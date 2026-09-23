@@ -6,8 +6,9 @@
  * Chỉ nhận chuỗi ISO `yyyy-mm-dd` (không giờ, không múi giờ — máy chủ đã quy về ngày trước khi gọi).
  */
 import { outcomeLabelFor } from './cases.ts';
-import type { ProgressTone } from './display.ts';
-import { tuanLich } from './hienThiNgay.ts';
+import { ngay, tuanLich } from './hienThiNgay.ts';
+import { RATIO_PASS_THRESHOLD } from './normal.ts';
+import { ASSESSED_SKILL_LABEL } from './skills.ts';
 import { mondayOfDate, owningMonthOf, weekNumberInMonthOf, MONTH_CODE } from './week.ts';
 
 const DAY_MS = 86_400_000;
@@ -139,109 +140,251 @@ export function xepTang<T extends { id: number; tu: string; den: string | null; 
   return tang;
 }
 
-// ====================================================================== nhãn khối PA (Q5, chú thích g8-133)
+// ====================================================================== nhãn khối PA (Q5, chú thích g8-133; PR-UX5 Q2/Q4/Q11)
 
-export type ToneKhoiPa = 'ok' | 'part' | 'bad' | 'run' | 'late';
-export type NhanKhoiPa = { chu: string; tone: ToneKhoiPa };
+export type ToneKhoiPa = 'ok' | 'part' | 'bad' | 'run' | 'late' | 'done';
+export type NhanKhoiPa = { ten: string; dau: '✓' | '◐' | '✗' | '▶' | '⚠' | '■'; tone: ToneKhoiPa; day: string };
+
+/** Khối PA ngắn hơn ngưỡng này (px) thì chỉ vẽ dấu kết quả, không vẽ tên (Q3) — tên đủ nằm ở tooltip `day`. */
+export const KHOI_PA_CO_TEN = 130;
 
 /**
- * NHÃN MỘT KHỐI PHƯƠNG ÁN. Kết quả lấy nguyên nhãn từ `outcomeLabelFor` (`cases.ts`) — không gõ lại
- * chữ ở đây để hai chỗ không lệch nhau khi owner đổi chữ.
+ * KHỐI PA ĐANG CHẠY KẾT THÚC Ở TUẦN HÔM NAY, không kéo tới cột cuối trục (Q4, sửa lỗi Qb). PA chưa tới ngày bắt
+ * đầu thì kết thúc ở tuần bắt đầu của chính nó.
  */
-export function nhanKhoiPa(pa: { ten: string; status: string; lastOutcome: string | null; followupOverdue: boolean }): NhanKhoiPa {
+export function denKhoiPa(p: { tu: string; den: string | null }, homNay: string): string {
+  return p.den ?? (p.tu > homNay ? p.tu : homNay);
+}
+
+/**
+ * NHÃN MỘT KHỐI PHƯƠNG ÁN. Chữ hiện trên khối chỉ là tên PA (`ten`) + dấu kết quả (`dau`); câu đủ vào tooltip
+ * (`day`). Kết quả lấy nguyên nhãn từ `outcomeLabelFor` (`cases.ts`) — không gõ lại chữ ở đây. Xanh lá chỉ dành cho
+ * kết quả (Q11): PA đã kết thúc mà chưa ghi kết quả là họ `done` (xám) với dấu ■.
+ */
+export function nhanKhoiPa(
+  pa: {
+    ten: string; status: string; lastOutcome: string | null; followupOverdue: boolean;
+    soNgayQuaHan?: number | null; tu?: string; den?: string | null;
+  },
+  homNay?: string,
+): NhanKhoiPa {
+  const { ten } = pa;
+  const khoang = pa.tu
+    ? (pa.den ? `${ngay(pa.tu, homNay)} → ${ngay(pa.den, homNay)}` : `từ ${ngay(pa.tu, homNay)}`)
+    : null;
+  const ghep = (...phan: (string | null)[]) => phan.filter(Boolean).join(' · ');
   if (pa.status === 'completed') {
-    if (pa.lastOutcome === 'improved') return { chu: `${pa.ten} · ✓ ${outcomeLabelFor('improved')}`, tone: 'ok' };
-    if (pa.lastOutcome === 'partial') return { chu: `${pa.ten} · ◐ ${outcomeLabelFor('partial')}`, tone: 'part' };
-    if (pa.lastOutcome === 'unchanged' || pa.lastOutcome === 'worse') {
-      return { chu: `${pa.ten} · ✗ ${outcomeLabelFor(pa.lastOutcome)}`, tone: 'bad' };
+    const ketQua: { dau: NhanKhoiPa['dau']; tone: ToneKhoiPa } | null =
+      pa.lastOutcome === 'improved' ? { dau: '✓', tone: 'ok' }
+        : pa.lastOutcome === 'partial' ? { dau: '◐', tone: 'part' }
+          : pa.lastOutcome === 'unchanged' || pa.lastOutcome === 'worse' ? { dau: '✗', tone: 'bad' }
+            : null;
+    if (ketQua) {
+      return { ten, dau: ketQua.dau, tone: ketQua.tone, day: ghep(ten, `${ketQua.dau} ${outcomeLabelFor(pa.lastOutcome!)}`, khoang) };
     }
-    return { chu: `${pa.ten} · Đã kết thúc`, tone: 'part' };
+    return { ten, dau: '■', tone: 'done', day: ghep(ten, '■ Đã kết thúc, chưa ghi kết quả', khoang) };
   }
-  if (pa.followupOverdue) return { chu: `${pa.ten} · Đang thực hiện · Quá hạn cập nhật`, tone: 'late' };
-  return { chu: `${pa.ten} · Đang thực hiện`, tone: 'run' };
+  if (pa.followupOverdue) {
+    const quaHan = `⚠ Quá hạn cập nhật${pa.soNgayQuaHan ? ` ${pa.soNgayQuaHan} ngày` : ''}`;
+    return { ten, dau: '⚠', tone: 'late', day: ghep(ten, '▶ Đang thực hiện', quaHan, khoang) };
+  }
+  return { ten, dau: '▶', tone: 'run', day: ghep(ten, '▶ Đang thực hiện', khoang) };
 }
 
 // ====================================================================== badge hộp kỹ năng (Q6)
 
 export type ToneHop = 'ok' | 'warn' | 'danger';
-export type TrangThaiHop = { chu: string; tone: ToneHop } | null;
+export type TrangThaiHop = { chu: string; ngan: string; tone: ToneHop } | null;
 
 const soTuanTron = (tu: string, den: string): number => Math.max(0, Math.ceil((ngayThu(den) - ngayThu(tu)) / 7));
 
 /**
  * BADGE ĐẦU HỘP KỸ NĂNG — thứ tự ưu tiên CỐ ĐỊNH (Q6): thiếu PA nói trước, đang xấu điểm nói trước
  * "đang theo dõi" chung chung. `null` = chưa từng có Case (giao diện tự vẽ chữ mờ "Không có Case").
+ * `ngan` = phần trước " · " của `chu` — chỗ hẹp (Xem gọn, 375px) hiện `ngan`, `chu` đủ để ở tooltip.
  */
 export function trangThaiHop(
   i: { caseMo: { mo: string; soPa: number }[]; coTungCase: boolean; diemCuoiChuaDat: boolean | null; xongGanNhat: string | null },
   homNay: string,
 ): TrangThaiHop {
+  const dung = (chu: string, tone: ToneHop): NonNullable<TrangThaiHop> => ({ chu, ngan: chu.split(' · ')[0], tone });
   if (i.caseMo.length > 0) {
     const somNhat = i.caseMo.reduce((a, b) => (b.mo < a ? b.mo : a), i.caseMo[0].mo);
     const n = soTuanTron(somNhat, homNay);
-    if (i.caseMo.some((c) => c.soPa === 0)) return { chu: `Chưa có PA · ${n} tuần`, tone: 'warn' };
-    if (i.diemCuoiChuaDat) return { chu: `Cần hỗ trợ · ${n} tuần`, tone: 'danger' };
-    return { chu: `Đang theo dõi · ${n} tuần`, tone: 'warn' };
+    if (i.caseMo.some((c) => c.soPa === 0)) return dung(`Chưa có PA · ${n} tuần`, 'warn');
+    if (i.diemCuoiChuaDat) return dung(`Cần hỗ trợ · ${n} tuần`, 'danger');
+    return dung(`Đang theo dõi · ${n} tuần`, 'warn');
   }
   if (i.coTungCase && i.xongGanNhat) {
-    return { chu: `Đã ổn · xong ${i.xongGanNhat.slice(8, 10)}/${i.xongGanNhat.slice(5, 7)}`, tone: 'ok' };
+    return dung(`Đã ổn · xong ${i.xongGanNhat.slice(8, 10)}/${i.xongGanNhat.slice(5, 7)}`, 'ok');
   }
   return null;
 }
 
-// ====================================================================== chuỗi điểm (Q16)
+/** Dòng phụ của một vấn đề (G-3, ≤ 60 ký tự; G-6 ngày `dd/mm`, năm chỉ khi khác năm nay). */
+export function dongPhuVanDe(v: { mo: string; dong: string | null; soPa: number }, homNay: string): string {
+  const pa = v.soPa === 0 ? 'chưa có PA' : `${v.soPa} PA`;
+  const s = v.dong ? `${ngay(v.mo, homNay)} → ${ngay(v.dong, homNay)} · ${pa}` : `từ ${ngay(v.mo, homNay)} · ${pa}`;
+  return s.slice(0, 60);
+}
 
-export type MocDiem = { chu: string; xau: boolean };
+// ====================================================================== chuỗi điểm (Q16; PR-UX5 Q1/Q7/Q8)
+
+export type DotRef = { cheDo: 'ielts' | 'ratio'; attemptNo: number; kind: string; maLop?: string | null };
+
+/** Nhãn một đợt: Fast Track `MT2`; lớp thường `Giữa khoá MB-FOU 03` / `Cuối khoá` (không bao giờ chữ "MT"). */
+export function nhanDotTest(d: DotRef): string {
+  if (d.cheDo === 'ielts') return `MT${d.attemptNo}`;
+  const kind = d.kind === 'final' ? 'Cuối khoá' : 'Giữa khoá';
+  return d.maLop ? `${kind} ${d.maLop}` : kind;
+}
+
+/** Một mốc điểm máy chủ gửi — trường mới tuỳ chọn để phép kiểm cũ vẫn gọi được. */
+export type DiemMoc = {
+  gt: number; tong?: number | null; chuaDat: boolean;
+  attemptNo?: number; kind?: string; maLop?: string | null; kyVong?: number | null;
+};
+export type LechDiem = { dau: 'len' | 'xuong' | 'bang'; chu: string };
+export type MocDiem = { chu: string; xau: boolean; cho: boolean; lech: LechDiem | null; title: string };
+
+const DAU_TRU = '−';
 
 /**
- * CHUỖI ĐIỂM của một hộp kỹ năng — tối đa 5 mốc gần nhất. Fast Track ghi band; lớp thường ghi %
- * (làm tròn, `outcome` đã tính sẵn từ `evaluateRegular` chứ không tính lại 70% ở đây). `conCho` thêm
- * một mốc "?" ở cuối khi có đợt đã lên lịch nhưng chưa có điểm môn này.
+ * MŨI TÊN GIỮA HAI MỐC LIỀN NHAU (Q8). Fast Track chênh band 1 chữ số lẻ; lớp thường chênh điểm % tính từ % ĐÃ LÀM
+ * TRÒN của hai mốc — số đang hiện và mức chênh không bao giờ lệch nhau. Dấu trừ là U+2212.
+ */
+export function lechDiem(truoc: number, sau: number, cheDo: 'ielts' | 'ratio'): LechDiem {
+  const d = cheDo === 'ratio' ? Math.round(sau) - Math.round(truoc) : Math.round((sau - truoc) * 10) / 10;
+  if (d === 0) return { dau: 'bang', chu: '=' };
+  const so = cheDo === 'ratio' ? String(Math.abs(d)) : Math.abs(d).toFixed(1);
+  return d > 0 ? { dau: 'len', chu: `▲+${so}` } : { dau: 'xuong', chu: `▼${DAU_TRU}${so}` };
+}
+
+/**
+ * CHUỖI ĐIỂM của một hộp kỹ năng — `toiDa` mốc gần nhất (mặc định 5, tính cả mốc "?"). Fast Track ghi band một chữ
+ * số lẻ; lớp thường ghi % (làm tròn; `chuaDat` đã tính sẵn từ `evaluateRegular`, không tính lại 70% ở đây).
+ * `conCho` thêm một mốc "?" ở cuối khi có đợt đã lên lịch mà chưa có điểm môn này. Mũi tên chỉ tính giữa các mốc
+ * ĐANG HIỆN liền nhau (cắt rồi mới tính); mốc đầu và mốc "?" không có mũi tên.
  */
 export function chuoiDiem(
-  diem: readonly { gt: number; tong?: number | null; chuaDat: boolean }[],
+  diem: readonly DiemMoc[],
   cheDo: 'ielts' | 'ratio',
   conCho: boolean,
+  o: { toiDa?: number; dotCho?: DotRef | null } = {},
 ): MocDiem[] {
-  const moc: MocDiem[] = diem.slice(-5).map((d) => ({
-    chu: cheDo === 'ratio' && d.tong ? `${Math.round((d.gt / d.tong) * 100)}%` : String(d.gt),
-    xau: d.chuaDat,
-  }));
-  if (conCho) moc.push({ chu: '?', xau: false });
+  const soDiem = Math.max(0, (o.toiDa ?? 5) - (conCho ? 1 : 0));
+  const lay = diem.slice(Math.max(0, diem.length - soDiem));
+  const nguong = Math.round(RATIO_PASS_THRESHOLD * 100);
+  let giaTriTruoc: number | null = null;
+  const moc: MocDiem[] = lay.map((d) => {
+    const phanTram = cheDo === 'ratio' && d.tong ? Math.round((d.gt / d.tong) * 100) : null;
+    const gia = phanTram ?? d.gt;
+    const chu = phanTram !== null ? `${phanTram}%` : cheDo === 'ielts' ? d.gt.toFixed(1) : String(d.gt);
+    const nhan = d.attemptNo != null
+      ? nhanDotTest({ cheDo, attemptNo: d.attemptNo, kind: d.kind ?? '', maLop: d.maLop })
+      : null;
+    let phan: (string | null)[];
+    if (cheDo === 'ratio') {
+      const cauDung = d.tong ? ` (${d.gt}/${d.tong})` : '';
+      phan = [nhan, `${chu}${cauDung}`, d.chuaDat ? `Chưa đạt — ngưỡng ${nguong}%` : 'Đạt'];
+    } else {
+      const ky = d.kyVong != null ? (d.chuaDat ? `dưới kỳ vọng ${d.kyVong.toFixed(1)}` : `kỳ vọng ${d.kyVong.toFixed(1)}`) : null;
+      phan = [nhan, chu, ky];
+    }
+    const lech = giaTriTruoc === null ? null : lechDiem(giaTriTruoc, gia, cheDo);
+    giaTriTruoc = gia;
+    return { chu, xau: d.chuaDat, cho: false, lech, title: phan.filter(Boolean).join(' · ') };
+  });
+  if (conCho) {
+    moc.push({ chu: '?', xau: false, cho: true, lech: null, title: `${o.dotCho ? nhanDotTest(o.dotCho) : 'Đợt sắp tới'} · chưa chấm` });
+  }
   return moc;
 }
 
-// ====================================================================== nhãn ghim đợt Test (Q16 hàng "Đợt Test")
+/** Bề rộng ước (px) của chuỗi điểm — tính bằng số ký tự, KHÔNG đo DOM (tránh vòng đo ↔ đổi bố cục). */
+export function uocRongChuoi(moc: readonly MocDiem[]): number {
+  let px = 0;
+  for (const m of moc) {
+    px += m.chu.length * 7.6;
+    if (m.lech) px += m.lech.chu.length * 6.2 + 12;
+  }
+  if (moc.some((m) => m.cho)) px += 16;
+  return Math.ceil(px);
+}
 
-export type NhanGhim = { ngan: string; day: string; tone: ProgressTone };
+// ====================================================================== nhãn ghim đợt Test (Q16 hàng "Đợt Test"; N-1b)
+
+/** Màu kết quả Test (N-1b): Đạt xanh lá · SOS 1 vàng · SOS 2 cam · SOS 3 đỏ · tạm thời / chưa đủ điểm xám viền đứt. */
+export type MauKetQua = 'dat' | 'sos1' | 'sos2' | 'sos3' | 'tam';
+export type NhanGhim = { chu: string; gon: string; day: string; mau: MauKetQua };
+
+const mauTuSos = (sos: number): MauKetQua => (sos <= 0 ? 'dat' : sos === 1 ? 'sos1' : sos === 2 ? 'sos2' : 'sos3');
 
 /**
- * NHÃN GHIM một đợt Test trên trục. Fast Track luôn có tiền tố `MT{n}`; lớp thường KHÔNG BAO GIỜ có
- * chữ "MT" (Q Bảng quyết định) — chỉ "Giữa"/"Cuối" ngắn gọn, đủ chữ ở `day` (tooltip).
+ * NHÃN GHIM một đợt Test trên trục — không mũi tên trên ghim (mũi tên ở chuỗi điểm). Fast Track luôn có tiền tố
+ * `MT{n}`; lớp thường KHÔNG BAO GIỜ có chữ "MT" — chỉ "Giữa"/"Cuối", đủ chữ ở `day` (tooltip). `gon` là nhãn của
+ * chế độ Xem gọn. Màu theo N-1b: thiếu điểm hoặc chưa có kỳ vọng → `tam`.
  */
 export function nhanGhim(a: {
   cheDo: 'ielts' | 'ratio'; attemptNo: number; kind: string;
   overall: number | null; sosLevel: number | null;
   soDat: number | null; soYeuCau: number; soCoDiem: number;
+  maLop?: string | null; kyNangChuaDat?: string[]; kyVong?: number | null; tuan?: string; homNay?: string;
 }): NhanGhim {
+  const ghep = (...phan: (string | null | undefined)[]) => phan.filter(Boolean).join(' · ');
   if (a.cheDo === 'ielts') {
     const mt = `MT${a.attemptNo}`;
-    if (a.soCoDiem === 0) return { ngan: mt, day: mt, tone: 'muted' };
+    const tuan = a.tuan ? tuanLich(a.tuan, a.homNay) : null;
+    if (a.soCoDiem === 0) return { chu: mt, gon: mt, day: ghep(mt, tuan, 'chưa có điểm'), mau: 'tam' };
     if (a.soCoDiem < a.soYeuCau) {
-      const t = `${mt} · đang chấm`;
-      return { ngan: t, day: t, tone: 'info' };
+      return { chu: `${mt} · đang chấm`, gon: mt, day: ghep(mt, tuan, `đang chấm ${a.soCoDiem}/${a.soYeuCau} kỹ năng`), mau: 'tam' };
     }
-    const soSos = a.sosLevel && a.sosLevel > 0;
     const band = a.overall != null ? a.overall.toFixed(1) : '—';
-    const t = soSos ? `${mt} · ${band} · SOS ${a.sosLevel}` : `${mt} · ${band}`;
-    return { ngan: t, day: t, tone: soSos ? 'danger' : 'ok' };
+    const overall = `Overall ${band}`;
+    if (a.sosLevel == null) {
+      return { chu: `${mt} · ${band}`, gon: `${mt} ${band}`, day: ghep(mt, tuan, overall, 'chưa có kỳ vọng'), mau: 'tam' };
+    }
+    const mau = mauTuSos(a.sosLevel);
+    if (a.sosLevel <= 0) {
+      return { chu: `${mt} · ${band} · Đạt`, gon: `${mt} ${band}`, day: ghep(mt, tuan, overall, 'Đạt kỳ vọng'), mau };
+    }
+    const ky = (a.kyNangChuaDat ?? []).map((k) => (ASSESSED_SKILL_LABEL as Record<string, string>)[k] ?? k);
+    const sos = `SOS ${a.sosLevel}`;
+    return {
+      chu: `${mt} · ${band} · ${sos}`, gon: `${mt} ${band}`,
+      day: ghep(mt, tuan, overall, ky.length ? `${sos} — ${ky.join(', ')} dưới kỳ vọng` : sos), mau,
+    };
   }
   const daiKind = a.kind === 'final' ? 'Cuối khoá' : 'Giữa khoá';
   const ngan = a.kind === 'final' ? 'Cuối' : 'Giữa';
-  if (a.soCoDiem === 0) return { ngan, day: daiKind, tone: 'muted' };
-  if (a.soCoDiem < a.soYeuCau) return { ngan, day: `${daiKind} · còn ${a.soYeuCau - a.soCoDiem} môn`, tone: 'info' };
-  const chuaDat = (a.soDat ?? 0) < a.soYeuCau;
-  return { ngan, day: `${daiKind} · Đạt ${a.soDat ?? 0}/${a.soYeuCau} môn`, tone: chuaDat ? 'danger' : 'ok' };
+  const dai = a.maLop ? `${daiKind} ${a.maLop}` : daiKind;
+  if (a.soCoDiem === 0) return { chu: ngan, gon: ngan, day: dai, mau: 'tam' };
+  if (a.soCoDiem < a.soYeuCau) {
+    return { chu: `${ngan} · tạm thời`, gon: ngan, day: ghep(dai, `mới chấm ${a.soCoDiem}/${a.soYeuCau} môn`, 'tạm thời'), mau: 'tam' };
+  }
+  const soDat = a.soDat ?? 0;
+  const sos = a.sosLevel ?? (soDat >= a.soYeuCau ? 0 : Math.min(3, a.soYeuCau - soDat));
+  const mau = mauTuSos(sos);
+  const datMon = `Đạt ${soDat}/${a.soYeuCau} môn`;
+  if (sos <= 0) return { chu: `${ngan} · Đạt`, gon: ngan, day: ghep(dai, datMon), mau };
+  return { chu: `${ngan} · SOS ${sos}`, gon: ngan, day: ghep(dai, datMon, `SOS ${sos}`), mau };
+}
+
+/**
+ * GOM GHIM THEO TUẦN (Q9): hai đợt rơi vào cùng một tuần (kể cả hai ngày khác nhau trong tuần) thành MỘT nhóm,
+ * ghim xếp theo `attemptNo`; nhóm xếp theo tuần tăng dần. `tuan` của nhóm là thứ Hai đầu tuần.
+ */
+export function gomGhimTheoTuan<T extends { tuan: string; attemptNo: number }>(g: readonly T[]): { tuan: string; ghim: T[] }[] {
+  const theoTuan = new Map<string, T[]>();
+  for (const x of g) {
+    const thuHai = mondayOfDate(x.tuan);
+    const list = theoTuan.get(thuHai) ?? [];
+    list.push(x);
+    theoTuan.set(thuHai, list);
+  }
+  return [...theoTuan.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([tuan, ghim]) => ({ tuan, ghim: [...ghim].sort((a, b) => a.attemptNo - b.attemptNo) }));
 }
 
 // ====================================================================== nhãn hai nút giai đoạn (Q1)
@@ -251,4 +394,68 @@ export function nhanGiaiDoan(gd: { loai: 'thuong' | 'ft'; tu: string; den: strin
   const nhan = gd.loai === 'thuong' ? 'Lớp thường' : 'Fast Track';
   if (gd.den) return `${nhan} · ${tuanLich(gd.tu, homNay)} – ${tuanLich(gd.den, homNay)}`;
   return `${nhan} · từ ${tuanLich(gd.tu, homNay)}`;
+}
+
+// ====================================================================== bố cục một lưới (PR-UX5 Q5/Q7/Q15)
+
+/** Bề rộng (px) dành cho tên kỹ năng ở hàng đầu hộp — chuỗi điểm bắt đầu ngay sau đó (mockup 18 `--knw`). */
+export const RONG_TEN_KY_NANG = { ielts: 118, ratio: 96 } as const;
+
+export type BoCuc = { cotTen: number; cotTuan: string; xuongDong: boolean; toiDaMoc: number };
+
+const COT = { ten: 300, tenRong: 320, tenToiDa: 440, tenHep: 148, tuanToiThieu: 48, tuanGon: 40 } as const;
+
+/**
+ * BỐ CỤC CỘT: Xem gọn → cột tên 148px, tuần 40px, chuỗi điểm xuống dòng dưới tên, 3 mốc. Ngược lại cột tên rộng
+ * `RONG_TEN_KY_NANG + rongChuoi + 18` kẹp [300 (≥ 1800px: 320), 440]; nếu không đủ chỗ cho `soTuan` cột ≥ 48px thì
+ * rơi về dạng hẹp (148px, chuỗi xuống dòng, 3 mốc) nhưng cột tuần vẫn co giãn.
+ */
+export function boCucHanhTrinh(i: { rong: number; soTuan: number; xemGon: boolean; rongChuoi: number; cheDo: 'ielts' | 'ratio' }): BoCuc {
+  if (i.xemGon) return { cotTen: COT.tenHep, cotTuan: `${COT.tuanGon}px`, xuongDong: true, toiDaMoc: 3 };
+  const san = i.rong >= 1800 ? COT.tenRong : COT.ten;
+  const ten = Math.min(COT.tenToiDa, Math.max(san, RONG_TEN_KY_NANG[i.cheDo] + i.rongChuoi + 18));
+  const cotTuan = `minmax(${COT.tuanToiThieu}px, 1fr)`;
+  if (i.rong < ten + i.soTuan * COT.tuanToiThieu) return { cotTen: COT.tenHep, cotTuan, xuongDong: true, toiDaMoc: 3 };
+  return { cotTen: ten, cotTuan, xuongDong: false, toiDaMoc: 5 };
+}
+
+/** Bề rộng (px) thật của một cột tuần — để quyết định khối PA có đủ chỗ vẽ tên (`KHOI_PA_CO_TEN`). */
+export function rongCotTuan(b: BoCuc, rong: number, soTuan: number): number {
+  if (b.cotTuan === `${COT.tuanGon}px`) return COT.tuanGon;
+  return Math.max(COT.tuanToiThieu, (rong - b.cotTen) / Math.max(1, soTuan));
+}
+
+export type HangLuoi = {
+  hangDoan: number | null; hangGhim: number | null; hangCuoi: number; mau: string;
+  hop: { khung: [number, number]; dau: number; vanDe: { tu: number; so: number }[]; dongAn: number | null }[];
+};
+
+/**
+ * SỐ HÀNG CỦA LƯỚI DUY NHẤT (1-based): hàng 1 tháng, 2 tuần, [đoạn], [ghim]; mỗi hộp một hàng khe 10px, một hàng đầu,
+ * rồi mỗi vấn đề `so` hàng (tầng đầu `minmax(40px, auto)`, tầng thêm 30px), cuối hộp thêm một hàng `auto` nếu có
+ * "+n vấn đề cũ hơn". `khung` = [hàng đầu, hàng sau cùng + 1) — khe không nằm trong khung. `hangCuoi` = hàng sau
+ * cùng của cả lưới + 1 (cận mở, dùng trực tiếp làm `gridRow: 1 / hangCuoi`).
+ */
+export function xepHangLuoi(i: { coDoan: boolean; coGhim: boolean; hop: { soTangVanDe: number[]; coDongAn?: boolean }[] }): HangLuoi {
+  const mau: string[] = ['auto', 'auto'];
+  let hang = 2;
+  const hangDoan = i.coDoan ? ++hang : null;
+  if (i.coDoan) mau.push('auto');
+  const hangGhim = i.coGhim ? ++hang : null;
+  if (i.coGhim) mau.push('auto');
+  const hop: HangLuoi['hop'] = i.hop.map((h) => {
+    mau.push('10px');
+    hang += 1;
+    const dau = ++hang;
+    mau.push('minmax(42px, auto)');
+    const vanDe = h.soTangVanDe.map((so) => {
+      const tu = hang + 1;
+      for (let k = 0; k < so; k++) { hang += 1; mau.push(k === 0 ? 'minmax(40px, auto)' : '30px'); }
+      return { tu, so };
+    });
+    let dongAn: number | null = null;
+    if (h.coDongAn) { dongAn = ++hang; mau.push('auto'); }
+    return { khung: [dau, hang + 1] as [number, number], dau, vanDe, dongAn };
+  });
+  return { hangDoan, hangGhim, hangCuoi: hang + 1, mau: mau.join(' '), hop };
 }

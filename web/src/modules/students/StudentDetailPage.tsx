@@ -4,6 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { Card, DaiChiXem, Empty, ErrorState, Info, Level, Outcome, Skeleton, Status, Th} from '../../ui/ui.tsx';
 import { Modal } from '../../ui/Drawer.tsx';
 import { api, invalidate } from '../../lib/api.ts';
+import { cuonOnDinh } from '../../lib/cuonOnDinh.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { SkillBoard, type SkillBoardRow } from '../cases/SkillBoard.tsx';
 import { HanhTrinh } from './HanhTrinh.tsx';
@@ -115,13 +116,14 @@ export default function StudentDetailPage() {
   useEffect(() => {
     if (!data) return;
     if (p.dot != null) {
-      requestAnimationFrame(() => document.getElementById(`dot-${p.dot}`)?.scrollIntoView({ block: 'center' }));
+      return cuonOnDinh(() => document.getElementById(`dot-${p.dot}`), document.getElementById('bang-ky-nang'));
     } else if (p.kn && data.cycle) {
       const boHop = caseCategoriesFor(data.cycle.ratio ? 'ratio' : 'ielts_band');
       const mapped = anhXaKyNang(p.kn, boHop);
       if (mapped) setSkillPick(mapped);
-      requestAnimationFrame(() => document.getElementById('bang-ky-nang')?.scrollIntoView({ block: 'center' }));
+      return cuonOnDinh(() => document.getElementById('bang-ky-nang'), null);
     }
+    return undefined;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [!!data, p.dot, p.kn]);
 

@@ -157,21 +157,22 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
 
   check('PR-Qb (1) · nhanKhoiPa: đủ 6 nhánh (improved/partial/unchanged/worse/đã kết thúc/đang thực hiện)', () => {
     const ten = 'Reading';
+    /* PR-UX5 (Q2): chữ trên khối chỉ còn `ten` + `dau`; câu đủ (kết quả, ngày) nằm ở `day`. */
     const improved = d.nhanKhoiPa({ ten, status: 'completed', lastOutcome: 'improved', followupOverdue: false });
-    assert(improved.chu === 'Reading · ✓ Tiến bộ rõ', `improved: ${JSON.stringify(improved)}`);
+    assert(improved.ten === 'Reading' && improved.dau === '✓' && improved.day === 'Reading · ✓ Tiến bộ rõ', `improved: ${JSON.stringify(improved)}`);
     assert(improved.tone === 'ok', `improved tone: ${improved.tone}`);
     const partial = d.nhanKhoiPa({ ten, status: 'completed', lastOutcome: 'partial', followupOverdue: false });
-    assert(partial.chu === 'Reading · ◐ Tiến bộ một phần', `partial: ${JSON.stringify(partial)}`);
+    assert(partial.dau === '◐' && partial.day === 'Reading · ◐ Tiến bộ một phần', `partial: ${JSON.stringify(partial)}`);
     const unchanged = d.nhanKhoiPa({ ten, status: 'completed', lastOutcome: 'unchanged', followupOverdue: false });
-    assert(unchanged.chu === 'Reading · ✗ Không tiến bộ', `unchanged: ${JSON.stringify(unchanged)}`);
+    assert(unchanged.dau === '✗' && unchanged.day === 'Reading · ✗ Không tiến bộ', `unchanged: ${JSON.stringify(unchanged)}`);
     const worse = d.nhanKhoiPa({ ten, status: 'completed', lastOutcome: 'worse', followupOverdue: false });
     assert(worse.tone === 'bad', `worse tone: ${worse.tone}`);
     const daXong = d.nhanKhoiPa({ ten, status: 'completed', lastOutcome: null, followupOverdue: false });
-    assert(daXong.chu === 'Reading · Đã kết thúc', `xong không kết quả: ${JSON.stringify(daXong)}`);
+    assert(daXong.tone === 'done' && daXong.dau === '■' && daXong.day.includes('Đã kết thúc'), `xong không kết quả: ${JSON.stringify(daXong)}`);
     const running = d.nhanKhoiPa({ ten, status: 'started', lastOutcome: null, followupOverdue: false });
-    assert(running.chu === 'Reading · Đang thực hiện' && running.tone === 'run', `Đang chạy: ${JSON.stringify(running)}`);
+    assert(running.day === 'Reading · ▶ Đang thực hiện' && running.tone === 'run' && running.dau === '▶', `Đang chạy: ${JSON.stringify(running)}`);
     const late = d.nhanKhoiPa({ ten, status: 'planned', lastOutcome: null, followupOverdue: true });
-    assert(late.tone === 'late' && late.chu.includes('Quá hạn cập nhật'), `Quá hạn cập nhật: ${JSON.stringify(late)}`);
+    assert(late.tone === 'late' && late.dau === '⚠' && late.day.includes('Quá hạn cập nhật'), `Quá hạn cập nhật: ${JSON.stringify(late)}`);
   });
 
   check('PR-Qb (1) · trangThaiHop: đủ 5 nhánh Q6, n tuần làm tròn lên', () => {
@@ -196,23 +197,24 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     const ratio = d.chuoiDiem([{ gt: 3, tong: 4, chuaDat: true }], 'ratio', false);
     assert(ratio[0].chu === '75%' && ratio[0].xau === true, `Lớp thường %: ${JSON.stringify(ratio)}`);
     const nhieu = d.chuoiDiem([1, 2, 3, 4, 5, 6].map((n) => ({ gt: n, chuaDat: false })), 'ielts', false);
-    assert(nhieu.length === 5 && nhieu[0].chu === '2' && nhieu[4].chu === '6', `Tối đa 5 mốc cuối: ${JSON.stringify(nhieu)}`);
+    assert(nhieu.length === 5 && nhieu[0].chu === '2.0' && nhieu[4].chu === '6.0', `Tối đa 5 mốc cuối: ${JSON.stringify(nhieu)}`);
   });
 
   check('PR-Qb (1) · nhanGhim: FT có MT, lớp thường KHÔNG chứa chữ "MT"', () => {
+    /* PR-UX5 (N-1b): `ngan`→`chu`, `tone`→`mau` (ok→dat, danger→sos1, info/muted→tam). */
     const mt1 = d.nhanGhim({ cheDo: 'ielts', attemptNo: 1, kind: 'mock', overall: 5.5, sosLevel: 0, soDat: null, soYeuCau: 4, soCoDiem: 4 });
-    assert(mt1.ngan === 'MT1 · 5.5' && mt1.tone === 'ok', `MT đạt: ${JSON.stringify(mt1)}`);
+    assert(mt1.chu.startsWith('MT1 · 5.5') && mt1.mau === 'dat', `MT đạt: ${JSON.stringify(mt1)}`);
     const mt2 = d.nhanGhim({ cheDo: 'ielts', attemptNo: 2, kind: 'mock', overall: 6, sosLevel: 1, soDat: null, soYeuCau: 4, soCoDiem: 4 });
-    assert(mt2.ngan === 'MT2 · 6.0 · SOS 1' && mt2.tone === 'danger', `MT có SOS: ${JSON.stringify(mt2)}`);
+    assert(mt2.chu === 'MT2 · 6.0 · SOS 1' && mt2.mau === 'sos1', `MT có SOS: ${JSON.stringify(mt2)}`);
     const mt3 = d.nhanGhim({ cheDo: 'ielts', attemptNo: 3, kind: 'mock', overall: null, sosLevel: null, soDat: null, soYeuCau: 4, soCoDiem: 2 });
-    assert(mt3.ngan === 'MT3 · đang chấm' && mt3.tone === 'info', `MT đang chấm: ${JSON.stringify(mt3)}`);
+    assert(mt3.chu === 'MT3 · đang chấm' && mt3.mau === 'tam', `MT đang chấm: ${JSON.stringify(mt3)}`);
     const mt4 = d.nhanGhim({ cheDo: 'ielts', attemptNo: 4, kind: 'mock', overall: null, sosLevel: null, soDat: null, soYeuCau: 4, soCoDiem: 0 });
-    assert(mt4.ngan === 'MT4' && mt4.tone === 'muted', `MT chưa có điểm: ${JSON.stringify(mt4)}`);
+    assert(mt4.chu === 'MT4' && mt4.mau === 'tam', `MT chưa có điểm: ${JSON.stringify(mt4)}`);
     const giua = d.nhanGhim({ cheDo: 'ratio', attemptNo: 1, kind: 'progress', overall: null, sosLevel: null, soDat: 3, soYeuCau: 4, soCoDiem: 4 });
-    assert(giua.ngan === 'Giữa' && giua.day === 'Giữa khoá · Đạt 3/4 môn' && giua.tone === 'danger', `Giữa khoá: ${JSON.stringify(giua)}`);
+    assert(giua.gon === 'Giữa' && giua.day.startsWith('Giữa khoá · Đạt 3/4 môn') && giua.mau === 'sos1', `Giữa khoá: ${JSON.stringify(giua)}`);
     const cuoi = d.nhanGhim({ cheDo: 'ratio', attemptNo: 1, kind: 'final', overall: null, sosLevel: null, soDat: 4, soYeuCau: 4, soCoDiem: 4 });
-    assert(cuoi.ngan === 'Cuối' && cuoi.tone === 'ok', `Cuối khoá đạt: ${JSON.stringify(cuoi)}`);
-    for (const r of [giua, cuoi]) assert(!r.ngan.includes('MT') && !r.day.includes('MT'), `Lớp thường không chứa MT: ${JSON.stringify(r)}`);
+    assert(cuoi.gon === 'Cuối' && cuoi.mau === 'dat', `Cuối khoá đạt: ${JSON.stringify(cuoi)}`);
+    for (const r of [giua, cuoi]) assert(!r.chu.includes('MT') && !r.gon.includes('MT') && !r.day.includes('MT'), `Lớp thường không chứa MT: ${JSON.stringify(r)}`);
   });
 
   check('PR-Qb (1) · nhanGiaiDoan: giai đoạn đã xong có khoảng, đang chạy chỉ có "từ"', () => {
@@ -220,6 +222,184 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     assert(xong === 'Lớp thường · W2 JUN – W4 SEP', `Giai đoạn đã xong: ${xong}`);
     const dangChay = d.nhanGiaiDoan({ loai: 'ft', tu: '2026-10-05', den: null }, '2026-09-22');
     assert(dangChay === 'Fast Track · từ W2 OCT', `Giai đoạn đang chạy: ${dangChay}`);
+  });
+
+  // ==================================================================== PR-UX5 (1) — luật thuần mới
+
+  console.log('\nPR-UX5 · Hành trình: một lưới, điểm ▲▼, màu ghim N-1b');
+
+  check('PR-UX5 (1) · lechDiem FT: ▲ ▼ = theo band một chữ số lẻ, dấu trừ là U+2212 (không phải "-")', () => {
+    const len = d.lechDiem(5, 6, 'ielts');
+    assert(len.dau === 'len' && len.chu === '▲+1.0', `Lên: ${JSON.stringify(len)}`);
+    const xuong = d.lechDiem(6, 5.5, 'ielts');
+    assert(xuong.dau === 'xuong' && xuong.chu === '▼−0.5', `Xuống: ${JSON.stringify(xuong)}`);
+    assert(xuong.chu.includes('−') && !xuong.chu.includes('-'), 'Phải là dấu trừ U+2212, không phải gạch nối ASCII');
+    const bang = d.lechDiem(5.5, 5.5, 'ielts');
+    assert(bang.dau === 'bang' && bang.chu === '=', `Bằng: ${JSON.stringify(bang)}`);
+  });
+
+  check('PR-UX5 (1) · lechDiem lớp thường: chênh tính từ % ĐÃ LÀM TRÒN (13/20 → 14/19 = 65% → 74% = ▲+9)', () => {
+    const r = d.lechDiem(65, 74, 'ratio');
+    assert(r.chu === '▲+9', `Chênh %: ${JSON.stringify(r)}`);
+    const m = d.chuoiDiem([{ gt: 13, tong: 20, chuaDat: true }, { gt: 14, tong: 19, chuaDat: false }], 'ratio', false);
+    assert(m[0].chu === '65%' && m[1].chu === '74%' && m[1].lech?.chu === '▲+9', `Chuỗi: ${JSON.stringify(m)}`);
+    assert(d.lechDiem(70, 63, 'ratio').chu === '▼−7', 'Xuống 7 điểm %');
+  });
+
+  check('PR-UX5 (1) · chuoiDiem FT: chữ 5.0, mốc xấu, title "dưới kỳ vọng 6.0", mũi tên giữa hai mốc', () => {
+    const m = d.chuoiDiem([
+      { gt: 5, chuaDat: true, attemptNo: 1, kind: 'mock', kyVong: 6 },
+      { gt: 6, chuaDat: false, attemptNo: 2, kind: 'mock', kyVong: 6 },
+      { gt: 5.5, chuaDat: true, attemptNo: 3, kind: 'mock', kyVong: 6 },
+    ], 'ielts', false);
+    assert(m[0].chu === '5.0' && m[0].xau && m[0].lech === null, `Mốc đầu: ${JSON.stringify(m[0])}`);
+    assert(m[1].lech?.chu === '▲+1.0' && m[2].lech?.chu === '▼−0.5', `Mũi tên: ${JSON.stringify(m)}`);
+    assert(m[2].title === 'MT3 · 5.5 · dưới kỳ vọng 6.0', `Title dưới kỳ vọng: ${m[2].title}`);
+    assert(m[1].title === 'MT2 · 6.0 · kỳ vọng 6.0', `Title đạt: ${m[1].title}`);
+    assert(d.chuoiDiem([{ gt: 6, chuaDat: false, attemptNo: 2, kind: 'mock' }], 'ielts', false)[0].title === 'MT2 · 6.0', 'Thiếu kyVong: chỉ MT + điểm');
+  });
+
+  check('PR-UX5 (1) · chuoiDiem lớp thường: title "Giữa khoá … ngưỡng 70%", KHÔNG chữ "kỳ vọng" / "MT" (Q1)', () => {
+    const m = d.chuoiDiem([
+      { gt: 13, tong: 20, chuaDat: true, attemptNo: 1, kind: 'progress', maLop: 'MB-FOU 03' },
+      { gt: 16, tong: 20, chuaDat: false, attemptNo: 2, kind: 'final', maLop: 'MB-FOU 03' },
+    ], 'ratio', false);
+    assert(m[0].title === 'Giữa khoá MB-FOU 03 · 65% (13/20) · Chưa đạt — ngưỡng 70%', `Title: ${m[0].title}`);
+    assert(m[1].title === 'Cuối khoá MB-FOU 03 · 80% (16/20) · Đạt', `Title đạt: ${m[1].title}`);
+    for (const x of m) assert(!x.title.includes('kỳ vọng') && !x.title.includes('MT'), `Không "kỳ vọng"/"MT": ${x.title}`);
+  });
+
+  check('PR-UX5 (1) · chuoiDiem mốc "?": cho=true, không mũi tên, title "chưa chấm" (có/không dotCho)', () => {
+    const m = d.chuoiDiem([{ gt: 6, chuaDat: false }], 'ielts', true, { dotCho: { cheDo: 'ielts', attemptNo: 4, kind: 'mock' } });
+    const q = m[m.length - 1];
+    assert(q.cho && q.chu === '?' && q.lech === null && q.title === 'MT4 · chưa chấm', `Mốc ?: ${JSON.stringify(q)}`);
+    assert(d.chuoiDiem([], 'ielts', true)[0].title === 'Đợt sắp tới · chưa chấm', 'Không dotCho');
+  });
+
+  check('PR-UX5 (1) · chuoiDiem toiDa: 3 giữ 3 mốc cuối (tính cả "?"), mốc đầu lech=null, lech tính SAU khi cắt', () => {
+    const diem = [4, 5, 6, 7, 8].map((n) => ({ gt: n, chuaDat: false }));
+    const m3 = d.chuoiDiem(diem, 'ielts', false, { toiDa: 3 });
+    assert(m3.map((x) => x.chu).join(',') === '6.0,7.0,8.0' && m3[0].lech === null, `3 mốc cuối: ${JSON.stringify(m3)}`);
+    const m3q = d.chuoiDiem(diem, 'ielts', true, { toiDa: 3 });
+    assert(m3q.length === 3 && m3q[2].cho && m3q[0].chu === '7.0' && m3q[0].lech === null, `2 điểm + "?": ${JSON.stringify(m3q)}`);
+    assert(d.chuoiDiem(diem, 'ielts', false).length === 5, 'Mặc định 5 mốc');
+  });
+
+  check('PR-UX5 (1) · nhanGhim FT: 6 màu N-1b (Đạt · SOS 1/2/3 · thiếu điểm · chưa có kỳ vọng) + chữ + tooltip', () => {
+    const base = { cheDo: 'ielts' as const, attemptNo: 1, kind: 'mock', overall: 5.5, soDat: null, soYeuCau: 4, soCoDiem: 4 };
+    assert(d.nhanGhim({ ...base, sosLevel: 0 }).mau === 'dat', 'sos 0 → dat');
+    const s1 = d.nhanGhim({ ...base, sosLevel: 1, tuan: '2026-07-06', kyNangChuaDat: ['reading'] });
+    assert(s1.mau === 'sos1' && s1.chu === 'MT1 · 5.5 · SOS 1' && s1.gon === 'MT1 5.5', `SOS 1: ${JSON.stringify(s1)}`);
+    assert(s1.day.includes('Reading dưới kỳ vọng') && s1.day.includes('W2 JUL') && s1.day.includes('Overall 5.5'), `Tooltip: ${s1.day}`);
+    assert(d.nhanGhim({ ...base, sosLevel: 2 }).mau === 'sos2' && d.nhanGhim({ ...base, sosLevel: 3 }).mau === 'sos3', 'sos 2 / 3');
+    assert(d.nhanGhim({ ...base, sosLevel: null, soCoDiem: 2 }).mau === 'tam', 'Thiếu điểm → tam');
+    const chuaKy = d.nhanGhim({ ...base, sosLevel: null });
+    assert(chuaKy.mau === 'tam' && chuaKy.day.includes('chưa có kỳ vọng'), `Chưa có kỳ vọng: ${JSON.stringify(chuaKy)}`);
+  });
+
+  check('PR-UX5 (1) · nhanGhim lớp thường: "Giữa · SOS 1" / "Cuối · Đạt" / "Cuối · tạm thời", không chữ "MT"', () => {
+    const base = { cheDo: 'ratio' as const, attemptNo: 1, overall: null, soYeuCau: 4, maLop: 'MB-FOU 03' };
+    const g = d.nhanGhim({ ...base, kind: 'progress', sosLevel: 1, soDat: 3, soCoDiem: 4 });
+    assert(g.chu === 'Giữa · SOS 1' && g.mau === 'sos1' && g.day === 'Giữa khoá MB-FOU 03 · Đạt 3/4 môn · SOS 1', `Giữa: ${JSON.stringify(g)}`);
+    const c = d.nhanGhim({ ...base, kind: 'final', sosLevel: 0, soDat: 4, soCoDiem: 4 });
+    assert(c.chu === 'Cuối · Đạt' && c.mau === 'dat', `Cuối đạt: ${JSON.stringify(c)}`);
+    const t = d.nhanGhim({ ...base, kind: 'final', sosLevel: 2, soDat: 2, soCoDiem: 3 });
+    assert(t.chu === 'Cuối · tạm thời' && t.mau === 'tam' && t.day.includes('mới chấm 3/4 môn'), `Tạm thời: ${JSON.stringify(t)}`);
+    const trong = d.nhanGhim({ ...base, kind: 'progress', sosLevel: null, soDat: null, soCoDiem: 0 });
+    assert(trong.chu === 'Giữa' && trong.mau === 'tam', `Chưa điểm: ${JSON.stringify(trong)}`);
+    for (const r of [g, c, t, trong]) assert(!/MT/.test(`${r.chu}${r.gon}${r.day}`), `Không "MT": ${JSON.stringify(r)}`);
+  });
+
+  check('PR-UX5 (1) · gomGhimTheoTuan: hai ngày khác nhau trong một tuần → 1 nhóm đúng thứ tự; khác tuần → 2 nhóm', () => {
+    const cung = d.gomGhimTheoTuan([
+      { tuan: '2026-07-09', attemptNo: 2, id: 'b' }, { tuan: '2026-07-07', attemptNo: 1, id: 'a' },
+    ]);
+    assert(cung.length === 1 && cung[0].tuan === '2026-07-06' && cung[0].ghim.map((g) => g.id).join('') === 'ab', `Cùng tuần: ${JSON.stringify(cung)}`);
+    const khac = d.gomGhimTheoTuan([{ tuan: '2026-07-14', attemptNo: 2 }, { tuan: '2026-07-07', attemptNo: 1 }]);
+    assert(khac.length === 2 && khac[0].tuan < khac[1].tuan, `Khác tuần: ${JSON.stringify(khac)}`);
+  });
+
+  check('PR-UX5 (1) · nhanKhoiPa: dấu/màu 7 nhánh, tên PA không chứa "·", tooltip quá hạn có số ngày và ngày dd/mm', () => {
+    const co = { ten: 'Học tutor', followupOverdue: false, tu: '2026-09-14', den: null as string | null };
+    const dem = (o: object) => d.nhanKhoiPa({ status: 'completed', lastOutcome: null, ...co, ...o } as any, '2026-09-23');
+    const cacNhanh = [
+      [{ lastOutcome: 'improved' }, '✓', 'ok'], [{ lastOutcome: 'partial' }, '◐', 'part'],
+      [{ lastOutcome: 'unchanged' }, '✗', 'bad'], [{ lastOutcome: 'worse' }, '✗', 'bad'],
+      [{}, '■', 'done'], [{ status: 'started' }, '▶', 'run'], [{ status: 'started', followupOverdue: true, soNgayQuaHan: 2 }, '⚠', 'late'],
+    ] as const;
+    for (const [o, dau, tone] of cacNhanh) {
+      const n = dem(o);
+      assert(n.dau === dau && n.tone === tone && !n.ten.includes('·'), `${JSON.stringify(o)} → ${JSON.stringify(n)}`);
+    }
+    const quaHan = dem({ status: 'started', followupOverdue: true, soNgayQuaHan: 2 });
+    assert(quaHan.day === 'Học tutor · ▶ Đang thực hiện · ⚠ Quá hạn cập nhật 2 ngày · từ 14/09', `Quá hạn: ${quaHan.day}`);
+    assert(dem({ status: 'started' }).day === 'Học tutor · ▶ Đang thực hiện · từ 14/09', 'Đang chạy');
+    assert(dem({ den: '2026-09-20', lastOutcome: 'improved' }).day === 'Học tutor · ✓ Tiến bộ rõ · 14/09 → 20/09', 'Đã xong có kết quả');
+    assert(dem({}).day.includes('■ Đã kết thúc, chưa ghi kết quả'), 'Đã kết thúc chưa ghi');
+  });
+
+  check('PR-UX5 (1) · denKhoiPa: PA đang chạy kết thúc ở tuần hôm nay; có den giữ den; PA sắp tới giữ ngày bắt đầu (Q4)', () => {
+    assert(d.denKhoiPa({ tu: '2026-09-01', den: null }, '2026-09-23') === '2026-09-23', 'Đang chạy → hôm nay');
+    assert(d.denKhoiPa({ tu: '2026-09-01', den: '2026-09-10' }, '2026-09-23') === '2026-09-10', 'Đã xong → den');
+    assert(d.denKhoiPa({ tu: '2026-10-05', den: null }, '2026-09-23') === '2026-10-05', 'Chưa tới ngày → chính tu');
+  });
+
+  check('PR-UX5 (1) · trangThaiHop có `ngan` (phần trước " · ") cho cả 4 trạng thái', () => {
+    const h = '2026-09-22';
+    const ngan = (i: Parameters<typeof d.trangThaiHop>[0]) => d.trangThaiHop(i, h)?.ngan;
+    assert(ngan({ caseMo: [{ mo: '2026-08-01', soPa: 0 }], coTungCase: true, diemCuoiChuaDat: null, xongGanNhat: null }) === 'Chưa có PA', 'Chưa có PA');
+    assert(ngan({ caseMo: [{ mo: '2026-08-01', soPa: 1 }], coTungCase: true, diemCuoiChuaDat: true, xongGanNhat: null }) === 'Cần hỗ trợ', 'Cần hỗ trợ');
+    assert(ngan({ caseMo: [{ mo: '2026-08-01', soPa: 1 }], coTungCase: true, diemCuoiChuaDat: false, xongGanNhat: null }) === 'Đang theo dõi', 'Đang theo dõi');
+    assert(ngan({ caseMo: [], coTungCase: true, diemCuoiChuaDat: null, xongGanNhat: '2026-08-30' }) === 'Đã ổn', 'Đã ổn');
+  });
+
+  check('PR-UX5 (1) · dongPhuVanDe: 3 dạng, ngày dd/mm không năm khi cùng năm (G-6), ≤ 60 ký tự', () => {
+    const h = '2026-09-23';
+    assert(d.dongPhuVanDe({ mo: '2026-09-14', dong: null, soPa: 1 }, h) === 'từ 14/09 · 1 PA', 'Đang mở có PA');
+    assert(d.dongPhuVanDe({ mo: '2026-09-18', dong: null, soPa: 0 }, h) === 'từ 18/09 · chưa có PA', 'Đang mở chưa PA');
+    assert(d.dongPhuVanDe({ mo: '2026-07-12', dong: '2026-08-24', soPa: 2 }, h) === '12/07 → 24/08 · 2 PA', 'Đã đóng');
+    assert(d.dongPhuVanDe({ mo: '2025-12-12', dong: '2026-01-24', soPa: 2 }, h).startsWith('12/12/2025'), 'Khác năm có năm');
+  });
+
+  check('PR-UX5 (1) · boCucHanhTrinh: 5 tình huống (gọn · 1440 ≥ 300 · 1920 → 320 · 700px → 148 · chuỗi dài 300 < cotTen ≤ 440)', () => {
+    const gon = d.boCucHanhTrinh({ rong: 1440, soTuan: 13, xemGon: true, rongChuoi: 100, cheDo: 'ielts' });
+    assert(gon.cotTen === 148 && gon.cotTuan === '40px' && gon.xuongDong && gon.toiDaMoc === 3, `Gọn: ${JSON.stringify(gon)}`);
+    const r1440 = d.boCucHanhTrinh({ rong: 1440, soTuan: 13, xemGon: false, rongChuoi: 100, cheDo: 'ielts' });
+    assert(r1440.cotTen === 300 && !r1440.xuongDong && r1440.toiDaMoc === 5 && r1440.cotTuan === 'minmax(48px, 1fr)', `1440: ${JSON.stringify(r1440)}`);
+    assert(d.boCucHanhTrinh({ rong: 1920, soTuan: 21, xemGon: false, rongChuoi: 100, cheDo: 'ratio' }).cotTen === 320, '1920 → 320');
+    const hep = d.boCucHanhTrinh({ rong: 700, soTuan: 13, xemGon: false, rongChuoi: 100, cheDo: 'ielts' });
+    assert(hep.cotTen === 148 && hep.xuongDong && hep.cotTuan === 'minmax(48px, 1fr)' && hep.toiDaMoc === 3, `700px: ${JSON.stringify(hep)}`);
+    const dai = d.boCucHanhTrinh({ rong: 1600, soTuan: 13, xemGon: false, rongChuoi: 230, cheDo: 'ielts' });
+    assert(dai.cotTen > 300 && dai.cotTen <= 440, `Chuỗi dài: ${dai.cotTen}`);
+    assert(d.boCucHanhTrinh({ rong: 1600, soTuan: 13, xemGon: false, rongChuoi: 900, cheDo: 'ielts' }).cotTen === 440, 'Kẹp trên 440');
+  });
+
+  check('PR-UX5 (1) · rongCotTuan + ngưỡng KHOI_PA_CO_TEN: 82×1 không tên, 82×2 có tên, 40×3 không tên', () => {
+    const r = d.boCucHanhTrinh({ rong: 1440, soTuan: 13, xemGon: false, rongChuoi: 100, cheDo: 'ielts' });
+    const w = d.rongCotTuan(r, 1440, 13);
+    assert(Math.abs(w - 87.7) < 0.1, `(1440 − 300)/13 ≈ 87.7: ${w}`);
+    const gon = d.boCucHanhTrinh({ rong: 375, soTuan: 13, xemGon: true, rongChuoi: 0, cheDo: 'ielts' });
+    assert(d.rongCotTuan(gon, 375, 13) === 40, 'Xem gọn luôn 40');
+    assert(82 * 1 < d.KHOI_PA_CO_TEN && 82 * 2 >= d.KHOI_PA_CO_TEN && 40 * 3 < d.KHOI_PA_CO_TEN, `Ngưỡng ${d.KHOI_PA_CO_TEN}`);
+    assert(d.rongCotTuan(d.boCucHanhTrinh({ rong: 600, soTuan: 20, xemGon: false, rongChuoi: 0, cheDo: 'ielts' }), 600, 20) === 48, 'Không thấp hơn 48');
+  });
+
+  check('PR-UX5 (1) · xepHangLuoi: đúng ví dụ kế hoạch (không đoạn, 2 hộp) và ví dụ có đoạn (hangDoan 3, hangGhim 4)', () => {
+    const a = d.xepHangLuoi({ coDoan: false, coGhim: true, hop: [{ soTangVanDe: [] }, { soTangVanDe: [2, 1] }] });
+    assert(a.hangDoan === null && a.hangGhim === 3 && a.hangCuoi === 11, `Hàng: ${JSON.stringify(a)}`);
+    assert(a.hop[0].dau === 5 && a.hop[0].khung.join() === '5,6' && a.hop[0].vanDe.length === 0 && a.hop[0].dongAn === null, `Hộp 0: ${JSON.stringify(a.hop[0])}`);
+    assert(a.hop[1].dau === 7 && a.hop[1].khung.join() === '7,11' && JSON.stringify(a.hop[1].vanDe) === '[{"tu":8,"so":2},{"tu":10,"so":1}]', `Hộp 1: ${JSON.stringify(a.hop[1])}`);
+    assert(a.mau === 'auto auto auto 10px minmax(42px, auto) 10px minmax(42px, auto) minmax(40px, auto) 30px minmax(40px, auto)', `Mẫu: ${a.mau}`);
+    const b = d.xepHangLuoi({ coDoan: true, coGhim: true, hop: [{ soTangVanDe: [1], coDongAn: true }] });
+    assert(b.hangDoan === 3 && b.hangGhim === 4 && b.hop[0].dau === 6 && b.hop[0].dongAn === 8 && b.hangCuoi === 9, `Có đoạn + dòng ẩn: ${JSON.stringify(b)}`);
+    assert(d.xepHangLuoi({ coDoan: false, coGhim: false, hop: [] }).hangCuoi === 3, 'Lưới rỗng chỉ còn hai hàng trục');
+  });
+
+  check('PR-UX5 (1) · uocRongChuoi: tăng theo số mốc, có mũi tên thì rộng hơn, "?" cộng 16px', () => {
+    const m2 = d.chuoiDiem([{ gt: 5, chuaDat: false }, { gt: 6, chuaDat: false }], 'ielts', false);
+    const m1 = d.chuoiDiem([{ gt: 5, chuaDat: false }], 'ielts', false);
+    assert(d.uocRongChuoi(m2) > d.uocRongChuoi(m1), 'Nhiều mốc rộng hơn');
+    assert(d.uocRongChuoi(d.chuoiDiem([{ gt: 5, chuaDat: false }], 'ielts', true)) === Math.ceil(3 * 7.6 + 1 * 7.6 + 16), 'Mốc "?"');
   });
 
   // ==================================================================== Task 2 — máy chủ GET /students/:id/hanh-trinh
@@ -328,6 +508,95 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     } finally {
       conn.prepare(`DELETE FROM sos_cases WHERE id IN (${idsMoi.map(() => '?').join(',')})`).run(...idsMoi);
     }
+  });
+
+  // ==================================================================== PR-UX5 (2) — máy chủ thêm trường, không thêm câu SQL
+
+  /* Đo trên DB seed sạch của `origin/main` (Task 0 kế hoạch PR-UX5): số `prepare` của hanhTrinhHocVien(admin, HV1, …). */
+  const SO_CAU_FT = 31;
+  const SO_CAU_THUONG = 33;
+
+  check('PR-UX5 (2) · HV1 "ft": mỗi điểm có attemptNo/kind, ≥ 1 kyVong, chuaDat ⇔ gt < kyVong', () => {
+    const r = hanhTrinhHocVien(P.admin, HV1, 'ft');
+    const moc = r.hop.flatMap((h: any) => h.diem);
+    assert(moc.length > 0, 'HV1 phải có điểm ở hộp Fast Track');
+    assert(moc.every((x: any) => typeof x.attemptNo === 'number' && typeof x.kind === 'string'), 'Mọi điểm phải có attemptNo/kind');
+    assert(moc.some((x: any) => x.kyVong != null), 'Có ít nhất một mốc đã biết kỳ vọng');
+    for (const x of moc) if (x.kyVong != null) assert(x.chuaDat === (x.gt < x.kyVong), `chuaDat lệch kyVong: ${JSON.stringify(x)}`);
+  });
+
+  check('PR-UX5 (2) · HV1 "thuong": kyVong === null (ngưỡng ở shared), maLop là chuỗi khác rỗng', () => {
+    const r = hanhTrinhHocVien(P.admin, HV1, 'thuong');
+    const moc = r.hop.flatMap((h: any) => h.diem);
+    assert(moc.length > 0, 'HV1 phải có điểm ở hộp lớp thường');
+    assert(moc.every((x: any) => x.kyVong === null), 'Lớp thường không có kỳ vọng band');
+    assert(moc.every((x: any) => typeof x.maLop === 'string' && x.maLop.length > 0), 'Mọi điểm lớp thường có mã lớp');
+  });
+
+  check('PR-UX5 (2) · ghim có kyNangChuaDat (mã thuộc ASSESSED_SKILLS) ở cả hai giai đoạn, và dotCho của hộp có "?"', () => {
+    const hop = new Set<string>(d.ASSESSED_SKILLS);
+    for (const gd of ['ft', 'thuong'] as const) {
+      const r = hanhTrinhHocVien(P.admin, HV1, gd);
+      assert(r.ghim.length > 0, `Giai đoạn ${gd} phải có ghim`);
+      for (const g of r.ghim as any[]) {
+        assert(Array.isArray(g.kyNangChuaDat) && g.kyNangChuaDat.every((k: string) => hop.has(k)), `kyNangChuaDat: ${JSON.stringify(g)}`);
+        assert('maLop' in g && 'kyVong' in g, 'Ghim phải có maLop và kyVong');
+      }
+      for (const h of r.hop as any[]) assert(h.conCho ? h.dotCho && typeof h.dotCho.attemptNo === 'number' : h.dotCho === null, `dotCho ↔ conCho: ${h.kyNang}`);
+    }
+  });
+
+  check('PR-UX5 (2) · hai đợt cùng tuần: ghim ra 2 phần tử cùng tuần và gomGhimTheoTuan gom thành 1 nhóm 2 ghim', () => {
+    const r = hanhTrinhHocVien(P.admin, HV1, 'ft');
+    const goc = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(r.ghim[0].attemptId) as any;
+    const max = (conn.prepare('SELECT MAX(attempt_no) n FROM assessment_attempts WHERE cycle_id = ?').get(goc.cycle_id) as any).n;
+    const id = conn.prepare(
+      `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id, status, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, 'planned', ?)`,
+    ).run(goc.cycle_id, goc.student_id, max + 1, goc.kind, goc.class_id, goc.planned_period_id, new Date().toISOString()).lastInsertRowid as number;
+    try {
+      const sau = hanhTrinhHocVien(P.admin, HV1, 'ft');
+      const tuanGoc = d.mondayOfDate(r.ghim[0].tuan);
+      const cungTuan = sau.ghim.filter((g: any) => d.mondayOfDate(g.tuan) === tuanGoc);
+      assert(cungTuan.length === 2, `Hai đợt cùng tuần ${tuanGoc}: ${cungTuan.length}`);
+      const nhom = d.gomGhimTheoTuan(sau.ghim).filter((n) => n.tuan === tuanGoc);
+      assert(nhom.length === 1 && nhom[0].ghim.length === 2 && nhom[0].ghim[0].attemptNo < nhom[0].ghim[1].attemptNo, `Gom: ${JSON.stringify(nhom)}`);
+    } finally {
+      conn.prepare('DELETE FROM assessment_attempts WHERE id = ?').run(id);
+    }
+  });
+
+  check('PR-UX5 (2) · PA quá hạn có soNgayQuaHan > 0 (khớp followupOverdue), PA không quá hạn có null', () => {
+    const homNay = (hanhTrinhHocVien(P.admin, HV1, null) as any).homNay as string;
+    const row = conn.prepare(
+      `SELECT sc.student_id AS sid FROM case_interventions ci JOIN sos_cases sc ON sc.id = ci.case_id
+        WHERE ci.status NOT IN ('completed', 'cancelled') AND ci.action_due IS NOT NULL AND ci.action_due < ? LIMIT 1`,
+    ).get(homNay) as any;
+    assert(row, 'Seed phải có một PA quá hạn cập nhật');
+    let quaHan = 0;
+    for (const gd of ['ft', 'thuong'] as const) {
+      const r = hanhTrinhHocVien(P.admin, row.sid, gd);
+      for (const h of r.hop as any[]) for (const v of h.vanDe) for (const pa of v.pa) {
+        assert('soNgayQuaHan' in pa, 'Mọi PA phải có soNgayQuaHan');
+        if (pa.followupOverdue) { quaHan += 1; assert(pa.soNgayQuaHan > 0, `PA quá hạn phải > 0 ngày: ${JSON.stringify(pa)}`); }
+        else assert(pa.soNgayQuaHan === null, `PA không quá hạn phải null: ${JSON.stringify(pa)}`);
+      }
+    }
+    assert(quaHan > 0, 'Phải thấy ít nhất một PA quá hạn trong hành trình của học viên đó');
+  });
+
+  check('PR-UX5 (2) · số câu lệnh không tăng so với mốc origin/main (FT ≤ 31, lớp thường ≤ 33)', () => {
+    const demTruyVan = (fn: () => void): number => {
+      let n = 0;
+      const orig = conn.prepare.bind(conn);
+      (conn as any).prepare = (sql: string) => { n += 1; return orig(sql); };
+      try { fn(); } finally { (conn as any).prepare = orig; }
+      return n;
+    };
+    const ft = demTruyVan(() => { hanhTrinhHocVien(P.admin, HV1, 'ft'); });
+    const thuong = demTruyVan(() => { hanhTrinhHocVien(P.admin, HV1, 'thuong'); });
+    assert(ft <= SO_CAU_FT, `Fast Track: ${ft} câu > mốc ${SO_CAU_FT}`);
+    assert(thuong <= SO_CAU_THUONG, `Lớp thường: ${thuong} câu > mốc ${SO_CAU_THUONG}`);
   });
 
   // ==================================================================== Task 3 — hồ sơ mở đúng đợt, khoá đang học, thông báo
@@ -502,5 +771,64 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
 
   check('PR-Qb (7) · Header.tsx dùng duongThongBao để điều hướng thông báo', () => {
     assert(doc('web/src/modules/platform/Header.tsx').includes('duongThongBao'), 'Phải gọi duongThongBao');
+  });
+
+  // ==================================================================== PR-UX5 (5) — ?dot= cuộn ổn định (quét nguồn)
+
+  check('PR-UX5 (5) · cuonOnDinh.ts: có ResizeObserver, setTimeout (tối đa ms), trả hàm dọn', () => {
+    const src = doc('web/src/lib/cuonOnDinh.ts');
+    assert(src.includes('ResizeObserver'), 'Phải cuộn lại khi bảng phía trên đổi cỡ (ResizeObserver)');
+    assert(src.includes('setTimeout'), 'Phải có hạn chót (setTimeout)');
+    assert(/return \(\) =>/.test(src) && src.includes('removeEventListener'), 'Phải trả hàm dọn và gỡ sự kiện người dùng cuộn');
+  });
+
+  check('PR-UX5 (5) · StudentDetailPage.tsx gọi cuonOnDinh(, không còn requestAnimationFrame cuộn `dot-` một lần', () => {
+    const src = doc('web/src/modules/students/StudentDetailPage.tsx');
+    assert(src.includes('cuonOnDinh('), 'Phải gọi cuonOnDinh');
+    assert(!src.includes('requestAnimationFrame(() => document.getElementById(`dot-'), 'Cách cuộn một lần cũ phải hết');
+  });
+
+  // ==================================================================== PR-UX5 (6) — HanhTrinh.tsx (quét nguồn)
+
+  const boChuThich = (src: string): string => src
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:\\])\/\/.*$/gm, '$1');
+
+  check('PR-UX5 (6) · HanhTrinh.tsx: không nền đặc pastel, không màu cũ, không đường điểm, không fmtDate', () => {
+    const src = boChuThich(doc('web/src/modules/students/HanhTrinh.tsx'));
+    for (const cam of ['toneBg', 'khoiPaBg', 'var(--danger)', 'var(--accent-ink)', 'text-slate-600', 'fmtDate', '<svg', '<polyline', '<path']) {
+      assert(!src.includes(cam), `HanhTrinh.tsx còn "${cam}"`);
+    }
+  });
+
+  check('PR-UX5 (6) · HanhTrinh.tsx: 40px chỉ đến từ boCucHanhTrinh (không ", 40px)" cứng trong mẫu cột)', () => {
+    assert(!boChuThich(doc('web/src/modules/students/HanhTrinh.tsx')).includes(', 40px)'), 'Cột tuần 40px chỉ được đặt trong boCucHanhTrinh');
+  });
+
+  check('PR-UX5 (6) · HanhTrinh.tsx: giữ data-pa-id, công tắc role="switch", và gọi các luật thuần mới', () => {
+    const src = boChuThich(doc('web/src/modules/students/HanhTrinh.tsx'));
+    for (const can of ['data-pa-id', 'role="switch"', 'xepHangLuoi(', 'gomGhimTheoTuan(', 'denKhoiPa(', 'boCucHanhTrinh(']) {
+      assert(src.includes(can), `HanhTrinh.tsx thiếu "${can}"`);
+    }
+  });
+
+  check('PR-UX5 (6) · HanhTrinh.tsx: chỉ MỘT lưới CSS (một `grid` có gridTemplateColumns) — thành phần con không tự chia cột tuần', () => {
+    const src = boChuThich(doc('web/src/modules/students/HanhTrinh.tsx'));
+    const soLuoi = (src.match(/gridTemplateColumns:\s*`\$\{boCuc\.cotTen\}px/g) ?? []).length;
+    assert(soLuoi === 1, `Phải đúng 1 lưới cột tuần: ${soLuoi}`);
+    assert(!/colTemplate/.test(src), 'Không còn khuôn cột cố định cũ (colTemplate)');
+  });
+
+  check('PR-UX5 (6) · HanhTrinh.tsx: ô cột tên ghim trái đi qua CotGhim (trải 1 / -1) — không ô nào đặt riêng ở gridColumn 1', () => {
+    const src = boChuThich(doc('web/src/modules/students/HanhTrinh.tsx'));
+    assert(src.includes('function CotGhim('), 'Phải có CotGhim');
+    assert(!/gridColumn:\s*1[,\s}]/.test(src), '`sticky` trong một ô cột 1 không đứng yên được khi cuộn ngang — dùng CotGhim');
+    assert((src.match(/<CotGhim /g) ?? []).length >= 6, 'Trục (tháng/tuần/đoạn/ghim), tên vấn đề, dòng "+n vấn đề cũ hơn" đều dùng CotGhim');
+  });
+
+  check('PR-UX5 (6) · HanhTrinh.tsx: không tự đặt chữ kết quả PA (lấy outcomeLabelFor) và không "kỳ vọng"/"Overall" gõ cứng ở lớp thường', () => {
+    const src = boChuThich(doc('web/src/modules/students/HanhTrinh.tsx'));
+    for (const cam of ['Tiến bộ rõ', 'Tiến bộ một phần', 'Không tiến bộ', 'Overall']) assert(!src.includes(cam), `Gõ lại chữ "${cam}" — phải lấy từ outcomeLabelFor / luật thuần`);
+    assert(src.includes("outcomeLabelFor('improved')"), 'Chú giải phải lấy nhãn từ outcomeLabelFor');
   });
 }
