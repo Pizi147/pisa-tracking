@@ -3,7 +3,7 @@
  * dữ liệu) và `scripts/chup-api.mjs` (chụp JSON để so trước/sau).
  *
  * PR SAU THÊM ĐƯỜNG MỚI VÀO ĐÂY — mỗi trang/tab mới của các trang chính (Tổng quan, Học viên & Lớp, hồ sơ lớp, hồ sơ
- * HV, Cần chấm, Danh sách Case, Việc cần làm) phải có ít nhất một dòng ở đây, nếu không phép kiểm ĐO không biết mà đo.
+ * HV, Lịch Test, Danh sách Case, Việc cần làm) phải có ít nhất một dòng ở đây, nếu không phép kiểm ĐO không biết mà đo.
  *
  * Đường của Qa (`/hoc-vien-lop`, `/classes/:id/phan-tich-lop`) và Rc1 (`/cham/can-cham`, `/cham/lich-test`,
  * `/classes/:id/cham`) đã thêm ở Task 4 sau khi rebase lên #69/#70.
@@ -112,9 +112,10 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/transition' },
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/cases?classId={lopThuong}' },
 
-  // ---------------------------------------------------------------- Cần chấm + Lịch Test
-  { trang: 'Cần chấm', vai: MOI_VAI, url: '/cham/can-cham' },
-  { trang: 'Cần chấm', vai: MOI_VAI, url: '/cham/lich-test' },
+  // ---------------------------------------------------------------- Lịch Test (PR-UX1: gộp Cần chấm)
+  { trang: 'Lịch Test', vai: MOI_VAI, url: '/cham/lich-test' },
+  { trang: 'Lịch Test', vai: MOI_VAI, url: '/cham/lich-test?phamVi=tat-ca' },
+  { trang: 'Lịch Test', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/cham/lich-test?classId={lopFT}' },
 
   /*
    * {hv} và {case} nằm trong lớp FT (MB-FT 101) — GVCN_THUONG (chủ nhiệm MB-FOU 12, lớp khác) không có phân công ở
@@ -346,16 +347,22 @@ export const TRAN: Record<string, number> = {
   'QL /cases?classId=5': 28,
   'QT /cases?classId=5': 25,
   'GVCN_THUONG /cases?classId=5': 28,
-  'QL /cham/can-cham': 34,
-  'GVCN /cham/can-cham': 33,
-  'GVBM /cham/can-cham': 32,
-  'GVCN_THUONG /cham/can-cham': 33,
-  'QT /cham/can-cham': 38,
-  'QL /cham/lich-test': 26,
-  'GVCN /cham/lich-test': 26,
-  'GVBM /cham/lich-test': 26,
-  'GVCN_THUONG /cham/lich-test': 26,
-  'QT /cham/lich-test': 26,
+  // PR-UX1 (3), 23/09/2026 — Lịch Test gộp Cần chấm (thêm `listAttempts` cho khối Nợ tuần trước): 16 → 26 câu (QT 28),
+  // vẫn ít hơn hai trang cũ cộng lại (16 + 24). Trần max(sau+10, ⌈sau×1.3⌉).
+  'QL /cham/lich-test': 36,
+  'GVCN /cham/lich-test': 36,
+  'GVBM /cham/lich-test': 36,
+  'GVCN_THUONG /cham/lich-test': 36,
+  'QT /cham/lich-test': 38,
+  'QL /cham/lich-test?phamVi=tat-ca': 36,
+  'GVCN /cham/lich-test?phamVi=tat-ca': 36,
+  'GVBM /cham/lich-test?phamVi=tat-ca': 36,
+  'GVCN_THUONG /cham/lich-test?phamVi=tat-ca': 36,
+  'QT /cham/lich-test?phamVi=tat-ca': 38,
+  'QL /cham/lich-test?classId=3': 36,
+  'QT /cham/lich-test?classId=3': 35,
+  'GVCN /cham/lich-test?classId=3': 36,
+  'GVBM /cham/lich-test?classId=3': 36,
   'QL /students/1': 100,
   'QT /students/1': 100,
   'GVCN /students/1': 100,

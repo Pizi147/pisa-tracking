@@ -12,7 +12,7 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, ca
   cap?: 'chinh' | 'con';
 }) {
   return (
-    <div role="tablist" aria-label={ariaLabel} className="flex gap-1 overflow-x-auto border-b" style={{ borderColor: 'var(--line)' }}>
+    <div role="tablist" aria-label={ariaLabel} className="flex gap-1 overflow-x-auto overflow-y-hidden border-b" style={{ borderColor: 'var(--line)' }}>
       {tabs.map((t) => {
         const active = t.key === value;
         return (

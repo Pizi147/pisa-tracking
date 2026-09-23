@@ -65,14 +65,14 @@ export async function runKhungTests(t: YThucTestKit) {
     for (const [p, want] of cases) assert(d.khuVucCuaDuong(p) === want, `${p} → ${d.khuVucCuaDuong(p)}, cần ${want}`);
   });
 
-  check('PR-O · O2/O2b Tab Test theo quyền: GV chỉ Cần chấm + Lịch Test, mặc định Cần chấm; QL mặc định Lịch Test', () => {
-    assert(d.tabTestHienThi(QL).join(',') === 'can-cham,lich,ke-hoach', `QL: ${d.tabTestHienThi(QL)}`);
-    assert(d.tabTestHienThi(GV).join(',') === 'can-cham,lich', `GV: ${d.tabTestHienThi(GV)}`);
-    assert(d.tabTestMacDinh(GV) === 'can-cham', `GV mặc định: ${d.tabTestMacDinh(GV)}`);
+  check('PR-O · O2/O2b Tab Test theo quyền: GV chỉ Lịch Test; ai cũng mở vào Lịch Test (PR-UX1 bỏ Cần chấm)', () => {
+    assert(d.tabTestHienThi(QL).join(',') === 'lich,ke-hoach', `QL: ${d.tabTestHienThi(QL)}`);
+    assert(d.tabTestHienThi(GV).join(',') === 'lich', `GV: ${d.tabTestHienThi(GV)}`);
+    assert(d.tabTestMacDinh(GV) === 'lich', `GV mặc định: ${d.tabTestMacDinh(GV)}`);
     assert(d.tabTestMacDinh(QL) === 'lich', `QL mặc định: ${d.tabTestMacDinh(QL)}`);
     assert(d.tabTestMacDinh(d.NAV_RONG) === null, 'Không có tab nào thì không có mặc định');
     assert(d.tabTestTuDuong('ke-hoach') === 'ke-hoach' && d.tabTestTuDuong(undefined) === null && d.tabTestTuDuong('x') === null, 'Đọc tab từ đường dẫn');
-    assert(Object.values(d.TAB_TEST_LABEL).join(',') === 'Cần chấm,Lịch Test,Kế hoạch Test', 'Chữ tab Test');
+    assert(Object.values(d.TAB_TEST_LABEL).join(',') === 'Lịch Test,Kế hoạch Test', 'Chữ tab Test');
     assert(d.DUONG_TAB_TEST.lich === '/test/lich', 'Đường dẫn tab Test');
   });
 
@@ -100,7 +100,10 @@ export async function runKhungTests(t: YThucTestKit) {
       ['/tien-do-cong-viec', '?viec=12', '/cong-viec/van-hanh?open=12'],
       ['/tien-do-cong-viec', '?open=7&tao=1&nhom=tutor', '/cong-viec/van-hanh?open=7&tao=1&nhom=tutor'],
       ['/tien-do-cong-viec', '?tab=don-vi&cn=2', '/cong-viec/bao-cao?cn=2'],
-      ['/hoc-vien', '?view=my_scores&classId=7&scope=mine', '/test/can-cham?classId=7&scope=mine'],
+      ['/hoc-vien', '?view=my_scores&classId=7&scope=mine', '/test/lich?classId=7'],
+      /* PR-UX1 Q12: Cần chấm gộp vào Lịch Test — giữ lớp, môn, chi nhánh; bỏ `scope`. */
+      ['/test/can-cham', '?classId=7&kn=reading&scope=mine&branchId=2', '/test/lich?classId=7&kn=reading&branchId=2'],
+      ['/test/can-cham', '', '/test/lich'], ['/test/lich', '?classId=7', null],
       ['/hoc-vien', 'view=no_plan', '/test/ke-hoach'],
       ['/hoc-vien', '?view=sos', null], ['/hoc-vien', '', null], ['/hoc-vien/12', '?view=my_scores', null],
       ['/mock-test', '?x=1', '/hoc-vien'], ['/mock-test/lop/12', '?a=1', '/nhap-diem/12?a=1'], ['/mock-test/33', '', null],
@@ -124,18 +127,18 @@ export async function runKhungTests(t: YThucTestKit) {
     for (const [ten, p] of [['Quản trị', t.P.admin], ['QL MB', t.P.mbManager]] as const) {
       const n = navOf(p);
       assert(d.khuVucHienThi(n).length === 4, `${ten}: ${tabs(n)}`);
-      assert(d.tabTestHienThi(n).join(',') === 'can-cham,lich,ke-hoach', `${ten} tab Test: ${tabs(n)}`);
+      assert(d.tabTestHienThi(n).join(',') === 'lich,ke-hoach', `${ten} tab Test: ${tabs(n)}`);
       assert(d.tabCongViecHienThi(n).join(',') === 'ho-tro,van-hanh,bao-cao', `${ten} tab Công việc: ${tabs(n)}`);
       assert(n.analysis && n.academic, `${ten} phải thấy Phân tích`);
     }
     assert(navOf(t.P.admin).admin && !navOf(t.P.mbManager).admin, 'Chỉ Quản trị thấy màn Quản trị');
   });
 
-  check('PR-O · O6/R1 GV (GVCN, GVBM): 4 khu; Test chỉ Cần chấm + Lịch Test; Công việc chỉ Hỗ trợ học viên; không Phân tích', () => {
+  check('PR-O · O6/R1 GV (GVCN, GVBM): 4 khu; Test chỉ Lịch Test; Công việc chỉ Hỗ trợ học viên; không Phân tích', () => {
     for (const [ten, p] of [['GVCN', t.P.coreTeacher], ['GVBM', t.P.subjectTeacher], ['GVCN lớp thường', t.P.normalCoreTeacher]] as const) {
       const n = navOf(p);
-      assert(tabs(n) === 'tong-quan,hoc-vien,test,cong-viec|can-cham,lich|ho-tro|false|false', `${ten}: ${tabs(n)}`);
-      assert(d.tabTestMacDinh(n) === 'can-cham', `${ten} mở Test vào ${d.tabTestMacDinh(n)}`);
+      assert(tabs(n) === 'tong-quan,hoc-vien,test,cong-viec|lich|ho-tro|false|false', `${ten}: ${tabs(n)}`);
+      assert(d.tabTestMacDinh(n) === 'lich', `${ten} mở Test vào ${d.tabTestMacDinh(n)}`);
       assert(!n.mgmtTasks && !n.meeting, `${ten} không được thấy Vận hành / Báo cáo đơn vị`);
     }
   });

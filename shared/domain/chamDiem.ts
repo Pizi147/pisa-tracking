@@ -1,43 +1,33 @@
 /**
  * LUẬT THUẦN CỦA VIỆC CHẤM ĐIỂM — khu vực Test (spec §3.5).
  *
- * Ở đây chỉ có luật KHÔNG ĐỌC DATABASE: xếp việc chấm vào ba mục theo hạn, dựng ô của lưới lớp thường, đếm ngược cửa
+ * Ở đây chỉ có luật KHÔNG ĐỌC DATABASE: nhãn hàng lớp của Lịch Test, dựng ô của lưới lớp thường, đếm ngược cửa
  * sổ sửa dấu "-", tính tuần kế tiếp, và luật lý do hiệu chỉnh điểm. Máy chủ và giao diện cùng gọi một nơi, nên hai
  * bên không thể nói hai con số khác nhau — và harness kiểm được mà không cần mở trình duyệt.
  */
 import { mondayOfDate } from './week.ts';
 
-export type MucCanCham = 'qua-han' | 'tuan-nay' | 'sap-toi';
+/** Lịch Test lọc lớp nào (PR-UX1 Q4): lớp người xem có phân công, hay cả phạm vi được xem. */
+export type PhamViLichTest = 'cua-toi' | 'tat-ca';
 
-export const MUC_CAN_CHAM: readonly MucCanCham[] = ['qua-han', 'tuan-nay', 'sap-toi'] as const;
-
-export const MUC_CAN_CHAM_LABEL: Record<MucCanCham, string> = {
-  'qua-han': 'Quá hạn',
-  'tuan-nay': 'Tuần này',
-  'sap-toi': 'Sắp tới',
-};
+export type LoaiNhanLop = 'da-cham' | 'chua-toi-han' | 'cho-ban' | 'cho-gv-khac' | 'cho-cham';
 
 /**
- * Một việc chấm thuộc mục nào. CHƯA CÓ HẠN KHÔNG PHẢI QUÁ HẠN: môn chưa tới tuần thi thì chưa nợ ai cái gì, xếp nó
- * vào "Quá hạn" là vu oan cho người chấm.
+ * NHÃN MỘT HÀNG LỚP Ở LỊCH TEST (PR-UX1 Q6, Q7) — một trạng thái, ≤ 3 từ, nói bài còn lại là của ai. Quá hạn KHÔNG
+ * nằm ở đây: cột Hạn đã nói (mockup 17 B-5, quá hạn nói một lần). Người không chấm (Quản lý) thấy "Chờ chấm" — với họ
+ * "GV khác" sai nghĩa.
  */
-export function mucCanCham(han: string | null, homNay: string, cuoiTuanNay: string): MucCanCham {
-  if (!han) return 'sap-toi';
-  const d = han.slice(0, 10);
-  if (d < homNay.slice(0, 10)) return 'qua-han';
-  return d <= cuoiTuanNay.slice(0, 10) ? 'tuan-nay' : 'sap-toi';
+export function nhanLopLichTest(i: { conBai: number; conBaiCuaToi: number; chuaToiHan: boolean; coDayLop: boolean })
+  : { loai: LoaiNhanLop; chu: string } {
+  if (i.conBai === 0) return { loai: 'da-cham', chu: 'Đã chấm' };          // web thêm ✓ nhỏ (G-1)
+  if (i.chuaToiHan) return { loai: 'chua-toi-han', chu: 'Chưa tới hạn' };
+  if (i.conBaiCuaToi > 0) return { loai: 'cho-ban', chu: 'Chờ bạn chấm' };
+  return i.coDayLop ? { loai: 'cho-gv-khac', chu: 'Chờ GV khác' } : { loai: 'cho-cham', chu: 'Chờ chấm' };
 }
 
-/** Ba mục cố định, luôn đủ ba (mục rỗng vẫn hiện với số 0 — mockup 05a2 phương án A). */
-export function nhomCanCham<T extends { han: string | null }>(
-  dong: T[], o: { homNay: string; cuoiTuanNay: string },
-): Array<{ muc: MucCanCham; nhan: string; dong: T[] }> {
-  return MUC_CAN_CHAM.map((muc) => ({
-    muc,
-    nhan: MUC_CAN_CHAM_LABEL[muc],
-    dong: dong.filter((x) => mucCanCham(x.han, o.homNay, o.cuoiTuanNay) === muc),
-  }));
-}
+/** Lớp nào tự mở khi vào Lịch Test (Q8): người có phân công — lớp còn bài của mình; Quản lý — lớp còn bài. */
+export const lopTuMo = (i: { conBai: number; conBaiCuaToi: number; coPhanCong: boolean }) =>
+  (i.coPhanCong ? i.conBaiCuaToi > 0 : i.conBai > 0);
 
 /**
  * MỘT Ô CỦA LƯỚI LỚP THƯỜNG: số câu đúng / tổng số câu (Writing và Speaking chấm theo thang điểm thì là điểm đạt /
@@ -93,12 +83,40 @@ export function tuanKeTiep(weekStart: string): string {
   return new Date(Date.parse(`${monday}T00:00:00Z`) + 7 * 86400000).toISOString().slice(0, 10);
 }
 
-/** Một câu trạng thái chấm cho Lịch Test và cho dòng Cần chấm. */
+/** Một câu trạng thái chấm cho dòng kỹ năng của Lịch Test. */
 export function trangThaiChamLabel(i: { conBai: number; tong: number; quaHan: boolean; chuaToiHan: boolean }): string {
   if (i.conBai === 0) return 'Đã chấm xong';
   if (i.chuaToiHan) return 'Chưa tới hạn';
   return i.quaHan ? `Quá hạn · còn ${i.conBai} bài` : `Còn ${i.conBai} bài`;
 }
+
+/**
+ * TRẠNG THÁI LƯU THEO TỪNG Ô của lưới chấm (PR-UX1, lỗi thật bản chính 24/09): trước đây một dòng chỉ nhớ lần lưu CUỐI
+ * — ô L lưu hỏng (503/BUSY/mạng) rồi ô R lưu được thì dòng hiện "Đã lưu", giáo viên tưởng đủ điểm. Nay mỗi ô giữ trạng
+ * thái riêng; dòng chỉ "đã lưu" khi KHÔNG còn ô nào lỗi.
+ *
+ *   bat-dau     gửi ô lên máy chủ            → dang-luu
+ *   thanh-cong  máy chủ nhận                 → da-luu (xoá lỗi cũ của chính ô đó)
+ *   loi         lỗi mạng / 5xx               → loi (giữ tới khi chính ô đó lưu được)
+ *   bo          máy chủ từ chối có chủ ý (4xx của lệnh "-"), hộp lý do tự báo lỗi → ô về như chưa gửi
+ */
+export type TrangThaiLuuO = 'dang-luu' | 'da-luu' | 'loi';
+export function capNhatLuuO(
+  o: Readonly<Record<string, TrangThaiLuuO>>, oKey: string, su: 'bat-dau' | 'thanh-cong' | 'loi' | 'bo',
+): Record<string, TrangThaiLuuO> {
+  const moi = { ...o };
+  if (su === 'bo') delete moi[oKey];
+  else moi[oKey] = su === 'bat-dau' ? 'dang-luu' : su === 'thanh-cong' ? 'da-luu' : 'loi';
+  return moi;
+}
+/** Dòng/hàng lớp: có ô lỗi → "n ô chưa lưu" (thắng mọi trạng thái khác); còn ô đang gửi → đang lưu; rồi mới đã lưu. */
+export function tomTatLuuDong(cacO: readonly (TrangThaiLuuO | null | undefined)[]): { tt: TrangThaiLuuO | null; soLoi: number } {
+  const soLoi = cacO.filter((x) => x === 'loi').length;
+  if (soLoi) return { tt: 'loi', soLoi };
+  if (cacO.includes('dang-luu')) return { tt: 'dang-luu', soLoi: 0 };
+  return { tt: cacO.includes('da-luu') ? 'da-luu' : null, soLoi: 0 };
+}
+export const chuOChuaLuu = (n: number) => `${n} ô chưa lưu`;
 
 /** RB-5 — sửa một ô đã có điểm chính thức thì phải nói vì sao. Ngắn quá thì không phải một lý do. */
 export const LY_DO_TOI_THIEU = 5;

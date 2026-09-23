@@ -135,7 +135,8 @@ export function loadPrincipal(userId: number): Principal {
   };
 }
 
-const activeAt = (a: Assignment, date: string) =>
+/** Phân công còn hiệu lực ở ngày này. Xuất ra cho Lịch Test ("Lớp tôi dạy") — không viết lại luật. */
+export const activeAt = (a: Assignment, date: string) =>
   a.effectiveFrom <= date && (!a.effectiveTo || a.effectiveTo >= date);
 
 /**

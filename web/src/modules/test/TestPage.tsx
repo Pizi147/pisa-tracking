@@ -1,7 +1,6 @@
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useSession } from '../../lib/session.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
-import { CanChamTab } from './CanChamTab.tsx';
 import { LichTestTab } from './LichTestTab.tsx';
 import { KeHoachTestTab } from './KeHoachTestTab.tsx';
 import {
@@ -9,8 +8,8 @@ import {
 } from '@shared/domain/index.ts';
 
 /**
- * TEST — khu vực mới (O2, spec §3.5): Cần chấm · Lịch Test · Kế hoạch Test, mỗi tab một đường dẫn.
- * Mở `/test` thì vào tab mặc định theo quyền (O2b): giáo viên → Cần chấm, người xếp lịch → Lịch Test.
+ * TEST — khu vực (O2; PR-UX1 bỏ Cần chấm): Lịch Test · Kế hoạch Test, mỗi tab một đường dẫn. Mở `/test` thì vào Lịch
+ * Test. Chỉ một tab (giáo viên) thì ẩn cả hàng tab, chỉ còn tiêu đề "Test" (Q15, mockup 13).
  */
 export default function TestPage() {
   const { session } = useSession();
@@ -34,9 +33,10 @@ export default function TestPage() {
   return (
     <div className="page space-y-4">
       <h1 className="text-lg font-semibold text-slate-100 m-0">Test</h1>
-      <HangTab ariaLabel="Test" value={tab} onChange={go}
-        tabs={tabs.map((k) => ({ key: k, label: TAB_TEST_LABEL[k] }))} />
-      {tab === 'can-cham' && <CanChamTab />}
+      {tabs.length > 1 && (
+        <HangTab ariaLabel="Test" value={tab} onChange={go}
+          tabs={tabs.map((k) => ({ key: k, label: TAB_TEST_LABEL[k] }))} />
+      )}
       {tab === 'lich' && <LichTestTab />}
       {tab === 'ke-hoach' && <KeHoachTestTab />}
     </div>
