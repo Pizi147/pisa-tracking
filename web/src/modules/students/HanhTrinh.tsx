@@ -1,19 +1,22 @@
-import { useState } from 'react';
+import { Fragment, useLayoutEffect, useState, type ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
+import { Empty, ErrorState, SCORE_CHIP, Skeleton, type ScoreTone } from '../../ui/ui.tsx';
+import { Nhan, toneNhanTuBadge } from '../../ui/Nhan.tsx';
 import { Episode } from './StudentDetailPage.tsx';
 import {
-  CASE_CATEGORY_LABEL, CASE_CATEGORY_SHORT, type CaseCategory,
-  chuoiDiem, cotCua, duongHoSoHocVien, giaoKhoangXem, khoangTruc, ngay, nhanGhim, nhanGiaiDoan, nhanKhoiPa,
-  trangThaiHop, trucTuan, xepTang, type CheDoKhoang,
+  CASE_CATEGORY_LABEL, CASE_CATEGORY_SHORT, KHOI_PA_CO_TEN, RONG_TEN_KY_NANG, type CaseCategory,
+  boCucHanhTrinh, chuoiDiem, cotCua, denKhoiPa, dongPhuVanDe, duongHoSoHocVien, giaoKhoangXem, gomGhimTheoTuan,
+  khoangTruc, nhanGhim, nhanGiaiDoan, nhanKhoiPa, outcomeLabelFor, rongCotTuan, trangThaiHop, trucTuan, tuanLich,
+  uocRongChuoi, xepHangLuoi, xepTang,
+  type CheDoKhoang, type DiemMoc, type DotRef, type MauKetQua, type ToneKhoiPa,
 } from '@shared/domain/index.ts';
 
 /**
- * TAB HÀNH TRÌNH (PR-Qb, spec §3.8, mockup `08e-hanh-trinh-lich.html`) — một trục tuần theo LỊCH
- * THẬT (không ép 4 tuần/tháng), mỗi giai đoạn (Lớp thường | Fast Track) một trục riêng, mỗi kỹ
- * năng một hộp gộp điểm + vấn đề + phương án. Mọi nhãn/tầng/badge tính bằng `shared/domain/hanhTrinh.ts`
- * — file này chỉ vẽ theo đúng những gì các hàm đó trả về.
+ * TAB HÀNH TRÌNH (PR-Qb, spec §3.8; PR-UX5, mockup `18-hanh-trinh-va-mau.html` phần (a)) — MỘT LƯỚI CSS duy nhất cho
+ * trục tuần lẫn mọi hộp kỹ năng, trải hết chiều ngang (cột tuần giãn theo màn). Không vẽ đường điểm: chuỗi điểm
+ * nằm trong cột tên, ngay sau tên kỹ năng, kèm ▲ xanh / ▼ đỏ / = xám. Mọi nhãn/tầng/badge/bố cục tính bằng
+ * `shared/domain/hanhTrinh.ts` — file này chỉ vẽ theo đúng những gì các hàm đó trả về.
  */
 
 type GiaiDoan = { loai: 'thuong' | 'ft'; tu: string; den: string | null };
@@ -21,15 +24,17 @@ type Doan = { loai: 'khoa' | 'lo-trinh'; nhan: string; tu: string; den: string }
 type Ghim = {
   attemptId: number; tuan: string; cheDo: 'ielts' | 'ratio'; attemptNo: number; kind: string;
   overall: number | null; sosLevel: number | null; soDat: number | null; soYeuCau: number; soCoDiem: number;
+  maLop: string | null; kyVong: number | null; kyNangChuaDat: string[];
 };
 type Pa = {
   id: number; ten: string; tu: string; den: string | null; status: string;
-  lastOutcome: string | null; followupOverdue: boolean; supersededBy: number | null; noiTiepTu: number | null;
+  lastOutcome: string | null; followupOverdue: boolean; soNgayQuaHan: number | null;
+  supersededBy: number | null; noiTiepTu: number | null;
 };
 type VanDe = { caseId: number; ten: string; mo: string; dong: string | null; soPa: number; pa: Pa[] };
 type Hop = {
   kyNang: CaseCategory; nhan: string; cheDo: 'ielts' | 'ratio';
-  diem: { gt: number; tong?: number | null; chuaDat: boolean }[]; conCho: boolean;
+  diem: DiemMoc[]; conCho: boolean; dotCho: DotRef | null;
   caseMo: { mo: string; soPa: number }[]; coTungCase: boolean;
   diemCuoiChuaDat: boolean | null; xongGanNhat: string | null; vanDe: VanDe[];
 };
@@ -38,8 +43,25 @@ type HanhTrinhData = {
   doan: Doan[]; ghim: Ghim[]; hop: Hop[];
 };
 type Truc = ReturnType<typeof trucTuan>;
+type BoCuc = ReturnType<typeof boCucHanhTrinh>;
 
 const CHIP_TAT_CA = 'tat-ca';
+
+/** Màu kết quả Test (N-1b) → họ chip của `SCORE_CHIP`. */
+const MAU_GHIM = { dat: 'emerald', sos1: 'sos1', sos2: 'sos2', sos3: 'sos3', tam: 'tam' } as const satisfies Record<MauKetQua, ScoreTone>;
+/** Mũi tên ▲▼= của chuỗi điểm. */
+const LECH = { len: 'text-ok', xuong: 'text-bad', bang: 'text-faint' } as const;
+const LECH_TITLE = { len: 'Tăng', xuong: 'Giảm', bang: 'Giữ nguyên' } as const;
+/** Khối PA: nền sẫm cùng họ, chữ màu, KHÔNG viền (mockup 18 (a) luật 5). */
+const KHOI: Record<ToneKhoiPa, string> = {
+  ok: 'bg-ok-bg text-ok', part: 'bg-soon-bg text-soon', bad: 'bg-bad-bg text-bad',
+  run: 'bg-doing-bg text-doing', late: 'bg-late-bg text-late', done: 'bg-done-bg text-done',
+};
+const NEN_HOP = { background: 'var(--surface-2)' } as const;
+/** Ngưỡng màn hẹp: dưới đây Xem gọn tự bật lúc mở tab (không lưu). */
+const MAN_HEP = '(max-width: 639px)';
+
+const soTangCua = (pa: Pa[]): number => (pa.length ? Math.max(...xepTang(pa.map((p) => ({ id: p.id, tu: p.tu, den: p.den, noiTiepTu: p.noiTiepTu }))).values()) + 1 : 1);
 
 export function HanhTrinh({ studentId, active, episodes, allEpisodes, onOpenCase }: {
   studentId: number; active: boolean; episodes: any[]; allEpisodes: any[];
@@ -54,23 +76,31 @@ export function HanhTrinh({ studentId, active, episodes, allEpisodes, onOpenCase
   const { data, loading, error, reload } = useApi<HanhTrinhData>(url, [studentId, gd, active]);
   const [chip, setChip] = useState<string>(CHIP_TAT_CA);
   const [cheDoKhoang, setCheDoKhoang] = useState<CheDoKhoang>('3-thang');
+  const [xemGon, setXemGon] = useState(() => typeof window !== 'undefined' && !!window.matchMedia?.(MAN_HEP).matches);
+  /* Bề rộng khung cuộn (px) — mọi bố cục cột tính từ đây (`boCucHanhTrinh`), không đo lại từng phần tử. */
+  const [khung, setKhung] = useState<HTMLDivElement | null>(null);
+  const [rong, setRong] = useState(0);
+  useLayoutEffect(() => {
+    if (!khung) return undefined;
+    const doDac = () => setRong(khung.clientWidth);
+    doDac();
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(doDac);
+    ro.observe(khung);
+    return () => ro.disconnect();
+  }, [khung]);
 
   if (!active) return null;
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (loading || !data) return <Skeleton rows={6} />;
   if (!data.cacGiaiDoan.length) return <Empty title="Chưa có Case nào để hiển thị trong hành trình" />;
 
+  const homNay = data.homNay;
   const giaiDoanDangXem = data.giaiDoan ? data.cacGiaiDoan.find((g) => g.loai === data.giaiDoan)! : data.cacGiaiDoan[0];
-  const khoang = khoangTruc(giaiDoanDangXem, data.homNay, cheDoKhoang);
-  const truc = trucTuan(khoang.tu, khoang.den, data.homNay);
-  /*
-   * CỘT TUẦN RỘNG CỐ ĐỊNH (sửa sau rà #75, vấn đề 1) — trục và mỗi hộp kỹ năng là NHIỀU lưới
-   * CSS riêng (không phải một lưới liên tục), nên `minmax(…, 1fr)` giãn theo bề rộng khả dụng của
-   * TỪNG lưới sẽ ra pixel khác nhau nếu bối cảnh bố cục khác nhau dù cùng `colTemplate`. Cột rộng
-   * cố định thì mọi lưới ra đúng cùng một bề rộng, khớp tuyệt đối bất kể lưới nào.
-   */
-  const colTemplate = `var(--cot-ten) repeat(${truc.tuan.length}, 40px)`;
-  /* Ẩn hẳn đoạn khoá/lộ trình KHÔNG giao khoảng đang xem — cotCua kẹp mép sẽ vẽ dính mép giả nếu không lọc trước (vấn đề 2). */
+  const khoang = khoangTruc(giaiDoanDangXem, homNay, cheDoKhoang);
+  const truc = trucTuan(khoang.tu, khoang.den, homNay);
+  const soTuan = truc.tuan.length;
+  /* Ẩn hẳn đoạn khoá/lộ trình KHÔNG giao khoảng đang xem — cotCua kẹp mép sẽ vẽ dính mép giả nếu không lọc trước. */
   const doanHienThi = data.doan.filter((dg) => giaoKhoangXem(dg.tu, dg.den, khoang));
 
   const setGiaiDoan = (loai: 'thuong' | 'ft') => {
@@ -80,20 +110,34 @@ export function HanhTrinh({ studentId, active, episodes, allEpisodes, onOpenCase
   };
 
   const hopHienThi = chip === CHIP_TAT_CA ? data.hop : data.hop.filter((h) => h.kyNang === chip);
+  const cheDo = data.hop[0]?.cheDo ?? (giaiDoanDangXem.loai === 'thuong' ? 'ratio' : 'ielts');
+  /* Ước trên 5 mốc dù đang hiện 3 — cột tên không nhảy qua lại khi bật/tắt Xem gọn hay đổi chip kỹ năng. */
+  const rongChuoi = Math.max(0, ...data.hop.map((h) => uocRongChuoi(chuoiDiem(h.diem, h.cheDo, h.conCho, { toiDa: 5, dotCho: h.dotCho }))));
+  const boCuc = boCucHanhTrinh({ rong, soTuan, xemGon, rongChuoi, cheDo });
+  const rongTuan = rongCotTuan(boCuc, rong, soTuan);
 
-  /* Số hàng cố định của phần đầu lưới: tháng, tuần, rồi Khoá/Lộ trình và Đợt Test nếu có. */
-  let hang = 2;
-  const hangDoan = doanHienThi.length ? ++hang : null;
-  const hangGhim = data.ghim.length ? ++hang : null;
+  const vanDeCua = (h: Hop) => h.vanDe.filter((v) => giaoKhoangXem(v.mo, v.dong, khoang));
+  const hang = xepHangLuoi({
+    coDoan: doanHienThi.length > 0,
+    coGhim: data.ghim.length > 0,
+    hop: hopHienThi.map((h) => ({
+      soTangVanDe: vanDeCua(h).map((v) => soTangCua(v.pa)),
+      coDongAn: h.vanDe.length - vanDeCua(h).length > 0,
+    })),
+  });
+  const nhomGhim = gomGhimTheoTuan(data.ghim);
+  const cotHomNay = truc.tuan.findIndex((w) => w.homNay);
+  /* Các đoạn hàng liền nhau (không có khe): phần trục rồi từng khung hộp — phần trục bắt đầu ở hàng 2 (dưới hàng tháng). */
+  const doanLuoi: [number, number][] = [[2, hang.hop.length ? hang.hop[0].khung[0] - 1 : hang.hangCuoi], ...hang.hop.map((h) => h.khung)];
 
   return (
     <div className="space-y-3">
-      {/* Hàng điều khiển: hai nút giai đoạn · chip kỹ năng · khoảng đang xem */}
+      {/* Hàng điều khiển: nút giai đoạn · chip kỹ năng · khoảng đang xem · Xem gọn */}
       <div className="flex flex-wrap items-center gap-2">
         {data.cacGiaiDoan.length === 2 && data.cacGiaiDoan.map((g) => (
           <button key={g.loai} className={`btn btn-sm ${g.loai === giaiDoanDangXem.loai ? 'btn-primary' : ''}`}
             onClick={() => setGiaiDoan(g.loai)}>
-            {nhanGiaiDoan(g, data.homNay)}
+            {nhanGiaiDoan(g, homNay)}
           </button>
         ))}
         <span className="flex flex-wrap gap-1 ml-auto">
@@ -111,96 +155,112 @@ export function HanhTrinh({ studentId, active, episodes, allEpisodes, onOpenCase
           <option value="3-thang">3 tháng gần nhất</option>
           <option value="ca-giai-doan">Cả giai đoạn</option>
         </select>
+        <button type="button" role="switch" aria-checked={xemGon} onClick={() => setXemGon(!xemGon)}
+          title="Thu hẹp cột tuần về 40px — cuộn ngang trong thẻ"
+          className={`btn btn-sm inline-flex items-center gap-1.5 ${xemGon ? 'bg-doing-bg text-doing border-doing-line' : ''}`}>
+          <i aria-hidden className="relative inline-block h-3 w-[22px] rounded-full" style={{ background: xemGon ? 'rgb(var(--doing-line-rgb))' : 'var(--line-strong)' }}>
+            <span className="absolute top-[2px] h-2 w-2 rounded-full" style={{ left: xemGon ? 12 : 2, background: xemGon ? '#dbe9ff' : 'var(--text-faint)' }} />
+          </i>
+          Xem gọn
+        </button>
       </div>
 
-      {/*
-        MỘT KHUNG CUỘN NGANG DUY NHẤT cho cả trục lẫn mọi hộp kỹ năng (sửa sau rà #75, vấn đề 1) —
-        `--cot-ten` khai báo Ở ĐÂY để mọi lưới con (trục, từng hộp) đọc được cùng một giá trị; mỗi
-        khối `min-w-max` bên trong tự giãn theo đúng bề rộng lưới của nó, khung ngoài cuộn chung.
-      */}
-      <div className="space-y-3 overflow-x-auto sm:[--cot-ten:200px] [--cot-ten:128px]">
-      {/* Lưới: trục tháng/tuần · hàng Khoá/Lộ trình · hàng Đợt Test — cùng một khuôn cột */}
-      <div className="rounded-lg border min-w-max" style={{ borderColor: 'var(--line)' }}>
-        <div className="grid text-xs" style={{ gridTemplateColumns: colTemplate }}>
-          <div className="sticky-col" style={{ gridRow: 1, gridColumn: 1 }} />
-          {truc.thang.map((th) => (
-            <div key={`${th.tu}-${th.nhan}`} className="px-1 py-1 text-slate-400 border-b truncate"
-              style={{ gridRow: 1, gridColumn: `${th.tu + 2} / ${th.tu + th.so + 2}`, borderColor: 'var(--line)' }}>
-              {th.nhan}
-            </div>
-          ))}
+      {/* MỘT thẻ, MỘT khung cuộn ngang, MỘT lưới — trục và mọi hộp kỹ năng là con trực tiếp của lưới này. */}
+      <div className="rounded-lg border p-1.5" style={{ background: 'var(--surface)' }}>
+        <div ref={setKhung} className="overflow-x-auto">
+          <div className="grid relative isolate"
+            style={{ gridTemplateColumns: `${boCuc.cotTen}px repeat(${soTuan}, ${boCuc.cotTuan})`, gridTemplateRows: hang.mau }}>
+            {/* ---- lớp nền: khung hộp · vạch tuần · cả cột tuần này */}
+            {hang.hop.map((h, i) => (
+              <div key={`khung-${hopHienThi[i].kyNang}`} aria-hidden className="pointer-events-none z-0 rounded-lg"
+                style={{ gridRow: `${h.khung[0]} / ${h.khung[1]}`, gridColumn: '1 / -1', ...NEN_HOP, boxShadow: '0 0 0 1px var(--line)' }} />
+            ))}
+            {/* Vạch tuần vẽ theo ĐOẠN (phần trục + từng khung hộp), bỏ hàng khe — khi cuộn ngang khe không có ô cột tên che. */}
+            {truc.tuan.map((w, i) => doanLuoi.map(([a, b], k) => (
+              <div key={`vach-${w.thuHai}-${k}`} aria-hidden className="pointer-events-none z-[1] border-l"
+                style={{ gridRow: `${a} / ${b}`, gridColumn: i + 2, borderColor: w.dauThang ? 'var(--line-strong)' : 'var(--line)', opacity: w.dauThang ? 1 : 0.55 }} />
+            )))}
+            {cotHomNay >= 0 && (
+              <div aria-hidden className="pointer-events-none z-[1] rounded-md"
+                style={{ gridRow: `1 / ${hang.hangCuoi}`, gridColumn: cotHomNay + 2, background: 'rgb(var(--doing-rgb) / 0.08)' }} />
+            )}
 
-          <div className="sticky-col px-2 py-1 text-slate-500 border-b"
-            style={{ gridRow: 2, gridColumn: 1, borderColor: 'var(--line)' }}>
-            Tuần
+            {/* ---- trục: tháng (hàng 1) · tuần (hàng 2) */}
+            <CotGhim hang={1} cotTen={boCuc.cotTen} nen="var(--surface)" />
+            {truc.thang.map((th) => (
+              <div key={`${th.tu}-${th.nhan}`} className="z-[2] px-1.5 pb-1 pt-0.5 text-[10px] font-extrabold uppercase tracking-[0.06em] text-dim whitespace-nowrap"
+                style={{ gridRow: 1, gridColumn: `${th.tu + 2} / ${th.tu + th.so + 2}` }}>
+                {th.nhan}
+              </div>
+            ))}
+            <CotGhim hang={2} cotTen={boCuc.cotTen} nen="var(--surface)" className="items-center px-3 text-[10.5px] text-faint">Tuần</CotGhim>
+            {truc.tuan.map((w, i) => (
+              <div key={w.thuHai} title={`${tuanLich(w.thuHai, homNay)}${w.homNay ? ' · tuần này' : ''}`}
+                className={`z-[2] pb-1.5 pt-1 text-center text-[10.5px] tabular-nums ${w.homNay ? 'font-extrabold text-doing' : 'text-faint'}`}
+                style={{ gridRow: 2, gridColumn: i + 2 }}>
+                {w.nhan}
+              </div>
+            ))}
+            <div aria-hidden className="pointer-events-none z-[1] self-end border-b" style={{ gridRow: 2, gridColumn: '1 / -1', height: 0 }} />
+
+            {/* ---- hàng Khoá / Lộ trình */}
+            {hang.hangDoan && (
+              <>
+                <CotGhim hang={hang.hangDoan} cotTen={boCuc.cotTen} nen="var(--surface)" className="items-center px-3 py-1 text-[10.5px] text-faint">
+                  {doanHienThi[0].loai === 'khoa' ? 'Khoá' : 'Lộ trình'}
+                </CotGhim>
+                {doanHienThi.map((dg, di) => {
+                  const a = cotCua(dg.tu, truc);
+                  const b = cotCua(dg.den, truc);
+                  return (
+                    <div key={di} title={dg.nhan}
+                      className="z-[2] mx-[3px] mt-1.5 truncate rounded-md bg-muted-bg px-2 py-0.5 text-[10.5px] text-muted"
+                      style={{ gridRow: hang.hangDoan!, gridColumn: `${a + 2} / ${b + 3}` }}>
+                      {dg.nhan}
+                    </div>
+                  );
+                })}
+              </>
+            )}
+
+            {/* ---- hàng Đợt Test: mỗi tuần một ô, ghim cùng tuần xếp dọc */}
+            {hang.hangGhim && (
+              <>
+                <CotGhim hang={hang.hangGhim} cotTen={boCuc.cotTen} nen="var(--surface)" className="items-center px-3 py-1 text-[10.5px] text-faint">
+                  Đợt Test
+                </CotGhim>
+                {nhomGhim.map((nhom) => {
+                  const cot = cotCua(nhom.tuan, truc);
+                  return (
+                    <div key={nhom.tuan} style={{ gridRow: hang.hangGhim!, gridColumn: cot + 2 }}
+                      className={`z-[2] flex flex-col gap-1 overflow-visible py-1.5 ${cot === 0 ? 'items-start' : cot === soTuan - 1 ? 'items-end' : 'items-center'}`}>
+                      {nhom.ghim.map((g) => {
+                        const nh = nhanGhim({ ...g, homNay });
+                        return (
+                          <button key={g.attemptId} type="button" title={nh.day}
+                            onClick={() => navigate(duongHoSoHocVien(studentId, { dot: g.attemptId }))}
+                            className={`rounded-full border px-2 text-[10.5px] font-bold leading-4 whitespace-nowrap ${SCORE_CHIP[MAU_GHIM[nh.mau]]}`}>
+                            {boCuc.xuongDong ? nh.gon : nh.chu}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </>
+            )}
+
+            {/* ---- hộp kỹ năng */}
+            {hopHienThi.map((h, i) => (
+              <HopKyNang key={h.kyNang} hop={h} vi={hang.hop[i]} vanDe={vanDeCua(h)} soAn={h.vanDe.length - vanDeCua(h).length}
+                truc={truc} boCuc={boCuc} rongTuan={rongTuan} homNay={homNay}
+                onOpenCase={onOpenCase} onXemCaGiaiDoan={() => setCheDoKhoang('ca-giai-doan')} />
+            ))}
           </div>
-          {truc.tuan.map((w, i) => (
-            <div key={w.thuHai} title={w.homNay ? `${w.nhan} · hôm nay` : w.nhan}
-              className={`px-1 py-1 text-center tabular-nums border-b ${w.homNay ? 'font-semibold' : 'text-slate-500'}`}
-              style={{
-                gridRow: 2, gridColumn: i + 2, borderColor: 'var(--line)',
-                background: w.homNay ? 'var(--surface-2)' : undefined,
-                color: w.homNay ? 'var(--accent-strong)' : undefined,
-              }}>
-              {w.nhan}
-            </div>
-          ))}
-
-          {hangDoan && (
-            <>
-              <div className="sticky-col px-2 py-1.5 text-slate-500 border-b"
-                style={{ gridRow: hangDoan, gridColumn: 1, borderColor: 'var(--line)' }}>
-                {doanHienThi[0].loai === 'khoa' ? 'Khoá' : 'Lộ trình'}
-              </div>
-              {doanHienThi.map((d, di) => {
-                const a = cotCua(d.tu, truc);
-                const b = cotCua(d.den, truc);
-                return (
-                  <div key={di} className="px-1.5 py-1.5 border-b truncate rounded" title={d.nhan}
-                    style={{ gridRow: hangDoan, gridColumn: `${a + 2} / ${b + 3}`, borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
-                    {d.nhan}
-                  </div>
-                );
-              })}
-            </>
-          )}
-
-          {hangGhim && (
-            <>
-              <div className="sticky-col px-2 py-1.5 text-slate-500 border-b"
-                style={{ gridRow: hangGhim, gridColumn: 1, borderColor: 'var(--line)' }}>
-                Đợt Test
-              </div>
-              {data.ghim.map((g) => {
-                const col = cotCua(g.tuan, truc);
-                const nhan = nhanGhim(g);
-                return (
-                  <button key={g.attemptId} type="button"
-                    className="mx-auto my-auto rounded px-1.5 py-0.5 text-[10px] whitespace-nowrap"
-                    title={nhan.day}
-                    style={{ gridRow: hangGhim, gridColumn: col + 2, background: toneBg(nhan.tone), color: 'var(--accent-ink)' }}
-                    onClick={() => navigate(duongHoSoHocVien(studentId, { dot: g.attemptId }))}>
-                    {nhan.ngan}
-                  </button>
-                );
-              })}
-            </>
-          )}
         </div>
       </div>
 
-      {/* Hộp kỹ năng — cùng khung cuộn với trục ở trên (vấn đề 1) */}
-      {hopHienThi.map((h) => (
-        <HopKyNang key={h.kyNang} hop={h} truc={truc} khoang={khoang} colTemplate={colTemplate} homNay={data.homNay}
-          onOpenCase={onOpenCase} onXemCaGiaiDoan={() => setCheDoKhoang('ca-giai-doan')} />
-      ))}
-      </div>
-
-      {/* Chú thích */}
-      <p className="text-[11px] text-slate-500 m-0">
-        ✓ Tiến bộ rõ · ◐ Tiến bộ một phần · ✗ Không tiến bộ / Kém hơn · Đang thực hiện (viền đỏ = quá hạn cập nhật)
-        · Chưa có PA · <span style={{ color: 'var(--accent-strong)' }}>▍</span> tuần này
-      </p>
+      <ChuGiai cheDo={cheDo} />
 
       {/*
         MỐC HỌC TẬP (Q8): vào học, vào lớp, chuyển chương trình, đổi target hay kế hoạch thi, bàn
@@ -230,131 +290,193 @@ export function HanhTrinh({ studentId, active, episodes, allEpisodes, onOpenCase
   );
 }
 
-function toneBg(tone: string): string {
-  if (tone === 'ok') return 'var(--ok)';
-  if (tone === 'danger') return 'var(--danger)';
-  if (tone === 'info') return 'var(--accent)';
-  return 'var(--line-strong)';
+/**
+ * Một hộp kỹ năng, là các con trực tiếp của lưới chính (không tự tạo `display: grid` cho cột tuần):
+ * hàng khe → hàng đầu (tên · chuỗi điểm ở cột tên, badge ngay đầu vùng trục) → mỗi vấn đề `so` hàng.
+ * Cột tên và hàng đầu ghim trái (`sticky`) để còn đọc được khi cuộn ngang ở màn hẹp.
+ */
+function HopKyNang({ hop, vi, vanDe, soAn, truc, boCuc, rongTuan, homNay, onOpenCase, onXemCaGiaiDoan }: {
+  hop: Hop; vi: ReturnType<typeof xepHangLuoi>['hop'][number]; vanDe: VanDe[]; soAn: number;
+  truc: Truc; boCuc: BoCuc; rongTuan: number; homNay: string;
+  onOpenCase: (caseId: number, paId?: number) => void; onXemCaGiaiDoan: () => void;
+}) {
+  const moc = chuoiDiem(hop.diem, hop.cheDo, hop.conCho, { toiDa: boCuc.toiDaMoc, dotCho: hop.dotCho });
+  const chuoiDu = chuoiDiem(hop.diem, hop.cheDo, hop.conCho, { toiDa: 99, dotCho: hop.dotCho })
+    .map((m) => `${m.lech ? `${m.lech.chu} ` : ''}${m.chu}`).join(' ');
+  const badge = trangThaiHop({ caseMo: hop.caseMo, coTungCase: hop.coTungCase, diemCuoiChuaDat: hop.diemCuoiChuaDat, xongGanNhat: hop.xongGanNhat }, homNay);
+  const rongTen = RONG_TEN_KY_NANG[hop.cheDo];
+  const cuoiHop = vanDe.length === 0 && soAn === 0;
+
+  return (
+    <>
+      <div className="z-[2] flex min-h-[42px] items-stretch" style={{ gridRow: vi.dau, gridColumn: '1 / -1' }}>
+        <div className="sticky left-0 z-[3] flex items-center whitespace-nowrap">
+          <div className={`flex-none ${cuoiHop ? 'rounded-l-lg' : 'rounded-tl-lg'}`}
+            style={{
+              width: boCuc.cotTen, ...NEN_HOP,
+              ...(boCuc.xuongDong
+                ? { display: 'grid', gridTemplateColumns: '1fr', rowGap: 2, padding: '6px 0' }
+                : { display: 'grid', gridTemplateColumns: `${rongTen}px 1fr`, alignItems: 'center', minHeight: 42 }),
+            }}>
+            <span className="truncate pl-3 text-[13px] font-bold" title={hop.nhan}>{hop.nhan}</span>
+            <span data-chuoi className="inline-flex w-max items-baseline justify-self-start pr-3 text-[12.5px] tabular-nums"
+              style={boCuc.xuongDong ? { paddingLeft: 12 } : undefined} title={chuoiDu}>
+              {moc.length === 0
+                ? <span className="text-faint">chưa có điểm</span>
+                : moc.map((m, k) => (
+                  <Fragment key={k}>
+                    {m.lech && (
+                      <i className={`mx-[5px] text-[10px] font-bold not-italic ${LECH[m.lech.dau]}`} title={LECH_TITLE[m.lech.dau]}>{m.lech.chu}</i>
+                    )}
+                    <b title={m.title}
+                      className={m.cho ? 'ml-2 font-semibold text-faint' : m.xau ? 'font-bold text-bad' : 'font-bold text-[var(--text)]'}>
+                      {m.chu}
+                    </b>
+                  </Fragment>
+                ))}
+            </span>
+          </div>
+          {badge ? (
+            <span className="ml-1.5">
+              <Nhan tone={badge.tone === 'ok' ? 'ok' : toneNhanTuBadge(badge.tone)} title={badge.chu}>
+                {boCuc.xuongDong ? badge.ngan : badge.chu}
+              </Nhan>
+            </span>
+          ) : (
+            <span className="ml-1.5 text-[10.5px] text-faint">Không có Case</span>
+          )}
+        </div>
+      </div>
+
+      {vanDe.map((v, j) => (
+        <VanDeHang key={v.caseId} v={v} vi={vi.vanDe[j]} cuoi={j === vanDe.length - 1 && soAn === 0}
+          truc={truc} boCuc={boCuc} rongTuan={rongTuan} homNay={homNay} onOpenCase={onOpenCase} />
+      ))}
+
+      {soAn > 0 && vi.dongAn && (
+        <CotGhim hang={vi.dongAn} cotTen={boCuc.cotTen} nen="var(--surface-2)" className="rounded-bl-lg">
+          <button type="button" onClick={onXemCaGiaiDoan} title={`Chọn "Cả giai đoạn" để thấy ${soAn} vấn đề cũ hơn`}
+            className="block w-full appearance-none truncate border-0 bg-transparent py-1.5 pl-3 pr-3 text-left text-[11px] text-faint hover:underline">
+            +{soAn} vấn đề cũ hơn — chọn "Cả giai đoạn"
+          </button>
+        </CotGhim>
+      )}
+    </>
+  );
 }
 
 /**
- * Đầu hộp: tên đầy đủ · chuỗi điểm · badge trạng thái — GHIM TRÁI (`sticky-col`, tự co theo nội
- * dung) để còn đọc được khi đã cuộn ngang sang phải xem khối PA. Dưới đó mỗi vấn đề một khối lưới
- * riêng, cùng khuôn cột `colTemplate` với trục — KHÔNG đệm ngang, KHÔNG tự cuộn riêng (vấn đề 1: cả
- * khối này nằm trong khung cuộn chung của `HanhTrinh`, mép trái phải khớp trục tuyệt đối).
+ * Ô CỘT TÊN GHIM TRÁI. `position: sticky` chỉ chạy trong vùng lưới của chính phần tử, nên ô ở cột 1 một mình không
+ * thể đứng yên khi cuộn ngang — ô ngoài trải `1 / -1` (không bắt chuột) rồi phần đứng yên bên trong rộng đúng `cotTen`.
  */
-function HopKyNang({ hop, truc, khoang, colTemplate, homNay, onOpenCase, onXemCaGiaiDoan }: {
-  hop: Hop; truc: Truc; khoang: { tu: string; den: string }; colTemplate: string; homNay: string;
-  onOpenCase: (caseId: number, paId?: number) => void; onXemCaGiaiDoan: () => void;
+function CotGhim({ hang, cotTen, nen, className = '', children }: {
+  hang: number | string; cotTen: number; nen: string; className?: string; children?: ReactNode;
 }) {
-  const moc = chuoiDiem(hop.diem, hop.cheDo === 'ratio' ? 'ratio' : 'ielts', hop.conCho);
-  const badge = trangThaiHop({ caseMo: hop.caseMo, coTungCase: hop.coTungCase, diemCuoiChuaDat: hop.diemCuoiChuaDat, xongGanNhat: hop.xongGanNhat }, homNay);
-  // Vấn đề 2 + Q22: ẩn hẳn vấn đề không giao khoảng đang xem, đếm số bị ẩn để gợi ý "Cả giai đoạn".
-  const vanDeHienThi = hop.vanDe.filter((v) => giaoKhoangXem(v.mo, v.dong, khoang));
-  const soAn = hop.vanDe.length - vanDeHienThi.length;
-
   return (
-    <div className="rounded-lg border min-w-max" style={{ borderColor: 'var(--line)' }}>
-      <div className="sticky-col flex flex-wrap items-center gap-2 px-2.5 pt-2.5 pb-1.5" style={{ width: 'max-content', maxWidth: '100%' }}>
-        <span className="text-sm text-slate-100">{hop.nhan}</span>
-        <span className="text-xs tabular-nums">
-          {moc.length === 0
-            ? <span className="text-slate-600">chưa có điểm</span>
-            : moc.map((m, i) => (
-              <span key={i}>
-                {i > 0 && <span className="text-slate-600"> → </span>}
-                <span className={m.xau ? 'text-rose-300' : 'text-slate-300'}>{m.chu}</span>
-              </span>
-            ))}
-        </span>
-        {badge ? (
-          <span className="text-[11px] rounded px-1.5 py-0.5" style={{ background: toneBg2(badge.tone) }}>{badge.chu}</span>
-        ) : (
-          <span className="text-[11px] text-slate-600">Không có Case</span>
-        )}
+    <div className="pointer-events-none z-[3] flex" style={{ gridRow: hang, gridColumn: '1 / -1' }}>
+      <div className={`pointer-events-auto sticky left-0 flex flex-none whitespace-nowrap ${className}`} style={{ width: cotTen, background: nen }}>
+        {children}
       </div>
-
-      {vanDeHienThi.length > 0 && (
-        <div className="space-y-1 pb-2.5">
-          {vanDeHienThi.map((v) => <VanDeHang key={v.caseId} v={v} truc={truc} colTemplate={colTemplate} homNay={homNay} onOpenCase={onOpenCase} />)}
-        </div>
-      )}
-      {soAn > 0 && (
-        <button type="button" onClick={onXemCaGiaiDoan}
-          className="block text-left appearance-none bg-transparent border-0 px-2.5 pb-2.5 text-[11px] text-slate-500 hover:underline">
-          +{soAn} vấn đề cũ hơn — chọn "Cả giai đoạn"
-        </button>
-      )}
     </div>
   );
 }
 
-function toneBg2(tone: 'ok' | 'warn' | 'danger'): string {
-  return tone === 'ok' ? 'var(--ok)' : tone === 'danger' ? 'var(--danger)' : 'var(--warn)';
-}
-
-/** Một vấn đề: LƯỚI RIÊNG cùng khuôn cột — ô tên (bấm mở Case, spans mọi tầng, GHIM TRÁI) + các tầng khối phương án (`xepTang`). */
-function VanDeHang({ v, truc, colTemplate, homNay, onOpenCase }: {
-  v: VanDe; truc: Truc; colTemplate: string; homNay: string;
+/** Một vấn đề: ô tên ghim trái (bấm mở Case, cao mọi tầng) + các khối phương án theo tầng `xepTang`. */
+function VanDeHang({ v, vi, cuoi, truc, boCuc, rongTuan, homNay, onOpenCase }: {
+  v: VanDe; vi: { tu: number; so: number }; cuoi: boolean; truc: Truc; boCuc: BoCuc; rongTuan: number; homNay: string;
   onOpenCase: (caseId: number, paId?: number) => void;
 }) {
   const tang = xepTang(v.pa.map((p) => ({ id: p.id, tu: p.tu, den: p.den, noiTiepTu: p.noiTiepTu })));
-  const soTang = Math.max(1, new Set(tang.values()).size);
-  const phu = (v.dong ? `${ngay(v.mo)} → ${ngay(v.dong)}` : `từ ${ngay(v.mo)} · ${v.soPa} PA`).slice(0, 60);
+  const phu = dongPhuVanDe(v, homNay);
 
   return (
-    <div className="grid gap-y-0.5" style={{ gridTemplateColumns: colTemplate, gridTemplateRows: `repeat(${soTang}, 20px)` }}>
-      {/* Đệm trái khớp đầu hộp kỹ năng (`HopKyNang` dùng px-2.5) — sửa sau rà PR #86, vấn đề 6. */}
-      <div className="sticky-col py-0.5 pl-2.5 pr-2 min-w-0" style={{ gridRow: `1 / span ${soTang}`, gridColumn: 1 }}>
-        <button type="button" className="text-left appearance-none bg-transparent border-0 p-0 group w-full"
-          onClick={() => onOpenCase(v.caseId)}>
-          <span className="block text-xs text-slate-200 truncate group-hover:underline">{v.ten}</span>
-          <span className="block text-[10px] text-slate-500 truncate">{phu}</span>
+    <>
+      <div aria-hidden className="pointer-events-none z-[4] border-t" style={{ gridRow: vi.tu, gridColumn: '1 / -1', height: 0, alignSelf: 'start' }} />
+      <CotGhim hang={`${vi.tu} / span ${vi.so}`} cotTen={boCuc.cotTen} nen="var(--surface-2)"
+        className={`min-w-0 flex-col justify-center pr-3 ${boCuc.xuongDong ? 'pl-3' : 'pl-6'} ${cuoi ? 'rounded-bl-lg' : ''}`}>
+        <button type="button" onClick={() => onOpenCase(v.caseId)} className="group min-w-0 appearance-none border-0 bg-transparent p-0 text-left">
+          <span className="block truncate text-[11.5px] leading-[15px] text-[var(--text)] group-hover:underline" title={v.ten}>{v.ten}</span>
+          <span className="block truncate text-[10.5px] leading-[14px] text-faint" title={phu}>{phu}</span>
         </button>
-      </div>
+      </CotGhim>
       {v.pa.length === 0 ? (
-        <ChuaCoPa tu={v.mo} homNay={homNay} truc={truc} />
+        <ChuaCoPa tu={v.mo} homNay={homNay} truc={truc} hang={vi.tu} rongTuan={rongTuan} />
       ) : v.pa.map((p) => (
-        <KhoiPa key={p.id} p={p} hang={tang.get(p.id)! + 1} truc={truc} onOpenCase={() => onOpenCase(v.caseId, p.id)} />
+        <KhoiPa key={p.id} p={p} hang={vi.tu + tang.get(p.id)!} truc={truc} rongTuan={rongTuan} homNay={homNay}
+          onOpenCase={() => onOpenCase(v.caseId, p.id)} />
       ))}
-    </div>
+    </>
   );
 }
 
-function ChuaCoPa({ tu, homNay, truc }: { tu: string; homNay: string; truc: Truc }) {
+function ChuaCoPa({ tu, homNay, truc, hang, rongTuan }: { tu: string; homNay: string; truc: Truc; hang: number; rongTuan: number }) {
   const a = cotCua(tu, truc);
-  const b = cotCua(homNay, truc);
+  const b = Math.max(a, cotCua(homNay, truc));
+  const rongKhoi = (b - a + 1) * rongTuan;
   return (
-    <div className="rounded border border-dashed px-1.5 text-[10px] text-amber-200/80 truncate flex items-center"
-      style={{ gridRow: 1, gridColumn: `${a + 2} / ${b + 3}`, borderColor: 'var(--warn)' }}>
-      Chưa có phương án nào — cần đề ra
+    <div title="Chưa có phương án nào — cần đề ra"
+      className="z-[2] mx-[3px] flex h-6 min-w-0 items-center justify-center self-center overflow-hidden rounded-md border border-dashed border-soon-line text-[11px] font-semibold text-soon whitespace-nowrap"
+      style={{ gridRow: hang, gridColumn: `${a + 2} / ${b + 3}` }}>
+      {rongKhoi >= 72 ? 'Chưa có PA' : ''}
     </div>
   );
 }
 
-function KhoiPa({ p, hang, truc, onOpenCase }: { p: Pa; hang: number; truc: Truc; onOpenCase: () => void }) {
+function KhoiPa({ p, hang, truc, rongTuan, homNay, onOpenCase }: {
+  p: Pa; hang: number; truc: Truc; rongTuan: number; homNay: string; onOpenCase: () => void;
+}) {
   const a = cotCua(p.tu, truc);
-  const b = cotCua(p.den ?? truc.tuan[truc.tuan.length - 1]?.thuHai ?? p.tu, truc);
-  const nhan = nhanKhoiPa(p);
-  const late = nhan.tone === 'late';
+  /* PA đang chạy kết thúc ở tuần hôm nay (Q4), không kéo tới cột cuối trục. */
+  const b = Math.max(a, cotCua(denKhoiPa(p, homNay), truc));
+  const nh = nhanKhoiPa(p, homNay);
+  const hienTen = (b - a + 1) * rongTuan >= KHOI_PA_CO_TEN;
   return (
-    <button type="button" onClick={onOpenCase}
-      data-pa-id={p.id}
-      title={`${nhan.chu} · ${ngay(p.tu)} → ${ngay(p.den)}`}
-      className="rounded px-1.5 text-[10px] truncate text-left appearance-none flex items-center"
-      style={{
-        gridRow: hang, gridColumn: `${a + 2} / ${b + 3}`,
-        background: khoiPaBg(nhan.tone), color: 'var(--accent-ink)',
-        border: late ? '1px solid var(--danger)' : undefined,
-      }}>
-      {nhan.chu}
+    <button type="button" data-pa-id={p.id} title={nh.day} onClick={onOpenCase}
+      style={{ gridRow: hang, gridColumn: `${a + 2} / ${b + 3}` }}
+      className={`z-[2] mx-[3px] flex h-6 min-w-0 appearance-none items-center gap-1.5 self-center overflow-hidden whitespace-nowrap rounded-md border-0 text-[11px] ${KHOI[nh.tone]} ${hienTen ? 'px-2' : 'justify-center px-0'}`}>
+      <span className="flex-none font-extrabold">{nh.dau}</span>
+      {hienTen && <span className="truncate font-semibold text-[var(--text)]">{nh.ten}</span>}
     </button>
   );
 }
 
-function khoiPaBg(tone: string): string {
-  if (tone === 'ok') return 'var(--ok)';
-  if (tone === 'bad') return 'var(--danger)';
-  if (tone === 'part') return 'var(--warn)';
-  return 'var(--accent)'; // run · late
+/** Chú giải theo nhóm: ĐIỂM · ĐỢT TEST · PHƯƠNG ÁN · ô màu tuần này. Dấu nào cũng có tooltip ở chỗ dùng (G-7). */
+function ChuGiai({ cheDo }: { cheDo: 'ielts' | 'ratio' }) {
+  const tieuDe = 'text-[10px] font-extrabold uppercase tracking-[0.05em] text-faint';
+  const khoiMau = (tone: ToneKhoiPa, dau: string, chu: string) => (
+    <span className="inline-flex items-center gap-1">
+      <span className={`inline-block rounded px-[5px] text-[10px] font-extrabold leading-[15px] ${KHOI[tone]}`}>{dau}</span>{chu}
+    </span>
+  );
+  const ghim: [MauKetQua, string][] = [['dat', 'Đạt'], ['sos1', 'SOS 1'], ['sos2', 'SOS 2'], ['sos3', 'SOS 3'], ['tam', 'Tạm thời']];
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] text-dim">
+      <span className={tieuDe}>Điểm</span>
+      <span><i className="not-italic font-bold text-ok">▲+0.5</i> tăng</span>
+      <span><i className="not-italic font-bold text-bad">▼{'−'}0.5</i> giảm</span>
+      <span><i className="not-italic font-bold text-faint">=</i> giữ</span>
+      {cheDo === 'ielts'
+        ? <span><b className="text-bad">5.5</b> dưới kỳ vọng</span>
+        : <span><b className="text-bad">65%</b> chưa đạt</span>}
+      <span aria-hidden className="h-3 w-px" style={{ background: 'var(--line-strong)' }} />
+      <span className={tieuDe}>Đợt Test</span>
+      {ghim.map(([mau, chu]) => (
+        <span key={mau} className={`rounded-full border px-2 text-[10.5px] font-bold leading-4 ${SCORE_CHIP[MAU_GHIM[mau]]}`}>{chu}</span>
+      ))}
+      <span aria-hidden className="h-3 w-px" style={{ background: 'var(--line-strong)' }} />
+      <span className={tieuDe}>Phương án</span>
+      {khoiMau('ok', '✓', outcomeLabelFor('improved'))}
+      {khoiMau('part', '◐', outcomeLabelFor('partial'))}
+      {khoiMau('bad', '✗', outcomeLabelFor('unchanged'))}
+      {khoiMau('run', '▶', 'Đang làm')}
+      {khoiMau('late', '⚠', 'Quá hạn cập nhật')}
+      <span className="inline-flex items-center gap-1">
+        <span className="inline-block rounded border border-dashed border-soon-line px-[5px] text-[10px] font-extrabold leading-[13px] text-soon">Chưa có PA</span>
+      </span>
+      <span aria-hidden className="h-3 w-px" style={{ background: 'var(--line-strong)' }} />
+      <span className="inline-flex items-center gap-1">
+        <span aria-hidden className="inline-block h-3 w-2.5 rounded-sm" style={{ background: 'rgb(var(--doing-rgb) / 0.2)' }} />tuần này
+      </span>
+    </div>
+  );
 }
