@@ -345,6 +345,12 @@ onPickStudent` không đổi; `signal` có thể mang `kind`, `scoreText`, `cont
 
 **Xong khi:** typecheck xanh. Commit `PR-Form (8): chọn người thực hiện khi lập, Điều chỉnh, Thay PA; Sửa gợi ý có lý do; data-pa-id cho Qb`.
 
+- [x] Task 8 xong — `npm run check` xanh, 826 phép kiểm không đổi. Lệch kế hoạch có chủ ý: `CapNhatTuan` Điều chỉnh dùng
+  `...nguoiThanhPayload(nguoi)` cho cả `toi` (gửi `performerSelf: true`) thay vì gửi thẳng `performerUserId: session.user.id`
+  như bản kế hoạch gợi ý — vì `performerUserId` bị `laNguoiHopLe(..., 'giao_vien')` kiểm, QL tự ghi PA học thuật (được phép
+  qua `SOS_EDIT anyScope`) sẽ bị 400 nếu gửi ID của chính họ; `performerSelf` cố tình bỏ qua kiểm vai (Task 3, "giữ hành vi
+  cũ khi QL tự ghi"). Ghi vào đây theo đúng chỉ dẫn khi thấy kế hoạch lệch mã thật.
+
 ## Task 9 · Web: Ý thức — người thực hiện, Phụ trách (YT-9), Môn tự điền (YT-4)
 
 **Files:** `ConfirmMeasurePanel.tsx`, `CreateMeasurePanel.tsx`, `XemPhuongAnPanel.tsx`, `RecordViolationPanel.tsx`.

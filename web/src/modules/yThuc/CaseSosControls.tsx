@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
+import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import {
   CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, INTERVENTION_KIND_LABEL, issuesForTopic,
-  interventionKindsFor, reasonNeedsText, type CaseDismissReason,
+  interventionKindsFor, reasonNeedsText, nguoiThanhPayload, type CaseDismissReason, type NguoiChon,
 } from '@shared/domain/index.ts';
 
 const invalidateCases = () => { invalidate('/cases'); invalidate('/students'); invalidate('/overview'); invalidate('/my-work'); };
@@ -71,9 +72,10 @@ export function PresetPlanActions({ interventionId, description, followupDue, on
   const [busy, setBusy] = useState(false);
   const [desc, setDesc] = useState(description);
   const [due, setDue] = useState(followupDue ?? '');
+  const [reason, setReason] = useState('');
   const catalogue = interventionKindsFor();
   const [kind, setKind] = useState<string>(catalogue.selfServe[0]);
-  const [performerName, setPerformerName] = useState('');
+  const [nguoi, setNguoi] = useState<NguoiChon | null>({ kieu: 'toi' });
 
   const confirmNow = async (patch: Record<string, unknown> = {}) => {
     setBusy(true);
@@ -93,8 +95,7 @@ export function PresetPlanActions({ interventionId, description, followupDue, on
     setBusy(true);
     try {
       await api.post(`/interventions/${interventionId}/replace`, {
-        kind, description: desc, performerSelf: !performerName.trim(),
-        performerName: performerName.trim() || undefined, followupDue: due || undefined,
+        kind, description: desc, ...nguoiThanhPayload(nguoi), followupDue: due || undefined,
       });
       invalidateCases();
       toast.push('ok', 'Đã thay phương án');
@@ -120,10 +121,14 @@ export function PresetPlanActions({ interventionId, description, followupDue, on
           Dự kiến kết thúc
           <input type="date" className="field" style={{ width: '9.5rem' }} value={due} onChange={(e) => setDue(e.target.value)} />
         </label>
+        <label className="block">
+          <span className="block text-[11px] text-slate-400 mb-1">Lý do sửa (không bắt buộc)</span>
+          <input className="field w-full" maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} />
+        </label>
         <div className="flex gap-1.5">
           <button type="button" className="btn btn-sm" onClick={() => setMode(null)} disabled={busy}>Huỷ</button>
           <button type="button" className="btn btn-sm btn-primary" disabled={busy}
-            onClick={() => confirmNow({ description: desc, followupDue: due || null })}>
+            onClick={() => confirmNow({ description: desc, followupDue: due || null, reason: reason.trim() || undefined })}>
             Xác nhận
           </button>
         </div>
@@ -142,8 +147,7 @@ export function PresetPlanActions({ interventionId, description, followupDue, on
         </optgroup>
       </select>
       <textarea className="field w-full" rows={2} placeholder="Mô tả phương án mới" value={desc} onChange={(e) => setDesc(e.target.value)} />
-      <input className="field" placeholder="Người thực hiện (bỏ trống nếu chính bạn)" value={performerName}
-        onChange={(e) => setPerformerName(e.target.value)} />
+      <ChonNguoi nhom="giao_vien" value={nguoi} onChange={setNguoi} />
       <label className="flex items-center gap-1.5 text-[11px] text-slate-400">
         Dự kiến kết thúc
         <input type="date" className="field" style={{ width: '9.5rem' }} value={due} onChange={(e) => setDue(e.target.value)} />

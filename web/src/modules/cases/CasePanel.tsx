@@ -7,6 +7,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { Alert, Card, Empty, ErrorState, Field, Info, Level, Outcome, SectionNote, Skeleton, Status } from '../../ui/ui.tsx';
 import { Modal } from '../../ui/Drawer.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
+import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { CHUA_CO_PHUONG_AN, GOI_Y_THEM_PHUONG_AN } from '../../ui/chu.ts';
 import { caseStatusLabel, caseStatusTone, fmtBand, fmtDate, skillLabel, sosLabel, sosTone } from '../../lib/format.ts';
 import {
@@ -16,6 +17,7 @@ import {
   RESCHEDULE_TARGETS, RESCHEDULE_TARGET_LABEL,
   componentsAreCounts, componentsFor, interventionKindsFor,
   isProposalKind, outcomeLabelFor,
+  nguoiThanhPayload, type NguoiChon,
 } from '@shared/domain/index.ts';
 import { CapNhatTuanForm, LichSuDieuChinh, type BanDieuChinh } from './CapNhatTuan.tsx';
 import { ComponentsField, componentsPayload } from './ChiTietKyNang.tsx';
@@ -194,7 +196,7 @@ export function CasePanel({ caseId, compact = false, hideHeader = false, onChang
           <ol className="list-none p-0 m-0 relative pl-6"
               style={{ borderLeft: '2px solid var(--line-strong)', marginLeft: '5px' }}>
             {timeline.map((ev) => (
-              <li key={ev.key} className="relative pb-4 last:pb-1">
+              <li key={ev.key} className="relative pb-4 last:pb-1" data-pa-id={ev.paId ?? undefined}>
                 {/* Chấm mốc: đặc = chuyện xảy ra với em, rỗng = việc mình làm. */}
                 <span className="absolute rounded-full"
                       style={{
@@ -292,7 +294,7 @@ export function CasePanel({ caseId, compact = false, hideHeader = false, onChang
       <OutcomeDialog open={outcome} onClose={() => setOutcome(false)} caseId={caseId}
         category={data.category} categoryLabel={data.categoryLabel}
         ratio={!!data.ratio} onDone={reload} />
-      <ActionDialog open={addAction} onClose={() => setAddAction(false)} caseId={caseId} onDone={reload} />
+      <ActionDialog open={addAction} onClose={() => setAddAction(false)} caseId={caseId} studentId={data.student?.id} onDone={reload} />
       <ApprovalDialog open={respondTo !== null} onClose={() => setRespondTo(null)}
         intervention={respondTo} onDone={reload} />
       <ResultDialog iv={resultFor}
@@ -332,6 +334,11 @@ type TimelineItem = {
   card?: boolean;
   /** Thứ tự phụ trong cùng một ngày: chuyện xảy ra trước, việc mình làm sau. */
   rank: number;
+  /**
+   * GIAO KÈO VỚI PR-Qb (Hành trình): chỉ mục PA học thuật mang `data-pa-id={paId}` trên `<li>`, để Hành trình mở ngăn
+   * Case rồi cuộn tới đúng PA bằng `querySelector('[data-pa-id="…"]')`. Mục khác (mốc, quan sát) không có.
+   */
+  paId?: number;
 };
 
 const MILESTONE_TITLE: Record<string, string> = {
@@ -393,7 +400,7 @@ function buildTimeline(data: any, act: TimelineActions): TimelineItem[] {
     const on = iv.completedDate ?? iv.startedDate ?? iv.plannedDate ?? iv.actionDue ?? data.detectedAt;
     const mine = (data.followups ?? []).filter((f: any) => f.interventionId === iv.id);
     items.push({
-      key: `i${iv.id}`, on, attemptNo: null, rank: 1, card: true,
+      key: `i${iv.id}`, on, attemptNo: null, rank: 1, card: true, paId: iv.id,
       dotFill: 'var(--surface)',
       dotEdge: iv.status === 'completed' ? 'var(--accent)' : 'var(--line-strong)',
       title: (
@@ -740,8 +747,8 @@ export function OutcomeDialog({ open, onClose, caseId, category, categoryLabel, 
  *   · "Hẹn xem lại" → **Dự kiến kết thúc phương án**. Đây là hạn HOÀN THÀNH, không phải một
  *     cái nhắc; bỏ trống thì lấy Chủ nhật tuần tiếp theo.
  */
-export function ActionDialog({ open, onClose, caseId, onDone }: {
-  open: boolean; onClose: () => void; caseId: number; onDone: () => void;
+export function ActionDialog({ open, onClose, caseId, studentId, onDone }: {
+  open: boolean; onClose: () => void; caseId: number; studentId?: number | null; onDone: () => void;
 }) {
   const toast = useToast();
   const catalogue = interventionKindsFor();
@@ -749,7 +756,7 @@ export function ActionDialog({ open, onClose, caseId, onDone }: {
   const [description, setDescription] = useState('');
   /* Mặc định ĐANG THEO DÕI: phương án vừa lập thì đang chạy, không phải đã xong. */
   const [status, setStatus] = useState('started');
-  const [performerName, setPerformerName] = useState('');
+  const [nguoi, setNguoi] = useState<NguoiChon | null>({ kieu: 'toi' });
   const [completedDate, setCompletedDate] = useState('');
   const [startedDate, setStartedDate] = useState('');
   const [followupDue, setFollowupDue] = useState('');
@@ -785,8 +792,7 @@ export function ActionDialog({ open, onClose, caseId, onDone }: {
     try {
       await api.post(`/cases/${caseId}/interventions`, {
         kind, description, status,
-        performerSelf: !performerName.trim(),
-        performerName: performerName.trim() || undefined,
+        ...nguoiThanhPayload(nguoi),
         completedDate: status === 'completed' ? completedDate || undefined : undefined,
         startedDate: startedDate || undefined,
         followupDue: followupDue || undefined,
@@ -795,7 +801,7 @@ export function ActionDialog({ open, onClose, caseId, onDone }: {
       });
       invalidate('/cases'); invalidate('/students'); invalidate('/overview');
       onDone(); onClose();
-      setDescription(''); setPerformerName(''); setCompletedDate(''); setFollowupDue('');
+      setDescription(''); setNguoi({ kieu: 'toi' }); setCompletedDate(''); setFollowupDue('');
       toast.push('ok', alwaysNeedsApproval || (canPropose && needsApproval)
         ? 'Đã gửi Quản lý duyệt' : 'Đã ghi lại');
       setNeedsApproval(false);
@@ -875,15 +881,12 @@ export function ActionDialog({ open, onClose, caseId, onDone }: {
           </Field>
         )}
         {/*
-          NGƯỜI THỰC HIỆN — một ô, không phải một câu hỏi.
-          Bỏ trống nghĩa là chính bạn làm. Điền tên nghĩa là người đó làm còn bạn ghi lại —
-          hai vai luôn được lưu riêng, nên Quản lý giao việc cho giáo viên thì không bị ghi
-          thành người đã làm.
+          NGƯỜI THỰC HIỆN (PR-Form F-2) — chọn tài khoản, lưu ID thay vì chữ tự do (Q2, Q5).
+          Không có `studentId` (mở từ trang case, không rõ học viên trước khi tải) thì
+          `ChonNguoi` không gợi ý trước khi gõ — chấp nhận được, chỉ mất bước gõ ≥ 3 ký tự.
         */}
-        <Field label="Người thực hiện"
-          hint="Bỏ trống nếu chính bạn làm. Điền tên nếu bạn đang ghi lại việc của người khác.">
-          <input className="field" value={performerName} onChange={(e) => setPerformerName(e.target.value)}
-            placeholder="Ví dụ: cô Trang (GV Speaking)" />
+        <Field label="Người thực hiện">
+          <ChonNguoi nhom="giao_vien" studentId={studentId} value={nguoi} onChange={setNguoi} />
         </Field>
         <Field label="Dự kiến kết thúc phương án"
           hint="Đây là hạn HOÀN THÀNH, không phải một cái nhắc. Bỏ trống thì lấy Chủ nhật tuần tiếp theo.">
