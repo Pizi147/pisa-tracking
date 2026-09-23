@@ -664,6 +664,11 @@ const SO_NGUYEN = /^\d+$/;
  *
  * Gõ "-" ở ô trái là một LỆNH, không phải một số: em không làm bài → môn này dời sang tuần sau (C08). Xoá dấu "-"
  * đang có là gỡ dấu và trả lịch về tuần cũ. Ô đã có điểm thì không nhận dấu "-" — muốn sửa phải qua hộp lý do.
+ * Ô đang mang dấu mà tuần thi mới ĐÃ TỚI: gõ lại "-" là em lại không làm bài — môn dời tiếp (Q4). Tuần mới chưa tới
+ * thì gõ lại không làm gì.
+ *
+ * KHÔNG BAO GIỜ GỬI một ô chưa có điểm mà ô số câu đúng vẫn trống: con trỏ đi qua ô vừa được ↓ điền tổng không được
+ * thành một dòng chỉ có tổng (và người nhập) cho bài chưa chấm. Tổng vừa điền vẫn hiện trong ô, lưu cùng số câu đúng.
  *
  * Lưu khi rời CẢ CẶP ô (hoặc Enter), không lưu khi chỉ nhảy từ ô trái sang ô tổng — nếu không, gõ xong số câu đúng rồi
  * Tab sang ô tổng là máy chủ đã báo "thiếu tổng". Ô tổng viền vàng khi khác tổng đầu cột (em làm đề khác — Q7).
@@ -709,6 +714,8 @@ export function ODiemThuong({
   const cap = useRef<HTMLSpanElement>(null);
   const dangGui = useRef(false);
   const lanDaDien = useRef(dienTong?.lan ?? 0);
+  /* Ô trái vừa được GÕ thật — ↓ điền tổng hay con trỏ đi qua không bao giờ tính là gõ lại "-". */
+  const goDiem = useRef(false);
 
   useEffect(() => {
     if (!dirty) { setDiem(diemDaLuu()); setTong(tongDaLuu()); }
@@ -738,7 +745,7 @@ export function ODiemThuong({
     const ok = await lam();
     dangGui.current = false;
     setBusy(false);
-    if (ok) setDirty(false);       // lỗi thì giữ nguyên bản nháp để sửa và thử lại
+    if (ok) { setDirty(false); goDiem.current = false; }   // lỗi thì giữ nguyên bản nháp để sửa và thử lại
   };
 
   const commit = async () => {
@@ -746,21 +753,26 @@ export function ODiemThuong({
     const d = diem.trim();
     const t = tong.trim();
     if (d === '-') {
-      if (dau) { setDirty(false); return; }
+      /* Đã mang dấu: chỉ dời tiếp khi tuần mới đã tới VÀ người dùng thật sự gõ lại "-" (Q4). */
+      if (dau && (cell.chuaToiTuan || !goDiem.current)) { setDirty(false); goDiem.current = false; return; }
       setCanhBao(null);
       return gui(() => onDau(true));
     }
     if (d === '' && dau) { setCanhBao(null); return gui(() => onDau(false)); }
-    /* Trên điện thoại ô tổng đã điền sẵn tổng của cột mà không "bẩn"; gõ rồi xoá số câu đúng ở ô trống
-       thì không được thành một dòng chỉ có tổng (và người nhập) cho bài chưa chấm. Lưới máy tính giữ ↓. */
-    if (d === '' && !dau && cell.diem === null && tongLaySan && cell.tong === null) {
-      setCanhBao(null); setDirty(false); return;
-    }
     if (d !== '' && !SO_NGUYEN.test(d)) {
       setCanhBao({ o: 'diem', cau: 'Số câu đúng là số nguyên, hoặc "-" nếu em không làm bài.' }); return;
     }
     if (t !== '' && (!SO_NGUYEN.test(t) || Number(t) <= 0)) {
       setCanhBao({ o: 'tong', cau: 'Tổng số câu là số nguyên lớn hơn 0.' }); return;
+    }
+    /*
+     * Ô CHƯA CÓ ĐIỂM mà số câu đúng vẫn trống: không gửi gì. Lưới máy tính GIỮ bản nháp để tổng vừa ↓ điền còn hiện
+     * (lưu cùng số câu đúng khi gõ); điện thoại thì ô tổng trống tự hiện lại tổng của cột nên bỏ bản nháp luôn.
+     */
+    if (d === '' && cell.diem === null) {
+      setCanhBao(null);
+      if (tongLaySan && cell.tong === null) setDirty(false);
+      return;
     }
     if (d !== '' && t === '') { setCanhBao({ o: 'tong', cau: 'Nhập cả tổng số câu.' }); return; }
     if (d !== '' && Number(d) > Number(t)) {
@@ -772,7 +784,7 @@ export function ODiemThuong({
     if (score === cell.diem && total === cell.tong) { setDirty(false); return; }
     return gui(() => onSave({ score, total }));
   };
-  const huy = () => { setDiem(diemDaLuu()); setTong(tongDaLuu()); setDirty(false); setCanhBao(null); };
+  const huy = () => { setDiem(diemDaLuu()); setTong(tongDaLuu()); setDirty(false); setCanhBao(null); goDiem.current = false; };
 
   const phim = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') void commit();
@@ -869,6 +881,8 @@ export function ODiemThuong({
   /* ---- Ô chưa có điểm: hai ô nhập. Ô trái nhận số câu đúng hoặc "-". */
   const dangDau = diem.trim() === '-';
   const titleDiem = canhBao?.o === 'diem' ? canhBao.cau
+    : dau && !cell.chuaToiTuan
+      ? `Đã dời sang ${cell.tuanHienTai ?? 'tuần này'} (từ ${cell.tuanDoiTu ?? 'tuần cũ'}). Gõ số khi em đã làm bài; em lại không làm bài thì gõ lại "-" để dời tiếp.`
     : dau ? `Đã dời sang ${cell.tuanHienTai ?? 'tuần sau'}. Xoá dấu "-" để trả lịch về ${cell.tuanDoiTu ?? 'tuần cũ'}; gõ số khi em đã làm bài.`
     : `Số câu đúng. Gõ "-" nếu em không làm bài: môn này dời sang tuần sau.${cell.chuaToiTuan && cell.tuanHienTai ? ` Thi ${cell.tuanHienTai}.` : ''}`;
   const titleTong = canhBao?.o === 'tong' ? canhBao.cau
@@ -880,7 +894,7 @@ export function ODiemThuong({
         className={`${oSo} ${canhBao?.o === 'diem' ? 'border-rose-400/70' : ''} ${dangDau ? 'text-slate-400' : ''}`}
         inputMode="numeric" value={diem} disabled={busy} title={titleDiem}
         aria-label={`${tenMon} — số câu đúng. Gõ "-" nếu em không làm bài`}
-        onChange={(e) => { setDiem(e.target.value); setDirty(true); }} onKeyDown={phim} />
+        onChange={(e) => { setDiem(e.target.value); setDirty(true); goDiem.current = true; }} onKeyDown={phim} />
       <span className="text-slate-600">/</span>
       <input className={`${oSo} ${canhBao?.o === 'tong' ? 'border-rose-400/70' : o.vienVang ? 'border-amber-400/80' : ''}`}
         inputMode="numeric" value={dangDau ? '' : tong} disabled={busy || dangDau} placeholder={dangDau ? '' : 'tổng'}

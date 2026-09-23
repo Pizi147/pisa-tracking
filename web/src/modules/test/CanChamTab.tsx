@@ -142,8 +142,13 @@ export function CanChamTab() {
                             title={d.kind === 'mock' ? `${d.classCode} · Mock Test ${d.attemptNo ?? ''}` : ten}>{ten}</div>
                           <div className="text-xs text-slate-400 truncate" title={phu.goiY}>{phu.chu}</div>
                         </div>
+                        {/* Lớp thường có hạn RIÊNG (hết Chủ nhật của tuần thi), khác hạn thứ Tư của FT ở tên mục —
+                            nói trong tooltip, không thêm dòng (G-3). */}
                         <div className="text-sm text-slate-300 tabular-nums sm:text-right whitespace-nowrap"
-                          title={`${d.soHv} học viên còn bài chưa nhập điểm`}>còn {d.conBai} bài</div>
+                          title={[
+                            d.mode === 'ratio' && d.han ? `Hạn ${thuCua(d.han)} ${ngay(d.han, homNay)}` : '',
+                            `${d.soHv} học viên còn bài chưa nhập điểm`,
+                          ].filter(Boolean).join(' · ')}>còn {d.conBai} bài</div>
                         <Link to={d.href}
                           className="btn btn-primary btn-sm justify-center min-h-11 sm:min-h-0 w-24 sm:w-full">
                           {d.daBatDau ? 'Chấm tiếp' : 'Chấm'}

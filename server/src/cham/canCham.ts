@@ -256,7 +256,8 @@ export function canChamList(
       href: `/nhap-diem/${d.classId}${q ? `?${q}` : ''}`,
     };
   });
-  const cls = f.classId
+  /* Chip "Đang lọc: lớp …" chỉ nói tên lớp NGƯỜI XEM ĐƯỢC THẤY — lớp ngoài phạm vi thì null, không lộ mã lớp. */
+  const cls = f.classId && can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: f.classId })
     ? (db().prepare('SELECT id, code FROM classes WHERE id = ?').get(f.classId) as any) ?? null
     : null;
   return {
@@ -350,8 +351,10 @@ export function lichTest(
     if (!d) {
       const qs = new URLSearchParams();
       if (r.kind !== 'mock') qs.set('kind', r.kind);
-      /* Lớp FT mở lưới đúng tuần đang xem. */
+      /* Lớp FT mở lưới đúng tuần đang xem. Lớp thường kèm `kn` = môn của dòng (như Cần chấm): con trỏ đặt sẵn vào ô
+         trống đầu tiên của môn đó. */
       if (mode === 'ielts_band') qs.set('periodId', String(periodId));
+      else qs.set('kn', r.skill);
       const q = qs.toString();
       d = {
         key, dotLabel: dotLabelOf(r.kind, r.attempt_no ?? null), kyNang: [r.skill],

@@ -189,6 +189,50 @@ export async function runChamDiemTests(t: YThucTestKit) {
       /đã có điểm|lý do/, 'Ô đã có điểm thì phải đi đường hiệu chỉnh có lý do');
   });
 
+  check('PR-Rc1 · Q4 Vắng hai tuần liên tiếp → 28/09; tuần mới chưa tới thì ghi lại không dời', () => {
+    assert(monCuaGv.length > 0, 'Seed: GVBM của MB-FOU 12 phải được phân công ít nhất một môn');
+    const k = monCuaGv[0];
+    const { attemptId } = taoBaiThuong('2026-09-14');
+    const tuanId = (ws: string) => (conn.prepare('SELECT id FROM report_periods WHERE week_start = ?').get(ws) as any)?.id;
+    const tuanMon = () => tuanCuaMon(skillSched.loadSkillRows([attemptId]).get(attemptId), k);
+    assert(regular.reportRegularNoShow(P.normalSubjectTeacher, attemptId, k, true, '2026-09-16').moved, 'Lần một phải dời');
+    assert(tuanMon() === '2026-09-21', `Lần một sang 21/09: ${tuanMon()}`);
+    /* Tuần 21/09 chưa tới (hôm nay 18/09): em chưa có dịp vắng tuần đó — ghi lại là vô hại. */
+    const som = regular.reportRegularNoShow(P.normalSubjectTeacher, attemptId, k, true, '2026-09-18');
+    assert(!som.moved && tuanMon() === '2026-09-21', `Tuần mới chưa tới thì không dời: ${tuanMon()}`);
+    /* Tuần 21/09 đã tới (hôm nay 22/09) và em lại không làm bài → dời tiếp. */
+    const lan2 = regular.reportRegularNoShow(P.normalSubjectTeacher, attemptId, k, true, '2026-09-22');
+    assert(lan2.moved, 'Lần hai phải dời tiếp');
+    assert(tuanMon() === '2026-09-28', `Lần hai sang 28/09: ${tuanMon()}`);
+    assert(dauCua(attemptId, k).no_show_period_id === tuanId('2026-09-21'),
+      'Dấu giữ tuần của LẦN GHI GẦN NHẤT (21/09), không phải 14/09');
+    /* Cùng tuần 28/09 gọi lại (vẫn hôm nay 22/09) thì không dời lần ba. */
+    assert(!regular.reportRegularNoShow(P.normalSubjectTeacher, attemptId, k, true, '2026-09-22').moved, 'Gọi lại là vô hại');
+    assert(tuanMon() === '2026-09-28', 'Không dời lần ba');
+    const nk = (conn.prepare(
+      `SELECT COUNT(*) AS n FROM audit_logs WHERE action = 'regular.no_show' AND entity_type = 'assessment_attempt' AND entity_id = ?`,
+    ).get(attemptId) as any).n;
+    assert(nk === 2, `Mỗi lần dời một dòng nhật ký: ${nk}`);
+    const demDoi = (conn.prepare('SELECT absence_move_count AS n FROM attempt_skills WHERE attempt_id = ? AND skill = ?')
+      .get(attemptId, k) as any)?.n;
+    assert(demDoi === 0, `absence_move_count giữ 0 sau hai lần "-": ${demDoi}`);
+  });
+
+  check('PR-Rc1 · Q3+Q4 Gỡ dấu sau lần dời thứ hai chỉ lùi về 21/09 (tuần vừa dời khỏi), không về 14/09', () => {
+    assert(monCuaGv.length > 0, 'Seed: GVBM của MB-FOU 12 phải được phân công ít nhất một môn');
+    const k = monCuaGv[0];
+    const { attemptId } = taoBaiThuong('2026-09-14');
+    const tuanMon = () => tuanCuaMon(skillSched.loadSkillRows([attemptId]).get(attemptId), k);
+    regular.reportRegularNoShow(P.normalSubjectTeacher, attemptId, k, true, '2026-09-16');
+    regular.reportRegularNoShow(P.normalSubjectTeacher, attemptId, k, true, '2026-09-22');
+    assert(tuanMon() === '2026-09-28', `Đã dời hai lần: ${tuanMon()}`);
+    const g = regular.reportRegularNoShow(P.normalSubjectTeacher, attemptId, k, false, '2026-09-22');
+    assert(g.moved, 'Gỡ dấu là một lần đổi lịch');
+    assert(tuanMon() === '2026-09-21', `Gỡ dấu lần hai về 21/09: ${tuanMon()}`);
+    const sc = dauCua(attemptId, k);
+    assert(!sc || !sc.no_show_period_id, 'Dấu đã được xoá');
+  });
+
   check('PR-Rc1 · C08 Dời bị chặn (vượt đợt kế tiếp) thì KHÔNG để lại dấu "-" — ghi dấu và dời là một giao dịch', () => {
     assert(monCuaGv.length > 0, 'Seed: GVBM của MB-FOU 12 phải được phân công ít nhất một môn');
     const k = monCuaGv[0];
@@ -415,6 +459,10 @@ export async function runChamDiemTests(t: YThucTestKit) {
     assert(r.lop && r.lop.id === cid && r.lop.code === 'MB-FT 101', 'Trả về lớp đang lọc để giao diện hiện chip');
     assert(r.nhom.flatMap((x: any) => x.dong).every((d: any) => d.classId === cid), 'Chỉ còn lớp đó');
     assert(cham.canChamList(P.mbManager, {}, TODAY).lop === null, 'Không lọc thì không có chip');
+    /* Lớp ngoài phạm vi (chi nhánh CP, người xem là Quản lý MB): không lộ mã lớp qua chip. */
+    const ngoai = cham.canChamList(P.mbManager, { classId: classId('CP-FT 110') }, TODAY);
+    assert(ngoai.lop === null, `Lớp ngoài phạm vi phải trả lop = null: ${JSON.stringify(ngoai.lop)}`);
+    assert(ngoai.nhom.flatMap((x: any) => x.dong).length === 0, 'Lớp ngoài phạm vi thì không có dòng nào');
   });
 
   check('PR-Rc1 · Q14 Lịch Test nhóm theo lớp và lọc theo tuần của CHÍNH môn', () => {
@@ -428,6 +476,11 @@ export async function runChamDiemTests(t: YThucTestKit) {
     assert(tatCa.every((d: any) => TRANG_THAI.test(d.trangThai)), `Câu trạng thái lạ: ${tatCa.map((d: any) => d.trangThai).join(' | ')}`);
     for (const l of r.lop.filter((x: any) => x.mode === 'ielts_band')) {
       assert(l.dong.every((d: any) => d.href.includes(`periodId=${tuan.id}`)), 'Lớp FT mở lưới đúng tuần đang xem');
+    }
+    /* Lớp thường: link kèm `kn` = môn của dòng (như Cần chấm), không kèm periodId. */
+    for (const d of lop.dong) {
+      const q = new URLSearchParams(d.href.split('?')[1] ?? '');
+      assert(q.get('kn') === d.kyNang[0] && !q.has('periodId'), `Dòng lớp thường phải mang kn=${d.kyNang[0]}: ${d.href}`);
     }
     /* Dời Listening sang tuần sau rồi thì tuần 14/09 không còn Listening của em này, tuần 21/09 thì có. Ghi "-" dùng
        Quản trị hệ thống (Ruling 1: Quản lý không ghi điểm). */

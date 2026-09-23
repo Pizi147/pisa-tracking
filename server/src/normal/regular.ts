@@ -429,11 +429,13 @@ export function saveRegularScore(
  * GHI DẤU VÀ DỜI LỊCH LÀ MỘT GIAO DỊCH: `setSkillWeek` chặn (vượt đợt kế tiếp, đang có đề nghị dời chờ duyệt…) thì
  * dòng dấu vừa ghi cũng cuộn lại theo — không bao giờ còn một dấu "-" mà lịch không dời.
  *
- * `today` giữ trong chữ ký cho cùng dáng với `saveScore` của FT: dời sang tuần sau tính từ TUẦN THI của môn, không
- * tính từ hôm nay, nên hiện chưa dùng tới.
+ * DỜI NHIỀU LẦN (Q4): em lại không làm bài ở tuần vừa dời tới thì ghi "-" lần nữa — môn dời tiếp, mỗi lần một dòng nhật
+ * ký, không chặn. Dòng điểm chỉ giữ tuần của LẦN GHI GẦN NHẤT, nên gỡ dấu chỉ lùi về đúng tuần vừa dời khỏi. `today`
+ * dùng đúng chỗ đó: tuần mới CHƯA TỚI thì ghi lại là vô hại (em chưa có dịp vắng tuần ấy); dời sang tuần sau thì vẫn tính
+ * từ TUẦN THI của môn, không từ hôm nay.
  */
 export function reportRegularNoShow(
-  p: Principal, attemptId: number, skill: string, bat: boolean, _today: string = demoToday(),
+  p: Principal, attemptId: number, skill: string, bat: boolean, today: string = demoToday(),
 ): { moved: boolean; tuanCu: string | null; tuanMoi: string | null; result: RegularResult } {
   const conn = db();
   const a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
@@ -474,8 +476,12 @@ export function reportRegularNoShow(
       if (!row.planned_period_id || !row.week_start) {
         throw badRequest(`${skill} chưa có tuần thi nên chưa ghi dấu "-" được.`);
       }
-      /* Đã ghi dấu và đã dời rồi thì không làm gì thêm — gọi lại là vô hại, không dời lần hai. */
-      if (existing?.no_show_period_id && existing.no_show_period_id !== row.planned_period_id) {
+      /*
+       * Đã ghi dấu và đã dời rồi: tuần mới CHƯA TỚI thì gọi lại là vô hại, không dời lần hai. Tuần mới ĐÃ TỚI thì đây là
+       * một lần vắng MỚI của chính tuần đó (Q4) — đi tiếp xuống dưới: dấu chuyển sang tuần hiện tại, môn dời tiếp.
+       */
+      if (existing?.no_show_period_id && existing.no_show_period_id !== row.planned_period_id
+        && String(row.week_start) > today) {
         return { moved: false, tuanCu: tuanCua(existing.no_show_period_id)?.code ?? null,
           tuanMoi: row.period_code, result: regularResultOf(attemptId) };
       }
