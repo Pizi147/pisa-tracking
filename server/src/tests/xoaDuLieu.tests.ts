@@ -425,6 +425,19 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     assert(!conn.inTransaction, 'giao dịch còn mở');
   });
 
+  check('PR-XOA X15 · Em chỉ có hồ sơ (chưa xếp lớp, chưa có gì): xem trước rỗng, "Chưa xếp lớp"; xoá được, tập rỗng không làm hỏng câu nào', () => {
+    const now = new Date().toISOString();
+    const sid = ins(`INSERT INTO students (student_code, full_name, normalized_name, status, created_at) VALUES ('PISA-XOA-RONG', 'Em Rong', 'em rong', 'active', ?)`, now);
+    const x = xoaHV.xemXoaHocVien(P.admin, sid);
+    assert(x.mat.length === 0 && x.lop === null && x.dangHoc === false && x.congViecGoLienKet === 0, JSON.stringify(x));
+    const truoc = demBang();
+    const r = xoaHV.xoaHocVien(P.admin, sid, { maXacNhan: 'PISA-XOA-RONG' });
+    const sau = demBang();
+    assert(r.ok && !conn.prepare('SELECT 1 FROM students WHERE id = ?').get(sid), 'em rỗng phải xoá được');
+    const lech = MOI_BANG.filter((b) => sau[b] !== truoc[b] - (b === 'students' ? 1 : 0) + (b === 'audit_logs' ? 1 : 0));
+    assert(!lech.length, `bảng khác bị đổi: ${lech.join(', ')}`);
+  });
+
   let truocXoa: Record<string, number> = {};
   let dongTTruoc: DongEm = new Map();
   let fkTruoc = 0;
