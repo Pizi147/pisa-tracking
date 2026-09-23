@@ -1,0 +1,287 @@
+<style>
+  .pp{--bg:#0d1423;--s:#111b2d;--line:#293852;--tx:#e8eef7;--mu:#8f9db4;--fa:#8292ae;--bl:#84baff;--bb:#173451;--gr:#73d9a5;--gb:#15362a;--yl:#e5c66a;--yb:#3a3219;--rd:#ff9a9a;--rb:#3b2126;
+      background:var(--bg);color:var(--tx);font:12px Inter,Segoe UI,Arial,sans-serif;border-radius:8px;overflow:hidden;border:1px solid var(--line);font-variant-numeric:tabular-nums;margin-top:8px}
+  .pp .w{padding:12px}.pp .mu{color:var(--mu);font-size:11px}.pp .sp{flex:1}
+  .pp .scr{overflow-x:auto}
+  .pp table{width:100%;border-collapse:collapse;table-layout:fixed;min-width:620px;color:var(--tx);font:inherit;font-variant-numeric:tabular-nums}
+  .pp th{color:var(--fa);font-size:10px;padding:6px 10px;font-weight:700;text-transform:uppercase;text-align:left;border-bottom:1px solid var(--line);background:#0f192b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pp th.r,.pp td.r{text-align:right}.pp th.c,.pp td.c{text-align:center}
+  .pp th.gh{text-align:center;border-bottom:1px solid #22314a;letter-spacing:.04em}
+  .pp .vs{border-left:1px solid #22314a}
+  .pp td{padding:0 10px;border-bottom:1px solid #1d2b43;vertical-align:middle;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* LUẬT HÀNG — phương án A của mockup 17: hàng lớn nền sáng hơn một bậc + vạch 3px trái + chữ đậm · hàng con thụt 16px, nền tối hơn */
+  .pp tr.A-lon td{background:#172640;font-weight:800;font-size:12.5px;height:38px}
+  .pp tr.A-lon td:first-child{box-shadow:inset 3px 0 0 var(--vc,#84baff)}
+  .pp tr.A-lon.dong td{background:#131f35}.pp tr.A-lon.dong td:first-child{box-shadow:inset 3px 0 0 #3a4f72}
+  .pp tr.A-con td{background:#0b1322;font-size:11.5px;color:#c9d4e6;height:32px;font-weight:400}
+  .pp tr.A-con td:first-child{padding-left:40px}
+  .pp tr.A-lon.ch{--vc:#e5c66a}
+  .pp tr.chua td{background:#2a2412;height:36px;font-weight:700;color:#f3dfa5;border-top:1px solid #5a4a1c}
+  .pp tr.chua td:first-child{box-shadow:inset 3px 0 0 #e5c66a}
+  .pp tr.fl1 td{height:36px}
+  .pp tr.more td{background:#0b1322;height:30px;color:var(--fa);font-size:11px}
+  .pp table.wr td{white-space:normal;padding:6px 10px;line-height:1.45}
+  .pp .tw{display:inline-block;width:14px;color:#8fa3c4;font-weight:400}
+  .pp .nm{font-weight:700}.pp .sub{display:block;font-size:10.5px;color:var(--fa);font-weight:400;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pp .lk{color:var(--tx);text-decoration:underline dotted #5c6f8f;text-underline-offset:3px;cursor:pointer}
+  .pp .of{color:var(--fa);font-weight:400}
+  .pp .up{color:var(--rd)}.pp .dn{color:var(--gr)}.pp .eq{color:#7f8fab}
+  .pp .n{display:inline-block;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:700;white-space:nowrap;line-height:16px;vertical-align:1px}
+  .pp .y{background:var(--yb);color:var(--yl)}.pp .bl{background:var(--bb);color:var(--bl)}.pp .gy{background:#1d2a40;color:#b7c2d6}.pp .rr{background:var(--rb);color:var(--rd)}.pp .gg{background:var(--gb);color:var(--gr)}
+  .pp .cl{display:inline-block;border:1px solid #34445f;background:#1d2a40;color:#c9d4e6;border-radius:5px;padding:0 6px;font-size:10.5px;font-weight:600;line-height:18px;margin-right:4px;white-space:nowrap;cursor:pointer}
+  .pp .cl b{color:var(--tx);font-weight:800}
+  .pp .btn{border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-weight:700;font-size:11px;white-space:nowrap;display:inline-block;cursor:pointer;color:var(--tx)}
+  .pp .btn.p{background:#82b9f6;color:#0c1726;border-color:#82b9f6}
+  .pp .fl{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+  .pp .sel{border:1px solid var(--line);border-radius:7px;padding:4px 8px;white-space:nowrap}
+  .pp .seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}.pp .seg span{padding:4px 9px;color:var(--mu);font-weight:700;white-space:nowrap}.pp .seg .on{background:var(--bb);color:var(--bl)}
+  .pp .sw{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:7px;padding:3px 9px;white-space:nowrap;font-weight:700;color:var(--mu)}
+  .pp .sw i{display:inline-block;width:24px;height:14px;border-radius:7px;background:#22314a;position:relative}
+  .pp .sw i:after{content:"";position:absolute;left:2px;top:2px;width:10px;height:10px;border-radius:50%;background:#8f9db4}
+  .pp .sw.on{color:var(--bl);border-color:#2f5580}.pp .sw.on i{background:#2f5d95}.pp .sw.on i:after{left:12px;background:#dbe9ff}
+  .pp .gocs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:0 0 8px;overflow-x:auto}
+  .pp .gocs span{padding:6px 10px;color:var(--mu);font-weight:700;border-bottom:2px solid transparent;white-space:nowrap}
+  .pp .gocs .on{color:var(--tx);border-color:var(--bl)}.pp .gocs .df{font-size:9.5px;color:var(--fa);font-weight:600;margin-left:4px}
+  .pp .top{display:flex;align-items:center;gap:16px;background:#09111f;border-bottom:1px solid var(--line);padding:8px 12px;font-weight:700;color:var(--mu)}
+  .pp .top .on{color:var(--tx);border-bottom:2px solid var(--bl);padding-bottom:3px}
+  .pp .tt{display:flex;align-items:baseline;gap:8px;margin:2px 0 8px;flex-wrap:wrap}.pp .tt b{font-size:14px}
+  .pp .bar{display:inline-block;width:64px;height:7px;border-radius:4px;background:#22314a;overflow:hidden;vertical-align:middle;margin-right:6px}
+  .pp .bar i{display:block;height:100%;background:#73d9a5}.pp .bar.w i{background:#e5c66a}
+  .pp .strip{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#111b2d;border:1px solid var(--line);border-radius:8px;padding:7px 10px;margin-top:8px}
+  .pp .chip{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:3px 10px;white-space:nowrap}
+  .pp .h3{font-size:12px;font-weight:800;margin:14px 0 6px;color:#c9d4e6}
+  .pp .lay{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:12px;align-items:start}
+  @media (max-width:1180px){.pp .lay{grid-template-columns:1fr}}
+  .pp .drw{background:#111b2d;border:1px solid #3a5178;border-radius:10px;overflow:hidden}
+  .pp .drw .hd{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--line);font-weight:800}
+  .pp .drw .it{display:grid;grid-template-columns:1fr auto;gap:2px 8px;padding:7px 12px;border-bottom:1px solid #1d2b43}
+  .pp .drw .it .t{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pp .drw .it .s{grid-column:1/-1;font-size:10.5px;color:var(--fa);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pp .drw .ft{padding:8px 12px;font-size:11px;color:var(--mu)}
+  .vt{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;background:#2a1f10;border:1px solid #5a4020;border-left:3px solid #f0a04b;border-radius:6px;padding:6px 10px;margin:8px 0 4px;font:12px Inter,Segoe UI,Arial,sans-serif;color:#f3dcb8}
+  .vt b.lbl{color:#f0a04b;letter-spacing:.06em;font-size:10px}
+  .vt .ai{color:#d9c3a0}
+  .kn{background:#13233a;border:1px solid #2c4a73;border-left:3px solid #84baff;border-radius:6px;padding:7px 10px;margin:8px 0 18px;font:12px Inter,Segoe UI,Arial,sans-serif;color:#dbe7f7;line-height:1.5}
+  .kn b{color:#84baff}
+  .dev{margin-top:34px;border-top:1px dashed #33456a;padding-top:10px;font:10.5px/1.55 Inter,Segoe UI,Arial,sans-serif;color:#8292ae}
+  .dev b{color:#aab6c8}.dev code{font-family:Consolas,monospace;font-size:10px;color:#9fb2d0}
+  .dev ul{margin:4px 0 0;padding-left:18px}
+</style>
+
+<h2>16 · Phân tích — bản v2 (chủ sản phẩm chốt 23/09)</h2>
+<p class="subtitle">Hàng góc nhìn theo thứ tự chủ sản phẩm chốt (giữ thêm "Theo giáo viên" của 06e trước Danh sách Case), mặc định mở <b>Tổng hợp Test + SOS</b>. "Điểm nóng" đổi thành <b>Tổng hợp vấn đề HV</b> đếm theo <b>loại lỗi</b> (nguyên nhân) của Case; "kỹ năng dưới ngưỡng" chỉ còn ở Tổng hợp Test + SOS. Bỏ góc nhìn "Chưa ai nhận" và nút "Giao bổ trợ". Mọi số bấm được, mở ra danh sách HV / Case (G-10). Hàng lớn / hàng con theo phương án A của mockup 17. Bản cũ: <code>16-phan-tich-v1.html</code>. Dữ liệu mẫu theo bộ demo, ngày 23/09.</p>
+
+<!-- ============================================================ 0. CÂU HỎI → GÓC NHÌN -->
+<h3>0 · Câu hỏi Quản lý cần trả lời → góc nhìn nào trả lời</h3>
+<div class="pp"><div class="w"><div class="scr"><table class="wr">
+ <colgroup><col style="width:56%"><col style="width:44%"></colgroup>
+ <tr><th>Câu hỏi mỗi tuần</th><th>Mở ở đâu</th></tr>
+ <tr><td>Test tuần này ra sao: bao nhiêu lượt, bao nhiêu SOS, <b>kỹ năng nào nhiều em dưới kỳ vọng / chưa đạt</b>, bao nhiêu em đã có Case, Case nào thiếu PA?</td><td><b>Tổng hợp Test + SOS</b> <span class="mu">(mặc định)</span></td></tr>
+ <tr><td><b>Bao nhiêu học viên yếu ngữ pháp / phát âm / quản lý thời gian…</b> và <b>ở lớp nào</b>? Tăng hay giảm so với lần Test trước?</td><td><b>Tổng hợp vấn đề HV</b> <span class="mu">(thay Điểm nóng)</span></td></tr>
+ <tr><td>Một loại lỗi <b>chung cho nhiều kỹ năng</b> — ví dụ ngữ pháp (Reading + Writing + Speaking) — tổng cộng bao nhiêu em?</td><td><b>Tổng hợp vấn đề HV</b> · công tắc <b>Gộp theo loại lỗi chung</b></td></tr>
+ <tr><td>Case nào <b>chưa được phân loại lỗi</b> (làm số liệu trên thiếu)?</td><td><b>Tổng hợp vấn đề HV</b> · dòng cuối <b>Chưa phân loại</b></td></tr>
+ <tr><td><b>Loại PA nào thật sự hiệu quả</b> cho loại vấn đề nào, thường mất bao lâu?</td><td><b>Hiệu quả PA</b></td></tr>
+ <tr><td>PA nào đã xong mà <b>chưa ai ghi kết quả</b>?</td><td><b>Hiệu quả PA</b> · dải dưới bảng</td></tr>
+ <tr><td>Lớp nào nhiều vi phạm? <b>Học viên nào vi phạm lặp lại, sắp tới Thư cảnh cáo lần tiếp</b>?</td><td><b>Ý thức &amp; Phối hợp</b></td></tr>
+ <tr><td>Phối hợp SOS nào chưa xong? Việc có người phụ trách mà quá hạn?</td><td>Việc cần làm của GVCN · Công việc › Hỗ trợ học viên <span class="mu">(đã có — Phân tích không làm lại)</span></td></tr>
+ <tr><td>GV nào có nhiều em chưa đạt ở môn mình dạy?</td><td><b>Theo giáo viên</b> <span class="mu">(giữ, mockup 06e)</span></td></tr>
+ <tr><td>Tìm một Case cụ thể / đích của mọi số bấm về Case</td><td><b>Danh sách Case</b> <span class="mu">(giữ, cuối hàng)</span></td></tr>
+</table></div></div></div>
+
+<!-- ============================================================ 1. HÀNG GÓC NHÌN -->
+<h3 style="margin-top:22px">1 · Hàng góc nhìn + bộ lọc chung</h3>
+<div class="vt"><b class="lbl">VỊ TRÍ</b><span>Tổng quan → tab <b>Phân tích</b> → hàng góc nhìn dưới tab</span><span class="ai">Ai thấy: Quản lý (chi nhánh mình) · Quản trị (mọi chi nhánh)</span></div>
+<div class="pp">
+ <div class="top"><span style="color:#84baff">PISA</span><span class="on">Tổng quan</span><span>Học viên &amp; Lớp</span><span>Test</span><span>Công việc</span><span class="sp"></span><span class="mu">Nguyễn Thị Quản lý ▾</span></div>
+ <div class="w">
+  <div class="gocs" style="margin-bottom:4px"><span>Tổng quan</span><span class="on">Phân tích</span></div>
+  <div class="gocs">
+   <span class="on">Tổng hợp Test + SOS<span class="df">mặc định</span></span>
+   <span title="Bao nhiêu HV mắc từng loại lỗi, ở lớp nào">Tổng hợp vấn đề HV</span>
+   <span title="Loại PA nào hiệu quả cho loại vấn đề nào">Hiệu quả PA</span>
+   <span>Ý thức &amp; Phối hợp</span>
+   <span>Theo giáo viên</span>
+   <span>Danh sách Case</span>
+  </div>
+  <div class="fl"><span class="sel">Mọi chi nhánh ▾</span><span class="seg"><span title="Lớp thường">Lớp thường</span><span title="Fast Track">FT</span><span class="on">Cả hai</span></span><span class="sel">8 tuần ▾</span><span class="sel">Mọi lớp ▾</span><span class="sp"></span><span class="mu">Dữ liệu đến 23/09</span></div>
+  <div class="scr"><table class="wr">
+   <colgroup><col style="width:24%"><col style="width:30%"><col style="width:12%"><col style="width:34%"></colgroup>
+   <tr><th>Góc nhìn</th><th>Thay cho</th><th>Trạng thái</th><th>Ghi chú</th></tr>
+   <tr><td class="nm">Tổng hợp Test + SOS</td><td>—</td><td><span class="n gy">Giữ</span></td><td class="mu">Mặc định. Hàng lớn / hàng con theo mockup 17</td></tr>
+   <tr><td class="nm">Tổng hợp vấn đề HV</td><td>Vấn đề học viên · Điểm nóng (v1)</td><td><span class="n bl">Mới</span></td><td class="mu">Kỹ năng → loại lỗi; công tắc gộp loại lỗi chung</td></tr>
+   <tr><td class="nm">Hiệu quả PA</td><td>Kết quả hỗ trợ</td><td><span class="n bl">Mới</span></td><td class="mu">Vấn đề → loại PA, có cỡ mẫu</td></tr>
+   <tr><td class="nm">Ý thức &amp; Phối hợp</td><td>Bảng nhóm × trạng thái, 9 loại biện pháp</td><td><span class="n y">Làm lại</span></td><td class="mu">2 danh sách: Học viên cần chú ý · Lớp nhiều vi phạm</td></tr>
+   <tr><td class="nm">Theo giáo viên</td><td>—</td><td><span class="n gy">Giữ</span></td><td class="mu">Mockup 06e (A)</td></tr>
+   <tr><td class="nm">Danh sách Case</td><td>—</td><td><span class="n gy">Giữ</span></td><td class="mu">Tra cứu; đích của mọi số bấm về Case</td></tr>
+   <tr><td class="nm" style="color:#ff9a9a">Bỏ</td><td colspan="3">"Chưa ai nhận" (Case chưa phân loại → dòng cuối của Tổng hợp vấn đề HV; Case chưa có người phụ trách → Việc cần làm của Quản lý) · nút "Giao bổ trợ" (không có trong quy trình) · khối "Phối hợp SOS chưa xong" (đã có ở Việc cần làm của GVCN) · cột "Không cải thiện" ở Hiệu quả PA.</td></tr>
+  </table></div>
+ </div>
+</div>
+
+<!-- ============================================================ 2. TỔNG HỢP TEST + SOS -->
+<h3 style="margin-top:26px">2 · Tổng hợp Test + SOS — mặc định (giữ, áp luật hàng A)</h3>
+<div class="vt"><b class="lbl">VỊ TRÍ</b><span>Tổng quan → tab <b>Phân tích</b> → góc nhìn <b>Tổng hợp Test + SOS</b> (mở sẵn khi vào tab)</span><span class="ai">Ai thấy: Quản lý (chi nhánh mình) · Quản trị (mọi chi nhánh)</span></div>
+<p class="subtitle">Nội dung như 03b (3); chỉ đổi cách vẽ hàng: tuần là hàng lớn, lớp là hàng con. Nhóm cột "Dưới kỳ vọng theo kỹ năng" là nơi <b>duy nhất</b> trả lời "kỹ năng nào nhiều em dưới ngưỡng".</p>
+<div class="pp"><div class="w">
+ <div class="gocs"><span class="on">Tổng hợp Test + SOS</span><span>Tổng hợp vấn đề HV</span><span>Hiệu quả PA</span><span>Ý thức &amp; Phối hợp</span><span>…</span></div>
+ <div class="fl"><span class="seg"><span class="on">Theo tuần</span><span>Theo lớp</span><span>Theo đợt MT</span></span><span class="sel">Fast Track ▾</span><span class="sel">Monbay ▾</span><span class="sel">8 tuần ▾</span><span class="sp"></span><span class="sel">⤓ Xuất Excel</span></div>
+ <div class="scr"><table style="min-width:980px">
+  <colgroup><col style="width:17%"><col><col><col><col><col><col><col><col><col><col><col><col><col><col style="width:8%"><col style="width:7%"></colgroup>
+  <tr><th></th><th colspan="7" class="gh">Kết quả Test (lượt)</th><th colspan="5" class="gh vs" title="FT: dưới kỳ vọng · Lớp thường: chưa đạt — đếm học viên">Dưới kỳ vọng theo kỹ năng (HV) ⓘ</th><th colspan="2" class="gh vs">Xử lý (hiện tại)</th></tr>
+  <tr><th>Tuần / lớp</th><th class="r">Lượt</th><th class="r">Đạt</th><th class="r">SOS 1</th><th class="r">SOS 2</th><th class="r">SOS 3</th><th class="r" title="Tạm thời">Tạm</th><th class="r" title="Chưa đủ điểm">Thiếu</th>
+      <th class="r vs" title="Listening">L</th><th class="r" title="Reading">R</th><th class="r" title="Writing Task 1">W1</th><th class="r" title="Writing Task 2">W2</th><th class="r" title="Speaking">S</th><th class="r vs" title="Học viên có Case">HV có Case</th><th class="r" title="Case thiếu PA học thuật">Thiếu PA</th></tr>
+  <tr class="A-lon"><td><span class="tw">▾</span>W3 SEP</td><td class="r"><span class="lk">18</span></td><td class="r"><span class="lk">5</span></td><td class="r"><span class="lk">4</span></td><td class="r"><span class="lk">3</span></td><td class="r"><span class="lk">1</span></td><td class="r"><span class="lk">3</span></td><td class="r"><span class="lk">2</span></td><td class="r vs"><span class="lk">3</span></td><td class="r"><span class="lk">1</span></td><td class="r"><span class="lk">2</span></td><td class="r up"><span class="lk" style="color:inherit">7</span></td><td class="r"><span class="lk">3</span></td><td class="r vs"><span class="lk">9</span></td><td class="r up"><span class="lk" style="color:inherit">2</span></td></tr>
+  <tr class="A-con"><td>MB-FT 101</td><td class="r"><span class="lk">8</span></td><td class="r">1</td><td class="r">2</td><td class="r">2</td><td class="r">1</td><td class="r">1</td><td class="r">1</td><td class="r vs">2</td><td class="r">0</td><td class="r">1</td><td class="r">4</td><td class="r">2</td><td class="r vs">5</td><td class="r">2</td></tr>
+  <tr class="A-con"><td>CP-FT 110</td><td class="r"><span class="lk">6</span></td><td class="r">2</td><td class="r">1</td><td class="r">1</td><td class="r">0</td><td class="r">1</td><td class="r">1</td><td class="r vs">1</td><td class="r">1</td><td class="r">0</td><td class="r">2</td><td class="r">1</td><td class="r vs">3</td><td class="r">0</td></tr>
+  <tr class="A-con"><td>BC-FT 205</td><td class="r"><span class="lk">4</span></td><td class="r">2</td><td class="r">1</td><td class="r">0</td><td class="r">0</td><td class="r">1</td><td class="r">0</td><td class="r vs">0</td><td class="r">0</td><td class="r">1</td><td class="r">1</td><td class="r">0</td><td class="r vs">1</td><td class="r">0</td></tr>
+  <tr class="A-lon dong"><td><span class="tw">▸</span>W2 SEP</td><td class="r"><span class="lk">14</span></td><td class="r"><span class="lk">6</span></td><td class="r"><span class="lk">4</span></td><td class="r"><span class="lk">2</span></td><td class="r">0</td><td class="r"><span class="lk">1</span></td><td class="r"><span class="lk">1</span></td><td class="r vs"><span class="lk">2</span></td><td class="r"><span class="lk">1</span></td><td class="r"><span class="lk">1</span></td><td class="r"><span class="lk">4</span></td><td class="r"><span class="lk">2</span></td><td class="r vs"><span class="lk">6</span></td><td class="r"><span class="lk">1</span></td></tr>
+  <tr class="A-lon dong"><td><span class="tw">▸</span>W1 SEP</td><td class="r"><span class="lk">9</span></td><td class="r"><span class="lk">5</span></td><td class="r"><span class="lk">2</span></td><td class="r"><span class="lk">1</span></td><td class="r">0</td><td class="r">0</td><td class="r"><span class="lk">1</span></td><td class="r vs"><span class="lk">1</span></td><td class="r">0</td><td class="r"><span class="lk">1</span></td><td class="r"><span class="lk">2</span></td><td class="r"><span class="lk">1</span></td><td class="r vs"><span class="lk">3</span></td><td class="r">0</td></tr>
+ </table></div>
+ <div class="mu" style="margin-top:6px">Lượt = Đạt + SOS 1–3 + Tạm + Thiếu (cộng ngang luôn khớp). Lớp thường: cột đầu "Bài kiểm tra", gộp W1/W2 thành Writing. Số 0 không gạch chân (không có danh sách để mở).</div>
+</div></div>
+
+<!-- ============================================================ 3. TỔNG HỢP VẤN ĐỀ HV -->
+<h3 style="margin-top:26px">3 · Tổng hợp vấn đề HV — "Bao nhiêu em yếu ngữ pháp / phát âm / …, ở lớp nào?" (thay Điểm nóng)</h3>
+<div class="vt"><b class="lbl">VỊ TRÍ</b><span>Tổng quan → tab <b>Phân tích</b> → góc nhìn <b>Tổng hợp vấn đề HV</b> (thứ 2)</span><span class="ai">Ai thấy: Quản lý (chi nhánh mình) · Quản trị (mọi chi nhánh)</span><span class="ai">Bấm số → ngăn trượt phải "Danh sách HV" (một ngăn, G-8)</span></div>
+<p class="subtitle">Đếm <b>học viên có Case mang loại lỗi đó</b> — tính cả lỗi chính ("Vấn đề chính") và lỗi phụ ("Yếu tố đi kèm") của Case, một em chỉ đếm một lần trong một dòng. Loại lỗi đúng danh mục đang dùng khi GV phân loại Case (<code>ISSUE_TAXONOMY</code>); dòng 0 HV ẩn. Writing gộp W1 + W2 vì hai task dùng chung bộ loại lỗi. Không có ngưỡng "nóng" — chỉ xếp số lớn lên trước.</p>
+
+<div class="pp"><div class="w">
+ <div class="gocs"><span>Tổng hợp Test + SOS</span><span class="on">Tổng hợp vấn đề HV</span><span>Hiệu quả PA</span><span>Ý thức &amp; Phối hợp</span><span>…</span></div>
+ <div class="fl"><span class="sel">Mọi chi nhánh ▾</span><span class="seg"><span>Lớp thường</span><span>FT</span><span class="on">Cả hai</span></span><span class="sel" title="Case đang mở + Case đóng trong khoảng">Case mở + đóng trong 8 tuần ▾</span><span class="sel">Mọi lớp ▾</span><span class="seg" title="Lỗi chính = Vấn đề chính · Lỗi phụ = Yếu tố đi kèm"><span class="on">Lỗi chính + phụ</span><span>Chỉ lỗi chính</span></span><span class="sp"></span><span class="sw"><i></i>Gộp theo loại lỗi chung</span></div>
+ <div class="tt"><b>27 học viên có Case đã phân loại lỗi</b><span class="mu">· 38 Case · 9 lớp</span><span class="mu" title="Một em có lỗi ở hai kỹ năng được đếm ở cả hai hàng kỹ năng, nhưng chỉ một lần trong con số 27">ⓘ</span></div>
+
+ <div class="lay">
+  <div class="scr"><table style="min-width:760px">
+   <colgroup><col style="width:24%"><col style="width:7%"><col style="width:7%"><col style="width:31%"><col style="width:15%"><col style="width:16%"></colgroup>
+   <tr><th>Kỹ năng / loại lỗi</th><th class="r" title="Học viên không trùng">Số HV</th><th class="r">Số lớp</th><th title="Ba lớp có nhiều HV mắc lỗi này nhất">3 lớp nhiều nhất</th><th class="r" title="Số HV có lỗi này trong Case từ lần Test gần nhất của mỗi lớp, so với lần Test ngay trước của chính lớp đó. ↑ = nhiều em hơn">So với lần Test trước</th><th title="Loại lỗi nhiều HV nhất trong kỹ năng">Lỗi phổ biến</th></tr>
+
+   <tr class="A-lon"><td><span class="tw">▾</span>Writing <span class="of" style="font-size:10.5px" title="Writing Task 1 + Writing Task 2">W1 + W2</span></td><td class="r"><span class="lk">14</span></td><td class="r"><span class="lk">6</span></td><td><span class="cl">MB-FT 101 · <b>5</b></span><span class="cl">CP-FT 110 · <b>3</b></span><span class="cl">BC-FT 205 · <b>3</b></span></td><td class="r up">↑5</td><td style="font-weight:600;font-size:11.5px">Tổ chức bài / liên kết ý</td></tr>
+   <tr class="A-con"><td>Tổ chức bài / liên kết ý</td><td class="r"><span class="lk">9</span></td><td class="r"><span class="lk">4</span></td><td><span class="cl">MB-FT 101 · <b>4</b></span><span class="cl">CP-FT 110 · <b>2</b></span><span class="cl">BC-FT 205 · <b>2</b></span></td><td class="r up">↑4</td><td></td></tr>
+   <tr class="A-con" style="outline:1px solid #3a5178;outline-offset:-1px"><td>Ngữ pháp</td><td class="r"><span class="lk" style="color:#84baff">7</span></td><td class="r"><span class="lk">4</span></td><td><span class="cl">MB-FT 101 · <b>3</b></span><span class="cl">MB-FOU 12 · <b>2</b></span><span class="cl">CP-FT 110 · <b>1</b></span></td><td class="r up">↑2</td><td></td></tr>
+   <tr class="A-con"><td>Đáp ứng yêu cầu đề</td><td class="r"><span class="lk">5</span></td><td class="r"><span class="lk">3</span></td><td><span class="cl">BC-FT 205 · <b>2</b></span><span class="cl">MB-FT 101 · <b>2</b></span><span class="cl">CP-FT 110 · <b>1</b></span></td><td class="r up">↑1</td><td></td></tr>
+   <tr class="A-con"><td>Từ vựng</td><td class="r"><span class="lk">4</span></td><td class="r"><span class="lk">3</span></td><td><span class="cl">MB-FT 102 · <b>2</b></span><span class="cl">MB-FT 101 · <b>1</b></span><span class="cl">HD-FT 302 · <b>1</b></span></td><td class="r eq">=</td><td></td></tr>
+   <tr class="A-con"><td>Khác</td><td class="r"><span class="lk">1</span></td><td class="r"><span class="lk">1</span></td><td><span class="cl">MB-BE 08 · <b>1</b></span></td><td class="r eq">=</td><td></td></tr>
+
+   <tr class="A-lon"><td><span class="tw">▾</span>Reading</td><td class="r"><span class="lk">10</span></td><td class="r"><span class="lk">5</span></td><td><span class="cl">CP-FT 110 · <b>4</b></span><span class="cl">MB-FT 102 · <b>3</b></span><span class="cl">MB-FOU 12 · <b>2</b></span></td><td class="r up">↑3</td><td style="font-weight:600;font-size:11.5px">Quản lý thời gian</td></tr>
+   <tr class="A-con"><td>Quản lý thời gian</td><td class="r"><span class="lk">6</span></td><td class="r"><span class="lk">3</span></td><td><span class="cl">CP-FT 110 · <b>3</b></span><span class="cl">MB-FT 102 · <b>2</b></span><span class="cl">MB-FT 101 · <b>1</b></span></td><td class="r up">↑3</td><td></td></tr>
+   <tr class="A-con"><td>Từ vựng / ngữ pháp</td><td class="r"><span class="lk">4</span></td><td class="r"><span class="lk">3</span></td><td><span class="cl">MB-FOU 12 · <b>2</b></span><span class="cl">CP-FT 110 · <b>1</b></span><span class="cl">MB-FT 102 · <b>1</b></span></td><td class="r dn">↓1</td><td></td></tr>
+   <tr class="A-con"><td>Kỹ năng làm bài</td><td class="r"><span class="lk">3</span></td><td class="r"><span class="lk">2</span></td><td><span class="cl">MB-FT 102 · <b>2</b></span><span class="cl">CP-FT 110 · <b>1</b></span></td><td class="r eq">=</td><td></td></tr>
+   <tr class="A-con"><td>Tư duy logic</td><td class="r"><span class="lk">2</span></td><td class="r"><span class="lk">2</span></td><td><span class="cl">CP-FT 110 · <b>1</b></span><span class="cl">MB-FT 101 · <b>1</b></span></td><td class="r up">↑1</td><td></td></tr>
+
+   <tr class="A-lon"><td><span class="tw">▾</span>Speaking</td><td class="r"><span class="lk">8</span></td><td class="r"><span class="lk">4</span></td><td><span class="cl">CP-FT 110 · <b>3</b></span><span class="cl">MB-FT 101 · <b>3</b></span><span class="cl">BC-FT 205 · <b>1</b></span></td><td class="r up">↑2</td><td style="font-weight:600;font-size:11.5px">Phát âm</td></tr>
+   <tr class="A-con"><td>Phát âm</td><td class="r"><span class="lk">5</span></td><td class="r"><span class="lk">3</span></td><td><span class="cl">CP-FT 110 · <b>2</b></span><span class="cl">MB-FT 101 · <b>2</b></span><span class="cl">BC-FT 205 · <b>1</b></span></td><td class="r up">↑2</td><td></td></tr>
+   <tr class="A-con"><td>Ngữ pháp</td><td class="r"><span class="lk">4</span></td><td class="r"><span class="lk">3</span></td><td><span class="cl">MB-FT 101 · <b>2</b></span><span class="cl">CP-FT 110 · <b>1</b></span><span class="cl">HD-FT 302 · <b>1</b></span></td><td class="r up">↑1</td><td></td></tr>
+   <tr class="A-con"><td>Trôi chảy / mạch lạc</td><td class="r"><span class="lk">3</span></td><td class="r"><span class="lk">2</span></td><td><span class="cl">CP-FT 110 · <b>2</b></span><span class="cl">MB-FT 101 · <b>1</b></span></td><td class="r dn">↓1</td><td></td></tr>
+   <tr class="A-con"><td>Từ vựng</td><td class="r"><span class="lk">2</span></td><td class="r"><span class="lk">2</span></td><td><span class="cl">MB-FT 101 · <b>1</b></span><span class="cl">BC-FT 205 · <b>1</b></span></td><td class="r eq">=</td><td></td></tr>
+
+   <tr class="A-lon dong"><td><span class="tw">▸</span>Listening</td><td class="r"><span class="lk">6</span></td><td class="r"><span class="lk">3</span></td><td><span class="cl">MB-FT 101 · <b>3</b></span><span class="cl">MB-FT 102 · <b>2</b></span><span class="cl">CP-FT 110 · <b>1</b></span></td><td class="r eq">=</td><td style="font-weight:600;font-size:11.5px" title="Nhận diện âm, nối âm, trọng âm, tốc độ lời nói — khác với vốn từ và ngữ pháp">Ngôn ngữ ⓘ</td></tr>
+
+   <tr class="chua"><td title="Case chưa chọn loại lỗi — không vào được bảng này và Hiệu quả PA">Chưa phân loại: <span class="lk" style="color:inherit">5 Case</span></td><td class="r"><span class="lk" style="color:inherit">5</span></td><td class="r"><span class="lk" style="color:inherit">4</span></td><td style="font-weight:400;font-size:11px">Bấm để mở danh sách Case cần GV phân loại →</td><td></td><td></td></tr>
+  </table></div>
+
+  <!-- ngăn trượt khi bấm số -->
+  <div class="drw">
+   <div class="hd">Writing · Ngữ pháp · 7 HV<span class="sp"></span><span class="mu" title="Đóng">✕</span></div>
+   <div class="it"><span class="t">Dương Minh Quân</span><span class="n rr" title="Vấn đề chính của Case">Lỗi chính</span><span class="s">MB-FT 101 · Case W2 · MT3 · Cao Khánh Linh</span></div>
+   <div class="it"><span class="t">Mai Ngọc Diệp</span><span class="n gy" title="Yếu tố đi kèm">Lỗi phụ</span><span class="s">MB-FT 101 · Case W2 · MT3 · Cao Khánh Linh</span></div>
+   <div class="it"><span class="t">Phan Hải Anh</span><span class="n rr">Lỗi chính</span><span class="s">MB-FT 101 · Case W1 · MT3 · Cao Khánh Linh</span></div>
+   <div class="it"><span class="t">Lê Quang Huy</span><span class="n gy">Lỗi phụ</span><span class="s">MB-FOU 12 · Case Writing · Giữa khoá · Lê Minh Khoa</span></div>
+   <div class="it"><span class="t">Hoàng Thanh Mai</span><span class="n rr">Lỗi chính</span><span class="s">MB-FOU 12 · Case Writing · Giữa khoá · Lê Minh Khoa</span></div>
+   <div class="it"><span class="t">Cao Minh Tuấn</span><span class="n gy">Lỗi phụ</span><span class="s">CP-FT 110 · Case W2 · MT2 · Hoàng Quang Dũng</span></div>
+   <div class="ft">Bấm tên → hồ sơ HV · bấm dòng phụ → mở Case. <span class="lk">+ 1 HV</span></div>
+  </div>
+ </div>
+ <div class="mu" style="margin-top:6px">Mọi số, mọi chip lớp đều bấm được: số HV → ngăn danh sách HV (như bên phải) · số lớp → danh sách lớp · chip "MB-FT 101 · 4" → 4 HV đó · "Chưa phân loại" → danh sách Case chưa phân loại (tên HV · lớp · kỹ năng · người phụ trách · ngày mở), bấm dòng mở Case để GV phân loại. Không có nút giao việc ở đây.</div>
+</div></div>
+
+<h3 style="margin-top:18px">3b · Cùng góc nhìn, bật "Gộp theo loại lỗi chung"</h3>
+<p class="subtitle">Hàng lớn = loại lỗi chung, hàng con = kỹ năng. Số ở hàng lớn là <b>HV không trùng</b> (một em yếu ngữ pháp ở cả Writing lẫn Speaking chỉ đếm 1). Reading và Listening chỉ có một mục "Từ vựng / ngữ pháp" nên mục đó nằm ở cả hai nhóm Ngữ pháp và Từ vựng — ghi rõ trong ⓘ. Loại lỗi chỉ có ở một kỹ năng (Phát âm, Quản lý thời gian…) giữ nguyên một dòng.</p>
+<div class="pp"><div class="w">
+ <div class="fl"><span class="sel">Mọi chi nhánh ▾</span><span class="seg"><span>Lớp thường</span><span>FT</span><span class="on">Cả hai</span></span><span class="sel">Case mở + đóng trong 8 tuần ▾</span><span class="sel">Mọi lớp ▾</span><span class="seg"><span class="on">Lỗi chính + phụ</span><span>Chỉ lỗi chính</span></span><span class="sp"></span><span class="sw on"><i></i>Gộp theo loại lỗi chung</span></div>
+ <div class="scr"><table style="min-width:760px">
+  <colgroup><col style="width:24%"><col style="width:7%"><col style="width:7%"><col style="width:31%"><col style="width:15%"><col style="width:16%"></colgroup>
+  <tr><th>Loại lỗi chung / kỹ năng</th><th class="r" title="Học viên không trùng">Số HV</th><th class="r">Số lớp</th><th>3 lớp nhiều nhất</th><th class="r" title="So với lần Test ngay trước của chính lớp đó">So với lần Test trước</th><th title="Kỹ năng có nhiều HV mắc lỗi này nhất">Kỹ năng nhiều nhất</th></tr>
+  <tr class="A-lon"><td><span class="tw">▾</span>Ngữ pháp <span class="of" style="font-size:10.5px" title="Writing · Speaking · Reading* · Listening* (* mục Từ vựng / ngữ pháp)">ⓘ</span></td><td class="r"><span class="lk">13</span></td><td class="r"><span class="lk">6</span></td><td><span class="cl">MB-FT 101 · <b>5</b></span><span class="cl">MB-FOU 12 · <b>3</b></span><span class="cl">CP-FT 110 · <b>2</b></span></td><td class="r up">↑3</td><td style="font-weight:600;font-size:11.5px">Writing</td></tr>
+  <tr class="A-con"><td>Writing · Ngữ pháp</td><td class="r"><span class="lk">7</span></td><td class="r"><span class="lk">4</span></td><td><span class="cl">MB-FT 101 · <b>3</b></span><span class="cl">MB-FOU 12 · <b>2</b></span><span class="cl">CP-FT 110 · <b>1</b></span></td><td class="r up">↑2</td><td></td></tr>
+  <tr class="A-con"><td>Speaking · Ngữ pháp</td><td class="r"><span class="lk">4</span></td><td class="r"><span class="lk">3</span></td><td><span class="cl">MB-FT 101 · <b>2</b></span><span class="cl">CP-FT 110 · <b>1</b></span><span class="cl">HD-FT 302 · <b>1</b></span></td><td class="r up">↑1</td><td></td></tr>
+  <tr class="A-con"><td title="Mục chung Từ vựng / ngữ pháp">Reading · Từ vựng / ngữ pháp</td><td class="r"><span class="lk">4</span></td><td class="r"><span class="lk">3</span></td><td><span class="cl">MB-FOU 12 · <b>2</b></span><span class="cl">CP-FT 110 · <b>1</b></span><span class="cl">MB-FT 102 · <b>1</b></span></td><td class="r dn">↓1</td><td></td></tr>
+  <tr class="A-con"><td title="Mục chung Từ vựng / ngữ pháp">Listening · Từ vựng / ngữ pháp</td><td class="r"><span class="lk">2</span></td><td class="r"><span class="lk">2</span></td><td><span class="cl">MB-FT 101 · <b>1</b></span><span class="cl">MB-FT 102 · <b>1</b></span></td><td class="r eq">=</td><td></td></tr>
+  <tr class="A-lon dong"><td><span class="tw">▸</span>Từ vựng</td><td class="r"><span class="lk">10</span></td><td class="r"><span class="lk">6</span></td><td><span class="cl">MB-FT 102 · <b>3</b></span><span class="cl">MB-FOU 12 · <b>2</b></span><span class="cl">MB-FT 101 · <b>2</b></span></td><td class="r eq">=</td><td style="font-weight:600;font-size:11.5px">Writing</td></tr>
+  <tr class="A-lon dong"><td><span class="tw">▸</span>Tổ chức ý / mạch lạc</td><td class="r"><span class="lk">11</span></td><td class="r"><span class="lk">4</span></td><td><span class="cl">MB-FT 101 · <b>5</b></span><span class="cl">CP-FT 110 · <b>4</b></span><span class="cl">BC-FT 205 · <b>2</b></span></td><td class="r up">↑3</td><td style="font-weight:600;font-size:11.5px" title="Writing: Tổ chức bài / liên kết ý · Speaking: Trôi chảy / mạch lạc">Writing</td></tr>
+  <tr class="A-lon dong"><td><span class="tw">▸</span>Kỹ năng làm bài</td><td class="r"><span class="lk">4</span></td><td class="r"><span class="lk">2</span></td><td><span class="cl">MB-FT 102 · <b>2</b></span><span class="cl">CP-FT 110 · <b>2</b></span></td><td class="r eq">=</td><td style="font-weight:600;font-size:11.5px" title="Reading: Kỹ năng làm bài · Listening: Tư duy và kỹ năng làm bài">Reading</td></tr>
+  <tr class="more"><td colspan="6">▸ 7 loại lỗi chỉ có ở một kỹ năng — Quản lý thời gian 6 · Phát âm 5 · Đáp ứng yêu cầu đề 5 · Ngôn ngữ (L) 4 · Tư duy logic 2 · Tâm lý và độ tập trung 1 · Khác 1</td></tr>
+  <tr class="chua"><td>Chưa phân loại: <span class="lk" style="color:inherit">5 Case</span></td><td class="r"><span class="lk" style="color:inherit">5</span></td><td class="r"><span class="lk" style="color:inherit">4</span></td><td style="font-weight:400;font-size:11px">Bấm để mở danh sách Case cần GV phân loại →</td><td></td><td></td></tr>
+ </table></div>
+</div></div>
+<div class="kn"><b>Vì sao cột "So với lần Test trước" không ghi "đợt":</b> mỗi lớp có lịch Test riêng; con số so lần Test gần nhất <b>của từng lớp</b> với lần ngay trước <b>của chính lớp đó</b>, rồi cộng lại. Giải thích nằm ở ⓘ trên tiêu đề cột. ↑ đỏ = nhiều em mắc hơn · ↓ xanh = ít hơn · = xám.</div>
+
+<!-- ============================================================ 4. HIỆU QUẢ PA -->
+<h3 style="margin-top:26px">4 · Hiệu quả PA — "Loại PA nào thật sự hiệu quả cho loại vấn đề nào?" (phương án A)</h3>
+<div class="vt"><b class="lbl">VỊ TRÍ</b><span>Tổng quan → tab <b>Phân tích</b> → góc nhìn <b>Hiệu quả PA</b></span><span class="ai">Ai thấy: Quản lý (chi nhánh mình) · Quản trị (mọi chi nhánh)</span><span class="ai">Kết quả tính theo nơi em học lúc làm PA</span></div>
+<p class="subtitle">"Có cải thiện" = Tiến bộ rõ + Tiến bộ một phần, trên PA đã kết thúc có kết quả xác định. Dưới 5 PA: nhãn <b>Ít dữ liệu</b>, không vẽ thanh. <b>Thời gian trung bình</b> = từ ngày bắt đầu đến ngày ghi kết quả, chỉ tính PA có cải thiện, chỉ hiện khi ≥ 5 PA. Vấn đề ghi đúng tên loại lỗi của Case.</p>
+<div class="pp"><div class="w">
+ <div class="gocs"><span>Tổng hợp Test + SOS</span><span>Tổng hợp vấn đề HV</span><span class="on">Hiệu quả PA</span><span>Ý thức &amp; Phối hợp</span><span>…</span></div>
+ <div class="fl"><span class="sel">Mọi chi nhánh ▾</span><span class="seg"><span>Lớp thường</span><span>FT</span><span class="on">Cả hai</span></span><span class="sel">6 tháng ▾</span><span class="sel">Mọi lớp ▾</span></div>
+ <div class="tt"><b>38 PA có kết quả</b><span class="mu">· 24 có cải thiện · 3 vấn đề đủ dữ liệu</span></div>
+ <div class="scr"><table style="min-width:640px">
+  <colgroup><col style="width:36%"><col style="width:9%"><col style="width:27%"><col style="width:14%"><col style="width:14%"></colgroup>
+  <tr><th>Vấn đề / loại PA</th><th class="r" title="PA đã kết thúc có kết quả xác định">Số PA</th><th>Có cải thiện</th><th class="r" title="Từ ngày bắt đầu đến ngày ghi kết quả, PA có cải thiện">Thời gian trung bình</th><th></th></tr>
+  <tr class="A-lon"><td><span class="tw">▾</span>Writing · Tổ chức bài / liên kết ý</td><td class="r"><span class="lk">14</span></td><td><span class="bar"><i style="width:57%"></i></span><span class="lk">8</span><span class="of">/14</span></td><td class="r">4 tuần</td><td></td></tr>
+  <tr class="A-con"><td>Học tutor</td><td class="r"><span class="lk">6</span></td><td><span class="bar"><i style="width:83%"></i></span><span class="lk">5</span><span class="of">/6</span></td><td class="r">3 tuần</td><td><span class="n gg">Nên dùng</span></td></tr>
+  <tr class="A-con"><td>Điều chỉnh cách dạy</td><td class="r"><span class="lk">5</span></td><td><span class="bar w"><i style="width:40%"></i></span><span class="lk">2</span><span class="of">/5</span></td><td class="r">5 tuần</td><td></td></tr>
+  <tr class="A-con"><td>Tăng cường bài tập</td><td class="r"><span class="lk">3</span></td><td class="mu"><span class="lk">1</span>/3</td><td class="r mu">—</td><td><span class="n gy">Ít dữ liệu</span></td></tr>
+  <tr class="A-lon"><td><span class="tw">▾</span><span title="Nhận diện âm, nối âm, trọng âm, tốc độ lời nói">Listening · Ngôn ngữ</span></td><td class="r"><span class="lk">9</span></td><td><span class="bar"><i style="width:67%"></i></span><span class="lk">6</span><span class="of">/9</span></td><td class="r">3 tuần</td><td></td></tr>
+  <tr class="A-con"><td>Xếp tự học</td><td class="r"><span class="lk">5</span></td><td><span class="bar"><i style="width:80%"></i></span><span class="lk">4</span><span class="of">/5</span></td><td class="r">3 tuần</td><td><span class="n gg">Nên dùng</span></td></tr>
+  <tr class="A-con"><td>Học tutor</td><td class="r"><span class="lk">4</span></td><td class="mu"><span class="lk">2</span>/4</td><td class="r mu">—</td><td><span class="n gy">Ít dữ liệu</span></td></tr>
+  <tr class="A-lon"><td><span class="tw">▾</span>Reading · Quản lý thời gian</td><td class="r"><span class="lk">6</span></td><td><span class="bar w"><i style="width:50%"></i></span><span class="lk">3</span><span class="of">/6</span></td><td class="r">4 tuần</td><td></td></tr>
+  <tr class="A-con"><td>Tăng cường bài tập</td><td class="r"><span class="lk">6</span></td><td><span class="bar w"><i style="width:50%"></i></span><span class="lk">3</span><span class="of">/6</span></td><td class="r">4 tuần</td><td></td></tr>
+  <tr class="A-lon dong"><td><span class="tw">▸</span>Speaking · Phát âm</td><td class="r"><span class="lk">3</span></td><td class="mu"><span class="lk">2</span>/3</td><td class="r mu">—</td><td><span class="n gy">Ít dữ liệu</span></td></tr>
+  <tr class="more"><td colspan="5">▸ 6 vấn đề khác, mỗi vấn đề ≤ 2 PA có kết quả</td></tr>
+ </table></div>
+ <div class="strip"><span class="mu">Để số liệu đủ tin:</span>
+  <span class="chip"><b class="lk">7</b> PA đã xong chưa ghi kết quả</span><span class="btn">Nhắc GV</span>
+  <span class="chip"><b class="lk">5</b> Case chưa phân loại lỗi</span></div>
+</div></div>
+
+<!-- ============================================================ 5. Ý THỨC & PHỐI HỢP -->
+<h3 style="margin-top:26px">5 · Ý thức &amp; Phối hợp</h3>
+<div class="vt"><b class="lbl">VỊ TRÍ</b><span>Tổng quan → tab <b>Phân tích</b> → góc nhìn <b>Ý thức &amp; Phối hợp</b></span><span class="ai">Ai thấy: Quản lý (chi nhánh mình) · Quản trị — GV xem trong tab Ý thức &amp; Phối hợp của lớp</span></div>
+<p class="subtitle">Hai danh sách: <b>Học viên cần chú ý</b> (quyết biện pháp nặng hơn) → <b>Lớp nhiều vi phạm</b> (nói chuyện với GVCN). Phối hợp SOS chưa xong đã nằm ở Việc cần làm của GVCN nên không lặp ở đây. Không có hạn nên không dùng ⚠ (G-4).</p>
+<div class="pp"><div class="w">
+ <div class="gocs"><span>Tổng hợp Test + SOS</span><span>Tổng hợp vấn đề HV</span><span>Hiệu quả PA</span><span class="on">Ý thức &amp; Phối hợp</span><span>…</span></div>
+ <div class="fl"><span class="sel">Mọi chi nhánh ▾</span><span class="seg"><span>Lớp thường</span><span>FT</span><span class="on">Cả hai</span></span><span class="sel">30 ngày ▾</span><span class="sel">Mọi lớp ▾</span><span class="sp"></span><span class="sel">⤓ Xuất Excel</span></div>
+
+ <div class="h3">Học viên cần chú ý <span class="mu" title="≥ 3 vi phạm trong 30 ngày, hoặc có vi phạm mới sau Thư cảnh cáo">· vi phạm lặp lại, sắp tới Thư cảnh cáo lần tiếp ⓘ</span></div>
+ <div class="scr"><table>
+  <colgroup><col style="width:22%"><col style="width:12%"><col style="width:9%"><col style="width:10%"><col style="width:19%"><col style="width:9%"><col style="width:19%"></colgroup>
+  <tr><th>Học viên</th><th>Lớp</th><th class="r" title="Trong khoảng đang lọc">Vi phạm</th><th class="r">Chưa xử lý</th><th>Biện pháp gần nhất</th><th class="r">Ngày</th><th>Bước tiếp theo</th></tr>
+  <tr class="fl1"><td class="nm">Dương Minh Quân</td><td style="font-weight:400">MB-FT 101</td><td class="r"><span class="lk">5</span></td><td class="r"><span class="lk">2</span></td><td style="font-weight:400"><span class="n gy" title="Thư cảnh cáo lần 2">Thư CC lần 2</span></td><td class="r" style="font-weight:400">12/09</td><td><span class="n rr" title="Đã có Thư cảnh cáo lần 2, lại có vi phạm mới">Sắp Thư CC lần 3</span></td></tr>
+  <tr class="fl1"><td class="nm">Lê Thu Thảo</td><td style="font-weight:400">BC-FT 205</td><td class="r"><span class="lk">4</span></td><td class="r"><span class="lk">3</span></td><td style="font-weight:400"><span class="n gy">Report gia đình</span></td><td class="r" style="font-weight:400">05/09</td><td><span class="n y" title="Lặp lại sau Report gia đình">Sắp Thư CC lần 1</span></td></tr>
+  <tr class="fl1"><td class="nm">Cao Minh Tuấn</td><td style="font-weight:400">CP-FT 110</td><td class="r"><span class="lk">3</span></td><td class="r">0</td><td style="font-weight:400"><span class="n gy">Thư CC lần 1</span></td><td class="r" style="font-weight:400">18/09</td><td class="mu" style="font-weight:400">Theo dõi</td></tr>
+ </table></div>
+
+ <div class="h3">Lớp nhiều vi phạm <span class="mu">· xếp theo vi phạm chưa xử lý</span></div>
+ <div class="scr"><table>
+  <colgroup><col style="width:27%"><col style="width:11%"><col style="width:12%"><col style="width:13%"><col style="width:14%"><col style="width:23%"></colgroup>
+  <tr><th>Lớp / nhóm vi phạm</th><th class="r">Vi phạm</th><th class="r">Chưa xử lý</th><th class="r">HV có VP</th><th class="r" title="So với 30 ngày trước đó">± kỳ trước</th><th>GVCN</th></tr>
+  <tr class="A-lon"><td><span class="tw">▾</span>MB-FT 101</td><td class="r"><span class="lk">11</span></td><td class="r"><span class="lk">4</span></td><td class="r"><span class="lk">5</span><span class="of">/8</span></td><td class="r up">↑4</td><td style="font-weight:400">Phạm Thu Trang</td></tr>
+  <tr class="A-con"><td>BTVN</td><td class="r"><span class="lk">6</span></td><td class="r"><span class="lk">3</span></td><td class="r"><span class="lk">4</span></td><td class="r up">↑3</td><td></td></tr>
+  <tr class="A-con"><td>Chuyên cần</td><td class="r"><span class="lk">3</span></td><td class="r"><span class="lk">1</span></td><td class="r"><span class="lk">2</span></td><td class="r up">↑1</td><td></td></tr>
+  <tr class="A-con"><td>Thái độ / hành vi</td><td class="r"><span class="lk">2</span></td><td class="r">0</td><td class="r"><span class="lk">1</span></td><td class="r eq">=</td><td></td></tr>
+  <tr class="A-lon dong"><td><span class="tw">▸</span>BC-FT 205</td><td class="r"><span class="lk">7</span></td><td class="r"><span class="lk">3</span></td><td class="r"><span class="lk">3</span><span class="of">/10</span></td><td class="r eq">=</td><td style="font-weight:400">Vũ Gia Hân</td></tr>
+  <tr class="A-lon dong"><td><span class="tw">▸</span>CP-FT 110</td><td class="r"><span class="lk">4</span></td><td class="r">0</td><td class="r"><span class="lk">2</span><span class="of">/12</span></td><td class="r dn">↓3</td><td style="font-weight:400">Ngô Bảo Nam</td></tr>
+  <tr class="more"><td colspan="6">▸ 10 lớp khác · ≤ 2 vi phạm, đã xử lý hết</td></tr>
+ </table></div>
+ <div class="mu" style="margin-top:6px">Bấm tên HV → hồ sơ HV, tab Ý thức &amp; Phối hợp (nơi thêm biện pháp). Bấm tên lớp → hồ sơ lớp. Bảng 9 loại biện pháp cũ → trong ⤓ Xuất Excel.</div>
+</div></div>
+
+<!-- ============================================================ GHI CHÚ KỸ THUẬT -->
+<div class="dev">
+ <b>Ghi chú kỹ thuật — dành cho người lập trình</b> (chủ sản phẩm không cần đọc; thay mục "6 · Số liệu máy chủ" của v1)
+ <ul>
+  <li><b>Tổng hợp vấn đề HV:</b> dùng lại <code>server/src/phanTich/vanDe.ts</code> (đã đọc <code>case_issues</code> role <code>primary</code>/<code>secondary</code>). Nhóm theo <code>issueBranchOf(code)</code> → kỹ năng, theo lớp đang học. Mỗi số = độ dài một tập ID HV (cách của <code>tongHop.ts</code>) để giữ G-10. Thiếu: (1) "so với lần Test trước" — cần gắn Case với lần Test sinh ra nó (nguồn SOS) rồi so theo lịch Test của từng lớp; Case không từ Test thì không vào cột này; (2) bảng ánh xạ "loại lỗi chung" cố định trong <code>shared/domain/cases.ts</code> cạnh <code>ISSUE_TAXONOMY</code> (Ngữ pháp = writing.grammar, speaking.grammar, reading.language, listening.language; Từ vựng = writing.lexical, speaking.lexical, reading.language, listening.language; Tổ chức ý / mạch lạc = writing.organisation, speaking.fluency; Kỹ năng làm bài = reading.technique, listening.technique); mã cũ đi qua <code>LEGACY_ISSUE_CODE_MAP</code>; (3) bộ lọc "Chỉ lỗi chính"; (4) tập Case chưa phân loại (đã có trong chỉ số, chuyển về đây).</li>
+  <li><b>Hiệu quả PA:</b> kết quả theo loại lỗi × loại PA từ <code>planOutcomes</code> + <code>case_issues</code> (lỗi chính của Case); "Thời gian trung bình" = trung bình (ngày ghi kết quả − ngày bắt đầu) của PA có cải thiện, làm tròn tuần, ẩn khi &lt; 5 PA. Bỏ tính cột "Không cải thiện".</li>
+  <li><b>Ý thức &amp; Phối hợp:</b> <code>yThuc/thongKe.ts</code> đã có số vi phạm / chưa xử lý; thiếu "biện pháp cao nhất đã làm → bước tiếp theo" theo thang biện pháp và gom theo lớp + so kỳ trước. Bỏ truy vấn phối hợp theo GVCN.</li>
+  <li><b>Hàng góc nhìn:</b> mặc định <code>?goc=test-sos</code>; bỏ đường "chưa ai nhận" (chuyển hướng về Tổng hợp vấn đề HV). Hàng lớn / hàng con dùng component chung của mockup 17 (a3).</li>
+ </ul>
+</div>
