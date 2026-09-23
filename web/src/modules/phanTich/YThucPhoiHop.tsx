@@ -6,8 +6,7 @@ import { Card, Empty, ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
-import { SoLieuO } from '../../ui/SoLieuO.tsx';
-import { DINH_TRAI, MAU_SO_VOI_TRUOC, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
+import { DINH_TRAI, MAU_SO_VOI_TRUOC, SoO as SoLieuO, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
 import {
   BUOC_TIEP_LABEL, KHOANG_LABEL, MEASURE_KINDS, MEASURE_KIND_LABEL, duongHoSoHocVien, nhanSoVoiTruoc, ngay,
   type DongHvCanChuY, type DongLopViPham, type YThucPhanTichKetQua,
@@ -45,7 +44,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
     const hv: (string | number)[][] = [
       [`Học viên cần chú ý · ${moTa}`], [],
       ['Học viên', 'Lớp', 'Vi phạm', 'Chưa xử lý', 'PA xử lý gần nhất', 'Ngày', 'Bước tiếp theo'],
-      ...data.hvCanChuY.map((x) => [x.ten, x.lop ?? '', x.viPham, x.chuaXuLy, x.bienPhapGanNhat ?? '', x.ngay ? ngay(x.ngay) : '', BUOC_TIEP_LABEL[x.buocTiep]]),
+      ...data.hvCanChuY.map((x) => [x.ten, x.lop ?? '', x.viPham, x.chuaXuLy, x.bienPhapGanNhat ?? '', x.ngay ? ngay(x.ngay, demoDate) : '', BUOC_TIEP_LABEL[x.buocTiep]]),
     ];
     const dongLop = (x: DongLopViPham, thut: boolean): (string | number)[] => [
       `${thut ? '  ' : ''}${x.nhan}`, x.viPham, x.chuaXuLy, x.hvCoViPham, x.siSo ?? '', nhanSoVoiTruoc(x.soVoiTruoc).chu, x.gvcn ?? '',
@@ -80,7 +79,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
         <SoLieuO giaTri={x.hvCoViPham} nguon={nguon(x.khoa, 'hv-co-vi-pham')} tieuDe={`${x.nhan} · học viên có vi phạm`} />
         {!con && x.siSo !== null && <span className="font-normal text-slate-400">/{x.siSo}</span>}
       </td>
-      <td className="text-right">{soVoi(x)}</td>
+      <td className="pr-5 text-right">{soVoi(x)}</td>
       <td className="truncate text-xs font-normal text-slate-300">{x.gvcn ?? ''}</td>
     </>
   );
@@ -113,7 +112,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
                   ? <abbr title={x.bienPhapGanNhat} className="text-slate-200 no-underline">{tenNgan(x.bienPhapGanNhat)}</abbr>
                   : <span className="text-faint">—</span>}
               </td>
-              <td className="td text-right tabular-nums text-slate-300">{x.ngay ? ngay(x.ngay) : ''}</td>
+              <td className="td text-right tabular-nums text-slate-300">{x.ngay ? ngay(x.ngay, demoDate) : ''}</td>
               <td className="td">
                 {x.buocTiep === 'theo-doi' ? <span className="text-slate-400">{BUOC_TIEP_LABEL[x.buocTiep]}</span>
                   : <Nhan tone="soon" title={x.buocTiep === 'da-thu-3' ? 'Đã đủ ba Thư cảnh cáo, lại có vi phạm mới' : 'Đã có Thư cảnh cáo hoặc vi phạm lặp lại, còn vi phạm chưa xử lý'}>{BUOC_TIEP_LABEL[x.buocTiep]}</Nhan>}
@@ -157,7 +156,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
                         <tr>
                           <Th className="sticky-col">Lớp / nhóm vi phạm</Th><Th align="right">Vi phạm</Th><Th align="right">Chưa xử lý</Th>
                           <Th align="right" hint="Học viên có vi phạm / sĩ số lớp">HV có VP</Th>
-                          <Th align="right" hint="So với khoảng cùng độ dài liền trước">± kỳ trước</Th><Th>GVCN</Th>
+                          <Th align="right" className="pr-5" hint="So với khoảng cùng độ dài liền trước">± kỳ trước</Th><Th>GVCN</Th>
                         </tr>
                       </thead>
                       <tbody>

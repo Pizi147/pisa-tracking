@@ -36,10 +36,10 @@ const marks = (n: number) => Array.from({ length: n }, () => '?').join(',');
 const cat = (s: string, max = 60) => (s.length > max ? `${s.slice(0, max - 1)}…` : s);
 
 export function boQuen(p: Principal, branchId: number | null, today: string): Record<LoaiBoQuen, DongBoQuen[]> {
-  return nho(`bo-quen:${p.userId}:${branchId}:${today}`, () => tinh(p, branchId));
+  return nho(`bo-quen:${p.userId}:${branchId}:${today}`, () => tinh(p, branchId, today));
 }
 
-function tinh(p: Principal, branchId: number | null): Record<LoaiBoQuen, DongBoQuen[]> {
+function tinh(p: Principal, branchId: number | null, today: string): Record<LoaiBoQuen, DongBoQuen[]> {
   const ketQua: Record<LoaiBoQuen, DongBoQuen[]> = { 'can-ho-tro-2-lan': [], 'bo-qua-van-can-ho-tro': [] };
   const hvIds = studentsInScope(p, branchId);
   if (!hvIds.length) return ketQua;
@@ -136,16 +136,16 @@ function tinh(p: Principal, branchId: number | null): Record<LoaiBoQuen, DongBoQ
 
   for (const [sid, x] of [...dong1].sort((a, b) => a[0] - b[0])) {
     const dongTu = x.lopThuong ? 'chưa đạt' : 'dưới kỳ vọng';
-    const phanCase = x.daDong ? `Case đóng ${ngay(x.daDong)}` : 'chưa có Case';
+    const phanCase = x.daDong ? `Case đóng ${ngay(x.daDong, today)}` : 'chưa có Case';
     ketQua['can-ho-tro-2-lan'].push({
       studentId: sid, ten: ten.get(sid)?.ten ?? `#${sid}`, lop: ten.get(sid)?.lop ?? null, kyNang: nhan(x.ho),
-      chiTiet: cat(`${dongChu(x.cu)}, ${dongChu(x.moi)} ${dongTu} · ${phanCase}`), tu: tuanLich(x.moi.period_start),
+      chiTiet: cat(`${dongChu(x.cu)}, ${dongChu(x.moi)} ${dongTu} · ${phanCase}`), tu: tuanLich(x.moi.period_start, today),
     });
   }
   for (const [sid, x] of [...dong2].sort((a, b) => a[0] - b[0])) {
     ketQua['bo-qua-van-can-ho-tro'].push({
       studentId: sid, ten: ten.get(sid)?.ten ?? `#${sid}`, lop: ten.get(sid)?.lop ?? null, kyNang: nhan(x.ho),
-      chiTiet: cat(`Bỏ qua ${x.ngayBoQua ? ngay(x.ngayBoQua) : '—'} · ${dongChu(x.sau)} vẫn chưa đạt`), tu: tuanLich(x.sau.period_start),
+      chiTiet: cat(`Bỏ qua ${x.ngayBoQua ? ngay(x.ngayBoQua, today) : '—'} · ${dongChu(x.sau)} vẫn chưa đạt`), tu: tuanLich(x.sau.period_start, today),
     });
   }
   return ketQua;

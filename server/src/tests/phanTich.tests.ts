@@ -926,14 +926,14 @@ export async function runPhanTichTests(t: YThucTestKit) {
       b.ft(x, 4, 1, 3.0); b.ft(x, 5, 2, 3.0);
       const r = hangCua('can-ho-tro-2-lan', x);
       assert(!!r, 'em có hai lượt Writing dưới kỳ vọng, chưa Case → phải có');
-      eq([r.kyNang, r.chiTiet, r.tu], ['W', 'MT4, MT5 dưới kỳ vọng · chưa có Case', d.tuanLich(b.tuan(2))], 'dòng chi tiết');
+      eq([r.kyNang, r.chiTiet, r.tu], ['W', 'MT4, MT5 dưới kỳ vọng · chưa có Case', d.tuanLich(b.tuan(2), TODAY)], 'dòng chi tiết');
       assert(r.chiTiet.length <= 60 && typeof r.lop === 'string', 'chiTiet ≤ 60 ký tự, có lớp');
       const caId = b.kit.ca(x, 'writing2', [], { status: 'open' });
       assert(!hangCua('can-ho-tro-2-lan', x), 'Case mở writing2 (cùng họ Writing với W1/W2) → mất');
       conn.prepare(`UPDATE sos_cases SET status = 'done', closed_at = ? WHERE id = ?`).run(cong(TODAY, -3), caId);
       const lai = hangCua('can-ho-tro-2-lan', x);
       assert(!!lai, 'Case đã đóng thì không chặn → có lại');
-      assert(lai.chiTiet.includes(`Case đóng ${d.ngay(cong(TODAY, -3))}`), `chiTiet phải nói Case đóng: ${lai.chiTiet}`);
+      assert(lai.chiTiet.includes(`Case đóng ${d.ngay(cong(TODAY, -3), TODAY)}`), `chiTiet phải nói Case đóng: ${lai.chiTiet}`);
       assert(!hangCua('bo-qua-van-can-ho-tro', x), 'FT không có bước Bỏ qua → không vào dòng 2');
     } finally { b.don(); }
   });
@@ -966,7 +966,7 @@ export async function runPhanTichTests(t: YThucTestKit) {
       const r1 = hangCua('can-ho-tro-2-lan', z), r2 = hangCua('bo-qua-van-can-ho-tro', z);
       assert(!!r1 && !!r2, 'z có ở cả hai dòng');
       eq(r1.chiTiet, 'Giữa khoá, Cuối khoá chưa đạt · chưa có Case', 'lớp thường nói "chưa đạt"');
-      eq(r2.chiTiet, `Bỏ qua ${d.ngay(cong(TODAY, -10))} · Cuối khoá vẫn chưa đạt`, 'chi tiết dòng 2');
+      eq(r2.chiTiet, `Bỏ qua ${d.ngay(cong(TODAY, -10), TODAY)} · Cuối khoá vẫn chưa đạt`, 'chi tiết dòng 2');
       eq(r2.kyNang, 'W', 'kỹ năng');
       assert(!hangCua('bo-qua-van-can-ho-tro', y), 'lượt sau đạt → không');
       assert(!hangCua('bo-qua-van-can-ho-tro', w) && !hangCua('can-ho-tro-2-lan', w), 'Case mở cùng họ → không cả hai');
@@ -1020,6 +1020,87 @@ export async function runPhanTichTests(t: YThucTestKit) {
       assert(n2 <= n1 + 2, `số câu SQL tăng theo số HV: ${n1} → ${n2}`);
       assert(n2 <= 16, `quá nhiều câu SQL: ${n2} (tối đa 16)`);
     } finally { b.don(); }
+  });
+
+  // ================================================================== Bổ sung phép kiểm PR-UX4 (rà nhanh sau khi web xong)
+
+  console.log('\nPR-UX4 · Bổ sung');
+
+  check('UX4 · Vấn đề HV: gop — nhóm "chỉ một kỹ năng" đứng cuối, mọi "Khác" gộp một dòng, mã chỉ ở một kỹ năng có dòng riêng', () => {
+    const kit = baiTapUx4();
+    try {
+      const truoc = vanDeHvSvc.vanDeHv(P.admin, FV({ gop: true }));
+      const a = kit.hv(CID_FT, 'gm1'), b = kit.hv(CID_FT, 'gm2');
+      kit.ca(a, 'speaking', [[ISS.sPron, 'primary']]);
+      kit.ca(b, 'writing2', [[ISS.wOther, 'primary']]);
+      kit.ca(b, 'speaking', [['student.speaking.other', 'secondary']]);
+      const sau = vanDeHvSvc.vanDeHv(P.admin, FV({ gop: true }));
+      const gom = sau.hang[sau.hang.length - 1];
+      eq(gom.khoa, 'gom:mot', 'nhóm "chỉ một kỹ năng" đứng cuối');
+      eq(gom.loai, 'gom', 'loại gom');
+      assert(/loại lỗi chỉ có ở một kỹ năng$/.test(gom.nhan), `nhãn nhóm: ${gom.nhan}`);
+      const con = (kq: any, k: string) => timHang(kq, k);
+      eq(con(sau, `gom:mot|${ISS.sPron}`).nhan, 'Speaking · Phát âm', 'mã chỉ ở Speaking có dòng riêng kèm tên kỹ năng');
+      eq((con(sau, 'gom:mot|khac')?.soHv ?? 0) - (con(truoc, 'gom:mot|khac')?.soHv ?? 0), 1, 'mọi "Khác" gộp MỘT dòng — em b có hai "Khác" (W, S) chỉ đếm 1');
+      eq(con(sau, 'gom:mot|khac').nhan, 'Khác', 'nhãn dòng Khác');
+      assert(sau.hang.every((h: any) => h.khoa.startsWith('chung:') || h.khoa === 'gom:mot'), 'không còn hàng kỹ năng');
+      assert(soHvCua(sau, `gom:mot|${ISS.sPron}`) - soHvCua(truoc, `gom:mot|${ISS.sPron}`) === 1, 'Phát âm +1');
+    } finally { kit.don(); }
+  });
+
+  check('UX4 · Vấn đề HV: top3 xếp số HV giảm rồi mã lớp, tối đa 3, mỗi chip > 0 và ≤ soHv; soLop = số lớp có HV', () => {
+    const kit = baiTapUx4();
+    try {
+      kit.ca(kit.hv(CID_FT, 't1'), 'writing2', [[ISS.wGram, 'primary']]);
+      kit.ca(kit.hv(CID_FT, 't2'), 'writing2', [[ISS.wGram, 'primary']]);
+      kit.ca(kit.hv(CID_THUONG, 't3'), 'writing', [[ISS.wGram, 'primary']]);
+      const kq = vanDeHvSvc.vanDeHv(P.admin, FV());
+      let dem = 0;
+      for (const h of moiHang(kq)) {
+        assert(h.top3.length <= 3 && h.top3.length <= h.soLop, `"${h.khoa}": top3 dài ${h.top3.length}, soLop ${h.soLop}`);
+        for (let i = 0; i < h.top3.length; i++) {
+          assert(h.top3[i].n > 0 && h.top3[i].n <= h.soHv, `"${h.khoa}": chip ${h.top3[i].ma} = ${h.top3[i].n} ngoài (0, ${h.soHv}]`);
+          if (i > 0) {
+            const t = h.top3[i - 1], s = h.top3[i];
+            assert(t.n > s.n || (t.n === s.n && t.ma.localeCompare(s.ma) <= 0), `"${h.khoa}": chip không xếp giảm (${t.ma} ${t.n}, ${s.ma} ${s.n})`);
+          }
+        }
+        dem += 1;
+      }
+      assert(dem >= 2, 'có hàng để kiểm');
+      const w = timHang(kq, `kn:writing|${ISS.wGram}`);
+      assert(w.soLop >= 2, 'Ngữ pháp Writing có ở ít nhất hai lớp (FT và lớp thường)');
+    } finally { kit.don(); }
+  });
+
+  check('UX4 · Hiệu quả PA: vấn đề ≤ 2 PA có kết quả vào gom, không lặp ở hàng chính; soVanDe = số hàng gom', () => {
+    const kit = baiTapUx4(); const bo = { pa: [] as number[], fu: [] as number[] };
+    try {
+      const { kind, ma } = chonO(0);
+      for (let i = 0; i < 2; i++) {
+        const c = kit.ca(kit.hv(CID_FT, `gomPa${i}`), 'speaking', [[ma, 'primary']], { status: 'done', closedAt: TODAY });
+        dungPa(bo, c, kind, 'improved', NGAY_BD, cong(TODAY, -2));
+      }
+      const kq = hieuQuaSvc.hieuQuaPa(P.admin, FQ());
+      assert(!!kq.gom && kq.gom.hang.some((h: any) => h.khoa === `vd:${ma}`), 'vấn đề 2 PA phải nằm trong gom');
+      assert(!kq.hang.some((h: any) => h.khoa === `vd:${ma}`), 'không lặp ở hàng chính');
+      eq(kq.gom.soVanDe, kq.gom.hang.length, 'soVanDe = số hàng gom');
+      assert(kq.gom.hang.every((h: any) => h.soPa <= 2 && h.itDuLieu), 'gom chỉ có vấn đề ≤ 2 PA, đều Ít dữ liệu');
+      const h = kq.gom.hang.find((x: any) => x.khoa === `vd:${ma}`);
+      eq([h.soPa, h.caiThien, h.tbTuan, h.nenDung], [2, 2, null, false], 'chỉ số hàng gom');
+      const o = hieuQuaSvc.oHieuQuaPa(P.admin, { ...FQ(), dong: `vd:${ma}`, cot: 'pa' });
+      eq([o.n, o.rows.length], [2, 2], 'ngăn danh sách của hàng gom mở đúng 2 PA');
+    } finally { donPa(bo); kit.don(); }
+  });
+
+  check("UX4 · Ý thức: bienPhapTheoLoai (cho Excel) = byKind của 'bien-phap-theo-loai' cùng kỳ (cùng bộ lọc với 'bien-phap-da-thuc-hien')", () => {
+    const kq = yThucSvc.yThucPhanTich(P.admin, FY());
+    const f = FY();
+    const so = metricsUx4.metricSet(P.admin, 'bien-phap-theo-loai', { from: f.from, to: f.to });
+    for (const k of d.MEASURE_KINDS) {
+      eq(kq.bienPhapTheoLoai[k] ?? 0, so.byKind?.[k]?.length ?? 0, `loại ${k}`);
+    }
+    eq(Object.values(kq.bienPhapTheoLoai).reduce((s: number, x: any) => s + x, 0), so.n, 'tổng các loại = tổng chỉ số');
   });
 
   // ================================================================== Task 4 — P15: Phối hợp SOS chia SOS 1/2/3, bỏ N+1

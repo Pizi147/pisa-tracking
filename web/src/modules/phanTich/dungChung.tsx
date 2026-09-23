@@ -1,9 +1,18 @@
 import { useState, type ReactNode } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { Drawer } from '../../ui/Drawer.tsx';
+import { SoLieuO } from '../../ui/SoLieuO.tsx';
 import { DongDanhSach, type DongSoLieu } from '../../ui/SoLieu.tsx';
 import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { KHOANG_MAC_DINH, type ChuongTrinh, type Khoang } from '@shared/domain/index.ts';
+
+/**
+ * `SoLieuO` trong ô bảng căn phải: ngăn danh sách (Drawer) nằm ngay dưới ô nên thừa hưởng `text-align: right` — bọc `text-left` để chữ trong
+ * ngăn căn trái như mọi ngăn khác.
+ */
+export function SoO(props: Parameters<typeof SoLieuO>[0]) {
+  return <span className="inline-block text-left"><SoLieuO {...props} /></span>;
+}
 
 /** Props chung của các góc nhìn của Phân tích — cùng bộ lọc chi nhánh · chương trình · khoảng · lớp (PhanTich.tsx). */
 export type PhamViPhanTich = { branchId: number | null; ct: ChuongTrinh; tg: Khoang; classId: number | null };

@@ -4,8 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { Card, Empty, ErrorState, SCORE_CHIP, Skeleton, Th } from '../../ui/ui.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
-import { SoLieuO } from '../../ui/SoLieuO.tsx';
-import { DINH_TRAI } from './dungChung.tsx';
+import { DINH_TRAI, SoO as SoLieuO } from './dungChung.tsx';
 import {
   CHUONG_TRINH_LABEL, KHOANG_LABEL, KHOANG_MAC_DINH, THEO_DONG, THEO_DONG_COT_DAU, THEO_DONG_DANH_TU, THEO_DONG_LABEL,
   bangXuatTongHop, cotTongHopFor, mauOKetQua, ngay, nhomCotNhanNgan,

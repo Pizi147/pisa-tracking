@@ -4,8 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { Card, Empty, ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
-import { SoLieuO } from '../../ui/SoLieuO.tsx';
-import { DINH_TRAI, DongTomTat, MAU_SO_VOI_TRUOC, NutMoDanhSach, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
+import { DINH_TRAI, DongTomTat, MAU_SO_VOI_TRUOC, NutMoDanhSach, SoO as SoLieuO, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
 import { KHOANG_LABEL, nhanSoVoiTruoc, type DongVanDeHv, type VanDeHvKetQua } from '@shared/domain/index.ts';
 
 /**
@@ -60,7 +59,7 @@ export function TongHopVanDeHv(props: PhamViPhanTich) {
       <td className="text-right tabular-nums"><SoLieuO giaTri={d.soHv} nguon={nguon(d.khoa, 'hv')} tieuDe={`${d.nhan} · học viên`} /></td>
       <td className="text-right tabular-nums"><SoLieuO giaTri={d.soLop} nguon={nguon(d.khoa, 'lop')} tieuDe={`${d.nhan} · lớp`} /></td>
       <td>{chipLop(d)}</td>
-      <td className="text-right">{soVoiTruoc(d)}</td>
+      <td className="pr-5 text-right">{soVoiTruoc(d)}</td>
       <td className="text-xs font-semibold text-slate-200">
         {d.phu ?? ''}
         {d.goiY && <span className="ml-1 cursor-help text-slate-500" title={d.goiY}>ⓘ</span>}
@@ -128,7 +127,7 @@ export function TongHopVanDeHv(props: PhamViPhanTich) {
                     <Th align="right" hint="Học viên không trùng">Số HV</Th>
                     <Th align="right">Số lớp</Th>
                     <Th hint="Ba lớp có nhiều HV mắc lỗi này nhất">3 lớp nhiều nhất</Th>
-                    <Th align="right" hint="Số HV có lỗi này trong Case từ lần Test gần nhất của mỗi lớp, so với lần Test ngay trước của chính lớp đó, rồi cộng lại. ↑ = nhiều em hơn">
+                    <Th align="right" className="pr-5" hint="Số HV có lỗi này trong Case từ lần Test gần nhất của mỗi lớp, so với lần Test ngay trước của chính lớp đó, rồi cộng lại. ↑ = nhiều em hơn">
                       So với lần Test trước ⓘ
                     </Th>
                     <Th hint={gop ? 'Kỹ năng có nhiều HV mắc lỗi này nhất' : 'Loại lỗi nhiều HV nhất trong kỹ năng'}>{cotCuoi}</Th>

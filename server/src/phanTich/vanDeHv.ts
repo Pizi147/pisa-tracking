@@ -351,7 +351,7 @@ export function oVanDeHv(p: Principal, f: FilterVanDeHv & { dong: string; cot: s
       const rows = rowsFor('case', ids).map((row) => {
         const c = r.cases.get(row.id)!;
         const lop = [...(r.lopCuaHv.get(c.studentId) ?? [])].map((k) => r.maLop.get(k)).filter(Boolean).sort()[0] ?? '—';
-        const sub = [lop, catNgan(c), c.owner ?? 'chưa có người phụ trách', c.openedAt ? `mở ${ngay(c.openedAt)}` : null].filter(Boolean).join(' · ');
+        const sub = [lop, catNgan(c), c.owner ?? 'chưa có người phụ trách', c.openedAt ? `mở ${ngay(c.openedAt, demoToday())}` : null].filter(Boolean).join(' · ');
         return { ...row, title: row.sub.split(' · ')[0] || row.title, sub: catMotDong(sub) };
       });
       return { n: ids.length, tieuDe: `Chưa phân loại · ${ids.length} Case`, rows };

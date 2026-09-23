@@ -4,8 +4,7 @@ import { Card, Empty, ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
-import { SoLieuO } from '../../ui/SoLieuO.tsx';
-import { DINH_TRAI, DongTomTat, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
+import { DINH_TRAI, DongTomTat, SoO as SoLieuO, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
 import { KHOANG_LABEL, NGUONG_IT_DU_LIEU, type DongHieuQuaPa, type HieuQuaPaKetQua } from '@shared/domain/index.ts';
 
 /**
@@ -31,7 +30,7 @@ export function HieuQuaPa(props: PhamViPhanTich) {
     return (
       <>
         <td className="text-right tabular-nums"><SoLieuO giaTri={d.soPa} nguon={nguon(d.khoa, 'pa')} tieuDe={`${d.nhan} · PA có kết quả`} /></td>
-        <td>
+        <td className="pl-5">
           <span className="inline-flex items-center gap-2 tabular-nums">
             {!d.itDuLieu && (
               <span className="inline-block h-1.5 w-[60px] overflow-hidden rounded-full align-middle" style={{ background: 'rgb(var(--muted-bg-rgb))' }}
@@ -42,7 +41,7 @@ export function HieuQuaPa(props: PhamViPhanTich) {
             <span><SoLieuO giaTri={d.caiThien} nguon={nguon(d.khoa, 'cai-thien')} tieuDe={`${d.nhan} · có cải thiện`} /><span className="text-slate-400">/{d.soPa}</span></span>
           </span>
         </td>
-        <td className="text-right tabular-nums">{d.tbTuan !== null ? `${d.tbTuan} tuần` : <span className="text-faint">—</span>}</td>
+        <td className="pr-4 text-right tabular-nums">{d.tbTuan !== null ? `${d.tbTuan} tuần` : <span className="text-faint">—</span>}</td>
         <td>
           {d.nenDung ? <Nhan tone="ok" title="Cải thiện từ 70%, đủ mẫu và cao nhất trong vấn đề này">Nên dùng</Nhan>
             : d.itDuLieu ? <Nhan tone="muted" title={`Dưới ${NGUONG_IT_DU_LIEU} PA có kết quả — chưa đủ để so sánh`}>Ít dữ liệu</Nhan> : null}
@@ -87,8 +86,8 @@ export function HieuQuaPa(props: PhamViPhanTich) {
                   <tr>
                     <Th className="sticky-col">Vấn đề / loại PA</Th>
                     <Th align="right" hint="PA đã kết thúc có kết quả xác định">Số PA</Th>
-                    <Th>Có cải thiện</Th>
-                    <Th align="right" hint="Từ ngày bắt đầu đến ngày ghi kết quả, chỉ tính PA có cải thiện">Thời gian trung bình</Th>
+                    <Th className="pl-5">Có cải thiện</Th>
+                    <Th align="right" className="pr-4" hint="Từ ngày bắt đầu đến ngày ghi kết quả, chỉ tính PA có cải thiện">Thời gian trung bình</Th>
                     <Th>{' '}</Th>
                   </tr>
                 </thead>
