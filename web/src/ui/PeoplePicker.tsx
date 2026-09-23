@@ -144,7 +144,11 @@ export function FollowerPicker({ value, onChange, autoNames = [], disabled }: {
 
 type NguoiKetQua = { id: number; name: string; role: string | null; branches: string[]; cungLop: boolean; monDay: string[] };
 
-function useNguoiSearch(term: string, nhom: 'giao_vien' | 'nhan_vien', studentId: number | null | undefined, active: boolean) {
+function useNguoiSearch(
+  term: string, nhom: 'giao_vien' | 'nhan_vien', studentId: number | null | undefined, active: boolean,
+  /** PR-Ra Q2: chỉ người trong phạm vi người xem (chi nhánh mình quản) — mặc định false (giữ hành vi cũ). */
+  trongPhamVi = false,
+) {
   const [rows, setRows] = useState<NguoiKetQua[]>([]);
   const [loading, setLoading] = useState(false);
   const seq = useRef(0);
@@ -156,12 +160,13 @@ function useNguoiSearch(term: string, nhom: 'giao_vien' | 'nhan_vien', studentId
       try {
         const qs = new URLSearchParams({ q: term.trim(), nhom });
         if (studentId) qs.set('studentId', String(studentId));
+        if (trongPhamVi) qs.set('trongPhamVi', '1');
         const r = await api.get<NguoiKetQua[]>(`/ref/nguoi?${qs.toString()}`);
         if (my === seq.current) setRows(r);          // bỏ qua kết quả của lượt gõ cũ
       } catch { if (my === seq.current) setRows([]); } finally { if (my === seq.current) setLoading(false); }
     }, 250);
     return () => clearTimeout(t);
-  }, [term, nhom, studentId, active]);
+  }, [term, nhom, studentId, active, trongPhamVi]);
   return { rows, loading };
 }
 
@@ -183,13 +188,16 @@ type ChonNguoiOption =
  * ngưỡng gõ ≥ 3 ký tự, tìm không dấu, và gợi ý sẵn giáo viên đang dạy lớp của em khi biết `studentId` (Q6).
  */
 export function ChonNguoi({
-  value, onChange, nhom, studentId, choToi = true, choNgoai = true, khongDoi, macDinhTrong, ariaLabel, disabled,
+  value, onChange, nhom, studentId, choToi = true, choNgoai = true, trongPhamVi = false,
+  khongDoi, macDinhTrong, ariaLabel, disabled,
 }: {
   value: NguoiChon | null;
   onChange: (v: NguoiChon | null) => void;
   nhom: 'giao_vien' | 'nhan_vien';
   studentId?: number | null;
   choToi?: boolean; choNgoai?: boolean;
+  /** PR-Ra Q2: chỉ người trong phạm vi người xem — dùng cho "Chọn giáo viên…" của Quản lý. */
+  trongPhamVi?: boolean;
   /** Ô Điều chỉnh: khi `value = null` hiện "Không đổi · hiện: {khongDoi}". */
   khongDoi?: string;
   /** Ô Phụ trách: khi `value = null` hiện nguyên câu này (ví dụ "Mặc định: GVCN của lớp"). */
@@ -205,7 +213,7 @@ export function ChonNguoi({
   const box = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const uid = useId();
-  const { rows, loading } = useNguoiSearch(term, nhom, studentId, editing);
+  const { rows, loading } = useNguoiSearch(term, nhom, studentId, editing, trongPhamVi);
 
   useEffect(() => {
     if (!editing) return;

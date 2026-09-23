@@ -52,6 +52,13 @@ export const DUONG_DO: MucDo[] = [
 
   // ---------------------------------------------------------------- Tổng quan · Giáo viên
   { trang: 'Tổng quan GV', vai: ['GVCN', 'GVBM', 'GVCN_THUONG'], url: '/my-work' },
+  /* PR-Ra: trang "Công việc" — Hỗ trợ học viên dùng lại `/my-work`, nay có thêm `nguoi`. */
+  { trang: 'Công việc', vai: ['QL', 'QT'], url: '/my-work' },
+  {
+    trang: 'Công việc', vai: ['QL', 'QT', 'GVCN'], url: '/my-work?nguoi=tat-ca',
+    maChuDich: { GVCN: 403 },
+  },
+  { trang: 'Công việc', vai: ['QL'], url: '/my-work?nguoi={gv}' },
   { trang: 'Tổng quan GV', vai: ['QL', 'QT', 'GVCN', 'GVBM', 'GVCN_THUONG'], url: '/tong-quan/hoc-vien-can-ho-tro' },
   { trang: 'Tổng quan GV', vai: ['GVCN', 'GVBM', 'GVCN_THUONG'], url: '/highlights' },
   { trang: 'Tổng quan GV', vai: ['GVCN'], url: '/y-thuc/my-warnings' },
@@ -114,6 +121,12 @@ export const DUONG_DO: MucDo[] = [
     maChuDich: { GVCN: 403, GVBM: 403, GVCN_THUONG: 403 },
   },
   { trang: 'Kế hoạch Test', vai: ['QL', 'QT'], url: '/ke-hoach-test/thuong?branchId={cn}' },
+
+  // ---------------------------------------------------------------- Công việc · Vận hành (PR-Ra)
+  /* GVCN không vào được tab Vận hành, nhưng `listMgmtTasks` trả `scopeEmpty` chứ không 403 — mã thật là 200. */
+  { trang: 'Công việc', vai: ['QL', 'QT', 'GVCN'], url: '/mgmt-tasks' },
+  { trang: 'Công việc', vai: ['QL', 'QT'], url: '/mgmt-tasks?hang=qua-han' },
+  { trang: 'Công việc', vai: ['QL', 'QT'], url: '/meeting/board' },
 ];
 
 /**
@@ -172,6 +185,20 @@ export const TRAN: Record<string, number> = {
   'GVCN /my-work': 60,
   'GVBM /my-work': 62,
   'GVCN_THUONG /my-work': 60,
+  /* PR-Ra: trang "Công việc" dùng lại /my-work cho QL·QT, cộng chế độ nguoi=tat-ca/{gv} (Q1–Q2). */
+  'QL /my-work': 62,
+  'QT /my-work': 68,
+  'QL /my-work?nguoi=tat-ca': 75,
+  'QT /my-work?nguoi=tat-ca': 75,
+  'GVCN /my-work?nguoi=tat-ca': 19,
+  'QL /my-work?nguoi=7': 69,
+  'QL /mgmt-tasks': 23,
+  'QT /mgmt-tasks': 23,
+  'GVCN /mgmt-tasks': 18,
+  'QL /mgmt-tasks?hang=qua-han': 23,
+  'QT /mgmt-tasks?hang=qua-han': 23,
+  'QL /meeting/board': 30,
+  'QT /meeting/board': 30,
   'QL /tong-quan/hoc-vien-can-ho-tro': 42,
   'QT /tong-quan/hoc-vien-can-ho-tro': 39,
   'GVCN /tong-quan/hoc-vien-can-ho-tro': 42,

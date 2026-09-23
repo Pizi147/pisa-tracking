@@ -94,7 +94,7 @@ runSeed();
 const SEED_MAX: Record<string, number> = {};
 {
   const { db: seedDb } = await import('../db.ts');
-  for (const t of ['sos_cases', 'case_interventions', 'case_followups', 'assessment_scores', 'unit_reports', 'violations', 'discipline_measures']) {
+  for (const t of ['sos_cases', 'case_interventions', 'case_followups', 'assessment_scores', 'unit_reports', 'violations', 'discipline_measures', 'tasks']) {
     SEED_MAX[t] = ((seedDb().prepare(`SELECT COALESCE(MAX(id),0) m FROM ${t}`).get() as any).m) as number;
   }
 }
@@ -1720,7 +1720,7 @@ check('Báo cáo tuần: mở hai ngày cuối tuần, bù đến hết thứ T�
     );
   }
 });
-check('Tuần đã khoá chỉ Quản trị hệ thống mở lại được, và chặn ở máy chủ', () => {
+check('PR-Ra Q13 · Tuần đã khoá: LƯU NHÁP vẫn chạy được; NỘP thì chặn — chỉ Quản trị hệ thống mở lại mới nộp được', () => {
   const old = conn
     .prepare('SELECT * FROM report_periods WHERE week_end < ? ORDER BY week_end DESC LIMIT 1')
     .get(addDays(demoToday(), -7)) as any;
@@ -1728,13 +1728,17 @@ check('Tuần đã khoá chỉ Quản trị hệ thống mở lại được, v�
   const unit = conn.prepare(`SELECT * FROM reporting_units WHERE kind='branch' LIMIT 1`).get() as any;
 
   assert(week.reportEditWindow(old).locked, 'Tuần cũ phải đang khoá');
-  assertThrows(() => meeting.saveUnitReport(P.admin, unit.id, old.id, 'teachers', { status: 'ok' }),
-    /quá hạn|Quản trị hệ thống/, 'Ghi báo cáo tuần đã khoá');
+  /* Q13: nháp được cho MỌI tuần đã bắt đầu, kể cả khi cửa sổ đóng hẳn — chỉ NỘP mới bị chặn. */
+  const draft = meeting.saveUnitReport(P.admin, unit.id, old.id, 'teachers', { status: 'ok' }) as any;
+  assert(draft.submitted_at === null, 'Lưu nháp ở tuần đã khoá không được tự thành đã nộp');
+  assertThrows(() => meeting.saveUnitReport(P.admin, unit.id, old.id, 'teachers', { status: 'ok', nop: true }),
+    /quá hạn|Quản trị hệ thống/, 'Nộp báo cáo tuần đã khoá');
 
   week.setPeriodUnlocked(old.id, true, P.admin.userId);
   const opened = week.reportEditWindow(old);
-  assert(opened.open && opened.unlocked, 'Mở lại rồi mà vẫn không ghi được');
-  meeting.saveUnitReport(P.admin, unit.id, old.id, 'teachers', { status: 'ok' });   // giờ phải chạy được
+  assert(opened.open && opened.unlocked, 'Mở lại rồi mà vẫn không nộp được');
+  const submitted = meeting.saveUnitReport(P.admin, unit.id, old.id, 'teachers', { status: 'ok', nop: true }) as any;   // giờ phải nộp được
+  assert(submitted.submitted_at, 'Quản trị hệ thống mở lại rồi mà nộp vẫn không ghi submitted_at');
 
   week.setPeriodUnlocked(old.id, false, P.admin.userId);
   assert(!week.reportEditWindow(old).open, 'Khoá lại rồi mà vẫn ghi được');
@@ -5455,8 +5459,14 @@ check('Mỗi lần cập nhật là một dòng lịch sử, không đè lên l�
 check('Người theo dõi xem được nhưng không cập nhật hộ', () => {
   const board = mgmt.listMgmtTasks(P.admin, {});
   const row = board.rows.find((r: any) => r.subTotal === 0 && r.progress !== 'done' && r.progress !== 'stopped')!;
+  /* PR-Ra: người theo dõi/phụ trách phải là tài khoản `nhan_vien` (giáo viên/quản lý) — không còn nhận bất kỳ ID nào. */
   const other = (conn
-    .prepare(`SELECT id FROM users WHERE status='active' AND id != ? ORDER BY id LIMIT 1`)
+    .prepare(
+      `SELECT DISTINCT u.id FROM users u
+         JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active'
+         JOIN roles r ON r.id = ur.role_id AND r.key IN ('teacher','manager')
+        WHERE u.status = 'active' AND u.id != ? ORDER BY u.id LIMIT 1`,
+    )
     .get(row.assigneeUserId) as any).id;
   mgmt.editMgmtTask(P.admin, row.id, { watcherUserId: other });
   const detail = mgmt.mgmtTaskDetail(P.admin, row.id);
@@ -6961,20 +6971,22 @@ check('[14.1] Số theo trạng thái cũng đếm trên toàn tập, không đ�
   }
 });
 
-check('[14.2] Dòng tổng hợp là bốn câu hỏi chồng nhau, không phải một phép chia', () => {
+check('[14.2] Dòng tổng hợp (PR-Ra: hàng số Q8) là bốn câu hỏi chồng nhau, không phải một phép chia', () => {
   const all = mgmt.listMgmtTasks(P.admin, {}) as any;
-  const s = all.summary;
-  assert(s, 'Không có dòng tổng hợp');
-  assert(s.total === all.rows.length, `Tổng ${s.total} không khớp số việc đang có ${all.rows.length}`);
-  for (const k of ['doing', 'overdue', 'dueSoon', 'paused']) {
-    assert(s[k] >= 0 && s[k] <= s.total, `Con số "${k}" nằm ngoài khoảng hợp lệ`);
+  const s = all.hangSo;
+  assert(s, 'Không có hàng số');
+  for (const k of ['qua-han', 'cho-nguoi-khac', 'can-quyet-dinh', 'vua-xong']) {
+    assert(s[k] >= 0 && s[k] <= all.rows.length, `Con số "${k}" nằm ngoài khoảng hợp lệ`);
   }
   /*
-   * Quá hạn và đang thực hiện CHỒNG NHAU có chủ ý — nên bốn con số cộng lại có thể lớn hơn
+   * Quá hạn và Tạm ngưng CHỒNG NHAU có chủ ý (Q8) — nên bốn con số cộng lại có thể lớn hơn
    * tổng, và giao diện phải nói ra điều đó chứ không được bày như một phép chia.
+   *
+   * `hangSo` không lọc theo trạng thái đang chọn (chỉ áp nhóm) — gọi không lọc gì cả (`{}`)
+   * thì nó phải khớp CHÍNH các dòng "quá hạn" đang hiện ra.
    */
-  assert(s.overdue === all.rows.filter((r: any) => r.overdue).length,
-    'Số quá hạn ở dòng tổng hợp không khớp chính các dòng đang hiện');
+  assert(s['qua-han'] === all.rows.filter((r: any) => r.overdue).length,
+    'Số quá hạn ở hàng số không khớp chính các dòng đang hiện khi không lọc trạng thái');
 });
 
 check('[14.2] Phạm vi chi nhánh áp TRƯỚC bộ lọc nhóm, không áp sau', () => {
@@ -9571,6 +9583,11 @@ await runYThucGonTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P
 
 const { runKeHoachTestTests } = await import('./keHoachTest.tests.ts');
 await runKeHoachTestTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
+// ==================================================================== PR-Ra (Công việc: Hỗ trợ học viên · Vận hành · Báo cáo đơn vị)
+
+const { runCongViecTests } = await import('./congViec.tests.ts');
+await runCongViecTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

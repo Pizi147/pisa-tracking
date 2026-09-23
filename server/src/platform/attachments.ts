@@ -2,8 +2,8 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { DB_PATH, ROOT, db, laDbTuXa } from '../db.ts';
 import { badRequest, notFound, nowIso } from '../util.ts';
-import { ATTACHMENT_EXTENSIONS, ATTACHMENT_MAX_BYTES, ATTACHMENT_MIME_BY_EXT } from '../../../shared/domain/index.ts';
-import type { Principal } from '../permissions.ts';
+import { ATTACHMENT_EXTENSIONS, ATTACHMENT_MAX_BYTES, ATTACHMENT_MIME_BY_EXT, PERMISSIONS } from '../../../shared/domain/index.ts';
+import { require_, type Principal } from '../permissions.ts';
 import { caseAccess } from '../cases/cases.ts';
 import { coordinationOwner, measureOwner, violationOwner } from '../yThuc/access.ts';
 import { writeAudit } from './audit.ts';
@@ -28,7 +28,7 @@ import { ghiNhanViecNenKhoTep, khoTepHienTai } from './khoTep.ts';
  * phục vụ dạng tải về. Liên kết chỉ nhận http/https — không `javascript:`, `data:`, `file:`.
  */
 
-export const OWNER_TYPES = ['sos_case', 'case_intervention', 'violation', 'discipline_measure', 'sos_coordination_action'] as const;
+export const OWNER_TYPES = ['sos_case', 'case_intervention', 'violation', 'discipline_measure', 'sos_coordination_action', 'unit_report'] as const;
 export type AttachmentOwnerType = (typeof OWNER_TYPES)[number];
 
 /** Dung lượng và đuôi tệp được nhận nằm ở `shared/domain/attachments.ts` — giao diện đọc cùng danh sách. */
@@ -64,7 +64,23 @@ function ownerAccess(ownerType: string, ownerId: number): OwnerAccess {
   if (ownerType === 'violation') return violationOwner(ownerId);
   if (ownerType === 'discipline_measure') return measureOwner(ownerId);
   if (ownerType === 'sos_coordination_action') return coordinationOwner(ownerId);
+  if (ownerType === 'unit_report') return unitReportOwner(ownerId);
   throw badRequest(`Loại bản ghi "${ownerType}" chưa hỗ trợ đính kèm.`);
+}
+
+/** Báo cáo đơn vị (PR-Ra, Q15): xem = MEETING_VIEW của chi nhánh đơn vị; sửa (thêm/xoá bằng chứng) = MEETING_EDIT. */
+function unitReportOwner(unitReportId: number): OwnerAccess {
+  const row = db()
+    .prepare(
+      `SELECT ru.branch_id FROM unit_reports ur JOIN reporting_units ru ON ru.id = ur.reporting_unit_id WHERE ur.id = ?`,
+    )
+    .get(unitReportId) as any;
+  if (!row) throw notFound('Không tìm thấy báo cáo đơn vị');
+  const ctx = { branchId: row.branch_id, anyScope: row.branch_id === null };
+  return {
+    requireView: (p) => require_(p, PERMISSIONS.MEETING_VIEW, ctx, 'Bản ghi này nằm ngoài phạm vi bạn được xem.'),
+    requireEdit: (p) => require_(p, PERMISSIONS.MEETING_EDIT, ctx, 'Bạn không có quyền đính kèm hoặc gỡ bằng chứng của báo cáo này.'),
+  };
 }
 
 /** Case học thuật: xem = quyền xem case; thêm/xoá = quyền SỬA case (đúng môn — AUTH-01/C02). Phương án dùng lại của case chứa nó. */

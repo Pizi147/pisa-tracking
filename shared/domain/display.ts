@@ -233,7 +233,7 @@ export function attemptProgressView(i: AttemptProgressInput): AttemptProgressVie
  */
 export const DEADLINE_KINDS = [
   'xac-minh-sos', 'lap-pa', 'cap-nhat-pa', 'thuc-hien-y-thuc', 'hoan-thanh-y-thuc', 'nhap-diem',
-  'du-kien-ket-thuc',
+  'du-kien-ket-thuc', 'viec-van-hanh',
 ] as const;
 export type DeadlineKind = (typeof DEADLINE_KINDS)[number];
 
@@ -246,6 +246,8 @@ const DEADLINE_LABEL: Record<DeadlineKind, (date: string) => string> = {
   'hoan-thanh-y-thuc': (d) => `Kết luận đợt · hạn ${d}`,
   'nhap-diem': (d) => `Hạn nhập điểm ${d}`,
   'du-kien-ket-thuc': (d) => `Dự kiến kết thúc ${d}`,
+  /* PR-Ra Q9: quá hạn tính theo hạn HIỆN TẠI — hạn gốc/lý do dời hiện ở dòng phụ riêng (`dongHanDaDoi`), không qua `originalDue` ở đây. */
+  'viec-van-hanh': (d) => `Hạn ${d}`,
 };
 
 /** `neutral` = không phải hạn hoặc chưa đến hạn; `overdue` = quá hạn thật; `waiting` = hạn đang chạy. */

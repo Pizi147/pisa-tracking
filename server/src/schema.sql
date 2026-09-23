@@ -1267,6 +1267,8 @@ CREATE TABLE unit_reports (
   note TEXT,
   reporter_user_id INTEGER REFERENCES users(id),
   updated_at TEXT,
+  submitted_at TEXT,                  -- NULL = nháp (PR-Ra)
+  submitted_by INTEGER REFERENCES users(id),
   UNIQUE (reporting_unit_id, period_id, category_key)
 );
 CREATE INDEX idx_ur_period ON unit_reports(period_id);
@@ -1286,9 +1288,20 @@ CREATE TABLE unit_report_history (
   status TEXT,
   note TEXT,
   actor_user_id INTEGER REFERENCES users(id),
-  at TEXT NOT NULL
+  at TEXT NOT NULL,
+  kind TEXT                           -- 'nhap' | 'nop', NULL với dòng cũ (PR-Ra)
 );
 CREATE INDEX idx_urh_cell ON unit_report_history(reporting_unit_id, period_id, category_key);
+
+-- LIÊN KẾT BÁO CÁO ĐƠN VỊ ↔ VIỆC VẬN HÀNH (PR-Ra, R6).
+CREATE TABLE unit_report_task_links (
+  unit_report_id INTEGER NOT NULL REFERENCES unit_reports(id),
+  task_id INTEGER NOT NULL REFERENCES tasks(id),
+  created_by INTEGER REFERENCES users(id),
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (unit_report_id, task_id)
+);
+CREATE INDEX idx_urtl_task ON unit_report_task_links(task_id);
 
 CREATE TABLE tasks (
   id INTEGER PRIMARY KEY,
@@ -1332,7 +1345,11 @@ CREATE TABLE tasks (
   created_by INTEGER REFERENCES users(id),
   created_at TEXT NOT NULL,
   updated_at TEXT,
-  completed_at TEXT
+  completed_at TEXT,
+  -- Người cần hỗ trợ khi Tạm ngưng (PR-Ra, Q10) — một trong hai; rời Tạm ngưng thì cả hai về NULL.
+  -- help_user_id một tài khoản, help_name người ngoài gõ tay (ví dụ "Tổ chuyên môn").
+  help_user_id INTEGER REFERENCES users(id),
+  help_name TEXT
 );
 CREATE INDEX idx_task_period ON tasks(period_id);
 CREATE INDEX idx_task_assignee ON tasks(assignee_user_id);
@@ -1430,7 +1447,8 @@ CREATE TABLE task_history (
   old_value TEXT,
   new_value TEXT,
   actor_user_id INTEGER REFERENCES users(id),
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  reason TEXT                         -- lý do (bắt buộc khi field='due_date' đổi hạn đang có, PR-Ra)
 );
 
 -- ===================== HỖ TRỢ =====================

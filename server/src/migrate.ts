@@ -444,6 +444,8 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     migrateAuthAttempts(conn, applied);
     /* PR-S2: lịch sử điều chỉnh PA học thuật + hai cột cập nhật tuần rút gọn. */
     migrateDieuChinhPa(conn, applied);
+    /* PR-Ra: người cần hỗ trợ khi Tạm ngưng, lý do dời hạn, nháp/nộp báo cáo, nối báo cáo ↔ việc. */
+    migrateCongViec(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống
@@ -3154,4 +3156,64 @@ export function migrateDieuChinhPa(conn: any, applied: string[]) {
   }
   if (!done.length) return;
   applied.push(`PR-S2: thêm ${done.join(', ')}. Dữ liệu cũ giữ nguyên.`);
+}
+
+export function migrateCongViec(conn: any, applied: string[]) {
+  const hasTable = (t: string) => !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  const cols = (t: string): string[] => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
+  if (!hasTable('tasks') || !hasTable('task_history') || !hasTable('unit_reports') || !hasTable('unit_report_history')) return;
+  const done: string[] = [];
+  if (!cols('tasks').includes('help_user_id')) {
+    conn.exec(`ALTER TABLE tasks ADD COLUMN help_user_id INTEGER REFERENCES users(id)`);
+    done.push('tasks.help_user_id');
+  }
+  if (!cols('tasks').includes('help_name')) {
+    conn.exec(`ALTER TABLE tasks ADD COLUMN help_name TEXT`);
+    done.push('tasks.help_name');
+  }
+  if (!cols('task_history').includes('reason')) {
+    conn.exec(`ALTER TABLE task_history ADD COLUMN reason TEXT`);
+    done.push('task_history.reason');
+  }
+  if (!cols('unit_reports').includes('submitted_at')) {
+    conn.exec(`ALTER TABLE unit_reports ADD COLUMN submitted_at TEXT`);
+    /*
+     * Dòng đã có nội dung (status NOT NULL) coi như đã nộp ở lần chạy TRƯỚC lúc có khái niệm
+     * nháp — chỉ điền ở ĐÚNG lần thêm cột này, không chạy lại lần hai (nếu không thì một dòng
+     * nháp mới tạo giữa hai lần chạy sẽ bị migrate biến thành "đã nộp" oan).
+     */
+    conn.exec(`UPDATE unit_reports SET submitted_at = updated_at WHERE status IS NOT NULL`);
+    done.push('unit_reports.submitted_at');
+  }
+  if (!cols('unit_reports').includes('submitted_by')) {
+    conn.exec(`ALTER TABLE unit_reports ADD COLUMN submitted_by INTEGER REFERENCES users(id)`);
+    /*
+     * Điền theo `submitted_at IS NOT NULL` — ĐÃ NỘP, không phải `status IS NOT NULL` (chỉ nói có
+     * ghi mức, kể cả nháp). Hai cột này thêm ở HAI khối `if` riêng, chạy độc lập theo cột nào
+     * còn thiếu — nếu `submitted_at` đã có từ một lần nâng cấp TRƯỚC (không còn khớp `status IS
+     * NOT NULL` nữa vì đã có nháp mới tạo sau đó), điền `submitted_by` theo `status` sẽ gán oan
+     * "đã nộp" cho một dòng NHÁP chưa ai nộp.
+     */
+    conn.exec(`UPDATE unit_reports SET submitted_by = reporter_user_id WHERE submitted_at IS NOT NULL`);
+    done.push('unit_reports.submitted_by');
+  }
+  if (!cols('unit_report_history').includes('kind')) {
+    conn.exec(`ALTER TABLE unit_report_history ADD COLUMN kind TEXT`);
+    done.push('unit_report_history.kind');
+  }
+  if (!hasTable('unit_report_task_links')) {
+    conn.exec(`
+      CREATE TABLE unit_report_task_links (
+        unit_report_id INTEGER NOT NULL REFERENCES unit_reports(id),
+        task_id INTEGER NOT NULL REFERENCES tasks(id),
+        created_by INTEGER REFERENCES users(id),
+        created_at TEXT NOT NULL,
+        PRIMARY KEY (unit_report_id, task_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_urtl_task ON unit_report_task_links(task_id);
+    `);
+    done.push('bảng unit_report_task_links');
+  }
+  if (!done.length) return;
+  applied.push(`PR-Ra: thêm ${done.join(', ')}. Dữ liệu cũ giữ nguyên.`);
 }

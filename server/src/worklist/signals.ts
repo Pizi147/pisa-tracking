@@ -130,14 +130,15 @@ export function signalsFor(p: Principal, f: { branchId?: number | null; periodId
     if (period && reportEditWindow(period, today).open) {
       for (const r of conn
         .prepare(
+          /* PR-Ra Q13: "đã báo cáo" nghĩa là ĐÃ NỘP — một ô còn nháp không được tính là đã hoàn thiện. */
           `SELECT ru.branch_id, COUNT(*) AS n FROM reporting_units ru
-             LEFT JOIN unit_reports r ON r.reporting_unit_id = ru.id AND r.period_id = ? AND r.status IS NOT NULL
+             LEFT JOIN unit_reports r ON r.reporting_unit_id = ru.id AND r.period_id = ? AND r.submitted_at IS NOT NULL
             WHERE ru.status='active' AND ru.branch_id IN (${ph}) AND r.id IS NULL
             GROUP BY ru.branch_id`,
         )
         .all(f.periodId, ...ids) as any[]) {
         push('report_due', r.branch_id, r.n, `Báo cáo tuần ${period.code} chưa hoàn thiện`,
-             'manager', 'info', `/tien-trinh?periodId=${f.periodId}`);
+             'manager', 'info', `/cong-viec/bao-cao?periodId=${f.periodId}`);
       }
     }
   }

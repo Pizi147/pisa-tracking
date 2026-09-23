@@ -4,7 +4,7 @@ import { db, isInitialised } from '../db.ts';
 import { laBanChinh } from '../moiTruong.ts';
 import {
   ENTRY_SKILLS, ENTRY_SKILL_LABEL, ISSUE_TAXONOMY, THEO_DONG,
-  PERMISSIONS, REGULAR_SKILLS, ROLE_LABEL, WORK_SCOPES, chuongTrinhTuThamSo, khoangTuThamSo,
+  PERMISSIONS, REGULAR_SKILLS, ROLE_LABEL, WORK_SCOPES, chuongTrinhTuThamSo, khoangTuThamSo, thamSoNguoi,
   type Role, type TheoDong, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { transferReasonText } from '../../../shared/domain/index.ts';
@@ -73,6 +73,7 @@ import * as tongHopSvc from '../phanTich/tongHop.ts';
 import * as vanDeSvc from '../phanTich/vanDe.ts';
 import { metricResponse, metricSet, rowsFor } from '../worklist/metrics.ts';
 import { myWork } from '../worklist/mywork.ts';
+import { nhacViec } from '../worklist/nhacViec.ts';
 import * as caseSvc from '../cases/cases.ts';
 import * as caseSignalSvc from '../cases/signals.ts';
 import * as regularSvc from '../normal/regular.ts';
@@ -295,6 +296,7 @@ api.get('/ref/nguoi', requireAuth, wrap((req) => {
     q: qStr(req, 'q'),
     nhom: nhom === 'nhan_vien' ? 'nhan_vien' : 'giao_vien',
     studentId: qInt(req, 'studentId'),
+    trongPhamVi: qStr(req, 'trongPhamVi') === '1',
   });
 }));
 
@@ -349,9 +351,87 @@ api.get('/ref/units', requireAuth, wrap((req) => {
  * VIỆC CỦA CHÍNH NGƯỜI ĐANG XEM — thay bảng số theo tuần ở màn chính.
  * Chỉ trả về việc người này thực sự làm được; quyền kiểm ở tầng dịch vụ, không phải ẩn nút.
  */
+/**
+ * PR-Ra Q1–Q2: `?nguoi=` chọn góc nhìn — `toi` (mặc định) · `tat-ca` (Quản lý/Quản trị, Q1) ·
+ * một ID giáo viên cụ thể (Q2, "Chọn giáo viên…"). Chuỗi lạ bị `thamSoNguoi` bỏ qua, coi như
+ * không gửi — không báo lỗi cho một tham số hỏng, giữ đúng quy ước "phạm vi trên đường dẫn".
+ */
 api.get('/my-work', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return myWork(principalOf(req), { branchId: qInt(req, 'branchId') });
+  const p = principalOf(req);
+  const branchId = qInt(req, 'branchId');
+  const nguoi = thamSoNguoi(qStr(req, 'nguoi'));
+
+  if (nguoi === 'tat-ca') {
+    if (!can(p, PERMISSIONS.CASE_APPROVE, { anyScope: true })) throw forbidden('Bạn chỉ xem được việc của mình.');
+    return myWork(p, { branchId, nguoi: 'tat-ca' });
+  }
+  if (typeof nguoi === 'number') {
+    if (!can(p, PERMISSIONS.CASE_APPROVE, { anyScope: true })) throw forbidden('Bạn chỉ xem được việc của mình.');
+    const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
+    if (!scope.all) {
+      const branches = db()
+        .prepare(`SELECT DISTINCT branch_id FROM user_roles WHERE user_id = ? AND status = 'active' AND branch_id IS NOT NULL`)
+        .all(nguoi) as any[];
+      if (!branches.some((b) => scope.branchIds.includes(b.branch_id))) {
+        throw forbidden('Giáo viên này không thuộc chi nhánh bạn quản lý.');
+      }
+    }
+    const x = loadPrincipal(nguoi);
+    const w = myWork(x, { branchId }) as any;
+    /* Dòng không lớp/không HV là việc Vận hành ("mgmt") — không thuộc Hỗ trợ học viên, bỏ. */
+    const items = w.items
+      .filter((it: any) => (it.classId !== null || it.studentId !== null)
+        && can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: it.classId, studentId: it.studentId }))
+      .map((it: any) => ({
+        ...it,
+        owner: it.ownerId === x.userId ? x.fullName : it.owner,
+        mine: false,
+      }));
+    if (items.length) {
+      const today = demoToday();
+      const nhacToday = new Map<string, string>();
+      for (const r of db()
+        .prepare(`SELECT dedup_key, created_at FROM notifications WHERE kind = 'nhac_viec' AND dedup_key LIKE ?`)
+        .all(`nhac:%:${today}`) as any[]) {
+        const m = /^nhac:(.+):[^:]+$/.exec(r.dedup_key);
+        if (m) nhacToday.set(m[1], r.created_at);
+      }
+      for (const it of items) {
+        if (it.ownerId === null) continue;
+        it.nhac = { ownerId: it.ownerId, daNhacLuc: nhacToday.get(it.key) ?? null };
+      }
+    }
+    const groupsByKey = new Map<string, any[]>();
+    for (const it of items) (groupsByKey.get(it.group) ?? groupsByKey.set(it.group, []).get(it.group)!).push(it);
+    const groups = w.groups
+      .map((g: any) => ({ ...g, items: groupsByKey.get(g.key) ?? [] }))
+      .filter((g: any) => g.items.length > 0)
+      .map((g: any) => ({
+        ...g,
+        overdue: g.items.filter((i: any) => i.urgency === 'overdue').length,
+        today: g.items.filter((i: any) => i.urgency === 'today').length,
+      }));
+    return {
+      summary: {
+        total: items.length,
+        overdue: items.filter((i: any) => i.urgency === 'overdue').length,
+        today: items.filter((i: any) => i.urgency === 'today').length,
+        approval: items.filter((i: any) => i.group === 'decide').length,
+        mine: 0,
+      },
+      items, groups, scopeEmpty: false, xemNguoiKhac: true,
+    };
+  }
+
+  return myWork(p, { branchId });
+}));
+
+api.post('/my-work/nhac', requireAuth, wrap((req) => {
+  const key = String(req.body?.key ?? '');
+  const ownerId = toInt(req.body?.ownerId);
+  if (!key || !ownerId) throw badRequest('Thiếu key hoặc ownerId.');
+  return nhacViec(principalOf(req), { key, ownerId });
 }));
 
 api.get('/overview', requireAuth, wrap((req) => {
@@ -1670,6 +1750,14 @@ api.put('/meeting/units/:unitId/reports/:categoryKey', requireAuth, wrap((req) =
     String(req.params.categoryKey), req.body ?? {});
 }));
 
+/** PR-Ra R6: nối/gỡ một việc Vận hành thật vào một ô báo cáo đơn vị (thay gợi ý tự động cũ). */
+api.post('/meeting/reports/:reportId/tasks', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return meetingSvc.linkReportTask(principalOf(req), pInt(req, 'reportId'), toInt(req.body?.taskId) ?? 0);
+}));
+api.delete('/meeting/reports/:reportId/tasks/:taskId', requireAuth, wrap((req) =>
+  meetingSvc.unlinkReportTask(principalOf(req), pInt(req, 'reportId'), pInt(req, 'taskId'))));
+
 api.get('/tasks', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return meetingSvc.listTasks(principalOf(req), {
@@ -1706,10 +1794,12 @@ api.post('/notifications/:id/read', requireAuth, wrap((req) => {
 
 // ============================================================ Tiến độ công việc (mục 8)
 
+/* PR-Ra: giao diện mặc định "Đang mở" — route tự điền 'mo' khi không gửi progress, hàm dịch vụ (không progress) vẫn nghĩa "tất cả". */
 api.get('/mgmt-tasks', requireAuth, wrap((req) => mgmtSvc.listMgmtTasks(principalOf(req), {
   branchId: qInt(req, 'branchId'),
   group: qStr(req, 'group'),
-  progress: qStr(req, 'progress'),
+  progress: qStr(req, 'progress') ?? 'mo',
+  hang: qStr(req, 'hang'),
   assigneeUserId: qInt(req, 'assigneeUserId'),
   periodId: qInt(req, 'periodId'),
 })));
@@ -1731,6 +1821,7 @@ api.post('/mgmt-tasks', requireAuth, wrap((req) => {
     due: b.due ?? null, note: b.note ?? null,
     parentTaskId: b.parentTaskId ? Number(b.parentTaskId) : null,
     caseIds: Array.isArray(b.caseIds) ? b.caseIds.map(Number) : [],
+    unitReportId: b.unitReportId ? Number(b.unitReportId) : null,
   });
 }));
 
@@ -1740,6 +1831,7 @@ api.post('/mgmt-tasks/:id/update', requireAuth, wrap((req) => {
   return mgmtSvc.updateMgmtTask(principalOf(req), pInt(req, 'id'), {
     progress: String(b.progress ?? ''), note: b.note ?? null, reason: b.reason ?? null,
     on: b.on ?? null, reviewOn: b.reviewOn ?? null,
+    helpUserId: b.helpUserId ? Number(b.helpUserId) : null, helpName: b.helpName ?? null,
   });
 }));
 
