@@ -1,6 +1,7 @@
 import { Fragment, useState } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
+import { HangNhom } from '../../ui/HangNhom.tsx';
 import { IssueTable } from './ClassIssueBoard.tsx';
 
 type PhanTich = {
@@ -39,15 +40,13 @@ export function PhanTichLopTab({ classId }: { classId: number }) {
         <tbody>
           {data.dong.map((d) => (
             <Fragment key={d.key}>
-              <tr className="row-hover cursor-pointer" aria-expanded={mo === d.key} onClick={() => setMo(mo === d.key ? null : d.key)}>
-                <td className="td">
-                  <span className="mr-1.5 text-slate-500" title={mo === d.key ? 'Thu gọn' : 'Mở rộng'}>{mo === d.key ? '▾' : '▸'}</span>
-                  <abbr className="text-slate-100 no-underline" title={d.tenDayDu}>{d.nhan}</abbr>
-                </td>
+              {/* PR-UX4 (Q22, N-2): hàng kỹ năng là hàng lớn — mũi tên do `HangNhom` vẽ, không còn ▸ tự vẽ. */}
+              <HangNhom mo={mo === d.key} onMo={() => setMo(mo === d.key ? null : d.key)} nhan={d.tenDayDu}
+                tieuDe={<abbr className="text-slate-100 no-underline" title={d.tenDayDu}>{d.nhan}</abbr>}>
                 {data.cot.map((c) => {
                   const o = data.o[`${d.key}|${c.key}`];
                   return (
-                    <td key={c.key} className="td text-center tabular-nums">
+                    <td key={c.key} className="text-center tabular-nums">
                       {!o || o.tong === 0
                         ? <span className="text-slate-600">—</span>
                         : <span className={o.dat * 2 < o.tong ? 'text-rose-200' : 'text-slate-200'} title={`${o.dat}/${o.tong} HV đạt`}>
@@ -56,7 +55,7 @@ export function PhanTichLopTab({ classId }: { classId: number }) {
                     </td>
                   );
                 })}
-              </tr>
+              </HangNhom>
               {mo === d.key && (
                 <tr><td className="td" colSpan={data.cot.length + 1}><IssueTable classId={classId} category={d.category} /></td></tr>
               )}

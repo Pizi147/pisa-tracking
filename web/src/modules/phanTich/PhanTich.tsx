@@ -1,44 +1,59 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
-import { Card } from '../../ui/ui.tsx';
 import { ChonChuongTrinh } from '../worklist/ChonChuongTrinh.tsx';
 import { DanhSachCase } from '../cases/CaseBoardPage.tsx';
-import { IssueAnalysis } from '../cases/IssueAnalysis.tsx';
-import { YThucAnalysisView } from '../yThuc/YThucAnalysisView.tsx';
+import { DanhSachBoQuen } from './DanhSachBoQuen.tsx';
+import { HieuQuaPa } from './HieuQuaPa.tsx';
 import { TongHopTestSos } from './TongHopTestSos.tsx';
-import { VanDeHocVien } from './VanDeHocVien.tsx';
+import { TongHopVanDeHv } from './TongHopVanDeHv.tsx';
+import { YThucPhoiHop } from './YThucPhoiHop.tsx';
 import {
-  GOC_NHIN, GOC_NHIN_LABEL, KHOANG, KHOANG_LABEL, KHOANG_MAC_DINH,
-  chuongTrinhTuThamSo, gocNhinTuThamSo, khoangTuThamSo, ngay, thamSoXoaKhiDoiGoc, tuDauKhoang,
+  GOC_NHIN, GOC_NHIN_LABEL, KHOANG, KHOANG_LABEL, KHOANG_MAC_DINH, LOAI_BO_QUEN, LOAI_BO_QUEN_LABEL,
+  chuongTrinhTuThamSo, gocNhinTuThamSo, khoangTuThamSo, laLoaiBoQuen, ngay, thamSoXoaKhiDoiGoc,
   type ChuongTrinh, type GocNhin,
 } from '@shared/domain/index.ts';
 
 /**
- * KHUNG PHÂN TÍCH (§3.3, P7/P11) — tab "Phân tích" của Tổng quan (`/phan-tich`). Đầu trang (tiêu đề, ô chi nhánh, hai
- * tab Tổng quan | Phân tích) là của `OverviewPage.tsx` (PR-Pa, chỉ import). Ngay dưới là MỘT hàng: bên trái nhóm nút
- * góc nhìn, bên phải bộ lọc chung (chương trình · khoảng thời gian · lớp) — mọi góc nhìn đọc CÙNG bộ lọc này, nên
- * đổi chi nhánh hay chương trình ở đây thì cả năm góc nhìn đổi theo, không phải năm ô lọc rời nhau.
+ * KHUNG PHÂN TÍCH (§3.3, P7/P11; PR-UX4 — năm góc nhìn) — tab "Phân tích" của Tổng quan (`/phan-tich`). Đầu trang (tiêu đề, ô chi nhánh,
+ * hai tab Tổng quan | Phân tích) là của `OverviewPage.tsx` (PR-Pa, chỉ import). Ngay dưới là MỘT hàng: bên trái nhóm nút góc nhìn
+ * (Tổng hợp Test + SOS · Tổng hợp vấn đề HV · Hiệu quả PA · Ý thức & Phối hợp · Danh sách Case), bên phải bộ lọc chung
+ * (chương trình · khoảng thời gian · lớp) — mọi góc nhìn đọc CÙNG bộ lọc này.
  */
 export function PhanTich() {
   const { session, branchCount } = useSession();
   const [params, setParams] = useSearchParams();
   const branchId = params.get('cn') ? Number(params.get('cn')) : null;
-  const { goc, ct: ctTuLoaiLop, boThamSo } = gocNhinTuThamSo(params);
+  const { goc, ct: ctTuLoaiLop, boThamSo, gocMoi } = gocNhinTuThamSo(params);
   const ct = chuongTrinhTuThamSo(params.get('ct'));
   const tg = khoangTuThamSo(params.get('tg'));
   const classId = params.get('lop') ? Number(params.get('lop')) : null;
+  const hangDoi = params.get('hang-doi');
+  const loaiBoQuen = laLoaiBoQuen(hangDoi) ? hangDoi : null;
 
-  /* ĐƯỜNG DẪN CŨ VẪN VÀO ĐÚNG MÀN (Q16) — chỉ dọn `xem`/`loai-lop`; KHÔNG đụng hang-doi/tinh-hinh/ky-nang (bộ lọc của Danh sách Case). */
+  /*
+   * ĐƯỜNG DẪN CŨ VẪN VÀO ĐÚNG MÀN (Q1) — dọn `xem`/`loai-lop`; đổi tên góc nhìn cũ (`ket-qua` → `hieu-qua-pa`, `chua-ai-nhan` →
+   * `van-de`) bằng `replace`. KHÔNG đụng hang-doi/tinh-hinh/ky-nang (bộ lọc của Danh sách Case).
+   */
   useEffect(() => {
-    if (!boThamSo.length) return;
+    if (!boThamSo.length && !gocMoi) return;
     const next = new URLSearchParams(params);
     for (const k of boThamSo) next.delete(k);
     if (ctTuLoaiLop) next.set('ct', ctTuLoaiLop);
+    if (gocMoi) next.set('goc', gocMoi);
     setParams(next, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [boThamSo.join('|'), ctTuLoaiLop]);
+  }, [boThamSo.join('|'), ctTuLoaiLop, gocMoi]);
+
+  /* 375px: hàng góc nhìn cuộn ngang trong chính nó — cuộn tới nút đang chọn để không bị che (Danh sách Case nằm cuối hàng). */
+  const hangGoc = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const nut = hangGoc.current?.querySelector<HTMLElement>('[aria-checked="true"]');
+    const hang = hangGoc.current;
+    if (!nut || !hang) return;
+    hang.scrollLeft = Math.max(0, nut.offsetLeft - (hang.clientWidth - nut.offsetWidth) / 2);
+  }, [goc]);
 
   const branches = useApi<any[]>('/ref/branches');
   /*
@@ -79,6 +94,12 @@ export function PhanTich() {
     if (id) next.set('lop', id); else next.delete('lop');
     setParams(next, { replace: false });
   };
+  /** Bộ lọc "Học viên cần chú ý" của Danh sách Case: bấm chip đang chọn thì bỏ lọc. */
+  const setHangDoi = (v: string | null) => {
+    const next = new URLSearchParams(params);
+    if (v) next.set('hang-doi', v); else next.delete('hang-doi');
+    setParams(next, { replace: false });
+  };
 
   /* Ô lớp (Q6) — P14 (PR-YT2): máy chủ Ý thức nay đã nhận tham số lớp, nên bật lại ở góc nhìn Ý thức. */
   const classesApi = useApi<any[]>(`/ref/classes${branchId ? `?branchId=${branchId}` : ''}`, [branchId]);
@@ -89,14 +110,13 @@ export function PhanTich() {
   }, [classId, classesApi.data, ct]);
 
   const demoDate = session?.demoDate ?? null;
-  const from = demoDate ? tuDauKhoang(demoDate, tg) : null;
-  /* VẤN ĐỀ HỌC VIÊN VÀ DANH SÁCH CASE LÀ HIỆN TRẠNG (Q5) — luật 5 của Hợp đồng số liệu: không trộn "hiện trạng" với một khoảng thời gian. */
-  const laHienTrang = goc === 'van-de' || goc === 'danh-sach';
+  /* DANH SÁCH CASE LÀ HIỆN TRẠNG (Q5) — luật 5 của Hợp đồng số liệu: không trộn "hiện trạng" với một khoảng thời gian. */
+  const laHienTrang = goc === 'danh-sach';
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div role="radiogroup" aria-label="Góc nhìn" className="inline-flex rounded-lg border overflow-x-auto max-w-full"
+        <div ref={hangGoc} role="radiogroup" aria-label="Góc nhìn" className="relative inline-flex rounded-lg border overflow-x-auto max-w-full"
           style={{ borderColor: 'var(--line)' }}>
           {GOC_NHIN.map((k) => (
             <button key={k} type="button" role="radio" aria-checked={goc === k} onClick={() => setGoc(k)}
@@ -114,9 +134,12 @@ export function PhanTich() {
           {laHienTrang
             ? (demoDate && <span className="text-xs text-slate-500">Hiện trạng · đến {ngay(demoDate)}</span>)
             : (
-              <select className="field w-28 text-xs" value={tg} onChange={(e) => setTg(Number(e.target.value))} aria-label="Khoảng thời gian">
-                {KHOANG.map((n) => <option key={n} value={n}>{KHOANG_LABEL[n]}</option>)}
-              </select>
+              <>
+                {goc === 'van-de' && <span className="text-xs text-slate-500" title="Case đang mở, cộng Case đã đóng trong khoảng này">Case mở + đóng trong</span>}
+                <select className="field w-28 text-xs" value={tg} onChange={(e) => setTg(Number(e.target.value))} aria-label="Khoảng thời gian">
+                  {KHOANG.map((n) => <option key={n} value={n}>{KHOANG_LABEL[n]}</option>)}
+                </select>
+              </>
             )}
           <select className="field w-40 text-xs" value={classId ?? ''} onChange={(e) => setClassId(e.target.value)} aria-label="Lớp">
             <option value="">Mọi lớp</option>
@@ -126,17 +149,25 @@ export function PhanTich() {
       </div>
 
       {goc === 'tong-hop' && <TongHopTestSos branchId={branchId} ct={ct} tg={tg} classId={classId} />}
-      {goc === 'van-de' && <VanDeHocVien branchId={branchId} ct={ct} classId={classId} />}
-      {goc === 'danh-sach' && <DanhSachCase branchId={branchId} ct={ct} classId={classId} />}
-      {goc === 'ket-qua' && (
-        <Card title="Kết quả hỗ trợ" bodyClass="p-3">
-          <IssueAnalysis branchId={branchId} ct={ct} from={from} classId={classId} />
-        </Card>
-      )}
-      {goc === 'y-thuc' && (
-        <Card title="Ý thức & Phối hợp" bodyClass="p-3">
-          <YThucAnalysisView branchId={branchId} ct={ct} from={from} classId={classId} />
-        </Card>
+      {goc === 'van-de' && <TongHopVanDeHv branchId={branchId} ct={ct} tg={tg} classId={classId} />}
+      {goc === 'hieu-qua-pa' && <HieuQuaPa branchId={branchId} ct={ct} tg={tg} classId={classId} />}
+      {goc === 'y-thuc' && <YThucPhoiHop branchId={branchId} ct={ct} tg={tg} classId={classId} />}
+      {goc === 'danh-sach' && (
+        <>
+          <div className="flex flex-wrap items-center gap-2 text-xs" role="group" aria-label="Học viên cần chú ý">
+            <span className="text-slate-500">Học viên cần chú ý:</span>
+            {LOAI_BO_QUEN.map((k) => (
+              <button key={k} type="button" aria-pressed={loaiBoQuen === k} onClick={() => setHangDoi(loaiBoQuen === k ? null : k)}
+                className={`rounded-full border px-2.5 py-0.5 cursor-pointer ${
+                  loaiBoQuen === k ? 'bg-doing-bg text-doing border-doing-line font-semibold' : 'bg-transparent text-slate-400 border-[color:var(--line)] hover:text-slate-200'}`}>
+                {LOAI_BO_QUEN_LABEL[k]}
+              </button>
+            ))}
+          </div>
+          {loaiBoQuen
+            ? <DanhSachBoQuen loai={loaiBoQuen} branchId={branchId} ct={ct} onBoLoc={() => setHangDoi(null)} />
+            : <DanhSachCase branchId={branchId} ct={ct} classId={classId} />}
+        </>
       )}
     </div>
   );
