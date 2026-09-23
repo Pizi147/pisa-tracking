@@ -31,7 +31,7 @@ const {
 const { loadPrincipal, can, napTruocPhamVi, scopeFor } = await import('../permissions.ts');
 const { PERMISSIONS } = await import('../../../shared/domain/index.ts');
 const { listCases } = await import('../cases/cases.ts');
-const { DUONG_DO } = await import('./tocDoDuong.ts');
+const { DUONG_DO, TRAN } = await import('./tocDoDuong.ts');
 
 runSeed();
 
@@ -534,6 +534,155 @@ await checkAsync(
     assert(thaySau, 'Quản lý CP PHẢI thấy Case ngay sau khi HV chuyển sang lớp CP — không được dính bộ nhớ cũ giữa hai request');
   },
 );
+
+// ==================================================================== Task 5 — trần câu SQL và nhân dữ liệu
+
+/** Đo lại TOÀN BỘ DUONG_DO một lượt — dùng làm mốc "trước" cho cả phép trần và phép nhân dữ liệu. */
+async function doMotLuot(): Promise<Map<string, number>> {
+  const ra = new Map<string, number>();
+  for (const muc of DUONG_DO) {
+    for (const vai of muc.vai) {
+      const url = urlFor(muc.url);
+      const { n } = await doSql(vai, 'GET', url);
+      ra.set(`${vai} ${url}`, n);
+    }
+  }
+  return ra;
+}
+
+const truocNhan = await doMotLuot();
+
+await checkAsync('PR-TD Task5(1) · trần câu SQL — mọi (đường × vai) đã có trong TRAN đều ≤ trần riêng và ≤ 100', async () => {
+  const sai: string[] = [];
+  for (const [khoa, n] of truocNhan) {
+    const tran = TRAN[khoa];
+    if (tran === undefined) continue; // đường mới chưa có mốc — bỏ qua, không phải lỗi
+    if (n > tran || n > 100) sai.push(`${khoa}: ${n} câu > trần ${tran} (trần cứng 100)`);
+  }
+  assert(sai.length === 0, `Vượt trần:\n${sai.join('\n')}`);
+});
+
+/**
+ * PR-TD Task 5 — nhân dữ liệu ×N: với MỖI HV đang có, chép thêm (N-1) bản (học viên, ghi danh — mọi trạng thái,
+ * lộ trình, lượt MT, điểm từng kỹ năng, Case, phân loại vấn đề, tác động). KHÔNG nhân lớp (Q11 — lớp đổi chậm, nhân
+ * lớp đòi sao chép phân công/lịch/chương trình, dễ sai). Đọc cột bằng `PRAGMA table_info` nên không cần liệt kê
+ * tay từng cột của từng bảng — bảng đổi cột thì hàm này vẫn chạy đúng.
+ */
+function chepDong(table: string, banGoc: Record<string, unknown>, ghiDe: Record<string, unknown>): number {
+  const cols = (conn.prepare(`PRAGMA table_info(${table})`).all() as any[])
+    .map((c) => c.name as string)
+    .filter((c) => c !== 'id');
+  const giaTri = cols.map((c) => (c in ghiDe ? ghiDe[c] : banGoc[c]));
+  const info = conn
+    .prepare(`INSERT INTO ${table} (${cols.join(',')}) VALUES (${cols.map(() => '?').join(',')})`)
+    .run(...giaTri);
+  return Number(info.lastInsertRowid);
+}
+
+function nhanDuLieu(n: number): { hvTruoc: number; hvSau: number; caseTruoc: number; caseSau: number } {
+  const demHv = () => (conn.prepare('SELECT COUNT(*) AS n FROM students').get() as any).n as number;
+  const demCase = () => (conn.prepare('SELECT COUNT(*) AS n FROM sos_cases').get() as any).n as number;
+  const hvTruoc = demHv();
+  const caseTruoc = demCase();
+
+  const idHvGoc = (conn.prepare('SELECT id FROM students').all() as any[]).map((r) => r.id as number);
+  /* Ánh xạ case CŨ → case MỚI, dùng chung suốt cả lượt nhân để previous_case_id nối đúng bản sao của chính nó. */
+  const banCase = new Map<number, number>();
+
+  for (let lan = 1; lan < n; lan += 1) {
+    for (const hvCu of idHvGoc) {
+      const hv = conn.prepare('SELECT * FROM students WHERE id = ?').get(hvCu) as any;
+      const hvMoi = chepDong('students', hv, { student_code: `${hv.student_code}-x${lan}` });
+
+      for (const e of conn.prepare('SELECT * FROM enrollments WHERE student_id = ?').all(hvCu) as any[]) {
+        chepDong('enrollments', e, { student_id: hvMoi }); // KHÔNG lọc status — mọi ghi danh, giống classesOfStudent
+      }
+
+      const idLoTrinh = new Map<number, number>();
+      for (const c of conn.prepare('SELECT * FROM learning_cycles WHERE student_id = ?').all(hvCu) as any[]) {
+        /* baseline/outcome attempt tạm NULL — lượt MT của lộ trình này chưa tồn tại; backfill ngay dưới đây. */
+        idLoTrinh.set(c.id, chepDong('learning_cycles', c, {
+          student_id: hvMoi, baseline_attempt_id: null, outcome_attempt_id: null,
+        }));
+      }
+
+      const idLuot = new Map<number, number>();
+      for (const a of conn.prepare('SELECT * FROM assessment_attempts WHERE student_id = ?').all(hvCu) as any[]) {
+        const aMoi = chepDong('assessment_attempts', a, {
+          student_id: hvMoi, cycle_id: idLoTrinh.get(a.cycle_id) ?? a.cycle_id,
+        });
+        idLuot.set(a.id, aMoi);
+        for (const s of conn.prepare('SELECT * FROM attempt_skills WHERE attempt_id = ?').all(a.id) as any[]) {
+          chepDong('attempt_skills', s, { attempt_id: aMoi });
+        }
+        for (const s of conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ?').all(a.id) as any[]) {
+          chepDong('assessment_scores', s, { attempt_id: aMoi });
+        }
+      }
+
+      for (const c of conn.prepare('SELECT * FROM learning_cycles WHERE student_id = ?').all(hvCu) as any[]) {
+        conn.prepare('UPDATE learning_cycles SET baseline_attempt_id = ?, outcome_attempt_id = ? WHERE id = ?').run(
+          c.baseline_attempt_id ? (idLuot.get(c.baseline_attempt_id) ?? null) : null,
+          c.outcome_attempt_id ? (idLuot.get(c.outcome_attempt_id) ?? null) : null,
+          idLoTrinh.get(c.id),
+        );
+      }
+
+      for (const sc of conn.prepare('SELECT * FROM sos_cases WHERE student_id = ?').all(hvCu) as any[]) {
+        const scMoi = chepDong('sos_cases', sc, {
+          student_id: hvMoi,
+          cycle_id: sc.cycle_id ? (idLoTrinh.get(sc.cycle_id) ?? null) : null,
+          attempt_id: sc.attempt_id ? (idLuot.get(sc.attempt_id) ?? null) : null,
+          dedup_key: null, // chỉ mục duy nhất — nhiều NULL vẫn hợp lệ trong SQLite
+          previous_case_id: sc.previous_case_id ? (banCase.get(sc.previous_case_id) ?? null) : null,
+        });
+        banCase.set(sc.id, scMoi);
+        for (const ci of conn.prepare('SELECT * FROM case_issues WHERE case_id = ?').all(sc.id) as any[]) {
+          chepDong('case_issues', ci, { case_id: scMoi });
+        }
+        for (const iv of conn.prepare('SELECT * FROM case_interventions WHERE case_id = ?').all(sc.id) as any[]) {
+          chepDong('case_interventions', iv, { case_id: scMoi, migration_key: null, superseded_by: null });
+        }
+      }
+    }
+  }
+
+  return { hvTruoc, hvSau: demHv(), caseTruoc, caseSau: demCase() };
+}
+
+const soNhanDuLieu = nhanDuLieu(3);
+console.log(
+  `\nNhân dữ liệu ×3: HV ${soNhanDuLieu.hvTruoc} → ${soNhanDuLieu.hvSau}, Case ${soNhanDuLieu.caseTruoc} → ${soNhanDuLieu.caseSau} (lớp giữ nguyên — Q11).`,
+);
+
+await checkAsync('PR-TD Task5(2) · sau khi nhân dữ liệu ×3, mọi (đường × vai) không tăng quá 5 câu so với trước', async () => {
+  const sauNhan = await doMotLuot();
+  const sai: string[] = [];
+  for (const [khoa, truoc] of truocNhan) {
+    const sau = sauNhan.get(khoa) ?? 0;
+    if (sau > truoc + 5) sai.push(`${khoa}: ${truoc} → ${sau} câu`);
+  }
+  assert(sai.length === 0, `Tăng quá 5 câu sau khi nhân dữ liệu:\n${sai.join('\n')}`);
+  console.log('\nBảng trước → sau nhân dữ liệu ×3 (chỉ đường có thay đổi):');
+  for (const [khoa, truoc] of truocNhan) {
+    const sau = sauNhan.get(khoa) ?? 0;
+    if (sau !== truoc) console.log(`  ${khoa}: ${truoc} → ${sau}`);
+  }
+});
+
+await checkAsync('PR-TD Task5(3) · sau khi nhân dữ liệu, listCases vẫn ra ĐÚNG tập id như tham chiếu — 3 vai chính', async () => {
+  const sai: string[] = [];
+  for (const vai of ['QL', 'GVCN', 'QT'] as const) {
+    const p = PRINCIPAL_CUA.get(USER[vai])!;
+    for (const f of BO_LOC_TASK3) {
+      const thamChieu = thamChieuCaseIds(p, f);
+      const truc = new Set((listCases(p, f as any).rows as any[]).map((r) => r.id as number));
+      const lech = truc.size !== thamChieu.size || [...truc].some((id) => !thamChieu.has(id));
+      if (lech) sai.push(`vai=${vai} f=${JSON.stringify(f)}: trực tiếp=${truc.size} tham chiếu=${thamChieu.size}`);
+    }
+  }
+  assert(sai.length === 0, `Lệch sau khi nhân dữ liệu:\n${sai.join('\n')}`);
+});
 
 console.log('\nBảng đo (vai · url → mã HTTP · số câu SQL):');
 for (const dong of bangDo) console.log(`  ${dong}`);
