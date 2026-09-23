@@ -482,3 +482,7 @@ này dịch được riêng).
 
 | Ngày | Task | Ghi chú |
 |---|---|---|
+
+## Bổ sung sau rà #87 (planning 23/09)
+
+- `HopSuaTuan` chế độ **Sửa lịch**: khởi tạo bộ chọn tuần bằng **tuần hiện có của ô** (sau #87 WeekPicker tự phát tuần này khi `periodId` null → nút Lưu mở ngay, bấm nhầm là dời sang tuần này). Phép kiểm/bấm thử: mở ô "L · W4 SEP" → bộ chọn hiện W4 SEP, Lưu mờ tới khi đổi tuần.

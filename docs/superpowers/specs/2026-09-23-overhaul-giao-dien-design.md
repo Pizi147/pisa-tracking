@@ -49,7 +49,7 @@ Chủ sản phẩm chốt 23/09:
 
 ## 5. Hành trình học viên (PR-UX5 — chờ mockup 18a)
 
-Giữ mô hình hiện tại. **Không vẽ đường điểm (sparkline)** — chủ sản phẩm bỏ 23/09. Sửa: điểm **lên/xuống rõ ngay trong chuỗi điểm** (▲ xanh / ▼ đỏ / = xám + mức chênh, điểm dưới kỳ vọng đỏ, màu kết quả theo N-1b, ghim đợt Test ghi điểm); **trải hết chiều ngang** (cột tuần giãn theo màn), công tắc "Xem gọn" mới thu hẹp; **không chữ bị cắt/chồng** (tên vấn đề 1 dòng + tooltip, dòng phụ riêng, khối PA hẹp chỉ hiện dấu kết quả).
+Giữ mô hình hiện tại. **Không vẽ đường điểm (sparkline)** — chủ sản phẩm bỏ 23/09. **Chuỗi điểm nằm trong cột tên, ngay sau tên kỹ năng, cùng dòng, thẳng một cột dọc giữa các hộp** (chủ sản phẩm 23/09 — vùng trục chỉ còn badge trạng thái / "Không có Case"). Sửa: điểm **lên/xuống rõ ngay trong chuỗi điểm** (▲ xanh / ▼ đỏ / = xám + mức chênh, điểm dưới kỳ vọng đỏ, màu kết quả theo N-1b, ghim đợt Test ghi điểm); **trải hết chiều ngang** (cột tuần giãn theo màn), công tắc "Xem gọn" mới thu hẹp; **không chữ bị cắt/chồng** (tên vấn đề 1 dòng + tooltip, dòng phụ riêng, khối PA hẹp chỉ hiện dấu kết quả).
 
 ## 6. Chia PR và thứ tự
 
