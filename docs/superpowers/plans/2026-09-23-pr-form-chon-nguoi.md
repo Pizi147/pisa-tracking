@@ -311,6 +311,12 @@ onPickStudent` không đổi; `signal` có thể mang `kind`, `scoreText`, `cont
 **Xong khi:** typecheck xanh; mở form từ hồ sơ HV FT, HV lớp thường, trang lớp (chưa chọn em), dòng tín hiệu của Pa đều chạy
 đúng ở Task 11. Commit `PR-Form (7): form Case — lớp thường có Writing, lưu rồi đính kèm tại chỗ, thẻ nhập bù 3 dòng, điểm chi tiết`.
 
+- [x] Task 7 xong — `npm run check` xanh, 826 phép kiểm không đổi (không có phép kiểm máy chủ mới ở Task này). Tách
+  `ComponentsField`/`componentsPayload` sang `ChiTietKyNang.tsx`, `CasePanel.tsx` import lại — `OutcomeDialog` không đổi hành vi
+  (thêm `buttonLabel?` tuỳ chọn, mặc định giữ nguyên chữ cũ). Ba caller (`ClassOverviewPage`, `StudentDetailPage` × 2,
+  `DongTinHieu`) không cần sửa: `onClose` đã đóng panel trước khi `onDone` chạy (bên trong `dong()` mới), nơi gọi đóng lại
+  trong `onDone` là vô hại (idempotent). Bấm thử để Task 11.
+
 ## Task 8 · Web: người thực hiện PA học thuật + nút Sửa có lý do (nợ S2)
 
 **Files:** `CasePanel.tsx` (ActionDialog 819-980), `CapNhatTuan.tsx` (64, 70, 82, 104-120, 212-216, 248-252),

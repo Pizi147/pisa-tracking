@@ -1,12 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
+import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Modal } from '../../ui/Drawer.tsx';
-import { Field, SectionNote } from '../../ui/ui.tsx';
+import { Field } from '../../ui/ui.tsx';
+import { BangChung } from '../../ui/BangChung.tsx';
+import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
+import { ComponentsField, componentsPayload } from './ChiTietKyNang.tsx';
 import {
-  ENTRY_SKILLS, ENTRY_SKILL_LABEL, URGENCY_LEVELS, URGENCY_LABEL, issuesForTopic, DEFAULT_URGENCY,
+  ENTRY_SKILL_LABEL, URGENCY_LEVELS, URGENCY_LABEL, issuesForTopic, DEFAULT_URGENCY,
   CASE_OUTCOMES, CASE_OUTCOME_LABEL, REGULAR_SKILL_LABEL,
+  categoryOf, componentsFor, componentsAreCounts,
+  nguoiThanhPayload, nguoiThieu, type NguoiChon,
 } from '@shared/domain/index.ts';
+
+type DaLuu = { id: number; tieuDe: string; gop: boolean; canEdit: boolean };
+type BfAction = { description: string; nguoi: NguoiChon; fromDate: string; toDate: string };
 
 /**
  * BÁO NHANH MỘT VẤN ĐỀ.
@@ -63,14 +72,19 @@ export function QuickReport({
   const [busy, setBusy] = useState(false);
   const [more, setMore] = useState(false);
 
+  /* F-1 (mục 4.8): sau khi lưu, panel KHÔNG đóng — chuyển sang bước "Đã lưu" + khối Bằng chứng. */
+  const [daLuu, setDaLuu] = useState<DaLuu | null>(null);
+
   /* NHẬP BÙ (mục 10.3) — chỉ dùng khi mode === 'backfill'. */
   const [bfFrom, setBfFrom] = useState('');
   const [bfTo, setBfTo] = useState('');
-  const [bfActions, setBfActions] = useState<{ description: string; performerName: string; fromDate: string; toDate: string }[]>([
-    { description: '', performerName: '', fromDate: '', toDate: '' },
+  const [bfActions, setBfActions] = useState<BfAction[]>([
+    { description: '', nguoi: { kieu: 'toi' }, fromDate: '', toDate: '' },
   ]);
+  const [bfErrors, setBfErrors] = useState<Record<number, string>>({});
   const [bfOutcome, setBfOutcome] = useState<string>('');
   const [bfNote, setBfNote] = useState('');
+  const [bfMetrics, setBfMetrics] = useState<Record<string, { score: string; total: string }>>({});
   const [bfDup, setBfDup] = useState<any | null>(null);
 
   /*
@@ -88,8 +102,28 @@ export function QuickReport({
     setTopic(signal.skill ?? '');
   }, [open, signal?.id]);
 
-  /* MỞ TỪ TÍN HIỆU: chỉ đúng môn của tín hiệu (§3.10 "form Case môn đó") — máy chủ cũng từ chối môn khác. */
-  const topics: readonly string[] = signal?.skill ? [signal.skill] : ENTRY_SKILLS;
+  /* Mở lại hộp thoại cho một lần báo mới thì bước "Đã lưu" của lần trước không còn ý nghĩa. */
+  useEffect(() => { if (open) setDaLuu(null); }, [open]);
+
+  /*
+   * F07 — KỸ NĂNG THEO ĐÚNG CHƯƠNG TRÌNH EM ĐANG HỌC.
+   *
+   * Mở từ tín hiệu thì đã biết chắc chắn kỹ năng (chỉ đúng môn của tín hiệu). Còn lại (hồ sơ
+   * học viên, trang lớp) hỏi máy chủ: lớp thường bốn ô L·R·W·S, Fast Track năm ô L·R·W1·W2·S
+   * (Q8) — form không tự đoán chương trình.
+   */
+  const chuDe = useApi<{ ratio: boolean; topics: string[] }>(
+    open && studentId && !signal ? `/students/${studentId}/case-topics${cycleId ? `?cycleId=${cycleId}` : ''}` : null,
+    [open, studentId, cycleId, signal],
+  );
+  const topics: readonly string[] = signal?.skill ? [signal.skill] : (chuDe.data?.topics ?? []);
+  const topicsKey = topics.join('|');
+  /* Đổi học viên (trang lớp): bộ kỹ năng đổi theo — kỹ năng/phân loại cũ không còn hợp lệ thì bỏ, không giữ lại một lựa chọn sai chương trình. */
+  useEffect(() => {
+    if (topic && !topics.includes(topic)) { setTopic(''); setPrimaryCode(''); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [topicsKey]);
+
   const topicLabel = (k: string) => ENTRY_SKILL_LABEL[k as keyof typeof ENTRY_SKILL_LABEL]
     ?? REGULAR_SKILL_LABEL[k as keyof typeof REGULAR_SKILL_LABEL] ?? k;
   const causes = topic ? issuesForTopic(topic) : [];
@@ -98,8 +132,25 @@ export function QuickReport({
     setSummary(''); setUrgency(DEFAULT_URGENCY); setTopic('');
     setTitle(''); setPrimaryCode(''); setDetectedAt(''); setMore(false); setDup(null);
     setMode('now'); setBfFrom(''); setBfTo('');
-    setBfActions([{ description: '', performerName: '', fromDate: '', toDate: '' }]);
-    setBfOutcome(''); setBfNote(''); setBfDup(null);
+    setBfActions([{ description: '', nguoi: { kieu: 'toi' }, fromDate: '', toDate: '' }]);
+    setBfErrors({}); setBfOutcome(''); setBfNote(''); setBfMetrics({}); setBfDup(null);
+    setDaLuu(null);
+  };
+
+  /*
+   * BƯỚC "ĐÃ LƯU" DÙNG CHUNG cho ✕ / Esc / bấm nền của Modal VÀ nút Xong (Q7):
+   *   · Đã lưu → panel đóng THẬT SỰ, và onDone chỉ chạy lúc này (nơi gọi đóng panel trong onDone).
+   *   · Chưa lưu → đóng như trước, không có gì để báo lại.
+   */
+  const dong = () => {
+    if (daLuu) {
+      const id = daLuu.id;
+      reset();
+      onClose();
+      onDone?.(id);
+    } else {
+      onClose();
+    }
   };
 
   /*
@@ -125,7 +176,8 @@ export function QuickReport({
       });
       invalidate('/cases'); invalidate('/students'); invalidate('/overview');
       toast.push('ok', extra.mergeIntoExisting ? 'Đã ghi vào case đang có' : 'Đã ghi nhận');
-      reset(); setDup(null); onClose(); onDone?.(res.id);
+      setDup(null);
+      setDaLuu({ id: res.id, tieuDe: res.title, gop: !!extra.mergeIntoExisting, canEdit: !!res.viewer?.canEdit });
     } catch (e: any) {
       const d = e?.details?.duplicateCase;
       if (d) { setDup(d); return; }
@@ -157,21 +209,25 @@ export function QuickReport({
   const sendBackfill = async (extra: Record<string, unknown> = {}) => {
     setBusy(true);
     try {
+      const category = categoryOf(topic);
       const res = await api.post<any>('/cases/backfill', {
         studentId, cycleId: cycleId ?? undefined,
         topic, primaryCode: primaryCode || undefined,
         title: title.trim() || null, summary,
         fromDate: bfFrom, toDate: bfTo,
         actions: bfActions.map((a) => ({
-          description: a.description.trim(), performerName: a.performerName.trim(),
+          description: a.description.trim(), ...nguoiThanhPayload(a.nguoi),
           fromDate: a.fromDate, toDate: a.toDate,
         })),
         outcome: bfOutcome, note: bfNote,
+        /* S5 — điểm giáo viên tự chấm theo kỹ năng, luôn TUỲ CHỌN. */
+        metrics: componentsPayload(category, bfMetrics, componentsAreCounts(category)),
         ...extra,
       });
       invalidate('/cases'); invalidate('/students'); invalidate('/overview');
-      toast.push('ok', 'Đã ghi lại case đã xong');
-      reset(); onClose(); onDone?.(res.id);
+      toast.push('ok', 'Đã ghi lại Case đã xong');
+      setBfDup(null);
+      setDaLuu({ id: res.id, tieuDe: res.title, gop: false, canEdit: !!res.viewer?.canEdit });
     } catch (e: any) {
       const d = e?.details?.duplicateBackfill;
       if (d) { setBfDup(d); return; }
@@ -194,35 +250,66 @@ export function QuickReport({
     }
     if (!bfFrom || !bfTo) { toast.push('error', 'Ghi từ ngày nào đến ngày nào.'); return; }
     if (bfFrom > bfTo) { toast.push('error', 'Ngày bắt đầu phải trước ngày kết thúc.'); return; }
-    const rows = bfActions.filter((a) => a.description.trim() || a.performerName.trim());
-    if (!rows.length) { toast.push('error', 'Ghi ít nhất một dòng "đã làm gì".'); return; }
-    for (const a of rows) {
-      if (a.description.trim().length < 3) { toast.push('error', 'Mỗi dòng "đã làm gì" phải nói rõ đã làm gì.'); return; }
-      if (!a.performerName.trim()) { toast.push('error', 'Mỗi dòng "đã làm gì" phải ghi người làm.'); return; }
-      if (!a.fromDate || !a.toDate) { toast.push('error', 'Mỗi dòng "đã làm gì" phải có từ ngày → đến ngày.'); return; }
-      if (a.fromDate > a.toDate) { toast.push('error', 'Một dòng "đã làm gì" có ngày bắt đầu sau ngày kết thúc.'); return; }
-    }
+
+    /*
+     * F-3 (§22.4): mỗi thẻ kiểm RIÊNG, lỗi hiện NGAY DƯỚI thẻ đó — không đẩy lệch thẻ khác
+     * bằng một toast chung chung "có dòng sai". Thẻ chưa gõ gì (mô tả rỗng) thì bỏ qua, không kiểm.
+     */
+    const filled = bfActions.filter((a) => a.description.trim());
+    if (!filled.length) { toast.push('error', 'Ghi ít nhất một dòng "đã làm gì".'); return; }
+    const errors: Record<number, string> = {};
+    bfActions.forEach((a, i) => {
+      if (!a.description.trim()) return;
+      if (a.description.trim().length < 3) { errors[i] = 'Phải nói rõ đã làm gì.'; return; }
+      const thieu = nguoiThieu(a.nguoi, true);
+      if (thieu) { errors[i] = thieu; return; }
+      if (!a.fromDate || !a.toDate) { errors[i] = 'Cần từ ngày → đến ngày.'; return; }
+      if (a.fromDate > a.toDate) { errors[i] = 'Ngày bắt đầu phải trước ngày kết thúc.'; return; }
+    });
+    if (Object.keys(errors).length) { setBfErrors(errors); return; }
+    setBfErrors({});
     if (!bfOutcome) { toast.push('error', 'Chọn kết quả cuối.'); return; }
     if (bfNote.trim().length < 10) { toast.push('error', 'Ghi chú kết luận — ít nhất 10 ký tự.'); return; }
-    setBfActions(rows);
+    setBfActions(filled);
     await sendBackfill();
   };
 
+  const category = categoryOf(topic);
+  const bfComponents = componentsFor(category, chuDe.data?.ratio ? 'ratio' : 'band');
+  const bfCounts = componentsAreCounts(category);
+
   return (
-    <Modal open={open} onClose={onClose}
+    <Modal open={open} onClose={dong}
+      width={mode === 'backfill' ? 'max-w-xl' : undefined}
       title={signal?.kind === 'normal'
         ? `Tạo Case · ${signal.label}${studentName ? ` · ${studentName}` : ''}`
         : signal
           ? `Xác minh tín hiệu ${signal.label}${studentName ? ` · ${studentName}` : ''}`
           : (studentName ? `+ Case · ${studentName}` : '+ Case')}
       footer={
-        <>
-          <button className="btn" onClick={onClose}>Huỷ</button>
-          {mode === 'now'
-            ? <button className="btn btn-primary" disabled={busy || !studentId} onClick={submit}>Ghi nhận</button>
-            : <button className="btn btn-primary" disabled={busy || !studentId} onClick={submitBackfill}>Ghi lại case đã xong</button>}
-        </>
+        daLuu ? (
+          <button className="btn btn-primary" onClick={dong}>Xong</button>
+        ) : (
+          <>
+            <button className="btn" onClick={dong}>Huỷ</button>
+            {mode === 'now'
+              ? <button className="btn btn-primary" disabled={busy || !studentId} onClick={submit}>Ghi nhận</button>
+              : <button className="btn btn-primary" disabled={busy || !studentId} onClick={submitBackfill}>Ghi lại Case đã xong</button>}
+          </>
+        )
       }>
+      {daLuu ? (
+        /*
+         * F-1 (mục 4.8): bước "Đã lưu" — panel không đóng, hiện dấu ✓ rồi khối Bằng chứng của
+         * CHÍNH Case vừa tạo, để đính kèm ngay tại chỗ thay vì phải mở lại case sau.
+         */
+        <div className="space-y-3">
+          <p className="text-sm text-slate-400 m-0">
+            {daLuu.gop ? <>✓ Đã ghi vào Case đang có «{daLuu.tieuDe}»</> : <>✓ Đã lưu Case «{daLuu.tieuDe}»</>}
+          </p>
+          <BangChung ownerType="sos_case" ownerId={daLuu.id} canEdit={daLuu.canEdit} tieuDe="Bằng chứng" />
+        </div>
+      ) : (
       <div className="space-y-3">
         {/*
           HAI TAB (mục 10.3): "Đang gặp vấn đề" (đường thường) và "Đã xong từ trước" (nhập
@@ -230,15 +317,20 @@ export function QuickReport({
           ra, không phải chuyện đã xong từ lâu.
         */}
         {!signal && (
-          <div className="flex gap-1">
+          <div className="flex gap-1.5 items-center flex-wrap">
             <button type="button" className={`btn btn-sm ${mode === 'now' ? 'btn-primary' : ''}`}
               onClick={() => setMode('now')}>
               Đang gặp vấn đề
             </button>
+            <span className="text-slate-500 text-xs cursor-help" aria-label="Không tạo bài đánh giá, không có mức SOS."
+              title="Không tạo bài đánh giá, không có mức SOS.">ⓘ</span>
             <button type="button" className={`btn btn-sm ${mode === 'backfill' ? 'btn-primary' : ''}`}
               onClick={() => setMode('backfill')}>
               Đã xong từ trước
             </button>
+            <span className="text-slate-500 text-xs cursor-help"
+              aria-label="Nhập bù không có hạn, không tính vào tỷ lệ hiệu quả — đây là trí nhớ, không phải phương án đang chạy."
+              title="Nhập bù không có hạn, không tính vào tỷ lệ hiệu quả — đây là trí nhớ, không phải phương án đang chạy.">ⓘ</span>
           </div>
         )}
 
@@ -290,6 +382,9 @@ export function QuickReport({
             placeholder="MT2 Reading: hết giờ khi còn hai câu cuối của Passage 3; dạng Not Given sai 4/5 câu. Buổi 12/08 chữa bài em cũng đoán chứ không tìm được căn cứ trong bài." />
         </Field>
 
+        {/* F-1: người dùng biết trước — ảnh/tệp/liên kết KHÔNG có ở đây, mà thêm ngay sau khi lưu. */}
+        <p className="text-[11px] text-slate-500 m-0">Ảnh, tệp, liên kết: thêm ngay sau khi lưu.</p>
+
         {/* Nhập bù là chuyện ĐÃ XONG — không còn "mức độ gấp" để mà xin. */}
         {mode === 'now' && (
           <Field label="Mức độ" required
@@ -309,17 +404,26 @@ export function QuickReport({
         {/*
           KỸ NĂNG LÀ BẮT BUỘC, nên để ngay đây chứ không giấu dưới "xem thêm": một vấn đề không
           có chỗ cất sẽ không bao giờ hiện lên bảng tổng hợp theo kỹ năng.
+
+          F07: bộ kỹ năng theo đúng chương trình em đang học — hỏi máy chủ (`case-topics`) thay
+          vì luôn giả định năm ô Fast Track, để lớp thường mở được Case Writing (`writing`).
         */}
         <Field label="Kỹ năng nào" required>
-          <div className="flex gap-1 flex-wrap">
-            {topics.map((k) => (
-              <button key={k} type="button"
-                className={`btn btn-sm ${topic === k ? 'btn-primary' : ''}`}
-                onClick={() => { setTopic(k); setPrimaryCode(''); }}>
-                {topicLabel(k)}
-              </button>
-            ))}
-          </div>
+          {!studentId ? (
+            <p className="text-xs text-slate-500 m-0">Chọn học viên trước.</p>
+          ) : !signal && chuDe.loading && !chuDe.data ? (
+            <p className="text-xs text-slate-500 m-0">Đang tải…</p>
+          ) : (
+            <div className="flex gap-1 flex-wrap">
+              {topics.map((k) => (
+                <button key={k} type="button"
+                  className={`btn btn-sm ${topic === k ? 'btn-primary' : ''}`}
+                  onClick={() => { setTopic(k); setPrimaryCode(''); }}>
+                  {topicLabel(k)}
+                </button>
+              ))}
+            </div>
+          )}
         </Field>
 
         {/*
@@ -364,55 +468,64 @@ export function QuickReport({
           </Field>
         )}
 
-        {mode === 'now' && !signal && (
-          <SectionNote>
-            Ghi nhận này KHÔNG tạo ra một bài đánh giá và cũng không có mức SOS — SOS là số kỹ
-            năng dưới kỳ vọng ở một bài cụ thể, ở đây chưa có bài nào.
-          </SectionNote>
-        )}
-
         {/*
           TAB "ĐÃ XONG TỪ TRƯỚC" (mục 10.3) — chỗ DUY NHẤT được nhập ngày quá khứ, Không có ô "Mức độ": việc đã xong rồi thì không còn gì
           để mà gấp.
         */}
         {mode === 'backfill' && (
           <>
-            <Field label="Từ ngày → đến ngày" required
+            <Field label="Khoảng thời gian" required
               hint="Khoảng thời gian vấn đề thật sự diễn ra, không phải hôm nay.">
-              <div className="flex items-center gap-2">
-                <input type="date" className="field" value={bfFrom} onChange={(e) => setBfFrom(e.target.value)} />
-                <span className="text-slate-500">→</span>
-                <input type="date" className="field" value={bfTo} onChange={(e) => setBfTo(e.target.value)} />
+              <div className="grid grid-cols-2 gap-2">
+                <label className="block">
+                  <span className="text-[11px] text-slate-500 block">Từ ngày</span>
+                  <input type="date" className="field" value={bfFrom} onChange={(e) => setBfFrom(e.target.value)} />
+                </label>
+                <label className="block">
+                  <span className="text-[11px] text-slate-500 block">Đến ngày</span>
+                  <input type="date" className="field" value={bfTo} onChange={(e) => setBfTo(e.target.value)} />
+                </label>
               </div>
             </Field>
 
-            <Field label="Phương án đã áp dụng" required hint="Mỗi dòng một phương án: tên phương án, người thực hiện, từ ngày → đến ngày.">
+            {/*
+              F-3 (§22.4): mỗi thẻ ba dòng cố định — mô tả, người thực hiện (ChonNguoi), khoảng
+              ngày. Lỗi hiện NGAY DƯỚI thẻ của chính nó, không đẩy lệch các thẻ khác.
+            */}
+            <Field label="Phương án đã áp dụng" required hint="Mỗi thẻ một phương án: mô tả, người thực hiện, từ ngày → đến ngày.">
               <div className="space-y-2">
                 {bfActions.map((a, i) => (
-                  <div key={i} className="surface-2 rounded-lg p-2 space-y-1.5">
+                  <div key={i} className="surface-2 rounded-lg p-2.5 space-y-1.5">
+                    {bfActions.length > 1 && (
+                      <div className="flex justify-end">
+                        <button type="button" className="btn btn-sm btn-ghost"
+                          onClick={() => setBfActions(bfActions.filter((_, j) => j !== i))}>
+                          Xoá
+                        </button>
+                      </div>
+                    )}
                     <input className="field" placeholder="Phương án đã áp dụng (ví dụ: tutor Listening mỗi tuần)"
                       value={a.description}
                       onChange={(e) => setBfActions(bfActions.map((x, j) => j === i ? { ...x, description: e.target.value } : x))} />
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <input className="field max-w-[10rem]" placeholder="Người thực hiện"
-                        value={a.performerName}
-                        onChange={(e) => setBfActions(bfActions.map((x, j) => j === i ? { ...x, performerName: e.target.value } : x))} />
-                      <input type="date" className="field max-w-[9rem]" value={a.fromDate}
-                        onChange={(e) => setBfActions(bfActions.map((x, j) => j === i ? { ...x, fromDate: e.target.value } : x))} />
-                      <span className="text-slate-500">→</span>
-                      <input type="date" className="field max-w-[9rem]" value={a.toDate}
-                        onChange={(e) => setBfActions(bfActions.map((x, j) => j === i ? { ...x, toDate: e.target.value } : x))} />
-                      {bfActions.length > 1 && (
-                        <button type="button" className="btn btn-sm btn-ghost"
-                          onClick={() => setBfActions(bfActions.filter((_, j) => j !== i))}>
-                          Bỏ dòng
-                        </button>
-                      )}
+                    <ChonNguoi nhom="giao_vien" studentId={studentId} value={a.nguoi}
+                      onChange={(v) => setBfActions(bfActions.map((x, j) => j === i ? { ...x, nguoi: v ?? { kieu: 'toi' } } : x))} />
+                    <div className="grid grid-cols-2 gap-2">
+                      <label className="block">
+                        <span className="text-[11px] text-slate-500 block">Từ ngày</span>
+                        <input type="date" className="field" value={a.fromDate}
+                          onChange={(e) => setBfActions(bfActions.map((x, j) => j === i ? { ...x, fromDate: e.target.value } : x))} />
+                      </label>
+                      <label className="block">
+                        <span className="text-[11px] text-slate-500 block">Đến ngày</span>
+                        <input type="date" className="field" value={a.toDate}
+                          onChange={(e) => setBfActions(bfActions.map((x, j) => j === i ? { ...x, toDate: e.target.value } : x))} />
+                      </label>
                     </div>
+                    {bfErrors[i] && <p className="text-[11px] text-rose-300 m-0">{bfErrors[i]}</p>}
                   </div>
                 ))}
                 <button type="button" className="btn btn-sm btn-ghost"
-                  onClick={() => setBfActions([...bfActions, { description: '', performerName: '', fromDate: '', toDate: '' }])}>
+                  onClick={() => setBfActions([...bfActions, { description: '', nguoi: { kieu: 'toi' }, fromDate: '', toDate: '' }])}>
                   + Thêm phương án
                 </button>
               </div>
@@ -430,15 +543,16 @@ export function QuickReport({
               </div>
             </Field>
 
+            {/* S5 — điểm giáo viên tự chấm theo đúng kỹ năng của case, luôn TUỲ CHỌN. */}
+            {bfComponents.length > 0 && (
+              <ComponentsField label={topicLabel(topic)} components={bfComponents} counts={bfCounts}
+                value={bfMetrics} onChange={setBfMetrics}
+                buttonLabel="+ Điểm chi tiết theo kỹ năng (không bắt buộc)" />
+            )}
+
             <Field label="Ghi chú" required hint="Ngày quá khứ không tự chứng minh hiệu quả — nói rõ vì sao kết luận vậy.">
               <textarea className="field" rows={2} value={bfNote} onChange={(e) => setBfNote(e.target.value)} />
             </Field>
-
-            <SectionNote>
-              Case nhập bù sẽ hiện nhãn <strong>"nhập bù"</strong> ngay trên thẻ case, không có
-              hạn cập nhật hay hạn báo kết quả nào, và không tính vào tỷ lệ hiệu quả hỗ trợ —
-              đây là trí nhớ, không phải một phương án đang chạy.
-            </SectionNote>
 
             {bfDup && (
               <div className="mt-2 rounded-lg border p-3"
@@ -458,6 +572,7 @@ export function QuickReport({
           </>
         )}
       </div>
+      )}
 
       {/*
         POP-UP CẢNH BÁO CASE TRÙNG — đè lên form, không thay thế form.
@@ -466,7 +581,7 @@ export function QuickReport({
         định gì. Nút trái là vế MẶC ĐỊNH vì nó đúng trong đa số trường hợp; vế phải hợp lệ
         nhưng phải là quyết định có ý thức.
       */}
-      {dup && (
+      {dup && !daLuu && (
         <div className="mt-4 rounded-lg border p-3"
              style={{ borderColor: 'var(--warn)', background: 'rgba(240, 201, 135, 0.08)' }}>
           <p className="text-sm text-slate-100 m-0">
