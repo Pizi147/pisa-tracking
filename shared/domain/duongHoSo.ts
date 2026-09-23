@@ -94,6 +94,9 @@ export function duongThongBao(n: ThongBaoRow): string | null {
       return n.attempt_id != null ? `/mock-test/${n.attempt_id}` : null;
     case 'discipline_measure':
       return n.student_id != null ? duongHoSoHocVien(n.student_id, { tab: 'y-thuc' }) : null;
+    /* PR-Ra Q5: người được Nhắc bấm chuông thì về thẳng danh sách có dòng vừa được nhắc. */
+    case 'nhac_viec':
+      return '/cong-viec';
     default:
       return null;
   }

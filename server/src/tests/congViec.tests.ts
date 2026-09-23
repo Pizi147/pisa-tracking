@@ -312,6 +312,11 @@ export async function runCongViecTests(t: YThucTestKit) {
     assert(chua.ma === 'chua' && chua.nhan === 'Chưa báo cáo', `Không ô nào có gì phải là Chưa báo cáo: ${JSON.stringify(chua)}`);
   });
 
+  check('PR-Ra Q5 · duongThongBao: thông báo Nhắc (entity_type="nhac_viec") mở /cong-viec', () => {
+    const duong = domain.duongThongBao({ entity_type: 'nhac_viec', entity_id: 0, kind: null, student_id: null, attempt_id: null });
+    assert(duong === '/cong-viec', `Thông báo Nhắc phải mở /cong-viec: ${duong}`);
+  });
+
   // ================================================================== 4. Máy chủ: Hỗ trợ học viên — nguoi, Nhắc, Duyệt
 
   console.log('\nPR-Ra · 4. Máy chủ Hỗ trợ học viên — người phụ trách lọc ở máy chủ, Nhắc, Duyệt trên dòng');

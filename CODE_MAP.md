@@ -37,7 +37,7 @@ Nếu bạn nghĩ theo "cái tôi thấy trên màn hình" chứ không theo tê
 | Thông báo trên thanh đầu, mở đúng chỗ theo loại | `web/src/modules/platform/Header.tsx` | `server/src/platform/thongBao.ts` |
 | Màn một lượt Test (chọn đợt khác cạnh tiêu đề; nút nhập điểm mở lưới đúng tuần của đợt) | `web/src/modules/fasttrack/MockDetailPage.tsx` | `server/src/fasttrack/attempts.ts` → `attemptDetail` |
 | **Bảng nhập điểm cả lớp** — một lưới cho hai loại lớp, máy chủ trả `mode` | `web/src/modules/cham/ChamDiemPage.tsx` (lưới `web/src/modules/cham/LuoiFT.tsx` · `web/src/modules/cham/LuoiThuong.tsx`; điện thoại `web/src/modules/cham/MotKyNang.tsx`) | `server/src/cham/canCham.ts` → `chamSheet` (`GET /classes/:classId/cham`) |
-| **Công việc** › Hỗ trợ học viên · Vận hành · Báo cáo đơn vị | `web/src/modules/congViec/CongViecPage.tsx` (bọc `WorkList` · `TasksBoard` · `MeetingBoard`) | `mywork.ts` · `mgmttasks.ts` · `meeting.ts` |
+| **Công việc** (3 tab: Hỗ trợ học viên · Vận hành · Báo cáo đơn vị, PR-Ra) | `web/src/modules/congViec/CongViecPage.tsx` (bọc `HoTroHocVienTab.tsx` · `worklist/MgmtTasksPage.tsx` → `TasksBoard`/`NganViecVanHanh` · `worklist/MeetingPage.tsx` → `MeetingBoard`) | `worklist/mywork.ts` (`nguoi`, `nhacViec.ts`) · `worklist/mgmttasks.ts` · `worklist/meeting.ts` · luật thuần `shared/domain/congViec.ts` (lọc nhanh, hàng số Vận hành, trạng thái báo cáo) · nâng cấp `migrate.ts` → `migrateCongViec` |
 | **Tổng quan** (QL: 4 ô · Cần xử lý · Điểm đáng chú ý · Lịch sắp tới · Theo chi nhánh; GV: Việc cần làm của tôi · Học viên cần hỗ trợ) | `web/src/modules/worklist/OverviewPage.tsx` | `server/src/worklist/tongQuan.ts` · `bangChiNhanh.ts` · `metrics.ts` (metricSet + chương trình) |
 | Dòng tín hiệu SOS lớp thường (Tạo Case / Bỏ qua) | `web/src/modules/worklist/DongTinHieu.tsx` → `QuickReport.tsx` | `/signals/pending/:id/dismiss` · `/cases/report` |
 | Lọc chương trình Lớp thường / FT cho mọi chỉ số | `shared/domain/tongQuan.ts` | `server/src/worklist/chuongTrinh.ts` |
@@ -270,7 +270,8 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | Màn Tổng quan (QL: 4 ô · Cần xử lý · Điểm đáng chú ý · Lịch sắp tới · Theo chi nhánh; GV: Việc cần làm của tôi · Học viên cần hỗ trợ) | `web/src/modules/worklist/OverviewPage.tsx` · `server/src/worklist/tongQuan.ts` · `metrics.ts` (metricSet + chương trình) |
 | Dòng tín hiệu SOS lớp thường (Tạo Case / Bỏ qua) | `web/src/modules/worklist/DongTinHieu.tsx` → `QuickReport.tsx` · `/signals/pending/:id/dismiss` · `/cases/report` |
 | Lọc chương trình Lớp thường / FT cho mọi chỉ số | `shared/domain/tongQuan.ts` · `server/src/worklist/chuongTrinh.ts` |
-| Khu "Việc cần làm" — bộ lọc, phân trang, năm ô của một dòng | `web/src/modules/worklist/WorkList.tsx` |
+| Một dòng việc (năm ô) và khối bốn nhóm gập/mở | `web/src/modules/worklist/WorkList.tsx` → `DongViec` · `worklist/NhomViec.tsx` (dùng chung ở `ViecCuaToi.tsx` và tab Hỗ trợ học viên, PR-Ra) |
+| Tab **Hỗ trợ học viên** — lọc nhanh theo hạn, Người phụ trách (QL: Tất cả trong phạm vi/Chọn giáo viên…), Loại việc, nút Nhắc/Duyệt trên dòng (PR-Ra) | `web/src/modules/congViec/HoTroHocVienTab.tsx` · `congViec/ChonPhuTrach.tsx` · `server/src/worklist/mywork.ts` (`nguoi`) · `nhacViec.ts` |
 | Bảng "Theo chi nhánh" / "Theo lớp" (Việc cần lưu ý) | `web/src/modules/worklist/BranchPulse.tsx` · `server/src/worklist/bangChiNhanh.ts` (bảng **Theo giáo viên** vẫn ở `branchpulse.ts`) |
 | **Ô điểm còn nợ** của bảng chi nhánh — đi qua đúng hàm của bảng chấm (S12, §6) | `server/src/worklist/scoreDebt.ts` → `scoreDebtCells` |
 | Quản lý giao việc cho giáo viên | `web/src/modules/worklist/ManagerTasks.tsx` · `server/src/worklist/meeting.ts` (không còn gọi từ Phân tích — PR-Ra quyết, xem `MeetingPage`) |
@@ -279,13 +280,14 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | Tên và ý nghĩa của chín nhóm việc | `server/src/worklist/mywork.ts` → `GROUP_META` |
 | "Việc của tôi" khác "tôi sửa được" | `server/src/permissions.ts` → `mySkills` vs `editableSkills` |
 
-### Tiến độ công việc
+### Tiến độ công việc (tab Vận hành)
 
 | Muốn sửa | Mở file |
 |---|---|
-| Bảng Tiến độ công việc | `web/src/modules/worklist/MgmtTasksPage.tsx` |
-| Luật của bảng đó: việc con một tầng, lý do bắt buộc, đóng việc cha | `server/src/worklist/mgmttasks.ts` |
+| Tab Vận hành: hàng số (bấm lọc), bảng 5 cột, panel chi tiết | `web/src/modules/worklist/MgmtTasksPage.tsx` → `TasksBoard` · `NganViecVanHanh` (PR-Ra) |
+| Luật của bảng đó: việc con một tầng, lý do bắt buộc, đóng việc cha, **Tạm ngưng** đủ ba ý (lý do + người cần hỗ trợ + ngày xem lại, PR-Ra Q10), dời hạn giữ hạn cũ (Q9) | `server/src/worklist/mgmttasks.ts` |
 | Bốn nhóm công việc và năm trạng thái | `shared/domain/worklist.ts` → `TASK_GROUPS`, `TASK_PROGRESS` |
+| Luật thuần hàng số Vận hành (Q8: quá hạn · chờ người khác · cần quyết định · vừa hoàn thành), facet, lọc nhanh Hỗ trợ học viên, trạng thái ô/đơn vị báo cáo (Q12) | `shared/domain/congViec.ts` |
 
 ### Nền tảng
 

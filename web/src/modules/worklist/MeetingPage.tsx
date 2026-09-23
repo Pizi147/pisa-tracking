@@ -83,6 +83,25 @@ export function MeetingBoard() {
     periodId ? `/meeting/board?periodId=${periodId}${month ? `&month=${month}` : ''}` : null,
     [periodId, month],
   );
+  /*
+   * Panel phải đang mở một ô thì `board.reload()` (sau Lưu nháp/Nộp) nạp dữ liệu MỚI, nhưng
+   * `ganhoi.cell` vẫn là bản CŨ chụp lúc bấm mở — không đồng bộ lại thì panel cứ hiện "chưa có
+   * báo cáo" dù vừa lưu xong (thiếu "Nối với việc"/"Bằng chứng"). Đồng bộ theo khoá `key`.
+   */
+  useEffect(() => {
+    if (!ganhoi || !board.data) return;
+    const u = board.data.units.find((x) => x.unitId === ganhoi.unit.unitId);
+    const c = u?.cells.find((x) => x.key === ganhoi.cell.key);
+    if (u && c && (u !== ganhoi.unit || c !== ganhoi.cell)) setGanHoi({ unit: u, cell: c });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [board.data]);
+  /*
+   * Rules of Hooks: hai đếm này PHẢI gọi vô điều kiện ở đây, không gọi trong JSX bên dưới
+   * `{board.data && (...)}` — gọi trong đó thì tải xong dữ liệu là đổi SỐ hook giữa hai lần
+   * render, React ném "Rendered more hooks than during the previous render".
+   */
+  const soVanDaGiao = useManagerTaskCount(periodId);
+  const soTinHieuDangTon = useSignalCount(periodId);
 
   if (board.error) return <ErrorState message={board.error.message} hint={board.error.hint} onRetry={board.reload} />;
 
@@ -180,11 +199,11 @@ export function MeetingBoard() {
 
           {/* ── hai khối thu gọn (Q16) — luôn có số ── */}
           <details>
-            <summary className="cursor-pointer text-sm text-slate-300 py-1">Việc đã giao ({useManagerTaskCount(periodId)})</summary>
+            <summary className="cursor-pointer text-sm text-slate-300 py-1">Việc đã giao ({soVanDaGiao})</summary>
             <div className="pt-2"><ManagerTaskList periodId={periodId} /></div>
           </details>
           <details>
-            <summary className="cursor-pointer text-sm text-slate-300 py-1">Việc đang tồn ({useSignalCount(periodId)})</summary>
+            <summary className="cursor-pointer text-sm text-slate-300 py-1">Việc đang tồn ({soTinHieuDangTon})</summary>
             <div className="pt-2"><SignalList periodId={periodId} /></div>
           </details>
 

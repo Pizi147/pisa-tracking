@@ -476,4 +476,24 @@ Kịch bản (mỗi kịch bản ≥ 1 ảnh `thiet-ke/anh/pr-ra/NN-ten.png`):
   rồi làm". Qb #75 và Rc2 #76 đã merge vào `origin/main` từ lúc bắt đầu Task 6 (kiểm bằng `git fetch`), nhưng NHÁNH của
   PR-Ra chưa rebase — rebase giữa chừng khi Task 7–8 chưa xong rủi ro cao hơn lợi ích của việc làm sớm một dòng. Giữ
   đúng phương án dự phòng của kế hoạch: hoãn điểm 7 tới lúc rebase cuối PR (Task 9).
+- **Task 9, bấm thử phát hiện lỗi thật (2 lỗi, cả hai đã sửa và kiểm lại bằng ảnh):**
+  1. `MeetingBoard` (`MeetingPage.tsx`) gọi `useManagerTaskCount(periodId)`/`useSignalCount(periodId)` NGAY TRONG JSX bên
+     trong `{board.data && (...)}` — lần render đầu (`board.data` chưa có) không gọi hai hook này, lần render sau (dữ
+     liệu vừa tải xong) mới gọi → React ném "Rendered more hooks than during the previous render", trang Báo cáo đơn vị
+     TRẮNG HOÀN TOÀN. Đổi tên hàm thành `useXxx` ở PR-Ra (8) chỉ thoả quy ước đặt tên của eslint, không sửa được lỗi gọi
+     hook có điều kiện — phải chuyển lời gọi lên đầu thân `MeetingBoard`, vô điều kiện, trước `if (board.error) return`.
+  2. `NganBaoCao` (panel phải của Báo cáo đơn vị) nhận `cell`/`unit` từ state `ganhoi` — sau khi Lưu nháp/Nộp/Nối việc,
+     `onSaved` gọi `board.reload()` nạp dữ liệu MỚI nhưng `ganhoi.cell` vẫn là bản CŨ chụp lúc bấm mở ô, không tự đồng
+     bộ lại. Kết quả: vừa lưu nháp xong, panel vẫn hiện "Lưu nháp để đính kèm bằng chứng" và không có "+ Chọn việc" dù
+     báo cáo đã có `reportId` — phải đóng rồi mở lại ô mới thấy đúng. Thêm một `useEffect` (vô điều kiện, đặt ngay sau
+     `board = useApi(...)`) đồng bộ `ganhoi` theo `key`/`unitId` mỗi khi `board.data` đổi.
+  3. Đã manh nha dùng lệnh riêng `PATCH /mgmt-tasks/:id` (đổi người phụ trách, hạn) để tạo tạm dữ liệu thử hai kịch bản
+     seed không sẵn có (GV mở việc Vận hành được giao, dời hạn có lý do) rồi trả lại giá trị gốc ngay sau khi chụp ảnh —
+     không đụng seed.ts, không đụng Turso, chỉ là thao tác tạm trên `data/pisa-demo.sqlite` của bản thử qua API thật.
+  4. Không tìm được dòng `decide` (GV đề xuất PA học thuật, đang chờ QL duyệt, `duyet != null`) nào trong seed hiện tại
+     ở phạm vi QL demo — chỉ có dòng `decide_move` (xin dời lịch MT, dẫn sang `/mock-test/:id`, không có nút Duyệt tại
+     chỗ). Không dựng dữ liệu giả cho ca này: `duyet`/nút Duyệt đã có phép kiểm máy chủ ở Task 3
+     (`congViec.tests.ts`, "Dòng duyệt đề xuất có `duyet.interventionId`") và đã rà code phần gọi `ApprovalDialog`
+     (`CasePanel.tsx:940`, chỉ thêm `export`) khớp đúng kiểu tham số qua `npm run check` (typecheck xanh) — rủi ro còn
+     lại chỉ ở phần hiển thị, thấp hơn nhiều so với hai lỗi thật đã tìm thấy trong lúc bấm thử phần còn lại.
 
