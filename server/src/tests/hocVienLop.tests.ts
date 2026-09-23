@@ -517,4 +517,46 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     eq(badge, dsGvThay, 'Badge lớp B phải khớp ĐÚNG danh sách "Cần hỗ trợ" mà GV lớp B thấy được — không đếm dư');
     eq(dsGvThay, 0, 'Nợ để lại (ngoài phạm vi PR-Qa): case vẫn "vô hình" với GV lớp B vì cases.ts lọc quyền theo lớp lúc đánh giá (A)');
   });
+
+  // ------------------------------------------------------------------ Task 17 (fix sau rà soát planning) · Important
+
+  /** Đếm số lần `conn.prepare` được gọi trong `fn` — cùng kỹ thuật với run.ts (mục 11, "chỉ dùng một nhóm truy vấn"). */
+  function demTruyVan(fn: () => void): number {
+    let n = 0;
+    const orig = conn.prepare.bind(conn);
+    (conn as any).prepare = (sql: string) => { n += 1; return orig(sql); };
+    try { fn(); } finally { (conn as any).prepare = orig; }
+    return n;
+  }
+
+  /** Thêm N Case mới (học viên mới, mỗi em một Case) vào một lớp đã có sẵn — dùng để phình số Case mà không đổi số lớp/chi nhánh. */
+  function themNhieuCase(cid: number, soLuong: number) {
+    for (let i = 0; i < soLuong; i += 1) {
+      const hvMoi = taoHocVien({ cid, ft: true, target: 6.5 });
+      const at = themLuot({ ...hvMoi, cid, no: 2, kind: 'mock', weekStart: '2026-09-07' });
+      conn.prepare(
+        `INSERT INTO sos_cases (student_id, cycle_id, attempt_id, topic, category, origin_kind, status, sos_level, title, detected_at, created_at)
+         VALUES (?, ?, ?, 'listening', 'listening', 'teacher_report', 'open', 1, 'PR-Qa T17-fix đếm truy vấn', ?, ?)`,
+      ).run(hvMoi.sid, hvMoi.cycleId, at, TODAY, NOW);
+    }
+  }
+
+  check('PR-Qa (17, fix planning) · danhSachHocVienLop: số câu lệnh không tăng theo số Case (chỉ theo số chi nhánh/lớp)', () => {
+    const ft = classId('MB-FT 101');
+    const truoc = demTruyVan(() => { hvl.danhSachHocVienLop(P.admin, {}); });
+    themNhieuCase(ft, 18); // phình thêm 18 Case (+ 18 học viên/lượt/lộ trình) vào MỘT lớp đã có sẵn — không thêm lớp/chi nhánh nào.
+    const sau = demTruyVan(() => { hvl.danhSachHocVienLop(P.admin, {}); });
+    assert(sau <= truoc + 3,
+      `Thêm 18 Case khiến danhSachHocVienLop tăng từ ${truoc} lên ${sau} câu lệnh — nghi vấn quét theo từng Case (N+1)`);
+  });
+
+  check('PR-Qa (17, fix planning) · classOverview: số câu lệnh không tăng theo số Case của lớp', () => {
+    const cid = taoLop('MB-FT QA17C', 'FT');
+    const truoc = demTruyVan(() => { classes.classOverview(P.admin, cid); });
+    themNhieuCase(cid, 15); // lớp này giờ có 15 Case đang mở.
+    const sau = demTruyVan(() => { classes.classOverview(P.admin, cid); });
+    assert(sau <= truoc + 3,
+      `Thêm 15 Case khiến classOverview tăng từ ${truoc} lên ${sau} câu lệnh — nghi vấn quét theo từng Case (N+1)`);
+    eq(classes.classOverview(P.admin, cid).soCaseMo, 15, 'Số Case đang mở phải khớp đúng 15 Case vừa thêm');
+  });
 }

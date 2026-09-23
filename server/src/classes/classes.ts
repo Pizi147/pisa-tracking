@@ -16,8 +16,9 @@ import { standingFor, standingLine } from '../students/standing.ts';
 import { allProgrammes, evaluateRegular, programmeOfClass } from '../normal/regular.ts';
 import { classProgressMany, missingForClasses, missingForStudent } from './schedule.ts';
 import { SKILL_SHORT } from '../../../shared/domain/index.ts';
-import { canhBaoTheoHocVien, caseMoTheoHocVien, soCaseMoTheoLop } from './dongHocVien.ts';
+import { canhBaoTheoHocVien, caseMoTheoHocVien } from './dongHocVien.ts';
 import { classWarning } from '../yThuc/canhBao.ts';
+import { listCases } from '../cases/cases.ts';
 
 /**
  * Màn Học viên lấy LỚP làm gốc.
@@ -606,8 +607,15 @@ export function classOverview(p: Principal, classId: number) {
     skills: skills.map((s) => ({ skill: s.skill, sessionsPerWeek: s.sessions_per_week })),
     coreTeachers: assignments.filter((a) => a.is_core === 1).map((a) => ({ id: a.user_id, name: a.full_name })),
     skillTeachers: assignments.filter((a) => a.skill).map((a) => ({ skill: a.skill, id: a.user_id, name: a.full_name })),
-    /** "n Case đang mở" ở đầu hồ sơ lớp — cùng tập với cột Case của tab Học viên (Q5). */
-    soCaseMo: soCaseMoTheoLop(p, [classId]).get(classId) ?? 0,
+    /**
+     * "n Case đang mở" ở đầu hồ sơ lớp — cùng tập với cột Case của tab Học viên (Q5).
+     *
+     * PR-Qa (17, sửa theo rà soát planning): gọi thẳng `listCases(p, { classId })` — ĐÚNG tập mà
+     * `BangCanHoTro.tsx` (chế độ "Cần hỗ trợ") gọi qua `GET /cases?classId=`, nên số này TỰ ĐỘNG khớp,
+     * không cần một hàm quét toàn hệ thống rồi lọc lại (hàm dựng riêng cũ đã bỏ — chậm trên Turso vì
+     * `listCases(p, {})` không lọc phạm vi gì, quét MỌI Case rồi gọi `can()` từng dòng).
+     */
+    soCaseMo: listCases(p, { classId }).rows.filter((c) => c.status !== 'done').length,
     /** Số học viên có vi phạm chưa xử lý quá 5 ngày — dấu ⚠ trên tab Ý thức & Phối hợp (Q15). */
     canhBaoYThuc: can(p, PERMISSIONS.STUDENT_VIEW, { classId }) ? classWarning(p, classId).activeCount : 0,
     viewer: {

@@ -16,7 +16,6 @@ import { listClassSummaries, type ClassSummary } from './classes.ts';
 import { classProgressMany, missingForStudent } from './schedule.ts';
 import { standingFor } from '../students/standing.ts';
 import { listCases } from '../cases/cases.ts';
-import { soCaseMoTheoLop } from './dongHocVien.ts';
 import { allProgrammes } from '../normal/regular.ts';
 
 export type LopHocVienLop = ClassSummary & {
@@ -90,7 +89,44 @@ export function danhSachHocVienLop(
       WHERE ta.class_id IN (${ph}) AND ta.is_core = 1 AND ta.status = 'active' ORDER BY ta.id`,
   ).all(...ids) as any[]) if (!gvcn.has(r.class_id)) gvcn.set(r.class_id, { id: r.id, name: r.full_name });
 
-  const soCase = soCaseMoTheoLop(p, ids);
+  /*
+   * Học viên đang học, không tính em đã lưu trữ — đúng cách `studentCount` của lớp đếm (Q18).
+   *
+   * PR-Qa (17, sửa theo rà soát planning): dựng TRƯỚC bước tính Case — `hv` đã có sẵn `class_id`
+   * HIỆN TẠI của từng em, dùng lại để gom Case về đúng lớp em đang học, thay vì tự viết thêm một
+   * câu SQL enrollment→class riêng (như hàm dựng riêng cũ ở `dongHocVien.ts` từng làm).
+   */
+  const hv = conn.prepare(
+    `SELECT e.class_id, s.id, s.full_name, s.normalized_name, s.student_code, s.dob, s.status,
+            cy.id AS cycle_id, cy.start_period_id, cy.exam_month, cy.target_score, cy.baseline_attempt_id, cy.baseline_score,
+            (SELECT COUNT(*) FROM assessment_attempts a WHERE a.cycle_id = cy.id AND a.status = 'planned') AS so_luot_ke_hoach
+       FROM enrollments e
+       JOIN students s ON s.id = e.student_id
+       LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
+      WHERE e.class_id IN (${ph}) AND e.status = 'active' AND s.archived_at IS NULL`,
+  ).all(...ids) as any[];
+  const lopCuaHv = new Map<number, number>(hv.map((h) => [h.id as number, h.class_id as number]));
+
+  /*
+   * Case của cả lô, đọc MỘT LẦN CHO MỖI CHI NHÁNH thực sự xuất hiện trong `lops` — không phải một lần
+   * cho TOÀN BỘ hệ thống (`listCases(p, {})` không lọc phạm vi gì từng khiến hàm dựng riêng cũ quét
+   * mọi Case rồi gọi `can()` từng dòng, chậm hàng chục giây trên Turso), và không gọi lần thứ hai cho
+   * cùng việc (bản cũ gọi riêng một lần cho số Case từng lớp, một lần khác cho cờ lọc từng học viên).
+   * Khi đang xem MỘT chi nhánh (`chiNhanh` đã set), `lops` chỉ có đúng một branchId nên đây gọn lại
+   * thành đúng MỘT lời gọi — y hệt hành vi cũ.
+   */
+  const chiNhanhCuaLops = [...new Set(lops.map((r) => r.branchId))];
+  const allCases = chiNhanhCuaLops.flatMap((b) => listCases(p, { branchId: b }).rows);
+
+  /* Số Case đang mở của mỗi lớp — tra lớp HIỆN TẠI của học viên qua `lopCuaHv`, chỉ tính em đang học. */
+  const soCaseByClass = new Map<number, number>();
+  for (const c of allCases) {
+    if (c.status === 'done' || c.studentId === null) continue;
+    const classId = lopCuaHv.get(c.studentId);
+    if (classId === undefined) continue;
+    soCaseByClass.set(classId, (soCaseByClass.get(classId) ?? 0) + 1);
+  }
+
   const tienDo = classProgressMany(ids);
 
   /*
@@ -111,7 +147,7 @@ export function danhSachHocVienLop(
     return {
       ...r,
       gvcn: gvcn.get(r.id) ?? null,
-      soCaseMo: soCase.get(r.id) ?? 0,
+      soCaseMo: soCaseByClass.get(r.id) ?? 0,
       tuanKetThuc: pr?.startWeekStart && pr.totalWeeks ? addDays(pr.startWeekStart, (pr.totalWeeks - 1) * 7) : null,
       viewer: {
         coTheSuaHocVien: can(p, PERMISSIONS.STUDENT_EDIT, { classId: r.id }),
@@ -121,17 +157,6 @@ export function danhSachHocVienLop(
       },
     };
   });
-
-  /* Học viên đang học, không tính em đã lưu trữ — đúng cách `studentCount` của lớp đếm (Q18). */
-  const hv = conn.prepare(
-    `SELECT e.class_id, s.id, s.full_name, s.normalized_name, s.student_code, s.dob, s.status,
-            cy.id AS cycle_id, cy.start_period_id, cy.exam_month, cy.target_score, cy.baseline_attempt_id, cy.baseline_score,
-            (SELECT COUNT(*) FROM assessment_attempts a WHERE a.cycle_id = cy.id AND a.status = 'planned') AS so_luot_ke_hoach
-       FROM enrollments e
-       JOIN students s ON s.id = e.student_id
-       LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
-      WHERE e.class_id IN (${ph}) AND e.status = 'active' AND s.archived_at IS NULL`,
-  ).all(...ids) as any[];
 
   /* Tìm theo tên/mã HỌC VIÊN thì chỉ em khớp được đếm và được hiện; tìm theo MÃ LỚP thì cả lớp. */
   const q = (f.q ?? '').trim();
@@ -146,8 +171,9 @@ export function danhSachHocVienLop(
 
   const standing = standingFor(hvKhop.map((h) => h.id));
   const idSet = new Set(hvKhop.map((h) => h.id as number));
+  /* Cờ lọc từng học viên (case_working/case_no_plan/case_overdue) — CÙNG nguồn `allCases` ở trên, không gọi listCases() lần nữa. */
   const caseCua = new Map<number, { working: boolean; noPlan: boolean; overdue: boolean }>();
-  for (const c of listCases(p, { branchId: chiNhanh }).rows) {
+  for (const c of allCases) {
     if (c.status === 'done' || c.studentId === null || !idSet.has(c.studentId)) continue;
     const x = caseCua.get(c.studentId) ?? { working: false, noPlan: false, overdue: false };
     if (c.state === 'working') x.working = true;

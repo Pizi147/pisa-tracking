@@ -6,7 +6,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { MissingBadge } from '../students/MissingBadge.tsx';
 import { CanhBaoYThuc } from './CanhBaoYThuc.tsx';
 import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from './thaoTacDongHocVien.tsx';
-import { maHocVienNgan, skillShort, tenKyNang, tuanLich } from '@shared/domain/index.ts';
+import { maHocVienNgan, mondayOfDate, skillShort, tenKyNang, tuanLich } from '@shared/domain/index.ts';
 
 type ODiem = { score: number | null; total: number | null; outcome: string };
 type LuotThuong = {
@@ -95,8 +95,13 @@ export function BangDiemLopThuong({ classId, quyen, onDoi }: { classId: number; 
 function ODiemThuong({ o, tuan, homNay }: { o: ODiem | null; tuan: string | null; homNay: string }) {
   if (o && o.score !== null && o.total !== null) {
     const truot = o.outcome === 'fail';
-    return <span className={truot ? 'font-semibold text-rose-200' : 'text-slate-100'} title={truot ? 'Chưa đạt' : 'Đạt'}>{o.score}/{o.total}</span>;
+    return <span className={truot ? 'font-semibold text-rose-300' : 'text-slate-100'} title={truot ? 'Chưa đạt' : 'Đạt'}>{o.score}/{o.total}</span>;
   }
-  if (tuan) return <span className="text-[11px] text-slate-500" title="Tuần thi môn này">{tuanLich(tuan, homNay)}</span>;
+  if (tuan) {
+    /* Tuần thi đã QUA mà vẫn chưa có điểm là một dạng quá hạn nhập điểm — khác với tuần chưa tới lịch. */
+    const daQua = tuan < mondayOfDate(homNay);
+    if (daQua) return <span className="text-[11px] text-amber-200" title="Tuần thi đã qua nhưng chưa nhập điểm">Chưa có điểm</span>;
+    return <span className="text-[11px] text-slate-500" title="Tuần thi môn này">{tuanLich(tuan, homNay)}</span>;
+  }
   return <span className="text-slate-700">–</span>;
 }

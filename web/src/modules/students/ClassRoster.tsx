@@ -129,7 +129,7 @@ export function ClassRoster({ classId, quyen, onDoi, onAddStudents }: {
                   {skillLabel(k)}
                 </Th>
               ))}
-              <Th hint="Một việc chính nếu có, kèm số case đang xử lý. Quá hạn là thông tin của việc đó, không phải một việc riêng.">
+              <Th hint="Một việc chính nếu có, kèm số Case đang xử lý. Quá hạn là thông tin của việc đó, không phải một việc riêng.">
                 Theo dõi
               </Th>
               <th className="th"><span className="sr-only">Thao tác</span></th>
@@ -268,8 +268,8 @@ function FollowCell({ row }: { row: RosterRow }) {
   const overdue = row.timeline.some((t) => t.overdueSkills > 0);
   const here = row.openCases - (row.handoverCases ?? 0);
   const bits: string[] = [];
-  if (here > 0) bits.push(`${here} case`);
-  if (row.handoverCases > 0) bits.push(`${row.handoverCases} case bàn giao`);
+  if (here > 0) bits.push(`${here} Case`);
+  if (row.handoverCases > 0) bits.push(`${row.handoverCases} Case bàn giao`);
 
   /* Việc chính: nhập điểm kỹ năng của CHÍNH người đang xem, ở mốc đang chờ. */
   const pending = row.myPending;
