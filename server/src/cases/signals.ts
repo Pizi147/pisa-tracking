@@ -316,13 +316,31 @@ export function listSignals(p: Principal, f: SignalFilters = {}) {
 
 /**
  * TẬP ID CỦA Ô "CHỜ XÁC MINH QUÁ HẠN" (đặc tả §3.2, §3.10): tín hiệu LỚP THƯỜNG còn chờ mà hạn 3 ngày (tính cả ngày đầu) đã qua.
- * Fast Track tự tạo Case nên không có tín hiệu chờ. Phạm vi và quyền đi qua `listSignals` — cùng hàm với danh sách tín hiệu.
+ * Fast Track tự tạo Case nên không có tín hiệu chờ.
+ *
+ * ĐỌC THẲNG SQL TRONG PHẠM VI (nợ sau rà PR-S1, plan PR-Pa Task 2). Bản trước đi qua `listSignals`, mà hàm đó dựng `SignalView`
+ * cho TỪNG tín hiệu và gọi quyền xử lý 1–2 lần mỗi cái — trên Turso là vài giây mỗi lần mở Tổng quan. Tập này chỉ phụ thuộc
+ * PHẠM VI XEM (cùng `classScopeSql` với `listSignals`), không phụ thuộc ai xử lý được, nên không cần quyền từng dòng.
+ * Điều kiện giữ ĐÚNG như `listSignals` + `viewOf`: chờ (`pending`) · `verify_due < hôm nay` · chương trình chấm theo tỷ lệ.
  */
 export function overdueNormalSignalIds(p: Principal, f: { branchId?: number | null; today?: string } = {}): number[] {
-  return listSignals(p, { branchId: f.branchId ?? null, status: 'open', today: f.today }).rows
-    .filter((s) => s.kind === 'normal' && s.overdue)
-    .map((s) => s.id)
-    .sort((a, b) => a - b);
+  const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
+  if (scope.none) return [];
+  const cs = classScopeSql(scope);
+  const where = [cs.sql, `sg.status = 'pending'`, 'sg.verify_due < ?', `COALESCE(pg.scoring_mode, pgc.scoring_mode) = 'ratio'`];
+  const params: unknown[] = [...cs.params, f.today ?? demoToday()];
+  if (f.branchId) { where.push('c.branch_id = ?'); params.push(f.branchId); }
+  return (db()
+    .prepare(
+      `SELECT sg.id FROM case_signals sg
+         JOIN students s ON s.id = sg.student_id
+         LEFT JOIN classes c ON c.id = sg.class_id
+         LEFT JOIN programmes pg ON pg.code = c.programme_code
+         LEFT JOIN learning_cycles cy ON cy.id = sg.cycle_id
+         LEFT JOIN programmes pgc ON pgc.code = cy.programme_code
+        WHERE ${where.join(' AND ')} ORDER BY sg.id`,
+    )
+    .all(...params) as any[]).map((r) => r.id as number);
 }
 
 export function signalDetail(p: Principal, id: number): SignalView {
