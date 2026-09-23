@@ -16,6 +16,7 @@ import { cycleById, cyclesOf, currentCycle, examPlanOf, targetRevisions } from '
 import { parseMetrics, skillSupportBoard } from '../cases/cases.ts';
 import { standingFor, standingLine } from './standing.ts';
 import { missingForStudent, suggestedMockWeeks } from '../classes/schedule.ts';
+import { lopHocCua } from '../classes/loTrinhTiep.ts';
 import { listSignals } from '../cases/signals.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { activeClassOf, canManageDiscipline } from '../yThuc/access.ts';
@@ -943,6 +944,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
         canManageDiscipline: canManageDiscipline(p, studentId),
       };
     })(),
+    lopHoc: lopHocCua(p, studentId, current),
   };
 }
 

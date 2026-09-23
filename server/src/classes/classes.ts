@@ -1,7 +1,8 @@
 import { db, tx } from '../db.ts';
 import {
-  ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS, awaitingScore, pendingSkillsOf, viecTiepTheoCua,
-  type AssessedSkill, type AttemptKind, type PendingCell, type WorkScope,
+  ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS, awaitingScore, nhanTiepTheo, pendingSkillsOf, trongHaiTuanCuoi,
+  viecTiepTheoCua,
+  type AssessedSkill, type AttemptKind, type PendingCell, type ProgrammeCode, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, notFound, nowIso } from '../util.ts';
@@ -17,6 +18,7 @@ import { allProgrammes, evaluateRegular, programmeOfClass } from '../normal/regu
 import { classProgressMany, missingForClasses, missingForStudent } from './schedule.ts';
 import { SKILL_SHORT } from '../../../shared/domain/index.ts';
 import { canhBaoTheoHocVien, caseMoTheoHocVien } from './dongHocVien.ts';
+import { demChuaLoTrinh, tiepTheoTheoHocVien } from './loTrinhTiep.ts';
 import { classWarning } from '../yThuc/canhBao.ts';
 import { listCases } from '../cases/cases.ts';
 
@@ -61,6 +63,11 @@ export type ClassSummary = {
   /** Gom mọi thứ lớp còn thiếu vào MỘT badge, kèm danh sách kỹ năng thiếu giáo viên. */
   missing: { key: string; label: string; who: string }[];
   missingSkills: string[];
+  /** Số em THẬT SỰ cần xếp lớp tiếp ngay — badge "Hết khoá" (PR-LT, Q9). */
+  canXepLop: number;
+  /** Số em lớp thường chưa ghi Lộ trình tiếp theo, chỉ đếm ở hai tuần cuối khoá (PR-LT, Q5). */
+  soChuaLoTrinhTiep: number;
+  nhacLoTrinh: boolean;
 };
 
 /**
@@ -76,15 +83,20 @@ export type ClassSummary = {
 function progressMapOf(classIds: number[]) {
   const prs = classProgressMany(classIds);
   const ms = missingForClasses(classIds);
+  const chua = demChuaLoTrinh(classIds);
   const out = new Map<number, {
     progressLabel: string | null; phase: string; phaseLabel: string;
     currentWeek: number | null; totalWeeks: number | null;
     needsPlacement: boolean; placementOptions: { code: string; name: string }[];
     missing: { key: string; label: string; who: string }[]; missingSkills: string[];
+    canXepLop: number; soChuaLoTrinhTiep: number; nhacLoTrinh: boolean;
   }>();
   for (const id of classIds) {
     const pr = prs.get(id);
     const m = ms.get(id);
+    /* Lộ trình tiếp theo chỉ áp dụng lớp thường, và chỉ nhắc ở hai tuần cuối khoá (Q5). */
+    const nhacLoTrinh = !!pr && pr.programmeCode !== 'FT'
+      && trongHaiTuanCuoi(pr.currentWeek, pr.totalWeeks, pr.phase);
     out.set(id, {
       progressLabel: pr?.label ?? null,
       phase: (pr?.phase ?? 'unknown') as string,
@@ -95,6 +107,9 @@ function progressMapOf(classIds: number[]) {
       placementOptions: (pr?.placementOptions ?? []) as { code: string; name: string }[],
       missing: m?.items ?? [],
       missingSkills: m?.missingSkills ?? [],
+      canXepLop: pr?.canXepLop ?? 0,
+      soChuaLoTrinhTiep: nhacLoTrinh ? (chua.get(id) ?? 0) : 0,
+      nhacLoTrinh,
     });
   }
   return out;
@@ -352,6 +367,9 @@ export function classRoster(p: Principal, classId: number, q?: string) {
   /* PR-Qa: nhãn cảnh báo Ý thức 5 ngày (YT-8) và Case đang mở cho "Việc tiếp theo" — mỗi thứ MỘT lần cho cả lớp. */
   const canhBao = canhBaoTheoHocVien(p, classId);
   const caseMo = caseMoTheoHocVien(p, classId);
+  /* PR-LT: Lộ trình tiếp theo của cả lớp — một câu, cột Khoá dùng ngay, không hỏi lại theo từng em. */
+  const tiepTheoLop = tiepTheoTheoHocVien([classId]);
+  const maChuongTrinhHienTai = (prog?.code ?? null) as ProgrammeCode | null;
 
   return students.map((s) => {
     /*
@@ -569,6 +587,9 @@ export function classRoster(p: Principal, classId: number, q?: string) {
         cases: caseMo.get(s.id) ?? [],
         homNay: today,
       }),
+      /* Cột Khoá "tiếp theo: …" (PR-LT, Q1/Q4) — chỉ có nghĩa cho lớp thường còn đang học. */
+      tiepTheo: isRatio ? nhanTiepTheo(tiepTheoLop.get(s.id) ?? null, maChuongTrinhHienTai) : null,
+      chuaLoTrinh: isRatio && (!tiepTheoLop.has(s.id) || tiepTheoLop.get(s.id)!.huong === 'chua_ro'),
     };
   });
 }
@@ -646,6 +667,8 @@ export function classOverview(p: Principal, classId: number) {
       canReportCase: can(p, PERMISSIONS.SOS_REPORT, { classId }),
       canRecordViolation: can(p, PERMISSIONS.VIOLATION_RECORD, { classId }),
       canEnterScores: editableSkills(p, classId, classSkills).length > 0,
+      /** Cùng luật với `canEditProgress` (Q2) — tên riêng để nút Chuyển tiếp lớp/badge/việc đỏ dùng chung một cờ. */
+      coTheChuyenTiep: can(p, PERMISSIONS.CLASS_EDIT, { classId }),
     },
   };
 }

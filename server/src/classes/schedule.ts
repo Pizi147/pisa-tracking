@@ -185,6 +185,11 @@ export type ClassProgress = {
   placementOptions: { code: ProgrammeCode; name: string }[];
   /** Số học viên còn đang học ở lớp này — chính là số em cần xếp lớp khi lớp đã xong. */
   activeStudents: number;
+  /**
+   * Số em THẬT SỰ cần xếp lớp tiếp ngay (PR-LT, Q9) — `activeStudents` trừ em đã ghi
+   * `huong='xep_sau'` với `ngay_xem_lai` còn ở tương lai. Badge/việc đỏ Hết khoá dùng số này.
+   */
+  canXepLop: number;
   /** Một dòng đọc được ngay, ví dụ "BE · tuần 5/10 · Progress Test tuần này". */
   label: string | null;
 };
@@ -201,16 +206,25 @@ export function classProgress(classId: number): ClassProgress {
   const c = conn.prepare('SELECT * FROM classes WHERE id = ?').get(classId) as any;
   if (!c) throw notFound('Không tìm thấy lớp');
   const start = c.start_period_id ? periodById(c.start_period_id) : null;
-  const activeStudents = (conn
-    .prepare(
-      `SELECT COUNT(*) n FROM enrollments e
-         JOIN students s ON s.id = e.student_id
-        WHERE e.class_id = ? AND e.status = 'active'
-          AND s.status = 'active' AND s.archived_at IS NULL`,
-    )
-    .get(classId) as any).n;
-  return computeProgress(c, start, activeStudents);
+  const row = conn.prepare(CLASS_ACTIVE_COUNT_SQL).get(demoToday(), classId) as any;
+  return computeProgress(c, start, row.n, row.can_xep_lop ?? 0);
 }
+
+/**
+ * Đếm em `active` của một lớp, và trong đó bao nhiêu em CÒN CẦN xếp lớp tiếp ngay (Q9): trừ
+ * em đã ghi `huong='xep_sau'` mà `ngay_xem_lai` còn ở tương lai — một câu, không N+1.
+ */
+const CLASS_ACTIVE_COUNT_SQL = `
+  SELECT COUNT(*) n,
+         SUM(CASE WHEN EXISTS (
+           SELECT 1 FROM lo_trinh_tiep_theo lt
+            WHERE lt.student_id = e.student_id AND lt.class_id = e.class_id
+              AND lt.huong = 'xep_sau' AND lt.ngay_xem_lai > ?
+         ) THEN 0 ELSE 1 END) can_xep_lop
+    FROM enrollments e
+    JOIN students s ON s.id = e.student_id
+   WHERE e.class_id = ? AND e.status = 'active'
+     AND s.status = 'active' AND s.archived_at IS NULL`;
 
 /**
  * TIẾN ĐỘ CỦA NHIỀU LỚP TRONG BA CÂU LỆNH — không phải ba câu MỖI LỚP.
@@ -236,21 +250,29 @@ export function classProgressMany(classIds: number[]): Map<number, ClassProgress
     }
   }
   const counts = new Map<number, number>();
+  const canXepByClass = new Map<number, number>();
   for (const r of conn
     .prepare(
-      `SELECT e.class_id, COUNT(*) n FROM enrollments e
+      `SELECT e.class_id, COUNT(*) n,
+              SUM(CASE WHEN EXISTS (
+                SELECT 1 FROM lo_trinh_tiep_theo lt
+                 WHERE lt.student_id = e.student_id AND lt.class_id = e.class_id
+                   AND lt.huong = 'xep_sau' AND lt.ngay_xem_lai > ?
+              ) THEN 0 ELSE 1 END) can_xep_lop
+         FROM enrollments e
          JOIN students s ON s.id = e.student_id
         WHERE e.class_id IN (${ph}) AND e.status = 'active'
           AND s.status = 'active' AND s.archived_at IS NULL
         GROUP BY e.class_id`,
     )
-    .all(...classIds) as any[]) {
+    .all(demoToday(), ...classIds) as any[]) {
     counts.set(r.class_id, r.n);
+    canXepByClass.set(r.class_id, r.can_xep_lop ?? 0);
   }
 
   for (const c of classes) {
     out.set(c.id, computeProgress(c, c.start_period_id ? periods.get(c.start_period_id) ?? null : null,
-      counts.get(c.id) ?? 0));
+      counts.get(c.id) ?? 0, canXepByClass.get(c.id) ?? 0));
   }
   return out;
 }
@@ -260,6 +282,7 @@ function computeProgress(
   c: any,
   start: { weekStart: string } | null,
   activeStudents: number,
+  canXepLop: number,
 ): ClassProgress {
   const code = (c.programme_code ?? programmeOf(c.kind)) as ProgrammeCode | null;
   const tpl = code ? PROGRAMME_TEMPLATES[code] : null;
@@ -305,7 +328,7 @@ function computeProgress(
   else if (progressWeekStart === nextMonday) phase = 'progress_soon';
   else phase = 'running';
 
-  const needsPlacement = phase === 'finished' && activeStudents > 0;
+  const needsPlacement = phase === 'finished' && canXepLop > 0;
   const placementOptions = needsPlacement
     ? nextStepsAfter(code).map((c) => ({ code: c, name: PROGRAMME_TEMPLATES[c].name }))
     : [];
@@ -319,7 +342,7 @@ function computeProgress(
     const parts: string[] = [tpl.code];
     if (phase === 'finished') {
       parts.push(`đã học xong ${tpl.weeks} tuần`);
-      if (activeStudents > 0) parts.push(`${activeStudents} học viên cần xếp lớp tiếp`);
+      if (canXepLop > 0) parts.push(`${canXepLop} học viên cần xếp lớp tiếp`);
     } else {
       parts.push(currentWeek !== null ? `tuần ${currentWeek}/${tpl.weeks}` : 'chưa khai tuần bắt đầu');
       if (phase !== 'running' && phase !== 'not_started' && phase !== 'unknown') {
@@ -343,7 +366,7 @@ function computeProgress(
     progressWeekStart, finalWeekStart,
     checkpointThisWeek,
     phase, phaseLabel: CLASS_PHASE_LABEL[phase],
-    weeksLeft, needsPlacement, placementOptions, activeStudents,
+    weeksLeft, needsPlacement, placementOptions, activeStudents, canXepLop,
     label,
   };
 }

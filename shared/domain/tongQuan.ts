@@ -32,7 +32,7 @@ const NHOM_CUA_LOAI: Record<string, NhomViec> = {
   score: 'cham-diem', decide_move: 'cham-diem',
   verify: 'case-hoc-thuat', cause: 'case-hoc-thuat', no_plan: 'case-hoc-thuat', result: 'case-hoc-thuat',
   decide: 'case-hoc-thuat', do_plan: 'case-hoc-thuat', no_owner: 'case-hoc-thuat',
-  placement: 'van-hanh', mgmt: 'van-hanh', missing_data: 'van-hanh',
+  placement: 'van-hanh', next_step: 'van-hanh', mgmt: 'van-hanh', missing_data: 'van-hanh',
 };
 export function nhomViecCua(loai: string): NhomViec { return NHOM_CUA_LOAI[loai] ?? 'van-hanh'; }
 

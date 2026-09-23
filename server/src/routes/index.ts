@@ -48,6 +48,7 @@ import * as classSvc from '../classes/classes.ts';
 import * as scheduleSvc from '../classes/schedule.ts';
 import * as intakeSvc from '../classes/intake.ts';
 import * as transitionSvc from '../classes/transition.ts';
+import * as loTrinhTiepSvc from '../classes/loTrinhTiep.ts';
 import * as hocVienLopSvc from '../classes/hocVienLop.ts';
 import * as phanTichLopSvc from '../classes/phanTichLop.ts';
 import * as thongTinLopSvc from '../classes/thongTinLop.ts';
@@ -1676,6 +1677,16 @@ api.post('/students/:id/transfer', requireAuth, wrap((req) => {
       noNote: noHandoverNote === true,
       receiverUserId: receiverUserId ? Number(receiverUserId) : null,
     });
+}));
+
+/** Lộ trình tiếp theo (PR-LT, Q1) — dự định sau lớp đang học, ghi trước khi thật sự chuyển. */
+api.get('/students/:id/lo-trinh-tiep', requireAuth, wrap((req) => {
+  return loTrinhTiepSvc.layLoTrinhTiep(principalOf(req), pInt(req, 'id'));
+}));
+
+api.put('/students/:id/lo-trinh-tiep', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return loTrinhTiepSvc.ghiLoTrinhTiep(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
 /** Những thứ còn dở của một em — để màn chuyển lớp bày sẵn, người chuyển không phải chép tay. */
