@@ -23,7 +23,7 @@ export type LopHocVienLop = ClassSummary & {
   soCaseMo: number;
   /** Thứ Hai của tuần học cuối — lớp thường; FT null. */
   tuanKetThuc: string | null;
-  viewer: { coTheSuaHocVien: boolean; coTheBaoCase: boolean; coTheGhiViPham: boolean; coTheNhapDiem: boolean };
+  viewer: { coTheSuaHocVien: boolean; coTheBaoCase: boolean; coTheGhiViPham: boolean; coTheNhapDiem: boolean; coTheChuyenTiep: boolean };
 };
 
 export type TrangHocVienLop = {
@@ -154,6 +154,8 @@ export function danhSachHocVienLop(
         coTheBaoCase: can(p, PERMISSIONS.SOS_REPORT, { classId: r.id }),
         coTheGhiViPham: can(p, PERMISSIONS.VIOLATION_RECORD, { classId: r.id }),
         coTheNhapDiem: editableSkills(p, r.id, skillsByClass.get(r.id) ?? [...ENTRY_SKILLS]).length > 0,
+        /* PR-LT: badge "Hết khoá" bấm được — cùng luật với classOverview.viewer.coTheChuyenTiep (Q2). */
+        coTheChuyenTiep: can(p, PERMISSIONS.CLASS_EDIT, { classId: r.id }),
       },
     };
   });

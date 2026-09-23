@@ -184,7 +184,7 @@ export default function StudentDetailPage() {
                   ĐẦU HỒ SƠ LỚP THƯỜNG (Q18): {mã lớp} · GVCN {tên} · {khoá đang học}, KHÔNG tên
                   chương trình, KHÔNG "Mục tiêu"/"Dự kiến thi" (Q18, §3.8 dòng cuối) — dùng đúng
                   hàm `khoaLopThuong` mà cột Khoá của hồ sơ lớp (PR-Qa) đã dùng, để hai chỗ luôn
-                  nói cùng một câu. `tiepTheo: null` — PR-LT sẽ truyền nhãn Lộ trình tiếp theo.
+                  nói cùng một câu. `tiepTheo`/`nhacLoTrinh` từ `data.lopHoc` (PR-LT, Task 3).
                 */}
                 {data.currentClass?.khoa
                   ? (() => {
@@ -193,7 +193,8 @@ export default function StudentDetailPage() {
                       tuanHienTai: data.currentClass.khoa.tuanHienTai,
                       tongTuan: data.currentClass.khoa.tongTuan,
                       tuanKetThuc: data.currentClass.khoa.tuanKetThuc,
-                      tiepTheo: null,
+                      tiepTheo: data.lopHoc?.tiepTheo ?? null,
+                      nhacLoTrinh: data.lopHoc?.nhacLoTrinh ?? false,
                       homNay: homNay ?? '',
                     });
                     return (
@@ -382,8 +383,10 @@ export default function StudentDetailPage() {
         student={{
           id: data.id, name: data.fullName, classId: data.currentClass?.id ?? null,
           dob: data.dob ?? null, consultantName: data.consultantName ?? null, note: data.note ?? null,
+          status: data.status,
         }}
         cycle={cy} attempts={data.attempts} canEdit={data.viewer.canEdit}
+        lopHoc={data.lopHoc ?? null}
         onOpenPlan={() => setPlanOpen(true)} onDone={reload}
       />
     </div>

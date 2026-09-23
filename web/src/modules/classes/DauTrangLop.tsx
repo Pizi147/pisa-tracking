@@ -16,6 +16,8 @@ export type HoSoLop = {
     studentCount: number; needScores: number; workScope: WorkScope; phase: string;
     currentWeek: number | null; totalWeeks: number | null; needsPlacement: boolean;
     missing: { key: string; label: string; who: string }[]; missingSkills: string[];
+    /** PR-LT: số em thật sự cần xếp lớp tiếp (Q9), số em chưa có lộ trình tiếp theo (chỉ hai tuần cuối khoá, Q5). */
+    canXepLop: number; soChuaLoTrinhTiep: number;
   } | null;
   skills: { skill: string; sessionsPerWeek: number }[];
   coreTeachers: { id: number; name: string }[];
@@ -23,10 +25,13 @@ export type HoSoLop = {
   programme: { code: string; name: string; weeks: number | null; scoringMode: string } | null;
   soCaseMo: number;
   canhBaoYThuc: number;
+  status?: string; finishedAt?: string | null;
   viewer: {
     canPlanWeek: boolean; canAddStudents: boolean; canAssign: boolean; canEditProgress: boolean;
     editableSkills: string[]; isCoreTeacher: boolean;
     canReportCase: boolean; canRecordViolation: boolean; canEnterScores: boolean;
+    /** PR-LT: nút Chuyển tiếp lớp/badge — cùng luật CLASS_EDIT với canEditProgress, tên riêng cho rõ ý. */
+    coTheChuyenTiep: boolean;
   };
 };
 export type ViecDauTrang = 'tien-do' | 'chuyen-tiep' | 'phan-cong' | 'thong-tin' | 'case' | 'hoc-vien';
@@ -50,16 +55,16 @@ export function DauTrangLop({ data, periodId, onViec, onCheDoCanHoTro }: {
   const gvcn = data.coreTeachers[0] ?? null;
   const nhom = nhomGiaoVienBoMon(data.skills.map((x) => x.skill), data.skillTeachers);
   const b = badgeLop({
-    // canXepLop/soChuaLoTrinhTiep: 0 tạm — Task 3 (PR-LT) nối số thật từ classOverview.summary.
-    needsPlacement: !!s?.needsPlacement, canXepLop: 0, missingSkills: s?.missingSkills ?? [],
+    needsPlacement: !!s?.needsPlacement, canXepLop: s?.canXepLop ?? 0, missingSkills: s?.missingSkills ?? [],
     needScoresText: s && s.needScores > 0 ? needScoresText(s.workScope, s.needScores) : null,
     soCaseMo: data.soCaseMo, phase: s?.phase ?? 'running',
-    missingCount: (s?.missing ?? []).filter((m) => m.key !== 'teachers').length, soChuaLoTrinhTiep: 0,
+    missingCount: (s?.missing ?? []).filter((m) => m.key !== 'teachers').length,
+    soChuaLoTrinhTiep: s?.soChuaLoTrinhTiep ?? 0,
   });
   const bamBadge = (x: BadgeLop): (() => void) | null =>
     x.key === 'case' ? onCheDoCanHoTro
       : x.key === 'cham' ? () => navigate(`/test/can-cham?classId=${data.id}`)
-      : x.key === 'het-khoa' && data.viewer.canEditProgress ? () => onViec('chuyen-tiep')
+      : x.key === 'het-khoa' && data.viewer.coTheChuyenTiep ? () => onViec('chuyen-tiep')
       : null;
   const menu: MucMenu[] = [
     ...(data.viewer.canAssign ? [{ key: 'phan-cong', nhan: 'Sửa phân công', onChon: () => onViec('phan-cong') }] : []),
@@ -85,7 +90,7 @@ export function DauTrangLop({ data, periodId, onViec, onCheDoCanHoTro }: {
           {data.viewer.canEditProgress && (
             <button type="button" className="btn btn-sm" onClick={() => onViec('tien-do')}>{thuong ? 'Lịch kiểm tra' : 'Lộ trình lớp'}</button>
           )}
-          {thuong && data.viewer.canEditProgress && (
+          {thuong && data.viewer.coTheChuyenTiep && (
             <button type="button" className="btn btn-sm" onClick={() => onViec('chuyen-tiep')}>Chuyển tiếp lớp</button>
           )}
           {data.viewer.canReportCase && <button type="button" className="btn btn-sm" onClick={() => onViec('case')}>+ Case</button>}

@@ -23,7 +23,9 @@ export type LopTrenTrang = {
   phase: string; currentWeek: number | null; totalWeeks: number | null; needsPlacement: boolean;
   missing: { key: string; label: string; who: string }[]; missingSkills: string[];
   gvcn: { id: number; name: string } | null; soCaseMo: number; tuanKetThuc: string | null;
-  viewer: { coTheSuaHocVien: boolean; coTheBaoCase: boolean; coTheGhiViPham: boolean; coTheNhapDiem: boolean };
+  viewer: { coTheSuaHocVien: boolean; coTheBaoCase: boolean; coTheGhiViPham: boolean; coTheNhapDiem: boolean; coTheChuyenTiep: boolean };
+  /** PR-LT: số em thật sự cần xếp lớp tiếp (Q9), số em lớp thường chưa có lộ trình tiếp theo (chỉ hai tuần cuối khoá, Q5). */
+  canXepLop: number; soChuaLoTrinhTiep: number; nhacLoTrinh: boolean;
 };
 type TrangHocVienLop = {
   rows: LopTrenTrang[]; scopeEmpty: boolean;
@@ -211,16 +213,15 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, chiMinh, onThemHocVien, onD
   const navigate = useNavigate();
   const thuong = lop.scoringMode === 'ratio';
   const b = badgeLop({
-    // canXepLop/soChuaLoTrinhTiep: 0 tạm — Task 3 (PR-LT) nối số thật từ GET /hoc-vien-lop.
-    needsPlacement: lop.needsPlacement, canXepLop: 0, missingSkills: lop.missingSkills,
+    needsPlacement: lop.needsPlacement, canXepLop: lop.canXepLop, missingSkills: lop.missingSkills,
     needScoresText: lop.needScores > 0 ? needScoresText(lop.workScope, lop.needScores) : null,
     soCaseMo: lop.soCaseMo, phase: lop.phase,
-    missingCount: lop.missing.filter((m) => m.key !== 'teachers').length, soChuaLoTrinhTiep: 0,
+    missingCount: lop.missing.filter((m) => m.key !== 'teachers').length, soChuaLoTrinhTiep: lop.soChuaLoTrinhTiep,
   });
   const denBadge = (x: BadgeLop): string | null =>
     x.key === 'cham' ? `/test/can-cham?classId=${lop.id}${chiMinh ? '&scope=mine' : ''}`
       : x.key === 'case' ? `/hoc-vien/lop/${lop.id}?che-do=can-ho-tro`
-      : x.key === 'het-khoa' ? `/hoc-vien/lop/${lop.id}`
+      : x.key === 'het-khoa' ? (lop.viewer.coTheChuyenTiep ? `/hoc-vien/lop/${lop.id}?viec=chuyen-tiep` : `/hoc-vien/lop/${lop.id}`)
       : null;
   const mucLop: MucMenu[] = [
     { key: 'ho-so', nhan: 'Hồ sơ lớp', onChon: () => navigate(`/hoc-vien/lop/${lop.id}`) },

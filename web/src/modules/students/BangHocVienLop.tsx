@@ -23,12 +23,17 @@ export type DongRoster = {
   canhBaoYThuc: { count: number; oldestAgeDays: number; message: string } | null;
   viecTiepTheo: ViecTiepTheo[];
   timeline: { id: number; kind: string; kindLabel: string; myPending: string[]; overdueSkills: number }[];
+  /** PR-LT: cột Khoá "tiếp theo: …" và cờ chưa có lộ trình tiếp theo (chỉ lớp thường). */
+  tiepTheo: string | null;
+  chuaLoTrinh: boolean;
 };
 
 export type LopChoBang = {
   id: number; programmeCode: string | null; scoringMode: string | null;
   currentWeek: number | null; totalWeeks: number | null; tuanKetThuc: string | null;
   viewer: QuyenDong;
+  /** PR-LT: lớp đang trong hai tuần cuối khoá — chỉ khi đó mới nhắc "chưa có lộ trình tiếp theo" (Q5). */
+  nhacLoTrinh?: boolean;
 };
 
 /**
@@ -53,9 +58,9 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi }: {
       })),
     sapXep,
   ), [data, chiHien, sapXep]);
-  const khoa = thuong
+  const khoaCua = (s: DongRoster) => thuong
     ? khoaLopThuong({ maChuongTrinh: lop.programmeCode, tuanHienTai: lop.currentWeek, tongTuan: lop.totalWeeks,
-        tuanKetThuc: lop.tuanKetThuc, tiepTheo: null, homNay })
+        tuanKetThuc: lop.tuanKetThuc, tiepTheo: s.tiepTheo, nhacLoTrinh: !!lop.nhacLoTrinh && s.chuaLoTrinh, homNay })
     : null;
 
   if (error) {
@@ -88,6 +93,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi }: {
         <tbody>
           {rows.map((s) => {
             const k = ketQuaGanNhat(s.standing);
+            const khoa = khoaCua(s);
             return (
               <tr key={s.id} className={`row-hover ${s.status !== 'active' ? 'row-muted' : ''}`}>
                 <td className="td h-14">

@@ -187,10 +187,10 @@ export const MUC_MENU_DONG_NHAN: Record<MucMenuDong, string> = {
   'lo-trinh-tiep': 'Lộ trình tiếp theo', 'chuyen-lop': 'Chuyển lớp',
 };
 /**
- * Hai mục thuộc PR-LT (đợt 5). Chưa có màn làm việc đúng luật §3.9 thì KHÔNG hiện (không để nút bấm không làm gì, không để GVCN
- * bấm ra lỗi quyền). PR-LT đổi hằng này thành `true` và gắn panel trong `web/src/modules/classes/thaoTacDongHocVien.tsx`.
+ * Hai mục thuộc PR-LT (đợt 5). Đã có màn làm việc đúng luật §3.9 (`LoTrinhTiepPanel.tsx`,
+ * `ChuyenLopPanel.tsx`) — panel gắn ở `web/src/modules/classes/thaoTacDongHocVien.tsx`.
  */
-export const MENU_DONG_CHO_PR_LT = { loTrinhTiepTheo: false, chuyenLop: false } as const;
+export const MENU_DONG_CHO_PR_LT = { loTrinhTiepTheo: true, chuyenLop: true } as const;
 
 export function mucMenuDongHocVien(i: {
   laLopThuong: boolean; dangHoc: boolean; coTheGhiViPham: boolean; coTheBaoCase: boolean;

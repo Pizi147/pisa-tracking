@@ -150,14 +150,14 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     eq(n[0].title, 'Listening · Reading', 'Tooltip tên đầy đủ (G-7)');
   });
 
-  check('PR-Qa · Q1 menu ⋯ dòng học viên: Lộ trình tiếp theo và Chuyển lớp ẩn tới PR-LT', () => {
+  check('PR-Qa · Q1 menu ⋯ dòng học viên: Lộ trình tiếp theo và Chuyển lớp (PR-LT bật)', () => {
     const q = { laLopThuong: true, dangHoc: true, coTheGhiViPham: true, coTheBaoCase: true, coTheNhapDiem: true, coTheSuaHocVien: true, coTheChuyenLop: true };
-    eq(d.mucMenuDongHocVien(q), ['ho-so', 'vi-pham', 'case', 'nhap-diem'], 'Mặc định');
-    eq(d.MENU_DONG_CHO_PR_LT, { loTrinhTiepTheo: false, chuyenLop: false }, 'Hằng PR-LT bật');
-    eq(d.mucMenuDongHocVien(q, { loTrinhTiepTheo: true, chuyenLop: true }), ['ho-so', 'vi-pham', 'case', 'nhap-diem', 'lo-trinh-tiep', 'chuyen-lop'], 'PR-LT bật');
-    eq(d.mucMenuDongHocVien({ ...q, laLopThuong: false }, { loTrinhTiepTheo: true, chuyenLop: true }).includes('lo-trinh-tiep'), false, 'FT không có Lộ trình tiếp theo');
+    eq(d.MENU_DONG_CHO_PR_LT, { loTrinhTiepTheo: true, chuyenLop: true }, 'Hằng PR-LT bật');
+    eq(d.mucMenuDongHocVien(q), ['ho-so', 'vi-pham', 'case', 'nhap-diem', 'lo-trinh-tiep', 'chuyen-lop'], 'Mặc định (PR-LT đã bật)');
+    eq(d.mucMenuDongHocVien(q, { loTrinhTiepTheo: false, chuyenLop: false }), ['ho-so', 'vi-pham', 'case', 'nhap-diem'], 'Tắt qua tham số vẫn được');
+    eq(d.mucMenuDongHocVien({ ...q, laLopThuong: false }).includes('lo-trinh-tiep'), false, 'FT không có Lộ trình tiếp theo');
     eq(d.mucMenuDongHocVien({ ...q, dangHoc: false }), ['ho-so'], 'Em đã kết thúc: chỉ Hồ sơ');
-    eq(d.mucMenuDongHocVien({ ...q, coTheGhiViPham: false, coTheNhapDiem: false }), ['ho-so', 'case'], 'Theo quyền');
+    eq(d.mucMenuDongHocVien({ ...q, coTheGhiViPham: false, coTheNhapDiem: false }), ['ho-so', 'case', 'lo-trinh-tiep', 'chuyen-lop'], 'Theo quyền');
     eq(d.MUC_MENU_DONG_NHAN['vi-pham'], '+ Ghi nhận vi phạm', 'Chữ');
   });
 
