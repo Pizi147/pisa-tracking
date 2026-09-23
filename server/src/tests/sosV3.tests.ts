@@ -1059,10 +1059,10 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(!(violSvc as any).invalidateViolation, 'Không còn hàm hủy');
   });
 
-  check('PR-T · Chỉ số `vi-pham-khong-hieu-luc` đã BỎ khỏi sổ chỉ số và khỏi hàm thống kê Ý thức (không còn trạng thái đó); bảy chỉ số Ý thức còn lại', () => {
+  check('PR-T · Chỉ số `vi-pham-khong-hieu-luc` đã BỎ khỏi sổ chỉ số và khỏi hàm thống kê Ý thức (không còn trạng thái đó); tám chỉ số Ý thức còn lại (bảy của PR-J + `vi-pham-theo-nhom` của PR-YT2)', () => {
     assert(domain.metricById('vi-pham-khong-hieu-luc') === null && !domain.METRICS.some((m: any) => m.id === 'vi-pham-khong-hieu-luc'), 'Sổ chỉ số vẫn còn');
     const thongKe: any = thongKeSvc;
-    assert(!thongKe.YTHUC_METRIC_IDS.includes('vi-pham-khong-hieu-luc') && thongKe.YTHUC_METRIC_IDS.length === 7, `Ý thức: ${thongKe.YTHUC_METRIC_IDS}`);
+    assert(!thongKe.YTHUC_METRIC_IDS.includes('vi-pham-khong-hieu-luc') && thongKe.YTHUC_METRIC_IDS.length === 8, `Ý thức: ${thongKe.YTHUC_METRIC_IDS}`);
     assertThrows(() => metricsSvc.metricSet(P.mbManager, 'vi-pham-khong-hieu-luc', {}), /Không tìm thấy/, 'Hỏi chỉ số đã bỏ');
   });
 

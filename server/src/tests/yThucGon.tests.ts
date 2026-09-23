@@ -10,7 +10,7 @@
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runYThucGonTests(t: YThucTestKit) {
-  const { check, checkAsync, assert, conn, P, TODAY, addDays } = t;
+  const { check, checkAsync, assert, assertThrows, conn, P, TODAY, addDays, classId } = t;
   const domain: any = await import('../../../shared/domain/index.ts');
 
   console.log('\nPR-YT2 · 1. Luật thuần (shared/domain/yThucGon.ts)');
@@ -319,5 +319,104 @@ export async function runYThucGonTests(t: YThucTestKit) {
       const single = measSvc.measureDetail(gvcn, row.id);
       assert(JSON.stringify(row) === JSON.stringify(single), `PA #${row.id} lệch giữa listMeasures (theo lô) và measureDetail (gọi lẻ)`);
     }
+  });
+
+  // ==================================================================== 3. Phân tích Ý thức cho QL (P13, P14, Task 8)
+
+  console.log('\nPR-YT2 · 3. Phân tích Ý thức cho QL — vi-pham-theo-nhom (P13), lọc theo lớp (P14, Q19)');
+
+  const thongKeSvc = await import('../yThuc/thongKe.ts');
+  const phoiHopSvc = await import('../yThuc/phoiHop.ts');
+  const metricsSvc = await import('../worklist/metrics.ts');
+  const { soCauSql } = await import('../platform/nguCanhRequest.ts');
+
+  check('PR-YT2 · vi-pham-theo-nhom: khoá tat-ca:tat-ca = đúng tập vi-pham-tong cùng bộ lọc', () => {
+    const nhom = thongKeSvc.yThucMetric(P.mbManager, 'vi-pham-theo-nhom', { branchId: mbBranch }) as any;
+    const tong = thongKeSvc.yThucMetric(P.mbManager, 'vi-pham-tong', { branchId: mbBranch }) as any;
+    assert(
+      JSON.stringify([...nhom.byKind['tat-ca:tat-ca']].sort((a: number, b: number) => a - b)) === JSON.stringify([...tong.ids].sort((a: number, b: number) => a - b)),
+      'tat-ca:tat-ca phải bằng vi-pham-tong',
+    );
+  });
+
+  check('PR-YT2 · vi-pham-theo-nhom: mỗi nhóm × ba trạng thái rời nhau, hợp = {nhom}:tat-ca', () => {
+    const nhom = thongKeSvc.yThucMetric(P.mbManager, 'vi-pham-theo-nhom', { branchId: mbBranch }).byKind as any;
+    for (const cat of domain.VIOLATION_CATEGORIES) {
+      const u = new Set(nhom[`${cat}:unhandled`]), pr = new Set(nhom[`${cat}:preparing`]), don = new Set(nhom[`${cat}:done`]);
+      for (const id of u) assert(!pr.has(id) && !don.has(id), `${cat}: unhandled phải rời preparing/done`);
+      for (const id of pr) assert(!don.has(id), `${cat}: preparing phải rời done`);
+      const hop = [...new Set([...u, ...pr, ...don])].sort((a: any, b: any) => a - b);
+      assert(JSON.stringify(hop) === JSON.stringify([...nhom[`${cat}:tat-ca`]].sort((a: number, b: number) => a - b)), `hợp ba trạng thái phải bằng ${cat}:tat-ca`);
+    }
+  });
+
+  check('PR-YT2 · vi-pham-theo-nhom: kind lọc xuống đúng một khoá; khoá lạ → 400', () => {
+    const full = thongKeSvc.yThucMetric(P.mbManager, 'vi-pham-theo-nhom', { branchId: mbBranch }).byKind as any;
+    const filtered = thongKeSvc.yThucMetric(P.mbManager, 'vi-pham-theo-nhom', { branchId: mbBranch, kind: 'homework:unhandled' }) as any;
+    assert(JSON.stringify([...filtered.ids].sort((a: number, b: number) => a - b)) === JSON.stringify([...full['homework:unhandled']].sort((a: number, b: number) => a - b)),
+      'kind phải lọc đúng tập con');
+    assert(Object.keys(filtered.byKind).length === 1, 'byKind chỉ còn một khoá');
+    assertThrows(() => thongKeSvc.yThucMetric(P.mbManager, 'vi-pham-theo-nhom', { branchId: mbBranch, kind: 'khoa-la' }),
+      /không hợp lệ/, 'khoá lạ phải 400');
+  });
+
+  check('PR-YT2 · vi-pham-theo-nhom: GVCN không có quyền thống kê chi nhánh → rỗng có nhãn (như chỉ số Ý thức khác)', () => {
+    const r = thongKeSvc.yThucMetric(gvcn, 'vi-pham-theo-nhom', {}) as any;
+    assert(r.none === true && r.ids.length === 0, `GVCN phải rỗng có nhãn: ${JSON.stringify(r)}`);
+  });
+
+  check('PR-YT2 · Q19 classId ngoài chi nhánh của Quản lý → 403', () => {
+    const cpClass = classId('CP-FT 110');
+    assertThrows(() => thongKeSvc.yThucMetric(P.mbManager, 'vi-pham-theo-nhom', { classId: cpClass }), /phạm vi/, 'lớp ngoài chi nhánh phải 403');
+    assertThrows(() => phoiHopSvc.phoiHopMetric(P.mbManager, 'phoi-hop-luot-sos', { classId: cpClass }), /phạm vi/, 'lớp ngoài chi nhánh phải 403 (Phối hợp)');
+  });
+
+  check('PR-YT2 · Q19 classId: vi-pham-tong chỉ còn vi phạm GHI ở lớp đó; vi-pham-chua-xu-ly chỉ còn HV ĐANG HỌC lớp đó', () => {
+    const CLASS = classId('MB-FT 101');
+    const tong = thongKeSvc.yThucMetric(P.mbManager, 'vi-pham-tong', { classId: CLASS }) as any;
+    for (const id of tong.ids) {
+      const row = conn.prepare('SELECT class_id FROM violations WHERE id = ?').get(id) as any;
+      assert(row.class_id === CLASS, `vi phạm #${id} phải ghi ở đúng lớp ${CLASS}, được ${row.class_id}`);
+    }
+    const cxl = thongKeSvc.yThucMetric(P.mbManager, 'vi-pham-chua-xu-ly', { classId: CLASS }) as any;
+    for (const id of cxl.ids) {
+      const row = conn.prepare('SELECT student_id FROM violations WHERE id = ?').get(id) as any;
+      const active = conn.prepare(`SELECT 1 n FROM enrollments WHERE student_id = ? AND class_id = ? AND status = 'active'`).get(row.student_id, CLASS);
+      assert(!!active, `vi phạm #${id} phải của HV đang học đúng lớp ${CLASS}`);
+    }
+  });
+
+  check('PR-YT2 · Q19 phoi-hop-luot-sos + classId: chỉ còn lượt của lớp, byKind vẫn cộng đúng tổng', () => {
+    const CLASS = classId('MB-FT 101');
+    const r = phoiHopSvc.phoiHopMetric(P.mbManager, 'phoi-hop-luot-sos', { classId: CLASS }) as any;
+    for (const id of r.ids) {
+      const row = conn.prepare('SELECT class_id FROM assessment_attempts WHERE id = ?').get(id) as any;
+      assert(row.class_id === CLASS, `lượt #${id} phải thuộc lớp ${CLASS}`);
+    }
+    const tongByKind = (r.byKind.sos1?.length ?? 0) + (r.byKind.sos2?.length ?? 0) + (r.byKind.sos3?.length ?? 0);
+    assert(tongByKind === r.ids.length, `byKind phải cộng đúng tổng: ${tongByKind} != ${r.ids.length}`);
+  });
+
+  check('PR-YT2 · Q19 chỉ số học thuật (case-mo) + classId → 400', () => {
+    assertThrows(() => metricsSvc.metricSet(P.mbManager, 'case-mo', { classId: classId('MB-FT 101') }),
+      /chưa lọc theo lớp/, 'case-mo + classId phải 400');
+  });
+
+  check('PR-YT2 · Q18 bien-phap-dang-chuan-bi byKind cộng đúng ids', () => {
+    const r = thongKeSvc.yThucMetric(P.mbManager, 'bien-phap-dang-chuan-bi', { branchId: mbBranch }) as any;
+    const hopByKind = [...new Set(Object.values(r.byKind).flat() as number[])].sort((a, b) => a - b);
+    assert(JSON.stringify(hopByKind) === JSON.stringify([...r.ids].sort((a: number, b: number) => a - b)), 'byKind hợp lại phải đúng ids');
+  });
+
+  check('PR-YT2 · vi-pham-theo-nhom không tăng số câu SQL theo số vi phạm (bộ đếm PR-TD)', () => {
+    const before1 = soCauSql();
+    thongKeSvc.yThucMetric(P.mbManager, 'vi-pham-theo-nhom', { branchId: mbBranch });
+    const d1 = soCauSql() - before1;
+    const s = taoHocVien('MB-FT 101', true);
+    for (let i = 0; i < 20; i += 1) ghi(s.sid, `Vi phạm thêm #${i} để kiểm không N+1 cho vi-pham-theo-nhom`);
+    const before2 = soCauSql();
+    thongKeSvc.yThucMetric(P.mbManager, 'vi-pham-theo-nhom', { branchId: mbBranch });
+    const d2 = soCauSql() - before2;
+    assert(d2 <= d1 + 1, `số câu SQL không được tăng theo số vi phạm: trước ${d1}, sau khi thêm 20 vi phạm ${d2}`);
   });
 }

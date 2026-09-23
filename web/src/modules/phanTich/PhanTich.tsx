@@ -80,8 +80,8 @@ export function PhanTich() {
     setParams(next, { replace: false });
   };
 
-  /* Ô lớp (Q6) — ẩn ở Ý thức: máy chủ Ý thức chưa nhận tham số lớp (P14, sau deploy). */
-  const classesApi = useApi<any[]>(goc === 'y-thuc' ? null : `/ref/classes${branchId ? `?branchId=${branchId}` : ''}`, [branchId, goc]);
+  /* Ô lớp (Q6) — P14 (PR-YT2): máy chủ Ý thức nay đã nhận tham số lớp, nên bật lại ở góc nhìn Ý thức. */
+  const classesApi = useApi<any[]>(`/ref/classes${branchId ? `?branchId=${branchId}` : ''}`, [branchId]);
   const classes = (classesApi.data ?? []).filter((c) => ct === 'ca-hai' || (c.scoring_mode === 'ratio') === (ct === 'thuong'));
   useEffect(() => {
     if (classId && classesApi.data && !classes.some((c) => c.id === classId)) setClassId('');
@@ -118,12 +118,10 @@ export function PhanTich() {
                 {KHOANG.map((n) => <option key={n} value={n}>{KHOANG_LABEL[n]}</option>)}
               </select>
             )}
-          {goc !== 'y-thuc' && (
-            <select className="field w-40 text-xs" value={classId ?? ''} onChange={(e) => setClassId(e.target.value)} aria-label="Lớp">
-              <option value="">Mọi lớp</option>
-              {classes.map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
-            </select>
-          )}
+          <select className="field w-40 text-xs" value={classId ?? ''} onChange={(e) => setClassId(e.target.value)} aria-label="Lớp">
+            <option value="">Mọi lớp</option>
+            {classes.map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
+          </select>
         </div>
       </div>
 
@@ -137,7 +135,7 @@ export function PhanTich() {
       )}
       {goc === 'y-thuc' && (
         <Card title="Ý thức & Phối hợp" bodyClass="p-3">
-          <YThucAnalysisView branchId={branchId} ct={ct} from={from} />
+          <YThucAnalysisView branchId={branchId} ct={ct} from={from} classId={classId} />
         </Card>
       )}
     </div>

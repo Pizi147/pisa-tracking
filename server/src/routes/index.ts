@@ -973,6 +973,7 @@ api.get('/metrics/:id', requireAuth, wrap((req) => {
     branchId: qInt(req, 'branchId'), skill: qStr(req, 'skill') ?? null,
     from: qStr(req, 'from') ?? null, to: qStr(req, 'to') ?? null, kind: qStr(req, 'kind') ?? null,
     program: chuongTrinhTuThamSo(qStr(req, 'ct')),
+    classId: qInt(req, 'classId'),
   });
   return metricResponse(r, qStr(req, 'rows') === '1');
 }));

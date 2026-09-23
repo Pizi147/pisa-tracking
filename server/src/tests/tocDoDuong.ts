@@ -46,6 +46,10 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/metrics/do-phu-danh-gia' },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/summary' },
 
+  // ---------------------------------------------------------------- Phân tích Ý thức cho QL (PR-YT2, P13/P14)
+  { trang: 'Phân tích Ý thức QL', vai: ['QL', 'QT'], url: '/metrics/vi-pham-theo-nhom' },
+  { trang: 'Phân tích Ý thức QL', vai: ['QL', 'QT'], url: '/metrics/vi-pham-tong?classId={lopFT}' },
+
   // ---------------------------------------------------------------- Tổng quan · Giáo viên
   { trang: 'Tổng quan GV', vai: ['GVCN', 'GVBM', 'GVCN_THUONG'], url: '/my-work' },
   { trang: 'Tổng quan GV', vai: ['QL', 'QT', 'GVCN', 'GVBM', 'GVCN_THUONG'], url: '/tong-quan/hoc-vien-can-ho-tro' },
@@ -147,6 +151,11 @@ export const TRAN: Record<string, number> = {
   'QT /metrics/do-phu-danh-gia': 29,
   'QL /summary': 40,
   'QT /summary': 37,
+  // PR-YT2 (8), 23/09/2026 — mốc chốt ngay sau khi thêm đường, đo được 11/12 câu: max(sau+10, ⌈sau×1.3⌉).
+  'QL /metrics/vi-pham-theo-nhom': 21,
+  'QT /metrics/vi-pham-theo-nhom': 21,
+  'QL /metrics/vi-pham-tong?classId=3': 22,
+  'QT /metrics/vi-pham-tong?classId=3': 22,
   'GVCN /my-work': 60,
   'GVBM /my-work': 62,
   'GVCN_THUONG /my-work': 60,

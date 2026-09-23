@@ -10,7 +10,7 @@ import { demoToday } from '../demoConfig.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { countAttachments } from '../platform/attachments.ts';
 import { loadBundle, resultOf } from '../fasttrack/attempts.ts';
-import { branchSql, statScope } from './thongKe.ts';
+import { branchSql, checkClassInScope, classSql, statScope } from './thongKe.ts';
 import { canManageDiscipline, requireManageDiscipline, requireViewClass, requireViewStudent } from './access.ts';
 
 /**
@@ -339,20 +339,21 @@ export const isPhoiHopMetric = (id: string): boolean => (PHOI_HOP_METRIC_IDS as 
  */
 export function phoiHopMetric(
   p: Principal, id: string,
-  f: { branchId?: number | null; from?: string | null; to?: string | null; kind?: string | null } = {},
+  f: { branchId?: number | null; from?: string | null; to?: string | null; kind?: string | null; classId?: number | null } = {},
 ): { none: boolean; ids: number[]; byKind?: { sos1: number[]; sos2: number[]; sos3: number[] } } {
   const scope = statScope(p, f.branchId ?? null);
   if (scope.none) return { none: true, ids: [] };
-  const b = branchSql('c.branch_id', scope.branchIds);
+  if (f.classId) checkClassInScope(f.classId, scope.branchIds);
+  const b = branchSql('c.branch_id', scope.branchIds), cl = classSql('a.class_id', f.classId);
   const period = `${f.from ? ' AND rp.week_start >= ?' : ''}${f.to ? ' AND rp.week_start <= ?' : ''}`;
-  const args = [...b.args, ...(f.from ? [f.from] : []), ...(f.to ? [f.to] : [])];
+  const args = [...b.args, ...cl.args, ...(f.from ? [f.from] : []), ...(f.to ? [f.to] : [])];
   const attempts = db()
     .prepare(
       `SELECT DISTINCT a.* FROM assessment_attempts a
          JOIN sos_coordination_actions x ON x.attempt_id = a.id
          LEFT JOIN classes c ON c.id = a.class_id
          LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
-        WHERE a.status != 'cancelled' AND ${b.sql}${period} ORDER BY a.id`,
+        WHERE a.status != 'cancelled' AND ${b.sql} AND ${cl.sql}${period} ORDER BY a.id`,
     )
     .all(...args) as any[];
 
