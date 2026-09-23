@@ -49,6 +49,7 @@ import * as scheduleSvc from '../classes/schedule.ts';
 import * as intakeSvc from '../classes/intake.ts';
 import * as transitionSvc from '../classes/transition.ts';
 import * as loTrinhTiepSvc from '../classes/loTrinhTiep.ts';
+import * as luatLoTrinhSvc from '../classes/luatLoTrinh.ts';
 import * as hocVienLopSvc from '../classes/hocVienLop.ts';
 import * as phanTichLopSvc from '../classes/phanTichLop.ts';
 import * as thongTinLopSvc from '../classes/thongTinLop.ts';
@@ -1666,7 +1667,10 @@ api.patch('/students/:id', requireAuth, wrap((req) => {
 
 api.post('/students/:id/transfer', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  const { toClassId, effectiveDate, reasonCode, reasonNote, handoverNote, noHandoverNote, receiverUserId } = req.body ?? {};
+  const {
+    toClassId, effectiveDate, reasonCode, reasonNote, handoverNote, noHandoverNote, receiverUserId,
+    nguoiNhan, mucTieu, thangThi,
+  } = req.body ?? {};
   if (!toClassId) throw badRequest('Cần chọn lớp đích.');
   /* RB-3: lý do chọn nhanh BẮT BUỘC; "Khác" phải ghi rõ. */
   const reason = transferReasonText(reasonCode, reasonNote);
@@ -1676,7 +1680,23 @@ api.post('/students/:id/transfer', requireAuth, wrap((req) => {
       note: handoverNote ?? null,
       noNote: noHandoverNote === true,
       receiverUserId: receiverUserId ? Number(receiverUserId) : null,
+      nguoiNhan: nguoiNhan ?? null,
+      mucTieu: mucTieu === undefined || mucTieu === null ? null : Number(mucTieu),
+      thangThi: thangThi ?? null,
     });
+}));
+
+/** Q3: danh sách chi nhánh + lớp đích cho panel Chuyển lớp — không lộ học viên lớp khác. */
+api.get('/chuyen-lop/lop-dich', requireAuth, wrap((req) => {
+  const sid = qInt(req, 'studentId');
+  if (!sid) throw badRequest('Cần studentId.');
+  return luatLoTrinhSvc.lopDichChoChuyen(principalOf(req), sid);
+}));
+
+/** Case đang mở + luật áp dụng khi đã chọn lớp đích (Q13, Q14). */
+api.get('/students/:id/chuyen-lop', requireAuth, wrap((req) => {
+  const toClassId = qInt(req, 'toClassId');
+  return luatLoTrinhSvc.xemChuyenLop(principalOf(req), pInt(req, 'id'), toClassId ?? null);
 }));
 
 /** Lộ trình tiếp theo (PR-LT, Q1) — dự định sau lớp đang học, ghi trước khi thật sự chuyển. */
@@ -1702,7 +1722,7 @@ api.post('/students/:id/status', requireAuth, wrap((req) => {
   const status = req.body?.status;
   if (!['active', 'inactive', 'finished'].includes(status)) throw badRequest('Trạng thái không hợp lệ.');
   return studentSvc.setStudentStatus(principalOf(req), pInt(req, 'id'), status,
-    req.body?.date ?? demoToday(), req.body?.reason);
+    req.body?.date ?? demoToday(), req.body?.reason, req.body?.endKind ?? null);
 }));
 
 /** RB-9: lưu trữ / bỏ lưu trữ — chỉ Quản lý, chỉ em đã kết thúc học. Không có tác vụ ngầm. */

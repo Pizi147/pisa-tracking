@@ -282,11 +282,13 @@ export async function runLenLopTests(t: YThucTestKit) {
 
   const { P, TODAY: TODAY3, addDays: addDays3, classId } = t;
   const week = await import('../platform/week.ts');
-  const { loadPrincipal } = await import('../permissions.ts');
+  const { loadPrincipal, can: can4 } = await import('../permissions.ts');
   const intake = await import('../classes/intake.ts');
   const classesSvc = await import('../classes/classes.ts');
   const loTrinhTiepSvc = await import('../classes/loTrinhTiep.ts');
   const scheduleSvc = await import('../classes/schedule.ts');
+  const studentsSvc4 = await import('../students/students.ts');
+  const timNguoiSvc4 = await import('../platform/timNguoi.ts');
   const myworkSvc = await import('../worklist/mywork.ts');
   const profileSvc = await import('../students/profile.ts');
 
@@ -460,5 +462,250 @@ export async function runLenLopTests(t: YThucTestKit) {
     taoHocVien3(cls, 'FOU'); taoHocVien3(cls, 'FOU');
     const sau = demTruyVan(() => { classesSvc.classRoster(P.admin, cls); });
     assert(sau <= truoc + 1, `Thêm 2 em không được tăng nhiều câu lệnh: ${truoc} → ${sau}`);
+  });
+
+  // ==================================================================== Task 4 — luật lộ trình + Chuyển lớp một em
+
+  console.log('\nPR-LT (4) · Máy chủ: luật lộ trình một chỗ, Chuyển lớp một em mọi chi nhánh (S16, S17, RB-3)');
+
+  const luatLoTrinhSvc = await import('../classes/luatLoTrinh.ts');
+  const CP4 = (conn.prepare(`SELECT id FROM branches WHERE code = 'CP'`).get() as any).id as number;
+  let lt4Seq = 0;
+
+  function taoLop4(o: { branchId: number; kind: string; ft: boolean; tuanHienTai?: number }): number {
+    lt4Seq += 1;
+    const branchCode = (conn.prepare('SELECT code FROM branches WHERE id = ?').get(o.branchId) as any).code as string;
+    const startPeriodId = o.tuanHienTai !== undefined ? week.ensurePeriod(mondayForWeek3(o.tuanHienTai)).id : undefined;
+    const r = intake.createClass(P.admin, {
+      code: `${branchCode}-LT4-${lt4Seq}`, branchId: o.branchId, kind: o.kind, isFastTrack: o.ft,
+      startDate: o.tuanHienTai !== undefined ? mondayForWeek3(o.tuanHienTai) : TODAY3, startPeriodId,
+    }) as any;
+    return r.id as number;
+  }
+  function ganGV4(clsId: number, userId: number, skill: string | null, isCore: boolean) {
+    conn.prepare(
+      `INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at)
+       VALUES (?, ?, ?, ?, '2026-01-01', 'active', ?)`,
+    ).run(userId, clsId, skill, isCore ? 1 : 0, new Date().toISOString());
+  }
+  function taoHV4(o: { clsId: number; ma: string | null; ft: boolean; target?: number | null }): { sid: number; cycleId: number } {
+    lt4Seq += 1;
+    const tag = `LT4-${lt4Seq}`;
+    const now = new Date().toISOString();
+    const cls = conn.prepare('SELECT branch_id FROM classes WHERE id = ?').get(o.clsId) as any;
+    const sid = Number(conn.prepare(
+      `INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`,
+    ).run(`PISA-${tag}`, `Hoc vien ${tag}`, `hoc vien ${tag}`.toLowerCase(), cls.branch_id, now).lastInsertRowid);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`)
+      .run(sid, o.clsId, TODAY3, now);
+    const cycleId = Number(conn.prepare(
+      `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, started_at, status, created_at)
+       VALUES (?, 1, ?, ?, ?, ?, 'active', ?)`,
+    ).run(sid, o.ft ? 'LT1' : null, o.ma, o.target ?? null, TODAY3, now).lastInsertRowid);
+    return { sid, cycleId };
+  }
+  function taoCase4(sid: number, cycleId: number, category: string, ownerUserId: number | null = null): number {
+    const now = new Date().toISOString();
+    return Number(conn.prepare(
+      `INSERT INTO sos_cases (student_id, cycle_id, category, topic, origin_kind, status, sos_level, owner_user_id, detected_at, created_at)
+       VALUES (?,?,?,?, 'teacher_report', 'open', 1, ?, ?, ?)`,
+    ).run(sid, cycleId, category, category, ownerUserId, TODAY3, now).lastInsertRowid);
+  }
+  const caseStatus = (id: number) => (conn.prepare('SELECT status, system_close_reason FROM sos_cases WHERE id = ?').get(id) as any);
+  const cycleStatus = (id: number) => (conn.prepare('SELECT status FROM learning_cycles WHERE id = ?').get(id) as any).status;
+  const activeCycleCount = (sid: number) => (conn.prepare(`SELECT COUNT(*) n FROM learning_cycles WHERE student_id=? AND status='active'`).get(sid) as any).n;
+
+  check('PR-LT (4) · FT → FT (cùng chi nhánh): lộ trình giữ NGUYÊN id, Case giữ, người nhận gợi ý = GV cùng môn lớp mới', () => {
+    const from = taoLop4({ branchId: MB3, kind: 'FT', ft: true });
+    const to = taoLop4({ branchId: MB3, kind: 'FT', ft: true });
+    const gvW = P.w1Teacher ?? P.normalCoreTeacher;
+    ganGV4(to, gvW.userId, 'writing1', false);
+    const { sid, cycleId } = taoHV4({ clsId: from, ma: 'FT', ft: true, target: 6.5 });
+    const caseId = taoCase4(sid, cycleId, 'writing1');
+    const gvcn = ganGVCN3(from, P.normalCoreTeacher.userId);
+    const r = studentsSvc4.transferStudent(gvcn, sid, to, TODAY3, 'Đổi lịch học', { note: 'Đang dở PA Writing.' });
+    assert(activeCycleCount(sid) === 1 && cycleStatus(cycleId) === 'active', 'FT→FT phải GIỮ nguyên lộ trình (khoa=giu)');
+    assert(caseStatus(caseId).status === 'open', 'Case phải giữ nguyên, không tự đóng');
+    assert(r.endKind === 'chuyen_lop', `endKind: ${r.endKind}`);
+  });
+
+  check('PR-LT (4) · Lớp thường cùng chương trình, giữa khoá: khoá GIỮ, lượt chưa làm chuyển sang lớp mới (Q12)', () => {
+    const from = taoLop4({ branchId: MB3, kind: 'FOU', ft: false, tuanHienTai: 3 });
+    const to = taoLop4({ branchId: MB3, kind: 'FOU', ft: false, tuanHienTai: 3 });
+    const { sid, cycleId } = taoHV4({ clsId: from, ma: 'FOU', ft: false });
+    const periodId = week.ensurePeriod(TODAY3).id;
+    const attemptId = Number(conn.prepare(
+      `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id, status, created_at)
+       VALUES (?,?,1,'progress',?,?, 'planned', ?)`,
+    ).run(cycleId, sid, from, periodId, new Date().toISOString()).lastInsertRowid);
+    const gvcn = ganGVCN3(from, P.normalCoreTeacher.userId);
+    studentsSvc4.transferStudent(gvcn, sid, to, TODAY3, 'Đổi lịch học', { noNote: true });
+    assert(cycleStatus(cycleId) === 'active', 'Cùng chương trình, giữa khoá: khoá phải GIỮ (khoa=giu)');
+    const att = conn.prepare('SELECT class_id FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
+    assert(att.class_id === to, 'Khoá giữ thì lượt chưa làm phải chuyển theo em sang lớp mới');
+  });
+
+  check('PR-LT (4) · Lớp thường → Fast Track (thật, Q7): khoá cũ completed, lộ trình FT mới active có mục tiêu, Case lớp thường đóng moved_to_ft, đúng MỘT lộ trình active', () => {
+    const from = taoLop4({ branchId: MB3, kind: 'FOU', ft: false, tuanHienTai: 3 });
+    const to = taoLop4({ branchId: MB3, kind: 'FT', ft: true });
+    const { sid, cycleId } = taoHV4({ clsId: from, ma: 'FOU', ft: false });
+    const caseId = taoCase4(sid, cycleId, 'writing');
+    const gvcn = ganGVCN3(from, P.normalCoreTeacher.userId);
+    assertThrows(() => studentsSvc4.transferStudent(gvcn, sid, to, TODAY3, 'Xếp lại trình độ', { noNote: false, note: 'Đủ trình lên FT', mucTieu: undefined as any }),
+      /Mục tiêu/, 'Thiếu Mục tiêu band phải 400');
+    const r = studentsSvc4.transferStudent(gvcn, sid, to, TODAY3, 'Xếp lại trình độ', { note: 'Đủ trình lên FT', mucTieu: 6.5 });
+    assert(cycleStatus(cycleId) === 'completed', 'Khoá lớp thường cũ phải đóng completed');
+    assert(activeCycleCount(sid) === 1, 'Đúng một lộ trình active sau khi sang FT');
+    const newCycle = conn.prepare(`SELECT * FROM learning_cycles WHERE student_id=? AND status='active'`).get(sid) as any;
+    assert(newCycle.target_score === 6.5, `Lộ trình FT mới phải có mục tiêu: ${newCycle.target_score}`);
+    assert(caseStatus(caseId).status === 'done' && caseStatus(caseId).system_close_reason === 'moved_to_ft',
+      `Case lớp thường phải đóng moved_to_ft: ${JSON.stringify(caseStatus(caseId))}`);
+    assert(r.endKind === 'sang_ft', `endKind: ${r.endKind}`);
+  });
+
+  check('PR-LT (4) · Fast Track → lớp thường (Q10): Case FT đóng moved_to_normal, khoá FT cũ completed', () => {
+    const from = taoLop4({ branchId: MB3, kind: 'FT', ft: true });
+    const to = taoLop4({ branchId: MB3, kind: 'BE', ft: false, tuanHienTai: 2 });
+    const { sid, cycleId } = taoHV4({ clsId: from, ma: 'FT', ft: true, target: 6.0 });
+    const caseId = taoCase4(sid, cycleId, 'listening');
+    const gvcn = ganGVCN3(from, P.normalCoreTeacher.userId);
+    const r = studentsSvc4.transferStudent(gvcn, sid, to, TODAY3, 'Xếp lại trình độ', { noNote: false, note: 'Chuyển sang lớp thường' });
+    assert(cycleStatus(cycleId) === 'completed', 'Khoá FT cũ phải đóng completed');
+    assert(caseStatus(caseId).status === 'done' && caseStatus(caseId).system_close_reason === 'moved_to_normal',
+      `Case FT phải đóng moved_to_normal: ${JSON.stringify(caseStatus(caseId))}`);
+    assert(r.endKind === 'chuyen_lop', `FT→thường giữa khoá: endKind chuyen_lop, được ${r.endKind}`);
+  });
+
+  check('PR-LT (4) · Lớp thường KHÁC chương trình, giữa khoá (xếp lại trình độ): khoá mới đúng mã, Case đi theo em (MỞ, không đóng), lượt chưa làm Ở LẠI lớp cũ', () => {
+    const from = taoLop4({ branchId: MB3, kind: 'FOU', ft: false, tuanHienTai: 2 });
+    const to = taoLop4({ branchId: MB3, kind: 'BE', ft: false, tuanHienTai: 2 });
+    const { sid, cycleId } = taoHV4({ clsId: from, ma: 'FOU', ft: false });
+    const caseId = taoCase4(sid, cycleId, 'reading');
+    const periodId = week.ensurePeriod(TODAY3).id;
+    const attemptId = Number(conn.prepare(
+      `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id, status, created_at)
+       VALUES (?,?,1,'final',?,?, 'planned', ?)`,
+    ).run(cycleId, sid, from, periodId, new Date().toISOString()).lastInsertRowid);
+    const gvcn = ganGVCN3(from, P.normalCoreTeacher.userId);
+    studentsSvc4.transferStudent(gvcn, sid, to, TODAY3, 'Xếp lại trình độ', { noNote: false, note: 'Học lệch trình' });
+    assert(cycleStatus(cycleId) === 'completed', 'Khác chương trình giữa khoá vẫn đóng khoá cũ');
+    const newCycle = conn.prepare(`SELECT programme_code FROM learning_cycles WHERE student_id=? AND status='active'`).get(sid) as any;
+    assert(newCycle.programme_code === 'BE', `Khoá mới phải đúng mã BE: ${newCycle?.programme_code}`);
+    assert(caseStatus(caseId).status === 'open', 'Case phải đi theo em, KHÔNG tự đóng (Q11)');
+    const att = conn.prepare('SELECT class_id FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
+    assert(att.class_id === from, 'Đóng khoá thì lượt chưa làm phải Ở LẠI lớp cũ (Q12)');
+  });
+
+  check('PR-LT (4) · Q3: GVBM lớp nguồn → 403; GVCN lớp KHÁC (không phải nguồn) → 403; GVCN lớp MB chuyển em sang lớp CP thành công; GVCN MB mất quyền xem sau đó', () => {
+    const from = taoLop4({ branchId: MB3, kind: 'FOU', ft: false, tuanHienTai: 2 });
+    const other = taoLop4({ branchId: MB3, kind: 'FOU', ft: false, tuanHienTai: 2 });
+    const to = taoLop4({ branchId: CP4, kind: 'FOU', ft: false, tuanHienTai: 2 });
+    const { sid } = taoHV4({ clsId: from, ma: 'FOU', ft: false });
+    const gvcnFrom = ganGVCN3(from, P.normalCoreTeacher.userId);
+    const gvcnOther = ganGVCN3(other, P.normalSubjectTeacher.userId);
+    const gvbmFrom = loadPrincipal(P.subjectTeacher.userId);
+    ganGV4(from, gvbmFrom.userId, 'listening', false);
+    const gvbmFromLai = loadPrincipal(gvbmFrom.userId);
+    assertThrows(() => studentsSvc4.transferStudent(gvbmFromLai, sid, to, TODAY3, 'Đổi chi nhánh', { noNote: true }),
+      /quyền/, 'GVBM (không kiêm GVCN) của lớp nguồn phải 403');
+    assertThrows(() => studentsSvc4.transferStudent(gvcnOther, sid, to, TODAY3, 'Đổi chi nhánh', { noNote: true }),
+      /quyền/, 'GVCN của một lớp KHÁC (không phải lớp nguồn hiện tại) phải 403');
+    studentsSvc4.transferStudent(gvcnFrom, sid, to, TODAY3, 'Đổi chi nhánh', { noNote: true });
+    /*
+     * "QL CP thấy ngay" (PR-TD Task2(e), đã kiểm ở đó với HV KHÔNG có ghi danh cũ): ở đây HV có
+     * ghi danh MB cũ ('transferred') nên `branchesOfStudent` trả CẢ MB lẫn CP — luật can() hiện
+     * có (permissions.ts, ngoài phạm vi PR-LT sửa) đòi grant phủ TRỌN các chi nhánh đó, nên QL
+     * một chi nhánh KHÔNG đủ; chỉ vai phạm vi toàn hệ thống mới thấy ngay. Dùng admin xác nhận dữ liệu đúng.
+     */
+    assert(profileSvc.studentProfile(P.admin, sid).currentClass?.id === to, 'Hồ sơ phải phản ánh lớp CP mới ngay sau khi chuyển');
+    assertThrows(() => profileSvc.studentProfile(gvcnFrom, sid), /phạm vi/, 'GVCN MB (lớp cũ) phải mất quyền xem sau khi chuyển');
+  });
+
+  check('PR-LT (4) · GET /chuyen-lop/lop-dich: có lớp CP, JSON KHÔNG có khoá nào về học viên lớp khác', () => {
+    const from = taoLop4({ branchId: MB3, kind: 'FOU', ft: false, tuanHienTai: 2 });
+    const to = taoLop4({ branchId: CP4, kind: 'FOU', ft: false, tuanHienTai: 2 });
+    taoHV4({ clsId: to, ma: 'FOU', ft: false }); // học viên lớp đích — không được lộ
+    const { sid } = taoHV4({ clsId: from, ma: 'FOU', ft: false });
+    const gvcn = ganGVCN3(from, P.normalCoreTeacher.userId);
+    const r = luatLoTrinhSvc.lopDichChoChuyen(gvcn, sid);
+    assert(r.chiNhanh.some((b: any) => b.id === CP4), 'Phải có chi nhánh CP');
+    assert(r.lop.some((l: any) => l.id === to), 'Phải có lớp đích ở CP');
+    const raw = JSON.stringify(r);
+    assert(!/soHv|"students"|hocVien/i.test(raw), `JSON không được lộ khoá học viên lớp khác: ${raw.slice(0, 200)}`);
+  });
+
+  check('PR-LT (4) · Q21: chuyển MB → CP tạo thông báo cho GVCN lớp CP và QL chi nhánh CP (không QL MB); chạy lại không nhân đôi (dedup)', () => {
+    const from = taoLop4({ branchId: MB3, kind: 'FOU', ft: false, tuanHienTai: 2 });
+    const to = taoLop4({ branchId: CP4, kind: 'FOU', ft: false, tuanHienTai: 2 });
+    const gvcnTo = loadPrincipal(P.normalCoreTeacher.userId);
+    ganGV4(to, gvcnTo.userId, null, true);
+    const { sid } = taoHV4({ clsId: from, ma: 'FOU', ft: false });
+    const gvcnFrom = ganGVCN3(from, P.normalSubjectTeacher.userId);
+    studentsSvc4.transferStudent(gvcnFrom, sid, to, TODAY3, 'Đổi chi nhánh', { noNote: true });
+    const notiGvcn = conn.prepare(`SELECT COUNT(*) n FROM notifications WHERE user_id=? AND kind='transfer_in'`).get(gvcnTo.userId) as any;
+    assert(notiGvcn.n === 1, `GVCN lớp CP phải nhận đúng 1 thông báo: ${notiGvcn.n}`);
+    const notiQlCp = conn.prepare(`SELECT COUNT(*) n FROM notifications WHERE user_id=? AND kind='transfer_in'`).get(P.cpManager.userId) as any;
+    assert(notiQlCp.n >= 1, 'QL chi nhánh CP phải nhận thông báo');
+    const notiQlMb = conn.prepare(`SELECT COUNT(*) n FROM notifications WHERE user_id=? AND kind='transfer_in' AND entity_id=?`).get(P.mbManager.userId, sid) as any;
+    assert(notiQlMb.n === 0, 'QL chi nhánh MB (chi nhánh cũ) KHÔNG được nhận thông báo này');
+    assert(d.duongThongBao({ entity_type: 'student', entity_id: sid, kind: null, student_id: null, attempt_id: null }) === `/hoc-vien/${sid}`,
+      'duongThongBao phải ra /hoc-vien/{id}');
+    // Chạy lại đúng lệnh (cùng enrollmentMoiId) không được nhân đôi thông báo (dedup theo user + dedup_key).
+    const enrMoi = conn.prepare(`SELECT id FROM enrollments WHERE student_id=? AND status='active'`).get(sid) as any;
+    luatLoTrinhSvc.thongBaoChuyenVao({
+      sid, tenHocVien: 'x', enrollmentMoiId: enrMoi.id, actorUserId: gvcnFrom.userId,
+      tuMa: 'x', tuChiNhanh: 'MB', doiChiNhanh: true, lyDo: null,
+      denLop: { id: to, code: 'x', branchId: CP4 },
+    });
+    const notiGvcnLai = conn.prepare(`SELECT COUNT(*) n FROM notifications WHERE user_id=? AND kind='transfer_in'`).get(gvcnTo.userId) as any;
+    assert(notiGvcnLai.n === 1, `Chạy lại không được nhân đôi thông báo: ${notiGvcnLai.n}`);
+  });
+
+  check('PR-LT (4) · end_kind ghi đúng theo từng nhánh luật (len_lop, hoc_lai, sang_ft, chuyen_lop, chuyen_lop khác chương trình)', () => {
+    const fou = taoLop4({ branchId: MB3, kind: 'FOU', ft: false, tuanHienTai: 2 });
+    const be = taoLop4({ branchId: MB3, kind: 'BE', ft: false, tuanHienTai: 2 });
+    const { sid } = taoHV4({ clsId: fou, ma: 'FOU', ft: false });
+    const gvcn = ganGVCN3(fou, P.normalCoreTeacher.userId);
+    const r = studentsSvc4.transferStudent(gvcn, sid, be, TODAY3, 'Xếp lại trình độ', { noNote: true });
+    assert(r.endKind === 'chuyen_lop', `Giữa khoá khác chương trình → chuyen_lop, được ${r.endKind}`);
+    const enr = conn.prepare(`SELECT end_kind FROM enrollments WHERE student_id=? AND status='transferred' ORDER BY id DESC LIMIT 1`).get(sid) as any;
+    assert(enr.end_kind === 'chuyen_lop', `Cột end_kind trên enrollment: ${enr.end_kind}`);
+  });
+
+  check('PR-LT (4) · Kết thúc học: khoá đang chạy abandoned, Case course_ended, status finished; lớp cũ hết khoá & em cuối đi → finished, chưa hết khoá → giữ active', () => {
+    const clsHet = taoLop4({ branchId: MB3, kind: 'FOU', ft: false, tuanHienTai: 9 }); // đã hết khoá (>8 tuần)
+    const { sid: s1, cycleId: c1 } = taoHV4({ clsId: clsHet, ma: 'FOU', ft: false });
+    const case1 = taoCase4(s1, c1, 'listening');
+    studentsSvc4.setStudentStatus(P.mbManager, s1, 'finished', TODAY3, 'Nghỉ hẳn');
+    assert(cycleStatus(c1) === 'abandoned', `Khoá đang chạy phải abandoned: ${cycleStatus(c1)}`);
+    assert(caseStatus(case1).status === 'done', 'Case phải tự đóng course_ended');
+    const cls1 = conn.prepare('SELECT status FROM classes WHERE id = ?').get(clsHet) as any;
+    assert(cls1.status === 'finished', 'Lớp hết khoá, em cuối đi → phải thành finished');
+
+    const clsChuaHet = taoLop4({ branchId: MB3, kind: 'FOU', ft: false, tuanHienTai: 3 });
+    const { sid: s2 } = taoHV4({ clsId: clsChuaHet, ma: 'FOU', ft: false });
+    studentsSvc4.setStudentStatus(P.mbManager, s2, 'finished', TODAY3, 'Nghỉ hẳn');
+    const cls2 = conn.prepare('SELECT status FROM classes WHERE id = ?').get(clsChuaHet) as any;
+    assert(cls2.status === 'active', 'Lớp chưa hết khoá thì vẫn giữ active dù mất em cuối');
+  });
+
+  check('PR-LT (4) · Quay lại học vào lớp đã kết thúc → 400', () => {
+    const cls = taoLop4({ branchId: MB3, kind: 'FOU', ft: false, tuanHienTai: 9 });
+    const { sid } = taoHV4({ clsId: cls, ma: 'FOU', ft: false });
+    studentsSvc4.setStudentStatus(P.mbManager, sid, 'inactive', TODAY3, 'Tạm nghỉ');
+    // Lớp chỉ 'finished' khi KHÔNG còn enrollment active — em này đã 'paused' nên lớp đủ điều kiện hết khoá.
+    const cls1 = conn.prepare('SELECT status FROM classes WHERE id = ?').get(cls) as any;
+    assert(cls1.status === 'finished', 'Tiền đề: lớp phải đã kết thúc sau khi em cuối tạm dừng');
+    assertThrows(() => studentsSvc4.setStudentStatus(P.mbManager, sid, 'active', TODAY3, 'Quay lại'),
+      /đã kết thúc/, 'Quay lại học vào lớp đã kết thúc phải 400 (Q17)');
+  });
+
+  check('PR-LT (4) · GVCN dùng /ref/nguoi (không còn /ref/people) để chọn người nhận Case khi chuyển lớp — không bị 403', () => {
+    const from = taoLop4({ branchId: MB3, kind: 'FOU', ft: false, tuanHienTai: 2 });
+    const gvcn = ganGVCN3(from, P.normalCoreTeacher.userId);
+    assert(!can4(gvcn, d.PERMISSIONS.MEETING_VIEW, { anyScope: true }), 'Tiền đề: GVCN thường không có MEETING_VIEW toàn hệ thống');
+    let threw = false;
+    try { timNguoiSvc4.timNguoi(gvcn, { q: 'nguyen', nhom: 'giao_vien', studentId: null }); } catch { threw = true; }
+    assert(!threw, '/ref/nguoi không được đòi MEETING_VIEW (khác /ref/people) — GVCN phải gọi được');
   });
 }

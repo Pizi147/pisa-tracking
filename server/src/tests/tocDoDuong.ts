@@ -105,6 +105,17 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/hanh-trinh?giai-doan=thuong' },
   /* PR-LT: {hv} là em lớp FT nên `lop.laLopThuong=false`, nhưng đường vẫn 200 với mọi vai xem được hồ sơ. */
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/lo-trinh-tiep' },
+  /* PR-LT, Q3: quyền chuyển lớp kiểm Ở LỚP NGUỒN — GVCN của lớp {hv} đang học được, GVBM (không kiêm GVCN) bị 403. */
+  {
+    trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/chuyen-lop/lop-dich?studentId={hv}',
+    maChuDich: { GVBM: 403 },
+  },
+  { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/chuyen-lop', maChuDich: { GVBM: 403 } },
+  {
+    /* {lopThuong} khác lớp nguồn của {hv} (MB-FT 101) — {lopFT} sẽ trùng lớp nguồn, lopDichHopLe từ chối. */
+    trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/chuyen-lop?toClassId={lopThuong}',
+    maChuDich: { GVBM: 403 },
+  },
 
   // ---------------------------------------------------------------- Danh sách Case
   { trang: 'Danh sách Case', vai: MOI_VAI, url: '/cases' },

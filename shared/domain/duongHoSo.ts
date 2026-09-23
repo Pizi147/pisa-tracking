@@ -97,6 +97,9 @@ export function duongThongBao(n: ThongBaoRow): string | null {
     /* PR-Ra Q5: người được Nhắc bấm chuông thì về thẳng danh sách có dòng vừa được nhắc. */
     case 'nhac_viec':
       return '/cong-viec';
+    /* PR-LT, Q21: thông báo chuyển lớp — entity_id CHÍNH LÀ studentId (không phải student_id riêng). */
+    case 'student':
+      return duongHoSoHocVien(n.entity_id);
     default:
       return null;
   }
