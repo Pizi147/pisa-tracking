@@ -5,7 +5,7 @@ import { Modal } from '../../ui/Drawer.tsx';
 import { Field, SectionNote } from '../../ui/ui.tsx';
 import {
   ENTRY_SKILLS, ENTRY_SKILL_LABEL, URGENCY_LEVELS, URGENCY_LABEL, issuesForTopic, DEFAULT_URGENCY,
-  CASE_OUTCOMES, CASE_OUTCOME_LABEL,
+  CASE_OUTCOMES, CASE_OUTCOME_LABEL, REGULAR_SKILL_LABEL,
 } from '@shared/domain/index.ts';
 
 /**
@@ -45,7 +45,7 @@ export function QuickReport({
    * chắc. Tên và mô tả thì không: máy chỉ đọc được con số, còn vấn đề thật là gì thì người
    * dạy mới biết, và đó chính là lý do bước xác minh này tồn tại.
    */
-  signal?: { id: number; skill: string | null; label: string } | null;
+  signal?: { id: number; skill: string | null; label: string; kind?: 'normal' | 'ft'; scoreText?: string | null; contextLabel?: string | null } | null;
 }) {
   const toast = useToast();
   /*
@@ -88,8 +88,10 @@ export function QuickReport({
     setTopic(signal.skill ?? '');
   }, [open, signal?.id]);
 
-  const topics: readonly string[] = ENTRY_SKILLS;
-  const topicLabel = (k: string) => ENTRY_SKILL_LABEL[k as keyof typeof ENTRY_SKILL_LABEL] ?? k;
+  /* MỞ TỪ TÍN HIỆU: chỉ đúng môn của tín hiệu (§3.10 "form Case môn đó") — máy chủ cũng từ chối môn khác. */
+  const topics: readonly string[] = signal?.skill ? [signal.skill] : ENTRY_SKILLS;
+  const topicLabel = (k: string) => ENTRY_SKILL_LABEL[k as keyof typeof ENTRY_SKILL_LABEL]
+    ?? REGULAR_SKILL_LABEL[k as keyof typeof REGULAR_SKILL_LABEL] ?? k;
   const causes = topic ? issuesForTopic(topic) : [];
 
   const reset = () => {
@@ -208,9 +210,11 @@ export function QuickReport({
 
   return (
     <Modal open={open} onClose={onClose}
-      title={signal
-        ? `Xác minh tín hiệu ${signal.label}${studentName ? ` · ${studentName}` : ''}`
-        : (studentName ? `+ Case · ${studentName}` : '+ Case')}
+      title={signal?.kind === 'normal'
+        ? `Tạo Case · ${signal.label}${studentName ? ` · ${studentName}` : ''}`
+        : signal
+          ? `Xác minh tín hiệu ${signal.label}${studentName ? ` · ${studentName}` : ''}`
+          : (studentName ? `+ Case · ${studentName}` : '+ Case')}
       footer={
         <>
           <button className="btn" onClick={onClose}>Huỷ</button>
@@ -236,6 +240,14 @@ export function QuickReport({
               Đã xong từ trước
             </button>
           </div>
+        )}
+
+        {/* ĐIỂM CỦA TÍN HIỆU — phần máy biết chắc, hiện ra để người dạy khỏi mở bài lên dò. */}
+        {signal?.scoreText && (
+          <p className="m-0 text-xs text-slate-400">
+            Điểm: <span className="text-slate-200">{signal.contextLabel ?? signal.label}</span>{' '}
+            <span className="tabular-nums text-rose-200">{signal.scoreText}</span>
+          </p>
         )}
 
         {/*
@@ -352,7 +364,7 @@ export function QuickReport({
           </Field>
         )}
 
-        {mode === 'now' && (
+        {mode === 'now' && !signal && (
           <SectionNote>
             Ghi nhận này KHÔNG tạo ra một bài đánh giá và cũng không có mức SOS — SOS là số kỹ
             năng dưới kỳ vọng ở một bài cụ thể, ở đây chưa có bài nào.
