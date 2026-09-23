@@ -18,10 +18,19 @@ const catThanBao = (s: string): string => (s.length <= THAN_BAO_TOI_DA ? s : `${
 
 export function nhacViec(p: Principal, i: { key: string; ownerId: number }): { daNhacLuc: string } {
   if (!can(p, PERMISSIONS.CASE_APPROVE, { anyScope: true })) throw forbidden('Bạn chỉ xem được việc của mình.');
+  if (p.userId === i.ownerId) throw forbidden('Không tự nhắc chính mình.');
 
   const target = loadPrincipal(i.ownerId);
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   if (!scope.all) {
+    /*
+     * KIỂM NHANH (trước khi dựng `myWork`): người được nhắc phải làm việc ở MỘT chi nhánh
+     * trong phạm vi — rẻ, tránh tải dữ liệu vô ích cho giáo viên rõ ràng ngoài phạm vi. CHƯA
+     * đủ: giáo viên dạy nhiều chi nhánh thì qua được kiểm này dù DÒNG cụ thể lại thuộc chi
+     * nhánh khác (VD: QL Monbay, giáo viên dạy cả Monbay lẫn Bãi Cháy, dòng là lớp Bãi Cháy) —
+     * kiểm đúng DÒNG bằng `can(..., ATTEMPT_VIEW, { classId, studentId })` ngay dưới mới là
+     * chốt chặn thật.
+     */
     const branches = db()
       .prepare(`SELECT DISTINCT branch_id FROM user_roles WHERE user_id = ? AND status = 'active' AND branch_id IS NOT NULL`)
       .all(i.ownerId) as any[];
@@ -33,6 +42,9 @@ export function nhacViec(p: Principal, i: { key: string; ownerId: number }): { d
   const w = myWork(target) as any;
   const row = w.items.find((it: any) => it.key === i.key);
   if (!row) throw notFound(`Việc này không còn trong danh sách của ${target.fullName}.`);
+  if (!can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: row.classId, studentId: row.studentId })) {
+    throw forbidden('Dòng này không thuộc phạm vi bạn quản lý.');
+  }
 
   const today = demoToday();
   const dedupKey = `nhac:${i.key}:${today}`;

@@ -3187,7 +3187,14 @@ export function migrateCongViec(conn: any, applied: string[]) {
   }
   if (!cols('unit_reports').includes('submitted_by')) {
     conn.exec(`ALTER TABLE unit_reports ADD COLUMN submitted_by INTEGER REFERENCES users(id)`);
-    conn.exec(`UPDATE unit_reports SET submitted_by = reporter_user_id WHERE status IS NOT NULL`);
+    /*
+     * Điền theo `submitted_at IS NOT NULL` — ĐÃ NỘP, không phải `status IS NOT NULL` (chỉ nói có
+     * ghi mức, kể cả nháp). Hai cột này thêm ở HAI khối `if` riêng, chạy độc lập theo cột nào
+     * còn thiếu — nếu `submitted_at` đã có từ một lần nâng cấp TRƯỚC (không còn khớp `status IS
+     * NOT NULL` nữa vì đã có nháp mới tạo sau đó), điền `submitted_by` theo `status` sẽ gán oan
+     * "đã nộp" cho một dòng NHÁP chưa ai nộp.
+     */
+    conn.exec(`UPDATE unit_reports SET submitted_by = reporter_user_id WHERE submitted_at IS NOT NULL`);
     done.push('unit_reports.submitted_by');
   }
   if (!cols('unit_report_history').includes('kind')) {

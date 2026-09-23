@@ -133,7 +133,18 @@ export function TasksBoard() {
             return (
               <button key={h} type="button" disabled={mo}
                 className={`flex items-baseline gap-1 appearance-none bg-transparent border-0 p-0 ${mo ? 'opacity-40 cursor-default' : 'cursor-pointer hover:opacity-80'}`}
-                onClick={() => setParam('hang', active ? null : h)}>
+                onClick={() => {
+                  /*
+                   * "Vừa hoàn thành" là việc ĐÃ KHÉP — Trạng thái mặc định "Đang mở" thì lọc còn 0
+                   * dòng dù hàng số > 0 (G-10). Bấm hàng số nào cũng chuyển Trạng thái về "Tất cả"
+                   * luôn — vừa tránh riêng ca này, vừa không để hai bộ lọc âm thầm chỏi nhau. Gộp
+                   * một lần `setParams` vì `setParam` gọi liên tiếp sẽ dựa trên `params` cũ, mất
+                   * thay đổi của lần gọi trước.
+                   */
+                  const next = new URLSearchParams(params);
+                  if (active) { next.delete('hang'); } else { next.set('hang', h); next.set('trangThai', 'tat-ca'); }
+                  setParams(next, { replace: true });
+                }}>
                 <strong className={`tabular-nums text-sm ${active ? 'text-sky-300' : h === 'qua-han' && n > 0 ? 'text-rose-300' : 'text-slate-100'}`}>{n}</strong>
                 <span className={active ? 'text-sky-300' : 'text-slate-400'}>{HANG_SO_LABEL[h]}</span>
                 {active && <span className="text-sky-300" aria-hidden>✕</span>}

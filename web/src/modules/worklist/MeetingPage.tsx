@@ -9,7 +9,7 @@ import { WeekPicker, usePeriodWindow, resolveWeek } from '../../ui/Filters.tsx';
 import { SignalList } from './SignalList.tsx';
 import { ManagerTaskList, ManagerTasks } from './ManagerTasks.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
-import { fmtDate, fmtDateTime, unitStatusLabel, unitTone } from '../../lib/format.ts';
+import { fmtDate, fmtDateTime, fmtThu, unitStatusLabel, unitTone } from '../../lib/format.ts';
 import { UNIT_STATUSES } from '@shared/domain/index.ts';
 
 type LinkedTask = { id: number; code: string; title: string; progress: string; progressLabel: string; due: string | null; overdue: boolean };
@@ -129,10 +129,20 @@ export function MeetingBoard() {
           Đang đọc cả tháng <strong>{board.data.scope.month}</strong> ({board.data.scope.weeks.join(' · ')}) — chỉ để đọc, ô hiện lần báo cáo gần nhất kèm tình trạng nặng nhất đã xuất hiện.
         </p>
       ) : ew && (
-        <p className="text-xs m-0" style={{ color: ew.open ? 'var(--text-muted, #94a3b8)' : 'rgb(252 165 165)' }}>
+        /*
+         * BA TRẠNG THÁI khác nhau, không phải hai: "chưa mở" (tuần chưa tới hai ngày cuối, hoặc
+         * chưa bắt đầu) và "đã khoá" (quá hạn bù, cần Quản trị hệ thống) đều có `open === false`
+         * nhưng khác hẳn về mức độ — gộp chung một câu đỏ "Đã khoá" cho cả "chưa mở" là báo động
+         * giả. Phân biệt bằng `ew.locked` (chỉ true ở ca thật sự khoá — xem `reportEditWindow`).
+         */
+        <p className="text-xs m-0" style={{ color: ew.open || !ew.locked ? 'var(--text-muted, #94a3b8)' : 'rgb(252 165 165)' }}>
           {ew.open
-            ? (ew.locked ? 'Đã khoá nhưng Quản trị hệ thống đã mở lại để bổ sung.' : `Nộp từ thứ Sáu ${fmtDate(ew.opensOn)} đến hết thứ Tư ${fmtDate(ew.closesOn)}.`)
-            : <>Đã khoá · chỉ Quản trị hệ thống mở lại được. {ew.reason}</>}
+            ? (ew.locked
+                ? 'Đã khoá nhưng Quản trị hệ thống đã mở lại để bổ sung.'
+                : `Nộp từ ${fmtThu(ew.opensOn)} ${fmtDate(ew.opensOn)} đến hết ${fmtThu(ew.closesOn)} ${fmtDate(ew.closesOn)}.`)
+            : ew.locked
+              ? <>Đã khoá · chỉ Quản trị hệ thống mở lại được. {ew.reason}</>
+              : `Chưa mở — mở từ ${fmtThu(ew.opensOn)} ${fmtDate(ew.opensOn)}.`}
         </p>
       )}
 
@@ -264,6 +274,9 @@ function NganBaoCao({ unit, cell, periodId, editable, editWindow, onClose, onSav
   }, [cell?.key, unit?.unitId]);
 
   const daNop = cell?.trangThai.ma === 'da-nop';
+  /* Khớp đúng luật chặn của máy chủ (`saveUnitReport`: `before?.submitted_at && !window.open` → 400) —
+     ô đã nộp mà tuần đã khoá thì Lưu nháp cũng bị chặn, không riêng gì Nộp. */
+  const nhapBiChan = daNop && !(editWindow?.open ?? true);
   const chiDoc = !editable || !(unit?.canEdit ?? false);
   const key = cell?.key ?? null;
 
@@ -356,7 +369,9 @@ function NganBaoCao({ unit, cell, periodId, editable, editWindow, onClose, onSav
 
           {!chiDoc && (
             <div className="flex items-center gap-2 pt-2 border-t" style={{ borderColor: 'var(--line)' }}>
-              <button className="btn btn-sm" disabled={busy !== null} onClick={() => luu(false)}>
+              <button className="btn btn-sm" disabled={busy !== null || nhapBiChan}
+                title={nhapBiChan ? 'Báo cáo này đã nộp và tuần đã khoá — chỉ Quản trị hệ thống mở lại được.' : undefined}
+                onClick={() => luu(false)}>
                 {busy === 'nhap' ? 'Đang lưu…' : 'Lưu nháp'}
               </button>
               <button className="btn btn-primary btn-sm" disabled={busy !== null || !status || !(editWindow?.open ?? true)} onClick={() => luu(true)}>

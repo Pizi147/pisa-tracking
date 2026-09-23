@@ -8,6 +8,7 @@ import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { BranchFilter } from '../../ui/Filters.tsx';
 import { fmtTime } from '../../lib/format.ts';
 import { NhomViec } from '../worklist/NhomViec.tsx';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import type { WorkGroup, WorkItem } from '../worklist/WorkList.tsx';
 import { ApprovalDialog } from '../cases/CasePanel.tsx';
 import { NganViecVanHanh } from '../worklist/MgmtTasksPage.tsx';
@@ -61,7 +62,7 @@ export function HoTroHocVienTab() {
   const url = `/my-work${qs.toString() ? `?${qs}` : ''}`;
   const { data, loading, error, reload, setData } = useApi<Work>(url, [url]);
 
-  const homNay = new Date().toISOString().slice(0, 10);
+  const { homNay } = useNgayNghiepVu();
   const items = data?.items ?? [];
   const demHan = useMemo(() => demLocNhanh(items, loai ?? 'tat-ca', homNay), [items, loai, homNay]);
   const demLoai = useMemo(() => demLoaiViec(items, loc, homNay), [items, loc, homNay]);
@@ -122,7 +123,10 @@ export function HoTroHocVienTab() {
           <ChonPhuTrach
             value={nguoi}
             onChange={(v, name) => {
-              setParam('nguoi', v === 'toi' ? null : String(v));
+              /* Mặc định KHÔNG có `nguoi` trên URL là "Tất cả trong phạm vi" (`thamSoNguoi` ở trên
+                 trả về khi param lạ/thiếu) — xoá tham số ở đây thì đúng "tất cả", còn "Tôi" phải GHI
+                 rõ `nguoi=toi` chứ xoá tham số sẽ rơi lại về "tất cả", không phải "tôi". */
+              setParam('nguoi', v === 'tat-ca' ? null : String(v));
               if (typeof v === 'number' && name) toast.push('ok', `Đang xem việc của ${name}`);
             }}
           />

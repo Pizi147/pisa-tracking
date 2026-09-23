@@ -48,6 +48,15 @@ export function fmtTime(d?: string | null): string {
   return `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`;
 }
 
+const TEN_THU = ['Chủ nhật', 'thứ Hai', 'thứ Ba', 'thứ Tư', 'thứ Năm', 'thứ Sáu', 'thứ Bảy'];
+/** Tên thứ trong tuần từ một ngày ISO — đọc ĐÚNG ngày đưa vào, không viết cứng một thứ cố định (G-6). */
+export function fmtThu(d?: string | null): string {
+  if (!d) return '';
+  const dt = new Date(`${d.slice(0, 10)}T00:00:00Z`);
+  if (Number.isNaN(dt.getTime())) return '';
+  return TEN_THU[dt.getUTCDay()];
+}
+
 /** Band trống KHÁC điểm 0 — luôn hiện dấu gạch, không bao giờ hiện 0 thay cho ô trống. */
 export function fmtBand(n: number | null | undefined): string {
   return n === null || n === undefined ? '—' : Number(n).toFixed(1);

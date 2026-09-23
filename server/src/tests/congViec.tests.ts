@@ -146,6 +146,27 @@ export async function runCongViecTests(t: YThucTestKit) {
     assert(none.length === 0, `Database mới không được có gì để nâng cấp: ${none.join(' | ')}`);
   });
 
+  check('PR-Ra · Migrate: submitted_by điền theo submitted_at IS NOT NULL, không phải status IS NOT NULL — dòng nháp (status có, chưa nộp) không bị gán oan người nộp', () => {
+    /*
+     * Dựng đúng ca lệch nhau giữa hai đợt nâng cấp: `submitted_at` đã có SẴN từ một lần chạy
+     * TRƯỚC (đúng giá trị — chỉ dòng đã nộp mới có), còn `submitted_by` thì CHƯA — rồi một dòng
+     * NHÁP mới (status có nội dung nhưng chưa nộp, submitted_at NULL) được tạo ở giữa. Nếu điền
+     * submitted_by theo `status IS NOT NULL` (sai) thì dòng nháp này bị gán oan "đã nộp bởi X".
+     */
+    const m = preRaDatabase();
+    m.exec(`ALTER TABLE unit_reports ADD COLUMN submitted_at TEXT`);
+    m.exec(`UPDATE unit_reports SET submitted_at = updated_at WHERE status IS NOT NULL`);
+    m.prepare(`INSERT INTO unit_reports (reporting_unit_id, period_id, category_key, category_label, status, note, reporter_user_id, updated_at, submitted_at)
+               VALUES (1,1,'curriculum','Giáo trình','watch','Đang theo dõi, chưa nộp.',1,'2026-09-11T09:00:00.000Z',NULL)`).run();
+    const applied: string[] = [];
+    migrateMod.migrateCongViec(m, applied);
+    const rows = m.prepare('SELECT category_key, status, submitted_at, submitted_by FROM unit_reports').all() as any[];
+    const draft = rows.find((r) => r.category_key === 'curriculum');
+    assert(draft.submitted_by === null, `Dòng nháp (submitted_at NULL) không được có submitted_by: ${JSON.stringify(draft)}`);
+    const teachers = rows.find((r) => r.category_key === 'teachers');
+    assert(teachers.submitted_by === 1, `Dòng đã nộp thật (submitted_at có) phải điền submitted_by: ${JSON.stringify(teachers)}`);
+  });
+
   check('PR-Ra · Migrate: `migrate()` trọn chuỗi chạy hai lần trên database đang dùng, lần hai không áp lại bước PR-Ra', () => {
     migrateMod.migrate();
     const second = migrateMod.migrate();
@@ -322,6 +343,7 @@ export async function runCongViecTests(t: YThucTestKit) {
   console.log('\nPR-Ra · 4. Máy chủ Hỗ trợ học viên — người phụ trách lọc ở máy chủ, Nhắc, Duyệt trên dòng');
 
   const mywork: any = await import('../worklist/mywork.ts');
+  const nhacSvc: any = await import('../worklist/nhacViec.ts');
   const permMod: any = await import('../permissions.ts');
   const casesSvc: any = await import('../cases/cases.ts');
   const { createApp } = await import('../app.ts');
@@ -346,6 +368,30 @@ export async function runCongViecTests(t: YThucTestKit) {
     return permMod.loadPrincipal(row.id);
   };
   const gvMB = owingTeacherAt(mbBranchId);
+
+  /*
+   * Giáo viên dạy CẢ Monbay lẫn Bãi Cháy, đang nợ điểm một lớp ở BÃI CHÁY — dựng riêng vì
+   * `owingTeacherAt` không đủ (không đòi multi-branch). Dùng để thử: kiểm phạm vi Nhắc theo
+   * chi nhánh của NGƯỜI được nhắc (cũ, chỉ nhìn `user_roles`) sẽ ĐẬU sai vì người này CÓ dạy ở
+   * Monbay — phải kiểm đúng chi nhánh của DÒNG việc cụ thể mới bắt được.
+   */
+  const bcBranchId = (conn.prepare(`SELECT id FROM branches WHERE code = 'BC'`).get() as any).id as number;
+  const gvMbBc = (() => {
+    const row = conn.prepare(
+      `SELECT ta.user_id AS id, cl.id AS classId FROM teacher_assignments ta
+         JOIN classes cl ON cl.id = ta.class_id
+         JOIN assessment_attempts a ON a.class_id = ta.class_id
+         JOIN report_periods rp ON rp.id = a.planned_period_id
+         LEFT JOIN assessment_scores sc ON sc.attempt_id = a.id AND sc.skill = ta.skill
+        WHERE ta.status = 'active' AND ta.skill IS NOT NULL AND cl.branch_id = ?
+          AND a.status != 'cancelled' AND rp.week_start <= ?
+          AND sc.band IS NULL AND sc.raw_score IS NULL
+          AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = ta.user_id AND ur.status = 'active' AND ur.branch_id = ?)
+        LIMIT 1`,
+    ).get(bcBranchId, TODAY, mbBranchId) as any;
+    assert(row, 'Không tìm được giáo viên dạy cả Monbay lẫn Bãi Cháy, đang nợ điểm ở Bãi Cháy, để thử kiểm phạm vi Nhắc theo dòng');
+    return { principal: permMod.loadPrincipal(row.id), classId: row.classId as number };
+  })();
 
   check('PR-Ra · myWork mặc định (không nguoi): dòng chấm điểm của GV chỉ khác khoá cũ ở đuôi "|u…"; QL không được phân công thì vẫn không có dòng chấm điểm', () => {
     const scoreOf = (p: any) => (mywork.myWork(p, {}).items ?? []).filter((i: any) => i.group === 'score');
@@ -483,6 +529,28 @@ export async function runCongViecTests(t: YThucTestKit) {
     assert(same && same.nhac && same.nhac.daNhacLuc, `Dòng đã nhắc phải có nhac.daNhacLuc ở "tat-ca": ${JSON.stringify(same)}`);
   });
 
+  await checkAsync('PR-Ra · Nhắc kiểm ĐÚNG DÒNG chứ không chỉ chi nhánh của người được nhắc: QL Monbay nhắc dòng lớp Bãi Cháy của giáo viên dạy cả hai chi nhánh → 403', async () => {
+    /*
+     * Không đòi đúng nhóm "score"/đúng classId của riêng truy vấn "đang nợ điểm" — `myWork` có
+     * thể gom/nhóm dòng khác cách truy vấn đối chứng ở trên tính. Lấy dòng THẬT SỰ myWork trả về
+     * (bất kỳ nhóm nào) mà lớp của nó thuộc Bãi Cháy — đúng cái cần thử: chi nhánh của DÒNG.
+     */
+    const bcItemsRes = await goiHttp(gvMbBc.principal.userId, 'GET', '/my-work');
+    const bcItem = (bcItemsRes.json.items as any[]).find((i: any) => {
+      if (i.classId == null) return false;
+      const cl = conn.prepare('SELECT branch_id FROM classes WHERE id = ?').get(i.classId) as any;
+      return cl?.branch_id === bcBranchId;
+    });
+    assert(bcItem, `Cần một dòng việc của lớp Bãi Cháy trong myWork của giáo viên (uid=${gvMbBc.principal.userId}) để thử: ${JSON.stringify(bcItemsRes.json.items?.map((i: any) => ({ key: i.key, classId: i.classId })))}`);
+    const r = await goiHttp(P.mbManager.userId, 'POST', '/my-work/nhac', { key: bcItem.key, ownerId: gvMbBc.principal.userId });
+    assert(r.status === 403, `QL Monbay nhắc dòng lớp Bãi Cháy (giáo viên có dạy cả Monbay) phải 403: ${r.status} ${JSON.stringify(r.json)}`);
+  });
+
+  check('PR-Ra · nhacViec chặn tự nhắc chính mình — chặn NGAY từ đầu, trước cả khi tra khoá (khoá bịa vẫn phải báo "tự nhắc", không phải 404)', () => {
+    assertThrows(() => nhacSvc.nhacViec(P.mbManager, { key: 'score:bia-khong-ton-tai', ownerId: P.mbManager.userId }),
+      /chính mình/, 'Tự nhắc chính mình phải bị chặn với thông báo nói rõ lý do');
+  });
+
   await checkAsync('PR-Ra · /ref/nguoi?trongPhamVi=1 của QL MB không trả GV chỉ thuộc CP', async () => {
     const cpOnlyGv = conn.prepare(
       `SELECT u.id, u.full_name FROM users u
@@ -519,6 +587,22 @@ export async function runCongViecTests(t: YThucTestKit) {
     group: over.group ?? 'teacher', branchId: over.branchId ?? mbBranchId,
     assigneeUserId: over.assigneeUserId ?? gvMB.userId, due: over.due ?? null,
     parentTaskId: over.parentTaskId ?? null,
+  });
+
+  check('PR-Ra · LỖ CŨ trên main đã sửa: canSeeBoard chỉ hỏi VAI TRÒ (Quản lý ở BẤT KỲ chi nhánh) chứ không hỏi ĐÚNG chi nhánh của việc — Quản lý Monbay không xem/cập nhật được việc của chi nhánh khác', () => {
+    const cpBranchId = (conn.prepare(`SELECT id FROM branches WHERE code = 'CP'`).get() as any).id as number;
+    const cpTask = mgmt.createMgmtTask(P.admin, { title: 'Việc Cẩm Phả thử phạm vi', group: 'teacher', branchId: cpBranchId });
+    assertThrows(() => mgmt.mgmtTaskDetail(P.mbManager, cpTask.id), /không được giao cho bạn/,
+      'QL Monbay xem chi tiết việc chi nhánh Cẩm Phả phải bị chặn');
+    assertThrows(() => mgmt.updateMgmtTask(P.mbManager, cpTask.id, { progress: 'doing', on: '2026-09-14' }),
+      /Chỉ người được giao hoặc Quản lý/, 'QL Monbay cập nhật tiến độ việc chi nhánh Cẩm Phả phải bị chặn');
+    assertThrows(() => mgmt.editMgmtTask(P.mbManager, cpTask.id, { note: 'thử' }), /Chỉ Quản lý mới sửa được/,
+      'QL Monbay sửa (PATCH) việc chi nhánh Cẩm Phả phải bị chặn — lỗ này chưa có, kiểm để giữ nguyên');
+    // Đúng chi nhánh thì làm được bình thường — không phải khoá hết mọi Quản lý.
+    const d = mgmt.mgmtTaskDetail(P.cpManager, cpTask.id);
+    assert(d.id === cpTask.id, 'QL Cẩm Phả phải xem được việc của đúng chi nhánh mình');
+    mgmt.updateMgmtTask(P.cpManager, cpTask.id, { progress: 'doing', on: '2026-09-14' });
+    assert(mgmt.mgmtTaskDetail(P.cpManager, cpTask.id).progress === 'doing', 'QL Cẩm Phả phải cập nhật được việc của đúng chi nhánh mình');
   });
 
   check('PR-Ra Q10 · Tạm ngưng thiếu người cần hỗ trợ / thiếu ngày xem lại / ngày xem lại trước ngày cập nhật → 400', () => {
@@ -605,6 +689,25 @@ export async function runCongViecTests(t: YThucTestKit) {
     const mo = mgmt.listMgmtTasks(P.mbManager, { progress: 'mo' }) as any;
     assert(!mo.rows.some((r: any) => r.progress === 'done' || r.progress === 'stopped'), 'progress="mo" không được có việc đã khép trong danh sách');
     assert(mo.hangSo['vua-xong'] >= 1, `hangSo (áp CHỈ nhóm, bỏ qua "mo") vẫn phải đếm việc vừa hoàn thành: ${JSON.stringify(mo.hangSo)}`);
+  });
+
+  check('PR-Ra G-10 · bấm hàng số "vừa hoàn thành" (progress=tat-ca kèm theo, đúng như giao diện gửi) — số dòng bảng phải bằng đúng hàng số', () => {
+    const done = taoViecRa({ title: 'Việc vừa xong PR-Ra G-10' });
+    mgmt.updateMgmtTask(P.mbManager, done.id, { progress: 'done', on: '2026-09-14', note: 'Xong rồi.' });
+    const vuaXong = mgmt.listMgmtTasks(P.mbManager, { hang: 'vua-xong', progress: 'tat-ca' }) as any;
+    assert(vuaXong.rows.length === vuaXong.hangSo['vua-xong'],
+      `Bảng phải có đúng ${vuaXong.hangSo['vua-xong']} dòng "vừa hoàn thành", có ${vuaXong.rows.length}`);
+    assert(vuaXong.rows.some((r: any) => r.id === done.id), 'Việc vừa đánh dấu hoàn thành phải có trong bảng khi lọc hàng "vừa hoàn thành"');
+    /*
+     * `listMgmtTasks(p, {hang:'vua-xong'})` KHÔNG lặp lại được lỗi — hàm dịch vụ mặc định
+     * `progress` thiếu thành 'tat-ca' (dòng ~187, "giữ nghĩa cũ"), CHỈ tuyến `GET /mgmt-tasks`
+     * mới tự điền 'mo' khi không gửi progress. Phải truyền progress:'mo' TƯỜNG MINH mới đúng
+     * mô phỏng hành vi cũ của giao diện (trước khi sửa) — vẫn còn cho ai gọi hàm này mà thiếu
+     * progress=tat-ca sau này biết ngay bảng sẽ rỗng.
+     */
+    const vuaXongProgressMo = mgmt.listMgmtTasks(P.mbManager, { hang: 'vua-xong', progress: 'mo' }) as any;
+    assert(vuaXongProgressMo.rows.length === 0,
+      'progress="mo" tường minh (như tuyến GET /mgmt-tasks tự điền khi thiếu) kèm hang="vua-xong" thì bảng rỗng — đúng là lỗi G-10 đã sửa ở giao diện (luôn gửi trangThai=tat-ca khi bấm hàng số), không phải hàm dịch vụ tự bỏ qua progress');
   });
 
   check('PR-Ra · subOverdueTitles có đúng tên việc con quá hạn (tối đa 2)', () => {

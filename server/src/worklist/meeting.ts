@@ -94,12 +94,19 @@ export function meetingBoard(p: Principal, periodId: number, opts: { month?: str
   const unitIds = units.map((u) => u.id);
   const periodIdsToQuery = monthIds.length ? monthIds : [periodId];
 
-  // (2) mọi unit_reports của mọi đơn vị trong (các) kỳ đang xem.
+  /*
+   * (2) mọi unit_reports của mọi đơn vị trong (các) kỳ đang xem — PHẢI `ORDER BY` tuần tăng dần:
+   * dòng (172) lấy "lần báo cáo GẦN NHẤT" của kỳ tháng bằng `mineAll[mineAll.length - 1]`, dựa
+   * vào thứ tự hàng trả về. Không có `ORDER BY` thì SQLite không cam kết thứ tự gì cả — đúng
+   * ngẫu nhiên hôm nay, sai ngày mai. Nối `report_periods` để sắp theo NGÀY (`week_start`), không
+   * phải theo `period_id` (id tăng theo thứ tự TẠO kỳ, không chắc trùng thứ tự tuần).
+   */
   const allReports = conn
     .prepare(
-      `SELECT ur.* FROM unit_reports ur
+      `SELECT ur.* FROM unit_reports ur JOIN report_periods rp ON rp.id = ur.period_id
         WHERE ur.reporting_unit_id IN (${unitIds.map(() => '?').join(',')})
-          AND ur.period_id IN (${periodIdsToQuery.map(() => '?').join(',')})`,
+          AND ur.period_id IN (${periodIdsToQuery.map(() => '?').join(',')})
+        ORDER BY rp.week_start`,
     )
     .all(...unitIds, ...periodIdsToQuery) as any[];
   const reportsByUnit = new Map<number, any[]>();

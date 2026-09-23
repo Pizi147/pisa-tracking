@@ -54,6 +54,19 @@ export function canSeeBoard(p: Principal): boolean {
     || can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true });
 }
 
+/**
+ * `canSeeBoard` chỉ hỏi "có vai trò Quản lý/Quản trị KHÔNG, bất kỳ chi nhánh nào" — đúng cho
+ * việc mở TAB (mục 8.3), nhưng dùng làm cửa chặn một VIỆC CỤ THỂ thì rò: Quản lý chi nhánh A
+ * qua được cửa này rồi xem/sửa được việc của chi nhánh B (lỗ đã có trên `main`, không phải PR
+ * này sinh ra, nhưng PR đang chạm đúng những đường này nên sửa luôn). Ràng đúng theo CHI NHÁNH
+ * CỦA VIỆC — như `createMgmtTask`/`editMgmtTask` (PATCH) đã làm: việc "Toàn hệ thống"
+ * (`branch_id IS NULL`) thì `anyScope`, việc có chi nhánh thì phải đúng chi nhánh đó.
+ */
+function coQuyenViec(p: Principal, t: { branch_id: number | null }): boolean {
+  const ctx = { branchId: t.branch_id, anyScope: !t.branch_id };
+  return can(p, PERMISSIONS.MEETING_EDIT, ctx) || can(p, PERMISSIONS.ADMIN_CONFIG, ctx);
+}
+
 const closed = (pr: string) => (TASK_PROGRESS_CLOSED as readonly string[]).includes(pr);
 
 /** Tối đa hai tên, phần còn lại gộp "và n việc khác" (Q11) — dòng phụ ở giao diện không được dài vô hạn. */
@@ -245,7 +258,8 @@ export function mgmtTaskDetail(p: Principal, taskId: number) {
   const sub = conn.prepare('SELECT assignee_user_id, watcher_user_id FROM tasks WHERE parent_task_id = ?')
     .all(taskId) as any[];
   const inSub = sub.some((x) => x.assignee_user_id === p.userId || x.watcher_user_id === p.userId);
-  if (!canSeeBoard(p) && !mine && !inSub) {
+  const coQuyen = coQuyenViec(p, t);
+  if (!coQuyen && !mine && !inSub) {
     throw badRequest('Công việc này không được giao cho bạn.');
   }
 
@@ -321,7 +335,7 @@ export function mgmtTaskDetail(p: Principal, taskId: number) {
           WHERE l.task_id = ? ORDER BY sc.id`,
       )
       .all(taskId) as any[],
-    viewer: { canEdit: canSeeBoard(p), canUpdate: canSeeBoard(p) || mine || inSub },
+    viewer: { canEdit: coQuyen, canUpdate: coQuyen || mine || inSub },
   };
 }
 
@@ -447,7 +461,7 @@ export function updateMgmtTask(p: Principal, taskId: number, input: {
 
   /* Người được giao cập nhật được việc của mình; người THEO DÕI thì không (mục 8.3). */
   const isAssignee = t.assignee_user_id === p.userId;
-  if (!canSeeBoard(p) && !isAssignee) {
+  if (!coQuyenViec(p, t) && !isAssignee) {
     throw badRequest('Chỉ người được giao hoặc Quản lý mới cập nhật được công việc này.');
   }
   if (!(TASK_PROGRESS as readonly string[]).includes(input.progress)) {
