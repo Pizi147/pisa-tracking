@@ -2,9 +2,9 @@
  * LUẬT THUẦN CỦA PHÂN TÍCH (PR-Pb, đặc tả 2026-09-22-ux-toan-web-truoc-deploy-design §3.3).
  *
  * Cùng tinh thần `tongQuan.ts` (PR-Pa): không con số nào tính ở đây — số luôn đến từ lõi tập ID
- * ở máy chủ (`server/src/phanTich/{tongHop,vanDe}.ts`). File này chỉ giữ những gì máy chủ và web
- * PHẢI đồng ý với nhau: góc nhìn, khoảng thời gian, bộ kỹ năng theo chương trình, cột bảng Tổng
- * hợp, mức nhiệt, và cách xuất Excel từ đúng dữ liệu đang hiện trên bảng.
+ * ở máy chủ (`server/src/phanTich/*.ts`). File này chỉ giữ những gì máy chủ và web PHẢI đồng ý với
+ * nhau: góc nhìn, khoảng thời gian, bộ kỹ năng theo chương trình, cột bảng Tổng hợp, màu ô kết quả,
+ * loại lỗi chung, "Nên dùng", bước tiếp theo của Ý thức, và cách xuất Excel từ đúng dữ liệu đang hiện.
  */
 import {
   CASE_CATEGORIES, CASE_CATEGORY_LABEL, CASE_CATEGORY_SHORT, FT_CASE_CATEGORIES, NORMAL_CASE_CATEGORIES,
@@ -15,14 +15,14 @@ import { type ChuongTrinh } from './tongQuan.ts';
 
 // ------------------------------------------------------------------ góc nhìn (Q1, Q16)
 
-export const GOC_NHIN = ['tong-hop', 'van-de', 'danh-sach', 'ket-qua', 'y-thuc'] as const;
+export const GOC_NHIN = ['tong-hop', 'van-de', 'hieu-qua-pa', 'y-thuc', 'danh-sach'] as const;
 export type GocNhin = (typeof GOC_NHIN)[number];
 export const GOC_NHIN_LABEL: Record<GocNhin, string> = {
   'tong-hop': 'Tổng hợp Test + SOS',
-  'van-de': 'Vấn đề học viên',
-  'danh-sach': 'Danh sách Case',
-  'ket-qua': 'Kết quả hỗ trợ',
+  'van-de': 'Tổng hợp vấn đề HV',
+  'hieu-qua-pa': 'Hiệu quả PA',
   'y-thuc': 'Ý thức & Phối hợp',
+  'danh-sach': 'Danh sách Case',
 };
 export const GOC_NHIN_MAC_DINH: GocNhin = 'tong-hop';
 
@@ -31,8 +31,9 @@ export const GOC_NHIN_MAC_DINH: GocNhin = 'tong-hop';
  * `hang-doi` / `tinh-hinh` / `ky-nang` KHÔNG có mặt ở đây dù chúng đưa người dùng vào Danh sách
  * Case: đó là BỘ LỌC của chính màn đó, không phải tên góc nhìn cũ, nên phải giữ nguyên trên URL.
  * `ct` khác `null` nghĩa là `loai-lop` cũ cần đổi thành tham số chương trình mới.
+ * `gocMoi` khác `null` nghĩa là `goc` trên URL là TÊN CŨ (`ket-qua`, `chua-ai-nhan`) — web thay bằng tên mới (replace).
  */
-export type KetQuaGocNhinTuThamSo = { goc: GocNhin; ct: ChuongTrinh | null; boThamSo: string[] };
+export type KetQuaGocNhinTuThamSo = { goc: GocNhin; ct: ChuongTrinh | null; boThamSo: string[]; gocMoi: GocNhin | null };
 
 export function gocNhinTuThamSo(params: { get(key: string): string | null }): KetQuaGocNhinTuThamSo {
   const gocParam = params.get('goc');
@@ -42,13 +43,12 @@ export function gocNhinTuThamSo(params: { get(key: string): string | null }): Ke
    * là lúc suy theo bộ lọc Danh sách Case). Thiếu nhánh này thì bấm "Tổng hợp" trong khi
    * `hang-doi`/`tinh-hinh`/`ky-nang` còn sót trên URL sẽ kẹt mãi ở Danh sách Case.
    */
-  const goc: GocNhin =
-    gocParam === 'y-thuc' ? 'y-thuc'
-    : gocParam === 'van-de' ? 'van-de'
-    : gocParam === 'ket-qua' ? 'ket-qua'
-    : gocParam === 'tong-hop' ? 'tong-hop'
-    : gocParam === 'danh-sach' || coBoLocDanhSach ? 'danh-sach'
-    : GOC_NHIN_MAC_DINH;
+  let gocMoi: GocNhin | null = null;
+  let goc: GocNhin;
+  if (gocParam === 'ket-qua') { goc = 'hieu-qua-pa'; gocMoi = goc; }
+  else if (gocParam === 'chua-ai-nhan') { goc = 'van-de'; gocMoi = goc; }
+  else if ((GOC_NHIN as readonly string[]).includes(gocParam ?? '')) goc = gocParam as GocNhin;
+  else goc = coBoLocDanhSach ? 'danh-sach' : GOC_NHIN_MAC_DINH;
   const boThamSo: string[] = [];
   if (params.get('xem') !== null) boThamSo.push('xem');
   const loaiLop = params.get('loai-lop');
@@ -57,7 +57,7 @@ export function gocNhinTuThamSo(params: { get(key: string): string | null }): Ke
     ct = loaiLop === 'normal' ? 'thuong' : loaiLop === 'ft' ? 'ft' : null;
     boThamSo.push('loai-lop');
   }
-  return { goc, ct, boThamSo };
+  return { goc, ct, boThamSo, gocMoi };
 }
 
 /**
@@ -212,16 +212,100 @@ export function cotTongHopFor(ct: ChuongTrinh): CotTongHop[] {
   return [COT_LUOT, ...COT_KET_QUA, ...cotKyNangFor(ct), ...COT_XU_LY];
 }
 
-// ------------------------------------------------------------------ mức nhiệt (Q12)
+// ------------------------------------------------------------------ màu ô kết quả (N-1b, Q23)
 
-/** 0 = không có gì (n=0 hoặc N=0); 1 < 10% ; 2 < 25% ; 3 < 40% ; 4 ≥ 40%. Chỉ để liếc màu, số vẫn in rõ. */
-export function mucNhiet(n: number, N: number): 0 | 1 | 2 | 3 | 4 {
-  if (N <= 0 || n <= 0) return 0;
-  const ty = n / N;
-  if (ty < 0.10) return 1;
-  if (ty < 0.25) return 2;
-  if (ty < 0.40) return 3;
-  return 4;
+export type MauOKetQua = 'dat' | 'sos1' | 'sos2' | 'sos3' | 'tam' | 'xam';
+
+/**
+ * Màu MỘT Ô của bảng Tổng hợp. Cột Đạt / SOS 1 / SOS 2 / SOS 3 mang màu riêng khi có số (ô 0 xám);
+ * Tạm thời / Chưa đủ điểm chỉ xám đậm (`tam`) khi có số; cột khác (Lượt, kỹ năng, xử lý) không tô — `null`.
+ */
+export function mauOKetQua(khoaCot: string, v: number): MauOKetQua | null {
+  if (khoaCot === 'dat' || khoaCot === 'sos1' || khoaCot === 'sos2' || khoaCot === 'sos3') return v > 0 ? khoaCot : 'xam';
+  if (khoaCot === 'tamThoi' || khoaCot === 'chuaDu') return v > 0 ? 'tam' : 'xam';
+  return null;
+}
+
+// ------------------------------------------------------------------ vấn đề HV: loại lỗi chung, họ kỹ năng (Q3, Q5)
+
+/**
+ * LOẠI LỖI CHUNG (Q3) — công tắc "Gộp theo loại lỗi chung". Một mã có thể nằm ở nhiều nhóm: Reading/Listening chỉ có
+ * mục `language` (Từ vựng / ngữ pháp) nên mục đó tính ở cả Ngữ pháp lẫn Từ vựng.
+ */
+export const LOI_CHUNG: readonly { khoa: string; nhan: string; ma: readonly string[] }[] = [
+  { khoa: 'ngu-phap', nhan: 'Ngữ pháp',
+    ma: ['student.writing.grammar', 'student.speaking.grammar', 'student.reading.language', 'student.listening.language'] },
+  { khoa: 'tu-vung', nhan: 'Từ vựng',
+    ma: ['student.writing.lexical', 'student.speaking.lexical', 'student.reading.language', 'student.listening.language'] },
+  { khoa: 'to-chuc', nhan: 'Tổ chức ý / mạch lạc', ma: ['student.writing.organisation', 'student.speaking.fluency'] },
+  { khoa: 'ky-nang-lam-bai', nhan: 'Kỹ năng làm bài', ma: ['student.reading.technique', 'student.listening.technique'] },
+];
+
+export type HoKyNang = 'listening' | 'reading' | 'writing' | 'speaking';
+
+/** Họ kỹ năng của một hạng mục Case (W1/W2/Writing → writing); mã lạ → null. Dùng cho Q5 (Vấn đề HV) lẫn Q18 (Bỏ quên). */
+export function hoKyNang(k: string | null | undefined): HoKyNang | null {
+  if (!k) return null;
+  if (k === 'writing1' || k === 'writing2' || k === 'writing' || k === 'prep_writing') return 'writing';
+  if (k === 'pronunciation') return 'speaking';
+  return k === 'listening' || k === 'reading' || k === 'speaking' ? k : null;
+}
+
+// ------------------------------------------------------------------ Hiệu quả PA (Q9, Q10)
+
+export const NGUONG_IT_DU_LIEU = 5;
+/** 70% tính bằng số nguyên (7/10) để biên 70% đúng tuyệt đối, không dính sai số số thực. */
+const NGUONG_NEN_DUNG_PHAN_MUOI = 7;
+
+/**
+ * "Nên dùng" (Q9): đủ mẫu (≥ 5 PA), cải thiện ≥ 70% và cao nhất trong vấn đề (hoà thì cả hai). `anhEm` = các loại PA khác
+ * của CÙNG vấn đề; loại dưới 5 PA không được xếp hạng (cấm xếp hạng mẫu nhỏ) nên không ngăn ai "Nên dùng".
+ */
+export function nenDung(
+  dong: { soPa: number; caiThien: number },
+  anhEm: readonly { soPa: number; caiThien: number }[],
+): boolean {
+  if (dong.soPa < NGUONG_IT_DU_LIEU) return false;
+  const ty = dong.caiThien / dong.soPa;
+  if (dong.caiThien * 10 < dong.soPa * NGUONG_NEN_DUNG_PHAN_MUOI) return false;
+  return anhEm.every((x) => x.soPa < NGUONG_IT_DU_LIEU || x.caiThien / x.soPa <= ty + 1e-9);
+}
+
+/** "Thời gian trung bình" (Q10): số ngày → tuần, làm tròn, tối thiểu 1; không có PA nào → null. */
+export function tuanTrungBinh(soNgay: readonly number[]): number | null {
+  if (!soNgay.length) return null;
+  const tb = soNgay.reduce((s, x) => s + x, 0) / soNgay.length;
+  return Math.max(1, Math.round(tb / 7));
+}
+
+// ------------------------------------------------------------------ Ý thức: bước tiếp theo (Q14)
+
+export const BUOC_TIEP = ['sap-thu-1', 'sap-thu-2', 'sap-thu-3', 'da-thu-3', 'theo-doi'] as const;
+export type BuocTiep = (typeof BUOC_TIEP)[number];
+export const BUOC_TIEP_LABEL: Record<BuocTiep, string> = {
+  'sap-thu-1': 'Sắp Thư CC lần 1', 'sap-thu-2': 'Sắp Thư CC lần 2', 'sap-thu-3': 'Sắp Thư CC lần 3',
+  'da-thu-3': 'Đã Thư CC lần 3', 'theo-doi': 'Theo dõi',
+};
+
+/** Vi phạm lặp lại (≥ 3 trong khoảng) hoặc vi phạm SAU lần Thư CC gần nhất — cùng lộ trình. */
+export function laHvCanChuY(x: { viPham: number; viPhamSauThu: number }): boolean {
+  return x.viPham >= 3 || x.viPhamSauThu > 0;
+}
+
+export function buocTiepTheo(
+  x: { thuCaoNhat: 0 | 1 | 2 | 3; viPhamSauThu: number; viPham: number; chuaXuLy: number },
+): BuocTiep {
+  if (x.thuCaoNhat === 3) return x.viPhamSauThu > 0 ? 'da-thu-3' : 'theo-doi';
+  if (x.thuCaoNhat > 0) return x.viPhamSauThu > 0 ? (`sap-thu-${x.thuCaoNhat + 1}` as BuocTiep) : 'theo-doi';
+  return x.viPham >= 3 && x.chuaXuLy > 0 ? 'sap-thu-1' : 'theo-doi';
+}
+
+/** Chênh lệch "so với lần trước / kỳ trước": nhiều hơn = xấu (đỏ ↑), ít hơn = tốt (xanh ↓), bằng = xám. null → "—". */
+export function nhanSoVoiTruoc(d: number | null): { chu: string; tone: 'bad' | 'ok' | 'muted' } {
+  if (d === null) return { chu: '—', tone: 'muted' };
+  if (d > 0) return { chu: `↑${d}`, tone: 'bad' };
+  if (d < 0) return { chu: `↓${-d}`, tone: 'ok' };
+  return { chu: '=', tone: 'muted' };
 }
 
 // ------------------------------------------------------------------ kiểu trả về dùng chung máy chủ ↔ web
@@ -241,7 +325,7 @@ export type TongHopKetQua = {
   scopeEmpty: boolean;
 };
 
-/** Một ô của ma trận Vấn đề: n = HV có Case chưa xong hạng mục đó, N = HV đang học có kỹ năng đó ở cột này. `null` = không áp dụng. */
+/* TẠM (bỏ ở Task 2 cùng `server/src/phanTich/vanDe.ts`): kiểu của ma trận Vấn đề học viên cũ. */
 export type ONhietVanDe = { n: number; N: number } | null;
 export type DongLoiVanDe = { ma: string; nhan: string; o: Record<string, number | null>; tong: number };
 export type HangKyNangVanDe = {
@@ -256,6 +340,55 @@ export type MaTranVanDe = {
   cotDs: { khoa: string; nhan: string }[];
   hang: HangKyNangVanDe[];
   scopeEmpty: boolean;
+};
+
+/** Tổng hợp vấn đề HV (PR-UX4): hàng lớn = kỹ năng (hoặc loại lỗi chung), hàng con = loại lỗi (hoặc kỹ năng · loại lỗi). */
+export type DongVanDeHv = {
+  khoa: string; nhan: string; loai: 'ky-nang' | 'loi' | 'chung' | 'gom';
+  soHv: number; soLop: number;
+  top3: { classId: number; ma: string; n: number }[];
+  /** Hiệu số HV so với lần Test trước của chính từng lớp, cộng qua các lớp; `null` khi không lớp nào đủ 2 đợt. */
+  soVoiTruoc: number | null;
+  /** "Lỗi phổ biến" (chế độ kỹ năng) hoặc "Kỹ năng nhiều nhất" (chế độ gộp). */
+  phu?: string | null;
+  goiY?: string;
+  con?: DongVanDeHv[];
+};
+export type VanDeHvKetQua = {
+  gop: boolean; chiChinh: boolean;
+  tomTat: { hv: number; case: number; lop: number };
+  hang: DongVanDeHv[];
+  chuaPhanLoai: { case: number; hv: number; lop: number };
+  scopeEmpty: boolean;
+};
+
+/** Hiệu quả PA: hàng lớn = vấn đề (mã lỗi chính), hàng con = loại PA. */
+export type DongHieuQuaPa = {
+  khoa: string; nhan: string; soPa: number; caiThien: number;
+  tbTuan: number | null; itDuLieu: boolean; nenDung: boolean;
+  con?: DongHieuQuaPa[];
+};
+export type HieuQuaPaKetQua = {
+  tomTat: { paCoKetQua: number; caiThien: number; vanDeDuDuLieu: number };
+  hang: DongHieuQuaPa[];
+  gom: { soVanDe: number; hang: DongHieuQuaPa[] } | null;
+  chuaGhiKetQua: number; caseChuaPhanLoai: number; scopeEmpty: boolean;
+};
+
+/** Ý thức & Phối hợp: "Học viên cần chú ý" + "Lớp nhiều vi phạm". */
+export type DongHvCanChuY = {
+  studentId: number; ten: string; lop: string | null; viPham: number; chuaXuLy: number;
+  bienPhapGanNhat: string | null; ngay: string | null; buocTiep: BuocTiep;
+};
+export type DongLopViPham = {
+  khoa: string; classId: number | null; nhan: string; viPham: number; chuaXuLy: number;
+  hvCoViPham: number; siSo: number | null; soVoiTruoc: number; gvcn: string | null;
+  con?: DongLopViPham[];
+};
+export type YThucPhanTichKetQua = {
+  hvCanChuY: DongHvCanChuY[]; lop: DongLopViPham[];
+  gom: { soLop: number; hang: DongLopViPham[] } | null;
+  bienPhapTheoLoai: Record<string, number>; scopeEmpty: boolean;
 };
 
 // ------------------------------------------------------------------ xuất Excel (Q13)

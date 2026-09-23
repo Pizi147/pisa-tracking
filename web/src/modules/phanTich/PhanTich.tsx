@@ -8,7 +8,6 @@ import { DanhSachCase } from '../cases/CaseBoardPage.tsx';
 import { IssueAnalysis } from '../cases/IssueAnalysis.tsx';
 import { YThucAnalysisView } from '../yThuc/YThucAnalysisView.tsx';
 import { TongHopTestSos } from './TongHopTestSos.tsx';
-import { VanDeHocVien } from './VanDeHocVien.tsx';
 import {
   GOC_NHIN, GOC_NHIN_LABEL, KHOANG, KHOANG_LABEL, KHOANG_MAC_DINH,
   chuongTrinhTuThamSo, gocNhinTuThamSo, khoangTuThamSo, ngay, thamSoXoaKhiDoiGoc, tuDauKhoang,
@@ -126,9 +125,9 @@ export function PhanTich() {
       </div>
 
       {goc === 'tong-hop' && <TongHopTestSos branchId={branchId} ct={ct} tg={tg} classId={classId} />}
-      {goc === 'van-de' && <VanDeHocVien branchId={branchId} ct={ct} classId={classId} />}
+      {goc === 'van-de' && null /* TẠM — Task 7 vẽ <TongHopVanDeHv/> */}
       {goc === 'danh-sach' && <DanhSachCase branchId={branchId} ct={ct} classId={classId} />}
-      {goc === 'ket-qua' && (
+      {goc === 'hieu-qua-pa' && (
         <Card title="Kết quả hỗ trợ" bodyClass="p-3">
           <IssueAnalysis branchId={branchId} ct={ct} from={from} classId={classId} />
         </Card>

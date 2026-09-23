@@ -25,27 +25,97 @@ export async function runPhanTichTests(t: YThucTestKit) {
     eq(d.kyNangTheoCt('ca-hai'), ['listening', 'reading', 'writing1', 'writing2', 'writing', 'speaking'], 'Cả hai — hợp, không gộp');
   });
 
-  check('PR-Pb · mucNhiet: đủ 5 mức Q12 (0, N=0, và ba biên 10%/25%/40%)', () => {
-    eq(d.mucNhiet(0, 10), 0, 'n=0');
-    eq(d.mucNhiet(3, 0), 0, 'N=0');
-    eq(d.mucNhiet(1, 20), 1, '5% < 10% → mức 1');
-    eq(d.mucNhiet(2, 20), 2, '10% chạm biên (không còn < 10%) → mức 2');
-    eq(d.mucNhiet(5, 20), 3, '25% chạm biên (không còn < 25%) → mức 3');
-    eq(d.mucNhiet(8, 20), 4, '40% chạm biên (không còn < 40%) → mức 4');
-    eq(d.mucNhiet(15, 20), 4, '75% → vẫn mức 4 (mức cao nhất)');
+  check('UX4 · mauOKetQua: 6 cột kết quả × v=0/v>0; cột khác null', () => {
+    for (const k of ['dat', 'sos1', 'sos2', 'sos3']) {
+      eq(d.mauOKetQua(k, 3), k, `${k} có số → chính nó`);
+      eq(d.mauOKetQua(k, 0), 'xam', `${k} bằng 0 → xám`);
+    }
+    for (const k of ['tamThoi', 'chuaDu']) {
+      eq(d.mauOKetQua(k, 2), 'tam', `${k} có số → tam`);
+      eq(d.mauOKetQua(k, 0), 'xam', `${k} bằng 0 → xám`);
+    }
+    for (const k of ['luot', 'kn:listening', 'hvCoCase', 'case', 'dangXuLy', 'thieuPa']) eq(d.mauOKetQua(k, 5), null, `${k} không tô`);
   });
 
   check('PR-Pb · gocNhinTuThamSo: Q16 — hang-doi/tinh-hinh/ky-nang KHÔNG bị xoá khỏi URL', () => {
     const g = (qs: string) => d.gocNhinTuThamSo(new URLSearchParams(qs));
-    eq(g('xem=tuan'), { goc: 'tong-hop', ct: null, boThamSo: ['xem'] }, '?xem=tuan → Tổng hợp, xoá xem');
-    eq(g('goc=danh-sach&hang-doi=due'), { goc: 'danh-sach', ct: null, boThamSo: [] }, 'goc=danh-sach giữ hang-doi');
-    eq(g('hang-doi=review'), { goc: 'danh-sach', ct: null, boThamSo: [] }, 'chỉ có hang-doi cũng vào Danh sách Case');
-    eq(g('tinh-hinh=no_plan'), { goc: 'danh-sach', ct: null, boThamSo: [] }, 'chỉ có tinh-hinh cũng vào Danh sách Case');
-    eq(g('ky-nang=listening'), { goc: 'danh-sach', ct: null, boThamSo: [] }, 'chỉ có ky-nang cũng vào Danh sách Case');
-    eq(g('loai-lop=normal'), { goc: 'tong-hop', ct: 'thuong', boThamSo: ['loai-lop'] }, 'loai-lop=normal → ct=thuong, xoá loai-lop');
-    eq(g('loai-lop=ft'), { goc: 'tong-hop', ct: 'ft', boThamSo: ['loai-lop'] }, 'loai-lop=ft → ct=ft');
-    eq(g('goc=y-thuc'), { goc: 'y-thuc', ct: null, boThamSo: [] }, 'goc=y-thuc giữ nguyên');
-    eq(g(''), { goc: 'tong-hop', ct: null, boThamSo: [] }, 'không tham số → mặc định Tổng hợp');
+    eq(g('xem=tuan'), { goc: 'tong-hop', ct: null, boThamSo: ['xem'], gocMoi: null }, '?xem=tuan → Tổng hợp, xoá xem');
+    eq(g('goc=danh-sach&hang-doi=due'), { goc: 'danh-sach', ct: null, boThamSo: [], gocMoi: null }, 'goc=danh-sach giữ hang-doi');
+    eq(g('hang-doi=review'), { goc: 'danh-sach', ct: null, boThamSo: [], gocMoi: null }, 'chỉ có hang-doi cũng vào Danh sách Case');
+    eq(g('tinh-hinh=no_plan'), { goc: 'danh-sach', ct: null, boThamSo: [], gocMoi: null }, 'chỉ có tinh-hinh cũng vào Danh sách Case');
+    eq(g('ky-nang=listening'), { goc: 'danh-sach', ct: null, boThamSo: [], gocMoi: null }, 'chỉ có ky-nang cũng vào Danh sách Case');
+    eq(g('loai-lop=normal'), { goc: 'tong-hop', ct: 'thuong', boThamSo: ['loai-lop'], gocMoi: null }, 'loai-lop=normal → ct=thuong, xoá loai-lop');
+    eq(g('loai-lop=ft'), { goc: 'tong-hop', ct: 'ft', boThamSo: ['loai-lop'], gocMoi: null }, 'loai-lop=ft → ct=ft');
+    eq(g('goc=y-thuc'), { goc: 'y-thuc', ct: null, boThamSo: [], gocMoi: null }, 'goc=y-thuc giữ nguyên');
+    eq(g(''), { goc: 'tong-hop', ct: null, boThamSo: [], gocMoi: null }, 'không tham số → mặc định Tổng hợp');
+  });
+
+  check('UX4 · gocNhinTuThamSo: ket-qua→hieu-qua-pa, chua-ai-nhan→van-de, gocMoi đúng; hang-doi vẫn giữ', () => {
+    const g = (qs: string) => d.gocNhinTuThamSo(new URLSearchParams(qs));
+    eq(g('goc=ket-qua'), { goc: 'hieu-qua-pa', ct: null, boThamSo: [], gocMoi: 'hieu-qua-pa' }, 'ket-qua → Hiệu quả PA');
+    eq(g('goc=chua-ai-nhan'), { goc: 'van-de', ct: null, boThamSo: [], gocMoi: 'van-de' }, 'chua-ai-nhan → Tổng hợp vấn đề HV');
+    eq(g('goc=hieu-qua-pa').gocMoi, null, 'khoá mới không cần thay URL');
+    eq(g('goc=van-de').goc, 'van-de', 'van-de giữ khoá cũ');
+    eq(g('goc=danh-sach&hang-doi=can-ho-tro-2-lan'), { goc: 'danh-sach', ct: null, boThamSo: [], gocMoi: null }, 'hang-doi giữ nguyên');
+    eq([...d.GOC_NHIN], ['tong-hop', 'van-de', 'hieu-qua-pa', 'y-thuc', 'danh-sach'], 'đúng thứ tự chủ sản phẩm chốt');
+    eq(d.GOC_NHIN_LABEL['van-de'], 'Tổng hợp vấn đề HV', 'nhãn');
+    eq(d.GOC_NHIN_LABEL['hieu-qua-pa'], 'Hiệu quả PA', 'nhãn');
+  });
+
+  check('UX4 · LOI_CHUNG: mọi mã có trong ISSUE_TAXONOMY; R/L language ở cả Ngữ pháp lẫn Từ vựng', () => {
+    const moi = new Set<string>(d.ISSUE_TAXONOMY.flatMap((b: any) => b.items.map((i: any) => i.code)));
+    for (const nhom of d.LOI_CHUNG) for (const ma of nhom.ma) assert(moi.has(ma), `${nhom.khoa}: mã "${ma}" không có trong ISSUE_TAXONOMY`);
+    const cua = (khoa: string) => d.LOI_CHUNG.find((x: any) => x.khoa === khoa).ma as string[];
+    for (const ma of ['student.reading.language', 'student.listening.language']) {
+      assert(cua('ngu-phap').includes(ma) && cua('tu-vung').includes(ma), `${ma} phải có ở cả Ngữ pháp và Từ vựng`);
+    }
+    eq(d.LOI_CHUNG.map((x: any) => x.nhan), ['Ngữ pháp', 'Từ vựng', 'Tổ chức ý / mạch lạc', 'Kỹ năng làm bài'], 'bốn nhóm');
+  });
+
+  check('UX4 · hoKyNang: writing1/writing2/writing → writing; mã lạ → null', () => {
+    for (const k of ['writing1', 'writing2', 'writing']) eq(d.hoKyNang(k), 'writing', k);
+    for (const k of ['listening', 'reading', 'speaking']) eq(d.hoKyNang(k), k, k);
+    eq(d.hoKyNang('prep_writing'), 'writing', 'mã cũ prep_writing');
+    eq(d.hoKyNang('pronunciation'), 'speaking', 'mã cũ pronunciation');
+    eq(d.hoKyNang('xyz'), null, 'mã lạ');
+    eq(d.hoKyNang(null), null, 'null');
+  });
+
+  check('UX4 · nenDung: <5 PA false; 70% biên; hoà cùng đỉnh cả hai true', () => {
+    eq(d.nenDung({ soPa: 4, caiThien: 4 }, []), false, '4 PA dù 100% → không đủ mẫu');
+    eq(d.nenDung({ soPa: 10, caiThien: 7 }, []), true, '7/10 = 70% chạm biên');
+    eq(d.nenDung({ soPa: 10, caiThien: 6 }, []), false, '6/10 < 70%');
+    eq(d.nenDung({ soPa: 10, caiThien: 8 }, [{ soPa: 10, caiThien: 9 }]), false, 'anh em cao hơn (90%) → không phải cao nhất');
+    eq(d.nenDung({ soPa: 10, caiThien: 8 }, [{ soPa: 5, caiThien: 4 }]), true, 'hoà cùng đỉnh (80% = 80%) → cả hai');
+    eq(d.nenDung({ soPa: 10, caiThien: 8 }, [{ soPa: 3, caiThien: 3 }]), true, 'anh em dưới 5 PA không được xếp hạng');
+  });
+
+  check('UX4 · tuanTrungBinh: [] null, [3] 1, [20,22] 3', () => {
+    eq(d.tuanTrungBinh([]), null, 'rỗng');
+    eq(d.tuanTrungBinh([3]), 1, 'tối thiểu 1 tuần');
+    eq(d.tuanTrungBinh([20, 22]), 3, '21 ngày = 3 tuần');
+  });
+
+  check('UX4 · buocTiepTheo: đủ 5 nhánh Q14; laHvCanChuY', () => {
+    const b = (thuCaoNhat: 0 | 1 | 2 | 3, viPhamSauThu: number, viPham: number, chuaXuLy: number) =>
+      d.buocTiepTheo({ thuCaoNhat, viPhamSauThu, viPham, chuaXuLy });
+    eq(b(1, 1, 2, 0), 'sap-thu-2', 'Thư CC 1 + vi phạm sau thư → sắp lần 2');
+    eq(b(2, 2, 4, 0), 'sap-thu-3', 'Thư CC 2 + vi phạm sau thư → sắp lần 3');
+    eq(b(0, 0, 3, 1), 'sap-thu-1', 'chưa thư, ≥ 3 vi phạm, còn chưa xử lý → sắp lần 1');
+    eq(b(3, 1, 5, 0), 'da-thu-3', 'Thư CC 3 + vi phạm sau → đã lần 3');
+    eq(b(0, 0, 3, 0), 'theo-doi', 'chưa thư, ≥ 3 nhưng xử lý hết → theo dõi');
+    eq(b(1, 0, 2, 0), 'theo-doi', 'có thư, không vi phạm sau → theo dõi');
+    eq(d.BUOC_TIEP_LABEL['sap-thu-1'], 'Sắp Thư CC lần 1', 'nhãn');
+    eq(d.BUOC_TIEP_LABEL['theo-doi'], 'Theo dõi', 'nhãn');
+    assert(d.laHvCanChuY({ viPham: 3, viPhamSauThu: 0 }) && d.laHvCanChuY({ viPham: 1, viPhamSauThu: 1 }), 'đủ điều kiện');
+    assert(!d.laHvCanChuY({ viPham: 2, viPhamSauThu: 0 }), '2 vi phạm, không sau thư → không');
+  });
+
+  check('UX4 · nhanSoVoiTruoc: +3/-1/0/null', () => {
+    eq(d.nhanSoVoiTruoc(3), { chu: '↑3', tone: 'bad' }, '+3');
+    eq(d.nhanSoVoiTruoc(-1), { chu: '↓1', tone: 'ok' }, '-1');
+    eq(d.nhanSoVoiTruoc(0), { chu: '=', tone: 'muted' }, '0');
+    eq(d.nhanSoVoiTruoc(null), { chu: '—', tone: 'muted' }, 'null');
   });
 
   check('PR-Pb · nhanDot / khoaDot / thuTuDot: MT1…MT5, Giữa khoá, Cuối khoá đúng thứ tự', () => {
