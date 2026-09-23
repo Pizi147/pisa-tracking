@@ -134,20 +134,29 @@ export function khoaLopThuong(i: {
 
 export type BadgeLop = {
   key: 'het-khoa' | 'chua-lo-trinh' | 'thieu-gv' | 'cham' | 'case' | 'chang' | 'thieu-tt'; nhan: string;
-  tone: 'danger' | 'warn' | 'info';
+  tone: 'danger' | 'warn' | 'info' | 'muted';
+  /** Câu đầy đủ cho tooltip (PR-UX0, B-1: badge là danh từ + số, câu dài nằm ở đây). */
+  title?: string;
 };
 const CHANG_THI = ['progress_soon', 'progress_week', 'final_soon', 'final_week'];
 
+/**
+ * PR-UX0 (B-1, mockup 17 #16–#18): mỗi badge một trạng thái ngắn — "{n} HV chờ xếp lớp" (vàng), "{n} bài chờ chấm"
+ * (vàng, tooltip giữ câu cũ `needScoresText`), "{n} Case mở" (xám). Chữ đã chốt ở PR-LT/PR-Qa cho `chua-lo-trinh`,
+ * `chang`, `thieu-gv`, `thieu-tt` giữ nguyên.
+ */
 export function badgeLop(c: {
-  needsPlacement: boolean; canXepLop: number; missingSkills: readonly string[]; needScoresText: string | null;
+  needsPlacement: boolean; canXepLop: number; missingSkills: readonly string[];
+  /** Số bài chờ chấm của lớp (0 = không hiện badge). */
+  soBaiChoCham: number; needScoresTitle: string | null;
   soCaseMo: number; phase: string; missingCount: number; soChuaLoTrinhTiep?: number;
 }): { hien: BadgeLop[]; an: BadgeLop[] } {
   const all: BadgeLop[] = [];
-  if (c.needsPlacement) all.push({ key: 'het-khoa', nhan: `Hết khoá · ${c.canXepLop} HV cần xếp lớp tiếp`, tone: 'danger' });
+  if (c.needsPlacement) all.push({ key: 'het-khoa', nhan: `${c.canXepLop} HV chờ xếp lớp`, tone: 'warn', title: 'Lớp đã hết khoá: những học viên này chưa được xếp lớp tiếp' });
   if (c.soChuaLoTrinhTiep) all.push({ key: 'chua-lo-trinh', nhan: `${c.soChuaLoTrinhTiep} HV chưa có lộ trình tiếp theo`, tone: 'warn' });
   if (c.missingSkills.length) all.push({ key: 'thieu-gv', nhan: `Thiếu GV ${c.missingSkills.map(skillShort).join(', ')}`, tone: 'warn' });
-  if (c.needScoresText) all.push({ key: 'cham', nhan: c.needScoresText, tone: 'warn' });
-  if (c.soCaseMo > 0) all.push({ key: 'case', nhan: `${c.soCaseMo} Case đang mở`, tone: 'danger' });
+  if (c.soBaiChoCham > 0) all.push({ key: 'cham', nhan: `${c.soBaiChoCham} bài chờ chấm`, tone: 'warn', title: c.needScoresTitle ?? undefined });
+  if (c.soCaseMo > 0) all.push({ key: 'case', nhan: `${c.soCaseMo} Case mở`, tone: 'muted' });
   if (CHANG_THI.includes(c.phase)) all.push({ key: 'chang', nhan: CLASS_PHASE_LABEL[c.phase as ClassPhase], tone: 'info' });
   if (c.missingCount > 0) all.push({ key: 'thieu-tt', nhan: `Thiếu ${c.missingCount} thông tin`, tone: 'warn' });
   return { hien: all.slice(0, 2), an: all.slice(2) };

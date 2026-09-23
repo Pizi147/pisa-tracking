@@ -117,5 +117,24 @@ export async function runNenGiaoDienTests(t: YThucTestKit) {
     }
     assert(thay >= 1, 'Dữ liệu mẫu phải có việc của lớp thường có nhãn đợt để kiểm');
   });
+
+  check('UX0 · N-3: badge hộp lớp là danh từ + số, câu cũ vào tooltip', () => {
+    const goc = { needsPlacement: true, canXepLop: 4, soChuaLoTrinhTiep: 5, missingSkills: ['writing'], soBaiChoCham: 9,
+      needScoresTitle: 'Lớp còn 9 bài chưa nhập điểm', soCaseMo: 3, phase: 'final_week', missingCount: 2 };
+    const b = d.badgeLop(goc);
+    const tatCa = [...b.hien, ...b.an];
+    assert(tatCa.length === 7, `Bộ đủ phải có 7 badge, đang ${tatCa.length}`);
+    const cham = tatCa.find((x: any) => x.key === 'cham')!;
+    assert(cham.nhan === '9 bài chờ chấm' && cham.title === 'Lớp còn 9 bài chưa nhập điểm', JSON.stringify(cham));
+    // Chữ đã chốt ở PR-LT/PR-Qa: `chua-lo-trinh` ("… chưa có lộ trình tiếp theo") và `chang` (tên chặng thi) dài hơn 3 từ nên được miễn.
+    for (const x of tatCa) {
+      // Miễn: `chua-lo-trinh`, `chang` (chữ đã chốt ở PR-LT/PR-Qa) và `het-khoa` ("n HV chờ xếp lớp": chữ chốt ở mockup 17 #17, "HV" là viết tắt).
+      if (x.key === 'chua-lo-trinh' || x.key === 'chang' || x.key === 'het-khoa') continue;
+      const tu = x.nhan.split(/\s+/).filter((w: string) => !/^\d+$/.test(w));
+      assert(tu.length <= 3, `${x.key}: "${x.nhan}" quá 3 từ`);
+    }
+    assert(tatCa.find((x: any) => x.key === 'case')!.nhan === '3 Case mở', 'Case mở');
+    assert(tatCa.find((x: any) => x.key === 'het-khoa')!.nhan === '4 HV chờ xếp lớp', 'Chờ xếp lớp');
+  });
 }
 

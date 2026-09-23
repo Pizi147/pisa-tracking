@@ -155,7 +155,7 @@ export async function runLenLopTests(t: YThucTestKit) {
   check('PR-LT (1) · badgeLop: "chua-lo-trinh" đứng ngay sau "het-khoa", vẫn cắt tối đa 2 badge hiện', () => {
     const b = d.badgeLop({
       needsPlacement: true, canXepLop: 3, soChuaLoTrinhTiep: 5, missingSkills: ['writing'],
-      needScoresText: null, soCaseMo: 0, phase: 'finished', missingCount: 0,
+      soBaiChoCham: 0, needScoresTitle: null, soCaseMo: 0, phase: 'finished', missingCount: 0,
     });
     assert(b.hien.map((x: any) => x.key).join(',') === 'het-khoa,chua-lo-trinh', `Hai badge đầu: ${JSON.stringify(b.hien)}`);
     assert(b.an.map((x: any) => x.key).join(',') === 'thieu-gv', `Phần gom: ${JSON.stringify(b.an)}`);

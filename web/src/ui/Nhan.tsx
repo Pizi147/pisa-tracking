@@ -33,3 +33,8 @@ export function Nhan({ tone, dut, title, onClick, children }: {
   }
   return <span title={title} className={cls}>{children}</span>;
 }
+
+/** Tone của luật badge hộp lớp (`badgeLop`) → tone `Nhan`: đỏ · vàng · xanh dương · xám. */
+export function toneNhanTuBadge(t: 'danger' | 'warn' | 'info' | 'muted'): ToneNhan {
+  return t === 'danger' ? 'bad' : t === 'warn' ? 'soon' : t === 'info' ? 'doing' : 'muted';
+}
