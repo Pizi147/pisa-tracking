@@ -1821,7 +1821,7 @@ api.post('/auth/login', wrap((req, res) => {
   const email = accountSvc.normalizeEmail(String(req.body?.email ?? ''));
   const ip = gioiHan.ipCua(req);
   gioiHan.chanNeuBiKhoa('dang_nhap_email', email, gioiHan.cauKhoaDangNhap);
-  gioiHan.chanNeuBiKhoa('dang_nhap_ip', ip, gioiHan.cauKhoaDangNhap);
+  gioiHan.chanNeuBiKhoa('dang_nhap_ip', ip, gioiHan.cauKhoaDangNhapIp);
   let r: accountSvc.LoginResult;
   try {
     r = accountSvc.login(email, String(req.body?.password ?? ''));
