@@ -1,55 +1,66 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Card, Empty, ErrorState, Outcome, SectionNote, Skeleton, Status } from '../../ui/ui.tsx';
+import { Card, Empty, ErrorState, Info, Outcome, Skeleton, Status, Th } from '../../ui/ui.tsx';
+import { Drawer } from '../../ui/Drawer.tsx';
 import { WeekPicker, usePeriodWindow, resolveWeek } from '../../ui/Filters.tsx';
 import { SignalList } from './SignalList.tsx';
 import { ManagerTaskList, ManagerTasks } from './ManagerTasks.tsx';
-import { fmtDate, unitStatusLabel, unitTone } from '../../lib/format.ts';
+import { BangChung } from '../../ui/BangChung.tsx';
+import { fmtDate, fmtDateTime, unitStatusLabel, unitTone } from '../../lib/format.ts';
 import { UNIT_STATUSES } from '@shared/domain/index.ts';
 
+type LinkedTask = { id: number; code: string; title: string; progress: string; progressLabel: string; due: string | null; overdue: boolean };
+type TrangThaiO = { ma: 'da-nop' | 'nhap' | 'chua'; nhan: string; phu: string | null };
+type Cell = {
+  key: string; label: string; hint: string;
+  status: string | null; note: string | null;
+  reporterName: string | null; updatedAt: string | null; reportedOn: string | null; reportId: number | null;
+  trangThai: TrangThaiO; submittedAt: string | null; submittedBy: string | null;
+  taskGroup: string | null; linkedTasks: LinkedTask[]; evidenceCount: number;
+  worstStatus: string | null; weeksReported: number | null; weeksTotal: number | null;
+  history: { status: string | null; note: string | null; at: string; actor: string | null; kind: string | null }[];
+};
+type Unit = {
+  unitId: number; unitName: string; unitCode: string; kind: string; branchId: number | null;
+  cells: Cell[]; reported: number; total: number; trangThai: TrangThaiO; canEdit: boolean;
+};
 type Board = {
   period: { id: number; code: string; range: string };
-  units: {
-    unitId: number; unitName: string; unitCode: string; kind: string; branchId: number | null;
-    cells: {
-      key: string; label: string; hint: string;
-      status: string | null; note: string | null;
-      reporterName: string | null; reportedOn: string | null;
-      worstStatus: string | null; weeksReported: number | null; weeksTotal: number | null;
-      taskGroup: string | null;
-      tasks: { id: number; code: string; title: string; progress: string; progressLabel: string; due: string | null; overdue: boolean }[];
-      history: { status: string | null; note: string | null; at: string; actor: string | null }[];
-    }[];
-    reported: number; total: number; canEdit: boolean;
-  }[];
-  totals: { total: number; ok: number; watch: number; problem: number; notReported: number };
+  units: Unit[];
+  totals: { total: number; ok: number; watch: number; problem: number; notReported: number; daNop: number; nhap: number; chua: number };
   scope: { kind: 'week' | 'month'; month: string | null; weeks: string[]; editable: boolean };
   /** Báo cáo tuần chỉ được cập nhật trong hai ngày cuối tuần đó. Máy chủ mới là nơi chặn thật. */
-  editWindow: { open: boolean; reason: string | null; opensOn: string } | null;
+  editWindow: { open: boolean; reason: string | null; opensOn: string; closesOn: string; locked: boolean; unlocked: boolean } | null;
 };
 
+const COT_GIUA: { key: string; label: string }[] = [
+  { key: 'teachers', label: 'Giáo viên' }, { key: 'students', label: 'Học viên / Phụ huynh' }, { key: 'curriculum', label: 'Giáo trình' },
+];
+const TUTOR_LABEL_NGAN: Record<string, string> = { tutor_count: 'Số lượng', tutor_quality: 'Chất lượng', tutor_other: 'Khác' };
+
 /**
- * Thân màn Báo cáo đơn vị — Công việc › Báo cáo đơn vị (`/cong-viec/bao-cao`).
+ * Thân màn Báo cáo đơn vị — Công việc › Báo cáo đơn vị (`/cong-viec/bao-cao`, PR-Ra phương án A).
+ *
+ * Thứ tự (§7.3): hàng chọn tuần/kỳ → dòng cửa sổ nộp → hàng số Đã nộp · Nháp · Chưa báo cáo
+ * (bấm lọc hàng đơn vị) → MA TRẬN lên đầu → hai khối thu gọn (Việc đã giao, Việc đang tồn).
  */
 export function MeetingBoard() {
-  const [periodId, setPeriodId] = useState<number | null>(null);
-  /*
-   * KỲ TUẦN HAY KỲ THÁNG (mục 14.2). Báo cáo được GHI theo tuần; kỳ tháng là cách đọc lại
-   * các tuần của tháng đó và cố ý CHỈ ĐỂ ĐỌC — một nhận định thuộc về tuần người ta viết nó.
-   */
+  const [params, setParams] = useSearchParams();
+  const [periodId, setPeriodIdState] = useState<number | null>(params.get('periodId') ? Number(params.get('periodId')) : null);
+  const setPeriodId = (id: number | null) => {
+    setPeriodIdState(id);
+    const next = new URLSearchParams(params);
+    if (id) next.set('periodId', String(id)); else next.delete('periodId');
+    setParams(next, { replace: true });
+  };
   const [byMonth, setByMonth] = useState(false);
+  const [locTrangThai, setLocTrangThai] = useState<TrangThaiO['ma'] | null>(null);
+  const [ganhoi, setGanHoi] = useState<{ unit: Unit; cell: Cell } | null>(null);
 
-  /*
-   * MỞ ĐÚNG TUẦN HIỆN TẠI. Cửa sổ tuần trượt theo tuần đang xem nên không cần nạp cả lịch sử.
-   *
-   * Tuần hiện tại lấy qua cờ `isAnchor` máy chủ trả về (neo mặc định vào hôm nay khi chưa có
-   * `periodId`) — KHÔNG fallback về `window.data[0]` (phần tử đầu, tức tuần TƯƠNG LAI nhất của
-   * cửa sổ): đó đúng là kiểu lỗi sổ §13.8 cấm, tuần rơi khỏi cửa sổ thì nhảy sang tuần khác
-   * thay vì báo lỗi rõ ràng. Tuần hiện tại có thể chưa có hàng (`id: null`) nên phải resolve.
-   */
+  /* Không có ?periodId= → neo vào tuần hiện tại như cũ (nợ PR-O: có thì giữ đúng tuần đó). */
   const window = usePeriodWindow(periodId);
   useEffect(() => {
     if (periodId !== null || !window.data?.length) return;
@@ -59,12 +70,12 @@ export function MeetingBoard() {
     let cancelled = false;
     void resolveWeek(cur.weekStart).then((r) => { if (!cancelled) setPeriodId(r.id); });
     return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [window.data, periodId]);
 
   const week = window.data?.find((p) => p.id === periodId) ?? null;
   const month = (() => {
     if (!byMonth || !week) return null;
-    /* Tuần thuộc về tháng chứa ngày thứ Năm của nó — cùng quy ước với cả hệ thống. */
     const thu = new Date(Date.parse(`${week.weekStart}T00:00:00Z`) + 3 * 86_400_000);
     return `${thu.getUTCFullYear()}-${String(thu.getUTCMonth() + 1).padStart(2, '0')}`;
   })();
@@ -75,210 +86,317 @@ export function MeetingBoard() {
 
   if (board.error) return <ErrorState message={board.error.message} hint={board.error.hint} onRetry={board.reload} />;
 
+  const units = board.data?.units ?? [];
+  const unitsLoc = locTrangThai ? units.filter((u) => u.trangThai.ma === locTrangThai) : units;
+  const ew = board.data?.editWindow ?? null;
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="flex flex-wrap items-end gap-2">
-          <WeekPicker periodId={periodId} onPeriod={setPeriodId}
-            label={byMonth ? 'Tuần bất kỳ trong tháng' : 'Tuần báo cáo'} />
-          <label className="block">
-            <span className="label">Kỳ</span>
-            <select className="field w-28" value={byMonth ? 'month' : 'week'}
-              onChange={(e) => setByMonth(e.target.value === 'month')}>
-              <option value="week">Tuần</option>
-              <option value="month">Tháng</option>
-            </select>
-          </label>
-          {/* Bảng số liệu theo tuần: cùng dữ liệu, khác lát cắt — nhiều tuần cạnh nhau. */}
-          <Link className="btn no-underline" to="/tong-hop-tuan">Tổng hợp theo tuần</Link>
-        </div>
+      <div className="flex flex-wrap items-end gap-2">
+        <WeekPicker periodId={periodId} onPeriod={setPeriodId} label={byMonth ? 'Tuần bất kỳ trong tháng' : 'Tuần báo cáo'} />
+        <label className="block">
+          <span className="label">Kỳ</span>
+          <select className="field w-28" value={byMonth ? 'month' : 'week'} onChange={(e) => setByMonth(e.target.value === 'month')}>
+            <option value="week">Tuần</option>
+            <option value="month">Tháng</option>
+          </select>
+        </label>
         <ManagerTasks periodId={periodId} />
       </div>
 
-      <ManagerTaskList periodId={periodId} />
-
-      {board.data?.scope.kind === 'month' && (
-        <SectionNote>
-          Đang đọc <strong>cả tháng {board.data.scope.month}</strong> ({board.data.scope.weeks.join(' · ')}).
-          Ô hiện <strong>lần báo cáo gần nhất</strong> của tháng, kèm tình trạng nặng nhất đã xuất
-          hiện — một tuần “Có vấn đề” rồi ba tuần “Ổn” không phải là một tháng ổn. Muốn sửa thì
-          chuyển về kỳ tuần, vì nhận định thuộc về tuần người ta viết nó.
-        </SectionNote>
+      {/* Cửa sổ nộp — hoặc dòng phụ cho biết đang đọc cả tháng. */}
+      {board.data?.scope.kind === 'month' ? (
+        <p className="text-xs text-slate-500 m-0">
+          Đang đọc cả tháng <strong>{board.data.scope.month}</strong> ({board.data.scope.weeks.join(' · ')}) — chỉ để đọc, ô hiện lần báo cáo gần nhất kèm tình trạng nặng nhất đã xuất hiện.
+        </p>
+      ) : ew && (
+        <p className="text-xs m-0" style={{ color: ew.open ? 'var(--text-muted, #94a3b8)' : 'rgb(252 165 165)' }}>
+          {ew.open
+            ? (ew.locked ? 'Đã khoá nhưng Quản trị hệ thống đã mở lại để bổ sung.' : `Nộp từ thứ Sáu ${fmtDate(ew.opensOn)} đến hết thứ Tư ${fmtDate(ew.closesOn)}.`)
+            : <>Đã khoá · chỉ Quản trị hệ thống mở lại được. {ew.reason}</>}
+        </p>
       )}
-
-      {/* Báo cáo tuần chỉ mở trong hai ngày cuối tuần — nói rõ vì sao, không chỉ làm mờ ô nhập. */}
-      {board.data?.editWindow && !board.data.editWindow.open && (
-        <SectionNote>
-          <strong>Chưa/không còn cập nhật được báo cáo tuần này.</strong> {board.data.editWindow.reason}
-        </SectionNote>
-      )}
-
-      {/* Hệ thống tổng hợp dữ kiện trước; nhận định của quản lý nằm ở phần dưới. */}
-      <SignalList periodId={periodId} />
 
       {board.loading && <Skeleton rows={6} />}
 
       {board.data && (
-        <Card
-          title="Tình hình đơn vị"
-          action={
-            <span className="text-xs text-slate-400 flex flex-wrap gap-2">
-              <Status kind="idle">Chưa báo cáo {board.data.totals.notReported}</Status>
-              <Outcome tone="ok" mark="✓">Ổn {board.data.totals.ok}</Outcome>
-              <Outcome tone="warn" mark="–">Cần theo dõi {board.data.totals.watch}</Outcome>
-              <Outcome tone="danger" mark="↓">Có vấn đề {board.data.totals.problem}</Outcome>
-              <span className="text-slate-500">trên {board.data.totals.total} mục</span>
-            </span>
-          }
-          bodyClass="p-0"
-        >
-          {board.data.units.length === 0 ? (
-            <Empty title="Bạn không có đơn vị nào trong phạm vi được cấp" />
-          ) : (
-            <div className="divide-y" style={{ borderColor: 'var(--line)' }}>
-              {board.data.units.map((u) => (
-                <UnitRow
-                  key={u.unitId} unit={u} periodId={periodId!}
-                  windowOpen={board.data!.editWindow?.open ?? true} onSaved={board.reload}
-                />
-              ))}
-            </div>
-          )}
-        </Card>
-      )}
+        <>
+          {/* Hàng số — bấm lọc hàng đơn vị (G-10). */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+            {([['da-nop', 'Đã nộp', board.data.totals.daNop], ['nhap', 'Nháp', board.data.totals.nhap], ['chua', 'Chưa báo cáo', board.data.totals.chua]] as const).map(([ma, nhan, n]) => {
+              const active = locTrangThai === ma;
+              return (
+                <button key={ma} type="button" disabled={n === 0 && !active}
+                  className={`flex items-baseline gap-1 appearance-none bg-transparent border-0 p-0 ${n === 0 && !active ? 'opacity-40 cursor-default' : 'cursor-pointer hover:opacity-80'}`}
+                  onClick={() => setLocTrangThai(active ? null : ma)}>
+                  <strong className={`tabular-nums text-sm ${active ? 'text-sky-300' : 'text-slate-100'}`}>{n}</strong>
+                  <span className={active ? 'text-sky-300' : 'text-slate-400'}>{nhan}</span>
+                  {active && <span className="text-sky-300" aria-hidden>✕</span>}
+                </button>
+              );
+            })}
+          </div>
 
+          {/* ── ma trận: đơn vị × hạng mục, lên đầu trang (§7.3) ── */}
+          <Card title="Tình hình đơn vị" bodyClass="p-0">
+            {unitsLoc.length === 0 ? (
+              <div className="p-4"><Empty title="Bạn không có đơn vị nào khớp bộ lọc" /></div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: '46rem' }}>
+                  <colgroup>
+                    <col style={{ width: '20%' }} />
+                    <col style={{ width: '20%' }} /><col style={{ width: '20%' }} /><col style={{ width: '20%' }} />
+                    <col style={{ width: '20%' }} />
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <Th>Đơn vị</Th>
+                      {COT_GIUA.map((c) => <Th key={c.key}>{c.label}</Th>)}
+                      <Th>Trạng thái</Th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {unitsLoc.map((u) => (
+                      <tr key={u.unitId} className="border-t" style={{ borderColor: 'var(--line)' }}>
+                        <td className="td text-slate-100 font-medium">{u.unitName}</td>
+                        {u.cells.map((c, i) => (
+                          <td key={c.key} className="td cursor-pointer hover:bg-white/5" onClick={() => setGanHoi({ unit: u, cell: c })}>
+                            <OTaBang cell={c} thTutor={u.kind !== 'branch' ? (TUTOR_LABEL_NGAN[c.key] ?? c.label) : undefined} />
+                          </td>
+                        ))}
+                        {u.cells.length < COT_GIUA.length && Array.from({ length: COT_GIUA.length - u.cells.length }).map((_, i) => <td key={`pad-${i}`} className="td text-slate-600">—</td>)}
+                        <td className="td">
+                          <Status kind={u.trangThai.ma === 'da-nop' ? 'done' : u.trangThai.ma === 'nhap' ? 'waiting' : 'idle'}>{u.trangThai.nhan}</Status>
+                          {u.trangThai.phu && <div className="text-[11px] text-slate-500 mt-0.5">{u.trangThai.phu}</div>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
+
+          {/* ── hai khối thu gọn (Q16) — luôn có số ── */}
+          <details>
+            <summary className="cursor-pointer text-sm text-slate-300 py-1">Việc đã giao ({useManagerTaskCount(periodId)})</summary>
+            <div className="pt-2"><ManagerTaskList periodId={periodId} /></div>
+          </details>
+          <details>
+            <summary className="cursor-pointer text-sm text-slate-300 py-1">Việc đang tồn ({useSignalCount(periodId)})</summary>
+            <div className="pt-2"><SignalList periodId={periodId} /></div>
+          </details>
+
+          <NganBaoCao unit={ganhoi?.unit ?? null} cell={ganhoi?.cell ?? null} periodId={periodId}
+            editable={board.data.scope.editable} editWindow={ew}
+            onClose={() => setGanHoi(null)} onSaved={board.reload} />
+        </>
+      )}
     </div>
   );
 }
 
-function UnitRow({ unit, periodId, windowOpen, onSaved }: {
-  unit: Board['units'][number]; periodId: number; windowOpen: boolean; onSaved: () => void;
-}) {
-  const [open, setOpen] = useState(false);
+/** Số việc đã giao trong tuần — chỉ để hiện cạnh "Việc đã giao" khi khối đang gập. */
+function useManagerTaskCount(periodId: number | null): number {
+  const { data } = useApi<{ rows: unknown[] }>(periodId ? `/tasks?periodId=${periodId}` : null, [periodId]);
+  return data?.rows.length ?? 0;
+}
+/** Số nhóm tín hiệu — chỉ để hiện cạnh "Việc đang tồn" khi khối đang gập. */
+function useSignalCount(periodId: number | null): number {
+  const { data } = useApi<unknown[]>(periodId ? `/signals?periodId=${periodId}` : null, [periodId]);
+  return data?.length ?? 0;
+}
+
+/** Một ô của ma trận — mức + (nháp) + kỳ tháng "(từng …)". */
+function OTaBang({ cell, thTutor }: { cell: Cell; thTutor?: string }) {
+  if (!cell.status) return <span className="text-slate-600">—</span>;
+  const nhat = cell.trangThai.ma === 'nhap';
   return (
-    <div>
-      <button className="w-full text-left px-4 py-3 hover:bg-white/5 flex flex-wrap items-center gap-3"
-        onClick={() => setOpen((o) => !o)}>
-        <span className="font-medium text-slate-100 w-40 shrink-0">{unit.unitName}</span>
-        <span className="flex flex-wrap gap-1.5 flex-1">
-          {unit.cells.map((c) => (
-            <Outcome key={c.key} tone={unitTone(c.status)}>
-              {c.label}: {unitStatusLabel(c.status)}
-              {/* Kỳ tháng: tình trạng nặng nhất trong tháng, nếu nó nặng hơn lần gần nhất. */}
-              {c.worstStatus && c.worstStatus !== c.status && ` (từng ${unitStatusLabel(c.worstStatus).toLowerCase()})`}
-              {c.weeksTotal ? ` · ${c.weeksReported}/${c.weeksTotal} tuần` : ''}
-            </Outcome>
-          ))}
-        </span>
-        <span className="text-xs text-slate-500 shrink-0">{unit.reported}/{unit.total} đã báo cáo</span>
-        <span className="text-slate-500 text-xs shrink-0">{open ? '▲' : '▼'}</span>
-      </button>
-      {open && (
-        <div className="px-4 pb-4 grid gap-3 md:grid-cols-3">
-          {unit.cells.map((c) => (
-            <CellEditor
-              key={c.key} unitId={unit.unitId} periodId={periodId} cell={c}
-              canEdit={unit.canEdit && windowOpen} onSaved={onSaved}
-            />
-          ))}
-        </div>
+    <span className={nhat ? 'opacity-70' : ''}>
+      {thTutor && <span className="text-slate-500">{thTutor}: </span>}
+      <Outcome tone={unitTone(cell.status)}>{unitStatusLabel(cell.status)}</Outcome>
+      {nhat && <span className="text-[11px] text-slate-500 ml-1">nháp</span>}
+      {cell.worstStatus && cell.worstStatus !== cell.status && (
+        <span className="text-[11px] text-slate-500"> (từng {unitStatusLabel(cell.worstStatus).toLowerCase()})</span>
       )}
-    </div>
+      {cell.weeksTotal ? <span className="text-[11px] text-slate-500"> · {cell.weeksReported}/{cell.weeksTotal} tuần</span> : ''}
+    </span>
   );
 }
 
-function CellEditor({ unitId, periodId, cell, canEdit, onSaved }: {
-  unitId: number; periodId: number; cell: Board['units'][number]['cells'][number];
-  canEdit: boolean; onSaved: () => void;
+/** Panel phải — mở đúng MỘT ô báo cáo. Mở ô khác thì THAY nội dung, không chồng (G-8). */
+function NganBaoCao({ unit, cell, periodId, editable, editWindow, onClose, onSaved }: {
+  unit: Unit | null; cell: Cell | null; periodId: number | null;
+  editable: boolean; editWindow: Board['editWindow'];
+  onClose: () => void; onSaved: () => void;
 }) {
   const toast = useToast();
-  const [status, setStatus] = useState<string>(cell.status ?? '');
-  const [note, setNote] = useState(cell.note ?? '');
-  const [busy, setBusy] = useState(false);
-  const dirty = status !== (cell.status ?? '') || note !== (cell.note ?? '');
+  const navigate = useNavigate();
+  const [status, setStatus] = useState<string>('');
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState<'nhap' | 'nop' | null>(null);
+  const [chonMo, setChonMo] = useState(false);
 
-  const save = async () => {
-    setBusy(true);
+  useEffect(() => {
+    setStatus(cell?.status ?? '');
+    setNote(cell?.note ?? '');
+    setChonMo(false);
+  }, [cell?.key, unit?.unitId]);
+
+  const daNop = cell?.trangThai.ma === 'da-nop';
+  const chiDoc = !editable || !(unit?.canEdit ?? false);
+  const key = cell?.key ?? null;
+
+  const luu = async (nop: boolean) => {
+    if (!unit || !cell || !periodId) return;
+    setBusy(nop ? 'nop' : 'nhap');
     try {
-      await api.put(`/meeting/units/${unitId}/reports/${cell.key}`, { periodId, status: status || null, note });
-      invalidate('/meeting'); invalidate('/overview');
+      await api.put(`/meeting/units/${unit.unitId}/reports/${cell.key}`, { periodId, status: status || null, note, nop });
+      invalidate('/meeting'); invalidate('/overview'); invalidate('/signals');
       onSaved();
-      toast.push('ok', `Đã lưu: ${cell.label}`);
-    } catch (e: any) {
-      toast.push('error', e.message);      // giữ nguyên nội dung đang gõ
-    } finally { setBusy(false); }
+      toast.push('ok', nop ? 'Đã nộp' : 'Đã lưu nháp');
+    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(null); }
   };
 
   return (
-    <div className="surface-2 rounded-lg p-3 space-y-2">
-      <div className="flex items-center justify-between gap-2">
-        <strong className="text-sm text-slate-100">{cell.label}</strong>
-        <Outcome tone={unitTone(cell.status)}>{unitStatusLabel(cell.status)}</Outcome>
-      </div>
-      {cell.hint && <p className="text-[11px] text-slate-500 m-0">{cell.hint}</p>}
-      <select className="field" value={status} disabled={!canEdit} onChange={(e) => setStatus(e.target.value)}>
-        <option value="">Chưa báo cáo</option>
-        {UNIT_STATUSES.map((s) => <option key={s} value={s}>{unitStatusLabel(s)}</option>)}
-      </select>
-      <textarea className="field" rows={2} value={note} disabled={!canEdit}
-        onChange={(e) => setNote(e.target.value)}
-        placeholder="Bằng chứng cụ thể: chuyện gì, ở lớp nào, buổi nào" />
-      <div className="flex items-center justify-between gap-2">
-        {/* NGƯỜI VÀ NGÀY BÁO CÁO đứng cạnh nội dung — đọc một nhận định mà không biết ai viết,
-            viết khi nào thì không dùng để họp được (mục 14.2). */}
-        <span className="text-[11px] text-slate-500">
-          {cell.reporterName
-            ? <>Người báo cáo: {cell.reporterName}{cell.reportedOn ? ` · ${fmtDate(cell.reportedOn)}` : ''}</>
-            : 'Chưa có người báo cáo'}
-        </span>
-        {canEdit && <button className="btn btn-sm btn-primary" disabled={!dirty || busy} onClick={save}>{busy ? 'Đang lưu…' : 'Lưu'}</button>}
-      </div>
+    <Drawer open={!!(unit && cell)} onClose={onClose} width="max-w-lg"
+      title={unit && cell ? `${unit.unitName} · ${cell.label}` : 'Báo cáo'}
+      subtitle={cell
+        ? (cell.submittedAt ? `đã nộp ${fmtDateTime(cell.submittedAt)}${cell.submittedBy ? ` · ${cell.submittedBy}` : ''}`
+          : cell.updatedAt ? `nháp lưu ${fmtDateTime(cell.updatedAt)}` : undefined)
+        : undefined}>
+      {unit && cell && (
+        <div className="space-y-4">
+          {chiDoc && <Info>Chỉ đọc — {editable ? 'bạn không có quyền sửa đơn vị này' : 'kỳ tháng chỉ để đọc'}.</Info>}
 
-      {/*
-        CÔNG VIỆC LIÊN QUAN, với TRẠNG THÁI HIỆN TẠI (mục 14.2).
-        Một việc sống xuyên nhiều kỳ, nên đây là chỗ để nối vào việc ĐANG CÓ chứ không phải
-        chỗ đẻ ra một việc mới mỗi tuần.
-      */}
-      {cell.tasks.length > 0 && (
-        <div className="pt-1.5 border-t" style={{ borderColor: 'var(--line)' }}>
-          <span className="block text-[11px] text-slate-500 mb-1">Công việc liên quan (trạng thái hiện tại)</span>
-          <ul className="list-none p-0 m-0 space-y-0.5">
-            {cell.tasks.map((t) => (
-              <li key={t.id} className="text-[11px]">
-                <Link className="text-slate-300 no-underline hover:underline"
-                  to={`/tien-do-cong-viec?open=${t.id}`}>{t.title}</Link>
-                <span className={t.overdue ? 'text-rose-300' : 'text-slate-500'}>
-                  {' · '}{t.progressLabel}{t.due ? ` · hạn ${fmtDate(t.due)}` : ''}{t.overdue ? ' · quá hạn' : ''}
-                </span>
-              </li>
+          <div className="flex gap-1.5">
+            {UNIT_STATUSES.map((s) => (
+              <button key={s} type="button" disabled={chiDoc}
+                className={`btn btn-sm ${status === s ? 'btn-primary' : ''}`} onClick={() => setStatus(s)}>
+                {unitStatusLabel(s)}
+              </button>
             ))}
-          </ul>
+          </div>
+          <textarea className="field" rows={4} disabled={chiDoc} value={note} onChange={(e) => setNote(e.target.value)}
+            placeholder="Bằng chứng cụ thể: chuyện gì, ở lớp nào, buổi nào" />
+
+          {/* ── Nối với việc (R6) ── */}
+          <section>
+            <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-1.5">Nối với việc:</h3>
+            <div className="flex flex-wrap gap-1.5">
+              {cell.linkedTasks.map((t) => (
+                <span key={t.id} className="inline-flex items-center gap-1 surface-2 rounded-full px-2 py-1 text-xs">
+                  <button type="button" className="appearance-none bg-transparent border-0 p-0 text-slate-200 hover:underline cursor-pointer"
+                    onClick={() => navigate(`/cong-viec/van-hanh?open=${t.id}`)}>
+                    {t.title} · {t.progressLabel}{t.due ? ` · ${fmtDate(t.due)}` : ''}
+                  </button>
+                  {!chiDoc && cell.reportId && (
+                    <button type="button" className="text-slate-500 hover:text-slate-200" aria-label={`Gỡ "${t.title}"`}
+                      onClick={async () => {
+                        await api.del(`/meeting/reports/${cell.reportId}/tasks/${t.id}`);
+                        invalidate('/meeting'); onSaved();
+                      }}>✕</button>
+                  )}
+                </span>
+              ))}
+              {!chiDoc && cell.reportId && (
+                <button type="button" className="btn btn-sm" onClick={() => setChonMo((o) => !o)}>+ Chọn việc</button>
+              )}
+            </div>
+            {chonMo && cell.reportId && (
+              <ChonViec branchId={unit.branchId} reportId={cell.reportId} taskGroup={cell.taskGroup} periodId={periodId}
+                onLinked={() => { setChonMo(false); invalidate('/meeting'); onSaved(); }}
+                onCreateNew={() => navigate(`/cong-viec/van-hanh?tao=1&nhom=${cell.taskGroup ?? ''}&baoCao=${cell.reportId}&periodId=${periodId}`)} />
+            )}
+          </section>
+
+          {/* ── Bằng chứng ── */}
+          <section>
+            <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-1.5">Bằng chứng</h3>
+            {cell.reportId ? (
+              <BangChung ownerType="unit_report" ownerId={cell.reportId} canEdit={!chiDoc} tieuDe="" />
+            ) : (
+              <p className="text-xs text-slate-500 m-0">Lưu nháp để đính kèm bằng chứng.</p>
+            )}
+          </section>
+
+          {cell.history.length > 0 && (
+            <details>
+              <summary className="text-[11px] text-slate-500 cursor-pointer">Lịch sử chỉnh sửa ({cell.history.length})</summary>
+              <ul className="list-none p-0 m-0 mt-1 space-y-0.5">
+                {cell.history.map((h, i) => (
+                  <li key={i} className="text-[11px] text-slate-500">
+                    {fmtDate(h.at.slice(0, 10))} · {unitStatusLabel(h.status)}{h.kind ? ` · ${h.kind === 'nop' ? 'nộp' : 'nháp'}` : ''}
+                    {h.actor ? ` · ${h.actor}` : ''}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+
+          {!chiDoc && (
+            <div className="flex items-center gap-2 pt-2 border-t" style={{ borderColor: 'var(--line)' }}>
+              <button className="btn btn-sm" disabled={busy !== null} onClick={() => luu(false)}>
+                {busy === 'nhap' ? 'Đang lưu…' : 'Lưu nháp'}
+              </button>
+              <button className="btn btn-primary btn-sm" disabled={busy !== null || !status || !(editWindow?.open ?? true)} onClick={() => luu(true)}>
+                {busy === 'nop' ? 'Đang nộp…' : daNop ? 'Nộp lại' : 'Nộp'}
+              </button>
+              {!(editWindow?.open ?? true) && <span className="text-[11px] text-slate-500">Cửa sổ nộp đã đóng — vẫn lưu nháp được.</span>}
+              {(editWindow?.open ?? true) && !status && <span className="text-[11px] text-slate-500">Chọn mức trước khi nộp.</span>}
+            </div>
+          )}
         </div>
       )}
-      {cell.taskGroup && (
-        <Link className="btn btn-sm no-underline"
-          to={`/tien-do-cong-viec?tao=1&nhom=${cell.taskGroup}`}>
-          + Tạo việc từ mục này
-        </Link>
-      )}
-
-      {/* LỊCH SỬ CHỈNH SỬA — ô đổi từ "Có vấn đề" sang "Ổn" trước giờ họp phải truy lại được. */}
-      {cell.history.length > 1 && (
-        <details>
-          <summary className="text-[11px] text-slate-500 cursor-pointer">
-            Lịch sử chỉnh sửa ({cell.history.length} lần)
-          </summary>
-          <ul className="list-none p-0 m-0 mt-1 space-y-0.5">
-            {cell.history.map((h, i) => (
-              <li key={i} className="text-[11px] text-slate-500">
-                {fmtDate(h.at.slice(0, 10))} · {unitStatusLabel(h.status)}
-                {h.actor ? ` · ${h.actor}` : ''}
-              </li>
-            ))}
-          </ul>
-        </details>
-      )}
-    </div>
+      {/* để tsc khỏi kêu unused khi key đổi giữa các lần mở — theo dõi qua effect ở trên. */}
+      <span className="hidden" aria-hidden>{key}</span>
+    </Drawer>
   );
 }
 
+type MoViecRow = { id: number; title: string; progressLabel: string; due: string | null; group: string | null };
+
+/** "+ Chọn việc": việc Vận hành CHƯA KHÉP của chi nhánh đơn vị — việc cùng nhóm lên đầu (Q14). */
+function ChonViec({ branchId, reportId, taskGroup, periodId, onLinked, onCreateNew }: {
+  branchId: number | null; reportId: number; taskGroup: string | null; periodId: number | null;
+  onLinked: () => void; onCreateNew: () => void;
+}) {
+  const toast = useToast();
+  const qs = new URLSearchParams({ progress: 'mo' });
+  if (branchId) qs.set('branchId', String(branchId));
+  const { data, loading } = useApi<{ rows: MoViecRow[] }>(`/mgmt-tasks?${qs}`, [branchId]);
+  const [q, setQ] = useState('');
+
+  const rows = useMemo(() => {
+    const list = (data?.rows ?? []).filter((r) => !q.trim() || r.title.toLowerCase().includes(q.trim().toLowerCase()));
+    return [...list].sort((a, b) => (a.group === taskGroup ? -1 : 0) - (b.group === taskGroup ? -1 : 0));
+  }, [data, q, taskGroup]);
+
+  const noi = async (taskId: number) => {
+    try {
+      await api.post(`/meeting/reports/${reportId}/tasks`, { taskId });
+      onLinked();
+    } catch (e: any) { toast.push('error', e.message); }
+  };
+
+  return (
+    <div className="mt-2 surface-2 rounded-lg border p-2 space-y-1.5" style={{ borderColor: 'var(--line-strong)' }}>
+      <input className="field" placeholder="Gõ tên việc…" value={q} onChange={(e) => setQ(e.target.value)} autoFocus />
+      {loading && <Skeleton rows={2} />}
+      <ul className="list-none p-0 m-0 max-h-48 overflow-y-auto space-y-0.5">
+        {rows.map((r) => (
+          <li key={r.id}>
+            <button type="button" className="w-full text-left px-2 py-1.5 rounded hover:bg-white/5 appearance-none bg-transparent border-0 text-xs text-slate-200"
+              onClick={() => noi(r.id)}>
+              {r.title} <span className="text-slate-500">· {r.progressLabel}{r.due ? ` · ${fmtDate(r.due)}` : ''}</span>
+            </button>
+          </li>
+        ))}
+        {!loading && rows.length === 0 && <li className="text-xs text-slate-500 px-2 py-1.5">Không có việc nào khớp.</li>}
+      </ul>
+      <button type="button" className="btn btn-sm w-full" onClick={onCreateNew}>+ Tạo việc từ mục này</button>
+      <span className="hidden" aria-hidden>{periodId}</span>
+    </div>
+  );
+}
