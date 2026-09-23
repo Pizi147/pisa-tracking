@@ -18,8 +18,9 @@ import {
   type CaseOutcome, type FollowUpOutcome, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
-import { can, isCoreTeacherOf, require_, scopeFor, type Principal } from '../permissions.ts';
+import { can, isCoreTeacherOf, napTruocPhamVi, require_, scopeFor, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
+import { nho, trongBoNho } from '../platform/nguCanhRequest.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { currentCycle } from '../fasttrack/cycles.ts';
 import { expectationFor } from '../fasttrack/scoring.ts';
@@ -1666,11 +1667,31 @@ export type MappedCase = {
   state: CaseState;
 };
 
-export function listCases(p: Principal, f: CaseFilters = {}) {
-  const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
-  if (scope.none) return { rows: [], scopeEmpty: true };
-  const conn = db();
-  const today = demoToday();
+/**
+ * PR-TD: khoá bộ nhớ của `caseTrongPhamVi` — CHỈ gồm các bộ lọc đi vào SQL (`queue`/`classKind`/`skill` lọc SAU,
+ * trong bộ nhớ, không vào khoá) — để `caseQueueCounts` (5 lần cùng bộ lọc SQL, khác `queue`) và Tổng quan (~12 lần
+ * cùng bộ lọc SQL) dùng chung đúng MỘT kết quả SQL. Bỏ giá trị `null`/`undefined`/`false`, sắp khoá theo tên để cùng
+ * một bộ lọc luôn ra cùng một khoá bất kể thứ tự viết trong object.
+ */
+function khoaDsCase(userId: number, f: CaseFilters): string {
+  const fSql: Record<string, unknown> = {};
+  for (const k of ['studentId', 'classId', 'branchId', 'status', 'cycleId', 'origin', 'ownerUserId', 'noOwner'] as const) {
+    const v = f[k];
+    if (v !== null && v !== undefined && v !== false) fSql[k] = v;
+  }
+  const sapXep: Record<string, unknown> = {};
+  for (const k of Object.keys(fSql).sort()) sapXep[k] = fSql[k];
+  return `ds-case:${userId}:${JSON.stringify(sapXep)}`;
+}
+
+/**
+ * PHẦN SQL + LỌC QUYỀN + DỰNG `MappedCase` của `listCases` — tách riêng để nhớ trong request theo bộ lọc SQL
+ * (`khoaDsCase`), không phụ thuộc `queue`/`classKind`/`skill` (lọc trong bộ nhớ ở `listCases`, không đổi).
+ */
+function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
+  return nho(khoaDsCase(p.userId, f), () => {
+    const conn = db();
+    const today = demoToday();
 
   const where: string[] = ['1=1'];
   const params: unknown[] = [];
@@ -1785,6 +1806,9 @@ export function listCases(p: Principal, f: CaseFilters = {}) {
     skillsByCase.set(r.case_id, cur);
   }
 
+  /* PR-TD: nạp trước chi nhánh/lớp của MỌI HV trong một lô, để `can()` dưới đây không hỏi DB từng dòng một. */
+  napTruocPhamVi(rows.map((r) => r.eff_student_id));
+
   const all: MappedCase[] = rows
     .filter((r) => can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: r.eff_class_id, studentId: r.eff_student_id }))
     .map((r) => ({
@@ -1862,39 +1886,60 @@ export function listCases(p: Principal, f: CaseFilters = {}) {
         : 'working') as CaseState,
     }));
 
-  /*
-   * Hàng đợi lọc TRƯỚC, vì nó là câu hỏi đang đặt ra ("cái nào chưa ai làm?"). Nhóm và kỹ
-   * năng là hai chiều đi sâu bên trong câu hỏi đó, nên số đếm ở các chiều ấy phải tính
-   * trong phạm vi hàng đợi đang chọn, không phải trên toàn bộ.
-   */
-  const queued = (list: MappedCase[]) => {
-    switch (f.queue) {
-      // Chưa ai định hướng: không có hướng xử lý và cũng chưa có tác động nào.
-      case 'new':
-        return list.filter((r) => r.status !== 'done' && !r.disposition && r.interventionCount === 0);
-      case 'active':
-        return list.filter((r) => r.status !== 'done' && (!!r.disposition || r.interventionCount > 0));
-      // Tới hạn xem lại: CHỈ khi đã hẹn. Theo dõi không hẹn thì không bao giờ quá hạn.
-      case 'due':
-        return list.filter((r) => r.status !== 'done' && r.dueOverdue);
-      case 'review':
-        return list.filter((r) => r.status !== 'done' && ((r.sosLevel ?? 0) >= 3 || r.urgency === 'urgent'));
-      default:
-        return list;
-    }
-  };
+    return all;
+  });
+}
 
-  const base = queued(all);
-  let mapped = base;
-  /*
-   * `skill` là CHỦ ĐỀ (một trong năm ô kỹ năng). 'none' cho chủ đề = vấn đề cũ chưa gắn được kỹ năng —
-   * một lựa chọn thật, để các số cộng lại đúng bằng tổng. (Bộ lọc "đầu mục" Học thuật/Ý thức đã bỏ 21/09/2026.)
-   */
-  if (f.classKind) mapped = mapped.filter((r) => r.classKind === f.classKind);
-  if (f.skill === 'none') mapped = mapped.filter((r) => !r.topic);
-  else if (f.skill) mapped = mapped.filter((r) => r.topic === f.skill);
+/*
+ * PR-TD: annotation TƯỜNG MINH — tách `caseTrongPhamVi` qua `trongBoNho` (một lời gọi hàm generic riêng) làm mất
+ * "mẹo" suy luận kiểu cũ của TypeScript (khi hai `return` object-literal nằm cùng một hàm, TS tự thêm `facets?:
+ * undefined` vào nhánh thiếu — nay hai nhánh được suy luận tách rời nên mẹo đó không còn). Không đổi hình dạng JSON
+ * trả về, chỉ khai rõ để nơi gọi cũ dùng `.facets!` vẫn qua được typecheck.
+ */
+export function listCases(p: Principal, f: CaseFilters = {}): {
+  rows: MappedCase[];
+  scopeEmpty: boolean;
+  facets?: ReturnType<typeof facetsOf>;
+} {
+  const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
+  if (scope.none) return { rows: [], scopeEmpty: true };
+  return trongBoNho(() => {
+    const all = caseTrongPhamVi(p, f);
 
-  return { rows: mapped, scopeEmpty: false, facets: facetsOf(base, f) };
+    /*
+     * Hàng đợi lọc TRƯỚC, vì nó là câu hỏi đang đặt ra ("cái nào chưa ai làm?"). Nhóm và kỹ
+     * năng là hai chiều đi sâu bên trong câu hỏi đó, nên số đếm ở các chiều ấy phải tính
+     * trong phạm vi hàng đợi đang chọn, không phải trên toàn bộ.
+     */
+    const queued = (list: MappedCase[]) => {
+      switch (f.queue) {
+        // Chưa ai định hướng: không có hướng xử lý và cũng chưa có tác động nào.
+        case 'new':
+          return list.filter((r) => r.status !== 'done' && !r.disposition && r.interventionCount === 0);
+        case 'active':
+          return list.filter((r) => r.status !== 'done' && (!!r.disposition || r.interventionCount > 0));
+        // Tới hạn xem lại: CHỈ khi đã hẹn. Theo dõi không hẹn thì không bao giờ quá hạn.
+        case 'due':
+          return list.filter((r) => r.status !== 'done' && r.dueOverdue);
+        case 'review':
+          return list.filter((r) => r.status !== 'done' && ((r.sosLevel ?? 0) >= 3 || r.urgency === 'urgent'));
+        default:
+          return list;
+      }
+    };
+
+    const base = queued(all);
+    let mapped = base;
+    /*
+     * `skill` là CHỦ ĐỀ (một trong năm ô kỹ năng). 'none' cho chủ đề = vấn đề cũ chưa gắn được kỹ năng —
+     * một lựa chọn thật, để các số cộng lại đúng bằng tổng. (Bộ lọc "đầu mục" Học thuật/Ý thức đã bỏ 21/09/2026.)
+     */
+    if (f.classKind) mapped = mapped.filter((r) => r.classKind === f.classKind);
+    if (f.skill === 'none') mapped = mapped.filter((r) => !r.topic);
+    else if (f.skill) mapped = mapped.filter((r) => r.topic === f.skill);
+
+    return { rows: mapped, scopeEmpty: false, facets: facetsOf(base, f) };
+  });
 }
 
 /**

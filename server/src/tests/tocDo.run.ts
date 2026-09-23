@@ -28,8 +28,9 @@ const { createSession } = await import('../auth.ts');
 const {
   chayTrongRequest, nho, coNho, trongBoNho, soCauSql, demHienTai,
 } = await import('../platform/nguCanhRequest.ts');
-const { loadPrincipal, can, napTruocPhamVi } = await import('../permissions.ts');
+const { loadPrincipal, can, napTruocPhamVi, scopeFor } = await import('../permissions.ts');
 const { PERMISSIONS } = await import('../../../shared/domain/index.ts');
+const { listCases } = await import('../cases/cases.ts');
 const { DUONG_DO } = await import('./tocDoDuong.ts');
 
 runSeed();
@@ -370,6 +371,169 @@ await checkAsync("PR-TD Task2(d) · qua HTTP, hai request liền nhau: PUT /demo
   const khoiPhuc = await callHttp('QT', 'PUT', '/demo/config', { demoDate: explicitCu });
   assert(khoiPhuc.status === 200, 'Phải đặt lại được ngày demo cũ sau phép kiểm');
 });
+
+// ==================================================================== Task 3 — listCases nhớ trong request + kiểm quyền theo lô
+
+/**
+ * HÀM THAM CHIẾU (đường CŨ): SQL thô lấy đúng ba cột (id, eff_class_id, eff_student_id, cùng các JOIN của
+ * `caseTrongPhamVi`), lọc bằng `can()` NGOÀI MỌI KHO — từng dòng hỏi DB, không nhớ gì. Dùng để chứng minh
+ * `listCases` sau khi tách/nhớ vẫn ra ĐÚNG tập id như trước PR này.
+ */
+function thamChieuCaseIds(
+  p: ReturnType<typeof loadPrincipal>,
+  f: { branchId?: number; classId?: number; studentId?: number; status?: string },
+): Set<number> {
+  if (scopeFor(p, PERMISSIONS.ATTEMPT_VIEW).none) return new Set();
+  const where: string[] = ['1=1'];
+  const params: unknown[] = [];
+  if (f.studentId) { where.push('COALESCE(sc.student_id, a.student_id) = ?'); params.push(f.studentId); }
+  if (f.classId) { where.push('COALESCE(cur.class_id, a.class_id) = ?'); params.push(f.classId); }
+  if (f.branchId) { where.push('COALESCE(cc.branch_id, ac.branch_id) = ?'); params.push(f.branchId); }
+  if (f.status) { where.push('sc.status = ?'); params.push(f.status); }
+  const rows = conn
+    .prepare(
+      `SELECT sc.id AS id,
+              COALESCE(a.class_id, cur.class_id) AS eff_class_id,
+              COALESCE(sc.student_id, a.student_id) AS eff_student_id
+         FROM sos_cases sc
+         LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+         LEFT JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
+         LEFT JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active'
+         LEFT JOIN classes ac ON ac.id = a.class_id
+         LEFT JOIN classes cc ON cc.id = cur.class_id
+        WHERE ${where.join(' AND ')}`,
+    )
+    .all(...params) as any[];
+  const ids = new Set<number>();
+  for (const r of rows) {
+    if (can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: r.eff_class_id, studentId: r.eff_student_id })) ids.add(r.id as number);
+  }
+  return ids;
+}
+
+function urlChoBoLoc(f: { branchId?: number; classId?: number; studentId?: number; status?: string }): string {
+  const qs = new URLSearchParams();
+  if (f.branchId) qs.set('branchId', String(f.branchId));
+  if (f.classId) qs.set('classId', String(f.classId));
+  if (f.studentId) qs.set('studentId', String(f.studentId));
+  if (f.status) qs.set('status', f.status);
+  const s = qs.toString();
+  return '/cases' + (s ? `?${s}` : '');
+}
+
+const TOAN_BO_CN = (conn.prepare('SELECT id FROM branches').all() as any[]).map((r) => r.id as number);
+const BO_LOC_TASK3: Array<{ branchId?: number; classId?: number; studentId?: number; status?: string }> = [
+  {},
+  ...TOAN_BO_CN.map((b) => ({ branchId: b })),
+  { classId: LOP_FT },
+  { classId: LOP_THUONG },
+  { studentId: HV },
+  { status: 'done' },
+];
+
+check('PR-TD Task3(1) · listCases (gọi trực tiếp NGOÀI request) ra ĐÚNG tập id như tham chiếu — mọi tài khoản × {}, mỗi chi nhánh, hai lớp mẫu, một HV, status=done', () => {
+  const saiLech: string[] = [];
+  for (const uid of TOAN_BO_TK) {
+    const p = PRINCIPAL_CUA.get(uid)!;
+    for (const f of BO_LOC_TASK3) {
+      const thamChieu = thamChieuCaseIds(p, f);
+      const truc = new Set((listCases(p, f as any).rows as any[]).map((r) => r.id as number));
+      const lech = truc.size !== thamChieu.size || [...truc].some((id) => !thamChieu.has(id));
+      if (lech) saiLech.push(`user=${uid} f=${JSON.stringify(f)}: trực tiếp=${truc.size} tham chiếu=${thamChieu.size}`);
+    }
+  }
+  assert(saiLech.length === 0, `Lệch giữa listCases (ngoài request) và tham chiếu:\n${saiLech.slice(0, 10).join('\n')}`);
+});
+
+await checkAsync('PR-TD Task3(2) · GET /cases (qua HTTP) ra ĐÚNG tập id như tham chiếu — cùng bộ bộ lọc, các vai chính', async () => {
+  const saiHttp: string[] = [];
+  for (const vai of ['QL', 'GVCN', 'GVBM', 'GVCN_THUONG', 'QT'] as const) {
+    const uid = USER[vai];
+    const p = PRINCIPAL_CUA.get(uid)!;
+    for (const f of BO_LOC_TASK3) {
+      const thamChieu = thamChieuCaseIds(p, f);
+      // eslint-disable-next-line no-await-in-loop
+      const { status, json } = await callHttpUser(uid, 'GET', urlChoBoLoc(f));
+      if (status !== 200) { saiHttp.push(`vai=${vai} f=${JSON.stringify(f)}: mã ${status} (mong đợi 200)`); continue; }
+      const idsHttp = new Set(((json as any).rows as any[]).map((r) => r.id as number));
+      const lech = idsHttp.size !== thamChieu.size || [...idsHttp].some((id) => !thamChieu.has(id));
+      if (lech) saiHttp.push(`vai=${vai} f=${JSON.stringify(f)}: http=${idsHttp.size} tham chiếu=${thamChieu.size}`);
+    }
+  }
+  assert(saiHttp.length === 0, `Lệch giữa GET /cases (HTTP) và tham chiếu:\n${saiHttp.slice(0, 10).join('\n')}`);
+});
+
+await checkAsync('PR-TD Task3(3) · facets của gọi trực tiếp và của GET /cases (qua HTTP) bằng nhau — cùng bộ lọc, các vai chính', async () => {
+  const saiFacets: string[] = [];
+  for (const vai of ['QL', 'GVCN', 'GVBM', 'GVCN_THUONG', 'QT'] as const) {
+    const uid = USER[vai];
+    const p = PRINCIPAL_CUA.get(uid)!;
+    for (const f of BO_LOC_TASK3) {
+      const truc = listCases(p, f as any).facets;
+      // eslint-disable-next-line no-await-in-loop
+      const { status, json } = await callHttpUser(uid, 'GET', urlChoBoLoc(f));
+      if (status !== 200) continue; // đã báo ở Task3(2)
+      if (JSON.stringify(truc) !== JSON.stringify((json as any).facets)) {
+        saiFacets.push(`vai=${vai} f=${JSON.stringify(f)}: facets lệch giữa gọi trực tiếp và HTTP`);
+      }
+    }
+  }
+  assert(saiFacets.length === 0, `Facets lệch:\n${saiFacets.slice(0, 10).join('\n')}`);
+});
+
+check('PR-TD Task3(4) · trong một kho GET, gọi listCases(p, {}) hai lần cùng bộ lọc → lần hai 0 câu SQL', () => {
+  const p = PRINCIPAL_CUA.get(USER.QT)!;
+  chayTrongRequest('GET', () => {
+    listCases(p, {});
+    const truoc = soCauSql();
+    listCases(p, {});
+    const sau = soCauSql();
+    assert(sau === truoc, `Lần gọi thứ hai (cùng bộ lọc, cùng request GET) phải 0 câu SQL thêm: được ${sau - truoc}`);
+  });
+});
+
+/*
+ * PR-TD Task2(e) — CHẠY SAU CÙNG trong file (đúng yêu cầu kế hoạch): thao tác ghi thật (chuyển lớp) trên một HV
+ * TẠO RIÊNG cho phép kiểm này, để không đụng HV/lớp dùng chung ở các phép kiểm phía trên.
+ *
+ * HV khởi tạo KHÔNG có ghi danh nào (chỉ gắn `students.branch_id = MB`) — cố ý, không phải sơ suất:
+ * `branchesOfStudent`/`napTruocPhamVi` tính CẢ ghi danh cũ (mọi trạng thái, xem Task2(c)) nên nếu HV có sẵn một ghi
+ * danh ở MB rồi mới chuyển, ghi danh MB dù đã 'transferred' vẫn còn tính, khiến em vĩnh viễn "thuộc cả hai chi
+ * nhánh" và Quản lý CP không bao giờ thấy trọn vẹn — đây là luật `can()`/`ctxBranches` CŨ, không phải lỗi bộ nhớ (đã
+ * xác nhận bằng cách tái hiện y hệt với mã KHÔNG qua bộ nhớ của PR này). Không có ghi danh trước thì sau khi chuyển,
+ * `branchesOfStudent` chỉ còn đúng CP — đúng kịch bản "trước không thấy, sau thấy ngay" mà phép kiểm này cần.
+ */
+await checkAsync(
+  'PR-TD Task2(e) · qua HTTP: Quản lý CP không thấy Case của một HV MB (chưa xếp lớp) → chuyển HV đó sang lớp CP → Quản lý CP THẤY ngay (không dính bộ nhớ cũ)',
+  async () => {
+    const now = new Date().toISOString();
+    const infoHv = conn
+      .prepare(`INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`)
+      .run('PR-TD-E1', 'PR TD E1', 'pr td e1', CN, now);
+    const hvE = Number(infoHv.lastInsertRowid);
+    const infoCase = conn
+      .prepare(`INSERT INTO sos_cases (student_id, category, origin_kind, status, created_at) VALUES (?, 'listening', 'manager_task', 'open', ?)`)
+      .run(hvE, now);
+    const caseE = Number(infoCase.lastInsertRowid);
+
+    const truoc = await callHttpUser(QL_CP, 'GET', '/cases');
+    assert(truoc.status === 200, `GET /cases (QL_CP, trước chuyển) phải 200, được ${truoc.status}`);
+    const thayTruoc = (truoc.json.rows as any[]).some((r) => r.id === caseE);
+    assert(!thayTruoc, 'Quản lý CP KHÔNG được thấy Case của một HV còn gắn chi nhánh MB');
+
+    const lopCp = classId('CP-FT 110');
+    const chuyen = await callHttpUser(USER.QT, 'POST', `/students/${hvE}/transfer`, {
+      toClassId: lopCp, effectiveDate: '2026-09-23', reasonCode: 'doi_lich_hoc',
+      handoverNote: 'Bàn giao cho phép kiểm PR-TD Task2(e)',
+    });
+    assert(chuyen.status === 200, `POST /students/:id/transfer phải 200, được ${chuyen.status}: ${JSON.stringify(chuyen.json)}`);
+
+    const sau = await callHttpUser(QL_CP, 'GET', '/cases');
+    assert(sau.status === 200, `GET /cases (QL_CP, sau chuyển) phải 200, được ${sau.status}`);
+    const thaySau = (sau.json.rows as any[]).some((r) => r.id === caseE);
+    assert(thaySau, 'Quản lý CP PHẢI thấy Case ngay sau khi HV chuyển sang lớp CP — không được dính bộ nhớ cũ giữa hai request');
+  },
+);
 
 console.log('\nBảng đo (vai · url → mã HTTP · số câu SQL):');
 for (const dong of bangDo) console.log(`  ${dong}`);
