@@ -1,0 +1,305 @@
+<style>
+  .pp{--bg:#0d1423;--s:#111b2d;--line:#293852;--tx:#e8eef7;--mu:#8f9db4;--bl:#84baff;--bb:#173451;--gr:#73d9a5;--gb:#15362a;--yl:#e5c66a;--yb:#3a3219;--rd:#ff9a9a;--rb:#3b2126;
+      background:var(--bg);color:var(--tx);font:12px Inter,Segoe UI,Arial,sans-serif;border-radius:8px;overflow:hidden;border:1px solid var(--line);font-variant-numeric:tabular-nums;margin-top:8px}
+  .pp .w{padding:12px}.pp .mu{color:var(--mu);font-size:11px}.pp .sp{flex:1}.pp .dim{color:#6f819e}
+  .pp table{width:100%;border-collapse:collapse;table-layout:fixed;color:var(--tx);font-size:12px}
+  .pp th{color:#6f819e;font-size:10px;padding:6px 10px;font-weight:700;text-transform:uppercase;text-align:left;border-bottom:1px solid var(--line);background:#0f192b}
+  .pp th.c,.pp td.c{text-align:center}.pp th.rt,.pp td.rt{text-align:right}
+  .pp td{padding:0 10px;height:36px;border-bottom:1px solid #1d2b43;vertical-align:middle}
+  .pp .n{display:inline-block;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:700;white-space:nowrap;line-height:16px}
+  .pp .y{background:var(--yb);color:var(--yl)}.pp .bl{background:var(--bb);color:var(--bl)}.pp .gy{background:#1d2a40;color:#b7c2d6}.pp .r{background:var(--rb);color:var(--rd)}.pp .g{background:var(--gb);color:var(--gr)}
+  .pp .n.dash{background:transparent;border:1px dashed currentColor}
+  .pp .old{display:inline-block;padding:1px 6px;border-radius:5px;font-size:10px;font-weight:700;white-space:nowrap;border:1px solid}
+  .pp .old.r{border-color:#7a3a44}.pp .old.y{border-color:#6b5a26}.pp .old.bl{border-color:#2f5580}.pp .old.gy{border-color:#34445f}
+  .pp .btn{border:1px solid var(--line);border-radius:7px;padding:4px 9px;font-weight:700;font-size:11px;white-space:nowrap;display:inline-block;color:var(--tx)}.pp .btn.p{background:#82b9f6;color:#0c1726;border-color:#82b9f6}
+  .pp .fl{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  .pp .note{font-size:11px;color:#b7c2d6;margin-top:8px;line-height:1.5}
+  .pp .od{color:var(--rd);font-weight:700}.pp .td{color:var(--yl);font-weight:700}
+  .pp .loc{display:flex;gap:8px;align-items:flex-start;background:#0a1120;border-bottom:1px solid var(--line);padding:8px 12px;font-size:11px;color:#b7c2d6;line-height:1.5}
+  .pp .loc b.k{color:#0c1726;background:#e5c66a;border-radius:4px;padding:0 5px;font-size:10px;letter-spacing:.04em;flex:none;margin-top:1px}
+  .pp .two{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+  @media (max-width:980px){.pp .two{grid-template-columns:1fr}}
+  .pp .lab{font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#6f819e;font-weight:800;margin:0 0 6px}
+  .pp .lab.bad{color:#d98a8a}.pp .lab.good{color:#7fcf9f}
+  .pp .card{background:#0f192b;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .pp .tw{display:inline-block;width:14px;color:#8fa3c4}
+  .pp .sub{display:block;font-size:10.5px;color:#6f819e;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pp .nm{font-weight:700}
+  /* === Luật hàng — phương án A === */
+  .pp tr.A-lon td{background:#172640;font-weight:800;font-size:12.5px;height:38px}
+  .pp tr.A-lon td:first-child{box-shadow:inset 3px 0 0 #84baff}
+  .pp tr.A-con td{background:#0b1322;font-size:11.5px;color:#c9d4e6;height:32px}
+  .pp tr.A-con td:first-child{padding-left:40px}
+  .pp tr.A-lon.dong td:first-child{box-shadow:inset 3px 0 0 #3a4f72}
+  .pp tr.A-lon.dong td{background:#131f35}
+  /* === phương án B === */
+  .pp tr.B-lon td{background:#0a1120;height:28px;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#9fb2d0;position:sticky;top:0}
+  .pp tr.B-con td{height:34px}
+  /* hàng hiện trạng */
+  .pp tr.O-lon td{height:36px}.pp tr.O-con td{height:36px;color:#b7c2d6}.pp tr.O-con td:first-child{padding-left:34px}
+  /* list-style rows (Việc cần làm) */
+  .pp .li{display:grid;grid-template-columns:1fr 150px 118px;gap:10px;align-items:center;padding:8px 12px;border-top:1px solid #1d2b43}
+  .pp .li .t{font-weight:700;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pp .li .hn{font-size:11px;color:#8f9db4;line-height:1.4}
+  .pp .li .ac{text-align:right}
+  .pp .grpA{display:flex;align-items:center;gap:8px;padding:0 12px;height:38px;background:#172640;box-shadow:inset 3px 0 0 #84baff;font-weight:800;font-size:12.5px;border-top:1px solid #22314a}
+  .pp .grpA .cnt{font-size:11px;font-weight:700;color:#b7c2d6;background:#22324f;border-radius:999px;padding:0 7px}
+  .pp .conA .li{background:#0b1322;padding-left:28px}
+  .pp .oldli{padding:10px 12px;border-top:1px solid #1d2b43}
+  .pp .oldli .r1{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.pp .oldli .r2{font-size:11px;color:#8f9db4;margin-top:3px}.pp .oldli .r3{display:flex;gap:8px;align-items:center;margin-top:5px;font-size:10.5px;color:#6f819e;flex-wrap:wrap}
+  .pp .oldli .act{float:right;margin-top:-30px}
+  .pp .rule{display:grid;grid-template-columns:34px 1fr;gap:4px 10px;padding:7px 0;border-top:1px solid #1d2b43;font-size:11.5px;line-height:1.5}
+  .pp .rule:first-child{border-top:0}.pp .rule b.m{color:#e5c66a}
+  .pp .src{font-family:Consolas,monospace;font-size:10px;color:#8fa3c4}
+  .pp .big td{height:auto;padding:6px 10px;vertical-align:top;line-height:1.45}
+  .pp .ex{font-size:11px}
+</style>
+
+<h2>17 · Hai luật chung toàn web: hàng lớn / hàng nhỏ và badge</h2>
+<p class="subtitle">Chủ sản phẩm yêu cầu áp "ở TẤT CẢ mọi nơi". (a) Khi mở rộng một hàng, hàng lớn và hàng con phải khác nhau rõ. (b) Badge ngắn, mỗi cái một trạng thái; hạn và việc cần làm tách ra khỏi badge. Số liệu lấy từ bản demo chạy trên main 7e6585b ngày 23/09 (ngày demo 14/09).</p>
+
+<!-- ================= (a) HÀNG ================= -->
+<h3>(a1) Hàng lớn vs hàng nhỏ — hai phương án</h3>
+<div class="pp"><div class="w">
+ <div class="two">
+  <div>
+   <div class="lab">Hiện tại · Tổng hợp Test + SOS, "Theo tuần" <span style="text-transform:none;font-weight:400">(số minh hoạ)</span></div>
+   <div class="card"><table><colgroup><col style="width:34%"><col><col><col><col><col><col></colgroup>
+    <tr><th>Tuần</th><th class="c">Lượt</th><th class="c">Đạt</th><th class="c">SOS 1</th><th class="c">SOS 2</th><th class="c">SOS 3</th><th class="c">Case</th></tr>
+    <tr class="O-lon"><td><span class="tw">▾</span>W2 SEP<span class="sub" style="display:inline;margin-left:4px">08/09 – 14/09</span></td><td class="c">21</td><td class="c">9</td><td class="c">5</td><td class="c">4</td><td class="c">3</td><td class="c">7</td></tr>
+    <tr class="O-con"><td>MB-FT 101</td><td class="c">12</td><td class="c">5</td><td class="c">3</td><td class="c">2</td><td class="c">2</td><td class="c">4</td></tr>
+    <tr class="O-con"><td>MB-FOU 12</td><td class="c">4</td><td class="c">1</td><td class="c">1</td><td class="c">1</td><td class="c">1</td><td class="c">3</td></tr>
+    <tr class="O-con"><td>MB-FT 102</td><td class="c">5</td><td class="c">3</td><td class="c">1</td><td class="c">1</td><td class="c">0</td><td class="c">0</td></tr>
+    <tr class="O-lon"><td><span class="tw">▸</span>W1 SEP<span class="sub" style="display:inline;margin-left:4px">01/09 – 07/09</span></td><td class="c">14</td><td class="c">6</td><td class="c">4</td><td class="c">3</td><td class="c">1</td><td class="c">5</td></tr>
+   </table></div>
+   <div class="note">Cha và con cùng nền, cùng độ đậm, cùng cỡ chữ — chỉ khác thụt 24px và chữ nhạt một bậc (<span class="src">TongHopTestSos.tsx:115-133, 199-203</span>). Mở ba tuần là không biết số nào là tổng.</div>
+  </div>
+  <div></div>
+ </div>
+ <div class="two" style="margin-top:14px">
+  <div>
+   <div class="lab good">Phương án A · hàng lớn sáng hơn + vạch trái, hàng con thụt + tối hơn</div>
+   <div class="card"><table><colgroup><col style="width:34%"><col><col><col><col><col><col></colgroup>
+    <tr><th>Tuần</th><th class="c">Lượt</th><th class="c">Đạt</th><th class="c">SOS 1</th><th class="c">SOS 2</th><th class="c">SOS 3</th><th class="c">Case</th></tr>
+    <tr class="A-lon"><td><span class="tw">▾</span>W2 SEP</td><td class="c">21</td><td class="c">9</td><td class="c">5</td><td class="c">4</td><td class="c">3</td><td class="c">7</td></tr>
+    <tr class="A-con"><td>MB-FT 101</td><td class="c">12</td><td class="c">5</td><td class="c">3</td><td class="c">2</td><td class="c">2</td><td class="c">4</td></tr>
+    <tr class="A-con"><td>MB-FOU 12</td><td class="c">4</td><td class="c">1</td><td class="c">1</td><td class="c">1</td><td class="c">1</td><td class="c">3</td></tr>
+    <tr class="A-con"><td>MB-FT 102</td><td class="c">5</td><td class="c">3</td><td class="c">1</td><td class="c">1</td><td class="c">0</td><td class="c">0</td></tr>
+    <tr class="A-lon dong"><td><span class="tw">▸</span>W1 SEP</td><td class="c">14</td><td class="c">6</td><td class="c">4</td><td class="c">3</td><td class="c">1</td><td class="c">5</td></tr>
+   </table></div>
+   <div class="note">Hàng lớn: nền sáng hơn một bậc, <b>vạch màu 3px</b> bên trái, chữ <b>đậm</b> 12.5px, cao 38px. Hàng con: thụt <b>16px</b> sau cột mũi tên, nền <b>tối hơn</b>, chữ 11.5px, cao 32px. Hàng lớn đang đóng: vạch mờ. Số tổng nằm <b>đúng cột</b> với số con.</div>
+  </div>
+  <div>
+   <div class="lab">Phương án B · hàng lớn là dải tiêu đề nhóm dính</div>
+   <div class="card"><table><colgroup><col style="width:34%"><col><col><col><col><col><col></colgroup>
+    <tr><th>Lớp</th><th class="c">Lượt</th><th class="c">Đạt</th><th class="c">SOS 1</th><th class="c">SOS 2</th><th class="c">SOS 3</th><th class="c">Case</th></tr>
+    <tr class="B-lon"><td colspan="7">▾ W2 SEP · 3 lớp · 21 lượt</td></tr>
+    <tr class="B-con"><td class="nm">MB-FT 101</td><td class="c">12</td><td class="c">5</td><td class="c">3</td><td class="c">2</td><td class="c">2</td><td class="c">4</td></tr>
+    <tr class="B-con"><td class="nm">MB-FOU 12</td><td class="c">4</td><td class="c">1</td><td class="c">1</td><td class="c">1</td><td class="c">1</td><td class="c">3</td></tr>
+    <tr class="B-con"><td class="nm">MB-FT 102</td><td class="c">5</td><td class="c">3</td><td class="c">1</td><td class="c">1</td><td class="c">0</td><td class="c">0</td></tr>
+    <tr class="B-lon"><td colspan="7">▸ W1 SEP · 3 lớp · 14 lượt</td></tr>
+   </table></div>
+   <div class="note">Hàng lớn: dải chữ hoa nhỏ 10px, nền tối nhất, <b>dính</b> dưới tiêu đề bảng khi cuộn, một con số tổng. Hàng con: như hàng thường. Gọn cho danh sách dài, nhưng <b>mất số tổng theo cột</b> (Đạt/SOS của cả tuần), và hai dải chữ hoa (tiêu đề bảng + dải nhóm) chồng nhau dễ lẫn.</div>
+  </div>
+ </div>
+ <div class="card" style="margin-top:14px;padding:10px 12px;background:#10213a;border-color:#2f5580">
+  <b>Khuyến nghị: phương án A cho mọi nơi.</b>
+  <span class="mu" style="display:block;margin-top:4px;font-size:11.5px;line-height:1.55">(1) Hàng cha ở Tổng hợp Test + SOS, BranchPulse, Vấn đề học viên <b>có số của riêng nó</b> — A giữ số tổng thẳng cột, B phải bỏ hoặc nhét vào một chuỗi chữ. (2) Một kiểu dùng được cho cả bảng lẫn danh sách (Việc cần làm, Học viên &amp; Lớp). (3) Gần với hộp lớp ở Học viên &amp; Lớp đang có (đã có nền riêng) nên sửa ít nhất. (4) Không thêm dải chữ hoa thứ hai cạnh tiêu đề bảng. Vạch trái luôn <b>màu xanh trung tính</b>, không dùng màu trạng thái — tránh lẫn với đỏ quá hạn (G-4).</span>
+ </div>
+</div></div>
+
+<h3>(a2) Áp phương án A vào ba chỗ thật</h3>
+<div class="pp">
+ <div class="loc"><b class="k">VỊ TRÍ</b><span>① Phân tích › Tổng hợp Test + SOS › "Theo tuần" (tuần → lớp) · ② Học viên &amp; Lớp › hộp lớp → học viên · ③ Tổng quan › Việc cần làm của tôi, và Công việc › Hỗ trợ học viên (nhóm → dòng việc)</span></div>
+ <div class="w">
+  <div class="lab">① Tổng hợp Test + SOS — xem (a1) phương án A</div>
+  <div class="two" style="margin-top:12px">
+   <div>
+    <div class="lab bad">② Học viên &amp; Lớp — hiện tại</div>
+    <div class="card"><table><colgroup><col style="width:36%"><col style="width:34%"><col style="width:30%"></colgroup>
+     <tr class="O-lon"><td colspan="3" style="background:#15223a"><span class="tw">▾</span><b>MB-FOU 12</b> <span class="mu">Foundation · 4 học viên · GVCN Trần Ngọc Hà</span></td></tr>
+     <tr><th>Học viên</th><th>Kết quả gần nhất</th><th>Việc tiếp theo</th></tr>
+     <tr><td><span style="color:var(--bl)">Dương Ngọc Ánh</span> <span class="dim" style="font-size:10px">000011</span></td><td><b>Đạt 0/4 môn</b> <span class="n r">SOS 3</span></td><td><span class="old y">Xác định nguyên nhân R</span></td></tr>
+     <tr><td><span style="color:var(--bl)">Hoàng Thanh Mai</span> <span class="dim" style="font-size:10px">000009</span></td><td><b>Đạt 0/4 môn</b> <span class="n r">SOS 3</span></td><td><span class="old bl">W · Cập nhật kết quả · trước CN 14/09</span></td></tr>
+    </table></div>
+    <div class="note">Hộp lớp có nền nhưng hàng HV cũng cùng độ sáng; tiêu đề cột nằm giữa cha và con làm hai bên tách rời.</div>
+   </div>
+   <div>
+    <div class="lab good">② Học viên &amp; Lớp — mới (A)</div>
+    <div class="card"><table><colgroup><col style="width:36%"><col style="width:34%"><col style="width:30%"></colgroup>
+     <tr><th>Học viên</th><th>Kết quả gần nhất</th><th>Việc tiếp theo</th></tr>
+     <tr class="A-lon"><td colspan="3"><span class="tw">▾</span>MB-FOU 12 <span class="mu" style="font-weight:400">· Foundation · 4 HV · GVCN Trần Ngọc Hà</span> <span class="n y" style="margin-left:6px">9 bài chờ chấm</span> <span class="n gy">3 Case mở</span></td></tr>
+     <tr class="A-con"><td>Dương Ngọc Ánh <span class="dim" style="font-size:10px">000011</span></td><td><b>Đạt 0/4 môn</b> <span class="n r">SOS 3</span></td><td>Đề ra PA R <span class="od">· ⚠ 18 ngày</span></td></tr>
+     <tr class="A-con"><td>Hoàng Thanh Mai <span class="dim" style="font-size:10px">000009</span></td><td><b>Đạt 0/4 môn</b> <span class="n r">SOS 3</span></td><td>Ghi kết quả W <span class="dim">· hạn CN 14/09</span></td></tr>
+     <tr class="A-lon dong"><td colspan="3"><span class="tw">▸</span>MB-FT 101 <span class="mu" style="font-weight:400">· Fast Track · 8 HV · GVCN Trần Ngọc Hà</span> <span class="n y" style="margin-left:6px">28 bài chờ chấm</span></td></tr>
+    </table></div>
+    <div class="note">Tiêu đề cột nằm <b>một lần</b> trên cùng, dính khi cuộn. Hộp lớp thành hàng lớn kiểu A; bỏ khung thẻ riêng của từng lớp (bớt một lớp viền).</div>
+   </div>
+  </div>
+  <div class="two" style="margin-top:14px">
+   <div>
+    <div class="lab bad">③ Việc cần làm — hiện tại</div>
+    <div class="card">
+     <div class="oldli" style="border-top:0"><div class="r1"><span class="tw">▾</span><b>Case học thuật</b><span class="n gy">8</span><span class="mu">3 quá hạn · 1 hạn hôm nay</span></div></div>
+     <div class="oldli"><div class="r1"><b>Lê Quang Huy</b><span class="old gy">MB-FT 101</span><span class="old gy">MT1</span><span class="old r">⚠ Quá hạn làm</span></div><div class="r2">Học tutor — quá hạn 15 ngày</div><div class="r3">Bạn · Hạn 30/08 <span class="old bl">▶ Đang thực hiện</span><span class="sp"></span><span class="btn">Đánh dấu đã làm</span></div></div>
+    </div>
+    <div class="note">Nhóm và dòng việc cùng lề trái, cùng nền; chỉ khác chữ đậm một bậc (<span class="src">NhomViec.tsx:26-75</span>, <span class="src">WorkList.tsx:47</span>).</div>
+   </div>
+   <div>
+    <div class="lab good">③ Việc cần làm — mới (A)</div>
+    <div class="card">
+     <div class="grpA" style="border-top:0"><span class="tw">▾</span>Case học thuật<span class="cnt">8</span><span class="sp"></span><span class="od" style="font-size:11px">⚠ 3 quá hạn</span></div>
+     <div class="conA">
+      <div class="li"><div><div class="t">Làm PA: Học tutor</div><span class="sub">Lê Quang Huy · MB-FT 101 · MT1</span></div><div class="hn">hạn 30/08<br><span class="od">⚠ quá hạn 15 ngày</span></div><div class="ac"><span class="btn">Đã làm</span></div></div>
+      <div class="li"><div><div class="t">Ghi kết quả PA Listening</div><span class="sub">Dương Ngọc Ánh · MB-FOU 12 · Giữa khoá</span></div><div class="hn">hạn CN 14/09<br><span class="td">hôm nay</span></div><div class="ac"><span class="btn">Ghi kết quả</span></div></div>
+     </div>
+     <div class="grpA dong" style="background:#131f35;box-shadow:inset 3px 0 0 #3a4f72"><span class="tw">▸</span>Chấm điểm<span class="cnt">3</span><span class="sp"></span><span class="od" style="font-size:11px">⚠ 1 quá hạn</span></div>
+    </div>
+    <div class="note">Dòng việc thụt 16px, nền tối hơn; cột hạn cố định 150px nên mọi hạn thẳng một cột.</div>
+   </div>
+  </div>
+ </div>
+</div>
+
+<h3>(a3) Các chỗ đang có hàng mở rộng — một component chung</h3>
+<div class="pp"><div class="w">
+ <table class="big"><colgroup><col style="width:30%"><col style="width:22%"><col style="width:48%"></colgroup>
+  <tr><th>Màn · file</th><th>Cha → con</th><th>Kiểu hiện tại (lỗi)</th></tr>
+  <tr><td>Phân tích › Tổng hợp Test + SOS<br><span class="src">phanTich/TongHopTestSos.tsx:115-133, 199-203</span></td><td>Tuần → lớp · lớp → đợt · đợt/chi nhánh → lớp</td><td>Con vẽ bằng chính hàm của cha; chỉ khác thụt 24px + chữ nhạt. Không nền, không đậm.</td></tr>
+  <tr><td>Học viên &amp; Lớp › hộp lớp<br><span class="src">students/StudentsPage.tsx:232-258</span> + <span class="src">BangHocVienLop.tsx:72-143</span></td><td>Lớp → học viên</td><td>Đầu hộp có nền <code>surface-2</code> (tốt), nhưng mỗi lớp một thẻ + thead riêng; con không thụt.</td></tr>
+  <tr><td>Việc cần làm (Tổng quan + Công việc › Hỗ trợ HV)<br><span class="src">worklist/NhomViec.tsx:26-75</span>, <span class="src">WorkList.tsx:47</span></td><td>Nhóm → dòng việc</td><td>Nhóm không nền; con không thụt; chỉ khác <code>font-semibold</code> với <code>font-medium</code>.</td></tr>
+  <tr><td>Tổng quan quản lý › BranchPulse<br><span class="src">worklist/BranchPulse.tsx:90-114</span></td><td>Chi nhánh → lớp</td><td>Con <code>pl-8</code>, cùng màu, cùng độ đậm.</td></tr>
+  <tr><td>Phân tích › Vấn đề học viên<br><span class="src">phanTich/VanDeHocVien.tsx:98-133</span></td><td>Kỹ năng → loại lỗi</td><td>Con <code>pl-8 text-slate-300</code>, không nền.</td></tr>
+  <tr><td>Hồ sơ lớp › Phân tích lớp<br><span class="src">classes/PhanTichLopTab.tsx:40-62</span></td><td>Môn → bảng lỗi</td><td>Con là một ô <code>colSpan</code> chứa bảng con — giữ, chỉ đổi hàng cha sang A.</td></tr>
+  <tr><td>Hồ sơ HV › Học thuật (SkillBoard)<br><span class="src">cases/SkillBoard.tsx:161-245, 278-321</span></td><td>Kỹ năng → thẻ Case → PA</td><td>Ba tầng khung lồng nhau. Đổi: hàng kỹ năng kiểu A; thẻ Case không khung (thụt + nền tối); PA mở ngăn Case (mockup 15).</td></tr>
+  <tr><td>Ý thức theo HV · Phối hợp SOS<br><span class="src">yThuc/ClassYThucCard.tsx:238-275</span>, <span class="src">PhoiHopSosSection.tsx:66-105</span>, <span class="src">ui/DongThoiGian.tsx:76-95</span></td><td>HV → vi phạm · lượt SOS → việc</td><td>Mỗi dòng một khung bo tròn + nút chữ "Mở/Đóng". Đổi sang A, bỏ chữ "Mở/Đóng" (dùng ▸/▾).</td></tr>
+ </table>
+ <div class="note">PR áp luật: thêm vào <code>web/src/index.css</code> hai lớp <code>.hang-lon</code> / <code>.hang-con</code> (và <code>.hang-lon.dong</code>), và một component <code>web/src/ui/HangMoRong.tsx</code>: <code>&lt;HangMoRong mo onMo tieuDe so cot&gt;</code> cho bảng, <code>&lt;NhomMoRong&gt;</code> cho danh sách. Mũi tên ▸/▾ trong cột riêng rộng 16px, có tooltip "Mở"/"Thu gọn" (G-7). Tám chỗ trên đổi sang dùng chung; <code>&lt;details&gt;</code> nhỏ trong panel (Đã điều chỉnh n lần, Đã từng dạy lớp này) giữ nguyên — không phải hàng.</div>
+</div></div>
+
+<!-- ================= (b) BADGE ================= -->
+<h3>(b1) Luật badge</h3>
+<div class="pp"><div class="w">
+ <div class="rule"><b class="m">B-1</b><span><b>Một badge = một trạng thái ngắn</b>, tối đa 3 từ + số: <span class="n y">Quá hạn 5 ngày</span> <span class="n y">Chờ chấm</span> <span class="n g">Đã ổn</span> <span class="n bl">Đang làm</span> <span class="n gy">Chưa có PA</span>. Một dòng tối đa <b>2 badge</b> (thường là SOS + trạng thái).</span></div>
+ <div class="rule"><b class="m">B-2</b><span><b>Việc cần làm là tiêu đề dòng</b> (động từ + đối tượng: "Ghi kết quả PA Listening", "Nhập điểm L, R"), không bao giờ nằm trong badge; nút trên dòng dùng động từ ngắn ("Ghi kết quả").</span></div>
+ <div class="rule"><b class="m">B-3</b><span><b>Hạn ở cột hoặc dòng phụ riêng</b>, chữ mờ: "hạn CN 30/08". Quá hạn nối ngay sau, <b>trong chữ</b>: <span class="od">⚠ quá hạn 15 ngày</span> — đỏ, không nền, không khung. Hạn hôm nay: <span class="td">hôm nay</span> (vàng, không ⚠). Số ngày, không lặp lại ngày.</span></div>
+ <div class="rule"><b class="m">B-4</b><span><b>⚠ chỉ nghĩa quá hạn</b> (G-4). Nhắc mềm (vi phạm chưa xử lý &gt; 5 ngày), cảnh báo trùng, SOS tạm thời, "dữ liệu demo", "lưu lỗi", mức khẩn → không ⚠.</span></div>
+ <div class="rule"><b class="m">B-5</b><span><b>Mỗi thông tin nói một lần</b> trên một dòng / một thẻ. Đã có tiêu đề "Ghi kết quả…" thì không thêm badge "Chờ cập nhật kết quả"; đã có "⚠ quá hạn" ở dòng hạn thì không thêm badge "Quá hạn …" hay đuôi "— quá hạn n ngày".</span></div>
+ <div class="rule"><b class="m">B-6</b><span><b>Tooltip giữ bản đầy đủ</b>: rê chuột vào hạn → "Ghi kết quả PA Xếp tự học · trước CN 30/08 · quá hạn 15 ngày".</span></div>
+ <div class="rule"><b class="m">B-7</b><span><b>Màu</b>: xanh = đang chạy · vàng = chờ / cần chú ý · xám = chưa bắt đầu, thông tin · xanh lá = xong / ổn · nền đỏ = chỉ SOS 3 và "Chưa đạt". Quá hạn = <b>chữ đỏ</b>, không phải badge. Viền nét đứt = số tạm (vd SOS tạm thời).</span></div>
+</div></div>
+
+<h3>(b2) Hiện tại → Mới — 26 mẫu nhãn thật</h3>
+<div class="pp"><div class="w">
+ <table class="big"><colgroup><col style="width:3%"><col style="width:31%"><col style="width:23%"><col style="width:13%"><col style="width:30%"></colgroup>
+  <tr><th>#</th><th>Hiện tại</th><th>Dựng ở</th><th>Màn</th><th>Mới</th></tr>
+  <tr><td>1</td><td class="ex"><span class="old r">⚠ Cập nhật kết quả · trước CN 30/08 · quá hạn</span></td><td class="src">shared/domain/display.ts:244, 293 · web/src/ui/Han.tsx:38 · SkillBoard.tsx:654</td><td class="mu">Hồ sơ HV, Việc cần làm</td><td class="ex">Việc: "Ghi kết quả PA" · hạn: "hạn CN 30/08 <span class="od">⚠ quá hạn 15 ngày</span>". SkillBoard:654 đang lấy <b>hạn làm</b> gắn nhãn cập nhật — sửa luôn.</td></tr>
+  <tr><td>2</td><td class="ex"><span class="old r">⚠ Xác minh nguyên nhân · hạn 09/09 · quá hạn 5 ngày</span></td><td class="src">display.ts:242 · tongQuan.ts:41</td><td class="mu">Việc cần làm, SkillBoard</td><td class="ex">Tiêu đề "Xác minh SOS Writing" · hạn "hạn 09/09 <span class="od">⚠ quá hạn 5 ngày</span>"</td></tr>
+  <tr><td>3</td><td class="ex"><span class="old r">⚠ Cần có phương án · hạn 27/08 · quá hạn 18 ngày</span></td><td class="src">display.ts:243</td><td class="mu">Việc cần làm</td><td class="ex">Tiêu đề "Đề ra PA học thuật Reading" · hạn "hạn 27/08 <span class="od">⚠ quá hạn 18 ngày</span>"</td></tr>
+  <tr><td>4</td><td class="ex"><span class="old r">⚠ Hạn nhập điểm 09/09 · quá hạn 5 ngày</span></td><td class="src">display.ts:247 · ScoreEntry.tsx:644, 649 · ChamDiemPage.tsx:194</td><td class="mu">Việc cần làm, nhập điểm</td><td class="ex">"hạn 09/09 <span class="od">⚠ quá hạn 5 ngày</span>"</td></tr>
+  <tr><td>5</td><td class="ex"><span class="old r">⚠ Quá hạn nhập điểm</span> <span class="old r">⚠ Quá hạn làm</span> <span class="old r">⚠ Quá hạn đề xuất PA học thuật</span> <span class="old r">⚠ Quá hạn xác minh</span> … (12 nhãn)</td><td class="src">server/src/worklist/mywork.ts:131-211 (GROUP_META.overdue), badge() :216 · WorkList.tsx:65-69</td><td class="mu">Việc cần làm</td><td class="ex"><b>Bỏ</b> — trùng với dòng hạn (B-5)</td></tr>
+  <tr><td>6</td><td class="ex"><span class="old bl">▶ Chờ xác minh · quá hạn 5 ngày</span></td><td class="src">mywork.ts:303 · lateText() :252-255</td><td class="mu">Việc cần làm</td><td class="ex"><span class="n y">Chờ xác minh</span> (bỏ ▶ và đuôi quá hạn)</td></tr>
+  <tr><td>7</td><td class="ex"><span class="n y" style="background:#e5c66a;color:#0c1726">Hạn hôm nay</span> (nền đặc, họ nhãn mức SOS)</td><td class="src">mywork.ts:217 · WorkList.tsx:68</td><td class="mu">Việc cần làm</td><td class="ex">Trong cột hạn: "hạn CN 14/09 · <span class="td">hôm nay</span>"</td></tr>
+  <tr><td>8</td><td class="ex">Câu lý do "Học tutor <b>— quá hạn 15 ngày</b>"</td><td class="src">mywork.ts:411, 522, 651, 762, 906, 1001</td><td class="mu">Việc cần làm</td><td class="ex">"Học tutor" — bỏ đuôi quá hạn</td></tr>
+  <tr><td>9</td><td class="ex">"Giữa khoá: 2 môn chưa đạt — Vốn từ còn hẹp nên đọc chậm. — chưa có PA học thuật 22 ngày"</td><td class="src">mywork.ts:841</td><td class="mu">Việc cần làm</td><td class="ex">Dòng phụ "Dương Ngọc Ánh · MB-FOU 12 · Giữa khoá" (mô tả dài vào tooltip)</td></tr>
+  <tr><td>10</td><td class="ex"><span class="old gy">Chưa có PA học thuật</span> + nhóm "Thiếu PA học thuật" + nút "Đề xuất PA học thuật"</td><td class="src">mywork.ts:845, 849</td><td class="mu">Việc cần làm</td><td class="ex">Tiêu đề "Đề ra PA học thuật …", nút "Đề ra PA", bỏ badge</td></tr>
+  <tr><td>11</td><td class="ex"><span class="old bl">▶ Chờ cập nhật kết quả</span> + nút "Cập nhật kết quả"</td><td class="src">mywork.ts:767, 770, 177</td><td class="mu">Việc cần làm</td><td class="ex">Bỏ badge; nút "Ghi kết quả" (một cụm chữ còn 1 lần thay vì 4)</td></tr>
+  <tr><td>12</td><td class="ex"><span class="old r">⚠ Quá hạn xếp lớp tiếp</span> — luôn quá hạn dù không có hạn</td><td class="src">mywork.ts:699</td><td class="mu">Việc cần làm</td><td class="ex"><span class="n y">Chờ xếp lớp</span> (không ⚠)</td></tr>
+  <tr><td>13</td><td class="ex">Ngữ cảnh <span class="old gy">MT1</span> cho HV lớp thường (MB-FOU 12)</td><td class="src">mywork.ts:305-308</td><td class="mu">Việc cần làm</td><td class="ex">"Giữa khoá" / "Cuối khoá" (§2 luật chữ)</td></tr>
+  <tr><td>14</td><td class="ex"><span class="old bl">L · Cập nhật kết quả · trước CN 14/09</span></td><td class="src">shared/domain/hocVienLop.ts:247-248 · BangHocVienLop.tsx:125 · BangCanHoTro.tsx:81</td><td class="mu">Học viên &amp; Lớp, hồ sơ lớp</td><td class="ex">"Ghi kết quả L" + <span class="dim">hạn CN 14/09</span></td></tr>
+  <tr><td>15</td><td class="ex"><span class="old y">Xác định nguyên nhân R</span> cho Case <b>chưa có PA</b></td><td class="src">hocVienLop.ts:244</td><td class="mu">Học viên &amp; Lớp</td><td class="ex">"Đề ra PA R" (động từ sai nghĩa)</td></tr>
+  <tr><td>16</td><td class="ex"><span class="old y">Lớp còn 9 bài chưa nhập điểm</span> / <span class="old y">Bạn cần chấm: 8 bài</span></td><td class="src">shared/domain/people.ts:223</td><td class="mu">Hộp lớp, đầu hồ sơ lớp</td><td class="ex"><span class="n y">9 bài chờ chấm</span> · tooltip giữ câu cũ. <i class="mu">Cần chủ SP chốt: §4 vừa đặt tên câu cũ.</i></td></tr>
+  <tr><td>17</td><td class="ex"><span class="old r">Hết khoá · 4 HV cần xếp lớp tiếp</span></td><td class="src">hocVienLop.ts:142</td><td class="mu">Hộp lớp</td><td class="ex"><span class="n r">4 HV chờ xếp lớp</span></td></tr>
+  <tr><td>18</td><td class="ex"><span class="old r">3 Case đang mở</span> (tô đỏ)</td><td class="src">hocVienLop.ts:145</td><td class="mu">Hộp lớp</td><td class="ex"><span class="n gy">3 Case mở</span> — xám: đang mở không phải báo động</td></tr>
+  <tr><td>19</td><td class="ex"><span class="old y">SOS 2 · tạm thời</span> + ⚠ ở đợt thiếu điểm</td><td class="src">display.ts:186 · KetQuaDot.tsx:47</td><td class="mu">Học viên &amp; Lớp, hồ sơ HV</td><td class="ex"><span class="n y dash">SOS 2</span> viền nét đứt · tooltip "Tạm thời: 1/3 môn có điểm"</td></tr>
+  <tr><td>20</td><td class="ex">Đầu thẻ Case "0/1 PA có kết quả" + "<span class="od">PA tiếp: hạn 30/08/2026 · quá hạn</span>"</td><td class="src">shared/domain/hoSoHocVien.ts:69, 77-81 · SkillBoard.tsx:292-295</td><td class="mu">Hồ sơ HV</td><td class="ex">"1 PA · chưa có kết quả" — hạn chỉ nói ở PA</td></tr>
+  <tr><td>21</td><td class="ex">Cột 4 "Cập nhật PA · 30/08/2026" cạnh cột 3 <span class="old bl">▶ Đang xử lý</span>, và "Đang xử lý" lặp ở đầu thẻ</td><td class="src">SkillBoard.tsx:185-188, 220-223 · nextStepOf :769</td><td class="mu">Hồ sơ HV</td><td class="ex">Một ô Việc tiếp: "Ghi kết quả PA" + "hạn CN 30/08 <span class="od">⚠ 15 ngày</span>"; "Đang xử lý" một lần</td></tr>
+  <tr><td>22</td><td class="ex">Ô đầu hồ sơ "Làm PA Listening" / "quá hạn 30/08/2026" (đọc như 30 ngày)</td><td class="src">server/src/students/profile.ts:469-479 · StudentDetailPage.tsx:453-455</td><td class="mu">Đầu hồ sơ HV</td><td class="ex">"Ghi kết quả PA Listening" / <span class="od">⚠ quá hạn 15 ngày</span></td></tr>
+  <tr><td>23</td><td class="ex">Thanh PA "Xếp tự học · Đang thực hiện · Quá hạn cập nhật" (bị cắt)</td><td class="src">shared/domain/hanhTrinh.ts:160 · HanhTrinh.tsx:337</td><td class="mu">Hành trình</td><td class="ex">"Xếp tự học"; viền đỏ = quá hạn; đủ chữ ở tooltip</td></tr>
+  <tr><td>24</td><td class="ex"><span class="old y">⚠ cũ nhất 9 ngày</span> · "⚠ đã 6 ngày" · "<span class="old y">⚠ 1 học viên có vi phạm chưa xử lý quá 5 ngày</span>" · tab "Ý thức &amp; Phối hợp ⚠"</td><td class="src">yThuc.ts:231, 237 · ClassYThucCard.tsx:259, 288 · StudentYThucSection.tsx:122, 125 · yThuc/board.ts:88 · HangTab.tsx:24</td><td class="mu">Ý thức</td><td class="ex"><span class="n y">Chưa xử lý 9 ngày</span> · dòng phụ "6 ngày" · tab có chấm vàng + số — <b>không ⚠</b> (nhắc mềm, W02)</td></tr>
+  <tr><td>25</td><td class="ex">"· ⚠ cập nhật trễ" trong lịch sử PA</td><td class="src">SkillBoard.tsx:599 · CasePanel.tsx:573</td><td class="mu">Hồ sơ HV, ngăn Case</td><td class="ex"><span class="dim">"ghi trễ 3 ngày"</span> — chữ mờ, không ⚠ (chuyện đã qua)</td></tr>
+  <tr><td>26</td><td class="ex"><code>&lt;Alert&gt;</code> luôn tự gắn ⚠ (Dữ liệu demo, Lưu lỗi, Khẩn/Ưu tiên…)</td><td class="src">web/src/ui/ui.tsx:185-199 (⚠ ở :195) · CaseBoardPage.tsx:232</td><td class="mu">Toàn web</td><td class="ex">Tách <code>&lt;QuaHan&gt;</code> (có ⚠, chữ đỏ) khỏi <code>&lt;Alert&gt;</code> (không ⚠)</td></tr>
+ </table>
+ <div class="note"><b>Sửa ở gốc, không sửa từng màn:</b> (1) <span class="src">display.ts:241-306</span> <code>DEADLINE_LABEL</code> + <code>deadlineView</code> trả <b>mảnh rời</b> <code>{viec, han: "hạn CN 30/08", quaHanNgay: 15, tone}</code> thay vì chuỗi ghép; <code>&lt;Han&gt;</code> vẽ "hạn … ⚠ quá hạn n ngày" dạng chữ, tooltip bản đầy đủ. (2) <span class="src">mywork.ts</span>: bỏ <code>GROUP_META.overdue</code>, <code>lateText</code> trong <code>statusLabel</code> và đuôi "— quá hạn" trong <code>reason</code>; thêm trường <code>tieuDe</code> (việc). (3) <span class="src">WorkList.tsx:38-94</span> <code>DongViec</code> dựng theo lưới cố định (tiêu đề · hạn 150px · nút). (4) <span class="src">ui.tsx:195</span> tách ⚠ ra khỏi <code>Alert</code>. Bốn chỗ này xử lý khoảng 2/3 bảng trên.</div>
+</div></div>
+
+<h3>(b3) Trước / sau — Việc cần làm</h3>
+<div class="pp">
+ <div class="loc"><b class="k">VỊ TRÍ</b><span>Tổng quan › khối "Việc cần làm của tôi" (GV) · Công việc › Hỗ trợ học viên (QL). Cùng component <code>DongViec</code>.</span></div>
+ <div class="w two">
+  <div>
+   <div class="lab bad">Trước (chụp thật: 20-viec-can-lam-1440.png)</div>
+   <div class="card">
+    <div class="oldli" style="border-top:0"><div class="r1"><b>Đỗ Minh Khôi</b><span class="old gy">MB-FT 101</span><span class="old gy">MT2</span><span class="old r">⚠ Quá hạn nhập điểm</span></div><div class="r2">Listening, Reading — quá hạn 5 ngày</div><div class="r3">Bạn <span class="old r">⚠ Hạn nhập điểm 09/09 · quá hạn 5 ngày</span><span class="old bl">▶ Chưa nhập điểm</span></div><div style="margin-top:6px"><span class="btn">Nhập điểm Listening, Reading</span></div></div>
+    <div class="oldli"><div class="r1"><b>Dương Ngọc Ánh</b><span class="old gy">MB-FOU 12</span><span class="old gy">MT1</span><span class="n y">SOS 2</span><span class="old r">⚠ Quá hạn đề xuất PA học thuật</span></div><div class="r2">Giữa khoá: 2 môn chưa đạt — Vốn từ còn hẹp nên đọc chậm. — chưa có PA học thuật 22 ngày</div><div class="r3">Chưa có người phụ trách <span class="old r">⚠ Cần có phương án · hạn 27/08 · quá hạn 18 ngày</span><span class="old gy">Chưa có PA học thuật</span></div><div style="margin-top:6px"><span class="btn">Đề xuất PA học thuật</span></div></div>
+    <div class="oldli"><div class="r1"><b>Dương Ngọc Ánh</b><span class="old gy">MB-FOU 12</span><span class="old gy">MT1</span><span class="n y">SOS 2</span><span class="n y" style="background:#e5c66a;color:#0c1726">Hạn hôm nay</span></div><div class="r2">Nghe lại bài trên lớp ở tốc độ 0.8 rồi 1.0</div><div class="r3">Bạn <span class="old bl">◷ Cập nhật kết quả · trước CN 14/09</span><span class="old bl">▶ Chờ cập nhật kết quả</span></div><div style="margin-top:6px"><span class="btn">Cập nhật kết quả</span></div></div>
+   </div>
+   <div class="note">Dòng 1 nói "quá hạn 5 ngày" <b>ba lần</b>; dòng 2 nói "chưa có PA" <b>bốn lần</b>; dòng 3 nói "cập nhật kết quả" <b>ba lần</b>. 5–6 badge một dòng, badge dài nhất 45 ký tự.</div>
+  </div>
+  <div>
+   <div class="lab good">Sau</div>
+   <div class="card">
+    <div class="li" style="border-top:0"><div><div class="t">Nhập điểm L, R · MT2</div><span class="sub">Đỗ Minh Khôi · MB-FT 101</span></div><div class="hn">hạn 09/09<br><span class="od">⚠ quá hạn 5 ngày</span></div><div class="ac"><span class="btn">Nhập điểm</span></div></div>
+    <div class="li"><div><div class="t">Đề ra PA học thuật Reading <span class="n y" style="margin-left:4px">SOS 2</span></div><span class="sub">Dương Ngọc Ánh · MB-FOU 12 · Giữa khoá · chưa ai phụ trách</span></div><div class="hn">hạn 27/08<br><span class="od">⚠ quá hạn 18 ngày</span></div><div class="ac"><span class="btn">Đề ra PA</span></div></div>
+    <div class="li"><div><div class="t">Ghi kết quả PA Listening <span class="n y" style="margin-left:4px">SOS 2</span></div><span class="sub">Dương Ngọc Ánh · MB-FOU 12 · Nghe lại bài trên lớp…</span></div><div class="hn">hạn CN 14/09<br><span class="td">hôm nay</span></div><div class="ac"><span class="btn">Ghi kết quả</span></div></div>
+   </div>
+   <div class="note">Mỗi dòng: <b>việc</b> (tiêu đề) · một dòng phụ (HV · lớp · đợt) · tối đa 1 badge · <b>cột hạn</b> 150px · một nút. Mọi hạn thẳng một cột, đọc dọc là biết cái nào gấp.</div>
+  </div>
+ </div>
+</div>
+
+<h3>(b4) Trước / sau — Hồ sơ HV › Học thuật (SkillBoard)</h3>
+<div class="pp">
+ <div class="loc"><b class="k">VỊ TRÍ</b><span>Học viên &amp; Lớp › bấm tên HV › tab <b>Học thuật</b> › hàng kỹ năng (mở ra thẻ Case)</span></div>
+ <div class="w two">
+  <div>
+   <div class="lab bad">Trước (04-ghi-ket-qua-inline-1440.png)</div>
+   <div class="card" style="padding:10px 12px">
+    <div class="fl"><b>Listening</b><span class="mu">mới có một bài · W3 AUG 2026</span><span class="old r">20/40</span><span class="sp"></span><span class="od" style="font-weight:400">Cập nhật PA · 30/08/2026</span></div>
+    <div class="fl" style="margin-top:4px;padding-left:180px"><span>Giữa khoá - Listening dưới kỳ vọng</span><span class="old bl">▶ Đang xử lý</span></div>
+    <div style="border:1px solid #2b3d5c;border-radius:8px;margin-top:8px;padding:8px 10px">
+     <div class="fl"><span>Listening · Giữa khoá - Listening dưới kỳ vọng</span><span class="sp"></span><b style="font-size:11px">0/1 PA có kết quả</b><span class="n y">SOS 2</span></div>
+     <div class="fl"><span class="mu">Ngôn ngữ · mở 23/08/2026</span><span class="sp"></span><span class="od" style="font-weight:400;font-size:10.5px">PA tiếp: hạn 30/08/2026 · quá hạn</span><span class="old bl">▶ Đang xử lý</span></div>
+     <div class="fl" style="margin-top:8px;border-top:1px solid #22314a;padding-top:6px"><span>▶ Nghe lại bài trên lớp ở tốc độ 0.8 rồi 1.0</span><span class="sp"></span><span class="mu">Chưa có kết quả</span></div>
+     <div class="fl" style="justify-content:flex-end;margin-top:4px"><span class="old r">⚠ Cập nhật kết quả · trước CN 30/08 · quá hạn</span><span class="old gy">Dự kiến kết thúc 14/09</span></div>
+    </div>
+   </div>
+   <div class="note">Một hạn (30/08) hiện <b>4 lần</b> với 3 cách nói; "Đang xử lý" 2 lần; năm "2026" lặp 4 lần.</div>
+  </div>
+  <div>
+   <div class="lab good">Sau</div>
+   <div class="card"><table><colgroup><col style="width:22%"><col style="width:14%"><col style="width:36%"><col style="width:28%"></colgroup>
+    <tr><th>Kỹ năng</th><th class="c">Gần nhất</th><th>Case</th><th>Việc tiếp</th></tr>
+    <tr class="A-lon"><td><span class="tw">▾</span>Listening</td><td class="c"><span class="n r">20/40</span></td><td style="font-weight:600;font-size:11.5px">Listening dưới kỳ vọng <span class="n bl">Đang xử lý</span></td><td style="font-weight:400;font-size:11px;line-height:1.3">Ghi kết quả PA<br><span class="od">⚠ quá hạn 15 ngày</span></td></tr>
+    <tr class="A-con"><td colspan="2">PA · Xếp tự học</td><td>Nghe lại bài ở tốc độ 0.8 → 1.0<span class="sub">Trần Ngọc Hà · 24/08 → 14/09</span></td><td><span class="dim">hạn CN 30/08</span> <span class="btn" style="margin-left:4px">Ghi kết quả</span></td></tr>
+    <tr class="A-lon dong"><td><span class="tw">▸</span>Reading</td><td class="c"><span class="n r">21/40</span></td><td style="font-weight:600;font-size:11.5px">Reading dưới kỳ vọng <span class="n gy">Chưa có PA</span></td><td style="font-weight:400;font-size:11px">Đề ra PA</td></tr>
+    <tr class="A-lon dong"><td><span class="tw">▸</span>Writing</td><td class="c"><span class="n r">13/20</span></td><td style="font-weight:400" class="dim">Không có Case</td><td></td></tr>
+   </table></div>
+   <div class="note">Hạn và quá hạn nói <b>một lần</b> ở hàng kỹ năng; hạn gốc ở hàng PA. Bấm hàng PA mở ngăn Case (mockup 15 §3) — không trải form trong trang.</div>
+  </div>
+ </div>
+</div>
+
+<h3>(b5) Trước / sau — Học viên &amp; Lớp</h3>
+<div class="pp">
+ <div class="loc"><b class="k">VỊ TRÍ</b><span>Học viên &amp; Lớp (trang chính) › hộp lớp · cột <b>Kết quả gần nhất</b> và <b>Việc tiếp theo</b></span></div>
+ <div class="w two">
+  <div>
+   <div class="lab bad">Trước (21-hoc-vien-lop-1440.png)</div>
+   <div class="card"><table><colgroup><col style="width:28%"><col style="width:38%"><col style="width:34%"></colgroup>
+    <tr class="O-lon"><td colspan="3" style="background:#15223a"><span class="tw">▾</span><b>MB-FOU 12</b> <span class="mu">Foundation · 4 HV</span> <span class="old y">Lớp còn 9 bài chưa nhập điểm</span> <span class="old r">3 Case đang mở</span> <span class="dim">+1</span></td></tr>
+    <tr style="height:58px"><td>Bùi Khánh Linh</td><td><b>Đạt 1/3 môn đã chấm</b> <span class="n y">SOS 2 · tạm thời</span><span class="sub">Giữa khoá · chưa đạt L 27/40, R 26/40 · còn 1 môn chưa…</span></td><td class="dim">—</td></tr>
+    <tr><td>Dương Ngọc Ánh</td><td><b>Đạt 0/4 môn</b> <span class="n r">SOS 3</span></td><td><span class="old y">Xác định nguyên nhân R</span><br><span class="old bl" style="margin-top:3px">L · Cập nhật kết quả · trước CN 14/09</span></td></tr>
+   </table></div>
+  </div>
+  <div>
+   <div class="lab good">Sau</div>
+   <div class="card"><table><colgroup><col style="width:28%"><col style="width:38%"><col style="width:34%"></colgroup>
+    <tr class="A-lon"><td colspan="3"><span class="tw">▾</span>MB-FOU 12 <span class="mu" style="font-weight:400">· Foundation · 4 HV</span> <span class="n y" style="margin-left:6px">9 bài chờ chấm</span> <span class="n gy">3 Case mở</span></td></tr>
+    <tr class="A-con"><td>Bùi Khánh Linh</td><td><b>Đạt 1/3 môn</b> <span class="n y dash">SOS 2</span><span class="sub">Giữa khoá · chưa đạt L, R · chờ chấm S</span></td><td class="dim">—</td></tr>
+    <tr class="A-con"><td>Dương Ngọc Ánh</td><td><b>Đạt 0/4 môn</b> <span class="n r">SOS 3</span></td><td style="line-height:1.35">Đề ra PA R <span class="od">⚠ 18 ngày</span><br>Ghi kết quả L <span class="dim">· CN 14/09</span></td></tr>
+   </table></div>
+   <div class="note">Badge hộp lớp là danh từ + số; "+1" bỏ khi đủ chỗ (tối đa 2 badge, §3.6). Việc tiếp theo: mỗi việc một dòng chữ, không khung; quá hạn nói bằng số ngày.</div>
+  </div>
+ </div>
+</div>

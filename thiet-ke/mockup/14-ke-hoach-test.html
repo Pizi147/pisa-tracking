@@ -1,0 +1,334 @@
+<style>
+  .pp{--bg:#0d1423;--s:#111b2d;--line:#293852;--tx:#e8eef7;--mu:#8f9db4;--bl:#84baff;--bb:#173451;--gr:#73d9a5;--gb:#15362a;--yl:#e5c66a;--yb:#3a3219;--rd:#ff9a9a;--rb:#3b2126;
+      background:var(--bg);color:var(--tx);font:12px Inter,Segoe UI,Arial,sans-serif;border-radius:8px;overflow:hidden;border:1px solid var(--line);font-variant-numeric:tabular-nums;margin-top:8px}
+  .pp .w{padding:12px}.pp .mu{color:var(--mu);font-size:11px}.pp .sp{flex:1}.pp .dim{color:#6f819e}
+  .pp h4{margin:0 0 8px;font-size:15px}
+  .pp .nav{display:flex;align-items:center;gap:18px;background:#0a1120;border-bottom:1px solid var(--line);padding:8px 12px;font-weight:700;color:var(--mu)}
+  .pp .nav .on{color:var(--tx);border-bottom:2px solid var(--bl);padding-bottom:3px}
+  .pp .tabs{display:flex;gap:16px;border-bottom:1px solid var(--line);margin:0 0 10px}.pp .tabs span{padding:6px 0;color:var(--mu);font-weight:700}.pp .tabs .on{color:var(--tx);border-bottom:2px solid var(--bl)}
+  .pp .btn{border:1px solid var(--line);border-radius:7px;padding:4px 9px;font-weight:700;font-size:11px;white-space:nowrap;display:inline-block;color:var(--tx)}
+  .pp .btn.p{background:#82b9f6;color:#0c1726;border-color:#82b9f6}.pp .btn.sm{padding:2px 8px;font-size:10.5px}.pp .btn.gh{border-color:transparent;color:var(--mu)}
+  .pp .ctl{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;margin-bottom:10px;position:relative}
+  .pp .sel{border:1px solid var(--line);border-radius:7px;padding:4px 9px;background:#0f1a2c;white-space:nowrap}
+  .pp .srch{display:inline-flex;align-items:center;gap:6px;border:1px solid #4f7fbf;border-radius:7px;padding:4px 9px;background:#0e1829;width:200px;box-shadow:0 0 0 2px rgba(132,186,255,.18)}
+  .pp .dd{position:absolute;left:150px;top:30px;width:260px;background:#16233a;border:1px solid #3a5178;border-radius:8px;padding:4px 0;z-index:2;box-shadow:0 8px 20px rgba(0,0,0,.4)}
+  .pp .dd div{display:grid;grid-template-columns:86px 1fr 50px;gap:6px;padding:5px 10px;font-size:11px}.pp .dd .hi{background:#1d3150}
+  .pp .dd mark{background:none;color:var(--bl);font-weight:800}
+  .pp .seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}.pp .seg span{padding:4px 10px;color:var(--mu);font-weight:700}.pp .seg .on{background:var(--bb);color:var(--bl)}
+  .pp .n{display:inline-block;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:700;white-space:nowrap}
+  .pp .y{background:var(--yb);color:var(--yl)}.pp .bl{background:var(--bb);color:var(--bl)}.pp .gy{background:#1d2a40;color:#b7c2d6}.pp .r{background:var(--rb);color:var(--rd)}.pp .g{background:var(--gb);color:var(--gr)}
+  .pp .ck{color:inherit;opacity:.7;font-weight:400;font-size:10px;margin-left:2px}
+  /* HÀNG LỚN / HÀNG NHỎ */
+  .pp .box{border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-top:8px;background:#0b1220}
+  .pp .hd{display:flex;gap:10px;align-items:center;padding:8px 10px 8px 9px;background:#182843;border-left:3px solid #5d8fce;font-weight:700;font-size:12.5px}
+  .pp .hd.cl{background:#152338;border-left-color:#3c5a86}
+  .pp .hd .tg{color:var(--mu);font-weight:800;width:10px}.pp .hd .x{font-weight:500;color:#c9d4e6;font-size:11.5px}
+  .pp .tw{overflow-x:auto}
+  .pp table{width:100%;border-collapse:collapse;table-layout:fixed}
+  .pp th{color:#6f819e;font-size:10px;padding:6px;font-weight:700;text-transform:uppercase;text-align:left;border-bottom:1px solid #22314a;background:#0e1626}
+  .pp th .hs{display:block;text-transform:none;font-weight:500;color:#56657f;font-size:9.5px}
+  .pp td{padding:4px 6px;height:52px;border-bottom:1px solid #1a263b;vertical-align:middle;font-size:11.5px}
+  .pp td.hv{padding-left:30px;color:var(--tx);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pp .sub{display:block;font-size:9.5px;color:#6f819e;font-weight:400;margin-top:1px}
+  .pp .sticky{position:sticky;left:0;background:#0b1220;z-index:1}
+  /* chip lịch */
+  .pp .sc{display:flex;align-items:center;gap:4px;border-radius:5px;padding:2px 6px;font-size:10.5px;font-weight:700;margin:2px 0;white-space:nowrap;border:1px solid transparent;height:18px;box-sizing:border-box}
+  .pp .sc .k{letter-spacing:.02em}.pp .sc .t{margin-left:auto;font-weight:600}
+  .pp .sc.dn{background:#15362a;color:#73d9a5;border-color:#1f4a3a}
+  .pp .sc.pl{background:#173451;color:#84baff;border-color:#24507a}
+  .pp .sc.lt{background:#3a3219;color:#e5c66a;border-color:#5a4b22}
+  .pp .sc.no{border:1px dashed #33445f;color:#5c6f8f;font-weight:600}
+  .pp .sc.sug{border:1px dashed #33445f;color:#7f93b3;font-weight:600}
+  .pp .sc .cw{color:#6f819e;font-weight:500;font-size:9.5px;margin-left:4px}
+  .pp .q{display:grid;grid-template-columns:1fr 1fr;gap:3px}.pp .q .sc{margin:0;font-size:10px;padding:1px 5px}
+  .pp .leg{display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:var(--mu);margin-top:8px;align-items:center}
+  .pp .leg .sc{display:inline-flex;margin:0;height:16px}
+  .pp .note{font-size:11px;color:#b7c2d6;margin-top:8px}
+  .pp .pop{background:#16233a;border:1px solid #3a5178;border-radius:9px;padding:10px 12px;width:290px;box-shadow:0 8px 22px rgba(0,0,0,.4)}
+  .pp .pop .r4{display:grid;grid-template-columns:20px 1fr 118px;gap:6px;align-items:center;height:28px;border-top:1px solid #22314a}
+  .pp .wkp{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#0f1a2c;font-size:11px}
+  .pp .wkp .ar{padding:2px 6px;color:var(--mu);font-weight:800}.pp .wkp .md{padding:2px 6px;border-left:1px solid var(--line);border-right:1px solid var(--line);font-weight:700;min-width:52px;text-align:center}
+  .pp .cb{display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border:1px solid #4f6a92;border-radius:3px;font-size:9px;line-height:1;color:#0c1726}
+  .pp .cb.on{background:#82b9f6;border-color:#82b9f6}
+  .pp .cb.dis{opacity:.35}
+  /* ngăn phải */
+  .pp .scene{display:flex;min-width:1000px;height:auto}
+  .pp .scene .left{flex:1;opacity:.35;padding:12px;pointer-events:none}
+  .pp .drawer{width:720px;border-left:1px solid #3a5178;background:#101a2c;display:flex;flex-direction:column;box-shadow:-10px 0 26px rgba(0,0,0,.4)}
+  .pp .drawer .dh{display:flex;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);font-weight:800;font-size:14px}
+  .pp .drawer .db{padding:12px 16px}
+  .pp .drawer .df{display:flex;align-items:center;gap:8px;padding:10px 16px;border-top:1px solid var(--line);background:#0c1526;position:sticky;bottom:0}
+  .pp .st{display:grid;grid-template-columns:22px 1fr;gap:8px;padding:10px 0;border-top:1px solid #22314a}.pp .st:first-child{border-top:0;padding-top:0}
+  .pp .num{width:20px;height:20px;border-radius:50%;background:#173451;color:#84baff;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:11px}
+  .pp .sh{display:flex;align-items:center;gap:8px;font-weight:700;margin-bottom:6px}
+  .pp .chip{border:1px solid var(--line);border-radius:999px;padding:3px 10px;color:var(--mu);font-weight:700}.pp .chip.on{background:var(--bb);color:var(--bl);border-color:#24507a}.pp .chip.dis{opacity:.4}
+  .pp .two{display:grid;grid-template-columns:1fr 330px;gap:16px}
+  .pp .lst{border:1px solid #22314a;border-radius:8px;background:#0b1220;overflow:hidden}
+  .pp .lr{display:grid;grid-template-columns:18px 1fr 132px;gap:6px;align-items:center;height:30px;padding:0 10px;border-top:1px solid #1a263b;font-size:11.5px}.pp .lr:first-child{border-top:0}
+  .pp .kr{display:grid;grid-template-columns:18px 26px 1fr 130px;gap:6px;align-items:center;height:30px;padding:0 10px;border-top:1px solid #1a263b;font-size:11.5px}
+  .pp .pv td{height:28px;padding:0 8px;font-size:11px;color:#c9d4e6}
+  .pp .phone{width:375px;border:1px solid var(--line);border-radius:20px;overflow:hidden;background:var(--bg);margin:0 auto}
+  .pp .phone .top{padding:10px 12px 8px;border-bottom:1px solid var(--line);background:#09111f}
+  .pp .bnav{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);background:#09111f;text-align:center;font-size:10.5px;color:var(--mu);font-weight:700}
+  .pp .bnav span{padding:9px 0}.pp .bnav .on{color:var(--bl)}
+</style>
+<style>
+  .loc{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;background:#1a1408;border:1px solid #5a3f16;border-left:3px solid #f0a04b;border-radius:8px;padding:6px 10px;font:11.5px Inter,Segoe UI,Arial,sans-serif;color:#f3d7ae;margin:10px 0 0}
+  .loc .t{color:#f0a04b;font-weight:900;letter-spacing:.08em;font-size:10px;margin-right:4px}
+  .loc b{color:#fff3e0}.loc .sep{color:#8a6a3a}
+  .loc .who{margin-left:auto;background:#2a1f0e;border:1px solid #5a3f16;border-radius:999px;padding:1px 8px;color:#f0c890;font-weight:700}
+  .ab{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+  .rec{display:inline-block;background:#15362a;color:#73d9a5;border:1px solid #1f4a3a;border-radius:999px;padding:1px 8px;font-size:10.5px;font-weight:800;margin-left:6px;vertical-align:middle}
+</style>
+
+<h2>14 · Test › Kế hoạch Test — xếp tách 4 kỹ năng L · R · W · S</h2>
+<p class="subtitle">Chỉ Quản lý. Fast Track bỏ cặp "RLW / S": mỗi đợt xếp riêng <b>L · R · W · S</b> (W = chấm cả W1 và W2). Lớp thường làm y như FT: lưới học viên × Giữa khoá | Cuối khoá, cạnh tuần ghi tuần trong khoá. Dữ liệu mẫu: bộ demo, hôm nay <b>14/09/2026 · W3 SEP</b>.</p>
+
+<!-- ============================================================ (1) FT -->
+<h3>(1) Fast Track — lưới cả lớp (vẽ theo phương án B ở mục 2)</h3>
+<div class="loc"><span class="t">VỊ TRÍ</span><b>Thanh trên cùng › Test</b><span class="sep">›</span><b>tab Kế hoạch Test</b> (tab thứ 2)<span class="sep">›</span>tab nhỏ <b>Fast Track</b><span class="sep">·</span>lối vào khác: Hồ sơ lớp › nút <b>Lịch kiểm tra</b> (mở sẵn lớp đó)<span class="who">Chỉ QL · GV không thấy tab này</span></div>
+<div class="pp">
+ <div class="nav"><span style="color:#84baff">PISA</span><span>Tổng quan</span><span>Học viên &amp; Lớp</span><span class="on">Test</span><span>Công việc</span><span class="sp"></span><span class="mu">Quản lý Monbay ▾</span></div>
+ <div class="w">
+  <h4>Test</h4>
+  <div class="tabs"><span>Lịch Test</span><span class="on">Kế hoạch Test</span></div>
+
+  <div class="ctl">
+   <span class="sel">Chi nhánh: Monbay ▾</span>
+   <span class="srch"><span class="dim">⌕</span><span>10<span style="color:var(--bl)">|</span></span><span class="sp"></span><span class="dim" title="Xoá">✕</span></span>
+   <span class="seg"><span class="on">Fast Track</span><span>Lớp thường</span></span>
+   <span class="sp"></span>
+   <span class="dim" title="Luật xếp lịch: hai đợt không thi cùng tuần (chặn); cách đúng một tuần thì hỏi lại. Lịch mặc định MT1 tuần học 6, MT2 tuần 12, MT3 tuần 16.">ⓘ</span>
+   <span class="btn p">Xếp lịch hàng loạt…</span>
+   <div class="dd">
+    <div class="hi"><b>MB-FT <mark>10</mark>1</b><span class="dim">Monbay · FT</span><span class="dim" style="text-align:right">5 HV</span></div>
+    <div><b>MB-FT <mark>10</mark>2</b><span class="dim">Monbay · FT</span><span class="dim" style="text-align:right">2 HV</span></div>
+    <div><b>CP-FT 1<mark>10</mark></b><span class="dim">Cẩm Phả · FT</span><span class="dim" style="text-align:right">5 HV</span></div>
+   </div>
+  </div>
+
+  <div class="box">
+   <div class="hd"><span class="tg">▾</span><span>MB-FT 101</span><span class="x">Monbay · 5 HV</span><span class="sp"></span><span class="x dim">MT3 đang thi · MT4 chưa xếp 4 em</span></div>
+   <div class="tw"><table style="min-width:960px">
+    <colgroup><col style="width:190px"><col><col><col><col><col></colgroup>
+    <tr><th class="sticky" style="padding-left:30px">Học viên</th><th>MT1</th><th>MT2</th><th>MT3</th><th>MT4</th><th>MT5</th></tr>
+    <tr><td class="hv sticky">Nguyễn Minh An</td>
+     <td><span class="sc dn" title="L R W: W2 JUL · S: W3 JUL"><span class="k">Xong</span><span class="t">W2 JUL <span class="ck">✓</span></span></span></td>
+     <td><span class="sc dn"><span class="k">Xong</span><span class="t">W3 AUG <span class="ck">✓</span></span></span></td>
+     <td><span class="sc pl"><span class="k">L R W</span><span class="t">W3 SEP</span></span><span class="sc pl"><span class="k">S</span><span class="t">W4 SEP</span></span></td>
+     <td><span class="sc no"><span class="k">+ xếp</span></span></td><td><span class="sc no"><span class="k">+ xếp</span></span></td></tr>
+    <tr><td class="hv sticky">Trần Thu Hà</td>
+     <td><span class="sc dn"><span class="k">Xong</span><span class="t">W2 JUL <span class="ck">✓</span></span></span></td>
+     <td><span class="sc dn"><span class="k">Xong</span><span class="t">W3 AUG <span class="ck">✓</span></span></span></td>
+     <td><span class="sc dn"><span class="k">Xong</span><span class="t">W3 SEP <span class="ck">✓</span></span></span></td>
+     <td><span class="sc no"><span class="k">+ xếp</span></span></td><td><span class="sc no"><span class="k">+ xếp</span></span></td></tr>
+    <tr><td class="hv sticky">Lê Quang Huy</td>
+     <td><span class="sc dn"><span class="k">Xong</span><span class="t">W2 JUL <span class="ck">✓</span></span></span></td>
+     <td><span class="sc dn"><span class="k">L R W</span><span class="t">W3 AUG <span class="ck">✓</span></span></span><span class="sc lt" title="Vắng Speaking W4 AUG → dời sang W1 SEP. Chưa chấm, quá hạn."><span class="k">S · dời</span><span class="t">W1 SEP</span></span></td>
+     <td><span class="sc pl"><span class="k">L R W</span><span class="t">W3 SEP</span></span><span class="sc pl"><span class="k">S</span><span class="t">W4 SEP</span></span></td>
+     <td><span class="sc no"><span class="k">+ xếp</span></span></td><td><span class="sc no"><span class="k">+ xếp</span></span></td></tr>
+    <tr><td class="hv sticky">Phạm Bảo Ngọc</td>
+     <td><span class="sc dn"><span class="k">Xong</span><span class="t">W2 JUL <span class="ck">✓</span></span></span></td>
+     <td><span class="sc dn"><span class="k">Xong</span><span class="t">W3 AUG <span class="ck">✓</span></span></span></td>
+     <td><span class="sc dn"><span class="k">Xong</span><span class="t">W3 SEP <span class="ck">✓</span></span></span></td>
+     <td><span class="sc pl" title="Bấm để sửa tuần từng kỹ năng"><span class="k">L R W S</span><span class="t">W4 OCT</span></span></td><td><span class="sc no"><span class="k">+ xếp</span></span></td></tr>
+    <tr><td class="hv sticky">Vũ Hải Đăng</td>
+     <td><span class="sc dn"><span class="k">Xong</span><span class="t">W2 JUL <span class="ck">✓</span></span></span></td>
+     <td><span class="sc dn"><span class="k">Xong</span><span class="t">W3 AUG <span class="ck">✓</span></span></span></td>
+     <td><span class="sc pl" title="GV đã ghi &quot;-&quot; tuần này; chốt hết CN 20/09 thì tự dời"><span class="k">L R W</span><span class="t">W3 SEP</span></span><span class="sc pl" title="QL xếp riêng: em báo nghỉ"><span class="k">S</span><span class="t">W1 OCT</span></span></td>
+     <td><span class="sc no"><span class="k">+ xếp</span></span></td><td><span class="sc no"><span class="k">+ xếp</span></span></td></tr>
+   </table></div>
+  </div>
+  <div class="box"><div class="hd cl"><span class="tg">▸</span><span>MB-FT 102</span><span class="x">Monbay · 2 HV</span><span class="sp"></span><span class="x dim">MT2 đang thi</span></div></div>
+
+  <div class="leg">
+   <span class="sc pl"><span class="k">L</span><span class="t">W3 SEP</span></span>đã xếp
+   <span class="sc dn"><span class="k">L</span><span class="t">W3 AUG <span class="ck">✓</span></span></span>đã thi xong
+   <span class="sc lt"><span class="k">S · dời</span><span class="t">W1 SEP</span></span>đã dời vì vắng
+   <span class="sc no"><span class="k">+ xếp</span></span>chưa xếp
+   <span class="dim" title="W = Writing: một lịch cho cả W1 và W2 (hai bài viết thi cùng buổi, chấm hai ô)">ⓘ W = chấm cả W1 và W2</span>
+  </div>
+
+  <div style="display:flex;gap:16px;align-items:flex-start;margin-top:12px">
+   <div class="pop">
+    <div style="font-weight:800;margin-bottom:6px">Lê Quang Huy · MT3</div>
+    <div class="r4" style="border-top:0"><span class="cb on">✓</span><span>L <span class="dim">Listening</span></span><span class="wkp"><span class="ar">‹</span><span class="md">W3 SEP</span><span class="ar">›</span></span></div>
+    <div class="r4"><span class="cb on">✓</span><span>R <span class="dim">Reading</span></span><span class="wkp"><span class="ar">‹</span><span class="md">W3 SEP</span><span class="ar">›</span></span></div>
+    <div class="r4"><span class="cb on">✓</span><span>W <span class="dim">Writing ⓘ</span></span><span class="wkp"><span class="ar">‹</span><span class="md">W3 SEP</span><span class="ar">›</span></span></div>
+    <div class="r4"><span class="cb on">✓</span><span>S <span class="dim">Speaking</span></span><span class="wkp" style="border-color:#4f7fbf"><span class="ar">‹</span><span class="md">W1 OCT</span><span class="ar">›</span></span></div>
+    <div class="mu" style="margin:6px 0">S: W4 SEP → W1 OCT · không trùng đợt khác.</div>
+    <div style="display:flex;gap:6px;justify-content:flex-end"><span class="btn sm">Huỷ</span><span class="btn p sm">Lưu</span></div>
+   </div>
+   <div class="note" style="margin-top:0;max-width:420px">Bấm một chip → hộp nhỏ ngay cạnh, <b>4 dòng L R W S</b>, mỗi dòng đổi tuần riêng. Ô tích để bỏ một kỹ năng khỏi đợt (đợt không thi Speaking, ví dụ) — thay cho "không yêu cầu" hiện có. Kỹ năng đã thi xong thì dòng đó chỉ đọc. Trùng tuần với đợt trước/sau → nút Lưu tắt, ghi <span class="n r">Chặn</span> và lý do.</div>
+  </div>
+ </div>
+</div>
+
+<!-- ============================================================ (2) A/B -->
+<h3 style="margin-top:22px">(2) Cần chọn: vẽ ô mỗi đợt thế nào cho gọn?</h3>
+<div class="options ab">
+ <div class="option" data-choice="a" onclick="toggleSelect(this)"><div class="letter">A</div><div class="content">
+  <h3>Luôn 4 chip, xếp 2 × 2</h3>
+  <p>Ô nào cũng cùng hình: L R ở trên, W S ở dưới — dò một kỹ năng theo cột rất dễ, bấm thẳng chip là sửa đúng kỹ năng. Nhưng 5 đợt × 4 chip = 20 chip mỗi em, lưới dày chữ, cả khi 4 kỹ năng cùng một tuần.</p>
+  <div class="pp"><div class="w" style="padding:8px"><div class="box" style="margin-top:0"><table>
+   <colgroup><col style="width:108px"><col><col></colgroup>
+   <tr><th style="padding-left:14px">HV</th><th>MT3</th><th>MT4</th></tr>
+   <tr><td class="hv" style="padding-left:14px">Nguyễn Minh An</td>
+    <td><div class="q"><span class="sc pl"><span class="k">L</span><span class="t">W3 SEP</span></span><span class="sc pl"><span class="k">R</span><span class="t">W3 SEP</span></span><span class="sc pl"><span class="k">W</span><span class="t">W3 SEP</span></span><span class="sc pl"><span class="k">S</span><span class="t">W4 SEP</span></span></div></td>
+    <td><div class="q"><span class="sc no"><span class="k">L</span></span><span class="sc no"><span class="k">R</span></span><span class="sc no"><span class="k">W</span></span><span class="sc no"><span class="k">S</span></span></div></td></tr>
+   <tr><td class="hv" style="padding-left:14px">Lê Quang Huy</td>
+    <td><div class="q"><span class="sc pl"><span class="k">L</span><span class="t">W3 SEP</span></span><span class="sc pl"><span class="k">R</span><span class="t">W3 SEP</span></span><span class="sc pl"><span class="k">W</span><span class="t">W3 SEP</span></span><span class="sc pl"><span class="k">S</span><span class="t">W4 SEP</span></span></div></td>
+    <td><div class="q"><span class="sc no"><span class="k">L</span></span><span class="sc no"><span class="k">R</span></span><span class="sc no"><span class="k">W</span></span><span class="sc no"><span class="k">S</span></span></div></td></tr>
+   <tr><td class="hv" style="padding-left:14px">Phạm Bảo Ngọc</td>
+    <td><div class="q"><span class="sc dn"><span class="k">L</span><span class="t">W3 SEP</span></span><span class="sc dn"><span class="k">R</span><span class="t">W3 SEP</span></span><span class="sc dn"><span class="k">W</span><span class="t">W3 SEP</span></span><span class="sc dn"><span class="k">S</span><span class="t">W3 SEP</span></span></div></td>
+    <td><div class="q"><span class="sc pl"><span class="k">L</span><span class="t">W4 OCT</span></span><span class="sc pl"><span class="k">R</span><span class="t">W4 OCT</span></span><span class="sc pl"><span class="k">W</span><span class="t">W4 OCT</span></span><span class="sc pl"><span class="k">S</span><span class="t">W4 OCT</span></span></div></td></tr>
+  </table></div></div></div>
+ </div></div>
+
+ <div class="option" data-choice="b" onclick="toggleSelect(this)"><div class="letter">B</div><div class="content">
+  <h3>Gộp khi cùng tuần, tách khi khác tuần <span class="rec">Khuyến nghị</span></h3>
+  <p>Cùng tuần + cùng trạng thái → một chip "L R W S · W4 OCT". Khác tuần → tách dòng, nên <b>nhìn là thấy đợt nào lệch tuần</b>. Đợt thi xong gọn thành "Xong ✓". Ô cao cố định 2 dòng (thẳng hàng); hiếm khi hơn 2 nhóm thì dòng 2 ghi "+1". Lý do: lưới 5 đợt gần vừa một màn, mắt chỉ phải đọc chỗ khác thường.</p>
+  <div class="pp"><div class="w" style="padding:8px"><div class="box" style="margin-top:0"><table>
+   <colgroup><col style="width:108px"><col><col></colgroup>
+   <tr><th style="padding-left:14px">HV</th><th>MT3</th><th>MT4</th></tr>
+   <tr><td class="hv" style="padding-left:14px">Nguyễn Minh An</td>
+    <td><span class="sc pl"><span class="k">L R W</span><span class="t">W3 SEP</span></span><span class="sc pl"><span class="k">S</span><span class="t">W4 SEP</span></span></td>
+    <td><span class="sc no"><span class="k">+ xếp</span></span></td></tr>
+   <tr><td class="hv" style="padding-left:14px">Lê Quang Huy</td>
+    <td><span class="sc pl"><span class="k">L R W</span><span class="t">W3 SEP</span></span><span class="sc pl"><span class="k">S</span><span class="t">W4 SEP</span></span></td>
+    <td><span class="sc no"><span class="k">+ xếp</span></span></td></tr>
+   <tr><td class="hv" style="padding-left:14px">Phạm Bảo Ngọc</td>
+    <td><span class="sc dn"><span class="k">Xong</span><span class="t">W3 SEP <span class="ck">✓</span></span></span></td>
+    <td><span class="sc pl"><span class="k">L R W S</span><span class="t">W4 OCT</span></span></td></tr>
+  </table></div></div></div>
+ </div></div>
+</div>
+
+<!-- ============================================================ (3) NGĂN XẾP HÀNG LOẠT -->
+<h3 style="margin-top:22px">(3) Ngăn "Xếp lịch hàng loạt" — rộng ~720px, chân cố định</h3>
+<div class="loc"><span class="t">VỊ TRÍ</span><b>Test › Kế hoạch Test</b><span class="sep">›</span>nút <b>Xếp lịch hàng loạt…</b> (cuối hàng điều khiển) → ngăn trượt từ phải, lưới vẫn thấy bên trái<span class="who">Chỉ QL</span></div>
+<div class="pp" style="overflow-x:auto"><div class="scene">
+ <div class="left"><div class="box" style="margin-top:0"><div class="hd"><span class="tg">▾</span><span>MB-FT 101</span></div><table><tr><td class="hv">Nguyễn Minh An</td></tr><tr><td class="hv">Trần Thu Hà</td></tr><tr><td class="hv">Lê Quang Huy</td></tr><tr><td class="hv">Phạm Bảo Ngọc</td></tr><tr><td class="hv">Vũ Hải Đăng</td></tr></table></div></div>
+ <div class="drawer">
+  <div class="dh">Xếp lịch hàng loạt · MB-FT 101<span class="sp"></span><span class="dim" title="Đóng">✕</span></div>
+  <div class="db">
+   <div class="st"><span class="num">1</span><div><div class="sh">Đợt</div>
+    <div style="display:flex;gap:6px"><span class="chip dis" title="Cả lớp đã thi xong">MT1 ✓</span><span class="chip dis" title="Chỉ còn bài dời của Lê Quang Huy">MT2</span><span class="chip">MT3</span><span class="chip on">MT4</span><span class="chip">MT5</span></div></div></div>
+
+   <div class="two" style="border-top:1px solid #22314a"><div class="st" style="border-top:0"><span class="num">2</span>
+    <div><div class="sh">Học viên <span class="n bl">4/5 đã chọn</span><span class="sp"></span><span class="btn sm gh">Chọn cả</span></div>
+     <div class="lst">
+      <div class="lr"><span class="cb on">✓</span><span>Nguyễn Minh An</span><span class="dim">MT4 chưa xếp</span></div>
+      <div class="lr"><span class="cb on">✓</span><span>Trần Thu Hà</span><span class="dim">MT4 chưa xếp</span></div>
+      <div class="lr"><span class="cb on">✓</span><span>Lê Quang Huy</span><span class="dim">MT4 chưa xếp</span></div>
+      <div class="lr"><span class="cb"></span><span>Phạm Bảo Ngọc</span><span class="dim">L R W S · W4 OCT</span></div>
+      <div class="lr"><span class="cb on">✓</span><span>Vũ Hải Đăng</span><span class="dim">MT4 chưa xếp</span></div>
+     </div></div>
+    </div><div class="st" style="border-top:0"><span class="num">3</span><div><div class="sh">Kỹ năng</div>
+     <div class="lst">
+      <div class="kr" style="border-top:0;grid-template-columns:18px 1fr"><span class="cb on">✓</span><span>Chọn cả 4 kỹ năng</span></div>
+      <div class="kr"><span class="cb on">✓</span><b>L</b><span class="dim">Listening</span><span class="wkp"><span class="ar">‹</span><span class="md">W1 OCT</span><span class="ar">›</span></span></div>
+      <div class="kr"><span class="cb on">✓</span><b>R</b><span class="dim">Reading</span><span class="wkp"><span class="ar">‹</span><span class="md">W1 OCT</span><span class="ar">›</span></span></div>
+      <div class="kr"><span class="cb on">✓</span><b>W</b><span class="dim" title="Một lịch cho cả W1 và W2">Writing ⓘ</span><span class="wkp"><span class="ar">‹</span><span class="md">W1 OCT</span><span class="ar">›</span></span></div>
+      <div class="kr"><span class="cb on">✓</span><b>S</b><span class="dim">Speaking</span><span class="wkp"><span class="ar">‹</span><span class="md">W2 OCT</span><span class="ar">›</span></span></div>
+     </div>
+     <div style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:11px"><span class="dim">Áp một tuần cho mọi kỹ năng đã chọn</span><span class="sp"></span><span class="wkp"><span class="ar">‹</span><span class="md">W1 OCT</span><span class="ar">›</span></span><span class="btn sm">Áp</span></div>
+    </div>
+   </div></div>
+
+   <div class="st"><span class="num">4</span><div><div class="sh">Xem trước <span class="mu" style="font-weight:500">16 bài · 13 lưu được (7 có cảnh báo) · 3 bị chặn</span></div>
+    <div class="lst"><table class="pv">
+     <colgroup><col style="width:150px"><col style="width:70px"><col style="width:120px"><col></colgroup>
+     <tr><th>Học viên</th><th>Kỹ năng</th><th>Tuần cũ → mới</th><th>Ghi chú</th></tr>
+     <tr><td>Nguyễn Minh An</td><td>L R W</td><td><span class="dim">—</span> → W1 OCT</td><td><span class="n y" title="Chỉ cách MT3 (S · W4 SEP) đúng một tuần.">Cảnh báo</span> <span class="dim">cách MT3 một tuần</span></td></tr>
+     <tr><td></td><td>S</td><td><span class="dim">—</span> → W2 OCT</td><td><span class="n gy">Mới</span></td></tr>
+     <tr><td>Trần Thu Hà</td><td>L R W S</td><td><span class="dim">—</span> → W1 · W2 OCT</td><td><span class="n gy">Mới</span></td></tr>
+     <tr><td>Lê Quang Huy</td><td>L R W</td><td><span class="dim">—</span> → W1 OCT</td><td><span class="n y">Cảnh báo</span> <span class="dim">cách MT3 một tuần</span></td></tr>
+     <tr><td></td><td>S</td><td><span class="dim">—</span> → W2 OCT</td><td><span class="n gy">Mới</span></td></tr>
+     <tr><td>Vũ Hải Đăng</td><td>L R W</td><td><span class="dim">—</span> → W1 OCT</td><td><span class="n r" title="Trùng tuần W1 OCT với MT3. Hai đợt không thi cùng một tuần.">Chặn</span> <span class="dim">trùng tuần với MT3 (S)</span></td></tr>
+     <tr><td></td><td>S</td><td><span class="dim">—</span> → W2 OCT</td><td><span class="n y">Cảnh báo</span> <span class="dim">cách MT3 một tuần</span></td></tr>
+    </table></div>
+    <div style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:11px"><span class="cb on">✓</span><span>Vẫn xếp 7 bài có cảnh báo</span><span class="sp"></span><span class="dim">Bài bị chặn không lưu — sửa tuần ở bước 3 hoặc bỏ tích em đó.</span></div>
+   </div></div>
+  </div>
+  <div class="df"><span class="btn">Đóng</span><span class="sp"></span><span class="mu">Lưu xong mà còn bài lỗi thì ngăn không đóng, chỉ giữ lại các em lỗi.</span><span class="btn p">Lưu lịch cho 4 em · 13 bài</span></div>
+ </div>
+</div></div>
+
+<!-- ============================================================ (4) LỚP THƯỜNG -->
+<h3 style="margin-top:22px">(4) Lớp thường — y như FT: học viên × Giữa khoá | Cuối khoá</h3>
+<div class="loc"><span class="t">VỊ TRÍ</span><b>Test › Kế hoạch Test</b><span class="sep">›</span>tab nhỏ <b>Lớp thường</b><span class="sep">·</span>lối vào khác: Hồ sơ lớp thường › nút <b>Lịch kiểm tra</b><span class="who">Chỉ QL</span></div>
+<div class="pp"><div class="w">
+ <div class="ctl">
+  <span class="sel">Chi nhánh: Tất cả ▾</span>
+  <span class="srch" style="box-shadow:none;border-color:var(--line)"><span class="dim">⌕</span><span class="dim">Tìm lớp…</span></span>
+  <span class="seg"><span>Fast Track</span><span class="on">Lớp thường</span></span>
+  <span class="sp"></span>
+  <span class="dim" title="Máy đề xuất tuần theo chương trình: FOU (8 tuần) Giữa W4, Cuối W8 · BE, ELE (10 tuần) Giữa W5, Cuối W10. GV ghi &quot;-&quot; ở lưới chấm thì môn đó tự dời sang tuần sau. QL đổi tuần ở đây.">ⓘ</span>
+  <span class="btn p">Xếp lịch hàng loạt…</span>
+ </div>
+
+ <div class="box">
+  <div class="hd"><span class="tg">▾</span><span>MB-FOU 12</span><span class="x">Monbay · FOU · 4 HV</span><span class="x dim">đang W8/8</span><span class="sp"></span></div>
+  <div class="tw"><table style="width:auto">
+   <colgroup><col style="width:190px"><col style="width:270px"><col style="width:270px"></colgroup>
+   <tr><th style="padding-left:30px">Học viên</th><th>Giữa khoá<span class="hs">đề xuất W4/8</span></th><th>Cuối khoá<span class="hs">đề xuất W8/8</span></th></tr>
+   <tr><td class="hv">Đỗ Gia Bảo</td><td><span class="sc dn"><span class="k">Xong</span><span class="t">W3 AUG <span class="ck">✓</span><span class="cw">W4/8</span></span></span></td><td><span class="sc dn"><span class="k">Xong</span><span class="t">W3 SEP <span class="ck">✓</span><span class="cw">W8/8</span></span></span></td></tr>
+   <tr><td class="hv">Hoàng Thanh Mai</td><td><span class="sc dn"><span class="k">Xong</span><span class="t">W3 AUG <span class="ck">✓</span><span class="cw">W4/8</span></span></span></td><td><span class="sc dn"><span class="k">L R W</span><span class="t">W3 SEP <span class="ck">✓</span><span class="cw">W8/8</span></span></span><span class="sc pl"><span class="k">S</span><span class="t">W3 SEP<span class="cw">W8/8</span></span></span></td></tr>
+   <tr><td class="hv">Bùi Khánh Linh</td><td><span class="sc dn"><span class="k">Xong</span><span class="t">W3 AUG <span class="ck">✓</span><span class="cw">W4/8</span></span></span></td><td><span class="sc pl"><span class="k">R W S</span><span class="t">W3 SEP<span class="cw">W8/8</span></span></span><span class="sc lt" title="GV ghi &quot;-&quot; Listening W3 SEP → tự dời. Tuần này đã qua hết khoá."><span class="k">L · dời</span><span class="t">W4 SEP<span class="cw">sau khoá</span></span></span></td></tr>
+   <tr><td class="hv">Dương Ngọc Ánh</td><td><span class="sc dn"><span class="k">Xong</span><span class="t">W3 AUG <span class="ck">✓</span><span class="cw">W4/8</span></span></span></td><td><span class="sc pl"><span class="k">L R W S</span><span class="t">W3 SEP<span class="cw">W8/8</span></span></span></td></tr>
+  </table></div>
+ </div>
+
+ <div class="box">
+  <div class="hd"><span class="tg">▾</span><span>BC-ELE 01</span><span class="x">Bãi Cháy · ELE · 3 HV</span><span class="x dim">đang W5/10</span><span class="sp"></span><span class="btn sm" title="Tạo bài Cuối khoá cho 3 em ở tuần máy đề xuất (W4 OCT · W10/10). Em nào đã có lịch thì giữ nguyên.">Xếp cả lớp theo đề xuất</span></div>
+  <div class="tw"><table style="width:auto">
+   <colgroup><col style="width:190px"><col style="width:270px"><col style="width:270px"></colgroup>
+   <tr><th style="padding-left:30px">Học viên</th><th>Giữa khoá<span class="hs">đề xuất W5/10</span></th><th>Cuối khoá<span class="hs">đề xuất W10/10</span></th></tr>
+   <tr><td class="hv">Nguyễn Hà My</td><td><span class="sc dn"><span class="k">L</span><span class="t">W3 SEP <span class="ck">✓</span><span class="cw">W5/10</span></span></span><span class="sc pl"><span class="k">R W S</span><span class="t">W3 SEP<span class="cw">W5/10</span></span></span></td><td><span class="sc sug" title="Chưa xếp — máy đề xuất"><span class="k">đề xuất</span><span class="t">W4 OCT<span class="cw">W10/10</span></span></span></td></tr>
+   <tr><td class="hv">Trần Bảo Long</td><td><span class="sc dn"><span class="k">L</span><span class="t">W3 SEP <span class="ck">✓</span><span class="cw">W5/10</span></span></span><span class="sc pl"><span class="k">R W S</span><span class="t">W3 SEP<span class="cw">W5/10</span></span></span></td><td><span class="sc sug"><span class="k">đề xuất</span><span class="t">W4 OCT<span class="cw">W10/10</span></span></span></td></tr>
+   <tr><td class="hv">Lê Thu Thảo</td><td><span class="sc dn"><span class="k">L</span><span class="t">W3 SEP <span class="ck">✓</span><span class="cw">W5/10</span></span></span><span class="sc pl"><span class="k">R W S</span><span class="t">W3 SEP<span class="cw">W5/10</span></span></span></td><td><span class="sc sug"><span class="k">đề xuất</span><span class="t">W4 OCT<span class="cw">W10/10</span></span></span></td></tr>
+  </table></div>
+ </div>
+ <div class="note">Chip giống FT, thêm <b>tuần trong khoá</b> mờ bên phải (W8/8, W10/10). Chip xanh lá = môn đã chấm đủ cả lớp đợt đó. Bài dời qua hết khoá ghi "sau khoá" để QL thấy ngay. Nút "Dời một môn" cũ bỏ: bấm chip là đổi tuần từng môn, từng em; muốn đổi cả lớp thì dùng ngăn hàng loạt.</div>
+
+ <div style="margin-top:14px;font-weight:700">Ngăn hàng loạt dùng chung — chỉ khác bước 1 và nhãn tuần</div>
+ <div class="box" style="max-width:720px;background:#101a2c;padding:10px 14px">
+  <div class="st" style="border:0;padding-top:0"><span class="num">1</span><div><div class="sh">Đợt</div><div style="display:flex;gap:6px"><span class="chip dis">Giữa khoá ✓</span><span class="chip on">Cuối khoá</span></div></div></div>
+  <div class="st"><span class="num">3</span><div><div class="sh">Kỹ năng</div>
+   <div class="lst">
+    <div class="kr" style="border-top:0;grid-template-columns:18px 26px 1fr 190px"><span class="cb on">✓</span><b>L</b><span class="dim">Listening</span><span><span class="wkp"><span class="ar">‹</span><span class="md">W4 OCT</span><span class="ar">›</span></span> <span class="dim">W10/10</span></span></div>
+    <div class="kr" style="grid-template-columns:18px 26px 1fr 190px"><span class="cb on">✓</span><b>R</b><span class="dim">Reading</span><span><span class="wkp"><span class="ar">‹</span><span class="md">W4 OCT</span><span class="ar">›</span></span> <span class="dim">W10/10</span></span></div>
+    <div class="kr" style="grid-template-columns:18px 26px 1fr 190px"><span class="cb on">✓</span><b>W</b><span class="dim">Writing</span><span><span class="wkp"><span class="ar">‹</span><span class="md">W4 OCT</span><span class="ar">›</span></span> <span class="dim">W10/10</span></span></div>
+    <div class="kr" style="grid-template-columns:18px 26px 1fr 190px"><span class="cb on">✓</span><b>S</b><span class="dim">Speaking</span><span><span class="wkp"><span class="ar">‹</span><span class="md">W5 OCT</span><span class="ar">›</span></span> <span class="dim">sau khoá</span></span></div>
+   </div></div></div>
+ </div>
+</div></div>
+
+<!-- ============================================================ (5) ĐIỆN THOẠI -->
+<h3 style="margin-top:22px">(5) Điện thoại 375px — lưới cuộn ngang trong thẻ</h3>
+<div class="loc"><span class="t">VỊ TRÍ</span><b>Thanh dưới › Test</b><span class="sep">›</span>tab Kế hoạch Test<span class="who">Chỉ QL</span></div>
+<div class="pp"><div class="w">
+ <div class="phone">
+  <div class="top">
+   <b style="font-size:15px">Test</b>
+   <div class="tabs" style="margin:6px 0 8px"><span>Lịch Test</span><span class="on">Kế hoạch Test</span></div>
+   <div style="display:flex;gap:6px;align-items:center"><span class="srch" style="width:auto;flex:1;box-shadow:none;border-color:var(--line)"><span class="dim">⌕</span><span>MB-FT 101</span></span><span class="sel" title="Chi nhánh, chương trình">Lọc ▾</span></div>
+   <div style="display:flex;gap:6px;align-items:center;margin-top:8px"><span class="seg"><span class="on">Fast Track</span><span>Lớp thường</span></span><span class="sp"></span><span class="btn p sm">Xếp hàng loạt…</span></div>
+  </div>
+  <div class="box" style="margin:8px">
+   <div class="hd"><span class="tg">▾</span><span>MB-FT 101</span><span class="x">5 HV</span></div>
+   <div class="tw"><table style="min-width:560px">
+    <colgroup><col style="width:112px"><col style="width:150px"><col style="width:150px"><col style="width:150px"></colgroup>
+    <tr><th class="sticky" style="padding-left:12px">HV</th><th>MT3</th><th>MT4</th><th>MT5</th></tr>
+    <tr><td class="hv sticky" style="padding-left:12px">Nguyễn Minh An</td><td><span class="sc pl"><span class="k">L R W</span><span class="t">W3 SEP</span></span><span class="sc pl"><span class="k">S</span><span class="t">W4 SEP</span></span></td><td><span class="sc no"><span class="k">+ xếp</span></span></td><td><span class="sc no"><span class="k">+ xếp</span></span></td></tr>
+    <tr><td class="hv sticky" style="padding-left:12px">Trần Thu Hà</td><td><span class="sc dn"><span class="k">Xong</span><span class="t">W3 SEP <span class="ck">✓</span></span></span></td><td><span class="sc no"><span class="k">+ xếp</span></span></td><td><span class="sc no"><span class="k">+ xếp</span></span></td></tr>
+    <tr><td class="hv sticky" style="padding-left:12px">Lê Quang Huy</td><td><span class="sc pl"><span class="k">L R W</span><span class="t">W3 SEP</span></span><span class="sc pl"><span class="k">S</span><span class="t">W4 SEP</span></span></td><td><span class="sc no"><span class="k">+ xếp</span></span></td><td><span class="sc no"><span class="k">+ xếp</span></span></td></tr>
+    <tr><td class="hv sticky" style="padding-left:12px">Phạm Bảo Ngọc</td><td><span class="sc dn"><span class="k">Xong</span><span class="t">W3 SEP <span class="ck">✓</span></span></span></td><td><span class="sc pl"><span class="k">L R W S</span><span class="t">W4 OCT</span></span></td><td><span class="sc no"><span class="k">+ xếp</span></span></td></tr>
+   </table></div>
+   <div class="mu" style="padding:6px 10px">← kéo ngang trong thẻ · cột tên đứng yên · mở sẵn ở đợt đang tới (MT3), MT1–MT2 nằm bên trái</div>
+  </div>
+  <div class="bnav"><span>Tổng quan</span><span>Học viên</span><span class="on">Test</span><span>Công việc</span></div>
+ </div>
+ <div class="note" style="text-align:center">Ngăn hàng loạt trên điện thoại mở toàn màn, 4 bước xếp dọc, chân "Lưu lịch…" vẫn dính đáy.</div>
+</div></div>
