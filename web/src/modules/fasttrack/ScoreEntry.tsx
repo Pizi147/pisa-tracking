@@ -787,6 +787,19 @@ export function ODiemThuong({
   const huy = () => { setDiem(diemDaLuu()); setTong(tongDaLuu()); setDirty(false); setCanhBao(null); goDiem.current = false; };
 
   const phim = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    /*
+     * GÕ "-" LÊN Ô ĐANG HIỆN "-": giá trị không đổi (đè lên "-" đang chọn) hoặc thành "--" (con trỏ đặt sau "-") — cả
+     * hai đều không phải điều người dùng muốn. Chặn phím và coi đó chính là lệnh "gõ lại -": tuần mới đã tới → dời tiếp
+     * ngay (Q4, có toast báo); tuần mới chưa tới → không làm gì.
+     */
+    /* Ô tổng bị khoá khi ô trái đang là "-", nên phím này chỉ có thể tới từ ô trái. */
+    if (e.key === '-' && diem.trim() === '-') {
+      e.preventDefault();
+      if (!dau || cell.chuaToiTuan || dangGui.current) return;
+      setCanhBao(null);
+      void gui(() => onDau(true));
+      return;
+    }
     if (e.key === 'Enter') void commit();
     /* Esc HUỶ ô đang sửa: trả về giá trị đã lưu, không gửi gì lên máy chủ. */
     if (e.key === 'Escape' && dirty) { e.preventDefault(); huy(); }

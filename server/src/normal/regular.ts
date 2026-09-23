@@ -477,26 +477,37 @@ export function reportRegularNoShow(
         throw badRequest(`${skill} chưa có tuần thi nên chưa ghi dấu "-" được.`);
       }
       /*
-       * Đã ghi dấu và đã dời rồi: tuần mới CHƯA TỚI thì gọi lại là vô hại, không dời lần hai. Tuần mới ĐÃ TỚI thì đây là
-       * một lần vắng MỚI của chính tuần đó (Q4) — đi tiếp xuống dưới: dấu chuyển sang tuần hiện tại, môn dời tiếp.
+       * Đã ghi dấu và đã dời rồi. Chỉ là một lần vắng MỚI (Q4 — đi tiếp xuống dưới: dấu chuyển sang tuần hiện tại, môn
+       * dời tiếp) khi CẢ HAI: tuần hiện tại của môn đã tới, VÀ dấu cũ được ghi TRƯỚC khi tuần đó bắt đầu. Vế sau giữ lần
+       * gọi lặp vô hại cả khi ghi muộn: bài tuần 14/09 báo "-" hôm 05/10 thì môn sang 21/09 (đã qua) — gửi lại cùng
+       * lệnh hôm đó không được dời tiếp, vì em chưa có dịp vắng tuần 21/09 SAU lần báo trước. Ngày ghi dấu là ngày NGHIỆP
+       * VỤ (`today`, xem chỗ ghi `no_show_at` bên dưới); dòng không có ngày ghi thì coi là không rõ → không dời.
        */
-      if (existing?.no_show_period_id && existing.no_show_period_id !== row.planned_period_id
-        && String(row.week_start) > today) {
-        return { moved: false, tuanCu: tuanCua(existing.no_show_period_id)?.code ?? null,
-          tuanMoi: row.period_code, result: regularResultOf(attemptId) };
+      if (existing?.no_show_period_id && existing.no_show_period_id !== row.planned_period_id) {
+        const ngayGhi = existing.no_show_at ? String(existing.no_show_at).slice(0, 10) : null;
+        const tuanDaToi = String(row.week_start) <= today;
+        if (!tuanDaToi || !ngayGhi || ngayGhi >= String(row.week_start)) {
+          return { moved: false, tuanCu: tuanCua(existing.no_show_period_id)?.code ?? null,
+            tuanMoi: row.period_code, result: regularResultOf(attemptId) };
+        }
       }
       const cu = { id: row.planned_period_id, code: row.period_code, weekStart: row.week_start };
       const moi = ensurePeriod(tuanKeTiep(cu.weekStart));
+      /*
+       * `no_show_at` = NGÀY NGHIỆP VỤ + giờ thật: phần ngày phải là `today` (bản demo chạy ngày giả lập, khác đồng hồ
+       * máy) vì luật "vắng mới" ở trên so phần ngày này với tuần thi. Cột không được đọc ở chỗ nào khác.
+       */
+      const luc = `${today}T${nowIso().slice(11)}`;
       if (existing) {
         conn.prepare(
           `UPDATE assessment_scores SET no_show_period_id = ?, no_show_by = ?, no_show_at = ?, no_show_late = 0 WHERE id = ?`,
-        ).run(cu.id, p.userId, nowIso(), existing.id);
+        ).run(cu.id, p.userId, luc, existing.id);
       } else {
         /* Cố ý KHÔNG ghi entered_by: người báo "không có bài" chưa nhập điểm nào. */
         conn.prepare(
           `INSERT INTO assessment_scores (attempt_id, skill, no_show_period_id, no_show_by, no_show_at, no_show_late)
            VALUES (?,?,?,?,?,0)`,
-        ).run(attemptId, skill, cu.id, p.userId, nowIso());
+        ).run(attemptId, skill, cu.id, p.userId, luc);
       }
       /* Dời bằng ĐÚNG hàm dời lịch chung — `force` chỉ vượt được cảnh báo, không bao giờ vượt được chặn. */
       setSkillWeek(p, attemptId, skill, moi.id, {
