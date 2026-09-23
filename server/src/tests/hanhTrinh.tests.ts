@@ -457,4 +457,20 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
       assert(!src.includes(cam), `Còn chữ cấm "${cam}"`);
     }
   });
+
+  // ==================================================================== Task 7 — AN-9, R8a, R8b, thông báo (quét nguồn)
+
+  check('PR-Qb (7) · StudentYThucSection.tsx nhận prop canhBao (AN-9 — một lần gọi /violation-warning)', () => {
+    assert(doc('web/src/modules/yThuc/StudentYThucSection.tsx').includes('canhBao'), 'Phải có prop canhBao');
+  });
+
+  check('PR-Qb (7) · ClassRoster.tsx: nhãn đợt dùng duongHoSoHocVien, không còn tự dựng /mock-test/ ở đó', () => {
+    const src = doc('web/src/modules/students/ClassRoster.tsx');
+    assert(src.includes('duongHoSoHocVien'), 'Phải dùng duongHoSoHocVien');
+    assert(!/to=\{h\.kind === 'mock' \? `\/mock-test\//.test(src), 'Không còn tự dựng /mock-test/ ở nhãn đợt');
+  });
+
+  check('PR-Qb (7) · Header.tsx dùng duongThongBao để điều hướng thông báo', () => {
+    assert(doc('web/src/modules/platform/Header.tsx').includes('duongThongBao'), 'Phải gọi duongThongBao');
+  });
 }

@@ -332,6 +332,7 @@ export default function StudentDetailPage() {
           <StudentYThucSection studentId={data.id} studentName={data.fullName}
             canRecordViolation={!!data.viewer.canRecordViolation}
             canManageDiscipline={!!data.viewer.canManageDiscipline}
+            canhBao={warn.data ?? null}
             onGoAcademic={() => setTab('hoc-thuat')} />
         </Card>
       )}

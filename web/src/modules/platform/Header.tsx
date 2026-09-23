@@ -5,6 +5,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { api } from '../../lib/api.ts';
 import { Info } from '../../ui/ui.tsx';
 import { roleLabel, skillShort } from '../../lib/format.ts';
+import { duongThongBao } from '@shared/domain/index.ts';
 
 type SearchHit = { id: number; studentCode: string; fullName: string; classCode: string | null };
 
@@ -86,16 +87,9 @@ export function Header() {
                 onClick={async () => {
                   await api.post(`/notifications/${n.id}/read`);
                   notifications.reload();
-                  /*
-                    Thông báo chỉ lưu id của lượt, không lưu loại bài. Đi qua màn Mock Test
-                    là đủ: màn đó tự chuyển tiếp sang bảng điểm lớp Normal khi bài không
-                    phải Mock Test.
-
-                    SỬA 18/09/2026: máy chủ ghi `entityType: 'assessment_attempt'`
-                    (`server/src/cases/sos.ts:421`), không phải `'mock_attempt'` — chuỗi cũ
-                    không khớp gì nên bấm thông báo chưa từng điều hướng đi đâu.
-                  */
-                  if (n.entity_type === 'assessment_attempt') navigate(`/mock-test/${n.entity_id}`);
+                  /* Mỗi loại thông báo về đúng chỗ làm được việc của nó (R8, Q12) — một quy ước duy nhất. */
+                  const den = duongThongBao(n);
+                  if (den) navigate(den);
                   setOpenMenu(null);
                 }}
               >

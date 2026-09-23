@@ -7,7 +7,9 @@ import { MissingBadge } from './MissingBadge.tsx';
 import { CanhBaoYThuc } from '../classes/CanhBaoYThuc.tsx';
 import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from '../classes/thaoTacDongHocVien.tsx';
 import { fmtBand } from '../../lib/format.ts';
-import { ENTRY_SKILL_LABEL, maHocVienNgan, skillShort, type EntrySkill, type ExamPlan } from '@shared/domain/index.ts';
+import {
+  ENTRY_SKILL_LABEL, duongHoSoHocVien, maHocVienNgan, skillShort, type EntrySkill, type ExamPlan,
+} from '@shared/domain/index.ts';
 
 type Timeline = {
   id: number; attemptNo: number; cycleSeq: number; route: string | null;
@@ -165,7 +167,7 @@ export function ClassRoster({ classId, quyen, onDoi, onAddStudents }: {
                         ? [<span key="none" className="text-[11px] text-slate-600">chưa có điểm</span>]
                         : rows.map((h, i) => (
                           <Link key={h.id} className="no-underline"
-                            to={h.kind === 'mock' ? `/mock-test/${h.id}` : `/bang-diem-thuong/${classId}?kind=${h.kind}`}>
+                            to={duongHoSoHocVien(s.id, { dot: h.id })} title={`Mở hồ sơ ${s.fullName} ở ${h.label}`}>
                             <span className={`text-xs whitespace-nowrap ${i === 0 ? 'text-slate-200' : 'text-slate-500'}`}>
                               {h.label}
                               {h.scoredRequired < h.requiredCount && (

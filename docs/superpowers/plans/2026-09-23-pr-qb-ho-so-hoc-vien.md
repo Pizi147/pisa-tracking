@@ -448,3 +448,10 @@ Commit `PR-Qb (8): 375px hồ sơ học viên, bảng định vị, CODE_MAP, đ
   cần sửa server). Tiện thể đổi hai chữ "Lớp Normal"/"Mở case" còn sót trong CHÚ THÍCH mã (không phải chữ người
   dùng thấy) để khớp phép kiểm quét chữ cấm — quét cả file thay vì phải bỏ qua chú thích cho đơn giản.
   `npm run check` xanh, **876 = 872 + 4** (đủ ≥4). Commit `PR-Qb (6)`.
+- **Task 7:** `StudentYThucSection.tsx` nhận `canhBao?` (AN-9 — chỉ `StudentDetailPage` gọi `/violation-warning`,
+  component con dùng lại qua prop, `undefined` thì vẫn tự tải như cũ cho chỗ khác chưa kịp gom lại không vỡ);
+  `ClassRoster.tsx` nhãn đợt dùng `duongHoSoHocVien` (R8b); `StudentsPage.tsx` (`HopLop`/`denBadge`) thêm
+  `&scope=mine` khi Phạm vi đang chọn là `toi` (R8a — xác nhận `qScope`/`WORK_SCOPES` của Rc1 ĐÃ có sẵn trong
+  `routes/index.ts`, không phải tự dựng giá trị dự phòng như kế hoạch tính trước cho trường hợp Rc1 chưa merge);
+  `Header.tsx` thông báo điều hướng bằng `duongThongBao` (bỏ khối chú thích cũ về SOS/mock_attempt). `npm run
+  check` xanh, **879 = 876 + 3** (đủ ≥3). Commit `PR-Qb (7)`.
