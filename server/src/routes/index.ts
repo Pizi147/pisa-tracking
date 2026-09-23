@@ -42,6 +42,8 @@ import * as summarySvc from '../worklist/summary.ts';
 import * as pulseSvc from '../worklist/branchpulse.ts';
 import * as prefSvc from '../platform/prefs.ts';
 import * as profileSvc from '../students/profile.ts';
+import { hanhTrinhHocVien } from '../students/hanhTrinh.ts';
+import { thongBaoCua } from '../platform/thongBao.ts';
 import * as classSvc from '../classes/classes.ts';
 import * as scheduleSvc from '../classes/schedule.ts';
 import * as intakeSvc from '../classes/intake.ts';
@@ -1506,6 +1508,13 @@ api.get('/students/:id/skill-board', requireAuth, wrap((req) => {
 api.get('/students/:id/case-topics', requireAuth, wrap((req) =>
   caseSvc.caseTopicsOf(principalOf(req), pInt(req, 'id'), qInt(req, 'cycleId'))));
 
+/** Tab Hành trình (PR-Qb): trục tuần theo giai đoạn (lớp thường | Fast Track), một câu trả lời cho cả giai đoạn. */
+api.get('/students/:id/hanh-trinh', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const gd = qStr(req, 'giai-doan');
+  return hanhTrinhHocVien(principalOf(req), pInt(req, 'id'), gd === 'thuong' || gd === 'ft' ? gd : null);
+}));
+
 /** Ghi một lần xem lại sau hỗ trợ. Một tác động có thể xem lại nhiều lần. */
 api.post('/cases/:id/followups', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -1566,7 +1575,7 @@ api.get('/students', requireAuth, wrap((req) => {
  */
 api.get('/students/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return profileSvc.studentProfile(principalOf(req), pInt(req, 'id'), qInt(req, 'cycleId'));
+  return profileSvc.studentProfile(principalOf(req), pInt(req, 'id'), qInt(req, 'cycleId'), qInt(req, 'attemptId'));
 }));
 
 api.patch('/students/:id', requireAuth, wrap((req) => {
@@ -1686,12 +1695,7 @@ api.get('/tasks/:id/history', requireAuth, wrap((req) => meetingSvc.taskHistory(
 
 // ============================================================ Thông báo
 
-api.get('/notifications', requireAuth, wrap((req) => {
-  const p = principalOf(req);
-  return db()
-    .prepare('SELECT * FROM notifications WHERE user_id = ? ORDER BY id DESC LIMIT 30')
-    .all(p.userId);
-}));
+api.get('/notifications', requireAuth, wrap((req) => thongBaoCua(principalOf(req).userId)));
 
 api.post('/notifications/:id/read', requireAuth, wrap((req) => {
   const p = principalOf(req);

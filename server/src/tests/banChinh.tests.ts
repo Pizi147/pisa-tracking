@@ -106,6 +106,19 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
   console.log('\nPR-Z2 · 1c. `npm run migrate` vào Turso: phải xác nhận, và không tạo tài khoản/mật khẩu mặc định của bản demo');
   const fs = await import('node:fs');
   const os = await import('node:os');
+  /**
+   * Xoá thư mục tạm của một phép kiểm. Trên Windows, tay cầm tệp (kết nối sqlite, cổng máy chủ Blobs cục bộ)
+   * đôi khi chưa nhả ngay sau khi đóng — thử lại vài lần trước khi bỏ cuộc; bỏ cuộc thì để lần `npm run check`
+   * sau quét dọn (xem đầu server/src/tests/run.ts), không lặng lẽ rơi mất như trước.
+   */
+  const xoaThuMucTam = (dir: string) => {
+    for (let lan = 0; lan < 5; lan++) {
+      try { fs.rmSync(dir, { recursive: true, force: true }); return; } catch { /* thử lại */ }
+      const cho = new Int32Array(new SharedArrayBuffer(4));
+      Atomics.wait(cho, 0, 0, 30 * (lan + 1));
+    }
+    try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* để lần chạy sau dọn */ }
+  };
   const { default: Database } = await import('libsql');
   const { SCHEMA_PATH } = await import('../db.ts');
   const { DEFAULT_ADMIN_EMAIL } = await import('../platform/accounts.ts');
@@ -173,7 +186,7 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
       assert(r2.status === 0, `migrate (máy dev) lỗi: ${String(r2.stderr).slice(-300)}`);
       const d = doc(fFile);
       assert(d.admin && !!d.matKhauCu, 'Máy dev: migrate vẫn tạo quản trị mặc định và đặt mật khẩu cho tài khoản cũ như trước');
-    } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows còn giữ file — bỏ qua dọn dẹp */ } }
+    } finally { xoaThuMucTam(dir); }
   });
 
   console.log('\nPR-Z2 · 2. Kho tệp');
@@ -235,7 +248,7 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
     } finally {
       delete process.env.NETLIFY_BLOBS_CONTEXT;
       await mayBlobs.stop();
-      try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ }
+      xoaThuMucTam(dir);
     }
   });
   const measuresSvc = await import('../yThuc/measures.ts');
@@ -456,7 +469,7 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
   };
   const dongLai = (o: { conn: InstanceType<typeof Database>; dir: string }) => {
     try { o.conn.close(); } catch { /* đã đóng */ }
-    try { fs.rmSync(o.dir, { recursive: true, force: true }); } catch { /* Windows còn giữ file — bỏ qua dọn dẹp */ }
+    xoaThuMucTam(o.dir);
   };
   const dem = (conn: InstanceType<typeof Database>, b: string) => (conn.prepare(`SELECT COUNT(*) n FROM "${b}"`).get() as any).n as number;
   const cacBang = (conn: InstanceType<typeof Database>) =>
@@ -612,7 +625,7 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
       assert(new RegExp(`mật khẩu quản trị dài ${MK.length} ký tự`).test(r.stdout), `Phải in độ dài mật khẩu đã lưu: ${String(r.stdout).slice(-300)}`);
       const c = new Database(f);
       try { assert(dem(c, 'users') === 1 && dem(c, 'branches') === 2, 'Database sau lệnh init phải có 1 người dùng, 2 chi nhánh'); } finally { c.close(); }
-    } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
+    } finally { xoaThuMucTam(dir); }
   });
   check('PR-Z2 · Lệnh init-ban-chinh chạy nhầm lần hai: TỪ CHỐI, và file database giữ nguyên TỪNG BYTE', () => {
     const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'z2-lenh-'));
@@ -624,7 +637,7 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
       const r = chayLenh(initJs, { ...env, ADMIN_EMAIL: 'khac.pisa@gmail.com', CHI_NHANH: 'UB=Uông Bí' });
       assert(r.status === 1 && /TỪ CHỐI/.test(r.stderr) && /đã có dữ liệu/.test(r.stderr), `Lần hai: mã ${r.status}; ${String(r.stderr).slice(-300)}`);
       assert(bamFile(f) === bam, 'File database đã bị thay đổi dù lệnh từ chối');
-    } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
+    } finally { xoaThuMucTam(dir); }
   });
   check('PR-Z2 · Lệnh init-ban-chinh không có biến Turso (máy dev) → từ chối, không đụng database máy dev', () => {
     const r = chayLenh(initJs, { ADMIN_EMAIL: 'quantri.pisa@gmail.com', ADMIN_PASSWORD: MK, CHI_NHANH: 'MB=Monbay' });
@@ -650,7 +663,7 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
       assert(bamFile(f) === bam, 'File database đã bị thay đổi dù lệnh từ chối');
       const r3 = chayLenh(themJs, env, []);
       assert(r3.status === 1 && /them-chi-nhanh/.test(r3.stderr), 'Thiếu tham số phải chỉ cách gõ');
-    } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
+    } finally { xoaThuMucTam(dir); }
   });
   check('PR-Z2 · Tên chi nhánh có dấu ^ hoặc " bị TỪ CHỐI (dấu vết thoát ký tự của npm/cmd trên Windows) — không bao giờ lưu tên hỏng', () => {
     assertThrows(() => docDanhSachChiNhanh('UB=^Uông^ Bí^'), /\^/, 'Tên có ^ phải báo lỗi');
@@ -710,7 +723,7 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
         assert(cacBang(moLai).includes(BANG_PHIEN) && dem(moLai, BANG_PHIEN) === 0, 'Bảng phiên phải CÓ trong bản sao (giữ cấu trúc) và rỗng');
         assert(dem(moLai, 'users') > 0 && dem(moLai, 'students') > 0, 'Bản sao của bộ demo phải có người dùng và học viên');
       } finally { moLai.close(); }
-    } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
+    } finally { xoaThuMucTam(dir); }
   });
   check('PR-Z2 · Bản sao lưu dùng được bằng CHÍNH mã hiện tại: tiến trình mở nó làm database (PISA_DB) thấy đủ học viên và đăng nhập được', () => {
     const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'z2-bk-'));
@@ -731,7 +744,7 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
       assert(r.status === 0, `Mở bản sao bằng mã hiện tại lỗi: ${String(r.stderr).slice(-300)}`);
       const o = JSON.parse(String(r.stdout).trim().split('\n').pop()!);
       assert(o.khoiTao === true && o.hv === dem(db(), 'students') && o.dangNhap > 0, `Nhận ${JSON.stringify(o)}`);
-    } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
+    } finally { xoaThuMucTam(dir); }
   });
   check('PR-Z2 · saoLuu đọc nguồn TRONG MỘT GIAO DỊCH ĐỌC (mọi bảng cùng một thời điểm) và kết thúc giao dịch đó', () => {
     const o = moDbTam();
@@ -796,7 +809,7 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
       nguonHong.exec("CREATE TABLE users (id INTEGER PRIMARY KEY)");        // không có người dùng → kiểm sau khi chép phải hỏng
       try { assertThrows(() => saoLuuRaFile(nguonHong, f2), /người dùng/, 'Bản sao không có người dùng phải bị coi là hỏng'); } finally { nguonHong.close(); }
       assert(JSON.stringify(fs.readdirSync(dir)) === JSON.stringify(['pisa-2026-09-22-1000.sqlite']), `Còn sót file dở: ${JSON.stringify(fs.readdirSync(dir))}`);
-    } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
+    } finally { xoaThuMucTam(dir); }
   });
   check('PR-Z2 · saoLuuRaFile ghi qua file TẠM (tên không bao giờ bị coi là bản sao lưu): xong thì chỉ còn file thật; file tạm của lần trước còn đó → TỪ CHỐI, không đụng nó', () => {
     const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'z2-bk-'));
@@ -808,7 +821,7 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
       fs.writeFileSync(`${f2}.dang-ghi`, 'dở của lần trước');
       assertThrows(() => saoLuuRaFile(db(), f2), /dang-ghi/, 'File tạm còn đó phải từ chối');
       assert(!fs.existsSync(f2) && fs.readFileSync(`${f2}.dang-ghi`, 'utf8') === 'dở của lần trước', 'Không được tạo file thật hay đụng file tạm cũ');
-    } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
+    } finally { xoaThuMucTam(dir); }
   });
   check('PR-Z2 · Tên bản sao lưu theo GIỜ VIỆT NAM và ghi rõ CỦA DATABASE NÀO: pisa-<tên máy chủ>-NĂM-THÁNG-NGÀY-GIỜPHÚT', () => {
     const luc = new Date('2026-09-21T17:05:00Z');
@@ -825,7 +838,7 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
       assert(JSON.stringify(xoa) === JSON.stringify(['pisa-pisatracking-pizi147-2026-09-02-0000.sqlite', 'pisa-pisatracking-pizi147-2026-09-01-0000.sqlite']),
         `Chỉ được xoá 2 bản cũ nhất CỦA bản chính: ${JSON.stringify(xoa)}`);
       assert(khac.every((f) => fs.existsSync(pathMod.join(dir, f))), 'Đã xoá bản của database khác');
-    } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
+    } finally { xoaThuMucTam(dir); }
   });
   check('PR-Z2 · Giữ đúng 14 bản mới nhất, xoá bản cũ hơn KÈM thư mục tệp của nó; không đụng file khác; không bao giờ xoá bản vừa tạo', () => {
     const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'z2-keep-'));
@@ -843,7 +856,7 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
       assert(['ghi-chu.txt', 'pisa-khac.sqlite', 'pisa-2026-08-01-0000.sqlite.bak'].every((f) => con.includes(f)), 'Đã xoá file không phải bản sao lưu');
       const giu = giuBanMoiNhat(dir, 1, { giuLai: 'pisa-2026-09-03-0000.sqlite' });
       assert(fs.existsSync(pathMod.join(dir, 'pisa-2026-09-03-0000.sqlite')) && !giu.includes('pisa-2026-09-03-0000.sqlite'), 'Xoá mất bản vừa tạo');
-    } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
+    } finally { xoaThuMucTam(dir); }
   });
   await checkAsync('PR-Z2 · saoLuuTep tải MỌI tệp của kho Blobs (kiểu siteID + token, như lệnh sao lưu) ra thư mục, đúng từng byte, giữ đường dẫn khoá', async () => {
     const { BlobsServer } = await import('@netlify/blobs/server');
@@ -860,7 +873,7 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
       for (const [k, d] of tep) assert(fs.readFileSync(pathMod.join(dir, 'ra', ...k.split('/'))).equals(d), `Tệp ${k} sai nội dung`);
     } finally {
       await mayBlobs.stop();
-      try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ }
+      xoaThuMucTam(dir);
     }
   });
 
@@ -899,7 +912,7 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
       assert(bamFile(nguon) === bamNguon, 'Lệnh sao lưu đã làm thay đổi file nguồn');
       const a = new Database(nguon, { readonly: true }); const b = new Database(pathMod.join(bk, ra[0]), { readonly: true });
       try { soHaiDb(a, b, 'Lệnh sao-luu'); } finally { a.close(); b.close(); }
-    } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
+    } finally { xoaThuMucTam(dir); }
   });
   /*
    * KHÔNG đặt NETLIFY_SITE_ID/NETLIFY_AUTH_TOKEN cho lệnh thật trong phép kiểm: có hai biến đó thì @netlify/blobs luôn gọi API
@@ -923,7 +936,7 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
       assert(cuaNo.length === 14 && !con.includes('pisa-cuc-bo-2026-01-01-0000.sqlite') && con.includes('pisa-cuc-bo-2026-01-02-0000.sqlite'),
         `Phải giữ đúng 14 bản (chỉ xoá bản cũ nhất): ${JSON.stringify(con)}`);
       assert(giuNguyen.every((f) => con.includes(f)) && /pisa-cuc-bo-2026-01-01-0000\.sqlite/.test(r.stdout), 'Không được đụng file khác; phải báo đã xoá bản nào');
-    } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
+    } finally { xoaThuMucTam(dir); }
   });
   await checkAsync('PR-Z2 · Lệnh sao-luu: dọn bản cũ hỏng (file đang bị giữ, Drive đang đồng bộ) KHÔNG làm hỏng bản sao lưu vừa tạo — báo cảnh báo, vẫn "Xong"', async () => {
     const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'z2-lenh-bk-'));
@@ -941,7 +954,7 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
       assert(moi.length === 1, `Bản mới phải còn nguyên: ${JSON.stringify(fs.readdirSync(bk))}`);
     } finally {
       giu.close();
-      try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ }
+      xoaThuMucTam(dir);
     }
   });
   await checkAsync('PR-Z2 · Lệnh sao-luu có BACKUP_DIR mà KHÔNG có biến Turso → TỪ CHỐI (không lặng lẽ sao lưu database máy dev vào thư mục bản chính)', async () => {
@@ -951,7 +964,7 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
       const r = await chayLenhNen({ BACKUP_DIR: bk });
       assert(r.status === 1 && /TURSO_DATABASE_URL/.test(r.stderr), `Mã ${r.status}; ${r.stderr.slice(-300)}`);
       assert(!fs.existsSync(bk), 'Từ chối thì không được tạo gì trong BACKUP_DIR');
-    } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
+    } finally { xoaThuMucTam(dir); }
   });
 
   console.log('\nPR-Z2 · 7. Khôi phục (khoi-phuc) — chỉ ghi vào database RỖNG; đúng từng dòng như bản sao lưu');
@@ -987,7 +1000,7 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
         assert(dem(dich, 'users') > 0 && dem(dich, 'students') > 0, 'Phải có người dùng và học viên');
       } finally { bk.close(); dich.close(); }
       assert(bamFile(f) === bamBk, 'Khôi phục đã ghi vào file sao lưu');
-    } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
+    } finally { xoaThuMucTam(dir); }
   });
   check('PR-Z2 · Khôi phục TỪ CHỐI khi đích đã có dữ liệu (một dòng bất kỳ) hoặc đã có bảng (kể cả rỗng) — và khi từ chối thì KHÔNG ghi gì', () => {
     const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'z2-kp-'));
@@ -1007,7 +1020,7 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
           } finally { dongLai(o); }
         }
       } finally { bk.close(); }
-    } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
+    } finally { xoaThuMucTam(dir); }
   });
   check('PR-Z2 · Khôi phục TỪ CHỐI file không phải bản sao lưu dùng được (không có người dùng) — đích vẫn trống trơn', () => {
     const o = moDbTam();
@@ -1070,7 +1083,7 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
         assert(o.cuVaoDuoc === false, `${ten}: mã phiên cũ vẫn đăng nhập được sau khi khôi phục`);
         assert(o.moiVaoDuoc === true, `${ten}: đăng nhập lại bằng mật khẩu không được`);
       }
-    } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
+    } finally { xoaThuMucTam(dir); }
   });
 
   const khoiPhucJs = pathMod.join(REPO, 'dist-server/server/src/ops/runKhoiPhuc.js');
@@ -1101,7 +1114,7 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
       const lai = chay({ ...env, PISA_CHO_PHEP_KHOI_PHUC: 'dich-moi.sqlite' });
       assert(lai.status === 1 && /TỪ CHỐI/.test(lai.stderr) && /đã có/.test(lai.stderr), `Lần hai: ${lai.status} ${String(lai.stderr).slice(-200)}`);
       assert(bamFile(dich) === bam, 'Chạy lần hai đã thay đổi database đích');
-    } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows */ } }
+    } finally { xoaThuMucTam(dir); }
   });
 
   console.log('\nPR-Z2 · 8. Phiên đăng nhập hết hạn sau 30 ngày không dùng (tính theo GIỜ THẬT, không theo ngày demo)');
