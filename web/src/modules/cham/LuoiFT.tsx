@@ -280,7 +280,8 @@ function SheetRow({ row, rowIndex, active, cot, tuanDangXem, onReload, register,
       {/* Badge ôm sát nội dung: items-start để ô bảng rộng cũng không kéo giãn nó ra. */}
       <td className="td py-1.5">
         <div className="flex flex-col items-start gap-0.5 min-w-0">
-          <Level tone={sosTone(row.result.sosLevel)}>
+          {/* N-1b: chưa đủ điểm là TẠM — xám, không mang màu mức SOS. */}
+          <Level tone={row.result.evaluable ? sosTone(row.result.sosLevel) : 'muted'}>
             {row.result.evaluable
               ? sosLabel(row.result.sosLevel)
               : `Chờ ${row.result.required.length - row.result.scoredRequired} kỹ năng`}

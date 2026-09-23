@@ -85,7 +85,13 @@ export function LichTestTab() {
     daKhoiTao.current = khoa;
     setNho(docMo(data.tuan.id));
     setChiQuaHan(false);
-    const noDau = urlClassId ? data.no.find((d) => d.classId === urlClassId) : undefined;
+    /* Có `kn` (Việc cần làm › Chấm): dòng Nợ có môn đó; không có thì hàng lớp tuần này; không có hàng lớp thì dòng Nợ
+       đầu của lớp. Không có `kn` (badge "n bài chờ chấm"): dòng Nợ đầu (ưu tiên dòng của mình), rồi hàng lớp. */
+    const khopKn = (k: string) => !!urlKn && (k === urlKn || (urlKn === 'writing' && k.startsWith('writing')));
+    const noCuaLop = urlClassId ? data.no.filter((d) => d.classId === urlClassId) : [];
+    const coHangLop = data.lop.some((l) => l.classId === urlClassId);
+    const noDau = noCuaLop.find((d) => d.kyNang.some(khopKn))
+      ?? (urlKn && coHangLop ? undefined : noCuaLop.find((d) => d.cuaToi) ?? noCuaLop[0]);
     if (noDau) {
       setDongMo({ d: noDau, viTri: data.no.indexOf(noDau), conTro: true });
       setMoNo(true);
@@ -117,9 +123,8 @@ export function LichTestTab() {
     if (co(loaiParam)) return loaiParam;
     const theoLop = data.lop.find((l) => l.classId === urlClassId);
     if (theoLop && co(loaiCua(theoLop))) return loaiCua(theoLop);
-    const moSan = data.lop.find((l) => l.moSan);
-    if (moSan) return loaiCua(moSan);
-    return tabs[0]?.key ?? null;
+    /* Tab đầu (theo thứ tự tab FT → thường) có lớp tự mở, rồi tab đầu có lớp. */
+    return tabs.find((t) => data.lop.some((l) => l.moSan && loaiCua(l) === t.key))?.key ?? tabs[0]?.key ?? null;
   }, [data, tabs, loaiParam, urlClassId]);
   const lopTab = (data?.lop ?? []).filter((l) => loaiCua(l) === loai);
 

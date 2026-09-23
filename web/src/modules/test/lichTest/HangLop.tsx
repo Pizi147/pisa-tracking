@@ -33,6 +33,9 @@ function KyNang({ l }: { l: LopLichTest }) {
   );
 }
 
+/** `.hang-lon > td` ép chữ đậm cho cả hàng; ô phụ (chi nhánh, hạn) về chữ thường cho dễ đọc. */
+const THUONG = { fontWeight: 400 } as const;
+
 const TienDo = ({ l }: { l: LopLichTest }) => (
   <span className="tabular-nums text-slate-200" title={`Đã chấm ${l.daCham} trong ${l.tong} bài của tuần này`}>
     {l.daCham}/{l.tong} <span className="text-[11px] font-normal text-slate-500">bài</span>
@@ -88,7 +91,7 @@ export function HangLop({ lop, moCua, onMo, coChiNhanh, hep, periodId, tuanDangX
                     <span className="block truncate">
                       {l.classCode} · {l.dotLabel} · <TienDo l={l} />
                     </span>
-                    <span className="flex min-w-0 items-center gap-2 font-normal">
+                    <span className="flex min-w-0 flex-wrap items-center gap-x-2" style={THUONG}>
                       <Han loai="nhap-diem" han={l.han} />
                       <NhanLop l={l} />
                     </span>
@@ -97,10 +100,10 @@ export function HangLop({ lop, moCua, onMo, coChiNhanh, hep, periodId, tuanDangX
                 {!hep && (
                   <>
                     <td className="px-3 whitespace-nowrap font-semibold text-slate-200">{l.dotLabel}</td>
-                    {coChiNhanh && <td className="px-3 truncate font-normal text-slate-400" title={l.branchName}>{l.branchName}</td>}
+                    {coChiNhanh && <td className="px-3 truncate text-slate-400" style={THUONG} title={l.branchName}>{l.branchName}</td>}
                     <td className="px-3"><KyNang l={l} /></td>
                     <td className="px-3"><TienDo l={l} /></td>
-                    <td className="px-3 whitespace-nowrap font-normal"><Han loai="nhap-diem" han={l.han} /></td>
+                    <td className="px-3 whitespace-nowrap" style={THUONG}><Han loai="nhap-diem" han={l.han} /></td>
                     <td className="px-3"><NhanLop l={l} /></td>
                     <td className="px-1 text-center">
                       <Link to={l.hrefDayDu} title="Mở lưới đầy đủ" aria-label={`Mở lưới đầy đủ lớp ${l.classCode}`}
@@ -114,7 +117,7 @@ export function HangLop({ lop, moCua, onMo, coChiNhanh, hep, periodId, tuanDangX
                   <td colSpan={soCot} style={{ paddingLeft: hep ? 0 : 16, paddingRight: 0 }}>
                     <LuoiNhung classId={l.classId} periodId={l.mode === 'ielts_band' ? periodId : null} kind={l.kind}
                       tuanDangXem={tuanDangXem} kn={l.classId === urlClassId ? urlKn : null} hrefDayDu={l.hrefDayDu}
-                      datConTro={conTro.has(l.key)} onDaLuu={onDaLuu} />
+                      datConTro={conTro.has(l.key)} onDaLuu={onDaLuu} coLinkRieng />
                   </td>
                 </HangCon>
               )}

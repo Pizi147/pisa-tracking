@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Card } from '../../ui/ui.tsx';
 import { LuoiFT, type FtSheet } from './LuoiFT.tsx';
 import { LuoiThuong, type ThuongSheet } from './LuoiThuong.tsx';
@@ -55,10 +55,12 @@ export function thuongTheoBai(t: ThuongSheet | null | undefined, kind: string | 
  * → chữ mờ `W4 SEP`), `chiAttempt` (khối Nợ: chỉ các em còn nợ). Luật chấm không đổi.
  */
 export function LuoiChamLop({
-  data, kind, kn = null, hv = null, onReload, gon = false, tuanDangXem = null, chiAttempt = null, datConTro = true,
+  data, kind, kn = null, hv = null, onReload, gon = false, tuanDangXem = null, chiAttempt = null, datConTro = true, thanhTren,
 }: {
   data: Cham; kind: string | null; kn?: string | null; hv?: number | null; onReload: () => void;
   gon?: boolean; tuanDangXem?: string | null; chiAttempt?: ReadonlySet<number> | null; datConTro?: boolean;
+  /** Chữ nhỏ ở hàng trên lưới, cùng hàng với nút "Xem dạng bảng" (Lịch Test: "Mở lưới đầy đủ ↗"). */
+  thanhTren?: ReactNode;
 }) {
   const hep = useManHinhHep();
   const [xemBang, setXemBang] = useState(false);
@@ -112,13 +114,16 @@ export function LuoiChamLop({
 
   return (
     <div ref={khung}>
-      {hep && (
-        <div className="flex justify-end">
-          <button type="button" className="min-h-[44px] px-1 text-xs text-slate-500 hover:text-slate-200"
-            onClick={() => setXemBang((v) => !v)}
-            title={xemBang ? 'Quay lại chấm từng kỹ năng, mỗi em một ô to' : 'Mở lưới đủ các cột; lưới cuộn ngang trong thẻ'}>
-            {xemBang ? 'Chấm từng kỹ năng' : 'Xem dạng bảng'}
-          </button>
+      {(hep || thanhTren) && (
+        <div className="flex items-center justify-end gap-3">
+          {thanhTren}
+          {hep && (
+            <button type="button" className="min-h-[44px] px-1 text-xs text-slate-500 hover:text-slate-200"
+              onClick={() => setXemBang((v) => !v)}
+              title={xemBang ? 'Quay lại chấm từng kỹ năng, mỗi em một ô to' : 'Mở lưới đủ các cột; lưới cuộn ngang trong thẻ'}>
+              {xemBang ? 'Chấm từng kỹ năng' : 'Xem dạng bảng'}
+            </button>
+          )}
         </div>
       )}
       {gon ? luoi : <Card bodyClass="p-0">{luoi}</Card>}

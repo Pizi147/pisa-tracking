@@ -124,9 +124,9 @@ export function KhoiNo({ no, mo, onMo, chiQuaHan, onBoQuaHan, dongMo, onMoDong, 
                           <div className="truncate font-semibold text-slate-100">
                             {d.classCode} · {d.dotLabel} · <span title={k.goiY}>{k.chu}</span>
                           </div>
-                          <div className="flex min-w-0 items-center gap-2 text-[11px] text-slate-400 tabular-nums">
-                            <span>còn {xong ? 0 : d.conBai}</span>
-                            <Han loai="nhap-diem" han={d.han} />
+                          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-slate-400 tabular-nums">
+                            <span className="whitespace-nowrap">còn {xong ? 0 : d.conBai} bài</span>
+                            {!xong && <span className="whitespace-nowrap"><Han loai="nhap-diem" han={d.han} /></span>}
                             <NhanDong d={d} xong={xong} />
                           </div>
                         </td>
@@ -141,7 +141,7 @@ export function KhoiNo({ no, mo, onMo, chiQuaHan, onBoQuaHan, dongMo, onMoDong, 
                         </td>
                         <td className="td truncate text-slate-300" title={k.goiY}>{k.chu}</td>
                         <td className="td text-right tabular-nums text-slate-200">{xong ? 0 : d.conBai} <span className="text-[11px] text-slate-500">bài</span></td>
-                        <td className="td whitespace-nowrap"><Han loai="nhap-diem" han={d.han} /></td>
+                        <td className="td whitespace-nowrap">{xong ? <span className="text-slate-600">—</span> : <Han loai="nhap-diem" han={d.han} />}</td>
                         <td className="td"><NhanDong d={d} xong={xong} /></td>
                         <td className="td text-right">{nut}</td>
                       </>
