@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Alert } from '../../ui/ui.tsx';
 
 /**
  * BADGE "THIẾU THÔNG TIN" — mục 7.5.
@@ -14,7 +13,7 @@ import { Alert } from '../../ui/ui.tsx';
 export function MissingBadge({ items, className = '', gon = false }: {
   items: { key: string; label: string; who: string }[] | null | undefined;
   className?: string;
-  /** Dạng gọn cho bảng lớp (PR-HV, chủ sản phẩm 22/09): chỉ `⚠ {n}`; rê chuột thấy danh sách, bấm mở popover như thường. */
+  /** Dạng gọn cho bảng lớp: "Thiếu {n}"; rê chuột thấy danh sách, bấm mở popover như thường. */
   gon?: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -29,7 +28,10 @@ export function MissingBadge({ items, className = '', gon = false }: {
         title={items.map((i) => i.label).join(' · ')}
         onClick={(e) => { e.stopPropagation(); e.preventDefault(); setOpen((v) => !v); }}
       >
-        <Alert tone="warn">{gon ? items.length : `Thiếu ${items.length} thông tin`}</Alert>
+        {/* G-4: ⚠ chỉ nghĩa là quá hạn — thiếu thông tin là badge chữ (Q12). */}
+        <span className="inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap bg-amber-300/10 text-amber-200 border-amber-300/30">
+          {gon ? `Thiếu ${items.length}` : `Thiếu ${items.length} thông tin`}
+        </span>
       </button>
 
       {open && (

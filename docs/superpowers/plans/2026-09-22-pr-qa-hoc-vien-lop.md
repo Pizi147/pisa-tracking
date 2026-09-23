@@ -199,21 +199,21 @@ lại — lệch vài dòng là bình thường; **lệch nội dung** thì 🛑
 
 **Files:** không sửa file.
 
-- [ ] **Step 1:** superpowers:using-git-worktrees — tạo nhánh `pr-qa-hoc-vien-lop` từ `origin/main` mới nhất
+- [x] **Step 1:** superpowers:using-git-worktrees — tạo nhánh `pr-qa-hoc-vien-lop` từ `origin/main` mới nhất
   (`git fetch origin && git worktree add ../pisa-pr-qa -b pr-qa-hoc-vien-lop origin/main`, hoặc công cụ `EnterWorktree` rồi đổi
   tên nhánh). **Không checkout nhánh khác trong thư mục chính** (session khác đang làm ở đó). Mọi lệnh sau chạy trong worktree.
-- [ ] **Step 2: Môi trường sạch biến Turso.**
+- [x] **Step 2: Môi trường sạch biến Turso.**
 
 ```bash
 node -e "for (const k of ['TURSO_DATABASE_URL','TURSO_AUTH_TOKEN','BAN_CHINH','PISA_CHO_PHEP_MIGRATE_TURSO','PISA_CHO_PHEP_SEED_TURSO']) if (process.env[k]) { console.error('CÓ BIẾN', k); process.exit(1) } ; console.log('sạch')"
 ```
 Expected: `sạch`.
 
-- [ ] **Step 3:** `npm ci` rồi `npm run check`. Ghi vào Nhật ký số phép kiểm (dòng `TẤT CẢ N KIỂM TRA ĐỀU ĐẠT`). Đỏ ngay từ đầu →
+- [x] **Step 3:** `npm ci` rồi `npm run check`. Ghi vào Nhật ký số phép kiểm (dòng `TẤT CẢ N KIỂM TRA ĐỀU ĐẠT`). Đỏ ngay từ đầu →
   🛑 dừng, báo chủ sản phẩm.
-- [ ] **Step 4:** `git diff 7843875..HEAD --stat -- web/src/modules/students web/src/modules/classes server/src/classes shared/domain server/src/students/standing.ts index.html web/src/App.tsx`
+- [x] **Step 4:** `git diff 7843875..HEAD --stat -- web/src/modules/students web/src/modules/classes server/src/classes shared/domain server/src/students/standing.ts index.html web/src/App.tsx`
   — có thay đổi (PR-AN/S2/Pa đã merge?) thì mở lại các file đó đối chiếu số dòng trước khi làm.
-- [ ] **Step 5:** Đọc: spec §1–§4, §6, §7 dòng Qa; kiểm kê §1.2, §1.6 (K2-6a, YT-8); sáu mockup; bảng Quyết định Q1–Q21 ở trên.
+- [x] **Step 5:** Đọc: spec §1–§4, §6, §7 dòng Qa; kiểm kê §1.2, §1.6 (K2-6a, YT-8); sáu mockup; bảng Quyết định Q1–Q21 ở trên.
   Thấy Q nào sai đặc tả → 🛑 hỏi trước khi code.
 
 ---
@@ -233,7 +233,7 @@ Expected: `sạch`.
 - `ngay`, `tuanLich`, `tuanKhoa`, `shortDate`, `deadlineView` **giữ nguyên chữ ký**.
 - `runHocVienLopTests(t: YThucTestKit): Promise<void>` — các task sau nối thêm `check(...)` vào CUỐI thân hàm này.
 
-- [ ] **Step 1: Tạo file phép kiểm (đỏ).** `server/src/tests/hocVienLop.tests.ts`:
+- [x] **Step 1: Tạo file phép kiểm (đỏ).** `server/src/tests/hocVienLop.tests.ts`:
 
 ```ts
 /**
@@ -316,10 +316,10 @@ const { runHocVienLopTests } = await import('./hocVienLop.tests.ts');
 await runHocVienLopTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 ```
 
-- [ ] **Step 2: Chạy, thấy đỏ.** `npm test 2>&1 | grep -E "PR-Qa|KIỂM TRA|KHÔNG ĐẠT"`
+- [x] **Step 2: Chạy, thấy đỏ.** `npm test 2>&1 | grep -E "PR-Qa|KIỂM TRA|KHÔNG ĐẠT"`
   Expected: hai phép kiểm `PR-Qa · G-6 …` ✗ (vd `'22/09' ≠ '23/09'`, `d.ngayTheoGioVN is not a function`).
 
-- [ ] **Step 3: Sửa `shared/domain/display.ts`.** Thay dòng 25 (`const validIso = …`) và hàm `shortDate` (dòng 27-36) bằng:
+- [x] **Step 3: Sửa `shared/domain/display.ts`.** Thay dòng 25 (`const validIso = …`) và hàm `shortDate` (dòng 27-36) bằng:
 
 ```ts
 /** Ngày theo lịch có thật không — `Date.parse` tự lăn 31/02 thành 03/03 nên không dùng được một mình. */
@@ -367,7 +367,7 @@ export function shortDate(iso: string | null | undefined, today: string): string
 
   `vietnamDateOf` (cuối file) **giữ nguyên** — `businessDateText` vẫn dùng.
 
-- [ ] **Step 4: Thay `shared/domain/hienThiNgay.ts`** (giữ nguyên chú thích đầu file dòng 1-10, thêm một câu vào cuối chú thích:
+- [x] **Step 4: Thay `shared/domain/hienThiNgay.ts`** (giữ nguyên chú thích đầu file dòng 1-10, thêm một câu vào cuối chú thích:
   ` * Chuỗi có giờ đổi sang giờ Việt Nam trước khi lấy ngày; ngày không tồn tại ra "—" (ngayTheoGioVN, display.ts).`):
 
 ```ts
@@ -398,7 +398,7 @@ export function tuanKhoa(n: number, tong: number): string {
 }
 ```
 
-- [ ] **Step 5: Sửa phép kiểm PR-O.** `server/src/tests/khung.tests.ts:16` — thay
+- [x] **Step 5: Sửa phép kiểm PR-O.** `server/src/tests/khung.tests.ts:16` — thay
 
 ```ts
     eq(d.ngay('2026-09-22T10:00:00Z', '2026-01-01'), '22/09', 'Có giờ vẫn chỉ lấy ngày');
@@ -408,10 +408,10 @@ export function tuanKhoa(n: number, tong: number): string {
     eq(d.ngay('2026-09-22T18:30:00Z', '2026-01-01'), '23/09', 'Có giờ (UTC) đổi sang giờ Việt Nam rồi mới lấy ngày');
 ```
 
-- [ ] **Step 6: Chạy, thấy xanh.** `npm test 2>&1 | tail -3` → `TẤT CẢ N+2 KIỂM TRA ĐỀU ĐẠT` (N = mốc Task 0). Phép kiểm cũ của
+- [x] **Step 6: Chạy, thấy xanh.** `npm test 2>&1 | tail -3` → `TẤT CẢ N+2 KIỂM TRA ĐỀU ĐẠT` (N = mốc Task 0). Phép kiểm cũ của
   `deadlineView`, `shortDate`, `businessDateText` (`run.ts` ~7900-7960) phải vẫn đạt.
-- [ ] **Step 7:** `npm run check` xanh. Ghi số vào Nhật ký.
-- [ ] **Step 8: Commit.**
+- [x] **Step 7:** `npm run check` xanh. Ghi số vào Nhật ký.
+- [x] **Step 8: Commit.**
 
 ```bash
 git add shared/domain/display.ts shared/domain/hienThiNgay.ts server/src/tests/khung.tests.ts server/src/tests/hocVienLop.tests.ts server/src/tests/run.ts
@@ -427,7 +427,7 @@ git commit -m "PR-Qa (1): G-6 ngày theo giờ Việt Nam, từ chối ngày kh�
 - Modify: `web/src/App.tsx:126-127`
 - Test: `server/src/tests/hocVienLop.tests.ts`
 
-- [ ] **Step 1: Phép kiểm đỏ.** Nối vào cuối thân `runHocVienLopTests`:
+- [x] **Step 1: Phép kiểm đỏ.** Nối vào cuối thân `runHocVienLopTests`:
 
 ```ts
   // ------------------------------------------------------------------ Task 2 · nợ PR-O
@@ -441,10 +441,10 @@ git commit -m "PR-Qa (1): G-6 ngày theo giờ Việt Nam, từ chối ngày kh�
   });
 ```
 
-- [ ] **Step 2:** `npm test` → phép kiểm này ✗.
-- [ ] **Step 3:** `index.html:7` → `    <title>PISA Progress</title>` (bắt buộc trước deploy: tab trình duyệt của bản chính không được ghi
+- [x] **Step 2:** `npm test` → phép kiểm này ✗.
+- [x] **Step 3:** `index.html:7` → `    <title>PISA Progress</title>` (bắt buộc trước deploy: tab trình duyệt của bản chính không được ghi
   "Bản demo nội bộ").
-- [ ] **Step 4:** `web/src/App.tsx:126-127` — chú thích và lớp:
+- [x] **Step 4:** `web/src/App.tsx:126-127` — chú thích và lớp:
 
 ```tsx
       {/* Điện thoại: thanh dưới 4 nút (G-11). z-30 — dưới menu tài khoản/thông báo ở đầu trang (z-40), Drawer/Modal (z-50),
@@ -452,8 +452,8 @@ git commit -m "PR-Qa (1): G-6 ngày theo giờ Việt Nam, từ chối ngày kh�
       <nav aria-label="Điều hướng chính" className="md:hidden fixed bottom-0 inset-x-0 z-30 flex border-t bg-[color:var(--surface)]"
 ```
   (dòng `style=…` giữ nguyên; không đổi gì khác ở `App.tsx`.)
-- [ ] **Step 5:** `npm run check` xanh (N+3).
-- [ ] **Step 6: Commit.**
+- [x] **Step 5:** `npm run check` xanh (N+3).
+- [x] **Step 6: Commit.**
 
 ```bash
 git add index.html web/src/App.tsx server/src/tests/hocVienLop.tests.ts
@@ -487,7 +487,7 @@ git commit -m "PR-Qa (2): tiêu đề tab PISA Progress, thanh dưới điện t
 - `CO_TRANG_HO_SO_GIAO_VIEN = false`, `duongHoSoGiaoVien(gvId, nguoiXem, coTrang?)`
 - `TAB_HO_SO_LOP`, `type TabHoSoLop`, `TAB_HO_SO_LOP_NHAN`, `tabHoSoLop(s)`
 
-- [ ] **Step 1: Phép kiểm đỏ.** Nối vào cuối thân `runHocVienLopTests`:
+- [x] **Step 1: Phép kiểm đỏ.** Nối vào cuối thân `runHocVienLopTests`:
 
 ```ts
   // ------------------------------------------------------------------ Task 3 · luật thuần
@@ -633,9 +633,9 @@ git commit -m "PR-Qa (2): tiêu đề tab PISA Progress, thanh dưới điện t
   });
 ```
 
-- [ ] **Step 2:** `npm test 2>&1 | grep -E "PR-Qa|KIỂM TRA"` → 12 phép kiểm mới ✗ (`is not a function` / `undefined`).
+- [x] **Step 2:** `npm test 2>&1 | grep -E "PR-Qa|KIỂM TRA"` → 12 phép kiểm mới ✗ (`is not a function` / `undefined`).
 
-- [ ] **Step 3: Tạo `shared/domain/hocVienLop.ts`:**
+- [x] **Step 3: Tạo `shared/domain/hocVienLop.ts`:**
 
 ```ts
 /**
@@ -923,7 +923,7 @@ export function tabHoSoLop(s: string | null | undefined): TabHoSoLop {
 }
 ```
 
-- [ ] **Step 4:** `shared/domain/fasttrack.ts:84-88` — đổi chữ (giữ khoá):
+- [x] **Step 4:** `shared/domain/fasttrack.ts:84-88` — đổi chữ (giữ khoá):
 
 ```ts
   progress_soon: 'Tuần sau thi Giữa khoá',
@@ -934,9 +934,9 @@ export function tabHoSoLop(s: string | null | undefined): TabHoSoLop {
 ```
   Kiểm: `grep -rn "Đã hết chương trình\|Progress Test tuần này\|Final Test tuần này" server/src/tests web/src shared` → không còn phép
   kiểm nào đòi chữ cũ. Phép kiểm `run.ts:4133` (`pr.label.includes('tuần')`) vẫn đạt.
-- [ ] **Step 5:** thêm `export * from './hocVienLop.ts';` vào `shared/domain/index.ts` sau `export * from './dieuHuong.ts';`.
-- [ ] **Step 6:** `npm test` → mọi `PR-Qa ·` xanh (N+15). `npm run check` xanh. Ghi Nhật ký.
-- [ ] **Step 7: Commit.**
+- [x] **Step 5:** thêm `export * from './hocVienLop.ts';` vào `shared/domain/index.ts` sau `export * from './dieuHuong.ts';`.
+- [x] **Step 6:** `npm test` → mọi `PR-Qa ·` xanh (N+15). `npm run check` xanh. Ghi Nhật ký.
+- [x] **Step 7: Commit.**
 
 ```bash
 git add shared/domain/hocVienLop.ts shared/domain/index.ts shared/domain/fasttrack.ts server/src/tests/hocVienLop.tests.ts
@@ -958,7 +958,7 @@ git commit -m "PR-Qa (3): luật thuần Học viên & Lớp + hồ sơ lớp (c
 - Test helpers (các task sau dùng): `taoLop(code, kind)`, `taoHocVien({ cid, ft, target?, ten? })`, `themLuot({ sid, cid, cycleId, no, kind, weekStart })`,
   `bandFT(attemptId, bands)`, `diemThuong(attemptId, diem)`, hằng `MB` (id chi nhánh MB).
 
-- [ ] **Step 1: Helper + phép kiểm đỏ.** Nối vào cuối thân `runHocVienLopTests`:
+- [x] **Step 1: Helper + phép kiểm đỏ.** Nối vào cuối thân `runHocVienLopTests`:
 
 ```ts
   // ------------------------------------------------------------------ helper dữ liệu riêng của PR-Qa
@@ -1031,9 +1031,9 @@ git commit -m "PR-Qa (3): luật thuần Học viên & Lớp + hồ sơ lớp (c
   });
 ```
 
-- [ ] **Step 2:** `npm test` → hai phép kiểm ✗ (`s.expectation` là `undefined`).
+- [x] **Step 2:** `npm test` → hai phép kiểm ✗ (`s.expectation` là `undefined`).
 
-- [ ] **Step 3: Sửa `server/src/students/standing.ts`.**
+- [x] **Step 3: Sửa `server/src/students/standing.ts`.**
   - Trong `export type Standing` (sau dòng 59 `failed: number | null;`) thêm:
 
 ```ts
@@ -1064,8 +1064,8 @@ git commit -m "PR-Qa (3): luật thuần Học viên & Lớp + hồ sơ lớp (c
           .map((v) => ({ skill: v.skill, band: v.band as number }));
 ```
 
-- [ ] **Step 4:** `npm run check` xanh (N+17). Không phép kiểm cũ nào đỏ (trường chỉ thêm).
-- [ ] **Step 5: Commit.**
+- [x] **Step 4:** `npm run check` xanh (N+17). Không phép kiểm cũ nào đỏ (trường chỉ thêm).
+- [x] **Step 5: Commit.**
 
 ```bash
 git add server/src/students/standing.ts server/src/tests/hocVienLop.tests.ts
@@ -1096,7 +1096,7 @@ git commit -m "PR-Qa (4): Standing mang Overall, kỳ vọng của đợt, kỹ 
     viewer: { coTheSuaHocVien; coTheBaoCase; coTheGhiViPham; coTheNhapDiem } }`.
   - Route `GET /api/hoc-vien-lop?q=&phamVi=&branchId=`.
 
-- [ ] **Step 1: Phép kiểm đỏ.** Nối vào cuối thân `runHocVienLopTests`:
+- [x] **Step 1: Phép kiểm đỏ.** Nối vào cuối thân `runHocVienLopTests`:
 
 ```ts
   // ------------------------------------------------------------------ Task 5 · GET /hoc-vien-lop
@@ -1157,9 +1157,9 @@ git commit -m "PR-Qa (4): Standing mang Overall, kỳ vọng của đợt, kỹ 
   });
 ```
 
-- [ ] **Step 2:** `npm test` → bốn phép kiểm ✗ (`Chưa có mô-đun ../classes/hocVienLop.ts`).
+- [x] **Step 2:** `npm test` → bốn phép kiểm ✗ (`Chưa có mô-đun ../classes/hocVienLop.ts`).
 
-- [ ] **Step 3: Tạo `server/src/classes/dongHocVien.ts`:**
+- [x] **Step 3: Tạo `server/src/classes/dongHocVien.ts`:**
 
 ```ts
 /**
@@ -1213,7 +1213,7 @@ export function soCaseMoTheoLop(classIds: number[]): Map<number, number> {
 }
 ```
 
-- [ ] **Step 4: Tạo `server/src/classes/hocVienLop.ts`:**
+- [x] **Step 4: Tạo `server/src/classes/hocVienLop.ts`:**
 
 ```ts
 /**
@@ -1380,7 +1380,7 @@ export function danhSachHocVienLop(
   Nếu `tsc` báo `missingForStudent` nhận kiểu khác cho `cycle` → mở `schedule.ts:452` và truyền đúng tên trường như `classes.ts`
   đang truyền (dòng ~522-540); không đổi `schedule.ts`.
 
-- [ ] **Step 5: Route.** Import sau dòng 46 của `server/src/routes/index.ts`:
+- [x] **Step 5: Route.** Import sau dòng 46 của `server/src/routes/index.ts`:
 
 ```ts
 import * as hocVienLopSvc from '../classes/hocVienLop.ts';
@@ -1399,8 +1399,8 @@ api.get('/hoc-vien-lop', requireAuth, wrap((req) => {
 }));
 ```
 
-- [ ] **Step 6:** `npm run check` xanh (N+21). Ghi Nhật ký (và thời gian chạy phép kiểm nếu thấy chậm hẳn).
-- [ ] **Step 7: Commit.**
+- [x] **Step 6:** `npm run check` xanh (N+21). Ghi Nhật ký (và thời gian chạy phép kiểm nếu thấy chậm hẳn).
+- [x] **Step 7: Commit.**
 
 ```bash
 git add server/src/classes/dongHocVien.ts server/src/classes/hocVienLop.ts server/src/routes/index.ts server/src/tests/hocVienLop.tests.ts
@@ -1423,7 +1423,7 @@ git commit -m "PR-Qa (5): GET /hoc-vien-lop — phạm vi, chip lọc có số �
 - Produces (`GET /classes/:id/overview`): `soCaseMo: number`, `canhBaoYThuc: number`,
   `viewer.canReportCase`, `viewer.canRecordViolation`, `viewer.canEnterScores`.
 
-- [ ] **Step 1: Phép kiểm đỏ.**
+- [x] **Step 1: Phép kiểm đỏ.**
 
 ```ts
   // ------------------------------------------------------------------ Task 6 · dòng học viên, hồ sơ lớp
@@ -1462,9 +1462,9 @@ git commit -m "PR-Qa (5): GET /hoc-vien-lop — phạm vi, chip lọc có số �
     eq(g.canhBaoYThuc, warn.classWarning(P.coreTeacher, ft).activeCount, 'Cảnh báo tab Ý thức');
   });
 ```
-- [ ] **Step 2:** `npm test` → ba phép kiểm ✗.
+- [x] **Step 2:** `npm test` → ba phép kiểm ✗.
 
-- [ ] **Step 3: Sửa `classes.ts`.**
+- [x] **Step 3: Sửa `classes.ts`.**
   - Import: thêm `viecTiepTheoCua` vào khối import `shared/domain/index.ts` (dòng 2-5); thêm hai dòng sau dòng 17:
 
 ```ts
@@ -1518,8 +1518,8 @@ import { classWarning } from '../yThuc/canhBao.ts';
       canEnterScores: editableSkills(p, classId, classSkills).length > 0,
 ```
 
-- [ ] **Step 4:** `npm run check` xanh (N+24).
-- [ ] **Step 5: Commit.**
+- [x] **Step 4:** `npm run check` xanh (N+24).
+- [x] **Step 5: Commit.**
 
 ```bash
 git add server/src/classes/classes.ts server/src/tests/hocVienLop.tests.ts
@@ -1541,7 +1541,7 @@ git commit -m "PR-Qa (6): dòng học viên có cảnh báo Ý thức (YT-8), Vi
   o: Record<\`${dong}|${cot}\`, { dat: number; tong: number }>; soHocVien: number }`. FT: dòng `L R W1 W2 S`, cột `mt1…mt5` (thêm nếu
   có MT6+). Lớp thường: dòng `L R W S`, cột `progress` "Giữa khoá", `final` "Cuối khoá".
 
-- [ ] **Step 1: Phép kiểm đỏ.**
+- [x] **Step 1: Phép kiểm đỏ.**
 
 ```ts
   // ------------------------------------------------------------------ Task 7 · Phân tích lớp
@@ -1577,9 +1577,9 @@ git commit -m "PR-Qa (6): dòng học viên có cảnh báo Ý thức (YT-8), Vi
   });
 ```
 
-- [ ] **Step 2:** `npm test` → hai phép kiểm ✗ (`Chưa có mô-đun ../classes/phanTichLop.ts`).
+- [x] **Step 2:** `npm test` → hai phép kiểm ✗ (`Chưa có mô-đun ../classes/phanTichLop.ts`).
 
-- [ ] **Step 3: Tạo `server/src/classes/phanTichLop.ts`:**
+- [x] **Step 3: Tạo `server/src/classes/phanTichLop.ts`:**
 
 ```ts
 /**
@@ -1670,7 +1670,7 @@ export function phanTichLop(p: Principal, classId: number): PhanTichLop {
 }
 ```
 
-- [ ] **Step 4: Route.** Import cạnh dòng Task 5: `import * as phanTichLopSvc from '../classes/phanTichLop.ts';`. Trong khối PR-Qa:
+- [x] **Step 4: Route.** Import cạnh dòng Task 5: `import * as phanTichLopSvc from '../classes/phanTichLop.ts';`. Trong khối PR-Qa:
 
 ```ts
 /** Tab Phân tích lớp: kỹ năng × đợt, mỗi ô "số HV đạt / số HV có điểm" (đặc tả §3.7). */
@@ -1679,8 +1679,8 @@ api.get('/classes/:id/phan-tich-lop', requireAuth, wrap((req) => {
   return phanTichLopSvc.phanTichLop(principalOf(req), pInt(req, 'id'));
 }));
 ```
-- [ ] **Step 5:** `npm run check` xanh (N+26).
-- [ ] **Step 6: Commit.**
+- [x] **Step 5:** `npm run check` xanh (N+26).
+- [x] **Step 6: Commit.**
 
 ```bash
 git add server/src/classes/phanTichLop.ts server/src/routes/index.ts server/src/tests/hocVienLop.tests.ts
@@ -1700,7 +1700,7 @@ git commit -m "PR-Qa (7): GET /classes/:id/phan-tich-lop — kỹ năng × đợ
 - Produces: `capNhatThongTinLop(p, classId, { code?, route?, note?, programmeCode? })` → dòng `classes` sau khi sửa.
   Lỗi (400/403) nói rõ vì sao. Ghi `audit_logs` action `class.info`.
 
-- [ ] **Step 1: Phép kiểm đỏ.**
+- [x] **Step 1: Phép kiểm đỏ.**
 
 ```ts
   // ------------------------------------------------------------------ Task 8 · Sửa thông tin lớp
@@ -1730,9 +1730,9 @@ git commit -m "PR-Qa (7): GET /classes/:id/phan-tich-lop — kỹ năng × đợ
   });
 ```
 
-- [ ] **Step 2:** `npm test` → hai phép kiểm ✗.
+- [x] **Step 2:** `npm test` → hai phép kiểm ✗.
 
-- [ ] **Step 3: Tạo `server/src/classes/thongTinLop.ts`:**
+- [x] **Step 3: Tạo `server/src/classes/thongTinLop.ts`:**
 
 ```ts
 /**
@@ -1820,7 +1820,7 @@ export function capNhatThongTinLop(
 }
 ```
 
-- [ ] **Step 4: Route.** Import `import * as thongTinLopSvc from '../classes/thongTinLop.ts';`; trong khối PR-Qa:
+- [x] **Step 4: Route.** Import `import * as thongTinLopSvc from '../classes/thongTinLop.ts';`; trong khối PR-Qa:
 
 ```ts
 /** ⋮ Sửa thông tin lớp: mã lớp, LT (FT), ghi chú; chương trình chỉ khi lớp chưa có học viên và bài Test. */
@@ -1829,8 +1829,8 @@ api.patch('/classes/:id/thong-tin', requireAuth, wrap((req) => {
   return thongTinLopSvc.capNhatThongTinLop(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 ```
-- [ ] **Step 5:** `npm run check` xanh (N+28).
-- [ ] **Step 6: Commit.**
+- [x] **Step 5:** `npm run check` xanh (N+28).
+- [x] **Step 6: Commit.**
 
 ```bash
 git add server/src/classes/thongTinLop.ts server/src/routes/index.ts server/src/tests/hocVienLop.tests.ts
@@ -1859,7 +1859,7 @@ Web không có bộ kiểm thử: luật đã kiểm ở Task 3; task này kiể
   `useThaoTacDongHocVien({ laLopThuong, quyen, onDone }) → { mucCua(d): MucMenu[]; panels: ReactNode }`,
   `nhapDiemCua(classId, laLopThuong, timeline) → DongChoMenu['nhapDiem']`
 
-- [ ] **Step 1: `web/src/ui/MenuDong.tsx`:**
+- [x] **Step 1: `web/src/ui/MenuDong.tsx`:**
 
 ```tsx
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -1942,7 +1942,7 @@ export function MenuDong({ muc, nhan = 'Thêm thao tác', bieuTuong = '⋯' }: {
 }
 ```
 
-- [ ] **Step 2: `web/src/modules/classes/TenGiaoVien.tsx`:**
+- [x] **Step 2: `web/src/modules/classes/TenGiaoVien.tsx`:**
 
 ```tsx
 import { Link } from 'react-router-dom';
@@ -1962,7 +1962,7 @@ export function TenGiaoVien({ id, ten }: { id: number | null; ten: string }) {
 }
 ```
 
-- [ ] **Step 3: `web/src/modules/classes/CanhBaoYThuc.tsx`:**
+- [x] **Step 3: `web/src/modules/classes/CanhBaoYThuc.tsx`:**
 
 ```tsx
 /**
@@ -1980,7 +1980,7 @@ export function CanhBaoYThuc({ cb }: { cb: { count: number; oldestAgeDays: numbe
 }
 ```
 
-- [ ] **Step 4: `web/src/modules/classes/thaoTacDongHocVien.tsx`:**
+- [x] **Step 4: `web/src/modules/classes/thaoTacDongHocVien.tsx`:**
 
 ```tsx
 import { useState, type ReactNode } from 'react';
@@ -2044,7 +2044,7 @@ export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone }: {
 }
 ```
 
-- [ ] **Step 5: `MissingBadge.tsx`** — bỏ `import { Alert } from '../../ui/ui.tsx';` (dòng 2) và thay dòng 32
+- [x] **Step 5: `MissingBadge.tsx`** — bỏ `import { Alert } from '../../ui/ui.tsx';` (dòng 2) và thay dòng 32
   `<Alert tone="warn">{gon ? items.length : `Thiếu ${items.length} thông tin`}</Alert>` bằng:
 
 ```tsx
@@ -2055,9 +2055,9 @@ export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone }: {
 ```
   Sửa chú thích prop `gon` (dòng 17) thành: `/** Dạng gọn cho bảng lớp: "Thiếu {n}"; rê chuột thấy danh sách, bấm mở popover như thường. */`
 
-- [ ] **Step 6:** `npm run typecheck` xanh. (QuickReport/RecordViolationPanel với `open=false` không vẽ gì — cùng cách
+- [x] **Step 6:** `npm run typecheck` xanh. (QuickReport/RecordViolationPanel với `open=false` không vẽ gì — cùng cách
   `ClassOverviewPage`/`ClassYThucCard` đang dùng.)
-- [ ] **Step 7: Commit.**
+- [x] **Step 7: Commit.**
 
 ```bash
 git add web/src/ui/MenuDong.tsx web/src/modules/classes/TenGiaoVien.tsx web/src/modules/classes/CanhBaoYThuc.tsx web/src/modules/classes/thaoTacDongHocVien.tsx web/src/modules/students/MissingBadge.tsx
@@ -2079,7 +2079,7 @@ git commit -m "PR-Qa (9): menu ⋯ dùng chung, tên GV, nhãn cảnh báo Ý th
   `useThaoTacDongHocVien`, `nhapDiemCua` (Task 9).
 - URL: `q`, `phamVi`, `branchId`, `view` (chip; khoá cũ giữ), `sx=chu-y`, `open` (danh sách id, `-` = đóng hết), `classId` (chỉ một lớp).
 
-- [ ] **Step 1: `web/src/modules/students/BangHocVienLop.tsx`:**
+- [x] **Step 1: `web/src/modules/students/BangHocVienLop.tsx`:**
 
 ```tsx
 import { useMemo } from 'react';
@@ -2231,7 +2231,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi }: {
 }
 ```
 
-- [ ] **Step 2: `StudentsPage.tsx` — phần đầu file mới (thay dòng 1-378).** Import và trang:
+- [x] **Step 2: `StudentsPage.tsx` — phần đầu file mới (thay dòng 1-378).** Import và trang:
 
 ```tsx
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -2485,15 +2485,15 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi }: {
 }
 ```
 
-- [ ] **Step 3: Chữ thô trong `WorkQueue`** (giữ nguyên hàm, chỉ hai chỗ):
+- [x] **Step 3: Chữ thô trong `WorkQueue`** (giữ nguyên hàm, chỉ hai chỗ):
   - dòng 459: `Nhập {r.pendingSkills.join(', ')}` → `Nhập {r.pendingSkills.map(skillShort).join(', ')}`
   - dòng 472: `.map((sk: string) => \`${sk}: ${r.pendingOwners?.[sk] ?? 'chưa phân công'}\`)` →
     `.map((sk: string) => \`${skillShort(sk)}: ${r.pendingOwners?.[sk] ?? 'chưa phân công'}\`)`
   - Xoá `BranchTab` (512-525) và `CaseQueue` (527-602). Chạy `grep -n "Info\|MissingBadge\|STUDENT_FILTERS\|WORK_SCOPE" web/src/modules/students/StudentsPage.tsx`
     — tên nào không còn dùng thì bỏ khỏi import.
-- [ ] **Step 4:** `npm run typecheck` xanh; `grep -n "case SOS\|Theo lớp\|Tạo lớp\|WORK_SCOPE_LABEL" web/src/modules/students/StudentsPage.tsx`
+- [x] **Step 4:** `npm run typecheck` xanh; `grep -n "case SOS\|Theo lớp\|Tạo lớp\|WORK_SCOPE_LABEL" web/src/modules/students/StudentsPage.tsx`
   → không còn.
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.**
 
 ```bash
 git add web/src/modules/students/BangHocVienLop.tsx web/src/modules/students/StudentsPage.tsx
@@ -2520,7 +2520,7 @@ git commit -m "PR-Qa (10): trang Học viên & Lớp — hộp lớp, chip lọc
   `TabHocVienLop` (Task 12) và `PhanTichLopTab` (Task 13) được import ở đây — làm Task 11 tới Step 4 rồi tạm để hai dòng import đó và
   hai dòng dùng chúng thành chú thích cho `typecheck` xanh; Task 12/13 bỏ chú thích.
 
-- [ ] **Step 1: `web/src/modules/classes/DauTrangLop.tsx`:**
+- [x] **Step 1: `web/src/modules/classes/DauTrangLop.tsx`:**
 
 ```tsx
 import { useState } from 'react';
@@ -2679,7 +2679,7 @@ function DongGiaoVienBoMon({ nhom }: { nhom: NhomGiaoVien[] }) {
 }
 ```
 
-- [ ] **Step 2: `web/src/modules/classes/SuaThongTinLopPanel.tsx`:**
+- [x] **Step 2: `web/src/modules/classes/SuaThongTinLopPanel.tsx`:**
 
 ```tsx
 import { useState } from 'react';
@@ -2754,7 +2754,7 @@ export function SuaThongTinLopPanel({ lop, onClose, onDone }: {
 }
 ```
 
-- [ ] **Step 3: Viết lại `web/src/modules/classes/ClassOverviewPage.tsx`:**
+- [x] **Step 3: Viết lại `web/src/modules/classes/ClassOverviewPage.tsx`:**
 
 ```tsx
 import { useEffect, useState } from 'react';
@@ -2856,7 +2856,7 @@ export default function ClassOverviewPage() {
   Ghi chú: `soHocVien` lấy `studentCount` (đang học). Máy chủ kiểm lại cả HV đã rời lớp và bài Test (Task 8) — nếu còn thì trả lời lỗi
   rõ ràng qua toast. Link cũ `?view=…&classId=` vào hồ sơ lớp không còn; `?tab=giao-vien` về tab Học viên (`tabHoSoLop`).
 
-- [ ] **Step 4: `ClassProgressPanel.tsx`:**
+- [x] **Step 4: `ClassProgressPanel.tsx`:**
   - Chữ ký: thêm `tieuDe: string` vào props (dòng 36-37); `title="Lộ trình"` (dòng 73) → `title={tieuDe}`.
   - `import { fmtDate } from '../../lib/format.ts';` → `import { ngay, tuanLich } from '@shared/domain/index.ts';` và
     `import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';`; trong thân: `const { homNay } = useNgayNghiepVu();`.
@@ -2866,8 +2866,8 @@ export default function ClassOverviewPage() {
   - Hai `Status` (dòng ~112-123): `Progress Test: tuần {data.progressWeek} · {fmtDate(data.progressWeekStart)}` →
     `Giữa khoá: {tuanLich(data.progressWeekStart, homNay)} (tuần học {data.progressWeek})`; tương tự `Cuối khoá: …` cho final.
   - `grep -n "Progress\|Final\|Normal\|fmtDate" web/src/modules/classes/ClassProgressPanel.tsx` → không còn (chú thích cũng sửa theo).
-- [ ] **Step 5:** tạm chú thích hai import/khối `TabHocVienLop`, `PhanTichLopTab` nếu hai file chưa có; `npm run typecheck` xanh.
-- [ ] **Step 6: Commit.**
+- [x] **Step 5:** tạm chú thích hai import/khối `TabHocVienLop`, `PhanTichLopTab` nếu hai file chưa có; `npm run typecheck` xanh.
+- [x] **Step 6: Commit.**
 
 ```bash
 git add web/src/modules/classes/DauTrangLop.tsx web/src/modules/classes/SuaThongTinLopPanel.tsx web/src/modules/classes/ClassOverviewPage.tsx web/src/modules/classes/ClassProgressPanel.tsx
@@ -2892,7 +2892,7 @@ git commit -m "PR-Qa (11): hồ sơ lớp — hàng nút đầu trang, GVCN, dò
   `ClassRoster({ classId, quyen, onDoi, onAddStudents? })` (chữ ký MỚI — chỉ `TabHocVienLop` gọi),
   `BangDiemLopThuong({ classId, quyen, onDoi })`, `BangCanHoTro({ classId, laLopThuong, quyen, onDoi })`.
 
-- [ ] **Step 1: Phép kiểm quét chữ (đỏ).** Nối vào cuối thân `runHocVienLopTests`:
+- [x] **Step 1: Phép kiểm quét chữ (đỏ).** Nối vào cuối thân `runHocVienLopTests`:
 
 ```ts
   // ------------------------------------------------------------------ Task 12 · chữ trên màn lớp thường (§2, §6)
@@ -2911,9 +2911,9 @@ git commit -m "PR-Qa (11): hồ sơ lớp — hàng nút đầu trang, GVCN, dò
   });
 ```
 
-- [ ] **Step 2:** `npm test` → ✗ (`ENOENT … BangDiemLopThuong.tsx`).
+- [x] **Step 2:** `npm test` → ✗ (`ENOENT … BangDiemLopThuong.tsx`).
 
-- [ ] **Step 3: `web/src/modules/classes/TabHocVienLop.tsx`:**
+- [x] **Step 3: `web/src/modules/classes/TabHocVienLop.tsx`:**
 
 ```tsx
 import { ClassRoster } from '../students/ClassRoster.tsx';
@@ -2958,7 +2958,7 @@ export function TabHocVienLop({ lop, cheDo, onCheDo, onDoi, onThemHocVien }: {
 }
 ```
 
-- [ ] **Step 4: `web/src/modules/classes/BangDiemLopThuong.tsx`:**
+- [x] **Step 4: `web/src/modules/classes/BangDiemLopThuong.tsx`:**
 
 ```tsx
 import { Link } from 'react-router-dom';
@@ -3065,7 +3065,7 @@ function ODiemThuong({ o, tuan, homNay }: { o: ODiem | null; tuan: string | null
 }
 ```
 
-- [ ] **Step 5: `web/src/modules/classes/BangCanHoTro.tsx`:**
+- [x] **Step 5: `web/src/modules/classes/BangCanHoTro.tsx`:**
 
 ```tsx
 import { useMemo } from 'react';
@@ -3165,7 +3165,7 @@ export function BangCanHoTro({ classId, laLopThuong, quyen, onDoi }: {
 }
 ```
 
-- [ ] **Step 6: `web/src/modules/students/ClassRoster.tsx` — chỉ còn FT.**
+- [x] **Step 6: `web/src/modules/students/ClassRoster.tsx` — chỉ còn FT.**
   - Import (dòng 1-10) thay bằng:
 
 ```tsx
@@ -3231,10 +3231,10 @@ export function ClassRoster({ classId, quyen, onDoi, onAddStudents }: {
   - Sau `</table></div>` (trước `</div>` ngoài cùng) thêm `{tt.panels}`.
   - `FollowCell` dòng 322: `pending.map((k) => ENTRY_SKILL_SHORT[k as EntrySkill] ?? k)` → `pending.map(skillShort)` (§6 chữ thô).
   - `KetLuan` giữ ("Đạt kỳ vọng" đúng cho FT). `export { Outcome };` giữ.
-- [ ] **Step 7:** bỏ chú thích hai dòng `TabHocVienLop` ở `ClassOverviewPage.tsx` (Task 11 Step 5). `npm run typecheck` xanh.
+- [x] **Step 7:** bỏ chú thích hai dòng `TabHocVienLop` ở `ClassOverviewPage.tsx` (Task 11 Step 5). `npm run typecheck` xanh.
   `grep -rn "ClassRoster" web/src` → chỉ `TabHocVienLop.tsx` gọi.
-- [ ] **Step 8:** `npm run check` xanh (N+29).
-- [ ] **Step 9: Commit.**
+- [x] **Step 8:** `npm run check` xanh (N+29).
+- [x] **Step 9: Commit.**
 
 ```bash
 git add web/src/modules/classes/TabHocVienLop.tsx web/src/modules/classes/BangDiemLopThuong.tsx web/src/modules/classes/BangCanHoTro.tsx web/src/modules/students/ClassRoster.tsx web/src/modules/classes/ClassOverviewPage.tsx server/src/tests/hocVienLop.tests.ts
@@ -3256,7 +3256,7 @@ git commit -m "PR-Qa (12): tab Học viên — Điểm (FT, lớp thường Gi�
 - Consumes: `GET /classes/:id/phan-tich-lop` (Task 7), `IssueTable({ classId, category })`, `Th`.
 - Tab Ý thức & Phối hợp: `ClassYThucCard` **giữ nguyên** (chỉ đặt vào tab — YT2 đợt 3 sửa nội dung).
 
-- [ ] **Step 1: `web/src/modules/classes/PhanTichLopTab.tsx`:**
+- [x] **Step 1: `web/src/modules/classes/PhanTichLopTab.tsx`:**
 
 ```tsx
 import { Fragment, useState } from 'react';
@@ -3329,9 +3329,9 @@ export function PhanTichLopTab({ classId }: { classId: number }) {
   );
 }
 ```
-- [ ] **Step 2:** sửa `ClassIssueBoard.tsx` như mục Files; `grep -rn "ClassIssueBoard\b" web/src` → không còn chỗ gọi vỏ cũ.
-- [ ] **Step 3:** `npm run typecheck` xanh.
-- [ ] **Step 4: Commit.**
+- [x] **Step 2:** sửa `ClassIssueBoard.tsx` như mục Files; `grep -rn "ClassIssueBoard\b" web/src` → không còn chỗ gọi vỏ cũ.
+- [x] **Step 3:** `npm run typecheck` xanh.
+- [x] **Step 4: Commit.**
 
 ```bash
 git add web/src/modules/classes/PhanTichLopTab.tsx web/src/modules/classes/ClassIssueBoard.tsx web/src/modules/classes/ClassOverviewPage.tsx
@@ -3345,13 +3345,13 @@ git commit -m "PR-Qa (13): tab Phân tích lớp — kỹ năng × đợt, mở 
 **Files:**
 - Modify: `web/src/modules/students/IntakePanel.tsx:178, 211-216`
 
-- [ ] **Step 1:** dòng 178 `width="max-w-5xl"` → `width="max-w-[1440px]"`.
-- [ ] **Step 2:** dòng 211 `Tuần bắt đầu học — mặc định cho cả lô` → `Tuần bắt đầu học`.
-- [ ] **Step 3:** dòng 213-216 — ngày ISO `pv.defaultStartWeek` qua G-6: thêm `import { ngay } from '@shared/domain/index.ts';` và
+- [x] **Step 1:** dòng 178 `width="max-w-5xl"` → `width="max-w-[1440px]"`.
+- [x] **Step 2:** dòng 211 `Tuần bắt đầu học — mặc định cho cả lô` → `Tuần bắt đầu học`.
+- [x] **Step 3:** dòng 213-216 — ngày ISO `pv.defaultStartWeek` qua G-6: thêm `import { ngay } from '@shared/domain/index.ts';` và
   `import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';`, trong thân `const { homNay } = useNgayNghiepVu();`, rồi
   `` `Đang dùng tuần bắt đầu ${pv.defaultStartWeek}. …` `` → `` `Đang dùng tuần bắt đầu ${ngay(pv.defaultStartWeek, homNay)}. …` ``.
-- [ ] **Step 4:** `grep -n "cả lô" web/src/modules/students/IntakePanel.tsx` → không còn. `npm run typecheck` xanh.
-- [ ] **Step 5: Commit.**
+- [x] **Step 4:** `grep -n "cả lô" web/src/modules/students/IntakePanel.tsx` → không còn. `npm run typecheck` xanh.
+- [x] **Step 5: Commit.**
 
 ```bash
 git add web/src/modules/students/IntakePanel.tsx
@@ -3366,16 +3366,16 @@ git commit -m "PR-Qa (14): Thêm học viên hàng loạt rộng 1440px, bỏ ch
 - Modify: `docs/superpowers/specs/2026-09-22-ux-toan-web-truoc-deploy-design.md` §4 (dòng 189, 191)
 - Modify: `CODE_MAP.md`
 
-- [ ] **Step 1: §4 dòng "Chấm điểm"** (dòng 189) — cột "Nằm ở" thêm ` · ⋯ hộp lớp ở Học viên & Lớp` (Q6, G-12):
-  `| Chấm điểm | Test › Cần chấm → lưới · nút Nhập điểm Test ở Hồ sơ lớp · ⋯ dòng HV · ⋯ hộp lớp ở Học viên & Lớp | GV môn đó, QL |`
-- [ ] **Step 2: §4 dòng "Hồ sơ GV"** (dòng 191) — thêm vào cuối cột "Nằm ở": ` (tên chỉ thành link khi PR-GV bật \`CO_TRANG_HO_SO_GIAO_VIEN\`)`.
-- [ ] **Step 3: CODE_MAP.md** — tìm các dòng về Học viên / lớp (`grep -n "StudentsPage\|ClassOverviewPage\|ClassRoster" CODE_MAP.md`),
+- [x] **Step 1: §4 dòng "Chấm điểm"** (dòng 189) — cột "Nằm ở" thêm ` · ⋯ hộp lớp ở Học viên & Lớp` (Q6, G-12):
+  `| Chấm điểm | Test › Cần chấm → lưới · nút Nhập điểm Test ở Hồ sơ lớp · ⋯ dòng HV · ⋯ hộp lớp ở Học viên & Lớp | GV môn đó, QL |` — đã có sẵn từ Q11 (thêm 22/09), không cần sửa.
+- [x] **Step 2: §4 dòng "Hồ sơ GV"** (dòng 191) — thêm vào cuối cột "Nằm ở": ` (tên chỉ thành link khi PR-GV bật \`CO_TRANG_HO_SO_GIAO_VIEN\`)`.
+- [x] **Step 3: CODE_MAP.md** — tìm các dòng về Học viên / lớp (`grep -n "StudentsPage\|ClassOverviewPage\|ClassRoster" CODE_MAP.md`),
   sửa/thêm để trỏ đúng:
   - `| **Học viên & Lớp** (một trang, nhóm theo lớp, chip lọc, Phạm vi) | web/src/modules/students/StudentsPage.tsx → BangHocVienLop.tsx | GET /hoc-vien-lop → server/src/classes/hocVienLop.ts |`
   - `| **Hồ sơ lớp** (đầu trang, 3 tab, ⋮) | web/src/modules/classes/ClassOverviewPage.tsx → DauTrangLop · TabHocVienLop · PhanTichLopTab | /classes/:id/overview · /roster · /phan-tich-lop · PATCH /thong-tin |`
   - `| Menu ⋯ dòng học viên (Hồ sơ · + Ghi nhận vi phạm · + Case · Nhập điểm) | web/src/modules/classes/thaoTacDongHocVien.tsx + shared/domain/hocVienLop.ts (mucMenuDongHocVien) | — |`
   - `| Luật hiển thị Học viên & Lớp (kết quả gần nhất, khoá, badge lớp, việc tiếp theo) | shared/domain/hocVienLop.ts | server/src/classes/dongHocVien.ts |`
-- [ ] **Step 4: Commit.**
+- [x] **Step 4: Commit.**
 
 ```bash
 git add docs/superpowers/specs/2026-09-22-ux-toan-web-truoc-deploy-design.md CODE_MAP.md
@@ -3388,7 +3388,7 @@ git commit -m "PR-Qa (15): bảng định vị §4 (Nhập điểm ở ⋯ hộp
 
 **Files:** ảnh `thiet-ke/anh/pr-qa/` (tạo thư mục). Không sửa mã (thấy lỗi → sửa ở task tương ứng, commit riêng, ghi Nhật ký).
 
-- [ ] **Step 1: Bật máy dev trong worktree, cổng 4137 / 5337** (không dùng `preview_start` — nó chạy mã của thư mục chính; không
+- [x] **Step 1: Bật máy dev trong worktree, cổng 4137 / 5337** (không dùng `preview_start` — nó chạy mã của thư mục chính; không
   dùng 4000/5173):
   1. `npm run seed` (database riêng của worktree).
   2. Nền: `PORT=4137 node dist-server/server/src/index.js` (sau `npm run build:server`).
@@ -3401,9 +3401,9 @@ git commit -m "PR-Qa (15): bảng định vị §4 (Nhập điểm ở ⋯ hộp
   5. Chụp ảnh: `npm i --no-save playwright` + `chromium.launch({ channel: 'chrome' })` (Chrome có sẵn, không tải trình duyệt), chạy
      script từ Git Bash với `MSYS_NO_PATHCONV=1`. Trang cuộn trong `<main>` → chụp cả trang = nới chiều cao khung theo `main.scrollHeight`.
      Tên ảnh `{vai}-{man}-{ft|thuong}-{1440|375}.png` (vai: `qt`, `ql`, `gvcn`, `gvbm`).
-- [ ] **Step 2: Chuẩn bị một dữ liệu cho YT-8.** Là GVCN (7), vào hồ sơ lớp MB-FT 101 › Ý thức & Phối hợp › + Ghi nhận vi phạm cho một
+- [x] **Step 2: Chuẩn bị một dữ liệu cho YT-8.** Là GVCN (7), vào hồ sơ lớp MB-FT 101 › Ý thức & Phối hợp › + Ghi nhận vi phạm cho một
   em, ngày cách đây 7 ngày. (DB của worktree, không phải bản chính.)
-- [ ] **Step 3: KIỂM — Quản trị (1), 1440px.** Ghi ✓/✗ + ảnh:
+- [x] **Step 3: KIỂM — Quản trị (1), 1440px.** Ghi ✓/✗ + ảnh:
   1. Tab trình duyệt ghi **PISA Progress** (`document.title`).
   2. `/hoc-vien`: tiêu đề **Học viên & Lớp**; ô tìm; **Phạm vi: Tất cả** mặc định, có "Chi nhánh"; chọn Chi nhánh → hiện ô chọn chi
      nhánh (nếu > 1); **Xếp: Tên A→Z**; 6 chip có số; **không còn** cặp nút Tôi / Tất cả, dải tab chi nhánh, nút "Theo lớp".
@@ -3433,16 +3433,16 @@ git commit -m "PR-Qa (15): bảng định vị §4 (Nhập điểm ở ⋯ hộp
   14. ⋮ › Sửa thông tin lớp: đổi mã MB-FOU 12 → "MB-FOU 12A" → lưu → đầu trang đổi; đổi lại "MB-FOU 12". Ô Chương trình bị khoá kèm câu
       giải thích (lớp có học viên). Gõ mã "FOU 12" → toast lỗi "Mã lớp phải bắt đầu bằng "MB-"…".
   15. + Học viên mở ngăn thêm hàng loạt rộng gần hết 1440px; nhãn "Tuần bắt đầu học" (không "mặc định cho cả lô").
-- [ ] **Step 4: KIỂM — QL chi nhánh (2), 1440px.** Phạm vi mặc định Chi nhánh (hoặc Lớp tôi dạy nếu QL có dạy); chỉ lớp MB; hộp lớp
+- [x] **Step 4: KIỂM — QL chi nhánh (2), 1440px.** Phạm vi mặc định Chi nhánh (hoặc Lớp tôi dạy nếu QL có dạy); chỉ lớp MB; hộp lớp
   ⋯ đủ 3 mục; hồ sơ lớp đủ nút như Quản trị; ⋮ đủ hai mục; Sửa phân công mở `TeacherAssignDialog` cũ và lưu được.
-- [ ] **Step 5: KIỂM — GVCN Trần Ngọc Hà (7), 1440px.** Phạm vi mặc định **Lớp tôi dạy**, chỉ lớp mình dạy; "Việc tiếp theo" có
+- [x] **Step 5: KIỂM — GVCN Trần Ngọc Hà (7), 1440px.** Phạm vi mặc định **Lớp tôi dạy**, chỉ lớp mình dạy; "Việc tiếp theo" có
   "Nhập điểm L, R · MT…" (việc CỦA MÌNH); hồ sơ lớp: **+ Case · + Học viên · Nhập điểm Test**, không có Lộ trình lớp / Lịch kiểm tra,
   Chuyển tiếp lớp, ⋮ (nếu GVCN không có `class.edit`/`class.assign`); menu ⋯ dòng có + Ghi nhận vi phạm; bảng điều khiển trình duyệt
   không có lỗi 403 đỏ.
-- [ ] **Step 6: KIỂM — GVBM Phạm Thu Trang (9), 1440px.** Chỉ lớp mình dạy; ô Phạm vi ẩn nếu chỉ một lựa chọn; hồ sơ lớp **không**
+- [x] **Step 6: KIỂM — GVBM Phạm Thu Trang (9), 1440px.** Chỉ lớp mình dạy; ô Phạm vi ẩn nếu chỉ một lựa chọn; hồ sơ lớp **không**
   có + Học viên, Lộ trình lớp, ⋮; có + Case (nếu có quyền báo Case), Nhập điểm Test; menu ⋯ dòng: Hồ sơ · + Ghi nhận vi phạm · + Case ·
   Nhập điểm (chỉ khi em còn bài Speaking chờ chấm); tên đồng nghiệp ở dòng GV bộ môn là chữ thường.
-- [ ] **Step 7: KIỂM — điện thoại 375×812** (Quản trị, QL, GVCN, GVBM — ít nhất `/hoc-vien`, hồ sơ lớp FT tab Học viên, hồ sơ lớp
+- [x] **Step 7: KIỂM — điện thoại 375×812** (Quản trị, QL, GVCN, GVBM — ít nhất `/hoc-vien`, hồ sơ lớp FT tab Học viên, hồ sơ lớp
   thường tab Học viên, tab Phân tích lớp):
   1. `document.documentElement.scrollWidth <= 375` ở mọi màn trên; bảng cuộn ngang **trong thẻ** (G-11).
   2. Hộp lớp xuống dòng gọn, badge không đè tên; chip cuộn ngang trong hàng của nó.
@@ -3450,39 +3450,83 @@ git commit -m "PR-Qa (15): bảng định vị §4 (Nhập điểm ở ⋯ hộp
   4. Menu ⋯ ở dòng cuối cùng mở **lên trên**, nằm **trên** thanh dưới 4 nút; menu thông báo/tài khoản ở đầu trang phủ lên thanh dưới
      (thanh dưới z-30). Ngăn trượt (+ Case) phủ thanh dưới; toast hiện trên thanh dưới.
   5. Hàng nút đầu hồ sơ lớp xuống dòng, không tràn; tab cuộn ngang trong hàng tab.
-- [ ] **Step 8:** Lưu ảnh vào `thiet-ke/anh/pr-qa/`. Tắt API/Vite, xoá `vite.qa.config.ts`, gỡ playwright khỏi `node_modules`
+- [x] **Step 8:** Lưu ảnh vào `thiet-ke/anh/pr-qa/`. Tắt API/Vite, xoá `vite.qa.config.ts`, gỡ playwright khỏi `node_modules`
   (`npm prune`), kiểm `git status` không còn file tạm. Xác nhận không còn tiến trình nghe 4137/5337.
-- [ ] **Step 9:** `npm run check` xanh lần cuối; số phép kiểm ≥ mốc Task 0 + 29. Ghi Nhật ký (✓/✗ từng mục, lỗi đã sửa ở commit nào).
-- [ ] **Step 10: Commit.**
+- [x] **Step 9:** `npm run check` xanh lần cuối; số phép kiểm ≥ mốc Task 0 + 29. Ghi Nhật ký (✓/✗ từng mục, lỗi đã sửa ở commit nào).
+- [x] **Step 10: Commit.**
 
 ```bash
 git add thiet-ke/anh/pr-qa
 git commit -m "PR-Qa (16): ảnh KIỂM bốn vai, 1440px và 375px, lớp FT và lớp thường"
 ```
 
+**Nhật ký thực thi (Task 16, KIỂM bấm thử):**
+
+Máy dev bật đúng cổng 4137 (API)/5337 (Vite) trong worktree, không đụng bản chính. Đăng nhập bằng
+`POST /api/demo/session` cho 4 vai (1, 2, 7, 9). Chụp 15 ảnh 1440px/375px vào `thiet-ke/anh/pr-qa/` bằng Playwright
+Chrome tạm thời (gỡ sau khi xong). Kiểm bằng cả ảnh và `get_page_text`/`read_page`/DOM (regex chữ cấm G-6) qua trình
+duyệt gắn sẵn.
+
+- Step 3 (Quản trị, 15 mục): ✓ tất cả. Chi tiết đáng chú ý: mục 3.5/3.12/3.13 quét regex `\d{4}-\d{2}-\d{2}|Progress|Final|Normal|kỳ vọng`
+  trên `MB-FOU 12` và panel Lịch kiểm tra — sạch. Mục 3.9 xác nhận `<abbr title="Listening · Reading">` đúng khi rê chuột "L · R";
+  ⋮ đúng "Sửa phân công · Sửa thông tin lớp"; bấm "11 Case đang mở" chuyển đúng sang chế độ Cần hỗ trợ. Mục 3.11 (Phân tích lớp):
+  bấm dòng mở đúng bảng vấn đề; ⓘ trong đặc tả (Q14) hiện dưới dạng thuộc tính `title` thường (không có glyph ⓘ riêng) — cùng quy ước
+  với TOÀN BỘ 15 task trước (không có icon ⓘ riêng ở bất kỳ đâu trong `web/src`), nên không coi là lỗi riêng của task này, chỉ ghi
+  nhận để Task 17 cân nhắc. Mục 3.14: đổi mã lớp MB-FOU 12 → 12A → lưu → đổi lại; toast lỗi đúng câu khi gõ "FOU 12" thiếu tiền tố "MB-".
+  **Mục 3.15 phát hiện LỖI THẬT** (xem bên dưới) — đã sửa.
+- Step 4 (QL chi nhánh Nguyễn Khánh Vy): ✓. Riêng "Nhập điểm Test" KHÔNG hiện ở hồ sơ lớp cho QL (khác mô tả brief "đủ nút như
+  Quản trị") — đã tra `server/src/permissions.ts` + `server/src/tests/run.ts:699-701`: đây là hành vi ĐÚNG THEO THIẾT KẾ đã có phép
+  kiểm tường minh ("Quản lý không có đường nhập bù điểm", chỉ Quản trị hệ thống mới nhập bù được) — không phải lỗi, không sửa. ⋮ đủ
+  "Sửa phân công · Sửa thông tin lớp"; mở `TeacherAssignDialog`, đổi rồi Lưu → toast "Đã lưu phân công".
+- Step 5 (GVCN Trần Ngọc Hà): ✓. Mặc định chỉ 2 lớp mình dạy (MB-FOU 12, MB-FT 101), không có ô Phạm vi/Chi nhánh. Hồ sơ lớp chỉ
+  "+ Case · + Học viên · Nhập điểm Test", không ⋮. "Việc tiếp theo" đúng việc của mình (Nhập điểm L, R). Console không có lỗi 403.
+- Step 6 (GVBM Phạm Thu Trang): ✓. Hồ sơ lớp chỉ "+ Case · Nhập điểm Test", không + Học viên/Lộ trình lớp/⋮. Menu ⋯ dòng học viên còn
+  bài Speaking chờ chấm có thêm "Nhập điểm MT…"; dòng không còn bài chỉ có "Hồ sơ · + Ghi nhận vi phạm · + Case". Tên đồng nghiệp ở
+  dòng GV bộ môn là chữ thường, không phải link.
+- Step 7 (375×812, 4 vai): ✓. `scrollWidth` luôn 375 ở mọi màn đã kiểm; bảng cuộn ngang trong thẻ; dòng GV bộ môn gọn 2 nhóm + "+k",
+  bấm "+k" ra đủ danh sách; menu ⋯ dòng cuối mở lên trên, trên thanh dưới 4 nút; ngăn "+ Case" phủ kín thanh dưới; hàng nút đầu hồ sơ
+  lớp xuống dòng gọn, tab cuộn ngang trong hàng tab.
+
+**Lỗi thật phát hiện và đã sửa (commit riêng):**
+
+1. `web/src/modules/students/IntakePanel.tsx` (thuộc Task 14) — ô "Tuần bắt đầu" của từng dòng trong ngăn + Học viên hàng loạt hiện
+   placeholder theo **ISO thô** (`2026-07-27`) thay vì định dạng G-6 (`27/07`), vi phạm "Ngày không bao giờ hiện dạng ISO". Nguyên
+   nhân: dùng thẳng `pv.defaultStartWeek` (chuỗi ISO từ máy chủ) làm `placeholder` thay vì qua hàm `ngay()` như dòng gợi ý ngay phía
+   trên đã làm đúng. Sửa: bọc qua `ngay(pv.defaultStartWeek, homNay)`. Đã xác nhận lại trên trình duyệt: placeholder đổi thành "27/07".
+   Commit: xem SHA bên dưới, message `PR-Qa (16): sửa lỗi phát hiện khi KIỂM — ...`.
+
+**Không tìm thấy lỗi nào khác cần sửa.** Mọi mục ✗ ban đầu (QL thiếu "Nhập điểm Test") sau khi tra code + test hiện có đều xác
+định là hành vi đúng theo thiết kế, không phải lỗi.
+
+`npm run check`: **787/787 kiểm tra đạt**, `typecheck` xanh (không đổi so với mốc trước Task 16 vì đây là task KIỂM, không thêm bớt
+phép kiểm). Đã dọn sạch: tắt cả 2 tiến trình dev (API 4137, Vite 5337), xoá `vite.qa.config.ts` và `scripts-tmp-qa/`, `npm prune` gỡ
+playwright, `git status` sạch trước khi commit.
+
 ---
 
 ### Task 17: Rà soát, rebase main mới nhất, mở PR (không tự merge)
 
-- [ ] **Step 1:** superpowers:requesting-code-review — người rà **Opus 5** (khác model người code) rà `git diff origin/main...HEAD`,
+- [x] **Step 1:** superpowers:requesting-code-review — người rà **Opus 5** (khác model người code) rà `git diff origin/main...HEAD`,
   nhấn vào: (a) nút/mục menu nào hiện ra mà máy chủ từ chối (403) hoặc bấm không làm gì; (b) số chip / số "Case đang mở" có khớp
   danh sách mở ra; (c) chữ lớp thường (không MT, kỳ vọng, Progress/Final, Normal) và G-6 (không ISO); (d) có chạm file của PR-AN /
   PR-S2 / PR-Pa (bảng ranh giới) không; (e) `ngay`/`tuanLich`/`shortDate` giữ chữ ký; (f) hiệu năng `GET /hoc-vien-lop` (không truy vấn
   theo từng em). Xử lý theo superpowers:receiving-code-review; ghi Nhật ký.
-- [ ] **Step 2: Rebase main mới nhất.** `git fetch origin && git rebase origin/main`. Xung đột dự kiến và cách gỡ:
+- [x] **Step 2: Rebase main mới nhất.** `git fetch origin && git rebase origin/main`. Xung đột dự kiến và cách gỡ:
   - `server/src/tests/run.ts` (khối cuối) → giữ **mọi** khối (PR-AN/S2/Pa) và khối PR-Qa, khối PR-Qa đứng cuối trước dòng in tổng kết.
   - `server/src/routes/index.ts` → giữ mọi import và mọi khối route của cả hai bên.
   - `shared/domain/index.ts` → giữ mọi dòng `export *`.
   - `shared/domain/hienThiNgay.ts` / `display.ts` → PR-Qa sở hữu; nếu PR khác đã sửa, 🛑 hỏi trước khi chọn bên.
   - PR-S2/AN có migrate → chạy `npm run migrate` trên **bản sao** DB dev nếu cần seed lại; không đụng DB bản chính.
   Sau rebase: `npm ci` (nếu `package-lock.json` đổi), `npm run check` xanh, ghi số phép kiểm.
-- [ ] **Step 3:** superpowers:finishing-a-development-branch — `git push -u origin pr-qa-hoc-vien-lop --force-with-lease`, mở PR
+- [x] **Step 3:** superpowers:finishing-a-development-branch — `git push -u origin pr-qa-hoc-vien-lop --force-with-lease`, mở PR
   **không draft** bằng `gh pr create`, tiêu đề `PR-Qa · Học viên & Lớp + Hồ sơ lớp`. Thân PR: phạm vi (§3.6, §3.7, Q1–Q5, Q10–Q13,
   K2-6a, YT-8, ba nợ PR-O), bảng Q1–Q21 "chỗ tự quyết", "Không migrate; 3 route mới: `GET /hoc-vien-lop`,
   `GET /classes/:id/phan-tich-lop`, `PATCH /classes/:id/thong-tin`", việc để lại cho PR sau (PR-LT bật `MENU_DONG_CHO_PR_LT` + dữ liệu
   "tiếp theo: …" cho `khoaLopThuong`; PR-GV bật `CO_TRANG_HO_SO_GIAO_VIEN`; PR-Rc1 quyết badge "bài chưa chấm" trên hộp lớp), số phép
   kiểm, link ảnh KIỂM, model thật đã code và model rà. Cuối thân: `🤖 Generated with [Claude Code](https://claude.com/claude-code)`.
   **Không tự merge.** Báo chủ sản phẩm link PR.
+  → Đã push, mở **PR #69**: https://github.com/Pizi147/pisa-tracking/pull/69 (không draft, base `main`, head
+  `pr-qa-hoc-vien-lop`). Chưa merge — chờ session planning rà và nói "merge được".
 
 ---
 
@@ -3501,4 +3545,91 @@ git commit -m "PR-Qa (16): ảnh KIỂM bốn vai, 1440px và 375px, lớp FT v�
 
 *(Người thực thi ghi sau mỗi task: model thật, số phép kiểm, điều bất ngờ, chỗ phải tự quyết.)*
 
-- **Task 0:**
+- **Task 0:** Model thật: Sonnet 5. Worktree tạo bằng `EnterWorktree` (native), nhánh tự sinh `worktree-pr-qa-hoc-vien-lop` được
+  đổi tên lại đúng `pr-qa-hoc-vien-lop` (`git branch -m`), base ref khớp `origin/main` @ `67e79c5` (đã có PR-AN #63, PR-S1, spec #60,
+  #61, #62 — sau mốc `7843875` của plan nhưng `git diff 7843875..HEAD --stat` trên các file PR-Qa sở hữu **không có gì** nên số dòng
+  trong plan vẫn đúng). Biến Turso: sạch. `npm ci` xong (325 packages). `npm run check`: **TẤT CẢ 757 KIỂM TRA ĐỀU ĐẠT**, typecheck
+  xanh — mốc N = 757. Xác nhận đủ 9 file spec/kiểm kê/mockup/thuật ngữ tồn tại. Không có Q nào lệch đặc tả ở bước đọc. Sẵn sàng
+  Task 1.
+
+- **Task 1:** Model thật: Sonnet 5. Tám bước làm theo đúng thứ tự, đúng code mẫu trong task brief (đã chép nguyên). Bước 2 (đỏ):
+  757 đạt, đúng 2 phép kiểm PR-Qa mới ✗ như dự tính. Sau khi sửa `display.ts` (`ngayTheoGioVN`, `shortDate`) và `hienThiNgay.ts`
+  (`ngay`, `tuanLich` đi qua `ngayTheoGioVN`) và cập nhật phép kiểm PR-O cũ ở `khung.tests.ts:15` — `npm test`:
+  **TẤT CẢ 759 KIỂM TRA ĐỀU ĐẠT** (N+2 = 759, đúng mốc). Phép kiểm cũ `deadlineView`/`shortDate`/`businessDateText` (`run.ts`
+  ~7900-7960) và PR-O `khung.tests.ts` vẫn xanh. `npm run check` xanh (build + test + typecheck), thoát mã 0. Điều bất ngờ duy
+  nhất: khối PR-AN đã được chèn vào giữa khối PR-O và dòng `console.log` cuối `run.ts` (không có ở lúc viết brief) — tự quyết đặt
+  khối `PR-Qa` ngay sau `await runKhungTests(...)` và trước khối PR-AN, giữ đúng ý "ngay sau khối PR-O" mà không chèn giữa PR-AN.
+  Không có Q nào lệch đặc tả. Sẵn sàng Task 2 (PR-Pa dùng `ngay`/`tuanLich`/`tuanKhoa`/`shortDate` không cần đổi gì thêm).
+
+- **Task 17 (fix sau rà soát cuối):** Model thật: Sonnet 5. Vòng sửa 2 lỗi Important do rà soát TOÀN NHÁNH cuối cùng (model
+  Opus) tìm ra, TRƯỚC khi mở PR — không phải một task mới, phạm vi đúng 2 finding, không mở rộng. Báo cáo đầy đủ:
+  `.superpowers/sdd/2026-09-22-pr-qa-hoc-vien-lop/task-17-fix-report.md`.
+  - **Điểm a (nút đầu trang ra 403):** `can(PERMISSIONS.STUDENT_EDIT)` phía client (không ngữ cảnh branchId/classId) khiến nút
+    "+ Lớp mới"/"+ Học viên" luôn hiện dù GVCN/GVBM bấm vào chắc chắn 403 (`hasAssignment` đòi `ctx.classId` cụ thể). Sửa:
+    "+ Học viên" đổi sang `(data?.rows ?? []).some((r) => r.viewer.coTheSuaHocVien)` (cờ đã có sẵn theo từng lớp, thuần web);
+    "+ Lớp mới" thêm cờ mới `coTheTaoLop` từ máy chủ (`server/src/classes/hocVienLop.ts` — kiểm `STUDENT_EDIT` theo TỪNG chi
+    nhánh người xem thấy được), web đổi sang `data?.coTheTaoLop`, bỏ hẳn `can(PERMISSIONS.STUDENT_EDIT)` và import
+    `PERMISSIONS` khỏi `StudentsPage.tsx`.
+  - **Điểm b (Q5/G-10, badge "n Case đang mở" không khớp "Cần hỗ trợ"):** `soCaseMoTheoLop` (`dongHocVien.ts`) đổi từ đếm SQL
+    thô (không lọc quyền) sang tính dựa trên `listCases(p, {})` (một lời gọi, cùng nguồn mà "Cần hỗ trợ" dùng), gom lại theo
+    lớp ĐANG HỌC hiện tại của từng em; thêm `p` vào chữ ký, cập nhật 2 nơi gọi (`hocVienLop.ts`, `classes.ts:610`).
+  - **Nợ để lại (KHÔNG sửa, ngoài phạm vi PR-Qa):** nguyên nhân gốc ở `server/src/cases/cases.ts:1789` — bộ lọc quyền của
+    `listCases` dùng `eff_class_id = COALESCE(a.class_id, cur.class_id)` (lớp LÚC ĐÁNH GIÁ trước), trong khi WHERE lọc theo
+    `classId` của CHÍNH hàm đó (dòng 1688) lại đúng dùng `COALESCE(cur.class_id, a.class_id)` (lớp HIỆN TẠI trước) — hai công
+    thức khác thứ tự COALESCE trong cùng một hàm. `cases.ts` thuộc PR-S2/PR-AN, nằm trong bảng ranh giới file cấm sửa của
+    PR-Qa — đã ghi chi tiết và đề nghị hướng sửa vào báo cáo Task 17 để route sang người sở hữu file đó.
+  - **Test mới:** 2 phép kiểm ở `hocVienLop.tests.ts` (điểm a: `coTheTaoLop` đúng `true`/`false` theo 4 vai; điểm b: tái hiện
+    kịch bản em chuyển lớp A→B, Case gắn bài Test cũ ở A, GV chỉ dạy B — badge và "Cần hỗ trợ" phải khớp nhau, cả hai `= 0`).
+    2 phép kiểm CŨ của Task 5/Task 6 (so `soCaseMo` với tổng cột Case của `classRoster`) vẫn xanh, KHÔNG phải chỉnh gì — vì cả
+    hai đều dùng `P.admin`, và `can()` của Quản trị hệ thống luôn `true` bất kể ngữ cảnh nên việc đổi nguồn đếm không đổi kết
+    quả với vai này. `npm run check`: **TẤT CẢ 811 KIỂM TRA ĐỀU ĐẠT** (809 + 2 mới), `typecheck` xanh. Không đụng `cases.ts`
+    hay file cấm nào khác trong bảng ranh giới.
+
+- **Task 2–16 (tóm tắt):** Model thật: Sonnet 5 cho toàn bộ 16 task implementer + reviewer theo từng task (dùng skill
+  superpowers:subagent-driven-development, mỗi task một implementer subagent + một task reviewer riêng, đúng quy trình).
+  Lịch sử thi hành đầy đủ từng task (commit SHA, kết quả review, fix round nếu có) nằm ở ledger SDD:
+  `.superpowers/sdd/2026-09-22-pr-qa-hoc-vien-lop/progress.md` — bao gồm 2 fix round trong quá trình code (Task 5: cờ
+  `coTheNhapDiem` đổi sang `editableSkills()`/`can()` thật thay vì đọc thẳng phân công; Task 8: bổ sung phép kiểm cho
+  nhánh kết thúc phân công GV khi đổi chương trình) và 1 fix round tài liệu (Task 15: dọn dòng cũ/trùng CODE_MAP.md).
+  Mọi task đều qua review Approved trước khi sang task kế tiếp; số phép kiểm tăng dần từ 757 (Task 0) lên 809 sau Task 16.
+
+- **Task 17 Step 1 (rà soát toàn nhánh cuối cùng):** Model rà: **Opus 5** (khác Sonnet 5 của người code, đúng chốt ở đầu
+  plan). Phạm vi: `61ae2dd..8dabfcd` (20 commit, sau khi rebase lên `origin/main` mới nhất — main đã có PR-S2 merge).
+  Kết quả lần 1: "gộp được, nhưng phải sửa trước" — 2 Important (đã sửa, xem mục "Task 17 (fix sau rà soát cuối)" phía
+  trên), không Critical. Sáu điểm (a)-(f) bắt buộc: (a) ban đầu có lỗi (đã sửa), (b) ban đầu có lỗi (đã sửa), (c)/(d)/(e)/
+  (f) đạt ngay từ đầu. Sau 1 fix round, re-review (Opus, tự chạy lại `npm run check` xác nhận 811/811): **All findings
+  addressed**. Các Minor (9 mục ở lần rà đầu + 2 mục mới sau fix) và vấn đề của chính kế hoạch (Q5 không nói rõ nguồn dữ
+  liệu "Cần hỗ trợ") đã park theo ruling, không chặn PR — xem chi tiết trong `.superpowers/sdd/.../progress.md`.
+  Ghi chú của người rà cuối: mục Nhật ký thực thi này trước khi bổ sung chỉ có Task 0/1/16/17 — các task 2-15 đã được
+  code/review đầy đủ (xem ledger SDD) nhưng không phải task nào cũng tự chép lại vào file plan này; đã bổ sung tóm tắt ở
+  trên để người đọc plan không phải mở file ledger riêng mới biết đã có review.
+
+- **PR #69 — vòng sửa theo session planning + xung đột merge với main:** Sau khi mở PR #69, session planning rà và trả
+  lời "MERGE ĐƯỢC SAU KHI SỬA" với 2 việc: (1) [Important] `soCaseMoTheoLop` gọi `listCases(p, {})` quét toàn hệ thống —
+  chậm trên Turso; (2) [Minor] 3 chỗ chữ/màu ở `ClassRoster.tsx`/`BangDiemLopThuong.tsx`. Model thật: Sonnet 5 (fix),
+  Opus 5 (review — vẫn giữ nguyên tắc khác model người code cho mọi vòng rà nhạy cảm về quyền/hiệu năng).
+  - Fix round 1 (`3f951e3`): xoá hẳn `soCaseMoTheoLop`; `classOverview` gọi `listCases(p,{classId})` trực tiếp;
+    `danhSachHocVienLop` gọi `listCases` một lần cho mỗi chi nhánh có trong danh sách lớp (không phải toàn hệ thống,
+    không gọi hai lần); 3 fix chữ/màu; bấm thử vai GVBM/QL qua server tạm 4137/5337, dọn dẹp sạch. 813/813 đạt.
+  - Review round 1 (Opus): Needs fixes — 2 Important MỚI phát hiện (tự tái hiện bằng cách đảo code, không suy đoán):
+    (a) `classOverview` badge lệch "Cần hỗ trợ" khi học viên bị tạm dừng (paused) còn Case mở — quirk khác của
+    `cases.ts` (không sửa file đó) va chạm với cách tính mới; (b) 2 phép kiểm đếm truy vấn mới dùng `P.admin` (grant
+    `branchId: null` không hỏi DB) nên không bắt được nếu code quay lại quét toàn hệ thống — tự chứng minh bằng cách
+    đảo code, test vẫn xanh.
+  - **Đồng thời:** Auto-fix CI báo PR #69 xung đột merge với `main` (PR-Pa #68 vừa merge). Xử lý SAU khi fix round 1 đã
+    push (không phá việc đang chạy dở): `git fetch origin main && git merge FETCH_HEAD` (KHÔNG rebase, KHÔNG
+    force-push — đúng chỉ dẫn Auto-fix cho PR đã mở công khai). Xung đột DUY NHẤT: `shared/domain/index.ts` (cộng dồn
+    `export *` cho `hocVienLop.ts` và `tongQuan.ts` của PR-Pa) — giữ cả hai dòng. Mọi file khác tự merge sạch. Không
+    trùng tên export giữa hai module mới. `npm run check` sau merge: 835/835 (813 PR-Qa + 22 PR-Pa). Commit merge
+    `75694f3`, push thường.
+  - Fix round 2 (`46a8051`): `classOverview.soCaseMo` lọc thêm theo học viên đang active/không lưu trữ của ĐÚNG lớp
+    trước khi đếm (một câu SQL hằng số, khớp cách `lopCuaHv` đã làm đúng ở `danhSachHocVienLop`); test mới tái hiện
+    đúng kịch bản paused; 2 test đếm truy vấn đổi/thêm dùng `P.mbManager` + Case ở chi nhánh khác để "có răng" thật.
+    837/837 đạt.
+  - Re-review round 2 (Opus): **All findings addressed** — xác minh bằng cách đảo code lại 3 lần (mỗi lần một chỗ),
+    thấy đúng test tương ứng đỏ, rồi khôi phục sạch. Không breakage mới. Park (không chặn): số câu `prepare` NỀN còn
+    cao (~660-734, không tăng theo Case) — nghi từ `listClassSummaries`/`can()` từng lớp, để PR-TD (tốc độ Turso) đo
+    sau; 1 nit đặt tên biến test; nợ gốc `cases.ts` (fallback lớp lúc đánh giá cho học viên paused) vẫn còn, đã ghi rõ
+    trong test là hành vi né tránh phía PR-Qa, không phải sửa gốc.
+  - **PR #69 sau cùng:** `mergeStateStatus: CLEAN`, `mergeable: MERGEABLE`. Đã push đủ 3 commit
+    (`3f951e3`, `75694f3`, `46a8051`) lên `origin/pr-qa-hoc-vien-lop`. Chưa merge — chờ session planning xác nhận lại.

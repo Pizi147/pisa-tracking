@@ -9459,6 +9459,11 @@ await runBanChinhTests({ check, checkAsync, assert, assertThrows, conn, admin: P
 const { runKhungTests } = await import('./khung.tests.ts');
 await runKhungTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
+// ==================================================================== PR-Qa (Học viên & Lớp + Hồ sơ lớp)
+
+const { runHocVienLopTests } = await import('./hocVienLop.tests.ts');
+await runHocVienLopTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
 // ==================================================================== PR-AN (an toàn trước người dùng thật)
 const { runAnToanTests } = await import('./anToan.tests.ts');
 await runAnToanTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P });
