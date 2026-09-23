@@ -180,6 +180,7 @@ export default function StudentsPage() {
           {lopHien.map((c) => (
             <HopLop key={c.id} lop={c} mo={openIds.includes(c.id)} onDoiMo={() => doiMo(c.id)}
               chiHien={dangLoc ? (idsTheoLop.get(c.id) ?? new Set()) : null} sapXep={sapXep}
+              chiMinh={pv?.dangDung === 'toi'}
               onThemHocVien={() => setThem({ id: c.id, code: c.code })} onDoi={trang.reload} />
           ))}
         </div>
@@ -201,8 +202,10 @@ export default function StudentsPage() {
  * HỘP LỚP (đặc tả §3.6): ▸ · mã (mở Hồ sơ lớp) · chương trình · n học viên · GVCN · tối đa 2 badge (+n) · ⋯.
  * ⋯ của lớp: Hồ sơ lớp · Nhập điểm Test (Q11, Q6) · + Học viên — chỉ mục người xem làm được.
  */
-function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi }: {
+function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, chiMinh, onThemHocVien, onDoi }: {
   lop: LopTrenTrang; mo: boolean; onDoiMo: () => void; chiHien: Set<number> | null; sapXep: SapXep;
+  /** Phạm vi đang chọn = "Lớp tôi dạy" (R8a, PR-Qb) — badge "Cần chấm" mang thêm `&scope=mine`. */
+  chiMinh: boolean;
   onThemHocVien: () => void; onDoi: () => void;
 }) {
   const navigate = useNavigate();
@@ -214,7 +217,7 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi }: {
     missingCount: lop.missing.filter((m) => m.key !== 'teachers').length,
   });
   const denBadge = (x: BadgeLop): string | null =>
-    x.key === 'cham' ? `/test/can-cham?classId=${lop.id}`
+    x.key === 'cham' ? `/test/can-cham?classId=${lop.id}${chiMinh ? '&scope=mine' : ''}`
       : x.key === 'case' ? `/hoc-vien/lop/${lop.id}?che-do=can-ho-tro`
       : x.key === 'het-khoa' ? `/hoc-vien/lop/${lop.id}`
       : null;

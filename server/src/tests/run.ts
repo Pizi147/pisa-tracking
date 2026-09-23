@@ -4,7 +4,28 @@
  */
 import path from 'node:path';
 import fs from 'node:fs';
+import os from 'node:os';
 import { fileURLToPath } from 'node:url';
+
+/*
+ * Dọn rác thư mục tạm của các lần `npm run check` trước (tiền tố `z2-`, xem server/src/tests/banChinh.tests.ts):
+ * bình thường mỗi phép kiểm tự xoá thư mục của nó, nhưng khi tiến trình bị treo/bị kill giữa chừng (chạy chồng
+ * nhiều lệnh check cùng lúc) thì việc dọn không kịp chạy. Chỉ đụng thư mục cũ hơn 1 giờ, để không xoá nhầm
+ * thư mục của một lần `npm run check` KHÁC đang chạy song song ngay lúc này.
+ */
+{
+  const motGio = 60 * 60 * 1000;
+  const giờHienTai = Date.now();
+  const tmp = os.tmpdir();
+  for (const ten of fs.readdirSync(tmp)) {
+    if (!ten.startsWith('z2-')) continue;
+    const p = path.join(tmp, ten);
+    try {
+      const tt = fs.statSync(p);
+      if (tt.isDirectory() && giờHienTai - tt.mtimeMs > motGio) fs.rmSync(p, { recursive: true, force: true });
+    } catch { /* của tiến trình khác đang giữ, hoặc đã bị xoá — bỏ qua */ }
+  }
+}
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '../../..');
@@ -9535,6 +9556,11 @@ await runFormTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, ad
 
 const { runPhanTichTests } = await import('./phanTich.tests.ts');
 await runPhanTichTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
+// ==================================================================== PR-Qb (Hồ sơ học viên: Hành trình theo lịch)
+
+const { runHanhTrinhTests } = await import('./hanhTrinh.tests.ts');
+await runHanhTrinhTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-Rc2 (Kế hoạch Test)
 

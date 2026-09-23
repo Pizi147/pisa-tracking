@@ -44,12 +44,20 @@ const RANGES = [
  * gom vi phạm thành phương án (A4). Nút theo dòng: vi phạm `Sửa` (xoá nằm trong form sửa) · PA đang chuẩn bị `Mở`
  * (ConfirmMeasurePanel) · PA đã thực hiện `Xem` (hộp chỉ đọc, K2-6). Không toggle Theo HS (đã là một em).
  */
-export function StudentYThucSection({ studentId, studentName, canRecordViolation, canManageDiscipline, onGoAcademic }: {
+export function StudentYThucSection({ studentId, studentName, canRecordViolation, canManageDiscipline, onGoAcademic, canhBao }: {
   studentId: number; studentName: string; canRecordViolation: boolean; canManageDiscipline: boolean;
   /** Đổi sang tab Học thuật của hồ sơ (link trong thẻ Phối hợp SOS). */
   onGoAcademic?: () => void;
+  /**
+   * CẢNH BÁO ĐÃ TẢI SẴN Ở TRANG CHA (AN-9) — trang cha cũng cần con số này cho dấu ⚠ trên tab, nên chỉ
+   * MỘT nơi được gọi `/violation-warning`. Có truyền prop này (kể cả `null`) thì component KHÔNG tự gọi lại;
+   * không truyền (`undefined`) thì tự tải như cũ, cho chỗ khác chưa kịp gom lại vẫn chạy đúng.
+   */
+  canhBao?: { message: string } | null;
 }) {
-  const warn = useApi<{ message: string }>(`/students/${studentId}/violation-warning`, [studentId]);
+  const tuTaiCanhBao = canhBao === undefined;
+  const warn = useApi<{ message: string }>(tuTaiCanhBao ? `/students/${studentId}/violation-warning` : null, [studentId, tuTaiCanhBao]);
+  const warnMessage = tuTaiCanhBao ? warn.data?.message : canhBao?.message;
   const violations = useApi<{ rows: ViolationView[] }>(`/students/${studentId}/violations`, [studentId]);
   const measures = useApi<{ rows: MeasureDetail[] }>(`/students/${studentId}/measures`, [studentId]);
   const [sub, setSub] = useState<'violations' | 'coordination'>('violations');
@@ -72,7 +80,7 @@ export function StudentYThucSection({ studentId, studentName, canRecordViolation
 
   const cutoff = range === 'all' ? null : addDays(today, -Number(range));
 
-  const reload = () => { violations.reload(); measures.reload(); warn.reload(); coord.reload(); };
+  const reload = () => { violations.reload(); measures.reload(); if (tuTaiCanhBao) warn.reload(); coord.reload(); };
 
   const vRows = violations.data?.rows ?? [];
   const mRows = measures.data?.rows ?? [];
@@ -149,7 +157,7 @@ export function StudentYThucSection({ studentId, studentName, canRecordViolation
 
       {sub === 'violations' ? (
         <>
-          {warn.data?.message && <Alert tone="warn">{warn.data.message.replace(/^⚠\s*/, '')}</Alert>}
+          {warnMessage && <Alert tone="warn">{warnMessage.replace(/^⚠\s*/, '')}</Alert>}
 
           {/* A3 — ô số nhỏ: Vi phạm · từng nhóm có số > 0 · PA đang chuẩn bị · Thư cảnh cáo gần nhất. */}
           <div className="flex flex-wrap gap-2">

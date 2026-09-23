@@ -125,6 +125,18 @@ export type AttemptProgressInput = {
   passed: boolean | null;
   /** Số kỹ năng dưới kỳ vọng ở các môn đã chấm; null khi chưa tính được. */
   sos: number | null;
+  /**
+   * CHẾ ĐỘ CHỮ (PR-Qb, Q17) — `ielts` (mặc định, mọi nơi gọi cũ không đổi) nói "kỹ năng"/"kỳ
+   * vọng"/"Overall" như FT; `ratio` nói "môn"/"đạt" như lớp thường, KHÔNG có khái niệm Overall
+   * hay "kỳ vọng" — lớp thường chỉ có ĐẠT hay CHƯA ĐẠT từng môn.
+   */
+  cheDo?: 'ielts' | 'ratio';
+  /**
+   * CHỈ `cheDo: 'ratio'` — số môn chưa đạt THẬT, đủ điểm cả 4 môn. `sos` (`sosLevel`) bị chặn
+   * trần ở 3 nên KHÔNG dùng được để dựng "Đạt {k}/{n} môn" khi trượt cả 4 — thiếu trường này thì
+   * tạm lấy `sos` (sai khi trượt ≥ 3 môn); luôn truyền khi biết được.
+   */
+  soMonChuaDat?: number | null;
 };
 
 export type AttemptProgressView = {
@@ -148,44 +160,64 @@ export type AttemptProgressView = {
  *       đếm bài nhập (W1/W2) thay vì kỹ năng — báo lỗi, không vẽ "1/5 kỹ năng" (MT-P02).
  */
 export function attemptProgressView(i: AttemptProgressInput): AttemptProgressView {
-  const { scored, required, passed, sos } = i;
+  const { scored, required, passed, sos, cheDo = 'ielts', soMonChuaDat } = i;
+  const ratio = cheDo === 'ratio';
+  const donVi = ratio ? 'môn' : 'kỹ năng';
   const bad = (why: string): AttemptProgressView => ({
     text: `Số liệu tiến độ không hợp lệ (${why})`, tone: 'muted', overall: 'invalid',
     overallText: 'Chưa đủ điểm', passBadge: false,
   });
   if (!Number.isInteger(scored) || !Number.isInteger(required) || scored < 0 || required <= 0) {
-    return bad('đợt không có kỹ năng bắt buộc nào');
+    return bad(`đợt không có ${donVi} bắt buộc nào`);
   }
-  if (required > ATTEMPT_SKILL_UNITS) return bad('đơn vị đếm là bốn kỹ năng L/R/W/S, W1/W2 là hai bài nhập');
-  if (scored > required) return bad('số kỹ năng có điểm vượt số yêu cầu');
+  if (!ratio && required > ATTEMPT_SKILL_UNITS) return bad('đơn vị đếm là bốn kỹ năng L/R/W/S, W1/W2 là hai bài nhập');
+  if (scored > required) return bad(`số ${donVi} có điểm vượt số yêu cầu`);
 
   const incomplete = (text: string, tone: ProgressTone): AttemptProgressView => ({
     text, tone, overall: 'incomplete', overallText: 'Chưa đủ điểm', passBadge: false,
   });
 
-  if (scored === 0) return incomplete(`Chưa có điểm · 0/${required} kỹ năng`, 'muted');
+  if (scored === 0) return incomplete(`Chưa có điểm · 0/${required} ${donVi}`, 'muted');
 
   if (scored < required) {
     if (sos !== null && sos > 0) {
+      if (ratio) return incomplete(`Đạt ${scored - sos}/${scored} ${donVi} đã chấm · còn ${required - scored} ${donVi}`, 'danger');
       /* Chữ "tạm thời" KHÔNG được bỏ: mới chấm một phần, mức SOS còn có thể đổi khi đủ điểm. */
-      return incomplete(`SOS ${sos} tạm thời · ${scored}/${required} kỹ năng có điểm`, 'danger');
+      return incomplete(`SOS ${sos} tạm thời · ${scored}/${required} ${donVi} có điểm`, 'danger');
     }
-    if (sos === 0) return incomplete(`Các kỹ năng đã chấm đều đạt · còn thiếu ${required - scored}`, 'muted');
-    return incomplete(`${scored}/${required} kỹ năng có điểm`, 'muted');
+    if (sos === 0) {
+      return incomplete(ratio
+        ? `Đạt ${scored}/${scored} ${donVi} đã chấm · còn ${required - scored} ${donVi}`
+        : `Các ${donVi} đã chấm đều đạt · còn thiếu ${required - scored}`, 'muted');
+    }
+    return incomplete(ratio
+      ? `Đạt ${scored}/${scored} ${donVi} đã chấm · còn ${required - scored} ${donVi}`
+      : `${scored}/${required} ${donVi} có điểm`, 'muted');
   }
 
   /* Đủ điểm. */
   if (sos !== null && sos > 0) {
-    return { text: `Đã đủ điểm · SOS ${sos}`, tone: 'danger', overall: 'not-passed', overallText: 'Chưa đạt kỳ vọng', passBadge: false };
+    const soChuaDatThat = ratio ? (soMonChuaDat ?? sos) : sos;
+    return {
+      text: ratio ? `Chưa đạt ${soChuaDatThat}/${required} ${donVi} · SOS ${sos}` : `Đã đủ điểm · SOS ${sos}`,
+      tone: 'danger', overall: 'not-passed', overallText: ratio ? 'Chưa đạt' : 'Chưa đạt kỳ vọng', passBadge: false,
+    };
   }
   if (passed === true) {
-    return { text: 'Đã đủ điểm · Đạt kỳ vọng', tone: 'info', overall: 'passed', overallText: 'Đạt kỳ vọng', passBadge: true };
+    return {
+      text: ratio ? `Đạt ${required}/${required} ${donVi}` : 'Đã đủ điểm · Đạt kỳ vọng',
+      tone: 'info', overall: 'passed', overallText: ratio ? 'Đạt' : 'Đạt kỳ vọng', passBadge: true,
+    };
   }
   if (passed === false) {
-    return { text: 'Đã đủ điểm · Overall chưa đạt kỳ vọng', tone: 'danger', overall: 'not-passed', overallText: 'Chưa đạt kỳ vọng', passBadge: false };
+    return {
+      text: ratio ? `Chưa đạt ${required}/${required} ${donVi}` : 'Đã đủ điểm · Overall chưa đạt kỳ vọng',
+      tone: 'danger', overall: 'not-passed', overallText: ratio ? 'Chưa đạt' : 'Chưa đạt kỳ vọng', passBadge: false,
+    };
   }
   return {
-    text: 'Đã đủ điểm · chưa có kỳ vọng để so', tone: 'muted', overall: 'no-expectation',
+    text: ratio ? `Đạt ${required}/${required} ${donVi} đã chấm` : 'Đã đủ điểm · chưa có kỳ vọng để so',
+    tone: 'muted', overall: 'no-expectation',
     overallText: 'Chưa có kỳ vọng', passBadge: false,
   };
 }
