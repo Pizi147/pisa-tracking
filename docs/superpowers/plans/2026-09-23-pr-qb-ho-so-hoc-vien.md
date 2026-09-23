@@ -438,3 +438,13 @@ Commit `PR-Qb (8): 375px hồ sơ học viên, bảng định vị, CODE_MAP, đ
   writing↔writing1 khi lệch bộ lớp thường/FT) — không đưa vào `shared/domain` vì đây thuần là quyết định vẽ
   UI, không phải luật máy chủ cần kiểm bằng harness. `npm run check` xanh, **872 = 870 + 2** (đủ ≥2). Commit
   `PR-Qb (5)`.
+- **Task 6:** Đầu hồ sơ lớp thường dùng `khoaLopThuong` (bỏ tên chương trình, bỏ "kết thúc {endWeek.code}" có
+  năm); `attemptProgressView`/`KetQuaDot` thêm `cheDo` (mặc định `ielts`, gọi cũ không đổi); `ketQuaTestGanNhat`
+  đổi `periodCode` → `weekStart` + `tuanLich` (G-6, không còn năm khi cùng năm hôm nay) — cập nhật fixture của
+  phép kiểm CŨ `hoSoHocVien.tests.ts` cho khớp field mới (bắt buộc phải sửa, không phải tự ý đổi phép kiểm PR
+  khác: `LuotTomTat` đổi kiểu thì test cũ dùng field cũ không biên dịch được nữa); bảng lượt lớp thường đổi
+  "phần" → "môn", nhãn môn rút gọn L/R/W/S kèm tooltip; ba `SectionNote` bỏ (một xoá hẳn, hai thay bằng dòng chữ
+  mờ / icon ⓘ cạnh tiêu đề); khối SOS "Mở case" → "Tạo Case" + nút "Bỏ qua" (gọi route dismiss có sẵn, không
+  cần sửa server). Tiện thể đổi hai chữ "Lớp Normal"/"Mở case" còn sót trong CHÚ THÍCH mã (không phải chữ người
+  dùng thấy) để khớp phép kiểm quét chữ cấm — quét cả file thay vì phải bỏ qua chú thích cho đơn giản.
+  `npm run check` xanh, **876 = 872 + 4** (đủ ≥4). Commit `PR-Qb (6)`.

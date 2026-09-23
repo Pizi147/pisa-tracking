@@ -27,7 +27,7 @@ const TONE_MARK: Record<ProgressTone, string> = { muted: '·', danger: '●', in
  * `phan="overall"` chỉ vẽ ô Overall (`Chưa đủ điểm` / `Đạt kỳ vọng` …) để bảng có một cột
  * Overall mà không phải tự dựng chữ.
  */
-export function KetQuaDot({ coDiem, yeuCau, dat, sos, phan = 'cau' }: {
+export function KetQuaDot({ coDiem, yeuCau, dat, sos, phan = 'cau', cheDo }: {
   /** Số KỸ NĂNG (L/R/W/S) đã có điểm. */
   coDiem: number;
   /** Số KỸ NĂNG bắt buộc của đợt. */
@@ -37,8 +37,10 @@ export function KetQuaDot({ coDiem, yeuCau, dat, sos, phan = 'cau' }: {
   /** Số kỹ năng dưới kỳ vọng ở các môn đã chấm; `null` khi chưa tính được. */
   sos: number | null;
   phan?: 'cau' | 'overall';
+  /** `ratio` (lớp thường) nói "môn"/"đạt", không có "kỳ vọng"/"Overall" (Q17). Mặc định `ielts`. */
+  cheDo?: 'ielts' | 'ratio';
 }) {
-  const v = attemptProgressView({ scored: coDiem, required: yeuCau, passed: dat, sos });
+  const v = attemptProgressView({ scored: coDiem, required: yeuCau, passed: dat, sos, cheDo });
   const tone: ProgressTone = phan === 'overall' && v.overall === 'incomplete' ? 'muted' : v.tone;
   const mark = phan === 'overall' ? (v.passBadge ? '✓' : '·') : tone === 'danger' && v.overall === 'incomplete' ? '⚠' : TONE_MARK[tone];
   return (

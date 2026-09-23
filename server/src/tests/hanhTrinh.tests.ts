@@ -428,4 +428,33 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     assert(!/params\.get\(['"]lo-trinh['"]\)/.test(src), 'Không còn đọc lẻ params.get(\'lo-trinh\')');
     assert(!/params\.get\(['"]tab['"]\)/.test(src), 'Không còn đọc lẻ params.get(\'tab\')');
   });
+
+  // ==================================================================== Task 6 — đầu hồ sơ lớp thường, chữ §6, khối SOS
+
+  check('PR-Qb (6) · Q17 attemptProgressView cheDo=ratio: đủ điểm đạt hết → "Đạt 4/4 môn", không chứa "kỳ vọng"', () => {
+    const v = d.attemptProgressView({ scored: 4, required: 4, passed: true, sos: 0, cheDo: 'ratio' });
+    assert(v.text === 'Đạt 4/4 môn', `Chữ: ${v.text}`);
+    assert(!v.text.includes('kỳ vọng') && !v.overallText.includes('kỳ vọng'), `Không được có "kỳ vọng": ${v.text} / ${v.overallText}`);
+    assert(v.passBadge === true, 'Đủ điểm và đạt hết phải có badge');
+  });
+
+  check('PR-Qb (6) · Q17 attemptProgressView cheDo=ratio: chưa đủ điểm → chứa "môn đã chấm"', () => {
+    const v = d.attemptProgressView({ scored: 2, required: 4, passed: null, sos: 0, cheDo: 'ratio' });
+    assert(v.text.includes('môn đã chấm'), `Chữ: ${v.text}`);
+    assert(v.passBadge === false, 'Chưa đủ điểm không bao giờ có badge');
+  });
+
+  check('PR-Qb (6) · Q17 attemptProgressView: gọi cũ không cheDo → chữ FT không đổi', () => {
+    const cu = d.attemptProgressView({ scored: 4, required: 4, passed: true, sos: 0 });
+    assert(cu.text === 'Đã đủ điểm · Đạt kỳ vọng', `FT phải giữ nguyên chữ cũ: ${cu.text}`);
+    const cu2 = d.attemptProgressView({ scored: 2, required: 4, passed: null, sos: null });
+    assert(cu2.text === '2/4 kỹ năng có điểm', `FT chưa đủ điểm giữ nguyên chữ cũ: ${cu2.text}`);
+  });
+
+  check('PR-Qb (6) · StudentDetailPage.tsx không còn chữ cấm §6: "Số MT đánh lại", "Progress Test", "Final Test", "Lớp Normal", "Mở case"', () => {
+    const src = doc('web/src/modules/students/StudentDetailPage.tsx');
+    for (const cam of ['Số MT đánh lại', 'Progress Test', 'Final Test', 'Lớp Normal', 'Mở case']) {
+      assert(!src.includes(cam), `Còn chữ cấm "${cam}"`);
+    }
+  });
 }

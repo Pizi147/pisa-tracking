@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { Card, Empty, ErrorState, Info, Level, Outcome, SectionNote, Skeleton, Status, Th} from '../../ui/ui.tsx';
+import { Card, Empty, ErrorState, Info, Level, Outcome, Skeleton, Status, Th} from '../../ui/ui.tsx';
 import { Modal } from '../../ui/Drawer.tsx';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
@@ -15,14 +15,15 @@ import { QuickReport } from '../cases/QuickReport.tsx';
 import { StudentYThucSection } from '../yThuc/StudentYThucSection.tsx';
 import {
   attemptHref,
-  attemptStatusLabel, fmtBand, fmtDate, skillLabel, sosLabel, sosTone, studentStatusLabel,
+  attemptStatusLabel, fmtBand, fmtDate, skillLabel, skillShort, sosLabel, sosTone, studentStatusLabel,
 } from '../../lib/format.ts';
 import {
   HO_SO_TAB_LABEL, JOURNEY_EVENT_LABEL, caseCategoriesFor, docThamSoHoSo, duongHoSoHocVien,
-  ketQuaTestGanNhat, ngay, type HoSoTab,
+  khoaLopThuong, ketQuaTestGanNhat, ngay, tuanLich, type HoSoTab,
 } from '@shared/domain/index.ts';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
+import { useSession } from '../../lib/session.tsx';
 
 type OpenCase = { caseId: number; paId?: number } | null;
 
@@ -34,13 +35,15 @@ type Profile = any;
  * Trang này phải trả lời được trong khoảng ba mươi giây: em bắt đầu ở đâu, đang ở đâu,
  * đích ở đâu, có đang theo kịp không, đang vướng gì, ai đã làm gì, và bước tiếp theo là gì.
  *
- * BỐ CỤC (chủ sản phẩm chốt 22/09/2026, spec PR-HV — thay ba tầng của bản 13/09):
+ * BỐ CỤC (chủ sản phẩm chốt 22/09/2026, spec PR-HV/PR-Qb — thay ba tầng của bản 13/09):
  *
- *   Đầu trang    EM NÀY LÀ AI          tên, lớp, GVCN, mục tiêu; nút Lộ trình · + Case · ⋮
- *   Bốn ô số     LIẾC MỘT CÁI          Kết quả Test gần nhất · Kỹ năng cần hỗ trợ · Case đang mở · Việc cần làm tiếp
- *   Ba tab       Học thuật (mặc định: bảng kỹ năng + case, rồi Mock Test) · Ý thức & Phối hợp · Hành trình
+ *   Đầu trang    EM NÀY LÀ AI          tên, {khoá đang học lớp thường | mục tiêu FT}, GVCN; nút Lộ trình · + Case · ⋮
+ *   Bốn ô số     LIẾC MỘT CÁI, BẤM ĐƯỢC  Kết quả Test gần nhất · Kỹ năng cần hỗ trợ · Case đang mở · Việc cần làm tiếp
+ *   Ba tab       Học thuật (mặc định: bảng kỹ năng + case, rồi Mock Test) · Ý thức & Phối hợp · Hành trình theo giai đoạn
  *
- * Tab nằm NGAY DƯỚI đầu trang, không dồn xuống cuối; tab nhớ qua địa chỉ `?tab=`.
+ * Tab nằm NGAY DƯỚI đầu trang, không dồn xuống cuối; tab nhớ qua địa chỉ `?tab=` — có `?dot=`/`?kn=` thì
+ * luôn mở Học thuật (R7, Q10). Hành trình vẽ MỘT trục theo lịch thật cho MỖI giai đoạn (Lớp thường | Fast
+ * Track), không gộp hai thang điểm khác nhau vào một trục.
  *
  * Bản trước là BẢY cái hộp xếp chồng, trong đó ba hộp — "Đang cần chú ý", "Đường đi từng kỹ
  * năng" và bảng "Vấn đề học vụ" — nói cùng một chuyện bằng ba cách khác nhau, nên đọc hết
@@ -54,6 +57,8 @@ type Profile = any;
 export default function StudentDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { session } = useSession();
+  const homNay = session?.demoDate ?? null;
   const [params, setParams] = useSearchParams();
   /* R7/R8c/Q9/Q10 (PR-Qb): MỘT hàm đọc mọi tham số của hồ sơ — không còn đọc lẻ từng khoá. */
   const p = docThamSoHoSo((k) => params.get(k));
@@ -174,12 +179,35 @@ export default function StudentDetailPage() {
                 {data.archivedAt && <Info>Đã lưu trữ</Info>}
               </h1>
               <p className="text-xs text-slate-400 mt-1 mb-0">
-                {data.currentClass
-                  ? <>{data.currentClass.code} · {data.currentClass.programme ?? data.currentClass.branchName}
-                      {data.currentClass.coreTeacher && <> · GVCN {data.currentClass.coreTeacher}</>}</>
-                  : 'Chưa xếp lớp'}
+                {/*
+                  ĐẦU HỒ SƠ LỚP THƯỜNG (Q18): {mã lớp} · GVCN {tên} · {khoá đang học}, KHÔNG tên
+                  chương trình, KHÔNG "Mục tiêu"/"Dự kiến thi" (Q18, §3.8 dòng cuối) — dùng đúng
+                  hàm `khoaLopThuong` mà cột Khoá của hồ sơ lớp (PR-Qa) đã dùng, để hai chỗ luôn
+                  nói cùng một câu. `tiepTheo: null` — PR-LT sẽ truyền nhãn Lộ trình tiếp theo.
+                */}
+                {data.currentClass?.khoa
+                  ? (() => {
+                    const { chinh, phu } = khoaLopThuong({
+                      maChuongTrinh: data.currentClass.khoa.ma,
+                      tuanHienTai: data.currentClass.khoa.tuanHienTai,
+                      tongTuan: data.currentClass.khoa.tongTuan,
+                      tuanKetThuc: data.currentClass.khoa.tuanKetThuc,
+                      tiepTheo: null,
+                      homNay: homNay ?? '',
+                    });
+                    return (
+                      <>
+                        {data.currentClass.code}
+                        {data.currentClass.coreTeacher && <> · GVCN {data.currentClass.coreTeacher}</>}
+                        {' · '}{chinh}{phu ? ` · ${phu}` : ''}
+                      </>
+                    );
+                  })()
+                  : data.currentClass
+                    ? <>{data.currentClass.code} · {data.currentClass.programme ?? data.currentClass.branchName}
+                        {data.currentClass.coreTeacher && <> · GVCN {data.currentClass.coreTeacher}</>}</>
+                    : 'Chưa xếp lớp'}
                 {cy && !cy.ratio && cy.target !== null && <> · mục tiêu {fmtBand(cy.target)}</>}
-                {cy?.ratio && cy.endWeek && <> · kết thúc {cy.endWeek.code}</>}
               </p>
             </div>
 
@@ -220,12 +248,12 @@ export default function StudentDetailPage() {
       </div>
 
       {/* BỐN Ô SỐ (Q7, R8c/Q11) — bốn câu hỏi, không phải một phép chia. LUÔN hiện phía trên hàng tab, kể cả khi chưa có lộ trình (spec §4.1; chủ sản phẩm chốt 22/09 sau rà soát). */}
-      <HeaderStats data={data} rows={skillRows}
+      <HeaderStats data={data} rows={skillRows} homNay={homNay}
         onOpenDot={(attemptId) => navigate(duongHoSoHocVien(data.id, { dot: attemptId }))}
         onOpenKn={moKyNang} />
 
       {/* Xác minh SOS: giữ chỗ cũ — dưới 4 ô số, trên hàng tab; tự ẩn khi không có tín hiệu. */}
-      <PendingSignals signals={data.pendingSignals ?? []} onVerify={(sg) => setVerify(sg)} />
+      <PendingSignals signals={data.pendingSignals ?? []} onVerify={(sg) => setVerify(sg)} onReload={reload} />
 
       {/*
         BA TAB NGAY DƯỚI ĐẦU TRANG (D2, spec 2026-09-22): Học thuật (mặc định) · Ý thức & Phối hợp · Hành trình.
@@ -273,13 +301,9 @@ export default function StudentDetailPage() {
           <Card title={cy.ratio ? 'Kết quả kiểm tra' : 'Mock Test'} bodyClass="p-0">
             {data.attempts.length === 0 ? (
               <div className="p-4"><Empty title="Chưa có lượt đánh giá nào trong lộ trình này" /></div>
-            ) : cy.ratio ? <RatioAttempts attempts={data.attempts} dotId={p.dot} onOpen={(a) => navigate(attemptHref(a))} />
-              : <IeltsAttempts attempts={data.attempts} dotId={p.dot} onOpen={(a) => navigate(attemptHref(a))} />}
+            ) : cy.ratio ? <RatioAttempts attempts={data.attempts} dotId={p.dot} homNay={homNay} onOpen={(a) => navigate(attemptHref(a))} />
+              : <IeltsAttempts attempts={data.attempts} dotId={p.dot} homNay={homNay} onOpen={(a) => navigate(attemptHref(a))} />}
             <div className="p-3">
-              <SectionNote>
-                Lớp ghi ở đây là lớp TẠI LÚC ĐÁNH GIÁ — chuyển lớp không viết lại lịch sử này.
-                Số MT đánh lại từ 1 khi sang lộ trình mới, học tiếp trong cùng lộ trình thì tăng tiếp.
-              </SectionNote>
               {cy.targetRevisions.length > 0 && (
                 <p className="text-xs text-slate-500 mt-2 mb-0">
                   Mục tiêu đã đổi {cy.targetRevisions.length} lần — lần gần nhất {fmtDate(cy.targetRevisions[0].effectiveFrom)}:
@@ -296,10 +320,7 @@ export default function StudentDetailPage() {
                 </p>
               )}
               {!cy.baseline && !cy.ratio && (
-                <SectionNote>
-                  Chưa ghi điểm đầu vào nên chưa tính được đã tiến bộ bao nhiêu. Hệ thống KHÔNG lấy
-                  MT1 làm điểm đầu vào — hai thứ đó khác nhau.
-                </SectionNote>
+                <p className="text-xs text-slate-500 mt-2 mb-0">Chưa ghi điểm đầu vào.</p>
               )}
             </div>
           </Card>
@@ -343,7 +364,7 @@ export default function StudentDetailPage() {
         studentId={data.id} studentName={data.fullName} cycleId={cy?.id ?? null}
         onDone={(cid) => { reload(); setOpenCase({ caseId: cid }); }} />
 
-      {/* Mở case ĐỂ TRẢ LỜI một tín hiệu: đầu mục và kỹ năng điền sẵn, nhận định do người viết. */}
+      {/* Tạo Case ĐỂ TRẢ LỜI một tín hiệu: đầu mục và kỹ năng điền sẵn, nhận định do người viết. */}
       <QuickReport open={!!verify} onClose={() => setVerify(null)}
         studentId={data.id} studentName={data.fullName} cycleId={cy?.id ?? null}
         signal={verify}
@@ -380,8 +401,8 @@ export default function StudentDetailPage() {
  * Mỗi ô nói ĐÚNG MỘT điều. BỐN Ô ĐỀU BẤM ĐƯỢC (R8c, Q11) — mỗi ô dẫn đúng chỗ tạo ra con số đó.
  * Giá trị `—`/`0` không bấm được (không có gì để mở).
  */
-function HeaderStats({ data, rows, onOpenDot, onOpenKn }: {
-  data: any; rows: SkillBoardRow[] | null;
+function HeaderStats({ data, rows, homNay, onOpenDot, onOpenKn }: {
+  data: any; rows: SkillBoardRow[] | null; homNay: string | null;
   onOpenDot: (attemptId: number) => void; onOpenKn: (kn: string | null | undefined) => void;
 }) {
   const scored = (rows ?? []).filter((r) => r.band !== null);
@@ -391,7 +412,8 @@ function HeaderStats({ data, rows, onOpenDot, onOpenKn }: {
   const runningPlans = openCases.flatMap((c) => c.plans)
     .filter((p) => p.status === 'planned' || p.status === 'started').length;
   const next = data.headline?.next ?? null;
-  const kq = ketQuaTestGanNhat(data.attempts ?? []);
+  const kq = ketQuaTestGanNhat(data.attempts ?? [], homNay);
+  const cheDo = data.cycle?.ratio ? 'ratio' as const : 'ielts' as const;
 
   return (
     <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
@@ -401,7 +423,7 @@ function HeaderStats({ data, rows, onOpenDot, onOpenKn }: {
         title="Mở đợt Test này ở bảng Học thuật"
         sub={kq
           ? (kq.dungKetQuaDot
-            ? <KetQuaDot coDiem={kq.coDiem} yeuCau={kq.yeuCau} dat={kq.dat} sos={kq.sos} />
+            ? <KetQuaDot coDiem={kq.coDiem} yeuCau={kq.yeuCau} dat={kq.dat} sos={kq.sos} cheDo={cheDo} />
             : `${kq.coDiem}/${kq.yeuCau} phần có điểm`)
           : 'chưa có điểm nào'} />
 
@@ -412,7 +434,7 @@ function HeaderStats({ data, rows, onOpenDot, onOpenKn }: {
         title="Mở bảng kỹ năng ở đúng môn chưa đạt đầu tiên"
         sub={below.length
           ? below.map((r) => r.label).join(' · ')
-          : scored.length ? 'mọi môn đạt kỳ vọng' : 'chưa có điểm nào'} />
+          : scored.length ? (cheDo === 'ratio' ? 'mọi môn đạt' : 'mọi môn đạt kỳ vọng') : 'chưa có điểm nào'} />
 
       <Stat label="Case đang mở"
         value={String(openCases.length)}
@@ -455,7 +477,9 @@ function Stat({ label, value, sub, tone, nho, onClick, title }: {
   );
 }
 
-function IeltsAttempts({ attempts, dotId, onOpen }: { attempts: any[]; dotId?: number; onOpen: (a: any) => void }) {
+function IeltsAttempts({ attempts, dotId, homNay, onOpen }: {
+  attempts: any[]; dotId?: number; homNay: string | null; onOpen: (a: any) => void;
+}) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
@@ -478,7 +502,7 @@ function IeltsAttempts({ attempts, dotId, onOpen }: { attempts: any[]; dotId?: n
               <td className="td tabular-nums">MT{a.attemptNo}</td>
               <td className="td text-slate-300">{a.classCode ?? '—'}</td>
               <td className="td whitespace-nowrap">
-                {a.periodCode ?? <Info pending>Chưa có tuần</Info>}
+                {a.weekStart ? tuanLich(a.weekStart, homNay) : <Info pending>Chưa có tuần</Info>}
               </td>
               <td className="td">
                 <Status kind={a.status === 'done' ? 'done' : a.status === 'cancelled' ? 'idle' : 'doing'}>
@@ -508,20 +532,22 @@ function IeltsAttempts({ attempts, dotId, onOpen }: { attempts: any[]; dotId?: n
 }
 
 /**
- * Lớp Normal chấm theo ĐIỂM ĐẠT / TỔNG ĐIỂM — không có band, không có Overall, không có
- * kỳ vọng IELTS. Bấm một dòng ở đây mở BẢNG ĐIỂM LỚP NORMAL, không phải màn Mock Test.
+ * Lớp thường chấm theo ĐIỂM ĐẠT / TỔNG ĐIỂM — không có band, không có Overall, không có
+ * kỳ vọng IELTS. Bấm một dòng ở đây mở đúng bảng điểm lớp thường, không phải màn Mock Test.
  */
-function RatioAttempts({ attempts, dotId, onOpen }: { attempts: any[]; dotId?: number; onOpen: (a: any) => void }) {
+function RatioAttempts({ attempts, dotId, homNay, onOpen }: {
+  attempts: any[]; dotId?: number; homNay: string | null; onOpen: (a: any) => void;
+}) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr>
-            <Th hint="Progress Test (giữa khoá) hay Final Test (cuối khoá) của chương trình lớp.">Bài</Th>
+            <Th hint="Giữa khoá hay Cuối khoá của khoá học.">Bài</Th>
             <th className="th">Lớp</th>
             <Th hint="Tuần kế hoạch của lượt này. Một lượt chỉ thuộc đúng một tuần — không có ngày thi cụ thể.">Tuần</Th>
-            <Th hint="Điểm đạt trên tổng điểm của từng môn. Lớp Normal không quy ra band.">Điểm từng phần</Th>
-            <Th hint="Số kỹ năng dưới kỳ vọng của đợt Test đó — chính là mức SOS. Thiếu điểm thì chưa kết luận.">Kết quả</Th>
+            <Th hint="Số câu đúng / tổng số câu từng môn. Đạt khi từ 70% trở lên.">Điểm từng phần</Th>
+            <Th hint="Số môn chưa đạt — chính là mức SOS. Môn chưa có điểm không tính là chưa đạt.">Kết quả</Th>
           </tr>
         </thead>
         <tbody>
@@ -531,22 +557,23 @@ function RatioAttempts({ attempts, dotId, onOpen }: { attempts: any[]; dotId?: n
               <td className="td whitespace-nowrap">{a.kind === 'final' ? 'Cuối khoá' : 'Giữa khoá'}</td>
               <td className="td text-slate-300">{a.classCode ?? '—'}</td>
               <td className="td whitespace-nowrap">
-                {a.periodCode ?? <Info pending>Chưa có tuần</Info>}
+                {a.weekStart ? tuanLich(a.weekStart, homNay) : <Info pending>Chưa có tuần</Info>}
               </td>
               <td className="td">
                 <span className="flex flex-wrap gap-1">
                   {(a.skills ?? []).map((s: any) => (
-                    <Outcome key={s.skill} tone={s.outcome === 'missing' ? 'muted' : s.outcome === 'pass' ? 'ok' : 'warn'}>
-                      {s.label} {s.score !== null ? `${s.score}/${s.total}` : '—'}
+                    <Outcome key={s.skill} tone={s.outcome === 'missing' ? 'muted' : s.outcome === 'pass' ? 'ok' : 'warn'}
+                      title={s.label}>
+                      {skillShort(s.skill)} {s.score !== null ? `${s.score}/${s.total}` : '—'}
                     </Outcome>
                   ))}
                 </span>
               </td>
               <td className="td">
                 <Level tone={sosTone(a.sosLevel)}>
-                  {a.sosLevel === null ? `Chờ ${a.required - a.scored} phần` : sosLabel(a.sosLevel)}
+                  {a.sosLevel === null ? `Chờ ${a.required - a.scored} môn` : sosLabel(a.sosLevel)}
                 </Level>
-                {a.provisional && <div className="text-[10px] text-slate-500">mới {a.scored}/{a.required} phần</div>}
+                {a.provisional && <div className="text-[10px] text-slate-500">mới {a.scored}/{a.required} môn</div>}
                 <Link to={attemptHref(a)} className="link text-[10px]" onClick={(e) => e.stopPropagation()}>Hồ sơ đợt ›</Link>
               </td>
             </tr>
@@ -648,54 +675,57 @@ function anhXaKyNang(kn: string, boHop: readonly string[]): string | null {
  *   · mở case — khi xem lại bài thấy có vấn đề thật
  *   · ghi nhận đã xem — khi không có vấn đề thật, và phải viết ra vì sao
  */
-function PendingSignals({ signals, onVerify }: {
-  signals: any[]; onVerify: (sg: any) => void;
+function PendingSignals({ signals, onVerify, onReload }: {
+  signals: any[]; onVerify: (sg: any) => void; onReload: () => void;
 }) {
+  const toast = useToast();
   if (!signals.length) return null;
 
   const overdue = signals.filter((s) => s.overdue).length;
+  const boQua = async (sg: any) => {
+    await api.post(`/signals/pending/${sg.id}/dismiss`, {});
+    toast.push('ok', 'Đã bỏ qua tín hiệu.');
+    onReload();
+  };
   return (
-    <>
-      <Card title="Xác minh vấn đề SOS"
-        action={<span className="text-xs text-slate-500">
-          {signals.length} tín hiệu{overdue > 0 ? ` · ${overdue} quá hạn` : ''}
-        </span>}>
-        <ul className="space-y-2 list-none p-0 m-0">
-          {signals.map((sg) => (
-            <li key={sg.id} className="surface-2 rounded-lg p-3 flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0">
-                <div className="text-sm text-slate-100">
-                  {sg.label}
-                  {sg.band !== null && sg.expectation !== null && (
-                    <span className="text-slate-400"> · {fmtBand(sg.band)} so với kỳ vọng {fmtBand(sg.expectation)}</span>
-                  )}
-                  {sg.attemptNo && <span className="text-slate-500 text-xs"> · MT{sg.attemptNo}</span>}
-                </div>
-                <div className="text-xs text-slate-500 mt-0.5">
-                  Hệ thống mới chỉ đọc được con số. Xem lại bài rồi quyết định.
-                </div>
-                <div className="text-xs mt-1">
-                  {sg.overdue
-                    ? <span className="text-rose-300">Quá hạn xác minh {fmtDate(sg.verifyDue)}</span>
-                    : <span className="text-slate-400">Hạn xác minh {fmtDate(sg.verifyDue)}</span>}
-                  {sg.ownerName && <span className="text-slate-500"> · {sg.ownerName}</span>}
-                </div>
+    <Card title={<>Xác minh vấn đề SOS <Info title="Tín hiệu chờ người dạy xem bài; hạn 3 ngày.">ⓘ</Info></>}
+      action={<span className="text-xs text-slate-500">
+        {signals.length} tín hiệu{overdue > 0 ? ` · ${overdue} quá hạn` : ''}
+      </span>}>
+      <ul className="space-y-2 list-none p-0 m-0">
+        {signals.map((sg) => (
+          <li key={sg.id} className="surface-2 rounded-lg p-3 flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="text-sm text-slate-100">
+                {/* Q19: lớp thường ghi {môn} {đúng}/{tổng} · Giữa|Cuối khoá — không "MT{n}", không "so với kỳ vọng". */}
+                {sg.kind === 'normal'
+                  ? <>{sg.label} {sg.score}/{sg.total} · {sg.attemptKind === 'final' ? 'Cuối khoá' : 'Giữa khoá'}</>
+                  : <>
+                      {sg.label}
+                      {sg.band !== null && sg.expectation !== null && (
+                        <span className="text-slate-400"> · {fmtBand(sg.band)} so với kỳ vọng {fmtBand(sg.expectation)}</span>
+                      )}
+                      {sg.attemptNo && <span className="text-slate-500 text-xs"> · MT{sg.attemptNo}</span>}
+                    </>}
               </div>
-              {sg.canResolve && (
-                <button className="btn btn-sm btn-primary" onClick={() => onVerify(sg)}>Mở case</button>
-              )}
-            </li>
-          ))}
-        </ul>
-        <SectionNote>
-          Điểm dưới kỳ vọng chỉ sinh một <strong>tín hiệu cần xác minh</strong>, không tự mở case
-          và không tự sinh phương án hỗ trợ: máy đọc được con số nhưng không biết vì sao, và cũng
-          không xếp được tutor thay người. Xác minh nghĩa là <strong>mở case</strong> với tên và
-          mô tả cụ thể — đó là nhận định của người dạy, máy không viết hộ.
-          Hạn là <strong>ba ngày</strong> kể từ lúc tín hiệu được ghi nhận, tính cả ngày đầu.
-        </SectionNote>
-      </Card>
-
-    </>
+              <div className="text-xs mt-1">
+                {sg.overdue
+                  ? <span className="text-rose-300">Quá hạn xác minh {fmtDate(sg.verifyDue)}</span>
+                  : <span className="text-slate-400">Hạn xác minh {fmtDate(sg.verifyDue)}</span>}
+                {sg.ownerName && <span className="text-slate-500"> · {sg.ownerName}</span>}
+              </div>
+            </div>
+            {sg.canResolve && (
+              <span className="flex gap-2">
+                {sg.actions?.includes('dismiss') && (
+                  <button className="btn btn-sm btn-ghost" onClick={() => boQua(sg)}>Bỏ qua</button>
+                )}
+                <button className="btn btn-sm btn-primary" onClick={() => onVerify(sg)}>Tạo Case</button>
+              </span>
+            )}
+          </li>
+        ))}
+      </ul>
+    </Card>
   );
 }
