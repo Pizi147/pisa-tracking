@@ -395,4 +395,241 @@ Commit `PR-Qb (8): 375px hồ sơ học viên, bảng định vị, CODE_MAP, đ
 
 *(Người code ghi: model thật, B và số phép kiểm mỗi Task, kết quả KIỂM từng ý, chỗ tự quyết thêm.)*
 
-- **Task 0:**
+- **Task 0:** Model thật = Sonnet 5. Qa (#69) đã merge trên `origin/main` (69910fd) — 3 điều kiện kiểm đều đạt. Worktree
+  `.claude/worktrees/pr-qb-ho-so-hoc-vien` tạo từ `origin/main`, `npm ci` xong. Biến Turso: sạch. `npm test` → **B = 837**
+  kiểm tra đạt. File kế hoạch đã có sẵn trên `main` (không cần chép thêm) — không có gì khác để commit ở bước này.
+- **Task 1:** `duongHoSo.ts` + `hanhTrinh.ts` tạo đúng bản đồ file. Hai chỗ tự quyết vì kế hoạch không nói rõ mã thật:
+  (1) `caseTitleOf` không tồn tại trong `cases.ts` — hàm đúng tên là `caseTitle`; Task 2 sẽ dùng tên này.
+  (2) `cotCua` — kế hoạch ghi "ngoài trục trả thêm cờ `cat`" nhưng cũng ghi kiểu trả về là `number`; hai câu mâu
+  thuẫn nhau. Giữ đúng kiểu trả về đã ghi (`number`, kẹp `[0, soTuan-1]`), bỏ phần "cờ cắt" — việc phát hiện Case
+  nằm ngoài khoảng đang xem (Q22, "+{n} vấn đề cũ hơn") để Task 2 tự so ngày ở máy chủ, không phụ thuộc `cotCua`.
+  `npm run check` xanh, **853 = 837 + 16** (đủ ≥16). Commit `PR-Qb (1)`.
+- **Task 2:** `server/src/students/hanhTrinh.ts` + route `GET /students/:id/hanh-trinh`. Ba chỗ tự quyết:
+  (1) Kế hoạch liệt kê "lớp lấy từ `enrollments` trùng thời gian" cho nhãn đoạn lớp thường, nhưng bảng
+  `enrollments` KHÔNG nằm trong danh sách 6 truy vấn cố định của chính kế hoạch — thêm một truy vấn riêng cho
+  việc này phá vỡ ngân sách. Chọn: lấy mã lớp từ `class_code` của lượt gần nhất trong lộ trình đó (đã có sẵn ở
+  truy vấn (2)), không có lượt nào thì lấy tên chương trình — không cần truy vấn thêm.
+  (2) "Tuần cuối theo chương trình" (`den` của đoạn lớp thường khi lộ trình chưa có `ended_at`) cần một truy vấn
+  `report_periods` theo TỪNG lộ trình — đây là chi phí phụ thêm ngoài 6 câu cố định, nhưng bị chặn bởi SỐ LỘ
+  TRÌNH (luôn nhỏ, 1–3), không bởi số Case, nên không phạm tinh thần "không N+1 theo Case" mà phép kiểm hiệu năng
+  đang bắt.
+  (3) `caseTitleOf` trong bản đặc tả không tồn tại (đã ghi ở Task 1) — dùng `caseTitle`.
+  `npm run check` xanh, **861 = 853 + 8** (đủ ≥8). Commit `PR-Qb (2)`.
+- **Task 3:** `profile.ts` (R7 chọn lộ trình theo `attemptId`, `currentClass.khoa`, `headline.next.category`, bỏ
+  Ý thức khỏi mốc + toàn bộ sự kiện), `platform/thongBao.ts` (mới), route `/students/:id` nhận `attemptId`,
+  `/notifications` gọi `thongBaoCua`. Không có chỗ mâu thuẫn kế hoạch/mã cần tự quyết ở Task này — khớp đúng bản
+  đồ file. `npm run check` xanh, **867 = 861 + 6** (đủ ≥6). Commit `PR-Qb (3)`.
+- **Task 4:** `HanhTrinh.tsx` (mới, thay `JourneyTimeline.tsx` — đã xoá), `NganCase.tsx` (mới); sửa
+  `StudentDetailPage.tsx` (khối tab Hành trình, `openCase` đổi sang `{caseId; paId?}|null`, export `Episode` +
+  đổi `fmtDate`→`ngay`). Tự quyết: (1) lưới dùng CSS Grid với số hàng CỐ ĐỊNH gán tay (`gridRow` tường minh)
+  thay vì để trình duyệt tự xếp (`grid-auto-flow`) — nhiều khối PA dùng chung cột nhưng khác tầng nếu không ghim
+  `gridRow` tay sẽ bị trình duyệt tự đẩy sai hàng; mỗi vấn đề vẽ thành MỘT lưới con riêng (không gộp chung một
+  lưới khổng lồ với cả hộp) để không phải cộng dồn số hàng giữa nhiều Case. (2) "Mốc học tập" (Q8) chuyển hẳn
+  vào `HanhTrinh.tsx`, nhận `episodes`/`allEpisodes` làm prop từ `StudentDetailPage` (dữ liệu đó nằm ở hồ sơ
+  chính `/students/:id`, không phải endpoint `/hanh-trinh`); `HanhTrinh.tsx` import `Episode` ngược lại từ
+  `StudentDetailPage.tsx` (import vòng an toàn vì chỉ gọi trong JSX, không gọi lúc nạp module). `npm run check`
+  xanh, **870 = 867 + 3** (đủ ≥3). Chưa bấm thử trên trình duyệt — để dành đúng một lần ở Task 9 theo quy trình
+  nhanh. Commit `PR-Qb (4)`.
+- **Task 5:** `StudentDetailPage.tsx` — đọc mọi tham số qua `docThamSoHoSo`; `?dot=` không có `lo-trinh` gọi
+  `attemptId`; `?dot=`/`?kn=` ép tab Học thuật + cuộn một lần (hiệu ứng khoá theo `[!!data, p.dot, p.kn]`, không
+  khoá theo tham chiếu `data` để tránh cuộn lại mỗi lần tải nền); bảng lượt thêm `id="dot-{id}"` + nền nhấn +
+  link "Hồ sơ đợt ›"; bốn ô số (`Stat`) nhận `onClick` thành nút thật; `?case=`/`?pa=` mở `NganCase`, đóng thì
+  xoá khỏi URL. Tự quyết: `kn` ↔ hạng mục bảng kỹ năng dùng hàm `anhXaKyNang` cục bộ trong file (ghép
+  writing↔writing1 khi lệch bộ lớp thường/FT) — không đưa vào `shared/domain` vì đây thuần là quyết định vẽ
+  UI, không phải luật máy chủ cần kiểm bằng harness. `npm run check` xanh, **872 = 870 + 2** (đủ ≥2). Commit
+  `PR-Qb (5)`.
+- **Task 6:** Đầu hồ sơ lớp thường dùng `khoaLopThuong` (bỏ tên chương trình, bỏ "kết thúc {endWeek.code}" có
+  năm); `attemptProgressView`/`KetQuaDot` thêm `cheDo` (mặc định `ielts`, gọi cũ không đổi); `ketQuaTestGanNhat`
+  đổi `periodCode` → `weekStart` + `tuanLich` (G-6, không còn năm khi cùng năm hôm nay) — cập nhật fixture của
+  phép kiểm CŨ `hoSoHocVien.tests.ts` cho khớp field mới (bắt buộc phải sửa, không phải tự ý đổi phép kiểm PR
+  khác: `LuotTomTat` đổi kiểu thì test cũ dùng field cũ không biên dịch được nữa); bảng lượt lớp thường đổi
+  "phần" → "môn", nhãn môn rút gọn L/R/W/S kèm tooltip; ba `SectionNote` bỏ (một xoá hẳn, hai thay bằng dòng chữ
+  mờ / icon ⓘ cạnh tiêu đề); khối SOS "Mở case" → "Tạo Case" + nút "Bỏ qua" (gọi route dismiss có sẵn, không
+  cần sửa server). Tiện thể đổi hai chữ "Lớp Normal"/"Mở case" còn sót trong CHÚ THÍCH mã (không phải chữ người
+  dùng thấy) để khớp phép kiểm quét chữ cấm — quét cả file thay vì phải bỏ qua chú thích cho đơn giản.
+  `npm run check` xanh, **876 = 872 + 4** (đủ ≥4). Commit `PR-Qb (6)`.
+- **Task 7:** `StudentYThucSection.tsx` nhận `canhBao?` (AN-9 — chỉ `StudentDetailPage` gọi `/violation-warning`,
+  component con dùng lại qua prop, `undefined` thì vẫn tự tải như cũ cho chỗ khác chưa kịp gom lại không vỡ);
+  `ClassRoster.tsx` nhãn đợt dùng `duongHoSoHocVien` (R8b); `StudentsPage.tsx` (`HopLop`/`denBadge`) thêm
+  `&scope=mine` khi Phạm vi đang chọn là `toi` (R8a — xác nhận `qScope`/`WORK_SCOPES` của Rc1 ĐÃ có sẵn trong
+  `routes/index.ts`, không phải tự dựng giá trị dự phòng như kế hoạch tính trước cho trường hợp Rc1 chưa merge);
+  `Header.tsx` thông báo điều hướng bằng `duongThongBao` (bỏ khối chú thích cũ về SOS/mock_attempt). `npm run
+  check` xanh, **879 = 876 + 3** (đủ ≥3). Commit `PR-Qb (7)`.
+- **Task 8:** AN-10: `IeltsAttempts`/`RatioAttempts` thêm `min-w-[640px]` cho `<table>` trong khung `overflow-x-auto`
+  sẵn có. Tài liệu: spec §4 thêm dòng "Hồ sơ HV mở đúng đợt"; `CODE_MAP.md` ba dòng `JourneyTimeline` →
+  `HanhTrinh.tsx`/`NganCase.tsx`/`hanhTrinh.ts`; `plan.md` tick R7/R8 (a–d + notifications), đánh dấu ✅ hai dòng
+  AN-9/AN-10 ở mục 12.18, ghi chú mục 12.5 đã xong (giữ bảng khảo sát cũ để đọc lịch sử); kiểm kê
+  `2026-09-22-kiem-ke-truoc-deploy.md` đổi Q9/R7/R8/AN-9/AN-10 từ ❌ sang ✅ kèm "PR-Qb". `npm run check` xanh,
+  **879** (không đổi số phép kiểm — Task này chỉ có một dòng CSS + tài liệu, không thêm luật mới). Commit
+  `PR-Qb (8)`.
+- **Task 9:** `npm run check` cuối cùng: **879 = B(837) + 42** (đủ ≥ B+40). `git diff origin/main...HEAD --stat --
+  server/src/schema.sql server/src/migrate.ts` → rỗng (không đổi schema/migrate).
+
+  **Máy chủ thử:** DB riêng seed ở thư mục scratch (`PISA_DB=…/pr-qb-kiem.sqlite npm run seed`), `PORT=4157
+  npm run dev:api` nền, Vite tạm `vite.pr-qb.config.ts` ở gốc worktree (cổng **5357**, proxy `/api` →
+  `127.0.0.1:4157`) — đã xoá sau khi xong, không commit. Dùng khung Browser (không có Playwright cài trong repo)
+  qua `POST /api/demo/session`.
+
+  **KIỂM** (vai admin = HV1, vai GVCN/GV Trần Ngọc Hà = MB-FOU 12 & MB-FT 101):
+  1. HV1: hai nút giai đoạn hiện đúng (`Lớp thường · W1 DEC 2025 – W4 APR` / `Fast Track · từ W1 JUN`); FT trục
+     13 tuần JUL–SEP, cột tuần này (W3 SEP) tô sáng; ghim `MT1 · 5.5 · SOS 1`, `MT2 · 6.0`, `MT3` (chưa điểm);
+     5 hộp L R W1 W2 S đúng thứ tự. ĐẠT.
+  2. Chọn "Lớp thường": hàng Khoá `MB-FOU 03 · 8 tuần` → `MB-BE 08 · 10 tuần` đúng thứ tự; ghim `Giữa`/`Cuối`
+     (không "MT"); chuỗi `%` (`65% → 68% → 63% → 55%`); 4 hộp; hộp Reading có vấn đề "Cuối khoá - Reading dưới
+     kỳ vọng" + khối PA `Xếp tự học · Đang thực hiện · Quá hạn cập nhật`. ĐẠT.
+  3. Bấm khối PA → ngăn Case mở (`NganCase`), tab Hành trình không đổi, case đúng ("Reading cuối khoá Beginner
+     còn dưới ngưỡng"). Bấm ghim (qua ô "Kết quả Test gần nhất") → sang Học thuật, dòng `dot-6` (MT2) tô nền
+     `--accent-soft`, có link "Hồ sơ đợt ›". ĐẠT — không kiểm riêng nút Back (logic tham số URL đối xứng, không
+     có state ẩn).
+  4. Bốn ô số: "Kết quả Test gần nhất" → `?dot=6` + tô đúng dòng; "Kỹ năng cần hỗ trợ" → `?kn=writing1` + mở
+     đúng hàng Writing Task 1; "Case đang mở" → `?kn=reading`; "Việc cần làm tiếp" → `?kn=reading`. ĐẠT cả 4.
+     (`attemptId` của lộ trình cũ → chọn đúng lộ trình đã có phép kiểm tự động ở Task 3, không lặp lại bằng tay.)
+  5. GVCN lớp thường MB-FOU 12 (HV9): đầu hồ sơ `MB-FOU 12 · GVCN Trần Ngọc Hà · FOU · W8/8 · kết thúc W3 SEP`
+     (không "mục tiêu"); ô Kết quả `Chưa đạt 3/4 môn · SOS 3`; bảng "Kết quả kiểm tra" tuần dạng `W3 AUG`/
+     `W1 OCT` (không năm, không ISO); chèn tạm một tín hiệu lớp thường (dữ liệu demo không sẵn có tín hiệu nào
+     kiểu lớp thường — DB tạm, không ảnh hưởng bản chính) → khối SOS đúng `Listening 26/40 · Giữa khoá`, hai nút
+     `Bỏ qua`/`Tạo Case`; bấm `Bỏ qua` → khối biến mất (route dismiss có sẵn chạy đúng). ĐẠT.
+  6. GV Listening MB-FT 101 (Trần Ngọc Hà): hồ sơ lớp tab Học viên, nhãn `MT2` của Nguyễn Minh An có href
+     `/hoc-vien/1?dot=6` — đúng `duongHoSoHocVien`. Chuông thông báo: bấm "SOS 1 — Bùi Thảo Vy" (loại
+     `assessment_attempt`, `kind=sos`) → điều hướng đúng `/hoc-vien/44?dot=118`. `GET /notifications` trả kèm
+     `student_id`/`attempt_id` cho mọi dòng (xác nhận JOIN của Task 3). Badge "Bạn cần chấm: N bài" ở
+     `StudentsPage` mang `&scope=mine` đúng khi Phạm vi = "Lớp tôi dạy". ĐẠT.
+  7. Tab mạng: mỗi lần điều hướng đầy đủ trang gọi `/violation-warning` đúng **một lần về mặt logic** (React
+     StrictMode của môi trường dev nhân đôi mọi hiệu ứng — 2 lần quan sát được mỗi lượt điều hướng, ĐÚNG bằng
+     một nửa so với trước khi sửa AN-9 vốn sẽ ra 4 lần/lượt do gọi ở cả `StudentDetailPage` lẫn
+     `StudentYThucSection`). ĐẠT theo đúng tinh thần AN-9.
+  8. 375px: đo `document.documentElement.scrollWidth` và `main.scrollWidth <= main.clientWidth` ở cả ba tab
+     (Học thuật/Ý thức/Hành trình) của hồ sơ HV1 và ở hồ sơ lớp MB-FT 101 — cả bốn đều **không cuộn ngang**
+     (`scrollWidth` khớp `375`/`365`). Lưới Hành trình cuộn ngang ĐÚNG BÊN TRONG khung thẻ (cột tên đứng yên).
+     ĐẠT.
+  9. Chữ: không thấy "Đạt kỳ vọng" ở màn lớp thường của PR này (chỉ "Đạt X/Y môn"/"Chưa đạt"); không ngày ISO;
+     mọi mã tuần hiện không kèm năm khi cùng năm 2026 (`W3 SEP`, `W1 OCT`…). ĐẠT.
+
+  **Chưa làm:** ảnh chụp `thiet-ke/anh/pr-qb/*-1440.png`/`-375.png` — khung Browser trong môi trường này không
+  có primitive lưu ảnh ra đĩa (Playwright không có sẵn trong repo); đã xác nhận đúng bằng đọc DOM/mạng thay vì
+  bằng mắt, planning xem lại nếu cần ảnh thật.
+
+  `git status` sạch (file Vite tạm và sửa `launch.json` tạm thời đã bỏ, không commit). `git fetch origin &&
+  git rebase origin/main` (từ `48baefc`, sau khi PR-Rc1 #70 / PR-Form #72 / PR-TD #74 đã merge): xung đột đúng ở
+  ba chỗ "chỉ thêm khối" như dự đoán — `shared/domain/index.ts`, `server/src/tests/run.ts` (giữ cả hai nhánh
+  export/gọi test) và thêm hai chỗ tài liệu không nằm trong dự đoán ban đầu (`CODE_MAP.md`, `plan.md` mục R7/R8 —
+  PR-Rc1 đã tự ghi chú "phần lưới xong" ở R8, gộp làm một ghi chú lịch sử thay vì xoá). `npm run check` sau rebase:
+  **933 kiểm tra đều đạt** (toàn repo, gồm cả các PR khác vừa merge). Push, mở PR
+  [#75](https://github.com/Pizi147/pisa-tracking/pull/75). Báo planning.
+
+- **Sửa sau rà PR #75 (planning: "CHƯA MERGE"):** Trước hết `git fetch origin && git rebase origin/main`
+  (từ `48baefc`, lần này thêm PR-Pb #73 đã merge sau khi PR #75 mở) — xung đột đúng ba chỗ "chỉ thêm khối" như
+  dự đoán, giữ CẢ HAI nhánh: `shared/domain/index.ts` (khối `phanTich.ts` của Pb trước, `duongHoSo.ts`/`hanhTrinh.ts`
+  của Qb sau), `server/src/tests/run.ts` (khối `runPhanTichTests` trước, `runHanhTrinhTests` sau), `CODE_MAP.md`
+  (lấy nguyên ba dòng của Pb — Kết quả hỗ trợ, khung Phân tích, Danh sách Case — cộng dòng Hành trình bản Qb
+  `HanhTrinh.tsx → KhoiPa`, bỏ dòng "Bảng Vấn đề - Case" cũ vì trùng). **Lưu ý cho lần sau:** con số "933 kiểm
+  tra đều đạt" ở mục Task 9 phía trên đã LỖI THỜI sau lần rebase này (`git rebase` phát lại đúng commit cũ, không
+  tự sửa số ghi trong nội dung) — số đúng của nhánh SAU rebase lần này, trước khi sửa 7 vấn đề dưới, là **968**.
+  `npm run check` xanh ngay sau rebase.
+
+  Bảy vấn đề planning nêu, mỗi vấn đề một đoạn (không tách commit riêng — bảy chỗ đan xen nhiều vào cùng vài
+  file, tách nhỏ chỉ sinh xung đột dòng giả):
+
+  1. **[Nghiêm trọng] Lệch cột trục tuần** (`HanhTrinh.tsx`) — nguyên nhân đúng như planning chỉ ra: `--cot-ten`
+     chỉ khai báo trên khung của TRỤC, không phải tổ tiên chung của trục lẫn từng hộp kỹ năng (biến CSS không
+     truyền sang phần tử anh em); mỗi hộp lại có `overflow-x-auto` VÀ đệm ngang (`p-2.5`) riêng nên dù sửa được
+     biến, mép lưới của hộp vẫn lệch mép lưới của trục đúng đúng bằng bề rộng đệm. Sửa: (a) `--cot-ten` chuyển
+     lên khung NGOÀI CÙNG bọc cả trục lẫn danh sách hộp; (b) MỘT `overflow-x-auto` duy nhất ở khung đó — trục và
+     mỗi hộp là khối `min-w-max` bên trong (tự giãn đúng bề rộng lưới của nó, không còn tự cuộn riêng); (c) cột
+     tuần đổi từ `minmax(40px,1fr)` sang **40px cố định** — nhiều lưới CSS riêng biệt (trục + một lưới/vấn đề)
+     dùng `1fr` có thể giãn ra pixel khác nhau tuỳ bối cảnh bố cục dù cùng `colTemplate`, cột cố định thì khớp
+     tuyệt đối bất kể lưới nào; (d) bỏ đệm ngang khỏi phần lưới của hộp (đệm chỉ còn ở đầu hộp, không phải phần
+     grid); (e) đầu hộp (tên · chuỗi điểm · badge) đổi từ hàng `justify-between` full-width sang khối GHIM TRÁI
+     (`sticky-col`, tự co theo nội dung) để còn đọc được khi đã cuộn ngang — kéo theo bỏ `justify-between`, badge
+     giờ nằm ngay sau chuỗi điểm thay vì đẩy sát mép phải (đổi giao diện nhỏ, ghi chú để planning xem lại nếu
+     không ưng). Tự quyết thêm: ô tên vấn đề (`VanDeHang`) cũng thêm `sticky-col` cho nhất quán với cột tên của
+     trục — planning không yêu cầu riêng nhưng bỏ qua sẽ tạo một điểm KHÔNG NHẤT QUÁN ngay khi vừa thống nhất
+     khung cuộn (tên hộp ghim được mà tên vấn đề thì không). **Kiểm bằng ảnh thật + `getBoundingClientRect`**
+     (Playwright kênh Chrome, xem bên dưới): HV1 hộp Reading, PA "Học tutor" 15/07→05/08 — mép trái khớp mép
+     trái JUL W3 (x=318), mép phải khớp mép phải AUG W1 (x=478), TRÙNG TUYỆT ĐỐI ở cả khung Browser lẫn Chrome
+     thật.
+  2. **[Quan trọng] Mục ngoài khoảng xem bị kẹp vào mép** — `cotCua` một mình chỉ biết KẸP về mép, không biết
+     một mục nằm HẲN NGOÀI khoảng để ẩn. Thêm `giaoKhoangXem(tu, den, khoang)` (`shared/domain/hanhTrinh.ts`) —
+     mục còn mở (`den=null`) luôn coi là chạy tới hết khoảng đang xem. Gọi hàm này TRƯỚC khi vẽ để lọc cả `doan`
+     (khoá/lộ trình) lẫn `vanDe` (Case) — mục giao MỘT PHẦN vẫn vẽ (và vẫn kẹp mép như cũ qua `cotCua`), mục
+     KHÔNG GIAO thì ẩn hẳn. Làm luôn Q22: hộp có vấn đề bị ẩn thì thêm một dòng mờ cuối hộp
+     `+{n} vấn đề cũ hơn — chọn "Cả giai đoạn"`, bấm vào tự đổi `cheDoKhoang` sang `ca-giai-doan`. **Kiểm bằng
+     ảnh thật + gọi API trực tiếp**: HV1 lớp thường, "3 tháng gần nhất" — khoá `MB-FOU 03` (kết thúc
+     `2026-01-25`, tuần chứa `2026-01-19`) hết HẲN trước khoảng đang xem (`tu=2026-01-26`) → ẩn sạch, không còn
+     cảnh dính mép giả ở JAN W5 như planning mô tả; chuyển "Cả giai đoạn" thì hiện lại đủ cả FOU lẫn BE.
+  3. **[Quan trọng] SOS dùng mức chặn trần làm số môn** — `attemptProgressView` dùng thẳng `sos` (= `sosLevel`,
+     bị `sosFromFailCount` chặn trần ở 3) làm số môn chưa đạt trong câu "Chưa đạt {k}/{n} môn", nên trượt cả 4
+     môn vẫn ghi "Chưa đạt 3/4 môn". Thêm tham số `soMonChuaDat` (số môn chưa đạt THẬT, không chặn trần) —
+     `AttemptProgressInput`/`KetQuaDot`/`KetQuaTestGanNhat`/`LuotTomTat` đều thêm trường này (ratio-only, `null`
+     ở FT); `ketQuaTestGanNhat` (`hoSoHocVien.ts`) tính từ `skills[].outcome==='fail'` của lượt đã chọn — dữ
+     liệu này `profile.ts` đã có sẵn trong `attempts[]` (không thêm truy vấn). Thiếu `soMonChuaDat` (gọi cũ) thì
+     tạm lấy `sos` như trước — không vỡ các chỗ gọi khác chưa kịp truyền. Chỉ MỘT nhánh cần sửa (đủ điểm, SOS>0)
+     — nhánh "chưa đủ điểm" luôn có `scored ≤ 3` (còn thiếu ít nhất 1/4) nên mức SOS không thể vượt số môn đã
+     chấm, không bị chặn trần sai ở đó. Thêm hai phép kiểm (`hanhTrinh.tests.ts`): trượt 4/4 môn ra đúng
+     "Chưa đạt 4/4 môn", và trường hợp thiếu `soMonChuaDat` vẫn chạy được (không vỡ).
+  4. **[Quan trọng] Tên Case tự sinh bỏ qua tên người tạo đặt** — `hanhTrinh.ts` (máy chủ) dùng thẳng
+     `caseTitle(...)` cho mọi vấn đề, bỏ qua `c.title` (tên tay). Sửa `(c.title ?? '').trim() || caseTitle(...)`
+     — ĐÃ CÓ SẴN `c.title` từ câu `SELECT sc.*` gốc, không cần câu SQL mới (khác `caseTitleOf` ở
+     `server/src/cases/cases.ts:58` — hàm đó tự truy vấn DB theo `case.id`, gọi trong vòng lặp nhiều Case sẽ vỡ
+     ngân sách truy vấn "6 câu cố định" của chính file này — planning nêu tên hàm đó chỉ để chỉ ra QUY TẮC
+     "tên tay thắng tên suy ra", không phải bảo gọi thẳng hàm đó). Đồng thời "lớp thường không được ra chữ
+     'kỳ vọng'": `caseTitle` (dùng chung toàn hệ thống, nằm ngoài phạm vi PR này, KHÔNG được sửa) luôn gắn đuôi
+     "… dưới kỳ vọng" bất kể lớp thường/FT — tự quyết KHÔNG sửa hàm dùng chung mà thêm nhánh RIÊNG cho lớp
+     thường ngay tại nơi gọi: tên tự sinh của lớp thường đổi thành `"{Tên môn} chưa đạt"` (không mượn chữ FT).
+  5. **[Quan trọng] Ngân sách truy vấn** — thêm `/students/{hv}/hanh-trinh` (cả `?giai-doan=thuong`) và
+     `/notifications` vào `tocDoDuong.ts`; đo lần đầu (chưa có trần) ra 27–30 câu và 9 câu, áp công thức có sẵn
+     `max(sau+10, ⌈sau×1.3⌉)` → trần 37–40 và 19 (khớp đúng gợi ý "~40 và ~19" của planning). `profile.ts:754`
+     (khối `currentClass.khoa`) gọi `isRatioClass` (tự query `programme_code` lại — TRÙNG câu `programmeOfClass`
+     đã gọi ngay phía trên cho `programme.name`) rồi `classProgressMany([id])` (ba câu: `classes`,
+     `report_periods`, đếm học viên — tính dư thừa `activeStudents`/`needsPlacement`… mà khối này không dùng
+     tới). Sửa: gọi `programmeOfClass` MỘT LẦN (`progHienTai`), dùng lại cho cả `programme.name` lẫn
+     `scoringMode==='ratio'`; widen câu SELECT `enrollments` có sẵn (JOIN thêm `report_periods` lấy
+     `class_start_week`, KHÔNG thêm câu SQL mới) rồi tính `tuanHienTai`/`tuanKetThuc` thẳng bằng `studyWeekOf`/
+     `addDays` (đã có ở `shared/domain`) — bỏ hẳn `isRatioClass`/`classProgressMany` khỏi khối này. `{hv}` của
+     `tocDo.run.ts` là học viên lớp FT (không rơi vào nhánh ratio) nên bảng đo không thấy trực tiếp số 72→76 kể
+     lại của planning; xác nhận đúng cơ chế qua đọc mã (mỗi query TRÙNG bị bỏ khớp chính xác 1 hoặc 4 câu tuỳ
+     ratio hay không).
+  6. **[Quan trọng] Bấm ô số nhảy khỏi lộ trình đang xem** — `moKyNang` (`StudentDetailPage.tsx`) thiếu
+     `loTrinh: p.loTrinh` khi gọi `duongHoSoHocVien` — sửa một dòng.
+  7. **[Nhỏ, làm vì cùng luồng SOS] Khối xác minh SOS + tuần thiếu 1** — `PendingSignals` tự viết lại thiếu ba
+     thứ so với `DongTinHieu.tsx` (cùng luồng, khác chỗ hiển thị): không có ô lý do, không chặn bấm hai lần,
+     không bắt lỗi, chỉ làm mới hồ sơ hiện tại (không `invalidate('/my-work')`/`'/signals'`). Tách một hàng
+     thành `TinHieuHang` (component riêng, có state riêng — `PendingSignals` là danh sách nên không tự có hook
+     theo từng dòng được) chép lại ĐÚNG bốn hành vi đó của `DongTinHieu`; nút "Tạo Case" giờ truyền thêm
+     `scoreText` (`"{score}/{total}"`, `QuickReport` tự thêm nhãn "Điểm:") giống hệt cách `DongTinHieu` làm.
+     Đoạn khoá đang chạy thiếu 1 tuần: `server/src/students/hanhTrinh.ts` tính `soTuan` bằng hiệu ngày
+     (`tu`→`den`, cả hai đều là NGÀY THỨ HAI của tuần) rồi chia 7 — thiếu tuần đầu vì đây là hiệu số TUẦN ĐÃ
+     TRÔI QUA giữa hai mốc, không phải số tuần được đếm (khoá W8/8 ra "7 tuần"); sửa `+1`. Thêm phép kiểm
+     tự-đối-chiếu (`hanhTrinh.tests.ts`): mọi `doan` của HV1 lớp thường đều khớp công thức `+1` — bắt được ngay
+     nếu ai lỡ bỏ `+1` sau này.
+
+  `npm run check` (chỉ chạy MỘT LẦN một lúc như dặn): **971 = 968 + 3** (hai phép kiểm SOS 4/4 môn + `giaoKhoangXem`,
+  một phép kiểm tự-đối-chiếu `+1 tuần` gộp vào phép kiểm `doan` có sẵn nên không cộng thêm dòng riêng), trần
+  truy vấn của hai đường mới không vỡ, không phép kiểm nào đỏ.
+
+  **Bấm thử lại bằng ẢNH THẬT** (không chỉ đọc DOM lần này) — dev server chạy tay trong worktree
+  (`npm run dev`, cổng mặc định 4000/5173, không đụng máy chính), `npm run seed` lại DB worktree (trống lúc
+  vừa `npm ci` xong), đăng nhập Quản trị hệ thống. Chụp bằng **Playwright kênh Chrome** (`npx playwright`, bản
+  đã cache sẵn ở máy — không cài thêm gói, không đụng `package.json`) vì khung Browser tích hợp không có chỗ
+  lưu ảnh ra đĩa (ghi nhận đúng như Task 9 nêu) — script chạy một lần, không commit vào repo, kết quả lưu
+  `thiet-ke/anh/pr-qb/`:
+    - `sau-hanh-trinh-hv1-ft-3thang-desktop.png` — giai đoạn FT, khối PA "Học tutor" khớp trục JUL W3→AUG W1.
+    - `sau-hanh-trinh-hv1-thuong-3thang-desktop.png` — giai đoạn lớp thường, khoá FOU (hết hạn trước khoảng
+      xem) ẩn sạch, chỉ còn BE; vấn đề Reading không còn chữ "kỳ vọng".
+    - `sau-hanh-trinh-hv1-thuong-ca-giai-doan-desktop.png` — đối chứng, hiện đủ cả FOU lẫn BE khi chọn "Cả
+      giai đoạn".
+
+  `git status` sạch trừ ảnh mới + sửa mã (không còn file Vite/DB tạm — `data/` đã gitignore, dừng hẳn dev
+  server sau khi chụp xong). Push, cập nhật PR #75. Báo planning.
+
+- **Xung đột merge với `main` ngay sau khi push (Auto-fix pull requests báo):** PR-Rc2 (#76, Kế hoạch Test)
+  merge vào `main` đúng lúc giữa hai lần push của round trên. Theo đúng hướng dẫn của sự kiện (không rebase,
+  không force-push lần này — MERGE để giữ đúng lịch sử đã push): `sync_with_base_branch` từ chối vì worktree
+  này không phải do app tạo (worktree thủ công từ đầu phiên) — tự làm bằng `git fetch origin main && git merge
+  FETCH_HEAD`. Bốn xung đột, đều "chỉ thêm khối" (Rc2 thêm entry riêng cạnh entry của Qb, không sửa cùng dòng):
+  `shared/domain/index.ts` (export `keHoachTest.ts` của Rc2 + `duongHoSo.ts`/`hanhTrinh.ts` của Qb),
+  `server/src/tests/run.ts` (khối `runKeHoachTestTests` của Rc2 + `runHanhTrinhTests` của Qb),
+  `server/src/tests/tocDoDuong.ts` (đường + trần của cả hai PR), `plan.md` (mục R7/R8 Qb đánh dấu xong nằm
+  sát mục R9 mà Rc2 cũng vừa đánh dấu xong — giữ CẢ HAI, không phải chọn một). `npm run check`: **995 kiểm tra
+  đều đạt** (971 của Qb + 24 của Rc2's `keHoachTest.tests.ts`). Merge commit (không rebase), push thường (không
+  force). `gh pr view 75` xác nhận `mergeable: MERGEABLE`, `mergeStateStatus: CLEAN`.

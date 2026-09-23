@@ -10,6 +10,7 @@
  *   tiến độ case, việc tiếp của PA    → `tienDoCase`, `viecTiepPhuongAn` (Task 6)
  */
 import { ATTEMPT_SKILL_UNITS } from './display.ts';
+import { tuanLich } from './hienThiNgay.ts';
 import { VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, type ViolationCategory } from './yThuc.ts';
 
 // ====================================================================== ba tab (D2, A6)
@@ -102,12 +103,17 @@ export const quaHan = (due: string | null | undefined, today: string): boolean =
 /** Một lượt đánh giá như `studentProfile().attempts[]` trả về — chỉ các trường ô này cần. */
 export type LuotTomTat = {
   id: number; attemptNo: number; kind: string; status: string; periodCode: string | null;
+  weekStart: string | null;
   mode: string; scored: number; required: number; complete: boolean;
   overall: number | null; expectation: number | null; sosLevel: number | null;
+  /** Chỉ lớp thường — dùng để đếm số môn chưa đạt THẬT (`sosLevel` bị chặn trần ở 3, không dùng được khi trượt cả 4). */
+  skills?: { outcome: string }[] | null;
 };
 export type KetQuaTestGanNhat = {
   attemptId: number; nhan: string; coDiem: number; yeuCau: number;
   dat: boolean | null; sos: number | null;
+  /** Chỉ lớp thường — số môn chưa đạt THẬT (không bị chặn trần như `sos`); FT luôn `null`. */
+  soMonChuaDat: number | null;
   /** `<KetQuaDot>` chỉ nhận 1–4 kỹ năng (ATTEMPT_SKILL_UNITS); ngoài khoảng đó giao diện ghi `{có}/{cần} phần có điểm`. */
   dungKetQuaDot: boolean;
 };
@@ -119,19 +125,20 @@ export type KetQuaTestGanNhat = {
  *   Normal:     nhãn `Giữa khoá` / `Cuối khoá` (+ tuần); KHÔNG có Overall — "đạt" = đủ điểm và SOS 0
  *               (mọi phần đạt ngưỡng), chưa đủ điểm → null. Không bịa Overall (J3).
  */
-export function ketQuaTestGanNhat(attempts: readonly LuotTomTat[]): KetQuaTestGanNhat | null {
+export function ketQuaTestGanNhat(attempts: readonly LuotTomTat[], homNay?: string | null): KetQuaTestGanNhat | null {
   const a = [...attempts]
     .filter((x) => x.status !== 'cancelled' && x.scored > 0)
     .sort((x, y) => y.attemptNo - x.attemptNo)[0];
   if (!a) return null;
   const ratio = a.mode === 'ratio';
   const dau = ratio ? (a.kind === 'final' ? 'Cuối khoá' : 'Giữa khoá') : `MT${a.attemptNo}`;
-  const nhan = a.periodCode ? `${dau} · ${a.periodCode}` : dau;
+  const nhan = a.weekStart ? `${dau} · ${tuanLich(a.weekStart, homNay)}` : dau;
   const dat = ratio
     ? (a.complete ? a.sosLevel === 0 : null)
     : (a.complete && a.overall !== null && a.expectation !== null ? a.overall >= a.expectation : null);
+  const soMonChuaDat = ratio ? (a.skills ?? []).filter((s) => s.outcome === 'fail').length : null;
   return {
-    attemptId: a.id, nhan, coDiem: a.scored, yeuCau: a.required, dat, sos: a.sosLevel,
+    attemptId: a.id, nhan, coDiem: a.scored, yeuCau: a.required, dat, sos: a.sosLevel, soMonChuaDat,
     dungKetQuaDot: a.required >= 1 && a.required <= ATTEMPT_SKILL_UNITS,
   };
 }

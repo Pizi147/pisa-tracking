@@ -9557,6 +9557,11 @@ await runFormTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, ad
 const { runPhanTichTests } = await import('./phanTich.tests.ts');
 await runPhanTichTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
+// ==================================================================== PR-Qb (Hồ sơ học viên: Hành trình theo lịch)
+
+const { runHanhTrinhTests } = await import('./hanhTrinh.tests.ts');
+await runHanhTrinhTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
 // ==================================================================== PR-Rc2 (Kế hoạch Test)
 
 const { runKeHoachTestTests } = await import('./keHoachTest.tests.ts');
