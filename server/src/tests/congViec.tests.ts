@@ -210,4 +210,111 @@ export async function runCongViecTests(t: YThucTestKit) {
     ).all(seedMax.tasks, today) as any[];
     assert(late.length === 0, `Có việc hoàn thành ghi ở tương lai: ${JSON.stringify(late)}`);
   });
+
+  // ================================================================== 3. Luật thuần shared/domain/congViec.ts
+
+  console.log('\nPR-Ra · 3. Luật thuần Công việc — lọc nhanh, facet, hàng số Vận hành, trạng thái báo cáo');
+
+  const domain: any = await import('../../../shared/domain/index.ts');
+  const homNay = '2026-09-14'; // thứ Hai, W3 SEP (DEMO_DATE)
+
+  check('PR-Ra · Q4: "Tuần này" gồm hôm nay và Chủ nhật (14→20/09), không gồm thứ Hai tuần sau (21/09), không gồm quá hạn', () => {
+    const mk = (due: string | null, urgency: 'overdue' | 'today' | 'normal' = 'normal') => ({ due, urgency });
+    assert(domain.khopLocNhanh(mk(homNay), 'tuan-nay', homNay) === true, 'Hôm nay phải vào Tuần này');
+    assert(domain.khopLocNhanh(mk('2026-09-20'), 'tuan-nay', homNay) === true, 'Chủ nhật 20/09 phải vào Tuần này');
+    assert(domain.khopLocNhanh(mk('2026-09-21'), 'tuan-nay', homNay) === false, 'Thứ Hai tuần sau (21/09) không được vào Tuần này');
+    assert(domain.khopLocNhanh(mk('2026-09-10', 'overdue'), 'tuan-nay', homNay) === false, 'Việc quá hạn không được vào Tuần này (hai ô không chồng nhau)');
+    assert(domain.khopLocNhanh(mk(null), 'tuan-nay', homNay) === false, 'Việc không có hạn không vào Tuần này');
+  });
+
+  check('PR-Ra · demLocNhanh: bốn ô không đổi khi đổi Loại việc đang xem (chỉ phụ thuộc chính tham số loai truyền vào)', () => {
+    const items = [
+      { group: 'score', urgency: 'overdue', due: '2026-09-10' },
+      { group: 'score', urgency: 'normal', due: '2026-09-16' },
+      { group: 'decide', urgency: 'today', due: homNay },
+    ];
+    const a = domain.demLocNhanh(items, 'score', homNay);
+    const b = domain.demLocNhanh(items, 'score', homNay);
+    assert(JSON.stringify(a) === JSON.stringify(b), 'Gọi lại với cùng loai phải ra cùng số — không có trạng thái ẩn nào chen vào');
+    assert(a['qua-han'] === 1 && a['tuan-nay'] === 1, `Số theo Loại việc "score" sai: ${JSON.stringify(a)}`);
+  });
+
+  check('PR-Ra · demLoaiViec: số theo Loại việc không đổi khi đổi lọc nhanh khác — mỗi lần gọi chỉ áp đúng MỘT lọc nhanh truyền vào', () => {
+    const items = [
+      { group: 'score', urgency: 'overdue', due: '2026-09-10' },
+      { group: 'decide', urgency: 'overdue', due: '2026-09-11' },
+      { group: 'score', urgency: 'today', due: homNay },
+    ];
+    const quaHan = domain.demLoaiViec(items, 'qua-han', homNay);
+    assert(quaHan.score === 1 && quaHan.decide === 1, `Số theo lọc nhanh "qua-han" sai: ${JSON.stringify(quaHan)}`);
+    const tatCa = domain.demLoaiViec(items, 'tat-ca', homNay);
+    assert(tatCa.score === 2 && tatCa.decide === 1, `Số theo lọc nhanh "tat-ca" sai: ${JSON.stringify(tatCa)}`);
+  });
+
+  check('PR-Ra · thamSoNguoi: "toi"/"tat-ca" giữ nguyên, số hợp lệ → number, chuỗi lạ/rỗng/thiếu → null', () => {
+    assert(domain.thamSoNguoi('toi') === 'toi' && domain.thamSoNguoi('tat-ca') === 'tat-ca', 'toi/tat-ca phải giữ nguyên');
+    assert(domain.thamSoNguoi('12') === 12, 'Chuỗi số phải đổi ra number');
+    assert(domain.thamSoNguoi('abc') === null && domain.thamSoNguoi('') === null && domain.thamSoNguoi(undefined) === null && domain.thamSoNguoi('0') === null,
+      'Chuỗi lạ (kể cả 0, rỗng, thiếu) phải ra null');
+  });
+
+  const dvh = (o: Partial<{ progress: string; due: string | null; reviewOn: string | null; completedAt: string | null; subOpen: number; subTotal: number; group: string; assigneeUserId: number | null }>) => ({
+    progress: 'doing', due: null, reviewOn: null, completedAt: null, subOpen: 0, subTotal: 0, group: 'teacher', assigneeUserId: null, ...o,
+  });
+
+  check('PR-Ra · Q8 hàng số: Tạm ngưng TRƯỚC ngày xem lại → chờ người khác; ĐÚNG/SAU ngày xem lại → cần quyết định; hai ô không chồng nhau', () => {
+    const truoc = dvh({ progress: 'paused', reviewOn: '2026-09-20' });
+    const dung = dvh({ progress: 'paused', reviewOn: homNay });
+    const sau = dvh({ progress: 'paused', reviewOn: '2026-09-01' });
+    const hs = domain.hangSoVanHanh([truoc, dung, sau], homNay);
+    assert(hs['cho-nguoi-khac'] === 1, `Chỉ "trước" là chờ người khác: ${JSON.stringify(hs)}`);
+    assert(hs['can-quyet-dinh'] === 2, `"đúng" và "sau" ngày xem lại phải là cần quyết định: ${JSON.stringify(hs)}`);
+    assert(domain.khopHang(truoc, 'cho-nguoi-khac', homNay) && !domain.khopHang(truoc, 'can-quyet-dinh', homNay), 'Một dòng không được vào cả hai ô giữa');
+  });
+
+  check('PR-Ra · Q8 hàng số: việc CHA đã khép hết việc con (còn cha chưa xong) → cần quyết định', () => {
+    const chaHetCon = dvh({ progress: 'doing', subTotal: 3, subOpen: 0 });
+    const chaConMo = dvh({ progress: 'doing', subTotal: 3, subOpen: 1 });
+    assert(domain.khopHang(chaHetCon, 'can-quyet-dinh', homNay) === true, 'Cha đã khép hết con phải vào cần quyết định');
+    assert(domain.khopHang(chaConMo, 'can-quyet-dinh', homNay) === false, 'Cha còn con mở thì chưa vào cần quyết định');
+  });
+
+  check('PR-Ra · Q8 hàng số: vừa hoàn thành đúng 7 ngày (ngày thứ 7 vào, thứ 8 không)', () => {
+    const ngay7 = dvh({ progress: 'done', completedAt: addDaysStr(homNay, -6) });
+    const ngay8 = dvh({ progress: 'done', completedAt: addDaysStr(homNay, -7) });
+    assert(domain.khopHang(ngay7, 'vua-xong', homNay) === true, 'Hoàn thành 6 ngày trước (ngày thứ 7 tính cả hôm nay) phải tính');
+    assert(domain.khopHang(ngay8, 'vua-xong', homNay) === false, 'Hoàn thành 7 ngày trước (ngày thứ 8) không được tính');
+  });
+
+  check('PR-Ra · facetVanHanh: số trạng thái KHÔNG đổi khi đổi trạng thái đang chọn (chỉ áp nhóm + hàng)', () => {
+    const rows = [dvh({ progress: 'doing', group: 'teacher' }), dvh({ progress: 'paused', group: 'teacher', reviewOn: '2026-09-01' }),
+      dvh({ progress: 'done', group: 'curriculum', completedAt: homNay })];
+    const a = domain.facetVanHanh(rows, { progress: 'doing' }, homNay);
+    const b = domain.facetVanHanh(rows, { progress: 'paused' }, homNay);
+    assert(JSON.stringify(a.progress) === JSON.stringify(b.progress), `Facet trạng thái phải giữ nguyên khi đổi trạng thái đang chọn: ${JSON.stringify(a.progress)} vs ${JSON.stringify(b.progress)}`);
+    assert(a.progress.doing === 1 && a.progress.paused === 1, `Facet trạng thái sai: ${JSON.stringify(a.progress)}`);
+  });
+
+  check('PR-Ra · dongHanDaDoi: ≤ 60 ký tự, không hiện ISO, không hạn gốc → null', () => {
+    const s = domain.dongHanDaDoi({ hanGoc: '2026-09-05', lyDo: 'Chờ duyệt ngân sách nhà cung cấp, hẹn lại đầu tháng sau vì kế toán đang bận quyết toán quý' }, homNay);
+    assert(typeof s === 'string' && s.length <= 60, `Dòng phụ dời hạn phải ≤ 60 ký tự: "${s}" (${s?.length})`);
+    assert(!/\d{4}-\d{2}-\d{2}/.test(s ?? ''), `Không được hiện ngày ISO: "${s}"`);
+    assert(/^đã dời từ 05\/09/.test(s ?? ''), `Phải bắt đầu bằng "đã dời từ 05/09": "${s}"`);
+    assert(domain.dongHanDaDoi({ hanGoc: null, lyDo: null }, homNay) === null, 'Không có hạn gốc thì không có dòng phụ');
+  });
+
+  check('PR-Ra · trangThaiDonVi (Q12): Đã nộp · Nháp kèm "đã nộp n/m" · Chưa báo cáo', () => {
+    const o = (status: string | null, submittedAt: string | null, note: string | null = null) => ({ status, note, submittedAt });
+    const daNop = domain.trangThaiDonVi([o('ok', homNay), o('watch', homNay)]);
+    assert(daNop.ma === 'da-nop' && daNop.nhan === 'Đã nộp' && daNop.phu === null, `Ba ô đều đã nộp phải là Đã nộp: ${JSON.stringify(daNop)}`);
+    const nhap = domain.trangThaiDonVi([o('ok', homNay), o('watch', null), o('problem', null)]);
+    assert(nhap.ma === 'nhap' && nhap.phu === 'đã nộp 1/3', `Trộn nộp/nháp phải là Nháp · chưa nộp kèm "đã nộp 1/3": ${JSON.stringify(nhap)}`);
+    const chua = domain.trangThaiDonVi([o(null, null), o(null, null)]);
+    assert(chua.ma === 'chua' && chua.nhan === 'Chưa báo cáo', `Không ô nào có gì phải là Chưa báo cáo: ${JSON.stringify(chua)}`);
+  });
+}
+
+function addDaysStr(iso: string, n: number): string {
+  const DAY_MS = 86_400_000;
+  return new Date(Date.parse(`${iso}T00:00:00Z`) + n * DAY_MS).toISOString().slice(0, 10);
 }
