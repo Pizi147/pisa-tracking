@@ -1,7 +1,8 @@
 /**
  * DỮ LIỆU NỀN DÙNG CHUNG — quyền, vai trò (kể cả vai `retired`), lộ trình, chương trình học + kỹ năng + mốc.
  * Bộ demo (`seed.ts`) và bản chính (`ops/initBanChinh.ts`, PR-Z2) cùng gọi hàm này, nên hai bên không bao giờ lệch nhau.
- * KHÔNG tạo chi nhánh, người dùng, lớp, học viên hay cấu hình demo nào. Mã bên dưới chuyển NGUYÊN VĂN từ `runSeed()`.
+ * KHÔNG tạo chi nhánh, người dùng, lớp, học viên hay cấu hình demo nào (chỉ một dòng dấu ngưỡng ở `demo_config` — xem cuối hàm).
+ * Mã bên dưới chuyển NGUYÊN VĂN từ `runSeed()`.
  */
 import { PERMISSION_LABEL, PROGRAMME_TEMPLATES } from '../../../shared/domain/index.ts';
 import { seedRoutes } from '../platform/sysconfig.ts';
@@ -55,5 +56,11 @@ export function napDuLieuNen(conn: any, now: string): { roleId: Map<string, numb
         .run(t.code, cp.kind, cp.studyWeek);
     }
   }
+  /*
+   * DẤU NGƯỠNG ĐẠT LỚP NORMAL (PR-Z2c-b). Ngưỡng thật là hằng RATIO_PASS_THRESHOLD trong mã; dòng này chỉ là dấu cho bước
+   * migrate `migrateNormalPassThreshold` biết database đã ở luật 70%. Thiếu dấu thì lần migrate đầu trên một database MỚI
+   * (bản chính vừa khởi tạo) ghi audit "đổi luật 60% → 70%" — sai sự thật: database đó chưa từng có luật 60%.
+   */
+  conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('normal_pass_threshold', '0.7', now);
   return { roleId, permId };
 }
