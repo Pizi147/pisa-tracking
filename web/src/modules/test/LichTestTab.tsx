@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
@@ -8,7 +8,7 @@ import { HangTab } from '../../ui/HangTab.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useManHinhHep } from '../cham/LuoiChamLop.tsx';
-import { mondayOfDate, tuanLich } from '@shared/domain/index.ts';
+import { chuOChuaLuu, mondayOfDate, tuanLich } from '@shared/domain/index.ts';
 import type { DongNo, LichTest, LopLichTest } from './lichTest/kieu.ts';
 import { DaiSo, type OSo } from './lichTest/DaiSo.tsx';
 import { KhoiNo } from './lichTest/KhoiNo.tsx';
@@ -74,6 +74,14 @@ export function LichTestTab() {
   const [moNo, setMoNo] = useState(true);
   const [chiQuaHan, setChiQuaHan] = useState(false);
   const [dongMo, setDongMo] = useState<{ d: DongNo; viTri: number; conTro: boolean } | null>(null);
+  /* Số ô lưu hỏng theo hàng lớp / dòng Nợ (PR-UX1) — badge của hàng nói "n ô chưa lưu" tới khi hết. */
+  const [chuaLuu, setChuaLuu] = useState<Record<string, number>>({});
+  const baoChuaLuu = useCallback((khoa: string, n: number) => setChuaLuu((x) => {
+    if ((x[khoa] ?? 0) === n) return x;
+    const moi = { ...x };
+    if (n) moi[khoa] = n; else delete moi[khoa];
+    return moi;
+  }), []);
 
   /* Khởi tạo MỘT LẦN cho mỗi (tuần, lớp đang lọc): đọc lớp đã nhớ; lớp trên đường dẫn thì mở dòng Nợ đầu của lớp
      đó nếu có, không thì mở hàng lớp của nó. */
@@ -195,7 +203,13 @@ export function LichTestTab() {
           <DaiSo tq={data.tongQuan} tenTuan={tenTuan} onBam={bamSo} />
           <KhoiNo no={data.no} mo={moNo} onMo={() => setMoNo((v) => !v)}
             chiQuaHan={chiQuaHan} onBoQuaHan={() => setChiQuaHan(false)}
-            dongMo={dongMo} onMoDong={(d, viTri) => setDongMo(d ? { d, viTri, conTro: true } : null)}
+            dongMo={dongMo} chuaLuu={chuaLuu} baoChuaLuu={baoChuaLuu}
+            onMoDong={(d, viTri) => {
+              /* Dòng đang mở còn ô chưa lưu: đóng nó là mất giá trị đã gõ — hỏi trước. */
+              const n = dongMo ? chuaLuu[`no:${dongMo.d.key}`] ?? 0 : 0;
+              if (n > 0 && !window.confirm(`Lớp ${dongMo!.d.classCode} còn ${chuOChuaLuu(n)}. Đóng lưới thì mất các giá trị đó — vẫn đóng?`)) return;
+              setDongMo(d ? { d, viTri, conTro: true } : null);
+            }}
             hep={hep} homNay={homNay} onDaLuu={baoDaLuu} knUrl={dongMo?.d.classId === urlClassId ? urlKn : null} />
 
           <div id="lich-test-lop" className="space-y-2">
@@ -235,7 +249,7 @@ export function LichTestTab() {
             {lopTab.length > 0 && data.tuan ? (
               <HangLop lop={lopTab} moCua={moCua} onMo={doiMo} coChiNhanh={branchCount > 1 && !branchId} hep={hep}
                 periodId={data.tuan.id} tuanDangXem={data.tuan.weekStart} urlClassId={urlClassId} urlKn={urlKn}
-                conTro={conTro} onDaLuu={baoDaLuu} />
+                conTro={conTro} onDaLuu={baoDaLuu} chuaLuu={chuaLuu} baoChuaLuu={baoChuaLuu} />
             ) : (
               <div className="card"><Empty title={`${tenTuan} không có lượt Test nào`} hint="Bài còn nợ các tuần trước nằm ở khối trên." /></div>
             )}

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { BaoLuuContext } from '../../ui/SaveState.tsx';
 import { Card } from '../../ui/ui.tsx';
 import { LuoiFT, type FtSheet } from './LuoiFT.tsx';
 import { LuoiThuong, type ThuongSheet } from './LuoiThuong.tsx';
@@ -56,13 +57,26 @@ export function thuongTheoBai(t: ThuongSheet | null | undefined, kind: string | 
  */
 export function LuoiChamLop({
   data, kind, kn = null, hv = null, onReload, gon = false, tuanDangXem = null, chiAttempt = null, datConTro = true, thanhTren,
+  onSoOChuaLuu,
 }: {
   data: Cham; kind: string | null; kn?: string | null; hv?: number | null; onReload: () => void;
   gon?: boolean; tuanDangXem?: string | null; chiAttempt?: ReadonlySet<number> | null; datConTro?: boolean;
   /** Chữ nhỏ ở hàng trên lưới, cùng hàng với nút "Xem dạng bảng" (Lịch Test: "Mở lưới đầy đủ ↗"). */
   thanhTren?: ReactNode;
+  /** Tổng số ô lưu hỏng của cả lưới (mọi dòng) — đầu trang / hàng lớp nói "n ô chưa lưu" cho tới khi hết. */
+  onSoOChuaLuu?: (n: number) => void;
 }) {
   const hep = useManHinhHep();
+  /* Mỗi dòng báo số ô lỗi của nó (`useBaoLuu`); cộng lại rồi báo lên trên. */
+  const [loiTheoDong, setLoiTheoDong] = useState<Record<string, number>>({});
+  const bao = useCallback((khoa: string, n: number) => setLoiTheoDong((x) => {
+    if ((x[khoa] ?? 0) === n) return x;
+    const moi = { ...x };
+    if (n) moi[khoa] = n; else delete moi[khoa];
+    return moi;
+  }), []);
+  const soOChuaLuu = Object.values(loiTheoDong).reduce((a, b) => a + b, 0);
+  useEffect(() => { onSoOChuaLuu?.(soOChuaLuu); }, [soOChuaLuu, onSoOChuaLuu]);
   const [xemBang, setXemBang] = useState(false);
   const laFt = data.mode === 'ielts_band';
 
@@ -113,6 +127,7 @@ export function LuoiChamLop({
   );
 
   return (
+    <BaoLuuContext.Provider value={bao}>
     <div ref={khung}>
       {(hep || thanhTren) && (
         <div className="flex items-center justify-end gap-3">
@@ -128,5 +143,6 @@ export function LuoiChamLop({
       )}
       {gon ? luoi : <Card bodyClass="p-0">{luoi}</Card>}
     </div>
+    </BaoLuuContext.Provider>
   );
 }

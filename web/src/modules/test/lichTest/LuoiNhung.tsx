@@ -11,10 +11,10 @@ import { LuoiChamLop, duongCham, useManHinhHep, type Cham } from '../../cham/Luo
  * "Mở lưới đầy đủ ↗": hàng lớp trên máy tính đã có ↗ ở cột riêng (`coLinkRieng`) nên không lặp; màn hẹp thì hàng lớp gập,
  * link về lại trên lưới.
  */
-export function LuoiNhung({ classId, periodId, kind, tuanDangXem, chiAttempt = null, kn = null, hrefDayDu, datConTro, onDaLuu, coLinkRieng }: {
+export function LuoiNhung({ classId, periodId, kind, tuanDangXem, chiAttempt = null, kn = null, hrefDayDu, datConTro, onDaLuu, coLinkRieng, onSoOChuaLuu }: {
   classId: number; periodId: number | null; kind: string | null; tuanDangXem: string | null;
   chiAttempt?: ReadonlySet<number> | null; kn?: string | null; hrefDayDu: string; datConTro: boolean;
-  onDaLuu: () => void; coLinkRieng?: boolean;
+  onDaLuu: () => void; coLinkRieng?: boolean; onSoOChuaLuu?: (n: number) => void;
 }) {
   const { data, error, reload } = useApi<Cham>(duongCham(classId, { periodId, kind }));
   const hep = useManHinhHep();
@@ -30,7 +30,8 @@ export function LuoiNhung({ classId, periodId, kind, tuanDangXem, chiAttempt = n
         : !data ? <Skeleton rows={4} />
         : (
           <LuoiChamLop data={data} kind={kind} kn={kn} onReload={() => { reload(); onDaLuu(); }}
-            gon tuanDangXem={tuanDangXem} chiAttempt={chiAttempt} datConTro={datConTro} thanhTren={link} />
+            gon tuanDangXem={tuanDangXem} chiAttempt={chiAttempt} datConTro={datConTro} thanhTren={link}
+            onSoOChuaLuu={onSoOChuaLuu} />
         )}
     </div>
   );

@@ -39,3 +39,16 @@
 ĐẠT  375 ql: lưới mở là một kỹ năng một lúc (2)
 ĐẠT  375 ql: nút ≥ 44px 
 ĐẠT  375 ql: hàng lớp gập (một ô, hai dòng)
+
+# Lưu theo từng ô (giả 503 cho một ô)
+ĐẠT  Lưới đầy đủ FT: L giả 503 → ô L "loi", ô R lưu được "da-luu" (loi, da-luu; 1 lần 503)
+ĐẠT  Ô L lỗi vẫn giữ giá trị đã gõ (30)
+ĐẠT  Dòng hiện "1 ô chưa lưu", không "Đã lưu" (Nguyễn Minh An PISA-000001 1 ô chưa lưu Lưu lại)
+ĐẠT  Đầu trang: "1 ô chưa lưu" thay cho "Đã lưu hh:mm ✓"
+ĐẠT  Ô lỗi có viền đỏ (rgb(255, 255, 255) 0px 0px 0px 0px inset)
+ĐẠT  Bấm "Lưu lại" ở ô → lưu được, dòng + đầu trang hết "chưa lưu" (da-luu)
+ĐẠT  Lịch Test lớp thường: L lỗi, R lưu được, hàng lớp "1 ô chưa lưu" (loi, da-luu)
+ĐẠT  Thu rồi mở lại lớp: badge còn, ô L vẫn "30"
+ĐẠT  Lưu lại xong: hàng lớp hết "chưa lưu" (▾ MB-FOU 12 Cuối khoá L R W S 4/8 bài hạn 20/09 Chờ bạn chấm ↗)
+ĐẠT  375: ô lỗi có "Lưu lại" cao 44px, dòng "1 ô chưa lưu"
+ĐẠT  375: không cuộn ngang

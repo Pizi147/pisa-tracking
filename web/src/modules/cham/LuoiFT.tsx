@@ -1,14 +1,13 @@
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Empty, Info, Level, Status, Th } from '../../ui/ui.tsx';
-import { SaveIndicator } from '../../ui/SaveState.tsx';
 import {
   CriteriaButton, DeadlinePill, KHOA_HOAN_TAT_HINT, RawScoreInput, useSaveScore, type Cell,
 } from '../fasttrack/ScoreEntry.tsx';
 import {
   attemptStatusLabel, fmtBand, skillLabel, skillShort, sosLabel, sosTone,
 } from '../../lib/format.ts';
-import { ENTRY_SKILLS, ngay, tuanLich } from '@shared/domain/index.ts';
+import { ENTRY_SKILLS, chuOChuaLuu, ngay, tuanLich, type TrangThaiLuuO } from '@shared/domain/index.ts';
 
 /** Dữ liệu lưới FT — chính là `cham.ft` (`classScoreSheet` ở máy chủ). */
 export type FtSheet = {
@@ -205,7 +204,7 @@ function SheetRow({ row, rowIndex, active, cot, tuanDangXem, onReload, register,
   register: (col: number, el: HTMLInputElement | null) => void;
   onMove: (row: number, col: number, dr: number) => void;
 }) {
-  const { save, status, lastError, retry } = useSaveScore(row.attemptId, onReload);
+  const { save, status, lastError, retry, o, loi, luuLai, soLoi } = useSaveScore(row.attemptId, onReload);
   const cellOf = (skill: string) => row.cells.find((c) => c.skill === skill);
   const oKhacTuan = (s: string, cell: Cell) => (
     <td key={s} className="td py-1.5 text-slate-500" data-kn={s} title={`${skillLabel(s)}: thi tuần ${tuanLich(cell.weekStart)}`}>
@@ -222,10 +221,10 @@ function SheetRow({ row, rowIndex, active, cot, tuanDangXem, onReload, register,
             <Info title={`Hết Chủ nhật ${ngay(row.chuNhatCuoi)}. ${KHOA_HOAN_TAT_HINT}`}>Đã hoàn tất</Info>
           )}
         </div>
-        {/* Trạng thái lưu RIÊNG TỪNG DÒNG — lỗi nói rõ ở dòng nào, có nút Thử lại. */}
+        {/* Tóm tắt lưu của dòng: "n ô chưa lưu" khi còn ô lỗi (không bao giờ "đã lưu" che ô lỗi) — trạng thái từng ô ở ô. */}
         <div className="flex items-center gap-1.5 text-[11px] text-slate-500 min-w-0">
           <span className="shrink-0">{row.studentCode}</span>
-          <DauLuu status={status} error={lastError} onRetry={retry} />
+          <DauLuu status={status} error={lastError} onRetry={retry} soLoi={soLoi} />
         </div>
       </td>
       {cot.mt && <td className="td py-1.5 whitespace-nowrap" title={`Mock Test lượt ${row.attemptNo}`}>MT{row.attemptNo}</td>}
@@ -252,7 +251,9 @@ function SheetRow({ row, rowIndex, active, cot, tuanDangXem, onReload, register,
         if (!cell) return <td key={s} className="td py-1.5 text-slate-600">—</td>;
         if (khacTuanFt(cell, tuanDangXem)) return oKhacTuan(s, cell);
         return (
-          <td key={s} className="td py-1.5" data-kn={s} data-trong={oTrongFt(cell) ? '1' : undefined}>
+          <td key={s} className={`td py-1.5 relative ${o[s] === 'loi' ? VIEN_LOI : ''}`} data-kn={s} data-trong={oTrongFt(cell) ? '1' : undefined}
+            data-luu={o[s]}>
+            <DauO tt={o[s]} loi={loi[s]} onLuuLai={() => luuLai(s)} />
             <RawScoreInput
               cell={cell}
               onSave={(p, o) => save(s, p, o)}
@@ -270,7 +271,9 @@ function SheetRow({ row, rowIndex, active, cot, tuanDangXem, onReload, register,
         if (!cell) return <td key={s} className="td py-1.5 text-slate-600">—</td>;
         if (khacTuanFt(cell, tuanDangXem)) return oKhacTuan(s, cell);
         return (
-          <td key={s} className="td py-1.5" data-kn={s} data-trong={oTrongFt(cell) ? '1' : undefined}>
+          <td key={s} className={`td py-1.5 relative ${o[s] === 'loi' ? VIEN_LOI : ''}`} data-kn={s} data-trong={oTrongFt(cell) ? '1' : undefined}
+            data-luu={o[s]}>
+            <DauO tt={o[s]} loi={loi[s]} onLuuLai={() => luuLai(s)} />
             <CriteriaButton cell={cell} onSave={(p, o) => save(s, p, o)} />
           </td>
         );
@@ -298,14 +301,61 @@ function SheetRow({ row, rowIndex, active, cot, tuanDangXem, onReload, register,
 }
 
 /**
- * DẤU LƯU CỦA MỘT DÒNG — nhỏ, nằm cạnh mã học viên để các hàng cao bằng nhau (G-2). Đã lưu là một dấu ✓ mảnh cùng
- * màu chữ phụ (G-1), rê chuột thấy chữ; lưu lỗi vẫn là nhãn ⚠ + Thử lại như cũ vì đó là việc phải làm ngay.
+ * DẤU LƯU CỦA MỘT DÒNG — nhỏ, nằm cạnh mã học viên để các hàng cao bằng nhau (G-2). Còn ô lỗi thì LUÔN là "n ô chưa lưu"
+ * + Lưu lại (gửi lại mọi ô lỗi của dòng) — ô lưu sau không che được ô lỗi trước (PR-UX1, lỗi thật 24/09). Hết lỗi mới
+ * về ✓ mảnh cùng màu chữ phụ (G-1).
  */
-export function DauLuu({ status, error, onRetry }: {
-  status: 'idle' | 'saving' | 'saved' | 'error'; error?: string; onRetry?: () => void;
+export function DauLuu({ status, error, onRetry, soLoi = 0, lon = false }: {
+  status: 'idle' | 'saving' | 'saved' | 'error'; error?: string; onRetry?: () => void; soLoi?: number; lon?: boolean;
 }) {
+  if (soLoi > 0 || status === 'error') {
+    return (
+      <span className="inline-flex items-center gap-1 whitespace-nowrap font-semibold text-bad" role="alert"
+        title={error ? `Chưa lưu được: ${error}` : 'Chưa lưu được'}>
+        {chuOChuaLuu(Math.max(soLoi, 1))}
+        {/* Điện thoại: dòng chỉ một kỹ năng, nút "Lưu lại" 44px nằm ngay ở ô — không lặp hai nút sát nhau. */}
+        {onRetry && !lon && (
+          <button type="button" onClick={onRetry}
+            className="appearance-none border-0 bg-transparent p-0 font-semibold text-bad underline">
+            Lưu lại
+          </button>
+        )}
+      </span>
+    );
+  }
   if (status === 'saving') return <span className="text-[10px] text-slate-500">Đang lưu…</span>;
   if (status === 'saved') return <span className="text-[11px] text-slate-500" title="Đã lưu">✓</span>;
-  if (status === 'error') return <SaveIndicator status="error" error={error} onRetry={onRetry} />;
+  return null;
+}
+
+/** Viền đỏ của ô lưu hỏng — màu token `bad` (N-1). */
+export const VIEN_LOI = 'ring-1 ring-inset ring-bad bg-bad-bg/40';
+
+/**
+ * DẤU LƯU CỦA MỘT Ô (PR-UX1): đang lưu "…" · đã lưu ✓ nhỏ, mảnh, tự mờ sau vài giây (mockup 13 (2)) · lỗi → nút
+ * "Lưu lại" (gửi lại đúng lệnh đã hỏng; giá trị đã gõ vẫn nằm trong ô). Góc dưới-phải của ô, không đẩy hàng cao lên.
+ * `lon` (điện thoại) → nằm cạnh ô, nút cao 44px.
+ */
+export function DauO({ tt, loi, onLuuLai, lon = false }: {
+  tt?: TrangThaiLuuO; loi?: string; onLuuLai: () => void; lon?: boolean;
+}) {
+  const [hienXong, setHienXong] = useState(false);
+  useEffect(() => {
+    if (tt !== 'da-luu') { setHienXong(false); return; }
+    setHienXong(true);
+    const t = setTimeout(() => setHienXong(false), 3000);
+    return () => clearTimeout(t);
+  }, [tt]);
+  const cho = lon ? 'inline-flex items-center' : 'absolute bottom-0.5 right-1 leading-none';
+  if (tt === 'loi') {
+    return (
+      <button type="button" onClick={onLuuLai} title={`Chưa lưu được${loi ? `: ${loi}` : ''}. Bấm để lưu lại.`}
+        className={`${cho} appearance-none border-0 bg-transparent p-0 text-[10px] font-semibold text-bad underline ${lon ? 'min-h-[44px] px-1 text-xs' : ''}`}>
+        Lưu lại
+      </button>
+    );
+  }
+  if (tt === 'dang-luu') return <span className={`${cho} text-[10px] text-slate-500`} title="Đang lưu">…</span>;
+  if (hienXong) return <span className={`${cho} text-[10px] text-slate-500`} title="Đã lưu">✓</span>;
   return null;
 }

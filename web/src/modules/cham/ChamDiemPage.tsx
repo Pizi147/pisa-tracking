@@ -7,6 +7,7 @@ import { Han } from '../../ui/Han.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { skillLabel, skillShort } from '../../lib/format.ts';
+import { chuOChuaLuu } from '@shared/domain/index.ts';
 import { hanSomNhatFt, tenDotFt } from './LuoiFT.tsx';
 import { hanSomNhatThuong, kindMacDinh, kindsThuong, tuanThiTheoMon, type ThuongSheet } from './LuoiThuong.tsx';
 import { LuoiChamLop, duongCham, thuongTheoBai, type Cham } from './LuoiChamLop.tsx';
@@ -46,6 +47,8 @@ export default function ChamDiemPage() {
 
   /* "Đã lưu 10:31 ✓" ở đầu trang: giờ của lần lưu thành công gần nhất trên cả lưới. */
   const [luuLuc, setLuuLuc] = useState<Date | null>(null);
+  /* PR-UX1: còn ô lưu hỏng thì đầu trang nói "n ô chưa lưu" thay cho "Đã lưu hh:mm ✓" — không để giờ lưu cuối che ô hỏng. */
+  const [chuaLuu, setChuaLuu] = useState(0);
   const onReload = () => { setLuuLuc(new Date()); reload(); };
 
   /** Đổi tham số trên đường dẫn (replace) — tải lại (F5) và Back không nhảy tuần / nhảy bài. */
@@ -128,7 +131,13 @@ export default function ChamDiemPage() {
             </label>
           )}
           {han && <div className="pb-2"><Han loai="nhap-diem" han={han} /></div>}
-          {luuLuc && (
+          {chuaLuu > 0 && (
+            <span className="pb-2 text-[11px] font-semibold text-bad whitespace-nowrap" role="alert"
+              title="Ô viền đỏ chưa lưu được — bấm Lưu lại ở ô đó.">
+              {chuOChuaLuu(chuaLuu)}
+            </span>
+          )}
+          {luuLuc && chuaLuu === 0 && (
             <span className="pb-2 text-[11px] text-slate-500 tabular-nums whitespace-nowrap"
               title="Mỗi ô tự lưu khi rời ô hoặc bấm Enter.">
               Đã lưu {String(luuLuc.getHours()).padStart(2, '0')}:{String(luuLuc.getMinutes()).padStart(2, '0')} ✓
@@ -137,7 +146,7 @@ export default function ChamDiemPage() {
         </div>
       </div>
 
-      <LuoiChamLop data={data} kind={kindChon} kn={kn} hv={hv} onReload={onReload} />
+      <LuoiChamLop data={data} kind={kindChon} kn={kn} hv={hv} onReload={onReload} onSoOChuaLuu={setChuaLuu} />
     </div>
   );
 }

@@ -90,6 +90,34 @@ export function trangThaiChamLabel(i: { conBai: number; tong: number; quaHan: bo
   return i.quaHan ? `Quá hạn · còn ${i.conBai} bài` : `Còn ${i.conBai} bài`;
 }
 
+/**
+ * TRẠNG THÁI LƯU THEO TỪNG Ô của lưới chấm (PR-UX1, lỗi thật bản chính 24/09): trước đây một dòng chỉ nhớ lần lưu CUỐI
+ * — ô L lưu hỏng (503/BUSY/mạng) rồi ô R lưu được thì dòng hiện "Đã lưu", giáo viên tưởng đủ điểm. Nay mỗi ô giữ trạng
+ * thái riêng; dòng chỉ "đã lưu" khi KHÔNG còn ô nào lỗi.
+ *
+ *   bat-dau     gửi ô lên máy chủ            → dang-luu
+ *   thanh-cong  máy chủ nhận                 → da-luu (xoá lỗi cũ của chính ô đó)
+ *   loi         lỗi mạng / 5xx               → loi (giữ tới khi chính ô đó lưu được)
+ *   bo          máy chủ từ chối có chủ ý (4xx của lệnh "-"), hộp lý do tự báo lỗi → ô về như chưa gửi
+ */
+export type TrangThaiLuuO = 'dang-luu' | 'da-luu' | 'loi';
+export function capNhatLuuO(
+  o: Readonly<Record<string, TrangThaiLuuO>>, oKey: string, su: 'bat-dau' | 'thanh-cong' | 'loi' | 'bo',
+): Record<string, TrangThaiLuuO> {
+  const moi = { ...o };
+  if (su === 'bo') delete moi[oKey];
+  else moi[oKey] = su === 'bat-dau' ? 'dang-luu' : su === 'thanh-cong' ? 'da-luu' : 'loi';
+  return moi;
+}
+/** Dòng/hàng lớp: có ô lỗi → "n ô chưa lưu" (thắng mọi trạng thái khác); còn ô đang gửi → đang lưu; rồi mới đã lưu. */
+export function tomTatLuuDong(cacO: readonly (TrangThaiLuuO | null | undefined)[]): { tt: TrangThaiLuuO | null; soLoi: number } {
+  const soLoi = cacO.filter((x) => x === 'loi').length;
+  if (soLoi) return { tt: 'loi', soLoi };
+  if (cacO.includes('dang-luu')) return { tt: 'dang-luu', soLoi: 0 };
+  return { tt: cacO.includes('da-luu') ? 'da-luu' : null, soLoi: 0 };
+}
+export const chuOChuaLuu = (n: number) => `${n} ô chưa lưu`;
+
 /** RB-5 — sửa một ô đã có điểm chính thức thì phải nói vì sao. Ngắn quá thì không phải một lý do. */
 export const LY_DO_TOI_THIEU = 5;
 

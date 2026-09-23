@@ -3,7 +3,7 @@ import { KhoiNhom } from '../../../ui/HangNhom.tsx';
 import { Nhan } from '../../../ui/Nhan.tsx';
 import { Han } from '../../../ui/Han.tsx';
 import { skillLabel, skillShort } from '../../../lib/format.ts';
-import { tuanLich } from '@shared/domain/index.ts';
+import { chuOChuaLuu, tuanLich } from '@shared/domain/index.ts';
 import type { DongNo } from './kieu.ts';
 import { LuoiNhung } from './LuoiNhung.tsx';
 
@@ -23,7 +23,8 @@ function kyNangCua(d: DongNo, homNay: string): { chu: string; goiY: string } {
 }
 
 /** Dòng Nợ là của ai: chờ mình · chờ GV khác (mình dạy lớp) · chờ chấm (Quản lý). Dòng đã chấm xong (Q14) → "Đã chấm ✓". */
-function NhanDong({ d, xong }: { d: DongNo; xong: boolean }) {
+function NhanDong({ d, xong, chuaLuu = 0 }: { d: DongNo; xong: boolean; chuaLuu?: number }) {
+  if (chuaLuu > 0) return <Nhan tone="bad" title="Ô viền đỏ chưa lưu được — bấm Lưu lại ở ô đó.">{chuOChuaLuu(chuaLuu)}</Nhan>;
   if (xong) return <Nhan tone="done">Đã chấm <span className="font-normal" aria-hidden>✓</span></Nhan>;
   if (d.cuaToi) return <Nhan tone="soon">Chờ bạn chấm</Nhan>;
   return <Nhan tone="wait">{d.coDayLop ? 'Chờ GV khác' : 'Chờ chấm'}</Nhan>;
@@ -36,12 +37,15 @@ function NhanDong({ d, xong }: { d: DongNo; xong: boolean }) {
  * Q14: dòng đang mở mà máy chủ không còn trả (vừa chấm hết) vẫn giữ trên màn, ghi "Đã chấm ✓", tới khi người dùng thu —
  * dòng biến mất giữa lúc gõ là mất ô đang nhập. `dongMo` là bản sao dòng đó, do `LichTestTab` giữ.
  */
-export function KhoiNo({ no, mo, onMo, chiQuaHan, onBoQuaHan, dongMo, onMoDong, hep, homNay, onDaLuu, knUrl }: {
+export function KhoiNo({ no, mo, onMo, chiQuaHan, onBoQuaHan, dongMo, onMoDong, hep, homNay, onDaLuu, knUrl, chuaLuu, baoChuaLuu }: {
   no: DongNo[]; mo: boolean; onMo: () => void;
   chiQuaHan: boolean; onBoQuaHan: () => void;
   dongMo: { d: DongNo; viTri: number; conTro: boolean } | null;
   onMoDong: (d: DongNo | null, viTri: number) => void;
   hep: boolean; homNay: string; onDaLuu: () => void; knUrl: string | null;
+  /** Số ô lưu hỏng theo khoá dòng Nợ (đang mở). */
+  chuaLuu: Readonly<Record<string, number>>;
+  baoChuaLuu: (khoa: string, n: number) => void;
 }) {
   const quaHan = no.filter((d) => d.quaHan);
   const baiQuaHan = quaHan.reduce((n, d) => n + d.conBai, 0);
@@ -127,7 +131,7 @@ export function KhoiNo({ no, mo, onMo, chiQuaHan, onBoQuaHan, dongMo, onMoDong, 
                           <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-slate-400 tabular-nums">
                             <span className="whitespace-nowrap">còn {xong ? 0 : d.conBai} bài</span>
                             {!xong && <span className="whitespace-nowrap"><Han loai="nhap-diem" han={d.han} /></span>}
-                            <NhanDong d={d} xong={xong} />
+                            <NhanDong d={d} xong={xong} chuaLuu={chuaLuu[`no:${d.key}`]} />
                           </div>
                         </td>
                         <td className="td py-1.5 text-right">{nut}</td>
@@ -142,7 +146,7 @@ export function KhoiNo({ no, mo, onMo, chiQuaHan, onBoQuaHan, dongMo, onMoDong, 
                         <td className="td truncate text-slate-300" title={k.goiY}>{k.chu}</td>
                         <td className="td text-right tabular-nums text-slate-200">{xong ? 0 : d.conBai} <span className="text-[11px] text-slate-500">bài</span></td>
                         <td className="td whitespace-nowrap">{xong ? <span className="text-slate-600">—</span> : <Han loai="nhap-diem" han={d.han} />}</td>
-                        <td className="td"><NhanDong d={d} xong={xong} /></td>
+                        <td className="td"><NhanDong d={d} xong={xong} chuaLuu={chuaLuu[`no:${d.key}`]} /></td>
                         <td className="td text-right">{nut}</td>
                       </>
                     )}
@@ -153,7 +157,7 @@ export function KhoiNo({ no, mo, onMo, chiQuaHan, onBoQuaHan, dongMo, onMoDong, 
                         <LuoiNhung classId={d.classId} periodId={d.mode === 'ielts_band' ? d.periodId : null}
                           kind={d.mode === 'ratio' ? d.kind : null} tuanDangXem={d.weekStart} chiAttempt={chiAttempt}
                           kn={knUrl ?? d.kyNang[0] ?? null} hrefDayDu={d.hrefDayDu} datConTro={dongMo!.conTro}
-                          onDaLuu={onDaLuu} />
+                          onDaLuu={onDaLuu} onSoOChuaLuu={(n) => baoChuaLuu(`no:${d.key}`, n)} />
                       </td>
                     </tr>
                   )}

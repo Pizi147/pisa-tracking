@@ -10,11 +10,11 @@ import { Link } from 'react-router-dom';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Empty, Info, Level, Status } from '../../ui/ui.tsx';
-import type { SaveStatus } from '../../ui/SaveState.tsx';
+import { useTrangThaiLuuO } from '../../ui/SaveState.tsx';
 import { ODiemThuong, laTuChoi, type SaveOpts } from '../fasttrack/ScoreEntry.tsx';
 import { caseStatusLabel, skillLabel, skillShort, sosLabel, sosTone } from '../../lib/format.ts';
 import { ATTEMPT_KIND_SHORT, ketQuaThuong, ngay, tuanLich, type AttemptKind } from '@shared/domain/index.ts';
-import { DauLuu } from './LuoiFT.tsx';
+import { DauLuu, DauO, VIEN_LOI } from './LuoiFT.tsx';
 
 type SkillResult = {
   skill: string; label: string;
@@ -167,45 +167,41 @@ const COT_MON = 136;
 const COT_KQ = 290;
 
 /**
- * Lưu một ô của lưới lớp thường cho MỘT dòng — cùng dáng `useSaveScore` của FT: trạng thái lưu riêng từng dòng,
+ * Lưu một ô của lưới lớp thường cho MỘT dòng — cùng dáng `useSaveScore` của FT: trạng thái lưu riêng TỪNG Ô,
  * chặn gửi lặp cùng một ô, lỗi thì giữ bản nháp. `nem` = ném lỗi cho hộp lý do hiện câu lỗi tại ô.
  */
 export function useLuuThuong(attemptId: number, onReload: () => void) {
   const toast = useToast();
-  const [status, setStatus] = useState<SaveStatus>('idle');
-  const [lastError, setLastError] = useState<string | undefined>(undefined);
+  /* Trạng thái lưu THEO TỪNG Ô (PR-UX1): một ô hỏng không bị ô lưu sau che thành "Đã lưu". */
+  const tt = useTrangThaiLuuO<Record<string, unknown>>(`thuong:${attemptId}`);
   const inflight = useRef(new Set<string>());
-  const failed = useRef<{ skill: string; body: Record<string, unknown> } | null>(null);
 
   const gui = async (skill: string, body: Record<string, unknown>, opts: SaveOpts = {}): Promise<any | null> => {
     if (inflight.current.has(skill)) return null;
     inflight.current.add(skill);
-    setStatus('saving');
+    tt.batDau(skill);
     try {
       const r = await api.put<any>(`/regular/attempts/${attemptId}/scores/${skill}`, body);
       /* Không `invalidate('/cham')`: Lịch Test tự tải lại dải số GỘP 1,5 s sau lần lưu cuối (PR-UX1 Q14) qua `onReload` —
          tải lại mỗi ô làm nặng Turso. Lưới (`/classes/:id/cham`) vẫn tải lại qua `/classes`. */
       invalidate('/regular'); invalidate('/classes'); invalidate('/attempts');
       invalidate('/students'); invalidate('/overview');
-      failed.current = null;
-      setStatus('saved'); setLastError(undefined);
+      tt.thanhCong(skill);
       onReload();
       return r ?? {};
     } catch (e: any) {
-      /* Hộp lý do đang mở: câu lỗi hiện trong hộp, dòng không bật "Lưu lỗi + Thử lại". */
-      if (opts.nem) { setStatus('idle'); throw e; }
+      /* Hộp lý do đang mở: câu lỗi hiện trong hộp, ô không bật "Lưu lại". */
+      if (opts.nem) { tt.bo(skill); throw e; }
       /*
        * Máy chủ TỪ CHỐI lệnh "-" (ví dụ Q5: dời vượt qua đợt kế tiếp; chưa tới tuần thi): gửi lại y nguyên không bao giờ
        * thành — báo đúng câu của máy chủ, ô về giá trị đã lưu, không có "Lưu lỗi · Thử lại". Lỗi mạng / 5xx vẫn có.
        */
       if ('noShow' in body && laTuChoi(e)) {
-        failed.current = null;
-        setStatus('idle'); setLastError(undefined);
+        tt.bo(skill);
         toast.push('error', `${skillLabel(skill)}: ${e.message}`);
         return null;
       }
-      failed.current = { skill, body };
-      setStatus('error'); setLastError(e.message);
+      tt.hongO(skill, body, e.message);
       toast.push('error', `${skillLabel(skill)}: ${e.message}`);
       return null;
     } finally {
@@ -225,8 +221,10 @@ export function useLuuThuong(attemptId: number, onReload: () => void) {
     return r !== null;
   };
 
-  const retry = () => { if (failed.current) void gui(failed.current.skill, failed.current.body); };
-  return { luu, dau, status, lastError, retry };
+  /** Gửi lại đúng lệnh đã hỏng của một ô / của mọi ô lỗi trên dòng. */
+  const luuLai = (skill: string) => { const b = tt.hong.current.get(skill); if (b) void gui(skill, b); };
+  const retry = () => { for (const k of [...tt.hong.current.keys()]) luuLai(k); };
+  return { luu, dau, status: tt.status, lastError: tt.lastError, retry, o: tt.o, loi: tt.loi, luuLai, soLoi: tt.soLoi };
 }
 
 /**
@@ -357,7 +355,7 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
   register: (col: number, el: HTMLInputElement | null) => void;
   onMove: (row: number, col: number, dr: number) => void;
 }) {
-  const { luu, dau, status, lastError, retry } = useLuuThuong(row.attemptId, onReload);
+  const { luu, dau, status, lastError, retry, o, loi, luuLai, soLoi } = useLuuThuong(row.attemptId, onReload);
   const homNay = sheet.today;
 
   return (
@@ -375,7 +373,7 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
         {/* Trạng thái lưu RIÊNG TỪNG DÒNG — lỗi nói rõ ở dòng nào, có nút Thử lại. */}
         <div className="flex items-center gap-1.5 text-[11px] text-slate-500 min-w-0">
           <span className="shrink-0">{row.studentCode}</span>
-          <DauLuu status={status} error={lastError} onRetry={retry} />
+          <DauLuu status={status} error={lastError} onRetry={retry} soLoi={soLoi} />
         </div>
       </td>
       {sheet.programme.skills.map((k, ci) => {
@@ -400,7 +398,9 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
           );
         }
         return (
-          <td key={k} className="td py-1.5 text-center" data-kn={k} data-trong={trong ? '1' : undefined}>
+          <td key={k} className={`td py-1.5 text-center relative ${o[k] === 'loi' ? VIEN_LOI : ''}`} data-kn={k}
+            data-trong={trong ? '1' : undefined} data-luu={o[k]}>
+            <DauO tt={o[k]} loi={loi[k]} onLuuLai={() => luuLai(k)} />
             <ODiemThuong
               cell={cell}
               tongCot={tongCot(k)}

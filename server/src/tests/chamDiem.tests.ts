@@ -46,6 +46,28 @@ export async function runChamDiemTests(t: YThucTestKit) {
     }
   });
 
+  check('PR-UX1 · Lưu theo từng ô: ô hỏng (503) không bị ô lưu sau che thành "Đã lưu" (lỗi bản chính 24/09)', () => {
+    const eq = (got: any, want: string, m: string) => assert(`${got.tt}|${got.soLoi}` === want, `${m}: ${got.tt}|${got.soLoi} ≠ ${want}`);
+    let o = {};
+    o = d.capNhatLuuO(o, 'listening', 'bat-dau');
+    eq(d.tomTatLuuDong(Object.values(o)), 'dang-luu|0', 'Đang gửi L');
+    o = d.capNhatLuuO(o, 'listening', 'loi');                 // L: 503
+    o = d.capNhatLuuO(o, 'reading', 'bat-dau');
+    o = d.capNhatLuuO(o, 'reading', 'thanh-cong');            // R lưu được SAU L
+    eq(d.tomTatLuuDong(Object.values(o)), 'loi|1', 'L hỏng rồi R lưu được: dòng vẫn "1 ô chưa lưu", KHÔNG "đã lưu"');
+    o = d.capNhatLuuO(o, 'speaking', 'bat-dau');
+    eq(d.tomTatLuuDong(Object.values(o)), 'loi|1', 'Đang gửi ô khác không che ô lỗi');
+    o = d.capNhatLuuO(o, 'speaking', 'loi');
+    eq(d.tomTatLuuDong(Object.values(o)), 'loi|2', 'Hai ô hỏng → 2');
+    o = d.capNhatLuuO(o, 'listening', 'bat-dau');
+    o = d.capNhatLuuO(o, 'listening', 'thanh-cong');          // Lưu lại L thành công
+    eq(d.tomTatLuuDong(Object.values(o)), 'loi|1', 'Lưu lại L được, S còn hỏng → 1');
+    o = d.capNhatLuuO(o, 'speaking', 'bo');                   // máy chủ từ chối có chủ ý (4xx lệnh "-") → không phải "chưa lưu"
+    eq(d.tomTatLuuDong(Object.values(o)), 'da-luu|0', 'Hết ô lỗi mới là "đã lưu"');
+    eq(d.tomTatLuuDong([]), 'null|0', 'Chưa gửi gì');
+    assert(d.chuOChuaLuu(3) === '3 ô chưa lưu', 'Chữ');
+  });
+
   check('PR-Rc1 · Q7 Ô lưới lớp thường: hai số, viền vàng khi tổng khác tổng của cột', () => {
     const o = (diem: any, tong: any, tongCot: any) => d.oLuoiThuong({ diem, tong, tongCot });
     assert(o(33, 40, 40).hien === '33/40' && !o(33, 40, 40).vienVang, 'Cùng tổng cột thì không viền vàng');

@@ -4,7 +4,7 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Modal } from '../../ui/Drawer.tsx';
 import { Info, SectionNote, Status } from '../../ui/ui.tsx';
-import type { SaveStatus } from '../../ui/SaveState.tsx';
+import { useTrangThaiLuuO } from '../../ui/SaveState.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
@@ -118,47 +118,43 @@ export function useSaveScore(attemptId: number, onSaved?: () => void) {
   const toast = useToast();
   const [saving, setSaving] = useState<string | null>(null);
   /*
-   * TRẠNG THÁI LƯU CỦA TỪNG DÒNG (rule của bảng nhập điểm): mỗi dòng có một chỉ báo riêng — Đang lưu · Đã lưu ·
-   * Lưu lỗi + Thử lại — thay vì lưu cả bảng rồi báo một lỗi chung không nói lỗi ở dòng nào.
+   * TRẠNG THÁI LƯU THEO TỪNG Ô (PR-UX1, lỗi thật bản chính 24/09): trước đây dòng chỉ nhớ lần lưu CUỐI — ô L hỏng rồi
+   * ô R lưu được thì dòng hiện "Đã lưu". Nay mỗi ô một trạng thái (`o`, `loi`); dòng chỉ "đã lưu" khi không còn ô lỗi,
+   * còn thì "n ô chưa lưu" + Lưu lại. Lỗi nói rõ ở ô nào, không một lỗi chung cho cả bảng.
    */
-  const [status, setStatus] = useState<SaveStatus>('idle');
-  const [lastError, setLastError] = useState<string | undefined>(undefined);
+  const tt = useTrangThaiLuuO<SavePatch>(`ft:${attemptId}`);
   const inflight = useRef(new Set<string>());
-  const failed = useRef<{ skill: string; patch: SavePatch } | null>(null);
 
   const save = async (skill: string, patch: SavePatch, opts: SaveOpts = {}): Promise<boolean> => {
     if (inflight.current.has(skill)) return false;   // chặn gửi lặp cùng một ô
     inflight.current.add(skill);
     setSaving(skill);
-    setStatus('saving');
+    tt.batDau(skill);
     try {
       await api.put(`/attempts/${attemptId}/scores/${skill}`, patch);
       invalidate('/attempts');
       invalidate('/overview');
       invalidate('/classes');
       invalidate('/students');
-      failed.current = null;
-      setStatus('saved'); setLastError(undefined);
+      tt.thanhCong(skill);
       onSaved?.();
       return true;
     } catch (e: any) {
       /*
-       * Hộp lý do đang mở thì câu lỗi hiện ngay trong hộp — không toast, không bật "Lưu lỗi + Thử lại" ở dòng (người
-       * dùng sửa ngay trong hộp; Huỷ là bỏ, không còn gì để thử lại).
+       * Hộp lý do đang mở thì câu lỗi hiện ngay trong hộp — không toast, không bật "Lưu lại" ở ô (người dùng sửa ngay
+       * trong hộp; Huỷ là bỏ, không còn gì để thử lại).
        */
-      if (opts.nem) { setStatus('idle'); throw e; }
+      if (opts.nem) { tt.bo(skill); throw e; }
       /*
        * Máy chủ TỪ CHỐI lệnh "-" (sai luật lịch, quá hạn sửa dấu…): gửi lại y nguyên không bao giờ thành — báo đúng câu
-       * của máy chủ, ô giữ nguyên, không có "Lưu lỗi · Thử lại". Lỗi mạng / 5xx vẫn có "Thử lại".
+       * của máy chủ, ô giữ nguyên, không có "Lưu lại". Lỗi mạng / 5xx vẫn có "Lưu lại".
        */
       if (patch.noShow !== undefined && laTuChoi(e)) {
-        failed.current = null;
-        setStatus('idle'); setLastError(undefined);
+        tt.bo(skill);
         toast.push('error', `${skillLabel(skill)}: ${e.message}`);
         return false;
       }
-      failed.current = { skill, patch };
-      setStatus('error'); setLastError(e.message);
+      tt.hongO(skill, patch, e.message);
       toast.push('error', `${skillLabel(skill)}: ${e.message}`);
       return false;
     } finally {
@@ -167,9 +163,11 @@ export function useSaveScore(attemptId: number, onSaved?: () => void) {
     }
   };
 
-  const retry = () => { if (failed.current) void save(failed.current.skill, failed.current.patch); };
+  /** Gửi lại đúng lệnh đã hỏng của một ô / của mọi ô lỗi trên dòng. */
+  const luuLai = (skill: string) => { const p = tt.hong.current.get(skill); if (p) void save(skill, p); };
+  const retry = () => { for (const k of [...tt.hong.current.keys()]) luuLai(k); };
 
-  return { save, saving, status, lastError, retry };
+  return { save, saving, status: tt.status, lastError: tt.lastError, retry, o: tt.o, loi: tt.loi, luuLai, soLoi: tt.soLoi };
 }
 
 /**
