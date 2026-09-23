@@ -449,9 +449,9 @@ function metricSetGoc(
 
   /* Phối hợp SOS (PR-T): cùng phạm vi thống kê với Ý thức — chỉ Quản lý và Quản trị; GVBM/GVCN nhận tập rỗng có nhãn. Đơn vị: lượt. */
   if (isPhoiHopMetric(id)) {
-    const r = phoiHopMetric(p, id, { branchId: scope.branchId, from: f.from ?? null, to: f.to ?? null });
+    const r = phoiHopMetric(p, id, { branchId: scope.branchId, from: f.from ?? null, to: f.to ?? null, kind: f.kind ?? null });
     if (r.none) return { ...done([]), empty: true, note: EMPTY_NOTE };
-    return done(r.ids);
+    return done(r.ids, r.byKind ? { byKind: r.byKind } : {});
   }
 
   const branchId = scope.branchId ?? undefined;

@@ -9484,6 +9484,11 @@ await runChamDiemTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P
 const { runFormTests } = await import('./form.tests.ts');
 await runFormTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
+// ==================================================================== PR-Pb (Phân tích: Tổng hợp Test + SOS, Vấn đề học viên)
+
+const { runPhanTichTests } = await import('./phanTich.tests.ts');
+await runPhanTichTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

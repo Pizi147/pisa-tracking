@@ -7,7 +7,7 @@ import { mondayOf, weekInfo } from '../platform/week.ts';
 import { loadBundle } from '../fasttrack/attempts.ts';
 import { allProgrammes } from '../normal/regular.ts';
 import { evaluateAttemptRow } from './danhGia.ts';
-import { isNoPlanCase } from '../../../shared/domain/index.ts';
+import { phanLoaiLuot, trangThaiXuLy, type PhanLoaiLuot } from '../phanTich/tongHop.ts';
 
 /**
  * TỔNG HỢP THEO TUẦN cho Quản lý — thay cho sheet "Tổng hợp theo tuần" của workbook cũ.
@@ -98,6 +98,10 @@ export const WEEKLY_COL_UNIT: Record<WeeklyCol, 'dot-test' | 'case' | 'hoc-vien'
   attempts: 'dot-test', onTarget: 'dot-test', sos1: 'dot-test', sos2: 'dot-test', sos3: 'dot-test',
   provisional: 'dot-test', pending: 'dot-test', cases: 'case', withSupport: 'case', untouched: 'case',
   caseStudents: 'hoc-vien', pendingApproval: 'phuong-an',
+};
+/** Đúng tên cột của bảng tuần (Q17, PR-Pb) ứng với mỗi kết quả phân loại thuần `phanLoaiLuot`. */
+const PHAN_LOAI_TO_WEEKLY_COL: Record<PhanLoaiLuot, WeeklyCol> = {
+  dat: 'onTarget', sos1: 'sos1', sos2: 'sos2', sos3: 'sos3', tamThoi: 'provisional', chuaDu: 'pending',
 };
 type WeeklySets = Record<WeeklyCol, Set<number>>;
 const emptySets = (): WeeklySets =>
@@ -197,15 +201,8 @@ function weeklySets(
      * chưa đủ điểm mà đã kết luận được thì là kết luận TẠM THỜI — không được rơi vào cột
      * "Đạt" hay cột SOS chắc chắn, và cũng không được đếm thêm lần nữa ở cột "chưa đủ điểm".
      */
-    const { sosLevel, complete } = evaluateAttemptRow(a, bundle, programmes);
-    if (!complete) {
-      if (sosLevel === null) row.sets.pending.add(a.id);
-      else row.sets.provisional.add(a.id);
-    } else if (sosLevel === null) row.sets.pending.add(a.id);
-    else if (sosLevel === 0) row.sets.onTarget.add(a.id);
-    else if (sosLevel === 1) row.sets.sos1.add(a.id);
-    else if (sosLevel === 2) row.sets.sos2.add(a.id);
-    else row.sets.sos3.add(a.id);
+    const ev = evaluateAttemptRow(a, bundle, programmes);
+    row.sets[PHAN_LOAI_TO_WEEKLY_COL[phanLoaiLuot(ev)]].add(a.id);
   }
 
   /*
@@ -245,9 +242,10 @@ function weeklySets(
         const row = byPeriod.get(r.pid);
         if (!row) continue;
         row.sets.cases.add(r.case_id);
-        if (r.support_done && r.support_done <= today) row.sets.withSupport.add(r.case_id);
-        /* "Thiếu phương án" — cùng `isNoPlanCase` với chỉ số `case-thieu-pa` (trước đây bảng này tự định nghĩa lại). */
-        else if (isNoPlanCase({ status: r.status, disposition: r.disposition, interventionCount: r.iv_count })) row.sets.untouched.add(r.case_id);
+        /* Q17 (PR-Pb): `trangThaiXuLy` gói cùng luật "thiếu phương án" của chỉ số `case-thieu-pa`, một nơi cho cả hai bảng. */
+        const trang = trangThaiXuLy({ supportDone: r.support_done, status: r.status, disposition: r.disposition, ivCount: r.iv_count }, today);
+        if (trang === 'dangXuLy') row.sets.withSupport.add(r.case_id);
+        else if (trang === 'thieuPa') row.sets.untouched.add(r.case_id);
         /* Số HỌC VIÊN có case — một em ba case vẫn là một em. */
         if (r.student_id) row.sets.caseStudents.add(r.student_id);
       }
