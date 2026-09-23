@@ -220,7 +220,9 @@ netlify env:set TURSO_DATABASE_URL '<URL database CHÍNH>' --context production
 netlify env:set TURSO_AUTH_TOKEN '<Token database CHÍNH>' --context production
 ```
 
-Mỗi lệnh thấy dòng `Set environment variable ... in the production branch` là được. (Dòng đó in lại cả giá trị vừa
+Nếu lệnh hỏi `Warning: The environment variable … already exists! … Do you want to overwrite it? (y/N)` thì gõ **`y`** rồi
+Enter — biến đã có từ mục 5 (database thử); nhờ chữ `--context production`, lệnh chỉ ghi đè giá trị của **bản chính thức**,
+bản nháp vẫn giữ database thử. Mỗi lệnh thấy dòng `Set environment variable ... in the production branch` là được. (Dòng đó in lại cả giá trị vừa
 đặt — xong mục này **đóng cửa sổ PowerShell** để token không còn nằm trên màn hình.)
 
 Rồi kiểm lại (hai lệnh này chỉ in **URL**, không in token):
@@ -278,6 +280,9 @@ Dòng đầu tiên lệnh in ra cho biết **đích**: `Đích: database BẢN C
 chốt, dừng giữa chừng là không có gì được ghi) rồi kiểm lại URL.
 
 Chờ vài phút (database ở Mỹ, mỗi lượt đi về mất nửa giây) — **đừng đóng cửa sổ** giữa chừng.
+
+> Tên chi nhánh có chữ **ẩ, ả, ư, ơ** có thể hiện thành **ô vuông** trong PowerShell (phông chữ của cửa sổ không vẽ được) —
+> **không sao**, dữ liệu vẫn đúng (đã kiểm 24/09: trên web hiện đủ "Cẩm Phả", "Hải Dương").
 
 **Kết quả đúng:** dòng cuối có dạng
 `[init-ban-chinh] Xong. Đã tạo tài khoản quản trị <email của bạn> (userId 1) và 2 chi nhánh: MB (Monbay), BC (Bãi Cháy).`
@@ -369,7 +374,10 @@ npm install
 netlify deploy --build
 ```
 
-Chờ 2–5 phút (lần build đầu cần mạng để tải thư viện cho Linux). Cuối cùng hiện dòng **`Website draft URL: https://<mã>--<tên-site>.netlify.app`**. Mở địa chỉ đó, đăng
+Chờ 2–5 phút (lần build đầu cần mạng để tải thư viện cho Linux). Cuối cùng hiện dòng **`Website draft URL: https://<mã>--<tên-site>.netlify.app`**
+(bản CLI mới ghi `Draft URL:`). **Từ 24/09 bản nháp được khoá** (Netlify › Visitor access › Deploy Preview visibility =
+**Private**): mở địa chỉ nháp bằng trình duyệt **đã đăng nhập** <https://app.netlify.com>, nếu không sẽ bị đòi đăng nhập Netlify.
+Bản chính thức vẫn **Public** — đừng đổi dòng Production, giáo viên sẽ không vào được. Mở địa chỉ nháp, đăng
 nhập, bấm thử vài trang. Bản nháp luôn dùng database **thử** — thoải mái bấm thử; chỉ bản chính thức (`--prod`) mới có
 dữ liệu thật. Vì vậy ở bản nháp, đăng nhập bằng **tài khoản demo** (email và mật khẩu trong `README.md`), không phải
 tài khoản quản trị thật của bạn.
