@@ -152,7 +152,7 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
               Cột hiện ▾
             </button>
             {menuMo && (
-              <div className="absolute right-0 mt-1 z-10 rounded-lg border p-2 space-y-1 surface-2" style={{ borderColor: 'var(--line)', minWidth: 160 }}>
+              <div className="absolute right-0 mt-1 z-20 rounded-lg border p-2 space-y-1 surface-2" style={{ borderColor: 'var(--line)', minWidth: 160 }}>
                 {NHOM_MAC_DINH.map((n) => (
                   <label key={n} className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
                     <input type="checkbox" checked={cotHien.has(n)} onChange={() => toggleCotHien(n)} />
