@@ -11,17 +11,20 @@ import { HttpError } from '../util.ts';
  * nguội là mất sạch. Chỉ lưu MÃ BĂM của email/IP, dòng quá 24 giờ bị xoá mỗi khi ghi lần mới.
  *
  * Ngưỡng (plan PR-AN Q2): IP để rộng vì cả một chi nhánh dùng chung một wifi — ngày mở tài khoản cả nhóm giáo viên đăng ký cùng lúc.
+ * PR-Z2c: đăng ký nâng 10 → 30 lần/giờ/IP (một chi nhánh đông giáo viên đăng ký cùng buổi vẫn đủ).
  */
 export type LoaiThu = 'dang_nhap_email' | 'dang_nhap_ip' | 'dang_ky_ip';
 
 export const GIOI_HAN: Record<LoaiThu, { soLan: number; phut: number }> = {
   dang_nhap_email: { soLan: 5, phut: 15 },
   dang_nhap_ip: { soLan: 30, phut: 15 },
-  dang_ky_ip: { soLan: 10, phut: 60 },
+  dang_ky_ip: { soLan: 30, phut: 60 },
 };
 export const GIU_DONG_GIO = 24;
 
 export const cauKhoaDangNhap = (phut: number) => `Đăng nhập sai quá nhiều lần. Thử lại sau ${phut} phút.`;
+/** PR-Z2c: khoá theo IP nói rõ là cả MẠNG bị khoá — người gõ đúng mật khẩu biết không phải lỗi của mình. */
+export const cauKhoaDangNhapIp = (phut: number) => `Có quá nhiều lần đăng nhập sai từ mạng này. Thử lại sau ${phut} phút.`;
 export const cauKhoaDangKy = (phut: number) => `Đã gửi quá nhiều đăng ký trong một giờ. Thử lại sau ${phut} phút.`;
 
 /** Mã băm cố định của một email (đã chuẩn hoá) hoặc một IP. Không đảo ngược được; cùng đầu vào cho cùng mã. */
@@ -30,16 +33,26 @@ export function bam(giaTri: string): string {
 }
 
 /**
- * IP người gửi. Bản chính: header `x-nf-client-connection-ip` do Netlify ghi. KHÔNG tin `x-forwarded-for` — người gửi tự đặt được.
- * Máy dev: địa chỉ socket.
+ * IP người gửi. Bản chính: header `x-nf-client-connection-ip` do Netlify ghi, thiếu thì `client-ip` (Netlify cũng ghi — PR-Z2c).
+ * KHÔNG tin `x-forwarded-for` — người gửi tự đặt được. Máy dev: địa chỉ socket.
+ * Không ra IP nào → 'khong-ro' (mọi yêu cầu như vậy dùng chung một ô đếm), cảnh báo vào log MỘT lần mỗi yêu cầu — chỉ method + đường dẫn.
  */
+const daCanhBaoIp = new WeakSet<object>();
 export function ipCua(req: Request): string {
   if (laBanChinh()) {
-    const h = req.headers['x-nf-client-connection-ip'];
-    const v = Array.isArray(h) ? h[0] : h;
-    if (v && v.trim()) return v.trim();
+    for (const ten of ['x-nf-client-connection-ip', 'client-ip']) {
+      const h = req.headers[ten];
+      const v = Array.isArray(h) ? h[0] : h;
+      if (v && v.trim()) return v.trim();
+    }
   }
-  return req.socket?.remoteAddress ?? 'khong-ro';
+  const ip = req.socket?.remoteAddress;
+  if (ip) return ip;
+  if (!daCanhBaoIp.has(req)) {
+    daCanhBaoIp.add(req);
+    console.warn(`[gioi-han] Không xác định được IP người gửi (${req.method} ${req.originalUrl ?? req.path}) — dùng ô đếm chung "khong-ro".`);
+  }
+  return 'khong-ro';
 }
 
 /** Còn bị khoá bao nhiêu phút (làm tròn lên, ít nhất 1); `null` = không bị khoá. */

@@ -197,17 +197,60 @@ export async function runAnToanTests(t: AnToanTestKit) {
     assert(boSo(r.json?.error) === boSo(gh.cauKhoaDangNhap(1)), `Câu khác câu của email có thật: ${r.json?.error}`);
   });
 
-  await checkAsync('AN-1 · Đăng ký: 10 lần/giờ/IP (tính cả lần hỏng) → lần 11 bị 429 dù thân hợp lệ, không tạo tài khoản; IP khác vẫn đăng ký được', async () => {
-    for (let i = 0; i < 10; i++) {
+  await checkAsync('AN-1 · Đăng ký: 30 lần/giờ/IP (PR-Z2c, trước là 10; tính cả lần hỏng) → lần 31 bị 429 dù thân hợp lệ, không tạo tài khoản; IP khác vẫn đăng ký được', async () => {
+    for (let i = 0; i < 30; i++) {
       const r = await goi('POST', '/auth/register', { ip: '203.0.113.31', body: { email: 'thieu' } });
       assert(r.status === 400, `Đăng ký hỏng lần ${i + 1}: ${r.status}`);
     }
     const hopLe = { email: `an1.dangky${accounts.EMAIL_SUFFIX}`, password: 'matkhau123', fullName: 'AN1 Đăng Ký', branches: ['MB'] };
-    const r11 = await goi('POST', '/auth/register', { ip: '203.0.113.31', body: hopLe });
-    assert(r11.status === 429 && /quá nhiều đăng ký/.test(r11.json?.error ?? ''), `Lần 11: ${r11.status} ${JSON.stringify(r11.json)}`);
+    const r31 = await goi('POST', '/auth/register', { ip: '203.0.113.31', body: hopLe });
+    assert(r31.status === 429 && /quá nhiều đăng ký/.test(r31.json?.error ?? ''), `Lần 31: ${r31.status} ${JSON.stringify(r31.json)}`);
     assert(!conn.prepare('SELECT 1 FROM users WHERE email = ?').get(hopLe.email), 'Bị khoá mà vẫn tạo tài khoản');
     const khac = await goi('POST', '/auth/register', { ip: '203.0.113.32', body: hopLe });
     assert(khac.status === 200 && khac.json?.pending === true, `IP khác: ${khac.status}`);
+  });
+
+  check('PR-Z2c · Câu khoá theo IP: "Có quá nhiều lần đăng nhập sai từ mạng này. Thử lại sau N phút." — N tính như câu khoá theo email', () => {
+    const t0 = Date.now();
+    const ip = '198.51.100.20';
+    for (let i = 0; i < 30; i++) gh.ghiLanThu('dang_nhap_ip', ip, t0 - 60_000);
+    assertThrows(() => gh.chanNeuBiKhoa('dang_nhap_ip', ip, gh.cauKhoaDangNhapIp, t0),
+      /^Có quá nhiều lần đăng nhập sai từ mạng này\. Thử lại sau 14 phút\.$/, 'Câu khoá theo IP sai');
+    assert(gh.cauKhoaDangNhap(14) === 'Đăng nhập sai quá nhiều lần. Thử lại sau 14 phút.', `Câu khoá theo email bị đổi: ${gh.cauKhoaDangNhap(14)}`);
+  });
+
+  await checkAsync('PR-Z2c · Đăng nhập qua HTTP bị khoá theo IP → 429 với câu "…từ mạng này…"; bị khoá theo email thì vẫn câu cũ', async () => {
+    const tk = taoTaiKhoan('z2c.ip');
+    for (let i = 0; i < 30; i++) gh.ghiLanThu('dang_nhap_ip', '203.0.113.24');
+    const r = await dangNhap(tk, '203.0.113.24');
+    assert(r.status === 429 && /^Có quá nhiều lần đăng nhập sai từ mạng này\. Thử lại sau \d+ phút\.$/.test(r.json?.error ?? ''), `Nhận ${r.status} ${JSON.stringify(r.json)}`);
+    const la = { email: `z2c.email${accounts.EMAIL_SUFFIX}`, password: 'x' };
+    for (let i = 0; i < 5; i++) await dangNhap(la, '203.0.113.25', true);
+    const e = await dangNhap(la, '203.0.113.25');
+    assert(e.status === 429 && /^Đăng nhập sai quá nhiều lần\. Thử lại sau \d+ phút\.$/.test(e.json?.error ?? ''), `Khoá theo email: ${e.status} ${JSON.stringify(e.json)}`);
+  });
+
+  check('PR-Z2c · ipCua: bản chính dùng x-nf-client-connection-ip, thiếu thì client-ip; không ra IP thì "khong-ro" + cảnh báo MỘT lần mỗi yêu cầu (chỉ method + đường dẫn)', () => {
+    const gia = (headers: Record<string, string>, remoteAddress?: string) =>
+      ({ headers, socket: { remoteAddress }, method: 'POST', path: '/api/auth/login', originalUrl: '/api/auth/login' }) as any;
+    process.env.BAN_CHINH = '1';
+    try {
+      assert(gh.ipCua(gia({ 'x-nf-client-connection-ip': '198.51.100.30', 'client-ip': '198.51.100.31' })) === '198.51.100.30', 'x-nf phải được ưu tiên');
+      assert(gh.ipCua(gia({ 'client-ip': ' 198.51.100.31 ' })) === '198.51.100.31', 'Thiếu x-nf thì phải dùng client-ip');
+      assert(gh.ipCua(gia({ 'client-ip': '198.51.100.31' }, '10.0.0.1')) === '198.51.100.31', 'client-ip phải đứng trước địa chỉ socket ở bản chính');
+    } finally { delete process.env.BAN_CHINH; }
+    assert(gh.ipCua(gia({ 'client-ip': '198.51.100.31' }, '127.0.0.1')) === '127.0.0.1', 'Máy dev không tin header');
+    const goc = console.warn;
+    const canhBao: string[] = [];
+    console.warn = (...a: unknown[]) => { canhBao.push(a.map(String).join(' ')); };
+    try {
+      const req = gia({ cookie: 'pisa_demo_session=bi-mat-123' });
+      assert(gh.ipCua(req) === 'khong-ro' && gh.ipCua(req) === 'khong-ro', 'Không có IP thì phải là khong-ro');
+      assert(canhBao.length === 1, `Cảnh báo ${canhBao.length} lần cho một yêu cầu`);
+      assert(/POST/.test(canhBao[0]) && /\/api\/auth\/login/.test(canhBao[0]) && !/bi-mat-123|cookie/.test(canhBao[0]), `Câu cảnh báo: ${canhBao[0]}`);
+      gh.ipCua(gia({}));
+      assert(canhBao.length === 2, 'Yêu cầu khác phải cảnh báo lại');
+    } finally { console.warn = goc; }
   });
 
   // ================================================================== 4. AN-6 — đăng ký phải QTHT duyệt
@@ -337,6 +380,21 @@ export async function runAnToanTests(t: AnToanTestKit) {
     assert(soLanHoi === 2 && r2.body?.seeded === false, `Sau 30 giây: hỏi ${soLanHoi} lần, ${JSON.stringify(r2.body)}`);
   });
 
+  check('PR-Z2c · Database lỗi cũng giữ nhịp 30 giây: trong 30 giây trả lại 503 mà KHÔNG hỏi lại database; qua 30 giây mới hỏi lại', () => {
+    let gio = 0; let soLanHoi = 0; let hong = true;
+    const sk = suKhoeMod.taoSuKhoe(() => { soLanHoi += 1; if (hong) throw new Error('libsql: mất kết nối'); return true; }, () => gio);
+    const gocLoi = console.error; console.error = () => {};
+    try {
+      const kq: any[] = [];
+      for (const g of [0, 1_000, 29_999]) { gio = g; const r = giaRes(); sk({} as any, r); kq.push(r); }
+      assert(soLanHoi === 1, `Database lỗi mà trong 30 giây hỏi ${soLanHoi} lần`);
+      assert(kq.every((r) => r.code === 503 && JSON.stringify(r.body) === '{"ok":false,"seeded":false}'), `Trong 30 giây phải trả 503: ${kq.map((r) => r.code).join(',')}`);
+      hong = false; gio = 30_000;
+      const r2 = giaRes(); sk({} as any, r2);
+      assert(soLanHoi === 2 && r2.code === 200 && JSON.stringify(r2.body) === '{"ok":true,"seeded":true}', `Sau 30 giây: hỏi ${soLanHoi} lần, ${r2.code} ${JSON.stringify(r2.body)}`);
+    } finally { console.error = gocLoi; }
+  });
+
   // ================================================================== 7. AN-5 — hạn 10 giây
 
   console.log('\nPR-AN · 7. Không mở giao dịch Turso khi hàm Netlify sắp hết 10 giây');
@@ -412,6 +470,9 @@ export async function runAnToanTests(t: AnToanTestKit) {
   console.log('\nPR-AN · 9. Chốt "-" tự chạy đầu thứ Hai kể cả khi không ai mở web (4.6)');
   const cv = await load('../ops/chotVangDinhKy.ts');
   const utilMod: any = await import('../util.ts');
+  const weekMod: any = await import('../platform/week.ts');
+  const skillScheduleMod: any = await import('../fasttrack/skillSchedule.ts');
+  const attemptsMod: any = await import('../fasttrack/attempts.ts');
 
   check('RB-1 · chotVangDinhKy gọi đúng settleNoShows(ngày); không truyền ngày thì dùng NGÀY THẬT giờ Việt Nam; database chưa khởi tạo thì bỏ qua, không gọi', () => {
     let nhan: string | null = null;
@@ -430,6 +491,35 @@ export async function runAnToanTests(t: AnToanTestKit) {
     const lan2 = cv.chotVangDinhKy({ ngay: TODAY });
     assert(lan1.boQua === null && typeof lan1.daChot === 'number', JSON.stringify(lan1));
     assert(lan2.daChot === 0, `Lần hai chốt thêm ${lan2.daChot}`);
+  });
+
+  check('PR-Z2c · RB-1 chạy thật với MỘT buổi "-" có thật: chotVangDinhKy trả daChot === 1, buổi thành vắng; lần hai 0 (cả phép chạy trong giao dịch rồi cuộn lại)', () => {
+    const now = new Date().toISOString();
+    conn.exec('BEGIN');
+    try {
+      const cid = (conn.prepare(`SELECT id FROM classes WHERE code = 'MB-FT 101'`).get() as any).id as number;
+      const mb = (conn.prepare(`SELECT id FROM branches WHERE code = 'MB'`).get() as any).id as number;
+      const sid = Number(conn.prepare(
+        `INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`,
+      ).run('PISA-Z2C-1', 'Học viên Z2c', 'hoc vien z2c', mb, now).lastInsertRowid);
+      conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', '2026-07-27', ?)`).run(sid, cid, now);
+      const cycleId = Number(conn.prepare(
+        `INSERT INTO learning_cycles (student_id, seq, route, programme_code, started_at, status, created_at) VALUES (?, 1, 'LT1', NULL, '2026-07-27', 'active', ?)`,
+      ).run(sid, now).lastInsertRowid);
+      /* Tuần 07–13/09 (đã hết trước TODAY = 14/09): phép kiểm ngay trên đã chốt mọi "-" có week_end < TODAY, nên chỉ còn buổi này. */
+      const periodId = weekMod.ensurePeriod('2026-09-07').id;
+      const attemptId = Number(conn.prepare(
+        `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id, status, created_at)
+         VALUES (?,?,1,'mock',?,?, 'planned', ?)`,
+      ).run(cycleId, sid, cid, periodId, now).lastInsertRowid);
+      skillScheduleMod.ensureSkillRows(attemptId);
+      attemptsMod.saveScore(P.lrTeacher, attemptId, 'listening', { noShow: true }, '2026-09-09');
+      const kq = cv.chotVangDinhKy({ ngay: TODAY });
+      assert(kq.boQua === null && kq.daChot === 1, `Phải chốt đúng 1 buổi: ${JSON.stringify(kq)}`);
+      const s = conn.prepare(`SELECT sit_status, absent_from_no_show AS co FROM attempt_skills WHERE attempt_id = ? AND skill = 'listening'`).get(attemptId) as any;
+      assert(s.sit_status === 'absent' && s.co === 1, `Buổi Listening: ${JSON.stringify(s)}`);
+      assert(cv.chotVangDinhKy({ ngay: TODAY }).daChot === 0, 'Lần hai lại chốt thêm');
+    } finally { if (conn.inTransaction) conn.exec('ROLLBACK'); }
   });
 
   check('RB-1 · netlify.toml hẹn hàm chot-vang đúng lịch 00:05 và 06:05 sáng thứ Hai giờ VN; hàm tự bật chế độ bản chính và chỉ gọi chotVangDinhKy', () => {
