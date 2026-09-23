@@ -16,11 +16,11 @@ import {
   activeAt, can, classScopeSql, defaultWorkScope, editableSkills, mySkills, scopeFor, type Principal,
 } from '../permissions.ts';
 import {
-  ATTEMPT_KIND_SHORT, PERMISSIONS, SKILL_SHORT, lopTuMo, nhanLopLichTest, trangThaiChamLabel,
-  type AttemptKind, type LoaiNhanLop, type PhamViLichTest,
+  ATTEMPT_KIND_SHORT, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, PERMISSIONS, SKILL_SHORT, lopTuMo, nhanLopLichTest, noShowStateOf,
+  trangThaiChamLabel, type AssessedSkill, type AttemptKind, type LoaiNhanLop, type PhamViLichTest,
 } from '../../../shared/domain/index.ts';
 import { classScoreSheet, conBaiCanCham, listAttempts, type MonDoiLich } from '../fasttrack/attempts.ts';
-import { assessedSkillOf } from '../fasttrack/scoring.ts';
+import { assessedSkillOf, entrySkillsOf } from '../fasttrack/scoring.ts';
 import { allProgrammes, isRatioClass, regularSheet } from '../normal/regular.ts';
 import { isOverdue, skillScoreDeadline, weekInfo } from '../platform/week.ts';
 
@@ -297,6 +297,37 @@ export type LichTest = {
   lop: LopLichTest[];
 };
 
+type OiemLuu = {
+  skill: string; band: number | null; raw_score: number | null;
+  no_show_period_id: number | null; no_show_settled_at: string | null; no_show_late: number | null;
+};
+
+/**
+ * MỘT Ô NHẬP FT ĐÃ XONG CHƯA — có điểm, hoặc dấu "-" CÒN HIỆU LỰC ở chính tuần này. Cùng luật với `skillCells`
+ * (`server/src/fasttrack/attempts.ts`, nơi badge "n bài chờ chấm" và khối Nợ đọc): `noShowStateOf`, cộng hai điều kiện
+ * của việc chốt — quá Chủ nhật mà chưa chốt thì buổi phải `scheduled` và mọi ô nhập của buổi đều "-"; đã chốt mà Quản lý
+ * đảo trạng thái thi (không còn `absent`) thì dấu cũ không sống lại. Lệch luật này là lệch số giữa Lịch Test và badge
+ * (rà #92) — phép kiểm "còn phải chấm + Nợ = badge" giữ hai nơi khớp nhau.
+ */
+function oFtXong(diem: OiemLuu[], nhap: string, v: { periodId: number; weekEnd: string | null; sitStatus: string; today: string }) {
+  const row = diem.find((x) => x.skill === nhap);
+  if (!row) return false;
+  if (row.band !== null || row.raw_score !== null) return true;
+  let ns = noShowStateOf({
+    marked: !!row.no_show_period_id, hasScore: false, sameWeek: row.no_show_period_id === v.periodId,
+    weekEnd: v.weekEnd, today: v.today, enteredAfterWeekEnd: !!row.no_show_late, lateRule: C10_NHAP_DAU_TRU_TUAN_QUA_KHU,
+  }).state;
+  if (!row.no_show_settled_at && ns === 'khong-du-thi') {
+    const banCung = entrySkillsOf(assessedSkillOf(nhap) as AssessedSkill).filter((k) => k !== nhap).every((k) => {
+      const o = diem.find((x) => x.skill === k);
+      return !!o?.no_show_period_id && o.no_show_period_id === v.periodId && o.band === null && o.raw_score === null;
+    });
+    if (!(v.sitStatus === 'scheduled' && banCung)) ns = 'none';
+  }
+  if (row.no_show_settled_at && ns !== 'none') ns = v.sitStatus === 'absent' ? 'khong-du-thi' : 'none';
+  return ns !== 'none';
+}
+
 const THU_TU_MON =
   `CASE ask.skill WHEN 'listening' THEN 1 WHEN 'reading' THEN 2 WHEN 'writing' THEN 3 WHEN 'speaking' THEN 4 ELSE 5 END`;
 
@@ -348,16 +379,7 @@ export function lichTest(
     .prepare(
       `SELECT a.id, a.kind, a.attempt_no, a.class_id, a.deadline_override AS han_dot,
               c.code AS class_code, b.name AS branch_name, c.programme_code,
-              ask.skill, ask.sit_status, ask.deadline_override AS han_mon,
-              (SELECT COUNT(*) FROM assessment_scores sc
-                WHERE sc.attempt_id = a.id AND sc.skill = ask.skill
-                  AND (sc.band IS NOT NULL OR sc.raw_score IS NOT NULL)) AS cham_don,
-              (SELECT COUNT(*) FROM assessment_scores sc
-                WHERE sc.attempt_id = a.id AND sc.skill IN ('writing1', 'writing2') AND sc.band IS NOT NULL) AS cham_viet,
-              (SELECT COUNT(*) FROM assessment_scores sc
-                WHERE sc.attempt_id = a.id
-                  AND (sc.skill = ask.skill OR (ask.skill = 'writing' AND sc.skill IN ('writing1', 'writing2')))
-                  AND sc.no_show_period_id = ask.planned_period_id) AS dau_tru
+              ask.skill, ask.sit_status, ask.deadline_override AS han_mon
          FROM assessment_attempts a
          JOIN attempt_skills ask ON ask.attempt_id = a.id
          JOIN classes c ON c.id = a.class_id
@@ -367,15 +389,23 @@ export function lichTest(
     )
     .all(...params) as any[];
 
-  const modes = allProgrammes();
-  /* Môn của tôi ở lớp này — hỏi một lần mỗi lớp + môn. Ô Writing FT là hai ô nhập W1, W2 (phân công theo môn nhập). */
-  const cuaToiNho = new Map<string, boolean>();
-  const monCuaToi = (classId: number, mode: CheDo, skill: string) => {
-    const k = `${classId}:${skill}`;
-    if (!cuaToiNho.has(k)) {
-      const nhap = mode === 'ielts_band' && skill === 'writing' ? ['writing1', 'writing2'] : [skill];
-      cuaToiNho.set(k, mySkills(p, classId, nhap).length > 0);
+  /* Điểm + dấu "-" của mọi lượt trong tuần: MỘT câu gom lô (thay các câu con lồng theo từng dòng). */
+  const diemCua = new Map<number, OiemLuu[]>();
+  theoLo([...new Set(rows.map((r) => r.id as number))], (lo, ph) => {
+    for (const x of conn.prepare(
+      `SELECT attempt_id, skill, band, raw_score, no_show_period_id, no_show_settled_at, no_show_late
+         FROM assessment_scores WHERE attempt_id IN (${ph})`,
+    ).all(...lo) as any[]) {
+      (diemCua.get(x.attempt_id) ?? diemCua.set(x.attempt_id, []).get(x.attempt_id)!).push(x);
     }
+  });
+
+  const modes = allProgrammes();
+  /* Môn NHẬP của tôi ở lớp này — hỏi một lần mỗi lớp + môn (W1, W2 của FT phân công riêng). */
+  const cuaToiNho = new Map<string, boolean>();
+  const monCuaToi = (classId: number, monNhap: string) => {
+    const k = `${classId}:${monNhap}`;
+    if (!cuaToiNho.has(k)) cuaToiNho.set(k, mySkills(p, classId, [monNhap]).length > 0);
     return cuaToiNho.get(k)!;
   };
   type DongTam = Omit<DongLichTest, 'trangThai'> & { quaHan: boolean };
@@ -423,17 +453,30 @@ export function lichTest(
       };
       lop.dong.set(key, d);
     }
+    /*
+     * MỘT BÀI = MỘT Ô NHẬP (rà #92): Writing FT là HAI bài W1, W2 — cùng cách đếm với khối Nợ (`pendingDetail`) và badge
+     * "n bài chờ chấm" (`pendingSkillsOf`), nên hàng lớp + Nợ cộng lại đúng bằng badge (G-10). `soHv` vẫn đếm theo em.
+     * Mỗi ô xong khi có điểm hoặc đã báo "-" ở chính tuần này.
+     */
+    const diem = diemCua.get(r.id) ?? [];
+    const cacO = (mode === 'ielts_band' && r.skill === 'writing' ? ['writing1', 'writing2'] : [r.skill as string])
+      .map((nhap) => ({
+        nhap,
+        xong: mode === 'ielts_band'
+          ? oFtXong(diem, nhap, { periodId, weekEnd: tuan.week_end, sitStatus: r.sit_status, today })
+          : diem.some((x) => x.skill === nhap && (x.band !== null || x.raw_score !== null || x.no_show_period_id === periodId)),
+      }));
+    const con = cacO.filter((o) => !o.xong);
     d.soHv += 1;
-    lop.tong += 1;
-    const daCham = mode === 'ielts_band' && r.skill === 'writing' ? r.cham_viet >= 2 : r.cham_don > 0;
-    if (!daCham && !r.dau_tru) {
-      d.conBai += 1;
-      lop.conBai += 1;
-      if (monCuaToi(r.class_id, mode, r.skill)) lop.conBaiCuaToi += 1;
+    lop.tong += cacO.length;
+    if (con.length) {
+      d.conBai += con.length;
+      lop.conBai += con.length;
+      lop.conBaiCuaToi += con.filter((o) => monCuaToi(r.class_id, o.nhap)).length;
       /* Hạn theo đúng thứ tự của `viewSkill`: hạn riêng của môn → hạn riêng của đợt → hạn mặc định theo tuần môn. */
       const han = r.han_mon ?? r.han_dot ?? skillScoreDeadline(mode === 'ratio' ? 'ratio' : 'band', tuan.week_start);
       if (!lop._hanNo || han < lop._hanNo) lop._hanNo = han;
-      if (!chuaToiHan && isOverdue(han, today)) { d.quaHan = true; lop.quaHan = true; quaHanTuan += 1; }
+      if (!chuaToiHan && isOverdue(han, today)) { d.quaHan = true; lop.quaHan = true; quaHanTuan += con.length; }
     }
   }
 

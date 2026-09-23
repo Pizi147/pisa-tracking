@@ -34,6 +34,7 @@ const GOP_TAI_LAI_MS = 1500;
  */
 export function LichTestTab() {
   const { session, branchCount } = useSession();
+  const nguoiId = session?.user?.id ?? null;
   const { homNay } = useNgayNghiepVu();
   const hep = useManHinhHep();
   const [params, setParams] = useSearchParams();
@@ -88,10 +89,10 @@ export function LichTestTab() {
   const daKhoiTao = useRef<string | null>(null);
   useEffect(() => {
     if (!data?.tuan) return;
-    const khoa = `${data.tuan.id}|${urlClassId ?? ''}`;
+    const khoa = `${nguoiId ?? 0}|${data.tuan.id}|${urlClassId ?? ''}`;
     if (daKhoiTao.current === khoa) return;
     daKhoiTao.current = khoa;
-    setNho(docMo(data.tuan.id));
+    setNho(docMo(nguoiId, data.tuan.id));
     setChiQuaHan(false);
     /* Có `kn` (Việc cần làm › Chấm): dòng Nợ có môn đó; không có thì hàng lớp tuần này; không có hàng lớp thì dòng Nợ
        đầu của lớp. Không có `kn` (badge "n bài chờ chấm"): dòng Nợ đầu (ưu tiên dòng của mình), rồi hàng lớp. */
@@ -109,13 +110,13 @@ export function LichTestTab() {
       const ep = new Set(urlClassId ? data.lop.filter((l) => l.classId === urlClassId).map((l) => l.key) : []);
       setEpMo(ep); setConTro(new Set(ep));
     }
-  }, [data, urlClassId]);
+  }, [data, urlClassId, nguoiId]);
 
   const moCua = (l: LopLichTest) => dangMo(l, nho, epMo);
   const doiMo = (l: LopLichTest) => {
     const moi = { ...nho, [l.key]: !moCua(l) };
     setNho(moi);
-    if (tuanId) ghiMo(tuanId, moi);
+    if (tuanId) ghiMo(nguoiId, tuanId, moi);
     if (epMo.has(l.key)) setEpMo((s) => { const n = new Set(s); n.delete(l.key); return n; });
     if (moi[l.key]) setConTro((s) => new Set(s).add(l.key));
   };
@@ -238,7 +239,7 @@ export function LichTestTab() {
                     onClick={() => {
                       const moHet = !lopTab.every(moCua);
                       const moi = { ...nho, ...Object.fromEntries(lopTab.map((l) => [l.key, moHet])) };
-                      setNho(moi); if (tuanId) ghiMo(tuanId, moi);
+                      setNho(moi); if (tuanId) ghiMo(nguoiId, tuanId, moi);
                       if (!moHet) setEpMo(new Set());
                     }}>
                     {lopTab.every(moCua) ? 'Thu tất cả' : 'Mở tất cả'}

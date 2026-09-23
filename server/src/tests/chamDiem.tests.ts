@@ -660,6 +660,42 @@ export async function runChamDiemTests(t: YThucTestKit) {
     }
   });
 
+  const classSvc: any = await import('../classes/classes.ts');
+  check('PR-UX1 (rà #92) · Lớp FT: còn phải chấm tuần này + Nợ tuần trước = badge "n bài chờ chấm" (Writing = W1 + W2)', () => {
+    const tom = classSvc.listClassSummaries(P.mbManager, { scope: 'managed' });
+    const ds = (Array.isArray(tom) ? tom : tom.classes ?? tom.rows ?? []) as any[];
+    const ft = ds.filter((c: any) => c.scoringMode !== 'ratio' && c.needScores !== undefined);
+    assert(ft.length > 0, `Seed: phải có lớp FT trong phạm vi QL MB (${Object.keys(tom)})`);
+    assert(ft.some((c: any) => c.needScores > 0), 'Seed: phải có lớp FT còn bài chờ chấm');
+    let coViet = false;
+    for (const c of ft) {
+      const r = cham.lichTest(P.mbManager, tuanId(TUAN_NAY), null, TODAY, { classId: c.id, phamVi: 'tat-ca' });
+      const tuan = r.lop.reduce((n: number, l: any) => n + l.conBai, 0);
+      const no = r.no.reduce((n: number, x: any) => n + x.conBai, 0);
+      if (tuan + no !== c.needScores) {
+        const cells = attempts.listAttempts(P.mbManager, { classId: c.id, scope: 'managed' }).rows
+          .filter((a: any) => a.status !== 'cancelled').flatMap((a: any) => (a.pendingDetail ?? []).map((x: any) => ({ ...x, aid: a.id })));
+        const nhom = (f: (x: any) => boolean) => cells.filter(f).length;
+        const la = cells.filter((x: any) => x.weekStart === TUAN_NAY);
+        throw new Error(`${c.code}: tuần ${tuan} + Nợ ${no} ≠ badge ${c.needScores} · pendingDetail: trước ${nhom((x) => x.weekStart && x.weekStart < TUAN_NAY)}`
+          + ` · tuần này ${la.length} · sau ${nhom((x) => x.weekStart > TUAN_NAY)} · không tuần ${nhom((x) => !x.weekStart)}`
+          + ` · tuần này: ${JSON.stringify(la.map((x: any) => `${x.aid}:${x.skill}:${x.periodId}`))}`);
+      }
+      for (const l of r.lop) {
+        const w = l.dong.filter((x: any) => x.kyNang.includes('writing'));
+        if (w.length) coViet = true;
+        /* Writing FT: mỗi em hai bài (W1, W2) — dòng kỹ năng đếm bài, không đếm em. */
+        for (const x of w) assert(x.conBai <= 2 * x.soHv, `${c.code} ${x.key}: ${x.conBai} bài > 2 × ${x.soHv} em`);
+      }
+    }
+    assert(coViet, 'Seed: phải có lớp FT thi Writing tuần này để kiểm W1 + W2');
+    /* Tổng số bài của tuần: Writing FT tính hai bài mỗi em. */
+    const r = cham.lichTest(P.mbManager, tuanId(TUAN_NAY), null, TODAY, { classId: classId('MB-FT 101'), phamVi: 'tat-ca' });
+    const l = r.lop[0];
+    const soO = l.dong.reduce((n: number, x: any) => n + x.soHv * (x.kyNang.includes('writing') ? 2 : 1), 0);
+    assert(l.tong === soO, `MB-FT 101: tổng ${l.tong} ≠ số ô nhập ${soO}`);
+  });
+
   check('PR-UX1 · Lớp tôi dạy: GV chỉ lớp có phân công, không có nút khi hai tập như nhau; QL mặc định Tất cả', () => {
     const gv = cham.lichTest(P.coreTeacher, tuanId(TUAN_NAY), null, TODAY);
     const lopGv = new Set(P.coreTeacher.assignments.map((a: any) => a.classId));
