@@ -818,4 +818,17 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     assert(soLuoi === 1, `Phải đúng 1 lưới cột tuần: ${soLuoi}`);
     assert(!/colTemplate/.test(src), 'Không còn khuôn cột cố định cũ (colTemplate)');
   });
+
+  check('PR-UX5 (6) · HanhTrinh.tsx: ô cột tên ghim trái đi qua CotGhim (trải 1 / -1) — không ô nào đặt riêng ở gridColumn 1', () => {
+    const src = boChuThich(doc('web/src/modules/students/HanhTrinh.tsx'));
+    assert(src.includes('function CotGhim('), 'Phải có CotGhim');
+    assert(!/gridColumn:\s*1[,\s}]/.test(src), '`sticky` trong một ô cột 1 không đứng yên được khi cuộn ngang — dùng CotGhim');
+    assert((src.match(/<CotGhim /g) ?? []).length >= 6, 'Trục (tháng/tuần/đoạn/ghim), tên vấn đề, dòng "+n vấn đề cũ hơn" đều dùng CotGhim');
+  });
+
+  check('PR-UX5 (6) · HanhTrinh.tsx: không tự đặt chữ kết quả PA (lấy outcomeLabelFor) và không "kỳ vọng"/"Overall" gõ cứng ở lớp thường', () => {
+    const src = boChuThich(doc('web/src/modules/students/HanhTrinh.tsx'));
+    for (const cam of ['Tiến bộ rõ', 'Tiến bộ một phần', 'Không tiến bộ', 'Overall']) assert(!src.includes(cam), `Gõ lại chữ "${cam}" — phải lấy từ outcomeLabelFor / luật thuần`);
+    assert(src.includes("outcomeLabelFor('improved')"), 'Chú giải phải lấy nhãn từ outcomeLabelFor');
+  });
 }

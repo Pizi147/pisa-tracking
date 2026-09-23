@@ -1,4 +1,4 @@
-import { Fragment, useLayoutEffect, useState } from 'react';
+import { Fragment, useLayoutEffect, useState, type ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Empty, ErrorState, SCORE_CHIP, Skeleton, type ScoreTone } from '../../ui/ui.tsx';
@@ -127,6 +127,8 @@ export function HanhTrinh({ studentId, active, episodes, allEpisodes, onOpenCase
   });
   const nhomGhim = gomGhimTheoTuan(data.ghim);
   const cotHomNay = truc.tuan.findIndex((w) => w.homNay);
+  /* Các đoạn hàng liền nhau (không có khe): phần trục rồi từng khung hộp — phần trục bắt đầu ở hàng 2 (dưới hàng tháng). */
+  const doanLuoi: [number, number][] = [[2, hang.hop.length ? hang.hop[0].khung[0] - 1 : hang.hangCuoi], ...hang.hop.map((h) => h.khung)];
 
   return (
     <div className="space-y-3">
@@ -173,25 +175,25 @@ export function HanhTrinh({ studentId, active, episodes, allEpisodes, onOpenCase
               <div key={`khung-${hopHienThi[i].kyNang}`} aria-hidden className="pointer-events-none z-0 rounded-lg"
                 style={{ gridRow: `${h.khung[0]} / ${h.khung[1]}`, gridColumn: '1 / -1', ...NEN_HOP, boxShadow: '0 0 0 1px var(--line)' }} />
             ))}
-            {truc.tuan.map((w, i) => (
-              <div key={`vach-${w.thuHai}`} aria-hidden className="pointer-events-none z-[1] border-l"
-                style={{ gridRow: `2 / ${hang.hangCuoi}`, gridColumn: i + 2, borderColor: w.dauThang ? 'var(--line-strong)' : 'var(--line)', opacity: w.dauThang ? 1 : 0.55 }} />
-            ))}
+            {/* Vạch tuần vẽ theo ĐOẠN (phần trục + từng khung hộp), bỏ hàng khe — khi cuộn ngang khe không có ô cột tên che. */}
+            {truc.tuan.map((w, i) => doanLuoi.map(([a, b], k) => (
+              <div key={`vach-${w.thuHai}-${k}`} aria-hidden className="pointer-events-none z-[1] border-l"
+                style={{ gridRow: `${a} / ${b}`, gridColumn: i + 2, borderColor: w.dauThang ? 'var(--line-strong)' : 'var(--line)', opacity: w.dauThang ? 1 : 0.55 }} />
+            )))}
             {cotHomNay >= 0 && (
               <div aria-hidden className="pointer-events-none z-[1] rounded-md"
                 style={{ gridRow: `1 / ${hang.hangCuoi}`, gridColumn: cotHomNay + 2, background: 'rgb(var(--doing-rgb) / 0.08)' }} />
             )}
 
             {/* ---- trục: tháng (hàng 1) · tuần (hàng 2) */}
-            <div className="sticky left-0 z-[3]" style={{ gridRow: 1, gridColumn: 1, background: 'var(--surface)' }} />
+            <CotGhim hang={1} cotTen={boCuc.cotTen} nen="var(--surface)" />
             {truc.thang.map((th) => (
               <div key={`${th.tu}-${th.nhan}`} className="z-[2] px-1.5 pb-1 pt-0.5 text-[10px] font-extrabold uppercase tracking-[0.06em] text-dim whitespace-nowrap"
                 style={{ gridRow: 1, gridColumn: `${th.tu + 2} / ${th.tu + th.so + 2}` }}>
                 {th.nhan}
               </div>
             ))}
-            <div className="sticky left-0 z-[3] px-3 py-1 text-[10.5px] text-faint self-center whitespace-nowrap"
-              style={{ gridRow: 2, gridColumn: 1, background: 'var(--surface)' }}>Tuần</div>
+            <CotGhim hang={2} cotTen={boCuc.cotTen} nen="var(--surface)" className="items-center px-3 text-[10.5px] text-faint">Tuần</CotGhim>
             {truc.tuan.map((w, i) => (
               <div key={w.thuHai} title={`${tuanLich(w.thuHai, homNay)}${w.homNay ? ' · tuần này' : ''}`}
                 className={`z-[2] pb-1.5 pt-1 text-center text-[10.5px] tabular-nums ${w.homNay ? 'font-extrabold text-doing' : 'text-faint'}`}
@@ -204,10 +206,9 @@ export function HanhTrinh({ studentId, active, episodes, allEpisodes, onOpenCase
             {/* ---- hàng Khoá / Lộ trình */}
             {hang.hangDoan && (
               <>
-                <div className="sticky left-0 z-[3] px-3 self-center py-1 text-[10.5px] text-faint whitespace-nowrap"
-                  style={{ gridRow: hang.hangDoan, gridColumn: 1, background: 'var(--surface)' }}>
+                <CotGhim hang={hang.hangDoan} cotTen={boCuc.cotTen} nen="var(--surface)" className="items-center px-3 py-1 text-[10.5px] text-faint">
                   {doanHienThi[0].loai === 'khoa' ? 'Khoá' : 'Lộ trình'}
-                </div>
+                </CotGhim>
                 {doanHienThi.map((dg, di) => {
                   const a = cotCua(dg.tu, truc);
                   const b = cotCua(dg.den, truc);
@@ -225,10 +226,9 @@ export function HanhTrinh({ studentId, active, episodes, allEpisodes, onOpenCase
             {/* ---- hàng Đợt Test: mỗi tuần một ô, ghim cùng tuần xếp dọc */}
             {hang.hangGhim && (
               <>
-                <div className="sticky left-0 z-[3] px-3 self-center py-1 text-[10.5px] text-faint whitespace-nowrap"
-                  style={{ gridRow: hang.hangGhim, gridColumn: 1, background: 'var(--surface)' }}>
+                <CotGhim hang={hang.hangGhim} cotTen={boCuc.cotTen} nen="var(--surface)" className="items-center px-3 py-1 text-[10.5px] text-faint">
                   Đợt Test
-                </div>
+                </CotGhim>
                 {nhomGhim.map((nhom) => {
                   const cot = cotCua(nhom.tuan, truc);
                   return (
@@ -354,14 +354,30 @@ function HopKyNang({ hop, vi, vanDe, soAn, truc, boCuc, rongTuan, homNay, onOpen
       ))}
 
       {soAn > 0 && vi.dongAn && (
-        <div className="sticky left-0 z-[3] rounded-bl-lg" style={{ gridRow: vi.dongAn, gridColumn: 1, width: boCuc.cotTen, ...NEN_HOP }}>
+        <CotGhim hang={vi.dongAn} cotTen={boCuc.cotTen} nen="var(--surface-2)" className="rounded-bl-lg">
           <button type="button" onClick={onXemCaGiaiDoan} title={`Chọn "Cả giai đoạn" để thấy ${soAn} vấn đề cũ hơn`}
             className="block w-full appearance-none truncate border-0 bg-transparent py-1.5 pl-3 pr-3 text-left text-[11px] text-faint hover:underline">
             +{soAn} vấn đề cũ hơn — chọn "Cả giai đoạn"
           </button>
-        </div>
+        </CotGhim>
       )}
     </>
+  );
+}
+
+/**
+ * Ô CỘT TÊN GHIM TRÁI. `position: sticky` chỉ chạy trong vùng lưới của chính phần tử, nên ô ở cột 1 một mình không
+ * thể đứng yên khi cuộn ngang — ô ngoài trải `1 / -1` (không bắt chuột) rồi phần đứng yên bên trong rộng đúng `cotTen`.
+ */
+function CotGhim({ hang, cotTen, nen, className = '', children }: {
+  hang: number | string; cotTen: number; nen: string; className?: string; children?: ReactNode;
+}) {
+  return (
+    <div className="pointer-events-none z-[3] flex" style={{ gridRow: hang, gridColumn: '1 / -1' }}>
+      <div className={`pointer-events-auto sticky left-0 flex flex-none whitespace-nowrap ${className}`} style={{ width: cotTen, background: nen }}>
+        {children}
+      </div>
+    </div>
   );
 }
 
@@ -376,13 +392,13 @@ function VanDeHang({ v, vi, cuoi, truc, boCuc, rongTuan, homNay, onOpenCase }: {
   return (
     <>
       <div aria-hidden className="pointer-events-none z-[4] border-t" style={{ gridRow: vi.tu, gridColumn: '1 / -1', height: 0, alignSelf: 'start' }} />
-      <div className={`sticky left-0 z-[3] flex min-w-0 flex-col justify-center pr-3 ${boCuc.xuongDong ? 'pl-3' : 'pl-6'} ${cuoi ? 'rounded-bl-lg' : ''}`}
-        style={{ gridRow: `${vi.tu} / span ${vi.so}`, gridColumn: 1, width: boCuc.cotTen, ...NEN_HOP }}>
+      <CotGhim hang={`${vi.tu} / span ${vi.so}`} cotTen={boCuc.cotTen} nen="var(--surface-2)"
+        className={`min-w-0 flex-col justify-center pr-3 ${boCuc.xuongDong ? 'pl-3' : 'pl-6'} ${cuoi ? 'rounded-bl-lg' : ''}`}>
         <button type="button" onClick={() => onOpenCase(v.caseId)} className="group min-w-0 appearance-none border-0 bg-transparent p-0 text-left">
           <span className="block truncate text-[11.5px] leading-[15px] text-[var(--text)] group-hover:underline" title={v.ten}>{v.ten}</span>
           <span className="block truncate text-[10.5px] leading-[14px] text-faint" title={phu}>{phu}</span>
         </button>
-      </div>
+      </CotGhim>
       {v.pa.length === 0 ? (
         <ChuaCoPa tu={v.mo} homNay={homNay} truc={truc} hang={vi.tu} rongTuan={rongTuan} />
       ) : v.pa.map((p) => (
