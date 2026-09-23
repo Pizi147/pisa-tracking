@@ -10,11 +10,12 @@ import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../
 import { can, editableSkills, require_, scoreEditPath, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
-import { ensurePeriod, mondayOf } from '../platform/week.ts';
+import { ensurePeriod } from '../platform/week.ts';
 import { regularSkillViews, weekStartOf } from '../fasttrack/attempts.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { ensureSkillRows, loadSkillRows, setSkillWeek } from '../fasttrack/skillSchedule.ts';
 import { dotHoanTat, dotHoanTatMany, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
+import { classProgress } from '../classes/schedule.ts';
 
 /**
  * LỚP THƯỜNG (Foundation / Beginner / Elementary).
@@ -239,7 +240,16 @@ export function planRegularTests(p: Principal, classId: number) {
   if (!prog || prog.scoringMode !== 'ratio') {
     throw badRequest('Lớp này không phải lớp thường. Lớp FT dùng lịch Mock Test.');
   }
-  if (!cls.start_date) throw badRequest('Lớp chưa có ngày khai giảng nên chưa tính được mốc tuần học.');
+  /*
+   * Q13 (23/09): tuần mốc lấy từ `classProgress` — CÙNG nguồn với "đề xuất" của Kế hoạch Test
+   * (`bangThuong`, `classes/schedule.ts:199`), tính từ `start_period_id` + mốc Quản lý đã sửa riêng
+   * (`progress_week_override`/`final_week_override`). Trước đây hàm này tự tính từ `start_date`, bỏ qua mốc
+   * đã sửa — tạo ra khác đề xuất là lỗi thầm lặng.
+   */
+  const progress = classProgress(classId);
+  if (!progress.progressWeekStart && !progress.finalWeekStart) {
+    throw badRequest('Lớp chưa có ngày khai giảng nên chưa tính được mốc tuần học.');
+  }
   if (!prog.checkpoints.length) throw badRequest(`Chương trình ${prog.code} chưa khai báo mốc kiểm tra nào.`);
 
   const students = conn
@@ -294,8 +304,8 @@ export function planRegularTests(p: Principal, classId: number) {
           .get(cycle.id, cp.kind) as any;
         if (dup) continue;
 
-        // Tuần học N bắt đầu sau (N-1) tuần kể từ ngày khai giảng.
-        const week = mondayOf(addDays(cls.start_date, (cp.studyWeek - 1) * 7));
+        const week = cp.kind === 'progress' ? progress.progressWeekStart : progress.finalWeekStart;
+        if (!week) throw badRequest(`Chưa tính được tuần ${ATTEMPT_KIND_LABEL[cp.kind]} của lớp — thiếu mốc tuần học.`);
         const period = ensurePeriod(week);
         const nextNo = ((conn.prepare('SELECT MAX(attempt_no) m FROM assessment_attempts WHERE cycle_id = ?')
           .get(cycle.id) as any)?.m ?? 0) + 1;

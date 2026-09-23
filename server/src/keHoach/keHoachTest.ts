@@ -7,7 +7,8 @@
  */
 import { db, tx } from '../db.ts';
 import {
-  NHOM_KY_NANG, PERMISSIONS, laVaoMuon, tieuDeKeHoach, trangThaiNhom, tuanDaSo,
+  NHOM_KY_NANG, PERMISSIONS, REGULAR_SKILLS, laVaoMuon, tieuDeKeHoach,
+  tuanDaSo, tuanKhoa as tuanKhoaCua, trangThaiNhom,
   type TrangThaiO,
 } from '../../../shared/domain/index.ts';
 import { badRequest, notFound } from '../util.ts';
@@ -18,6 +19,8 @@ import { createAttempt, loadBundle } from '../fasttrack/attempts.ts';
 import { currentCycle } from '../fasttrack/cycles.ts';
 import { checkWeekVsNeighbours, loadSkillRows, setSkillWeek } from '../fasttrack/skillSchedule.ts';
 import { writeAudit } from '../platform/audit.ts';
+import { classProgressMany } from '../classes/schedule.ts';
+import { allProgrammes } from '../normal/regular.ts';
 
 // ---------------------------------------------------------------- danh sách lớp
 
@@ -410,6 +413,177 @@ export function xepHangLoat(p: Principal, i: {
     actorUserId: p.userId, action: 'ke_hoach.hang_loat', entityType: 'class', entityId: i.classId,
     entityLabel: `MT${i.attemptNo}`,
     before: null, after: { daLuu, loi: ketQua.filter((d) => d.hanhDong === 'loi').map((d) => ({ studentId: d.studentId, loi: d.loi })) },
+  });
+
+  return { dong: ketQua, daLuu };
+}
+
+// ---------------------------------------------------------------- lớp thường (R12, R14 phần lịch)
+
+const KIND_NHAN: Record<'progress' | 'final', string> = { progress: 'Giữa khoá', final: 'Cuối khoá' };
+
+export function bangThuong(p: Principal, i: { branchId?: number | null } = {}, today: string = demoToday()) {
+  const conn = db();
+  const params: unknown[] = [];
+  let where = `pg.scoring_mode = 'ratio'`;
+  if (i.branchId) { where += ' AND c.branch_id = ?'; params.push(i.branchId); }
+  const classes = conn
+    .prepare(`SELECT c.* FROM classes c LEFT JOIN programmes pg ON pg.code = c.programme_code WHERE ${where} ORDER BY c.code`)
+    .all(...params) as any[];
+  const inScope = classes.filter((c) => can(p, PERMISSIONS.PLAN_WEEK, { classId: c.id }));
+  const classIds = inScope.map((c) => c.id as number);
+  if (!classIds.length) return { lop: [] };
+
+  const progressAll = classProgressMany(classIds);
+  const progs = allProgrammes();
+  const ph = classIds.map(() => '?').join(',');
+
+  /* HV chưa có bài (chưa có lượt Giữa/Cuối khoá nào) — một câu gom theo lớp (như `danhSachLop`). */
+  const hvChuaCoLich = new Map<number, number>();
+  for (const r of conn
+    .prepare(
+      `SELECT e.class_id AS class_id, COUNT(*) AS n
+         FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
+        WHERE e.class_id IN (${ph}) AND s.status = 'active' AND s.archived_at IS NULL
+          AND NOT EXISTS (
+            SELECT 1 FROM assessment_attempts a
+             WHERE a.student_id = s.id AND a.class_id = e.class_id AND a.kind IN ('progress', 'final') AND a.status != 'cancelled'
+          )
+        GROUP BY e.class_id`,
+    )
+    .all(...classIds) as any[]) hvChuaCoLich.set(r.class_id, r.n);
+
+  /* MỘT LƯỢT ĐỌC CHO MỌI LỚP: lượt Giữa/Cuối khoá của HV đang học, lịch từng môn, điểm từng môn, tên HV. */
+  const attempts = conn
+    .prepare(
+      `SELECT a.*, s.full_name FROM assessment_attempts a
+         JOIN students s ON s.id = a.student_id
+         JOIN enrollments e ON e.student_id = s.id AND e.status = 'active' AND e.class_id = a.class_id
+        WHERE a.class_id IN (${ph}) AND a.kind IN ('progress', 'final') AND a.status != 'cancelled'
+          AND s.status = 'active' AND s.archived_at IS NULL`,
+    )
+    .all(...classIds) as any[];
+  const attemptIds = attempts.map((a) => a.id);
+  const skillRows = loadSkillRows(attemptIds);
+  const bundle = loadBundle(attemptIds);
+
+  const byClassKind = new Map<string, any[]>();
+  for (const a of attempts) {
+    const key = `${a.class_id}:${a.kind}`;
+    if (!byClassKind.has(key)) byClassKind.set(key, []);
+    byClassKind.get(key)!.push(a);
+  }
+
+  const lop = inScope.map((c) => {
+    const prog = progs.get(c.programme_code ?? '') ?? null;
+    const progressInfo = progressAll.get(c.id);
+    const tuanKhoaStr = progressInfo?.currentWeek && progressInfo?.totalWeeks
+      ? tuanKhoaCua(progressInfo.currentWeek, progressInfo.totalWeeks) : null;
+
+    const dong = (['progress', 'final'] as const).map((kind) => {
+      const rows = byClassKind.get(`${c.id}:${kind}`) ?? [];
+      const mon = {} as Record<'listening' | 'reading' | 'writing' | 'speaking', {
+        tuan: string | null; deXuat: string | null; xong: boolean; daCham: number; tong: number;
+        khac: Array<{ tuan: string; n: number; ten: string[] }>;
+      }>;
+      for (const skill of REGULAR_SKILLS) {
+        const tuanCuaEm = rows.map((a: any) => (skillRows.get(a.id) ?? []).find((r: any) => r.skill === skill)?.week_start ?? null);
+        const { tuan } = tuanDaSo(tuanCuaEm);
+        /* R14 phần lịch: em nào lệch tuần đa số (dấu "-" của Rc1 đã dời) → liệt kê ở `khac`, kèm tên. */
+        const khacMap = new Map<string, { tuan: string; n: number; ten: string[] }>();
+        rows.forEach((a: any, idx: number) => {
+          const t = tuanCuaEm[idx];
+          if (!t || t === tuan) return;
+          if (!khacMap.has(t)) khacMap.set(t, { tuan: t, n: 0, ten: [] });
+          const g = khacMap.get(t)!;
+          g.n += 1; g.ten.push(a.full_name);
+        });
+        const daCham = rows.filter((a: any) => {
+          const sc = (bundle.scores.get(a.id) ?? []).find((s: any) => s.skill === skill);
+          return (sc?.raw_score ?? null) !== null;
+        }).length;
+        mon[skill] = {
+          tuan,
+          deXuat: rows.length === 0 ? (kind === 'progress' ? (progressInfo?.progressWeekStart ?? null) : (progressInfo?.finalWeekStart ?? null)) : null,
+          xong: rows.length > 0 && daCham === rows.length,
+          daCham, tong: rows.length,
+          khac: [...khacMap.values()].sort((x, y) => x.tuan.localeCompare(y.tuan)),
+        };
+      }
+      return { kind, nhan: KIND_NHAN[kind], mon };
+    });
+
+    return {
+      classId: c.id as number, code: c.code as string, chuongTrinh: prog?.code ?? null,
+      tuanKhoa: tuanKhoaStr, thieuKhaiGiang: !progressInfo?.progressWeekStart && !progressInfo?.finalWeekStart,
+      hvChuaCoLich: hvChuaCoLich.get(c.id) ?? 0, dong,
+    };
+  });
+
+  return { lop };
+}
+
+export type DongDoiLichThuong = {
+  studentId: number; ten: string; tu: string | null; den: string | null; loi: string | null; giu: string | null;
+};
+
+export function doiLichThuong(p: Principal, i: {
+  classId: number; kind: 'progress' | 'final'; skill: string; periodId: number;
+  studentIds?: number[] | null; force?: boolean; xemTruoc?: boolean;
+}): { dong: DongDoiLichThuong[]; daLuu: number } {
+  const conn = db();
+  require_(p, PERMISSIONS.PLAN_WEEK, { classId: i.classId }, 'Chỉ Quản lý xếp được lịch Test.');
+  if (!(REGULAR_SKILLS as readonly string[]).includes(i.skill)) throw badRequest('Môn không hợp lệ.');
+  const period = conn.prepare('SELECT * FROM report_periods WHERE id = ?').get(i.periodId) as any;
+  if (!period) throw notFound('Không tìm thấy tuần');
+
+  const params: unknown[] = [i.classId, i.kind];
+  let studentFilter = '';
+  if (i.studentIds?.length) {
+    studentFilter = ` AND a.student_id IN (${i.studentIds.map(() => '?').join(',')})`;
+    params.push(...i.studentIds);
+  }
+  const attempts = conn
+    .prepare(
+      `SELECT a.*, s.full_name FROM assessment_attempts a
+         JOIN students s ON s.id = a.student_id
+         JOIN enrollments e ON e.student_id = s.id AND e.status = 'active' AND e.class_id = a.class_id
+        WHERE a.class_id = ? AND a.kind = ? AND a.status != 'cancelled'
+          AND s.status = 'active' AND s.archived_at IS NULL${studentFilter}
+        ORDER BY s.full_name`,
+    )
+    .all(...params) as any[];
+
+  const attemptIds = attempts.map((a) => a.id);
+  const skillRows = loadSkillRows(attemptIds);
+  const bundle = loadBundle(attemptIds);
+  const attemptOf = new Map<number, number>(attempts.map((a) => [a.student_id, a.id]));
+
+  const dong: DongDoiLichThuong[] = attempts.map((a) => {
+    const row: any = (skillRows.get(a.id) ?? []).find((r: any) => r.skill === i.skill);
+    const scoreRow: any = (bundle.scores.get(a.id) ?? []).find((s: any) => s.skill === i.skill);
+    const tu = row?.week_start ?? null;
+    if ((scoreRow?.raw_score ?? null) !== null) {
+      return { studentId: a.student_id, ten: a.full_name, tu, den: tu, loi: null, giu: 'đã có điểm' };
+    }
+    if (!row) return { studentId: a.student_id, ten: a.full_name, tu: null, den: null, loi: `Chưa có dòng lịch cho ${i.skill}.`, giu: null };
+    if (row.planned_period_id === i.periodId) return { studentId: a.student_id, ten: a.full_name, tu, den: tu, loi: null, giu: 'đã ở đúng tuần' };
+    return { studentId: a.student_id, ten: a.full_name, tu, den: period.week_start, loi: null, giu: null };
+  });
+
+  if (i.xemTruoc) return { dong, daLuu: 0 };
+
+  let daLuu = 0;
+  const ketQua = dong.map((d) => {
+    if (d.giu || d.loi) return d;
+    try {
+      setSkillWeek(p, attemptOf.get(d.studentId)!, i.skill, i.periodId, { force: i.force });
+      daLuu += 1;
+      return d;
+    } catch (e: any) {
+      /* Mỗi em qua `setSkillWeek` riêng (tự bọc `tx`) — lỗi của một em không huỷ các em khác. */
+      return { ...d, loi: e?.message ?? 'Không lưu được.' };
+    }
   });
 
   return { dong: ketQua, daLuu };

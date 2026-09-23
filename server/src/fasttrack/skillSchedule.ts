@@ -532,12 +532,18 @@ function loadOne(attemptId: number, skill: string): { attempt: any; row: SkillRo
 }
 
 /** Đã có ít nhất một ô điểm của kỹ năng đánh giá này. */
+/*
+ * (23/09) Lớp thường lưu điểm ở `raw_score`, không có `band` — chỉ nhìn `band` để trước đây một môn lớp thường
+ * đã có điểm vẫn dời được như một lịch tương lai. `writing` của FT vẫn xét qua `writing1`/`writing2`.
+ */
 function hasScore(attemptId: number, skill: AssessedSkill): boolean {
-  const entry = skill === 'writing' ? ['writing1', 'writing2'] : [skill];
+  /* FT tách 'writing' thành writing1/writing2; lớp thường ghi thẳng 'writing' — kiểm cả ba, không cần biết
+   * trước chế độ chấm của đợt. */
+  const entry = skill === 'writing' ? ['writing', 'writing1', 'writing2'] : [skill];
   const row = db()
     .prepare(
       `SELECT COUNT(*) AS n FROM assessment_scores
-        WHERE attempt_id = ? AND band IS NOT NULL AND skill IN (${entry.map(() => '?').join(',')})`,
+        WHERE attempt_id = ? AND (band IS NOT NULL OR raw_score IS NOT NULL) AND skill IN (${entry.map(() => '?').join(',')})`,
     )
     .get(attemptId, ...entry) as any;
   return row.n > 0;

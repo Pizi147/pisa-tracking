@@ -454,6 +454,17 @@ api.post('/ke-hoach-test/hang-loat', requireAuth, wrap((req) => {
   return keHoachSvc.xepHangLoat(principalOf(req), { ...req.body, classId, attemptNo, rlwPeriodId });
 }));
 
+api.get('/ke-hoach-test/thuong', requireAuth, wrap((req) =>
+  keHoachSvc.bangThuong(principalOf(req), { branchId: toInt(req.query?.branchId) })));
+
+api.post('/ke-hoach-test/thuong/doi-lich', requireAuth, wrap((req) => {
+  if (!req.body?.xemTruoc) maybeSimulateSaveFailure();
+  const classId = toInt(req.body?.classId);
+  const periodId = toInt(req.body?.periodId);
+  if (!classId || !periodId || !req.body?.kind || !req.body?.skill) throw badRequest('Thiếu lớp, đợt, môn hoặc tuần.');
+  return keHoachSvc.doiLichThuong(principalOf(req), { ...req.body, classId, periodId });
+}));
+
 /** Tổng hợp theo tuần cho Quản lý: mỗi tuần một dòng, mọi con số bấm được. */
 api.get('/weekly-rollup', requireAuth, wrap((req) => weeklyRollup(principalOf(req), {
   branchId: toInt(req.query?.branchId),

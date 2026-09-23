@@ -7580,6 +7580,14 @@ function normalWritingAttemptSkill() {
       LIMIT 1`,
   ).get(classId('MB-FOU 12')) as any;
   assert(row, 'Seed thiếu một bài Writing lớp Normal chưa chấm để kiểm SCH-01');
+  /*
+   * PHẢI CHƯA CÓ ĐIỂM (23/09): `hasScore` (skillSchedule.ts) nay xét cả cột `raw_score` của lớp thường, nên
+   * `setSkillWeek` đúng luật từ chối dời một môn đã có điểm. Đến cuối khoá (MB-FOU 12 đang tuần 8/8) hầu hết
+   * Writing đã có điểm sẵn — xoá điểm của đúng dòng vừa chọn để dựng lại tiền đề "chưa chấm" mà các phép kiểm
+   * SCH-01/T07/PR-G cần, thay vì đổi sang lớp khác (các quyền `P.normalCoreTeacher`/`normalSubjectTeacher`
+   * chỉ gắn với MB-FOU 12).
+   */
+  conn.prepare(`DELETE FROM assessment_scores WHERE attempt_id = ? AND skill = 'writing'`).run(row.attemptId);
   return row as { attemptId: number; skill: string; periodId: number };
 }
 
