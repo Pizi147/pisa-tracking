@@ -89,7 +89,7 @@ export function attachPrincipal(req: Request, _res: Response, next: NextFunction
 
 export function requireAuth(req: Request, _res: Response, next: NextFunction) {
   if (!req.principal) {
-    next(new HttpError(401, 'Chưa chọn tài khoản demo. Chọn một tài khoản ở thanh Công cụ demo.'));
+    next(new HttpError(401, 'Chưa đăng nhập, hoặc phiên đăng nhập đã hết hạn. Đăng nhập lại.'));
     return;
   }
   next();

@@ -397,7 +397,7 @@ function AccountDialog({ account, branches, onClose, onDone }: {
             </div>
 
             <Field label="Đặt lại mật khẩu"
-              hint="Thay cho luồng quên mật khẩu mà bản demo không có. Bỏ trống nếu không đổi.">
+              hint="Hệ thống chưa có luồng quên mật khẩu — đặt lại mật khẩu ở đây. Bỏ trống nếu không đổi.">
               <input className="field w-full" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
             </Field>
           </>
