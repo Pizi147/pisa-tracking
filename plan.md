@@ -1750,6 +1750,10 @@ báo cáo · WORK-03 liên kết task thật.
 
 ### 12.5. Bốn đường vào nhập điểm còn lại của Task 6 (khảo sát 18/09/2026)
 
+**Đã xong (PR-Qb, 23/09/2026) — cả bốn đường + quy ước tham số duy nhất.** Xem R7/R8 ở mục 15
+(đánh dấu `[x]`) và Nhật ký thực thi của `docs/superpowers/plans/2026-09-23-pr-qb-ho-so-hoc-vien.md`.
+Bảng dưới giữ lại để đọc lịch sử khảo sát, không còn là việc cần làm.
+
 PR1 chỉ sửa lỗi thông báo không điều hướng (đã xong, xem mục 14). Bốn đường sau cần dựng
 mới, không phải sửa nhỏ — làm PR riêng, có kèm quyết định thiết kế trước khi code:
 
@@ -1910,8 +1914,8 @@ Ghi theo yêu cầu chủ sản phẩm sau rà soát PR #52 (làm sau, không l�
 | Việc | Ở đâu | Làm khi nào |
 |---|---|---|
 | Thẻ case đếm bằng chứng bằng một `SELECT COUNT(*)` **mỗi thẻ** (`caseCardOf`, `attachmentCount`) — gộp thành một truy vấn theo lô qua `countAttachments()` của `platform/attachments.ts` | `server/src/cases/cases.ts` ~2380 | Khi tối ưu số truy vấn cho Turso (mạng, mỗi truy vấn một vòng đi về) |
-| Hồ sơ học viên gọi `/students/:id/violation-warning` **hai lần** (dấu ⚠ trên tab ở `StudentDetailPage` và banner trong `StudentYThucSection`) — nâng `warn` lên trang, truyền xuống | `web/src/modules/students/StudentDetailPage.tsx`, `web/src/modules/yThuc/StudentYThucSection.tsx` | Cùng lúc với tối ưu Turso |
-| Ở 375px, bảng Mock Test (`IeltsAttempts`) và bảng Học viên của lớp (`ClassRoster`) cuộn ngang **trong thẻ** (`overflow-x-auto` của chính bảng — không đẩy trang); nhãn `dự kiến dd/mm` của `JourneyTimeline` lòi 23px khỏi `main` | `StudentDetailPage.tsx`, `ClassRoster.tsx`, `JourneyTimeline.tsx` | Lỗi có sẵn từ trước PR-HV — PR-Q (Q9 Hành trình) hoặc một PR bố cục mobile riêng |
+| ✅ **Đã làm ở PR-Qb (AN-9, 23/09/2026).** Hồ sơ học viên gọi `/students/:id/violation-warning` **hai lần** (dấu ⚠ trên tab ở `StudentDetailPage` và banner trong `StudentYThucSection`) | `web/src/modules/students/StudentDetailPage.tsx`, `web/src/modules/yThuc/StudentYThucSection.tsx` | Xong — `warn` nâng lên trang, truyền xuống qua prop `canhBao` |
+| ✅ **Đã làm ở PR-Qb (AN-10, 23/09/2026).** Ở 375px, bảng Mock Test (`IeltsAttempts`) và bảng Học viên của lớp (`ClassRoster`) cuộn ngang **trong thẻ**; nhãn `dự kiến dd/mm` của `JourneyTimeline` lòi 23px khỏi `main` | `StudentDetailPage.tsx`, `ClassRoster.tsx`, `HanhTrinh.tsx` (thay `JourneyTimeline.tsx` đã xoá) | Xong — bảng thêm `min-w-[640px]` trong khung `overflow-x-auto` sẵn có; `HanhTrinh.tsx` không còn nhãn "dự kiến" tuyệt đối vị trí nào |
 
 ### 12.17. PR-Z2b (an toàn dữ liệu bản chính) thấy nhưng KHÔNG sửa — 22/09/2026
 
@@ -2845,18 +2849,21 @@ Tình trạng từng dòng: `BAN_DO_OVERHAUL.md` mục 5 và mục 8.
 - [ ] **R6. Liên kết báo cáo ↔ task thật (F06).** `meetingBoard` đang gợi ý theo "cùng nhóm +
       cùng CN" và ẩn task thứ 7. Nếu giữ gợi ý thì phải gọi `Việc cùng nhóm`, **không**
       `Việc xử lý báo cáo này`.
-- [ ] **R7. Quy ước URL cho "mở đúng đợt".** Chốt **một** tham số trên `StudentDetailPage`
-      (gợi ý `?attempt=<id>` hoặc `?focus=<attemptId>:<skill>`). Làm **trước** R8 — dựng lẻ tẻ
-      ở từng nơi gọi là sinh ra đúng kiểu hai định nghĩa một khái niệm.
-- [ ] **R8. Bốn đường vào nhập điểm** (mục 12.5): (a) badge lớp mở **lưới chấm** chứ không phải
-      hàng đợi lọc, và nút ở `ClassOverviewPage.tsx` mang `scope`; (b) nhãn MT2/MT3/Final ở
-      `ClassRoster.tsx` mở hồ sơ đúng đợt; (c) bốn ô số đầu hồ sơ HV **bấm được**
-      (`HeaderStats`/`Stat` đang là `<div>` tĩnh); (d) mốc Test trên `JourneyTimeline.tsx`
-      có `onClick`. Cộng thêm: `GET /notifications` JOIN thêm `studentId` theo `entity_type` —
-      **không đổi schema**, chỉ đổi câu SELECT.
-      *(23/09, PR-Rc1: **phần lưới xong** — một lưới chấm chung `/nhap-diem/:classId` nhận `?periodId=` `?kind=`
-      `?kn=` `?hv=`; Test › Cần chấm lọc theo lớp có chip bỏ lọc. Chưa tick: đổi đích badge lớp + nút mang `scope`
-      (a), (b)–(d) và `/notifications` thuộc PR-Qa/Qb.)*
+- [x] **R7. Quy ước URL cho "mở đúng đợt".** **Xong (PR-Qb, 23/09/2026):** một hàm dựng + một hàm
+      đọc ở `shared/domain/duongHoSo.ts` (`duongHoSoHocVien`, `docThamSoHoSo`) — tham số
+      `?dot=<attemptId>&kn=<skill>` (không phải `?attempt=`/`?focus=` như gợi ý ban đầu), mọi nơi
+      tạo link đều gọi hàm này, không còn chỗ nào tự dựng chuỗi tham số riêng.
+- [x] **R8. Bốn đường vào nhập điểm** (mục 12.5). **Xong (PR-Qb, 23/09/2026):** (a) badge lớp
+      `?scope=mine` khi Phạm vi = Lớp tôi dạy (đường badge → lưới chấm/`ClassOverviewPage` do Qa/Rc1
+      đã dựng trước đó, Qb chỉ thêm `scope`); (b) nhãn MT ở `ClassRoster.tsx` mở đúng hồ sơ đợt qua
+      `duongHoSoHocVien`; (c) bốn ô số đầu hồ sơ HV bấm được (`Stat` nhận `onClick`, vẽ `<button>`);
+      (d) ghim Đợt Test trên trục Hành trình (`HanhTrinh.tsx`, thay `JourneyTimeline.tsx` đã xoá) có
+      `onClick` điều hướng `?dot=`. Cộng thêm: `GET /notifications` JOIN `student_id`/`attempt_id`
+      theo `entity_type` (`server/src/platform/thongBao.ts`, không đổi schema) + `Header.tsx` dùng
+      `duongThongBao` để điều hướng đúng loại.
+      *(23/09, PR-Rc1 đã làm trước phần lưới: một lưới chấm chung `/nhap-diem/:classId` nhận `?periodId=`
+      `?kind=` `?kn=` `?hv=`; Test › Cần chấm lọc theo lớp có chip bỏ lọc — đây chính là "lưới chấm" mà nút
+      `&scope=mine` của Qb trỏ tới.)*
 - [ ] **R9. Kế hoạch Test — panel mới** năm phần: `Lớp và học viên → Lượt Test và lịch hiện tại →
       Lịch mới → Kiểm tra thay đổi → Lưu`. Bỏ bố cục `một tuần chung + bốn checkbox + dãy MT1–MT7`
       làm đường thao tác mặc định; dãy lượt vào phần lịch sử thu gọn.

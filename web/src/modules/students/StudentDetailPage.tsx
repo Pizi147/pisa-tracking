@@ -483,7 +483,7 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen }: {
 }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+      <table className="w-full text-sm min-w-[640px]">
         <thead>
           <tr>
             <Th hint="Số thứ tự lượt Mock Test trong lộ trình này.">MT</Th>
@@ -541,7 +541,7 @@ function RatioAttempts({ attempts, dotId, homNay, onOpen }: {
 }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+      <table className="w-full text-sm min-w-[640px]">
         <thead>
           <tr>
             <Th hint="Giữa khoá hay Cuối khoá của khoá học.">Bài</Th>

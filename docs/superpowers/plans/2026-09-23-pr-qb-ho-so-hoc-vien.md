@@ -455,3 +455,10 @@ Commit `PR-Qb (8): 375px hồ sơ học viên, bảng định vị, CODE_MAP, đ
   `routes/index.ts`, không phải tự dựng giá trị dự phòng như kế hoạch tính trước cho trường hợp Rc1 chưa merge);
   `Header.tsx` thông báo điều hướng bằng `duongThongBao` (bỏ khối chú thích cũ về SOS/mock_attempt). `npm run
   check` xanh, **879 = 876 + 3** (đủ ≥3). Commit `PR-Qb (7)`.
+- **Task 8:** AN-10: `IeltsAttempts`/`RatioAttempts` thêm `min-w-[640px]` cho `<table>` trong khung `overflow-x-auto`
+  sẵn có. Tài liệu: spec §4 thêm dòng "Hồ sơ HV mở đúng đợt"; `CODE_MAP.md` ba dòng `JourneyTimeline` →
+  `HanhTrinh.tsx`/`NganCase.tsx`/`hanhTrinh.ts`; `plan.md` tick R7/R8 (a–d + notifications), đánh dấu ✅ hai dòng
+  AN-9/AN-10 ở mục 12.18, ghi chú mục 12.5 đã xong (giữ bảng khảo sát cũ để đọc lịch sử); kiểm kê
+  `2026-09-22-kiem-ke-truoc-deploy.md` đổi Q9/R7/R8/AN-9/AN-10 từ ❌ sang ✅ kèm "PR-Qb". `npm run check` xanh,
+  **879** (không đổi số phép kiểm — Task này chỉ có một dòng CSS + tài liệu, không thêm luật mới). Commit
+  `PR-Qb (8)`.

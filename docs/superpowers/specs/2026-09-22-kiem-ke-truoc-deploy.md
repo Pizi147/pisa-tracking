@@ -37,7 +37,7 @@ Ký hiệu: ✅ đã có · 🟡 một phần · ❌ chưa có · ⚰️ hết h
 | Q5 | Tab Giáo viên dùng chung form Phân công | §22.7 | 🟡 | Đã dùng chung `TeacherAssignDialog` (`ClassOverviewPage.tsx:12, 265`); chỉ cần đưa vào tab | Q-a | S | Q4 |
 | Q6 | Ô `Chọn giáo viên` trong dropdown `Người phụ trách` (lọc ở máy chủ) | §22.7 · 12.11 | ❌ | `WorkList.tsx:111-115` chỉ có mine/managed; `PeoplePicker` chưa màn nào dùng | R-a (cùng file WorkList) | M | – |
 | Q7/Q8 | Bốn ô hồ sơ HV · khối PA 3 phần | §22.7 | ✅ | PR-HV: `StudentDetailPage.tsx:181-198`, `SkillBoard.tsx` | – | – | – |
-| Q9 | Hành trình: chọn Toàn bộ / kỹ năng / (Ý thức?), mặc định 6–8 tuần, thanh chặng, `Mốc học tập` | §22.7 · §8.2 · §18.7 | ❌ | `StudentDetailPage.tsx:294` vẫn "Các mốc đã qua"; `JourneyTimeline.tsx` không có bộ lọc | Q-b | M | câu hỏi 4.12 |
+| Q9 | Hành trình: chọn Toàn bộ / kỹ năng / (Ý thức?), mặc định 6–8 tuần, thanh chặng, `Mốc học tập` | §22.7 · §8.2 · §18.7 | ✅ | **PR-Qb (23/09):** `HanhTrinh.tsx` — chip kỹ năng + khoảng "3 tháng gần nhất/Cả giai đoạn" (không phải 6–8 tuần cố định, spec §3.8 thắng); không có Ý thức (câu hỏi 4.12 chốt (b)); mục "Mốc học tập" thay "Các mốc đã qua" | Q-b | – | câu hỏi 4.12 |
 | Q10 | Đầu hồ sơ lớp: tóm tắt GVBM, bài chờ chấm, case mở/thiếu PA; "2 vấn đề nổi bật" trên bảng HV; chế độ Điểm / Cần hỗ trợ | design §8.3 | ❌ | không tìm thấy — **Q4 chỉ dựng khung tab** | Q-a | M | Q4 |
 | Q11 | Nút `Nhập điểm` trên hàng lớp của danh sách | design §18.5 | ❌ | không tìm thấy (R8a chỉ một phần) | Q-a | S | – |
 | Q12 | Bỏ cặp nút phạm vi `Tôi / Tất cả`, thay bằng dropdown `Người phụ trách` | §3 20/09 · design §22.7 | 🟡 | `StudentsPage.tsx:171-181` còn 2 nút (chỉ đổi chữ) | Q-a | S | – |
@@ -80,8 +80,8 @@ Ký hiệu: ✅ đã có · 🟡 một phần · ❌ chưa có · ⚰️ hết h
 | R4 | Báo cáo đơn vị đảo thứ tự, bảng hiện ngay màn đầu | §22.8 · WORK-02 | ❌ | `ManagerTaskList` đứng trước ma trận (`MeetingPage.tsx:110-113`) | R-a | S | R1 |
 | R5 | `Nháp / Đã nộp / Chưa báo cáo`; lưu nháp cả tuần; chỉ khoá nút Nộp | §22.8 · D04 | ❌ | `unit_reports.status` không có nháp (`schema.sql:1206-1217`); `editWindow` khoá cả form (`MeetingPage.tsx:125`) | R-a | L | migrate |
 | R6 | Liên kết báo cáo ↔ task thật (F06, WORK-03) | §22.8 | ❌ | `meeting.ts:103-111` gợi ý cùng nhóm + CN, `LIMIT 6` | R-a | S–M | – |
-| R7 | Một quy ước URL "mở đúng đợt" | §22.8 · 12.5 · DS05 | ❌ | StudentDetailPage chỉ đọc `lo-trinh`, `tab` | Q-b | S | câu hỏi 4.3 |
-| R8 | Bốn đường vào nhập điểm + `GET /notifications` JOIN `studentId` | §22.8 · 12.5 | ❌ | (a) nút lớp không mang `scope` (`ClassOverviewPage.tsx:156-161`), badge mở hàng đợi (`StudentsPage.tsx:374`); (b) nhãn MT mở `/mock-test/:id` (`ClassRoster.tsx:191`); (c) `Stat` là div tĩnh (`StudentDetailPage.tsx:409-423`); (d) mốc Test không onClick; notifications `SELECT *` (`routes/index.ts:1450`) | Q-b | M | R7 |
+| R7 | Một quy ước URL "mở đúng đợt" | §22.8 · 12.5 · DS05 | ✅ | **PR-Qb (23/09):** `shared/domain/duongHoSo.ts` (`duongHoSoHocVien`, `docThamSoHoSo`) — `?dot=&kn=`, `StudentDetailPage.tsx` đọc qua đó, không còn đọc lẻ `lo-trinh`/`tab` | Q-b | – | câu hỏi 4.3 |
+| R8 | Bốn đường vào nhập điểm + `GET /notifications` JOIN `studentId` | §22.8 · 12.5 | ✅ | **PR-Qb (23/09):** (a) badge lớp mang `&scope=mine` (`StudentsPage.tsx`); (b) nhãn MT ở `ClassRoster.tsx` mở `duongHoSoHocVien(s.id,{dot})`; (c) `Stat` nhận `onClick`, vẽ `<button>` (`StudentDetailPage.tsx`); (d) ghim Đợt Test ở `HanhTrinh.tsx` có `onClick`; `server/src/platform/thongBao.ts` JOIN `student_id`/`attempt_id` theo `entity_type`, `Header.tsx` dùng `duongThongBao` | Q-b | – | R7 |
 | R9 | Panel Kế hoạch Test mới 5 phần; hai hàng RLW / Speaking; tách cấu hình kỹ năng bắt buộc khỏi sửa lịch | §22.8 · 12.6 | ❌ | `MockPlanPanel.tsx:101` bulk-plan, checkbox `:154`, dãy MT1–MT7 `:271` | R-c | L | – |
 | R9b | Tiêu đề `Kế hoạch Mock Test` khi chỉ có FT; lưu một phần thì giữ hàng lỗi để sửa | design §18.8, §9 | ❌ | `MockPlanPanel.tsx:120` | R-c | S | R9 |
 | R10 | Ô đã có lịch mở modal sửa (tuần cũ → mới) | §22.8 | ❌ | `SkillWeekModal` chỉ ở `MockDetailPage.tsx:583` | R-c | M | R9 |
@@ -175,8 +175,8 @@ Ký hiệu: ✅ đã có · 🟡 một phần · ❌ chưa có · ⚰️ hết h
 | AN-6 | `/auth/register` mở cho mọi người | 12.16 | 🟡 | `routes/index.ts:1578`; tài khoản cần duyệt (`accounts.ts:149, 206`) | PR-AN | S | câu hỏi 4.11 |
 | AN-7 | Màn đăng nhập bản chính không hiện "máy chủ chưa chạy" (suy từ `/demo/accounts`) | 12.16 · 12.17 | ❌ | `WelcomePage.tsx:89-93` | PR-AN | S | – |
 | AN-8 | Thẻ case đếm bằng chứng mỗi thẻ một truy vấn (N+1) | 12.18 | ❌ | `server/src/cases/cases.ts` ~2380 | PR-AN (tối ưu Turso) hoặc Z2c Step 6 | S | – |
-| AN-9 | Hồ sơ HV gọi `/violation-warning` 2 lần | 12.18 | ❌ | `StudentDetailPage.tsx`, `StudentYThucSection.tsx` | Q-b | S | – |
-| AN-10 | 375px: bảng Mock Test và bảng HV lớp cuộn ngang trong thẻ; nhãn `dự kiến dd/mm` lòi 23px | 12.18 | ❌ | `StudentDetailPage.tsx`, `ClassRoster.tsx`, `JourneyTimeline.tsx` | Q-b | S | – |
+| AN-9 | Hồ sơ HV gọi `/violation-warning` 2 lần | 12.18 | ✅ | **PR-Qb (23/09):** `StudentYThucSection.tsx` nhận prop `canhBao` từ `StudentDetailPage.tsx`, không tự gọi lại | Q-b | – | – |
+| AN-10 | 375px: bảng Mock Test và bảng HV lớp cuộn ngang trong thẻ; nhãn `dự kiến dd/mm` lòi 23px | 12.18 | ✅ | **PR-Qb (23/09):** bảng lượt thêm `min-w-[640px]` trong `overflow-x-auto`; `HanhTrinh.tsx` (thay `JourneyTimeline.tsx`) không còn nhãn "dự kiến" tuyệt đối vị trí | Q-b | – | – |
 | AN-11 | Build cần mạng (thư viện Linux); bản gói ghi `nodejs24.x` dù toml ghi Node 22 | 12.15 | 🟡 ghi nhận | – | Z2c (ghi vào TRIEN_KHAI) | S | – |
 | AN-12 | Netlify Blobs nhất quán sau cùng; đường tải kho tệp thật của `sao-luu` chưa chạy | 12.16 · 12.17 | ❓ | – | Z2c Task 10 | S | – |
 | AN-13 | Phép kiểm cũ: `db().name` luôn `""`; tên máy giả `*.turso.io` → `.invalid` | 12.17 | ❌ | – | S-luật | S | – |

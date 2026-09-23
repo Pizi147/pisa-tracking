@@ -191,6 +191,7 @@ Quyền phải khớp giữa menu, máy chủ và việc đỏ.
 | Hồ sơ GV | tên GV ở Hồ sơ lớp · Phân tích › Theo giáo viên (tên chỉ thành link khi PR-GV bật `CO_TRANG_HO_SO_GIAO_VIEN`) | QL trong phạm vi · GV (chính mình) |
 | Ghi nhận vi phạm | ⋯ dòng HV · tab Ý thức & Phối hợp của lớp và của HV | GV |
 | Báo cáo đơn vị | Công việc › Báo cáo đơn vị | QL |
+| Hồ sơ HV mở đúng đợt (?dot=&kn=) | nhãn MT ở tab Học viên của Hồ sơ lớp · ghim Đợt Test ở Hành trình · ô Kết quả Test gần nhất · thông báo | trong phạm vi |
 
 ## 5. Quyết định còn lại (22/09)
 
