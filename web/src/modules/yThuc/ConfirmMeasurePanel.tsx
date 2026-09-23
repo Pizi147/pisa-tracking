@@ -2,14 +2,13 @@ import { useEffect, useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Modal } from '../../ui/Drawer.tsx';
-import { Field } from '../../ui/ui.tsx';
+import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import {
-  MEASURE_REQUIRED_FIELDS, measureMissing, nguoiThanhPayloadYThuc, nguoiThieu, type MeasureKind, type NguoiChon,
+  MEASURE_REQUIRED_FIELDS, measureMissing, ngay, nguoiThanhPayloadYThuc, nguoiThieu, type MeasureKind, type NguoiChon,
 } from '@shared/domain/index.ts';
-import { fmtDate } from '../../lib/format.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 
 type MeasureDetail = {
@@ -20,9 +19,9 @@ type MeasureDetail = {
 };
 
 /**
- * PANEL `XÁC NHẬN ĐÃ THỰC HIỆN` (Y_THUC §7.5, giữ nguyên theo plan.md K1). Ô bắt buộc đổi theo loại biện
- * pháp (§5.4) — dùng ĐÚNG `measureMissing` mà máy chủ dùng để từ chối, nên nút mờ và câu từ chối không
- * bao giờ nói hai điều khác nhau (B13). Không hỏi tiến bộ, không mức kết quả (B15).
+ * PANEL `XÁC NHẬN ĐÃ THỰC HIỆN` (Y_THUC §7.5; PR-UX3 — cùng vỏ `KhungPanel`). Ô bắt buộc đổi theo loại PA (§5.4) — dùng ĐÚNG
+ * `measureMissing` mà máy chủ dùng để từ chối, nên câu ở chân và câu từ chối của máy chủ không bao giờ nói hai điều khác nhau (B13).
+ * Không hỏi tiến bộ, không mức kết quả (B15). Lỗi chỉ hiện SAU khi bấm nút chính.
  */
 export function ConfirmMeasurePanel({ open, onClose, measureId, onDone }: {
   open: boolean; onClose: () => void; measureId: number | null; onDone?: () => void;
@@ -34,14 +33,16 @@ export function ConfirmMeasurePanel({ open, onClose, measureId, onDone }: {
   const [nguoi, setNguoi] = useState<NguoiChon | null>({ kieu: 'toi' });
   const [note, setNote] = useState('');
   const [participants, setParticipants] = useState('');
+  const [daBam, setDaBam] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!open) return;
-    setPerformedOn(today); setNguoi({ kieu: 'toi' }); setNote(''); setParticipants('');
+    setPerformedOn(today); setNguoi({ kieu: 'toi' }); setNote(''); setParticipants(''); setDaBam(false);
   }, [open, measureId]);
 
-  if (!data) return open ? <Modal open onClose={onClose} title="Xác nhận đã thực hiện"><p>Đang tải…</p></Modal> : null;
+  if (!open) return null;
+  if (!data) return <KhungPanel tieuDe="Xác nhận đã thực hiện" onDong={onClose}><p className="mt-3 text-sm text-slate-400">Đang tải…</p></KhungPanel>;
 
   const spec = MEASURE_REQUIRED_FIELDS[data.kind as MeasureKind];
   const missing = measureMissing(data.kind as MeasureKind, {
@@ -50,7 +51,8 @@ export function ConfirmMeasurePanel({ open, onClose, measureId, onDone }: {
   });
 
   const submit = async () => {
-    if (!measureId) return;
+    setDaBam(true);
+    if (missing || !measureId) return;
     setBusy(true);
     try {
       await api.post(`/measures/${measureId}/confirm`, {
@@ -64,51 +66,40 @@ export function ConfirmMeasurePanel({ open, onClose, measureId, onDone }: {
   };
 
   return (
-    <Modal open={open} onClose={onClose}
-      title={`Xác nhận đã thực hiện · ${data.kindLabel} · ${data.studentName}`}
-      footer={
-        <>
-          <button className="btn" onClick={onClose}>Huỷ</button>
-          <button className="btn btn-primary" disabled={busy || !!missing} title={missing ?? undefined} onClick={submit}>
-            Xác nhận đã thực hiện
-          </button>
-        </>
-      }>
-      <div className="space-y-3">
-        {data.ownerName && <p className="text-xs text-slate-500 m-0">Phụ trách: {data.ownerName}</p>}
-
-        <Field label="Ngày thực hiện" required>
-          <input type="date" className="field" value={performedOn} max={today}
-            onChange={(e) => setPerformedOn(e.target.value)} />
-        </Field>
-
-        <Field label="Người thực hiện">
-          <ChonNguoi nhom="nhan_vien" value={nguoi} onChange={setNguoi} />
-        </Field>
-
+    <KhungPanel tieuDe="Xác nhận đã thực hiện" hocVien={data.studentName} onDong={onClose}
+      ngCanh={<span className="truncate">{data.kindLabel}{data.ownerName ? ` · phụ trách ${data.ownerName}` : ''}</span>}
+      chan={{
+        conThieu: daBam && missing ? [missing.replace(/^Cần /, '').replace(/^./, (c) => c.toUpperCase())] : undefined,
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={submit}>Xác nhận</button>,
+      }}>
+      <Khoi tieuDe="Đã thực hiện">
+        <Hang2>
+          <Truong nhan="Ngày thực hiện" batBuoc>
+            <ChonNgayGan value={performedOn} onChange={setPerformedOn} soNgay={30} />
+          </Truong>
+          <Truong nhan="Người thực hiện" as="div">
+            <ChonNguoi nhom="nhan_vien" value={nguoi} onChange={setNguoi} />
+          </Truong>
+        </Hang2>
         {spec?.participants === 'optional' && (
-          <Field label="Người tham gia" hint="Dùng cho CX / GĐCN meeting với HS / PH.">
-            <input className="field" value={participants} onChange={(e) => setParticipants(e.target.value)} />
-          </Field>
+          <Truong nhan="Người tham gia" tuyChon phu="Dùng cho CX / GĐCN meeting với HV / PH">
+            <input className="field w-full" value={participants} onChange={(e) => setParticipants(e.target.value)} />
+          </Truong>
         )}
+        <Truong nhan="Lý do / nội dung" batBuoc>
+          <textarea className="field w-full" rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
+        </Truong>
+      </Khoi>
 
-        <Field label="Lý do / nội dung" required>
-          <textarea className="field" rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
-        </Field>
+      <Khoi tieuDe={spec?.attachment === 'required' ? 'Tệp hoặc liên kết · bắt buộc' : 'Tệp hoặc liên kết · không bắt buộc'}>
+        <BangChung ownerType="discipline_measure" ownerId={data.id} canEdit={data.canManage} tieuDe="" onChanged={reload} />
+      </Khoi>
 
-        <Field label={spec?.attachment === 'required' ? 'Tệp hoặc liên kết' : 'Tệp hoặc liên kết (tuỳ chọn)'}
-          required={spec?.attachment === 'required'} as="div">
-          <BangChung ownerType="discipline_measure" ownerId={data.id} canEdit={data.canManage} tieuDe="" onChanged={reload} />
-        </Field>
-
-        <Field label={`${data.violations.length} vi phạm được xử lý bằng phương án này`} as="div">
-          <p className="text-xs text-slate-400 m-0">
-            {data.violations.map((v) => `${fmtDate(v.occurredOn)} ${v.categoryLabel}`).join(' · ')}
-          </p>
-        </Field>
-
-        {missing && <p className="text-xs text-amber-200/90 m-0">{missing}</p>}
-      </div>
-    </Modal>
+      <Khoi tieuDe={`Vi phạm được xử lý · ${data.violations.length}`}>
+        <p className="m-0 text-xs text-slate-400">
+          {data.violations.map((v) => `${ngay(v.occurredOn, today)} ${v.categoryLabel}`).join(' · ')}
+        </p>
+      </Khoi>
+    </KhungPanel>
   );
 }

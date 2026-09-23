@@ -3,15 +3,16 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-import { Modal } from '../../ui/Drawer.tsx';
-import { Field } from '../../ui/ui.tsx';
+import { ConfirmDialog } from '../../ui/Drawer.tsx';
+import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { Nhan } from '../../ui/Nhan.tsx';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import {
-  MEASURE_KINDS, MEASURE_KIND_LABEL, chiaThemViPham, thanPatchPhuongAn, type MeasureKind, type NguoiChon,
+  MEASURE_KINDS, MEASURE_KIND_LABEL, chiaThemViPham, ngay, thanPatchPhuongAn, type MeasureKind, type NguoiChon,
   type PatchPhuongAnGoc, type ViolationState,
 } from '@shared/domain/index.ts';
-import { fmtDate } from '../../lib/format.ts';
 import { ChiTietViPham } from './ChiTietViPham.tsx';
 
 type KindRow = { kind: MeasureKind; label: string; available: boolean; reason: string | null };
@@ -24,9 +25,12 @@ type MeasureDetail = {
 };
 
 /**
- * PANEL `PHƯƠNG ÁN XỬ LÝ` ĐANG CHUẨN BỊ (YT-2, YT-3, mockup 09c khối phải) — sửa loại/phụ trách/nội dung/danh sách vi
- * phạm TẠI CHỖ, một lần Lưu (Q1/Q2). Sửa một vi phạm bên trong: đóng panel này → mở form Sửa → xong quay lại đúng đây
- * (Q3, xử lý ở `usePanelYThuc`). Danh sách vi phạm có thay đổi CHƯA LƯU thì khoá Sửa/Xoá của từng vi phạm.
+ * PANEL `PHƯƠNG ÁN XỬ LÝ` ĐANG CHUẨN BỊ (YT-2, YT-3; PR-UX3 mockup 15 §7) — sửa loại/người thực hiện/nội dung/danh sách vi phạm TẠI
+ * CHỖ, một lần Lưu. Sửa một vi phạm bên trong: đóng panel này → mở form Sửa → xong quay lại đúng đây (`usePanelYThuc`).
+ * Danh sách vi phạm có thay đổi CHƯA LƯU thì khoá Sửa/Xoá của từng vi phạm.
+ *
+ * Chân: trái `Xoá PA` (viền đỏ, hỏi lại bằng `ConfirmDialog`) · phụ `Lưu` · chính `Đã thực hiện` (→ `ConfirmMeasurePanel`).
+ * "Thêm vi phạm chưa xử lý" và "Đã xử lý ở PA khác" THU GỌN — mặc định chỉ hiện các vi phạm đang thuộc PA này.
  */
 export function PhuongAnPanel({ measureId, onClose, onDone, onXacNhan, onSuaViPham, onMoPhuongAnKhac }: {
   measureId: number;
@@ -39,6 +43,7 @@ export function PhuongAnPanel({ measureId, onClose, onDone, onXacNhan, onSuaViPh
 }) {
   const toast = useToast();
   const { session } = useSession();
+  const { homNay } = useNgayNghiepVu();
   const { data: d, reload } = useApi<MeasureDetail>(`/measures/${measureId}`, [measureId]);
   const kinds = useApi<{ rows: KindRow[] }>(d ? `/students/${d.studentId}/measure-kinds?excludeMeasureId=${measureId}` : null, [d?.studentId, measureId]);
   const allV = useApi<{ rows: ViolationRow[] }>(d ? `/students/${d.studentId}/violations` : null, [d?.studentId]);
@@ -46,10 +51,11 @@ export function PhuongAnPanel({ measureId, onClose, onDone, onXacNhan, onSuaViPh
   const [kind, setKind] = useState<string>('talk_short');
   const [customName, setCustomName] = useState('');
   const [note, setNote] = useState('');
-  /* null = "không đổi" (Q1/Q2) — giữ nguyên phụ trách hiện có, không phải "bỏ trống". */
+  /* Giá trị ban đầu = người phụ trách hiện có (không còn "Không đổi · hiện: …"); đổi = khác giá trị ban đầu. */
   const [owner, setOwner] = useState<NguoiChon | null>(null);
   const [picked, setPicked] = useState<Set<number>>(new Set());
   const [initedFor, setInitedFor] = useState<number | null>(null);
+  const [moThem, setMoThem] = useState(false);
   const [xemDaXuLy, setXemDaXuLy] = useState(false);
   const [moChiTiet, setMoChiTiet] = useState<number | null>(null);
   const [hoiXoa, setHoiXoa] = useState(false);
@@ -57,21 +63,25 @@ export function PhuongAnPanel({ measureId, onClose, onDone, onXacNhan, onSuaViPh
 
   useEffect(() => {
     if (d && initedFor !== measureId) {
-      setKind(d.kind); setCustomName(d.customName ?? ''); setNote(d.note ?? ''); setOwner(null);
+      setKind(d.kind); setCustomName(d.customName ?? ''); setNote(d.note ?? '');
+      setOwner(d.ownerUserId ? { kieu: 'tai_khoan', id: d.ownerUserId, ten: d.ownerName ?? `#${d.ownerUserId}` } : null);
       setPicked(new Set(d.violations.map((v) => v.id)));
-      setXemDaXuLy(false); setMoChiTiet(null); setHoiXoa(false);
+      setMoThem(false); setXemDaXuLy(false); setMoChiTiet(null); setHoiXoa(false);
       setInitedFor(measureId);
     }
   }, [d, measureId, initedFor]);
 
-  if (!d) return <Modal open onClose={onClose} title="Phương án xử lý"><p>Đang tải…</p></Modal>;
+  /* Chờ nạp xong giá trị đầu (đặc biệt là người phụ trách) rồi mới vẽ form: `ChonNguoi` quyết chế độ hiện tên/ô gõ ngay lúc gắn vào. */
+  if (!d || initedFor !== measureId) {
+    return <KhungPanel tieuDe="Phương án xử lý" onDong={onClose}><p className="mt-3 text-sm text-slate-400">Đang tải…</p></KhungPanel>;
+  }
 
   const byId = new Map((allV.data?.rows ?? []).map((v) => [v.id, v]));
   const list = [...picked].map((id) => byId.get(id)).filter((v): v is ViolationRow => !!v)
     .sort((a, b) => b.occurredOn.localeCompare(a.occurredOn) || b.id - a.id);
   /*
    * Bỏ tích một vi phạm ĐANG thuộc PA này (nằm trong `d.violations` gốc) thì coi là "chưa xử lý" cho mục "Thêm vi phạm" —
-   * lưu xong nó sẽ thật sự rời PA và về lại tập chưa xử lý; xếp nó vào "Xem thêm … (đã xử lý)" theo `state` máy chủ
+   * lưu xong nó sẽ thật sự rời PA và về lại tập chưa xử lý; xếp nó vào "đã xử lý ở PA khác" theo `state` máy chủ
    * (vẫn 'preparing' vì CHƯA lưu) là sai chỗ.
    */
   const gocIds = new Set(d.violations.map((v) => v.id));
@@ -83,7 +93,9 @@ export function PhuongAnPanel({ measureId, onClose, onDone, onXacNhan, onSuaViPh
     kind: d.kind, customName: d.customName ?? null, note: d.note ?? null, ownerUserId: d.ownerUserId ?? null,
     violationIds: d.violations.map((v) => v.id),
   };
-  const ownerUserId = owner === null ? undefined : owner.kieu === 'toi' ? session?.user?.id : owner.kieu === 'tai_khoan' ? owner.id : undefined;
+  /* Chỉ gửi người phụ trách khi ĐỔI so với người hiện có. */
+  const ownerMoi = owner === null ? undefined : owner.kieu === 'toi' ? session?.user?.id : owner.kieu === 'tai_khoan' ? owner.id : undefined;
+  const ownerUserId = ownerMoi !== undefined && ownerMoi !== d.ownerUserId ? ownerMoi : undefined;
   const patch = thanPatchPhuongAn(goc, {
     kind, customName: kind === 'other' ? (customName.trim() || null) : null, note: note.trim() || null,
     ownerUserId, violationIds: [...picked],
@@ -137,129 +149,136 @@ export function PhuongAnPanel({ measureId, onClose, onDone, onXacNhan, onSuaViPh
     finally { setBusy(false); }
   };
 
-  const rong = (v: ViolationRow) => `${v.description.slice(0, 60)}${v.description.length > 60 ? '…' : ''}`;
+  /* Mô tả một dòng, cắt "…" (tooltip là bản đủ); dòng 2 mờ: `10/09 · Thái độ / hành vi`. */
+  const cat = (v: ViolationRow) => `${ngay(v.occurredOn, homNay)} · ${v.categoryLabel}`;
 
   return (
-    <Modal open onClose={onClose} width="max-w-xl"
-      title={<>Phương án xử lý <span className="text-xs font-normal text-amber-200/90">Đang chuẩn bị</span></>}
-      footer={hoiXoa ? (
-        <>
-          <span className="text-sm text-amber-200/90 mr-auto">Xoá phương án này? Vi phạm quay về Chưa xử lý.</span>
-          <button className="btn" disabled={busy} onClick={() => setHoiXoa(false)}>Huỷ</button>
-          <button className="btn text-rose-200" disabled={busy} onClick={xoaPhuongAn}>Xoá</button>
-        </>
-      ) : (
-        <>
-          <button className="btn btn-ghost text-rose-200 mr-auto" onClick={() => setHoiXoa(true)}>Xoá</button>
-          <button className="btn" onClick={onClose}>Đóng</button>
-          <button className="btn" disabled={busy || !patch} title={!patch ? 'Chưa có gì thay đổi' : undefined} onClick={luu}>Lưu</button>
-          <button className="btn btn-primary" disabled={busy} onClick={xacNhan}>Xác nhận đã thực hiện →</button>
-        </>
-      )}>
-      <div className="space-y-3">
-        <p className="text-xs text-slate-500 m-0">{d.studentName} · tạo {fmtDate(d.createdAt)}</p>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <Field label="Loại">
-            <select className="field" value={kind} onChange={(e) => setKind(e.target.value)}>
+    <KhungPanel tieuDe="Phương án xử lý" hocVien={d.studentName} onDong={onClose}
+      ngCanh={(
+        <span className="flex items-center gap-1.5">
+          <Nhan tone="doing">Đang chuẩn bị</Nhan>
+          <span className="truncate text-slate-400">tạo {ngay(d.createdAt, homNay)}{d.ownerName ? ` · ${d.ownerName}` : ''}</span>
+        </span>
+      )}
+      chan={{
+        huy: { nhan: 'Đóng', onClick: onClose },
+        xoa: { nhan: 'Xoá PA', onClick: () => setHoiXoa(true) },
+        phu: (
+          <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy || !patch} title={!patch ? 'Chưa có gì thay đổi' : undefined} onClick={luu}>Lưu</button>
+        ),
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={xacNhan}>Đã thực hiện</button>,
+      }}>
+      <Khoi tieuDe="Phương án">
+        <Hang2>
+          <Truong nhan="Loại" batBuoc>
+            <select className="field w-full" value={kind} onChange={(e) => setKind(e.target.value)}>
               {MEASURE_KINDS.map((k) => (
-                <option key={k} value={k} disabled={isLocked(k) && k !== d.kind}>
-                  {MEASURE_KIND_LABEL[k]}{isLocked(k) && k !== d.kind ? ` — khoá: ${lockReason(k)}` : ''}
+                <option key={k} value={k} disabled={isLocked(k) && k !== d.kind} title={isLocked(k) && k !== d.kind ? lockReason(k) ?? undefined : undefined}>
+                  {MEASURE_KIND_LABEL[k]}
                 </option>
               ))}
             </select>
-          </Field>
-          <Field label="Phụ trách">
-            <ChonNguoi nhom="nhan_vien" choNgoai={false} value={owner} onChange={setOwner} khongDoi={d.ownerName ?? 'chưa có'} />
-          </Field>
-        </div>
-
+          </Truong>
+          <Truong nhan="Phụ trách" as="div">
+            <ChonNguoi nhom="nhan_vien" choNgoai={false} value={owner} onChange={setOwner} />
+          </Truong>
+        </Hang2>
         {kind === 'other' && (
-          <Field label="Tên phương án" required>
-            <input className="field" value={customName} onChange={(e) => setCustomName(e.target.value)} />
-          </Field>
+          <Truong nhan="Tên phương án" batBuoc>
+            <input className="field w-full" value={customName} onChange={(e) => setCustomName(e.target.value)} />
+          </Truong>
         )}
+        <Truong nhan="Nội dung" tuyChon>
+          <textarea className="field w-full" rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
+        </Truong>
+      </Khoi>
 
-        <Field label="Nội dung">
-          <textarea className="field" rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
-        </Field>
-
-        <Field label={`Vi phạm · ${list.length}`} as="div">
-          <ul className="list-none p-0 m-0 space-y-1">
-            {list.map((v) => (
-              <li key={v.id}>
-                <div className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" checked disabled={picked.size === 1}
-                    title={picked.size === 1 ? 'Phương án cần ít nhất một vi phạm — không cần nữa thì Xoá phương án' : undefined}
-                    onChange={() => toggle(v.id)} />
-                  <span className="text-slate-500 text-xs tabular-nums">{fmtDate(v.occurredOn)}</span>
-                  <button type="button" className="flex-1 min-w-0 text-left text-slate-200 hover:underline"
-                    onClick={() => setMoChiTiet((cur) => (cur === v.id ? null : v.id))}>
-                    {rong(v)}
-                  </button>
-                  <span className="text-[11px] text-slate-500 shrink-0">{v.categoryLabel}</span>
+      <Khoi tieuDe={`Vi phạm được xử lý · ${list.length}`}>
+        <ul className="m-0 list-none space-y-2 p-0">
+          {list.map((v) => (
+            <li key={v.id}>
+              <div className="flex items-start gap-2">
+                <input type="checkbox" className="mt-1" checked disabled={picked.size === 1}
+                  title={picked.size === 1 ? 'PA cần ít nhất một vi phạm. Không cần nữa thì Xoá PA' : undefined}
+                  onChange={() => toggle(v.id)} />
+                <button type="button" className="min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 text-left"
+                  onClick={() => setMoChiTiet((cur) => (cur === v.id ? null : v.id))}>
+                  <span className="block truncate text-sm text-slate-200 hover:underline" title={v.description}>{v.description}</span>
+                  <span className="block text-[11px] text-slate-500">{cat(v)}</span>
+                </button>
+              </div>
+              {moChiTiet === v.id && (
+                <div className="ml-6 mt-1.5 border-l pl-3" style={{ borderColor: 'var(--line)' }}>
+                  <ChiTietViPham violationId={v.id} canManage={d.canManage} boQuaPhuongAnId={measureId} choSua={choSua} choXoa={choXoa}
+                    onSua={(vv) => onSuaViPham({ ...vv }, measureId)}
+                    onDaXoa={() => {
+                      setPicked((s) => { const n = new Set(s); n.delete(v.id); return n; });
+                      setMoChiTiet(null);
+                      reload();
+                    }}
+                    onMoPhuongAn={onMoPhuongAnKhac} />
                 </div>
-                {moChiTiet === v.id && (
-                  <div className="mt-1.5 ml-6 border-l pl-3" style={{ borderColor: 'var(--line)' }}>
-                    <ChiTietViPham violationId={v.id} canManage={d.canManage} boQuaPhuongAnId={measureId} choSua={choSua} choXoa={choXoa}
-                      onSua={(vv) => onSuaViPham({ ...vv }, measureId)}
-                      onDaXoa={() => {
-                        setPicked((s) => { const n = new Set(s); n.delete(v.id); return n; });
-                        setMoChiTiet(null);
-                        reload();
-                      }}
-                      onMoPhuongAn={onMoPhuongAnKhac} />
-                  </div>
-                )}
-              </li>
-            ))}
-          </ul>
-        </Field>
-
-        <Field label="Thêm vi phạm" as="div">
-          {them.chuaXuLy.length === 0 && them.daXuLy.length === 0 ? (
-            <p className="text-xs text-slate-500 m-0">Không còn vi phạm nào khác của em này.</p>
-          ) : (
-            <ul className="list-none p-0 m-0 space-y-1">
-              {them.chuaXuLy.map((v) => (
-                <li key={v.id} className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" checked={false} onChange={() => toggle(v.id)} />
-                  <span className="text-slate-500 text-xs tabular-nums">{fmtDate(v.occurredOn)}</span>
-                  <span className="flex-1 min-w-0 text-slate-300">{rong(v)}</span>
-                  <span className="text-[11px] text-slate-500 shrink-0">{v.categoryLabel}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-          {them.daXuLy.length > 0 && (
-            <div className="mt-1.5">
-              <button type="button" className="text-xs text-sky-300 hover:underline" aria-expanded={xemDaXuLy}
-                onClick={() => setXemDaXuLy((v) => !v)}>
-                Xem thêm {them.daXuLy.length} vi phạm (đã xử lý) ▾
-              </button>
-              {xemDaXuLy && (
-                <ul className="list-none p-0 m-0 mt-1 space-y-1">
-                  {them.daXuLy.map((v) => (
-                    <li key={v.id} className="flex items-center gap-2 text-sm">
-                      <input type="checkbox" checked={false} onChange={() => toggle(v.id)} />
-                      <span className="text-slate-500 text-xs tabular-nums">{fmtDate(v.occurredOn)}</span>
-                      <div className="flex-1 min-w-0">
-                        <span className="block text-slate-300">{rong(v)}</span>
-                        <span className="block text-[11px] text-slate-500">{v.stateLabel}</span>
-                      </div>
-                      <span className="text-[11px] text-slate-500 shrink-0">{v.categoryLabel}</span>
-                    </li>
-                  ))}
-                </ul>
               )}
-            </div>
-          )}
-        </Field>
+            </li>
+          ))}
+        </ul>
 
-        <Field label={`Bằng chứng · ${d.attachmentCount}`} as="div">
-          <BangChung ownerType="discipline_measure" ownerId={d.id} canEdit={d.canManage} tieuDe="" onChanged={reload} />
-        </Field>
-      </div>
-    </Modal>
+        {them.chuaXuLy.length === 0 && them.daXuLy.length === 0 ? (
+          <p className="m-0 text-xs text-slate-500">Không còn vi phạm nào khác của em này.</p>
+        ) : (
+          <>
+            {them.chuaXuLy.length > 0 && (
+              <div>
+                <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-xs" aria-expanded={moThem}
+                  onClick={() => setMoThem((v) => !v)}>
+                  {moThem ? '▾' : '▸'} Thêm vi phạm chưa xử lý ({them.chuaXuLy.length})
+                </button>
+                {moThem && (
+                  <ul className="m-0 mt-2 list-none space-y-2 p-0">
+                    {them.chuaXuLy.map((v) => (
+                      <li key={v.id} className="flex items-start gap-2">
+                        <input type="checkbox" className="mt-1" checked={false} onChange={() => toggle(v.id)} />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm text-slate-300" title={v.description}>{v.description}</span>
+                          <span className="block text-[11px] text-slate-500">{cat(v)}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+            {them.daXuLy.length > 0 && (
+              <div>
+                <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-xs" aria-expanded={xemDaXuLy}
+                  onClick={() => setXemDaXuLy((v) => !v)}>
+                  {xemDaXuLy ? '▾' : '▸'} Đã xử lý ở PA khác ({them.daXuLy.length})
+                </button>
+                {xemDaXuLy && (
+                  <ul className="m-0 mt-2 list-none space-y-2 p-0">
+                    {them.daXuLy.map((v) => (
+                      <li key={v.id} className="flex items-start gap-2">
+                        <input type="checkbox" className="mt-1" checked={false} onChange={() => toggle(v.id)} />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm text-slate-300" title={v.description}>{v.description}</span>
+                          <span className="block text-[11px] text-slate-500">{cat(v)} · {v.stateLabel}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </Khoi>
+
+      <Khoi tieuDe={`Bằng chứng · ${d.attachmentCount}`}>
+        <BangChung ownerType="discipline_measure" ownerId={d.id} canEdit={d.canManage} tieuDe="" onChanged={reload} />
+      </Khoi>
+
+      <ConfirmDialog open={hoiXoa} onClose={() => setHoiXoa(false)} onConfirm={xoaPhuongAn} title="Xoá PA" danger confirmLabel="Xoá" busy={busy}
+        body="Xoá PA này? Vi phạm quay về Chưa xử lý." />
+    </KhungPanel>
   );
 }

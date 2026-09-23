@@ -61,8 +61,8 @@ const FT_SKILLS = ['listening', 'reading', 'writing1', 'writing2', 'speaking'] a
  * Ô TRỐNG NGHĨA LÀ CHƯA NHẬP, và nó giữ nguyên là ô trống: không lấy điểm mốc cũ lấp vào ô
  * thiếu của mốc mới, không ghép điểm khác lượt thành Overall.
  */
-export function ClassRoster({ classId, quyen, onDoi, onAddStudents }: {
-  classId: number; quyen: QuyenDong; onDoi: () => void; onAddStudents?: () => void;
+export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents }: {
+  classId: number; maLop?: string; quyen: QuyenDong; onDoi: () => void; onAddStudents?: () => void;
 }) {
   const { data, loading, error, reload } = useApi<RosterRow[]>(`/classes/${classId}/roster`, [classId]);
   /*
@@ -70,7 +70,7 @@ export function ClassRoster({ classId, quyen, onDoi, onAddStudents }: {
    * đang lên hay xuống", còn mốc thứ ba là để đọc kỹ chứ không phải để liếc.
    */
   const [depth, setDepth] = useState<2 | 3>(2);
-  const tt = useThaoTacDongHocVien({ laLopThuong: false, quyen, onDone: () => { reload(); onDoi(); } });
+  const tt = useThaoTacDongHocVien({ laLopThuong: false, quyen, maLop, onDone: () => { reload(); onDoi(); } });
 
   if (loading) return <div className="surface-2 rounded-lg p-3"><Skeleton rows={3} /></div>;
   if (error) {

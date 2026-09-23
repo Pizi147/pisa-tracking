@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { cuoiTuan, dsNgayGan, dsThang, dsTuan, type LuaChon } from '@shared/domain/index.ts';
+import { cuoiTuan, dsNgayGan, dsThang, dsTuan, ngay, type LuaChon } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
 
 /**
@@ -11,11 +11,12 @@ import { useNgayNghiepVu } from './ngayNghiepVu.ts';
 function Chon({ ds, value, onChange, disabled, ariaLabel, chuaChon }: {
   ds: LuaChon[]; value: string; onChange: (v: string) => void; disabled?: boolean; ariaLabel?: string; chuaChon?: string;
 }) {
+  const { homNay } = useNgayNghiepVu();
   const coTrongDs = ds.some((x) => x.giaTri === value);
   return (
     <select className="field w-full" value={value} disabled={disabled} aria-label={ariaLabel} onChange={(e) => onChange(e.target.value)}>
       {chuaChon && <option value="">{chuaChon}</option>}
-      {value && !coTrongDs && <option value={value}>{value}</option>}
+      {value && !coTrongDs && <option value={value}>{/^\d{4}-\d{2}-\d{2}$/.test(value) ? ngay(value, homNay) : value}</option>}
       {ds.map((x) => <option key={x.giaTri} value={x.giaTri}>{x.phu ? `${x.nhan} · ${x.phu}` : x.nhan}</option>)}
     </select>
   );
@@ -34,15 +35,17 @@ export function ChonNgayGan({ value, onChange, soNgay = 14, disabled, ariaLabel,
  * Tuần lịch "W4 SEP · 24/08 – 30/08". `moc="dau"` (mặc định): giá trị là thứ Hai. `moc="cuoi"`: giá trị là Chủ nhật của tuần đó,
  * cắt về hôm nay khi là tuần hiện tại (máy chủ chặn ngày tương lai) — dùng cho ô "Đến".
  */
-export function ChonTuan({ value, onChange, lui = 8, toi = 0, moc = 'dau', disabled, ariaLabel, chuaChon }: {
+export function ChonTuan({ value, onChange, lui = 8, toi = 0, moc = 'dau', catHomNay = true, disabled, ariaLabel, chuaChon }: {
   value: string; onChange: (v: string) => void; lui?: number; toi?: number; moc?: 'dau' | 'cuoi';
+  /** `moc="cuoi"`: cắt Chủ nhật về hôm nay cho tuần hiện tại (mặc định, cho việc ĐÃ xảy ra). `false` cho hạn tương lai. */
+  catHomNay?: boolean;
   disabled?: boolean; ariaLabel?: string; chuaChon?: string;
 }) {
   const { homNay } = useNgayNghiepVu();
   const ds = useMemo(() => {
     const t = dsTuan(homNay, lui, toi);
-    return moc === 'dau' ? t : t.map((x) => ({ ...x, giaTri: cuoiTuan(x.giaTri, homNay) }));
-  }, [homNay, lui, toi, moc]);
+    return moc === 'dau' ? t : t.map((x) => ({ ...x, giaTri: cuoiTuan(x.giaTri, catHomNay ? homNay : undefined) }));
+  }, [homNay, lui, toi, moc, catHomNay]);
   return <Chon ds={ds} value={value} onChange={onChange} disabled={disabled} ariaLabel={ariaLabel} chuaChon={chuaChon} />;
 }
 

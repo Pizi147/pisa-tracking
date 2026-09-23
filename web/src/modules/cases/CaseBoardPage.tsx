@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
-import { Alert, Card, Empty, ErrorState, Info, Level, Skeleton, Status, Th } from '../../ui/ui.tsx';
-import { Drawer } from '../../ui/Drawer.tsx';
+import { Card, Empty, ErrorState, Info, Level, Skeleton, Status, Th } from '../../ui/ui.tsx';
+import { Nhan } from '../../ui/Nhan.tsx';
+import { NganCase } from '../students/NganCase.tsx';
 import { CasePanel } from './CasePanel.tsx';
 import { fmtDate, sosLabel, sosTone } from '../../lib/format.ts';
 import {
@@ -229,9 +230,7 @@ export function DanhSachCase({ branchId, ct, classId }: { branchId: number | nul
                         )}
                         {r.urgency && r.urgency !== 'normal' && (
                           <div className="mt-0.5">
-                            <Alert tone={r.urgency === 'urgent' ? 'danger' : 'warn'}>
-                              {URGENCY_LABEL[r.urgency as keyof typeof URGENCY_LABEL] ?? r.urgency}
-                            </Alert>
+                            <Nhan tone="soon">{URGENCY_LABEL[r.urgency as keyof typeof URGENCY_LABEL] ?? r.urgency}</Nhan>
                           </div>
                         )}
                       </td>
@@ -244,9 +243,7 @@ export function DanhSachCase({ branchId, ct, classId }: { branchId: number | nul
       </Card>
 
       {/* Không có nút mở trang riêng: route `/hoc-thuat/case/:id` vẫn còn cho link sâu từ thông báo. */}
-      <Drawer open={openCase !== null} onClose={() => setOpenCase(null)} title="Vấn đề - Case">
-        {openCase !== null && <CasePanel caseId={openCase} />}
-      </Drawer>
+      {openCase !== null && <NganCase caseId={openCase} onClose={() => setOpenCase(null)} />}
     </div>
   );
 }

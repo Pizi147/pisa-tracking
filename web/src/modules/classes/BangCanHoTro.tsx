@@ -19,13 +19,13 @@ type CaseDong = {
  * bước tiếp theo + hạn. Chỉ em có Case đang mở (Case theo `/cases?classId=` — lớp em ĐANG học). Case nói trước chọn bằng
  * `chonCaseChinh` (quá hạn → chưa có PA → mức SOS). Badge "n Case đang mở" ở đầu trang mở chế độ này (Q5).
  */
-export function BangCanHoTro({ classId, laLopThuong, quyen, onDoi }: {
-  classId: number; laLopThuong: boolean; quyen: QuyenDong; onDoi: () => void;
+export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi }: {
+  classId: number; maLop?: string; laLopThuong: boolean; quyen: QuyenDong; onDoi: () => void;
 }) {
   const { homNay } = useNgayNghiepVu();
   const roster = useApi<any[]>(`/classes/${classId}/roster`, [classId]);
   const cases = useApi<{ rows: CaseDong[] }>(`/cases?classId=${classId}`, [classId]);
-  const tt = useThaoTacDongHocVien({ laLopThuong, quyen, onDone: () => { roster.reload(); cases.reload(); onDoi(); } });
+  const tt = useThaoTacDongHocVien({ laLopThuong, quyen, maLop, onDone: () => { roster.reload(); cases.reload(); onDoi(); } });
   const theoEm = useMemo(() => {
     const m = new Map<number, CaseDong[]>();
     for (const c of cases.data?.rows ?? []) {

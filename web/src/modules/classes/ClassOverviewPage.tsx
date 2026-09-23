@@ -9,7 +9,7 @@ import { usePeriods } from '../../ui/Filters.tsx';
 import { ClassYThucCard } from '../yThuc/ClassYThucCard.tsx';
 import { QuickReport } from '../cases/QuickReport.tsx';
 import { IntakePanel } from '../students/IntakePanel.tsx';
-import { TeacherAssignDialog } from './TeacherAssignPanel.tsx';
+import { TeacherAssignPanel } from './TeacherAssignPanel.tsx';
 import { ClassProgressPanel } from './ClassProgressPanel.tsx';
 import { TransitionPanel } from './TransitionPanel.tsx';
 import { DauTrangLop, type HoSoLop, type ViecDauTrang } from './DauTrangLop.tsx';
@@ -90,7 +90,7 @@ export default function ClassOverviewPage() {
           onClose={dong} onDone={xong} />
       )}
       <TransitionPanel classId={data.id} open={viec === 'chuyen-tiep'} onClose={dong} onDone={xong} />
-      <TeacherAssignDialog open={viec === 'phan-cong'} onClose={dong} classId={data.id} classCode={data.code} onDone={xong} />
+      <TeacherAssignPanel open={viec === 'phan-cong'} onClose={dong} classId={data.id} classCode={data.code} onDone={xong} />
       {viec === 'thong-tin' && (
         <SuaThongTinLopPanel onClose={dong} onDone={xong}
           lop={{ id: data.id, code: data.code, route: data.route, note: data.note,
@@ -99,7 +99,7 @@ export default function ClassOverviewPage() {
       {viec === 'hoc-vien' && (
         <IntakePanel defaultClass={{ id: data.id, code: data.code }} onClose={dong} onDone={xong} />
       )}
-      <QuickReport open={viec === 'case'} onClose={() => { dong(); setCaseFor(0); }} studentId={caseFor}
+      <QuickReport open={viec === 'case'} onClose={() => { dong(); setCaseFor(0); }} studentId={caseFor} lop={data.code}
         students={(roster.data ?? []).filter((r: any) => !r.archived).map((r: any) => ({ id: r.id, name: r.fullName, code: r.studentCode ?? null }))}
         onPickStudent={setCaseFor} onDone={() => { dong(); setCaseFor(0); xong(); }} />
     </div>

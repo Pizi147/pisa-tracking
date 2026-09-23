@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Modal } from '../../ui/Drawer.tsx';
-import { Field } from '../../ui/ui.tsx';
-import { HUONG_TIEP, huongTiepKhaDung, nhanHuong, type Huong } from '@shared/domain/index.ts';
+import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { ChonThang } from '../../ui/ChonNgay.tsx';
+import { huongTiepKhaDung, nhanHuong, type Huong } from '@shared/domain/index.ts';
 
 type LoTrinhTiepData = {
   lop: { id: number; code: string; ma: string | null; maKe: string | null; laLopThuong: boolean; dangHoc: boolean } | null;
@@ -13,12 +13,32 @@ type LoTrinhTiepData = {
   coTheGhi: boolean;
 };
 
+/** Một dòng nghĩa (≤ 60 ký tự) dưới mỗi hướng — để người chọn khỏi đoán "Học lại" hay "Bảo lưu" là gì. */
+const NGHIA_HUONG: Record<Huong, string> = {
+  len_lop: 'Học tiếp chương trình kế của lớp thường',
+  fast_track: 'Chuyển sang lộ trình luyện thi Fast Track',
+  hoc_lai: 'Học lại chương trình đang học',
+  bao_luu: 'Tạm nghỉ, giữ chỗ để quay lại sau',
+  dung_hoc: 'Em thôi học sau lớp này',
+  chua_ro: 'Chưa biết, hệ thống sẽ nhắc lại sau',
+  xep_sau: 'Sắp xếp sau, chưa có dự định',
+};
+
 /**
- * LỘ TRÌNH TIẾP THEO (mockup 11-1, §3.9.1) — dự định cho một em SAU lớp đang học, ghi trước
- * khi thật sự chuyển. Chỉ áp dụng lớp thường. Dùng chung cho ⋯ dòng HV (panel riêng ở đây) và
- * ⋮ Hồ sơ HV (`LoTrinhTiepForm` chèn thẳng vào `StudentManagePanel`, không panel chồng panel).
+ * LỘ TRÌNH TIẾP THEO (mockup 11-1, §3.9.1; PR-UX3 mockup 15 §8) — dự định cho một em SAU lớp đang học, ghi trước khi thật sự chuyển. Chỉ lớp
+ * thường. MỘT panel `KhungPanel`: khối **Hướng đi** là danh sách dọc (nhãn đầy đủ + một dòng nghĩa), khối **Chi tiết** (lớp dự kiến ·
+ * Fast Track: mục tiêu band + tháng thi 2 ô một hàng · ghi chú). Câu "Chỉ là dự định, chưa đổi lớp" nằm ở ⓘ.
  */
-export function LoTrinhTiepForm({ studentId, onDone }: { studentId: number; onDone?: () => void }) {
+export function LoTrinhTiepPanel({ open, onClose, studentId, studentName, lop, onDone }: {
+  open: boolean; onClose: () => void; studentId: number; studentName?: string; lop?: string | null; onDone?: () => void;
+}) {
+  if (!open) return null;
+  return <NoiDungLoTrinhTiep onClose={onClose} studentId={studentId} studentName={studentName} lop={lop} onDone={onDone} />;
+}
+
+function NoiDungLoTrinhTiep({ onClose, studentId, studentName, lop, onDone }: {
+  onClose: () => void; studentId: number; studentName?: string; lop?: string | null; onDone?: () => void;
+}) {
   const toast = useToast();
   const info = useApi<LoTrinhTiepData>(`/students/${studentId}/lo-trinh-tiep`, [studentId]);
   const [huong, setHuong] = useState<Huong | ''>('');
@@ -26,6 +46,7 @@ export function LoTrinhTiepForm({ studentId, onDone }: { studentId: number; onDo
   const [mucTieu, setMucTieu] = useState('');
   const [thangThi, setThangThi] = useState('');
   const [ghiChu, setGhiChu] = useState('');
+  const [daBam, setDaBam] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -37,20 +58,27 @@ export function LoTrinhTiepForm({ studentId, onDone }: { studentId: number; onDo
     setGhiChu(bg?.ghiChu ?? '');
   }, [info.data]);
 
-  if (info.loading) return <p className="text-sm text-slate-500">Đang tải…</p>;
   const data = info.data;
-  if (!data?.lop) return <p className="text-sm text-slate-500">Học viên không đang học lớp nào.</p>;
-  if (!data.lop.laLopThuong) return <p className="text-sm text-slate-500">Lộ trình tiếp theo chỉ áp dụng cho lớp thường.</p>;
+  const thongBao = info.loading ? 'Đang tải…'
+    : !data?.lop ? 'Học viên không đang học lớp nào.'
+    : !data.lop.laLopThuong ? 'Lộ trình tiếp theo chỉ áp dụng cho lớp thường.'
+    : !data.coTheGhi ? 'Bạn không có quyền ghi lộ trình tiếp theo cho học viên này.'
+    : null;
+  if (thongBao || !data?.lop) {
+    return <KhungPanel tieuDe="Lộ trình tiếp theo" hocVien={studentName} lop={lop} onDong={onClose}><p className="mt-3 text-sm text-slate-400">{thongBao}</p></KhungPanel>;
+  }
+  const lopHoc = data.lop;
 
-  const cacHuong = huongTiepKhaDung(data.lop.ma as any);
+  const cacHuong = huongTiepKhaDung(lopHoc.ma as any);
   const lopHopLe = data.lopDuKien.filter((l) => (
     huong === 'fast_track' ? l.ft
-      : huong === 'hoc_lai' ? !l.ft && l.ma === data.lop!.ma
-      : !l.ft && l.ma === data.lop!.maKe
+      : huong === 'hoc_lai' ? !l.ft && l.ma === lopHoc.ma
+      : !l.ft && l.ma === lopHoc.maKe
   ));
 
-  const submit = async () => {
-    if (!huong) { toast.push('error', 'Chọn một hướng.'); return; }
+  const luu = async () => {
+    setDaBam(true);
+    if (!huong) return;
     setBusy(true);
     try {
       await api.put(`/students/${studentId}/lo-trinh-tiep`, {
@@ -61,59 +89,61 @@ export function LoTrinhTiepForm({ studentId, onDone }: { studentId: number; onDo
       });
       invalidate('/students'); invalidate('/classes'); invalidate('/hoc-vien-lop'); invalidate('/my-work');
       toast.push('ok', 'Đã ghi lộ trình tiếp theo');
-      onDone?.();
+      onDone?.(); onClose();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 
-  if (!data.coTheGhi) return <p className="text-sm text-slate-500">Bạn không có quyền ghi lộ trình tiếp theo cho học viên này.</p>;
-
   return (
-    <div className="space-y-3">
-      <Field label="Hướng tiếp theo" required>
-        <div className="flex flex-wrap gap-1.5">
-          {cacHuong.map((h) => (
-            <button key={h} type="button"
-              className={`btn btn-sm ${huong === h ? 'btn-primary' : ''}`}
-              onClick={() => { setHuong(h); setLopDuKienId(''); }}>
-              {nhanHuong(h, { ma: data.lop!.ma as any, maKe: data.lop!.maKe as any })}
-            </button>
-          ))}
+    <KhungPanel tieuDe="Lộ trình tiếp theo" hocVien={studentName} lop={lop} onDong={onClose}
+      chan={{
+        conThieu: daBam && !huong ? ['Hướng đi'] : undefined,
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy}>Lưu</button>,
+      }}>
+      <Khoi tieuDe="Hướng đi" luat="Chỉ là dự định, chưa đổi lớp. Ghi trước để người kế nhiệm biết em sẽ đi đâu sau lớp này.">
+        <div role="radiogroup" aria-label="Hướng đi" className="space-y-1.5">
+          {cacHuong.map((h) => {
+            const chon = huong === h;
+            return (
+              <button key={h} type="button" role="radio" aria-checked={chon}
+                onClick={() => { setHuong(h); setLopDuKienId(''); }}
+                className={`flex w-full items-start gap-2.5 rounded-md border px-2.5 py-2 text-left ${
+                  chon ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)]' : 'border-[color:var(--line)] hover:border-[color:var(--line-strong)]'}`}
+                style={{ background: chon ? undefined : 'transparent' }}>
+                <span aria-hidden className={`mt-[3px] inline-block h-3 w-3 shrink-0 rounded-full border ${chon ? 'border-[color:var(--accent)] bg-[color:var(--accent)]' : 'border-slate-500'}`} />
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold text-slate-100">{nhanHuong(h, { ma: lopHoc.ma as any, maKe: lopHoc.maKe as any })}</span>
+                  <span className="block text-[11px] text-slate-500">{NGHIA_HUONG[h]}</span>
+                </span>
+              </button>
+            );
+          })}
         </div>
-      </Field>
+      </Khoi>
+
       {huong && (
-        <Field label="Lớp dự kiến" hint="Không bắt buộc — chưa biết thì để trống.">
-          <select className="field" value={lopDuKienId} onChange={(e) => setLopDuKienId(e.target.value ? Number(e.target.value) : '')}>
-            <option value="">Chưa chọn</option>
-            {lopHopLe.map((l) => <option key={l.id} value={l.id}>{l.code}</option>)}
-          </select>
-        </Field>
+        <Khoi tieuDe="Chi tiết">
+          <Truong nhan="Lớp dự kiến" tuyChon phu="Chưa biết thì để trống">
+            <select className="field w-full" value={lopDuKienId} onChange={(e) => setLopDuKienId(e.target.value ? Number(e.target.value) : '')}>
+              <option value="">Chưa chọn</option>
+              {lopHopLe.map((l) => <option key={l.id} value={l.id}>{l.code}</option>)}
+            </select>
+          </Truong>
+          {huong === 'fast_track' && (
+            <Hang2>
+              <Truong nhan="Mục tiêu band" tuyChon>
+                <input className="field w-full" type="number" step="0.5" min={0} max={9} value={mucTieu} onChange={(e) => setMucTieu(e.target.value)} />
+              </Truong>
+              <Truong nhan="Tháng dự kiến thi" tuyChon>
+                <ChonThang value={thangThi} onChange={setThangThi} chuaChon="Chưa chọn" />
+              </Truong>
+            </Hang2>
+          )}
+          <Truong nhan="Ghi chú" tuyChon>
+            <textarea className="field w-full" rows={2} value={ghiChu} onChange={(e) => setGhiChu(e.target.value)} />
+          </Truong>
+        </Khoi>
       )}
-      {huong === 'fast_track' && (
-        <>
-          <Field label="Mục tiêu band" hint="Điền sau cũng được.">
-            <input className="field max-w-[8rem]" type="number" step="0.5" min={0} max={9}
-              value={mucTieu} onChange={(e) => setMucTieu(e.target.value)} />
-          </Field>
-          <Field label="Tháng dự kiến thi">
-            <input className="field max-w-[10rem]" type="month" value={thangThi} onChange={(e) => setThangThi(e.target.value)} />
-          </Field>
-        </>
-      )}
-      <Field label="Ghi chú">
-        <textarea className="field" rows={2} value={ghiChu} onChange={(e) => setGhiChu(e.target.value)} />
-      </Field>
-      <p className="text-xs text-slate-500 m-0">Chỉ là dự định, chưa đổi lớp.</p>
-      <button className="btn btn-primary" onClick={submit} disabled={busy}>{busy ? 'Đang lưu…' : 'Lưu'}</button>
-    </div>
+    </KhungPanel>
   );
 }
 
-export function LoTrinhTiepPanel({ open, onClose, studentId, studentName, onDone }: {
-  open: boolean; onClose: () => void; studentId: number; studentName?: string; onDone?: () => void;
-}) {
-  return (
-    <Modal open={open} onClose={onClose} title={`Lộ trình tiếp theo${studentName ? ` · ${studentName}` : ''}`}>
-      <LoTrinhTiepForm studentId={studentId} onDone={() => { onDone?.(); onClose(); }} />
-    </Modal>
-  );
-}

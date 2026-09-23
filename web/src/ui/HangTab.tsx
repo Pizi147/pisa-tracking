@@ -1,6 +1,6 @@
 /**
  * HÀNG TAB GẠCH CHÂN (PR-HV, spec 2026-09-22 §4.1, §4.3) — dùng cho tab chính của trang (`cap="chinh"`) và tab con
- * bên trong một khối (`cap="con"`). Số đếm và dấu ⚠ nằm ngay trên nhãn (A5): nhìn là biết bên nào có việc.
+ * bên trong một khối (`cap="con"`). Số đếm và chấm vàng ● nằm ngay trên nhãn (A5): nhìn là biết bên nào có việc.
  *
  * Trên 375px hàng tab cuộn ngang BÊN TRONG chính nó (`overflow-x-auto`) — không đẩy cả trang cuộn ngang.
  */
@@ -21,7 +21,7 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, ca
               cap === 'con' ? 'text-xs' : 'text-sm'
             } ${active ? 'border-[color:var(--accent)] text-slate-100' : 'border-transparent text-slate-400 hover:text-slate-200'}`}>
             {t.label}
-            {t.canhBao && <span className="ml-1 text-soon" aria-label="có cảnh báo">⚠</span>}
+            {t.canhBao && <span className="ml-1 text-soon" role="img" aria-label="có nhắc" title="Có nhắc">●</span>}
             {!!t.so && t.so > 0 && (
               <span className="ml-1.5 rounded-full px-1.5 text-[10px] tabular-nums bg-doing-bg text-doing">{t.so}</span>
             )}

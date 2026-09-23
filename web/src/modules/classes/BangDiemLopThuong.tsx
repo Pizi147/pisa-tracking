@@ -30,10 +30,10 @@ const BAI = [{ kind: 'progress', nhan: 'Giữa khoá' }, { kind: 'final', nhan: 
  * Hai nhóm cột Giữa khoá | Cuối khoá, mỗi nhóm L R W S. Ô `đúng/tổng`, đỏ nếu chưa đạt (dưới 70%). Chưa có điểm mà đã có lịch thì ghi
  * tuần thi (`W3 SEP`, G-6); chưa có lịch thì gạch. Thiếu điểm KHÁC chưa đạt: không tô đỏ.
  */
-export function BangDiemLopThuong({ classId, quyen, onDoi }: { classId: number; quyen: QuyenDong; onDoi: () => void }) {
+export function BangDiemLopThuong({ classId, maLop, quyen, onDoi }: { classId: number; maLop?: string; quyen: QuyenDong; onDoi: () => void }) {
   const { homNay } = useNgayNghiepVu();
   const { data, loading, error, reload } = useApi<DongThuong[]>(`/classes/${classId}/roster`, [classId]);
-  const tt = useThaoTacDongHocVien({ laLopThuong: true, quyen, onDone: () => { reload(); onDoi(); } });
+  const tt = useThaoTacDongHocVien({ laLopThuong: true, quyen, maLop, onDone: () => { reload(); onDoi(); } });
 
   if (error) return <p className="m-0 text-xs text-rose-200">{error.message}</p>;
   if (loading || !data) return <Skeleton rows={4} />;

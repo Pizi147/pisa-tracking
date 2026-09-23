@@ -3,11 +3,14 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-import { Modal } from '../../ui/Drawer.tsx';
-import { Field } from '../../ui/ui.tsx';
+import { ConfirmDialog } from '../../ui/Drawer.tsx';
+import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
-import type { NguoiChon } from '@shared/domain/index.ts';
-import { NO_HANDOVER_NOTE, TRANSFER_REASONS, TRANSFER_REASON_LABEL } from '@shared/domain/index.ts';
+import { ChonThang, ChonTuan } from '../../ui/ChonNgay.tsx';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import {
+  CASE_CATEGORY_LABEL, NO_HANDOVER_NOTE, TRANSFER_REASONS, TRANSFER_REASON_LABEL, mondayOfDate, tuanLich, type NguoiChon,
+} from '@shared/domain/index.ts';
 
 type LopDich = { id: number; code: string; chiNhanhId: number; ma: string | null; ft: boolean; tenChuongTrinh: string | null; tuan: string | null; gvcn: string | null };
 type LopDichData = { chiNhanh: { id: number; name: string }[]; lop: LopDich[] };
@@ -20,13 +23,26 @@ type XemChuyenLopData = {
 };
 
 /**
- * CHUYỂN LỚP MỘT EM (mockup 11-3, §3.9.3, Q3 — mọi chi nhánh) — thay `TransferForm` cũ. Dùng
- * chung cho ⋯ dòng HV (panel riêng) và ⋮ Hồ sơ HV (`ChuyenLopForm` chèn thẳng vào
- * `StudentManagePanel`, không panel chồng panel).
+ * CHUYỂN LỚP MỘT EM (mockup 11-3, §3.9.3, Q3 — mọi chi nhánh; PR-UX3 mockup 15 §8) — MỘT panel `KhungPanel`, dùng chung cho ⋯ dòng HV và
+ * ⋮ Hồ sơ HV (mục "Chuyển lớp" của menu mở thẳng panel này, không còn ngăn trung gian).
+ *
+ * Khối **Lớp mới**: Chi nhánh + `Từ tuần` (tuần này → máy chủ lấy hôm nay như cũ; tuần sau → thứ Hai, không lùi ngày về quá khứ — Q8) ·
+ * Lớp · Lý do (4 nút một hàng). Khối **Bàn giao** ⓘ: Ghi chú bàn giao (Q9) + Case đang mở, mỗi Case một dòng chọn người nhận.
+ * Chân `Huỷ | Chuyển lớp` → `ConfirmDialog` MỘT câu "Chuyển {tên} sang {mã lớp} từ {W4 SEP}?" → gửi. Lỗi chỉ hiện SAU khi bấm.
  */
-export function ChuyenLopForm({ studentId, onDone }: { studentId: number; onDone?: () => void }) {
+export function ChuyenLopPanel({ open, onClose, studentId, studentName, lop, onDone }: {
+  open: boolean; onClose: () => void; studentId: number; studentName?: string; lop?: string | null; onDone?: () => void;
+}) {
+  if (!open) return null;
+  return <NoiDungChuyenLop onClose={onClose} studentId={studentId} studentName={studentName} lop={lop} onDone={onDone} />;
+}
+
+function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone }: {
+  onClose: () => void; studentId: number; studentName?: string; lop?: string | null; onDone?: () => void;
+}) {
   const toast = useToast();
   const { session } = useSession();
+  const { homNay } = useNgayNghiepVu();
   const lopDich = useApi<LopDichData>(`/chuyen-lop/lop-dich?studentId=${studentId}`, [studentId]);
   const [chiNhanhId, setChiNhanhId] = useState<number | null>(null);
   const [toClassId, setToClassId] = useState<number | null>(null);
@@ -34,7 +50,8 @@ export function ChuyenLopForm({ studentId, onDone }: { studentId: number; onDone
     toClassId ? `/students/${studentId}/chuyen-lop?toClassId=${toClassId}` : `/students/${studentId}/chuyen-lop`,
     [studentId, toClassId],
   );
-  const [ngay, setNgay] = useState('');
+  const tuanNay = homNay ? mondayOfDate(homNay) : '';
+  const [tuan, setTuan] = useState(tuanNay);
   const [reasonCode, setReasonCode] = useState('');
   const [reasonNote, setReasonNote] = useState('');
   const [luuY, setLuuY] = useState('');
@@ -42,16 +59,20 @@ export function ChuyenLopForm({ studentId, onDone }: { studentId: number; onDone
   const [mucTieu, setMucTieu] = useState('');
   const [thangThi, setThangThi] = useState('');
   const [nguoiNhan, setNguoiNhan] = useState<Record<number, NguoiChon | null>>({});
+  const [daBam, setDaBam] = useState(false);
+  const [hoiXacNhan, setHoiXacNhan] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (chiNhanhId === null && xem.data) setChiNhanhId(xem.data.hienTai.chiNhanhId);
   }, [xem.data, chiNhanhId]);
+  useEffect(() => { if (!tuan && tuanNay) setTuan(tuanNay); }, [tuan, tuanNay]);
 
   const lopCuaChiNhanh = useMemo(
     () => (lopDich.data?.lop ?? []).filter((l) => l.chiNhanhId === chiNhanhId),
     [lopDich.data, chiNhanhId],
   );
+  const lopDich1 = (lopDich.data?.lop ?? []).find((l) => l.id === toClassId) ?? null;
 
   const caseMo = xem.data?.caseMo ?? [];
   const canLuuY = xem.data?.canLuuY ?? true;
@@ -64,10 +85,22 @@ export function ChuyenLopForm({ studentId, onDone }: { studentId: number; onDone
     return null;
   };
 
-  const submit = async () => {
-    if (!toClassId) { toast.push('error', 'Cần chọn lớp đích.'); return; }
-    if (!reasonCode) { toast.push('error', 'Chọn lý do chuyển lớp.'); return; }
-    if (luat?.canMucTieu && !mucTieu) { toast.push('error', 'Chuyển sang Fast Track cần Mục tiêu band.'); return; }
+  /* Gom NHÃN ô còn thiếu — chỉ hiện SAU khi bấm Chuyển lớp (Q4). */
+  const thieu: string[] = [];
+  if (!toClassId) thieu.push('Lớp');
+  if (!reasonCode) thieu.push('Lý do');
+  else if (reasonCode === 'khac' && !reasonNote.trim()) thieu.push('Ghi rõ lý do');
+  if (luat?.canMucTieu && !mucTieu) thieu.push('Mục tiêu band');
+  if ((!canLuuY || !noNote) && !luuY.trim()) thieu.push('Ghi chú bàn giao');
+
+  const bamChuyen = () => {
+    setDaBam(true);
+    if (thieu.length > 0) return;
+    setHoiXacNhan(true);
+  };
+
+  const gui = async () => {
+    if (!toClassId) return;
     setBusy(true);
     try {
       const nguoiNhanPayload: Record<number, number> = {};
@@ -76,128 +109,128 @@ export function ChuyenLopForm({ studentId, onDone }: { studentId: number; onDone
         if (id) nguoiNhanPayload[c.id] = id;
       }
       await api.post(`/students/${studentId}/transfer`, {
-        toClassId, effectiveDate: ngay || undefined,
+        toClassId,
+        /* Tuần này → không gửi ngày (máy chủ lấy hôm nay, như cũ); tuần sau → thứ Hai của tuần đó. */
+        effectiveDate: tuan && tuan !== tuanNay ? tuan : undefined,
         reasonCode, reasonNote: reasonNote || undefined,
         handoverNote: luuY || undefined, noHandoverNote: noNote,
         nguoiNhan: Object.keys(nguoiNhanPayload).length ? nguoiNhanPayload : undefined,
         mucTieu: mucTieu ? Number(mucTieu) : undefined, thangThi: thangThi || undefined,
       });
-      invalidate('/students'); invalidate('/attempts'); invalidate('/overview'); invalidate('/cases'); invalidate('/classes');
+      invalidate('/students'); invalidate('/attempts'); invalidate('/overview'); invalidate('/cases'); invalidate('/classes'); invalidate('/hoc-vien-lop');
       toast.push('ok', 'Đã chuyển lớp');
-      onDone?.();
-    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+      setHoiXacNhan(false);
+      onDone?.(); onClose();
+    } catch (e: any) { setHoiXacNhan(false); toast.push('error', e.message); } finally { setBusy(false); }
   };
 
-  if (lopDich.loading) return <p className="text-sm text-slate-500">Đang tải…</p>;
+  const cauXacNhan = `Chuyển ${studentName ?? 'học viên'} sang ${lopDich1?.code ?? 'lớp mới'} từ ${tuan ? tuanLich(tuan, homNay) : 'tuần này'}?`;
 
   return (
-    <div className="space-y-3">
-      <Field label="Chi nhánh" required hint="Mọi chi nhánh đang hoạt động — chọn khác chi nhánh hiện tại vẫn chuyển được.">
-        <select className="field" value={chiNhanhId ?? ''}
-          onChange={(e) => { setChiNhanhId(Number(e.target.value)); setToClassId(null); }}>
-          {(lopDich.data?.chiNhanh ?? []).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-        </select>
-      </Field>
-      {chiNhanhId !== null && chiNhanhId !== xem.data?.hienTai.chiNhanhId && (
-        <p className="text-xs text-amber-200 m-0">Quản lý chi nhánh và GVCN lớp mới sẽ nhận thông báo.</p>
-      )}
-      <Field label="Lớp" required>
-        <select className="field" value={toClassId ?? ''} onChange={(e) => setToClassId(Number(e.target.value) || null)}>
-          <option value="">Chọn lớp…</option>
-          {lopCuaChiNhanh.map((l) => (
-            <option key={l.id} value={l.id}>
-              {l.code}{l.tuan ? ` · ${l.tuan}` : ''} · GVCN {l.gvcn ?? 'chưa có'}
-              {l.tenChuongTrinh ? ` · ${l.tenChuongTrinh}` : ''}
-            </option>
-          ))}
-        </select>
-      </Field>
-      <Field label="Ngày hiệu lực">
-        <input type="date" className="field" value={ngay} onChange={(e) => setNgay(e.target.value)} />
-      </Field>
-      <Field label="Lý do" required>
-        <div className="flex flex-wrap gap-1.5">
-          {TRANSFER_REASONS.map((r) => (
-            <button key={r} type="button" className={`btn btn-sm ${reasonCode === r ? 'btn-primary' : ''}`}
-              onClick={() => setReasonCode(r)}>{TRANSFER_REASON_LABEL[r]}</button>
-          ))}
-        </div>
-      </Field>
-      {reasonCode === 'khac' && (
-        <Field label="Ghi rõ lý do" required>
-          <input className="field" value={reasonNote} onChange={(e) => setReasonNote(e.target.value)} />
-        </Field>
-      )}
-
-      {luat?.canMucTieu && (
+    <KhungPanel tieuDe="Chuyển lớp" hocVien={studentName} lop={lop} onDong={onClose}
+      chan={{
+        conThieu: daBam ? thieu : undefined,
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={bamChuyen} disabled={busy}>Chuyển lớp</button>,
+      }}>
+      {lopDich.loading ? <p className="mt-3 text-sm text-slate-500">Đang tải…</p> : (
         <>
-          <Field label="Mục tiêu band" required>
-            <input className="field max-w-[8rem]" type="number" step="0.5" min={0} max={9}
-              value={mucTieu} onChange={(e) => setMucTieu(e.target.value)} />
-          </Field>
-          <Field label="Tháng dự kiến thi">
-            <input type="month" className="field max-w-[10rem]" value={thangThi} onChange={(e) => setThangThi(e.target.value)} />
-          </Field>
+          <Khoi tieuDe="Lớp mới">
+            <Hang2>
+              <Truong nhan="Chi nhánh" batBuoc>
+                <select className="field w-full" value={chiNhanhId ?? ''} onChange={(e) => { setChiNhanhId(Number(e.target.value)); setToClassId(null); }}>
+                  {(lopDich.data?.chiNhanh ?? []).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+              </Truong>
+              <Truong nhan="Từ tuần" batBuoc>
+                <ChonTuan moc="dau" lui={0} toi={8} value={tuan} onChange={setTuan} />
+              </Truong>
+            </Hang2>
+            {chiNhanhId !== null && chiNhanhId !== xem.data?.hienTai.chiNhanhId && (
+              <p className="m-0 text-xs text-soon">Quản lý chi nhánh và GVCN lớp mới sẽ nhận thông báo.</p>
+            )}
+            <Truong nhan="Lớp" batBuoc>
+              <select className="field w-full" value={toClassId ?? ''} onChange={(e) => setToClassId(Number(e.target.value) || null)}>
+                <option value="">Chọn lớp</option>
+                {lopCuaChiNhanh.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {[l.code, l.tenChuongTrinh, l.tuan, `GVCN ${l.gvcn ?? 'chưa có'}`].filter(Boolean).join(' · ')}
+                  </option>
+                ))}
+              </select>
+            </Truong>
+            <Truong nhan="Lý do" batBuoc as="div">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {TRANSFER_REASONS.map((r) => (
+                  <button key={r} type="button" aria-pressed={reasonCode === r}
+                    className={`btn min-h-[44px] justify-center px-1 sm:min-h-0 ${reasonCode === r ? 'btn-primary' : ''}`}
+                    onClick={() => setReasonCode(r)}>{TRANSFER_REASON_LABEL[r]}</button>
+                ))}
+              </div>
+            </Truong>
+            {reasonCode === 'khac' && (
+              <Truong nhan="Ghi rõ lý do" batBuoc>
+                <input className="field w-full" value={reasonNote} onChange={(e) => setReasonNote(e.target.value)} />
+              </Truong>
+            )}
+            {luat?.canMucTieu && (
+              <Hang2>
+                <Truong nhan="Mục tiêu band" batBuoc>
+                  <input className="field w-full" type="number" step="0.5" min={0} max={9} value={mucTieu} onChange={(e) => setMucTieu(e.target.value)} />
+                </Truong>
+                <Truong nhan="Tháng dự kiến thi" tuyChon>
+                  <ChonThang value={thangThi} onChange={setThangThi} chuaChon="Chưa chọn" />
+                </Truong>
+              </Hang2>
+            )}
+            {luat?.khoa === 'dong-mo' && (
+              <p className="m-0 text-xs text-slate-400">
+                Lớp mới khác chương trình: máy đóng khoá cũ và mở {luat.dongCase === 'ft' ? 'lộ trình Fast Track' : 'khoá mới'}.
+              </p>
+            )}
+          </Khoi>
+
+          <Khoi tieuDe="Bàn giao"
+            luat="Ghi những gì người nhận lớp cần biết. Em còn Case dở thì bắt buộc phải có ghi chú; không có gì cần dặn thì chọn ô bên dưới (chỉ khi em không còn Case).">
+            <Truong nhan="Ghi chú bàn giao" batBuoc={!noNote || !canLuuY}>
+              <textarea className="field w-full" rows={2} value={luuY} disabled={noNote && canLuuY} onChange={(e) => setLuuY(e.target.value)}
+                placeholder="Ví dụ: còn dở Case Listening" />
+            </Truong>
+            {canLuuY && (
+              <label className="flex items-center gap-2 text-sm text-slate-300">
+                <input type="checkbox" checked={noNote} onChange={(e) => setNoNote(e.target.checked)} />
+                {NO_HANDOVER_NOTE}
+              </label>
+            )}
+            {caseMo.length > 0 && (
+              <div className="space-y-2">
+                <p className="m-0 text-[11.5px] font-bold text-slate-200">Case đang mở · {caseMo.length}</p>
+                {caseMo.map((c) => {
+                  const kn = c.category ? CASE_CATEGORY_LABEL[c.category as keyof typeof CASE_CATEGORY_LABEL] ?? c.category : null;
+                  return (
+                    <div key={c.id} className="space-y-1">
+                      <p className="m-0 truncate text-xs text-slate-200" title={c.title ?? undefined}>
+                        {c.title ?? kn}
+                        {c.seDong && <span className="text-soon"> · tự đóng “Chuyển sang Fast Track”</span>}
+                      </p>
+                      {!c.seDong && (
+                        <>
+                          <ChonNguoi
+                            value={nguoiNhan[c.id] ?? (c.goiY ? { kieu: 'tai_khoan', id: c.goiY.id, ten: c.goiY.ten } : null)}
+                            onChange={(v) => setNguoiNhan((prev) => ({ ...prev, [c.id]: v }))}
+                            nhom="giao_vien" choNgoai={false}
+                            macDinhTrong={c.owner ? `Giữ nguyên: ${c.owner}` : 'Chưa có người phụ trách'} />
+                          {kn && <span className="block text-[10.5px] text-slate-500">GV {kn} lớp mới</span>}
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Khoi>
         </>
       )}
-      {luat?.khoa === 'dong-mo' && (
-        <p className="text-xs text-slate-400 m-0">
-          Lớp mới khác chương trình: máy đóng khoá cũ và mở {luat.dongCase === 'ft' ? 'lộ trình Fast Track' : 'khoá mới'}.
-        </p>
-      )}
-
-      {caseMo.length > 0 && (
-        <div className="surface-2 rounded-lg p-3 space-y-2">
-          <span className="label m-0">Case đang mở ({caseMo.length})</span>
-          {caseMo.map((c) => (
-            <div key={c.id} className="space-y-1">
-              <div className="text-xs text-slate-300 flex flex-wrap items-center gap-2">
-                <span className="text-slate-100">{c.title ?? c.category}</span>
-                {c.seDong && <span className="text-amber-200">→ tự đóng “Chuyển sang Fast Track”</span>}
-              </div>
-              {!c.seDong && (
-                <ChonNguoi
-                  value={nguoiNhan[c.id] ?? (c.goiY ? { kieu: 'tai_khoan', id: c.goiY.id, ten: c.goiY.ten } : null)}
-                  onChange={(v) => setNguoiNhan((prev) => ({ ...prev, [c.id]: v }))}
-                  nhom="giao_vien" choNgoai={false}
-                  macDinhTrong={c.owner ? `Giữ nguyên: ${c.owner}` : 'Chưa có người phụ trách'}
-                />
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {!canLuuY ? (
-        <Field label="Lưu ý bàn giao" required>
-          <textarea className="field" rows={2} value={luuY} onChange={(e) => setLuuY(e.target.value)}
-            placeholder="Em còn Case dở — ghi lưu ý để người nhận biết em đang dở gì." />
-        </Field>
-      ) : (
-        <div className="space-y-2">
-          <Field label="Lưu ý bàn giao" required={!noNote}>
-            <textarea className="field" rows={2} value={luuY} disabled={noNote} onChange={(e) => setLuuY(e.target.value)} />
-          </Field>
-          <label className="flex items-center gap-2 text-sm text-slate-300">
-            <input type="checkbox" checked={noNote} onChange={(e) => setNoNote(e.target.checked)} />
-            {NO_HANDOVER_NOTE}
-          </label>
-        </div>
-      )}
-
-      <div className="flex items-center gap-2">
-        <button className="btn btn-primary" onClick={submit} disabled={busy}>{busy ? 'Đang chuyển…' : 'Chuyển lớp'}</button>
-      </div>
-    </div>
-  );
-}
-
-export function ChuyenLopPanel({ open, onClose, studentId, studentName, onDone }: {
-  open: boolean; onClose: () => void; studentId: number; studentName?: string; onDone?: () => void;
-}) {
-  return (
-    <Modal open={open} onClose={onClose} title={`Chuyển lớp${studentName ? ` · ${studentName}` : ''}`}>
-      <ChuyenLopForm studentId={studentId} onDone={() => { onDone?.(); onClose(); }} />
-    </Modal>
+      <ConfirmDialog open={hoiXacNhan} onClose={() => setHoiXacNhan(false)} onConfirm={gui} title="Chuyển lớp" body={cauXacNhan} confirmLabel="Chuyển lớp" busy={busy} />
+    </KhungPanel>
   );
 }

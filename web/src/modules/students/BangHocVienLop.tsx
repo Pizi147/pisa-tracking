@@ -33,7 +33,7 @@ export type DongRoster = {
 };
 
 export type LopChoBang = {
-  id: number; programmeCode: string | null; scoringMode: string | null;
+  id: number; code?: string; programmeCode: string | null; scoringMode: string | null;
   currentWeek: number | null; totalWeeks: number | null; tuanKetThuc: string | null;
   viewer: QuyenDong;
   /** PR-LT: lớp đang trong hai tuần cuối khoá — chỉ khi đó mới nhắc "chưa có lộ trình tiếp theo" (Q5). */
@@ -53,7 +53,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot }: {
   const { homNay } = useNgayNghiepVu();
   const thuong = lop.scoringMode === 'ratio';
   const { data, loading, error, reload } = useApi<DongRoster[]>(`/classes/${lop.id}/roster`, [lop.id]);
-  const tt = useThaoTacDongHocVien({ laLopThuong: thuong, quyen: lop.viewer, onDone: () => { reload(); onDoi(); } });
+  const tt = useThaoTacDongHocVien({ laLopThuong: thuong, quyen: lop.viewer, maLop: lop.code, onDone: () => { reload(); onDoi(); } });
   const rows = useMemo(() => sapXepHocVien(
     (data ?? [])
       .filter((s) => !s.archived && (!chiHien || chiHien.has(s.id)))

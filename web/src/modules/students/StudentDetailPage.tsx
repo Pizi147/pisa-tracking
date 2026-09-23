@@ -12,12 +12,13 @@ import { LichSuLop } from './LichSuLop.tsx';
 import { NganCase } from './NganCase.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
 import { StudentPlanPanel } from './StudentPlanPanel.tsx';
-import { StudentManagePanel } from './StudentManagePanel.tsx';
+import { StudentManagePanel, mucQuanLyHocVien, type ViecQuanLy } from './StudentManagePanel.tsx';
+import { Menu } from '../../ui/Menu.tsx';
 import { QuickReport } from '../cases/QuickReport.tsx';
 import { StudentYThucSection } from '../yThuc/StudentYThucSection.tsx';
 import {
   attemptHref,
-  attemptStatusLabel, fmtBand, fmtDate, skillLabel, skillShort, sosLabel, sosTone, studentStatusLabel,
+  attemptStatusLabel, fmtBand, skillLabel, skillShort, sosLabel, sosTone, studentStatusLabel,
 } from '../../lib/format.ts';
 import {
   HO_SO_TAB_LABEL, JOURNEY_EVENT_LABEL, caseCategoriesFor, docThamSoHoSo, duongHoSoHocVien,
@@ -25,9 +26,11 @@ import {
 } from '@shared/domain/index.ts';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
+import { Han } from '../../ui/Han.tsx';
+import { QuaHan } from '../../ui/Nhan.tsx';
 import { useSession } from '../../lib/session.tsx';
 
-type OpenCase = { caseId: number; paId?: number } | null;
+type OpenCase = { caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'them-pa' } | null;
 
 type Profile = any;
 
@@ -66,7 +69,7 @@ export default function StudentDetailPage() {
   const p = docThamSoHoSo((k) => params.get(k));
   const q = p.loTrinh ? `?cycleId=${p.loTrinh}` : p.dot != null ? `?attemptId=${p.dot}` : '';
   const { data, loading, error, reload } = useApi<Profile>(id ? `/students/${id}${q}` : null, [p.loTrinh, p.dot]);
-  const [manageOpen, setManageOpen] = useState(false);
+  const [viecQuanLy, setViecQuanLy] = useState<ViecQuanLy | null>(null);
   const [planOpen, setPlanOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   /** Tín hiệu đang được xác minh — mở form case với đầu mục và kỹ năng điền sẵn. */
@@ -132,12 +135,12 @@ export default function StudentDetailPage() {
 
   const cy = data.cycle;
   /* Mở đúng đợt (`?dot=`) hoặc do bấm trong trang — ngăn Case dùng chung một chỗ (Q9). */
-  const ngan: OpenCase = p.caseId != null ? { caseId: p.caseId, paId: p.paId } : openCase;
+  const ngan: OpenCase = p.caseId != null ? { caseId: p.caseId, paId: p.paId, viec: p.viec } : openCase;
   const dongNgan = () => {
     setOpenCase(null);
     if (p.caseId != null) {
       const next = new URLSearchParams(params);
-      next.delete('case'); next.delete('pa');
+      next.delete('case'); next.delete('pa'); next.delete('viec');
       setParams(next, { replace: true });
     }
   };
@@ -170,7 +173,7 @@ export default function StudentDetailPage() {
       <div>
         <button className="btn btn-sm btn-ghost mb-1.5" onClick={() => navigate(-1)}>← Quay lại</button>
         {data.lopHoc?.chiXem && (
-          <DaiChiXem>Học viên đã lưu trữ{data.archivedAt ? ` ${fmtDate(data.archivedAt)}` : ''} — chỉ xem</DaiChiXem>
+          <DaiChiXem>Học viên đã lưu trữ{data.archivedAt ? ` ${ngay(data.archivedAt, homNay)}` : ''} — chỉ xem</DaiChiXem>
         )}
         <div className="rounded-xl border p-3 sm:p-4 mt-1.5"
              style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>
@@ -227,8 +230,9 @@ export default function StudentDetailPage() {
               {data.viewer.canReport && !data.lopHoc?.chiXem && (
                 <button className="btn btn-primary" onClick={() => setReportOpen(true)}>+ Case</button>
               )}
-              <button className="btn" title="Quản lý học viên" aria-label="Quản lý học viên"
-                onClick={() => setManageOpen(true)}>⋮</button>
+              {/* ⋮ = MENU THẢ; mỗi mục mở THẲNG panel của việc đó (Q10). Không có quyền nào → Menu không vẽ gì. */}
+              <Menu label="⋮" className="btn" items={mucQuanLyHocVien({ canEdit: data.viewer.canEdit, lopHoc: data.lopHoc ?? null, cycle: cy, status: data.status })
+                .map((m) => ({ label: m.nhan, onClick: () => (m.key === 'lo-trinh' ? setPlanOpen(true) : setViecQuanLy(m.key)) }))} />
             </div>
           </div>
 
@@ -297,7 +301,8 @@ export default function StudentDetailPage() {
                 selected={skillPick}
                 onPick={setSkillPick}
                 onReport={() => setReportOpen(true)}
-                onChanged={() => { board.reload(); reload(); }} />
+                onChanged={() => { board.reload(); reload(); }}
+                onMoCase={(caseId, o) => setOpenCase({ caseId, paId: o?.paId, viec: o?.viec })} />
             </Card>
           </div>
 
@@ -314,7 +319,7 @@ export default function StudentDetailPage() {
             <div className="p-3">
               {cy.targetRevisions.length > 0 && (
                 <p className="text-xs text-slate-500 mt-2 mb-0">
-                  Mục tiêu đã đổi {cy.targetRevisions.length} lần — lần gần nhất {fmtDate(cy.targetRevisions[0].effectiveFrom)}:
+                  Mục tiêu đã đổi {cy.targetRevisions.length} lần — lần gần nhất {ngay(cy.targetRevisions[0].effectiveFrom, homNay)}:
                   {' '}{fmtBand(cy.targetRevisions[0].oldTarget)} → {fmtBand(cy.targetRevisions[0].newTarget)}
                   {cy.targetRevisions[0].reason && ` (${cy.targetRevisions[0].reason})`}.
                   {' '}Các lượt đã chốt vẫn giữ kỳ vọng tính theo mục tiêu lúc đó.
@@ -372,30 +377,29 @@ export default function StudentDetailPage() {
       )}
 
       <QuickReport open={reportOpen} onClose={() => setReportOpen(false)}
-        studentId={data.id} studentName={data.fullName} cycleId={cy?.id ?? null}
+        studentId={data.id} studentName={data.fullName} lop={data.currentClass?.code} cycleId={cy?.id ?? null}
         onDone={(cid) => { reload(); setOpenCase({ caseId: cid }); }} />
 
       {/* Tạo Case ĐỂ TRẢ LỜI một tín hiệu: đầu mục và kỹ năng điền sẵn, nhận định do người viết. */}
       <QuickReport open={!!verify} onClose={() => setVerify(null)}
-        studentId={data.id} studentName={data.fullName} cycleId={cy?.id ?? null}
+        studentId={data.id} studentName={data.fullName} lop={data.currentClass?.code} cycleId={cy?.id ?? null}
         signal={verify}
         onDone={(cid) => { setVerify(null); reload(); setOpenCase({ caseId: cid }); }} />
 
       {/* Ngăn Case (Q9) — không đổi tab; cuộn tới đúng PA khi mở kèm `paId`. Mở do `?case=` thì đóng cũng xoá URL. */}
       {ngan && (
-        <NganCase caseId={ngan.caseId} paId={ngan.paId} studentName={data.fullName} onClose={dongNgan} />
+        <NganCase caseId={ngan.caseId} paId={ngan.paId} viec={ngan.viec} hocVien={data.fullName} lop={data.currentClass?.code}
+          onClose={dongNgan} onChanged={reload} />
       )}
 
       <StudentManagePanel
-        open={manageOpen} onClose={() => setManageOpen(false)}
+        viec={viecQuanLy} onClose={() => setViecQuanLy(null)} lop={data.currentClass?.code}
         student={{
           id: data.id, name: data.fullName, classId: data.currentClass?.id ?? null,
           dob: data.dob ?? null, consultantName: data.consultantName ?? null, note: data.note ?? null,
           status: data.status,
         }}
-        cycle={cy} attempts={data.attempts} canEdit={data.viewer.canEdit}
-        lopHoc={data.lopHoc ?? null}
-        onOpenPlan={() => setPlanOpen(true)} onDone={reload}
+        cycle={cy} attempts={data.attempts} onDone={reload}
       />
     </div>
   );
@@ -462,7 +466,9 @@ function HeaderStats({ data, rows, homNay, onOpenDot, onOpenKn }: {
         onClick={next ? () => onOpenKn(next.category) : undefined}
         title="Mở bảng kỹ năng ở đúng kỹ năng của việc này"
         sub={next?.due
-          ? `${next.overdue ? 'quá hạn' : 'hạn'} ${fmtDate(next.due)}`
+          ? (next.overdue
+            ? <QuaHan ngay={Math.max(1, Math.round((Date.parse(`${(homNay ?? '').slice(0, 10)}T00:00:00Z`) - Date.parse(`${next.due.slice(0, 10)}T00:00:00Z`)) / 86_400_000))} />
+            : `hạn ${ngay(next.due, homNay)}`)
           : next ? 'chưa đặt hạn' : 'không có việc nào đang chờ'} />
     </div>
   );
@@ -741,9 +747,7 @@ function TinHieuHang({ sg, onVerify, onReload }: { sg: any; onVerify: (sg: any) 
               </>}
         </div>
         <div className="text-xs mt-1">
-          {sg.overdue
-            ? <span className="text-rose-300">Quá hạn xác minh {fmtDate(sg.verifyDue)}</span>
-            : <span className="text-slate-400">Hạn xác minh {fmtDate(sg.verifyDue)}</span>}
+          <Han loai="xac-minh-sos" han={sg.verifyDue} coViec />
           {sg.ownerName && <span className="text-slate-500"> · {sg.ownerName}</span>}
         </div>
       </div>

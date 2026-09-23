@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Drawer } from '../../ui/Drawer.tsx';
 import { Empty, ErrorState, SectionNote, Skeleton, Status, Th } from '../../ui/ui.tsx';
-import { CasePanel } from './CasePanel.tsx';
+import { NganCase } from '../students/NganCase.tsx';
 import { caseStatusLabel, fmtDate, sosLabel, sosTone } from '../../lib/format.ts';
 import { Level } from '../../ui/ui.tsx';
 import { TyLe } from '../../ui/TyLe.tsx';
@@ -365,9 +365,7 @@ function CaseDrill({ drill, query, onClose }: {
         ) : null}
       </Drawer>
 
-      <Drawer open={openCase !== null} onClose={() => setOpenCase(null)} width="max-w-3xl" title="Vấn đề - Case">
-        {openCase !== null && <CasePanel caseId={openCase} />}
-      </Drawer>
+      {openCase !== null && <NganCase caseId={openCase} onClose={() => setOpenCase(null)} />}
     </>
   );
 }
