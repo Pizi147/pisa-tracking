@@ -1786,10 +1786,12 @@ api.post('/notifications/:id/read', requireAuth, wrap((req) => {
 
 // ============================================================ Tiến độ công việc (mục 8)
 
+/* PR-Ra: giao diện mặc định "Đang mở" — route tự điền 'mo' khi không gửi progress, hàm dịch vụ (không progress) vẫn nghĩa "tất cả". */
 api.get('/mgmt-tasks', requireAuth, wrap((req) => mgmtSvc.listMgmtTasks(principalOf(req), {
   branchId: qInt(req, 'branchId'),
   group: qStr(req, 'group'),
-  progress: qStr(req, 'progress'),
+  progress: qStr(req, 'progress') ?? 'mo',
+  hang: qStr(req, 'hang'),
   assigneeUserId: qInt(req, 'assigneeUserId'),
   periodId: qInt(req, 'periodId'),
 })));
@@ -1811,6 +1813,7 @@ api.post('/mgmt-tasks', requireAuth, wrap((req) => {
     due: b.due ?? null, note: b.note ?? null,
     parentTaskId: b.parentTaskId ? Number(b.parentTaskId) : null,
     caseIds: Array.isArray(b.caseIds) ? b.caseIds.map(Number) : [],
+    unitReportId: b.unitReportId ? Number(b.unitReportId) : null,
   });
 }));
 
@@ -1820,6 +1823,7 @@ api.post('/mgmt-tasks/:id/update', requireAuth, wrap((req) => {
   return mgmtSvc.updateMgmtTask(principalOf(req), pInt(req, 'id'), {
     progress: String(b.progress ?? ''), note: b.note ?? null, reason: b.reason ?? null,
     on: b.on ?? null, reviewOn: b.reviewOn ?? null,
+    helpUserId: b.helpUserId ? Number(b.helpUserId) : null, helpName: b.helpName ?? null,
   });
 }));
 

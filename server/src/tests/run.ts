@@ -5455,8 +5455,14 @@ check('Mỗi lần cập nhật là một dòng lịch sử, không đè lên l�
 check('Người theo dõi xem được nhưng không cập nhật hộ', () => {
   const board = mgmt.listMgmtTasks(P.admin, {});
   const row = board.rows.find((r: any) => r.subTotal === 0 && r.progress !== 'done' && r.progress !== 'stopped')!;
+  /* PR-Ra: người theo dõi/phụ trách phải là tài khoản `nhan_vien` (giáo viên/quản lý) — không còn nhận bất kỳ ID nào. */
   const other = (conn
-    .prepare(`SELECT id FROM users WHERE status='active' AND id != ? ORDER BY id LIMIT 1`)
+    .prepare(
+      `SELECT DISTINCT u.id FROM users u
+         JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active'
+         JOIN roles r ON r.id = ur.role_id AND r.key IN ('teacher','manager')
+        WHERE u.status = 'active' AND u.id != ? ORDER BY u.id LIMIT 1`,
+    )
     .get(row.assigneeUserId) as any).id;
   mgmt.editMgmtTask(P.admin, row.id, { watcherUserId: other });
   const detail = mgmt.mgmtTaskDetail(P.admin, row.id);
@@ -6961,20 +6967,22 @@ check('[14.1] Số theo trạng thái cũng đếm trên toàn tập, không đ�
   }
 });
 
-check('[14.2] Dòng tổng hợp là bốn câu hỏi chồng nhau, không phải một phép chia', () => {
+check('[14.2] Dòng tổng hợp (PR-Ra: hàng số Q8) là bốn câu hỏi chồng nhau, không phải một phép chia', () => {
   const all = mgmt.listMgmtTasks(P.admin, {}) as any;
-  const s = all.summary;
-  assert(s, 'Không có dòng tổng hợp');
-  assert(s.total === all.rows.length, `Tổng ${s.total} không khớp số việc đang có ${all.rows.length}`);
-  for (const k of ['doing', 'overdue', 'dueSoon', 'paused']) {
-    assert(s[k] >= 0 && s[k] <= s.total, `Con số "${k}" nằm ngoài khoảng hợp lệ`);
+  const s = all.hangSo;
+  assert(s, 'Không có hàng số');
+  for (const k of ['qua-han', 'cho-nguoi-khac', 'can-quyet-dinh', 'vua-xong']) {
+    assert(s[k] >= 0 && s[k] <= all.rows.length, `Con số "${k}" nằm ngoài khoảng hợp lệ`);
   }
   /*
-   * Quá hạn và đang thực hiện CHỒNG NHAU có chủ ý — nên bốn con số cộng lại có thể lớn hơn
+   * Quá hạn và Tạm ngưng CHỒNG NHAU có chủ ý (Q8) — nên bốn con số cộng lại có thể lớn hơn
    * tổng, và giao diện phải nói ra điều đó chứ không được bày như một phép chia.
+   *
+   * `hangSo` không lọc theo trạng thái đang chọn (chỉ áp nhóm) — gọi không lọc gì cả (`{}`)
+   * thì nó phải khớp CHÍNH các dòng "quá hạn" đang hiện ra.
    */
-  assert(s.overdue === all.rows.filter((r: any) => r.overdue).length,
-    'Số quá hạn ở dòng tổng hợp không khớp chính các dòng đang hiện');
+  assert(s['qua-han'] === all.rows.filter((r: any) => r.overdue).length,
+    'Số quá hạn ở hàng số không khớp chính các dòng đang hiện khi không lọc trạng thái');
 });
 
 check('[14.2] Phạm vi chi nhánh áp TRƯỚC bộ lọc nhóm, không áp sau', () => {

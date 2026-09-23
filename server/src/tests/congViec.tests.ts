@@ -8,7 +8,7 @@
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runCongViecTests(t: YThucTestKit) {
-  const { check, checkAsync, assert, conn, TODAY, P, seedMax } = t;
+  const { check, checkAsync, assert, assertThrows, conn, TODAY, P, seedMax } = t;
   const fsMod = await import('node:fs');
   const pathMod = await import('node:path');
   const { fileURLToPath } = await import('node:url');
@@ -493,6 +493,152 @@ export async function runCongViecTests(t: YThucTestKit) {
     const r = await goiHttp(P.mbManager.userId, 'GET', `/ref/nguoi?nhom=giao_vien&trongPhamVi=1&q=${encodeURIComponent(cpOnlyGv.full_name)}`);
     assert(r.status === 200, `status: ${r.status}`);
     assert(!r.json.some((x: any) => x.id === cpOnlyGv.id), `QL MB không được thấy GV chỉ thuộc CP (${cpOnlyGv.full_name}) khi trongPhamVi=1`);
+  });
+
+  // ================================================================== 5. Máy chủ: Vận hành
+
+  console.log('\nPR-Ra · 5. Máy chủ Vận hành — hàng số, facet đúng, Tạm ngưng đủ ba ý, dời hạn giữ hạn cũ');
+
+  const mgmt: any = await import('../worklist/mgmttasks.ts');
+
+  const khoaUser = Number(conn.prepare(
+    `INSERT INTO users (code, full_name, email, title, password_hash, password_salt, status, created_at)
+     VALUES ('PR-RA-KHOA','Tài khoản đã khoá','pr-ra-khoa@pisa.test','GV','h','s','inactive',?)`,
+  ).run(new Date().toISOString()).lastInsertRowid);
+  const motHocVien = (conn.prepare(`SELECT id FROM students LIMIT 1`).get() as any).id as number;
+
+  const taoViecRa = (over: Partial<{
+    title: string; group: string; assigneeUserId: number | null; due: string | null; branchId: number | null; parentTaskId: number | null;
+  }> = {}) => mgmt.createMgmtTask(P.mbManager, {
+    title: over.title ?? `Việc thử PR-Ra ${Math.random().toString(36).slice(2, 8)}`,
+    group: over.group ?? 'teacher', branchId: over.branchId ?? mbBranchId,
+    assigneeUserId: over.assigneeUserId ?? gvMB.userId, due: over.due ?? null,
+    parentTaskId: over.parentTaskId ?? null,
+  });
+
+  check('PR-Ra Q10 · Tạm ngưng thiếu người cần hỗ trợ / thiếu ngày xem lại / ngày xem lại trước ngày cập nhật → 400', () => {
+    const v = taoViecRa();
+    assertThrows(() => mgmt.updateMgmtTask(P.mbManager, v.id, { progress: 'paused', reason: 'Chờ duyệt ngân sách.', reviewOn: '2026-10-01' }),
+      /cần ai hỗ trợ/i, 'Thiếu người cần hỗ trợ phải 400');
+    assertThrows(() => mgmt.updateMgmtTask(P.mbManager, v.id, { progress: 'paused', reason: 'Chờ duyệt ngân sách.', helpUserId: gvMB.userId }),
+      /ngày xem lại/i, 'Thiếu ngày xem lại phải 400');
+    assertThrows(() => mgmt.updateMgmtTask(P.mbManager, v.id, {
+      progress: 'paused', reason: 'Chờ duyệt ngân sách.', helpUserId: gvMB.userId, on: '2026-09-14', reviewOn: '2026-09-10',
+    }), /ngày xem lại/i, 'Ngày xem lại trước ngày cập nhật phải 400');
+  });
+
+  check('PR-Ra Q10 · Tạm ngưng đủ ba ý → lưu help_user_id/help_name; rời Tạm ngưng thì cả hai về NULL; helpUserId là HV/tài khoản khoá → 400', () => {
+    const v = taoViecRa();
+    mgmt.updateMgmtTask(P.mbManager, v.id, {
+      progress: 'paused', reason: 'Chờ duyệt ngân sách.', helpUserId: gvMB.userId, on: '2026-09-14', reviewOn: '2026-09-20',
+    });
+    const d1 = mgmt.mgmtTaskDetail(P.mbManager, v.id);
+    assert(d1.helpUserId === gvMB.userId && d1.reviewOn === '2026-09-20', `Chưa lưu đúng người/ngày xem lại: ${JSON.stringify({ helpUserId: d1.helpUserId, reviewOn: d1.reviewOn })}`);
+
+    assertThrows(() => mgmt.updateMgmtTask(P.mbManager, v.id, {
+      progress: 'paused', reason: 'Thử lại.', helpUserId: motHocVien, on: '2026-09-14', reviewOn: '2026-09-20',
+    }), /không hợp lệ/i, 'helpUserId là học viên phải 400');
+    assertThrows(() => mgmt.updateMgmtTask(P.mbManager, v.id, {
+      progress: 'paused', reason: 'Thử lại.', helpUserId: khoaUser, on: '2026-09-14', reviewOn: '2026-09-20',
+    }), /không hợp lệ/i, 'helpUserId là tài khoản đã khoá phải 400');
+
+    mgmt.updateMgmtTask(P.mbManager, v.id, { progress: 'doing', on: '2026-09-14', note: 'Tiếp tục làm.' });
+    const d2 = mgmt.mgmtTaskDetail(P.mbManager, v.id);
+    assert(d2.helpUserId === null && d2.helpName === null, `Rời Tạm ngưng phải xoá cả hai: ${JSON.stringify({ helpUserId: d2.helpUserId, helpName: d2.helpName })}`);
+  });
+
+  check('PR-Ra Q9 · Dời hạn không lý do → 400; có lý do → task_history đúng old/new/reason và hanGoc = hạn đầu tiên; quá hạn tính theo hạn hiện tại', () => {
+    const v = taoViecRa({ due: '2026-09-01' });   // đã quá hạn so với TODAY = 2026-09-14
+    assertThrows(() => mgmt.editMgmtTask(P.mbManager, v.id, { due: '2026-09-20' }), /lý do/i, 'Dời hạn không lý do phải 400');
+    mgmt.editMgmtTask(P.mbManager, v.id, { due: '2026-09-08', lyDoDoiHan: 'Chờ duyệt ngân sách nhà cung cấp.' });
+    let row = mgmt.listMgmtTasks(P.mbManager, {}).rows.find((r: any) => r.id === v.id);
+    assert(row.hanGoc === '2026-09-01' && row.lyDoDoiHan === 'Chờ duyệt ngân sách nhà cung cấp.',
+      `hanGoc/lyDoDoiHan sai sau lần dời đầu: ${JSON.stringify({ hanGoc: row.hanGoc, lyDoDoiHan: row.lyDoDoiHan })}`);
+    assert(row.overdue === true, 'Hạn 08/09 vẫn quá hạn so với TODAY 14/09');
+    const hist = (conn.prepare(`SELECT * FROM task_history WHERE task_id = ? AND field = 'due_date' ORDER BY id`).all(v.id) as any[]);
+    assert(hist.length === 1 && hist[0].old_value === '2026-09-01' && hist[0].new_value === '2026-09-08' && hist[0].reason === 'Chờ duyệt ngân sách nhà cung cấp.',
+      `task_history dời hạn sai: ${JSON.stringify(hist)}`);
+
+    /* Dời hạn LẦN HAI, sang tương lai — hanGoc vẫn là hạn ĐẦU TIÊN (01/09), quá hạn hết vì hạn hiện tại ở tương lai. */
+    mgmt.editMgmtTask(P.mbManager, v.id, { due: '2026-10-05', lyDoDoiHan: 'Chờ nhà cung cấp báo giá lại.' });
+    row = mgmt.listMgmtTasks(P.mbManager, {}).rows.find((r: any) => r.id === v.id);
+    assert(row.hanGoc === '2026-09-01' && row.soLanDoiHan === 2, `Sau hai lần dời, hanGoc phải vẫn là hạn đầu tiên: ${JSON.stringify(row)}`);
+    assert(row.overdue === false, 'Dời hạn sang tương lai phải hết quá hạn (tính theo hạn hiện tại, Q9)');
+  });
+
+  check('PR-Ra Q11 · Dừng hẳn việc cha còn việc con mở → 400, câu báo nêu tên việc con', () => {
+    const parent = taoViecRa({ title: 'Cha PR-Ra còn con mở' });
+    const child = taoViecRa({ title: 'Con PR-Ra chưa xong', parentTaskId: parent.id });
+    void child;
+    assertThrows(() => mgmt.updateMgmtTask(P.mbManager, parent.id, { progress: 'stopped', reason: 'Không làm nữa.' }),
+      /Con PR-Ra chưa xong/, 'Dừng hẳn việc cha còn con mở phải 400 kèm tên việc con');
+  });
+
+  check('PR-Ra · facetVanHanh qua listMgmtTasks: facet nhóm KHÔNG đổi khi chọn nhóm, CÓ áp lọc trạng thái khi chọn trạng thái', () => {
+    /* Dựng thêm hai việc CÙNG nhóm, KHÁC trạng thái — đảm bảo có dữ liệu để phân biệt hai lượt lọc. */
+    const a = taoViecRa({ title: 'Facet A — doing', group: 'curriculum' });
+    mgmt.updateMgmtTask(P.mbManager, a.id, { progress: 'doing', on: '2026-09-14', note: 'Đang làm.' });
+    taoViecRa({ title: 'Facet B — not_started', group: 'curriculum' });
+
+    const all = mgmt.listMgmtTasks(P.mbManager, {}) as any;
+    const byGroup = mgmt.listMgmtTasks(P.mbManager, { group: 'curriculum' }) as any;
+    for (const g of Object.keys(all.facets.group)) {
+      assert(byGroup.facets.group[g] === all.facets.group[g],
+        `Chọn nhóm "curriculum" làm facet nhóm "${g}" đổi từ ${all.facets.group[g]} thành ${byGroup.facets.group[g]}`);
+    }
+
+    const byProgress = mgmt.listMgmtTasks(P.mbManager, { progress: 'doing' }) as any;
+    assert(byProgress.facets.group.curriculum <= all.facets.group.curriculum,
+      'Facet nhóm khi lọc trạng thái "doing" phải KHÔNG lớn hơn khi không lọc gì (facet nhóm vẫn áp trạng thái đang chọn)');
+    assert(byProgress.facets.group.curriculum < all.facets.group.curriculum,
+      'Facet nhóm phải giảm khi lọc "doing" — có việc "not_started" cùng nhóm bị loại ra');
+  });
+
+  check('PR-Ra · progress mặc định "mo": không có việc đã khép; hangSo.vuaXong vẫn đếm việc hoàn thành dù đang lọc "mo"', () => {
+    const done = taoViecRa({ title: 'Việc vừa xong PR-Ra' });
+    mgmt.updateMgmtTask(P.mbManager, done.id, { progress: 'done', on: '2026-09-14', note: 'Xong rồi.' });
+    const mo = mgmt.listMgmtTasks(P.mbManager, { progress: 'mo' }) as any;
+    assert(!mo.rows.some((r: any) => r.progress === 'done' || r.progress === 'stopped'), 'progress="mo" không được có việc đã khép trong danh sách');
+    assert(mo.hangSo['vua-xong'] >= 1, `hangSo (áp CHỈ nhóm, bỏ qua "mo") vẫn phải đếm việc vừa hoàn thành: ${JSON.stringify(mo.hangSo)}`);
+  });
+
+  check('PR-Ra · subOverdueTitles có đúng tên việc con quá hạn (tối đa 2)', () => {
+    const parent = taoViecRa({ title: 'Cha PR-Ra có con quá hạn', due: '2026-12-01' });
+    taoViecRa({ title: 'Con quá hạn A', parentTaskId: parent.id, due: '2026-09-01' });
+    taoViecRa({ title: 'Con quá hạn B', parentTaskId: parent.id, due: '2026-09-02' });
+    const row = mgmt.listMgmtTasks(P.mbManager, {}).rows.find((r: any) => r.id === parent.id);
+    assert(row.subOverdueCount === 2, `subOverdueCount sai: ${row.subOverdueCount}`);
+    assert(row.subOverdueTitles.includes('Con quá hạn A') && row.subOverdueTitles.includes('Con quá hạn B'),
+      `subOverdueTitles thiếu tên: ${JSON.stringify(row.subOverdueTitles)}`);
+  });
+
+  check('PR-Ra R6 · createMgmtTask với unitReportId khác chi nhánh đơn vị → 400; đúng chi nhánh → có dòng unit_report_task_links', () => {
+    /* Đơn vị MB cố tình để TRỐNG ở kỳ hiện tại trong bộ demo (Q12 "Chưa báo cáo") — dùng CP để có ô báo cáo thật. */
+    const cpUnit = (conn.prepare(`SELECT id FROM reporting_units WHERE code = 'CP'`).get() as any).id as number;
+    const cpBranchId = (conn.prepare(`SELECT id FROM branches WHERE code = 'CP'`).get() as any).id as number;
+    const cur = week.ensurePeriod(TODAY).id;
+    const cpReport = (conn.prepare(
+      `SELECT id FROM unit_reports WHERE reporting_unit_id = ? AND period_id = ? ORDER BY id LIMIT 1`,
+    ).get(cpUnit, cur) as any)?.id as number | undefined;
+    assert(cpReport, 'Cần một ô báo cáo của CP ở kỳ hiện tại để đối chứng');
+    assertThrows(() => mgmt.createMgmtTask(P.mbManager, {
+      title: 'Việc từ báo cáo khác chi nhánh', group: 'teacher', branchId: mbBranchId, unitReportId: cpReport,
+    }), /chi nhánh/i, 'Việc khác chi nhánh với báo cáo phải 400');
+
+    const created = mgmt.createMgmtTask(P.admin, {
+      title: 'Việc từ báo cáo CP', group: 'teacher', branchId: cpBranchId, unitReportId: cpReport,
+    });
+    const link = conn.prepare(`SELECT * FROM unit_report_task_links WHERE unit_report_id = ? AND task_id = ?`).get(cpReport, created.id);
+    assert(link, 'createMgmtTask với unitReportId đúng chi nhánh phải tạo dòng nối');
+  });
+
+  check('PR-Ra · createMgmtTask/editMgmtTask: assigneeUserId không hợp lệ (học viên) → 400', () => {
+    assertThrows(() => mgmt.createMgmtTask(P.mbManager, {
+      title: 'Việc gán sai người', group: 'teacher', branchId: mbBranchId, assigneeUserId: motHocVien,
+    }), /không hợp lệ/i, 'Tạo việc với assigneeUserId là học viên phải 400');
+    const v = taoViecRa();
+    assertThrows(() => mgmt.editMgmtTask(P.mbManager, v.id, { assigneeUserId: motHocVien }),
+      /không hợp lệ/i, 'Sửa việc với assigneeUserId là học viên phải 400');
   });
 }
 

@@ -121,6 +121,11 @@ export const DUONG_DO: MucDo[] = [
     maChuDich: { GVCN: 403, GVBM: 403, GVCN_THUONG: 403 },
   },
   { trang: 'Kế hoạch Test', vai: ['QL', 'QT'], url: '/ke-hoach-test/thuong?branchId={cn}' },
+
+  // ---------------------------------------------------------------- Công việc · Vận hành (PR-Ra)
+  /* GVCN không vào được tab Vận hành, nhưng `listMgmtTasks` trả `scopeEmpty` chứ không 403 — mã thật là 200. */
+  { trang: 'Công việc', vai: ['QL', 'QT', 'GVCN'], url: '/mgmt-tasks' },
+  { trang: 'Công việc', vai: ['QL', 'QT'], url: '/mgmt-tasks?hang=qua-han' },
 ];
 
 /**
@@ -186,6 +191,11 @@ export const TRAN: Record<string, number> = {
   'QT /my-work?nguoi=tat-ca': 75,
   'GVCN /my-work?nguoi=tat-ca': 19,
   'QL /my-work?nguoi=7': 69,
+  'QL /mgmt-tasks': 23,
+  'QT /mgmt-tasks': 23,
+  'GVCN /mgmt-tasks': 18,
+  'QL /mgmt-tasks?hang=qua-han': 23,
+  'QT /mgmt-tasks?hang=qua-han': 23,
   'QL /tong-quan/hoc-vien-can-ho-tro': 42,
   'QT /tong-quan/hoc-vien-can-ho-tro': 39,
   'GVCN /tong-quan/hoc-vien-can-ho-tro': 42,
