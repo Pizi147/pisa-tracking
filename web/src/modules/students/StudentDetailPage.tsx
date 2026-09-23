@@ -1,12 +1,13 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { Card, Empty, ErrorState, Info, Level, Outcome, Skeleton, Status, Th} from '../../ui/ui.tsx';
+import { Card, DaiChiXem, Empty, ErrorState, Info, Level, Outcome, Skeleton, Status, Th} from '../../ui/ui.tsx';
 import { Modal } from '../../ui/Drawer.tsx';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { SkillBoard, type SkillBoardRow } from '../cases/SkillBoard.tsx';
 import { HanhTrinh } from './HanhTrinh.tsx';
+import { LichSuLop } from './LichSuLop.tsx';
 import { NganCase } from './NganCase.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
 import { StudentPlanPanel } from './StudentPlanPanel.tsx';
@@ -166,7 +167,10 @@ export default function StudentDetailPage() {
       */}
       <div>
         <button className="btn btn-sm btn-ghost mb-1.5" onClick={() => navigate(-1)}>← Quay lại</button>
-        <div className="rounded-xl border p-3 sm:p-4"
+        {data.lopHoc?.chiXem && (
+          <DaiChiXem>Học viên đã lưu trữ{data.archivedAt ? ` ${fmtDate(data.archivedAt)}` : ''} — chỉ xem</DaiChiXem>
+        )}
+        <div className="rounded-xl border p-3 sm:p-4 mt-1.5"
              style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
@@ -184,7 +188,7 @@ export default function StudentDetailPage() {
                   ĐẦU HỒ SƠ LỚP THƯỜNG (Q18): {mã lớp} · GVCN {tên} · {khoá đang học}, KHÔNG tên
                   chương trình, KHÔNG "Mục tiêu"/"Dự kiến thi" (Q18, §3.8 dòng cuối) — dùng đúng
                   hàm `khoaLopThuong` mà cột Khoá của hồ sơ lớp (PR-Qa) đã dùng, để hai chỗ luôn
-                  nói cùng một câu. `tiepTheo: null` — PR-LT sẽ truyền nhãn Lộ trình tiếp theo.
+                  nói cùng một câu. `tiepTheo`/`nhacLoTrinh` từ `data.lopHoc` (PR-LT, Task 3).
                 */}
                 {data.currentClass?.khoa
                   ? (() => {
@@ -193,7 +197,8 @@ export default function StudentDetailPage() {
                       tuanHienTai: data.currentClass.khoa.tuanHienTai,
                       tongTuan: data.currentClass.khoa.tongTuan,
                       tuanKetThuc: data.currentClass.khoa.tuanKetThuc,
-                      tiepTheo: null,
+                      tiepTheo: data.lopHoc?.tiepTheo ?? null,
+                      nhacLoTrinh: data.lopHoc?.nhacLoTrinh ?? false,
                       homNay: homNay ?? '',
                     });
                     return (
@@ -217,7 +222,7 @@ export default function StudentDetailPage() {
                 <button className={`btn ${cycleOpen ? 'btn-primary' : ''}`}
                   onClick={() => setCycleOpen(!cycleOpen)}>Lộ trình</button>
               )}
-              {data.viewer.canReport && (
+              {data.viewer.canReport && !data.lopHoc?.chiXem && (
                 <button className="btn btn-primary" onClick={() => setReportOpen(true)}>+ Case</button>
               )}
               <button className="btn" title="Quản lý học viên" aria-label="Quản lý học viên"
@@ -340,6 +345,8 @@ export default function StudentDetailPage() {
 
       {tab === 'hanh-trinh' && (
         <Card title="Hành trình học tập" bodyClass="p-4 space-y-4">
+          {/* LỊCH SỬ LỚP (PR-LT, §3.8 dòng cuối) — đứng TRÊN trục tuần, mỗi lớp em từng học một dòng. */}
+          <LichSuLop studentId={data.id} active={tab === 'hanh-trinh'} />
           {/*
             TRỤC TUẦN THEO LỊCH THẬT, MỖI GIAI ĐOẠN MỘT TRỤC (§3.8, PR-Qb) — thay dòng thời gian
             cũ vẽ lại đúng biểu đồ điểm đã có ở khối trên. Tự gọi máy chủ riêng theo giai đoạn
@@ -382,8 +389,10 @@ export default function StudentDetailPage() {
         student={{
           id: data.id, name: data.fullName, classId: data.currentClass?.id ?? null,
           dob: data.dob ?? null, consultantName: data.consultantName ?? null, note: data.note ?? null,
+          status: data.status,
         }}
         cycle={cy} attempts={data.attempts} canEdit={data.viewer.canEdit}
+        lopHoc={data.lopHoc ?? null}
         onOpenPlan={() => setPlanOpen(true)} onDone={reload}
       />
     </div>

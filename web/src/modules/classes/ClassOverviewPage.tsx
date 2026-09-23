@@ -44,6 +44,18 @@ export default function ClassOverviewPage() {
     }
   }, [periods.data, periodId, session]);
 
+  /*
+   * LỐI VÀO TỪ VIỆC ĐỎ / BADGE "Hết khoá" (PR-LT): `?viec=chuyen-tiep` mở panel Chuyển tiếp
+   * lớp MỘT LẦN rồi xoá tham số khỏi URL — không mở lại nếu người dùng tự đóng rồi tải lại.
+   */
+  useEffect(() => {
+    if (data && params.get('viec') === 'chuyen-tiep' && data.viewer.coTheChuyenTiep) {
+      setViec('chuyen-tiep');
+      doiThamSo({ viec: null });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
+
   const doiThamSo = (patch: Record<string, string | null>) => {
     const next = new URLSearchParams(params);
     for (const [k, v] of Object.entries(patch)) { if (v === null) next.delete(k); else next.set(k, v); }

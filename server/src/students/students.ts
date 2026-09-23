@@ -1,6 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
-  ENTRY_SKILLS, JOURNEY_GROUP, NO_HANDOVER_NOTE, PERMISSIONS, STUDENT_STATUSES,
+  ENTRY_SKILLS, JOURNEY_GROUP, NO_HANDOVER_NOTE, PERMISSIONS, STUDENT_STATUSES, luatDoiLop,
+  type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, isIsoDate, normalizeName, notFound, nowIso, padCode } from '../util.ts';
@@ -11,6 +12,7 @@ import { closeCasesBySystem } from '../cases/systemClose.ts';
 import { entryBandsOf, scoresOf, skipsOf } from '../fasttrack/attempts.ts';
 import { evaluateAttempt } from '../fasttrack/scoring.ts';
 import { currentCycle, cyclesOf, examPlanOf } from '../fasttrack/cycles.ts';
+import { apDungMotDong, dongLopNeuHet, lopDichHopLe, lopHienTaiCua } from '../classes/luatLoTrinh.ts';
 
 import { weekInfo } from '../platform/week.ts';
 
@@ -159,11 +161,30 @@ export function transferStudent(p: Principal, studentId: number, toClassId: numb
   note?: string | null;
   /** Chọn rõ "Không có lưu ý" (RB-3) — chỉ nhận khi em không còn case dở. */
   noNote?: boolean;
-  /** Người tiếp nhận: đổi người phụ trách của các case còn mở sang người này. */
+  /** Người tiếp nhận CŨ — áp dụng cho MỌI case còn mở (giữ tương thích phép kiểm cũ). `nguoiNhan` thắng nếu có (Q14). */
   receiverUserId?: number | null;
+  /** caseId → userId người nhận (Q14, panel Chuyển lớp gợi ý theo Case). */
+  nguoiNhan?: Record<number, number> | null;
+  /** Sang Fast Track (thật): bắt buộc (Q7). */
+  mucTieu?: number | null;
+  thangThi?: string | null;
 }) {
-  require_(p, PERMISSIONS.STUDENT_EDIT, { studentId }, 'Bạn không có quyền chuyển lớp học viên này.');
-  require_(p, PERMISSIONS.STUDENT_EDIT, { classId: toClassId }, 'Lớp đích nằm ngoài phạm vi bạn được cấp quyền.');
+  /*
+   * Q3 (chủ sản phẩm 23/09): quyền kiểm Ở LỚP NGUỒN — GVCN của lớp đó (hoặc QL phạm vi lớp đó).
+   * KHÔNG đòi quyền ở lớp đích: GVCN chuyển được sang MỌI chi nhánh đang hoạt động.
+   *
+   * Em CHƯA TỪNG ghi danh (xếp lớp lần đầu, không phải "chuyển lớp") thì không có lớp nguồn để
+   * kiểm theo Q3 — giữ đúng luật cũ: quyền theo phạm vi của em (branch_id) VÀ quyền ở lớp đích.
+   */
+  const enr = lopHienTaiCua(studentId);
+  if (enr) {
+    require_(p, PERMISSIONS.STUDENT_EDIT, { classId: enr.class_id }, 'Bạn không có quyền chuyển lớp học viên này.');
+  } else {
+    require_(p, PERMISSIONS.STUDENT_EDIT, { studentId }, 'Bạn không có quyền chuyển lớp học viên này.');
+    require_(p, PERMISSIONS.STUDENT_EDIT, { classId: toClassId }, 'Lớp đích nằm ngoài phạm vi bạn được cấp quyền.');
+  }
+  const toClass = lopDichHopLe(toClassId, enr?.class_id ?? -1);
+  if (!toClass) throw badRequest('Lớp đích không hợp lệ.');
   if (!isIsoDate(effectiveDate)) throw badRequest('Ngày hiệu lực không hợp lệ.');
 
   const why = String(reason ?? '').trim();
@@ -182,52 +203,32 @@ export function transferStudent(p: Principal, studentId: number, toClassId: numb
   }
   if (!typed && !handover?.noNote) throw badRequest(`Ghi lưu ý bàn giao, hoặc chọn "${NO_HANDOVER_NOTE}".`);
   const handoverNote = typed || NO_HANDOVER_NOTE;
-  return tx(() => {
-    const conn = db();
-    const toClass = conn.prepare('SELECT * FROM classes WHERE id = ?').get(toClassId) as any;
-    if (!toClass) throw notFound('Không tìm thấy lớp đích');
-    const cur = conn
-      .prepare(`SELECT * FROM enrollments WHERE student_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1`)
-      .get(studentId) as any;
-    if (cur?.class_id === toClassId) throw badRequest('Học viên đã ở lớp này.');
-    if (cur) {
-      conn.prepare(`UPDATE enrollments SET status='transferred', ended_at=?, end_reason=? WHERE id=?`)
-        .run(effectiveDate, why, cur.id);
+
+  /* Q7: chuyển THẬT sang Fast Track (không phải chỉ ghi dự định) bắt buộc Mục tiêu band. Không áp dụng khi xếp lớp lần đầu. */
+  if (enr) {
+    const luatXem = luatDoiLop(
+      { ma: (enr.programme_code ?? null) as ProgrammeCode | null, ft: !!enr.is_fast_track },
+      { ma: (toClass.programme_code ?? null) as ProgrammeCode | null, ft: !!toClass.is_fast_track },
+      'giua-khoa',
+    );
+    if (luatXem.canMucTieu && (handover?.mucTieu === null || handover?.mucTieu === undefined)) {
+      throw badRequest('Chuyển sang Fast Track cần Mục tiêu band.');
     }
-    const info = conn
-      .prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`)
-      .run(studentId, toClassId, effectiveDate, nowIso());
-    conn.prepare('UPDATE students SET branch_id = ? WHERE id = ?').run(toClass.branch_id, studentId);
-    // Lượt CHƯA xong chuyển sang lớp mới; lượt đã xong giữ nguyên lớp cũ để không viết lại lịch sử.
-    conn.prepare(`UPDATE assessment_attempts SET class_id = ? WHERE student_id = ? AND status = 'planned'`)
-      .run(toClassId, studentId);
-    /*
-     * BÀN GIAO CASE CÒN MỞ. Đổi người phụ trách sang người nhận nếu có chỉ định — nhưng
-     * KHÔNG viết lại lịch sử: ai đã làm gì trước đó vẫn nguyên trong từng phương án.
-     */
-    if (handover?.receiverUserId) {
-      for (const c of brief.cases) {
-        const before = c.ownerName;
-        conn.prepare('UPDATE sos_cases SET owner_user_id = ?, updated_at = ? WHERE id = ?')
-          .run(handover.receiverUserId, nowIso(), c.id);
-        conn
-          .prepare(
-            `INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at)
-             VALUES (?, 'owner', ?, ?, ?, ?)`,
-          )
-          .run(c.id, before, 'bàn giao khi chuyển lớp', p.userId, nowIso());
-      }
-    }
-    addJourney({
-      studentId, eventType: 'transfer', eventDate: effectiveDate,
-      title: `Chuyển sang lớp ${toClass.code}`,
-      detail: [why, handoverNote].join(' — '),
-      createdBy: p.userId,
-    });
-    writeAudit({ actorUserId: p.userId, action: 'student.transfer', entityType: 'student', entityId: studentId,
-      entityLabel: toClass.code, before: cur, after: { classId: toClassId, effectiveDate } });
-    return { newEnrollmentId: Number(info.lastInsertRowid), closedEnrollmentId: cur?.id ?? null };
+  }
+
+  let nguoiNhan: Record<number, number> | null = handover?.nguoiNhan ?? null;
+  if (!nguoiNhan && handover?.receiverUserId) {
+    nguoiNhan = {};
+    for (const c of brief.cases) nguoiNhan[c.id] = handover.receiverUserId;
+  }
+
+  const r = apDungMotDong(p, {
+    sid: studentId, toClassId, ngay: effectiveDate, lyDo: why, luuY: handoverNote,
+    mucTieu: handover?.mucTieu ?? null, thangThi: handover?.thangThi ?? null,
+    nguoiNhan, boiCanh: 'giua-khoa',
   });
+  if (enr) dongLopNeuHet([enr.class_id], effectiveDate);
+  return { newClassCode: r.toClassCode, endKind: r.luat?.endKind ?? null };
 }
 
 /**
@@ -237,6 +238,8 @@ export function transferStudent(p: Principal, studentId: number, toClassId: numb
  */
 export function setStudentStatus(
   p: Principal, studentId: number, status: 'active' | 'inactive' | 'finished', date: string, reason?: string,
+  /** PR-LT: "Kết thúc vì" của dòng enrollment đóng lại (Q18). Mặc định theo `status` khi không truyền. */
+  endKind?: 'bao_luu' | 'dung_hoc' | 'ket_thuc' | null,
 ) {
   require_(p, PERMISSIONS.STUDENT_EDIT, { studentId });
   if (!(STUDENT_STATUSES as readonly string[]).includes(status)) throw badRequest('Trạng thái không hợp lệ.');
@@ -246,16 +249,35 @@ export function setStudentStatus(
   if (!s) throw notFound('Không tìm thấy học viên');
   if (s.status === status) return s;
 
+  const curEnr = conn
+    .prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status IN ('active','paused') ORDER BY id DESC LIMIT 1`)
+    .get(studentId) as any;
+
+  /* Q17: Quay lại học vào lớp mà enrollment tạm dừng đang đứng — lớp đó có thể đã kết thúc từ đó tới nay. */
+  if (status === 'active' && s.status === 'inactive' && curEnr) {
+    const cls = conn.prepare('SELECT status, code FROM classes WHERE id = ?').get(curEnr.class_id) as any;
+    if (cls?.status === 'finished') {
+      throw badRequest(`Lớp ${cls.code} đã kết thúc. Dùng Chuyển lớp để xếp em vào lớp đang học.`);
+    }
+  }
+
   return tx(() => {
     conn.prepare('UPDATE students SET status = ?, finished_at = ?, archived_at = NULL WHERE id = ?')
       .run(status, status === 'finished' ? date : null, studentId);
     // Enrollment đi theo nhưng vẫn giữ nguyên lịch sử lớp.
     const enrollmentStatus = status === 'active' ? 'active' : status === 'inactive' ? 'paused' : 'completed';
-    conn.prepare(`UPDATE enrollments SET status = ? WHERE student_id = ? AND status IN ('active','paused')`)
-      .run(enrollmentStatus, studentId);
-    /* S16: em KẾT THÚC học → Case còn mở của em hệ thống tự đóng "Học viên kết thúc khoá". Tạm dừng thì không. */
+    const kind = status === 'finished' ? (endKind ?? 'ket_thuc') : status === 'inactive' ? (endKind ?? 'bao_luu') : null;
+    conn.prepare(`UPDATE enrollments SET status = ?, end_kind = ? WHERE student_id = ? AND status IN ('active','paused')`)
+      .run(enrollmentStatus, kind, studentId);
+    /*
+     * S16: em KẾT THÚC học → Case còn mở của em hệ thống tự đóng "Học viên kết thúc khoá". Tạm dừng thì không.
+     * PR-LT: lộ trình ĐANG CHẠY cũng khép lại — `updateCycle`/`setOutcome` chỉ đóng khi nơi gọi truyền cờ, và
+     * setStudentStatus trước đây không đóng gì (Nhật ký PR-LT, mục 6 "Mâu thuẫn nguồn ↔ mã thật").
+     */
     if (status === 'finished') {
       closeCasesBySystem({ actorUserId: p.userId, studentId, reason: 'course_ended', on: date });
+      conn.prepare(`UPDATE learning_cycles SET status = 'abandoned', ended_at = ? WHERE student_id = ? AND status = 'active'`)
+        .run(date, studentId);
     }
     addJourney({
       studentId, eventType: status === 'inactive' ? 'pause' : status === 'active' ? 'resume' : 'finish',
@@ -265,6 +287,7 @@ export function setStudentStatus(
     });
     writeAudit({ actorUserId: p.userId, action: 'student.status', entityType: 'student', entityId: studentId,
       entityLabel: s.student_code, before: { status: s.status }, after: { status, date, reason } });
+    if (curEnr && status !== 'active') dongLopNeuHet([curEnr.class_id], date);
     return conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId);
   });
 }

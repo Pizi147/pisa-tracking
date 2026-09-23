@@ -117,29 +117,34 @@ export function ketQuaGanNhat(k: KetQuaVao | null): KetQuaHien {
 
 export function khoaLopThuong(i: {
   maChuongTrinh: string | null; tuanHienTai: number | null; tongTuan: number | null;
-  tuanKetThuc: string | null; tiepTheo: string | null; homNay: string;
+  tuanKetThuc: string | null; tiepTheo: string | null; homNay: string; nhacLoTrinh?: boolean;
 }): { chinh: string; phu: string | null } {
   const ma = i.maChuongTrinh ?? '—';
   let tuan: string | null = null;
   if (i.tuanHienTai !== null && i.tuanHienTai < 1) tuan = 'chưa khai giảng';
   else if (i.tuanHienTai !== null && i.tongTuan) tuan = tuanKhoa(Math.min(i.tuanHienTai, i.tongTuan), i.tongTuan);
-  const phu = i.tiepTheo ? `tiếp theo: ${i.tiepTheo}` : i.tuanKetThuc ? `kết thúc ${tuanLich(i.tuanKetThuc, i.homNay)}` : null;
+  // Thứ tự ưu tiên dòng phụ (PR-LT): tiếp theo đã ghi › nhắc chưa ghi › kết thúc khoá.
+  const phu = i.tiepTheo ? `tiếp theo: ${i.tiepTheo}`
+    : i.nhacLoTrinh ? 'chưa có lộ trình tiếp theo'
+    : i.tuanKetThuc ? `kết thúc ${tuanLich(i.tuanKetThuc, i.homNay)}` : null;
   return { chinh: tuan ? `${ma} · ${tuan}` : ma, phu };
 }
 
 // ---------------------------------------------------------------- badge hộp lớp / đầu hồ sơ lớp (Q5, Q7)
 
 export type BadgeLop = {
-  key: 'het-khoa' | 'thieu-gv' | 'cham' | 'case' | 'chang' | 'thieu-tt'; nhan: string; tone: 'danger' | 'warn' | 'info';
+  key: 'het-khoa' | 'chua-lo-trinh' | 'thieu-gv' | 'cham' | 'case' | 'chang' | 'thieu-tt'; nhan: string;
+  tone: 'danger' | 'warn' | 'info';
 };
 const CHANG_THI = ['progress_soon', 'progress_week', 'final_soon', 'final_week'];
 
 export function badgeLop(c: {
-  needsPlacement: boolean; studentCount: number; missingSkills: readonly string[]; needScoresText: string | null;
-  soCaseMo: number; phase: string; missingCount: number;
+  needsPlacement: boolean; canXepLop: number; missingSkills: readonly string[]; needScoresText: string | null;
+  soCaseMo: number; phase: string; missingCount: number; soChuaLoTrinhTiep?: number;
 }): { hien: BadgeLop[]; an: BadgeLop[] } {
   const all: BadgeLop[] = [];
-  if (c.needsPlacement) all.push({ key: 'het-khoa', nhan: `Hết khoá · ${c.studentCount} HV cần xếp lớp tiếp`, tone: 'danger' });
+  if (c.needsPlacement) all.push({ key: 'het-khoa', nhan: `Hết khoá · ${c.canXepLop} HV cần xếp lớp tiếp`, tone: 'danger' });
+  if (c.soChuaLoTrinhTiep) all.push({ key: 'chua-lo-trinh', nhan: `${c.soChuaLoTrinhTiep} HV chưa có lộ trình tiếp theo`, tone: 'warn' });
   if (c.missingSkills.length) all.push({ key: 'thieu-gv', nhan: `Thiếu GV ${c.missingSkills.map(skillShort).join(', ')}`, tone: 'warn' });
   if (c.needScoresText) all.push({ key: 'cham', nhan: c.needScoresText, tone: 'warn' });
   if (c.soCaseMo > 0) all.push({ key: 'case', nhan: `${c.soCaseMo} Case đang mở`, tone: 'danger' });
@@ -182,10 +187,10 @@ export const MUC_MENU_DONG_NHAN: Record<MucMenuDong, string> = {
   'lo-trinh-tiep': 'Lộ trình tiếp theo', 'chuyen-lop': 'Chuyển lớp',
 };
 /**
- * Hai mục thuộc PR-LT (đợt 5). Chưa có màn làm việc đúng luật §3.9 thì KHÔNG hiện (không để nút bấm không làm gì, không để GVCN
- * bấm ra lỗi quyền). PR-LT đổi hằng này thành `true` và gắn panel trong `web/src/modules/classes/thaoTacDongHocVien.tsx`.
+ * Hai mục thuộc PR-LT (đợt 5). Đã có màn làm việc đúng luật §3.9 (`LoTrinhTiepPanel.tsx`,
+ * `ChuyenLopPanel.tsx`) — panel gắn ở `web/src/modules/classes/thaoTacDongHocVien.tsx`.
  */
-export const MENU_DONG_CHO_PR_LT = { loTrinhTiepTheo: false, chuyenLop: false } as const;
+export const MENU_DONG_CHO_PR_LT = { loTrinhTiepTheo: true, chuyenLop: true } as const;
 
 export function mucMenuDongHocVien(i: {
   laLopThuong: boolean; dangHoc: boolean; coTheGhiViPham: boolean; coTheBaoCase: boolean;

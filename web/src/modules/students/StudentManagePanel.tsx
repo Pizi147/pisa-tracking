@@ -4,73 +4,79 @@ import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Drawer } from '../../ui/Drawer.tsx';
 import { Field, SectionNote } from '../../ui/ui.tsx';
-import { fmtBand, fmtDate } from '../../lib/format.ts';
-import {
-  CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, NO_HANDOVER_NOTE, TRANSFER_REASONS, TRANSFER_REASON_LABEL,
-} from '@shared/domain/index.ts';
+import { fmtBand } from '../../lib/format.ts';
+import { CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL } from '@shared/domain/index.ts';
+import { LoTrinhTiepForm } from './LoTrinhTiepPanel.tsx';
+import { ChuyenLopForm } from './ChuyenLopPanel.tsx';
 
 /**
  * QUẢN LÝ HỌC VIÊN — MỘT panel cho mọi việc quản trị của một em (mục 5.1).
  *
- * Trước vòng 5, đầu hồ sơ có ba nút và thẻ kết quả có thêm ba nút nữa: "Kế hoạch học",
- * "Chuyển lớp", "Điểm đầu vào", "Đổi mục tiêu", "Kết luận lộ trình". Sáu nút cho sáu việc
- * mà mỗi năm làm một lần, xếp ngang hàng với việc làm hằng ngày là mở case. Ai nhìn vào
- * cũng phải đọc hết sáu cái tên mới tìm ra cái mình cần.
- *
- * Nay còn HAI nút ở đầu trang: "+ Case" (việc hằng ngày, giữ nguyên chỗ) và "Quản lý học
- * viên" mở panel này.
+ * Trước vòng 5, đầu hồ sơ có ba nút và thẻ kết quả có thêm ba nút nữa. Nay còn HAI nút ở đầu
+ * trang: "+ Case" (việc hằng ngày, giữ nguyên chỗ) và "Quản lý học viên" mở panel này.
  *
  * PANEL ĐỔI NỘI DUNG NGAY BÊN TRONG, không mở modal chồng lên modal (mục 5.2): chọn một
  * việc thì phần thân thay bằng form của việc đó, và nút "← Chọn việc khác" đưa về danh sách.
  * Riêng "Kế hoạch học" là một panel lớn có sẵn — chọn nó thì panel này ĐÓNG rồi panel kia
  * mở, để không bao giờ có hai lớp panel chồng nhau.
+ *
+ * PR-LT (mockup 12-C, §3.9.2, Q2, Q15, Q22) — thứ tự đúng: Thông tin học viên · Lộ trình tiếp
+ * theo (lớp thường) · Lộ trình (FT) · Chuyển lớp · Kết luận lộ trình (CHỈ FT, Q15) · nhóm trạng
+ * thái (Tạm dừng/Quay lại/Kết thúc học) · Lưu trữ/Bỏ lưu trữ (chỉ QL, chỉ em đã kết thúc).
  */
-/*
- * ĐÚNG BỐN MỤC, ĐÚNG THỨ TỰ NÀY (mục 5.1) — với lớp Fast Track:
- *
- *   1. Thông tin học viên    2. Lộ trình    3. Chuyển lớp    4. Kết luận lộ trình
- *
- * Vòng trước menu có SÁU mục, trong đó "Điểm đầu vào" và "Đổi mục tiêu" là hai mục riêng
- * cho hai ô dữ liệu thuộc về cùng một thứ — cái lộ trình. Kết quả là để sửa mục tiêu, người
- * dùng phải đoán xem nó nằm ở "Kế hoạch học" hay ở "Đổi mục tiêu". Nay cả hai về đúng chỗ
- * của chúng: mục Lộ trình.
- *
- * LỚP NORMAL KHÔNG CÓ MỤC LỘ TRÌNH (mục 5.3): không target IELTS, không LT1/LT2, giai đoạn
- * là chương trình Foundation/Beginner/Elementary và nằm ngay trong Thông tin học viên. Lịch
- * test Normal chỉnh từ màn lớp, không đi qua Lịch Mock Test của Fast Track.
- */
-type Job = 'menu' | 'info' | 'outcome' | 'transfer';
+type Job = 'menu' | 'info' | 'outcome' | 'lo-trinh-tiep' | 'chuyen-lop' | 'tam-dung' | 'quay-lai' | 'ket-thuc' | 'luu-tru' | 'bo-luu-tru';
 
 const JOB_LABEL: Record<Exclude<Job, 'menu'>, string> = {
   info: 'Thông tin học viên',
   outcome: 'Kết luận lộ trình',
-  transfer: 'Chuyển lớp',
+  'lo-trinh-tiep': 'Lộ trình tiếp theo',
+  'chuyen-lop': 'Chuyển lớp',
+  'tam-dung': 'Tạm dừng học',
+  'quay-lai': 'Quay lại học',
+  'ket-thuc': 'Kết thúc học',
+  'luu-tru': 'Lưu trữ',
+  'bo-luu-tru': 'Bỏ lưu trữ',
 };
 const JOB_HINT: Record<Exclude<Job, 'menu'>, string> = {
   info: 'Họ tên, ngày sinh, người tư vấn, và thông tin giai đoạn đang học.',
   outcome: 'Khép lại lộ trình này: kết quả thi thật và kết luận có đạt mục tiêu hay không.',
-  transfer: 'Chuyển em sang lớp khác. Lượt đã xong vẫn giữ nguyên lớp cũ.',
+  'lo-trinh-tiep': 'Ghi dự định sau lớp đang học — chưa đổi lớp ngay.',
+  'chuyen-lop': 'Chuyển em sang lớp khác, kể cả chi nhánh khác. Lượt đã xong vẫn giữ nguyên lớp cũ.',
+  'tam-dung': 'Em nghỉ một thời gian, giữ lớp và lộ trình để quay lại sau.',
+  'quay-lai': 'Em quay lại học bình thường.',
+  'ket-thuc': 'Em thôi học hẳn. Case còn mở sẽ được hệ thống tự đóng.',
+  'luu-tru': 'Ẩn hồ sơ khỏi danh sách chính — chỉ em đã kết thúc học.',
+  'bo-luu-tru': 'Đưa hồ sơ trở lại danh sách chính.',
+};
+
+export type LopHocQuyen = {
+  ghiLoTrinhTiep: boolean; chuyenLop: boolean; tamDung: boolean; quayLai: boolean;
+  ketThuc: boolean; luuTru: boolean; boLuuTru: boolean;
 };
 
 export function StudentManagePanel({
-  open, onClose, student, cycle, attempts, canEdit, onOpenPlan, onDone,
+  open, onClose, student, cycle, attempts, canEdit, lopHoc, onOpenPlan, onDone,
 }: {
   open: boolean; onClose: () => void;
   student: {
     id: number; name: string; classId: number | null;
-    dob?: string | null; consultantName?: string | null; note?: string | null;
+    dob?: string | null; consultantName?: string | null; note?: string | null; status?: string;
   };
   cycle: any | null;
   attempts: any[];
   canEdit: boolean;
+  lopHoc?: { quyen: LopHocQuyen; chiXem: boolean } | null;
   /** Mở panel Kế hoạch học — panel này tự đóng trước để không chồng lớp. */
   onOpenPlan: () => void;
   onDone: () => void;
 }) {
   const [job, setJob] = useState<Job>('menu');
   const close = () => { onClose(); setJob('menu'); };
+  const xong = () => { onDone(); close(); };
 
   const ratio = !!cycle?.ratio;
+  const quyen = lopHoc?.quyen;
+  const dangHoc = student.status === 'active';
 
   return (
     <Drawer open={open} onClose={close} width="max-w-xl"
@@ -78,36 +84,50 @@ export function StudentManagePanel({
       subtitle={student.name}>
       {job === 'menu' ? (
         <div className="space-y-2">
-          {!canEdit ? (
+          {!canEdit && !quyen?.boLuuTru ? (
             <SectionNote>
               Bạn không có quyền sửa hồ sơ của học viên này. Vẫn xem được mọi thông tin, và vẫn mở
               được case mới từ nút “+ Case”.
             </SectionNote>
           ) : (
             <>
-              <MenuItem label={JOB_LABEL.info} hint={JOB_HINT.info} onClick={() => setJob('info')} />
+              {canEdit && <MenuItem label={JOB_LABEL.info} hint={JOB_HINT.info} onClick={() => setJob('info')} />}
+              {/* LỘ TRÌNH TIẾP THEO — chỉ lớp thường, chỉ khi ghi được (Q2). */}
+              {quyen?.ghiLoTrinhTiep && (
+                <MenuItem label={JOB_LABEL['lo-trinh-tiep']} hint={JOB_HINT['lo-trinh-tiep']} onClick={() => setJob('lo-trinh-tiep')} />
+              )}
               {/*
-                LỘ TRÌNH — mục 2 của Fast Track, thay cho "Kế hoạch học" cũ. Gồm tuần bắt đầu,
-                kế hoạch thi thật, mục tiêu, điểm đầu vào và bảng các MT với lịch từng kỹ năng.
-                Lớp Normal KHÔNG có mục này (mục 5.3).
+                LỘ TRÌNH — mục của Fast Track, thay cho "Kế hoạch học" cũ. Lớp Normal KHÔNG có
+                mục này (mục 5.3) — thay bằng "Lộ trình tiếp theo" ở trên.
               */}
-              {cycle && !ratio && (
+              {canEdit && cycle && !ratio && (
                 <MenuItem
                   label="Lộ trình"
                   hint="Tuần bắt đầu học, kế hoạch thi thật, mục tiêu, điểm đầu vào, và lịch các đợt MT."
                   onClick={() => { close(); onOpenPlan(); }}
                 />
               )}
-              <MenuItem label={JOB_LABEL.transfer} hint={JOB_HINT.transfer} onClick={() => setJob('transfer')} />
-              {cycle && (
+              {quyen?.chuyenLop && (
+                <MenuItem label={JOB_LABEL['chuyen-lop']} hint={JOB_HINT['chuyen-lop']} onClick={() => setJob('chuyen-lop')} />
+              )}
+              {/* KẾT LUẬN LỘ TRÌNH — CHỈ Fast Track (Q15); lớp thường không còn mục này. */}
+              {canEdit && cycle && !ratio && (
                 <MenuItem label={JOB_LABEL.outcome} hint={JOB_HINT.outcome} onClick={() => setJob('outcome')} />
               )}
-              {ratio && (
-                <SectionNote>
-                  Lớp Normal không có mục Lộ trình riêng: không có target IELTS và không có LT1/LT2.
-                  Giai đoạn là chương trình đang học, nằm trong <strong>Thông tin học viên</strong>;
-                  lịch kiểm tra chỉnh từ màn hình lớp.
-                </SectionNote>
+              {quyen?.tamDung && dangHoc && (
+                <MenuItem label={JOB_LABEL['tam-dung']} hint={JOB_HINT['tam-dung']} onClick={() => setJob('tam-dung')} />
+              )}
+              {quyen?.quayLai && !dangHoc && student.status === 'inactive' && (
+                <MenuItem label={JOB_LABEL['quay-lai']} hint={JOB_HINT['quay-lai']} onClick={() => setJob('quay-lai')} />
+              )}
+              {quyen?.ketThuc && student.status !== 'finished' && (
+                <MenuItem label={JOB_LABEL['ket-thuc']} hint={JOB_HINT['ket-thuc']} onClick={() => setJob('ket-thuc')} />
+              )}
+              {quyen?.luuTru && (
+                <MenuItem label={JOB_LABEL['luu-tru']} hint={JOB_HINT['luu-tru']} onClick={() => setJob('luu-tru')} />
+              )}
+              {quyen?.boLuuTru && (
+                <MenuItem label={JOB_LABEL['bo-luu-tru']} hint={JOB_HINT['bo-luu-tru']} onClick={() => setJob('bo-luu-tru')} />
               )}
             </>
           )}
@@ -115,13 +135,16 @@ export function StudentManagePanel({
       ) : (
         <div className="space-y-3">
           <button className="btn btn-sm btn-ghost" onClick={() => setJob('menu')}>← Chọn việc khác</button>
-          {job === 'transfer'
-            ? <TransferForm studentId={student.id} currentClassId={student.classId}
-                onDone={() => { onDone(); close(); }} />
+          {job === 'lo-trinh-tiep' ? <LoTrinhTiepForm studentId={student.id} onDone={xong} />
+            : job === 'chuyen-lop' ? <ChuyenLopForm studentId={student.id} onDone={xong} />
+            : job === 'tam-dung' ? <TrangThaiForm studentId={student.id} status="inactive" onDone={xong} />
+            : job === 'quay-lai' ? <TrangThaiForm studentId={student.id} status="active" onDone={xong} />
+            : job === 'ket-thuc' ? <TrangThaiForm studentId={student.id} status="finished" onDone={xong} />
+            : job === 'luu-tru' ? <LuuTruForm studentId={student.id} boLuuTru={false} onDone={xong} />
+            : job === 'bo-luu-tru' ? <LuuTruForm studentId={student.id} boLuuTru onDone={xong} />
             : job === 'info'
-              ? <InfoForm student={student} cycle={cycle} onDone={() => { onDone(); close(); }} />
-              : <CycleForm kind={job} cycle={cycle} attempts={attempts}
-                  onDone={() => { onDone(); close(); }} />}
+              ? <InfoForm student={student} cycle={cycle} onDone={xong} />
+              : <CycleForm kind={job} cycle={cycle} attempts={attempts} onDone={xong} />}
         </div>
       )}
     </Drawer>
@@ -142,18 +165,83 @@ function MenuItem({ label, hint, onClick }: { label: string; hint: string; onCli
 // ==================================================================== các form
 
 /**
- * KẾT LUẬN LỘ TRÌNH — mục 4 của menu (mục 5.1).
- *
- * Ba thay đổi so với bản trước, và mỗi cái sửa một câu nói sai:
- *
- * 1. BỎ "CHỌN MỘT BÀI ĐÃ CÓ". Một lượt Mock Test không phải một kỳ thi IELTS: nó chấm nội
- *    bộ, không có phòng thi, không có chứng chỉ. Lấy điểm MT làm kết quả thi thật là ghi
- *    vào hồ sơ một điều chưa xảy ra. Kết quả thật là con số em báo về từ BC hay IDP.
- * 2. NÓI RÕ CÒN GÌ PHẢI BÀN GIAO. Kết thúc lộ trình KHÔNG đóng hộ các case chưa xử lý và
- *    càng không đánh dấu chúng là thành công — nên người kết luận phải nhìn thấy chúng ngay
- *    tại đây, trước khi bấm.
- * 3. HỌC LẠI LÀ MỘT LỘ TRÌNH MỚI, không phải đổi nhãn lộ trình cũ. Giữ định danh giai đoạn
- *    thì lịch sử mới đọc được là em đã đi qua hai chặng.
+ * TẠM DỪNG HỌC / QUAY LẠI HỌC / KẾT THÚC HỌC (PR-LT, §3.9.4, Q9). Cùng một form, ba trạng
+ * thái — lý do bắt buộc khi dừng/kết thúc; ngày tuỳ chọn (mặc định hôm nay ở máy chủ).
+ */
+function TrangThaiForm({ studentId, status, onDone }: {
+  studentId: number; status: 'active' | 'inactive' | 'finished'; onDone: () => void;
+}) {
+  const toast = useToast();
+  const [lyDo, setLyDo] = useState('');
+  const [ngay, setNgay] = useState('');
+  const [busy, setBusy] = useState(false);
+  const canDoLuon = status === 'active';
+
+  const submit = async () => {
+    if (!canDoLuon && !lyDo.trim()) { toast.push('error', 'Ghi lý do.'); return; }
+    setBusy(true);
+    try {
+      await api.post(`/students/${studentId}/status`, { status, date: ngay || undefined, reason: lyDo || undefined });
+      invalidate('/students'); invalidate('/classes'); invalidate('/hoc-vien-lop'); invalidate('/cases');
+      toast.push('ok', 'Đã lưu');
+      onDone();
+    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+  };
+
+  return (
+    <div className="space-y-3">
+      {status === 'finished' && (
+        <SectionNote>Case còn mở sẽ được hệ thống đóng “Học viên kết thúc khoá”.</SectionNote>
+      )}
+      {!canDoLuon && (
+        <Field label="Lý do" required>
+          <input className="field" value={lyDo} onChange={(e) => setLyDo(e.target.value)} />
+        </Field>
+      )}
+      <Field label="Ngày hiệu lực">
+        <input type="date" className="field" value={ngay} onChange={(e) => setNgay(e.target.value)} />
+      </Field>
+      <button className="btn btn-primary" onClick={submit} disabled={busy}>{busy ? 'Đang lưu…' : 'Lưu'}</button>
+    </div>
+  );
+}
+
+/** LƯU TRỮ / BỎ LƯU TRỮ (RB-9, Q22) — hỏi xác nhận ngay trong panel, không mở hộp thoại riêng. */
+function LuuTruForm({ studentId, boLuuTru, onDone }: { studentId: number; boLuuTru: boolean; onDone: () => void }) {
+  const toast = useToast();
+  const [xacNhan, setXacNhan] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const submit = async () => {
+    setBusy(true);
+    try {
+      await api.post(`/students/${studentId}/${boLuuTru ? 'unarchive' : 'archive'}`, {});
+      invalidate('/students'); invalidate('/hoc-vien-lop');
+      toast.push('ok', boLuuTru ? 'Đã bỏ lưu trữ' : 'Đã lưu trữ');
+      onDone();
+    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+  };
+
+  return (
+    <div className="space-y-3">
+      <SectionNote>
+        {boLuuTru
+          ? 'Hồ sơ sẽ trở lại danh sách chính của Học viên & Lớp.'
+          : 'Hồ sơ sẽ ẩn khỏi danh sách chính — không đổi trạng thái, không xoá dữ liệu, không đóng việc còn dở. Xem lại được ở khu Lưu trữ.'}
+      </SectionNote>
+      <label className="flex items-center gap-2 text-sm text-slate-300">
+        <input type="checkbox" checked={xacNhan} onChange={(e) => setXacNhan(e.target.checked)} />
+        Tôi hiểu và muốn {boLuuTru ? 'bỏ lưu trữ' : 'lưu trữ'} học viên này.
+      </label>
+      <button className="btn btn-primary" onClick={submit} disabled={busy || !xacNhan}>
+        {busy ? 'Đang lưu…' : JOB_LABEL[boLuuTru ? 'bo-luu-tru' : 'luu-tru']}
+      </button>
+    </div>
+  );
+}
+
+/**
+ * KẾT LUẬN LỘ TRÌNH — CHỈ Fast Track (Q15).
  */
 function CycleForm({ kind, cycle, attempts, onDone }: {
   kind: 'outcome'; cycle: any; attempts: any[]; onDone: () => void;
@@ -189,25 +277,15 @@ function CycleForm({ kind, cycle, attempts, onDone }: {
         </select>
       </Field>
 
-      {!cycle?.ratio ? (
-        <>
-          <Field label="Điểm IELTS thật (Overall)"
-            hint="Con số em báo về từ phòng thi. Chưa thi thì để trống — “chưa có căn cứ” là một câu trả lời hợp lệ.">
-            <input className="field max-w-[8rem]" type="number" step="0.5" min={0} max={9}
-              value={score} onChange={(e) => setScore(e.target.value)} />
-          </Field>
-          <SectionNote>
-            KHÔNG lấy một lượt Mock Test làm kết quả thi thật. MT chấm nội bộ, không có phòng
-            thi và không có chứng chỉ — ghi nó vào đây là nói em đã thi trong khi em chưa thi.
-          </SectionNote>
-        </>
-      ) : (
-        <SectionNote>
-          Lớp Normal kết luận theo <strong>Final Test</strong> của đúng đợt cuối, đủ cả bốn môn
-          L/R/W/S — kể cả khi đợt đó thi rải ra nhiều tuần. Thiếu một môn thì đợt vẫn là chưa
-          đủ: môn thiếu KHÔNG được tính bằng 0 và cũng không tự chốt hộ.
-        </SectionNote>
-      )}
+      <Field label="Điểm IELTS thật (Overall)"
+        hint="Con số em báo về từ phòng thi. Chưa thi thì để trống — “chưa có căn cứ” là một câu trả lời hợp lệ.">
+        <input className="field max-w-[8rem]" type="number" step="0.5" min={0} max={9}
+          value={score} onChange={(e) => setScore(e.target.value)} />
+      </Field>
+      <SectionNote>
+        KHÔNG lấy một lượt Mock Test làm kết quả thi thật. MT chấm nội bộ, không có phòng
+        thi và không có chứng chỉ — ghi nó vào đây là nói em đã thi trong khi em chưa thi.
+      </SectionNote>
 
       <Field label="Ghi chú">
         <input className="field" value={note} onChange={(e) => setNote(e.target.value)} />
@@ -245,12 +323,7 @@ function CycleForm({ kind, cycle, attempts, onDone }: {
  * THÔNG TIN HỌC VIÊN — mục 1 của menu (mục 5.1).
  *
  * Với lớp Fast Track, mục tiêu và kế hoạch thi thật sửa được ở CẢ ĐÂY lẫn ở mục Lộ trình.
- * Đó là chủ ý của mục 5.2: cùng một dữ liệu, cùng một phép kiểm, không hai nguồn sự thật —
- * nên ở đâu cũng đi qua đúng một đường của máy chủ, và sửa mục tiêu ở đâu cũng hỏi lý do và
- * ngày hiệu lực.
- *
- * Với lớp Normal thì đây là chỗ DUY NHẤT nói về giai đoạn đang học, vì Normal không có mục
- * Lộ trình (mục 5.3): không target IELTS, không LT1/LT2.
+ * Với lớp thường, giai đoạn đang học đọc ở đây; sửa Lộ trình tiếp theo ở mục riêng (PR-LT).
  */
 function InfoForm({ student, cycle, onDone }: {
   student: { id: number; name: string; dob?: string | null; consultantName?: string | null; note?: string | null };
@@ -278,11 +351,6 @@ function InfoForm({ student, cycle, onDone }: {
       <Field label="Ghi chú">
         <textarea className="field" rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
-      {/*
-        GIAI ĐOẠN ĐANG HỌC. Lớp Normal đọc ở đây là hết — nó không có mục Lộ trình. Lớp Fast
-        Track đọc ở đây để nhận biết, còn sửa thì ở mục Lộ trình, nơi có đủ mục tiêu, kế
-        hoạch thi thật và bảng MT trong một màn.
-      */}
       {cycle && (
         <div className="rounded-lg border p-3 space-y-1" style={{ borderColor: 'var(--line)' }}>
           <span className="label m-0">Giai đoạn đang học</span>
@@ -294,9 +362,8 @@ function InfoForm({ student, cycle, onDone }: {
                 {cycle.endWeek && <span className="text-slate-500"> · kết thúc {cycle.endWeek.code}</span>}
               </p>
               <SectionNote>
-                Lớp Normal không có target IELTS và không có LT1/LT2. Giai đoạn là chương trình
-                đang học; tuần kết thúc suy ra từ tuần bắt đầu và độ dài chương trình. Lịch kiểm
-                tra chỉnh từ màn hình lớp, không đi qua Lịch Mock Test của Fast Track.
+                Giai đoạn là chương trình đang học; tuần kết thúc suy ra từ tuần bắt đầu và độ
+                dài chương trình. Ghi dự định sau lớp này ở mục <strong>Lộ trình tiếp theo</strong>.
               </SectionNote>
             </>
           ) : (
@@ -330,134 +397,6 @@ function InfoForm({ student, cycle, onDone }: {
           } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
         }}>
         {busy ? 'Đang lưu…' : 'Lưu'}
-      </button>
-    </div>
-  );
-}
-
-function TransferForm({ studentId, currentClassId, onDone }: {
-  studentId: number; currentClassId: number | null; onDone: () => void;
-}) {
-  const toast = useToast();
-  const classes = useApi<any[]>('/ref/classes');
-  /* Những thứ còn dở của em — bày sẵn để người chuyển không phải tự nhớ và chép lại. */
-  const brief = useApi<{ cases: any[]; openPlans: number }>(`/students/${studentId}/handover`, [studentId]);
-  const people = useApi<any[]>('/ref/people');
-  const [toClassId, setToClassId] = useState<number | null>(null);
-  const [date, setDate] = useState('');
-  /* RB-3: lý do chọn nhanh, BẮT BUỘC; "Khác" phải ghi rõ. */
-  const [reasonCode, setReasonCode] = useState('');
-  const [reasonNote, setReasonNote] = useState('');
-  const [handoverNote, setHandoverNote] = useState('');
-  /* RB-3: lưu ý bàn giao bắt buộc, hoặc chọn rõ "Không có lưu ý" (chỉ khi em không còn case dở). */
-  const [noNote, setNoNote] = useState(false);
-  const [receiverUserId, setReceiver] = useState('');
-  const [busy, setBusy] = useState(false);
-
-  const openCases = brief.data?.cases ?? [];
-  const needHandover = openCases.length > 0;
-
-  const submit = async () => {
-    if (!toClassId) { toast.push('error', 'Cần chọn lớp đích.'); return; }
-    if (!reasonCode) { toast.push('error', 'Chọn lý do chuyển lớp.'); return; }
-    setBusy(true);
-    try {
-      await api.post(`/students/${studentId}/transfer`, {
-        toClassId, effectiveDate: date || undefined,
-        reasonCode, reasonNote: reasonNote || undefined,
-        handoverNote: handoverNote || undefined,
-        noHandoverNote: noNote,
-        receiverUserId: receiverUserId || undefined,
-      });
-      invalidate('/students'); invalidate('/attempts'); invalidate('/overview'); invalidate('/cases');
-      onDone(); toast.push('ok', 'Đã chuyển lớp');
-    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
-  };
-
-  return (
-    <div className="space-y-3">
-      <Field label="Lớp đích" required>
-        <select className="field" value={toClassId ?? ''}
-          onChange={(e) => setToClassId(Number(e.target.value) || null)}>
-          <option value="">Chọn lớp…</option>
-          {(classes.data ?? []).filter((c) => c.id !== currentClassId).map((c) => (
-            <option key={c.id} value={c.id}>{c.code} · {c.branch_name}</option>
-          ))}
-        </select>
-      </Field>
-      <Field label="Ngày hiệu lực">
-        <input type="date" className="field" value={date} onChange={(e) => setDate(e.target.value)} />
-      </Field>
-      <Field label="Lý do" required>
-        <select className="field" value={reasonCode} onChange={(e) => setReasonCode(e.target.value)}>
-          <option value="">Chọn lý do…</option>
-          {TRANSFER_REASONS.map((r) => <option key={r} value={r}>{TRANSFER_REASON_LABEL[r]}</option>)}
-        </select>
-      </Field>
-      {reasonCode === 'khac' && (
-        <Field label="Ghi rõ lý do" required>
-          <input className="field" value={reasonNote} onChange={(e) => setReasonNote(e.target.value)} />
-        </Field>
-      )}
-      {!needHandover && (
-        <div className="space-y-2">
-          <Field label="Lưu ý bàn giao" required={!noNote}>
-            <textarea className="field" rows={2} value={handoverNote} disabled={noNote}
-              onChange={(e) => setHandoverNote(e.target.value)} />
-          </Field>
-          <label className="flex items-center gap-2 text-sm text-slate-300">
-            <input type="checkbox" checked={noNote} onChange={(e) => setNoNote(e.target.checked)} />
-            {NO_HANDOVER_NOTE}
-          </label>
-        </div>
-      )}
-
-      {/*
-        THÔNG TIN BÀN GIAO — bắt buộc khi em còn case dở (mục 6.4).
-
-        Chuyển lớp xong mà không bàn giao thì case còn mở rơi vào khoảng trống: cô cũ không
-        còn dạy em, cô mới không biết em đang dở chuyện gì. Danh sách bên dưới bày sẵn đúng
-        những thứ đang dở, nên người chuyển chỉ cần dặn thêm, không phải chép lại.
-      */}
-      {needHandover && (
-        <div className="surface-2 rounded-lg p-3 space-y-2">
-          <span className="label m-0">Thông tin bàn giao</span>
-          <ul className="text-xs text-slate-300 list-none p-0 m-0 space-y-1">
-            {openCases.map((c) => (
-              <li key={c.id} className="flex flex-wrap items-center gap-2">
-                <span className="text-slate-100">{c.title}</span>
-                <span className="text-slate-500">
-                  {c.ownerName ?? 'chưa có người phụ trách'}
-                  {c.openPlans > 0 ? ` · ${c.openPlans} phương án đang chạy` : ' · chưa có phương án'}
-                  {c.nextDue ? ` · hạn ${fmtDate(c.nextDue)}` : ''}
-                </span>
-              </li>
-            ))}
-          </ul>
-          <Field label="Dặn người nhận" required
-            hint="Cô mới nhận lớp sẽ đọc đúng dòng này để biết em đang vướng gì.">
-            <textarea className="field" rows={2} value={handoverNote}
-              onChange={(e) => setHandoverNote(e.target.value)}
-              placeholder="Em đang dở phương án Reading, tuần sau có buổi tutor đã hẹn." />
-          </Field>
-          <Field label="Người tiếp nhận"
-            hint="Chọn thì các case còn mở đổi người phụ trách sang người này. Lịch sử ai đã làm gì vẫn giữ nguyên.">
-            <select className="field" value={receiverUserId} onChange={(e) => setReceiver(e.target.value)}>
-              <option value="">Giữ nguyên người phụ trách hiện tại</option>
-              {(people.data ?? []).map((u: any) => (
-                <option key={u.id} value={u.id}>{u.fullName ?? u.full_name}</option>
-              ))}
-            </select>
-          </Field>
-        </div>
-      )}
-
-      <SectionNote>
-        Lượt chưa xong sẽ chuyển sang lớp mới. Lượt đã xong giữ nguyên lớp cũ để không viết
-        lại lịch sử.
-      </SectionNote>
-      <button className="btn btn-primary" onClick={submit} disabled={busy}>
-        {busy ? 'Đang chuyển…' : 'Chuyển lớp'}
       </button>
     </div>
   );

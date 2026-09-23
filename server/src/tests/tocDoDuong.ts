@@ -69,6 +69,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Học viên & Lớp', vai: ['QL', 'QT'], url: '/classes?branchId={cn}' },
   { trang: 'Học viên & Lớp', vai: MOI_VAI, url: '/hoc-vien-lop' },
   { trang: 'Học viên & Lớp', vai: ['QL', 'QT'], url: '/hoc-vien-lop?phamVi=chi-nhanh&branchId={cn}' },
+  { trang: 'Học viên & Lớp', vai: MOI_VAI, url: '/hoc-vien-lop/luu-tru' },
+  { trang: 'Học viên & Lớp', vai: MOI_VAI, url: '/hoc-vien-lop/luu-tru?branchId={cn}' },
 
   // ---------------------------------------------------------------- Hồ sơ lớp (FT)
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/overview' },
@@ -86,6 +88,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/phan-tich-lop' },
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/y-thuc' },
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/cham' },
+  /* PR-LT, Task 5: GVCN_THUONG đọc được kế hoạch Chuyển tiếp lớp (canEdit=false ở đó), không sửa được (chỉ QL/QT gọi POST). */
+  { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/transition' },
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/cases?classId={lopThuong}' },
 
   // ---------------------------------------------------------------- Cần chấm + Lịch Test
@@ -103,6 +107,20 @@ export const DUONG_DO: MucDo[] = [
   /* PR-Qb (sửa sau rà #75, vấn đề 5) — tab Hành trình, cả giai đoạn mặc định lẫn ?giai-doan=thuong. */
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/hanh-trinh' },
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/hanh-trinh?giai-doan=thuong' },
+  { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/lich-su-lop' },
+  /* PR-LT: {hv} là em lớp FT nên `lop.laLopThuong=false`, nhưng đường vẫn 200 với mọi vai xem được hồ sơ. */
+  { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/lo-trinh-tiep' },
+  /* PR-LT, Q3: quyền chuyển lớp kiểm Ở LỚP NGUỒN — GVCN của lớp {hv} đang học được, GVBM (không kiêm GVCN) bị 403. */
+  {
+    trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/chuyen-lop/lop-dich?studentId={hv}',
+    maChuDich: { GVBM: 403 },
+  },
+  { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/chuyen-lop', maChuDich: { GVBM: 403 } },
+  {
+    /* {lopThuong} khác lớp nguồn của {hv} (MB-FT 101) — {lopFT} sẽ trùng lớp nguồn, lopDichHopLe từ chối. */
+    trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/chuyen-lop?toClassId={lopThuong}',
+    maChuDich: { GVBM: 403 },
+  },
 
   // ---------------------------------------------------------------- Danh sách Case
   { trang: 'Danh sách Case', vai: MOI_VAI, url: '/cases' },
@@ -349,4 +367,38 @@ export const TRAN: Record<string, number> = {
   'QT /ke-hoach-test/ft/3': 29,
   'QL /ke-hoach-test/thuong?branchId=1': 34,
   'QT /ke-hoach-test/thuong?branchId=1': 34,
+  // PR-LT (rà PR #86) — mốc chốt trên số đo sau khi rà, giống công thức chung: max(sau+10, ⌈sau×1.3⌉).
+  'QL /hoc-vien-lop/luu-tru': 22,
+  'GVCN /hoc-vien-lop/luu-tru': 22,
+  'GVBM /hoc-vien-lop/luu-tru': 22,
+  'GVCN_THUONG /hoc-vien-lop/luu-tru': 22,
+  'QT /hoc-vien-lop/luu-tru': 22,
+  'QL /hoc-vien-lop/luu-tru?branchId=1': 22,
+  'GVCN /hoc-vien-lop/luu-tru?branchId=1': 22,
+  'GVBM /hoc-vien-lop/luu-tru?branchId=1': 22,
+  'GVCN_THUONG /hoc-vien-lop/luu-tru?branchId=1': 22,
+  'QT /hoc-vien-lop/luu-tru?branchId=1': 22,
+  'QL /classes/5/transition': 36,
+  'QT /classes/5/transition': 35,
+  'GVCN_THUONG /classes/5/transition': 36,
+  'QL /students/1/lich-su-lop': 32,
+  'QT /students/1/lich-su-lop': 30,
+  'GVCN /students/1/lich-su-lop': 34,
+  'GVBM /students/1/lich-su-lop': 34,
+  'QL /students/1/lo-trinh-tiep': 23,
+  'QT /students/1/lo-trinh-tiep': 21,
+  'GVCN /students/1/lo-trinh-tiep': 25,
+  'GVBM /students/1/lo-trinh-tiep': 25,
+  'QL /chuyen-lop/lop-dich?studentId=1': 29,
+  'QT /chuyen-lop/lop-dich?studentId=1': 28,
+  'GVCN /chuyen-lop/lop-dich?studentId=1': 29,
+  'GVBM /chuyen-lop/lop-dich?studentId=1': 21,
+  'QL /students/1/chuyen-lop': 21,
+  'QT /students/1/chuyen-lop': 20,
+  'GVCN /students/1/chuyen-lop': 22,
+  'GVBM /students/1/chuyen-lop': 21,
+  'QL /students/1/chuyen-lop?toClassId=5': 24,
+  'QT /students/1/chuyen-lop?toClassId=5': 23,
+  'GVCN /students/1/chuyen-lop?toClassId=5': 25,
+  'GVBM /students/1/chuyen-lop?toClassId=5': 21,
 };

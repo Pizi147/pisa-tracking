@@ -23,7 +23,9 @@ export type LopTrenTrang = {
   phase: string; currentWeek: number | null; totalWeeks: number | null; needsPlacement: boolean;
   missing: { key: string; label: string; who: string }[]; missingSkills: string[];
   gvcn: { id: number; name: string } | null; soCaseMo: number; tuanKetThuc: string | null;
-  viewer: { coTheSuaHocVien: boolean; coTheBaoCase: boolean; coTheGhiViPham: boolean; coTheNhapDiem: boolean };
+  viewer: { coTheSuaHocVien: boolean; coTheBaoCase: boolean; coTheGhiViPham: boolean; coTheNhapDiem: boolean; coTheChuyenTiep: boolean };
+  /** PR-LT: số em thật sự cần xếp lớp tiếp (Q9), số em lớp thường chưa có lộ trình tiếp theo (chỉ hai tuần cuối khoá, Q5). */
+  canXepLop: number; soChuaLoTrinhTiep: number; nhacLoTrinh: boolean;
 };
 type TrangHocVienLop = {
   rows: LopTrenTrang[]; scopeEmpty: boolean;
@@ -32,7 +34,15 @@ type TrangHocVienLop = {
   hocVien: { id: number; classId: number; loc: LocHocVien[] }[];
   /** Người xem có tạo được lớp MỚI ở chi nhánh nào không — không gắn với lớp đã tồn tại nào (điểm a rà soát cuối). */
   coTheTaoLop: boolean;
+  /** Số ở mục ⋯ "Lưu trữ" đầu trang (PR-LT, Q16). */
+  demLuuTru: { lop: number; hv: number };
 };
+
+/** "Lưu trữ · {n} lớp · {m} HV" — bỏ phần số 0, cả hai 0 thì chỉ "Lưu trữ" (§3.6, G-12). */
+function nhanLuuTru(dem: { lop: number; hv: number }): string {
+  const phan = [dem.lop > 0 ? `${dem.lop} lớp` : null, dem.hv > 0 ? `${dem.hv} HV` : null].filter(Boolean);
+  return phan.length ? `Lưu trữ · ${phan.join(' · ')}` : 'Lưu trữ';
+}
 
 /**
  * HỌC VIÊN & LỚP (đặc tả §3.6, mockup 07b phương án A) — một trang, học viên nằm dưới lớp của mình.
@@ -40,6 +50,7 @@ type TrangHocVienLop = {
  * Mọi trạng thái nằm trên URL: tải lại trang và nút Back giữ đúng chỗ đang đứng.
  */
 export default function StudentsPage() {
+  const navigate = useNavigate();
   const { can } = useSession();
   const [params, setParams] = useSearchParams();
   const doc = docThamSoLoc(params.get('view'));
@@ -122,6 +133,9 @@ export default function StudentsPage() {
         {(data?.rows ?? []).some((r) => r.viewer.coTheSuaHocVien) && (
           <button type="button" className="btn btn-sm btn-primary" onClick={() => setThem(null)}>+ Học viên</button>
         )}
+        <MenuDong nhan="Thao tác trang" muc={[
+          { key: 'luu-tru', nhan: nhanLuuTru(data?.demLuuTru ?? { lop: 0, hv: 0 }), onChon: () => navigate('/hoc-vien/luu-tru') },
+        ]} />
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -211,15 +225,15 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, chiMinh, onThemHocVien, onD
   const navigate = useNavigate();
   const thuong = lop.scoringMode === 'ratio';
   const b = badgeLop({
-    needsPlacement: lop.needsPlacement, studentCount: lop.studentCount, missingSkills: lop.missingSkills,
+    needsPlacement: lop.needsPlacement, canXepLop: lop.canXepLop, missingSkills: lop.missingSkills,
     needScoresText: lop.needScores > 0 ? needScoresText(lop.workScope, lop.needScores) : null,
     soCaseMo: lop.soCaseMo, phase: lop.phase,
-    missingCount: lop.missing.filter((m) => m.key !== 'teachers').length,
+    missingCount: lop.missing.filter((m) => m.key !== 'teachers').length, soChuaLoTrinhTiep: lop.soChuaLoTrinhTiep,
   });
   const denBadge = (x: BadgeLop): string | null =>
     x.key === 'cham' ? `/test/can-cham?classId=${lop.id}${chiMinh ? '&scope=mine' : ''}`
       : x.key === 'case' ? `/hoc-vien/lop/${lop.id}?che-do=can-ho-tro`
-      : x.key === 'het-khoa' ? `/hoc-vien/lop/${lop.id}`
+      : x.key === 'het-khoa' ? (lop.viewer.coTheChuyenTiep ? `/hoc-vien/lop/${lop.id}?viec=chuyen-tiep` : `/hoc-vien/lop/${lop.id}`)
       : null;
   const mucLop: MucMenu[] = [
     { key: 'ho-so', nhan: 'Hồ sơ lớp', onChon: () => navigate(`/hoc-vien/lop/${lop.id}`) },

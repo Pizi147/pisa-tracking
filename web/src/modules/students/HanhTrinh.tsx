@@ -304,7 +304,8 @@ function VanDeHang({ v, truc, colTemplate, homNay, onOpenCase }: {
 
   return (
     <div className="grid gap-y-0.5" style={{ gridTemplateColumns: colTemplate, gridTemplateRows: `repeat(${soTang}, 20px)` }}>
-      <div className="sticky-col py-0.5 pr-2 min-w-0" style={{ gridRow: `1 / span ${soTang}`, gridColumn: 1 }}>
+      {/* Đệm trái khớp đầu hộp kỹ năng (`HopKyNang` dùng px-2.5) — sửa sau rà PR #86, vấn đề 6. */}
+      <div className="sticky-col py-0.5 pl-2.5 pr-2 min-w-0" style={{ gridRow: `1 / span ${soTang}`, gridColumn: 1 }}>
         <button type="button" className="text-left appearance-none bg-transparent border-0 p-0 group w-full"
           onClick={() => onOpenCase(v.caseId)}>
           <span className="block text-xs text-slate-200 truncate group-hover:underline">{v.ten}</span>

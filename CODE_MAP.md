@@ -137,7 +137,12 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | Badge "Thiếu thông tin" (chỉ thiếu sót CẢN TRỞ chuyên môn) | `web/src/modules/students/MissingBadge.tsx` · `server/src/classes/schedule.ts` → `missingForStudent` |
 | Câu tình trạng đầu hồ sơ ("MT2 đạt kỳ vọng · còn 2 case…") | `server/src/students/standing.ts` |
 | Lịch sử điểm 2–3 mốc trên bảng lớp | `web/src/modules/students/ClassRoster.tsx` · `server/src/classes/classes.ts` → `classRoster` (`history`) |
-| Chuyển lớp | `server/src/students/students.ts` → `transferStudent` |
+| Chuyển lớp | `server/src/students/students.ts` → `transferStudent` · `server/src/classes/luatLoTrinh.ts` → `apDungMotDong` · `web/src/modules/students/ChuyenLopPanel.tsx` |
+| **Luật đổi lớp/khoá dùng chung** (giữ khoá hay đóng-mở, đóng Case tự động, endKind) | `shared/domain/lenLop.ts` → `luatDoiLop` (bảng Q, PR-LT) |
+| Lộ trình tiếp theo (dự định sau lớp đang học, ghi trước khi chuyển thật) | `server/src/classes/loTrinhTiep.ts` · `web/src/modules/students/LoTrinhTiepPanel.tsx` |
+| Lịch sử lớp (đầu tab Hành trình, mỗi lớp em từng học một dòng) | `server/src/classes/lichSuLop.ts` · `web/src/modules/students/LichSuLop.tsx` |
+| Lưu trữ / Bỏ lưu trữ học viên | `server/src/students/students.ts` → `archiveStudent`, `unarchiveStudent` |
+| Khu Lưu trữ (lớp đã kết thúc, HV đã lưu trữ, chế độ chỉ xem) | `server/src/classes/luuTru.ts` · `web/src/modules/students/LuuTruPage.tsx` |
 
 ### Lớp học
 
@@ -149,6 +154,8 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | Lớp đang ở tuần thứ mấy, sắp thi gì | `server/src/classes/schedule.ts` → `classProgress` |
 | Tab **Ý thức** của lớp — ba khu vực (Vi phạm chưa xử lý · Biện pháp đang chuẩn bị · Lịch sử) | dữ liệu `server/src/yThuc/board.ts` → `classViolationBoard` (`GET /classes/:id/y-thuc`); giao diện PR-K |
 | **Bảng phân tích vấn đề** của lớp (tab kỹ năng, năm con số mỗi hàng) | `web/src/modules/classes/ClassIssueBoard.tsx` · `server/src/cases/effectiveness.ts` → `classIssueBoard` |
+| Chuyển tiếp cả lớp khi hết chương trình (mỗi em một hướng, hai bước Soạn/Xác nhận) | `server/src/classes/transition.ts` · `web/src/modules/classes/TransitionPanel.tsx` |
+| Lớp đã kết thúc — chế độ chỉ xem (mọi cờ viewer `false`) | `server/src/classes/classes.ts` → `classOverview`, `classRoster` (nhánh `status==='finished'`) |
 
 ### Fast Track
 

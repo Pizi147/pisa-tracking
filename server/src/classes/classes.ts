@@ -1,7 +1,8 @@
 import { db, tx } from '../db.ts';
 import {
-  ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS, awaitingScore, pendingSkillsOf, viecTiepTheoCua,
-  type AssessedSkill, type AttemptKind, type PendingCell, type WorkScope,
+  ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS, awaitingScore, nhanKetThucVi, nhanTiepTheo, pendingSkillsOf, trongHaiTuanCuoi,
+  viecTiepTheoCua,
+  type AssessedSkill, type AttemptKind, type PendingCell, type ProgrammeCode, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, notFound, nowIso } from '../util.ts';
@@ -17,6 +18,7 @@ import { allProgrammes, evaluateRegular, programmeOfClass } from '../normal/regu
 import { classProgressMany, missingForClasses, missingForStudent } from './schedule.ts';
 import { SKILL_SHORT } from '../../../shared/domain/index.ts';
 import { canhBaoTheoHocVien, caseMoTheoHocVien } from './dongHocVien.ts';
+import { demChuaLoTrinh, tiepTheoTheoHocVien } from './loTrinhTiep.ts';
 import { classWarning } from '../yThuc/canhBao.ts';
 import { listCases } from '../cases/cases.ts';
 
@@ -61,6 +63,11 @@ export type ClassSummary = {
   /** Gom mọi thứ lớp còn thiếu vào MỘT badge, kèm danh sách kỹ năng thiếu giáo viên. */
   missing: { key: string; label: string; who: string }[];
   missingSkills: string[];
+  /** Số em THẬT SỰ cần xếp lớp tiếp ngay — badge "Hết khoá" (PR-LT, Q9). */
+  canXepLop: number;
+  /** Số em lớp thường chưa ghi Lộ trình tiếp theo, chỉ đếm ở hai tuần cuối khoá (PR-LT, Q5). */
+  soChuaLoTrinhTiep: number;
+  nhacLoTrinh: boolean;
 };
 
 /**
@@ -76,15 +83,20 @@ export type ClassSummary = {
 function progressMapOf(classIds: number[]) {
   const prs = classProgressMany(classIds);
   const ms = missingForClasses(classIds);
+  const chua = demChuaLoTrinh(classIds);
   const out = new Map<number, {
     progressLabel: string | null; phase: string; phaseLabel: string;
     currentWeek: number | null; totalWeeks: number | null;
     needsPlacement: boolean; placementOptions: { code: string; name: string }[];
     missing: { key: string; label: string; who: string }[]; missingSkills: string[];
+    canXepLop: number; soChuaLoTrinhTiep: number; nhacLoTrinh: boolean;
   }>();
   for (const id of classIds) {
     const pr = prs.get(id);
     const m = ms.get(id);
+    /* Lộ trình tiếp theo chỉ áp dụng lớp thường, và chỉ nhắc ở hai tuần cuối khoá (Q5). */
+    const nhacLoTrinh = !!pr && pr.programmeCode !== 'FT'
+      && trongHaiTuanCuoi(pr.currentWeek, pr.totalWeeks, pr.phase);
     out.set(id, {
       progressLabel: pr?.label ?? null,
       phase: (pr?.phase ?? 'unknown') as string,
@@ -95,6 +107,9 @@ function progressMapOf(classIds: number[]) {
       placementOptions: (pr?.placementOptions ?? []) as { code: string; name: string }[],
       missing: m?.items ?? [],
       missingSkills: m?.missingSkills ?? [],
+      canXepLop: pr?.canXepLop ?? 0,
+      soChuaLoTrinhTiep: nhacLoTrinh ? (chua.get(id) ?? 0) : 0,
+      nhacLoTrinh,
     });
   }
   return out;
@@ -262,8 +277,14 @@ export function listClassSummaries(p: Principal, f: { branchId?: number; q?: str
 export function classRoster(p: Principal, classId: number, q?: string) {
   require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
   const conn = db();
+  const cls = conn.prepare('SELECT status FROM classes WHERE id = ?').get(classId) as any;
+  const finished = cls?.status === 'finished';
   const params: unknown[] = [classId];
-  let sql = `SELECT s.*, e.status AS enrollment_status,
+  /*
+   * LỚP ĐÃ KẾT THÚC (Q22): bảng học viên đọc MỌI em từng học (mọi trạng thái enrollment), dòng
+   * MỚI NHẤT mỗi em — chứ không chỉ em còn `active` (lớp finished thì không còn ai active).
+   */
+  let sql = `SELECT s.*, e.status AS enrollment_status, e.end_kind AS enrollment_end_kind,
                     cy.id AS cycle_id, cy.seq AS cycle_seq, cy.route, cy.target_score,
                     cy.baseline_attempt_id, cy.baseline_score,
                     cy.start_period_id, cy.exam_month, cy.exam_period_id, sp.week_start AS start_week,
@@ -273,7 +294,11 @@ export function classRoster(p: Principal, classId: number, q?: string) {
                LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
                LEFT JOIN report_periods sp ON sp.id = cy.start_period_id
                LEFT JOIN report_periods ep ON ep.id = cy.exam_period_id
-              WHERE e.class_id = ? AND e.status = 'active'`;
+              WHERE e.class_id = ?`;
+  sql += finished
+    ? ` AND e.id IN (SELECT MAX(id) FROM enrollments WHERE class_id = ? GROUP BY student_id)`
+    : ` AND e.status = 'active'`;
+  if (finished) params.push(classId);
   if (q?.trim()) {
     sql += ' AND (s.full_name LIKE ? OR s.normalized_name LIKE ? OR s.student_code LIKE ?)';
     params.push(`%${q.trim()}%`, `%${q.trim().toLowerCase()}%`, `%${q.trim().toUpperCase()}%`);
@@ -352,6 +377,9 @@ export function classRoster(p: Principal, classId: number, q?: string) {
   /* PR-Qa: nhãn cảnh báo Ý thức 5 ngày (YT-8) và Case đang mở cho "Việc tiếp theo" — mỗi thứ MỘT lần cho cả lớp. */
   const canhBao = canhBaoTheoHocVien(p, classId);
   const caseMo = caseMoTheoHocVien(p, classId);
+  /* PR-LT: Lộ trình tiếp theo của cả lớp — một câu, cột Khoá dùng ngay, không hỏi lại theo từng em. */
+  const tiepTheoLop = tiepTheoTheoHocVien([classId]);
+  const maChuongTrinhHienTai = (prog?.code ?? null) as ProgrammeCode | null;
 
   return students.map((s) => {
     /*
@@ -522,6 +550,8 @@ export function classRoster(p: Principal, classId: number, q?: string) {
       /** DỰ KIẾN THI ở đúng mức chắc chắn đang có: tuần, hoặc tháng, hoặc chưa biết. */
       examPlan: examPlanOf(s),
       archived: !!s.archived_at,
+      /** "Kết thúc vì" (Q18/Q22) — chỉ có nghĩa ở bảng lớp ĐÃ KẾT THÚC, nơi dòng không còn `active`. */
+      ketThucVi: finished ? nhanKetThucVi(s.enrollment_end_kind ?? null, s.enrollment_status) : null,
       cycle: s.cycle_id
         ? {
           id: s.cycle_id, seq: s.cycle_seq, route: s.route,
@@ -569,6 +599,9 @@ export function classRoster(p: Principal, classId: number, q?: string) {
         cases: caseMo.get(s.id) ?? [],
         homNay: today,
       }),
+      /* Cột Khoá "tiếp theo: …" (PR-LT, Q1/Q4) — chỉ có nghĩa cho lớp thường còn đang học. */
+      tiepTheo: isRatio ? nhanTiepTheo(tiepTheoLop.get(s.id) ?? null, maChuongTrinhHienTai) : null,
+      chuaLoTrinh: isRatio && (!tiepTheoLop.has(s.id) || tiepTheoLop.get(s.id)!.huong === 'chua_ro'),
     };
   });
 }
@@ -584,8 +617,25 @@ export function classOverview(p: Principal, classId: number) {
     .get(classId) as any;
   if (!cls) throw notFound('Không tìm thấy lớp');
   require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
+  const finished = cls.status === 'finished';
 
-  const summary = listClassSummaries(p, {}).rows.find((r) => r.id === classId) ?? null;
+  /*
+   * LỚP ĐÃ KẾT THÚC (Q22, chủ sản phẩm 23/09) — `listClassSummaries` chỉ lọc `status='active'`
+   * nên trả rỗng cho lớp này; dựng tóm tắt tối thiểu từ `classProgressMany` (tiến độ thô,
+   * không việc cần làm — lớp đã đóng thì không còn gì cần xếp/nhập nữa).
+   */
+  const summary = finished
+    ? (() => {
+      const pr = classProgressMany([classId]).get(classId) ?? null;
+      const studentCount = (conn.prepare('SELECT COUNT(DISTINCT student_id) n FROM enrollments WHERE class_id = ?').get(classId) as any).n as number;
+      return {
+        studentCount, needScores: 0, workScope: defaultWorkScope(p) as WorkScope,
+        phase: pr?.phase ?? 'finished', currentWeek: pr?.currentWeek ?? null, totalWeeks: pr?.totalWeeks ?? null,
+        needsPlacement: false, missing: [] as { key: string; label: string; who: string }[], missingSkills: [] as string[],
+        canXepLop: 0, soChuaLoTrinhTiep: 0,
+      };
+    })()
+    : listClassSummaries(p, {}).rows.find((r) => r.id === classId) ?? null;
   const assignments = conn
     .prepare(
       `SELECT ta.skill, ta.is_core, u.id AS user_id, u.full_name FROM teacher_assignments ta
@@ -603,6 +653,7 @@ export function classOverview(p: Principal, classId: number) {
     isFastTrack: cls.is_fast_track === 1, startDate: cls.start_date, note: cls.note,
     branchId: cls.branch_id, branchCode: cls.branch_code, branchName: cls.branch_name,
     programme: prog ? { code: prog.code, name: prog.name, weeks: prog.weeks, scoringMode: prog.scoringMode } : null,
+    status: cls.status as string, finishedAt: cls.finished_at ?? null,
     summary,
     skills: skills.map((s) => ({ skill: s.skill, sessionsPerWeek: s.sessions_per_week })),
     coreTeachers: assignments.filter((a) => a.is_core === 1).map((a) => ({ id: a.user_id, name: a.full_name })),
@@ -634,7 +685,16 @@ export function classOverview(p: Principal, classId: number) {
     })(),
     /** Số học viên có vi phạm chưa xử lý quá 5 ngày — dấu ⚠ trên tab Ý thức & Phối hợp (Q15). */
     canhBaoYThuc: can(p, PERMISSIONS.STUDENT_VIEW, { classId }) ? classWarning(p, classId).activeCount : 0,
-    viewer: {
+    /*
+     * LỚP ĐÃ KẾT THÚC → CHẾ ĐỘ CHỈ XEM (Q22): mọi cờ thao tác `false`, không nút nào hiện,
+     * không nhánh nào ở web đoán riêng — kể cả với Quản trị hệ thống (QT). Lớp đã đóng thì
+     * không còn gì để sửa/nhập/gán nữa.
+     */
+    viewer: finished ? {
+      canPlanWeek: false, canAddStudents: false, canAssign: false, canEditProgress: false,
+      editableSkills: [] as string[], isCoreTeacher: false,
+      canReportCase: false, canRecordViolation: false, canEnterScores: false, coTheChuyenTiep: false,
+    } : {
       canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { classId }),
       canAddStudents: can(p, PERMISSIONS.STUDENT_EDIT, { classId }),
       canAssign: can(p, PERMISSIONS.CLASS_ASSIGN, { classId }),
@@ -646,6 +706,8 @@ export function classOverview(p: Principal, classId: number) {
       canReportCase: can(p, PERMISSIONS.SOS_REPORT, { classId }),
       canRecordViolation: can(p, PERMISSIONS.VIOLATION_RECORD, { classId }),
       canEnterScores: editableSkills(p, classId, classSkills).length > 0,
+      /** Cùng luật với `canEditProgress` (Q2) — tên riêng để nút Chuyển tiếp lớp/badge/việc đỏ dùng chung một cờ. */
+      coTheChuyenTiep: can(p, PERMISSIONS.CLASS_EDIT, { classId }),
     },
   };
 }

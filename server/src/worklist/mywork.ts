@@ -3,7 +3,7 @@ import {
   ASSESSED_SKILL_LABEL, ATTEMPT_KIND_SHORT, ENTRY_SKILL_LABEL,
   INTERVENTION_KIND_LABEL, PERMISSIONS,
   REGULAR_SKILL_LABEL, SOS_LABEL, URGENCY_LABEL, caseHeadline, caseTopicLabel, cycleDeadline,
-  planDueDate, urgencyFromSos,
+  planDueDate, trongHaiTuanCuoi, tuanLich, urgencyFromSos,
   type AssessedSkill, type AttemptKind, type EntrySkill, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -11,6 +11,7 @@ import { diffDays } from '../util.ts';
 import { can, napTruocPhamVi, scopeFor, teachesClass, type Principal } from '../permissions.ts';
 import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
 import { classAlerts } from '../classes/schedule.ts';
+import { demChuaLoTrinh } from '../classes/loTrinhTiep.ts';
 import { myMgmtTasks } from './mgmttasks.ts';
 import { listSignals, type SignalAction } from '../cases/signals.ts';
 import { NOT_UNCONFIRMED_PRESET, UNCONFIRMED_PRESET, awaitingCauseCaseIds } from '../cases/sosState.ts';
@@ -107,7 +108,7 @@ export type WorkItem = {
 export type WorkGroupKey =
   | 'verify' | 'cause' | 'score' | 'no_plan' | 'result'
   | 'decide' | 'decide_move'
-  | 'do_plan' | 'no_owner' | 'placement' | 'missing_data' | 'mgmt';
+  | 'do_plan' | 'no_owner' | 'placement' | 'next_step' | 'missing_data' | 'mgmt';
 
 /**
  * Mỗi nhóm có MỘT DÒNG nói rõ nhóm đó nghĩa là gì.
@@ -199,6 +200,11 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string; overdue: s
     label: 'Cần xếp lớp tiếp',
     hint: 'Lớp đã học hết chương trình. Học viên còn đang học phải được xếp lớp tiếp, việc này không tự xảy ra.',
     overdue: 'Quá hạn xếp lớp tiếp',
+  },
+  next_step: {
+    label: 'Chưa có lộ trình tiếp theo',
+    hint: 'Lớp sắp hết khoá. Ghi cho từng em sẽ học gì tiếp, để Quản lý xếp lớp.',
+    overdue: 'Lớp đã hết khoá',
   },
   missing_data: {
     label: 'Thiếu dữ liệu cần cho đánh giá',
@@ -684,7 +690,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       .all(...(f.branchId ? [f.branchId] : [])) as any[]).map((r) => r.id),
   )) {
     if (pr.phase !== 'finished') continue;
-    if (pr.activeStudents === 0) continue;   // đã xếp hết rồi thì không còn việc gì
+    if (pr.canXepLop === 0) continue;   // đã xếp hết (hoặc đang xếp sau) rồi thì không còn việc gì (Q9)
     if (!can(p, PERMISSIONS.CLASS_EDIT, { classId })) continue;
     const cls = conn.prepare('SELECT code FROM classes WHERE id = ?').get(classId) as any;
     items.push({
@@ -692,16 +698,59 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       studentId: null, studentName: `Lớp ${cls.code}`,
       classId, classCode: cls.code,
       attemptId: null, attemptNo: null, caseId: null, level: null,
-      contextLabel: `Hết ${pr.totalWeeks} tuần`, count: pr.activeStudents,
-      reason: `${pr.activeStudents} học viên chưa được xếp lớp tiếp`
-        + (pr.placementOptions.length ? ` (${pr.placementOptions.map((o) => o.name).join(' hoặc ')})` : ''),
+      contextLabel: `Hết ${pr.totalWeeks} tuần`, count: pr.canXepLop,
+      reason: `${pr.canXepLop} học viên chưa có hướng học tiếp`,
       actionLabel: 'Xếp lớp tiếp theo',
       overdueLabel: badge('placement', 'overdue'),
-      href: `/hoc-vien/lop/${classId}`,
+      href: `/hoc-vien/lop/${classId}?viec=chuyen-tiep`,
       /* Việc của cả lớp, không của riêng ai — nên không gán người phụ trách. */
       ownerId: null, owner: null, mine: false,
       due: null, statusLabel: 'Đã hết chương trình',
     });
+  }
+
+  // ------------------------------------------------- 2d. chưa có lộ trình tiếp theo (PR-LT, Q5, Q6)
+  /*
+   * NHẮC GVCN TRƯỚC KHI LỚP HẾT KHOÁ: badge hộp lớp đã nhắc, nhưng GVCN cần một dòng việc
+   * để thực sự MỞ panel ghi cho từng em — QL đã có việc đỏ "Cần xếp lớp tiếp" (2c) riêng,
+   * nên việc này CHỈ dành cho GVCN, tránh trùng hai việc cho cùng một lớp (Q5).
+   */
+  {
+    const lopGvcnDay = (conn
+      .prepare(
+        `SELECT ta.class_id FROM teacher_assignments ta
+           JOIN classes c ON c.id = ta.class_id
+          WHERE ta.user_id = ? AND ta.is_core = 1 AND ta.status = 'active' AND c.status = 'active'
+            ${f.branchId ? 'AND c.branch_id = ?' : ''}`,
+      )
+      .all(...(f.branchId ? [p.userId, f.branchId] : [p.userId])) as any[]).map((r) => r.class_id as number);
+    if (lopGvcnDay.length) {
+      const tienDo = classAlerts(lopGvcnDay);
+      const soChua = demChuaLoTrinh(lopGvcnDay);
+      for (const classId of lopGvcnDay) {
+        const pr = tienDo.get(classId);
+        if (!pr || pr.programmeCode === 'FT') continue;
+        if (!trongHaiTuanCuoi(pr.currentWeek, pr.totalWeeks, pr.phase)) continue;
+        const n = soChua.get(classId) ?? 0;
+        if (n === 0) continue;
+        const cls = conn.prepare('SELECT code FROM classes WHERE id = ?').get(classId) as any;
+        const urgency: WorkUrgency = pr.phase === 'finished' ? 'overdue' : 'normal';
+        items.push({
+          key: `class-next-step:${classId}`, group: 'next_step', urgency,
+          studentId: null, studentName: `Lớp ${cls.code}`,
+          classId, classCode: cls.code,
+          attemptId: null, attemptNo: null, caseId: null, level: null,
+          contextLabel: pr.finalWeekStart ? `hết khoá ${tuanLich(pr.finalWeekStart, today)}` : null,
+          count: n,
+          reason: `${n} HV chưa có lộ trình tiếp theo`,
+          actionLabel: 'Ghi lộ trình tiếp theo',
+          overdueLabel: badge('next_step', urgency),
+          href: `/hoc-vien?open=${classId}`,
+          ownerId: p.userId, owner: null, mine: true,
+          due: null, statusLabel: pr.phase === 'finished' ? 'Đã hết khoá' : 'Sắp hết khoá',
+        });
+      }
+    }
   }
 
   // ------------------------------------------------- 3. kết quả sau hỗ trợ (tới hẹn xem lại)
@@ -1021,7 +1070,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   const order: WorkGroupKey[] = [
     'verify', 'cause', 'score', 'no_plan', 'result',
     'decide', 'decide_move',
-    'placement', 'do_plan', 'no_owner', 'mgmt', 'missing_data',
+    'placement', 'next_step', 'do_plan', 'no_owner', 'mgmt', 'missing_data',
   ];
   const weight = (u: WorkUrgency) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
 

@@ -723,7 +723,8 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     assertThrows(() => studentsSvc.transferStudent(P.mbManager, hv.sid, targetClass, TODAY, '  '), /lý do/, 'Chuyển lớp không lý do');
     assertThrows(() => studentsSvc.transferStudent(P.mbManager, hv.sid, targetClass, TODAY, 'Đổi lịch học', {}),
       /Không có lưu ý/, 'Chuyển lớp không lưu ý bàn giao');
-    studentsSvc.transferStudent(P.mbManager, hv.sid, targetClass, TODAY, 'Đổi lịch học', { noNote: true });
+    /* PR-LT, Q7: targetClass là lớp Fast Track — chuyển thật từ lớp thường bắt buộc Mục tiêu band. */
+    studentsSvc.transferStudent(P.mbManager, hv.sid, targetClass, TODAY, 'Đổi lịch học', { noNote: true, mucTieu: 6.5 });
     const j = conn.prepare(`SELECT detail FROM journey_events WHERE student_id = ? AND event_type = 'transfer' ORDER BY id DESC LIMIT 1`).get(hv.sid) as any;
     assert(j && String(j.detail).includes('Đổi lịch học') && String(j.detail).includes('Không có lưu ý'), `Hành trình: ${j?.detail}`);
   });

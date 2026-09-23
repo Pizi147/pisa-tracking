@@ -17,13 +17,14 @@ import { classProgressMany, missingForStudent } from './schedule.ts';
 import { standingFor } from '../students/standing.ts';
 import { listCases } from '../cases/cases.ts';
 import { allProgrammes } from '../normal/regular.ts';
+import { danhSachLuuTru } from './luuTru.ts';
 
 export type LopHocVienLop = ClassSummary & {
   gvcn: { id: number; name: string } | null;
   soCaseMo: number;
   /** Thứ Hai của tuần học cuối — lớp thường; FT null. */
   tuanKetThuc: string | null;
-  viewer: { coTheSuaHocVien: boolean; coTheBaoCase: boolean; coTheGhiViPham: boolean; coTheNhapDiem: boolean };
+  viewer: { coTheSuaHocVien: boolean; coTheBaoCase: boolean; coTheGhiViPham: boolean; coTheNhapDiem: boolean; coTheChuyenTiep: boolean };
 };
 
 export type TrangHocVienLop = {
@@ -34,6 +35,8 @@ export type TrangHocVienLop = {
   hocVien: { id: number; classId: number; loc: LocHocVien[] }[];
   /** Người xem có tạo được lớp MỚI ở chi nhánh nào không — không gắn với lớp đã tồn tại nào (điểm a rà soát cuối). */
   coTheTaoLop: boolean;
+  /** Số ở mục ⋯ "Lưu trữ" đầu trang (PR-LT, Q16) — cùng phạm vi, cùng hàm với `/hoc-vien-lop/luu-tru` (khớp G-10 theo cấu tạo). */
+  demLuuTru: { lop: number; hv: number };
 };
 
 const demRong = (): Record<LocHocVien, number> =>
@@ -68,6 +71,8 @@ export function danhSachHocVienLop(
     chiNhanh = f.branchId && duocXemChiNhanh.includes(f.branchId) ? f.branchId : duocXemChiNhanh[0] ?? null;
   }
   const phamVi = { coThe, dangDung, chiNhanh };
+  const dl = danhSachLuuTru(p, {});
+  const demLuuTru = { lop: dl.lop.length, hv: dl.hocVien.length };
 
   const base = listClassSummaries(p, {
     branchId: chiNhanh ?? undefined,
@@ -75,10 +80,10 @@ export function danhSachHocVienLop(
     /* Phạm vi quyết luôn badge chấm bài: "Lớp tôi dạy" đếm phần mình phải chấm (Q12 — thay cặp nút Tôi / Tất cả). */
     scope: dangDung === 'toi' ? 'mine' : 'managed',
   });
-  if (base.scopeEmpty) return { rows: [], scopeEmpty: true, phamVi, dem: demRong(), hocVien: [], coTheTaoLop };
+  if (base.scopeEmpty) return { rows: [], scopeEmpty: true, phamVi, dem: demRong(), hocVien: [], coTheTaoLop, demLuuTru };
   const lopToi = new Set(phanCong.map((a) => a.classId));
   const lops = dangDung === 'toi' ? base.rows.filter((r) => lopToi.has(r.id)) : base.rows;
-  if (!lops.length) return { rows: [], scopeEmpty: false, phamVi, dem: demRong(), hocVien: [], coTheTaoLop };
+  if (!lops.length) return { rows: [], scopeEmpty: false, phamVi, dem: demRong(), hocVien: [], coTheTaoLop, demLuuTru };
 
   const ids = lops.map((r) => r.id);
   const ph = ids.map(() => '?').join(',');
@@ -154,6 +159,8 @@ export function danhSachHocVienLop(
         coTheBaoCase: can(p, PERMISSIONS.SOS_REPORT, { classId: r.id }),
         coTheGhiViPham: can(p, PERMISSIONS.VIOLATION_RECORD, { classId: r.id }),
         coTheNhapDiem: editableSkills(p, r.id, skillsByClass.get(r.id) ?? [...ENTRY_SKILLS]).length > 0,
+        /* PR-LT: badge "Hết khoá" bấm được — cùng luật với classOverview.viewer.coTheChuyenTiep (Q2). */
+        coTheChuyenTiep: can(p, PERMISSIONS.CLASS_EDIT, { classId: r.id }),
       },
     };
   });
@@ -205,5 +212,5 @@ export function danhSachHocVienLop(
     return { id: h.id as number, classId: h.class_id as number, loc };
   });
 
-  return { rows, scopeEmpty: false, phamVi, dem, hocVien, coTheTaoLop };
+  return { rows, scopeEmpty: false, phamVi, dem, hocVien, coTheTaoLop, demLuuTru };
 }

@@ -1173,24 +1173,45 @@ check('Gửi null xoá điểm về trống, không biến thành 0', () => {
   const back = conn.prepare(`SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill='listening'`).get(a.id) as any;
   assert(back.band === scoring.bandFromRaw('listening', 30) && back.entered_by === teacher.userId, 'Nhập lại không lưu đúng');
 });
-check('Chuyển lớp giữ lớp cũ cho lượt đã xong, chuyển lượt chưa xong', () => {
-  const s = conn
-    .prepare(
-      `SELECT s.* FROM students s JOIN enrollments e ON e.student_id=s.id
-        WHERE e.class_id = ? AND e.status='active' AND s.status='active' ORDER BY s.id LIMIT 1`,
-    )
-    .get(classId('BC-FT 205')) as any;
-  const before = conn.prepare('SELECT id, class_id, status FROM assessment_attempts WHERE student_id = ?').all(s.id) as any[];
-  const done = before.filter((a) => a.status === 'done');
-  const target = classId('BC-ELE 01');
-  students.transferStudent(P.admin, s.id, target, '2026-09-21', 'Đổi ca học',
+check('PR-LT (4): Chuyển lớp KHÁC chương trình (FT → lớp thường) đóng khoá cũ, lượt chưa xong Ở LẠI lớp cũ (Q10, Q12 — sửa lại phép kiểm cũ ở đây từng cho lượt chưa xong luôn theo em sang mọi lớp đích, kể cả khác chương trình; PR-LT chốt: chỉ theo em khi GIỮ khoá). Dữ liệu TỰ DỰNG, không đụng BC-FT 205/BC-ELE 01 — hai lớp đó là bể chứa chung của nhiều phép kiểm khác (freshPlannedAttempt).', () => {
+  const bc = (conn.prepare(`SELECT id FROM branches WHERE code = 'BC'`).get() as any).id as number;
+  const now = new Date().toISOString();
+  const fromCls = (intake.createClass(P.admin, {
+    code: `BC-LT4-FT-${Date.now()}`, branchId: bc, kind: 'FT', isFastTrack: true, startDate: TODAY,
+  }) as any).id as number;
+  const toCls = (intake.createClass(P.admin, {
+    code: `BC-LT4-ELE-${Date.now()}`, branchId: bc, kind: 'ELE', isFastTrack: false, startDate: TODAY,
+  }) as any).id as number;
+  const sid = Number(conn.prepare(
+    `INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES ('PISA-LT4','LT4','lt4',?, 'active', ?)`,
+  ).run(bc, now).lastInsertRowid);
+  conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`)
+    .run(sid, fromCls, TODAY, now);
+  const cycleId = Number(conn.prepare(
+    `INSERT INTO learning_cycles (student_id, seq, route, started_at, status, created_at) VALUES (?, 1, 'LT1', ?, 'active', ?)`,
+  ).run(sid, TODAY, now).lastInsertRowid);
+  const periodId = week.ensurePeriod(TODAY).id;
+  const doneId = Number(conn.prepare(
+    `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id, status, created_at)
+     VALUES (?,?,1,'mock',?,?, 'done', ?)`,
+  ).run(cycleId, sid, fromCls, periodId, now).lastInsertRowid);
+  skillSchedule.ensureSkillRows(doneId);
+  const plannedId = Number(conn.prepare(
+    `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id, status, created_at)
+     VALUES (?,?,2,'mock',?,?, 'planned', ?)`,
+  ).run(cycleId, sid, fromCls, periodId, now).lastInsertRowid);
+  skillSchedule.ensureSkillRows(plannedId);
+
+  students.transferStudent(P.admin, sid, toCls, TODAY, 'Đổi ca học',
     { note: 'Em còn case Reading đang theo dõi, cô mới nhận lớp đọc kỹ phần phương án.' });
-  const after = conn.prepare('SELECT id, class_id, status FROM assessment_attempts WHERE student_id = ?').all(s.id) as any[];
-  for (const t of done) assert(after.find((a) => a.id === t.id)!.class_id === t.class_id, 'Lượt đã xong bị viết lại lớp');
-  for (const a of after.filter((x) => x.status === 'planned')) {
-    assert(a.class_id === target, 'Lượt chưa xong không chuyển sang lớp mới');
-  }
-  assert(profile.studentProfile(P.admin, s.id).enrollments.length >= 2, 'Lịch sử lớp bị ghi đè');
+
+  const after = conn.prepare('SELECT id, class_id, status FROM assessment_attempts WHERE student_id = ?').all(sid) as any[];
+  assert(after.find((a) => a.id === doneId)!.class_id === fromCls, 'Lượt đã xong bị viết lại lớp');
+  assert(after.find((a) => a.id === plannedId)!.class_id === fromCls,
+    'Khác chương trình: lượt chưa xong phải Ở LẠI lớp cũ (Q12), không đi theo em');
+  assert(profile.studentProfile(P.admin, sid).enrollments.length >= 2, 'Lịch sử lớp bị ghi đè');
+  const cyc = conn.prepare('SELECT status FROM learning_cycles WHERE id = ?').get(cycleId) as any;
+  assert(cyc.status === 'completed', 'Lộ trình FT cũ phải đóng completed (Q10)');
 });
 check('Ba trạng thái học viên; lưu trữ chỉ ẩn, không đóng việc còn dở', () => {
   const s = conn.prepare(`SELECT * FROM students WHERE status='finished' LIMIT 1`).get() as any;
@@ -5185,13 +5206,17 @@ check('[8] Chuyển tiếp lớp giữ nguyên lịch sử chương trình cũ v
     .prepare(`SELECT COUNT(*) n FROM assessment_attempts WHERE class_id = ? AND student_id = ?`)
     .get(row.oldc, row.sid) as any;
   assert(kept.n > 0, 'Bài của giai đoạn trước không còn gắn với lớp cũ');
-  /* Lộ trình mới có bài của CHÍNH nó, không mượn bài của lộ trình cũ. */
+  /*
+   * Lộ trình mới KHÔNG được mượn bài của lộ trình cũ. PR-LT (Q10/Q12): chuyển KHÁC chương
+   * trình đóng lộ trình cũ và mở lộ trình mới trống — một lộ trình vừa mở chưa có lịch MT
+   * nào là bình thường (giống `createCycle`), nên không còn đòi `own.n > 0` tuyệt đối.
+   */
   const cur = conn
     .prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status='active' LIMIT 1`)
     .get(row.sid) as any;
   if (cur) {
-    const own = conn.prepare('SELECT COUNT(*) n FROM assessment_attempts WHERE cycle_id = ?').get(cur.id) as any;
-    assert(own.n > 0, 'Lộ trình mới trống trơn — không có bài nào của chính nó');
+    const own = conn.prepare('SELECT id, class_id FROM assessment_attempts WHERE cycle_id = ?').all(cur.id) as any[];
+    assert(own.every((a) => a.class_id !== row.oldc), 'Lộ trình mới mượn bài đang gắn với lớp cũ');
   }
 });
 
@@ -5356,6 +5381,8 @@ check('Chuyển lớp khi còn case dở thì BẮT BUỘC có thông tin bàn g
   const target = (conn
     .prepare(`SELECT id FROM classes WHERE id != ? AND status = 'active' ORDER BY id LIMIT 1`)
     .get(row.cid) as any).id;
+  console.log('DEBUG row.cid', conn.prepare('SELECT code, programme_code, is_fast_track FROM classes WHERE id=?').get(row.cid));
+  console.log('DEBUG target', conn.prepare('SELECT code, programme_code, is_fast_track FROM classes WHERE id=?').get(target));
 
   /* Thiếu thông tin bàn giao thì KHÔNG chuyển được — và lời từ chối nói rõ vì sao. */
   assertThrows(
@@ -5369,9 +5396,10 @@ check('Chuyển lớp khi còn case dở thì BẮT BUỘC có thông tin bàn g
 
   /* Có ghi chú và người nhận thì chuyển được, và case đổi người phụ trách. */
   const receiver = (conn.prepare(`SELECT id FROM users WHERE status='active' ORDER BY id LIMIT 1`).get() as any).id;
+  /* PR-LT: `target` có thể là lớp Fast Track (Q7) — truyền sẵn mucTieu để không vỡ nếu rơi đúng trường hợp đó. */
   students.transferStudent(P.admin, row.sid, target, demoToday(), 'Đổi lớp', {
     note: 'Em đang dở phương án Reading, tuần sau có buổi tutor.',
-    receiverUserId: receiver,
+    receiverUserId: receiver, mucTieu: 6.5,
   });
   for (const c of brief.cases) {
     const now = conn.prepare('SELECT owner_user_id, status FROM sos_cases WHERE id = ?').get(c.id) as any;
@@ -5652,10 +5680,17 @@ console.log('\n34. Lịch thi, phạm vi và hạn chấm theo TỪNG KỸ NĂNG
 
 /** Một lượt MT còn nguyên, chưa có điểm, để thử các thao tác lịch mà không phá dữ liệu khác. */
 function freshPlannedAttempt(classCode: string) {
+  /*
+   * "FRESH" nghĩa đen: chưa ai đụng tới hạn của nó. PR-LT sửa lại luật Q12 (bài chưa làm chỉ đi
+   * theo em khi GIỮ khoá, lọc theo cycle_id thay vì student_id) khiến một lượt seed vốn bị bản
+   * lỗi cũ dọn nhầm sang lớp khác nay ở lại đúng chỗ (đã đúng) — nhưng lượt đó đã có sẵn
+   * deadline_override từ kịch bản demo khác, nên không còn "mới tinh" để phép kiểm dời tuần
+   * quan sát hạn đổi từ trạng thái sạch. Loại rõ deadline_override IS NULL để tên hàm đúng nghĩa.
+   */
   const row = conn
     .prepare(
       `SELECT a.* FROM assessment_attempts a
-        WHERE a.class_id = ? AND a.status = 'planned' AND a.kind = 'mock'
+        WHERE a.class_id = ? AND a.status = 'planned' AND a.kind = 'mock' AND a.deadline_override IS NULL
           AND NOT EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND s.band IS NOT NULL)
         ORDER BY a.id LIMIT 1`,
     )
@@ -9588,6 +9623,11 @@ await runKeHoachTestTests({ check, checkAsync, assert, assertThrows, conn, TODAY
 
 const { runCongViecTests } = await import('./congViec.tests.ts');
 await runCongViecTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
+// ==================================================================== PR-LT (Lên lớp, chuyển lớp)
+
+const { runLenLopTests } = await import('./lenLop.tests.ts');
+await runLenLopTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

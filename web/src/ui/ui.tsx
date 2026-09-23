@@ -316,6 +316,11 @@ export function SectionNote({ children }: { children: ReactNode }) {
   );
 }
 
+/** DẢI CHỈ XEM (PR-LT, Q22) — lớp đã kết thúc / học viên đã lưu trữ: không nút, không ⋮ thao tác. */
+export function DaiChiXem({ children }: { children: ReactNode }) {
+  return <div className="surface-2 rounded-md px-3 py-1.5 text-xs text-slate-400">{children}</div>;
+}
+
 export function DataCell({ value, state, suffix }: { value: ReactNode; state?: string; suffix?: string }) {
   if (state === 'not_applicable') return <span className="text-slate-600 text-xs italic">Không áp dụng</span>;
   if (value === null || value === undefined) return <span className="text-slate-500 text-xs">Chưa có dữ liệu</span>;

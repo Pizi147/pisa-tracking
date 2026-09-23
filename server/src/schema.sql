@@ -97,11 +97,13 @@ CREATE TABLE classes (
    */
   previous_class_id INTEGER REFERENCES classes(id),
 
-  status TEXT NOT NULL DEFAULT 'active',
+  status TEXT NOT NULL DEFAULT 'active',   -- active | finished (PR-LT, Q16 — lớp thường đã hết khoá và không còn em active)
   note TEXT,
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  finished_at TEXT   -- Ngày lớp thành 'finished' (PR-LT) — badge "Đã kết thúc {dd/mm/yyyy}" ở khu Lưu trữ.
 );
 CREATE INDEX idx_class_branch ON classes(branch_id);
+CREATE INDEX idx_class_status ON classes(status);
 
 -- Kỹ năng lớp có học và số buổi chính mỗi tuần. Quản lý cấu hình, không suy từ tên lớp.
 CREATE TABLE class_skills (
@@ -377,10 +379,31 @@ CREATE TABLE enrollments (
   started_at TEXT NOT NULL,
   ended_at TEXT,
   end_reason TEXT,
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  end_kind TEXT   -- "Kết thúc vì" (PR-LT, Q18, `lenLop.ts` → EndKind). Dòng cũ không có cột này thì suy từ `status`.
 );
 CREATE INDEX idx_enr_student ON enrollments(student_id);
 CREATE INDEX idx_enr_class ON enrollments(class_id);
+
+-- LỘ TRÌNH TIẾP THEO (PR-LT, Q1) — dự định của một em SAU lớp đang học, ghi trước khi thật sự chuyển.
+CREATE TABLE lo_trinh_tiep_theo (
+  id INTEGER PRIMARY KEY,
+  student_id INTEGER NOT NULL REFERENCES students(id),
+  class_id INTEGER NOT NULL REFERENCES classes(id),   -- lớp (khoá) mà dự định nói "sau lớp này"
+  huong TEXT NOT NULL,                                -- len_lop|fast_track|hoc_lai|bao_luu|dung_hoc|chua_ro|xep_sau
+  lop_du_kien_id INTEGER REFERENCES classes(id),
+  muc_tieu REAL,
+  thang_thi TEXT,                                     -- 'YYYY-MM'
+  ghi_chu TEXT,
+  ly_do TEXT,
+  ngay_xem_lai TEXT,
+  da_ap_dung_luc TEXT,                                -- ngày Chuyển tiếp lớp đã thực hiện dự định này
+  updated_by INTEGER REFERENCES users(id),
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  UNIQUE (student_id, class_id)
+);
+CREATE INDEX idx_ltt_class ON lo_trinh_tiep_theo(class_id);
 
 -- HÀNH TRÌNH HỌC. Đây là câu chuyện đọc được của một em, KHÔNG phải nhật ký kỹ thuật
 -- (nhật ký kỹ thuật nằm ở `audit_logs`). Chỉ ghi sự kiện có ý nghĩa với người đọc.

@@ -166,16 +166,31 @@ function classIsFastTrack(classId: number): boolean {
   return !!r?.is_fast_track;
 }
 
+/**
+ * Chi nhánh của HV cho luật quyền — ưu tiên CHI NHÁNH ĐANG HỌC (quyết định planning 23/09):
+ * còn ghi danh `active` thì chỉ tính chi nhánh của các lớp ĐANG HỌC (+ `students.branch_id`) —
+ * ghi danh cũ đã `transferred`/`paused`/`completed` không còn giữ quyền xem ở chi nhánh cũ nữa,
+ * để QL chi nhánh MỚI thấy em ngay sau khi chuyển (PR-LT). Em đã nghỉ hẳn/lưu trữ (không còn
+ * ghi danh `active` nào) thì giữ luật cũ — mọi chi nhánh từng học, để lịch sử vẫn tra được.
+ */
 function branchesOfStudent(studentId: number): number[] {
   return nho('hv-cn:' + studentId, () => {
-    const rows = db()
+    const conn = db();
+    const activeRows = conn
       .prepare(
         `SELECT DISTINCT c.branch_id AS b FROM enrollments e JOIN classes c ON c.id = e.class_id
-          WHERE e.student_id = ?
-         UNION SELECT branch_id AS b FROM students WHERE id = ? AND branch_id IS NOT NULL`,
+          WHERE e.student_id = ? AND e.status = 'active'`,
       )
-      .all(studentId, studentId) as any[];
-    return rows.map((r) => r.b).filter((b) => b != null);
+      .all(studentId) as any[];
+    const rows = activeRows.length
+      ? activeRows
+      : (conn
+        .prepare(`SELECT DISTINCT c.branch_id AS b FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = ?`)
+        .all(studentId) as any[]);
+    const set = new Set<number>(rows.map((r) => r.b).filter((b) => b != null));
+    const studentBranch = (conn.prepare('SELECT branch_id AS b FROM students WHERE id = ?').get(studentId) as any)?.b;
+    if (studentBranch != null) set.add(studentBranch);
+    return [...set];
   });
 }
 
@@ -191,8 +206,9 @@ function classesOfStudent(studentId: number): number[] {
  *
  * Nạp ĐÚNG hai thứ mà `classesOfStudent`/`branchesOfStudent` tính — cùng luật, chỉ đổi nguồn dữ liệu:
  *   · lớp của HV = MỌI ghi danh, mọi trạng thái (không lọc status, y hệt `classesOfStudent`).
- *   · chi nhánh của HV = chi nhánh các lớp đó (bỏ NULL) ∪ `students.branch_id` (khi khác NULL) — y hệt
- *     `branchesOfStudent`.
+ *   · chi nhánh của HV = CHI NHÁNH ĐANG HỌC nếu còn ghi danh `active` (chi nhánh các lớp `active`
+ *     ∪ `students.branch_id`), không có ghi danh `active` nào thì lùi về chi nhánh MỌI ghi danh
+ *     ∪ `students.branch_id` — đúng luật mới của `branchesOfStudent` (planning 23/09).
  * Mỗi id trong lô ĐỀU được `datNho` (kể cả em không có ghi danh nào → mảng rỗng `[]`), để lần gọi
  * `classesOfStudent`/`branchesOfStudent` sau đó (cùng request) không hỏi DB nữa dù kết quả rỗng. Theo lô 400 id một
  * lần hỏi (giới hạn tham số của một câu `IN`); bỏ id rỗng/trùng/đã có trong bộ nhớ trước khi hỏi.
@@ -204,32 +220,43 @@ export function napTruocPhamVi(studentIds: readonly (number | null | undefined)[
   if (!idsCanNap.length) return;
 
   const lopCua = new Map<number, number[]>();
-  const cnCua = new Map<number, Set<number>>();
-  for (const id of idsCanNap) { lopCua.set(id, []); cnCua.set(id, new Set()); }
+  const cnDangHoc = new Map<number, Set<number>>();
+  const cnMoiGhiDanh = new Map<number, Set<number>>();
+  /* Id nào có ÍT NHẤT MỘT ghi danh `active` — quyết định dùng `cnDangHoc` hay lùi về `cnMoiGhiDanh`,
+     tách riêng khỏi hai Set trên vì cả hai đều được cộng thêm `students.branch_id` bên dưới (nếu
+     dùng `.size` của `cnDangHoc` để quyết thì một em CHỈ có `students.branch_id`, không ghi danh
+     active nào, sẽ bị tính nhầm là "đang học"). */
+  const coActive = new Set<number>();
+  for (const id of idsCanNap) { lopCua.set(id, []); cnDangHoc.set(id, new Set()); cnMoiGhiDanh.set(id, new Set()); }
 
   for (let i = 0; i < idsCanNap.length; i += 400) {
     const lo = idsCanNap.slice(i, i + 400);
     const cho = lo.map(() => '?').join(',');
     for (const r of db()
       .prepare(
-        `SELECT e.student_id AS sid, e.class_id AS cid, c.branch_id AS bid
+        `SELECT e.student_id AS sid, e.class_id AS cid, e.status AS trang_thai, c.branch_id AS bid
            FROM enrollments e LEFT JOIN classes c ON c.id = e.class_id
           WHERE e.student_id IN (${cho})`,
       )
       .all(...lo) as any[]) {
       lopCua.get(r.sid)!.push(r.cid);
-      if (r.bid != null) cnCua.get(r.sid)!.add(r.bid);
+      if (r.trang_thai === 'active') coActive.add(r.sid);
+      if (r.bid != null) {
+        cnMoiGhiDanh.get(r.sid)!.add(r.bid);
+        if (r.trang_thai === 'active') cnDangHoc.get(r.sid)!.add(r.bid);
+      }
     }
     for (const r of db()
       .prepare(`SELECT id, branch_id AS bid FROM students WHERE id IN (${cho}) AND branch_id IS NOT NULL`)
       .all(...lo) as any[]) {
-      cnCua.get(r.id)!.add(r.bid);
+      cnMoiGhiDanh.get(r.id)!.add(r.bid);
+      cnDangHoc.get(r.id)!.add(r.bid);
     }
   }
 
   for (const id of idsCanNap) {
     datNho('hv-lop:' + id, lopCua.get(id)!);
-    datNho('hv-cn:' + id, [...cnCua.get(id)!]);
+    datNho('hv-cn:' + id, [...(coActive.has(id) ? cnDangHoc.get(id)! : cnMoiGhiDanh.get(id)!)]);
   }
 }
 

@@ -34,6 +34,8 @@ type HistoryRow = {
 type RosterRow = {
   missing: { key: string; label: string; who: string }[];
   id: number; studentCode: string; fullName: string; status: string; archived: boolean;
+  /** "Kết thúc vì" (Q18/Q22) — chỉ có ở bảng lớp ĐÃ KẾT THÚC, thay cho nhãn chung "Đã kết thúc". */
+  ketThucVi?: string | null;
   skills: string[] | null;
   cycle: { id: number; seq: number; route: string | null; target: number | null } | null;
   standingLine: string | null;
@@ -224,7 +226,7 @@ export function ClassRoster({ classId, quyen, onDoi, onAddStudents }: {
 function KetLuan({ row }: { row: RosterRow }) {
   const xam = 'inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap bg-slate-300/8 text-slate-400 border-slate-300/20';
   const vang = 'inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap bg-amber-300/10 text-amber-200 border-amber-300/30';
-  if (row.status !== 'active') return <span className={xam}>Đã kết thúc</span>;
+  if (row.status !== 'active') return <span className={xam}>{row.ketThucVi ?? 'Đã kết thúc'}</span>;
   if (row.sosLevel === null) return <span className={xam}>Chưa có kết quả</span>;
   const tamThoi = row.provisional ? ' · tạm thời' : '';
   if (row.sosLevel > 0) return <span className={vang}>SOS {row.sosLevel}{tamThoi}</span>;
