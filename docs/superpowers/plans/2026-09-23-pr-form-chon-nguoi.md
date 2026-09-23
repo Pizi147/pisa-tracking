@@ -370,6 +370,10 @@ onPickStudent` không đổi; `signal` có thể mang `kind`, `scoreText`, `cont
 
 **Xong khi:** typecheck xanh. Commit `PR-Form (9): Ý thức — chọn người thực hiện, Phụ trách PA xử lý, Môn tự điền`.
 
+- [x] Task 9 xong — `npm run check` xanh, 826 phép kiểm không đổi. `CreateMeasurePanel` giữ lại nửa sau của `SectionNote` cũ
+  (câu về hai nút Lưu/Xác nhận — không liên quan phụ trách) thay vì xoá cả khối, chỉ bỏ đúng câu về người phụ trách mặc
+  định như kế hoạch nói.
+
 ## Task 10 · Web: chữ lớp thường ở `SkillBoard.tsx`
 
 **Files:** `web/src/modules/cases/SkillBoard.tsx` (chỉ thêm trường vào kiểu, không đổi tên kiểu `SkillBoardRow` —

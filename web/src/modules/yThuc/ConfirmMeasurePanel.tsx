@@ -1,17 +1,20 @@
 import { useEffect, useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
-import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { Modal } from '../../ui/Drawer.tsx';
 import { Field } from '../../ui/ui.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
-import { MEASURE_REQUIRED_FIELDS, measureMissing, type MeasureKind } from '@shared/domain/index.ts';
+import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
+import {
+  MEASURE_REQUIRED_FIELDS, measureMissing, nguoiThanhPayloadYThuc, nguoiThieu, type MeasureKind, type NguoiChon,
+} from '@shared/domain/index.ts';
 import { fmtDate } from '../../lib/format.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 
 type MeasureDetail = {
   id: number; studentName: string; kind: string; kindLabel: string; customName: string | null;
+  ownerName: string | null;
   violations: { id: number; occurredOn: string; categoryLabel: string }[];
   attachmentCount: number; canManage: boolean;
 };
@@ -25,18 +28,17 @@ export function ConfirmMeasurePanel({ open, onClose, measureId, onDone }: {
   open: boolean; onClose: () => void; measureId: number | null; onDone?: () => void;
 }) {
   const toast = useToast();
-  const { session } = useSession();
   const { homNay: today } = useNgayNghiepVu();
   const { data, reload } = useApi<MeasureDetail>(open && measureId ? `/measures/${measureId}` : null, [open, measureId]);
   const [performedOn, setPerformedOn] = useState(today);
-  const [performerName, setPerformerName] = useState('');
+  const [nguoi, setNguoi] = useState<NguoiChon | null>({ kieu: 'toi' });
   const [note, setNote] = useState('');
   const [participants, setParticipants] = useState('');
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!open) return;
-    setPerformedOn(today); setPerformerName(''); setNote(''); setParticipants('');
+    setPerformedOn(today); setNguoi({ kieu: 'toi' }); setNote(''); setParticipants('');
   }, [open, measureId]);
 
   if (!data) return open ? <Modal open onClose={onClose} title="Xác nhận đã thực hiện"><p>Đang tải…</p></Modal> : null;
@@ -44,7 +46,7 @@ export function ConfirmMeasurePanel({ open, onClose, measureId, onDone }: {
   const spec = MEASURE_REQUIRED_FIELDS[data.kind as MeasureKind];
   const missing = measureMissing(data.kind as MeasureKind, {
     performedOn: performedOn || null, content: note, attachments: data.attachmentCount,
-    customName: data.customName, performer: !!(performerName.trim() || session?.user?.id),
+    customName: data.customName, performer: nguoiThieu(nguoi, true) === null,
   });
 
   const submit = async () => {
@@ -52,9 +54,7 @@ export function ConfirmMeasurePanel({ open, onClose, measureId, onDone }: {
     setBusy(true);
     try {
       await api.post(`/measures/${measureId}/confirm`, {
-        performedOn, performerName: performerName.trim() || undefined,
-        /* Bỏ trống người thực hiện = chính bạn làm — máy chủ không tự suy ra, phải gửi rõ ID của mình. */
-        performedBy: performerName.trim() ? undefined : session?.user?.id,
+        performedOn, ...nguoiThanhPayloadYThuc(nguoi),
         note: note.trim() || undefined, participants: participants.trim() || undefined,
       });
       invalidate('/measures'); invalidate('/violations'); invalidate('/classes'); invalidate('/students'); invalidate('/y-thuc');
@@ -75,14 +75,15 @@ export function ConfirmMeasurePanel({ open, onClose, measureId, onDone }: {
         </>
       }>
       <div className="space-y-3">
+        {data.ownerName && <p className="text-xs text-slate-500 m-0">Phụ trách: {data.ownerName}</p>}
+
         <Field label="Ngày thực hiện" required>
           <input type="date" className="field" value={performedOn} max={today}
             onChange={(e) => setPerformedOn(e.target.value)} />
         </Field>
 
-        <Field label="Người thực hiện" hint="Bỏ trống nếu chính bạn làm.">
-          <input className="field" value={performerName} onChange={(e) => setPerformerName(e.target.value)}
-            placeholder="Ví dụ: cô Thu (GVCN)" />
+        <Field label="Người thực hiện">
+          <ChonNguoi nhom="nhan_vien" value={nguoi} onChange={setNguoi} />
         </Field>
 
         {spec?.participants === 'optional' && (

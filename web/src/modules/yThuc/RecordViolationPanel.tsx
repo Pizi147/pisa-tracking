@@ -38,6 +38,8 @@ export function RecordViolationPanel({
   const editing = !!violation;
   const [category, setCategory] = useState<string>('homework');
   const [skill, setSkill] = useState<string>('');
+  /* YT-4: người dùng đã đụng ô Môn chưa — chưa đụng thì môn tự điền không tính là một lựa chọn. */
+  const [daChonMon, setDaChonMon] = useState(false);
   const [occurredOn, setOccurredOn] = useState(today);
   const [description, setDescription] = useState('');
   const [busy, setBusy] = useState(false);
@@ -51,9 +53,9 @@ export function RecordViolationPanel({
     if (!open) return;
     if (violation) {
       setCategory(violation.category); setSkill(violation.skill ?? ''); setOccurredOn(violation.occurredOn);
-      setDescription(violation.description);
+      setDescription(violation.description); setDaChonMon(true);
     } else {
-      setCategory('homework'); setSkill(''); setOccurredOn(today); setDescription('');
+      setCategory('homework'); setSkill(''); setOccurredOn(today); setDescription(''); setDaChonMon(false);
     }
   }, [open, violation?.id]);
 
@@ -61,10 +63,17 @@ export function RecordViolationPanel({
   const similarQ = studentId && category && !editing
     ? `/violations/similar?studentId=${studentId}&category=${category}${occurredOn ? `&occurredOn=${occurredOn}` : ''}`
     : null;
-  const similar = useApi<{ rows: any[] }>(similarQ, [studentId, category, occurredOn, editing]);
+  const similar = useApi<{ rows: any[]; defaultSkill: string | null }>(similarQ, [studentId, category, occurredOn, editing]);
   const [forceNew, setForceNew] = useState(false);
   useEffect(() => { setForceNew(false); }, [category, occurredOn, studentId]);
   const dup = !editing && !forceNew ? (similar.data?.rows ?? [])[0] : null;
+
+  /* YT-4: chưa đụng ô Môn mà máy chủ biết bạn dạy đúng một môn ở lớp này → điền sẵn, để người dùng thấy trước khi lưu. */
+  const defaultSkill = similar.data?.defaultSkill ?? null;
+  useEffect(() => {
+    if (editing || daChonMon || !defaultSkill) return;
+    setSkill(defaultSkill);
+  }, [editing, daChonMon, defaultSkill]);
 
   const minLen = category === 'other' ? VIOLATION_OTHER_DESCRIPTION_MIN : VIOLATION_DESCRIPTION_MIN;
   /* K2-3: ràng buộc nói TRƯỚC khi bấm — nút mờ + câu thiếu gì, không báo lỗi đỏ sau khi bấm. */
@@ -83,7 +92,10 @@ export function RecordViolationPanel({
         toast.push('ok', 'Đã lưu vi phạm');
       } else {
         await api.post('/violations', {
-          studentId, category, skill: skill || null, occurredOn: occurredOn || undefined, description, idempotencyKey,
+          studentId, category,
+          /* YT-4: chưa đụng ô Môn thì không gửi trường này — máy chủ tự điền. Đã đụng thì gửi đúng giá trị, kể cả rỗng (chủ ý để trống). */
+          ...(daChonMon ? { skill: skill || null } : {}),
+          occurredOn: occurredOn || undefined, description, idempotencyKey,
         });
         toast.push('ok', `Đã ghi vi phạm cho ${studentName ?? 'học viên'}`);
       }
@@ -137,7 +149,7 @@ export function RecordViolationPanel({
         </Field>
 
         <Field label="Môn" hint="Tự điền theo môn bạn dạy lớp này; để trống được.">
-          <select className="field" value={skill} onChange={(e) => setSkill(e.target.value)}>
+          <select className="field" value={skill} onChange={(e) => { setSkill(e.target.value); setDaChonMon(true); }}>
             <option value="">— để trống —</option>
             {VIOLATION_SKILLS.map((s) => (
               <option key={s} value={s}>{VIOLATION_SKILL_LABEL[s] ?? s}</option>

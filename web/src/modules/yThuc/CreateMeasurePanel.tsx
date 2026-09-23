@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
+import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { Modal } from '../../ui/Drawer.tsx';
 import { Field, SectionNote } from '../../ui/ui.tsx';
-import { MEASURE_KINDS, MEASURE_KIND_LABEL, type MeasureKind } from '@shared/domain/index.ts';
+import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
+import { MEASURE_KINDS, MEASURE_KIND_LABEL, type MeasureKind, type NguoiChon } from '@shared/domain/index.ts';
 import { fmtDate } from '../../lib/format.ts';
 
 type KindRow = { kind: MeasureKind; label: string; available: boolean; reason: string | null };
@@ -26,16 +28,19 @@ export function CreateMeasurePanel({
   onConfirmNow?: (measureId: number) => void;
 }) {
   const toast = useToast();
+  const { session } = useSession();
   const kinds = useApi<{ rows: KindRow[] }>(open && studentId ? `/students/${studentId}/measure-kinds` : null, [open, studentId]);
   const [kind, setKind] = useState<string>('talk_short');
   const [customName, setCustomName] = useState('');
   const [note, setNote] = useState('');
   const [picked, setPicked] = useState<Set<number>>(new Set());
+  /* YT-9: null = để trống, máy chủ tự điền GVCN của lớp như cũ. */
+  const [owner, setOwner] = useState<NguoiChon | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!open) return;
-    setKind('talk_short'); setCustomName(''); setNote('');
+    setKind('talk_short'); setCustomName(''); setNote(''); setOwner(null);
     setPicked(new Set(violations.map((v) => v.id)));
   }, [open]);
 
@@ -52,9 +57,11 @@ export function CreateMeasurePanel({
     if (missing) return;
     setBusy(true);
     try {
+      const ownerUserId = owner?.kieu === 'toi' ? session?.user?.id : owner?.kieu === 'tai_khoan' ? owner.id : undefined;
       const m = await api.post<any>('/measures', {
         studentId, kind, customName: kind === 'other' ? customName.trim() : null,
         violationIds: list.map((v) => v.id), note: note.trim() || null,
+        ownerUserId,
         idempotencyKey: `measure:${studentId}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`,
       });
       invalidate('/violations'); invalidate('/measures'); invalidate('/classes'); invalidate('/students'); invalidate('/y-thuc');
@@ -112,6 +119,12 @@ export function CreateMeasurePanel({
           </div>
         </Field>
 
+        {/* YT-9: Phụ trách — ngay dưới Loại (không cùng hàng được: Loại là danh sách radio, B05). */}
+        <Field label="Phụ trách">
+          <ChonNguoi nhom="nhan_vien" choNgoai={false} value={owner} onChange={setOwner}
+            macDinhTrong="Mặc định: GVCN của lớp" />
+        </Field>
+
         {kind === 'other' && (
           <Field label="Tên phương án" required>
             <input className="field" value={customName} onChange={(e) => setCustomName(e.target.value)} />
@@ -123,8 +136,8 @@ export function CreateMeasurePanel({
         </Field>
 
         <SectionNote>
-          Người phụ trách mặc định là giáo viên chủ nhiệm của lớp em đang học. `Lưu — Đang chuẩn bị` dùng cho
-          việc cần vài ngày (Report, Thư cảnh cáo); `Xác nhận đã làm luôn` dùng cho việc vừa làm tại chỗ.
+          `Lưu — Đang chuẩn bị` dùng cho việc cần vài ngày (Report, Thư cảnh cáo); `Xác nhận đã làm luôn` dùng cho việc vừa
+          làm tại chỗ.
         </SectionNote>
 
         {missing && <p className="text-xs text-amber-200/90 m-0">{missing}</p>}

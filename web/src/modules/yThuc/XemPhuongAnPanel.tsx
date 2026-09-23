@@ -18,7 +18,8 @@ export function XemPhuongAnPanel({ measureId, onClose }: { measureId: number | n
         <div className="space-y-3 text-sm text-slate-200">
           <Field label="Trạng thái" as="div">{d.statusLabel}</Field>
           <Field label="Ngày thực hiện" as="div">{fmtDate(d.performedOn)}</Field>
-          <Field label="Người thực hiện" as="div">{d.performerName ?? d.performedByName ?? '—'}</Field>
+          <Field label="Người thực hiện" as="div">{d.performedByName ?? d.performerName ?? '—'}</Field>
+          {d.ownerName && <Field label="Phụ trách" as="div">{d.ownerName}</Field>}
           {d.participants && <Field label="Người tham gia" as="div">{d.participants}</Field>}
           <Field label="Lý do / nội dung" as="div">
             <p className="m-0 whitespace-pre-wrap break-words">{d.note ?? '—'}</p>
