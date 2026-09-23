@@ -395,4 +395,6 @@ Commit `PR-Qb (8): 375px hồ sơ học viên, bảng định vị, CODE_MAP, đ
 
 *(Người code ghi: model thật, B và số phép kiểm mỗi Task, kết quả KIỂM từng ý, chỗ tự quyết thêm.)*
 
-- **Task 0:**
+- **Task 0:** Model thật = Sonnet 5. Qa (#69) đã merge trên `origin/main` (69910fd) — 3 điều kiện kiểm đều đạt. Worktree
+  `.claude/worktrees/pr-qb-ho-so-hoc-vien` tạo từ `origin/main`, `npm ci` xong. Biến Turso: sạch. `npm test` → **B = 837**
+  kiểm tra đạt. File kế hoạch đã có sẵn trên `main` (không cần chép thêm) — không có gì khác để commit ở bước này.
