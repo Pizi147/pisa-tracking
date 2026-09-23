@@ -94,7 +94,7 @@ runSeed();
 const SEED_MAX: Record<string, number> = {};
 {
   const { db: seedDb } = await import('../db.ts');
-  for (const t of ['sos_cases', 'case_interventions', 'case_followups', 'assessment_scores', 'unit_reports', 'violations', 'discipline_measures', 'tasks']) {
+  for (const t of ['sos_cases', 'case_interventions', 'case_followups', 'assessment_scores', 'unit_reports', 'violations', 'discipline_measures', 'tasks', 'students']) {
     SEED_MAX[t] = ((seedDb().prepare(`SELECT COALESCE(MAX(id),0) m FROM ${t}`).get() as any).m) as number;
   }
 }
@@ -9644,6 +9644,11 @@ await runNenGiaoDienTests({ check, checkAsync, assert, assertThrows, conn, TODAY
 
 const { runPanelUx3Tests } = await import('./panelUx3.tests.ts');
 await runPanelUx3Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
+// ==================================================================== PR-XOA (Xoá học viên, xoá tài khoản, lưu trữ tự động — chỉ Quản trị hệ thống)
+
+const { runXoaDuLieuTests } = await import('./xoaDuLieu.tests.ts');
+await runXoaDuLieuTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

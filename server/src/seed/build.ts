@@ -85,20 +85,18 @@ export function buildJourneys(ctx: BuildCtx): BuildCounts {
 
   for (const s of STUDENTS) {
     /* ---------------------------------------------------------------- 1. học viên */
+    /* PR-XOA §2 (Q15): em đã thôi học thì đã ở Lưu trữ từ ngày thôi học — cùng luật `setStudentStatus`. */
+    const finishedAt = s.status === 'finished' ? (s.finishedAt ?? null) : null;
     const info = conn
       .prepare(
         `INSERT INTO students (student_code, full_name, normalized_name, dob, branch_id, status,
-                               consultant_name, note, archived_at, created_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?)`,
+                               consultant_name, note, finished_at, archived_at, created_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
       )
       .run(ctx.nextStudentCode(), s.name, normalizeName(s.name), s.dob ?? null,
            ctx.branchId.get(s.branch)!,
            s.status === 'finished' ? 'finished' : 'active',
-           null, null, null, NOW);
-    if (s.status === 'finished' && s.finishedAt) {
-      conn.prepare('UPDATE students SET finished_at = ? WHERE id = ?')
-        .run(s.finishedAt, Number(info.lastInsertRowid));
-    }
+           null, null, finishedAt, finishedAt, NOW);
     const sid = Number(info.lastInsertRowid);
     counts.students += 1;
     ctx.studentIdByCode?.set(s.code, sid);

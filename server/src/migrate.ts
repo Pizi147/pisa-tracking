@@ -448,6 +448,8 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     migrateCongViec(conn, applied);
     /* PR-LT: Lộ trình tiếp theo, end_kind, khu Lưu trữ. */
     migrateLenLop(conn, applied);
+    /* PR-XOA: cột users.deleted_at (xoá mềm tài khoản) + đưa em đã thôi học vào Lưu trữ (một lần). */
+    migrateXoaDuLieu(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống
@@ -3263,4 +3265,30 @@ export function migrateLenLop(conn: any, applied: string[]) {
   conn.exec(`CREATE INDEX IF NOT EXISTS idx_class_status ON classes(status)`);
   if (!done.length) return;
   applied.push('PR-LT: thêm bảng lo_trinh_tiep_theo, cột enrollments.end_kind, classes.finished_at. Dữ liệu cũ giữ nguyên.');
+}
+
+/**
+ * PR-XOA: cột `users.deleted_at` (xoá mềm tài khoản còn dấu vết, đặc tả §3) + đưa học viên ĐÃ THÔI HỌC mà chưa lưu trữ vào khu Lưu trữ
+ * (đặc tả §2 — từ nay `setStudentStatus(…, 'finished')` tự lưu trữ). Phần đưa vào Lưu trữ chạy ĐÚNG MỘT LẦN, đánh dấu bằng khoá
+ * `demo_config.xoa_du_lieu_backfill_at` (Q14): chạy lại không lưu trữ lại em mà Quản lý đã "Bỏ lưu trữ".
+ */
+export function migrateXoaDuLieu(conn: any, applied: string[]) {
+  const hasTable = (t: string) => !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
+  const cols = (t: string): string[] => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
+  if (!hasTable('users') || !hasTable('students')) return;
+  const done: string[] = [];
+  if (!cols('users').includes('deleted_at')) {
+    conn.exec('ALTER TABLE users ADD COLUMN deleted_at TEXT');
+    done.push('cột users.deleted_at');
+  }
+  const KHOA = 'xoa_du_lieu_backfill_at';
+  if (hasTable('demo_config') && !conn.prepare('SELECT 1 FROM demo_config WHERE key = ?').get(KHOA)) {
+    const r = conn.prepare(
+      `UPDATE students SET archived_at = COALESCE(finished_at, substr(created_at, 1, 10))
+        WHERE status = 'finished' AND archived_at IS NULL`,
+    ).run();
+    conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run(KHOA, nowIso(), nowIso());
+    if (r.changes) done.push(`đưa ${r.changes} học viên đã thôi học vào Lưu trữ`);
+  }
+  if (done.length) applied.push(`PR-XOA: ${done.join(', ')}.`);
 }

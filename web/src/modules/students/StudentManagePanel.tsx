@@ -88,7 +88,7 @@ function TrangThaiPanel({ studentId, studentName, lop, onClose, onDone, status }
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy}>Lưu</button>,
       }}>
       <Khoi tieuDe={tieuDe}
-        luat={status === 'finished' ? 'Case còn mở sẽ được hệ thống đóng “Học viên kết thúc khoá”.'
+        luat={status === 'finished' ? 'Case còn mở sẽ được hệ thống đóng “Học viên kết thúc khoá”. Hồ sơ vào khu Lưu trữ (chỉ xem).'
           : status === 'inactive' ? 'Em nghỉ một thời gian, giữ lớp và lộ trình để quay lại sau.' : undefined}>
         {!canDoLuon && (
           <Truong nhan="Lý do" batBuoc>
