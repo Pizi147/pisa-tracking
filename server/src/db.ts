@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cauHinhDb, choPhepSeedTurso, coCoBanChinh } from './moiTruong.ts';
 import { chanGiaoDichNeuSapHetGio } from './platform/hanGio.ts';
+import { demCau, xoaNho } from './platform/nguCanhRequest.ts';
 
 /*
  * libsql gắn thêm `_metadata: { duration }` vào MỖI dòng `.get()` trả về (better-sqlite3 thì không). Khoá này lọt
@@ -19,13 +20,29 @@ import { chanGiaoDichNeuSapHetGio } from './platform/hanGio.ts';
    * lỡ là null sẽ thành lỗi 500 — đưa về đúng hành vi cũ bằng cách bọc thành mảng tham số `[null]`.
    */
   const motNull = (args: unknown[]) => (args.length === 1 && args[0] === null ? [[null]] : args);
+  /*
+   * PR-TD: đếm câu SQL cho `run`/`iterate` (đọc thân bài ở nguCanhRequest.ts) — KHÔNG đếm `all`: trong libsql,
+   * `all()` tự gọi lại `iterate()` (node_modules/libsql/index.js:400-403), đếm cả hai là đếm đôi cùng một câu.
+   * `run` xoá bộ nhớ TRƯỚC khi chạy: mọi lệnh ghi trong một request GET phải làm mất bộ nhớ đã tích luỹ, vì dữ
+   * liệu vừa đổi có thể ảnh hưởng bất kỳ tra cứu nào đã nhớ trước đó.
+   */
   for (const ten of ['all', 'run', 'iterate'] as const) {
     const goc = proto[ten];
-    proto[ten] = function (this: unknown, ...args: unknown[]) { return goc.apply(this, motNull(args)); };
+    if (ten === 'all') {
+      proto[ten] = function (this: unknown, ...args: unknown[]) { return goc.apply(this, motNull(args)); };
+      continue;
+    }
+    proto[ten] = function (this: unknown, ...args: unknown[]) {
+      if (ten === 'run') xoaNho();
+      const out = goc.apply(this, motNull(args));
+      demCau();
+      return out;
+    };
   }
   const getGoc = proto.get;
   proto.get = function (this: unknown, ...args: unknown[]) {
     const row = getGoc.apply(this, motNull(args));
+    demCau();
     if (row && typeof row === 'object' && '_metadata' in row) delete (row as Record<string, unknown>)._metadata;
     return row;
   };

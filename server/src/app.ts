@@ -7,6 +7,7 @@ import { api } from './routes/index.ts';
 import { HttpError } from './util.ts';
 import { taoSuKhoe } from './platform/suKhoe.ts';
 import { HAN_HAM_NETLIFY_MS, LOG_CHAM_MS, chayVoiHan } from './platform/hanGio.ts';
+import { chayTrongRequest, demHienTai } from './platform/nguCanhRequest.ts';
 import { donGiaoDichTreo } from './db.ts';
 import { laBanChinh } from './moiTruong.ts';
 
@@ -29,6 +30,7 @@ export function createApp() {
   app.use(express.json({ limit: '12mb' }));
   app.use(cookieParser());
   app.use(demGio);
+  app.use(moNguCanhRequest);
   /* AN-4: đặt trước attachPrincipal — gọi health kèm cookie cũ cũng không tốn một lượt hỏi phiên. */
   app.get('/api/health', taoSuKhoe());
   app.use(attachPrincipal);
@@ -60,6 +62,22 @@ export function demGio(req: Request, res: Response, next: NextFunction): void {
   });
   if (!laBanChinh()) { next(); return; }
   chayVoiHan(batDau + HAN_HAM_NETLIFY_MS, next);
+}
+
+/**
+ * MỞ NGỮ CẢNH REQUEST (PR-TD) — bộ nhớ tra cứu lặp + bộ đếm câu SQL, đặt SAU `express.json`/`cookieParser` (cùng lý
+ * do chú thích của `demGio`: ngữ cảnh `AsyncLocalStorage` không đi qua sự kiện luồng của bộ đọc thân yêu cầu).
+ * `PISA_DEM_SQL=1` (không đặt ở bản chính, biến không có trong `netlify.toml`) in `[sql]` mỗi request khi xong —
+ * PR-Z2c dùng để biết trang nào cần gộp truy vấn tiếp.
+ */
+function moNguCanhRequest(req: Request, res: Response, next: NextFunction): void {
+  chayTrongRequest(req.method, () => {
+    if (process.env.PISA_DEM_SQL === '1') {
+      const dem = demHienTai();
+      res.on('finish', () => console.log(`[sql] ${req.method} ${req.originalUrl} ${dem?.n ?? 0} câu`));
+    }
+    next();
+  });
 }
 
 /**
