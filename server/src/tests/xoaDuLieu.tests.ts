@@ -738,4 +738,24 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
       .run(e.a2, cy, moi, new Date(Date.now() + 1_000).toISOString());
     assert(attemptsSvc.scoreHistoryOf(e.a2).length === 0, 'lượt mới hiện lịch sử điểm của em đã xoá');
   });
+
+  // ==================================================================== Task 5 — Tài khoản › ⋯ › Xoá tài khoản
+
+  console.log('\nPR-XOA (5) · Giao diện: Quản trị hệ thống › Tài khoản › ⋯ › Xoá tài khoản, nút lọc Đang dùng / Đã xoá');
+
+  check('PR-XOA (5) · XoaTaiKhoanPanel theo khuôn: KhungPanel, nút đỏ tắt tới khi gõ đúng email / khi bị chặn, dòng sao lưu; không SectionNote/fmtDate/Modal', () => {
+    const pn = docNguon('web/src/modules/platform/XoaTaiKhoanPanel.tsx');
+    assert(/<KhungPanel\b/.test(pn) && /btn btn-danger/.test(pn) && /disabled=\{busy \|\| !khop \|\| !!d\?\.chan\}/.test(pn), 'thiếu khuôn / nút đỏ');
+    assert(/toLowerCase\(\)/.test(pn), 'so email phải không phân biệt hoa thường');
+    assert(pn.includes('Nên sao lưu trước lần xoá đầu (npm run sao-luu)') && pn.includes('Chưa có dấu vết → xoá hẳn')
+      && pn.includes('→ tài khoản bị khoá và ẩn, lịch sử giữ tên kèm (đã xoá)'), 'thiếu câu của đặc tả');
+    assert(!/SectionNote|fmtDate\(|<Modal\b/.test(pn), 'panel xoá tài khoản dùng thứ bị cấm');
+  });
+
+  check('PR-XOA (5) · AccountsAdmin: ⋯ "Xoá tài khoản" chữ đỏ; nút lọc "Đang dùng" / "Đã xoá"; dòng đã xoá không có Sửa/⋯', () => {
+    const ad = docNguon('web/src/modules/platform/AccountsAdmin.tsx');
+    assert(/nhan: 'Xoá tài khoản', nguyHiem: true/.test(ad) && ad.includes('Đang dùng (') && ad.includes('Đã xoá ('), 'thiếu mục Xoá / nút lọc');
+    assert(/u\.status === 'deleted' \? \(\s*<span[^>]*>Đã xoá \{ngay\(u\.deletedAt\)\}/.test(ad), 'dòng đã xoá phải ghi "Đã xoá {ngày}" thay cho Sửa/⋯');
+    assert(/nguyHiem\?: boolean/.test(docNguon('web/src/ui/MenuDong.tsx')), 'MenuDong thiếu nguyHiem');
+  });
 }
