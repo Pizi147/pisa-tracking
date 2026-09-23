@@ -37,6 +37,11 @@ export function destroySession(token: string) {
  * được dời về bây giờ, nên người dùng đều đặn không bao giờ bị đẩy ra.
  */
 export const PHIEN_HET_HAN_SAU_NGAY = 30;
+/**
+ * Mốc dùng cuối chỉ GHI LẠI khi đã cũ hơn từng này phút (PR-Z2c-d). Trước đây mọi lời gọi API đều ghi một dòng — một trang mở
+ * 5–10 lời gọi song song là 5–10 lần ghi tranh khoá với người đang lưu điểm. Hạn 30 ngày lệch tối đa 10 phút, không ai thấy.
+ */
+export const GHI_LAI_MOC_DUNG_SAU_PHUT = 10;
 
 export function resolveSession(token: string | undefined): Principal | null {
   if (!token) return null;
@@ -58,7 +63,9 @@ export function resolveSession(token: string | undefined): Principal | null {
     db().prepare('DELETE FROM demo_sessions WHERE token = ?').run(token);
     return null;
   }
-  db().prepare('UPDATE demo_sessions SET last_seen_at = ? WHERE token = ?').run(nowIso(), token);
+  if (Date.now() - Date.parse(row.last_seen_at ?? row.created_at) > GHI_LAI_MOC_DUNG_SAU_PHUT * 60_000) {
+    db().prepare('UPDATE demo_sessions SET last_seen_at = ? WHERE token = ?').run(nowIso(), token);
+  }
   return loadPrincipal(row.user_id);
 }
 
