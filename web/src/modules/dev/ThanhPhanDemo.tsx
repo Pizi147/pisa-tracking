@@ -3,6 +3,9 @@ import { Card, Empty, ErrorState, Forbidden, Skeleton } from '../../ui/ui.tsx';
 import { Drawer, Modal } from '../../ui/Drawer.tsx';
 import { WeekPicker } from '../../ui/Filters.tsx';
 import { Han } from '../../ui/Han.tsx';
+import { Nhan, QuaHan, type ToneNhan } from '../../ui/Nhan.tsx';
+import { HangCon, HangNhom, KhoiNhom } from '../../ui/HangNhom.tsx';
+import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
 import { TyLe } from '../../ui/TyLe.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -76,6 +79,8 @@ export default function ThanhPhanDemo() {
   const [p4, setP4] = useState<number | null>(null);
   const [drawer, setDrawer] = useState(false);
   const [modal, setModal] = useState(false);
+  const [panel, setPanel] = useState<'dong' | 'hep' | 'rong' | 'hai'>('dong');
+  const [moNhom, setMoNhom] = useState<Record<string, boolean>>({ a: true, b: false });
 
   return (
     <div className="max-w-[1100px] space-y-6">
@@ -90,21 +95,22 @@ export default function ThanhPhanDemo() {
       {/* ------------------------------------------------------------ <Han> */}
       <Card title="<Han> — mọi hạn đều có loại">
         <SixStates
-          empty={<Han loai="nhap-diem" han={null} />}
-          one={<Han loai="nhap-diem" han={d(9)} />}
-          many={<>{DEADLINE_KINDS.map((k) => <div key={k}><Han loai={k} han={d(9)} /></div>)}</>}
+          empty={<Han loai="nhap-diem" han={null} coViec />}
+          one={<Han loai="nhap-diem" han={d(9)} coViec />}
+          many={<>{DEADLINE_KINDS.map((k) => <div key={k}><Han loai={k} han={d(9)} coViec /></div>)}</>}
           long={<Han loai="lap-pa" han={d(3)} tienTo="Thi 14/09 – 20/09 tuần Speaking của lớp Fast Track buổi tối"
             ghiChu="hạn riêng cả đợt do quản lý chi nhánh đặt" />}
         />
         <div className="grid gap-3 sm:grid-cols-2 mt-3">
           <Cell title="Quá hạn — đếm từ hạn gốc">
-            <div><Han loai="nhap-diem" han={d(-2)} /></div>
-            <div><Han loai="nhap-diem" han={d(7)} hanGoc={d(-2)} /></div>
-            <div><Han loai="cap-nhat-pa" han={d(-8)} /></div>
+            <div><Han loai="nhap-diem" han={d(-2)} coViec /></div>
+            <div><Han loai="nhap-diem" han={d(7)} hanGoc={d(-2)} coViec /></div>
+            <div><Han loai="cap-nhat-pa" han={d(-8)} coViec /></div>
+            <div><Han loai="nhap-diem" han={d(0)} coViec /></div>
           </Cell>
           <Cell title="Hẹn xử lý — hiện cả hai, không ghi đè hạn gốc">
-            <div><Han loai="nhap-diem" han={d(9)} hen={d(16)} /></div>
-            <div><Han loai="nhap-diem" han={d(-1)} hen={d(6)} /></div>
+            <div><Han loai="nhap-diem" han={d(9)} hen={d(16)} coViec /></div>
+            <div><Han loai="nhap-diem" han={d(-1)} hen={d(6)} coViec /></div>
           </Cell>
           <Cell title="Dự kiến kết thúc — KHÔNG phải hạn, không bao giờ đỏ">
             <div><Han loai="du-kien-ket-thuc" han={d(-15)} /></div>
@@ -112,6 +118,68 @@ export default function ThanhPhanDemo() {
           </Cell>
         </div>
       </Card>
+
+      {/* ------------------------------------------------------------ PR-UX0: Nhan · QuaHan · hàng lớn/nhỏ · KhungPanel */}
+      <Card title="Nền giao diện — Nhan · QuaHan · hàng lớn/nhỏ · khuôn panel">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Cell title="Nhan — bảy màu nghĩa + viền đứt (số tạm)">
+            <div className="flex flex-wrap gap-1.5">
+              {(['ok', 'done', 'bad', 'soon', 'doing', 'wait', 'muted'] as ToneNhan[]).map((t) => <Nhan key={t} tone={t}>{t}</Nhan>)}
+              <Nhan tone="muted" dut>tạm thời</Nhan>
+              <Nhan tone="soon" onClick={() => undefined}>bấm được</Nhan>
+            </div>
+          </Cell>
+          <Cell title="QuaHan + hạn — chữ, không nền, không khung">
+            <div><QuaHan ngay={15} /> · <QuaHan ngay={3} gon /></div>
+            <div><Han loai="cap-nhat-pa" han={d(-15)} coViec /></div>
+          </Cell>
+        </div>
+        <div className="mt-3 overflow-x-auto rounded-lg border" style={{ borderColor: 'var(--line)' }}>
+          <table className="w-full min-w-[560px] table-fixed text-sm">
+            <thead><tr><th className="th">Học viên</th><th className="th text-right">Điểm</th><th className="th text-right">Case</th></tr></thead>
+            {(['a', 'b'] as const).map((k) => (
+              <tbody key={k}>
+                <HangNhom mo={moNhom[k]} onMo={() => setMoNhom((s2) => ({ ...s2, [k]: !s2[k] }))} nhan={`lớp ${k.toUpperCase()}`}
+                  tieuDe={`Lớp ${k.toUpperCase()} · 12 HV`}>
+                  <td className="px-3 text-right tabular-nums">7.5</td><td className="px-3 text-right tabular-nums">3</td>
+                </HangNhom>
+                {moNhom[k] && ['Nguyễn Văn An', 'Trần Thu Hà'].map((ten, i) => (
+                  <HangCon key={ten}><td className="td">{ten}</td><td className="td text-right tabular-nums">{6 + i}.5</td><td className="td text-right tabular-nums">{i}</td></HangCon>
+                ))}
+              </tbody>
+            ))}
+          </table>
+        </div>
+        <div className="mt-3 overflow-hidden rounded-lg border" style={{ borderColor: 'var(--line)' }}>
+          <KhoiNhom id="demo-khoi" mo={moNhom.a} onMo={() => setMoNhom((s2) => ({ ...s2, a: !s2.a }))} nhan="Nhập điểm Test" tieuDe="Nhập điểm Test" dem={2}
+            phu={<span className="font-bold text-late">⚠ 1 quá hạn</span>}>
+            <div className="py-2 pr-3 text-xs">Dòng việc mẫu <QuaHan ngay={4} /></div>
+          </KhoiNhom>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button type="button" className="btn" onClick={() => setPanel('hep')}>Mở panel hẹp (560px)</button>
+          <button type="button" className="btn" onClick={() => setPanel('rong')}>Mở panel rộng (720px)</button>
+        </div>
+      </Card>
+
+      {panel !== 'dong' && (
+        <KhungPanel tieuDe={panel === 'hai' ? 'Panel thứ hai' : 'Panel mẫu'} hocVien="Nguyễn Văn An" lop="MB-FT 101"
+          rong={panel === 'rong' ? 'rong' : 'hep'} onDong={() => setPanel('dong')}
+          ngCanh="Ngữ cảnh một dòng, cắt nếu quá dài…"
+          chan={{ xoa: { onClick: () => undefined }, phu: <button type="button" className="btn" onClick={() => setPanel('hai')}>Mở panel thứ hai</button>,
+            chinh: <button type="button" className="btn btn-primary" onClick={() => setPanel('dong')}>Lưu</button>, conThieu: ['Mã lớp', 'Ghi chú'] }}>
+          <Khoi tieuDe="Thông tin chung" luat="Luật dài nằm trong ⓘ, không thành khối chữ dưới ô.">
+            <Hang2>
+              <Truong nhan="Mã lớp" batBuoc phu="Ví dụ: MB-FT 101"><input className="field" defaultValue="" /></Truong>
+              <Truong nhan="Lộ trình"><select className="field"><option>LT1</option><option>LT2</option></select></Truong>
+            </Hang2>
+            <Truong nhan="Ghi chú" tuyChon><textarea className="field" rows={3} /></Truong>
+          </Khoi>
+          <Khoi tieuDe="Khối thứ hai">
+            <Truong nhan="Ví dụ dài để thân cuộn"><textarea className="field" rows={14} /></Truong>
+          </Khoi>
+        </KhungPanel>
+      )}
 
       {/* ------------------------------------------------------------ <KetQuaDot> */}
       <Card title="<KetQuaDot> — một câu duy nhất cho tiến độ một đợt Test">

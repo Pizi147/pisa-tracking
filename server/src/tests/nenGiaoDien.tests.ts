@@ -136,5 +136,28 @@ export async function runNenGiaoDienTests(t: YThucTestKit) {
     assert(tatCa.find((x: any) => x.key === 'case')!.nhan === '3 Case mở', 'Case mở');
     assert(tatCa.find((x: any) => x.key === 'het-khoa')!.nhan === '4 HV chờ xếp lớp', 'Chờ xếp lớp');
   });
+
+  check('UX0 · N-4: mở panel thứ hai thì panel thứ nhất bị đóng, không bao giờ hai panel', () => {
+    const kho = d.taoKhoPanel();
+    let dongA = 0, dongB = 0;
+    kho.mo('A', () => { dongA++; });
+    assert(kho.dangMo() === 'A', 'A phải đang mở');
+    kho.mo('B', () => { dongB++; });
+    assert(dongA === 1, `dong của A phải gọi đúng 1 lần, đang ${dongA}`);
+    assert(kho.dangMo() === 'B' && dongB === 0, `B phải là panel duy nhất (đang mở: ${kho.dangMo()}), dong của B chưa gọi (${dongB})`);
+    kho.mo('B', () => { dongB++; });
+    assert(dongB === 0, 'Mở lại đúng panel đang mở không tự đóng nó');
+  });
+
+  check('UX0 · N-4: đóng panel cũ sau khi panel mới đã mở không đóng nhầm panel mới', () => {
+    const kho = d.taoKhoPanel();
+    let dongB = 0;
+    kho.mo('A', () => undefined);
+    kho.mo('B', () => { dongB++; });
+    kho.dong('A');   // cleanup của A chạy muộn
+    assert(kho.dangMo() === 'B' && dongB === 0, `B phải còn mở (đang ${kho.dangMo()}), dong của B chưa gọi (${dongB})`);
+    kho.dong('B');
+    assert(kho.dangMo() === null, 'Đóng B thì không còn panel nào');
+  });
 }
 
