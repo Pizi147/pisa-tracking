@@ -419,3 +419,14 @@ Commit `PR-Qb (8): 375px hồ sơ học viên, bảng định vị, CODE_MAP, đ
   Ý thức khỏi mốc + toàn bộ sự kiện), `platform/thongBao.ts` (mới), route `/students/:id` nhận `attemptId`,
   `/notifications` gọi `thongBaoCua`. Không có chỗ mâu thuẫn kế hoạch/mã cần tự quyết ở Task này — khớp đúng bản
   đồ file. `npm run check` xanh, **867 = 861 + 6** (đủ ≥6). Commit `PR-Qb (3)`.
+- **Task 4:** `HanhTrinh.tsx` (mới, thay `JourneyTimeline.tsx` — đã xoá), `NganCase.tsx` (mới); sửa
+  `StudentDetailPage.tsx` (khối tab Hành trình, `openCase` đổi sang `{caseId; paId?}|null`, export `Episode` +
+  đổi `fmtDate`→`ngay`). Tự quyết: (1) lưới dùng CSS Grid với số hàng CỐ ĐỊNH gán tay (`gridRow` tường minh)
+  thay vì để trình duyệt tự xếp (`grid-auto-flow`) — nhiều khối PA dùng chung cột nhưng khác tầng nếu không ghim
+  `gridRow` tay sẽ bị trình duyệt tự đẩy sai hàng; mỗi vấn đề vẽ thành MỘT lưới con riêng (không gộp chung một
+  lưới khổng lồ với cả hộp) để không phải cộng dồn số hàng giữa nhiều Case. (2) "Mốc học tập" (Q8) chuyển hẳn
+  vào `HanhTrinh.tsx`, nhận `episodes`/`allEpisodes` làm prop từ `StudentDetailPage` (dữ liệu đó nằm ở hồ sơ
+  chính `/students/:id`, không phải endpoint `/hanh-trinh`); `HanhTrinh.tsx` import `Episode` ngược lại từ
+  `StudentDetailPage.tsx` (import vòng an toàn vì chỉ gọi trong JSX, không gọi lúc nạp module). `npm run check`
+  xanh, **870 = 867 + 3** (đủ ≥3). Chưa bấm thử trên trình duyệt — để dành đúng một lần ở Task 9 theo quy trình
+  nhanh. Commit `PR-Qb (4)`.

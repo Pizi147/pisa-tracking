@@ -2,12 +2,12 @@ import { useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Card, Empty, ErrorState, Info, Level, Outcome, SectionNote, Skeleton, Status, Th} from '../../ui/ui.tsx';
-import { Drawer, Modal } from '../../ui/Drawer.tsx';
+import { Modal } from '../../ui/Drawer.tsx';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { CasePanel } from '../cases/CasePanel.tsx';
 import { SkillBoard, type SkillBoardRow } from '../cases/SkillBoard.tsx';
-import { JourneyTimeline } from './JourneyTimeline.tsx';
+import { HanhTrinh } from './HanhTrinh.tsx';
+import { NganCase } from './NganCase.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
 import { StudentPlanPanel } from './StudentPlanPanel.tsx';
 import { StudentManagePanel } from './StudentManagePanel.tsx';
@@ -17,9 +17,13 @@ import {
   attemptHref,
   attemptStatusLabel, fmtBand, fmtDate, skillLabel, sosLabel, sosTone, studentStatusLabel,
 } from '../../lib/format.ts';
-import { HO_SO_TAB_LABEL, JOURNEY_EVENT_LABEL, ketQuaTestGanNhat, parseHoSoTab, type HoSoTab } from '@shared/domain/index.ts';
+import {
+  HO_SO_TAB_LABEL, JOURNEY_EVENT_LABEL, ketQuaTestGanNhat, ngay, parseHoSoTab, type HoSoTab,
+} from '@shared/domain/index.ts';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
+
+type OpenCase = { caseId: number; paId?: number } | null;
 
 type Profile = any;
 
@@ -58,14 +62,13 @@ export default function StudentDetailPage() {
   const [reportOpen, setReportOpen] = useState(false);
   /** Tín hiệu đang được xác minh — mở form case với đầu mục và kỹ năng điền sẵn. */
   const [verify, setVerify] = useState<any | null>(null);
-  const [openCase, setOpenCase] = useState<number | null>(null);
+  /** Ngăn Case (Q9) — case + phương án đang cuộn tới, nếu có. */
+  const [openCase, setOpenCase] = useState<OpenCase>(null);
   /*
    * HẠNG MỤC ĐANG LỌC — một state duy nhất nối bảng kỹ năng với khối case bên dưới.
    * Bấm "Reading" ở bảng trên là khối dưới chỉ còn case Reading; bấm lại thì bỏ lọc.
    */
   const [skillPick, setSkillPick] = useState<string | null>(null);
-  /** Hành trình: chỉ mốc xuyên chương trình, hay toàn bộ ghi nhận (mục 4.5). */
-  const [allJourney, setAllJourney] = useState(false);
   /** Dải chọn lộ trình — chỉ bày khi người dùng hỏi tới, không chiếm chỗ mặc định. */
   const [cycleOpen, setCycleOpen] = useState(false);
   /*
@@ -271,45 +274,13 @@ export default function StudentDetailPage() {
       {tab === 'hanh-trinh' && (
         <Card title="Hành trình học tập" bodyClass="p-4 space-y-4">
           {/*
-            DÒNG THỜI GIAN NGANG, KHÔNG LẶP LẠI BIỂU ĐỒ ĐIỂM.
-
-            Bản trước vẽ thêm một biểu đồ điểm ở đây, đúng cái biểu đồ đã có trong từng
-            hàng kỹ năng ở khối trên. Hai hình giống nhau trên một trang thì người đọc
-            phải so xem chúng có khác gì không — mất công mà không thêm thông tin.
-
-            Ở đây câu hỏi khác: CẢ HÀNH TRÌNH đã diễn ra theo trình tự nào. Nên nó là
-            một dòng thời gian theo tuần, mỗi case một nhóm, mỗi phương án một làn.
+            TRỤC TUẦN THEO LỊCH THẬT, MỖI GIAI ĐOẠN MỘT TRỤC (§3.8, PR-Qb) — thay dòng thời gian
+            cũ vẽ lại đúng biểu đồ điểm đã có ở khối trên. Tự gọi máy chủ riêng theo giai đoạn
+            đang chọn, chỉ khi tab này đang mở.
           */}
-          {cy && <JourneyTimeline rows={skillRows} progress={data.progress ?? null} onOpenCase={setOpenCase} />}
-
-          <div>
-            {/*
-              MỐC XUYÊN CHƯƠNG TRÌNH (mục 4.5): vào học, vào lớp, chuyển chương trình,
-              đổi target hay kế hoạch thi, bàn giao case, kết quả thi thật, kết luận lộ
-              trình. Mọi cập nhật phương án đã nằm trong hàng kỹ năng ở khối trên —
-              kể lại lần nữa ở đây chỉ làm cả hai chỗ cùng dài ra mà không rõ hơn.
-            */}
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-              <h3 className="text-sm font-semibold text-slate-200 m-0">
-                {allJourney ? 'Toàn bộ ghi nhận' : 'Các mốc đã qua'}
-              </h3>
-              <button className="btn btn-sm btn-ghost" onClick={() => setAllJourney(!allJourney)}>
-                {allJourney ? 'Chỉ xem mốc chính' : 'Mở toàn hành trình'}
-              </button>
-            </div>
-            {(() => {
-              const eps = allJourney ? (data.allEpisodes ?? data.episodes) : data.episodes;
-              return eps.length === 0 ? <Empty title="Chưa có sự kiện nào" /> : (
-                <ol className="space-y-3 list-none p-0 m-0">
-                  {eps.map((ep: any) => <Episode key={ep.key} ep={ep} onOpenCase={setOpenCase} />)}
-                </ol>
-              );
-            })()}
-            <SectionNote>
-              Phần này là hành trình của CẢ em, không riêng lộ trình đang xem: lớp cũ, lộ
-              trình cũ và case đã bàn giao đều tra lại được ở đây.
-            </SectionNote>
-          </div>
+          <HanhTrinh studentId={data.id} active={tab === 'hanh-trinh'}
+            episodes={data.episodes} allEpisodes={data.allEpisodes}
+            onOpenCase={(caseId, paId) => setOpenCase({ caseId, paId })} />
         </Card>
       )}
 
@@ -326,19 +297,19 @@ export default function StudentDetailPage() {
 
       <QuickReport open={reportOpen} onClose={() => setReportOpen(false)}
         studentId={data.id} studentName={data.fullName} cycleId={cy?.id ?? null}
-        onDone={(cid) => { reload(); setOpenCase(cid); }} />
+        onDone={(cid) => { reload(); setOpenCase({ caseId: cid }); }} />
 
       {/* Mở case ĐỂ TRẢ LỜI một tín hiệu: đầu mục và kỹ năng điền sẵn, nhận định do người viết. */}
       <QuickReport open={!!verify} onClose={() => setVerify(null)}
         studentId={data.id} studentName={data.fullName} cycleId={cy?.id ?? null}
         signal={verify}
-        onDone={(cid) => { setVerify(null); reload(); setOpenCase(cid); }} />
+        onDone={(cid) => { setVerify(null); reload(); setOpenCase({ caseId: cid }); }} />
 
-      {/* Không có nút mở trang riêng: route `/hoc-thuat/case/:id` vẫn còn cho link sâu từ thông báo. */}
-      <Drawer open={openCase !== null} onClose={() => setOpenCase(null)} title="Vấn đề - Case"
-        subtitle={data.fullName}>
-        {openCase !== null && <CasePanel caseId={openCase} compact />}
-      </Drawer>
+      {/* Ngăn Case (Q9) — không đổi tab; cuộn tới đúng PA khi mở kèm `paId`. */}
+      {openCase && (
+        <NganCase caseId={openCase.caseId} paId={openCase.paId} studentName={data.fullName}
+          onClose={() => setOpenCase(null)} />
+      )}
 
       <StudentManagePanel
         open={manageOpen} onClose={() => setManageOpen(false)}
@@ -527,7 +498,7 @@ function RatioAttempts({ attempts, onOpen }: { attempts: any[]; onOpen: (a: any)
  * Chương có nhiều sự kiện thì mặc định gấp lại, chỉ hiện dòng mở đầu và số việc bên trong —
  * người đọc quét cả năm tháng trong một màn hình, mở ra khi thực sự muốn xem chi tiết.
  */
-function Episode({ ep, onOpenCase }: { ep: any; onOpenCase: (id: number) => void }) {
+export function Episode({ ep, onOpenCase }: { ep: any; onOpenCase: (id: number) => void }) {
   const [open, setOpen] = useState(false);
   const many = ep.events.length > 1;
   const caseId = ep.kind === 'case' ? Number(String(ep.link).split('/').pop()) : null;
@@ -536,7 +507,7 @@ function Episode({ ep, onOpenCase }: { ep: any; onOpenCase: (id: number) => void
     <li className="rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>
       <div className="flex flex-wrap items-baseline gap-2">
         <span className="text-xs text-slate-500 tabular-nums">
-          {ep.from === ep.to ? fmtDate(ep.from) : `${fmtDate(ep.from)} → ${fmtDate(ep.to)}`}
+          {ep.from === ep.to ? ngay(ep.from) : `${ngay(ep.from)} → ${ngay(ep.to)}`}
         </span>
         <span className="text-sm text-slate-100 min-w-0">{ep.title}</span>
         {many && <Info>{ep.events.length} mốc</Info>}
@@ -553,7 +524,7 @@ function Episode({ ep, onOpenCase }: { ep: any; onOpenCase: (id: number) => void
         <ol className="mt-2 space-y-1 list-none p-0 m-0">
           {ep.events.map((e: any) => (
             <li key={e.id} className="flex gap-3 items-start">
-              <span className="text-[11px] text-slate-500 w-20 shrink-0 tabular-nums pt-0.5">{fmtDate(e.eventDate)}</span>
+              <span className="text-[11px] text-slate-500 w-20 shrink-0 tabular-nums pt-0.5">{ngay(e.eventDate)}</span>
               <span className="min-w-0">
                 <span className="block text-sm text-slate-200">
                   {e.title}

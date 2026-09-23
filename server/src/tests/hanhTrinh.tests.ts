@@ -6,8 +6,13 @@
  *
  * Task 1: luật thuần (`duongHoSo.ts`, `hanhTrinh.ts`) — không đụng database, không cần `conn`.
  */
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { YThucTestKit } from './yThuc.tests.ts';
 import type { ThamSoHoSo } from '../../../shared/domain/duongHoSo.ts';
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..');
 
 export async function runHanhTrinhTests(t: YThucTestKit) {
   const { check, assert } = t;
@@ -390,5 +395,25 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     } finally {
       conn.prepare(`DELETE FROM notifications WHERE id IN (${ids.map(() => '?').join(',')})`).run(...ids);
     }
+  });
+
+  // ==================================================================== Task 4 — tab Hành trình (quét nguồn)
+
+  const doc = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
+
+  check('PR-Qb (4) · JourneyTimeline.tsx không còn (thay bằng HanhTrinh.tsx)', () => {
+    assert(!fs.existsSync(path.join(ROOT, 'web/src/modules/students/JourneyTimeline.tsx')), 'File cũ phải bị xoá');
+  });
+
+  check('PR-Qb (4) · HanhTrinh.tsx không chứa "dự kiến", SectionNote, weekCodeOf', () => {
+    const src = doc('web/src/modules/students/HanhTrinh.tsx');
+    assert(!src.includes('dự kiến'), 'Không vẽ đuôi "dự kiến" (Q4)');
+    assert(!src.includes('SectionNote'), 'Không dùng SectionNote — chú thích một dòng thay thế');
+    assert(!src.includes('weekCodeOf'), 'Trục dùng trucTuan/hanhTrinh.ts, không dùng weekCodeOf cũ');
+  });
+
+  check('PR-Qb (4) · StudentDetailPage.tsx không còn chữ "Các mốc đã qua" (đổi thành "Mốc học tập")', () => {
+    assert(!doc('web/src/modules/students/StudentDetailPage.tsx').includes('Các mốc đã qua'), 'Chữ cũ phải hết');
+    assert(doc('web/src/modules/students/HanhTrinh.tsx').includes('Mốc học tập'), 'Chữ mới phải có ở HanhTrinh.tsx');
   });
 }
