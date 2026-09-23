@@ -10,6 +10,7 @@ import { fmtTime } from '../../lib/format.ts';
 import { NhomViec } from '../worklist/NhomViec.tsx';
 import type { WorkGroup, WorkItem } from '../worklist/WorkList.tsx';
 import { ApprovalDialog } from '../cases/CasePanel.tsx';
+import { NganViecVanHanh } from '../worklist/MgmtTasksPage.tsx';
 import { useNhacYThuc } from '../yThuc/YThucReminders.tsx';
 import { ChonPhuTrach, type NguoiPhuTrach } from './ChonPhuTrach.tsx';
 import {
@@ -44,6 +45,7 @@ export function HoTroHocVienTab() {
   const nguoi = laQuanLy ? thamSoNguoi(params.get('nguoi')) : 'toi';
   const loc: LocNhanh = (LOC_NHANH as readonly string[]).includes(params.get('loc') ?? '') ? (params.get('loc') as LocNhanh) : 'tat-ca';
   const loai = params.get('loai');
+  const moViec = params.get('mo-viec') ? Number(params.get('mo-viec')) : null;
   const nhac = useNhacYThuc();
 
   const setParam = (k: string, v: string | null) => {
@@ -156,6 +158,13 @@ export function HoTroHocVienTab() {
         intervention={duyetDong?.duyet ? { id: duyetDong.duyet.interventionId, kind: duyetDong.duyet.kind, description: duyetDong.duyet.description } : null}
         onDone={() => invalidate('/my-work')}
       />
+
+      {/*
+        PR-Ra, nợ PR-O (#58): GV mở được việc Vận hành giao cho mình mà không cần vào tab Vận
+        hành (họ không có quyền) — panel mở TẠI CHỖ ở tab này. QL bấm dòng "Công việc được
+        giao" ở tab này cũng mở tại chỗ, không nhảy sang tab Vận hành.
+      */}
+      <NganViecVanHanh taskId={moViec} onClose={() => setParam('mo-viec', null)} onDone={() => invalidate('/my-work')} />
     </div>
   );
 }

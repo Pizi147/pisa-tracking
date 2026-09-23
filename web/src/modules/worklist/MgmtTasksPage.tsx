@@ -1,26 +1,34 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
+import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { Alert, Card, Empty, ErrorState, Field, Forbidden, Info, SectionNote, Skeleton, Status, Th } from '../../ui/ui.tsx';
 import { Drawer, Modal } from '../../ui/Drawer.tsx';
 import { BranchFilter } from '../../ui/Filters.tsx';
+import { Han } from '../../ui/Han.tsx';
+import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { fmtDate } from '../../lib/format.ts';
 import {
-  TASK_GROUPS, TASK_GROUP_LABEL, TASK_PROGRESS, TASK_PROGRESS_LABEL,
-  TASK_PROGRESS_NEEDS_REASON,
+  HANG_SO, HANG_SO_LABEL, TASK_GROUPS, TASK_GROUP_LABEL, TASK_PROGRESS, TASK_PROGRESS_LABEL,
+  TASK_PROGRESS_NEEDS_REASON, TRANG_THAI_LOC, catDongPhu, dongHanDaDoi,
+  type HangSo, type NguoiChon, type TrangThaiLoc,
 } from '@shared/domain/index.ts';
 
 type Row = {
-  id: number; code: string; title: string; group: string | null;
+  id: number; code: string; title: string; group: string | null; taskType: string;
   branchId: number | null; branchName: string;
   assigneeUserId: number | null; assigneeName: string | null;
   watcherUserId: number | null; watcherName: string | null;
   due: string | null; progress: string; progressLabel: string;
   stopReason: string | null; reviewOn: string | null;
-  overdue: boolean; subTotal: number; subDone: number; subOverdue: boolean;
+  helpUserId: number | null; helpName: string | null;
+  overdue: boolean; subTotal: number; subDone: number; subOpen: number;
+  subOverdue: boolean; subOverdueCount: number; subOverdueTitles: string[];
   caseLinks: number;
+  hanGoc: string | null; lyDoDoiHan: string | null; soLanDoiHan: number;
   lastUpdate: { on: string; progressLabel: string; note: string | null; by: string | null } | null;
 };
 
@@ -29,31 +37,47 @@ const KIND: Record<string, 'doing' | 'waiting' | 'done' | 'idle'> = {
   not_started: 'idle', doing: 'doing', done: 'done', paused: 'waiting', stopped: 'idle',
 };
 
+const TRANG_THAI_LABEL: Record<TrangThaiLoc, string> = {
+  mo: 'Đang mở', not_started: 'Chưa bắt đầu', doing: 'Tiếp tục xử lý', paused: 'Tạm ngưng',
+  stopped: 'Dừng hẳn', done: 'Đã hoàn thành', 'tat-ca': 'Mọi trạng thái',
+};
+
+const idOfNguoi = (v: NguoiChon | null, myId: number | null): number | null => {
+  if (!v) return null;
+  if (v.kieu === 'toi') return myId;
+  if (v.kieu === 'tai_khoan') return v.id;
+  return null;
+};
+
 /**
  * TIẾN ĐỘ CÔNG VIỆC — MỘT bảng, không phải bốn bảng mở cùng lúc (mục 8.2).
  *
- * Đây là công việc quản lý vận hành, không phải case của học viên: không có tầng "phương án
- * xử lý", không có quy trình xin duyệt. Quản lý tạo việc, giao việc, cập nhật tiến độ.
- *
- * Bốn nhóm là RANH GIỚI CÓ CHỦ Ý (mục 8.1): Học sinh/Phụ huynh · Giáo trình · Giáo viên ·
- * Tutor. Việc nào không thuộc bốn nhóm này thì hoặc là một case của học viên, hoặc là chuyện
- * ngoài phạm vi phần mềm — thêm nhóm thứ năm là bước đầu biến nó thành một hệ quản trị.
+ * PR-Ra: hàng số ở đầu tab bấm được (Q8, bốn câu hỏi CHỒNG NHAU có chủ ý), hàng lọc Nhóm ·
+ * Trạng thái · Người phụ trách đứng cùng một hàng (§18.4: không quá 10 nút), bảng 5 cột với
+ * Việc con thay "Cập nhật gần nhất" (Q7). Đây là công việc quản lý vận hành, không phải case
+ * của học viên — không có tầng "phương án xử lý", không có quy trình xin duyệt.
  */
 export function TasksBoard() {
+  const { session } = useSession();
   const [params, setParams] = useSearchParams();
+  const { homNay } = useNgayNghiepVu();
   const branchId = params.get('cn') ? Number(params.get('cn')) : null;
-  const [group, setGroup] = useState('');
-  const [progress, setProgress] = useState('');
+  const group = params.get('nhom') ?? '';
+  const progress: TrangThaiLoc = (TRANG_THAI_LOC as readonly string[]).includes(params.get('trangThai') ?? '')
+    ? (params.get('trangThai') as TrangThaiLoc) : 'mo';
+  const hang: HangSo | null = (HANG_SO as readonly string[]).includes(params.get('hang') ?? '') ? (params.get('hang') as HangSo) : null;
+  const phuTrachParam = params.get('phuTrach');
+  const assigneeUserId = phuTrachParam === 'toi' ? session?.user?.id ?? null : (phuTrachParam ? Number(phuTrachParam) : null);
+
   /*
-   * MỞ THẲNG TỪ ĐƯỜNG DẪN (mục 14.2): báo cáo kỳ họp liên kết sang đây để "tạo hoặc liên
-   * kết task ngay từ báo cáo". Đọc một lần lúc vào màn, rồi xoá tham số khỏi URL để nút Back
-   * không mở lại hộp thoại.
+   * MỞ THẲNG TỪ ĐƯỜNG DẪN (mục 14.2): báo cáo kỳ họp liên kết sang đây để mở/tạo việc ngay.
+   * Đọc một lần lúc vào màn, rồi xoá tham số khỏi URL để nút Back không mở lại hộp thoại.
    */
-  const [open, setOpen] = useState<number | null>(
-    params.get('open') ? Number(params.get('open')) : null,
-  );
+  const [open, setOpen] = useState<number | null>(params.get('open') ? Number(params.get('open')) : null);
   const [creating, setCreating] = useState(params.get('tao') === '1');
-  const preGroup = params.get('nhom') ?? '';
+  const preGroup = params.get('nhom') || '';
+  const baoCaoId = params.get('baoCao') ? Number(params.get('baoCao')) : null;
+  const veKyHop = params.get('periodId');
   useEffect(() => {
     if (!params.get('open') && !params.get('tao')) return;
     const next = new URLSearchParams(params);
@@ -61,15 +85,23 @@ export function TasksBoard() {
     setParams(next, { replace: true });
   }, [params, setParams]);
 
+  const setParam = (k: string, v: string | null) => {
+    const next = new URLSearchParams(params);
+    if (v) next.set(k, v); else next.delete(k);
+    setParams(next, { replace: true });
+  };
+
   const qs = new URLSearchParams();
   if (branchId) qs.set('branchId', String(branchId));
   if (group) qs.set('group', group);
-  if (progress) qs.set('progress', progress);
+  qs.set('progress', progress);
+  if (hang) qs.set('hang', hang);
+  if (assigneeUserId) qs.set('assigneeUserId', String(assigneeUserId));
   const { data, loading, error, reload } = useApi<{
     rows: Row[]; canEdit: boolean; scopeEmpty: boolean;
-    facets?: { group: Record<string, number>; progress: Record<string, number> };
-    summary?: { doing: number; overdue: number; dueSoon: number; paused: number; total: number };
-  }>(`/mgmt-tasks?${qs}`, [branchId, group, progress]);
+    facets: { group: Record<string, number>; progress: Record<string, number>; hang: Record<string, number> };
+    hangSo: Record<string, number>;
+  }>(`/mgmt-tasks?${qs}`, [qs.toString()]);
 
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (data?.scopeEmpty) {
@@ -82,87 +114,67 @@ export function TasksBoard() {
   }
 
   const rows = data?.rows ?? [];
-  /*
-   * SỐ TRÊN NÚT NHÓM LẤY TỪ MÁY CHỦ, đếm trên phạm vi quyền/chi nhánh TRƯỚC KHI áp chính bộ
-   * lọc nhóm (mục 14.1). Đếm trên `rows` như bản trước là sai: chọn "Học sinh/Phụ huynh" thì
-   * ba nhóm kia tụt về 0 và người dùng tưởng trung tâm hết việc về giáo trình.
-   */
-  const countOf = (g: string) => data?.facets?.group[g] ?? 0;
-  const countProgress = (k: string) => data?.facets?.progress[k] ?? 0;
-  const sum = data?.summary;
+  const hangSo = data?.hangSo ?? {};
+  const assigneeValue: NguoiChon | null = phuTrachParam === 'toi'
+    ? { kieu: 'toi' }
+    : assigneeUserId
+      ? { kieu: 'tai_khoan', id: assigneeUserId, ten: rows.find((r) => r.assigneeUserId === assigneeUserId)?.assigneeName ?? `#${assigneeUserId}` }
+      : null;
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <p className="text-xs text-slate-500 m-0">
-          Công việc quản lý vận hành — không phải case của học viên.
-        </p>
-        <div className="flex flex-wrap items-center gap-2">
-          <BranchFilter branchId={branchId} onBranch={(id) => {
-            const next = new URLSearchParams(params);
-            if (id) next.set('cn', String(id)); else next.delete('cn');
-            setParams(next);
-          }} />
-          {data?.canEdit && (
-            <button className="btn btn-primary" onClick={() => setCreating(true)}>+ Công việc</button>
-          )}
+      {/* ── hàng số: bốn câu hỏi CHỒNG NHAU (Q8), mỗi số là một nút lọc ── */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs" title="Bốn con số này chồng nhau có chủ ý — một việc Tạm ngưng đã tới ngày xem lại cũng có thể vừa quá hạn.">
+          {HANG_SO.map((h) => {
+            const n = hangSo[h] ?? 0;
+            const active = hang === h;
+            const mo = n === 0 && !active;
+            return (
+              <button key={h} type="button" disabled={mo}
+                className={`flex items-baseline gap-1 appearance-none bg-transparent border-0 p-0 ${mo ? 'opacity-40 cursor-default' : 'cursor-pointer hover:opacity-80'}`}
+                onClick={() => setParam('hang', active ? null : h)}>
+                <strong className={`tabular-nums text-sm ${active ? 'text-sky-300' : h === 'qua-han' && n > 0 ? 'text-rose-300' : 'text-slate-100'}`}>{n}</strong>
+                <span className={active ? 'text-sky-300' : 'text-slate-400'}>{HANG_SO_LABEL[h]}</span>
+                {active && <span className="text-sky-300" aria-hidden>✕</span>}
+              </button>
+            );
+          })}
         </div>
+        {data?.canEdit && <button className="btn btn-primary" onClick={() => setCreating(true)}>+ Công việc</button>}
       </div>
 
-      {/*
-        DÒNG TỔNG HỢP GỌN (mục 14.2), và nó CỐ Ý KHÔNG cộng thành tổng: một việc quá hạn thì
-        cũng đang thực hiện. Bốn con số là bốn câu hỏi, nên câu chú thích nói thẳng điều đó
-        thay vì để người đọc cộng lại rồi thấy lệch và mất tin.
-      */}
-      {sum && (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs surface-2 rounded-lg px-3 py-2">
-          <span className="text-slate-300">
-            <strong className="tabular-nums text-slate-100">{sum.doing}</strong> đang thực hiện
-          </span>
-          <span className={sum.overdue ? 'text-rose-300' : 'text-slate-400'}>
-            <strong className="tabular-nums">{sum.overdue}</strong> quá hạn
-          </span>
-          <span className={sum.dueSoon ? 'text-amber-200' : 'text-slate-400'}>
-            <strong className="tabular-nums">{sum.dueSoon}</strong> đến hạn trong ba ngày
-          </span>
-          <span className="text-slate-400">
-            <strong className="tabular-nums">{sum.paused}</strong> tạm ngưng
-          </span>
-          <span className="text-[11px] text-slate-500">
-            Bốn nhóm này chồng nhau — một việc quá hạn cũng đang thực hiện — nên chúng không
-            cộng thành {sum.total} việc.
-          </span>
-        </div>
-      )}
-
       <Card bodyClass="p-0"
-        title={
-          <span className="flex flex-wrap items-baseline gap-2">
-            Công việc
-            <span className="text-slate-500 font-normal">{rows.length} việc</span>
-          </span>
-        }>
-        {/* Một thanh lọc duy nhất: nhóm và trạng thái. Không dựng thêm bảng cho mỗi nhóm. */}
-        <div className="px-4 py-3 border-b flex flex-wrap items-center gap-1.5" style={{ borderColor: 'var(--line)' }}>
-          <button className={`btn btn-sm ${!group ? 'btn-primary' : ''}`} onClick={() => setGroup('')}>
-            Mọi nhóm
-          </button>
-          {TASK_GROUPS.map((g) => (
-            <button key={g} className={`btn btn-sm ${group === g ? 'btn-primary' : ''}`}
-              onClick={() => setGroup(group === g ? '' : g)}>
-              {TASK_GROUP_LABEL[g]} <span className="tabular-nums opacity-70 ml-1">{countOf(g)}</span>
-            </button>
-          ))}
-          <span className="w-px h-5 mx-1" style={{ background: 'var(--line)' }} />
-          <button className={`btn btn-sm ${!progress ? 'btn-primary' : ''}`} onClick={() => setProgress('')}>
-            Mọi trạng thái
-          </button>
-          {TASK_PROGRESS.map((s) => (
-            <button key={s} className={`btn btn-sm ${progress === s ? 'btn-primary' : ''}`}
-              onClick={() => setProgress(progress === s ? '' : s)}>
-              {TASK_PROGRESS_LABEL[s]} <span className="tabular-nums opacity-70 ml-1">{countProgress(s)}</span>
-            </button>
-          ))}
+        title={<span className="flex flex-wrap items-baseline gap-2">Công việc <span className="text-slate-500 font-normal">{rows.length} việc</span></span>}
+        action={<BranchFilter branchId={branchId} onBranch={(id) => setParam('cn', id ? String(id) : null)} />}
+      >
+        {/* ── hàng lọc: Nhóm · Trạng thái · Người phụ trách (§18.4 — không quá 10 nút một hàng) ── */}
+        <div className="px-4 py-3 border-b flex flex-wrap items-center gap-3" style={{ borderColor: 'var(--line)' }}>
+          <label className="flex items-center gap-1.5 text-xs text-slate-400">
+            Nhóm:
+            <select className="field" value={group} onChange={(e) => setParam('nhom', e.target.value || null)}>
+              <option value="">Mọi nhóm</option>
+              {TASK_GROUPS.map((g) => (
+                <option key={g} value={g}>{TASK_GROUP_LABEL[g]} ({data?.facets.group[g] ?? 0})</option>
+              ))}
+            </select>
+          </label>
+          <label className="flex items-center gap-1.5 text-xs text-slate-400">
+            Trạng thái:
+            <select className="field" value={progress} onChange={(e) => setParam('trangThai', e.target.value === 'mo' ? null : e.target.value)}>
+              {TRANG_THAI_LOC.map((t) => (
+                <option key={t} value={t}>{TRANG_THAI_LABEL[t]} ({data?.facets.progress[t] ?? 0})</option>
+              ))}
+            </select>
+          </label>
+          <div className="flex items-center gap-1.5 text-xs text-slate-400">
+            <span className="shrink-0">Người phụ trách:</span>
+            <div className="w-56">
+              <ChonNguoi value={assigneeValue}
+                onChange={(v) => setParam('phuTrach', v?.kieu === 'toi' ? 'toi' : v?.kieu === 'tai_khoan' ? String(v.id) : null)}
+                nhom="nhan_vien" choNgoai={false} macDinhTrong="Mọi người" ariaLabel="Lọc theo người phụ trách" />
+            </div>
+          </div>
         </div>
 
         {loading && <div className="p-4"><Skeleton rows={5} /></div>}
@@ -171,87 +183,84 @@ export function TasksBoard() {
         )}
         {rows.length > 0 && (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: '52rem' }}>
+              <colgroup>
+                <col style={{ width: '32%' }} /><col style={{ width: '16%' }} /><col style={{ width: '16%' }} />
+                <col style={{ width: '20%' }} /><col style={{ width: '16%' }} />
+              </colgroup>
               <thead>
                 <tr>
-                  <Th hint="Bấm một dòng để mở chi tiết, việc con và lịch sử cập nhật.">Công việc</Th>
-                  <Th hint="Người chịu trách nhiệm làm. Người theo dõi chỉ xem, không sửa được.">Phụ trách</Th>
-                  <Th hint="Hạn của chính công việc này. Hạn việc con đặt riêng, không dời theo hạn cha.">Hạn</Th>
+                  <Th hint="Bấm một dòng để mở chi tiết, việc con và lịch sử cập nhật.">Việc</Th>
+                  <Th hint="Người chịu trách nhiệm làm. Người theo dõi chỉ xem, không sửa được.">Người phụ trách</Th>
+                  <Th hint="Quá hạn tính theo hạn HIỆN TẠI (giữ nguyên luật cũ) — hạn đã dời hiện ở dòng phụ.">Hạn</Th>
                   <Th hint="Tạm ngưng là còn sống, tiếp tục được bất kỳ lúc nào; dừng hẳn là đã quyết định không làm.">Trạng thái</Th>
-                  <Th hint="Lần cập nhật gần nhất — ai, lúc nào, nói gì.">Cập nhật gần nhất</Th>
+                  <Th hint="Việc con chỉ MỘT tầng — không quy thành phần trăm khối lượng.">Việc con</Th>
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r) => (
-                  <tr key={r.id} className="row-hover cursor-pointer" onClick={() => setOpen(r.id)}>
-                    <td className="td">
-                      <span className="text-slate-100">{r.title}</span>
-                      <span className="flex flex-wrap items-center gap-1.5 mt-1">
-                        {r.group && <Info>{TASK_GROUP_LABEL[r.group as keyof typeof TASK_GROUP_LABEL]}</Info>}
-                        <Info>{r.branchName}</Info>
-                        {/* "2/4 việc con hoàn thành" — KHÔNG quy thành 50% khối lượng (mục 8.6). */}
-                        {r.subTotal > 0 && (
-                          <Info>{r.subDone}/{r.subTotal} việc con xong</Info>
+                {rows.map((r) => {
+                  const phuTrangThai = r.progress === 'paused'
+                    ? catDongPhu(`${r.stopReason ?? ''} · cần: ${r.helpName ?? '—'} · xem lại ${r.reviewOn ? fmtDate(r.reviewOn) : '—'}`)
+                    : r.progress === 'stopped' ? r.stopReason : null;
+                  const phuTrangThaiDu = r.progress === 'paused'
+                    ? `${r.stopReason ?? ''} · cần: ${r.helpName ?? '—'} · xem lại ${r.reviewOn ? fmtDate(r.reviewOn) : '—'}`
+                    : r.stopReason ?? '';
+                  return (
+                    <tr key={r.id} className="row-hover cursor-pointer" onClick={() => setOpen(r.id)}>
+                      <td className="td">
+                        <span className="text-slate-100" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{r.title}</span>
+                        <span className="block text-[11px] text-slate-500 mt-0.5">
+                          {r.group ? TASK_GROUP_LABEL[r.group as keyof typeof TASK_GROUP_LABEL] : '—'}
+                          {' · '}{r.taskType === 'long_term' ? 'Dài hạn' : 'Trong kỳ'}
+                          {branchId === null && r.branchName ? ` · ${r.branchName}` : ''}
+                        </span>
+                      </td>
+                      <td className="td text-slate-300">
+                        {r.assigneeName ?? <span className="text-slate-600">chưa giao</span>}
+                      </td>
+                      <td className="td whitespace-nowrap">
+                        <Han loai="viec-van-hanh" han={r.due} />
+                        {r.hanGoc && (
+                          <div className="text-[11px] text-slate-500 mt-0.5">{dongHanDaDoi({ hanGoc: r.hanGoc, lyDo: r.lyDoDoiHan }, homNay)}</div>
                         )}
-                        {r.subOverdue && <Alert tone="warn">Việc con quá hạn</Alert>}
-                        {r.caseLinks > 0 && <Info>{r.caseLinks} case làm căn cứ</Info>}
-                      </span>
-                    </td>
-                    <td className="td text-slate-300">
-                      {r.assigneeName ?? <span className="text-slate-600">chưa giao</span>}
-                      {r.watcherName && (
-                        <span className="block text-[11px] text-slate-500">theo dõi: {r.watcherName}</span>
-                      )}
-                    </td>
-                    <td className="td whitespace-nowrap">
-                      {r.due ? fmtDate(r.due) : <span className="text-slate-600">—</span>}
-                      {r.overdue && <div className="mt-0.5"><Alert>Quá hạn</Alert></div>}
-                    </td>
-                    <td className="td">
-                      <Status kind={KIND[r.progress] ?? 'idle'}>{r.progressLabel}</Status>
-                      {r.stopReason && (
-                        <div className="text-[11px] text-slate-500 mt-0.5">{r.stopReason}</div>
-                      )}
-                      {r.reviewOn && (
-                        <div className="text-[11px] text-slate-500 mt-0.5">xem lại {fmtDate(r.reviewOn)}</div>
-                      )}
-                    </td>
-                    <td className="td text-xs text-slate-400">
-                      {r.lastUpdate ? (
-                        <>
-                          <span className="text-slate-500 tabular-nums">{fmtDate(r.lastUpdate.on)}</span>
-                          {r.lastUpdate.by && <span className="text-slate-500"> · {r.lastUpdate.by}</span>}
-                          {r.lastUpdate.note && <div className="text-slate-400">{r.lastUpdate.note}</div>}
-                        </>
-                      ) : <span className="text-slate-600">chưa có cập nhật nào</span>}
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="td">
+                        <Status kind={KIND[r.progress] ?? 'idle'}>{r.progressLabel}</Status>
+                        {phuTrangThai && <div className="text-[11px] text-slate-500 mt-0.5" title={phuTrangThaiDu}>{phuTrangThai}</div>}
+                      </td>
+                      <td className="td text-xs">
+                        {r.subTotal > 0 ? <span className="text-slate-300">{r.subDone}/{r.subTotal} xong</span> : <span className="text-slate-600">—</span>}
+                        {r.subOverdueCount > 0 && (
+                          <div className="text-rose-300 mt-0.5">
+                            quá hạn: {r.subOverdueTitles.map((t) => `"${t}"`).join(', ')}
+                            {r.subOverdueCount > r.subOverdueTitles.length ? ` và ${r.subOverdueCount - r.subOverdueTitles.length} việc khác` : ''}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
-        <div className="p-3">
-          <SectionNote>
-            Một công việc có MỘT định danh xuyên nhiều tuần — không nhân bản mỗi tuần một bản
-            sao. Việc chưa xong vẫn hiện sang tuần sau, kể cả khi hạn còn xa.
-          </SectionNote>
-        </div>
       </Card>
 
-      <TaskDetail taskId={open} onClose={() => setOpen(null)} onDone={reload} />
+      <NganViecVanHanh taskId={open} onClose={() => setOpen(null)} onDone={reload} />
       <CreateTask open={creating} onClose={() => setCreating(false)} onDone={reload}
-        branchId={branchId} defaultGroup={preGroup || undefined} />
+        branchId={branchId} defaultGroup={preGroup || undefined} unitReportId={baoCaoId} veKyHop={veKyHop} />
     </div>
   );
 }
 
-/** Chi tiết một công việc: việc con, lịch sử cập nhật, case làm căn cứ. */
-function TaskDetail({ taskId, onClose, onDone }: {
+/** Chi tiết một công việc: hạn + lịch sử dời hạn, việc con, lịch sử cập nhật, case làm căn cứ. */
+export function NganViecVanHanh({ taskId, onClose, onDone }: {
   taskId: number | null; onClose: () => void; onDone: () => void;
 }) {
+  const { homNay } = useNgayNghiepVu();
   const { data, loading, reload } = useApi<any>(taskId ? `/mgmt-tasks/${taskId}` : null, [taskId]);
   const [updating, setUpdating] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [addingSub, setAddingSub] = useState(false);
 
   return (
@@ -263,14 +272,37 @@ function TaskDetail({ taskId, onClose, onDone }: {
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
             <Status kind={KIND[data.progress] ?? 'idle'}>{data.progressLabel}</Status>
-            {data.overdue && <Alert>Quá hạn</Alert>}
-            {data.due && <Info>Hạn {fmtDate(data.due)}</Info>}
+            <Han loai="viec-van-hanh" han={data.due} />
             {data.assigneeName && <Info>{data.assigneeName}</Info>}
             {data.watcherName && <Info>theo dõi: {data.watcherName}</Info>}
           </div>
-          {data.stopReason && (
-            <SectionNote><strong>Lý do:</strong> {data.stopReason}
-              {data.reviewOn && <> · hẹn xem lại {fmtDate(data.reviewOn)}</>}</SectionNote>
+          {data.hanGoc && (
+            <p className="text-xs text-slate-500 m-0">{dongHanDaDoi({ hanGoc: data.hanGoc, lyDo: null }, homNay)}</p>
+          )}
+          {data.dueHistory?.length > 0 && (
+            <section>
+              <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-1.5">Lịch sử dời hạn</h3>
+              <ul className="list-none p-0 m-0 space-y-1 text-xs text-slate-400">
+                {data.dueHistory.map((h: any, i: number) => (
+                  <li key={i}>
+                    {h.old ? fmtDate(h.old) : '—'} → {h.new ? fmtDate(h.new) : '—'}
+                    {h.reason && <> · "{h.reason}"</>}
+                    {h.by && <span className="text-slate-500"> · {h.by}</span>}
+                    {h.at && <span className="text-slate-500"> · {fmtDate(h.at)}</span>}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {data.progress === 'paused' && (data.stopReason || data.helpName || data.reviewOn) && (
+            <SectionNote>
+              <strong>Lý do:</strong> {data.stopReason}
+              {data.helpName && <> · cần: {data.helpName}</>}
+              {data.reviewOn && <> · hẹn xem lại {fmtDate(data.reviewOn)}</>}
+            </SectionNote>
+          )}
+          {data.progress === 'stopped' && data.stopReason && (
+            <SectionNote><strong>Lý do dừng hẳn:</strong> {data.stopReason}</SectionNote>
           )}
           {data.note && <p className="text-sm text-slate-300 m-0">{data.note}</p>}
 
@@ -278,7 +310,10 @@ function TaskDetail({ taskId, onClose, onDone }: {
             <div className="flex flex-wrap gap-2">
               <button className="btn btn-primary btn-sm" onClick={() => setUpdating(true)}>Cập nhật tiến độ</button>
               {data.viewer.canEdit && (
-                <button className="btn btn-sm" onClick={() => setAddingSub(true)}>+ Công việc con</button>
+                <>
+                  <button className="btn btn-sm" onClick={() => setEditing(true)}>Sửa</button>
+                  <button className="btn btn-sm" onClick={() => setAddingSub(true)}>+ Công việc con</button>
+                </>
               )}
             </div>
           )}
@@ -300,9 +335,8 @@ function TaskDetail({ taskId, onClose, onDone }: {
                 {data.subtasks.map((x: any) => (
                   <li key={x.id} className="rounded-lg border px-3 py-2" style={{ borderColor: 'var(--line)' }}>
                     <span className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm text-slate-100">{x.title}</span>
+                      <span className={`text-sm ${x.overdue ? 'text-rose-300' : 'text-slate-100'}`}>{x.title}</span>
                       <Status kind={KIND[x.progress] ?? 'idle'}>{x.progressLabel}</Status>
-                      {x.overdue && <Alert>Quá hạn</Alert>}
                     </span>
                     <span className="block text-[11px] text-slate-500 mt-0.5">
                       {x.assigneeName ?? 'chưa giao'}
@@ -336,16 +370,15 @@ function TaskDetail({ taskId, onClose, onDone }: {
 
           {data.cases.length > 0 && (
             <section>
-              <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-2">Case làm căn cứ</h3>
+              <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-2">
+                Case làm căn cứ
+                <span className="text-slate-500 ml-1.5 cursor-help" title="Liên kết này chỉ là CĂN CỨ. Hoàn thành công việc quản lý KHÔNG đóng case nào, và cũng không tự tạo phương án cho em nào.">ⓘ</span>
+              </h3>
               <ul className="list-none p-0 m-0 space-y-1 text-xs text-slate-300">
                 {data.cases.map((c: any) => (
                   <li key={c.id}>{c.title} <span className="text-slate-500">· {c.student_name}</span></li>
                 ))}
               </ul>
-              <SectionNote>
-                Liên kết này chỉ là CĂN CỨ. Hoàn thành công việc quản lý KHÔNG đóng case nào,
-                và cũng không tự tạo phương án cho em nào — hai thứ có nhịp khác nhau.
-              </SectionNote>
             </section>
           )}
         </div>
@@ -353,6 +386,10 @@ function TaskDetail({ taskId, onClose, onDone }: {
 
       {data && (
         <UpdateDialog open={updating} onClose={() => setUpdating(false)} task={data}
+          onDone={() => { reload(); onDone(); }} />
+      )}
+      {data && (
+        <SuaViec open={editing} onClose={() => setEditing(false)} task={data}
           onDone={() => { reload(); onDone(); }} />
       )}
       {data && (
@@ -368,25 +405,37 @@ function UpdateDialog({ open, onClose, task, onDone }: {
   open: boolean; onClose: () => void; task: any; onDone: () => void;
 }) {
   const toast = useToast();
+  const { homNay } = useNgayNghiepVu();
   const [progress, setProgress] = useState(task.progress);
   const [note, setNote] = useState('');
   const [reason, setReason] = useState('');
-  const [reviewOn, setReviewOn] = useState('');
+  const [reviewOn, setReviewOn] = useState(task.reviewOn ?? addDaysIso(homNay, 7));
+  const [help, setHelp] = useState<NguoiChon | null>(task.helpUserId
+    ? { kieu: 'tai_khoan', id: task.helpUserId, ten: task.helpName ?? '' }
+    : task.helpName ? { kieu: 'ngoai', ten: task.helpName } : null);
   const [busy, setBusy] = useState(false);
   const needReason = (TASK_PROGRESS_NEEDS_REASON as readonly string[]).includes(progress);
+  const needHelp = progress === 'paused';
+  const helpThieu = needHelp && !help;
+  const reviewThieu = needHelp && (!reviewOn || reviewOn < homNay);
+  /* Q11: Hoàn thành/Dừng hẳn việc CHA còn con mở đều bị chặn — không phải chỉ Hoàn thành. */
+  const conChuaXong: string[] = task.openSubTitles ?? [];
+  const chanKhepLai = (progress === 'done' || progress === 'stopped') && conChuaXong.length > 0;
 
   return (
     <Modal open={open} onClose={onClose} title="Cập nhật tiến độ"
       footer={
         <>
           <button className="btn" onClick={onClose} disabled={busy}>Huỷ</button>
-          <button className="btn btn-primary" disabled={busy || (needReason && !reason.trim())}
+          <button className="btn btn-primary" disabled={busy || (needReason && !reason.trim()) || helpThieu || reviewThieu || chanKhepLai}
             onClick={async () => {
               setBusy(true);
               try {
                 await api.post(`/mgmt-tasks/${task.id}/update`, {
                   progress, note: note || null, reason: reason || null,
-                  reviewOn: reviewOn || null,
+                  reviewOn: needHelp ? (reviewOn || null) : null,
+                  helpUserId: help?.kieu === 'tai_khoan' ? help.id : null,
+                  helpName: help?.kieu === 'ngoai' ? help.ten : null,
                 });
                 invalidate('/mgmt-tasks');
                 toast.push('ok', 'Đã cập nhật'); onDone(); onClose();
@@ -409,54 +458,141 @@ function UpdateDialog({ open, onClose, task, onDone }: {
             ))}
           </div>
         </Field>
+        {chanKhepLai && (
+          <Alert>
+            Còn {conChuaXong.length} công việc con chưa khép lại: {conChuaXong.slice(0, 2).map((t) => `"${t}"`).join(', ')}
+            {conChuaXong.length > 2 ? ` và ${conChuaXong.length - 2} việc khác` : ''}.
+          </Alert>
+        )}
         {needReason && (
           <Field label="Lý do" required
             hint="Một việc tự nhiên im lặng mà không ai biết vì sao là thứ vài tháng sau không ai giải thích được.">
             <input className="field" value={reason} onChange={(e) => setReason(e.target.value)} />
           </Field>
         )}
-        {progress === 'paused' && (
-          <Field label="Hẹn xem lại"
-            hint="Tạm ngưng KHÔNG dời hạn và không xoá hạn — chỉ dừng nhắc cập nhật thường kỳ.">
-            <input type="date" className="field" value={reviewOn} onChange={(e) => setReviewOn(e.target.value)} />
-          </Field>
+        {needHelp && (
+          <>
+            <Field label="Cần ai hỗ trợ" required>
+              <ChonNguoi value={help} onChange={setHelp} nhom="nhan_vien" choToi={false} choNgoai ariaLabel="Người cần hỗ trợ" />
+            </Field>
+            <Field label="Ngày xem lại" required hint="Từ ngày cập nhật trở đi.">
+              <input type="date" className="field" min={homNay} value={reviewOn} onChange={(e) => setReviewOn(e.target.value)} />
+            </Field>
+          </>
         )}
         <Field label="Ghi chú">
           <textarea className="field" rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
         </Field>
-        <SectionNote>
-          Mỗi lần cập nhật là một dòng riêng có người, thời điểm và ghi chú — không ghi đè lần
-          trước. Tuần chỉ dùng để lọc các lần cập nhật, không nhân bản công việc.
-        </SectionNote>
       </div>
     </Modal>
   );
 }
 
-function CreateTask({ open, onClose, onDone, branchId, parent, defaultGroup }: {
+/** Sửa phần mô tả: tên, nhóm, người, hạn, ghi chú — không đụng tiến độ. Đổi hạn ĐANG CÓ thì bắt buộc lý do (Q9). */
+function SuaViec({ open, onClose, task, onDone }: {
+  open: boolean; onClose: () => void; task: any; onDone: () => void;
+}) {
+  const toast = useToast();
+  const { session } = useSession();
+  const [title, setTitle] = useState(task.title);
+  const [group, setGroup] = useState(task.group ?? 'curriculum');
+  const [assignee, setAssignee] = useState<NguoiChon | null>(task.assigneeUserId
+    ? { kieu: 'tai_khoan', id: task.assigneeUserId, ten: task.assigneeName ?? '' } : null);
+  const [watcher, setWatcher] = useState<NguoiChon | null>(task.watcherUserId
+    ? { kieu: 'tai_khoan', id: task.watcherUserId, ten: task.watcherName ?? '' } : null);
+  const [due, setDue] = useState(task.due ?? '');
+  const [lyDoDoiHan, setLyDoDoiHan] = useState('');
+  const [note, setNote] = useState(task.note ?? '');
+  const [busy, setBusy] = useState(false);
+
+  const doiHan = due !== task.due;
+  const canDoi = !!task.due && doiHan;
+
+  return (
+    <Modal open={open} onClose={onClose} title="Sửa công việc"
+      footer={
+        <>
+          <button className="btn" onClick={onClose} disabled={busy}>Huỷ</button>
+          <button className="btn btn-primary" disabled={busy || !title.trim() || (canDoi && lyDoDoiHan.trim().length < 2)}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                await api.patch(`/mgmt-tasks/${task.id}`, {
+                  title, group,
+                  assigneeUserId: idOfNguoi(assignee, session?.user?.id ?? null),
+                  watcherUserId: idOfNguoi(watcher, session?.user?.id ?? null),
+                  due: due || null,
+                  lyDoDoiHan: canDoi ? lyDoDoiHan.trim() : null,
+                  note: note || null,
+                });
+                invalidate('/mgmt-tasks');
+                toast.push('ok', 'Đã lưu'); onDone(); onClose();
+              } catch (e: any) { toast.push('error', e?.message ?? 'Không lưu được'); }
+              finally { setBusy(false); }
+            }}>
+            Lưu
+          </button>
+        </>
+      }>
+      <div className="space-y-3">
+        <Field label="Tên công việc" required>
+          <input className="field" value={title} onChange={(e) => setTitle(e.target.value)} />
+        </Field>
+        <Field label="Nhóm" required>
+          <select className="field" value={group} onChange={(e) => setGroup(e.target.value)}>
+            {TASK_GROUPS.map((g) => <option key={g} value={g}>{TASK_GROUP_LABEL[g]}</option>)}
+          </select>
+        </Field>
+        <Field label="Người phụ trách">
+          <ChonNguoi value={assignee} onChange={setAssignee} nhom="nhan_vien" choNgoai={false} macDinhTrong="Chưa giao" />
+        </Field>
+        <Field label="Người theo dõi" hint="Nhìn thấy công việc nhưng KHÔNG sửa được.">
+          <ChonNguoi value={watcher} onChange={setWatcher} nhom="nhan_vien" choNgoai={false} macDinhTrong="Không có" />
+        </Field>
+        <Field label="Hạn">
+          <input type="date" className="field" value={due} onChange={(e) => setDue(e.target.value)} />
+        </Field>
+        {canDoi && (
+          <Field label="Lý do dời hạn" required hint="2–200 ký tự — hạn cũ vẫn hiện lại ở cột Hạn, không mất.">
+            <input className="field" value={lyDoDoiHan} onChange={(e) => setLyDoDoiHan(e.target.value)} placeholder="Chờ duyệt ngân sách nhà cung cấp" />
+          </Field>
+        )}
+        <Field label="Ghi chú">
+          <textarea className="field" rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
+        </Field>
+      </div>
+    </Modal>
+  );
+}
+
+function addDaysIso(iso: string, n: number): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+function CreateTask({ open, onClose, onDone, branchId, parent, defaultGroup, unitReportId, veKyHop }: {
   open: boolean; onClose: () => void; onDone: () => void;
   branchId: number | null; parent?: any;
   /** Mở từ một mục báo cáo kỳ họp thì nhóm đã biết trước — đỡ một lần chọn và một lần chọn sai. */
   defaultGroup?: string;
+  /** PR-Ra R6: tạo từ ô báo cáo đơn vị — tự nối, rồi quay về đúng tuần đó. */
+  unitReportId?: number | null;
+  veKyHop?: string | null;
 }) {
   const toast = useToast();
-  const people = useApi<any[]>(open ? '/ref/people' : null);
+  const navigate = useNavigate();
+  const { session } = useSession();
   const branches = useApi<any[]>(open ? '/ref/branches' : null);
   const [title, setTitle] = useState('');
   const [group, setGroup] = useState<string>(parent?.group ?? defaultGroup ?? 'curriculum');
-  const [assignee, setAssignee] = useState('');
-  const [watcher, setWatcher] = useState('');
+  const [assignee, setAssignee] = useState<NguoiChon | null>(null);
+  const [watcher, setWatcher] = useState<NguoiChon | null>(null);
   /*
    * HẠN VIỆC CON mặc định = hạn cha trừ MỘT NGÀY (mục 8.6), và sửa được ngay tại đây.
    * Hạn cha đã là quá khứ thì để TRỐNG chứ không đưa ra một mặc định vô nghĩa.
    */
-  const defaultDue = parent?.due
-    ? (() => {
-      const d = new Date(parent.due); d.setDate(d.getDate() - 1);
-      const iso = d.toISOString().slice(0, 10);
-      return iso;
-    })()
-    : '';
+  const defaultDue = parent?.due ? addDaysIso(parent.due, -1) : '';
   const [due, setDue] = useState(defaultDue);
   const [branch, setBranch] = useState(String(parent?.branchId ?? branchId ?? ''));
   const [note, setNote] = useState('');
@@ -473,13 +609,17 @@ function CreateTask({ open, onClose, onDone, branchId, parent, defaultGroup }: {
               setBusy(true);
               try {
                 await api.post('/mgmt-tasks', {
-                  title, group, assigneeUserId: assignee || null, watcherUserId: watcher || null,
+                  title, group,
+                  assigneeUserId: idOfNguoi(assignee, session?.user?.id ?? null),
+                  watcherUserId: idOfNguoi(watcher, session?.user?.id ?? null),
                   due: due || null, branchId: branch || null, note: note || null,
                   parentTaskId: parent?.id ?? null,
+                  unitReportId: unitReportId ?? null,
                 });
                 invalidate('/mgmt-tasks');
                 toast.push('ok', 'Đã tạo công việc');
                 setTitle(''); setNote(''); onDone(); onClose();
+                if (unitReportId && veKyHop) navigate(`/cong-viec/bao-cao?periodId=${veKyHop}`);
               } catch (e: any) { toast.push('error', e?.message ?? 'Không lưu được'); }
               finally { setBusy(false); }
             }}>
@@ -500,20 +640,10 @@ function CreateTask({ open, onClose, onDone, branchId, parent, defaultGroup }: {
           </Field>
         )}
         <Field label="Người phụ trách">
-          <select className="field" value={assignee} onChange={(e) => setAssignee(e.target.value)}>
-            <option value="">Chưa giao</option>
-            {(people.data ?? []).map((u: any) => (
-              <option key={u.id} value={u.id}>{u.fullName ?? u.full_name}</option>
-            ))}
-          </select>
+          <ChonNguoi value={assignee} onChange={setAssignee} nhom="nhan_vien" choToi choNgoai={false} macDinhTrong="Chưa giao" />
         </Field>
         <Field label="Người theo dõi" hint="Nhìn thấy công việc nhưng KHÔNG sửa được.">
-          <select className="field" value={watcher} onChange={(e) => setWatcher(e.target.value)}>
-            <option value="">Không có</option>
-            {(people.data ?? []).map((u: any) => (
-              <option key={u.id} value={u.id}>{u.fullName ?? u.full_name}</option>
-            ))}
-          </select>
+          <ChonNguoi value={watcher} onChange={setWatcher} nhom="nhan_vien" choToi choNgoai={false} macDinhTrong="Không có" />
         </Field>
         <Field label="Hạn"
           hint={parent ? 'Mặc định là hạn của việc cha trừ một ngày — sửa được ngay.' : undefined}>
