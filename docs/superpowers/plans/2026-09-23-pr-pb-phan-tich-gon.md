@@ -478,3 +478,12 @@ chi nhánh" như Task 6). Không có ô khoảng thời gian (Q5).
 ## Nhật ký thực thi
 
 (Session code ghi: B, số phép kiểm sau mỗi Task, lệch kế hoạch, kết quả KIỂM, link PR.)
+
+- **Model thật đang chạy: Claude Sonnet 5** (không phải Opus 5.5/Opus 5 như kế hoạch khuyến nghị — phiên này được hệ
+  thống gán Sonnet 5, ngoài khả năng session code tự chọn). Mọi commit ghi `Co-Authored-By: Claude Sonnet 5`.
+- **Task 0:** PR-Pa đã merge (`49c8214`). Worktree + nhánh `pr-pb-phan-tich-gon` từ `origin/main` (`d681bfb`). Không có
+  biến Turso trong môi trường. `npm ci` xong. **B = 801** (`npm run check` xanh).
+- **Task 1:** 801 → **807** phép kiểm. `gocNhinTuThamSo` trả `{ goc, ct, boThamSo }` thay vì `{ goc, boThamSo }` như
+  câu tóm tắt trong kế hoạch — cần thêm `ct` vì `loai-lop=normal|ft` phải đổi thành tham số chương trình mới, không chỉ
+  xoá tham số cũ. `COT_TONG_HOP` xếp cột `luot` vào cùng nhóm `ket-qua` với sáu cột Đạt…Chưa đủ điểm (kế hoạch liệt kê
+  chung một chỗ); "Cột hiện" ẩn nhóm Kết quả thì ẩn luôn cột Lượt — hợp lý vì không còn gì để đối chiếu với nó.
