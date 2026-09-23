@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, ENTRY_SKILLS, ENTRY_SKILL_LABEL, MOCK_FT_STUDY_WEEK, NO_SHOW_OVERRIDDEN_NOTE,
-  PERMISSIONS, awaitingScore, noShowStateOf, noShowText, pendingSkillsOf,
+  PERMISSIONS, awaitingScore, kiemLyDo, noShowStateOf, noShowText, pendingSkillsOf, tuanLich,
   type AssessedSkill, type EntrySkill, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -25,7 +25,7 @@ import { canRequest as canRequestAbsence, flagLateNoShow, pendingMove, settleNoS
 import { raiseSignalsForResult, stepsFor } from '../cases/sos.ts';
 import { reconcileCorrectedSignals } from '../cases/signals.ts';
 import { currentCycle, cycleById, examPlanOf, nextAttemptNo } from './cycles.ts';
-import { allProgrammes, evaluateRegular, regularDeadline } from '../normal/regular.ts';
+import { allProgrammes, evaluateRegular, isRatioClass, regularDeadline } from '../normal/regular.ts';
 
 export type ScoreRow = {
   id: number; skill: EntrySkill;
@@ -210,7 +210,7 @@ export type SkillCell = {
    */
   noShow: {
     state: Exclude<NoShowState, 'none'>;
-    /** Câu hiển thị: "Không có bài · Có thể sửa đến hết Chủ nhật 20/09", "Không dự thi · Tuần W3 SEP 2026", … */
+    /** Câu hiển thị: "Không có bài · Có thể sửa đến hết Chủ nhật 20/09", "Không dự thi · Tuần W3 SEP" (năm chỉ hiện khi khác năm), … */
     text: string;
     effectiveOn: string | null;
     editableUntil: string | null;
@@ -323,7 +323,8 @@ export function skillCells(
     const noShowNote = row?.no_show_settled_at && row.no_show_period_id === view.periodId && view.sitStatus !== 'absent'
       ? NO_SHOW_OVERRIDDEN_NOTE : null;
     const noShow = ns.state === 'none' ? null : {
-      state: ns.state, text: noShowText(ns, view.periodCode, today) ?? '',
+      /* Tuần viết bằng `tuanLich` (G-6): "W3 SEP", chỉ kèm năm khi khác năm hôm nay — không in mã tuần có năm. */
+      state: ns.state, text: noShowText(ns, view.weekStart ? tuanLich(view.weekStart, today) : view.periodCode, today) ?? '',
       effectiveOn: ns.effectiveOn, editableUntil: ns.editableUntil,
     };
 
@@ -434,6 +435,39 @@ export function scheduleHeadline(input: {
 }
 
 // ---------------------------------------------------------------- danh sách
+
+/**
+ * MỘT DÒNG CÒN VIỆC CHẤM theo phạm vi đang xem — luật của `need: 'my_scores'`. Xuất ra để Cần chấm (đọc cả dòng đã
+ * chấm xong để biết "Chấm tiếp") lọc bằng ĐÚNG luật này, không chép lại một bản thứ hai.
+ */
+export const conBaiCanCham = (m: { pendingSkills: string[]; status: string }): boolean =>
+  m.pendingSkills.length > 0 && m.status !== 'cancelled';
+
+/**
+ * BẰNG CHỨNG MỘT MÔN ĐÃ BỊ DỜI LỊCH (Q15 "lùi lịch") — chỉ hai nguồn có thật, KHÔNG suy từ thứ tự tuần: lịch tách
+ * tuần theo kế hoạch (lớp thường trải bốn môn qua hai tuần, FT xếp Speaking tuần sau) không phải là dời.
+ *
+ *   `no_show`  dấu "-" của lớp thường: `no_show_period_id` còn đó và KHÁC tuần hiện tại của môn — cùng luật với
+ *              `movedFrom` của `regularSheet`. Tuần cũ chính là `no_show_period_id`.
+ *   `absence`  dời do vắng (`absence_move_count > 0`, chỉ `applyMove` tăng nó). Tuần cũ đọc ở lịch sử lịch đợt.
+ *
+ * Xếp riêng tuần bằng `setSkillWeek` thì KHÔNG tính: kế hoạch tách tuần cũng đi đường đó.
+ */
+export type MonDoiLich = { by: 'no_show' | 'absence'; fromPeriodId: number | null };
+
+function monDoiLich(
+  score: { no_show_period_id?: number | null } | undefined, currentPeriodId: number | null, absenceMoves: number,
+): MonDoiLich | null {
+  if (score?.no_show_period_id && score.no_show_period_id !== currentPeriodId) {
+    return { by: 'no_show', fromPeriodId: score.no_show_period_id };
+  }
+  return absenceMoves > 0 ? { by: 'absence', fromPeriodId: null } : null;
+}
+
+/** Số ô đã có điểm trong phạm vi đang xem (cùng tiêu chí "được yêu cầu" và "của tôi" với `pendingSkillsOf`). */
+function scoredInScopeOf(cells: PendingCell[], scope: WorkScope): number {
+  return cells.filter((c) => c.required && c.scored && (scope === 'mine' ? c.mine : true)).length;
+}
 
 export type AttemptFilters = {
   periodId?: number;
@@ -610,6 +644,17 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
           .map((x) => ({ skill: x.skill, deadline: x.v!.deadline, weekCode: x.v!.periodCode })),
         /* Tập bài cần chấm THEO PHẠM VI ĐANG XEM — cùng hàm với badge ở danh sách lớp. */
         pendingSkills: pending,
+        /* Hạn và tuần của CHÍNH các môn còn nợ theo phạm vi đang xem — Cần chấm cần hạn của cả dòng, không chỉ phần của tôi. */
+        pendingDetail: pending.map((k) => {
+          const v = views.get(k);
+          return {
+            skill: k, deadline: v?.deadline ?? null, periodId: v?.periodId ?? null,
+            weekCode: v?.periodCode ?? null, weekStart: v?.weekStart ?? null,
+            moved: monDoiLich(scores.find((x) => x.skill === k), v?.periodId ?? null, v?.absenceMoveCount ?? 0),
+          };
+        }),
+        /* Số ô ĐÃ CÓ ĐIỂM trong cùng phạm vi — Cần chấm phân biệt "Chấm" với "Chấm tiếp". */
+        scoredInScope: scoredInScopeOf(pendingCells, workScope),
         /* Ai phụ trách từng bài — danh sách của Quản lý là để ĐÔN ĐỐC, nên phải có tên. */
         pendingOwners: ownersOf(a.class_id, pending),
         /** Tuần thi của CHÍNH các môn còn nợ — để hàng đợi nói "nợ từ tuần nào". */
@@ -680,6 +725,17 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
         .map((c) => ({ skill: c.skill, deadline: c.deadline, weekCode: c.periodCode })),
       /* Tập bài cần chấm THEO PHẠM VI ĐANG XEM — cùng hàm với badge ở danh sách lớp. */
       pendingSkills: pending,
+      /* Hạn và tuần của CHÍNH các môn còn nợ theo phạm vi đang xem — cùng ý như nhánh lớp thường. */
+      pendingDetail: pending.map((k) => {
+        const c = cells.find((x) => x.skill === k);
+        const lich = bundle.skillRows.get(a.id)?.find((r) => r.skill === c?.assessedSkill);
+        return {
+          skill: k, deadline: c?.deadline ?? null, periodId: c?.periodId ?? null,
+          weekCode: c?.periodCode ?? null, weekStart: c?.weekStart ?? null,
+          moved: monDoiLich(scores.find((x) => x.skill === k), c?.periodId ?? null, lich?.absence_move_count ?? 0),
+        };
+      }),
+      scoredInScope: scoredInScopeOf(pendingInputOf(cells), workScope),
       /* Ai phụ trách từng bài — danh sách của Quản lý là để ĐÔN ĐỐC, nên phải có tên. */
       pendingOwners: ownersOf(a.class_id, pending),
       /** Tuần thi của CHÍNH các môn còn nợ — để hàng đợi nói "nợ từ tuần nào". */
@@ -704,7 +760,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
 
   switch (f.need) {
     case 'my_scores':
-      mapped = mapped.filter((m) => m.pendingSkills.length > 0 && m.status !== 'cancelled');
+      mapped = mapped.filter(conBaiCanCham);
       break;
     case 'missing_scores': mapped = mapped.filter((m) => m.status !== 'cancelled' && !m.complete && m.scoredRequired > 0); break;
     case 'overdue': mapped = mapped.filter((m) => m.overdueSkills > 0); break;
@@ -756,6 +812,8 @@ export function scoreHistoryOf(attemptId: number) {
       skillLabel: ENTRY_SKILL_LABEL[l.entity_label as EntrySkill] ?? l.entity_label,
       before: scoreSummaryText(before), after: afterText,
       actorName: l.actor_name as string | null, createdAt: l.created_at as string,
+      /* RB-5 — lý do hiệu chỉnh nằm ngay trong bản "sau" của nhật ký; lần nhập đầu không có. */
+      lyDo: (after && typeof after === 'object' ? (after as any).lyDo ?? null : null) as string | null,
     };
   });
 }
@@ -1083,6 +1141,12 @@ export type ScorePatch = {
    * khi tuần kết thúc). Không phải điểm 0, và không bao giờ xoá một điểm chính thức.
    */
   noShow?: boolean;
+  /**
+   * RB-5 — LÝ DO HIỆU CHỈNH. Bắt buộc khi ô ĐÃ CÓ điểm chính thức và lần ghi này làm đổi giá trị đó (kể cả xoá). Lần
+   * nhập đầu tiên không phải hiệu chỉnh nên không đòi; lưu lại đúng con số cũ (tự lưu) hay chỉ sửa ghi chú cũng không.
+   * Lý do đi vào nhật ký `score.edit`/`score.override` — chỗ `scoreHistoryOf` đang đọc — nên không cần bảng mới.
+   */
+  lyDo?: string | null;
 };
 
 /**
@@ -1146,11 +1210,12 @@ export function saveScore(
   if (!(ENTRY_SKILLS as readonly string[]).includes(skill)) throw badRequest('Kỹ năng không hợp lệ.');
   if (a.status === 'cancelled') throw badRequest('Lượt này đã huỷ, không nhập điểm được.');
   /*
-   * CHỐT VẮNG CHỈ ÁP CHO MOCK (rule book §17.1). Lớp Normal vẫn phải đủ bốn môn, không có huỷ nghĩa vụ
-   * Test — đừng mang giới hạn FT sang Normal — nên dấu '-' không tồn tại ở đó.
+   * DẤU "-" CỦA LỚP THƯỜNG ĐI CỬA KHÁC (C08, chốt 21/09/2026 đêm). Ở lớp thường, "-" không phải lời khai chờ chốt
+   * Chủ nhật như Fast Track mà là một lần DỜI LỊCH: môn đó sang tuần sau ngay. Luật ấy nằm ở `normal/regular.ts`
+   * (`reportRegularNoShow`), cùng chỗ với bảng điểm lớp thường — nên ở đây chỉ chỉ đường, không dựng luật thứ hai.
    */
   if (patch.noShow !== undefined && scoringModeOf(a) === 'ratio') {
-    throw badRequest('Lớp Normal không dùng dấu "-": bài chưa có thì để trống, và vẫn phải đủ bốn môn.');
+    throw badRequest('Bài của lớp thường ghi dấu "-" ở bảng điểm lớp thường — ở đó môn được ghi "-" tự dời sang tuần sau.');
   }
 
   const path = a.class_id ? scoreEditPath(p, a.class_id, skill) : null;
@@ -1286,6 +1351,25 @@ export function saveScore(
     }
 
     /*
+     * RB-5 — SỬA MỘT Ô ĐÃ CÓ ĐIỂM THÌ PHẢI NÓI VÌ SAO.
+     *
+     * Câu lỗi của dấu "-" đã nhắc tới "hiệu chỉnh điểm có ghi lý do" từ lâu mà đường ấy chưa tồn tại (kiểm kê RB-5).
+     * Nay nó tồn tại và là ĐƯỜNG DUY NHẤT: không có lý do thì không đổi được một con số mà người khác đã đọc. So trên
+     * giá trị SẼ ĐƯỢC LƯU (điểm thô / bốn tiêu chí / band), chưa ghi gì nên chặn ở đây là cuộn lại sạch. Lưu lại đúng
+     * con số cũ không phải hiệu chỉnh — tự lưu không bị hỏi lý do.
+     */
+    const daCoDiem = (existing?.band ?? null) !== null || (existing?.raw_score ?? null) !== null;
+    if (daCoDiem) {
+      const cu = [existing!.raw_score, existing!.c1, existing!.c2, existing!.c3, existing!.c4, existing!.band]
+        .map((v) => v ?? null);
+      const moi = [raw, ...crit, band].map((v) => v ?? null);
+      if (cu.some((v, i) => v !== moi[i])) {
+        const loi = kiemLyDo(patch.lyDo);
+        if (loi) throw badRequest(loi);
+      }
+    }
+
+    /*
      * NGƯỜI NHẬP CHỈ CÓ KHI Ô CÓ GIÁ TRỊ (MT-P09). Xoá điểm là một thao tác, nhưng KHÔNG phải một lần "nhập điểm":
      * ô trống mà còn ghi "Người nhập: X" là dùng tác giả của thao tác làm bằng chứng rằng đã có điểm. Ai đã sửa
      * gì, lúc nào vẫn nằm trong nhật ký (`score.edit`) — hiện ở "Lịch sử thay đổi" của hồ sơ Test.
@@ -1332,7 +1416,8 @@ export function saveScore(
     writeAudit({
       actorUserId: p.userId,
       action: path === 'override' ? 'score.override' : 'score.edit',
-      entityType: 'assessment_attempt', entityId: attemptId, entityLabel: skill, before, after,
+      entityType: 'assessment_attempt', entityId: attemptId, entityLabel: skill,
+      before, after: patch.lyDo ? { ...(after as any), lyDo: String(patch.lyDo).trim() } : after,
     });
 
     /*
@@ -1365,6 +1450,14 @@ export function classScoreSheet(
     .get(classId) as any;
   if (!cls) throw notFound('Không tìm thấy lớp');
   require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
+  /*
+   * BẢNG NÀY LÀ BẢNG MOCK TEST. Lớp thường có bảng riêng (`regularSheet`): chấm theo số câu đúng/tổng số câu, bài tên
+   * "Giữa khoá"/"Cuối khoá". Mở nhầm bảng là đọc sai cả kết quả — bảng này gọi mọi lượt là "MT{n}" và chấm theo band.
+   * Chặn ở MÁY CHỦ chứ không chỉ ở giao diện: gõ thẳng đường dẫn vẫn phải ra đúng bảng.
+   */
+  if (isRatioClass(classId)) {
+    throw badRequest('Lớp thường dùng bảng điểm riêng (số câu đúng / tổng số câu), không dùng bảng điểm Mock Test.');
+  }
   const period = periodId ? (conn.prepare('SELECT * FROM report_periods WHERE id = ?').get(periodId) as any) : null;
 
   const params: unknown[] = [classId];

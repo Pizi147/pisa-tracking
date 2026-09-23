@@ -14,7 +14,8 @@ import {
 import {
   attemptHref, attemptStatusLabel, fmtBand, fmtDate, fmtDateTime, progressLabel, skillLabel,
 } from '../../lib/format.ts';
-import { ASSESSED_SKILL_LABEL } from '@shared/domain/index.ts';
+import { ASSESSED_SKILL_LABEL, ATTEMPT_KIND_SHORT, tuanLich, type AttemptKind } from '@shared/domain/index.ts';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { KIEM_TRA_LAI_KY_NANG, KY_NANG_KHONG_KIEM_TRA, TOOLTIP_TUAN_HOAN_TAT } from '../../ui/chu.ts';
 import { usePeriods } from '../../ui/Filters.tsx';
 
@@ -52,6 +53,8 @@ type Detail = {
 type ScoreHistoryRow = {
   id: number; kind: 'edit' | 'override' | 'no_show'; skill: string; skillLabel: string;
   before: string; after: string; actorName: string | null; createdAt: string;
+  /** RB-5 — lý do sửa điểm đã nhập (lần nhập đầu không có). */
+  lyDo: string | null;
 };
 
 type SkillRow = {
@@ -68,6 +71,12 @@ type SkillRow = {
   pendingMove: { id: number; decideBy: string; toWeek: string | null; moveNo: number } | null;
 };
 
+/** Một đợt của học viên trong `GET /attempts?studentId=` — đủ để dựng nhãn và đường dẫn của bộ chọn đợt (R15). */
+type DotCuaHv = {
+  id: number; kind: string; classId: number | null; attemptNo: number; status: string;
+  period: { id: number; weekStart: string } | null;
+};
+
 /** Năm cột làm việc — một dòng mỗi bài nhập. Dưới `md` mỗi bài là một thẻ xếp dọc, không có cột. */
 const ROW_GRID = 'md:grid md:grid-cols-[6.5rem_9.5rem_minmax(14rem,1.2fr)_minmax(13rem,1fr)_11rem] md:gap-x-3';
 
@@ -77,6 +86,9 @@ export default function MockDetailPage() {
   const toast = useToast();
   const { data, loading, error, reload } = useApi<Detail>(id ? `/attempts/${id}` : null);
   const { save } = useSaveScore(Number(id), reload);
+  const { homNay } = useNgayNghiepVu();
+  /* R15 — các đợt của CHÍNH học viên này, để chuyển đợt ngay trên trang (không phải quay lại hồ sơ). */
+  const dsDot = useApi<{ rows: DotCuaHv[] }>(data ? `/attempts?studentId=${data.student.id}` : null);
   const [showHistory, setShowHistory] = useState(false);
   const [weekOpen, setWeekOpen] = useState(false);
   const [deadlineOpen, setDeadlineOpen] = useState(false);
@@ -141,10 +153,13 @@ export default function MockDetailPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <button className="btn btn-sm btn-ghost mb-1" onClick={() => navigate(-1)}>← Quay lại</button>
-          <h1 className="text-lg font-semibold text-slate-100">
-            {d.student.name} <span className="text-slate-500 text-sm">· {d.student.code}</span>
-            <span className="text-slate-300 text-base font-medium"> · MT{d.attemptNo}</span>
-          </h1>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <h1 className="text-lg font-semibold text-slate-100">
+              {d.student.name} <span className="text-slate-500 text-sm">· {d.student.code}</span>
+              <span className="text-slate-300 text-base font-medium"> · MT{d.attemptNo}</span>
+            </h1>
+            <ChonDot hienTai={d.id} ds={dsDot.data?.rows ?? []} homNay={homNay} onChon={(r) => navigate(attemptHref(r))} />
+          </div>
           <p className="text-xs text-slate-500 mt-0.5">
             Lớp lúc đánh giá: {d.classCode ?? '—'} · {d.branchName ?? '—'}
             {d.cycle.route && ` · Lộ trình ${d.cycle.route}`}
@@ -153,7 +168,11 @@ export default function MockDetailPage() {
         <div className="flex flex-wrap items-center gap-2">
           <Link className="btn no-underline" to={`/hoc-vien/${d.student.id}`}>Hồ sơ học viên</Link>
           {d.classId && (
-            <Link className="btn no-underline" to={`/nhap-diem/${d.classId}`}>Nhập điểm cả lớp</Link>
+            /* R16 — mở lưới cả lớp đúng TUẦN của đợt đang xem, không phải tuần hôm nay. */
+            <Link className="btn no-underline"
+              to={`/nhap-diem/${d.classId}${d.period ? `?periodId=${d.period.id}` : ''}`}>
+              Nhập điểm cả lớp
+            </Link>
           )}
           <Menu label="Chỉnh lịch" items={headerItems} className="btn" />
         </div>
@@ -190,7 +209,7 @@ export default function MockDetailPage() {
           <Info label="Tuần dự kiến hoàn tất"
             title={TOOLTIP_TUAN_HOAN_TAT}>
             {d.period
-              ? <>{d.period.code} <span className="text-slate-500 text-xs">({d.period.range})</span></>
+              ? <>{tuanLich(d.period.weekStart, homNay)} <span className="text-slate-500 text-xs">({d.period.range})</span></>
               : <Tag pending>Chưa chốt tuần</Tag>}
           </Info>
           <Info label="Thi thật dự kiến"><ExamPlanText plan={d.cycle.examPlan} /></Info>
@@ -215,6 +234,31 @@ export default function MockDetailPage() {
       <CancelDialog open={cancelOpen} onClose={() => setCancelOpen(false)} attemptId={d.id}
         attemptNo={d.attemptNo} scoredSkills={d.result.scoredRequired} onDone={reload} />
     </div>
+  );
+}
+
+/**
+ * R15 — CHỌN ĐỢT KHÁC của cùng học viên, cạnh tiêu đề. Nhãn `MT{n} · W3 SEP` (Mock Test) hoặc `Giữa khoá · W3 SEP` /
+ * `Cuối khoá · W3 SEP` (lớp thường); đi bằng `attemptHref` nên bài lớp thường mở đúng lưới lớp thường. Đợt đang xem chọn
+ * sẵn; chỉ có một đợt thì không hiện.
+ */
+function ChonDot({ hienTai, ds, homNay, onChon }: {
+  hienTai: number; ds: DotCuaHv[]; homNay: string; onChon: (r: DotCuaHv) => void;
+}) {
+  if (ds.length < 2 || !ds.some((r) => r.id === hienTai)) return null;
+  const xep = [...ds].sort((a, b) =>
+    (a.period?.weekStart ?? '9999').localeCompare(b.period?.weekStart ?? '9999') || a.attemptNo - b.attemptNo || a.id - b.id);
+  const nhan = (r: DotCuaHv) => {
+    const ten = r.kind === 'mock' || !r.kind ? `MT${r.attemptNo}` : ATTEMPT_KIND_SHORT[r.kind as AttemptKind] ?? r.kind;
+    const tuan = r.period ? tuanLich(r.period.weekStart, homNay) : 'chưa chốt tuần';
+    return `${ten} · ${tuan}${r.status === 'cancelled' ? ` · ${attemptStatusLabel(r.status)}` : ''}`;
+  };
+  return (
+    <select className="field w-auto max-w-full min-w-44" value={hienTai} aria-label="Chọn đợt khác của học viên này"
+      title="Mở đợt khác của cùng học viên"
+      onChange={(e) => { const r = xep.find((x) => x.id === Number(e.target.value)); if (r && r.id !== hienTai) onChon(r); }}>
+      {xep.map((r) => <option key={r.id} value={r.id}>{nhan(r)}</option>)}
+    </select>
   );
 }
 
@@ -284,6 +328,7 @@ function SkillWorkTable({ d, save, onDone, onOpenHistory }: {
   const [restoreFor, setRestoreFor] = useState<SkillRow | null>(null);
   const [decideFor, setDecideFor] = useState<SkillRow | null>(null);
   const toast = useToast();
+  const { homNay } = useNgayNghiepVu();
   const cancelled = d.status === 'cancelled';
 
   const act = async (fn: () => Promise<unknown>, okMsg: string) => {
@@ -380,7 +425,7 @@ function SkillWorkTable({ d, save, onDone, onOpenHistory }: {
           <Label>Lịch kiểm tra</Label>
           {!r.required ? <span className="text-slate-500 text-xs">—</span>
             : r.periodCode
-              ? <>{r.periodCode} <span className="text-slate-500 text-xs block sm:inline">({r.weekRange})</span></>
+              ? <>{tuanLich(r.weekStart, homNay)} <span className="text-slate-500 text-xs block sm:inline">({r.weekRange})</span></>
               : <Tag pending>Chưa xếp tuần</Tag>}
         </div>
 
@@ -533,7 +578,7 @@ function HistoryCard({ d, open, onToggle }: { d: Detail; open: boolean; onToggle
     ...d.scoreHistory.map((h) => ({
       key: `c${h.id}`, at: h.createdAt, who: h.actorName,
       what: `${h.kind === 'override' ? 'Hiệu chỉnh điểm' : h.kind === 'no_show' ? 'Dấu "-"' : 'Sửa điểm'} · ${h.skillLabel}`,
-      change: `${h.before} → ${h.after}`, reason: null as string | null,
+      change: `${h.before} → ${h.after}`, reason: h.lyDo ?? null,
     })),
   ].sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
 
@@ -552,7 +597,12 @@ function HistoryCard({ d, open, onToggle }: { d: Detail; open: boolean; onToggle
                 <span className="text-slate-600">{h.at ? fmtDateTime(h.at) : '—'} · </span>
                 <span className="text-slate-200">{h.what}</span>
                 {h.change && <> · {h.change}</>}
-                {h.reason && <> · {h.reason}</>}
+                {/* Lý do trên MỘT dòng (G-3): dài thì cắt, rê chuột đọc đủ. */}
+                {h.reason && (
+                  <> · <span className="inline-block max-w-full sm:max-w-[24rem] truncate align-bottom" title={`Lý do: ${h.reason}`}>
+                    Lý do: {h.reason}
+                  </span></>
+                )}
                 <span className="text-slate-600"> · {h.who ?? '—'}</span>
               </li>
             ))}
@@ -585,6 +635,7 @@ function SkillWeekModal({ open, row, attemptId, onClose, onDone }: {
 }) {
   const toast = useToast();
   const periods = usePeriods();
+  const { homNay } = useNgayNghiepVu();
   const [periodId, setPeriodId] = useState<number | null>(null);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
@@ -620,7 +671,7 @@ function SkillWeekModal({ open, row, attemptId, onClose, onDone }: {
       </>}>
       <div className="space-y-3">
         <p className="text-xs text-slate-400 m-0">
-          Đang thi {row?.periodCode ? `${row.periodCode} (${row.weekRange})` : 'chưa xếp tuần'}.
+          Đang thi {row?.periodCode ? `${tuanLich(row.weekStart, homNay)} (${row.weekRange})` : 'chưa xếp tuần'}.
           Chỉ kỹ năng này đổi lịch; các kỹ năng khác của đợt giữ nguyên tuần và hạn chấm.
         </p>
         <label className="block">
@@ -628,7 +679,7 @@ function SkillWeekModal({ open, row, attemptId, onClose, onDone }: {
           <select className="field" value={periodId ?? ''}
             onChange={(e) => { setPeriodId(Number(e.target.value) || null); setWarning(null); }}>
             <option value="">Chọn tuần…</option>
-            {(periods.data ?? []).map((p) => <option key={p.id} value={p.id}>{p.code} · {p.range}</option>)}
+            {(periods.data ?? []).map((p) => <option key={p.id} value={p.id}>{tuanLich(p.weekStart, homNay)} · {p.range}</option>)}
           </select>
         </label>
         {/* PREVIEW "tuần cũ → tuần mới" TRƯỚC KHI LƯU — sổ §D/T07: thấy rõ đang đổi gì, không đoán. */}
@@ -636,7 +687,7 @@ function SkillWeekModal({ open, row, attemptId, onClose, onDone }: {
           const next = (periods.data ?? []).find((p) => p.id === periodId);
           return next ? (
             <p className="text-sm text-slate-200 m-0">
-              {row?.periodCode ?? 'chưa có tuần'} <strong>→</strong> {next.code} · {next.range}
+              {row?.periodCode ? tuanLich(row.weekStart, homNay) : 'chưa có tuần'} <strong>→</strong> {tuanLich(next.weekStart, homNay)} · {next.range}
             </p>
           ) : null;
         })()}
@@ -719,6 +770,7 @@ function WeekModal({ open, onClose, attemptId, currentPeriodId, onDone }: {
 }) {
   const toast = useToast();
   const periods = usePeriods();
+  const { homNay } = useNgayNghiepVu();
   const [periodId, setPeriodId] = useState<number | null>(currentPeriodId);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
@@ -744,7 +796,7 @@ function WeekModal({ open, onClose, attemptId, currentPeriodId, onDone }: {
           <span className="label">Tuần mới</span>
           <select className="field" value={periodId ?? ''} onChange={(e) => setPeriodId(Number(e.target.value) || null)}>
             <option value="">Chọn tuần…</option>
-            {(periods.data ?? []).map((p) => <option key={p.id} value={p.id}>{p.code} · {p.range}</option>)}
+            {(periods.data ?? []).map((p) => <option key={p.id} value={p.id}>{tuanLich(p.weekStart, homNay)} · {p.range}</option>)}
           </select>
         </label>
         <label className="block">
@@ -860,6 +912,7 @@ function AbsenceMoveModal({ open, row, detail, onClose, onDone }: {
   open: boolean; row: SkillRow | null; detail: Detail; onClose: () => void; onDone: () => void;
 }) {
   const toast = useToast();
+  const { homNay } = useNgayNghiepVu();
   const [picked, setPicked] = useState<string[]>([]);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
@@ -911,7 +964,7 @@ function AbsenceMoveModal({ open, row, detail, onClose, onDone }: {
       ) : (
         <div className="space-y-3">
           <p className="text-xs text-slate-400 m-0">
-            {row?.label} đang xếp {row?.periodCode} ({row?.weekRange}), đã xác nhận vắng.
+            {row?.label} đang xếp {tuanLich(row?.weekStart, homNay)} ({row?.weekRange}), đã xác nhận vắng.
             {(row?.absenceMoveCount ?? 0) > 0 && ` Môn này đã dời do vắng ${row?.absenceMoveCount} lần.`}
           </p>
 
@@ -925,7 +978,7 @@ function AbsenceMoveModal({ open, row, detail, onClose, onDone }: {
                       onChange={(e) => setPicked(
                         e.target.checked ? [...picked, r.skill] : picked.filter((x) => x !== r.skill),
                       )} />
-                    <span>{r.label} <span className="text-slate-500 text-xs">({r.periodCode})</span></span>
+                    <span>{r.label} <span className="text-slate-500 text-xs">({tuanLich(r.weekStart, homNay)})</span></span>
                   </label>
                 ))}
               </div>
@@ -974,6 +1027,7 @@ function RestoreModal({ open, row, detail, onClose, onDone }: {
 }) {
   const toast = useToast();
   const periods = usePeriods();
+  const { homNay } = useNgayNghiepVu();
   const [periodId, setPeriodId] = useState<number | null>(null);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
@@ -1011,7 +1065,7 @@ function RestoreModal({ open, row, detail, onClose, onDone }: {
           <select className="field" value={periodId ?? ''}
             onChange={(e) => setPeriodId(Number(e.target.value) || null)}>
             <option value="">Chọn tuần…</option>
-            {(periods.data ?? []).map((p) => <option key={p.id} value={p.id}>{p.code} · {p.range}</option>)}
+            {(periods.data ?? []).map((p) => <option key={p.id} value={p.id}>{tuanLich(p.weekStart, homNay)} · {p.range}</option>)}
           </select>
         </label>
         <label className="block">
@@ -1044,6 +1098,7 @@ function DecideMoveModal({ open, row, detail, onClose, onDone }: {
 }) {
   const toast = useToast();
   const periods = usePeriods();
+  const { homNay } = useNgayNghiepVu();
   const [note, setNote] = useState('');
   const [periodId, setPeriodId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
@@ -1090,7 +1145,7 @@ function DecideMoveModal({ open, row, detail, onClose, onDone }: {
           <select className="field" value={periodId ?? ''}
             onChange={(e) => setPeriodId(Number(e.target.value) || null)}>
             <option value="">Giữ tuần GVCN đề nghị</option>
-            {(periods.data ?? []).map((p) => <option key={p.id} value={p.id}>{p.code} · {p.range}</option>)}
+            {(periods.data ?? []).map((p) => <option key={p.id} value={p.id}>{tuanLich(p.weekStart, homNay)} · {p.range}</option>)}
           </select>
           <span className="block text-[11px] text-slate-500 mt-1">
             Chỉ cần khi tuần được đề nghị đã bắt đầu — lúc đó phải chọn một tuần chưa tới.

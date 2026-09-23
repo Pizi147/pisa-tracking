@@ -75,9 +75,13 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     const attemptId = themLuot({ sid, cid, cycleId, weekStart: o.weekStart, kind: o.kind ?? (ft ? 'mock' : 'progress'), no: 1 });
     return { sid, cid, cycleId, attemptId, periodId: week.ensurePeriod(o.weekStart).id };
   }
-  /** Nhập điểm lớp thường qua đúng đường nghiệp vụ (Quản trị nhập bù — đường `score.override`). */
+  /**
+   * Nhập điểm lớp thường qua đúng đường nghiệp vụ (Quản trị nhập bù — đường `score.override`). RB-5 (PR-Rc1): hàm này
+   * cũng dùng để SỬA điểm đã có, nên luôn kèm lý do — lần nhập đầu thì máy chủ bỏ qua nó (luật có phép kiểm riêng ở
+   * chamDiem.tests.ts).
+   */
   const diem = (attemptId: number, skill: string, score: number, total: number) =>
-    regular.saveRegularScore(P.admin, attemptId, skill, { score, total });
+    regular.saveRegularScore(P.admin, attemptId, skill, { score, total, lyDo: 'Phép kiểm: sửa điểm nguồn' });
   const tinHieu = (attemptId: number, skill: string) =>
     conn.prepare('SELECT * FROM case_signals WHERE attempt_id = ? AND skill = ?').get(attemptId, skill) as any;
   const pGvcnFou = P.normalCoreTeacher;                               // T_HA — GVCN MB-FOU 12, dạy L và R

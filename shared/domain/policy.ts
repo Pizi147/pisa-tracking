@@ -4,12 +4,12 @@
  * Mỗi điểm là MỘT HẰNG SỐ CÓ TÊN, kèm chú thích nêu cả hai phương án và cái nào đang dùng. Nơi gọi chỉ ĐỌC hằng số,
  * không có `if` rải rác. Không hiển thị mã C trên giao diện người dùng (LUAT_CHO_CHOT.md §4).
  *
- * TRẠNG THÁI (cập nhật PR-S1, 22/09/2026):
- *   · NỐI DÂY, mã đọc hằng số:  C02 (quyền máy chủ; RB-6 áp thêm cho "hoàn thành Case") · C10 (chốt ngay).
+ * TRẠNG THÁI (cập nhật PR-Rc1, 23/09/2026):
+ *   · NỐI DÂY, mã đọc hằng số:  C02 (quyền máy chủ; RB-6 áp thêm cho "hoàn thành Case") · C10 (chốt ngay)
+ *     · C08 (lớp thường ghi "-" thì môn đó tự dời sang tuần sau — PR-Rc1, R14).
  *   · ĐÃ CHỐT, khớp hành vi đang chạy: C01 (21/09 — hai mốc riêng) · C06 · C07 · C09.
  *   · HẾT HIỆU LỰC: C03 · C04 (21/09 — bỏ mô hình Case Ý thức) · C05 (21/09 tối — thay bằng Phối hợp SOS, rulebook v3).
  *     Giữ hằng số và ghi lý do, không xoá dấu vết một quyết định có thật.
- *   · C08: ĐÃ CHỐT 21/09 đêm (lớp thường dùng "-", GV ghi, tự dời tuần sau) — phần "dấu -" CHƯA NỐI DÂY, việc của PR-Rc1 (R14).
  */
 
 /**
@@ -79,7 +79,8 @@ export const C07_DOT_FT_CHI_W1_HOAC_W2 = 'phai-du-hai-task' as const;
 /**
  * C08 — ĐÃ CHỐT 21/09/2026 đêm. Hạn chấm lớp thường: hết Chủ nhật của chính tuần thi (khớp mã). Lớp thường CÓ dùng dấu "-": GIÁO VIÊN
  * ghi khi em chưa làm bài của tuần (máy không tự thêm); ghi "-" thì môn đó tự dời sang tuần sau.
- * CHƯA NỐI DÂY phần dấu "-": máy chủ còn chặn "-" cho lớp thường (`attempts.ts` saveScore) — việc của PR-Rc1 (plan.md R14, đặc tả §3.5).
+ * ĐÃ NỐI DÂY (PR-Rc1): lớp thường ghi '-' thì môn đó tự dời sang tuần sau — `normal/regular.ts`
+ * (`reportRegularNoShow`), dùng lại `setSkillWeek`. `attempts.ts` chỉ chỉ đường sang đó.
  *   'chu-nhat-tuan-thi'  : hết Chủ nhật của tuần thi.  ← đã chốt
  */
 export const C08_HAN_CHAM_NORMAL = 'chu-nhat-tuan-thi' as const;

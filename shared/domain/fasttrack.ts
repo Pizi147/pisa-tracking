@@ -318,7 +318,7 @@ export const NO_SHOW_HINT = 'Nhập - nếu học viên không làm bài';
  */
 export const NO_SHOW_OVERRIDDEN_NOTE = 'Quản lý đã đổi kết luận tuần này — dấu "-" không được tính lại.';
 
-/** Câu trạng thái của một ô có dấu '-'. `weekCode` là mã tuần đầy đủ, ví dụ `W3 SEP 2026`. */
+/** Câu trạng thái của một ô có dấu '-'. `weekCode` là nhãn tuần đã định dạng — nơi gọi dùng `tuanLich` (`W3 SEP`, G-6). */
 export function noShowText(v: NoShowView, weekCode: string | null, today: string): string | null {
   const day = (iso: string) => {
     const s = iso.slice(0, 10);
