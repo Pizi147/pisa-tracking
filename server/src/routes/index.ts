@@ -3,9 +3,9 @@ import multer from 'multer';
 import { db, isInitialised } from '../db.ts';
 import { laBanChinh } from '../moiTruong.ts';
 import {
-  ENTRY_SKILLS, ENTRY_SKILL_LABEL, ISSUE_TAXONOMY,
-  PERMISSIONS, REGULAR_SKILLS, ROLE_LABEL, WORK_SCOPES, chuongTrinhTuThamSo,
-  type Role, type WorkScope,
+  ENTRY_SKILLS, ENTRY_SKILL_LABEL, ISSUE_TAXONOMY, THEO_DONG,
+  PERMISSIONS, REGULAR_SKILLS, ROLE_LABEL, WORK_SCOPES, chuongTrinhTuThamSo, khoangTuThamSo,
+  type Role, type TheoDong, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { transferReasonText } from '../../../shared/domain/index.ts';
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
@@ -66,6 +66,7 @@ import * as highlightSvc from '../worklist/highlights.ts';
 import * as tongQuanSvc from '../worklist/tongQuan.ts';
 import * as bangSvc from '../worklist/bangChiNhanh.ts';
 import { weeklyDrill, weeklyRollup } from '../worklist/weekly.ts';
+import * as tongHopSvc from '../phanTich/tongHop.ts';
 import { metricResponse, metricSet, rowsFor } from '../worklist/metrics.ts';
 import { myWork } from '../worklist/mywork.ts';
 import * as caseSvc from '../cases/cases.ts';
@@ -425,6 +426,26 @@ api.get('/weekly-rollup/ids', requireAuth, wrap((req) => {
     unit: d.unit, n: d.ids.length, empty: d.empty,
     rows: qStr(req, 'rows') === '1' ? rowsFor(d.unit, d.ids) : undefined,
   };
+}));
+
+/*
+ * PHÂN TÍCH (PR-Pb, §3.3) — Tổng hợp Test + SOS và Vấn đề học viên. `theo`/`cot` chỉ có nghĩa với Tổng hợp;
+ * Vấn đề học viên dùng `cot` riêng (lop|cn). Quyền `meeting.view` được kiểm ngay trong `tongHopSvc`/`vanDeSvc`.
+ */
+const filterTongHopOf = (req: Request) => ({
+  branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')),
+  soTuan: khoangTuThamSo(qStr(req, 'tg')), classId: qInt(req, 'lop') ?? null,
+  theo: (THEO_DONG as readonly string[]).includes(qStr(req, 'theo') ?? '') ? (qStr(req, 'theo') as TheoDong) : 'tuan',
+});
+api.get('/phan-tich/tong-hop', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return tongHopSvc.tongHop(principalOf(req), filterTongHopOf(req));
+}));
+api.get('/phan-tich/tong-hop/o', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return tongHopSvc.oTongHop(principalOf(req), {
+    ...filterTongHopOf(req), khoa: qStr(req, 'khoa') ?? '', cot: qStr(req, 'cot') ?? '',
+  });
 }));
 
 /** Việc sinh ra từ dữ liệu — tự hết khi nguồn được xử lý, không có nút đóng giả. */

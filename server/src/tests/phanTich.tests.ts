@@ -5,7 +5,7 @@
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runPhanTichTests(t: YThucTestKit) {
-  const { check, assert } = t;
+  const { check, checkAsync, assert, conn, TODAY, P, classId } = t;
   const d: any = await import('../../../shared/domain/index.ts');
   console.log('\nPR-Pb · Phân tích');
   const eq = (got: unknown, want: unknown, m: string) =>
@@ -82,5 +82,157 @@ export async function runPhanTichTests(t: YThucTestKit) {
     const day2 = d.bangXuatTongHop(kq, new Set(['ket-qua', 'ky-nang', 'xu-ly']), 'x');
     const hangCot = day2[3];
     assert(hangCot.some((x: any) => x === 'L'), 'bật nhóm ky-nang thì cột hiện nhãn ngắn L, không phải kn:listening');
+  });
+
+  // ================================================================== Task 2 — máy chủ Tổng hợp Test + SOS
+
+  console.log('\nPR-Pb · Tổng hợp Test + SOS');
+  const tongHopSvc: any = await import('../phanTich/tongHop.ts');
+  const week: any = await import('../platform/week.ts');
+  const skillSchedule: any = await import('../fasttrack/skillSchedule.ts');
+  const mbBranch = (conn.prepare(`SELECT id FROM branches WHERE code = 'MB'`).get() as any).id as number;
+  const cpBranch = (conn.prepare(`SELECT id FROM branches WHERE code = 'CP'`).get() as any).id as number;
+  const KET_QUA_COLS = ['dat', 'sos1', 'sos2', 'sos3', 'tamThoi', 'chuaDu'];
+  const demCauHoi = async (fn: () => unknown): Promise<number> => {
+    const goc = conn.prepare;
+    let n = 0;
+    conn.prepare = function (this: unknown, sql: string, ...r: unknown[]) { n += 1; return goc.call(this, sql, ...r); };
+    try { await fn(); } finally { conn.prepare = goc; }
+    return n;
+  };
+
+  const layMoiDong = (hang: any[]): any[] => hang.flatMap((h) => [h, ...layMoiDong(h.con ?? [])]);
+
+  for (const theo of ['tuan', 'lop', 'dot', 'cn'] as const) {
+    check(`PR-Pb · Tổng hợp (${theo}): sáu cột Kết quả cộng lại đúng bằng Lượt, ở mọi dòng và dòng con`, () => {
+      const kq = tongHopSvc.tongHop(P.admin, { branchId: null, ct: 'ca-hai', soTuan: 52, classId: null, theo });
+      for (const dong of layMoiDong(kq.hang)) {
+        const tongKetQua = KET_QUA_COLS.reduce((s, c) => s + (dong.o[c] ?? 0), 0);
+        assert(tongKetQua === dong.o.luot, `Dòng "${dong.nhan}": ${KET_QUA_COLS.map((c) => dong.o[c]).join('+')} = ${tongKetQua} ≠ luot ${dong.o.luot}`);
+      }
+      const tongChinh = KET_QUA_COLS.reduce((s, c) => s + (kq.tong[c] ?? 0), 0);
+      assert(tongChinh === kq.tong.luot, `Dòng Tổng: ${tongChinh} ≠ luot ${kq.tong.luot}`);
+    });
+  }
+
+  check('PR-Pb · Tổng hợp: tổng Lượt và tổng Case bằng nhau giữa bốn cách xếp dòng (cùng bộ lọc)', () => {
+    const bo = { branchId: null, ct: 'ca-hai', soTuan: 52, classId: null };
+    const tongs = (['tuan', 'lop', 'dot', 'cn'] as const).map((theo) => tongHopSvc.tongHop(P.admin, { ...bo, theo }).tong);
+    for (const t2 of tongs.slice(1)) {
+      assert(t2.luot === tongs[0].luot, `Tổng Lượt lệch giữa các cách xếp: ${JSON.stringify(tongs.map((x: any) => x.luot))}`);
+      assert(t2.case === tongs[0].case, `Tổng Case lệch giữa các cách xếp: ${JSON.stringify(tongs.map((x: any) => x.case))}`);
+    }
+  });
+
+  check('PR-Pb · Tổng hợp: dòng con cộng lại đúng bằng dòng cha (Lượt, Case) ở mọi cách xếp có dòng con', () => {
+    for (const theo of ['tuan', 'lop', 'dot', 'cn'] as const) {
+      const kq = tongHopSvc.tongHop(P.admin, { branchId: null, ct: 'ca-hai', soTuan: 52, classId: null, theo });
+      for (const cha of kq.hang) {
+        if (!cha.con?.length) continue;
+        const luotCon = cha.con.reduce((s: number, c: any) => s + (c.o.luot ?? 0), 0);
+        const caseCon = cha.con.reduce((s: number, c: any) => s + (c.o.case ?? 0), 0);
+        assert(luotCon === cha.o.luot, `[${theo}] "${cha.nhan}": con cộng lượt ${luotCon} ≠ cha ${cha.o.luot}`);
+        assert(caseCon === cha.o.case, `[${theo}] "${cha.nhan}": con cộng case ${caseCon} ≠ cha ${cha.o.case}`);
+      }
+    }
+  });
+
+  check('PR-Pb · Tổng hợp: cột học viên (hvCoCase) ở dòng Tổng là số DUY NHẤT, và ≤ tổng cộng học sinh của các dòng', () => {
+    const kq = tongHopSvc.tongHop(P.admin, { branchId: null, ct: 'ca-hai', soTuan: 52, classId: null, theo: 'lop' });
+    const congCacDong = kq.hang.reduce((s: number, h: any) => s + (h.o.hvCoCase ?? 0), 0);
+    assert(kq.tong.hvCoCase <= congCacDong, `Tổng duy nhất ${kq.tong.hvCoCase} phải ≤ cộng các dòng ${congCacDong} (một em có thể ở nhiều lớp)`);
+  });
+
+  check('PR-Pb · oTongHop: n khớp số trong bảng và rows.length === n, ở ô Tổng, một dòng, và một cột kn:', () => {
+    const kq = tongHopSvc.tongHop(P.admin, { branchId: null, ct: 'ft', soTuan: 52, classId: null, theo: 'lop' });
+    const oTong = tongHopSvc.oTongHop(P.admin, { branchId: null, ct: 'ft', soTuan: 52, classId: null, theo: 'lop', khoa: 'tong', cot: 'luot' });
+    assert(oTong.n === kq.tong.luot && oTong.rows.length === oTong.n, `Ô Tổng · Lượt: ${oTong.n} ≠ ${kq.tong.luot} hoặc rows lệch`);
+    const dongCoDuLieu = kq.hang.find((h: any) => h.o.luot > 0);
+    if (dongCoDuLieu) {
+      const o = tongHopSvc.oTongHop(P.admin, { branchId: null, ct: 'ft', soTuan: 52, classId: null, theo: 'lop', khoa: dongCoDuLieu.khoa, cot: 'luot' });
+      assert(o.n === dongCoDuLieu.o.luot && o.rows.length === o.n, `Dòng "${dongCoDuLieu.nhan}" · Lượt: ${o.n} ≠ ${dongCoDuLieu.o.luot} hoặc rows lệch`);
+    }
+    const dongCoKn = kq.hang.find((h: any) => (h.o['kn:listening'] ?? 0) > 0);
+    if (dongCoKn) {
+      const o = tongHopSvc.oTongHop(P.admin, { branchId: null, ct: 'ft', soTuan: 52, classId: null, theo: 'lop', khoa: dongCoKn.khoa, cot: 'kn:listening' });
+      assert(o.n === dongCoKn.o['kn:listening'] && o.rows.length === o.n, `Dòng "${dongCoKn.nhan}" · kn:listening: ${o.n} ≠ ${dongCoKn.o['kn:listening']} hoặc rows lệch`);
+    }
+  });
+
+  check('PR-Pb · Cột theo chương trình: ct=thuong không có kn:writing1/kn:writing2; ct=ft không có kn:writing', () => {
+    const cotThuong = tongHopSvc.tongHop(P.admin, { branchId: null, ct: 'thuong', soTuan: 52, classId: null, theo: 'lop' }).cot;
+    assert(!cotThuong.includes('kn:writing1') && !cotThuong.includes('kn:writing2'), `Lớp thường không được có cột W1/W2: ${cotThuong}`);
+    const cotFt = tongHopSvc.tongHop(P.admin, { branchId: null, ct: 'ft', soTuan: 52, classId: null, theo: 'lop' }).cot;
+    assert(!cotFt.includes('kn:writing'), `FT không được có cột W (lớp thường): ${cotFt}`);
+  });
+
+  check('PR-Pb · oTongHop(...,"luot") với ct đã chọn: mọi lượt trả về thuộc đúng lớp của chương trình đó', () => {
+    const o = tongHopSvc.oTongHop(P.admin, { branchId: null, ct: 'ft', soTuan: 52, classId: null, theo: 'tuan', khoa: 'tong', cot: 'luot' });
+    for (const id of o.rows.map((r: any) => r.id)) {
+      const a = conn.prepare('SELECT c.is_fast_track AS ft FROM assessment_attempts a JOIN classes c ON c.id = a.class_id WHERE a.id = ?').get(id) as any;
+      assert(a?.ft === 1, `Lượt #${id} phải thuộc lớp Fast Track khi ct=ft`);
+    }
+  });
+
+  await checkAsync('PR-Pb · Q8: FT — band Writing tổng hợp đạt kỳ vọng thì KHÔNG sinh kn:writing1 dù riêng W1 dưới kỳ vọng', async () => {
+    const cid = classId('MB-FT 101');
+    const cls = conn.prepare('SELECT branch_id FROM classes WHERE id = ?').get(cid) as any;
+    const tag = `PB2Q8-${Date.now()}`;
+    const now = new Date().toISOString();
+    const sid = Number(conn.prepare(
+      `INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`,
+    ).run(`PISA-${tag}`, `Học viên ${tag}`, `hoc vien ${tag.toLowerCase()}`, cls.branch_id, now).lastInsertRowid);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', '2026-07-27', ?)`).run(sid, cid, now);
+    const cycleId = Number(conn.prepare(
+      `INSERT INTO learning_cycles (student_id, seq, route, programme_code, started_at, status, created_at) VALUES (?, 1, 'LT1', NULL, '2026-07-27', 'active', ?)`,
+    ).run(sid, now).lastInsertRowid);
+    const weekStart = week.mondayOf(TODAY);
+    const periodId = week.ensurePeriod(weekStart).id;
+    const attemptId = Number(conn.prepare(
+      `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id, target_at_attempt, status, created_at)
+       VALUES (?, ?, 3, 'mock', ?, ?, 6.0, 'planned', ?)`,
+    ).run(cycleId, sid, cid, periodId, now).lastInsertRowid);
+    skillSchedule.ensureSkillRows(attemptId);
+    /* W1 = 5.0 (dưới kỳ vọng 6.0 nếu xét riêng), W2 = 6.5 → band Writing tổng hợp = round((5+6.5*2)/3) = 6.0 = ĐẠT kỳ vọng. */
+    conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, band, entered_at) VALUES (?, 'writing1', 5.0, ?)`).run(attemptId, now);
+    conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, band, entered_at) VALUES (?, 'writing2', 6.5, ?)`).run(attemptId, now);
+    try {
+      const o = tongHopSvc.oTongHop(P.admin, {
+        branchId: null, ct: 'ft', soTuan: 4, classId: cid, theo: 'lop', khoa: `lop:${cid}`, cot: 'kn:writing1',
+      });
+      assert(!o.rows.some((r: any) => r.id === sid), `Em không được vào kn:writing1 vì band Writing tổng hợp đã đạt kỳ vọng: ${JSON.stringify(o.rows)}`);
+    } finally {
+      conn.prepare('DELETE FROM assessment_scores WHERE attempt_id = ?').run(attemptId);
+      conn.prepare('DELETE FROM attempt_skills WHERE attempt_id = ?').run(attemptId);
+      conn.prepare('DELETE FROM assessment_attempts WHERE id = ?').run(attemptId);
+      conn.prepare('DELETE FROM learning_cycles WHERE id = ?').run(cycleId);
+      conn.prepare('DELETE FROM enrollments WHERE student_id = ?').run(sid);
+      conn.prepare('DELETE FROM students WHERE id = ?').run(sid);
+    }
+  });
+
+  check('PR-Pb · Quyền: giáo viên (không có meeting.view) bị 403; Quản lý một chi nhánh hỏi chi nhánh khác → rỗng, không phải toàn hệ thống', () => {
+    let bi403 = false;
+    try { tongHopSvc.tongHop(P.coreTeacher, { branchId: null, ct: 'ca-hai', soTuan: 8, classId: null, theo: 'tuan' }); }
+    catch (e: any) { bi403 = e?.status === 403; }
+    assert(bi403, 'Giáo viên không có meeting.view phải bị 403');
+
+    const oCp = tongHopSvc.oTongHop(P.admin, { branchId: cpBranch, ct: 'ca-hai', soTuan: 8, classId: null, theo: 'tuan', khoa: 'tong', cot: 'luot' });
+    const kqMbHoiCp = tongHopSvc.tongHop(P.mbManager, { branchId: cpBranch, ct: 'ca-hai', soTuan: 8, classId: null, theo: 'tuan' });
+    assert(kqMbHoiCp.tong.luot === 0 && kqMbHoiCp.hang.length === 0,
+      `QL Monbay hỏi chi nhánh CP phải ra rỗng (0 lượt, 0 dòng), không phải toàn hệ thống (CP có ${oCp.n} lượt thật)`);
+
+    const oTong = tongHopSvc.oTongHop(P.mbManager, { branchId: null, ct: 'ca-hai', soTuan: 8, classId: null, theo: 'tuan', khoa: 'tong', cot: 'luot' });
+    for (const id of oTong.rows.map((r: any) => r.id)) {
+      const a = conn.prepare('SELECT c.branch_id AS bid FROM assessment_attempts a JOIN classes c ON c.id = a.class_id WHERE a.id = ?').get(id) as any;
+      assert(a?.bid === mbBranch, `QL Monbay mặc định chỉ được thấy lượt của lớp chi nhánh Monbay, lượt #${id} thuộc chi nhánh ${a?.bid}`);
+    }
+  });
+
+  await checkAsync('PR-Pb · Không N+1: số câu SQL của tongHop không đổi khi khoảng thời gian thay đổi (soTuan 4 và 26)', async () => {
+    const n4 = await demCauHoi(() => tongHopSvc.tongHop(P.admin, { branchId: null, ct: 'ca-hai', soTuan: 4, classId: null, theo: 'lop' }));
+    const n26 = await demCauHoi(() => tongHopSvc.tongHop(P.admin, { branchId: null, ct: 'ca-hai', soTuan: 26, classId: null, theo: 'lop' }));
+    assert(n4 === n26, `Số câu SQL đổi theo khoảng thời gian: soTuan=4 → ${n4} câu, soTuan=26 → ${n26} câu`);
+    assert(n4 <= 12, `Quá nhiều câu SQL cho một lần tính Tổng hợp: ${n4} (tối đa 12)`);
   });
 }
