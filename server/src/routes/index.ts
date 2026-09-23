@@ -67,6 +67,7 @@ import * as tongQuanSvc from '../worklist/tongQuan.ts';
 import * as bangSvc from '../worklist/bangChiNhanh.ts';
 import { weeklyDrill, weeklyRollup } from '../worklist/weekly.ts';
 import * as tongHopSvc from '../phanTich/tongHop.ts';
+import * as vanDeSvc from '../phanTich/vanDe.ts';
 import { metricResponse, metricSet, rowsFor } from '../worklist/metrics.ts';
 import { myWork } from '../worklist/mywork.ts';
 import * as caseSvc from '../cases/cases.ts';
@@ -445,6 +446,20 @@ api.get('/phan-tich/tong-hop/o', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return tongHopSvc.oTongHop(principalOf(req), {
     ...filterTongHopOf(req), khoa: qStr(req, 'khoa') ?? '', cot: qStr(req, 'cot') ?? '',
+  });
+}));
+const filterVanDeOf = (req: Request) => ({
+  branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')),
+  classId: qInt(req, 'lop') ?? null, cot: qStr(req, 'cot') === 'cn' ? ('cn' as const) : ('lop' as const),
+});
+api.get('/phan-tich/van-de', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return vanDeSvc.maTranVanDe(principalOf(req), filterVanDeOf(req));
+}));
+api.get('/phan-tich/van-de/o', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return vanDeSvc.oVanDe(principalOf(req), {
+    ...filterVanDeOf(req), kn: qStr(req, 'kn') ?? '', ma: qStr(req, 'ma') ?? null, khoaCot: qStr(req, 'khoaCot') ?? '',
   });
 }));
 

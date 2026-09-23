@@ -235,4 +235,135 @@ export async function runPhanTichTests(t: YThucTestKit) {
     assert(n4 === n26, `Số câu SQL đổi theo khoảng thời gian: soTuan=4 → ${n4} câu, soTuan=26 → ${n26} câu`);
     assert(n4 <= 12, `Quá nhiều câu SQL cho một lần tính Tổng hợp: ${n4} (tối đa 12)`);
   });
+
+  // ================================================================== Task 3 — máy chủ Vấn đề học viên (ma trận)
+
+  console.log('\nPR-Pb · Vấn đề học viên (ma trận)');
+  const vanDeSvc: any = await import('../phanTich/vanDe.ts');
+
+  check('PR-Pb · Vấn đề học viên: mọi ô n ≤ N (kỹ năng và Tổng), ba giá trị ct, hai cách xếp cột', () => {
+    for (const ct of ['ft', 'thuong', 'ca-hai'] as const) {
+      for (const cot of ['lop', 'cn'] as const) {
+        const kq = vanDeSvc.maTranVanDe(P.admin, { branchId: null, ct, classId: null, cot });
+        for (const h of kq.hang) {
+          for (const c of kq.cotDs) {
+            const cell = h.o[c.khoa];
+            if (cell) assert(cell.n <= cell.N, `${ct}/${cot} "${h.nhan}" · ${c.nhan}: n=${cell.n} > N=${cell.N}`);
+          }
+          assert(h.tong.n <= h.tong.N, `${ct}/${cot} "${h.nhan}" Tổng: n=${h.tong.n} > N=${h.tong.N}`);
+        }
+      }
+    }
+  });
+
+  check('PR-Pb · Vấn đề học viên: ct=thuong không có dòng W1/W2; ct=ft không có dòng W (lớp thường)', () => {
+    const thuong = vanDeSvc.maTranVanDe(P.admin, { branchId: null, ct: 'thuong', classId: null, cot: 'lop' }).hang.map((h: any) => h.kn);
+    assert(!thuong.includes('writing1') && !thuong.includes('writing2'), `Lớp thường không được có dòng W1/W2: ${thuong}`);
+    const ft = vanDeSvc.maTranVanDe(P.admin, { branchId: null, ct: 'ft', classId: null, cot: 'lop' }).hang.map((h: any) => h.kn);
+    assert(!ft.includes('writing'), `FT không được có dòng W (lớp thường): ${ft}`);
+  });
+
+  check('PR-Pb · oVanDe: n khớp đúng số trong bảng và rows.length === n — ô kỹ năng, ô loại lỗi, và cột Tổng', () => {
+    const kq = vanDeSvc.maTranVanDe(P.admin, { branchId: null, ct: 'ca-hai', classId: null, cot: 'lop' });
+    let kiemDuocGi = false;
+    for (const h of kq.hang) {
+      for (const c of kq.cotDs) {
+        const cell = h.o[c.khoa];
+        if (cell && cell.n > 0) {
+          const o = vanDeSvc.oVanDe(P.admin, { branchId: null, ct: 'ca-hai', classId: null, cot: 'lop', kn: h.kn, khoaCot: c.khoa });
+          assert(o.n === cell.n && o.rows.length === o.n, `Ô kỹ năng "${h.nhan}" · ${c.nhan}: ${o.n} ≠ ${cell.n} hoặc rows lệch`);
+          kiemDuocGi = true;
+        }
+      }
+      if (h.tong.n > 0) {
+        const oTong = vanDeSvc.oVanDe(P.admin, { branchId: null, ct: 'ca-hai', classId: null, cot: 'lop', kn: h.kn, khoaCot: 'tong' });
+        assert(oTong.n === h.tong.n && oTong.rows.length === oTong.n, `Ô Tổng "${h.nhan}": ${oTong.n} ≠ ${h.tong.n} hoặc rows lệch`);
+        kiemDuocGi = true;
+      }
+      for (const con of h.con) {
+        if (con.tong > 0) {
+          const oMa = vanDeSvc.oVanDe(P.admin, { branchId: null, ct: 'ca-hai', classId: null, cot: 'lop', kn: h.kn, ma: con.ma, khoaCot: 'tong' });
+          assert(oMa.n === con.tong && oMa.rows.length === oMa.n, `Ô loại lỗi "${con.nhan}" (Tổng): ${oMa.n} ≠ ${con.tong} hoặc rows lệch`);
+          kiemDuocGi = true;
+        }
+      }
+    }
+    assert(kiemDuocGi, 'Bộ demo phải có ít nhất một ô khác 0 để kiểm — nếu seed thay đổi, xem lại phép kiểm này');
+  });
+
+  check('PR-Pb · Vấn đề học viên: loiNhieuNhat khớp đúng dòng con lớn nhất ở cột Tổng (không tính Chưa phân loại)', () => {
+    const kq = vanDeSvc.maTranVanDe(P.admin, { branchId: null, ct: 'ca-hai', classId: null, cot: 'lop' });
+    for (const h of kq.hang) {
+      const ungVien = h.con.filter((c: any) => c.ma !== '__chua-phan-loai__' && c.tong > 0);
+      if (!h.loiNhieuNhat) { assert(ungVien.length === 0, `"${h.nhan}" không có loiNhieuNhat nhưng có ứng viên: ${JSON.stringify(ungVien)}`); continue; }
+      const max = Math.max(...ungVien.map((c: any) => c.tong));
+      assert(h.loiNhieuNhat.n === max, `"${h.nhan}": loiNhieuNhat.n=${h.loiNhieuNhat.n} ≠ lớn nhất thực ${max}`);
+    }
+  });
+
+  check('PR-Pb · Vấn đề học viên: Case chưa xong — em có trong ô (kỹ năng, lớp đang học); đóng Case thì em biến mất khỏi ô', () => {
+    const ung = conn
+      .prepare(
+        `SELECT sc.id, sc.status, sc.student_id, sc.category, sc.topic, e.class_id
+           FROM sos_cases sc
+           JOIN enrollments e ON e.student_id = sc.student_id AND e.status = 'active'
+           JOIN classes c ON c.id = e.class_id AND c.status = 'active'
+          WHERE sc.status != 'done'`,
+      )
+      .all() as any[];
+    let found: any = null;
+    for (const r of ung) {
+      const hangMuc = r.category || d.categoryOf(r.topic);
+      if (hangMuc) { found = { ...r, hangMuc }; break; }
+    }
+    assert(found, 'Bộ demo phải có ít nhất một Case chưa xong với hạng mục suy ra được, thuộc em đang học một lớp');
+    const khoaCot = `lop:${found.class_id}`;
+    const bo = { branchId: null, ct: 'ca-hai' as const, classId: null, cot: 'lop' as const, kn: found.hangMuc, khoaCot };
+    const truoc = vanDeSvc.oVanDe(P.admin, bo);
+    assert(truoc.rows.some((r: any) => r.id === found.student_id), `Em #${found.student_id} phải có trong ô (${found.hangMuc}, ${khoaCot}) khi Case đang mở`);
+    conn.prepare(`UPDATE sos_cases SET status = 'done' WHERE id = ?`).run(found.id);
+    try {
+      const sau = vanDeSvc.oVanDe(P.admin, bo);
+      assert(!sau.rows.some((r: any) => r.id === found.student_id), `Đóng Case xong thì em #${found.student_id} phải biến mất khỏi ô (${found.hangMuc}, ${khoaCot})`);
+    } finally {
+      conn.prepare(`UPDATE sos_cases SET status = ? WHERE id = ?`).run(found.status, found.id);
+    }
+  });
+
+  check('PR-Pb · Vấn đề học viên: cột Tổng đếm DUY NHẤT — em học hai lớp cùng lúc không bị đếm hai lần', () => {
+    const cid1 = classId('MB-FT 101');
+    const khac = conn.prepare(`SELECT id FROM classes WHERE is_fast_track = 1 AND status = 'active' AND id != ?`).get(cid1) as any;
+    const enr = conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' LIMIT 1`).get(cid1) as any;
+    if (!khac || !enr) { console.log('  (bỏ qua: seed không có đủ lớp FT thứ hai + học viên để dựng tình huống)'); return; }
+    const daHoc = conn.prepare(`SELECT 1 FROM enrollments WHERE student_id = ? AND class_id = ? AND status = 'active'`).get(enr.student_id, khac.id);
+    if (daHoc) { console.log('  (bỏ qua: em đã học sẵn cả hai lớp)'); return; }
+    const now = new Date().toISOString();
+    const info = conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', '2026-07-27', ?)`)
+      .run(enr.student_id, khac.id, now);
+    try {
+      const kq = vanDeSvc.maTranVanDe(P.admin, { branchId: null, ct: 'ft', classId: null, cot: 'lop' });
+      const dong = kq.hang.find((h: any) => h.kn === 'listening');
+      const congCot = kq.cotDs.reduce((s: number, c: any) => s + (dong.o[c.khoa]?.N ?? 0), 0);
+      assert(dong.tong.N <= congCot, `Tổng N (${dong.tong.N}) phải ≤ cộng các cột (${congCot}) — em học hai lớp không được đếm hai lần ở Tổng`);
+    } finally {
+      conn.prepare(`DELETE FROM enrollments WHERE id = ?`).run(info.lastInsertRowid);
+    }
+  });
+
+  check('PR-Pb · Vấn đề học viên — Quyền: GV không có meeting.view bị 403; QL Monbay hỏi chi nhánh CP → rỗng (không phải toàn hệ thống)', () => {
+    let bi403 = false;
+    try { vanDeSvc.maTranVanDe(P.coreTeacher, { branchId: null, ct: 'ca-hai', classId: null, cot: 'lop' }); }
+    catch (e: any) { bi403 = e?.status === 403; }
+    assert(bi403, 'Giáo viên không có meeting.view phải bị 403');
+    const kqCp = vanDeSvc.maTranVanDe(P.mbManager, { branchId: cpBranch, ct: 'ca-hai', classId: null, cot: 'lop' });
+    assert(kqCp.cotDs.length === 0 && kqCp.hang.every((h: any) => h.tong.N === 0),
+      `QL Monbay hỏi chi nhánh CP phải ra rỗng, đang có ${kqCp.cotDs.length} cột`);
+  });
+
+  await checkAsync('PR-Pb · Không N+1: ma trận Vấn đề học viên ≤ 6 câu SQL, không đổi khi đổi cách xếp cột', async () => {
+    const nLop = await demCauHoi(() => vanDeSvc.maTranVanDe(P.admin, { branchId: null, ct: 'ca-hai', classId: null, cot: 'lop' }));
+    const nCn = await demCauHoi(() => vanDeSvc.maTranVanDe(P.admin, { branchId: null, ct: 'ca-hai', classId: null, cot: 'cn' }));
+    assert(nLop <= 6, `Quá nhiều câu SQL cho ma trận Vấn đề học viên: ${nLop} (tối đa 6)`);
+    assert(nLop === nCn, `Số câu SQL đổi theo cách xếp cột: theo lớp ${nLop}, theo chi nhánh ${nCn}`);
+  });
 }
