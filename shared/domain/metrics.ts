@@ -242,6 +242,21 @@ export const METRICS: readonly ChiSo[] = [
     tapDuDieuKien: 'Trong các lượt SOS: lượt có ít nhất một việc và mọi việc đều đã xong hoặc đã bỏ (kèm lý do). "Hoàn thành" là SUY RA, không lưu.',
     thoiGian: 'phat-sinh-trong-ky', khuTrung: 'COUNT DISTINCT attempt_id', drilldown: '/metrics/phoi-hop-hoan-thanh',
   },
+  /* PR-UX4: hai việc "bỏ quên" của "Chưa ai nhận" cũ — hiện thành hai dòng Cần xử lý ở Tổng quan QL. */
+  {
+    id: 'hv-can-ho-tro-2-lan-chua-case', ten: 'Học viên cần hỗ trợ 2 lần Test liền, chưa có Case mở',
+    cauHoi: 'Bao nhiêu học viên dưới kỳ vọng / chưa đạt cùng một kỹ năng ở hai lần Test liền nhau mà chưa có Case mở cho kỹ năng đó?',
+    donVi: 'hoc-vien',
+    tapDuDieuKien: 'Học viên đang học trong phạm vi có HAI lượt hợp lệ mới nhất (đã có điểm, kể cả tạm thời) cùng dưới kỳ vọng (Fast Track) / chưa đạt (lớp thường) ở một họ kỹ năng (W1, W2 và Writing là một họ), mà không có Case đang mở cùng họ. Case đã đóng không chặn.',
+    thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT student_id', drilldown: '/metrics/hv-can-ho-tro-2-lan-chua-case',
+  },
+  {
+    id: 'hv-bo-qua-van-can-ho-tro', ten: 'Học viên bị Bỏ qua tín hiệu, lần Test sau vẫn chưa đạt',
+    cauHoi: 'Bao nhiêu học viên lớp thường bị Bỏ qua tín hiệu mà lần Test sau vẫn chưa đạt cùng kỹ năng?',
+    donVi: 'hoc-vien',
+    tapDuDieuKien: 'Học viên lớp thường đang học có tín hiệu chưa đạt bị Bỏ qua (đã xem, không thành Case), mà lượt hợp lệ NGAY SAU lượt của tín hiệu vẫn chưa đạt cùng họ kỹ năng và không có Case đang mở cùng họ. Fast Track không có bước Bỏ qua nên không thuộc tập.',
+    thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT student_id', drilldown: '/metrics/hv-bo-qua-van-can-ho-tro',
+  },
 ];
 
 /**

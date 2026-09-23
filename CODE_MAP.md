@@ -41,7 +41,7 @@ Nếu bạn nghĩ theo "cái tôi thấy trên màn hình" chứ không theo tê
 | **Tổng quan** (QL: 4 ô · Cần xử lý · Điểm đáng chú ý · Lịch sắp tới · Theo chi nhánh; GV: Việc cần làm của tôi · Học viên cần hỗ trợ) | `web/src/modules/worklist/OverviewPage.tsx` | `server/src/worklist/tongQuan.ts` · `bangChiNhanh.ts` · `metrics.ts` (metricSet + chương trình) |
 | Dòng tín hiệu SOS lớp thường (Tạo Case / Bỏ qua) | `web/src/modules/worklist/DongTinHieu.tsx` → `QuickReport.tsx` | `/signals/pending/:id/dismiss` · `/cases/report` |
 | Lọc chương trình Lớp thường / FT cho mọi chỉ số | `shared/domain/tongQuan.ts` | `server/src/worklist/chuongTrinh.ts` |
-| **Phân tích** (Tổng hợp Test + SOS · Vấn đề học viên · Kết quả hỗ trợ · Ý thức & Phối hợp) | web/src/modules/phanTich/*, cases/IssueAnalysis.tsx, yThuc/YThucAnalysisView.tsx | server/src/phanTich/{tongHop,vanDe}.ts · cases/effectiveness.ts · yThuc/phoiHop.ts |
+| **Phân tích** (5 góc nhìn — Tổng hợp Test + SOS · Tổng hợp vấn đề HV · Hiệu quả PA · Ý thức & Phối hợp · Danh sách Case, PR-UX4) | web/src/modules/phanTich/{PhanTich,TongHopTestSos,TongHopVanDeHv,HieuQuaPa,YThucPhoiHop,DanhSachBoQuen,dungChung}.tsx | server/src/phanTich/{tongHop,vanDeHv,hieuQuaPa,yThucPhanTich,boQuen,phamVi}.ts · shared/domain/phanTich.ts · cases/effectiveness.ts |
 | Hàm chung ngày/tuần G-6 (`ngay`, `tuanLich`, `tuanKhoa`) | `shared/domain/hienThiNgay.ts` | — |
 | Form **+ Case** | `web/src/modules/cases/QuickReport.tsx` | `server/src/cases/cases.ts` → `reportIssue` |
 | Màn một case đầy đủ | `web/src/modules/cases/CasePanel.tsx` | `server/src/cases/cases.ts` → `caseDetail` |
@@ -249,7 +249,9 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | Điều kiện được hoàn thành case | `server/src/cases/cases.ts` → `closeBlockers` |
 | Điểm giáo viên tự chấm | `server/src/cases/cases.ts` → `normalizeMetrics`, `parseMetrics` |
 | **Cách đếm hiệu quả phương án** — thành công/thất bại/chưa xác định, n/N, mẫu nhỏ | `server/src/cases/effectiveness.ts` (nơi sở hữu duy nhất; bảng của lớp và góc nhìn Kết quả hỗ trợ đều gọi vào đây) |
-| **Phân tích vấn đề — góc nhìn Kết quả hỗ trợ** — Fast Track/Lớp thường, hàng kỹ năng, bấm số ra case | `web/src/modules/cases/IssueAnalysis.tsx` · `server/src/cases/effectiveness.ts` → `issueSkillRows`, `issueBoard`, `issueBoardCases` |
+| **Hiệu quả PA** (vấn đề → loại PA, cỡ mẫu, "Ít dữ liệu", "Nên dùng", Thời gian trung bình; thay "Kết quả hỗ trợ") — bấm số ra PA | `web/src/modules/phanTich/HieuQuaPa.tsx` · `server/src/phanTich/hieuQuaPa.ts` (dùng `cases/effectiveness.ts` → `planOutcomes`) |
+| **Tổng hợp vấn đề HV** (đếm HV theo loại lỗi `ISSUE_TAXONOMY`, công tắc gộp loại lỗi chung `LOI_CHUNG`) | `web/src/modules/phanTich/TongHopVanDeHv.tsx` · `server/src/phanTich/vanDeHv.ts` |
+| **2 dòng Cần xử lý "bỏ quên"** (HV cần hỗ trợ 2 lần Test liền chưa có Case mở · HV bị Bỏ qua tín hiệu mà lần Test sau vẫn chưa đạt) + bộ lọc "Học viên cần chú ý" ở Danh sách Case | `server/src/phanTich/boQuen.ts` + hai chỉ số `hv-can-ho-tro-2-lan-chua-case`, `hv-bo-qua-van-can-ho-tro` (sổ `shared/domain/metrics.ts`, `worklist/metrics.ts`) · `web/src/modules/worklist/KhoiCanXuLy.tsx` · `web/src/modules/phanTich/DanhSachBoQuen.tsx` |
 | **Khối phương án theo tầng** ở tab Hành trình (một lưới, dấu + màu theo kết quả, hẹp chỉ hiện dấu) | `web/src/modules/students/HanhTrinh.tsx` → `KhoiPa` · luật xếp tầng `shared/domain/hanhTrinh.ts` → `xepTang` |
 | Khung Phân tích (hàng góc nhìn + bộ lọc chung), Danh sách Case và bộ lọc | `web/src/modules/phanTich/PhanTich.tsx` · `web/src/modules/cases/CaseBoardPage.tsx` (`DanhSachCase`) |
 
@@ -284,7 +286,7 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | **Ô điểm còn nợ** của bảng chi nhánh — đi qua đúng hàm của bảng chấm (S12, §6) | `server/src/worklist/scoreDebt.ts` → `scoreDebtCells` |
 | Quản lý giao việc cho giáo viên | `web/src/modules/worklist/ManagerTasks.tsx` · `server/src/worklist/meeting.ts` (không còn gọi từ Phân tích — PR-Ra quyết, xem `MeetingPage`) |
 | Khối "Lịch sắp tới" (tuần này · tuần tới · tuần nữa; cột Lớp thường / Fast Track) | `web/src/modules/worklist/Highlights.tsx` · `server/src/worklist/highlights.ts` |
-| Bảng "Phương án và kết quả" (góc nhìn **Kết quả hỗ trợ** của Phân tích) | `web/src/modules/cases/IssueAnalysis.tsx` · `server/src/cases/effectiveness.ts` |
+| Bảng "Phương án và kết quả" (góc nhìn **Hiệu quả PA** của Phân tích) | `web/src/modules/phanTich/HieuQuaPa.tsx` · `server/src/phanTich/hieuQuaPa.ts` · `server/src/cases/effectiveness.ts` |
 | Tên và ý nghĩa của chín nhóm việc | `server/src/worklist/mywork.ts` → `GROUP_META` |
 | "Việc của tôi" khác "tôi sửa được" | `server/src/permissions.ts` → `mySkills` vs `editableSkills` |
 

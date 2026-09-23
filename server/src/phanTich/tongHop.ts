@@ -134,7 +134,7 @@ function tinh(p: Principal, f: FilterTongHop) {
       const trongTuanNay = a.week_start <= today && a.week_end >= today;
       return {
         khoa: `tuan:${a.period_id}`, nhan: tuanLich(a.week_start, today),
-        phu: `${ngay(a.week_start)}–${ngay(a.week_end)}${trongTuanNay ? ' · tuần này' : ''}`,
+        phu: `${ngay(a.week_start, today)}–${ngay(a.week_end, today)}${trongTuanNay ? ' · tuần này' : ''}`,
         sortKey: [a.week_start],
       };
     }
