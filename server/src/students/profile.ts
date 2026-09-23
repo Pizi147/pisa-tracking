@@ -7,15 +7,15 @@ import {
 } from '../../../shared/domain/index.ts';
 import { outcomeGroup } from '../cases/effectiveness.ts';
 import { demoToday } from '../demoConfig.ts';
-import { diffDays, notFound } from '../util.ts';
+import { addDays, diffDays, notFound } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { entryBandsOf, scoresOf, skipsOf } from '../fasttrack/attempts.ts';
 import { assessedBands, evaluateAttempt } from '../fasttrack/scoring.ts';
-import { evaluateRegular, isRatioCycle, programmeByCode, programmeCodeOfCycle, programmeOfClass } from '../normal/regular.ts';
+import { evaluateRegular, isRatioClass, isRatioCycle, programmeByCode, programmeCodeOfCycle, programmeOfClass } from '../normal/regular.ts';
 import { cycleById, cyclesOf, currentCycle, examPlanOf, targetRevisions } from '../fasttrack/cycles.ts';
 import { parseMetrics, skillSupportBoard } from '../cases/cases.ts';
 import { standingFor, standingLine } from './standing.ts';
-import { missingForStudent, suggestedMockWeeks } from '../classes/schedule.ts';
+import { classProgressMany, missingForStudent, suggestedMockWeeks } from '../classes/schedule.ts';
 import { listSignals } from '../cases/signals.ts';
 import { ensurePeriod } from '../platform/week.ts';
 import { canManageDiscipline } from '../yThuc/access.ts';
@@ -453,7 +453,7 @@ function headlineOf(p: Principal, studentId: number, cycleId: number | null) {
    */
   /* Câu BẮT ĐẦU BẰNG ĐỘNG TỪ (PR-HV Q7): ô "Việc cần làm tiếp" đọc như một việc, không như một nhận xét. "PA" ở đây
      đúng D1 — đầu hồ sơ học viên là ngữ cảnh học thuật. */
-  type Next = { text: string; due: string | null; rank: number };
+  type Next = { text: string; due: string | null; rank: number; category: string };
   const cands: Next[] = [];
   /* DỰ PHÒNG (PR-HV, sửa sau rà soát 22/09): việc cập nhật hằng tuần CHƯA quá hạn CHỈ dùng khi không có việc nào khác —
      nếu đưa vào `cands`, ứng viên có hạn sẽ thắng ứng viên không hạn ở `cands.sort` và chen trước "Xác minh SOS"/"Đề ra PA". */
@@ -466,17 +466,17 @@ function headlineOf(p: Principal, studentId: number, cycleId: number | null) {
   for (const r of rows) {
     for (const c of r.cases) {
       if (c.status === 'done') continue;
-      if (c.sos?.awaitingCause) xacDinh.push({ text: `Xác định nguyên nhân ${sk(r)}`, due: c.sos.dueOn ?? null, rank: 0 });
-      else if (c.sos?.unconfirmedPlanId) cands.push({ text: `Xác nhận PA gợi ý ${sk(r)}`, due: null, rank: 1 });
+      if (c.sos?.awaitingCause) xacDinh.push({ text: `Xác định nguyên nhân ${sk(r)}`, due: c.sos.dueOn ?? null, rank: 0, category: r.category });
+      else if (c.sos?.unconfirmedPlanId) cands.push({ text: `Xác nhận PA gợi ý ${sk(r)}`, due: null, rank: 1, category: r.category });
     }
-    if (r.signal) cands.push({ text: `Xác minh SOS ${sk(r)}`, due: r.signal.verifyDue ?? null, rank: 0 });
-    if (r.state === 'no_plan') cands.push({ text: `Đề ra PA cho ${sk(r)}`, due: null, rank: 1 });
-    if (r.overdueActionDue) cands.push({ text: `Làm PA ${sk(r)}`, due: r.overdueActionDue, rank: 1 });
-    if (r.pendingApproval) cands.push({ text: `Chờ Quản lý duyệt PA ${sk(r)}`, due: null, rank: 2 });
-    if (r.followOverdue) cands.push({ text: `Cập nhật PA ${sk(r)}`, due: r.followUntil, rank: 1 });
+    if (r.signal) cands.push({ text: `Xác minh SOS ${sk(r)}`, due: r.signal.verifyDue ?? null, rank: 0, category: r.category });
+    if (r.state === 'no_plan') cands.push({ text: `Đề ra PA cho ${sk(r)}`, due: null, rank: 1, category: r.category });
+    if (r.overdueActionDue) cands.push({ text: `Làm PA ${sk(r)}`, due: r.overdueActionDue, rank: 1, category: r.category });
+    if (r.pendingApproval) cands.push({ text: `Chờ Quản lý duyệt PA ${sk(r)}`, due: null, rank: 2, category: r.category });
+    if (r.followOverdue) cands.push({ text: `Cập nhật PA ${sk(r)}`, due: r.followUntil, rank: 1, category: r.category });
     /* MỚI (PR-HV): việc cập nhật hằng tuần CHƯA quá hạn — để ô có "hạn 30/08" thay vì "Không có" khi mọi việc đang đúng hạn. */
     else if (r.followUntil && r.cases.some((c: any) => c.status !== 'done')) {
-      duPhong.push({ text: `Cập nhật PA ${sk(r)}`, due: r.followUntil, rank: 3 });
+      duPhong.push({ text: `Cập nhật PA ${sk(r)}`, due: r.followUntil, rank: 3, category: r.category });
     }
   }
   cands.sort((a, b) => {
@@ -494,18 +494,26 @@ function headlineOf(p: Principal, studentId: number, cycleId: number | null) {
   const chon = xacDinh[0] ?? cands[0] ?? duPhong[0] ?? null;
   return {
     below, signals, openCases: open,
-    next: chon ? { text: chon.text, due: chon.due, overdue: quaHan(chon.due, today) } : null,
+    next: chon ? { text: chon.text, due: chon.due, overdue: quaHan(chon.due, today), category: chon.category } : null,
   };
 }
 
-export function studentProfile(p: Principal, studentId: number, wantCycleId?: number | null) {
+export function studentProfile(p: Principal, studentId: number, wantCycleId?: number | null, attemptId?: number | null) {
   const conn = db();
   const s = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
   if (!s) throw notFound('Không tìm thấy học viên');
   require_(p, PERMISSIONS.STUDENT_VIEW, { studentId }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
 
   const allCycles = cyclesOf(studentId);
+  /*
+   * R7 (PR-Qb): mở đúng đợt — `?dot=` chỉ ĐỔI lộ trình khi chưa ai chỉ định `cycleId` tường minh.
+   * Đợt của học viên KHÁC bị bỏ qua thay vì lộ dữ liệu của em đó (không throw — về lộ trình đang chạy như bình thường).
+   */
+  const wantCycleFromAttempt = !wantCycleId && attemptId
+    ? (conn.prepare('SELECT cycle_id FROM assessment_attempts WHERE id = ? AND student_id = ?').get(attemptId, studentId) as any)?.cycle_id ?? null
+    : null;
   const selected = (wantCycleId ? cycleById(wantCycleId) : null)
+    ?? (wantCycleFromAttempt ? cycleById(wantCycleFromAttempt) : null)
     ?? currentCycle(studentId)
     ?? allCycles[allCycles.length - 1]
     ?? null;
@@ -700,12 +708,15 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
    * Kể lại chúng lần nữa ở đây là biến một mục "em đã đi qua những đâu" thành một cuộn giấy
    * mười lăm dòng cho một vấn đề, và cả hai chỗ cùng dài ra mà không chỗ nào rõ hơn.
    */
+  /* Q8 (PR-Qb): Hành trình KHÔNG có Ý thức — bỏ 'warning'/'wl' khỏi cả mốc chính lẫn toàn bộ sự kiện. */
   const JOURNEY_MILESTONES = new Set([
     'enrollment', 'transfer', 'pause', 'resume', 'finish',
     'cycle_start', 'repeat', 'exam_date_changed', 'exam_result',
-    'case_handover', 'cycle_outcome', 'warning', 'wl',
+    'case_handover', 'cycle_outcome',
   ]);
-  const milestoneRows = journeyRows.filter((r) => JOURNEY_MILESTONES.has(r.event_type)
+  const Y_THUC_EVENTS = new Set(['warning', 'wl']);
+  const journeyRowsKhongYThuc = journeyRows.filter((r) => !Y_THUC_EVENTS.has(r.event_type));
+  const milestoneRows = journeyRowsKhongYThuc.filter((r) => JOURNEY_MILESTONES.has(r.event_type)
     || r.ref_table === 'learning_cycles' || r.ref_table === 'cycle_target_revisions');
 
   const standingNow = standingFor([studentId]).get(studentId) ?? null;
@@ -736,6 +747,23 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
               WHERE t.class_id = ? AND t.is_core = 1 AND t.status = 'active' LIMIT 1`,
           )
           .get(current.class_id) as any)?.full_name ?? null,
+        /*
+         * KHOÁ ĐANG HỌC (Q18, PR-Qb) — chỉ lớp thường có, FT không có "tuần học của khoá" cố định.
+         * Cùng cách tính `tuanKetThuc` với `hocVienLop.ts` (PR-Qa): tuần bắt đầu + (tổng tuần − 1) × 7 ngày.
+         */
+        khoa: isRatioClass(current.class_id)
+          ? (() => {
+            const prog = classProgressMany([current.class_id]).get(current.class_id);
+            if (!prog) return null;
+            return {
+              ma: prog.programmeCode,
+              tuanHienTai: prog.currentWeek,
+              tongTuan: prog.totalWeeks,
+              tuanKetThuc: prog.startWeekStart && prog.totalWeeks
+                ? addDays(prog.startWeekStart, (prog.totalWeeks - 1) * 7) : null,
+            };
+          })()
+          : null,
       }
       : null,
     /*
@@ -891,7 +919,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     cases,
     /* Mặc định chỉ mốc xuyên chương trình; giao diện mở được toàn bộ khi cần tra lại. */
     episodes: episodesOf(milestoneRows),
-    allEpisodes: episodesOf(journeyRows),
+    allEpisodes: episodesOf(journeyRowsKhongYThuc),
     viewer: {
       canEdit: can(p, PERMISSIONS.STUDENT_EDIT, { studentId }),
       canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { studentId }),

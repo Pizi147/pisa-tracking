@@ -308,4 +308,87 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
       conn.prepare(`DELETE FROM sos_cases WHERE id IN (${idsMoi.map(() => '?').join(',')})`).run(...idsMoi);
     }
   });
+
+  // ==================================================================== Task 3 — hồ sơ mở đúng đợt, khoá đang học, thông báo
+
+  const { studentProfile } = await import('../students/profile.ts');
+  const { thongBaoCua } = await import('../platform/thongBao.ts');
+
+  check('PR-Qb (3) · R7: attemptId của lộ trình cũ chọn đúng lộ trình đó khi không có cycleId', () => {
+    const prof = studentProfile(P.admin, HV1, undefined, 1); // attempt 1 thuộc cycle 1 (FOU) của HV1
+    assert(prof.cycle?.id === 1, `attemptId=1 phải chọn cycle 1 (FOU): cycle=${prof.cycle?.id}`);
+  });
+
+  check('PR-Qb (3) · R7: attemptId thuộc học viên KHÁC bị bỏ qua, về lộ trình đang chạy', () => {
+    const attemptCuaHocVienKhac = conn.prepare('SELECT id FROM assessment_attempts WHERE student_id != ? LIMIT 1').get(HV1) as any;
+    const prof = studentProfile(P.admin, HV1, undefined, attemptCuaHocVienKhac.id);
+    const macDinh = studentProfile(P.admin, HV1);
+    assert(prof.cycle?.id === macDinh.cycle?.id, `Đợt của HV khác không được đổi lộ trình đang xem: ${prof.cycle?.id} ≠ ${macDinh.cycle?.id}`);
+  });
+
+  check('PR-Qb (3) · Q18: currentClass.khoa chỉ có ở lớp thường (mã đúng chương trình), FT là null', () => {
+    const hocVienLopThuong = (conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = (SELECT id FROM classes WHERE code = 'MB-FOU 12') AND status = 'active' LIMIT 1`).get() as any).student_id;
+    const profLopThuong = studentProfile(P.admin, hocVienLopThuong);
+    assert(profLopThuong.currentClass?.khoa?.ma === 'FOU', `Lớp thường phải có khoa.ma = FOU: ${JSON.stringify(profLopThuong.currentClass?.khoa)}`);
+    const profFt = studentProfile(P.admin, HV1);
+    assert(profFt.currentClass?.khoa === null, `FT không có khoá đang học: ${JSON.stringify(profFt.currentClass?.khoa)}`);
+  });
+
+  check('PR-Qb (3) · Q11: headline.next.category (khi có) thuộc đúng bộ hạng mục case', () => {
+    const CATEGORY_HOP_LE = new Set<string>(d.CASE_CATEGORIES);
+    for (const sid of [HV1, HV40]) {
+      const prof = studentProfile(P.admin, sid);
+      if (prof.headline.next) {
+        assert(CATEGORY_HOP_LE.has(prof.headline.next.category), `category lạ: ${prof.headline.next.category}`);
+      }
+    }
+  });
+
+  check('PR-Qb (3) · Q8: sự kiện Ý thức (warning/wl) không còn trong episodes lẫn allEpisodes', () => {
+    const now = new Date().toISOString();
+    const id = conn.prepare(
+      `INSERT INTO journey_events (student_id, event_type, event_date, title, created_at) VALUES (?, 'warning', ?, 'Cảnh báo thử', ?)`,
+    ).run(HV1, TODAY, now).lastInsertRowid as number;
+    try {
+      const prof = studentProfile(P.admin, HV1);
+      assert(!prof.episodes.some((e: any) => e.events.some((ev: any) => ev.id === id)), 'episodes không được chứa sự kiện Ý thức');
+      assert(!prof.allEpisodes.some((e: any) => e.events.some((ev: any) => ev.id === id)), 'allEpisodes không được chứa sự kiện Ý thức');
+    } finally {
+      conn.prepare('DELETE FROM journey_events WHERE id = ?').run(id);
+    }
+  });
+
+  check('PR-Qb (3) · thongBaoCua: mỗi loại thông báo trả đúng student_id/attempt_id, duongThongBao ra đúng đường', () => {
+    const now = new Date().toISOString();
+    const caseBe = conn.prepare(`SELECT id, student_id FROM sos_cases WHERE student_id = ? AND cycle_id = 2`).get(HV1) as any;
+    const attempt = conn.prepare('SELECT id, student_id FROM assessment_attempts WHERE student_id = ? LIMIT 1').get(HV1) as any;
+    const smr = conn.prepare('SELECT id, attempt_id FROM skill_move_requests LIMIT 1').get() as any;
+    const measure = conn.prepare('SELECT id, student_id FROM discipline_measures LIMIT 1').get() as any;
+    const ins = conn.prepare(
+      `INSERT INTO notifications (user_id, kind, title, entity_type, entity_id, dedup_key, created_at) VALUES (?,?,?,?,?,?,?)`,
+    );
+    const ids: number[] = [];
+    ids.push(ins.run(P.admin.userId, 'case', 'thử sos_case', 'sos_case', caseBe.id, `test-qb:sos_case:${caseBe.id}`, now).lastInsertRowid as number);
+    ids.push(ins.run(P.admin.userId, 'sos', 'thử assessment_attempt', 'assessment_attempt', attempt.id, `test-qb:aa:${attempt.id}`, now).lastInsertRowid as number);
+    ids.push(ins.run(P.admin.userId, 'discipline', 'thử discipline_measure', 'discipline_measure', measure.id, `test-qb:dm:${measure.id}`, now).lastInsertRowid as number);
+    if (smr) ids.push(ins.run(P.admin.userId, 'schedule_move', 'thử skill_move_requests', 'skill_move_requests', smr.id, `test-qb:smr:${smr.id}`, now).lastInsertRowid as number);
+    try {
+      const rows = thongBaoCua(P.admin.userId);
+      const sosCaseRow = rows.find((r: any) => r.id === ids[0]);
+      assert(sosCaseRow?.student_id === caseBe.student_id, `sos_case student_id: ${sosCaseRow?.student_id}`);
+      assert(d.duongThongBao(sosCaseRow) === `/hoc-vien/${caseBe.student_id}?case=${caseBe.id}`, `sos_case đường: ${d.duongThongBao(sosCaseRow)}`);
+      const attemptRow = rows.find((r: any) => r.id === ids[1]);
+      assert(attemptRow?.student_id === attempt.student_id && attemptRow?.attempt_id === attempt.id, `assessment_attempt: ${JSON.stringify(attemptRow)}`);
+      const measureRow = rows.find((r: any) => r.id === ids[2]);
+      assert(measureRow?.student_id === measure.student_id, `discipline_measure student_id: ${measureRow?.student_id}`);
+      assert(d.duongThongBao(measureRow) === `/hoc-vien/${measure.student_id}?tab=y-thuc`, `discipline_measure đường: ${d.duongThongBao(measureRow)}`);
+      if (smr) {
+        const smrRow = rows.find((r: any) => r.id === ids[3]);
+        assert(smrRow?.attempt_id === smr.attempt_id, `skill_move_requests attempt_id: ${smrRow?.attempt_id}`);
+        assert(d.duongThongBao(smrRow) === `/mock-test/${smr.attempt_id}`, `skill_move_requests đường: ${d.duongThongBao(smrRow)}`);
+      }
+    } finally {
+      conn.prepare(`DELETE FROM notifications WHERE id IN (${ids.map(() => '?').join(',')})`).run(...ids);
+    }
+  });
 }

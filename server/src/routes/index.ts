@@ -43,6 +43,7 @@ import * as pulseSvc from '../worklist/branchpulse.ts';
 import * as prefSvc from '../platform/prefs.ts';
 import * as profileSvc from '../students/profile.ts';
 import { hanhTrinhHocVien } from '../students/hanhTrinh.ts';
+import { thongBaoCua } from '../platform/thongBao.ts';
 import * as classSvc from '../classes/classes.ts';
 import * as scheduleSvc from '../classes/schedule.ts';
 import * as intakeSvc from '../classes/intake.ts';
@@ -1503,7 +1504,7 @@ api.get('/students', requireAuth, wrap((req) => {
  */
 api.get('/students/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return profileSvc.studentProfile(principalOf(req), pInt(req, 'id'), qInt(req, 'cycleId'));
+  return profileSvc.studentProfile(principalOf(req), pInt(req, 'id'), qInt(req, 'cycleId'), qInt(req, 'attemptId'));
 }));
 
 api.patch('/students/:id', requireAuth, wrap((req) => {
@@ -1623,12 +1624,7 @@ api.get('/tasks/:id/history', requireAuth, wrap((req) => meetingSvc.taskHistory(
 
 // ============================================================ Thông báo
 
-api.get('/notifications', requireAuth, wrap((req) => {
-  const p = principalOf(req);
-  return db()
-    .prepare('SELECT * FROM notifications WHERE user_id = ? ORDER BY id DESC LIMIT 30')
-    .all(p.userId);
-}));
+api.get('/notifications', requireAuth, wrap((req) => thongBaoCua(principalOf(req).userId)));
 
 api.post('/notifications/:id/read', requireAuth, wrap((req) => {
   const p = principalOf(req);

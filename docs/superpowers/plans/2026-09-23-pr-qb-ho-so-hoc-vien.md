@@ -415,3 +415,7 @@ Commit `PR-Qb (8): 375px hồ sơ học viên, bảng định vị, CODE_MAP, đ
   đang bắt.
   (3) `caseTitleOf` trong bản đặc tả không tồn tại (đã ghi ở Task 1) — dùng `caseTitle`.
   `npm run check` xanh, **861 = 853 + 8** (đủ ≥8). Commit `PR-Qb (2)`.
+- **Task 3:** `profile.ts` (R7 chọn lộ trình theo `attemptId`, `currentClass.khoa`, `headline.next.category`, bỏ
+  Ý thức khỏi mốc + toàn bộ sự kiện), `platform/thongBao.ts` (mới), route `/students/:id` nhận `attemptId`,
+  `/notifications` gọi `thongBaoCua`. Không có chỗ mâu thuẫn kế hoạch/mã cần tự quyết ở Task này — khớp đúng bản
+  đồ file. `npm run check` xanh, **867 = 861 + 6** (đủ ≥6). Commit `PR-Qb (3)`.
