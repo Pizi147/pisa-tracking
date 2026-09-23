@@ -382,7 +382,7 @@ export function oVanDeHv(p: Principal, f: FilterVanDeHv & { dong: string; cot: s
 function dongLop(r: Tinh, classIds: number[], nhan: string, demHv: (k: number) => number) {
   const ids = [...classIds].filter((k) => demHv(k) > 0).sort((a, b) => (r.maLop.get(a) ?? '').localeCompare(r.maLop.get(b) ?? ''));
   const rows: MetricRow[] = ids.map((k) => ({
-    id: k, title: r.maLop.get(k) ?? `#${k}`, sub: `${demHv(k)} HV`, href: `/classes/${k}/overview`,
+    id: k, title: r.maLop.get(k) ?? `#${k}`, sub: `${demHv(k)} HV`, href: `/hoc-vien/lop/${k}`,
   }));
   return { n: ids.length, tieuDe: `${nhan} · ${ids.length} lớp`, rows };
 }
