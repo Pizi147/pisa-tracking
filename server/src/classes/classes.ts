@@ -698,7 +698,7 @@ export function classOverview(p: Principal, classId: number) {
      * không nhánh nào ở web đoán riêng — kể cả với Quản trị hệ thống (QT). Lớp đã đóng thì
      * không còn gì để sửa/nhập/gán nữa.
      */
-    viewer: finished ? {
+    viewer: { ...(finished ? {
       canPlanWeek: false, canAddStudents: false, canAssign: false, canEditProgress: false,
       editableSkills: [] as string[], isCoreTeacher: false,
       canReportCase: false, canRecordViolation: false, canEnterScores: false, coTheChuyenTiep: false,
@@ -716,6 +716,9 @@ export function classOverview(p: Principal, classId: number) {
       canEnterScores: editableSkills(p, classId, classSkills).length > 0,
       /** Cùng luật với `canEditProgress` (Q2) — tên riêng để nút Chuyển tiếp lớp/badge/việc đỏ dùng chung một cờ. */
       coTheChuyenTiep: can(p, PERMISSIONS.CLASS_EDIT, { classId }),
+    }),
+      /** ⋮ Xoá lớp / Kết thúc lớp — CHỈ Quản trị hệ thống (PR-UX3); máy chủ kiểm lại ở từng đường. */
+      coTheXoaKetThuc: can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }),
     },
   };
 }

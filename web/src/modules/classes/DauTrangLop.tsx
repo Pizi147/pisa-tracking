@@ -4,7 +4,9 @@ import { DaiChiXem } from '../../ui/ui.tsx';
 import { Nhan, toneNhanTuBadge } from '../../ui/Nhan.tsx';
 import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { useApi } from '../../lib/useApi.ts';
 import { TenGiaoVien } from './TenGiaoVien.tsx';
+import type { TinhTrangXoaKetThuc } from './XoaKetThucLopPanel.tsx';
 import {
   badgeLop, needScoresText, ngay, nhomGiaoVienBoMon, tuanKhoa, type BadgeLop, type NhomGiaoVien, type WorkScope,
 } from '@shared/domain/index.ts';
@@ -33,9 +35,11 @@ export type HoSoLop = {
     canReportCase: boolean; canRecordViolation: boolean; canEnterScores: boolean;
     /** PR-LT: nút Chuyển tiếp lớp/badge — cùng luật CLASS_EDIT với canEditProgress, tên riêng cho rõ ý. */
     coTheChuyenTiep: boolean;
+    /** PR-UX3: ⋮ Xoá lớp / Kết thúc lớp — chỉ Quản trị hệ thống (máy chủ kiểm lại). */
+    coTheXoaKetThuc?: boolean;
   };
 };
-export type ViecDauTrang = 'tien-do' | 'chuyen-tiep' | 'phan-cong' | 'thong-tin' | 'case' | 'hoc-vien';
+export type ViecDauTrang = 'tien-do' | 'chuyen-tiep' | 'phan-cong' | 'thong-tin' | 'case' | 'hoc-vien' | 'xoa-lop' | 'ket-thuc-lop';
 
 /**
  * ĐẦU TRANG HỒ SƠ LỚP (đặc tả §3.7, mockup 06c §1).
@@ -68,9 +72,15 @@ export function DauTrangLop({ data, periodId, onViec, onCheDoCanHoTro }: {
       : x.key === 'cham' ? () => navigate(`/test/can-cham?classId=${data.id}`)
       : x.key === 'het-khoa' && data.viewer.coTheChuyenTiep ? () => onViec('chuyen-tiep')
       : null;
+  /* Chỉ Quản trị hệ thống mới gọi được đường này (403 với người khác) — nên chỉ hỏi khi có cờ. */
+  const xk = useApi<TinhTrangXoaKetThuc>(data.viewer.coTheXoaKetThuc ? `/classes/${data.id}/xoa-ket-thuc` : null, [data.id, data.viewer.coTheXoaKetThuc]);
   const menu: MucMenu[] = [
     ...(data.viewer.canAssign ? [{ key: 'phan-cong', nhan: 'Sửa phân công', onChon: () => onViec('phan-cong') }] : []),
     ...(data.viewer.canEditProgress ? [{ key: 'thong-tin', nhan: 'Sửa thông tin lớp', onChon: () => onViec('thong-tin') }] : []),
+    /* Cuối menu, sau đường kẻ: Xoá lớp (lớp còn trống) · Kết thúc lớp (lớp đã có dữ liệu, còn hoạt động). */
+    ...(xk.data?.coTheXoa ? [{ key: 'xoa-lop', nhan: 'Xoá lớp', keTruoc: true, onChon: () => onViec('xoa-lop') }] : []),
+    ...(xk.data && xk.data.coDuLieu && !xk.data.daKetThuc
+      ? [{ key: 'ket-thuc-lop', nhan: 'Kết thúc lớp', keTruoc: !xk.data.coTheXoa, onChon: () => onViec('ket-thuc-lop') }] : []),
   ];
   const nhapDiem = thuong ? `/bang-diem-thuong/${data.id}` : `/nhap-diem/${data.id}${periodId ? `?periodId=${periodId}` : ''}`;
   const tuan = thuong && s?.currentWeek && s.totalWeeks && s.currentWeek >= 1

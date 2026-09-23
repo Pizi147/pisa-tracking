@@ -80,6 +80,11 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/y-thuc' },
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/violations' },
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/cham' },
+  /* PR-UX3: ⋮ Xoá lớp / Kết thúc lớp — chỉ Quản trị hệ thống; QL và GV nhận 403 (máy chủ kiểm quyền, không chỉ ẩn nút). */
+  {
+    trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/xoa-ket-thuc',
+    maChuDich: { QL: 403, GVCN: 403, GVBM: 403, GVCN_THUONG: 403 },
+  },
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/cases?classId={lopFT}' },
 
   // ---------------------------------------------------------------- Hồ sơ lớp (thường)

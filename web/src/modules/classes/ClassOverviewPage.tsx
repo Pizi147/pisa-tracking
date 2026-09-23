@@ -10,6 +10,7 @@ import { ClassYThucCard } from '../yThuc/ClassYThucCard.tsx';
 import { QuickReport } from '../cases/QuickReport.tsx';
 import { IntakePanel } from '../students/IntakePanel.tsx';
 import { TeacherAssignPanel } from './TeacherAssignPanel.tsx';
+import { KetThucLopPanel, XoaLopPanel } from './XoaKetThucLopPanel.tsx';
 import { ClassProgressPanel } from './ClassProgressPanel.tsx';
 import { TransitionPanel } from './TransitionPanel.tsx';
 import { DauTrangLop, type HoSoLop, type ViecDauTrang } from './DauTrangLop.tsx';
@@ -96,6 +97,8 @@ export default function ClassOverviewPage() {
           lop={{ id: data.id, code: data.code, route: data.route, note: data.note,
             programmeCode: data.programme?.code ?? null, soHocVien: data.summary?.studentCount ?? 0 }} />
       )}
+      {viec === 'xoa-lop' && <XoaLopPanel classId={data.id} classCode={data.code} onClose={dong} />}
+      {viec === 'ket-thuc-lop' && <KetThucLopPanel classId={data.id} classCode={data.code} onClose={dong} onDone={xong} />}
       {viec === 'hoc-vien' && (
         <IntakePanel defaultClass={{ id: data.id, code: data.code }} onClose={dong} onDone={xong} />
       )}

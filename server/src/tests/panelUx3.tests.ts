@@ -406,5 +406,105 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     assert(/effectiveDate: tuan && tuan !== tuanNay \? tuan : undefined/.test(src), 'tuần này phải không gửi effectiveDate');
   });
 
+  // ==================================================================== 11. ⋮ Hồ sơ lớp › Xoá lớp / Kết thúc lớp (chỉ Quản trị hệ thống)
+
+  const xoaKetThuc: any = await import('../classes/xoaKetThucLop.ts');
+  const intakeSvc: any = await import('../classes/intake.ts');
+  const classesSvc: any = await import('../classes/classes.ts');
+  const luuTruSvc: any = await import('../classes/luuTru.ts');
+  const mbId = (conn.prepare(`SELECT id FROM branches WHERE code = 'MB'`).get() as { id: number }).id;
+  let soLop = 0;
+  const taoLopTrong = (): { id: number; ma: string } => {
+    soLop += 1;
+    const ma = `MB-UX3 ${soLop}`;
+    const c = intakeSvc.createClass(t.P.admin, { code: ma, branchId: mbId, kind: 'FOU', isFastTrack: false, startDate: '2026-08-03' }) as { id: number };
+    return { id: c.id, ma };
+  };
+  const themHocVien = (classId: number, status: string) => {
+    const sid = Number(conn.prepare(
+      `INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', '2026-09-01')`,
+    ).run(`PISA-UX3-${classId}-${status}`, `HV UX3 ${classId}`, `hv ux3 ${classId}`, mbId).lastInsertRowid);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?,?, '2026-08-03', '2026-09-01')`)
+      .run(sid, classId, status);
+    return sid;
+  };
+  const demLop = (id: number) => (conn.prepare('SELECT COUNT(*) n FROM classes WHERE id = ?').get(id) as { n: number }).n;
+  const ftId = (conn.prepare(`SELECT id FROM classes WHERE code = 'MB-FT 101'`).get() as { id: number }).id;
+
+  check('UX3 (11) · QL và GV gọi Xem / Xoá / Kết thúc lớp đều 403 (máy chủ kiểm, không chỉ ẩn nút)', () => {
+    const l = taoLopTrong();
+    for (const who of [t.P.mbManager, t.P.coreTeacher, t.P.subjectTeacher]) {
+      t.assertThrows(() => xoaKetThuc.xemXoaKetThuc(who, l.id), /Quản trị hệ thống/, 'xem');
+      t.assertThrows(() => xoaKetThuc.xoaLop(who, l.id, { maLop: l.ma }), /Quản trị hệ thống/, 'xoá');
+      t.assertThrows(() => xoaKetThuc.ketThucLop(who, l.id), /Quản trị hệ thống/, 'kết thúc');
+    }
+    assert(demLop(l.id) === 1, 'lớp phải còn nguyên sau các lần bị từ chối');
+  });
+
+  check('UX3 (11) · viewer.coTheXoaKetThuc: Quản trị hệ thống true; Quản lý và GV false', () => {
+    const l = taoLopTrong();
+    assert(classesSvc.classOverview(t.P.admin, l.id).viewer.coTheXoaKetThuc === true, 'QT');
+    assert(classesSvc.classOverview(t.P.mbManager, l.id).viewer.coTheXoaKetThuc === false, 'QL');
+    assert(classesSvc.classOverview(t.P.coreTeacher, ftId).viewer.coTheXoaKetThuc === false, 'GV');
+  });
+
+  check('UX3 (11) · xemXoaKetThuc: lớp trống → coTheXoa; lớp có dữ liệu → không xoá được, có lý do', () => {
+    const l = taoLopTrong();
+    const trong = xoaKetThuc.xemXoaKetThuc(t.P.admin, l.id);
+    assert(trong.coTheXoa === true && trong.coDuLieu === false && trong.ma === l.ma, JSON.stringify(trong));
+    const co = xoaKetThuc.xemXoaKetThuc(t.P.admin, ftId);
+    assert(co.coTheXoa === false && co.coDuLieu === true && co.dangGan.length > 0, JSON.stringify(co));
+  });
+
+  check('UX3 (11) · Xoá lớp trống: sai mã → 400; đúng mã → dòng lớp + phân công + kỹ năng mất, có audit "class.delete"', () => {
+    const l = taoLopTrong();
+    const admin = (conn.prepare(`SELECT id FROM users WHERE id = ?`).get(t.P.admin.userId) as { id: number }).id;
+    conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at) VALUES (?,?,NULL,1,'2026-09-01','active','2026-09-01')`)
+      .run(admin, l.id);
+    t.assertThrows(() => xoaKetThuc.xoaLop(t.P.admin, l.id, { maLop: 'sai ma' }), /Gõ lại đúng mã lớp/, 'sai mã');
+    assert(demLop(l.id) === 1, 'sai mã mà lớp đã mất');
+    xoaKetThuc.xoaLop(t.P.admin, l.id, { maLop: l.ma });
+    assert(demLop(l.id) === 0, 'lớp vẫn còn');
+    const dem = (b: string) => (conn.prepare(`SELECT COUNT(*) n FROM ${b} WHERE class_id = ?`).get(l.id) as { n: number }).n;
+    assert(dem('teacher_assignments') === 0 && dem('class_skills') === 0, 'phân công / kỹ năng lớp còn sót');
+    const au = conn.prepare(`SELECT actor_user_id, entity_label FROM audit_logs WHERE action = 'class.delete' AND entity_id = ?`).get(l.id) as any;
+    assert(au && au.actor_user_id === t.P.admin.userId && au.entity_label === l.ma, `audit: ${JSON.stringify(au)}`);
+  });
+
+  check('UX3 (11) · Xoá lớp có dữ liệu → 400 "dùng Kết thúc lớp": lớp có HV từng học; lớp có lượt Test', () => {
+    const l = taoLopTrong();
+    themHocVien(l.id, 'withdrawn');
+    t.assertThrows(() => xoaKetThuc.xoaLop(t.P.admin, l.id, { maLop: l.ma }), /Kết thúc lớp/, 'HV từng học');
+    assert(demLop(l.id) === 1, 'lớp có HV từng học bị xoá');
+    t.assertThrows(() => xoaKetThuc.xoaLop(t.P.admin, ftId, { maLop: 'MB-FT 101' }), /Kết thúc lớp/, 'lớp có Test');
+    assert(demLop(ftId) === 1, 'lớp có Test bị xoá');
+  });
+
+  check('UX3 (11) · Kết thúc lớp còn HV đang học → 400 kèm số HV; không còn ai → finished + finished_at hôm nay + vào Lưu trữ + audit', () => {
+    const l = taoLopTrong();
+    themHocVien(l.id, 'active');
+    t.assertThrows(() => xoaKetThuc.ketThucLop(t.P.admin, l.id), /Còn 1 học viên đang học/, 'còn HV');
+    assert((conn.prepare('SELECT status FROM classes WHERE id = ?').get(l.id) as any).status === 'active', 'lớp bị đóng dù còn HV');
+    conn.prepare(`UPDATE enrollments SET status = 'transferred' WHERE class_id = ?`).run(l.id);
+    const kq = xoaKetThuc.ketThucLop(t.P.admin, l.id);
+    const c = conn.prepare('SELECT status, finished_at FROM classes WHERE id = ?').get(l.id) as any;
+    assert(c.status === 'finished' && c.finished_at === kq.finishedAt, JSON.stringify(c));
+    assert(luuTruSvc.danhSachLuuTru(t.P.admin, {}).lop.some((x: any) => x.id === l.id), 'lớp phải có ở khu Lưu trữ');
+    const au = conn.prepare(`SELECT actor_user_id FROM audit_logs WHERE action = 'class.finished' AND entity_id = ?`).get(l.id) as any;
+    assert(au && au.actor_user_id === t.P.admin.userId, 'thiếu audit kết thúc lớp');
+    t.assertThrows(() => xoaKetThuc.ketThucLop(t.P.admin, l.id), /đã kết thúc/, 'kết thúc hai lần');
+  });
+
+  check('UX3 (11) · Kết thúc lớp rỗng cũng được (finished + Lưu trữ); panel web: gõ lại mã mới bật nút đỏ, menu có đường kẻ trước Xoá/Kết thúc', () => {
+    const l = taoLopTrong();
+    xoaKetThuc.ketThucLop(t.P.admin, l.id);
+    assert(luuTruSvc.danhSachLuuTru(t.P.admin, {}).lop.some((x: any) => x.id === l.id), 'lớp rỗng phải vào Lưu trữ');
+    const pn = docSach('web/src/modules/classes/XoaKetThucLopPanel.tsx');
+    assert(/disabled=\{busy \|\| !khop \|\| !!chan\}/.test(pn) && /btn btn-danger/.test(pn), 'nút Xoá lớp phải mờ tới khi gõ đúng mã');
+    assert(!/<Modal\b|type="date"/.test(pn), 'panel xoá/kết thúc phải là KhungPanel');
+    const dt = docSach('web/src/modules/classes/DauTrangLop.tsx');
+    assert(/keTruoc: true/.test(dt) && /coTheXoaKetThuc/.test(dt), 'menu ⋮ hồ sơ lớp thiếu mục Xoá/Kết thúc sau đường kẻ');
+  });
+
   void docSach;
 }
