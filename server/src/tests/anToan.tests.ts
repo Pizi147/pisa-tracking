@@ -757,6 +757,22 @@ export async function runAnToanTests(t: AnToanTestKit) {
 
   conn.exec('DROP TABLE IF EXISTS _thu_khoa');
 
+  // ================================================================== PR-XOA-b · Tham số đặt tên ("@s") — Turso không nhận
+
+  check('XOA-b · Truyền tham số ĐẶT TÊN ({ s: 1 } cho @s/:s/$s) → ném lỗi ngay ở máy dev (Turso qua mạng lặng lẽ bỏ qua → câu chạy như NULL)', () => {
+    /* Bản nháp 24/09: libsql nối Turso bỏ qua MỌI tham số đặt tên — `WHERE id = @s` + `{ s: 3 }` ra không dòng nào, nên "Xoá học viên"
+       luôn báo "Không tìm thấy". File cục bộ thì nhận, nên phép kiểm không bao giờ đỏ. Chặn ở lớp kết nối: dùng `?`/`?1`. */
+    for (const [sql, goi] of [
+      ['SELECT 1 AS x WHERE @s = 1', (st: any) => st.get({ s: 1 })],
+      ['SELECT 1 AS x WHERE :s = 1', (st: any) => st.all({ s: 1 })],
+      ['SELECT 1 AS x WHERE $s = 1', (st: any) => st.run({ s: 1 })],
+    ] as const) {
+      assertThrows(() => goi(conn.prepare(sql)), /tham số đặt tên/, `Phải chặn tham số đặt tên: ${sql}`);
+    }
+    const r = conn.prepare('SELECT ?1 AS a, ?1 AS b, ?2 AS c').get(7, 'x') as any;
+    assert(r.a === 7 && r.b === 7 && r.c === 'x', `Tham số đánh số vẫn chạy: ${JSON.stringify(r)}`);
+  });
+
   // ---- các task sau thêm phép kiểm NGAY TRÊN dòng này ----
 
   may.close();
