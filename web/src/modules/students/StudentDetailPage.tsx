@@ -231,8 +231,12 @@ export default function StudentDetailPage() {
                 <button className="btn btn-primary" onClick={() => setReportOpen(true)}>+ Case</button>
               )}
               {/* ⋮ = MENU THẢ; mỗi mục mở THẲNG panel của việc đó (Q10). Không có quyền nào → Menu không vẽ gì. */}
-              <Menu label="⋮" className="btn" items={mucQuanLyHocVien({ canEdit: data.viewer.canEdit, lopHoc: data.lopHoc ?? null, cycle: cy, status: data.status })
-                .map((m) => ({ label: m.nhan, onClick: () => (m.key === 'lo-trinh' ? setPlanOpen(true) : setViecQuanLy(m.key)) }))} />
+              <Menu label="⋮" className="btn" items={mucQuanLyHocVien({
+                canEdit: data.viewer.canEdit, lopHoc: data.lopHoc ?? null, cycle: cy, status: data.status, coTheXoa: !!data.viewer.coTheXoa,
+              }).map((m) => ({
+                label: m.nhan, danger: m.nguyHiem, keTruoc: m.keTruoc,
+                onClick: () => (m.key === 'lo-trinh' ? setPlanOpen(true) : setViecQuanLy(m.key)),
+              }))} />
             </div>
           </div>
 

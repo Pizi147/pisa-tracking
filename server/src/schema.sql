@@ -144,7 +144,8 @@ CREATE TABLE users (
   approved_by INTEGER REFERENCES users(id),
   approved_at TEXT,
   decline_reason TEXT,
-  status TEXT NOT NULL DEFAULT 'active',
+  status TEXT NOT NULL DEFAULT 'active',              -- active | deleted (PR-XOA: xoá mềm, còn dấu vết)
+  deleted_at TEXT,
   created_at TEXT NOT NULL
 );
 

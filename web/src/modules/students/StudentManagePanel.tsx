@@ -10,6 +10,7 @@ import {
 } from '@shared/domain/index.ts';
 import { LoTrinhTiepPanel } from './LoTrinhTiepPanel.tsx';
 import { ChuyenLopPanel } from './ChuyenLopPanel.tsx';
+import { XoaHocVienPanel } from './XoaHocVienPanel.tsx';
 
 /**
  * QUẢN LÝ HỌC VIÊN Ở HỒ SƠ (PR-UX3, Q10) — dấu ⋮ mở MENU THẢ (`Menu`) chứ không còn ngăn "Quản lý học viên" với danh sách việc rồi
@@ -48,6 +49,7 @@ export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempt
     case 'bo-luu-tru': return <LuuTruPanel {...chung} boLuuTru />;
     case 'outcome': return <KetLuanLoTrinhPanel {...chung} cycle={cycle} attempts={attempts} />;
     case 'info': return <ThongTinPanel {...chung} student={student} cycle={cycle} />;
+    case 'xoa-hoc-vien': return <XoaHocVienPanel studentId={student.id} studentName={student.name} lop={lop} onClose={onClose} />;
     default: return null;
   }
 }
@@ -88,7 +90,7 @@ function TrangThaiPanel({ studentId, studentName, lop, onClose, onDone, status }
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy}>Lưu</button>,
       }}>
       <Khoi tieuDe={tieuDe}
-        luat={status === 'finished' ? 'Case còn mở sẽ được hệ thống đóng “Học viên kết thúc khoá”.'
+        luat={status === 'finished' ? 'Case còn mở sẽ được hệ thống đóng “Học viên kết thúc khoá”. Hồ sơ vào khu Lưu trữ (chỉ xem).'
           : status === 'inactive' ? 'Em nghỉ một thời gian, giữ lớp và lộ trình để quay lại sau.' : undefined}>
         {!canDoLuon && (
           <Truong nhan="Lý do" batBuoc>

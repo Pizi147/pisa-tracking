@@ -5,13 +5,17 @@ import { useToast } from '../../ui/Toast.tsx';
 import { Card, Empty, Field, Forbidden, Info, SectionNote, Skeleton, Th} from '../../ui/ui.tsx';
 import { Drawer } from '../../ui/Drawer.tsx';
 import { fmtDate, skillLabel } from '../../lib/format.ts';
-import { PERMISSION_LABEL, ROLES, ROLE_LABEL, roleLabel, type Role } from '@shared/domain/index.ts';
+import { PERMISSION_LABEL, ROLES, ROLE_LABEL, ngay, roleLabel, type Role } from '@shared/domain/index.ts';
+import { MenuDong } from '../../ui/MenuDong.tsx';
+import { XoaTaiKhoanPanel } from './XoaTaiKhoanPanel.tsx';
 
 type Branch = { id: number; code: string; name: string };
 type RoleGrant = { role: string; roleName: string; branchCode: string | null; branchName: string | null };
 type Account = {
   id: number; code: string; fullName: string; email: string | null; phone: string | null;
   title: string | null; status: string; approvalState: string; hasPassword: boolean;
+  /** PR-XOA: tài khoản xoá mềm (`status = 'deleted'`). */
+  deletedAt: string | null;
   roles: RoleGrant[]; skills: string[];
   extra: { permission: string; name: string; branchCode: string | null }[];
 };
@@ -33,6 +37,9 @@ export function AccountsAdmin() {
   const accounts = useApi<{ rows: Account[]; pending: Pending[] }>('/admin/accounts');
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<Account | null>(null);
+  /** PR-XOA: nút lọc trên bảng — mặc định "Đang dùng"; "Đã xoá" là tài khoản xoá mềm (còn dấu vết). */
+  const [loc, setLoc] = useState<'dang-dung' | 'da-xoa'>('dang-dung');
+  const [xoaId, setXoaId] = useState<number | null>(null);
 
   if (accounts.loading) return <Card title="Tài khoản"><Skeleton rows={5} /></Card>;
   /*
@@ -50,7 +57,10 @@ export function AccountsAdmin() {
       />
     );
   }
-  const rows = accounts.data?.rows ?? [];
+  const tatCa = accounts.data?.rows ?? [];
+  const dangDung = tatCa.filter((u) => u.status !== 'deleted');
+  const daXoa = tatCa.filter((u) => u.status === 'deleted');
+  const rows = loc === 'da-xoa' ? daXoa : dangDung;
   const pending = accounts.data?.pending ?? [];
   const reload = () => { accounts.reload(); invalidate('/demo/accounts'); };
 
@@ -75,7 +85,15 @@ export function AccountsAdmin() {
       </Card>
 
       <Card title={`Tài khoản (${rows.length})`} bodyClass="p-0"
-        action={<button className="btn btn-sm btn-primary" onClick={() => setCreating(true)}>+ Tạo tài khoản</button>}>
+        action={
+          <span className="flex flex-wrap items-center gap-1.5">
+            <button type="button" className={`btn btn-sm ${loc === 'dang-dung' ? 'btn-primary' : ''}`} aria-pressed={loc === 'dang-dung'}
+              onClick={() => setLoc('dang-dung')}>Đang dùng ({dangDung.length})</button>
+            <button type="button" className={`btn btn-sm ${loc === 'da-xoa' ? 'btn-primary' : ''}`} aria-pressed={loc === 'da-xoa'}
+              onClick={() => setLoc('da-xoa')}>Đã xoá ({daXoa.length})</button>
+            <button className="btn btn-sm btn-primary" onClick={() => setCreating(true)}>+ Tạo tài khoản</button>
+          </span>
+        }>
         <div className="table-scroll">
           <table className="w-full text-sm">
             <thead>
@@ -89,8 +107,11 @@ export function AccountsAdmin() {
               </tr>
             </thead>
             <tbody>
+              {rows.length === 0 && (
+                <tr><td className="td text-sm text-slate-500" colSpan={6}>{loc === 'da-xoa' ? 'Chưa xoá tài khoản nào.' : 'Chưa có tài khoản.'}</td></tr>
+              )}
               {rows.map((u) => (
-                <tr key={u.id} className="row-hover">
+                <tr key={u.id} className={u.status === 'deleted' ? 'opacity-60' : 'row-hover'}>
                   <td className="td sticky-col whitespace-nowrap">
                     <span className="text-slate-100">{u.fullName}</span>
                     <span className="block text-[11px] text-slate-500">{u.code}{u.phone ? ` · ${u.phone}` : ''}</span>
@@ -118,7 +139,14 @@ export function AccountsAdmin() {
                     {u.skills.length ? u.skills.map(skillLabel).join(', ') : '—'}
                   </td>
                   <td className="td whitespace-nowrap">
-                    <button className="btn btn-sm" onClick={() => setEditing(u)}>Sửa</button>
+                    {u.status === 'deleted' ? (
+                      <span className="text-xs text-slate-500">Đã xoá {ngay(u.deletedAt)}</span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5">
+                        <button className="btn btn-sm" onClick={() => setEditing(u)}>Sửa</button>
+                        <MenuDong nhan="Thêm thao tác" muc={[{ key: 'xoa', nhan: 'Xoá tài khoản', nguyHiem: true, onChon: () => setXoaId(u.id) }]} />
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -141,6 +169,9 @@ export function AccountsAdmin() {
       {editing && (
         <AccountDialog account={editing} branches={branches.data ?? []} onClose={() => setEditing(null)}
           onDone={() => { setEditing(null); reload(); }} />
+      )}
+      {xoaId !== null && (
+        <XoaTaiKhoanPanel userId={xoaId} onClose={() => setXoaId(null)} onDone={() => { setXoaId(null); reload(); }} />
       )}
     </div>
   );

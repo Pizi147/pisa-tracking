@@ -942,6 +942,8 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
         /* Ý thức & Phối hợp (PR-K): ghi vi phạm — mọi GV dạy lớp em đang học (V01, C02 không áp cho Ý thức); xử lý — GVCN của lớp + Quản lý. */
         canRecordViolation: can(p, PERMISSIONS.VIOLATION_RECORD, { classId: lopDangHoc, studentId }),
         canManageDiscipline: canManageDiscipline(p, studentId),
+        /* PR-XOA: ⋮ › Xoá học viên — CHỈ Quản trị hệ thống (máy chủ kiểm lại ở `xoaHocVien`). */
+        coTheXoa: can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }),
       };
     })(),
     lopHoc: lopHocCua(p, studentId, current),

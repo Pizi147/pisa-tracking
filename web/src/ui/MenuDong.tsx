@@ -5,6 +5,8 @@ export type MucMenu = {
   key: string; nhan: string; onChon: () => void;
   /** Đường kẻ NGAY TRÊN mục này (tách nhóm việc hiếm/nặng ở cuối menu). */
   keTruoc?: boolean;
+  /** Việc khó đảo ngược (xoá) — chữ đỏ, như `danger` của `Menu`. */
+  nguyHiem?: boolean;
 };
 
 /**
@@ -69,7 +71,7 @@ export function MenuDong({ muc, nhan = 'Thêm thao tác', bieuTuong = '⋯' }: {
           style={{ borderColor: 'var(--line-strong)', top: viTri?.top ?? 0, left: viTri?.left ?? 0, visibility: viTri ? 'visible' : 'hidden' }}>
           {muc.map((m) => (
             <button key={m.key} type="button" role="menuitem"
-              className={`block w-full rounded-md px-3 py-2 text-left text-sm text-slate-200 bg-transparent border-0 hover:bg-white/5 cursor-pointer ${
+              className={`block w-full rounded-md px-3 py-2 text-left text-sm ${m.nguyHiem ? 'text-rose-200' : 'text-slate-200'} bg-transparent border-0 hover:bg-white/5 cursor-pointer ${
                 m.keTruoc ? 'mt-1 rounded-t-none pt-2.5' : ''}`}
               style={m.keTruoc ? { borderTop: '1px solid var(--line)' } : undefined}
               onClick={() => { setMo(false); m.onChon(); }}>

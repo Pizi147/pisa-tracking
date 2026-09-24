@@ -142,7 +142,8 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | **Luật đổi lớp/khoá dùng chung** (giữ khoá hay đóng-mở, đóng Case tự động, endKind) | `shared/domain/lenLop.ts` → `luatDoiLop` (bảng Q, PR-LT) |
 | Lộ trình tiếp theo (dự định sau lớp đang học, ghi trước khi chuyển thật) | `server/src/classes/loTrinhTiep.ts` · `web/src/modules/students/LoTrinhTiepPanel.tsx` |
 | Lịch sử lớp (đầu tab Hành trình, mỗi lớp em từng học một dòng) | `server/src/classes/lichSuLop.ts` · `web/src/modules/students/LichSuLop.tsx` |
-| Lưu trữ / Bỏ lưu trữ học viên | `server/src/students/students.ts` → `archiveStudent`, `unarchiveStudent` |
+| Lưu trữ / Bỏ lưu trữ học viên (thôi học tự vào Lưu trữ — `setStudentStatus`, PR-XOA) | `server/src/students/students.ts` → `archiveStudent`, `unarchiveStudent`, `setStudentStatus` |
+| **Xoá học viên** (chỉ Quản trị hệ thống; một giao dịch, danh sách bảng viết cứng + phép kiểm "không sót" so PRAGMA) | `server/src/students/xoaHocVien.ts` → `CAU_XOA_HOC_VIEN`, `xemXoaHocVien`, `xoaHocVien` · `web/src/modules/students/XoaHocVienPanel.tsx` · menu ⋮ `shared/domain/quanLyHocVien.ts` (`coTheXoa`) · phép kiểm `server/src/tests/xoaDuLieu.tests.ts` |
 | Khu Lưu trữ (lớp đã kết thúc, HV đã lưu trữ, chế độ chỉ xem) | `server/src/classes/luuTru.ts` · `web/src/modules/students/LuuTruPage.tsx` |
 
 ### Lớp học
@@ -305,6 +306,7 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | Muốn sửa | Mở file |
 |---|---|
 | Đăng nhập, đăng ký, duyệt tài khoản | `server/src/platform/accounts.ts` · `web/src/modules/platform/WelcomePage.tsx` |
+| **Xoá tài khoản** (xoá hẳn nếu chưa có dấu vết, xoá mềm nếu có; 68 cột trỏ `users` phân loại trong `COT_TRO_TAI_KHOAN`) · nút lọc Đang dùng / Đã xoá | `server/src/platform/xoaTaiKhoan.ts` · `web/src/modules/platform/XoaTaiKhoanPanel.tsx` · `web/src/modules/platform/AccountsAdmin.tsx` |
 | Vai trò và quyền | `shared/domain/people.ts` → `ROLES`, `PERMISSIONS` |
 | Sửa bảng quyền theo vai | `server/src/platform/sysconfig.ts` → `setRolePermission` · `web/src/modules/platform/AdminPage.tsx` |
 | Ai được làm gì ở đâu | `server/src/permissions.ts` |
@@ -344,6 +346,7 @@ Hướng dẫn cho chủ sản phẩm: `TRIEN_KHAI.md`. Kế hoạch: `docs/supe
 | `npm run sao-luu` — chép database + tải kho tệp, giữ 14 bản | `server/src/ops/saoLuu.ts` (luật) · `server/src/ops/runSaoLuu.ts` (điểm chạy) |
 | `npm run khoi-phuc` — chép một bản sao lưu vào database rỗng | `server/src/ops/khoiPhuc.ts` (luật) · `server/src/ops/runKhoiPhuc.ts` (điểm chạy) |
 | `npm run thu-turso` — thử đường mạng tới database THỬ | `server/src/ops/thuTurso.ts` |
+| `npm run kiem-sau-xoa` — CHỈ ĐỌC: HV/lớp thử còn không, mọi tài khoản, `foreign_key_check`, tệp mồ côi, migrate PR-XOA đã chạy chưa | `server/src/ops/kiemSauXoa.ts` |
 | `npm run migrate` vào Turso (xác nhận, bỏ tài khoản mặc định) | `server/src/migrate/run.ts` · `server/src/migrate.ts` → `migrateAccounts` |
 | Phiên đăng nhập (cookie), **hết hạn sau 30 ngày không dùng** (`PHIEN_HET_HAN_SAU_NGAY`) | `server/src/auth.ts` |
 | Giới hạn số lần thử đăng nhập/đăng ký (AN-1), bảng `auth_attempts` | `server/src/platform/gioiHanThu.ts` · khối `/auth` trong `server/src/routes/index.ts` |

@@ -746,6 +746,8 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
     assertThrows(() => studentsSvc.archiveStudent(P.mbManager, hv.sid), /đã kết thúc/, 'Lưu trữ em đang học');
     studentsSvc.setStudentStatus(P.mbManager, hv.sid, 'finished', TODAY, 'Kết thúc');
+    /* PR-XOA §2: Kết thúc học đã tự lưu trữ — bỏ lưu trữ trước để thử lại đúng nút Lưu trữ của Quản lý. */
+    studentsSvc.unarchiveStudent(P.mbManager, hv.sid);
     assertThrows(() => studentsSvc.archiveStudent(pGvcnFou, hv.sid), /Quản lý/, 'GVCN lưu trữ học viên');
     studentsSvc.archiveStudent(P.mbManager, hv.sid);
     const s = conn.prepare('SELECT status, archived_at FROM students WHERE id = ?').get(hv.sid) as any;

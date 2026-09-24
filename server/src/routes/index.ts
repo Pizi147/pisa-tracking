@@ -56,6 +56,8 @@ import * as luuTruSvc from '../classes/luuTru.ts';
 import * as phanTichLopSvc from '../classes/phanTichLop.ts';
 import * as thongTinLopSvc from '../classes/thongTinLop.ts';
 import * as xoaKetThucLopSvc from '../classes/xoaKetThucLop.ts';
+import * as xoaHocVienSvc from '../students/xoaHocVien.ts';
+import * as xoaTaiKhoanSvc from '../platform/xoaTaiKhoan.ts';
 import * as studentSvc from '../students/students.ts';
 import * as meetingSvc from '../worklist/meeting.ts';
 import * as dashboardSvc from '../worklist/dashboard.ts';
@@ -1739,6 +1741,13 @@ api.get('/students/:id/handover', requireAuth, wrap((req) => {
   return studentSvc.handoverBrief(id);
 }));
 
+/** ⋮ Hồ sơ HV › Xoá học viên — CHỈ Quản trị hệ thống (máy chủ kiểm `admin.config`, PR-XOA). Xoá hẳn trong một giao dịch. */
+api.get('/students/:id/xoa', requireAuth, wrap((req) => xoaHocVienSvc.xemXoaHocVien(principalOf(req), pInt(req, 'id'))));
+api.post('/students/:id/xoa', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return xoaHocVienSvc.xoaHocVien(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
 api.post('/students/:id/status', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const status = req.body?.status;
@@ -2036,6 +2045,12 @@ api.put('/admin/accounts/:id/permissions', requireAuth, wrap((req) => accountSvc
 api.post('/admin/accounts/:id/password', requireAuth, wrap((req) => accountSvc.resetPassword(
   principalOf(req), Number(req.params.id), String(req.body?.password ?? ''),
 )));
+/** Tài khoản › ⋯ › Xoá tài khoản — CHỈ Quản trị hệ thống (PR-XOA): xoá hẳn nếu chưa có dấu vết, xoá mềm nếu có. */
+api.get('/admin/accounts/:id/xoa', requireAuth, wrap((req) => xoaTaiKhoanSvc.xemXoaTaiKhoan(principalOf(req), pInt(req, 'id'))));
+api.post('/admin/accounts/:id/xoa', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return xoaTaiKhoanSvc.xoaTaiKhoan(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
 
 /** Lộ trình và loại lớp — nay là dữ liệu, Quản trị hệ thống sửa được (mục 7.3). */
 api.get('/ref/routes', wrap(() => sysconfigSvc.listRoutes()));

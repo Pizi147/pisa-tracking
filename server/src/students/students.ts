@@ -261,9 +261,11 @@ export function setStudentStatus(
     }
   }
 
+  /* PR-XOA §2: thôi học (finished) tự vào Lưu trữ từ ngày hiệu lực; tạm dừng / quay lại học thì không lưu trữ. */
+  const archivedAt = status === 'finished' ? date : null;
   return tx(() => {
-    conn.prepare('UPDATE students SET status = ?, finished_at = ?, archived_at = NULL WHERE id = ?')
-      .run(status, status === 'finished' ? date : null, studentId);
+    conn.prepare('UPDATE students SET status = ?, finished_at = ?, archived_at = ? WHERE id = ?')
+      .run(status, status === 'finished' ? date : null, archivedAt, studentId);
     // Enrollment đi theo nhưng vẫn giữ nguyên lịch sử lớp.
     const enrollmentStatus = status === 'active' ? 'active' : status === 'inactive' ? 'paused' : 'completed';
     const kind = status === 'finished' ? (endKind ?? 'ket_thuc') : status === 'inactive' ? (endKind ?? 'bao_luu') : null;
@@ -286,14 +288,15 @@ export function setStudentStatus(
       detail: reason ?? null, createdBy: p.userId,
     });
     writeAudit({ actorUserId: p.userId, action: 'student.status', entityType: 'student', entityId: studentId,
-      entityLabel: s.student_code, before: { status: s.status }, after: { status, date, reason } });
+      entityLabel: s.student_code, before: { status: s.status }, after: { status, date, reason, archivedAt } });
     if (curEnr && status !== 'active') dongLopNeuHet([curEnr.class_id], date);
     return conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId);
   });
 }
 
 /**
- * LƯU TRỮ HỌC VIÊN — CHỈ KHI QUẢN LÝ BẤM (RB-9, quyết định 4.17 ngày 22/09/2026).
+ * LƯU TRỮ HỌC VIÊN — QUẢN LÝ BẤM (RB-9, quyết định 4.17 ngày 22/09/2026), và từ PR-XOA (24/09) em thôi học TỰ vào Lưu trữ ngay lúc
+ * `setStudentStatus(…, 'finished')`. Nút này còn dùng khi QL đã "Bỏ lưu trữ" rồi muốn lưu trữ lại.
  *
  * Không có tác vụ ngầm "sau N ngày tự lưu trữ" (hàm `archiveDueStudents` cũ đã gỡ — nó chưa từng được gọi ở đâu ngoài phép kiểm).
  * Lưu trữ chỉ ẩn khỏi danh sách mặc định: không đổi trạng thái, không xoá dữ liệu, không đóng việc còn dở. Chỉ em đã kết thúc học.

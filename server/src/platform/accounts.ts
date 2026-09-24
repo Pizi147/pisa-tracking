@@ -312,6 +312,7 @@ export function setRoles(p: Principal, userId: number, roles: { role: string; br
   const conn = db();
   const user = conn.prepare('SELECT * FROM users WHERE id = ?').get(userId) as any;
   if (!user) throw notFound('Không tìm thấy tài khoản.');
+  if (user.status === 'deleted') throw badRequest('Tài khoản đã xoá.');   // PR-XOA: xoá mềm là khoá hẳn
   /*
    * KHÔNG XOÁ DÒNG CŨ, chỉ đóng lại. Điểm đã nhập và mọi bản ghi khác đều trỏ tới `user_id`;
    * xoá grant là xoá căn cứ để đọc lại "lúc đó ai được phép làm việc này".
@@ -334,6 +335,7 @@ export function resetPassword(p: Principal, userId: number, password: string) {
   const conn = db();
   const user = conn.prepare('SELECT * FROM users WHERE id = ?').get(userId) as any;
   if (!user) throw notFound('Không tìm thấy tài khoản.');
+  if (user.status === 'deleted') throw badRequest('Tài khoản đã xoá.');   // PR-XOA: xoá mềm là khoá hẳn
   const { hash, salt } = hashPassword(checkPassword(password));
   conn.prepare('UPDATE users SET password_hash = ?, password_salt = ? WHERE id = ?').run(hash, salt, userId);
   writeAudit({
@@ -421,6 +423,7 @@ export function setUserPermissions(p: Principal, userId: number, items: {
   const conn = db();
   const user = conn.prepare('SELECT * FROM users WHERE id = ?').get(userId) as any;
   if (!user) throw notFound('Không tìm thấy tài khoản.');
+  if (user.status === 'deleted') throw badRequest('Tài khoản đã xoá.');   // PR-XOA: xoá mềm là khoá hẳn
   return tx(() => {
     conn.prepare('DELETE FROM user_permissions WHERE user_id = ?').run(userId);
     for (const it of items ?? []) {
@@ -461,6 +464,8 @@ export function listAccounts(p: Principal) {
   return users.map((u) => ({
     id: u.id, code: u.code, fullName: u.full_name, email: u.email, phone: u.phone,
     title: u.title, status: u.status, approvalState: u.approval_state,
+    /** PR-XOA: tài khoản xoá mềm (`status = 'deleted'`) — màn quản trị để ở nút lọc "Đã xoá". */
+    deletedAt: u.deleted_at ?? null,
     hasPassword: !!u.password_hash,
     roles: (conn
       .prepare(

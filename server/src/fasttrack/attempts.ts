@@ -806,9 +806,14 @@ export function scoreSummaryText(row: Partial<ScoreRow> | null | undefined): str
 export function scoreHistoryOf(attemptId: number) {
   const rows = db()
     .prepare(
+      /*
+       * PR-XOA: xoá hẳn học viên thì SQLite có thể cấp lại id lượt Test cũ cho lượt mới, còn nhật ký (Q1) vẫn giữ — chỉ lấy dòng nhật ký
+       * KHÔNG cũ hơn chính lượt này, để lượt mới không hiện lịch sử điểm của em đã xoá.
+       */
       `SELECT l.id, l.action, l.entity_label, l.before_json, l.after_json, l.created_at, u.full_name AS actor_name
          FROM audit_logs l LEFT JOIN users u ON u.id = l.actor_user_id
-        WHERE l.entity_type = 'assessment_attempt' AND l.entity_id = ?
+         JOIN assessment_attempts a ON a.id = l.entity_id
+        WHERE l.entity_type = 'assessment_attempt' AND l.entity_id = ? AND l.created_at >= a.created_at
           AND l.action IN ('score.edit', 'score.override', 'score.no_show', 'score.no_show_cleared')
         ORDER BY l.id DESC`,
     )
