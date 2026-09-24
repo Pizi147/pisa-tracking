@@ -70,10 +70,17 @@ export const COT_TRO_TAI_KHOAN: readonly { bang: string; cot: string; loai: Loai
 
 const COT_DAU_VET = COT_TRO_TAI_KHOAN.filter((x) => x.loai === 'dau_vet');
 const COT_THIET_LAP = COT_TRO_TAI_KHOAN.filter((x) => x.loai === 'thiet_lap');
-/** MỘT câu đếm mọi cột dấu vết (tham số ?1). */
-const CAU_DAU_VET = COT_DAU_VET
-  .map((x) => `SELECT '${x.bang}.${x.cot}' AS k, COUNT(*) AS n FROM ${x.bang} WHERE ${x.cot} = ?1`)
-  .join('\nUNION ALL ');
+/**
+ * Câu đếm mọi cột dấu vết (tham số ?1), CHIA NHÓM ≤ 20 vế UNION ALL (PR-XOA-b): Turso từ chối câu gộp quá ~50 vế ("too many terms
+ * in compound SELECT", đo trên DB thử 24/09: 50 được, 64 hỏng) — file cục bộ cho tới 500 nên phép kiểm không thấy.
+ */
+export const VE_TOI_DA_MOT_CAU = 20;
+export const CAU_DAU_VET: string[] = [];
+for (let i = 0; i < COT_DAU_VET.length; i += VE_TOI_DA_MOT_CAU) {
+  CAU_DAU_VET.push(COT_DAU_VET.slice(i, i + VE_TOI_DA_MOT_CAU)
+    .map((x) => `SELECT '${x.bang}.${x.cot}' AS k, COUNT(*) AS n FROM ${x.bang} WHERE ${x.cot} = ?1`)
+    .join('\nUNION ALL '));
+}
 
 export type XemXoaTaiKhoan = {
   id: number; ten: string; email: string | null; vai: string[]; chiNhanh: string[];
@@ -117,7 +124,7 @@ function lyDoChan(p: Principal, u: Nguoi): string | null {
 }
 
 function demDauVet(userId: number): { tong: number; theoCot: Map<string, number> } {
-  const rows = db().prepare(CAU_DAU_VET).all(userId) as { k: string; n: number }[];
+  const rows = CAU_DAU_VET.flatMap((cau) => db().prepare(cau).all(userId) as { k: string; n: number }[]);
   const theoCot = new Map(rows.map((r) => [r.k, Number(r.n)]));
   return { tong: rows.reduce((s, r) => s + Number(r.n), 0), theoCot };
 }

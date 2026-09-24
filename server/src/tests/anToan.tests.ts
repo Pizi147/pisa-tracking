@@ -773,6 +773,13 @@ export async function runAnToanTests(t: AnToanTestKit) {
     assert(r.a === 7 && r.b === 7 && r.c === 'x', `Tham số đánh số vẫn chạy: ${JSON.stringify(r)}`);
   });
 
+  const xtkMod: any = await import('../platform/xoaTaiKhoan.ts');
+  check('XOA-b · Câu đếm dấu vết tài khoản chia nhóm ≤ 20 vế UNION ALL (Turso từ chối câu gộp quá ~50 vế) và vẫn phủ đủ mọi cột', () => {
+    const ve = xtkMod.CAU_DAU_VET.map((c: string) => c.split('UNION ALL').length);
+    assert(ve.every((n: number) => n <= xtkMod.VE_TOI_DA_MOT_CAU), `Có câu quá ${xtkMod.VE_TOI_DA_MOT_CAU} vế: ${ve.join(', ')}`);
+    assert(ve.length >= 2 && ve.reduce((a: number, b: number) => a + b, 0) >= 40, `Số vế lạ (${ve.join('+')}) — mất cột dấu vết?`);
+  });
+
   // ---- các task sau thêm phép kiểm NGAY TRÊN dòng này ----
 
   may.close();
