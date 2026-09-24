@@ -731,7 +731,9 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     const nMem = demTruyVan(() => { xoaTK.xoaTaiKhoan(P.admin, mem.id, { emailXacNhan: mem.email }); });
     const nHan = demTruyVan(() => { xoaTK.xoaTaiKhoan(P.admin, han.id, { emailXacNhan: han.email }); });
     assert(user(mem.id)?.status === 'deleted' && !user(han.id), 'tiền đề: một mềm một hẳn');
-    assert(nXem <= 8 && nMem <= 15 && nHan <= 15, `xem ${nXem}, mềm ${nMem}, hẳn ${nHan}`);
+    /* XOA-b: câu đếm dấu vết chia nhóm ≤ 20 vế cho Turso — mỗi nhóm thêm là một câu (xem/xoá đều đếm dấu vết một lần). */
+    const them = xoaTK.CAU_DAU_VET.length - 1;
+    assert(nXem <= 8 + them && nMem <= 15 + them && nHan <= 15 + them, `xem ${nXem}, mềm ${nMem}, hẳn ${nHan} (thêm ${them} câu vì chia nhóm)`);
   });
 
   check('PR-XOA T12 · audit user.delete đúng một dòng mỗi lần xoá (tên cũ, cách xoá, số dấu vết)', () => {

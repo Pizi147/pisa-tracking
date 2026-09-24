@@ -20,7 +20,17 @@ import { HttpError } from './util.ts';
    * "failed to downcast any to object"; better-sqlite3 thì gắn NULL. Mã có hàng trăm chỗ gọi một tham số, chỗ nào giá trị
    * lỡ là null sẽ thành lỗi 500 — đưa về đúng hành vi cũ bằng cách bọc thành mảng tham số `[null]`.
    */
-  const motNull = (args: unknown[]) => (args.length === 1 && args[0] === null ? [[null]] : args);
+  /*
+   * PR-XOA-b: THAM SỐ ĐẶT TÊN BỊ CẤM. libsql nối Turso qua mạng lặng lẽ BỎ QUA `{ s: 1 }` cho `@s`/`:s`/`$s` — câu chạy như tham số
+   * NULL (đo trên DB thử 24/09: "Xoá học viên" luôn "Không tìm thấy"). File cục bộ thì nhận, nên phép kiểm không bao giờ thấy.
+   * Ném ngay ở mọi nơi để lỗi lộ ra từ máy dev; dùng `?` hoặc `?1`, `?2` (lặp lại được trong cùng câu).
+   */
+  const motNull = (args: unknown[]) => {
+    if (args.length === 1 && args[0] !== null && typeof args[0] === 'object' && Object.getPrototypeOf(args[0]) === Object.prototype) {
+      throw new Error('Không dùng tham số đặt tên ({ … } cho @x/:x/$x) — Turso bỏ qua chúng. Dùng ? hoặc ?1, ?2.');
+    }
+    return args.length === 1 && args[0] === null ? [[null]] : args;
+  };
   /*
    * PR-TD: đếm câu SQL cho `run`/`iterate` (đọc thân bài ở nguCanhRequest.ts) — KHÔNG đếm `all`: trong libsql,
    * `all()` tự gọi lại `iterate()` (node_modules/libsql/index.js:400-403), đếm cả hai là đếm đôi cùng một câu.

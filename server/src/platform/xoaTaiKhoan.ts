@@ -70,10 +70,17 @@ export const COT_TRO_TAI_KHOAN: readonly { bang: string; cot: string; loai: Loai
 
 const COT_DAU_VET = COT_TRO_TAI_KHOAN.filter((x) => x.loai === 'dau_vet');
 const COT_THIET_LAP = COT_TRO_TAI_KHOAN.filter((x) => x.loai === 'thiet_lap');
-/** MỘT câu đếm mọi cột dấu vết (tham số @u). */
-const CAU_DAU_VET = COT_DAU_VET
-  .map((x) => `SELECT '${x.bang}.${x.cot}' AS k, COUNT(*) AS n FROM ${x.bang} WHERE ${x.cot} = @u`)
-  .join('\nUNION ALL ');
+/**
+ * Câu đếm mọi cột dấu vết (tham số ?1), CHIA NHÓM ≤ 20 vế UNION ALL (PR-XOA-b): Turso từ chối câu gộp quá ~50 vế ("too many terms
+ * in compound SELECT", đo trên DB thử 24/09: 50 được, 64 hỏng) — file cục bộ cho tới 500 nên phép kiểm không thấy.
+ */
+export const VE_TOI_DA_MOT_CAU = 20;
+export const CAU_DAU_VET: string[] = [];
+for (let i = 0; i < COT_DAU_VET.length; i += VE_TOI_DA_MOT_CAU) {
+  CAU_DAU_VET.push(COT_DAU_VET.slice(i, i + VE_TOI_DA_MOT_CAU)
+    .map((x) => `SELECT '${x.bang}.${x.cot}' AS k, COUNT(*) AS n FROM ${x.bang} WHERE ${x.cot} = ?1`)
+    .join('\nUNION ALL '));
+}
 
 export type XemXoaTaiKhoan = {
   id: number; ten: string; email: string | null; vai: string[]; chiNhanh: string[];
@@ -102,9 +109,9 @@ function docNguoi(userId: number, homNay: string): Nguoi {
               WHERE r.key = 'system_admin' AND ur.status = 'active' AND u2.status = 'active' AND u2.id != u.id) AS so_qt_khac,
             (SELECT group_concat(code, ', ') FROM (SELECT DISTINCT c.code FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
               WHERE ta.user_id = u.id AND ta.is_core = 1 AND ta.status = 'active' AND c.status = 'active'
-                AND (ta.effective_to IS NULL OR ta.effective_to >= @homNay) ORDER BY c.code)) AS lop_gvcn
-       FROM users u WHERE u.id = @u`,
-  ).get({ u: userId, homNay }) as Nguoi | undefined;
+                AND (ta.effective_to IS NULL OR ta.effective_to >= ?2) ORDER BY c.code)) AS lop_gvcn
+       FROM users u WHERE u.id = ?1`,
+  ).get(userId, homNay) as Nguoi | undefined;
   if (!u || u.approval_state === 'pending') throw notFound('Không tìm thấy tài khoản.');
   return u;
 }
@@ -117,7 +124,7 @@ function lyDoChan(p: Principal, u: Nguoi): string | null {
 }
 
 function demDauVet(userId: number): { tong: number; theoCot: Map<string, number> } {
-  const rows = db().prepare(CAU_DAU_VET).all({ u: userId }) as { k: string; n: number }[];
+  const rows = CAU_DAU_VET.flatMap((cau) => db().prepare(cau).all(userId) as { k: string; n: number }[]);
   const theoCot = new Map(rows.map((r) => [r.k, Number(r.n)]));
   return { tong: rows.reduce((s, r) => s + Number(r.n), 0), theoCot };
 }
@@ -139,21 +146,21 @@ export function xemXoaTaiKhoan(p: Principal, userId: number): XemXoaTaiKhoan {
   /* GVBM đang dạy lớp còn hoạt động — lớp sẽ thiếu GV môn đó. */
   const mon = conn.prepare(
     `SELECT DISTINCT c.code, ta.skill FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
-      WHERE ta.user_id = @u AND ta.skill IS NOT NULL AND ta.status = 'active' AND c.status = 'active'
-        AND (ta.effective_to IS NULL OR ta.effective_to >= @homNay)
+      WHERE ta.user_id = ?1 AND ta.skill IS NOT NULL AND ta.status = 'active' AND c.status = 'active'
+        AND (ta.effective_to IS NULL OR ta.effective_to >= ?2)
       ORDER BY c.code, ta.skill`,
-  ).all({ u: userId, homNay }) as { code: string; skill: string }[];
+  ).all(userId, homNay) as { code: string; skill: string }[];
   /* Gộp theo môn — một GV Speaking dạy 4 lớp là MỘT dòng "Lớp A, B, C, D sẽ thiếu GV môn Speaking.", không phải bốn. */
   const theoMon = new Map<string, string[]>();
   for (const m of mon) theoMon.set(m.skill, [...(theoMon.get(m.skill) ?? []), m.code]);
   for (const [skill, lop] of theoMon) canhBao.push(`Lớp ${lop.join(', ')} sẽ thiếu GV môn ${tenKyNang(skill)}.`);
   /* Q12: việc đang giao cho người này. */
   const viec = (conn.prepare(
-    `SELECT (SELECT COUNT(*) FROM sos_cases WHERE owner_user_id = @u AND status != 'done')
-          + (SELECT COUNT(*) FROM case_signals WHERE owner_user_id = @u AND status = 'pending')
-          + (SELECT COUNT(*) FROM discipline_measures WHERE owner_user_id = @u AND status = 'preparing')
-          + (SELECT COUNT(*) FROM tasks WHERE assignee_user_id = @u AND completed_at IS NULL) AS n`,
-  ).get({ u: userId }) as { n: number }).n;
+    `SELECT (SELECT COUNT(*) FROM sos_cases WHERE owner_user_id = ?1 AND status != 'done')
+          + (SELECT COUNT(*) FROM case_signals WHERE owner_user_id = ?1 AND status = 'pending')
+          + (SELECT COUNT(*) FROM discipline_measures WHERE owner_user_id = ?1 AND status = 'preparing')
+          + (SELECT COUNT(*) FROM tasks WHERE assignee_user_id = ?1 AND completed_at IS NULL) AS n`,
+  ).get(userId) as { n: number }).n;
   if (viec > 0) canhBao.push(`Còn ${viec} Case/việc đang giao cho người này — đổi người phụ trách sau khi xoá.`);
   return {
     id: u.id, ten: u.full_name, email: u.email,
@@ -181,21 +188,21 @@ export function xoaTaiKhoan(p: Principal, userId: number, input: { emailXacNhan?
     const soDauVet = demDauVet(userId).tong;
     const cach: 'han' | 'mem' = soDauVet > 0 ? 'mem' : 'han';
     if (cach === 'han') {
-      for (const x of COT_THIET_LAP) conn.prepare(`DELETE FROM ${x.bang} WHERE ${x.cot} = @u`).run({ u: userId });
-      conn.prepare('DELETE FROM users WHERE id = @u').run({ u: userId });
+      for (const x of COT_THIET_LAP) conn.prepare(`DELETE FROM ${x.bang} WHERE ${x.cot} = ?1`).run(userId);
+      conn.prepare('DELETE FROM users WHERE id = ?1').run(userId);
     } else {
       conn.prepare(
-        `UPDATE users SET status = 'deleted', deleted_at = @nay, full_name = full_name || ' (đã xoá)',
+        `UPDATE users SET status = 'deleted', deleted_at = ?2, full_name = full_name || ' (đã xoá)',
                           email = 'da-xoa-' || id || '@invalid', password_hash = NULL, password_salt = NULL
-          WHERE id = @u`,
-      ).run({ u: userId, nay: nowIso() });
+          WHERE id = ?1`,
+      ).run(userId, nowIso());
       for (const bang of ['demo_sessions', 'user_emails', 'user_permissions', 'user_prefs', 'task_followers', 'notifications']) {
-        conn.prepare(`DELETE FROM ${bang} WHERE user_id = @u`).run({ u: userId });
+        conn.prepare(`DELETE FROM ${bang} WHERE user_id = ?1`).run(userId);
       }
       /* `user_roles` không có effective_to — đóng như setRoles (Q11). */
-      conn.prepare(`UPDATE user_roles SET status = 'ended' WHERE user_id = @u AND status = 'active'`).run({ u: userId });
-      conn.prepare(`UPDATE teacher_assignments SET status = 'ended', effective_to = @homNay WHERE user_id = @u AND status = 'active'`)
-        .run({ u: userId, homNay });
+      conn.prepare(`UPDATE user_roles SET status = 'ended' WHERE user_id = ?1 AND status = 'active'`).run(userId);
+      conn.prepare(`UPDATE teacher_assignments SET status = 'ended', effective_to = ?2 WHERE user_id = ?1 AND status = 'active'`)
+        .run(userId, homNay);
     }
     writeAudit({
       actorUserId: p.userId, action: 'user.delete', entityType: 'users', entityId: userId, entityLabel: u.full_name,

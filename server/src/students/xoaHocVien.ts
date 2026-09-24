@@ -7,7 +7,7 @@
  * DANH SÁCH BẢNG VIẾT CỨNG (Q6): dựng từ `PRAGMA foreign_key_list` lúc chạy là 62 câu mỗi lần trên Turso. Phép kiểm
  * `xoaDuLieu.tests.ts` (X1, X2, X4) dựng lại đồ thị từ PRAGMA và ĐỎ khi một bảng mới trỏ tới học viên mà mảng dưới đây quên.
  *
- * GOM THEO TẬP (Turso): mỗi câu xoá cả một tập bằng `WHERE … IN (SELECT …)`, tham số có tên `@s` — số câu cố định, không đổi theo
+ * GOM THEO TẬP (Turso): mỗi câu xoá cả một tập bằng `WHERE … IN (SELECT …)`, tham số có tên `?1` — số câu cố định, không đổi theo
  * số lượt Test / Case của em. Thứ tự con → cha. Giữ lại: `audit_logs` cũ (Q1), `tasks` (chỉ gỡ liên kết, Q3), mã HV không tái dùng (Q8),
  * lớp của em không tự kết thúc (Q9).
  */
@@ -33,16 +33,16 @@ export const BANG_CUA_HOC_VIEN: readonly string[] = [
 /** Dòng của NGƯỜI KHÁC trỏ vào dữ liệu của em (Q5) — đặt NULL, không xoá. Cả ba cột cho phép NULL. */
 export const CANH_NULL: readonly string[] = ['sos_cases.previous_case_id', 'case_followups.evidence_attempt_id', 'tasks.source_sos_case_id'];
 
-// ---------------------------------------------------------------- các tập (SQL con, tham số @s)
-const Y = 'SELECT id FROM learning_cycles WHERE student_id = @s';
-const A = `SELECT id FROM assessment_attempts WHERE student_id = @s OR cycle_id IN (${Y})`;
-const C = `SELECT id FROM sos_cases WHERE student_id = @s OR attempt_id IN (${A}) OR cycle_id IN (${Y})`;
+// ---------------------------------------------------------------- các tập (SQL con, tham số ?1)
+const Y = 'SELECT id FROM learning_cycles WHERE student_id = ?1';
+const A = `SELECT id FROM assessment_attempts WHERE student_id = ?1 OR cycle_id IN (${Y})`;
+const C = `SELECT id FROM sos_cases WHERE student_id = ?1 OR attempt_id IN (${A}) OR cycle_id IN (${Y})`;
 const I = `SELECT id FROM case_interventions WHERE case_id IN (${C})`;
 const F = `SELECT id FROM case_followups WHERE case_id IN (${C}) OR intervention_id IN (${I})`;
-const G = `SELECT id FROM case_signals WHERE student_id = @s OR case_id IN (${C}) OR attempt_id IN (${A}) OR cycle_id IN (${Y})`;
-const V = `SELECT id FROM violations WHERE student_id = @s OR cycle_id IN (${Y})`;
-const M = `SELECT id FROM discipline_measures WHERE student_id = @s OR cycle_id IN (${Y})`;
-const X = `SELECT id FROM sos_coordination_actions WHERE student_id = @s OR attempt_id IN (${A})`;
+const G = `SELECT id FROM case_signals WHERE student_id = ?1 OR case_id IN (${C}) OR attempt_id IN (${A}) OR cycle_id IN (${Y})`;
+const V = `SELECT id FROM violations WHERE student_id = ?1 OR cycle_id IN (${Y})`;
+const M = `SELECT id FROM discipline_measures WHERE student_id = ?1 OR cycle_id IN (${Y})`;
+const X = `SELECT id FROM sos_coordination_actions WHERE student_id = ?1 OR attempt_id IN (${A})`;
 const R = `SELECT id FROM skill_move_requests WHERE attempt_id IN (${A})`;
 
 /** Tệp đính kèm theo liên kết mềm `owner_type/owner_id` (không có FK). `unit_report` không thuộc học viên. */
@@ -53,7 +53,7 @@ const DK_TEP = `(owner_type = 'sos_case' AND owner_id IN (${C}))
   OR (owner_type = 'sos_coordination_action' AND owner_id IN (${X}))`;
 
 /** Thông báo theo liên kết mềm `entity_type/entity_id` (Q2). `nhac_viec` (entity_id NULL) giữ. */
-const DK_THONG_BAO = `(entity_type = 'student' AND entity_id = @s)
+const DK_THONG_BAO = `(entity_type = 'student' AND entity_id = ?1)
   OR (entity_type = 'assessment_attempt' AND entity_id IN (${A}))
   OR (entity_type = 'sos_case' AND entity_id IN (${C}))
   OR (entity_type = 'case_signal' AND entity_id IN (${G}))
@@ -69,7 +69,7 @@ const DK_THONG_BAO = `(entity_type = 'student' AND entity_id = @s)
  */
 export const CAU_XOA_HOC_VIEN: readonly { bang: string; sql: string }[] = [
   /* cắt vòng learning_cycles ↔ assessment_attempts */
-  { bang: 'learning_cycles', sql: 'UPDATE learning_cycles SET baseline_attempt_id = NULL, outcome_attempt_id = NULL WHERE student_id = @s' },
+  { bang: 'learning_cycles', sql: 'UPDATE learning_cycles SET baseline_attempt_id = NULL, outcome_attempt_id = NULL WHERE student_id = ?1' },
   /* Q5: dòng của em khác trỏ vào dữ liệu của em → NULL */
   { bang: 'sos_cases', sql: `UPDATE sos_cases SET previous_case_id = NULL WHERE previous_case_id IN (${C}) AND id NOT IN (${C})` },
   { bang: 'case_followups', sql: `UPDATE case_followups SET evidence_attempt_id = NULL WHERE evidence_attempt_id IN (${A}) AND id NOT IN (${F})` },
@@ -80,7 +80,7 @@ export const CAU_XOA_HOC_VIEN: readonly { bang: string; sql: string }[] = [
   { bang: 'notifications', sql: `DELETE FROM notifications WHERE ${DK_THONG_BAO}` },
   /* Case học thuật và mọi thứ treo dưới Case */
   { bang: 'task_case_links', sql: `DELETE FROM task_case_links WHERE case_id IN (${C})` },
-  { bang: 'task_students', sql: `DELETE FROM task_students WHERE student_id = @s OR case_id IN (${C}) OR intervention_id IN (${I})` },
+  { bang: 'task_students', sql: `DELETE FROM task_students WHERE student_id = ?1 OR case_id IN (${C}) OR intervention_id IN (${I})` },
   { bang: 'case_intervention_revisions', sql: `DELETE FROM case_intervention_revisions WHERE case_id IN (${C}) OR intervention_id IN (${I}) OR followup_id IN (${F})` },
   { bang: 'case_followups', sql: `DELETE FROM case_followups WHERE id IN (${F})` },
   /*
@@ -106,15 +106,15 @@ export const CAU_XOA_HOC_VIEN: readonly { bang: string; sql: string }[] = [
   { bang: 'attempt_skills', sql: `DELETE FROM attempt_skills WHERE attempt_id IN (${A})` },
   { bang: 'attempt_skill_skips', sql: `DELETE FROM attempt_skill_skips WHERE attempt_id IN (${A})` },
   { bang: 'attempt_schedule_history', sql: `DELETE FROM attempt_schedule_history WHERE attempt_id IN (${A})` },
-  { bang: 'teacher_estimates', sql: `DELETE FROM teacher_estimates WHERE student_id = @s OR cycle_id IN (${Y})` },
-  { bang: 'journey_events', sql: `DELETE FROM journey_events WHERE student_id = @s OR cycle_id IN (${Y})` },
+  { bang: 'teacher_estimates', sql: `DELETE FROM teacher_estimates WHERE student_id = ?1 OR cycle_id IN (${Y})` },
+  { bang: 'journey_events', sql: `DELETE FROM journey_events WHERE student_id = ?1 OR cycle_id IN (${Y})` },
   { bang: 'assessment_attempts', sql: `DELETE FROM assessment_attempts WHERE id IN (${A})` },
   /* lộ trình, lớp, em */
   { bang: 'cycle_target_revisions', sql: `DELETE FROM cycle_target_revisions WHERE cycle_id IN (${Y})` },
-  { bang: 'lo_trinh_tiep_theo', sql: 'DELETE FROM lo_trinh_tiep_theo WHERE student_id = @s' },
-  { bang: 'enrollments', sql: 'DELETE FROM enrollments WHERE student_id = @s' },
-  { bang: 'learning_cycles', sql: 'DELETE FROM learning_cycles WHERE student_id = @s' },
-  { bang: 'students', sql: 'DELETE FROM students WHERE id = @s' },
+  { bang: 'lo_trinh_tiep_theo', sql: 'DELETE FROM lo_trinh_tiep_theo WHERE student_id = ?1' },
+  { bang: 'enrollments', sql: 'DELETE FROM enrollments WHERE student_id = ?1' },
+  { bang: 'learning_cycles', sql: 'DELETE FROM learning_cycles WHERE student_id = ?1' },
+  { bang: 'students', sql: 'DELETE FROM students WHERE id = ?1' },
 ];
 
 /**
@@ -136,11 +136,11 @@ const LOAI_MAT: { khoa: string; nhan: string; sql: string }[] = [
   { khoa: 'phoiHop', nhan: 'Phối hợp SOS', sql: `SELECT COUNT(*) FROM (${X})` },
   { khoa: 'tep', nhan: 'Tệp, liên kết đính kèm', sql: `SELECT COUNT(*) FROM attachments WHERE ${DK_TEP}` },
   { khoa: 'thongBao', nhan: 'Thông báo', sql: `SELECT COUNT(*) FROM notifications WHERE ${DK_THONG_BAO}` },
-  { khoa: 'lopTungHoc', nhan: 'Lớp từng học', sql: 'SELECT COUNT(*) FROM enrollments WHERE student_id = @s' },
+  { khoa: 'lopTungHoc', nhan: 'Lớp từng học', sql: 'SELECT COUNT(*) FROM enrollments WHERE student_id = ?1' },
 ];
 /** Công việc (của Quản lý) nối tới em hoặc Case của em — GIỮ lại, chỉ bỏ liên kết (Q3). */
 const CONG_VIEC_NOI = `SELECT COUNT(*) FROM (
-  SELECT task_id FROM task_students WHERE student_id = @s OR case_id IN (${C}) OR intervention_id IN (${I})
+  SELECT task_id FROM task_students WHERE student_id = ?1 OR case_id IN (${C}) OR intervention_id IN (${I})
   UNION SELECT task_id FROM task_case_links WHERE case_id IN (${C})
   UNION SELECT id FROM tasks WHERE source_sos_case_id IN (${C}))`;
 /** MỘT câu đếm cho cả xem trước và `soDong` của audit. */
@@ -161,14 +161,14 @@ function docEm(sid: number): Em {
             (SELECT c.code FROM enrollments e JOIN classes c ON c.id = e.class_id
               WHERE e.student_id = s.id AND e.status IN ('active','paused') ORDER BY e.id DESC LIMIT 1) AS lop,
             EXISTS (SELECT 1 FROM enrollments e WHERE e.student_id = s.id AND e.status = 'active') AS lop_dang_hoc
-       FROM students s WHERE s.id = @s`,
-  ).get({ s: sid }) as Em | undefined;
+       FROM students s WHERE s.id = ?1`,
+  ).get(sid) as Em | undefined;
   if (!s) throw notFound('Không tìm thấy học viên');
   return s;
 }
 
 function demMat(sid: number): { soDong: Record<string, number>; congViec: number } {
-  const r = db().prepare(CAU_DEM).get({ s: sid }) as Record<string, number>;
+  const r = db().prepare(CAU_DEM).get(sid) as Record<string, number>;
   const soDong: Record<string, number> = {};
   for (const l of LOAI_MAT) soDong[l.khoa] = Number(r[l.khoa] ?? 0);
   return { soDong, congViec: Number(r.congViec ?? 0) };
@@ -200,10 +200,10 @@ export function xoaHocVien(p: Principal, studentId: number, input: { maXacNhan?:
     const dem = demMat(studentId).soDong;
     for (const c of CAU_XOA_HOC_VIEN) {
       if (c.bang === 'attachments#tep') {
-        for (const r of conn.prepare(c.sql).all({ s: studentId }) as { url: string }[]) khoaTep.push(r.url);
+        for (const r of conn.prepare(c.sql).all(studentId) as { url: string }[]) khoaTep.push(r.url);
         continue;
       }
-      conn.prepare(c.sql).run({ s: studentId });
+      conn.prepare(c.sql).run(studentId);
     }
     writeAudit({
       actorUserId: p.userId, action: 'student.delete', entityType: 'student', entityId: studentId,
