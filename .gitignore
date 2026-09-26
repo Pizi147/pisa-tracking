@@ -17,3 +17,6 @@ data/*.bak
 
 # Mockup tạm của buổi brainstorm (bản duyệt đã chép sang thiet-ke/mockup/)
 .superpowers/
+
+# Impeccable (skill thiết kế): bản chụp đánh giá, cache — không đưa lên repo
+.impeccable/

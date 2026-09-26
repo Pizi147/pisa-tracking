@@ -50,6 +50,13 @@ phong cách riêng của màn đó (design plan 18.1).
 Trạng thái quy trình (Chờ nhập điểm, Chờ QL duyệt…) dùng **tone trung tính + nhãn chữ**,
 không mượn bốn màu điểm. Rule book mục 3.5.
 
+**Thang màu mức SOS — chủ sản phẩm chốt 26/09/2026, giữ nguyên bảng màu đang chạy để đồng bộ:**
+SOS 1 **vàng** (`--sos1`) · SOS 2 **cam** (`--sos2`) · SOS 3 **đỏ** (`--sos3`), token ở `web/src/index.css :root`.
+Mọi màn phải dùng đúng thang này. Không màn nào được để SOS rơi về xanh dương, vì xanh dương là "bằng kỳ vọng".
+**SOS tạm thời** (đợt chưa đủ điểm) mang **đúng màu của mức SOS đó**, thêm **viền đứt** và luôn có chữ
+**"tạm thời"**. Ví dụ: `SOS 1 tạm thời` viền đứt vàng, `SOS 2 tạm thời` viền đứt cam. Không dùng một màu chung
+cho mọi SOS tạm thời. Hàng "đỏ" ở bảng `<KetQuaDot>` mục 5 đọc theo luật này.
+
 ### Chữ và khoảng cách
 
 | Vai trò | Desktop | Ghi chú |
@@ -132,9 +139,9 @@ viết câu của riêng mình** — đó là cách MT-P02 (header 1/4, nội du
 |---|---|---|
 | `coDiem === 0` | `Chưa có điểm · 0/{yeuCau} kỹ năng` | xám |
 | `0 < coDiem < yeuCau`, các môn đã chấm đều đạt | `Các kỹ năng đã chấm đều đạt · còn thiếu {yeuCau−coDiem}` | xám |
-| `0 < coDiem < yeuCau`, có môn dưới kỳ vọng | `SOS {sos} tạm thời · {coDiem}/{yeuCau} kỹ năng có điểm` | đỏ, chữ **tạm thời** không được bỏ |
+| `0 < coDiem < yeuCau`, có môn dưới kỳ vọng | `SOS {sos} tạm thời · {coDiem}/{yeuCau} kỹ năng có điểm` | màu của mức SOS đó (vàng/cam/đỏ), viền đứt, chữ **tạm thời** không được bỏ (chốt 26/09) |
 | `coDiem === yeuCau`, `sos === 0` | `Đã đủ điểm · Đạt kỳ vọng` | xanh dương/lá theo Overall |
-| `coDiem === yeuCau`, `sos > 0` | `Đã đủ điểm · SOS {sos}` | đỏ |
+| `coDiem === yeuCau`, `sos > 0` | `Đã đủ điểm · SOS {sos}` | màu của mức SOS đó (vàng/cam/đỏ), viền liền |
 
 Khi `coDiem < yeuCau`, Overall hiển thị đúng chữ **`Chưa đủ điểm`** — không phải ô trống, không
 phải `0.0`, và tuyệt đối không kèm badge đạt. Đây là lỗi MT-P01 có bằng chứng ảnh.
