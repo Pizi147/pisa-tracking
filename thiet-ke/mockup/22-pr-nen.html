@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="vi" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup PR-NEN — nền giao diện</title>
+<style>
+/* Token tối lấy đúng web/src/index.css (cùng bộ với mockup 19). Chỉ tông tối — PR-NEN không làm chế độ sáng (PR-SANG). */
+:root{
+  --bg:#0c1220; --s1:#141d2f; --s2:#1a2437; --s3:#101a2c; --line:rgba(160,178,214,.14); --line2:rgba(160,178,214,.26);
+  --tx:#dde5f2; --dim:#93a3c0; --faint:#8292ae; --acc:#7db3f0; --acc-soft:rgba(125,179,240,.14); --acc-line:rgba(125,179,240,.38);
+  --ok:#6fdc9f; --ok-bg:#123526; --ok-ln:#2b7050;
+  --bad:#ff9aa2; --bad-bg:#3c1d24; --bad-ln:#88404a;
+  --late:#ff9166; --late-bg:#3e1f13; --late-ln:#9a4a2a;
+  --soon:#f2c450; --soon-bg:#352b10; --soon-ln:#7a6222;
+  --sos2:#ffb070; --sos2-bg:#3a2412; --sos2-ln:#8a5530;
+  --wait:#c4a9ff; --done:#a9b5c8;
+  --hl:#172640; --hl-bar:#7db3f0; --sub:#0f1828;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.45 'Be Vietnam Pro','Segoe UI',system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.page{max-width:1240px;margin:0 auto;padding:20px 16px 80px}
+h1{font-size:22px;margin:0 0 4px}
+.lead{color:var(--dim);margin:0 0 14px;max-width:86ch}
+.toc{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 20px;position:sticky;top:0;background:var(--bg);padding:8px 0;z-index:5;border-bottom:1px solid var(--line)}
+.toc a{border:1px solid var(--line2);border-radius:7px;padding:4px 9px;font-size:12px;font-weight:600;color:var(--tx);text-decoration:none}
+section.m{margin:30px 0 0}
+.mh{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.mh .code{font-weight:700;color:var(--acc);font-size:13px}
+.mh h2{font-size:17px;margin:0}
+.yc{font-size:11px;font-weight:700;color:var(--faint);border:1px solid var(--line2);border-radius:5px;padding:0 5px}
+.loc{display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;margin:8px 0 10px;font-size:12.5px;color:var(--dim)}
+.loc b{background:var(--soon);color:#1b1400;border-radius:4px;padding:0 6px;font-size:11px;letter-spacing:.03em}
+.loc .who{margin-left:auto}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:900px){.pair{grid-template-columns:1fr}}
+.col>.lbl{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;margin:0 0 6px}
+.col.truoc>.lbl{color:var(--bad)} .col.sau>.lbl{color:var(--ok)}
+.win{background:var(--s1);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.col.truoc .win{opacity:.92}
+.body{padding:12px}
+.notes{margin:8px 0 0;padding-left:18px;color:var(--dim);font-size:12.5px}
+.mut{color:var(--dim)} .fnt{color:var(--faint);font-size:11.5px} .b{font-weight:700} .sb{font-weight:600}
+.t12{font-size:12px} .t11{font-size:11px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sp{flex:1}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line2);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;color:var(--tx);background:transparent;white-space:nowrap}
+.btn.pri{background:var(--acc);color:#0b1626;border-color:var(--acc)}
+.btn.ghost{border-color:transparent;color:var(--dim)}
+.btn.sm{padding:3px 8px;font-size:11.5px}
+.lv{display:inline-flex;align-items:center;border-radius:999px;padding:0 7px;font-size:10.5px;font-weight:700;line-height:17px;white-space:nowrap}
+.sos1{background:var(--soon-bg);color:var(--soon)} .sos2{background:var(--sos2-bg);color:var(--sos2)} .sos3{background:var(--bad-bg);color:var(--bad)}
+.blue{background:rgba(128,184,255,.15);color:#80b8ff}
+.dut{background:transparent!important;border:1px dashed currentColor}
+.ok{color:var(--ok)} .bad{color:var(--bad)} .late{color:var(--late);font-weight:700} .soon{color:var(--soon)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--dim);text-align:left;padding:7px 8px;background:var(--s2);border-bottom:1px solid var(--line)}
+td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+td.r,th.r{text-align:right}
+tr.lon td{background:var(--hl);font-weight:800;font-size:12.5px;box-shadow:inset 3px 0 0 var(--hl-bar)}
+tr.lon.dong td{background:var(--s2);box-shadow:inset 3px 0 0 var(--line2)}
+tr.con td{background:var(--sub);font-size:12px}
+.stick{position:relative}
+.stick::after{content:"dính khi cuộn";position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;font-weight:700;color:var(--soon);border:1px dashed var(--soon-ln);border-radius:5px;padding:0 5px;letter-spacing:0;text-transform:none}
+.fade td{opacity:.35}
+.field{display:block;width:100%;border:1px solid var(--line2);background:var(--s3);border-radius:7px;padding:6px 9px;color:var(--tx);font-size:12.5px;min-height:32px}
+.field.err{border-color:var(--late);box-shadow:0 0 0 1px rgba(255,145,102,.4)}
+.f-lbl{font-size:11.5px;font-weight:700;margin:0 0 4px;display:flex}
+.f-lbl .req{color:var(--bad)} .f-lbl .dem{margin-left:auto;font-weight:500;color:var(--faint);font-size:10.5px}
+.f-err{font-size:11px;color:var(--late);margin-top:3px}
+.foot{border-top:1px solid var(--line);padding:0}
+.foot .thieu{padding:7px 12px 0;text-align:right;font-size:11px;font-weight:600;color:var(--soon)}
+.foot .thieu u{text-underline-offset:2px;cursor:pointer}
+.foot .can-sua{padding:7px 12px 0;text-align:right;font-size:11px;color:var(--faint);cursor:pointer}
+.qc{font-size:10.5px;color:var(--dim);margin-left:6px;white-space:nowrap}
+.foot .act{display:flex;gap:8px;padding:9px 12px}
+.pa-row{border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:8px}
+.khoi{margin-top:8px;padding:9px;border-radius:8px;background:var(--s2)}
+.chip{display:inline-flex;border:1px solid var(--line2);border-radius:7px;padding:3px 8px;font-size:11.5px;margin:0 4px 4px 0}
+.cp{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.stat{border:1px solid var(--line);border-radius:10px;padding:9px 11px;background:var(--s1)}
+.stat .k{font-size:11px;color:var(--dim)} .stat .v{font-size:15px;font-weight:700;margin:2px 0}
+.toast{display:flex;align-items:center;gap:12px;border:1px solid var(--line2);background:var(--s1);border-radius:10px;padding:10px 14px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.45);max-width:420px}
+.bar{display:flex;align-items:center;gap:12px;padding:9px 14px;border-bottom:1px solid var(--line);background:var(--s3)}
+.bar .logo{display:inline-flex;width:22px;height:22px;border-radius:6px;background:var(--acc-soft);border:1px solid var(--acc-line);color:var(--acc);font-weight:800;font-size:12px;align-items:center;justify-content:center}
+.bar .nav span{padding:3px 9px;border-radius:7px;color:var(--dim);font-size:12.5px}
+.bar .nav span.on{background:var(--acc-soft);color:var(--tx);border:1px solid var(--acc-line)}
+.tri{font-size:9px;margin-right:2px}
+.x{color:var(--faint)}
+/* ---- thêm riêng cho mockup 22 ---- */
+.ink800{background:#13212d} .teal{color:#5eead4}
+.chon{border-color:#0d9488!important;background:#13212d!important;color:var(--tx)!important}
+.chon::before{content:"✓";font-size:10px;color:#5eead4;margin-right:2px}
+.odn{display:flex;gap:6px;align-items:stretch}
+.odn .field{flex:1;font-variant-numeric:tabular-nums}
+.ical{display:inline-flex;align-items:center;justify-content:center;width:34px;border:1px solid var(--line2);border-radius:7px;color:var(--dim)}
+.cal{border:1px solid var(--line2);background:var(--s2);border-radius:10px;padding:10px;width:280px;box-shadow:0 14px 34px rgba(0,0,0,.5)}
+.cal .hd{display:flex;align-items:center;justify-content:space-between;font-size:12.5px;font-weight:700;margin-bottom:6px}
+.cal .g{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;font-size:12px;text-align:center}
+.cal .g span{padding:4px 0;border-radius:5px}
+.cal .g .dow{font-size:10.5px;color:var(--faint);font-weight:700}
+.cal .g .out{color:#4a5a78} .cal .g .dis{color:#4a5a78;text-decoration:line-through}
+.cal .g .td{text-decoration:underline;font-weight:700}
+.cal .g .sel{background:#13212d;box-shadow:inset 0 0 0 1px #0d9488;color:var(--tx);font-weight:700}
+.cal .g .row-sel{background:#13212d}
+.cal .gan{border-top:1px solid var(--line);margin-top:8px;padding-top:7px;display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.cal .gan .t{width:100%;font-size:10.5px;color:var(--faint);font-weight:700}
+.mgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;font-size:12px;text-align:center}
+.mgrid span{padding:6px 0;border:1px solid var(--line);border-radius:6px}
+.sel-old{border:1px solid var(--line2);background:var(--s3);border-radius:7px;padding:6px 9px;font-size:12.5px;display:flex;justify-content:space-between}
+.dd{border:1px solid var(--line2);background:#0f1726;border-radius:7px;margin-top:3px;font-size:12px}
+.dd div{padding:5px 9px;border-bottom:1px solid var(--line)} .dd div:last-child{border-bottom:0}
+.dd .hi{background:rgba(255,255,255,.05)} .dd .mo{color:var(--faint)}
+.st{display:inline-flex;align-items:center;border:1px solid transparent;border-radius:6px;padding:1px 7px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.st.can{border-color:var(--line2)} .st.dang{background:rgba(255,255,255,.06)}
+.st.cho{background:#272043;color:var(--wait);border-color:#574a8a} .st.qua{background:var(--late-bg);color:var(--late);border-color:var(--late-ln)}
+.st.xong{color:var(--done)} .st.huy{color:var(--faint);text-decoration:line-through;text-decoration-thickness:1px}
+.st.xanh{background:#132c4d;color:#80b8ff;border-color:#2f5d95}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden}
+.seg span{padding:5px 11px;font-size:12px;font-weight:600;color:var(--dim);border-left:1px solid var(--line)}
+.seg span:first-child{border-left:0}
+.seg span.on{background:#13212d;color:var(--tx);box-shadow:inset 0 0 0 1px #0d9488}
+.seg span.on::before{content:"✓ ";font-size:10px;color:#5eead4}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
+.tabs span{padding:7px 11px;font-size:12.5px;font-weight:600;color:var(--dim);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs span.on{color:var(--tx);border-bottom-color:var(--acc)}
+.tabs-old span{padding:5px 11px;font-size:12.5px;border:1px solid transparent;border-radius:8px;color:var(--dim)}
+.tabs-old span.on{background:var(--acc-soft);border-color:var(--acc-line);color:#a9cdf7}
+.pn{border:1px solid var(--line2);border-radius:10px;overflow:hidden;background:var(--s1)}
+.pn .ph{display:flex;align-items:center;gap:8px;height:44px;padding:0 12px;border-bottom:1px solid var(--line)}
+.pn .ph b{font-size:13px} .pn .ph .x{margin-left:auto}
+.pn .pb{padding:12px}
+.kbd{display:inline-block;border:1px solid var(--line2);border-bottom-width:2px;border-radius:4px;padding:0 5px;font-size:10.5px;font-weight:700;color:var(--dim)}
+.focus{outline:2px solid var(--acc);outline-offset:2px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+</style>
+</head>
+<body>
+<div class="page">
+<h1>PR-NEN · Nền giao diện — Trước | Sau</h1>
+<p class="lead">Mỗi mục một cặp: trái là web hiện nay (<code>main</code>), phải là sau PR-NEN. Dữ liệu demo (Vũ Ngọc Lan, lớp MB FT 101,
+cô Phạm Thu Trang). Hôm nay <b>Thứ Hai 28/09/2026</b> (tuần <b>W1 OCT</b> = 28/09–04/10 vì Thứ Năm 01/10 thuộc tháng 10; W4 SEP = 21–27/09).
+Kế hoạch: <code>docs/superpowers/plans/2026-09-28-pr-nen-nen-giao-dien.md</code>. Không có JS — lịch vẽ ở trạng thái đang mở.</p>
+<nav class="toc">
+  <a href="#m1">1 · Ô ngày + lịch</a><a href="#m2">2 · Bắt đầu theo dõi</a><a href="#m3">3 · "Khác"</a><a href="#m4">4 · Chọn người</a>
+  <a href="#m5">5 · 6 nhãn trạng thái</a><a href="#m6">6 · Đang chọn ≠ Lưu</a><a href="#m7">7 · Tab + bộ lọc</a><a href="#m8">8 · Một khung panel</a>
+  <a href="#m9">9 · Bàn phím</a>
+</nav>
+
+<!-- ============================================================ 1 -->
+<section class="m" id="m1">
+  <div class="mh"><span class="code">1</span><h2>Ô ngày thống nhất <code>ONgay</code> — bốn kiểu, gõ dd/mm/yyyy, lịch tự vẽ có "Gần đây"</h2><span class="yc">YC-9 · T11</span></div>
+  <div class="loc"><b>NẰM Ở</b><span>Mọi ô ngày/tuần/tháng: Công việc › Vận hành (Hạn, Ngày xem lại) · Hồ sơ Mock (Hẹn xử lý) · Thêm HV (Tuần bắt đầu học) · Lộ trình HV (Tháng dự kiến thi) · Ghi vi phạm (Ngày xảy ra) · Tạo Case nhập bù (Từ tuần/Đến tuần) · 21 chỗ</span><span class="who">Ai thấy: mọi vai</span></div>
+  <div class="pair">
+    <div class="col truoc"><p class="lbl">Trước — ba kiểu khác nhau</p><div class="win"><div class="body">
+      <p class="f-lbl">Hạn <span class="fnt" style="margin-left:6px">(ô lịch của trình duyệt)</span></p>
+      <div class="sel-old"><span>10/05/2026</span><span class="x">📅</span></div>
+      <p class="fnt">Máy tiếng Anh hiện <b>mm/dd/yyyy</b> — "10/05" là 5 tháng 10 hay 10 tháng 5?</p>
+      <p class="f-lbl" style="margin-top:10px">Ngày xảy ra <span class="fnt" style="margin-left:6px">(danh sách thả xuống)</span></p>
+      <div class="sel-old"><span>Hôm nay, 28/09</span><span class="x">▾</span></div>
+      <div class="dd"><div class="hi">Hôm nay, 28/09</div><div>Hôm qua, 27/09</div><div>Thứ Bảy, 26/09</div><div class="mo">… 18 dòng nữa</div><div class="mo">Ngày khác…</div></div>
+      <p class="f-lbl" style="margin-top:10px">Tháng dự kiến thi</p>
+      <div class="sel-old"><span>tháng 12 năm 2026</span><span class="x">📅</span></div>
+    </div></div></div>
+    <div class="col sau"><p class="lbl">Sau — một ô, bốn kiểu</p><div class="win"><div class="body">
+      <div class="grid2">
+        <div><p class="f-lbl">Hạn <span class="dem">ngay</span></p>
+          <div class="odn"><span class="field">05/10/2026</span><span class="ical">▦</span></div></div>
+        <div><p class="f-lbl">Tuần bắt đầu học <span class="dem">tuan</span></p>
+          <div class="odn"><span class="field">28/09/2026</span><span class="ical">▦</span></div>
+          <div class="fnt" style="margin-top:3px">W1 OCT · 28/09 – 04/10</div></div>
+        <div><p class="f-lbl">Tháng dự kiến thi <span class="dem">thang</span></p>
+          <div class="odn"><span class="field">12/2026</span><span class="ical">▦</span></div></div>
+        <div><p class="f-lbl">Ngày thi dự kiến <span class="dem">ngay-hoac-thang</span></p>
+          <div class="odn"><span class="field">12/2026</span><span class="ical">▦</span></div>
+          <div class="fnt" style="margin-top:3px">gõ 12/2026 = chỉ tháng · 05/12/2026 = ngày</div></div>
+      </div>
+      <p class="f-lbl" style="margin-top:10px">Ngày xảy ra <span class="req">&nbsp;*</span></p>
+      <div class="odn"><span class="field err">29/09/2026</span><span class="ical">▦</span></div>
+      <div class="f-err">Không được sau hôm nay</div>
+      <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
+        <div class="cal"><div class="hd"><span class="btn sm">‹</span>Tháng 9/2026<span class="btn sm">›</span></div>
+          <div class="g"><span class="dow">T2</span><span class="dow">T3</span><span class="dow">T4</span><span class="dow">T5</span><span class="dow">T6</span><span class="dow">T7</span><span class="dow">CN</span>
+            <span class="out">31</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span>
+            <span>7</span><span>8</span><span>9</span><span>10</span><span>11</span><span>12</span><span>13</span>
+            <span>14</span><span>15</span><span>16</span><span>17</span><span>18</span><span>19</span><span>20</span>
+            <span>21</span><span>22</span><span>23</span><span>24</span><span>25</span><span class="sel">26</span><span>27</span>
+            <span class="td">28</span><span class="dis">29</span><span class="dis">30</span><span class="dis out">1</span><span class="dis out">2</span><span class="dis out">3</span><span class="dis out">4</span></div>
+          <div class="gan"><span class="t">Gần đây</span><span class="btn sm">Hôm nay, 28/09</span><span class="btn sm">Hôm qua, 27/09</span><span class="btn sm">Thứ Bảy, 26/09</span></div></div>
+        <div class="cal"><div class="hd"><span class="btn sm">‹</span>2026<span class="btn sm">›</span></div>
+          <div class="mgrid"><span>Th1</span><span>Th2</span><span>Th3</span><span>Th4</span><span>Th5</span><span>Th6</span><span>Th7</span><span>Th8</span><span>Th9</span><span>Th10</span><span>Th11</span><span class="chon" style="border-radius:6px">Th12</span></div>
+          <div class="gan"><span class="t">Gần đây</span><span class="btn sm">Tháng này</span><span class="btn sm">10/2026</span><span class="btn sm">11/2026</span></div></div>
+      </div>
+    </div></div></div>
+  </div>
+  <ul class="notes"><li>Gõ <b>28/9</b>, <b>28/09</b>, <b>28.09.2026</b> đều được; năm bỏ trống = năm nay. Ô hiện <b>dd/mm/yyyy</b>, máy chủ nhận ISO.</li>
+    <li>Nút lịch là biểu tượng nét mảnh 14 px (không emoji). Lịch vẽ <b>đè lên</b> panel (không bị cắt), ngày ngoài luật mờ + gạch, hôm nay gạch chân, đang chọn nền mực + viền teal.</li>
+    <li>Kiểu tuần: bấm ngày nào cũng chọn cả tuần (nhảy về Thứ Hai); ô "Đến tuần" của nhập bù vẫn là Chủ nhật (T12 d). Thanh <b>‹ tuần ›</b> ở Lịch Test giữ nguyên, chỉ đổi lịch bên trong (T12 b).</li>
+    <li>Giữ đúng luật cũ từng chỗ: "không sau hôm nay" (ngày xảy ra, ngày thực hiện), "từ hôm nay" (ngày xem lại). Thanh ngày của bản demo không đổi (T12 e).</li></ul>
+</section>
+
+<!-- ============================================================ 2 -->
+<section class="m" id="m2">
+  <div class="mh"><span class="code">2</span><h2>"Bắt đầu theo dõi": bỏ dòng "hôm nay · Đổi" → ô ngày có sẵn hôm nay</h2><span class="yc">T12 (a) · Q27-7</span></div>
+  <div class="loc"><b>NẰM Ở</b><span>Hồ sơ HV → <b style="background:none;color:var(--tx);padding:0">+ Case</b> → panel "Tạo Case" → khối Theo dõi. Cùng kiểu: Ghi kết quả (Ngày ghi, Ngày kết thúc), Hoàn thành Case (Ngày hoàn thành)</span><span class="who">Ai thấy: GVBM, GVCN, QL</span></div>
+  <div class="pair">
+    <div class="col truoc"><p class="lbl">Trước</p><div class="win"><div class="body">
+      <p class="fnt" style="text-transform:uppercase;font-weight:800;letter-spacing:.06em">Theo dõi</p>
+      <p class="t12 mut">Bắt đầu theo dõi: <span style="color:var(--tx)">hôm nay, 28/09</span> · <a style="color:var(--acc)">Đổi</a></p>
+      <p class="fnt">Bấm "Đổi" mới hiện danh sách 30 ngày — không gõ được ngày xa hơn.</p>
+    </div></div></div>
+    <div class="col sau"><p class="lbl">Sau</p><div class="win"><div class="body">
+      <p class="fnt" style="text-transform:uppercase;font-weight:800;letter-spacing:.06em">Theo dõi</p>
+      <p class="f-lbl">Bắt đầu theo dõi</p>
+      <div class="odn" style="max-width:220px"><span class="field">28/09/2026</span><span class="ical">▦</span></div>
+      <p class="fnt" style="margin-top:4px">Sẵn hôm nay; sửa bằng gõ hoặc lịch. Không sau hôm nay.</p>
+    </div></div></div>
+  </div>
+  <ul class="notes"><li>Form <b>Xác nhận Case</b> của SOS (PR-SOS dựng) vẫn khoá ngày = hôm nay — không dùng ô này (12.3.4).</li></ul>
+</section>
+
+<!-- ============================================================ 3 -->
+<section class="m" id="m3">
+  <div class="mh"><span class="code">3</span><h2>"Khác" → ô <b>Ghi rõ</b> nhỏ ngay dưới, ≥ 3 ký tự (bỏ luật "mô tả ≥ 30 ký tự")</h2><span class="yc">YC-8 · T13</span></div>
+  <div class="loc"><b>NẰM Ở</b><span>11 chỗ: phân loại nguyên nhân (Tạo Case, Xác định nguyên nhân) · PA đề xuất Khác (Thêm PA, Thay PA) · Không cần theo dõi · Phối hợp SOS (lý do bỏ, loại việc) · nhóm vi phạm · xử lý ngoài thang · lý do chuyển lớp</span><span class="who">Ai thấy: GVBM, GVCN, QL</span></div>
+  <div class="pair">
+    <div class="col truoc"><p class="lbl">Trước — Ghi vi phạm, nhóm Khác</p><div class="win"><div class="body">
+      <p class="f-lbl">Nhóm <span class="req">&nbsp;*</span></p>
+      <div class="row"><span class="btn">Chuyên cần</span><span class="btn">BTVN</span><span class="btn">Thái độ / hành vi</span><span class="btn pri">Khác</span></div>
+      <p class="f-lbl" style="margin-top:10px">Mô tả <span class="req">&nbsp;*</span></p>
+      <div class="field">Mượn điện thoại bạn</div>
+    </div><div class="foot"><div class="thieu">Còn thiếu: Mô tả (ít nhất 30 ký tự)</div><div class="act"><span class="btn">Huỷ</span><span class="sp"></span><span class="btn pri">Lưu</span></div></div></div></div>
+    <div class="col sau"><p class="lbl">Sau</p><div class="win"><div class="body">
+      <p class="f-lbl">Nhóm <span class="req">&nbsp;*</span></p>
+      <div class="row"><span class="btn">Chuyên cần</span><span class="btn">BTVN</span><span class="btn">Thái độ / hành vi</span><span class="btn chon">Khác</span></div>
+      <p class="f-lbl" style="margin-top:6px">Ghi rõ <span class="req">&nbsp;*</span></p>
+      <div class="field focus" style="max-width:280px">Dùng điện thoại riêng</div>
+      <p class="f-lbl" style="margin-top:10px">Mô tả <span class="req">&nbsp;*</span></p>
+      <div class="field">Mượn điện thoại bạn trong giờ Reading</div>
+    </div><div class="foot"><div class="act"><span class="btn">Huỷ</span><span class="sp"></span><span class="btn pri">Lưu</span></div></div></div>
+      <div class="body t12 mut">Gõ "ab" rồi rời ô → dưới ô: <span class="late" style="font-weight:400">Cần ít nhất 3 ký tự (đang có 2)</span>. Lưu xong nhật ký hiện
+        <span style="color:var(--tx)">Dùng điện thoại riêng — Mượn điện thoại bạn trong giờ Reading</span>.</div></div>
+  </div>
+  <ul class="notes"><li>Chọn "Khác" thì con trỏ nhảy thẳng vào ô Ghi rõ. Đổi sang nhóm khác rồi quay lại vẫn giữ chữ đã gõ.</li>
+    <li>Phân loại nguyên nhân "Khác": chữ lưu vào ô quan sát của vấn đề; PA đề xuất "Khác": nhãn ô là <b>Tên đề xuất</b>; xử lý ngoài thang: <b>Tên phương án</b>; Phối hợp SOS: <b>Tên việc</b>.</li></ul>
+</section>
+
+<!-- ============================================================ 4 -->
+<section class="m" id="m4">
+  <div class="mh"><span class="code">4</span><h2>Chọn người: bấm là có danh sách, luôn có dòng "Dùng tên ngoài hệ thống"</h2><span class="yc">YC-10 · T14</span></div>
+  <div class="loc"><b>NẰM Ở</b><span>Người thực hiện PA (Thêm PA, Ghi kết quả, Tạo Case nhập bù) · người thực hiện xử lý Ý thức · Phối hợp SOS "Đánh dấu xong" (ô mới) · Công việc › Hỗ trợ học viên › Người phụ trách ▾ › Chọn giáo viên…</span><span class="who">Ai thấy: GVBM, GVCN, QL</span></div>
+  <div class="pair">
+    <div class="col truoc"><p class="lbl">Trước</p><div class="win"><div class="body">
+      <p class="f-lbl">Người thực hiện</p>
+      <div class="field focus">|</div>
+      <div class="dd"><div class="hi">Tôi <span class="fnt">· Phạm Thu Trang</span></div><div class="mo">Nhập ít nhất 3 ký tự để tìm giáo viên</div></div>
+      <p class="fnt">Gõ "Cô Mai" → dòng "Người ngoài: «Cô Mai»" chỉ hiện khi đã gõ.</p>
+    </div></div></div>
+    <div class="col sau"><p class="lbl">Sau</p><div class="win"><div class="body">
+      <p class="f-lbl">Người thực hiện</p>
+      <div class="field focus">|</div>
+      <div class="dd"><div class="hi">Tôi <span class="fnt">· Phạm Thu Trang</span></div>
+        <div>Trần Ngọc Hà <span class="fnt">· dạy L · R lớp này</span></div>
+        <div>Lê Minh Quân <span class="fnt">· dạy W lớp này</span></div>
+        <div>Đỗ Hải Yến <span class="fnt">· MB</span></div><div class="mo">… cuộn thêm (tối đa 20)</div>
+        <div class="mo">Dùng tên ngoài hệ thống: gõ tên ở ô trên</div></div>
+      <p class="fnt" style="margin-top:6px">Gõ "Cô Mai tutor" →</p>
+      <div class="dd"><div class="mo">Không tìm thấy giáo viên khớp «Cô Mai tutor»</div><div class="hi">Dùng tên ngoài hệ thống: «Cô Mai tutor»</div></div>
+    </div></div></div>
+  </div>
+  <ul class="notes"><li>GV cùng lớp đứng đầu. ↑/↓ chọn, Enter chốt, Esc đóng danh sách (không đóng panel).</li>
+    <li><b>Ngoại lệ chỉ tài khoản</b>: phân công GV cho lớp, bộ lọc người phụ trách, người theo dõi việc Vận hành, người phụ trách xử lý Ý thức.
+      <b>Người phụ trách việc Vận hành</b> nhận tên ngoài cần thêm một cột dữ liệu → đề xuất để PR-DUYET (câu hỏi cho chủ sản phẩm).</li></ul>
+</section>
+
+<!-- ============================================================ 5 -->
+<section class="m" id="m5">
+  <div class="mh"><span class="code">5</span><h2>6 nhãn trạng thái chính — không mượn màu điểm</h2><span class="yc">§7.3 · brainstorm C.2 · A8</span></div>
+  <div class="loc"><b>NẰM Ở</b><span>Dựng ở PR này; dùng ngay ở Hồ sơ HV › Phối hợp SOS, Học viên &amp; Lớp (góc SOS), bảng Case. Các PR sau dùng dần (hàng Case, hộp kỹ năng, Công việc)</span><span class="who">Ai thấy: mọi vai</span></div>
+  <div class="pair">
+    <div class="col truoc"><p class="lbl">Trước — mỗi khu một kiểu</p><div class="win"><div class="body">
+      <div class="row t12"><span class="st xanh">▶ Đang xử lý</span><span class="st" style="background:var(--soon-bg);color:var(--soon)">◷ Cần xử lý</span><span class="st xong">✓ Đã xong</span><span class="st xanh">▶ Tiếp tục xử lý</span></div>
+      <p class="fnt">"Đang xử lý" xanh dương — trùng màu ô điểm; "Cần xử lý" vàng — trùng SOS 1.</p>
+    </div></div></div>
+    <div class="col sau"><p class="lbl">Sau — một bộ</p><div class="win"><div class="body">
+      <div class="row t12"><span class="st can">Cần làm</span><span class="st dang">Đang làm</span><span class="st cho">Chờ duyệt</span><span class="st qua">Quá hạn · 2 ngày</span><span class="st xong">Xong</span><span class="st huy">Đã huỷ</span></div>
+      <table style="margin-top:10px"><tr><td style="width:110px"><span class="st qua">Quá hạn · 2 ngày</span></td><td>Trao đổi với gia đình · <span class="mut">cô Trang</span></td></tr>
+        <tr><td><span class="st can">Cần làm</span></td><td>GVCN meeting với HS · <span class="mut">hạn 02/10</span></td></tr>
+        <tr><td><span class="st huy">Đã huỷ</span></td><td class="mut">Trùng với phương án xử lý khác</td></tr></table>
+    </div></div></div>
+  </div>
+  <ul class="notes"><li>Một dòng = một nhãn chính; hạn viết bằng chữ, người phụ trách bằng tên. Quá hạn luôn kèm số ngày.</li></ul>
+</section>
+
+<!-- ============================================================ 6 -->
+<section class="m" id="m6">
+  <div class="mh"><span class="code">6</span><h2>"Đang chọn" khác nút chính: chỉ nút Lưu xanh đặc</h2><span class="yc">UX-B B3</span></div>
+  <div class="loc"><b>NẰM Ở</b><span>Mọi nút lựa chọn trong form (≈ 30 chỗ): Tạo Case (Kỹ năng, Mức độ), Ghi vi phạm (Nhóm), Ghi kết quả (Kết quả, Quyết định), Chuyển lớp (Lý do), Giao việc, Quản trị (chi nhánh, kỹ năng)…</span><span class="who">Ai thấy: mọi vai</span></div>
+  <div class="pair">
+    <div class="col truoc"><p class="lbl">Trước — ba khối xanh đặc trong một panel</p><div class="win"><div class="body">
+      <p class="f-lbl">Kỹ năng</p><div class="row"><span class="btn">L</span><span class="btn pri">R</span><span class="btn">W</span><span class="btn">S</span></div>
+      <p class="f-lbl" style="margin-top:8px">Mức độ</p><div class="grid2"><span class="btn pri" style="justify-content:center">Bình thường</span><span class="btn" style="justify-content:center">Gấp</span></div>
+    </div><div class="foot"><div class="act"><span class="btn">Huỷ</span><span class="sp"></span><span class="btn pri">Lưu Case</span></div></div></div></div>
+    <div class="col sau"><p class="lbl">Sau</p><div class="win"><div class="body">
+      <p class="f-lbl">Kỹ năng</p><div class="row"><span class="btn">L</span><span class="btn chon">R</span><span class="btn">W</span><span class="btn">S</span></div>
+      <p class="f-lbl" style="margin-top:8px">Mức độ</p><div class="grid2"><span class="btn chon" style="justify-content:center">Bình thường</span><span class="btn" style="justify-content:center">Gấp</span></div>
+    </div><div class="foot"><div class="act"><span class="btn">Huỷ</span><span class="sp"></span><span class="btn pri">Lưu Case</span></div></div></div></div>
+  </div>
+  <ul class="notes"><li>Đang chọn = nền mực <code>ink-800</code> + viền teal + ✓ 10 px + <code>aria-pressed</code>. Chỗ của ✓ luôn giữ sẵn để chữ không nhảy.</li></ul>
+</section>
+
+<!-- ============================================================ 7 -->
+<section class="m" id="m7">
+  <div class="mh"><span class="code">7</span><h2>Một kiểu tab trang (gạch chân) · một kiểu bộ lọc (nút đoạn)</h2><span class="yc">UX-E E6</span></div>
+  <div class="loc"><b>NẰM Ở</b><span>Tab: Quản trị hệ thống (đổi), các trang khác đã đúng. Bộ lọc: Ý thức lớp/HV (nhóm, cách xem, khoảng), Hành trình, Danh sách lớp (Gọn/Đầy đủ), Tài khoản (Đang dùng/Đã xoá), Hỗ trợ học viên, Thực trạng chi nhánh</span><span class="who">Ai thấy: mọi vai (Quản trị: QT)</span></div>
+  <div class="pair">
+    <div class="col truoc"><p class="lbl">Trước</p><div class="win"><div class="body">
+      <div class="row tabs-old"><span class="on">Tài khoản</span><span>Danh mục</span><span>Quyền</span></div>
+      <p class="fnt" style="margin-top:4px">Quản trị: tab viên bo — trang khác tab gạch chân.</p>
+      <div class="row" style="margin-top:10px"><span class="btn sm pri">Tất cả</span><span class="btn sm">Chuyên cần</span><span class="btn sm">BTVN</span><span class="btn sm">Khác</span></div>
+      <p class="fnt">Bộ lọc là nút rời, đang chọn xanh đặc như nút Lưu.</p>
+    </div></div></div>
+    <div class="col sau"><p class="lbl">Sau</p><div class="win"><div class="body">
+      <div class="tabs"><span class="on">Tài khoản</span><span>Danh mục</span><span>Quyền</span></div>
+      <div style="margin-top:12px"><span class="seg"><span class="on">Tất cả <span class="fnt">12</span></span><span>Chuyên cần <span class="fnt">4</span></span><span>BTVN <span class="fnt">6</span></span><span>Khác <span class="fnt">2</span></span></span></div>
+    </div></div></div>
+  </div>
+</section>
+
+<!-- ============================================================ 8 -->
+<section class="m" id="m8">
+  <div class="mh"><span class="code">8</span><h2>Panel cũ <code>Drawer</code> → một khung <code>KhungPanel</code> (Huỷ trái, Lưu phải)</h2><span class="yc">UX-E E1</span></div>
+  <div class="loc"><b>NẰM Ở</b><span>Thêm học viên · Lộ trình HV · Lịch kiểm tra lớp · Chuyển tiếp lớp · Sửa tài khoản · Danh mục · Ô báo cáo · Chi tiết công việc · các ngăn "Số liệu"</span><span class="who">Ai thấy: QL, QT (Thêm HV, Quản trị); GVCN (Lộ trình, Chuyển tiếp)</span></div>
+  <div class="pair">
+    <div class="col truoc"><p class="lbl">Trước</p><div class="pn">
+      <div class="ph" style="height:56px;align-items:flex-start;padding-top:9px"><div><b style="font-size:15px">Thêm học viên</b><div class="fnt">Lớp MB FT 101</div></div><span class="x">✕</span></div>
+      <div class="pb t12 mut">… nội dung, nền khác panel khác …</div>
+      <div class="foot"><div class="act"><span class="sp"></span><span class="btn">Huỷ</span><span class="btn pri">Thêm 3 học viên</span></div></div></div></div>
+    <div class="col sau"><p class="lbl">Sau</p><div class="pn">
+      <div class="ph"><b>Thêm học viên</b><span class="mut t12">MB FT 101</span><span class="x">✕</span></div>
+      <div class="pb">
+        <p class="fnt" style="text-transform:uppercase;font-weight:800;letter-spacing:.06em">Lớp và tuần</p>
+        <p class="f-lbl">Tuần bắt đầu học</p><div class="odn" style="max-width:240px"><span class="field">28/09/2026</span><span class="ical">▦</span></div>
+        <div class="fnt" style="margin-top:3px">W1 OCT · 28/09 – 04/10</div>
+      </div>
+      <div class="foot"><div class="act"><span class="btn">Huỷ</span><span class="sp"></span><span class="btn pri">Thêm 3 học viên</span></div></div></div></div>
+  </div>
+  <ul class="notes"><li>Đầu 52 px một dòng (tên panel · ngữ cảnh mờ · ✕); chỉ thân cuộn; chân cố định. 375 px: toàn màn.</li>
+    <li>Mở panel → focus vào panel; Tab vòng bên trong; Esc đóng; đóng xong focus về nút đã mở.</li></ul>
+</section>
+
+<!-- ============================================================ 9 -->
+<section class="m" id="m9">
+  <div class="mh"><span class="code">9</span><h2>Bàn phím: bỏ qua tới nội dung · tìm bằng mũi tên · Esc đóng lớp trên cùng</h2><span class="yc">UX-E E2 · E3</span></div>
+  <div class="loc"><b>NẰM Ở</b><span>Thanh đầu trang (ô tìm học viên, Thông báo, tài khoản) · menu ⋯ ở các dòng · lịch trong ô ngày</span><span class="who">Ai thấy: mọi vai</span></div>
+  <div class="pair">
+    <div class="col truoc"><p class="lbl">Trước</p><div class="win"><div class="bar"><span class="logo">P</span><span class="sp"></span><span class="field" style="width:190px">zzz</span></div>
+      <div class="body t12 mut">Không có kết quả → không hiện gì. Mũi tên không đi vào danh sách; Esc không đóng Thông báo; Tab phải qua cả thanh menu mới tới nội dung.</div></div></div>
+    <div class="col sau"><p class="lbl">Sau</p><div class="win">
+      <div class="bar"><span class="btn sm focus">Bỏ qua tới nội dung</span><span class="sp"></span><span class="field" style="width:190px">zzz</span></div>
+      <div class="body"><div class="dd" style="max-width:260px;margin-left:auto"><div class="mo">Không tìm thấy học viên</div></div>
+        <p class="t12 mut" style="margin-top:8px"><span class="kbd">Tab</span> đầu trang → "Bỏ qua tới nội dung" · <span class="kbd">↓</span><span class="kbd">↑</span> trong kết quả tìm, <span class="kbd">Enter</span> mở hồ sơ ·
+          <span class="kbd">Esc</span> đóng lớp trên cùng: lịch → menu ⋯ → panel · menu ⋯ mở là focus mục đầu.</p></div></div></div>
+  </div>
+</section>
+
+<p class="fnt" style="margin-top:28px">Không làm ở PR này: chế độ sáng/tối, font (PR-SANG), đổi màu token, migrate.</p>
+</div>
+</body>
+</html>
