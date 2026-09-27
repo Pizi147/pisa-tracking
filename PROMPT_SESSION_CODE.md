@@ -10,6 +10,11 @@ Cập nhật: 21/09/2026 (chiều). Lộ trình: `plan.md` mục 23–24 · plan
 
 ## 0. Chọn model và mức suy nghĩ (effort) cho từng PR
 
+> **Cập nhật 27/09/2026 (yêu cầu 16 của chủ sản phẩm):** người **rà chéo** luôn là **Opus 5.5** ở một session riêng —
+> không đổi sang Fable để rà nữa. Nếu PR do Opus 5.5 code thì vẫn rà bằng Opus 5.5 nhưng **session khác**. Bảng model
+> của các PR đợt 1–6 sau deploy nằm ở `docs/superpowers/specs/2026-09-27-nang-cap-sau-deploy-design.md` §8 (bảng
+> dưới đây là của các PR cũ, giữ làm lịch sử).
+
 **Cách làm việc:** session **planning** (Opus) viết kế hoạch chi tiết → session **coding** làm theo → quay lại session
 planning rà soát. Chọn model ở ô chọn model của Claude Code **trước khi dán prompt**. Tên mức effort có thể khác một
 chút trên giao diện — chọn mức **gần nhất**.
