@@ -71,6 +71,8 @@ tr.con td{background:var(--sub);font-size:12px}
 .foot{border-top:1px solid var(--line);padding:0}
 .foot .thieu{padding:7px 12px 0;text-align:right;font-size:11px;font-weight:600;color:var(--soon)}
 .foot .thieu u{text-underline-offset:2px;cursor:pointer}
+.foot .can-sua{padding:7px 12px 0;text-align:right;font-size:11px;color:var(--faint);cursor:pointer}
+.qc{font-size:10.5px;color:var(--dim);margin-left:6px;white-space:nowrap}
 .foot .act{display:flex;gap:8px;padding:9px 12px}
 .pa-row{border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:8px}
 .khoi{margin-top:8px;padding:9px;border-radius:8px;background:var(--s2)}
@@ -143,9 +145,10 @@ hạn ghi kết quả là <b>hết Thứ Hai 28/09</b>. Kế hoạch: <code>docs
       <p class="f-lbl" style="margin-top:10px">Mô tả <span class="req">&nbsp;*</span><span class="dem">8/15</span></p>
       <div class="field err">Nghe kém</div>
       <div class="f-err">Cần ít nhất 15 ký tự (đang có 8)</div>
-    </div><div class="foot"><div class="thieu">Còn thiếu: <u>Mô tả — cần ≥ 15 ký tự (đang có 8)</u> · <u>Kết quả cuối — chưa chọn</u></div><div class="act"><span class="btn">Huỷ</span><span class="sp"></span><span class="btn pri">Lưu Case</span></div></div></div></div>
+    </div><div class="foot"><div class="can-sua" title="Mô tả · Kết quả cuối">2 ô cần sửa ↑</div><div class="act"><span class="btn">Huỷ</span><span class="sp"></span><span class="btn pri">Lưu Case</span></div></div></div></div>
   </div>
-  <ul class="notes"><li>Dòng PA chỉ gọn lại khi bấm <b>Xong</b>. Viền đỏ + câu dưới ô hiện khi <b>rời ô</b>; chân form hiện sau khi bấm Lưu; bấm tên ô ở chân → nhảy tới ô.</li></ul>
+  <ul class="notes"><li>Dòng PA chỉ gọn lại khi bấm <b>Xong</b>. Viền đỏ + câu dưới ô hiện khi <b>rời ô</b> — lý do chỉ nằm dưới ô.</li>
+    <li>Chân form (chủ sản phẩm 28/09): <b>một dòng xám nhỏ</b> <code>2 ô cần sửa ↑</code>, chỉ hiện <b>sau khi bấm Lưu</b>; bấm → cuộn và đặt con trỏ vào ô lỗi đầu tiên. Không chữ vàng, không liệt kê luật.</li></ul>
 </section>
 
 <!-- ============================================================ 3 -->
@@ -172,7 +175,7 @@ hạn ghi kết quả là <b>hết Thứ Hai 28/09</b>. Kế hoạch: <code>docs
 
 <!-- ============================================================ 4 -->
 <section class="m" id="m4">
-  <div class="mh"><span class="code">4</span><h2>Cột phải hàng Case / PA: nút ở trên, chữ phụ ở dưới, cùng một mép</h2><span class="yc">YC-12.5.4</span></div>
+  <div class="mh"><span class="code">4</span><h2>Cột phải hàng Case / PA: nút ở trên, chữ phụ ở dưới · PA quy chế chạy ngay</h2><span class="yc">YC-12.5.4 · S4-1</span></div>
   <div class="loc"><b>NẰM Ở</b><span>Hồ sơ HV → tab Học thuật → bảng kỹ năng → cột "Việc tiếp" của hàng Case và hàng PA</span><span class="who">Ai thấy: mọi vai xem hồ sơ</span></div>
   <div class="pair">
     <div class="col truoc"><p class="lbl">Trước</p><div class="win"><table>
@@ -181,11 +184,12 @@ hạn ghi kết quả là <b>hết Thứ Hai 28/09</b>. Kế hoạch: <code>docs
       <tr class="con"><td>Case · TEST READING</td><td><span class="btn sm">Mở Case</span><div class="fnt">Kết luận: Tiến bộ rõ</div></td></tr>
     </table></div></div>
     <div class="col sau"><p class="lbl">Sau</p><div class="win"><table>
-      <tr class="con"><td>▶ PA · Tutor · đến MT2<div class="fnt">Trần Ngọc Hà</div></td><td><div class="cp"><div class="row"><span class="btn sm pri">Xác nhận</span><span class="btn sm">Sửa</span><span class="btn sm ghost">Thay</span></div><span class="soon t11">Gợi ý tự động · chờ xác nhận</span></div></td></tr>
+      <tr class="con"><td>▶ PA · Tutor · đến MT2<span class="qc" title="PA theo quy chế SOS — máy gán, không xoá, không thay">🔒 theo quy chế</span><div class="fnt">Trần Ngọc Hà · 22/09 → MT2</div></td><td><div class="cp"><span class="btn sm">Ghi kết quả</span><span class="fnt">hạn hết T2 28/09</span></div></td></tr>
       <tr class="con"><td>▶ PA · Tự học đề<div class="fnt">Đỗ Vũ Tuấn Phong</div></td><td><div class="cp"><span class="btn sm">Ghi kết quả</span><span class="fnt">hạn hết T2 28/09</span></div></td></tr>
       <tr class="con"><td>Case · TEST READING</td><td><div class="cp"><span class="btn sm">Mở Case</span><span class="fnt">Kết luận: Tiến bộ rõ</span></div></td></tr>
     </table></div></div>
   </div>
+  <ul class="notes"><li>S4-1 (chủ sản phẩm 28/09): PA theo quy chế do SOS gán <b>chạy ngay</b> — không còn "Gợi ý tự động · chờ xác nhận", không còn Xác nhận / Sửa / Thay. Dấu nhỏ <b>🔒 theo quy chế</b> cạnh tên; không xoá, không thay được. Hạn 3 ngày của GVBM chỉ còn là xác định nguyên nhân (hoặc Không cần theo dõi).</li></ul>
 </section>
 
 <!-- ============================================================ 5 -->

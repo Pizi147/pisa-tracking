@@ -7,7 +7,8 @@
 **Goal:** Web đổi tên thành **Pisa Tracking**; sửa các chỗ đang nói sai sự thật (hạn ghi kết quả PA nay **hết Thứ Hai**, bảng
 điểm FT tô theo kỳ vọng của đúng mốc, SOS 1 vàng, SOS tạm thời có chữ, "0/4 môn đạt", "quá hạn n ngày", số và dòng ở tab Ý thức
 lớp khớp nhau); sửa lỗi nóng của Học viên & Lớp (không tự mở lớp, tiêu đề cột dính), hồ sơ HV (hai khối SOS loại trừ nhau, dòng
-PA nhập bù không tự đóng, cột phải nút trên chữ dưới) và báo lỗi form rõ ràng cho mọi `KhungPanel`; thêm Toast "Hoàn tác" 5 giây.
+PA nhập bù không tự đóng, cột phải nút trên chữ dưới) và báo lỗi form rõ ràng cho mọi `KhungPanel`; thêm Toast "Hoàn tác" 5 giây;
+PA quy chế SOS gán tự động và chạy ngay, không còn bước "xác nhận PA gợi ý" (S4-1 phần gán tự động, chủ sản phẩm 28/09).
 **Architecture:** Luật mới đều là **hàm thuần** ở `shared/domain` (kiểm được): `weeklyUpdateDue` → Thứ Hai, `hanTheoNgay`,
 `nhanTuanGhiKetQua`, `kiemTruong`, `dongViPhamLop`, `nhanHanhDongNhatKy`. Máy chủ chỉ gọi lại các hàm đó + gộp nhóm việc
 `do_plan`/`result` + vá truy vấn thẻ chết. Một migrate nhỏ (R-PA5) trong file riêng `server/src/migrate/prN1.ts`. Web chỉ vẽ lại.
@@ -28,7 +29,7 @@ kế hoạch cũ `docs/superpowers/plans/2026-09-26-ux-sau-danh-gia.md` UX-A A1�
 | Model | **Sonnet 5 · High** · phương án B: **Fable 5.1 · High** |
 | Người rà | **Opus 5.5**, session riêng (T52) — session code không tự rà |
 | Subagent | chỉ khi buộc phải dùng: **cùng model, KHÔNG Haiku**. Commit ghi `Co-Authored-By` đúng **model thật** đang chạy |
-| Migrate | **Có (nhỏ)** — một câu dời `action_due` Chủ nhật → Thứ Hai của PA đang chạy (R-PA5, K5-19) + lệnh chạy thử chỉ đọc. Không migrate gì khác |
+| Migrate | **Có (nhỏ)** — hai câu: (1) PA quy chế SOS đang "chờ xác nhận" → đang chạy (S4-1, Task 5b); (2) dời `action_due` Chủ nhật → Thứ Hai của PA đang chạy (R-PA5, K5-19). Lệnh chạy thử chỉ đọc `chay-thu:n1`. Không migrate gì khác |
 | Skill thiết kế | Không gọi taste-skill/impeccable (PR sửa nhỏ, bám mockup 20). Đọc `thiet-ke/HE_GIAO_DIEN.md` §4 và `TU_DIEN_VA_CHU.md` là đủ |
 | Phụ thuộc | Không. PR-LOP (làn B) và PR-NEN (làn C) chạy song song — ranh giới file ở bảng dưới |
 
@@ -51,9 +52,9 @@ kế hoạch cũ `docs/superpowers/plans/2026-09-26-ux-sau-danh-gia.md` UX-A A1�
 | `server/src/classes/classes.ts` | PR-LOP (số tuần, phân công) | chỉ khối `timeline` FT (dòng 455-481) + `history` (520-531) + `nhapDiem` (600-606) |
 | `web/src/modules/students/StudentsPage.tsx` | PR-LOP (nút "+ Lớp mới", panel tạo lớp :134, :221) | chỉ khung bảng dòng 195-218 |
 | `server/src/migrate.ts` | PR-LOP (file migrate riêng) | **một dòng** gọi `migratePrN1(conn, applied)` sau `migrateXoaDuLieu` (:451) + một dòng import (T78) |
-| `web/src/ui/KhungPanel.tsx` | **PR-NEN** (khung panel) | kiểu `conThieu` (:21) + khối "Còn thiếu" (:69-71) + `Truong` (:99-114) — chỉ **thêm** prop, không đổi prop có sẵn |
+| `web/src/ui/KhungPanel.tsx` | **PR-NEN** (khung panel) | kiểu `conThieu` (:21) + khối chân "Còn thiếu" (:69-71) → dòng `n ô cần sửa ↑` + `Truong` (:99-114) — chỉ **thêm** prop, không đổi prop có sẵn |
 | `web/src/ui/ui.tsx` | PR-NEN (`NhanTrangThai`) | chỉ thêm prop `dut?` cho `Level` (:102-109) |
-| `web/src/modules/yThuc/CaseSosControls.tsx`, `ui/ChonNgay.tsx`, `ui/PeoplePicker.tsx`, `ui/Filters.tsx`, mọi `type="date"` | PR-NEN (ô ngày, "Khác", chọn người) | **không sửa** (YC-12.1 sửa ở `SkillBoard.tsx`) |
+| `web/src/modules/yThuc/CaseSosControls.tsx`, `ui/ChonNgay.tsx`, `ui/PeoplePicker.tsx`, `ui/Filters.tsx`, mọi `type="date"` | PR-NEN (ô ngày, "Khác", chọn người) | **không sửa** (YC-12.1 sửa ở `SkillBoard.tsx`; Task 5b chỉ bỏ chỗ **gọi** `PresetPlanActions`, không xoá component) |
 | `web/src/index.css`, `tailwind.config.js` | PR-NEN / PR-SANG | chỉ thêm **một** khối CSS hàng lớp dính (Task 8) cuối khối `.hang-lon` |
 | `server/src/tests/run.ts`, `shared/domain/index.ts`, `CODE_MAP.md`, `plan.md` | mọi PR | chỉ thêm dòng đăng ký/export/ghi chú |
 
@@ -502,6 +503,127 @@ function CotPhai({ nut, phu }: { nut?: ReactNode; phu?: ReactNode }) {
   `ghi-ket-qua` → `nut` = nút Ghi kết quả (khi `canEdit`), `phu` = `han.han` ("hạn hết T2 28/09"); còn lại → `phu` = `v.text`.
 - [ ] `npm run check` → commit `PR-N1 (5): hai khối SOS loại trừ nhau, cột phải nút trên chữ dưới`.
 
+## Task 5b · PA quy chế SOS gán tự động — chạy ngay, không chờ xác nhận (S4-1 phần gán tự động, T22 phần "không xoá/không thay", K5-07; chủ sản phẩm 28/09)
+
+**Cách ít đụng nhất (Q22):** PA điền sẵn tạo ra đã **chạy** và mang dấu "máy đã xác nhận": `confirmed_at = lúc tạo`,
+`confirmed_by = NULL`. Mọi truy vấn đang lọc `UNCONFIRMED_PRESET` (việc cần làm, hiệu quả PA, hạn tuần) tự tính PA này như PA thường
+mà không phải sửa; mọi chặn "chưa xác nhận" ở `cases.ts:1074, 1269, 2763` tự thông. `confirmed_by IS NULL` là dấu nhận ra "PA quy
+chế máy gán" (PA đã được người xác nhận trước đây có `confirmed_by` là người).
+
+**Files:** `server/src/cases/sosState.ts:12-79`; `server/src/cases/sosAuto.ts:74-127, 300-307`; `server/src/cases/signals.ts:582-600, 634-640`;
+`server/src/worklist/mywork.ts:141-145, 905-930`; `server/src/students/profile.ts:471`; `shared/domain/hoSoHocVien.ts:75-80, 89-93`;
+`web/src/modules/cases/SkillBoard.tsx:8, 30, 57, 374, 386-390`; `web/src/modules/cases/CasePanel.tsx` (thẻ PA, cạnh tên PA);
+`server/src/migrate/prN1.ts`, `server/src/migrate/chayThuN1.ts`. **Không** sửa `yThuc/CaseSosControls.tsx` (PR-NEN đang sửa — chỉ bỏ
+chỗ gọi `PresetPlanActions`; xoá hẳn component + hai đường `/interventions/:id/confirm|replace` là việc PR-SOS). **Không** khoá
+Thay/Kết thúc trong form Ghi kết quả (T63 — PR-SOS).
+
+- [ ] **Phép kiểm trước** (khối 5b):
+```ts
+  const sosAuto: any = await import('../cases/sosAuto.ts');
+  const sosState: any = await import('../cases/sosState.ts');
+  const sigSvc: any = await import('../cases/signals.ts');
+  const lop = (t.conn.prepare("SELECT id FROM classes WHERE programme_code = 'FT' LIMIT 1").get() as any)?.id ?? t.classId;
+  const taoQuyChe = (key: string) => {
+    const { caseId } = taoPa(`qc-${key}`);
+    t.conn.prepare('DELETE FROM case_interventions WHERE case_id = ?').run(caseId);
+    const ivId = sosAuto.createPresetPlan({ caseId, attempt: { attempt_no: 1, class_id: lop }, category: 'listening', sosLevel: 2, followUntil: null });
+    return { caseId, ivId };
+  };
+  check('N1 (5b) · S4-1: PA quy chế tạo ra là đang chạy, máy xác nhận, có hạn ghi kết quả Thứ Hai từ tuần tạo', () => {
+    const { ivId } = taoQuyChe('chay');
+    const iv = t.conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(ivId) as any;
+    assert(iv.status === 'started' && iv.preset === 1 && !!iv.confirmed_at && iv.confirmed_by === null, JSON.stringify(iv));
+    assert(iv.action_due === d.weeklyUpdateDue(t.TODAY) && iv.cycle_started_on === t.TODAY && iv.cycle_no === 1, `hạn ${iv.action_due}`);
+    const khop = t.conn.prepare(`SELECT COUNT(*) n FROM case_interventions iv WHERE iv.id = ? AND ${sosState.PA_QUY_CHE_CHUA_GHI('iv')}`).get(ivId) as any;
+    assert(khop.n === 1, 'PA quy chế chưa có kết quả tuần phải khớp PA_QUY_CHE_CHUA_GHI');
+  });
+  check('N1 (5b) · hạn 3 ngày của GVBM chỉ còn "xác định nguyên nhân" (không còn vế xác nhận PA)', () => {
+    const { caseId } = taoQuyChe('cho');
+    assert(sosState.sosCaseState(caseId).awaitingCause === false, 'đã có nguyên nhân mà vẫn chờ');
+    t.conn.prepare("DELETE FROM case_issues WHERE case_id = ? AND role = 'primary'").run(caseId);
+    assert(sosState.sosCaseState(caseId).awaitingCause === true && sosState.awaitingCauseCaseIds([caseId]).length === 1, 'chưa có nguyên nhân thì phải chờ');
+    assert(!/xác nhận, sửa hoặc thay/.test(docSach('server/src/worklist/mywork.ts')), 'chữ nhóm cause còn vế PA gợi ý (K5-07)');
+  });
+  check('N1 (5b) · S08: sửa điểm thành đạt, PA quy chế CHƯA có kết quả tuần → Case vẫn tự huỷ, PA huỷ "score_fixed"', () => {
+    const { caseId, ivId } = taoQuyChe('s08');
+    sigSvc.retireCaseForCorrectedScore(t.P.manager, caseId, 'Listening');
+    const iv = t.conn.prepare('SELECT status, closed_reason FROM case_interventions WHERE id = ?').get(ivId) as any;
+    assert(iv.status === 'cancelled' && iv.closed_reason === 'score_fixed', JSON.stringify(iv));
+  });
+  check('N1 (5b) · giao diện không còn "Gợi ý tự động · chờ xác nhận" / Xác nhận–Sửa–Thay; PA quy chế có dấu 🔒', () => {
+    const sb = docSach('web/src/modules/cases/SkillBoard.tsx');
+    assert(!/PresetPlanActions/.test(sb) && /theo quy chế/.test(sb), 'SkillBoard còn nút xác nhận / thiếu dấu quy chế');
+    assert(!/Gợi ý tự động|goi-y/.test(docSach('shared/domain/hoSoHocVien.ts')), 'hoSoHocVien còn nhánh gợi ý');
+    assert(!/Xác nhận PA gợi ý/.test(docSach('server/src/students/profile.ts')), 'ô Việc cần làm còn "Xác nhận PA gợi ý"');
+  });
+```
+  (Tên cột/mã chương trình FT, khoá QL trong `P`: dùng đúng như dữ liệu thử; lệch thì ghi Nhật ký.)
+- [ ] **Mã `sosState.ts`:** thêm (dưới `NOT_UNCONFIRMED_PRESET`, giữ hai hằng cũ — sau migrate chúng không còn khớp dòng nào):
+```ts
+/**
+ * PA THEO QUY CHẾ DO MÁY GÁN mà CHƯA có kết quả tuần nào (S4-1, S08 bản 28/09). Máy gán ⇔ `preset = 1 AND confirmed_by IS NULL`.
+ * Dùng cho: đồng bộ theo mức SOS mới nhất, huỷ khi "Không cần theo dõi", huỷ khi sửa điểm thành đạt. Có kết quả tuần rồi = việc thật.
+ */
+export const PA_QUY_CHE_CHUA_GHI = (a = 'iv') => `(${a}.preset = 1 AND ${a}.confirmed_by IS NULL AND ${a}.status IN ('planned', 'started')
+  AND NOT EXISTS (SELECT 1 FROM case_followups f_qc WHERE f_qc.intervention_id = ${a}.id))`;
+```
+  `sosCaseState`: bỏ truy vấn `unconfirmed` và trường `unconfirmedPlanId` (kiểu `SosCaseState` + web `SkillBoard.tsx:57`);
+  `awaitingCause: fromSos && c.status !== 'done' && !hasCause`. `awaitingCauseCaseIds`: bỏ vế `OR EXISTS (… UNCONFIRMED_PRESET …)`.
+- [ ] **Mã `sosAuto.ts`:** `createPresetPlan` — thêm `const today = demoToday();` và câu INSERT thành
+```ts
+      `INSERT INTO case_interventions (case_id, kind, description, performer_user_id, recorded_by, status, started_date,
+                                       followup_due, cycle_no, cycle_started_on, action_due, needs_approval, preset,
+                                       confirmed_at, confirmed_by, created_at)
+       VALUES (?,?,?,?, NULL, 'started', ?, ?, 1, ?, ?, 0, 1, ?, NULL, ?)`,
+    ).run(input.caseId, p.kind, p.description, performer, today, p.followupDue, today, weeklyUpdateDue(today), nowIso(), nowIso());
+```
+  `resyncUnconfirmedPresets` (:116): `WHERE ${PA_QUY_CHE_CHUA_GHI('iv')} AND sc.status != 'done'` (thay `UNCONFIRMED_PRESET … AND
+  status = 'planned'`) — PA quy chế chưa có kết quả tuần vẫn theo mức SOS cuối của lượt (Q24). `dismissSosCase` (:305): điều kiện
+  huỷ → `${PA_QUY_CHE_CHUA_GHI('case_interventions')}` (closed_reason `dismissed` như cũ). Chú thích đầu file: bỏ "chờ xác nhận".
+- [ ] **Mã `signals.ts` (S08, Q23):** `caseHasIndependentBasis` — câu `work` (:584) thêm `AND NOT ${PA_QUY_CHE_CHUA_GHI('case_interventions')}`
+  (PA máy gán chưa ghi gì không phải căn cứ); câu `confirmed` (:597) thêm `AND confirmed_by IS NOT NULL` (chỉ người xác nhận mới là
+  căn cứ). `retireCaseForCorrectedScore` (:638) điều kiện huỷ → `(status = 'planned' AND NOT (preset = 1 AND confirmed_by IS NOT NULL))
+  OR ${PA_QUY_CHE_CHUA_GHI('case_interventions')}`. PA quy chế **đã** có kết quả tuần → là việc thật → Case giữ, chỉ "cần xem lại".
+- [ ] **Mã việc cần làm/hồ sơ:** `mywork.ts` `GROUP_META.cause.hint` → `'Mock Test có SOS đã tự tạo Case và PA theo quy chế cho kỹ năng
+  này. Bạn có ba ngày (tính cả ngày đầu) để xác định nguyên nhân — hoặc đóng "Không cần theo dõi" nếu em không cần theo dõi. Quản lý
+  chỉ thấy dòng này khi đã quá hạn.'`; câu `causeCandidates` bỏ cột `has_unconfirmed`, `missing` chỉ còn `chưa chọn nguyên nhân`.
+  `profile.ts:471` xoá nhánh `Xác nhận PA gợi ý`. `hoSoHocVien.ts`: bỏ `goiY` trong `tienDoCase` và nhánh `goi-y` của
+  `viecTiepPhuongAn` (kiểu `loai` còn `'cho-duyet' | 'ghi-ket-qua' | 'da-xong'`); sửa kỳ vọng ở `hoSoHocVien.tests.ts`.
+- [ ] **Mã web:** `SkillBoard.tsx` bỏ import + nhánh `goi-y` gọi `PresetPlanActions` (:386-390, trong `CotPhai` của Task 5), sửa chú
+  thích :30. Cạnh tên PA (:374) và thẻ PA trong `CasePanel.tsx`:
+```tsx
+{p.preset && <span className="ml-1.5 whitespace-nowrap text-[10.5px] text-slate-400" title="PA theo quy chế SOS — máy gán, không xoá, không thay">🔒 theo quy chế</span>}
+```
+  PA quy chế không hiện nút Xoá/Thay ở bảng kỹ năng và Ngăn Case (hiện chỉ có ở `PresetPlanActions` — đã bỏ; nếu Ngăn Case có nút
+  xoá PA nào khác thì ẩn khi `p.preset`, ghi Nhật ký).
+- [ ] **Migrate** — thêm vào `prN1.ts` (chạy TRƯỚC câu dời hạn CN → T2) và đếm vào `chayThuN1.ts`:
+```ts
+/** S4-1: PA điền sẵn còn "chờ xác nhận" trên dữ liệu có sẵn → PA quy chế đang chạy; hạn tuần tính từ ngày migrate (không ai quá hạn ngược). */
+const CHO_XAC_NHAN = `preset = 1 AND confirmed_at IS NULL AND status = 'planned'
+  AND case_id IN (SELECT id FROM sos_cases WHERE status != 'done')`;
+export function demPaQuyCheChoXacNhan(conn: any): number {
+  return (conn.prepare(`SELECT COUNT(*) n FROM case_interventions WHERE ${CHO_XAC_NHAN}`).get() as any).n;
+}
+export function migratePaQuyChe(conn: any, applied: string[], homNay: string) {
+  const r = conn.prepare(`UPDATE case_interventions
+      SET status = 'started', started_date = COALESCE(started_date, ?), cycle_no = 1, cycle_started_on = ?, action_due = ?,
+          confirmed_at = ?, confirmed_by = NULL, updated_at = ?
+    WHERE ${CHO_XAC_NHAN}`).run(homNay, homNay, weeklyUpdateDue(homNay), new Date().toISOString(), new Date().toISOString());
+  if (r.changes) applied.push(`Chuyển ${r.changes} PA quy chế SOS đang chờ xác nhận thành đang chạy (S4-1)`);
+}
+```
+  `migratePrN1` gọi `migratePaQuyChe(conn, applied, demoToday())` trước câu dời hạn. `chayThuN1` in thêm dòng
+  `n PA quy chế đang chờ xác nhận sẽ thành đang chạy`. Phép kiểm khối 3 thêm: chèn một dòng `preset = 1, status = 'planned',
+  confirmed_at NULL` vào Case đang mở → `demPaQuyCheChoXacNhan ≥ 1` → sau `migratePrN1`: `status = 'started'`, `confirmed_by` NULL,
+  `action_due` là Thứ Hai; chạy lại không đổi.
+- [ ] Hiệu quả PA: kiểm `server/src/cases/effectiveness.ts` loại `closed_reason IN ('dismissed', 'score_fixed')` khỏi mẫu số (T61
+  phần ngoài mẫu số); đã có thì thôi, chưa có thì thêm điều kiện đó (một dòng) + ghi Nhật ký. Tách "PA theo quy chế" riêng trong
+  Phân tích (T61) **không** làm — PR-Pb2.
+- [ ] Sửa kỳ vọng cũ của luồng xác nhận (`sosV3.tests.ts`, `dieuChinhPa.tests.ts`, `hoSoHocVien.tests.ts`, `run.ts` — grep
+  `confirmPresetPlan|replacePresetPlan|unconfirmedPlanId|awaitingConfirmation|Gợi ý tự động`): PA quy chế nay tạo ra đã chạy; phép
+  kiểm "xác nhận/thay PA gợi ý" đổi thành "gọi confirm/replace trên PA quy chế → 400 'đã được xác nhận rồi'" (giữ số phép kiểm).
+- [ ] `npm run check` → commit `PR-N1 (5b): PA quy chế SOS gán tự động, chạy ngay; GVBM chỉ còn xác định nguyên nhân`.
+
 ## Task 6 · Báo lỗi form rõ ràng (nền) + form Tạo Case / nhập bù (YC-12.5.2, YC-12.5.1)
 
 **Files:** tạo `shared/domain/loiForm.ts` (+ export `index.ts`), `web/src/ui/loiForm.tsx`; sửa `web/src/ui/KhungPanel.tsx:21,
@@ -514,30 +636,33 @@ export type LuatTruong = { khoa: string; nhan: string; toiThieu?: number; chon?:
 export type LoiTruong = { khoa: string; nhan: string; lyDo: string };        // lyDo hiện DƯỚI ô
 export function kiemTruong(l: LuatTruong, giaTri: unknown): string | null;   // 'Chưa chọn' | 'Chưa điền' | 'Cần ít nhất 15 ký tự (đang có 8)' | null
 export function dsLoi(luat: readonly LuatTruong[], giaTri: Record<string, unknown>): LoiTruong[];
-export function nhanChanForm(l: LoiTruong): string;                          // chân form: 'Mô tả — cần ≥ 15 ký tự (đang có 8)'
+export function nhanCanSua(soO: number): string;                             // chân form: '2 ô cần sửa ↑' ('' khi 0) — KHÔNG liệt kê luật
 // web/src/ui/loiForm.tsx
 export type MucThieu = { nhan: string; lyDo?: string; oId?: string };
 export function useLoiForm(): { daBam: boolean; bam(): void; roi(khoa: string): () => void; hien(khoa: string): boolean; oId(khoa: string): string };
-export function DongConThieu({ muc }: { muc: (string | MucThieu)[] }): JSX.Element;  // "Còn thiếu: …", mỗi mục có oId là nút nhảy tới ô
+export function DongCanSua({ muc }: { muc: (string | MucThieu)[] }): JSX.Element;  // xám nhỏ "2 ô cần sửa ↑", bấm → cuộn + focus ô lỗi ĐẦU TIÊN
 ```
 - [ ] **Phép kiểm trước** (khối 6):
 ```ts
-  check('N1 (6) · kiemTruong/nhanChanForm: nói thiếu gì và đang có bao nhiêu (YC-12.5.2)', () => {
+  check('N1 (6) · kiemTruong nói thiếu gì dưới ô; chân form chỉ đếm "n ô cần sửa ↑" (YC-12.5.2, chủ sản phẩm 28/09)', () => {
     assert(d.kiemTruong({ khoa: 'mo-ta', nhan: 'Mô tả', toiThieu: 15 }, 'Em hay sai') === 'Cần ít nhất 15 ký tự (đang có 10)', 'đếm ký tự');
     assert(d.kiemTruong({ khoa: 'mo-ta', nhan: 'Mô tả', toiThieu: 15 }, '   ') === 'Cần ít nhất 15 ký tự (đang có 0)', 'rỗng');
     assert(d.kiemTruong({ khoa: 'kn', nhan: 'Kỹ năng', chon: true }, '') === 'Chưa chọn' && d.kiemTruong({ khoa: 'kn', nhan: 'Kỹ năng', chon: true }, 'reading') === null, 'chọn');
     const l = d.dsLoi([{ khoa: 'mo-ta', nhan: 'Mô tả', toiThieu: 15 }, { khoa: 'ten', nhan: 'Tên Case', toiThieu: 6 }], { 'mo-ta': 'Nghe kém!', ten: 'Nghe kém phần 3' });
-    assert(l.length === 1 && d.nhanChanForm(l[0]) === 'Mô tả — cần ≥ 15 ký tự (đang có 9)', JSON.stringify(l));
+    assert(l.length === 1 && l[0].lyDo === 'Cần ít nhất 15 ký tự (đang có 9)', JSON.stringify(l));
+    assert(d.nhanCanSua(2) === '2 ô cần sửa ↑' && d.nhanCanSua(1) === '1 ô cần sửa ↑' && d.nhanCanSua(0) === '', 'nhanCanSua');
+    const kp = docSach('web/src/ui/KhungPanel.tsx') + docSach('web/src/ui/loiForm.tsx');
+    assert(!/Còn thiếu|text-soon/.test(kp.slice(kp.indexOf('DongCanSua'))), 'chân form còn chữ vàng / liệt kê luật');
   });
   check('N1 (6) · YC-12.5.1: dòng PA nhập bù chỉ đóng khi bấm Xong', () => {
     const src = docSach('web/src/modules/cases/QuickReport.tsx');
     assert(/const dangSua = moSua\.includes\(i\);/.test(src), 'dòng PA còn tự đóng khi có chữ');
-    assert(/DongConThieu|conThieu: daBam \? thieuChan/.test(src), 'chân form chưa nói lý do');
+    assert(/conThieu: lf\.daBam \? oLoi/.test(src), 'chân form chưa dùng danh sách ô lỗi');
   });
 ```
 - [ ] **Mã `loiForm.ts`:**
 ```ts
-/** LUẬT BÁO LỖI FORM (YC-12.5.2): rời ô → viền đỏ + câu dưới ô; chân form liệt kê tên ô + lý do. Một nguồn chữ cho mọi KhungPanel. */
+/** LUẬT BÁO LỖI FORM (YC-12.5.2): rời ô → viền đỏ + câu dưới ô; chân form (sau khi bấm Lưu) chỉ đếm "n ô cần sửa ↑". */
 export type LuatTruong = { khoa: string; nhan: string; toiThieu?: number; chon?: boolean };
 export type LoiTruong = { khoa: string; nhan: string; lyDo: string };
 export function kiemTruong(l: LuatTruong, giaTri: unknown): string | null {
@@ -549,18 +674,36 @@ export function kiemTruong(l: LuatTruong, giaTri: unknown): string | null {
 export function dsLoi(luat: readonly LuatTruong[], giaTri: Record<string, unknown>): LoiTruong[] {
   return luat.flatMap((l) => { const lyDo = kiemTruong(l, giaTri[l.khoa]); return lyDo ? [{ khoa: l.khoa, nhan: l.nhan, lyDo }] : []; });
 }
-export function nhanChanForm(l: LoiTruong): string {
-  const m = /^Cần ít nhất (\d+) ký tự \(đang có (\d+)\)$/.exec(l.lyDo);
-  return `${l.nhan} — ${m ? `cần ≥ ${m[1]} ký tự (đang có ${m[2]})` : l.lyDo.charAt(0).toLowerCase() + l.lyDo.slice(1)}`;
+/** Chân form: trung tính, không lặp luật (lý do đã nằm dưới từng ô). */
+export function nhanCanSua(soO: number): string {
+  return soO > 0 ? `${soO} ô cần sửa ↑` : '';
 }
 ```
 - [ ] **Mã `web/src/ui/loiForm.tsx`:** `useLoiForm` giữ `daRoi: Set<string>` + `daBam`; `roi(khoa)` trả hàm cho `onBlur`; `hien(khoa)
   = daBam || daRoi.has(khoa)`; `oId(khoa) = 'o-' + khoa` (một panel một lúc — `khoPanelChung` — nên id không trùng).
-  `DongConThieu`: `<div className="px-4 pt-2 text-right text-[11px] font-semibold text-soon" role="status">Còn thiếu: …</div>`,
-  mục nối bằng " · "; mục có `oId` là `<button type="button" className="link …">` → `document.getElementById(oId)?.scrollIntoView({
-  block: 'center' }); …focus()`. `KhungPanel.tsx`: `conThieu?: (string | MucThieu)[]` và :69-71 → `{chan.conThieu?.length ?
-  <DongConThieu muc={chan.conThieu} /> : null}` (gọi cũ truyền `string[]` vẫn chạy). `Truong`: thêm prop `dem?: { co: number; can:
-  number }` (bộ đếm nhỏ `8/15` căn phải, `tabular-nums`, 10.5px) và khi có `loi` bọc `children` trong
+  `DongCanSua` (chủ sản phẩm 28/09 — chữ vàng liệt kê luật quá gắt): **một** dòng xám nhỏ trung tính, chỉ có khi người gọi truyền
+  `conThieu` (tức SAU khi bấm Lưu):
+```tsx
+export function DongCanSua({ muc }: { muc: (string | MucThieu)[] }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const toiO = () => {
+    const dau = muc.find((m): m is MucThieu => typeof m !== 'string' && !!m.oId);
+    const el = (dau && document.getElementById(dau.oId!))
+      ?? ref.current?.closest('[role="dialog"]')?.querySelector<HTMLElement>('[aria-invalid="true"]') ?? null;
+    el?.scrollIntoView({ block: 'center' }); el?.focus();
+  };
+  return (
+    <div ref={ref} className="px-4 pt-2 text-right" role="status">
+      <button type="button" onClick={toiO} title={muc.map((m) => (typeof m === 'string' ? m : m.nhan)).join(' · ')}
+        className="appearance-none border-0 bg-transparent p-0 text-[11px] text-slate-500 hover:text-slate-300">{nhanCanSua(muc.length)}</button>
+    </div>
+  );
+}
+```
+  Tên ô chỉ nằm ở `title` (tooltip); không lý do, không màu cảnh báo. `KhungPanel.tsx`: `conThieu?: (string | MucThieu)[]` và
+  :69-71 → `{chan.conThieu?.length ? <DongCanSua muc={chan.conThieu} /> : null}` (gọi cũ truyền `string[]`, kể cả panel
+  `classes/` của PR-LOP, tự thành "1 ô cần sửa ↑"). `Truong`: thêm prop `dem?: { co: number; can:
+  number }` (bộ đếm nhỏ `8/15` căn phải, `tabular-nums`, 10.5px), và khi có `loi` đặt `aria-invalid` lên ô (người gọi truyền) + bọc `children` trong
   `<div className="[&_.field]:border-late [&_.field]:ring-1 [&_.field]:ring-late/40">` (viền đỏ, không sửa `index.css`).
 - [ ] **Mã `QuickReport.tsx`:** (a) YC-12.5.1: `:80` và `:144` → `useState<number[]>([0])` / `setMoSua([0])`; `:417` →
   `const dangSua = moSua.includes(i);`; nút "+ Thêm PA đã áp dụng" (:456) thêm `setMoSua([...moSua, bfActions.length])`; nút Xoá
@@ -582,20 +725,20 @@ export function nhanChanForm(l: LoiTruong): string {
   if (mode === 'backfill' && bfFrom && bfTo && bfFrom > bfTo) loi.push({ khoa: 'den-tuan', nhan: 'Đến tuần', lyDo: 'Không được trước Từ tuần' });
   if (mode === 'backfill' && !bfActions.some((a) => a.description.trim())) loi.push({ khoa: 'pa-0', nhan: 'Phương án đã áp dụng', lyDo: 'Chưa có PA nào' });
   const thieu = loi.map((l) => l.nhan);                     // giữ tên cũ cho hai chỗ `if (thieu.length > 0) return;` (:203, :238)
-  const thieuChan = loi.map((l) => ({ nhan: l.nhan, lyDo: nhanChanForm(l).slice(l.nhan.length + 3), oId: lf.oId(l.khoa) }));
+  const oLoi = loi.map((l) => ({ nhan: l.nhan, oId: lf.oId(l.khoa) }));    // chân form chỉ đếm + nhảy tới ô đầu
   const loiCua = (khoa: string) => (lf.hien(khoa) ? loi.find((l) => l.khoa === khoa)?.lyDo ?? null : null);
 ```
-  `daBam` cũ → `lf.daBam`/`lf.bam()`; chân (:320) `conThieu: lf.daBam ? thieuChan : undefined`. Mỗi ô: thêm `id={lf.oId(khoa)}`,
+  `daBam` cũ → `lf.daBam`/`lf.bam()`; chân (:320) `conThieu: lf.daBam ? oLoi : undefined`. Mỗi ô: thêm `id={lf.oId(khoa)}`, `aria-invalid={!!loiCua(khoa)}`,
   `onBlur={lf.roi(khoa)}` vào input/textarea/select (ô chọn dạng nút: đặt `id` + `tabIndex={-1}` lên khung nhóm nút), `Truong`
   nhận `loi={loiCua(khoa)}`; ô Mô tả (:392) thêm `dem={{ co: summary.trim().length, can: 15 }}`. Ô mô tả PA dòng 0 dùng `id="o-pa-0"`.
-- [ ] `npm run check` → commit `PR-N1 (6): báo lỗi form rõ (viền đỏ, lý do, nhảy tới ô) + dòng PA nhập bù không tự đóng`.
+- [ ] `npm run check` → commit `PR-N1 (6): báo lỗi form rõ (viền đỏ + lý do dưới ô, chân "n ô cần sửa ↑") + dòng PA nhập bù không tự đóng`.
 
 ## Task 7 · Áp báo lỗi rõ cho các form KhungPanel còn lại (YC-12.5.2)
 
 **Mẫu cho mỗi form:** `const lf = useLoiForm();` · `const LUAT: LuatTruong[] = [ …theo bảng… ];` · `const loi = dsLoi(LUAT,
 { khoa: giáTrị… });` (+ `loi.push({ khoa, nhan, lyDo })` cho lỗi riêng) · giữ `const thieu = loi.map((l) => l.nhan);` cho các chỗ
 `if (thieu.length) return;` · nút chính gọi `lf.bam()` thay `setDaBam(true)` · chân `conThieu: lf.daBam ? loi.map((l) => ({ nhan:
-l.nhan, lyDo: nhanChanForm(l).slice(l.nhan.length + 3), oId: lf.oId(l.khoa) })) : undefined` · mỗi ô `id={lf.oId(khoa)}
+l.nhan, oId: lf.oId(l.khoa) })) : undefined` · mỗi ô `id={lf.oId(khoa)} aria-invalid={…}
 onBlur={lf.roi(khoa)}` và `Truong loi={lf.hien(khoa) ? loi.find((l) => l.khoa === khoa)?.lyDo ?? null : null}`. **Không** áp cho `web/src/modules/classes/*` (PR-LOP) và `dev/ThanhPhanDemo.tsx` (chỉ đổi ví dụ
 `conThieu` sang một mục `MucThieu` để còn minh hoạ):
 
@@ -808,25 +951,27 @@ function Band({ v, kyVong, faded, soSanh = true }: { v: number | null; kyVong: n
 
 ## Task 12 · Cập nhật tài liệu (K2-37, K5-67, §10.1)
 
-- [ ] `CODE_MAP.md`: dòng "Nền giao diện (PR-UX0)" thêm `ui/loiForm.tsx` (`useLoiForm`, `DongConThieu`) + `shared/domain/loiForm.ts`
-  (`kiemTruong`, `dsLoi`, `nhanChanForm`); dòng "Ngăn Case" thêm `hanTheoNgay`, `HAN_DUYET_NGAY`, `nhanTuanGhiKetQua`; dòng Ý thức thêm
+- [ ] `CODE_MAP.md`: dòng "Nền giao diện (PR-UX0)" thêm `ui/loiForm.tsx` (`useLoiForm`, `DongCanSua`) + `shared/domain/loiForm.ts`
+  (`kiemTruong`, `dsLoi`, `nhanCanSua`); dòng "Ngăn Case" thêm `hanTheoNgay`, `HAN_DUYET_NGAY`, `nhanTuanGhiKetQua`; dòng Ý thức thêm
   `viPhamLop.ts` (`dongViPhamLop`); mục Tra nhanh "Thông báo nổi" thêm `toast.hoanTac` + `hoanTac.ts`; thêm `nhatKy.ts`,
   `migrate/prN1.ts` + `chay-thu:n1`, phép kiểm `suaLoiNong.tests.ts`.
 - [ ] `thiet-ke/HE_GIAO_DIEN.md` §4: dòng `cap-nhat-pa` (:112) → `Ghi kết quả tuần W4 SEP · hạn hết T2 28/09` · "Hằng tuần, hết
   **Thứ Hai** tuần sau" · nguồn "§5.6 R-PA1"; dòng :127 "mốc Chủ nhật" → "mốc Thứ Hai"; thêm quy ước "mọi hạn *n ngày* tính cả ngày
-  đầu (`hanTheoNgay`)"; thêm mục nhỏ "Báo lỗi form" (viền đỏ khi rời ô, câu dưới ô, chân `Còn thiếu: {ô} — {lý do}` bấm nhảy tới ô)
+  đầu (`hanTheoNgay`)"; thêm mục nhỏ "Báo lỗi form" (viền đỏ khi rời ô, câu dưới ô, sau khi bấm Lưu chân form có một dòng xám `n ô cần sửa ↑`, bấm → ô lỗi đầu tiên; không liệt kê luật ở chân)
   và "Toast Hoàn tác 5 giây".
 - [ ] `thiet-ke/TU_DIEN_VA_CHU.md`: tên ứng dụng **Pisa Tracking**; `hạn hết T2 {dd/mm}`; `SOS {n} tạm thời`; `{x}/{y} môn đạt`;
-  `quá hạn {n} ngày` (không "⚠ n ngày"); dòng :273 (dưới tên HV lớp) đổi theo A2; dòng :185 `Hoàn tác` → `Hoàn tác ({n})` 5 giây;
-  `Cần ít nhất {n} ký tự (đang có {k})`.
+  `quá hạn {n} ngày` (không "⚠ n ngày"); `🔒 theo quy chế` (cạnh tên PA quy chế SOS; bỏ "Gợi ý tự động · chờ xác nhận"); dòng :273 (dưới tên HV lớp) đổi theo A2; dòng :185 `Hoàn tác` → `Hoàn tác ({n})` 5 giây;
+  `Cần ít nhất {n} ký tự (đang có {k})` (dưới ô) · `{n} ô cần sửa ↑` (chân form).
 - [ ] `thiet-ke/mockup/19-nang-cap-27-09.html` (K2-37): mọi chữ hạn ghi kết quả PA ở M3, M4, M7 (dòng ~360, 370, 382, 386, 533: "trước
   CN 28/09", "ghi kết quả CN 05/10") → mẫu R-PA3 `Ghi kết quả tuần W… · hạn hết T2 dd/mm` (ngày Thứ Hai thật của 2026).
-- [ ] Đặc tả `docs/superpowers/specs/2026-09-27-nang-cap-sau-deploy-design.md` §8 hàng PR-N1 cột Migrate "Không" → "Có (nhỏ): dời
-  `action_due` CN → T2 (R-PA5)"; §5.6 R-PA3 ví dụ "29/09" → "28/09" (29/09/2026 là Thứ Ba — xem Mâu thuẫn M1). Cột Migrate của PR
+- [ ] Đặc tả `docs/superpowers/specs/2026-09-27-nang-cap-sau-deploy-design.md` §8 hàng PR-N1: cột Nội dung thêm "**S4-1 phần gán tự
+  động PA quy chế** (PA chạy ngay, 🔒 theo quy chế, GVBM chỉ còn xác định nguyên nhân)"; cột Migrate "Không" → "Có (nhỏ): PA quy chế
+  chờ xác nhận → đang chạy (S4-1) + dời `action_due` CN → T2 (R-PA5)"; hàng PR-SOS ghi "S4-1 phần còn lại (Chuyển cho PR-SOS trong
+  kế hoạch PR-N1)"; §5.6 R-PA3 ví dụ "29/09" → "28/09" (29/09/2026 là Thứ Ba — xem Mâu thuẫn M1). Cột Migrate của PR
   khác (K5-67) để người soạn kế hoạch từng PR sửa.
 - [ ] `TRIEN_KHAI.md` mục lệnh chạy thử trước migrate đợt 1: thêm `npm run chay-thu:n1` (chỉ đọc; đọc số PA dời, số PA chạy thiếu hạn).
 - [ ] `plan.md` §14 thêm một dòng: `28/09 PR-N1: tên Pisa Tracking; hạn ghi kết quả PA hết Thứ Hai (+migrate dời hạn); báo lỗi form rõ;
-  Toast Hoàn tác; UX-A A1–A9.`
+  Toast Hoàn tác; UX-A A1–A9; PA quy chế SOS gán tự động chạy ngay (S4-1, +migrate PA chờ xác nhận).`
 - [ ] Commit `PR-N1 (12): tài liệu — hạn Thứ Hai, báo lỗi form, Hoàn tác, tên Pisa Tracking`.
 
 ## Task 13 · Bấm thử theo vai + 375px (một lần), mở PR
@@ -850,11 +995,12 @@ function Band({ v, kyVong, faded, soSanh = true }: { v: number | null; kyVong: n
 | 2 | QL Vy · 1440 | Mở 3 lớp, cuộn xuống | Hàng tiêu đề cột (Học viên · Kết quả gần nhất…) dính trên cùng; ngay dưới là hàng lớp đang xem (`MB-FT 101 …`) |
 | 3 | QL Vy · 1440 | Gõ tìm "Lan" | Lớp có kết quả tự mở (≤ 5); SOS tạm thời hiện `SOS 2 tạm thời` viền đứt đúng màu mức |
 | 4 | GVCN Hà (7) · 1440 | Hồ sơ Vũ Ngọc Lan › Học thuật, hàng Reading | Bấm "Xác định nguyên nhân" → nút "Không cần theo dõi" biến mất; Huỷ → hai nút lại; bấm "Không cần theo dõi" → khối nguyên nhân không hiện. Không bao giờ thấy hai khối |
-| 5 | GVCN Hà · 1440 | cùng hồ sơ, cột phải hàng Case/PA | Mọi nút (Mở Case, Ghi kết quả, Xác nhận/Sửa/Thay) nằm **trên**, chữ phụ (hạn, "Kết luận: …") **dưới**, cùng một mép trái |
+| 5a | GVBM Trang (9) · 1440 | Hồ sơ Vũ Ngọc Lan › Học thuật, Case Reading từ SOS | PA "Tutor · đến MT2" có `🔒 theo quy chế`, nút **Ghi kết quả** + `hạn hết T2 …`; không còn "Gợi ý tự động · chờ xác nhận", không Xác nhận/Sửa/Thay; dòng chờ chỉ còn "xác định nguyên nhân" |
+| 5 | GVCN Hà · 1440 | cùng hồ sơ, cột phải hàng Case/PA | Mọi nút (Mở Case, Ghi kết quả) nằm **trên**, chữ phụ (hạn, "Kết luận: …") **dưới**, cùng một mép trái |
 | 6 | GVCN Hà · 1440 | hàng PA đang chạy + ô "Việc cần làm tiếp" | `hạn hết T2 dd/mm` (không còn "hạn CN"); ô đầu hồ sơ: `tuần W… · hạn hết T2 …` và cùng số ngày quá hạn với hàng kỹ năng |
 | 7 | GVCN Hà · 1440 | Ghi kết quả một PA trễ 3 tuần | Tiêu đề khối `1 · Kết quả W… – W… (ghi bù 3 tuần)`; lưu xong hạn mới là Thứ Hai |
 | 8 | GVCN Hà · 1440 | "+ Case" › tab Đã xong từ trước | Gõ cả câu tên PA — dòng **không** tự đóng; bấm Xong mới gọn; "+ Thêm PA đã áp dụng" mở dòng mới ở chế độ sửa |
-| 9 | GVCN Hà · 1440 | cùng form: gõ 8 ký tự Mô tả rồi Tab sang ô khác | Ô Mô tả viền đỏ + `Cần ít nhất 15 ký tự (đang có 8)` dưới ô + bộ đếm `8/15`; bấm Lưu → chân `Còn thiếu: Mô tả — cần ≥ 15 ký tự (đang có 8)`; bấm chữ "Mô tả" → nhảy về ô |
+| 9 | GVCN Hà · 1440 | cùng form: gõ 8 ký tự Mô tả rồi Tab sang ô khác | Ô Mô tả viền đỏ + `Cần ít nhất 15 ký tự (đang có 8)` dưới ô + bộ đếm `8/15`; **chưa** có gì ở chân; bấm Lưu → chân một dòng xám nhỏ `2 ô cần sửa ↑` (không chữ vàng, không liệt kê luật); bấm → cuộn + focus ô lỗi đầu tiên |
 | 10 | GVCN Hà · 1440 | Công việc › Việc cần làm | **Một** nhóm "Ghi kết quả PA", dòng `Ghi kết quả PA R` + `hạn hết T2 …`; không còn dòng "Làm PA … hạn 30/08"; mọi ngày đã qua có `quá hạn n ngày` |
 | 11 | GVCN Hà · 1440 | Hồ sơ lớp MB-FT 101 › Ý thức & Phối hợp, lọc Chuyên cần | Số `n vi phạm` trên dòng em = số dòng "Vi phạm gần đây"; mọi dòng là Chuyên cần; mã HV dạng ngắn |
 | 12 | GVCN Hà · 1440 | Ghi một vi phạm | Toast `Đã ghi vi phạm cho … · Hoàn tác (5)` đếm lùi, bấm Hoàn tác → vi phạm biến mất |
@@ -880,6 +1026,8 @@ function Band({ v, kyVong, faded, soSanh = true }: { v: number | null; kyVong: n
 | Bỏ nhãn SOS của lớp thường (T58) | PR-LT2b | luật Cuối khoá |
 | Toast Hoàn tác cho vắng (C2), dời/huỷ (C3, C4) | PR-HSM · PR-XLMT | thao tác thuộc PR đó |
 | Chữ nút "Xác nhận nguyên nhân", luồng Xác nhận Case | PR-SOS | YC-12.3 |
+| S4-1/T22 phần còn lại: khoá Thay/Kết thúc PA quy chế trong form Ghi kết quả (T63), mốc "1 tháng / đến MT kế tiếp" + "Ghi kết quả cuối", đổi người thực hiện; xoá hẳn `PresetPlanActions`, `confirmPresetPlan`/`replacePresetPlan`, hai đường `/interventions/:id/confirm|replace`, trường `awaitingConfirmation`; S4-2/S4-3 form Xác nhận Case | PR-SOS | luồng Case/PA v4 dựng lại ở PR-SOS; PR-N1 chỉ làm phần gán tự động |
+| Tách "PA theo quy chế" riêng trong Phân tích › Hiệu quả PA | PR-Pb2 | T61 |
 
 ## Bảng Q — tự quyết (người rà gạch dòng không đồng ý)
 
@@ -906,6 +1054,11 @@ function Band({ v, kyVong, faded, soSanh = true }: { v: number | null; kyVong: n
 | Q19 | `hanTheoNgay` dùng lại cho `planDueDate`/`signalVerifyDue` (kết quả không đổi) | một hàm cho mọi hạn "n ngày" (K5-20) |
 | Q20 | Tiêu đề ghi bù: từ tuần của hạn tới tuần đầy đủ gần nhất, `W2–W4 SEP (ghi bù 3 tuần)` | K3-17 |
 | Q21 | Dùng ngày thật 2026: W4 SEP → **hạn hết T2 28/09** (không phải 29/09 như đặc tả) | 29/09/2026 là Thứ Ba |
+| Q22 | PA quy chế tạo ra với `status = 'started'`, `confirmed_at = lúc tạo`, `confirmed_by = NULL` (dấu "máy gán"); giữ hằng `UNCONFIRMED_PRESET` | ít đụng nhất: mọi truy vấn/chặn cũ tự tính PA này như PA thường |
+| Q23 | S08: Case tự tạo, sửa điểm thành đạt, PA quy chế **chưa có kết quả tuần** → Case vẫn tự huỷ (PA huỷ `score_fixed`); đã có kết quả tuần → giữ Case, "cần xem lại" | ưu tiên của chủ sản phẩm; kết quả tuần = việc thật |
+| Q24 | PA quy chế chưa có kết quả tuần vẫn đồng bộ theo mức SOS cuối của lượt; "Không cần theo dõi" huỷ PA quy chế chưa có kết quả tuần | giữ hành vi cũ, đổi điều kiện "chưa xác nhận" → "chưa ghi" |
+| Q25 | Migrate PA chờ xác nhận: hạn tuần đầu tính từ **ngày migrate** | không ai quá hạn ngược lúc deploy |
+| Q26 | Chân form chỉ còn dòng xám `n ô cần sửa ↑` (tên ô ở tooltip), hiện sau khi bấm Lưu; lý do chỉ nằm dưới ô | chủ sản phẩm 28/09: chữ vàng liệt kê luật quá gắt |
 
 ## Mâu thuẫn nguồn ↔ mã thật
 
@@ -917,6 +1070,7 @@ function Band({ v, kyVong, faded, soSanh = true }: { v: number | null; kyVong: n
 - **M6** YC-11.1 "thêm tiêu đề dính": `.th` đã `sticky` (index.css:147) nhưng khung `overflow-x-auto` làm hỏng.
 - **M7** HE_GIAO_DIEN §4 ghi `Cập nhật kết quả · trước CN` còn mã ghi `Ghi kết quả PA · hạn CN` — cả hai đổi sang R-PA3.
 - **M8** §7.6 gọi `ToastHoanTac` là thành phần mới; `Toast.tsx` đã có `hanhDong` (PR-YT2) — PR-N1 chỉ chuẩn hoá thành `toast.hoanTac`.
+- **M10** Đặc tả §8 xếp S4-1 vào PR-SOS; chủ sản phẩm 28/09 kéo phần gán tự động PA quy chế lên PR-N1 (Task 5b) — sửa §8 ở Task 12.
 - **M9** K3-18 dẫn `ThaoTacCase.tsx:88-90, 121-127`: câu sai ở `:88`; `:121-127` là nút "Đang theo dõi / Đã xong" (để PR-SOS).
 
 ## Nhật ký
