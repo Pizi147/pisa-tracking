@@ -68,7 +68,7 @@ của người làm việc**: ít danh từ hơn, một trạng thái chính cho
 | Người dùng thấy | Đằng sau (máy chủ giữ nguyên) | Ghi chú |
 |---|---|---|
 | **Case** + **Phương án (PA)** | `sos_cases`, `case_interventions`, `case_signals` | Giữ chữ "Case", đội ngũ đã quen. **"Tín hiệu" biến khỏi màn hình** khi lớp thường cũng tự tạo Case (quy định lớp thường 27/09) |
-| **Vi phạm** · **Ghi nhận** · **Xử lý (bậc n)** | `violations`, `discipline_measures` | "Biện pháp" và "PA xử lý" gộp một chữ **"Xử lý"**, tên cụ thể là bậc: *Report 1, Report 2, Thư cảnh cáo 1…* |
+| **Vi phạm** · **Ghi nhận** · **Xử lý (bậc n)** | `violations`, `discipline_measures` | "Biện pháp" và "PA xử lý" gộp một chữ **"Xử lý"**, tên cụ thể là bậc: *Report 1, Report 2, WL 1…* (WL = thư cảnh cáo) |
 | **Việc phối hợp** | `sos_coordination_actions` + việc báo phụ huynh lớp thường | Một checklist nhỏ gắn vào lượt Test, không phải một khu riêng |
 | **Việc** (có người + hạn) | suy ra, không lưu | Không có "nhắc", "tín hiệu" riêng |
 | **Yêu cầu duyệt** (chỉ QL thấy hộp) | bảng mới dùng chung | Mọi loại duyệt một kiểu thẻ |
@@ -173,7 +173,7 @@ Nhãn: **[UI]** = chỉ đổi cách trình bày · **[LUẬT]** = đổi luật
 ```
 F1. SOS Fast Track  [LUẬT 12.3–12.4]
 Nhập điểm MT → kỹ năng dưới kỳ vọng → Case "MT2 · Reading không đạt [SOS 2]" + PA quy chế (bắt buộc)
-   → GVBM: [Xác nhận nguyên nhân] (3 ngày) ──→ Case chạy, PA quy chế + PA thêm (nếu có) → Ghi kết quả CN hằng tuần → Xong
+   → GVBM: [Xác nhận nguyên nhân] (3 ngày) ──→ Case chạy, PA quy chế + PA thêm (nếu có) → Ghi kết quả hằng tuần (hạn hết Thứ Hai) → Xong
           └ [Không cần theo dõi] + lý do → QL duyệt (5 ngày làm việc) ─ Duyệt → Case + PA huỷ, giữ lịch sử
                                                                      └ Từ chối → quay lại "Xác nhận nguyên nhân"
 
@@ -188,7 +188,7 @@ F4. Ý thức  [LUẬT 12.6]
 Ghi vi phạm → GVCN: [Ghi nhận] hoặc [Xác nhận xử lý = bậc kế tiếp]
    ≥ 3 vi phạm trong tuần này + tuần trước → chỉ còn [Xác nhận xử lý] (bắt buộc)
    quá 5 ngày chưa xử lý → Quá hạn + báo QL
-   Bậc: Report 1 → Report 2 → Thư CC 1 → Report 4 + Meeting CX/GĐCN → Thư CC 2 → (QL duyệt) Thư CC 3 / Đình chỉ
+   Bậc: Report 1 → Report 2 → WL 1 → Report 4 + Meeting CX/GĐCN → WL 2 → (QL duyệt) WL 3 / Đình chỉ
 
 F5. Duyệt  [UI + máy chủ mới]
 Người xin (GV) → thẻ trong "Chờ duyệt" (QL, có phân loại, hạn) → Duyệt / Từ chối (lý do) → người xin nhận kết quả
@@ -238,7 +238,7 @@ Người xin (GV) → thẻ trong "Chờ duyệt" (QL, có phân loại, hạn) 
 |---|---|---|---|---|
 | J1 | SOS v3 S04–S06: PA điền sẵn phải **xác nhận / sửa / thay** | 12.3.6: PA quy chế **không được bỏ, phải làm theo** | Chủ sản phẩm | ✅ theo yêu cầu 27/09 |
 | J2 | Q-V3-4: GVBM tự đóng "Không cần theo dõi" ngay | 12.4: phải **QL duyệt** trong 5 ngày làm việc | Chủ sản phẩm | ✅ theo yêu cầu 27/09 |
-| J3 | Y01: GVCN tự làm mọi biện pháp, **không có QL duyệt** | 12.6.4: Meeting CX/GĐCN, Thư CC 3, Đình chỉ **cần QL duyệt** | Chủ sản phẩm | ✅ |
+| J3 | Y01: GVCN tự làm mọi biện pháp, **không có QL duyệt** | 12.6.4: Meeting CX/GĐCN, WL 3, Đình chỉ **cần QL duyệt** | Chủ sản phẩm | ✅ |
 | J4 | B05: không có thứ tự biện pháp bắt buộc | 12.6.4: thang **bắt buộc theo thứ tự** | Chủ sản phẩm | ✅ chốt 27/09 (câu hỏi 1) |
 | J5 | W02: cảnh báo 5 ngày chỉ là cảnh báo mềm | 12.6.1: ≥ 3 lỗi / 2 tuần **bắt buộc xử lý**; > 5 ngày **quá hạn + báo QL** | Chủ sản phẩm | ✅ |
 | J6 | Chín biện pháp (có trao đổi ngắn, GV meeting, CX meeting) | Bỏ 2 loại meeting + trao đổi ngắn | Chủ sản phẩm | ✅ |

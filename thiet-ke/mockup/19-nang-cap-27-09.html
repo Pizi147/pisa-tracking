@@ -158,8 +158,8 @@ tr.sticky th{position:sticky;top:0}
 .pa .act{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
 @media (max-width:820px){.pa{grid-template-columns:1fr;margin-left:12px}}
 
-.ladder{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:12px}
-.ladder .r{border:1px solid var(--line2);border-radius:999px;padding:2px 9px;color:var(--dim)}
+.ladder{display:flex;align-items:center;flex-wrap:nowrap;gap:4px;font-size:12px;overflow-x:auto;white-space:nowrap}
+.ladder .r{flex:none;border:1px solid var(--line2);border-radius:999px;padding:2px 8px;color:var(--dim)}
 .ladder .r.dn{color:var(--done);border-style:solid}
 .ladder .r.dn::before{content:"✓ "}
 .ladder .r.now{border-color:var(--acc);color:var(--tx);background:var(--acc-soft);font-weight:700}
@@ -226,6 +226,7 @@ tr.sticky th{position:sticky;top:0}
   Mỗi module có dải <b style="background:var(--soon);color:#1b1400;border-radius:4px;padding:0 5px;font-size:11px">NẰM Ở</b>
   nói rõ khu vực → trang → nút, và ai thấy. Dữ liệu là dữ liệu demo. Nút ◐ góc phải dưới đổi <b>sáng/tối</b> để xem bảng màu sáng đề xuất.
   Khung viền vàng đứt = <b>đề xuất, chờ anh/chị chọn</b>.</p>
+  <p class="lead"><b>Cập nhật 28/09 sau rà toàn web</b> (đặc tả §4.9): đã sửa M1 (FT đủ W1, W2), M4 (lọc "chỉ kỹ năng tôi dạy"), M6 (một bộ lọc), M9 (xếp lịch theo dữ liệu thật sau khi MT1–MT3 tự tạo), M10 (menu theo trạng thái, W1/W2 hai hàng tiêu chí), M11 (đặt ở Lịch Test). Các trạng thái còn thiếu (lượt đã huỷ, MT lịch sử, vắng/dời, lớp thường) sẽ vẽ đủ khi soạn kế hoạch PR tương ứng.</p>
 
   <nav class="toc">
     <a href="#m1">M1 Tạo lớp</a><a href="#m2">M2 Thêm HV</a><a href="#m3">M3 Dòng kết quả</a>
@@ -258,7 +259,8 @@ tr.sticky th{position:sticky;top:0}
                 <div class="errmsg">GVCN phải dạy ít nhất một kỹ năng — chọn cô Hà ở L, R, W hoặc S.</div></td></tr>
               <tr><td class="b">L</td><td><div class="fld"><span class="ph">🔍 Tìm giáo viên…</span></div></td></tr>
               <tr><td class="b">R</td><td><div class="fld"><span class="ph">🔍 Tìm giáo viên…</span></div></td></tr>
-              <tr><td class="b">W</td><td><div class="fld">Lê Minh Khoa <span class="fnt">· 3 lớp</span><span class="ic">✕</span></div></td></tr>
+              <tr><td class="b">W1</td><td><div class="fld">Lê Minh Khoa <span class="fnt">· 3 lớp</span><span class="ic">✕</span></div></td></tr>
+              <tr><td class="b">W2</td><td><div class="fld">Cao Khánh Linh <span class="fnt">· 2 lớp</span><span class="ic">✕</span></div></td></tr>
               <tr><td class="b">S</td><td><div class="fld">Phạm Thu Trang <span class="fnt">· 4 lớp</span><span class="ic">✕</span></div></td></tr>
             </table>
             <div class="hint">Còn trống L, R — vẫn tạo được, bổ sung sau ở trang lớp.</div>
@@ -268,8 +270,8 @@ tr.sticky th{position:sticky;top:0}
       </div>
       <ul class="notes">
         <li>Người dùng <b>không gõ</b> chữ FT / RF / FOU / BE / ELE — máy tự ghép (T1).</li>
-        <li>Lớp thường: bấm <i>Lớp thường</i> → hàng Lộ trình đổi thành <span class="seg"><span class="on">FOU</span><span>BE</span><span>ELE</span></span>, tên thành <b>MB FOU 12</b>.</li>
-        <li>Mỗi ô là ô tìm <b>một</b> người; không còn "+ Thêm giáo viên" lần hai (YC-4).</li>
+        <li>Lớp thường: bấm <i>Lớp thường</i> → hàng Lộ trình đổi thành <span class="seg"><span>Pre FOU</span><span class="on">FOU</span><span>BE</span><span>ELE</span></span>, tên thành <b>MB FOU 12</b> (Pre FOU: <b>MB Pre FOU 03</b>, 5 tuần, chỉ Cuối khoá).</li>
+        <li>Mỗi ô là ô tìm <b>một</b> người; không còn "+ Thêm giáo viên" lần hai (YC-4). Ô theo chương trình: FT <b>L R W1 W2 S</b> · BE/ELE <b>L R W S</b> · FOU <b>L R G+V P</b> · Pre FOU chỉ <b>GVCN + GV dạy</b>.</li>
         <li>Lỗi hiện <b>ngay dưới ô sai</b> và ở chân panel; nút Tạo lớp khoá kèm lý do. Tạo lớp + phân công là <b>một</b> lần lưu (YC-1).</li>
         <li>Tạo xong → mở thẳng hồ sơ lớp mới.</li>
       </ul>
@@ -305,7 +307,7 @@ tr.sticky th{position:sticky;top:0}
       <li>Hàng <b>cao đều</b>; lời nhắc không còn chèn dưới ô — nằm ở cột <b>Tình trạng</b>, bấm mở một dòng trải ngang (YC-5.1).</li>
       <li>Cột mới: <b>Email</b> sau Ngày sinh; <b>Thi dự kiến</b> cạnh Target (gõ <code>dd/mm/yyyy</code> hoặc <code>mm/yyyy</code>) (YC-5.2, 5.3).</li>
       <li>Bỏ ô "Định dạng ngày trong dữ liệu" — luôn <code>dd/mm/yyyy</code>. Ngày không có thật (31/02) báo lỗi đúng ô.</li>
-      <li>Lớp BE/ELE có thêm cột tuỳ chọn <b>Placement (IELTS)</b>; lớp thường không có OVR/L/R/W/S/Target/Thi dự kiến.</li>
+      <li>Lớp thường (Pre FOU, FOU, BE, ELE) chỉ có Họ tên · Ngày sinh · Email · Tuần bắt đầu — không có OVR/L/R/W/S/Target/Thi dự kiến.</li>
       <li>Thêm xong, web <b>tự tạo MT1–MT3</b> theo tuần bắt đầu (đặc tả §5.2).</li>
     </ul>
   </section>
@@ -328,12 +330,13 @@ tr.sticky th{position:sticky;top:0}
           <td class="two"><div><span class="sos sos3">SOS 3</span> <span class="t13">MT1 · kỳ vọng 6.0 · 4/4 kỹ năng có điểm</span></div><div class="l2">Không đạt: L R S</div></td>
           <td class="n">7.0</td><td class="n">2</td><td class="two"><a>Xác nhận nguyên nhân Listening</a><div class="l2"><span class="st late">quá hạn 9 ngày</span></div></td><td class="proposed t12">MT2 · W2 OCT</td><td>⋯</td></tr>
         <tr><td><b>Nguyễn Gia Bảo</b> <span class="fnt">000061</span> <span class="fnt">· MB FOU 12</span></td>
-          <td class="two"><div><span class="t13">Cuối khoá · 2/4 kỹ năng có điểm</span></div><div class="l2">Không đạt: L R</div></td>
-          <td class="n dash">—</td><td class="n">2</td><td class="two"><a>Nhập điểm W, S · Cuối khoá</a><div class="l2">hạn CN 28/09</div></td><td class="proposed t12">Kết luận khoá</td><td>⋯</td></tr>
+          <td class="two"><div><span class="t13">Cuối khoá · 2/4 môn có điểm</span></div><div class="l2">Không đạt: L G+V</div></td>
+          <td class="n dash">—</td><td class="n">2</td><td class="two"><a>Nhập điểm G+V, P · Cuối khoá</a><div class="l2">hạn CN 28/09</div></td><td class="proposed t12">Kết luận khoá</td><td>⋯</td></tr>
       </table>
     </div></div>
     <ul class="notes">
       <li>Hai dòng, không bị cắt "…": dòng 1 = đợt · kỳ vọng · số kỹ năng có điểm; dòng 2 = <b>Không đạt: L R W</b> (YC-11.2, T18).</li>
+      <li>Lớp FOU dùng tên môn của FOU (<b>L · R · G+V · P</b>); lớp Pre FOU chỉ một dòng <b>Cuối khoá · 62%</b> (không chia môn).</li>
       <li>Tên em đậm hơn; mức SOS giữ thang vàng/cam/đỏ, "tạm thời" viền đứt có chữ; "Việc tiếp theo" là <b>liên kết</b> tới đúng chỗ làm.</li>
       <li>Hàng tiêu đề <b>dính</b> khi cuộn (YC-11.1).</li>
       <li><b>★ Đề xuất cột "Sắp tới"</b> (khung vàng): mốc kế tiếp của em. Tôi không đề xuất cột nào khác — anh/chị chọn <b>thêm</b> hoặc <b>không</b>.</li>
@@ -346,7 +349,7 @@ tr.sticky th{position:sticky;top:0}
     <div class="loc"><b>NẰM Ở</b> Hồ sơ lớp › tab Học viên › nút chế độ <b style="background:none;color:var(--tx);padding:0">Điểm | Cần hỗ trợ</b> → chọn Cần hỗ trợ (hoặc bấm badge "n Case mở" ở đầu hồ sơ lớp) <span class="who">Ai thấy: GVCN, GVBM (chỉ đọc môn khác), QL</span></div>
     <div class="win">
       <div class="bar"><span class="b">MB FT 101</span><span class="fnt">3 học viên · 7 Case đang mở</span><span class="sp"></span>
-        <span class="seg"><span>Điểm</span><span class="on">Cần hỗ trợ</span></span></div>
+        <span class="chip">☐ Chỉ kỹ năng tôi dạy</span><span class="seg"><span>Điểm</span><span class="on">Cần hỗ trợ</span></span></div>
       <div class="skhead" style="grid-template-columns:220px 44px minmax(0,1.25fr) minmax(0,1fr) minmax(0,.95fr)"><div>Học viên</div><div>KN</div><div>Case</div><div>Phương án đang làm</div><div>Việc tiếp · hạn</div></div>
 
       <div class="stu">
@@ -357,7 +360,7 @@ tr.sticky th{position:sticky;top:0}
           <div class="sk"><div class="k">L</div>
             <div><div><span class="mt">MT1</span> <b>Listening không đạt</b> <span class="sos sos3">SOS 3</span></div><div class="t12 mut">Kỹ năng làm bài · Gấp · mở 24/08</div></div>
             <div><div><span class="lock-ic"></span>Tutor · đến MT2</div><div class="t12 mut">cô Trần Ngọc Hà · từ 27/08 · theo quy chế</div></div>
-            <div><a>Ghi kết quả PA</a><div class="t12 mut">trước CN 28/09</div></div></div>
+            <div><a>Ghi kết quả PA</a><div class="t12 mut">hạn hết T2 29/09</div></div></div>
           <div class="sk"><div class="k">R</div>
             <div><div><span class="mt">MT1</span> <b>Reading không đạt</b> <span class="sos sos3">SOS 3</span></div><div class="t12"><span class="st need">Chờ xác nhận nguyên nhân</span></div></div>
             <div><div><span class="lock-ic"></span>Tutor · đến MT2</div><div class="t12 mut">chưa bắt đầu — chờ xác nhận Case</div></div>
@@ -367,7 +370,7 @@ tr.sticky th{position:sticky;top:0}
             <div><div><span class="mt">MT1</span> <b>Speaking không đạt</b> <span class="sos sos3">SOS 3</span></div><div class="t12 mut">Từ vựng / ngữ pháp · Bình thường · mở 24/08</div></div>
             <div><div><span class="lock-ic"></span>Tutor · đến MT2</div><div class="t12 mut">cô Phạm Thu Trang</div>
               <div class="sub">Tự học đề · 2 tuần <span class="t12 mut">· GV thêm</span></div></div>
-            <div><a>Ghi kết quả PA</a><div class="t12 mut">trước CN 28/09</div></div></div>
+            <div><a>Ghi kết quả PA</a><div class="t12 mut">hạn hết T2 29/09</div></div></div>
         </div>
       </div>
 
@@ -379,11 +382,11 @@ tr.sticky th{position:sticky;top:0}
           <div class="sk"><div class="k">L</div>
             <div><div><span class="mt">MT3</span> <b>Listening không đạt</b> <span class="sos sos2 tam">SOS 2 tạm thời</span></div><div class="t12 mut">Quản lý thời gian · Bình thường · mở 22/09</div></div>
             <div><div><span class="lock-ic"></span>Tutor · đến lúc thi</div><div class="t12 mut">cô Trần Ngọc Hà</div></div>
-            <div><span class="dash">Đang làm</span><div class="t12 mut">ghi kết quả CN 05/10</div></div></div>
+            <div><span class="dash">Đang làm</span><div class="t12 mut">ghi kết quả · hạn hết T2 06/10</div></div></div>
           <div class="sk"><div class="k">R</div>
             <div><div><span class="mt">MT3</span> <b>Reading không đạt</b></div><div class="t12 mut">Kỹ năng làm bài · Gấp · mở 22/09</div></div>
             <div><div><span class="lock-ic"></span>Tutor · đến lúc thi</div><div class="t12 mut">cô Trần Ngọc Hà</div></div>
-            <div><span class="dash">Đang làm</span><div class="t12 mut">ghi kết quả CN 05/10</div></div></div>
+            <div><span class="dash">Đang làm</span><div class="t12 mut">ghi kết quả · hạn hết T2 06/10</div></div></div>
           <div class="sk"><div class="k">W</div>
             <div><div class="t12 mut">W1 —</div>
               <div class="sub"><span class="t12 b">W2</span> <b>Task 2 lạc đề nhiều lần</b> <span class="t12 mut">· Case tạo tay · mở 10/09</span></div></div>
@@ -411,8 +414,9 @@ tr.sticky th{position:sticky;top:0}
     <ul class="notes">
       <li>Mỗi em <b>một khối</b>, bên trái là tóm tắt em (tên, mức SOS gần nhất, số Case); bên phải <b>4 hàng L · R · W · S</b> (T19).</li>
       <li>Mỗi hàng: <b>Case</b> (tên có <span class="mt">MT#</span> + SOS, nguyên nhân · mức gấp · ngày mở) · <b>Phương án đang làm</b> (🔒 = PA theo quy chế SOS, không xoá được) · <b>Việc tiếp</b> (liên kết + hạn).</li>
-      <li>Fast Track: hàng W có hai dòng con W1, W2. Lớp thường: W một dòng.</li>
+      <li>Fast Track: hàng W có hai dòng con W1, W2. BE/ELE: 4 hàng L · R · W · S. FOU: 4 hàng <b>L · R · G+V · P</b>. Pre FOU không chia môn → mỗi em <b>một</b> hàng "Tổng hợp".</li>
       <li>Hàng không có Case: một dòng mờ "—" thấp hơn, để mắt nhảy thẳng tới hàng có việc.</li>
+      <li>Em có <b>2 Case cùng kỹ năng</b>: hàng đó có 2 dòng con (như W1/W2). Lớp đông: các hàng "—" liền nhau của một em gộp thành một dòng mờ ("W · S: không có Case"). GVBM bật <b>"Chỉ kỹ năng tôi dạy"</b> để chỉ thấy hàng của mình.</li>
       <li>Bấm tên Case → mở Ngăn Case tại chỗ (không rời trang lớp). Trên điện thoại: mỗi hàng kỹ năng thành một thẻ.</li>
     </ul>
   </section>
@@ -478,10 +482,10 @@ tr.sticky th{position:sticky;top:0}
         </div>
         <div>
           <div class="bar" style="background:transparent"><span class="b">Vi phạm · Nguyễn Minh An</span><span class="sp"></span>
-            <span class="seg"><span class="on">Tất cả</span><span>Cần xử lý</span><span>Chờ duyệt</span><span>Đã xử lý</span></span><span class="btn sm">Nhóm ▾</span></div>
+            <span class="btn sm">Nhóm vi phạm ▾</span></div>
           <div style="padding:10px 12px;border-bottom:1px solid var(--line)" class="ladder">
-            <span class="fnt">Thang xử lý (LT1):</span>
-            <span class="r dn">Report 1</span><span class="ar">→</span><span class="r now">Report 2 · lần này</span><span class="ar">→</span><span class="r">Thư CC 1</span><span class="ar">→</span><span class="r">Report 4 + Meeting CX/GĐCN</span><span class="ar">→</span><span class="r">Thư CC 2</span><span class="ar">→</span><span class="r ql">Thư CC 3 · cần QL</span>
+            <span class="fnt">Thang (LT1):</span>
+            <span class="r dn">Report 1</span><span class="ar">›</span><span class="r now">Report 2 · lần này</span><span class="ar">›</span><span class="r">WL 1</span><span class="ar">›</span><span class="r">Report 4 + Meeting CX/GĐCN</span><span class="ar">›</span><span class="r">WL 2</span><span class="ar">›</span><span class="r ql">WL 3 · QL duyệt</span>
           </div>
           <div class="vio"><span class="d">26/09</span><div>Đi muộn 20 phút buổi Speaking<div class="t12 mut">Chuyên cần · cô Trang ghi</div></div><span class="st need">Cần xử lý</span></div>
           <div class="vio"><span class="d">24/09</span><div>Không nộp bài Writing Task 1<div class="t12 mut">BTVN · thầy Khoa ghi</div></div><span class="st need">Cần xử lý</span></div>
@@ -503,13 +507,14 @@ tr.sticky th{position:sticky;top:0}
             <div class="f"><span class="lb">Người thực hiện <span class="req">*</span></span><div class="fld">Trần Ngọc Hà<span class="ic">▾</span></div></div></div>
           <div class="f"><span class="lb">Mô tả <span class="req">*</span></span><div class="fld ta">Đã gửi report lần 2 cho phụ huynh qua Zalo, PH cam kết nhắc em đi học đúng giờ…</div></div>
           <div class="f"><span class="lb">Tệp / liên kết <span class="opt">(không bắt buộc)</span></span><div class="fld"><span class="ph">Kéo thả hoặc dán liên kết</span></div></div>
-          <p class="fnt" style="margin:4px 0 0">Cần biện pháp nặng hơn (Meeting CX/GĐCN, Đình chỉ…)? <a>Đề xuất QL duyệt</a></p>
+          <p class="fnt" style="margin:4px 0 0">Cần biện pháp nặng hơn (Meeting CX/GĐCN, WL 3, Đình chỉ…)? <a>Đề xuất QL duyệt</a></p>
         </div>
         <div class="pf"><span class="sp"></span><span class="btn">Huỷ</span><span class="btn p">Xác nhận xử lý</span></div>
       </div>
       <ul class="notes">
         <li>Hai khung (YC-11.4): trái <b>Xử lý</b> — em theo trạng thái; phải <b>Vi phạm</b> của em đang chọn. Không còn mỗi em một khối dài.</li>
-        <li>Bộ lọc còn <b>một hàng</b>; số và danh sách luôn cùng một tập (sửa lỗi ảnh 3).</li>
+        <li>Lọc theo trạng thái nằm ở <b>khung trái</b> (các nhóm Bắt buộc · Chờ duyệt · Mới · Đã xử lý); khung phải chỉ còn "Nhóm vi phạm ▾" — không hai bộ lọc chồng nhau; số và danh sách luôn cùng một tập (sửa lỗi ảnh 3). Chưa chọn em nào: khung phải hiện vi phạm mới nhất của cả lớp, không có thang và nút Xác nhận xử lý. "+ Ghi vi phạm" luôn có ô chọn em.</li>
+        <li>Thang xử lý nằm trên <b>một dòng</b>; thư cảnh cáo ký hiệu <b>WL 1 · WL 2 · WL 3</b>; bậc đang làm tô nhấn, bậc đã qua có ✓, WL 3 viền đứt = cần QL duyệt.</li>
         <li>Mỗi vi phạm một nhãn: Mới · <b>Đã ghi nhận</b> (xám, không nền) · Cần xử lý · Quá hạn · Chờ QL duyệt · <b>Đã xử lý · Report 2</b> (có tên bậc) (YC-12.6.3).</li>
         <li>Xác nhận xử lý <b>một bước</b>: bậc tự điền theo thang, không chọn; mô tả bắt buộc; tệp tuỳ chọn; không có "Xoá PA" (YC-12.6.2).</li>
         <li>Nút ghi vi phạm đổi thành <b>"+ Ghi vi phạm"</b> để khỏi trùng chữ với "Ghi nhận" (T31).</li>
@@ -530,7 +535,7 @@ tr.sticky th{position:sticky;top:0}
         </div>
         <div class="case run">
           <div class="hd"><span class="chev">▾</span><span class="mt">MT1</span><span class="tw">Listening không đạt</span><span class="sos sos3">SOS 3</span><span class="st doing">Đang làm</span><span class="t12 mut">2 PA · 1 đang chạy</span></div>
-          <div class="pa"><div><span class="tag">PA</span><span class="lock-ic"></span><b>Tutor · đến MT2</b><div class="t12 mut">theo quy chế · cô Hà · từ 27/08</div></div><div class="t12">Tuần trước: <b>Tiến bộ một phần</b></div><div class="act"><span class="btn sm">Ghi kết quả</span><span class="t12 mut">trước CN 28/09</span></div></div>
+          <div class="pa"><div><span class="tag">PA</span><span class="lock-ic"></span><b>Tutor · đến MT2</b><div class="t12 mut">theo quy chế · cô Hà · từ 27/08</div></div><div class="t12">Tuần trước: <b>Tiến bộ một phần</b></div><div class="act"><span class="btn sm">Ghi kết quả</span><span class="t12 mut">hạn hết T2 29/09</span></div></div>
           <div class="pa"><div><span class="tag">PA</span><b>Luyện nghe số liệu</b><div class="t12 mut">GV thêm · cô Hà · 10/09 → 24/09</div></div><div class="t12"><b>Tiến bộ rõ</b></div><div class="act"><span class="st done">Xong</span></div></div>
         </div>
         <div class="case doneb">
@@ -564,7 +569,7 @@ tr.sticky th{position:sticky;top:0}
       <li><b>Case</b> = hàng đậm, vạch trái màu theo trạng thái, nút gập ▾; <b>PA</b> = dòng thụt vào, nền nhạt, nhãn nhỏ "PA". Gập lại vẫn giữ tiêu đề + "2 PA · 1 đang chạy" (YC-12.2).</li>
       <li>Hai nút <b>Xác nhận nguyên nhân</b> / <b>Không cần theo dõi…</b> mở hai thứ khác nhau, không bao giờ cùng lúc (YC-12.1).</li>
       <li>Form Xác nhận Case: không có tab "Đã xong từ trước"; kỹ năng khoá; nguyên nhân + mức gấp bắt buộc; không có Bằng chứng; bắt đầu = hôm nay; PA quy chế 🔒 không xoá (YC-12.3).</li>
-      <li>"Không cần theo dõi…" → chọn lý do → gửi QL duyệt (5 ngày làm việc) → Case hiện <span class="st wait">Chờ QL duyệt · không theo dõi</span> (YC-12.4).</li>
+      <li>"Không cần theo dõi…" → chọn lý do → gửi QL duyệt (5 ngày) → Case hiện <span class="st wait">Chờ QL duyệt · không theo dõi</span> (YC-12.4).</li>
       <li>Cột bên phải của mọi hàng: <b>nút ở trên, chữ phụ ở dưới</b>, cùng một mép (YC-12.5.4). PA nhập bù có <b>kết quả</b> (YC-12.5.3).</li>
       <li>Báo lỗi: viền đỏ khi rời ô + câu nói rõ thiếu gì; chân form liệt kê, bấm để nhảy tới ô (YC-12.5.2).</li>
     </ul>
@@ -582,8 +587,8 @@ tr.sticky th{position:sticky;top:0}
 
         <div class="req-card over">
           <div><div class="row"><span class="cat">Ý thức</span><b>Đình chỉ học tạm thời</b><span class="mut">· Lê Quang Huy · MB FT 101</span></div>
-            <div class="t13" style="margin-top:4px">Cô <b>Trần Ngọc Hà</b> đề xuất 24/09: “Em đã nhận Thư CC 2 ngày 12/09, tiếp tục bỏ 3 buổi liên tiếp…”</div>
-            <div class="t12 mut" style="margin-top:4px">Bậc hiện tại: Thư CC 2 · 📎 2 tệp · 7 vi phạm trong lộ trình</div></div>
+            <div class="t13" style="margin-top:4px">Cô <b>Trần Ngọc Hà</b> đề xuất 24/09: “Em đã nhận WL 2 ngày 12/09, tiếp tục bỏ 3 buổi liên tiếp…”</div>
+            <div class="t12 mut" style="margin-top:4px">Bậc hiện tại: WL 2 · 📎 2 tệp · 7 vi phạm trong lộ trình</div></div>
           <div><div class="due" style="color:var(--late)">Quá hạn 1 ngày</div><div class="t12 mut">hạn 26/09</div>
             <div class="row" style="margin-top:8px"><span class="btn p sm">Duyệt</span><span class="btn sm">Từ chối…</span><span class="btn g sm">Mở</span></div></div>
         </div>
@@ -591,7 +596,7 @@ tr.sticky th{position:sticky;top:0}
           <div><div class="row"><span class="cat">Học thuật</span><b>Không cần theo dõi · Writing Task 2</b><span class="mut">· Đỗ Minh Khôi · MB FT 101 · MT2</span></div>
             <div class="t13" style="margin-top:4px">Thầy <b>Lê Minh Khoa</b> xin 25/09 · lý do <b>Tình huống đơn lẻ</b>: “Hôm thi em sốt; bài trên lớp W2 vẫn 6.5.”</div>
             <div class="t12 mut" style="margin-top:4px">Nếu duyệt: Case và PA "Tự học · 1 tháng" bị huỷ, lịch sử giữ lý do.</div></div>
-          <div><div class="due">Còn 2 ngày</div><div class="t12 mut">hạn 01/10 · 5 ngày làm việc</div>
+          <div><div class="due">Còn 2 ngày</div><div class="t12 mut">hạn 30/09 · 5 ngày</div>
             <div class="row" style="margin-top:8px"><span class="btn p sm">Duyệt</span><span class="btn sm">Từ chối…</span><span class="btn g sm">Mở Case</span></div></div>
         </div>
         <div class="req-card">
@@ -603,7 +608,7 @@ tr.sticky th{position:sticky;top:0}
         <div class="req-card">
           <div><div class="row"><span class="cat">Học thuật</span><b>Kế hoạch bổ trợ · Writing</b><span class="mut">· Nguyễn Gia Bảo · MB FOU 12 · Giữa khoá 58%</span></div>
             <div class="t13" style="margin-top:4px">2 buổi/tuần đến Cuối khoá · trừ buổi Free · 📎 kế hoạch bài giảng</div></div>
-          <div><div class="due">Còn 3 ngày</div><div class="t12 mut">3 ngày làm việc</div>
+          <div><div class="due">Còn 3 ngày</div><div class="t12 mut">hạn duyệt 3 ngày</div>
             <div class="row" style="margin-top:8px"><span class="btn p sm">Duyệt</span><span class="btn sm">Từ chối…</span></div></div>
         </div>
         <div class="req-card">
@@ -631,7 +636,7 @@ tr.sticky th{position:sticky;top:0}
     <div class="mh"><span class="code">M9</span><h2>Xếp lịch Mock Test</h2><span class="yc">YC-13.4 · 13.6</span></div>
     <div class="loc"><b>NẰM Ở</b> Test › Kế hoạch Test › nút <b style="background:none;color:var(--tx);padding:0">Xếp lịch MT</b> → ngăn rộng bên phải <span class="who">Ai thấy: Quản lý</span></div>
     <div class="panel">
-      <div class="ph"><span class="t">Xếp lịch Mock Test</span><span class="cl">✕</span></div>
+      <div class="ph"><span class="t">Xếp lịch Mock Test</span><span class="seg" style="margin-left:10px"><span class="on">Fast Track</span><span>Lớp thường</span></span><span class="cl">✕</span></div>
       <div class="pb">
         <div class="row" style="gap:10px">
           <div style="width:170px"><span class="lb">Chi nhánh</span><div class="fld">Monbay (MB)<span class="ic">▾</span></div></div>
@@ -652,26 +657,26 @@ tr.sticky th{position:sticky;top:0}
           <table>
             <colgroup><col style="width:30px"><col style="width:190px"><col style="width:100px"><col><col style="width:170px"></colgroup>
             <tr><th></th><th>Học viên</th><th>Lớp</th><th>Mock Test (tick để chọn đợt khác)</th><th>Sẽ xếp</th></tr>
-            <tr><td>☑</td><td class="b">Vũ Ngọc Lan</td><td>MB FT 101</td><td><div class="mts"><span class="dn">MT1</span><span class="dn">MT2</span><span class="tg">MT3</span></div></td><td>MT3 · W2 OCT</td></tr>
-            <tr><td>☑</td><td class="b">Nguyễn Minh An</td><td>MB FT 101</td><td><div class="mts"><span class="dn">MT1</span><span class="dn">MT2</span><span class="dn">MT3</span><span class="tg">MT4</span></div></td><td><span class="st need">→ MT4 (đã có MT3)</span></td></tr>
-            <tr><td>☑</td><td class="b">Trần Thu Hà</td><td>MB FT 101</td><td><div class="mts"><span class="dn">MT1</span><span class="pl">MT2</span><span class="tg">MT3</span></div></td><td><span class="st late">Chưa làm MT2</span></td></tr>
-            <tr><td>☑</td><td class="b">Hoàng Nhật Minh</td><td>MB FT 102</td><td><div class="mts"><span class="dn">MT1</span><span class="dn">MT2</span><span class="tg">MT3</span></div></td><td>MT3 · W2 OCT</td></tr>
+            <tr><td>☑</td><td class="b">Vũ Ngọc Lan</td><td>MB FT 101</td><td><div class="mts"><span class="dn">MT1</span><span class="dn">MT2</span><span class="tg">MT3</span></div></td><td>Dời MT3 · W3 OCT → W2 OCT</td></tr>
+            <tr><td>☑</td><td class="b">Nguyễn Minh An</td><td>MB FT 101</td><td><div class="mts"><span class="dn">MT1</span><span class="dn">MT2</span><span class="tg">MT3 ◐</span></div></td><td><span class="st need">Xếp nốt W, S · MT3</span></td></tr>
+            <tr><td>☑</td><td class="b">Trần Thu Hà</td><td>MB FT 101</td><td><div class="mts"><span class="dn">MT1</span><span class="pl">MT2</span><span class="tg">MT3</span></div></td><td><span class="st late">MT2 thi W1 OCT — cách 1 tuần</span></td></tr>
+            <tr><td>☑</td><td class="b">Hoàng Nhật Minh</td><td>MB FT 102</td><td><div class="mts"><span class="dn">MT1</span><span class="dn">MT2</span><span class="dn">MT3</span><span class="tg">MT4</span></div></td><td>Tạo MT4 · W2 OCT</td></tr>
           </table>
           <div class="blkt" style="margin-top:12px">Chưa chọn · 14</div>
           <table><colgroup><col style="width:30px"><col style="width:190px"><col style="width:100px"><col><col style="width:170px"></colgroup>
             <tr><td>☐</td><td>Phạm Bảo Ngọc</td><td>MB FT 101</td><td><div class="mts"><span class="dn">MT1</span><span class="dn">MT2</span><span class="pl">MT3</span></div></td><td class="dash">—</td></tr></table>
         </div>
         <div class="pv" style="margin-top:12px">
-          <b>Ép Nguyễn Minh An vào MT3?</b> MT3 (W3 SEP) đã có: <b>L 6.0 · R 6.5</b>; W và S chưa làm.
-          <div class="row" style="margin-top:6px"><span class="btn sm p">Chỉ xếp W, S vào MT3</span><span class="btn sm">Giữ MT4</span></div>
+          <b>Cho Nguyễn Minh An thi lại L của MT3?</b> L đã có điểm <b>6.0</b> (W3 SEP). Chỉ dùng khi thật sự thi lại — điểm cũ giữ trong lịch sử.
+          <div class="row" style="margin-top:6px"><span class="btn sm">Thi lại L</span><span class="btn sm p">Không, chỉ xếp nốt W, S</span></div>
         </div>
       </div>
-      <div class="pf"><span class="t13">Xem trước: <b>2</b> em vào MT3 · <b>1</b> em vào MT4 · <b>1</b> em bị chặn (chưa có MT2)</span><span class="sp"></span><span class="btn">Huỷ</span><span class="btn p">Xếp lịch 3 em</span></div>
+      <div class="pf"><span class="t13">Xem trước: dời <b>1</b> · xếp nốt <b>1</b> · tạo <b>1</b> · cảnh báo <b>1</b></span><span class="sp"></span><span class="btn">Huỷ</span><span class="btn p">Xếp lịch 4 em</span></div>
     </div>
     <ul class="notes">
       <li>Lọc chi nhánh · lớp (nhiều lớp) · tìm tên; em đã chọn đẩy lên đầu.</li>
       <li>Hàng chip cạnh tên: MT đã làm ✓, đã lên lịch ○, đợt đang xếp tô đặc — <b>bấm chip</b> để đổi đợt cho riêng em đó.</li>
-      <li>Đợt tới MT8; em trùng đợt tự chuyển MT kế tiếp; muốn ép thì hộp nói kỹ năng nào đã làm (T37). Luật đánh số chặn "chưa có MT2" (T36).</li>
+      <li>MT1–MT3 đã <b>tự tạo</b> cho mọi em FT, nên việc thật ở đây là <b>dời tuần</b>, <b>xếp nốt</b> kỹ năng còn thiếu của một đợt dở (◐) và <b>tạo MT4+</b>. Đợt đã đủ điểm → chuyển MT kế tiếp; đợt dở → mặc định "Xếp nốt". "Ép" chỉ còn nghĩa là <b>thi lại</b> kỹ năng đã có điểm. Lượt lân cận cách một tuần: cảnh báo, trùng tuần: chặn (T15). Khung Lớp thường: đợt Giữa khoá · Cuối khoá, tuần đề xuất riêng từng lớp.</li>
       <li>4 kỹ năng mặc định <b>cùng một tuần</b> (tuần tới); đổi riêng từng kỹ năng ngay dưới.</li>
       <li>Thao tác từng kỹ năng (Dời hạn chấm · Dời lịch thi · Bỏ kỹ năng khỏi đợt · Báo vắng · Huỷ điểm) nằm trong <b>hộp kỹ năng</b> của lưới Kế hoạch Test và hàng kỹ năng ở hồ sơ Mock — cùng một hộp, có ô lý do (YC-13.6).</li>
     </ul>
@@ -689,8 +694,8 @@ tr.sticky th{position:sticky;top:0}
         <div class="tile"><div class="k">Listening</div><div class="v bad">5.0</div><div class="s">19 câu · ▾ dưới kỳ vọng</div></div>
         <div class="tile"><div class="k">Reading</div><div class="v bad">5.0</div><div class="s">18 câu · ▾ dưới kỳ vọng</div></div>
         <div class="tile"><div class="k">Writing</div><div class="v bad">5.0</div><div class="s">W1 5.0 · W2 5.0 · ▾ dưới kỳ vọng</div>
-          <div class="crit"><div><small>TA</small><b>5</b></div><div><small>CC</small><b>4.5</b></div><div><small>LR</small><b>5</b></div><div><small>GRA</small><b>5.5</b></div></div>
-          <div class="fnt" style="margin-top:4px">Tiêu chí W2 · <a>xem W1</a></div></div>
+          <div class="fnt" style="margin-top:6px">W1</div><div class="crit" style="margin-top:2px"><div><small>TA</small><b>5</b></div><div><small>CC</small><b>5</b></div><div><small>LR</small><b>5</b></div><div><small>GRA</small><b>5</b></div></div>
+          <div class="fnt" style="margin-top:4px">W2</div><div class="crit" style="margin-top:2px"><div><small>TR</small><b>5</b></div><div><small>CC</small><b>4.5</b></div><div><small>LR</small><b>5</b></div><div><small>GRA</small><b>5.5</b></div></div></div>
         <div class="tile"><div class="k">Speaking</div><div class="v ok">5.5</div><div class="s">▴ đạt kỳ vọng</div>
           <div class="crit edit"><div><small>FC</small><b>5.5</b></div><div><small>LR</small><b>5</b></div><div><small>GRA</small><b>5.5</b></div><div><small>P</small><b>6</b></div></div>
           <div class="fnt" style="margin-top:4px">Đang sửa · Lưu từng ô ✓</div></div>
@@ -705,7 +710,7 @@ tr.sticky th{position:sticky;top:0}
         <tr><th>Kỹ năng</th><th>Lịch</th><th>Tình trạng</th><th>Thao tác</th></tr>
         <tr><td>Listening</td><td>W3 JUL</td><td><span class="st done">Đã có điểm</span> <span class="fnt">· Đỗ Vũ Tuấn Phong · 19/07</span></td><td><span class="btn sm">Sửa điểm</span> <span class="btn g sm">⋯</span></td></tr>
         <tr><td>Speaking</td><td>W3 JUL</td><td><span class="st done">Đã có điểm</span></td><td><span class="btn sm">Sửa điểm</span> <span class="btn g sm">⋯</span>
-          <div class="dd" style="width:210px"><div>Dời hạn chấm</div><div>Dời lịch thi</div><div>Bỏ kỹ năng khỏi đợt</div><div>Báo vắng</div><div style="color:var(--bad)">Huỷ điểm</div></div></td></tr>
+          <div class="dd" style="width:210px;margin-left:-90px"><div style="color:var(--bad)">Huỷ điểm…</div><div class="fnt" style="padding:6px 10px">Đã có điểm nên chỉ còn Sửa điểm / Huỷ điểm. Chưa tới tuần: Dời lịch thi · Bỏ kỹ năng. Qua tuần chưa điểm: Báo vắng · Dời hạn chấm.</div></div></td></tr>
       </table>
       <div class="row" style="margin-top:10px"><span class="b">Lịch sử</span><span class="fnt">· 2 thay đổi</span><span class="sp"></span><span class="btn g sm">Mở ▾</span></div>
     </div></div>
@@ -713,17 +718,18 @@ tr.sticky th{position:sticky;top:0}
       <li>Tầng 1 = <b>năm ô số lớn</b> L · R · W · S · Overall. <b>Writing tổng</b> là ô lớn ngang hàng, W1/W2 là dòng phụ (YC-13.7).</li>
       <li>W và S có <b>4 ô tiêu chí</b>. Ai đúng quyền bấm ô → sửa ngay tại chỗ, lưu từng ô; sửa điểm đã có vẫn phải ghi lý do (YC-13.8).</li>
       <li>Nhận xét W/S ở dưới (không bắt buộc); Speaking có <b>GV chấm</b> (YC-13.5).</li>
-      <li>Menu ⋯ dùng tên ngắn mới; mỗi mục mở hộp có ô lý do, không ghi ngay (YC-13.6, T38).</li>
+      <li>Menu ⋯ dùng tên ngắn mới và <b>chỉ hiện thao tác hợp với trạng thái</b> của kỹ năng (T38, bảng K4 §4d); mục cần lý do mở hộp có ô lý do, không ghi ngay.</li>
+      <li>Sửa tại chỗ: GVBM đúng kỹ năng, QL; với <b>MT lịch sử</b> thêm GVCN (T34). Còn phải vẽ khi soạn PR-HSM: lượt đã huỷ, MT lịch sử, kỹ năng vắng/dời, lượt RF.</li>
     </ul>
   </section>
 
   <!-- ================================================================ M11 -->
   <section class="m" id="m11">
     <div class="mh"><span class="code">M11</span><h2>Xuất Excel kết quả Mock Test</h2><span class="yc">YC-13.9</span></div>
-    <div class="loc"><b>NẰM Ở</b> Test › Kế hoạch Test › nút <b style="background:none;color:var(--tx);padding:0">Xuất Excel</b> (và Phân tích › Tổng hợp Test) → ngăn bên phải <span class="who">Ai thấy: QL, Quản trị (phạm vi của mình) · GVCN (lớp mình)</span></div>
+    <div class="loc"><b>NẰM Ở</b> Test › <b style="background:none;color:var(--tx);padding:0">Lịch Test</b> › nút Xuất Excel ở đầu trang · Hồ sơ lớp ⋮ › Xuất Excel (điền sẵn lớp) · Phân tích › Tổng hợp Test → ngăn bên phải <span class="who">Ai thấy: QL, Quản trị (phạm vi của mình) · GVCN (lớp mình)</span></div>
     <div class="grid-side">
       <div class="panel">
-        <div class="ph"><span class="t">Xuất kết quả Mock Test</span><span class="cl">✕</span></div>
+        <div class="ph"><span class="t">Xuất kết quả</span><span class="seg" style="margin-left:10px"><span class="on">Mock Test (FT)</span><span>Lớp thường</span></span><span class="cl">✕</span></div>
         <div class="pb">
           <div class="blkt">1 · Phạm vi</div>
           <div class="grid2"><div class="f"><span class="lb">Chi nhánh</span><div class="fld"><span class="chip">MB ✕</span><span class="chip">BC ✕</span></div></div>
@@ -743,7 +749,7 @@ tr.sticky th{position:sticky;top:0}
         <li>Ba bước trên một ngăn: <b>Phạm vi</b> (chi nhánh, lớp) → <b>Thời gian</b> (tuần / tháng / đợt MT) → <b>Lượt và cột</b>. Điều kiện cộng dồn: "chi nhánh này trong những tuần này", "lớp này trong khoảng này".</li>
         <li><b>Xem trước</b> luôn hiện số lượt/học viên/lớp và dòng đầu — biết trước file có gì.</li>
         <li>Tệp có 2 sheet: <b>Kết quả</b> (một dòng = một em × một MT) và <b>Bộ lọc đã dùng</b> (ai xuất, khi nào, điều kiện).</li>
-        <li>Cột đầy đủ thêm W1, W2, 4 tiêu chí W/S, nhận xét, GV chấm, tuần từng kỹ năng.</li>
+        <li>Cột gọn: Mã · Tên · Chi nhánh · Lớp · Lộ trình · MT · Tuần · L · R · W · S · Overall · Target · Kỳ vọng · SOS · Trạng thái lượt. Đầy đủ thêm W1, W2, 4 tiêu chí W1/W2/S, nhận xét, GV chấm, tuần từng kỹ năng. Điểm là ô số, thiếu để trống. Khung Lớp thường xuất sheet riêng, môn theo chương trình + % tổng.</li>
       </ul>
     </div>
   </section>
@@ -782,12 +788,15 @@ tr.sticky th{position:sticky;top:0}
         <div class="row"><span class="st todo">Cần làm</span><span class="st doing">Đang làm</span><span class="st wait">Chờ duyệt</span><span class="st late">Quá hạn 2 ngày</span><span class="st done">Xong</span><span class="st cancel">Đã huỷ</span></div>
         <div class="blkt" style="margin-top:14px">Kết quả Test (hệ riêng, không đổi)</div>
         <div class="row"><span class="sos sos1">SOS 1</span><span class="sos sos2">SOS 2</span><span class="sos sos3">SOS 3</span><span class="sos sos2 tam">SOS 2 tạm thời</span><span class="st ok">Đạt kỳ vọng</span></div>
+        <div class="blkt" style="margin-top:14px">Hai khung FT / Lớp thường (đầu trang Tổng quan, Phân tích, Test, Công việc)</div>
+        <div class="row"><span class="seg"><span class="on">Fast Track</span><span>Lớp thường</span></span><span class="fnt">FT lọc kỹ năng L · R · W · S — Lớp thường lọc chương trình Pre FOU · FOU · BE · ELE, không lọc môn</span></div>
         <div class="blkt" style="margin-top:14px">Nút sáng/tối</div>
         <div class="row"><span class="fnt">Thanh đầu:</span><span class="chip">Thông báo 1</span><button class="theme-btn" onclick="flip()" title="Chế độ sáng/tối">◐</button><span class="chip">Đỗ Vũ Tuấn Phong</span></div>
       </div></div>
     </div>
     <ul class="notes">
       <li>Một ô ngày cho cả web: gõ <code>dd/mm/yyyy</code> (hoặc <code>dd/mm</code>) + nút lịch tự vẽ (không dùng lịch trình duyệt vì nó hiện <code>mm/dd/yyyy</code>). Luật từng chỗ giữ nguyên (ví dụ "không sau hôm nay").</li>
+      <li>Không còn dòng thu gọn "Bắt đầu theo dõi: hôm nay · Đổi" — thay bằng ô ngày này, hiện sẵn ngày hôm nay.</li>
       <li>"Khác" ở đâu cũng hiện ô chữ ngay dưới, bắt buộc ghi rõ.</li>
       <li>Ô chọn người: bấm là thấy danh sách; luôn có "Dùng tên ngoài hệ thống".</li>
       <li>Font thử: <b>Be Vietnam Pro</b> (trang này đang dùng). Bấm ◐ để xem bảng màu sáng.</li>
