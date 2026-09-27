@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="vi" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup PR-N1 — sửa lỗi nóng</title>
+<style>
+/* Token tối lấy đúng web/src/index.css (cùng bộ với mockup 19). Chỉ tông tối — PR-N1 không làm chế độ sáng. */
+:root{
+  --bg:#0c1220; --s1:#141d2f; --s2:#1a2437; --s3:#101a2c; --line:rgba(160,178,214,.14); --line2:rgba(160,178,214,.26);
+  --tx:#dde5f2; --dim:#93a3c0; --faint:#8292ae; --acc:#7db3f0; --acc-soft:rgba(125,179,240,.14); --acc-line:rgba(125,179,240,.38);
+  --ok:#6fdc9f; --ok-bg:#123526; --ok-ln:#2b7050;
+  --bad:#ff9aa2; --bad-bg:#3c1d24; --bad-ln:#88404a;
+  --late:#ff9166; --late-bg:#3e1f13; --late-ln:#9a4a2a;
+  --soon:#f2c450; --soon-bg:#352b10; --soon-ln:#7a6222;
+  --sos2:#ffb070; --sos2-bg:#3a2412; --sos2-ln:#8a5530;
+  --wait:#c4a9ff; --done:#a9b5c8;
+  --hl:#172640; --hl-bar:#7db3f0; --sub:#0f1828;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.45 'Be Vietnam Pro','Segoe UI',system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.page{max-width:1240px;margin:0 auto;padding:20px 16px 80px}
+h1{font-size:22px;margin:0 0 4px}
+.lead{color:var(--dim);margin:0 0 14px;max-width:86ch}
+.toc{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 20px;position:sticky;top:0;background:var(--bg);padding:8px 0;z-index:5;border-bottom:1px solid var(--line)}
+.toc a{border:1px solid var(--line2);border-radius:7px;padding:4px 9px;font-size:12px;font-weight:600;color:var(--tx);text-decoration:none}
+section.m{margin:30px 0 0}
+.mh{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.mh .code{font-weight:700;color:var(--acc);font-size:13px}
+.mh h2{font-size:17px;margin:0}
+.yc{font-size:11px;font-weight:700;color:var(--faint);border:1px solid var(--line2);border-radius:5px;padding:0 5px}
+.loc{display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;margin:8px 0 10px;font-size:12.5px;color:var(--dim)}
+.loc b{background:var(--soon);color:#1b1400;border-radius:4px;padding:0 6px;font-size:11px;letter-spacing:.03em}
+.loc .who{margin-left:auto}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:900px){.pair{grid-template-columns:1fr}}
+.col>.lbl{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;margin:0 0 6px}
+.col.truoc>.lbl{color:var(--bad)} .col.sau>.lbl{color:var(--ok)}
+.win{background:var(--s1);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.col.truoc .win{opacity:.92}
+.body{padding:12px}
+.notes{margin:8px 0 0;padding-left:18px;color:var(--dim);font-size:12.5px}
+.mut{color:var(--dim)} .fnt{color:var(--faint);font-size:11.5px} .b{font-weight:700} .sb{font-weight:600}
+.t12{font-size:12px} .t11{font-size:11px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sp{flex:1}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line2);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;color:var(--tx);background:transparent;white-space:nowrap}
+.btn.pri{background:var(--acc);color:#0b1626;border-color:var(--acc)}
+.btn.ghost{border-color:transparent;color:var(--dim)}
+.btn.sm{padding:3px 8px;font-size:11.5px}
+.lv{display:inline-flex;align-items:center;border-radius:999px;padding:0 7px;font-size:10.5px;font-weight:700;line-height:17px;white-space:nowrap}
+.sos1{background:var(--soon-bg);color:var(--soon)} .sos2{background:var(--sos2-bg);color:var(--sos2)} .sos3{background:var(--bad-bg);color:var(--bad)}
+.blue{background:rgba(128,184,255,.15);color:#80b8ff}
+.dut{background:transparent!important;border:1px dashed currentColor}
+.ok{color:var(--ok)} .bad{color:var(--bad)} .late{color:var(--late);font-weight:700} .soon{color:var(--soon)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--dim);text-align:left;padding:7px 8px;background:var(--s2);border-bottom:1px solid var(--line)}
+td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+td.r,th.r{text-align:right}
+tr.lon td{background:var(--hl);font-weight:800;font-size:12.5px;box-shadow:inset 3px 0 0 var(--hl-bar)}
+tr.lon.dong td{background:var(--s2);box-shadow:inset 3px 0 0 var(--line2)}
+tr.con td{background:var(--sub);font-size:12px}
+.stick{position:relative}
+.stick::after{content:"dính khi cuộn";position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;font-weight:700;color:var(--soon);border:1px dashed var(--soon-ln);border-radius:5px;padding:0 5px;letter-spacing:0;text-transform:none}
+.fade td{opacity:.35}
+.field{display:block;width:100%;border:1px solid var(--line2);background:var(--s3);border-radius:7px;padding:6px 9px;color:var(--tx);font-size:12.5px;min-height:32px}
+.field.err{border-color:var(--late);box-shadow:0 0 0 1px rgba(255,145,102,.4)}
+.f-lbl{font-size:11.5px;font-weight:700;margin:0 0 4px;display:flex}
+.f-lbl .req{color:var(--bad)} .f-lbl .dem{margin-left:auto;font-weight:500;color:var(--faint);font-size:10.5px}
+.f-err{font-size:11px;color:var(--late);margin-top:3px}
+.foot{border-top:1px solid var(--line);padding:0}
+.foot .thieu{padding:7px 12px 0;text-align:right;font-size:11px;font-weight:600;color:var(--soon)}
+.foot .thieu u{text-underline-offset:2px;cursor:pointer}
+.foot .act{display:flex;gap:8px;padding:9px 12px}
+.pa-row{border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:8px}
+.khoi{margin-top:8px;padding:9px;border-radius:8px;background:var(--s2)}
+.chip{display:inline-flex;border:1px solid var(--line2);border-radius:7px;padding:3px 8px;font-size:11.5px;margin:0 4px 4px 0}
+.cp{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.stat{border:1px solid var(--line);border-radius:10px;padding:9px 11px;background:var(--s1)}
+.stat .k{font-size:11px;color:var(--dim)} .stat .v{font-size:15px;font-weight:700;margin:2px 0}
+.toast{display:flex;align-items:center;gap:12px;border:1px solid var(--line2);background:var(--s1);border-radius:10px;padding:10px 14px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.45);max-width:420px}
+.bar{display:flex;align-items:center;gap:12px;padding:9px 14px;border-bottom:1px solid var(--line);background:var(--s3)}
+.bar .logo{display:inline-flex;width:22px;height:22px;border-radius:6px;background:var(--acc-soft);border:1px solid var(--acc-line);color:var(--acc);font-weight:800;font-size:12px;align-items:center;justify-content:center}
+.bar .nav span{padding:3px 9px;border-radius:7px;color:var(--dim);font-size:12.5px}
+.bar .nav span.on{background:var(--acc-soft);color:var(--tx);border:1px solid var(--acc-line)}
+.tri{font-size:9px;margin-right:2px}
+.x{color:var(--faint)}
+</style>
+</head>
+<body>
+<div class="page">
+<h1>PR-N1 · Sửa lỗi nóng + sửa sai sự thật — Trước | Sau</h1>
+<p class="lead">Mỗi mục một cặp nhỏ: bên trái là web hiện nay (<code>main</code>), bên phải là sau PR-N1. Dữ liệu là bộ demo
+(Vũ Ngọc Lan, Nguyễn Minh An, Trần Thu Hà, lớp MB-FT 101 · MB-FOU 12). Ngày theo lịch thật 2026: tuần <b>W4 SEP</b> = 21–27/09,
+hạn ghi kết quả là <b>hết Thứ Hai 28/09</b>. Kế hoạch: <code>docs/superpowers/plans/2026-09-28-pr-n1-sua-loi-nong.md</code>.</p>
+<nav class="toc">
+  <a href="#m1">1 · HV &amp; Lớp</a><a href="#m2">2 · Form nhập bù + báo lỗi</a><a href="#m3">3 · Hai khối SOS</a>
+  <a href="#m4">4 · Cột phải Case/PA</a><a href="#m5">5 · Hạn hết T2</a><a href="#m6">6 · Ý thức lớp</a>
+  <a href="#m7">7 · Nhãn kết quả</a><a href="#m8">8 · Hoàn tác</a><a href="#m9">9 · Tên web</a>
+</nav>
+
+<!-- ============================================================ 1 -->
+<section class="m" id="m1">
+  <div class="mh"><span class="code">1</span><h2>Học viên &amp; Lớp: không lớp nào mở sẵn · tiêu đề cột dính</h2><span class="yc">YC-11.1 · T17</span></div>
+  <div class="loc"><b>NẰM Ở</b><span>Menu <b style="background:none;color:var(--tx);padding:0">Học viên &amp; Lớp</b> → trang danh sách → bảng lớp (phạm vi Chi nhánh / Lớp tôi dạy)</span><span class="who">Ai thấy: QL, GVCN, GVBM</span></div>
+  <div class="pair">
+    <div class="col truoc"><p class="lbl">Trước</p><div class="win"><table>
+      <tr><th>Học viên</th><th>Kết quả gần nhất</th><th>Mục tiêu</th><th class="r">Case</th><th>Việc tiếp theo</th></tr>
+      <tr class="lon"><td colspan="5"><span class="tri">▾</span> MB-FT 101 · Fast Track · 18 HV · GVCN Trần Ngọc Hà</td></tr>
+      <tr class="con"><td>Nguyễn Minh An <span class="fnt">000001</span></td><td><b>6.0</b> <span class="lv sos1">SOS 1</span></td><td>7.0</td><td class="r">1</td><td>Ghi kết quả R</td></tr>
+      <tr class="con"><td>Vũ Ngọc Lan <span class="fnt">000043</span></td><td><b>5.0</b> <span class="lv sos3">SOS 3</span></td><td>7.0</td><td class="r">2</td><td>Xác định nguyên nhân L</td></tr>
+      <tr class="con"><td colspan="5" class="fnt">… 16 em nữa — cuộn xuống thì hàng tiêu đề trôi mất</td></tr>
+      <tr class="lon dong"><td colspan="5"><span class="tri">▸</span> MB-FOU 12 · Foundation · 14 HV</td></tr>
+    </table></div></div>
+    <div class="col sau"><p class="lbl">Sau</p><div class="win"><table>
+      <tr><th class="stick">Học viên</th><th>Kết quả gần nhất</th><th>Mục tiêu</th><th class="r">Case</th><th>Việc tiếp theo</th></tr>
+      <tr class="lon dong"><td colspan="5"><span class="tri">▸</span> MB-FT 101 · Fast Track · 18 HV · GVCN Trần Ngọc Hà</td></tr>
+      <tr class="lon dong"><td colspan="5"><span class="tri">▸</span> MB-FOU 12 · Foundation · 14 HV</td></tr>
+      <tr class="lon dong"><td colspan="5"><span class="tri">▸</span> MB-FT 102 · Fast Track · 16 HV</td></tr>
+    </table>
+    <div class="body t12 mut">Đã mở một lớp và cuộn: <b>hàng tiêu đề cột</b> dính trên cùng, ngay dưới là <b>hàng lớp đang xem</b>
+      (<span class="sb">▾ MB-FT 101 …</span>) — luôn biết đang ở lớp nào. Gõ tìm "Lan" → lớp có kết quả tự mở (tối đa 5).</div></div></div>
+  </div>
+  <ul class="notes"><li>Từ 768 px. Điện thoại: bảng vẫn cuộn ngang trong khung, tiêu đề không dính (Q10).</li></ul>
+</section>
+
+<!-- ============================================================ 2 -->
+<section class="m" id="m2">
+  <div class="mh"><span class="code">2</span><h2>Form Tạo Case › Đã xong từ trước: dòng PA không tự đóng · báo lỗi rõ</h2><span class="yc">YC-12.5.1 · YC-12.5.2</span></div>
+  <div class="loc"><b>NẰM Ở</b><span>Hồ sơ HV Vũ Ngọc Lan → nút <b style="background:none;color:var(--tx);padding:0">+ Case</b> → ngăn phải "Tạo Case" → tab "Đã xong từ trước". Báo lỗi áp cho <b style="background:none;color:var(--tx);padding:0">mọi</b> form ngăn phải (Ghi kết quả, Thêm PA, Chuyển lớp, Ghi vi phạm…)</span><span class="who">Ai thấy: GVCN, GVBM, QL</span></div>
+  <div class="pair">
+    <div class="col truoc"><p class="lbl">Trước</p><div class="win"><div class="body">
+      <p class="f-lbl">Phương án đã áp dụng</p>
+      <div class="pa-row t12"><span class="sb">T</span> <span class="mut">· Tôi · W2 SEP → W4 SEP</span> <a class="t11" style="color:var(--acc)">Sửa</a>
+        <div class="fnt">gõ chữ "T" đầu tiên → dòng tự thu gọn, không gõ tiếp được</div></div>
+      <p class="f-lbl" style="margin-top:10px">Mô tả <span class="req">&nbsp;*</span></p>
+      <div class="field">Nghe kém</div>
+    </div><div class="foot"><div class="thieu">Còn thiếu: Mô tả</div><div class="act"><span class="btn">Huỷ</span><span class="sp"></span><span class="btn pri">Lưu Case</span></div></div></div></div>
+    <div class="col sau"><p class="lbl">Sau</p><div class="win"><div class="body">
+      <p class="f-lbl">Phương án đã áp dụng</p>
+      <div class="pa-row"><div class="field">Tutor Listening mỗi tuần, chữa đề Section 3|</div>
+        <div class="row" style="margin-top:6px"><span class="chip">Tôi</span><span class="chip">W2 SEP</span><span class="chip">W4 SEP</span><span class="sp"></span><span class="btn sm">Xong</span><span class="btn sm ghost">Xoá</span></div></div>
+      <p class="f-lbl" style="margin-top:10px">Mô tả <span class="req">&nbsp;*</span><span class="dem">8/15</span></p>
+      <div class="field err">Nghe kém</div>
+      <div class="f-err">Cần ít nhất 15 ký tự (đang có 8)</div>
+    </div><div class="foot"><div class="thieu">Còn thiếu: <u>Mô tả — cần ≥ 15 ký tự (đang có 8)</u> · <u>Kết quả cuối — chưa chọn</u></div><div class="act"><span class="btn">Huỷ</span><span class="sp"></span><span class="btn pri">Lưu Case</span></div></div></div></div>
+  </div>
+  <ul class="notes"><li>Dòng PA chỉ gọn lại khi bấm <b>Xong</b>. Viền đỏ + câu dưới ô hiện khi <b>rời ô</b>; chân form hiện sau khi bấm Lưu; bấm tên ô ở chân → nhảy tới ô.</li></ul>
+</section>
+
+<!-- ============================================================ 3 -->
+<section class="m" id="m3">
+  <div class="mh"><span class="code">3</span><h2>Case từ SOS chờ nguyên nhân: hai khối loại trừ nhau</h2><span class="yc">YC-12.1 (tạm — luồng mới ở PR-SOS)</span></div>
+  <div class="loc"><b>NẰM Ở</b><span>Hồ sơ HV → tab Học thuật → bảng kỹ năng → hàng Case "MT1 - Reading dưới kỳ vọng" → dòng "Chờ GVBM xác định nguyên nhân"</span><span class="who">Ai thấy: GVBM môn đó, GVCN, QL</span></div>
+  <div class="pair">
+    <div class="col truoc"><p class="lbl">Trước — mở được cả hai, vỡ giao diện</p><div class="win"><div class="body t12">
+      <p class="soon" style="margin:0 0 6px">Chờ GVBM xác định nguyên nhân · hạn 16/09</p>
+      <span class="chip">Từ vựng / ngữ pháp</span><span class="chip">Kỹ năng làm bài</span><span class="chip">Tư duy logic</span><span class="chip">Khác</span>
+      <div class="row"><span class="btn sm">Huỷ</span><span class="btn sm">Lưu</span></div>
+      <div class="khoi"><span class="chip">Học sinh có lý do đặc biệt</span><span class="chip">Tình huống đơn lẻ</span><span class="chip">Khác</span>
+      <div class="soon t11">Chọn một lý do.</div><div class="row"><span class="btn sm">Huỷ</span><span class="btn sm" style="color:var(--bad)">Không cần theo dõi</span></div></div>
+    </div></div></div>
+    <div class="col sau"><p class="lbl">Sau — một khối một lúc</p><div class="win"><div class="body t12">
+      <p class="soon" style="margin:0 0 6px">Chờ GVBM xác định nguyên nhân · hạn 16/09</p>
+      <div class="row"><span class="btn sm pri">Xác định nguyên nhân</span><span class="btn sm ghost">Không cần theo dõi</span><span class="fnt">← lúc chưa mở</span></div>
+      <div class="khoi"><span class="fnt">Bấm "Xác định nguyên nhân" → hai nút biến mất, chỉ còn:</span><br>
+        <span class="chip">Từ vựng / ngữ pháp</span><span class="chip">Kỹ năng làm bài</span><span class="chip">Tư duy logic</span><span class="chip">Khác</span>
+        <div class="row"><span class="btn sm">Huỷ</span><span class="btn sm pri">Lưu</span><span class="fnt">Huỷ → về hai nút</span></div></div>
+    </div></div></div>
+  </div>
+</section>
+
+<!-- ============================================================ 4 -->
+<section class="m" id="m4">
+  <div class="mh"><span class="code">4</span><h2>Cột phải hàng Case / PA: nút ở trên, chữ phụ ở dưới, cùng một mép</h2><span class="yc">YC-12.5.4</span></div>
+  <div class="loc"><b>NẰM Ở</b><span>Hồ sơ HV → tab Học thuật → bảng kỹ năng → cột "Việc tiếp" của hàng Case và hàng PA</span><span class="who">Ai thấy: mọi vai xem hồ sơ</span></div>
+  <div class="pair">
+    <div class="col truoc"><p class="lbl">Trước</p><div class="win"><table>
+      <tr class="con"><td>▶ PA · Tutor · đến MT2<div class="fnt">Trần Ngọc Hà</div></td><td><div class="soon t11">Gợi ý tự động · chờ xác nhận</div><div class="row"><span class="btn sm pri">Xác nhận</span><span class="btn sm">Sửa</span><span class="btn sm ghost">Thay</span></div></td></tr>
+      <tr class="con"><td>▶ PA · Tự học đề<div class="fnt">Đỗ Vũ Tuấn Phong</div></td><td><span class="fnt">hạn CN 27/09</span> <span class="btn sm">Ghi kết quả</span></td></tr>
+      <tr class="con"><td>Case · TEST READING</td><td><span class="btn sm">Mở Case</span><div class="fnt">Kết luận: Tiến bộ rõ</div></td></tr>
+    </table></div></div>
+    <div class="col sau"><p class="lbl">Sau</p><div class="win"><table>
+      <tr class="con"><td>▶ PA · Tutor · đến MT2<div class="fnt">Trần Ngọc Hà</div></td><td><div class="cp"><div class="row"><span class="btn sm pri">Xác nhận</span><span class="btn sm">Sửa</span><span class="btn sm ghost">Thay</span></div><span class="soon t11">Gợi ý tự động · chờ xác nhận</span></div></td></tr>
+      <tr class="con"><td>▶ PA · Tự học đề<div class="fnt">Đỗ Vũ Tuấn Phong</div></td><td><div class="cp"><span class="btn sm">Ghi kết quả</span><span class="fnt">hạn hết T2 28/09</span></div></td></tr>
+      <tr class="con"><td>Case · TEST READING</td><td><div class="cp"><span class="btn sm">Mở Case</span><span class="fnt">Kết luận: Tiến bộ rõ</span></div></td></tr>
+    </table></div></div>
+  </div>
+</section>
+
+<!-- ============================================================ 5 -->
+<section class="m" id="m5">
+  <div class="mh"><span class="code">5</span><h2>Hạn ghi kết quả PA: hết Thứ Hai — cùng một chữ ở ba nơi</h2><span class="yc">§5.6 R-PA1…5 · K3-02 · K5-02 · T53 Q1</span></div>
+  <div class="loc"><b>NẰM Ở</b><span>(a) Hồ sơ HV → Học thuật → hàng PA · (b) Tổng quan / Công việc → Việc cần làm → nhóm "Ghi kết quả PA" · (c) Hồ sơ HV → ô đầu "Việc cần làm tiếp"</span><span class="who">Ai thấy: người thực hiện PA, GV dạy lớp; QL khi đã quá hạn</span></div>
+  <div class="pair">
+    <div class="col truoc"><p class="lbl">Trước — ba nơi ba hạn</p><div class="win"><div class="body t12">
+      <p class="fnt" style="margin:0">(a) hàng PA</p><div>PA · Tutor Listening <span class="fnt">· hạn CN 27/09</span></div>
+      <p class="fnt" style="margin:8px 0 0">(b) Việc cần làm — hai nhóm cho một việc</p>
+      <div>Làm PA: Tutor <span class="fnt">· Vũ Ngọc Lan · hạn 30/08</span> <span class="btn sm">Đã làm</span></div>
+      <div>Ghi kết quả PA L <span class="fnt">· hạn 30/08</span></div>
+      <p class="fnt" style="margin:8px 0 0">(c) ô đầu hồ sơ</p>
+      <div class="stat"><div class="k">Việc cần làm tiếp</div><div class="v bad">Ghi kết quả PA Listening</div><div class="late t11">⚠ quá hạn 27 ngày</div><div class="fnt">(lấy ngày dự kiến kết thúc; hàng kỹ năng nói 6 ngày)</div></div>
+    </div></div></div>
+    <div class="col sau"><p class="lbl">Sau — một hạn, một chữ</p><div class="win"><div class="body t12">
+      <p class="fnt" style="margin:0">(a) hàng PA</p><div>PA · Tutor Listening <span class="fnt">· hạn hết T2 28/09</span></div>
+      <p class="fnt" style="margin:8px 0 0">(b) Việc cần làm — một nhóm "Ghi kết quả PA", một dòng mỗi PA</p>
+      <div class="row"><div><b>Ghi kết quả PA L</b><div class="fnt">Vũ Ngọc Lan · MB-FT 101 · MT1</div></div><span class="sp"></span><div class="t11" style="text-align:right">tuần W4 SEP · hạn hết T2 28/09<div class="late">⚠ quá hạn 2 ngày</div></div><span class="btn sm">Ghi kết quả</span></div>
+      <p class="fnt" style="margin:8px 0 0">(c) ô đầu hồ sơ</p>
+      <div class="stat"><div class="k">Việc cần làm tiếp</div><div class="v bad">Ghi kết quả PA Listening</div><div class="t11">tuần W4 SEP · hạn hết T2 28/09 <span class="late">⚠ quá hạn 2 ngày</span></div></div>
+      <p class="fnt" style="margin:8px 0 0">Form Ghi kết quả khi trễ nhiều tuần: tiêu đề khối <b style="color:var(--tx)">1 · Kết quả W2–W4 SEP (ghi bù 3 tuần)</b></p>
+    </div></div></div>
+  </div>
+  <ul class="notes"><li>"Dự kiến kết thúc 04/10" vẫn hiện ở dòng phụ của PA nhưng màu trung tính và <b>không bao giờ</b> là việc.</li>
+    <li>Lúc deploy: một câu migrate dời hạn Chủ nhật → Thứ Hai của mọi PA đang chạy — sáng Thứ Hai không ai bị "quá hạn" ngược.</li></ul>
+</section>
+
+<!-- ============================================================ 6 -->
+<section class="m" id="m6">
+  <div class="mh"><span class="code">6</span><h2>Tab Ý thức của lớp, lọc "Chuyên cần": số và dòng khớp nhau</h2><span class="yc">YC-11.3.2 (sửa nhanh — dựng lại ở PR-YT4)</span></div>
+  <div class="loc"><b>NẰM Ở</b><span>Hồ sơ lớp MB-FT 101 → tab "Ý thức &amp; Phối hợp" → Vi phạm &amp; xử lý → Theo học viên → chip nhóm "Chuyên cần"</span><span class="who">Ai thấy: GVCN, QL</span></div>
+  <div class="pair">
+    <div class="col truoc"><p class="lbl">Trước</p><div class="win"><div class="body t12">
+      <div class="row"><b>Trần Thu Hà</b><span class="fnt">PISA-000002 · đang học</span><span class="sp"></span><b>0 vi phạm</b></div>
+      <p class="fnt" style="margin:6px 0 2px">Vi phạm gần đây</p>
+      <div>BTVN · 18/09 <span class="fnt">· đang chuẩn bị Report 1</span></div><div>BTVN · 16/09 <span class="fnt">· đang chuẩn bị Report 1</span></div>
+      <div>BTVN · 12/09</div><div>BTVN · 10/09</div>
+    </div></div></div>
+    <div class="col sau"><p class="lbl">Sau</p><div class="win"><div class="body t12">
+      <div class="row"><b>Trần Thu Hà</b><span class="fnt">000002 · đang học</span><span class="sp"></span><b>2 vi phạm</b> <span class="lv sos1">cũ nhất 6 ngày</span></div>
+      <p class="fnt" style="margin:6px 0 2px">Vi phạm gần đây</p>
+      <div>Chuyên cần · Đi muộn 20 phút · 22/09</div><div>Chuyên cần · Vắng không phép · 18/09</div>
+    </div></div></div>
+  </div>
+</section>
+
+<!-- ============================================================ 7 -->
+<section class="m" id="m7">
+  <div class="mh"><span class="code">7</span><h2>Nhãn kết quả nói đúng</h2><span class="yc">UX-A A1 · A2 · A3 · A4 · A6 · A9 · K2-10</span></div>
+  <div class="loc"><b>NẰM Ở</b><span>A1: Tổng quan GV + Công việc (nhãn SOS) · A2: HV &amp; Lớp, ô đầu hồ sơ HV · A4: Test › lưới lớp thường · A6: cột "Việc tiếp theo" · K2-10: Hồ sơ lớp FT › Học viên › Điểm</span><span class="who">Ai thấy: mọi vai</span></div>
+  <div class="pair">
+    <div class="col truoc"><p class="lbl">Trước</p><div class="win"><div class="body t12">
+      <div class="row">A1 <span class="lv blue">SOS 1</span><span class="fnt">xanh dương (ký tự ẩn trong mã)</span></div>
+      <div class="row" style="margin-top:6px">A2 <span class="lv dut" style="color:var(--dim)">SOS 2</span><span class="fnt">xám, không nói tạm thời</span></div>
+      <div class="row" style="margin-top:6px">A4 <span class="lv sos3">Đạt 0/4 môn · SOS 3</span></div>
+      <div class="row" style="margin-top:6px">A6 Nhập điểm R <span class="late">⚠ 12 ngày</span></div>
+      <table style="margin-top:8px"><tr><th>Mốc</th><th class="r">L</th><th class="r">R</th><th class="r">W1</th><th class="r">W2</th><th class="r">S</th></tr>
+        <tr><td>MT1 <span class="fnt">kỳ vọng 6.0</span></td><td class="r bad">6</td><td class="r bad">6.5</td><td class="r bad">5.5</td><td class="r ok">7</td><td class="r bad">6</td></tr></table>
+      <div class="fnt">tô theo target 7.0 → MT1 đạt kỳ vọng vẫn đỏ; "6" và "6.5" hai dạng</div>
+    </div></div></div>
+    <div class="col sau"><p class="lbl">Sau</p><div class="win"><div class="body t12">
+      <div class="row">A1 <span class="lv sos1">SOS 1</span><span class="fnt">vàng như mọi nơi</span></div>
+      <div class="row" style="margin-top:6px">A2 <span class="lv sos2 dut">SOS 2 tạm thời</span><span class="fnt">màu mức SOS · viền đứt · 2/4 kỹ năng</span></div>
+      <div class="row" style="margin-top:6px">A4 <span class="lv sos3">0/4 môn đạt</span></div>
+      <div class="row" style="margin-top:6px">A6 Nhập điểm R <span class="fnt">· MT2</span> <span class="late">⚠ quá hạn 12 ngày</span></div>
+      <table style="margin-top:8px"><tr><th>Mốc</th><th class="r">L</th><th class="r">R</th><th class="r">W1</th><th class="r">W2</th><th class="r">W</th><th class="r">S</th></tr>
+        <tr><td>MT1 <span class="fnt">kỳ vọng 6.0</span></td><td class="r ok">6.0</td><td class="r ok">6.5</td><td class="r">5.5</td><td class="r">7.0</td><td class="r ok">6.5</td><td class="r ok">6.0</td></tr>
+        <tr><td>MT2 <span class="fnt">kỳ vọng 6.5</span></td><td class="r bad"><span class="tri">▾</span>6.0</td><td class="r ok">7.0</td><td class="r">6.0</td><td class="r">6.5</td><td class="r ok">6.5</td><td class="r bad"><span class="tri">▾</span>6.0</td></tr></table>
+      <div class="fnt">so kỳ vọng của đúng mốc · ▾ dưới kỳ vọng · cột W (Writing tổng) là cột SOS xét · W1/W2 không tô</div>
+    </div></div></div>
+  </div>
+  <ul class="notes"><li>Lớp thường: bỏ hẳn nhãn SOS là việc PR-LT2b (T58); PR-N1 chỉ đổi chữ "Đạt x/y" → "x/y môn đạt".</li></ul>
+</section>
+
+<!-- ============================================================ 8 -->
+<section class="m" id="m8">
+  <div class="mh"><span class="code">8</span><h2>Toast "Hoàn tác" 5 giây dùng chung</h2><span class="yc">UX-C C1</span></div>
+  <div class="loc"><b>NẰM Ở</b><span>Góc dưới phải mọi trang (trên điện thoại: trên thanh menu dưới) — sau thao tác ghi ngay, đầu tiên là "Ghi vi phạm" ở Hồ sơ lớp/HV → Ý thức</span><span class="who">Ai thấy: người vừa thao tác</span></div>
+  <div class="pair">
+    <div class="col truoc"><p class="lbl">Trước — 10 giây, chữ xanh dương, không biết còn bao lâu</p>
+      <div class="toast" style="color:#80b8ff;border-color:rgba(128,184,255,.4)"><span style="flex:1">Đã ghi vi phạm cho Trần Thu Hà</span><span class="btn sm ghost">Hoàn tác</span></div></div>
+    <div class="col sau"><p class="lbl">Sau — 5 giây, đếm lùi</p>
+      <div class="toast"><span class="ok">✓</span><span style="flex:1">Đã lưu · Đã ghi vi phạm cho Trần Thu Hà</span><span class="btn sm">Hoàn tác (5)</span></div></div>
+  </div>
+</section>
+
+<!-- ============================================================ 9 -->
+<section class="m" id="m9">
+  <div class="mh"><span class="code">9</span><h2>Tên web: Pisa Tracking</h2><span class="yc">YC-6</span></div>
+  <div class="loc"><b>NẰM Ở</b><span>Thanh đầu mọi trang (góc trái) · tiêu đề tab trình duyệt · trang đăng nhập / Vào nhanh · README, TRIEN_KHAI, DEMO</span><span class="who">Ai thấy: mọi người</span></div>
+  <div class="pair">
+    <div class="col truoc"><p class="lbl">Trước</p><div class="win"><div class="bar"><span class="logo">P</span><b>PISA Progress</b><span class="nav"><span>Tổng quan</span><span class="on">Học viên &amp; Lớp</span><span>Test</span><span>Công việc</span></span></div>
+      <div class="body t12 mut">Tab trình duyệt: "PISA Progress" · Vào nhanh: "Bốn nhóm: … <s>Admin chi nhánh</s> …"</div></div></div>
+    <div class="col sau"><p class="lbl">Sau</p><div class="win"><div class="bar"><span class="logo">P</span><b>Pisa Tracking</b><span class="nav"><span>Tổng quan</span><span class="on">Học viên &amp; Lớp</span><span>Test</span><span>Công việc</span></span></div>
+      <div class="body t12 mut">Tab trình duyệt: "Pisa Tracking" · Vào nhanh: "Ba nhóm: Quản trị hệ thống, Quản lý và Giáo viên."</div></div></div>
+  </div>
+  <ul class="notes"><li>Không đổi tên repo, thư mục, mã học viên (PISA-000043).</li></ul>
+</section>
+
+</div>
+</body>
+</html>

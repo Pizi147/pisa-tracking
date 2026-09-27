@@ -441,7 +441,7 @@ chi nhánh đi qua Vận hành (tab đã có) với "Người phụ trách" nh�
 |---|---|
 | R-PA1 | Kết quả của một tuần học (Thứ Hai → Chủ nhật) phải ghi xong **trước hết Thứ Hai tuần kế tiếp** (thay "hết Chủ nhật" của rulebook mục 5 và `HE_GIAO_DIEN.md` §4 loại `cap-nhat-pa`) |
 | R-PA2 | Áp cho **mọi PA học thuật** (FT, lớp thường, PA quy chế SOS, PA bổ trợ). Không áp cho Ý thức, Phối hợp SOS |
-| R-PA3 | Nhãn hiển thị: `Ghi kết quả tuần W4 SEP · hạn hết T2 29/09`; quá hạn: `quá hạn n ngày` tính từ sau Thứ Hai đó |
+| R-PA3 | Nhãn hiển thị: `Ghi kết quả tuần W4 SEP · hạn hết T2 28/09`; quá hạn: `quá hạn n ngày` tính từ sau Thứ Hai đó |
 | R-PA4 | Đổi ở **hàm hạn tuần thật** `weeklyUpdateDue` (`shared/domain/cases.ts`) — **không** phải `cycleDeadline` (M-15). 11 chỗ chữ/hàm phải đổi: bảng K3 §4(c). `cycleDeadline` chỉ còn dùng cho hạn duyệt đề xuất PA → đổi thành 5 ngày (K3-18) |
 | R-PA5 | Hạn tuần **được lưu** ở `case_interventions.action_due` → migrate **một câu** dời mọi hạn của PA đang chạy từ Chủ nhật sang Thứ Hai (K5-19); chạy thử in số PA bị dời trước. Tuần đang dở lúc deploy không ai bị tính quá hạn ngược |
 
