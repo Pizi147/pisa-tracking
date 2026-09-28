@@ -182,7 +182,7 @@ Thứ tự này là thứ tự **BÀY RA**, không phải quy trình bắt buộ
 | Chưa đủ ký tự tìm người | `Nhập ít nhất 3 ký tự để tìm giáo viên` |
 | Vi phạm hết hiệu lực trong lịch sử | `{người} đánh dấu {ngày}: "{lý do}"` — dòng phụ dưới vi phạm bị gạch ngang |
 | Phương án có vi phạm bị hủy sau đó | `{k} trong {n} vi phạm của phương án này sau đó được xác định là không chính xác.` |
-| Lưu vi phạm xong | `Đã ghi vi phạm cho {tên}` + link `Hoàn tác` |
+| Lưu vi phạm xong | `Đã ghi vi phạm cho {tên}` + nút `Hoàn tác ({n})` đếm lùi 5 giây (PR-N1) |
 | Xác nhận phương án xong | `Đã lưu. {tên}: {n} vi phạm chuyển sang Đã xử lý.` |
 | Trạng thái rỗng, khu vi phạm chưa xử lý | `Không còn vi phạm nào chưa xử lý.` |
 | Trạng thái rỗng, khu phương án đang chuẩn bị | `Chưa có phương án nào đang chuẩn bị.` |
@@ -270,7 +270,23 @@ câu báo máy chủ `phương án xử lý`) và D3 (bỏ "Hãy") đã ghi ở 
 | Hồ sơ không có lộ trình | tab Học thuật: `Học viên chưa có lộ trình nào` (giữ); tab Ý thức và Hành trình vẫn mở được (J8); bốn ô số vẫn hiện |
 | Ô Việc cần làm tiếp — hai việc thêm (chủ sản phẩm 22/09) | `Xác định nguyên nhân {kỹ năng}` (đứng trước mọi việc khác, hạn = hạn xác định nguyên nhân) · `Xác nhận PA gợi ý {kỹ năng}`; mọi câu dùng **tên đầy đủ** kỹ năng (`Làm PA Writing Task 2`), ô Kỹ năng cần hỗ trợ cũng vậy |
 | Ô Kết quả Test gần nhất | dấu ⚠ chỉ khi đợt còn thiếu điểm; đủ điểm mà có SOS: màu đỏ + ● (không ⚠ đi với "Đã đủ điểm") |
-| Bảng Học viên của lớp — dòng dưới tên (chủ sản phẩm 22/09) | một nhãn nhỏ: `SOS {n} · tạm thời` (vàng) · `SOS {n}` (vàng) · `Đạt kỳ vọng` (xám; `· tạm thời` khi mới có một phần điểm) · `Chưa có kết quả` (xám) · `Đã kết thúc` (xám) |
+| Bảng Học viên của lớp — dòng dưới tên (chủ sản phẩm 22/09; PR-N1 A2) | một nhãn nhỏ: `SOS {n} tạm thời` (màu của mức, viền đứt) · `SOS {n}` (màu của mức) · `Đạt kỳ vọng` (xám; `· tạm thời` khi mới có một phần điểm) · `Chưa có kết quả` (xám) · `Đã kết thúc` (xám) |
 | Bảng Học viên của lớp — thiếu thông tin | `⚠ {n}` (rê chuột/bấm thấy danh sách); các màn khác giữ `Thiếu {n} thông tin` |
 | Bảng Học viên của lớp — cột Theo dõi, dòng phụ | `{n} case` · `{n} case bàn giao` (bỏ "quá hạn nhập điểm" — màu đỏ của nhãn việc đã nói; bỏ nhãn "Cần bàn giao" riêng) |
 | Nhãn dòng thời gian Ý thức | `Vi phạm` = nhãn trơn xanh dương, không biểu tượng ▶ (quá 5 ngày: `⚠ Vi phạm` đỏ) |
+
+## 9. PR-N1 — 28/09/2026
+
+| Chỗ | Chữ dùng | Không viết |
+|---|---|---|
+| Tên ứng dụng (thanh đầu, tab trình duyệt, màn đăng nhập) | `Pisa Tracking` | `PISA Progress` |
+| Hạn ghi kết quả PA hằng tuần | `Ghi kết quả tuần W4 SEP · hạn hết T2 28/09`; ngắn: `hạn hết T2 {dd/mm}` | `hạn CN`, `trước CN` |
+| Quá hạn (mọi loại việc) | `quá hạn {n} ngày` (luôn có số) | `⚠ {n} ngày`, `· quá hạn` trơn |
+| SOS chưa đủ điểm các môn | `SOS {n} tạm thời` (màu của mức, viền đứt); IELTS: `SOS {n} tạm thời · {k}/{m} kỹ năng` | `SOS {n}` trơn khi còn thiếu điểm |
+| Tỷ lệ môn đạt (lớp thường) | `{x}/{y} môn đạt` · `{x}/{y} môn đạt · SOS {n}` · chưa đủ: `{x}/{k} môn đạt (đã chấm)` | `Đạt {x}/{y} môn`, `Chưa đạt 4/4 môn` |
+| PA theo quy chế SOS (máy gán, chạy ngay) | `🔒 theo quy chế` cạnh tên PA | `Gợi ý tự động · chờ xác nhận` |
+| Lỗi dưới ô (form) | `Cần ít nhất {n} ký tự (đang có {k})` · `Chưa chọn` · `Chưa điền` | — |
+| Chân form sau khi bấm Lưu | `{n} ô cần sửa ↑` (xám, bấm → ô lỗi đầu tiên) | `Còn thiếu: …` (vàng, liệt kê luật) |
+| Toast sau thao tác hoàn tác được | `… · Hoàn tác ({n})` đếm lùi 5 giây | toast 10 giây, nút `Hoàn tác` không đếm |
+| Nhật ký thay đổi (Quản trị) | nhãn tiếng Việt (`Huỷ phần còn lại của lượt`), mã máy chỉ ở tooltip | `attempt.cancel_part` |
+| ⓘ số liệu — không đếm trùng | `Mỗi học viên chỉ đếm 1 lần` · `Mỗi Case chỉ đếm 1 lần` | `COUNT DISTINCT student_id` |
