@@ -368,7 +368,8 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
       const cur = conn.prepare(
         `SELECT id FROM learning_cycles WHERE student_id = ? ORDER BY (status = 'active') DESC, seq DESC LIMIT 1`,
       ).get(list[0].student_id) as any;
-      if (cur?.id === list[0].cycle_id) { found = { mt1: list[0], mt2: list[1], mt3: list[2] }; break; }
+      /* PR-MT: lấy BA LƯỢT CUỐI — MT kế tiếp (mt3 + 1) phải là số còn trống của lộ trình (T36). */
+      if (cur?.id === list[0].cycle_id) { found = { mt1: list[list.length - 3], mt2: list[list.length - 2], mt3: list[list.length - 1] }; break; }
     }
     assert(found, 'Seed thiếu một lộ trình ĐANG CHẠY có đủ MT1-MT3 để kiểm xepMoi');
     const { mt3 } = found!;

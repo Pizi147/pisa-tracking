@@ -89,4 +89,91 @@ export async function runPrMtTests(t: YThucTestKit) {
     const huy = mig.luotHuyGiua(t.conn).filter((x: any) => x.hv === 'PRMT-NHAY');
     assert(huy.length === 1 && huy[0].mt === 'MT2' && !huy[0].coDiem, JSON.stringify(huy));
   });
+
+  // ---------------------------------------------------------------- khối 3: tự tạo MT mặc định
+  const { conn, P, TODAY, addDays, classId } = t;
+  const intake: any = await import('../classes/intake.ts');
+  const luat: any = await import('../classes/luatLoTrinh.ts');
+  const cycles: any = await import('../fasttrack/cycles.ts');
+  const mtMd: any = await import('../fasttrack/mtMacDinh.ts');
+  const week: any = await import('../platform/week.ts');
+  const { assertThrows } = t;
+  /** Lượt MT của lộ trình đang chạy: số, tuần thi (thứ Hai), lịch sử, số kỹ năng cùng tuần đó. */
+  const luotCua = (sid: number) => conn.prepare(
+    `SELECT a.id, a.attempt_no AS no, p.week_start AS tuan, a.lich_su, a.plan_source, a.cycle_id,
+            (SELECT COUNT(*) FROM attempt_skills k WHERE k.attempt_id = a.id AND k.planned_period_id = a.planned_period_id) AS kn
+       FROM assessment_attempts a JOIN learning_cycles cy ON cy.id = a.cycle_id AND cy.status = 'active'
+       JOIN report_periods p ON p.id = a.planned_period_id
+      WHERE a.student_id = ? AND a.status != 'cancelled' ORDER BY a.attempt_no`).all(sid) as any[];
+  const them = (lop: string, ten: string, startWeek: string) => {
+    const r = intake.commitIntake(P.admin, { classId: classId(lop), rows: [{ fullName: ten, target: 6.5, startWeek }], dateFormat: 'iso' });
+    assert(r.added === 1, `thêm ${ten}: ${JSON.stringify(r.failed)}`);
+    return r.studentIds[0] as number;
+  };
+  const tuanNay = week.mondayOf(TODAY);
+  const sA = them('MB FT 101', 'PRMT Em Mới LT1', tuanNay);
+  check('PR-MT (3) · Thêm HV lớp FT LT1, tuần bắt đầu tuần này → MT1/2/3 tuần học 6/12/16, lượt thường, 4 kỹ năng cùng tuần (M1, T33)', () => {
+    const ds = luotCua(sA);
+    const muon = [6, 12, 16].map((w) => addDays(tuanNay, 7 * (w - 1)));
+    assert(ds.map((x) => x.no).join() === '1,2,3', JSON.stringify(ds));
+    assert(ds.every((x, i) => x.tuan === muon[i] && x.lich_su === 0 && x.kn === 4 && x.plan_source === 'auto'), JSON.stringify(ds));
+  });
+  check('PR-MT (3) · Thêm HV lớp RF → đúng 2 lượt tuần học 4/8 (M1, Q27-4)', () => {
+    const ds = luotCua(them('MB FT RF 12', 'PRMT Em Mới RF', tuanNay));
+    assert(ds.map((x) => `${x.no}:${x.tuan}`).join() === `1:${addDays(tuanNay, 21)},2:${addDays(tuanNay, 49)}`, JSON.stringify(ds));
+  });
+  const sH1 = them('MB FT 101', 'PRMT Em Cũ H1', addDays(tuanNay, -7 * 22));
+  check('PR-MT (3) · H1: tuần bắt đầu 22 tuần trước → 3 lượt MT lịch sử; taoMtMacDinh chạy lại → [] (T34, M1)', () => {
+    const ds = luotCua(sH1);
+    assert(ds.length === 3 && ds.every((x) => x.lich_su === 1), JSON.stringify(ds));
+    assert(mtMd.taoMtMacDinh(ds[0].cycle_id, { actorUserId: null }).length === 0, 'chạy lại tạo trùng');
+    const j = conn.prepare(`SELECT COUNT(*) n FROM journey_events WHERE student_id = ? AND event_type = 'mock_scheduled'`).get(sH1) as any;
+    assert(j.n === 1, `một dòng hành trình cho cả lộ trình, đang ${j.n}`);
+  });
+  check('PR-MT (3) · ngayTao truyền vào là mốc lịch sử (K4-02); daThiToiMt kéo tới MT5; ngoài 0–8 bị chặn', () => {
+    const sid = them('MB FT 101', 'PRMT Em Ngày Tạo', tuanNay);
+    const cy = conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(sid) as any;
+    conn.prepare('DELETE FROM attempt_schedule_history WHERE attempt_id IN (SELECT id FROM assessment_attempts WHERE cycle_id = ?)').run(cy.id);
+    conn.prepare('DELETE FROM attempt_skills WHERE attempt_id IN (SELECT id FROM assessment_attempts WHERE cycle_id = ?)').run(cy.id);
+    conn.prepare('DELETE FROM assessment_attempts WHERE cycle_id = ?').run(cy.id);
+    const kq = mtMd.taoMtMacDinh(cy.id, { actorUserId: null, ngayTao: addDays(tuanNay, 7 * 6), daThiToiMt: 5 });
+    assert(kq.map((x: any) => `${x.attemptNo}${x.lichSu ? 'LS' : ''}`).join() === '1LS,2,3,4,5', JSON.stringify(kq));
+    assertThrows(() => mtMd.taoMtMacDinh(cy.id, { actorUserId: null, daThiToiMt: 9 }), /0 đến 8/, 'daThiToiMt 9');
+  });
+  check('PR-MT (3) · Đổi tuần bắt đầu (GVCN sửa): MT1 đã có điểm đứng yên, MT2/MT3 dời; hành trình nói rõ (K2-33, Q6)', () => {
+    const ds = luotCua(sA);
+    conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, band, entered_at) VALUES (?, 'listening', 5.5, ?)`).run(ds[0].id, TODAY);
+    const cy = conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(sA) as any;
+    cycles.updateCycle(P.coreTeacher, cy.id, { startPeriodId: week.ensurePeriod(addDays(tuanNay, 7)).id });
+    const sau = luotCua(sA);
+    assert(sau[0].tuan === ds[0].tuan, 'MT1 có điểm bị dời');
+    assert(sau[1].tuan === addDays(ds[1].tuan, 7) && sau[2].tuan === addDays(ds[2].tuan, 7), JSON.stringify(sau));
+    const j = conn.prepare(`SELECT detail FROM journey_events WHERE student_id = ? AND title = 'Đổi tuần bắt đầu học' ORDER BY id DESC`).get(sA) as any;
+    assert(/^MT2, MT3 dời sang W\d [A-Z]{3}, W\d [A-Z]{3}/.test(j?.detail ?? ''), j?.detail);
+  });
+  check('PR-MT (3) · Mở lộ trình tay (createCycle) ghi tuần bắt đầu và tạo lịch MT mặc định (Q5)', () => {
+    const cy = cycles.createCycle(P.admin, { studentId: sH1, route: 'LT2', targetScore: 7, startedAt: TODAY });
+    assert(cy.start_period_id, 'thiếu tuần bắt đầu');
+    assert(luotCua(sH1).map((x) => x.no).join() === '1,2,3', JSON.stringify(luotCua(sH1)));
+  });
+  check('PR-MT (3) · Chuyển em LT1 → lớp RF: lộ trình mới RF có MT1/MT2, Case đang mở đi theo lộ trình mới, không Case trùng (K5-60)', () => {
+    const c = conn.prepare(
+      `SELECT sc.id, sc.student_id, sc.category, sc.cycle_id FROM sos_cases sc
+         JOIN learning_cycles cy ON cy.id = sc.cycle_id AND cy.status = 'active' AND cy.route = 'LT1'
+         JOIN enrollments e ON e.student_id = sc.student_id AND e.status = 'active'
+         JOIN classes cl ON cl.id = e.class_id AND cl.is_fast_track = 1
+        WHERE sc.status != 'done' AND sc.dedup_key IS NOT NULL
+          AND (SELECT COUNT(*) FROM enrollments x WHERE x.student_id = sc.student_id AND x.status = 'active') = 1
+          AND (SELECT COUNT(*) FROM learning_cycles x WHERE x.student_id = sc.student_id AND x.status = 'active') = 1 LIMIT 1`).get() as any;
+    assert(c, 'seed thiếu em FT LT1 có Case mở');
+    luat.apDungMotDong(P.admin, { sid: c.student_id, toClassId: classId('MB FT RF 12'), ngay: TODAY, boiCanh: 'giua-khoa' });
+    const moi = conn.prepare(`SELECT id, route FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(c.student_id) as any;
+    assert(moi.route === 'RF' && moi.id !== c.cycle_id, JSON.stringify(moi));
+    assert(luotCua(c.student_id).map((x) => x.no).join() === '1,2', JSON.stringify(luotCua(c.student_id)));
+    const sau = conn.prepare('SELECT cycle_id, dedup_key FROM sos_cases WHERE id = ?').get(c.id) as any;
+    assert(sau.cycle_id === moi.id && sau.dedup_key === `a:${c.student_id}:${moi.id}:${c.category}`, JSON.stringify(sau));
+    const trung = conn.prepare(`SELECT COUNT(*) n FROM sos_cases WHERE student_id = ? AND category = ? AND status != 'done'`).get(c.student_id, c.category) as any;
+    assert(trung.n === 1, `Case ${c.category} mở: ${trung.n}`);
+    assert(conn.prepare(`SELECT 1 FROM case_milestones WHERE case_id = ? AND kind = 'route_changed'`).get(c.id), 'thiếu mốc Sang lộ trình');
+  });
 }

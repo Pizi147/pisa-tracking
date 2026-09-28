@@ -6,6 +6,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { boLichTuTao } from './luotThu.ts';
 
 /*
  * Dọn rác thư mục tạm của các lần `npm run check` trước (tiền tố `z2-`, xem server/src/tests/banChinh.tests.ts):
@@ -824,10 +825,9 @@ check('Mở lộ trình mới không đụng ràng buộc số MT của lộ tr�
   const created = cycles.createCycle(P.admin, {
     studentId: s.student_id, route: 'LT2', targetScore: 7.5, examPeriodId: periodOf('2027-05-03'), startedAt: '2026-09-23',
   }) as any;
-  const a = attempts.createAttempt(P.admin, {
-    studentId: s.student_id, cycleId: created.id, periodId: periodOf('2026-11-02'),
-  }) as any;
-  assert(a.attempt_no === 1, 'Lộ trình mới phải bắt đầu từ MT1 dù học viên đã có MT1 ở lộ trình cũ');
+  /* PR-MT (M1): mở lộ trình FT tự tạo lịch MT mặc định — MT1 của lộ trình mới có sẵn. */
+  const a = conn.prepare('SELECT * FROM assessment_attempts WHERE cycle_id = ? ORDER BY attempt_no LIMIT 1').get(created.id) as any;
+  assert(a?.attempt_no === 1, 'Lộ trình mới phải bắt đầu từ MT1 dù học viên đã có MT1 ở lộ trình cũ');
   assert(a.target_at_attempt === 7.5, 'Lượt mới phải chốt target của lộ trình mới');
   assert(a.planned_period_id, 'Tạo lượt phải gắn đúng một tuần');
 });
@@ -1579,11 +1579,11 @@ check('Bấm hai lần hoặc thử lại không tạo học viên trùng', () =
   assert(after === before, `Gửi lại cùng khoá đã tạo thêm ${after - before} học viên`);
   assert(again.added === 2, 'Kết quả lần gửi lại phải giống lần đầu');
 });
-check('[12.1] Nhập hàng loạt KHÔNG lập lịch MT, kể cả người có quyền xếp lịch', () => {
+check('[12.1 → PR-MT M1] Nhập hàng loạt tạo lịch MT MẶC ĐỊNH do hệ thống tính (không lấy tuần từ file), với cả GVCN lẫn Quản lý', () => {
   /*
-   * Trước đây file dán có cột "Tuần MT" thì đường nhập này tạo luôn các lượt thi. Nghe thì
-   * tiện, nhưng nó biến ô nhập danh sách thành một lối vòng quanh quyền xếp lịch — và lịch
-   * tạo kiểu đó không đi qua ràng buộc thứ tự đợt nào cả.
+   * Trước đây file dán có cột "Tuần MT" thì đường nhập này tạo luôn các lượt thi theo file — một lối vòng quanh quyền xếp lịch.
+   * PR-MT (M1, YC-13.2) đổi luật: thêm em vào lớp FT thì HỆ THỐNG tạo MT1–MT3 theo tuần bắt đầu học (tuần học 6/12/16); tuần không
+   * đến từ file, nên vẫn không có lối vòng nào. Quản lý xếp lại ở Kế hoạch Test.
    */
   const r = intake.commitIntake(P.coreTeacher, {
     classId: classId('MB FT 101'),
@@ -1592,8 +1592,8 @@ check('[12.1] Nhập hàng loạt KHÔNG lập lịch MT, kể cả người có
   });
   assert(r.added === 1, 'GVCN phải thêm được học viên vào lớp mình phụ trách');
   const s = conn.prepare("SELECT id FROM students WHERE full_name = 'Học Viên Không Quyền Tuần'").get() as any;
-  assert((conn.prepare('SELECT COUNT(*) n FROM assessment_attempts WHERE student_id = ?').get(s.id) as any).n === 0,
-    'Nhập hàng loạt đã tạo kế hoạch MT');
+  assert((conn.prepare("SELECT COUNT(*) n FROM assessment_attempts WHERE student_id = ? AND plan_source = 'auto'").get(s.id) as any).n === 3,
+    'Nhập hàng loạt phải tạo đúng 3 lượt MT mặc định do hệ thống xếp');
 
   const r2 = intake.commitIntake(P.mbManager, {
     classId: classId('MB FT 101'),
@@ -1602,8 +1602,8 @@ check('[12.1] Nhập hàng loạt KHÔNG lập lịch MT, kể cả người có
   });
   assert(r2.added === 1, 'Quản lý phải thêm được học viên');
   const s2 = conn.prepare("SELECT id FROM students WHERE full_name = 'Học Viên Có Quyền Tuần'").get() as any;
-  assert((conn.prepare('SELECT COUNT(*) n FROM assessment_attempts WHERE student_id = ?').get(s2.id) as any).n === 0,
-    'Người có quyền xếp lịch vẫn không được xếp lịch qua đường nhập danh sách — đó là việc của panel Lộ trình');
+  assert((conn.prepare("SELECT COUNT(*) n FROM assessment_attempts WHERE student_id = ? AND plan_source = 'auto'").get(s2.id) as any).n === 3,
+    'Quản lý thêm em cũng chỉ ra lịch mặc định — không xếp tuần qua đường nhập danh sách');
 });
 
 check('[12.1] Tuần bắt đầu: mặc định cho cả lô, ghi đè được từng dòng', () => {
@@ -1660,8 +1660,7 @@ check('Lên kế hoạch MT hàng loạt, chọn luôn kỹ năng lượt này y
          JOIN enrollments e ON e.student_id = s.id AND e.status='active'
          JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status='active'
         WHERE e.class_id = ?
-          AND NOT EXISTS (SELECT 1 FROM assessment_attempts a WHERE a.cycle_id = cy.id AND a.status='planned')
-        LIMIT 3`,
+        LIMIT 3`,   /* PR-MT (M1): em nào cũng đã có lịch MT mặc định — lên kế hoạch hàng loạt tạo lượt KẾ TIẾP */
     )
     .all(mbClass) as any[];
   assert(students.length >= 2, 'Cần ít nhất hai học viên chưa có kế hoạch để thử');
@@ -8981,6 +8980,7 @@ const prnMake = (name: string, target = 7): { id: number; cycleId: number } => {
   const st = conn.prepare('SELECT id FROM students WHERE full_name = ?').get(name) as any;
   const cy = conn.prepare("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'").get(st.id) as any;
   assert(st && cy, `Không dựng được học viên thử "${name}"`);
+  boLichTuTao(conn, cy.id);   // PR-MT: em thử tự dựng lượt cần (luotThu.ts)
   return { id: st.id, cycleId: cy.id };
 };
 const prnRaw = (skill: 'listening' | 'reading', band: number): number => {

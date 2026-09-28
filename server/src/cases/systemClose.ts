@@ -1,5 +1,5 @@
 import { db, tx } from '../db.ts';
-import { SYSTEM_CLOSE_REASON_LABEL, categoryOf, type SystemCloseReason } from '../../../shared/domain/index.ts';
+import { SYSTEM_CLOSE_REASON_LABEL, caseDedupKey, categoryOf, type SystemCloseReason } from '../../../shared/domain/index.ts';
 import { nowIso } from '../util.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 
@@ -133,4 +133,24 @@ export function closeCasesOnProgrammeSwitch(actorUserId: number | null, studentI
     reason: to === 'normal' ? 'moved_to_normal' : 'moved_to_ft',
     programme: to === 'normal' ? 'band' : 'ratio',
   });
+}
+
+/**
+ * K5-60: đổi LT ↔ RF = lộ trình mới, Case đang mở ĐI THEO em — đổi `cycle_id` + khoá chống trùng (dựng bằng `caseDedupKey`, không ghép
+ * chuỗi SQL) và ghi mốc "Sang lộ trình …". Lượt `planned` của lộ trình cũ ở lại lộ trình cũ (Q12 của PR-LOP). Gọi trong tx của nơi chuyển.
+ */
+export function chuyenCaseSangLoTrinh(actorUserId: number | null, studentId: number, tuCycleId: number, denCycleId: number,
+  route: string | null, on: string): number {
+  const conn = db();
+  const ds = conn.prepare(`SELECT id, category, dedup_key FROM sos_cases WHERE student_id = ? AND cycle_id = ? AND status != 'done'`)
+    .all(studentId, tuCycleId) as any[];
+  for (const c of ds) {
+    const khoa = c.dedup_key ? caseDedupKey({ category: c.category, studentId, cycleId: denCycleId }) : null;
+    conn.prepare('UPDATE sos_cases SET cycle_id = ?, dedup_key = ?, updated_at = ? WHERE id = ?').run(denCycleId, khoa, nowIso(), c.id);
+    conn.prepare(
+      `INSERT INTO case_milestones (case_id, kind, occurred_on, note, created_by, created_at, dedup_key)
+       VALUES (?, 'route_changed', ?, ?, ?, ?, ?) ON CONFLICT(dedup_key) DO NOTHING`)
+      .run(c.id, on, `Sang lộ trình ${route ?? 'mới'}`, actorUserId, nowIso(), `lo-trinh:${c.id}:${denCycleId}`);
+  }
+  return ds.length;
 }

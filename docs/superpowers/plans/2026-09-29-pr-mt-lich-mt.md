@@ -546,6 +546,20 @@ khác ngày với bản thử thì chạy thử lại. 5. Chạy thử lần n�
   đặt cạnh `LUOT_TINH_NO_SQL` ở `lichMt.ts`. `chay-thu:mt` trên DB demo worktree: (1) đã có cột · (2) 0 em · (3) 1 em thiếu tuần bắt đầu
   (PISA-000032 HD FT 302) · (4) 3 lộ trình nhảy số — PISA-000040 `MT1, MT2, MT5`, PISA-000042 `MT2`, PISA-000044 `MT3` (seed sosV3, sửa ở
   Task 10) · (5) 0 lượt huỷ ở giữa.
+- **Task 3:** lõi `apLichMacDinh` + `ngayTaoLuot` đặt ở `classes/schedule.ts` (cạnh `suggestedMockWeeks`, tránh vòng import);
+  `fasttrack/mtMacDinh.ts` chỉ bọc `taoMtMacDinh` (giữ đúng tên + chữ ký cho PR-NHAP; thêm kiểm `daThiToiMt` 0–8). Lõi **không tạo** số
+  đã có dòng huỷ (người huỷ thì người tạo lại) và giữ liền mạch bằng `kiemSoMtMoi`. `ngayTaoLuot` = ngày sớm hơn giữa `created_at` (giờ máy)
+  và `demoToday()` — ở demo đồng hồ nghiệp vụ lùi hơn giờ thật. Bỏ `keHoachBoSung` / lệnh bổ sung (Planning chốt 29/09) nên (f) thay bằng
+  phép kiểm `ngayTao` + `daThiToiMt`. K5-60: `chuyenCaseSangLoTrinh` ở `cases/systemClose.ts`, mốc mới `route_changed` "Sang lộ trình mới"
+  (`MILESTONE_KINDS`). Chuyển tiếp cả lớp: lớp nguồn luôn là lớp thường nên chỉ gọi `taoMtMacDinh`, không có FT → FT.
+  **Dữ liệu phép kiểm cũ đổi theo luật mới** (không xoá, không nới): `tests/luotThu.ts` — `boLichTuTao` (em thử của sosV3 / Ý thức / PR-N tự
+  dựng lượt) + `luotThu` (tạo trước số còn thiếu, đánh dấu MT lịch sử). `[12.1]` đổi thành kiểm M1 (lịch mặc định do hệ thống tính, không
+  lấy tuần từ file). "Mở lộ trình mới…" đọc MT1 tự tạo. "Lên kế hoạch MT hàng loạt" bỏ điều kiện "chưa có kế hoạch". Rc2 Task4(d) lấy ba lượt
+  cuối. Seed `sosV3Seed.ts` chọn tuần bắt đầu để MT{n} rơi đúng tuần demo rồi dùng lại lượt tự tạo (MT trước = MT lịch sử).
+  **Ngoài kế hoạch (bắt buộc để xanh):** trần câu SQL hành trình HV1 (PR-UX5, 31) vỡ vì `createCycle` nay có 3 MT → `typedResult` chạy
+  từng lượt. Sửa gốc: `hanhTrinh.ts` nạp điểm / phạm vi / chương trình theo lô, `typedResult(a, pre?)` nhận dữ liệu nạp sẵn.
+  **Câu hỏi cho planning:** `createAttempt` tạo MỚI ở tuần đã qua vẫn `lich_su = 0` (kế hoạch chỉ ghi tính cờ ở lõi tự tạo, dời theo tuần
+  bắt đầu và hồi sinh) — T34 nói chung "lượt có tuần thi kết thúc trước ngày tạo". Giữ theo kế hoạch; PR-XLMT (xếp MT lịch sử) quyết.
 
 ## Planning chốt 29/09
 

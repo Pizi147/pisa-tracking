@@ -7,6 +7,7 @@
  * Quy ước TDD của file này: mọi mô-đun mới được nạp bằng `load(...)` — thiếu mô-đun thì phép kiểm ĐỎ với câu nói rõ thiếu gì,
  * không làm sập cả bộ.
  */
+import { boLichTuTao, luotThu } from './luotThu.ts';
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runSosV3Tests(t: YThucTestKit) {
@@ -289,12 +290,13 @@ export async function runSosV3Tests(t: YThucTestKit) {
     const st = get('SELECT id FROM students WHERE full_name = ?', `PT ${name}`);
     const cy = get("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'", st.id);
     assert(st && cy, `Không dựng được học viên thử "${name}"`);
+    boLichTuTao(conn, cy.id);   // PR-MT: em thử tự dựng lượt cần — xem luotThu.ts
     return { id: st.id, cycleId: cy.id };
   };
-  /** Tuần đã qua (không phải tương lai) — điểm nhập được ngay. */
+  /** Tuần đã qua (không phải tương lai) — điểm nhập được ngay. PR-MT (T36): MT trước còn thiếu tạo trước, là MT lịch sử. */
   const PAST_WEEK = weekSvc.mondayOf(addDays(TODAY, -14));
-  const mkAttempt = (st: { id: number; cycleId: number }, no: number, weekStart: string = PAST_WEEK): any => attemptsSvc.createAttempt(P.admin, {
-    studentId: st.id, cycleId: st.cycleId, classId: CLASS, attemptNo: no, periodId: weekSvc.ensurePeriod(weekStart).id });
+  const mkAttempt = (st: { id: number; cycleId: number }, no: number, weekStart: string = PAST_WEEK): any => luotThu(conn, attemptsSvc.createAttempt, P.admin, {
+    studentId: st.id, cycleId: st.cycleId, classId: CLASS, no, periodId: weekSvc.ensurePeriod(weekStart).id });
   /*
    * RB-5 (PR-Rc1): sửa một ô đã có điểm nay phải kèm lý do. Hàm này vừa nhập lần đầu vừa sửa điểm nguồn, nên LUÔN gửi
    * một lý do — lần nhập đầu thì máy chủ bỏ qua nó. Luật "khi nào phải có lý do" có phép kiểm riêng ở chamDiem.tests.ts.

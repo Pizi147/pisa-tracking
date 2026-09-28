@@ -1,12 +1,12 @@
 import { db } from '../db.ts';
 import {
   CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS, caseCategoriesFor, caseTitle, type CaseCategory,
-  type DiemMoc, type DotRef,
+  type AssessedSkill, type DiemMoc, type DotRef,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { cyclesOf } from '../fasttrack/cycles.ts';
-import { isRatioCycle, programmeByCode, programmeCodeOfCycle } from '../normal/regular.ts';
+import { isRatioCycle, programmeByCode, programmeCodeOfCycle, programmeOfClass } from '../normal/regular.ts';
 import { typedResult } from './profile.ts';
 import { addDays } from '../util.ts';
 
@@ -103,19 +103,36 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
   const attemptIds = attemptRows.map((a) => a.id);
 
   // -------------------------------------------------------------- (3) điểm các lượt (bulk, entry-level cho FT)
-  const scoresByAttempt = new Map<number, { skill: string; band: number | null }[]>();
+  const scoresByAttempt = new Map<number, any[]>();
+  /* PR-MT: phạm vi kỹ năng + chương trình theo lớp cũng nạp theo lô — em FT nào cũng có sẵn ≥ 3 lượt từ ngày đầu (M1). */
+  const skipsByAttempt = new Map<number, AssessedSkill[]>();
+  const coDongKyNang = new Set<number>();
   if (attemptIds.length) {
-    for (const r of conn
-      .prepare(`SELECT attempt_id, skill, band FROM assessment_scores WHERE attempt_id IN (${attemptIds.map(() => '?').join(',')})`)
-      .all(...attemptIds) as any[]) {
+    const ph = attemptIds.map(() => '?').join(',');
+    for (const r of conn.prepare(`SELECT * FROM assessment_scores WHERE attempt_id IN (${ph})`).all(...attemptIds) as any[]) {
       const list = scoresByAttempt.get(r.attempt_id) ?? [];
-      list.push({ skill: r.skill, band: r.band });
+      list.push(r);
       scoresByAttempt.set(r.attempt_id, list);
     }
+    for (const r of conn.prepare(`SELECT attempt_id, skill, required FROM attempt_skills WHERE attempt_id IN (${ph})`).all(...attemptIds) as any[]) {
+      coDongKyNang.add(r.attempt_id);
+      if (!r.required) skipsByAttempt.set(r.attempt_id, [...(skipsByAttempt.get(r.attempt_id) ?? []), r.skill]);
+    }
   }
+  const progByClass = new Map<number, ReturnType<typeof programmeOfClass>>();
+  const progOf = (classId: number | null) => {
+    if (!classId) return null;
+    if (!progByClass.has(classId)) progByClass.set(classId, programmeOfClass(classId));
+    return progByClass.get(classId)!;
+  };
 
   const typed = new Map<number, ReturnType<typeof typedResult>>();
-  for (const a of attemptRows) typed.set(a.id, typedResult(a));
+  for (const a of attemptRows) {
+    /* Lượt cũ chưa có dòng lịch kỹ năng → đường cũ đọc bảng ngoại lệ (skipsOf). */
+    typed.set(a.id, coDongKyNang.has(a.id)
+      ? typedResult(a, { scores: scoresByAttempt.get(a.id) ?? [], skips: skipsByAttempt.get(a.id) ?? [], prog: progOf(a.class_id) })
+      : typedResult(a));
+  }
 
   // -------------------------------------------------------------- (4) case
   const caseRows = conn

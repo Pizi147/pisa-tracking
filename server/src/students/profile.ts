@@ -60,16 +60,17 @@ function cycleLabel(c: any): string {
  * lượt của lớp thường qua bộ máy FT thì mọi kỹ năng đều "chưa có band" và hồ sơ hiện ra
  * một bảng trống — sai mà trông như thiếu dữ liệu.
  */
-export function typedResult(attempt: any) {
-  const prog = attempt.class_id ? programmeOfClass(attempt.class_id) : null;
+/** `pre`: danh sách gọi cho NHIỀU lượt nạp sẵn điểm / phạm vi / chương trình bằng vài câu (không hỏi lại theo từng lượt). */
+export function typedResult(attempt: any, pre?: { scores: any[]; skips: AssessedSkill[]; prog: ReturnType<typeof programmeOfClass> }) {
+  const prog = pre ? pre.prog : attempt.class_id ? programmeOfClass(attempt.class_id) : null;
   if (prog?.scoringMode === 'ratio') {
-    const rows = db().prepare('SELECT skill, raw_score, raw_total FROM assessment_scores WHERE attempt_id = ?')
+    const rows = pre?.scores ?? db().prepare('SELECT skill, raw_score, raw_total FROM assessment_scores WHERE attempt_id = ?')
       .all(attempt.id) as any[];
     const r = evaluateRegular(prog.skills, rows);
     return { mode: 'ratio' as const, ratio: r, ft: null };
   }
   const r = evaluateAttempt(attempt.target_at_attempt, attempt.attempt_no,
-    entryBandsOf(scoresOf(attempt.id)), skipsOf(attempt.id));
+    entryBandsOf(pre?.scores ?? scoresOf(attempt.id)), pre?.skips ?? skipsOf(attempt.id));
   return { mode: 'ielts' as const, ratio: null, ft: r };
 }
 

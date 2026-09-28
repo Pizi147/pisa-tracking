@@ -3,7 +3,8 @@ import { addDays } from '../util.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { LISTENING_BY_RAW, READING_BY_RAW } from '../fasttrack/scoring.ts';
 import { commitIntake } from '../classes/intake.ts';
-import { createAttempt, saveScore } from '../fasttrack/attempts.ts';
+import { saveScore } from '../fasttrack/attempts.ts';
+import { tuanHocCuaMt } from '../../../shared/domain/index.ts';
 import { setIssues } from '../cases/cases.ts';
 import { dismissSosCase } from '../cases/sosAuto.ts';
 import { confirmCoordination } from '../yThuc/phoiHop.ts';
@@ -36,16 +37,28 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
   };
   const gvcn = activeTeacher(null);
 
-  const addStudent = (fullName: string) => {
-    commitIntake(admin, { classId, rows: [{ fullName, target: 7 }], dateFormat: 'iso', idempotencyKey: `sosv3-demo-${fullName}` } as any);
+  /**
+   * PR-MT (M1): Thêm HV tự tạo MT1–MT3 theo tuần bắt đầu học — nên chọn TUẦN BẮT ĐẦU sao cho MT{no} rơi đúng tuần demo (`weeksAgo` tuần
+   * trước), rồi dùng chính lượt đó. Số MT liền mạch (T36): các MT trước là MT lịch sử của em (tuần thi đã qua trước ngày thêm).
+   */
+  const addStudent = (fullName: string, no: number, weeksAgo: number) => {
+    const tuanThi = mondayOf(addDays(DEMO_DATE, -7 * weeksAgo));
+    const startWeek = addDays(tuanThi, -7 * (tuanHocCuaMt('LT1', no) - 1));
+    commitIntake(admin, { classId, rows: [{ fullName, target: 7, startWeek }], dateFormat: 'iso', idempotencyKey: `sosv3-demo-${fullName}` } as any);
     const st = conn.prepare('SELECT id FROM students WHERE full_name = ?').get(fullName) as any;
     const cy = conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(st.id) as any;
-    return { id: st.id as number, cycleId: cy.id as number };
+    return { id: st.id as number, cycleId: cy.id as number, no, periodId: ensurePeriod(tuanThi).id };
   };
-  /** Lượt Mock ở một tuần ĐÃ QUA (tính từ ngày demo) — điểm nhập được ngay, không có gì nằm ở tương lai. */
-  const attempt = (st: { id: number; cycleId: number }, no: number, weeksAgo: number) => createAttempt(admin, {
-    studentId: st.id, cycleId: st.cycleId, classId, attemptNo: no, periodId: ensurePeriod(mondayOf(addDays(DEMO_DATE, -7 * weeksAgo))).id,
-  }) as any;
+  /**
+   * Lượt Mock ở một tuần ĐÃ QUA (tính từ ngày demo) — điểm nhập được ngay. Kịch bản coi lượt này được lên lịch TỪ ĐẦU KHOÁ (trước tuần
+   * thi) nên là lượt thường, không phải MT lịch sử — ghi thẳng cờ, như các bộ dựng khác ghi thẳng mốc thời gian theo ngày demo.
+   */
+  const attempt = (st: { cycleId: number; no: number; periodId: number }) => {
+    const a = conn.prepare('SELECT * FROM assessment_attempts WHERE cycle_id = ? AND attempt_no = ?').get(st.cycleId, st.no) as any;
+    if (a.planned_period_id !== st.periodId) throw new Error(`sosV3 demo: MT${st.no} không rơi đúng tuần demo`);
+    conn.prepare('UPDATE assessment_attempts SET lich_su = 0 WHERE id = ?').run(a.id);
+    return a;
+  };
   const score = (a: any, skill: string, band: number) => saveScore(admin, a.id, skill,
     skill === 'listening' ? { rawScore: LISTENING_BY_RAW.indexOf(band) }
     : skill === 'reading' ? { rawScore: READING_BY_RAW.indexOf(band) }
@@ -54,8 +67,8 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
   const actionOf = (attemptId: number, kind: string) => conn.prepare('SELECT * FROM sos_coordination_actions WHERE attempt_id = ? AND kind = ?').get(attemptId, kind) as any;
 
   // ---------------------------------------------------------------- Đỗ Minh Khôi — MT2 · SOS2
-  const khoi = addStudent('Đỗ Minh Khôi');
-  const khoiA = attempt(khoi, 2, 2);
+  const khoi = addStudent('Đỗ Minh Khôi', 2, 2);
+  const khoiA = attempt(khoi);
   score(khoiA, 'writing1', 7); score(khoiA, 'writing2', 5.5); score(khoiA, 'speaking', 5);        // kỳ vọng MT2 6.5: W2 và Speaking dưới
   const khoiSp = caseOf(khoi.id, 'speaking');
   setIssues(activeTeacher('speaking'), khoiSp.id, { primaryCode: 'student.speaking.fluency' });   // GVBM chọn nguyên nhân (PA quy chế đã tự chạy)
@@ -72,16 +85,16 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
   }
 
   // ---------------------------------------------------------------- Vũ Ngọc Lan — MT1 · SOS3
-  const lan = addStudent('Vũ Ngọc Lan');
-  const lanA = attempt(lan, 1, 3);
+  const lan = addStudent('Vũ Ngọc Lan', 1, 3);
+  const lanA = attempt(lan);
   score(lanA, 'listening', 5); score(lanA, 'reading', 5); score(lanA, 'speaking', 5);            // kỳ vọng MT1 6.0: ba kỹ năng dưới → SOS3
   dismissSosCase(activeTeacher('speaking'), caseOf(lan.id, 'speaking').id, { reasonCode: 'single_incident' });
   confirmCoordination(gvcn, actionOf(lanA.id, 'talk_student').id, { performedOn: addDays(DEMO_DATE, -4) });
   confirmCoordination(gvcn, actionOf(lanA.id, 'talk_family').id, { performedOn: addDays(DEMO_DATE, -3), note: 'CS gọi cho mẹ em, gia đình nắm tình hình.', performerName: 'CS Thu Hà' });
 
   // ---------------------------------------------------------------- Bùi Thảo Vy — MT3 · SOS1 (lượt hoàn thành)
-  const vy = addStudent('Bùi Thảo Vy');
-  const vyA = attempt(vy, 3, 1);
+  const vy = addStudent('Bùi Thảo Vy', 3, 1);
+  const vyA = attempt(vy);
   score(vyA, 'speaking', 5);                                                                       // kỳ vọng MT3 7.0: chỉ Speaking dưới → SOS1
   const vySp = caseOf(vy.id, 'speaking');
   setIssues(activeTeacher('speaking'), vySp.id, { primaryCode: 'student.speaking.fluency' });

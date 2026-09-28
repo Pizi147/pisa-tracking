@@ -207,7 +207,7 @@ export function caseDedupKey(input: {
  * biệt người dùng cần thấy: "vẫn chưa đạt kết quả" khác hẳn "tưởng xong rồi mà hỏng lại".
  */
 export const MILESTONE_KINDS = [
-  'opened', 'repeat', 'recurrence', 'passed', 'closed', 'extended',
+  'opened', 'repeat', 'recurrence', 'passed', 'closed', 'extended', 'route_changed',
 ] as const;
 export type MilestoneKind = (typeof MILESTONE_KINDS)[number];
 export const MILESTONE_KIND_LABEL: Record<MilestoneKind, string> = {
@@ -217,6 +217,7 @@ export const MILESTONE_KIND_LABEL: Record<MilestoneKind, string> = {
   passed: 'Đã đạt kỳ vọng',
   closed: 'Chốt kết quả',
   extended: 'Kéo dài theo dõi',
+  route_changed: 'Sang lộ trình mới',
 };
 
 /**
