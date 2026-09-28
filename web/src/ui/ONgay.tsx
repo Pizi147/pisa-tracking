@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { docONgay, hienONgay, phuONgay, type KieuONgay, type LuatONgay } from '@shared/domain/index.ts';
+import { canDongBoONgay, chotONgay, hienONgay, phuONgay, type KieuONgay, type LuatONgay } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
 import { LichNho } from './LichNho.tsx';
 
@@ -33,16 +33,14 @@ export function ONgay({ kieu, value, onChange, toiThieu, toiDa, moc, catHomNay, 
   const [loi, setLoi] = useState<string | null>(null);
   const [mo, setMo] = useState(false);
   const nut = useRef<HTMLButtonElement>(null);
-  useEffect(() => { setText(hienONgay(value, kieu)); setLoi(null); }, [value, kieu]);
+  /* Chỉ `value`/`kieu` đổi mới chạy; đọc `text` lúc đó để không xoá chữ gõ sai sau khi chính ô báo '' (chotONgay). */
+  useEffect(() => {
+    if (canDongBoONgay(text, value, kieu, homNay, luat)) { setText(hienONgay(value, kieu)); setLoi(null); }
+  }, [value, kieu]); // eslint-disable-line react-hooks/exhaustive-deps
   const chot = () => {
-    /* Chữ chưa sửa thì không kiểm lại: giá trị cũ ngoài luật (hạn đã qua) không được báo lỗi khi chỉ Tab qua. */
-    if (text === hienONgay(value, kieu)) { setLoi(null); return; }
-    const r = docONgay(text, kieu, homNay, luat);
-    if (r.iso) { if (r.iso !== value) onChange(r.iso); setText(hienONgay(r.iso, kieu)); }
-    /* Xoá chữ: báo '' rồi hiện lại theo `value` — nơi gọi có mặc định (`detectedAt || homNay`) thì ô không trống mà form vẫn gửi
-       mặc định; nơi gọi xoá thật thì hiệu ứng đồng bộ `value` đưa chữ về ''. */
-    else if (!text.trim() && value) { onChange(''); setText(hienONgay(value, kieu)); }
-    setLoi(r.loi);
+    const c = chotONgay(text, value, kieu, homNay, luat);
+    if (c.phat !== null) onChange(c.phat);
+    setText(c.text); setLoi(c.loi);
   };
   const phu = phuONgay(value, kieu, homNay);
   return (

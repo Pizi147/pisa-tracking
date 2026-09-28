@@ -61,6 +61,27 @@ export function docONgay(text: string, kieu: KieuONgay, homNay: string, luat: Lu
   return loi ? { iso: null, loi } : { iso, loi: null };
 }
 
+/**
+ * Rời ô (blur/Enter): `phat` là giá trị báo lên nơi gọi (`null` = không báo), `text`/`loi` là thứ ô hiện.
+ * - Chữ chưa sửa: không kiểm lại (giá trị cũ ngoài luật không bị báo lỗi khi chỉ Tab qua).
+ * - Xoá chữ: báo '' rồi hiện lại theo `value` (nơi gọi có mặc định như `detectedAt || homNay` thì ô không trống giả).
+ * - Gõ sai: báo '' như ô ngày trình duyệt cũ để luật chặn Lưu của form bắt được; giữ chữ đã gõ + lỗi.
+ */
+export function chotONgay(text: string, value: string | null, kieu: KieuONgay, homNay: string, luat: LuatONgay = {}):
+  { phat: string | null; text: string; loi: string | null } {
+  const v = value || '';
+  if (text === hienONgay(v, kieu)) return { phat: null, text, loi: null };
+  const r = docONgay(text, kieu, homNay, luat);
+  if (r.iso) return { phat: r.iso !== v ? r.iso : null, text: hienONgay(r.iso, kieu), loi: null };
+  if (!text.trim()) return { phat: v ? '' : null, text: hienONgay(v, kieu), loi: null };
+  return { phat: v ? '' : null, text, loi: r.loi };
+}
+
+/** `value` từ nơi gọi đổi: chỉ viết lại chữ khi chữ đang có không ứng với `value` — '' do chính ô báo khi gõ sai giữ nguyên chữ + lỗi. */
+export function canDongBoONgay(text: string, value: string | null, kieu: KieuONgay, homNay: string, luat: LuatONgay = {}): boolean {
+  return (docONgay(text, kieu, homNay, luat).iso ?? '') !== (value || '');
+}
+
 export function hienONgay(iso: string | null | undefined, kieu: KieuONgay): string {
   if (!iso) return '';
   if (/^\d{4}-\d{2}$/.test(iso) || kieu === 'thang') return thangHien(iso);

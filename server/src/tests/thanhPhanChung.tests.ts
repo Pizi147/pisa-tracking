@@ -158,4 +158,29 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     const con = tepNguon('web/src').filter((f) => /NgayDoiDuoc/.test(doc(f)));
     assert(con.length === 0, `còn NgayDoiDuoc: ${con.join(', ')}`);
   });
+
+  check('NEN (5) · chotONgay: chưa sửa không kiểm; xoá chữ báo "" rồi hiện lại value; gõ sai báo "" như ô cũ, giữ chữ + lỗi', () => {
+    const toiDa = { toiDa: H };
+    const j = (x: unknown) => JSON.stringify(x);
+    // Chưa sửa: hạn cũ ngoài luật chỉ Tab qua → không báo, không lỗi.
+    const a = d.chotONgay('01/09/2026', '2026-09-01', 'ngay', H, { toiThieu: H });
+    assert(a.phat === null && a.loi === null, j(a));
+    // Xoá chữ (Ngày thực hiện / Bắt đầu theo dõi = hôm nay) → báo '' rồi hiện lại hôm nay.
+    const b = d.chotONgay('  ', H, 'ngay', H, toiDa);
+    assert(b.phat === '' && b.text === '28/09/2026' && b.loi === null, j(b));
+    // Gõ ngày không có thật / sau hôm nay → báo '' để form chặn Lưu, giữ chữ đã gõ và lỗi.
+    const c = d.chotONgay('31/09/2026', H, 'ngay', H, toiDa);
+    assert(c.phat === '' && c.text === '31/09/2026' && c.loi === 'Ngày không có thật', j(c));
+    const e = d.chotONgay('29/09/2026', H, 'ngay', H, toiDa);
+    assert(e.phat === '' && /Không được sau/.test(e.loi ?? ''), j(e));
+    // Gõ sai khi giá trị đã rỗng → không báo lại; gõ đúng → báo ISO, chữ về dạng chuẩn.
+    assert(d.chotONgay('31/09/2026', '', 'ngay', H, toiDa).phat === null, 'đã rỗng thì không báo lại');
+    const g = d.chotONgay('1/9', H, 'ngay', H, toiDa);
+    assert(g.phat === '2026-09-01' && g.text === '01/09/2026' && g.loi === null, j(g));
+    // Đồng bộ: '' do chính ô báo khi gõ sai giữ nguyên chữ; value đổi thật thì viết lại.
+    assert(!d.canDongBoONgay('31/09/2026', '', 'ngay', H, toiDa), 'gõ sai + value "" phải giữ chữ');
+    assert(d.canDongBoONgay('28/09/2026', '', 'ngay', H, toiDa), 'nơi gọi xoá thật phải viết lại chữ');
+    assert(d.canDongBoONgay('31/09/2026', '2026-09-20', 'ngay', H, toiDa), 'nơi gọi đặt ngày khác phải viết lại chữ');
+    assert(!d.canDongBoONgay('28/09/2026', H, 'ngay', H, toiDa), 'chữ khớp value thì không viết lại');
+  });
 }
