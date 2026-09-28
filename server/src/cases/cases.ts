@@ -1768,8 +1768,10 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
               u.full_name AS reporter_name,
               ow.full_name AS owner_name,
               (SELECT COUNT(*) FROM case_interventions iv WHERE iv.case_id = sc.id) AS intervention_count,
-              (SELECT MIN(iv.followup_due) FROM case_interventions iv
-                WHERE iv.case_id = sc.id AND iv.followup_due IS NOT NULL AND iv.status != 'completed'
+              /* PR-N1 (Task 13, K3-02/T53 Q1): hạn tiếp theo = hạn GHI KẾT QUẢ TUẦN (action_due, hết Thứ Hai) của PA đang
+                 chạy — KHÔNG phải dự kiến kết thúc (followup_due, không bao giờ là hạn). Cùng luật với ô "Việc cần làm tiếp". */
+              (SELECT MIN(iv.action_due) FROM case_interventions iv
+                WHERE iv.case_id = sc.id AND iv.action_due IS NOT NULL AND iv.status IN ('planned','started')
                   AND ${NOT_UNCONFIRMED_PRESET('iv')}) AS next_due,
               (SELECT ci.taxonomy_code FROM case_issues ci
                 WHERE ci.case_id = sc.id AND ci.role = 'primary' LIMIT 1) AS primary_code

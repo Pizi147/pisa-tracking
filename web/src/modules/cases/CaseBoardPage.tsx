@@ -4,6 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { Card, Empty, ErrorState, Info, Level, Skeleton, Status, Th } from '../../ui/ui.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
+import { Han } from '../../ui/Han.tsx';
 import { NganCase } from '../students/NganCase.tsx';
 import { CasePanel } from './CasePanel.tsx';
 import { fmtDate, sosLabel, sosTone } from '../../lib/format.ts';
@@ -211,9 +212,7 @@ export function DanhSachCase({ branchId, ct, classId }: { branchId: number | nul
                       <td className="td text-xs text-slate-300">
                         {r.interventionCount > 0 ? `${r.interventionCount} việc` : '—'}
                         {r.nextDue && (
-                          <div className={`text-[10px] ${r.dueOverdue ? 'text-amber-200/80' : 'text-slate-500'}`}>
-                            hẹn {fmtDate(r.nextDue)}
-                          </div>
+                          <div className="text-[10px]"><Han loai="cap-nhat-pa" han={r.nextDue} /></div>
                         )}
                       </td>
                       <td className="td whitespace-nowrap">

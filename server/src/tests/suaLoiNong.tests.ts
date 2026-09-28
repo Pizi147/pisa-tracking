@@ -303,6 +303,17 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     assert(d.nhanHanhDongNhatKy('attempt.cancel_part') === 'Huỷ phần còn lại của lượt' && d.nhanHanhDongNhatKy('x.y') === 'Thao tác hệ thống', 'nhãn');
   });
 
+  // ==================================================================== 13a. Bấm thử: danh sách Case lấy hạn tuần, không lấy dự kiến kết thúc
+  check('N1 (13a) · K3-02/T53 Q1: listCases.nextDue = hạn ghi kết quả tuần (Thứ Hai), không phải dự kiến kết thúc; quá hạn theo hạn tuần', () => {
+    const { caseId, ivId } = taoPa('list-cases');
+    t.conn.prepare('UPDATE case_interventions SET action_due = ?, followup_due = ? WHERE id = ?').run(t.addDays(t.TODAY, 6), t.addDays(t.TODAY, -3), ivId);
+    const dong = (casesSvc.listCases(t.P.coreTeacher, {}).rows as any[]).find((r) => r.id === caseId);
+    assert(dong && dong.nextDue === t.addDays(t.TODAY, 6) && dong.dueOverdue === false, JSON.stringify(dong && { nextDue: dong.nextDue, dueOverdue: dong.dueOverdue }));
+    t.conn.prepare('UPDATE case_interventions SET action_due = ? WHERE id = ?').run(t.addDays(t.TODAY, -1), ivId);
+    const tre = (casesSvc.listCases(t.P.coreTeacher, {}).rows as any[]).find((r) => r.id === caseId);
+    assert(tre.nextDue === t.addDays(t.TODAY, -1) && tre.dueOverdue === true, 'hạn tuần đã qua mà không quá hạn');
+  });
+
   // ==================================================================== 8. Học viên & Lớp + tab Ý thức lớp
   check('N1 (8) · T17: không lọc → không mở lớp nào; đang lọc → tối đa 5 lớp có kết quả', () => {
     assert(d.lopMoSan({ thamSoOpen: null, lopHien: [1, 2, 3], dangLoc: false }).length === 0, 'tự mở lớp');
