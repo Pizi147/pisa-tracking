@@ -222,16 +222,15 @@ export function DanhSachCase({ branchId, ct, classId }: { branchId: number | nul
                           trong database: một case có hai việc đã ghi mà cột này vẫn đề
                           "Chưa xử lý" thì người đọc chỉ có thể kết luận là số liệu sai.
                         */}
-                        <Status kind={r.state === 'done' ? 'done' : r.state === 'no_plan' ? 'waiting' : 'doing'}>
+                        <Status kind={r.state === 'done' ? 'done' : r.state === 'no_plan' ? 'waiting' : 'idle'}>
                           {STATE_LABEL[r.state]}
                         </Status>
                         {r.sosLevel !== null && (
                           <div className="mt-0.5"><Level tone={sosTone(r.sosLevel)}>{sosLabel(r.sosLevel)}</Level></div>
                         )}
-                        {r.urgency && r.urgency !== 'normal' && (
-                          <div className="mt-0.5">
-                            <Nhan tone="soon">{URGENCY_LABEL[r.urgency as keyof typeof URGENCY_LABEL] ?? r.urgency}</Nhan>
-                          </div>
+                        {/* PR-N1 A8: chỉ "Gấp" có nhãn màu; "Bình thường" không cần nói. */}
+                        {r.urgency === 'urgent' && (
+                          <div className="mt-0.5"><Nhan tone="bad">{URGENCY_LABEL.urgent}</Nhan></div>
                         )}
                       </td>
                     </tr>

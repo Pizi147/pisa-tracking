@@ -421,6 +421,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
           scoredRequired: r.scored, requiredCount: r.required,
           // Lớp thường KHÔNG có Overall IELTS — để trống thay vì dựng một con số giả.
           overall: null,
+          expectation: null, writing: null,
           passedCount: r.complete ? r.required - (r.failedCount ?? 0) : null,
           failedCount: r.failedCount,
           sosLevel: r.sosLevel, evaluable: r.complete,
@@ -470,6 +471,8 @@ export function classRoster(p: Principal, classId: number, q?: string) {
         kind: a.kind, kindLabel: `MT${a.attempt_no}`,
         scoredRequired: result.scoredRequired, requiredCount: result.required.length,
         overall: result.overall,
+        /* PR-N1 K2-10: kỳ vọng của ĐÚNG mốc này (không phải target) + Writing tổng (SOS xét cột này, §5.7). */
+        expectation: result.expectation, writing: result.bands?.writing ?? null,
         /*
          * BAND CỦA TỪNG Ô NHẬP, để bảng lớp vẽ được sáu cột điểm.
          *
@@ -536,6 +539,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
         sosLevel: t.sosLevel, evaluable: t.evaluable,
         scoredRequired: t.scoredRequired, requiredCount: t.requiredCount,
         overall: t.overall,
+        expectation: t.expectation, writing: t.writing,
         bands: (t as any).bands ?? null,
         ratios: (t as any).ratios ?? null,
       }));

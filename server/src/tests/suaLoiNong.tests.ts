@@ -257,6 +257,26 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     assert(conCu.length === 0, `còn chân kiểu cũ: ${conCu.join(', ')}`);
   });
 
+  // ==================================================================== 9. Kết quả & điểm nói đúng (UX-A A1–A4, A8, A9; K2-10)
+  check('N1 (9) · A1: không còn ký tự điều khiển trong mã; A2: SOS tạm thời nói "tạm thời"; A4: "x/y môn đạt"', () => {
+    const tep = [...tepTsx('web/src'), ...tepTs('shared/domain'), ...tepTs('server/src')];
+    const ban = tep.filter((f) => /[\x00-\x08\x0b\x0c\x0e-\x1f]/.test(fs.readFileSync(path.join(REPO, f), 'utf8')));
+    assert(ban.length === 0, `ký tự điều khiển: ${ban.join(', ')}`);
+    const v = d.attemptProgressView({ scored: 2, required: 4, passed: null, sos: 2, cheDo: 'ielts' });
+    assert(v.text === 'SOS 2 tạm thời · 2/4 kỹ năng' && v.tamThoi, v.text);
+    const r = d.attemptProgressView({ scored: 4, required: 4, passed: false, sos: 3, cheDo: 'ratio', soMonChuaDat: 4 });
+    assert(!/^Đạt/.test(r.text) && r.text === '0/4 môn đạt · SOS 3', r.text);
+    for (const f of ['shared/domain/hocVienLop.ts', 'shared/domain/chamDiem.ts', 'shared/domain/hanhTrinh.ts', 'shared/domain/display.ts', 'server/src/students/standing.ts'])
+      assert(!/`Đạt \$\{/.test(docSach(f)), `${f} còn "Đạt x/y"`);
+  });
+  check('N1 (9) · A8: "Bình thường" không tô màu cảnh báo; K2-10: bảng điểm FT so kỳ vọng của đúng mốc, có cột W', () => {
+    assert(d.URGENCY_TONE.attention === 'neutral', 'Bình thường còn vàng');
+    const ros = docSach('web/src/modules/students/ClassRoster.tsx');
+    assert(!/target=\{s\.cycle/.test(ros) && /kyVong=\{h\.expectation/.test(ros) && /'writing'/.test(ros), 'Band còn so target / thiếu cột W');
+    assert(/expectation: t\.expectation/.test(docSach('server/src/classes/classes.ts')), 'history chưa có kỳ vọng từng mốc');
+    assert(/\\b\/\.exec\(text\)/.test(fs.readFileSync(path.join(REPO, 'web/src/lib/format.ts'), 'utf8')), 'toneTheoNhan chưa có \\b');
+  });
+
   // ==================================================================== 8. Học viên & Lớp + tab Ý thức lớp
   check('N1 (8) · T17: không lọc → không mở lớp nào; đang lọc → tối đa 5 lớp có kết quả', () => {
     assert(d.lopMoSan({ thamSoOpen: null, lopHien: [1, 2, 3], dangLoc: false }).length === 0, 'tự mở lớp');

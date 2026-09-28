@@ -112,13 +112,13 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     eq(d.ketQuaGanNhat(null), { chinh: '—', thieu: null, dat: false, sos: null, phu: 'Chưa có kết quả' }, 'Chưa thi');
   });
 
-  check('PR-Qa · §2/§3.6 Kết quả gần nhất lớp thường: "Đạt 3/4 môn", không "kỳ vọng", không "MT"', () => {
+  check('PR-Qa · §2/§3.6 Kết quả gần nhất lớp thường: "3/4 môn đạt", không "kỳ vọng", không "MT"', () => {
     const th = { mode: 'ratio', attemptLabel: 'Giữa khoá', sosLevel: 1, provisional: false, scored: 4, required: 4, failed: 1,
       overall: null, expectation: null, belowSkills: [], failedSkills: [{ skill: 'writing', score: 12, total: 20 }] };
     const k = d.ketQuaGanNhat(th);
-    eq(k, { chinh: 'Đạt 3/4 môn', thieu: null, dat: false, sos: 'SOS 1', phu: 'Giữa khoá · chưa đạt W 12/20' }, 'Đủ điểm');
+    eq(k, { chinh: '3/4 môn đạt', thieu: null, dat: false, sos: 'SOS 1', phu: 'Giữa khoá · chưa đạt W 12/20' }, 'Đủ điểm');
     eq(d.ketQuaGanNhat({ ...th, attemptLabel: 'Cuối khoá', scored: 2, failed: 0, sosLevel: null, failedSkills: [] }),
-      { chinh: 'Đạt 2/2 môn đã chấm', thieu: null, dat: false, sos: null, phu: 'Cuối khoá · còn 2 môn chưa có điểm' }, 'Còn thiếu môn');
+      { chinh: '2/2 môn đạt (đã chấm)', thieu: null, dat: false, sos: null, phu: 'Cuối khoá · còn 2 môn chưa có điểm' }, 'Còn thiếu môn');
     eq(d.ketQuaGanNhat({ ...th, sosLevel: 0, failed: 0, failedSkills: [] }).dat, true, 'Đạt đủ bốn môn');
     assert(!/kỳ vọng|MT\d|Overall|Normal/.test(JSON.stringify(k)), `Chữ FT lọt vào lớp thường: ${JSON.stringify(k)}`);
   });
@@ -284,7 +284,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     const s = standingMod.standingFor([b.sid]).get(b.sid);
     eq(s.failedSkills, [{ skill: 'writing', score: 12, total: 20 }], 'W 12/20 = 60% < 70%');
     eq([s.overall, s.expectation, s.belowSkills], [null, null, []], 'Lớp thường không có Overall/kỳ vọng');
-    eq(d.ketQuaGanNhat(s), { chinh: 'Đạt 3/4 môn', thieu: null, dat: false, sos: 'SOS 1', phu: 'Giữa khoá · chưa đạt W 12/20' }, 'Chữ cột');
+    eq(d.ketQuaGanNhat(s), { chinh: '3/4 môn đạt', thieu: null, dat: false, sos: 'SOS 1', phu: 'Giữa khoá · chưa đạt W 12/20' }, 'Chữ cột');
   });
 
   // ------------------------------------------------------------------ Task 5 · GET /hoc-vien-lop

@@ -102,7 +102,7 @@ export function ketQuaGanNhat(k: KetQuaVao | null): KetQuaHien {
   const dat = k.sosLevel === 0 && !k.provisional;
   if (k.mode === 'ratio') {
     const soDat = k.scored - (k.failed ?? 0);
-    const chinh = k.scored < k.required ? `Đạt ${soDat}/${k.scored} môn đã chấm` : `Đạt ${soDat}/${k.required} môn`;
+    const chinh = k.scored < k.required ? `${soDat}/${k.scored} môn đạt (đã chấm)` : `${soDat}/${k.required} môn đạt`;
     const truot = k.failedSkills.map((f) => `${skillShort(f.skill)} ${f.score}/${f.total}`).join(', ');
     const phu = [k.attemptLabel, truot ? `chưa đạt ${truot}` : null,
       k.scored < k.required ? `còn ${k.required - k.scored} môn chưa có điểm` : null].filter(Boolean).join(' · ');

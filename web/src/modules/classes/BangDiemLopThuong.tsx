@@ -98,7 +98,12 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi }: { classId: n
 function ODiemThuong({ o, tuan, homNay }: { o: ODiem | null; tuan: string | null; homNay: string }) {
   if (o && o.score !== null && o.total !== null) {
     const truot = o.outcome === 'fail';
-    return <span className={truot ? 'font-semibold text-rose-300' : 'text-slate-100'} title={truot ? 'Chưa đạt' : 'Đạt'}>{o.score}/{o.total}</span>;
+    /* PR-N1 A3: trượt có dấu mảnh ▾ — không chỉ dựa vào màu. */
+    return (
+      <span className={truot ? 'font-semibold text-rose-300' : 'text-slate-100'} title={truot ? 'Chưa đạt' : 'Đạt'}>
+        {truot && <span aria-hidden className="mr-0.5 text-[9px]">▾</span>}{o.score}/{o.total}
+      </span>
+    );
   }
   if (tuan) {
     /* Tuần thi đã QUA mà vẫn chưa có điểm là một dạng quá hạn nhập điểm — khác với tuần chưa tới lịch. */
