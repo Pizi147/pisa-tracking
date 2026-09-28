@@ -1155,3 +1155,13 @@ function Band({ v, kyVong, faded, soSanh = true }: { v: number | null; kyVong: n
   `xoaDuLieu.tests.ts` đổi theo. `khuTrung` đổi 30 chỗ (thêm intervention/measure/violation/"phương án × chu kỳ" cùng mẫu). Check: **1399** (+1).
 - Task 12: mockup 19 và §5.6 R-PA3 **đã** đúng mẫu hạn Thứ Hai trên `main` (sửa ở vòng planning) → không sửa. Đặc tả YC-12.5.2
   ghi thêm quyết định Q26 (chân chỉ đếm). TU_DIEN thêm mục 9 (PR-N1).
+- Task 13: `chay-thu:n1` trên DB seed mới (sau Task 12): (1) **0** PA dời · (2) **2** PA chưa xong không có hạn — cả 2 đang chờ duyệt, 0 đang chạy · (3) **0** · (4) **0** (seed mới đã tạo PA quy chế ở trạng thái chạy).
+  Thead đo thật **40px** (kế hoạch đoán 33px) → `.hang-lon-dinh` `top: 40px`. Sticky của `td` bám theo cả BẢNG (không theo `tbody`):
+  lớp trước vẫn dính tới khi hàng lớp sau cuộn lên đè — có một đoạn ~38px cuộn thấy hai hàng lớp chồng nhau (hàng dưới đè hàng trên).
+  Chấp nhận, ghi cho người rà. **Lỗi bắt được (13a)**: `listCases` lấy `MIN(followup_due)` (dự kiến kết thúc) làm `nextDue` →
+  cột "Việc tiếp theo" ở Học viên & Lớp ghi "Ghi kết quả S · hết T2 18/10" (18/10 là Chủ nhật, là dự kiến kết thúc), chip "Case quá hạn
+  cập nhật" và hàng đợi "Tới hạn" ở bảng Case cũng đếm theo dự kiến kết thúc. Sửa gốc: `MIN(action_due)` của PA `planned/started`
+  (cùng luật ô "Việc cần làm tiếp", T53 Q1); bảng Case đổi "hẹn dd/mm" → `<Han loai="cap-nhat-pa">`; thêm phép kiểm N1 (13a). Check cuối: **1400** (B + 33).
+- Task 13: 16 kịch bản KIỂM đạt ở bản mới (ảnh `thiet-ke/anh/pr-n1/*-1440.png`, `*-375.png`; bản trước `*-truoc.png` chụp từ `main` 3432d97
+  cùng kịch bản, seed riêng, cổng 4158/5358). Ngoài phạm vi: nhật ký Quản trị còn mã máy trong **tên đối tượng** do máy chủ ghi
+  (`Xác nhận việc phối hợp SOS · talk_family`) — chuyển PR khác.
