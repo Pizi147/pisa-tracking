@@ -1,15 +1,15 @@
 import { db, tx } from '../db.ts';
 import {
-  PERMISSIONS, PROGRAMME_TEMPLATES, kiemDongChuyenTiep, soSanhLop, luatDoiLop, nextStepsAfter, programmeOf, tuanKhoa,
+  PERMISSIONS, PROGRAMME_TEMPLATES, kiemDongChuyenTiep, kyHieuLop, soSanhLop, tachSoLop, luatDoiLop, nextStepsAfter, programmeOf, tuanKhoa,
   type DongChuyenTiep, type Huong, type LoaiLop, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
-import { badRequest, isIsoDate, notFound } from '../util.ts';
+import { addDays, badRequest, isIsoDate, notFound } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { writeAudit } from '../platform/audit.ts';
-import { ensurePeriod } from '../platform/week.ts';
+import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { classProgress, classProgressMany } from './schedule.ts';
-import { createClass } from './intake.ts';
+import { taoLopVaPhanCong, type TaoLopInput } from './intake.ts';
 import { setStudentStatus } from '../students/students.ts';
 import { apDungBaoLuuCaLop, apDungCaLop, dongLopNeuHet, type DongCaLop } from './luatLoTrinh.ts';
 import { tiepTheoTheoHocVien } from './loTrinhTiep.ts';
@@ -23,15 +23,15 @@ import { tiepTheoTheoHocVien } from './loTrinhTiep.ts';
 
 // ==================================================================== Kế hoạch (chỉ đọc)
 
-/** Mã lớp gợi ý: `MB-BE 01`, tăng dần — MỘT câu LIKE, không dò từng số. */
-function suggestClassCode(branchCode: string, programme: ProgrammeCode): string {
-  const conn = db();
-  const prefix = `${branchCode}-${programme} `;
-  const rows = conn.prepare(`SELECT code FROM classes WHERE code LIKE ?`).all(`${prefix}%`) as any[];
-  const used = new Set(rows.map((r) => Number(r.code.slice(prefix.length))).filter((n) => Number.isInteger(n)));
-  let n = 1;
-  while (used.has(n) && n <= 99) n += 1;
-  return `${prefix}${String(n).padStart(2, '0')}`;
+/** Số lớp gợi ý: số lớn nhất của các lớp CÙNG ký hiệu (`FT`, `FT RF`, `BE`…) trong chi nhánh + 1 — đọc cột, không `LIKE` tên (K2 §4d). */
+export function soGoiY(branchCode: string, ct: string, route: string | null): string {
+  const kh = kyHieuLop(ct, route);
+  const rows = db().prepare(
+    `SELECT c.code, c.programme_code, c.route FROM classes c JOIN branches b ON b.id = c.branch_id WHERE b.code = ? AND c.programme_code = ?`,
+  ).all(branchCode, ct) as any[];
+  const so = rows.filter((r) => kyHieuLop(r.programme_code, r.route) === kh)
+    .map((r) => parseInt(tachSoLop(r.code, branchCode) ?? '', 10)).filter((n) => Number.isInteger(n));
+  return String(Math.max(0, ...so) + 1);
 }
 
 export function transitionPlan(p: Principal, classId: number) {
@@ -121,16 +121,13 @@ export function transitionPlan(p: Principal, classId: number) {
       };
     });
 
-  const suggestedCode = defaultProgramme ? suggestClassCode(cls.branch_code, defaultProgramme) : null;
-
-  /* GVCN gợi ý cho ô "+ Mở lớp mới" — giáo viên đang hoạt động của chi nhánh. */
-  const teachers = (conn
-    .prepare(
-      `SELECT DISTINCT u.id, u.full_name FROM teacher_assignments ta JOIN users u ON u.id = ta.user_id
-        JOIN classes c ON c.id = ta.class_id
-       WHERE c.branch_id = ? AND ta.status = 'active' ORDER BY u.full_name`,
-    )
-    .all(cls.branch_id) as any[]).map((t) => ({ id: t.id, name: t.full_name }));
+  /* "+ Mở lớp mới" (K2-16) mở panel Tạo lớp điền sẵn các giá trị này; panel tự nạp giáo viên. Tuần khai giảng = tuần sau ngày chuyển. */
+  const loTrinhGoiY = defaultProgramme === 'FT' ? 'LT1' : null;
+  const goiYLopMoi = defaultProgramme ? {
+    branchId: cls.branch_id as number, chuongTrinh: defaultProgramme, loTrinh: loTrinhGoiY,
+    so: soGoiY(cls.branch_code, defaultProgramme, loTrinhGoiY),
+    startPeriodId: ensurePeriod(addDays(mondayOf(demoToday()), 7)).id,
+  } : null;
 
   return {
     from: {
@@ -142,9 +139,8 @@ export function transitionPlan(p: Principal, classId: number) {
     },
     defaultProgramme,
     options,
-    suggestedCode,
+    goiYLopMoi,
     candidates,
-    teachers,
     tuanKetThuc: progress.finalWeekStart,
     students: students.map((s) => ({
       id: s.id, studentCode: s.student_code, fullName: s.full_name,
@@ -170,7 +166,8 @@ export type TransitionDong = {
 };
 export type TransitionInput = {
   fromClassId: number;
-  newClass?: { code: string; programme: string; startPeriodId?: number | null; startWeekStart?: string | null; gvcnUserId?: number | null } | null;
+  /** Chỉ phép kiểm còn gửi — web mới tạo lớp trước bằng panel Tạo lớp (Q8) rồi gán vào dòng. */
+  newClass?: Omit<TaoLopInput, 'branchId'> | null;
   dongs?: TransitionDong[];
   /** Dạng cũ (trước PR-LT) — vẫn nhận để phép kiểm cũ chạy; web mới chỉ gửi `dongs`. */
   moves?: { studentId: number; toClassId?: number | null; toNewClass?: boolean; handoverNote?: string | null; receiverUserId?: number | null }[];
@@ -200,25 +197,11 @@ export function applyTransition(p: Principal, input: TransitionInput) {
   return tx(() => {
     let created: any = null;
     if (input.newClass) {
-      const prog = programmeOf(input.newClass.programme);
-      if (!prog) throw badRequest('Chương trình của lớp mới không hợp lệ.');
-      /* Sửa lỗi §6: web gửi startPeriodId (chọn tuần trực tiếp) — vẫn nhận startWeekStart cũ để tương thích. */
-      const startPeriodId = input.newClass.startPeriodId
-        ?? (input.newClass.startWeekStart ? ensurePeriod(input.newClass.startWeekStart).id : ensurePeriod(input.effectiveDate).id);
-      created = createClass(p, {
-        code: input.newClass.code, branchId: from.branch_id, kind: prog, isFastTrack: prog === 'FT',
-        startDate: input.effectiveDate, startPeriodId,
-        skills: [...PROGRAMME_TEMPLATES[prog].skills], previousClassId: from.id,
-        note: `Học tiếp từ lớp ${from.code}`,
+      /* Cùng hàm với panel Tạo lớp: kiểm luật phân công TRƯỚC khi ghi (không chèn GVCN thẳng — lách L3). */
+      const r = taoLopVaPhanCong(p, {
+        ...input.newClass, branchId: from.branch_id, previousClassId: from.id, note: `Học tiếp từ lớp ${from.code}`,
       });
-      if (input.newClass.gvcnUserId) {
-        conn
-          .prepare(
-            `INSERT INTO teacher_assignments (user_id, class_id, is_core, effective_from, status, created_at)
-             VALUES (?, ?, 1, ?, 'active', ?)`,
-          )
-          .run(input.newClass.gvcnUserId, created.id, input.effectiveDate, new Date().toISOString());
-      }
+      created = conn.prepare('SELECT * FROM classes WHERE id = ?').get(r.id);
     }
 
     /*
@@ -244,19 +227,19 @@ export function applyTransition(p: Principal, input: TransitionInput) {
     const rawToClassIds = new Set<number>();
     for (const m of input.moves ?? []) if (!m.toNewClass && m.toClassId) rawToClassIds.add(m.toClassId);
     for (const d of input.dongs ?? []) if (!d.toNewClass && d.toClassId) rawToClassIds.add(d.toClassId);
-    const classInfoOf = new Map<number, { ma: ProgrammeCode | null; ft: boolean; code: string; branchId: number }>();
+    const classInfoOf = new Map<number, { ma: ProgrammeCode | null; ft: boolean; code: string; branchId: number; route: string | null }>();
     if (rawToClassIds.size) {
       const ids = [...rawToClassIds];
       for (const c of conn
         .prepare(
-          `SELECT id, code, programme_code, is_fast_track, branch_id FROM classes
+          `SELECT id, code, programme_code, is_fast_track, branch_id, route FROM classes
             WHERE id IN (${ids.map(() => '?').join(',')}) AND status = 'active' AND id != ?`,
         )
         .all(...ids, input.fromClassId) as any[]) {
-        classInfoOf.set(c.id, { ma: (c.programme_code ?? null) as ProgrammeCode | null, ft: !!c.is_fast_track, code: c.code, branchId: c.branch_id });
+        classInfoOf.set(c.id, { ma: (c.programme_code ?? null) as ProgrammeCode | null, ft: !!c.is_fast_track, code: c.code, branchId: c.branch_id, route: c.route ?? null });
       }
     }
-    if (created) classInfoOf.set(created.id, { ma: (created.programme_code ?? null) as ProgrammeCode | null, ft: !!created.is_fast_track, code: created.code, branchId: created.branch_id });
+    if (created) classInfoOf.set(created.id, { ma: (created.programme_code ?? null) as ProgrammeCode | null, ft: !!created.is_fast_track, code: created.code, branchId: created.branch_id, route: created.route ?? null });
 
     /* Dạng cũ → dạng mới: suy hướng từ luật lộ trình so với lớp đích đã chọn (giữ tương thích phép kiểm cũ). */
     const legacyDongs: TransitionDong[] = (input.moves ?? []).map((m) => {

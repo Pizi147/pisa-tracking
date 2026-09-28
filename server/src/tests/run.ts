@@ -4675,7 +4675,8 @@ check('Chuyển tiếp: FOU → BE là luồng mặc định, và hệ thống K
   const plan = transition.transitionPlan(P.admin, fou.id) as any;
   assert(plan.defaultProgramme === 'BE', `Luồng mặc định của FOU phải là BE, đang là ${plan.defaultProgramme}`);
   assert(plan.students.length > 0, 'Kế hoạch chuyển tiếp không có học viên nào');
-  assert(/^\w+-BE \d\d$/.test(plan.suggestedCode ?? ''), `Mã lớp gợi ý sai: ${plan.suggestedCode}`);
+  const g = plan.goiYLopMoi;
+  assert(g && g.chuongTrinh === 'BE' && /^\d+$/.test(g.so) && g.startPeriodId, `Lớp mới gợi ý sai: ${JSON.stringify(g)}`);
   // Chỉ ĐỌC: gọi kế hoạch không được đụng vào một dòng dữ liệu nào.
   const before = (conn.prepare('SELECT COUNT(*) n FROM classes').get() as any).n;
   transition.transitionPlan(P.admin, fou.id);
@@ -4694,9 +4695,11 @@ check('Chuyển tiếp: mở lớp mới, chuyển cả lớp, GIỮ NGUYÊN l�
     .get() as any;
   const plan = transition.transitionPlan(P.admin, src.id) as any;
   const ids = plan.students.map((s: any) => s.id);
+  const gv = (conn.prepare(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active'`).get(src.id) as any).user_id;
   const r = transition.applyTransition(P.admin, {
     fromClassId: src.id,
-    newClass: { code: plan.suggestedCode, programme: 'BE' },
+    newClass: { chuongTrinh: 'BE', so: plan.goiYLopMoi.so, startPeriodId: plan.goiYLopMoi.startPeriodId,
+      slots: [{ userId: gv, skill: null, isCore: true }, { userId: gv, skill: 'listening', isCore: false }] },
     moves: ids.map((id: number) => ({ studentId: id, toNewClass: true })),
     effectiveDate: demoToday(),
   }) as any;
@@ -4731,9 +4734,11 @@ check('Chuyển tiếp: một dòng lỗi không làm hỏng cả lô', () => {
     .get() as any;
   const plan = transition.transitionPlan(P.admin, src.id) as any;
   if (!plan.students.length) return;
+  const gv = (conn.prepare(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active'`).get(src.id) as any).user_id;
   const r = transition.applyTransition(P.admin, {
     fromClassId: src.id,
-    newClass: { code: plan.suggestedCode, programme: plan.defaultProgramme },
+    newClass: { chuongTrinh: 'BE', so: transition.soGoiY(plan.from.branchCode, 'BE', null), startPeriodId: plan.goiYLopMoi.startPeriodId,
+      slots: [{ userId: gv, skill: null, isCore: true }, { userId: gv, skill: 'listening', isCore: false }] },
     moves: [
       { studentId: plan.students[0].id, toNewClass: true },
       { studentId: plan.students[0].id, toClassId: null },   // cố ý thiếu lớp đích

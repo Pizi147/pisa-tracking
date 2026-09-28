@@ -5,6 +5,7 @@ export async function runPrLopTests(t: YThucTestKit) {
   const { check, assert, assertThrows, conn, P } = t;
   const intakeMod: any = await import('../classes/intake.ts');
   const clsMod: any = await import('../classes/classes.ts');
+  const ttl: any = await import('../classes/thongTinLop.ts');
   const d = await import('../../../shared/domain/index.ts');
   console.log('\nPR-LOP · Tạo lớp, tên lớp, RF, Pre FOU, phân công');
 
@@ -135,5 +136,17 @@ export async function runPrLopTests(t: YThucTestKit) {
     }
     const ma = clsMod.listClassSummaries(P.admin, {}).rows.filter((x: any) => x.branchCode === 'MB').map((x: any) => x.code);
     assert(ma.join('|') === [...ma].map((code: string) => ({ code })).sort(d.soSanhLop).map((x: any) => x.code).join('|'), ma.join(' · '));
+  });
+
+  check('LOP (7) · luatDoiLop: FT → FT khác lộ trình = mở lộ trình mới, Case đi theo em (K2-17, M-20)', () => {
+    const r = d.luatDoiLop({ ma: 'FT', ft: true, lt: 'LT1' }, { ma: 'FT', ft: true, lt: 'RF' }, 'giua-khoa');
+    assert(r.khoa === 'dong-mo' && r.dongCase === null && !r.canMucTieu, JSON.stringify(r));
+    assert(d.luatDoiLop({ ma: 'FT', ft: true, lt: 'LT1' }, { ma: 'FT', ft: true, lt: 'LT1' }, 'giua-khoa').khoa === 'giu', 'cùng lộ trình giữ');
+    assert(d.luatDoiLop({ ma: 'FT', ft: true }, { ma: 'FT', ft: true }, 'giua-khoa').khoa === 'giu', 'thiếu lt (dữ liệu cũ) giữ như cũ');
+  });
+  check('LOP (7) · Sửa thông tin lớp: chỉ đổi phần số; đổi lộ trình bị chặn khi lớp có HV (YC-2, K2-18)', () => {
+    const lop = conn.prepare(`SELECT c.id FROM classes c WHERE c.code = 'MB FT 101'`).get() as any;
+    assertThrows(() => ttl.capNhatThongTinLop(P.admin, lop.id, { route: 'RF' }), /đã có \d+ học viên/, 'đổi lộ trình khi có HV');
+    assertThrows(() => ttl.capNhatThongTinLop(P.admin, lop.id, { so: '1O1' }), /Chỉ gõ số/, 'số sai');
   });
 }

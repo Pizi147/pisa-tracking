@@ -22,7 +22,7 @@ import { ensurePeriod, mondayOf } from '../platform/week.ts';
 export function lopHienTaiCua(studentId: number): any {
   return db()
     .prepare(
-      `SELECT e.*, c.code, c.programme_code, c.is_fast_track, c.branch_id, c.status AS class_status,
+      `SELECT e.*, c.code, c.programme_code, c.is_fast_track, c.route, c.branch_id, c.status AS class_status,
               b.name AS branch_name
          FROM enrollments e JOIN classes c ON c.id = e.class_id JOIN branches b ON b.id = c.branch_id
         WHERE e.student_id = ? AND e.status = 'active' LIMIT 1`,
@@ -224,8 +224,8 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
     });
   }
 
-  const tuLop: LoaiLop = { ma: (enr.programme_code ?? null) as ProgrammeCode | null, ft: !!enr.is_fast_track };
-  const denLop: LoaiLop = { ma: (toClass.programme_code ?? null) as ProgrammeCode | null, ft: !!toClass.is_fast_track };
+  const tuLop: LoaiLop = { ma: (enr.programme_code ?? null) as ProgrammeCode | null, ft: !!enr.is_fast_track, lt: enr.route };
+  const denLop: LoaiLop = { ma: (toClass.programme_code ?? null) as ProgrammeCode | null, ft: !!toClass.is_fast_track, lt: toClass.route };
   const luat = luatDoiLop(tuLop, denLop, d.boiCanh);
 
   return tx((): { luat: LuatDoiLop; toClassCode: string } => {
@@ -240,14 +240,15 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
   if (luat.khoa === 'dong-mo') {
     if (curCycle) conn.prepare(`UPDATE learning_cycles SET status = 'completed', ended_at = ? WHERE id = ?`).run(d.ngay, curCycle.id);
     const seq = ((conn.prepare('SELECT MAX(seq) n FROM learning_cycles WHERE student_id = ?').get(d.sid) as any)?.n ?? 0) + 1;
-    const route = denLop.ft ? (curCycle?.route ?? 'LT1') : null;
+    const route = denLop.ft ? (toClass.route ?? curCycle?.route ?? 'LT1') : null;   // lộ trình mới = lộ trình lớp đích (M-20)
     const startPeriodId = denLop.ft ? ensurePeriod(mondayOf(d.ngay)).id : (toClass.start_period_id ?? null);
     conn
       .prepare(
         `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, exam_month, start_period_id, started_at, status, created_at)
          VALUES (?,?,?,?,?,?,?,?, 'active', ?)`,
       )
-      .run(d.sid, seq, route, denLop.ma, d.mucTieu ?? null, d.thangThi ?? null, startPeriodId, d.ngay, nowIso());
+      .run(d.sid, seq, route, denLop.ma, d.mucTieu ?? (tuLop.ft && denLop.ft ? curCycle?.target_score ?? null : null),   // Q7: FT → FT giữ target cũ
+        d.thangThi ?? null, startPeriodId, d.ngay, nowIso());
   }
 
   /* Q12: bài chưa làm CHỈ đi theo em khi GIỮ khoá — đóng khoá thì lượt planned ở lại lớp cũ. */
@@ -314,8 +315,8 @@ export function xemChuyenLop(p: Principal, sid: number, toClassId?: number | nul
   if (toClassId) {
     const toClass = lopDichHopLe(toClassId, enr.class_id);
     if (!toClass) throw badRequest('Lớp đích không hợp lệ.');
-    const tuLop: LoaiLop = { ma: (enr.programme_code ?? null) as ProgrammeCode | null, ft: !!enr.is_fast_track };
-    const denLop: LoaiLop = { ma: (toClass.programme_code ?? null) as ProgrammeCode | null, ft: !!toClass.is_fast_track };
+    const tuLop: LoaiLop = { ma: (enr.programme_code ?? null) as ProgrammeCode | null, ft: !!enr.is_fast_track, lt: enr.route };
+    const denLop: LoaiLop = { ma: (toClass.programme_code ?? null) as ProgrammeCode | null, ft: !!toClass.is_fast_track, lt: toClass.route };
     luat = luatDoiLop(tuLop, denLop, 'giua-khoa');
     goiY = nguoiNhanGoiY(openCases, toClassId);
     doiChiNhanh = enr.branch_id !== toClass.branch_id;
@@ -339,7 +340,7 @@ export function xemChuyenLop(p: Principal, sid: number, toClassId?: number | nul
 
 export type DongCaLop = {
   sid: number; huong: 'len_lop' | 'hoc_lai' | 'fast_track';
-  toClassId: number; toClass: { ma: ProgrammeCode | null; ft: boolean; branchId: number; code: string };
+  toClassId: number; toClass: { ma: ProgrammeCode | null; ft: boolean; branchId: number; code: string; route?: string | null };
   mucTieu?: number | null;
   thangThi?: string | null;
 };
@@ -421,7 +422,7 @@ export function apDungCaLop(p: Principal, o: {
 
     const rows = o.dongs.map(() => '(?,?,?,?,?,?,?,?,\'active\',?)').join(',');
     const params = o.dongs.flatMap((d) => [
-      d.sid, (seqOf.get(d.sid) ?? 0) + 1, d.toClass.ft ? 'LT1' : null, d.toClass.ma, d.mucTieu ?? null, d.thangThi ?? null,
+      d.sid, (seqOf.get(d.sid) ?? 0) + 1, d.toClass.ft ? (d.toClass.route ?? 'LT1') : null, d.toClass.ma, d.mucTieu ?? null, d.thangThi ?? null,
       d.toClass.ft ? ftPeriodId : (startPeriodOf.get(d.toClassId) ?? null), o.ngay, now,
     ]);
     conn

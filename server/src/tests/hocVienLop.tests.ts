@@ -416,31 +416,31 @@ export async function runHocVienLopTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ Task 8 · Sửa thông tin lớp
 
   check('PR-Qa · Q8 Sửa thông tin lớp: mã có tiền tố chi nhánh, không trùng; chỉ người có quyền sửa lớp; có nhật ký', () => {
-    const cid = taoLop('MB FT QA4', 'FT');
-    assertThrows(() => ttl.capNhatThongTinLop(P.sTeacher, cid, { code: 'MB FT QA4B' }), /quyền/, 'GV bộ môn');
-    assertThrows(() => ttl.capNhatThongTinLop(P.admin, cid, { code: 'FT QA4B' }), /bắt đầu bằng "MB-"/, 'Thiếu tiền tố');
+    const cid = taoLop('MB FT 9904', 'FT');
+    assertThrows(() => ttl.capNhatThongTinLop(P.sTeacher, cid, { so: '9914' }), /quyền/, 'GV bộ môn');
+    assertThrows(() => ttl.capNhatThongTinLop(P.admin, cid, { code: 'FT 9914' }), /Chỉ đổi được phần số/, 'Thiếu tiền tố (PR-LOP: máy ghép tên)');
     assertThrows(() => ttl.capNhatThongTinLop(P.admin, cid, { code: 'MB FT 101' }), /Đã có lớp/, 'Trùng mã');
-    assertThrows(() => ttl.capNhatThongTinLop(P.admin, cid, { route: 'LT9' }), /LT1 hoặc LT2/, 'LT lạ');
-    const r = ttl.capNhatThongTinLop(P.admin, cid, { code: 'MB FT QA4B', route: 'LT2', note: 'Lớp tối' });
-    eq([r.code, r.route, r.note], ['MB FT QA4B', 'LT2', 'Lớp tối'], 'Đã lưu');
+    assertThrows(() => ttl.capNhatThongTinLop(P.admin, cid, { route: 'LT9' }), /LT1, LT2 hoặc RF/, 'LT lạ');
+    const r = ttl.capNhatThongTinLop(P.admin, cid, { so: '9914', route: 'LT2', note: 'Lớp tối' });
+    eq([r.code, r.route, r.note], ['MB FT 9914', 'LT2', 'Lớp tối'], 'Đã lưu');
     const log = conn.prepare(`SELECT before_json, after_json FROM audit_logs WHERE action = 'class.info' AND entity_id = ? ORDER BY id DESC LIMIT 1`).get(cid) as any;
-    assert(log && /MB FT QA4"/.test(log.before_json) && /MB FT QA4B/.test(log.after_json), `Nhật ký: ${JSON.stringify(log)}`);
+    assert(log && /MB FT 9904"/.test(log.before_json) && /MB FT 9914/.test(log.after_json), `Nhật ký: ${JSON.stringify(log)}`);
   });
 
   check('PR-Qa · Q8 đổi chương trình chỉ khi lớp chưa có học viên và chưa có bài Test; kỹ năng lớp theo chương trình mới', () => {
-    const rong = taoLop('MB FT QA5', 'FT');
+    const rong = taoLop('MB FT 9905', 'FT');
     ttl.capNhatThongTinLop(P.admin, rong, { programmeCode: 'FOU' });
     const c = conn.prepare('SELECT programme_code, is_fast_track, route FROM classes WHERE id = ?').get(rong) as any;
     const ks = (conn.prepare('SELECT skill FROM class_skills WHERE class_id = ? ORDER BY skill').all(rong) as any[]).map((x) => x.skill).join(',');
     eq([c.programme_code, c.is_fast_track, c.route, ks], ['FOU', 0, null, 'listening,reading,speaking,writing'], 'Lớp trống đổi được');
     assertThrows(() => ttl.capNhatThongTinLop(P.admin, rong, { route: 'LT1' }), /Fast Track/, 'Lớp thường không có LT');
-    const coEm = taoLop('MB FT QA6', 'FT');
+    const coEm = taoLop('MB FT 9906', 'FT');
     taoHocVien({ cid: coEm, ft: true });
-    assertThrows(() => ttl.capNhatThongTinLop(P.admin, coEm, { programmeCode: 'FOU' }), /đã có học viên/, 'Lớp có học viên');
+    assertThrows(() => ttl.capNhatThongTinLop(P.admin, coEm, { programmeCode: 'FOU' }), /đã có \d+ học viên/, 'Lớp có học viên');
   });
 
   check('PR-Qa · Q8 đổi chương trình: phân công kỹ năng KHÔNG còn ở chương trình mới bị KẾT THÚC (không xoá); phân công vẫn khớp thì giữ nguyên', () => {
-    const cid = taoLop('MB FT QA7', 'FT');
+    const cid = taoLop('MB FT 9907', 'FT');
     // writing1 chỉ có ở FT, không có ở FOU (REGULAR_SKILLS = listening/reading/writing/speaking) → phải bị kết thúc.
     const idMat = Number(conn.prepare(
       `INSERT INTO teacher_assignments (class_id, user_id, skill, is_core, status, effective_from, created_at) VALUES (?, ?, 'writing1', 0, 'active', '2026-08-03', ?)`,

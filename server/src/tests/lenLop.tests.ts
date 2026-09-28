@@ -736,7 +736,8 @@ export async function runLenLopTests(t: YThucTestKit) {
     const tuanKhaiGiang = week.ensurePeriod(mondayForWeek3(2)).id;
     const r = transitionSvc.applyTransition(P.mbManager, {
       fromClassId: cls, effectiveDate: TODAY3,
-      newClass: { code: `MB-LT5-${Date.now()}`, programme: 'BE', startPeriodId: tuanKhaiGiang },
+      newClass: { chuongTrinh: 'BE', so: transitionSvc.soGoiY('MB', 'BE', null), startPeriodId: tuanKhaiGiang,
+        slots: [{ userId: P.normalCoreTeacher.userId, skill: null, isCore: true }, { userId: P.normalCoreTeacher.userId, skill: 'listening', isCore: false }] },
       dongs: [{ studentId: sids[0], huong: 'len_lop', toNewClass: true }],
     }) as any;
     const created = conn.prepare('SELECT start_period_id FROM classes WHERE id = ?').get(r.newClass.id) as any;
@@ -822,7 +823,8 @@ export async function runLenLopTests(t: YThucTestKit) {
     const { cls, sids } = taoLopHetKhoa5(9, 1);
     const r = transitionSvc.applyTransition(P.mbManager, {
       fromClassId: cls, effectiveDate: TODAY3,
-      newClass: { code: `MB-LT5-${Date.now()}`, programme: 'BE', gvcnUserId: P.normalCoreTeacher.userId },
+      newClass: { chuongTrinh: 'BE', so: transitionSvc.soGoiY('MB', 'BE', null), startPeriodId: week.ensurePeriod(TODAY3).id,
+        slots: [{ userId: P.normalCoreTeacher.userId, skill: null, isCore: true }, { userId: P.normalCoreTeacher.userId, skill: 'listening', isCore: false }] },
       dongs: [{ studentId: sids[0], huong: 'len_lop', toNewClass: true }],
     }) as any;
     const gv = conn.prepare(`SELECT user_id FROM teacher_assignments WHERE class_id=? AND is_core=1 AND status='active'`).get(r.newClass.id) as any;
