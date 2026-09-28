@@ -9683,6 +9683,11 @@ await runPrLopTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 const { runThanhPhanChungTests } = await import('./thanhPhanChung.tests.ts');
 await runThanhPhanChungTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
+// ==================================================================== PR-DUYET (Hộp Chờ duyệt)
+
+const { runPrDuyetTests } = await import('./prDuyet.tests.ts');
+await runPrDuyetTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
