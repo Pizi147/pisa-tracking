@@ -9,6 +9,7 @@ import { PERMISSION_LABEL, VIOLATION_SKILLS, legacyTopicToViolationCategory } fr
 import { DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD, EMAIL_SUFFIX } from './platform/accounts.ts';
 import { seedRoutes } from './platform/sysconfig.ts';
 import { ROLE_PERMISSIONS } from './seed/data.ts';
+import { migratePrN1 } from './migrate/prN1.ts';
 
 /**
  * Giá trị cũ của cột `track` cho case Ý thức. Mô hình Case Ý thức đã BỎ 21/09/2026 (rule book mục 18) — hằng số này chỉ để NÂNG CẤP
@@ -450,6 +451,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     migrateLenLop(conn, applied);
     /* PR-XOA: cột users.deleted_at (xoá mềm tài khoản) + đưa em đã thôi học vào Lưu trữ (một lần). */
     migrateXoaDuLieu(conn, applied);
+    /* PR-N1: hạn ghi kết quả PA hết Thứ Hai (R-PA5). */ migratePrN1(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống

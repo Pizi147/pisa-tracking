@@ -109,4 +109,20 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     const src = docSach('server/src/students/profile.ts');
     assert(!/followUntil/.test(src.slice(src.indexOf('const cands'), src.indexOf('cands.sort'))), 'còn dùng followUntil làm hạn');
   });
+
+  // ==================================================================== 3. Migrate R-PA5: hạn Chủ nhật của PA đang chạy → Thứ Hai
+  const mig: any = await import('../migrate/prN1.ts');
+  check('N1 (3) · R-PA5: PA đang chạy có hạn Chủ nhật → Thứ Hai; PA xong/huỷ giữ nguyên; chạy lại không đổi thêm', () => {
+    const a = taoPa('mig-a').ivId; const b = taoPa('mig-b').ivId;
+    t.conn.prepare("UPDATE case_interventions SET action_due = '2026-09-27' WHERE id IN (?, ?)").run(a, b);
+    t.conn.prepare("UPDATE case_interventions SET status = 'completed' WHERE id = ?").run(b);
+    const truoc = mig.demPaDoiHanThuHai(t.conn);
+    assert(truoc.soPa >= 1 && truoc.mau.some((x: any) => x.id === a && x.hanMoi === '2026-09-28'), JSON.stringify(truoc.mau.slice(0, 3)));
+    const applied: string[] = [];
+    mig.migratePrN1(t.conn, applied);
+    const ha = (id: number) => (t.conn.prepare('SELECT action_due FROM case_interventions WHERE id = ?').get(id) as any).action_due;
+    assert(ha(a) === '2026-09-28' && ha(b) === '2026-09-27', `${ha(a)} · ${ha(b)}`);
+    const lan2: string[] = []; mig.migratePrN1(t.conn, lan2);
+    assert(lan2.length === 0 && mig.demPaDoiHanThuHai(t.conn).soPa === 0, 'chạy lại vẫn đổi');
+  });
 }
