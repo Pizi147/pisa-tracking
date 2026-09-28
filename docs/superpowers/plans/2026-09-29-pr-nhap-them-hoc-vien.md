@@ -579,7 +579,9 @@ bấm K1, K2, K5, K8. 3. Migrate **DB CHÍNH** (`PISA_CHO_PHEP_MIGRATE_TURSO=<t�
 
 ## Nhật ký
 
-- (Task 0) PR-MT đã merge: … · tên hàm thật: … · mốc B: … · dòng lệch: …
+- (Task 0) PR-MT đã merge: **không** (`grep -i "PR-MT"` chỉ khớp commit kế hoạch bf56547/7f1a908; `fasttrack/mtMacDinh.ts` chưa có
+  trên `origin/main` fb51181) · tên hàm thật: chưa có · mốc B: **1444** (+ tốc độ 20) · dòng lệch: không (≤ 2 dòng: `parseDateAs` :181,
+  `blocking` :408, chú thích MT :479, `canPlanWeeks` :362, `docNgaySinh` :206, `isWarning` :164, khối 12 :1424). Model thật: Opus 5.5.
 
 ## Chủ sản phẩm chốt 29/09
 
