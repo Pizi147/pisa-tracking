@@ -1,0 +1,31 @@
+# PISA Progress — luật mặc định cho mọi session Claude
+
+Tệp này tự nạp vào mọi session của repo (planning, code, worktree), nên giữ ngắn. Chi tiết nằm ở
+`PROMPT_SESSION_CODE.md`, `CODE_MAP.md` và đặc tả trong `docs/superpowers/specs/`.
+
+## Khi các nguồn mâu thuẫn
+1. Quyết định của chủ sản phẩm, đặc tả và kế hoạch PR đã duyệt.
+2. `thiet-ke/PISA-Rulebook-2026-09-19.md` và mockup đã duyệt trong `thiet-ke/`.
+3. Skill (impeccable, ponytail, superpowers). Skill gợi ý trái với mục 1–2 thì không tự làm: ghi vào báo cáo để
+   chủ sản phẩm quyết.
+
+## Giao diện và UX: dùng `impeccable`
+- PISA là công cụ làm việc cho giáo viên (chế độ Operate): dễ hiểu, dễ dùng, nhất quán trước; trang trí sau.
+- Không dùng taste-skill (đã tắt; không dành cho dashboard, bảng dữ liệu).
+- Tinh chỉnh, không làm lại: giữ phông Inter, bảng màu, bố cục đã khoá, trừ khi kế hoạch PR ghi rõ là đổi.
+- Lệnh dùng: `critique` ở session planning để tìm vấn đề · `polish`, `clarify`, `layout`, `harden`, `adapt` ở
+  session code, chỉ trong phạm vi PR · `audit` trước khi mở PR có sửa giao diện.
+- Session code không chạy `init`, `document`, `hooks on`, `npx impeccable install|update`. PRODUCT.md / DESIGN.md
+  chỉ do session planning tạo, khớp Rulebook, sau khi chủ sản phẩm đồng ý.
+- `.impeccable/` đã gitignore; không commit gì trong đó.
+
+## Code: `ponytail` luôn bật
+- Code logic giữ mức mặc định `full`. PR có sửa giao diện: gõ `/ponytail lite` đầu phiên để không đè impeccable.
+- Việc kế hoạch PR đã ghi là yêu cầu rõ ràng: làm đủ, không cắt theo YAGNI. Muốn bớt thì hỏi, không tự bớt.
+- Không bao giờ bớt: kiểm tra dữ liệu nhập, xử lý lỗi chống mất dữ liệu, phân quyền, bảo mật.
+- Chú thích `ponytail:` được phép, nhưng liệt kê chúng trong mô tả PR. Trước khi mở PR: `/ponytail-review`.
+
+## Session planning soạn prompt cho session code
+- Có việc giao diện: ghi rõ lệnh impeccable cần chạy và `/ponytail lite`.
+- Không cài thêm plugin/skill cho toàn máy khi chưa hỏi chủ sản phẩm: mục tiêu là giảm token, và mỗi plugin
+  luôn bật đều tốn token ở mọi phiên.
