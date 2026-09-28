@@ -16,7 +16,7 @@ import {
   HAN_DUYET_NGAY, hanTheoNgay,
   type NextStep, type RescheduleTarget,
   issueBranchOf, issueLabel, caseTopicLabel, urgencyFromSos,
-  caseTopicsFor,
+  caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac,
   type CaseOutcome, type FollowUpOutcome, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -456,8 +456,8 @@ export function reportIssue(p: Principal, input: {
   /*
    * PHÂN LOẠI BẮT BUỘC, và không có lối thoát "Chưa rõ" (mục 6.3).
    *
-   * Chọn "Khác" thì được, nhưng lúc đó mô tả phải nói rõ vấn đề cụ thể — nếu không, "Khác"
-   * trở thành đúng cái ô "Chưa rõ" vừa bị bỏ, chỉ khác tên.
+   * Chọn "Khác" thì được, nhưng lúc đó phải ghi rõ "Khác" là gì (ô Ghi rõ, T13) — nếu không,
+   * "Khác" trở thành đúng cái ô "Chưa rõ" vừa bị bỏ, chỉ khác tên.
    */
   const allowed = issuesForTopic(topic).map((i) => i.code);
   const primaryCode = (input.primaryCode ?? '').trim();
@@ -465,8 +465,10 @@ export function reportIssue(p: Principal, input: {
   if (!allowed.includes(primaryCode)) {
     throw badRequest(`Phân loại "${primaryCode}" không thuộc bộ phân loại của ${topic}.`);
   }
-  if (primaryCode.endsWith('.other') && summary.length < 30) {
-    throw badRequest('Chọn "Khác" thì mô tả phải nói rõ vấn đề cụ thể là gì.');
+  /* T13: "Khác" cần ô Ghi rõ ≥ 3 ký tự, lưu ở `case_issues.observation` (Q9). Luật cũ "mô tả ≥ 30 ký tự" đã bỏ. */
+  if (laKhac(primaryCode)) {
+    const loi = kiemGhiRoKhac(input.observation);
+    if (loi) throw badRequest(`Phân loại "Khác": ${loi}.`);
   }
 
   const category = categoryOf(topic);
@@ -657,6 +659,10 @@ export function setIssues(p: Principal, caseId: number, input: {
   for (const code of [input.primaryCode, ...(input.secondaryCodes ?? [])]) {
     if (code && !issueBranchOf(code)) throw badRequest(`Mã vấn đề không hợp lệ: ${code}`);
   }
+  if (laKhac(input.primaryCode)) {
+    const loi = kiemGhiRoKhac(input.observation);
+    if (loi) throw badRequest(`Phân loại "Khác": ${loi}.`);
+  }
   return tx(() => {
     const before = conn.prepare('SELECT * FROM case_issues WHERE case_id = ?').all(caseId);
     conn.prepare('DELETE FROM case_issues WHERE case_id = ?').run(caseId);
@@ -748,6 +754,8 @@ export function recordIntervention(p: Principal, caseId: number, input: {
   needsApproval?: boolean;
   status?: string; plannedDate?: string | null; startedDate?: string | null;
   completedDate?: string | null; followupDue?: string | null;
+  /** PA đề xuất "Khác" (`other_proposal`, T13): chữ ô Ghi rõ ≥ 3 ký tự — ghép vào đầu mô tả (không có cột riêng, Q9). */
+  ghiRoKhac?: string | null;
   /** NHẬP BÙ (PR-C Task 3) — xem ghi chú đầy đủ ở `reportIssue`. Chảy tiếp từ đó. */
   backfill?: boolean;
 }) {
@@ -769,10 +777,16 @@ export function recordIntervention(p: Principal, caseId: number, input: {
    * tutor dạy gì, bao nhiêu buổi, đến khi nào. Đó chính là thứ mà một lần cập nhật kết quả
    * cần để so.
    */
-  const description = (input.description ?? '').trim();
-  if (description.length < 8) {
+  const moTa = (input.description ?? '').trim();
+  if (moTa.length < 8) {
     throw badRequest('Mô tả ngắn phải nói rõ làm gì cho em — ít nhất 8 ký tự.');
   }
+  /* T13: PA đề xuất "Khác" cần ô Ghi rõ ≥ 3 ký tự; không có cột riêng nên ghép `{ghi rõ} — {mô tả}` (Q9). */
+  if (input.kind === 'other_proposal') {
+    const loi = kiemGhiRoKhac(input.ghiRoKhac);
+    if (loi) throw badRequest(`PA đề xuất "Khác": ${loi}.`);
+  }
+  const description = input.kind === 'other_proposal' ? ghepKhac(input.ghiRoKhac ?? '', moTa) : moTa;
   /*
    * LÙI LỊCH THI PHẢI NÓI RÕ LÙI CÁI GÌ (mục 8.1).
    *
@@ -1143,6 +1157,8 @@ export function backfillCase(p: Principal, input: {
   studentId: number; cycleId?: number | null;
   topic: string; primaryCode: string;
   title?: string | null; summary: string;
+  /** Phân loại "Khác" (T13): chữ ô Ghi rõ — `reportIssue` kiểm ≥ 3 ký tự. */
+  observation?: string | null;
   fromDate: string; toDate: string;
   actions: {
     description: string; performerSelf?: boolean; performerUserId?: number | null; performerName?: string | null;
@@ -1219,7 +1235,7 @@ export function backfillCase(p: Principal, input: {
     const created = reportIssue(p, {
       studentId: input.studentId, cycleId: input.cycleId,
       topic: input.topic, primaryCode: input.primaryCode,
-      title: input.title, summary: input.summary,
+      title: input.title, summary: input.summary, observation: input.observation ?? null,
       detectedAt: input.fromDate,
       parallel: true,
       backfill: true,
@@ -2738,7 +2754,11 @@ export function updateResult(p: Principal, interventionId: number, input: {
     performerUserId?: number | null; performerName?: string | null;
     rescheduleTarget?: string | null;
     performerSelf?: boolean;
+    /** Phương án mới là đề xuất "Khác" (`other_proposal`): chữ ô Ghi rõ (T13). */
+    ghiRoKhac?: string | null;
   } | null;
+  /** Như `newPlan.ghiRoKhac` — nhận cả ở cấp ngoài cho tiện gửi từ form. */
+  ghiRoKhac?: string | null;
   /**
    * PR-S2 (S4): quyết định của lần cập nhật: keep | adjust | replace | end | ask_manager. Có thì thay cho cặp `mode`/`nextStep`
    * (dịch bằng `decisionToStep`). Payload cũ không có `decision` giữ nguyên ý nghĩa.
@@ -2842,6 +2862,11 @@ export function updateResult(p: Principal, interventionId: number, input: {
   if ((nextStep === 'adjust' || nextStep === 'propose') && (decisionNote ?? '').length < 8) {
     throw badRequest('Điều chỉnh hoặc thay phương án thì phải ghi Lý do, ít nhất 8 ký tự.');
   }
+  /* T13: thay sang PA đề xuất "Khác" — báo thiếu Ghi rõ TRƯỚC khi ghi gì (`recordIntervention` kiểm lại lần nữa). */
+  if (nextStep === 'propose' && input.newPlan?.kind === 'other_proposal') {
+    const loi = kiemGhiRoKhac(input.newPlan.ghiRoKhac ?? input.ghiRoKhac);
+    if (loi) throw badRequest(`PA đề xuất "Khác": ${loi}.`);
+  }
   const remainingIssue = String(input.remainingIssue ?? '').trim() || null;
   if (remainingIssue && remainingIssue.length > 300) throw badRequest('Vấn đề còn tồn tối đa 300 ký tự.');
   /* Điều chỉnh: chuẩn hoá TRƯỚC giao dịch; sai thì không ghi gì. */
@@ -2939,6 +2964,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
         performerName: input.newPlan!.performerName ?? null,
         status: 'started', startedDate: observedOn,
         rescheduleTarget: input.newPlan!.rescheduleTarget ?? null,
+        ghiRoKhac: input.newPlan!.ghiRoKhac ?? input.ghiRoKhac ?? null,
       }) as any;
       created = (conn
         .prepare('SELECT id FROM case_interventions WHERE case_id = ? ORDER BY id DESC LIMIT 1')

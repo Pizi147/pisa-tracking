@@ -6187,14 +6187,25 @@ check('[6.3] Bốn trường bắt buộc: tên, mô tả, mức độ hai bậc
     /hai bậc/, 'Vẫn nhận được mã mức cũ `normal`',
   );
 
-  /* Chọn "Khác" thì mô tả phải nói rõ — nếu không thì "Khác" chính là "Chưa rõ" đổi tên. */
+  /* Chọn "Khác" thì phải ghi rõ Khác là gì (≥ 3 ký tự, PR-NEN T13) — nếu không thì "Khác" chính là "Chưa rõ" đổi tên. */
   assertThrows(
     () => cases.reportIssue(P.admin, {
       ...base, title: 'Reading có vấn đề', summary: 'Em đọc chưa tốt lắm.',
       primaryCode: 'student.reading.other',
     }),
-    /nói rõ vấn đề cụ thể/, 'Chọn "Khác" mà mô tả qua loa vẫn mở được case',
+    /Ghi rõ "Khác" là gì/, 'Chọn "Khác" mà không ghi rõ vẫn mở được case',
   );
+  const khac = cases.reportIssue(P.admin, {
+    ...base, title: 'Reading có vấn đề', summary: 'Đọc sai ý chính', observation: 'Đọc lướt',
+    primaryCode: 'student.reading.other',
+  }) as any;
+  assert(khac.id > 0, 'Chọn "Khác" có ghi rõ + mô tả 15 ký tự phải mở được (bỏ luật 30 ký tự)');
+  /* PA đề xuất "Khác": ghi rõ ≥ 3 ký tự, ghép vào đầu mô tả (không có cột riêng — Q9). */
+  const paKhac = { kind: 'other_proposal', description: 'Nhờ P. Học thuật xem lại', performerSelf: true };
+  assertThrows(() => cases.recordIntervention(P.admin, khac.id, paKhac), /PA đề xuất "Khác": Ghi rõ/, 'PA "Khác" không ghi rõ');
+  cases.recordIntervention(P.admin, khac.id, { ...paKhac, ghiRoKhac: 'Gặp chuyên gia' });
+  const paMoi = conn.prepare('SELECT description FROM case_interventions WHERE case_id = ? ORDER BY id DESC LIMIT 1').get(khac.id) as any;
+  assert(paMoi.description === 'Gặp chuyên gia — Nhờ P. Học thuật xem lại', `PA "Khác" ghép mô tả: ${paMoi.description}`);
 
   /* Đủ bốn trường thì mở được, và mức mặc định là "Bình thường" chứ không phải không có mức. */
   const ok = cases.reportIssue(P.admin, {

@@ -7,7 +7,7 @@ import {
   PERMISSIONS, REGULAR_SKILLS, ROLE_LABEL, WORK_SCOPES, chuongTrinhTuThamSo, khoangTuThamSo, laLoaiBoQuen, thamSoNguoi, tuDauKhoang,
   type Role, type TheoDong, type WorkScope,
 } from '../../../shared/domain/index.ts';
-import { transferReasonText } from '../../../shared/domain/index.ts';
+import { kiemGhiRoKhac, laKhac, transferReasonText } from '../../../shared/domain/index.ts';
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
 import { HttpError, badRequest, forbidden, isIsoDate, notFound, toInt } from '../util.ts';
 import { SESSION_COOKIE, createSession, destroySession, principalOf, requireAuth } from '../auth.ts';
@@ -1033,6 +1033,7 @@ api.post('/violations', requireAuth, wrap((req) => {
   return violationSvc.recordViolation(principalOf(req), {
     studentId: toInt(b.studentId) ?? 0, category: b.category, description: b.description, occurredOn: b.occurredOn ?? null,
     skill: 'skill' in b ? (b.skill ?? null) : undefined, idempotencyKey: b.idempotencyKey ?? null,
+    ghiRoKhac: b.ghiRoKhac ?? null,
   });
 }));
 api.get('/violations/:id', requireAuth, wrap((req) => {
@@ -1045,6 +1046,7 @@ api.patch('/violations/:id', requireAuth, wrap((req) => {
   return violationSvc.editViolation(principalOf(req), pInt(req, 'id'), {
     description: b.description, category: b.category, skill: 'skill' in b ? (b.skill ?? null) : undefined,
     occurredOn: 'occurredOn' in b ? (b.occurredOn ?? null) : undefined,
+    ghiRoKhac: 'ghiRoKhac' in b ? (b.ghiRoKhac ?? null) : undefined,
   });
 }));
 /** XOÁ THẲNG (rulebook v3, V11′–V14′): không lý do, không "đánh dấu không chính xác". Trả số biện pháp đã bị gỡ vi phạm này. */
@@ -1696,7 +1698,11 @@ api.post('/students/:id/transfer', requireAuth, wrap((req) => {
     nguoiNhan, mucTieu, thangThi,
   } = req.body ?? {};
   if (!toClassId) throw badRequest('Cần chọn lớp đích.');
-  /* RB-3: lý do chọn nhanh BẮT BUỘC; "Khác" phải ghi rõ. */
+  /* RB-3: lý do chọn nhanh BẮT BUỘC; "Khác" phải ghi rõ ≥ 3 ký tự (T13). */
+  if (laKhac(reasonCode)) {
+    const loi = kiemGhiRoKhac(reasonNote);
+    if (loi) throw badRequest(`Lý do "Khác": ${loi}.`);
+  }
   const reason = transferReasonText(reasonCode, reasonNote);
   if (!reason) throw badRequest('Chọn lý do chuyển lớp (chọn "Khác" thì ghi rõ).');
   return studentSvc.transferStudent(principalOf(req), pInt(req, 'id'), Number(toClassId),

@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, CONFIRM_EDIT_REASON, academicSupportFor, ngay, reasonNeedsText, sosPlanEndDate, weeklyUpdateDue,
+  CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, CONFIRM_EDIT_REASON, academicSupportFor, kiemGhiRoKhac, ngay, reasonNeedsText, sosPlanEndDate, weeklyUpdateDue,
   type AcademicSupportPreset, type CaseDismissReason,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -248,6 +248,8 @@ export function replacePresetPlan(p: Principal, interventionId: number, plan: {
   kind: string; description?: string | null;
   performerSelf?: boolean; performerUserId?: number | null; performerName?: string | null;
   followupDue?: string | null; rescheduleTarget?: string | null;
+  /** Thay bằng PA đề xuất "Khác" (T13): chữ ô Ghi rõ — `recordIntervention` kiểm và ghép vào mô tả. */
+  ghiRoKhac?: string | null;
 }) {
   const iv = loadUnconfirmedPreset(p, interventionId, 'thay');
   const today = demoToday();
@@ -256,6 +258,7 @@ export function replacePresetPlan(p: Principal, interventionId: number, plan: {
       kind: plan.kind, description: plan.description ?? null,
       performerSelf: plan.performerSelf, performerUserId: plan.performerUserId ?? null, performerName: plan.performerName ?? null,
       status: 'started', startedDate: today, followupDue: plan.followupDue ?? null, rescheduleTarget: plan.rescheduleTarget ?? null,
+      ghiRoKhac: plan.ghiRoKhac ?? null,
     });
     const created = (db().prepare('SELECT id FROM case_interventions WHERE case_id = ? ORDER BY id DESC LIMIT 1').get(iv.case_id) as any).id as number;
     db().prepare('UPDATE case_interventions SET confirmed_by = ?, confirmed_at = ? WHERE id = ?').run(p.userId, nowIso(), created);
@@ -293,7 +296,10 @@ export function dismissSosCase(p: Principal, caseId: number, input: { reasonCode
     throw badRequest(`Chọn một lý do: ${CASE_DISMISS_REASONS.map((r) => CASE_DISMISS_REASON_LABEL[r]).join(' · ')}.`);
   }
   const text = (input.reasonText ?? '').trim();
-  if (reasonNeedsText(code) && !text) throw badRequest('Chọn "Khác" thì phải ghi rõ lý do bằng chữ.');
+  if (reasonNeedsText(code)) {
+    const loi = kiemGhiRoKhac(text);
+    if (loi) throw badRequest(`Lý do "Khác": ${loi}.`);
+  }
   const started = conn
     .prepare(`SELECT COUNT(*) n FROM case_interventions iv WHERE iv.case_id = ? AND iv.status != 'cancelled'
                 AND NOT ${UNCONFIRMED_PRESET('iv')} AND NOT ${PA_QUY_CHE_CHUA_GHI('iv')}`)

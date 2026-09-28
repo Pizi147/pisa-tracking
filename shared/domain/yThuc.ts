@@ -64,9 +64,8 @@ export function legacyTopicToViolationCategory(topic: string | null | undefined)
   }
 }
 
-/** V02: mô tả tối thiểu. V05: nhóm `Khác` phải dài hơn, nếu không `Khác` thành cái ô "chưa rõ" vô nghĩa. */
+/** V02: mô tả tối thiểu. V05 (bản T13): nhóm Khác cần ô Ghi rõ ≥ 3 ký tự (`kiemGhiRoKhac`, `./khac.ts`). */
 export const VIOLATION_DESCRIPTION_MIN = 10;
-export const VIOLATION_OTHER_DESCRIPTION_MIN = 30;
 
 /**
  * Môn của một vi phạm — TÙY CHỌN (V02/V04). Lớp Fast Track phân công Writing thành hai task, lớp Normal có một môn Writing
