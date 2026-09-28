@@ -1,5 +1,6 @@
 /** PHÉP KIỂM PR-LOP — tạo lớp, tên lớp, RF, Pre FOU, phân công. Harness do `run.ts` truyền vào. */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { docSach } from './panelUx3.tests.ts';
 
 export async function runPrLopTests(t: YThucTestKit) {
   const { check, assert, assertThrows, conn, P } = t;
@@ -148,5 +149,13 @@ export async function runPrLopTests(t: YThucTestKit) {
     const lop = conn.prepare(`SELECT c.id FROM classes c WHERE c.code = 'MB FT 101'`).get() as any;
     assertThrows(() => ttl.capNhatThongTinLop(P.admin, lop.id, { route: 'RF' }), /đã có \d+ học viên/, 'đổi lộ trình khi có HV');
     assertThrows(() => ttl.capNhatThongTinLop(P.admin, lop.id, { so: '1O1' }), /Chỉ gõ số/, 'số sai');
+  });
+
+  check('LOP (8) · panel Tạo lớp: một lệnh, ô số, xem trước, một người mỗi ô, không câu sai (YC-1, YC-2, YC-4)', () => {
+    const src = docSach('web/src/modules/classes/ClassCreatePanel.tsx');
+    assert(!/\/teachers`|api\.put\(/.test(src), 'còn gọi lệnh phân công thứ hai');
+    assert(/oPhanCong\(/.test(src) && /kiemPhanCong\(/.test(src) && /ghepMaLop\(/.test(src) && /locSoLop\(/.test(src), 'chưa dùng luật chung');
+    assert(!/hai người dạy|TeacherPick|\+ Thêm giáo viên|Normal|Progress Test|Final Test/.test(src), 'còn chữ/ô cũ');
+    assert(/CHO_TAO_PRE_FOU/.test(src) && /navigate\(`\/hoc-vien\/lop\//.test(src), 'PF6 / mở hồ sơ lớp');
   });
 }

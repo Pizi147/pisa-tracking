@@ -1241,8 +1241,9 @@ api.put('/regular/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
 }));
 
 /** Danh sách chương trình học đang dùng. */
+/* Kèm `skills` + `checkpoints` của bảng: panel Tạo lớp vẽ ô phân công và dòng "10 tuần · Giữa khoá tuần 5 …" từ đây (PR-LOP). */
 api.get('/ref/programmes', requireAuth, wrap(() =>
-  db().prepare(`SELECT code, name, weeks, scoring_mode AS scoringMode FROM programmes WHERE status='active' ORDER BY code`).all()));
+  [...regularSvc.allProgrammes().values()].sort((x, y) => x.code.localeCompare(y.code))));
 
 // ============================================================ Lộ trình và Đánh giá GV
 

@@ -17,7 +17,7 @@ function boChuThich(src: string): string {
     .replace(/(^|[^:\\])\/\/.*$/gm, '$1');
 }
 const doc = (rel: string) => fs.readFileSync(path.join(REPO, rel), 'utf8');
-const docSach = (rel: string) => boChuThich(doc(rel));
+export const docSach = (rel: string) => boChuThich(doc(rel));
 
 export async function runPanelUx3Tests(t: YThucTestKit) {
   const { check, assert } = t;
