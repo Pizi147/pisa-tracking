@@ -15,6 +15,7 @@ import {
 } from '@shared/domain/index.ts';
 import { LichSuDieuChinh, type BanDieuChinh } from './CapNhatTuan.tsx';
 import { NganCase } from '../students/NganCase.tsx';
+import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
 
 /**
  * MỘT VẤN ĐỀ HỌC VỤ (PR-UX3, N-4, mockup 15 §3) — kể theo hai câu người đọc cần: VẤN ĐỀ gì, và ĐÃ LÀM GÌ (các PA, mỗi PA một
@@ -62,8 +63,7 @@ export type CaseDetail = {
 };
 
 /** Nội dung của ngăn Case: một `KhungPanel` đổi nội dung theo view, không chồng panel. */
-export type ViewCase = { loai: 'case' } | { loai: 'ghi-ket-qua'; paId: number } | { loai: 'them-pa' }
-  | { loai: 'hoan-thanh' } | { loai: 'tra-loi'; paId: number };
+export type ViewCase = { loai: 'case' } | { loai: 'ghi-ket-qua'; paId: number } | { loai: 'them-pa' } | { loai: 'hoan-thanh' };
 
 /** "Case Listening" — tên ngắn của Case cho tiêu đề ngăn và dòng "← Case Listening". */
 export function tenNganCase(d: { categoryLabel: string | null; category: string | null }): string {
@@ -271,13 +271,16 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
             Ghi kết quả
           </button>
         )}
-        {choDuyet && data.viewer.canApprove && (
-          <button type="button" className="btn btn-sm" onClick={() => onViec({ loai: 'tra-loi', paId: iv.id })}>Trả lời đề xuất</button>
-        )}
-        {choDuyet && !data.viewer.canApprove && (
-          <span className="self-center text-xs text-slate-500">Đang chờ Quản lý trả lời; thời gian chờ tính cho Quản lý.</span>
+        {choDuyet && !(data.viewer.canApprove && iv.yeuCau) && (
+          <span className="self-center text-xs text-slate-500 tabular-nums">
+            Đang chờ Quản lý trả lời{iv.approvalDue ? ` · hạn ${ngan(iv.approvalDue)}` : ''} — thời gian chờ tính cho Quản lý.
+          </span>
         )}
       </div>
+      {/* PR-DUYET (K3-20): người duyệt được quyết NGAY dưới PA — cùng thẻ với hộp Chờ duyệt, không còn panel "Trả lời đề xuất". */}
+      {data.viewer.canApprove && iv.yeuCau && iv.yeuCau.loai === 'de_xuat_pa' && (
+        <div className="mt-2"><TheYeuCau gon yc={iv.yeuCau} onXong={() => onViec({ loai: 'case' })} /></div>
+      )}
     </li>
   );
 }

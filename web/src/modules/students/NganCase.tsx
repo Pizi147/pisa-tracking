@@ -8,20 +8,21 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { caseStatusLabel, sosLabel, sosTone } from '../../lib/format.ts';
 import { ThanCase, tenNganCase, type CaseDetail, type ViewCase } from '../cases/CasePanel.tsx';
 import { GhiKetQuaPanel } from '../cases/CapNhatTuan.tsx';
-import { HoanThanhCasePanel, ThemPaPanel, TraLoiDeXuatPanel } from '../cases/ThaoTacCase.tsx';
+import { HoanThanhCasePanel, ThemPaPanel } from '../cases/ThaoTacCase.tsx';
 
 export type { ViewCase };
 
 /**
  * NGĂN CASE dùng chung cho mọi lối vào (PR-UX3, N-4, G-8): Hồ sơ HV › Học thuật, Hành trình, thông báo (`?case=&pa=`), Việc cần làm
  * (`?viec=ghi-ket-qua`), bảng Case, Phân tích. MỘT panel — không chồng: view `case` (thân Case) và các view làm việc (Ghi kết quả ·
- * Thêm PA · Hoàn thành · Trả lời đề xuất) THAY nội dung cho nhau, có dòng "← Case Listening" để về. Tải `/cases/{id}` MỘT lần.
+ * Thêm PA · Hoàn thành; PR-DUYET bỏ Trả lời đề xuất — thẻ Chờ duyệt nhúng dưới PA) THAY nội dung cho nhau, có dòng "← Case Listening" để về. Tải `/cases/{id}` MỘT lần.
  *
  * Có `paId` (view `case`) thì sau khi tải xong dò `[data-pa-id="{paId}"]` (giao kèo với Hành trình) để cuộn tới và viền sáng 2 giây.
  * Có `viec` thì mở thẳng view đó; `viecBanDau` là bản đầy đủ khi nơi gọi đã có `ViewCase`.
  */
 export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose, onChanged }: {
   caseId: number; paId?: number | null;
+  /** `tra-loi` cũ trên URL (trước PR-DUYET) → mở Ngăn Case thường: trả lời đề xuất nay là thẻ ngay dưới PA. */
   viec?: 'ghi-ket-qua' | 'them-pa' | 'hoan-thanh' | 'tra-loi';
   viecBanDau?: ViewCase;
   hocVien?: string | null; lop?: string | null;
@@ -68,9 +69,9 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
   const hv = hocVien ?? data.student?.name ?? null;
   const chung = { hocVien: hv, lop, quayLai: { nhan: ten, onClick: veCase }, onClose };
 
-  if (view.loai === 'ghi-ket-qua' || view.loai === 'tra-loi') {
+  if (view.loai === 'ghi-ket-qua') {
     const iv = (data.interventions ?? []).find((x: any) => x.id === view.paId);
-    if (iv && view.loai === 'ghi-ket-qua') {
+    if (iv) {
       return (
         <GhiKetQuaPanel key={iv.id} {...chung} onSaved={xong}
           pa={{
@@ -79,9 +80,6 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
             followupDue: iv.followupDue ?? null, actionDue: iv.actionDue ?? null, cycleNo: iv.cycleNo ?? null,
           }} />
       );
-    }
-    if (iv && view.loai === 'tra-loi') {
-      return <TraLoiDeXuatPanel key={iv.id} {...chung} onSaved={xong} iv={{ id: iv.id, kind: iv.kind, description: iv.description ?? null }} />;
     }
   }
   if (view.loai === 'them-pa') {
@@ -138,7 +136,6 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
 
 function tuViec(viec: string | undefined, paId: number | null | undefined): ViewCase | null {
   if (viec === 'ghi-ket-qua' && paId) return { loai: 'ghi-ket-qua', paId };
-  if (viec === 'tra-loi' && paId) return { loai: 'tra-loi', paId };
   if (viec === 'them-pa') return { loai: 'them-pa' };
   if (viec === 'hoan-thanh') return { loai: 'hoan-thanh' };
   return null;
