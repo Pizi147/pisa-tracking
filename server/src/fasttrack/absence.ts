@@ -615,7 +615,7 @@ export function settleNoShows(today: string = demoToday()): number {
       `SELECT s.id AS score_id, s.attempt_id, s.skill AS entry_skill, s.no_show_late,
               k.id AS sched_id, k.skill AS assessed, rp.week_end, rp.code AS period_code
          FROM assessment_scores s
-         JOIN assessment_attempts a ON a.id = s.attempt_id AND a.status != 'cancelled' AND a.kind = 'mock'
+         JOIN assessment_attempts a ON a.id = s.attempt_id AND a.status != 'cancelled' AND a.kind = 'mock' AND a.lich_su = 0
          JOIN attempt_skills k ON k.attempt_id = s.attempt_id
               AND k.skill = CASE WHEN s.skill IN ('writing1', 'writing2') THEN 'writing' ELSE s.skill END
          JOIN report_periods rp ON rp.id = k.planned_period_id

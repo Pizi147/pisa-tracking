@@ -286,4 +286,57 @@ export async function runPrMtTests(t: YThucTestKit) {
     for (const a of [m1, m2]) conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, band, entered_at) VALUES (?, 'speaking', 6, ?)`).run(a.id, TODAY);
     assert(danhGia.latestAttempts([sid], 'valid', TODAY).get(sid)?.attemptNo === 2, 'phải chọn MT2');
   });
+
+  // ---------------------------------------------------------------- khối 6: GVCN nhập MT lịch sử, R11 7 ngày, không "-", cửa sổ Case
+  const perm: any = await import('../permissions.ts');
+  const hoanTatSvc: any = await import('../fasttrack/hoanTat.ts');
+  const GVCN = P.coreTeacher;
+  const monKhongDay = d.ENTRY_SKILLS.find((k: string) => !perm.mySkills(GVCN, MB101, [k]).length && k === 'speaking') ?? 'speaking';
+  const mt2H1 = luotCua(sH1b)[1];
+  const tieuChi = (b: number) => ({ criteria: [b, b, b, b] });
+  check('PR-MT (6) · GVCN nhập ô TRỐNG môn mình không dạy của MT lịch sử → được (nhật ký score.lich_su); sửa lại → từ chối; QL sửa có lý do → được (K5-31, Q8, T34)', () => {
+    assert(!perm.mySkills(GVCN, MB101, [monKhongDay]).length, `tiền đề: GVCN không dạy ${monKhongDay}`);
+    attemptsSvc.saveScore(GVCN, mt2H1.id, monKhongDay, tieuChi(5));
+    const nk = conn.prepare(`SELECT action FROM audit_logs WHERE entity_type = 'assessment_attempt' AND entity_id = ? ORDER BY id DESC`).get(mt2H1.id) as any;
+    assert(nk?.action === 'score.lich_su' && d.nhanHanhDongNhatKy('score.lich_su') === 'Nhập điểm MT lịch sử', JSON.stringify(nk));
+    assertThrows(() => attemptsSvc.saveScore(GVCN, mt2H1.id, monKhongDay, { ...tieuChi(6), lyDo: 'Gõ nhầm tiêu chí khi nhập bù' }),
+      /phân công/, 'GVCN sửa ô đã có điểm của MT lịch sử');
+    attemptsSvc.saveScore(P.mbManager, mt2H1.id, monKhongDay, { ...tieuChi(6.5), lyDo: 'Gõ nhầm tiêu chí khi nhập bù' });
+    const cells = attemptsSvc.attemptDetail(GVCN, mt2H1.id).cells;
+    assert(cells.filter((c: any) => c.skill !== monKhongDay).every((c: any) => c.canEdit) && cells.every((c: any) => c.progress === 'lich_su' || c.band !== null),
+      'GVCN thấy ô trống cả 4 kỹ năng mở, tiến độ "lịch sử"');
+  });
+  check('PR-MT (6) · Lượt thường: GVCN không dạy môn đó vẫn bị từ chối như cũ', () => {
+    assertThrows(() => attemptsSvc.saveScore(GVCN, luotCua(sA)[1].id, monKhongDay, tieuChi(6)), /phân công/, 'lượt thường');
+  });
+  check('PR-MT (6) · MT lịch sử không nhận dấu "-" (K4-20)', () => {
+    assertThrows(() => attemptsSvc.saveScore(P.mbManager, mt2H1.id, 'listening', { noShow: true }),
+      /MT lịch sử không nhận dấu "-" — để trống ô nếu không có dữ liệu\./, 'dấu "-" trên MT lịch sử');
+  });
+  check('PR-MT (6) · H2: MT2 lịch sử cách 10+ tuần, đủ 4 kỹ năng SOS 2 → KHÔNG Case, không tín hiệu, không Phối hợp (M4, M-14)', () => {
+    attemptsSvc.saveScore(P.mbManager, mt2H1.id, 'listening', { rawScore: scoringSvc.LISTENING_BY_RAW.indexOf(5) });
+    attemptsSvc.saveScore(P.mbManager, mt2H1.id, 'reading', { rawScore: scoringSvc.READING_BY_RAW.indexOf(5) });
+    for (const k of ['writing1', 'writing2']) attemptsSvc.saveScore(P.mbManager, mt2H1.id, k, tieuChi(7));
+    const r = attemptsSvc.attemptDetail(P.mbManager, mt2H1.id).result;
+    assert(r.sosLevel === 2, `SOS ${r.sosLevel}`);
+    const n = (sql: string) => (conn.prepare(sql).get(mt2H1.id) as any).n;
+    assert(n('SELECT COUNT(*) n FROM case_signals WHERE attempt_id = ?') === 0, 'có tín hiệu');
+    assert(n('SELECT COUNT(*) n FROM sos_coordination_actions WHERE attempt_id = ?') === 0, 'có Phối hợp');
+    assert((conn.prepare('SELECT COUNT(*) n FROM sos_cases WHERE student_id = ?').get(sH1b) as any).n === 0, 'có Case');
+  });
+  check('PR-MT (6) · R11 MT lịch sử: nhập ô cuối hôm nay → chưa khoá; hôm nay + 8 → khoá (K5-21, K4-20)', () => {
+    conn.prepare('UPDATE assessment_scores SET entered_at = ? WHERE attempt_id = ?').run(`${TODAY}T03:00:00.000Z`, mt2H1.id);
+    assert(hoanTatSvc.dotHoanTat(mt2H1.id, TODAY).hoanTat === false, 'hôm nay đã khoá');
+    assert(hoanTatSvc.dotHoanTat(mt2H1.id, addDays(TODAY, 8)).hoanTat === true, 'sau 8 ngày chưa khoá');
+  });
+  const sH3 = them('MB FT 101', 'PRMT Em H3', addDays(tuanNay, -7 * (16 - 1) - 14));
+  check('PR-MT (6) · H3: MT3 lịch sử cách 2 tuần có SOS → Case + PA quy chế + Phối hợp, ngày phát hiện = hôm nay (M4, Q7)', () => {
+    const mt3 = luotCua(sH3)[2];
+    assert(mt3.no === 3 && mt3.lich_su === 1, JSON.stringify(mt3));
+    nhap(mt3, { l: 5, r: 5, w: 7, s: 7 });
+    const cs = conn.prepare('SELECT id, detected_at FROM sos_cases WHERE student_id = ?').all(sH3) as any[];
+    assert(cs.length === 2 && cs.every((c) => String(c.detected_at).slice(0, 10) === TODAY), JSON.stringify(cs));
+    assert((conn.prepare('SELECT COUNT(*) n FROM case_interventions WHERE case_id = ? AND preset = 1').get(cs[0].id) as any).n === 1, 'PA quy chế');
+    assert((conn.prepare('SELECT COUNT(*) n FROM sos_coordination_actions WHERE attempt_id = ?').get(mt3.id) as any).n > 0, 'Phối hợp');
+  });
 }

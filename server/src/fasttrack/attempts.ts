@@ -8,7 +8,7 @@ import { demoToday } from '../demoConfig.ts';
 import { badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { dotHoanTat, dotHoanTatMany, quyenSuaSauHoanTat } from './hoanTat.ts';
 import {
-  can, classScopeSql, defaultWorkScope, editableSkills, moveableSkills, mySkills, require_, scopeFor, scoreEditPath,
+  can, classScopeSql, defaultWorkScope, editableSkills, moveableSkills, mySkills, require_, scopeFor, scoreEditPath, type LuotQuyen,
   type Principal,
 } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
@@ -161,6 +161,11 @@ export function entryBandsOf(rows: ScoreRow[]) {
  * LỘ TRÌNH CỦA LƯỢT (K5-49) — `learning_cycles.route` theo `cycle_id`, không phải lộ trình hiện tại của em. Hàng đã JOIN `cy.route` thì
  * dùng luôn; không thì một câu, nhớ theo `cycle_id` trong request. Danh sách phải JOIN sẵn — không hỏi theo từng dòng.
  */
+/** Quyền theo lượt (MT lịch sử): cờ + các ô đã có điểm của CHÍNH lượt — đọc từ điểm đã nạp sẵn, không hỏi lại. */
+function luotQuyen(a: any, rows: ScoreRow[]): LuotQuyen {
+  return { lich_su: a.lich_su ?? 0, oCoDiem: rows.filter((r) => (r.band ?? null) !== null || (r.raw_score ?? null) !== null).map((r) => r.skill) };
+}
+
 export function routeCuaLuot(attempt: any): string | null {
   if ('route' in attempt) return attempt.route ?? null;
   if (!attempt.cycle_id) return null;
@@ -264,7 +269,7 @@ export function skillCells(
   /** R11: truyền từ nơi gọi (`dotHoanTatMany` cho cả bảng) — không tự hỏi lại lẻ từng dòng ở đây. */
   hoanTat: { hoanTat: boolean; chuNhatCuoi: string | null } = { hoanTat: false, chuNhatCuoi: null },
 ): SkillCell[] {
-  const editable = attempt.class_id ? editableSkills(p, attempt.class_id, ENTRY_SKILLS) : [];
+  const editable = attempt.class_id ? editableSkills(p, attempt.class_id, ENTRY_SKILLS, luotQuyen(attempt, rows)) : [];
   const mine = attempt.class_id ? mySkills(p, attempt.class_id, ENTRY_SKILLS) : [];
   const mode = scoringModeOf(attempt);
   const schedule = skillScheduleOf(attempt, skillRows);
@@ -829,7 +834,7 @@ export function scoreHistoryOf(attemptId: number) {
          FROM audit_logs l LEFT JOIN users u ON u.id = l.actor_user_id
          JOIN assessment_attempts a ON a.id = l.entity_id
         WHERE l.entity_type = 'assessment_attempt' AND l.entity_id = ? AND l.created_at >= a.created_at
-          AND l.action IN ('score.edit', 'score.override', 'score.no_show', 'score.no_show_cleared')
+          AND l.action IN ('score.edit', 'score.lich_su', 'score.override', 'score.no_show', 'score.no_show_cleared')
         ORDER BY l.id DESC`,
     )
     .all(attemptId) as any[];
@@ -841,7 +846,7 @@ export function scoreHistoryOf(attemptId: number) {
       : scoreSummaryText(after);
     return {
       id: l.id,
-      kind: l.action === 'score.override' ? 'override' : l.action === 'score.edit' ? 'edit' : 'no_show',
+      kind: l.action === 'score.override' ? 'override' : l.action === 'score.edit' || l.action === 'score.lich_su' ? 'edit' : 'no_show',
       skill: l.entity_label as string,
       skillLabel: ENTRY_SKILL_LABEL[l.entity_label as EntrySkill] ?? l.entity_label,
       before: scoreSummaryText(before), after: afterText,
@@ -970,7 +975,7 @@ export function attemptDetail(p: Principal, attemptId: number) {
       canOverrideDeadline: can(p, PERMISSIONS.DEADLINE_OVERRIDE, { classId: a.class_id }),
       /* Không có kỹ năng cụ thể ở mức cả đợt — dùng SOS_REPORT (rộng), đúng nghĩa "báo được". */
       canEditSos: can(p, PERMISSIONS.SOS_REPORT, { classId: a.class_id, studentId: a.student_id }),
-      editableSkills: a.class_id ? editableSkills(p, a.class_id, ENTRY_SKILLS) : [],
+      editableSkills: a.class_id ? editableSkills(p, a.class_id, ENTRY_SKILLS, luotQuyen(a, scores)) : [],
     },
   };
 }
@@ -1246,6 +1251,8 @@ export function saveScore(
   const a = loadAttempt(attemptId);
   if (!(ENTRY_SKILLS as readonly string[]).includes(skill)) throw badRequest('Kỹ năng không hợp lệ.');
   if (a.status === 'cancelled') throw badRequest('Lượt này đã huỷ, không nhập điểm được.');
+  /* K4-20: MT lịch sử không vào luồng vắng — không có buổi nào để "không dự thi". */
+  if (patch.noShow === true && a.lich_su) throw badRequest('MT lịch sử không nhận dấu "-" — để trống ô nếu không có dữ liệu.');
   /*
    * DẤU "-" CỦA LỚP THƯỜNG ĐI CỬA KHÁC (C08, chốt 21/09/2026 đêm). Ở lớp thường, "-" không phải lời khai chờ chốt
    * Chủ nhật như Fast Track mà là một lần DỜI LỊCH: môn đó sang tuần sau ngay. Luật ấy nằm ở `normal/regular.ts`
@@ -1261,7 +1268,10 @@ export function saveScore(
    * xem dưới). GVBM bị chặn hẳn, không còn đường `assigned` nữa dù đúng môn mình phụ trách.
    */
   const hoanTat = dotHoanTat(attemptId, today);
-  let path = a.class_id ? scoreEditPath(p, a.class_id, skill) : null;
+  const oCu = conn.prepare('SELECT band, raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, skill) as any;
+  let path = a.class_id
+    ? scoreEditPath(p, a.class_id, skill, { lich_su: a.lich_su ?? 0, coDiemO: (oCu?.band ?? null) !== null || (oCu?.raw_score ?? null) !== null })
+    : null;
   if (hoanTat.hoanTat) {
     if (!a.class_id || !quyenSuaSauHoanTat(p, a.class_id)) {
       throw forbidden(
@@ -1473,7 +1483,7 @@ export function saveScore(
       : after;
     writeAudit({
       actorUserId: p.userId,
-      action: path === 'override' ? 'score.override' : 'score.edit',
+      action: path === 'override' ? 'score.override' : path === 'lich_su' ? 'score.lich_su' : 'score.edit',
       entityType: 'assessment_attempt', entityId: attemptId, entityLabel: skill,
       before, after: afterGhi,
     });

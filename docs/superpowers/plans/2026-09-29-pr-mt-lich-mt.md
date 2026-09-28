@@ -570,6 +570,11 @@ khác ngày với bản thử thì chạy thử lại. 5. Chạy thử lần n�
   rồi số MT lớn nhất. `luotSinhViecRow(a, homNay)` (danhGia.ts) dùng cho SOS hiện tại + Bỏ quên. K5-09: việc "Điền target" (nhóm Thiếu dữ
   liệu, GVCN, không hạn); câu gợi ý nhóm bỏ "lớp chưa có tuần bắt đầu" (không có loại việc đó). Phần web của Task 5 (DeadlinePill,
   LuoiFT…) làm chung ở Task 9.
+- **Task 6 — lệch kế hoạch (sửa theo đặc tả):** vai Quản lý **không** có `score.edit`/`score.override` (seed `ROLE_PERMISSIONS`) — QL chỉ sửa
+  điểm sau "hoàn tất" (R11). T34 ghi "GVCN của lớp **và QL** nhập được cả 4 kỹ năng", nên đường `lich_su` = lượt lịch sử + (QL có
+  `PLAN_WEEK` ở lớp đó — mọi ô, sửa ô đã có điểm vẫn phải có lý do RB-5) **hoặc** (GVCN lớp — chỉ ô trống, Q8). `editableSkills(…, luot?)`
+  theo cùng luật; `mySkills` giữ nguyên (MT lịch sử không phải nợ). R11 lịch sử: vẫn cần đủ điểm như `dotDaHoanTat`, chỉ thay mốc
+  "Chủ nhật tuần muộn nhất" bằng "lần nhập cuối + 7 ngày". Nhật ký `score.lich_su` hiện trong Lịch sử thay đổi của hồ sơ Test như "edit".
 
 ## Planning chốt 29/09
 

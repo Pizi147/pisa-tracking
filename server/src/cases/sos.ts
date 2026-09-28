@@ -2,7 +2,7 @@ import { suggestCaseOwner } from './owner.ts';
 import { db, tx } from '../db.ts';
 import {
   ENTRY_SKILL_LABEL,
-  SOS_LABEL, caseDedupKey, categoryOf,
+  SOS_LABEL, caseDedupKey, categoryOf, luotSinhViec,
   type CaseCategory, type EntrySkill, type MilestoneKind, type SosLevel,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -16,6 +16,7 @@ import { scoringModeOf } from '../fasttrack/skillSchedule.ts';
 import { announceAutoCase, createPresetPlan, isFastTrackMock, resyncUnconfirmedPresets } from './sosAuto.ts';
 import { syncSosCoordination } from '../yThuc/phoiHop.ts';
 import { mondayOf } from '../platform/week.ts';
+import { ngayTaoLuot } from '../classes/schedule.ts';
 
 /**
  * Hành động phối hợp theo Lần MT × mức SOS, lấy nguyên từ 'Quy trinh SOS' của trung tâm.
@@ -264,6 +265,17 @@ export function addMilestone(input: {
 export function raiseSignalsForResult(p: Principal, attempt: any, result: AttemptResult) {
   if (result.sosLevel === null) return null;
   const conn = db();
+  /*
+   * PR-MT (M4, M-14, K5-15): MT LỊCH SỬ chỉ sinh Case / PA quy chế / Phối hợp / thông báo khi tuần thi nằm trong 4 tuần trước ngày tạo
+   * lượt. Chặn ĐÚNG MỘT CHỖ ở đầu hàm — không để tín hiệu `pending` rơi vào nhánh "silent" bên dưới.
+   */
+  const lichSu = !!attempt.lich_su;
+  if (lichSu) {
+    const tuanKetThuc = attempt.planned_period_id
+      ? (conn.prepare('SELECT week_end FROM report_periods WHERE id = ?').get(attempt.planned_period_id) as any)?.week_end ?? null
+      : null;
+    if (!luotSinhViec({ lich_su: 1, tuanKetThuc, created_at: ngayTaoLuot(attempt.created_at) })) return null;
+  }
   const rows = conn
     .prepare('SELECT skill, band FROM assessment_scores WHERE attempt_id = ?')
     .all(attempt.id) as any[];
@@ -276,7 +288,8 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
    * Nó KHÁC ngày ghi nhận tín hiệu (hôm nay) — và hạn ba ngày đếm từ ngày ghi nhận, không
    * từ ngày này, để điểm nhập muộn không làm giáo viên quá hạn ngay lúc điểm vừa công bố.
    */
-  const detectedAt = weekStartOf(attempt) ?? demoToday();
+  /* Q7: MT lịch sử trong cửa sổ → phát hiện HÔM NAY (thứ Hai tuần thi đã qua lâu thì hạn 3 ngày quá hạn ngay lúc nhập). */
+  const detectedAt = lichSu ? demoToday() : weekStartOf(attempt) ?? demoToday();
 
   /*
    * PHỐI HỢP SOS (rulebook v3, P01–P03) — CHỈ Mock Test FT. Đồng bộ TRƯỚC các lối thoát sớm bên dưới: SOS hết (mức 0) cũng phải tự bỏ những việc
