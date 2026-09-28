@@ -454,7 +454,7 @@ function headlineOf(p: Principal, studentId: number, cycleId: number | null) {
    */
   /* Câu BẮT ĐẦU BẰNG ĐỘNG TỪ (PR-HV Q7): ô "Việc cần làm tiếp" đọc như một việc, không như một nhận xét. "PA" ở đây
      đúng D1 — đầu hồ sơ học viên là ngữ cảnh học thuật. */
-  type Next = { text: string; due: string | null; rank: number; category: string };
+  type Next = { text: string; due: string | null; rank: number; category: string; loai?: 'cap-nhat-pa' };
   const cands: Next[] = [];
   /* DỰ PHÒNG (PR-HV, sửa sau rà soát 22/09): việc cập nhật hằng tuần CHƯA quá hạn CHỈ dùng khi không có việc nào khác —
      nếu đưa vào `cands`, ứng viên có hạn sẽ thắng ứng viên không hạn ở `cands.sort` và chen trước "Xác minh SOS"/"Đề ra PA". */
@@ -462,23 +462,19 @@ function headlineOf(p: Principal, studentId: number, cycleId: number | null) {
   /* Mục 3 (chủ sản phẩm 22/09): TÊN ĐẦY ĐỦ kỹ năng ("Writing Task 2"), không viết tắt "W2". */
   const sk = (r: any) => r.label;
   /* Mục 1 (chủ sản phẩm 22/09): case từ SOS CHỜ XÁC ĐỊNH NGUYÊN NHÂN là việc chặn đầu chuỗi — xếp TRƯỚC mọi ứng viên khác
-     (hạn = hạn xác định nguyên nhân); PA gợi ý chưa xác nhận là một việc thường. Chỉ hiển thị — luật ở cases.ts không đổi. */
+     (hạn = hạn xác định nguyên nhân). PA theo quy chế tự chạy từ lúc tạo (PR-N1, S4-1) — không còn việc "xác nhận PA". */
   const xacDinh: Next[] = [];
   for (const r of rows) {
     for (const c of r.cases) {
       if (c.status === 'done') continue;
       if (c.sos?.awaitingCause) xacDinh.push({ text: `Xác định nguyên nhân ${sk(r)}`, due: c.sos.dueOn ?? null, rank: 0, category: r.category });
-      else if (c.sos?.unconfirmedPlanId) cands.push({ text: `Xác nhận PA gợi ý ${sk(r)}`, due: null, rank: 1, category: r.category });
     }
     if (r.signal) cands.push({ text: `Xác minh SOS ${sk(r)}`, due: r.signal.verifyDue ?? null, rank: 0, category: r.category });
     if (r.state === 'no_plan') cands.push({ text: `Đề ra PA ${sk(r)}`, due: null, rank: 1, category: r.category });
-    if (r.overdueActionDue) cands.push({ text: `Ghi kết quả PA ${sk(r)}`, due: r.overdueActionDue, rank: 1, category: r.category });
+    if (r.overdueActionDue) cands.push({ text: `Ghi kết quả PA ${sk(r)}`, due: r.overdueActionDue, rank: 1, category: r.category, loai: 'cap-nhat-pa' });
+    /* Hạn tuần CHƯA quá hạn — chỉ dùng khi không còn việc khác. Dự kiến kết thúc KHÔNG bao giờ là việc (T53 Q1, K3-02). */
+    else if (r.nextActionDue) duPhong.push({ text: `Ghi kết quả PA ${sk(r)}`, due: r.nextActionDue, rank: 3, category: r.category, loai: 'cap-nhat-pa' });
     if (r.pendingApproval) cands.push({ text: `Chờ Quản lý duyệt PA ${sk(r)}`, due: null, rank: 2, category: r.category });
-    if (r.followOverdue) cands.push({ text: `Ghi kết quả PA ${sk(r)}`, due: r.followUntil, rank: 1, category: r.category });
-    /* MỚI (PR-HV): việc cập nhật hằng tuần CHƯA quá hạn — để ô có "hạn 30/08" thay vì "Không có" khi mọi việc đang đúng hạn. */
-    else if (r.followUntil && r.cases.some((c: any) => c.status !== 'done')) {
-      duPhong.push({ text: `Ghi kết quả PA ${sk(r)}`, due: r.followUntil, rank: 3, category: r.category });
-    }
   }
   cands.sort((a, b) => {
     /* Quá hạn trước, rồi hạn sớm hơn, rồi bậc chặn. */
@@ -495,7 +491,7 @@ function headlineOf(p: Principal, studentId: number, cycleId: number | null) {
   const chon = xacDinh[0] ?? cands[0] ?? duPhong[0] ?? null;
   return {
     below, signals, openCases: open,
-    next: chon ? { text: chon.text, due: chon.due, overdue: quaHan(chon.due, today), category: chon.category } : null,
+    next: chon ? { text: chon.text, due: chon.due, overdue: quaHan(chon.due, today), category: chon.category, loai: chon.loai } : null,
   };
 }
 

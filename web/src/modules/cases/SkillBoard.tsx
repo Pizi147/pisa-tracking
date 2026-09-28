@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Empty, ErrorState, Level, Outcome, SCORE_CHIP, SCORE_TEXT, Skeleton, type ScoreTone } from '../../ui/ui.tsx';
 import { fmtBand, sosLabel, sosTone } from '../../lib/format.ts';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { Nhan, QuaHan } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { type BanDieuChinh } from './CapNhatTuan.tsx';
-import { CauseDeterminationPanel, DismissCaseForm, PresetPlanActions } from '../yThuc/CaseSosControls.tsx';
+import { CauseDeterminationPanel, DismissCaseForm } from '../yThuc/CaseSosControls.tsx';
 import {
   ATTEMPT_KIND_SHORT, OUTCOME_MARK, OUTCOME_TONE, dangChay, deadlineView, tienDoCase, viecTiepPhuongAn,
   type AttemptKind, type DeadlineView,
@@ -27,7 +27,7 @@ import {
 
 type Plan = {
   id: number; kind: string; kindLabel: string; name: string;
-  /** Phương án điền sẵn từ SOS (§3.2, PR-K) chưa ai xác nhận: hiện `Gợi ý tự động · chờ xác nhận` + Xác nhận/Sửa/Thay. */
+  /** PA theo quy chế SOS do máy gán (§3.2, PR-N1 S4-1): chạy ngay từ lúc tạo, hiện dấu `🔒 theo quy chế` cạnh tên — không xoá, không thay. */
   preset: boolean; confirmedAt: string | null;
   performer: string | null; status: string; statusLabel: string;
   startedOn: string | null; completedOn: string | null;
@@ -52,9 +52,9 @@ type CaseCard = {
   id: number; title: string; status: string;
   /** Chủ đề gốc của case (§7.5, PR-K) — để mở đúng danh mục phân loại khi "Xác định nguyên nhân". */
   topic: string | null;
-  /** Case tự tạo từ SOS còn chờ xác định nguyên nhân / xác nhận phương án điền sẵn (§3.2, §7.5, PR-K). */
+  /** Case tự tạo từ SOS còn chờ xác định nguyên nhân (§3.2, §7.5, PR-K; PR-N1 S4-1: PA quy chế đã tự chạy). */
   sos: {
-    fromSos: boolean; hasCause: boolean; unconfirmedPlanId: number | null;
+    fromSos: boolean; hasCause: boolean;
     awaitingCause: boolean; dueOn: string | null;
     dismissed: { code: string; label: string; text: string | null } | null;
   };
@@ -154,7 +154,7 @@ export function SkillBoard({ rows, loading, error, onRetry, selected, onPick, on
   );
 }
 
-/** Hạn của việc tiếp theo, một dòng dưới chữ việc: "⚠ quá hạn 15 ngày" (đỏ) · "hôm nay" (vàng) · "hạn CN 30/08" (mờ). Chỗ DUY NHẤT nói quá hạn của kỹ năng. */
+/** Hạn của việc tiếp theo, một dòng dưới chữ việc: "⚠ quá hạn 15 ngày" (đỏ) · "hôm nay" (vàng) · "hạn hết T2 31/08" (mờ). Chỗ DUY NHẤT nói quá hạn của kỹ năng. */
 function DongHan({ v }: { v: DeadlineView | null }) {
   if (!v || v.han === 'chưa có hạn') return null;
   return (
@@ -256,8 +256,8 @@ function HangCaseVaPa({ c, ngan, onChanged, onMoCase }: {
   c: CaseCard; ngan: (d: string | null | undefined) => string; onChanged?: () => void;
   onMoCase: (caseId: number, o?: MoCase) => void;
 }) {
-  const [causeOpen, setCauseOpen] = useState(false);
-  const [dismissOpen, setDismissOpen] = useState(false);
+  /* YC-12.1: MỘT biến cho hai khối SOS — mở khối này thì nút của khối kia biến mất; Huỷ → về hai nút. */
+  const [khoiSos, setKhoiSos] = useState<null | 'nguyen-nhan' | 'khong-theo-doi'>(null);
   const [moXong, setMoXong] = useState(false);
   const td = tienDoCase(c.plans, c);
   const chay = c.plans.filter(dangChay);
@@ -293,13 +293,16 @@ function HangCaseVaPa({ c, ngan, onChanged, onMoCase }: {
           </span>
         </td>
         <td className="td">
-          <span className="flex flex-wrap items-center gap-1.5">
-            <button type="button" className="btn btn-sm" onClick={() => onMoCase(c.id)}>Mở Case</button>
-            {c.canEdit && !daXong && c.plans.length === 0 && (
-              <button type="button" className="btn btn-sm" onClick={() => onMoCase(c.id, { viec: 'them-pa' })}>+ Thêm PA</button>
+          <CotPhai
+            nut={(
+              <>
+                <button type="button" className="btn btn-sm" onClick={() => onMoCase(c.id)}>Mở Case</button>
+                {c.canEdit && !daXong && c.plans.length === 0 && (
+                  <button type="button" className="btn btn-sm" onClick={() => onMoCase(c.id, { viec: 'them-pa' })}>+ Thêm PA</button>
+                )}
+              </>
             )}
-          </span>
-          {daXong && c.outcomeLabel && <span className="mt-0.5 block text-[11px] text-slate-500">Kết luận: {c.outcomeLabel}</span>}
+            phu={daXong && c.outcomeLabel ? `Kết luận: ${c.outcomeLabel}` : undefined} />
         </td>
       </HangCon>
 
@@ -312,19 +315,17 @@ function HangCaseVaPa({ c, ngan, onChanged, onMoCase }: {
                 <p className="m-0 text-xs text-soon">
                   Chờ GVBM xác định nguyên nhân{c.sos.dueOn && ` · hạn ${ngan(c.sos.dueOn)}`}
                 </p>
-                {c.canEdit && !causeOpen && !c.sos.hasCause && (
+                {c.canEdit && khoiSos === null && !c.sos.hasCause && (
                   <span className="flex flex-wrap gap-2">
-                    <button type="button" className="btn btn-sm btn-primary" onClick={() => setCauseOpen(true)}>Xác định nguyên nhân</button>
-                    {!dismissOpen && (
-                      <button type="button" className="btn btn-sm btn-ghost" onClick={() => setDismissOpen(true)}>Không cần theo dõi</button>
-                    )}
+                    <button type="button" className="btn btn-sm btn-primary" onClick={() => setKhoiSos('nguyen-nhan')}>Xác định nguyên nhân</button>
+                    <button type="button" className="btn btn-sm btn-ghost" onClick={() => setKhoiSos('khong-theo-doi')}>Không cần theo dõi</button>
                   </span>
                 )}
-                {causeOpen && (
+                {khoiSos === 'nguyen-nhan' && (
                   <CauseDeterminationPanel caseId={c.id} topic={c.topic} currentCode={c.issueCode}
-                    onClose={() => setCauseOpen(false)} onDone={onChanged} />
+                    onClose={() => setKhoiSos(null)} onDone={onChanged} />
                 )}
-                {dismissOpen && <DismissCaseForm caseId={c.id} onClose={() => setDismissOpen(false)} onDone={onChanged} />}
+                {khoiSos === 'khong-theo-doi' && <DismissCaseForm caseId={c.id} onClose={() => setKhoiSos(null)} onDone={onChanged} />}
               </div>
             )}
             {/* CASE ĐÓNG "KHÔNG CẦN THEO DÕI" (§3.2, S05, K2-4) — chữ tự gõ của lý do Khác chỉ hiện ở đây. */}
@@ -333,7 +334,7 @@ function HangCaseVaPa({ c, ngan, onChanged, onMoCase }: {
         </HangCon>
       )}
 
-      {chay.map((p) => <HangPa key={p.id} p={p} c={c} ngan={ngan} onChanged={onChanged} onMoCase={onMoCase} />)}
+      {chay.map((p) => <HangPa key={p.id} p={p} c={c} ngan={ngan} onMoCase={onMoCase} />)}
       {xong.length > 0 && (
         <HangCon>
           <td className="td" colSpan={4}>
@@ -344,17 +345,17 @@ function HangCaseVaPa({ c, ngan, onChanged, onMoCase }: {
           </td>
         </HangCon>
       )}
-      {moXong && xong.map((p) => <HangPa key={p.id} p={p} c={c} ngan={ngan} onChanged={onChanged} onMoCase={onMoCase} />)}
+      {moXong && xong.map((p) => <HangPa key={p.id} p={p} c={c} ngan={ngan} onMoCase={onMoCase} />)}
     </>
   );
 }
 
 /**
- * MỘT PA = MỘT HÀNG CON: `PA · {loại} — mô tả` + `người · 24/08 → 14/09` · kết quả gần nhất · `hạn CN 30/08` (hạn gốc của PA, KHÔNG lặp
- * ⚠ — quá hạn đã nói ở hàng kỹ năng, B-5) + nút `Ghi kết quả`. Bấm tên PA → ngăn Case cuộn tới PA đó.
+ * MỘT PA = MỘT HÀNG CON: `PA · {loại} — mô tả` + `người · 24/08 → 14/09` · kết quả gần nhất · cột phải (`CotPhai`, YC-12.5.4): nút
+ * `Ghi kết quả` ở trên, `hạn hết T2 31/08` ở dưới (hạn gốc của PA, KHÔNG lặp ⚠ — quá hạn đã nói ở hàng kỹ năng, B-5). Bấm tên PA → ngăn Case cuộn tới PA đó.
  */
-function HangPa({ p, c, ngan, onChanged, onMoCase }: {
-  p: Plan; c: CaseCard; ngan: (d: string | null | undefined) => string; onChanged?: () => void;
+function HangPa({ p, c, ngan, onMoCase }: {
+  p: Plan; c: CaseCard; ngan: (d: string | null | undefined) => string;
   onMoCase: (caseId: number, o?: MoCase) => void;
 }) {
   const { homNay } = useNgayNghiepVu();
@@ -369,10 +370,13 @@ function HangPa({ p, c, ngan, onChanged, onMoCase }: {
   return (
     <HangCon>
       <td className="td" colSpan={2}>
-        <button type="button" onClick={() => onMoCase(c.id, { paId: p.id })} title="Mở PA trong ngăn Case"
-          className="block max-w-full appearance-none truncate border-0 bg-transparent p-0 text-left text-xs text-slate-100 hover:underline">
-          <span aria-hidden className={`mr-1.5 ${running ? 'text-doing' : 'text-slate-500'}`}>{running ? '▶' : '✓'}</span>PA · {p.name}
-        </button>
+        <div className="flex min-w-0 items-baseline">
+          <button type="button" onClick={() => onMoCase(c.id, { paId: p.id })} title="Mở PA trong ngăn Case"
+            className="min-w-0 appearance-none truncate border-0 bg-transparent p-0 text-left text-xs text-slate-100 hover:underline">
+            <span aria-hidden className={`mr-1.5 ${running ? 'text-doing' : 'text-slate-500'}`}>{running ? '▶' : '✓'}</span>PA · {p.name}
+          </button>
+          {p.preset && <span className="ml-1.5 whitespace-nowrap text-[10.5px] text-slate-400" title="PA theo quy chế SOS — máy gán, không xoá, không thay">🔒 theo quy chế</span>}
+        </div>
         <span className="block truncate text-[11px] text-slate-500" title={dongPhu}>{dongPhu}</span>
       </td>
       <td className="td">
@@ -383,24 +387,18 @@ function HangPa({ p, c, ngan, onChanged, onMoCase }: {
         ) : <span className="text-[11px] text-slate-500">Chưa có kết quả</span>}
       </td>
       <td className="td">
-        {v.loai === 'goi-y' ? (
-          <span className="flex flex-col items-start gap-1">
-            <span className="text-[11px] text-soon">{v.text}</span>
-            {c.canEdit && <PresetPlanActions interventionId={p.id} description={p.name} followupDue={p.followupDue} onDone={onChanged} />}
-          </span>
-        ) : v.loai === 'cho-duyet' ? (
-          <span className="block text-[11px] text-wait">{v.text}{v.due ? <span className="text-slate-500"> · hạn {ngan(v.due)}</span> : null}</span>
+        {v.loai === 'cho-duyet' ? (
+          <CotPhai phu={<><span className="text-wait">{v.text}</span>{v.due ? ` · hạn ${ngan(v.due)}` : null}</>} />
         ) : v.loai === 'ghi-ket-qua' ? (
-          <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            {han && <span className="text-[11px] text-slate-500">{han.han}</span>}
-            {c.canEdit && (
+          <CotPhai
+            nut={c.canEdit ? (
               <button type="button" className="btn btn-sm" onClick={() => onMoCase(c.id, { viec: 'ghi-ket-qua', paId: p.id })}
-                title="Ghi kết quả tuần này: kết quả, tiến triển, và quyết định Giữ nguyên / Điều chỉnh / Thay / Kết thúc">
+                title={`${han?.viec ?? 'Ghi kết quả'}: kết quả, tiến triển, và quyết định Giữ nguyên / Điều chỉnh / Thay / Kết thúc`}>
                 Ghi kết quả
               </button>
-            )}
-          </span>
-        ) : <span className="text-[11px] text-slate-500">{v.text}</span>}
+            ) : undefined}
+            phu={han?.han} />
+        ) : <CotPhai phu={v.text} />}
       </td>
     </HangCon>
   );
@@ -577,6 +575,16 @@ function pointTone(pt: Row['points'][number], ratio: boolean): string {
   if (pt.band < pt.expectation) return 'text-rose-300/80';
   if (pt.band === pt.expectation) return 'text-sky-300/80';
   return 'text-emerald-300/80';
+}
+
+/** CỘT PHẢI của hàng Case/PA (YC-12.5.4): nút ở TRÊN, chữ phụ ở DƯỚI, cùng một mép trái — mọi hàng như nhau. */
+function CotPhai({ nut, phu }: { nut?: ReactNode; phu?: ReactNode }) {
+  return (
+    <span className="flex flex-col items-start gap-1">
+      {nut && <span className="flex flex-wrap items-center gap-1.5">{nut}</span>}
+      {phu && <span className="text-[11px] tabular-nums text-slate-500">{phu}</span>}
+    </span>
+  );
 }
 
 export { STATE_LABEL as SKILL_STATE_LABEL };

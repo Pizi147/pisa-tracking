@@ -106,8 +106,8 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     const dp = v.find((x: any) => /^Đề ra PA/.test(x.viec));
     assert(dp && dp.viec === 'Đề ra PA W2' && dp.quaHanNgay === null, JSON.stringify(dp));
     const gk = v.find((x: any) => /^Ghi kết quả/.test(x.viec));
-    assert(gk && gk.viec === 'Ghi kết quả L' && gk.han === 'CN 13/09' && gk.quaHanNgay === 3 && gk.tone === 'danger'
-      && gk.title === 'Ghi kết quả PA L · hạn CN 13/09 · quá hạn 3 ngày', JSON.stringify(gk));
+    assert(gk && gk.viec === 'Ghi kết quả L' && gk.han === 'hết T2 13/09' && gk.quaHanNgay === 3 && gk.tone === 'danger'
+      && gk.title === 'Ghi kết quả PA L · hạn hết T2 13/09 · quá hạn 3 ngày', JSON.stringify(gk));
     assert(!/Cập nhật|Xác định nguyên nhân/.test(JSON.stringify(v)), JSON.stringify(v));
   });
 
@@ -169,7 +169,7 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     for (const who of nguoiXem) {
       const nhom = (myworkSvc.myWork(who, {}).groups as any[]).find((g) => g.key === 'result');
       if (!nhom) continue;
-      assert(nhom.label === 'Ghi kết quả', `nhãn nhóm: ${nhom.label}`);
+      assert(nhom.label === 'Ghi kết quả PA', `nhãn nhóm: ${nhom.label}`);
       for (const it of nhom.items) {
         assert(!/Cập nhật/.test(`${it.tieuDe} ${it.actionLabel} ${it.statusLabel}`), `${it.key}: còn chữ "Cập nhật"`);
         if (!it.studentId) continue;

@@ -16,6 +16,7 @@
  * C01 — ĐÃ CHỐT 21/09/2026 (nguồn 21/09 §3.2 tự trả lời): hai mốc riêng, khớp mã đang chạy.
  * Cách hiểu của chủ sản phẩm: trong 3 ngày kể từ khi có SOS thì phải có phương án; có phương án rồi thì đi theo luật cũ —
  *   Học thuật: ghi kết quả vào mỗi Chủ nhật hằng tuần và chốt kết quả vào cuối đợt.
+ *     (PR-N1, chủ sản phẩm 27/09 R-PA1: nay hạn ghi kết quả tuần là HẾT THỨ HAI tuần sau — xem `weeklyUpdateDue`.)
  *   Ý thức: hoàn thành hết phương án trong thời hạn mặc định của case là 1 tuần.
  *   'hai-moc-rieng' : hai mốc riêng như code hiện tại (hạn xác minh SOS, rồi hạn lập phương án).  ← đã chốt
  *   'mot-han-chung' : MỘT hạn 3 ngày kể từ SOS, trong đó phải có phương án.

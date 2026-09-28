@@ -161,7 +161,7 @@ export function ThanCase({ data, onViec }: { data: CaseDetail; onViec: (v: ViewC
       <Khoi tieuDe={`Phương án · ${dsPa.length}`}
         luat={(
           <>
-            <p className="m-0">Mỗi PA có hạn ghi kết quả hằng tuần vào Chủ nhật. Case chỉ hoàn thành được khi mọi PA đã khép.</p>
+            <p className="m-0">Mỗi PA ghi kết quả hằng tuần, trước hết Thứ Hai tuần sau. Case chỉ hoàn thành được khi mọi PA đã khép.</p>
             {chiXem && <p className="m-0">Chỉ Quản lý, hoặc GVCN dạy đúng môn của Case, mới hoàn thành được Case này. Bạn vẫn ghi được kết quả của từng PA.</p>}
           </>
         )}>
@@ -222,6 +222,8 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
     <li className="rounded-lg border px-3 py-2.5 surface-2" style={{ borderColor: 'var(--line)' }} data-pa-id={iv.id}>
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="text-sm font-semibold text-slate-100">{INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? iv.kind}</span>
+        {/* PR-N1 S4-1: PA theo quy chế SOS do máy gán — dấu nhỏ cạnh tên (khoảng cách lấy từ `gap-1.5` của hàng, nên không thêm `ml-1.5`). */}
+        {iv.preset && <span className="whitespace-nowrap text-[10.5px] text-slate-400" title="PA theo quy chế SOS — máy gán, không xoá, không thay">🔒 theo quy chế</span>}
         {/* Trạng thái CÔNG VIỆC, không phải kết quả (mục 2.2): "Đã xong" chỉ nghĩa việc đã làm xong. */}
         <Nhan tone={toneTrangThaiPa(iv.status)}>{INTERVENTION_STATUS_LABEL[iv.status as keyof typeof INTERVENTION_STATUS_LABEL] ?? iv.status}</Nhan>
         {choDuyet && <Nhan tone="wait" title={iv.approvalDue ? `Hạn Quản lý trả lời ${ngan(iv.approvalDue)}` : undefined}>Chờ QL duyệt</Nhan>}
@@ -254,7 +256,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
       <div className="mt-1.5 flex flex-wrap gap-2">
         {data.viewer.canEdit && dangChay && !choDuyet && (
           <button type="button" className="btn btn-sm btn-primary" onClick={() => onViec({ loai: 'ghi-ket-qua', paId: iv.id })}
-            title="Ghi kết quả tuần này: kết quả, tiến triển, và quyết định Giữ nguyên / Điều chỉnh / Thay / Kết thúc">
+            title={`${hanGhi?.viec ?? 'Ghi kết quả'}: kết quả, tiến triển, và quyết định Giữ nguyên / Điều chỉnh / Thay / Kết thúc`}>
             Ghi kết quả
           </button>
         )}

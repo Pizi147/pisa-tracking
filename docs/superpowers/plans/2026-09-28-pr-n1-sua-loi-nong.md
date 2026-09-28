@@ -1075,7 +1075,55 @@ function Band({ v, kyVong, faded, soSanh = true }: { v: number | null; kyVong: n
 
 ## Nhật ký
 
-- Mốc B (Task 0): …
-- Dòng thật lệch kế hoạch: …
-- Số chỗ sửa kỳ vọng chữ/ngày (Task 1, 2, 9): …
-- Kết quả `chay-thu:n1` trên DB demo: … PA dời · … PA chạy thiếu hạn · … PA huỷ còn chờ duyệt
+- Mốc B (Task 0): **1367** phép kiểm (+ 20 kiểm tốc độ), `npm run check` xanh trên `66446cd`. Kế hoạch + mockup 20 đã có
+  sẵn trên `main` (PR #106) nên bỏ bước chép từ nhánh `ke-hoach-nang-cap-27-09`.
+- Model thật: session code và subagent chạy **Opus 5.5** (chủ sản phẩm yêu cầu subagent cùng model session, không Haiku) —
+  khác dòng "Sonnet 5 · High" ở Bảng điều hành; người rà Opus 5.5 vẫn là session riêng.
+- Dòng thật lệch kế hoạch (Task 0): không lệch > 20 dòng — `weeklyUpdateDue` :750, `planEndDefault` :763, `lopMoSan` :235,
+  `dangSua =` :417, `toneTheoNhan` `format.ts:84`, `migrateXoaDuLieu(conn, applied)` `migrate.ts:452`, `runXoaDuLieuTests`
+  `run.ts:9650`, `approvalDue`/`startDue` `cases.ts:840/994`.
+- Số chỗ sửa kỳ vọng chữ/ngày (Task 1, 2, 9): Task 1 = **9** kỳ vọng — `run.ts` 6 (`weeklyUpdateDue` 14/09, 19/09, 20/09 → 21/09;
+  dữ liệu mẫu `action_due` 20/09 → 21/09; `<Han>` cap-nhat-pa chữ → `Ghi kết quả tuần W3 SEP · hạn hết T2 23/09`; quá hạn
+  cap-nhat-pa hạn CN 06/09 → hạn hết T2 07/09, 8 → 7 ngày), `hocVienLop.tests.ts` 2 (`han`/`title` `CN dd/mm` → `hết T2 dd/mm`,
+  giữ ngày đầu vào `nextDue` để không đổi điều kiện quá hạn), `panelUx3.tests.ts` 1 (cùng kiểu). Ngoài ra chỉ đổi câu báo lỗi
+  `run.ts` (:2441, :2618) và tên 2 phép kiểm, không đổi điều kiện; Task 2 = **2** kỳ vọng — `run.ts:3739` nhóm `do_plan` →
+  `result` (cùng khoá `action:{id}`), `panelUx3.tests.ts:173` nhãn nhóm `Ghi kết quả` → `Ghi kết quả PA`. `run.ts:3044-3057`
+  ("tutor hẹn 10/09") vẫn xanh không cần sửa — dữ liệu mẫu có `action_due` quá hạn nên QL vẫn chỉ thấy dòng quá hạn; …
+- Kết quả `chay-thu:n1` trên DB demo (seed mới trong worktree, sau Task 1): **0** PA dời · **5** PA chạy thiếu hạn (2 chờ duyệt + 3 PA quy chế SOS `preset` chờ xác nhận — đều trống hạn đúng luật; 0 PA `started` thiếu hạn) · **0** PA huỷ còn chờ duyệt. Tệp DB giữ nguyên mã băm sau khi chạy (chỉ đọc). Bản sao ở scratchpad có 18 hạn Thứ Hai lùi về Chủ nhật → in đúng `18 PA sẽ dời hạn CN → T2` + dòng mẫu `#1 · Nguyễn Minh An · 10/05 → 11/05`.
+- Task 1: `sosPlanEndDate('one_month')` (`shared/domain/sos.ts`, ngoài danh sách file) mượn `weeklyUpdateDue` làm "Chủ nhật
+  đầu tiên từ ngày đó" → đổi hạn tuần sang Thứ Hai sẽ lén dời dự kiến kết thúc SOS 1 tháng sang Thứ Hai. Tách hàm cục bộ
+  `chuNhatCuaTuan` trong `sos.ts`, kết quả giữ nguyên (sosV3 :109/:111 xanh; thêm phép kiểm chặn ở `suaLoiNong`). Không đổi luật.
+- Task 1: `REPO` trong `suaLoiNong.tests.ts` đúng như kế hoạch (4 cấp từ `dist-server/server/src/tests/` về gốc worktree) —
+  thêm phép kiểm `N1 (0)` xác nhận lúc chạy. `YThucTestKit` có đủ 10 trường truyền vào. Mốc sau Task 1: **1375** (+8).
+- Task 2: `P` của `run.ts` không có khoá `manager` → dùng `P.mbManager` (QL chi nhánh MB, lớp MB-FT 101). `assertThrows` của kit
+  bắt buộc `RegExp` → `/đã huỷ/`. `taoPa`: `recordIntervention` trạng thái `started` bắt buộc người thực hiện → thêm
+  `performerSelf: true` (khoá `extra` vẫn đè được); học viên lấy ở MB-FT 101 và CHỈ có một lớp active (các phép kiểm trước ghi thêm
+  lớp active cho em đầu lớp → `reportIssue` lấy lớp mới nhất, ngoài phạm vi GVCN — lần chạy check đầu đỏ 4 phép vì vậy). Tên/chữ
+  ký `taoPa(key, extra)` giữ nguyên cho Task 3, 5b.
+- Task 2: phép kiểm K5-02 lọc `it.key.endsWith(':id')` bắt nhầm `support:`/`owner:` của một Case KHÁC có id Case trùng số id PA
+  (lần chạy check thứ hai: `["support:262","action:262","owner:262"]`) → lọc đúng `action:{id}` / `review:{id}`. Không đổi luật.
+- Task 2: dòng thật khớp kế hoạch (lệch ≤ 20): `approvalDue` :840, `respondToPlan` SELECT :945, "đã trả lời" :966, `startDue` :994,
+  `overdueActionDue` :2317, `ask_manager` :2957; `mywork.ts` 2b :587-657, 3 :742-810, `order` :1063; `profile.ts` :457-481.
+  Thêm ngoài brief: sửa chú thích hạn QL trả lời (`cases.ts` ~:836, "dùng chung chu kỳ" → 5 ngày). Import `cycleDeadline` thừa ở
+  `mywork.ts` (có từ trước, không dùng) để nguyên.
+- Task 2: mốc `npm run check` — lần 1: 1376 đạt / 4 đỏ (chọn học viên); lần 2: **1379 đạt / 1 đỏ** (lọc khoá phép kiểm K5-02).
+  Sửa lọc xong KHÔNG chạy check lần 3 (luật "chạy lại một lần") — chỉ `build:server` + `typecheck` xanh + chạy riêng khối N1 trên DB
+  seed mới (13/13). Mốc dự kiến sau Task 2: **1380** (+5); Task 3 chạy check đầu tiên sẽ xác nhận.
+- Task 3: `migrate.ts` — `migrateXoaDuLieu(conn, applied)` ở :452 (sau Task 3 là :453) nằm trong `migrateCaseEngine`, mà cả hai nhánh của `migrate()` đều đi qua → `migratePrN1` chạy trên mọi DB. `conn` ở đây là kết nối ĐỒNG BỘ (`db()`, libsql kiểu better-sqlite3), cùng kiểu các `migrateXxx(conn, applied)` khác. `strftime('%w', …)`/`date(…, '+1 day')` là hàm sẵn SQLite — chạy như nhau trên file và Turso.
+- Task 3: lệch nhỏ so với brief, không đổi luật — (a) điều kiện viết MỘT lần (`dieuKien(alias)`) cho cả câu đếm và câu dời, thay vì chép hai lần; (b) câu đếm dùng `LEFT JOIN sos_cases` + lấy học viên qua `COALESCE(sc.student_id, a.student_id)` (như `loadCase`) — `JOIN` của brief sẽ bỏ sót PA nếu Case mất dòng, và Case tạo từ lượt thi có `student_id` NULL sẽ hiện không tên; (c) `chayThuN1.ts` dừng trước khi mở nếu file DB cục bộ chưa có (`db()` sẽ TẠO file rỗng — chạy thử không được để lại dấu vết); mục (2) tách thêm "chờ duyệt / PA quy chế SOS chờ xác nhận / đang chạy" để người deploy biết con số nào đáng hỏi.
+- Task 3 (điểm canh "chạy mỗi lần khởi động"): `migrate()` KHÔNG chạy lúc khởi động máy chủ — chỉ `npm run migrate` (`migrate/run.ts`); `index.ts` chỉ nhập `hasLegacyDisciplineModel`. Không luồng người dùng nào đặt `action_due` bằng ngày tự chọn: mọi chỗ ghi đều qua `weeklyUpdateDue` (Thứ Hai) — tạo PA `cases.ts:~866`, duyệt :997, Giữ nguyên/Theo dõi/Điều chỉnh :2908, xác nhận PA quy chế `sosAuto.ts:206`; "Điều chỉnh" (`planRevisions.ts:99`) chỉ đổi mô tả/người/dự kiến kết thúc, không đụng `action_due`; Chờ QL đặt NULL. Riêng `migratePlanForm` (thời DB cũ, chặn bởi `legacyEra`) đặt `nextSunday(today)` — chạy TRƯỚC `migratePrN1` trong cùng lần nên kết quả cuối vẫn là Thứ Hai. Dữ liệu mẫu có một `actionDue: '2026-09-11'` cố ý (Thứ Sáu, không phải Chủ nhật). Không có vòng "đặt CN ↔ dời T2" nào.
+- Task 3: `npm run check` một lần — **1381 đạt** (+1) + 20 kiểm tốc độ, typecheck xanh. Khối N1 (2) xanh cả 6, không phải sửa.
+- Task 4: `CasePanel.tsx` — biến hạn ở `TheKhoiPa` tên `hanGhi` (không phải `han`) → `title` dùng `hanGhi?.viec`. `ThaoTacCase` `chuaChon` dùng `planEndDefault(startedDate || homNay)` thay `planEndDefault(homNay)`: máy chủ tính dự kiến kết thúc từ ngày bắt đầu (`cycleStart`), người chọn ngày bắt đầu khác hôm nay thì chữ mặc định phải khớp. `ThemPaPanel` chưa có `homNay` → thêm `useNgayNghiepVu()`.
+- Task 4: `viecTiepTheoCua` có `han` mà `quaHan` (cờ đếm ô trễ của CẢ đợt) bật trong khi hạn sớm nhất của người xem chưa qua → vẫn xếp `danger` và title nối `· quá hạn` như cũ (không mất tín hiệu); không có `han` → nhánh cũ nguyên văn. `hanNhap` lớp thường viết lại điều kiện `myPending` (lọc môn chưa điểm + `awaitingScore`) rồi lấy `regViews.get(k)?.deadline`. `StudentDetailPage.HeaderStats` nhận `homNay: string | null` (từ `session.demoDate`, cùng nguồn `useNgayNghiepVu`) → `today: homNay ?? ''`. `WorkList.tsx` bỏ `useNgayNghiepVu`/`ngay` không còn dùng. Mọi nhóm việc không có `LOAI_HAN_CUA_VIEC` mà có `due` (`decide`, `decide_move`, `mgmt`) đều là hạn thật → `viec-van-hanh` đúng nghĩa; các nhóm khác `due: null`.
+- Task 4: `policy.ts:18` là lời chủ sản phẩm 21/09 (dấu vết quyết định) → giữ nguyên câu, thêm một dòng chú thích PR-N1 bên dưới thay vì sửa câu gốc.
+- Task 4: lần check đầu đỏ 1 — `hocVienLop.tests.ts:366` (PR-Qa Q13, lớp thường) so chữ cũ `· quá hạn` trơn → sửa kỳ vọng sang chữ mới `hạn 13/09 · quá hạn 1 ngày` (cùng điều kiện; xác nhận `hanNhap` lớp thường chạy thật). Lần hai: **1383 đạt** (+2) + 20 kiểm tốc độ, typecheck xanh.
+- Task 5b: phép kiểm khối 5b lệch brief, không đổi luật — `t.classId` là HÀM (không phải số) → `lop = t.classId('MB-FT 101')`; QL là `P.mbManager` (không có `P.manager`). Thêm một phép kiểm Q23 (`caseHasIndependentBasis`: PA quy chế chưa ghi gì không là căn cứ, có kết quả tuần thì là) + một phép kiểm migrate S4-1 ở khối 3 (tách riêng, không nhồi vào phép R-PA5).
+- Task 5b: `dismissSosCase` — ngoài điều kiện HUỶ (brief), cửa chặn "đã có việc thật" (đếm PA không huỷ) cũng phải bỏ qua `PA_QUY_CHE_CHUA_GHI`; không thì PA quy chế tự chạy chặn luôn "Không cần theo dõi" — trái Q24 và chữ nhóm cause mới. PA quy chế ĐÃ có kết quả tuần thì vẫn chặn (việc thật).
+- Task 5b: `createPresetPlan` KHÔNG chuyển Case sang `in_progress` (brief không nói; `confirmPresetPlan` cũ thì có). Case tự tạo giữ `open` = "Chưa xử lý" tới khi có người ghi việc/kết quả (`recordFollowUp`/`recordIntervention` tự chuyển). Migrate S4-1 cũng không đổi trạng thái Case. Để planning xem lại nếu muốn "Đang xử lý" ngay.
+- Task 5b: `seed/sosV3Seed.ts` (ngoài danh sách file) gọi `confirmPresetPlan` cho Khôi/Vy → nay ném 400 "đã được xác nhận rồi" làm hỏng seed → bỏ hai lời gọi (PA đã tự chạy) + `planOf` thừa; kịch bản demo giữ nguyên (Speaking có nguyên nhân, W2 chờ).
+- Task 5b: chữ người dùng thấy còn nói "chờ xác nhận" ngoài brief → sửa theo S4-1: `sos.ts` ghi chú tín hiệu nối Case, `sosAuto.ts` hành trình `announceAutoCase` + thông báo GVBM ("Xác định nguyên nhân (PA theo quy chế đã tự chạy)"), `shared/domain/metrics.ts` câu hỏi/tập của `case-cho-xac-dinh-nguyen-nhan`. Thông báo GVBM vẫn in hạn dạng ISO (`Hạn ${verifyDue}`) — có từ trước, không thuộc 5b, để nguyên.
+- Task 5b: CasePanel — dấu `🔒 theo quy chế` đặt cạnh tên loại PA trong hàng có `gap-1.5` nên bỏ `ml-1.5` (tránh hở đôi); SkillBoard giữ đúng lớp của brief, nút tên PA bọc `flex min-w-0` để tên dài vẫn cắt `…` mà dấu không bị cắt. Ngăn Case không có nút Xoá/Thay PA nào khác (chỉ có ở `PresetPlanActions` đã bỏ gọi). `HangPa` bỏ prop `onChanged` không còn dùng.
+- Task 5b: hiệu quả PA (`effectiveness.ts`) — mẫu số đã loại `dismissed`/`score_fixed` sẵn: `queryPlans` chỉ lấy `status = 'completed'`, bảng vấn đề lấy `status != 'cancelled'`, mà hai lý do đó luôn đi với `cancelled` → không sửa.
+- Task 5b: kỳ vọng cũ đã đổi (giữ số phép kiểm) — `sosV3.tests.ts`: S01 (PA tạo ra `started`, máy xác nhận, hạn Thứ Hai), S08/S08b (`planned` → `started`), S04+S07/S04 "Chỉnh"/C02/S06 (confirm/replace trên PA quy chế → 400 "đã được xác nhận rồi"; C02 giữ các chặn quyền), S05 (`confirmed_by` NULL thay `confirmed_at` NULL), S05b (chặn "Không cần theo dõi" khi PA quy chế đã có kết quả tuần thay cho "đã xác nhận"), FOLLOW + Q-V3-3 (dựng lại dòng "chờ xác nhận" kiểu dữ liệu cũ để giữ phép kiểm các chặn còn trong mã; Q-V3-3 dùng `migratePaQuyChe` thay `confirmPresetPlan`), CAUSE/IND (có nguyên nhân là đủ), HTTP (confirm + replace → 400), hai tên demo; `hoSoHocVien.tests.ts`: (c) + nhánh `goi-y` → `ghi-ket-qua`, vòng demo bỏ `unconfirmedPlanId`. `dieuChinhPa.tests.ts` (tự chèn dòng chờ xác nhận kiểu cũ rồi xác nhận — đường mã còn tới PR-SOS) và `run.ts:3908` (chỉ gọi confirm khi `confirmed_at` trống) vẫn đúng, không sửa.
+- Task 5b: `chay-thu:n1` trên DB demo của worktree (seed trước 5b): (4) **3** PA quy chế đang chờ xác nhận sẽ thành đang chạy; mã băm tệp DB giữ nguyên.
+- Task 5b: `npm run check` lần 1 — 1389 đạt / 1 đỏ: `run.ts` `[6.2→v3]` (:1002) còn đòi PA tự sinh `confirmed_at` NULL → sửa kỳ vọng sang PA quy chế đang chạy, máy xác nhận (cùng chỗ, tên phép kiểm bỏ "chưa xác nhận"). Lần 2: **1390 đạt** (+6: 5 phép khối 5b + 1 phép migrate S4-1 ở khối 3), typecheck xanh.

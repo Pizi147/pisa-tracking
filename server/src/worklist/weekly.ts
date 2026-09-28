@@ -260,7 +260,7 @@ function weeklySets(
              FROM case_interventions iv
              JOIN sos_cases sc ON sc.id = iv.case_id
              JOIN assessment_attempts a ON a.id = sc.attempt_id
-            WHERE iv.approval_state = 'pending' AND a.id IN (${ph})`,
+            WHERE iv.approval_state = 'pending' AND iv.status != 'cancelled' AND sc.status != 'done' AND a.id IN (${ph})`,
         )
         .all(...chunk) as any[]) {
         byPeriod.get(r.pid)?.sets.pendingApproval.add(r.iv_id);

@@ -22,7 +22,7 @@ import {
 } from '../../lib/format.ts';
 import {
   HO_SO_TAB_LABEL, JOURNEY_EVENT_LABEL, caseCategoriesFor, docThamSoHoSo, duongHoSoHocVien,
-  khoaLopThuong, ketQuaTestGanNhat, ngay, tuanLich, type HoSoTab,
+  deadlineView, khoaLopThuong, ketQuaTestGanNhat, ngay, tuanLich, type HoSoTab,
 } from '@shared/domain/index.ts';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
@@ -469,7 +469,13 @@ function HeaderStats({ data, rows, homNay, onOpenDot, onOpenKn }: {
         tone={next?.overdue ? 'danger' : undefined}
         onClick={next ? () => onOpenKn(next.category) : undefined}
         title="Mở bảng kỹ năng ở đúng kỹ năng của việc này"
-        sub={next?.due
+        sub={next?.loai === 'cap-nhat-pa' && next.due
+          /* PR-N1 (K3 §4c, mockup 20): việc ghi kết quả PA nói TUẦN + hạn hết Thứ Hai + quá hạn n ngày — cùng luật <Han>. */
+          ? (() => {
+            const v = deadlineView({ kind: 'cap-nhat-pa', due: next.due, today: homNay ?? '' });
+            return <span className="tabular-nums">{v.viec.replace(/^Ghi kết quả /, '')} · {v.han}{v.quaHan && <> <QuaHan ngay={v.daysOverdue} /></>}</span>;
+          })()
+          : next?.due
           ? (next.overdue
             ? <QuaHan ngay={Math.max(1, Math.round((Date.parse(`${(homNay ?? '').slice(0, 10)}T00:00:00Z`) - Date.parse(`${next.due.slice(0, 10)}T00:00:00Z`)) / 86_400_000))} />
             : `hạn ${ngay(next.due, homNay)}`)

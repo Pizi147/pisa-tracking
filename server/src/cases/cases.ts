@@ -10,9 +10,10 @@ import {
   caseCategoriesFor, componentsAreCounts, componentsFor, type CaseCategory,
   CASE_OUTCOME_LABEL, SYSTEM_CLOSE_REASON_LABEL, caseCategoryLabel, caseDedupKey, caseHeadline, caseTitle, categoryOf,
   type SystemCloseReason,
-  NEXT_STEP_LABEL, cycleDeadline, isProposalKind, outcomeLabelFor,
+  NEXT_STEP_LABEL, isProposalKind, outcomeLabelFor,
   RESCHEDULE_TARGETS, RESCHEDULE_TARGET_LABEL, RESULT_MODES, RESULT_MODE_LABEL,
   canEndWithOutcome, planDueDate, planEndDefault, stepsForMode, weeklyUpdateDue,
+  HAN_DUYET_NGAY, hanTheoNgay,
   type NextStep, type RescheduleTarget,
   issueBranchOf, issueLabel, caseTopicLabel, urgencyFromSos,
   caseTopicsFor,
@@ -833,11 +834,11 @@ export function recordIntervention(p: Principal, caseId: number, input: {
 
   return tx(() => {
     /*
-     * HẠN QUẢN LÝ PHẢI TRẢ LỜI — dùng CHUNG chu kỳ với phương án, để không ai phải nhớ hai
-     * thang. Quá hạn KHÔNG chặn gì cả; nó nổi lên màn của Quản lý để một đề xuất không nằm
+     * HẠN QUẢN LÝ PHẢI TRẢ LỜI — `HAN_DUYET_NGAY` (5) ngày, tính cả ngày gửi (T54, K3-18, PR-N1).
+     * Quá hạn KHÔNG chặn gì cả; nó nổi lên màn của Quản lý để một đề xuất không nằm
      * im mãi, và thời gian chờ đó tính cho QUẢN LÝ chứ không phải cho giáo viên.
      */
-    const approvalDue = needsApproval ? cycleDeadline(today) : null;
+    const approvalDue = needsApproval ? hanTheoNgay(today, HAN_DUYET_NGAY) : null;
 
     /*
      * CHU KỲ ĐẦU TIÊN bắt đầu NGAY, trừ hai trường hợp:
@@ -853,7 +854,7 @@ export function recordIntervention(p: Principal, caseId: number, input: {
      * HAI MỐC KHÁC NHAU CỦA MỘT PHƯƠNG ÁN (mục 8.3) — trước đây gộp làm một nên không ai
      * phân biệt được "đã đến lúc báo tiến độ" với "đã đến hạn xong việc".
      *
-     *   · HẠN CẬP NHẬT (`action_due`): trước hết CHỦ NHẬT hằng tuần.
+     *   · HẠN GHI KẾT QUẢ (`action_due`): kết quả tuần T2→CN ghi xong trước hết Thứ Hai tuần sau.
      *   · NGÀY DỰ KIẾN KẾT THÚC (`followup_due`): người dùng chọn; bỏ trống thì mặc định là
      *     Chủ nhật của tuần TIẾP THEO.
      *
@@ -941,7 +942,7 @@ export function respondToPlan(p: Principal, interventionId: number, input: {
        * Giống hệt `loadCase`, để quyền của một case luôn tính trên cùng một lớp dù vào từ
        * đâu; viết `sc.class_id` là sai và sẽ hỏng ngay khi chạy.
        */
-      `SELECT iv.*, sc.student_id, sc.attempt_id,
+      `SELECT iv.*, sc.student_id, sc.attempt_id, iv.status AS iv_status, sc.status AS case_status,
               COALESCE(sc.student_id, a.student_id) AS eff_student_id,
               COALESCE(sc.cycle_id, a.cycle_id) AS eff_cycle_id,
               COALESCE(a.class_id,
@@ -958,6 +959,8 @@ export function respondToPlan(p: Principal, interventionId: number, input: {
   require_(p, PERMISSIONS.CASE_APPROVE, { classId: iv.class_id, studentId: iv.eff_student_id },
     'Chỉ Quản lý mới duyệt được phương án hỗ trợ.');
   if (!iv.needs_approval) throw badRequest('Phương án này không cần duyệt.');
+  /* K5-58 (PR-N1): PA đã huỷ / Case đã đóng thì không còn gì để duyệt — trước đây vẫn duyệt được và PA "sống lại". */
+  if (iv.iv_status === 'cancelled' || iv.case_status === 'done') throw badRequest('PA này đã huỷ hoặc Case đã đóng — không còn gì để duyệt.');
   /*
    * ĐÃ TRẢ LỜI RỒI THÌ THÔI. Đổi ý là chuyện bình thường, nhưng sửa đè lên câu trả lời cũ
    * sẽ xoá mất lý do đã ghi — giáo viên đọc lại không biết vì sao lúc đầu bị bác. Đổi ý thì
@@ -991,7 +994,7 @@ export function respondToPlan(p: Principal, interventionId: number, input: {
        * số "quá hạn" sau đó chỉ ra một người sai.
        */
       const approvedOn = demoToday();
-      const startDue = input.decision === 'approved' ? cycleDeadline(approvedOn) : null;
+      const startDue = input.decision === 'approved' ? weeklyUpdateDue(approvedOn) : null;
       conn
         .prepare(
           `UPDATE case_interventions
@@ -1010,7 +1013,7 @@ export function respondToPlan(p: Principal, interventionId: number, input: {
              input.decision, approvedOn,
              input.decision, approvedOn,
              input.decision, startDue,
-             input.decision, startDue,
+             input.decision, startDue ? planEndDefault(approvedOn) : null,
              nowIso(), interventionId);
     }
 
@@ -1490,7 +1493,7 @@ export function caseDetail(p: Principal, caseId: number) {
           .get(iv.id, iv.cycle_no ?? 1),
       // NULL = không cần duyệt, khác hẳn 'pending' = đang chờ Quản lý trả lời.
       needsApproval: !!iv.needs_approval,
-      /** Phương án ĐIỀN SẴN từ SOS (rulebook v3): chưa xác nhận thì chỉ là gợi ý tự động, chờ Xác nhận · Sửa · Thay. */
+      /** PA theo quy chế SOS (rulebook v3). Từ PR-N1 (S4-1) tạo ra đã chạy, nên `awaitingConfirmation` chỉ còn đúng với dữ liệu chưa migrate. */
       preset: iv.preset === 1,
       confirmedAt: (iv.confirmed_at ?? null) as string | null,
       awaitingConfirmation: iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned',
@@ -2315,6 +2318,9 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
       supportLine: supportLineOf(openIv, lastDone, lastFollow),
       openActions: openIv.length,
       overdueActionDue: overdueAction?.action_due ?? null,
+      /** Hạn ghi kết quả tuần gần nhất của PA đang chạy (bỏ PA chờ duyệt) — ô "Việc cần làm tiếp" dùng (K3-02). */
+      nextActionDue: openIv.filter((i) => i.action_due && (i.approval_state ?? '') !== 'pending')
+        .map((i) => i.action_due as string).sort()[0] ?? null,
       pendingApproval: interventions.some((i) => i.approval_state === 'pending'),
 
       /*
@@ -2450,7 +2456,7 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>) {
       kindLabel: INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] ?? iv.kind,
       /* Tên phương án là câu người dạy viết; thiếu thì lùi về tên loại, không để trống. */
       name: (iv.description ?? '').trim() || (INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] ?? iv.kind),
-      /* Phương án điền sẵn từ SOS (§3.2, PR-K) chưa ai xác nhận: giao diện hiện `Gợi ý tự động · chờ xác nhận` + Xác nhận/Sửa/Thay. */
+      /* PA theo quy chế SOS (§3.2, PR-K): từ PR-N1 (S4-1) chạy ngay lúc tạo — giao diện hiện dấu `🔒 theo quy chế` cạnh tên. */
       preset: iv.preset === 1,
       confirmedAt: iv.confirmed_at ?? null,
       performer: iv.performer_user_name ?? iv.performer_name ?? null,
@@ -2892,9 +2898,9 @@ export function updateResult(p: Principal, interventionId: number, input: {
        * MỞ CHU KỲ MỚI trên CHÍNH phương án này. Không tạo một phương án thứ hai giống hệt:
        * đó vẫn là cùng một việc, chỉ là làm tiếp thêm một vòng nữa.
        *
-       * HẠN CẬP NHẬT chuyển sang CHỦ NHẬT KẾ TIẾP (mục 8.3). Cập nhật đúng ngày Chủ nhật thì
-       * hạn mới là Chủ nhật TUẦN SAU, không phải chính hôm nay — nếu không, vừa lưu xong đã
-       * thấy báo quá hạn.
+       * HẠN GHI KẾT QUẢ chuyển sang hết Thứ Hai tuần sau (mục 8.3, R-PA1). Ghi đúng hôm Thứ Hai
+       * hạn thì hạn mới là hết Thứ Hai tuần sau, không phải chính hôm nay — nếu không, vừa lưu
+       * xong đã thấy báo quá hạn.
        *
        * NGÀY DỰ KIẾN KẾT THÚC giữ nguyên: theo dõi thêm một tuần không được âm thầm đẩy lùi
        * ngày mà cả case đang trông vào.
@@ -2954,7 +2960,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
                   approval_due = ?, action_due = NULL, followup_due = NULL, updated_at = ?
             WHERE id = ?`,
         )
-        .run(cycleDeadline(observedOn), nowIso(), interventionId);
+        .run(hanTheoNgay(observedOn, HAN_DUYET_NGAY), nowIso(), interventionId);
     }
 
     if (c.status === 'open') {

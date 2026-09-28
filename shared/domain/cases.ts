@@ -648,6 +648,14 @@ function addDaysIso(date: string, n: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+/** HẠN "n NGÀY" DÙNG CHUNG (T24, T66, M-16): n ngày liên tiếp theo lịch, TÍNH CẢ ngày bắt đầu. Quá hạn khi hôm nay > hạn. */
+export function hanTheoNgay(batDau: string, n: number): string {
+  if (!Number.isInteger(n) || n < 1) throw new Error(`hanTheoNgay: số ngày phải ≥ 1 (nhận ${n})`);
+  return addDaysIso(batDau, n - 1);
+}
+/** Quản lý trả lời Đề xuất PA / Xin hỗ trợ trong 5 ngày, tính cả ngày gửi (T54, K3-18). */
+export const HAN_DUYET_NGAY = 5;
+
 /**
  * Hạn của một chu kỳ xử lý, tính từ ngày chu kỳ BẮT ĐẦU. Phương án cần duyệt thì ngày bắt đầu là NGÀY ĐƯỢC DUYỆT, không phải
  * ngày gửi — thời gian chờ Quản lý không được tính là giáo viên đã có thời gian làm.
@@ -657,9 +665,12 @@ export function cycleDeadline(startDate: string): string {
   return addDaysIso(mondayOfIso(startDate), ACADEMIC_CYCLE_WEEKS * 7 - 1);
 }
 
-/** Câu giải thích cho giao diện, để người dùng không phải tự đoán luật. */
+/**
+ * Câu giải thích cho giao diện, để người dùng không phải tự đoán luật. PR-N1 (T54, K3 §4c #3): nói hạn Quản lý trả lời theo
+ * `HAN_DUYET_NGAY`; `cycleDeadline` ở trên chỉ còn bộ demo dùng.
+ */
 export function cycleDeadlineHint(): string {
-  return 'Hạn mặc định: hết Chủ nhật của tuần kế tiếp (chu kỳ hai tuần, tính tuần bắt đầu là tuần thứ nhất).';
+  return `Hạn Quản lý trả lời: ${HAN_DUYET_NGAY} ngày, tính cả ngày gửi.`;
 }
 
 /**
@@ -707,7 +718,7 @@ export const SIGNAL_VERIFY_DAYS = 3;
  * giây điểm được công bố — phạt người ta vì việc của người khác.
  */
 export function signalVerifyDue(raisedOn: string): string {
-  return addDaysIso(raisedOn, SIGNAL_VERIFY_DAYS - 1);
+  return hanTheoNgay(raisedOn, SIGNAL_VERIFY_DAYS);
 }
 
 /** Lý do chuẩn khi một tín hiệu mất căn cứ vì điểm được sửa lại (mục 9.4). */
@@ -738,30 +749,20 @@ export const PLAN_DUE_DAYS: Record<string, number> = { urgent: 3, attention: 5 }
  */
 export function planDueDate(assignedOn: string, urgency: string | null | undefined): string {
   const days = PLAN_DUE_DAYS[urgency ?? DEFAULT_URGENCY] ?? PLAN_DUE_DAYS.attention;
-  return addDaysIso(assignedOn, days - 1);
+  return hanTheoNgay(assignedOn, days);
 }
 
 /**
- * HẠN CẬP NHẬT PHƯƠNG ÁN HỌC THUẬT: trước hết CHỦ NHẬT hằng tuần (mục 8.3).
- *
- * Bắt đầu 19/9 (thứ Bảy) thì vẫn phải cập nhật ngày 20/9 — chưa đủ dữ liệu thì ghi đúng là
- * chưa đủ, chứ không được bỏ qua một tuần. Đó là điều kiện để bảng theo tuần nói đúng.
+ * HẠN GHI KẾT QUẢ PA HẰNG TUẦN (§5.6 R-PA1, chủ sản phẩm 27/09): kết quả của tuần Thứ Hai → Chủ nhật chứa `fromDate` phải ghi
+ * xong trước HẾT THỨ HAI tuần kế tiếp. Máy chủ gọi `weeklyUpdateDue(ngàyGhi + 1)` sau mỗi lần ghi → ghi ngày CN hay T2 đều khép
+ * đúng tuần vừa hết, hạn mới là Thứ Hai tuần sau nữa.
  */
 export function weeklyUpdateDue(fromDate: string): string {
-  const d = new Date(`${fromDate.slice(0, 10)}T00:00:00Z`);
-  const dow = d.getUTCDay();                    // 0 = Chủ nhật
-  return addDaysIso(fromDate, dow === 0 ? 0 : 7 - dow);
+  return addDaysIso(mondayOfIso(fromDate), 7);
 }
-
-/**
- * NGÀY DỰ KIẾN KẾT THÚC PHƯƠNG ÁN HỌC THUẬT khi người dùng không chọn: CHỦ NHẬT TUẦN TIẾP
- * THEO tính từ lúc bắt đầu thực hiện (mục 8.3).
- *
- * Bắt đầu 19/9 → kết thúc mặc định 27/9. Trùng đúng Chủ nhật thì MỘT lần cập nhật kết thúc
- * đáp ứng cả hai nghĩa vụ; không bắt người dùng bấm hai lần cho cùng một ngày.
- */
+/** DỰ KIẾN KẾT THÚC mặc định: Chủ nhật tuần tiếp theo (mục 8.3). Không phải hạn (T53 Q1) — không theo hạn Thứ Hai. */
 export function planEndDefault(startDate: string): string {
-  return addDaysIso(weeklyUpdateDue(startDate), 7);
+  return addDaysIso(mondayOfIso(startDate), 13);
 }
 
 export const INTERVENTION_STATUSES = ['planned', 'started', 'completed', 'cancelled'] as const;
@@ -907,7 +908,7 @@ export const PLAN_DECISION_LABEL: Record<PlanDecision, string> = {
   ask_manager: 'Xin hỗ trợ từ Quản lý',
 };
 export const PLAN_DECISION_HINT: Record<PlanDecision, string> = {
-  keep: 'Phương án chạy tiếp như cũ. Lần cập nhật sau vào Chủ nhật kế tiếp.',
+  keep: 'Phương án chạy tiếp như cũ. Kết quả tuần sau ghi trước hết Thứ Hai kế tiếp.',
   adjust: 'Cùng phương án, sửa mô tả, người thực hiện hoặc ngày dự kiến kết thúc. Bản cũ giữ trong lịch sử.',
   replace: 'Khép phương án này (Được thay thế) và mở phương án mới. Đổi loại phương án thì chọn ở đây.',
   end: 'Khép phương án này. Case chỉ hoàn thành được khi mọi phương án đã khép.',

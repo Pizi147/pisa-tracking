@@ -10,10 +10,10 @@ import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { suggestCaseOwner } from './owner.ts';
 import { examPlanOf } from '../fasttrack/cycles.ts';
 import { caseAccess, caseDetail, recordIntervention } from './cases.ts';
-import { UNCONFIRMED_PRESET, sosCaseState } from './sosState.ts';
+import { PA_QUY_CHE_CHUA_GHI, UNCONFIRMED_PRESET, sosCaseState } from './sosState.ts';
 import { ghiBanDieuChinh } from './planRevisions.ts';
 
-export { UNCONFIRMED_PRESET, NOT_UNCONFIRMED_PRESET } from './sosState.ts';
+export { UNCONFIRMED_PRESET, NOT_UNCONFIRMED_PRESET, PA_QUY_CHE_CHUA_GHI } from './sosState.ts';
 
 /**
  * SOS TỰ TẠO CASE — PHẦN GHI DỮ LIỆU (rulebook v3, PR-T; `thiet-ke/SOS_VA_PHOI_HOP_V3.md` mục 3–4).
@@ -21,13 +21,15 @@ export { UNCONFIRMED_PRESET, NOT_UNCONFIRMED_PRESET } from './sosState.ts';
  * Chỉ lượt Mock Test FAST TRACK mới đi qua đây (Q-V3-1). Lớp Normal giữ mô hình tín hiệu cũ — không case tự tạo, không phương án điền
  * sẵn, không Phối hợp SOS.
  *
- * `cases/sos.ts` (nơi sở hữu `raiseSignalsForResult`) quyết định KHI NÀO tạo hay gắn case; file này lo phần "phương án điền sẵn":
- *   · dựng phương án theo bảng MT × mức SOS (`shared/domain/sos.ts`),
- *   · đồng bộ phương án CHƯA xác nhận khi mức SOS của lượt đổi,
- *   · xác nhận / thay / đóng case (S04–S07) — phần dưới.
+ * `cases/sos.ts` (nơi sở hữu `raiseSignalsForResult`) quyết định KHI NÀO tạo hay gắn case; file này lo phần "PA theo quy chế":
+ *   · dựng PA theo bảng MT × mức SOS (`shared/domain/sos.ts`) — PA CHẠY NGAY lúc tạo (PR-N1, S4-1),
+ *   · đồng bộ PA quy chế CHƯA có kết quả tuần khi mức SOS của lượt đổi (Q24),
+ *   · đóng case "Không cần theo dõi" (S05) — phần dưới.
  *
- * PHƯƠNG ÁN ĐIỀN SẴN CHƯA XÁC NHẬN chỉ là gợi ý (Q-V3-3): không vào hiệu quả, không sinh nghĩa vụ cập nhật tuần. Điều kiện SQL nhận diện nó
- * nằm ở MỘT chỗ — `UNCONFIRMED_PRESET` trong `sosState.ts`.
+ * PA QUY CHẾ DO MÁY GÁN (PR-N1, Q22): `status = 'started'`, `confirmed_at = lúc tạo`, `confirmed_by = NULL` — nên mọi truy vấn lọc
+ * `UNCONFIRMED_PRESET` tính nó như PA thường (vào hiệu quả, có nghĩa vụ ghi kết quả tuần). `confirmed_by IS NULL` là dấu "máy gán";
+ * điều kiện "máy gán mà chưa có kết quả tuần" nằm ở MỘT chỗ — `PA_QUY_CHE_CHUA_GHI` trong `sosState.ts`. Hai hàm xác nhận / thay cũ còn
+ * giữ cho đường API (PR-SOS gỡ) nhưng PA quy chế luôn trả 400 "đã được xác nhận rồi".
  */
 
 /**
@@ -66,10 +68,10 @@ export function presetFor(
 }
 
 /**
- * DỰNG PHƯƠNG ÁN ĐIỀN SẴN CHO MỘT CASE VỪA TẠO (S03). Người thực hiện mặc định là GVBM đúng kỹ năng ở lớp em đang học.
+ * DỰNG PA THEO QUY CHẾ CHO MỘT CASE VỪA TẠO (S03, PR-N1 S4-1). Người thực hiện mặc định là GVBM đúng kỹ năng ở lớp em đang học.
  *
- * `action_due` để NULL và không có ngày bắt đầu: phương án chưa chạy nên chưa có nghĩa vụ cập nhật tuần (Q-V3-3); chúng chỉ có khi GVBM
- * xác nhận.
+ * PA CHẠY NGAY: `status = 'started'` từ hôm nay, chu kỳ 1, hạn ghi kết quả tuần = hết Thứ Hai sau tuần tạo (`weeklyUpdateDue`).
+ * Dấu "máy đã xác nhận" (Q22): `confirmed_at = lúc tạo`, `confirmed_by = NULL`.
  */
 export function createPresetPlan(input: {
   caseId: number;
@@ -80,22 +82,24 @@ export function createPresetPlan(input: {
   const p = presetFor(input.attempt, input.sosLevel, input.followUntil);
   if (!p) return null;
   const performer = suggestCaseOwner({ classId: input.attempt.class_id ?? null, category: input.category });
+  const today = demoToday();
   const info = db()
     .prepare(
-      `INSERT INTO case_interventions (case_id, kind, description, performer_user_id, recorded_by, status,
-                                       followup_due, cycle_no, needs_approval, preset, created_at)
-       VALUES (?,?,?,?, NULL, 'planned', ?, 1, 0, 1, ?)`,
+      `INSERT INTO case_interventions (case_id, kind, description, performer_user_id, recorded_by, status, started_date,
+                                       followup_due, cycle_no, cycle_started_on, action_due, needs_approval, preset,
+                                       confirmed_at, confirmed_by, created_at)
+       VALUES (?,?,?,?, NULL, 'started', ?, ?, 1, ?, ?, 0, 1, ?, NULL, ?)`,
     )
-    .run(input.caseId, p.kind, p.description, performer, p.followupDue, nowIso());
+    .run(input.caseId, p.kind, p.description, performer, today, p.followupDue, today, weeklyUpdateDue(today), nowIso(), nowIso());
   return Number(info.lastInsertRowid);
 }
 
 /**
- * ĐỒNG BỘ PHƯƠNG ÁN ĐIỀN SẴN CHƯA XÁC NHẬN với mức SOS hiện tại của lượt đã MỞ chúng.
+ * ĐỒNG BỘ PA QUY CHẾ CHƯA CÓ KẾT QUẢ TUẦN với mức SOS hiện tại của lượt đã MỞ chúng (PR-N1, Q24).
  *
  * Điểm thường được nhập từng kỹ năng, bởi từng GVBM, vào những lúc khác nhau — nên case đầu tiên ra đời khi lượt mới ở SOS1, trước khi
- * SOS3 xuất hiện. Đặc tả §4 nói phương án theo MỨC SOS CỦA CẢ LƯỢT, nên phần gợi ý chưa ai xác nhận phải theo mức mới nhất. Phương án ĐÃ
- * xác nhận thì không bao giờ bị đụng: đó là quyết định của một người.
+ * SOS3 xuất hiện. Đặc tả §4 nói phương án theo MỨC SOS CỦA CẢ LƯỢT, nên PA máy gán chưa ghi kết quả tuần nào phải theo mức mới nhất. PA
+ * đã có kết quả tuần, hay do người xác nhận/thay (`confirmed_by` khác NULL), thì không bao giờ bị đụng.
  *
  * Chỉ áp cho case do CHÍNH lượt này mở (mốc `opened` của lượt) — case cũ được lượt sau "gắn" thêm mốc thì giữ nguyên phương án của nó.
  */
@@ -111,7 +115,7 @@ export function resyncUnconfirmedPresets(
               (SELECT MIN(g.raised_on) FROM case_signals g WHERE g.case_id = sc.id) AS raised_on
          FROM case_interventions iv
          JOIN sos_cases sc ON sc.id = iv.case_id
-        WHERE ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND sc.status != 'done'
+        WHERE ${PA_QUY_CHE_CHUA_GHI('iv')} AND sc.status != 'done'
           AND EXISTS (SELECT 1 FROM case_milestones m WHERE m.case_id = sc.id AND m.kind = 'opened' AND m.attempt_id = ?)`,
     )
     .all(attempt.id) as any[];
@@ -134,7 +138,7 @@ export function announceAutoCase(input: {
   addJourney({
     studentId: input.studentId, cycleId: input.cycleId, eventType: 'case_opened', eventDate: input.detectedOn,
     title: `MT${input.attemptNo}: SOS tự tạo case ${input.skillLabel}`,
-    detail: 'Phương án điền sẵn đang chờ GVBM xác nhận.',
+    detail: 'PA theo quy chế đã chạy — chờ GVBM xác định nguyên nhân.',
     refTable: 'sos_cases', refId: input.caseId, createdBy: input.actorUserId,
     dedupKey: `case_open:${input.caseId}`,
   });
@@ -146,7 +150,7 @@ export function announceAutoCase(input: {
     notify({
       userId: input.ownerUserId, kind: 'sos',
       title: `Case mới từ SOS: ${input.skillLabel} — ${st?.full_name ?? ''}`,
-      body: `Xác định nguyên nhân và xác nhận PA học thuật. Hạn ${input.verifyDue}.`,
+      body: `Xác định nguyên nhân (PA theo quy chế đã tự chạy). Hạn ${input.verifyDue}.`,
       entityType: 'sos_case', entityId: input.caseId, dedupKey: `sos-case:${input.caseId}`,
     });
   }
@@ -176,7 +180,7 @@ function loadUnconfirmedPreset(p: Principal, interventionId: number, doing: stri
 /**
  * XÁC NHẬN PHƯƠNG ÁN ĐIỀN SẴN (S04) — kèm CHỈNH nếu muốn (sửa mô tả, ngày dự kiến kết thúc).
  *
- * Từ đây case đi ĐÚNG workflow học thuật thường (S07): phương án chạy (đang thực hiện), có hạn cập nhật Chủ nhật hằng tuần, có bằng chứng,
+ * Từ đây case đi ĐÚNG workflow học thuật thường (S07): phương án chạy (đang thực hiện), có hạn ghi kết quả tuần hết Thứ Hai tuần sau, có bằng chứng,
  * điều chỉnh, đóng khi xong. Không có lớp "tiến trình SOS" riêng. Phương án ĐÃ xác nhận được coi là căn cứ độc lập khi sửa điểm (S08) —
  * xem `caseHasIndependentBasis`.
  *
@@ -267,10 +271,11 @@ export function replacePresetPlan(p: Principal, interventionId: number, plan: {
 }
 
 /**
- * `KHÔNG CẦN THEO DÕI` (S05, Q-V3-4): GVBM đóng NGAY một case tự tạo từ SOS kèm lý do chọn nhanh. Case đóng, giữ lịch sử; phương án điền sẵn
- * HUỶ (không tính thất bại); không có `outcome` nên không vào bất kỳ thống kê hiệu quả nào.
+ * `KHÔNG CẦN THEO DÕI` (S05, Q-V3-4): GVBM đóng NGAY một case tự tạo từ SOS kèm lý do chọn nhanh. Case đóng, giữ lịch sử; PA theo quy chế
+ * chưa có kết quả tuần HUỶ `dismissed` (không tính thất bại, PR-N1 Q24); không có `outcome` nên không vào bất kỳ thống kê hiệu quả nào.
  *
- * Chỉ áp cho case TỰ TẠO TỪ SOS còn chưa có việc thật: đã xác nhận phương án hoặc đã ghi việc/kết quả thì việc đã bắt đầu — kết thúc bằng
+ * Chỉ áp cho case TỰ TẠO TỪ SOS còn chưa có việc thật: PA máy gán đang chạy mà chưa ghi kết quả tuần KHÔNG tính là việc thật; có PA người
+ * thêm/xác nhận/thay hoặc đã ghi kết quả thì việc đã bắt đầu — kết thúc bằng
  * `Chốt kết quả case` như mọi case thường. Không khoá theo ngày: "3 ngày" của S04 là HẠN để làm, không phải cửa sổ hết hạn thì mất quyền.
  * Trượt lại ở MT sau thì SOS mở case mới NỐI vào case này (không mở lại).
  */
@@ -290,7 +295,8 @@ export function dismissSosCase(p: Principal, caseId: number, input: { reasonCode
   const text = (input.reasonText ?? '').trim();
   if (reasonNeedsText(code) && !text) throw badRequest('Chọn "Khác" thì phải ghi rõ lý do bằng chữ.');
   const started = conn
-    .prepare(`SELECT COUNT(*) n FROM case_interventions iv WHERE iv.case_id = ? AND iv.status != 'cancelled' AND NOT ${UNCONFIRMED_PRESET('iv')}`)
+    .prepare(`SELECT COUNT(*) n FROM case_interventions iv WHERE iv.case_id = ? AND iv.status != 'cancelled'
+                AND NOT ${UNCONFIRMED_PRESET('iv')} AND NOT ${PA_QUY_CHE_CHUA_GHI('iv')}`)
     .get(caseId) as any;
   const followed = conn.prepare('SELECT COUNT(*) n FROM case_followups WHERE case_id = ?').get(caseId) as any;
   if (started.n > 0 || followed.n > 0) {
@@ -303,7 +309,7 @@ export function dismissSosCase(p: Principal, caseId: number, input: { reasonCode
     const cancelled = conn
       .prepare(
         `UPDATE case_interventions SET status = 'cancelled', closed_reason = 'dismissed', updated_at = ?
-          WHERE case_id = ? AND ${UNCONFIRMED_PRESET('case_interventions')} AND status = 'planned'`,
+          WHERE case_id = ? AND ${PA_QUY_CHE_CHUA_GHI('case_interventions')}`,
       )
       .run(nowIso(), caseId).changes;
     conn

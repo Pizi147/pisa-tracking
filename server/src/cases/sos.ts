@@ -350,7 +350,7 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
     /*
      * CHƯA CÓ CASE ĐANG MỞ → SOS TỰ TẠO (S01), mỗi kỹ năng trượt một case, W1/W2 tách (S02 — `failing` đã là kết quả của luật hai tầng nên
      * không bao giờ có case "Writing tổng"). Case đã ĐÓNG mà trượt lại thì `upsertCategoryCase` mở case mới NỐI vào case cũ.
-     * Case mới có sẵn phương án theo bảng MT × mức SOS, chờ GVBM xác nhận (S03).
+     * Case mới có sẵn PA theo quy chế (bảng MT × mức SOS) chạy ngay từ lúc tạo (S03, PR-N1 S4-1); GVBM còn việc xác định nguyên nhân.
      */
     /*
      * TÍN HIỆU ĐÃ NỐI VÀO MỘT CASE rồi (kể cả case đó nay đã ĐÓNG — `Không cần theo dõi`, hay chốt kết quả thường) thì KHÔNG tạo case mới cho chính
@@ -375,7 +375,7 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
           `UPDATE case_signals SET status = 'linked', case_id = ?, resolved_by = NULL, resolved_at = ?,
                   resolution_note = ?, updated_at = ? WHERE id = ?`,
         )
-        .run(up.id, nowIso(), 'Mock Test có SOS đã tự tạo case cho kỹ năng này — chờ GVBM xác nhận.', nowIso(), signal.id);
+        .run(up.id, nowIso(), 'Mock Test có SOS đã tự tạo Case và PA theo quy chế cho kỹ năng này — chờ GVBM xác định nguyên nhân.', nowIso(), signal.id);
       announceAutoCase({
         caseId: up.id, studentId: attempt.student_id, cycleId: attempt.cycle_id ?? null, skillLabel: labelOf({ skill }),
         attemptNo: attempt.attempt_no, sosLevel: result.sosLevel, ownerUserId: open.owner_user_id ?? null,

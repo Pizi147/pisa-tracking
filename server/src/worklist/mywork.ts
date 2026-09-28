@@ -7,13 +7,14 @@ import {
   type AssessedSkill, type AttemptKind, type EntrySkill, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
+import { addDays } from '../util.ts';
 import { can, napTruocPhamVi, scopeFor, teachesClass, type Principal } from '../permissions.ts';
 import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
 import { classAlerts } from '../classes/schedule.ts';
 import { demChuaLoTrinh } from '../classes/loTrinhTiep.ts';
 import { myMgmtTasks } from './mgmttasks.ts';
 import { listSignals, type SignalAction } from '../cases/signals.ts';
-import { NOT_UNCONFIRMED_PRESET, UNCONFIRMED_PRESET, awaitingCauseCaseIds } from '../cases/sosState.ts';
+import { NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds } from '../cases/sosState.ts';
 import { settleNoShows, sweepExpiredMoves } from '../fasttrack/absence.ts';
 
 /**
@@ -108,7 +109,7 @@ export type WorkItem = {
 export type WorkGroupKey =
   | 'verify' | 'cause' | 'score' | 'no_plan' | 'result'
   | 'decide' | 'decide_move'
-  | 'do_plan' | 'no_owner' | 'placement' | 'next_step' | 'missing_data' | 'mgmt';
+  | 'no_owner' | 'placement' | 'next_step' | 'missing_data' | 'mgmt';
 
 /**
  * Mỗi nhóm có MỘT DÒNG nói rõ nhóm đó nghĩa là gì.
@@ -135,13 +136,13 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
    * XÁC ĐỊNH NGUYÊN NHÂN (rulebook v3, S04) — thay `verify` cho MOCK TEST FAST TRACK.
    *
    * Mock FT nay TỰ TẠO case cho kỹ năng trượt kèm phương án điền sẵn, nên không còn tín hiệu nào để "xác minh". Việc còn lại của GVBM đúng kỹ năng có
-   * đúng hạn ba ngày: chọn nguyên nhân + xác nhận (sửa / thay) phương án gợi ý, hoặc đóng `Không cần theo dõi`. Không có dòng này thì hạn đó vô hình:
-   * phương án gợi ý chưa xác nhận bị loại khỏi mọi thống kê và nghĩa vụ, nên một case bị lờ đi sẽ nằm im mãi mà số liệu trông như chưa có chuyện gì.
+   * đúng hạn ba ngày: xác định nguyên nhân, hoặc đóng `Không cần theo dõi`. PA theo quy chế đã tự chạy từ lúc tạo (PR-N1, S4-1) — không còn vế
+   * "xác nhận PA gợi ý". Không có dòng này thì hạn ba ngày vô hình.
    */
   cause: {
     label: 'Xác định nguyên nhân',
-    hint: 'Mock Test có SOS đã tự tạo case cho kỹ năng này. Bạn có ba ngày (tính cả ngày đầu) để chọn nguyên nhân và xác nhận, sửa hoặc thay PA học thuật gợi ý — '
-      + 'hoặc đóng `Không cần theo dõi` nếu em không cần theo dõi. Quản lý chỉ thấy dòng này khi đã quá hạn.',
+    hint: 'Mock Test có SOS đã tự tạo Case và PA theo quy chế cho kỹ năng này. Bạn có ba ngày (tính cả ngày đầu) để xác định nguyên nhân — '
+      + 'hoặc đóng "Không cần theo dõi" nếu em không cần theo dõi. Quản lý chỉ thấy dòng này khi đã quá hạn.',
   },
 
   /*
@@ -168,8 +169,8 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
     hint: 'Vấn đề đã mở nhưng chưa ai ghi sẽ làm gì cho em.',
   },
   result: {
-    label: 'Ghi kết quả',
-    hint: 'Đã tới hẹn xem lại: ghi lại sau khi hỗ trợ em có tiến bộ không, rồi chọn bước tiếp theo.',
+    label: 'Ghi kết quả PA',
+    hint: 'Kết quả tuần Thứ Hai → Chủ nhật ghi xong trước hết Thứ Hai tuần sau. Tuần chạm ngày dự kiến kết thúc thì ghi kết quả và kết luận PA.',
   },
 
   /* ------------------------------------------------------- việc chỉ Quản lý làm được */
@@ -179,10 +180,6 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   },
 
   /* --------------------------------------------- những nghĩa vụ khác, vẫn phải thấy được */
-  do_plan: {
-    label: 'Làm PA học thuật đã hẹn',
-    hint: 'PA học thuật đã lên kế hoạch và tới ngày phải làm. Làm xong thì đánh dấu đã hoàn thành kèm ngày thực hiện.',
-  },
   no_owner: {
     label: 'Chưa có người phụ trách',
     hint: 'Case đang mở mà chưa ai nhận điều phối. Chọn người phụ trách trước, vì mọi việc sau đó đều treo vào chỗ này.',
@@ -487,7 +484,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
          LEFT JOIN classes ac ON ac.id = a.class_id
          LEFT JOIN classes cc ON cc.id = cur.class_id
          LEFT JOIN users pu ON pu.id = iv.recorded_by
-        WHERE iv.approval_state = 'pending'`,
+        WHERE iv.approval_state = 'pending' AND iv.status != 'cancelled' AND sc.status != 'done'`,
     )
     .all() as any[];
 
@@ -584,31 +581,30 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     });
   }
 
-  // ------------------------------------- 2b. phương án đã lên kế hoạch mà tới hạn làm
+  // ------------------------------------------- 2b. GHI KẾT QUẢ PA HẰNG TUẦN (K5-02, T75, §5.6) — một PA một dòng
   /*
-   * MỐC THỨ NHẤT trong hai mốc owner giữ: hạn LÀM XONG phương án.
-   * (Mốc thứ hai là hạn BÁO KẾT QUẢ của cả case, nằm ở nhóm "Kết quả sau hỗ trợ".)
-   *
-   * Chỉ hiện việc ĐÃ TỚI HẠN hoặc quá hạn — bày ra từ ngày đầu thì danh sách lúc nào cũng
-   * dài mà chưa cần làm gì, và một danh sách lúc nào cũng dài thì không ai đọc.
-   *
-   * Phương án đang CHỜ DUYỆT thì chưa được phép làm, nên không tính là tới hạn: thúc người
-   * ta làm một việc Quản lý chưa đồng ý là thúc sai người.
+   * Một nghĩa vụ: kết quả tuần T2→CN ghi xong trước HẾT THỨ HAI tuần sau (`action_due`). Hiện từ Chủ nhật (tuần sắp hết) tới khi
+   * ghi. Dự kiến kết thúc (`followup_due`) KHÔNG sinh việc (T53 Q1) — tuần chạm nó chỉ thêm chữ "tuần cuối". Khoá dòng giữ
+   * `action:{id}` để "đã nhắc hôm nay" của nút Nhắc khớp qua các PR (K5-12). QL chỉ thấy dòng của người khác khi đã quá hạn.
    */
-  const dueActions = conn
+  const reviewedCases = new Set<number>();
+  const ghiKetQua = conn
     .prepare(
-      `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.action_due,
-              iv.performer_user_id, iv.performer_name,
-              sc.topic, sc.category, sc.attempt_id, sc.sos_level,
+      `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.action_due, iv.followup_due,
+              iv.performer_user_id, iv.performer_name, COALESCE(iv.performer_user_id, iv.recorded_by) AS owner_id,
+              sc.topic, sc.sos_level, sc.urgency, sc.summary, sc.origin_kind, sc.attempt_id,
               COALESCE(sc.student_id, a.student_id) AS eff_student_id,
               COALESCE(a.class_id, cur.class_id) AS eff_class_id,
-              s.full_name, cl.code AS class_code, cl.branch_id, a.attempt_no, a.kind AS attempt_kind
+              COALESCE(ac.branch_id, cc.branch_id) AS eff_branch_id,
+              COALESCE(ac.code, cc.code) AS class_code,
+              s.full_name, a.attempt_no, a.kind AS attempt_kind
          FROM case_interventions iv
          JOIN sos_cases sc ON sc.id = iv.case_id
          LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
-         LEFT JOIN enrollments cur ON cur.student_id = sc.student_id AND cur.status = 'active'
          LEFT JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
-         LEFT JOIN classes cl ON cl.id = COALESCE(a.class_id, cur.class_id)
+         LEFT JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active'
+         LEFT JOIN classes ac ON ac.id = a.class_id
+         LEFT JOIN classes cc ON cc.id = cur.class_id
         WHERE iv.status IN ('planned', 'started')
           AND iv.action_due IS NOT NULL AND iv.action_due <= ?
           AND sc.status != 'done'
@@ -616,43 +612,34 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           AND ${NOT_UNCONFIRMED_PRESET('iv')}
           AND s.archived_at IS NULL`,
     )
-    .all(today) as any[];
-  napTruocPhamVi(dueActions.map((r) => r.eff_student_id));
-  for (const iv of dueActions) {
-    if (f.branchId && iv.branch_id !== f.branchId) continue;
-    if (!can(p, PERMISSIONS.SOS_EDIT, {
-      classId: iv.eff_class_id, studentId: iv.eff_student_id,
-      skill: iv.topic ?? undefined,
-    })) continue;
-    /*
-     * AI THẤY VIỆC NÀY: người ĐANG DẠY em. Quản lý thấy hết, vì họ là người đôn đốc khi có ai đó quên.
-     */
-    const isManager = can(p, PERMISSIONS.CASE_APPROVE, { classId: iv.eff_class_id, studentId: iv.eff_student_id });
-    if (!isManager && !teachesClass(p, iv.eff_class_id)) continue;
+    .all(addDays(today, 1)) as any[];
+  napTruocPhamVi(ghiKetQua.map((r) => r.eff_student_id));
+  for (const iv of ghiKetQua) {
+    if (f.branchId && iv.eff_branch_id !== f.branchId) continue;
+    if (!can(p, PERMISSIONS.SOS_EDIT, { classId: iv.eff_class_id, studentId: iv.eff_student_id, skill: iv.topic ?? undefined })) continue;
     const u = urgencyOf(iv.action_due, today);
-    const what = INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL]
-      ?? iv.kind;
+    const mine = iv.owner_id === p.userId;
+    const qlQuaHan = u === 'overdue' && can(p, PERMISSIONS.CASE_APPROVE, { classId: iv.eff_class_id, studentId: iv.eff_student_id });
+    if (!mine && !teachesClass(p, iv.eff_class_id) && !qlQuaHan) continue;
+    reviewedCases.add(iv.case_id);
+    const tuanCuoi = !!iv.followup_due && iv.followup_due >= addDays(iv.action_due, -7) && iv.followup_due < iv.action_due;
     items.push({
-      key: `action:${iv.id}`, group: 'do_plan', urgency: u,
+      key: `action:${iv.id}`, group: 'result', urgency: u,
       studentId: iv.eff_student_id, studentName: iv.full_name ?? 'Học viên',
       classId: iv.eff_class_id ?? null, classCode: iv.class_code ?? null,
       attemptId: iv.attempt_id ?? null, attemptNo: iv.attempt_no ?? null,
-      caseId: iv.case_id, level: null,
-      contextLabel: nhanDot(iv.attempt_kind, iv.attempt_no),
-      count: null,
-      reason: what,
-      tieuDe: `Làm PA: ${what}`,
-      actionLabel: 'Đã làm',
-      href: iv.eff_student_id ? `/hoc-vien/${iv.eff_student_id}` : `/hoc-thuat/case/${iv.case_id}`,
-      /*
-       * NGƯỜI PHỤ TRÁCH có thể là một tài khoản, hoặc chỉ là một cái tên ai đó gõ vào (người
-       * ngoài hệ thống). Không có cả hai thì nói thẳng là CHƯA CÓ AI — đó là một tin quan
-       * trọng, không phải một ô trống cần lấp cho đẹp.
-       */
-      ownerId: iv.performer_user_id ?? null,
+      caseId: iv.case_id as number, level: levelOf(iv),
+      contextLabel: nhanDot(iv.attempt_kind, iv.attempt_no), count: null,
+      reason: [(iv.description ?? '').trim() || INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] || 'PA học thuật',
+        tuanCuoi ? 'tuần cuối — ghi kết quả và kết luận PA' : null,
+        mine ? null : 'người thực hiện chưa ghi'].filter(Boolean).join(' — '),
+      tieuDe: `Ghi kết quả PA${duoiKyNang(iv.topic)}`, actionLabel: 'Ghi kết quả',
+      href: iv.eff_student_id
+        ? duongHoSoHocVien(iv.eff_student_id, { caseId: iv.case_id, paId: iv.id, viec: 'ghi-ket-qua' })
+        : `/hoc-thuat/case/${iv.case_id}`,
+      ownerId: iv.performer_user_id ?? iv.owner_id ?? null,
       owner: iv.performer_user_id ? null : ((iv.performer_name ?? '').trim() || null),
-      mine: iv.performer_user_id === p.userId,
-      due: iv.action_due ?? null, statusLabel: 'Đang thực hiện',
+      mine, due: iv.action_due, statusLabel: 'Chờ ghi kết quả',
     });
   }
 
@@ -737,76 +724,6 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         });
       }
     }
-  }
-
-  // ------------------------------------------------- 3. kết quả sau hỗ trợ (tới hẹn xem lại)
-  /*
-   * AI THẤY VIỆC NÀY: người thực hiện phương án — họ là người biết em có khá lên không.
-   * Quá hạn thì Quản lý cũng thấy, để việc không rơi mất khi người thực hiện quên.
-   *
-   * Phương án đang chờ duyệt thì CHƯA làm, nên chưa có gì để xem lại — loại ra.
-   */
-  const dueReviews = conn
-    .prepare(
-      `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.followup_due,
-              COALESCE(iv.performer_user_id, iv.recorded_by) AS owner_id, a.kind AS attempt_kind,
-              sc.topic, sc.sos_level, sc.urgency, sc.summary, sc.origin_kind, sc.attempt_id,
-              COALESCE(sc.student_id, a.student_id) AS eff_student_id,
-              COALESCE(a.class_id, cur.class_id) AS eff_class_id,
-              COALESCE(ac.branch_id, cc.branch_id) AS eff_branch_id,
-              COALESCE(ac.code, cc.code) AS class_code,
-              s.full_name, a.attempt_no
-         FROM case_interventions iv
-         JOIN sos_cases sc ON sc.id = iv.case_id
-         LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
-         LEFT JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
-         LEFT JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active'
-         LEFT JOIN classes ac ON ac.id = a.class_id
-         LEFT JOIN classes cc ON cc.id = cur.class_id
-        WHERE iv.followup_due IS NOT NULL AND iv.followup_due <= ?
-          AND iv.status != 'cancelled'
-          AND COALESCE(iv.approval_state, '') != 'pending'
-          AND ${NOT_UNCONFIRMED_PRESET('iv')}
-          AND sc.status != 'done'
-          AND NOT EXISTS (SELECT 1 FROM case_followups fu WHERE fu.intervention_id = iv.id)`,
-    )
-    .all(today) as any[];
-
-  napTruocPhamVi(dueReviews.map((r) => r.eff_student_id));
-  const reviewedCases = new Set<number>();
-  for (const iv of dueReviews) {
-    if (f.branchId && iv.eff_branch_id !== f.branchId) continue;
-    const u = urgencyOf(iv.followup_due, today);
-    const mine = iv.owner_id === p.userId;
-    const asManager = u === 'overdue'
-      && can(p, PERMISSIONS.CASE_APPROVE, { classId: iv.eff_class_id, studentId: iv.eff_student_id });
-    if (!mine && !asManager) continue;
-    if (!can(p, PERMISSIONS.SOS_EDIT, {
-      classId: iv.eff_class_id, studentId: iv.eff_student_id,
-      skill: iv.topic ?? undefined,
-    })) continue;
-    reviewedCases.add(iv.case_id);
-    items.push({
-      key: `review:${iv.id}`, group: 'result', urgency: u,
-      studentId: iv.eff_student_id, studentName: iv.full_name ?? 'Học viên',
-      classId: iv.eff_class_id ?? null, classCode: iv.class_code ?? null,
-      attemptId: iv.attempt_id ?? null, attemptNo: iv.attempt_no ?? null,
-      caseId: iv.case_id as number, level: levelOf(iv),
-      reason: [
-        (iv.description ?? '').trim() || INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] || 'Đã hỗ trợ',
-        mine ? null : 'người thực hiện chưa cập nhật',
-      ].filter(Boolean).join(' — '),
-      contextLabel: nhanDot(iv.attempt_kind, iv.attempt_no),
-      count: null,
-      tieuDe: `Ghi kết quả PA${duoiKyNang(iv.topic)}`,
-      actionLabel: 'Ghi kết quả',
-      /* PR-UX3 Q3: mở thẳng ngăn Case ở view Ghi kết quả của đúng PA này, không trải form trong trang. */
-      href: iv.eff_student_id
-        ? duongHoSoHocVien(iv.eff_student_id, { caseId: iv.case_id, paId: iv.id, viec: 'ghi-ket-qua' })
-        : `/hoc-thuat/case/${iv.case_id}`,
-      ownerId: iv.owner_id ?? null, owner: null, mine,
-      due: iv.followup_due ?? null, statusLabel: 'Chờ ghi kết quả',
-    });
   }
 
   // ------------------------------------------------- 4. vấn đề mở mà chưa có phương án nào
@@ -902,8 +819,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
               COALESCE(ac.code, cc.code) AS class_code,
               s.full_name, a.attempt_no, a.kind AS attempt_kind,
               (SELECT MIN(g.verify_due) FROM case_signals g WHERE g.case_id = sc.id AND g.status = 'linked') AS due,
-              EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary') AS has_cause,
-              EXISTS (SELECT 1 FROM case_interventions un WHERE un.case_id = sc.id AND ${UNCONFIRMED_PRESET('un')} AND un.status = 'planned') AS has_unconfirmed
+              EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary') AS has_cause
          FROM sos_cases sc
          LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
          LEFT JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
@@ -924,10 +840,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     const mine = c.owner_user_id === p.userId;
     const asManager = u === 'overdue' && can(p, PERMISSIONS.CASE_APPROVE, { classId: c.eff_class_id, studentId: c.eff_student_id });
     if (!mine && !asManager) continue;
-    const missing = [
-      c.has_cause ? null : 'chưa chọn nguyên nhân',
-      c.has_unconfirmed ? 'PA học thuật gợi ý chưa được xác nhận' : null,
-    ].filter(Boolean) as string[];
+    const missing = [c.has_cause ? null : 'chưa chọn nguyên nhân'].filter(Boolean) as string[];
     const skillLabel = c.topic ? caseTopicLabel(c.topic) : 'Kỹ năng';
     items.push({
       key: `cause:${c.id}`, group: 'cause', urgency: u,
@@ -1060,7 +973,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   const order: WorkGroupKey[] = [
     'verify', 'cause', 'score', 'no_plan', 'result',
     'decide', 'decide_move',
-    'placement', 'next_step', 'do_plan', 'no_owner', 'mgmt', 'missing_data',
+    'placement', 'next_step', 'no_owner', 'mgmt', 'missing_data',
   ];
   const weight = (u: WorkUrgency) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
 

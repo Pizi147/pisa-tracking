@@ -2,8 +2,7 @@ import { type ReactNode } from 'react';
 import { Level } from '../../ui/ui.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { toneTheoNhan } from '../../lib/format.ts';
-import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { LOAI_HAN_CUA_VIEC, ngay } from '@shared/domain/index.ts';
+import { LOAI_HAN_CUA_VIEC } from '@shared/domain/index.ts';
 import { DongTinHieu } from './DongTinHieu.tsx';
 
 export type WorkItem = {
@@ -46,7 +45,6 @@ export function DongViec({ it, onOpen, nutPhu }: {
   /** Nút phụ đứng cạnh nút chính (PR-Ra: Nhắc/Duyệt). */
   nutPhu?: ReactNode;
 }) {
-  const { homNay } = useNgayNghiepVu();
   const loaiHan = LOAI_HAN_CUA_VIEC[it.group];
   const coNut = !!it.signal && it.signal.actions.length > 0;
   /* Lớp chỉ hiện khi dòng đang nói về MỘT EM — dòng gom đã lấy chính tên lớp làm tiêu đề phụ. */
@@ -67,7 +65,7 @@ export function DongViec({ it, onOpen, nutPhu }: {
         <span className="block truncate text-[11px] text-slate-500">{dongPhu}</span>
       </button>
       <span className="text-[11px]">
-        {loaiHan && it.due ? <Han loai={loaiHan} han={it.due} haiDong /> : <span className="text-slate-500">{it.due ? `hạn ${ngay(it.due, homNay)}` : '—'}</span>}
+        {it.due ? <Han loai={loaiHan ?? 'viec-van-hanh'} han={it.due} haiDong /> : <span className="text-slate-500">—</span>}
       </span>
       <span className="flex items-center gap-2 sm:justify-end">
         {nutPhu}

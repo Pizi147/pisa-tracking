@@ -12,7 +12,7 @@ import { useNgayNghiepVu } from './ngayNghiepVu.ts';
  * phải một cảnh báo lúc chạy. Sáu loại là sáu đồng hồ khác nhau trong rule book; ngày trần
  * ("30/08") không nói được người đọc đang trễ việc gì.
  *
- * PR-UX0 (B-2/B-3): việc là TIÊU ĐỀ DÒNG ở chỗ gọi, nên hạn chỉ là chữ mờ "hạn CN 30/08"; quá hạn nối
+ * PR-UX0 (B-2/B-3): việc là TIÊU ĐỀ DÒNG ở chỗ gọi, nên hạn chỉ là chữ mờ "hạn hết T2 31/08"; quá hạn nối
  * ngay sau BẰNG CHỮ ("⚠ quá hạn 15 ngày", đỏ cam, không nền, không khung); đúng hạn hôm nay là "hôm nay"
  * (vàng, không ⚠). Chỗ không có tiêu đề nói việc thì truyền `coViec` để hiện lại tên việc. Bản đầy đủ nằm ở tooltip.
  *

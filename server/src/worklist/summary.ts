@@ -241,7 +241,7 @@ export function branchSummary(p: Principal, f: { branchId?: number | null } = {}
     .prepare(
       `SELECT sc.id AS case_id, COUNT(*) n FROM case_interventions iv
          JOIN sos_cases sc ON sc.id = iv.case_id
-        WHERE iv.approval_state = 'pending' GROUP BY sc.id`,
+        WHERE iv.approval_state = 'pending' AND iv.status != 'cancelled' AND sc.status != 'done' GROUP BY sc.id`,
     )
     .all() as any[]) {
     const c = cases.find((x) => x.id === r.case_id);
