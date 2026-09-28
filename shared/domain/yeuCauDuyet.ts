@@ -110,6 +110,8 @@ export type TheYeuCauDto = {
   kieuNut: KieuNut;
   hangLoat: boolean;
   tieuDe: string;
+  /** Ngữ cảnh ngắn sau học viên · lớp (ví dụ "MT2"). */
+  phu: string | null;
   dong: string[];
   neuDuyet: string | null;
   /** Đường "Mở" (hồ sơ HV / Ngăn Case / trang lượt thi). */

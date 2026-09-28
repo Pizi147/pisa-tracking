@@ -10,7 +10,6 @@ import { fmtTime } from '../../lib/format.ts';
 import { NhomViec } from '../worklist/NhomViec.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import type { WorkGroup, WorkItem } from '../worklist/WorkList.tsx';
-import { TraLoiDeXuatPanel } from '../cases/ThaoTacCase.tsx';
 import { NganViecVanHanh } from '../worklist/MgmtTasksPage.tsx';
 import { useNhacYThuc } from '../yThuc/YThucReminders.tsx';
 import { ChonPhuTrach, type NguoiPhuTrach } from './ChonPhuTrach.tsx';
@@ -75,7 +74,6 @@ export function HoTroHocVienTab() {
   const moHet = loc !== 'tat-ca' || !!loai;
 
   const [dangNhac, setDangNhac] = useState<Record<string, boolean>>({});
-  const [duyetDong, setDuyetDong] = useState<WorkItem | null>(null);
 
   const bamNhac = async (it: WorkItem) => {
     if (!it.nhac || dangNhac[it.key]) return;
@@ -94,13 +92,6 @@ export function HoTroHocVienTab() {
       return (
         <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={dangNhac[it.key]} onClick={(e) => { e.stopPropagation(); bamNhac(it); }}>
           Nhắc
-        </button>
-      );
-    }
-    if (it.duyet) {
-      return (
-        <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={(e) => { e.stopPropagation(); setDuyetDong(it); }}>
-          Duyệt
         </button>
       );
     }
@@ -150,15 +141,6 @@ export function HoTroHocVienTab() {
         <Card bodyClass="p-0">
           <NhomViec nhom={nhom} nhac={nguoi === 'toi' ? nhac : []} soHien={10} moHet={moHet} onOpen={navigate} nutPhu={nutPhu} />
         </Card>
-      )}
-
-      {duyetDong?.duyet && (
-        <TraLoiDeXuatPanel
-          hocVien={duyetDong.studentName} lop={duyetDong.classCode}
-          iv={{ id: duyetDong.duyet.interventionId, kind: duyetDong.duyet.kind, description: duyetDong.duyet.description }}
-          onClose={() => setDuyetDong(null)}
-          onSaved={() => { invalidate('/my-work'); setDuyetDong(null); }}
-        />
       )}
 
       {/*

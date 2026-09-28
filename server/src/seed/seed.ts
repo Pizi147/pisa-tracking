@@ -16,6 +16,7 @@ import { buildYThuc } from './yThucSeed.ts';
 import { buildSosV3Demo } from './sosV3Seed.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
 import { dienMocLop } from '../migrate/prLop.ts';
+import { napYeuCauTuNguonCu } from '../migrate/prDuyet.ts';
 
 const NOW = nowIso();
 
@@ -238,6 +239,8 @@ export function runSeed() {
     for (const s of conn.prepare(`SELECT id, finished_at FROM students WHERE status = 'finished'`).all() as any[]) {
       closeCasesBySystem({ actorUserId: null, studentId: s.id, reason: 'course_ended', on: s.finished_at ?? DEMO_DATE });
     }
+    /* PR-DUYET: PA chờ duyệt / đề nghị dời dựng thẳng bằng SQL ở trên cũng có thẻ ở hộp Chờ duyệt (seed không chạy migrate()). */
+    napYeuCauTuNguonCu(conn);
 
     return {
       'Chi nhánh': BRANCHES.length,

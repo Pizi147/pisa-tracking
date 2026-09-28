@@ -2984,12 +2984,12 @@ check('Chỉ Quản lý duyệt được, và không duyệt thì bắt buộc c
     /lý do/, 'Không duyệt mà không ghi lý do');
 });
 
-check('Góp ý KHÔNG kết thúc việc chờ; duyệt và không duyệt thì mới kết thúc', () => {
+check('PR-DUYET (K3-20): bỏ Góp ý — gửi "comment" bị từ chối rõ, việc chờ còn nguyên; duyệt và không duyệt thì mới kết thúc', () => {
   const plan = pendingPlanIn('CP');
-  cases.respondToPlan(P.cpManager, plan.id, { decision: 'comment', note: 'Cho tôi xem bài gần nhất' });
+  assertThrows(() => cases.respondToPlan(P.cpManager, plan.id, { decision: 'comment' as any, note: 'Cho tôi xem bài gần nhất' }),
+    /Không còn Góp ý/, 'Góp ý vẫn được nhận');
   const afterComment = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(plan.id) as any;
-  assert(afterComment.approval_state === 'pending', 'Góp ý đã xoá mất việc chờ duyệt');
-  assert(afterComment.approval_note === 'Cho tôi xem bài gần nhất', 'Góp ý không được lưu lại');
+  assert(afterComment.approval_state === 'pending', 'Góp ý bị từ chối mà việc chờ duyệt mất');
 
   cases.respondToPlan(P.cpManager, plan.id, { decision: 'approved', note: 'Duyệt 4 buổi' });
   const afterApprove = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(plan.id) as any;
@@ -3012,16 +3012,17 @@ check('Không duyệt thì phương án dừng lại, không âm thầm thành v
 
 console.log('\n18. Việc của chính người đang xem');
 
-check('Quản lý thấy nhóm "Chờ tôi xử lý", giáo viên thì không', () => {
+const yeuCau: any = await import('../duyet/yeuCau.ts');
+check('PR-DUYET: đề xuất chờ duyệt nằm ở hộp Chờ duyệt của Quản lý (không còn nhóm việc "Chờ tôi xử lý"); giáo viên không mở được hộp', () => {
   const gv = loadPrincipal(teacherOfSkill('MB FT 102', 'listening'));
   const mgrGroups = mywork.myWork(P.mbManager).groups.map((g: any) => g.key);
   const gvGroups = mywork.myWork(gv).groups.map((g: any) => g.key);
-  assert(!gvGroups.includes('decide'), 'Giáo viên bị giao việc duyệt mà họ không có quyền làm');
+  assert(!gvGroups.includes('decide') && !mgrGroups.includes('decide') && !mgrGroups.includes('decide_move'), 'Còn nhóm việc duyệt');
+  assertThrows(() => yeuCau.hopChoDuyet(gv), /Quản lý/, 'Giáo viên mở được hộp Chờ duyệt');
   const anyManagerHasIt = ['MB', 'CP', 'BC', 'HD']
     .map((b) => loadPrincipal(userByRole('manager', b)))
-    .some((m) => mywork.myWork(m).groups.some((g: any) => g.key === 'decide'));
+    .some((m) => yeuCau.hopChoDuyet(m).the.some((x: any) => x.loai === 'de_xuat_pa'));
   assert(anyManagerHasIt, 'Không Quản lý nào thấy đề xuất đang chờ duyệt');
-  assert(Array.isArray(mgrGroups), 'myWork không trả về nhóm');
 });
 
 check('Việc quá hạn: tiêu đề nói việc gì, hạn nói quá hạn — không nhãn "Quá hạn …" riêng', () => {
@@ -6437,6 +6438,24 @@ check('[10.6] Lần thứ hai: GVCN gửi đề nghị, lịch KHÔNG đổi tr�
     .get(a.id) as any;
   assert(done.p !== weekBefore.p, 'Duyệt rồi mà lịch không đổi');
   assert(done.n === 2, `Bộ đếm phải là 2, đang là ${done.n}`);
+});
+
+check('PR-DUYET (4) · Dời lần 2 → thẻ Lịch thi hạn = decide_by; từ chối không lý do → 400; hết hạn → thẻ tự đóng cùng lúc huỷ phần thi; myWork(QL) không còn decide_move', () => {
+  const { a, mgr } = absentSkill('speaking', 3);
+  absence.requestAbsenceMove(mgr, a.id, ['speaking'], { reason: 'Lần một' });
+  skillSchedule.setSitStatus(mgr, a.id, 'speaking', 'absent', 'Em lại vắng');
+  const out = absence.requestAbsenceMove(P.admin, a.id, ['speaking'], { reason: 'Vắng hai tuần liền' });
+  const reqId = out.outcomes[0].requestId!;
+  const req = conn.prepare('SELECT decide_by FROM skill_move_requests WHERE id = ?').get(reqId) as any;
+  const the = () => conn.prepare(`SELECT * FROM yeu_cau_duyet WHERE loai = 'lich_thi' AND doi_tuong_id = ?`).get(reqId) as any;
+  assert(the()?.trang_thai === 'cho' && the().han_duyet === req.decide_by && the().ly_do === 'Vắng hai tuần liền', JSON.stringify(the()));
+  assert(!mywork.myWork(mgr).groups.some((g: any) => g.key === 'decide_move'), 'còn nhóm decide_move');
+  assertThrows(() => absence.decideAbsenceMove(mgr, reqId, { approve: false }), /lý do/, 'Từ chối không lý do');
+  assertThrows(() => absence.decideAbsenceMove(mgr, reqId, { approve: false, note: 'ab' }), /lý do/, 'Lý do 2 ký tự');
+  conn.prepare('UPDATE skill_move_requests SET decide_by = ? WHERE id = ?').run(addDays(demoToday(), -1), reqId);
+  absence.sweepExpiredMoves();
+  const sp = conn.prepare(`SELECT sit_status FROM attempt_skills WHERE attempt_id = ? AND skill = 'speaking'`).get(a.id) as any;
+  assert(sp.sit_status === 'cancelled' && the().trang_thai === 'tu_dong' && the().ly_do_dong === 'Hết hạn duyệt — phần thi bị huỷ', JSON.stringify(the()));
 });
 
 check('[10.6] Quản lý từ chối: Fast Track huỷ PHẦN THI, giữ nguyên điểm các phần đã xong', () => {

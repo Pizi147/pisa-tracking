@@ -37,14 +37,14 @@ const tenHocVien = (conn: any, id: number | null) =>
 function nguoiNhanHop(conn: any, chiNhanhId: number | null, chiQuanLy = false): number[] {
   return (conn.prepare(
     `SELECT DISTINCT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id JOIN users u ON u.id = ur.user_id
-      WHERE u.deleted_at IS NULL
+      WHERE u.deleted_at IS NULL AND ur.status = 'active'
         AND ((r.key = 'manager' AND (ur.branch_id IS NULL OR ur.branch_id = ?)) OR (? = 0 AND r.key = 'system_admin'))`,
   ).all(chiNhanhId ?? -1, chiQuanLy ? 1 : 0) as any[]).map((r) => r.id as number);
 }
 function quanTri(conn: any): number[] {
   return (conn.prepare(
     `SELECT DISTINCT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id JOIN users u ON u.id = ur.user_id
-      WHERE u.deleted_at IS NULL AND r.key = 'system_admin'`,
+      WHERE u.deleted_at IS NULL AND ur.status = 'active' AND r.key = 'system_admin'`,
   ).all() as any[]).map((r) => r.id as number);
 }
 
@@ -238,14 +238,15 @@ function theRa(r: any, ngu: NguCanhThe): TheYeuCauDto {
   return {
     id: r.id, loai: r.loai, nhanLoai: meta.nhan, phanLoai: meta.phanLoai, nhanPhanLoai: PHAN_LOAI_LABEL[meta.phanLoai],
     kieuNut: meta.kieuNut, hangLoat: meta.hangLoat,
-    tieuDe: mt.tieuDe, dong: mt.dong, neuDuyet: mt.neuDuyet ?? null,
+    tieuDe: mt.tieuDe, phu: mt.phu ?? null, dong: mt.dong, neuDuyet: mt.neuDuyet ?? null,
     mo: mt.mo ?? (r.hoc_vien_id ? duongHoSoHocVien(r.hoc_vien_id) : null),
     hocVienId: r.hoc_vien_id, hocVien: ngu.hocVien.get(r.hoc_vien_id) ?? null,
     lopId: r.lop_id, lop: ngu.lop.get(r.lop_id) ?? null,
     nguoiXinId: r.nguoi_xin, nguoiXin: r.nguoi_xin == null ? null : ngu.nguoi.get(r.nguoi_xin) ?? null,
     nguoiDuyet: r.nguoi_duyet == null ? null : ngu.nguoi.get(r.nguoi_duyet) ?? null,
     lyDo: r.ly_do, lyDoTuChoi: r.ly_do_tu_choi, traLoi: r.tra_loi, lyDoDong: r.ly_do_dong,
-    hanDuyet: r.han_duyet, trangThai: r.trang_thai, tuDuyet: !!r.tu_duyet, taoLuc: r.tao_luc, xuLyLuc: r.xu_ly_luc, duLieu,
+    hanDuyet: r.han_duyet, trangThai: r.trang_thai, tuDuyet: !!r.tu_duyet, taoLuc: r.tao_luc, xuLyLuc: r.xu_ly_luc,
+    duLieu: mt.duLieu ? { ...(duLieu ?? {}), ...mt.duLieu } : duLieu,
   };
 }
 

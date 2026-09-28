@@ -21,6 +21,7 @@ import { canhBaoTheoHocVien, caseMoTheoHocVien } from './dongHocVien.ts';
 import { demChuaLoTrinh, tiepTheoTheoHocVien } from './loTrinhTiep.ts';
 import { classWarning } from '../yThuc/canhBao.ts';
 import { listCases } from '../cases/cases.ts';
+import { trongBoNho } from '../platform/nguCanhRequest.ts';
 
 /**
  * Màn Học viên lấy LỚP làm gốc.
@@ -116,7 +117,14 @@ function progressMapOf(classIds: number[], programmes: ReturnType<typeof allProg
 }
 
 /** Một truy vấn cho mỗi loại dữ liệu, không hỏi lại theo từng lớp. */
+/*
+ * PR-DUYET (K5-28): sổ đề nghị dời đang chờ (`pendingMove`, gọi ở từng ô lịch) nay nhớ THEO REQUEST. Hai trang đọc nặng dưới
+ * đây tự mở bộ nhớ tạm (`trongBoNho`, như `listCases`) để gọi ngoài request GET (phép kiểm, lệnh ops) vẫn nạp sổ một lần.
+ */
 export function listClassSummaries(p: Principal, f: { branchId?: number; q?: string; scope?: WorkScope } = {}) {
+  return trongBoNho(() => listClassSummariesThat(p, f));
+}
+function listClassSummariesThat(p: Principal, f: { branchId?: number; q?: string; scope?: WorkScope }) {
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   if (scope.none) return { rows: [] as ClassSummary[], scopeEmpty: true };
   const workScope: WorkScope = f.scope ?? defaultWorkScope(p);
@@ -633,6 +641,9 @@ export function classRoster(p: Principal, classId: number, q?: string) {
 
 /** Trang tổng quan một lớp: thông tin lớp, phân công, và những việc cần chú ý. */
 export function classOverview(p: Principal, classId: number) {
+  return trongBoNho(() => classOverviewThat(p, classId));
+}
+function classOverviewThat(p: Principal, classId: number) {
   const conn = db();
   const cls = conn
     .prepare(

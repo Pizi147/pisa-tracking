@@ -556,10 +556,11 @@ PA; GVCN sửa target/lộ trình/lớp qua "Đề xuất sửa".
 - MT / NHAP / MON đã merge lúc bắt đầu? **Chưa** (origin/main = fb51181, #115 kế hoạch).
 - Câu 1 (chủ sản phẩm): **B** (chốt 29/09) — GVCN vẫn tự chuyển lớp; chỉ rút target + lộ trình.
 - Dòng thật lệch kế hoạch: Task 0 grep 7 mốc — đều khớp (lệch ≤ 1 dòng).
-- Trần tốc độ đổi (cũ → mới): Task 3 — `/my-work` +1 câu (quét), `/tong-quan/quan-ly` 62 → 63: vẫn dưới trần cũ, không đổi. Trần mới: `/yeu-cau?hop=cho-duyet` 10 → 20, `/yeu-cau/dem` 10–11 → 20–21, GVCN 403 7 → 17.
+- Trần tốc độ đổi (cũ → mới): Task 3 — `/my-work` +1 câu (quét), `/tong-quan/quan-ly` 62 → 63: vẫn dưới trần cũ, không đổi. Trần mới: `/yeu-cau?hop=cho-duyet` 10 → 20, `/yeu-cau/dem` 10–11 → 20–21, GVCN 403 7 → 17. Task 4 (hộp có thẻ thật, đo lại): `/yeu-cau?hop=cho-duyet` 18 → trần 28, `da-xu-ly` 11 → 21, `cua-toi` 11–15 → 21–25, `/yeu-cau/dem` 11–15 → 21–25. `/my-work` giảm 2–3 câu (bỏ hai khối việc duyệt), `/tong-quan/quan-ly` 63 → 68 (dưới trần cũ), `/classes` +1.
 - `chay-thu:duyet` trên bản sao DB demo:
 - Task 1: nhãn `cycle.edit` = "Sửa target, lộ trình học viên" (bỏ "chuyển lớp" — Câu 1 = B). `sapThe(ds)` bỏ tham số `homNay`: hạn là ngày ISO, so chuỗi đã xếp quá hạn lên đầu.
 - Task 2: bảng mới vào bao đóng xoá học viên (PR-XOA: 30 bảng, 53 cạnh, thông báo `yeu_cau_duyet`) và cột trỏ tài khoản (`nguoi_xin`, `nguoi_duyet` = dấu vết, 70 cột). Phép kiểm PR-Ra so schema bỏ qua `tasks.assignee_name` (thêm ở bước migrate sau).
+- Task 4: sổ đề nghị dời đang chờ (`absence.ts`) nhớ theo request (`nho`) — `listClassSummaries`, `classOverview` tự mở `trongBoNho` (như `listCases`) để phép kiểm N+1 gọi ngoài request vẫn nạp sổ một lần. `lich_thi` có thêm `chet` (đề nghị không còn `pending` — ví dụ modal cũ ở trang lượt thi đã trả lời). Seed gọi `napYeuCauTuNguonCu` ngay ở Task 4 (không đợi Task 11) để hộp demo có thẻ. Bỏ luôn trường `duyet` + nút Duyệt ở dòng việc web (K1-32) vì kiểu dữ liệu đã bỏ ở máy chủ. Phép kiểm "dời lần 2" đặt ở `run.ts` (cạnh helper `absentSkill`).
 - Task 3: thêm chỉ mục `ix_notifications_dedup` (quét quá hạn tra "đã báo chưa" theo `dedup_key`). Giao kèo thêm `nap?` (nạp phần riêng của loại một câu cho cả lô — `moTa` không SQL). Ghi chú khi Duyệt lưu ở `tra_loi`. Hành trình học viên do hàm nguồn của từng loại ghi (không ghi thêm ở lõi — tránh hai dòng). QL tự duyệt → thông báo kind `duyet_tu_duyet` cho Quản trị (đường về hộp).
 
 ## Chủ sản phẩm chốt 29/09 (thay các chỗ lệch trong kế hoạch)

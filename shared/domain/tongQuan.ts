@@ -28,11 +28,11 @@ export type NhomViec = (typeof NHOM_VIEC)[number];
 export const NHOM_VIEC_LABEL: Record<NhomViec, string> = {
   'cham-diem': 'Chấm điểm', 'case-hoc-thuat': 'Case học thuật', 'y-thuc': 'Ý thức & Phối hợp', 'van-hanh': 'Vận hành',
 };
-/** 12 loại việc của `mywork.ts` → 4 nhóm (plan PR-Pa Q12). Ý thức & Phối hợp là nhắc mềm, không phải loại việc. */
+/** 10 loại việc của `mywork.ts` → 4 nhóm (PR-DUYET bỏ `decide`, `decide_move` — thẻ ở hộp Chờ duyệt) (plan PR-Pa Q12). Ý thức & Phối hợp là nhắc mềm, không phải loại việc. */
 const NHOM_CUA_LOAI: Record<string, NhomViec> = {
-  score: 'cham-diem', decide_move: 'cham-diem',
+  score: 'cham-diem',
   verify: 'case-hoc-thuat', cause: 'case-hoc-thuat', no_plan: 'case-hoc-thuat', result: 'case-hoc-thuat',
-  decide: 'case-hoc-thuat', do_plan: 'case-hoc-thuat', no_owner: 'case-hoc-thuat',
+  do_plan: 'case-hoc-thuat', no_owner: 'case-hoc-thuat',
   placement: 'van-hanh', next_step: 'van-hanh', mgmt: 'van-hanh', missing_data: 'van-hanh',
 };
 export function nhomViecCua(loai: string): NhomViec { return NHOM_CUA_LOAI[loai] ?? 'van-hanh'; }

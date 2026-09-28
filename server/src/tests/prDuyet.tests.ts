@@ -164,4 +164,73 @@ export async function runPrDuyetTests(t: YThucTestKit) {
     conn.prepare('DELETE FROM yeu_cau_duyet WHERE loai = ?').run(GIA);
     delete (d.LOAI_YC_META as any)[GIA];
   }
+
+  // ---------------------------------------------------------------- khối 4: Đề xuất PA vào hộp (T43)
+  const casesSvc: any = await import('../cases/cases.ts');
+  const myworkSvc: any = await import('../worklist/mywork.ts');
+  const { closeCasesBySystem } = await import('../cases/systemClose.ts');
+  let hvSeq = 0;
+  /** Em MỚI chỉ học MB FT 101 + một Case Listening do GV Listening mở — không đụng dữ liệu demo các phép kiểm khác đang đọc. */
+  const hvMoi = () => {
+    hvSeq += 1;
+    const tag = `DUYET-${hvSeq}`;
+    const now = new Date().toISOString();
+    const sid = Number(conn.prepare(`INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at)
+      VALUES (?,?,?, (SELECT branch_id FROM classes WHERE id = ?), 'active', ?)`).run(`PISA-${tag}`, `Học viên ${tag}`, `hoc vien ${tag.toLowerCase()}`, mb, now).lastInsertRowid);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', '2026-07-27', ?)`).run(sid, mb, now);
+    conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, started_at, status, created_at) VALUES (?, 1, 'LT1', '2026-07-27', 'active', ?)`).run(sid, now);
+    const c = casesSvc.reportIssue(P.lrTeacher, { studentId: sid, topic: 'listening', title: `Case thử ${tag}`,
+      summary: 'Case dựng riêng cho phép kiểm hộp Chờ duyệt.', primaryCode: d.issuesForTopic('listening')[0].code, idempotencyKey: `duyet-${tag}` }) as any;
+    return { sid, caseId: c.id as number };
+  };
+  const deXuat = (caseId: number, moTa = 'Tutor 1-1 hai buổi mỗi tuần') => {
+    const r = casesSvc.recordIntervention(P.lrTeacher, caseId, { kind: 'tutor', description: moTa, status: 'planned', needsApproval: true }) as any;
+    return r.interventions[r.interventions.length - 1].id as number;
+  };
+  const theCua = (loai: string, doiTuongId: number) =>
+    conn.prepare('SELECT * FROM yeu_cau_duyet WHERE loai = ? AND doi_tuong_id = ? ORDER BY id DESC LIMIT 1').get(loai, doiTuongId) as any;
+
+  check('DUYET (4) · GV đề xuất PA cần duyệt → MỘT thẻ Đề xuất PA hạn = approval_due; myWork(QL) không còn nhóm decide', () => {
+    const { caseId } = hvMoi();
+    const ivId = deXuat(caseId);
+    const iv = conn.prepare('SELECT approval_due FROM case_interventions WHERE id = ?').get(ivId) as any;
+    const the = theCua('de_xuat_pa', ivId);
+    assert(the && the.trang_thai === 'cho' && the.han_duyet === iv.approval_due && the.nguoi_xin === P.lrTeacher.userId && the.lop_id === mb,
+      JSON.stringify(the));
+    assert((conn.prepare(`SELECT COUNT(*) n FROM yeu_cau_duyet WHERE loai = 'de_xuat_pa' AND doi_tuong_id = ?`).get(ivId) as any).n === 1, 'thẻ đôi');
+    assert(!(myworkSvc.myWork(P.mbManager, {}).groups as any[]).some((g) => g.key === 'decide' || g.key === 'decide_move'), 'còn nhóm việc duyệt');
+    const tren = yc.hopChoDuyet(P.mbManager).the.find((x: any) => x.id === the.id);
+    assert(tren && tren.tieuDe.startsWith('Đề xuất PA · Listening') && tren.dong[0].includes('Tutor 1-1') && tren.neuDuyet?.includes('hết T2')
+      && tren.mo?.includes(`case=${caseId}`), JSON.stringify(tren));
+    assert(!conn.prepare(`SELECT 1 FROM notifications WHERE kind IN ('approval', 'case') AND entity_type = 'sos_case' AND entity_id = ?`).get(caseId),
+      'còn thông báo kiểu cũ (approval/plan/report)');
+  });
+  check('DUYET (4) · QL Duyệt ở hộp → PA Đang làm, hạn ghi kết quả Thứ Hai, thẻ duyet, GV nhận duyet_ket_qua', () => {
+    const { caseId } = hvMoi();
+    const ivId = deXuat(caseId);
+    const the = theCua('de_xuat_pa', ivId);
+    yc.duyetYeuCau(P.mbManager, the.id, { ghiChu: 'Đồng ý' });
+    const iv = conn.prepare('SELECT status, approval_state, action_due FROM case_interventions WHERE id = ?').get(ivId) as any;
+    assert(iv.status === 'started' && iv.approval_state === 'approved' && iv.action_due === d.weeklyUpdateDue(TODAY), JSON.stringify(iv));
+    assert(theCua('de_xuat_pa', ivId).trang_thai === 'duyet', 'thẻ chưa chốt');
+    assert(!!conn.prepare(`SELECT 1 FROM notifications WHERE user_id = ? AND kind = 'duyet_ket_qua' AND entity_id = ?`).get(P.lrTeacher.userId, the.id), 'GV không nhận kết quả');
+  });
+  check('DUYET (4) · gọi thẳng respondToPlan (đường cũ) cũng chốt thẻ; từ chối ở hộp → PA huỷ, lý do ở thẻ', () => {
+    const a = hvMoi(); const ivA = deXuat(a.caseId);
+    casesSvc.respondToPlan(P.mbManager, ivA, { decision: 'declined', note: 'Chưa cần tutor' });
+    const theA = theCua('de_xuat_pa', ivA);
+    assert(theA.trang_thai === 'tu_choi' && theA.ly_do_tu_choi === 'Chưa cần tutor', JSON.stringify(theA));
+    const b = hvMoi(); const ivB = deXuat(b.caseId);
+    yc.tuChoiYeuCau(P.mbManager, theCua('de_xuat_pa', ivB).id, 'Thử cách khác trước');
+    const iv = conn.prepare('SELECT status, approval_state FROM case_interventions WHERE id = ?').get(ivB) as any;
+    assert(iv.status === 'cancelled' && iv.approval_state === 'declined', JSON.stringify(iv));
+  });
+  check('DUYET (4) · Case đóng bởi hệ thống (FT → lớp thường, D15) → lần mở hộp sau thẻ tự đóng', () => {
+    const { sid, caseId } = hvMoi();
+    const ivId = deXuat(caseId);
+    closeCasesBySystem({ actorUserId: null, studentId: sid, reason: 'course_ended', on: TODAY });
+    yc.hopChoDuyet(P.mbManager);
+    const the = theCua('de_xuat_pa', ivId);
+    assert(the.trang_thai === 'tu_dong' && /Case đã đóng/.test(the.ly_do_dong), JSON.stringify(the));
+  });
 }
