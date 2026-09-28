@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, CONFIRM_EDIT_REASON, academicSupportFor, reasonNeedsText, sosPlanEndDate, weeklyUpdateDue,
+  CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, CONFIRM_EDIT_REASON, academicSupportFor, ngay, reasonNeedsText, sosPlanEndDate, weeklyUpdateDue,
   type AcademicSupportPreset, type CaseDismissReason,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -150,7 +150,7 @@ export function announceAutoCase(input: {
     notify({
       userId: input.ownerUserId, kind: 'sos',
       title: `Case mới từ SOS: ${input.skillLabel} — ${st?.full_name ?? ''}`,
-      body: `Xác định nguyên nhân (PA theo quy chế đã tự chạy). Hạn ${input.verifyDue}.`,
+      body: `Xác định nguyên nhân (PA theo quy chế đã tự chạy). Hạn ${ngay(input.verifyDue, demoToday())}.`,
       entityType: 'sos_case', entityId: input.caseId, dedupKey: `sos-case:${input.caseId}`,
     });
   }

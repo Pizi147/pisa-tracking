@@ -134,7 +134,7 @@ export default function WelcomePage() {
         <div className="flex items-center gap-3 mb-1">
           <div className="w-9 h-9 rounded-lg bg-sky-300/12 border border-sky-300/40 grid place-items-center text-sky-200 font-bold">P</div>
           <div>
-            <h1 className="text-xl font-semibold text-slate-100">PISA Progress</h1>
+            <h1 className="text-xl font-semibold text-slate-100">Pisa Tracking</h1>
             <div className="text-xs text-slate-500">{LA_BAN_CHINH ? 'Hệ thống quản lý học vụ và vận hành' : 'Hệ thống quản lý học vụ và vận hành — bản demo chạy local'}</div>
           </div>
           {!LA_BAN_CHINH && <div className="ml-auto"><Alert tone="warn">Dữ liệu demo</Alert></div>}
@@ -340,9 +340,8 @@ function DemoAccounts({ accounts, loading }: { accounts: Account[]; loading: boo
   return (
     <div>
       <p className="text-sm text-slate-400 mb-4 leading-relaxed">
-        Bấm một tài khoản để vào ngay, không cần mật khẩu. Bốn nhóm: <strong>Quản trị hệ thống</strong> (quản
-        phần mềm), <strong>Admin chi nhánh</strong> (nhân sự văn phòng), <strong>Quản lý</strong> (điều hành
-        chuyên môn) và <strong>Giáo viên</strong>. Mỗi tài khoản có phạm vi khác nhau, để thử cùng một màn hình
+        Bấm một tài khoản để vào ngay, không cần mật khẩu. Ba nhóm: <strong>Quản trị hệ thống</strong> (quản
+        phần mềm), <strong>Quản lý</strong> (điều hành chuyên môn) và <strong>Giáo viên</strong>. Mỗi tài khoản có phạm vi khác nhau, để thử cùng một màn hình
         dưới nhiều góc nhìn. Toàn bộ dữ liệu trong bản demo là dữ liệu giả.
       </p>
       {loading && <div className="text-slate-400">Đang tải danh sách tài khoản…</div>}

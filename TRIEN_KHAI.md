@@ -1,4 +1,4 @@
-# Đưa bản chính lên mạng — hướng dẫn từng bước
+# Pisa Tracking — đưa bản chính lên mạng, hướng dẫn từng bước
 
 Viết 21/09/2026 cho chủ sản phẩm — **không cần biết code**. Làm đúng thứ tự, mỗi bước chỉ làm một việc.
 Kế hoạch kỹ thuật phía sau: `docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md`.

@@ -79,7 +79,7 @@ export function XoaTaiKhoanPanel({ userId, onClose, onDone }: { userId: number; 
             </Khoi>
             {!d.chan && (
               <Khoi tieuDe="Xác nhận">
-                <p className="m-0 text-xs text-slate-400">Nên sao lưu trước lần xoá đầu (npm run sao-luu)</p>
+                <p className="m-0 text-xs text-slate-400">Nên sao lưu dữ liệu trước lần xoá đầu.</p>
                 <Truong nhan="Gõ lại email" batBuoc phu={d.email ? `Email: ${d.email}` : undefined} loi={lf.loiCua(loi, 'go-lai')}>
                   <input className="field w-full" {...lf.o(loi, 'go-lai')} value={go} onChange={(e) => setGo(e.target.value)} autoComplete="off" spellCheck={false} />
                 </Truong>

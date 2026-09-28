@@ -50,3 +50,4 @@ export * from './quanLyHocVien.ts';
 export * from './loiForm.ts';
 export * from './viPhamLop.ts';
 export * from './hoanTac.ts';
+export * from './nhatKy.ts';

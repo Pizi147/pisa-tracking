@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   ENTRY_SKILL_LABEL, PERMISSIONS, REGULAR_SKILL_LABEL, SIGNAL_DISMISS_NOTE, SIGNAL_STATUS_LABEL,
-  SIGNAL_WITHDRAW_SCORE_FIXED, signalVerifyDue,
+  SIGNAL_WITHDRAW_SCORE_FIXED, ngay, signalVerifyDue,
   type CaseCategory, type EntrySkill, type SignalStatus,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -137,7 +137,7 @@ export function raiseSignal(input: {
     notify({
       userId: owner, kind: 'sos',
       title: `Cần xác minh: ${labelOf(row)} — ${st?.full_name ?? ''}`,
-      body: `Hạn ${row.verify_due}. Tín hiệu từ điểm, chưa phải case.`,
+      body: `Hạn ${ngay(row.verify_due, demoToday())}. Tín hiệu từ điểm, chưa phải case.`,
       entityType: 'case_signal', entityId: row.id,
       dedupKey: `signal:${row.id}`,
     });

@@ -286,6 +286,23 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     assert(/toast\.hoanTac\(/.test(src) && !/ms: 10000/.test(src), 'Ghi vi phạm chưa dùng Hoàn tác chung');
   });
 
+  // ==================================================================== 11. Tên Pisa Tracking, chữ máy lọt ra màn hình (YC-6, A7)
+  check('N1 (11) · YC-6 + A7: không còn "PISA Progress", "npm", "COUNT DISTINCT", ngày ISO trong thông báo; nhật ký có nhãn tiếng Việt', () => {
+    const hien = [...tepTsx('web/src'), 'index.html', 'shared/domain/metrics.ts'];
+    const tenCu = hien.filter((f) => /PISA Progress/.test(docSach(f)));
+    assert(tenCu.length === 0, `còn tên cũ: ${tenCu.join(', ')}`);
+    /* Hướng dẫn chạy bản demo trên máy (trang thử dev/, thanh demo, trang chào khi demo chưa có dữ liệu) được nói lệnh npm. */
+    const demo = /modules[\\/]dev[\\/]|DemoBar\.tsx|WelcomePage\.tsx/;
+    const chuMay = hien.filter((f) => !demo.test(f) && /npm run|COUNT DISTINCT/.test(docSach(f)));
+    assert(chuMay.length === 0, `chữ máy: ${chuMay.join(', ')}`);
+    assert(!/Hạn \$\{(input\.verifyDue|row\.verify_due)\}/.test(docSach('server/src/cases/sosAuto.ts') + docSach('server/src/cases/signals.ts')), 'ngày ISO trong thông báo');
+    const ma = new Set<string>();
+    for (const f of tepTs('server/src')) for (const m of docSach(f).matchAll(/\baction\s*:\s*'([a-z_]+\.[a-z_.]+)'/g)) ma.add(m[1]);
+    const thieuNhan = [...ma].filter((a) => d.nhanHanhDongNhatKy(a) === 'Thao tác hệ thống');
+    assert(ma.size > 0 && thieuNhan.length === 0, `thiếu nhãn: ${thieuNhan.join(', ')}`);
+    assert(d.nhanHanhDongNhatKy('attempt.cancel_part') === 'Huỷ phần còn lại của lượt' && d.nhanHanhDongNhatKy('x.y') === 'Thao tác hệ thống', 'nhãn');
+  });
+
   // ==================================================================== 8. Học viên & Lớp + tab Ý thức lớp
   check('N1 (8) · T17: không lọc → không mở lớp nào; đang lọc → tối đa 5 lớp có kết quả', () => {
     assert(d.lopMoSan({ thamSoOpen: null, lopHien: [1, 2, 3], dangLoc: false }).length === 0, 'tự mở lớp');

@@ -6,6 +6,7 @@ import { api } from '../../lib/api.ts';
 import { AccountsAdmin } from './AccountsAdmin.tsx';
 import { CatalogAdmin } from './CatalogAdmin.tsx';
 import { fmtDateTime, roleLabel } from '../../lib/format.ts';
+import { nhanHanhDongNhatKy } from '@shared/domain/index.ts';
 
 type AdminData = {
   roles: { id: number; key: string; name: string }[];
@@ -42,8 +43,7 @@ export default function AdminPage() {
       <div>
         <h1 className="text-lg font-semibold text-slate-100">Quản trị hệ thống</h1>
         <p className="text-xs text-slate-500 mt-0.5">
-          Tài khoản, danh mục và cấu hình quyền. Đây là quản trị <strong>phần mềm</strong> — khác với
-          Admin chi nhánh là nhân sự văn phòng.
+          Tài khoản, danh mục và cấu hình quyền của phần mềm.
         </p>
       </div>
 
@@ -144,7 +144,7 @@ function ConfigTab({ data, onDone }: { data: AdminData; onDone: () => void }) {
           <ul className="divide-y list-none p-0 m-0 max-h-96 overflow-y-auto" style={{ borderColor: 'var(--line)' }}>
             {data.audit.map((a) => (
               <li key={a.id} className="px-4 py-2 text-xs">
-                <span className="text-slate-200">{a.action}</span>
+                <span className="text-slate-200" title={a.action}>{nhanHanhDongNhatKy(a.action)}</span>
                 <span className="text-slate-500"> · {a.entityLabel ?? a.entityType}</span>
                 <div className="text-slate-500">{a.actorName ?? '—'} · {fmtDateTime(a.createdAt)}</div>
               </li>

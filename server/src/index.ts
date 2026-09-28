@@ -18,5 +18,5 @@ if (!isInitialised()) {
 }
 
 app.listen(PORT, () => {
-  console.log(`[api] PISA Progress demo API đang chạy tại http://localhost:${PORT}`);
+  console.log(`[api] Pisa Tracking — API đang chạy tại http://localhost:${PORT}`);
 });
