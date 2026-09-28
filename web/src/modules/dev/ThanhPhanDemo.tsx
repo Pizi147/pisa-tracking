@@ -1,6 +1,8 @@
 import { useState, type ReactNode } from 'react';
-import { Card, Empty, ErrorState, Forbidden, Skeleton } from '../../ui/ui.tsx';
-import { Drawer, Modal } from '../../ui/Drawer.tsx';
+import { BoLocDoan, Card, Empty, ErrorState, Forbidden, NhanTrangThai, NutChon, Skeleton } from '../../ui/ui.tsx';
+import { Modal } from '../../ui/Drawer.tsx';
+import { ONgay } from '../../ui/ONgay.tsx';
+import { OKhac } from '../../ui/OKhac.tsx';
 import { WeekPicker } from '../../ui/Filters.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { Nhan, QuaHan, type ToneNhan } from '../../ui/Nhan.tsx';
@@ -10,7 +12,7 @@ import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
 import { TyLe } from '../../ui/TyLe.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { addDaysStr } from '../../lib/format.ts';
-import { DEADLINE_KINDS } from '@shared/domain/index.ts';
+import { DEADLINE_KINDS, KIEU_O_NGAY, TRANG_THAI, type KieuONgay } from '@shared/domain/index.ts';
 
 /**
  * TRANG THỬ THÀNH PHẦN DÙNG CHUNG — chỉ có khi chạy `npm run dev` (PR-E Step 9, đóng DS18).
@@ -78,6 +80,10 @@ export default function ThanhPhanDemo() {
   const [p3, setP3] = useState<number | null>(null);
   const [p4, setP4] = useState<number | null>(null);
   const [drawer, setDrawer] = useState(false);
+  const [ngay, setNgay] = useState<Record<KieuONgay, string | null>>({ ngay: null, tuan: null, thang: null, 'ngay-hoac-thang': null });
+  const [lyDo, setLyDo] = useState<'muon' | 'vang' | 'khac'>('muon');
+  const [ghiRo, setGhiRo] = useState('');
+  const [loc, setLoc] = useState<'tat-ca' | 'mo' | 'dong'>('tat-ca');
   const [modal, setModal] = useState(false);
   const [panel, setPanel] = useState<'dong' | 'hep' | 'rong' | 'hai'>('dong');
   const [moNhom, setMoNhom] = useState<Record<string, boolean>>({ a: true, b: false });
@@ -253,23 +259,58 @@ export default function ThanhPhanDemo() {
           <Cell title="Cho bỏ trống (clearable) — chưa chọn thì ghi 'Chưa xác định'">
             <div style={{ maxWidth: 600 }}><WeekPicker periodId={p3} onPeriod={setP3} label="Tuần dự kiến thi" scope="planning" clearable /></div>
           </Cell>
-          <Cell title="Trong ngăn kéo và hộp thoại — popover phải nổi lên trên, không bị cắt">
+          <Cell title="Trong panel và hộp thoại — popover phải nổi lên trên, không bị cắt">
             <div className="flex gap-2">
-              <button type="button" className="btn" onClick={() => setDrawer(true)}>Mở trong ngăn kéo</button>
+              <button type="button" className="btn" onClick={() => setDrawer(true)}>Mở trong panel</button>
               <button type="button" className="btn" onClick={() => setModal(true)}>Mở trong hộp thoại</button>
             </div>
           </Cell>
         </div>
       </Card>
 
-      <Drawer open={drawer} onClose={() => setDrawer(false)} title="Bộ chọn tuần trong ngăn kéo">
-        <WeekPicker periodId={p4} onPeriod={setP4} label="Tuần" scope="planning" />
-        <p className="text-xs text-slate-500 mt-3">Bấm vào trường tuần: lịch phải hiện đủ, kể cả khi ngăn kéo cuộn hoặc hẹp.</p>
-      </Drawer>
+      {drawer && (
+        <KhungPanel tieuDe="Bộ chọn tuần trong panel" onDong={() => setDrawer(false)}>
+          <div className="pt-3">
+            <WeekPicker periodId={p4} onPeriod={setP4} label="Tuần" scope="planning" />
+            <p className="text-xs text-slate-500 mt-3">Bấm vào trường tuần: lịch phải hiện đủ, kể cả khi panel cuộn hoặc hẹp.</p>
+          </div>
+        </KhungPanel>
+      )}
       <Modal open={modal} onClose={() => setModal(false)} title="Bộ chọn tuần trong hộp thoại" width="max-w-md">
         <WeekPicker periodId={p4} onPeriod={setP4} label="Tuần" scope="planning" />
         <p className="text-xs text-slate-500 mt-3">Nhấn Esc khi lịch đang mở: chỉ lịch đóng, hộp thoại vẫn còn.</p>
       </Modal>
+
+      {/* ------------------------------------------------------------ PR-NEN: ô ngày · Khác · đang chọn · bộ lọc · 6 nhãn */}
+      <Card title="Ô ngày · Khác · đang chọn · bộ lọc · nhãn trạng thái">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Cell title="ONgay — bốn kiểu (gõ dd/mm/yyyy hoặc bấm lịch)">
+            {KIEU_O_NGAY.map((k) => (
+              <label key={k} className="block">
+                <span className="mb-1 block text-[11.5px] font-bold text-slate-200">{{ ngay: 'Ngày', tuan: 'Tuần', thang: 'Tháng', 'ngay-hoac-thang': 'Ngày hoặc tháng' }[k]}</span>
+                <ONgay kieu={k} value={ngay[k]} onChange={(iso) => setNgay((s2) => ({ ...s2, [k]: iso }))} />
+              </label>
+            ))}
+          </Cell>
+          <Cell title="NutChon + OKhac — chọn Khác thì hiện Ghi rõ (≥ 3 ký tự)">
+            <div className="flex flex-wrap gap-1.5">
+              {([['muon', 'Đi muộn'], ['vang', 'Vắng không phép'], ['khac', 'Khác']] as const).map(([k, t]) => (
+                <NutChon key={k} chon={lyDo === k} onClick={() => setLyDo(k)}>{t}</NutChon>
+              ))}
+            </div>
+            <OKhac hien={lyDo === 'khac'} value={ghiRo} onChange={setGhiRo} />
+          </Cell>
+          <Cell title="BoLocDoan — một kiểu cho mọi bộ lọc">
+            <BoLocDoan ariaLabel="Lọc mẫu" value={loc} onChange={setLoc}
+              muc={[{ key: 'tat-ca', nhan: 'Tất cả', so: 12 }, { key: 'mo', nhan: 'Đang mở', so: 5 }, { key: 'dong', nhan: 'Đã đóng', so: 7 }]} />
+          </Cell>
+          <Cell title="NhanTrangThai — sáu nhãn">
+            <div className="flex flex-wrap gap-1.5">
+              {TRANG_THAI.map((t) => <NhanTrangThai key={t} t={t} soNgay={t === 'qua-han' ? 3 : null} />)}
+            </div>
+          </Cell>
+        </div>
+      </Card>
 
       {/* ------------------------------------------------------------ trạng thái chuẩn */}
       <Card title="Bốn trạng thái dữ liệu chuẩn (bắt buộc cho mọi khối đọc dữ liệu)">

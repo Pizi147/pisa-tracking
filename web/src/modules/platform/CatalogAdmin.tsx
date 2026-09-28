@@ -3,7 +3,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Card, Field, Forbidden, Info, NutChon, SectionNote, Skeleton, Th} from '../../ui/ui.tsx';
-import { Drawer } from '../../ui/Drawer.tsx';
+import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { skillLabel } from '../../lib/format.ts';
 import { ENTRY_SKILLS, REGULAR_SKILLS } from '@shared/domain/index.ts';
 
@@ -154,15 +154,12 @@ function RouteDialog({ row, onClose, onDone }: {
   };
 
   return (
-    <Drawer open onClose={onClose} width="max-w-lg"
-      title={row ? `Sửa lộ trình ${row.code}` : 'Thêm lộ trình'}
-      footer={
-        <>
-          <button className="btn" onClick={onClose} disabled={busy}>Huỷ</button>
-          <button className="btn btn-primary" onClick={save} disabled={busy || !f.code || !f.name}>Lưu</button>
-        </>
-      }>
-      <div className="space-y-4">
+    <KhungPanel tieuDe={row ? `Sửa lộ trình ${row.code}` : 'Thêm lộ trình'} onDong={onClose}
+      chan={{
+        huy: { nhan: 'Huỷ', onClick: onClose, disabled: busy },
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={save} disabled={busy || !f.code || !f.name}>Lưu</button>,
+      }}>
+      <div className="space-y-4 pt-3">
         <Field label="Mã lộ trình" required hint="Chữ in hoa, số và gạch ngang. Ví dụ LT1, LT2, IELTS-CAP.">
           <input className="field w-full" value={f.code} disabled={!!row}
             onChange={(e) => setF({ ...f, code: e.target.value.toUpperCase() })} />
@@ -184,7 +181,7 @@ function RouteDialog({ row, onClose, onDone }: {
           </SectionNote>
         )}
       </div>
-    </Drawer>
+    </KhungPanel>
   );
 }
 
@@ -222,15 +219,12 @@ function ProgrammeDialog({ row, onClose, onDone }: {
   };
 
   return (
-    <Drawer open onClose={onClose} width="max-w-lg"
-      title={row ? `Sửa loại lớp ${row.code}` : 'Thêm loại lớp'}
-      footer={
-        <>
-          <button className="btn" onClick={onClose} disabled={busy}>Huỷ</button>
-          <button className="btn btn-primary" onClick={save} disabled={busy || !f.code || !f.name}>Lưu</button>
-        </>
-      }>
-      <div className="space-y-4">
+    <KhungPanel tieuDe={row ? `Sửa loại lớp ${row.code}` : 'Thêm loại lớp'} onDong={onClose}
+      chan={{
+        huy: { nhan: 'Huỷ', onClick: onClose, disabled: busy },
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={save} disabled={busy || !f.code || !f.name}>Lưu</button>,
+      }}>
+      <div className="space-y-4 pt-3">
         <Field label="Mã loại lớp" required hint="Chữ in hoa, số và gạch ngang. Ví dụ FOU, BE, ELE, PRE-IELTS.">
           <input className="field w-full" value={f.code} disabled={!!row}
             onChange={(e) => setF({ ...f, code: e.target.value.toUpperCase() })} />
@@ -293,6 +287,6 @@ function ProgrammeDialog({ row, onClose, onDone }: {
           </SectionNote>
         )}
       </div>
-    </Drawer>
+    </KhungPanel>
   );
 }

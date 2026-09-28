@@ -1,13 +1,13 @@
 import { useState, type ReactNode } from 'react';
 import { useApi } from '../../lib/useApi.ts';
-import { Drawer } from '../../ui/Drawer.tsx';
+import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { SoLieuO } from '../../ui/SoLieuO.tsx';
 import { DongDanhSach, type DongSoLieu } from '../../ui/SoLieu.tsx';
 import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { KHOANG_MAC_DINH, type ChuongTrinh, type Khoang } from '@shared/domain/index.ts';
 
 /**
- * `SoLieuO` trong ô bảng căn phải: ngăn danh sách (Drawer) nằm ngay dưới ô nên thừa hưởng `text-align: right` — bọc `text-left` để chữ trong
+ * `SoLieuO` trong ô bảng căn phải: ngăn danh sách (KhungPanel) nằm ngay dưới ô nên thừa hưởng `text-align: right` — bọc `text-left` để chữ trong
  * ngăn căn trái như mọi ngăn khác.
  */
 export function SoO(props: Parameters<typeof SoLieuO>[0]) {
@@ -47,12 +47,16 @@ export function NutMoDanhSach({ nguon, tieuDe, children, className = '' }: { ngu
         className={`appearance-none bg-transparent border-0 p-0 cursor-pointer underline decoration-dotted underline-offset-4 hover:text-white ${className}`}>
         {children}
       </button>
-      <Drawer open={mo} onClose={() => setMo(false)} title={data?.tieuDe ?? tieuDe} subtitle="Đúng những mục tạo nên con số vừa bấm">
-        {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
-          : loading || !data ? <Skeleton rows={5} />
-          : !data.rows.length ? <Empty title="Không có mục nào" />
-          : <DongDanhSach rows={data.rows} onPick={() => setMo(false)} />}
-      </Drawer>
+      {mo && (
+        <KhungPanel tieuDe={data?.tieuDe ?? tieuDe} onDong={() => setMo(false)} ngCanh="Đúng những mục tạo nên con số vừa bấm">
+          <div className="pt-3">
+            {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
+              : loading || !data ? <Skeleton rows={5} />
+              : !data.rows.length ? <Empty title="Không có mục nào" />
+              : <DongDanhSach rows={data.rows} onPick={() => setMo(false)} />}
+          </div>
+        </KhungPanel>
+      )}
     </>
   );
 }

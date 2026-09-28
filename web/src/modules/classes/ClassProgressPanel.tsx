@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
-import { Drawer } from '../../ui/Drawer.tsx';
+import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { WeekPicker } from '../../ui/Filters.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { Field, SectionNote, Skeleton, Status } from '../../ui/ui.tsx';
@@ -70,19 +70,13 @@ export function ClassProgressPanel({ classId, classCode, tieuDe, onClose, onDone
   const laLopThuong = !!data?.totalWeeks;
 
   return (
-    <Drawer
-      open onClose={onClose} width="max-w-xl"
-      title={tieuDe}
-      subtitle={classCode}
-      footer={
-        <>
-          <button className="btn" onClick={onClose} disabled={busy}>Đóng</button>
-          <button className="btn btn-primary" onClick={save} disabled={busy}>Lưu</button>
-        </>
-      }
-    >
-      {loading || !data ? <Skeleton rows={5} /> : (
-        <div className="space-y-4">
+    <KhungPanel tieuDe={tieuDe} lop={classCode} onDong={onClose}
+      chan={{
+        huy: { nhan: 'Đóng', onClick: onClose, disabled: busy },
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={save} disabled={busy}>Lưu</button>,
+      }}>
+      {loading || !data ? <div className="pt-3"><Skeleton rows={5} /></div> : (
+        <div className="space-y-4 pt-3">
           <div className="rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>
             <p className="text-sm text-slate-100 m-0">{data.label ?? 'Chưa tính được tiến độ'}</p>
             {data.startWeekStart && (
@@ -159,6 +153,6 @@ export function ClassProgressPanel({ classId, classCode, tieuDe, onClose, onDone
           )}
         </div>
       )}
-    </Drawer>
+    </KhungPanel>
   );
 }

@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { useGiuFocus } from './giuFocus.ts';
 
+/** @deprecated Dùng `KhungPanel` (UX-E E1: một khung panel). Chỉ còn TransitionPanel, ClassCreatePanel chờ PR-LOP — Task 11 xoá hàm này. */
 export function Drawer({ open, onClose, title, subtitle, children, footer, width = 'max-w-2xl' }: {
   open: boolean; onClose: () => void; title: ReactNode; subtitle?: ReactNode;
   children: ReactNode; footer?: ReactNode; width?: string;

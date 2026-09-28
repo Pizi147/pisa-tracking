@@ -16,15 +16,18 @@ export const khoPanelChung = taoKhoPanel();
  * chồng panel (`khoPanelChung`). Không chữ dev; chữ mẫu bắt đầu "Ví dụ:".
  */
 export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, quayLai, chan, onDong, children }: {
-  tieuDe: string; hocVien?: string | null; lop?: string | null; rong?: 'hep' | 'rong';
+  tieuDe: string; hocVien?: string | null; lop?: string | null;
+  /** `toan`: lưới nhập hàng loạt nhiều cột (Thêm học viên) — rộng theo màn tới 1440px, không ép 10 cột vào ngăn hẹp. */
+  rong?: 'hep' | 'rong' | 'toan';
   tabs?: ReactNode; ngCanh?: ReactNode; quayLai?: { nhan: string; onClick: () => void };
   chan?: {
-    huy?: { nhan?: string; onClick: () => void }; xoa?: { onClick: () => void; nhan?: string };
+    huy?: { nhan?: string; onClick: () => void; disabled?: boolean }; xoa?: { onClick: () => void; nhan?: string };
     phu?: ReactNode; chinh?: ReactNode; conThieu?: (string | MucThieu)[];
   };
   onDong: () => void; children: ReactNode;
 }) {
   const id = useId();
+  const khung = useRef<HTMLDivElement>(null);
   const dongRef = useRef(onDong);
   dongRef.current = onDong;
 
@@ -40,22 +43,24 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
   }, []);
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !e.defaultPrevented) dongRef.current(); };
+    /* Esc chỉ đóng lớp TRÊN CÙNG: `Modal` mở chồng trong panel (không portal) tự đóng bằng Esc — panel đứng yên. */
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !e.defaultPrevented && !khung.current?.querySelector('[aria-modal="true"]')) dongRef.current();
+    };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
   const ngu = [hocVien, lop].filter(Boolean).join(' · ');
   const huy = chan?.huy ?? { onClick: onDong };
-  const khung = useRef<HTMLDivElement>(null);
   useGiuFocus(khung);
   return (
     <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label={tieuDe}>
       <div className="absolute inset-0 bg-black/60" onClick={onDong} />
-      <div ref={khung} tabIndex={-1} className={`relative flex h-full w-full flex-col border-l shadow-2xl outline-none ${rong === 'rong' ? 'sm:w-[720px]' : 'sm:w-[560px]'}`}
+      <div ref={khung} tabIndex={-1} className={`relative flex h-full w-full flex-col border-l shadow-2xl outline-none ${rong === 'toan' ? 'max-w-[1440px]' : rong === 'rong' ? 'sm:w-[720px]' : 'sm:w-[560px]'}`}
         style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
         <header className="flex h-[52px] shrink-0 items-center gap-2 border-b px-4" style={{ borderColor: 'var(--line)' }}>
-          <h2 className="m-0 whitespace-nowrap text-sm font-extrabold text-slate-100">{tieuDe}</h2>
+          <h2 className="m-0 min-w-0 truncate text-sm font-extrabold text-slate-100" title={tieuDe}>{tieuDe}</h2>
           {ngu && <span className="min-w-0 flex-1 truncate text-xs text-slate-400" title={ngu}>{ngu}</span>}
           {!ngu && <span className="flex-1" />}
           <button type="button" className="btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-[32px] sm:min-w-[32px]" onClick={onDong} aria-label="Đóng">✕</button>
@@ -72,7 +77,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
           <footer className="shrink-0 border-t" style={{ borderColor: 'var(--line)' }}>
             {chan.conThieu?.length ? <DongCanSua muc={chan.conThieu} /> : null}
             <div className="flex items-center gap-2 px-4 py-2.5">
-              <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={huy.onClick}>{huy.nhan ?? 'Huỷ'}</button>
+              <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={huy.onClick} disabled={huy.disabled}>{huy.nhan ?? 'Huỷ'}</button>
               {chan.xoa && <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" onClick={chan.xoa.onClick}>{chan.xoa.nhan ?? 'Xoá'}</button>}
               <span className="flex-1" />
               {chan.phu}

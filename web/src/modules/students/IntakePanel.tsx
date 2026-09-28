@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Drawer } from '../../ui/Drawer.tsx';
+import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { Outcome, SectionNote, Th} from '../../ui/ui.tsx';
 import { ngay } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -176,23 +176,18 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
   }, [pv, skipRows]);
 
   return (
-    <Drawer
-      open
-      onClose={onClose}
-      width="max-w-[1440px]"
-      title={cls ? `Thêm học viên vào ${cls.code}` : 'Thêm học viên'}
-      subtitle="Chọn lớp, rồi dán từ Excel/Google Sheets hoặc gõ thẳng vào lưới"
-      footer={
-        <>
-          <button className="btn" onClick={onClose} disabled={busy}>Đóng</button>
-          <button className="btn btn-primary" onClick={commit}
+    <KhungPanel tieuDe="Thêm học viên" lop={cls?.code} rong="toan" onDong={onClose}
+      ngCanh="Chọn lớp, rồi dán từ Excel/Google Sheets hoặc gõ thẳng vào lưới"
+      chan={{
+        huy: { nhan: 'Đóng', onClick: onClose, disabled: busy },
+        chinh: (
+          <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={commit}
             disabled={busy || !classId || willAdd === 0 || blocking > 0}>
             {busy ? 'Đang lưu…' : willAdd > 0 ? `Thêm ${willAdd} học viên` : 'Thêm học viên'}
           </button>
-        </>
-      }
-    >
-      <div className="space-y-4">
+        ),
+      }}>
+      <div className="space-y-4 pt-3">
         {/*
           LỚP VÀ TUẦN BẮT ĐẦU — hai quyết định của CẢ LÔ, đặt ở trên cùng (mục 12.1).
           Lớp quyết định bảng bên dưới có những cột nào, nên nó phải được chọn trước.
@@ -386,6 +381,6 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
           xếp lịch.
         </SectionNote>
       </div>
-    </Drawer>
+    </KhungPanel>
   );
 }

@@ -5,7 +5,8 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { Alert, Card, Empty, ErrorState, Field, Forbidden, Info, NutChon, SectionNote, Skeleton, Status, Th } from '../../ui/ui.tsx';
-import { Drawer, Modal } from '../../ui/Drawer.tsx';
+import { Modal } from '../../ui/Drawer.tsx';
+import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { BranchFilter } from '../../ui/Filters.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
@@ -276,13 +277,13 @@ export function NganViecVanHanh({ taskId, onClose, onDone }: {
   const [editing, setEditing] = useState(false);
   const [addingSub, setAddingSub] = useState(false);
 
+  if (taskId === null) return null;
   return (
-    <Drawer open={taskId !== null} onClose={onClose} width="max-w-2xl"
-      title={data?.title ?? 'Công việc'}
-      subtitle={data ? `${TASK_GROUP_LABEL[data.group as keyof typeof TASK_GROUP_LABEL] ?? ''}` : undefined}>
-      {loading && <Skeleton rows={6} />}
+    <KhungPanel tieuDe={data?.title ?? 'Công việc'} rong="rong" onDong={onClose}
+      ngCanh={data ? TASK_GROUP_LABEL[data.group as keyof typeof TASK_GROUP_LABEL] || undefined : undefined}>
+      {loading && <div className="pt-3"><Skeleton rows={6} /></div>}
       {data && (
-        <div className="space-y-4">
+        <div className="space-y-4 pt-3">
           <div className="flex flex-wrap items-center gap-2">
             <Status kind={KIND[data.progress] ?? 'idle'}>{data.progressLabel}</Status>
             <Han loai="viec-van-hanh" han={data.due} />
@@ -409,7 +410,7 @@ export function NganViecVanHanh({ taskId, onClose, onDone }: {
         <CreateTask open={addingSub} onClose={() => setAddingSub(false)} parent={data}
           branchId={data.branchId} onDone={() => { reload(); onDone(); }} />
       )}
-    </Drawer>
+    </KhungPanel>
   );
 }
 

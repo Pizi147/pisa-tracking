@@ -3,7 +3,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { BoLocDoan, Card, Empty, Field, Forbidden, Info, NutChon, SectionNote, Skeleton, Th} from '../../ui/ui.tsx';
-import { Drawer } from '../../ui/Drawer.tsx';
+import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { fmtDate, skillLabel } from '../../lib/format.ts';
 import { PERMISSION_LABEL, ROLES, ROLE_LABEL, ngay, roleLabel, type Role } from '@shared/domain/index.ts';
 import { MenuDong } from '../../ui/MenuDong.tsx';
@@ -302,17 +302,12 @@ function AccountDialog({ account, branches, onClose, onDone }: {
   };
 
   return (
-    <Drawer
-      open onClose={onClose} width="max-w-2xl"
-      title={editing ? 'Sửa tài khoản' : 'Tạo tài khoản'}
-      subtitle={editing ? account!.fullName : undefined}
-      footer={
-        <>
-          <button className="btn" onClick={onClose} disabled={busy}>Đóng</button>
-          <button className="btn btn-primary" onClick={save} disabled={busy}>Lưu</button>
-        </>
-      }>
-      <div className="space-y-4">
+    <KhungPanel tieuDe={editing ? 'Sửa tài khoản' : 'Tạo tài khoản'} hocVien={editing ? account!.fullName : null} rong="rong" onDong={onClose}
+      chan={{
+        huy: { nhan: 'Đóng', onClick: onClose, disabled: busy },
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={save} disabled={busy}>Lưu</button>,
+      }}>
+      <div className="space-y-4 pt-3">
         {!editing && (
           <>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -430,6 +425,6 @@ function AccountDialog({ account, branches, onClose, onDone }: {
           </>
         )}
       </div>
-    </Drawer>
+    </KhungPanel>
   );
 }

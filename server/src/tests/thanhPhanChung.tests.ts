@@ -226,4 +226,13 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     for (const f of ['web/src/modules/yThuc/ClassYThucCard.tsx', 'web/src/modules/yThuc/StudentYThucSection.tsx', 'web/src/modules/students/HanhTrinh.tsx'])
       assert(/<BoLocDoan\b/.test(doc(f)), `${f} chưa dùng BoLocDoan`);
   });
+
+  check('NEN (9) · E1: không còn Drawer; E3: Esc/mũi tên ở đầu trang, "Không tìm thấy học viên", "Bỏ qua tới nội dung"', () => {
+    const sai = tepNguon('web/src').filter((f) => !/modules\/classes\//.test(f) && /<Drawer\b/.test(doc(f)));   // Task 11 bỏ loại trừ
+    assert(sai.length === 0, sai.join(', '));
+    const h = doc('web/src/modules/platform/Header.tsx');
+    assert(/Không tìm thấy học viên/.test(h) && /buocDanhSach\(/.test(h) && /'Escape'/.test(h) && /role="combobox"/.test(h), 'Header');
+    const a = doc('web/src/App.tsx');
+    assert(/Bỏ qua tới nội dung/.test(a) && /id="noi-dung"/.test(a) && /tabIndex=\{-1\}/.test(a), 'App');
+  });
 }

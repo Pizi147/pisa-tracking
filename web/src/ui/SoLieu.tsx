@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { METRIC_UNIT_LABEL, metricById, thamSoCt, type ChiSo, type ChuongTrinh } from '@shared/domain/index.ts';
 import { useApi } from '../lib/useApi.ts';
-import { Drawer } from './Drawer.tsx';
+import { KhungPanel } from './KhungPanel.tsx';
 import { Empty, ErrorState, Skeleton } from './ui.tsx';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
 
@@ -65,18 +65,18 @@ export function DanhSachSoLieu({ id, giaTri, phamVi, extra, open, onClose }: {
   const cs = metricById(id);
   const qs = qsSoLieu(phamVi, extra);
   const { data, loading, error, reload } = useApi<Drill>(open && cs ? `/metrics/${id}?${qs}` : null, [id, open, qs]);
-  if (!cs) return null;
+  if (!cs || !open) return null;
   const dv = METRIC_UNIT_LABEL[cs.donVi];
   return (
-    <Drawer open={open} onClose={onClose} title={`${data ? data.n : giaTri} ${dv} — ${cs.ten}`}
-      subtitle="Đúng những mục tạo nên con số vừa bấm">
-      <div className="mb-3"><CachTinh cs={cs} /></div>
+    <KhungPanel tieuDe={`${data ? data.n : giaTri} ${dv} — ${cs.ten}`} onDong={onClose}
+      ngCanh="Đúng những mục tạo nên con số vừa bấm">
+      <div className="mb-3 pt-3"><CachTinh cs={cs} /></div>
       {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
         : loading || !data ? <Skeleton rows={5} />
         : data.empty ? <Empty title="Không có dữ liệu trong phạm vi" />
         : !data.rows?.length ? <Empty title={`Không có ${dv} nào trong tập này`} />
         : <DongDanhSach rows={data.rows} onPick={onClose} />}
-    </Drawer>
+    </KhungPanel>
   );
 }
 

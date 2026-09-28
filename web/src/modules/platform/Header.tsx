@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSession } from '../../lib/session.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { api } from '../../lib/api.ts';
 import { Info } from '../../ui/ui.tsx';
 import { roleLabel, skillShort } from '../../lib/format.ts';
-import { duongThongBao } from '@shared/domain/index.ts';
+import { buocDanhSach, duongThongBao } from '@shared/domain/index.ts';
 
 type SearchHit = { id: number; studentCode: string; fullName: string; classCode: string | null };
 
@@ -16,26 +16,57 @@ export function Header() {
   const [q, setQ] = useState('');
   const [openMenu, setOpenMenu] = useState<null | 'account' | 'notif'>(null);
   const [hits, setHits] = useState<SearchHit[]>([]);
+  /** Lượt tìm cuối đã trả về (để "Không tìm thấy học viên" không hiện khi đang chờ). */
+  const [daTim, setDaTim] = useState(false);
+  /** Danh sách kết quả đang hiện (bấm ra ngoài / Esc thì ẩn, gõ hoặc vào lại ô thì hiện). */
+  const [moTim, setMoTim] = useState(false);
+  /** Chỉ số dòng đang sáng khi đi bằng mũi tên (−1 = chưa chọn). */
+  const [dong, setDong] = useState(-1);
   const boxRef = useRef<HTMLDivElement>(null);
+  const oTim = useRef<HTMLInputElement>(null);
+  const nutThongBao = useRef<HTMLButtonElement>(null);
+  const nutTaiKhoan = useRef<HTMLButtonElement>(null);
+  const idDs = useId();
   const notifications = useApi<any[]>('/notifications');
 
   useEffect(() => {
-    if (q.trim().length < 2) { setHits([]); return; }
+    if (q.trim().length < 2) { setHits([]); setDaTim(false); setDong(-1); return; }
     const t = setTimeout(() => {
       api.get<{ rows: SearchHit[] }>(`/students?q=${encodeURIComponent(q)}`)
-        .then((d) => setHits((d.rows ?? []).slice(0, 8)))
-        .catch(() => setHits([]));
+        .then((d) => { setHits((d.rows ?? []).slice(0, 8)); setDaTim(true); setDong(-1); })
+        .catch(() => { setHits([]); setDaTim(false); setDong(-1); });
     }, 250);
     return () => clearTimeout(t);
   }, [q]);
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) { setHits([]); setOpenMenu(null); }
+      if (boxRef.current && !boxRef.current.contains(e.target as Node)) { setMoTim(false); setOpenMenu(null); }
     };
     document.addEventListener('mousedown', onClick);
     return () => document.removeEventListener('mousedown', onClick);
   }, []);
+
+  const coDs = moTim && hits.length > 0;
+  const khongThay = moTim && q.trim().length >= 2 && daTim && hits.length === 0;
+  const dangMo = coDs || khongThay || openMenu !== null;
+
+  /* Esc đóng menu/danh sách đang mở và trả focus về nút/ô đã mở nó — pha bắt + chặn lan (cùng mẫu MenuDong). */
+  useEffect(() => {
+    if (!dangMo) return undefined;
+    const phim = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.stopPropagation();
+      e.preventDefault();
+      const ve = openMenu === 'notif' ? nutThongBao.current : openMenu === 'account' ? nutTaiKhoan.current : oTim.current;
+      setOpenMenu(null); setMoTim(false); setDong(-1);
+      ve?.focus();
+    };
+    document.addEventListener('keydown', phim, true);
+    return () => document.removeEventListener('keydown', phim, true);
+  }, [dangMo, openMenu]);
+
+  const moHocVien = (h: SearchHit) => { navigate(`/hoc-vien/${h.id}`); setQ(''); setHits([]); setDaTim(false); setMoTim(false); setDong(-1); };
 
   const unread = useMemo(() => (notifications.data ?? []).filter((n) => !n.read_at).length, [notifications.data]);
   const core = (session?.assignments ?? []).filter((a) => a.isCore);
@@ -45,19 +76,46 @@ export function Header() {
     <div className="flex items-center gap-2 min-w-0" ref={boxRef}>
       <div className="relative w-28 sm:w-52 lg:w-64 shrink">
         <input
+          ref={oTim}
           className="field"
           placeholder="Tìm học viên…"
           value={q}
-          onChange={(e) => setQ(e.target.value)}
+          onChange={(e) => { setQ(e.target.value); setMoTim(true); }}
+          onFocus={() => setMoTim(true)}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {           // Home/End để nguyên cho con trỏ (như ô chọn người)
+              if (!hits.length) return;
+              e.preventDefault();
+              setMoTim(true);
+              const k = buocDanhSach(hits.length, dong, e.key);
+              if (k !== null) setDong(k);
+            } else if (e.key === 'Enter' && coDs) {
+              e.preventDefault();
+              moHocVien(hits[dong] ?? hits[0]);
+            }
+          }}
+          role="combobox"
+          aria-expanded={coDs}
+          aria-controls={idDs}
+          aria-activedescendant={coDs && dong >= 0 ? `${idDs}-${dong}` : undefined}
+          aria-autocomplete="list"
+          autoComplete="off"
           aria-label="Tìm học viên trong phạm vi được cấp quyền"
         />
-        {hits.length > 0 && (
-          <ul className="absolute z-40 mt-1 w-[min(18rem,calc(100vw-2rem))] right-0 card overflow-hidden shadow-2xl list-none p-0 m-0">
-            {hits.map((h) => (
-              <li key={h.id}>
+        {coDs && (
+          <ul id={idDs} role="listbox" aria-label="Kết quả tìm học viên"
+            className="absolute z-40 mt-1 w-[min(18rem,calc(100vw-2rem))] right-0 card overflow-hidden shadow-2xl list-none p-0 m-0">
+            {hits.map((h, i) => (
+              <li key={h.id} role="none">
                 <button
-                  className="w-full text-left px-3 py-2 hover:bg-white/5 text-sm"
-                  onClick={() => { navigate(`/hoc-vien/${h.id}`); setQ(''); setHits([]); }}
+                  id={`${idDs}-${i}`}
+                  type="button"
+                  role="option"
+                  aria-selected={i === dong}
+                  tabIndex={-1}
+                  className={`w-full min-h-[44px] sm:min-h-0 text-left px-3 py-2 text-sm ${i === dong ? 'bg-white/5' : 'hover:bg-white/5'}`}
+                  onMouseEnter={() => setDong(i)}
+                  onClick={() => moHocVien(h)}
                 >
                   <span className="text-slate-100">{h.fullName}</span>
                   <span className="text-slate-500 text-xs ml-2">{h.studentCode}</span>
@@ -67,11 +125,16 @@ export function Header() {
             ))}
           </ul>
         )}
+        {khongThay && (
+          <div role="status" className="absolute z-40 mt-1 w-[min(18rem,calc(100vw-2rem))] right-0 card shadow-2xl px-3 py-2 text-[13px] text-slate-400">
+            Không tìm thấy học viên
+          </div>
+        )}
       </div>
 
       <div className="relative">
-        <button className="btn btn-sm" onClick={() => setOpenMenu(openMenu === 'notif' ? null : 'notif')}
-          aria-label="Thông báo">
+        <button ref={nutThongBao} className="btn btn-sm" onClick={() => setOpenMenu(openMenu === 'notif' ? null : 'notif')}
+          aria-label="Thông báo" aria-expanded={openMenu === 'notif'}>
           <span className="hidden sm:inline">Thông báo</span>
           <span className="sm:hidden" aria-hidden>🔔</span>
           {unread > 0 && <span className="ml-1 rounded bg-sky-300/25 text-sky-200 px-1.5 text-[10px]">{unread}</span>}
@@ -105,7 +168,8 @@ export function Header() {
       </div>
 
       <div className="relative">
-        <button className="btn btn-sm" onClick={() => setOpenMenu(openMenu === 'account' ? null : 'account')}>
+        <button ref={nutTaiKhoan} className="btn btn-sm" onClick={() => setOpenMenu(openMenu === 'account' ? null : 'account')}
+          aria-expanded={openMenu === 'account'}>
           <span className="text-slate-200 truncate max-w-[6rem] sm:max-w-[10rem]">{session?.user?.fullName}</span>
         </button>
         {openMenu === 'account' && (
