@@ -202,7 +202,7 @@ export function WeekPicker({ periodId, onPeriod, label = 'Tuần', scope, cleara
 
       {open && (
         <LichNho kieu="tuan" goNgay value={shown?.weekStart ?? null} homNay={today} luat={{}} neo={field}
-          onChon={(t2) => void pick(t2)} onDong={() => setOpen(false)} />
+          onChon={(t2) => { if (!busy) void pick(t2); }} onDong={() => setOpen(false)} />
       )}
     </div>
   );

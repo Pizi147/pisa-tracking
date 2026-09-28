@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { kiemGhiRoKhac } from '@shared/domain/index.ts';
 
 type Props = {
@@ -16,15 +16,16 @@ export function OKhac({ hien, value, onChange, nhan = 'Ghi rõ', goiY = 'Ví d�
   const [daRoi, setDaRoi] = useState(false);
   const o = useRef<HTMLInputElement>(null);
   const truoc = useRef(hien);
+  const idLoi = useId();
   useEffect(() => { if (hien && !truoc.current) o.current?.focus(); truoc.current = hien; }, [hien]);
   if (!hien) return null;
   const cau = khongBaoLoi ? null : loi ?? (daRoi ? kiemGhiRoKhac(value) : null);
   return (
     <label className="mt-1.5 block min-w-0">
-      <span className="mb-1 block text-[11.5px] font-bold text-slate-200">{nhan}<span className="text-bad"> *</span></span>
-      <input ref={o} id={id} className="field w-full" maxLength={200} value={value} placeholder={goiY} aria-invalid={!!cau || undefined}
+      <span className="mb-1 block text-[11.5px] font-bold text-slate-200">{nhan}<span aria-hidden className="text-bad"> *</span><span className="sr-only"> (bắt buộc)</span></span>
+      <input ref={o} id={id} className="field w-full" maxLength={200} value={value} placeholder={goiY} aria-invalid={!!cau || undefined} aria-describedby={cau ? idLoi : undefined}
         onChange={(e) => onChange(e.target.value)} onBlur={() => { setDaRoi(true); onBlur?.(); }} />
-      {cau && <span className="mt-1 block text-[11px] text-late">{cau}</span>}
+      {cau && <span id={idLoi} className="mt-1 block text-[11px] text-late">{cau}</span>}
     </label>
   );
 }

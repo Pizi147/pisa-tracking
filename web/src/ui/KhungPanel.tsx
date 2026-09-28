@@ -1,8 +1,9 @@
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { taoKhoPanel } from '@shared/domain/index.ts';
 import { NutLuat } from './NutLuat.tsx';
 import { DongCanSua, type MucThieu } from './loiForm.tsx';
 import { useGiuFocus } from './giuFocus.ts';
+import { BaoOTrongNhan } from './ONgay.tsx';
 
 /** Kho dùng chung toàn web: mở panel này thì panel đang mở phải đóng (G-8, N-4). */
 export const khoPanelChung = taoKhoPanel();
@@ -57,7 +58,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
   return (
     <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label={tieuDe}>
       <div className="absolute inset-0 bg-black/60" onClick={onDong} />
-      <div ref={khung} tabIndex={-1} className={`relative flex h-full w-full flex-col border-l shadow-2xl outline-none ${rong === 'toan' ? 'max-w-[1440px]' : rong === 'rong' ? 'sm:w-[720px]' : 'sm:w-[560px]'}`}
+      <div ref={khung} tabIndex={-1} className={`relative flex h-full w-full flex-col rounded-none border-l shadow-2xl -outline-offset-2 ${rong === 'toan' ? 'max-w-[1440px]' : rong === 'rong' ? 'sm:w-[720px]' : 'sm:w-[560px]'}`}
         style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
         <header className="flex h-[52px] shrink-0 items-center gap-2 border-b px-4" style={{ borderColor: 'var(--line)' }}>
           <h2 className="m-0 min-w-0 truncate text-sm font-extrabold text-slate-100" title={tieuDe}>{tieuDe}</h2>
@@ -110,20 +111,29 @@ export function Truong({ nhan, batBuoc, tuyChon, phu, loi, dem, as = 'label', ch
   nhan: string; batBuoc?: boolean; tuyChon?: boolean; phu?: string; loi?: string | null; dem?: { co: number; can: number };
   as?: 'label' | 'div'; children: ReactNode;
 }) {
-  const Vo = as;
+  /* Ô ngày bên trong báo id → nhãn không bọc nút lịch (`BaoOTrongNhan`). */
+  const [idO, setIdO] = useState<string | null>(null);
+  const Vo = idO ? 'div' : as;
+  /* `as="div"` không có ô để nhãn trỏ vào (nhóm NutChon…) → nhóm mang tên của nhãn, trình đọc màn hình đọc "Mức độ, nhóm". */
+  const idNhan = useId();
+  const nhom = Vo === 'div' && !idO ? { role: 'group', 'aria-labelledby': idNhan } : {};
+  const chu = <>
+    <span className="min-w-0 flex-1">
+      {nhan}{batBuoc && <><span aria-hidden className="text-bad"> *</span><span className="sr-only"> (bắt buộc)</span></>}
+      {tuyChon && <span className="font-normal text-slate-500"> (không bắt buộc)</span>}
+    </span>
+    {dem && <span className={`text-[10.5px] font-normal tabular-nums ${dem.co < dem.can ? 'text-slate-500' : 'text-slate-400'}`}>{dem.co}/{dem.can}</span>}
+  </>;
+  const lopNhan = 'mb-1 flex items-baseline gap-2 text-[11.5px] font-bold text-slate-200';
   return (
-    <Vo className="block min-w-0">
-      <span className="mb-1 flex items-baseline gap-2 text-[11.5px] font-bold text-slate-200">
-        <span className="min-w-0 flex-1">
-          {nhan}{batBuoc && <span className="text-bad"> *</span>}
-          {tuyChon && <span className="font-normal text-slate-500"> (không bắt buộc)</span>}
-        </span>
-        {dem && <span className={`text-[10.5px] font-normal tabular-nums ${dem.co < dem.can ? 'text-slate-500' : 'text-slate-400'}`}>{dem.co}/{dem.can}</span>}
-      </span>
-      {loi ? <div className="[&_.field]:border-late [&_.field]:ring-1 [&_.field]:ring-late/40">{children}</div> : children}
-      {phu && <span className="mt-1 block truncate text-[10.5px] text-slate-500">{phu}</span>}
-      {loi && <span className="mt-1 block text-[11px] text-late">{loi}</span>}
-    </Vo>
+    <BaoOTrongNhan.Provider value={setIdO}>
+      <Vo className="block min-w-0" {...nhom}>
+        {idO ? <label htmlFor={idO} className={lopNhan}>{chu}</label> : <span id={idNhan} className={lopNhan}>{chu}</span>}
+        {loi ? <div className="[&_.field]:border-late [&_.field]:ring-1 [&_.field]:ring-late/40">{children}</div> : children}
+        {phu && <span className="mt-1 block truncate text-[10.5px] text-slate-500">{phu}</span>}
+        {loi && <span className="mt-1 block text-[11px] text-late">{loi}</span>}
+      </Vo>
+    </BaoOTrongNhan.Provider>
   );
 }
 

@@ -25,7 +25,7 @@ const thangHien = (iso: string) => `${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
  * Giá trị lưu của một tuần: Thứ Hai, hoặc Chủ nhật khi `moc="cuoi"`. Chủ nhật chỉ cắt về hôm nay khi tuần đó chứa hôm nay
  * (và `catHomNay` không tắt); tuần tương lai giữ Chủ nhật thật để `loiKhoangNgay` chặn, không lặng lẽ đổi thành hôm nay.
  */
-function chotTuan(iso: string, homNay: string, luat: LuatONgay): string {
+export function chotTuan(iso: string, homNay: string, luat: LuatONgay): string {
   if (luat.moc !== 'cuoi') return mondayOfDate(iso);
   return cuoiTuan(iso, luat.catHomNay === false || mondayOfDate(iso) > homNay ? undefined : homNay);
 }

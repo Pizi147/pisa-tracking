@@ -19,7 +19,7 @@ export function NutLuat({ children, label = 'Luật' }: { children: ReactNode; l
   }, [mo]);
   return (
     <span ref={hop} className="relative inline-flex">
-      <button type="button" className="text-slate-500 hover:text-slate-200 text-sm font-normal leading-none"
+      <button type="button" className="-m-[15px] p-[15px] text-slate-500 hover:text-slate-200 text-sm font-normal leading-none sm:m-0 sm:p-0"
         title={label} aria-label={label} aria-expanded={mo} onClick={() => setMo((v) => !v)}>ⓘ</button>
       {mo && (
         <span role="dialog" aria-label={label}

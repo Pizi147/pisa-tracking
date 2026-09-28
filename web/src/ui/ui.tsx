@@ -1,6 +1,7 @@
-import type { MouseEvent, ReactNode } from 'react';
+import { useId, useState, type MouseEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { chuTrangThai, type TrangThai } from '@shared/domain/index.ts';
+import { BaoOTrongNhan } from './ONgay.tsx';
 
 export function Card({ title, action, children, className = '', bodyClass = 'p-4' }: {
   title?: ReactNode; action?: ReactNode; children: ReactNode; className?: string; bodyClass?: string;
@@ -315,13 +316,20 @@ export function KpiTile({ label, value, tone = 'neutral', to, sub }: {
 export function Field({ label, children, hint, required, as = 'label' }: {
   label: string; children: ReactNode; hint?: string; required?: boolean; as?: 'label' | 'div';
 }) {
-  const Wrap = as;
+  /* Ô ngày bên trong báo id → nhãn không bọc nút lịch (`BaoOTrongNhan`, như `Truong`). */
+  const [idO, setIdO] = useState<string | null>(null);
+  const Wrap = idO ? 'div' : as;
+  const idNhan = useId();
+  const nhom = Wrap === 'div' && !idO ? { role: 'group', 'aria-labelledby': idNhan } : {};
+  const chu = <>{label}{required && <><span aria-hidden className="text-bad"> *</span><span className="sr-only"> (bắt buộc)</span></>}</>;
   return (
-    <Wrap className="block">
-      <span className="label">{label}{required && <span className="text-bad"> *</span>}</span>
-      {children}
-      {hint && <span className="block text-[11px] text-slate-500 mt-1">{hint}</span>}
-    </Wrap>
+    <BaoOTrongNhan.Provider value={setIdO}>
+      <Wrap className="block" {...nhom}>
+        {idO ? <label htmlFor={idO} className="label">{chu}</label> : <span id={idNhan} className="label">{chu}</span>}
+        {children}
+        {hint && <span className="block text-[11px] text-slate-500 mt-1">{hint}</span>}
+      </Wrap>
+    </BaoOTrongNhan.Provider>
   );
 }
 
@@ -475,7 +483,7 @@ export function BoLocDoan<K extends string>({ muc, value, onChange, ariaLabel }:
           <button key={m.key} type="button" aria-pressed={chon} title={m.title} onClick={() => onChange(m.key)} style={{ borderColor: 'var(--line)' }}
             className={`inline-flex min-h-[44px] items-center gap-1 whitespace-nowrap px-3 text-xs font-semibold sm:min-h-[32px] ${i ? 'border-l' : ''} ${
               chon ? 'bg-ink-800 text-slate-100 shadow-[inset_0_0_0_1px_theme(colors.teal.600)]' : 'bg-transparent text-slate-400 hover:text-slate-200'}`}>
-            <span aria-hidden className={`text-[10px] text-teal-300 ${chon ? '' : 'hidden'}`}>✓</span>{m.nhan}
+            <span aria-hidden className={`text-[10px] text-teal-300 ${chon ? '' : 'invisible'}`}>✓</span>{m.nhan}
             {m.so != null && <span className="tabular-nums text-slate-500">{m.so}</span>}
           </button>
         );

@@ -49,7 +49,7 @@ export function Han({ loai, han, hanGoc, hen, tienTo, ghiChu, coViec, haiDong }:
   );
   const coTinHieu = v.tone === 'overdue' || v.homNay;
   return (
-    <span title={title} className="text-[11px] text-slate-500">
+    <span title={title} className="text-[11px] tabular-nums text-slate-500">
       {[tienTo, coViec && loai !== 'du-kien-ket-thuc' ? v.viec : null].filter(Boolean).map((x) => `${x} · `).join('')}
       {v.han}
       {coTinHieu && (haiDong ? <span className="block">{tinHieu}</span> : <> {tinHieu}</>)}

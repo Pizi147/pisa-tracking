@@ -71,12 +71,14 @@ export function ChonPhuTrach({ value, valueName, onChange }: {
 
   return (
     <div className="relative inline-flex items-center gap-1" ref={box}>
-      <button ref={nut} type="button" className="btn btn-sm" aria-haspopup="menu" aria-expanded={open}
+      <button ref={nut} type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" aria-haspopup="menu" aria-expanded={open}
         onClick={() => { setOpen((o) => !o); setPicking(false); }}>
-        Người phụ trách: {nhan} ▾
+        Người phụ trách: {nhan}
+        {/* ▾ ở chữ Inter 12px chỉ còn một chấm → vẽ SVG nét mảnh. */}
+        <svg aria-hidden width="8" height="5" viewBox="0 0 8 5" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M1 1l3 3 3-3" /></svg>
       </button>
       {typeof value === 'number' && (
-        <button type="button" className="text-slate-500 hover:text-slate-200 text-xs" aria-label="Bỏ chọn giáo viên, về Tất cả trong phạm vi"
+        <button type="button" className="min-h-[44px] min-w-[32px] text-slate-500 hover:text-slate-200 text-xs sm:min-h-0 sm:min-w-0" aria-label="Bỏ chọn giáo viên, về Tất cả trong phạm vi"
           onClick={() => onChange('tat-ca')}>✕</button>
       )}
       {open && !picking && (
@@ -103,7 +105,7 @@ export function ChonPhuTrach({ value, valueName, onChange }: {
               dongVeNut();
             }}
             nhom="giao_vien" choToi={false} choNgoai={false} trongPhamVi
-            ariaLabel="Chọn giáo viên"
+            ariaLabel="Chọn giáo viên" tuMo
           />
         </div>
       )}

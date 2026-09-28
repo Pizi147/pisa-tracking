@@ -265,13 +265,11 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
               </NutChon>
             ))}
           </div>
-          <p className="m-0 mt-1.5 text-[11px] text-slate-500">
-            Chưa có bài để so?{' '}
-            <button type="button" aria-pressed={outcome === 'insufficient'}
-              className={`link appearance-none border-0 bg-transparent p-0 ${outcome === 'insufficient' ? 'font-bold text-slate-100' : ''}`}
-              onClick={() => pickOutcome('insufficient')}>
-              {outcomeLabelFor('insufficient')}{outcome === 'insufficient' ? ' ✓' : ''}
-            </button>
+          <p className="m-0 mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
+            Chưa có bài để so?
+            <NutChon nho chon={outcome === 'insufficient'} onClick={() => pickOutcome('insufficient')}>
+              {outcomeLabelFor('insufficient')}
+            </NutChon>
           </p>
           {loiCua('ket-qua') && <span className="mt-1 block text-[11px] text-late">{loiCua('ket-qua')}</span>}
         </div>

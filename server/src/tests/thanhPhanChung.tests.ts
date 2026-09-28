@@ -235,4 +235,17 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     const a = doc('web/src/App.tsx');
     assert(/Bỏ qua tới nội dung/.test(a) && /id="noi-dung"/.test(a) && /tabIndex=\{-1\}/.test(a), 'App');
   });
+
+  check('NEN (11) · audit: chotTuan (dùng chung ô ngày + lịch); nhãn không bọc ô ngày; lịch/khung thấy focus, vừa màn; focus không rơi về body', () => {
+    assert(d.chotTuan('2026-09-30', H, {}) === '2026-09-28', 'tuần mốc đầu → Thứ Hai');
+    assert(d.chotTuan('2026-09-30', H, { moc: 'cuoi' }) === H, 'tuần chứa hôm nay, mốc cuối → cắt về hôm nay');
+    assert(d.chotTuan('2026-09-30', H, { moc: 'cuoi', catHomNay: false }) === '2026-10-04', 'catHomNay false → Chủ nhật thật');
+    assert(d.chotTuan('2026-10-07', H, { moc: 'cuoi' }) === '2026-10-11', 'tuần tương lai giữ Chủ nhật');
+    const lich = doc('web/src/ui/LichNho.tsx');
+    assert(!/focus:outline-none/.test(lich) && /maxHeight/.test(lich) && /chotTuan\(/.test(lich) && !/function giaTriTuan/.test(lich), 'LichNho');
+    assert(/BaoOTrongNhan/.test(doc('web/src/ui/ONgay.tsx')) && /BaoOTrongNhan\.Provider/.test(doc('web/src/ui/KhungPanel.tsx'))
+      && /BaoOTrongNhan\.Provider/.test(doc('web/src/ui/ui.tsx')) && /BaoOTrongNhan/.test(doc('web/src/ui/PeoplePicker.tsx')), 'nhãn còn bọc ô ngày/ô chọn người');
+    assert(/document\.activeElement/.test(doc('web/src/ui/giuFocus.ts').split('useEffect(')[1] ?? ''), 'giuFocus thiếu dự phòng khi focus đã rơi về body');
+    assert(/useState\(!!tuMo\)/.test(doc('web/src/ui/PeoplePicker.tsx')), 'ChonNguoi tự mở danh sách khi vừa vẽ (Q18)');
+  });
 }

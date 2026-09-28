@@ -17,8 +17,13 @@ export function useGiuFocus(ref: RefObject<HTMLElement>) {
   const [truoc] = useState(() => (document.activeElement instanceof HTMLElement ? document.activeElement : null));
   useEffect(() => {
     const el = ref.current; if (!el) return undefined;
+    /* Lúc vẽ, focus đã rơi về <body> (nút Lưu bị khoá khi đang lưu → trình duyệt bỏ focus) mà panel cũ vừa đóng đã trả focus
+       về nút mở ban đầu (dọn effect cũ chạy trước effect mới) → lấy chỗ đó, để đóng panel xong focus không rơi về <body>. */
+    const hienTai = document.activeElement;
+    const dich = truoc && truoc !== document.body ? truoc
+      : hienTai instanceof HTMLElement && hienTai !== document.body && !el.contains(hienTai) ? hienTai : truoc;
     el.dataset.giuFocus = '';
-    DICH.set(el, truoc);
+    DICH.set(el, dich);
     el.focus({ preventScroll: true });
     const phim = (e: KeyboardEvent) => {
       if (e.key !== 'Tab' || e.defaultPrevented) return;          // modal lồng trong panel đã tự vòng Tab
@@ -36,7 +41,7 @@ export function useGiuFocus(ref: RefObject<HTMLElement>) {
     return () => {
       el.removeEventListener('keydown', phim);
       /* Phần tử đã gỡ vẫn giữ cây cha của nó → `closest` tìm được khung cũ (đã gỡ) để mượn chỗ trả. */
-      traFocusVe<HTMLElement>(truoc, (x) => x.isConnected, (x) => x.closest<HTMLElement>('[data-giu-focus]'), (k) => DICH.get(k) ?? null)
+      traFocusVe<HTMLElement>(dich, (x) => x.isConnected, (x) => x.closest<HTMLElement>('[data-giu-focus]'), (k) => DICH.get(k) ?? null)
         ?.focus({ preventScroll: true });
     };
   }, [ref, truoc]);

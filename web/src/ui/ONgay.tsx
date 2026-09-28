@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { canDongBoONgay, chotONgay, hienONgay, phuONgay, type KieuONgay, type LuatONgay } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
 import { LichNho } from './LichNho.tsx';
@@ -9,6 +9,12 @@ import { LichNho } from './LichNho.tsx';
  * Luật khoảng từng chỗ (`toiThieu`/`toiDa`, tuần `moc`/`catHomNay`) đi qua `LuatONgay`; chữ lỗi đến từ `docONgay`.
  * "Hôm nay" là ngày nghiệp vụ (`useNgayNghiepVu`), không đọc đồng hồ trình duyệt.
  */
+/**
+ * `Truong`/`Field` báo cho ô ngày biết nó nằm dưới một nhãn: ô báo lại `id` của ô gõ, nhãn đổi từ `<label>` BỌC (bọc luôn nút lịch,
+ * dòng phụ, dòng lỗi — HTML sai, tên truy cập lẫn "Mở lịch") sang `<div>` + `<label htmlFor>`. Nơi gọi không phải sửa gì.
+ */
+export const BaoOTrongNhan = createContext<((id: string | null) => void) | null>(null);
+
 type Props = {
   kieu: KieuONgay;
   value: string | null;
@@ -33,6 +39,10 @@ export function ONgay({ kieu, value, onChange, toiThieu, toiDa, moc, catHomNay, 
   const [loi, setLoi] = useState<string | null>(null);
   const [mo, setMo] = useState(false);
   const nut = useRef<HTMLButtonElement>(null);
+  const idTu = useId();
+  const idO = id ?? idTu;
+  const bao = useContext(BaoOTrongNhan);
+  useLayoutEffect(() => { bao?.(idO); return () => bao?.(null); }, [bao, idO]);
   /* Chỉ `value`/`kieu` đổi mới chạy; đọc `text` lúc đó để không xoá chữ gõ sai sau khi chính ô báo '' (chotONgay). */
   useEffect(() => {
     if (canDongBoONgay(text, value, kieu, homNay, luat)) { setText(hienONgay(value, kieu)); setLoi(null); }
@@ -46,16 +56,17 @@ export function ONgay({ kieu, value, onChange, toiThieu, toiDa, moc, catHomNay, 
   return (
     <span className="block min-w-0">
       <span className="flex min-w-0 items-stretch gap-1.5">
-        <input id={id} className="field min-w-0 flex-1 tabular-nums" inputMode="numeric" autoComplete="off" value={text} disabled={disabled}
+        <input id={idO} className="field min-w-0 flex-1 tabular-nums" inputMode="numeric" autoComplete="off" value={text} disabled={disabled}
           placeholder={goiY ?? (kieu === 'thang' ? 'mm/yyyy' : 'dd/mm/yyyy')} aria-label={ariaLabel} aria-invalid={invalid || !!loi || undefined}
+          aria-describedby={[phu && `${idO}-phu`, loi && `${idO}-loi`].filter(Boolean).join(' ') || undefined}
           onChange={(e) => setText(e.target.value)} onBlur={() => { chot(); onBlur?.(); }}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); chot(); } else if (e.key === 'ArrowDown' && e.altKey) { e.preventDefault(); setMo(true); } }} />
         <button ref={nut} type="button" className="btn flex-none min-h-[44px] min-w-[44px] justify-center px-0 sm:min-h-0 sm:min-w-[36px]"
           aria-label={kieu === 'thang' ? 'Mở lịch tháng' : 'Mở lịch'} aria-haspopup="dialog" aria-expanded={mo} disabled={disabled}
           onClick={() => setMo((v) => !v)}><BieuTuongLich /></button>
       </span>
-      {phu && <span className="mt-1 block truncate text-[11.5px] tabular-nums text-slate-400">{phu}</span>}
-      {loi && <span className="mt-1 block text-[11px] text-late" role="alert">{loi}</span>}
+      {phu && <span id={`${idO}-phu`} className="mt-1 block truncate text-[11.5px] tabular-nums text-slate-400">{phu}</span>}
+      {loi && <span id={`${idO}-loi`} className="mt-1 block text-[11px] text-late" role="alert">{loi}</span>}
       {mo && <LichNho kieu={kieu} value={value || null} homNay={homNay} luat={luat} neo={nut}
         onChon={(iso) => { if (iso !== value) onChange(iso); setText(hienONgay(iso, kieu)); setLoi(null); setMo(false); nut.current?.focus(); }} onDong={() => setMo(false)} />}
     </span>

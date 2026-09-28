@@ -35,7 +35,8 @@ export function MenuDong({ muc, nhan = 'Thêm thao tác', bieuTuong = '⋯' }: {
     if (!mo || !nut.current) { setViTri(null); return; }
     const r = nut.current.getBoundingClientRect();
     const rong = 216;
-    const cao = Math.min(muc.length * 38 + 8, 320);
+    /* Mục cao 44px trên điện thoại (ô bấm), ~36px từ sm. */
+    const cao = Math.min(muc.length * (window.innerWidth < 640 ? 46 : 38) + 8, 320);
     /* Chừa 64px dưới đáy cho thanh 4 nút trên điện thoại. */
     const moXuong = r.bottom + 4 + cao <= window.innerHeight - 64;
     setViTri({
@@ -79,7 +80,7 @@ export function MenuDong({ muc, nhan = 'Thêm thao tác', bieuTuong = '⋯' }: {
     <>
       <button ref={nut} type="button" title={nhan} aria-label={nhan} aria-haspopup="menu" aria-expanded={mo}
         onClick={(e) => { e.stopPropagation(); setMo((v) => !v); }}
-        className="inline-grid place-items-center w-7 h-7 rounded-md border bg-transparent text-slate-400 hover:text-slate-100 hover:bg-white/5 cursor-pointer"
+        className="relative inline-grid place-items-center w-7 h-7 rounded-md border bg-transparent text-slate-400 hover:text-slate-100 hover:bg-white/5 cursor-pointer after:absolute after:-inset-2 after:content-[''] sm:after:hidden"
         style={{ borderColor: 'var(--line)' }}>
         {bieuTuong}
       </button>
@@ -94,7 +95,7 @@ export function MenuDong({ muc, nhan = 'Thêm thao tác', bieuTuong = '⋯' }: {
           style={{ borderColor: 'var(--line-strong)', top: viTri?.top ?? 0, left: viTri?.left ?? 0, visibility: viTri ? 'visible' : 'hidden' }}>
           {muc.map((m, i) => (
             <button key={m.key} type="button" role="menuitem" tabIndex={-1} onFocus={() => setDang(i)}
-              className={`block w-full rounded-md px-3 py-2 text-left text-sm ${m.nguyHiem ? 'text-rose-200' : 'text-slate-200'} bg-transparent border-0 hover:bg-white/5 focus-visible:bg-white/5 cursor-pointer ${
+              className={`block min-h-[44px] w-full rounded-md px-3 py-2 text-left text-sm sm:min-h-0 ${m.nguyHiem ? 'text-rose-200' : 'text-slate-200'} bg-transparent border-0 hover:bg-white/5 focus-visible:bg-white/5 cursor-pointer ${
                 m.keTruoc ? 'mt-1 rounded-t-none pt-2.5' : ''}`}
               style={m.keTruoc ? { borderTop: '1px solid var(--line)' } : undefined}
               onClick={() => { dongVeNut(); m.onChon(); }}>

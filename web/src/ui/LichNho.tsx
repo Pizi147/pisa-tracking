@@ -1,7 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent as PhimReact, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  buocLich, cuoiTuan, docONgay, goiYGanDay, hienONgay, loiKhoangNgay, luoiThang, mondayOfDate,
+  buocLich, chotTuan, docONgay, goiYGanDay, hienONgay, loiKhoangNgay, luoiThang, mondayOfDate,
   type KieuONgay, type LuatONgay,
 } from '@shared/domain/index.ts';
 import { useGiuFocus } from './giuFocus.ts';
@@ -35,13 +35,8 @@ function tinhViTri(neo: HTMLElement | null, cao: number): ViTri | null {
   const left = Math.min(Math.max(8, r.left), window.innerWidth - width - 8);
   const duoi = r.bottom + 4;
   const top = duoi + cao > window.innerHeight && r.top - cao - 4 > 8 ? r.top - cao - 4 : duoi;
-  return { top, left, width };
-}
-
-/** Giá trị lưu của tuần chứa ngày `d` — như `docONgay` kiểu tuần: Chủ nhật chỉ cắt về hôm nay ở tuần chứa hôm nay. */
-function giaTriTuan(d: string, homNay: string, luat: LuatONgay): string {
-  if (luat.moc !== 'cuoi') return mondayOfDate(d);
-  return cuoiTuan(d, luat.catHomNay === false || mondayOfDate(d) > homNay ? undefined : homNay);
+  /* Màn thấp (điện thoại, ô ở giữa màn): trên dưới đều thiếu chỗ → kéo lên cho vừa đáy (đè lên ô), không tràn khỏi màn. */
+  return { top: Math.max(8, Math.min(top, window.innerHeight - cao - 8)), left, width };
 }
 
 /** Cộng tháng cho (năm, tháng 1–12). */
@@ -108,7 +103,7 @@ export function LichNho({ kieu, value, homNay, luat, neo, onChon, onDong, goNgay
   if (!NGAY.test(goc)) return <></>;
 
   const laThang = kieu === 'thang';
-  const giaTriO = (d: string) => (kieu === 'tuan' ? giaTriTuan(d, homNay, luat) : d);
+  const giaTriO = (d: string) => (kieu === 'tuan' ? chotTuan(d, homNay, luat) : d);
   const ngoaiLuat = (gt: string) => loiKhoangNgay(gt, homNay, luat) !== null;
   const chon = (gt: string) => { if (!ngoaiLuat(gt)) onChon(gt); };
   const doiThangXem = (n: number) => setXem((x) => (laThang ? { ...x, nam: x.nam + n } : congThang(x.nam, x.thang, n)));
@@ -162,7 +157,7 @@ export function LichNho({ kieu, value, homNay, luat, neo, onChon, onDong, goNgay
                     aria-label={`${hienONgay(d, 'ngay')}${homNayO ? ' · hôm nay' : ''}`}
                     className={[
                       'min-h-[44px] sm:min-h-[32px] rounded text-center text-[12.5px] tabular-nums',
-                      trongThang(d) ? 'text-slate-200' : 'text-slate-600',
+                      trongThang(d) ? 'text-slate-200' : 'text-slate-500',
                       homNayO ? 'font-semibold underline underline-offset-2' : '',
                       dangChon ? 'bg-ink-800 ring-1 ring-teal-600 text-slate-100 font-semibold' : '',
                       tat ? 'cursor-not-allowed line-through opacity-40' : 'hover:bg-white/10',
@@ -209,9 +204,9 @@ export function LichNho({ kieu, value, homNay, luat, neo, onChon, onDong, goNgay
   return createPortal(
     <div
       ref={khung} role="dialog" aria-label={tieuDe} tabIndex={-1}
-      className="fixed z-[70] surface-2 rounded-lg border p-3 shadow-xl focus:outline-none"
+      className="fixed z-[70] surface-2 overflow-y-auto overscroll-contain rounded-lg border p-3 shadow-xl"
       style={{
-        borderColor: 'var(--line-strong)',
+        borderColor: 'var(--line-strong)', maxHeight: 'calc(100vh - 16px)',
         top: viTri?.top ?? 0, left: viTri?.left ?? 0, width: viTri?.width ?? 'min(320px, calc(100vw - 16px))',
         visibility: viTri ? 'visible' : 'hidden',
       }}
@@ -235,11 +230,11 @@ export function LichNho({ kieu, value, homNay, luat, neo, onChon, onDong, goNgay
       )}
 
       <div className="mb-2 flex items-center justify-between gap-2">
-        <button type="button" className={NUT_DAU} onClick={() => doiThangXem(-1)} aria-label={laThang ? 'Năm trước' : 'Tháng trước'}>‹</button>
+        <button type="button" className={NUT_DAU} onClick={() => doiThangXem(-1)} aria-label={laThang ? 'Năm trước' : 'Tháng trước'}><MuiTen lui /></button>
         <span className="text-[12.5px] font-semibold tabular-nums text-slate-200" aria-live="polite">
           {laThang ? xem.nam : `Tháng ${xem.thang}/${xem.nam}`}
         </span>
-        <button type="button" className={NUT_DAU} onClick={() => doiThangXem(1)} aria-label={laThang ? 'Năm sau' : 'Tháng sau'}>›</button>
+        <button type="button" className={NUT_DAU} onClick={() => doiThangXem(1)} aria-label={laThang ? 'Năm sau' : 'Tháng sau'}><MuiTen /></button>
       </div>
 
       {laThang ? thanThang() : thanNgay()}
@@ -259,4 +254,10 @@ export function LichNho({ kieu, value, homNay, luat, neo, onChon, onDong, goNgay
     </div>,
     document.body,
   );
+}
+
+/** Mũi tên tháng trước/sau: SVG nét 1.5 px như biểu tượng lịch — ‹ › chữ 12 px mảnh và lệch tâm. */
+function MuiTen({ lui }: { lui?: boolean }) {
+  return <svg aria-hidden width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"
+    strokeLinecap="round" strokeLinejoin="round"><path d={lui ? 'M10 3.5 5.5 8l4.5 4.5' : 'M6 3.5 10.5 8 6 12.5'} /></svg>;
 }

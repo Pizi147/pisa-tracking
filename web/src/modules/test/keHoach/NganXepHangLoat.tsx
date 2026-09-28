@@ -196,7 +196,7 @@ export function NganXepHangLoat({ loai, classId, classCode, onClose, onDone }: {
                 return (
                   <NutChon key={khoaDot(d)} disabled={xong} chon={!!dot && khoaDot(dot) === khoaDot(d)} className={xong ? 'opacity-50' : ''}
                     title={xong ? 'Cả lớp đã xong đợt này' : undefined}
-                    onClick={() => setDot(d)}>{nhanDot(d)}{xong && <span aria-hidden> ✓</span>}</NutChon>
+                    onClick={() => setDot(d)}>{nhanDot(d)}{xong && <span className="text-slate-400"> · đã xong</span>}</NutChon>
                 );
               })}
               {!dots.length && <span className="text-xs text-slate-500">Lớp chưa có đợt nào.</span>}

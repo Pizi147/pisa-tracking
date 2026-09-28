@@ -89,7 +89,7 @@ export function AccountsAdmin() {
           <span className="flex flex-wrap items-center gap-1.5">
             <BoLocDoan ariaLabel="Lọc tài khoản" value={loc} onChange={setLoc}
               muc={[{ key: 'dang-dung', nhan: 'Đang dùng', so: dangDung.length }, { key: 'da-xoa', nhan: 'Đã xoá', so: daXoa.length }]} />
-            <button className="btn btn-sm btn-primary" onClick={() => setCreating(true)}>+ Tạo tài khoản</button>
+            <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => setCreating(true)}>+ Tạo tài khoản</button>
           </span>
         }>
         <div className="table-scroll">
@@ -141,7 +141,7 @@ export function AccountsAdmin() {
                       <span className="text-xs text-slate-500">Đã xoá {ngay(u.deletedAt)}</span>
                     ) : (
                       <span className="inline-flex items-center gap-1.5">
-                        <button className="btn btn-sm" onClick={() => setEditing(u)}>Sửa</button>
+                        <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setEditing(u)}>Sửa</button>
                         <MenuDong nhan="Thêm thao tác" muc={[{ key: 'xoa', nhan: 'Xoá tài khoản', nguyHiem: true, onChon: () => setXoaId(u.id) }]} />
                       </span>
                     )}

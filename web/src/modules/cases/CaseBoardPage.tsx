@@ -285,7 +285,7 @@ function FilterRow({ label, children }: { label: string; children: React.ReactNo
 function ChipBoLoc({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
   return (
     <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" title="Bỏ lọc này" onClick={onClick}>
-      {children} <span aria-hidden className="text-[10px] text-slate-400">✕</span>
+      <span className="sr-only">Bỏ lọc: </span>{children} <span aria-hidden className="text-[10px] text-slate-400">✕</span>
     </button>
   );
 }

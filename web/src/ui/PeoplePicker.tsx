@@ -1,6 +1,7 @@
-import { Fragment, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { Fragment, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../lib/api.ts';
 import { Info } from './ui.tsx';
+import { BaoOTrongNhan } from './ONgay.tsx';
 import { buocDanhSach, skillShort, type NguoiChon } from '@shared/domain/index.ts';
 import { useSession } from '../lib/session.tsx';
 
@@ -187,10 +188,12 @@ type ChonNguoiOption =
  * Khác `PersonPicker` (gọi `/ref/people`, đòi `MEETING_VIEW`): đây gọi `/ref/nguoi` — mọi người đăng nhập gọi được,
  * vào ô là có danh sách (T14: chưa gõ → 20 người, GV cùng lớp đầu), tìm không dấu. `choNgoai` → LUÔN có dòng cuối
  * "Dùng tên ngoài hệ thống" (tên cần ≥ 2 ký tự, Q11). ↑/↓ đi vòng, Enter chốt, Esc đóng danh sách (không đóng panel).
+ * Mở panel không tự nhảy vào ô gõ (Q18 — không bật bàn phím điện thoại; panel đang giữ focus ở khung): danh sách mở khi focus/bấm
+ * vào ô, hoặc ngay khi bấm "Đổi". `tuMo`: nơi gọi vừa được bấm để chọn người (menu "Chọn giáo viên…") → focus + mở ngay.
  */
 export function ChonNguoi({
   value, onChange, nhom, studentId, choToi = true, choNgoai = true, trongPhamVi = false,
-  khongDoi, macDinhTrong, ariaLabel, disabled,
+  khongDoi, macDinhTrong, ariaLabel, disabled, tuMo,
 }: {
   value: NguoiChon | null;
   onChange: (v: NguoiChon | null) => void;
@@ -205,23 +208,30 @@ export function ChonNguoi({
   macDinhTrong?: string;
   ariaLabel?: string;
   disabled?: boolean;
+  tuMo?: boolean;
 }) {
   const { session } = useSession();
   const [editing, setEditing] = useState(!value && khongDoi === undefined && macDinhTrong === undefined);
   const [term, setTerm] = useState('');
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(!!tuMo);
   const [activeIndex, setActiveIndex] = useState(-1);
   const box = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const uid = useId();
   const { rows, loading } = useNguoiSearch(term, nhom, studentId, editing, trongPhamVi);
+  /* Nằm dưới Truong/Field: nhãn trỏ vào ô gõ (label htmlFor), không bọc cả danh sách + nút "Đổi" (`BaoOTrongNhan`). */
+  const bao = useContext(BaoOTrongNhan);
+  useLayoutEffect(() => { bao?.(`${uid}-o`); return () => bao?.(null); }, [bao, uid]);
 
+  /* Chỉ khi VỪA chuyển sang sửa (bấm "Đổi") mới focus + mở; lúc vẽ đầu thì không, trừ `tuMo`. */
+  const suaTruoc = useRef(tuMo ? false : editing);
   useEffect(() => {
-    if (!editing) return;
-    setOpen(true);
-    setActiveIndex(-1);
-    inputRef.current?.focus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (editing && !suaTruoc.current) {
+      setOpen(true);
+      setActiveIndex(-1);
+      inputRef.current?.focus();
+    }
+    suaTruoc.current = editing;
   }, [editing]);
 
   useEffect(() => {
@@ -273,7 +283,7 @@ export function ChonNguoi({
           <span className="text-slate-100">{chinh}</span>
           {phu && <span className="text-slate-500 text-[11px]"> · {phu}</span>}
         </span>
-        {!disabled && <button type="button" className="btn btn-sm shrink-0" onClick={() => setEditing(true)}>Đổi</button>}
+        {!disabled && <button type="button" className="btn btn-sm min-h-[44px] shrink-0 sm:min-h-0" onClick={() => setEditing(true)}>Đổi</button>}
       </div>
     );
   }
@@ -290,6 +300,7 @@ export function ChonNguoi({
     <div ref={box}>
       <input
         ref={inputRef}
+        id={`${uid}-o`}
         className="field"
         role="combobox"
         aria-expanded={open}
@@ -307,7 +318,11 @@ export function ChonNguoi({
             e.preventDefault();
             setOpen(true);
             const k = buocDanhSach(chonDuoc.length, chonDuoc.indexOf(activeIndex), e.key);
-            if (k !== null) setActiveIndex(chonDuoc[k]);
+            if (k !== null) {
+              setActiveIndex(chonDuoc[k]);
+              /* aria-activedescendant không tự cuộn: dòng đang chọn phải thấy được khi đi quá 56 (max-h) bằng mũi tên. */
+              document.getElementById(`${uid}-opt-${chonDuoc[k]}`)?.scrollIntoView({ block: 'nearest' });
+            }
           } else if (e.key === 'Enter') {
             if (activeIndex >= 0 && activeIndex < options.length) { e.preventDefault(); chon(options[activeIndex]); }
           } else if (e.key === 'Escape' && open) {

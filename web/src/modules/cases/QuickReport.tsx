@@ -457,10 +457,10 @@ export function QuickReport({
                         </Hang2>
                         <span className="flex gap-2">
                           {a.description.trim() && (
-                            <button type="button" className="btn btn-sm" onClick={() => setMoSua(moSua.filter((x) => x !== i))}>Xong</button>
+                            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setMoSua(moSua.filter((x) => x !== i))}>Xong</button>
                           )}
                           {bfActions.length > 1 && (
-                            <button type="button" className="btn btn-sm btn-ghost" onClick={() => {
+                            <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={() => {
                               setBfActions(bfActions.filter((_, j) => j !== i));
                               setMoSua(moSua.filter((x) => x !== i).map((x) => (x > i ? x - 1 : x)));
                               setBfErrors({});
@@ -480,7 +480,7 @@ export function QuickReport({
                   </div>
                 );
               })}
-              <button type="button" className="btn btn-sm btn-ghost"
+              <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0"
                 onClick={() => { setMoSua([...moSua, bfActions.length]); setBfActions([...bfActions, { description: '', nguoi: { kieu: 'toi' }, fromDate: '', toDate: '' }]); }}>
                 + Thêm PA đã áp dụng
               </button>
@@ -522,7 +522,7 @@ export function QuickReport({
             Đã có Case nhập bù <strong>“{bfDup.title}”</strong> trùng khoảng {ngan(bfDup.from)} → {ngan(bfDup.to)}. Cùng một lần?
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
-            <button type="button" className="btn btn-sm" disabled={busy} onClick={() => sendBackfill({ confirmDuplicate: true })}>Lần khác, vẫn ghi riêng</button>
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => sendBackfill({ confirmDuplicate: true })}>Lần khác, vẫn ghi riêng</button>
           </div>
         </div>
       )}
@@ -533,8 +533,8 @@ export function QuickReport({
             <span className="text-slate-400"> Mở {ngan(dup.detectedAt)}{dup.interventionCount > 0 ? ` · ${dup.interventionCount} PA` : ' · chưa có PA'}.</span>
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
-            <button type="button" className="btn btn-primary btn-sm" disabled={busy} onClick={() => send({ mergeIntoExisting: true })}>Ghi vào Case đang có</button>
-            <button type="button" className="btn btn-sm" disabled={busy} onClick={() => send({ parallel: true })}>Vấn đề khác, mở Case riêng</button>
+            <button type="button" className="btn btn-primary btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => send({ mergeIntoExisting: true })}>Ghi vào Case đang có</button>
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => send({ parallel: true })}>Vấn đề khác, mở Case riêng</button>
           </div>
         </div>
       )}

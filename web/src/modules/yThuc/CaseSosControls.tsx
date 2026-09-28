@@ -128,10 +128,10 @@ export function PresetPlanActions({ interventionId, description, followupDue, on
     return (
       <div className="rounded-lg mt-2 p-2.5 space-y-2 w-full" style={{ background: 'var(--surface-1)' }}>
         <textarea className="field w-full" rows={2} value={desc} onChange={(e) => setDesc(e.target.value)} />
-        <label className="flex items-center gap-1.5 text-[11px] text-slate-400">
-          Dự kiến kết thúc
-          <span className="w-[11.5rem]"><ONgay kieu="ngay" value={due} onChange={setDue} /></span>
-        </label>
+        <div className="flex items-baseline gap-1.5 text-[11px] text-slate-400">
+          <span aria-hidden>Dự kiến kết thúc</span>
+          <span className="w-[11.5rem]"><ONgay kieu="ngay" value={due} onChange={setDue} ariaLabel="Dự kiến kết thúc" /></span>
+        </div>
         <label className="block">
           <span className="block text-[11px] text-slate-400 mb-1">Lý do sửa (không bắt buộc)</span>
           <input className="field w-full" maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} />
@@ -160,10 +160,10 @@ export function PresetPlanActions({ interventionId, description, followupDue, on
       <OKhac hien={kind === 'other_proposal'} value={ghiRo} onChange={setGhiRo} nhan="Tên đề xuất" goiY="Ví dụ: Học kèm 1-1 với trợ giảng" loi={loiGhiRo} />
       <textarea className="field w-full" rows={2} placeholder="Mô tả phương án mới" value={desc} onChange={(e) => setDesc(e.target.value)} />
       <ChonNguoi nhom="giao_vien" value={nguoi} onChange={setNguoi} />
-      <label className="flex items-center gap-1.5 text-[11px] text-slate-400">
-        Dự kiến kết thúc
-        <span className="w-[11.5rem]"><ONgay kieu="ngay" value={due} onChange={setDue} /></span>
-      </label>
+      <div className="flex items-baseline gap-1.5 text-[11px] text-slate-400">
+        <span aria-hidden>Dự kiến kết thúc</span>
+        <span className="w-[11.5rem]"><ONgay kieu="ngay" value={due} onChange={setDue} ariaLabel="Dự kiến kết thúc" /></span>
+      </div>
       {replaceMissing && <p className="text-xs text-amber-200/90 m-0">{replaceMissing}</p>}
       <div className="flex gap-1.5">
         <button type="button" className="btn btn-sm" onClick={() => setMode(null)} disabled={busy}>Huỷ</button>
