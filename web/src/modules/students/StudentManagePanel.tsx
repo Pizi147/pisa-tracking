@@ -3,10 +3,11 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { fmtBand } from '../../lib/format.ts';
 import {
-  CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, NHAN_VIEC_QUAN_LY, mucQuanLyHocVien, ngay, type LopHocQuyen, type ViecQuanLy,
+  CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, NHAN_VIEC_QUAN_LY, mucQuanLyHocVien, ngay, type LopHocQuyen, type ViecQuanLy, dsLoi,
 } from '@shared/domain/index.ts';
 import { LoTrinhTiepPanel } from './LoTrinhTiepPanel.tsx';
 import { ChuyenLopPanel } from './ChuyenLopPanel.tsx';
@@ -66,14 +67,15 @@ function TrangThaiPanel({ studentId, studentName, lop, onClose, onDone, status }
   const toast = useToast();
   const [lyDo, setLyDo] = useState('');
   const [ngayHl, setNgayHl] = useState('');
-  const [daBam, setDaBam] = useState(false);
+  const lf = useLoiForm();
   const [busy, setBusy] = useState(false);
   const canDoLuon = status === 'active';
   const tieuDe = status === 'active' ? NHAN_VIEC['quay-lai'] : status === 'inactive' ? NHAN_VIEC['tam-dung'] : NHAN_VIEC['ket-thuc'];
+  const loi = dsLoi(canDoLuon ? [] : [{ khoa: 'ly-do', nhan: 'Lý do', toiThieu: 1 }], { 'ly-do': lyDo });
 
   const luu = async () => {
-    setDaBam(true);
-    if (!canDoLuon && !lyDo.trim()) return;
+    lf.bam();
+    if (loi.length > 0) return;
     setBusy(true);
     try {
       await api.post(`/students/${studentId}/status`, { status, date: ngayHl || undefined, reason: lyDo || undefined });
@@ -86,15 +88,15 @@ function TrangThaiPanel({ studentId, studentName, lop, onClose, onDone, status }
   return (
     <KhungPanel tieuDe={tieuDe} hocVien={studentName} lop={lop} onDong={onClose}
       chan={{
-        conThieu: daBam && !canDoLuon && !lyDo.trim() ? ['Lý do'] : undefined,
+        conThieu: lf.conThieu(loi),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy}>Lưu</button>,
       }}>
       <Khoi tieuDe={tieuDe}
         luat={status === 'finished' ? 'Case còn mở sẽ được hệ thống đóng “Học viên kết thúc khoá”. Hồ sơ vào khu Lưu trữ (chỉ xem).'
           : status === 'inactive' ? 'Em nghỉ một thời gian, giữ lớp và lộ trình để quay lại sau.' : undefined}>
         {!canDoLuon && (
-          <Truong nhan="Lý do" batBuoc>
-            <input className="field w-full" value={lyDo} onChange={(e) => setLyDo(e.target.value)} />
+          <Truong nhan="Lý do" batBuoc loi={lf.loiCua(loi, 'ly-do')}>
+            <input className="field w-full" {...lf.o(loi, 'ly-do')} value={lyDo} onChange={(e) => setLyDo(e.target.value)} />
           </Truong>
         )}
         <Truong nhan="Có hiệu lực từ">
@@ -109,13 +111,14 @@ function TrangThaiPanel({ studentId, studentName, lop, onClose, onDone, status }
 function LuuTruPanel({ studentId, studentName, lop, onClose, onDone, boLuuTru }: ChungViec & { boLuuTru: boolean }) {
   const toast = useToast();
   const [xacNhan, setXacNhan] = useState(false);
-  const [daBam, setDaBam] = useState(false);
+  const lf = useLoiForm();
   const [busy, setBusy] = useState(false);
   const tieuDe = NHAN_VIEC[boLuuTru ? 'bo-luu-tru' : 'luu-tru'];
+  const loi = dsLoi([{ khoa: 'xac-nhan', nhan: 'Xác nhận', chon: true }], { 'xac-nhan': xacNhan });
 
   const luu = async () => {
-    setDaBam(true);
-    if (!xacNhan) return;
+    lf.bam();
+    if (loi.length > 0) return;
     setBusy(true);
     try {
       await api.post(`/students/${studentId}/${boLuuTru ? 'unarchive' : 'archive'}`, {});
@@ -128,7 +131,7 @@ function LuuTruPanel({ studentId, studentName, lop, onClose, onDone, boLuuTru }:
   return (
     <KhungPanel tieuDe={tieuDe} hocVien={studentName} lop={lop} onDong={onClose}
       chan={{
-        conThieu: daBam && !xacNhan ? ['Xác nhận'] : undefined,
+        conThieu: lf.conThieu(loi),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy}>{tieuDe}</button>,
       }}>
       <Khoi tieuDe={tieuDe}>
@@ -138,9 +141,10 @@ function LuuTruPanel({ studentId, studentName, lop, onClose, onDone, boLuuTru }:
             : 'Hồ sơ sẽ ẩn khỏi danh sách chính. Không đổi trạng thái, không xoá dữ liệu, không đóng việc còn dở. Xem lại được ở khu Lưu trữ.'}
         </p>
         <label className="flex items-center gap-2 text-sm text-slate-300">
-          <input type="checkbox" checked={xacNhan} onChange={(e) => setXacNhan(e.target.checked)} />
+          <input type="checkbox" {...lf.o(loi, 'xac-nhan')} checked={xacNhan} onChange={(e) => setXacNhan(e.target.checked)} />
           Tôi hiểu và muốn {boLuuTru ? 'bỏ lưu trữ' : 'lưu trữ'} học viên này.
         </label>
+        {lf.loiCua(loi, 'xac-nhan') && <span className="block text-[11px] text-late">Chưa đánh dấu xác nhận</span>}
       </Khoi>
     </KhungPanel>
   );
@@ -222,15 +226,15 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle }: Ch
   const [dob, setDob] = useState(student.dob ? ngay(student.dob, null) : '');
   const [consultantName, setConsultant] = useState(student.consultantName ?? '');
   const [note, setNote] = useState(student.note ?? '');
-  const [daBam, setDaBam] = useState(false);
+  const lf = useLoiForm();
   const [busy, setBusy] = useState(false);
   const dobIso = docNgaySinh(dob);
-  const thieu: string[] = [];
-  if (!fullName.trim()) thieu.push('Họ tên');
-  if (dobIso === undefined) thieu.push('Ngày sinh (dd/mm/yyyy)');
+  const loi = dsLoi([{ khoa: 'ho-ten', nhan: 'Họ tên', toiThieu: 1 }], { 'ho-ten': fullName });
+  if (dobIso === undefined) loi.push({ khoa: 'ngay-sinh', nhan: 'Ngày sinh', lyDo: 'Gõ dd/mm/yyyy, ví dụ 25/03/2008' });
+  const thieu = loi.map((l) => l.nhan);
 
   const luu = async () => {
-    setDaBam(true);
+    lf.bam();
     if (thieu.length > 0) return;
     setBusy(true);
     try {
@@ -244,15 +248,15 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle }: Ch
   return (
     <KhungPanel tieuDe={NHAN_VIEC.info} hocVien={studentName} lop={lop} onDong={onClose}
       chan={{
-        conThieu: daBam ? thieu : undefined,
+        conThieu: lf.conThieu(loi),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy}>Lưu</button>,
       }}>
       <Khoi tieuDe="Học viên">
-        <Truong nhan="Họ tên" batBuoc>
-          <input className="field w-full" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+        <Truong nhan="Họ tên" batBuoc loi={lf.loiCua(loi, 'ho-ten')}>
+          <input className="field w-full" {...lf.o(loi, 'ho-ten')} value={fullName} onChange={(e) => setFullName(e.target.value)} />
         </Truong>
-        <Truong nhan="Ngày sinh" tuyChon>
-          <input className="field w-full" inputMode="numeric" value={dob} onChange={(e) => setDob(e.target.value)} placeholder="Ví dụ: 25/03/2008" />
+        <Truong nhan="Ngày sinh" tuyChon loi={lf.loiCua(loi, 'ngay-sinh')}>
+          <input className="field w-full" {...lf.o(loi, 'ngay-sinh')} inputMode="numeric" value={dob} onChange={(e) => setDob(e.target.value)} placeholder="Ví dụ: 25/03/2008" />
         </Truong>
         <Truong nhan="Người tư vấn" tuyChon>
           <input className="field w-full" value={consultantName} onChange={(e) => setConsultant(e.target.value)} />

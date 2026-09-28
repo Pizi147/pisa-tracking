@@ -247,4 +247,13 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     assert(/const dangSua = moSua\.includes\(i\);/.test(src), 'dòng PA còn tự đóng khi có chữ');
     assert(/conThieu: lf\.daBam \? oLoi/.test(src), 'chân form chưa dùng danh sách ô lỗi');
   });
+
+  // ==================================================================== 7. Báo lỗi rõ cho mọi form KhungPanel còn lại
+  check('N1 (7) · mọi form KhungPanel (trừ classes/, dev/, panel chỉ xem) dùng useLoiForm', () => {
+    const bo = /modules[\/](classes|dev)[\/]|PhuongAnPanel|XemPhuongAnPanel/;
+    const thieu = tepTsx('web/src/modules').filter((f) => !bo.test(f) && /<KhungPanel/.test(docSach(f)) && !/useLoiForm\(/.test(docSach(f)));
+    assert(thieu.length === 0, thieu.join(', '));
+    const conCu = tepTsx('web/src/modules').filter((f) => !bo.test(f) && /conThieu: daBam/.test(docSach(f)));
+    assert(conCu.length === 0, `còn chân kiểu cũ: ${conCu.join(', ')}`);
+  });
 }

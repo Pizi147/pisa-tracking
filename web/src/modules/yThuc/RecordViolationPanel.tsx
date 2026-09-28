@@ -3,11 +3,12 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import {
   VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, VIOLATION_DESCRIPTION_MIN, VIOLATION_OTHER_DESCRIPTION_MIN,
-  VIOLATION_SKILLS, VIOLATION_SKILL_LABEL, cauCanhBaoTrung, type ViolationCategory,
+  VIOLATION_SKILLS, VIOLATION_SKILL_LABEL, cauCanhBaoTrung, type ViolationCategory, dsLoi,
 } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 
@@ -48,7 +49,7 @@ export function RecordViolationPanel({
   const [occurredOn, setOccurredOn] = useState(today);
   const [description, setDescription] = useState('');
   const [busy, setBusy] = useState(false);
-  const [daBam, setDaBam] = useState(false);
+  const lf = useLoiForm();
   /* K2-6f (Q4): ghi mới xong không đóng — chuyển sang bước "Đã ghi" + Bằng chứng. */
   const [daGhi, setDaGhi] = useState<{ id: number; studentName: string } | null>(null);
   const [xemTrung, setXemTrung] = useState(false);
@@ -60,7 +61,7 @@ export function RecordViolationPanel({
 
   const reset = () => {
     setCategory('homework'); setSkill(''); setOccurredOn(today); setDescription(''); setDaChonMon(false);
-    setDaGhi(null); setXemTrung(false); setDaBam(false);
+    setDaGhi(null); setXemTrung(false); lf.datLai();
   };
 
   useEffect(() => {
@@ -92,10 +93,12 @@ export function RecordViolationPanel({
   const displaySkill = daChonMon ? skill : (defaultSkill ?? skill);
 
   const minLen = category === 'other' ? VIOLATION_OTHER_DESCRIPTION_MIN : VIOLATION_DESCRIPTION_MIN;
-  /* Gom NHÃN ô còn thiếu, chỉ hiện SAU khi bấm Lưu (Q4). */
-  const thieu: string[] = [];
-  if (!studentId) thieu.push('Học viên');
-  if (description.trim().length < minLen) thieu.push(`Mô tả (ít nhất ${minLen} ký tự)`);
+  /* Ô lỗi (YC-12.5.2): lý do dưới ô khi rời ô; chân "n ô cần sửa ↑" sau khi bấm Lưu. */
+  const loi = dsLoi([
+    ...(students && !editing ? [{ khoa: 'hoc-vien', nhan: 'Học viên', chon: true }] : []),
+    { khoa: 'mo-ta', nhan: 'Mô tả', toiThieu: minLen },
+  ], { 'hoc-vien': studentId, 'mo-ta': description });
+  const thieu = loi.map((l) => l.nhan);
 
   const hoanTac = async (id: number) => {
     try {
@@ -131,7 +134,7 @@ export function RecordViolationPanel({
   };
 
   const submit = async () => {
-    setDaBam(true);
+    lf.bam();
     if (thieu.length > 0) return;
     setBusy(true);
     try {
@@ -183,13 +186,13 @@ export function RecordViolationPanel({
       chan={{
         /* Sửa: chân trái là `Xoá vi phạm` (viền đỏ). Nơi gọi tự đóng form này và quyết định lúc nào mở lại panel trước đó. */
         xoa: editing && violation && onDelete ? { nhan: 'Xoá vi phạm', onClick: () => onDelete(violation.id) } : undefined,
-        conThieu: daBam ? thieu : undefined,
+        conThieu: lf.conThieu(loi),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={submit}>Lưu</button>,
       }}>
       <Khoi tieuDe="Vi phạm">
         {students && !editing && (
-          <Truong nhan="Học viên" batBuoc>
-            <select className="field w-full" value={studentId || ''} onChange={(e) => onPickStudent?.(Number(e.target.value) || 0)}>
+          <Truong nhan="Học viên" batBuoc loi={lf.loiCua(loi, 'hoc-vien')}>
+            <select className="field w-full" {...lf.o(loi, 'hoc-vien')} value={studentId || ''} onChange={(e) => onPickStudent?.(Number(e.target.value) || 0)}>
               <option value="">Chọn học viên</option>
               {students.map((st) => <option key={st.id} value={st.id}>{st.name}{st.code ? ` · ${st.code}` : ''}</option>)}
             </select>
@@ -220,8 +223,8 @@ export function RecordViolationPanel({
           </div>
         </Truong>
 
-        <Truong nhan="Mô tả" batBuoc>
-          <textarea className="field w-full" rows={3} value={description} onChange={(e) => setDescription(e.target.value)}
+        <Truong nhan="Mô tả" batBuoc loi={lf.loiCua(loi, 'mo-ta')} dem={{ co: description.trim().length, can: minLen }}>
+          <textarea className="field w-full" {...lf.o(loi, 'mo-ta')} rows={3} value={description} onChange={(e) => setDescription(e.target.value)}
             placeholder="Ví dụ: không nộp bài Reading buổi 12/09" />
         </Truong>
 

@@ -4,6 +4,7 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 
 /** `GET /students/:id/xoa` (chỉ Quản trị hệ thống) — `server/src/students/xoaHocVien.ts`. */
@@ -28,6 +29,9 @@ export function XoaHocVienPanel({ studentId, studentName, lop, onClose }: {
   const [busy, setBusy] = useState(false);
   const d = xem.data;
   const khop = !!d && go.trim() === d.ma;
+  /* Nút Xoá chỉ sáng khi gõ khớp; rời ô mà còn lệch thì nói ngay dưới ô (YC-12.5.2). */
+  const lf = useLoiForm();
+  const loi = go.trim() && !khop ? [{ khoa: 'go-lai', nhan: 'Gõ lại mã học viên', lyDo: 'Chưa khớp mã' }] : [];
 
   const xoa = async () => {
     if (!d) return;
@@ -78,8 +82,8 @@ export function XoaHocVienPanel({ studentId, studentName, lop, onClose }: {
             <Khoi tieuDe="Xác nhận">
               <p className="m-0 text-sm text-soon">Không khôi phục được (trừ từ bản sao lưu).</p>
               <p className="m-0 text-xs text-slate-400">Nên sao lưu trước lần xoá đầu (npm run sao-luu)</p>
-              <Truong nhan="Gõ lại mã học viên" batBuoc phu={`Mã: ${d.ma}`}>
-                <input className="field w-full" value={go} onChange={(e) => setGo(e.target.value)} autoComplete="off" spellCheck={false} />
+              <Truong nhan="Gõ lại mã học viên" batBuoc phu={`Mã: ${d.ma}`} loi={lf.loiCua(loi, 'go-lai')}>
+                <input className="field w-full" {...lf.o(loi, 'go-lai')} value={go} onChange={(e) => setGo(e.target.value)} autoComplete="off" spellCheck={false} />
               </Truong>
             </Khoi>
           </>

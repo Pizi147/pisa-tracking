@@ -3,6 +3,7 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
@@ -33,12 +34,12 @@ export function ConfirmMeasurePanel({ open, onClose, measureId, onDone }: {
   const [nguoi, setNguoi] = useState<NguoiChon | null>({ kieu: 'toi' });
   const [note, setNote] = useState('');
   const [participants, setParticipants] = useState('');
-  const [daBam, setDaBam] = useState(false);
+  const lf = useLoiForm();
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!open) return;
-    setPerformedOn(today); setNguoi({ kieu: 'toi' }); setNote(''); setParticipants(''); setDaBam(false);
+    setPerformedOn(today); setNguoi({ kieu: 'toi' }); setNote(''); setParticipants(''); lf.datLai();
   }, [open, measureId]);
 
   if (!open) return null;
@@ -51,7 +52,7 @@ export function ConfirmMeasurePanel({ open, onClose, measureId, onDone }: {
   });
 
   const submit = async () => {
-    setDaBam(true);
+    lf.bam();
     if (missing || !measureId) return;
     setBusy(true);
     try {
@@ -69,7 +70,8 @@ export function ConfirmMeasurePanel({ open, onClose, measureId, onDone }: {
     <KhungPanel tieuDe="Xác nhận đã thực hiện" hocVien={data.studentName} onDong={onClose}
       ngCanh={<span className="truncate">{data.kindLabel}{data.ownerName ? ` · phụ trách ${data.ownerName}` : ''}</span>}
       chan={{
-        conThieu: daBam && missing ? [missing.replace(/^Cần /, '').replace(/^./, (c) => c.toUpperCase())] : undefined,
+        /* Câu chặn của máy chủ (measureMissing) có thể là tệp đính kèm, không phải một ô → nói thẳng câu đó ở chân. */
+        conThieu: lf.daBam && missing ? [{ nhan: 'Xác nhận', lyDo: missing }] : undefined,
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={submit}>Xác nhận</button>,
       }}>
       <Khoi tieuDe="Đã thực hiện">

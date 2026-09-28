@@ -32,9 +32,16 @@ export function useLoiForm() {
   };
 }
 
-/** Chân form sau khi bấm Lưu: MỘT dòng xám nhỏ "n ô cần sửa ↑" (tên ô ở tooltip); bấm → cuộn + focus ô lỗi ĐẦU TIÊN. */
+/**
+ * Chân form sau khi bấm Lưu: MỘT dòng xám nhỏ "n ô cần sửa ↑" (tên ô ở tooltip); bấm → cuộn + focus ô lỗi ĐẦU TIÊN.
+ * Câu CHẶN không gắn với ô nào (`{ lyDo }` không `oId`, ví dụ "Còn 1 PA đang chạy") thì nói thẳng câu đó, cùng kiểu xám.
+ */
 export function DongCanSua({ muc }: { muc: (string | MucThieu)[] }) {
   const ref = useRef<HTMLDivElement>(null);
+  const chan = muc.every((m) => typeof m !== 'string' && !m.oId && m.lyDo);
+  if (chan) {
+    return <div className="px-4 pt-2 text-right text-[11px] text-slate-400" role="status">{muc.map((m) => (m as MucThieu).lyDo).join(' · ')}</div>;
+  }
   const toiO = () => {
     const dau = muc.find((m): m is MucThieu => typeof m !== 'string' && !!m.oId);
     const el = (dau && document.getElementById(dau.oId!))
