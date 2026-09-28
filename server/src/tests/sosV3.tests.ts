@@ -285,7 +285,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
 
   /** Học viên MỚI, mục tiêu 7.0 (kỳ vọng MT1 6.0 · MT2 6.5 · MT3+ 7.0), riêng cho từng phép kiểm. */
   const makeStudent = (name: string): { id: number; cycleId: number } => {
-    intake.commitIntake(P.admin, { classId: CLASS, rows: [{ fullName: `PT ${name}`, target: 7 }], dateFormat: 'iso', idempotencyKey: `pt-${name}` });
+    intake.commitIntake(P.admin, { classId: CLASS, rows: [{ fullName: `PT ${name}`, target: 7, email: 'hv@demo.test' }], idempotencyKey: `pt-${name}` });
     const st = get('SELECT id FROM students WHERE full_name = ?', `PT ${name}`);
     const cy = get("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'", st.id);
     assert(st && cy, `Không dựng được học viên thử "${name}"`);
@@ -416,7 +416,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
   check('PR-T · Q-V3-1 (§10#8) Lớp NORMAL trượt hai môn ở Progress Test: KHÔNG tự tạo case, KHÔNG phương án điền sẵn, KHÔNG Phối hợp SOS — vẫn chỉ là tín hiệu chờ xác minh', () => {
     const regular: any = regularSvc;
     const fou = get("SELECT id FROM classes WHERE code = 'MB FOU 12'");
-    intake.commitIntake(P.admin, { classId: fou.id, rows: [{ fullName: 'PT Normal' }], dateFormat: 'iso', idempotencyKey: 'pt-normal' });
+    intake.commitIntake(P.admin, { classId: fou.id, rows: [{ fullName: 'PT Normal', email: 'hv@demo.test' }], idempotencyKey: 'pt-normal' });
     regular.planRegularTests(P.admin, fou.id);                     // idempotent: chỉ tạo bài còn thiếu cho em mới
     const stu = get("SELECT id FROM students WHERE full_name = 'PT Normal'");
     const attempt = get("SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'progress'", stu.id);

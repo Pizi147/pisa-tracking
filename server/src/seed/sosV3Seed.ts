@@ -37,7 +37,7 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
   const gvcn = activeTeacher(null);
 
   const addStudent = (fullName: string) => {
-    commitIntake(admin, { classId, rows: [{ fullName, target: 7 }], dateFormat: 'iso', idempotencyKey: `sosv3-demo-${fullName}` } as any);
+    commitIntake(admin, { classId, rows: [{ fullName, target: 7, email: 'hv@demo.test' }], idempotencyKey: `sosv3-demo-${fullName}` } as any);
     const st = conn.prepare('SELECT id FROM students WHERE full_name = ?').get(fullName) as any;
     const cy = conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(st.id) as any;
     return { id: st.id as number, cycleId: cy.id as number };
