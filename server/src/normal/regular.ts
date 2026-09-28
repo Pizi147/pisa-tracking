@@ -125,7 +125,7 @@ export function isRatioCycle(c: { id?: number | null; route?: string | null; pro
 
 /** Bộ hạng mục case đúng với chương trình của lộ trình này. */
 export function caseCategoriesOfCycle(c: any): readonly CaseCategory[] {
-  return caseCategoriesFor(isRatioCycle(c) ? 'ratio' : 'ielts_band');
+  return caseCategoriesFor(isRatioCycle(c) ? 'ratio' : 'ielts_band', c?.programme_code ?? programmeCodeOfCycle(c?.id));
 }
 
 // ---------------------------------------------------------------- kết luận
@@ -727,7 +727,7 @@ export function refreshRegularOutcome(p: Principal, attemptId: number) {
       addMilestone({
         caseId: existing.id, kind: 'repeat', attemptId: a.id, attemptNo: a.attempt_no,
         sosLevel: r.sosLevel, occurredOn: detectedAt, createdBy: p.userId,
-        note: REGULAR_SKILL_LABEL[skill as keyof typeof REGULAR_SKILL_LABEL] ?? skill,
+        note: r.skills.find((x) => x.skill === skill)?.label ?? tenMon(null, skill),   // tên môn theo chương trình (FOU G+V)
         dedupKey: `mt:${a.id}:${existing.id}:repeat`,
       });
       conn2

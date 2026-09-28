@@ -620,6 +620,12 @@ K5-45 T4 (+LOP) · K5-46 T2 · K5-47 T1/T5 · K5-48 T2 · K5-57 T5 · K5-67 T2.
   luôn ở Task này (cần cho `kyNangLabelOf`), lấy qua `programmeOfClass` một lần/lớp thay `isRatioClass` (cùng số câu). `tongQuan.ts:40`
   đổi danh sách viết tay → `ASSESSED_SKILLS` + `tenMon(null, …)` ngay Task này (phép quét Task 4 không có nó trong bảng trắng); lọc
   theo khung vẫn ở Task 9. `seed/build.ts` dùng `boMonLich(programme_code lớp)`.
+- **Task 5:** 1464 (+4). Quyền Pre FOU đi qua dòng `tong_hop` của GVCN — không sửa `owner.ts`/quyền. `reportIssue`: Pre FOU chỉ nhận
+  chủ đề `tong_hop` (trước đây hợp với 5 ô FT — em Pre FOU mở được Case Listening); câu lỗi phân loại không còn lộ mã ("…không thuộc bộ
+  phân loại của Grammar + Vocabulary"). `defaultSkillFor` (vi phạm) không tự điền `tong_hop`. `/violations/similar` trả thêm
+  `chuongTrinh`; form vi phạm hỏi cả khi sửa để có danh sách môn. `QuickReport` luôn hỏi `/case-topics` (kể cả mở từ tín hiệu) để có
+  `chuongTrinh`. Sửa kỳ vọng 5 phép kiểm cũ dùng mã nguyên nhân IELTS cho em FOU (S1, S17, PR-Pa Nợ S1, PR-Form ×2 → bộ G+V/P;
+  cùng điều kiện). `CaseSosControls` (ghi nguyên nhân trong Case) chờ `chuongTrinh` của Case — Task 6/7.
 
 ## Chủ sản phẩm chốt 29/09
 

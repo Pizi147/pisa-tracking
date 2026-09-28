@@ -1,6 +1,6 @@
 import { db } from '../db.ts';
 import {
-  hoKyNang, categoryOf, nhanDot,
+  hoKyNang, categoryOf, nhanDot, programmeOf,
   type ChuongTrinh, type HoKyNang, type LoaiBoQuen,
 } from '../../../shared/domain/index.ts';
 import { ngay, tuanLich } from '../../../shared/domain/hienThiNgay.ts';
@@ -55,6 +55,8 @@ function tinh(p: Principal, branchId: number | null, today: string): Record<Loai
     Object.entries(ev.skills).some(([k, v]) => hoKyNang(k) === ho && v.evaluable && v.under);
   const dongChu = (a: any) => nhanDot(a.kind, a.attempt_no);
   const laLopThuong = (a: any) => programmes.get(a.programme_code)?.scoringMode === 'ratio';
+  /* K5-57: "cùng họ" theo khoá môn — FOU (G+V, P) không nối với W/S của BE/ELE, lớp thường không nối với FT. */
+  const khoaHo = (a: any) => (laLopThuong(a) ? (programmeOf(a.programme_code) === 'FOU' ? 'FOU' : 'thuong') : 'ft');
 
   // Case của các học viên đó → họ kỹ năng đang mở, và ngày đóng gần nhất theo họ.
   const moCua = new Map<number, Set<HoKyNang>>();
@@ -99,7 +101,7 @@ function tinh(p: Principal, branchId: number | null, today: string): Record<Loai
   for (const [sid, list] of luotCua) {
     const hopLe = list.filter((a) => evOf(a).scored > 0);          // mới nhất trước
     // 1) hai lượt hợp lệ mới nhất cùng dưới kỳ vọng / chưa đạt một họ, không Case mở cùng họ
-    if (hopLe.length >= 2 && laLopThuong(hopLe[0]) === laLopThuong(hopLe[1])) {   // hai lượt phải CÙNG chương trình (FT không "trượt liền" với lượt lớp thường cũ)
+    if (hopLe.length >= 2 && khoaHo(hopLe[0]) === khoaHo(hopLe[1])) {   // hai lượt phải CÙNG khoá họ (FT ≠ lớp thường; FOU ≠ BE/ELE)
       const [moi, cu] = hopLe;
       const ho = THU_TU_HO.filter((h) => duoi(evOf(moi), h) && duoi(evOf(cu), h) && !coCaseMo(sid, h));
       if (ho.length) {

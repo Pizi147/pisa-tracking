@@ -401,7 +401,7 @@ export async function runTongQuanTests(t: YThucTestKit) {
       const gui = () => cases.reportIssue(gvcn, {
         studentId: hv.sid, topic: 'speaking', fromSignalId: sg.id, idempotencyKey: `pa-e2e-${sg.id}`,
         title: 'Speaking — trả lời cụt, không mở rộng ý', summary: 'Part 2 nói dưới một phút, lặp từ nối; đã nghe lại bài thi.',
-        primaryCode: d.issuesForTopic('speaking')[0].code,
+        primaryCode: d.issuesForTopic('speaking', 'FOU')[0].code,   // PR-MON: FOU S = P
       }) as any;
       const c = gui();
       eq(gui().id, c.id, 'Gửi lại cùng idempotencyKey phải ra cùng Case');

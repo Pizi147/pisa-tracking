@@ -157,7 +157,9 @@ export function defaultSkillFor(p: Principal, classId: number | null): string | 
       .filter((a) => a.classId === classId && a.skill && a.effectiveFrom <= today && (!a.effectiveTo || a.effectiveTo >= today))
       .map((a) => a.skill as string),
   );
-  return skills.size === 1 ? [...skills][0] : null;
+  /* Pre FOU: GVCN giữ ô `tong_hop` — không phải môn vi phạm (K5-47), nên không tự điền. */
+  const mot = skills.size === 1 ? [...skills][0] : null;
+  return mot && (VIOLATION_SKILLS as readonly string[]).includes(mot) ? mot : null;
 }
 
 // ---------------------------------------------------------------- ghi (V01–V08)

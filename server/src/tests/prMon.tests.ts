@@ -214,4 +214,64 @@ export async function runPrMonTests(t: YThucTestKit) {
       .filter((f) => mau.some((m) => m.test(doc(f))));
     assert(lo.length === 0, `còn danh sách 4 môn viết tay: ${lo.join(', ')}`);
   });
+
+  // ------------------------------------------------------------------ Task 5 · Case, quyền, phân loại theo môn
+  const cases: any = await import('../cases/cases.ts');
+  const owner: any = await import('../cases/owner.ts');
+  const viMod: any = await import('../yThuc/violations.ts');
+  let soHv = 0;
+  /** Một em mới ở lớp `lopCode`, lộ trình lớp thường mang mã chương trình `ct`. */
+  const taoHv = (lopCode: string, ct: string) => {
+    soHv += 1;
+    const now = new Date().toISOString();
+    const cid = classId(lopCode);
+    const sid = Number(conn.prepare(
+      `INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`,
+    ).run(`PISA-MONHV-${soHv}`, `Học viên MON ${soHv}`, `hoc vien mon ${soHv}`, MB, now).lastInsertRowid);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', '2026-07-27', ?)`).run(sid, cid, now);
+    conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, programme_code, started_at, status, created_at)
+                  VALUES (?, 1, NULL, ?, '2026-07-27', 'active', ?)`).run(sid, ct, now);
+    return sid;
+  };
+  let soKhoa = 0;
+  const moCase = (p: any, studentId: number, topic: string, primaryCode: string) => cases.reportIssue(p, {
+    studentId, topic, primaryCode, title: 'Case thử PR-MON', summary: 'Phép kiểm PR-MON: nguyên nhân theo môn của chương trình.',
+    idempotencyKey: `pr-mon-${++soKhoa}`,
+  });
+
+  check('MON (5) · GVCN Pre FOU nhập điểm và xử lý Case "Tổng hợp"; GV khác cùng chi nhánh bị chặn (M-09, T56)', () => {
+    const l = taoLopPreFou(1);
+    const ha = perm.loadPrincipal(GVCN_HA);
+    regularMod.saveRegularScore(ha, l.luot[0].id, 'tong_hop', { score: 27, total: 40 }, TODAY);
+    assertThrows(() => regularMod.saveRegularScore(P.lrTeacher, l.luot[0].id, 'tong_hop', { score: 20, total: 40 }, TODAY),
+      /phân công|quyền/, 'GV không phân công nhập được điểm Pre FOU');
+    assert(owner.suggestCaseOwner({ classId: l.classId, category: 'tong_hop' }) === GVCN_HA, 'người phụ trách Case Tổng hợp phải là GVCN');
+    const c = moCase(ha, l.sids[0], 'tong_hop', 'student.tong_hop.focus');
+    assert(c.topic === 'tong_hop' && c.category === 'tong_hop', JSON.stringify({ topic: c.topic, category: c.category }));
+    assertThrows(() => moCase(ha, l.sids[0], 'listening', d.issuesForTopic('listening')[0].code), /Chủ đề không hợp lệ/, 'Pre FOU không có Case Listening');
+  });
+  check('MON (5) · FOU chỉ nhận nguyên nhân G+V; BE ngược lại (T57, K5-41)', () => {
+    const fou = taoHv('MB FOU 12', 'FOU');
+    assertThrows(() => moCase(P.mbManager, fou, 'writing', 'student.writing.task'), /không thuộc bộ phân loại của Grammar \+ Vocabulary/, 'FOU nhận mã IELTS');
+    assert(moCase(P.mbManager, fou, 'writing', 'student.gv.grammar').topic === 'writing', 'FOU G+V');
+    const be = taoHv('MB BE 08', 'BE');
+    assertThrows(() => moCase(P.mbManager, be, 'writing', 'student.gv.grammar'), /không thuộc bộ phân loại/, 'BE nhận mã G+V');
+    assert(moCase(P.mbManager, be, 'writing', 'student.writing.task').topic === 'writing', 'BE Writing');
+    const tp = cases.caseTopicsOf(P.mbManager, fou);
+    assert(tp.chuongTrinh === 'FOU' && tp.topics.length === 4, JSON.stringify(tp));
+  });
+  check('MON (5) · vi phạm Pre FOU không có môn: danh sách chọn rỗng, tong_hop bị từ chối, không tự điền (K5-47)', () => {
+    const l = taoLopPreFou(1);
+    const ha = perm.loadPrincipal(GVCN_HA);
+    assert(d.monViPham('PREFOU').length === 0, 'danh sách chọn');
+    assert(viMod.defaultSkillFor(ha, l.classId) === null, 'GVCN Pre FOU bị tự điền môn tong_hop');
+    assertThrows(() => viMod.recordViolation(ha, { studentId: l.sids[0], category: 'homework', skill: 'tong_hop',
+      description: 'Không làm bài tập về nhà hai buổi liền.' }), /Môn không hợp lệ/, 'nhận môn tong_hop');
+    const v = viMod.recordViolation(ha, { studentId: l.sids[0], category: 'homework', description: 'Không làm bài tập về nhà hai buổi liền.' });
+    assert(v.violation.skill === null, `môn tự điền: ${v.violation.skill}`);
+  });
+  check('MON (5) · bỏ quên không nối FOU → BE: khoá họ khác nhau (K5-57)', () => {
+    const src = doc('server/src/phanTich/boQuen.ts');
+    assert(src.includes('khoaHo(hopLe[0]) === khoaHo(hopLe[1])') && src.includes("=== 'FOU' ? 'FOU' : 'thuong'"), 'boQuen chưa so khoá họ');
+  });
 }

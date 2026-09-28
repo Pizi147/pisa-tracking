@@ -1021,11 +1021,14 @@ api.get('/violations/similar', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   const p = principalOf(req);
   const studentId = qInt(req, 'studentId') ?? 0;
+  const lop = accessSvc.activeClassOf(studentId);
   return {
     rows: violationSvc.similarViolations(p, {
       studentId, category: qStr(req, 'category') ?? '', occurredOn: qStr(req, 'occurredOn') ?? null,
     }),
-    defaultSkill: violationSvc.defaultSkillFor(p, accessSvc.activeClassOf(studentId)),
+    defaultSkill: violationSvc.defaultSkillFor(p, lop),
+    /* K5-47: form chọn môn theo chương trình lớp em đang học (`monViPham`). */
+    chuongTrinh: lop ? regularSvc.programmeOfClass(lop)?.code ?? null : null,
   };
 }));
 api.post('/violations', requireAuth, wrap((req) => {

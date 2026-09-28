@@ -16,7 +16,7 @@ import {
   HAN_DUYET_NGAY, hanTheoNgay,
   type NextStep, type RescheduleTarget,
   issueBranchOf, issueLabel, caseTopicLabel, urgencyFromSos,
-  caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac,
+  caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac, programmeOf,
   type CaseOutcome, type FollowUpOutcome, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -26,7 +26,7 @@ import { nho, trongBoNho } from '../platform/nguCanhRequest.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { currentCycle } from '../fasttrack/cycles.ts';
 import { expectationFor } from '../fasttrack/scoring.ts';
-import { isRatioCycle } from '../normal/regular.ts';
+import { isRatioCycle, programmeCodeOfCycle } from '../normal/regular.ts';
 import { suggestCaseOwner } from './owner.ts';
 import { linkSignalToCase, loadSignal } from './signals.ts';
 import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
@@ -435,8 +435,11 @@ export function reportIssue(p: Principal, input: {
     throw badRequest('Chọn kỹ năng: Listening, Reading, Writing Task 1, Writing Task 2 hay Speaking.');
   }
   const ratioForTopics = !!(cycle && isRatioCycle(cycle));
-  const allowedTopics: readonly string[] = ratioForTopics
-    ? [...new Set([...caseTopicsFor(true), ...ENTRY_SKILLS])] : ENTRY_SKILLS;
+  /* T57: chương trình của lộ trình quyết định bộ chủ đề (Pre FOU "Tổng hợp") và bộ nguyên nhân (FOU G+V / P). */
+  const ctCuaCase: string | null = cycle ? cycle.programme_code ?? programmeCodeOfCycle(cycle.id) : null;
+  const allowedTopics: readonly string[] = !ratioForTopics ? ENTRY_SKILLS
+    : programmeOf(ctCuaCase) === 'PREFOU' ? caseTopicsFor(true, ctCuaCase)          // Pre FOU chỉ "Tổng hợp" (PF6)
+    : [...new Set([...caseTopicsFor(true, ctCuaCase), ...ENTRY_SKILLS])];
   if (!allowedTopics.includes(topic)) throw badRequest(`Chủ đề không hợp lệ: ${topic}`);
   if (fromSignal && categoryOf(topic) !== (fromSignal.category ?? categoryOf(fromSignal.skill))) {
     throw badRequest('Case tạo từ tín hiệu phải đúng môn của tín hiệu đó.');
@@ -459,11 +462,11 @@ export function reportIssue(p: Principal, input: {
    * Chọn "Khác" thì được, nhưng lúc đó phải ghi rõ "Khác" là gì (ô Ghi rõ, T13) — nếu không,
    * "Khác" trở thành đúng cái ô "Chưa rõ" vừa bị bỏ, chỉ khác tên.
    */
-  const allowed = issuesForTopic(topic).map((i) => i.code);
+  const allowed = issuesForTopic(topic, ctCuaCase).map((i) => i.code);
   const primaryCode = (input.primaryCode ?? '').trim();
   if (!primaryCode) throw badRequest('Chọn phân loại vấn đề — đây là căn cứ để tổng hợp về sau.');
   if (!allowed.includes(primaryCode)) {
-    throw badRequest(`Phân loại "${primaryCode}" không thuộc bộ phân loại của ${topic}.`);
+    throw badRequest(`Phân loại đã chọn không thuộc bộ phân loại của ${caseTopicLabel(topic, ctCuaCase)}.`);
   }
   /* T13: "Khác" cần ô Ghi rõ ≥ 3 ký tự, lưu ở `case_issues.observation` (Q9). Luật cũ "mô tả ≥ 30 ký tự" đã bỏ. */
   if (laKhac(primaryCode)) {
@@ -620,7 +623,8 @@ export function caseTopicsOf(p: Principal, studentId: number, cycleId?: number |
     ? (conn.prepare('SELECT * FROM learning_cycles WHERE id = ? AND student_id = ?').get(cycleId, studentId) as any)
     : currentCycle(studentId);
   const ratio = !!(cycle && isRatioCycle(cycle));
-  return { ratio, topics: caseTopicsFor(ratio) };
+  const chuongTrinh: string | null = cycle ? cycle.programme_code ?? programmeCodeOfCycle(cycle.id) : null;
+  return { ratio, topics: caseTopicsFor(ratio, chuongTrinh), chuongTrinh };
 }
 
 /**

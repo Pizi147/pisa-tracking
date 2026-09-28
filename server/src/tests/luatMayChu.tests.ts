@@ -91,7 +91,9 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   const caseTuTinHieu = (p: any, sg: any, topic?: string) => cases.reportIssue(p, {
     studentId: sg.student_id, topic: topic ?? sg.skill, fromSignalId: sg.id,
     title: `Case từ tín hiệu ${sg.skill} (PR-S1)`, summary: 'Đã xem lại bài, em vướng đúng phần này của môn.',
-    primaryCode: domain.issuesForTopic(topic ?? sg.skill)[0].code,
+    /* PR-MON (T57): bộ nguyên nhân theo chương trình lớp của tín hiệu (FOU W → G+V). */
+    primaryCode: domain.issuesForTopic(topic ?? sg.skill,
+      (conn.prepare('SELECT programme_code FROM classes WHERE id = ?').get(sg.class_id) as any)?.programme_code)[0].code,
   }) as any;
   void load; void assertThrows; void TODAY; void pSpeakingFou; void pWritingFou; void caseTuTinHieu; void diem; void tinHieu;
 
@@ -669,7 +671,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
       VALUES (?, 2, NULL, 'FOU', ?, 'active', ?)`).run(hv.sid, TODAY, NOW).lastInsertRowid);
     const nCase = cases.reportIssue(P.mbManager, {
       studentId: hv.sid, cycleId: normalCycle, topic: 'writing', title: 'Writing lớp thường (S17)', summary: 'Case lớp thường dựng cho phép kiểm đổi chương trình.',
-      primaryCode: domain.issuesForTopic('writing')[0].code, parallel: true,
+      primaryCode: domain.issuesForTopic('writing', 'FOU')[0].code, parallel: true,   // PR-MON: FOU W = G+V
     }) as any;
     assert(systemClose.programmeOfCase(conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(ftCase.id)) === 'band', 'Case W1 phải là FT');
     const r1 = systemClose.closeCasesOnProgrammeSwitch(P.mbManager.userId, hv.sid, 'normal', TODAY);
