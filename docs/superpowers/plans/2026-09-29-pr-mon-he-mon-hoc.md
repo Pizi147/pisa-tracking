@@ -671,6 +671,9 @@ K5-45 T4 (+LOP) · K5-46 T2 · K5-47 T1/T5 · K5-48 T2 · K5-57 T5 · K5-67 T2.
   (Tạo lớp + Phân công lớp) xếp trước người khai kỹ năng hợp `kyNangGoiY(ct, ô)`, thêm "— dạy được W1, W2" trong `<option>` (option
   không có dòng thứ hai — nối cùng dòng); không tự điền. `CatalogAdmin` đã đúng (FOU `L · R · G+V · P` qua `oPhanCong`, Pre FOU
   `Tổng hợp` qua dự phòng `skillShort`) — không sửa.
+- **Task 11:** `CODE_MAP.md` (Normal: tên môn, bộ môn một lượt, nguyên nhân theo môn, % Pre FOU; Dùng chung: `CongTacKhung`, `ChonKyNang`,
+  Migrate PR-MON) · `TRIEN_KHAI.md` §11.1 khối "Đợt 2 — PR-MON" · `thiet-ke/TU_DIEN_VA_CHU.md` §12 · `thiet-ke/HE_GIAO_DIEN.md` §12 ·
+  `plan.md` một dòng nhật ký. Không chạy lại check.
 
 ## Chủ sản phẩm chốt 29/09
 

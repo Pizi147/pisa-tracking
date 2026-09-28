@@ -193,7 +193,11 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 
 | Muốn sửa | Mở file |
 |---|---|
-| Bốn môn của Normal (L/R/W/S) | `shared/domain/normal.ts` → `REGULAR_SKILLS` |
+| Bốn ô môn của FOU/BE/ELE (L/R/W/S); Pre FOU một ô `tong_hop` | `shared/domain/normal.ts` → `REGULAR_SKILLS`, `PROGRAMME_TEMPLATES` (bảng `programme_skills` thắng) |
+| **Tên môn theo chương trình** (PR-MON, MH2 — MỘT nguồn: FOU `W` = G+V / Grammar + Vocabulary, `S` = P / Pronunciation; Pre FOU Tổng hợp) | `shared/domain/normal.ts` → `tenMon(ct, ô)`, `tenMonNgan(ct, ô)`; `skillLabel`/`skillShort` (web `lib/format.ts`), `tenKyNang`, `caseTopicLabel` chỉ là lớp mỏng. Máy chủ gửi kèm `chuongTrinh` (Case, Lịch Test, hồ sơ HV, lưới `monNgan`) |
+| Bộ môn xếp lịch của MỘT lượt (FT 4 kỹ năng đánh giá; lớp thường theo chương trình) | `server/src/fasttrack/skillSchedule.ts` → `boMonCuaLuot` · luật `shared/domain/normal.ts` → `boMonLich` · `regularSkillViews(…, skills)` bắt buộc truyền bộ môn |
+| Nguyên nhân Case theo môn (FOU G+V: Từ vựng/Ngữ pháp · P: Âm/Trọng âm/Ngữ điệu · Pre FOU nhóm Tổng hợp) | `shared/domain/cases.ts` → `nhanhPhanLoai`, `issuesForTopic(topic, ct)`, `ISSUE_TAXONOMY` (nhánh `gv`, `phat_am`, `tong_hop`) |
+| Pre FOU: kết quả là % tổng (không SOS) | `server/src/normal/regular.ts` → `evaluateRegular` (`tyLeTong`) · `shared/domain/chamDiem.ts` → `ketQuaThuong` · `hocVienLop.ts` → `ketQuaGanNhat` · `hanhTrinh.ts` → `nhanGhim` |
 | Số tuần và mốc kiểm tra từng chương trình | `shared/domain/normal.ts` → `PROGRAMME_TEMPLATES` |
 | Ngưỡng đạt (70%) và cách chấm theo tỷ lệ | `shared/domain/normal.ts` → `ratioResult` · `RATIO_PASS_THRESHOLD` |
 | Bảng nhập điểm Progress/Final Test (lưới lớp thường) | `web/src/modules/cham/LuoiThuong.tsx` · `server/src/normal/regular.ts` → `regularSheet` — xem mục "Chấm điểm" bên dưới |
@@ -371,6 +375,8 @@ Hướng dẫn cho chủ sản phẩm: `TRIEN_KHAI.md`. Kế hoạch: `docs/supe
 | Ô ngày · tuần · tháng (gõ + lịch), lịch tự vẽ | `web/src/ui/ONgay.tsx` · `web/src/ui/LichNho.tsx` · luật `shared/domain/oNgay.ts` |
 | Ô "Khác" → Ghi rõ | `web/src/ui/OKhac.tsx` · luật `shared/domain/khac.ts` |
 | Nút đang chọn, bộ lọc nút đoạn, nhãn trạng thái | `web/src/ui/ui.tsx` → `NutChon`, `BoLocDoan`, `NhanTrangThai` · luật `shared/domain/trangThai.ts` |
+| Công tắc hai khung `Fast Track · Lớp thường` (Lịch Test, Kế hoạch Test) / `Tất cả · …` (Công việc) — nhớ theo máy | `web/src/ui/CongTacKhung.tsx` (`CongTacKhung`, `khungDaNho`) · khung của dòng: `shared/domain/normal.ts` → `khungCua` · máy chủ `LichTest.tongQuanKhung`, `WorkItem.khung` |
+| Ô chọn kỹ năng phụ trách được (5 ô L R W1 W2 S) | `web/src/modules/platform/ProfilePage.tsx` → `ChonKyNang` (dùng lại ở Quản trị › Tài khoản, Đăng ký) · Quản trị sửa: `PUT /admin/accounts/:id/skills` → `setUserSkills` |
 | Giữ và trả focus (panel, Modal, lịch), phím mũi tên | `web/src/ui/giuFocus.ts` · luật `shared/domain/banPhim.ts` |
 | Ô chọn tuần, bộ lọc chi nhánh | `web/src/ui/Filters.tsx` |
 | Thông báo nổi | `web/src/ui/Toast.tsx` · `toast.hoanTac(text, onHoanTac, { key })` = toast Hoàn tác chung 5 giây, nút đếm lùi (PR-N1 C1; `shared/domain/hoanTac.ts` `HOAN_TAC_MS`, `giayHoanTacConLai`) |
@@ -380,6 +386,7 @@ Hướng dẫn cho chủ sản phẩm: `TRIEN_KHAI.md`. Kế hoạch: `docs/supe
 | Tab Ý thức lớp: số = dòng | `shared/domain/viPhamLop.ts` (`dongViPhamLop`) → `web/src/modules/yThuc/ClassYThucCard.tsx` |
 | Migrate PR-N1 (dời hạn CN → T2, PA quy chế chạy ngay) + chạy thử chỉ đọc | `server/src/migrate/prN1.ts` · `server/src/migrate/chayThuN1.ts` (`npm run chay-thu:n1`) · phép kiểm `server/src/tests/suaLoiNong.tests.ts` |
 | Migrate PR-LOP (cột `so_tuan`/`tuan_giua_khoa`/`tuan_cuoi_khoa`, dòng RF + Pre FOU, đổi tên lớp cũ, chỉ mục `ux_classes_ma_chuan`) + chạy thử chỉ đọc | `server/src/migrate/prLop.ts` (`migratePrLop`, `keHoachDoiTenLop`, `dienMocLop`) · `server/src/migrate/chayThuLop.ts` (`npm run chay-thu:lop`) · phép kiểm `server/src/tests/prLop.tests.ts` |
+| Migrate PR-MON (`user_skills`: Writing lớp thường → W1 + W2, Pronunciation → S) + chạy thử chỉ đọc | `server/src/migrate/prMon.ts` (`migratePrMon`, `keHoachDoiKyNang`, `demCaseFouNguyenNhanIelts`) · `server/src/migrate/chayThuMon.ts` (`npm run chay-thu:mon`) · phép kiểm `server/src/tests/prMon.tests.ts` |
 | Tên hiển thị của mọi mã máy | `web/src/lib/format.ts` |
 
 ---
