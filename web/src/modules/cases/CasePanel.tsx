@@ -161,7 +161,7 @@ export function ThanCase({ data, onViec }: { data: CaseDetail; onViec: (v: ViewC
       <Khoi tieuDe={`Phương án · ${dsPa.length}`}
         luat={(
           <>
-            <p className="m-0">Mỗi PA có hạn ghi kết quả hằng tuần vào Chủ nhật. Case chỉ hoàn thành được khi mọi PA đã khép.</p>
+            <p className="m-0">Mỗi PA ghi kết quả hằng tuần, trước hết Thứ Hai tuần sau. Case chỉ hoàn thành được khi mọi PA đã khép.</p>
             {chiXem && <p className="m-0">Chỉ Quản lý, hoặc GVCN dạy đúng môn của Case, mới hoàn thành được Case này. Bạn vẫn ghi được kết quả của từng PA.</p>}
           </>
         )}>
@@ -254,7 +254,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
       <div className="mt-1.5 flex flex-wrap gap-2">
         {data.viewer.canEdit && dangChay && !choDuyet && (
           <button type="button" className="btn btn-sm btn-primary" onClick={() => onViec({ loai: 'ghi-ket-qua', paId: iv.id })}
-            title="Ghi kết quả tuần này: kết quả, tiến triển, và quyết định Giữ nguyên / Điều chỉnh / Thay / Kết thúc">
+            title={`${hanGhi?.viec ?? 'Ghi kết quả'}: kết quả, tiến triển, và quyết định Giữ nguyên / Điều chỉnh / Thay / Kết thúc`}>
             Ghi kết quả
           </button>
         )}

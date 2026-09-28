@@ -154,7 +154,7 @@ export function SkillBoard({ rows, loading, error, onRetry, selected, onPick, on
   );
 }
 
-/** Hạn của việc tiếp theo, một dòng dưới chữ việc: "⚠ quá hạn 15 ngày" (đỏ) · "hôm nay" (vàng) · "hạn CN 30/08" (mờ). Chỗ DUY NHẤT nói quá hạn của kỹ năng. */
+/** Hạn của việc tiếp theo, một dòng dưới chữ việc: "⚠ quá hạn 15 ngày" (đỏ) · "hôm nay" (vàng) · "hạn hết T2 31/08" (mờ). Chỗ DUY NHẤT nói quá hạn của kỹ năng. */
 function DongHan({ v }: { v: DeadlineView | null }) {
   if (!v || v.han === 'chưa có hạn') return null;
   return (
@@ -350,7 +350,7 @@ function HangCaseVaPa({ c, ngan, onChanged, onMoCase }: {
 }
 
 /**
- * MỘT PA = MỘT HÀNG CON: `PA · {loại} — mô tả` + `người · 24/08 → 14/09` · kết quả gần nhất · `hạn CN 30/08` (hạn gốc của PA, KHÔNG lặp
+ * MỘT PA = MỘT HÀNG CON: `PA · {loại} — mô tả` + `người · 24/08 → 14/09` · kết quả gần nhất · `hạn hết T2 31/08` (hạn gốc của PA, KHÔNG lặp
  * ⚠ — quá hạn đã nói ở hàng kỹ năng, B-5) + nút `Ghi kết quả`. Bấm tên PA → ngăn Case cuộn tới PA đó.
  */
 function HangPa({ p, c, ngan, onChanged, onMoCase }: {
@@ -395,7 +395,7 @@ function HangPa({ p, c, ngan, onChanged, onMoCase }: {
             {han && <span className="text-[11px] text-slate-500">{han.han}</span>}
             {c.canEdit && (
               <button type="button" className="btn btn-sm" onClick={() => onMoCase(c.id, { viec: 'ghi-ket-qua', paId: p.id })}
-                title="Ghi kết quả tuần này: kết quả, tiến triển, và quyết định Giữ nguyên / Điều chỉnh / Thay / Kết thúc">
+                title={`${han?.viec ?? 'Ghi kết quả'}: kết quả, tiến triển, và quyết định Giữ nguyên / Điều chỉnh / Thay / Kết thúc`}>
                 Ghi kết quả
               </button>
             )}

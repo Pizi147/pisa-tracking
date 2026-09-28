@@ -10,7 +10,7 @@ import {
   FOLLOWUP_OUTCOMES, INTERVENTION_KIND_LABEL, OUTCOME_MARK,
   NUT_LUU_KET_QUA, PLAN_DECISIONS, PLAN_DECISION_HINT, PLAN_DECISION_NGAN, PLAN_DECISION_NGHIA,
   RESCHEDULE_TARGETS, RESCHEDULE_TARGET_LABEL,
-  decisionBlockedReason, decisionNeedsReason, deadlineView, interventionKindsFor, ngay, outcomeLabelFor,
+  decisionBlockedReason, decisionNeedsReason, deadlineView, interventionKindsFor, ngay, nhanTuanGhiKetQua, outcomeLabelFor,
   nguoiThanhPayload, type NguoiChon, type PlanDecision,
 } from '@shared/domain/index.ts';
 
@@ -18,7 +18,7 @@ import {
  * GHI KẾT QUẢ CỦA MỘT PA — MỘT PANEL (PR-UX3, N-4, mockup 15 §4–§5; nguồn §8). Thay `CapNhatTuanForm` (form trải trong trang + hộp
  * thoại đè lên ngăn Case): từ Hồ sơ HV, Việc cần làm, Hành trình đều mở NGĂN CASE ở view này.
  *
- * Ba khối: 1 · Kết quả tuần này (4 nút + "Chưa đủ dữ liệu" là nút chữ) · 2 · Quyết định (danh sách dọc 5 dòng, khối con mở
+ * Ba khối: 1 · Kết quả tuần W4 SEP / ghi bù nhiều tuần (4 nút + "Chưa đủ dữ liệu" là nút chữ) · 2 · Quyết định (danh sách dọc 5 dòng, khối con mở
  * NGAY DƯỚI dòng được chọn) · 3 · Ghi chú. Luật giữ nguyên (máy chủ vẫn kiểm lại); chỉ đổi CÁCH HIỆN: nút Lưu không mờ, bấm mới
  * hiện "Còn thiếu: Tiến triển · Lý do điều chỉnh" (Q4) — trước khi bấm không có lỗi nào.
  */
@@ -142,6 +142,8 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
   };
 
   const hanGhi = pa.actionDue ? deadlineView({ kind: 'cap-nhat-pa', due: pa.actionDue, today: homNay }) : null;
+  /* K3-17: tiêu đề khối nói TUẦN đang ghi ('Kết quả tuần W4 SEP'); trễ nhiều tuần thì nói khoảng + số tuần ghi bù. */
+  const tuanGhi = nhanTuanGhiKetQua(pa.actionDue ?? null, homNay).tieuDe;
   const tenPa = pa.description || (INTERVENTION_KIND_LABEL[pa.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? pa.kind);
 
   /* Khối con mở NGAY DƯỚI dòng quyết định được chọn (thụt 12px, vạch trái). */
@@ -233,9 +235,9 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
           </button>
         ),
       }}>
-      <Khoi tieuDe="1 · Kết quả tuần này">
+      <Khoi tieuDe={`1 · ${tuanGhi}`}>
         <div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="group" aria-label="Kết quả tuần này">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="group" aria-label={tuanGhi}>
             {FOLLOWUP_OUTCOMES.filter((o) => o !== 'insufficient').map((o) => (
               <button key={o} type="button" aria-pressed={outcome === o}
                 className={`btn min-h-[44px] justify-center whitespace-nowrap px-1.5 text-xs sm:min-h-0 ${outcome === o ? 'btn-primary' : ''}`} onClick={() => pickOutcome(o)}>

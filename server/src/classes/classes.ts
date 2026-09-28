@@ -447,6 +447,13 @@ export function classRoster(p: Principal, classId: number, q?: string) {
             const scored = row?.raw_score !== null && row?.raw_score !== undefined;
             return !scored && !!regViews.get(k)?.overdue;
           }).length,
+          /* PR-N1 A6: hạn nhập điểm SỚM NHẤT của các môn người xem còn nợ — "Nhập điểm R · MT2 ⚠ quá hạn n ngày". */
+          hanNhap: myRegularSkills.filter((k) => {
+            const row = scores.find((x) => x.skill === k);
+            const scored = row?.raw_score !== null && row?.raw_score !== undefined;
+            const v = regViews.get(k);
+            return !scored && !!v && awaitingScore(v.progress);
+          }).map((k) => regViews.get(k)?.deadline ?? null).filter(Boolean).sort()[0] ?? null,
           /* Tuần thi của TỪNG môn (thứ Hai) — ô chưa có điểm ở bảng lớp thường ghi tuần này (đặc tả §3.7, 10b A). */
           tuanMon: Object.fromEntries(prog!.skills.map((k) => [k, regViews.get(k)?.weekStart ?? null])),
         };
@@ -478,6 +485,9 @@ export function classRoster(p: Principal, classId: number, q?: string) {
         myPending: cells.filter((x) => x.canEdit && x.band === null && x.progress === 'due')
           .map((x) => x.skill),
         overdueSkills: cells.filter((x) => x.overdue).length,
+        /* PR-N1 A6: hạn nhập điểm SỚM NHẤT của các ô người xem còn nợ (đến lịch hoặc đã trễ). */
+        hanNhap: cells.filter((x) => x.canEdit && x.band === null && (x.progress === 'due' || x.overdue))
+          .map((x) => x.deadline).filter(Boolean).sort()[0] ?? null,
       };
     });
     const done = timeline.filter((t) => t.evaluable);
@@ -602,7 +612,10 @@ export function classRoster(p: Principal, classId: number, q?: string) {
           const cho = [...new Set(timeline.flatMap((t) => t.myPending))];
           if (!cho.length) return null;
           const dot = timeline.find((t) => t.myPending.length > 0) ?? null;
-          return { kyNang: cho, dot: dot?.kindLabel ?? null, quaHan: timeline.some((t) => t.overdueSkills > 0) };
+          return {
+            kyNang: cho, dot: dot?.kindLabel ?? null, quaHan: timeline.some((t) => t.overdueSkills > 0),
+            han: timeline.map((t) => t.hanNhap).filter(Boolean).sort()[0] ?? null,
+          };
         })(),
         cases: caseMo.get(s.id) ?? [],
         homNay: today,

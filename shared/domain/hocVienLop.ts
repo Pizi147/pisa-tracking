@@ -244,7 +244,8 @@ export type CaseChoViec = {
 };
 /**
  * Một việc ở cột "Việc tiếp theo" (PR-UX3, B-2/B-3, mockup 17 #14–#15): `viec` là chữ chính (động từ + đối tượng), hạn là
- * mẩu riêng (`han` = "CN 14/09", `quaHanNgay` = số ngày trễ) — giao diện nối "⚠ 3 ngày" đỏ hoặc "· CN 14/09" mờ, không nhét hạn vào chữ việc.
+ * mẩu riêng (`han` = "hết T2 14/09", `quaHanNgay` = số ngày trễ) — giao diện nối "⚠ quá hạn 3 ngày" đỏ hoặc "· hết T2 14/09" mờ
+ * (PR-N1 A6: luôn đủ chữ "quá hạn"), không nhét hạn vào chữ việc.
  * `title` là câu đầy đủ cho tooltip.
  */
 export type ViecTiepTheo = {
@@ -254,17 +255,28 @@ export type ViecTiepTheo = {
 const nhanKyNang = (topic: string | null) => (topic ? skillShort(topic) : 'Case');
 
 export function viecTiepTheoCua(i: {
-  nhapDiem: { kyNang: string[]; dot: string | null; quaHan: boolean } | null;
+  /** `han` (PR-N1 A6): hạn nhập điểm sớm nhất người xem còn nợ — có thì việc trễ nói "quá hạn n ngày". */
+  nhapDiem: { kyNang: string[]; dot: string | null; quaHan: boolean; han?: string | null } | null;
   cases: readonly CaseChoViec[];
   homNay: string;
 }): ViecTiepTheo[] {
   const out: ViecTiepTheo[] = [];
   if (i.nhapDiem && i.nhapDiem.kyNang.length) {
     const viec = `Nhập điểm ${i.nhapDiem.kyNang.map(skillShort).join(', ')}${i.nhapDiem.dot ? ` · ${i.nhapDiem.dot}` : ''}`;
-    out.push({
-      viec, han: null, quaHanNgay: null, tone: i.nhapDiem.quaHan ? 'danger' : 'warn',
-      title: i.nhapDiem.quaHan ? `${viec} · quá hạn` : viec,
-    });
+    if (i.nhapDiem.han) {
+      /* Cùng luật với <Han loai="nhap-diem">: số ngày trễ đếm từ hạn, không chỉ "quá hạn" trơn (A6). */
+      const v = deadlineView({ kind: 'nhap-diem', due: i.nhapDiem.han, today: i.homNay });
+      const tre = i.nhapDiem.quaHan || v.tone === 'overdue';
+      out.push({
+        viec, han: v.han.replace(/^hạn /, ''), quaHanNgay: v.daysOverdue, tone: tre ? 'danger' : 'warn',
+        title: `${viec} · ${v.han}${v.quaHan ? ` · ${v.quaHan}` : tre ? ' · quá hạn' : ''}`,
+      });
+    } else {
+      out.push({
+        viec, han: null, quaHanNgay: null, tone: i.nhapDiem.quaHan ? 'danger' : 'warn',
+        title: i.nhapDiem.quaHan ? `${viec} · quá hạn` : viec,
+      });
+    }
   }
   for (const c of i.cases) {
     if (c.state === 'done') continue;

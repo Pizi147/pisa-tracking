@@ -6,9 +6,9 @@ import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { ChonNgayGan, ChonTuan, NgayDoiDuoc } from '../../ui/ChonNgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
-  CASE_OUTCOMES, CASE_OUTCOME_LABEL, INTERVENTION_KIND_LABEL, RESCHEDULE_TARGETS, RESCHEDULE_TARGET_LABEL,
+  CASE_OUTCOMES, CASE_OUTCOME_LABEL, HAN_DUYET_NGAY, INTERVENTION_KIND_LABEL, RESCHEDULE_TARGETS, RESCHEDULE_TARGET_LABEL,
   componentsAreCounts, componentsFor, interventionKindsFor, isProposalKind,
-  nguoiThanhPayload, type NguoiChon,
+  ngay, nguoiThanhPayload, planEndDefault, type NguoiChon,
 } from '@shared/domain/index.ts';
 import { ComponentsField, componentsPayload } from './ChiTietKyNang.tsx';
 
@@ -35,6 +35,7 @@ export function ThemPaPanel({ caseId, studentId, hocVien, lop, quayLai, onClose,
   caseId: number; studentId?: number | null;
 }) {
   const toast = useToast();
+  const { homNay } = useNgayNghiepVu();
   const catalogue = interventionKindsFor();
   const [kind, setKind] = useState<string>(catalogue.selfServe[0]);
   const [description, setDescription] = useState('');
@@ -86,7 +87,7 @@ export function ThemPaPanel({ caseId, studentId, hocVien, lop, quayLai, onClose,
       }}>
       <Khoi tieuDe="Phương án"
         luat={deXuat
-          ? 'Đây là một ĐỀ XUẤT nên Quản lý luôn phải trả lời. Hạn trả lời suy từ mức độ ưu tiên: 7 ngày (bình thường) · 5 ngày (cần chú ý) · 3 ngày (gấp). Trong lúc chờ thì chưa ghi kết quả được.'
+          ? `Đây là một ĐỀ XUẤT nên Quản lý phải trả lời trong ${HAN_DUYET_NGAY} ngày, tính cả hôm gửi. Trong lúc chờ thì chưa ghi kết quả được.`
           : 'Chọn một mục trong "Cần Quản lý duyệt" tức là đang xin ý kiến Quản lý.'}>
         <Truong nhan="Loại PA" batBuoc>
           <select className="field w-full" value={kind} onChange={(e) => setKind(e.target.value)}>
@@ -143,7 +144,7 @@ export function ThemPaPanel({ caseId, studentId, hocVien, lop, quayLai, onClose,
           )}
         </Hang2>
         <Truong nhan="Dự kiến kết thúc" phu="Hạn hoàn thành PA, không phải nhắc việc">
-          <ChonTuan moc="cuoi" catHomNay={false} lui={0} toi={12} value={followupDue} onChange={setFollowupDue} chuaChon="Mặc định: Chủ nhật tuần tới" />
+          <ChonTuan moc="cuoi" catHomNay={false} lui={0} toi={12} value={followupDue} onChange={setFollowupDue} chuaChon={`Mặc định: CN ${ngay(planEndDefault(startedDate || homNay), homNay)}`} />
         </Truong>
       </Khoi>
     </KhungPanel>
