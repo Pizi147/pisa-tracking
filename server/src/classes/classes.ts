@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS, awaitingScore, kiemPhanCong, moRongPhanCong, nhanKetThucVi, nhanTiepTheo,
+  ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS, awaitingScore, chuanHoaMaLop, soSanhLop, kiemPhanCong, moRongPhanCong, nhanKetThucVi, nhanTiepTheo,
   oPhanCong, pendingSkillsOf, skillShort, trongHaiTuanCuoi, viecTiepTheoCua,
   type AssessedSkill, type SlotPhanCong, type AttemptKind, type PendingCell, type ProgrammeCode, type WorkScope,
 } from '../../../shared/domain/index.ts';
@@ -140,6 +140,7 @@ export function listClassSummaries(p: Principal, f: { branchId?: number; q?: str
     )
     .all(...params) as any[];
   if (!classes.length) return { rows: [], scopeEmpty: false };
+  classes.sort((a, b) => soSanhLop({ code: a.code, branchId: a.branch_id }, { code: b.code, branchId: b.branch_id }));
 
   const ids = classes.map((c) => c.id);
   const ph = ids.map(() => '?').join(',');
@@ -265,8 +266,8 @@ export function listClassSummaries(p: Principal, f: { branchId?: number; q?: str
         )
         .all(`%${q}%`, `%${q.toLowerCase()}%`, `%${q.toUpperCase()}%`) as any[]).map((r) => r.class_id),
     );
-    const lower = q.toLowerCase();
-    rows = rows.filter((r) => r.code.toLowerCase().includes(lower) || matched.has(r.id));
+    const qMa = chuanHoaMaLop(q);
+    rows = rows.filter((r) => (!!qMa && chuanHoaMaLop(r.code).includes(qMa)) || matched.has(r.id));
   }
   return { rows, scopeEmpty: false };
 }

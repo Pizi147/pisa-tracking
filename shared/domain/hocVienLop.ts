@@ -69,7 +69,9 @@ export function phamViCoThe(i: { dayLop: boolean; capChiNhanh: boolean; toanHeTh
   if (i.toanHeThong || i.soChiNhanh > 1) out.push('tat-ca');
   return out.length ? out : ['tat-ca'];
 }
-export function phamViMacDinh(coThe: readonly PhamVi[]): PhamVi {
+/** T6: QL/Quản trị mở ở Chi nhánh kể cả khi có dạy lớp; GV thuần giữ "Lớp tôi dạy". */
+export function phamViMacDinh(coThe: readonly PhamVi[], laQuanLy = false): PhamVi {
+  if (laQuanLy && coThe.includes('chi-nhanh')) return 'chi-nhanh';
   if (coThe.includes('toi')) return 'toi';
   if (coThe.includes('tat-ca')) return 'tat-ca';
   return coThe[0] ?? 'tat-ca';

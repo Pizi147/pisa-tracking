@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { chuanHoaMaLop } from '@shared/domain/index.ts';
 import type { LopKH } from './kieu.ts';
-
-/** So khớp không phân biệt hoa thường, bỏ khoảng trắng và dấu `-` (gõ `ft101` ra `MB-FT 101`). */
-export const chuanHoaMa = (s: string) => s.toLowerCase().replace(/[\s-]/g, '');
 
 /**
  * Ô TÌM LỚP (mockup 14 (1), Q8): gõ → gợi ý tối đa 8 dòng `{mã} · {chi nhánh} · {n} HV` (↑↓ Enter chọn, Esc đóng), ✕ xoá.
@@ -14,8 +12,8 @@ export function TimLop({ lop, value, onChange, onChon, className = '' }: {
   const [mo, setMo] = useState(false);
   const [dong, setDong] = useState(0);
   const goc = useRef<HTMLDivElement>(null);
-  const q = chuanHoaMa(value);
-  const goiY = q ? lop.filter((l) => chuanHoaMa(l.code).includes(q)).slice(0, 8) : [];
+  const q = chuanHoaMaLop(value);
+  const goiY = q ? lop.filter((l) => chuanHoaMaLop(l.code).includes(q)).slice(0, 8) : [];
 
   useEffect(() => {
     if (!mo) return;

@@ -4,6 +4,7 @@ import type { YThucTestKit } from './yThuc.tests.ts';
 export async function runPrLopTests(t: YThucTestKit) {
   const { check, assert, assertThrows, conn, P } = t;
   const intakeMod: any = await import('../classes/intake.ts');
+  const clsMod: any = await import('../classes/classes.ts');
   const d = await import('../../../shared/domain/index.ts');
   console.log('\nPR-LOP · Tạo lớp, tên lớp, RF, Pre FOU, phân công');
 
@@ -121,5 +122,18 @@ export async function runPrLopTests(t: YThucTestKit) {
     assertThrows(() => intakeMod.taoLopVaPhanCong(P.admin, { branchId: mb, chuongTrinh: 'BE', so: '12A3' }), /Chỉ gõ số/, 'số sai mẫu');
     conn.prepare('DELETE FROM teacher_assignments WHERE class_id = ?').run(r.id); conn.prepare('DELETE FROM class_skills WHERE class_id = ?').run(r.id);
     conn.prepare('DELETE FROM classes WHERE id = ?').run(r.id);
+  });
+
+  check('LOP (6) · phạm vi mặc định: QL/Quản trị → Chi nhánh kể cả khi có dạy; GV thuần → Lớp tôi dạy (T6)', () => {
+    assert(d.phamViMacDinh(['toi', 'chi-nhanh'], true) === 'chi-nhanh' && d.phamViMacDinh(['chi-nhanh', 'tat-ca'], true) === 'chi-nhanh', 'QL/QT');
+    assert(d.phamViMacDinh(['toi', 'chi-nhanh'], false) === 'toi', 'GV có quyền chi nhánh nhưng không phải QL');
+  });
+  check('LOP (6) · tìm lớp theo tên cũ có "-" và gõ liền; danh sách xếp số tự nhiên (K2-07, K2-08)', () => {
+    for (const q of ['MB-FT 101', 'mb ft 101', 'ft101']) {
+      const r = clsMod.listClassSummaries(P.admin, { q }).rows.map((x: any) => x.code);
+      assert(r.includes('MB FT 101'), `${q} → ${r.join(',')}`);
+    }
+    const ma = clsMod.listClassSummaries(P.admin, {}).rows.filter((x: any) => x.branchCode === 'MB').map((x: any) => x.code);
+    assert(ma.join('|') === [...ma].map((code: string) => ({ code })).sort(d.soSanhLop).map((x: any) => x.code).join('|'), ma.join(' · '));
   });
 }

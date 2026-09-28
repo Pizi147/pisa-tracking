@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  PERMISSIONS, PROGRAMME_TEMPLATES, kiemDongChuyenTiep, luatDoiLop, nextStepsAfter, programmeOf, tuanKhoa,
+  PERMISSIONS, PROGRAMME_TEMPLATES, kiemDongChuyenTiep, soSanhLop, luatDoiLop, nextStepsAfter, programmeOf, tuanKhoa,
   type DongChuyenTiep, type Huong, type LoaiLop, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { badRequest, isIsoDate, notFound } from '../util.ts';
@@ -102,6 +102,7 @@ export function transitionPlan(p: Principal, classId: number) {
           ORDER BY c.code`,
       )
       .all(cls.branch_id, classId, ...optionCodes) as any[])
+      .sort((a, b) => soSanhLop({ code: a.code }, { code: b.code }))
     : [];
   const candidateProgress = classProgressMany(candidateRows.map((c) => c.id));
   const candidates = candidateRows

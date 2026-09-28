@@ -289,17 +289,17 @@ export async function runHocVienLopTests(t: YThucTestKit) {
 
   // ------------------------------------------------------------------ Task 5 · GET /hoc-vien-lop
 
-  check('PR-Qa · Q3/Q12 Phạm vi theo vai: GV "Lớp tôi dạy", QL chi nhánh, Quản trị "Tất cả"; link cũ ?branchId= = một chi nhánh', () => {
+  check('PR-Qa · Q3/Q12 Phạm vi theo vai: GV "Lớp tôi dạy", QL/Quản trị mở "Chi nhánh" (T6); link cũ ?branchId= = một chi nhánh', () => {
     const gv = hvl.danhSachHocVienLop(P.subjectTeacher, {});
     assert(gv.phamVi.dangDung === 'toi' && !gv.phamVi.coThe.includes('tat-ca'), `GV: ${JSON.stringify(gv.phamVi)}`);
     const cuaGv = new Set(P.subjectTeacher.assignments.map((a: any) => a.classId));
     assert(gv.rows.length > 0 && gv.rows.every((r: any) => cuaGv.has(r.id)), 'GV chỉ thấy lớp mình dạy');
     const ql = hvl.danhSachHocVienLop(P.mbManager, {});
-    assert(ql.phamVi.dangDung === (ql.phamVi.coThe.includes('toi') ? 'toi' : 'chi-nhanh'), `QL: ${JSON.stringify(ql.phamVi)}`);
+    assert(ql.phamVi.dangDung === 'chi-nhanh', `QL: ${JSON.stringify(ql.phamVi)}`);
     const qlCn = hvl.danhSachHocVienLop(P.mbManager, { phamVi: 'chi-nhanh' });
     assert(qlCn.rows.every((r: any) => r.branchId === MB), 'QL MB chỉ thấy lớp MB');
     const qt = hvl.danhSachHocVienLop(P.admin, {});
-    assert(qt.phamVi.dangDung === 'tat-ca' && qt.phamVi.coThe.includes('chi-nhanh'), `Quản trị: ${JSON.stringify(qt.phamVi)}`);
+    assert(qt.phamVi.dangDung === 'chi-nhanh' && qt.phamVi.coThe.includes('tat-ca'), `Quản trị: ${JSON.stringify(qt.phamVi)}`);
     const cu = hvl.danhSachHocVienLop(P.admin, { branchId: MB });
     assert(cu.phamVi.dangDung === 'chi-nhanh' && cu.phamVi.chiNhanh === MB && cu.rows.every((r: any) => r.branchId === MB),
       'Có branchId mà không ghi phạm vi = xem chi nhánh đó');

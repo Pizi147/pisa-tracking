@@ -7,7 +7,7 @@ import {
   PERMISSIONS, REGULAR_SKILLS, ROLE_LABEL, WORK_SCOPES, chuongTrinhTuThamSo, khoangTuThamSo, laLoaiBoQuen, thamSoNguoi, tuDauKhoang,
   type Role, type TheoDong, type WorkScope,
 } from '../../../shared/domain/index.ts';
-import { transferReasonText } from '../../../shared/domain/index.ts';
+import { soSanhLop, transferReasonText } from '../../../shared/domain/index.ts';
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
 import { HttpError, badRequest, forbidden, isIsoDate, notFound, toInt } from '../util.ts';
 import { SESSION_COOKIE, createSession, destroySession, principalOf, requireAuth } from '../auth.ts';
@@ -242,6 +242,7 @@ api.get('/ref/classes', requireAuth, wrap((req) => {
         WHERE c.status = 'active' ORDER BY b.id, c.code`,
     )
     .all() as any[];
+  rows.sort((a, b) => soSanhLop({ code: a.code, branchId: a.branch_id }, { code: b.code, branchId: b.branch_id }));
   /* Kế hoạch Test CHỈ dành cho Fast Track (sổ MT-01) — Normal thi theo lịch lớp, không xếp lượt. */
   const fastTrackOnly = qStr(req, 'fastTrackOnly') === '1';
   return rows
