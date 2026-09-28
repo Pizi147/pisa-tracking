@@ -234,7 +234,8 @@ export function sapXepHocVien<T extends DongDeXep>(rows: readonly T[], cach: Sap
 
 export function lopMoSan(i: { thamSoOpen: number[] | null; lopHien: number[]; dangLoc: boolean }): number[] {
   if (i.thamSoOpen !== null) return i.thamSoOpen.filter((id) => i.lopHien.includes(id));
-  return i.dangLoc ? i.lopHien.slice(0, 5) : i.lopHien.slice(0, 1);
+  /* T17 (PR-N1): không lọc → không tự mở lớp nào (danh sách gọn, người dùng tự chọn); đang lọc → mở tối đa 5 lớp có kết quả. */
+  return i.dangLoc ? i.lopHien.slice(0, 5) : [];
 }
 
 // ---------------------------------------------------------------- việc tiếp theo (Q13)

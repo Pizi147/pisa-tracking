@@ -193,7 +193,8 @@ export default function StudentsPage() {
         </Card>
       ) : (
         /* MỘT bảng, tiêu đề cột MỘT lần, mỗi lớp một <tbody> (hàng lớn + hàng con) — PR-UX0, N-2. Menu ⋯ vẽ ra ngoài bảng (portal). */
-        <div className="card overflow-x-auto">
+        /* YC-11.1: từ 768px bỏ khung cuộn ngang để tiêu đề cột (.th sticky) dính theo <main>; điện thoại vẫn cuộn ngang trong khung. */
+        <div className="card overflow-x-auto md:overflow-visible">
           <table className="w-full min-w-[780px] table-fixed text-sm">
             <colgroup>
               <col className="w-[28%]" /><col className="w-[22%]" /><col className="w-[14%]" />
@@ -263,7 +264,7 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi }: {
 
   return (
     <tbody>
-      <HangNhom mo={mo} onMo={onDoiMo} nhan={`lớp ${lop.code}`} soCotDau={3}
+      <HangNhom mo={mo} onMo={onDoiMo} nhan={`lớp ${lop.code}`} soCotDau={3} className={mo ? 'hang-lon-dinh' : ''}
         tieuDe={
           <span className="flex min-w-0 items-baseline gap-2">
             <Link to={`/hoc-vien/lop/${lop.id}`} className="shrink-0 font-extrabold text-slate-100 underline decoration-dotted underline-offset-4">

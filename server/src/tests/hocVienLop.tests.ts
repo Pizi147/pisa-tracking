@@ -169,7 +169,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     ];
     eq(d.sapXepHocVien(r, 'ten').map((x: any) => x.ten), ['Bùi Thảo Vy', 'Đỗ Minh Khôi', 'Nguyễn Minh An'], 'A→Z tiếng Việt');
     eq(d.sapXepHocVien(r, 'chu-y').map((x: any) => x.ten), ['Đỗ Minh Khôi', 'Bùi Thảo Vy', 'Nguyễn Minh An'], 'Quá hạn trước, rồi mức SOS');
-    eq(d.lopMoSan({ thamSoOpen: null, lopHien: [3, 5, 7], dangLoc: false }), [3], 'Mở lớp đầu tiên');
+    eq(d.lopMoSan({ thamSoOpen: null, lopHien: [3, 5, 7], dangLoc: false }), [], 'Không tự mở lớp nào (T17)');
     eq(d.lopMoSan({ thamSoOpen: null, lopHien: [3, 5, 7], dangLoc: true }), [3, 5, 7], 'Đang lọc: mở các lớp còn hiện');
     eq(d.lopMoSan({ thamSoOpen: [], lopHien: [3, 5], dangLoc: false }), [], 'Người dùng đã đóng hết');
     eq(d.lopMoSan({ thamSoOpen: [5, 9], lopHien: [3, 5], dangLoc: false }), [5], 'Theo URL, bỏ lớp không còn hiện');
