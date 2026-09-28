@@ -110,4 +110,15 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
       assert(/kiemGhiRoKhac\(/.test(doc(f)), `${f} chưa kiểm bằng kiemGhiRoKhac`);
     assert(!/term\.length < 3/.test(doc('server/src/platform/timNguoi.ts')), 'còn ngưỡng 3 ký tự');
   });
+
+  check('NEN (3) · ONgay/LichNho: không ô lịch trình duyệt, không đồng hồ trình duyệt; ChonNgay là lớp bọc; WeekPicker dùng LichNho', () => {
+    const ui = ['web/src/ui/ONgay.tsx', 'web/src/ui/LichNho.tsx', 'web/src/ui/ChonNgay.tsx', 'web/src/ui/Filters.tsx'].map(doc).join('\n');
+    assert(!/type="date"|type="month"/.test(ui), 'còn ô lịch trình duyệt trong ui/');
+    assert(!/new Date\(\)|Date\.now\(/.test(ui), 'đọc đồng hồ trình duyệt');
+    const cn = doc('web/src/ui/ChonNgay.tsx');
+    assert(!/<select/.test(cn) && /<ONgay/.test(cn) && !/· Đổi|>Đổi</.test(cn), 'ChonNgay chưa là lớp bọc ONgay / còn dòng "hôm nay · Đổi"');
+    const f = doc('web/src/ui/Filters.tsx');
+    assert(/<LichNho/.test(f) && !/function monthGrid/.test(f), 'WeekPicker chưa dùng LichNho');
+    assert(/createPortal/.test(doc('web/src/ui/LichNho.tsx')) && /Gần đây/.test(doc('web/src/ui/LichNho.tsx')), 'lịch không qua portal / thiếu Gần đây');
+  });
 }
