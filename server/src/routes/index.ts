@@ -342,7 +342,8 @@ api.get('/ref/teachers', requireAuth, wrap((req) => {
     .prepare(
       `SELECT u.id, u.code, u.full_name AS name, u.title,
               (SELECT COUNT(DISTINCT ta.class_id) FROM teacher_assignments ta
-                WHERE ta.user_id = u.id AND ta.status = 'active') AS classCount
+                WHERE ta.user_id = u.id AND ta.status = 'active') AS classCount,
+              (SELECT GROUP_CONCAT(us.skill) FROM user_skills us WHERE us.user_id = u.id) AS skills
          FROM users u
         WHERE u.status = 'active'
           AND EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id
@@ -350,7 +351,9 @@ api.get('/ref/teachers', requireAuth, wrap((req) => {
                          AND (? IS NULL OR ur.branch_id IS NULL OR ur.branch_id = ?))
         ORDER BY u.full_name`,
     )
-    .all(branchId ?? null, branchId ?? null);
+    .all(branchId ?? null, branchId ?? null)
+    /* MH6: kỹ năng tự khai (5 ô) — gợi ý phân công, không phải quyền. */
+    .map((u: any) => ({ ...u, skills: String(u.skills ?? '').split(',').filter(Boolean) }));
 }));
 
 api.get('/ref/units', requireAuth, wrap((req) => {

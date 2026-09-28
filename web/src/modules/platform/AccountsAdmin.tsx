@@ -5,6 +5,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { BoLocDoan, Card, Empty, Field, Forbidden, Info, NutChon, SectionNote, Skeleton, Th} from '../../ui/ui.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { fmtDate, skillLabel } from '../../lib/format.ts';
+import { ChonKyNang } from './ProfilePage.tsx';
 import { PERMISSION_LABEL, ROLES, ROLE_LABEL, ngay, roleLabel, type Role } from '@shared/domain/index.ts';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { XoaTaiKhoanPanel } from './XoaTaiKhoanPanel.tsx';
@@ -275,6 +276,10 @@ function AccountDialog({ account, branches, onClose, onDone }: {
     () => (account?.extra ?? []).map((x) => ({ permission: x.permission, branchCode: x.branchCode })),
   );
   const [newPassword, setNewPassword] = useState('');
+  /* K1-51, Q9: Quản trị sửa kỹ năng phụ trách được (5 ô L R W1 W2 S) — lưu qua `PUT /admin/accounts/:id/skills` khi đổi. */
+  const [kyNang, setKyNang] = useState<Set<string>>(() => new Set(account?.skills ?? []));
+  const doiKyNang = (k: string) => setKyNang((s) => { const n = new Set(s); if (n.has(k)) n.delete(k); else n.add(k); return n; });
+  const kyNangDoi = !!account && [...kyNang].sort().join() !== [...account.skills].sort().join();
   const [busy, setBusy] = useState(false);
 
   const run = async (fn: () => Promise<unknown>, msg: string) => {
@@ -294,10 +299,11 @@ function AccountDialog({ account, branches, onClose, onDone }: {
         await api.put(`/admin/accounts/${account!.id}/roles`, { roles: payloadRoles() });
         await api.put(`/admin/accounts/${account!.id}/permissions`, { items: extra });
         if (newPassword) await api.post(`/admin/accounts/${account!.id}/password`, { password: newPassword });
+        if (kyNangDoi) await api.put(`/admin/accounts/${account!.id}/skills`, { skills: [...kyNang] });
       }, 'Đã lưu tài khoản');
     }
     return run(() => api.post('/admin/accounts', {
-      ...form, roles: payloadRoles(),
+      ...form, roles: payloadRoles(), skills: [...kyNang],
     }), 'Đã tạo tài khoản');
   };
 
@@ -371,6 +377,10 @@ function AccountDialog({ account, branches, onClose, onDone }: {
             ))}
           </div>
         </div>
+
+        <Field label="Kỹ năng phụ trách được" hint="Năng lực để gợi ý khi phân công — không phải quyền nhập điểm.">
+          <ChonKyNang value={kyNang} onToggle={doiKyNang} />
+        </Field>
 
         {editing && (
           <>

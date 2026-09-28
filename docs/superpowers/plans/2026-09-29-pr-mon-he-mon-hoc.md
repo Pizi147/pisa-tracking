@@ -665,6 +665,12 @@ K5-45 T4 (+LOP) · K5-46 T2 · K5-47 T1/T5 · K5-48 T2 · K5-57 T5 · K5-67 T2.
   "chưa đạt" cho lớp thường thành chết → bỏ). impeccable `layout`: `detect --scope layout` sạch; đánh giá trên màn thật dồn sang Task 12.
   Sửa kỳ vọng 2 phép kiểm cũ (PR-Pa Điểm đáng chú ý đo trên ct=ft + khẳng định không câu môn ở thường/Cả hai; PR-Pb #2 lớp thường không
   cột `kn:`).
+- **Task 10:** 1478 (+2). `ChonKyNang` (export ở `ProfilePage.tsx`, lặp `ENTRY_SKILLS`, nhãn ngắn + `title` tên đầy đủ) dùng ở Hồ sơ cá
+  nhân, Quản trị › Tài khoản (ô trong ngăn Tạo/Sửa — lưu qua `PUT /admin/accounts/:id/skills` chỉ khi đổi; Tạo gửi kèm `skills`) và
+  Đăng ký. Hồ sơ cá nhân: Lưu xuống chân thẻ. Gợi ý phân công: `/ref/teachers` và `classTeachers().candidates` trả `skills`; `LuoiPhanCong`
+  (Tạo lớp + Phân công lớp) xếp trước người khai kỹ năng hợp `kyNangGoiY(ct, ô)`, thêm "— dạy được W1, W2" trong `<option>` (option
+  không có dòng thứ hai — nối cùng dòng); không tự điền. `CatalogAdmin` đã đúng (FOU `L · R · G+V · P` qua `oPhanCong`, Pre FOU
+  `Tổng hợp` qua dự phòng `skillShort`) — không sửa.
 
 ## Chủ sản phẩm chốt 29/09
 

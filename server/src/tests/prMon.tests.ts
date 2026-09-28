@@ -395,4 +395,22 @@ export async function runPrMonTests(t: YThucTestKit) {
     }
     assert(!/HangTab/.test(doc('web/src/modules/test/LichTestTab.tsx')), 'Lịch Test còn HangTab khung cũ');
   });
+  // ------------------------------------------------------------------ Task 10 · tài khoản, Quản trị, gợi ý phân công
+  check('MON (10) · ô kỹ năng chỉ 5 mã L R W1 W2 S ở Hồ sơ cá nhân · Quản trị · Đăng ký (MH1)', () => {
+    const chon = doc('web/src/modules/platform/ProfilePage.tsx');
+    assert(/export function ChonKyNang/.test(chon) && /ENTRY_SKILLS\.map/.test(chon), 'ChonKyNang phải lặp ENTRY_SKILLS');
+    for (const f of ['ProfilePage', 'AccountsAdmin', 'WelcomePage']) {
+      const src = doc(`web/src/modules/platform/${f}.tsx`);
+      assert(!/REGULAR_SKILLS/.test(src) && /<ChonKyNang/.test(src), `${f}: còn REGULAR_SKILLS hoặc chưa dùng ChonKyNang`);
+    }
+  });
+  check('MON (10) · Quản trị sửa kỹ năng: lưu, đọc lại listAccounts thấy; ứng viên phân công mang skills (K1-51, MH6)', () => {
+    try {
+      accounts.setUserSkills(P.admin, B, ['speaking', 'writing1']);
+      const u = accounts.listAccounts(P.admin).find((x: any) => x.id === B);
+      assert([...u.skills].sort().join() === 'speaking,writing1', JSON.stringify(u.skills));
+      const ung = clsMod.classTeachers(P.admin, classId('MB FOU 12')).candidates.find((c: any) => c.id === B);
+      assert(ung && Array.isArray(ung.skills) && ung.skills.includes('writing1'), JSON.stringify(ung));
+    } finally { traLai(); }
+  });
 }

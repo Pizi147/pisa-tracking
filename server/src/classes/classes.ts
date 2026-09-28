@@ -830,7 +830,9 @@ export function classTeachers(p: Principal, classId: number) {
       .map((a) => ({ skill: a.skill, userId: a.user_id, name: a.full_name, from: a.effective_from })),
     candidates: teacherCandidatesBranch(cls.branch_id, classId)
       .map((u) => ({ id: u.id, name: u.full_name, code: u.code, title: u.title,
-                     classCount: u.load_classes, inThisClass: u.here > 0 })),
+                     classCount: u.load_classes, inThisClass: u.here > 0,
+                     /* MH6: kỹ năng tự khai — gợi ý phân công (xếp trước, dòng phụ), không tự điền. */
+                     skills: String(u.skills ?? '').split(',').filter(Boolean) })),
     past: past.map((a) => ({
       name: a.full_name, skill: a.skill, isCore: a.is_core === 1,
       from: a.effective_from, to: a.effective_to,

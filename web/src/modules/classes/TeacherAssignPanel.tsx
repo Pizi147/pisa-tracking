@@ -25,7 +25,7 @@ type Teachers = {
   skills: string[];
   core: { userId: number; name: string; from: string }[];
   bySkill: { skill: string; userId: number; name: string; from: string }[];
-  candidates: { id: number; name: string; code: string; title: string | null; classCount: number; inThisClass: boolean }[];
+  candidates: { id: number; name: string; code: string; title: string | null; classCount: number; inThisClass: boolean; skills?: string[] }[];
   past: { name: string; skill: string | null; isCore: boolean; from: string; to: string | null }[];
   viewer: { canAssign: boolean };
 };
@@ -101,7 +101,7 @@ export function TeacherAssignPanel({ open, onClose, classId, classCode, onDone }
         <>
           <Khoi tieuDe="Phân công"
             luat="Chỉ nhập được điểm môn mình được phân công. Bỏ phân công KHÔNG xoá lịch sử: dòng cũ được đóng lại theo ngày, nên báo cáo cũ đọc lại vẫn thấy đúng ai dạy lúc đó; điểm đã nhập giữ nguyên tên người nhập.">
-            <LuoiPhanCong oList={oList} chon={chon} nguoi={nguoi} loi={loiO} oId={lf.oId} chiXem={!data.viewer.canAssign}
+            <LuoiPhanCong oList={oList} chon={chon} nguoi={nguoi} loi={loiO} oId={lf.oId} chiXem={!data.viewer.canAssign} chuongTrinh={data.programmeCode}
               nhanTrong={(k) => nhieuNguoi[k]?.join(' · ')}
               onChon={(khoa, v) => setChon((c) => ({ ...c, [khoa]: v }))} />
             <p className="m-0 text-[11px] text-slate-500">

@@ -9,7 +9,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { NutChon } from '../../ui/ui.tsx';
 import {
   CHO_TAO_PRE_FOU, ENTRY_SKILLS, PROGRAMME_TEMPLATES,
-  chuanHoaMaLop, dsLoi, ghepMaLop, kiemPhanCong, kiemSoLop, kyHieuLop, locSoLop, oPhanCong, type LoiTruong, type OPhanCong,
+  chuanHoaMaLop, dsLoi, ghepMaLop, kiemPhanCong, kiemSoLop, kyHieuLop, kyNangGoiY, locSoLop, oPhanCong, skillShort, type LoiTruong, type OPhanCong,
 } from '@shared/domain/index.ts';
 
 type Branch = { id: number; code: string; name: string };
@@ -46,7 +46,7 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
   const lf = useLoiForm();
   const [busy, setBusy] = useState(false);
 
-  const teachers = useApi<{ id: number; name: string; classCount: number }[]>(
+  const teachers = useApi<{ id: number; name: string; classCount: number; skills?: string[] }[]>(
     branchId ? `/ref/teachers?branchId=${branchId}` : null, [branchId]);
   const lopDaCo = useApi<{ code: string }[]>(branchId ? `/ref/classes?branchId=${branchId}` : null, [branchId]);
 
@@ -167,7 +167,7 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
       </div>
 
       <Khoi tieuDe="Phân công">
-        <LuoiPhanCong oList={oList} chon={chon} nguoi={teachers.data ?? []} loi={loiPcO} oId={lf.oId}
+        <LuoiPhanCong oList={oList} chon={chon} nguoi={teachers.data ?? []} loi={loiPcO} oId={lf.oId} chuongTrinh={ct}
           onChon={(khoa, v) => setChon((c) => ({ ...c, [khoa]: v }))} />
         <p className="m-0 text-[11px] text-slate-500">
           {oList.length === 1
@@ -183,11 +183,19 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
  * Lưới ô phân công (mockup 21 mục 1, 4) — Tạo lớp và Sửa phân công dùng chung: nhãn trái cùng bề rộng, mỗi ô MỘT `<select>`,
  * lỗi một dòng dưới ô. `nhanTrong` thay chữ mục rỗng (dữ liệu cũ nhiều người một ô hiện cả tên).
  */
-export function LuoiPhanCong({ oList, chon, onChon, nguoi, loi, oId, nhanTrong, chiXem }: {
+export function LuoiPhanCong({ oList, chon, onChon, nguoi, loi, oId, nhanTrong, chiXem, chuongTrinh = null }: {
   oList: OPhanCong[]; chon: Record<string, number | ''>; onChon: (khoa: string, v: number | '') => void; oId: (khoa: string) => string;
-  nguoi: { id: number; name: string; classCount: number }[];
+  nguoi: { id: number; name: string; classCount: number; skills?: string[] }[];
   loi: (khoa: string) => string | null; nhanTrong?: (khoa: string) => string | undefined; chiXem?: boolean;
+  /** Mã chương trình lớp — gợi ý theo `kyNangGoiY` (ô W/G+V → người khai W1/W2; ô P → S). */
+  chuongTrinh?: string | null;
 }) {
+  /* MH6, T55, Q7: GỢI Ý = người khai kỹ năng hợp ô đứng trước + dòng phụ "dạy được …"; KHÔNG tự điền. Ô GVCN không gợi ý. */
+  const hop = (o: OPhanCong, t: { skills?: string[] }) => {
+    const can = o.skill ? kyNangGoiY(chuongTrinh, o.skill) : [];
+    return (t.skills ?? []).filter((k) => can.includes(k));
+  };
+  const xep = (o: OPhanCong) => [...nguoi].sort((a, b) => Number(hop(o, b).length > 0) - Number(hop(o, a).length > 0));
   return (
     <div className="grid grid-cols-[6rem_1fr] items-center gap-x-2.5 gap-y-1.5">
       {oList.map((o) => {
@@ -199,9 +207,14 @@ export function LuoiPhanCong({ oList, chon, onChon, nguoi, loi, oId, nhanTrong, 
               aria-invalid={l ? true : undefined} disabled={chiXem}
               onChange={(e) => onChon(o.khoa, e.target.value ? Number(e.target.value) : '')}>
               <option value="">{nhanTrong?.(o.khoa) ?? '— Chưa chọn —'}</option>
-              {nguoi.map((t) => (
-                <option key={t.id} value={t.id}>{t.name}{t.classCount ? ` · ${t.classCount} lớp` : ''}</option>
-              ))}
+              {xep(o).map((t) => {
+                const k = hop(o, t);
+                return (
+                  <option key={t.id} value={t.id}>
+                    {t.name}{t.classCount ? ` · ${t.classCount} lớp` : ''}{k.length ? ` — dạy được ${k.map(skillShort).join(', ')}` : ''}
+                  </option>
+                );
+              })}
             </select>
             {l && <span className="col-start-2 -mt-0.5 text-[11px] text-late">{l}</span>}
           </div>
