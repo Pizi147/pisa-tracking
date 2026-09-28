@@ -66,3 +66,11 @@ export function tenMoiChoLopCu(l: { code: string; branchCode: string; programmeC
   if (r.kh !== kyHieuLop(l.programmeCode, l.route)) return { loi: 'lech-chuong-trinh' };
   return { moi: `${l.branchCode.toUpperCase()} ${r.kh} ${r.so}` };
 }
+
+/** Quản trị › Lộ trình & chương trình: hai cột CHỈ ĐỌC (K1-47). Chỉ là CHỮ HIỂN THỊ — luật kỳ vọng / lịch MT thật thuộc PR-MT;
+ *  PR-MT đổi luật thì sửa luôn hằng này cho khớp. */
+export const LUAT_LO_TRINH_HIEN: Record<string, { kyVong: string; lichMt: string }> = {
+  LT1: { kyVong: '−1.0 · −0.5 · target', lichMt: 'Tuần 6 · 12 · 16' },
+  LT2: { kyVong: '−1.0 · −0.5 · target', lichMt: 'Tuần 6 · 12 · 16' },
+  RF: { kyVong: 'Mọi MT = target', lichMt: 'Tuần 4 · 8' },
+};

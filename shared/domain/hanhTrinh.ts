@@ -232,7 +232,7 @@ export function dongPhuVanDe(v: { mo: string; dong: string | null; soPa: number 
 
 export type DotRef = { cheDo: 'ielts' | 'ratio'; attemptNo: number; kind: string; maLop?: string | null };
 
-/** Nhãn một đợt: Fast Track `MT2`; lớp thường `Giữa khoá MB-FOU 03` / `Cuối khoá` (không bao giờ chữ "MT"). */
+/** Nhãn một đợt: Fast Track `MT2`; lớp thường `Giữa khoá MB FOU 03` / `Cuối khoá` (không bao giờ chữ "MT"). */
 export function nhanDotTest(d: DotRef): string {
   if (d.cheDo === 'ielts') return `MT${d.attemptNo}`;
   const kind = d.kind === 'final' ? 'Cuối khoá' : 'Giữa khoá';

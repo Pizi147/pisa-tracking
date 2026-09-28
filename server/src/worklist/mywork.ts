@@ -319,7 +319,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * Reading sinh ra mười hai dòng giống hệt nhau, đẩy mọi việc khác xuống dưới — trong khi
    * người nhập chỉ mở MỘT bảng điểm và gõ một lượt.
    *
-   * Nay một dòng là một NHÓM VIỆC: "CP-FT110 · MT2 · Nhập điểm R cho 6 học viên". Số em là
+   * Nay một dòng là một NHÓM VIỆC: "CP FT 110 · MT2 · Nhập điểm R cho 6 học viên". Số em là
    * thông tin của dòng, không phải số dòng (mục 2.2).
    *
    * Hạn của nhóm lấy hạn SỚM NHẤT trong nhóm — nhóm quá hạn khi có bất kỳ em nào quá hạn.

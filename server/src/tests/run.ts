@@ -4555,12 +4555,14 @@ check('Lộ trình và loại lớp là DỮ LIỆU, và không xoá được th
   assert(routes.some((r: any) => r.code === 'LT1'), 'Bảng lộ trình chưa được nạp');
   assert((routes.find((r: any) => r.code === 'LT1')?.inUse ?? 0) > 0, 'LT1 phải đang có lớp dùng');
 
-  sysconfig.saveRoute(P.admin, { code: 'LT9', name: 'Lộ trình thử' });
-  assert(sysconfig.activeRouteCodes().includes('LT9'), 'Không thêm được lộ trình mới');
+  /* PR-LOP (K1-48): không thêm mã mới ở màn Quản trị — ngừng dùng thử trên RF rồi bật lại. */
+  assertThrows(() => sysconfig.saveRoute(P.admin, { code: 'LT9', name: 'Lộ trình thử' }), /không thêm/i,
+    'Vẫn thêm được lộ trình mới');
   /* Ngừng dùng thì biến khỏi ô chọn, nhưng bản ghi vẫn còn để đọc lịch sử. */
-  sysconfig.saveRoute(P.admin, { code: 'LT9', name: 'Lộ trình thử', status: 'inactive' });
-  assert(!sysconfig.activeRouteCodes().includes('LT9'), 'Ngừng dùng mà vẫn chọn được');
-  assert(sysconfig.listRoutes(true).some((r: any) => r.code === 'LT9'), 'Ngừng dùng đã xoá mất bản ghi');
+  sysconfig.saveRoute(P.admin, { code: 'RF', name: 'Refire', status: 'inactive' });
+  assert(!sysconfig.activeRouteCodes().includes('RF'), 'Ngừng dùng mà vẫn chọn được');
+  assert(sysconfig.listRoutes(true).some((r: any) => r.code === 'RF'), 'Ngừng dùng đã xoá mất bản ghi');
+  sysconfig.saveRoute(P.admin, { code: 'RF', name: 'Refire' });
 
   /* Giáo viên không sửa được danh mục. */
   const gv = loadPrincipal(teacherOfSkill('MB FT 102', 'listening'));

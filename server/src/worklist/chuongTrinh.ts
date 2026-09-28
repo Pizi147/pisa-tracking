@@ -4,7 +4,7 @@ import { parseObligation } from './metrics.ts';
 
 /**
  * MỖI PHẦN TỬ CỦA MỘT TẬP CHỈ SỐ THUỘC LỚP NÀO (plan PR-Pa Q2) — một định nghĩa cho cả bộ lọc chương trình lẫn dòng phụ
- * "MB-FT 101 (8) · CP-FT 110 (4)" của Cần xử lý, để hai thứ không bao giờ nói hai chuyện khác nhau.
+ * "MB FT 101 (8) · CP FT 110 (4)" của Cần xử lý, để hai thứ không bao giờ nói hai chuyện khác nhau.
  *
  *   học viên            lớp ĐANG học (active trước), không còn thì lớp gần nhất
  *   Case                lớp của lượt Test sinh ra Case; Case tạo tay thì lớp của học viên — cùng `classKind` của `listCases`

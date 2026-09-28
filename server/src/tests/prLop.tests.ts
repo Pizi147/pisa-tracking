@@ -1,4 +1,7 @@
 /** PHÉP KIỂM PR-LOP — tạo lớp, tên lớp, RF, Pre FOU, phân công. Harness do `run.ts` truyền vào. */
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { YThucTestKit } from './yThuc.tests.ts';
 import { docSach } from './panelUx3.tests.ts';
 
@@ -191,5 +194,39 @@ export async function runPrLopTests(t: YThucTestKit) {
       conn.prepare(`UPDATE teacher_assignments SET status = 'active' WHERE class_id = ? AND status = 'tam_lop9'`).run(hv.cid);
       conn.prepare('DELETE FROM sos_cases WHERE id = ?').run(caseId);
     }
+  });
+
+  check('LOP (10) · Quản trị Lộ trình & chương trình: không thêm mã, Pre FOU không có Giữa khoá, Cuối khoá mặc định = số tuần (K1-46…K1-50)', () => {
+    assertThrows(() => sys.saveRoute(P.admin, { code: 'LT3', name: 'x' }), /không thêm/i, 'thêm được lộ trình');
+    assertThrows(() => sys.saveProgramme(P.admin, { code: 'PRE-IELTS', name: 'x' }), /không thêm/i, 'thêm được chương trình');
+    assertThrows(() => sys.saveProgramme(P.admin, { code: 'PREFOU', name: 'Pre Foundation', weeks: 5, progressWeek: 2 }),
+      /không có bài Giữa khoá/, 'Pre FOU nhận tuần Giữa khoá');
+    const r = sys.saveProgramme(P.admin, { code: 'PREFOU', name: 'Pre Foundation', weeks: 6 });
+    try {
+      const pf = sys.listProgrammes(P.admin).find((x: any) => x.code === 'PREFOU');
+      assert(pf.weeks === 6 && JSON.stringify(pf.checkpoints) === '[{"kind":"final","studyWeek":6}]', JSON.stringify(pf));
+      assert(typeof r.lopGiuSoCu === 'number', JSON.stringify(r));
+    } finally {
+      sys.saveProgramme(P.admin, { code: 'PREFOU', name: 'Pre Foundation', weeks: 5 });
+    }
+    const lt = sys.listRoutes(true).find((x: any) => x.code === 'RF');
+    assert(lt.kyVong === 'Mọi MT = target' && lt.lichMt === 'Tuần 4 · 8', JSON.stringify(lt));
+    const src = docSach('web/src/modules/platform/CatalogAdmin.tsx');
+    assert(!/\+ Thêm|Progress Test|Final Test|loại lớp|btn-primary' : ''|ALL_SKILLS/i.test(src), 'CatalogAdmin còn chữ/nút cũ');
+    assert(/Lộ trình & chương trình/.test(docSach('web/src/modules/platform/AdminPage.tsx')), 'tên tab');
+  });
+  check('LOP (10) · ô tìm đầu trang có nhóm Lớp; chữ mẫu tên lớp mới trong web + shared/domain (K1-43, T2)', () => {
+    const h = docSach('web/src/modules/platform/Header.tsx');
+    assert(/'\/ref\/classes'/.test(h) && /chuanHoaMaLop\(/.test(h) && /\/hoc-vien\/lop\//.test(h) && /Tìm học viên, lớp…/.test(h)
+      && /Không tìm thấy/.test(h), 'Header chưa tìm lớp');
+    const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
+    const sot: string[] = [];
+    for (const dir of ['web/src', 'shared/domain']) {
+      for (const f of fs.readdirSync(path.join(root, dir), { recursive: true }) as string[]) {
+        if (!/\.tsx?$/.test(f)) continue;
+        if (/MB-FT|MB-FOU|CP-FT/.test(fs.readFileSync(path.join(root, dir, f), 'utf8'))) sot.push(`${dir}/${f}`);
+      }
+    }
+    assert(sot.length === 0, `còn chữ mẫu tên cũ: ${sot.join(', ')}`);
   });
 }
