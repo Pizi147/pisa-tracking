@@ -18,10 +18,10 @@ import { QuickReport } from '../cases/QuickReport.tsx';
 import { StudentYThucSection } from '../yThuc/StudentYThucSection.tsx';
 import {
   attemptHref,
-  attemptStatusLabel, fmtBand, skillLabel, skillShort, sosLabel, sosTone, studentStatusLabel,
+  attemptStatusLabel, fmtBand, skillLabel, sosLabel, sosTone, studentStatusLabel,
 } from '../../lib/format.ts';
 import {
-  HO_SO_TAB_LABEL, JOURNEY_EVENT_LABEL, caseCategoriesFor, docThamSoHoSo, duongHoSoHocVien,
+  HO_SO_TAB_LABEL, JOURNEY_EVENT_LABEL, caseCategoriesFor, tenMonNgan, docThamSoHoSo, duongHoSoHocVien,
   deadlineView, khoaLopThuong, ketQuaTestGanNhat, ngay, tuanLich, type HoSoTab,
 } from '@shared/domain/index.ts';
 import { HangTab } from '../../ui/HangTab.tsx';
@@ -121,7 +121,7 @@ export default function StudentDetailPage() {
     if (p.dot != null) {
       return cuonOnDinh(() => document.getElementById(`dot-${p.dot}`), document.getElementById('bang-ky-nang'));
     } else if (p.kn && data.cycle) {
-      const boHop = caseCategoriesFor(data.cycle.ratio ? 'ratio' : 'ielts_band');
+      const boHop = caseCategoriesFor(data.cycle.ratio ? 'ratio' : 'ielts_band', data.cycle.programmeCode);
       const mapped = anhXaKyNang(p.kn, boHop);
       if (mapped) setSkillPick(mapped);
       return cuonOnDinh(() => document.getElementById('bang-ky-nang'), null);
@@ -310,7 +310,7 @@ export default function StudentDetailPage() {
           <Card title={cy.ratio ? 'Kết quả kiểm tra' : 'Mock Test'} bodyClass="p-0">
             {data.attempts.length === 0 ? (
               <div className="p-4"><Empty title="Chưa có lượt đánh giá nào trong lộ trình này" /></div>
-            ) : cy.ratio ? <RatioAttempts attempts={data.attempts} dotId={p.dot} homNay={homNay} onOpen={(a) => navigate(attemptHref(a))} />
+            ) : cy.ratio ? <RatioAttempts attempts={data.attempts} dotId={p.dot} homNay={homNay} ct={cy.programmeCode ?? null} onOpen={(a) => navigate(attemptHref(a))} />
               : <IeltsAttempts attempts={data.attempts} dotId={p.dot} homNay={homNay} onOpen={(a) => navigate(attemptHref(a))} />}
             <div className="p-3">
               {cy.targetRevisions.length > 0 && (
@@ -556,8 +556,10 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen }: {
  * Lớp thường chấm theo ĐIỂM ĐẠT / TỔNG ĐIỂM — không có band, không có Overall, không có
  * kỳ vọng IELTS. Bấm một dòng ở đây mở đúng bảng điểm lớp thường, không phải màn Mock Test.
  */
-function RatioAttempts({ attempts, dotId, homNay, onOpen }: {
+function RatioAttempts({ attempts, dotId, homNay, onOpen, ct = null }: {
   attempts: any[]; dotId?: number; homNay: string | null; onOpen: (a: any) => void;
+  /** Mã chương trình lộ trình — tên môn FOU G+V/P, Pre FOU Tổng hợp (MH2). */
+  ct?: string | null;
 }) {
   return (
     <div className="overflow-x-auto">
@@ -585,7 +587,7 @@ function RatioAttempts({ attempts, dotId, homNay, onOpen }: {
                   {(a.skills ?? []).map((s: any) => (
                     <Outcome key={s.skill} tone={s.outcome === 'missing' ? 'muted' : s.outcome === 'pass' ? 'ok' : 'warn'}
                       title={s.label}>
-                      {skillShort(s.skill)} {s.score !== null ? `${s.score}/${s.total}` : '—'}
+                      {tenMonNgan(ct, s.skill)} {s.score !== null ? `${s.score}/${s.total}` : '—'}
                     </Outcome>
                   ))}
                 </span>

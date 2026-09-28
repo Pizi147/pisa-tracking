@@ -5,7 +5,7 @@ import { BoLocDoan, Empty, ErrorState, SCORE_CHIP, Skeleton, type ScoreTone } fr
 import { Nhan, toneNhanTuBadge } from '../../ui/Nhan.tsx';
 import { Episode } from './StudentDetailPage.tsx';
 import {
-  CASE_CATEGORY_LABEL, CASE_CATEGORY_SHORT, KHOI_PA_CO_TEN, RONG_TEN_KY_NANG, type CaseCategory,
+  CASE_CATEGORY_SHORT, KHOI_PA_CO_TEN, RONG_TEN_KY_NANG, type CaseCategory,
   boCucHanhTrinh, chuoiDiem, cotCua, denKhoiPa, dongPhuVanDe, duongHoSoHocVien, giaoKhoangXem, gomGhimTheoTuan,
   khoangTruc, nhanGhim, nhanGiaiDoan, nhanKhoiPa, outcomeLabelFor, rongCotTuan, trangThaiHop, trucTuan, tuanLich,
   uocRongChuoi, xepHangLuoi, xepTang,
@@ -34,6 +34,8 @@ type Pa = {
 type VanDe = { caseId: number; ten: string; mo: string; dong: string | null; soPa: number; pa: Pa[] };
 type Hop = {
   kyNang: CaseCategory; nhan: string; cheDo: 'ielts' | 'ratio';
+  /** Tên ngắn theo chương trình (máy chủ, MH2): FOU G+V/P. */
+  nhanNgan?: string;
   diem: DiemMoc[]; conCho: boolean; dotCho: DotRef | null;
   caseMo: { mo: string; soPa: number }[]; coTungCase: boolean;
   diemCuoiChuaDat: boolean | null; xongGanNhat: string | null; vanDe: VanDe[];
@@ -138,10 +140,13 @@ export function HanhTrinh({ studentId, active, episodes, allEpisodes, onOpenCase
           <BoLocDoan ariaLabel="Giai đoạn" value={giaiDoanDangXem.loai} onChange={setGiaiDoan}
             muc={data.cacGiaiDoan.map((g) => ({ key: g.loai, nhan: nhanGiaiDoan(g, homNay) }))} />
         )}
+        {/* Pre FOU một hộp "Tổng hợp" — không cần chip lọc (PF6). */}
+        {data.hop.length > 1 && (
         <span className="ml-auto max-w-full">
           <BoLocDoan ariaLabel="Kỹ năng" value={chip} onChange={setChip}
-            muc={[{ key: CHIP_TAT_CA, nhan: 'Tất cả kỹ năng' }, ...data.hop.map((h) => ({ key: h.kyNang as string, nhan: CASE_CATEGORY_SHORT[h.kyNang], title: CASE_CATEGORY_LABEL[h.kyNang] }))]} />
+            muc={[{ key: CHIP_TAT_CA, nhan: 'Tất cả kỹ năng' }, ...data.hop.map((h) => ({ key: h.kyNang as string, nhan: h.nhanNgan ?? CASE_CATEGORY_SHORT[h.kyNang], title: h.nhan }))]} />
         </span>
+        )}
         <select className="field w-auto" aria-label="Khoảng đang xem" value={cheDoKhoang}
           onChange={(e) => setCheDoKhoang(e.target.value as CheDoKhoang)}>
           <option value="3-thang">3 tháng gần nhất</option>

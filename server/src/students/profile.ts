@@ -2,7 +2,7 @@ import { db } from '../db.ts';
 import {
   ASSESSED_SKILLS, BASELINE_SOURCE_LABEL, CYCLE_OUTCOME_LABEL, ENTRY_SKILLS,
   ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, JOURNEY_GROUP, PERMISSIONS,
-  caseHeadline, issueLabel, caseCategoryLabel, categoryOf, quaHan, studyWeekOf,
+  caseHeadline, issueLabel, caseCategoryLabel, categoryOf, quaHan, studyWeekOf, tenMon,
   type AssessedSkill, type EntrySkill, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { outcomeGroup } from '../cases/effectiveness.ts';
@@ -65,7 +65,7 @@ export function typedResult(attempt: any) {
   if (prog?.scoringMode === 'ratio') {
     const rows = db().prepare('SELECT skill, raw_score, raw_total FROM assessment_scores WHERE attempt_id = ?')
       .all(attempt.id) as any[];
-    const r = evaluateRegular(prog.skills, rows);
+    const r = evaluateRegular(prog.skills, rows, prog.code);
     return { mode: 'ratio' as const, ratio: r, ft: null };
   }
   const r = evaluateAttempt(attempt.target_at_attempt, attempt.attempt_no,
@@ -254,6 +254,8 @@ function progressOf(
   attempts: any[],
   ratio: boolean,
   caseIds: number[],
+  /** Mã chương trình của lộ trình (MH2: FOU G+V/P). */
+  ct: string | null = null,
 ) {
   const conn = db();
 
@@ -321,7 +323,7 @@ function progressOf(
     const official = points.filter((pt) => pt.kind === 'official');
     return {
       skill,
-      label: ASSESSED_SKILL_LABEL[skill as AssessedSkill] ?? caseCategoryLabel(skill),
+      label: ratio ? tenMon(ct, skill) : ASSESSED_SKILL_LABEL[skill as AssessedSkill] ?? caseCategoryLabel(skill),
       points,
       officialCount: official.length,
       /* Hai điểm chính thức trở lên mới nói được là lên hay xuống. */
@@ -918,7 +920,8 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     },
     trajectory,
     attempts,
-    progress: progressOf(attempts, isRatioCycle(selected ?? {}), cases.map((c: any) => c.id)),
+    progress: progressOf(attempts, isRatioCycle(selected ?? {}), cases.map((c: any) => c.id),
+      selected ? selected.programme_code ?? programmeCodeOfCycle(selected.id) : null),
     cases,
     /* Mặc định chỉ mốc xuyên chương trình; giao diện mở được toàn bộ khi cần tra lại. */
     episodes: episodesOf(milestoneRows),

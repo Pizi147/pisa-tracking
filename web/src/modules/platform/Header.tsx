@@ -228,7 +228,7 @@ export function Header() {
                 <div className="label">Kỹ năng được phân công</div>
                 <div className="flex flex-wrap gap-1 mb-3">
                   {skills.map((c, i) => (
-                    <Info key={i}>{c.classCode} · {skillShort(c.skill!)}</Info>
+                    <Info key={i}>{c.classCode} · {c.nhanMon ?? skillShort(c.skill!)}</Info>
                   ))}
                 </div>
               </>

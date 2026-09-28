@@ -16,7 +16,7 @@ import {
   HAN_DUYET_NGAY, hanTheoNgay,
   type NextStep, type RescheduleTarget,
   issueBranchOf, issueLabel, caseTopicLabel, urgencyFromSos,
-  caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac, programmeOf, tenMon,
+  caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac, programmeOf, tenMon, tenMonNgan,
   type CaseOutcome, type FollowUpOutcome, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -2235,7 +2235,9 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
     return r?.d ?? null;
   };
 
-  const rows = caseCategoriesFor(isRatioCycle(cycle) ? 'ratio' : 'ielts_band').map((category) => {
+  /* MH2 + PF6: bảng kỹ năng theo chương trình lộ trình — FOU G+V/P, Pre FOU một hàng "Tổng hợp". */
+  const ctBang: string | null = cycle ? cycle.programme_code ?? programmeCodeOfCycle(cycle.id) : null;
+  const rows = caseCategoriesFor(isRatioCycle(cycle) ? 'ratio' : 'ielts_band', ctBang).map((category) => {
     const points = byCategory.get(category) ?? [];
     const latest = points[points.length - 1] ?? null;
     const prev = points.length > 1 ? points[points.length - 2] : null;
@@ -2291,8 +2293,9 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
 
     return {
       category,
-      label: caseCategoryLabel(category),
-      short: CASE_CATEGORY_SHORT[category],
+      label: tenMon(ctBang, category),
+      short: tenMonNgan(ctBang, category),
+      chuongTrinh: ctBang,
       /* Band MT gần nhất — chưa có điểm thì để trống chứ không ghi 0. */
       band: latest?.band ?? null,
       bandAttemptNo: latest?.attemptNo ?? null,
@@ -2420,7 +2423,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
     };
   });
 
-  return { studentId, cycleId: cycle?.id ?? null, rows };
+  return { studentId, cycleId: cycle?.id ?? null, chuongTrinh: ctBang, rows };
 }
 
 /**

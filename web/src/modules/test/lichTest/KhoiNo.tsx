@@ -2,8 +2,7 @@ import { Fragment, useMemo } from 'react';
 import { KhoiNhom } from '../../../ui/HangNhom.tsx';
 import { Nhan } from '../../../ui/Nhan.tsx';
 import { Han } from '../../../ui/Han.tsx';
-import { skillLabel, skillShort } from '../../../lib/format.ts';
-import { chuOChuaLuu, tuanLich } from '@shared/domain/index.ts';
+import { chuOChuaLuu, tenMon, tenMonNgan, tuanLich } from '@shared/domain/index.ts';
 import type { DongNo } from './kieu.ts';
 import { LuoiNhung } from './LuoiNhung.tsx';
 
@@ -12,14 +11,15 @@ import { LuoiNhung } from './LuoiNhung.tsx';
  * tên em nằm ở tooltip (G-3: một dòng).
  */
 function kyNangCua(d: DongNo, homNay: string): { chu: string; goiY: string } {
-  const tatCa = d.kyNang.map(skillLabel).join(', ');
-  const chu = d.kyNang.map(skillShort).join(', ');
+  /* MH2: tên môn theo chương trình lớp (FOU "P", Pre FOU "Tổng hợp"). */
+  const tatCa = d.kyNang.map((k) => tenMon(d.chuongTrinh, k)).join(', ');
+  const chu = d.kyNang.map((k) => tenMonNgan(d.chuongTrinh, k)).join(', ');
   const l = d.luiLich;
   if (!l) return { chu, goiY: tatCa };
   const tu = l.tuTuanStart ? ` từ ${tuanLich(l.tuTuanStart, homNay)}` : '';
   const sang = l.sangTuanStart ? ` sang ${tuanLich(l.sangTuanStart, homNay)}` : '';
   const ai = l.hv.length === 1 ? ` của ${l.hv[0]}` : ` · ${l.hv.length} HV: ${l.hv.join(', ')}`;
-  return { chu: `${chu} · lùi lịch`, goiY: `${skillLabel(l.kyNang)}: lùi lịch${tu}${sang}${ai}\nCòn nợ: ${tatCa}` };
+  return { chu: `${chu} · lùi lịch`, goiY: `${tenMon(d.chuongTrinh, l.kyNang)}: lùi lịch${tu}${sang}${ai}\nCòn nợ: ${tatCa}` };
 }
 
 /** Dòng Nợ là của ai: chờ mình · chờ GV khác (mình dạy lớp) · chờ chấm (Quản lý). Dòng đã chấm xong (Q14) → "Đã chấm ✓". */

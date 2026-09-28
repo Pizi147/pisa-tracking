@@ -9,9 +9,9 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { CHUA_CO_PHUONG_AN, GOI_Y_THEM_PHUONG_AN } from '../../ui/chu.ts';
 import { caseStatusLabel, fmtBand, skillLabel, sosLabel, sosTone } from '../../lib/format.ts';
 import {
-  CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, INTERVENTION_STATUS_LABEL,
+  INTERVENTION_KIND_LABEL, INTERVENTION_STATUS_LABEL,
   NEXT_STEP_LABEL, OUTCOME_MARK, OUTCOME_TONE,
-  deadlineView, outcomeLabelFor,
+  deadlineView, outcomeLabelFor, tenMon,
 } from '@shared/domain/index.ts';
 import { LichSuDieuChinh, type BanDieuChinh } from './CapNhatTuan.tsx';
 import { NganCase } from '../students/NganCase.tsx';
@@ -39,6 +39,8 @@ export type CaseDetail = {
   title: string | null;
   /** Hạng mục — đơn vị của case từ vòng 4. */
   category: string | null; categoryLabel: string | null;
+  /** Mã chương trình lộ trình Case (MH2). */
+  chuongTrinh?: string | null;
   /** Case mở song song có chủ ý với một case khác cùng hạng mục. */
   parallel: boolean;
   /** Lớp chấm điểm đạt/tổng (Normal) hay band 0–9 (Fast Track). */
@@ -66,8 +68,9 @@ export type ViewCase = { loai: 'case' } | { loai: 'ghi-ket-qua'; paId: number } 
   | { loai: 'hoan-thanh' } | { loai: 'tra-loi'; paId: number };
 
 /** "Case Listening" — tên ngắn của Case cho tiêu đề ngăn và dòng "← Case Listening". */
-export function tenNganCase(d: { categoryLabel: string | null; category: string | null }): string {
-  const kn = d.categoryLabel ?? (d.category ? CASE_CATEGORY_LABEL[d.category as keyof typeof CASE_CATEGORY_LABEL] ?? d.category : null);
+export function tenNganCase(d: { categoryLabel: string | null; category: string | null; chuongTrinh?: string | null }): string {
+  /* MH2: máy chủ đã gửi `categoryLabel` theo chương trình ("Case G+V" đọc là "Case Grammar + Vocabulary"). */
+  const kn = d.categoryLabel ?? (d.category ? tenMon(d.chuongTrinh ?? null, d.category) : null);
   return kn ? `Case ${kn}` : 'Case';
 }
 
@@ -284,7 +287,8 @@ const MILESTONE_TITLE: Record<string, string> = {
 };
 
 /** Điểm cô tự chấm: LUÔN có chữ "cô chấm" — một con số 6.5 đứng trơ sẽ bị đọc nhầm thành điểm mock. */
-function MetricPills({ metrics }: {
+function MetricPills({ metrics, ct = null }: {
+  ct?: string | null;
   metrics?: { skill: string; component?: string | null; score: number; total: number | null }[] | null;
 }) {
   if (!metrics?.length) return null;
@@ -292,7 +296,7 @@ function MetricPills({ metrics }: {
     <span className="mt-1 flex flex-wrap gap-1">
       {metrics.map((m) => (
         <Nhan key={`${m.skill}:${m.component ?? ''}`} tone="muted">
-          cô chấm {m.component ?? (CASE_CATEGORY_LABEL[m.skill as keyof typeof CASE_CATEGORY_LABEL] ?? m.skill)}{' '}
+          cô chấm {m.component ?? tenMon(ct, m.skill)}{' '}
           {m.total ? `${m.score}/${m.total}` : fmtBand(m.score)}
         </Nhan>
       ))}
@@ -352,7 +356,7 @@ function buildLichSu(data: CaseDetail, ngan: (d: string | null | undefined) => s
           {f.decisionNote && (
             <span className="block text-[11px] text-slate-400">{f.nextStep === 'adjust' || f.nextStep === 'propose' ? 'Lý do' : 'Ghi chú'}: {f.decisionNote}</span>
           )}
-          <MetricPills metrics={f.metrics} />
+          <MetricPills metrics={f.metrics} ct={data.chuongTrinh ?? null} />
         </>
       ),
     });

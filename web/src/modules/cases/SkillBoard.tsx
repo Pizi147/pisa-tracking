@@ -77,6 +77,8 @@ type CaseCard = {
 };
 export type Row = {
   category: string; label: string; short: string;
+  /** Mã chương trình lộ trình — bộ nguyên nhân theo môn (T57: FOU G+V / P, Pre FOU Tổng hợp). */
+  chuongTrinh?: string | null;
   band: number | null; bandAttemptNo: number | null; bandWeek: string | null;
   expectation: number | null; missed: boolean | null;
   /** Còn thiếu bao nhiêu để đạt kỳ vọng CỦA CHÍNH ĐỢT ĐÓ — đây là dấu ± hiện mặc định. */
@@ -215,7 +217,7 @@ function SkillRows({ row, open, onToggle, onReport, onChanged, onMoCase }: {
             </td>
           </HangCon>
         ) : ordered.map((c) => (
-          <HangCaseVaPa key={c.id} c={c} ngan={ngan} onChanged={onChanged} onMoCase={onMoCase} />
+          <HangCaseVaPa key={c.id} c={c} ngan={ngan} onChanged={onChanged} onMoCase={onMoCase} ct={row.chuongTrinh ?? null} />
         ))
       )}
     </>
@@ -254,9 +256,10 @@ function CotCase({ row }: { row: Row }) {
  * nguyên nhân / Không cần theo dõi / PA gợi ý (`CaseSosControls`) giữ TẠI CHỖ — đó không phải form panel. Thêm PA, Hoàn thành,
  * Ghi kết quả, lịch sử, Bằng chứng: ở ngăn Case (một panel).
  */
-function HangCaseVaPa({ c, ngan, onChanged, onMoCase }: {
+function HangCaseVaPa({ c, ngan, onChanged, onMoCase, ct = null }: {
   c: CaseCard; ngan: (d: string | null | undefined) => string; onChanged?: () => void;
   onMoCase: (caseId: number, o?: MoCase) => void;
+  ct?: string | null;
 }) {
   /* YC-12.1: MỘT biến cho hai khối SOS — mở khối này thì nút của khối kia biến mất; Huỷ → về hai nút. */
   const [khoiSos, setKhoiSos] = useState<null | 'nguyen-nhan' | 'khong-theo-doi'>(null);
@@ -326,7 +329,7 @@ function HangCaseVaPa({ c, ngan, onChanged, onMoCase }: {
                   </span>
                 )}
                 {khoiSos === 'nguyen-nhan' && (
-                  <CauseDeterminationPanel caseId={c.id} topic={c.topic} currentCode={c.issueCode}
+                  <CauseDeterminationPanel caseId={c.id} topic={c.topic} ct={ct} currentCode={c.issueCode}
                     onClose={() => setKhoiSos(null)} onDone={onChanged} />
                 )}
                 {khoiSos === 'khong-theo-doi' && <DismissCaseForm caseId={c.id} onClose={() => setKhoiSos(null)} onDone={onChanged} />}

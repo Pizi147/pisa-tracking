@@ -16,7 +16,7 @@ import {
   activeAt, can, classScopeSql, defaultWorkScope, editableSkills, mySkills, scopeFor, type Principal,
 } from '../permissions.ts';
 import {
-  ATTEMPT_KIND_SHORT, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, PERMISSIONS, lopTuMo, tenMonNgan, nhanLopLichTest, noShowStateOf,
+  ATTEMPT_KIND_SHORT, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, PERMISSIONS, boMonLich, lopTuMo, tenMonNgan, nhanLopLichTest, noShowStateOf,
   trangThaiChamLabel, type AssessedSkill, type AttemptKind, type LoaiNhanLop, type PhamViLichTest,
 } from '../../../shared/domain/index.ts';
 import { classScoreSheet, conBaiCanCham, listAttempts, type MonDoiLich } from '../fasttrack/attempts.ts';
@@ -279,6 +279,8 @@ export type DongLichTest = {
  */
 export type LopLichTest = {
   key: string; classId: number; classCode: string; mode: CheDo; branchName: string;
+  /** MH2/MH4: mã chương trình lớp + bộ môn của lớp (FT: 4 kỹ năng đánh giá; FOU L R W S hiện L R G+V P; Pre FOU `tong_hop`). */
+  chuongTrinh: string | null; boMon: string[];
   kind: string | null; dotLabel: string;
   /** Môn đánh giá có thi tuần này, thứ tự L · R · W · S. */
   kyNangTuan: string[];
@@ -430,6 +432,8 @@ export function lichTest(
     if (!lop) {
       lop = {
         key: khoa, classId: r.class_id, classCode: r.class_code, branchName: r.branch_name, mode,
+        chuongTrinh: r.programme_code ?? null,
+        boMon: [...boMonLich(r.programme_code, modes.get(r.programme_code)?.skills)],
         kind: mode === 'ratio' ? r.kind : null,
         tong: 0, conBai: 0, conBaiCuaToi: 0, quaHan: false,
         hrefDayDu: mode === 'ratio'

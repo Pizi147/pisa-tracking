@@ -627,6 +627,8 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
         kind: a.kind,
         studentId: a.student_id, studentName: a.full_name, studentCode: a.student_code,
         classId: a.class_id, classCode: a.class_code, branchId: a.branch_id, branchName: a.branch_name,
+        /** MH2: mã chương trình lớp — tên môn FOU G+V/P ở danh sách. */
+        programmeCode: a.programme_code ?? null,
         cycleId: a.cycle_id, cycleSeq: a.cycle_seq, route: null,
         attemptNo: a.attempt_no,
         target: null,

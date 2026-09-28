@@ -12,8 +12,8 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ENTRY_SKILLS, ngay } from '@shared/domain/index.ts';
-import { fmtBand, skillLabel, skillShort } from '../../lib/format.ts';
+import { ENTRY_SKILLS, ngay, tenMon, tenMonNgan } from '@shared/domain/index.ts';
+import { fmtBand } from '../../lib/format.ts';
 import { Info } from '../../ui/ui.tsx';
 import {
   ChoNutDau, CriteriaButton, KHOA_HOAN_TAT_HINT, ODiemThuong, RawScoreInput, datPhanTram, useSaveScore, type Cell,
@@ -51,9 +51,11 @@ function useKyNangChon(dsKn: string[], cuaMinh: (k: string) => boolean, conTrong
 }
 
 /** Hàng chip kỹ năng: "L 3/8" — chữ tắt có tooltip tên đầy đủ (G-7); kỹ năng không phân công viền đứt. */
-function HangChip({ ds, chon, onChon }: {
+function HangChip({ ds, chon, onChon, ct = null }: {
   ds: { k: string; cuaMinh: boolean; daNhap: number; tong: number }[];
   chon: string | null; onChon: (k: string) => void;
+  /** Mã chương trình lớp (lớp thường) — tên môn FOU G+V/P (MH2). FT: null. */
+  ct?: string | null;
 }) {
   return (
     <div className="flex flex-wrap gap-1 px-3 pt-3 pb-2" role="group" aria-label="Chọn kỹ năng để chấm">
@@ -61,12 +63,12 @@ function HangChip({ ds, chon, onChon }: {
         const on = k === chon;
         return (
           <button key={k} type="button" aria-pressed={on} onClick={() => onChon(k)}
-            title={`${skillLabel(k)} — đã nhập ${daNhap}/${tong}${cuaMinh ? '' : `. ${KHONG_PHAN_CONG}`}`}
+            title={`${tenMon(ct, k)} — đã nhập ${daNhap}/${tong}${cuaMinh ? '' : `. ${KHONG_PHAN_CONG}`}`}
             className={`inline-flex items-center gap-1 min-h-[44px] min-w-[44px] justify-center px-2 rounded-full border text-sm tabular-nums ${
               on ? 'bg-[color:var(--accent-soft)] border-[color:var(--accent-line)] text-[color:var(--accent-strong)]'
                 : cuaMinh ? 'border-[color:var(--line-strong)] text-slate-200'
                   : 'border-dashed border-[color:var(--line-strong)] text-slate-500'}`}>
-            <span className="font-semibold">{skillShort(k)}</span>
+            <span className="font-semibold">{tenMonNgan(ct, k)}</span>
             <span className={on ? '' : 'text-slate-500'}>{daNhap}/{tong}</span>
           </button>
         );
@@ -222,18 +224,18 @@ function MotKyNangThuong({ data, onReload, kn, hv }: {
   const macDinh = tongPhoBien(data.rows, chon);
   const chuTong = tongGo[chon] ?? (macDinh === null ? '' : String(macDinh));
   const tongCot = /^\d+$/.test(chuTong.trim()) && Number(chuTong) > 0 ? Number(chuTong) : null;
-  const tenMon = data.skillLabels[chon] ?? skillLabel(chon);
+  const tenMonChon = tenMon(data.programme.code, chon);
 
   return (
     <div>
-      <HangChip ds={chips} chon={chon} onChon={setChon} />
+      <HangChip ds={chips} chon={chon} onChon={setChon} ct={data.programme.code} />
       {minh(chon) && (
         <label className="flex items-center justify-end gap-2 px-3 pb-2 text-xs text-slate-500">
           <span title="Tổng số câu của đề cả lớp làm. Ô tổng còn trống của từng em lấy sẵn số này; em làm đề khác thì sửa riêng ô đó.">
             Tổng số câu của đề
           </span>
           <input className="field w-[60px] h-11 px-1 text-center tabular-nums text-base" inputMode="numeric"
-            value={chuTong} placeholder="—" aria-label={`Tổng số câu chung của ${tenMon}`}
+            value={chuTong} placeholder="—" aria-label={`Tổng số câu chung của ${tenMonChon}`}
             onChange={(e) => setTongGo((t) => ({ ...t, [chon]: e.target.value }))} />
         </label>
       )}
@@ -252,9 +254,9 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
   row: DongThuongRow; k: string; sheet: ThuongSheet; tongCot: number | null; active: boolean; onReload: () => void;
   inputRef: (el: HTMLInputElement | null) => void; onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 }) {
-  const { luu, dau, status, lastError, retry, o, loi, luuLai, soLoi } = useLuuThuong(row.attemptId, onReload);
+  const { luu, dau, status, lastError, retry, o, loi, luuLai, soLoi } = useLuuThuong(row.attemptId, onReload, sheet.programme.code);
   const { s, canEdit, trong, dung, chuDung, quaHan, cell } = oThuong(row, k, sheet.today);
-  const tenMon = sheet.skillLabels[k] ?? skillLabel(k);
+  const tenMonO = tenMon(sheet.programme.code, k);
   /*
    * MỘT dòng phụ (G-3): ô mang "-" nói tuần mới (Q17: lớp thường không đếm ngược) → quá hạn chấm → chưa tới tuần thi
    * → kết quả của ô đã có điểm ("Đạt · 82,5%" — trên lưới câu này nằm dưới hai số; ở đây nằm dưới tên để mọi dòng cao
@@ -268,7 +270,7 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
     ?? row.studentCode;
   return (
     <DongHv studentId={row.studentId} active={active} ten={row.studentName} href={`/hoc-vien/${row.studentId}`}
-      phu={phu} phuTitle={`${tenMon} · ${row.studentCode}`} phuDo={phu === ketQua && cell.ketQua === 'fail'}
+      phu={phu} phuTitle={`${tenMonO} · ${row.studentCode}`} phuDo={phu === ketQua && cell.ketQua === 'fail'}
       luu={<DauLuu lon status={status} error={lastError} onRetry={retry} soLoi={soLoi} />}
       nhan={<NhanHoanTat hoanTat={row.hoanTat} chuNhatCuoi={row.chuNhatCuoi} />}>
       <div className={`shrink-0 flex items-center justify-end gap-1 rounded-md ${o[k] === 'loi' ? VIEN_LOI : ''}`} data-kn={k}
@@ -276,14 +278,14 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
         <DauO lon tt={o[k]} loi={loi[k]} onLuuLai={() => luuLai(k)} />
         {dung || !s ? (
           <span className="inline-flex items-center gap-1">
-            <span className="text-[11px] text-slate-500" title={`${tenMon}: ${chuDung ?? 'không có lịch'}`}>
+            <span className="text-[11px] text-slate-500" title={`${tenMonO}: ${chuDung ?? 'không có lịch'}`}>
               {chuDung ?? '—'}
             </span>
             {/* Giữ chỗ nút "−" để chữ trạng thái thẳng cột với ô nhập của các dòng khác. */}
             <ChoNutDau />
           </span>
         ) : (
-          <ODiemThuong lon tongLaySan cell={cell} tongCot={tongCot} canEdit={canEdit} tenMon={tenMon} tenHv={row.studentName}
+          <ODiemThuong lon tongLaySan cell={cell} tongCot={tongCot} canEdit={canEdit} tenMon={tenMonO} tenHv={row.studentName}
             onSave={(p, o) => luu(k, p, o)} onDau={(bat) => dau(k, bat)} inputRef={inputRef} onKeyDown={onKeyDown} />
         )}
       </div>

@@ -634,6 +634,14 @@ K5-45 T4 (+LOP) · K5-46 T2 · K5-47 T1/T5 · K5-48 T2 · K5-57 T5 · K5-67 T2.
   `KetQuaVao.chuongTrinh`, `badgeLop`/`viecTiepTheoCua` nhận `chuongTrinh`, phiên đăng nhập `assignments[].nhanMon`. `myWork`: bảng
   tra lớp → {chương trình, cách chấm} nạp lười MỘT câu (`ponytail:` đọc cả bảng lớp) — Task 9 dùng lại cho `khung`. `xoaTaiKhoan`
   gộp cảnh báo theo tên môn hiện ra. Sửa kỳ vọng 3 phép kiểm PR-Qa lớp FOU (W → G+V, S → P; cùng điều kiện).
+- **Task 7:** 1467 (+1). Grep trước **67** dòng → sau **30** (giữ — FT: `LuoiFT`, `ScoreEntry`, `MockDetailPage`, `ChamDiemPage` nhánh
+  `laFt`, `ClassRoster`, `ManagerTasks` chủ đề FT; bộ lọc chung MH3: chip `CaseBoardPage`, `ChuyenLopPanel`; dự phòng `Header`
+  `nhanMon ??`, `HanhTrinh` `nhanNgan ??`; `ProfilePage`/`WelcomePage` → Task 10). Làm luôn ở Task này (cùng file): `BangDiemLopThuong`
+  nhóm cột theo `programme.checkpoints` (hồ sơ lớp trả thêm) — bỏ `BAI`/`MON_MAC_DINH`, Pre FOU thêm cột `%` (K2-12, Task 8);
+  `LopLichTest.chuongTrinh/boMon` (Task 9) để bỏ `BON_MON`; `HanhTrinh` Pre FOU ẩn chip lọc (Task 8). Máy chủ thêm: `listAttempts`
+  dòng lớp thường `programmeCode`, bảng kỹ năng hồ sơ HV theo chương trình (`caseCategoriesFor(…, ct)`, `label/short` qua `tenMon`,
+  trả `chuongTrinh`), `hanhTrinh` hộp theo chương trình + `nhanNgan`, `violations` `skillLabel` theo lớp, `profile` tiến độ kỹ năng.
+  `CauseDeterminationPanel` (ghi nguyên nhân) nhận `ct` → FOU G+V/P (K8). `ChamDiemPage` bỏ chú giải cố định "W = Writing".
 
 ## Chủ sản phẩm chốt 29/09
 

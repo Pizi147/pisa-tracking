@@ -1,6 +1,6 @@
 import { db } from '../db.ts';
 import {
-  CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS, caseCategoriesFor, caseTitle, type CaseCategory,
+  CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS, caseCategoriesFor, caseTitle, tenMon, tenMonNgan, type CaseCategory,
   type DiemMoc, type DotRef,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -83,6 +83,9 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
   const chonCycles = (giaiDoan === 'thuong' ? thuongCycles : ftCycles).slice()
     .sort((a, b) => a.started_at.localeCompare(b.started_at));
   const ratio = giaiDoan === 'thuong';
+  /* MH2, PF6: tên môn + bộ hộp theo chương trình của khoá mới nhất trong giai đoạn (FOU G+V/P, Pre FOU một hộp Tổng hợp). */
+  const cuoi = chonCycles[chonCycles.length - 1];
+  const ct: string | null = ratio && cuoi ? cuoi.programme_code ?? programmeCodeOfCycle(cuoi.id) : null;
 
   if (!chonCycles.length) {
     return { giaiDoan, cacGiaiDoan, homNay, doan: [], ghim: [], hop: [] };
@@ -209,7 +212,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
     });
 
   // -------------------------------------------------------------- hop (hộp kỹ năng)
-  const boHop = caseCategoriesFor(ratio ? 'ratio' : 'ielts_band');
+  const boHop = caseCategoriesFor(ratio ? 'ratio' : 'ielts_band', ct);
   const hop = boHop.map((kyNang) => {
     const diem: DiemMoc[] = [];
     let conCho = false;
@@ -274,7 +277,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
         // Tên người tạo đặt thắng tên suy ra (như caseTitleOf, server/src/cases/cases.ts:58); lớp
         // thường không mượn "… dưới kỳ vọng" của Fast Track — chấm theo môn đạt/chưa đạt, không có kỳ vọng band.
         ten: (c.title ?? '').trim() || (ratio
-          ? `${CASE_CATEGORY_LABEL[(c.category ?? c.topic) as CaseCategory] ?? (c.category ?? c.topic ?? '')} chưa đạt`
+          ? `${tenMon(ct, c.category ?? c.topic ?? '')} chưa đạt`
           : caseTitle({ category: c.category ?? c.topic, latestAttemptNo: c.attempt_no, latestAttemptKind: c.attempt_kind })),
         mo: c.detected_at, dong: c.status === 'done' ? (c.closed_at ?? c.outcome_at ?? null) : null,
         soPa: pa.length, pa,
@@ -282,12 +285,12 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
     });
 
     return {
-      kyNang, nhan: CASE_CATEGORY_LABEL[kyNang], cheDo: ratio ? ('ratio' as const) : ('ielts' as const),
+      kyNang, nhan: ratio ? tenMon(ct, kyNang) : CASE_CATEGORY_LABEL[kyNang], nhanNgan: tenMonNgan(ratio ? ct : null, kyNang), cheDo: ratio ? ('ratio' as const) : ('ielts' as const),
       diem, conCho, dotCho: dotCho as DotRef | null, caseMo, coTungCase, diemCuoiChuaDat, xongGanNhat, vanDe,
     };
   });
 
-  return { giaiDoan, cacGiaiDoan, homNay, doan, ghim, hop };
+  return { giaiDoan, cacGiaiDoan, homNay, doan, ghim, hop, chuongTrinh: ct };
 }
 
 function caseInterventionLabel(kind: string): string {

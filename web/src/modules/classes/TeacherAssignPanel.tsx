@@ -7,8 +7,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { Empty, Skeleton } from '../../ui/ui.tsx';
-import { skillLabel } from '../../lib/format.ts';
-import { kiemPhanCong, ngay, oPhanCong } from '@shared/domain/index.ts';
+import { kiemPhanCong, ngay, oPhanCong, tenMon } from '@shared/domain/index.ts';
 import { LuoiPhanCong } from './ClassCreatePanel.tsx';
 
 /**
@@ -122,7 +121,7 @@ export function TeacherAssignPanel({ open, onClose, classId, classCode, onDone }
                 <ul className="m-0 mt-1.5 list-none space-y-1 p-0">
                   {data.past.map((h, i) => (
                     <li key={i} className="text-xs text-slate-500">
-                      {h.name} · {h.isCore ? 'GVCN' : skillLabel(h.skill ?? '')} · {ngay(h.from, homNay)}{h.to ? ` → ${ngay(h.to, homNay)}` : ''}
+                      {h.name} · {h.isCore ? 'GVCN' : tenMon(data?.programmeCode ?? null, h.skill ?? '')} · {ngay(h.from, homNay)}{h.to ? ` → ${ngay(h.to, homNay)}` : ''}
                     </li>
                   ))}
                 </ul>

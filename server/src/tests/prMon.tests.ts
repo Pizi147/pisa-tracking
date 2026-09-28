@@ -295,4 +295,15 @@ export async function runPrMonTests(t: YThucTestKit) {
     const dong = (mywork.myWork(P.mbManager).groups as any[]).flatMap((g) => g.items).find((i: any) => i.caseId === c.id);
     assert(!!dong && /Grammar \+ Vocabulary/.test(dong.tieuDe) && !/writing|Writing/.test(dong.tieuDe), JSON.stringify(dong?.tieuDe));
   });
+  // ------------------------------------------------------------------ Task 7 · tên môn phía web
+  check('MON (7) · web không tự tra bảng tên môn; lưới lớp thường chỉ gọi tenMonNgan (MH2)', () => {
+    const lo = quet('web/src').filter((f) => /REGULAR_SKILL_LABEL\[|REGULAR_SKILL_SHORT\[|BON_MON/.test(doc(f)));
+    assert(lo.length === 0, `web còn tự tra: ${lo.join(', ')}`);
+    for (const f of ['web/src/modules/cham/LuoiThuong.tsx', 'web/src/modules/cham/MotKyNang.tsx']) {
+      const src = doc(f);
+      assert(!/skillShort\(/.test(src) && /tenMonNgan\(/.test(src), `${f} còn skillShort( hoặc chưa dùng tenMonNgan(`);
+    }
+    const fmt = doc('web/src/lib/format.ts');
+    assert(/skillLabel = \(s: string\) => tenMon\(null, s\)/.test(fmt) && /skillShort = \(s: string\) => tenMonNgan\(null, s\)/.test(fmt), 'format.ts chưa là lớp mỏng');
+  });
 }

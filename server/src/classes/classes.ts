@@ -678,7 +678,11 @@ export function classOverview(p: Principal, classId: number) {
     id: cls.id, code: cls.code, kind: cls.kind, route: cls.route,
     isFastTrack: cls.is_fast_track === 1, startDate: cls.start_date, note: cls.note,
     branchId: cls.branch_id, branchCode: cls.branch_code, branchName: cls.branch_name,
-    programme: prog ? { code: prog.code, name: prog.name, weeks: prog.weeks, scoringMode: prog.scoringMode } : null,
+    programme: prog ? {
+      code: prog.code, name: prog.name, weeks: prog.weeks, scoringMode: prog.scoringMode,
+      /* K2-12, PF6: nhóm cột bảng điểm lớp theo MỐC của chương trình (Pre FOU chỉ Cuối khoá) — không cố định Giữa/Cuối. */
+      checkpoints: prog.checkpoints.map((c) => c.kind),
+    } : null,
     status: cls.status as string, finishedAt: cls.finished_at ?? null,
     summary,
     skills: skills.map((s) => ({ skill: s.skill, sessionsPerWeek: s.sessions_per_week })),
