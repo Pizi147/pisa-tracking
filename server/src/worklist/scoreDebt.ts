@@ -68,7 +68,7 @@ export function scoreDebtCells(p: Principal, today: string, branchIds: number[] 
     const scores = bundle.scores.get(a.id) ?? [];
     const skillRows = bundle.skillRows.get(a.id);
     if (scoringModeOf(a) === 'ratio') {
-      const views = regularSkillViews(a, skillRows, scores, today);
+      const views = regularSkillViews(a, skillRows, scores, today, REGULAR_SKILLS);
       for (const skill of REGULAR_SKILLS) {
         const v = views.get(skill);
         if (!v || !v.required || v.scored || !v.weekStart || v.weekStart > today || NOT_DEBT.has(v.progress)) continue;

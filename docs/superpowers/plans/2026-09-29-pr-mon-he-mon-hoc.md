@@ -611,6 +611,10 @@ K5-45 T4 (+LOP) · K5-46 T2 · K5-47 T1/T5 · K5-48 T2 · K5-57 T5 · K5-67 T2.
   writing2` · (2) 2 Case FOU mã IELTS (#12 `student.writing.organisation`, #26 `student.writing.grammar`) · (3) 0 lớp Pre FOU · (4) 0/0.
   `npm run migrate` → "Đổi kỹ năng phụ trách được của 1 dòng" (dòng `pronunciation` đã được bước đổi mã cũ có sẵn đổi sang
   `speaking` trước) → chạy thử lại (1) = 0; Trang còn `speaking, writing1, writing2`.
+- **Task 3:** 1457 (+3). `SkillRow.skill`, `SkillScheduleView.skill`, `blocking`, `hasScore`/`hasAnyBand` nới thành `string`;
+  `skippedSkillsOf` giữ `AssessedSkill[]` (ép kiểu tại chỗ — phạm vi chỉ dùng ở FT). `loadOne` (dùng chung `setSkillWeek`/`setSitStatus`)
+  kiểm bằng `boMonCuaLuot`. `absence.ts` `skillName` → `tenMon(null, s)` (không lộ `tong_hop`); `blockingLabels` ở chi tiết lượt →
+  `tenMon(null, k)` dự phòng. `scoreDebt.ts:71` tạm truyền `REGULAR_SKILLS` (Task 4 đổi sang bộ chương trình).
 
 ## Chủ sản phẩm chốt 29/09
 

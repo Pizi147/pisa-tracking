@@ -2,7 +2,7 @@
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runPrMonTests(t: YThucTestKit) {
-  const { check, checkAsync, assert, assertThrows, conn, P } = t;
+  const { check, checkAsync, assert, assertThrows, conn, P, TODAY, addDays, classId } = t;
   const d = await import('../../../shared/domain/index.ts');
   console.log('\nPR-MON · Hệ môn học, Pre FOU, hai khung');
 
@@ -121,5 +121,62 @@ export async function runPrMonTests(t: YThucTestKit) {
     const a = ds.find((x) => x.id === A);
     const tach = (s: unknown) => String(s ?? '').split(',').filter(Boolean).sort().join(',');
     assert(!!a && 'skills' in a && tach(a.skills) === kyNangCua(A), JSON.stringify(a));
+  });
+
+  // ------------------------------------------------------------------ Task 3 · lịch một lượt theo bộ môn, % tổng
+  const intakeMod: any = await import('../classes/intake.ts');
+  const regularMod: any = await import('../normal/regular.ts');
+  const lich: any = await import('../fasttrack/skillSchedule.ts');
+  const week: any = await import('../platform/week.ts');
+  const MB = (conn.prepare("SELECT id FROM branches WHERE code = 'MB'").get() as any).id;
+  const GVCN_HA = P.normalCoreTeacher.userId;
+  /** Lớp Pre FOU thử (chèn qua createClass — cờ CHO_TAO_PRE_FOU không chặn đường nội bộ), GVCN tự nhận ô tong_hop, n em, đã xếp bài. */
+  let soLop = 0;
+  const taoLopPreFou = (soEm: number) => {
+    soLop += 1;
+    const tuanKg = week.ensurePeriod(addDays(TODAY, -28));
+    const lop = intakeMod.createClass(P.admin, { code: `MB Pre FOU 9${soLop}`, branchId: MB, kind: 'PREFOU', startPeriodId: tuanKg.id, startDate: tuanKg.weekStart });
+    clsMod.ghiPhanCong(P.admin, lop.id, d.moRongPhanCong('PREFOU', ['tong_hop'], [{ userId: GVCN_HA, skill: null, isCore: true }]), TODAY);
+    const now = new Date().toISOString();
+    const sids: number[] = [];
+    for (let i = 0; i < soEm; i++) {
+      const tag = `MON-${soLop}-${i}`;
+      const sid = Number(conn.prepare(
+        `INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`,
+      ).run(`PISA-${tag}`, `Học viên ${tag}`, `hoc vien ${tag.toLowerCase()}`, MB, now).lastInsertRowid);
+      conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`).run(sid, lop.id, tuanKg.weekStart, now);
+      sids.push(sid);
+    }
+    regularMod.planRegularTests(P.admin, lop.id);
+    const luot = (conn.prepare('SELECT id, student_id, kind FROM assessment_attempts WHERE class_id = ? ORDER BY student_id').all(lop.id) as any[]);
+    return { classId: lop.id as number, sids, luot };
+  };
+
+  check('MON (3) · lượt Pre FOU một dòng lịch tong_hop; gọi lại không chèn thêm; môn lạ bị từ chối (K5-38, PF6)', () => {
+    const l = taoLopPreFou(1);
+    assert(l.luot.length === 1 && l.luot[0].kind === 'final', JSON.stringify(l.luot));
+    const id = l.luot[0].id;
+    const r1 = lich.ensureSkillRows(id);
+    assert(r1.length === 1 && r1[0].skill === 'tong_hop', JSON.stringify(r1.map((r: any) => r.skill)));
+    lich.ensureSkillRows(id);
+    assert((conn.prepare('SELECT COUNT(*) n FROM attempt_skills WHERE attempt_id = ?').get(id) as any).n === 1, 'gọi lần 2 chèn thêm dòng');
+    const tuan = week.ensurePeriod(addDays(TODAY, 7)).id;
+    assertThrows(() => lich.setSkillWeek(P.admin, id, 'listening', tuan), /Kỹ năng không hợp lệ/, 'môn L ở lượt Pre FOU');
+  });
+  check('MON (3) · lượt FT vẫn 4 dòng L R W S, thứ tự cũ', () => {
+    const ft = conn.prepare(`SELECT a.id FROM assessment_attempts a WHERE a.class_id = ? AND a.status != 'cancelled' ORDER BY a.id LIMIT 1`).get(classId('MB FT 101')) as any;
+    const ds = lich.ensureSkillRows(ft.id).map((r: any) => r.skill).join(' ');
+    assert(ds === 'listening reading writing speaking', ds);
+  });
+  check('MON (3) · tyLeTong = Σ điểm / Σ tổng khi đủ môn, thiếu → null; Pre FOU 27/40 = 0.675', () => {
+    const r = (skill: string, s: number | null) => ({ skill, raw_score: s, raw_total: s === null ? null : 40 });
+    const be = regularMod.evaluateRegular(d.REGULAR_SKILLS, [r('listening', 30), r('reading', 20), r('writing', 35), r('speaking', 36)], 'BE');
+    assert(be.tyLeTong === 121 / 160, String(be.tyLeTong));
+    const thieu = regularMod.evaluateRegular(d.REGULAR_SKILLS, [r('listening', 30), r('reading', 20), r('writing', 35)], 'BE');
+    assert(thieu.tyLeTong === null, 'thiếu một môn phải null');
+    const pf = regularMod.evaluateRegular(['tong_hop'], [r('tong_hop', 27)], 'PREFOU');
+    assert(pf.tyLeTong === 0.675 && pf.sosLevel === 1 && pf.skills[0].label === 'Tổng hợp', JSON.stringify(pf));
+    const fou = regularMod.evaluateRegular(d.REGULAR_SKILLS, [], 'FOU');
+    assert(fou.skills.map((s: any) => s.label).join() === 'Listening,Reading,Grammar + Vocabulary,Pronunciation', 'nhãn FOU');
   });
 }

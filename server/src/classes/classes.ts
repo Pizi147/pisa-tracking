@@ -193,7 +193,7 @@ export function listClassSummaries(p: Principal, f: { branchId?: number; q?: str
       const editableOrAll = skillsByClass.get(a.class_id) ?? [];
       const mineSkills = mineByClass.get(a.class_id) ?? [];
       /* Hỏi theo TỪNG MÔN: bốn môn của một bài có thể ở ba tuần khác nhau (mục 10.1). */
-      const views = regularSkillViews(a, bundle.skillRows.get(a.id), rows, today);
+      const views = regularSkillViews(a, bundle.skillRows.get(a.id), rows, today, editableOrAll);
       const cells: PendingCell[] = editableOrAll.map((k) => {
         const row = rows.find((r) => r.skill === k);
         const v = views.get(k);
@@ -412,7 +412,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
          */
         const r = evaluateRegular(prog!.skills, scores);
         /* Lịch và hạn của TỪNG môn — bốn môn của một bài có thể trải hai ba tuần. */
-        const regViews = regularSkillViews(a, bundle.skillRows.get(a.id), scores, today);
+        const regViews = regularSkillViews(a, bundle.skillRows.get(a.id), scores, today, prog!.skills);
         return {
           id: a.id, attemptNo: a.attempt_no, cycleSeq: a.cycle_seq, route: null,
           kind: a.kind, kindLabel: ATTEMPT_KIND_SHORT[a.kind as AttemptKind] ?? a.kind,

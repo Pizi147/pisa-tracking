@@ -3,7 +3,7 @@ import { addMilestone, followUntilAfter } from '../cases/sos.ts';
 import { raiseSignal, reconcileCorrectedSignals } from '../cases/signals.ts';
 import {
   ATTEMPT_KIND_LABEL, PERMISSIONS, RATIO_PASS_THRESHOLD, REGULAR_SKILL_LABEL,
-  caseCategoriesFor, categoryOf, kiemLyDo, ngay, ratioResult, sosFromFailCount, tuanKeTiep, tuanLich,
+  caseCategoriesFor, categoryOf, kiemLyDo, ngay, ratioResult, sosFromFailCount, tenMon, tuanKeTiep, tuanLich,
   type AssessedSkill, type AttemptKind, type CaseCategory, type RatioOutcome, type SosLevel,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -152,6 +152,8 @@ export type RegularResult = {
   failedCount: number | null;
   sosLevel: SosLevel | null;
   passThreshold: number;
+  /** K5-44, MH7: Σ điểm / Σ tổng — CHỈ khi đủ mọi môn (thiếu → null), không làm tròn. Pre FOU hiện đúng số này. */
+  tyLeTong: number | null;
 };
 
 /**
@@ -165,13 +167,15 @@ export type RegularResult = {
  * Lớp thường KHÔNG có cơ chế miễn kỹ năng — dời lịch sang tuần khác thì được, nhưng bộ
  * kỹ năng của chương trình luôn đủ.
  */
-export function evaluateRegular(skills: string[], rows: { skill: string; raw_score: number | null; raw_total: number | null }[]): RegularResult {
+export function evaluateRegular(
+  skills: readonly string[], rows: { skill: string; raw_score: number | null; raw_total: number | null }[], ct?: string | null,
+): RegularResult {
   const results: RegularSkillResult[] = skills.map((skill) => {
     const row = rows.find((r) => r.skill === skill);
     const { outcome, ratio } = ratioResult(row?.raw_score ?? null, row?.raw_total ?? null);
     return {
       skill,
-      label: REGULAR_SKILL_LABEL[skill as keyof typeof REGULAR_SKILL_LABEL] ?? skill,
+      label: tenMon(ct, skill),
       score: row?.raw_score ?? null,
       total: row?.raw_total ?? null,
       ratio, outcome,
@@ -202,6 +206,9 @@ export function evaluateRegular(skills: string[], rows: { skill: string; raw_sco
     failedCount,
     sosLevel,
     passThreshold: RATIO_PASS_THRESHOLD,
+    tyLeTong: complete
+      ? results.reduce((s, r) => s + (r.score ?? 0), 0) / results.reduce((s, r) => s + (r.total ?? 0), 0)
+      : null,
   };
 }
 
@@ -227,7 +234,7 @@ export function regularResultOf(attemptId: number): RegularResult {
   const prog = a?.class_id ? programmeOfClass(a.class_id) : null;
   const rows = conn.prepare('SELECT skill, raw_score, raw_total FROM assessment_scores WHERE attempt_id = ?')
     .all(attemptId) as any[];
-  return evaluateRegular(prog?.skills ?? [], rows);
+  return evaluateRegular(prog?.skills ?? [], rows, prog?.code);
 }
 
 // ---------------------------------------------------------------- lên lịch
@@ -870,7 +877,7 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
       const failing = result.skills.filter((s) => s.outcome === 'fail').map((s) => s.skill);
       const dongCases = casesOf(a.student_id, a.cycle_id ?? null, failing);
       const c = dongCases[0] ?? null;
-      const views = regularSkillViews({ ...a, period_start: a.week_start }, skillRows.get(a.id), rows as any, demoToday());
+      const views = regularSkillViews({ ...a, period_start: a.week_start }, skillRows.get(a.id), rows as any, demoToday(), prog.skills);
       /*
        * HẠN CỦA CẢ BÀI chỉ còn là hạn MUỘN NHẤT trong các môn còn phải chấm — một con số
        * để xếp thứ tự, không phải một luật riêng. Luật nằm ở từng môn, và cột "Hạn từng

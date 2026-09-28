@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, ENTRY_SKILLS, ENTRY_SKILL_LABEL, MOCK_FT_STUDY_WEEK, NO_SHOW_OVERRIDDEN_NOTE,
-  PERMISSIONS, awaitingScore, kiemLyDo, ngay, noShowStateOf, noShowText, pendingSkillsOf, tuanLich,
+  PERMISSIONS, awaitingScore, kiemLyDo, ngay, noShowStateOf, noShowText, pendingSkillsOf, tenMon, tuanLich,
   type AssessedSkill, type EntrySkill, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -389,11 +389,13 @@ export function skillCells(
  * nằm gọn trong `skillScoreDeadline`, và cả hai bên cùng hỏi một nơi.
  */
 export function regularSkillViews(
-  attempt: any, skillRows: SkillRow[] | undefined, scores: ScoreRow[], today = demoToday(),
+  attempt: any, skillRows: SkillRow[] | undefined, scores: ScoreRow[], today: string,
+  /** Bộ môn của chương trình lớp (K5-38, PF6) — BẮT BUỘC để mọi nơi gọi nói rõ bộ nào (Pre FOU một ô `tong_hop`). */
+  skills: readonly string[],
 ): Map<string, SkillScheduleView> {
-  const schedule = skillScheduleOf(attempt, skillRows);
+  const schedule = skillScheduleOf(attempt, skillRows, skills);
   const out = new Map<string, SkillScheduleView>();
-  for (const skill of ASSESSED_SKILLS) {
+  for (const skill of skills) {
     const row = schedule[skill];
     const entry = scores.find((r) => r.skill === skill);
     out.set(skill, viewSkill({
@@ -600,7 +602,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
        * Nên "đã đến lúc phải nhập điểm" phải hỏi theo TỪNG MÔN, không hỏi theo tuần của
        * cả bài. Hạn của lớp Normal là hết Chủ nhật của chính tuần thi môn đó.
        */
-      const views = regularSkillViews(a, bundle.skillRows.get(a.id), scores, today);
+      const views = regularSkillViews(a, bundle.skillRows.get(a.id), scores, today, regularSkills);
       const pendingOf = (k: string) => {
         const v = views.get(k);
         if (!v) return null;
@@ -898,7 +900,7 @@ export function attemptDetail(p: Principal, attemptId: number) {
     completionWeek: {
       valid: completion.valid,
       blocking: completion.blocking,
-      blockingLabels: completion.blocking.map((k: AssessedSkill) => ASSESSED_SKILL_LABEL[k]),
+      blockingLabels: completion.blocking.map((k: string) => ASSESSED_SKILL_LABEL[k as AssessedSkill] ?? tenMon(null, k)),
     },
     /** Lịch, phạm vi, trạng thái thi và hạn chấm của TỪNG kỹ năng (mục 10.1 · 10.5). */
     skillSchedule: scheduleRows,
@@ -1079,8 +1081,8 @@ export function setPlanningWeek(p: Principal, attemptId: number, periodId: numbe
 }
 
 /** Kỹ năng đánh giá này đã có band chưa (Writing cần ít nhất một trong hai task). */
-function hasAnyBand(attemptId: number, skill: AssessedSkill): boolean {
-  const entry = entrySkillsOf(skill);
+function hasAnyBand(attemptId: number, skill: string): boolean {
+  const entry = entrySkillsOf(skill as AssessedSkill)   // tong_hop (Pre FOU) → [tong_hop], không có band;
   const row = db()
     .prepare(
       `SELECT COUNT(*) AS n FROM assessment_scores

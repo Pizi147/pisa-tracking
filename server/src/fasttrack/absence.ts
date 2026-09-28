@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, PERMISSIONS,
+  ASSESSED_SKILL_LABEL, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, PERMISSIONS, tenMon,
   type AssessedSkill,
 } from '../../../shared/domain/index.ts';
 import { assessedSkillOf, entrySkillsOf } from './scoring.ts';
@@ -10,7 +10,7 @@ import { demoToday } from '../demoConfig.ts';
 import { writeAudit, notify } from '../platform/audit.ts';
 import { ensurePeriod } from '../platform/week.ts';
 import {
-  checkSkillWeekMove, ensureSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf,
+  boMonCuaLuot, checkSkillWeekMove, ensureSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf,
 } from './skillSchedule.ts';
 
 /**
@@ -52,7 +52,7 @@ export type MoveRequest = {
   cancelled_part: number;
 };
 
-const skillName = (s: string) => ASSESSED_SKILL_LABEL[s as AssessedSkill] ?? s;
+const skillName = (s: string) => tenMon(null, s);   // gồm cả tong_hop (Pre FOU) — không hiện mã máy
 
 /** Lớp Normal huỷ LỊCH HẸN, Fast Track huỷ PHẦN THI. Hai hệ quả khác nhau (mục 10.6). */
 function isRatio(attempt: any): boolean {
@@ -186,8 +186,9 @@ export function requestAbsenceMove(p: Principal, attemptId: number, skills: stri
   if (attempt.status === 'cancelled') throw badRequest('Đợt này đã huỷ.');
   const list = [...new Set(skills)];
   if (!list.length) throw badRequest('Chưa chọn kỹ năng nào.');
+  const boMon = boMonCuaLuot(db(), attemptId);
   for (const s of list) {
-    if (!(ASSESSED_SKILLS as readonly string[]).includes(s)) throw badRequest(`Kỹ năng ${s} không hợp lệ.`);
+    if (!boMon.includes(s)) throw badRequest(`Kỹ năng ${s} không hợp lệ.`);
   }
 
   const today = opts.today ?? demoToday();

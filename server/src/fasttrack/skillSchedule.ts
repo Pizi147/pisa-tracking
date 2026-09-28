@@ -1,12 +1,13 @@
 import { db, tx } from '../db.ts';
 import {
-  ASSESSED_SKILLS, CHU_KY_NANG, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, tuanLich,
+  ASSESSED_SKILLS, CHU_KY_NANG, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, boMonLich, tuanLich,
   type AssessedSkill, type SitStatus, type SkillProgress,
 } from '../../../shared/domain/index.ts';
 import { badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, explain, require_, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { writeAudit } from '../platform/audit.ts';
+import { programmeByCode } from '../normal/regular.ts';
 import {
   effectiveSkillDeadline, isOverdue, weekInfo, type ScoringMode,
 } from '../platform/week.ts';
@@ -54,7 +55,8 @@ function requireMoveSkillSchedule(
 export type SkillRow = {
   id: number;
   attempt_id: number;
-  skill: AssessedSkill;
+  /** FT: một trong 4 kỹ năng đánh giá. Lớp thường: môn của chương trình (Pre FOU `tong_hop`). */
+  skill: string;
   required: number;
   scope_reason: string | null;
   planned_period_id: number | null;
@@ -124,10 +126,17 @@ export function scoringModeOf(
  *
  * KHÔNG bịa trạng thái thi và KHÔNG bịa nguyên nhân vắng: mọi dòng mới đều là 'scheduled'.
  */
+/** K5-38, PF6: bộ môn xếp lịch của MỘT lượt — FT 4 kỹ năng đánh giá; lớp thường theo `programme_skills` (Pre FOU một ô). */
+export function boMonCuaLuot(conn: any, attemptId: number): readonly string[] {
+  const r = conn.prepare(`SELECT c.programme_code AS ct FROM assessment_attempts a JOIN classes c ON c.id = a.class_id WHERE a.id = ?`).get(attemptId) as any;
+  return boMonLich(r?.ct ?? null, programmeByCode(r?.ct)?.skills);
+}
+
 export function ensureSkillRows(attemptId: number): SkillRow[] {
   const conn = db();
   const existing = conn.prepare(`${SELECT_SKILLS} WHERE ask.attempt_id = ?`).all(attemptId) as SkillRow[];
-  if (existing.length === ASSESSED_SKILLS.length) return sortRows(existing);
+  const bo = boMonCuaLuot(conn, attemptId);
+  if (bo.every((k) => existing.some((r) => r.skill === k))) return sortRows(existing, bo);
 
   const a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
   if (!a) throw notFound('Không tìm thấy đợt kiểm tra');
@@ -137,7 +146,7 @@ export function ensureSkillRows(attemptId: number): SkillRow[] {
       .map((r) => r.skill as string),
   );
   const have = new Set(existing.map((r) => r.skill));
-  for (const skill of ASSESSED_SKILLS) {
+  for (const skill of bo) {
     if (have.has(skill)) continue;
     conn
       .prepare(
@@ -147,11 +156,11 @@ export function ensureSkillRows(attemptId: number): SkillRow[] {
       )
       .run(attemptId, skill, legacySkips.has(skill) ? 0 : 1, a.planned_period_id ?? null, nowIso());
   }
-  return sortRows(conn.prepare(`${SELECT_SKILLS} WHERE ask.attempt_id = ?`).all(attemptId) as SkillRow[]);
+  return sortRows(conn.prepare(`${SELECT_SKILLS} WHERE ask.attempt_id = ?`).all(attemptId) as SkillRow[], bo);
 }
 
-function sortRows(rows: SkillRow[]): SkillRow[] {
-  return [...rows].sort((a, b) => ASSESSED_SKILLS.indexOf(a.skill) - ASSESSED_SKILLS.indexOf(b.skill));
+function sortRows(rows: SkillRow[], bo: readonly string[] = ASSESSED_SKILLS): SkillRow[] {
+  return [...rows].sort((a, b) => (bo.indexOf(a.skill) + 1 || 99) - (bo.indexOf(b.skill) + 1 || 99));
 }
 
 /**
@@ -186,10 +195,11 @@ export function loadSkillRows(attemptIds: number[]): Map<number, SkillRow[]> {
 export function skillScheduleOf(
   attempt: { id: number; planned_period_id?: number | null; period_start?: string | null; period_end?: string | null; period_code?: string | null },
   rows: SkillRow[] | undefined,
-): Record<AssessedSkill, SkillRow> {
-  const bySkill = new Map<AssessedSkill, SkillRow>((rows ?? []).map((r) => [r.skill, r]));
-  const out = {} as Record<AssessedSkill, SkillRow>;
-  for (const skill of ASSESSED_SKILLS) {
+  skills: readonly string[] = ASSESSED_SKILLS,
+): Record<string, SkillRow> {
+  const bySkill = new Map<string, SkillRow>((rows ?? []).map((r) => [r.skill, r]));
+  const out = {} as Record<string, SkillRow>;
+  for (const skill of skills) {
     out[skill] = bySkill.get(skill) ?? {
       id: 0, attempt_id: attempt.id, skill, required: 1, scope_reason: null,
       planned_period_id: attempt.planned_period_id ?? null, plan_source: 'auto',
@@ -211,13 +221,13 @@ export function skippedSkillsOf(rows: SkillRow[] | undefined, attempt?: { id: nu
           .filter((s) => (ASSESSED_SKILLS as readonly string[]).includes(s))
       : [];
   }
-  return rows.filter((r) => !r.required).map((r) => r.skill);
+  return rows.filter((r) => !r.required).map((r) => r.skill as AssessedSkill);   // FT: lớp thường không dùng phạm vi
 }
 
 // ---------------------------------------------------------------- tiến độ và hạn
 
 export type SkillScheduleView = {
-  skill: AssessedSkill;
+  skill: string;
   required: boolean;
   scopeReason: string | null;
   periodId: number | null;
@@ -337,7 +347,7 @@ export type CompletionWeek = {
    */
   valid: boolean;
   /** Kỹ năng làm cho kế hoạch chưa hợp lệ, để màn hình chỉ đúng chỗ cần xử lý. */
-  blocking: AssessedSkill[];
+  blocking: string[];
 };
 
 /**
@@ -520,7 +530,7 @@ export function checkWeekVsNeighbours(input: {
 
 export function checkSkillWeekMove(input: {
   attemptId: number;
-  skill: AssessedSkill;
+  skill: string;
   newWeekStart: string;
 }): ScheduleCheck {
   const conn = db();
@@ -539,7 +549,7 @@ function daysBetween(a: string, b: string): number {
 // ---------------------------------------------------------------- thao tác
 
 function loadOne(attemptId: number, skill: string): { attempt: any; row: SkillRow } {
-  if (!(ASSESSED_SKILLS as readonly string[]).includes(skill)) throw badRequest('Kỹ năng không hợp lệ.');
+  if (!boMonCuaLuot(db(), attemptId).includes(skill)) throw badRequest('Kỹ năng không hợp lệ.');
   const attempt = db().prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
   if (!attempt) throw notFound('Không tìm thấy đợt kiểm tra');
   const rows = ensureSkillRows(attemptId);
@@ -552,7 +562,7 @@ function loadOne(attemptId: number, skill: string): { attempt: any; row: SkillRo
  * (23/09) Lớp thường lưu điểm ở `raw_score`, không có `band` — chỉ nhìn `band` để trước đây một môn lớp thường
  * đã có điểm vẫn dời được như một lịch tương lai. `writing` của FT vẫn xét qua `writing1`/`writing2`.
  */
-function hasScore(attemptId: number, skill: AssessedSkill): boolean {
+function hasScore(attemptId: number, skill: string): boolean {
   /* FT tách 'writing' thành writing1/writing2; lớp thường ghi thẳng 'writing' — kiểm cả ba, không cần biết
    * trước chế độ chấm của đợt. */
   const entry = skill === 'writing' ? ['writing', 'writing1', 'writing2'] : [skill];
