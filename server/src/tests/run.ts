@@ -9656,6 +9656,10 @@ await runXoaDuLieuTests({ check, checkAsync, assert, assertThrows, conn, TODAY, 
 const { runSuaLoiNongTests } = await import('./suaLoiNong.tests.ts');
 await runSuaLoiNongTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
+// ==================================================================== PR-LOP (Tạo lớp, tên lớp, RF, Pre FOU, phân công)
+const { runPrLopTests } = await import('./prLop.tests.ts');
+await runPrLopTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
