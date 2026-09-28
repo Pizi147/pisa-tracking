@@ -6,11 +6,12 @@ import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonNgayGan, ChonTuan } from '../../ui/ChonNgay.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
+import { OKhac } from '../../ui/OKhac.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
   CASE_OUTCOMES, CASE_OUTCOME_LABEL, HAN_DUYET_NGAY, INTERVENTION_KIND_LABEL, RESCHEDULE_TARGETS, RESCHEDULE_TARGET_LABEL,
   componentsAreCounts, componentsFor, interventionKindsFor, isProposalKind,
-  ngay, nguoiThanhPayload, planEndDefault, type NguoiChon, dsLoi,
+  ngay, nguoiThanhPayload, planEndDefault, type NguoiChon, dsLoi, kiemGhiRoKhac,
 } from '@shared/domain/index.ts';
 import { ComponentsField, componentsPayload } from './ChiTietKyNang.tsx';
 
@@ -41,6 +42,9 @@ export function ThemPaPanel({ caseId, studentId, hocVien, lop, quayLai, onClose,
   const catalogue = interventionKindsFor();
   const [kind, setKind] = useState<string>(catalogue.selfServe[0]);
   const [description, setDescription] = useState('');
+  /* PA đề xuất "Khác" (T13): ô Tên đề xuất ngay dưới; máy chủ ghép "{tên} — {mô tả}" (Q9). Đổi loại vẫn giữ chữ đã gõ. */
+  const [ghiRo, setGhiRo] = useState('');
+  const laKhacPa = kind === 'other_proposal';
   /* Mặc định ĐANG THEO DÕI: PA vừa lập thì đang chạy, không phải đã xong. */
   const [status, setStatus] = useState<'started' | 'completed'>('started');
   const [nguoi, setNguoi] = useState<NguoiChon | null>({ kieu: 'toi' });
@@ -57,7 +61,8 @@ export function ThemPaPanel({ caseId, studentId, hocVien, lop, quayLai, onClose,
     { khoa: 'mo-ta', nhan: 'Mô tả', toiThieu: 8 },
     ...(status === 'completed' ? [{ khoa: 'ngay-lam', nhan: 'Ngày đã làm', chon: true }] : []),
   ], { 'mo-ta': description, 'ngay-lam': completedDate });
-  const thieu = loi.map((l) => l.nhan);
+  const loiGhiRo = laKhacPa ? kiemGhiRoKhac(ghiRo) : null;
+  const thieu = [...(loiGhiRo ? ['Tên đề xuất'] : []), ...loi.map((l) => l.nhan)];
 
   const luu = async () => {
     lf.bam();
@@ -72,6 +77,7 @@ export function ThemPaPanel({ caseId, studentId, hocVien, lop, quayLai, onClose,
         followupDue: followupDue || undefined,
         rescheduleTarget: kind === 'reschedule_mt' ? rescheduleTarget : undefined,
         needsApproval: deXuat,
+        ...(laKhacPa ? { ghiRoKhac: ghiRo.trim() } : {}),
       });
       invalidate('/cases'); invalidate('/students'); invalidate('/overview');
       toast.push('ok', deXuat ? 'Đã gửi Quản lý duyệt' : 'Đã ghi lại');
@@ -93,20 +99,24 @@ export function ThemPaPanel({ caseId, studentId, hocVien, lop, quayLai, onClose,
         luat={deXuat
           ? `Đây là một ĐỀ XUẤT nên Quản lý phải trả lời trong ${HAN_DUYET_NGAY} ngày, tính cả hôm gửi. Trong lúc chờ thì chưa ghi kết quả được.`
           : 'Chọn một mục trong "Cần Quản lý duyệt" tức là đang xin ý kiến Quản lý.'}>
-        <Truong nhan="Loại PA" batBuoc>
-          <select className="field w-full" value={kind} onChange={(e) => setKind(e.target.value)}>
-            <optgroup label="Bạn tự làm được">
-              {catalogue.selfServe.map((k: string) => (
-                <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k as keyof typeof INTERVENTION_KIND_LABEL]}</option>
-              ))}
-            </optgroup>
-            <optgroup label="Cần Quản lý duyệt">
-              {catalogue.proposals.map((k: string) => (
-                <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k as keyof typeof INTERVENTION_KIND_LABEL]} · cần QL duyệt</option>
-              ))}
-            </optgroup>
-          </select>
-        </Truong>
+        <div>
+          <Truong nhan="Loại PA" batBuoc>
+            <select className="field w-full" value={kind} onChange={(e) => setKind(e.target.value)}>
+              <optgroup label="Bạn tự làm được">
+                {catalogue.selfServe.map((k: string) => (
+                  <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k as keyof typeof INTERVENTION_KIND_LABEL]}</option>
+                ))}
+              </optgroup>
+              <optgroup label="Cần Quản lý duyệt">
+                {catalogue.proposals.map((k: string) => (
+                  <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k as keyof typeof INTERVENTION_KIND_LABEL]} · cần QL duyệt</option>
+                ))}
+              </optgroup>
+            </select>
+          </Truong>
+          <OKhac hien={laKhacPa} value={ghiRo} onChange={setGhiRo} nhan="Tên đề xuất" goiY="Ví dụ: Học kèm 1-1 với trợ giảng"
+            loi={lf.daBam ? loiGhiRo : null} />
+        </div>
         {kind === 'reschedule_mt' && (
           <Truong nhan="Lùi cái gì" batBuoc as="div">
             <div className="grid grid-cols-2 gap-2">

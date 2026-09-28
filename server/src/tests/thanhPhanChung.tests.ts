@@ -183,4 +183,13 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(d.canDongBoONgay('31/09/2026', '2026-09-20', 'ngay', H, toiDa), 'nơi gọi đặt ngày khác phải viết lại chữ');
     assert(!d.canDongBoONgay('28/09/2026', H, 'ngay', H, toiDa), 'chữ khớp value thì không viết lại');
   });
+
+  check('NEN (6) · YC-8: mọi form có mục "Khác" đi qua OKhac; không còn luật "Khác ≥ 30 ký tự" trên web', () => {
+    const ds = ['web/src/modules/cases/QuickReport.tsx', 'web/src/modules/yThuc/CaseSosControls.tsx', 'web/src/modules/cases/ThaoTacCase.tsx',
+      'web/src/modules/cases/CapNhatTuan.tsx', 'web/src/modules/yThuc/PhoiHopSosSection.tsx', 'web/src/modules/yThuc/RecordViolationPanel.tsx',
+      'web/src/modules/yThuc/CreateMeasurePanel.tsx', 'web/src/modules/yThuc/PhuongAnPanel.tsx', 'web/src/modules/students/ChuyenLopPanel.tsx'];
+    for (const f of ds) assert(/<OKhac\b/.test(doc(f)), `${f} chưa dùng OKhac`);
+    const web = tepNguon('web/src').map(doc).join('\n');
+    assert(!/VIOLATION_OTHER_DESCRIPTION_MIN|endsWith\('\.other'\) \? 30|Mô tả rõ hơn \(chọn "Khác"\)/.test(web), 'còn luật 30 ký tự');
+  });
 }

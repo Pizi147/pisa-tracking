@@ -6,8 +6,9 @@ import { useToast } from '../../ui/Toast.tsx';
 import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
+import { OKhac } from '../../ui/OKhac.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { MEASURE_KINDS, MEASURE_KIND_LABEL, dsLoi, ngay, type MeasureKind, type NguoiChon } from '@shared/domain/index.ts';
+import { MEASURE_KINDS, MEASURE_KIND_LABEL, dsLoi, kiemGhiRoKhac, ngay, type MeasureKind, type NguoiChon } from '@shared/domain/index.ts';
 
 type KindRow = { kind: MeasureKind; label: string; available: boolean; reason: string | null };
 
@@ -53,9 +54,10 @@ export function CreateMeasurePanel({
   const availability = kinds.data?.rows ?? [];
   const isLocked = (k: string) => availability.find((r) => r.kind === k)?.available === false;
   const lockReason = (k: string) => availability.find((r) => r.kind === k)?.reason ?? null;
-  const loi = dsLoi(kind === 'other' ? [{ khoa: 'ten-pa', nhan: 'Tên phương án', toiThieu: 1 }] : [], { 'ten-pa': customName });
+  const loi = dsLoi([], {});
   if (!list.length) loi.unshift({ khoa: 'vi-pham', nhan: 'Vi phạm', lyDo: 'Cần ít nhất một vi phạm' });
-  const thieu = loi.map((l) => l.nhan);
+  const loiGhiRo = kind === 'other' ? kiemGhiRoKhac(customName) : null;
+  const thieu = [...loi.map((l) => l.nhan), ...(loiGhiRo ? ['Tên phương án'] : [])];
 
   const create = async (confirmNow: boolean) => {
     lf.bam();
@@ -91,25 +93,24 @@ export function CreateMeasurePanel({
       <Khoi tieuDe="Phương án"
         luat="Lưu nháp: việc cần vài ngày (Report, Thư cảnh cáo). Đã làm luôn: việc vừa làm tại chỗ. Loại xếp từ nhẹ đến nặng; chọn thẳng loại nào cũng được.">
         <Hang2>
-          <Truong nhan="Loại" batBuoc>
-            <select className="field w-full" value={kind} onChange={(e) => setKind(e.target.value)}
-              title={isLocked(kind) ? lockReason(kind) ?? undefined : undefined}>
-              {MEASURE_KINDS.map((k) => (
-                <option key={k} value={k} disabled={isLocked(k)} title={isLocked(k) ? lockReason(k) ?? undefined : undefined}>
-                  {MEASURE_KIND_LABEL[k]}
-                </option>
-              ))}
-            </select>
-          </Truong>
+          <div>
+            <Truong nhan="Loại" batBuoc>
+              <select className="field w-full" value={kind} onChange={(e) => setKind(e.target.value)}
+                title={isLocked(kind) ? lockReason(kind) ?? undefined : undefined}>
+                {MEASURE_KINDS.map((k) => (
+                  <option key={k} value={k} disabled={isLocked(k)} title={isLocked(k) ? lockReason(k) ?? undefined : undefined}>
+                    {MEASURE_KIND_LABEL[k]}
+                  </option>
+                ))}
+              </select>
+            </Truong>
+            <OKhac hien={kind === 'other'} value={customName} onChange={setCustomName} nhan="Tên phương án"
+              goiY="Ví dụ: Viết bản cam kết" loi={lf.daBam ? loiGhiRo : null} />
+          </div>
           <Truong nhan="Phụ trách" as="div">
             <ChonNguoi nhom="nhan_vien" choNgoai={false} value={owner} onChange={setOwner} macDinhTrong="Mặc định: GVCN của lớp" />
           </Truong>
         </Hang2>
-        {kind === 'other' && (
-          <Truong nhan="Tên phương án" batBuoc loi={lf.loiCua(loi, 'ten-pa')}>
-            <input className="field w-full" {...lf.o(loi, 'ten-pa')} value={customName} onChange={(e) => setCustomName(e.target.value)} />
-          </Truong>
-        )}
         <Truong nhan="Ghi chú" tuyChon>
           <textarea className="field w-full" rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
         </Truong>

@@ -7,11 +7,12 @@ import { ConfirmDialog } from '../../ui/Drawer.tsx';
 import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
+import { OKhac } from '../../ui/OKhac.tsx';
 import { ChonThang, ChonTuan } from '../../ui/ChonNgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
   CASE_CATEGORY_LABEL, NO_HANDOVER_NOTE, TRANSFER_REASONS, TRANSFER_REASON_LABEL, mondayOfDate, tuanLich, type NguoiChon,
-  dsLoi, type LuatTruong,
+  dsLoi, type LuatTruong, kiemGhiRoKhac,
 } from '@shared/domain/index.ts';
 
 type LopDich = { id: number; code: string; chiNhanhId: number; ma: string | null; ft: boolean; tenChuongTrinh: string | null; tuan: string | null; gvcn: string | null };
@@ -91,12 +92,12 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone }: {
   const LUAT: LuatTruong[] = [
     { khoa: 'lop', nhan: 'Lớp', chon: true },
     { khoa: 'ly-do', nhan: 'Lý do', chon: true },
-    ...(reasonCode === 'khac' ? [{ khoa: 'ghi-ro', nhan: 'Ghi rõ lý do', toiThieu: 3 }] : []),
     ...(luat?.canMucTieu ? [{ khoa: 'muc-tieu', nhan: 'Mục tiêu band', chon: true }] : []),
     ...(!canLuuY || !noNote ? [{ khoa: 'ban-giao', nhan: 'Ghi chú bàn giao', toiThieu: 1 }] : []),
   ];
   const loi = dsLoi(LUAT, { lop: toClassId, 'ly-do': reasonCode, 'ghi-ro': reasonNote, 'muc-tieu': mucTieu, 'ban-giao': luuY });
-  const thieu = loi.map((l) => l.nhan);
+  const loiGhiRo = reasonCode === 'khac' ? kiemGhiRoKhac(reasonNote) : null;
+  const thieu = [...loi.map((l) => l.nhan), ...(loiGhiRo ? ['Ghi rõ lý do'] : [])];
   const loiCua = (khoa: string) => lf.loiCua(loi, khoa);
   const o = (khoa: string) => lf.o(loi, khoa);
 
@@ -119,7 +120,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone }: {
         toClassId,
         /* Tuần này → không gửi ngày (máy chủ lấy hôm nay, như cũ); tuần sau → thứ Hai của tuần đó. */
         effectiveDate: tuan && tuan !== tuanNay ? tuan : undefined,
-        reasonCode, reasonNote: reasonNote || undefined,
+        reasonCode, reasonNote: reasonCode === 'khac' ? reasonNote.trim() : undefined,
         handoverNote: luuY || undefined, noHandoverNote: noNote,
         nguoiNhan: Object.keys(nguoiNhanPayload).length ? nguoiNhanPayload : undefined,
         mucTieu: mucTieu ? Number(mucTieu) : undefined, thangThi: thangThi || undefined,
@@ -173,12 +174,9 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone }: {
                     onClick={() => setReasonCode(r)}>{TRANSFER_REASON_LABEL[r]}</button>
                 ))}
               </div>
+              <OKhac hien={reasonCode === 'khac'} value={reasonNote} onChange={setReasonNote} nhan="Ghi rõ lý do"
+                goiY="Ví dụ: Gia đình chuyển nhà sang quận khác" loi={lf.daBam ? loiGhiRo : null} />
             </Truong>
-            {reasonCode === 'khac' && (
-              <Truong nhan="Ghi rõ lý do" batBuoc loi={loiCua('ghi-ro')}>
-                <input className="field w-full" {...o('ghi-ro')} value={reasonNote} onChange={(e) => setReasonNote(e.target.value)} />
-              </Truong>
-            )}
             {luat?.canMucTieu && (
               <Hang2>
                 <Truong nhan="Mục tiêu band" batBuoc loi={loiCua('muc-tieu')}>

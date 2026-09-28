@@ -7,13 +7,14 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { QuaHan } from '../../ui/Nhan.tsx';
 import { ChonTuan } from '../../ui/ChonNgay.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
+import { OKhac } from '../../ui/OKhac.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
   FOLLOWUP_OUTCOMES, INTERVENTION_KIND_LABEL, OUTCOME_MARK,
   NUT_LUU_KET_QUA, PLAN_DECISIONS, PLAN_DECISION_HINT, PLAN_DECISION_NGAN, PLAN_DECISION_NGHIA,
   RESCHEDULE_TARGETS, RESCHEDULE_TARGET_LABEL,
   decisionBlockedReason, decisionNeedsReason, deadlineView, interventionKindsFor, ngay, nhanTuanGhiKetQua, outcomeLabelFor,
-  nguoiThanhPayload, type NguoiChon, type PlanDecision, dsLoi, type LuatTruong,
+  nguoiThanhPayload, type NguoiChon, type PlanDecision, dsLoi, type LuatTruong, kiemGhiRoKhac,
 } from '@shared/domain/index.ts';
 
 /**
@@ -80,6 +81,9 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
   const kinds = interventionKindsFor();
   const [newKind, setNewKind] = useState<string>(kinds.selfServe[0]);
   const [newDesc, setNewDesc] = useState('');
+  /* PA mới là đề xuất "Khác" (T13): ô Tên đề xuất ngay dưới; máy chủ ghép "{tên} — {mô tả}" (Q9). */
+  const [newGhiRo, setNewGhiRo] = useState('');
+  const loiGhiRo = newKind === 'other_proposal' ? kiemGhiRoKhac(newGhiRo) : null;
   const [newNguoi, setNewNguoi] = useState<NguoiChon | null>({ kieu: 'toi' });
   const [newTarget, setNewTarget] = useState<string>(RESCHEDULE_TARGETS[0]);
   const lf = useLoiForm();
@@ -110,7 +114,8 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
     else if (descChanged && desc.trim().length < 8) loi.push({ khoa: 'noi-dung', nhan: 'Nội dung PA', lyDo: `Cần ít nhất 8 ký tự (đang có ${desc.trim().length})` });
     else if (dueChanged && !!on && due < on) loi.push({ khoa: 'han', nhan: 'Hạn kết thúc PA', lyDo: 'Không được sớm hơn ngày ghi' });
   }
-  const thieu = loi.map((l) => l.nhan);
+  /* PR-NEN (T13): "Khác" — ô Tên đề xuất (OKhac); gộp vào luật ở R2. */
+  const thieu = [...loi.map((l) => l.nhan), ...(decision === 'replace' && loiGhiRo ? ['Tên đề xuất'] : [])];
   const loiCua = (khoa: string) => lf.loiCua(loi, khoa);
   const o = (khoa: string) => lf.o(loi, khoa);
 
@@ -137,6 +142,7 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
           kind: newKind, description: newDesc,
           ...nguoiThanhPayload(newNguoi),
           rescheduleTarget: newKind === 'reschedule_mt' ? newTarget : null,
+          ...(newKind === 'other_proposal' ? { ghiRoKhac: newGhiRo.trim() } : {}),
         };
       }
       await api.post(`/interventions/${pa.id}/result`, body);
@@ -180,16 +186,20 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
     if (d === 'replace') {
       return (
         <div className="space-y-3">
-          <Truong nhan="PA mới" batBuoc>
-            <select className="field w-full" value={newKind} onChange={(e) => setNewKind(e.target.value)}>
-              <optgroup label="Bạn tự làm được">
-                {kinds.selfServe.map((k) => <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k] ?? k}</option>)}
-              </optgroup>
-              <optgroup label="Cần Quản lý duyệt">
-                {kinds.proposals.map((k) => <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k] ?? k} · cần QL duyệt</option>)}
-              </optgroup>
-            </select>
-          </Truong>
+          <div>
+            <Truong nhan="PA mới" batBuoc>
+              <select className="field w-full" value={newKind} onChange={(e) => setNewKind(e.target.value)}>
+                <optgroup label="Bạn tự làm được">
+                  {kinds.selfServe.map((k) => <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k] ?? k}</option>)}
+                </optgroup>
+                <optgroup label="Cần Quản lý duyệt">
+                  {kinds.proposals.map((k) => <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k] ?? k} · cần QL duyệt</option>)}
+                </optgroup>
+              </select>
+            </Truong>
+            <OKhac hien={newKind === 'other_proposal'} value={newGhiRo} onChange={setNewGhiRo} nhan="Tên đề xuất"
+              goiY="Ví dụ: Học kèm 1-1 với trợ giảng" loi={lf.daBam ? loiGhiRo : null} />
+          </div>
           <Truong nhan="Nội dung" batBuoc phu="Ví dụ: 10 phút chữa câu mỗi buổi, hai bài viết lại mỗi tuần" loi={loiCua('pa-moi')}>
             <textarea className="field w-full" {...o('pa-moi')} rows={2} value={newDesc} onChange={(e) => setNewDesc(e.target.value)} />
           </Truong>

@@ -5,11 +5,12 @@ import { Empty, Info, Skeleton, Status } from '../../ui/ui.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import {
   COORDINATION_KINDS, COORDINATION_KIND_LABEL, COORDINATION_USER_REMOVE_REASONS, COORDINATION_REMOVE_REASON_LABEL,
-  type CoordinationKind,
+  type CoordinationKind, kiemGhiRoKhac, reasonNeedsText,
 } from '@shared/domain/index.ts';
 import { fmtDate, sosLabel } from '../../lib/format.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
+import { OKhac } from '../../ui/OKhac.tsx';
 
 type CoordAction = {
   id: number; kind: string; kindLabel: string; customName: string | null; name: string;
@@ -192,15 +193,14 @@ function RemoveCoordinationForm({ actionId, onClose, onChanged }: {
   const [busy, setBusy] = useState(false);
 
   /* K2-3: ràng buộc nói TRƯỚC khi bấm — nút mờ + câu thiếu gì, không báo lỗi đỏ sau khi bấm. */
-  const missing = !reason ? 'Chọn một lý do.'
-    : reason === 'other' && !text.trim() ? 'Chọn "Khác" thì phải ghi rõ lý do.'
-    : null;
+  const missing = !reason ? 'Chọn một lý do.' : null;
+  const loiGhiRo = reasonNeedsText(reason) ? kiemGhiRoKhac(text) : null;
 
   const save = async () => {
-    if (missing) return;
+    if (missing || loiGhiRo) return;
     setBusy(true);
     try {
-      await api.post(`/phoi-hop-sos/${actionId}/remove`, { reasonCode: reason, reasonText: text.trim() || undefined });
+      await api.post(`/phoi-hop-sos/${actionId}/remove`, { reasonCode: reason, reasonText: reasonNeedsText(reason) ? text.trim() : undefined });
       invalidate('/classes'); invalidate('/students');
       toast.push('ok', 'Đã bỏ việc này');
       onChanged?.(); onClose();
@@ -217,13 +217,11 @@ function RemoveCoordinationForm({ actionId, onClose, onChanged }: {
           </button>
         ))}
       </div>
-      {reason === 'other' && (
-        <input className="field" placeholder="Lý do" value={text} onChange={(e) => setText(e.target.value)} />
-      )}
+      <OKhac hien={reasonNeedsText(reason)} value={text} onChange={setText} goiY="Ví dụ: Gia đình xin dời sang tuần sau" />
       {missing && <p className="text-xs text-amber-200/90 m-0">{missing}</p>}
       <div className="flex gap-1.5">
         <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>Huỷ</button>
-        <button type="button" className="btn btn-sm btn-primary" disabled={busy || !!missing} title={missing ?? undefined} onClick={save}>Bỏ việc này</button>
+        <button type="button" className="btn btn-sm btn-primary" disabled={busy || !!missing || !!loiGhiRo} title={missing ?? loiGhiRo ?? undefined} onClick={save}>Bỏ việc này</button>
       </div>
     </div>
   );
@@ -238,12 +236,11 @@ function AddCoordinationForm({ attemptId, existing, onClose, onChanged }: {
   const [busy, setBusy] = useState(false);
 
   /* K2-3: ràng buộc nói TRƯỚC khi bấm — nút mờ + câu thiếu gì, không báo lỗi đỏ sau khi bấm. */
-  const missing = !kind ? 'Chọn loại việc.'
-    : kind === 'other' && !customName.trim() ? 'Việc loại "Khác" cần ghi tên việc.'
-    : null;
+  const missing = !kind ? 'Chọn loại việc.' : null;
+  const loiGhiRo = kind === 'other' ? kiemGhiRoKhac(customName) : null;
 
   const save = async () => {
-    if (missing) return;
+    if (missing || loiGhiRo) return;
     setBusy(true);
     try {
       await api.post(`/attempts/${attemptId}/phoi-hop-sos`, { kind, customName: kind === 'other' ? customName.trim() : undefined });
@@ -264,13 +261,11 @@ function AddCoordinationForm({ attemptId, existing, onClose, onChanged }: {
           </button>
         ))}
       </div>
-      {kind === 'other' && (
-        <input className="field" placeholder="Tên việc" value={customName} onChange={(e) => setCustomName(e.target.value)} />
-      )}
+      <OKhac hien={kind === 'other'} value={customName} onChange={setCustomName} nhan="Tên việc" goiY="Ví dụ: Gặp trợ giảng sau giờ học" />
       {missing && <p className="text-xs text-amber-200/90 m-0">{missing}</p>}
       <div className="flex gap-1.5">
         <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>Huỷ</button>
-        <button type="button" className="btn btn-sm btn-primary" disabled={busy || !!missing} title={missing ?? undefined} onClick={save}>Thêm</button>
+        <button type="button" className="btn btn-sm btn-primary" disabled={busy || !!missing || !!loiGhiRo} title={missing ?? loiGhiRo ?? undefined} onClick={save}>Thêm</button>
       </div>
     </div>
   );

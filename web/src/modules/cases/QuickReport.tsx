@@ -10,12 +10,13 @@ import { ONgay } from '../../ui/ONgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
+import { OKhac } from '../../ui/OKhac.tsx';
 import { ComponentsField, componentsPayload } from './ChiTietKyNang.tsx';
 import {
   ENTRY_SKILL_LABEL, URGENCY_LEVELS, URGENCY_LABEL, issuesForTopic, DEFAULT_URGENCY,
   CASE_OUTCOMES, CASE_OUTCOME_LABEL, REGULAR_SKILL_LABEL,
   categoryOf, componentsFor, componentsAreCounts,
-  nguoiThanhPayload, nguoiThieu, skillShort, tuanLich, type NguoiChon, dsLoi, type LuatTruong,
+  nguoiThanhPayload, nguoiThieu, skillShort, tuanLich, type NguoiChon, dsLoi, type LuatTruong, laKhac, kiemGhiRoKhac,
 } from '@shared/domain/index.ts';
 
 type DaLuu = { id: number; tieuDe: string; gop: boolean; canEdit: boolean };
@@ -74,6 +75,8 @@ export function QuickReport({
   const [urgency, setUrgency] = useState<string>(DEFAULT_URGENCY);
   const [topic, setTopic] = useState('');
   const [primaryCode, setPrimaryCode] = useState('');
+  /* Phân loại "Khác" (T13): ô Ghi rõ ngay dưới, lưu ở `case_issues.observation` (Q9). Đổi phân loại vẫn giữ chữ đã gõ. */
+  const [ghiRo, setGhiRo] = useState('');
   const [detectedAt, setDetectedAt] = useState('');
   const [busy, setBusy] = useState(false);
   /* YC-12.5.2: lỗi hiện dưới ô khi rời ô; sau khi bấm nút chính, chân có thêm "n ô cần sửa ↑". */
@@ -182,6 +185,7 @@ export function QuickReport({
         studentId, cycleId: cycleId ?? undefined, title: title.trim() || null, summary, urgency,
         topic,
         primaryCode: primaryCode || undefined,
+        observation: laKhac(primaryCode) ? ghiRo.trim() : undefined,
         detectedAt: detectedAt || undefined,
         idempotencyKey,
         fromSignalId: signal?.id ?? undefined,
@@ -213,6 +217,7 @@ export function QuickReport({
       const res = await api.post<any>('/cases/backfill', {
         studentId, cycleId: cycleId ?? undefined,
         topic, primaryCode: primaryCode || undefined,
+        observation: laKhac(primaryCode) ? ghiRo.trim() : undefined,
         title: title.trim() || null, summary,
         fromDate: bfFrom, toDate: bfTo,
         actions: bfActions.map((a) => ({
@@ -265,13 +270,11 @@ export function QuickReport({
   const bfCounts = componentsAreCounts(category);
 
   /* Ô lỗi (YC-12.5.2): lý do dưới ô khi rời ô; chân chỉ đếm "n ô cần sửa ↑" sau khi bấm nút chính — không toast trước khi gửi. */
-  /* "Khác" → 30 ký tự là luật cũ; PR-NEN (T13) bỏ khi có OKhac. */
-  const moTaToiThieu = primaryCode.endsWith('.other') ? 30 : 15;
   const LUAT: LuatTruong[] = [
     ...(students ? [{ khoa: 'hoc-vien', nhan: 'Học viên', chon: true }] : []),
     { khoa: 'ky-nang', nhan: 'Kỹ năng', chon: true }, { khoa: 'phan-loai', nhan: 'Phân loại vấn đề', chon: true },
     { khoa: 'ten', nhan: 'Tên Case', toiThieu: 6 },
-    { khoa: 'mo-ta', nhan: 'Mô tả', toiThieu: moTaToiThieu },
+    { khoa: 'mo-ta', nhan: 'Mô tả', toiThieu: 15 },
     ...(mode === 'backfill' ? [{ khoa: 'tu-tuan', nhan: 'Từ tuần', chon: true }, { khoa: 'den-tuan', nhan: 'Đến tuần', chon: true },
       { khoa: 'ket-qua', nhan: 'Kết quả cuối', chon: true }, { khoa: 'vi-sao', nhan: 'Vì sao kết luận vậy', toiThieu: 10 }] : []),
   ];
@@ -279,7 +282,9 @@ export function QuickReport({
     'tu-tuan': bfFrom, 'den-tuan': bfTo, 'ket-qua': bfOutcome, 'vi-sao': bfNote });
   if (mode === 'backfill' && bfFrom && bfTo && bfFrom > bfTo) loi.push({ khoa: 'den-tuan', nhan: 'Đến tuần', lyDo: 'Không được trước Từ tuần' });
   if (mode === 'backfill' && !bfActions.some((a) => a.description.trim())) loi.push({ khoa: 'pa-0', nhan: 'Phương án đã áp dụng', lyDo: 'Chưa có PA nào' });
-  const thieu = loi.map((l) => l.nhan);
+  /* PR-NEN (T13): "Khác" → ô Ghi rõ ≥ 3 (OKhac), bỏ luật 30 ký tự của Mô tả; gộp vào luật ở R2. */
+  const loiGhiRo = laKhac(primaryCode) ? kiemGhiRoKhac(ghiRo) : null;
+  const thieu = [...loi.map((l) => l.nhan), ...(loiGhiRo ? ['Ghi rõ'] : [])];
   const oLoi = lf.conThieu(loi);
   const loiCua = (khoa: string) => lf.loiCua(loi, khoa);
   const o = (khoa: string) => lf.o(loi, khoa);
@@ -368,14 +373,19 @@ export function QuickReport({
         </Truong>
 
         {/* Phân loại BẮT BUỘC (máy chủ cần `primaryCode`): select ≥ 5 lựa chọn, gợi ý của lựa chọn nằm ở `title` (Q6). */}
-        <Truong nhan="Phân loại vấn đề" batBuoc loi={loiCua('phan-loai')}>
-          <select className="field w-full" {...o('phan-loai')} value={primaryCode} disabled={!topic}
-            title={causes.find((i) => i.code === primaryCode)?.hint}
-            onChange={(e) => setPrimaryCode(e.target.value)}>
-            <option value="">{topic ? 'Chọn phân loại' : ''}</option>
-            {causes.map((i) => <option key={i.code} value={i.code} title={i.hint}>{i.label}</option>)}
-          </select>
-        </Truong>
+        {/* OKhac là <label> riêng → đặt ngay SAU Truong (không lồng label), cùng một khối để sát ô chọn. */}
+        <div>
+          <Truong nhan="Phân loại vấn đề" batBuoc loi={loiCua('phan-loai')}>
+            <select className="field w-full" {...o('phan-loai')} value={primaryCode} disabled={!topic}
+              title={causes.find((i) => i.code === primaryCode)?.hint}
+              onChange={(e) => setPrimaryCode(e.target.value)}>
+              <option value="">{topic ? 'Chọn phân loại' : ''}</option>
+              {causes.map((i) => <option key={i.code} value={i.code} title={i.hint}>{i.label}</option>)}
+            </select>
+          </Truong>
+          <OKhac hien={laKhac(primaryCode)} value={ghiRo} onChange={setGhiRo} goiY="Ví dụ: Chưa quen dạng bài mới"
+            loi={lf.daBam ? loiGhiRo : null} />
+        </div>
 
         {/* Nhập bù là chuyện ĐÃ XONG — không còn "mức độ" để xin. */}
         {mode === 'now' && (
@@ -397,7 +407,7 @@ export function QuickReport({
             placeholder="Ví dụ: Reading — sai dạng True/False/Not Given" />
         </Truong>
         <Truong nhan="Mô tả và dẫn chứng" batBuoc phu="Sai ở đâu, bài hay buổi nào" loi={loiCua('mo-ta')}
-          dem={{ co: summary.trim().length, can: moTaToiThieu }}>
+          dem={{ co: summary.trim().length, can: 15 }}>
           <textarea className="field w-full" {...o('mo-ta')} rows={3} value={summary} onChange={(e) => setSummary(e.target.value)}
             placeholder="Ví dụ: Giữa khoá sai 4/5 câu Not Given" />
         </Truong>
