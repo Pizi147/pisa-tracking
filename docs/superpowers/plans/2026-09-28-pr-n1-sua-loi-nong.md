@@ -1075,7 +1075,12 @@ function Band({ v, kyVong, faded, soSanh = true }: { v: number | null; kyVong: n
 
 ## Nhật ký
 
-- Mốc B (Task 0): …
-- Dòng thật lệch kế hoạch: …
+- Mốc B (Task 0): **1367** phép kiểm (+ 20 kiểm tốc độ), `npm run check` xanh trên `66446cd`. Kế hoạch + mockup 20 đã có
+  sẵn trên `main` (PR #106) nên bỏ bước chép từ nhánh `ke-hoach-nang-cap-27-09`.
+- Model thật: session code và subagent chạy **Opus 5.5** (chủ sản phẩm yêu cầu subagent cùng model session, không Haiku) —
+  khác dòng "Sonnet 5 · High" ở Bảng điều hành; người rà Opus 5.5 vẫn là session riêng.
+- Dòng thật lệch kế hoạch (Task 0): không lệch > 20 dòng — `weeklyUpdateDue` :750, `planEndDefault` :763, `lopMoSan` :235,
+  `dangSua =` :417, `toneTheoNhan` `format.ts:84`, `migrateXoaDuLieu(conn, applied)` `migrate.ts:452`, `runXoaDuLieuTests`
+  `run.ts:9650`, `approvalDue`/`startDue` `cases.ts:840/994`.
 - Số chỗ sửa kỳ vọng chữ/ngày (Task 1, 2, 9): …
 - Kết quả `chay-thu:n1` trên DB demo: … PA dời · … PA chạy thiếu hạn · … PA huỷ còn chờ duyệt
