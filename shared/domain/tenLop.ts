@@ -18,9 +18,10 @@ export function kiemSoLop(so: string): string | null {
   if (!s) return 'Chưa gõ số lớp';
   return MAU_SO_LOP.test(s) ? null : 'Chỉ gõ số (1–4 chữ số), có thể thêm một chữ cái cuối, ví dụ 101A';
 }
+/** Lọc khi gõ: bỏ chữ trước số, giữ ≤ 4 chữ số + chữ cái ĐẦU TIÊN sau số; gõ tiếp sau chữ cái bị bỏ ("ft12a3" → "12A"). */
 export function locSoLop(go: string): string {
-  const so = go.replace(/[^0-9]/g, '').slice(0, 4);
-  return so + (so && /[A-Za-z]$/.test(go) ? go.slice(-1).toUpperCase() : '');
+  const m = go.replace(/[^0-9A-Za-z]/g, '').replace(/^[A-Za-z]+/, '').match(/^(\d{1,4})\d*([A-Za-z])?/);
+  return m ? m[1] + (m[2]?.toUpperCase() ?? '') : '';
 }
 export function ghepMaLop(maCn: string, chuongTrinh: string, loTrinh: string | null, so: string): string {
   const kh = kyHieuLop(chuongTrinh, loTrinh);

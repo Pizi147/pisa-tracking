@@ -22,6 +22,8 @@ export async function runPrLopTests(t: YThucTestKit) {
     assert(d.kiemSoLop('101A') === null && d.kiemSoLop('7') === null, 'số hợp lệ');
     for (const sai of ['', '12345', 'FT 1', '10AB', '1-2']) assert(d.kiemSoLop(sai) !== null, `nhận nhầm "${sai}"`);
     assert(d.locSoLop('ft12a') === '12A' && d.locSoLop('123456') === '1234', d.locSoLop('ft12a'));
+    assert(d.locSoLop('ft12a3') === '12A' && d.locSoLop('12A3') === '12A' && d.locSoLop('MB FT 101') === '101' && d.locSoLop('abc') === '',
+      `gõ sau chữ cái: ${d.locSoLop('ft12a3')}`);
   });
   check('LOP (1) · chuanHoaMaLop: ft101 · MB-FT 101 · mb ft 101 cùng một khoá (T2, K2-07)', () => {
     const k = d.chuanHoaMaLop('MB FT 101');
@@ -179,7 +181,13 @@ export async function runPrLopTests(t: YThucTestKit) {
     assert(/\bloi=/.test(tp), 'TransitionPanel chưa báo lỗi tại dòng');
     assert(/'phan-cong'/.test(docSach(lopDir + 'ClassOverviewPage.tsx')), 'hồ sơ lớp chưa nhận ?viec=phan-cong');
     const lop = conn.prepare(`SELECT id FROM classes WHERE code = 'MB FT 101'`).get() as any;
-    assert(clsMod.classTeachers(P.admin, lop.id).programmeCode === 'FT', 'classTeachers thiếu programmeCode');
+    const ct = clsMod.classTeachers(P.admin, lop.id);
+    assert(ct.programmeCode === 'FT', 'classTeachers thiếu programmeCode');
+    /* "· n lớp" đếm LỚP, không đếm dòng phân công (GVCN dạy L + R một lớp vẫn là 1 lớp) — khớp /ref/teachers của Tạo lớp. */
+    for (const c of ct.candidates) {
+      const soLop = (conn.prepare(`SELECT COUNT(DISTINCT class_id) n FROM teacher_assignments WHERE user_id = ? AND status = 'active'`).get(c.id) as any).n;
+      assert(c.classCount === soLop, `${c.name}: ${c.classCount} ≠ ${soLop} lớp`);
+    }
   });
   check('LOP (9) · việc "Chưa có người phụ trách" của lớp thiếu GV môn → Sửa phân công (K1-05)', () => {
     const hv = conn.prepare(`SELECT e.student_id sid, e.class_id cid FROM enrollments e JOIN classes c ON c.id = e.class_id

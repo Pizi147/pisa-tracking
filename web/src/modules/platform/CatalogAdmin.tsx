@@ -55,9 +55,9 @@ export function CatalogAdmin() {
 
   return (
     <div className="grid gap-4 lg:grid-cols-2 items-start">
-      <Card title="Lộ trình" bodyClass="p-0">
+      <Card title="Lộ trình" className="min-w-0" bodyClass="p-0">
         {routes.loading ? <div className="p-4"><Skeleton rows={3} /></div> : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto"><table className="w-full text-sm">
             <thead>
               <tr>
                 <th className="th">Lộ trình</th><th className="th">Kỳ vọng MT</th><th className="th">Lịch MT mặc định</th>
@@ -76,12 +76,12 @@ export function CatalogAdmin() {
                   <td className="td text-xs text-slate-400 whitespace-nowrap">{r.lichMt ?? '—'}</td>
                   <td className="td text-right tabular-nums text-slate-400">{r.inUse || '—'}</td>
                   <td className="td text-right">
-                    <button className="btn btn-sm" onClick={() => setEditRoute(r)}>Sửa</button>
+                    <button className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setEditRoute(r)}>Sửa</button>
                   </td>
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
         <div className="p-3">
           <SectionNote>
@@ -91,9 +91,9 @@ export function CatalogAdmin() {
         </div>
       </Card>
 
-      <Card title="Chương trình" bodyClass="p-0">
+      <Card title="Chương trình" className="min-w-0" bodyClass="p-0">
         {programmes.loading ? <div className="p-4"><Skeleton rows={3} /></div> : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto"><table className="w-full text-sm">
             <thead>
               <tr>
                 <th className="th">Chương trình</th>
@@ -116,13 +116,13 @@ export function CatalogAdmin() {
                     <td className="td text-right tabular-nums text-slate-400">{moc(p, 'final') ?? '—'}</td>
                     <td className="td text-right tabular-nums text-slate-400">{p.classes || '—'}</td>
                     <td className="td text-right">
-                      <button className="btn btn-sm" onClick={() => setEditProg(p)}>Sửa</button>
+                      <button className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setEditProg(p)}>Sửa</button>
                     </td>
                   </tr>
                 );
               })}
             </tbody>
-          </table>
+          </table></div>
         )}
         {ghiChu && <p className="px-4 pt-3 text-xs text-ok" role="status">{ghiChu}</p>}
         <div className="p-3">
@@ -272,7 +272,7 @@ function ProgrammeDialog({ row, onClose, onDone }: {
 
         {row.classes > 0 && (
           <SectionNote>
-            Đang có <strong className="tabular-nums">{row.classes}</strong> lớp học chương trình này. Số tuần và mốc mới chỉ
+            Có <strong className="tabular-nums">{row.classes}</strong> lớp dùng chương trình này (kể cả lớp đã kết thúc). Số tuần và mốc mới chỉ
             áp cho lớp tạo sau khi lưu; lớp đang học giữ số tuần lúc tạo, điểm đã nhập không đổi.
           </SectionNote>
         )}

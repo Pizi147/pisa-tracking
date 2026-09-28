@@ -767,7 +767,7 @@ export function teacherCandidatesBranch(branchId: number, classId: number | null
   return db()
     .prepare(
       `SELECT DISTINCT u.id, u.full_name, u.code, u.title,
-              (SELECT COUNT(*) FROM teacher_assignments ta
+              (SELECT COUNT(DISTINCT ta.class_id) FROM teacher_assignments ta
                 WHERE ta.user_id = u.id AND ta.status = 'active') AS load_classes,
               (SELECT COUNT(*) FROM teacher_assignments ta
                 WHERE ta.user_id = u.id AND ta.class_id = ? AND ta.status = 'active') AS here
