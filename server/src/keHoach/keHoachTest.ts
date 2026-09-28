@@ -10,7 +10,7 @@
  */
 import { db, tx } from '../db.ts';
 import {
-  CHU_KY_NANG, KY_NANG_KE_HOACH, PERMISSIONS, laVaoMuon, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang,
+  CHU_KY_NANG, KY_NANG_KE_HOACH, PERMISSIONS, laVaoMuon, soSanhLop, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang,
   tuanKhoa as tuanKhoaCua,
   type BaiXemTruoc, type DongHangLoat, type KyNangKH, type OKyNang,
 } from '../../../shared/domain/index.ts';
@@ -47,7 +47,7 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
 
   const rows = conn
     .prepare(
-      `SELECT c.id, c.code, pg.scoring_mode AS mode, br.name AS chi_nhanh,
+      `SELECT c.id, c.code, c.branch_id, pg.scoring_mode AS mode, br.name AS chi_nhanh,
               (SELECT COUNT(*) FROM enrollments e WHERE e.class_id = c.id AND e.status = 'active') AS so_hv
          FROM classes c LEFT JOIN programmes pg ON pg.code = c.programme_code
          LEFT JOIN branches br ON br.id = c.branch_id
@@ -55,6 +55,7 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
         ORDER BY c.code`,
     )
     .all(...params) as any[];
+  rows.sort((a, b) => soSanhLop({ code: a.code, branchId: a.branch_id }, { code: b.code, branchId: b.branch_id }));
   const inScope = rows.filter((r) => can(p, PERMISSIONS.PLAN_WEEK, { classId: r.id }));
 
   const ftClassIds = inScope.filter((r) => r.mode !== 'ratio').map((r) => r.id as number);

@@ -1,39 +1,57 @@
 import { useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
-import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { useLoiForm } from '../../ui/loiForm.tsx';
 import { useToast } from '../../ui/Toast.tsx';
+import { CHO_TAO_PRE_FOU, ghepMaLop, kiemSoLop, kyHieuLop, locSoLop, tachSoLop, type LoiTruong } from '@shared/domain/index.ts';
+import { PhanDoan } from './ClassCreatePanel.tsx';
 
 /**
- * ⋮ › SỬA THÔNG TIN LỚP (đặc tả §3.7, g3-120; Q8). Mã lớp · chương trình (chỉ đổi được khi lớp chưa có học viên) · LT (Fast Track) ·
- * ghi chú. Máy chủ kiểm lại mọi luật (`PATCH /classes/:id/thong-tin`) và nói rõ vì sao khi từ chối.
+ * ⋮ › SỬA THÔNG TIN LỚP (PR-LOP YC-2, K2-18; mockup 21 mục 4). Tên lớp máy ghép `{CN} {ký hiệu} {số}` — người dùng chỉ sửa
+ * phần SỐ. Chương trình và lộ trình chỉ đổi được khi lớp chưa có học viên (Q6: khoá, không "đổi kèm cảnh báo"). Máy chủ kiểm
+ * lại mọi luật (`PATCH /classes/:id/thong-tin`) và nói rõ vì sao khi từ chối.
  */
 export function SuaThongTinLopPanel({ lop, onClose, onDone }: {
-  lop: { id: number; code: string; route: string | null; note: string | null; programmeCode: string | null; soHocVien: number };
+  lop: {
+    id: number; code: string; branchCode: string; route: string | null; note: string | null;
+    programmeCode: string | null; soHocVien: number;
+  };
   onClose: () => void; onDone: () => void;
 }) {
   const toast = useToast();
   const programmes = useApi<{ code: string; name: string }[]>('/ref/programmes');
-  const [code, setCode] = useState(lop.code);
+  const routes = useApi<{ code: string; name: string }[]>('/ref/routes');
+  /** Lớp tên lạ (chưa theo mẫu) → null: không sửa số ở đây. */
+  const soCu = tachSoLop(lop.code, lop.branchCode);
+  const [so, setSo] = useState(soCu ?? '');
   const [chuongTrinh, setChuongTrinh] = useState(lop.programmeCode ?? '');
-  const [route, setRoute] = useState(lop.route ?? 'LT1');
+  const [loTrinh, setLoTrinh] = useState(lop.route ?? 'LT1');
   const [note, setNote] = useState(lop.note ?? '');
   const [busy, setBusy] = useState(false);
-  const [daBamLuu, setDaBamLuu] = useState(false);
+  const lf = useLoiForm();
   const doiDuoc = lop.soHocVien === 0;
+  const ft = chuongTrinh === 'FT';
+
+  const loiSo = soCu === null ? null : kiemSoLop(so);
+  const loi: LoiTruong[] = loiSo ? [{ khoa: 'so', nhan: 'Số lớp', lyDo: loiSo }] : [];
+  /* Số đã gõ mà sai mẫu → hiện ngay; ô trống → khi rời ô / sau khi bấm Lưu (YC-12.5.2). */
+  const loiSoHien = so !== '' ? loiSo : lf.loiCua(loi, 'so');
+  const kh = kyHieuLop(chuongTrinh, ft ? loTrinh : null);
+  const ma = soCu !== null && !loiSo && kh ? ghepMaLop(lop.branchCode, chuongTrinh, ft ? loTrinh : null, so) : null;
 
   const luu = async () => {
-    setDaBamLuu(true);
-    if (!code.trim()) return;   // báo "Còn thiếu: Mã lớp" ở chân panel, không khoá nút
+    lf.bam();
+    if (loi.length) return;   // báo tại ô + "1 ô cần sửa ↑" ở chân, không khoá nút
     setBusy(true);
     try {
       await api.patch(`/classes/${lop.id}/thong-tin`, {
-        code: code.trim(),
+        ...(soCu !== null ? { so } : {}),
         note: note.trim() || null,
         ...(chuongTrinh && chuongTrinh !== lop.programmeCode ? { programmeCode: chuongTrinh } : {}),
-        ...(chuongTrinh === 'FT' ? { route } : {}),
+        ...(ft && loTrinh !== lop.route ? { loTrinh } : {}),   // lớp FT cũ chưa có lộ trình: không gửi thì không bị khoá Q6
       });
-      invalidate('/classes'); invalidate('/hoc-vien-lop');
+      invalidate('/classes'); invalidate('/ref/classes'); invalidate('/hoc-vien-lop');
       toast.push('ok', 'Đã lưu thông tin lớp');
       onDone(); onClose();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
@@ -43,32 +61,45 @@ export function SuaThongTinLopPanel({ lop, onClose, onDone }: {
     <KhungPanel tieuDe="Sửa thông tin lớp" lop={lop.code} onDong={onClose}
       chan={{
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy}>Lưu</button>,
-        conThieu: daBamLuu && !code.trim() ? ['Mã lớp'] : undefined,
+        conThieu: lf.conThieu(loi),
       }}>
       <Khoi tieuDe="Thông tin lớp"
         luat={doiDuoc ? undefined : 'Lớp đã có học viên nên không đổi được chương trình. Lớp thường học tiếp khoá sau thì dùng Chuyển tiếp lớp.'}>
-        <Truong nhan="Mã lớp" batBuoc phu="Ví dụ: MB-FT 101">
-          <input className="field w-full" value={code} onChange={(e) => setCode(e.target.value)} />
-        </Truong>
-        {chuongTrinh === 'FT' ? (
-          <Hang2>
-            <Truong nhan="Chương trình">
-              <select className="field w-full" value={chuongTrinh} disabled={!doiDuoc} onChange={(e) => setChuongTrinh(e.target.value)}>
-                {(programmes.data ?? []).map((p) => <option key={p.code} value={p.code}>{p.name}</option>)}
-              </select>
-            </Truong>
-            <Truong nhan="Lộ trình (LT)">
-              <select className="field w-full" value={route} onChange={(e) => setRoute(e.target.value)}>
-                <option value="LT1">LT1</option>
-                <option value="LT2">LT2</option>
-              </select>
-            </Truong>
-          </Hang2>
+        {soCu === null ? (
+          <Truong nhan="Tên lớp" phu="Tên lớp cũ chưa theo mẫu — Quản trị đổi lúc nâng cấp">
+            <input className="field w-full" value={lop.code} readOnly />
+          </Truong>
         ) : (
-          <Truong nhan="Chương trình">
-            <select className="field w-full" value={chuongTrinh} disabled={!doiDuoc} onChange={(e) => setChuongTrinh(e.target.value)}>
-              {(programmes.data ?? []).map((p) => <option key={p.code} value={p.code}>{p.name}</option>)}
-            </select>
+          <div>
+            <Truong nhan="Số lớp" batBuoc phu="1–4 chữ số, được thêm một chữ cái cuối (101A)" loi={loiSoHien}>
+              <input className="field w-28 tabular-nums" {...lf.o(loi, 'so')} aria-invalid={!!loiSoHien} inputMode="numeric" autoComplete="off"
+                value={so} onChange={(e) => setSo(locSoLop(e.target.value))} />
+            </Truong>
+            <p className="m-0 mt-2 text-sm tabular-nums" aria-live="polite">
+              {ma
+                ? <>Lớp sẽ là <strong className="text-slate-100">{ma}</strong></>
+                : <span className="text-slate-500">Lớp sẽ là {lop.branchCode} {kh ?? ''} …</span>}
+            </p>
+          </div>
+        )}
+        <Truong nhan="Chương trình">
+          <select className="field w-full" value={chuongTrinh} disabled={!doiDuoc} onChange={(e) => setChuongTrinh(e.target.value)}>
+            {(programmes.data ?? []).map((p) => (
+              <option key={p.code} value={p.code} disabled={p.code === 'PREFOU' && !CHO_TAO_PRE_FOU && p.code !== lop.programmeCode}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </Truong>
+        {ft && (
+          <Truong nhan="Lộ trình" as="div">
+            <PhanDoan nhan="Lộ trình" giaTri={loTrinh} onChon={setLoTrinh}
+              muc={(routes.data ?? []).map((r) => ({ v: r.code, nhan: r.code, title: r.name, tat: !doiDuoc && r.code !== loTrinh }))} />
+            {!doiDuoc && (
+              <span className="mt-1 block text-[11px] text-slate-400">
+                Lớp đã có {lop.soHocVien} học viên — muốn đổi lộ trình thì chuyển các em sang lớp {kyHieuLop('FT', lop.route === 'RF' ? 'LT1' : 'RF')} khác
+              </span>
+            )}
           </Truong>
         )}
         <Truong nhan="Ghi chú" tuyChon>

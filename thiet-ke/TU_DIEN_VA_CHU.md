@@ -290,3 +290,22 @@ câu báo máy chủ `phương án xử lý`) và D3 (bỏ "Hãy") đã ghi ở 
 | Toast sau thao tác hoàn tác được | `… · Hoàn tác ({n})` đếm lùi 5 giây | toast 10 giây, nút `Hoàn tác` không đếm |
 | Nhật ký thay đổi (Quản trị) | nhãn tiếng Việt (`Huỷ phần còn lại của lượt`), mã máy chỉ ở tooltip | `attempt.cancel_part` |
 | ⓘ số liệu — không đếm trùng | `Mỗi học viên chỉ đếm 1 lần` · `Mỗi Case chỉ đếm 1 lần` | `COUNT DISTINCT student_id` |
+
+## 10. PR-LOP — 29/09/2026 · ba chữ về lớp (K1-50)
+
+Ba chữ khác nhau, không dùng lẫn. Panel Tạo lớp hỏi đúng thứ tự: Chi nhánh → **Kiểu lớp** → **Lộ trình** (FT) hoặc
+**Chương trình** (Lớp thường) → Số lớp.
+
+| Chữ | Nghĩa · giá trị hiện trên màn | Không viết |
+|---|---|---|
+| `Kiểu lớp` | `Fast Track` · `Lớp thường` | `Loại lớp`, `Normal`, `FT/Normal` |
+| `Lộ trình` | chỉ lớp Fast Track: `LT1` · `LT2` · `RF` (tên dài ở tooltip/Quản trị: `Lộ trình 1` · `Lộ trình 2` · `Refire`) | `Chương trình` cho LT1/LT2/RF |
+| `Chương trình` | chỉ Lớp thường: `Pre FOU` · `FOU` · `BE` · `ELE` (tên dài ở Quản trị, ví dụ `Pre Foundation`) | mã máy `PREFOU`, `FOUND`; `Lộ trình` cho FOU/BE/ELE |
+
+| Chỗ | Chữ dùng | Không viết |
+|---|---|---|
+| Tên lớp (máy ghép, không gõ tay) | `{CN} {FT \| FT RF \| Pre FOU \| FOU \| BE \| ELE} {số}` — `MB FT 101`, `MB FT RF 12`, `CP FOU 03` | `MB-FT 101` (tên cũ chỉ còn trong nhật ký, hành trình — là lịch sử) |
+| Xem trước tên ở panel Tạo lớp | `Lớp sẽ là MB FT RF 12` | — |
+| Ô Số lớp — dòng phụ | `1–4 chữ số, được thêm một chữ cái cuối (101A)` | — |
+| Pre FOU chưa mở (tới PR-MON) | nút mờ, `Mở cùng đợt cập nhật hệ môn học` | — |
+| Lỗi luật phân công dưới ô | `Chỉ chọn một GVCN` · `Mỗi môn một người` · `Lớp không có môn này` · `GVCN phải dạy ít nhất một kỹ năng — chọn kỹ năng cho cô/thầy này` · `Lớp Pre FOU chỉ có GVCN — GVCN dạy luôn` | câu dài liệt kê luật ở chân form |

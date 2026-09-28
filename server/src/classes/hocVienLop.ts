@@ -7,7 +7,7 @@
  */
 import { db } from '../db.ts';
 import {
-  ENTRY_SKILLS, LOC_HOC_VIEN, PERMISSIONS, phamViCoThe, phamViMacDinh, type LocHocVien, type PhamVi,
+  ENTRY_SKILLS, LOC_HOC_VIEN, PERMISSIONS, chuanHoaMaLop, phamViCoThe, phamViMacDinh, type LocHocVien, type PhamVi,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays } from '../util.ts';
@@ -65,7 +65,7 @@ export function danhSachHocVienLop(
   const coTheTaoLop = duocXemChiNhanh.some((b) => can(p, PERMISSIONS.STUDENT_EDIT, { branchId: b }));
   /* Link cũ `/hoc-vien?branchId=` (bảng chi nhánh, báo cáo tuần) không ghi phạm vi → coi là xem MỘT chi nhánh. */
   const muon = f.phamVi ?? (f.branchId && coThe.includes('chi-nhanh') ? 'chi-nhanh' : null);
-  const dangDung: PhamVi = (coThe as string[]).includes(muon ?? '') ? (muon as PhamVi) : phamViMacDinh(coThe);
+  const dangDung: PhamVi = (coThe as string[]).includes(muon ?? '') ? (muon as PhamVi) : phamViMacDinh(coThe, p.roleKeys.some((k) => k === 'manager' || k === 'system_admin'));
   let chiNhanh: number | null = null;
   if (dangDung === 'chi-nhanh') {
     chiNhanh = f.branchId && duocXemChiNhanh.includes(f.branchId) ? f.branchId : duocXemChiNhanh[0] ?? null;
@@ -168,9 +168,10 @@ export function danhSachHocVienLop(
   /* Tìm theo tên/mã HỌC VIÊN thì chỉ em khớp được đếm và được hiện; tìm theo MÃ LỚP thì cả lớp. */
   const q = (f.q ?? '').trim();
   const ql = q.toLowerCase();
-  const maLop = new Map(lops.map((r) => [r.id, r.code.toLowerCase()]));
+  const qMa = chuanHoaMaLop(q);
+  const maLop = new Map(lops.map((r) => [r.id, chuanHoaMaLop(r.code)]));
   const khop = (h: any) => !q
-    || (maLop.get(h.class_id) ?? '').includes(ql)
+    || (!!qMa && (maLop.get(h.class_id) ?? '').includes(qMa))
     || String(h.full_name ?? '').toLowerCase().includes(ql)
     || String(h.normalized_name ?? '').includes(ql)
     || String(h.student_code ?? '').toUpperCase().includes(q.toUpperCase());

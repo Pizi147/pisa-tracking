@@ -319,7 +319,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * Reading sinh ra mười hai dòng giống hệt nhau, đẩy mọi việc khác xuống dưới — trong khi
    * người nhập chỉ mở MỘT bảng điểm và gõ một lượt.
    *
-   * Nay một dòng là một NHÓM VIỆC: "CP-FT110 · MT2 · Nhập điểm R cho 6 học viên". Số em là
+   * Nay một dòng là một NHÓM VIỆC: "CP FT 110 · MT2 · Nhập điểm R cho 6 học viên". Số em là
    * thông tin của dòng, không phải số dòng (mục 2.2).
    *
    * Hạn của nhóm lấy hạn SỚM NHẤT trong nhóm — nhóm quá hạn khi có bất kỳ em nào quá hạn.
@@ -896,7 +896,11 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
               COALESCE(a.class_id, cur.class_id) AS eff_class_id,
               COALESCE(ac.branch_id, cc.branch_id) AS eff_branch_id,
               COALESCE(ac.code, cc.code) AS class_code,
-              s.full_name, a.attempt_no, a.kind AS attempt_kind
+              s.full_name, a.attempt_no, a.kind AS attempt_kind,
+              /* K1-05: lớp có môn của Case mà chưa ai dạy môn đó → gốc là phân công, không phải chọn người phụ trách. */
+              EXISTS (SELECT 1 FROM class_skills cs WHERE cs.class_id = COALESCE(a.class_id, cur.class_id) AND cs.skill = sc.category)
+                AND NOT EXISTS (SELECT 1 FROM teacher_assignments ta WHERE ta.class_id = COALESCE(a.class_id, cur.class_id)
+                                  AND ta.status = 'active' AND ta.skill = sc.category) AS thieu_gv_mon
          FROM sos_cases sc
          LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
          LEFT JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
@@ -916,6 +920,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       summary: c.summary, originKind: c.origin_kind, sosLevel: c.sos_level, attemptNo: c.attempt_no,
       attemptKind: c.attempt_kind ?? null,
     });
+    const suaPc = !!c.thieu_gv_mon && can(p, PERMISSIONS.CLASS_ASSIGN, { classId: c.eff_class_id });
     items.push({
       key: `owner:${c.id}`, group: 'no_owner', urgency: 'normal',
       studentId: c.eff_student_id, studentName: c.full_name ?? 'Học viên',
@@ -926,8 +931,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       count: null,
       reason: `${head} — chưa ai nhận điều phối`,
       tieuDe: 'Chọn người phụ trách',
-      actionLabel: 'Chọn người phụ trách',
-      href: c.eff_student_id ? `/hoc-vien/${c.eff_student_id}` : `/hoc-thuat/case/${c.id}`,
+      actionLabel: suaPc ? 'Sửa phân công' : 'Chọn người phụ trách',
+      href: suaPc ? `/hoc-vien/lop/${c.eff_class_id}?viec=phan-cong`
+        : c.eff_student_id ? `/hoc-vien/${c.eff_student_id}` : `/hoc-thuat/case/${c.id}`,
       ownerId: null, owner: null, mine: false,
       due: null, statusLabel: 'Chưa có người phụ trách',
     });

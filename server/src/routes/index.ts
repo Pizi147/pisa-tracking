@@ -7,7 +7,7 @@ import {
   PERMISSIONS, REGULAR_SKILLS, ROLE_LABEL, WORK_SCOPES, chuongTrinhTuThamSo, khoangTuThamSo, laLoaiBoQuen, thamSoNguoi, tuDauKhoang,
   type Role, type TheoDong, type WorkScope,
 } from '../../../shared/domain/index.ts';
-import { transferReasonText } from '../../../shared/domain/index.ts';
+import { soSanhLop, transferReasonText } from '../../../shared/domain/index.ts';
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
 import { HttpError, badRequest, forbidden, isIsoDate, notFound, toInt } from '../util.ts';
 import { SESSION_COOKIE, createSession, destroySession, principalOf, requireAuth } from '../auth.ts';
@@ -242,6 +242,7 @@ api.get('/ref/classes', requireAuth, wrap((req) => {
         WHERE c.status = 'active' ORDER BY b.id, c.code`,
     )
     .all() as any[];
+  rows.sort((a, b) => soSanhLop({ code: a.code, branchId: a.branch_id }, { code: b.code, branchId: b.branch_id }));
   /* Kế hoạch Test CHỈ dành cho Fast Track (sổ MT-01) — Normal thi theo lịch lớp, không xếp lượt. */
   const fastTrackOnly = qStr(req, 'fastTrackOnly') === '1';
   return rows
@@ -341,7 +342,7 @@ api.get('/ref/teachers', requireAuth, wrap((req) => {
          FROM users u
         WHERE u.status = 'active'
           AND EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id
-                       WHERE ur.user_id = u.id AND r.key IN ('teacher', 'manager', 'system_admin')
+                       WHERE ur.user_id = u.id AND ur.status = 'active' AND r.key IN ('teacher', 'manager')
                          AND (? IS NULL OR ur.branch_id IS NULL OR ur.branch_id = ?))
         ORDER BY u.full_name`,
     )
@@ -1132,9 +1133,10 @@ api.put('/classes/:id/teachers', requireAuth, wrap((req) => {
   return classSvc.setClassTeachers(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
+/** Tạo lớp = lớp + phân công trong MỘT giao dịch (YC-1); tên lớp do máy ghép từ chương trình/lộ trình/số (T1). */
 api.post('/classes', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return intakeSvc.createClass(principalOf(req), req.body ?? {});
+  return intakeSvc.taoLopVaPhanCong(principalOf(req), req.body ?? {});
 }));
 
 // ============================================================ Học viên & Lớp · hồ sơ lớp (PR-Qa)
@@ -1239,8 +1241,9 @@ api.put('/regular/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
 }));
 
 /** Danh sách chương trình học đang dùng. */
+/* Kèm `skills` + `checkpoints` của bảng: panel Tạo lớp vẽ ô phân công và dòng "10 tuần · Giữa khoá tuần 5 …" từ đây (PR-LOP). */
 api.get('/ref/programmes', requireAuth, wrap(() =>
-  db().prepare(`SELECT code, name, weeks, scoring_mode AS scoringMode FROM programmes WHERE status='active' ORDER BY code`).all()));
+  [...regularSvc.allProgrammes().values()].sort((x, y) => x.code.localeCompare(y.code))));
 
 // ============================================================ Lộ trình và Đánh giá GV
 

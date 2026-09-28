@@ -25,13 +25,13 @@ export async function runDieuChinhPaTests(t: YThucTestKit) {
   let soThuTu = 0;
 
   /**
-   * MỘT học viên mới ở MB-FT 101, MỘT Case Listening do GV Listening (`P.lrTeacher`) mở, MỘT PA tự học đang chạy từ hôm nay,
+   * MỘT học viên mới ở MB FT 101, MỘT Case Listening do GV Listening (`P.lrTeacher`) mở, MỘT PA tự học đang chạy từ hôm nay,
    * người thực hiện là chính GV đó. Mô tả gốc: "Tự học Listening — nghe chép 15 phút mỗi ngày".
    */
   function taoCase(): { sid: number; caseId: number; ivId: number } {
     soThuTu += 1;
     const tag = `S2-${soThuTu}`;
-    const cid = classId('MB-FT 101');
+    const cid = classId('MB FT 101');
     const sid = Number(conn.prepare(
       `INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`,
     ).run(`PISA-${tag}`, `Học viên ${tag}`, `hoc vien ${tag.toLowerCase()}`, mbBranch, NOW).lastInsertRowid);

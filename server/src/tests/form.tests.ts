@@ -99,7 +99,7 @@ export async function runFormTests(t: YThucTestKit) {
       return { status: res.status, json };
     };
 
-    const fouClassId = t.classId('MB-FOU 12');
+    const fouClassId = t.classId('MB FOU 12');
     intake.commitIntake(P.admin, {
       classId: fouClassId, rows: [{ fullName: 'PR-Form Em Fou', target: 7 }],
       dateFormat: 'iso', idempotencyKey: 'pr-form-ref-nguoi-fou',
@@ -149,12 +149,12 @@ export async function runFormTests(t: YThucTestKit) {
       assert(!names.includes(lockedName), `Tài khoản khoá không được hiện: ${lockedName} trong ${JSON.stringify(names)}`);
     });
 
-    check('PR-Form · studentId của em lớp MB-FOU 12 + q rỗng → đúng các GV đang dạy lớp đó, cungLop = true', () => {
+    check('PR-Form · studentId của em lớp MB FOU 12 + q rỗng → đúng các GV đang dạy lớp đó, cungLop = true', () => {
       const rows = suggestFou.json ?? [];
       assert(Array.isArray(rows) && rows.length > 0, `phải gợi ý ít nhất một GV: ${JSON.stringify(rows)}`);
       assert(rows.every((r: any) => r.cungLop === true), `mọi dòng gợi ý trước khi gõ phải cungLop=true: ${JSON.stringify(rows)}`);
       const names = rows.map((r: any) => r.name);
-      assert(names.includes('Trần Ngọc Hà'), `GVCN MB-FOU 12 phải nằm trong gợi ý: ${JSON.stringify(names)}`);
+      assert(names.includes('Trần Ngọc Hà'), `GVCN MB FOU 12 phải nằm trong gợi ý: ${JSON.stringify(names)}`);
     });
   }
 
@@ -169,7 +169,7 @@ export async function runFormTests(t: YThucTestKit) {
       conn.prepare('SELECT * FROM case_intervention_revisions WHERE intervention_id = ? ORDER BY id').all(id) as any[];
 
     let soThuTu = 0;
-    /** Case Listening mới ở MB-FT 101, mở bởi GV Listening — riêng cho từng phép kiểm. */
+    /** Case Listening mới ở MB FT 101, mở bởi GV Listening — riêng cho từng phép kiểm. */
     function taoCase(): { caseId: number } {
       soThuTu += 1;
       const c = cases.reportIssue(P.lrTeacher, {
@@ -181,9 +181,9 @@ export async function runFormTests(t: YThucTestKit) {
       }) as any;
       return { caseId: c.id as number };
     }
-    /** Học viên mới ở MB-FT 101 — tách khỏi bộ demo và khỏi các phép kiểm khác trong file này. */
+    /** Học viên mới ở MB FT 101 — tách khỏi bộ demo và khỏi các phép kiểm khác trong file này. */
     function makeFtStudent(tag: string): number {
-      const cid = t.classId('MB-FT 101');
+      const cid = t.classId('MB FT 101');
       const NOW = new Date().toISOString();
       const mbBranch = (conn.prepare(`SELECT id FROM branches WHERE code = 'MB'`).get() as any).id as number;
       const sid = Number(conn.prepare(
@@ -381,11 +381,11 @@ export async function runFormTests(t: YThucTestKit) {
     const NOW = new Date().toISOString();
 
     /** Học viên mới ở một lớp có sẵn của bộ demo, kèm một lộ trình đang chạy — riêng cho phép kiểm Task 4. */
-    function taoHocVien(classCode: 'MB-FOU 12' | 'MB-FT 101'): { sid: number; cid: number; cycleId: number } {
+    function taoHocVien(classCode: 'MB FOU 12' | 'MB FT 101'): { sid: number; cid: number; cycleId: number } {
       soThuTu += 1;
       const tag = `F4-${soThuTu}`;
       const cid = t.classId(classCode);
-      const ft = classCode === 'MB-FT 101';
+      const ft = classCode === 'MB FT 101';
       const sid = Number(conn.prepare(
         `INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`,
       ).run(`PISA-${tag}`, `Học viên ${tag}`, `hoc vien ${tag.toLowerCase()}`, mbBranch, NOW).lastInsertRowid);
@@ -398,13 +398,13 @@ export async function runFormTests(t: YThucTestKit) {
       return { sid, cid, cycleId };
     }
 
-    check('PR-Form · caseTopicsOf: em lớp thường (MB-FOU 12) → ratio true, 4 môn; em Fast Track (MB-FT 101) → 5 ô', () => {
-      const fou = taoHocVien('MB-FOU 12');
+    check('PR-Form · caseTopicsOf: em lớp thường (MB FOU 12) → ratio true, 4 môn; em Fast Track (MB FT 101) → 5 ô', () => {
+      const fou = taoHocVien('MB FOU 12');
       const r1 = cases.caseTopicsOf(P.normalCoreTeacher, fou.sid) as any;
       assert(r1.ratio === true, `FOU phải ratio=true: ${JSON.stringify(r1)}`);
       assert(JSON.stringify(r1.topics) === JSON.stringify(['listening', 'reading', 'writing', 'speaking']), `FOU 4 môn L R W S: ${JSON.stringify(r1.topics)}`);
 
-      const ft = taoHocVien('MB-FT 101');
+      const ft = taoHocVien('MB FT 101');
       const r2 = cases.caseTopicsOf(P.lrTeacher, ft.sid) as any;
       assert(r2.ratio === false, `FT phải ratio=false: ${JSON.stringify(r2)}`);
       assert(
@@ -414,7 +414,7 @@ export async function runFormTests(t: YThucTestKit) {
     });
 
     check('PR-Form · reportIssue: em lớp thường mở Case topic "writing" thành công (F07)', () => {
-      const fou = taoHocVien('MB-FOU 12');
+      const fou = taoHocVien('MB FOU 12');
       const c = cases.reportIssue(P.normalCoreTeacher, {
         studentId: fou.sid, topic: 'writing', title: 'Case Writing lớp thường (PR-Form Task 4)',
         summary: 'Em còn yếu tổ chức ý ở bài viết lớp thường, cần hỗ trợ thêm.',
@@ -425,7 +425,7 @@ export async function runFormTests(t: YThucTestKit) {
     });
 
     check('PR-Form · S5: backfillCase lớp thường topic writing kèm metrics → case_followups.metrics đúng một mục', () => {
-      const fou = taoHocVien('MB-FOU 12');
+      const fou = taoHocVien('MB FOU 12');
       /* Quản lý: mở → ghi phương án → đóng case đều đi qua được, không vướng C02 (đúng kỹ năng) lẫn "chỉ GVCN đóng case". */
       const closed = cases.backfillCase(P.mbManager, {
         studentId: fou.sid, topic: 'writing', primaryCode: domain.issuesForTopic('writing')[0].code,
@@ -442,7 +442,7 @@ export async function runFormTests(t: YThucTestKit) {
     });
 
     check('PR-Form · skillSupportBoard: em lớp thường có attemptKind progress/final ở điểm', () => {
-      const fou = taoHocVien('MB-FOU 12');
+      const fou = taoHocVien('MB FOU 12');
       const weekStart1 = '2026-08-03';
       const weekStart2 = '2026-08-31';
       const periodId1 = week.ensurePeriod(weekStart1).id;
@@ -467,7 +467,7 @@ export async function runFormTests(t: YThucTestKit) {
     });
 
     check('PR-Form · K2-6d: confirmMeasure không người → performed_by = người xác nhận; performedBy tài khoản khoá → 400', () => {
-      const fou = taoHocVien('MB-FOU 12');
+      const fou = taoHocVien('MB FOU 12');
       const v = violSvc.recordViolation(P.normalCoreTeacher, {
         studentId: fou.sid, category: 'homework', description: 'Không nộp bài tập về nhà buổi này',
         idempotencyKey: `pr-form-t4-viol-${soThuTu}`,
@@ -512,7 +512,7 @@ export async function runFormTests(t: YThucTestKit) {
         return { status: res.status, json };
       };
 
-      const cid = t.classId('MB-FT 101');
+      const cid = t.classId('MB FT 101');
       const sid = Number(conn.prepare(
         `INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`,
       ).run(`PISA-F4-HTTP`, `Học viên F4 HTTP`, `hoc vien f4 http`, mbBranch, NOW).lastInsertRowid);

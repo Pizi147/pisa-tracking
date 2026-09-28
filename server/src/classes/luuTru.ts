@@ -1,5 +1,5 @@
 import { db } from '../db.ts';
-import { PERMISSIONS, type ProgrammeCode } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, chuanHoaMaLop, soSanhLop, type ProgrammeCode } from '../../../shared/domain/index.ts';
 import { can, classScopeSql, napTruocPhamVi, scopeFor, type Principal } from '../permissions.ts';
 
 /**
@@ -30,11 +30,10 @@ export function danhSachLuuTru(p: Principal, f: { branchId?: number | null; q?: 
   const whereLop: string[] = [cs.sql, `c.status = 'finished'`];
   const paramsLop: unknown[] = [...cs.params];
   if (f.branchId) { whereLop.push('c.branch_id = ?'); paramsLop.push(f.branchId); }
-  if (q) { whereLop.push('c.code LIKE ?'); paramsLop.push(`%${q}%`); }
 
   const lopRows = scope.none ? [] : conn
     .prepare(
-      `SELECT c.id, c.code, c.programme_code, pg.name AS programme_name, b.name AS branch_name, c.finished_at,
+      `SELECT c.id, c.code, c.branch_id, c.programme_code, pg.name AS programme_name, b.name AS branch_name, c.finished_at,
               (SELECT COUNT(DISTINCT student_id) FROM enrollments WHERE class_id = c.id) AS so_hv_tung_hoc,
               (SELECT u.full_name FROM teacher_assignments ta JOIN users u ON u.id = ta.user_id
                 WHERE ta.class_id = c.id AND ta.is_core = 1 AND ta.status = 'active' ORDER BY ta.id LIMIT 1) AS gvcn
@@ -42,7 +41,12 @@ export function danhSachLuuTru(p: Principal, f: { branchId?: number | null; q?: 
         WHERE ${whereLop.join(' AND ')} ORDER BY c.finished_at DESC, c.code`,
     )
     .all(...paramsLop) as any[];
-  const lop: LopLuuTru[] = lopRows.map((r) => ({
+  /* T2: tìm theo mã chuẩn hoá (nhận `MB-FT 101`, `ft101`); cùng ngày kết thúc thì xếp lớp theo số tự nhiên (K2-08). */
+  const qMa = chuanHoaMaLop(q);
+  const lop: LopLuuTru[] = lopRows
+    .filter((r) => !q || (!!qMa && chuanHoaMaLop(r.code).includes(qMa)))
+    .sort((a, b) => String(b.finished_at ?? '').slice(0, 10).localeCompare(String(a.finished_at ?? '').slice(0, 10)) || soSanhLop({ code: a.code, branchId: a.branch_id }, { code: b.code, branchId: b.branch_id }))
+    .map((r) => ({
     id: r.id, code: r.code, ma: (r.programme_code ?? null) as ProgrammeCode | null, tenChuongTrinh: r.programme_name ?? null,
     chiNhanh: r.branch_name, gvcn: r.gvcn ?? null, soHvTungHoc: r.so_hv_tung_hoc, finishedAt: r.finished_at ?? null,
   }));

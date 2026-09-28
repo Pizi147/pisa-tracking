@@ -5,33 +5,46 @@ import { useApi } from '../../lib/useApi.ts';
 import { api } from '../../lib/api.ts';
 import { Info } from '../../ui/ui.tsx';
 import { roleLabel, skillShort } from '../../lib/format.ts';
-import { duongThongBao } from '@shared/domain/index.ts';
+import { chuanHoaMaLop, duongThongBao } from '@shared/domain/index.ts';
 
 type SearchHit = { id: number; studentCode: string; fullName: string; classCode: string | null };
+type LopRef = { id: number; code: string; student_count: number };
 
-/** Thanh phải: tìm học viên, thông báo, tài khoản. Không lặp lại điều hướng chính. */
+/** Thanh phải: tìm học viên + lớp (K1-43), thông báo, tài khoản. Không lặp lại điều hướng chính. */
 export function Header() {
   const { session, signOut } = useSession();
   const navigate = useNavigate();
   const [q, setQ] = useState('');
   const [openMenu, setOpenMenu] = useState<null | 'account' | 'notif'>(null);
-  const [hits, setHits] = useState<SearchHit[]>([]);
+  /* null = chưa có kết quả học viên cho chữ đang gõ (đang chờ) — chưa nói "Không tìm thấy". */
+  const [hits, setHits] = useState<SearchHit[] | null>(null);
+  const [moTim, setMoTim] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
   const notifications = useApi<any[]>('/notifications');
+  /* Danh sách lớp trong phạm vi: đọc một lần (useApi nhớ sẵn), lọc tại chỗ theo mã chuẩn hoá — gõ "ft101" ra MB FT 101. */
+  const lopRef = useApi<LopRef[]>('/ref/classes');
+  const timDu = q.trim().length >= 2;
+  const khoaLop = chuanHoaMaLop(q);
+  const lops = timDu && khoaLop
+    ? (lopRef.data ?? []).filter((l) => chuanHoaMaLop(l.code).includes(khoaLop)).slice(0, 4)
+    : [];
 
   useEffect(() => {
-    if (q.trim().length < 2) { setHits([]); return; }
+    setHits(null);
+    if (!timDu) return;
     const t = setTimeout(() => {
       api.get<{ rows: SearchHit[] }>(`/students?q=${encodeURIComponent(q)}`)
-        .then((d) => setHits((d.rows ?? []).slice(0, 8)))
+        .then((d) => setHits((d.rows ?? []).slice(0, 6)))
         .catch(() => setHits([]));
     }, 250);
     return () => clearTimeout(t);
-  }, [q]);
+  }, [q, timDu]);
+
+  const dong = () => { setQ(''); setHits(null); setMoTim(false); };
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) { setHits([]); setOpenMenu(null); }
+      if (boxRef.current && !boxRef.current.contains(e.target as Node)) { setMoTim(false); setOpenMenu(null); }
     };
     document.addEventListener('mousedown', onClick);
     return () => document.removeEventListener('mousedown', onClick);
@@ -46,18 +59,20 @@ export function Header() {
       <div className="relative w-28 sm:w-52 lg:w-64 shrink">
         <input
           className="field"
-          placeholder="Tìm học viên…"
+          placeholder="Tìm học viên, lớp…"
           value={q}
-          onChange={(e) => setQ(e.target.value)}
-          aria-label="Tìm học viên trong phạm vi được cấp quyền"
+          onChange={(e) => { setQ(e.target.value); setMoTim(true); }}
+          onFocus={() => setMoTim(true)}
+          aria-label="Tìm học viên, lớp trong phạm vi được cấp quyền"
         />
-        {hits.length > 0 && (
+        {moTim && timDu && (hits !== null || lops.length > 0) && (
           <ul className="absolute z-40 mt-1 w-[min(18rem,calc(100vw-2rem))] right-0 card overflow-hidden shadow-2xl list-none p-0 m-0">
-            {hits.map((h) => (
-              <li key={h.id}>
+            {!!hits?.length && <li className="px-3 pt-2 pb-1 text-[11px] text-slate-500">Học viên</li>}
+            {(hits ?? []).map((h) => (
+              <li key={`hv${h.id}`}>
                 <button
                   className="w-full text-left px-3 py-2 hover:bg-white/5 text-sm"
-                  onClick={() => { navigate(`/hoc-vien/${h.id}`); setQ(''); setHits([]); }}
+                  onClick={() => { navigate(`/hoc-vien/${h.id}`); dong(); }}
                 >
                   <span className="text-slate-100">{h.fullName}</span>
                   <span className="text-slate-500 text-xs ml-2">{h.studentCode}</span>
@@ -65,6 +80,21 @@ export function Header() {
                 </button>
               </li>
             ))}
+            {lops.length > 0 && <li className="px-3 pt-2 pb-1 text-[11px] text-slate-500">Lớp</li>}
+            {lops.map((l) => (
+              <li key={`lop${l.id}`}>
+                <button
+                  className="w-full text-left px-3 py-2 hover:bg-white/5 text-sm"
+                  onClick={() => { navigate(`/hoc-vien/lop/${l.id}`); dong(); }}
+                >
+                  <span className="text-slate-100">{l.code}</span>
+                  <span className="text-slate-500 text-xs ml-2 tabular-nums">· {l.student_count} HV</span>
+                </button>
+              </li>
+            ))}
+            {hits !== null && hits.length === 0 && lops.length === 0 && (
+              <li className="px-3 py-2 text-sm text-slate-500">Không tìm thấy</li>
+            )}
           </ul>
         )}
       </div>

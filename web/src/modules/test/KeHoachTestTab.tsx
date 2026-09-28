@@ -8,7 +8,8 @@ import { HangTab } from '../../ui/HangTab.tsx';
 import { BranchFilter } from '../../ui/Filters.tsx';
 import { NganXepHangLoat } from './keHoach/NganXepHangLoat.tsx';
 import { LopKeHoach } from './keHoach/LopKeHoach.tsx';
-import { TimLop, chuanHoaMa } from './keHoach/TimLop.tsx';
+import { chuanHoaMaLop } from '@shared/domain/index.ts';
+import { TimLop } from './keHoach/TimLop.tsx';
 import type { DanhSachLop, LopKH } from './keHoach/kieu.ts';
 
 /**
@@ -61,7 +62,7 @@ export function KeHoachTestTab() {
     }
   };
 
-  const danhSach = (loai === 'ft' ? lopFT : lopThuong).filter((l) => !chu.trim() || chuanHoaMa(l.code).includes(chuanHoaMa(chu)));
+  const danhSach = (loai === 'ft' ? lopFT : lopThuong).filter((l) => !chu.trim() || chuanHoaMaLop(l.code).includes(chuanHoaMaLop(chu)));
   const toggle = (id: number) => setMoList((m) => (m.includes(id) ? m.filter((x) => x !== id) : [...m, id]));
   const chonLop = (l: LopKH) => {
     setChu(l.code);

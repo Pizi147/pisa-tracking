@@ -150,8 +150,10 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 
 | Muốn sửa | Mở file |
 |---|---|
-| Tạo lớp | `web/src/modules/classes/ClassCreatePanel.tsx` · `server/src/classes/intake.ts` → `createClass` |
-| Phân công giáo viên, ba luật phân công | `server/src/classes/classes.ts` → `setClassTeachers` |
+| Tạo lớp (PR-LOP: một lệnh, **một giao dịch** lớp + phân công; kiểm ba luật phân công trước khi ghi) | `web/src/modules/classes/ClassCreatePanel.tsx` (cũng mở từ "+ Mở lớp mới" của Chuyển tiếp; lưới ô `LuoiPhanCong`) · `POST /classes` → `server/src/classes/intake.ts` → `taoLopVaPhanCong` · `createClass` chỉ còn là hàm ghi nội bộ (seed, phép kiểm) |
+| **Tên lớp** `{CN} {FT \| FT RF \| Pre FOU \| FOU \| BE \| ELE} {số}` — ghép, kiểm số, so trùng chuẩn hoá, sắp xếp số tự nhiên, đổi tên lớp cũ; cờ `CHO_TAO_PRE_FOU` (tắt tới PR-MON) | `shared/domain/tenLop.ts` (`ghepMaLop`, `kiemSoLop`, `chuanHoaMaLop`, `soSanhLop`, `tenMoiChoLopCu`, `kyHieuLop`) |
+| Sửa thông tin lớp (số lớp, lộ trình, chương trình — khoá khi lớp đã có HV/bài Test) | `web/src/modules/classes/SuaThongTinLopPanel.tsx` · `PATCH /classes/:id/thong-tin` → `server/src/classes/thongTinLop.ts` → `capNhatThongTinLop` |
+| Phân công giáo viên, ba luật phân công (mỗi ô **một** người; Pre FOU chỉ ô GVCN, máy tự thêm ô Tổng hợp) | luật `shared/domain/phanCong.ts` (`oPhanCong`, `kiemPhanCong`, `moRongPhanCong`) · `server/src/classes/classes.ts` → `setClassTeachers` (`PUT /classes/:id/teachers`), `ghiPhanCong`, `docSlots`, `teacherCandidatesBranch` · `web/src/modules/classes/TeacherAssignPanel.tsx` |
 | Tuần khai giảng, tuần Progress/Final Test | `web/src/modules/classes/ClassProgressPanel.tsx` · `server/src/classes/schedule.ts` |
 | Lớp đang ở tuần thứ mấy, sắp thi gì | `server/src/classes/schedule.ts` → `classProgress` |
 | Tab **Ý thức** của lớp — ba khu vực (Vi phạm chưa xử lý · Biện pháp đang chuẩn bị · Lịch sử) | dữ liệu `server/src/yThuc/board.ts` → `classViolationBoard` (`GET /classes/:id/y-thuc`); giao diện PR-K |
@@ -310,7 +312,7 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | Vai trò và quyền | `shared/domain/people.ts` → `ROLES`, `PERMISSIONS` |
 | Sửa bảng quyền theo vai | `server/src/platform/sysconfig.ts` → `setRolePermission` · `web/src/modules/platform/AdminPage.tsx` |
 | Ai được làm gì ở đâu | `server/src/permissions.ts` |
-| Lộ trình và loại lớp (danh mục) | `server/src/platform/sysconfig.ts` · `web/src/modules/platform/CatalogAdmin.tsx` |
+| Quản trị › Lộ trình & chương trình (LT1 · LT2 · RF; sửa số tuần, **không** thêm mã mới; lớp đang học giữ số tuần đã chụp) | `server/src/platform/sysconfig.ts` → `saveProgramme` · `web/src/modules/platform/CatalogAdmin.tsx` · số tuần chụp vào lớp `server/src/normal/regular.ts` → `mocChupVaoLop` |
 | Hồ sơ cá nhân | `web/src/modules/platform/ProfilePage.tsx` |
 | Quy ước tuần, mã tuần (W2 SEP 2026) | `server/src/platform/week.ts` |
 | Nhật ký thay đổi | `server/src/platform/audit.ts` |
@@ -347,6 +349,7 @@ Hướng dẫn cho chủ sản phẩm: `TRIEN_KHAI.md`. Kế hoạch: `docs/supe
 | `npm run khoi-phuc` — chép một bản sao lưu vào database rỗng | `server/src/ops/khoiPhuc.ts` (luật) · `server/src/ops/runKhoiPhuc.ts` (điểm chạy) |
 | `npm run thu-turso` — thử đường mạng tới database THỬ | `server/src/ops/thuTurso.ts` |
 | `npm run kiem-sau-xoa` — CHỈ ĐỌC: HV/lớp thử còn không, mọi tài khoản, `foreign_key_check`, tệp mồ côi, migrate PR-XOA đã chạy chưa | `server/src/ops/kiemSauXoa.ts` |
+| `npm run kiem-lop-mo-coi` — CHỈ ĐỌC: lớp không phân công ai (PR-LOP, T7) | `server/src/ops/kiemLopMoCoi.ts` → `lopMoCoi` (`server/src/migrate/prLop.ts`) |
 | `npm run migrate` vào Turso (xác nhận, bỏ tài khoản mặc định) | `server/src/migrate/run.ts` · `server/src/migrate.ts` → `migrateAccounts` |
 | Phiên đăng nhập (cookie), **hết hạn sau 30 ngày không dùng** (`PHIEN_HET_HAN_SAU_NGAY`) | `server/src/auth.ts` |
 | Giới hạn số lần thử đăng nhập/đăng ký (AN-1), bảng `auth_attempts` | `server/src/platform/gioiHanThu.ts` · khối `/auth` trong `server/src/routes/index.ts` |
@@ -370,6 +373,7 @@ Hướng dẫn cho chủ sản phẩm: `TRIEN_KHAI.md`. Kế hoạch: `docs/supe
 | Nhãn tiếng Việt của Nhật ký thay đổi | `shared/domain/nhatKy.ts` (`nhanHanhDongNhatKy`) → `web/src/modules/platform/AdminPage.tsx` |
 | Tab Ý thức lớp: số = dòng | `shared/domain/viPhamLop.ts` (`dongViPhamLop`) → `web/src/modules/yThuc/ClassYThucCard.tsx` |
 | Migrate PR-N1 (dời hạn CN → T2, PA quy chế chạy ngay) + chạy thử chỉ đọc | `server/src/migrate/prN1.ts` · `server/src/migrate/chayThuN1.ts` (`npm run chay-thu:n1`) · phép kiểm `server/src/tests/suaLoiNong.tests.ts` |
+| Migrate PR-LOP (cột `so_tuan`/`tuan_giua_khoa`/`tuan_cuoi_khoa`, dòng RF + Pre FOU, đổi tên lớp cũ, chỉ mục `ux_classes_ma_chuan`) + chạy thử chỉ đọc | `server/src/migrate/prLop.ts` (`migratePrLop`, `keHoachDoiTenLop`, `dienMocLop`) · `server/src/migrate/chayThuLop.ts` (`npm run chay-thu:lop`) · phép kiểm `server/src/tests/prLop.tests.ts` |
 | Tên hiển thị của mọi mã máy | `web/src/lib/format.ts` |
 
 ---

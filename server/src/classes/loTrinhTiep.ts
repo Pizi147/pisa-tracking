@@ -1,6 +1,6 @@
 import { db } from '../db.ts';
 import {
-  HUONG_TIEP, NORMAL_LADDER, PERMISSIONS, nhanHuong, nhanTiepTheo, trongHaiTuanCuoi,
+  HUONG_TIEP, NORMAL_LADDER, PERMISSIONS, nhanHuong, nhanTiepTheo, soSanhLop, trongHaiTuanCuoi,
   type Huong, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { badRequest, notFound, nowIso } from '../util.ts';
@@ -64,6 +64,7 @@ export function layLoTrinhTiep(p: Principal, studentId: number) {
           ORDER BY code`,
       )
       .all(enr.branch_id, enr.class_id, maKe, ma) as any[])
+      .sort((a, b) => soSanhLop({ code: a.code }, { code: b.code }))
       .map((r) => ({ id: r.id, code: r.code, ma: r.programme_code ?? null, ft: !!r.is_fast_track }))
     : [];
 

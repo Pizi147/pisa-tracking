@@ -60,7 +60,8 @@ export function nhanTiepTheo(banGhi: { huong: Huong } | null | undefined, ma: Pr
 
 // ---------------------------------------------------------------- luật lộ trình — MỘT CHỖ (Task 4, §3.9)
 
-export type LoaiLop = { ma: ProgrammeCode | null; ft: boolean };
+/** `lt`: lộ trình của lớp (FT) — thiếu (dữ liệu cũ) thì FT → FT giữ như cũ (Q7). */
+export type LoaiLop = { ma: ProgrammeCode | null; ft: boolean; lt?: string | null };
 export type EndKind = 'len_lop' | 'hoc_lai' | 'sang_ft' | 'chuyen_lop' | 'bao_luu' | 'dung_hoc' | 'ket_thuc';
 export type LuatDoiLop = {
   khoa: 'giu' | 'dong-mo';            // giữ lộ trình/khoá đang chạy, hay đóng ('completed') rồi mở cái mới
@@ -69,7 +70,11 @@ export type LuatDoiLop = {
   endKind: EndKind;                   // ghi vào enrollments.end_kind của dòng cũ → "Kết thúc vì"
 };
 export function luatDoiLop(tu: LoaiLop, den: LoaiLop, boiCanh: 'giua-khoa' | 'cuoi-khoa'): LuatDoiLop {
-  if (tu.ft && den.ft) return { khoa: 'giu', dongCase: null, canMucTieu: false, endKind: 'chuyen_lop' };
+  if (tu.ft && den.ft) {   // K2-17, M-20: khác lộ trình = mở lộ trình mới, Case đi theo em
+    return tu.lt && den.lt && tu.lt !== den.lt
+      ? { khoa: 'dong-mo', dongCase: null, canMucTieu: false, endKind: 'chuyen_lop' }
+      : { khoa: 'giu', dongCase: null, canMucTieu: false, endKind: 'chuyen_lop' };
+  }
   if (tu.ft) return { khoa: 'dong-mo', dongCase: 'normal', canMucTieu: false, endKind: 'chuyen_lop' };   // Q10
   if (den.ft) return { khoa: 'dong-mo', dongCase: 'ft', canMucTieu: true, endKind: 'sang_ft' };          // S17
   if (boiCanh === 'cuoi-khoa') {

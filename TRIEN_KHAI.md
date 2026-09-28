@@ -514,6 +514,25 @@ npm run chay-thu:n1
 > PR-N1 in năm số: PA đang chạy sẽ dời hạn Chủ nhật → Thứ Hai · PA chạy mà không có hạn · PA đã huỷ còn "chờ duyệt" ·
 > PA quy chế SOS chờ xác nhận sẽ thành đang chạy · Case từ SOS đổi nhãn Chưa xử lý / Đang xử lý (luật Q28-5, chỉ đổi nhãn). Số (2) lớn hơn 0 ở PA **đang chạy** → chụp màn hình gửi planning trước bước 3.
 
+**Đợt 1 (PR-N1 + PR-LOP + PR-NEN) — thêm hai lệnh chạy thử CHỈ ĐỌC của PR-LOP**, cùng cửa sổ, sau `chay-thu:n1`:
+
+```powershell
+npm run chay-thu:lop
+npm run kiem-lop-mo-coi
+```
+
+> `chay-thu:lop` in năm mục: (1) lớp sẽ đổi tên sang mẫu mới (`MB-FT 101` → `MB FT 101`) · (2) lớp **va chạm** (trùng khi
+> bỏ `-`, khoảng trắng, hoa/thường — giữ nguyên tên, chưa khoá trùng) · (3) lớp **không theo mẫu** (giữ nguyên tên) · (4) lớp
+> đang học không có phân công · (5) lớp FT có em đang ở lộ trình khác lộ trình lớp (chỉ để biết). `kiem-lop-mo-coi` in lại
+> riêng mục (4). Mục (2), (3), (4) khác 0 → chụp màn hình gửi planning **trước** bước 3; anh/chị quyết đổi tay tên nào
+> (Quản trị › Sửa thông tin lớp sau khi nâng cấp), bổ sung phân công hay ⋮ Xoá lớp.
+>
+> Sau bước 3 chạy lại `npm run chay-thu:lop`: mục (1) phải là **0**. Còn va chạm thì khoá trùng tên lớp **chưa** được tạo —
+> sửa tên rồi chạy `npm run migrate` lần nữa.
+>
+> **Tên lớp cũ trong nhật ký, hành trình, thông báo cũ giữ nguyên** (là lịch sử) — chỉ tên lớp hiện tại đổi. Báo GV: tên
+> lớp mới bỏ dấu `-`; ô tìm vẫn nhận cả kiểu cũ.
+
 **Bước 3 — nâng cấp:**
 
 ```powershell

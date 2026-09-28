@@ -1,8 +1,8 @@
 import { db, tx } from '../db.ts';
 import {
-  ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS, awaitingScore, nhanKetThucVi, nhanTiepTheo, pendingSkillsOf, trongHaiTuanCuoi,
-  viecTiepTheoCua,
-  type AssessedSkill, type AttemptKind, type PendingCell, type ProgrammeCode, type WorkScope,
+  ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS, awaitingScore, chuanHoaMaLop, soSanhLop, kiemPhanCong, moRongPhanCong, nhanKetThucVi, nhanTiepTheo,
+  oPhanCong, pendingSkillsOf, skillShort, trongHaiTuanCuoi, viecTiepTheoCua,
+  type AssessedSkill, type SlotPhanCong, type AttemptKind, type PendingCell, type ProgrammeCode, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, notFound, nowIso } from '../util.ts';
@@ -17,7 +17,6 @@ import { dotHoanTatMany, type HoanTatInfo } from '../fasttrack/hoanTat.ts';
 import { standingFor, standingLine } from '../students/standing.ts';
 import { allProgrammes, evaluateRegular, programmeOfClass } from '../normal/regular.ts';
 import { classProgressMany, missingForClasses, missingForStudent } from './schedule.ts';
-import { SKILL_SHORT } from '../../../shared/domain/index.ts';
 import { canhBaoTheoHocVien, caseMoTheoHocVien } from './dongHocVien.ts';
 import { demChuaLoTrinh, tiepTheoTheoHocVien } from './loTrinhTiep.ts';
 import { classWarning } from '../yThuc/canhBao.ts';
@@ -81,9 +80,9 @@ export type ClassSummary = {
  * CẢ danh sách lớp lẫn trang chi tiết lớp đều dùng đúng bộ này, nên hai màn không thể nói
  * khác nhau về cùng một lớp.
  */
-function progressMapOf(classIds: number[]) {
-  const prs = classProgressMany(classIds);
-  const ms = missingForClasses(classIds);
+function progressMapOf(classIds: number[], programmes: ReturnType<typeof allProgrammes>) {
+  const prs = classProgressMany(classIds, programmes);
+  const ms = missingForClasses(classIds, programmes);
   const chua = demChuaLoTrinh(classIds);
   const out = new Map<number, {
     progressLabel: string | null; phase: string; phaseLabel: string;
@@ -141,6 +140,7 @@ export function listClassSummaries(p: Principal, f: { branchId?: number; q?: str
     )
     .all(...params) as any[];
   if (!classes.length) return { rows: [], scopeEmpty: false };
+  classes.sort((a, b) => soSanhLop({ code: a.code, branchId: a.branch_id }, { code: b.code, branchId: b.branch_id }));
 
   const ids = classes.map((c) => c.id);
   const ph = ids.map(() => '?').join(',');
@@ -221,7 +221,7 @@ export function listClassSummaries(p: Principal, f: { branchId?: number; q?: str
     if (pending.length) bump(needScores, a.class_id, pending.length);
   }
 
-  const progressByClass = progressMapOf(classes.map((c) => c.id));
+  const progressByClass = progressMapOf(classes.map((c) => c.id), programmes);
 
   let rows: ClassSummary[] = classes.map((c) => ({
     id: c.id, code: c.code, kind: c.kind, route: c.route,
@@ -266,8 +266,8 @@ export function listClassSummaries(p: Principal, f: { branchId?: number; q?: str
         )
         .all(`%${q}%`, `%${q.toLowerCase()}%`, `%${q.toUpperCase()}%`) as any[]).map((r) => r.class_id),
     );
-    const lower = q.toLowerCase();
-    rows = rows.filter((r) => r.code.toLowerCase().includes(lower) || matched.has(r.id));
+    const qMa = chuanHoaMaLop(q);
+    rows = rows.filter((r) => (!!qMa && chuanHoaMaLop(r.code).includes(qMa)) || matched.has(r.id));
   }
   return { rows, scopeEmpty: false };
 }
@@ -761,12 +761,13 @@ export type { AssessedSkill };
  */
 export type TeacherSlot = { userId: number; skill: string | null; isCore: boolean };
 
-/** Giáo viên có thể xếp vào lớp này: có grant vai trò giáo viên phủ chi nhánh của lớp. */
-function teacherCandidates(classId: number, branchId: number) {
+/** Người xếp được vào lớp ở chi nhánh này: grant `teacher|manager` phủ chi nhánh (khớp `/ref/teachers`, Q9). `classId` (tuỳ chọn)
+ *  chỉ để đếm `here` — lớp chưa tạo thì null. */
+export function teacherCandidatesBranch(branchId: number, classId: number | null = null) {
   return db()
     .prepare(
       `SELECT DISTINCT u.id, u.full_name, u.code, u.title,
-              (SELECT COUNT(*) FROM teacher_assignments ta
+              (SELECT COUNT(DISTINCT ta.class_id) FROM teacher_assignments ta
                 WHERE ta.user_id = u.id AND ta.status = 'active') AS load_classes,
               (SELECT COUNT(*) FROM teacher_assignments ta
                 WHERE ta.user_id = u.id AND ta.class_id = ? AND ta.status = 'active') AS here
@@ -813,13 +814,15 @@ export function classTeachers(p: Principal, classId: number) {
 
   return {
     classId, classCode: cls.code, branchCode: cls.branch_code,
+    /** Web dựng ô phân công bằng `oPhanCong(programmeCode, skills)` — cùng hàm máy chủ kiểm (Pre FOU: một ô GVCN). */
+    programmeCode: prog?.code ?? null,
     /** Kỹ năng của lớp lấy theo CHƯƠNG TRÌNH, không mặc định là bộ IELTS. */
     skills: prog?.skills ?? [...ENTRY_SKILLS],
     core: active.filter((a) => a.is_core === 1)
       .map((a) => ({ userId: a.user_id, name: a.full_name, from: a.effective_from })),
     bySkill: active.filter((a) => a.skill)
       .map((a) => ({ skill: a.skill, userId: a.user_id, name: a.full_name, from: a.effective_from })),
-    candidates: teacherCandidates(classId, cls.branch_id)
+    candidates: teacherCandidatesBranch(cls.branch_id, classId)
       .map((u) => ({ id: u.id, name: u.full_name, code: u.code, title: u.title,
                      classCount: u.load_classes, inThisClass: u.here > 0 })),
     past: past.map((a) => ({
@@ -831,13 +834,82 @@ export function classTeachers(p: Principal, classId: number) {
 }
 
 /**
- * Ghi lại TOÀN BỘ phân công đang có hiệu lực của lớp.
- *
- * Nhận cả danh sách chứ không nhận từng thao tác thêm/bớt: màn hình đang hiển thị đúng một
- * bức tranh, gửi nguyên bức tranh đó lên thì không có chuyện hai người sửa hai nửa rồi ra
- * một trạng thái không ai định. Dòng nào không đổi thì GIỮ NGUYÊN `effective_from`, không
- * đóng rồi mở lại — làm vậy là bịa ra một lần đổi người không có thật.
+ * Đọc danh sách ô phân công gửi lên (dữ liệu từ ngoài) thành `SlotPhanCong` sạch. GVCN không mang kỹ năng; GV bộ môn phải có kỹ năng.
  */
+export function docSlots(raw: unknown): SlotPhanCong[] {
+  if (raw === undefined || raw === null) return [];
+  if (!Array.isArray(raw)) throw badRequest('Danh sách phân công không hợp lệ.');
+  return raw.map((s: any) => {
+    const userId = Number(s?.userId);
+    if (!Number.isInteger(userId) || userId <= 0) throw badRequest('Thiếu người được phân công.');
+    const isCore = !!s.isCore;
+    const skill = isCore ? null : (s.skill ? String(s.skill) : null);
+    if (!isCore && !skill) throw badRequest('Phân công giáo viên bộ môn phải chọn kỹ năng.');
+    return { userId, skill, isCore };
+  });
+}
+
+/**
+ * BA LUẬT PHÂN CÔNG (L3, mục 7.7) kiểm TRƯỚC khi ghi — cùng hàm `kiemPhanCong` web dùng để vẽ lỗi tại ô:
+ *   1. Mỗi môn một người — hai người cùng Listening thì cả hai tưởng người kia nhập điểm, và không ai nhập.
+ *   2. Một người dạy nhiều môn trong lớp thì được.
+ *   3. Đúng một GVCN, và GVCN phải dạy ít nhất một môn (owner 13/09/2026); Pre FOU: GVCN dạy luôn.
+ * Rồi: mỗi người phải có vai trò giảng dạy ở chi nhánh của lớp — không mượn người chi nhánh khác.
+ * `classId` null = lớp chưa tạo (Tạo lớp). Lỗi nói bằng nhãn ô (GVCN, L, W1…), không lộ mã kỹ năng.
+ */
+export function kiemTruocPhanCong(
+  classId: number | null, branchId: number, chuongTrinh: string | null, kyNang: string[], slots: SlotPhanCong[],
+): void {
+  const loi = kiemPhanCong(chuongTrinh, kyNang, slots)[0];
+  if (loi) {
+    const nhanO = oPhanCong(chuongTrinh, kyNang).find((o) => o.khoa === loi.khoa)?.nhan ?? skillShort(loi.khoa);
+    throw badRequest(`${nhanO}: ${loi.lyDo}`);
+  }
+  const duocXep = new Set(teacherCandidatesBranch(branchId, classId).map((u) => u.id as number));
+  if (slots.some((s) => !duocXep.has(s.userId))) throw badRequest('Người này không có vai trò giảng dạy ở chi nhánh của lớp.');
+}
+
+/**
+ * GHI phân công của lớp — gọi TRONG `tx` (Tạo lớp và Phân công GV dùng chung). Nhận nguyên bức tranh đang hiển thị, không từng
+ * thao tác thêm/bớt. Dòng không đổi GIỮ NGUYÊN `effective_from` (đóng rồi mở lại là bịa ra một lần đổi người); dòng bỏ thì kết
+ * thúc (`ended` + `effective_to`), không xoá — báo cáo cũ phải tra được ai dạy lúc đó.
+ */
+export function ghiPhanCong(p: Principal, classId: number, slots: SlotPhanCong[], ngay: string): { added: number; ended: number } {
+  const conn = db();
+  const keyOf = (userId: number, skill: string | null, isCore: boolean | number) => `${userId}|${skill ?? ''}|${isCore ? 1 : 0}`;
+  const wanted = new Map(slots.map((s) => [keyOf(s.userId, s.skill, s.isCore), s] as const));
+  const active = conn
+    .prepare(`SELECT * FROM teacher_assignments WHERE class_id = ? AND status = 'active'`)
+    .all(classId) as any[];
+
+  let added = 0; let ended = 0;
+  for (const a of active) {
+    const k = keyOf(a.user_id, a.skill, a.is_core);
+    if (wanted.has(k)) { wanted.delete(k); continue; }
+    conn.prepare(`UPDATE teacher_assignments SET status = 'ended', effective_to = ? WHERE id = ?`).run(ngay, a.id);
+    ended += 1;
+  }
+  for (const s of wanted.values()) {
+    conn
+      .prepare(
+        `INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at)
+         VALUES (?,?,?,?,?, 'active', ?)`,
+      )
+      .run(s.userId, classId, s.skill, s.isCore ? 1 : 0, ngay, nowIso());
+    added += 1;
+  }
+
+  if (added || ended) {
+    const code = (conn.prepare('SELECT code FROM classes WHERE id = ?').get(classId) as any)?.code ?? null;
+    writeAudit({
+      actorUserId: p.userId, action: 'class.assign', entityType: 'class', entityId: classId,
+      entityLabel: code, after: { added, ended },
+    });
+  }
+  return { added, ended };
+}
+
+/** Phân công GV của lớp đã có: kiểm ba luật TRƯỚC (`kiemTruocPhanCong`), rồi ghi trong một giao dịch. */
 export function setClassTeachers(p: Principal, classId: number, input: { slots?: TeacherSlot[] }) {
   const conn = db();
   const cls = conn.prepare('SELECT * FROM classes WHERE id = ?').get(classId) as any;
@@ -846,107 +918,14 @@ export function setClassTeachers(p: Principal, classId: number, input: { slots?:
     'Chỉ Quản lý và Admin chi nhánh mới đổi được phân công giáo viên.');
 
   const prog = programmeOfClass(classId);
+  const ct = prog?.code ?? null;
   const classSkills: string[] = prog?.skills ?? [...ENTRY_SKILLS];
-  const today = demoToday();
-
-  const wanted = new Map<string, TeacherSlot>();
-  for (const s of input.slots ?? []) {
-    const userId = Number(s.userId);
-    if (!Number.isInteger(userId) || userId <= 0) throw badRequest('Thiếu người được phân công.');
-    const isCore = !!s.isCore;
-    const skill = isCore ? null : (s.skill ?? null);
-    if (!isCore && !skill) throw badRequest('Phân công giáo viên bộ môn phải chọn kỹ năng.');
-    if (skill && !classSkills.includes(skill)) {
-      throw badRequest(`Lớp này không dạy kỹ năng "${skill}", không phân công vào đó được.`);
-    }
-    wanted.set(`${userId}|${skill ?? ''}|${isCore ? 1 : 0}`, { userId, skill, isCore });
-  }
-
-  // Người được xếp phải thực sự thuộc chi nhánh của lớp — không mượn người chi nhánh khác.
-  const eligible = new Set(teacherCandidates(classId, cls.branch_id).map((u) => u.id as number));
-  for (const s of wanted.values()) {
-    if (!eligible.has(s.userId)) {
-      throw badRequest('Người này không có vai trò giảng dạy ở chi nhánh của lớp.');
-    }
-  }
-
-  /*
-   * BA QUY TẮC PHÂN CÔNG — mục 7.7, kiểm ở MÁY CHỦ chứ không chỉ ở giao diện.
-   *
-   *   1. Mỗi kỹ năng chỉ MỘT giáo viên.
-   *   2. Một giáo viên dạy NHIỀU kỹ năng trong cùng lớp thì được.
-   *   3. Đúng MỘT giáo viên chủ nhiệm, và người đó phải nằm trong danh sách phân công.
-   *
-   * Quy tắc 1 là quy tắc dễ vi phạm nhất và hậu quả im lặng nhất: hai người cùng phụ trách
-   * Listening thì cả hai đều tưởng người kia nhập điểm, và không ai nhập.
-   */
-  const perSkill = new Map<string, number[]>();
-  for (const s of wanted.values()) {
-    if (!s.skill) continue;
-    const list = perSkill.get(s.skill) ?? [];
-    list.push(s.userId);
-    perSkill.set(s.skill, list);
-  }
-  for (const [skill, users] of perSkill) {
-    if (users.length > 1) {
-      throw badRequest(
-        `Kỹ năng ${SKILL_SHORT[skill] ?? skill} đang được xếp cho ${users.length} giáo viên. `
-        + 'Mỗi kỹ năng chỉ một người — nếu hai người cùng phụ trách thì cả hai đều tưởng người kia nhập điểm.',
-      );
-    }
-  }
-
-  /*
-   * ĐÚNG MỘT GVCN, VÀ GVCN PHẢI DẠY ÍT NHẤT MỘT KỸ NĂNG Ở LỚP ĐÓ.
-   *
-   * Owner khẳng định lại 13/09/2026. Đây chính là chữ "trong danh sách được phân công" ở mục
-   * 7.7: chủ nhiệm một lớp mà không dạy em nào buổi nào thì không có căn cứ nào để nhận xét
-   * và theo dõi các em — vai đó thành một cái tên trên giấy.
-   */
-  const cores = [...wanted.values()].filter((s) => s.isCore);
-  if (cores.length > 1) {
-    throw badRequest('Một lớp chỉ có đúng một giáo viên chủ nhiệm.');
-  }
-  if (cores.length === 1) {
-    const teaches = [...wanted.values()].some((s) => s.skill && s.userId === cores[0].userId);
-    if (!teaches) {
-      throw badRequest(
-        'Giáo viên chủ nhiệm phải dạy ít nhất một kỹ năng ở lớp này. '
-        + 'Xếp cho người đó một kỹ năng, hoặc chọn người khác làm chủ nhiệm.',
-      );
-    }
-  }
+  /* Pre FOU: GVCN tự nhận ô môn duy nhất — đổi GVCN thì ô đó đổi theo, dòng cũ kết thúc như mọi ô (T56). */
+  const slots = moRongPhanCong(ct, classSkills, docSlots(input.slots));
+  kiemTruocPhanCong(classId, cls.branch_id, ct, classSkills, slots);
 
   return tx(() => {
-    const active = conn
-      .prepare(`SELECT * FROM teacher_assignments WHERE class_id = ? AND status = 'active'`)
-      .all(classId) as any[];
-    const keyOf = (a: any) => `${a.user_id}|${a.skill ?? ''}|${a.is_core ? 1 : 0}`;
-
-    let added = 0; let ended = 0;
-    for (const a of active) {
-      if (wanted.has(keyOf(a))) { wanted.delete(keyOf(a)); continue; }
-      conn
-        .prepare(`UPDATE teacher_assignments SET status = 'ended', effective_to = ? WHERE id = ?`)
-        .run(today, a.id);
-      ended += 1;
-    }
-    for (const s of wanted.values()) {
-      conn
-        .prepare(
-          `INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at)
-           VALUES (?,?,?,?,?, 'active', ?)`,
-        )
-        .run(s.userId, classId, s.skill, s.isCore ? 1 : 0, today, nowIso());
-      added += 1;
-    }
-
-    if (added || ended) {
-      writeAudit({
-        actorUserId: p.userId, action: 'class.assign', entityType: 'class', entityId: classId,
-        entityLabel: cls.code, after: { added, ended },
-      });
-    }
+    ghiPhanCong(p, classId, slots, demoToday());
     return classTeachers(p, classId);
   });
 }

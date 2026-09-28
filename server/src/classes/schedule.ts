@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
-  CLASS_PHASE_LABEL, MOCK_FT_DEFAULT_ATTEMPTS, MOCK_FT_STUDY_WEEK, PERMISSIONS,
-  PROGRAMME_TEMPLATES, nextStepsAfter, programmeOf, studyWeekOf,
+  CHUONG_TRINH_KHONG_CHIA_MON, CLASS_PHASE_LABEL, MOCK_FT_DEFAULT_ATTEMPTS, MOCK_FT_STUDY_WEEK, PERMISSIONS,
+  PROGRAMME_TEMPLATES, kyHieuLop, nextStepsAfter, programmeOf, studyWeekOf,
   type ClassPhase, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, notFound, nowIso } from '../util.ts';
@@ -10,6 +10,7 @@ import { require_, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, mondayOf, periodById, weekInfo } from '../platform/week.ts';
 import { ensureSkillRows, recomputeCompletionWeek } from '../fasttrack/skillSchedule.ts';
+import { allProgrammes, type ProgrammeInfo } from '../normal/regular.ts';
 
 /**
  * TUẦN BẮT ĐẦU HỌC → LỊCH MT MẶC ĐỊNH, VÀ TIẾN ĐỘ LỚP.
@@ -207,7 +208,7 @@ export function classProgress(classId: number): ClassProgress {
   if (!c) throw notFound('Không tìm thấy lớp');
   const start = c.start_period_id ? periodById(c.start_period_id) : null;
   const row = conn.prepare(CLASS_ACTIVE_COUNT_SQL).get(demoToday(), classId) as any;
-  return computeProgress(c, start, row.n, row.can_xep_lop ?? 0);
+  return computeProgress(c, start, row.n, row.can_xep_lop ?? 0, allProgrammes());
 }
 
 /**
@@ -233,7 +234,7 @@ const CLASS_ACTIVE_COUNT_SQL = `
  * biến một trang mười lớp thành tám mươi câu truy vấn; bài kiểm N+1 của vòng trước bắt
  * đúng chỗ đó. Ở quy mô demo thì không ai thấy chậm — ở quy mô thật thì thấy ngay.
  */
-export function classProgressMany(classIds: number[]): Map<number, ClassProgress> {
+export function classProgressMany(classIds: number[], programmes?: Map<string, ProgrammeInfo>): Map<number, ClassProgress> {
   const out = new Map<number, ClassProgress>();
   if (!classIds.length) return out;
   const conn = db();
@@ -270,9 +271,10 @@ export function classProgressMany(classIds: number[]): Map<number, ClassProgress
     canXepByClass.set(r.class_id, r.can_xep_lop ?? 0);
   }
 
+  const progs = programmes ?? allProgrammes();
   for (const c of classes) {
     out.set(c.id, computeProgress(c, c.start_period_id ? periods.get(c.start_period_id) ?? null : null,
-      counts.get(c.id) ?? 0, canXepByClass.get(c.id) ?? 0));
+      counts.get(c.id) ?? 0, canXepByClass.get(c.id) ?? 0, progs));
   }
   return out;
 }
@@ -283,14 +285,18 @@ function computeProgress(
   start: { weekStart: string } | null,
   activeStudents: number,
   canXepLop: number,
+  programmes: Map<string, ProgrammeInfo>,
 ): ClassProgress {
   const code = (c.programme_code ?? programmeOf(c.kind)) as ProgrammeCode | null;
-  const tpl = code ? PROGRAMME_TEMPLATES[code] : null;
+  const prog = code ? programmes.get(code) ?? null : null;
   const thisMonday = mondayOf(demoToday());
   const currentWeek = start ? studyWeekOf(start.weekStart, thisMonday) : null;
 
-  const defProgress = tpl?.checkpoints.find((k) => k.kind === 'progress')?.studyWeek ?? null;
-  const defFinal = tpl?.checkpoints.find((k) => k.kind === 'final')?.studyWeek ?? null;
+  /* MỘT NGUỒN (PF1): lớp đã chụp số tuần lúc tạo thì giữ số đó; lớp chưa chụp đọc bảng `programmes`. */
+  const chup = c.so_tuan !== null && c.so_tuan !== undefined;
+  const totalWeeks: number | null = chup ? c.so_tuan : prog?.weeks ?? null;
+  const defProgress = chup ? c.tuan_giua_khoa ?? null : prog?.checkpoints.find((k) => k.kind === 'progress')?.studyWeek ?? null;
+  const defFinal = chup ? c.tuan_cuoi_khoa ?? c.so_tuan : prog?.checkpoints.find((k) => k.kind === 'final')?.studyWeek ?? null;
   const progressWeek = c.progress_week_override ?? defProgress;
   const finalWeek = c.final_week_override ?? defFinal;
 
@@ -314,7 +320,6 @@ function computeProgress(
    * "tuần sau Final Test" nữa, dù phép tính tuần vẫn khớp cả hai.
    */
   const nextMonday = addDays(thisMonday, 7);
-  const totalWeeks = tpl?.weeks ?? null;
   const weeksLeft = currentWeek !== null && totalWeeks !== null ? totalWeeks - currentWeek : null;
 
   let phase: ClassPhase;
@@ -330,7 +335,7 @@ function computeProgress(
 
   const needsPlacement = phase === 'finished' && canXepLop > 0;
   const placementOptions = needsPlacement
-    ? nextStepsAfter(code).map((c) => ({ code: c, name: PROGRAMME_TEMPLATES[c].name }))
+    ? nextStepsAfter(code).map((c) => ({ code: c, name: programmes.get(c)?.name ?? PROGRAMME_TEMPLATES[c].name }))
     : [];
 
   /*
@@ -338,13 +343,13 @@ function computeProgress(
    * mỗi màn tự ghép thì sẽ có màn ghép thiếu, và hai màn nói khác nhau về cùng một lớp.
    */
   let label: string | null = null;
-  if (tpl && tpl.weeks) {
-    const parts: string[] = [tpl.code];
+  if (totalWeeks) {
+    const parts: string[] = [kyHieuLop(code, c.route) ?? prog?.name ?? ''];   // ký hiệu, không lộ mã PREFOU (K2-24)
     if (phase === 'finished') {
-      parts.push(`đã học xong ${tpl.weeks} tuần`);
+      parts.push(`đã học xong ${totalWeeks} tuần`);
       if (canXepLop > 0) parts.push(`${canXepLop} học viên cần xếp lớp tiếp`);
     } else {
-      parts.push(currentWeek !== null ? `tuần ${currentWeek}/${tpl.weeks}` : 'chưa khai tuần bắt đầu');
+      parts.push(currentWeek !== null ? `tuần ${currentWeek}/${totalWeeks}` : 'chưa khai tuần bắt đầu');
       if (phase !== 'running' && phase !== 'not_started' && phase !== 'unknown') {
         parts.push(CLASS_PHASE_LABEL[phase]);
       }
@@ -355,7 +360,7 @@ function computeProgress(
   }
 
   return {
-    programmeCode: code, programmeName: tpl?.name ?? null,
+    programmeCode: code, programmeName: prog?.name ?? null,
     totalWeeks,
     currentWeek,
     startPeriodId: c.start_period_id ?? null,
@@ -406,17 +411,20 @@ export function setClassProgress(p: Principal, classId: number, input: {
   require_(p, PERMISSIONS.CLASS_EDIT, { classId }, 'Bạn không có quyền sửa tiến độ của lớp này.');
 
   const code = (c.programme_code ?? programmeOf(c.kind)) as ProgrammeCode | null;
-  const weeks = code ? PROGRAMME_TEMPLATES[code]?.weeks ?? null : null;
+  const weeks: number | null = c.so_tuan ?? (code ? allProgrammes().get(code)?.weeks ?? null : null);
   const checkWeek = (v: number | null | undefined, label: string) => {
     if (v === null || v === undefined) return null;
     if (!Number.isInteger(v) || v < 1) throw badRequest(`${label} phải là số tuần từ 1 trở lên.`);
     if (weeks && v > weeks) throw badRequest(`${label} không thể vượt quá ${weeks} tuần của chương trình.`);
     return v;
   };
-  const progress = 'progressWeek' in input ? checkWeek(input.progressWeek, 'Tuần Progress Test') : undefined;
-  const final = 'finalWeek' in input ? checkWeek(input.finalWeek, 'Tuần Final Test') : undefined;
+  const progress = 'progressWeek' in input ? checkWeek(input.progressWeek, 'Tuần Giữa khoá') : undefined;
+  const final = 'finalWeek' in input ? checkWeek(input.finalWeek, 'Tuần Cuối khoá') : undefined;
+  if (progress && c.so_tuan !== null && c.so_tuan !== undefined && (c.tuan_giua_khoa === null || c.tuan_giua_khoa === undefined)) {
+    throw badRequest('Chương trình này không có bài Giữa khoá.');
+  }
   if (progress !== undefined && final !== undefined && progress && final && progress >= final) {
-    throw badRequest('Progress Test phải ở trước Final Test.');
+    throw badRequest('Giữa khoá phải ở trước Cuối khoá.');
   }
   if (input.startPeriodId && !periodById(input.startPeriodId)) throw badRequest('Tuần bắt đầu không hợp lệ.');
 
@@ -523,6 +531,7 @@ export function missingForClass(classId: number): { items: MissingInfo[]; missin
 /** Bản hàng loạt — hai câu lệnh cho cả trang, không phải hai câu mỗi lớp. */
 export function missingForClasses(
   classIds: number[],
+  programmes?: Map<string, ProgrammeInfo>,
 ): Map<number, { items: MissingInfo[]; missingSkills: string[] }> {
   const out = new Map<number, { items: MissingInfo[]; missingSkills: string[] }>();
   if (!classIds.length) return out;
@@ -543,14 +552,16 @@ export function missingForClasses(
 
   for (const c of classes) {
     const code = (c.programme_code ?? programmeOf(c.kind)) as ProgrammeCode | null;
-    const tpl = code ? PROGRAMME_TEMPLATES[code] : null;
+    const prog = code ? (programmes ??= allProgrammes()).get(code) ?? null : null;
     const items: MissingInfo[] = [];
     /* Lớp FT không cần tuần bắt đầu của LỚP — lịch MT đi theo từng em. */
-    if (tpl?.weeks && !c.start_period_id) items.push(miss('class_start_week'));
+    if ((c.so_tuan ?? prog?.weeks) && !c.start_period_id) items.push(miss('class_start_week'));
 
     const assigned = byClass.get(c.id) ?? [];
     const have = new Set(assigned.map((a) => a.skill));
-    const missingSkills = (tpl?.skills ?? []).filter((sk) => !have.has(sk));
+    /* Lớp không chia môn (Pre FOU): GVCN dạy luôn — chỉ nhắc thiếu GVCN, không "thiếu GV tong_hop" (K2 §4b). */
+    const missingSkills = CHUONG_TRINH_KHONG_CHIA_MON.includes(code ?? '') ? []
+      : (prog?.skills ?? []).filter((sk) => !have.has(sk));
     if (missingSkills.length) items.push(miss('teachers'));
     if (!assigned.some((a) => a.is_core)) items.push(miss('core_teacher'));
 

@@ -41,7 +41,7 @@ export function QuickReport({
   open, onClose, studentId, studentName, lop, cycleId, onDone, signal, students, onPickStudent,
 }: {
   open: boolean; onClose: () => void;
-  /** Mã lớp hiện ở đầu ngăn (`Tạo Case · Tên HV · MB-FOU 12`); không có thì bỏ phần lớp. */
+  /** Mã lớp hiện ở đầu ngăn (`Tạo Case · Tên HV · MB FOU 12`); không có thì bỏ phần lớp. */
   lop?: string | null;
   studentId: number; studentName?: string; cycleId?: number | null;
   onDone?: (caseId: number) => void;

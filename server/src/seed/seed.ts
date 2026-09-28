@@ -15,6 +15,7 @@ import { buildJourneys } from './build.ts';
 import { buildYThuc } from './yThucSeed.ts';
 import { buildSosV3Demo } from './sosV3Seed.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
+import { dienMocLop } from '../migrate/prLop.ts';
 
 const NOW = nowIso();
 
@@ -193,6 +194,7 @@ export function runSeed() {
         assign(userId.get(c.core)!, null, true);
       }
     }
+    dienMocLop(conn);   // PF1: chụp số tuần vào lớp thường — seed không chạy migrate()
 
     // ---------------------------------------------------------------- học viên & hành trình
     conn.prepare('INSERT INTO student_code_seq (id, next_value) VALUES (1, 1)').run();
@@ -534,7 +536,7 @@ function seedMeeting(conn: any, ctx: {
     periodId: prevId, group: 'teacher', completedAt: '2026-09-05T09:00:00.000Z',
     updates: [
       { progress: 'doing', note: 'Đối chiếu lịch của bốn lớp Fast Track.', on: '2026-09-02' },
-      { progress: 'done', note: 'Khớp lịch xong. Dời MT2 của BC-FT 205 sang W2 SEP theo yêu cầu Quản lý.', on: '2026-09-05' },
+      { progress: 'done', note: 'Khớp lịch xong. Dời MT2 của BC FT 205 sang W2 SEP theo yêu cầu Quản lý.', on: '2026-09-05' },
     ],
   });
 

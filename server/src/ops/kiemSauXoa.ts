@@ -2,18 +2,21 @@
  * KIỂM SAU KHI XOÁ (PR-XOA, Task 8 của kế hoạch) — CHỈ ĐỌC. Session deploy chạy lệnh này trước và sau MỖI bước dọn dữ liệu thử trên
  * bản chính rồi dán kết quả vào nhật ký. Không ghi gì: chỉ `prepare(...).all/get`.
  *
- * In: (1) 3 học viên thử PISA-000001..3 · (2) lớp MB-FT THU 01 · (3) mọi tài khoản · (4) PRAGMA foreign_key_check · (5) tệp mồ côi
+ * In: (1) 3 học viên thử PISA-000001..3 · (2) lớp thử MB FT THU 01 (so chuẩn hoá: đổi tên hay chưa đều thấy) · (3) mọi tài khoản · (4) PRAGMA foreign_key_check · (5) tệp mồ côi
  * (attachments trỏ bản ghi chủ không còn) · (6) migrate PR-XOA đã chạy chưa (cột users.deleted_at).
  *
  * Chạy: nạp TURSO_DATABASE_URL + TURSO_AUTH_TOKEN (TRIEN_KHAI.md §11.1) rồi `npm run kiem-sau-xoa`. Không có biến Turso → DB cục bộ.
  */
 import { DB_PATH, db } from '../db.ts';
+import { chuanHoaMaLop, khoaMaLopSql } from '../../../shared/domain/index.ts';
 
 const conn = db();
 console.log(`[kiem-sau-xoa] Database: ${DB_PATH}`);
 
 const HV_THU = ['PISA-000001', 'PISA-000002', 'PISA-000003'];
-const LOP_THU = 'MB-FT THU 01';
+const LOP_THU = 'MB FT THU 01';
+/* So chuẩn hoá (bỏ `-`, khoảng trắng, hoa/thường): tên cũ `MB-FT THU 01` hay tên mới đều ra. */
+const LOP_THU_CHUAN = chuanHoaMaLop(LOP_THU);
 
 console.log('\n(1) Học viên thử');
 const hv = conn.prepare(
@@ -27,8 +30,8 @@ console.log(`\n(2) Lớp ${LOP_THU}`);
 const lop = conn.prepare(
   `SELECT c.id, c.code, c.status, c.finished_at,
           (SELECT COUNT(*) FROM enrollments e WHERE e.class_id = c.id) AS so_ghi_danh
-     FROM classes c WHERE c.code = ?`,
-).all(LOP_THU) as any[];
+     FROM classes c WHERE ${khoaMaLopSql('c.code')} = ?`,
+).all(LOP_THU_CHUAN) as any[];
 if (lop.length) console.table(lop); else console.log('  không còn lớp');
 
 console.log('\n(3) Tài khoản');
