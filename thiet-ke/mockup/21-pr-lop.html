@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="vi" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup PR-LOP — tạo lớp</title>
+<style>
+/* Token tối lấy đúng web/src/index.css (cùng bộ với mockup 19). Chỉ tông tối — PR-N1 không làm chế độ sáng. */
+:root{
+  --bg:#0c1220; --s1:#141d2f; --s2:#1a2437; --s3:#101a2c; --line:rgba(160,178,214,.14); --line2:rgba(160,178,214,.26);
+  --tx:#dde5f2; --dim:#93a3c0; --faint:#8292ae; --acc:#7db3f0; --acc-soft:rgba(125,179,240,.14); --acc-line:rgba(125,179,240,.38);
+  --ok:#6fdc9f; --ok-bg:#123526; --ok-ln:#2b7050;
+  --bad:#ff9aa2; --bad-bg:#3c1d24; --bad-ln:#88404a;
+  --late:#ff9166; --late-bg:#3e1f13; --late-ln:#9a4a2a;
+  --soon:#f2c450; --soon-bg:#352b10; --soon-ln:#7a6222;
+  --sos2:#ffb070; --sos2-bg:#3a2412; --sos2-ln:#8a5530;
+  --wait:#c4a9ff; --done:#a9b5c8;
+  --hl:#172640; --hl-bar:#7db3f0; --sub:#0f1828;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.45 'Be Vietnam Pro','Segoe UI',system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.page{max-width:1240px;margin:0 auto;padding:20px 16px 80px}
+h1{font-size:22px;margin:0 0 4px}
+.lead{color:var(--dim);margin:0 0 14px;max-width:86ch}
+.toc{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 20px;position:sticky;top:0;background:var(--bg);padding:8px 0;z-index:5;border-bottom:1px solid var(--line)}
+.toc a{border:1px solid var(--line2);border-radius:7px;padding:4px 9px;font-size:12px;font-weight:600;color:var(--tx);text-decoration:none}
+section.m{margin:30px 0 0}
+.mh{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.mh .code{font-weight:700;color:var(--acc);font-size:13px}
+.mh h2{font-size:17px;margin:0}
+.yc{font-size:11px;font-weight:700;color:var(--faint);border:1px solid var(--line2);border-radius:5px;padding:0 5px}
+.loc{display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;margin:8px 0 10px;font-size:12.5px;color:var(--dim)}
+.loc b{background:var(--soon);color:#1b1400;border-radius:4px;padding:0 6px;font-size:11px;letter-spacing:.03em}
+.loc .who{margin-left:auto}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:900px){.pair{grid-template-columns:1fr}}
+.col>.lbl{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;margin:0 0 6px}
+.col.truoc>.lbl{color:var(--bad)} .col.sau>.lbl{color:var(--ok)}
+.win{background:var(--s1);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.col.truoc .win{opacity:.92}
+.body{padding:12px}
+.notes{margin:8px 0 0;padding-left:18px;color:var(--dim);font-size:12.5px}
+.mut{color:var(--dim)} .fnt{color:var(--faint);font-size:11.5px} .b{font-weight:700} .sb{font-weight:600}
+.t12{font-size:12px} .t11{font-size:11px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sp{flex:1}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line2);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;color:var(--tx);background:transparent;white-space:nowrap}
+.btn.pri{background:var(--acc);color:#0b1626;border-color:var(--acc)}
+.btn.ghost{border-color:transparent;color:var(--dim)}
+.btn.sm{padding:3px 8px;font-size:11.5px}
+.lv{display:inline-flex;align-items:center;border-radius:999px;padding:0 7px;font-size:10.5px;font-weight:700;line-height:17px;white-space:nowrap}
+.sos1{background:var(--soon-bg);color:var(--soon)} .sos2{background:var(--sos2-bg);color:var(--sos2)} .sos3{background:var(--bad-bg);color:var(--bad)}
+.blue{background:rgba(128,184,255,.15);color:#80b8ff}
+.dut{background:transparent!important;border:1px dashed currentColor}
+.ok{color:var(--ok)} .bad{color:var(--bad)} .late{color:var(--late);font-weight:700} .soon{color:var(--soon)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--dim);text-align:left;padding:7px 8px;background:var(--s2);border-bottom:1px solid var(--line)}
+td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+td.r,th.r{text-align:right}
+tr.lon td{background:var(--hl);font-weight:800;font-size:12.5px;box-shadow:inset 3px 0 0 var(--hl-bar)}
+tr.lon.dong td{background:var(--s2);box-shadow:inset 3px 0 0 var(--line2)}
+tr.con td{background:var(--sub);font-size:12px}
+.stick{position:relative}
+.stick::after{content:"dính khi cuộn";position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;font-weight:700;color:var(--soon);border:1px dashed var(--soon-ln);border-radius:5px;padding:0 5px;letter-spacing:0;text-transform:none}
+.fade td{opacity:.35}
+.field{display:block;width:100%;border:1px solid var(--line2);background:var(--s3);border-radius:7px;padding:6px 9px;color:var(--tx);font-size:12.5px;min-height:32px}
+.field.err{border-color:var(--late);box-shadow:0 0 0 1px rgba(255,145,102,.4)}
+.f-lbl{font-size:11.5px;font-weight:700;margin:0 0 4px;display:flex}
+.f-lbl .req{color:var(--bad)} .f-lbl .dem{margin-left:auto;font-weight:500;color:var(--faint);font-size:10.5px}
+.f-err{font-size:11px;color:var(--late);margin-top:3px}
+.foot{border-top:1px solid var(--line);padding:0}
+.foot .thieu{padding:7px 12px 0;text-align:right;font-size:11px;font-weight:600;color:var(--soon)}
+.foot .thieu u{text-underline-offset:2px;cursor:pointer}
+.foot .can-sua{padding:7px 12px 0;text-align:right;font-size:11px;color:var(--faint);cursor:pointer}
+.qc{font-size:10.5px;color:var(--dim);margin-left:6px;white-space:nowrap}
+.foot .act{display:flex;gap:8px;padding:9px 12px}
+.pa-row{border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:8px}
+.khoi{margin-top:8px;padding:9px;border-radius:8px;background:var(--s2)}
+.chip{display:inline-flex;border:1px solid var(--line2);border-radius:7px;padding:3px 8px;font-size:11.5px;margin:0 4px 4px 0}
+.cp{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.stat{border:1px solid var(--line);border-radius:10px;padding:9px 11px;background:var(--s1)}
+.stat .k{font-size:11px;color:var(--dim)} .stat .v{font-size:15px;font-weight:700;margin:2px 0}
+.toast{display:flex;align-items:center;gap:12px;border:1px solid var(--line2);background:var(--s1);border-radius:10px;padding:10px 14px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.45);max-width:420px}
+.bar{display:flex;align-items:center;gap:12px;padding:9px 14px;border-bottom:1px solid var(--line);background:var(--s3)}
+.bar .logo{display:inline-flex;width:22px;height:22px;border-radius:6px;background:var(--acc-soft);border:1px solid var(--acc-line);color:var(--acc);font-weight:800;font-size:12px;align-items:center;justify-content:center}
+.bar .nav span{padding:3px 9px;border-radius:7px;color:var(--dim);font-size:12.5px}
+.bar .nav span.on{background:var(--acc-soft);color:var(--tx);border:1px solid var(--acc-line)}
+.tri{font-size:9px;margin-right:2px}
+.x{color:var(--faint)}
+/* ---- thêm cho mockup 21 ---- */
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden}
+.seg span{padding:4px 11px;font-size:12px;font-weight:600;color:var(--dim);border-right:1px solid var(--line2)}
+.seg span:last-child{border-right:0}
+.seg span.on{background:var(--acc-soft);color:var(--tx);box-shadow:inset 0 0 0 1px var(--acc-line)}
+.seg span.off{opacity:.4}
+.fld{margin-top:10px}
+.pc{display:grid;grid-template-columns:6rem 1fr;gap:6px 10px;align-items:center;margin-top:6px}
+.pc .n{font-size:12px;font-weight:700;color:var(--tx)}
+.pc .e{grid-column:2;font-size:11px;color:var(--late);margin-top:-3px}
+.sel{border:1px solid var(--line2);background:var(--s3);border-radius:7px;padding:5px 9px;font-size:12.5px;min-height:30px;display:flex;justify-content:space-between}
+.sel::after{content:"▾";color:var(--faint);font-size:10px}
+.sel.err{border-color:var(--late);box-shadow:0 0 0 1px rgba(255,145,102,.4)}
+.sel.mut{color:var(--faint)}
+.preview{margin-top:8px;font-size:14px}.preview b{font-size:15px}
+.so{width:7rem;display:inline-block}
+.khung-h{padding:10px 12px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:baseline}
+.khung-h .t{font-weight:700;font-size:14px}
+.foot .gray{padding:7px 12px 0;text-align:right;font-size:11px;color:var(--faint)}
+.chipline{font-size:12px;color:var(--dim);margin-top:6px}
+.ro{color:var(--dim);font-size:12px}
+.pair3{grid-template-columns:1fr 1fr 1fr}
+@media (max-width:900px){.pair3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="page">
+<h1>PR-LOP · Tạo lớp · tên lớp · RF · Pre FOU · phân công — Trước | Sau</h1>
+<p class="lead">Mỗi mục một cặp: trái là web hiện nay (<code>main</code>), phải là sau PR-LOP. Dữ liệu bộ demo (chi nhánh Monbay <b>MB</b>,
+GV Trần Ngọc Hà, Lê Minh Khoa, Đỗ Thu Linh, Phạm Thu Trang). Thay mockup M1 của <code>19-nang-cap-27-09.html</code> (K2-15: FT có W1/W2,
+thêm Pre FOU, FOU dùng G+V · P). Kế hoạch: <code>docs/superpowers/plans/2026-09-28-pr-lop-tao-lop.md</code>.</p>
+<nav class="toc">
+  <a href="#m1">1 · Tạo lớp FT + lỗi</a><a href="#m2">2 · Tạo lớp thường</a><a href="#m3">3 · Xem trước tên</a>
+  <a href="#m4">4 · Sửa phân công</a><a href="#m5">5 · HV &amp; Lớp mặc định</a><a href="#m6">6 · Quản trị</a><a href="#m7">7 · Chuyển tiếp</a>
+</nav>
+
+<!-- ============================================================ 1 -->
+<section class="m" id="m1">
+  <div class="mh"><span class="code">1</span><h2>Panel Tạo lớp — Fast Track: một lệnh, mỗi ô một người, lỗi ngay tại ô</h2><span class="yc">YC-1 · YC-2 · YC-4 · T5 · L3 · L4</span></div>
+  <div class="loc"><b>NẰM Ở</b><span>Học viên &amp; Lớp → nút <b style="background:none;color:var(--tx);padding:0">+ Lớp mới</b> (góc phải đầu trang) → ngăn phải "Tạo lớp mới"</span><span class="who">Ai thấy: QL, Quản trị</span></div>
+  <div class="pair">
+    <div class="col truoc"><p class="lbl">Trước</p><div class="win"><div class="khung-h"><span class="t">Tạo lớp mới</span></div><div class="body">
+      <div class="f-lbl">Loại lớp <span class="req">*</span></div><div class="row"><span class="btn pri sm">Fast Track (FT)</span><span class="btn sm">Normal</span></div>
+      <div class="fld f-lbl">Lộ trình</div><div class="row"><span class="btn pri sm">LT1</span><span class="btn sm">LT2</span></div>
+      <div class="fld f-lbl">Tên lớp</div><div class="row"><span class="field" style="width:60px">MB-</span><span class="field" style="flex:1">FT 101</span></div>
+      <div class="khoi"><div class="f-lbl">Phân công giáo viên</div>
+        <div class="t12">GVCN <span class="chip">Trần Ngọc Hà ×</span><span class="chip">Lê Minh Khoa ×</span> <span class="fnt">+ Thêm giáo viên ▾</span></div>
+        <div class="t12">L <span class="chip">Lê Minh Khoa ×</span> · R · W1 · W2 · S <span class="fnt">+ Thêm giáo viên ▾</span></div>
+        <div class="t12 soon" style="margin-top:4px">Chưa phân công: R, W1, W2, S. Vẫn tạo được lớp…</div>
+        <div class="fnt">Một người nhận nhiều vai hoặc nhiều môn là bình thường, và một môn có hai người dạy cũng vậy.</div></div>
+    </div><div class="foot"><div class="act"><span class="sp"></span><span class="btn">Huỷ</span><span class="btn pri">Tạo lớp</span></div></div></div>
+    <ul class="notes"><li>Bấm Tạo lớp: lớp <b>đã tạo</b>, phân công bị từ chối (2 GVCN) → lớp "tàng hình" không ai dạy.</li></ul></div>
+    <div class="col sau"><p class="lbl">Sau</p><div class="win"><div class="khung-h"><span class="t">Tạo lớp mới</span></div><div class="body">
+      <div class="f-lbl">Chi nhánh <span class="req">*</span></div><div class="sel">Monbay (MB)</div>
+      <div class="fld f-lbl">Kiểu lớp</div><div class="seg"><span class="on">Fast Track</span><span>Lớp thường</span></div>
+      <div class="fld f-lbl">Lộ trình</div><div class="seg"><span>LT1</span><span>LT2</span><span class="on">RF</span></div>
+      <div class="fld f-lbl">Số lớp <span class="req">*</span></div><span class="field so">12</span>
+      <div class="fnt">1–4 chữ số, được thêm một chữ cái cuối (101A)</div>
+      <div class="preview">Lớp sẽ là <b>MB FT RF 12</b></div>
+      <div class="chipline">Lịch MT theo từng học viên · 5 kỹ năng L R W1 W2 S</div>
+      <div class="khoi"><div class="f-lbl">Phân công</div>
+        <div class="pc">
+          <span class="n">GVCN</span><span class="sel err">Trần Ngọc Hà · 2 lớp</span>
+          <span class="e">GVCN phải dạy ít nhất một kỹ năng — chọn kỹ năng cho cô/thầy này</span>
+          <span class="n">L</span><span class="sel">Lê Minh Khoa · 3 lớp</span>
+          <span class="n">R</span><span class="sel mut">— Chưa chọn —</span>
+          <span class="n">W1</span><span class="sel">Lê Minh Khoa · 3 lớp</span>
+          <span class="n">W2</span><span class="sel">Đỗ Thu Linh · 1 lớp</span>
+          <span class="n">S</span><span class="sel">Phạm Thu Trang · 4 lớp</span>
+        </div>
+        <div class="fnt" style="margin-top:6px">Mỗi ô một người. Một người nhận nhiều ô được. Thiếu ô nào vẫn tạo được lớp — bổ sung ở hồ sơ lớp.</div></div>
+    </div><div class="foot"><div class="gray">1 ô cần sửa ↑</div><div class="act"><span class="sp"></span><span class="btn">Huỷ</span><span class="btn pri" style="opacity:.45" title="GVCN phải dạy ít nhất một kỹ năng">Tạo lớp</span></div></div></div>
+    <ul class="notes"><li>Chọn Trần Ngọc Hà ở ô R → lỗi tắt, nút mở. Bấm Tạo lớp → <b>một lệnh</b> (lớp + phân công cùng lúc) → mở thẳng hồ sơ lớp <b>MB FT RF 12</b>.</li>
+      <li>Không có cách chọn người thứ hai cho một ô. Chi nhánh tự chọn khi người tạo chỉ có một chi nhánh.</li></ul></div>
+  </div>
+</section>
+
+<!-- ============================================================ 2 -->
+<section class="m" id="m2">
+  <div class="mh"><span class="code">2</span><h2>Cùng panel · Lớp thường: FOU · BE/ELE · Pre FOU</h2><span class="yc">MH6 · T55 · T56 · PF6</span></div>
+  <div class="loc"><b>NẰM Ở</b><span>Như mục 1, chọn Kiểu lớp <b style="background:none;color:var(--tx);padding:0">Lớp thường</b> → Chương trình</span><span class="who">Ai thấy: QL, Quản trị</span></div>
+  <div class="pair pair3">
+    <div class="col sau"><p class="lbl">Sau · FOU</p><div class="win"><div class="body">
+      <div class="seg"><span>Fast Track</span><span class="on">Lớp thường</span></div>
+      <div class="fld seg"><span class="off">Pre FOU</span><span class="on">FOU</span><span>BE</span><span>ELE</span></div>
+      <div class="preview">Lớp sẽ là <b>MB FOU 12</b></div>
+      <div class="chipline">8 tuần · Giữa khoá tuần 4 · Cuối khoá tuần 8</div>
+      <div class="pc"><span class="n">GVCN</span><span class="sel">Trần Ngọc Hà</span><span class="n">L</span><span class="sel">Trần Ngọc Hà</span>
+        <span class="n">R</span><span class="sel">Lê Minh Khoa</span><span class="n">G+V</span><span class="sel">Lê Minh Khoa</span><span class="n">P</span><span class="sel">Phạm Thu Trang</span></div>
+    </div></div></div>
+    <div class="col sau"><p class="lbl">Sau · BE / ELE</p><div class="win"><div class="body">
+      <div class="seg"><span>Fast Track</span><span class="on">Lớp thường</span></div>
+      <div class="fld seg"><span class="off">Pre FOU</span><span>FOU</span><span class="on">BE</span><span>ELE</span></div>
+      <div class="preview">Lớp sẽ là <b>MB BE 03</b></div>
+      <div class="chipline">10 tuần · Giữa khoá tuần 5 · Cuối khoá tuần 10</div>
+      <div class="pc"><span class="n">GVCN</span><span class="sel">Lê Minh Khoa</span><span class="n">L</span><span class="sel">Trần Ngọc Hà</span>
+        <span class="n">R</span><span class="sel">Lê Minh Khoa</span><span class="n">W</span><span class="sel">Lê Minh Khoa</span><span class="n">S</span><span class="sel mut">— Chưa chọn —</span></div>
+    </div></div></div>
+    <div class="col sau"><p class="lbl">Sau · Pre FOU <span class="fnt">(bật sau PR-MON)</span></p><div class="win"><div class="body">
+      <div class="seg"><span>Fast Track</span><span class="on">Lớp thường</span></div>
+      <div class="fld seg"><span class="on">Pre FOU</span><span>FOU</span><span>BE</span><span>ELE</span></div>
+      <div class="preview">Lớp sẽ là <b>MB Pre FOU 03</b></div>
+      <div class="chipline">5 tuần · Cuối khoá tuần 5 · một điểm Tổng hợp</div>
+      <div class="pc"><span class="n">GVCN</span><span class="sel">Trần Ngọc Hà</span><span class="n">GV dạy</span><span class="sel mut">— Không bắt buộc —</span></div>
+      <div class="fnt" style="margin-top:6px">GVCN có thể kiêm GV dạy. Không có luật "GVCN dạy ≥ 1 kỹ năng".</div>
+    </div></div></div>
+  </div>
+  <ul class="notes"><li><b>Trong PR-LOP</b> nút <b>Pre FOU</b> mờ, chữ phụ "Mở cùng đợt cập nhật hệ môn học" (PF6 — cờ tắt; PR-MON bật). Cột thứ ba là trạng thái sau PR-MON.</li>
+    <li>Tên ô G+V, P của FOU là bảng tên tạm; PR-MON thay bằng hàm tên môn chung. Trước: chỉ có FOU/BE/ELE, cùng 4 ô L R W S, chữ "Normal", "Progress/Final Test".</li></ul>
+</section>
+
+<!-- ============================================================ 3 -->
+<section class="m" id="m3">
+  <div class="mh"><span class="code">3</span><h2>Ô số lớp + dòng xem trước tên</h2><span class="yc">T1 · L1 · PF5</span></div>
+  <div class="loc"><b>NẰM Ở</b><span>Panel Tạo lớp (mục 1–2) và ⋮ Sửa thông tin lớp (mục 4) — ô "Số lớp"</span><span class="who">Ai thấy: QL, Quản trị</span></div>
+  <div class="pair">
+    <div class="col truoc"><p class="lbl">Trước</p><div class="win"><div class="body">
+      <div class="f-lbl">Tên lớp</div><div class="row"><span class="field" style="width:60px">MB-</span><span class="field" style="flex:1">ft rf12</span></div>
+      <div class="fnt">Lớp sẽ là <b>MB-ft rf12</b> — gõ gì cũng nhận; "MB-FT 101" và "MB FT 101" cùng tồn tại được</div></div></div></div>
+    <div class="col sau"><p class="lbl">Sau</p><div class="win"><div class="body">
+      <table><tr><th>Chọn</th><th>Gõ ô số</th><th>Lớp sẽ là</th></tr>
+        <tr><td>FT · LT1</td><td class="r">101</td><td><b>MB FT 101</b></td></tr>
+        <tr><td>FT · RF</td><td class="r">12</td><td><b>MB FT RF 12</b></td></tr>
+        <tr><td>Pre FOU</td><td class="r">03</td><td><b>MB Pre FOU 03</b></td></tr>
+        <tr><td>FOU</td><td class="r">101a → 101A</td><td><b>MB FOU 101A</b></td></tr>
+        <tr><td>BE</td><td class="r">ft12 → 12</td><td><b>MB BE 12</b> <span class="fnt">(chữ khác bị bỏ khi gõ)</span></td></tr>
+      </table>
+      <div class="fld f-lbl">Số lớp</div><span class="field err so">101</span><div class="f-err">Đã có lớp MB FT 101</div>
+    </div></div></div>
+  </div>
+  <ul class="notes"><li>Kiểm trùng bỏ qua hoa/thường và dấu "-". Lớp cũ đổi tên lúc nâng cấp: <code>CP-FT 139</code> → <code>CP FT 139</code>.</li></ul>
+</section>
+
+<!-- ============================================================ 4 -->
+<section class="m" id="m4">
+  <div class="mh"><span class="code">4</span><h2>Sửa phân công (một người mỗi ô) · Sửa thông tin lớp (chỉ phần số)</h2><span class="yc">YC-4 · K2-18</span></div>
+  <div class="loc"><b>NẰM Ở</b><span>Hồ sơ lớp MB FT 101 → ⋮ (góc phải) → "Sửa phân công" / "Sửa thông tin lớp"</span><span class="who">Ai thấy: QL, Quản trị (GVCN chỉ xem)</span></div>
+  <div class="pair">
+    <div class="col truoc"><p class="lbl">Trước</p><div class="win"><div class="khung-h"><span class="t">Sửa phân công</span><span class="fnt">MB-FT 101</span></div><div class="body">
+      <div class="f-lbl">Listening</div><div class="t12"><span class="chip">Trần Ngọc Hà ×</span><span class="chip">Lê Minh Khoa ×</span> <span class="fnt">+ Thêm giáo viên ▾</span></div>
+      <div class="fld f-lbl">Mã lớp *</div><span class="field">MB-FT 101</span><div class="fnt">Ví dụ: MB-FT 101</div>
+      <div class="fld f-lbl">Lộ trình (LT)</div><div class="sel">LT1</div><div class="fnt">đổi được dù lớp có 18 HV</div>
+    </div></div></div>
+    <div class="col sau"><p class="lbl">Sau</p><div class="win"><div class="khung-h"><span class="t">Sửa phân công</span><span class="fnt">MB FT 101</span></div><div class="body">
+      <div class="pc"><span class="n">GVCN</span><span class="sel">Trần Ngọc Hà</span><span class="n">L</span><span class="sel err">Trần Ngọc Hà · Lê Minh Khoa</span>
+        <span class="e">Ô này đang có 2 người — chọn lại một người</span>
+        <span class="n">R</span><span class="sel">Trần Ngọc Hà</span><span class="n">W1</span><span class="sel">Lê Minh Khoa</span><span class="n">W2</span><span class="sel">Đỗ Thu Linh</span><span class="n">S</span><span class="sel">Phạm Thu Trang</span></div>
+      <div class="fnt" style="margin-top:6px">▸ Đã từng dạy lớp này (3)</div></div>
+      <div class="foot"><div class="gray">1 ô cần sửa ↑</div><div class="act"><span class="sp"></span><span class="btn">Huỷ</span><span class="btn pri" style="opacity:.45">Lưu</span></div></div></div>
+      <div class="win" style="margin-top:10px"><div class="khung-h"><span class="t">Sửa thông tin lớp</span><span class="fnt">MB FT 101</span></div><div class="body">
+        <div class="f-lbl">Số lớp</div><span class="field so">102</span><div class="preview">Lớp sẽ là <b>MB FT 102</b></div>
+        <div class="fld f-lbl">Lộ trình</div><div class="seg"><span class="on">LT1</span><span class="off">LT2</span><span class="off">RF</span></div>
+        <div class="ro" style="margin-top:4px">Lớp đã có 18 học viên — muốn đổi lộ trình thì chuyển các em sang lớp FT RF khác</div></div></div></div>
+  </div>
+</section>
+
+<!-- ============================================================ 5 -->
+<section class="m" id="m5">
+  <div class="mh"><span class="code">5</span><h2>Học viên &amp; Lớp: QL mở ở phạm vi Chi nhánh · lớp mới hiện ngay · tìm tên cũ</h2><span class="yc">T6 · YC-1 · K2-07 · K2-08</span></div>
+  <div class="loc"><b>NẰM Ở</b><span>Menu <b style="background:none;color:var(--tx);padding:0">Học viên &amp; Lớp</b> → công tắc phạm vi đầu trang + ô tìm</span><span class="who">Ai thấy: QL (kể cả QL có dạy lớp), Quản trị</span></div>
+  <div class="pair">
+    <div class="col truoc"><p class="lbl">Trước</p><div class="win"><div class="body"><div class="seg"><span class="on">Lớp tôi dạy</span><span>Chi nhánh</span></div></div><table>
+      <tr class="lon dong"><td><span class="tri">▸</span> MB-FT 101 · Fast Track · 18 HV</td></tr>
+      <tr class="lon dong"><td><span class="tri">▸</span> MB-FT 12 · Fast Track · 9 HV</td></tr>
+      <tr class="con"><td class="fnt">Lớp MB-FT RF 12 vừa tạo KHÔNG hiện (Vy không dạy lớp đó) · gõ "ft101" → không ra gì</td></tr></table></div></div>
+    <div class="col sau"><p class="lbl">Sau</p><div class="win"><div class="body"><div class="row"><div class="seg"><span>Lớp tôi dạy</span><span class="on">Chi nhánh</span></div><span class="sp"></span><span class="field" style="width:150px">ft101</span></div></div><table>
+      <tr class="lon dong"><td><span class="tri">▸</span> MB FT 12 · Fast Track · LT1 · 9 HV</td></tr>
+      <tr class="lon dong"><td><span class="tri">▸</span> MB FT 101 · Fast Track · LT1 · 18 HV</td></tr>
+      <tr class="lon dong"><td><span class="tri">▸</span> MB FT RF 12 · Fast Track · RF · 0 HV</td></tr>
+      <tr class="lon dong"><td><span class="tri">▸</span> MB FOU 12 · Foundation · 14 HV</td></tr></table>
+      <div class="body t12 mut">Xếp: FT → FT RF → Pre FOU → FOU → BE → ELE, số tự nhiên (12 trước 101). Gõ <b>ft101</b>, <b>MB-FT 101</b> hay <b>mb ft 101</b> đều ra MB FT 101; ô tìm đầu trang có thêm nhóm <b>Lớp</b>.</div></div></div>
+  </div>
+  <ul class="notes"><li>GV thuần (GVCN, GVBM) vẫn mở ở "Lớp tôi dạy".</li></ul>
+</section>
+
+<!-- ============================================================ 6 -->
+<section class="m" id="m6">
+  <div class="mh"><span class="code">6</span><h2>Quản trị › Lộ trình &amp; chương trình</h2><span class="yc">T62 · K1-46…K1-50 · YC-3</span></div>
+  <div class="loc"><b>NẰM Ở</b><span>Menu <b style="background:none;color:var(--tx);padding:0">Quản trị</b> → tab "Lộ trình &amp; chương trình" (trước: "Lộ trình và loại lớp")</span><span class="who">Ai thấy: Quản trị hệ thống</span></div>
+  <div class="pair">
+    <div class="col truoc"><p class="lbl">Trước</p><div class="win"><table>
+      <tr><th>Mã</th><th>Tên</th><th class="r">Đang dùng</th><th><span class="btn sm">+ Thêm lộ trình</span></th></tr>
+      <tr><td>LT1</td><td>Lộ trình 1</td><td class="r">42</td><td></td></tr><tr><td>LT2</td><td>Lộ trình 2</td><td class="r">17</td><td></td></tr></table>
+      <table><tr><th>Mã</th><th>Tên</th><th class="r">Tuần</th><th><span class="btn sm">+ Thêm loại lớp</span></th></tr>
+      <tr><td>BE <span class="lv blue">gốc</span></td><td>Beginner</td><td class="r">10</td><td></td></tr>
+      <tr><td colspan="4" class="fnt">Sửa số tuần BE 10 → 12: tiến độ lớp vẫn tính 10 (đọc hằng số trong mã)</td></tr></table></div></div>
+    <div class="col sau"><p class="lbl">Sau</p><div class="win"><table>
+      <tr><th>Lộ trình</th><th>Kỳ vọng MT</th><th>Lịch MT mặc định</th><th class="r">Đang dùng</th><th></th></tr>
+      <tr><td>LT1 <span class="fnt">Lộ trình 1</span></td><td class="t12 mut">−1.0 · −0.5 · target</td><td class="t12 mut">Tuần 6 · 12 · 16</td><td class="r">42</td><td><span class="btn sm">Sửa</span></td></tr>
+      <tr><td>LT2 <span class="fnt">Lộ trình 2</span></td><td class="t12 mut">−1.0 · −0.5 · target</td><td class="t12 mut">Tuần 6 · 12 · 16</td><td class="r">17</td><td><span class="btn sm">Sửa</span></td></tr>
+      <tr><td>RF <span class="fnt">Refire</span></td><td class="t12 mut">Mọi MT = target</td><td class="t12 mut">Tuần 4 · 8</td><td class="r">1</td><td><span class="btn sm">Sửa</span></td></tr></table>
+      <table><tr><th>Chương trình</th><th class="r">Số tuần</th><th class="r">Giữa khoá</th><th class="r">Cuối khoá</th><th class="r">Lớp</th><th></th></tr>
+      <tr><td>Pre FOU <span class="fnt">Pre Foundation</span></td><td class="r">5</td><td class="r x">—</td><td class="r">5</td><td class="r x">—</td><td><span class="btn sm">Sửa</span></td></tr>
+      <tr><td>FOU <span class="fnt">Foundation</span></td><td class="r">8</td><td class="r">4</td><td class="r">8</td><td class="r">6</td><td><span class="btn sm">Sửa</span></td></tr>
+      <tr><td>BE <span class="fnt">Beginner</span></td><td class="r">10</td><td class="r">5</td><td class="r">10</td><td class="r">4</td><td><span class="btn sm">Sửa</span></td></tr>
+      <tr><td>ELE <span class="fnt">Elementary</span></td><td class="r">10</td><td class="r">5</td><td class="r">10</td><td class="r">3</td><td><span class="btn sm">Sửa</span></td></tr></table>
+      <div class="body t12 mut">Không có nút Thêm. Sửa được: tên, số tuần, tuần Giữa/Cuối khoá (Pre FOU không có Giữa khoá), còn dùng. Lưu Pre FOU 5 → 6:
+        <span class="ok">Áp cho lớp tạo sau khi lưu · 2 lớp đang học giữ 5 tuần</span>. Hai cột Kỳ vọng / Lịch MT chỉ đọc.</div></div></div>
+  </div>
+</section>
+
+<!-- ============================================================ 7 -->
+<section class="m" id="m7">
+  <div class="mh"><span class="code">7</span><h2>Chuyển tiếp lớp: "+ Mở lớp mới" mở đúng panel Tạo lớp</h2><span class="yc">T71 · K2-16 · K2-17</span></div>
+  <div class="loc"><b>NẰM Ở</b><span>Hồ sơ lớp MB FOU 12 (hết khoá) → badge "Hết khoá" / ⋮ Chuyển tiếp lớp → cột "Lớp đích" → mục <b style="background:none;color:var(--tx);padding:0">+ Mở lớp mới</b></span><span class="who">Ai thấy: QL</span></div>
+  <div class="pair">
+    <div class="col truoc"><p class="lbl">Trước</p><div class="win"><div class="body">
+      <div class="f-lbl">Lớp đích chưa có? + Mở lớp mới</div>
+      <div class="row"><span class="field" style="flex:1">MB-BE 01</span><span class="sel" style="flex:1">Fast Track (FT)</span></div>
+      <div class="row" style="margin-top:6px"><span class="sel" style="flex:1">Tuần khai giảng</span><span class="sel" style="flex:1">GVCN: Trần Ngọc Hà</span></div>
+      <div class="fnt" style="margin-top:6px">Gõ tự do, tên kiểu cũ; FT không có ô lộ trình; GVCN vào lớp không kèm kỹ năng (lách luật phân công)</div></div></div></div>
+    <div class="col sau"><p class="lbl">Sau</p><div class="win"><table>
+      <tr><th>Học viên</th><th class="r">Cuối khoá</th><th>Lớp đích</th></tr>
+      <tr><td>Nguyễn Minh An</td><td class="r">74%</td><td><span class="sel">+ Mở lớp mới…</span></td></tr>
+      <tr><td>Vũ Ngọc Lan</td><td class="r">81%</td><td><span class="sel">MB BE 03 <span class="fnt">(mới)</span></span></td></tr></table>
+      <div class="body t12 mut">Chọn "+ Mở lớp mới…" → ngăn <b>Tạo lớp mới</b> (mục 1–2) điền sẵn: Monbay · Lớp thường · <b>BE</b> · số gợi ý <b>03</b> · tuần khai giảng = tuần sau ngày chuyển. Tạo xong quay lại Chuyển tiếp, các dòng đang chọn "+ Mở lớp mới" gán vào <b>MB BE 03</b>.
+        Em vào lớp <b>FT RF</b> → lộ trình của em là <b>RF</b> (theo lớp đích, không mặc định LT1).</div></div></div>
+  </div>
+  <ul class="notes"><li>Lớp tạo ở đây là lớp thật; huỷ Chuyển tiếp thì lớp vẫn còn (Quản trị xoá bằng ⋮ Xoá lớp nếu thừa).</li></ul>
+</section>
+
+</div>
+</body>
+</html>
