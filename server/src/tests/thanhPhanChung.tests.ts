@@ -121,4 +121,17 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(/<LichNho/.test(f) && !/function monthGrid/.test(f), 'WeekPicker chưa dùng LichNho');
     assert(/createPortal/.test(doc('web/src/ui/LichNho.tsx')) && /Gần đây/.test(doc('web/src/ui/LichNho.tsx')), 'lịch không qua portal / thiếu Gần đây');
   });
+
+  check('NEN (4) · thành phần chung: OKhac ≥ 3, đang chọn ≠ nút chính, 6 nhãn, focus panel, menu mũi tên, ChonNguoi không bắt gõ', () => {
+    const ok = doc('web/src/ui/OKhac.tsx');
+    assert(/kiemGhiRoKhac\(/.test(ok) && /autoFocus/.test(ok), 'OKhac chưa dùng kiemGhiRoKhac / không tự focus');
+    const ui = doc('web/src/ui/ui.tsx');
+    for (const x of ['export function NutChon', 'export function BoLocDoan', 'export function NhanTrangThai', 'aria-pressed', 'bg-ink-800', 'teal-600'])
+      assert(ui.includes(x), `ui.tsx thiếu ${x}`);
+    assert(!/doing: 'bg-doing-bg text-doing/.test(ui), 'Status doing còn mượn màu xanh của điểm (A8)');
+    assert(/useGiuFocus\(/.test(doc('web/src/ui/KhungPanel.tsx')) && /useGiuFocus\(/.test(doc('web/src/ui/Drawer.tsx')), 'panel/modal chưa giữ focus');
+    assert(/buocDanhSach\(/.test(doc('web/src/ui/MenuDong.tsx')), 'menu ⋯ chưa đi bằng mũi tên');
+    const pp = doc('web/src/ui/PeoplePicker.tsx');
+    assert(!/ít nhất 3 ký tự/.test(pp) && /Dùng tên ngoài hệ thống/.test(pp), 'ChonNguoi còn bắt gõ 3 ký tự / thiếu dòng tên ngoài');
+  });
 }

@@ -1,4 +1,5 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
+import { useGiuFocus } from './giuFocus.ts';
 
 export function Drawer({ open, onClose, title, subtitle, children, footer, width = 'max-w-2xl' }: {
   open: boolean; onClose: () => void; title: ReactNode; subtitle?: ReactNode;
@@ -41,10 +42,19 @@ export function Modal({ open, onClose, title, children, footer, width = 'max-w-l
   }, [open, onClose]);
 
   if (!open) return null;
+  return <KhungModal onClose={onClose} title={title} footer={footer} width={width}>{children}</KhungModal>;
+}
+
+/** Tách khỏi `Modal` để hook giữ focus chạy đúng lúc mở/đóng (Modal trả `null` khi `open = false`). */
+function KhungModal({ onClose, title, children, footer, width }: {
+  onClose: () => void; title: ReactNode; children: ReactNode; footer?: ReactNode; width: string;
+}) {
+  const khung = useRef<HTMLDivElement>(null);
+  useGiuFocus(khung);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className={`relative w-full ${width} card shadow-2xl max-h-[88vh] flex flex-col`}>
+      <div ref={khung} tabIndex={-1} className={`relative w-full ${width} card shadow-2xl max-h-[88vh] flex flex-col outline-none`}>
         <header className="flex items-center justify-between px-5 py-3 border-b" style={{ borderColor: 'var(--line)' }}>
           <h2 className="text-sm font-semibold text-slate-100">{title}</h2>
           <button className="btn btn-sm btn-ghost" onClick={onClose} aria-label="Đóng">✕</button>

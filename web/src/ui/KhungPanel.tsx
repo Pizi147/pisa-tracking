@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { taoKhoPanel } from '@shared/domain/index.ts';
 import { NutLuat } from './NutLuat.tsx';
 import { DongCanSua, type MucThieu } from './loiForm.tsx';
+import { useGiuFocus } from './giuFocus.ts';
 
 /** Kho dùng chung toàn web: mở panel này thì panel đang mở phải đóng (G-8, N-4). */
 export const khoPanelChung = taoKhoPanel();
@@ -46,10 +47,12 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
 
   const ngu = [hocVien, lop].filter(Boolean).join(' · ');
   const huy = chan?.huy ?? { onClick: onDong };
+  const khung = useRef<HTMLDivElement>(null);
+  useGiuFocus(khung);
   return (
     <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label={tieuDe}>
       <div className="absolute inset-0 bg-black/60" onClick={onDong} />
-      <div className={`relative flex h-full w-full flex-col border-l shadow-2xl ${rong === 'rong' ? 'sm:w-[720px]' : 'sm:w-[560px]'}`}
+      <div ref={khung} tabIndex={-1} className={`relative flex h-full w-full flex-col border-l shadow-2xl outline-none ${rong === 'rong' ? 'sm:w-[720px]' : 'sm:w-[560px]'}`}
         style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
         <header className="flex h-[52px] shrink-0 items-center gap-2 border-b px-4" style={{ borderColor: 'var(--line)' }}>
           <h2 className="m-0 whitespace-nowrap text-sm font-extrabold text-slate-100">{tieuDe}</h2>

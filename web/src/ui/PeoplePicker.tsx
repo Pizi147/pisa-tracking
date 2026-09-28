@@ -1,7 +1,7 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { api } from '../lib/api.ts';
 import { Info } from './ui.tsx';
-import { skillShort, type NguoiChon } from '@shared/domain/index.ts';
+import { buocDanhSach, skillShort, type NguoiChon } from '@shared/domain/index.ts';
 import { useSession } from '../lib/session.tsx';
 
 export type Person = { id: number; name: string; title: string | null; role: string | null; branches: string[] };
@@ -185,7 +185,8 @@ type ChonNguoiOption =
  * Ô chọn MỘT người thực hiện/phụ trách — dùng chung cho case học thuật và Ý thức (PR-Form F-2, §22.5).
  *
  * Khác `PersonPicker` (gọi `/ref/people`, đòi `MEETING_VIEW`): đây gọi `/ref/nguoi` — mọi người đăng nhập gọi được,
- * ngưỡng gõ ≥ 3 ký tự, tìm không dấu, và gợi ý sẵn giáo viên đang dạy lớp của em khi biết `studentId` (Q6).
+ * vào ô là có danh sách (T14: chưa gõ → 20 người, GV cùng lớp đầu), tìm không dấu. `choNgoai` → LUÔN có dòng cuối
+ * "Dùng tên ngoài hệ thống" (tên cần ≥ 2 ký tự, Q11). ↑/↓ đi vòng, Enter chốt, Esc đóng danh sách (không đóng panel).
  */
 export function ChonNguoi({
   value, onChange, nhom, studentId, choToi = true, choNgoai = true, trongPhamVi = false,
@@ -239,11 +240,15 @@ export function ChonNguoi({
     const out: ChonNguoiOption[] = [];
     if (choToi) out.push({ kind: 'toi' });
     for (const r of rows) out.push({ kind: 'nguoi', row: r });
-    if (choNgoai && term.trim().length >= 2) out.push({ kind: 'ngoai', text: term.trim() });
+    if (choNgoai) out.push({ kind: 'ngoai', text: term.trim() });
     return out;
   }, [choToi, rows, choNgoai, term]);
+  /** Dòng "tên ngoài" chưa đủ 2 ký tự: hiện mờ, bấm không làm gì, mũi tên bỏ qua. */
+  const tat = (opt: ChonNguoiOption) => opt.kind === 'ngoai' && opt.text.length < 2;
+  const chonDuoc = options.flatMap((o, i) => (tat(o) ? [] : [i]));
 
   const chon = (opt: ChonNguoiOption) => {
+    if (tat(opt)) return;
     if (opt.kind === 'toi') onChange({ kieu: 'toi' });
     else if (opt.kind === 'nguoi') onChange({ kieu: 'tai_khoan', id: opt.row.id, ten: opt.row.name, phu: nguoiContextOf(opt.row) });
     else onChange({ kieu: 'ngoai', ten: opt.text });
@@ -258,7 +263,7 @@ export function ChonNguoi({
     let chinh: string; let phu: string;
     if (value?.kieu === 'toi') { chinh = 'Tôi'; phu = session?.user?.fullName ?? ''; }
     else if (value?.kieu === 'tai_khoan') { chinh = value.ten; phu = value.phu ?? ''; }
-    else if (value?.kieu === 'ngoai') { chinh = value.ten; phu = 'người ngoài'; }
+    else if (value?.kieu === 'ngoai') { chinh = value.ten; phu = 'ngoài hệ thống'; }
     else if (khongDoi !== undefined) { chinh = `Không đổi · hiện: ${khongDoi}`; phu = ''; }
     else { chinh = macDinhTrong ?? '—'; phu = ''; }
 
@@ -274,6 +279,12 @@ export function ChonNguoi({
   }
 
   const activeId = activeIndex >= 0 && activeIndex < options.length ? `${uid}-opt-${activeIndex}` : undefined;
+  /* Dòng trạng thái nằm dưới danh sách người, TRÊN dòng "Dùng tên ngoài hệ thống" (mockup 22 §4). */
+  const trangThai = loading
+    ? <div className="px-3 py-2 text-[11px] text-slate-500">Đang tìm…</div>
+    : term.trim() && rows.length === 0
+      ? <div className="px-3 py-2 text-[11px] text-slate-500">Không tìm thấy {nguoiLabel} khớp «{term.trim()}»</div>
+      : null;
 
   return (
     <div ref={box}>
@@ -292,11 +303,14 @@ export function ChonNguoi({
         onFocus={() => setOpen(true)}
         onChange={(e) => { setTerm(e.target.value); setOpen(true); setActiveIndex(-1); }}
         onKeyDown={(e) => {
-          if (e.key === 'ArrowDown') { e.preventDefault(); setOpen(true); setActiveIndex((i) => Math.min(i + 1, options.length - 1)); }
-          else if (e.key === 'ArrowUp') { e.preventDefault(); setActiveIndex((i) => Math.max(i - 1, 0)); }
-          else if (e.key === 'Enter') {
+          if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {           // Home/End để nguyên cho con trỏ trong ô gõ
+            e.preventDefault();
+            setOpen(true);
+            const k = buocDanhSach(chonDuoc.length, chonDuoc.indexOf(activeIndex), e.key);
+            if (k !== null) setActiveIndex(chonDuoc[k]);
+          } else if (e.key === 'Enter') {
             if (activeIndex >= 0 && activeIndex < options.length) { e.preventDefault(); chon(options[activeIndex]); }
-          } else if (e.key === 'Escape') {
+          } else if (e.key === 'Escape' && open) {
             e.stopPropagation();
             setOpen(false);
           }
@@ -305,38 +319,39 @@ export function ChonNguoi({
       {open && (
         <div id={`${uid}-listbox`} role="listbox" className="mt-1 max-h-56 overflow-y-auto surface-2 rounded-lg border" style={{ borderColor: 'var(--line-strong)' }}>
           {options.map((opt, i) => (
-            <button
-              key={opt.kind === 'nguoi' ? `u${opt.row.id}` : opt.kind === 'toi' ? 'toi' : `ngoai:${opt.text}`}
-              id={`${uid}-opt-${i}`}
-              role="option"
-              aria-selected={i === activeIndex}
-              type="button"
-              className={`w-full text-left px-3 py-2 appearance-none bg-transparent border-0 ${i === activeIndex ? 'bg-white/5' : 'hover:bg-white/5'}`}
-              onMouseEnter={() => setActiveIndex(i)}
-              onClick={() => chon(opt)}
-            >
-              {opt.kind === 'toi' && (
-                <>
-                  <div className="text-sm text-slate-100">Tôi</div>
-                  {session?.user?.fullName && <div className="text-[11px] text-slate-500">{session.user.fullName}</div>}
-                </>
-              )}
-              {opt.kind === 'nguoi' && (
-                <>
-                  <div className="text-sm text-slate-100">{opt.row.name}</div>
-                  <div className="text-[11px] text-slate-500">{nguoiContextOf(opt.row)}</div>
-                </>
-              )}
-              {opt.kind === 'ngoai' && <div className="text-sm text-slate-100">Người ngoài: «{opt.text}»</div>}
-            </button>
+            <Fragment key={opt.kind === 'nguoi' ? `u${opt.row.id}` : opt.kind}>
+              {opt.kind === 'ngoai' && trangThai}
+              <button
+                id={`${uid}-opt-${i}`}
+                role="option"
+                aria-selected={i === activeIndex}
+                aria-disabled={tat(opt) || undefined}
+                tabIndex={-1}
+                type="button"
+                className={`w-full text-left px-3 py-2 appearance-none bg-transparent border-0 ${
+                  tat(opt) ? 'cursor-default' : i === activeIndex ? 'bg-white/5' : 'hover:bg-white/5'}`}
+                onMouseEnter={() => { if (!tat(opt)) setActiveIndex(i); }}
+                onClick={() => chon(opt)}
+              >
+                {opt.kind === 'toi' && (
+                  <>
+                    <div className="text-sm text-slate-100">Tôi</div>
+                    {session?.user?.fullName && <div className="text-[11px] text-slate-500">{session.user.fullName}</div>}
+                  </>
+                )}
+                {opt.kind === 'nguoi' && (
+                  <>
+                    <div className="text-sm text-slate-100">{opt.row.name}</div>
+                    <div className="text-[11px] text-slate-500">{nguoiContextOf(opt.row)}</div>
+                  </>
+                )}
+                {opt.kind === 'ngoai' && (tat(opt)
+                  ? <div className="text-sm text-slate-500">Dùng tên ngoài hệ thống: gõ tên ở ô trên</div>
+                  : <div className="text-sm text-slate-100">Dùng tên ngoài hệ thống: «{opt.text}»</div>)}
+              </button>
+            </Fragment>
           ))}
-          {term.trim().length < 3 && (
-            <div className="px-3 py-2 text-[11px] text-slate-500">Nhập ít nhất 3 ký tự để tìm {nguoiLabel}</div>
-          )}
-          {term.trim().length >= 3 && loading && <div className="px-3 py-2 text-[11px] text-slate-500">Đang tìm…</div>}
-          {term.trim().length >= 3 && !loading && rows.length === 0 && (
-            <div className="px-3 py-2 text-[11px] text-slate-500">Không tìm thấy {nguoiLabel} phù hợp</div>
-          )}
+          {!choNgoai && trangThai}
         </div>
       )}
     </div>
