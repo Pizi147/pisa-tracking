@@ -119,7 +119,7 @@ export function RecordViolationPanel({
 
   /*
    * dong() DÙNG CHUNG cho ✕ / Esc / bấm nền / nút `Xong`:
-   *   · Đã ghi → panel đóng THẬT, `onDone` chạy lúc này, VÀ toast 10 giây có nút `Hoàn tác`.
+   *   · Đã ghi → panel đóng THẬT, `onDone` chạy lúc này, VÀ toast Hoàn tác chung 5 giây (PR-N1 C1).
    *   · Chưa ghi (đang sửa, hoặc huỷ form ghi mới) → đóng như trước, không có gì để báo lại.
    */
   const dong = () => {
@@ -127,7 +127,7 @@ export function RecordViolationPanel({
       const { id, studentName: sn } = daGhi;
       reset(); onClose(); onDone?.();
       /* `key` cố định — ghi hai vi phạm liên tiếp thì toast MỚI thay toast CŨ, không chồng hai toast Hoàn tác cùng lúc. */
-      toast.push('info', `Đã ghi vi phạm cho ${sn}`, { ms: 10000, hanhDong: { nhan: 'Hoàn tác', onBam: () => hoanTac(id) }, key: 'ghi-vi-pham' });
+      toast.hoanTac(`Đã ghi vi phạm cho ${sn}`, () => hoanTac(id), { key: 'ghi-vi-pham' });
     } else {
       onClose();
     }

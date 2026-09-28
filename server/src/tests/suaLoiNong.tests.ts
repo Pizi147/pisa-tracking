@@ -277,6 +277,15 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     assert(/\\b\/\.exec\(text\)/.test(fs.readFileSync(path.join(REPO, 'web/src/lib/format.ts'), 'utf8')), 'toneTheoNhan chưa có \\b');
   });
 
+  // ==================================================================== 10. Toast "Hoàn tác" 5 giây dùng chung (UX-C C1)
+  check('N1 (10) · C1: Hoàn tác 5 giây, đếm ngược làm tròn lên; Ghi vi phạm dùng toast chung', () => {
+    assert(d.HOAN_TAC_MS === 5000, 'HOAN_TAC_MS');
+    const ca: [number, number][] = [[5000, 5], [4001, 5], [4000, 4], [1, 1], [0, 0], [-50, 0]];
+    for (const [con, giay] of ca) assert(d.giayHoanTacConLai(1_000_000 + con, 1_000_000) === giay, `${con} → ${d.giayHoanTacConLai(1_000_000 + con, 1_000_000)}`);
+    const src = docSach('web/src/modules/yThuc/RecordViolationPanel.tsx');
+    assert(/toast\.hoanTac\(/.test(src) && !/ms: 10000/.test(src), 'Ghi vi phạm chưa dùng Hoàn tác chung');
+  });
+
   // ==================================================================== 8. Học viên & Lớp + tab Ý thức lớp
   check('N1 (8) · T17: không lọc → không mở lớp nào; đang lọc → tối đa 5 lớp có kết quả', () => {
     assert(d.lopMoSan({ thamSoOpen: null, lopHien: [1, 2, 3], dangLoc: false }).length === 0, 'tự mở lớp');
