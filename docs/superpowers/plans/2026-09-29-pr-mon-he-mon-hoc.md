@@ -642,6 +642,19 @@ K5-45 T4 (+LOP) · K5-46 T2 · K5-47 T1/T5 · K5-48 T2 · K5-57 T5 · K5-67 T2.
   dòng lớp thường `programmeCode`, bảng kỹ năng hồ sơ HV theo chương trình (`caseCategoriesFor(…, ct)`, `label/short` qua `tenMon`,
   trả `chuongTrinh`), `hanhTrinh` hộp theo chương trình + `nhanNgan`, `violations` `skillLabel` theo lớp, `profile` tiến độ kỹ năng.
   `CauseDeterminationPanel` (ghi nguyên nhân) nhận `ct` → FOU G+V/P (K8). `ChamDiemPage` bỏ chú giải cố định "W = Writing".
+- **Task 8:** 1472 (+5). **Lỗi thật tìm thấy:** bước migrate cũ `migrateSkillSchedule` (`migrate.ts:~2034`) dựng dòng lịch cho mọi lượt
+  "< 4 dòng" → mỗi lần `npm run migrate` sẽ chèn L R W S vào lượt Pre FOU. Sửa ngoài bảng ranh giới (một điều kiện `NOT EXISTS … PREFOU`,
+  chống hỏng dữ liệu) + phép kiểm MON (3) chạy lại `migrate()` giữ 1 dòng. Kế hoạch Test: `KyNangKH` nhận thêm `tong_hop` qua
+  `O_KE_HOACH` (FT vẫn `KY_NANG_KE_HOACH`); `luoiThuong` trả `cot` theo mốc + `boMon`; `xepMoiThuong`/`xetMotEm`/`xepHangLoat` đếm
+  "đủ" theo bộ môn ("Cần chọn tuần cho 1 môn." / "cả 4 môn"); web `HopKyNang` lặp `ky` (bộ môn), `ChipKyNang` tên theo chương trình.
+  Ngăn Xếp lịch hàng loạt web giữ 4 kỹ năng (kiểu `Ky4`) — khung thường là PR-XLMT. Pre FOU %: `ketQuaThuong` ở lưới (tông đạt/chưa
+  đạt, không nhãn SOS), `ketQuaGanNhat`/`standingLine` (`Standing.tyLeTong/khongChiaMon`), ghim Hành trình `Cuối · 52%`, Tổng quan
+  "HV cần hỗ trợ" `Cuối khoá 52%` (`AttemptEval.tyLeTong`). Điện thoại (impeccable `adapt`, không PRODUCT.md — sửa hẹp theo mã): một
+  môn → dòng `Cuối khoá · Tổng hợp` + `đã nhập/tổng` thay hàng chip. `CHO_TAO_PRE_FOU = true`. Demo D12 `MB Pre FOU 03` (khai giảng
+  17/08, tuần 5/5 = tuần demo, GVCN Hà dạy luôn): 26/50 = 52% · 32/50 = 64% · 39/50 = 78% · 1 em chưa nhập (nợ). Điểm dùng tổng 50 để %
+  tròn đúng 52/64/78. Sửa kỳ vọng 4 phép kiểm cũ (cùng điều kiện): [18.1] "đủ dòng lịch" theo bộ môn chương trình; PR-UX1 môn tuần ∈
+  `boMon`; UX2 câu "cả 4 môn"; LOP (5) Pre FOU nay tạo được, GVCN nhận `tong_hop`. `tocDoDuong.ts` đã có dòng
+  `/ke-hoach-test/thuong/{lopThuong}`; không có chỗ đặt lớp Pre FOU → không thêm dòng đo.
 
 ## Chủ sản phẩm chốt 29/09
 

@@ -1,6 +1,6 @@
 import { db } from '../db.ts';
 import {
-  ASSESSED_SKILLS, CAN_XU_LY, PERMISSIONS, SOS_LABEL, caseTopicLabel, tenMon, chonDiemDangChuY, sapCanXuLy,
+  ASSESSED_SKILLS, ATTEMPT_KIND_SHORT, CAN_XU_LY, PERMISSIONS, type AttemptKind, SOS_LABEL, caseTopicLabel, tenMon, chonDiemDangChuY, sapCanXuLy,
   type ChuongTrinh, type DiemChuY, type DongCanXuLyGoc, type MaCanXuLy, type UngVienChuY,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -112,7 +112,11 @@ export function hocVienCanHoTro(p: Principal): { rows: DongHvCanHoTro[]; tong: n
     const cb = canhBao.get(sid);
     const coCanhBao = !!cb?.active;
     if (sos <= 0 && !cs && !coCanhBao) continue;
-    const huyHieu = sos > 0
+    /* MH7: Pre FOU không chia môn — nhãn là bài + % tổng ("Cuối khoá 55%"), không "SOS 1". */
+    const phanTram = ev?.khongChiaMon && ev.tyLeTong != null
+      ? `${ATTEMPT_KIND_SHORT[ev.kind as AttemptKind] ?? 'Bài'} ${Math.round(ev.tyLeTong * 100)}%` : null;
+    const huyHieu = sos > 0 && phanTram ? { text: phanTram, tone: 'warn' as const }
+      : sos > 0
       ? { text: `${SOS_LABEL[sos as 1 | 2 | 3]}${ev?.provisional ? ' · tạm thời' : ''}`, tone: (sos >= 3 ? 'danger' : sos === 2 ? 'warn' : 'info') as 'info' | 'warn' | 'danger' }
       : coCanhBao ? { text: 'Ý thức', tone: 'info' as const } : null;
     const k = paQuaHan.get(sid) ?? 0;

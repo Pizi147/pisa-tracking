@@ -2038,11 +2038,17 @@ function migrateSkillSchedule(conn: any, applied: string[]) {
     writing: ['writing1', 'writing2'], speaking: ['speaking'],
   };
 
+  /*
+   * PR-MON (PF6): lượt của lớp Pre FOU chỉ có MỘT dòng `tong_hop` — không phải "thiếu ba dòng". Bỏ qua lớp Pre FOU, nếu không
+   * mỗi lần migrate sẽ chèn thêm L R W S vào lượt Pre FOU.
+   */
+  const coCt = (conn.prepare('PRAGMA table_info(classes)').all() as any[]).some((c) => c.name === 'programme_code');
   const attempts = conn
     .prepare(
       `SELECT a.id, a.planned_period_id, a.status
          FROM assessment_attempts a
-        WHERE (SELECT COUNT(*) FROM attempt_skills ask WHERE ask.attempt_id = a.id) < 4`,
+        WHERE (SELECT COUNT(*) FROM attempt_skills ask WHERE ask.attempt_id = a.id) < 4${coCt
+          ? ` AND NOT EXISTS (SELECT 1 FROM classes c WHERE c.id = a.class_id AND c.programme_code = 'PREFOU')` : ''}`,
     )
     .all() as any[];
   if (!attempts.length) return;

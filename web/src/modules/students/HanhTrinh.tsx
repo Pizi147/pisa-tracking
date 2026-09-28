@@ -25,6 +25,7 @@ type Ghim = {
   attemptId: number; tuan: string; cheDo: 'ielts' | 'ratio'; attemptNo: number; kind: string;
   overall: number | null; sosLevel: number | null; soDat: number | null; soYeuCau: number; soCoDiem: number;
   maLop: string | null; kyVong: number | null; kyNangChuaDat: string[];
+  khongChiaMon?: boolean; tyLe?: number | null;
 };
 type Pa = {
   id: number; ten: string; tu: string; den: string | null; status: string;

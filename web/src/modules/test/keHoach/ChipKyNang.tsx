@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
-import { CHU_KY_NANG, gomChip, nhanTuanKhoa, tuanLich, type ChipKH, type KyNangKH } from '@shared/domain/index.ts';
-import { TEN_KY_NANG, type KnO } from './kieu.ts';
+import { gomChip, tenMon, tenMonNgan, nhanTuanKhoa, tuanLich, type ChipKH, type KyNangKH } from '@shared/domain/index.ts';
+import type { KnO } from './kieu.ts';
 
 /**
  * Ô MỘT ĐỢT của một em (mockup 14 phương án B): gộp chip cùng tuần + cùng trạng thái, khác tuần tách dòng, đợt xong gọn
@@ -8,7 +8,9 @@ import { TEN_KY_NANG, type KnO } from './kieu.ts';
  * Màu chỉ dùng token nghĩa (N-1): xong `--done` · đã xếp `--doing` · đã dời `--soon` · chưa xếp viền đứt `--muted`.
  * `onMo(kỹ năng, phần tử)` mở hộp sửa neo cạnh chip vừa bấm.
  */
-export function ChipKyNang({ kn, attemptId, loai, khaiGiang, tongTuan, deXuat, nhanDeXuat, tenDot, onMo }: {
+export function ChipKyNang({ kn, attemptId, loai, khaiGiang, tongTuan, deXuat, nhanDeXuat, tenDot, onMo, ct = null }: {
+  /** Mã chương trình lớp (MH3: Kế hoạch Test khung lớp thường gọi tên môn theo chương trình — FOU G+V/P). */
+  ct?: string | null;
   kn: KnO; attemptId: number | null; loai: 'ft' | 'thuong';
   khaiGiang?: string | null; tongTuan?: number | null;
   /** Lớp thường chưa có bài: tuần đề xuất (thứ Hai) và nhãn tuần khoá của nó. */
@@ -38,7 +40,7 @@ export function ChipKyNang({ kn, attemptId, loai, khaiGiang, tongTuan, deXuat, n
 
   const g = gomChip(kn);
   const tooltip = (chip: ChipKH) => chip.kyNang
-    .map((k) => `${TEN_KY_NANG[k]}: ${kn[k]?.tuan ? tuanLich(kn[k]!.tuan!) : 'chưa xếp'}${kn[k]?.doiTu ? ` (dời từ ${tuanLich(kn[k]!.doiTu!)})` : ''}${kn[k]?.khoa ? ` (${kn[k]!.khoa})` : ''}`)
+    .map((k) => `${tenMon(ct, k)}: ${kn[k]?.tuan ? tuanLich(kn[k]!.tuan!) : 'chưa xếp'}${kn[k]?.doiTu ? ` (dời từ ${tuanLich(kn[k]!.doiTu!)})` : ''}${kn[k]?.khoa ? ` (${kn[k]!.khoa})` : ''}`)
     .join('\n');
 
   if (g.xong) {
@@ -72,8 +74,8 @@ export function ChipKyNang({ kn, attemptId, loai, khaiGiang, tongTuan, deXuat, n
   return (
     <div className={bao}>
       {hienThi.map((c, i) => (
-        <Chip key={i} c={c} loai={loai} khaiGiang={khaiGiang} tongTuan={tongTuan}
-          them={i === 1 && g.them > 0 ? { n: g.them, ds: conLai.map((x) => `${x.kyNang.map((k) => CHU_KY_NANG[k]).join(' ')} · ${x.tuan ? tuanLich(x.tuan) : 'chưa xếp'}`).join('\n') } : null}
+        <Chip key={i} c={c} loai={loai} ct={ct} khaiGiang={khaiGiang} tongTuan={tongTuan}
+          them={i === 1 && g.them > 0 ? { n: g.them, ds: conLai.map((x) => `${x.kyNang.map((k) => tenMonNgan(ct, k)).join(' ')} · ${x.tuan ? tuanLich(x.tuan) : 'chưa xếp'}`).join('\n') } : null}
           title={tooltip(c)} onMo={onMo} />
       ))}
     </div>
@@ -87,7 +89,8 @@ function NhanKhoa({ tuan, khaiGiang, tongTuan }: { tuan: string | null; khaiGian
   return n ? <span className="ml-1 text-[10px] font-normal opacity-70">{n}</span> : null;
 }
 
-function Chip({ c, loai, khaiGiang, tongTuan, them, title, onMo }: {
+function Chip({ c, loai, khaiGiang, tongTuan, them, title, onMo, ct = null }: {
+  ct?: string | null;
   c: ChipKH; loai: 'ft' | 'thuong'; khaiGiang?: string | null; tongTuan?: number | null;
   them: { n: number; ds: string } | null; title: string; onMo: (skill: KyNangKH | null, el: HTMLElement) => void;
 }) {
@@ -97,7 +100,7 @@ function Chip({ c, loai, khaiGiang, tongTuan, them, title, onMo }: {
     : daDoi ? 'bg-soon-bg text-soon border-soon-line'
       : c.trangThai === 'xong' ? 'bg-done-bg text-done border-done-line'
         : 'bg-doing-bg text-doing border-doing-line';
-  const chu = c.kyNang.map((k) => CHU_KY_NANG[k]).join(' ');
+  const chu = c.kyNang.map((k) => tenMonNgan(ct, k)).join(' ');
   return (
     <button type="button" className={`${CHIP_CLS} ${mau} text-left`} title={title} onClick={(e) => onMo(c.kyNang[0], e.currentTarget)}>
       <span className="font-bold tracking-wide">{chu}{daDoi && <span className="font-normal"> · dời</span>}</span>

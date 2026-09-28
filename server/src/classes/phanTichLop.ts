@@ -8,7 +8,7 @@
  * Chỉ học viên ĐANG HỌC lớp này (không lưu trữ), chỉ lộ trình đang chạy. Chưa có điểm KHÁC trượt: không vào mẫu số.
  */
 import {
-  ENTRY_SKILLS, ENTRY_SKILL_SHORT, PERMISSIONS, REGULAR_SKILLS, categoryOf, tenKyNang, tenMon, tenMonNgan,
+  ATTEMPT_KIND_SHORT, ENTRY_SKILLS, ENTRY_SKILL_SHORT, PERMISSIONS, type AttemptKind, REGULAR_SKILLS, categoryOf, tenKyNang, tenMon, tenMonNgan,
 } from '../../../shared/domain/index.ts';
 import { db } from '../db.ts';
 import { require_, type Principal } from '../permissions.ts';
@@ -61,7 +61,9 @@ export function phanTichLop(p: Principal, classId: number): PhanTichLop {
     return {
       loai: 'thuong',
       dong: mon.map((k) => ({ key: k, nhan: tenMonNgan(prog?.code, k), tenDayDu: tenMon(prog?.code, k), category: categoryOf(k) ?? k })),
-      cot: [{ key: 'progress', nhan: 'Giữa khoá' }, { key: 'final', nhan: 'Cuối khoá' }],
+      /* K2-40, PF6: cột theo mốc của chương trình — Pre FOU chỉ Cuối khoá, một dòng Tổng hợp. */
+      cot: (prog?.checkpoints.length ? prog.checkpoints.map((c) => c.kind) : ['progress', 'final'] as const)
+        .map((k) => ({ key: k as string, nhan: ATTEMPT_KIND_SHORT[k as AttemptKind] ?? k })),
       o, soHocVien: hv.length,
     };
   }

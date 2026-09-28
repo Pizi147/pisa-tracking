@@ -1018,7 +1018,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     );
     assertThrows(
       () => keHoachMod.xepMoiThuong(P.mbManager, { classId: lopMoi, studentId: em2, kind: 'progress', tuan: { listening: giua.id } }),
-      /cả 4 kỹ năng/, 'Thiếu tuần kỹ năng thì không tạo gì',
+      /cả 4 môn/, 'Thiếu tuần kỹ năng thì không tạo gì',   // PR-MON (K4-16): lớp thường đếm theo bộ môn chương trình
     );
     assert(dem(em2) === 0, 'Bị từ chối mà vẫn tạo bài');
   });

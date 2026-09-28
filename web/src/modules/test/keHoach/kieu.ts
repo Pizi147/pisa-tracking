@@ -20,10 +20,12 @@ export type LuoiFTData = { classId: number; classCode: string; cot: number[]; ha
 export type DotThuong = { attemptId: number | null; kn: KnO };
 export type KindThuong = 'progress' | 'final';
 export type CotThuong = { kind: KindThuong; nhan: 'Giữa khoá' | 'Cuối khoá'; deXuat: string | null; nhanDeXuat: string | null };
-export type HangThuong = { studentId: number; ten: string; ma: string; dot: Record<KindThuong, DotThuong> };
+export type HangThuong = { studentId: number; ten: string; ma: string; dot: Partial<Record<KindThuong, DotThuong>> };
 export type LuoiThuongData = {
   classId: number; classCode: string; chuongTrinh: string | null; khaiGiang: string | null; tongTuan: number | null;
   tuanHienTai: string | null; hvChuaCoLich: number; cot: CotThuong[]; hang: HangThuong[];
+  /** Bộ môn của chương trình lớp (K4-16): FOU/BE/ELE 4 môn, Pre FOU `tong_hop`. */
+  boMon: KyNangKH[];
 };
 
 /** Một đợt của lớp: FT = MT{n}, lớp thường = Giữa khoá / Cuối khoá. */
@@ -36,9 +38,11 @@ export const khoaDot = (d: DotChon): string => (d.loai === 'ft' ? `mt${d.attempt
 export const thanDot = (d: DotChon) => (d.loai === 'ft' ? { attemptNo: d.attemptNo } : { kind: d.kind });
 
 export const KY = KY_NANG_KE_HOACH;
+/** Bốn kỹ năng L R W S (ngăn Xếp lịch hàng loạt — khung lớp thường theo chương trình là việc PR-XLMT). */
+export type Ky4 = (typeof KY_NANG_KE_HOACH)[number];
 export const chuKyNang = (k: KyNangKH) => CHU_KY_NANG[k];
 export const TEN_KY_NANG: Record<KyNangKH, string> = {
-  listening: 'Listening', reading: 'Reading', writing: 'Writing', speaking: 'Speaking',
+  listening: 'Listening', reading: 'Reading', writing: 'Writing', speaking: 'Speaking', tong_hop: 'Tổng hợp',
 };
 
 /** Đợt của một em ở một cột. */

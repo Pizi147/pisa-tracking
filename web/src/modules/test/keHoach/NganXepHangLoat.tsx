@@ -15,7 +15,7 @@ import {
 } from '@shared/domain/index.ts';
 import {
   KY, TEN_KY_NANG, chuKyNang, chuTinhTrang, dotCuaEm, emXongDot, khoaDot, nhanDot, thanDot,
-  type DotChon, type LuoiFTData, type LuoiThuongData,
+  type DotChon, type Ky4, type LuoiFTData, type LuoiThuongData,
 } from './kieu.ts';
 import { TuanNho, resolveTuan, type Tuan } from './TuanNho.tsx';
 
@@ -83,8 +83,8 @@ export function NganXepHangLoat({ loai, classId, classCode, onClose, onDone }: {
   const dsEm = giuLoi ? emChuaXong.filter((h) => giuLoi.includes(h.studentId)) : emChuaXong;
 
   /* Kỹ năng + tuần. Mặc định theo Q18 (đặt lại mỗi lần đổi đợt). */
-  const [chonKn, setChonKn] = useState<Record<KyNangKH, boolean>>({ listening: true, reading: true, writing: true, speaking: true });
-  const [tuan, setTuan] = useState<Record<KyNangKH, Tuan | null>>({ listening: null, reading: null, writing: null, speaking: null });
+  const [chonKn, setChonKn] = useState<Record<Ky4, boolean>>({ listening: true, reading: true, writing: true, speaking: true });
+  const [tuan, setTuan] = useState<Record<Ky4, Tuan | null>>({ listening: null, reading: null, writing: null, speaking: null });
   const [ap, setAp] = useState<Tuan | null>(null);
   const homNay = session?.demoDate ? mondayOfDate(session.demoDate) : null;
   useEffect(() => {

@@ -12,7 +12,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ENTRY_SKILLS, ngay, tenMon, tenMonNgan } from '@shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, ENTRY_SKILLS, ngay, tenMon, tenMonNgan, type AttemptKind } from '@shared/domain/index.ts';
 import { fmtBand } from '../../lib/format.ts';
 import { Info } from '../../ui/ui.tsx';
 import {
@@ -228,7 +228,15 @@ function MotKyNangThuong({ data, onReload, kn, hv }: {
 
   return (
     <div>
-      <HangChip ds={chips} chon={chon} onChon={setChon} ct={data.programme.code} />
+      {skills.length === 1 ? (
+        /* PF6 (Pre FOU): một môn — không có gì để chọn, nên không hàng chip; một dòng nói bài nào, môn nào. */
+        <div className="flex min-h-[44px] items-center gap-1.5 px-3 pt-3 pb-2 text-sm">
+          <span className="font-semibold text-slate-100">{ATTEMPT_KIND_SHORT[data.rows[0].kind as AttemptKind] ?? 'Bài kiểm tra'}</span>
+          <span className="text-slate-500" aria-hidden>·</span>
+          <span className="text-slate-200">{tenMonChon}</span>
+          <span className="ml-auto tabular-nums text-xs text-slate-500">{chips[0].daNhap}/{chips[0].tong}</span>
+        </div>
+      ) : <HangChip ds={chips} chon={chon} onChon={setChon} ct={data.programme.code} />}
       {minh(chon) && (
         <label className="flex items-center justify-end gap-2 px-3 pb-2 text-xs text-slate-500">
           <span title="Tổng số câu của đề cả lớp làm. Ô tổng còn trống của từng em lấy sẵn số này; em làm đề khác thì sửa riêng ô đó.">

@@ -199,6 +199,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
           overall: null, sosLevel: r.sosLevel, soDat, soYeuCau: r.required, soCoDiem: r.scored,
           maLop: (a.class_code as string | null) ?? null, kyVong: null as number | null,
           kyNangChuaDat: r.skills.filter((s) => s.outcome === 'fail').map((s) => s.skill as string),
+          khongChiaMon: r.skills.length === 1 && r.skills[0].skill === 'tong_hop', tyLe: r.tyLeTong,
         };
       }
       const r = t.ft!;

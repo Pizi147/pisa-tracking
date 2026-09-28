@@ -330,6 +330,8 @@ export function nhanGhim(a: {
   overall: number | null; sosLevel: number | null;
   soDat: number | null; soYeuCau: number; soCoDiem: number;
   maLop?: string | null; kyNangChuaDat?: string[]; kyVong?: number | null; tuan?: string; homNay?: string;
+  /** MH7: Pre FOU không chia môn — ghim là `Cuối · 68%` (đủ điểm mới có `tyLe`), không SOS. */
+  khongChiaMon?: boolean; tyLe?: number | null;
 }): NhanGhim {
   const ghep = (...phan: (string | null | undefined)[]) => phan.filter(Boolean).join(' · ');
   if (a.cheDo === 'ielts') {
@@ -359,6 +361,11 @@ export function nhanGhim(a: {
   const ngan = a.kind === 'final' ? 'Cuối' : 'Giữa';
   const dai = a.maLop ? `${daiKind} ${a.maLop}` : daiKind;
   if (a.soCoDiem === 0) return { chu: ngan, gon: ngan, day: dai, mau: 'tam' };
+  if (a.khongChiaMon && a.tyLe != null) {
+    const pt = `${Math.round(a.tyLe * 100)}%`;
+    const dat = (a.sosLevel ?? 1) <= 0;
+    return { chu: `${ngan} · ${pt}`, gon: ngan, day: ghep(dai, `${pt} tổng`, dat ? 'Đạt' : 'Chưa đạt'), mau: dat ? 'dat' : 'sos1' };
+  }
   if (a.soCoDiem < a.soYeuCau) {
     return { chu: `${ngan} · tạm thời`, gon: ngan, day: ghep(dai, `mới chấm ${a.soCoDiem}/${a.soYeuCau} môn`, 'tạm thời'), mau: 'tam' };
   }

@@ -13,7 +13,7 @@ import { Empty, Info, Level, Status } from '../../ui/ui.tsx';
 import { useTrangThaiLuuO } from '../../ui/SaveState.tsx';
 import { ODiemThuong, laTuChoi, type SaveOpts } from '../fasttrack/ScoreEntry.tsx';
 import { caseStatusLabel, sosLabel, sosTone } from '../../lib/format.ts';
-import { ATTEMPT_KIND_SHORT, ketQuaThuong, ngay, tenMon, tenMonNgan, tuanLich, type AttemptKind } from '@shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, CHUONG_TRINH_KHONG_CHIA_MON, ketQuaThuong, ngay, tenMon, tenMonNgan, tuanLich, type AttemptKind } from '@shared/domain/index.ts';
 import { DauLuu, DauO, VIEN_LOI } from './LuoiFT.tsx';
 
 type SkillResult = {
@@ -41,6 +41,8 @@ type Row = {
   result: {
     skills: SkillResult[]; scored: number; required: number; complete: boolean;
     failedCount: number | null; sosLevel: number | null; passThreshold: number;
+    /** Σ điểm / Σ tổng — chỉ khi đủ mọi môn (K5-44). */
+    tyLeTong?: number | null;
   };
   cases: { id: number; status: string; level: number | null; skill: string; category: string }[];
   caseId: number | null; caseStatus: string | null; caseLevel: number | null;
@@ -448,7 +450,9 @@ function KetQua({ row, sheet }: { row: Row; sheet: ThuongSheet }) {
   const du = (k: string) => tenMon(sheet.programme.code, k);
   const dat = r.skills.filter((s) => s.outcome === 'pass').length;
   const thieu = r.skills.filter((s) => s.outcome === 'missing').map((s) => ngan(s.skill));
-  const kq = ketQuaThuong({ dat, daCham: r.scored, tong: r.required, thieu });
+  /* MH7: Pre FOU không chia môn — kết quả là % tổng, tông đạt/chưa đạt (không SOS). */
+  const khongChiaMon = CHUONG_TRINH_KHONG_CHIA_MON.includes(sheet.programme.code);
+  const kq = ketQuaThuong({ dat, daCham: r.scored, tong: r.required, thieu, tyLe: r.tyLeTong ?? null, khongChiaMon });
   const truot = (r.failedCount ?? 0) > 0;
 
   /* Dòng phụ — một dòng, ≤ ~60 ký tự. */
@@ -473,13 +477,14 @@ function KetQua({ row, sheet }: { row: Row; sheet: ThuongSheet }) {
 
   const chiTiet = r.skills.map((s) => `${ngan(s.skill)} ${s.score === null ? '—' : `${s.score}/${s.total ?? '?'}`}`).join(' · ');
   /* N-1b: màu kết quả Test — Đạt xanh lá · SOS 1 vàng · SOS 2 cam · SOS 3 đỏ · chưa đủ điểm xám. */
-  const tone = truot ? (r.sosLevel ? sosTone(r.sosLevel) : 'sos3') : r.complete ? 'ok' : 'muted';
+  const tone = khongChiaMon ? (truot ? 'warn' : r.complete ? 'ok' : 'muted')
+    : truot ? (r.sosLevel ? sosTone(r.sosLevel) : 'sos3') : r.complete ? 'ok' : 'muted';
   const chinh = r.scored === 0
     ? <span className="text-xs text-slate-500">{kq.chinh}</span>
     : (
       <Level tone={tone} title={chiTiet}>
         {kq.chinh}
-        {truot && r.sosLevel ? (
+        {truot && r.sosLevel && !khongChiaMon ? (
           <span title={`${sosLabel(r.sosLevel)} — mức cần hỗ trợ theo số môn chưa đạt (${r.failedCount} môn)`}>
             {` · ${sosLabel(r.sosLevel)}`}
           </span>

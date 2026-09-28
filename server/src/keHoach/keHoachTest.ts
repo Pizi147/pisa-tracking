@@ -10,7 +10,7 @@
  */
 import { db, tx } from '../db.ts';
 import {
-  CHU_KY_NANG, KY_NANG_KE_HOACH, PERMISSIONS, laVaoMuon, soSanhLop, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang,
+  CHU_KY_NANG, KY_NANG_KE_HOACH, O_KE_HOACH, PERMISSIONS, boMonLich, laVaoMuon, soSanhLop, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang,
   tuanKhoa as tuanKhoaCua,
   type BaiXemTruoc, type DongHangLoat, type KyNangKH, type OKyNang,
 } from '../../../shared/domain/index.ts';
@@ -23,17 +23,23 @@ import { currentCycle } from '../fasttrack/cycles.ts';
 import { checkWeekVsNeighbours, loadSkillRows, setSkillWeek } from '../fasttrack/skillSchedule.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { classProgress, classProgressMany } from '../classes/schedule.ts';
-import { planRegularTests, programmeOfClass } from '../normal/regular.ts';
+import { planRegularTests, programmeByCode, programmeOfClass } from '../normal/regular.ts';
 
 const KIND_NHAN: Record<'progress' | 'final', 'Giữa khoá' | 'Cuối khoá'> = { progress: 'Giữa khoá', final: 'Cuối khoá' };
 const CAU_XAC_NHAN = 'Xác nhận lại nếu vẫn muốn xếp vào tuần này.';
 const PLAN_MSG = 'Chỉ Quản lý xếp được lịch Test.';
 
-const phOf = (n: number) => Array.from({ length: n }, () => '?').join(',');
-const thuTuKn = (k: string) => (KY_NANG_KE_HOACH as readonly string[]).indexOf(k);
+/** Bộ môn xếp lịch của lớp thường (bảng `programme_skills`, Pre FOU `tong_hop`) — K4-16. */
+const boMonThuong = (prog: { code: string; skills: readonly string[] } | null): KyNangKH[] =>
+  boMonLich(prog?.code ?? null, prog?.skills).filter((k): k is KyNangKH => (O_KE_HOACH as readonly string[]).includes(k));
+const cauThieuMon = (bo: readonly KyNangKH[]) => (bo.length === 1 ? 'Cần chọn tuần cho 1 môn.' : `Cần chọn tuần cho cả ${bo.length} môn.`);
 
+const phOf = (n: number) => Array.from({ length: n }, () => '?').join(',');
+const thuTuKn = (k: string) => (O_KE_HOACH as readonly string[]).indexOf(k);
+
+/* Nhận cả ô `tong_hop` (Pre FOU); môn có thuộc ĐÚNG lượt không thì `setSkillWeek` kiểm bằng `boMonCuaLuot`. */
 function chonKyNang(skill: string): KyNangKH {
-  if (!(KY_NANG_KE_HOACH as readonly string[]).includes(skill)) throw badRequest('Kỹ năng không hợp lệ.');
+  if (!(O_KE_HOACH as readonly string[]).includes(skill)) throw badRequest('Kỹ năng không hợp lệ.');
   return skill as KyNangKH;
 }
 
@@ -363,12 +369,16 @@ function docTuan(ids: number[]): Map<number, any> {
 }
 
 /** Bốn tuần cho một đợt CHƯA CÓ: thiếu kỹ năng không `bo` → lỗi. Trả tuần theo từng kỹ năng. */
-function tuanDayDu(tuan: Partial<Record<KyNangKH, number>>, bo: KyNangKH[] = []): Record<KyNangKH, number | null> {
+function tuanDayDu(
+  tuan: Partial<Record<KyNangKH, number>>, bo: KyNangKH[] = [],
+  /** Bộ phải đủ: FT 4 kỹ năng; lớp thường = bộ môn chương trình (K4-16 — Pre FOU 1 môn). */
+  ds: readonly KyNangKH[] = KY_NANG_KE_HOACH, cauThieu = 'Cần chọn tuần cho cả 4 kỹ năng.',
+): Record<KyNangKH, number | null> {
   const out = {} as Record<KyNangKH, number | null>;
-  for (const k of KY_NANG_KE_HOACH) {
+  for (const k of ds) {
     if (bo.includes(k)) { out[k] = null; continue; }
     const id = tuan[k];
-    if (!id) throw badRequest('Cần chọn tuần cho cả 4 kỹ năng.');
+    if (!id) throw badRequest(cauThieu);
     out[k] = id;
   }
   return out;
@@ -447,8 +457,11 @@ function docLopThuong(classId: number) {
 export function luoiThuong(p: Principal, classId: number) {
   const conn = db();
   require_(p, PERMISSIONS.PLAN_WEEK, { classId }, PLAN_MSG);
-  const { cls } = docLopThuong(classId);
+  const { cls, prog } = docLopThuong(classId);
   const progress = classProgress(classId);
+  const bo = boMonThuong(prog);
+  /* K4-16, PF6: cột theo MỐC của chương trình — Pre FOU chỉ Cuối khoá. */
+  const kinds = prog.checkpoints.map((c) => c.kind).filter((k): k is 'progress' | 'final' => k === 'progress' || k === 'final');
 
   const students = conn
     .prepare(
@@ -484,7 +497,7 @@ export function luoiThuong(p: Principal, classId: number) {
     const scores = bundle.scores.get(a.id) ?? [];
     const kn: Partial<Record<KyNangKH, OKyNang>> = {};
     for (const r of (skillRows.get(a.id) ?? []) as any[]) {
-      if (!(KY_NANG_KE_HOACH as readonly string[]).includes(r.skill)) continue;
+      if (!(bo as readonly string[]).includes(r.skill)) continue;
       const sc = scores.find((s: any) => s.skill === r.skill);
       const daDoi = !!sc?.no_show_period_id && sc.no_show_period_id !== r.planned_period_id;
       kn[r.skill as KyNangKH] = oKyNangCua('thuong', r, scores, daDoi, daDoi ? tuanDau.get(sc.no_show_period_id as number) ?? null : null);
@@ -495,8 +508,8 @@ export function luoiThuong(p: Principal, classId: number) {
   const theoEm = new Map<string, any>();
   for (const a of attempts) { const key = `${a.student_id}:${a.kind}`; if (!theoEm.has(key)) theoEm.set(key, a); }
   const hang = students.map((s) => {
-    const dot = {} as Record<'progress' | 'final', DotThuong>;
-    for (const kind of ['progress', 'final'] as const) {
+    const dot = {} as Partial<Record<'progress' | 'final', DotThuong>>;
+    for (const kind of kinds) {
       const a = theoEm.get(`${s.id}:${kind}`);
       dot[kind] = a ? dotCua(a) : { attemptId: null, kn: {} };
     }
@@ -504,17 +517,18 @@ export function luoiThuong(p: Principal, classId: number) {
   });
 
   const nhanKhoa = (n: number | null) => (n && progress.totalWeeks ? tuanKhoaCua(n, progress.totalWeeks) : null);
-  const hvChuaCoLich = students.filter((s) => !theoEm.has(`${s.id}:progress`) && !theoEm.has(`${s.id}:final`)).length;
+  const hvChuaCoLich = students.filter((s) => kinds.every((k) => !theoEm.has(`${s.id}:${k}`))).length;
   const cw = progress.currentWeek;
   return {
     classId, classCode: cls.code as string, chuongTrinh: progress.programmeCode as string | null,
     khaiGiang: progress.startWeekStart, tongTuan: progress.totalWeeks,
     tuanHienTai: cw && progress.totalWeeks ? (cw > progress.totalWeeks ? 'sau khoá' : cw >= 1 ? tuanKhoaCua(cw, progress.totalWeeks) : null) : null,
     hvChuaCoLich,
-    cot: [
-      { kind: 'progress' as const, nhan: KIND_NHAN.progress, deXuat: progress.progressWeekStart, nhanDeXuat: nhanKhoa(progress.progressWeek) },
-      { kind: 'final' as const, nhan: KIND_NHAN.final, deXuat: progress.finalWeekStart, nhanDeXuat: nhanKhoa(progress.finalWeek) },
-    ],
+    cot: kinds.map((kind) => (kind === 'progress'
+      ? { kind, nhan: KIND_NHAN.progress, deXuat: progress.progressWeekStart, nhanDeXuat: nhanKhoa(progress.progressWeek) }
+      : { kind, nhan: KIND_NHAN.final, deXuat: progress.finalWeekStart, nhanDeXuat: nhanKhoa(progress.finalWeek) })),
+    /** Bộ môn của chương trình (Pre FOU `tong_hop`) — hộp kỹ năng lặp đúng bộ này. */
+    boMon: bo,
     hang,
   };
 }
@@ -525,14 +539,15 @@ export function xepMoiThuong(p: Principal, i: {
 }) {
   const conn = db();
   require_(p, PERMISSIONS.PLAN_WEEK, { classId: i.classId }, PLAN_MSG);
-  docLopThuong(i.classId);
+  const { prog } = docLopThuong(i.classId);
   if (i.kind !== 'progress' && i.kind !== 'final') throw badRequest('Cần chọn Giữa khoá hoặc Cuối khoá.');
+  const bo = boMonThuong(prog);
   const dangHoc = conn
     .prepare(`SELECT 1 FROM enrollments WHERE class_id = ? AND student_id = ? AND status = 'active'`)
     .get(i.classId, i.studentId);
   if (!dangHoc) throw badRequest('Học viên không thuộc lớp này.');
-  const tuan = tuanDayDu(i.tuan) as Record<KyNangKH, number>;
-  const periods = docTuan(KY_NANG_KE_HOACH.map((k) => tuan[k]));
+  const tuan = tuanDayDu(i.tuan, [], bo, cauThieuMon(bo)) as Record<KyNangKH, number>;
+  const periods = docTuan(bo.map((k) => tuan[k]));
 
   return tx(() => {
     const cycle = cycleThuong(i.studentId);
@@ -541,7 +556,7 @@ export function xepMoiThuong(p: Principal, i: {
     }
     if (cycle) {
       const nextNo = ((conn.prepare('SELECT MAX(attempt_no) m FROM assessment_attempts WHERE cycle_id = ?').get(cycle.id) as any)?.m ?? 0) + 1;
-      const kiem = kiemTuanMoi(cycle.id, nextNo, KY_NANG_KE_HOACH.map((k) => periods.get(tuan[k]).week_start));
+      const kiem = kiemTuanMoi(cycle.id, nextNo, bo.map((k) => periods.get(tuan[k]).week_start));
       if (kiem.blockers.length) throw badRequest(kiem.blockers.join(' '));
       if (kiem.warnings.length && !i.force) throw badRequest(`${kiem.warnings.join(' ')} ${CAU_XAC_NHAN}`);
     }
@@ -553,7 +568,7 @@ export function xepMoiThuong(p: Principal, i: {
           ORDER BY a.id DESC LIMIT 1`,
       )
       .get(i.studentId, i.classId, i.kind) as any;
-    luuDot(p, { attemptId: moi.id, kyNang: KY_NANG_KE_HOACH.map((k) => ({ skill: k, periodId: tuan[k] })), force: true });
+    luuDot(p, { attemptId: moi.id, kyNang: bo.map((k) => ({ skill: k, periodId: tuan[k] })), force: true });
     return { id: moi.id as number };
   });
 }
@@ -572,10 +587,12 @@ type LoaiDot = { loai: 'ft'; attemptNo: number } | { loai: 'thuong'; kind: 'prog
 /** Phân loại MỘT em cho xem trước — KHÔNG ghi gì. Trả kèm `attemptId` (nếu đã có đợt) để lưu. */
 function xetMotEm(i: {
   studentId: number; ten: string; dot: LoaiDot; tuan: Partial<Record<KyNangKH, number>>; periods: Map<number, any>;
+  /** Bộ phải đủ khi tạo đợt mới: FT 4 kỹ năng; lớp thường = bộ môn chương trình. */
+  bo: readonly KyNangKH[];
 }): { dong: DongHangLoat; attemptId: number | null } {
   const conn = db();
   const nhanDot = i.dot.loai === 'ft' ? `MT${i.dot.attemptNo}` : KIND_NHAN[i.dot.kind];
-  const co = KY_NANG_KE_HOACH.filter((k) => i.tuan[k]);
+  const co = i.bo.filter((k) => i.tuan[k]);
   const loi = (cau: string, bai: BaiXemTruoc[] = []) => ({
     dong: { studentId: i.studentId, ten: i.ten, hanhDong: 'loi' as const, bai, loi: cau }, attemptId: null as number | null,
   });
@@ -591,7 +608,9 @@ function xetMotEm(i: {
 
   if (!existing) {
     /* Em chưa có đợt: đợt mới luôn tạo đủ 4 dòng lịch (Q2) nên cần đủ 4 kỹ năng. */
-    if (co.length < KY_NANG_KE_HOACH.length) return loi(`Em chưa có ${nhanDot} — cần chọn tuần cho cả 4 kỹ năng.`);
+    if (co.length < i.bo.length) {
+      return loi(`Em chưa có ${nhanDot} — ${i.dot.loai === 'ft' ? 'cần chọn tuần cho cả 4 kỹ năng.' : cauThieuMon(i.bo).replace(/^C/, 'c')}`);
+    }
     const attemptNo = i.dot.loai === 'ft' ? i.dot.attemptNo
       : (cycle ? ((conn.prepare('SELECT MAX(attempt_no) m FROM assessment_attempts WHERE cycle_id = ?').get(cycle.id) as any)?.m ?? 0) + 1 : 1);
     const kiem = kiemTuanMoi(cycle?.id ?? null, attemptNo, co.map((k) => i.periods.get(i.tuan[k]!).week_start));
@@ -622,7 +641,7 @@ export function xepHangLoat(p: Principal, i: {
   require_(p, PERMISSIONS.PLAN_WEEK, { classId: i.classId }, PLAN_MSG);
   if ((i.attemptNo ? 1 : 0) + (i.kind ? 1 : 0) !== 1) throw badRequest('Cần chọn đúng một đợt để xếp.');
   const cls = conn
-    .prepare(`SELECT pg.scoring_mode AS mode FROM classes c LEFT JOIN programmes pg ON pg.code = c.programme_code WHERE c.id = ?`)
+    .prepare(`SELECT pg.scoring_mode AS mode, c.programme_code AS ct FROM classes c LEFT JOIN programmes pg ON pg.code = c.programme_code WHERE c.id = ?`)
     .get(i.classId) as any;
   if (!cls) throw notFound('Không tìm thấy lớp');
   const laThuong = cls.mode === 'ratio';
@@ -631,7 +650,8 @@ export function xepHangLoat(p: Principal, i: {
   if (i.kind && i.kind !== 'progress' && i.kind !== 'final') throw badRequest('Cần chọn Giữa khoá hoặc Cuối khoá.');
 
   const tuan: Partial<Record<KyNangKH, number>> = {};
-  for (const k of KY_NANG_KE_HOACH) if (i.tuan?.[k]) tuan[k] = i.tuan[k];
+  const bo: readonly KyNangKH[] = laThuong ? boMonThuong(programmeByCode(cls.ct)) : KY_NANG_KE_HOACH;
+  for (const k of bo) if (i.tuan?.[k]) tuan[k] = i.tuan[k];
   if (!Object.keys(tuan).length) throw badRequest('Chưa chọn kỹ năng nào.');
   if (!i.studentIds?.length) throw badRequest('Chưa chọn học viên nào.');
   const periods = docTuan(Object.values(tuan) as number[]);
@@ -653,7 +673,7 @@ export function xepHangLoat(p: Principal, i: {
   );
 
   const dot: LoaiDot = laThuong ? { loai: 'thuong', kind: i.kind! } : { loai: 'ft', attemptNo: i.attemptNo! };
-  const xet = studentIds.map((studentId) => xetMotEm({ studentId, ten: names.get(studentId) ?? '', dot, tuan, periods }));
+  const xet = studentIds.map((studentId) => xetMotEm({ studentId, ten: names.get(studentId) ?? '', dot, tuan, periods, bo }));
   if (i.xemTruoc) return { dong: xet.map((x) => x.dong), daLuu: 0 };
 
   let daLuu = 0;

@@ -1861,4 +1861,59 @@ export const STUDENTS: StudentSeed[] = [
       ],
     }],
   },
+
+  /* ═══════════════════════════════════════════════ MB Pre FOU 03 · Monbay · Pre Foundation (PR-MON D12)
+     Một ô Tổng hợp, chỉ GVCN · Cuối khoá tuần 14/9 · kết quả là % tổng (MH7) */
+
+  {
+    code: 'S26', name: 'Lê Minh Châu', branch: 'MB', dob: '2013-03-11',
+    story: 'Pre FOU: Cuối khoá 26/50 = 52% — chưa đạt, hiện "52%" chứ không "SOS".',
+    enrollments: [{ class: 'MB Pre FOU 03', from: '2026-08-17', status: 'active' }],
+    cycles: [{
+      seq: 1, route: null, target: null, classCode: 'MB Pre FOU 03', status: 'active',
+      startWeek: '2026-08-17', startedAt: '2026-08-17',
+      tests: [
+        { no: 1, kind: 'final', week: '2026-09-14', status: 'done',
+          ratios: { tong_hop: [26, 50] } },
+      ],
+    }],
+  },
+  {
+    code: 'S27', name: 'Nguyễn Hải Đăng', branch: 'MB', dob: '2013-06-02',
+    story: 'Pre FOU: Cuối khoá 32/50 = 64% — chưa đạt, sát ngưỡng 70%.',
+    enrollments: [{ class: 'MB Pre FOU 03', from: '2026-08-17', status: 'active' }],
+    cycles: [{
+      seq: 1, route: null, target: null, classCode: 'MB Pre FOU 03', status: 'active',
+      startWeek: '2026-08-17', startedAt: '2026-08-17',
+      tests: [
+        { no: 1, kind: 'final', week: '2026-09-14', status: 'done',
+          ratios: { tong_hop: [32, 50] } },
+      ],
+    }],
+  },
+  {
+    code: 'S28', name: 'Phan Thảo Nhi', branch: 'MB', dob: '2013-10-25',
+    story: 'Pre FOU: Cuối khoá 39/50 = 78% — đạt.',
+    enrollments: [{ class: 'MB Pre FOU 03', from: '2026-08-17', status: 'active' }],
+    cycles: [{
+      seq: 1, route: null, target: null, classCode: 'MB Pre FOU 03', status: 'active',
+      startWeek: '2026-08-17', startedAt: '2026-08-17',
+      tests: [
+        { no: 1, kind: 'final', week: '2026-09-14', status: 'done',
+          ratios: { tong_hop: [39, 50] } },
+      ],
+    }],
+  },
+  {
+    code: 'S29', name: 'Vũ Đức Anh', branch: 'MB', dob: '2013-01-17',
+    story: 'Pre FOU: Cuối khoá chưa nhập điểm — GVCN đang nợ một bài Tổng hợp.',
+    enrollments: [{ class: 'MB Pre FOU 03', from: '2026-08-17', status: 'active' }],
+    cycles: [{
+      seq: 1, route: null, target: null, classCode: 'MB Pre FOU 03', status: 'active',
+      startWeek: '2026-08-17', startedAt: '2026-08-17',
+      tests: [
+        { no: 1, kind: 'final', week: '2026-09-14', status: 'planned' },
+      ],
+    }],
+  },
 ];

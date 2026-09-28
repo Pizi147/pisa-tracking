@@ -89,6 +89,9 @@ export type KetQuaVao = {
   failedSkills: { skill: string; score: number; total: number }[];
   /** Mã chương trình của lộ trình (MH2: FOU "G+V", "P"). Không có → tên chung. */
   chuongTrinh?: string | null;
+  /** MH7: Pre FOU — kết quả chỉ là % tổng (`tyLeTong` có khi đủ điểm). */
+  khongChiaMon?: boolean;
+  tyLeTong?: number | null;
 };
 export type KetQuaHien = {
   chinh: string; thieu: string | null; dat: boolean; sos: string | null; phu: string | null;
@@ -103,6 +106,10 @@ export function ketQuaGanNhat(k: KetQuaVao | null): KetQuaHien {
   const sos = k.sosLevel !== null && k.sosLevel > 0 ? `SOS ${k.sosLevel}` : null;
   const sosTamThoi = sos !== null && k.provisional;
   const dat = k.sosLevel === 0 && !k.provisional;
+  if (k.mode === 'ratio' && k.khongChiaMon && k.tyLeTong != null) {
+    /* Pre FOU: "52%" (làm tròn chỉ để hiện; đạt/không xét trên tỷ lệ chính xác ở máy chủ) — không SOS. */
+    return { chinh: `${Math.round(k.tyLeTong * 100)}%`, thieu: null, dat: k.sosLevel === 0, sos: null, phu: k.attemptLabel };
+  }
   if (k.mode === 'ratio') {
     const soDat = k.scored - (k.failed ?? 0);
     const chinh = k.scored < k.required ? `${soDat}/${k.scored} môn đạt (đã chấm)` : `${soDat}/${k.required} môn đạt`;

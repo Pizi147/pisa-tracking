@@ -136,6 +136,7 @@ export async function runPrMonTests(t: YThucTestKit) {
   const intakeMod: any = await import('../classes/intake.ts');
   const regularMod: any = await import('../normal/regular.ts');
   const lich: any = await import('../fasttrack/skillSchedule.ts');
+  const migMain: any = await import('../migrate.ts');
   const week: any = await import('../platform/week.ts');
   const MB = (conn.prepare("SELECT id FROM branches WHERE code = 'MB'").get() as any).id;
   const GVCN_HA = P.normalCoreTeacher.userId;
@@ -144,7 +145,7 @@ export async function runPrMonTests(t: YThucTestKit) {
   const taoLopPreFou = (soEm: number) => {
     soLop += 1;
     const tuanKg = week.ensurePeriod(addDays(TODAY, -28));
-    const lop = intakeMod.createClass(P.admin, { code: `MB Pre FOU 9${soLop}`, branchId: MB, kind: 'PREFOU', startPeriodId: tuanKg.id, startDate: tuanKg.weekStart });
+    const lop = intakeMod.createClass(P.admin, { code: `MB Pre FOU 6${soLop}`, branchId: MB, kind: 'PREFOU', startPeriodId: tuanKg.id, startDate: tuanKg.weekStart });
     clsMod.ghiPhanCong(P.admin, lop.id, d.moRongPhanCong('PREFOU', ['tong_hop'], [{ userId: GVCN_HA, skill: null, isCore: true }]), TODAY);
     const now = new Date().toISOString();
     const sids: number[] = [];
@@ -169,6 +170,10 @@ export async function runPrMonTests(t: YThucTestKit) {
     assert(r1.length === 1 && r1[0].skill === 'tong_hop', JSON.stringify(r1.map((r: any) => r.skill)));
     lich.ensureSkillRows(id);
     assert((conn.prepare('SELECT COUNT(*) n FROM attempt_skills WHERE attempt_id = ?').get(id) as any).n === 1, 'gọi lần 2 chèn thêm dòng');
+    /* migrate chạy lại (bước dựng dòng lịch cũ "< 4 dòng") không được chèn L R W S vào lượt Pre FOU. */
+    const { migrate } = migMain;
+    migrate();
+    assert((conn.prepare('SELECT COUNT(*) n FROM attempt_skills WHERE attempt_id = ?').get(id) as any).n === 1, 'migrate chèn thêm dòng vào lượt Pre FOU');
     const tuan = week.ensurePeriod(addDays(TODAY, 7)).id;
     assertThrows(() => lich.setSkillWeek(P.admin, id, 'listening', tuan), /Kỹ năng không hợp lệ/, 'môn L ở lượt Pre FOU');
   });
@@ -305,5 +310,53 @@ export async function runPrMonTests(t: YThucTestKit) {
     }
     const fmt = doc('web/src/lib/format.ts');
     assert(/skillLabel = \(s: string\) => tenMon\(null, s\)/.test(fmt) && /skillShort = \(s: string\) => tenMonNgan\(null, s\)/.test(fmt), 'format.ts chưa là lớp mỏng');
+  });
+  // ------------------------------------------------------------------ Task 8 · Pre FOU chạy thật
+  const keHoachMod: any = await import('../keHoach/keHoachTest.ts');
+  const standingMod: any = await import('../students/standing.ts');
+  const awaitPtl: any = await import('../classes/phanTichLop.ts');
+  const PF = classId('MB Pre FOU 03');
+  check('MON (8) · Kế hoạch Test Pre FOU chỉ Cuối khoá, bộ môn tong_hop (K4-16, PF6)', () => {
+    const l = keHoachMod.luoiThuong(P.mbManager, PF);
+    assert(l.cot.length === 1 && l.cot[0].kind === 'final' && l.boMon.join() === 'tong_hop', JSON.stringify({ cot: l.cot, bo: l.boMon }));
+    assert(l.hang.length === 4 && l.hang.every((h: any) => !('progress' in h.dot)), 'hàng có cột Giữa khoá');
+    const co = l.hang.filter((h: any) => h.dot.final?.kn?.tong_hop);
+    assert(co.length === 4, `ô tong_hop: ${co.length}`);
+  });
+  check('MON (8) · xếp mới Pre FOU một tuần: thiếu tuần → "1 môn", đủ → bài một dòng lịch', () => {
+    const l = taoLopPreFou(0);
+    const now = new Date().toISOString();
+    const sid = Number(conn.prepare(
+      `INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`,
+    ).run('PISA-MON-XEP', 'Học viên MON xếp', 'hoc vien mon xep', MB, now).lastInsertRowid);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`).run(sid, l.classId, TODAY, now);
+    assertThrows(() => keHoachMod.xepMoiThuong(P.admin, { classId: l.classId, studentId: sid, kind: 'final', tuan: {} }), /1 môn/, 'câu thiếu tuần');
+    const tuan = week.ensurePeriod(addDays(TODAY, 7)).id;
+    const r = keHoachMod.xepMoiThuong(P.admin, { classId: l.classId, studentId: sid, kind: 'final', tuan: { tong_hop: tuan } });
+    const ds = (conn.prepare('SELECT skill, planned_period_id AS p FROM attempt_skills WHERE attempt_id = ?').all(r.id) as any[]);
+    assert(ds.length === 1 && ds[0].skill === 'tong_hop' && ds[0].p === tuan, JSON.stringify(ds));
+  });
+  check('MON (8) · tạo lớp Pre FOU (cờ mở): class_skills tong_hop, GVCN 2 dòng phân công', () => {
+    assert(d.CHO_TAO_PRE_FOU === true, 'cờ chưa mở');
+    const tuanKg = week.ensurePeriod(addDays(TODAY, 14));
+    const lop = intakeMod.taoLopVaPhanCong(P.admin, { branchId: MB, chuongTrinh: 'PREFOU', so: '77', startPeriodId: tuanKg.id,
+      slots: [{ userId: GVCN_HA, skill: null, isCore: true }] });
+    const sk = (conn.prepare('SELECT skill FROM class_skills WHERE class_id = ?').all(lop.id) as any[]).map((r) => r.skill).join();
+    const ta = (conn.prepare(`SELECT user_id, skill FROM teacher_assignments WHERE class_id = ? AND status = 'active' ORDER BY is_core DESC`).all(lop.id) as any[]);
+    assert(lop.code === 'MB Pre FOU 77' && sk === 'tong_hop', `${lop.code} ${sk}`);
+    assert(ta.length === 2 && ta.every((x) => x.user_id === GVCN_HA) && ta[1].skill === 'tong_hop', JSON.stringify(ta));
+  });
+  check('MON (8) · hồ sơ lớp Pre FOU trả mốc chỉ Cuối khoá (bảng điểm lớp một nhóm cột) + phân tích lớp một dòng', () => {
+    const ov = clsMod.classOverview(P.admin, PF);
+    assert(ov.programme.checkpoints.join() === 'final', JSON.stringify(ov.programme));
+    const ptl = (awaitPtl as any).phanTichLop(P.admin, PF);
+    assert(ptl.dong.map((x: any) => x.nhan).join() === 'Tổng hợp' && ptl.cot.map((x: any) => x.nhan).join() === 'Cuối khoá', JSON.stringify({ d: ptl.dong, c: ptl.cot }));
+  });
+  check('MON (8) · % Pre FOU trên hàng HV: em 52% → "52%", không SOS (MH7)', () => {
+    const sid = (conn.prepare(`SELECT id FROM students WHERE student_code = (SELECT student_code FROM students WHERE full_name = 'Lê Minh Châu')`).get() as any).id;
+    const st = standingMod.standingFor([sid]).get(sid);
+    const k = d.ketQuaGanNhat(st);
+    assert(k.chinh === '52%' && k.sos === null, JSON.stringify(k));
+    assert(/: 52%/.test(standingMod.standingLine(st)) && !/SOS/.test(standingMod.standingLine(st)), standingMod.standingLine(st));
   });
 }
