@@ -171,7 +171,7 @@ Ký hiệu ⚠ = điểm tôi ít chắc nhất, nên xem trước.
 | T77 | Thẻ Báo lên | Có nút **"Nhắc {GV}"**; **tự đóng** khi việc gốc xong; không có nút Duyệt (K1-57) |
 | T78 | Migrate của các PR chạy song song | Mỗi PR một file `server/src/migrate/<ma-pr>.ts`, chỉ thêm **một dòng gọi** cuối danh sách; mọi dòng CSDL của `PREFOU` do PR-LOP làm, PR-MON chỉ mã (K5 §5) |
 | T55 ⚠ | FOU dùng ô chuẩn nào | FOU giữ **bốn ô chuẩn** của lớp thường, chỉ đổi **tên hiện**: ô Writing hiện là **G+V**, ô Speaking hiện là **P**. Điểm FOU cũ giữ nguyên, không migrate. Phân công FOU: ô G+V gợi ý người phụ trách W1/W2, ô P gợi ý người phụ trách S |
-| T56 ⚠ | Phân công lớp Pre FOU | GVCN (bắt buộc) + tối đa **một** "GV dạy" (tuỳ chọn). Luật "GVCN phải dạy ≥ 1 kỹ năng" **không áp** cho Pre FOU. Điểm Cuối khoá: GVCN, GV dạy hoặc QL nhập |
+| T56 ⚠ | Phân công lớp Pre FOU | **Chỉ một ô GVCN — GVCN dạy luôn** (chủ sản phẩm 28/09; bỏ ô "GV dạy"). Máy chủ tự gán ô môn `tong_hop` cho GVCN. Điểm Cuối khoá: GVCN hoặc QL nhập. Chỗ nào ở K2/K5 còn ghi "GV dạy" cho Pre FOU → đọc là GVCN |
 | T57 | Case lớp thường theo môn | FOU: Case L · R · G+V · P; BE/ELE: L · R · W · S; Pre FOU: **một** chủ đề "Tổng hợp". Phân loại nguyên nhân: G+V dùng nhóm Từ vựng/ngữ pháp, P dùng nhóm mới **Phát âm**, Tổng hợp dùng nhóm chung |
 
 ---
@@ -323,7 +323,7 @@ hoặc theo quy tắc §2 mục 4.
 PR-LT2 ở bảng trên nay tách làm **PR-LT2a** (Giữa khoá: Case tự tạo, PA bổ trợ, kế hoạch bài giảng, Báo PH qua TVV, bỏ tín hiệu) và
 **PR-LT2b** (Cuối khoá: % tổng, Chuyển tiếp lớp / Lộ trình tiếp theo, Mini Test, BE/ELE lên FT, KPI) — người soạn kế hoạch chia mã theo nội dung.
 
-**Mockup phải sửa trước khi giao code** (theo K2, K4): M1 (FT đủ ô W1, W2; lớp Pre FOU chỉ GVCN + GV dạy) · M4 (hai Case cùng kỹ năng,
+**Mockup phải sửa trước khi giao code** (theo K2, K4): M1 (FT đủ ô W1, W2; lớp Pre FOU chỉ một ô GVCN) · M4 (hai Case cùng kỹ năng,
 lớp thường, gộp hàng trống, công tắc "Chỉ kỹ năng tôi dạy") · M6 (một bộ lọc, em thuộc hai nhóm, khung phải khi chưa chọn em) · M9
 (MT3 dở → "Xếp nốt", chặn đúng M7, chip trạng thái dở / lịch sử / huỷ / chờ duyệt, khung lớp thường) · M10 (menu theo trạng thái, W1 và W2
 hai hàng tiêu chí, trạng thái huỷ / lịch sử / vắng) · M11 (đặt ở Lịch Test, cột theo T40). Phần đã sửa ngay trong bản này: xem ghi chú
@@ -461,7 +461,7 @@ chi nhánh đi qua Vận hành (tab đã có) với "Người phụ trách" nh�
 | MH3 | Tên môn riêng của lớp thường **chỉ** hiện ở: bài test, lưới chấm/bảng điểm, hồ sơ lớp, hồ sơ HV (bảng kỹ năng, Hành trình, Case), Kế hoạch Test / Lịch Test khung lớp thường, xuất Excel. **Không** đưa vào bộ lọc |
 | MH4 | **Hai khung tách hẳn** ở mọi trang có số liệu theo kỹ năng hoặc theo bài test (Tổng quan, Phân tích, Test, Công việc › Hỗ trợ học viên, danh sách Case nếu còn): công tắc `Fast Track · Lớp thường` đứng đầu trang. Khung FT: lọc kỹ năng **L · R · W · S** (W gồm W1, W2). Khung Lớp thường: lọc theo **chương trình** (`Pre FOU · FOU · BE · ELE`) và lớp — **không có bộ lọc môn** |
 | MH5 | Bảng/số liệu **không trộn** hai khung trong cùng một cột (ví dụ không có cột "W" vừa là Writing FT vừa là G+V FOU) |
-| MH6 | Phân công: lớp FT 5 ô; BE/ELE 4 ô (W: gợi ý người phụ trách W1/W2); FOU 4 ô L · R · G+V · P (T55); Pre FOU GVCN + một GV dạy (T56). Luật "một nhiệm vụ một người" (L3) áp cho mọi ô |
+| MH6 | Phân công: lớp FT 5 ô; BE/ELE 4 ô (W: gợi ý người phụ trách W1/W2); FOU 4 ô L · R · G+V · P (T55); Pre FOU chỉ một ô GVCN, GVCN dạy luôn (T56). Luật "một nhiệm vụ một người" (L3) áp cho mọi ô |
 | MH7 | Đạt / không đạt lớp thường: FOU, BE, ELE xét **từng môn ≥ 70%** và **% tổng**; Pre FOU chỉ **% tổng** (§6.6) |
 | MH8 | Case lớp thường theo môn của chương trình (T57); FOU Giữa khoá trượt G+V → Case "Giữa khoá · G+V không đạt" |
 | MH9 | Quản trị › Lộ trình & loại lớp: bộ môn của một loại lớp chọn trong **bộ môn của chương trình đó**, không hiện hợp mọi môn (`CatalogAdmin.tsx` đang gộp `ENTRY_SKILLS` + `REGULAR_SKILLS`) |
@@ -480,7 +480,7 @@ chi nhánh đi qua Vận hành (tab đã có) với "Người phụ trách" nh�
 | M-06 | KPI tháng: tháng = tháng chứa tuần thi; đơn vị = bài đủ môn; người được tính theo Q-E |
 | M-07 | Thang Ý thức lớp thường: Q-C |
 | M-08 | Vi phạm của em chuyển lớp: hạn 5 ngày **đặt lại** từ ngày chuyển cho GVCN mới; thẻ Báo lên cũ tự đóng; chỉ GVCN lớp đang học được xử lý |
-| M-09 | Pre FOU: GVCN có đủ quyền của "GV dạy" và được kiêm "GV dạy"; người phụ trách Case = GV dạy, không có thì GVCN |
+| M-09 | Pre FOU: GVCN là người dạy duy nhất (được gán ô `tong_hop`), nên có đủ quyền nhập điểm và xử lý Case; người phụ trách Case = GVCN |
 | M-10 | Đã ghi nhận rồi đủ 3 → "Cần xử lý" thắng; bắt buộc dính (T68) |
 | M-11 | Đề xuất ngoài thang được duyệt thì bậc giữ nguyên — chấp nhận; thẻ ghi rõ "bậc kế tiếp đang là WL 2" để QL thấy |
 | M-12 | Huỷ cả lượt MTn chỉ khi không còn MT(n+1) hiệu lực (T36) |

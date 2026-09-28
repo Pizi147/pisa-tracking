@@ -250,27 +250,31 @@ export type SlotPhanCong = { userId: number; skill: string | null; isCore: boole
 export type LoiPhanCong = { khoa: string; lyDo: string };                                   // khoa = 'gvcn' | mã ô chuẩn
 export function oPhanCong(chuongTrinh: string | null, kyNangLop: readonly string[]): OPhanCong[];
 export function kiemPhanCong(chuongTrinh: string | null, kyNangLop: readonly string[], slots: readonly SlotPhanCong[]): LoiPhanCong[];
+export function moRongPhanCong(chuongTrinh: string | null, kyNangLop: readonly string[], slots: readonly SlotPhanCong[]): SlotPhanCong[];
 ```
 - [ ] **Phép kiểm trước** (khối 2):
 ```ts
-  check('LOP (2) · oPhanCong: FT 6 ô · BE L R W S · FOU L R G+V P · Pre FOU GVCN + GV dạy (MH6, T55, T56)', () => {
+  check('LOP (2) · oPhanCong: FT 6 ô · BE L R W S · FOU L R G+V P · Pre FOU chỉ GVCN (MH6, T55, T56)', () => {
     const nhan = (c: string, k: readonly string[]) => d.oPhanCong(c, k).map((o) => o.nhan).join(' ');
     assert(nhan('FT', d.ENTRY_SKILLS) === 'GVCN L R W1 W2 S', nhan('FT', d.ENTRY_SKILLS));
     assert(nhan('BE', d.REGULAR_SKILLS) === 'GVCN L R W S', nhan('BE', d.REGULAR_SKILLS));
     assert(nhan('FOU', d.REGULAR_SKILLS) === 'GVCN L R G+V P', nhan('FOU', d.REGULAR_SKILLS));
-    assert(nhan('PREFOU', ['tong_hop']) === 'GVCN GV dạy', nhan('PREFOU', ['tong_hop']));
+    assert(nhan('PREFOU', ['tong_hop']) === 'GVCN', nhan('PREFOU', ['tong_hop']));
     assert(d.PROGRAMME_TEMPLATES.PREFOU.weeks === 5 && d.PROGRAMME_TEMPLATES.PREFOU.checkpoints.length === 1, 'PREFOU 5 tuần, chỉ Cuối khoá');
     assert(d.programmeOf('PREFOU') === 'PREFOU' && d.NORMAL_LADDER.PREFOU === 'FOU' && (d.ROUTES as readonly string[]).includes('RF'), 'hằng số');
   });
-  check('LOP (2) · kiemPhanCong: một ô một người, GVCN dạy ≥ 1 kỹ năng, Pre FOU miễn (L3, L4, T56, M-09)', () => {
+  check('LOP (2) · kiemPhanCong: một ô một người, GVCN dạy ≥ 1 kỹ năng; Pre FOU chỉ GVCN, GVCN dạy luôn (L3, L4, T56, M-09)', () => {
     const s = (userId: number, skill: string | null) => ({ userId, skill, isCore: skill === null });
     const loi = (c: string, k: readonly string[], x: any[]) => d.kiemPhanCong(c, k, x).map((l) => `${l.khoa}:${l.lyDo}`).join(' | ');
     assert(loi('FT', d.ENTRY_SKILLS, [s(1, null), s(2, null), s(1, 'listening')]).startsWith('gvcn:Chỉ chọn một GVCN'), 'hai GVCN');
     assert(/^gvcn:GVCN phải dạy ít nhất một kỹ năng/.test(loi('FT', d.ENTRY_SKILLS, [s(1, null), s(2, 'listening')])), 'GVCN không dạy');
     assert(/^listening:Mỗi môn một người/.test(loi('BE', d.REGULAR_SKILLS, [s(2, 'listening'), s(3, 'listening')])), 'hai người một môn');
     assert(/^writing1:Lớp không có môn này/.test(loi('BE', d.REGULAR_SKILLS, [s(2, 'writing1')])), 'môn lạ');
-    assert(loi('PREFOU', ['tong_hop'], [s(1, null)]) === '' && loi('PREFOU', ['tong_hop'], [s(1, null), s(1, 'tong_hop')]) === '', 'Pre FOU miễn');
-    assert(/^tong_hop:Mỗi môn một người/.test(loi('PREFOU', ['tong_hop'], [s(2, 'tong_hop'), s(3, 'tong_hop')])), 'tối đa một GV dạy');
+    assert(loi('PREFOU', ['tong_hop'], [s(1, null)]) === '' && loi('PREFOU', ['tong_hop'], [s(1, null), s(1, 'tong_hop')]) === '', 'Pre FOU: GVCN đủ');
+    assert(/^gvcn:Lớp Pre FOU chỉ có GVCN/.test(loi('PREFOU', ['tong_hop'], [s(1, null), s(2, 'tong_hop')])), 'Pre FOU: người thứ hai');
+    const mr = d.moRongPhanCong('PREFOU', ['tong_hop'], [s(1, null)]).map((x: any) => `${x.userId}:${x.skill}`).join(' ');
+    assert(mr === '1:null 1:tong_hop', `Pre FOU: GVCN tự nhận ô Tổng hợp → ${mr}`);
+    assert(d.moRongPhanCong('PREFOU', ['tong_hop'], []).length === 0 && d.moRongPhanCong('BE', d.REGULAR_SKILLS, [s(1, null)]).length === 1, 'không GVCN / lớp khác: giữ nguyên');
     assert(loi('FT', d.ENTRY_SKILLS, []) === '' && loi('FT', d.ENTRY_SKILLS, [s(2, 'reading')]) === '', 'thiếu phân công vẫn tạo được (L4)');
   });
 ```
@@ -292,13 +296,21 @@ export type OPhanCong = { khoa: string; skill: string | null; laGvcn: boolean; n
 export type SlotPhanCong = { userId: number; skill: string | null; isCore: boolean };
 export type LoiPhanCong = { khoa: string; lyDo: string };
 
+/** T56 (chủ sản phẩm 28/09): lớp không chia môn (Pre FOU) chỉ có MỘT ô — GVCN, và GVCN dạy luôn. */
+const khongChiaMon = (ct: string | null) => CHUONG_TRINH_KHONG_CHIA_MON.includes(ct ?? '');
+
 export function oPhanCong(chuongTrinh: string | null, kyNangLop: readonly string[]): OPhanCong[] {
-  const khongChiaMon = CHUONG_TRINH_KHONG_CHIA_MON.includes(chuongTrinh ?? '');
-  return [
-    { khoa: 'gvcn', skill: null, laGvcn: true, nhan: 'GVCN' },
-    ...kyNangLop.map((k) => ({ khoa: k, skill: k, laGvcn: false,
-      nhan: khongChiaMon ? 'GV dạy' : NHAN_O_TAM[chuongTrinh ?? '']?.[k] ?? skillShort(k) })),
-  ];
+  const gvcn: OPhanCong = { khoa: 'gvcn', skill: null, laGvcn: true, nhan: 'GVCN' };
+  if (khongChiaMon(chuongTrinh)) return [gvcn];
+  return [gvcn, ...kyNangLop.map((k) => ({ khoa: k, skill: k, laGvcn: false, nhan: NHAN_O_TAM[chuongTrinh ?? '']?.[k] ?? skillShort(k) }))];
+}
+
+/** Máy chủ gọi TRƯỚC khi kiểm + ghi: Pre FOU → GVCN tự nhận ô môn duy nhất (`tong_hop`), để quyền nhập điểm / xử lý Case
+ *  đi theo phân công môn như mọi lớp (M-09) — không cần nhánh quyền riêng. Lớp khác: trả nguyên. */
+export function moRongPhanCong(chuongTrinh: string | null, kyNangLop: readonly string[], slots: readonly SlotPhanCong[]): SlotPhanCong[] {
+  if (!khongChiaMon(chuongTrinh)) return [...slots];
+  const core = slots.filter((s) => s.isCore);
+  return core.length === 1 ? [...core, ...kyNangLop.map((k) => ({ userId: core[0].userId, skill: k, isCore: false }))] : core;
 }
 
 export function kiemPhanCong(chuongTrinh: string | null, kyNangLop: readonly string[], slots: readonly SlotPhanCong[]): LoiPhanCong[] {
@@ -312,8 +324,9 @@ export function kiemPhanCong(chuongTrinh: string | null, kyNangLop: readonly str
     theoMon.set(s.skill, (theoMon.get(s.skill) ?? new Set<number>()).add(s.userId));
   }
   for (const [mon, nguoi] of theoMon) if (nguoi.size > 1) loi.push({ khoa: mon, lyDo: 'Mỗi môn một người' });
-  const khongChiaMon = CHUONG_TRINH_KHONG_CHIA_MON.includes(chuongTrinh ?? '');
-  if (!khongChiaMon && gvcn.length === 1 && !slots.some((s) => !s.isCore && s.skill && s.userId === gvcn[0])) {
+  if (khongChiaMon(chuongTrinh)) {
+    if (slots.some((s) => !s.isCore && s.skill && s.userId !== gvcn[0])) loi.push({ khoa: 'gvcn', lyDo: 'Lớp Pre FOU chỉ có GVCN — GVCN dạy luôn' });
+  } else if (gvcn.length === 1 && !slots.some((s) => !s.isCore && s.skill && s.userId === gvcn[0])) {
     loi.push({ khoa: 'gvcn', lyDo: 'GVCN phải dạy ít nhất một kỹ năng — chọn kỹ năng cho cô/thầy này' });
   }
   return [...loi.filter((l) => l.khoa === 'gvcn'), ...loi.filter((l) => l.khoa !== 'gvcn')];
@@ -558,8 +571,8 @@ export function kiemTruocPhanCong(classId: number | null, branchId: number, chuo
 /** YC-1/T5/L4: MỘT lệnh, MỘT giao dịch — kiểm tên + ba luật phân công TRƯỚC, sai thì không ghi gì. Thiếu phân công vẫn tạo được. */
 export function taoLopVaPhanCong(p: Principal, input: TaoLopInput) {
   require_(p, PERMISSIONS.STUDENT_EDIT, { branchId: input.branchId }, 'Bạn không có quyền tạo lớp ở chi nhánh này.');
-  const slots = input.slots ?? [];
-  if (slots.length) require_(p, PERMISSIONS.CLASS_ASSIGN, { branchId: input.branchId }, 'Bạn không có quyền phân công giáo viên ở chi nhánh này.');
+  const slots0 = input.slots ?? [];
+  if (slots0.length) require_(p, PERMISSIONS.CLASS_ASSIGN, { branchId: input.branchId }, 'Bạn không có quyền phân công giáo viên ở chi nhánh này.');
   const conn = db();
   const branch = conn.prepare('SELECT * FROM branches WHERE id = ?').get(input.branchId) as any;
   if (!branch) throw notFound('Không tìm thấy chi nhánh');
@@ -572,6 +585,7 @@ export function taoLopVaPhanCong(p: Principal, input: TaoLopInput) {
   const loiSo = kiemSoLop(String(input.so ?? ''));
   if (loiSo) throw badRequest(loiSo);
   if (ct !== 'FT' && !input.startPeriodId) throw badRequest('Chọn tuần khai giảng — mốc Giữa/Cuối khoá đếm từ tuần này.');
+  const slots = moRongPhanCong(ct, prog.skills, slots0);   // Pre FOU: GVCN tự nhận ô Tổng hợp (T56)
   kiemTruocPhanCong(null, input.branchId, ct, prog.skills, slots);
   const code = ghepMaLop(branch.code, ct, loTrinh, String(input.so));
   return tx(() => {
@@ -585,7 +599,8 @@ export function taoLopVaPhanCong(p: Principal, input: TaoLopInput) {
   `startDate` của lớp thường = `week_start` của `startPeriodId` (đọc `report_periods`) như `transition.ts` đang làm.
 - [ ] **Mã `classes.ts`:** `kiemTruocPhanCong` = (1) `kiemPhanCong(ct, kyNang, slots)` → lỗi đầu tiên thành `badRequest(\`${nhanO}: ${lyDo}\`)`
   (nhãn ô qua `oPhanCong`, không lộ mã `writing1`); (2) mỗi `userId` phải thuộc `teacherCandidatesBranch(branchId)` (tách từ
-  `teacherCandidates`, không cần `classId`). `setClassTeachers` :835-901 → dựng `slots`, gọi `kiemTruocPhanCong(classId, cls.branch_id,
+  `teacherCandidates`, không cần `classId`). `setClassTeachers` :835-901 → dựng `slots`, qua `moRongPhanCong(prog?.code, classSkills, slots)` (Pre FOU: đổi GVCN thì ô
+  Tổng hợp đổi theo — dòng cũ kết thúc như mọi ô), gọi `kiemTruocPhanCong(classId, cls.branch_id,
   prog?.code, classSkills, slots)`, rồi `tx(() => { ghiPhanCong(...); return classTeachers(p, classId); })`. `ghiPhanCong` = thân `tx`
   cũ :904-931 (giữ `effective_from` dòng không đổi). Câu lỗi cũ "Kỹ năng … đang được xếp cho 2 giáo viên…" thay bằng câu của
   `kiemPhanCong`; phép kiểm cũ so chữ đó sửa kỳ vọng. `/ref/teachers` :342: `r.key IN ('teacher','manager')` (bỏ `system_admin` — đang
@@ -723,8 +738,8 @@ export function ClassCreatePanel(props: {
   "Lớp này sẽ có: `10 tuần · Giữa khoá tuần 5 · Cuối khoá tuần 10`" (Pre FOU: `5 tuần · Cuối khoá tuần 5`; FT: `Lịch MT theo từng HV`),
   số lấy **bảng** `/ref/programmes` · khối **Phân công** — mỗi `OPhanCong` một hàng lưới `grid-cols-[6rem_1fr]`: nhãn trái cố định,
   phải một `<select className="field">` "— Chưa chọn —" + GV (`/ref/teachers?branchId=`, dòng `Tên · 3 lớp`), lỗi một dòng dưới ô.
-  Chữ phụ khối: "Mỗi ô một người. Một người nhận nhiều ô được. Thiếu ô nào vẫn tạo được lớp — bổ sung ở hồ sơ lớp." Pre FOU thêm
-  "GVCN có thể kiêm GV dạy." Bỏ câu "một môn có hai người dạy cũng vậy", bỏ `TeacherPick`. Đổi chương trình → xoá chọn của ô không còn.
+  Chữ phụ khối: "Mỗi ô một người. Một người nhận nhiều ô được. Thiếu ô nào vẫn tạo được lớp — bổ sung ở hồ sơ lớp." Pre FOU: khối
+  chỉ một ô **GVCN**, chữ phụ thay bằng "Lớp Pre FOU không chia môn — GVCN dạy luôn." Bỏ câu "một môn có hai người dạy cũng vậy", bỏ `TeacherPick`. Đổi chương trình → xoá chọn của ô không còn.
 - [ ] **Lưu:** `api.post<{ id: number; code: string }>('/classes', { branchId, chuongTrinh: ct, loTrinh: kieu === 'FT' ? loTrinh : null,
   so, startPeriodId, slots, previousClassId: macDinh?.previousClassId })` → `invalidate('/classes'); invalidate('/ref/classes');
   invalidate('/hoc-vien-lop'); invalidate('/my-work')` → toast `Đã tạo lớp ${code}` → `onDone?.(r)` → `moHoSo !== false ?
@@ -850,7 +865,7 @@ export function ClassCreatePanel(props: {
 | Việc | PR nhận | Lý do |
 |---|---|---|
 | Kỳ vọng MT RF = target, lịch MT mặc định RF tuần 4/8, MT mặc định khi mở lộ trình mới (vào FT, đổi LT ↔ RF), câu xác nhận "MT đánh lại từ MT1" | **PR-MT** | YC-3 phần luật, M1, M2, K2-17 phần luật MT |
-| `tenMon()` thay bảng tên tạm `NHAN_O_TAM` (G+V, P); bật `CHO_TAO_PRE_FOU = true`; quyền Pre FOU `is_core` như mọi môn, `CASE_CATEGORY_SKILL.tong_hop`, người phụ trách Case = GV dạy ?? GVCN; lịch/nợ điểm/lưới một ô `tong_hop`; kỹ năng GV `writing` → `writing1+writing2` (MH1); lớp demo Pre FOU (D12) | **PR-MON** | K5-30 (1)(3), K5-38, K5-39, K5-45 phần nhập điểm, MH1–MH5, PF6 |
+| `tenMon()` thay bảng tên tạm `NHAN_O_TAM` (G+V, P); bật `CHO_TAO_PRE_FOU = true`; quyền Pre FOU đi theo ô `tong_hop` (PR-LOP đã tự gán cho GVCN), `CASE_CATEGORY_SKILL.tong_hop`, người phụ trách Case = GVCN; lịch/nợ điểm/lưới một ô `tong_hop`; kỹ năng GV `writing` → `writing1+writing2` (MH1); lớp demo Pre FOU (D12) | **PR-MON** | K5-30 (1)(3), K5-38, K5-39, K5-45 phần nhập điểm, MH1–MH5, PF6 |
 | Ô tuần khai giảng → ô ngày thống nhất kiểu tuần; ô chọn GV nếu dựng thành phần chung (vẫn chỉ tài khoản — T14) | **PR-NEN** | T11, T14 |
 | Dòng "Case chưa có người phụ trách" → "n lớp thiếu GV phụ trách môn…", giao tạm GVCN | **PR-SOS** | K1-05 phần Case |
 | Khối "Điều sẽ đổi" ở Chuyển lớp một em; T49 khi lớp thường → FT | **PR-LT2b** | K2-34, K2-27 |
@@ -882,6 +897,7 @@ export function ClassCreatePanel(props: {
 | Q9 | `/ref/teachers` bỏ `system_admin` cho khớp `teacherCandidates` | Hiện chọn được người rồi máy chủ từ chối (Mâu thuẫn #3) |
 | Q10 | Lớp demo RF không có HV; không thêm lớp demo Pre FOU | Kỳ vọng/lịch RF là PR-MT; Pre FOU khoá tới PR-MON (PF6) |
 | Q11 | Dữ liệu cũ có 2 người một ô: hiện cả hai + bắt chọn lại một, không tự bỏ ai | Không đoán thay người dùng; lỗi chỉ lộ khi mở panel |
+| Q13 | **Chủ sản phẩm 28/09:** lớp Pre FOU chỉ **một ô GVCN**, GVCN dạy luôn (bỏ ô "GV dạy"). Lưu: máy chủ tự thêm dòng `tong_hop` cho GVCN (`moRongPhanCong`) | Quyền nhập điểm / xử lý Case đi theo phân công môn như mọi lớp — không cần nhánh quyền riêng ở PR-MON |
 | Q12 | Tên hiện chương trình: ký hiệu (`Pre FOU`, `FOU`) ở tên lớp/nhãn tiến độ; tên dài ở bảng (`Pre Foundation`) cho Quản trị | Không lộ mã `PREFOU` (K2-24) |
 
 ## Mâu thuẫn nguồn ↔ mã thật
