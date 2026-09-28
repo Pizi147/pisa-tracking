@@ -9683,6 +9683,10 @@ await runPrLopTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 const { runThanhPhanChungTests } = await import('./thanhPhanChung.tests.ts');
 await runThanhPhanChungTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
+// ==================================================================== PR-NHAP (Thêm học viên: email, ngày thi, cột theo tiêu đề)
+const { runPrNhapTests } = await import('./prNhap.tests.ts');
+await runPrNhapTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
