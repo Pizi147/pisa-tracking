@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { ErrorState, Level, Skeleton } from '../../ui/ui.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
+import { useLoiForm } from '../../ui/loiForm.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { caseStatusLabel, sosLabel, sosTone } from '../../lib/format.ts';
@@ -29,10 +30,11 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
   const { ngan } = useNgayNghiepVu();
   const { data, error, reload } = useApi<CaseDetail>(`/cases/${caseId}`);
   const [view, setView] = useState<ViewCase>(() => viecBanDau ?? tuViec(viec, paId) ?? { loai: 'case' });
-  const [daBamHoanThanh, setDaBamHoanThanh] = useState(false);
+  /* Bấm "Hoàn thành Case" khi còn bị chặn: chân nói câu chặn (không phải ô nhập nên không đếm "n ô cần sửa"). */
+  const lf = useLoiForm();
   const boxRef = useRef<HTMLDivElement>(null);
 
-  const veCase = () => { setView({ loai: 'case' }); setDaBamHoanThanh(false); };
+  const veCase = () => { setView({ loai: 'case' }); lf.datLai(); };
   const xong = () => { reload(); onChanged?.(); veCase(); };
 
   /* Cuộn tới PA (chỉ ở view Case) + viền sáng 2 giây. Thân đã render cùng lượt với `data`, nên không cần đợi. */
@@ -120,12 +122,12 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
         chinh: data.viewer.canEdit && canDong && data.viewer.canClose
           ? (
             <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0"
-              onClick={() => (chanHoanThanh.length > 0 ? setDaBamHoanThanh(true) : setView({ loai: 'hoan-thanh' }))}>
+              onClick={() => (chanHoanThanh.length > 0 ? lf.bam() : setView({ loai: 'hoan-thanh' }))}>
               Hoàn thành Case
             </button>
           )
           : undefined,
-        conThieu: daBamHoanThanh && chanHoanThanh.length > 0 ? [chanHoanThanh[0]] : undefined,
+        conThieu: lf.daBam && chanHoanThanh.length > 0 ? [{ nhan: 'Hoàn thành Case', lyDo: chanHoanThanh[0] }] : undefined,
       }}>
       <div ref={boxRef}>
         <ThanCase data={data} onViec={setView} />

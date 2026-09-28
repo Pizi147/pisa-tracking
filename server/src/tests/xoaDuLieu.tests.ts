@@ -542,7 +542,8 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
   check('PR-XOA (3) · XoaHocVienPanel theo khuôn: KhungPanel, nút đỏ tắt tới khi gõ đúng mã, dòng sao lưu nguyên văn; không SectionNote/fmtDate/Modal', () => {
     const pn = docNguon('web/src/modules/students/XoaHocVienPanel.tsx');
     assert(/<KhungPanel\b/.test(pn) && /btn btn-danger/.test(pn) && /disabled=\{busy \|\| !khop\}/.test(pn), 'thiếu khuôn / nút đỏ theo mã');
-    assert(pn.includes('Nên sao lưu trước lần xoá đầu (npm run sao-luu)') && pn.includes('Không khôi phục được (trừ từ bản sao lưu).'), 'thiếu dòng nhắc');
+    /* PR-N1 A7: không lộ lệnh npm trên màn hình — câu nhắc sao lưu nói với người dùng, không nói lệnh. */
+    assert(pn.includes('Nên nhờ Quản trị sao lưu trước lần xoá đầu.') && pn.includes('Không khôi phục được (trừ từ bản sao lưu).'), 'thiếu dòng nhắc');
     assert(!/SectionNote|fmtDate\(|<Modal\b/.test(pn), 'panel xoá HV dùng thứ bị cấm');
     assert(/tabular-nums/.test(pn), 'cột số phải tabular-nums');
     const trang = docNguon('web/src/modules/students/StudentDetailPage.tsx');
@@ -768,7 +769,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     const pn = docNguon('web/src/modules/platform/XoaTaiKhoanPanel.tsx');
     assert(/<KhungPanel\b/.test(pn) && /btn btn-danger/.test(pn) && /disabled=\{busy \|\| !khop \|\| !!d\?\.chan\}/.test(pn), 'thiếu khuôn / nút đỏ');
     assert(/toLowerCase\(\)/.test(pn), 'so email phải không phân biệt hoa thường');
-    assert(pn.includes('Nên sao lưu trước lần xoá đầu (npm run sao-luu)') && pn.includes('Chưa có dấu vết → xoá hẳn')
+    assert(pn.includes('Nên sao lưu dữ liệu trước lần xoá đầu.') && pn.includes('Chưa có dấu vết → xoá hẳn')
       && pn.includes('→ tài khoản bị khoá và ẩn, lịch sử giữ tên kèm (đã xoá)'), 'thiếu câu của đặc tả');
     assert(!/SectionNote|fmtDate\(|<Modal\b/.test(pn), 'panel xoá tài khoản dùng thứ bị cấm');
   });

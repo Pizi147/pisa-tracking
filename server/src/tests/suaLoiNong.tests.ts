@@ -8,6 +8,14 @@ import type { YThucTestKit } from './yThuc.tests.ts';
 const REPO = path.join(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..'), '..');
 const boChuThich = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:\\])\/\/.*$/gm, '$1');
 const docSach = (rel: string) => boChuThich(fs.readFileSync(path.join(REPO, rel), 'utf8'));
+/** Mọi tệp có đuôi `duoi` dưới `dir` (đường dẫn tương đối gốc repo), bỏ node_modules/dist. */
+const tepDuoi = (dir: string, duoi: string): string[] => fs.readdirSync(path.join(REPO, dir), { withFileTypes: true }).flatMap((e) => {
+  const rel = `${dir}/${e.name}`;
+  if (e.isDirectory()) return /^(node_modules|dist|dist-server)$/.test(e.name) ? [] : tepDuoi(rel, duoi);
+  return e.name.endsWith(duoi) ? [rel] : [];
+});
+const tepTsx = (dir: string) => tepDuoi(dir, '.tsx');
+const tepTs = (dir: string) => tepDuoi(dir, '.ts');
 
 export async function runSuaLoiNongTests(t: YThucTestKit) {
   const { check, assert } = t;
@@ -220,5 +228,134 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     assert(!/Gợi ý tự động|goi-y/.test(docSach('shared/domain/hoSoHocVien.ts')), 'hoSoHocVien còn nhánh gợi ý');
     assert(!/Xác nhận PA gợi ý/.test(docSach('server/src/students/profile.ts')), 'ô Việc cần làm còn "Xác nhận PA gợi ý"');
     assert(/theo quy chế/.test(docSach('web/src/modules/cases/CasePanel.tsx')), 'Ngăn Case thiếu dấu quy chế cạnh tên PA');
+  });
+
+  // ==================================================================== 6. Báo lỗi form rõ (YC-12.5.2) + dòng PA nhập bù (YC-12.5.1)
+  check('N1 (6) · kiemTruong nói thiếu gì dưới ô; chân form chỉ đếm "n ô cần sửa ↑" (YC-12.5.2, chủ sản phẩm 28/09)', () => {
+    assert(d.kiemTruong({ khoa: 'mo-ta', nhan: 'Mô tả', toiThieu: 15 }, 'Em hay sai') === 'Cần ít nhất 15 ký tự (đang có 10)', 'đếm ký tự');
+    assert(d.kiemTruong({ khoa: 'mo-ta', nhan: 'Mô tả', toiThieu: 15 }, '   ') === 'Cần ít nhất 15 ký tự (đang có 0)', 'rỗng');
+    assert(d.kiemTruong({ khoa: 'ly-do', nhan: 'Lý do', toiThieu: 1 }, ' ') === 'Chưa điền', 'toiThieu 1');
+    assert(d.kiemTruong({ khoa: 'kn', nhan: 'Kỹ năng', chon: true }, '') === 'Chưa chọn' && d.kiemTruong({ khoa: 'kn', nhan: 'Kỹ năng', chon: true }, 'reading') === null, 'chọn');
+    const l = d.dsLoi([{ khoa: 'mo-ta', nhan: 'Mô tả', toiThieu: 15 }, { khoa: 'ten', nhan: 'Tên Case', toiThieu: 6 }], { 'mo-ta': 'Nghe kém!', ten: 'Nghe kém phần 3' });
+    assert(l.length === 1 && l[0].lyDo === 'Cần ít nhất 15 ký tự (đang có 9)', JSON.stringify(l));
+    assert(d.nhanCanSua(2) === '2 ô cần sửa ↑' && d.nhanCanSua(1) === '1 ô cần sửa ↑' && d.nhanCanSua(0) === '', 'nhanCanSua');
+    const kp = docSach('web/src/ui/KhungPanel.tsx') + docSach('web/src/ui/loiForm.tsx');
+    assert(!/Còn thiếu|text-soon/.test(kp.slice(kp.indexOf('DongCanSua'))), 'chân form còn chữ vàng / liệt kê luật');
+  });
+  check('N1 (6) · YC-12.5.1: dòng PA nhập bù chỉ đóng khi bấm Xong', () => {
+    const src = docSach('web/src/modules/cases/QuickReport.tsx');
+    assert(/const dangSua = moSua\.includes\(i\);/.test(src), 'dòng PA còn tự đóng khi có chữ');
+    assert(/conThieu: lf\.daBam \? oLoi/.test(src), 'chân form chưa dùng danh sách ô lỗi');
+  });
+
+  // ==================================================================== 7. Báo lỗi rõ cho mọi form KhungPanel còn lại
+  check('N1 (7) · mọi form KhungPanel (trừ classes/, dev/, panel chỉ xem) dùng useLoiForm', () => {
+    const bo = /modules[\/](classes|dev)[\/]|PhuongAnPanel|XemPhuongAnPanel/;
+    const thieu = tepTsx('web/src/modules').filter((f) => !bo.test(f) && /<KhungPanel/.test(docSach(f)) && !/useLoiForm\(/.test(docSach(f)));
+    assert(thieu.length === 0, thieu.join(', '));
+    const conCu = tepTsx('web/src/modules').filter((f) => !bo.test(f) && /conThieu: daBam/.test(docSach(f)));
+    assert(conCu.length === 0, `còn chân kiểu cũ: ${conCu.join(', ')}`);
+  });
+
+  // ==================================================================== 9. Kết quả & điểm nói đúng (UX-A A1–A4, A8, A9; K2-10)
+  check('N1 (9) · A1: không còn ký tự điều khiển trong mã; A2: SOS tạm thời nói "tạm thời"; A4: "x/y môn đạt"', () => {
+    const tep = [...tepTsx('web/src'), ...tepTs('shared/domain'), ...tepTs('server/src')];
+    const ban = tep.filter((f) => /[\x00-\x08\x0b\x0c\x0e-\x1f]/.test(fs.readFileSync(path.join(REPO, f), 'utf8')));
+    assert(ban.length === 0, `ký tự điều khiển: ${ban.join(', ')}`);
+    const v = d.attemptProgressView({ scored: 2, required: 4, passed: null, sos: 2, cheDo: 'ielts' });
+    assert(v.text === 'SOS 2 tạm thời · 2/4 kỹ năng' && v.tamThoi, v.text);
+    const r = d.attemptProgressView({ scored: 4, required: 4, passed: false, sos: 3, cheDo: 'ratio', soMonChuaDat: 4 });
+    assert(!/^Đạt/.test(r.text) && r.text === '0/4 môn đạt · SOS 3', r.text);
+    for (const f of ['shared/domain/hocVienLop.ts', 'shared/domain/chamDiem.ts', 'shared/domain/hanhTrinh.ts', 'shared/domain/display.ts', 'server/src/students/standing.ts'])
+      assert(!/`Đạt \$\{/.test(docSach(f)), `${f} còn "Đạt x/y"`);
+  });
+  check('N1 (9) · A8: "Bình thường" không tô màu cảnh báo; K2-10: bảng điểm FT so kỳ vọng của đúng mốc, có cột W', () => {
+    assert(d.URGENCY_TONE.attention === 'neutral', 'Bình thường còn vàng');
+    const ros = docSach('web/src/modules/students/ClassRoster.tsx');
+    assert(!/target=\{s\.cycle/.test(ros) && /kyVong=\{h\.expectation/.test(ros) && /'writing'/.test(ros), 'Band còn so target / thiếu cột W');
+    assert(/expectation: t\.expectation/.test(docSach('server/src/classes/classes.ts')), 'history chưa có kỳ vọng từng mốc');
+    assert(/\\b\/\.exec\(text\)/.test(fs.readFileSync(path.join(REPO, 'web/src/lib/format.ts'), 'utf8')), 'toneTheoNhan chưa có \\b');
+  });
+
+  // ==================================================================== 10. Toast "Hoàn tác" 5 giây dùng chung (UX-C C1)
+  check('N1 (10) · C1: Hoàn tác 5 giây, đếm ngược làm tròn lên; Ghi vi phạm dùng toast chung', () => {
+    assert(d.HOAN_TAC_MS === 5000, 'HOAN_TAC_MS');
+    const ca: [number, number][] = [[5000, 5], [4001, 5], [4000, 4], [1, 1], [0, 0], [-50, 0]];
+    for (const [con, giay] of ca) assert(d.giayHoanTacConLai(1_000_000 + con, 1_000_000) === giay, `${con} → ${d.giayHoanTacConLai(1_000_000 + con, 1_000_000)}`);
+    const src = docSach('web/src/modules/yThuc/RecordViolationPanel.tsx');
+    assert(/toast\.hoanTac\(/.test(src) && !/ms: 10000/.test(src), 'Ghi vi phạm chưa dùng Hoàn tác chung');
+  });
+
+  // ==================================================================== 11. Tên Pisa Tracking, chữ máy lọt ra màn hình (YC-6, A7)
+  check('N1 (11) · YC-6 + A7: không còn "PISA Progress", "npm", "COUNT DISTINCT", ngày ISO trong thông báo; nhật ký có nhãn tiếng Việt', () => {
+    const hien = [...tepTsx('web/src'), 'index.html', 'shared/domain/metrics.ts'];
+    const tenCu = hien.filter((f) => /PISA Progress/.test(docSach(f)));
+    assert(tenCu.length === 0, `còn tên cũ: ${tenCu.join(', ')}`);
+    /* Hướng dẫn chạy bản demo trên máy (trang thử dev/, thanh demo, trang chào khi demo chưa có dữ liệu) được nói lệnh npm. */
+    const demo = /modules[\\/]dev[\\/]|DemoBar\.tsx|WelcomePage\.tsx/;
+    const chuMay = hien.filter((f) => !demo.test(f) && /npm run|COUNT DISTINCT/.test(docSach(f)));
+    assert(chuMay.length === 0, `chữ máy: ${chuMay.join(', ')}`);
+    assert(!/Hạn \$\{(input\.verifyDue|row\.verify_due)\}/.test(docSach('server/src/cases/sosAuto.ts') + docSach('server/src/cases/signals.ts')), 'ngày ISO trong thông báo');
+    const ma = new Set<string>();
+    for (const f of tepTs('server/src')) for (const m of docSach(f).matchAll(/\baction\s*:\s*'([a-z_]+\.[a-z_.]+)'/g)) ma.add(m[1]);
+    const thieuNhan = [...ma].filter((a) => d.nhanHanhDongNhatKy(a) === 'Thao tác hệ thống');
+    assert(ma.size > 0 && thieuNhan.length === 0, `thiếu nhãn: ${thieuNhan.join(', ')}`);
+    assert(d.nhanHanhDongNhatKy('attempt.cancel_part') === 'Huỷ phần còn lại của lượt' && d.nhanHanhDongNhatKy('x.y') === 'Thao tác hệ thống', 'nhãn');
+  });
+
+  // ==================================================================== 13a. Bấm thử: danh sách Case lấy hạn tuần, không lấy dự kiến kết thúc
+  check('N1 (13a) · K3-02/T53 Q1: listCases.nextDue = hạn ghi kết quả tuần (Thứ Hai), không phải dự kiến kết thúc; quá hạn theo hạn tuần', () => {
+    const { caseId, ivId } = taoPa('list-cases');
+    t.conn.prepare('UPDATE case_interventions SET action_due = ?, followup_due = ? WHERE id = ?').run(t.addDays(t.TODAY, 6), t.addDays(t.TODAY, -3), ivId);
+    const dong = (casesSvc.listCases(t.P.coreTeacher, {}).rows as any[]).find((r) => r.id === caseId);
+    assert(dong && dong.nextDue === t.addDays(t.TODAY, 6) && dong.dueOverdue === false, JSON.stringify(dong && { nextDue: dong.nextDue, dueOverdue: dong.dueOverdue }));
+    t.conn.prepare('UPDATE case_interventions SET action_due = ? WHERE id = ?').run(t.addDays(t.TODAY, -1), ivId);
+    const tre = (casesSvc.listCases(t.P.coreTeacher, {}).rows as any[]).find((r) => r.id === caseId);
+    assert(tre.nextDue === t.addDays(t.TODAY, -1) && tre.dueOverdue === true, 'hạn tuần đã qua mà không quá hạn');
+  });
+
+  // ==================================================================== 13b. Q28-5 — Case từ SOS "Chưa xử lý" tới khi đủ nguyên nhân + PA do người xác nhận
+  const sos: any = await import('../cases/sosState.ts');
+  check('N1 (13b) · Q28-5: Case từ SOS chỉ "Đang xử lý" khi có nguyên nhân VÀ PA do người xác nhận; PA máy gán không đủ', () => {
+    const { caseId, ivId } = taoPa('q28-5');
+    const trangThai = () => (t.conn.prepare('SELECT status FROM sos_cases WHERE id = ?').get(caseId) as any).status;
+    /* Biến PA thành PA quy chế MÁY GÁN (preset, confirmed_by trống) — Case thành Case từ SOS. */
+    t.conn.prepare('UPDATE case_interventions SET preset = 1, confirmed_by = NULL WHERE id = ?').run(ivId);
+    sos.dongBoTrangThaiCase(caseId);
+    assert(trangThai() === 'open', `có nguyên nhân + PA máy gán mà ${trangThai()}`);
+    const dong = (casesSvc.listCases(t.P.coreTeacher, {}).rows as any[]).find((r) => r.id === caseId);
+    assert(dong.state === 'chua_xu_ly', `listCases state ${dong.state}`);
+    t.conn.prepare('UPDATE case_interventions SET confirmed_by = ? WHERE id = ?').run(t.P.coreTeacher.userId, ivId);
+    sos.dongBoTrangThaiCase(caseId);
+    assert(trangThai() === 'in_progress', 'PA đã có người xác nhận mà chưa Đang xử lý');
+    t.conn.prepare("DELETE FROM case_issues WHERE case_id = ? AND role = 'primary'").run(caseId);
+    sos.dongBoTrangThaiCase(caseId);
+    assert(trangThai() === 'open', 'chưa có nguyên nhân mà vẫn Đang xử lý');
+    /* Migrate PR-N1 tính lại đúng luật, chạy lại không đổi thêm. */
+    t.conn.prepare("UPDATE sos_cases SET status = 'in_progress' WHERE id = ?").run(caseId);
+    assert(mig.demCaseSosDoiTrangThai(t.conn).thanhChuaXuLy >= 1, 'chạy thử không đếm');
+    const a: string[] = []; mig.migrateTrangThaiCaseSos(t.conn, a);
+    const b: string[] = []; mig.migrateTrangThaiCaseSos(t.conn, b);
+    assert(trangThai() === 'open' && a.length === 1 && b.length === 0, `migrate: ${trangThai()} ${a} | ${b}`);
+    /* Case GV tự báo giữ luật cũ: có PA là Đang xử lý. */
+    const khac = taoPa('q28-5-thuong');
+    assert((t.conn.prepare('SELECT status FROM sos_cases WHERE id = ?').get(khac.caseId) as any).status === 'in_progress', 'Case thường đổi luật');
+  });
+
+  // ==================================================================== 8. Học viên & Lớp + tab Ý thức lớp
+  check('N1 (8) · T17: không lọc → không mở lớp nào; đang lọc → tối đa 5 lớp có kết quả', () => {
+    assert(d.lopMoSan({ thamSoOpen: null, lopHien: [1, 2, 3], dangLoc: false }).length === 0, 'tự mở lớp');
+    assert(d.lopMoSan({ thamSoOpen: null, lopHien: [1, 2, 3, 4, 5, 6, 7], dangLoc: true }).join() === '1,2,3,4,5', 'lọc');
+    assert(/overflow-x-auto md:overflow-visible/.test(docSach('web/src/modules/students/StudentsPage.tsx')), 'khung bảng còn chặn tiêu đề dính');
+  });
+  check('N1 (8) · YC-11.3.2: lọc một nhóm → số trên dòng em = số dòng "Vi phạm gần đây", mọi dòng đúng nhóm', () => {
+    const vp = (id: number, category: string, occurredOn: string) => ({ id, category, occurredOn });
+    const r = d.dongViPhamLop({ chuaXuLy: [vp(1, 'chuyen_can', '2026-09-20'), vp(2, 'btvn', '2026-09-21')],
+      dangChuanBi: [{ id: 9, kindLabel: 'Report 1', violations: [vp(3, 'btvn', '2026-09-10'), vp(4, 'chuyen_can', '2026-09-12')] }],
+      nhom: 'chuyen_can', homNay: '2026-09-24' });
+    assert(r.so === 2 && r.dong.every((x: any) => x.v.category === 'chuyen_can') && r.dong[0].v.id === 1, JSON.stringify(r));
+    assert(r.cuNhatNgay === 4, `cũ nhất ${r.cuNhatNgay}`);
+    const src = docSach('web/src/modules/yThuc/ClassYThucCard.tsx');
+    assert(/s\.vp\.so\} vi phạm/.test(src) && /s\.vp\.dong\.map/.test(src) && !/vpGanDay/.test(src), 'thẻ lớp chưa dùng một tập');
   });
 }

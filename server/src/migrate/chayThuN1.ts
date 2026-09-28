@@ -10,7 +10,7 @@
  */
 import fs from 'node:fs';
 import { DB_PATH, closeDb, db, isInitialised, laDbTuXa } from '../db.ts';
-import { demPaDoiHanThuHai, demPaQuyCheChoXacNhan } from './prN1.ts';
+import { demCaseSosDoiTrangThai, demPaDoiHanThuHai, demPaQuyCheChoXacNhan } from './prN1.ts';
 
 const ddmm = (iso: string | null) => (iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : '—');
 
@@ -60,6 +60,10 @@ console.log(`\n(3) ${huyCho} PA đã huỷ mà vẫn ở trạng thái chờ duy
 
 /* (4) S4-1: PA quy chế SOS còn chờ xác nhận → đang chạy, hạn tuần tính từ ngày migrate (Q25). */
 console.log(`\n(4) ${demPaQuyCheChoXacNhan(conn)} PA quy chế đang chờ xác nhận sẽ thành đang chạy`);
+
+/* (5) Q28-5: Case từ SOS còn mở sẽ đổi nhãn trạng thái theo luật mới (chỉ nhãn, không đổi PA/kết quả). */
+const tt = demCaseSosDoiTrangThai(conn);
+console.log(`\n(5) Case từ SOS đổi trạng thái: ${tt.thanhChuaXuLy} → Chưa xử lý (chưa đủ nguyên nhân + PA do người xác nhận), ${tt.thanhDangXuLy} → Đang xử lý`);
 
 console.log('\n[chay-thu:n1] Xong — database không bị đổi.');
 closeDb();

@@ -759,7 +759,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
 
   // ================================================================== 16. §6 chữ lớp thường
 
-  console.log('\nPR-S1 · 16. §6 — chữ lớp thường ở máy chủ: "Giữa khoá / Cuối khoá", "môn", "Đạt 3/4 môn"; FT giữ nguyên');
+  console.log('\nPR-S1 · 16. §6 — chữ lớp thường ở máy chủ: "Giữa khoá / Cuối khoá", "môn", "3/4 môn đạt"; FT giữ nguyên');
   const standing: any = await import('../students/standing.ts');
 
   check('§6 · caseHeadline lớp thường không ghi "MT{n}" và "kỳ vọng"; FT giữ nguyên', () => {
@@ -778,9 +778,9 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
       nextAttemptNo: null, nextAttemptLabel: null, nextPeriodCode: null, openCases: 0, handoverCases: 0,
     };
     const line = (x: any) => standing.standingLine({ ...base, ...x });
-    assert(line({}) === 'Giữa khoá: Đạt 4/4 môn', line({}));
-    assert(line({ sosLevel: 1, failed: 1 }) === 'Giữa khoá: Đạt 3/4 môn · SOS 1', line({ sosLevel: 1, failed: 1 }));
-    assert(line({ sosLevel: 2, failed: 2, provisional: true, scored: 3 }) === 'Giữa khoá: Đạt 1/4 môn · SOS 2 tạm thời · mới có điểm 3/4 môn',
+    assert(line({}) === 'Giữa khoá: 4/4 môn đạt', line({}));
+    assert(line({ sosLevel: 1, failed: 1 }) === 'Giữa khoá: 3/4 môn đạt · SOS 1', line({ sosLevel: 1, failed: 1 }));
+    assert(line({ sosLevel: 2, failed: 2, provisional: true, scored: 3 }) === 'Giữa khoá: 1/4 môn đạt · SOS 2 tạm thời · mới có điểm 3/4 môn',
       line({ sosLevel: 2, failed: 2, provisional: true, scored: 3 }));
     assert(line({ attemptId: null, sosLevel: null, scored: 0 }) === 'Chưa có kết quả trong khoá này', line({ attemptId: null, sosLevel: null, scored: 0 }));
     const ft = { mode: 'ielts_band', attemptLabel: 'MT2', failed: null };

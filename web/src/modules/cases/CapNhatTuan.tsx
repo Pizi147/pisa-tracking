@@ -3,6 +3,7 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { useLoiForm } from '../../ui/loiForm.tsx';
 import { QuaHan } from '../../ui/Nhan.tsx';
 import { ChonTuan, NgayDoiDuoc } from '../../ui/ChonNgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -11,7 +12,7 @@ import {
   NUT_LUU_KET_QUA, PLAN_DECISIONS, PLAN_DECISION_HINT, PLAN_DECISION_NGAN, PLAN_DECISION_NGHIA,
   RESCHEDULE_TARGETS, RESCHEDULE_TARGET_LABEL,
   decisionBlockedReason, decisionNeedsReason, deadlineView, interventionKindsFor, ngay, nhanTuanGhiKetQua, outcomeLabelFor,
-  nguoiThanhPayload, type NguoiChon, type PlanDecision,
+  nguoiThanhPayload, type NguoiChon, type PlanDecision, dsLoi, type LuatTruong,
 } from '@shared/domain/index.ts';
 
 /**
@@ -80,7 +81,7 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
   const [newDesc, setNewDesc] = useState('');
   const [newNguoi, setNewNguoi] = useState<NguoiChon | null>({ kieu: 'toi' });
   const [newTarget, setNewTarget] = useState<string>(RESCHEDULE_TARGETS[0]);
-  const [daBam, setDaBam] = useState(false);
+  const lf = useLoiForm();
   const [busy, setBusy] = useState(false);
 
   const pickOutcome = (o: string) => {
@@ -93,22 +94,27 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
   const nguoiDoi = khacNguoi(nguoi, goc);
   const adjustChanged = descChanged || nguoiDoi || dueChanged;
 
-  /* Gom NHÃN ô còn thiếu (không phải câu dài): "Còn thiếu: Tiến triển, Lý do điều chỉnh". Luật giữ như bản cũ. */
-  const thieu: string[] = [];
-  if (!outcome) thieu.push('Kết quả');
-  if (progress.trim().length < 8) thieu.push('Tiến triển');
-  if (!decision) thieu.push('Quyết định');
+  /* Ô lỗi (YC-12.5.2): lý do dưới ô, chân chỉ đếm "n ô cần sửa ↑". Luật giữ như bản cũ. */
+  const LUAT: LuatTruong[] = [
+    { khoa: 'ket-qua', nhan: 'Kết quả', chon: true },
+    { khoa: 'tien-trien', nhan: 'Tiến triển', toiThieu: 8 },
+    { khoa: 'quyet-dinh', nhan: 'Quyết định', chon: true },
+    ...(decision === 'replace' ? [{ khoa: 'pa-moi', nhan: 'Nội dung PA mới', toiThieu: 8 }] : []),
+    ...(needReason ? [{ khoa: 'ly-do', nhan: decision === 'adjust' ? 'Lý do điều chỉnh' : 'Lý do thay', toiThieu: 8 }] : []),
+    ...(decision === 'ask_manager' ? [{ khoa: 'ly-do', nhan: 'Cần Quản lý giúp gì', toiThieu: 8 }] : []),
+  ];
+  const loi = dsLoi(LUAT, { 'ket-qua': outcome, 'tien-trien': progress, 'quyet-dinh': decision, 'pa-moi': newDesc, 'ly-do': reason });
   if (decision === 'adjust') {
-    if (!adjustChanged) thieu.push('Đổi ít nhất một ô (nội dung, người làm, hạn)');
-    else if (descChanged && desc.trim().length < 8) thieu.push('Nội dung PA');
-    else if (dueChanged && !!on && due < on) thieu.push('Hạn không sớm hơn ngày ghi');
+    if (!adjustChanged) loi.push({ khoa: 'noi-dung', nhan: 'Nội dung PA', lyDo: 'Đổi ít nhất một ô: nội dung, người làm hoặc hạn' });
+    else if (descChanged && desc.trim().length < 8) loi.push({ khoa: 'noi-dung', nhan: 'Nội dung PA', lyDo: `Cần ít nhất 8 ký tự (đang có ${desc.trim().length})` });
+    else if (dueChanged && !!on && due < on) loi.push({ khoa: 'han', nhan: 'Hạn kết thúc PA', lyDo: 'Không được sớm hơn ngày ghi' });
   }
-  if (decision === 'replace' && newDesc.trim().length < 8) thieu.push('Nội dung PA mới');
-  if (needReason && reason.trim().length < 8) thieu.push(decision === 'adjust' ? 'Lý do điều chỉnh' : 'Lý do thay');
-  if (decision === 'ask_manager' && reason.trim().length < 8) thieu.push('Cần Quản lý giúp gì');
+  const thieu = loi.map((l) => l.nhan);
+  const loiCua = (khoa: string) => lf.loiCua(loi, khoa);
+  const o = (khoa: string) => lf.o(loi, khoa);
 
   const luu = async () => {
-    setDaBam(true);
+    lf.bam();
     if (thieu.length > 0 || !decision) return;
     setBusy(true);
     try {
@@ -151,19 +157,21 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
     if (d === 'adjust') {
       return (
         <div className="space-y-3">
-          <Truong nhan="Nội dung PA">
-            <textarea className="field w-full" rows={2} value={desc} onChange={(e) => setDesc(e.target.value)} />
+          <Truong nhan="Nội dung PA" loi={loiCua('noi-dung')}>
+            <textarea className="field w-full" {...o('noi-dung')} rows={2} value={desc} onChange={(e) => setDesc(e.target.value)} />
           </Truong>
           <Hang2>
             <Truong nhan="Người thực hiện" as="div">
               <ChonNguoi nhom="giao_vien" value={nguoi} onChange={setNguoi} />
             </Truong>
-            <Truong nhan="Đến (hạn kết thúc PA)">
-              <ChonTuan moc="cuoi" catHomNay={false} lui={0} toi={12} value={due} onChange={setDue} />
+            <Truong nhan="Đến (hạn kết thúc PA)" as="div" loi={loiCua('han')}>
+              <div {...o('han')} tabIndex={-1} className="outline-none">
+                <ChonTuan moc="cuoi" catHomNay={false} lui={0} toi={12} value={due} onChange={setDue} ariaLabel="Đến (hạn kết thúc PA)" />
+              </div>
             </Truong>
           </Hang2>
-          <Truong nhan="Lý do điều chỉnh" batBuoc phu="Phải đổi ít nhất một trong ba ô trên">
-            <input className="field w-full" value={reason} onChange={(e) => setReason(e.target.value)} />
+          <Truong nhan="Lý do điều chỉnh" batBuoc phu="Phải đổi ít nhất một trong ba ô trên" loi={loiCua('ly-do')}>
+            <input className="field w-full" {...o('ly-do')} value={reason} onChange={(e) => setReason(e.target.value)} />
           </Truong>
         </div>
       );
@@ -181,8 +189,8 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
               </optgroup>
             </select>
           </Truong>
-          <Truong nhan="Nội dung" batBuoc phu="Ví dụ: 10 phút chữa câu mỗi buổi, hai bài viết lại mỗi tuần">
-            <textarea className="field w-full" rows={2} value={newDesc} onChange={(e) => setNewDesc(e.target.value)} />
+          <Truong nhan="Nội dung" batBuoc phu="Ví dụ: 10 phút chữa câu mỗi buổi, hai bài viết lại mỗi tuần" loi={loiCua('pa-moi')}>
+            <textarea className="field w-full" {...o('pa-moi')} rows={2} value={newDesc} onChange={(e) => setNewDesc(e.target.value)} />
           </Truong>
           <Hang2>
             <Truong nhan="Người thực hiện" as="div">
@@ -196,8 +204,8 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
               </Truong>
             )}
           </Hang2>
-          <Truong nhan="Lý do thay" batBuoc>
-            <input className="field w-full" value={reason} onChange={(e) => setReason(e.target.value)} />
+          <Truong nhan="Lý do thay" batBuoc loi={loiCua('ly-do')}>
+            <input className="field w-full" {...o('ly-do')} value={reason} onChange={(e) => setReason(e.target.value)} />
           </Truong>
         </div>
       );
@@ -205,8 +213,8 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
     if (d === 'ask_manager') {
       return (
         <div className="space-y-2">
-          <Truong nhan="Cần Quản lý giúp gì" batBuoc>
-            <textarea className="field w-full" rows={2} value={reason} onChange={(e) => setReason(e.target.value)} />
+          <Truong nhan="Cần Quản lý giúp gì" batBuoc loi={loiCua('ly-do')}>
+            <textarea className="field w-full" {...o('ly-do')} rows={2} value={reason} onChange={(e) => setReason(e.target.value)} />
           </Truong>
           <p className="m-0 text-[11px] text-slate-500">Gửi Quản lý chi nhánh · nhận ở Việc cần làm</p>
         </div>
@@ -228,7 +236,7 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
         </span>
       )}
       chan={{
-        conThieu: daBam ? thieu : undefined,
+        conThieu: lf.conThieu(loi),
         chinh: (
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>
             {busy ? 'Đang lưu…' : decision ? NUT_LUU_KET_QUA[decision] : 'Lưu kết quả'}
@@ -237,7 +245,7 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
       }}>
       <Khoi tieuDe={`1 · ${tuanGhi}`}>
         <div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="group" aria-label={tuanGhi}>
+          <div {...o('ket-qua')} tabIndex={-1} className="grid grid-cols-2 gap-2 outline-none sm:grid-cols-4" role="group" aria-label={tuanGhi}>
             {FOLLOWUP_OUTCOMES.filter((o) => o !== 'insufficient').map((o) => (
               <button key={o} type="button" aria-pressed={outcome === o}
                 className={`btn min-h-[44px] justify-center whitespace-nowrap px-1.5 text-xs sm:min-h-0 ${outcome === o ? 'btn-primary' : ''}`} onClick={() => pickOutcome(o)}>
@@ -253,9 +261,10 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
               {outcomeLabelFor('insufficient')}{outcome === 'insufficient' ? ' ✓' : ''}
             </button>
           </p>
+          {loiCua('ket-qua') && <span className="mt-1 block text-[11px] text-late">{loiCua('ket-qua')}</span>}
         </div>
-        <Truong nhan="Tiến triển" batBuoc>
-          <textarea className="field w-full" rows={2} value={progress} onChange={(e) => setProgress(e.target.value)}
+        <Truong nhan="Tiến triển" batBuoc loi={loiCua('tien-trien')} dem={{ co: progress.trim().length, can: 8 }}>
+          <textarea className="field w-full" {...o('tien-trien')} rows={2} value={progress} onChange={(e) => setProgress(e.target.value)}
             placeholder="Ví dụ: nghe 1.0 vẫn sót số và tên riêng" />
         </Truong>
         <Truong nhan="Vấn đề còn tồn" tuyChon>
@@ -266,7 +275,7 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
 
       <Khoi tieuDe="2 · Quyết định"
         luat="Điều chỉnh: cùng PA, sửa nội dung, người làm hoặc hạn — bản cũ giữ trong lịch sử. Thay PA: khép PA này và mở PA mới. Kết thúc PA: Case chỉ hoàn thành được khi mọi PA đã khép.">
-        <div role="radiogroup" aria-label="Quyết định" className="space-y-1.5">
+        <div {...o('quyet-dinh')} tabIndex={-1} role="radiogroup" aria-label="Quyết định" className="space-y-1.5 outline-none">
           {PLAN_DECISIONS.map((d) => {
             const chan = outcome ? decisionBlockedReason(outcome, d) : 'Chọn kết quả trước.';
             const chon = decision === d;
@@ -290,6 +299,7 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
             );
           })}
         </div>
+        {loiCua('quyet-dinh') && <span className="block text-[11px] text-late">{loiCua('quyet-dinh')}</span>}
       </Khoi>
 
       {(decision === 'keep' || decision === 'end' || !decision) && (

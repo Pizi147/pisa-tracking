@@ -99,10 +99,16 @@ const LEVEL_CLASS: Record<LevelTone, string> = {
  * MỨC ĐỘ của một học viên — SOS 1/2/3, hay mức độ ưu tiên do giáo viên nhận định.
  * Nặng nhất về thị giác vì đây là tình trạng của một đứa trẻ, không phải một con số vận hành.
  */
-export function Level({ tone = 'neutral', children, title }: { tone?: LevelTone; children: ReactNode; title?: string }) {
+export function Level({ tone = 'neutral', children, title, dut }: { tone?: LevelTone; children: ReactNode; title?: string;
+  /** PR-N1 A2: số TẠM THỜI — giữ màu chữ của mức, nền trong, viền nét đứt. */
+  dut?: boolean;
+}) {
+  const lop = dut
+    ? `border border-dashed border-current bg-transparent ${LEVEL_CLASS[tone].split(' ').filter((c) => c.startsWith('text-')).join(' ')}`
+    : LEVEL_CLASS[tone];
   return (
     <span title={title}
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-px text-[11px] font-bold tracking-[0.01em] whitespace-nowrap ${LEVEL_CLASS[tone]}`}>
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-px text-[11px] font-bold tracking-[0.01em] whitespace-nowrap ${lop}`}>
       {children}
     </span>
   );

@@ -4,6 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { Card, Empty, ErrorState, Info, Level, Skeleton, Status, Th } from '../../ui/ui.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
+import { Han } from '../../ui/Han.tsx';
 import { NganCase } from '../students/NganCase.tsx';
 import { CasePanel } from './CasePanel.tsx';
 import { fmtDate, sosLabel, sosTone } from '../../lib/format.ts';
@@ -23,6 +24,7 @@ type Facets = {
 };
 
 const STATE_LABEL: Record<string, string> = {
+  chua_xu_ly: 'Chưa xử lý',
   no_plan: 'Chưa có PA học thuật',
   working: 'Đang xử lý',
   done: 'Đã xong',
@@ -106,8 +108,8 @@ export function DanhSachCase({ branchId, ct, classId }: { branchId: number | nul
       {/*
         BA TRẠNG THÁI LOẠI TRỪ NHAU, cộng lại đúng bằng tổng — bức tranh chung, khác câu hỏi "làm gì trước".
       */}
-      <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
-        {(['no_plan', 'working', 'done'] as const).map((k) => (
+      <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
+        {(['chua_xu_ly', 'no_plan', 'working', 'done'] as const).map((k) => (
           <QueueTile key={k} label={STATE_LABEL[k]} value={stateCount(k)} active={state === k}
             dim={k === 'done'}
             onClick={() => set('tinh-hinh', state === k ? '' : k)} />
@@ -211,9 +213,7 @@ export function DanhSachCase({ branchId, ct, classId }: { branchId: number | nul
                       <td className="td text-xs text-slate-300">
                         {r.interventionCount > 0 ? `${r.interventionCount} việc` : '—'}
                         {r.nextDue && (
-                          <div className={`text-[10px] ${r.dueOverdue ? 'text-amber-200/80' : 'text-slate-500'}`}>
-                            hẹn {fmtDate(r.nextDue)}
-                          </div>
+                          <div className="text-[10px]"><Han loai="cap-nhat-pa" han={r.nextDue} /></div>
                         )}
                       </td>
                       <td className="td whitespace-nowrap">
@@ -222,16 +222,15 @@ export function DanhSachCase({ branchId, ct, classId }: { branchId: number | nul
                           trong database: một case có hai việc đã ghi mà cột này vẫn đề
                           "Chưa xử lý" thì người đọc chỉ có thể kết luận là số liệu sai.
                         */}
-                        <Status kind={r.state === 'done' ? 'done' : r.state === 'no_plan' ? 'waiting' : 'doing'}>
+                        <Status kind={r.state === 'done' ? 'done' : r.state === 'no_plan' ? 'waiting' : 'idle'}>
                           {STATE_LABEL[r.state]}
                         </Status>
                         {r.sosLevel !== null && (
                           <div className="mt-0.5"><Level tone={sosTone(r.sosLevel)}>{sosLabel(r.sosLevel)}</Level></div>
                         )}
-                        {r.urgency && r.urgency !== 'normal' && (
-                          <div className="mt-0.5">
-                            <Nhan tone="soon">{URGENCY_LABEL[r.urgency as keyof typeof URGENCY_LABEL] ?? r.urgency}</Nhan>
-                          </div>
+                        {/* PR-N1 A8: chỉ "Gấp" có nhãn màu; "Bình thường" không cần nói. */}
+                        {r.urgency === 'urgent' && (
+                          <div className="mt-0.5"><Nhan tone="bad">{URGENCY_LABEL.urgent}</Nhan></div>
                         )}
                       </td>
                     </tr>

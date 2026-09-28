@@ -3,12 +3,13 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonNgayGan, ChonTuan, NgayDoiDuoc } from '../../ui/ChonNgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
   CASE_OUTCOMES, CASE_OUTCOME_LABEL, HAN_DUYET_NGAY, INTERVENTION_KIND_LABEL, RESCHEDULE_TARGETS, RESCHEDULE_TARGET_LABEL,
   componentsAreCounts, componentsFor, interventionKindsFor, isProposalKind,
-  ngay, nguoiThanhPayload, planEndDefault, type NguoiChon,
+  ngay, nguoiThanhPayload, planEndDefault, type NguoiChon, dsLoi,
 } from '@shared/domain/index.ts';
 import { ComponentsField, componentsPayload } from './ChiTietKyNang.tsx';
 
@@ -46,17 +47,19 @@ export function ThemPaPanel({ caseId, studentId, hocVien, lop, quayLai, onClose,
   const [startedDate, setStartedDate] = useState('');
   const [followupDue, setFollowupDue] = useState('');
   const [rescheduleTarget, setRescheduleTarget] = useState<string>(RESCHEDULE_TARGETS[0]);
-  const [daBam, setDaBam] = useState(false);
+  const lf = useLoiForm();
   const [busy, setBusy] = useState(false);
   /* Nhóm Đề xuất luôn phải có Quản lý trả lời. */
   const deXuat = isProposalKind(kind);
 
-  const thieu: string[] = [];
-  if (description.trim().length < 8) thieu.push('Mô tả');
-  if (status === 'completed' && !completedDate) thieu.push('Ngày đã làm');
+  const loi = dsLoi([
+    { khoa: 'mo-ta', nhan: 'Mô tả', toiThieu: 8 },
+    ...(status === 'completed' ? [{ khoa: 'ngay-lam', nhan: 'Ngày đã làm', chon: true }] : []),
+  ], { 'mo-ta': description, 'ngay-lam': completedDate });
+  const thieu = loi.map((l) => l.nhan);
 
   const luu = async () => {
-    setDaBam(true);
+    lf.bam();
     if (thieu.length > 0) return;
     setBusy(true);
     try {
@@ -78,7 +81,7 @@ export function ThemPaPanel({ caseId, studentId, hocVien, lop, quayLai, onClose,
   return (
     <KhungPanel tieuDe="Thêm PA" hocVien={hocVien} lop={lop} quayLai={quayLai} onDong={onClose}
       chan={{
-        conThieu: daBam ? thieu : undefined,
+        conThieu: lf.conThieu(loi),
         chinh: (
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>
             {deXuat ? 'Gửi duyệt' : 'Thêm PA'}
@@ -115,8 +118,8 @@ export function ThemPaPanel({ caseId, studentId, hocVien, lop, quayLai, onClose,
             </div>
           </Truong>
         )}
-        <Truong nhan="Mô tả" batBuoc phu="Một câu đủ để người khác hiểu sẽ làm gì cho em">
-          <input className="field w-full" value={description} onChange={(e) => setDescription(e.target.value)}
+        <Truong nhan="Mô tả" batBuoc phu="Một câu đủ để người khác hiểu sẽ làm gì cho em" loi={lf.loiCua(loi, 'mo-ta')}>
+          <input className="field w-full" {...lf.o(loi, 'mo-ta')} value={description} onChange={(e) => setDescription(e.target.value)}
             placeholder="Ví dụ: 10 phút chữa câu mỗi buổi" />
         </Truong>
         <Truong nhan="Tình trạng" batBuoc as="div">
@@ -134,8 +137,10 @@ export function ThemPaPanel({ caseId, studentId, hocVien, lop, quayLai, onClose,
             <ChonNguoi nhom="giao_vien" studentId={studentId} value={nguoi} onChange={setNguoi} />
           </Truong>
           {status === 'completed' ? (
-            <Truong nhan="Ngày đã làm" batBuoc>
-              <ChonNgayGan value={completedDate} onChange={setCompletedDate} soNgay={30} chuaChon="Chọn ngày" />
+            <Truong nhan="Ngày đã làm" batBuoc as="div" loi={lf.loiCua(loi, 'ngay-lam')}>
+              <div {...lf.o(loi, 'ngay-lam')} tabIndex={-1} className="outline-none">
+                <ChonNgayGan value={completedDate} onChange={setCompletedDate} soNgay={30} chuaChon="Chọn ngày" ariaLabel="Ngày đã làm" />
+              </div>
             </Truong>
           ) : (
             <Truong nhan="Ngày bắt đầu">
@@ -166,14 +171,15 @@ export function HoanThanhCasePanel({ caseId, category, categoryLabel, ratio, hoc
   const [note, setNote] = useState('');
   const [closedOn, setClosedOn] = useState(homNay);
   const [metrics, setMetrics] = useState<Record<string, { score: string; total: string }>>({});
-  const [daBam, setDaBam] = useState(false);
+  const lf = useLoiForm();
   const [busy, setBusy] = useState(false);
   const components = componentsFor(category, ratio ? 'ratio' : 'band');
   const counts = componentsAreCounts(category);
-  const thieu = note.trim().length < 10 ? ['Vì sao kết luận vậy'] : [];
+  const loi = dsLoi([{ khoa: 'vi-sao', nhan: 'Vì sao kết luận vậy', toiThieu: 10 }], { 'vi-sao': note });
+  const thieu = loi.map((l) => l.nhan);
 
   const luu = async () => {
-    setDaBam(true);
+    lf.bam();
     if (thieu.length > 0) return;
     setBusy(true);
     try {
@@ -192,7 +198,7 @@ export function HoanThanhCasePanel({ caseId, category, categoryLabel, ratio, hoc
   return (
     <KhungPanel tieuDe="Hoàn thành Case" hocVien={hocVien} lop={lop} quayLai={quayLai} onDong={onClose}
       chan={{
-        conThieu: daBam ? thieu : undefined,
+        conThieu: lf.conThieu(loi),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>Hoàn thành Case</button>,
       }}>
       <Khoi tieuDe="Kết quả cuối"
@@ -207,8 +213,9 @@ export function HoanThanhCasePanel({ caseId, category, categoryLabel, ratio, hoc
             ))}
           </div>
         </Truong>
-        <Truong nhan="Vì sao kết luận vậy" batBuoc phu="Phương án đã áp dụng cho em, kết quả ra sao, vì sao dừng ở đây">
-          <textarea className="field w-full" rows={3} value={note} onChange={(e) => setNote(e.target.value)}
+        <Truong nhan="Vì sao kết luận vậy" batBuoc phu="Phương án đã áp dụng cho em, kết quả ra sao, vì sao dừng ở đây"
+          loi={lf.loiCua(loi, 'vi-sao')} dem={{ co: note.trim().length, can: 10 }}>
+          <textarea className="field w-full" {...lf.o(loi, 'vi-sao')} rows={3} value={note} onChange={(e) => setNote(e.target.value)}
             placeholder="Ví dụ: MT3 Listening lên 6.0" />
         </Truong>
         <NgayDoiDuoc tien="Ngày hoàn thành" value={closedOn} onChange={setClosedOn} soNgay={30} />
@@ -234,16 +241,17 @@ export function TraLoiDeXuatPanel({ iv, hocVien, lop, quayLai, onClose, onSaved 
   const toast = useToast();
   const [decision, setDecision] = useState<'approved' | 'declined' | 'comment'>('approved');
   const [note, setNote] = useState('');
-  const [daBam, setDaBam] = useState(false);
+  const lf = useLoiForm();
   const [busy, setBusy] = useState(false);
   const canLyDo = decision !== 'approved';
-  const thieu = canLyDo && !note.trim() ? ['Lý do'] : [];
+  const loi = dsLoi(canLyDo ? [{ khoa: 'ly-do', nhan: 'Lý do', toiThieu: 1 }] : [], { 'ly-do': note });
+  const thieu = loi.map((l) => l.nhan);
   const NGHIA: Record<typeof decision, string> = {
     approved: 'Cứ làm', declined: 'Nói rõ vì sao và nên làm gì thay thế', comment: 'Chưa quyết, đề xuất vẫn chờ bạn',
   };
 
   const gui = async () => {
-    setDaBam(true);
+    lf.bam();
     if (thieu.length > 0) return;
     setBusy(true);
     try {
@@ -258,7 +266,7 @@ export function TraLoiDeXuatPanel({ iv, hocVien, lop, quayLai, onClose, onSaved 
     <KhungPanel tieuDe="Trả lời đề xuất" hocVien={hocVien} lop={lop} quayLai={quayLai} onDong={onClose}
       ngCanh={<span className="truncate">{INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? iv.kind}{iv.description ? ` — ${iv.description}` : ''}</span>}
       chan={{
-        conThieu: daBam ? thieu : undefined,
+        conThieu: lf.conThieu(loi),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={gui}>Gửi</button>,
       }}>
       <Khoi tieuDe="Quyết định">
@@ -269,8 +277,8 @@ export function TraLoiDeXuatPanel({ iv, hocVien, lop, quayLai, onClose, onSaved 
           ))}
         </div>
         <p className="m-0 text-[11px] text-slate-500">{NGHIA[decision]}</p>
-        <Truong nhan={canLyDo ? 'Lý do' : 'Ghi chú'} batBuoc={canLyDo} tuyChon={!canLyDo}>
-          <input className="field w-full" value={note} onChange={(e) => setNote(e.target.value)}
+        <Truong nhan={canLyDo ? 'Lý do' : 'Ghi chú'} batBuoc={canLyDo} tuyChon={!canLyDo} loi={lf.loiCua(loi, 'ly-do')}>
+          <input className="field w-full" {...lf.o(loi, 'ly-do')} value={note} onChange={(e) => setNote(e.target.value)}
             placeholder={decision === 'declined' ? 'Ví dụ: lớp thiếu GV, tạm xếp tự học' : 'Ví dụ: đồng ý, ưu tiên Listening trước'} />
         </Truong>
       </Khoi>

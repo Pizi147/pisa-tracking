@@ -3,6 +3,7 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { useLoiForm } from '../../ui/loiForm.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { ChonTuan, NgayDoiDuoc } from '../../ui/ChonNgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -13,7 +14,7 @@ import {
   ENTRY_SKILL_LABEL, URGENCY_LEVELS, URGENCY_LABEL, issuesForTopic, DEFAULT_URGENCY,
   CASE_OUTCOMES, CASE_OUTCOME_LABEL, REGULAR_SKILL_LABEL,
   categoryOf, componentsFor, componentsAreCounts,
-  nguoiThanhPayload, nguoiThieu, skillShort, tuanLich, type NguoiChon,
+  nguoiThanhPayload, nguoiThieu, skillShort, tuanLich, type NguoiChon, dsLoi, type LuatTruong,
 } from '@shared/domain/index.ts';
 
 type DaLuu = { id: number; tieuDe: string; gop: boolean; canEdit: boolean };
@@ -74,10 +75,10 @@ export function QuickReport({
   const [primaryCode, setPrimaryCode] = useState('');
   const [detectedAt, setDetectedAt] = useState('');
   const [busy, setBusy] = useState(false);
-  /* Lỗi chỉ hiện SAU khi bấm nút chính (Q4): `Còn thiếu: …` ở chân. */
-  const [daBam, setDaBam] = useState(false);
-  /* Các dòng PA đã áp dụng đang mở để sửa (dòng còn trống luôn mở). */
-  const [moSua, setMoSua] = useState<number[]>([]);
+  /* YC-12.5.2: lỗi hiện dưới ô khi rời ô; sau khi bấm nút chính, chân có thêm "n ô cần sửa ↑". */
+  const lf = useLoiForm();
+  /* Các dòng PA đã áp dụng đang mở để sửa. YC-12.5.1: dòng chỉ gọn lại khi bấm Xong (không tự đóng khi vừa có chữ). */
+  const [moSua, setMoSua] = useState<number[]>([0]);
   const { homNay, ngan } = useNgayNghiepVu();
 
   /* F-1 (mục 4.8): sau khi lưu, panel KHÔNG đóng — chuyển sang bước "Đã lưu" + khối Bằng chứng. */
@@ -141,7 +142,7 @@ export function QuickReport({
 
   const reset = () => {
     setSummary(''); setUrgency(DEFAULT_URGENCY); setTopic('');
-    setTitle(''); setPrimaryCode(''); setDetectedAt(''); setDup(null); setDaBam(false); setMoSua([]);
+    setTitle(''); setPrimaryCode(''); setDetectedAt(''); setDup(null); lf.datLai(); setMoSua([0]);
     setMode('now'); setBfFrom(''); setBfTo('');
     setBfActions([{ description: '', nguoi: { kieu: 'toi' }, fromDate: '', toDate: '' }]);
     setBfErrors({}); setBfOutcome(''); setBfNote(''); setBfMetrics({}); setBfDup(null);
@@ -197,9 +198,9 @@ export function QuickReport({
     } finally { setBusy(false); }
   };
 
-  /* Bấm nút chính: còn thiếu thì chỉ hiện `Còn thiếu: …` ở chân (không toast, không gửi). Đủ rồi mới gửi; máy chủ vẫn kiểm lại. */
+  /* Bấm nút chính: còn ô lỗi thì chỉ hiện lỗi dưới ô + "n ô cần sửa ↑" (không toast, không gửi). Đủ rồi mới gửi; máy chủ vẫn kiểm lại. */
   const submit = async () => {
-    setDaBam(true);
+    lf.bam();
     if (thieu.length > 0) return;
     await send();
   };
@@ -234,7 +235,7 @@ export function QuickReport({
   };
 
   const submitBackfill = async () => {
-    setDaBam(true);
+    lf.bam();
     if (thieu.length > 0) return;
     /*
      * F-3 (§22.4): mỗi thẻ kiểm RIÊNG, lỗi hiện NGAY DƯỚI thẻ đó. Thẻ chưa gõ gì (mô tả rỗng) thì bỏ qua. Khoảng tuần của thẻ
@@ -251,9 +252,10 @@ export function QuickReport({
       const den = a.toDate || bfTo;
       if (tu > den) { errors[i] = 'Từ tuần phải trước Đến tuần.'; return; }
     });
-    if (Object.keys(errors).length) { setBfErrors(errors); setMoSua(Object.keys(errors).map(Number)); return; }
+    if (Object.keys(errors).length) { setBfErrors(errors); setMoSua([...new Set([...moSua, ...Object.keys(errors).map(Number)])]); return; }
     setBfErrors({});
     setBfActions(filled);
+    setMoSua([]);
     await sendBackfill();
   };
 
@@ -261,22 +263,25 @@ export function QuickReport({
   const bfComponents = componentsFor(category, chuDe.data?.ratio ? 'ratio' : 'band');
   const bfCounts = componentsAreCounts(category);
 
-  /* Gom NHÃN ô còn thiếu — hiện ở chân SAU khi bấm nút chính (Q4), không toast trước khi gửi. */
-  const thieu: string[] = [];
-  if (students && !studentId) thieu.push('Học viên');
-  if (!topic) thieu.push('Kỹ năng');
-  if (!primaryCode) thieu.push('Phân loại vấn đề');
-  if (title.trim().length < 6) thieu.push('Tên Case');
-  if (summary.trim().length < 15) thieu.push('Mô tả');
-  else if (primaryCode.endsWith('.other') && summary.trim().length < 30) thieu.push('Mô tả rõ hơn (chọn "Khác")');
-  if (mode === 'backfill') {
-    if (!bfFrom) thieu.push('Từ tuần');
-    if (!bfTo) thieu.push('Đến tuần');
-    if (bfFrom && bfTo && bfFrom > bfTo) thieu.push('Đến tuần không trước Từ tuần');
-    if (!bfActions.some((a) => a.description.trim())) thieu.push('Phương án đã áp dụng');
-    if (!bfOutcome) thieu.push('Kết quả cuối');
-    if (bfNote.trim().length < 10) thieu.push('Vì sao kết luận vậy');
-  }
+  /* Ô lỗi (YC-12.5.2): lý do dưới ô khi rời ô; chân chỉ đếm "n ô cần sửa ↑" sau khi bấm nút chính — không toast trước khi gửi. */
+  /* "Khác" → 30 ký tự là luật cũ; PR-NEN (T13) bỏ khi có OKhac. */
+  const moTaToiThieu = primaryCode.endsWith('.other') ? 30 : 15;
+  const LUAT: LuatTruong[] = [
+    ...(students ? [{ khoa: 'hoc-vien', nhan: 'Học viên', chon: true }] : []),
+    { khoa: 'ky-nang', nhan: 'Kỹ năng', chon: true }, { khoa: 'phan-loai', nhan: 'Phân loại vấn đề', chon: true },
+    { khoa: 'ten', nhan: 'Tên Case', toiThieu: 6 },
+    { khoa: 'mo-ta', nhan: 'Mô tả', toiThieu: moTaToiThieu },
+    ...(mode === 'backfill' ? [{ khoa: 'tu-tuan', nhan: 'Từ tuần', chon: true }, { khoa: 'den-tuan', nhan: 'Đến tuần', chon: true },
+      { khoa: 'ket-qua', nhan: 'Kết quả cuối', chon: true }, { khoa: 'vi-sao', nhan: 'Vì sao kết luận vậy', toiThieu: 10 }] : []),
+  ];
+  const loi = dsLoi(LUAT, { 'hoc-vien': studentId, 'ky-nang': topic, 'phan-loai': primaryCode, ten: title, 'mo-ta': summary,
+    'tu-tuan': bfFrom, 'den-tuan': bfTo, 'ket-qua': bfOutcome, 'vi-sao': bfNote });
+  if (mode === 'backfill' && bfFrom && bfTo && bfFrom > bfTo) loi.push({ khoa: 'den-tuan', nhan: 'Đến tuần', lyDo: 'Không được trước Từ tuần' });
+  if (mode === 'backfill' && !bfActions.some((a) => a.description.trim())) loi.push({ khoa: 'pa-0', nhan: 'Phương án đã áp dụng', lyDo: 'Chưa có PA nào' });
+  const thieu = loi.map((l) => l.nhan);
+  const oLoi = lf.conThieu(loi);
+  const loiCua = (khoa: string) => lf.loiCua(loi, khoa);
+  const o = (khoa: string) => lf.o(loi, khoa);
 
   if (!open) return null;
 
@@ -313,11 +318,11 @@ export function QuickReport({
         <span>Điểm {signal.contextLabel ?? signal.label}: <span className="tabular-nums text-late">{signal.scoreText}</span></span>
       ) : undefined}
       tabs={!signal ? (
-        <HangTab cap="con" ariaLabel="Loại Case" value={mode} onChange={(k) => { setMode(k); setDaBam(false); }}
+        <HangTab cap="con" ariaLabel="Loại Case" value={mode} onChange={(k) => { setMode(k); lf.datLai(); }}
           tabs={[{ key: 'now', label: 'Đang gặp vấn đề' }, { key: 'backfill', label: 'Đã xong từ trước' }]} />
       ) : undefined}
       chan={{
-        conThieu: daBam ? thieu : undefined,
+        conThieu: lf.daBam ? oLoi : undefined,
         chinh: (
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={mode === 'now' ? submit : submitBackfill}>
             {mode === 'now' ? 'Tạo Case' : 'Ghi lại Case đã xong'}
@@ -330,8 +335,8 @@ export function QuickReport({
           : 'Hệ thống chỉ đọc được con số. Phần này là quan sát của bạn: em sai ở đâu, bài hay buổi nào.'}>
         {/* CHỌN HỌC VIÊN — chỉ khi mở từ trang lớp (mục 13.1); ở hồ sơ một em thì không hỏi lại. */}
         {students && (
-          <Truong nhan="Học viên" batBuoc>
-            <select className="field w-full" value={studentId || ''} onChange={(e) => onPickStudent?.(Number(e.target.value) || 0)}>
+          <Truong nhan="Học viên" batBuoc loi={loiCua('hoc-vien')}>
+            <select className="field w-full" {...o('hoc-vien')} value={studentId || ''} onChange={(e) => onPickStudent?.(Number(e.target.value) || 0)}>
               <option value="">Chọn học viên</option>
               {students.map((st) => <option key={st.id} value={st.id}>{st.name}{st.code ? ` · ${st.code}` : ''}</option>)}
             </select>
@@ -339,7 +344,8 @@ export function QuickReport({
         )}
 
         {/* Kỹ năng BẮT BUỘC: không có nó, vấn đề rơi vào "chưa phân loại" và biến mất khỏi bảng tổng hợp theo kỹ năng. */}
-        <Truong nhan="Kỹ năng" batBuoc as="div">
+        <Truong nhan="Kỹ năng" batBuoc as="div" loi={loiCua('ky-nang')}>
+          <div {...o('ky-nang')} tabIndex={-1} className="outline-none">
           {!studentId ? (
             <div className="grid grid-cols-4 gap-2 opacity-40" aria-hidden>
               {['L', 'R', 'W', 'S'].map((k) => <span key={k} className="btn justify-center">{k}</span>)}
@@ -357,11 +363,12 @@ export function QuickReport({
               ))}
             </div>
           )}
+          </div>
         </Truong>
 
         {/* Phân loại BẮT BUỘC (máy chủ cần `primaryCode`): select ≥ 5 lựa chọn, gợi ý của lựa chọn nằm ở `title` (Q6). */}
-        <Truong nhan="Phân loại vấn đề" batBuoc>
-          <select className="field w-full" value={primaryCode} disabled={!topic}
+        <Truong nhan="Phân loại vấn đề" batBuoc loi={loiCua('phan-loai')}>
+          <select className="field w-full" {...o('phan-loai')} value={primaryCode} disabled={!topic}
             title={causes.find((i) => i.code === primaryCode)?.hint}
             onChange={(e) => setPrimaryCode(e.target.value)}>
             <option value="">{topic ? 'Chọn phân loại' : ''}</option>
@@ -384,12 +391,13 @@ export function QuickReport({
         )}
 
         {/* TÊN CASE DO NGƯỜI TẠO ĐẶT (mục 7.3): Case tạo tay không có gì để suy, hệ thống không được tự gán "… dưới kỳ vọng". */}
-        <Truong nhan="Tên Case" batBuoc>
-          <input className="field w-full" value={title} onChange={(e) => setTitle(e.target.value)}
+        <Truong nhan="Tên Case" batBuoc loi={loiCua('ten')}>
+          <input className="field w-full" {...o('ten')} value={title} onChange={(e) => setTitle(e.target.value)}
             placeholder="Ví dụ: Reading — sai dạng True/False/Not Given" />
         </Truong>
-        <Truong nhan="Mô tả và dẫn chứng" batBuoc phu="Sai ở đâu, bài hay buổi nào">
-          <textarea className="field w-full" rows={3} value={summary} onChange={(e) => setSummary(e.target.value)}
+        <Truong nhan="Mô tả và dẫn chứng" batBuoc phu="Sai ở đâu, bài hay buổi nào" loi={loiCua('mo-ta')}
+          dem={{ co: summary.trim().length, can: moTaToiThieu }}>
+          <textarea className="field w-full" {...o('mo-ta')} rows={3} value={summary} onChange={(e) => setSummary(e.target.value)}
             placeholder="Ví dụ: Giữa khoá sai 4/5 câu Not Given" />
         </Truong>
       </Khoi>
@@ -405,16 +413,20 @@ export function QuickReport({
         <>
           <Khoi tieuDe="Đã áp dụng">
             <Hang2>
-              <Truong nhan="Từ tuần" batBuoc>
-                <ChonTuan moc="dau" lui={26} toi={0} value={bfFrom} onChange={setBfFrom} chuaChon="Chọn tuần" />
+              <Truong nhan="Từ tuần" batBuoc as="div" loi={loiCua('tu-tuan')}>
+                <div {...o('tu-tuan')} tabIndex={-1} className="outline-none">
+                  <ChonTuan moc="dau" lui={26} toi={0} value={bfFrom} onChange={setBfFrom} chuaChon="Chọn tuần" ariaLabel="Từ tuần" />
+                </div>
               </Truong>
-              <Truong nhan="Đến tuần" batBuoc>
-                <ChonTuan moc="cuoi" lui={26} toi={0} value={bfTo} onChange={setBfTo} chuaChon="Chọn tuần" />
+              <Truong nhan="Đến tuần" batBuoc as="div" loi={loiCua('den-tuan')}>
+                <div {...o('den-tuan')} tabIndex={-1} className="outline-none">
+                  <ChonTuan moc="cuoi" lui={26} toi={0} value={bfTo} onChange={setBfTo} chuaChon="Chọn tuần" ariaLabel="Đến tuần" />
+                </div>
               </Truong>
             </Hang2>
             <div className="space-y-2">
               {bfActions.map((a, i) => {
-                const dangSua = moSua.includes(i) || !a.description.trim();
+                const dangSua = moSua.includes(i);
                 const tu = a.fromDate || bfFrom;
                 const den = a.toDate || bfTo;
                 const doiKhoang = (part: 'fromDate' | 'toDate') => (v: string) =>
@@ -423,7 +435,8 @@ export function QuickReport({
                   <div key={i} className="rounded-lg border px-2.5 py-2" style={{ borderColor: 'var(--line)' }}>
                     {dangSua ? (
                       <div className="space-y-2">
-                        <input className="field w-full" placeholder="Ví dụ: tutor Listening mỗi tuần" value={a.description}
+                        <input className="field w-full" {...(i === 0 ? o('pa-0') : {})} aria-label="Phương án đã áp dụng"
+                          placeholder="Ví dụ: tutor Listening mỗi tuần" value={a.description}
                           onChange={(e) => setBfActions(bfActions.map((x, j) => (j === i ? { ...x, description: e.target.value } : x)))} />
                         <ChonNguoi nhom="giao_vien" studentId={studentId} value={a.nguoi}
                           onChange={(v) => setBfActions(bfActions.map((x, j) => (j === i ? { ...x, nguoi: v ?? { kieu: 'toi' } } : x)))} />
@@ -436,7 +449,11 @@ export function QuickReport({
                             <button type="button" className="btn btn-sm" onClick={() => setMoSua(moSua.filter((x) => x !== i))}>Xong</button>
                           )}
                           {bfActions.length > 1 && (
-                            <button type="button" className="btn btn-sm btn-ghost" onClick={() => setBfActions(bfActions.filter((_, j) => j !== i))}>Xoá</button>
+                            <button type="button" className="btn btn-sm btn-ghost" onClick={() => {
+                              setBfActions(bfActions.filter((_, j) => j !== i));
+                              setMoSua(moSua.filter((x) => x !== i).map((x) => (x > i ? x - 1 : x)));
+                              setBfErrors({});
+                            }}>Xoá</button>
                           )}
                         </span>
                       </div>
@@ -448,20 +465,20 @@ export function QuickReport({
                         <button type="button" className="link appearance-none border-0 bg-transparent p-0" onClick={() => setMoSua([...moSua, i])}>Sửa</button>
                       </p>
                     )}
-                    {bfErrors[i] && <p className="m-0 mt-1 text-[11px] text-late">{bfErrors[i]}</p>}
+                    {(bfErrors[i] || (i === 0 && loiCua('pa-0'))) && <p className="m-0 mt-1 text-[11px] text-late">{bfErrors[i] || loiCua('pa-0')}</p>}
                   </div>
                 );
               })}
               <button type="button" className="btn btn-sm btn-ghost"
-                onClick={() => setBfActions([...bfActions, { description: '', nguoi: { kieu: 'toi' }, fromDate: '', toDate: '' }])}>
+                onClick={() => { setMoSua([...moSua, bfActions.length]); setBfActions([...bfActions, { description: '', nguoi: { kieu: 'toi' }, fromDate: '', toDate: '' }]); }}>
                 + Thêm PA đã áp dụng
               </button>
             </div>
           </Khoi>
 
           <Khoi tieuDe="Kết quả">
-            <Truong nhan="Kết quả cuối" batBuoc as="div">
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <Truong nhan="Kết quả cuối" batBuoc as="div" loi={loiCua('ket-qua')}>
+              <div {...o('ket-qua')} tabIndex={-1} className="grid grid-cols-2 gap-2 outline-none sm:grid-cols-4">
                 {CASE_OUTCOMES.map((o) => (
                   <button key={o} type="button" aria-pressed={bfOutcome === o}
                     className={`btn min-h-[44px] justify-center sm:min-h-0 ${bfOutcome === o ? 'btn-primary' : ''}`} onClick={() => setBfOutcome(o)}>
@@ -475,8 +492,8 @@ export function QuickReport({
               <ComponentsField label={topicLabel(topic)} components={bfComponents} counts={bfCounts}
                 value={bfMetrics} onChange={setBfMetrics} buttonLabel="+ Điểm chi tiết theo kỹ năng" />
             )}
-            <Truong nhan="Vì sao kết luận vậy" batBuoc>
-              <textarea className="field w-full" rows={2} value={bfNote} onChange={(e) => setBfNote(e.target.value)}
+            <Truong nhan="Vì sao kết luận vậy" batBuoc loi={loiCua('vi-sao')}>
+              <textarea className="field w-full" {...o('vi-sao')} rows={2} value={bfNote} onChange={(e) => setBfNote(e.target.value)}
                 placeholder="Ví dụ: MT3 Listening lên 6.0" />
             </Truong>
           </Khoi>

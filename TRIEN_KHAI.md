@@ -1,4 +1,4 @@
-# Đưa bản chính lên mạng — hướng dẫn từng bước
+# Pisa Tracking — đưa bản chính lên mạng, hướng dẫn từng bước
 
 Viết 21/09/2026 cho chủ sản phẩm — **không cần biết code**. Làm đúng thứ tự, mỗi bước chỉ làm một việc.
 Kế hoạch kỹ thuật phía sau: `docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md`.
@@ -504,6 +504,15 @@ $env:PISA_CHO_PHEP_MIGRATE_TURSO='<URL database CHÍNH, bỏ libsql:// ở đầ
 ```
 
 > Ví dụ: URL là `libsql://pisatracking-xxx.aws-us-east-2.turso.io` → gõ `pisatracking-xxx.aws-us-east-2.turso.io`.
+
+**Bước 2b — chạy thử CHỈ ĐỌC (chỉ khi session code nói có, ví dụ PR-N1):** in trước số dòng migrate sẽ đổi, không ghi gì.
+
+```powershell
+npm run chay-thu:n1
+```
+
+> PR-N1 in năm số: PA đang chạy sẽ dời hạn Chủ nhật → Thứ Hai · PA chạy mà không có hạn · PA đã huỷ còn "chờ duyệt" ·
+> PA quy chế SOS chờ xác nhận sẽ thành đang chạy · Case từ SOS đổi nhãn Chưa xử lý / Đang xử lý (luật Q28-5, chỉ đổi nhãn). Số (2) lớn hơn 0 ở PA **đang chạy** → chụp màn hình gửi planning trước bước 3.
 
 **Bước 3 — nâng cấp:**
 

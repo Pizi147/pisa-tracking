@@ -38,3 +38,15 @@ export function Nhan({ tone, dut, title, onClick, children }: {
 export function toneNhanTuBadge(t: 'danger' | 'warn' | 'info' | 'muted'): ToneNhan {
   return t === 'danger' ? 'bad' : t === 'warn' ? 'soon' : t === 'info' ? 'doing' : 'muted';
 }
+
+/**
+ * DẤU "DƯỚI KỲ VỌNG / CHƯA ĐẠT" cạnh một con số (PR-N1 A3, chủ sản phẩm 28/09 "cho rõ hơn"): tam giác chỉ xuống 7×5px, cùng màu chữ.
+ * Vẽ SVG thay ký tự ▾ — ở cỡ chữ nhỏ ▾ của Inter chỉ còn như một dấu chấm. Không chỉ dựa vào màu: người mù màu vẫn thấy.
+ */
+export function DauDuoi() {
+  return (
+    <svg aria-hidden viewBox="0 0 7 5" width="7" height="5" className="mr-1 inline-block align-middle" style={{ marginTop: -2 }}>
+      <path d="M0 0h7L3.5 5z" fill="currentColor" />
+    </svg>
+  );
+}

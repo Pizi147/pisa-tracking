@@ -211,7 +211,7 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     const mt4 = d.nhanGhim({ cheDo: 'ielts', attemptNo: 4, kind: 'mock', overall: null, sosLevel: null, soDat: null, soYeuCau: 4, soCoDiem: 0 });
     assert(mt4.chu === 'MT4' && mt4.mau === 'tam', `MT chưa có điểm: ${JSON.stringify(mt4)}`);
     const giua = d.nhanGhim({ cheDo: 'ratio', attemptNo: 1, kind: 'progress', overall: null, sosLevel: null, soDat: 3, soYeuCau: 4, soCoDiem: 4 });
-    assert(giua.gon === 'Giữa' && giua.day.startsWith('Giữa khoá · Đạt 3/4 môn') && giua.mau === 'sos1', `Giữa khoá: ${JSON.stringify(giua)}`);
+    assert(giua.gon === 'Giữa' && giua.day.startsWith('Giữa khoá · 3/4 môn đạt') && giua.mau === 'sos1', `Giữa khoá: ${JSON.stringify(giua)}`);
     const cuoi = d.nhanGhim({ cheDo: 'ratio', attemptNo: 1, kind: 'final', overall: null, sosLevel: null, soDat: 4, soYeuCau: 4, soCoDiem: 4 });
     assert(cuoi.gon === 'Cuối' && cuoi.mau === 'dat', `Cuối khoá đạt: ${JSON.stringify(cuoi)}`);
     for (const r of [giua, cuoi]) assert(!r.chu.includes('MT') && !r.gon.includes('MT') && !r.day.includes('MT'), `Lớp thường không chứa MT: ${JSON.stringify(r)}`);
@@ -300,7 +300,7 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
   check('PR-UX5 (1) · nhanGhim lớp thường: "Giữa · SOS 1" / "Cuối · Đạt" / "Cuối · tạm thời", không chữ "MT"', () => {
     const base = { cheDo: 'ratio' as const, attemptNo: 1, overall: null, soYeuCau: 4, maLop: 'MB FOU 03' };
     const g = d.nhanGhim({ ...base, kind: 'progress', sosLevel: 1, soDat: 3, soCoDiem: 4 });
-    assert(g.chu === 'Giữa · SOS 1' && g.mau === 'sos1' && g.day === 'Giữa khoá MB FOU 03 · Đạt 3/4 môn · SOS 1', `Giữa: ${JSON.stringify(g)}`);
+    assert(g.chu === 'Giữa · SOS 1' && g.mau === 'sos1' && g.day === 'Giữa khoá MB FOU 03 · 3/4 môn đạt · SOS 1', `Giữa: ${JSON.stringify(g)}`);
     const c = d.nhanGhim({ ...base, kind: 'final', sosLevel: 0, soDat: 4, soCoDiem: 4 });
     assert(c.chu === 'Cuối · Đạt' && c.mau === 'dat', `Cuối đạt: ${JSON.stringify(c)}`);
     const t = d.nhanGhim({ ...base, kind: 'final', sosLevel: 2, soDat: 2, soCoDiem: 3 });
@@ -716,16 +716,16 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
 
   // ==================================================================== Task 6 — đầu hồ sơ lớp thường, chữ §6, khối SOS
 
-  check('PR-Qb (6) · Q17 attemptProgressView cheDo=ratio: đủ điểm đạt hết → "Đạt 4/4 môn", không chứa "kỳ vọng"', () => {
+  check('PR-Qb (6) · Q17 attemptProgressView cheDo=ratio: đủ điểm đạt hết → "4/4 môn đạt", không chứa "kỳ vọng"', () => {
     const v = d.attemptProgressView({ scored: 4, required: 4, passed: true, sos: 0, cheDo: 'ratio' });
-    assert(v.text === 'Đạt 4/4 môn', `Chữ: ${v.text}`);
+    assert(v.text === '4/4 môn đạt', `Chữ: ${v.text}`);
     assert(!v.text.includes('kỳ vọng') && !v.overallText.includes('kỳ vọng'), `Không được có "kỳ vọng": ${v.text} / ${v.overallText}`);
     assert(v.passBadge === true, 'Đủ điểm và đạt hết phải có badge');
   });
 
-  check('PR-Qb (6) · Q17 attemptProgressView cheDo=ratio: chưa đủ điểm → chứa "môn đã chấm"', () => {
+  check('PR-Qb (6) · Q17 attemptProgressView cheDo=ratio: chưa đủ điểm → "2/2 môn đạt · còn 2 môn" (PR-N1 A4)', () => {
     const v = d.attemptProgressView({ scored: 2, required: 4, passed: null, sos: 0, cheDo: 'ratio' });
-    assert(v.text.includes('môn đã chấm'), `Chữ: ${v.text}`);
+    assert(v.text === '2/2 môn đạt · còn 2 môn', `Chữ: ${v.text}`);
     assert(v.passBadge === false, 'Chưa đủ điểm không bao giờ có badge');
   });
 
@@ -738,16 +738,16 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
 
   // ==================================================================== Sửa sau rà PR #75 — Vấn đề 3
 
-  check('PR-Qb · sửa sau rà #75 (3): trượt cả 4/4 môn → "Chưa đạt 4/4 môn", không lấy sosLevel (chặn trần 3) làm số môn', () => {
+  check('PR-Qb · sửa sau rà #75 (3): trượt cả 4/4 môn → "0/4 môn đạt", không lấy sosLevel (chặn trần 3) làm số môn', () => {
     // sosLevel thật sự chặn trần ở 3 (sosFromFailCount) dù trượt cả 4 môn — phải truyền soMonChuaDat riêng.
     const v = d.attemptProgressView({ scored: 4, required: 4, passed: false, sos: 3, cheDo: 'ratio', soMonChuaDat: 4 });
-    assert(v.text === 'Chưa đạt 4/4 môn · SOS 3', `Chữ: ${v.text}`);
-    assert(!v.text.includes('3/4'), `Không được lấy nhầm mức SOS 3 làm số môn: ${v.text}`);
+    assert(v.text === '0/4 môn đạt · SOS 3', `Chữ: ${v.text}`);
+    assert(!v.text.includes('1/4'), `Không được lấy nhầm mức SOS 3 làm số môn: ${v.text}`);
   });
 
   check('PR-Qb · sửa sau rà #75 (3): thiếu soMonChuaDat → tạm lấy sos (không vỡ giao diện cũ)', () => {
     const v = d.attemptProgressView({ scored: 4, required: 4, passed: false, sos: 2, cheDo: 'ratio' });
-    assert(v.text === 'Chưa đạt 2/4 môn · SOS 2', `Chữ: ${v.text}`);
+    assert(v.text === '2/4 môn đạt · SOS 2', `Chữ: ${v.text}`);
   });
 
   check('PR-Qb (6) · StudentDetailPage.tsx không còn chữ cấm §6: "Số MT đánh lại", "Progress Test", "Final Test", "Lớp Normal", "Mở case"', () => {

@@ -82,7 +82,7 @@ export function sosTone(level: number | null): SosTone {
 }
 /** Nhãn do máy chủ gửi kèm tone chung: nếu là "SOS n" thì đổi sang màu SOS đúng bảng, còn lại giữ nguyên. */
 export function toneTheoNhan<T extends string>(text: string, tone: T): T | SosTone {
-  const m = /^SOS\s*([123])/.exec(text);
+  const m = /^SOS\s*([123])\b/.exec(text);
   return m ? sosTone(Number(m[1])) : tone;
 }
 /** Ba trạng thái case phải khác nhau ngay từ màu, không cần mở chi tiết mới biết. */

@@ -365,7 +365,7 @@ export function nhanGhim(a: {
   const soDat = a.soDat ?? 0;
   const sos = a.sosLevel ?? (soDat >= a.soYeuCau ? 0 : Math.min(3, a.soYeuCau - soDat));
   const mau = mauTuSos(sos);
-  const datMon = `Đạt ${soDat}/${a.soYeuCau} môn`;
+  const datMon = `${soDat}/${a.soYeuCau} môn đạt`;
   if (sos <= 0) return { chu: `${ngan} · Đạt`, gon: ngan, day: ghep(dai, datMon), mau };
   return { chu: `${ngan} · SOS ${sos}`, gon: ngan, day: ghep(dai, datMon, `SOS ${sos}`), mau };
 }

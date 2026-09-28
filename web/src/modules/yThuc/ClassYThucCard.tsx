@@ -8,7 +8,7 @@ import { DongThoiGian } from '../../ui/DongThoiGian.tsx';
 import { fmtDate, studentStatusLabel } from '../../lib/format.ts';
 import {
   VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, demTheoNhomViPham, type ViolationCategory,
-  BO_LOC_PHU, hopBoLocPhu, tuNgayTheoKhoang, type BoLocPhu,
+  BO_LOC_PHU, hopBoLocPhu, tuNgayTheoKhoang, type BoLocPhu, dongViPhamLop, maHocVienNgan,
 } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { usePanelYThuc } from './panelYThuc.tsx';
@@ -119,7 +119,8 @@ export function ClassYThucCard({ classId }: { classId: number }) {
       preparingByStudent.set(m.studentId, arr);
     });
     const studentIds = new Set([...unhandledByStudent.keys(), ...preparingByStudent.keys()]);
-    const rows: Array<{ studentId: number; studentName: string; count: number; oldestAgeDays: number; warningActive: boolean; violations: ViolationView[]; preps: MeasureDetail[] }> = [];
+    const rows: Array<{ studentId: number; studentName: string; count: number; oldestAgeDays: number; warningActive: boolean; violations: ViolationView[]; preps: MeasureDetail[];
+      vp: ReturnType<typeof dongViPhamLop<ViolationView>> }> = [];
     for (const studentId of studentIds) {
       const s = unhandledByStudent.get(studentId);
       const ms = preparingByStudent.get(studentId) ?? [];
@@ -130,6 +131,8 @@ export function ClassYThucCard({ classId }: { classId: number }) {
         studentId, studentName: s?.studentName ?? ms[0].studentName,
         count: s?.count ?? 0, oldestAgeDays: s?.oldestAgeDays ?? 0, warningActive: s?.warningActive ?? false,
         violations, preps: ms,
+        /* YC-11.3.2: số "n vi phạm" và danh sách "Vi phạm gần đây" là MỘT tập (chưa xử lý + đang chuẩn bị), cùng lọc nhóm. */
+        vp: dongViPhamLop({ chuaXuLy: s?.violations ?? [], dangChuanBi: ms, nhom: cat, homNay }),
       };
       if (!hopBoLocPhu(boLoc, { coChuaXuLy: violations.length > 0, coPaDangChuanBi: ms.length > 0, canhBao: row.warningActive })) continue;
       rows.push(row);
@@ -139,7 +142,7 @@ export function ClassYThucCard({ classId }: { classId: number }) {
 
   const students = useMemo(() => rowsForCategory(category, boLocPhu).sort((a, b) => (
     Number(b.warningActive) - Number(a.warningActive)
-    || b.violations.length - a.violations.length
+    || b.vp.so - a.vp.so
     || a.studentName.localeCompare(b.studentName, 'vi')
   )), [board.data, category, boLocPhu]);
   /* K3-3: số trên tab con = đúng số dòng hiện ở bộ lọc "Tất cả" (không tính bốn chip phụ), bất kể nhóm đang chọn. */
@@ -158,13 +161,6 @@ export function ClassYThucCard({ classId }: { classId: number }) {
 
   const d = board.data;
   const rosterById = new Map<number, any>((roster.data ?? []).map((r: any) => [r.id, r]));
-
-  /* YT-7: "Vi phạm gần đây" gộp CHƯA XỬ LÝ + vi phạm đang nằm trong PA đang chuẩn bị của em — không request thêm. */
-  const vpGanDay = (s: { studentId: number; violations: ViolationView[]; preps: MeasureDetail[] }) => {
-    const chuaXuLy = s.violations.map((v) => ({ v, dangChuanBi: null as { id: number; kindLabel: string } | null }));
-    const dangChuanBi = s.preps.flatMap((m) => (m.violations ?? []).map((v) => ({ v, dangChuanBi: { id: m.id, kindLabel: m.kindLabel } })));
-    return [...chuaXuLy, ...dangChuanBi].sort((a, b) => b.v.occurredOn.localeCompare(a.v.occurredOn) || b.v.id - a.v.id);
-  };
 
   const chiTietCuaDong = (v: ViolationView) => (
     <ChiTietViPham violationId={v.id} canManage={d.canManage}
@@ -248,17 +244,17 @@ export function ClassYThucCard({ classId }: { classId: number }) {
                           <span className="col-span-2 md:col-span-1 min-w-0">
                             <span className="block text-sm font-semibold text-slate-100">{s.studentName}</span>
                             <span className="block text-[11px] text-slate-500">
-                              {[r?.studentCode, r ? studentStatusLabel(r.status).toLowerCase() : null].filter(Boolean).join(' · ')}
+                              {[r ? maHocVienNgan(r.studentCode) : null, r ? studentStatusLabel(r.status).toLowerCase() : null].filter(Boolean).join(' · ')}
                             </span>
                           </span>
                           <span className="min-w-0">
-                            <span className="block text-sm font-semibold text-slate-100">{s.violations.length} vi phạm</span>
+                            <span className="block text-sm font-semibold tabular-nums text-slate-100">{s.vp.so} vi phạm</span>
                             <span className="block text-[11px] text-slate-500">{dem.nhom.map((g) => `${g.n} ${g.label}`).join(' · ')}</span>
                           </span>
                           <span className="min-w-0">
                             <span className="block">
                               {s.warningActive
-                                ? <Nhan tone="soon">cũ nhất {s.oldestAgeDays} ngày</Nhan>
+                                ? <Nhan tone="soon">cũ nhất {s.vp.cuNhatNgay ?? s.oldestAgeDays} ngày</Nhan>
                                 : <span className="text-xs text-slate-500">Không có cảnh báo</span>}
                             </span>
                             {/* YT-7 dòng HV: một PA → tên loại; nhiều PA → đếm. */}
@@ -279,7 +275,7 @@ export function ClassYThucCard({ classId }: { classId: number }) {
                           <div className="rounded-lg border p-2.5" style={{ borderColor: 'var(--line)' }}>
                             <p className="text-[11px] uppercase tracking-wide text-slate-500 m-0 mb-1.5">Vi phạm gần đây</p>
                             <DongThoiGian bien="gon" coCotChon={d.canManage}
-                              muc={vpGanDay(s).map(({ v, dangChuanBi }) => ({
+                              muc={s.vp.dong.map(({ v, dangChuanBi }) => ({
                                 key: `v${v.id}`, ngay: v.occurredOn,
                                 chon: d.canManage && !dangChuanBi
                                   ? { checked: ticks.has(v.id), onChange: () => toggleTick(s.studentId, v.id), nhanDoc: `Chọn vi phạm ${fmtDate(v.occurredOn)}` }

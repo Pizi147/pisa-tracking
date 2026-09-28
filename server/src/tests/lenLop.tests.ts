@@ -874,7 +874,7 @@ export async function runLenLopTests(t: YThucTestKit) {
 
   const lichSuLopSvc = await import('../classes/lichSuLop.ts');
 
-  check('PR-LT (8) · em lên lớp: hai dòng, dòng cũ "Lên lớp" + "Cuối khoá đạt n/4 môn"', () => {
+  check('PR-LT (8) · em lên lớp: hai dòng, dòng cũ "Lên lớp" + "Cuối khoá n/4 môn đạt"', () => {
     const { cls } = taoLopHetKhoa5(9, 0);
     const { sid, cycleId } = taoHV4({ clsId: cls, ma: 'FOU', ft: false });
     const attemptId = Number(conn.prepare(
@@ -891,7 +891,7 @@ export async function runLenLopTests(t: YThucTestKit) {
     assert(rows.length === 2, `Phải đúng 2 dòng: ${rows.length}`);
     assert(rows[0].lop.id === be && rows[0].dangHoc === true, `Dòng mới nhất phải là lớp mới, đang học: ${JSON.stringify(rows[0])}`);
     assert(rows[1].lop.id === cls && rows[1].ketThucVi === 'Lên lớp', `Dòng cũ phải "Lên lớp": ${JSON.stringify(rows[1])}`);
-    assert(rows[1].ketQua === 'Cuối khoá đạt 4/4 môn', `Kết quả dòng cũ: ${rows[1].ketQua}`);
+    assert(rows[1].ketQua === 'Cuối khoá 4/4 môn đạt', `Kết quả dòng cũ: ${rows[1].ketQua}`);
   });
 
   check('PR-LT (8) · em chuyển lớp: "Chuyển lớp" + đúng lý do đã ghi lúc chuyển', () => {

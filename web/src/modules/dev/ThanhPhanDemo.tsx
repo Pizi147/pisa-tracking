@@ -167,10 +167,10 @@ export default function ThanhPhanDemo() {
           rong={panel === 'rong' ? 'rong' : 'hep'} onDong={() => setPanel('dong')}
           ngCanh="Ngữ cảnh một dòng, cắt nếu quá dài…"
           chan={{ xoa: { onClick: () => undefined }, phu: <button type="button" className="btn" onClick={() => setPanel('hai')}>Mở panel thứ hai</button>,
-            chinh: <button type="button" className="btn btn-primary" onClick={() => setPanel('dong')}>Lưu</button>, conThieu: ['Mã lớp', 'Ghi chú'] }}>
+            chinh: <button type="button" className="btn btn-primary" onClick={() => setPanel('dong')}>Lưu</button>, conThieu: [{ nhan: 'Mã lớp', oId: 'o-ma-lop' }] }}>
           <Khoi tieuDe="Thông tin chung" luat="Luật dài nằm trong ⓘ, không thành khối chữ dưới ô.">
             <Hang2>
-              <Truong nhan="Mã lớp" batBuoc phu="Ví dụ: MB FT 101"><input className="field" defaultValue="" /></Truong>
+              <Truong nhan="Mã lớp" batBuoc phu="Ví dụ: MB FT 101" loi="Chưa điền"><input id="o-ma-lop" aria-invalid className="field" defaultValue="" /></Truong>
               <Truong nhan="Lộ trình"><select className="field"><option>LT1</option><option>LT2</option></select></Truong>
             </Hang2>
             <Truong nhan="Ghi chú" tuyChon><textarea className="field" rows={3} /></Truong>

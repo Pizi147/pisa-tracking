@@ -6,7 +6,8 @@ import { SCORE_CHIP, type ScoreTone } from './ui.tsx';
  * Đạt xanh lá · SOS 1 vàng · SOS 2 cam · SOS 3 (hay Overall chưa đạt) đỏ · tạm thời / chưa đủ điểm xám viền đứt.
  */
 function hoMau(tone: ProgressTone, overall: string, soMon: number | null): ScoreTone {
-  if (overall === 'incomplete') return 'tam';
+  /* PR-N1 A2: SOS tạm thời giữ màu của mức (viền đứt thêm ở dưới); chưa đủ điểm mà không có SOS thì xám viền đứt. */
+  if (overall === 'incomplete') return tone === 'danger' && soMon ? (soMon === 1 ? 'sos1' : soMon === 2 ? 'sos2' : 'rose') : 'tam';
   if (tone === 'danger') return soMon === 1 ? 'sos1' : soMon === 2 ? 'sos2' : 'rose';
   if (tone === 'info' || tone === 'ok') return 'emerald';
   return 'slate';
@@ -57,7 +58,7 @@ export function KetQuaDot({ coDiem, yeuCau, dat, sos, phan = 'cau', cheDo, soMon
   return (
     <span
       data-overall={v.overall} data-pass-badge={v.passBadge} title={v.title}
-      className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium ${SCORE_CHIP[mau]}`}>
+      className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium ${SCORE_CHIP[mau]} ${v.overall === 'incomplete' ? 'border-dashed' : ''}`}>
       <span aria-hidden>{mark}</span>
       {phan === 'overall' ? v.overallText : v.text}
     </span>

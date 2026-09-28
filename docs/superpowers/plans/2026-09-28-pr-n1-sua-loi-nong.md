@@ -1127,3 +1127,52 @@ function Band({ v, kyVong, faded, soSanh = true }: { v: number | null; kyVong: n
 - Task 5b: kỳ vọng cũ đã đổi (giữ số phép kiểm) — `sosV3.tests.ts`: S01 (PA tạo ra `started`, máy xác nhận, hạn Thứ Hai), S08/S08b (`planned` → `started`), S04+S07/S04 "Chỉnh"/C02/S06 (confirm/replace trên PA quy chế → 400 "đã được xác nhận rồi"; C02 giữ các chặn quyền), S05 (`confirmed_by` NULL thay `confirmed_at` NULL), S05b (chặn "Không cần theo dõi" khi PA quy chế đã có kết quả tuần thay cho "đã xác nhận"), FOLLOW + Q-V3-3 (dựng lại dòng "chờ xác nhận" kiểu dữ liệu cũ để giữ phép kiểm các chặn còn trong mã; Q-V3-3 dùng `migratePaQuyChe` thay `confirmPresetPlan`), CAUSE/IND (có nguyên nhân là đủ), HTTP (confirm + replace → 400), hai tên demo; `hoSoHocVien.tests.ts`: (c) + nhánh `goi-y` → `ghi-ket-qua`, vòng demo bỏ `unconfirmedPlanId`. `dieuChinhPa.tests.ts` (tự chèn dòng chờ xác nhận kiểu cũ rồi xác nhận — đường mã còn tới PR-SOS) và `run.ts:3908` (chỉ gọi confirm khi `confirmed_at` trống) vẫn đúng, không sửa.
 - Task 5b: `chay-thu:n1` trên DB demo của worktree (seed trước 5b): (4) **3** PA quy chế đang chờ xác nhận sẽ thành đang chạy; mã băm tệp DB giữ nguyên.
 - Task 5b: `npm run check` lần 1 — 1389 đạt / 1 đỏ: `run.ts` `[6.2→v3]` (:1002) còn đòi PA tự sinh `confirmed_at` NULL → sửa kỳ vọng sang PA quy chế đang chạy, máy xác nhận (cùng chỗ, tên phép kiểm bỏ "chưa xác nhận"). Lần 2: **1390 đạt** (+6: 5 phép khối 5b + 1 phép migrate S4-1 ở khối 3), typecheck xanh.
+- **Phần 2 (Task 6–13)**: PR #108 (Task 0–5b) đã được merge vào `main` khi còn dở → làm tiếp trên nhánh mới `pr-n1-tiep` tách
+  từ `origin/main` 3432d97 (đã gồm PR-LOP #109), cùng worktree `.claude/worktrees/pr-n1-sua-loi-nong`. Model thật **Opus 5.5**, không subagent.
+- Task 6: `useLoiForm` thêm bốn tiện ích ngoài brief để 13 form không chép lại cùng một khối — `datLai()` (đổi tab / reset quên lỗi
+  đã hiện), `loiCua(loi, khoa)`, `o(loi, khoa)` (id + onBlur + aria-invalid gắn lên ô), `conThieu(loi)` (chân chỉ có sau khi bấm).
+  Ô không sửa được file (`ChonTuan`, `ChonNgayGan` ở `ChonNgay.tsx` — ranh giới PR-NEN) và nhóm nút → bọc `div` có `id` +
+  `tabIndex={-1}` (`focusout` nổi bọt nên rời ô vẫn bắt được). Nút "+ Thêm PA đã áp dụng"/Xoá cập nhật `moSua`; lỗi thẻ PA vẫn dưới thẻ.
+  `aria-label="Đã làm gì"` bị phép kiểm PR-H chặn (chữ cũ) → `Phương án đã áp dụng`. Check: **1392** (+2).
+- Task 6–7: `DongCanSua` thêm một nhánh: mục là **câu chặn** không gắn ô (`{ lyDo }` không `oId`) → chân nói thẳng câu đó (xám),
+  không đếm "1 ô cần sửa" (Ngăn Case "Hoàn thành Case" khi còn PA chạy; Xác nhận PA ý thức với câu `measureMissing` có thể là tệp
+  đính kèm). Task 7: 12 file; Xoá HV / Xoá tài khoản giữ nút đỏ tắt tới khi khớp, thêm "Chưa khớp mã/email" dưới ô khi rời ô.
+  `ghi-ro` (Chuyển lớp, "Khác") dùng ≥ 3 ký tự theo bảng Task 7 (cũ: ≥ 1). Check: **1393** (+1).
+- Task 8: `ReturnType<typeof dongViPhamLop<ViolationView>>` cho kiểu dòng; "cũ nhất" dùng `vp.cuNhatNgay ?? oldestAgeDays`
+  (nhóm lọc chỉ còn vi phạm đang chuẩn bị → giữ số máy chủ). `top: 33px` chưa đo — đo ở Task 13. Check: **1395** (+2).
+- Task 9: ký tự 0x08 ở `format.ts:85` thay bằng `\b` (phép kiểm quét ký tự điều khiển toàn mã: sạch). `Level dut` giữ **màu chữ**
+  của mức, bỏ nền (tránh hai lớp `bg-*` đè nhau). A2 IELTS `SOS 2 tạm thời · 2/4 kỹ năng`. Kỳ vọng chữ đã đổi (cùng điều kiện):
+  `chamDiem.tests.ts` 2, `hanhTrinh.tests.ts` 6 (gồm "chưa đủ điểm → chứa môn đã chấm" → `2/2 môn đạt · còn 2 môn` theo mẫu
+  display.ts:196 của kế hoạch; "trượt cả 4/4" → `0/4 môn đạt · SOS 3`, chặn nhầm SOS đổi `3/4` → `1/4`), `hocVienLop.tests.ts` 4,
+  `luatMayChu.tests.ts` 4, `panelUx3.tests.ts` 3, `run.ts:8001` 1, `lenLop.tests.ts` 2 (`lichSuLop` hạ chữ đầu → `Cuối khoá 4/4 môn đạt`).
+  `passed === false` lớp thường không SOS (`Chưa đạt 4/4 môn`) không có trong danh sách A4 → để nguyên. Check: **1397** (+2).
+- Task 10: toast `ok`/`info` trung tính; `push` nhận thêm `demLui` (chỉ `hoanTac` bật). Check: **1398** (+1).
+- Task 11: phép kiểm khối 11 **bỏ qua** "npm run" ở ba chỗ chỉ có trong bản demo chạy trên máy (`modules/dev/`, `DemoBar.tsx`,
+  hướng dẫn nạp lại dữ liệu ở `WelcomePage.tsx` `SetupHelp`) — đó là hướng dẫn chạy lệnh thật cho người dùng demo, không phải chữ
+  máy lọt ra; "PISA Progress" vẫn quét mọi tệp. `nhatKy.ts` có nhãn cho mọi mã `action: 'x.y'` + các mã ghép động
+  (`case.plan.*`, `case.backfill`/`report`/`close`/`disposition`, `attempt.cancel_part`…, `score.*`, `regular.score*`, `user_*`,
+  `role.*`, `rule.changed`, `report.*`). XoaTaiKhoan: `Nên sao lưu dữ liệu trước lần xoá đầu.` (Quản trị tự sao lưu); hai kỳ vọng
+  `xoaDuLieu.tests.ts` đổi theo. `khuTrung` đổi 30 chỗ (thêm intervention/measure/violation/"phương án × chu kỳ" cùng mẫu). Check: **1399** (+1).
+- Task 12: mockup 19 và §5.6 R-PA3 **đã** đúng mẫu hạn Thứ Hai trên `main` (sửa ở vòng planning) → không sửa. Đặc tả YC-12.5.2
+  ghi thêm quyết định Q26 (chân chỉ đếm). TU_DIEN thêm mục 9 (PR-N1).
+- Task 13: `chay-thu:n1` trên DB seed mới (sau Task 12): (1) **0** PA dời · (2) **2** PA chưa xong không có hạn — cả 2 đang chờ duyệt, 0 đang chạy · (3) **0** · (4) **0** (seed mới đã tạo PA quy chế ở trạng thái chạy).
+  Thead đo thật **40px** (kế hoạch đoán 33px) → `.hang-lon-dinh` `top: 40px`. Sticky của `td` bám theo cả BẢNG (không theo `tbody`):
+  lớp trước vẫn dính tới khi hàng lớp sau cuộn lên đè — có một đoạn ~38px cuộn thấy hai hàng lớp chồng nhau (hàng dưới đè hàng trên).
+  Chấp nhận, ghi cho người rà. **Lỗi bắt được (13a)**: `listCases` lấy `MIN(followup_due)` (dự kiến kết thúc) làm `nextDue` →
+  cột "Việc tiếp theo" ở Học viên & Lớp ghi "Ghi kết quả S · hết T2 18/10" (18/10 là Chủ nhật, là dự kiến kết thúc), chip "Case quá hạn
+  cập nhật" và hàng đợi "Tới hạn" ở bảng Case cũng đếm theo dự kiến kết thúc. Sửa gốc: `MIN(action_due)` của PA `planned/started`
+  (cùng luật ô "Việc cần làm tiếp", T53 Q1); bảng Case đổi "hẹn dd/mm" → `<Han loai="cap-nhat-pa">`; thêm phép kiểm N1 (13a). Check cuối: **1400** (B + 33).
+- Task 13: 16 kịch bản KIỂM đạt ở bản mới (ảnh `thiet-ke/anh/pr-n1/*-1440.png`, `*-375.png`; bản trước `*-truoc.png` chụp từ `main` 3432d97
+  cùng kịch bản, seed riêng, cổng 4158/5358). Ngoài phạm vi: nhật ký Quản trị còn mã máy trong **tên đối tượng** do máy chủ ghi
+  (`Xác nhận việc phối hợp SOS · talk_family`) — chuyển PR khác.
+- **Sau rà của chủ sản phẩm (28/09, trả lời 3 câu ở PR #110)** — commit `PR-N1 (13b)` + gộp `main` (#111, xung đột một dòng §8 hàng PR-SOS: giữ cả hai):
+  (1) Hàng lớp dính: tách **mỗi lớp một `<table>`** (cùng `CotBangLop`), tiêu đề cột là khối dính riêng (`md:sticky`), bảng lớp có
+  `thead` `sr-only` cho trình đọc màn hình. `td` dính chỉ trong bảng của nó → cuộn hết lớp là bị lớp sau đẩy lên, không còn chồng.
+  (2) **Q28-5** (thêm vào đặc tả §3.1d): Case từ SOS "Đang xử lý" ⇔ có nguyên nhân chính VÀ có PA chưa huỷ do người xác nhận
+  (`preset = 0` hoặc `confirmed_by` có người). Một điều kiện SQL `CASE_SOS_DANG_XU_LY` (sosState.ts) cho `dongBoTrangThaiCase`
+  (gọi ở thêm PA, xong PA, ghi kết quả, xác nhận PA quy chế, phân loại nguyên nhân — thay 4 câu `open → in_progress` cũ) và migrate
+  `migrateTrangThaiCaseSos` (+ số (5) ở `chay-thu:n1`). Trạng thái tính ra thêm `chua_xu_ly` ("Chưa xử lý") ở danh sách Case (thêm ô
+  thứ tư), bảng kỹ năng hồ sơ HV, ô tổng hợp. Case GV tự báo giữ luật cũ. Panel Xác nhận PA (Q28-3) vẫn ở PR-SOS — tới lúc đó Case
+  từ SOS chỉ thành "Đang xử lý" khi GV tự thêm PA (sau khi có nguyên nhân). Seed mới: 0 Case đổi.
+  (3) Dấu dưới kỳ vọng: ký tự ▾ của Inter ở cỡ nhỏ chỉ như dấu chấm → `DauDuoi` (SVG tam giác 7×5, `ui/Nhan.tsx`) ở bảng điểm FT và
+  lưới lớp thường. Check: **1401** (+1 phép kiểm N1 (13b)).

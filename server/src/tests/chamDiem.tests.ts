@@ -79,9 +79,9 @@ export async function runChamDiemTests(t: YThucTestKit) {
 
   check('PR-Rc1 · Q9 Kết quả lớp thường: thiếu điểm KHÁC chưa đạt', () => {
     const eq = (got: any, want: string, m: string) => assert(got === want, `${m}: "${got}" ≠ "${want}"`);
-    eq(d.ketQuaThuong({ dat: 2, daCham: 2, tong: 4, thieu: ['W', 'S'] }).chinh, 'Đạt 2/2 môn đã chấm', 'Mới chấm hai môn');
+    eq(d.ketQuaThuong({ dat: 2, daCham: 2, tong: 4, thieu: ['W', 'S'] }).chinh, '2/2 môn đạt (đã chấm)', 'Mới chấm hai môn');
     eq(d.ketQuaThuong({ dat: 2, daCham: 2, tong: 4, thieu: ['W', 'S'] }).phu, 'còn W, S chưa chấm', 'Dòng phụ gọi tên môn');
-    eq(d.ketQuaThuong({ dat: 3, daCham: 4, tong: 4, thieu: [] }).chinh, 'Đạt 3/4 môn', 'Đủ điểm thì bỏ chữ "đã chấm"');
+    eq(d.ketQuaThuong({ dat: 3, daCham: 4, tong: 4, thieu: [] }).chinh, '3/4 môn đạt', 'Đủ điểm thì bỏ chữ "đã chấm"');
     eq(d.ketQuaThuong({ dat: 0, daCham: 0, tong: 4, thieu: ['L', 'R', 'W', 'S'] }).chinh, 'Chưa nhập điểm', 'Chưa có gì');
     assert(d.ketQuaThuong({ dat: 0, daCham: 0, tong: 4, thieu: ['L', 'R', 'W', 'S'] }).phu === null,
       'Chưa nhập môn nào thì không liệt kê cả bốn môn (G-3)');

@@ -24,6 +24,30 @@ export const NOT_UNCONFIRMED_PRESET = (alias = 'iv') => `NOT ${UNCONFIRMED_PRESE
 export const PA_QUY_CHE_CHUA_GHI = (a = 'iv') => `(${a}.preset = 1 AND ${a}.confirmed_by IS NULL AND ${a}.status IN ('planned', 'started')
   AND NOT EXISTS (SELECT 1 FROM case_followups f_qc WHERE f_qc.intervention_id = ${a}.id))`;
 
+/**
+ * Q28-5 (chủ sản phẩm 28/09): Case SINH TỪ SOS (có PA quy chế) chỉ "Đang xử lý" khi ĐÃ xác nhận nguyên nhân VÀ có một PA do
+ * NGƯỜI xác nhận (PA quy chế đã bấm Xác nhận — `confirmed_by` có người — hoặc PA GV tự thêm), chưa huỷ. PA máy gán chưa ai xác
+ * nhận không tính. `sc` là bí danh `sos_cases`. MỘT điều kiện cho hàm đồng bộ dưới đây và migrate PR-N1.
+ */
+export const LA_CASE_SOS = (sc = 'sc') =>
+  `EXISTS (SELECT 1 FROM case_interventions p_s WHERE p_s.case_id = ${sc}.id AND p_s.preset = 1)`;
+export const CASE_SOS_DANG_XU_LY = (sc = 'sc') => `(EXISTS (SELECT 1 FROM case_issues ci_s WHERE ci_s.case_id = ${sc}.id AND ci_s.role = 'primary')
+  AND EXISTS (SELECT 1 FROM case_interventions p_x WHERE p_x.case_id = ${sc}.id AND p_x.status != 'cancelled'
+               AND (COALESCE(p_x.preset, 0) = 0 OR p_x.confirmed_by IS NOT NULL)))`;
+
+/**
+ * Đặt lại "Chưa xử lý" / "Đang xử lý" của một Case chưa đóng sau mỗi việc có thể đổi trạng thái (thêm PA, ghi kết quả, xác nhận
+ * PA quy chế, xác định nguyên nhân). Case GV tự báo: như cũ — có việc là Đang xử lý. Case từ SOS: theo `CASE_SOS_DANG_XU_LY`.
+ * Đây là câu GHI duy nhất của mô-đun này.
+ */
+export function dongBoTrangThaiCase(caseId: number): void {
+  const conn = db();
+  const r = conn.prepare(`SELECT sc.status, CASE WHEN NOT ${LA_CASE_SOS()} OR ${CASE_SOS_DANG_XU_LY()} THEN 'in_progress' ELSE 'open' END AS moi
+    FROM sos_cases sc WHERE sc.id = ?`).get(caseId) as any;
+  if (!r || r.status === 'done' || r.status === r.moi) return;
+  conn.prepare('UPDATE sos_cases SET status = ?, updated_at = ? WHERE id = ?').run(r.moi, new Date().toISOString(), caseId);
+}
+
 export type SosCaseState = {
   /** Case do SOS tự tạo: có (hoặc từng có) phương án điền sẵn. Case tạo tay và case Normal thì không. */
   fromSos: boolean;

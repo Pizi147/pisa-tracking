@@ -1,12 +1,13 @@
 import { useState } from 'react';
+import { DauDuoi } from '../../ui/Nhan.tsx';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { Empty, ExamPlanText, Outcome, Skeleton, Status, Task, Th } from '../../ui/ui.tsx';
+import { Empty, ExamPlanText, Level, Outcome, Skeleton, Status, Task, Th } from '../../ui/ui.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
 import { CanhBaoYThuc } from '../classes/CanhBaoYThuc.tsx';
 import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from '../classes/thaoTacDongHocVien.tsx';
-import { fmtBand } from '../../lib/format.ts';
+import { fmtBand, sosTone } from '../../lib/format.ts';
 import {
   ENTRY_SKILL_LABEL, duongHoSoHocVien, maHocVienNgan, skillShort, type EntrySkill, type ExamPlan,
 } from '@shared/domain/index.ts';
@@ -28,6 +29,10 @@ type HistoryRow = {
   sosLevel: number | null; evaluable: boolean;
   scoredRequired: number; requiredCount: number;
   overall: number | null;
+  /** Kỳ vọng của đúng mốc này (PR-N1 K2-10) — ô band so với số này, không so target. */
+  expectation: number | null;
+  /** Writing tổng của mốc (SOS xét cột này). */
+  writing: number | null;
   bands: Record<string, number | null> | null;
 };
 
@@ -47,8 +52,8 @@ type RosterRow = {
   canhBaoYThuc: { count: number; oldestAgeDays: number; message: string } | null;
 };
 
-/** Bộ cột điểm của lớp Fast Track — mục 5.2: Target · Dự kiến thi · Mốc · OVR · L · R · W1 · W2 · S. */
-const FT_SKILLS = ['listening', 'reading', 'writing1', 'writing2', 'speaking'] as const;
+/** Bộ cột điểm của lớp Fast Track — mục 5.2: Target · Dự kiến thi · Mốc · OVR · L · R · W1 · W2 · W · S (W = Writing tổng, PR-N1 K2-10). */
+const FT_SKILLS = ['listening', 'reading', 'writing1', 'writing2', 'writing', 'speaking'] as const;
 
 /**
  * TAB HỌC VIÊN · CHẾ ĐỘ ĐIỂM · LỚP FAST TRACK (đặc tả §3.7 "FT: như hiện có (đợt MT)", mockup 06).
@@ -112,7 +117,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents }: {
         <table className="w-full min-w-[940px] table-fixed text-sm">
           <colgroup>
             <col className="w-[22%]" /><col className="w-[6%]" /><col className="w-[9%]" /><col className="w-[7%]" /><col className="w-[6%]" />
-            {skills.map((k) => <col key={k} className="w-[6%]" />)}
+            {skills.map((k) => <col key={k} className="w-[5%]" />)}
             <col className="w-[14%]" /><col className="w-12" />
           </colgroup>
           <thead>
@@ -129,8 +134,8 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents }: {
                 OVR
               </Th>
               {skills.map((k) => (
-                <Th key={k} align="right" hint={`${ENTRY_SKILL_LABEL[k as EntrySkill] ?? k} ở từng mốc`}>
-                  {skillLabel(k)}
+                <Th key={k} align="right" hint={k === 'writing' ? 'Writing tổng ở từng mốc — SOS xét cột này' : `${ENTRY_SKILL_LABEL[k as EntrySkill] ?? k} ở từng mốc`}>
+                  {k === 'writing' ? 'W' : skillLabel(k)}
                 </Th>
               ))}
               <Th hint="Một việc chính nếu có, kèm số Case đang xử lý. Quá hạn là thông tin của việc đó, không phải một việc riêng.">
@@ -187,7 +192,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents }: {
                     <Stack n={span} align="right">
                       {rows.length === 0 ? [<Dash key="none" />]
                         : rows.map((h, i) => (
-                          <Band key={h.id} v={h.overall} target={s.cycle?.target ?? null} faded={i > 0} />
+                          <Band key={h.id} v={h.overall} kyVong={h.expectation ?? null} faded={i > 0} />
                         ))}
                     </Stack>
                   </td>
@@ -197,7 +202,8 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents }: {
                       <Stack n={span} align="right">
                         {rows.length === 0 ? [<Dash key="none" />]
                           : rows.map((h, i) => (
-                            <Band key={h.id} v={h.bands?.[k] ?? null} target={s.cycle?.target ?? null} faded={i > 0} />
+                            <Band key={h.id} v={k === 'writing' ? h.writing ?? null : h.bands?.[k] ?? null} kyVong={h.expectation ?? null}
+                              soSanh={k !== 'writing1' && k !== 'writing2'} faded={i > 0} />
                           ))}
                       </Stack>
                     </td>
@@ -225,11 +231,11 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents }: {
  */
 function KetLuan({ row }: { row: RosterRow }) {
   const xam = 'inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap bg-slate-300/8 text-slate-400 border-slate-300/20';
-  const vang = 'inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap bg-amber-300/10 text-amber-200 border-amber-300/30';
   if (row.status !== 'active') return <span className={xam}>{row.ketThucVi ?? 'Đã kết thúc'}</span>;
   if (row.sosLevel === null) return <span className={xam}>Chưa có kết quả</span>;
   const tamThoi = row.provisional ? ' · tạm thời' : '';
-  if (row.sosLevel > 0) return <span className={vang}>SOS {row.sosLevel}{tamThoi}</span>;
+  /* PR-N1 A2: màu theo đúng mức SOS (hết vàng cho mọi mức); tạm thời = viền đứt + chữ "tạm thời". */
+  if (row.sosLevel > 0) return <Level tone={sosTone(row.sosLevel)} dut={row.provisional}>SOS {row.sosLevel}{row.provisional ? ' tạm thời' : ''}</Level>;
   return <span className={xam}>Đạt kỳ vọng{tamThoi}</span>;
 }
 
@@ -248,12 +254,19 @@ function Stack({ children, n, align = 'left' }: {
 
 function Dash() { return <span className="text-slate-700">–</span>; }
 
-/** Một ô band. Mốc cũ nhạt hơn để mắt bám vào hàng trên cùng (mục 5.4). */
-function Band({ v, target, faded }: { v: number | null; target: number | null; faded: boolean }) {
+/**
+ * Ô band (PR-N1 K2-10, A3, A9): so KỲ VỌNG CỦA ĐÚNG MỐC (không so target); dưới kỳ vọng có dấu mảnh ▾ (không chỉ dựa màu);
+ * luôn một chữ số thập phân. W1/W2 không tô đạt/chưa đạt (SOS xét Writing tổng). Mốc cũ nhạt hơn (mục 5.4).
+ */
+function Band({ v, kyVong, faded, soSanh = true }: { v: number | null; kyVong: number | null; faded: boolean; soSanh?: boolean }) {
   if (v === null) return <Dash />;
-  const met = target == null ? null : v >= target;
-  const tone = met === null ? 'text-slate-100' : met ? 'text-emerald-200' : 'text-rose-200';
-  return <span className={`tabular-nums text-xs ${tone} ${faded ? 'opacity-55' : ''}`}>{v}</span>;
+  const duoi = soSanh && kyVong !== null && v < kyVong;
+  const tone = !soSanh || kyVong === null ? 'text-slate-100' : duoi ? 'text-rose-200' : 'text-emerald-200';
+  return (
+    <span className={`tabular-nums text-xs ${tone} ${faded ? 'opacity-55' : ''}`} title={kyVong !== null ? `kỳ vọng ${fmtBand(kyVong)}` : undefined}>
+      {duoi && <DauDuoi />}{fmtBand(v)}
+    </span>
+  );
 }
 
 /**
