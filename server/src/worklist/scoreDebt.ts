@@ -1,9 +1,10 @@
 import { db } from '../db.ts';
-import { REGULAR_SKILLS } from '../../../shared/domain/index.ts';
+import { boMonLich } from '../../../shared/domain/index.ts';
 import type { Principal } from '../permissions.ts';
 import { loadBundle, regularSkillViews, skillCells } from '../fasttrack/attempts.ts';
 import { settleNoShows } from '../fasttrack/absence.ts';
 import { scoringModeOf } from '../fasttrack/skillSchedule.ts';
+import { allProgrammes } from '../normal/regular.ts';
 
 /**
  * Ô ĐIỂM CÒN NỢ — một ô = một kỹ năng một lượt, tuần thi đã bắt đầu, người được phân công chưa nhập (S12 + đặc tả §6).
@@ -29,7 +30,7 @@ export function scoreDebtCells(p: Principal, today: string, branchIds: number[] 
   if (branchIds) { where.push(`cl.branch_id IN (${branchIds.map(() => '?').join(',')})`); args.push(...branchIds); }
   const rows = conn
     .prepare(
-      `SELECT a.*, pg.scoring_mode, rp.week_start AS period_start, rp.week_end AS period_end, rp.code AS period_code
+      `SELECT a.*, pg.scoring_mode, cl.programme_code, rp.week_start AS period_start, rp.week_end AS period_end, rp.code AS period_code
          FROM assessment_attempts a
          JOIN classes cl ON cl.id = a.class_id
          LEFT JOIN programmes pg ON pg.code = cl.programme_code
@@ -39,17 +40,20 @@ export function scoreDebtCells(p: Principal, today: string, branchIds: number[] 
                         WHERE k.attempt_id = a.id AND r2.week_start <= ?)
                OR (NOT EXISTS (SELECT 1 FROM attempt_skills k2 WHERE k2.attempt_id = a.id) AND rp.week_start <= ?))
           /*
-           * LỌC TRƯỚC, CHỈ BỎ LƯỢT CHẮC CHẮN KHÔNG NỢ: mọi ô của bộ kỹ năng đã có điểm (lớp thường: số câu đúng ở L R W S; FT: band ở
+           * LỌC TRƯỚC, CHỈ BỎ LƯỢT CHẮC CHẮN KHÔNG NỢ: mọi ô của bộ kỹ năng đã có điểm (lớp thường: số câu đúng ở mọi môn của chương
+           * trình — bảng programme_skills, Pre FOU một ô (K5-39); FT: band ở
            * L R W1 W2 S). Không có dòng này thì mọi lượt đã chấm xong từ đầu khoá đều bị nạp lại mỗi lần mở bảng chi nhánh (Turso).
            * Luật "còn nợ" vẫn nằm ở \`skillCells\`/\`regularSkillViews\` bên dưới — đây chỉ là tập cha an toàn.
            */
           AND (SELECT COUNT(*) FROM assessment_scores sx
                 WHERE sx.attempt_id = a.id
                   AND CASE WHEN COALESCE(pg.scoring_mode, '') = 'ratio'
-                        THEN sx.raw_score IS NOT NULL AND sx.skill IN ('listening', 'reading', 'writing', 'speaking')
+                        THEN sx.raw_score IS NOT NULL
+                             AND sx.skill IN (SELECT ps.skill FROM programme_skills ps WHERE ps.programme_code = cl.programme_code)
                         ELSE sx.band IS NOT NULL AND sx.skill IN ('listening', 'reading', 'writing1', 'writing2', 'speaking')
                       END)
-              < CASE WHEN COALESCE(pg.scoring_mode, '') = 'ratio' THEN 4 ELSE 5 END`,
+              < CASE WHEN COALESCE(pg.scoring_mode, '') = 'ratio'
+                  THEN (SELECT COUNT(*) FROM programme_skills ps2 WHERE ps2.programme_code = cl.programme_code) ELSE 5 END`,
     )
     .all(...args, today, today) as any[];
   if (!rows.length) return [];
@@ -63,13 +67,15 @@ export function scoreDebtCells(p: Principal, today: string, branchIds: number[] 
   }
 
   const bundle = loadBundle(rows.map((r) => r.id));
+  const programmes = allProgrammes();          // một lần cho cả bảng, không mỗi lượt một câu
   const out: DebtCell[] = [];
   for (const a of rows) {
     const scores = bundle.scores.get(a.id) ?? [];
     const skillRows = bundle.skillRows.get(a.id);
     if (scoringModeOf(a) === 'ratio') {
-      const views = regularSkillViews(a, skillRows, scores, today, REGULAR_SKILLS);
-      for (const skill of REGULAR_SKILLS) {
+      const bo = boMonLich(a.programme_code, programmes.get(a.programme_code)?.skills);
+      const views = regularSkillViews(a, skillRows, scores, today, bo);
+      for (const skill of bo) {
         const v = views.get(skill);
         if (!v || !v.required || v.scored || !v.weekStart || v.weekStart > today || NOT_DEBT.has(v.progress)) continue;
         const userId = teacherOf.get(`${a.class_id}|${skill}`);

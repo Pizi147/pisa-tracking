@@ -329,7 +329,7 @@ function progressOf(
     };
   });
   /* Thứ tự cố định L·R·W·S để mắt quen chỗ, không đổi theo dữ liệu em nào nhiều điểm hơn. */
-  const order = ['listening', 'reading', 'writing', 'speaking'];
+  const order = ['listening', 'reading', 'writing', 'speaking', 'tong_hop'];
   skills.sort((x, y) => order.indexOf(x.skill) - order.indexOf(y.skill));
 
   /*

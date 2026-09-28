@@ -1,10 +1,10 @@
 import { db } from '../db.ts';
 import {
-  ASSESSED_SKILLS, PROGRAMME_TEMPLATES, REGULAR_SKILLS, SOS_LABEL,
+  ASSESSED_SKILLS, PROGRAMME_TEMPLATES, SOS_LABEL, boMonLich,
 } from '../../../shared/domain/index.ts';
 import { entryBandsOf, loadBundle } from '../fasttrack/attempts.ts';
 import { evaluateAttempt } from '../fasttrack/scoring.ts';
-import { evaluateRegular } from '../normal/regular.ts';
+import { allProgrammes, evaluateRegular } from '../normal/regular.ts';
 
 /**
  * TÌNH TRẠNG HỌC THUẬT HIỆN TẠI CỦA MỘT HỌC VIÊN — MỘT định nghĩa cho cả hệ thống.
@@ -189,6 +189,9 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
     if (s.cycleId !== null && r.cycle_id !== null && r.cycle_id !== s.cycleId) s.handoverCases += 1;
   }
 
+  /* Bộ môn lớp thường: đọc bảng MỘT lần cho cả danh sách, chỉ khi có em lớp thường (không N+1). */
+  let programmes: ReturnType<typeof allProgrammes> | null = null;
+  const boMonCua = (ct: string | null) => boMonLich(ct, (programmes ??= allProgrammes()).get(ct ?? '')?.skills);
   for (const [studentId, cycle] of cycleOf) {
     const s = out.get(studentId)!;
     const ratio = !!cycle.programme_code && PROGRAMME_TEMPLATES[
@@ -223,8 +226,8 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
       s.periodCode = a.period_code ?? null;
 
       if (ratio) {
-        const tpl = PROGRAMME_TEMPLATES[cycle.programme_code as keyof typeof PROGRAMME_TEMPLATES];
-        const r = evaluateRegular([...(tpl?.skills ?? REGULAR_SKILLS)], scores as any);
+        /* Một nguồn bộ môn: bảng `programme_skills` (qua `allProgrammes`, nhớ trong request), hằng số chỉ dự phòng (K5-45). */
+        const r = evaluateRegular(boMonCua(cycle.programme_code), scores as any, cycle.programme_code);
         s.sosLevel = r.sosLevel;
         s.provisional = r.provisional;
         s.scored = r.scored;
@@ -255,7 +258,7 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
       break;
     }
     if (s.attemptId === null && s.required === 0) {
-      s.required = ratio ? REGULAR_SKILLS.length : ASSESSED_SKILLS.length;
+      s.required = ratio ? boMonCua(cycle.programme_code).length : ASSESSED_SKILLS.length;
     }
   }
   return out;

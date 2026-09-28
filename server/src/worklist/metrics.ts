@@ -200,7 +200,7 @@ export const LISTED_METRICS: readonly string[] = [
   ...PHOI_HOP_METRIC_IDS,
 ];
 
-/** Kỹ năng ĐÁNH GIÁ mà `hv-duoi-ky-vong-mon` nhận. */
+/** Kỹ năng ĐÁNH GIÁ mà `hv-duoi-ky-vong-mon` nhận — chỉ số của khung Fast Track (MH5), không có môn lớp thường. */
 const SKILLS_FOR_METRIC = ['listening', 'reading', 'writing', 'speaking'] as const;
 
 /**

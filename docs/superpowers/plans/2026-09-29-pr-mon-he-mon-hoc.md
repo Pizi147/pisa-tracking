@@ -615,6 +615,11 @@ K5-45 T4 (+LOP) · K5-46 T2 · K5-47 T1/T5 · K5-48 T2 · K5-57 T5 · K5-67 T2.
   `skippedSkillsOf` giữ `AssessedSkill[]` (ép kiểu tại chỗ — phạm vi chỉ dùng ở FT). `loadOne` (dùng chung `setSkillWeek`/`setSitStatus`)
   kiểm bằng `boMonCuaLuot`. `absence.ts` `skillName` → `tenMon(null, s)` (không lộ `tong_hop`); `blockingLabels` ở chi tiết lượt →
   `tenMon(null, k)` dự phòng. `scoreDebt.ts:71` tạm truyền `REGULAR_SKILLS` (Task 4 đổi sang bộ chương trình).
+- **Task 4:** 1460 (+3). `standing.ts`: `allProgrammes()` đọc lười MỘT lần/danh sách (gọi trong vòng làm phép kiểm N+1 PR-LT (3)
+  28 → 34 câu vỡ); nhận diện `ratio` vẫn qua `PROGRAMME_TEMPLATES` (không nằm trong phạm vi). `canCham.ts`: `DongNo.chuongTrinh` thêm
+  luôn ở Task này (cần cho `kyNangLabelOf`), lấy qua `programmeOfClass` một lần/lớp thay `isRatioClass` (cùng số câu). `tongQuan.ts:40`
+  đổi danh sách viết tay → `ASSESSED_SKILLS` + `tenMon(null, …)` ngay Task này (phép quét Task 4 không có nó trong bảng trắng); lọc
+  theo khung vẫn ở Task 9. `seed/build.ts` dùng `boMonLich(programme_code lớp)`.
 
 ## Chủ sản phẩm chốt 29/09
 

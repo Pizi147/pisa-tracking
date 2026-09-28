@@ -1,5 +1,14 @@
 /** PHÉP KIỂM PR-MON — hệ môn học theo chương trình, Pre FOU một ô Tổng hợp, hai khung FT / Lớp thường. Harness do `run.ts` truyền vào. */
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { docSach as doc } from './panelUx3.tests.ts';
+
+const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
+/** Mọi file .ts/.tsx dưới `dir` (đường dẫn tương đối gốc repo, dấu /). */
+const quet = (dir: string): string[] => fs.readdirSync(path.join(REPO, dir), { withFileTypes: true }).flatMap((e) =>
+  e.isDirectory() ? quet(`${dir}/${e.name}`) : /\.tsx?$/.test(e.name) ? [`${dir}/${e.name}`] : []);
 
 export async function runPrMonTests(t: YThucTestKit) {
   const { check, checkAsync, assert, assertThrows, conn, P, TODAY, addDays, classId } = t;
@@ -178,5 +187,31 @@ export async function runPrMonTests(t: YThucTestKit) {
     assert(pf.tyLeTong === 0.675 && pf.sosLevel === 1 && pf.skills[0].label === 'Tổng hợp', JSON.stringify(pf));
     const fou = regularMod.evaluateRegular(d.REGULAR_SKILLS, [], 'FOU');
     assert(fou.skills.map((s: any) => s.label).join() === 'Listening,Reading,Grammar + Vocabulary,Pronunciation', 'nhãn FOU');
+  });
+
+  // ------------------------------------------------------------------ Task 4 · nợ điểm, danh sách môn viết tay
+  const debtMod: any = await import('../worklist/scoreDebt.ts');
+  const perm: any = await import('../permissions.ts');
+  const no = (lop: number) => (debtMod.scoreDebtCells(P.admin, TODAY, null) as any[]).filter((c) => c.classId === lop);
+  check('MON (4) · nợ điểm Pre FOU: đúng 1 ô tong_hop/em cho GVCN, không ô L/R/W/S; nhập 1 em → bớt 1 (K5-39)', () => {
+    const l = taoLopPreFou(3);
+    const ha = perm.loadPrincipal(GVCN_HA);   // nạp lại: phân công mới sau lúc harness dựng P
+    const truoc = no(l.classId);
+    assert(truoc.length === 3 && truoc.every((c) => c.skill === 'tong_hop' && c.userId === GVCN_HA), JSON.stringify(truoc));
+    regularMod.saveRegularScore(ha, l.luot[0].id, 'tong_hop', { score: 27, total: 40 }, TODAY);
+    const sau = no(l.classId);
+    assert(sau.length === 2 && !sau.some((c) => c.attemptId === l.luot[0].id), JSON.stringify(sau));
+  });
+  check('MON (4) · lượt Pre FOU đủ điểm không bị nạp lại (câu lọc trước theo bảng programme_skills)', () => {
+    const l = taoLopPreFou(1);
+    regularMod.saveRegularScore(perm.loadPrincipal(GVCN_HA), l.luot[0].id, 'tong_hop', { score: 30, total: 40 }, TODAY);
+    assert(no(l.classId).length === 0, 'còn nợ sau khi đủ điểm');
+  });
+  check('MON (4) · quét danh sách 4 môn viết tay ở máy chủ: chỉ bảng trắng', () => {
+    const TRANG = ['metrics.ts', 'boQuen.ts', 'vanDeHv.ts', 'phanTich.ts', 'keHoachTest.ts'];
+    const mau = [/\[\s*'listening',\s*'reading',\s*'writing',\s*'speaking'\s*\]/];
+    const lo = quet('server/src').filter((f) => !/\/(tests|seed)\/|\/migrate/.test(f) && !TRANG.includes(path.basename(f)))
+      .filter((f) => mau.some((m) => m.test(doc(f))));
+    assert(lo.length === 0, `còn danh sách 4 môn viết tay: ${lo.join(', ')}`);
   });
 }

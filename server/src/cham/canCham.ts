@@ -16,12 +16,12 @@ import {
   activeAt, can, classScopeSql, defaultWorkScope, editableSkills, mySkills, scopeFor, type Principal,
 } from '../permissions.ts';
 import {
-  ATTEMPT_KIND_SHORT, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, PERMISSIONS, SKILL_SHORT, lopTuMo, nhanLopLichTest, noShowStateOf,
+  ATTEMPT_KIND_SHORT, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, PERMISSIONS, SKILL_SHORT, lopTuMo, tenMonNgan, nhanLopLichTest, noShowStateOf,
   trangThaiChamLabel, type AssessedSkill, type AttemptKind, type LoaiNhanLop, type PhamViLichTest,
 } from '../../../shared/domain/index.ts';
 import { classScoreSheet, conBaiCanCham, listAttempts, type MonDoiLich } from '../fasttrack/attempts.ts';
 import { assessedSkillOf, entrySkillsOf } from '../fasttrack/scoring.ts';
-import { allProgrammes, isRatioClass, regularSheet } from '../normal/regular.ts';
+import { allProgrammes, isRatioClass, programmeOfClass, regularSheet } from '../normal/regular.ts';
 import { isOverdue, skillScoreDeadline, weekInfo } from '../platform/week.ts';
 
 export function chamSheet(
@@ -69,6 +69,8 @@ export type LuiLich = {
  */
 export type DongNo = {
   key: string; classId: number; classCode: string; mode: CheDo;
+  /** Mã chương trình của lớp (MH2: tên môn theo chương trình — FOU G+V/P, Pre FOU Tổng hợp). */
+  chuongTrinh: string | null;
   kind: string; attemptNo: number | null; dotLabel: string;
   periodId: number | null; weekStart: string | null;
   kyNang: string[]; kyNangLabel: string;
@@ -90,12 +92,12 @@ const dotLabelOf = (kind: string, attemptNo: number | null) =>
   (kind === 'mock' ? `MT${attemptNo ?? ''}` : ATTEMPT_KIND_SHORT[kind as AttemptKind] ?? kind);
 
 /** Thứ tự môn cố định L · R · W · S (W1, W2 của FT nằm chỗ W) — dòng nào cũng đọc cùng một thứ tự. */
-const THU_TU_KY_NANG = ['listening', 'reading', 'writing', 'writing1', 'writing2', 'speaking'];
+const THU_TU_KY_NANG = ['listening', 'reading', 'writing', 'writing1', 'writing2', 'speaking', 'tong_hop'];
 const theoThuTu = (a: string, b: string) =>
   ((THU_TU_KY_NANG.indexOf(a) + 1 || 99) - (THU_TU_KY_NANG.indexOf(b) + 1 || 99));
 
-const kyNangLabelOf = (mode: CheDo, kyNang: string[]) =>
-  (mode === 'ratio' && kyNang.length >= 4 ? `${kyNang.length} môn` : kyNang.map((k) => SKILL_SHORT[k] ?? k).join(', '));
+const kyNangLabelOf = (mode: CheDo, kyNang: string[], ct: string | null) =>
+  (mode === 'ratio' && kyNang.length >= 4 ? `${kyNang.length} môn` : kyNang.map((k) => tenMonNgan(ct, k)).join(', '));
 
 /** Chia lô cho câu `IN (...)` — SQLite giới hạn số tham số của một câu lệnh. */
 function theoLo<T>(ids: T[], hoi: (lo: T[], ph: string) => void) {
@@ -181,10 +183,14 @@ export function noTuanTruoc(
   if (f.classIds && !f.classIds.size) return { dong: [], quaHanBai: 0 };
   const motLop = f.classIds && f.classIds.size === 1 ? [...f.classIds][0] : undefined;
   const { rows } = listAttempts(p, { branchId: f.branchId ?? undefined, classId: motLop, scope: 'managed' });
-  const cheDo = new Map<number, CheDo>();
-  const cheDoOf = (classId: number): CheDo => {
-    if (!cheDo.has(classId)) cheDo.set(classId, isRatioClass(classId) ? 'ratio' : 'ielts_band');
-    return cheDo.get(classId)!;
+  /* Một câu mỗi LỚP (như `isRatioClass` trước đây), không mỗi dòng: cách chấm + mã chương trình. */
+  const lopInfo = new Map<number, { mode: CheDo; ct: string | null }>();
+  const lopOf = (classId: number) => {
+    if (!lopInfo.has(classId)) {
+      const pg = programmeOfClass(classId);
+      lopInfo.set(classId, { mode: pg?.scoringMode === 'ratio' ? 'ratio' : 'ielts_band', ct: pg?.code ?? null });
+    }
+    return lopInfo.get(classId)!;
   };
 
   type ChiTiet = {
@@ -208,7 +214,7 @@ export function noTuanTruoc(
       let cu = gom.get(key);
       if (!cu) {
         cu = {
-          key, classId: a.classId, classCode: a.classCode ?? '—', mode: cheDoOf(a.classId),
+          key, classId: a.classId, classCode: a.classCode ?? '—', mode: lopOf(a.classId).mode, chuongTrinh: lopOf(a.classId).ct,
           kind: a.kind, attemptNo: a.attemptNo ?? null, dotLabel: dotLabelOf(a.kind, a.attemptNo ?? null),
           periodId: x.periodId, weekStart: x.weekStart,
           kyNang: [], kyNangLabel: '', conBai: 0, soHv: 0, attemptIds: [], han: null, quaHan: false, luiLich: null,
@@ -240,7 +246,7 @@ export function noTuanTruoc(
     return {
       ...rest,
       kyNang,
-      kyNangLabel: kyNangLabelOf(d.mode, kyNang),
+      kyNangLabel: kyNangLabelOf(d.mode, kyNang, d.chuongTrinh),
       soHv: _hs.size,
       attemptIds: [..._aid],
       quaHan: !!d.han && isOverdue(d.han, today),
@@ -329,7 +335,7 @@ function oFtXong(diem: OiemLuu[], nhap: string, v: { periodId: number; weekEnd: 
 }
 
 const THU_TU_MON =
-  `CASE ask.skill WHEN 'listening' THEN 1 WHEN 'reading' THEN 2 WHEN 'writing' THEN 3 WHEN 'speaking' THEN 4 ELSE 5 END`;
+  `CASE ask.skill WHEN 'listening' THEN 1 WHEN 'reading' THEN 2 WHEN 'writing' THEN 3 WHEN 'speaking' THEN 4 WHEN 'tong_hop' THEN 5 ELSE 6 END`;
 
 /**
  * "TUẦN NÀY CÓ NHỮNG LƯỢT TEST NÀO, CÒN PHẢI CHẤM GÌ" — MỘT lời gọi đủ cho màn Lịch Test (PR-UX1): hàng lớp, dải số,

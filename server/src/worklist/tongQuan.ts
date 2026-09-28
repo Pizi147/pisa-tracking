@@ -1,6 +1,6 @@
 import { db } from '../db.ts';
 import {
-  CAN_XU_LY, PERMISSIONS, REGULAR_SKILL_LABEL, SOS_LABEL, caseTopicLabel, chonDiemDangChuY, sapCanXuLy,
+  ASSESSED_SKILLS, CAN_XU_LY, PERMISSIONS, SOS_LABEL, caseTopicLabel, tenMon, chonDiemDangChuY, sapCanXuLy,
   type ChuongTrinh, type DiemChuY, type DongCanXuLyGoc, type MaCanXuLy, type UngVienChuY,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -37,10 +37,11 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null; ct: 
 
   /* ĐIỂM ĐÁNG CHÚ Ý — ba luật (plan Q6), mỗi ứng viên là một chỉ số có sẵn. */
   const ung: UngVienChuY[] = [];
-  for (const skill of ['listening', 'reading', 'writing', 'speaking'] as const) {
+  /* `hv-duoi-ky-vong-mon` là chỉ số khung Fast Track: 4 kỹ năng đánh giá (MH5). */
+  for (const skill of ASSESSED_SKILLS) {
     const r = metricSet(p, 'hv-duoi-ky-vong-mon', { ...base, skill });
     ung.push({ loai: 'mon-duoi-ky-vong', metricId: 'hv-duoi-ky-vong-mon', extra: { skill }, tu: r.n,
-      mau: r.denominatorIds?.length ?? 0, nhanMon: REGULAR_SKILL_LABEL[skill] });
+      mau: r.denominatorIds?.length ?? 0, nhanMon: tenMon(null, skill) });
   }
   const tl = metricSet(p, 'ty-le-co-cai-thien', base);
   ung.push({ loai: 'pa-cai-thien', metricId: 'ty-le-co-cai-thien', tu: tl.numeratorIds?.length ?? 0, mau: tl.n });

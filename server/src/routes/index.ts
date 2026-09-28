@@ -519,7 +519,7 @@ api.get('/ke-hoach-test/ft/:classId', requireAuth, wrap((req) =>
 function tuanTheoKyNang(v: any): Record<string, number> {
   const out: Record<string, number> = {};
   if (!v || typeof v !== 'object') return out;
-  for (const k of ['listening', 'reading', 'writing', 'speaking']) {
+  for (const k of ['listening', 'reading', 'writing', 'speaking', 'tong_hop']) {   // tong_hop: Pre FOU (PF6)
     const n = toInt(v[k]);
     if (n) out[k] = n;
   }
