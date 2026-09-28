@@ -318,4 +318,40 @@ export async function runPrDuyetTests(t: YThucTestKit) {
     const muc = d.mucQuanLyHocVien({ canEdit: false, lopHoc: null, cycle: { ratio: false }, status: 'active', deXuatSua: true }).map((x: any) => x.key);
     assert(muc.join() === 'de-xuat-sua' && d.NHAN_VIEC_QUAN_LY['de-xuat-sua'] === 'Đề xuất sửa thông tin…', muc.join());
   });
+
+  // ---------------------------------------------------------------- khối 7: Báo lên Case chờ nguyên nhân quá hạn (K1-57) + Nhắc
+  const { awaitingCauseCaseIds } = await import('../cases/sosState.ts');
+  const { nhacViec } = await import('../worklist/nhacViec.ts');
+  check('DUYET (7) · Case chờ nguyên nhân quá hạn → MỘT thẻ Báo lên (quét lần hai không thêm); QL "Của tôi" không còn dòng cause, "tat-ca" vẫn có; Nhắc trỏ đúng dòng; có nguyên nhân → tự đóng', () => {
+    const ung = conn.prepare(`SELECT sc.id, sc.owner_user_id FROM sos_cases sc
+      WHERE sc.status != 'done' AND sc.owner_user_id IS NOT NULL AND sc.owner_user_id != ?
+        AND EXISTS (SELECT 1 FROM case_signals g WHERE g.case_id = sc.id AND g.status = 'linked') ORDER BY sc.id`).all(P.admin.userId) as any[];
+    const cho = new Set(awaitingCauseCaseIds(ung.map((r) => r.id)));
+    const kase = ung.find((r) => cho.has(r.id));
+    assert(kase, 'Bộ demo thiếu Case SOS chờ nguyên nhân (seed SOS v3)');
+    conn.prepare(`UPDATE case_signals SET verify_due = ? WHERE case_id = ? AND status = 'linked'`).run(t.addDays(TODAY, -2), kase.id);
+    yc.quetYeuCau(TODAY); yc.quetYeuCau(TODAY);
+    const dem = () => (conn.prepare(`SELECT COUNT(*) n FROM yeu_cau_duyet WHERE loai = 'bao_len_nguyen_nhan' AND doi_tuong_id = ? AND trang_thai = 'cho'`)
+      .get(kase.id) as any).n;
+    assert(dem() === 1, `số thẻ Báo lên: ${dem()}`);
+    const the = yc.hopChoDuyet(P.admin).the.find((x: any) => x.loai === 'bao_len_nguyen_nhan' && x.duLieu?.viecKey === `cause:${kase.id}`);
+    assert(the && the.kieuNut === 'nhac' && the.nguoiXin === null && the.phanLoai === 'bao-len' && the.hanDuyet === t.addDays(TODAY, -2)
+      && the.dong[0].startsWith('Không cần duyệt'), JSON.stringify(the));
+    assert(maLoi(() => yc.duyetYeuCau(P.admin, the.id)) === 400, 'Báo lên duyệt được');
+    assert(!conn.prepare(`SELECT 1 FROM notifications WHERE kind = 'duyet_qua_han' AND entity_id = ?`).get(the.id), 'Báo lên sinh duyet_qua_han (Q13)');
+    const khoa = (w: any) => w.items.map((it: any) => it.key);
+    assert(!khoa(myworkSvc.myWork(P.admin, {})).includes(`cause:${kase.id}`), 'QL "Của tôi" còn dòng cause của GV khác');
+    const tatCa = myworkSvc.myWork(P.admin, { nguoi: 'tat-ca' }).items.find((it: any) => it.key === `cause:${kase.id}`);
+    assert(tatCa && tatCa.ownerId === kase.owner_user_id, '"tat-ca" mất dòng cause');
+    const r1 = nhacViec(P.admin, { key: `cause:${kase.id}`, ownerId: kase.owner_user_id });
+    const tb = conn.prepare(`SELECT * FROM notifications WHERE user_id = ? AND kind = 'nhac_viec' AND dedup_key LIKE ?`).get(kase.owner_user_id, `nhac:cause:${kase.id}:%`) as any;
+    assert(tb && tb.duong === tatCa.href && d.duongThongBao(tb) === tatCa.href, JSON.stringify(tb));
+    assert(nhacViec(P.admin, { key: `cause:${kase.id}`, ownerId: kase.owner_user_id }).daNhacLuc === r1.daNhacLuc, 'nhắc lần hai gửi thêm');
+    assert(yc.hopChoDuyet(P.admin).the.find((x: any) => x.id === the.id)?.duLieu?.daNhacLuc === r1.daNhacLuc, 'thẻ không hiện Đã nhắc');
+    conn.prepare(`INSERT INTO case_issues (case_id, role, taxonomy_code, created_at) VALUES (?, 'primary', 'student.listening.technique', ?)`)
+      .run(kase.id, new Date().toISOString());
+    yc.quetYeuCau(TODAY);
+    const sau = conn.prepare('SELECT trang_thai, ly_do_dong FROM yeu_cau_duyet WHERE id = ?').get(the.id) as any;
+    assert(sau.trang_thai === 'tu_dong' && sau.ly_do_dong === 'Việc gốc đã xong', JSON.stringify(sau));
+  });
 }

@@ -700,7 +700,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     if (!can(p, PERMISSIONS.SOS_EDIT, { classId: c.eff_class_id, studentId: c.eff_student_id, skill: c.topic ?? undefined })) continue;
     const u = urgencyOf(c.due ?? null, today);
     const mine = c.owner_user_id === p.userId;
-    const asManager = u === 'overdue' && can(p, PERMISSIONS.CASE_APPROVE, { classId: c.eff_class_id, studentId: c.eff_student_id });
+    /* PR-DUYET (K1-57): QL không còn dòng này ở "Của tôi" — quá hạn thì nó là thẻ Báo lên ở hộp Chờ duyệt; "Của GV (nhắc)" vẫn có để nhắc. */
+    const asManager = tatCa && u === 'overdue' && can(p, PERMISSIONS.CASE_APPROVE, { classId: c.eff_class_id, studentId: c.eff_student_id });
     if (!mine && !asManager) continue;
     const missing = [c.has_cause ? null : 'chưa chọn nguyên nhân'].filter(Boolean) as string[];
     const skillLabel = c.topic ? caseTopicLabel(c.topic) : 'Kỹ năng';

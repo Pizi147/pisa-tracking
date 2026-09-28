@@ -16,11 +16,13 @@ import { decideAbsenceMove } from '../fasttrack/absence.ts';
 import { attemptHref } from '../fasttrack/attempts.ts';
 import { ensurePeriod } from '../platform/week.ts';
 import { addJourney } from '../platform/audit.ts';
-import { db } from '../db.ts';
+import { db, tx } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest } from '../util.ts';
 import { reviseTarget, updateCycle } from '../fasttrack/cycles.ts';
 import { NHAN_TRUONG_DE_XUAT, TRUONG_TU_AP, hienTaiCua, type TruongDeXuat } from './deXuatSua.ts';
+import { awaitingCauseCaseIds } from '../cases/sosState.ts';
+import { taoYeuCau } from './yeuCau.ts';
 
 export type YeuCauRow = {
   id: number; loai: LoaiYeuCau; doi_tuong_loai: string; doi_tuong_id: number; hoc_vien_id: number | null;
@@ -210,6 +212,54 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
           ? (d.truong === 'target' ? 'Target đổi từ hôm nay; kỳ vọng của các lượt đã thi giữ nguyên.' : 'Lộ trình đổi ngay.')
           : 'Không tự áp — sửa ở màn gốc trước, rồi Duyệt kèm ghi chú đã làm gì.',
         duLieu: { canGhiChu: !tuAp },
+      };
+    },
+  },
+  /* ------------------------------------------------------------ PR-DUYET · Báo lên: Case chờ nguyên nhân quá hạn (K1-57, T77) */
+  {
+    loai: 'bao_len_nguyen_nhan',
+    /* PR-SOS đổi `verify_due` → `han_xac_nhan` trong PHẦN TỬ NÀY (định nghĩa "chờ nguyên nhân" là của `awaitingCauseCaseIds`). */
+    quet: (conn, homNay) => {
+      const ung = conn.prepare(
+        `SELECT sc.id, sc.owner_user_id, COALESCE(sc.student_id, a.student_id) AS sid, a.class_id,
+                (SELECT MIN(g.verify_due) FROM case_signals g WHERE g.case_id = sc.id AND g.status = 'linked') AS han
+           FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+           JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
+          WHERE sc.status != 'done' AND s.archived_at IS NULL
+            AND (SELECT MIN(g.verify_due) FROM case_signals g WHERE g.case_id = sc.id AND g.status = 'linked') < ?
+            AND NOT EXISTS (SELECT 1 FROM yeu_cau_duyet y WHERE y.loai = 'bao_len_nguyen_nhan' AND y.doi_tuong_loai = 'sos_case'
+                             AND y.doi_tuong_id = sc.id AND y.trang_thai = 'cho')`,
+      ).all(homNay) as any[];
+      if (!ung.length) return 0;
+      const cho = new Set(awaitingCauseCaseIds(ung.map((r) => r.id as number)));
+      const tao = ung.filter((r) => cho.has(r.id));
+      if (!tao.length) return 0;
+      return tx(() => tao.filter((r) => taoYeuCau(conn, {
+        loai: 'bao_len_nguyen_nhan', doiTuongLoai: 'sos_case', doiTuongId: r.id, hocVienId: r.sid, lopId: r.class_id ?? null,
+        nguoiXin: null, hanDuyet: r.han, duLieu: { viecKey: `cause:${r.id}`, ownerId: r.owner_user_id ?? null },
+      }) !== null).length);
+    },
+    chet: {
+      sql: `NOT EXISTS (SELECT 1 FROM sos_cases sc WHERE sc.id = y.doi_tuong_id AND sc.status != 'done'
+             AND NOT EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary'))`,
+      lyDo: 'Việc gốc đã xong',
+    },
+    nap: (conn, ds) => {
+      const ids = ds.map((y) => y.id);
+      return new Map((conn.prepare(
+        `SELECT y.id, sc.topic, sc.owner_user_id, u.full_name AS ten_gv, n.created_at AS da_nhac
+           FROM yeu_cau_duyet y JOIN sos_cases sc ON sc.id = y.doi_tuong_id LEFT JOIN users u ON u.id = sc.owner_user_id
+           LEFT JOIN notifications n ON n.user_id = sc.owner_user_id AND n.dedup_key = 'nhac:cause:' || sc.id || ':' || ?
+          WHERE y.id IN (${ids.map(() => '?').join(',')})`).all(demoToday(), ...ids) as any[]).map((r) => [r.id as number, r]));
+    },
+    moTa: (yc, ngu) => {
+      const x = ngu.them.get(yc.id);
+      return {
+        tieuDe: `Case chờ nguyên nhân quá hạn${x?.topic ? ` · ${caseTopicLabel(x.topic)}` : ''}`,
+        phu: x?.ten_gv ? `GVBM ${x.ten_gv}` : null,
+        dong: ['Không cần duyệt — để QL biết và nhắc.'],
+        mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, { caseId: yc.doi_tuong_id }) : undefined,
+        duLieu: { tenGv: x?.ten_gv ?? null, daNhacLuc: x?.da_nhac ?? null, ownerId: x?.owner_user_id ?? null },
       };
     },
   },

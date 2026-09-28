@@ -77,6 +77,8 @@ export type ThongBaoRow = {
   kind: string | null;
   student_id: number | null;
   attempt_id: number | null;
+  /** PR-DUYET: đường mở riêng lưu cùng thông báo (Nhắc). */
+  duong?: string | null;
 };
 
 /**
@@ -104,7 +106,7 @@ export function duongThongBao(n: ThongBaoRow): string | null {
       return duongThe(n.entity_id, n.kind === 'duyet_ket_qua' ? 'nguoi-xin' : 'duyet');
     /* PR-Ra Q5: người được Nhắc bấm chuông thì về thẳng danh sách có dòng vừa được nhắc. */
     case 'nhac_viec':
-      return '/cong-viec';
+      return n.duong ?? '/cong-viec';
     /* PR-LT, Q21: thông báo chuyển lớp — entity_id CHÍNH LÀ studentId (không phải student_id riêng). */
     case 'student':
       return duongHoSoHocVien(n.entity_id);
