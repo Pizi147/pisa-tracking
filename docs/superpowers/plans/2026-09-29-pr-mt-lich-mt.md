@@ -536,3 +536,7 @@ khác ngày với bản thử thì chạy thử lại. 5. Chạy thử lần n�
    tới khi anh/chị chọn; đổi sang (A) chỉ là đổi điều kiện chọn em trong `keHoachBoSung`.
 
 ## Nhật ký
+
+## Planning chốt 29/09
+
+- Chủ sản phẩm sẽ **reset database trước khi deploy bản chính** (GV chưa dùng) → **BỎ lệnh `bo-sung-mt-mac-dinh` (T35) và phần chạy thử danh sách bổ sung** (không có dữ liệu thật để bổ sung). Câu hỏi "bổ sung MT còn thiếu cho em đã có 1–2 lượt" không còn cần. Migrate cột `lich_su` + `chay-thu:mt` (đếm nhanh) vẫn giữ cho DB THỬ/demo.

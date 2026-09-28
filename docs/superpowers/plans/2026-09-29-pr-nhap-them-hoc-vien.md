@@ -580,3 +580,7 @@ bấm K1, K2, K5, K8. 3. Migrate **DB CHÍNH** (`PISA_CHO_PHEP_MIGRATE_TURSO=<t�
 ## Nhật ký
 
 - (Task 0) PR-MT đã merge: … · tên hàm thật: … · mốc B: … · dòng lệch: …
+
+## Chủ sản phẩm chốt 29/09
+
+- Dán bảng **không có dòng tiêu đề → từ chối**, nhắc dán kèm tiêu đề (phương án A).

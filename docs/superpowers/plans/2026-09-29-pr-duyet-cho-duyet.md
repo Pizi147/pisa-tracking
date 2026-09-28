@@ -558,3 +558,7 @@ PA; GVCN sửa target/lộ trình/lớp qua "Đề xuất sửa".
 - Dòng thật lệch kế hoạch:
 - Trần tốc độ đổi (cũ → mới):
 - `chay-thu:duyet` trên bản sao DB demo:
+
+## Chủ sản phẩm chốt 29/09 (thay các chỗ lệch trong kế hoạch)
+
+- **Câu 1 = B:** GVCN **vẫn tự chuyển lớp** (kể cả sang chi nhánh khác — chốt 24/09, PR-LT). Chỉ rút quyền GVCN tự sửa **target** và **lộ trình** (đi thẻ "Đề xuất sửa thông tin HV" trong Chờ duyệt). Cửa 🛑 ở Task 6: theo B, không rút chuyển lớp.

@@ -598,3 +598,8 @@ XLMT · K5-29 T2 · K5-30 T5 (+LOP) · K5-38 T3 · K5-39 T4 · K5-40 T1/T6/T7 ·
 K5-45 T4 (+LOP) · K5-46 T2 · K5-47 T1/T5 · K5-48 T2 · K5-57 T5 · K5-67 T2.
 
 ## Nhật ký
+
+## Chủ sản phẩm chốt 29/09
+
+- Tên đầy đủ môn FOU: **G+V = Grammar + Vocabulary**, **P = Pronunciation**.
+- Nhóm nguyên nhân "Tổng hợp" của Pre FOU: theo khuyến nghị 5 mục (planning chốt).
