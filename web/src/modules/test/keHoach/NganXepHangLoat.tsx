@@ -7,6 +7,7 @@ import { KhungPanel, Khoi } from '../../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../../ui/loiForm.tsx';
 import { Nhan, type ToneNhan } from '../../../ui/Nhan.tsx';
 import { useToast } from '../../../ui/Toast.tsx';
+import { NutChon } from '../../../ui/ui.tsx';
 import {
   emGiuLaiSauLuu, gomBaiXemTruoc, gomChip, mondayOfDate, nhanTuanKhoa, tomTatHangLoat, tuanLich,
   type BaiXemTruoc, type DongHangLoat, type KyNangKH,
@@ -193,10 +194,9 @@ export function NganXepHangLoat({ loai, classId, classCode, onClose, onDone }: {
               {dots.map((d) => {
                 const xong = dotXongCaLop(d);
                 return (
-                  <button key={khoaDot(d)} type="button" disabled={xong}
-                    className={`btn min-h-[44px] sm:min-h-0 ${dot && khoaDot(dot) === khoaDot(d) ? 'btn-primary' : ''} ${xong ? 'opacity-50' : ''}`}
+                  <NutChon key={khoaDot(d)} disabled={xong} chon={!!dot && khoaDot(dot) === khoaDot(d)} className={xong ? 'opacity-50' : ''}
                     title={xong ? 'Cả lớp đã xong đợt này' : undefined}
-                    onClick={() => setDot(d)}>{nhanDot(d)}{xong && <span aria-hidden> ✓</span>}</button>
+                    onClick={() => setDot(d)}>{nhanDot(d)}{xong && <span aria-hidden> ✓</span>}</NutChon>
                 );
               })}
               {!dots.length && <span className="text-xs text-slate-500">Lớp chưa có đợt nào.</span>}

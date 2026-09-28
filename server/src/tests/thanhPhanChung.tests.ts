@@ -217,4 +217,13 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     for (const f of ['web/src/modules/yThuc/PhoiHopSosSection.tsx', 'web/src/modules/cases/CaseBoardPage.tsx', 'web/src/modules/students/StudentsPage.tsx'])
       assert(/<NhanTrangThai\b/.test(doc(f)) && !/<Status kind/.test(doc(f)), `${f} chưa dùng NhanTrangThai`);
   });
+
+  check('NEN (8) · B3: không nút lựa chọn nào dùng btn-primary; E6: tab trang là HangTab, bộ lọc là BoLocDoan', () => {
+    const sai = tepNguon('web/src').filter((f) => !/modules\/classes\//.test(f)    // phần chờ LOP — Task 11 bỏ loại trừ
+      && /\?\s*'btn-primary'\s*:\s*''/.test(doc(f)));
+    assert(sai.length === 0, sai.join(', '));
+    assert(/<HangTab\b/.test(doc('web/src/modules/platform/AdminPage.tsx')), 'Quản trị còn kiểu tab viên bo');
+    for (const f of ['web/src/modules/yThuc/ClassYThucCard.tsx', 'web/src/modules/yThuc/StudentYThucSection.tsx', 'web/src/modules/students/HanhTrinh.tsx'])
+      assert(/<BoLocDoan\b/.test(doc(f)), `${f} chưa dùng BoLocDoan`);
+  });
 }

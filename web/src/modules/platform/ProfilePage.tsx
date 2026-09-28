@@ -3,7 +3,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { api } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-import { Card, ErrorState, Field, Info, SectionNote, Skeleton } from '../../ui/ui.tsx';
+import { Card, ErrorState, Field, Info, NutChon, SectionNote, Skeleton } from '../../ui/ui.tsx';
 import { skillLabel } from '../../lib/format.ts';
 
 type Profile = {
@@ -113,10 +113,9 @@ export default function ProfilePage() {
             hint="Đây là NĂNG LỰC, dùng để gợi ý khi phân công — không phải quyền nhập điểm.">
             <div className="flex flex-wrap gap-1.5">
               {data.allSkills.map((k) => (
-                <button key={k} type="button" className={`btn btn-sm ${d.skills.has(k) ? 'btn-primary' : ''}`}
-                  onClick={() => toggleSkill(k)}>
+                <NutChon key={k} nho chon={d.skills.has(k)} onClick={() => toggleSkill(k)}>
                   {skillLabel(k)}
-                </button>
+                </NutChon>
               ))}
             </div>
           </Field>

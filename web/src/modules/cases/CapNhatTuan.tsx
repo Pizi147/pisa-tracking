@@ -8,6 +8,7 @@ import { QuaHan } from '../../ui/Nhan.tsx';
 import { ChonTuan } from '../../ui/ChonNgay.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
+import { NutChon } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
   FOLLOWUP_OUTCOMES, INTERVENTION_KIND_LABEL, OUTCOME_MARK,
@@ -258,10 +259,10 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
         <div>
           <div {...o('ket-qua')} tabIndex={-1} className="grid grid-cols-2 gap-2 outline-none sm:grid-cols-4" role="group" aria-label={tuanGhi}>
             {FOLLOWUP_OUTCOMES.filter((o) => o !== 'insufficient').map((o) => (
-              <button key={o} type="button" aria-pressed={outcome === o}
-                className={`btn min-h-[44px] justify-center whitespace-nowrap px-1.5 text-xs sm:min-h-0 ${outcome === o ? 'btn-primary' : ''}`} onClick={() => pickOutcome(o)}>
+              <NutChon key={o} chon={outcome === o} onClick={() => pickOutcome(o)}
+                className="justify-center whitespace-nowrap px-1.5 text-xs">
                 {OUTCOME_MARK[o] ?? ''} {outcomeLabelFor(o)}
-              </button>
+              </NutChon>
             ))}
           </div>
           <p className="m-0 mt-1.5 text-[11px] text-slate-500">

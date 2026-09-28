@@ -11,6 +11,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
+import { NutChon } from '../../ui/ui.tsx';
 import { ComponentsField, componentsPayload } from './ChiTietKyNang.tsx';
 import {
   ENTRY_SKILL_LABEL, URGENCY_LEVELS, URGENCY_LABEL, issuesForTopic, DEFAULT_URGENCY,
@@ -361,11 +362,11 @@ export function QuickReport({
           ) : (
             <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.max(topics.length, 1)}, minmax(0, 1fr))` }}>
               {topics.map((k) => (
-                <button key={k} type="button" aria-pressed={topic === k} title={topicLabel(k)}
-                  className={`btn min-h-[44px] justify-center px-1 sm:min-h-0 ${topic === k ? 'btn-primary' : ''}`}
+                <NutChon key={k} chon={topic === k} title={topicLabel(k)}
+                  className="justify-center px-1"
                   onClick={() => { setTopic(k); setPrimaryCode(''); }}>
                   {topicShort(k)}
-                </button>
+                </NutChon>
               ))}
             </div>
           )}
@@ -392,10 +393,9 @@ export function QuickReport({
           <Truong nhan="Mức độ" batBuoc phu="Nhận định của người báo, không phải mức SOS" as="div">
             <div className="grid grid-cols-2 gap-2">
               {URGENCY_LEVELS.map((u) => (
-                <button key={u} type="button" aria-pressed={urgency === u}
-                  className={`btn min-h-[44px] justify-center sm:min-h-0 ${urgency === u ? 'btn-primary' : ''}`} onClick={() => setUrgency(u)}>
+                <NutChon key={u} chon={urgency === u} className="justify-center" onClick={() => setUrgency(u)}>
                   {URGENCY_LABEL[u]}
-                </button>
+                </NutChon>
               ))}
             </div>
           </Truong>
@@ -491,10 +491,9 @@ export function QuickReport({
             <Truong nhan="Kết quả cuối" batBuoc as="div" loi={loiCua('ket-qua')}>
               <div {...o('ket-qua')} tabIndex={-1} className="grid grid-cols-2 gap-2 outline-none sm:grid-cols-4">
                 {CASE_OUTCOMES.map((o) => (
-                  <button key={o} type="button" aria-pressed={bfOutcome === o}
-                    className={`btn min-h-[44px] justify-center sm:min-h-0 ${bfOutcome === o ? 'btn-primary' : ''}`} onClick={() => setBfOutcome(o)}>
+                  <NutChon key={o} chon={bfOutcome === o} className="justify-center" onClick={() => setBfOutcome(o)}>
                     {CASE_OUTCOME_LABEL[o]}
-                  </button>
+                  </NutChon>
                 ))}
               </div>
             </Truong>

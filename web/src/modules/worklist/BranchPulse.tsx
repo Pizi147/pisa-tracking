@@ -1,7 +1,7 @@
 import { Fragment, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { Card, Empty, ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
+import { BoLocDoan, Card, Empty, ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { SoLieuO } from '../../ui/SoLieuO.tsx';
 import { DINH_TRAI } from '../phanTich/dungChung.tsx';
@@ -72,10 +72,8 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
   return (
     <Card title={data.cheDo === 'lop' ? `Theo lớp${data.tenChiNhanh ? ` · ${data.tenChiNhanh}` : ''}` : 'Theo chi nhánh'}
       action={coGv ? (
-        <div className="flex gap-1">
-          <button type="button" aria-pressed={view === 'lop'} className={`btn btn-sm ${view === 'lop' ? 'btn-primary' : ''}`} onClick={() => setView('lop')}>Theo lớp</button>
-          <button type="button" aria-pressed={view === 'gv'} className={`btn btn-sm ${view === 'gv' ? 'btn-primary' : ''}`} onClick={() => setView('gv')}>Theo giáo viên</button>
-        </div>
+        <BoLocDoan ariaLabel="Cách xem" value={view} onChange={setView}
+          muc={[{ key: 'lop', nhan: 'Theo lớp' }, { key: 'gv', nhan: 'Theo giáo viên' }]} />
       ) : undefined}
       bodyClass="p-0">
       {coGv && view === 'gv' ? <BangTheoGiaoVien branchId={data.branchId ?? branchId} /> : (

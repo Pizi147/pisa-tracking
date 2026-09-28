@@ -3,7 +3,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { LA_BAN_CHINH } from '../../lib/banChinh.ts';
 import { ApiError, api } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
-import { Alert, Field, Info, SectionNote } from '../../ui/ui.tsx';
+import { Alert, Field, Info, NutChon, SectionNote } from '../../ui/ui.tsx';
 import { skillLabel } from '../../lib/format.ts';
 
 import { ROLES, ROLE_LABEL, type Role } from '@shared/domain/index.ts';
@@ -298,11 +298,9 @@ function RegisterForm({ info, onDone }: { info: AuthInfo | null; onDone: () => v
         hint="Đây là đề nghị của bạn — người duyệt sửa lại được trước khi đồng ý.">
         <div className="flex flex-wrap gap-1.5">
           {(branches.data ?? []).map((b) => (
-            <button key={b.code} type="button"
-              className={`btn btn-sm ${picked.has(b.code) ? 'btn-primary' : ''}`}
-              onClick={() => toggle(picked, b.code, setPicked)}>
+            <NutChon key={b.code} nho chon={picked.has(b.code)} onClick={() => toggle(picked, b.code, setPicked)}>
               {b.name}
-            </button>
+            </NutChon>
           ))}
         </div>
       </Field>
@@ -310,11 +308,9 @@ function RegisterForm({ info, onDone }: { info: AuthInfo | null; onDone: () => v
       <Field label="Kỹ năng bạn phụ trách được" hint="Dùng để gợi ý khi phân công lớp. Bỏ trống cũng được.">
         <div className="flex flex-wrap gap-1.5">
           {(info?.skills ?? []).map((s) => (
-            <button key={s} type="button"
-              className={`btn btn-sm ${skills.has(s) ? 'btn-primary' : ''}`}
-              onClick={() => toggle(skills, s, setSkills)}>
+            <NutChon key={s} nho chon={skills.has(s)} onClick={() => toggle(skills, s, setSkills)}>
               {skillLabel(s)}
-            </button>
+            </NutChon>
           ))}
         </div>
       </Field>

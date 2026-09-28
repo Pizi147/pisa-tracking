@@ -7,6 +7,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonNgayGan, ChonTuan } from '../../ui/ChonNgay.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
+import { NutChon } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
   CASE_OUTCOMES, CASE_OUTCOME_LABEL, HAN_DUYET_NGAY, INTERVENTION_KIND_LABEL, RESCHEDULE_TARGETS, RESCHEDULE_TARGET_LABEL,
@@ -121,10 +122,9 @@ export function ThemPaPanel({ caseId, studentId, hocVien, lop, quayLai, onClose,
           <Truong nhan="Lùi cái gì" batBuoc as="div">
             <div className="grid grid-cols-2 gap-2">
               {RESCHEDULE_TARGETS.map((t) => (
-                <button key={t} type="button" aria-pressed={rescheduleTarget === t}
-                  className={`btn justify-center ${rescheduleTarget === t ? 'btn-primary' : ''}`} onClick={() => setRescheduleTarget(t)}>
+                <NutChon key={t} chon={rescheduleTarget === t} className="justify-center" onClick={() => setRescheduleTarget(t)}>
                   {RESCHEDULE_TARGET_LABEL[t]}
-                </button>
+                </NutChon>
               ))}
             </div>
           </Truong>
@@ -135,10 +135,10 @@ export function ThemPaPanel({ caseId, studentId, hocVien, lop, quayLai, onClose,
         </Truong>
         <Truong nhan="Tình trạng" batBuoc as="div">
           <div className="grid grid-cols-2 gap-2">
-            <button type="button" aria-pressed={status === 'started'} className={`btn justify-center ${status === 'started' ? 'btn-primary' : ''}`}
-              onClick={() => setStatus('started')}>Đang theo dõi</button>
-            <button type="button" aria-pressed={status === 'completed'} className={`btn justify-center ${status === 'completed' ? 'btn-primary' : ''}`}
-              onClick={() => setStatus('completed')}>Đã xong</button>
+            <NutChon chon={status === 'started'} className="justify-center"
+              onClick={() => setStatus('started')}>Đang theo dõi</NutChon>
+            <NutChon chon={status === 'completed'} className="justify-center"
+              onClick={() => setStatus('completed')}>Đã xong</NutChon>
           </div>
         </Truong>
       </Khoi>
@@ -217,10 +217,9 @@ export function HoanThanhCasePanel({ caseId, category, categoryLabel, ratio, hoc
         <Truong nhan="Sau cả đợt hỗ trợ, em tiến bộ đến đâu?" batBuoc as="div">
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="group">
             {CASE_OUTCOMES.map((o) => (
-              <button key={o} type="button" aria-pressed={outcome === o}
-                className={`btn min-h-[44px] justify-center sm:min-h-0 ${outcome === o ? 'btn-primary' : ''}`} onClick={() => setOutcome(o)}>
+              <NutChon key={o} chon={outcome === o} className="justify-center" onClick={() => setOutcome(o)}>
                 {CASE_OUTCOME_LABEL[o]}
-              </button>
+              </NutChon>
             ))}
           </div>
         </Truong>
@@ -281,10 +280,9 @@ export function TraLoiDeXuatPanel({ iv, hocVien, lop, quayLai, onClose, onSaved 
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={gui}>Gửi</button>,
       }}>
       <Khoi tieuDe="Quyết định">
-        <div role="radiogroup" aria-label="Quyết định" className="grid grid-cols-3 gap-2">
+        <div role="group" aria-label="Quyết định" className="grid grid-cols-3 gap-2">
           {([['approved', 'Duyệt'], ['declined', 'Không duyệt'], ['comment', 'Góp ý']] as const).map(([k, t]) => (
-            <button key={k} type="button" role="radio" aria-checked={decision === k}
-              className={`btn min-h-[44px] justify-center sm:min-h-0 ${decision === k ? 'btn-primary' : ''}`} onClick={() => setDecision(k)}>{t}</button>
+            <NutChon key={k} chon={decision === k} className="justify-center" onClick={() => setDecision(k)}>{t}</NutChon>
           ))}
         </div>
         <p className="m-0 text-[11px] text-slate-500">{NGHIA[decision]}</p>

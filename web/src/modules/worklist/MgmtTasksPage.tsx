@@ -4,7 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-import { Alert, Card, Empty, ErrorState, Field, Forbidden, Info, SectionNote, Skeleton, Status, Th } from '../../ui/ui.tsx';
+import { Alert, Card, Empty, ErrorState, Field, Forbidden, Info, NutChon, SectionNote, Skeleton, Status, Th } from '../../ui/ui.tsx';
 import { Drawer, Modal } from '../../ui/Drawer.tsx';
 import { BranchFilter } from '../../ui/Filters.tsx';
 import { Han } from '../../ui/Han.tsx';
@@ -463,11 +463,9 @@ function UpdateDialog({ open, onClose, task, onDone }: {
         <Field label="Trạng thái">
           <div className="flex flex-wrap gap-1.5">
             {TASK_PROGRESS.map((s) => (
-              <button key={s} type="button"
-                className={`btn btn-sm ${progress === s ? 'btn-primary' : ''}`}
-                onClick={() => setProgress(s)}>
+              <NutChon key={s} nho chon={progress === s} onClick={() => setProgress(s)}>
                 {TASK_PROGRESS_LABEL[s]}
-              </button>
+              </NutChon>
             ))}
           </div>
         </Field>

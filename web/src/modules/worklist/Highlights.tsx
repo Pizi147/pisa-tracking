@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { Card, Info, Skeleton } from '../../ui/ui.tsx';
+import { BoLocDoan, Card, Info, Skeleton } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { thamSoCt, tuanLich, type ChuongTrinh } from '@shared/domain/index.ts';
 
@@ -82,13 +82,8 @@ export function LichSapToi({ branchId, ct }: { branchId: number | null; ct: Chuo
         <>
           <div className="px-4 py-3 border-b flex flex-wrap items-center gap-1.5"
             style={{ borderColor: 'var(--line)' }}>
-            {data.weeks.map((w, i) => (
-              <button key={w.weekStart} className={`btn btn-sm ${tab === i ? 'btn-primary' : ''}`}
-                onClick={() => setTab(i)}>
-                {TAB_LABEL[i]}
-                <span className="opacity-70 ml-1.5 text-[11px]">{tuanLich(w.weekStart, homNay)}</span>
-              </button>
-            ))}
+            <BoLocDoan ariaLabel="Tuần" value={String(tab)} onChange={(k) => setTab(Number(k))}
+              muc={data.weeks.map((w, i) => ({ key: String(i), nhan: `${TAB_LABEL[i]} · ${tuanLich(w.weekStart, homNay)}` }))} />
             <span className="text-[11px] text-slate-500 ml-1">{week.range}</span>
           </div>
 

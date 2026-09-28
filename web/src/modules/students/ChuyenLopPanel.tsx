@@ -8,6 +8,7 @@ import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
+import { NutChon } from '../../ui/ui.tsx';
 import { ChonThang, ChonTuan } from '../../ui/ChonNgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
@@ -169,9 +170,8 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone }: {
             <Truong nhan="Lý do" batBuoc as="div" loi={loiCua('ly-do')}>
               <div {...o('ly-do')} tabIndex={-1} className="grid grid-cols-2 gap-2 outline-none sm:grid-cols-4">
                 {TRANSFER_REASONS.map((r) => (
-                  <button key={r} type="button" aria-pressed={reasonCode === r}
-                    className={`btn min-h-[44px] justify-center px-1 sm:min-h-0 ${reasonCode === r ? 'btn-primary' : ''}`}
-                    onClick={() => setReasonCode(r)}>{TRANSFER_REASON_LABEL[r]}</button>
+                  <NutChon key={r} chon={reasonCode === r} className="justify-center px-1"
+                    onClick={() => setReasonCode(r)}>{TRANSFER_REASON_LABEL[r]}</NutChon>
                 ))}
               </div>
               <OKhac hien={reasonCode === 'khac'} value={reasonNote} onChange={setReasonNote} nhan="Ghi rõ lý do"

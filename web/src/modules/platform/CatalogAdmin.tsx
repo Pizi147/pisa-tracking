@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Card, Field, Forbidden, Info, SectionNote, Skeleton, Th} from '../../ui/ui.tsx';
+import { Card, Field, Forbidden, Info, NutChon, SectionNote, Skeleton, Th} from '../../ui/ui.tsx';
 import { Drawer } from '../../ui/Drawer.tsx';
 import { skillLabel } from '../../lib/format.ts';
 import { ENTRY_SKILLS, REGULAR_SKILLS } from '@shared/domain/index.ts';
@@ -243,11 +243,10 @@ function ProgrammeDialog({ row, onClose, onDone }: {
           hint={locked ? 'Loại lớp gốc không đổi được cách chấm — đổi là đổi ý nghĩa của mọi điểm đã nhập.' : undefined}>
           <div className="flex flex-wrap gap-2">
             {(['ratio', 'ielts_band'] as const).map((m) => (
-              <button key={m} type="button" disabled={locked}
-                className={`btn btn-sm ${f.scoringMode === m ? 'btn-primary' : ''} ${locked ? 'opacity-60' : ''}`}
+              <NutChon key={m} nho disabled={locked} chon={f.scoringMode === m} className={locked ? 'opacity-60' : ''}
                 onClick={() => setF({ ...f, scoringMode: m })}>
                 {m === 'ratio' ? 'Điểm đạt / Tổng điểm' : 'Band IELTS'}
-              </button>
+              </NutChon>
             ))}
           </div>
         </Field>
@@ -256,14 +255,13 @@ function ProgrammeDialog({ row, onClose, onDone }: {
           hint={locked ? 'Loại lớp gốc không đổi được bộ kỹ năng — bỏ một kỹ năng là bỏ chỗ tựa của điểm đã có.' : undefined}>
           <div className="flex flex-wrap gap-1.5">
             {ALL_SKILLS.map((s) => (
-              <button key={s} type="button" disabled={locked}
-                className={`btn btn-sm ${f.skills.has(s) ? 'btn-primary' : ''} ${locked ? 'opacity-60' : ''}`}
+              <NutChon key={s} nho disabled={locked} chon={f.skills.has(s)} className={locked ? 'opacity-60' : ''}
                 onClick={() => setF({
                   ...f,
                   skills: (() => { const n = new Set(f.skills); if (n.has(s)) n.delete(s); else n.add(s); return n; })(),
                 })}>
                 {skillLabel(s)}
-              </button>
+              </NutChon>
             ))}
           </div>
         </Field>

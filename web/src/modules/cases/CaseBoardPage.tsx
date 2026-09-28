@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
-import { Card, Empty, ErrorState, Info, Level, NhanTrangThai, Skeleton, Th } from '../../ui/ui.tsx';
+import { BoLocDoan, Card, Empty, ErrorState, Info, Level, NhanTrangThai, Skeleton, Th } from '../../ui/ui.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { NganCase } from '../students/NganCase.tsx';
@@ -124,18 +124,14 @@ export function DanhSachCase({ branchId, ct, classId }: { branchId: number | nul
           */}
           {classKind && (
             <FilterRow label="Kỹ năng">
-              <Chip active={!skill} onClick={() => set('ky-nang', '')}>Tổng hợp</Chip>
-              {(classKind === 'normal' ? NORMAL_CASE_CATEGORIES : FT_CASE_CATEGORIES).map((k) => (
-                <Chip key={k} active={skill === k} onClick={() => set('ky-nang', skill === k ? '' : k)}>
-                  {CASE_CATEGORY_LABEL[k]}
-                  {f?.skill[k] !== undefined ? ` · ${f.skill[k]}` : ''}
-                </Chip>
-              ))}
-              {(f?.skillNone ?? 0) > 0 && (
-                <Chip active={skill === 'none'} onClick={() => set('ky-nang', skill === 'none' ? '' : 'none')}>
-                  Chưa xác định cụ thể · {f?.skillNone}
-                </Chip>
-              )}
+              {/* Bấm lại mục đang chọn = bỏ lọc (về Tổng hợp), như chip cũ. */}
+              <BoLocDoan ariaLabel="Kỹ năng" value={skill} onChange={(k) => set('ky-nang', k === skill ? '' : k)}
+                muc={[
+                  { key: '', nhan: 'Tổng hợp' },
+                  ...(classKind === 'normal' ? NORMAL_CASE_CATEGORIES : FT_CASE_CATEGORIES)
+                    .map((k) => ({ key: k as string, nhan: CASE_CATEGORY_LABEL[k], so: f?.skill[k] })),
+                  ...((f?.skillNone ?? 0) > 0 ? [{ key: 'none', nhan: 'Chưa xác định cụ thể', so: f?.skillNone }] : []),
+                ]} />
             </FilterRow>
           )}
           {/*
@@ -144,15 +140,15 @@ export function DanhSachCase({ branchId, ct, classId }: { branchId: number | nul
           {(skill || state || queue) && (
             <FilterRow label="Đang lọc">
               {skill && (
-                <Chip active onClick={() => set('ky-nang', '')}>
-                  {skill === 'none' ? 'Chưa xác định cụ thể' : topicLabel(skill)} ✕
-                </Chip>
+                <ChipBoLoc onClick={() => set('ky-nang', '')}>
+                  {skill === 'none' ? 'Chưa xác định cụ thể' : topicLabel(skill)}
+                </ChipBoLoc>
               )}
-              {state && <Chip active onClick={() => set('tinh-hinh', '')}>{STATE_LABEL[state]} ✕</Chip>}
+              {state && <ChipBoLoc onClick={() => set('tinh-hinh', '')}>{STATE_LABEL[state]}</ChipBoLoc>}
               {queue && (
-                <Chip active onClick={() => set('hang-doi', '')}>
-                  {queue === 'due' ? 'Tới hạn xem lại' : 'Mức cao hoặc gấp'} ✕
-                </Chip>
+                <ChipBoLoc onClick={() => set('hang-doi', '')}>
+                  {queue === 'due' ? 'Tới hạn xem lại' : 'Mức cao hoặc gấp'}
+                </ChipBoLoc>
               )}
               <button className="btn btn-sm btn-ghost" onClick={clearFilters}>Xoá hết bộ lọc</button>
             </FilterRow>
@@ -285,8 +281,11 @@ function FilterRow({ label, children }: { label: string; children: React.ReactNo
   );
 }
 
-function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+/** Một bộ lọc đang áp — bấm để bỏ (mục 4.4). Là nút xoá, không phải lựa chọn nên không mang kiểu "đang chọn". */
+function ChipBoLoc({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
   return (
-    <button type="button" className={`btn btn-sm ${active ? 'btn-primary' : ''}`} onClick={onClick}>{children}</button>
+    <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" title="Bỏ lọc này" onClick={onClick}>
+      {children} <span aria-hidden className="text-[10px] text-slate-400">✕</span>
+    </button>
   );
 }

@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Card, Empty, ErrorState, Info, Outcome, Skeleton, Status, Th } from '../../ui/ui.tsx';
+import { Card, Empty, ErrorState, Info, NutChon, Outcome, Skeleton, Status, Th } from '../../ui/ui.tsx';
 import { Drawer } from '../../ui/Drawer.tsx';
 import { WeekPicker, usePeriodWindow, resolveWeek } from '../../ui/Filters.tsx';
 import { SignalList } from './SignalList.tsx';
@@ -304,10 +304,9 @@ function NganBaoCao({ unit, cell, periodId, editable, editWindow, onClose, onSav
 
           <div className="flex gap-1.5">
             {UNIT_STATUSES.map((s) => (
-              <button key={s} type="button" disabled={chiDoc}
-                className={`btn btn-sm ${status === s ? 'btn-primary' : ''}`} onClick={() => setStatus(s)}>
+              <NutChon key={s} nho disabled={chiDoc} chon={status === s} onClick={() => setStatus(s)}>
                 {unitStatusLabel(s)}
-              </button>
+              </NutChon>
             ))}
           </div>
           <textarea className="field" rows={4} disabled={chiDoc} value={note} onChange={(e) => setNote(e.target.value)}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { Card, ErrorState, Info, SectionNote, Skeleton, Th } from '../../ui/ui.tsx';
+import { HangTab } from '../../ui/HangTab.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { api } from '../../lib/api.ts';
 import { AccountsAdmin } from './AccountsAdmin.tsx';
@@ -47,18 +48,8 @@ export default function AdminPage() {
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-1 border-b pb-2" style={{ borderColor: 'var(--line)' }}>
-        {TABS.map((t) => (
-          <button key={t.key} type="button" onClick={() => setTab(t.key)}
-            className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
-              tab === t.key
-                ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)] border-[color:var(--accent-line)]'
-                : 'text-slate-300 border-transparent hover:bg-white/5'
-            }`}>
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <HangTab ariaLabel="Quản trị hệ thống" value={tab} onChange={setTab}
+        tabs={TABS.map((t) => ({ key: t.key, label: t.label }))} />
 
       {tab === 'accounts' && <AccountsAdmin />}
       {tab === 'catalog' && <CatalogAdmin />}

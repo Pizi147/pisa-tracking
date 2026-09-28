@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Empty, NhanTrangThai, Skeleton } from '../../ui/ui.tsx';
+import { Empty, NhanTrangThai, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import {
   COORDINATION_KINDS, COORDINATION_KIND_LABEL, COORDINATION_USER_REMOVE_REASONS, COORDINATION_REMOVE_REASON_LABEL,
@@ -222,10 +222,9 @@ function RemoveCoordinationForm({ actionId, onClose, onChanged }: {
     <div className="mt-2 rounded-lg p-2.5 space-y-2" style={{ background: 'var(--surface-1)' }}>
       <div className="flex flex-wrap gap-1.5">
         {COORDINATION_USER_REMOVE_REASONS.map((r) => (
-          <button key={r} type="button" className={`btn btn-sm ${reason === r ? 'btn-primary' : ''}`}
-            onClick={() => setReason(r)}>
+          <NutChon key={r} nho chon={reason === r} onClick={() => setReason(r)}>
             {COORDINATION_REMOVE_REASON_LABEL[r]}
-          </button>
+          </NutChon>
         ))}
       </div>
       <OKhac hien={reasonNeedsText(reason)} value={text} onChange={setText} goiY="Ví dụ: Gia đình xin dời sang tuần sau" loi={loiGhiRo} />
@@ -265,11 +264,9 @@ function AddCoordinationForm({ attemptId, existing, onClose, onChanged }: {
     <div className="rounded-lg p-2.5 space-y-2" style={{ background: 'var(--surface-1)' }}>
       <div className="flex flex-wrap gap-1.5">
         {COORDINATION_KINDS.map((k) => (
-          <button key={k} type="button" className={`btn btn-sm ${kind === k ? 'btn-primary' : ''}`}
-            disabled={k !== 'other' && existing.includes(k)}
-            onClick={() => setKind(k)}>
+          <NutChon key={k} nho chon={kind === k} disabled={k !== 'other' && existing.includes(k)} onClick={() => setKind(k)}>
             {COORDINATION_KIND_LABEL[k as CoordinationKind]}
-          </button>
+          </NutChon>
         ))}
       </div>
       <OKhac hien={kind === 'other'} value={customName} onChange={setCustomName} nhan="Tên việc" goiY="Ví dụ: Gặp trợ giảng sau giờ học" loi={loiGhiRo} />

@@ -4,7 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
+import { BoLocDoan, Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { BranchFilter } from '../../ui/Filters.tsx';
 import { fmtTime } from '../../lib/format.ts';
 import { NhomViec } from '../worklist/NhomViec.tsx';
@@ -112,12 +112,8 @@ export function HoTroHocVienTab() {
     <div className="space-y-4">
       {/* ───────────────────────────────────────────────── hàng lọc — một hàng, xuống dòng ở màn hẹp */}
       <div className="flex flex-wrap items-center gap-1.5">
-        {LOC_NHANH.map((k) => (
-          <button key={k} className={`btn btn-sm ${loc === k ? 'btn-primary' : ''}`}
-            onClick={() => setParam('loc', k === 'tat-ca' ? null : k)}>
-            {LOC_NHANH_LABEL[k]} <span className="tabular-nums opacity-70 ml-1">{demHan[k]}</span>
-          </button>
-        ))}
+        <BoLocDoan ariaLabel="Lọc nhanh" value={loc} onChange={(k) => setParam('loc', k === 'tat-ca' ? null : k)}
+          muc={LOC_NHANH.map((k) => ({ key: k, nhan: LOC_NHANH_LABEL[k], so: demHan[k] }))} />
         <span className="w-px h-5 mx-1" style={{ background: 'var(--line)' }} />
         {laQuanLy && data && (
           <ChonPhuTrach

@@ -776,7 +776,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
 
   check('PR-XOA (5) · AccountsAdmin: ⋯ "Xoá tài khoản" chữ đỏ; nút lọc "Đang dùng" / "Đã xoá"; dòng đã xoá không có Sửa/⋯', () => {
     const ad = docNguon('web/src/modules/platform/AccountsAdmin.tsx');
-    assert(/nhan: 'Xoá tài khoản', nguyHiem: true/.test(ad) && ad.includes('Đang dùng (') && ad.includes('Đã xoá ('), 'thiếu mục Xoá / nút lọc');
+    assert(/nhan: 'Xoá tài khoản', nguyHiem: true/.test(ad) && /nhan: 'Đang dùng', so: /.test(ad) && /nhan: 'Đã xoá', so: /.test(ad), 'thiếu mục Xoá / nút lọc');
     assert(/u\.status === 'deleted' \? \(\s*<span[^>]*>Đã xoá \{ngay\(u\.deletedAt\)\}/.test(ad), 'dòng đã xoá phải ghi "Đã xoá {ngày}" thay cho Sửa/⋯');
     assert(/nguyHiem\?: boolean/.test(docNguon('web/src/ui/MenuDong.tsx')), 'MenuDong thiếu nguyHiem');
   });

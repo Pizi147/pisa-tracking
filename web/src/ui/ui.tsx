@@ -456,7 +456,7 @@ type NutChonProps = {
 export function NutChon({ chon, onClick, children, nho, className = '', disabled, title }: NutChonProps) {
   return (
     <button type="button" aria-pressed={chon} onClick={onClick} disabled={disabled} title={title}
-      className={`btn ${nho ? 'btn-sm' : ''} gap-1 ${chon ? CHON : ''} ${className}`}>
+      className={`btn ${nho ? 'btn-sm' : ''} min-h-[44px] gap-1 sm:min-h-0 ${chon ? CHON : ''} ${className}`}>
       <span aria-hidden className={`text-[10px] leading-none text-teal-300 ${chon ? '' : 'invisible'}`}>✓</span>{children}
     </button>
   );
@@ -464,7 +464,7 @@ export function NutChon({ chon, onClick, children, nho, className = '', disabled
 
 /** BỘ LỌC NÚT ĐOẠN (UX-E E6): một kiểu cho mọi bộ lọc; tab trang vẫn là `HangTab` gạch chân. */
 type BoLocDoanProps<K extends string> = {
-  muc: { key: K; nhan: string; so?: number | null }[]; value: K; onChange: (k: K) => void; ariaLabel: string;
+  muc: { key: K; nhan: string; so?: number | null; title?: string }[]; value: K; onChange: (k: K) => void; ariaLabel: string;
 };
 export function BoLocDoan<K extends string>({ muc, value, onChange, ariaLabel }: BoLocDoanProps<K>) {
   return (
@@ -472,7 +472,7 @@ export function BoLocDoan<K extends string>({ muc, value, onChange, ariaLabel }:
       {muc.map((m, i) => {
         const chon = m.key === value;
         return (
-          <button key={m.key} type="button" aria-pressed={chon} onClick={() => onChange(m.key)} style={{ borderColor: 'var(--line)' }}
+          <button key={m.key} type="button" aria-pressed={chon} title={m.title} onClick={() => onChange(m.key)} style={{ borderColor: 'var(--line)' }}
             className={`inline-flex min-h-[44px] items-center gap-1 whitespace-nowrap px-3 text-xs font-semibold sm:min-h-[32px] ${i ? 'border-l' : ''} ${
               chon ? 'bg-ink-800 text-slate-100 shadow-[inset_0_0_0_1px_theme(colors.teal.600)]' : 'bg-transparent text-slate-400 hover:text-slate-200'}`}>
             <span aria-hidden className={`text-[10px] text-teal-300 ${chon ? '' : 'hidden'}`}>✓</span>{m.nhan}

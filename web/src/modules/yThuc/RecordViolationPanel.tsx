@@ -7,6 +7,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
+import { NutChon } from '../../ui/ui.tsx';
 import {
   VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, VIOLATION_DESCRIPTION_MIN,
   VIOLATION_SKILLS, VIOLATION_SKILL_LABEL, cauCanhBaoTrung, type ViolationCategory, dsLoi, kiemGhiRoKhac, tachKhac,
@@ -231,10 +232,9 @@ export function RecordViolationPanel({
         <Truong nhan="Nhóm" batBuoc as="div">
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {VIOLATION_CATEGORIES.map((c) => (
-              <button key={c} type="button" aria-pressed={category === c}
-                className={`btn min-h-[44px] justify-center sm:min-h-0 ${category === c ? 'btn-primary' : ''}`} onClick={() => setCategory(c)}>
+              <NutChon key={c} chon={category === c} className="justify-center" onClick={() => setCategory(c)}>
                 {VIOLATION_CATEGORY_LABEL[c as ViolationCategory]}
-              </button>
+              </NutChon>
             ))}
           </div>
           <OKhac hien={laNhomKhac} value={ghiRo} onChange={setGhiRo}

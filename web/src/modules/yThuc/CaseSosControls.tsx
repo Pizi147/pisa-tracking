@@ -4,6 +4,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
+import { NutChon } from '../../ui/ui.tsx';
 import {
   CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, INTERVENTION_KIND_LABEL, issuesForTopic,
   interventionKindsFor, reasonNeedsText, nguoiThanhPayload, type CaseDismissReason, type NguoiChon, laKhac, kiemGhiRoKhac,
@@ -46,11 +47,9 @@ export function CauseDeterminationPanel({ caseId, topic, currentCode, onClose, o
       ) : (
         <div className="flex gap-1 flex-wrap">
           {causes.map((i) => (
-            <button key={i.code} type="button" title={i.hint}
-              className={`btn btn-sm ${code === i.code ? 'btn-primary' : ''}`}
-              onClick={() => setCode(i.code)}>
+            <NutChon key={i.code} nho title={i.hint} chon={code === i.code} onClick={() => setCode(i.code)}>
               {i.label}
-            </button>
+            </NutChon>
           ))}
         </div>
       )}
@@ -200,10 +199,9 @@ export function DismissCaseForm({ caseId, onClose, onDone }: { caseId: number; o
     <div className="rounded-lg mt-2 p-2.5 space-y-2" style={{ background: 'var(--surface-1)' }}>
       <div className="flex flex-wrap gap-1.5">
         {CASE_DISMISS_REASONS.map((r) => (
-          <button key={r} type="button" className={`btn btn-sm ${reason === r ? 'btn-primary' : ''}`}
-            onClick={() => setReason(r)}>
+          <NutChon key={r} nho chon={reason === r} onClick={() => setReason(r)}>
             {CASE_DISMISS_REASON_LABEL[r as CaseDismissReason]}
-          </button>
+          </NutChon>
         ))}
       </div>
       <OKhac hien={reasonNeedsText(reason)} value={text} onChange={setText} goiY="Ví dụ: Em nghỉ ốm cả tuần thi" loi={loiGhiRo} />

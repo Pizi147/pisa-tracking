@@ -1,7 +1,7 @@
 import { Fragment, useLayoutEffect, useState, type ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { Empty, ErrorState, SCORE_CHIP, Skeleton, type ScoreTone } from '../../ui/ui.tsx';
+import { BoLocDoan, Empty, ErrorState, SCORE_CHIP, Skeleton, type ScoreTone } from '../../ui/ui.tsx';
 import { Nhan, toneNhanTuBadge } from '../../ui/Nhan.tsx';
 import { Episode } from './StudentDetailPage.tsx';
 import {
@@ -134,21 +134,13 @@ export function HanhTrinh({ studentId, active, episodes, allEpisodes, onOpenCase
     <div className="space-y-3">
       {/* Hàng điều khiển: nút giai đoạn · chip kỹ năng · khoảng đang xem · Xem gọn */}
       <div className="flex flex-wrap items-center gap-2">
-        {data.cacGiaiDoan.length === 2 && data.cacGiaiDoan.map((g) => (
-          <button key={g.loai} className={`btn btn-sm ${g.loai === giaiDoanDangXem.loai ? 'btn-primary' : ''}`}
-            onClick={() => setGiaiDoan(g.loai)}>
-            {nhanGiaiDoan(g, homNay)}
-          </button>
-        ))}
-        <span className="flex flex-wrap gap-1 ml-auto">
-          <button className={`btn btn-sm ${chip === CHIP_TAT_CA ? 'btn-primary' : ''}`}
-            onClick={() => setChip(CHIP_TAT_CA)}>Tất cả kỹ năng</button>
-          {data.hop.map((h) => (
-            <button key={h.kyNang} className={`btn btn-sm ${chip === h.kyNang ? 'btn-primary' : ''}`}
-              title={CASE_CATEGORY_LABEL[h.kyNang]} onClick={() => setChip(h.kyNang)}>
-              {CASE_CATEGORY_SHORT[h.kyNang]}
-            </button>
-          ))}
+        {data.cacGiaiDoan.length === 2 && (
+          <BoLocDoan ariaLabel="Giai đoạn" value={giaiDoanDangXem.loai} onChange={setGiaiDoan}
+            muc={data.cacGiaiDoan.map((g) => ({ key: g.loai, nhan: nhanGiaiDoan(g, homNay) }))} />
+        )}
+        <span className="ml-auto max-w-full">
+          <BoLocDoan ariaLabel="Kỹ năng" value={chip} onChange={setChip}
+            muc={[{ key: CHIP_TAT_CA, nhan: 'Tất cả kỹ năng' }, ...data.hop.map((h) => ({ key: h.kyNang as string, nhan: CASE_CATEGORY_SHORT[h.kyNang], title: CASE_CATEGORY_LABEL[h.kyNang] }))]} />
         </span>
         <select className="field w-auto" aria-label="Khoảng đang xem" value={cheDoKhoang}
           onChange={(e) => setCheDoKhoang(e.target.value as CheDoKhoang)}>
