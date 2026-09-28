@@ -582,6 +582,23 @@ bấm K1, K2, K5, K8. 3. Migrate **DB CHÍNH** (`PISA_CHO_PHEP_MIGRATE_TURSO=<t�
 - (Task 0) PR-MT đã merge: **không** (`grep -i "PR-MT"` chỉ khớp commit kế hoạch bf56547/7f1a908; `fasttrack/mtMacDinh.ts` chưa có
   trên `origin/main` fb51181) · tên hàm thật: chưa có · mốc B: **1444** (+ tốc độ 20) · dòng lệch: không (≤ 2 dòng: `parseDateAs` :181,
   `blocking` :408, chú thích MT :479, `canPlanWeeks` :362, `docNgaySinh` :206, `isWarning` :164, khối 12 :1424). Model thật: Opus 5.5.
+- (Task 2) Thêm `cy.exam_date` vào hai câu SELECT đưa vào `examPlanOf` (`classes.ts` danh sách HV của lớp, `attempts.ts`
+  `ATTEMPT_SELECT`) — không thì màn lớp/Test vẫn hiện mã tuần trong khi hồ sơ hiện ngày. `sosAuto.examDateOf` giữ: có ngày thì
+  `exam_period_id` cũng được ghi (suy từ ngày) nên vẫn đúng.
+- (Task 3) Tuần cả lô gửi lên mà SAI → lỗi `row 0` **và** không thay bằng mặc định (kế hoạch ghi `w0?.iso ? … : tuanBatDauMacDinh`
+  — sẽ lặng lẽ ghi tuần khác tuần người nhập chọn); dòng không tự ghi tuần báo "Chưa có…". Bỏ tham số `skipRows` ở máy chủ (web
+  không gửi nữa, không phép kiểm nào dùng). Dòng xem trước trả thêm `consultant` (trước đây cột Tư vấn viên dán vào bị rơi ở bước ghi).
+  Phép kiểm PR-F dùng các em nhập ở khối 12 làm "em đã học trước 24/08" → hai lô đó ghi rõ `defaultStartWeek` = khai giảng lớp
+  (K2-19 đổi mặc định FT vào muộn sang tuần này).
+- (Task 5) `+ Thêm dòng` đặt ngay dưới lưới (bên trái, cạnh ghi chú) thay vì chân panel: `KhungPanel` (PR-NEN, dùng chung) chỉ có
+  nút Đóng ở trái; thêm khe mới ngoài ranh giới file. `ONgay gon`: viền `border-late` khi lỗi (không có luật CSS nào tô theo
+  `aria-invalid`). Mũi tên Tình trạng vẽ SVG tại chỗ (`MuiTenMo` là nút riêng — lồng nút trong nút sai HTML, và nó dùng ký tự ▸/▾).
+  impeccable `clarify`: lỗi ô ngày theo từ điển `Gõ dạng dd/mm/yyyy` · ô trống bắt buộc `Chưa điền` · band `Gõ band 0–9, bước 0,5 —
+  ví dụ 5.5` (dòng chi tiết đã ghi tên cột nên câu lỗi không lặp tên cột) · cột lớp `Bỏ qua — cả lô vào {lớp} (lớp chọn ở đầu panel)`.
+  Không có PRODUCT.md/DESIGN.md (luật repo: session code không `init`) → làm theo mã + từ điển.
+- (Task 6) Ô ngày sinh là `ONgay` (gõ sai thì ô trả '' ): `luu` đọc chữ trong ô — còn chữ mà giá trị rỗng thì chặn lưu, không gửi ''
+  xoá ngày sinh cũ. Tuần bắt đầu đặt trong khối "Giai đoạn đang học" (bỏ chữ "vào học/bắt đầu {tuần}" trùng với ô).
+- (Task 7) **Chờ PR-MT** — `git fetch` lúc xong Task 6 (59f1afa): chưa có commit merge PR-MT, `mtMacDinh.ts` chưa có. Dừng sau Task 8.
 
 ## Chủ sản phẩm chốt 29/09
 

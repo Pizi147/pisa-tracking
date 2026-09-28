@@ -533,6 +533,10 @@ npm run kiem-lop-mo-coi
 > **Tên lớp cũ trong nhật ký, hành trình, thông báo cũ giữ nguyên** (là lịch sử) — chỉ tên lớp hiện tại đổi. Báo GV: tên
 > lớp mới bỏ dấu `-`; ô tìm vẫn nhận cả kiểu cũ.
 
+**Đợt 2 — PR-NHAP:** migrate chỉ thêm 2 cột (`students.email`, `learning_cycles.exam_date`), không đổi dữ liệu cũ, **không có
+lệnh chạy thử**. Báo GV sau khi lên: thêm học viên mới **bắt buộc email**; bảng dán phải có **dòng tiêu đề**; ngày gõ `dd/mm/yyyy`;
+học viên cũ bổ sung email dần ở Thông tin học viên (không bắt).
+
 **Bước 3 — nâng cấp:**
 
 ```powershell
