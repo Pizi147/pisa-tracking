@@ -7,6 +7,7 @@ export async function runPrLopTests(t: YThucTestKit) {
   const intakeMod: any = await import('../classes/intake.ts');
   const clsMod: any = await import('../classes/classes.ts');
   const ttl: any = await import('../classes/thongTinLop.ts');
+  const mywork: any = await import('../worklist/mywork.ts');
   const d = await import('../../../shared/domain/index.ts');
   console.log('\nPR-LOP · Tạo lớp, tên lớp, RF, Pre FOU, phân công');
 
@@ -157,5 +158,38 @@ export async function runPrLopTests(t: YThucTestKit) {
     assert(/oPhanCong\(/.test(src) && /kiemPhanCong\(/.test(src) && /ghepMaLop\(/.test(src) && /locSoLop\(/.test(src), 'chưa dùng luật chung');
     assert(!/hai người dạy|TeacherPick|\+ Thêm giáo viên|Normal|Progress Test|Final Test/.test(src), 'còn chữ/ô cũ');
     assert(/CHO_TAO_PRE_FOU/.test(src) && /navigate\(`\/hoc-vien\/lop\//.test(src), 'PF6 / mở hồ sơ lớp');
+  });
+
+  check('LOP (9) · Sửa phân công / Sửa thông tin lớp / Chuyển tiếp dùng luật chung, không ô gõ tên tự do (YC-4, K2-16, K2-18)', () => {
+    const lopDir = 'web/src/modules/classes/';
+    const tap = docSach(lopDir + 'TeacherAssignPanel.tsx');
+    assert(!/\+ Thêm giáo viên|HAI người/.test(tap) && /oPhanCong\(/.test(tap) && /kiemPhanCong\(/.test(tap), 'Sửa phân công');
+    const ttlSrc = docSach(lopDir + 'SuaThongTinLopPanel.tsx');
+    assert(!/MB-FT|setCode\(/.test(ttlSrc) && /locSoLop\(/.test(ttlSrc) && /ghepMaLop\(/.test(ttlSrc), 'Sửa thông tin lớp');
+    const tp = docSach(lopDir + 'TransitionPanel.tsx');
+    assert(!/newCode|suggestedCode|gvcnUserId|newClass:/.test(tp) && /<ClassCreatePanel/.test(tp), 'Chuyển tiếp');
+    /* ponytail: `loi=` thay `useLoiForm(` tới khi PR-N1 Task 6 merge. */
+    for (const f of ['TeacherAssignPanel', 'SuaThongTinLopPanel', 'TransitionPanel', 'ClassCreatePanel']) {
+      assert(/useLoiForm\(|\bloi=/.test(docSach(`${lopDir}${f}.tsx`)), `${f} chưa báo lỗi tại ô`);
+    }
+    assert(/'phan-cong'/.test(docSach(lopDir + 'ClassOverviewPage.tsx')), 'hồ sơ lớp chưa nhận ?viec=phan-cong');
+    const lop = conn.prepare(`SELECT id FROM classes WHERE code = 'MB FT 101'`).get() as any;
+    assert(clsMod.classTeachers(P.admin, lop.id).programmeCode === 'FT', 'classTeachers thiếu programmeCode');
+  });
+  check('LOP (9) · việc "Chưa có người phụ trách" của lớp thiếu GV môn → Sửa phân công (K1-05)', () => {
+    const hv = conn.prepare(`SELECT e.student_id sid, e.class_id cid FROM enrollments e JOIN classes c ON c.id = e.class_id
+      JOIN students s ON s.id = e.student_id WHERE c.code = 'MB FT 101' AND e.status = 'active' AND s.archived_at IS NULL LIMIT 1`).get() as any;
+    const caseId = Number(conn.prepare(`INSERT INTO sos_cases (student_id, category, topic, origin_kind, status, owner_user_id, created_at)
+      VALUES (?, 'reading', 'reading', 'teacher_report', 'open', NULL, ?)`).run(hv.sid, new Date().toISOString()).lastInsertRowid);
+    const dong = () => (mywork.myWork(P.admin).items as any[]).find((i) => i.key === `owner:${caseId}`);
+    try {
+      assert(dong()?.actionLabel === 'Chọn người phụ trách', 'lớp đủ GV môn → giữ việc cũ');
+      conn.prepare(`UPDATE teacher_assignments SET status = 'tam_lop9' WHERE class_id = ? AND skill = 'reading' AND status = 'active'`).run(hv.cid);
+      const r = dong();
+      assert(r?.actionLabel === 'Sửa phân công' && r.href === `/hoc-vien/lop/${hv.cid}?viec=phan-cong`, JSON.stringify(r));
+    } finally {
+      conn.prepare(`UPDATE teacher_assignments SET status = 'active' WHERE class_id = ? AND status = 'tam_lop9'`).run(hv.cid);
+      conn.prepare('DELETE FROM sos_cases WHERE id = ?').run(caseId);
+    }
   });
 }

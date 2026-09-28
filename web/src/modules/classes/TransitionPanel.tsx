@@ -3,12 +3,12 @@ import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Drawer } from '../../ui/Drawer.tsx';
-import { WeekPicker } from '../../ui/Filters.tsx';
 import { ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
 import {
   HUONG_CHUYEN_TIEP, kiemDongChuyenTiep, nhanHuong, nhanHuongNgan, tomTatChuyenTiep, tuanLich,
   type DongTomTat, type Huong,
 } from '@shared/domain/index.ts';
+import { ClassCreatePanel } from './ClassCreatePanel.tsx';
 
 type Dong = {
   huong: Huong | ''; toClassId: number | 'new' | ''; mucTieu: string; thangThi: string; lyDo: string; ngayXemLai: string;
@@ -31,19 +31,13 @@ export function TransitionPanel({ classId, open, onClose, onDone }: {
 
   const [bulkTarget, setBulkTarget] = useState<number | 'new' | ''>('');
   const [dongs, setDongs] = useState<Record<number, Partial<Dong>>>({});
-  const [newCode, setNewCode] = useState('');
-  const [newProgramme, setNewProgramme] = useState('');
-  const [startPeriod, setStartPeriod] = useState<number | null>(null);
-  const [gvcnUserId, setGvcnUserId] = useState<number | ''>('');
   const [ngay, setNgay] = useState('');
+  const [taoLop, setTaoLop] = useState(false);
 
   const [loaded, setLoaded] = useState(false);
   if (data && !loaded) {
     setLoaded(true);
-    setNewCode(data.suggestedCode ?? '');
-    setNewProgramme(data.defaultProgramme ?? '');
     setNgay(data.today ?? '');
-    setBulkTarget('new');
   }
 
   const close = () => { onClose(); setBuoc(1); setLoaded(false); setDongs({}); };
@@ -73,7 +67,19 @@ export function TransitionPanel({ classId, open, onClose, onDone }: {
     if (!ghiDe.toClassId && !macDinh.toClassId && ket.huong === 'len_lop' && bulkTarget) ket.toClassId = bulkTarget;
     return ket;
   };
-  const suaDong = (sid: number, patch: Partial<Dong>) => setDongs((m) => ({ ...m, [sid]: { ...m[sid], ...patch } }));
+  const suaDong = (sid: number, patch: Partial<Dong>) => {
+    if (patch.toClassId === 'new') setTaoLop(true);
+    setDongs((m) => ({ ...m, [sid]: { ...m[sid], ...patch } }));
+  };
+  /**
+   * "+ Mở lớp mới" (K2-16, Q8) mở panel Tạo lớp (lớp thật, tạo ngay). Tạo xong: mọi dòng đang chọn "+ Mở lớp mới" và lớp đích
+   * chung nhận lớp đó; huỷ: bỏ chọn. Panel Tạo lớp là `KhungPanel`, Chuyển tiếp là `Drawer` (không ở `khoPanelChung`) nên hai
+   * panel chồng được mà Chuyển tiếp không mất state.
+   */
+  const ganLopMoi = (v: number | '') => {
+    setDongs((m) => Object.fromEntries(Object.entries(m).map(([k, d]) => [k, d.toClassId === 'new' ? { ...d, toClassId: v } : d])));
+    setBulkTarget((b) => (b === 'new' ? v : b));
+  };
 
   const lopHopLe = (huong: Huong | ''): any[] => (data?.candidates ?? []).filter((c: any) => (
     huong === 'fast_track' ? c.ft : huong === 'hoc_lai' ? !c.ft && c.programmeCode === data.from.programmeCode : !c.ft
@@ -81,12 +87,10 @@ export function TransitionPanel({ classId, open, onClose, onDone }: {
 
   const kiemTra = (s: any, d: Dong): string | null => {
     if (!d.huong) return 'Chọn một hướng.';
-    const toClass = d.toClassId === 'new' ? { ma: newProgramme || null, ft: newProgramme === 'FT' }
-      : d.toClassId ? (() => { const c = data.candidates.find((x: any) => x.id === d.toClassId); return c ? { ma: c.programmeCode, ft: c.ft } : null; })()
-      : null;
+    const toClassId = typeof d.toClassId === 'number' ? d.toClassId : null;
+    const c = toClassId ? data.candidates.find((x: any) => x.id === toClassId) : null;
     return kiemDongChuyenTiep({
-      huong: d.huong, toClassId: d.toClassId === 'new' ? null : (d.toClassId || null),
-      toClass, toNewClass: d.toClassId === 'new',
+      huong: d.huong, toClassId, toClass: c ? { ma: c.programmeCode, ft: c.ft } : null,
       mucTieu: d.mucTieu ? Number(d.mucTieu) : null, thangThi: d.thangThi || null,
       lyDo: d.lyDo || null, ngayXemLai: d.ngayXemLai || null,
     }, { maTu: data.from.programmeCode });
@@ -98,12 +102,11 @@ export function TransitionPanel({ classId, open, onClose, onDone }: {
     return { s, d, loi: kiemTra(s, d) };
   });
   const coLoi = rows.some((r) => r.loi);
-  const needNewClass = rows.some((r) => r.d.toClassId === 'new');
 
   const tomTat: ReturnType<typeof tomTatChuyenTiep> = tomTatChuyenTiep(
     rows.filter((r) => r.d.huong).map((r): DongTomTat => ({
       huong: r.d.huong as Huong,
-      toClassCode: r.d.toClassId === 'new' ? (newCode || '(lớp mới)') : r.d.toClassId ? data.candidates.find((c: any) => c.id === r.d.toClassId)?.code ?? null : null,
+      toClassCode: typeof r.d.toClassId === 'number' ? data.candidates.find((c: any) => c.id === r.d.toClassId)?.code ?? null : null,
       mucTieu: r.d.mucTieu ? Number(r.d.mucTieu) : null,
       caseCount: r.s.caseMo?.tong ?? 0,
       caseWillClose: r.d.huong === 'fast_track' && (r.s.caseMo?.seDongNeuSangFt ?? 0) > 0,
@@ -117,22 +120,16 @@ export function TransitionPanel({ classId, open, onClose, onDone }: {
     setBusy(true);
     try {
       const r = await api.post<any>(`/classes/${classId}/transition`, {
-        newClass: needNewClass
-          ? { code: newCode.trim(), programme: newProgramme, startPeriodId: startPeriod, gvcnUserId: gvcnUserId || undefined }
-          : null,
         effectiveDate: ngay,
         dongs: rows.filter((r) => r.d.huong).map((r) => ({
           studentId: r.s.id, huong: r.d.huong,
-          toClassId: r.d.toClassId === 'new' ? undefined : (r.d.toClassId || undefined),
-          toNewClass: r.d.toClassId === 'new',
+          toClassId: typeof r.d.toClassId === 'number' ? r.d.toClassId : undefined,
           mucTieu: r.d.mucTieu ? Number(r.d.mucTieu) : undefined, thangThi: r.d.thangThi || undefined,
           lyDo: r.d.lyDo || undefined, ngayXemLai: r.d.ngayXemLai || undefined,
         })),
       });
       invalidate('/classes'); invalidate('/students'); invalidate('/attempts'); invalidate('/overview'); invalidate('/hoc-vien-lop'); invalidate('/my-work');
-      const parts = [`Đã chuyển ${r.done.length} học viên`];
-      if (r.newClass) parts.push(`mở lớp ${r.newClass.code}`);
-      toast.push(r.failed.length ? 'info' : 'ok', parts.join(' · '));
+      toast.push(r.failed.length ? 'info' : 'ok', `Đã chuyển ${r.done.length} học viên`);
       if (r.lopCuDaKetThuc) toast.push('info', `Lớp ${data.from.code} đã kết thúc`);
       if (r.failed.length) {
         for (const f of r.failed.slice(0, 3)) toast.push('error', f.message);
@@ -142,8 +139,9 @@ export function TransitionPanel({ classId, open, onClose, onDone }: {
   };
 
   return (
+    <>
     <Drawer
-      open={open} onClose={close} width="max-w-4xl"
+      open={open} onClose={taoLop ? () => {} : close} width="max-w-4xl"
       title={data ? `Chuyển tiếp lớp · ${data.from.code} kết thúc ${data.tuanKetThuc ? tuanLich(data.tuanKetThuc, data.today) : ''} · ${students.length} HV` : 'Chuyển tiếp lớp'}
       footer={buoc === 1 ? (
         <>
@@ -185,9 +183,12 @@ export function TransitionPanel({ classId, open, onClose, onDone }: {
           <label className="block">
             <span className="label">Lớp đích cho cả lớp</span>
             <select className="field w-full sm:w-auto" value={bulkTarget}
-              onChange={(e) => setBulkTarget(e.target.value === 'new' ? 'new' : e.target.value ? Number(e.target.value) : '')}>
+              onChange={(e) => {
+                if (e.target.value === 'new') setTaoLop(true);
+                setBulkTarget(e.target.value === 'new' ? 'new' : e.target.value ? Number(e.target.value) : '');
+              }}>
               <option value="">Chưa chọn</option>
-              <option value="new">+ Mở lớp mới</option>
+              <option value="new">+ Mở lớp mới…</option>
               {(data.candidates ?? []).map((c: any) => (
                 <option key={c.id} value={c.id}>{c.code} · đang có {c.studentCount} HV</option>
               ))}
@@ -205,7 +206,7 @@ export function TransitionPanel({ classId, open, onClose, onDone }: {
               </thead>
               <tbody>
                 {rows.map(({ s, d, loi }) => (
-                  <DongBang key={s.id} s={s} d={d} loi={loi} suaDong={(p) => suaDong(s.id, p)} lopHopLe={lopHopLe} newCode={newCode} fromMa={data.from.programmeCode} />
+                  <DongBang key={s.id} s={s} d={d} loi={loi} suaDong={(p) => suaDong(s.id, p)} lopHopLe={lopHopLe} fromMa={data.from.programmeCode} />
                 ))}
               </tbody>
             </table>
@@ -214,40 +215,12 @@ export function TransitionPanel({ classId, open, onClose, onDone }: {
               {rows.map(({ s, d, loi }) => (
                 <div key={s.id} className="p-3 space-y-2">
                   <div className="text-sm text-slate-100">{s.fullName}</div>
-                  <DongThe s={s} d={d} loi={loi} suaDong={(p) => suaDong(s.id, p)} lopHopLe={lopHopLe} newCode={newCode} fromMa={data.from.programmeCode} />
+                  <DongThe s={s} d={d} loi={loi} suaDong={(p) => suaDong(s.id, p)} lopHopLe={lopHopLe} fromMa={data.from.programmeCode} />
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="surface-2 rounded-lg p-3 space-y-3">
-            <span className="label m-0">Lớp đích chưa có? + Mở lớp mới</span>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className="block">
-                <span className="label">Mã lớp mới</span>
-                <input className="field w-full" value={newCode} onChange={(e) => setNewCode(e.target.value)} />
-              </label>
-              <label className="block">
-                <span className="label">Chương trình</span>
-                <select className="field w-full" value={newProgramme} onChange={(e) => setNewProgramme(e.target.value)}>
-                  {(data.options ?? []).map((o: any) => <option key={o.code} value={o.code}>{o.name} ({o.code})</option>)}
-                </select>
-              </label>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="block">
-                <span className="label">Tuần khai giảng lớp mới</span>
-                <WeekPicker periodId={startPeriod} label={null} scope="planning" clearable onPeriod={(id) => setStartPeriod(id)} />
-              </div>
-              <label className="block">
-                <span className="label">GVCN</span>
-                <select className="field w-full" value={gvcnUserId} onChange={(e) => setGvcnUserId(e.target.value ? Number(e.target.value) : '')}>
-                  <option value="">Chưa chọn</option>
-                  {(data.teachers ?? []).map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                </select>
-              </label>
-            </div>
-          </div>
         </div>
       )}
       {data && buoc === 2 && (
@@ -263,6 +236,13 @@ export function TransitionPanel({ classId, open, onClose, onDone }: {
         </div>
       )}
     </Drawer>
+    {open && taoLop && data && (
+      <ClassCreatePanel moHoSo={false}
+        macDinh={{ ...(data.goiYLopMoi ?? { branchId: data.from.branchId }), previousClassId: data.from.id }}
+        onDone={(lop) => { reload(); ganLopMoi(lop.id); }}
+        onClose={() => { ganLopMoi(''); setTaoLop(false); }} />
+    )}
+    </>
   );
 }
 
@@ -288,8 +268,8 @@ function CanDienThem({ s, d, suaDong }: { s: any; d: Dong; suaDong: (p: Partial<
   return <span className="text-slate-600">—</span>;
 }
 
-function OLopDich({ d, suaDong, lopHopLe, newCode }: {
-  d: Dong; suaDong: (p: Partial<Dong>) => void; lopHopLe: (h: Huong | '') => any[]; newCode: string;
+function OLopDich({ d, suaDong, lopHopLe }: {
+  d: Dong; suaDong: (p: Partial<Dong>) => void; lopHopLe: (h: Huong | '') => any[];
 }) {
   if (!d.huong || d.huong === 'bao_luu' || d.huong === 'dung_hoc' || d.huong === 'xep_sau') {
     return <span className="text-slate-600">không chuyển</span>;
@@ -297,14 +277,14 @@ function OLopDich({ d, suaDong, lopHopLe, newCode }: {
   return (
     <select className="field w-full" value={d.toClassId} onChange={(e) => suaDong({ toClassId: e.target.value === 'new' ? 'new' : e.target.value ? Number(e.target.value) : '' })}>
       <option value="">Chưa chọn</option>
-      <option value="new">+ Mở lớp mới {newCode ? `(${newCode})` : ''}</option>
+      <option value="new">+ Mở lớp mới…</option>
       {lopHopLe(d.huong).map((c: any) => <option key={c.id} value={c.id}>{c.code}</option>)}
     </select>
   );
 }
 
-function DongBang({ s, d, loi, suaDong, lopHopLe, newCode, fromMa }: {
-  s: any; d: Dong; loi: string | null; suaDong: (p: Partial<Dong>) => void; lopHopLe: (h: Huong | '') => any[]; newCode: string;
+function DongBang({ s, d, loi, suaDong, lopHopLe, fromMa }: {
+  s: any; d: Dong; loi: string | null; suaDong: (p: Partial<Dong>) => void; lopHopLe: (h: Huong | '') => any[];
   fromMa: string | null;
 }) {
   const trong = !d.huong;
@@ -321,14 +301,14 @@ function DongBang({ s, d, loi, suaDong, lopHopLe, newCode, fromMa }: {
           {HUONG_CHUYEN_TIEP.map((h) => <option key={h} value={h}>{nhanHuongNgan(h, { ma: fromMa as any, maKe: null })}</option>)}
         </select>
       </td>
-      <td className="td"><OLopDich d={d} suaDong={suaDong} lopHopLe={lopHopLe} newCode={newCode} /></td>
+      <td className="td"><OLopDich d={d} suaDong={suaDong} lopHopLe={lopHopLe} /></td>
       <td className="td"><CanDienThem s={s} d={d} suaDong={suaDong} /></td>
     </tr>
   );
 }
 
-function DongThe({ s, d, loi, suaDong, lopHopLe, newCode, fromMa }: {
-  s: any; d: Dong; loi: string | null; suaDong: (p: Partial<Dong>) => void; lopHopLe: (h: Huong | '') => any[]; newCode: string;
+function DongThe({ s, d, loi, suaDong, lopHopLe, fromMa }: {
+  s: any; d: Dong; loi: string | null; suaDong: (p: Partial<Dong>) => void; lopHopLe: (h: Huong | '') => any[];
   fromMa: string | null;
 }) {
   return (
@@ -337,7 +317,7 @@ function DongThe({ s, d, loi, suaDong, lopHopLe, newCode, fromMa }: {
         <option value="">Chưa chọn hướng</option>
         {HUONG_CHUYEN_TIEP.map((h) => <option key={h} value={h}>{nhanHuong(h, { ma: fromMa as any, maKe: null })}</option>)}
       </select>
-      <OLopDich d={d} suaDong={suaDong} lopHopLe={lopHopLe} newCode={newCode} />
+      <OLopDich d={d} suaDong={suaDong} lopHopLe={lopHopLe} />
       <CanDienThem s={s} d={d} suaDong={suaDong} />
       {loi && <div className="text-[11px] text-rose-300">{loi}</div>}
     </div>

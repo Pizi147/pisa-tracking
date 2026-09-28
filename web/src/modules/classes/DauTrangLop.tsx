@@ -14,7 +14,7 @@ import {
 /** `GET /classes/:id/overview` (server/src/classes/classes.ts → classOverview). */
 export type HoSoLop = {
   id: number; code: string; kind: string; route: string | null; isFastTrack: boolean; startDate: string | null; note: string | null;
-  branchId: number; branchName: string;
+  branchId: number; branchCode: string; branchName: string;
   summary: {
     studentCount: number; needScores: number; workScope: WorkScope; phase: string;
     currentWeek: number | null; totalWeeks: number | null; needsPlacement: boolean;

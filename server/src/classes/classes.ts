@@ -810,6 +810,8 @@ export function classTeachers(p: Principal, classId: number) {
 
   return {
     classId, classCode: cls.code, branchCode: cls.branch_code,
+    /** Web dựng ô phân công bằng `oPhanCong(programmeCode, skills)` — cùng hàm máy chủ kiểm (Pre FOU: một ô GVCN). */
+    programmeCode: prog?.code ?? null,
     /** Kỹ năng của lớp lấy theo CHƯƠNG TRÌNH, không mặc định là bộ IELTS. */
     skills: prog?.skills ?? [...ENTRY_SKILLS],
     core: active.filter((a) => a.is_core === 1)

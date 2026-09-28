@@ -7,7 +7,7 @@ import { WeekPicker } from '../../ui/Filters.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import {
   CHO_TAO_PRE_FOU, ENTRY_SKILLS, PROGRAMME_TEMPLATES,
-  chuanHoaMaLop, ghepMaLop, kiemPhanCong, kiemSoLop, kyHieuLop, locSoLop, oPhanCong,
+  chuanHoaMaLop, ghepMaLop, kiemPhanCong, kiemSoLop, kyHieuLop, locSoLop, oPhanCong, type OPhanCong,
 } from '@shared/domain/index.ts';
 
 type Branch = { id: number; code: string; name: string };
@@ -30,7 +30,6 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
 }) {
   const toast = useToast();
   const navigate = useNavigate();
-  const id = useId();
   const branches = useApi<Branch[]>('/ref/branches');
   const routes = useApi<{ code: string; name: string }[]>('/ref/routes');
   const programmes = useApi<Programme[]>('/ref/programmes');
@@ -83,9 +82,8 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
     return daBam || (khoa === 'so' && so !== '') ? l : null;
   };
   const conLoi = loiO.filter((l) => l.lyDo);
-  const conThieu = daBam || loiPc.length
-    ? [...new Set([...conLoi.map((l) => l.nhan), ...loiPc.map((l) => oList.find((o) => o.khoa === l.khoa)?.nhan ?? '')])]
-    : undefined;
+  /* "Còn thiếu" chỉ cho ô thường; lỗi LUẬT phân công (ô đã chọn, sai luật) hiện tại ô + khoá nút (Q2). */
+  const conThieu = daBam ? conLoi.map((l) => l.nhan) : undefined;
 
   const moc = (k: string) => mau?.checkpoints.find((c) => c.kind === k)?.studyWeek;
   const lopSeCo = ct === 'FT'
@@ -117,6 +115,7 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={tao}
             disabled={busy || loiPc.length > 0} title={loiPcDau}>Tạo lớp</button>
         ),
+        phu: <SoOCanSua n={new Set(loiPc.map((l) => l.khoa)).size} />,
         conThieu,
       }}>
       <div className="space-y-3 pt-3.5">
@@ -167,25 +166,8 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
       </div>
 
       <Khoi tieuDe="Phân công">
-        <div className="grid grid-cols-[6rem_1fr] items-center gap-x-2.5 gap-y-1.5">
-          {oList.map((o) => {
-            const loi = loiPcO(o.khoa);
-            return (
-              <div key={o.khoa} className="contents">
-                <label htmlFor={`${id}-${o.khoa}`} className="text-xs font-bold text-slate-200">{o.nhan}</label>
-                <select id={`${id}-${o.khoa}`} className={`field w-full ${loi ? 'border-late' : ''}`} value={chon[o.khoa] ?? ''}
-                  aria-invalid={loi ? true : undefined}
-                  onChange={(e) => setChon((c) => ({ ...c, [o.khoa]: e.target.value ? Number(e.target.value) : '' }))}>
-                  <option value="">— Chưa chọn —</option>
-                  {(teachers.data ?? []).map((t) => (
-                    <option key={t.id} value={t.id}>{t.name}{t.classCount ? ` · ${t.classCount} lớp` : ''}</option>
-                  ))}
-                </select>
-                {loi && <span className="col-start-2 -mt-0.5 text-[11px] text-late">{loi}</span>}
-              </div>
-            );
-          })}
-        </div>
+        <LuoiPhanCong oList={oList} chon={chon} nguoi={teachers.data ?? []} loi={loiPcO}
+          onChon={(khoa, v) => setChon((c) => ({ ...c, [khoa]: v }))} />
         <p className="m-0 text-[11px] text-slate-500">
           {oList.length === 1
             ? 'Lớp Pre FOU không chia môn — GVCN dạy luôn.'
@@ -196,8 +178,46 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
   );
 }
 
+/**
+ * Lưới ô phân công (mockup 21 mục 1, 4) — Tạo lớp và Sửa phân công dùng chung: nhãn trái cùng bề rộng, mỗi ô MỘT `<select>`,
+ * lỗi một dòng dưới ô. `nhanTrong` thay chữ mục rỗng (dữ liệu cũ nhiều người một ô hiện cả tên).
+ */
+export function LuoiPhanCong({ oList, chon, onChon, nguoi, loi, nhanTrong, chiXem }: {
+  oList: OPhanCong[]; chon: Record<string, number | ''>; onChon: (khoa: string, v: number | '') => void;
+  nguoi: { id: number; name: string; classCount: number }[];
+  loi: (khoa: string) => string | null; nhanTrong?: (khoa: string) => string | undefined; chiXem?: boolean;
+}) {
+  const id = useId();
+  return (
+    <div className="grid grid-cols-[6rem_1fr] items-center gap-x-2.5 gap-y-1.5">
+      {oList.map((o) => {
+        const l = loi(o.khoa);
+        return (
+          <div key={o.khoa} className="contents">
+            <label htmlFor={`${id}-${o.khoa}`} className="text-xs font-bold text-slate-200">{o.nhan}</label>
+            <select id={`${id}-${o.khoa}`} className={`field w-full ${l ? 'border-late' : ''}`} value={chon[o.khoa] ?? ''}
+              aria-invalid={l ? true : undefined} disabled={chiXem}
+              onChange={(e) => onChon(o.khoa, e.target.value ? Number(e.target.value) : '')}>
+              <option value="">{nhanTrong?.(o.khoa) ?? '— Chưa chọn —'}</option>
+              {nguoi.map((t) => (
+                <option key={t.id} value={t.id}>{t.name}{t.classCount ? ` · ${t.classCount} lớp` : ''}</option>
+              ))}
+            </select>
+            {l && <span className="col-start-2 -mt-0.5 text-[11px] text-late">{l}</span>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Chân panel: `n ô cần sửa ↑` (mockup 21) cho lỗi luật phân công. ponytail: thay bằng `DongCanSua` khi PR-N1 Task 6 merge. */
+export function SoOCanSua({ n }: { n: number }) {
+  return n ? <span className="text-[11px] text-slate-500 tabular-nums">{n} ô cần sửa ↑</span> : null;
+}
+
 /** Nút phân đoạn: mục đang chọn viền + nền accent nhạt (không `btn-primary` — B3). */
-function PhanDoan({ nhan, giaTri, onChon, muc }: {
+export function PhanDoan({ nhan, giaTri, onChon, muc }: {
   nhan: string; giaTri: string; onChon: (v: string) => void;
   muc: { v: string; nhan: string; tat?: boolean; title?: string }[];
 }) {

@@ -2,26 +2,25 @@ import { useEffect, useState } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { Khoi, KhungPanel } from '../../ui/KhungPanel.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { Empty, Skeleton } from '../../ui/ui.tsx';
 import { skillLabel } from '../../lib/format.ts';
-import { ngay } from '@shared/domain/index.ts';
+import { kiemPhanCong, ngay, oPhanCong } from '@shared/domain/index.ts';
+import { LuoiPhanCong, SoOCanSua } from './ClassCreatePanel.tsx';
 
 /**
- * SỬA PHÂN CÔNG GIÁO VIÊN CỦA LỚP (PR-UX3, N-4, mockup 15 §8) — MỘT panel `KhungPanel`.
+ * SỬA PHÂN CÔNG GIÁO VIÊN CỦA LỚP (PR-LOP, YC-4, mockup 21 mục 4) — MỘT panel `KhungPanel`, mỗi ô MỘT người.
  *
- * Một lớp có thể có HAI người cùng dạy một kỹ năng (hai lớp trong dữ liệu thật đang như vậy), nên mỗi kỹ năng là một danh sách chứ không
- * phải một ô chọn. Ô chọn một-người sẽ âm thầm đá mất người thứ hai — đúng kiểu lỗi chỉ lộ ra khi ai đó không nhập được điểm.
- *
- * Gửi lên NGUYÊN bức tranh đang hiển thị, không gửi từng thao tác thêm/bớt: hai người sửa cùng lúc thì kết quả vẫn là một trong hai bức
- * tranh, không phải một trạng thái pha trộn mà không ai định. Chân `Huỷ | Lưu`.
+ * Ô theo chương trình (`oPhanCong`), lỗi luật (`kiemPhanCong`) hiện ngay tại ô và khoá Lưu — cùng hàm máy chủ kiểm.
+ * Dữ liệu cũ có nhiều người một ô (trước luật, Q11): hiện cả tên, bắt chọn lại một người, không tự bỏ ai.
+ * Gửi lên NGUYÊN bức tranh đang hiển thị (`{ slots }`), không gửi từng thao tác: hai người sửa cùng lúc thì kết quả vẫn là
+ * một trong hai bức tranh.
  */
 
-type Slot = { userId: number; skill: string | null; isCore: boolean };
 type Teachers = {
-  classId: number; classCode: string; branchCode: string;
+  classId: number; classCode: string; branchCode: string; programmeCode: string | null;
   skills: string[];
   core: { userId: number; name: string; from: string }[];
   bySkill: { skill: string; userId: number; name: string; from: string }[];
@@ -36,65 +35,41 @@ export function TeacherAssignPanel({ open, onClose, classId, classCode, onDone }
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
   const { data, loading, error } = useApi<Teachers>(open ? `/classes/${classId}/teachers` : null, [open]);
-  const [slots, setSlots] = useState<Slot[] | null>(null);
+  const [chon, setChon] = useState<Record<string, number | ''>>({});
+  /** Ô dữ liệu cũ đang có từ 2 người: khoá ô → tên. */
+  const [nhieuNguoi, setNhieuNguoi] = useState<Record<string, string[]>>({});
   const [busy, setBusy] = useState(false);
   const [moDaDay, setMoDaDay] = useState(false);
 
   // Nạp bức tranh hiện tại một lần khi mở; sửa xong mới gửi lên.
   useEffect(() => {
-    if (!data) { setSlots(null); return; }
-    setSlots([
-      ...data.core.map((c) => ({ userId: c.userId, skill: null, isCore: true })),
-      ...data.bySkill.map((c) => ({ userId: c.userId, skill: c.skill, isCore: false })),
-    ]);
+    if (!data) return;
+    const theoO = new Map<string, { userId: number; name: string }[]>();
+    for (const [khoa, a] of [...data.core.map((c) => ['gvcn', c] as const), ...data.bySkill.map((c) => [c.skill, c] as const)]) {
+      theoO.set(khoa, [...(theoO.get(khoa) ?? []), a]);
+    }
+    const ds = [...theoO];
+    setChon(Object.fromEntries(ds.filter(([, a]) => a.length === 1).map(([k, a]) => [k, a[0].userId])));
+    setNhieuNguoi(Object.fromEntries(ds.filter(([, a]) => a.length > 1).map(([k, a]) => [k, a.map((x) => x.name)])));
   }, [data]);
 
   if (!open) return null;
 
-  const nameOf = (id: number) => data?.candidates.find((c) => c.id === id)?.name
-    ?? data?.core.find((c) => c.userId === id)?.name
-    ?? data?.bySkill.find((c) => c.userId === id)?.name
-    ?? `#${id}`;
+  const oList = data ? oPhanCong(data.programmeCode, data.skills) : [];
+  const slots = oList.flatMap((o) => (chon[o.khoa] ? [{ userId: Number(chon[o.khoa]), skill: o.skill, isCore: o.laGvcn }] : []));
+  const loiPc = data ? kiemPhanCong(data.programmeCode, data.skills, slots) : [];
+  const loiO = (khoa: string) => (nhieuNguoi[khoa] && !chon[khoa]
+    ? `Ô này đang có ${nhieuNguoi[khoa].length} người — chọn lại một người`
+    : loiPc.find((l) => l.khoa === khoa)?.lyDo ?? null);
+  const oLoi = oList.filter((o) => loiO(o.khoa));
 
-  const inSlot = (skill: string | null) =>
-    (slots ?? []).filter((s) => (skill === null ? s.isCore : s.skill === skill));
-  const add = (userId: number, skill: string | null) => {
-    if (!userId) return;
-    setSlots((cur) => {
-      const list = cur ?? [];
-      const dup = list.some((s) => s.userId === userId && (skill === null ? s.isCore : s.skill === skill));
-      return dup ? list : [...list, { userId, skill, isCore: skill === null }];
-    });
-  };
-  const remove = (userId: number, skill: string | null) =>
-    setSlots((cur) => (cur ?? []).filter(
-      (s) => !(s.userId === userId && (skill === null ? s.isCore : s.skill === skill)),
-    ));
-
-  /* Một môn: nhãn TRÊN, dưới là các chip tên (×) và ô "+ Thêm giáo viên". */
-  const oMon = (skill: string | null, label: string) => (
-    <Truong key={label} nhan={label} as="div">
-      <div className="flex flex-wrap items-center gap-1.5">
-        {inSlot(skill).length === 0 && <span className="text-xs text-slate-500">Chưa phân công</span>}
-        {inSlot(skill).map((s) => (
-          <span key={s.userId} className="inline-flex items-center gap-1">
-            <Nhan tone="muted">{nameOf(s.userId)}</Nhan>
-            <button type="button" className="px-1 text-xs leading-none text-slate-500 hover:text-bad"
-              title="Bỏ phân công" aria-label={`Bỏ ${nameOf(s.userId)}`} onClick={() => remove(s.userId, skill)}>×</button>
-          </span>
-        ))}
-        {data?.viewer.canAssign && (
-          <select className="field w-auto py-1 text-xs" value="" aria-label={`Thêm giáo viên ${label}`}
-            onChange={(e) => { add(Number(e.target.value), skill); e.currentTarget.value = ''; }}>
-            <option value="">+ Thêm giáo viên</option>
-            {(data?.candidates ?? [])
-              .filter((c) => !inSlot(skill).some((s) => s.userId === c.id))
-              .map((c) => <option key={c.id} value={c.id}>{c.name}{c.classCount ? ` · ${c.classCount} lớp` : ''}</option>)}
-          </select>
-        )}
-      </div>
-    </Truong>
-  );
+  /* Người đang được phân công mà không còn trong danh sách ứng viên (khoá tài khoản, đổi chi nhánh) vẫn phải hiện tên. */
+  const nguoi = [
+    ...(data?.candidates ?? []),
+    ...[...(data?.core ?? []), ...(data?.bySkill ?? [])]
+      .filter((a, i, all) => !data?.candidates.some((c) => c.id === a.userId) && all.findIndex((x) => x.userId === a.userId) === i)
+      .map((a) => ({ id: a.userId, name: a.name, classCount: 0 })),
+  ];
 
   const luu = async () => {
     setBusy(true);
@@ -110,22 +85,28 @@ export function TeacherAssignPanel({ open, onClose, classId, classCode, onDone }
     <KhungPanel tieuDe="Sửa phân công" lop={classCode} onDong={onClose}
       ngCanh={data && !data.viewer.canAssign ? <span className="text-slate-400">Chỉ xem: đổi phân công là việc của Quản lý và Admin chi nhánh.</span> : undefined}
       chan={{
+        phu: <SoOCanSua n={oLoi.length} />,
         chinh: data?.viewer.canAssign
-          ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !slots} onClick={luu}>Lưu</button>
+          ? (
+            <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !data || oLoi.length > 0}
+              title={oLoi[0] ? `${oLoi[0].nhan}: ${loiO(oLoi[0].khoa)}` : undefined} onClick={luu}>Lưu</button>
+          )
           : undefined,
       }}>
       {loading && <div className="pt-3"><Skeleton rows={5} /></div>}
       {error && <div className="pt-3"><Empty title="Không đọc được phân công" hint={error.message} /></div>}
-      {data && slots && (
+      {data && (
         <>
-          <Khoi tieuDe="GVCN">
-            {oMon(null, 'GVCN')}
-          </Khoi>
-          <Khoi tieuDe="Giáo viên bộ môn"
+          <Khoi tieuDe="Phân công"
             luat="Chỉ nhập được điểm môn mình được phân công. Bỏ phân công KHÔNG xoá lịch sử: dòng cũ được đóng lại theo ngày, nên báo cáo cũ đọc lại vẫn thấy đúng ai dạy lúc đó; điểm đã nhập giữ nguyên tên người nhập.">
-            {data.skills.map((sk) => oMon(sk, skillLabel(sk)))}
+            <LuoiPhanCong oList={oList} chon={chon} nguoi={nguoi} loi={loiO} chiXem={!data.viewer.canAssign}
+              nhanTrong={(k) => nhieuNguoi[k]?.join(' · ')}
+              onChon={(khoa, v) => setChon((c) => ({ ...c, [khoa]: v }))} />
+            <p className="m-0 text-[11px] text-slate-500">
+              {oList.length === 1 ? 'Lớp Pre FOU không chia môn — GVCN dạy luôn.' : 'Mỗi ô một người. Một người nhận nhiều ô được.'}
+            </p>
           </Khoi>
-          {slots.length === 0 && (
+          {slots.length === 0 && !Object.keys(nhieuNguoi).length && (
             <p className="mt-3.5"><Nhan tone="soon">Lớp đang không có giáo viên nào</Nhan></p>
           )}
           {data.past.length > 0 && (
