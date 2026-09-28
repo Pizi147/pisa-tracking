@@ -81,9 +81,9 @@ export type ClassSummary = {
  * CẢ danh sách lớp lẫn trang chi tiết lớp đều dùng đúng bộ này, nên hai màn không thể nói
  * khác nhau về cùng một lớp.
  */
-function progressMapOf(classIds: number[]) {
-  const prs = classProgressMany(classIds);
-  const ms = missingForClasses(classIds);
+function progressMapOf(classIds: number[], programmes: ReturnType<typeof allProgrammes>) {
+  const prs = classProgressMany(classIds, programmes);
+  const ms = missingForClasses(classIds, programmes);
   const chua = demChuaLoTrinh(classIds);
   const out = new Map<number, {
     progressLabel: string | null; phase: string; phaseLabel: string;
@@ -221,7 +221,7 @@ export function listClassSummaries(p: Principal, f: { branchId?: number; q?: str
     if (pending.length) bump(needScores, a.class_id, pending.length);
   }
 
-  const progressByClass = progressMapOf(classes.map((c) => c.id));
+  const progressByClass = progressMapOf(classes.map((c) => c.id), programmes);
 
   let rows: ClassSummary[] = classes.map((c) => ({
     id: c.id, code: c.code, kind: c.kind, route: c.route,

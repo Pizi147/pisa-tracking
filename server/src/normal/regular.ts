@@ -71,6 +71,15 @@ export function programmeByCode(code: string | null | undefined): ProgrammeInfo 
   return allProgrammes().get(code) ?? null;
 }
 
+/** PF1: số tuần + mốc Giữa/Cuối khoá chụp vào lớp lúc tạo / đổi chương trình (`classes.so_tuan`, `tuan_giua_khoa`, `tuan_cuoi_khoa`).
+ *  Chương trình không có số tuần cố định (FT) → NULL cả ba. */
+export function mocChupVaoLop(code: string | null | undefined): [number | null, number | null, number | null] {
+  const prog = programmeByCode(code);
+  if (!prog?.weeks) return [null, null, null];
+  const moc = (k: AttemptKind) => prog.checkpoints.find((x) => x.kind === k)?.studyWeek ?? null;
+  return [prog.weeks, moc('progress'), moc('final')];
+}
+
 export function programmeOfClass(classId: number): ProgrammeInfo | null {
   const c = db().prepare('SELECT programme_code FROM classes WHERE id = ?').get(classId) as any;
   return programmeByCode(c?.programme_code);
@@ -255,7 +264,7 @@ export function planRegularTests(p: Principal, classId: number, opts: {
   if (!progress.progressWeekStart && !progress.finalWeekStart) {
     throw badRequest('Lớp chưa có ngày khai giảng nên chưa tính được mốc tuần học.');
   }
-  if (!prog.checkpoints.length) throw badRequest(`Chương trình ${prog.code} chưa khai báo mốc kiểm tra nào.`);
+  if (!prog.checkpoints.length) throw badRequest(`Chương trình ${prog.name} chưa khai báo mốc kiểm tra nào.`);
 
   const chonEm = opts.studentIds?.length ? opts.studentIds : null;
   const students = conn
@@ -305,15 +314,17 @@ export function planRegularTests(p: Principal, classId: number, opts: {
         });
       }
 
-      for (const cp of prog.checkpoints) {
-        if (opts.kinds && !opts.kinds.includes(cp.kind as 'progress' | 'final')) continue;
+      /* Mốc lấy từ `classProgress` (số tuần chụp vào lớp / bảng) — chương trình không có Giữa khoá (Pre FOU) thì bỏ mốc đó. */
+      for (const kind of ['progress', 'final'] as const) {
+        if (opts.kinds && !opts.kinds.includes(kind)) continue;
+        const week = kind === 'progress' ? progress.progressWeekStart : progress.finalWeekStart;
+        const studyWeek = kind === 'progress' ? progress.progressWeek : progress.finalWeek;
+        if (!week) continue;
         const dup = conn
           .prepare(`SELECT id FROM assessment_attempts WHERE cycle_id = ? AND kind = ?`)
-          .get(cycle.id, cp.kind) as any;
+          .get(cycle.id, kind) as any;
         if (dup) continue;
 
-        const week = cp.kind === 'progress' ? progress.progressWeekStart : progress.finalWeekStart;
-        if (!week) throw badRequest(`Chưa tính được tuần ${ATTEMPT_KIND_LABEL[cp.kind]} của lớp — thiếu mốc tuần học.`);
         const period = ensurePeriod(week);
         const nextNo = ((conn.prepare('SELECT MAX(attempt_no) m FROM assessment_attempts WHERE cycle_id = ?')
           .get(cycle.id) as any)?.m ?? 0) + 1;
@@ -323,13 +334,13 @@ export function planRegularTests(p: Principal, classId: number, opts: {
                                               status, created_by, created_at)
              VALUES (?,?,?,?,?,?, 'planned', ?,?)`,
           )
-          .run(cycle.id, st.id, nextNo, cp.kind, classId, period.id, p.userId, nowIso());
+          .run(cycle.id, st.id, nextNo, kind, classId, period.id, p.userId, nowIso());
         /* Bốn môn cùng tuần khi mới lập; trải ra nhiều tuần là thao tác đổi lịch sau đó. */
         ensureSkillRows(Number(info.lastInsertRowid));
         created.push(Number(info.lastInsertRowid));
         addJourney({
           studentId: st.id, eventType: 'mock_scheduled', eventDate: week,
-          title: `${ATTEMPT_KIND_LABEL[cp.kind]} · tuần học ${cp.studyWeek}`,
+          title: `${ATTEMPT_KIND_LABEL[kind]} · tuần học ${studyWeek}`,
           detail: `${period.code} · lớp ${cls.code}`,
           refTable: 'assessment_attempts', refId: Number(info.lastInsertRowid), createdBy: p.userId,
         });

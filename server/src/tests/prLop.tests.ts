@@ -2,7 +2,8 @@
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runPrLopTests(t: YThucTestKit) {
-  const { check, assert, conn } = t;
+  const { check, assert, assertThrows, conn, P } = t;
+  const intakeMod: any = await import('../classes/intake.ts');
   const d = await import('../../../shared/domain/index.ts');
   console.log('\nPR-LOP · Tạo lớp, tên lớp, RF, Pre FOU, phân công');
 
@@ -84,5 +85,20 @@ export async function runPrLopTests(t: YThucTestKit) {
     conn.prepare(`DELETE FROM classes WHERE id IN (${[a, b, c1, c2, v1, v2].map(() => '?').join(',')})`).run(a, b, c1, c2, v1, v2);
     const lan3: string[] = []; mig.migratePrLop(conn, lan3);
     assert(!!conn.prepare("SELECT name FROM sqlite_master WHERE name = 'ux_classes_ma_chuan'").get(), `hết va chạm phải tạo chỉ mục: ${lan3.join(' · ')}`);
+  });
+
+  const sch: any = await import('../classes/schedule.ts');
+  const sys: any = await import('../platform/sysconfig.ts');
+  check('LOP (4) · sửa số tuần ở Quản trị: lớp tạo sau theo số mới, lớp cũ giữ số lúc tạo (PF1, K1-46, K2-24)', () => {
+    const mb = (conn.prepare("SELECT id FROM branches WHERE code = 'MB'").get() as any).id;
+    const tao = (so: string) => (intakeMod.createClass(P.admin, { code: `MB BE ${so}`, branchId: mb, kind: 'BE', startDate: '2026-09-28' }) as any).id;
+    const cu = tao('8801');
+    sys.saveProgramme(P.admin, { code: 'BE', name: 'Beginner', weeks: 12, finalWeek: 12, progressWeek: 6 });
+    const moi = tao('8802');
+    const pr = sch.classProgressMany([cu, moi]);
+    assert(pr.get(cu).totalWeeks === 10 && pr.get(cu).finalWeek === 10, `lớp cũ: ${pr.get(cu).totalWeeks}/${pr.get(cu).finalWeek}`);
+    assert(pr.get(moi).totalWeeks === 12 && pr.get(moi).finalWeek === 12 && pr.get(moi).progressWeek === 6, 'lớp mới');
+    assert(!/PREFOU|ielts/i.test(String(pr.get(moi).label)) && /^BE · /.test(String(pr.get(moi).label)), String(pr.get(moi).label));
+    sys.saveProgramme(P.admin, { code: 'BE', name: 'Beginner', weeks: 10, finalWeek: 10, progressWeek: 5 });
   });
 }

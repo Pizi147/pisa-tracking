@@ -1,5 +1,6 @@
 import { db, tx } from '../db.ts';
-import { MOCK_FT_STUDY_WEEK, PERMISSIONS, PROGRAMME_TEMPLATES, chuanHoaMaLop, programmeOf, type Route } from '../../../shared/domain/index.ts';
+import { ENTRY_SKILLS, MOCK_FT_STUDY_WEEK, PERMISSIONS, PROGRAMME_TEMPLATES, chuanHoaMaLop, programmeOf, type Route } from '../../../shared/domain/index.ts';
+import { allProgrammes, mocChupVaoLop, programmeByCode } from '../normal/regular.ts';
 import { activeRouteCodes } from '../platform/sysconfig.ts';
 import { addDays, badRequest, isIsoDate, normalizeName, notFound, nowIso, padCode } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
@@ -228,8 +229,8 @@ export function previewIntake(
   }
 
   /* Chương trình quyết định bộ cột: Fast Track có band từng kỹ năng và target, Normal không. */
-  const tpl = cls.programme_code ? PROGRAMME_TEMPLATES[programmeOf(cls.programme_code) ?? 'FT'] : null;
-  const ratio = (tpl?.scoringMode ?? 'ielts_band') === 'ratio';
+  const pc = cls.programme_code ? programmeOf(cls.programme_code) ?? 'FT' : null;
+  const ratio = ((pc ? programmeByCode(pc)?.scoringMode ?? PROGRAMME_TEMPLATES[pc]?.scoringMode : null) ?? 'ielts_band') === 'ratio';
 
   const defaultWeek = input.defaultStartWeek
     ? mondayOf(input.defaultStartWeek)
@@ -514,6 +515,7 @@ export function createClass(p: Principal, input: {
   // Trùng so bằng mã chuẩn hoá (bỏ "-", khoảng trắng, hoa/thường) — khớp chỉ mục ux_classes_ma_chuan (Q3, K5-68).
   if (conn.prepare("SELECT id FROM classes WHERE lower(replace(replace(code, '-', ''), ' ', '')) = ?").get(chuanHoaMaLop(code))) throw badRequest(`Đã có lớp ${code}.`);
   if (input.startDate && !isIsoDate(input.startDate)) throw badRequest('Ngày khai giảng không hợp lệ.');
+  const ct = programmeOf(input.kind ?? 'FT');
 
   return tx(() => {
     const info = conn
@@ -525,20 +527,20 @@ export function createClass(p: Principal, input: {
          * dựng ra bảng band IELTS cho một lớp Foundation — lỗi im lặng đã từng xảy ra.
          */
         `INSERT INTO classes (code, branch_id, kind, programme_code, route, is_fast_track,
-                              start_date, start_period_id, previous_class_id, status, note, created_at)
-         VALUES (?,?,?,?,?,?,?,?,?, 'active', ?, ?)`,
+                              start_date, start_period_id, previous_class_id, status, note, created_at,
+                              so_tuan, tuan_giua_khoa, tuan_cuoi_khoa)
+         VALUES (?,?,?,?,?,?,?,?,?, 'active', ?, ?, ?,?,?)`,
       )
       .run(code, input.branchId, (input.kind ?? 'FT').trim(),
-           programmeOf(input.kind ?? 'FT'), input.route ?? null,
+           ct, input.route ?? null,
            input.isFastTrack ? 1 : 0, input.startDate ?? null, input.startPeriodId ?? null,
            input.previousClassId ?? null,
-           input.note ?? null, nowIso());
+           input.note ?? null, nowIso(),
+           ...mocChupVaoLop(ct));   // PF1: lớp giữ số tuần lúc tạo — Quản trị sửa sau chỉ áp lớp mở sau
     const id = Number(info.lastInsertRowid);
-    /* Không khai kỹ năng thì lấy ĐÚNG bộ môn của chương trình lớp đó, không mặc định bộ FT. */
-    const prog = programmeOf(input.kind ?? 'FT');
-    const fallback = prog && prog !== 'FT'
-      ? [...PROGRAMME_TEMPLATES[prog].skills]
-      : ['listening', 'reading', 'writing1', 'writing2', 'speaking'];
+    /* Không khai kỹ năng thì lấy ĐÚNG bộ môn của chương trình lớp đó (bảng `programmes`, K5-45), không mặc định bộ FT. */
+    const fallback = allProgrammes().get(ct ?? '')?.skills
+      ?? (ct ? PROGRAMME_TEMPLATES[ct]?.skills : null) ?? ENTRY_SKILLS;
     for (const skill of input.skills?.length ? input.skills : fallback) {
       conn.prepare('INSERT INTO class_skills (class_id, skill, sessions_per_week) VALUES (?,?,1)').run(id, skill);
     }

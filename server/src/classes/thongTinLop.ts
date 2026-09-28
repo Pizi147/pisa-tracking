@@ -9,6 +9,7 @@ import { demoToday } from '../demoConfig.ts';
 import { badRequest, notFound } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
+import { mocChupVaoLop, programmeByCode } from '../normal/regular.ts';
 
 export function capNhatThongTinLop(
   p: Principal, classId: number, input: { code?: unknown; route?: unknown; note?: unknown; programmeCode?: unknown },
@@ -51,6 +52,7 @@ export function capNhatThongTinLop(
       moi.programme_code = pc;
       moi.is_fast_track = pc === 'FT' ? 1 : 0;
       moi.route = pc === 'FT' ? (c.route ?? 'LT1') : null;
+      [moi.so_tuan, moi.tuan_giua_khoa, moi.tuan_cuoi_khoa] = mocChupVaoLop(pc);   // PF1: số tuần theo chương trình mới
     }
   }
   if (input.route !== undefined) {
@@ -67,7 +69,8 @@ export function capNhatThongTinLop(
     conn.prepare(`UPDATE classes SET ${cot.map((k) => `${k} = ?`).join(', ')} WHERE id = ?`).run(...cot.map((k) => moi[k]), classId);
     if (chuongTrinh !== cu && chuongTrinh) {
       /* Kỹ năng lớp đi theo CHƯƠNG TRÌNH (như lúc tạo lớp); phân công kỹ năng không còn thì kết thúc, không xoá (giữ lịch sử). */
-      const kyNang = [...PROGRAMME_TEMPLATES[chuongTrinh as keyof typeof PROGRAMME_TEMPLATES].skills] as string[];
+      const kyNang = [...(programmeByCode(chuongTrinh)?.skills
+        ?? PROGRAMME_TEMPLATES[chuongTrinh as keyof typeof PROGRAMME_TEMPLATES]?.skills ?? [])] as string[];
       conn.prepare('DELETE FROM class_skills WHERE class_id = ?').run(classId);
       for (const k of kyNang) conn.prepare('INSERT INTO class_skills (class_id, skill, sessions_per_week) VALUES (?,?,1)').run(classId, k);
       conn.prepare(
