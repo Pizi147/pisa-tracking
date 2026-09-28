@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { taoKhoPanel } from '@shared/domain/index.ts';
 import { NutLuat } from './NutLuat.tsx';
+import { DongCanSua, type MucThieu } from './loiForm.tsx';
 
 /** Kho dùng chung toàn web: mở panel này thì panel đang mở phải đóng (G-8, N-4). */
 export const khoPanelChung = taoKhoPanel();
@@ -9,8 +10,8 @@ export const khoPanelChung = taoKhoPanel();
  * KHUÔN PANEL CHUNG (PR-UX0, N-4 — mockup 15 (1)). Ngăn phải 560px (form dạng bảng `rong` = 720px), 375px toàn màn.
  * Đầu 52px MỘT dòng: tiêu đề · tên HV · lớp (mờ, cắt "…") · ✕; tab (nếu có) dính dưới đầu; ngữ cảnh ≤ 1 dòng.
  * Thân chia KHỐI (`Khoi`, tiêu đề nhỏ, luật dài vào ⓘ), nhãn TRÊN ô (`Truong`), ≤ 2 ô một hàng (`Hang2`).
- * Chân CỐ ĐỊNH: trái Huỷ / Xoá (viền đỏ), phải nút phụ + MỘT nút chính; "Còn thiếu: …" trên chân, canh phải — chỉ
- * truyền `conThieu` SAU khi bấm Lưu/rời ô. CHỈ thân cuộn, trang sau khoá cuộn. Mở việc khác thì THAY nội dung, không
+ * Chân CỐ ĐỊNH: trái Huỷ / Xoá (viền đỏ), phải nút phụ + MỘT nút chính; dòng xám "n ô cần sửa ↑" trên chân (PR-N1,
+ * `DongCanSua`) — chỉ truyền `conThieu` SAU khi bấm Lưu; lý do từng ô nằm dưới ô (`Truong loi`). CHỈ thân cuộn, trang sau khoá cuộn. Mở việc khác thì THAY nội dung, không
  * chồng panel (`khoPanelChung`). Không chữ dev; chữ mẫu bắt đầu "Ví dụ:".
  */
 export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, quayLai, chan, onDong, children }: {
@@ -18,7 +19,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
   tabs?: ReactNode; ngCanh?: ReactNode; quayLai?: { nhan: string; onClick: () => void };
   chan?: {
     huy?: { nhan?: string; onClick: () => void }; xoa?: { onClick: () => void; nhan?: string };
-    phu?: ReactNode; chinh?: ReactNode; conThieu?: string[];
+    phu?: ReactNode; chinh?: ReactNode; conThieu?: (string | MucThieu)[];
   };
   onDong: () => void; children: ReactNode;
 }) {
@@ -66,9 +67,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4">{children}</div>
         {chan && (
           <footer className="shrink-0 border-t" style={{ borderColor: 'var(--line)' }}>
-            {chan.conThieu && chan.conThieu.length > 0 && (
-              <div className="px-4 pt-2 text-right text-[11px] font-semibold text-soon" role="status">Còn thiếu: {chan.conThieu.join(', ')}</div>
-            )}
+            {chan.conThieu?.length ? <DongCanSua muc={chan.conThieu} /> : null}
             <div className="flex items-center gap-2 px-4 py-2.5">
               <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={huy.onClick}>{huy.nhan ?? 'Huỷ'}</button>
               {chan.xoa && <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" onClick={chan.xoa.onClick}>{chan.xoa.nhan ?? 'Xoá'}</button>}
@@ -95,18 +94,25 @@ export function Khoi({ tieuDe, luat, children }: { tieuDe: string; luat?: ReactN
   );
 }
 
-/** Một TRƯỜNG: nhãn ở TRÊN ô, `*` khi bắt buộc, chữ phụ ≤ 1 dòng, `loi` chỉ khi người gọi truyền (sau khi bấm Lưu / rời ô). */
-export function Truong({ nhan, batBuoc, tuyChon, phu, loi, as = 'label', children }: {
-  nhan: string; batBuoc?: boolean; tuyChon?: boolean; phu?: string; loi?: string | null; as?: 'label' | 'div'; children: ReactNode;
+/**
+ * Một TRƯỜNG: nhãn ở TRÊN ô, `*` khi bắt buộc, chữ phụ ≤ 1 dòng, `loi` chỉ khi người gọi truyền (sau khi bấm Lưu / rời ô).
+ * Có `loi` → ô viền đỏ + lý do dưới ô (YC-12.5.2; người gọi đặt `aria-invalid` lên ô). `dem` = bộ đếm ký tự `8/15` bên phải.
+ */
+export function Truong({ nhan, batBuoc, tuyChon, phu, loi, dem, as = 'label', children }: {
+  nhan: string; batBuoc?: boolean; tuyChon?: boolean; phu?: string; loi?: string | null; dem?: { co: number; can: number };
+  as?: 'label' | 'div'; children: ReactNode;
 }) {
   const Vo = as;
   return (
     <Vo className="block min-w-0">
-      <span className="mb-1 block text-[11.5px] font-bold text-slate-200">
-        {nhan}{batBuoc && <span className="text-bad"> *</span>}
-        {tuyChon && <span className="font-normal text-slate-500"> (không bắt buộc)</span>}
+      <span className="mb-1 flex items-baseline gap-2 text-[11.5px] font-bold text-slate-200">
+        <span className="min-w-0 flex-1">
+          {nhan}{batBuoc && <span className="text-bad"> *</span>}
+          {tuyChon && <span className="font-normal text-slate-500"> (không bắt buộc)</span>}
+        </span>
+        {dem && <span className={`text-[10.5px] font-normal tabular-nums ${dem.co < dem.can ? 'text-slate-500' : 'text-slate-400'}`}>{dem.co}/{dem.can}</span>}
       </span>
-      {children}
+      {loi ? <div className="[&_.field]:border-late [&_.field]:ring-1 [&_.field]:ring-late/40">{children}</div> : children}
       {phu && <span className="mt-1 block truncate text-[10.5px] text-slate-500">{phu}</span>}
       {loi && <span className="mt-1 block text-[11px] text-late">{loi}</span>}
     </Vo>

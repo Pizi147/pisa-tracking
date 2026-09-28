@@ -47,3 +47,4 @@ export * from './mauNghia.ts';
 export * from './khoPanel.ts';
 export * from './chonNgay.ts';
 export * from './quanLyHocVien.ts';
+export * from './loiForm.ts';
