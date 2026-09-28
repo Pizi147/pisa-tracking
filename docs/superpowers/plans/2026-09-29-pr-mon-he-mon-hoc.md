@@ -602,6 +602,10 @@ K5-45 T4 (+LOP) · K5-46 T2 · K5-47 T1/T5 · K5-48 T2 · K5-57 T5 · K5-67 T2.
 - **Task 0 (29/09, Opus 5.5 — phương án B):** nhánh `pr-mon-he-mon-hoc` từ `origin/main` fb51181. DUYET/MT/NHAP **chưa** merge (🛑 4c không
   áp). `npm ci` → `npm run check` xanh: **mốc B = 1444** phép kiểm + 20 tốc độ. Dòng mã khớp kế hoạch (lệch ≤ 4: `ALL_SKILLS` dùng ở
   `accounts.ts:359`, không :363); không cần bảng "dòng thật".
+- **Task 1:** 1450 (+6). Lệch kế hoạch: `hoKyNang` nhận thêm `gv` → writing, `phat_am` → speaking (nhánh nguyên nhân FOU nằm ở ô W/S;
+  `tong_hop` vẫn null) — cần vì `hieuQuaPa.ts`/`vanDeHv.ts` dùng nhánh làm họ; Case Pre FOU bị bỏ khỏi hai bảng họ kỹ năng (không đếm
+  "chưa phân loại"). `kyNangTheoCt('ca-hai')` lọc `tong_hop` (giữ hành vi, Task 9 bỏ cột). Sửa kỳ vọng 2 phép kiểm UX4 (thêm nhóm Phát
+  âm; mã "một kỹ năng" đổi từ Speaking · Phát âm sang Reading · Tư duy logic — cùng điều kiện). `grep NHAN_O_TAM` rỗng.
 
 ## Chủ sản phẩm chốt 29/09
 

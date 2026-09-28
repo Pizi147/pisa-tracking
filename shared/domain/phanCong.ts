@@ -1,8 +1,5 @@
 /** PHÂN CÔNG (L3, MH6, T55, T56, M-09): ô nào có theo chương trình + luật kiểm TRƯỚC khi ghi. Web vẽ lỗi tại ô, máy chủ từ chối — cùng hàm. */
-import { CHUONG_TRINH_KHONG_CHIA_MON, skillShort } from './normal.ts';
-
-/** Tên ô FOU TẠM (T55: ô `writing` hiện G+V, `speaking` hiện P). PR-MON thay bằng `tenMon(chuongTrinh, oChuan)` — MH2. */
-const NHAN_O_TAM: Record<string, Record<string, string>> = { FOU: { writing: 'G+V', speaking: 'P' } };
+import { CHUONG_TRINH_KHONG_CHIA_MON, tenMonNgan } from './normal.ts';
 
 export type OPhanCong = { khoa: string; skill: string | null; laGvcn: boolean; nhan: string };
 export type SlotPhanCong = { userId: number; skill: string | null; isCore: boolean };
@@ -14,7 +11,7 @@ const khongChiaMon = (ct: string | null) => CHUONG_TRINH_KHONG_CHIA_MON.includes
 export function oPhanCong(chuongTrinh: string | null, kyNangLop: readonly string[]): OPhanCong[] {
   const gvcn: OPhanCong = { khoa: 'gvcn', skill: null, laGvcn: true, nhan: 'GVCN' };
   if (khongChiaMon(chuongTrinh)) return [gvcn];
-  return [gvcn, ...kyNangLop.map((k) => ({ khoa: k, skill: k, laGvcn: false, nhan: NHAN_O_TAM[chuongTrinh ?? '']?.[k] ?? skillShort(k) }))];
+  return [gvcn, ...kyNangLop.map((k) => ({ khoa: k, skill: k, laGvcn: false, nhan: tenMonNgan(chuongTrinh, k) }))];
 }
 
 /** Máy chủ gọi TRƯỚC khi kiểm + ghi: Pre FOU → GVCN tự nhận ô môn duy nhất (`tong_hop`), để quyền nhập điểm / xử lý Case

@@ -4,8 +4,7 @@
  * Mọi quyết định "hiện chữ gì, hiện mấy cái, xếp thế nào" của hai màn nằm ở đây để kiểm được bằng harness máy chủ (web không có bộ
  * kiểm thử). Component React chỉ vẽ.
  */
-import { ENTRY_SKILL_LABEL, type EntrySkill } from './skills.ts';
-import { REGULAR_SKILL_LABEL, skillShort } from './normal.ts';
+import { skillShort, tenMon } from './normal.ts';
 import { deadlineView } from './display.ts';
 import { tuanKhoa, tuanLich } from './hienThiNgay.ts';
 import { CLASS_PHASE_LABEL, type ClassPhase } from './fasttrack.ts';
@@ -26,7 +25,7 @@ export function maHocVienNgan(ma: string | null | undefined): string {
 
 /** Tên đầy đủ của một kỹ năng/môn — tooltip của chữ viết tắt (G-7). */
 export function tenKyNang(k: string): string {
-  return ENTRY_SKILL_LABEL[k as EntrySkill] ?? REGULAR_SKILL_LABEL[k as keyof typeof REGULAR_SKILL_LABEL] ?? k;
+  return tenMon(null, k);
 }
 
 export function laVaiQuanLy(roles: readonly string[] | null | undefined): boolean {
