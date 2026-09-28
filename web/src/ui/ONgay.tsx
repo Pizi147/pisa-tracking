@@ -35,6 +35,8 @@ export function ONgay({ kieu, value, onChange, toiThieu, toiDa, moc, catHomNay, 
   const nut = useRef<HTMLButtonElement>(null);
   useEffect(() => { setText(hienONgay(value, kieu)); setLoi(null); }, [value, kieu]);
   const chot = () => {
+    /* Chữ chưa sửa thì không kiểm lại: giá trị cũ ngoài luật (hạn đã qua) không được báo lỗi khi chỉ Tab qua. */
+    if (text === hienONgay(value, kieu)) { setLoi(null); return; }
     const r = docONgay(text, kieu, homNay, luat);
     if (r.iso) { if (r.iso !== value) onChange(r.iso); setText(hienONgay(r.iso, kieu)); }
     else if (!text.trim() && value) onChange('');

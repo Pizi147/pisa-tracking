@@ -1,8 +1,9 @@
 import { useEffect, type RefObject } from 'react';
 import { buocVongFocus } from '@shared/domain/index.ts';
 
-/** Những gì Tab dừng lại được trong khung. */
-const O = 'a[href],button:not([disabled]),input:not([disabled]):not([type="hidden"]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+/** Những gì Tab dừng lại được trong khung — bỏ mọi phần tử tabIndex -1 (ô lịch roving, mục menu/danh sách). */
+const O = ['a[href]', 'button:not([disabled])', 'input:not([disabled]):not([type="hidden"])', 'select:not([disabled])',
+  'textarea:not([disabled])', '[tabindex]'].map((x) => `${x}:not([tabindex="-1"])`).join(',');
 
 /**
  * GIỮ FOCUS TRONG KHUNG (E2, Q18) — dùng cho lịch `LichNho` và panel (Task 4).
