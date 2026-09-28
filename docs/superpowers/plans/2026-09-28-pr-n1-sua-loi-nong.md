@@ -1086,10 +1086,26 @@ function Band({ v, kyVong, faded, soSanh = true }: { v: number | null; kyVong: n
   dữ liệu mẫu `action_due` 20/09 → 21/09; `<Han>` cap-nhat-pa chữ → `Ghi kết quả tuần W3 SEP · hạn hết T2 23/09`; quá hạn
   cap-nhat-pa hạn CN 06/09 → hạn hết T2 07/09, 8 → 7 ngày), `hocVienLop.tests.ts` 2 (`han`/`title` `CN dd/mm` → `hết T2 dd/mm`,
   giữ ngày đầu vào `nextDue` để không đổi điều kiện quá hạn), `panelUx3.tests.ts` 1 (cùng kiểu). Ngoài ra chỉ đổi câu báo lỗi
-  `run.ts` (:2441, :2618) và tên 2 phép kiểm, không đổi điều kiện; …
+  `run.ts` (:2441, :2618) và tên 2 phép kiểm, không đổi điều kiện; Task 2 = **2** kỳ vọng — `run.ts:3739` nhóm `do_plan` →
+  `result` (cùng khoá `action:{id}`), `panelUx3.tests.ts:173` nhãn nhóm `Ghi kết quả` → `Ghi kết quả PA`. `run.ts:3044-3057`
+  ("tutor hẹn 10/09") vẫn xanh không cần sửa — dữ liệu mẫu có `action_due` quá hạn nên QL vẫn chỉ thấy dòng quá hạn; …
 - Kết quả `chay-thu:n1` trên DB demo: … PA dời · … PA chạy thiếu hạn · … PA huỷ còn chờ duyệt
 - Task 1: `sosPlanEndDate('one_month')` (`shared/domain/sos.ts`, ngoài danh sách file) mượn `weeklyUpdateDue` làm "Chủ nhật
   đầu tiên từ ngày đó" → đổi hạn tuần sang Thứ Hai sẽ lén dời dự kiến kết thúc SOS 1 tháng sang Thứ Hai. Tách hàm cục bộ
   `chuNhatCuaTuan` trong `sos.ts`, kết quả giữ nguyên (sosV3 :109/:111 xanh; thêm phép kiểm chặn ở `suaLoiNong`). Không đổi luật.
 - Task 1: `REPO` trong `suaLoiNong.tests.ts` đúng như kế hoạch (4 cấp từ `dist-server/server/src/tests/` về gốc worktree) —
   thêm phép kiểm `N1 (0)` xác nhận lúc chạy. `YThucTestKit` có đủ 10 trường truyền vào. Mốc sau Task 1: **1375** (+8).
+- Task 2: `P` của `run.ts` không có khoá `manager` → dùng `P.mbManager` (QL chi nhánh MB, lớp MB-FT 101). `assertThrows` của kit
+  bắt buộc `RegExp` → `/đã huỷ/`. `taoPa`: `recordIntervention` trạng thái `started` bắt buộc người thực hiện → thêm
+  `performerSelf: true` (khoá `extra` vẫn đè được); học viên lấy ở MB-FT 101 và CHỈ có một lớp active (các phép kiểm trước ghi thêm
+  lớp active cho em đầu lớp → `reportIssue` lấy lớp mới nhất, ngoài phạm vi GVCN — lần chạy check đầu đỏ 4 phép vì vậy). Tên/chữ
+  ký `taoPa(key, extra)` giữ nguyên cho Task 3, 5b.
+- Task 2: phép kiểm K5-02 lọc `it.key.endsWith(':id')` bắt nhầm `support:`/`owner:` của một Case KHÁC có id Case trùng số id PA
+  (lần chạy check thứ hai: `["support:262","action:262","owner:262"]`) → lọc đúng `action:{id}` / `review:{id}`. Không đổi luật.
+- Task 2: dòng thật khớp kế hoạch (lệch ≤ 20): `approvalDue` :840, `respondToPlan` SELECT :945, "đã trả lời" :966, `startDue` :994,
+  `overdueActionDue` :2317, `ask_manager` :2957; `mywork.ts` 2b :587-657, 3 :742-810, `order` :1063; `profile.ts` :457-481.
+  Thêm ngoài brief: sửa chú thích hạn QL trả lời (`cases.ts` ~:836, "dùng chung chu kỳ" → 5 ngày). Import `cycleDeadline` thừa ở
+  `mywork.ts` (có từ trước, không dùng) để nguyên.
+- Task 2: mốc `npm run check` — lần 1: 1376 đạt / 4 đỏ (chọn học viên); lần 2: **1379 đạt / 1 đỏ** (lọc khoá phép kiểm K5-02).
+  Sửa lọc xong KHÔNG chạy check lần 3 (luật "chạy lại một lần") — chỉ `build:server` + `typecheck` xanh + chạy riêng khối N1 trên DB
+  seed mới (13/13). Mốc dự kiến sau Task 2: **1380** (+5); Task 3 chạy check đầu tiên sẽ xác nhận.

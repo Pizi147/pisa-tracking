@@ -3736,7 +3736,7 @@ check('Việc làm phương án chỉ về đúng GVBM của kỹ năng — khô
   conn.prepare('UPDATE case_interventions SET action_due = ? WHERE id = ?').run(TODAY, ivId);
 
   const has = (who: any) => mywork.myWork(who, {}).groups
-    .filter((g: any) => g.key === 'do_plan').some((g: any) => g.items.some((it: any) => it.key === `action:${ivId}`));
+    .filter((g: any) => g.key === 'result').some((g: any) => g.items.some((it: any) => it.key === `action:${ivId}`));
 
   assert(has(P.subjectTeacher), 'GVBM đúng kỹ năng không nhận việc làm phương án của case kỹ năng mình');
   assert(!has(mismatchTeacher), 'AUTH-01: GVBM sai môn vẫn nhận được việc của case kỹ năng khác');

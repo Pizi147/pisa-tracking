@@ -176,7 +176,7 @@ function loadUnconfirmedPreset(p: Principal, interventionId: number, doing: stri
 /**
  * XÁC NHẬN PHƯƠNG ÁN ĐIỀN SẴN (S04) — kèm CHỈNH nếu muốn (sửa mô tả, ngày dự kiến kết thúc).
  *
- * Từ đây case đi ĐÚNG workflow học thuật thường (S07): phương án chạy (đang thực hiện), có hạn cập nhật Chủ nhật hằng tuần, có bằng chứng,
+ * Từ đây case đi ĐÚNG workflow học thuật thường (S07): phương án chạy (đang thực hiện), có hạn ghi kết quả tuần hết Thứ Hai tuần sau, có bằng chứng,
  * điều chỉnh, đóng khi xong. Không có lớp "tiến trình SOS" riêng. Phương án ĐÃ xác nhận được coi là căn cứ độc lập khi sửa điểm (S08) —
  * xem `caseHasIndependentBasis`.
  *

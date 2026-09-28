@@ -169,7 +169,7 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     for (const who of nguoiXem) {
       const nhom = (myworkSvc.myWork(who, {}).groups as any[]).find((g) => g.key === 'result');
       if (!nhom) continue;
-      assert(nhom.label === 'Ghi kết quả', `nhãn nhóm: ${nhom.label}`);
+      assert(nhom.label === 'Ghi kết quả PA', `nhãn nhóm: ${nhom.label}`);
       for (const it of nhom.items) {
         assert(!/Cập nhật/.test(`${it.tieuDe} ${it.actionLabel} ${it.statusLabel}`), `${it.key}: còn chữ "Cập nhật"`);
         if (!it.studentId) continue;
