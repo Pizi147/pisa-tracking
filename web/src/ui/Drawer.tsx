@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { useGiuFocus } from './giuFocus.ts';
 
 export function Drawer({ open, onClose, title, subtitle, children, footer, width = 'max-w-2xl' }: {
@@ -51,12 +51,13 @@ function KhungModal({ onClose, title, children, footer, width }: {
 }) {
   const khung = useRef<HTMLDivElement>(null);
   useGiuFocus(khung);
+  const idTen = useId();
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby={idTen}>
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <div ref={khung} tabIndex={-1} className={`relative w-full ${width} card shadow-2xl max-h-[88vh] flex flex-col outline-none`}>
         <header className="flex items-center justify-between px-5 py-3 border-b" style={{ borderColor: 'var(--line)' }}>
-          <h2 className="text-sm font-semibold text-slate-100">{title}</h2>
+          <h2 id={idTen} className="text-sm font-semibold text-slate-100">{title}</h2>
           <button className="btn btn-sm btn-ghost" onClick={onClose} aria-label="Đóng">✕</button>
         </header>
         <div className="p-5 overflow-y-auto">{children}</div>

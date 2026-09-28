@@ -448,7 +448,8 @@ export function ExamPlanText({ plan }: { plan?: { confidence: string; label: str
 }
 
 /** ĐANG CHỌN (UX-B B3, HE §2 "Đang chọn"): viền teal-600 + nền ink-800 + ✓ nhỏ + aria-pressed — KHÁC nút chính (xanh đặc = Lưu). */
-const CHON = 'border-teal-600 bg-ink-800 text-slate-100 hover:bg-ink-800';
+/* `!`: `.btn:hover:not(:disabled)` (index.css) mạnh hơn lớp Tailwind thường — không có `!` thì rê chuột là mất kiểu đang chọn. */
+const CHON = '!border-teal-600 !bg-ink-800 text-slate-100';
 type NutChonProps = {
   chon: boolean; onClick: () => void; children: ReactNode; nho?: boolean; className?: string; disabled?: boolean; title?: string;
 };

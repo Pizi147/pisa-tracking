@@ -134,4 +134,19 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     const pp = doc('web/src/ui/PeoplePicker.tsx');
     assert(!/ít nhất 3 ký tự/.test(pp) && /Dùng tên ngoài hệ thống/.test(pp), 'ChonNguoi còn bắt gõ 3 ký tự / thiếu dòng tên ngoài');
   });
+
+  check('NEN (4) · trả focus: đổi panel tại chỗ về nút mở ban đầu; lịch trong panel về nút lịch; khung chứa còn mở thì về khung', () => {
+    /* Cây giả: P (nút trên trang) mở panel A; nút X trong A đổi sang panel B (A bị gỡ); nút Y trong B đổi lại sang A2 (B bị gỡ). */
+    const tren = new Set(['P', 'A2', 'nutLich']);
+    const khung: Record<string, string> = { X: 'A', Y: 'B', nutLich: 'A2', Z: 'A2' };
+    const dich: Record<string, string | null> = { A: 'P', B: 'X', A2: 'Y' };
+    const ve = (t: string | null) => d.traFocusVe(t, (x) => tren.has(x), (x) => khung[x] ?? null, (k) => dich[k] ?? null);
+    assert(ve('X') === 'P', `B đóng → ${ve('X')}`);
+    assert(ve('Y') === 'P', `A2 đóng (qua B rồi A) → ${ve('Y')}`);
+    assert(ve('nutLich') === 'nutLich', 'lịch trong panel phải về nút lịch, không mượn chỗ trả của panel');
+    assert(ve('Z') === 'A2', 'nút đã gỡ trong khung còn mở → về khung đó');
+    assert(ve(null) === null && ve('Q') === null, 'không dấu → null');
+    const vong = d.traFocusVe('m', () => false, () => 'k', () => 'm');
+    assert(vong === null, 'vòng lặp phải dừng');
+  });
 }

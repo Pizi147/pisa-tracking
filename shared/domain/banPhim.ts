@@ -23,6 +23,23 @@ export function buocVongFocus(n: number, i: number, lui: boolean): number {
   return lui ? (i - 1 + n) % n : (i + 1) % n;
 }
 
+/**
+ * Chỗ trả focus khi đóng một khung giữ focus (E2). `t` = ô đang focus lúc khung mở. Còn trên trang → trả về đó (lịch trong panel
+ * trả về nút lịch). Đã bị gỡ (panel đổi tại chỗ: nút "+ Thêm PA" nằm trong panel cũ) → khung chứa nó còn mở thì về khung đó,
+ * không thì lấy tiếp chỗ trả của khung đó — cứ thế tới ô còn trên trang (nút mở panel ban đầu). Hết dấu → `null`.
+ */
+export function traFocusVe<T>(t: T | null, conTren: (x: T) => boolean, khungCua: (x: T) => T | null, dichCua: (k: T) => T | null): T | null {
+  let x = t;
+  for (let buoc = 0; x && buoc < 20; buoc++) {       // 20: chặn vòng lặp nếu dữ liệu hỏng; thực tế ≤ vài lớp
+    if (conTren(x)) return x;
+    const k = khungCua(x);
+    if (!k) return null;
+    if (conTren(k)) return k;
+    x = dichCua(k);
+  }
+  return null;
+}
+
 /** Ngày kế tiếp trên lịch từ `iso` theo phím; `null` khi phím không thuộc lịch. */
 export function buocLich(iso: string, phim: string): string | null {
   const y = Number(iso.slice(0, 4));

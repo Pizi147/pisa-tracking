@@ -1,9 +1,12 @@
 import { useEffect, useState, type RefObject } from 'react';
-import { buocVongFocus } from '@shared/domain/index.ts';
+import { buocVongFocus, traFocusVe } from '@shared/domain/index.ts';
 
 /** Những gì Tab dừng lại được trong khung — bỏ mọi phần tử tabIndex -1 (ô lịch roving, mục menu/danh sách). */
 const O = ['a[href]', 'button:not([disabled])', 'input:not([disabled]):not([type="hidden"])', 'select:not([disabled])',
   'textarea:not([disabled])', '[tabindex]'].map((x) => `${x}:not([tabindex="-1"])`).join(',');
+
+/** Chỗ trả focus của từng khung — khung sau mở đè/thay khung trước thì mượn được chỗ trả của khung trước (`traFocusVe`). */
+const DICH = new WeakMap<HTMLElement, HTMLElement | null>();
 
 /**
  * GIỮ FOCUS TRONG KHUNG (E2, Q18) — dùng cho lịch `LichNho` và panel (Task 4).
@@ -14,6 +17,8 @@ export function useGiuFocus(ref: RefObject<HTMLElement>) {
   const [truoc] = useState(() => (document.activeElement instanceof HTMLElement ? document.activeElement : null));
   useEffect(() => {
     const el = ref.current; if (!el) return undefined;
+    el.dataset.giuFocus = '';
+    DICH.set(el, truoc);
     el.focus({ preventScroll: true });
     const phim = (e: KeyboardEvent) => {
       if (e.key !== 'Tab' || e.defaultPrevented) return;          // modal lồng trong panel đã tự vòng Tab
@@ -28,6 +33,11 @@ export function useGiuFocus(ref: RefObject<HTMLElement>) {
       }
     };
     el.addEventListener('keydown', phim);
-    return () => { el.removeEventListener('keydown', phim); if (truoc?.isConnected) truoc.focus({ preventScroll: true }); };
+    return () => {
+      el.removeEventListener('keydown', phim);
+      /* Phần tử đã gỡ vẫn giữ cây cha của nó → `closest` tìm được khung cũ (đã gỡ) để mượn chỗ trả. */
+      traFocusVe<HTMLElement>(truoc, (x) => x.isConnected, (x) => x.closest<HTMLElement>('[data-giu-focus]'), (k) => DICH.get(k) ?? null)
+        ?.focus({ preventScroll: true });
+    };
   }, [ref, truoc]);
 }
