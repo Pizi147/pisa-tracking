@@ -552,10 +552,10 @@ PA; GVCN sửa target/lộ trình/lớp qua "Đề xuất sửa".
 
 ## Nhật ký
 
-- Mốc B (Task 0):
-- MT / NHAP / MON đã merge lúc bắt đầu?
-- Câu 1 (chủ sản phẩm):
-- Dòng thật lệch kế hoạch:
+- Mốc B (Task 0): **1444** phép kiểm + 20 tốc độ (check 4 phút 50 giây).
+- MT / NHAP / MON đã merge lúc bắt đầu? **Chưa** (origin/main = fb51181, #115 kế hoạch).
+- Câu 1 (chủ sản phẩm): **B** (chốt 29/09) — GVCN vẫn tự chuyển lớp; chỉ rút target + lộ trình.
+- Dòng thật lệch kế hoạch: Task 0 grep 7 mốc — đều khớp (lệch ≤ 1 dòng).
 - Trần tốc độ đổi (cũ → mới):
 - `chay-thu:duyet` trên bản sao DB demo:
 
