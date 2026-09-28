@@ -47,8 +47,8 @@ export async function runFormTests(t: YThucTestKit) {
     assert(domain.nguoiThieu(null, true) === 'Chọn người thực hiện.', 'thiếu + bắt buộc');
     assert(domain.nguoiThieu(null, false) === null, 'thiếu + không bắt buộc → null');
     assert(
-      domain.nguoiThieu({ kieu: 'ngoai', ten: 'A' }, true) === 'Gõ tên người ngoài (ít nhất 2 ký tự).',
-      'người ngoài tên quá ngắn',
+      domain.nguoiThieu({ kieu: 'ngoai', ten: 'A' }, true) === 'Gõ tên ngoài hệ thống (ít nhất 2 ký tự).',
+      'tên ngoài hệ thống quá ngắn',
     );
     assert(domain.nguoiThieu({ kieu: 'ngoai', ten: 'An' }, true) === null, 'người ngoài tên đủ dài → null');
     assert(domain.nguoiThieu({ kieu: 'toi' }, true) === null, 'đã chọn Tôi → null');

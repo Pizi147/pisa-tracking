@@ -94,8 +94,8 @@ Không vừa ghi toàn lớp vừa dẫn tới việc riêng (RB 17.4, design pl
 | Chưa đến lịch | `Chưa đến lịch kiểm tra` |
 | Đến lịch, chưa có điểm | `Chờ nhập điểm` |
 | Đang chờ QL | `Chờ quản lý duyệt` |
-| Tìm người chưa đủ ký tự | `Nhập ít nhất 3 ký tự để tìm giáo viên` |
-| Tìm người không ra kết quả | `Không tìm thấy giáo viên phù hợp` |
+| Ô chọn người, chưa gõ gì (PR-NEN) | vào ô là có danh sách ngay — **không** còn câu `Nhập ít nhất 3 ký tự …` |
+| Tìm người không ra kết quả | `Không tìm thấy giáo viên khớp «{chữ đã gõ}»` (ô chọn nhân viên: `người`) |
 | Tooltip tuần hoàn tất | `Tuần dự kiến hoàn tất là tuần kiểm tra muộn nhất của các kỹ năng trong đợt.` |
 | Báo cáo đơn vị chưa nộp | `Chưa báo cáo` — **không phải** `Ổn` |
 | Nháp báo cáo | `Nháp · chưa nộp` |
@@ -162,7 +162,7 @@ Bỏ `Tham gia trên lớp` (Y04). Dữ liệu cũ đổi sang `Thái độ / h�
 6. `Thư cảnh cáo lần 2`
 7. `Đình chỉ học`
 8. `Thư cảnh cáo lần 3`
-9. `Khác` — kèm ô tên phương án tự đặt
+9. `Khác` → ô **Ghi rõ** ngay dưới, ≥ 3 ký tự (PR-NEN, T13)
 
 Thứ tự này là thứ tự **BÀY RA**, không phải quy trình bắt buộc. Trên màn có chữ `nhẹ ─ nặng`
 ở hai đầu danh sách để người đọc biết mức tương đối.
@@ -290,3 +290,24 @@ câu báo máy chủ `phương án xử lý`) và D3 (bỏ "Hãy") đã ghi ở 
 | Toast sau thao tác hoàn tác được | `… · Hoàn tác ({n})` đếm lùi 5 giây | toast 10 giây, nút `Hoàn tác` không đếm |
 | Nhật ký thay đổi (Quản trị) | nhãn tiếng Việt (`Huỷ phần còn lại của lượt`), mã máy chỉ ở tooltip | `attempt.cancel_part` |
 | ⓘ số liệu — không đếm trùng | `Mỗi học viên chỉ đếm 1 lần` · `Mỗi Case chỉ đếm 1 lần` | `COUNT DISTINCT student_id` |
+
+---
+
+## 10. PR-NEN — 28/09/2026 (nền giao diện)
+
+Chữ mới của PR nền giao diện (ô ngày, ô "Khác", ô chọn người, nhãn trạng thái, bàn phím) — chờ chủ sản phẩm duyệt cùng PR.
+Luật cách dùng ở `HE_GIAO_DIEN.md` §3, §9, §10.
+
+| Chỗ | Chữ |
+|---|---|
+| Ô ngày — chữ mờ khi ô trống | `dd/mm/yyyy` · ô tháng `mm/yyyy` (không bao giờ hiện dạng máy `2026-09-28`) |
+| Ô ngày — nút lịch (trình đọc màn hình đọc) | `Mở lịch` · `Mở lịch tháng`; khung lịch: `Chọn ngày` · `Chọn tuần` · `Chọn tháng` |
+| Ô tuần — dòng phụ dưới ô | `W4 SEP · 21/09 – 27/09` |
+| Ô ngày — câu lỗi dưới ô | `Gõ dạng dd/mm/yyyy` · `Gõ dạng mm/yyyy` · `Năm cần đủ 4 số, ví dụ 28/09/2026` · `Ngày không có thật` · `Không được sau hôm nay` · `Không được sau {ngày}` · `Không được trước {ngày}` (ô tháng: `… tháng {mm/yyyy}`) |
+| Lịch — hàng gợi ý dưới lưới | tiêu đề `Gần đây`; ngày `Hôm nay, 28/09` · `Hôm qua, 27/09` · `Thứ Bảy, 26/09` …; tuần `Tuần này` · `Tuần trước` · `2 tuần trước` (chỗ chỉ nhận từ tuần này: `Tuần này` · `Tuần sau` · `2 tuần sau`); tháng `Tháng này` · `10/2026` … |
+| Bộ chọn tuần — ô gõ trong lịch | `Gõ ngày` · chữ mờ `Ví dụ: 28/09/2026` |
+| Ô "Khác" | nhãn `Ghi rõ *` ngay dưới lựa chọn "Khác"; chữ mờ mặc định `Ví dụ: Đi muộn giờ ăn trưa`; lỗi `Ghi rõ "Khác" là gì` · `Cần ít nhất 3 ký tự (đang có {n})` |
+| Ô chọn người — dòng cuối | `Dùng tên ngoài hệ thống: «{tên}»`; chưa gõ tên: `Dùng tên ngoài hệ thống: gõ tên ở ô trên`; tên đã chọn hiện dòng phụ `ngoài hệ thống`; tên quá ngắn: `Gõ tên ngoài hệ thống (ít nhất 2 ký tự).` — thay mọi chữ "người ngoài" (Q23) |
+| Sáu nhãn trạng thái chung (`NhanTrangThai`) | `Cần làm` · `Đang làm` · `Chờ duyệt` · `Quá hạn` (biết số ngày: `Quá hạn · {n} ngày`) · `Xong` · `Đã huỷ` |
+| Ô tìm học viên ở đầu trang | không có kết quả: `Không tìm thấy học viên` |
+| Liên kết đầu trang (chỉ hiện khi bấm Tab) | `Bỏ qua tới nội dung` |

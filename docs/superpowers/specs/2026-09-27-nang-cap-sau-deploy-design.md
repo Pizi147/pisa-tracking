@@ -701,7 +701,7 @@ Cổng thử cho các làn song song: **A 4157/5357 · B 4167/5367 · C 4177/537
 |---|---|---|---|---|---|---|
 | **1** | A | **PR-N1** Sửa lỗi nóng + sửa sai sự thật | YC-6, 11.1, 11.3.2 (sửa nhanh), 12.1 (tạm), 12.5.1, 12.5.2, 12.5.4; **§5.6 hạn PA hết Thứ Hai**; gói **UX-A** A1–A9; UX-C **C1** (Toast hoàn tác); **S4-1 phần gán tự động PA quy chế** (PA chạy ngay, 🔒 theo quy chế, GVBM chỉ còn xác định nguyên nhân — chủ sản phẩm 28/09) | Có (nhỏ): PA quy chế chờ xác nhận → đang chạy (S4-1) + dời `action_due` CN → T2 (R-PA5) | Sonnet 5 · High (Fable 5.1 · High) | — |
 | 1 | B | **PR-LOP** Tạo lớp · tên lớp · RF · **Pre FOU** · phân công | YC-1, 2, 3 (danh mục + tên), 4; T1–T7; §6.6 PF1, PF4, PF5 (chương trình Pre FOU, số tuần sửa được) | **Có** (đổi tên lớp, thêm lộ trình RF, chương trình Pre FOU) | Fable 5.1 · High (Opus 5.5 · High) | — |
-| 1 | C | **PR-NEN** Nền giao diện | YC-8, 9, 10; T11–T14; UX-E **E1, E2, E3, E6**; UX-B **B3**; `NhanTrangThai`; impeccable init/document | Không | Fable 5.1 · High (Opus 5.5 · High) | — |
+| 1 | C | **PR-NEN** Nền giao diện | YC-8, 9, 10; T11–T14; UX-E **E1, E2, E3, E6**; UX-B **B3**; `NhanTrangThai`; impeccable init/document · **Vận hành tên ngoài → PR-DUYET** (Q12: cần cột mới, PR-NEN không migrate) | Không | Fable 5.1 · High (Opus 5.5 · High) | — |
 | **2** | A | **PR-DUYET** Hộp Chờ duyệt | §5.5; T41–T44; chuyển "Duyệt dời lịch" + "Đề xuất PA" vào hộp | **Có** (bảng yêu cầu duyệt) | Opus 5.5 · High (Fable 5.1 · High) | N1, NEN |
 | 2 | B | **PR-MT** Lịch MT tự tạo · HS cũ · đánh số · RF · dời lần 2 | YC-13.1, 13.2, 13.3, RF kỳ vọng; §5.2 M1–M8; T33–T36 | **Có** | Opus 5.5 · XHigh (Fable 5.1 · High) | LOP |
 | 2 | C | **PR-NHAP** Thêm học viên | YC-5.1–5.4; T8, T9; UX-C **C10** | **Có** (email, ngày thi) | Sonnet 5 · High (Fable 5.1 · High) | NEN (dùng `ONgay`); gọi hàm tạo MT của PR-MT (merge MT trước) |
@@ -763,6 +763,9 @@ migrate) và PR-YT4b (giao diện). Các PR còn lại để nguyên vì chạm 
 - **"Khác"**: phân loại nguyên nhân · PA đề xuất · lý do Không cần theo dõi · Phối hợp SOS (loại việc + lý do bỏ) ·
   nhóm vi phạm · xử lý ngoài thang · lý do chuyển lớp / kết thúc học · báo cáo tutor · loại việc Vận hành · lý do
   từ chối duyệt.
+  *Ghi chú PR-NEN (M4):* ba mục cuối **không có danh sách để áp** `OKhac` — báo cáo tutor `tutor_other` là dòng chữ tự do
+  (`shared/domain/worklist.ts`), loại việc Vận hành không có mục "Khác", lý do từ chối duyệt chưa có (dựng ở PR-DUYET — PR đó
+  dùng `OKhac` nếu danh sách lý do có "Khác").
 - **Chọn người**: người thực hiện PA (4 form) · người thực hiện xử lý Ý thức · Phối hợp SOS · người phụ trách Vận
   hành · bộ lọc phụ trách · GV chấm Speaking.
 
