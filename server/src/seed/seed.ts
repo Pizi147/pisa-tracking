@@ -17,6 +17,7 @@ import { buildSosV3Demo } from './sosV3Seed.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
 import { dienMocLop } from '../migrate/prLop.ts';
 import { napYeuCauTuNguonCu } from '../migrate/prDuyet.ts';
+import { buildDuyetDemo } from './duyetSeed.ts';
 
 const NOW = nowIso();
 
@@ -241,9 +242,12 @@ export function runSeed() {
     }
     /* PR-DUYET: PA chờ duyệt / đề nghị dời dựng thẳng bằng SQL ở trên cũng có thẻ ở hộp Chờ duyệt (seed không chạy migrate()). */
     napYeuCauTuNguonCu(conn);
+    /* PR-DUYET (D17): mỗi phân loại có thẻ, có quá hạn, tự duyệt, tự đóng, Báo lên — dựng qua hàm dịch vụ. */
+    const duyet = buildDuyetDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
 
     return {
       'Chi nhánh': BRANCHES.length,
+      'Thẻ Chờ duyệt (demo)': duyet.the,
       'Lớp': CLASSES.length,
       'Người dùng': userSeq,
       'Giáo viên': TEACHERS.length,

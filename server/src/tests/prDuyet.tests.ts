@@ -389,3 +389,23 @@ export async function runPrDuyetTests(t: YThucTestKit) {
     assert((conn.prepare('SELECT assignee_name FROM tasks WHERE id = ?').get(a.id) as any).assignee_name === null, 'đổi sang tài khoản không xoá tên ngoài');
   });
 }
+
+/** Khối 11 — soi BỘ DEMO ngay sau khi dựng (mục 0 của run.ts, trước mọi phép kiểm ghi thêm). */
+export async function runPrDuyetDemoTests(t: YThucTestKit) {
+  const { check, assert, P, conn } = t;
+  const yc: any = await import('../duyet/yeuCau.ts');
+  check('DUYET (11) · Demo: hộp QL MB có thẻ Học thuật · Thông tin HV · Báo lên, ≥ 1 quá hạn, ≥ 1 tự đóng, ≥ 1 tự duyệt được; Hà có thẻ đã duyệt + bị từ chối', () => {
+    const hop = yc.hopChoDuyet(P.mbManager);
+    for (const k of ['hoc-thuat', 'thong-tin-hv', 'bao-len']) assert(hop.dem[k] >= 1, `thiếu phân loại ${k}: ${JSON.stringify(hop.dem)}`);
+    assert(hop.dem['y-thuc'] === 0, 'Ý thức phải 0 tới PR-YT4');
+    assert(hop.the.some((x: any) => x.hanDuyet && x.hanDuyet < t.TODAY && x.kieuNut !== 'nhac'), 'không có thẻ quá hạn');
+    assert(hop.the.some((x: any) => x.loai === 'xin_y_kien'), 'không có Xin ý kiến');
+    assert(hop.the.some((x: any) => x.nguoiXinId === P.mbManager.userId), 'không có thẻ QL tự gửi');
+    assert(hop.the.some((x: any) => x.tieuDe === 'Đề xuất sửa target 6.5 → 7.0'), 'không có Đề xuất sửa target 6.5 → 7.0');
+    const daXuLy = yc.hopChoDuyet(P.mbManager, { xem: 'da-xu-ly' }).the;
+    assert(daXuLy.some((x: any) => x.trangThai === 'tu_dong'), 'không có thẻ tự đóng');
+    const ha = (conn.prepare(`SELECT id FROM users WHERE full_name = 'Trần Ngọc Hà'`).get() as any).id;
+    const cuaHa = yc.yeuCauCuaToi({ ...P.coreTeacher, userId: ha }).the.map((x: any) => x.trangThai);
+    assert(cuaHa.includes('duyet') && cuaHa.includes('tu_choi') && cuaHa.includes('cho'), cuaHa.join());
+  });
+}

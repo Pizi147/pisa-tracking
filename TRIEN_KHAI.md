@@ -533,6 +533,17 @@ npm run kiem-lop-mo-coi
 > **Tên lớp cũ trong nhật ký, hành trình, thông báo cũ giữ nguyên** (là lịch sử) — chỉ tên lớp hiện tại đổi. Báo GV: tên
 > lớp mới bỏ dấu `-`; ô tìm vẫn nhận cả kiểu cũ.
 
+**Đợt 2 (PR-DUYET) — thêm một lệnh chạy thử CHỈ ĐỌC**, cùng cửa sổ, trên **bản sao** DB chính:
+
+```powershell
+npm run chay-thu:duyet
+```
+
+> In ba mục: (1) số thẻ Chờ duyệt sẽ tạo (Đề xuất PA · trong đó "Xin hỗ trợ QL" kiểu cũ · Dời lịch lần 2) + 5 dòng mẫu
+> `#id · HV · lớp · hạn dd/mm` · (2) thẻ chết bị bỏ (PA "chờ duyệt" đã huỷ / Case đã đóng; đề nghị dời đã quá hạn duyệt — tạo
+> rồi tự đóng ở lần mở đầu) · (3) số GVCN sẽ mất quyền tự sửa target/lộ trình (chuyển lớp vẫn giữ). Sau `npm run migrate` chạy
+> lại: mục (1) phải là **0**. Báo GV: "Xin hỗ trợ QL" không còn dừng PA; GVCN sửa target/lộ trình qua ⋮ › Đề xuất sửa thông tin.
+
 **Bước 3 — nâng cấp:**
 
 ```powershell
