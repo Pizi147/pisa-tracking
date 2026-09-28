@@ -101,4 +101,25 @@ export async function runPrLopTests(t: YThucTestKit) {
     assert(!/PREFOU|ielts/i.test(String(pr.get(moi).label)) && /^BE · /.test(String(pr.get(moi).label)), String(pr.get(moi).label));
     sys.saveProgramme(P.admin, { code: 'BE', name: 'Beginner', weeks: 10, finalWeek: 10, progressWeek: 5 });
   });
+
+  check('LOP (5) · taoLopVaPhanCong: sai luật → KHÔNG có lớp; đúng → lớp + phân công cùng lúc (YC-1, L4)', () => {
+    const mb = (conn.prepare("SELECT id FROM branches WHERE code = 'MB'").get() as any).id;
+    const gv = (conn.prepare(`SELECT u.id FROM users u JOIN user_roles ur ON ur.user_id = u.id JOIN roles r ON r.id = ur.role_id
+      WHERE r.key = 'teacher' AND (ur.branch_id IS NULL OR ur.branch_id = ?) ORDER BY u.id LIMIT 2`).all(mb) as any[]).map((x) => x.id);
+    const dem = () => (conn.prepare("SELECT COUNT(*) n FROM classes WHERE code LIKE 'MB FT RF 88%'").get() as any).n;
+    const truoc = dem();
+    assertThrows(() => intakeMod.taoLopVaPhanCong(P.admin, { branchId: mb, chuongTrinh: 'FT', loTrinh: 'RF', so: '881',
+      slots: [{ userId: gv[0], skill: null, isCore: true }, { userId: gv[1], skill: 'listening', isCore: false }] }), /GVCN phải dạy/, 'GVCN không dạy');
+    assertThrows(() => intakeMod.taoLopVaPhanCong(P.admin, { branchId: mb, chuongTrinh: 'FT', loTrinh: 'RF', so: '882',
+      slots: [{ userId: gv[0], skill: null, isCore: true }, { userId: gv[1], skill: null, isCore: true }] }), /một GVCN/, 'hai GVCN');
+    assert(dem() === truoc, 'lớp tàng hình còn sót');
+    const r = intakeMod.taoLopVaPhanCong(P.admin, { branchId: mb, chuongTrinh: 'FT', loTrinh: 'RF', so: '883',
+      slots: [{ userId: gv[0], skill: null, isCore: true }, { userId: gv[0], skill: 'reading', isCore: false }] });
+    assert(r.code === 'MB FT RF 883' && (conn.prepare("SELECT COUNT(*) n FROM teacher_assignments WHERE class_id = ? AND status = 'active'").get(r.id) as any).n === 2, JSON.stringify(r));
+    assertThrows(() => intakeMod.createClass(P.admin, { code: 'mb-ft rf 883', branchId: mb, kind: 'FT' }), /Đã có lớp/, 'trùng không phân biệt hoa/thường, dấu -');
+    assertThrows(() => intakeMod.taoLopVaPhanCong(P.admin, { branchId: mb, chuongTrinh: 'PREFOU', so: '03', startPeriodId: 1 }), /chưa mở/, 'PF6');
+    assertThrows(() => intakeMod.taoLopVaPhanCong(P.admin, { branchId: mb, chuongTrinh: 'BE', so: '12A3' }), /Chỉ gõ số/, 'số sai mẫu');
+    conn.prepare('DELETE FROM teacher_assignments WHERE class_id = ?').run(r.id); conn.prepare('DELETE FROM class_skills WHERE class_id = ?').run(r.id);
+    conn.prepare('DELETE FROM classes WHERE id = ?').run(r.id);
+  });
 }

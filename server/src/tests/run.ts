@@ -3097,7 +3097,7 @@ check('Không xếp người của chi nhánh khác, và không xếp kỹ năng
     () => classesSvc.setClassTeachers(P.mbManager, found, {
       slots: [{ userId: anyTeacher.id, skill: 'writing2', isCore: false }],
     }),
-    /không dạy kỹ năng/, 'Xếp W2 cho lớp không có W2',
+    /Lớp không có môn này/, 'Xếp W2 cho lớp không có W2',
   );
 });
 
@@ -3214,7 +3214,7 @@ check('MỖI KỸ NĂNG CHỈ MỘT GIÁO VIÊN — xếp hai người vào mộ
         { userId: two[1].id, skill: 'reading', isCore: false },
       ],
     }),
-    /chỉ một người/, 'Xếp hai giáo viên vào cùng một kỹ năng',
+    /Mỗi môn một người/, 'Xếp hai giáo viên vào cùng một kỹ năng',
   );
 
   /* Một giáo viên dạy NHIỀU kỹ năng thì vẫn được — đó là quy tắc thứ hai của mục 7.7. */
@@ -3238,7 +3238,7 @@ check('MỖI KỸ NĂNG CHỈ MỘT GIÁO VIÊN — xếp hai người vào mộ
         { userId: two[1].id, skill: null, isCore: true },
       ],
     }),
-    /một giáo viên chủ nhiệm/, 'Xếp hai giáo viên chủ nhiệm cho một lớp',
+    /một GVCN/, 'Xếp hai giáo viên chủ nhiệm cho một lớp',
   );
 });
 

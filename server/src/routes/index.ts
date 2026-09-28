@@ -341,7 +341,7 @@ api.get('/ref/teachers', requireAuth, wrap((req) => {
          FROM users u
         WHERE u.status = 'active'
           AND EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id
-                       WHERE ur.user_id = u.id AND r.key IN ('teacher', 'manager', 'system_admin')
+                       WHERE ur.user_id = u.id AND ur.status = 'active' AND r.key IN ('teacher', 'manager')
                          AND (? IS NULL OR ur.branch_id IS NULL OR ur.branch_id = ?))
         ORDER BY u.full_name`,
     )
@@ -1132,9 +1132,10 @@ api.put('/classes/:id/teachers', requireAuth, wrap((req) => {
   return classSvc.setClassTeachers(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
+/** Tạo lớp = lớp + phân công trong MỘT giao dịch (YC-1); tên lớp do máy ghép từ chương trình/lộ trình/số (T1). */
 api.post('/classes', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return intakeSvc.createClass(principalOf(req), req.body ?? {});
+  return intakeSvc.taoLopVaPhanCong(principalOf(req), req.body ?? {});
 }));
 
 // ============================================================ Học viên & Lớp · hồ sơ lớp (PR-Qa)
