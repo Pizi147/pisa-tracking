@@ -106,6 +106,9 @@ export default function StudentsPage() {
   if ('chuyenDen' in doc) return <Navigate to={`${doc.chuyenDen}${branchId ? `?branchId=${branchId}` : ''}`} replace />;
 
   const lopHien = (data?.rows ?? []).filter((c) => (!chiLop || c.id === chiLop) && (!dangLoc || idsTheoLop.has(c.id)));
+  const tieuDeCot = ['Học viên', 'Kết quả gần nhất',
+    lopHien.some((c) => c.scoringMode === 'ratio') ? (lopHien.some((c) => c.scoringMode !== 'ratio') ? 'Mục tiêu / Khoá' : 'Khoá') : 'Mục tiêu',
+    'Case', 'Việc tiếp theo', ''];
   const openIds = lopMoSan({
     thamSoOpen: openRaw === null ? null : openRaw === '-' ? []
       : openRaw.split(',').map(Number).filter((n) => Number.isFinite(n) && n > 0),
@@ -192,30 +195,28 @@ export default function StudentsPage() {
               : 'Bỏ bớt từ khoá, đổi chip lọc hoặc đổi phạm vi.'} />
         </Card>
       ) : (
-        /* MỘT bảng, tiêu đề cột MỘT lần, mỗi lớp một <tbody> (hàng lớn + hàng con) — PR-UX0, N-2. Menu ⋯ vẽ ra ngoài bảng (portal). */
-        /* YC-11.1: từ 768px bỏ khung cuộn ngang để tiêu đề cột (.th sticky) dính theo <main>; điện thoại vẫn cuộn ngang trong khung. */
+        /*
+         * Tiêu đề cột MỘT lần, mỗi lớp MỘT bảng riêng (cùng colgroup nên cột thẳng nhau) — PR-UX0 N-2; menu ⋯ vẽ ra ngoài (portal).
+         * YC-11.1 (PR-N1): từ 768px bỏ khung cuộn ngang; hàng tiêu đề là khối dính riêng theo <main>, hàng lớp đang mở dính ngay
+         * dưới nó (`.hang-lon-dinh`). Mỗi lớp một bảng thì hàng lớp chỉ dính trong bảng của nó: cuộn hết lớp là bị lớp sau đẩy
+         * lên, không bao giờ hai hàng lớp chồng nhau (chủ sản phẩm 28/09). Điện thoại: cả khối cuộn ngang, không dính.
+         */
         <div className="card overflow-x-auto md:overflow-visible">
-          <table className="w-full min-w-[780px] table-fixed text-sm">
-            <colgroup>
-              <col className="w-[28%]" /><col className="w-[22%]" /><col className="w-[14%]" />
-              <col className="w-[7%]" /><col className="w-[25%]" /><col className="w-12" />
-            </colgroup>
-            <thead>
-              <tr>
-                <th className="th">Học viên</th>
-                <th className="th">Kết quả gần nhất</th>
-                <th className="th">{lopHien.some((c) => c.scoringMode === 'ratio') ? (lopHien.some((c) => c.scoringMode !== 'ratio') ? 'Mục tiêu / Khoá' : 'Khoá') : 'Mục tiêu'}</th>
-                <th className="th text-right">Case</th>
-                <th className="th">Việc tiếp theo</th>
-                <th className="th"><span className="sr-only">Thao tác</span></th>
-              </tr>
-            </thead>
-            {lopHien.map((c) => (
-              <HopLop key={c.id} lop={c} mo={openIds.includes(c.id)} onDoiMo={() => doiMo(c.id)}
+          <div className="md:sticky md:top-0 md:z-10" aria-hidden>
+            <table className="w-full min-w-[780px] table-fixed text-sm">
+              <CotBangLop />
+              <thead><tr>{tieuDeCot.map((t, i) => <th key={i} className={`th ${i === 3 ? 'text-right' : ''}`}>{t}</th>)}</tr></thead>
+            </table>
+          </div>
+          {lopHien.map((c) => (
+            <table key={c.id} className="w-full min-w-[780px] table-fixed text-sm" aria-label={`Lớp ${c.code}`}>
+              <CotBangLop />
+              <thead className="sr-only"><tr>{tieuDeCot.map((t, i) => <th key={i}>{t || 'Thao tác'}</th>)}</tr></thead>
+              <HopLop lop={c} mo={openIds.includes(c.id)} onDoiMo={() => doiMo(c.id)}
                 chiHien={dangLoc ? (idsTheoLop.get(c.id) ?? new Set()) : null} sapXep={sapXep}
                 onThemHocVien={() => setThem({ id: c.id, code: c.code })} onDoi={trang.reload} />
-            ))}
-          </table>
+            </table>
+          ))}
         </div>
       ))}
 
@@ -228,6 +229,16 @@ export default function StudentsPage() {
           onDone={() => { invalidate('/classes'); invalidate('/hoc-vien-lop'); invalidate('/students'); trang.reload(); }} />
       )}
     </div>
+  );
+}
+
+/** Cột chung của khối tiêu đề và mọi bảng lớp — một chỗ khai báo để cột luôn thẳng nhau. */
+function CotBangLop() {
+  return (
+    <colgroup>
+      <col className="w-[28%]" /><col className="w-[22%]" /><col className="w-[14%]" />
+      <col className="w-[7%]" /><col className="w-[25%]" /><col className="w-12" />
+    </colgroup>
   );
 }
 

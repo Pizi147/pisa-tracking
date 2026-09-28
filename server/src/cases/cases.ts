@@ -29,7 +29,7 @@ import { expectationFor } from '../fasttrack/scoring.ts';
 import { isRatioCycle } from '../normal/regular.ts';
 import { suggestCaseOwner } from './owner.ts';
 import { linkSignalToCase, loadSignal } from './signals.ts';
-import { NOT_UNCONFIRMED_PRESET, sosCaseState } from './sosState.ts';
+import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
 import { PLAN_DECISIONS, decisionToStep, type PlanDecision } from '../../../shared/domain/index.ts';
 import { apDungDieuChinh, chuanHoaDieuChinh, lichSuDieuChinhCuaCase } from './planRevisions.ts';
 import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
@@ -662,6 +662,8 @@ export function setIssues(p: Principal, caseId: number, input: {
     conn.prepare('DELETE FROM case_issues WHERE case_id = ?').run(caseId);
     // Chủ đề lấy từ chính bản ghi vấn đề — người phân loại không đổi được kỹ năng ở đây.
     addIssues(caseId, p.userId, { ...input, topic: c.topic });
+    /* Q28-5: có nguyên nhân là một nửa điều kiện "Đang xử lý" của Case từ SOS. */
+    dongBoTrangThaiCase(caseId);
     if (input.note !== undefined) {
       conn.prepare('UPDATE sos_cases SET note = ?, updated_at = ? WHERE id = ?')
         .run((input.note ?? '').trim() || null, nowIso(), caseId);
@@ -902,10 +904,8 @@ export function recordIntervention(p: Principal, caseId: number, input: {
       notifyManagers(c, needsApproval ? 'approval' : 'plan', description || input.kind, id, p.userId);
     }
 
-    // Có tác động thì case chuyển sang đang xử lý — trừ khi đã đóng.
-    if (c.status === 'open') {
-      conn.prepare(`UPDATE sos_cases SET status = 'in_progress', updated_at = ? WHERE id = ?`).run(nowIso(), caseId);
-    }
+    // Có tác động thì case chuyển sang đang xử lý — trừ khi đã đóng; Case từ SOS theo luật Q28-5.
+    dongBoTrangThaiCase(caseId);
     addJourney({
       studentId: c.eff_student_id, cycleId: c.eff_cycle_id,
       eventType: 'intervention', eventDate: input.completedDate ?? input.startedDate ?? today,
@@ -1108,10 +1108,7 @@ export function completeIntervention(p: Principal, interventionId: number, input
      * trạng thái để nó rời khỏi hàng đợi "chưa có phương án". Case đã đóng thì KHÔNG mở lại
      * chỉ vì ai đó ghi bù một việc cũ.
      */
-    if (c.status === 'open') {
-      conn.prepare("UPDATE sos_cases SET status = 'in_progress', updated_at = ? WHERE id = ?")
-        .run(nowIso(), iv.case_id);
-    }
+    dongBoTrangThaiCase(iv.case_id);
 
     addJourney({
       studentId: c.eff_student_id, cycleId: c.eff_cycle_id,
@@ -1667,8 +1664,10 @@ export type CaseFilters = {
  *   review — mức cao hoặc người báo đánh dấu gấp
  */
 /** Ba trạng thái loại trừ nhau dùng cho màn tổng hợp của Quản lý. */
-export type CaseState = 'no_plan' | 'working' | 'done';
+export type CaseState = 'chua_xu_ly' | 'no_plan' | 'working' | 'done';
 export const CASE_STATE_LABEL: Record<CaseState, string> = {
+  /* Q28-5: Case từ SOS có PA quy chế máy gán nhưng chưa xác nhận đủ nguyên nhân + PA. */
+  chua_xu_ly: 'Chưa xử lý',
   no_plan: 'Chưa có PA học thuật',
   working: 'Đang xử lý',
   done: 'Đã xong',
@@ -1768,6 +1767,7 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
               u.full_name AS reporter_name,
               ow.full_name AS owner_name,
               (SELECT COUNT(*) FROM case_interventions iv WHERE iv.case_id = sc.id) AS intervention_count,
+              ${LA_CASE_SOS('sc')} AS tu_sos,
               /* PR-N1 (Task 13, K3-02/T53 Q1): hạn tiếp theo = hạn GHI KẾT QUẢ TUẦN (action_due, hết Thứ Hai) của PA đang
                  chạy — KHÔNG phải dự kiến kết thúc (followup_due, không bao giờ là hạn). Cùng luật với ô "Việc cần làm tiếp". */
               (SELECT MIN(iv.action_due) FROM case_interventions iv
@@ -1928,6 +1928,7 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
        */
       state: (r.status === 'done' ? 'done'
         : isNoPlanCase({ status: r.status, disposition: r.disposition, interventionCount: r.intervention_count as number }) ? 'no_plan'
+        : r.tu_sos && r.status === 'open' ? 'chua_xu_ly'
         : 'working') as CaseState,
     }));
 
@@ -2253,6 +2254,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
     const state = !primary ? 'none'
       : primary.status === 'done' ? 'done'
       : (!primary.disposition && interventions.length === 0) ? 'no_plan'
+      : primary.status === 'open' && interventions.some((i) => i.preset) ? 'chua_xu_ly'
       : 'working';
 
     const overdueAction = openIv.find((i) => i.action_due && i.action_due < demoToday()
@@ -2965,10 +2967,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
         .run(hanTheoNgay(observedOn, HAN_DUYET_NGAY), nowIso(), interventionId);
     }
 
-    if (c.status === 'open') {
-      conn.prepare("UPDATE sos_cases SET status = 'in_progress', updated_at = ? WHERE id = ?")
-        .run(nowIso(), iv.case_id);
-    }
+    dongBoTrangThaiCase(iv.case_id);
 
     addJourney({
       studentId: c.eff_student_id, cycleId: c.eff_cycle_id,

@@ -10,7 +10,7 @@ import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { suggestCaseOwner } from './owner.ts';
 import { examPlanOf } from '../fasttrack/cycles.ts';
 import { caseAccess, caseDetail, recordIntervention } from './cases.ts';
-import { PA_QUY_CHE_CHUA_GHI, UNCONFIRMED_PRESET, sosCaseState } from './sosState.ts';
+import { PA_QUY_CHE_CHUA_GHI, UNCONFIRMED_PRESET, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
 import { ghiBanDieuChinh } from './planRevisions.ts';
 
 export { UNCONFIRMED_PRESET, NOT_UNCONFIRMED_PRESET, PA_QUY_CHE_CHUA_GHI } from './sosState.ts';
@@ -223,7 +223,7 @@ export function confirmPresetPlan(p: Principal, interventionId: number, patch: {
         after: { description, performerUserId: iv.performer_user_id ?? null, performerName: iv.performer_name ?? null, followupDue },
       });
     }
-    db().prepare("UPDATE sos_cases SET status = 'in_progress', updated_at = ? WHERE id = ? AND status = 'open'").run(nowIso(), iv.case_id);
+    dongBoTrangThaiCase(iv.case_id);
     const c = db().prepare('SELECT student_id, cycle_id FROM sos_cases WHERE id = ?').get(iv.case_id) as any;
     addJourney({
       studentId: c.student_id, cycleId: c.cycle_id ?? null, eventType: 'intervention', eventDate: today,

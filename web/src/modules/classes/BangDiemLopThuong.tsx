@@ -101,7 +101,7 @@ function ODiemThuong({ o, tuan, homNay }: { o: ODiem | null; tuan: string | null
     /* PR-N1 A3: trượt có dấu mảnh ▾ — không chỉ dựa vào màu. */
     return (
       <span className={truot ? 'font-semibold text-rose-300' : 'text-slate-100'} title={truot ? 'Chưa đạt' : 'Đạt'}>
-        {truot && <span aria-hidden className="mr-0.5 text-[9px]">▾</span>}{o.score}/{o.total}
+        {truot && <span aria-hidden className="mr-0.5 inline-block text-[11px] font-bold leading-none">▾</span>}{o.score}/{o.total}
       </span>
     );
   }

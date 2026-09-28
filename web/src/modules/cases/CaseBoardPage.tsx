@@ -24,6 +24,7 @@ type Facets = {
 };
 
 const STATE_LABEL: Record<string, string> = {
+  chua_xu_ly: 'Chưa xử lý',
   no_plan: 'Chưa có PA học thuật',
   working: 'Đang xử lý',
   done: 'Đã xong',
@@ -107,8 +108,8 @@ export function DanhSachCase({ branchId, ct, classId }: { branchId: number | nul
       {/*
         BA TRẠNG THÁI LOẠI TRỪ NHAU, cộng lại đúng bằng tổng — bức tranh chung, khác câu hỏi "làm gì trước".
       */}
-      <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
-        {(['no_plan', 'working', 'done'] as const).map((k) => (
+      <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
+        {(['chua_xu_ly', 'no_plan', 'working', 'done'] as const).map((k) => (
           <QueueTile key={k} label={STATE_LABEL[k]} value={stateCount(k)} active={state === k}
             dim={k === 'done'}
             onClick={() => set('tinh-hinh', state === k ? '' : k)} />

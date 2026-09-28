@@ -314,6 +314,34 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     assert(tre.nextDue === t.addDays(t.TODAY, -1) && tre.dueOverdue === true, 'hạn tuần đã qua mà không quá hạn');
   });
 
+  // ==================================================================== 13b. Q28-5 — Case từ SOS "Chưa xử lý" tới khi đủ nguyên nhân + PA do người xác nhận
+  const sos: any = await import('../cases/sosState.ts');
+  check('N1 (13b) · Q28-5: Case từ SOS chỉ "Đang xử lý" khi có nguyên nhân VÀ PA do người xác nhận; PA máy gán không đủ', () => {
+    const { caseId, ivId } = taoPa('q28-5');
+    const trangThai = () => (t.conn.prepare('SELECT status FROM sos_cases WHERE id = ?').get(caseId) as any).status;
+    /* Biến PA thành PA quy chế MÁY GÁN (preset, confirmed_by trống) — Case thành Case từ SOS. */
+    t.conn.prepare('UPDATE case_interventions SET preset = 1, confirmed_by = NULL WHERE id = ?').run(ivId);
+    sos.dongBoTrangThaiCase(caseId);
+    assert(trangThai() === 'open', `có nguyên nhân + PA máy gán mà ${trangThai()}`);
+    const dong = (casesSvc.listCases(t.P.coreTeacher, {}).rows as any[]).find((r) => r.id === caseId);
+    assert(dong.state === 'chua_xu_ly', `listCases state ${dong.state}`);
+    t.conn.prepare('UPDATE case_interventions SET confirmed_by = ? WHERE id = ?').run(t.P.coreTeacher.userId, ivId);
+    sos.dongBoTrangThaiCase(caseId);
+    assert(trangThai() === 'in_progress', 'PA đã có người xác nhận mà chưa Đang xử lý');
+    t.conn.prepare("DELETE FROM case_issues WHERE case_id = ? AND role = 'primary'").run(caseId);
+    sos.dongBoTrangThaiCase(caseId);
+    assert(trangThai() === 'open', 'chưa có nguyên nhân mà vẫn Đang xử lý');
+    /* Migrate PR-N1 tính lại đúng luật, chạy lại không đổi thêm. */
+    t.conn.prepare("UPDATE sos_cases SET status = 'in_progress' WHERE id = ?").run(caseId);
+    assert(mig.demCaseSosDoiTrangThai(t.conn).thanhChuaXuLy >= 1, 'chạy thử không đếm');
+    const a: string[] = []; mig.migrateTrangThaiCaseSos(t.conn, a);
+    const b: string[] = []; mig.migrateTrangThaiCaseSos(t.conn, b);
+    assert(trangThai() === 'open' && a.length === 1 && b.length === 0, `migrate: ${trangThai()} ${a} | ${b}`);
+    /* Case GV tự báo giữ luật cũ: có PA là Đang xử lý. */
+    const khac = taoPa('q28-5-thuong');
+    assert((t.conn.prepare('SELECT status FROM sos_cases WHERE id = ?').get(khac.caseId) as any).status === 'in_progress', 'Case thường đổi luật');
+  });
+
   // ==================================================================== 8. Học viên & Lớp + tab Ý thức lớp
   check('N1 (8) · T17: không lọc → không mở lớp nào; đang lọc → tối đa 5 lớp có kết quả', () => {
     assert(d.lopMoSan({ thamSoOpen: null, lopHien: [1, 2, 3], dangLoc: false }).length === 0, 'tự mở lớp');

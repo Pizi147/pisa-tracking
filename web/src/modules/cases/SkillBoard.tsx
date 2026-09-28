@@ -84,7 +84,7 @@ export type Row = {
   /** Tăng giảm so với LƯỢT TRƯỚC — hiện bằng chữ trung tính, không phải mũi tên màu. */
   trend: number | null;
   trendFrom: number | null;
-  state: 'none' | 'no_plan' | 'working' | 'done';
+  state: 'none' | 'chua_xu_ly' | 'no_plan' | 'working' | 'done';
   caseId: number | null; caseTitle: string | null; caseStatus: string | null;
   carriedOver: boolean;
   sosLevel: number | null; attemptsSpanned: number; parallelCount: number;
@@ -107,12 +107,14 @@ export type Row = {
 
 const STATE_LABEL: Record<Row['state'], string> = {
   none: 'Không có case',
+  /* Q28-5: Case từ SOS chưa xác nhận đủ nguyên nhân + PA do người xác nhận. */
+  chua_xu_ly: 'Chưa xử lý',
   no_plan: 'Chưa có phương án',
   working: 'Đang xử lý',
   done: 'Đã kết thúc',
 };
 const STATE_KIND: Record<Row['state'], 'doing' | 'waiting' | 'done' | 'idle'> = {
-  none: 'idle', no_plan: 'waiting', working: 'doing', done: 'done',
+  none: 'idle', chua_xu_ly: 'waiting', no_plan: 'waiting', working: 'doing', done: 'done',
 };
 
 /** Việc mở ngăn Case từ bảng này (Q3): không còn form trải trong trang. `viec` không có = mở view Case. */
@@ -228,7 +230,7 @@ function CotCase({ row }: { row: Row }) {
       <span className="block min-w-0 font-normal">
         <span className="block truncate text-xs text-slate-200" title={row.caseTitle}>{row.caseTitle}</span>
         <span className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] text-slate-500">
-          <Nhan tone={row.state === 'done' ? 'done' : row.state === 'no_plan' ? 'wait' : 'doing'}>{STATE_LABEL[row.state]}</Nhan>
+          <Nhan tone={row.state === 'done' ? 'done' : row.state === 'no_plan' || row.state === 'chua_xu_ly' ? 'wait' : 'doing'}>{STATE_LABEL[row.state]}</Nhan>
           {row.parallelCount > 1 && <span>{row.parallelCount} Case song song</span>}
           {row.carriedOver && <span>từ lộ trình trước</span>}
         </span>
@@ -287,7 +289,9 @@ function HangCaseVaPa({ c, ngan, onChanged, onMoCase }: {
               : (
                 <>
                   {c.sosLevel !== null && c.sosLevel > 0 && <Level tone={sosTone(c.sosLevel)}>{sosLabel(c.sosLevel)}</Level>}
-                  <Nhan tone={c.plans.length === 0 ? 'wait' : 'doing'}>{c.plans.length === 0 ? 'Chưa có PA' : 'Đang xử lý'}</Nhan>
+                  <Nhan tone={c.plans.length === 0 || c.status === 'open' ? 'wait' : 'doing'}>
+                    {c.plans.length === 0 ? 'Chưa có PA' : c.status === 'open' ? 'Chưa xử lý' : 'Đang xử lý'}
+                  </Nhan>
                 </>
               )}
           </span>

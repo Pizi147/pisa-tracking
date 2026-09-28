@@ -100,6 +100,7 @@ export function summaryColumns(): SummaryColumn[] {
         ? `Case ${CASE_CATEGORY_LABEL[s]} — chỉ lớp Fast Track mới có hai bài Writing riêng`
         : `Case Học thuật ở ${CASE_CATEGORY_LABEL[s]} — tổng / chưa có phương án`,
     })),
+    { key: 'chuaXuLy', label: 'Chưa xử lý', group: 'total', hint: 'Case từ SOS chưa xác nhận đủ nguyên nhân và PA do người xác nhận' },
     { key: 'working', label: 'Đang xử lý', group: 'total', hint: 'Case đã có phương án và đang theo dõi' },
     { key: 'noPlan', label: 'Thiếu PA học thuật', group: 'total', hint: 'Case chưa ai ghi sẽ làm gì cho em' },
     { key: 'overdueReview', label: 'Cần cập nhật', group: 'total',
@@ -301,6 +302,7 @@ export function branchSummary(p: Principal, f: { branchId?: number | null } = {}
         value: new Set(open.map((c) => c.studentId).filter((x) => x !== null)).size,
         href: q(''),
       },
+      chuaXuLy: { value: open.filter((c) => c.state === 'chua_xu_ly').length, href: q('&tinh-hinh=chua_xu_ly') },
       working: { value: open.filter((c) => c.state === 'working').length, href: q('&tinh-hinh=working') },
       noPlan: { value: open.filter((c) => c.state === 'no_plan').length, href: q('&tinh-hinh=no_plan') },
       overdueReview: { value: open.filter((c) => c.dueOverdue).length, href: q('&hang-doi=due') },
