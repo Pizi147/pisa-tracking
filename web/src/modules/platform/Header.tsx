@@ -30,7 +30,8 @@ export function Header() {
   const notifications = useApi<any[]>('/notifications');
 
   useEffect(() => {
-    if (q.trim().length < 2) { setHits([]); setDaTim(false); setDong(-1); return; }
+    setDaTim(false);                                   // lượt mới: chưa trả về thì không báo "Không tìm thấy", Enter không mở kết quả cũ
+    if (q.trim().length < 2) { setHits([]); setDong(-1); return; }
     const t = setTimeout(() => {
       api.get<{ rows: SearchHit[] }>(`/students?q=${encodeURIComponent(q)}`)
         .then((d) => { setHits((d.rows ?? []).slice(0, 8)); setDaTim(true); setDong(-1); })
@@ -51,11 +52,12 @@ export function Header() {
   const khongThay = moTim && q.trim().length >= 2 && daTim && hits.length === 0;
   const dangMo = coDs || khongThay || openMenu !== null;
 
-  /* Esc đóng menu/danh sách đang mở và trả focus về nút/ô đã mở nó — pha bắt + chặn lan (cùng mẫu MenuDong). */
+  /* Esc đóng menu/danh sách đang mở và trả focus về nút/ô đã mở nó — pha bắt + chặn lan (cùng mẫu MenuDong).
+     CHỈ khi focus đang ở trong đầu trang: menu bỏ ngỏ không được giành Esc của panel/hộp thoại mở sau. */
   useEffect(() => {
     if (!dangMo) return undefined;
     const phim = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
+      if (e.key !== 'Escape' || !boxRef.current?.contains(document.activeElement)) return;
       e.stopPropagation();
       e.preventDefault();
       const ve = openMenu === 'notif' ? nutThongBao.current : openMenu === 'account' ? nutTaiKhoan.current : oTim.current;
@@ -82,6 +84,7 @@ export function Header() {
           value={q}
           onChange={(e) => { setQ(e.target.value); setMoTim(true); }}
           onFocus={() => setMoTim(true)}
+          onBlur={(e) => { if (!e.currentTarget.parentElement?.contains(e.relatedTarget as Node | null)) setMoTim(false); }}
           onKeyDown={(e) => {
             if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {           // Home/End để nguyên cho con trỏ (như ô chọn người)
               if (!hits.length) return;
@@ -89,7 +92,7 @@ export function Header() {
               setMoTim(true);
               const k = buocDanhSach(hits.length, dong, e.key);
               if (k !== null) setDong(k);
-            } else if (e.key === 'Enter' && coDs) {
+            } else if (e.key === 'Enter' && coDs && daTim) {
               e.preventDefault();
               moHocVien(hits[dong] ?? hits[0]);
             }
@@ -115,6 +118,7 @@ export function Header() {
                   tabIndex={-1}
                   className={`w-full min-h-[44px] sm:min-h-0 text-left px-3 py-2 text-sm ${i === dong ? 'bg-white/5' : 'hover:bg-white/5'}`}
                   onMouseEnter={() => setDong(i)}
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => moHocVien(h)}
                 >
                   <span className="text-slate-100">{h.fullName}</span>
