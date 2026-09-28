@@ -14,7 +14,7 @@ import { classAlerts } from '../classes/schedule.ts';
 import { demChuaLoTrinh } from '../classes/loTrinhTiep.ts';
 import { myMgmtTasks } from './mgmttasks.ts';
 import { listSignals, type SignalAction } from '../cases/signals.ts';
-import { NOT_UNCONFIRMED_PRESET, UNCONFIRMED_PRESET, awaitingCauseCaseIds } from '../cases/sosState.ts';
+import { NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds } from '../cases/sosState.ts';
 import { settleNoShows, sweepExpiredMoves } from '../fasttrack/absence.ts';
 
 /**
@@ -136,13 +136,13 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
    * XÁC ĐỊNH NGUYÊN NHÂN (rulebook v3, S04) — thay `verify` cho MOCK TEST FAST TRACK.
    *
    * Mock FT nay TỰ TẠO case cho kỹ năng trượt kèm phương án điền sẵn, nên không còn tín hiệu nào để "xác minh". Việc còn lại của GVBM đúng kỹ năng có
-   * đúng hạn ba ngày: chọn nguyên nhân + xác nhận (sửa / thay) phương án gợi ý, hoặc đóng `Không cần theo dõi`. Không có dòng này thì hạn đó vô hình:
-   * phương án gợi ý chưa xác nhận bị loại khỏi mọi thống kê và nghĩa vụ, nên một case bị lờ đi sẽ nằm im mãi mà số liệu trông như chưa có chuyện gì.
+   * đúng hạn ba ngày: xác định nguyên nhân, hoặc đóng `Không cần theo dõi`. PA theo quy chế đã tự chạy từ lúc tạo (PR-N1, S4-1) — không còn vế
+   * "xác nhận PA gợi ý". Không có dòng này thì hạn ba ngày vô hình.
    */
   cause: {
     label: 'Xác định nguyên nhân',
-    hint: 'Mock Test có SOS đã tự tạo case cho kỹ năng này. Bạn có ba ngày (tính cả ngày đầu) để chọn nguyên nhân và xác nhận, sửa hoặc thay PA học thuật gợi ý — '
-      + 'hoặc đóng `Không cần theo dõi` nếu em không cần theo dõi. Quản lý chỉ thấy dòng này khi đã quá hạn.',
+    hint: 'Mock Test có SOS đã tự tạo Case và PA theo quy chế cho kỹ năng này. Bạn có ba ngày (tính cả ngày đầu) để xác định nguyên nhân — '
+      + 'hoặc đóng "Không cần theo dõi" nếu em không cần theo dõi. Quản lý chỉ thấy dòng này khi đã quá hạn.',
   },
 
   /*
@@ -819,8 +819,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
               COALESCE(ac.code, cc.code) AS class_code,
               s.full_name, a.attempt_no, a.kind AS attempt_kind,
               (SELECT MIN(g.verify_due) FROM case_signals g WHERE g.case_id = sc.id AND g.status = 'linked') AS due,
-              EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary') AS has_cause,
-              EXISTS (SELECT 1 FROM case_interventions un WHERE un.case_id = sc.id AND ${UNCONFIRMED_PRESET('un')} AND un.status = 'planned') AS has_unconfirmed
+              EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary') AS has_cause
          FROM sos_cases sc
          LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
          LEFT JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
@@ -841,10 +840,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     const mine = c.owner_user_id === p.userId;
     const asManager = u === 'overdue' && can(p, PERMISSIONS.CASE_APPROVE, { classId: c.eff_class_id, studentId: c.eff_student_id });
     if (!mine && !asManager) continue;
-    const missing = [
-      c.has_cause ? null : 'chưa chọn nguyên nhân',
-      c.has_unconfirmed ? 'PA học thuật gợi ý chưa được xác nhận' : null,
-    ].filter(Boolean) as string[];
+    const missing = [c.has_cause ? null : 'chưa chọn nguyên nhân'].filter(Boolean) as string[];
     const skillLabel = c.topic ? caseTopicLabel(c.topic) : 'Kỹ năng';
     items.push({
       key: `cause:${c.id}`, group: 'cause', urgency: u,

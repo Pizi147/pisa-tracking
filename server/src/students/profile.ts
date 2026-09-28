@@ -462,13 +462,12 @@ function headlineOf(p: Principal, studentId: number, cycleId: number | null) {
   /* Mục 3 (chủ sản phẩm 22/09): TÊN ĐẦY ĐỦ kỹ năng ("Writing Task 2"), không viết tắt "W2". */
   const sk = (r: any) => r.label;
   /* Mục 1 (chủ sản phẩm 22/09): case từ SOS CHỜ XÁC ĐỊNH NGUYÊN NHÂN là việc chặn đầu chuỗi — xếp TRƯỚC mọi ứng viên khác
-     (hạn = hạn xác định nguyên nhân); PA gợi ý chưa xác nhận là một việc thường. Chỉ hiển thị — luật ở cases.ts không đổi. */
+     (hạn = hạn xác định nguyên nhân). PA theo quy chế tự chạy từ lúc tạo (PR-N1, S4-1) — không còn việc "xác nhận PA". */
   const xacDinh: Next[] = [];
   for (const r of rows) {
     for (const c of r.cases) {
       if (c.status === 'done') continue;
       if (c.sos?.awaitingCause) xacDinh.push({ text: `Xác định nguyên nhân ${sk(r)}`, due: c.sos.dueOn ?? null, rank: 0, category: r.category });
-      else if (c.sos?.unconfirmedPlanId) cands.push({ text: `Xác nhận PA gợi ý ${sk(r)}`, due: null, rank: 1, category: r.category });
     }
     if (r.signal) cands.push({ text: `Xác minh SOS ${sk(r)}`, due: r.signal.verifyDue ?? null, rank: 0, category: r.category });
     if (r.state === 'no_plan') cands.push({ text: `Đề ra PA ${sk(r)}`, due: null, rank: 1, category: r.category });

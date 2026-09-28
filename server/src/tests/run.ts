@@ -946,7 +946,7 @@ console.log('\n10. Xử lý sau Mock và lưu dữ liệu');
  * hạn ba ngày tính từ ngày ghi nhận và KHÔNG bị đặt lại khi lưu lại / nhập thêm môn; không nhân đôi khi chạy lặp; mọi tín hiệu gắn với một môn.
  * (Lớp Normal giữ nguyên "chỉ sinh tín hiệu" — có phép kiểm riêng ở sosV3.tests.ts.)
  */
-check('[6.2→v3] Mock Test FT điểm dưới kỳ vọng: tín hiệu nối NGAY vào case tự tạo (có phương án điền sẵn chưa xác nhận); hạn 3 ngày không bị đặt lại', () => {
+check('[6.2→v3] Mock Test FT điểm dưới kỳ vọng: tín hiệu nối NGAY vào case tự tạo (có PA quy chế đang chạy — PR-N1 S4-1); hạn 3 ngày không bị đặt lại', () => {
   const s = conn
     .prepare(
       `SELECT s.id, cy.id AS cycle_id, cy.target_score FROM students s
@@ -999,7 +999,8 @@ check('[6.2→v3] Mock Test FT điểm dưới kỳ vọng: tín hiệu nối NG
   assert(casesOf() === 1, `Mock FT dưới kỳ vọng phải tự tạo đúng 1 case (v3 S01), đang có ${casesOf()}`);
   assert(plansOf() === 1, `Case tự tạo phải có sẵn đúng 1 phương án (v3 S03), đang có ${plansOf()}`);
   const preListening = conn.prepare(`SELECT * FROM case_interventions WHERE id > ?`).get(planIdBefore) as any;
-  assert(preListening.preset === 1 && preListening.confirmed_at === null, 'Phương án tự sinh phải là điền sẵn và CHƯA xác nhận');
+  assert(preListening.preset === 1 && preListening.status === 'started' && !!preListening.confirmed_at && preListening.confirmed_by === null,
+    'PA tự sinh phải là PA quy chế đang chạy, máy xác nhận (PR-N1 S4-1)');
 
   const sig = conn
     .prepare(`SELECT * FROM case_signals WHERE attempt_id = ? AND skill = 'listening'`)

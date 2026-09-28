@@ -125,6 +125,23 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     const lan2: string[] = []; mig.migratePrN1(t.conn, lan2);
     assert(lan2.length === 0 && mig.demPaDoiHanThuHai(t.conn).soPa === 0, 'chạy lại vẫn đổi');
   });
+  check('N1 (3) · S4-1 (Task 5b): PA điền sẵn "chờ xác nhận" ở Case đang mở → PA quy chế đang chạy, hạn Thứ Hai; chạy lại không đổi', () => {
+    const { caseId } = taoPa('mig-qc');
+    const cu = Number(t.conn.prepare(`INSERT INTO case_interventions (case_id, kind, description, status, preset, cycle_no, needs_approval, created_at)
+      VALUES (?, 'self_study', 'Tự học · 1 tháng', 'planned', 1, 1, 0, ?)`).run(caseId, new Date().toISOString()).lastInsertRowid);
+    assert(mig.demPaQuyCheChoXacNhan(t.conn) >= 1, 'chạy thử không đếm được PA chờ xác nhận');
+    const applied: string[] = [];
+    mig.migratePrN1(t.conn, applied);
+    const iv = t.conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(cu) as any;
+    assert(iv.status === 'started' && iv.confirmed_by === null && !!iv.confirmed_at && iv.cycle_started_on === t.TODAY
+      && iv.action_due === d.weeklyUpdateDue(t.TODAY) && new Date(`${iv.action_due}T00:00:00Z`).getUTCDay() === 1, JSON.stringify(iv));
+    assert(applied.some((x) => /PA quy chế SOS/.test(x)) && mig.demPaQuyCheChoXacNhan(t.conn) === 0, applied.join(' | '));
+    const truoc = JSON.stringify(iv);
+    const lan2: string[] = []; mig.migratePrN1(t.conn, lan2);
+    const sau = t.conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(cu) as any;
+    assert(lan2.length === 0 && JSON.stringify(sau) === truoc, `chạy lại vẫn đổi: ${lan2.join(' | ')}`);
+    assert(/demPaQuyCheChoXacNhan/.test(docSach('server/src/migrate/chayThuN1.ts')), 'chạy thử chưa in số PA quy chế chờ xác nhận');
+  });
 
   // ==================================================================== 4. Web: chữ hạn "hết Thứ Hai" + A5 + A6
   check('N1 (4) · A6: việc Nhập điểm trễ có số ngày; không còn "⚠ n ngày" gọn; chữ hạn PA không còn Chủ nhật', () => {
@@ -150,5 +167,58 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     const src = docSach('web/src/modules/cases/SkillBoard.tsx');
     assert(!/causeOpen|dismissOpen/.test(src) && /khoiSos === 'nguyen-nhan'/.test(src) && /khoiSos === 'khong-theo-doi'/.test(src), 'hai khối còn mở cùng lúc được');
     assert((src.match(/<CotPhai\b/g) ?? []).length >= 4, 'cột phải chưa theo khuôn nút trên chữ dưới');
+  });
+
+  // ==================================================================== 5b. PA quy chế SOS gán tự động — chạy ngay (S4-1, Q22–Q25)
+  const sosAuto: any = await import('../cases/sosAuto.ts');
+  const sosState: any = await import('../cases/sosState.ts');
+  const sigSvc: any = await import('../cases/signals.ts');
+  /* Lớp FT thật của bộ thử (MB-FT 101) — `t.classId` là hàm, không phải số (lệch brief, ghi Nhật ký). */
+  const lop = t.classId('MB-FT 101');
+  const taoQuyChe = (key: string) => {
+    const { caseId } = taoPa(`qc-${key}`);
+    t.conn.prepare('DELETE FROM case_interventions WHERE case_id = ?').run(caseId);
+    const ivId = sosAuto.createPresetPlan({ caseId, attempt: { attempt_no: 1, class_id: lop }, category: 'listening', sosLevel: 2, followUntil: null });
+    return { caseId, ivId };
+  };
+  check('N1 (5b) · S4-1: PA quy chế tạo ra là đang chạy, máy xác nhận, có hạn ghi kết quả Thứ Hai từ tuần tạo', () => {
+    const { ivId } = taoQuyChe('chay');
+    const iv = t.conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(ivId) as any;
+    assert(iv.status === 'started' && iv.preset === 1 && !!iv.confirmed_at && iv.confirmed_by === null, JSON.stringify(iv));
+    assert(iv.action_due === d.weeklyUpdateDue(t.TODAY) && iv.cycle_started_on === t.TODAY && iv.cycle_no === 1, `hạn ${iv.action_due}`);
+    const khop = t.conn.prepare(`SELECT COUNT(*) n FROM case_interventions iv WHERE iv.id = ? AND ${sosState.PA_QUY_CHE_CHUA_GHI('iv')}`).get(ivId) as any;
+    assert(khop.n === 1, 'PA quy chế chưa có kết quả tuần phải khớp PA_QUY_CHE_CHUA_GHI');
+  });
+  check('N1 (5b) · hạn 3 ngày của GVBM chỉ còn "xác định nguyên nhân" (không còn vế xác nhận PA)', () => {
+    const { caseId } = taoQuyChe('cho');
+    assert(sosState.sosCaseState(caseId).awaitingCause === false, 'đã có nguyên nhân mà vẫn chờ');
+    t.conn.prepare("DELETE FROM case_issues WHERE case_id = ? AND role = 'primary'").run(caseId);
+    assert(sosState.sosCaseState(caseId).awaitingCause === true && sosState.awaitingCauseCaseIds([caseId]).length === 1, 'chưa có nguyên nhân thì phải chờ');
+    assert(!/xác nhận, sửa hoặc thay/.test(docSach('server/src/worklist/mywork.ts')), 'chữ nhóm cause còn vế PA gợi ý (K5-07)');
+  });
+  check('N1 (5b) · S08: sửa điểm thành đạt, PA quy chế CHƯA có kết quả tuần → Case vẫn tự huỷ, PA huỷ "score_fixed"', () => {
+    const { caseId, ivId } = taoQuyChe('s08');
+    /* `P.mbManager` — bộ thử không có khoá `P.manager` (lệch brief, ghi Nhật ký). */
+    sigSvc.retireCaseForCorrectedScore(t.P.mbManager, caseId, 'Listening');
+    const iv = t.conn.prepare('SELECT status, closed_reason FROM case_interventions WHERE id = ?').get(ivId) as any;
+    assert(iv.status === 'cancelled' && iv.closed_reason === 'score_fixed', JSON.stringify(iv));
+  });
+  check('N1 (5b) · Q23: PA quy chế chưa ghi gì KHÔNG là căn cứ độc lập; đã có kết quả tuần thì là việc thật (không huỷ khi sửa điểm)', () => {
+    const { caseId, ivId } = taoQuyChe('can-cu');
+    /* Case tạo tay có mốc/nguồn riêng (đều là căn cứ) — gỡ đi để chỉ còn PA quy chế đứng một mình. */
+    t.conn.prepare('DELETE FROM case_sources WHERE case_id = ?').run(caseId);
+    t.conn.prepare('DELETE FROM case_milestones WHERE case_id = ?').run(caseId);
+    assert(sigSvc.caseHasIndependentBasis(caseId, null) === false, 'PA máy gán chưa ghi gì bị coi là căn cứ');
+    casesSvc.recordFollowUp(t.P.coreTeacher, caseId, { interventionId: ivId, outcome: 'partial', note: 'Tuần đầu em nghe chép đều hơn' });
+    assert(sigSvc.caseHasIndependentBasis(caseId, null) === true, 'PA quy chế có kết quả tuần phải là căn cứ');
+    const khop = t.conn.prepare(`SELECT COUNT(*) n FROM case_interventions iv WHERE iv.id = ? AND ${sosState.PA_QUY_CHE_CHUA_GHI('iv')}`).get(ivId) as any;
+    assert(khop.n === 0, 'có kết quả tuần rồi mà vẫn khớp PA_QUY_CHE_CHUA_GHI');
+  });
+  check('N1 (5b) · giao diện không còn "Gợi ý tự động · chờ xác nhận" / Xác nhận–Sửa–Thay; PA quy chế có dấu 🔒', () => {
+    const sb = docSach('web/src/modules/cases/SkillBoard.tsx');
+    assert(!/PresetPlanActions/.test(sb) && /theo quy chế/.test(sb), 'SkillBoard còn nút xác nhận / thiếu dấu quy chế');
+    assert(!/Gợi ý tự động|goi-y/.test(docSach('shared/domain/hoSoHocVien.ts')), 'hoSoHocVien còn nhánh gợi ý');
+    assert(!/Xác nhận PA gợi ý/.test(docSach('server/src/students/profile.ts')), 'ô Việc cần làm còn "Xác nhận PA gợi ý"');
+    assert(/theo quy chế/.test(docSach('web/src/modules/cases/CasePanel.tsx')), 'Ngăn Case thiếu dấu quy chế cạnh tên PA');
   });
 }

@@ -148,7 +148,7 @@ export async function runHoSoHocVienTests(t: YThucTestKit) {
     const casesMod: any = await import('../cases/cases.ts');
     const max = t.seedMax.sos_cases ?? Number.MAX_SAFE_INTEGER;
     const pairs = t.conn.prepare("SELECT DISTINCT student_id, cycle_id FROM sos_cases WHERE status != 'done' AND id <= ?").all(max) as any[];
-    let n = 0, nGoiY = 0;
+    let n = 0;
     for (const { student_id, cycle_id } of pairs) {
       const rows = (casesMod.skillSupportBoard(t.P.admin, student_id, cycle_id) as any).rows as any[];
       const cho = rows.flatMap((r) => r.cases.filter((c: any) => c.status !== 'done' && c.sos?.awaitingCause).map((c: any) => ({ r, c })));
@@ -162,8 +162,8 @@ export async function runHoSoHocVienTests(t: YThucTestKit) {
         assert(next.text === `Xác định nguyên nhân ${dung.r.label}` && next.due === (dung.c.sos.dueOn ?? null), `HV ${student_id}: mong "Xác định nguyên nhân ${dung.r.label}" hạn ${dung.c.sos.dueOn}, được ${JSON.stringify(next)}`);
         continue;
       }
-      const goiY = rows.some((r) => r.cases.some((c: any) => c.status !== 'done' && c.sos?.unconfirmedPlanId));
-      if (goiY) { nGoiY++; assert(next, `HV ${student_id}: có PA gợi ý chưa xác nhận mà ô lại rỗng`); }
+      /* PR-N1 S4-1: PA quy chế tự chạy — không còn việc "Xác nhận PA gợi ý". */
+      assert(!next || !/Xác nhận PA gợi ý/.test(next.text), `HV ${student_id}: ô còn "Xác nhận PA gợi ý": ${next?.text}`);
     }
     assert(n > 0, 'Bộ demo phải có học viên có case từ SOS chờ xác định nguyên nhân (ba em mới của sosV3Seed)');
   });
@@ -200,7 +200,7 @@ export async function runHoSoHocVienTests(t: YThucTestKit) {
     r = f([], CASE);
     assert(r.text === 'Chưa có PA' && r.tiep && r.tiep.text === 'Ghi kết quả PA' && r.tiep.due === '2026-08-30' && r.tiep.overdue === false, `(b) 0 PA → tiep theo followUntil: ${JSON.stringify(r)}`);
     r = f([PA({ actionDue: '2026-08-25' }), PA({ preset: true, confirmedAt: null })], CASE);
-    assert(r.tiep && r.tiep.text === 'PA gợi ý chờ xác nhận' && r.tiep.due === null, `(c) PA gợi ý chưa xác nhận thắng PA có hạn: ${JSON.stringify(r.tiep)}`);
+    assert(r.tiep && r.tiep.text === 'Ghi kết quả PA' && r.tiep.due === '2026-08-25', `(c) PR-N1 S4-1: không còn nhánh "PA gợi ý chờ xác nhận" — PA có hạn là việc tiếp: ${JSON.stringify(r.tiep)}`);
     r = f([PA({ actionDue: '2026-08-30' }), PA({ actionDue: '2026-08-25', actionOverdue: true })], CASE);
     assert(r.tiep && r.tiep.text === 'Ghi kết quả PA' && r.tiep.due === '2026-08-25' && r.tiep.overdue === true, `(d) hai PA có hạn → lấy hạn sớm nhất + cờ quá hạn của PA đó: ${JSON.stringify(r.tiep)}`);
     r = f([PA({ actionDue: null, followupDue: '2026-09-30' } as any)], CASE);
@@ -211,19 +211,19 @@ export async function runHoSoHocVienTests(t: YThucTestKit) {
     assert(r.tiep && r.tiep.text === 'Chờ Quản lý trả lời' && r.tiep.due === '2026-09-01' && r.tiep.overdue === false, `(g) PA chờ duyệt: ${JSON.stringify(r.tiep)}`);
     r = f([PA({ status: 'completed', completedOn: '2026-08-20', actionDue: '2026-08-10', actionOverdue: true })], { status: 'in_progress', followUntil: null, followOverdue: false });
     assert(r.tiep === null, `(h) PA đã xong không được tính là việc tiếp; không followUntil → null: ${JSON.stringify(r.tiep)}`);
-    /* Mục 2 (chủ sản phẩm 22/09): PA đang chạy ĐÃ QUÁ HẠN đứng trước "chờ Quản lý trả lời" và "PA gợi ý chờ xác nhận". */
+    /* Mục 2 (chủ sản phẩm 22/09): PA đang chạy ĐÃ QUÁ HẠN đứng trước "chờ Quản lý trả lời" (và PA quy chế — PR-N1). */
     r = f([PA({ pendingApproval: true, approvalDue: '2026-09-30' }), PA({ actionDue: '2026-08-10', actionOverdue: true })], CASE);
     assert(r.tiep && r.tiep.text === 'Ghi kết quả PA' && r.tiep.due === '2026-08-10' && r.tiep.overdue === true, `(i) PA quá hạn thắng PA chờ duyệt: ${JSON.stringify(r.tiep)}`);
     r = f([PA({ preset: true, confirmedAt: null }), PA({ actionDue: '2026-08-10', actionOverdue: true })], CASE);
-    assert(r.tiep && r.tiep.text === 'Ghi kết quả PA' && r.tiep.overdue === true, `(j) PA quá hạn thắng PA gợi ý: ${JSON.stringify(r.tiep)}`);
+    assert(r.tiep && r.tiep.text === 'Ghi kết quả PA' && r.tiep.overdue === true, `(j) PA quá hạn thắng PA quy chế: ${JSON.stringify(r.tiep)}`);
     r = f([PA({ actionDue: '2026-08-25', actionOverdue: true }), PA({ actionDue: '2026-08-10', actionOverdue: true })], CASE);
     assert(r.tiep && r.tiep.due === '2026-08-10', `(k) hai PA quá hạn → hạn sớm nhất: ${JSON.stringify(r.tiep)}`);
   });
 
-  check('PR-HV · Q8 Việc tiếp theo của một PA: bốn nhánh', () => {
+  check('PR-HV · Q8 Việc tiếp theo của một PA: ba nhánh (PR-N1 S4-1 bỏ nhánh "Gợi ý tự động · chờ xác nhận")', () => {
     const f = domain.viecTiepPhuongAn;
-    let v = f(PA({ preset: true, confirmedAt: null }));
-    assert(v.loai === 'goi-y' && v.text === 'Gợi ý tự động · chờ xác nhận' && v.due === null && v.overdue === false, `gợi ý: ${JSON.stringify(v)}`);
+    let v = f(PA({ preset: true, confirmedAt: '2026-09-28T01:00:00Z', actionDue: '2026-10-05' }));
+    assert(v.loai === 'ghi-ket-qua' && v.text === 'Ghi kết quả' && v.due === '2026-10-05' && v.overdue === false, `PA quy chế đang chạy = Ghi kết quả: ${JSON.stringify(v)}`);
     v = f(PA({ pendingApproval: true, approvalDue: '2026-09-01' }));
     assert(v.loai === 'cho-duyet' && v.text === 'Chờ Quản lý trả lời' && v.due === '2026-09-01', `chờ duyệt: ${JSON.stringify(v)}`);
     v = f(PA({ status: 'planned', actionDue: '2026-08-25', actionOverdue: true }));

@@ -1493,7 +1493,7 @@ export function caseDetail(p: Principal, caseId: number) {
           .get(iv.id, iv.cycle_no ?? 1),
       // NULL = không cần duyệt, khác hẳn 'pending' = đang chờ Quản lý trả lời.
       needsApproval: !!iv.needs_approval,
-      /** Phương án ĐIỀN SẴN từ SOS (rulebook v3): chưa xác nhận thì chỉ là gợi ý tự động, chờ Xác nhận · Sửa · Thay. */
+      /** PA theo quy chế SOS (rulebook v3). Từ PR-N1 (S4-1) tạo ra đã chạy, nên `awaitingConfirmation` chỉ còn đúng với dữ liệu chưa migrate. */
       preset: iv.preset === 1,
       confirmedAt: (iv.confirmed_at ?? null) as string | null,
       awaitingConfirmation: iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned',
@@ -2456,7 +2456,7 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>) {
       kindLabel: INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] ?? iv.kind,
       /* Tên phương án là câu người dạy viết; thiếu thì lùi về tên loại, không để trống. */
       name: (iv.description ?? '').trim() || (INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] ?? iv.kind),
-      /* Phương án điền sẵn từ SOS (§3.2, PR-K) chưa ai xác nhận: giao diện hiện `Gợi ý tự động · chờ xác nhận` + Xác nhận/Sửa/Thay. */
+      /* PA theo quy chế SOS (§3.2, PR-K): từ PR-N1 (S4-1) chạy ngay lúc tạo — giao diện hiện dấu `🔒 theo quy chế` cạnh tên. */
       preset: iv.preset === 1,
       confirmedAt: iv.confirmed_at ?? null,
       performer: iv.performer_user_name ?? iv.performer_name ?? null,

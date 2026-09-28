@@ -9,6 +9,7 @@ import { badRequest, forbidden, notFound, nowIso } from '../util.ts';
 import { can, classScopeSql, require_, scopeFor, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { suggestCaseOwner } from './owner.ts';
+import { PA_QUY_CHE_CHUA_GHI } from './sosState.ts';
 
 /**
  * TÍN HIỆU TỪ ĐIỂM — nơi sở hữu duy nhất của mục 6.2.
@@ -23,7 +24,7 @@ import { suggestCaseOwner } from './owner.ts';
  * phương án, mà không phản ánh một việc thật nào.
  *
  * RULEBOOK v3 (21/09/2026 tối) ĐỔI LUẬT NÀY CHO MOCK TEST FAST TRACK: điểm dưới kỳ vọng nay TỰ TẠO (hoặc tự gắn) case cho từng kỹ năng trượt và điền
- * sẵn phương án chờ GVBM xác nhận — xem `cases/sos.ts` (`raiseSignalsForResult`) và `cases/sosAuto.ts`. Tín hiệu ở đó nối NGAY vào case (`linked`,
+ * sẵn PA theo quy chế chạy ngay (PR-N1 S4-1) — xem `cases/sos.ts` (`raiseSignalsForResult`) và `cases/sosAuto.ts`. Tín hiệu ở đó nối NGAY vào case (`linked`,
  * hạn 3 ngày giữ nguyên) và là dây nối để thu hồi khi sửa điểm. Lớp NORMAL giữ nguyên mô hình mô tả dưới đây (Q-V3-1).
  *
  * Ba điều hàm trong file này KHÔNG bao giờ làm (với lớp Normal; với Mock FT thì việc tạo case nằm ở `sos.ts`, không ở đây):
@@ -74,7 +75,7 @@ export function raiseSignal(input: {
   raisedOn?: string;
   /**
    * Không gửi thông báo "Cần xác minh". Dùng khi tín hiệu sẽ được GẮN NGAY vào một case (rulebook v3: Mock Test FT tự tạo/gắn case) —
-   * lúc đó chẳng còn gì để "xác minh", và người phụ trách nhận một thông báo riêng nói đúng việc (case mới, chờ xác nhận phương án).
+   * lúc đó chẳng còn gì để "xác minh", và người phụ trách nhận một thông báo riêng nói đúng việc (case mới, chờ xác định nguyên nhân).
    */
   silent?: boolean;
 }): SignalRow {
@@ -582,19 +583,19 @@ export function caseHasIndependentBasis(caseId: number, excludeAttemptId: number
   const work = conn
     .prepare(
       `SELECT COUNT(*) n FROM case_interventions
-        WHERE case_id = ? AND status IN ('started', 'completed')`,
+        WHERE case_id = ? AND status IN ('started', 'completed') AND NOT ${PA_QUY_CHE_CHUA_GHI('case_interventions')}`,
     )
     .get(caseId) as any;
   if (work.n > 0) return true;
 
   /*
-   * PHƯƠNG ÁN ĐIỀN SẴN ĐÃ ĐƯỢC XÁC NHẬN là quyết định của một người, dù nó còn ở trạng thái "đã lên kế hoạch" (rulebook v3, S08). Chưa xác nhận
-   * thì nó chỉ là gợi ý của máy — không phải căn cứ.
+   * PHƯƠNG ÁN ĐIỀN SẴN ĐÃ ĐƯỢC NGƯỜI XÁC NHẬN là quyết định của một người, dù nó còn ở trạng thái "đã lên kế hoạch" (rulebook v3, S08). PA theo
+   * quy chế do MÁY gán (`confirmed_by IS NULL`, PR-N1 Q23) mà chưa có kết quả tuần thì không phải căn cứ — câu `work` ở trên đã loại nó.
    */
   const confirmed = conn
     .prepare(
       `SELECT COUNT(*) n FROM case_interventions
-        WHERE case_id = ? AND preset = 1 AND confirmed_at IS NOT NULL AND status != 'cancelled'`,
+        WHERE case_id = ? AND preset = 1 AND confirmed_at IS NOT NULL AND confirmed_by IS NOT NULL AND status != 'cancelled'`,
     )
     .get(caseId) as any;
   if (confirmed.n > 0) return true;
@@ -627,7 +628,8 @@ export function retireCaseForCorrectedScore(p: Principal, caseId: number, label:
 
   return tx(() => {
     /*
-     * CHỈ HUỶ PHƯƠNG ÁN CÒN Ở TRẠNG THÁI "ĐÃ LÊN KẾ HOẠCH" — tức chưa ai bắt tay vào.
+     * CHỈ HUỶ PHƯƠNG ÁN CÒN Ở TRẠNG THÁI "ĐÃ LÊN KẾ HOẠCH" — tức chưa ai bắt tay vào — và PA THEO QUY CHẾ MÁY GÁN chưa có kết quả tuần
+     * (PR-N1 Q23: chạy từ lúc tạo nhưng chưa ghi gì thì cũng chưa có việc thật).
      * `closed_reason = 'score_fixed'` để báo cáo hiệu quả biết mà KHÔNG đếm nó vào mẫu số:
      * một phương án chưa từng chạy thì không thành công cũng không thất bại.
      */
@@ -635,7 +637,8 @@ export function retireCaseForCorrectedScore(p: Principal, caseId: number, label:
       .prepare(
         `UPDATE case_interventions
             SET status = 'cancelled', closed_reason = 'score_fixed', updated_at = ?
-          WHERE case_id = ? AND status = 'planned' AND NOT (preset = 1 AND confirmed_at IS NOT NULL)`,
+          WHERE case_id = ? AND ((status = 'planned' AND NOT (preset = 1 AND confirmed_by IS NOT NULL))
+                                 OR ${PA_QUY_CHE_CHUA_GHI('case_interventions')})`,
       )
       .run(nowIso(), caseId).changes;
 

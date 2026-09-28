@@ -102,9 +102,9 @@ export const METRICS: readonly ChiSo[] = [
   },
   {
     id: 'case-cho-xac-dinh-nguyen-nhan', ten: 'Case chờ xác định nguyên nhân',
-    cauHoi: 'Bao nhiêu case SOS tự tạo đang chờ GVBM xác định nguyên nhân hoặc xác nhận phương án điền sẵn?',
+    cauHoi: 'Bao nhiêu case SOS tự tạo đang chờ GVBM xác định nguyên nhân?',
     donVi: 'case',
-    tapDuDieuKien: 'Case HỌC THUẬT do Mock Test Fast Track tự tạo, đang mở, mà chưa có nguyên nhân (phân loại vấn đề chính) HOẶC còn phương án điền sẵn chưa xác nhận (rulebook v3, đặc tả §3.2). Case tạo tay, case lớp Normal và case đã đóng (kể cả `Không cần theo dõi`) không thuộc tập.',
+    tapDuDieuKien: 'Case HỌC THUẬT do Mock Test Fast Track tự tạo, đang mở, mà chưa có nguyên nhân (phân loại vấn đề chính) (rulebook v3, đặc tả §3.2; PA theo quy chế tự chạy từ lúc tạo — PR-N1 S4-1). Case tạo tay, case lớp Normal và case đã đóng (kể cả `Không cần theo dõi`) không thuộc tập.',
     thoiGian: 'hien-trang', khuTrung: 'COUNT DISTINCT case_id', drilldown: '/metrics/case-cho-xac-dinh-nguyen-nhan',
   },
   {

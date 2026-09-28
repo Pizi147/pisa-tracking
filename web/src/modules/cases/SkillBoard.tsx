@@ -5,7 +5,7 @@ import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { Nhan, QuaHan } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { type BanDieuChinh } from './CapNhatTuan.tsx';
-import { CauseDeterminationPanel, DismissCaseForm, PresetPlanActions } from '../yThuc/CaseSosControls.tsx';
+import { CauseDeterminationPanel, DismissCaseForm } from '../yThuc/CaseSosControls.tsx';
 import {
   ATTEMPT_KIND_SHORT, OUTCOME_MARK, OUTCOME_TONE, dangChay, deadlineView, tienDoCase, viecTiepPhuongAn,
   type AttemptKind, type DeadlineView,
@@ -27,7 +27,7 @@ import {
 
 type Plan = {
   id: number; kind: string; kindLabel: string; name: string;
-  /** Phương án điền sẵn từ SOS (§3.2, PR-K) chưa ai xác nhận: hiện `Gợi ý tự động · chờ xác nhận` + Xác nhận/Sửa/Thay. */
+  /** PA theo quy chế SOS do máy gán (§3.2, PR-N1 S4-1): chạy ngay từ lúc tạo, hiện dấu `🔒 theo quy chế` cạnh tên — không xoá, không thay. */
   preset: boolean; confirmedAt: string | null;
   performer: string | null; status: string; statusLabel: string;
   startedOn: string | null; completedOn: string | null;
@@ -52,9 +52,9 @@ type CaseCard = {
   id: number; title: string; status: string;
   /** Chủ đề gốc của case (§7.5, PR-K) — để mở đúng danh mục phân loại khi "Xác định nguyên nhân". */
   topic: string | null;
-  /** Case tự tạo từ SOS còn chờ xác định nguyên nhân / xác nhận phương án điền sẵn (§3.2, §7.5, PR-K). */
+  /** Case tự tạo từ SOS còn chờ xác định nguyên nhân (§3.2, §7.5, PR-K; PR-N1 S4-1: PA quy chế đã tự chạy). */
   sos: {
-    fromSos: boolean; hasCause: boolean; unconfirmedPlanId: number | null;
+    fromSos: boolean; hasCause: boolean;
     awaitingCause: boolean; dueOn: string | null;
     dismissed: { code: string; label: string; text: string | null } | null;
   };
@@ -334,7 +334,7 @@ function HangCaseVaPa({ c, ngan, onChanged, onMoCase }: {
         </HangCon>
       )}
 
-      {chay.map((p) => <HangPa key={p.id} p={p} c={c} ngan={ngan} onChanged={onChanged} onMoCase={onMoCase} />)}
+      {chay.map((p) => <HangPa key={p.id} p={p} c={c} ngan={ngan} onMoCase={onMoCase} />)}
       {xong.length > 0 && (
         <HangCon>
           <td className="td" colSpan={4}>
@@ -345,7 +345,7 @@ function HangCaseVaPa({ c, ngan, onChanged, onMoCase }: {
           </td>
         </HangCon>
       )}
-      {moXong && xong.map((p) => <HangPa key={p.id} p={p} c={c} ngan={ngan} onChanged={onChanged} onMoCase={onMoCase} />)}
+      {moXong && xong.map((p) => <HangPa key={p.id} p={p} c={c} ngan={ngan} onMoCase={onMoCase} />)}
     </>
   );
 }
@@ -354,8 +354,8 @@ function HangCaseVaPa({ c, ngan, onChanged, onMoCase }: {
  * MỘT PA = MỘT HÀNG CON: `PA · {loại} — mô tả` + `người · 24/08 → 14/09` · kết quả gần nhất · cột phải (`CotPhai`, YC-12.5.4): nút
  * `Ghi kết quả` ở trên, `hạn hết T2 31/08` ở dưới (hạn gốc của PA, KHÔNG lặp ⚠ — quá hạn đã nói ở hàng kỹ năng, B-5). Bấm tên PA → ngăn Case cuộn tới PA đó.
  */
-function HangPa({ p, c, ngan, onChanged, onMoCase }: {
-  p: Plan; c: CaseCard; ngan: (d: string | null | undefined) => string; onChanged?: () => void;
+function HangPa({ p, c, ngan, onMoCase }: {
+  p: Plan; c: CaseCard; ngan: (d: string | null | undefined) => string;
   onMoCase: (caseId: number, o?: MoCase) => void;
 }) {
   const { homNay } = useNgayNghiepVu();
@@ -370,10 +370,13 @@ function HangPa({ p, c, ngan, onChanged, onMoCase }: {
   return (
     <HangCon>
       <td className="td" colSpan={2}>
-        <button type="button" onClick={() => onMoCase(c.id, { paId: p.id })} title="Mở PA trong ngăn Case"
-          className="block max-w-full appearance-none truncate border-0 bg-transparent p-0 text-left text-xs text-slate-100 hover:underline">
-          <span aria-hidden className={`mr-1.5 ${running ? 'text-doing' : 'text-slate-500'}`}>{running ? '▶' : '✓'}</span>PA · {p.name}
-        </button>
+        <div className="flex min-w-0 items-baseline">
+          <button type="button" onClick={() => onMoCase(c.id, { paId: p.id })} title="Mở PA trong ngăn Case"
+            className="min-w-0 appearance-none truncate border-0 bg-transparent p-0 text-left text-xs text-slate-100 hover:underline">
+            <span aria-hidden className={`mr-1.5 ${running ? 'text-doing' : 'text-slate-500'}`}>{running ? '▶' : '✓'}</span>PA · {p.name}
+          </button>
+          {p.preset && <span className="ml-1.5 whitespace-nowrap text-[10.5px] text-slate-400" title="PA theo quy chế SOS — máy gán, không xoá, không thay">🔒 theo quy chế</span>}
+        </div>
         <span className="block truncate text-[11px] text-slate-500" title={dongPhu}>{dongPhu}</span>
       </td>
       <td className="td">
@@ -384,11 +387,7 @@ function HangPa({ p, c, ngan, onChanged, onMoCase }: {
         ) : <span className="text-[11px] text-slate-500">Chưa có kết quả</span>}
       </td>
       <td className="td">
-        {v.loai === 'goi-y' ? (
-          <CotPhai
-            nut={c.canEdit ? <PresetPlanActions interventionId={p.id} description={p.name} followupDue={p.followupDue} onDone={onChanged} /> : undefined}
-            phu={<span className="text-soon">{v.text}</span>} />
-        ) : v.loai === 'cho-duyet' ? (
+        {v.loai === 'cho-duyet' ? (
           <CotPhai phu={<><span className="text-wait">{v.text}</span>{v.due ? ` · hạn ${ngan(v.due)}` : null}</>} />
         ) : v.loai === 'ghi-ket-qua' ? (
           <CotPhai
