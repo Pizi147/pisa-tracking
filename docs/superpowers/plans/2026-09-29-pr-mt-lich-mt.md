@@ -537,6 +537,11 @@ khác ngày với bản thử thì chạy thử lại. 5. Chạy thử lần n�
 
 ## Nhật ký
 
+- **Task 0 (29/09, Opus 5.5):** nhánh `pr-mt-lich-mt` từ `origin/main` @ fb51181. PR-DUYET / PR-NHAP / PR-MON **chưa** merge. Mốc B =
+  **1444** phép kiểm + 20 tốc độ. Dòng mã kế hoạch dẫn khớp (lệch ≤ 20 dòng), trừ `requestAbsenceMove` ở absence.ts:176 (kế hoạch :143 —
+  thân vòng lặp vẫn :196-290), `scoreEditPath` permissions.ts:509, `updateCycle` cycles.ts:126 (kế hoạch :200 — phần đổi tuần bắt đầu nằm
+  trong hàm này).
+
 ## Planning chốt 29/09
 
 - Chủ sản phẩm sẽ **reset database trước khi deploy bản chính** (GV chưa dùng) → **BỎ lệnh `bo-sung-mt-mac-dinh` (T35) và phần chạy thử danh sách bổ sung** (không có dữ liệu thật để bổ sung). Câu hỏi "bổ sung MT còn thiếu cho em đã có 1–2 lượt" không còn cần. Migrate cột `lich_su` + `chay-thu:mt` (đếm nhanh) vẫn giữ cho DB THỬ/demo.
