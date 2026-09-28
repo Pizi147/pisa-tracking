@@ -48,3 +48,4 @@ export * from './khoPanel.ts';
 export * from './chonNgay.ts';
 export * from './quanLyHocVien.ts';
 export * from './tenLop.ts';
+export * from './phanCong.ts';

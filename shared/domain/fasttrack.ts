@@ -31,7 +31,7 @@ export const MOCK_FT_DEFAULT_ATTEMPTS = 3;
 /**
  * BẬC THANG LỚP NORMAL — học xong một lớp thì em đi đâu tiếp.
  *
- *     FOU  →  BE  →  ELE  →  (hết bậc Normal)
+ *     Pre FOU  →  FOU  →  BE  →  ELE  →  (hết bậc Normal)
  *
  * Và ở BẤT KỲ bậc nào, em cũng có thể lên thẳng FT nếu đủ trình. Nên khi một lớp Normal
  * học hết chương trình, mỗi em luôn có ĐÚNG HAI đường (owner chốt 13/09/2026):
@@ -45,6 +45,7 @@ export const MOCK_FT_DEFAULT_ATTEMPTS = 3;
  * lớp cho em" và bày sẵn hai lựa chọn; người xếp lớp mới là người quyết.
  */
 export const NORMAL_LADDER: Partial<Record<ProgrammeCode, ProgrammeCode>> = {
+  PREFOU: 'FOU',
   FOU: 'BE',
   BE: 'ELE',
 };

@@ -38,8 +38,9 @@ export function transferReasonText(code: unknown, note?: unknown): string | null
  * Học tiếp / học lại TRONG cùng một lộ trình thì số MT tăng tiếp và target giữ nguyên.
  * Chỉ khi sang lộ trình mới (LT1 → LT2) mới đánh số lại từ MT1, vì lúc đó đã có target mới.
  */
-export const ROUTES = ['LT1', 'LT2'] as const;
+export const ROUTES = ['LT1', 'LT2', 'RF'] as const;
 export type Route = (typeof ROUTES)[number];
+export const ROUTE_NAME: Record<Route, string> = { LT1: 'Lộ trình 1', LT2: 'Lộ trình 2', RF: 'Refire' };
 
 export const CYCLE_STATUSES = ['active', 'completed', 'abandoned'] as const;
 export type CycleStatus = (typeof CYCLE_STATUSES)[number];

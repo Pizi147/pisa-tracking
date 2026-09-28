@@ -1,5 +1,5 @@
 import { db, tx } from '../db.ts';
-import { PERMISSIONS, PROGRAMME_TEMPLATES, ROUTES as BUILTIN_ROUTES } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, PROGRAMME_TEMPLATES, ROUTES as BUILTIN_ROUTES, ROUTE_NAME } from '../../../shared/domain/index.ts';
 import { badRequest, notFound, nowIso } from '../util.ts';
 import { clearScoringModeCache } from '../fasttrack/skillSchedule.ts';
 import { require_, type Principal } from '../permissions.ts';
@@ -168,13 +168,14 @@ export function saveProgramme(p: Principal, input: {
  * Nạp bảng `routes` lần đầu từ danh sách viết cứng, nếu bảng còn trống.
  *
  * Gọi khi seed và khi nâng cấp, nên một database đã chạy vẫn có đủ LT1/LT2 sau khi cập nhật.
+ * Bảng trống → nạp đủ LT1, LT2, RF.
  */
 export function seedRoutes(conn: any) {
   const n = (conn.prepare('SELECT COUNT(*) n FROM routes').get() as any).n;
   if (n > 0) return 0;
   BUILTIN_ROUTES.forEach((code, i) => {
     conn.prepare('INSERT INTO routes (code, name, note, seq, status, created_at) VALUES (?,?,?,?,?,?)')
-      .run(code, `Lộ trình ${code.replace('LT', '')}`, null, i + 1, 'active', nowIso());
+      .run(code, ROUTE_NAME[code], null, i + 1, 'active', nowIso());
   });
   return BUILTIN_ROUTES.length;
 }
