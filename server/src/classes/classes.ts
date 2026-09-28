@@ -289,7 +289,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
   let sql = `SELECT s.*, e.status AS enrollment_status, e.end_kind AS enrollment_end_kind,
                     cy.id AS cycle_id, cy.seq AS cycle_seq, cy.route, cy.target_score,
                     cy.baseline_attempt_id, cy.baseline_score,
-                    cy.start_period_id, cy.exam_month, cy.exam_period_id, sp.week_start AS start_week,
+                    cy.start_period_id, cy.exam_month, cy.exam_period_id, cy.exam_date, sp.week_start AS start_week,
                     ep.code AS exam_week_code, ep.week_start AS exam_week_start
                FROM enrollments e
                JOIN students s ON s.id = e.student_id

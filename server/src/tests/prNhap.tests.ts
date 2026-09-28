@@ -2,7 +2,7 @@
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runPrNhapTests(t: YThucTestKit) {
-  const { check, assert } = t;
+  const { check, assert, conn } = t;
   const d = await import('../../../shared/domain/index.ts');
   console.log('\nPR-NHAP · Thêm học viên, Thông tin HV');
 
@@ -57,5 +57,21 @@ export async function runPrNhapTests(t: YThucTestKit) {
     assert(ft(null) === '2026-09-28', String(ft(null)));
     assert(th('2026-06-03') === '2026-06-01', String(th('2026-06-03')));
     assert(th(null) === null, 'lớp thường chưa khai giảng');
+  });
+
+  const { migratePrNhap } = await import('../migrate/prNhap.ts');
+  const { examPlanOf } = await import('../fasttrack/cycles.ts');
+  check('NHAP (2) · migrate email + exam_date chạy lặp được; nhãn dự kiến thi đọc ngày', () => {
+    const a: string[] = [];
+    migratePrNhap(conn, a);
+    const b: string[] = [];
+    migratePrNhap(conn, b);
+    assert(b.length === 0, `lần hai vẫn đổi: ${b.join('; ')}`);
+    const coCot = (bang: string, cot: string) => (conn.prepare('SELECT name FROM pragma_table_info(?)').all(bang) as any[]).some((c) => c.name === cot);
+    assert(coCot('students', 'email') && coCot('learning_cycles', 'exam_date'), 'thiếu cột');
+    const p = examPlanOf({ exam_date: '2027-01-15' });
+    assert(p.label === '15/01/2027' && p.weekStart === '2027-01-11' && p.month === '2027-01', JSON.stringify(p));
+    assert(examPlanOf({ exam_month: '15/01' }).confidence === 'none', 'exam_month rác phải coi như chưa có');
+    assert(examPlanOf({ exam_month: '2027-05' }).label === 'MAY 2027', 'nhãn tháng giữ kiểu cũ (Q8)');
   });
 }

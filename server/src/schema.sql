@@ -277,6 +277,7 @@ CREATE TABLE students (
   archived_at TEXT,                   -- lưu trữ là cách ẩn khỏi danh sách, không phải trạng thái thứ tư
   consultant_name TEXT,               -- metadata hồ sơ, KHÔNG phải một vai trò tài khoản
   note TEXT,
+  email TEXT,                         -- T8: bắt buộc khi thêm mới, HS cũ có thể trống — không vào badge Thiếu thông tin
   created_at TEXT NOT NULL
 );
 CREATE INDEX idx_student_name ON students(normalized_name);
@@ -324,6 +325,7 @@ CREATE TABLE learning_cycles (
    * Chỉ đếm ngược khi đã có tuần; biết mỗi tháng thì không đếm ngược.
    */
   exam_period_id INTEGER REFERENCES report_periods(id),
+  exam_date TEXT,                     -- T9: ngày cụ thể; có ngày thì `exam_month` + `exam_period_id` suy từ ngày
 
   -- ĐIỂM XUẤT PHÁT. Phải ghi rõ NGUỒN, vì "em vào học ở mức nào" là câu hỏi khác hẳn
   -- "bài Mock đầu tiên được mấy điểm". Không có căn cứ thì để trống và hiển thị "chưa rõ",

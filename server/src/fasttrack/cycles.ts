@@ -1,6 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   BASELINE_SOURCES, CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, CYCLE_STATUSES, PERMISSIONS, type ExamPlan, type Route,
+  mondayOfDate, ngay,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
@@ -60,12 +61,17 @@ export function nextAttemptNo(cycleId: number): number {
 const MONTH_CODE = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
 export function examPlanOf(cycle: {
-  exam_period_id?: number | null; exam_month?: string | null;
+  exam_period_id?: number | null; exam_month?: string | null; exam_date?: string | null;
   /* Truy vấn nào JOIN sẵn bảng tuần thì truyền hai cột này vào, khỏi hỏi lại từng dòng. */
   exam_week_code?: string | null; exam_week_start?: string | null;
 } | null | undefined): ExamPlan {
   const none: ExamPlan = { confidence: 'none', periodId: null, weekStart: null, month: null, label: 'Chưa xác định' };
   if (!cycle) return none;
+  /* T9: có NGÀY thi cụ thể → nhãn là chính ngày đó (15/01/2027), tuần suy từ ngày. */
+  if (cycle.exam_date && isIsoDate(cycle.exam_date)) {
+    return { confidence: 'week', periodId: cycle.exam_period_id ?? null, weekStart: mondayOfDate(cycle.exam_date),
+             month: cycle.exam_date.slice(0, 7), label: ngay(cycle.exam_date) };
+  }
   if (cycle.exam_period_id) {
     const w = cycle.exam_week_code && cycle.exam_week_start
       ? { code: cycle.exam_week_code, weekStart: cycle.exam_week_start }
@@ -75,7 +81,8 @@ export function examPlanOf(cycle: {
                month: w.weekStart.slice(0, 7), label: w.code };
     }
   }
-  if (cycle.exam_month) {
+  /* Q12: `exam_month` sai dạng (rác từ cột "Ngày thi" cũ, K2-20) coi như chưa có — không vẽ nhãn hỏng. */
+  if (cycle.exam_month && /^\d{4}-\d{2}$/.test(cycle.exam_month)) {
     const mm = Number(cycle.exam_month.slice(5, 7));
     const name = MONTH_CODE[mm - 1] ?? cycle.exam_month.slice(5, 7);
     return { confidence: 'month', periodId: null, weekStart: null, month: cycle.exam_month,
