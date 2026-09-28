@@ -144,4 +144,11 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     const src = docSach('server/src/classes/classes.ts');
     assert((src.match(/hanNhap:/g) ?? []).length >= 2 && /han: timeline\.map\(\(t\) => t\.hanNhap\)/.test(src), 'classes.ts chưa có hanNhap');
   });
+
+  // ==================================================================== 5. Bảng kỹ năng: hai khối SOS loại trừ nhau + cột phải
+  check('N1 (5) · YC-12.1: một biến trạng thái cho hai khối SOS; YC-12.5.4: cột phải dùng CotPhai', () => {
+    const src = docSach('web/src/modules/cases/SkillBoard.tsx');
+    assert(!/causeOpen|dismissOpen/.test(src) && /khoiSos === 'nguyen-nhan'/.test(src) && /khoiSos === 'khong-theo-doi'/.test(src), 'hai khối còn mở cùng lúc được');
+    assert((src.match(/<CotPhai\b/g) ?? []).length >= 4, 'cột phải chưa theo khuôn nút trên chữ dưới');
+  });
 }
