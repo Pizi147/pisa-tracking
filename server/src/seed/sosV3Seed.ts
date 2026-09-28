@@ -17,14 +17,14 @@ import { DEMO_DATE } from './journeys.ts';
  * engine tự tạo case, PA theo quy chế (chạy ngay — PR-N1 S4-1) và việc phối hợp; sau đó GVBM/GVCN thao tác bằng đúng hàm của họ. Nhờ vậy demo không thể lệch luật: nó
  * là kết quả của luật, không phải bản sao viết tay của luật.
  *
- * Ba học viên MỚI ở MB-FT 101 (không đụng dữ liệu của kịch bản cũ):
+ * Ba học viên MỚI ở MB FT 101 (không đụng dữ liệu của kịch bản cũ):
  *   Đỗ Minh Khôi  MT2 · SOS2 (W2 + Speaking) — hai case; một đã có nguyên nhân, một còn CHỜ xác định nguyên nhân; Phối hợp xong 1/3; có 2 vi phạm Ý thức
  *   Vũ Ngọc Lan   MT1 · SOS3 (L + R + S)     — ba case Tutor · đến MT2; Speaking đóng `Không cần theo dõi`; Phối hợp xong 2/3
  *   Bùi Thảo Vy   MT3 · SOS1 (Speaking)      — một lượt Phối hợp HOÀN THÀNH 2/2
  */
 export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number; coordination: number } {
   const { conn } = ctx;
-  const classId = ctx.classId.get('MB-FT 101');
+  const classId = ctx.classId.get('MB FT 101');
   if (!classId) return { students: 0, cases: 0, coordination: 0 };
   const admin = loadPrincipal(ctx.adminId);
 

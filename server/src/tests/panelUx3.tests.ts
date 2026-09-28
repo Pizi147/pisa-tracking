@@ -429,7 +429,7 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     return sid;
   };
   const demLop = (id: number) => (conn.prepare('SELECT COUNT(*) n FROM classes WHERE id = ?').get(id) as { n: number }).n;
-  const ftId = (conn.prepare(`SELECT id FROM classes WHERE code = 'MB-FT 101'`).get() as { id: number }).id;
+  const ftId = (conn.prepare(`SELECT id FROM classes WHERE code = 'MB FT 101'`).get() as { id: number }).id;
 
   check('UX3 (11) · QL và GV gọi Xem / Xoá / Kết thúc lớp đều 403 (máy chủ kiểm, không chỉ ẩn nút)', () => {
     const l = taoLopTrong();
@@ -476,7 +476,7 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     themHocVien(l.id, 'withdrawn');
     t.assertThrows(() => xoaKetThuc.xoaLop(t.P.admin, l.id, { maLop: l.ma }), /Kết thúc lớp/, 'HV từng học');
     assert(demLop(l.id) === 1, 'lớp có HV từng học bị xoá');
-    t.assertThrows(() => xoaKetThuc.xoaLop(t.P.admin, ftId, { maLop: 'MB-FT 101' }), /Kết thúc lớp/, 'lớp có Test');
+    t.assertThrows(() => xoaKetThuc.xoaLop(t.P.admin, ftId, { maLop: 'MB FT 101' }), /Kết thúc lớp/, 'lớp có Test');
     assert(demLop(ftId) === 1, 'lớp có Test bị xoá');
   });
 

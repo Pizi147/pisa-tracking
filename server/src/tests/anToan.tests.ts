@@ -497,7 +497,7 @@ export async function runAnToanTests(t: AnToanTestKit) {
     const now = new Date().toISOString();
     conn.exec('BEGIN');
     try {
-      const cid = (conn.prepare(`SELECT id FROM classes WHERE code = 'MB-FT 101'`).get() as any).id as number;
+      const cid = (conn.prepare(`SELECT id FROM classes WHERE code = 'MB FT 101'`).get() as any).id as number;
       const mb = (conn.prepare(`SELECT id FROM branches WHERE code = 'MB'`).get() as any).id as number;
       const sid = Number(conn.prepare(
         `INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`,

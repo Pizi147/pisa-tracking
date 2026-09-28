@@ -116,17 +116,17 @@ export async function runLenLopTests(t: YThucTestKit) {
 
   check('PR-LT (1) · tomTatChuyenTiep: 2 lên BE, 1 sang FT (mục tiêu 6.5, Case Writing đóng), 1 bảo lưu → đúng câu mockup', () => {
     const r = d.tomTatChuyenTiep([
-      { huong: 'len_lop', toClassCode: 'MB-BE 14' },
-      { huong: 'len_lop', toClassCode: 'MB-BE 14' },
-      { huong: 'fast_track', toClassCode: 'MB-FT 105', mucTieu: 6.5, caseCount: 1, caseWillClose: true },
+      { huong: 'len_lop', toClassCode: 'MB BE 14' },
+      { huong: 'len_lop', toClassCode: 'MB BE 14' },
+      { huong: 'fast_track', toClassCode: 'MB FT 105', mucTieu: 6.5, caseCount: 1, caseWillClose: true },
       { huong: 'bao_luu' },
     ]);
-    assert(r.theoLop.length === 1 && r.theoLop[0].ma === 'MB-BE 14' && r.theoLop[0].n === 2, `theoLop: ${JSON.stringify(r.theoLop)}`);
+    assert(r.theoLop.length === 1 && r.theoLop[0].ma === 'MB BE 14' && r.theoLop[0].n === 2, `theoLop: ${JSON.stringify(r.theoLop)}`);
     assert(r.sangFt === 1, `sangFt: ${r.sangFt}`);
     assert(r.khongChuyen.bao_luu === 1 && r.khongChuyen.dung_hoc === 0 && r.khongChuyen.xep_sau === 0, `khongChuyen: ${JSON.stringify(r.khongChuyen)}`);
     assert(r.caseDong === 1 && r.caseDiTheo === 0, `Case: đi theo=${r.caseDiTheo} đóng=${r.caseDong}`);
     assert(
-      r.cau.join(' · ') === '2 em lên MB-BE 14 · 1 em sang MB-FT 105 (mở lộ trình FT, mục tiêu 6.5) · 1 em bảo lưu',
+      r.cau.join(' · ') === '2 em lên MB BE 14 · 1 em sang MB FT 105 (mở lộ trình FT, mục tiêu 6.5) · 1 em bảo lưu',
       `Câu bước Xác nhận: ${r.cau.join(' · ')}`,
     );
   });
@@ -357,7 +357,7 @@ export async function runLenLopTests(t: YThucTestKit) {
   });
 
   check('PR-LT (3) · GET /students/:id/lo-trinh-tiep: lopDuKien gồm bậc kế + Fast Track cùng chi nhánh, coTheGhi đúng quyền', () => {
-    const cls = classId('MB-FOU 12');
+    const cls = classId('MB FOU 12');
     const { sid } = taoHocVien3(cls, 'FOU');
     const view = loTrinhTiepSvc.layLoTrinhTiep(P.normalCoreTeacher, sid);
     assert(view.lop?.ma === 'FOU' && view.lop.maKe === 'BE', `lop: ${JSON.stringify(view.lop)}`);

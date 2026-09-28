@@ -123,7 +123,7 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Lịch Test', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/cham/lich-test?classId={lopFT}' },
 
   /*
-   * {hv} và {case} nằm trong lớp FT (MB-FT 101) — GVCN_THUONG (chủ nhiệm MB-FOU 12, lớp khác) không có phân công ở
+   * {hv} và {case} nằm trong lớp FT (MB FT 101) — GVCN_THUONG (chủ nhiệm MB FOU 12, lớp khác) không có phân công ở
    * lớp/HV này nên bị 403 đúng luật, không đưa vào vai của các dòng dưới.
    */
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}' },
@@ -145,7 +145,7 @@ export const DUONG_DO: MucDo[] = [
   },
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/chuyen-lop', maChuDich: { GVBM: 403 } },
   {
-    /* {lopThuong} khác lớp nguồn của {hv} (MB-FT 101) — {lopFT} sẽ trùng lớp nguồn, lopDichHopLe từ chối. */
+    /* {lopThuong} khác lớp nguồn của {hv} (MB FT 101) — {lopFT} sẽ trùng lớp nguồn, lopDichHopLe từ chối. */
     trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/chuyen-lop?toClassId={lopThuong}',
     maChuDich: { GVBM: 403 },
   },

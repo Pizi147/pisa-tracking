@@ -59,7 +59,7 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
   const casesSvc: any = await import('../cases/cases.ts');
   const myworkSvc: any = await import('../worklist/mywork.ts');
   /*
-   * Học viên CHỈ đang học lớp MB-FT 101 — lớp GVCN `P.coreTeacher` dạy. Các phép kiểm trước trong run.ts có ghi thêm lớp đang
+   * Học viên CHỈ đang học lớp MB FT 101 — lớp GVCN `P.coreTeacher` dạy. Các phép kiểm trước trong run.ts có ghi thêm lớp đang
    * học cho vài em (em đầu lớp có hai lớp active) → `reportIssue` lấy lớp mới nhất, ngoài phạm vi GVCN. Dùng lại ở Task 3, 5b.
    */
   const taoPa = (key: string, extra: Record<string, unknown> = {}) => {
@@ -67,7 +67,7 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
                                 WHERE s.archived_at IS NULL AND e.class_id = ?
                                   AND NOT EXISTS (SELECT 1 FROM enrollments e2 WHERE e2.student_id = s.id AND e2.status = 'active'
                                                    AND e2.class_id != e.class_id)
-                                ORDER BY s.id LIMIT 1`).get(t.classId('MB-FT 101')) as any;
+                                ORDER BY s.id LIMIT 1`).get(t.classId('MB FT 101')) as any;
     const c = casesSvc.reportIssue(t.P.coreTeacher, { title: 'Case kiểm PR-N1 hạn tuần', primaryCode: 'student.listening.technique',
       studentId: sv.id, topic: 'listening', summary: 'Kiểm gộp nhóm việc ghi kết quả', idempotencyKey: `n1-${key}`, parallel: true }) as any;
     const r = casesSvc.recordIntervention(t.P.coreTeacher, c.id,
@@ -173,8 +173,8 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
   const sosAuto: any = await import('../cases/sosAuto.ts');
   const sosState: any = await import('../cases/sosState.ts');
   const sigSvc: any = await import('../cases/signals.ts');
-  /* Lớp FT thật của bộ thử (MB-FT 101) — `t.classId` là hàm, không phải số (lệch brief, ghi Nhật ký). */
-  const lop = t.classId('MB-FT 101');
+  /* Lớp FT thật của bộ thử (MB FT 101) — `t.classId` là hàm, không phải số (lệch brief, ghi Nhật ký). */
+  const lop = t.classId('MB FT 101');
   const taoQuyChe = (key: string) => {
     const { caseId } = taoPa(`qc-${key}`);
     t.conn.prepare('DELETE FROM case_interventions WHERE case_id = ?').run(caseId);

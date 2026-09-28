@@ -56,13 +56,13 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   }
   /**
    * HỌC VIÊN MỚI trong một lớp có sẵn của bộ demo, kèm MỘT lộ trình đang chạy và MỘT lượt Test ở tuần `weekStart`.
-   * MB-FOU 12 là lớp thường (GVCN T_HA dạy L, R · W: T_KHOA · S: T_TRANG). MB-FT 101 là FT (GVCN T_HA dạy L, R · W1 T_KHOA · W2 T_LINH · S T_TRANG).
+   * MB FOU 12 là lớp thường (GVCN T_HA dạy L, R · W: T_KHOA · S: T_TRANG). MB FT 101 là FT (GVCN T_HA dạy L, R · W1 T_KHOA · W2 T_LINH · S T_TRANG).
    */
-  function taoHocVien(o: { classCode: 'MB-FOU 12' | 'MB-FT 101'; weekStart: string; kind?: 'mock' | 'progress' | 'final' }): HocVien {
+  function taoHocVien(o: { classCode: 'MB FOU 12' | 'MB FT 101'; weekStart: string; kind?: 'mock' | 'progress' | 'final' }): HocVien {
     soThuTu += 1;
     const tag = `S1-${soThuTu}`;
     const cid = classId(o.classCode);
-    const ft = o.classCode === 'MB-FT 101';
+    const ft = o.classCode === 'MB FT 101';
     const sid = Number(conn.prepare(
       `INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`,
     ).run(`PISA-${tag}`, `Học viên ${tag}`, `hoc vien ${tag.toLowerCase()}`, mbBranch, NOW).lastInsertRowid);
@@ -84,9 +84,9 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     regular.saveRegularScore(P.admin, attemptId, skill, { score, total, lyDo: 'Phép kiểm: sửa điểm nguồn' });
   const tinHieu = (attemptId: number, skill: string) =>
     conn.prepare('SELECT * FROM case_signals WHERE attempt_id = ? AND skill = ?').get(attemptId, skill) as any;
-  const pGvcnFou = P.normalCoreTeacher;                               // T_HA — GVCN MB-FOU 12, dạy L và R
-  const pSpeakingFou = loadPrincipal(teacherOf('MB-FOU 12', 'speaking'));
-  const pWritingFou = loadPrincipal(teacherOf('MB-FOU 12', 'writing'));
+  const pGvcnFou = P.normalCoreTeacher;                               // T_HA — GVCN MB FOU 12, dạy L và R
+  const pSpeakingFou = loadPrincipal(teacherOf('MB FOU 12', 'speaking'));
+  const pWritingFou = loadPrincipal(teacherOf('MB FOU 12', 'writing'));
   /** "Tạo Case" từ một tín hiệu, đúng như form sẽ gửi. `topic` để thử gửi sai môn. */
   const caseTuTinHieu = (p: any, sg: any, topic?: string) => cases.reportIssue(p, {
     studentId: sg.student_id, topic: topic ?? sg.skill, fromSignalId: sg.id,
@@ -154,13 +154,13 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   });
 
   check('PR-S1 · Tiền đề: dựng được học viên lớp thường và FT riêng cho phép kiểm, mỗi em một lượt có đủ bốn dòng lịch kỹ năng', () => {
-    const a = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
-    const b = taoHocVien({ classCode: 'MB-FT 101', weekStart: '2026-09-14' });
+    const a = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
+    const b = taoHocVien({ classCode: 'MB FT 101', weekStart: '2026-09-14' });
     for (const x of [a, b]) {
       const n = (conn.prepare('SELECT COUNT(*) n FROM attempt_skills WHERE attempt_id = ?').get(x.attemptId) as any).n;
       assert(n === 4, `Lượt ${x.attemptId} phải có 4 dòng lịch kỹ năng, có ${n}`);
     }
-    assert(regular.isRatioClass(a.cid) && !regular.isRatioClass(b.cid), 'MB-FOU 12 phải là lớp thường, MB-FT 101 là FT');
+    assert(regular.isRatioClass(a.cid) && !regular.isRatioClass(b.cid), 'MB FOU 12 phải là lớp thường, MB FT 101 là FT');
   });
 
   // ================================================================== 2. S11
@@ -173,7 +173,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   ).get(attemptId, skill) as any;
 
   check('S11 · Chốt dấu "-" đánh cờ; sửa chữ sit_note KHÔNG làm mất quyền dời lần đầu của GVCN (sáng thứ Ba sau khi chốt)', () => {
-    const hv = taoHocVien({ classCode: 'MB-FT 101', weekStart: '2026-09-14' });
+    const hv = taoHocVien({ classCode: 'MB FT 101', weekStart: '2026-09-14' });
     attempts.saveScore(P.lrTeacher, hv.attemptId, 'listening', { noShow: true }, '2026-09-16');
     absence.settleNoShows('2026-09-21');
     assert(sit(hv.attemptId, 'listening').sit_status === 'absent' && sit(hv.attemptId, 'listening').flag === 1,
@@ -186,7 +186,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   });
 
   check('S11 · Vắng do Quản lý/GVCN xác nhận bằng tay KHÔNG mang cờ chốt dấu "-"', () => {
-    const hv = taoHocVien({ classCode: 'MB-FT 101', weekStart: '2026-09-14' });
+    const hv = taoHocVien({ classCode: 'MB FT 101', weekStart: '2026-09-14' });
     skillSchedule.setSitStatus(P.mbManager, hv.attemptId, 'speaking', 'absent', 'Quản lý xác nhận em vắng buổi Speaking');
     assert(sit(hv.attemptId, 'speaking').sit_status === 'absent' && sit(hv.attemptId, 'speaking').flag === 0,
       `Vắng tay phải cờ 0: ${JSON.stringify(sit(hv.attemptId, 'speaking'))}`);
@@ -208,7 +208,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   ).get(attemptId, assessed) as any).n as number;
 
   check('S13 · GV báo lại "-" cùng tuần sau khi Quản lý đã đổi kết luận: không chốt lại, dấu không hiện lại, ô có MỘT dòng giải thích', () => {
-    const hv = taoHocVien({ classCode: 'MB-FT 101', weekStart: '2026-09-14' });
+    const hv = taoHocVien({ classCode: 'MB FT 101', weekStart: '2026-09-14' });
     attempts.saveScore(P.lrTeacher, hv.attemptId, 'listening', { noShow: true }, '2026-09-16');
     absence.settleNoShows('2026-09-21');
     assert(settledCount(hv.attemptId, 'listening') === 1, 'Tiền đề: phải chốt đúng một lần');
@@ -225,7 +225,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   });
 
   check('S14 · resolveLateNoShow nhánh Writing: chỉ W1 "-" thì KHÔNG xác nhận được; từ chối thì gỡ dấu; giáo viên không tự hiệu chỉnh', () => {
-    const hv = taoHocVien({ classCode: 'MB-FT 101', weekStart: '2026-09-07' });       // tuần đã hết 13/09
+    const hv = taoHocVien({ classCode: 'MB FT 101', weekStart: '2026-09-07' });       // tuần đã hết 13/09
     attempts.saveScore(P.w1Teacher, hv.attemptId, 'writing1', { noShow: true }, '2026-09-15');
     assert(sit(hv.attemptId, 'writing').sit_status === 'scheduled', 'W2 chưa "-" thì buổi Writing chưa phải vắng');
     assertThrows(() => absence.resolveLateNoShow(P.mbManager, hv.attemptId, 'writing1', 'confirm', '2026-09-15'),
@@ -246,12 +246,12 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     (scoreDebt.scoreDebtCells(P.admin, today, [mbBranch]) as any[]).filter((d) => d.attemptId === attemptId);
 
   check('§6 · Lớp thường: môn đã có số câu đúng không còn nợ; môn chưa có nợ và QUÁ HẠN từ thứ Hai sau tuần thi (không phải thứ Tư kiểu FT)', () => {
-    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'reading', 30, 40);
     const cells = no(TODAY, hv.attemptId);
     assert(!cells.some((d) => d.skill === 'reading'), `Reading đã có 30/40 mà vẫn bị tính nợ: ${JSON.stringify(cells)}`);
     const l = cells.find((d) => d.skill === 'listening');
-    assert(l && l.userId === teacherOf('MB-FOU 12', 'listening') && l.overdue === true,
+    assert(l && l.userId === teacherOf('MB FOU 12', 'listening') && l.overdue === true,
       `Listening chưa nhập phải nợ, đúng GV, quá hạn hôm thứ Hai 14/09: ${JSON.stringify(l)}`);
     const sunday = no('2026-09-13', hv.attemptId).find((d) => d.skill === 'listening');
     assert(sunday && sunday.overdue === false, `Chủ nhật 13/09 vẫn trong hạn: ${JSON.stringify(sunday)}`);
@@ -260,11 +260,11 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   });
 
   check('S12 · FT: chỉ W1 "-" thì W1 vẫn là nợ sau Chủ nhật (buổi Writing chưa phải vắng); trước Chủ nhật W1 "-" không nợ; W1 + W2 cùng "-" → chốt vắng, không ô nào nợ', () => {
-    const hv = taoHocVien({ classCode: 'MB-FT 101', weekStart: '2026-09-14' });
+    const hv = taoHocVien({ classCode: 'MB FT 101', weekStart: '2026-09-14' });
     attempts.saveScore(P.w1Teacher, hv.attemptId, 'writing1', { noShow: true }, '2026-09-16');
     const mid = no('2026-09-16', hv.attemptId);
     assert(!mid.some((d) => d.skill === 'writing1'), 'Trong tuần, W1 đã báo "không có bài" thì không nợ');
-    assert(mid.some((d) => d.skill === 'writing2' && d.userId === teacherOf('MB-FT 101', 'writing2')), 'W2 chưa nhập vẫn nợ, đúng GV W2');
+    assert(mid.some((d) => d.skill === 'writing2' && d.userId === teacherOf('MB FT 101', 'writing2')), 'W2 chưa nhập vẫn nợ, đúng GV W2');
     assert(no('2026-09-21', hv.attemptId).some((d) => d.skill === 'writing1'),
       'Sau Chủ nhật, W1 "-" mà W2 không "-" thì W1 vẫn là nợ — đúng như ô ở bảng chấm');
     attempts.saveScore(P.w2Teacher, hv.attemptId, 'writing2', { noShow: true }, '2026-09-18');
@@ -289,14 +289,14 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
 
   check('§6 · Học viên lớp thường không có lượt "planned" KHÔNG bị đếm "chưa có tuần MT" (lớp thường xếp lịch theo lớp)', () => {
     const before = countOf('no_plan');
-    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     conn.prepare(`UPDATE assessment_attempts SET status = 'done' WHERE id = ?`).run(hv.attemptId);
     assert(countOf('no_plan') === before, `Em lớp thường bị đếm vào "chưa có tuần MT": ${before} → ${countOf('no_plan')}`);
   });
 
   check('§6 · Lượt lớp thường đủ bốn môn (số câu đúng) KHÔNG còn "thiếu điểm"; thiếu một môn thì có', () => {
     const base = countOf('missing_scores');
-    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     assert(countOf('missing_scores') === base + 1, 'Lượt chưa có điểm nào phải được đếm thiếu điểm');
     for (const k of ['listening', 'reading', 'writing', 'speaking']) diem(hv.attemptId, k, 30, 40);
     assert(countOf('missing_scores') === base, `Đủ bốn môn mà vẫn "thiếu điểm": ${base} → ${countOf('missing_scores')}`);
@@ -308,12 +308,12 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   const signals: any = await import('../cases/signals.ts');
 
   check('S1 · Hai môn chưa đạt → hai tín hiệu riêng, mỗi cái về đúng GV dạy môn đó; không tự tạo Case', () => {
-    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'listening', 10, 40);
     diem(hv.attemptId, 'speaking', 5, 25);
     const l = tinHieu(hv.attemptId, 'listening'), s = tinHieu(hv.attemptId, 'speaking');
     assert(l && s && l.id !== s.id, 'Phải có hai tín hiệu riêng');
-    assert(l.owner_user_id === teacherOf('MB-FOU 12', 'listening') && s.owner_user_id === teacherOf('MB-FOU 12', 'speaking'),
+    assert(l.owner_user_id === teacherOf('MB FOU 12', 'listening') && s.owner_user_id === teacherOf('MB FOU 12', 'speaking'),
       `Sai người: L→${l.owner_user_id}, S→${s.owner_user_id}`);
     assert(l.status === 'pending' && s.status === 'pending', 'Lớp thường không tự tạo Case (Q-V3-1)');
     const n = (conn.prepare('SELECT COUNT(*) n FROM sos_cases WHERE student_id = ?').get(hv.sid) as any).n;
@@ -321,7 +321,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   });
 
   check('S1 · Tín hiệu lớp thường mang đủ dữ liệu cho dòng việc: loại, môn, số câu đúng/tổng, hạn, hai nút cho đúng người', () => {
-    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'listening', 20, 40);
     const sg = tinHieu(hv.attemptId, 'listening');
     const v = signals.signalDetail(pGvcnFou, sg.id) as any;
@@ -335,11 +335,11 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   });
 
   check('S1 · Không ai dạy môn đó → tín hiệu về GVCN, và GVCN xử lý được tín hiệu đó dù không dạy môn đó (Q1)', () => {
-    const cid = classId('MB-FOU 12');
+    const cid = classId('MB FOU 12');
     const ids = (conn.prepare(`SELECT id FROM teacher_assignments WHERE class_id = ? AND skill = 'speaking' AND status = 'active'`).all(cid) as any[]).map((r) => r.id);
     conn.prepare(`UPDATE teacher_assignments SET status = 'inactive' WHERE id IN (${ids.join(',')})`).run();
     try {
-      const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+      const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
       diem(hv.attemptId, 'speaking', 5, 25);
       const sg = tinHieu(hv.attemptId, 'speaking');
       const core = (conn.prepare(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active' LIMIT 1`).get(cid) as any).user_id;
@@ -358,7 +358,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     (conn.prepare('SELECT COUNT(*) n FROM audit_logs WHERE action = ? AND entity_id = ?').get(action, id) as any).n as number;
 
   check('S1 · Bỏ qua không lý do: tín hiệu thành "Đã bỏ qua", không có Case, có audit; bấm lần hai không đổi gì', () => {
-    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'listening', 10, 40);
     const sg = tinHieu(hv.attemptId, 'listening');
     signals.dismissSignal(pGvcnFou, sg.id, {});
@@ -374,7 +374,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   });
 
   check('S1 · Bỏ qua có lý do: lý do được giữ; GV môn khác không bỏ qua được; tín hiệu đã thành Case thì không bỏ qua được', () => {
-    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'listening', 10, 40);
     diem(hv.attemptId, 'reading', 10, 40);
     const l = tinHieu(hv.attemptId, 'listening'), r = tinHieu(hv.attemptId, 'reading');
@@ -387,7 +387,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   });
 
   check('S1 · Tín hiệu Fast Track không có nút Bỏ qua (FT tự tạo Case — đóng bằng "Không cần theo dõi")', () => {
-    const hv = taoHocVien({ classCode: 'MB-FT 101', weekStart: '2026-09-07' });
+    const hv = taoHocVien({ classCode: 'MB FT 101', weekStart: '2026-09-07' });
     const sg = signals.raiseSignal({
       actorUserId: P.admin.userId, studentId: hv.sid, cycleId: hv.cycleId, attemptId: hv.attemptId, classId: hv.cid,
       skill: 'reading', category: 'reading', detectedOn: '2026-09-07', silent: true,
@@ -401,7 +401,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   console.log('\nPR-S1 · 8. S1 — Tạo Case từ tín hiệu: đúng môn, đúng khoá, mốc mở mang điểm; Writing lớp thường');
 
   check('S1 · Tạo Case từ tín hiệu Listening: Case môn Listening của đúng khoá đó, tín hiệu "Đã thành Case", mốc mở ghi 10/40', () => {
-    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'listening', 10, 40);
     const sg = tinHieu(hv.attemptId, 'listening');
     const c = caseTuTinHieu(pGvcnFou, sg);
@@ -414,19 +414,19 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   });
 
   check('S1 · Tạo Case sai môn với tín hiệu bị từ chối (tín hiệu Listening không mở Case Reading)', () => {
-    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'listening', 10, 40);
     assertThrows(() => caseTuTinHieu(pGvcnFou, tinHieu(hv.attemptId, 'listening'), 'reading'), /đúng môn/, 'Case Reading từ tín hiệu Listening');
   });
 
   check('S1 · Tín hiệu Writing lớp thường tạo được Case Writing (một môn W); học viên FT không có Case "writing"', () => {
-    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'writing', 5, 20);
     const sg = tinHieu(hv.attemptId, 'writing');
     assert(sg.owner_user_id === pWritingFou.userId, 'Tín hiệu Writing phải về GV Writing');
     const c = caseTuTinHieu(pWritingFou, sg);
     assert((conn.prepare('SELECT category FROM sos_cases WHERE id = ?').get(c.id) as any).category === 'writing', 'Case phải là môn W');
-    const ft = taoHocVien({ classCode: 'MB-FT 101', weekStart: '2026-09-07' });
+    const ft = taoHocVien({ classCode: 'MB FT 101', weekStart: '2026-09-07' });
     assertThrows(() => cases.reportIssue(P.mbManager, {
       studentId: ft.sid, topic: 'writing', title: 'Writing chung của FT', summary: 'FT phải tách W1 và W2, không có Writing chung.',
       primaryCode: domain.issuesForTopic('writing')[0].code,
@@ -434,7 +434,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   });
 
   check('S1 · Tạo Case từ tín hiệu mà gửi kèm khoá KHÁC khoá của tín hiệu → từ chối (Case phải nằm đúng khoá của tín hiệu)', () => {
-    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'listening', 10, 40);
     const sg = tinHieu(hv.attemptId, 'listening');
     const other = Number(conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, programme_code, started_at, status, created_at)
@@ -454,7 +454,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   });
 
   check('S1 · Tín hiệu đã Bỏ qua không mở Case được nữa', () => {
-    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'reading', 10, 40);
     const sg = tinHieu(hv.attemptId, 'reading');
     signals.dismissSignal(pGvcnFou, sg.id, {});
@@ -468,7 +468,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   const metricsSvc: any = await import('../worklist/metrics.ts');
 
   check('S1 · Việc cần làm của GV môn đó có MỘT dòng cho mỗi tín hiệu, kèm loại, môn, điểm, hạn, hai nút; GV khác không thấy', () => {
-    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'listening', 12, 40);
     diem(hv.attemptId, 'speaking', 6, 25);
     const l = tinHieu(hv.attemptId, 'listening'), s = tinHieu(hv.attemptId, 'speaking');
@@ -483,7 +483,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   });
 
   check('S1 · Chỉ số tin-hieu-qua-han: tín hiệu lớp thường chờ quá 3 ngày có; chưa quá hạn thì không; đã bỏ qua thì không', () => {
-    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'listening', 10, 40);
     diem(hv.attemptId, 'reading', 10, 40);
     diem(hv.attemptId, 'speaking', 5, 25);
@@ -502,7 +502,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   console.log('\nPR-S1 · 10. RB-8 — sửa điểm nhập nhầm ở lớp thường: rút tín hiệu, rút Case không còn căn cứ, giữ Case có việc thật');
 
   check('RB-8 · Lớp thường: sửa 10/40 thành 30/40 → tín hiệu đang chờ bị thu hồi "Không còn hợp lệ do sửa điểm"', () => {
-    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'listening', 10, 40);
     diem(hv.attemptId, 'listening', 30, 40);
     const sg = tinHieu(hv.attemptId, 'listening');
@@ -510,7 +510,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   });
 
   check('RB-8 · Lớp thường: Case mở từ tín hiệu, chưa có việc gì → sửa điểm thành đạt thì Case được rút (đóng, có lý do), lịch sử giữ', () => {
-    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'listening', 10, 40);
     const c = caseTuTinHieu(pGvcnFou, tinHieu(hv.attemptId, 'listening'));
     diem(hv.attemptId, 'listening', 30, 40);
@@ -521,7 +521,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   });
 
   check('RB-8 · Lớp thường: Case đã có phương án đang chạy → sửa điểm KHÔNG đóng Case, chỉ nhắc người phụ trách xem lại', () => {
-    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'listening', 10, 40);
     const c = caseTuTinHieu(pGvcnFou, tinHieu(hv.attemptId, 'listening'));
     cases.recordIntervention(pGvcnFou, c.id, {
@@ -535,7 +535,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   });
 
   check('RB-8 · Không đóng Case vô cớ: Giữa khoá trượt → Case có việc; Cuối khoá đạt cả bốn môn → Case vẫn mở, hạ mức về 0, có mốc "đã đạt"', () => {
-    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-08-24' });
+    const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-08-24' });
     diem(hv.attemptId, 'listening', 10, 40);
     const c = caseTuTinHieu(pGvcnFou, tinHieu(hv.attemptId, 'listening'));
     cases.recordIntervention(pGvcnFou, c.id, {
@@ -553,8 +553,8 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
 
   console.log('\nPR-S1 · 11. RB-6 — GVCN chỉ hoàn thành Case đúng môn mình dạy; Quản lý hoàn thành mọi Case trong phạm vi');
 
-  check('RB-6 · GVCN MB-FT 101 (dạy L, R): hoàn thành được Case Listening, KHÔNG được Case Speaking; Quản lý được cả hai; GVBM Speaking không (luật cũ giữ)', () => {
-    const hv = taoHocVien({ classCode: 'MB-FT 101', weekStart: '2026-09-07' });
+  check('RB-6 · GVCN MB FT 101 (dạy L, R): hoàn thành được Case Listening, KHÔNG được Case Speaking; Quản lý được cả hai; GVBM Speaking không (luật cũ giữ)', () => {
+    const hv = taoHocVien({ classCode: 'MB FT 101', weekStart: '2026-09-07' });
     const mk = (topic: string) => cases.reportIssue(P.mbManager, {
       studentId: hv.sid, topic, title: `Case ${topic} (RB-6)`, summary: 'Case dựng riêng cho phép kiểm quyền hoàn thành Case.',
       primaryCode: domain.issuesForTopic(topic)[0].code, parallel: true,
@@ -594,7 +594,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   const auditSys = (caseId: number) => auditN('case.system_close', caseId);
 
   check('S16 · Hoàn tất lộ trình KHÔNG kèm cờ dongCaseKhiKetThuc (đường "Lên lớp thường tiếp" của PR-LT) → Case vẫn MỞ, đi theo em', () => {
-    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     const x = caseCoViec(hv);
     cycles.updateCycle(P.mbManager, hv.cycleId, { status: 'completed' });
     const c = conn.prepare('SELECT status, system_close_reason AS r FROM sos_cases WHERE id = ?').get(x.caseId) as any;
@@ -603,7 +603,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   });
 
   check('S16 · Kết thúc học (cờ dongCaseKhiKetThuc) còn Case mở → Case đóng "Học viên kết thúc khoá": không có kết quả, PA chưa làm huỷ và KHÔNG tính, PA đã xong giữ và VẪN tính hiệu quả, audit + mốc + hành trình, tín hiệu chờ thu hồi', () => {
-    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     const x = caseCoViec(hv);
     diem(hv.attemptId, 'reading', 10, 40);                              // tín hiệu Reading còn chờ
     assert(effectiveness.planOutcomes({ studentIds: [hv.sid] }).some((r: any) => r.id === x.done), 'Tiền đề: PA đã xong phải vào thống kê trước');
@@ -631,8 +631,8 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   });
 
   check('S16 · Học viên chuyển "Đã kết thúc" → Case mở đóng "Học viên kết thúc khoá"; "Tạm dừng" thì KHÔNG đóng', () => {
-    const a = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
-    const b = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    const a = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
+    const b = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     const xa = caseCoViec(a), xb = caseCoViec(b);
     students.setStudentStatus(P.mbManager, a.sid, 'finished', TODAY, 'Nghỉ học');
     students.setStudentStatus(P.mbManager, b.sid, 'inactive', TODAY, 'Tạm nghỉ ốm');
@@ -643,7 +643,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
 
   check('S16 · FT "Kết luận lộ trình": kèm cờ dongCaseKhiKetThuc (em thôi học) → đóng Case; không cờ (học tiếp) → Case giữ', () => {
     const mk = () => {
-      const hv = taoHocVien({ classCode: 'MB-FT 101', weekStart: '2026-09-07' });
+      const hv = taoHocVien({ classCode: 'MB FT 101', weekStart: '2026-09-07' });
       const c = cases.reportIssue(P.mbManager, {
         studentId: hv.sid, cycleId: hv.cycleId, topic: 'reading', title: 'Reading (S16 FT)', summary: 'Case FT dựng cho phép kiểm kết luận lộ trình.',
         primaryCode: domain.issuesForTopic('reading')[0].code, parallel: true,
@@ -660,7 +660,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   });
 
   check('S17 · Đổi chương trình: sang lớp thường đóng Case FT "Chuyển sang lớp thường"; sang FT đóng Case lớp thường "Chuyển sang Fast Track"; Case chương trình kia giữ', () => {
-    const hv = taoHocVien({ classCode: 'MB-FT 101', weekStart: '2026-09-07' });
+    const hv = taoHocVien({ classCode: 'MB FT 101', weekStart: '2026-09-07' });
     const ftCase = cases.reportIssue(P.mbManager, {
       studentId: hv.sid, cycleId: hv.cycleId, topic: 'writing1', title: 'Writing Task 1 (S17)', summary: 'Case FT dựng cho phép kiểm đổi chương trình.',
       primaryCode: domain.issuesForTopic('writing1')[0].code, parallel: true,
@@ -707,7 +707,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
 
   console.log('\nPR-S1 · 14. RB-3 — chuyển lớp: lý do bắt buộc (chọn nhanh), lưu ý bàn giao bắt buộc hoặc "Không có lưu ý"');
   const studentsSvc: any = await import('../students/students.ts');
-  const targetClass = classId('MB-FT 102');
+  const targetClass = classId('MB FT 102');
 
   check('RB-3 · transferReasonText: bốn lựa chọn đúng chữ; "Khác" phải ghi rõ; mã lạ bị từ chối', () => {
     assert(domain.transferReasonText('doi_lich_hoc') === 'Đổi lịch học', domain.transferReasonText('doi_lich_hoc'));
@@ -719,7 +719,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   });
 
   check('RB-3 · Không lý do → từ chối; không lưu ý và không chọn "Không có lưu ý" → từ chối; chọn "Không có lưu ý" → chuyển được, hành trình ghi rõ', () => {
-    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     assertThrows(() => studentsSvc.transferStudent(P.mbManager, hv.sid, targetClass, TODAY, '  '), /lý do/, 'Chuyển lớp không lý do');
     assertThrows(() => studentsSvc.transferStudent(P.mbManager, hv.sid, targetClass, TODAY, 'Đổi lịch học', {}),
       /Không có lưu ý/, 'Chuyển lớp không lưu ý bàn giao');
@@ -730,7 +730,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   });
 
   check('RB-3 · Em còn Case mở thì KHÔNG được chọn "Không có lưu ý" — phải ghi bàn giao (Q10)', () => {
-    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'listening', 10, 40);
     caseTuTinHieu(pGvcnFou, tinHieu(hv.attemptId, 'listening'));
     assertThrows(() => studentsSvc.transferStudent(P.mbManager, hv.sid, targetClass, TODAY, 'Đổi lịch học', { noNote: true }),
@@ -743,7 +743,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
 
   check('RB-9 · Không còn hàm tự lưu trữ sau N ngày; Quản lý lưu trữ / bỏ lưu trữ được em đã kết thúc, có audit; GV không được; em đang học không lưu trữ được', () => {
     assert(!('archiveDueStudents' in studentsSvc) && domain.ARCHIVE_AFTER_DAYS === undefined, 'Còn đường tự lưu trữ sau N ngày');
-    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     assertThrows(() => studentsSvc.archiveStudent(P.mbManager, hv.sid), /đã kết thúc/, 'Lưu trữ em đang học');
     studentsSvc.setStudentStatus(P.mbManager, hv.sid, 'finished', TODAY, 'Kết thúc');
     /* PR-XOA §2: Kết thúc học đã tự lưu trữ — bỏ lưu trữ trước để thử lại đúng nút Lưu trữ của Quản lý. */

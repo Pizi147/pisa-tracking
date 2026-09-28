@@ -334,7 +334,7 @@ export async function runYThucTests(t: YThucTestKit) {
   const { loadPrincipal } = await import('../permissions.ts');
   const viol = await import('../yThuc/violations.ts');
 
-  const CLASS = t.classId('MB-FT 101');
+  const CLASS = t.classId('MB FT 101');
   const one = (sql: string, ...args: unknown[]) => (conn.prepare(sql).get(...args) as any)?.n as number;
   /** Học viên mới, riêng cho từng phép kiểm, để số đếm của phép này không lẫn với phép khác. */
   const makeStudent = (name: string, classId = CLASS): { id: number; cycleId: number } => {
@@ -875,8 +875,8 @@ export async function runYThucTests(t: YThucTestKit) {
     return { id: st.id, ids };
   };
 
-  /** Lớp riêng cho phép kiểm W05 để số đếm không lẫn với dữ liệu của lớp khác. GVCN của lớp là `outsider` (giáo viên MB không dạy MB-FT 101). */
-  const makeClassForWarnings = (code = 'MB-FT PJW05') => {
+  /** Lớp riêng cho phép kiểm W05 để số đếm không lẫn với dữ liệu của lớp khác. GVCN của lớp là `outsider` (giáo viên MB không dạy MB FT 101). */
+  const makeClassForWarnings = (code = 'MB FT PJW05') => {
     const mbId = (conn.prepare("SELECT id FROM branches WHERE code = 'MB'").get() as any).id as number;
     const c = intake.createClass(P.admin, { code, branchId: mbId, kind: 'FT', isFastTrack: true, startDate: '2026-08-03' }) as any;
     conn.prepare(`INSERT INTO teacher_assignments (class_id, user_id, skill, is_core, status, effective_from, created_at) VALUES (?, ?, NULL, 1, 'active', '2026-01-01', ?)`)
@@ -1179,7 +1179,7 @@ export async function runYThucTests(t: YThucTestKit) {
   const board = await import('../yThuc/board.ts');
 
   check('PR-J · J9 Ba khu vực của lớp (Y03): vi phạm chưa xử lý gom theo HỌC VIÊN kèm tuổi, biện pháp đang chuẩn bị đủ, lịch sử chỉ 3 dòng; GVBM đọc được nhưng không có quyền tạo', () => {
-    const cls = makeClassForWarnings('MB-FT PJBRD');
+    const cls = makeClassForWarnings('MB FT PJBRD');
     const who = loadPrincipal(cls.gvcn);
     const a = withUnhandledIn(cls, 'BRD A', [9, 6, 1]);
     const b = withUnhandledIn(cls, 'BRD B', [2]);
@@ -1187,7 +1187,7 @@ export async function runYThucTests(t: YThucTestKit) {
     const empty = makeStudent('BRD D', cls.id);
     const { classViolationBoard } = board;
     const bd = classViolationBoard(who, cls.id) as any;
-    assert(bd.classCode === 'MB-FT PJBRD' && bd.canManage === true, 'GVCN của lớp có quyền xử lý');
+    assert(bd.classCode === 'MB FT PJBRD' && bd.canManage === true, 'GVCN của lớp có quyền xử lý');
     assert(bd.unhandled.total === 6 && bd.unhandled.studentCount === 3, `6 vi phạm của 3 học viên (hai đơn vị khác nhau, không cộng): ${bd.unhandled.total}/${bd.unhandled.studentCount}`);
     assert(bd.unhandled.students.map((s: any) => s.studentId).join() === [a.id, c.id, b.id].join(), 'Học viên xếp theo vi phạm cũ nhất trước (9 ngày, 8 ngày, 2 ngày)');
     assert(!bd.unhandled.students.some((s: any) => s.studentId === empty.id), 'Học viên không có vi phạm không xuất hiện');
@@ -1226,7 +1226,7 @@ export async function runYThucTests(t: YThucTestKit) {
     const kept = viol.recordViolation(gvbm, { studentId: st.id, category: 'attendance', description: 'Nghỉ một buổi không xin phép', occurredOn: addDays(TODAY, -2) } as any) as any;
     const prep = meas.createMeasure(gvcn, { studentId: st.id, kind: 'talk_short', violationIds: [kept.violation.id] });
     /* Em chuyển sang lớp khác cùng chi nhánh: ghi danh cũ đóng, ghi danh mới mở. */
-    const newCls = t.classId('MB-FT 102');
+    const newCls = t.classId('MB FT 102');
     conn.prepare("UPDATE enrollments SET status = 'transferred', ended_at = ? WHERE student_id = ? AND status = 'active'").run(TODAY, st.id);
     conn.prepare("INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?, ?, 'active', ?, ?)").run(st.id, newCls, TODAY, TODAY + 'T00:00:00.000Z');
     const gvcnNew = loadPrincipal((conn.prepare("SELECT user_id AS id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active' LIMIT 1").get(newCls) as any).id);
@@ -1246,7 +1246,7 @@ export async function runYThucTests(t: YThucTestKit) {
   const permsMod = await import('../permissions.ts');
 
   check('PR-K3 · K3-1 (§7.1) Bảng ba khu vực trả recentByStudent: tối đa 3 biện pháp MỚI NHẤT của TỪNG học viên, không phải của cả lớp', () => {
-    const cls = makeClassForWarnings('MB-FT PK31');
+    const cls = makeClassForWarnings('MB FT PK31');
     const who = loadPrincipal(cls.gvcn);
     const a = makeStudent('K31 A', cls.id);
     const b = makeStudent('K31 B', cls.id);
@@ -1268,13 +1268,13 @@ export async function runYThucTests(t: YThucTestKit) {
   });
 
   check('PR-K3 · K3-5 canRecord của bảng ba khu vực: GVBM dạy lớp trái môn → true; giáo viên không dạy lớp thì máy chủ từ chối cả quyền ghi vi phạm (không riêng gì bảng); Quản lý cùng chi nhánh → true, chi nhánh khác thì không đọc được bảng', () => {
-    const cls = makeClassForWarnings('MB-FT PK35');
+    const cls = makeClassForWarnings('MB FT PK35');
     conn.prepare(`INSERT INTO teacher_assignments (class_id, user_id, skill, is_core, status, effective_from, created_at) VALUES (?, ?, 'writing1', 0, 'active', '2026-01-01', ?)`)
       .run(cls.id, gvbm.userId, new Date().toISOString());
     const bdGvbm = board.classViolationBoard(loadPrincipal(gvbm.userId), cls.id) as any;
     assert(bdGvbm.canRecord === true, 'GVBM dạy lớp (trái môn, chỉ Writing 1) vẫn ghi vi phạm được — Ý thức không theo C02');
     assert(permsMod.can(loadPrincipal(gvbm.userId), domain.PERMISSIONS.VIOLATION_RECORD, { classId: cls.id }) === true, 'Khớp đúng quyền violation.record mà máy chủ dùng để tính canRecord');
-    /* gvbm2 không có phân công nào ở lớp mới này (chỉ dạy lớp CLASS = MB-FT 101) — không đọc được bảng, đồng nghĩa không ghi vi phạm được ở lớp này. */
+    /* gvbm2 không có phân công nào ở lớp mới này (chỉ dạy lớp CLASS = MB FT 101) — không đọc được bảng, đồng nghĩa không ghi vi phạm được ở lớp này. */
     assertThrows(() => board.classViolationBoard(gvbm2, cls.id), /phạm vi|quyền/, 'Giáo viên không dạy lớp vẫn đọc được bảng (và do đó vẫn có canRecord)');
     assert(permsMod.can(gvbm2, domain.PERMISSIONS.VIOLATION_RECORD, { classId: cls.id }) === false, 'Giáo viên không dạy lớp không có quyền violation.record ở lớp đó');
     const bdMb = board.classViolationBoard(P.mbManager, cls.id) as any;
@@ -1403,7 +1403,7 @@ export async function runYThucTests(t: YThucTestKit) {
     for (const [i, n] of [[1, 'Quản trị'], [2, 'Cô Hà']] as const) {
       q(`INSERT INTO users (id, code, full_name, email, title, password_hash, password_salt, status, created_at) VALUES (?,?,?,?,?,?,?,?,?)`, i, `NV${i}`, n, `u${i}@x.vn`, 'GV', 'h', 's', 'active', NOW);
     }
-    q(`INSERT INTO classes (id, code, branch_id, kind, status, created_at) VALUES (1, 'MB-FT 1', 1, 'FT', 'active', ?)`, NOW);
+    q(`INSERT INTO classes (id, code, branch_id, kind, status, created_at) VALUES (1, 'MB FT 1', 1, 'FT', 'active', ?)`, NOW);
     for (const i of [1, 2]) {
       q(`INSERT INTO students (id, student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?,1,'active',?)`, i, `PISA${i}`, `Em ${i}`, `em ${i}`, NOW);
       q(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,1,'active','2026-08-01',?)`, i, NOW);
@@ -1598,7 +1598,7 @@ export async function runYThucTests(t: YThucTestKit) {
   });
 
   check('PR-J · J9 Máy chủ TỪ CHỐI báo case với chủ đề Ý thức cũ (BTVN · Chuyên cần · Tham gia) — Ý thức nay là vi phạm, không đi qua cửa case', () => {
-    const st = conn.prepare("SELECT s.id FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active' WHERE e.class_id = ? LIMIT 1").get(t.classId('MB-FT 101')) as any;
+    const st = conn.prepare("SELECT s.id FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active' WHERE e.class_id = ? LIMIT 1").get(t.classId('MB FT 101')) as any;
     const before = (conn.prepare('SELECT COUNT(*) n FROM sos_cases').get() as any).n;
     for (const topic of ['homework', 'attendance', 'participation']) {
       let threw = false;

@@ -2,7 +2,7 @@
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runPrLopTests(t: YThucTestKit) {
-  const { check, assert } = t;
+  const { check, assert, conn } = t;
   const d = await import('../../../shared/domain/index.ts');
   console.log('\nPR-LOP · Tạo lớp, tên lớp, RF, Pre FOU, phân công');
 
@@ -58,5 +58,31 @@ export async function runPrLopTests(t: YThucTestKit) {
     assert(mr === '1:null 1:tong_hop', `Pre FOU: GVCN tự nhận ô Tổng hợp → ${mr}`);
     assert(d.moRongPhanCong('PREFOU', ['tong_hop'], []).length === 0 && d.moRongPhanCong('BE', d.REGULAR_SKILLS, [s(1, null)]).length === 1, 'không GVCN / lớp khác: giữ nguyên');
     assert(loi('FT', d.ENTRY_SKILLS, []) === '' && loi('FT', d.ENTRY_SKILLS, [s(2, 'reading')]) === '', 'thiếu phân công vẫn tạo được (L4)');
+  });
+  const mig: any = await import('../migrate/prLop.ts');
+  check('LOP (3) · migrate: cột số tuần, RF, PREFOU, đổi tên bỏ qua va chạm, chạy lại không đổi (T2, T78, K5-68)', () => {
+    /* DB test dựng từ schema.sql đã có chỉ mục chuẩn hoá — gỡ đi để giả một DB cũ còn hai lớp va chạm; lần migrate thứ 3 tạo lại. */
+    conn.exec('DROP INDEX IF EXISTS ux_classes_ma_chuan');
+    const mb = (conn.prepare("SELECT id FROM branches WHERE code = 'MB'").get() as any).id;
+    const them = (code: string, pc: string, r: string | null) => Number(conn.prepare(
+      `INSERT INTO classes (code, branch_id, kind, programme_code, route, is_fast_track, status, created_at)
+       VALUES (?,?,?,?,?,?, 'active', ?)`).run(code, mb, pc, pc, r, pc === 'FT' ? 1 : 0, '2026-09-28').lastInsertRowid);
+    const a = them('MB-FT 7771', 'FT', 'LT1'); const b = them('MB-BE 7772', 'BE', null);
+    const c1 = them('MB-FT 7773', 'FT', 'LT1'); const c2 = them('mb ft 7773x', 'FT', 'LT1');   // khác mẫu nhưng không va
+    const v1 = them('MB-FT 7774', 'FT', 'LT1'); const v2 = them('MB FT 7774', 'FT', 'LT1');    // va chạm khi so chuẩn hoá
+    const kh = mig.keHoachDoiTenLop(conn);
+    assert(kh.doi.some((x: any) => x.id === a && x.moi === 'MB FT 7771') && kh.doi.some((x: any) => x.id === b), JSON.stringify(kh.doi.slice(0, 3)));
+    assert([v1, v2].every((id) => kh.vaCham.some((x: any) => x.id === id)) && !kh.doi.some((x: any) => x.id === v1), 'va chạm phải bỏ qua');
+    const applied: string[] = []; mig.migratePrLop(conn, applied);
+    const ma = (id: number) => (conn.prepare('SELECT code, so_tuan FROM classes WHERE id = ?').get(id) as any);
+    assert(ma(a).code === 'MB FT 7771' && ma(b).code === 'MB BE 7772' && ma(b).so_tuan === 10 && ma(v1).code === 'MB-FT 7774', JSON.stringify([ma(a), ma(b), ma(v1)]));
+    assert(!!conn.prepare("SELECT 1 FROM routes WHERE code = 'RF'").get() && (conn.prepare(
+      "SELECT weeks FROM programmes WHERE code = 'PREFOU'").get() as any)?.weeks === 5, 'RF / PREFOU');
+    assert((conn.prepare("SELECT skill FROM programme_skills WHERE programme_code = 'PREFOU'").get() as any)?.skill === 'tong_hop', 'ô tong_hop');
+    const lan2: string[] = []; mig.migratePrLop(conn, lan2);
+    assert(!lan2.some((x) => /Đổi tên|Thêm/.test(x)), `chạy lại vẫn đổi: ${lan2.join(' · ')}`);
+    conn.prepare(`DELETE FROM classes WHERE id IN (${[a, b, c1, c2, v1, v2].map(() => '?').join(',')})`).run(a, b, c1, c2, v1, v2);
+    const lan3: string[] = []; mig.migratePrLop(conn, lan3);
+    assert(!!conn.prepare("SELECT name FROM sqlite_master WHERE name = 'ux_classes_ma_chuan'").get(), `hết va chạm phải tạo chỉ mục: ${lan3.join(' · ')}`);
   });
 }

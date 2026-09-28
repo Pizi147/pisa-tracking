@@ -1,5 +1,5 @@
 import { db, tx } from '../db.ts';
-import { MOCK_FT_STUDY_WEEK, PERMISSIONS, PROGRAMME_TEMPLATES, programmeOf, type Route } from '../../../shared/domain/index.ts';
+import { MOCK_FT_STUDY_WEEK, PERMISSIONS, PROGRAMME_TEMPLATES, chuanHoaMaLop, programmeOf, type Route } from '../../../shared/domain/index.ts';
 import { activeRouteCodes } from '../platform/sysconfig.ts';
 import { addDays, badRequest, isIsoDate, normalizeName, notFound, nowIso, padCode } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
@@ -507,11 +507,12 @@ export function createClass(p: Principal, input: {
   if (!branch) throw notFound('Không tìm thấy chi nhánh');
   const code = (input.code ?? '').trim();
   if (!code) throw badRequest('Cần mã lớp.');
-  // Mã lớp luôn bắt đầu bằng mã chi nhánh.
-  if (!code.toUpperCase().startsWith(`${branch.code.toUpperCase()}-`)) {
+  // Mã lớp luôn bắt đầu bằng mã chi nhánh — nhận tên cũ `CN-` lẫn mới `CN ` (Q5).
+  if (!new RegExp(`^${branch.code}[\\s-]`, 'i').test(code)) {
     throw badRequest(`Mã lớp phải bắt đầu bằng "${branch.code}-", ví dụ ${branch.code}-FT 101.`);
   }
-  if (conn.prepare('SELECT id FROM classes WHERE code = ?').get(code)) throw badRequest(`Đã có lớp ${code}.`);
+  // Trùng so bằng mã chuẩn hoá (bỏ "-", khoảng trắng, hoa/thường) — khớp chỉ mục ux_classes_ma_chuan (Q3, K5-68).
+  if (conn.prepare("SELECT id FROM classes WHERE lower(replace(replace(code, '-', ''), ' ', '')) = ?").get(chuanHoaMaLop(code))) throw badRequest(`Đã có lớp ${code}.`);
   if (input.startDate && !isIsoDate(input.startDate)) throw badRequest('Ngày khai giảng không hợp lệ.');
 
   return tx(() => {

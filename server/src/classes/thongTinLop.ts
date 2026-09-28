@@ -4,7 +4,7 @@
  * sau đã có "Chuyển tiếp lớp". Quyền `class.edit` — cùng quyền với "Lộ trình lớp / Lịch kiểm tra".
  */
 import { db, tx } from '../db.ts';
-import { PERMISSIONS, PROGRAMME_TEMPLATES, ROUTES, programmeOf } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, PROGRAMME_TEMPLATES, ROUTES, chuanHoaMaLop, programmeOf } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, notFound } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
@@ -25,10 +25,12 @@ export function capNhatThongTinLop(
     const code = String(input.code ?? '').trim();
     if (!code) throw badRequest('Cần mã lớp.');
     const tienTo = String(c.branch_code);
-    if (!code.toUpperCase().startsWith(`${tienTo.toUpperCase()}-`)) {
+    if (!new RegExp(`^${tienTo}[\\s-]`, 'i').test(code)) {   // nhận tên cũ `CN-` lẫn mới `CN ` (Q5); mẫu đầy đủ ở Task 7
       throw badRequest(`Mã lớp phải bắt đầu bằng "${tienTo}-", ví dụ ${tienTo}-FT 101.`);
     }
-    if (conn.prepare('SELECT id FROM classes WHERE code = ? AND id != ?').get(code, classId)) throw badRequest(`Đã có lớp ${code}.`);
+    if (conn.prepare("SELECT id FROM classes WHERE lower(replace(replace(code, '-', ''), ' ', '')) = ? AND id != ?").get(chuanHoaMaLop(code), classId)) {
+      throw badRequest(`Đã có lớp ${code}.`);   // so chuẩn hoá — khớp chỉ mục ux_classes_ma_chuan (Q3)
+    }
     moi.code = code;
   }
   if (input.note !== undefined) moi.note = String(input.note ?? '').trim() || null;

@@ -232,14 +232,14 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     async xoa(khoa: string) { tepDaXoa.push({ khoa, trongGiaoDich: !!conn.inTransaction }); },
   };
 
-  const FT = t.classId('MB-FT 101');
+  const FT = t.classId('MB FT 101');
   const KY = (conn.prepare('SELECT id FROM report_periods ORDER BY id LIMIT 1').get() as any).id as number;
   const U = P.admin.userId;
   let xSeq = 0;
   const ins = (sql: string, ...a: unknown[]) => Number(conn.prepare(sql).run(...a).lastInsertRowid);
 
   /**
-   * FIXTURE: một em mới ở MB-FT 101 có ≥ 1 dòng ở MỌI bảng của bao đóng — 2 lộ trình, 2 (+`soLuotThem`) lượt Test, Case có PA + ghi kết quả +
+   * FIXTURE: một em mới ở MB FT 101 có ≥ 1 dòng ở MỌI bảng của bao đóng — 2 lộ trình, 2 (+`soLuotThem`) lượt Test, Case có PA + ghi kết quả +
    * điều chỉnh PA + mốc + nguồn + lịch sử + tín hiệu, vi phạm + lịch sử + PA xử lý + dòng nối, Phối hợp SOS, xin dời lịch, ước lượng,
    * hành trình, Lộ trình tiếp theo, `task_students`, `task_case_links`; 5 tệp (mỗi `owner_type` một), 9 thông báo (mỗi `entity_type` một).
    */
@@ -361,7 +361,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
   check('PR-XOA X13 · xemXoaHocVien khớp fixture; viewer.coTheXoa chỉ Quản trị hệ thống', () => {
     const x = xoaHV.xemXoaHocVien(P.admin, S.sid);
     const so = Object.fromEntries(x.mat.map((m) => [m.khoa, m.so]));
-    assert(x.ma === S.ma && x.ten === S.ten && x.lop === 'MB-FT 101' && x.dangHoc === true, JSON.stringify({ ...x, mat: undefined }));
+    assert(x.ma === S.ma && x.ten === S.ten && x.lop === 'MB FT 101' && x.dangHoc === true, JSON.stringify({ ...x, mat: undefined }));
     assert(so.luotTest === 2 && so.diem === 1 && so.caseHocThuat === 1 && so.paHocThuat === 1 && so.ghiKetQua === 1 && so.tinHieu === 1
       && so.viPham === 1 && so.paXuLy === 1 && so.phoiHop === 1 && so.tep === 5 && so.thongBao === 9 && so.lopTungHoc === 1, JSON.stringify(so));
     assert(x.mat.every((m) => m.so > 0 && m.nhan), 'mat chỉ gồm loại > 0, có nhãn');
@@ -602,7 +602,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     assert(!user(a.id) && demTro(a.id) === 0, `còn dòng trỏ tài khoản đã xoá hẳn: ${demTro(a.id)}`);
   });
 
-  /* GVBM thử: có điểm đã nhập + Case báo và đang phụ trách + dạy Reading MB-FT 101; có phiên đang mở. */
+  /* GVBM thử: có điểm đã nhập + Case báo và đang phụ trách + dạy Reading MB FT 101; có phiên đang mở. */
   let gv = { id: 0, email: '', ten: '' };
   let tokenGv = '';
   let caseGv = 0;
@@ -683,7 +683,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     const gvcnId = P.normalCoreTeacher.userId;
     const truoc = JSON.stringify(user(gvcnId));
     const x = xoaTK.xemXoaTaiKhoan(P.admin, gvcnId);
-    assert(/^Đổi GVCN lớp .*MB-FOU 12.* trước\.$/.test(String(x.chan)), String(x.chan));
+    assert(/^Đổi GVCN lớp .*MB FOU 12.* trước\.$/.test(String(x.chan)), String(x.chan));
     assert(maLoi(() => xoaTK.xoaTaiKhoan(P.admin, gvcnId, { emailXacNhan: user(gvcnId).email })) === 400, 'GVCN phải 400');
     assert(JSON.stringify(user(gvcnId)) === truoc, 'bị chặn mà vẫn đổi');
   });
@@ -695,12 +695,12 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     const cs = conn.prepare(`SELECT id FROM sos_cases WHERE status != 'done' AND id != ? ORDER BY id DESC LIMIT 2`).all(caseGv) as any[];
     for (const r of cs) conn.prepare('UPDATE sos_cases SET owner_user_id = ? WHERE id = ?').run(g.id, r.id);
     const x = xoaTK.xemXoaTaiKhoan(P.admin, g.id);
-    assert(x.canhBao.includes('Lớp MB-FT 101 sẽ thiếu GV môn Reading.'), x.canhBao.join(' | '));
+    assert(x.canhBao.includes('Lớp MB FT 101 sẽ thiếu GV môn Reading.'), x.canhBao.join(' | '));
     /* Cùng môn ở lớp thứ hai → vẫn MỘT dòng, gộp mã lớp. */
     conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at)
-                  VALUES (?, ?, 'reading', 0, '2026-01-01', 'active', ?)`).run(g.id, t.classId('MB-FOU 12'), new Date().toISOString());
+                  VALUES (?, ?, 'reading', 0, '2026-01-01', 'active', ?)`).run(g.id, t.classId('MB FOU 12'), new Date().toISOString());
     const x2 = xoaTK.xemXoaTaiKhoan(P.admin, g.id);
-    assert(x2.canhBao.includes('Lớp MB-FOU 12, MB-FT 101 sẽ thiếu GV môn Reading.') && x2.canhBao.filter((c) => /thiếu GV môn/.test(c)).length === 1,
+    assert(x2.canhBao.includes('Lớp MB FOU 12, MB FT 101 sẽ thiếu GV môn Reading.') && x2.canhBao.filter((c) => /thiếu GV môn/.test(c)).length === 1,
       x2.canhBao.join(' | '));
     assert(x.canhBao.some((c) => c === `Còn ${cs.length} Case/việc đang giao cho người này — đổi người phụ trách sau khi xoá.`), x.canhBao.join(' | '));
   });

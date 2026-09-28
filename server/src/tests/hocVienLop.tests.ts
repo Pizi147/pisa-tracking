@@ -3,7 +3,7 @@
  * kiểm kê Q1–Q5, Q10–Q13, K2-6a, YT-8). Tên mỗi phép kiểm bắt đầu bằng "PR-Qa ·".
  *
  * Harness do `run.ts` sở hữu và truyền vào — file này không tự mở database. Lớp và học viên dùng để đếm do CHÍNH file này tạo
- * (mã lớp "MB-FT QA…", "MB-FOU QA…"), nên số đếm không lẫn dữ liệu demo. Ngày demo cố định TODAY = 2026-09-14 (thứ Hai).
+ * (mã lớp "MB FT QA…", "MB FOU QA…"), nên số đếm không lẫn dữ liệu demo. Ngày demo cố định TODAY = 2026-09-14 (thứ Hai).
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
 
@@ -261,8 +261,8 @@ export async function runHocVienLopTests(t: YThucTestKit) {
         .run(attemptId, k, s, tong, P.admin.userId, NOW);
     }
   };
-  const LOP_FT = taoLop('MB-FT QA1', 'FT');
-  const LOP_THUONG = taoLop('MB-FOU QA1', 'FOU');
+  const LOP_FT = taoLop('MB FT QA1', 'FT');
+  const LOP_THUONG = taoLop('MB FOU QA1', 'FOU');
 
   // ------------------------------------------------------------------ Task 4 · Standing
 
@@ -324,30 +324,30 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     const r = hvl.danhSachHocVienLop(P.admin, { q: 'Tim Kiem Duy Nhat' });
     assert(r.rows.some((x: any) => x.id === LOP_FT), 'Lớp chứa em phải hiện');
     eq(r.hocVien.map((h: any) => h.id), [e.sid], 'Chỉ em khớp được đếm');
-    const c = hvl.danhSachHocVienLop(P.admin, { q: 'MB-FT QA1' });
+    const c = hvl.danhSachHocVienLop(P.admin, { q: 'MB FT QA1' });
     const soEm = (conn.prepare(`SELECT COUNT(*) AS n FROM enrollments WHERE class_id = ? AND status = 'active'`).get(LOP_FT) as any).n;
     assert(c.rows.length === 1 && c.hocVien.length === soEm, `Tìm mã lớp: ${c.rows.length} lớp, ${c.hocVien.length}/${soEm} em`);
   });
 
   check('PR-Qa · Q2/Q5 "n Case đang mở" của lớp = tổng cột Case của danh sách lớp; cờ nút theo quyền', () => {
     const r = hvl.danhSachHocVienLop(P.admin, {});
-    for (const lop of r.rows.filter((x: any) => x.code === 'MB-FT 101' || x.code === 'MB-FOU 12')) {
+    for (const lop of r.rows.filter((x: any) => x.code === 'MB FT 101' || x.code === 'MB FOU 12')) {
       const tong = classes.classRoster(P.admin, lop.id).filter((s: any) => !s.archived).reduce((n: number, s: any) => n + s.openCases, 0);
       eq(lop.soCaseMo, tong, `${lop.code}: hộp lớp và danh sách`);
       assert(lop.gvcn && lop.gvcn.name, `${lop.code} thiếu GVCN`);
     }
-    const s = hvl.danhSachHocVienLop(P.sTeacher, {}).rows.find((x: any) => x.code === 'MB-FT 101');
+    const s = hvl.danhSachHocVienLop(P.sTeacher, {}).rows.find((x: any) => x.code === 'MB FT 101');
     assert(s && s.viewer.coTheGhiViPham && s.viewer.coTheNhapDiem && !s.viewer.coTheSuaHocVien, `GV Speaking: ${JSON.stringify(s?.viewer)}`);
-    const g = hvl.danhSachHocVienLop(P.coreTeacher, {}).rows.find((x: any) => x.code === 'MB-FT 101');
+    const g = hvl.danhSachHocVienLop(P.coreTeacher, {}).rows.find((x: any) => x.code === 'MB FT 101');
     assert(g && g.viewer.coTheSuaHocVien, 'GVCN sửa được học viên lớp mình');
-    const fou = r.rows.find((x: any) => x.code === 'MB-FOU 12');
+    const fou = r.rows.find((x: any) => x.code === 'MB FOU 12');
     assert(fou && fou.tuanKetThuc && /^\d{4}-\d{2}-\d{2}$/.test(fou.tuanKetThuc), 'Lớp thường có tuần kết thúc khoá');
   });
 
   // ------------------------------------------------------------------ Task 6 · dòng học viên, hồ sơ lớp
 
   check('PR-Qa · YT-8 nhãn cảnh báo 5 ngày ở dòng học viên — cùng dữ liệu với tab Ý thức của lớp', () => {
-    const ft = classId('MB-FT 101');
+    const ft = classId('MB FT 101');
     const e = taoHocVien({ cid: ft, ft: true, target: 6.5 });
     violations.recordViolation(P.coreTeacher, {
       studentId: e.sid, category: 'homework', description: 'Không làm bài tập về nhà (phép kiểm PR-Qa)', occurredOn: addDays(TODAY, -7),
@@ -371,7 +371,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
   });
 
   check('PR-Qa · Q4/K2-6a hồ sơ lớp: cờ nút theo quyền, số Case đang mở, cảnh báo Ý thức của tab', () => {
-    const ft = classId('MB-FT 101');
+    const ft = classId('MB FT 101');
     const g = classes.classOverview(P.coreTeacher, ft);
     assert(g.viewer.canRecordViolation && g.viewer.canReportCase && g.viewer.canEnterScores, `GVCN: ${JSON.stringify(g.viewer)}`);
     const s = classes.classOverview(P.sTeacher, ft);
@@ -384,7 +384,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ Task 7 · Phân tích lớp
 
   check('PR-Qa · §3.7 Phân tích lớp FT: 5 kỹ năng × MT1…MT5, ô = số HV đạt kỳ vọng của đợt / số HV có điểm', () => {
-    const cid = taoLop('MB-FT QA3', 'FT');
+    const cid = taoLop('MB FT QA3', 'FT');
     const a = taoHocVien({ cid, ft: true, target: 6.5 });
     const b = taoHocVien({ cid, ft: true, target: 6.5 });
     bandFT(themLuot({ ...a, cid, no: 2, kind: 'mock', weekStart: '2026-09-07' }), { listening: 5.0, reading: 6.0 });
@@ -400,7 +400,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
   });
 
   check('PR-Qa · §3.7 Phân tích lớp thường: 4 môn × Giữa khoá / Cuối khoá, ô = n/N HV đạt (từ 70%)', () => {
-    const cid = taoLop('MB-FOU QA3', 'FOU');
+    const cid = taoLop('MB FOU QA3', 'FOU');
     const a = taoHocVien({ cid, ft: false });
     const b = taoHocVien({ cid, ft: false });
     diemThuong(themLuot({ ...a, cid, no: 1, kind: 'progress', weekStart: '2026-09-07' }), { writing: [12, 20], listening: [30, 40] });
@@ -416,31 +416,31 @@ export async function runHocVienLopTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ Task 8 · Sửa thông tin lớp
 
   check('PR-Qa · Q8 Sửa thông tin lớp: mã có tiền tố chi nhánh, không trùng; chỉ người có quyền sửa lớp; có nhật ký', () => {
-    const cid = taoLop('MB-FT QA4', 'FT');
-    assertThrows(() => ttl.capNhatThongTinLop(P.sTeacher, cid, { code: 'MB-FT QA4B' }), /quyền/, 'GV bộ môn');
+    const cid = taoLop('MB FT QA4', 'FT');
+    assertThrows(() => ttl.capNhatThongTinLop(P.sTeacher, cid, { code: 'MB FT QA4B' }), /quyền/, 'GV bộ môn');
     assertThrows(() => ttl.capNhatThongTinLop(P.admin, cid, { code: 'FT QA4B' }), /bắt đầu bằng "MB-"/, 'Thiếu tiền tố');
-    assertThrows(() => ttl.capNhatThongTinLop(P.admin, cid, { code: 'MB-FT 101' }), /Đã có lớp/, 'Trùng mã');
+    assertThrows(() => ttl.capNhatThongTinLop(P.admin, cid, { code: 'MB FT 101' }), /Đã có lớp/, 'Trùng mã');
     assertThrows(() => ttl.capNhatThongTinLop(P.admin, cid, { route: 'LT9' }), /LT1 hoặc LT2/, 'LT lạ');
-    const r = ttl.capNhatThongTinLop(P.admin, cid, { code: 'MB-FT QA4B', route: 'LT2', note: 'Lớp tối' });
-    eq([r.code, r.route, r.note], ['MB-FT QA4B', 'LT2', 'Lớp tối'], 'Đã lưu');
+    const r = ttl.capNhatThongTinLop(P.admin, cid, { code: 'MB FT QA4B', route: 'LT2', note: 'Lớp tối' });
+    eq([r.code, r.route, r.note], ['MB FT QA4B', 'LT2', 'Lớp tối'], 'Đã lưu');
     const log = conn.prepare(`SELECT before_json, after_json FROM audit_logs WHERE action = 'class.info' AND entity_id = ? ORDER BY id DESC LIMIT 1`).get(cid) as any;
-    assert(log && /MB-FT QA4"/.test(log.before_json) && /MB-FT QA4B/.test(log.after_json), `Nhật ký: ${JSON.stringify(log)}`);
+    assert(log && /MB FT QA4"/.test(log.before_json) && /MB FT QA4B/.test(log.after_json), `Nhật ký: ${JSON.stringify(log)}`);
   });
 
   check('PR-Qa · Q8 đổi chương trình chỉ khi lớp chưa có học viên và chưa có bài Test; kỹ năng lớp theo chương trình mới', () => {
-    const rong = taoLop('MB-FT QA5', 'FT');
+    const rong = taoLop('MB FT QA5', 'FT');
     ttl.capNhatThongTinLop(P.admin, rong, { programmeCode: 'FOU' });
     const c = conn.prepare('SELECT programme_code, is_fast_track, route FROM classes WHERE id = ?').get(rong) as any;
     const ks = (conn.prepare('SELECT skill FROM class_skills WHERE class_id = ? ORDER BY skill').all(rong) as any[]).map((x) => x.skill).join(',');
     eq([c.programme_code, c.is_fast_track, c.route, ks], ['FOU', 0, null, 'listening,reading,speaking,writing'], 'Lớp trống đổi được');
     assertThrows(() => ttl.capNhatThongTinLop(P.admin, rong, { route: 'LT1' }), /Fast Track/, 'Lớp thường không có LT');
-    const coEm = taoLop('MB-FT QA6', 'FT');
+    const coEm = taoLop('MB FT QA6', 'FT');
     taoHocVien({ cid: coEm, ft: true });
     assertThrows(() => ttl.capNhatThongTinLop(P.admin, coEm, { programmeCode: 'FOU' }), /đã có học viên/, 'Lớp có học viên');
   });
 
   check('PR-Qa · Q8 đổi chương trình: phân công kỹ năng KHÔNG còn ở chương trình mới bị KẾT THÚC (không xoá); phân công vẫn khớp thì giữ nguyên', () => {
-    const cid = taoLop('MB-FT QA7', 'FT');
+    const cid = taoLop('MB FT QA7', 'FT');
     // writing1 chỉ có ở FT, không có ở FOU (REGULAR_SKILLS = listening/reading/writing/speaking) → phải bị kết thúc.
     const idMat = Number(conn.prepare(
       `INSERT INTO teacher_assignments (class_id, user_id, skill, is_core, status, effective_from, created_at) VALUES (?, ?, 'writing1', 0, 'active', '2026-08-03', ?)`,
@@ -490,8 +490,8 @@ export async function runHocVienLopTests(t: YThucTestKit) {
      * này cho GV đó, dù em nay đã học lớp B. TRƯỚC khi sửa, badge (đếm thô trên sos_cases, không lọc quyền)
      * vẫn đếm case này cho lớp B — lệch với "Cần hỗ trợ" (0). SAU khi sửa, cả hai phải khớp nhau (0 = 0).
      */
-    const lopA = taoLop('MB-FT QA17A', 'FT');
-    const lopB = taoLop('MB-FT QA17B', 'FT');
+    const lopA = taoLop('MB FT QA17A', 'FT');
+    const lopB = taoLop('MB FT QA17B', 'FT');
     const hv = taoHocVien({ cid: lopA, ft: true, target: 6.5 });
     const at = themLuot({ ...hv, cid: lopA, no: 2, kind: 'mock', weekStart: '2026-09-07' });
     conn.prepare(
@@ -543,7 +543,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
   }
 
   check('PR-Qa (17, fix planning) · danhSachHocVienLop: số câu lệnh không tăng theo số Case (chỉ theo số chi nhánh/lớp)', () => {
-    const ft = classId('MB-FT 101');
+    const ft = classId('MB FT 101');
     const truoc = demTruyVan(() => { hvl.danhSachHocVienLop(P.admin, {}); });
     themNhieuCase(ft, 18); // phình thêm 18 Case (+ 18 học viên/lượt/lộ trình) vào MỘT lớp đã có sẵn — không thêm lớp/chi nhánh nào.
     const sau = demTruyVan(() => { hvl.danhSachHocVienLop(P.admin, {}); });
@@ -552,7 +552,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
   });
 
   check('PR-Qa (17, fix planning) · classOverview: số câu lệnh không tăng theo số Case của lớp', () => {
-    const cid = taoLop('MB-FT QA17C', 'FT');
+    const cid = taoLop('MB FT QA17C', 'FT');
     const truoc = demTruyVan(() => { classes.classOverview(P.admin, cid); });
     themNhieuCase(cid, 15); // lớp này giờ có 15 Case đang mở.
     const sau = demTruyVan(() => { classes.classOverview(P.admin, cid); });
@@ -593,13 +593,13 @@ export async function runHocVienLopTests(t: YThucTestKit) {
   }
 
   check('PR-Qa (17, fix round 2) · vai QL chi nhánh MB: thêm Case ở CHI NHÁNH KHÁC không làm tăng số câu lệnh', () => {
-    const mbClass = classId('MB-FT 101');
+    const mbClass = classId('MB FT 101');
     const CP = (conn.prepare(`SELECT id FROM branches WHERE code = 'CP'`).get() as any).id as number;
     assert(CP && CP !== MB, `Cần một chi nhánh KHÁC MB để phép kiểm có ý nghĩa (CP=${CP}, MB=${MB})`);
     // taoLop (helper của file này) luôn gắn branch_id = MB — tạo thẳng bằng intake.createClass với branchId = CP
     // để có một lớp THẬT SỰ thuộc chi nhánh khác (mã lớp phải bắt đầu bằng đúng mã chi nhánh CP).
     const cpClass = (intake.createClass(P.admin, {
-      code: 'CP-FT QA17R2', branchId: CP, kind: 'FT', isFastTrack: true, startDate: '2026-08-03',
+      code: 'CP FT QA17R2', branchId: CP, kind: 'FT', isFastTrack: true, startDate: '2026-08-03',
     }) as any).id as number;
 
     const truocDsHv = demTruyVan(() => { hvl.danhSachHocVienLop(P.mbManager, {}); });
@@ -617,7 +617,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ Task 17 (fix round 2 — review Opus) · badge lệch khi học viên tạm dừng
 
   check('PR-Qa (17, fix round 2) · classOverview: học viên đã TẠM DỪNG không được tính vào "n Case đang mở" (khớp lại "Cần hỗ trợ")', () => {
-    const cid = taoLop('MB-FT QA17E', 'FT');
+    const cid = taoLop('MB FT QA17E', 'FT');
     const a = taoHocVien({ cid, ft: true, target: 6.5 });
     const at = themLuot({ ...a, cid, no: 2, kind: 'mock', weekStart: '2026-09-07' });
     conn.prepare(

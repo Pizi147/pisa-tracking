@@ -210,19 +210,19 @@ const P = {
   admin: loadPrincipal(userByRole('system_admin', null)),
   mbManager: loadPrincipal(userByRole('manager', 'MB')),
   cpManager: loadPrincipal(userByRole('manager', 'CP')),
-  w1Teacher: loadPrincipal(teacherOfSkill('MB-FT 101', 'writing1')),
-  w2Teacher: loadPrincipal(teacherOfSkill('MB-FT 101', 'writing2')),
-  sTeacher: loadPrincipal(teacherOfSkill('MB-FT 101', 'speaking')),
-  lrTeacher: loadPrincipal(teacherOfSkill('MB-FT 101', 'listening')),
+  w1Teacher: loadPrincipal(teacherOfSkill('MB FT 101', 'writing1')),
+  w2Teacher: loadPrincipal(teacherOfSkill('MB FT 101', 'writing2')),
+  sTeacher: loadPrincipal(teacherOfSkill('MB FT 101', 'speaking')),
+  lrTeacher: loadPrincipal(teacherOfSkill('MB FT 101', 'listening')),
   bcManager: loadPrincipal(userByRole('manager', 'BC')),
-  coreTeacher: loadPrincipal(coreTeacherOf('MB-FT 101')),
-  subjectTeacher: loadPrincipal(subjectOnlyTeacherOf('MB-FT 101')),
-  /* MB-FOU 12 là lớp Normal (is_fast_track=0) — dùng cho các phép kiểm SCH-01/02, T10. */
-  normalCoreTeacher: loadPrincipal(coreTeacherOf('MB-FOU 12')),
-  normalSubjectTeacher: loadPrincipal(subjectOnlyTeacherOf('MB-FOU 12')),
+  coreTeacher: loadPrincipal(coreTeacherOf('MB FT 101')),
+  subjectTeacher: loadPrincipal(subjectOnlyTeacherOf('MB FT 101')),
+  /* MB FOU 12 là lớp Normal (is_fast_track=0) — dùng cho các phép kiểm SCH-01/02, T10. */
+  normalCoreTeacher: loadPrincipal(coreTeacherOf('MB FOU 12')),
+  normalSubjectTeacher: loadPrincipal(subjectOnlyTeacherOf('MB FOU 12')),
 };
 
-const mbClass = classId('MB-FT 101');
+const mbClass = classId('MB FT 101');
 
 // ==================================================================== 0
 
@@ -672,8 +672,8 @@ check('Nhập điểm KHÔNG kèm quyền sửa lịch: payload điểm không �
 check('Đổi tuần ghi lại lịch sử và dời cả hạn nhập điểm theo', () => {
   const target = conn
     .prepare(`SELECT * FROM assessment_attempts WHERE class_id = ? AND status='planned' LIMIT 1`)
-    .get(classId('HD-FT 302')) as any;
-  assert(target, 'Seed thiếu lượt planned ở HD-FT 302');
+    .get(classId('HD FT 302')) as any;
+  assert(target, 'Seed thiếu lượt planned ở HD FT 302');
   const hdManager = loadPrincipal(userByRole('manager', 'HD'));
   attempts.setPlanningWeek(hdManager, target.id, periodOf('2026-11-02'), 'Dời sang tháng 11');
   const det = attempts.attemptDetail(hdManager, target.id);
@@ -697,7 +697,7 @@ check('Đổi tuần ghi lại lịch sử và dời cả hạn nhập điểm t
 });
 check('Huỷ giữ lý do và lịch sử, không tăng số MT', () => {
   const a = conn.prepare(`SELECT * FROM assessment_attempts WHERE class_id = ? AND status='planned' LIMIT 1`)
-    .get(classId('CP-FT 110')) as any;
+    .get(classId('CP FT 110')) as any;
   const before = (conn.prepare('SELECT COUNT(*) n FROM assessment_attempts WHERE cycle_id = ?').get(a.cycle_id) as any).n;
   assertThrows(() => attempts.cancelAttempt(P.cpManager, a.id, ''), /lý do/, 'Huỷ mà không ghi lý do');
   attempts.cancelAttempt(P.cpManager, a.id, 'Học viên nghỉ ốm');
@@ -744,7 +744,7 @@ check('Chỉ quản trị hệ thống nhập bù được, và đi nhật ký r
 check('API chặn thao tác ngoài chi nhánh, không chỉ ẩn nút', () => {
   const cpAttempt = conn
     .prepare('SELECT a.* FROM assessment_attempts a JOIN classes c ON c.id=a.class_id WHERE c.code = ? ORDER BY a.id LIMIT 1')
-    .get('CP-FT 110') as any;
+    .get('CP FT 110') as any;
   assertThrows(() => attempts.attemptDetail(P.mbManager, cpAttempt.id), /phạm vi/, 'Quản lý MB xem lượt của CP');
   assertThrows(() => attempts.setPlanningWeek(P.mbManager, cpAttempt.id, periodOf('2026-10-12')), /quyền|Quản lý/,
     'Quản lý MB đổi tuần của CP');
@@ -758,7 +758,7 @@ check('Một người có hai grant khác chi nhánh không cộng chéo quyền
     .run(uid, teacherRole, cpBranch, 'active', new Date().toISOString());
   const mixed = loadPrincipal(uid);
   assert(can(mixed, PERMISSIONS.PLAN_WEEK, { classId: mbClass }), 'Grant Quản lý MB phải còn tác dụng ở MB');
-  assert(!can(mixed, PERMISSIONS.PLAN_WEEK, { classId: classId('CP-FT 110') }),
+  assert(!can(mixed, PERMISSIONS.PLAN_WEEK, { classId: classId('CP FT 110') }),
     'Quyền Quản lý ở MB không được dùng sang CP');
   assert(!can(mixed, PERMISSIONS.MEETING_VIEW, { branchId: cpBranch }), 'Quyền họp của MB không được dùng ở CP');
   conn.prepare('DELETE FROM user_roles WHERE user_id = ? AND role_id = ? AND branch_id = ?').run(uid, teacherRole, cpBranch);
@@ -957,15 +957,15 @@ check('[6.2→v3] Mock Test FT điểm dưới kỳ vọng: tín hiệu nối NG
                            WHERE sc.student_id = s.id AND sc.category = 'reading')
         ORDER BY s.id LIMIT 1`,
     )
-    .get(classId('CP-FT 110')) as any;
+    .get(classId('CP FT 110')) as any;
   const cpPeriod = periodOf('2026-11-09');
   const attempt = attempts.createAttempt(P.cpManager, {
-    studentId: s.id, cycleId: s.cycle_id, classId: classId('CP-FT 110'), periodId: cpPeriod,
+    studentId: s.id, cycleId: s.cycle_id, classId: classId('CP FT 110'), periodId: cpPeriod,
   }) as any;
 
   const exp = s.target_score;           // từ MT3 trở đi kỳ vọng bằng target
   const low = exp - 0.5;
-  const t = (skill: string) => loadPrincipal(teacherOfSkill('CP-FT 110', skill));
+  const t = (skill: string) => loadPrincipal(teacherOfSkill('CP FT 110', skill));
   /*
    * Đếm case MỚI RA ĐỜI, không đếm case đang có.
    *
@@ -1114,13 +1114,13 @@ check('[9.4] Case chỉ sống nhờ con số vừa sửa thì rút khỏi danh 
         WHERE e.class_id = ? AND e.status = 'active' AND cy.target_score IS NOT NULL
         ORDER BY s.id DESC LIMIT 1`,
     )
-    .get(classId('UB-FT 401')) as any;
+    .get(classId('UB FT 401')) as any;
   const ubManager = loadPrincipal(userByRole('manager', 'UB'));
   const attempt = attempts.createAttempt(ubManager, {
-    studentId: s.id, cycleId: s.cycle_id, classId: classId('UB-FT 401'), periodId: periodOf('2026-12-07'),
+    studentId: s.id, cycleId: s.cycle_id, classId: classId('UB FT 401'), periodId: periodOf('2026-12-07'),
   }) as any;
   const exp = s.target_score;
-  const t = (skill: string) => loadPrincipal(teacherOfSkill('UB-FT 401', skill));
+  const t = (skill: string) => loadPrincipal(teacherOfSkill('UB FT 401', skill));
 
   attempts.saveScore(t('speaking'), attempt.id, 'speaking', { criteria: [exp - 0.5, exp - 0.5, exp - 0.5, exp - 0.5] });
   const sig = conn
@@ -1145,7 +1145,7 @@ check('[9.4] Case chỉ sống nhờ con số vừa sửa thì rút khỏi danh 
 check('Bỏ một kỹ năng khỏi phạm vi sau khi đã có điểm thì giữ điểm và tính lại kết quả', () => {
   const a = conn
     .prepare(`SELECT * FROM assessment_attempts WHERE class_id = ? AND status='done' ORDER BY id DESC LIMIT 1`)
-    .get(classId('CP-FT 110')) as any;
+    .get(classId('CP FT 110')) as any;
   const beforeScores = (conn.prepare('SELECT COUNT(*) n FROM assessment_scores WHERE attempt_id = ?').get(a.id) as any).n;
   /*
    * Lý do phải là một lý do về PHẠM VI, không phải "học viên vắng". Bỏ môn vì em vắng
@@ -1165,7 +1165,7 @@ check('Bỏ một kỹ năng khỏi phạm vi sau khi đã có điểm thì gi�
 });
 check('Gửi null xoá điểm về trống, không biến thành 0', () => {
   const a = conn.prepare(`SELECT * FROM assessment_attempts WHERE class_id = ? AND status='done' LIMIT 1`).get(mbClass) as any;
-  const teacher = loadPrincipal(teacherOfSkill('MB-FT 101', 'listening'));
+  const teacher = loadPrincipal(teacherOfSkill('MB FT 101', 'listening'));
   const chuNhat = chuNhatCuoiOf(a.id);
   attempts.saveScore(teacher, a.id, 'listening', { rawScore: null, lyDo: 'Phép kiểm: sửa điểm đã có' }, chuNhat);
   const row = conn.prepare(`SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill='listening'`).get(a.id) as any;
@@ -1174,7 +1174,7 @@ check('Gửi null xoá điểm về trống, không biến thành 0', () => {
   const back = conn.prepare(`SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill='listening'`).get(a.id) as any;
   assert(back.band === scoring.bandFromRaw('listening', 30) && back.entered_by === teacher.userId, 'Nhập lại không lưu đúng');
 });
-check('PR-LT (4): Chuyển lớp KHÁC chương trình (FT → lớp thường) đóng khoá cũ, lượt chưa xong Ở LẠI lớp cũ (Q10, Q12 — sửa lại phép kiểm cũ ở đây từng cho lượt chưa xong luôn theo em sang mọi lớp đích, kể cả khác chương trình; PR-LT chốt: chỉ theo em khi GIỮ khoá). Dữ liệu TỰ DỰNG, không đụng BC-FT 205/BC-ELE 01 — hai lớp đó là bể chứa chung của nhiều phép kiểm khác (freshPlannedAttempt).', () => {
+check('PR-LT (4): Chuyển lớp KHÁC chương trình (FT → lớp thường) đóng khoá cũ, lượt chưa xong Ở LẠI lớp cũ (Q10, Q12 — sửa lại phép kiểm cũ ở đây từng cho lượt chưa xong luôn theo em sang mọi lớp đích, kể cả khác chương trình; PR-LT chốt: chỉ theo em khi GIỮ khoá). Dữ liệu TỰ DỰNG, không đụng BC FT 205/BC ELE 01 — hai lớp đó là bể chứa chung của nhiều phép kiểm khác (freshPlannedAttempt).', () => {
   const bc = (conn.prepare(`SELECT id FROM branches WHERE code = 'BC'`).get() as any).id as number;
   const now = new Date().toISOString();
   const fromCls = (intake.createClass(P.admin, {
@@ -1360,8 +1360,8 @@ check('Badge "cần nhập điểm" theo đúng phân công của người đang
       .rows.reduce((n: number, r: any) => n + r.pendingSkills.length, 0);
     assert(c.needScores === q, `Lớp ${c.code}: badge ${c.needScores} khác hàng đợi ${q} của chính giáo viên đó`);
   }
-  const asAdmin = classesSvc.listClassSummaries(P.admin, { scope: 'managed' }).rows.find((c) => c.code === 'MB-FT 101')!;
-  const asTeacher = mine.find((c) => c.code === 'MB-FT 101');
+  const asAdmin = classesSvc.listClassSummaries(P.admin, { scope: 'managed' }).rows.find((c) => c.code === 'MB FT 101')!;
+  const asTeacher = mine.find((c) => c.code === 'MB FT 101');
   assert(!asTeacher || asTeacher.needScores <= asAdmin.needScores, 'Giáo viên không thể có nhiều việc hơn Admin (phạm vi quản lý)');
 });
 check('T08 · RLW tuần này, S tuần sau: mỗi bảng tuần hiện đúng phần của nó', () => {
@@ -1415,7 +1415,7 @@ check('Roster chỉ nạp khi mở lớp, và giáo viên ngoài lớp bị từ
   const roster = classesSvc.classRoster(P.admin, mbClass);
   assert(roster.length > 0, 'Roster rỗng');
   assert(roster[0].timeline.length > 0 && 'myPending' in roster[0], 'Roster thiếu tiến trình MT');
-  assertThrows(() => classesSvc.classRoster(P.mbManager, classId('CP-FT 110')), /phạm vi/,
+  assertThrows(() => classesSvc.classRoster(P.mbManager, classId('CP FT 110')), /phạm vi/,
     'Quản lý MB mở roster lớp CP');
 });
 
@@ -1423,10 +1423,10 @@ check('Roster chỉ nạp khi mở lớp, và giáo viên ngoài lớp bị từ
 
 console.log('\n12. Thêm học viên hàng loạt');
 check('Đọc được TSV dán từ bảng tính, có hoặc không có dòng tiêu đề', () => {
-  const withHeader = intake.parsePaste('Họ tên\tLớp\tNgày sinh\nNguyễn Văn A\tMB-FT 101\t12/05/2008');
+  const withHeader = intake.parsePaste('Họ tên\tLớp\tNgày sinh\nNguyễn Văn A\tMB FT 101\t12/05/2008');
   assert(withHeader.usedHeader && withHeader.rows.length === 1, 'Không nhận ra dòng tiêu đề');
-  assert(withHeader.rows[0].fullName === 'Nguyễn Văn A' && withHeader.rows[0].classCode === 'MB-FT 101', 'Đọc sai cột');
-  const noHeader = intake.parsePaste('Trần Thị B\tMB-FT 101\t01/02/2009');
+  assert(withHeader.rows[0].fullName === 'Nguyễn Văn A' && withHeader.rows[0].classCode === 'MB FT 101', 'Đọc sai cột');
+  const noHeader = intake.parsePaste('Trần Thị B\tMB FT 101\t01/02/2009');
   assert(!noHeader.usedHeader && noHeader.rows[0].fullName === 'Trần Thị B', 'Không đọc được dòng không có tiêu đề');
 });
 check('Ngày đọc theo đúng định dạng được chọn, ngày mơ hồ thì báo lỗi', () => {
@@ -1439,7 +1439,7 @@ check('Ngày đọc theo đúng định dạng được chọn, ngày mơ hồ t
 check('[12.1] Xem trước bắt lỗi từng ô và gợi ý trùng, không tự gộp', () => {
   const existing = conn.prepare('SELECT full_name, dob FROM students WHERE dob IS NOT NULL LIMIT 1').get() as any;
   const pv = intake.previewIntake(P.admin, {
-    classId: classId('MB-FT 101'),
+    classId: classId('MB FT 101'),
     rows: [
       { fullName: '' },
       { fullName: 'Người Mới Một', dob: 'linh tinh' },
@@ -1462,7 +1462,7 @@ check('[12.1] Xem trước bắt lỗi từng ô và gợi ý trùng, không t�
 
   if (existing) {
     const dup = intake.previewIntake(P.admin, {
-      classId: classId('MB-FT 101'),
+      classId: classId('MB FT 101'),
       rows: [{ fullName: existing.full_name, dob: existing.dob }], dateFormat: 'iso',
     });
     assert(dup.rows[0].duplicates.length > 0, 'Không gợi ý hồ sơ trùng');
@@ -1473,11 +1473,11 @@ check('[12.1] Xem trước bắt lỗi từng ô và gợi ý trùng, không t�
 
 check('[12.1] Lớp là quyết định của cả lô, cột "Lớp" trong file bị bỏ qua có báo', () => {
   const pv = intake.previewIntake(P.admin, {
-    classId: classId('MB-FT 101'),
-    rows: [{ fullName: 'Người Dán Nhầm Lớp', classCode: 'CP-FT 110' }],
+    classId: classId('MB FT 101'),
+    rows: [{ fullName: 'Người Dán Nhầm Lớp', classCode: 'CP FT 110' }],
     dateFormat: 'dmy',
   });
-  assert(pv.rows[0].classCode === 'MB-FT 101',
+  assert(pv.rows[0].classCode === 'MB FT 101',
     `Cột lớp trong file đã đè lên ô chọn lớp: ${pv.rows[0].classCode}`);
   assert(pv.rows[0].issues.some((i) => i.field === 'classCode' && /Bỏ qua cột lớp/.test(i.message)),
     'Bỏ qua cột lớp mà không nói — người nhập tưởng em vào lớp ghi trong file');
@@ -1502,7 +1502,7 @@ check('[12.1] Lớp Normal không nhận target IELTS và band từng kỹ năng
 });
 check('Nhập ngoài phạm vi quyền bị chặn ở server', () => {
   const pv = intake.previewIntake(P.mbManager, {
-    classId: classId('CP-FT 110'), rows: [{ fullName: 'Ngoài Phạm Vi' }], dateFormat: 'dmy',
+    classId: classId('CP FT 110'), rows: [{ fullName: 'Ngoài Phạm Vi' }], dateFormat: 'dmy',
   });
   assert(pv.issues.some((i) => /phạm vi/.test(i.message)), 'Không chặn lớp ngoài chi nhánh khi xem trước');
   /*
@@ -1510,7 +1510,7 @@ check('Nhập ngoài phạm vi quyền bị chặn ở server', () => {
    * ghi được một phần. Còn một dòng hỏng trong một lô hợp lệ thì chỉ dòng đó bị bỏ.
    */
   const r = intake.commitIntake(P.mbManager, {
-    classId: classId('CP-FT 110'),
+    classId: classId('CP FT 110'),
     rows: [{ fullName: 'Ngoài Phạm Vi 2' }],
     dateFormat: 'dmy', idempotencyKey: 'test-intake-scope',
   });
@@ -1521,7 +1521,7 @@ check('Nhập ngoài phạm vi quyền bị chặn ở server', () => {
 check('Ghi thật: tạo học viên, enrollment và lộ trình; bỏ qua dòng lỗi', () => {
   const before = (conn.prepare('SELECT COUNT(*) n FROM students').get() as any).n;
   const r = intake.commitIntake(P.admin, {
-    classId: classId('MB-FT 101'),
+    classId: classId('MB FT 101'),
     rows: [
       { fullName: 'Học Viên Nhập Một', target: 6.5, dob: '01/02/2009',
         entryListening: 5, entryReading: '5.5', entryWriting: '-', baselineScore: '5.0' },
@@ -1558,7 +1558,7 @@ check('Ghi thật: tạo học viên, enrollment và lộ trình; bỏ qua dòng
   assert(cyc.baseline_score === 5, `OVR phải giữ nguyên 5.0, đang là ${cyc.baseline_score}`);
 
   const warn = intake.previewIntake(P.admin, {
-    classId: classId('MB-FT 101'),
+    classId: classId('MB FT 101'),
     rows: [{ fullName: 'Học Viên Nhập Hai' }], dateFormat: 'dmy',
   });
   assert(warn.rows[0].issues.some((i) => i.field === 'target' && /Chưa có target/.test(i.message)),
@@ -1567,7 +1567,7 @@ check('Ghi thật: tạo học viên, enrollment và lộ trình; bỏ qua dòng
 check('Bấm hai lần hoặc thử lại không tạo học viên trùng', () => {
   const before = (conn.prepare('SELECT COUNT(*) n FROM students').get() as any).n;
   const again = intake.commitIntake(P.admin, {
-    classId: classId('MB-FT 101'),
+    classId: classId('MB FT 101'),
     rows: [
       { fullName: 'Học Viên Nhập Một', target: 6.5, dob: '01/02/2009' },
       { fullName: '' },
@@ -1586,7 +1586,7 @@ check('[12.1] Nhập hàng loạt KHÔNG lập lịch MT, kể cả người có
    * tạo kiểu đó không đi qua ràng buộc thứ tự đợt nào cả.
    */
   const r = intake.commitIntake(P.coreTeacher, {
-    classId: classId('MB-FT 101'),
+    classId: classId('MB FT 101'),
     rows: [{ fullName: 'Học Viên Không Quyền Tuần', target: 6 }],
     dateFormat: 'iso', idempotencyKey: 'test-intake-2',
   });
@@ -1596,7 +1596,7 @@ check('[12.1] Nhập hàng loạt KHÔNG lập lịch MT, kể cả người có
     'Nhập hàng loạt đã tạo kế hoạch MT');
 
   const r2 = intake.commitIntake(P.mbManager, {
-    classId: classId('MB-FT 101'),
+    classId: classId('MB FT 101'),
     rows: [{ fullName: 'Học Viên Có Quyền Tuần', target: 6 }],
     dateFormat: 'iso', idempotencyKey: 'test-intake-3',
   });
@@ -1608,7 +1608,7 @@ check('[12.1] Nhập hàng loạt KHÔNG lập lịch MT, kể cả người có
 
 check('[12.1] Tuần bắt đầu: mặc định cho cả lô, ghi đè được từng dòng', () => {
   const r = intake.commitIntake(P.admin, {
-    classId: classId('MB-FT 101'),
+    classId: classId('MB FT 101'),
     defaultStartWeek: '2026-10-05',
     rows: [
       { fullName: 'Em Theo Tuần Chung' },
@@ -1632,12 +1632,12 @@ check('Tạo lớp: mã phải bắt đầu bằng mã chi nhánh và không tr�
   const mb = (conn.prepare("SELECT id FROM branches WHERE code='MB'").get() as any).id;
   assertThrows(() => intake.createClass(P.admin, { code: 'FT 999', branchId: mb, kind: 'FT' }),
     /bắt đầu bằng/, 'Mã lớp không có tiền tố chi nhánh');
-  assertThrows(() => intake.createClass(P.admin, { code: 'MB-FT 101', branchId: mb, kind: 'FT' }),
+  assertThrows(() => intake.createClass(P.admin, { code: 'MB FT 101', branchId: mb, kind: 'FT' }),
     /Đã có lớp/, 'Mã lớp trùng');
   const c = intake.createClass(P.admin, {
-    code: 'MB-FT 999', branchId: mb, kind: 'FT', route: 'LT1', startDate: '2026-10-05',
+    code: 'MB FT 999', branchId: mb, kind: 'FT', route: 'LT1', startDate: '2026-10-05',
   }) as any;
-  assert(c.code === 'MB-FT 999', 'Không tạo được lớp');
+  assert(c.code === 'MB FT 999', 'Không tạo được lớp');
   assert((conn.prepare('SELECT COUNT(*) n FROM class_skills WHERE class_id = ?').get(c.id) as any).n === 5,
     'Lớp mới phải có cấu hình kỹ năng');
 });
@@ -2667,7 +2667,7 @@ check('Case của học viên ngoài phạm vi bị chặn ở máy chủ', () =
   const cp = conn
     .prepare(`SELECT s.id FROM students s JOIN enrollments e ON e.student_id = s.id
                WHERE e.class_id = ? LIMIT 1`)
-    .get(classId('CP-FT 110')) as any;
+    .get(classId('CP FT 110')) as any;
   assertThrows(() => cases.reportIssue(P.coreTeacher, { studentId: cp.id, topic: 'listening', summary: 'Ngoài phạm vi phụ trách của người báo.' }),
     /phạm vi/, 'GVCN lớp MB báo vấn đề học viên lớp CP');
 });
@@ -3013,7 +3013,7 @@ check('Không duyệt thì phương án dừng lại, không âm thầm thành v
 console.log('\n18. Việc của chính người đang xem');
 
 check('Quản lý thấy nhóm "Chờ tôi xử lý", giáo viên thì không', () => {
-  const gv = loadPrincipal(teacherOfSkill('MB-FT 102', 'listening'));
+  const gv = loadPrincipal(teacherOfSkill('MB FT 102', 'listening'));
   const mgrGroups = mywork.myWork(P.mbManager).groups.map((g: any) => g.key);
   const gvGroups = mywork.myWork(gv).groups.map((g: any) => g.key);
   assert(!gvGroups.includes('decide'), 'Giáo viên bị giao việc duyệt mà họ không có quyền làm');
@@ -3044,11 +3044,11 @@ check('Việc quá hạn: tiêu đề nói việc gì, hạn nói quá hạn —
 });
 
 check('Kết quả sau hỗ trợ là việc của NGƯỜI THỰC HIỆN; quá hạn thì Quản lý cũng thấy', () => {
-  const gv = loadPrincipal(teacherOfSkill('CP-FT 110', 'speaking'));
+  const gv = loadPrincipal(teacherOfSkill('CP FT 110', 'speaking'));
   const mgr = loadPrincipal(userByRole('manager', 'CP'));
   const reviewOf = (p: any) => (mywork.myWork(p).groups.find((g: any) => g.key === 'result')?.items ?? []);
 
-  // Dữ liệu mẫu: tutor CP-FT 110 hẹn 10/09, nay đã 14/09 — quá hạn, nên cả hai đều thấy.
+  // Dữ liệu mẫu: tutor CP FT 110 hẹn 10/09, nay đã 14/09 — quá hạn, nên cả hai đều thấy.
   const gvItems = reviewOf(gv);
   const mgrItems = reviewOf(mgr);
   assert(gvItems.length > 0, 'Người ghi phương án không thấy việc cập nhật kết quả của mình');
@@ -3076,7 +3076,7 @@ check('Đề xuất đang chờ duyệt thì chưa đòi cập nhật kết qu�
 console.log('\n19. Phân công giáo viên');
 
 check('Giáo viên không tự phân công mình vào lớp', () => {
-  const gv = loadPrincipal(teacherOfSkill('MB-FT 102', 'listening'));
+  const gv = loadPrincipal(teacherOfSkill('MB FT 102', 'listening'));
   assertThrows(() => classesSvc.setClassTeachers(gv, mbClass, { slots: [] }),
     /Quản lý|Admin|quyền/, 'Giáo viên đổi phân công');
   assert(!can(gv, PERMISSIONS.CLASS_ASSIGN, { classId: mbClass }), 'Giáo viên đang có quyền phân công');
@@ -3084,14 +3084,14 @@ check('Giáo viên không tự phân công mình vào lớp', () => {
 });
 
 check('Không xếp người của chi nhánh khác, và không xếp kỹ năng lớp không dạy', () => {
-  const cpTeacher = teacherOfSkill('CP-FT 110', 'listening');
+  const cpTeacher = teacherOfSkill('CP FT 110', 'listening');
   assertThrows(
     () => classesSvc.setClassTeachers(P.mbManager, mbClass, {
       slots: [{ userId: cpTeacher, skill: 'listening', isCore: false }],
     }),
     /chi nhánh/, 'Xếp giáo viên CP vào lớp MB',
   );
-  const found = classId('MB-FOU 12');
+  const found = classId('MB FOU 12');
   const anyTeacher = classesSvc.classTeachers(P.mbManager, found).candidates[0];
   assertThrows(
     () => classesSvc.setClassTeachers(P.mbManager, found, {
@@ -3573,7 +3573,7 @@ check('Bộ cột đặt sẵn nhớ theo tài khoản, và không rò sang ngư
 
 check('Khối Quản lý chỉ dành cho Quản lý, và không xếp hạng giáo viên', () => {
   /* Lớp 102: lớp 101 đã bị test phân công gỡ mất giáo viên Listening. */
-  const gv = loadPrincipal(teacherOfSkill('MB-FT 102', 'listening'));
+  const gv = loadPrincipal(teacherOfSkill('MB FT 102', 'listening'));
   assert(pulse.branchPulse(gv, {}) === null, 'Giáo viên thấy khối điều phối của Quản lý');
   /* Chưa chọn chi nhánh: mỗi hàng là một CHI NHÁNH, không liệt kê từng lớp (mục 9.2). */
   const b = pulse.branchPulse(P.mbManager, {});
@@ -3602,7 +3602,7 @@ check('Khối Quản lý chỉ dành cho Quản lý, và không xếp hạng gi�
 console.log('\n25. Việc Quản lý giao, toả ra thành phương án');
 
 check('Một task cho cả lớp là MỘT task, toả ra hồ sơ từng em', () => {
-  const cls = classId('MB-FT 102');
+  const cls = classId('MB FT 102');
   const before = (conn.prepare('SELECT COUNT(*) n FROM sos_cases').get() as any).n;
   const t = meeting.createTask(P.mbManager, {
     kind: 'teacher_task', title: 'Luyện đọc bấm giờ 10 phút mỗi buổi',
@@ -3640,7 +3640,7 @@ check('Vấn đề mở theo yêu cầu Quản lý vào thẳng ĐANG XỬ LÝ, 
 });
 
 check('Đã có vấn đề đang mở ở kỹ năng đó thì DÙNG LẠI, không mở cái thứ hai', () => {
-  const cls = classId('MB-FT 102');
+  const cls = classId('MB FT 102');
   meeting.createTask(P.mbManager, {
     kind: 'teacher_task', title: 'Đợt hai: vẫn luyện đọc bấm giờ',
     classId: cls, topic: 'reading',
@@ -3677,7 +3677,7 @@ check('Giao việc cho giáo viên phải chọn lớp và kỹ năng', () => {
   );
   assertThrows(
     () => meeting.createTask(P.mbManager, {
-      kind: 'teacher_task', title: 'Thiếu kỹ năng', classId: classId('MB-FT 101'),
+      kind: 'teacher_task', title: 'Thiếu kỹ năng', classId: classId('MB FT 101'),
     }),
     /kỹ năng|ý thức/, 'Giao việc mà không chọn kỹ năng',
   );
@@ -3715,7 +3715,7 @@ check('Việc làm phương án chỉ về đúng GVBM của kỹ năng — khô
         LIMIT 1`,
     )
     .get(mbClass, subjectSkill) as any;
-  assert(mismatchRow, 'Seed thiếu một GVBM khác môn (không kiêm GVCN) ở MB-FT 101 để kiểm AUTH-01');
+  assert(mismatchRow, 'Seed thiếu một GVBM khác môn (không kiêm GVCN) ở MB FT 101 để kiểm AUTH-01');
   const mismatchTeacher = loadPrincipal(mismatchRow.id);
 
   const enr = conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' LIMIT 1`).get(mbClass) as any;
@@ -3765,7 +3765,7 @@ console.log('\n27. Vòng 4 — case sống suốt khoá');
  */
 
 check('Trượt Listening ở MT1 rồi MT2 → ĐÚNG MỘT case, tên đổi theo lượt mới nhất', () => {
-  const cls = 'BC-FT 205';
+  const cls = 'BC FT 205';
   const s = conn
     .prepare(
       `SELECT s.id, cy.id AS cycle_id, cy.target_score FROM students s
@@ -3840,7 +3840,7 @@ check('Trượt Listening ở MT1 rồi MT2 → ĐÚNG MỘT case, tên đổi t
 });
 
 check('Case đã đóng mà MT sau trượt lại → MỞ CASE MỚI nối vào case cũ (mục 7.5)', () => {
-  const cls = 'BC-FT 205';
+  const cls = 'BC FT 205';
   const s = conn
     .prepare(
       `SELECT s.id, cy.id AS cycle_id, cy.target_score FROM students s
@@ -4392,7 +4392,7 @@ check('Mức SOS trên bảng lớp dùng CHUNG phép tính với bảng tổng 
    * Owner nêu đích danh chuyện số liệu lệch giữa các màn. Bảng lớp và bảng tổng hợp phải
    * gọi cùng một hàm, nên với một lớp bất kỳ, số em ở mỗi mức phải khớp nhau.
    */
-  const cid = classId('CP-FT 110');
+  const cid = classId('CP FT 110');
   const roster = classesSvc.classRoster(P.admin, cid) as any[];
   const expect = standing.standingFor(roster.map((r) => r.id));
   for (const r of roster) {
@@ -4514,7 +4514,7 @@ check('Quyền cấp riêng cho cá nhân cộng thêm vào quyền của vai, k
    * Sửa vai "Quản lý" là sửa cho tất cả Quản lý, nên phải có đường cấp riêng cho một người.
    */
   const mgr = userByRole('manager', 'MB');
-  const cp = (conn.prepare("SELECT id FROM classes WHERE code = 'CP-FT 110'").get() as any).id;
+  const cp = (conn.prepare("SELECT id FROM classes WHERE code = 'CP FT 110'").get() as any).id;
   assert(!can(loadPrincipal(mgr), PERMISSIONS.ATTEMPT_VIEW, { classId: cp }),
     'Quản lý MB đã xem được lớp CP từ trước khi cấp quyền');
 
@@ -4531,7 +4531,7 @@ check('Quyền cấp riêng cho cá nhân cộng thêm vào quyền của vai, k
 
 check('Hồ sơ cá nhân: sửa được tên, kỹ năng và email phụ; KHÔNG sửa được email đăng nhập', () => {
   /* Lớp 102: lớp 101 đã bị bài kiểm phân công ở trên gỡ mất giáo viên Listening. */
-  const gv = loadPrincipal(teacherOfSkill('MB-FT 102', 'listening'));
+  const gv = loadPrincipal(teacherOfSkill('MB FT 102', 'listening'));
   const before = accounts.myProfile(gv);
   assert(before.email && before.email.endsWith(accounts.EMAIL_SUFFIX), 'Tài khoản mẫu thiếu email đăng nhập');
 
@@ -4563,7 +4563,7 @@ check('Lộ trình và loại lớp là DỮ LIỆU, và không xoá được th
   assert(sysconfig.listRoutes(true).some((r: any) => r.code === 'LT9'), 'Ngừng dùng đã xoá mất bản ghi');
 
   /* Giáo viên không sửa được danh mục. */
-  const gv = loadPrincipal(teacherOfSkill('MB-FT 102', 'listening'));
+  const gv = loadPrincipal(teacherOfSkill('MB FT 102', 'listening'));
   assertThrows(() => sysconfig.saveRoute(gv, { code: 'LT8', name: 'Thử' }), /Quản trị hệ thống/,
     'Giáo viên sửa được lộ trình');
 
@@ -5707,7 +5707,7 @@ function freshPlannedAttempt(classCode: string) {
 }
 
 check('[10.1] Tách tuần KHÔNG tạo đợt mới và không đổi số MT', () => {
-  const a = freshPlannedAttempt('BC-FT 205');
+  const a = freshPlannedAttempt('BC FT 205');
   const mgr = loadPrincipal(userByRole('manager', 'BC'));
   const before = conn
     .prepare('SELECT COUNT(*) n FROM assessment_attempts WHERE cycle_id = ?')
@@ -5733,7 +5733,7 @@ check('[10.1] Tách tuần KHÔNG tạo đợt mới và không đổi số MT',
 });
 
 check('[10.5] Dời một môn chỉ đổi hạn của môn đó, không gia hạn môn đã thi', () => {
-  const a = freshPlannedAttempt('BC-FT 205');
+  const a = freshPlannedAttempt('BC FT 205');
   const mgr = loadPrincipal(userByRole('manager', 'BC'));
   const before = attempts.attemptDetail(mgr, a.id);
   const lBefore = before.skillSchedule.find((r: any) => r.skill === 'listening')!.deadline;
@@ -5840,7 +5840,7 @@ check('[10.1] Lớp Normal luôn phải đủ bốn môn — không có thao tá
 });
 
 check('[10.1] Không bỏ môn khỏi phạm vi SAU khi đã xác nhận vắng', () => {
-  const a = freshPlannedAttempt('CP-FT 110');
+  const a = freshPlannedAttempt('CP FT 110');
   const mgr = P.cpManager;
   /* Phải có tuần thi mới xác nhận được đã thi hay vắng. */
   skillSchedule.setSitStatus(mgr, a.id, 'speaking', 'absent', 'Em nghỉ ốm, GVCN đã xác minh');
@@ -5881,7 +5881,7 @@ check('[10.6] Ô điểm trống KHÔNG tự thành vắng; và không nhập đ
 });
 
 check('[10.6] Bộ đếm dời do vắng tính RIÊNG từng kỹ năng trong từng đợt', () => {
-  const a = freshPlannedAttempt('HD-FT 302');
+  const a = freshPlannedAttempt('HD FT 302');
   const mgr = loadPrincipal(userByRole('manager', 'HD'));
   /*
    * CHỈ MỘT CỬA VÀO BỘ ĐẾM. Trước đây ô "đổi tuần" có thêm một ô tick "dời vì em vắng" chạy
@@ -5912,7 +5912,7 @@ check('[10.6] Bộ đếm dời do vắng tính RIÊNG từng kỹ năng trong t
 });
 
 check('[10.7] Kỹ năng bị huỷ phần thi làm tuần kế hoạch hoàn tất chưa hợp lệ', () => {
-  const a = freshPlannedAttempt('UB-FT 401');
+  const a = freshPlannedAttempt('UB FT 401');
   const mgr = loadPrincipal(userByRole('manager', 'UB'));
   skillSchedule.setSitStatus(mgr, a.id, 'speaking', 'cancelled', 'QL từ chối dời, huỷ phần thi này');
   const d = attempts.attemptDetail(mgr, a.id);
@@ -6848,7 +6848,7 @@ check('[4.2] Lớp Normal có kết quả trong bảng kỹ năng — không đ�
 
 console.log('\n39. Hai dạng xem của lớp và bảng phân tích vấn đề (mục 13.3 · 13.4)');
 
-/** Một em ở lớp MB-FT 101, kèm lớp và chu kỳ — đủ để mở case và ghi phương án. */
+/** Một em ở lớp MB FT 101, kèm lớp và chu kỳ — đủ để mở case và ghi phương án. */
 function boardStudent(offset = 0) {
   const row = conn
     .prepare(
@@ -6858,8 +6858,8 @@ function boardStudent(offset = 0) {
         WHERE e.class_id = ? AND s.status = 'active'
         ORDER BY s.id LIMIT 1 OFFSET ?`,
     )
-    .get(classId('MB-FT 101'), offset) as any;
-  assert(row, 'Không tìm được học viên ở MB-FT 101 để thử');
+    .get(classId('MB FT 101'), offset) as any;
+  assert(row, 'Không tìm được học viên ở MB FT 101 để thử');
   return row;
 }
 
@@ -7407,8 +7407,8 @@ check('CASE-01 Task 2 · Case Học thuật vẫn chọn được ngày quá kh�
 
 /*
  * BA PHÉP KIỂM AUTH-01 (mục 10.5 Step 1) dùng đúng `P.subjectTeacher` — GVBM THUẦN của
- * MB-FT 101 (không kiêm GVCN). `P.lrTeacher` KHÔNG dùng được ở đây: bộ demo chỉ có 3 giáo
- * viên cho 5 kỹ năng của lớp này, và trong đúng lớp MB-FT 101, người dạy Listening lại
+ * MB FT 101 (không kiêm GVCN). `P.lrTeacher` KHÔNG dùng được ở đây: bộ demo chỉ có 3 giáo
+ * viên cho 5 kỹ năng của lớp này, và trong đúng lớp MB FT 101, người dạy Listening lại
  * chính là GVCN — dùng người đó để kiểm "GVBM sai môn bị từ chối" sẽ luôn PASS sai lý do
  * (qua được vì là GVCN, không phải vì đúng môn).
  */
@@ -7455,7 +7455,7 @@ check('CASE-01 Task 4 (AUTH-01) · GVBM sửa case ĐÚNG kỹ năng mình dạy
 console.log('\n43. PR-C Task 3 — Tab "Đã xong từ trước" (nhập bù), bảy chốt chặn (mục 10.4)');
 
 /*
- * ĐỦ SINH VIÊN RIÊNG CHO TỪNG PHÉP KIỂM: dùng đúng học viên đang học ở MB-FT 101 (khớp
+ * ĐỦ SINH VIÊN RIÊNG CHO TỪNG PHÉP KIỂM: dùng đúng học viên đang học ở MB FT 101 (khớp
  * `authSubjectSkill`/`authMismatchSkill` đã tính ở trên), nhưng mỗi phép kiểm chọn một
  * PHÂN LOẠI/khoảng ngày khác nhau để không tự đụng chỉ mục chống trùng của CHÍNH các phép
  * kiểm này với nhau.
@@ -7653,14 +7653,14 @@ function normalWritingAttemptSkill() {
       WHERE a.class_id = ? AND a.status != 'cancelled' AND s.skill = 'writing'
         AND s.required = 1 AND s.sit_status != 'sat' AND s.planned_period_id IS NOT NULL
       LIMIT 1`,
-  ).get(classId('MB-FOU 12')) as any;
+  ).get(classId('MB FOU 12')) as any;
   assert(row, 'Seed thiếu một bài Writing lớp Normal chưa chấm để kiểm SCH-01');
   /*
    * PHẢI CHƯA CÓ ĐIỂM (23/09): `hasScore` (skillSchedule.ts) nay xét cả cột `raw_score` của lớp thường, nên
-   * `setSkillWeek` đúng luật từ chối dời một môn đã có điểm. Đến cuối khoá (MB-FOU 12 đang tuần 8/8) hầu hết
+   * `setSkillWeek` đúng luật từ chối dời một môn đã có điểm. Đến cuối khoá (MB FOU 12 đang tuần 8/8) hầu hết
    * Writing đã có điểm sẵn — xoá điểm của đúng dòng vừa chọn để dựng lại tiền đề "chưa chấm" mà các phép kiểm
    * SCH-01/T07/PR-G cần, thay vì đổi sang lớp khác (các quyền `P.normalCoreTeacher`/`normalSubjectTeacher`
-   * chỉ gắn với MB-FOU 12).
+   * chỉ gắn với MB FOU 12).
    */
   conn.prepare(`DELETE FROM assessment_scores WHERE attempt_id = ? AND skill = 'writing'`).run(row.attemptId);
   return row as { attemptId: number; skill: string; periodId: number };
@@ -7670,11 +7670,11 @@ check('SCH-01 · GVBM lớp Normal dời được ĐÚNG môn mình dạy, khôn
   const { attemptId, periodId } = normalWritingAttemptSkill();
   const otherPeriod = periodOf(addDays(week.periodById(periodId)!.week_start, 7));
   assert(
-    !can(P.normalSubjectTeacher, PERMISSIONS.SCHEDULE_MOVE, { classId: classId('MB-FOU 12'), skill: 'speaking' }),
+    !can(P.normalSubjectTeacher, PERMISSIONS.SCHEDULE_MOVE, { classId: classId('MB FOU 12'), skill: 'speaking' }),
     'GVBM Writing không được có quyền dời Speaking',
   );
   assert(
-    can(P.normalSubjectTeacher, PERMISSIONS.SCHEDULE_MOVE, { classId: classId('MB-FOU 12'), skill: 'writing' }),
+    can(P.normalSubjectTeacher, PERMISSIONS.SCHEDULE_MOVE, { classId: classId('MB FOU 12'), skill: 'writing' }),
     'GVBM Writing phải dời được đúng môn Writing',
   );
   const r = skillSchedule.setSkillWeek(P.normalSubjectTeacher, attemptId, 'writing', otherPeriod, {});
@@ -7682,7 +7682,7 @@ check('SCH-01 · GVBM lớp Normal dời được ĐÚNG môn mình dạy, khôn
 });
 
 check('SCH-01 · GVCN lớp Normal dời được mọi môn trong lớp mình chủ nhiệm', () => {
-  const cid = classId('MB-FOU 12');
+  const cid = classId('MB FOU 12');
   for (const skill of ['listening', 'reading', 'writing', 'speaking']) {
     assert(
       can(P.normalCoreTeacher, PERMISSIONS.SCHEDULE_MOVE, { classId: cid, skill }),
@@ -7705,20 +7705,20 @@ check('SCH-01 · Giáo viên lớp Fast Track KHÔNG dời được lịch dù l
 check('SCH-01 · Cấp SCHEDULE_MOVE cho giáo viên KHÔNG vô tình mở luôn xếp lịch Fast Track chủ động', () => {
   // Giáo viên Normal có schedule.move nhưng KHÔNG được đồng thời có plan.week (mở bulkPlan/FT).
   assert(
-    !can(P.normalCoreTeacher, PERMISSIONS.PLAN_WEEK, { classId: classId('MB-FOU 12') }),
+    !can(P.normalCoreTeacher, PERMISSIONS.PLAN_WEEK, { classId: classId('MB FOU 12') }),
     'Cấp SCHEDULE_MOVE không được kèm PLAN_WEEK — nếu không sẽ vô tình mở luôn xếp lịch FT chủ động',
   );
 });
 
 check('SCH-02 · Xác nhận trạng thái thi dùng ĐÚNG cùng quyền với dời lịch (moveableSkills)', () => {
-  const cid = classId('MB-FOU 12');
+  const cid = classId('MB FOU 12');
   const list = permissions.moveableSkills(P.normalSubjectTeacher, cid, ['listening', 'reading', 'writing', 'speaking']);
   assert(list.join(',') === 'writing', `GVBM Writing chỉ được liệt kê đúng writing, đang ra: ${list.join(',')}`);
   const listCore = permissions.moveableSkills(P.normalCoreTeacher, cid, ['listening', 'reading', 'writing', 'speaking']);
   assert(listCore.length === 4, 'GVCN phải dời được cả bốn môn của lớp Normal mình');
 });
 
-/** MT1/MT2/MT3 liên tiếp cùng lộ trình ở MB-FT 101, dùng chung cho các phép kiểm T13. */
+/** MT1/MT2/MT3 liên tiếp cùng lộ trình ở MB FT 101, dùng chung cho các phép kiểm T13. */
 function threeConsecutiveMocks() {
   const rows = conn.prepare(
     `SELECT a.id AS attemptId, a.attempt_no, a.cycle_id, s.skill, s.planned_period_id
@@ -7791,11 +7791,11 @@ check('T13 · RLW và Speaking CÙNG một đợt không bị hiểu nhầm là 
 
 check('T07 · Kế hoạch Test chỉ hiện học viên lớp Fast Track, KHÔNG có Normal', () => {
   const q = planning.noPlanQueue(P.admin, { includePlanned: true });
-  const normalClass = classId('MB-FOU 12');
+  const normalClass = classId('MB FOU 12');
   assert(q.rows.length > 0, 'Cần có học viên FT trong hàng đợi để kiểm');
   assert(
     q.rows.every((r: any) => r.classId !== normalClass),
-    'Kế hoạch Test không được hiện học viên của lớp Normal (MB-FOU 12)',
+    'Kế hoạch Test không được hiện học viên của lớp Normal (MB FOU 12)',
   );
 });
 
@@ -8216,9 +8216,9 @@ check('PR-F · F03: em chuyển chi nhánh SAU khi kết thúc phương án — 
       WHERE e.class_id = ? AND (SELECT COUNT(*) FROM enrollments x WHERE x.student_id = s.id) = 1
       ORDER BY s.id DESC`,
   ).all(mbClass) as any[];
-  assert(single.length >= 1, 'Cần một học viên chỉ có đúng một lần ghi danh trong MB-FT 101');
+  assert(single.length >= 1, 'Cần một học viên chỉ có đúng một lần ghi danh trong MB FT 101');
   const st = single[0];
-  const cpClass = classId('CP-FT 110');
+  const cpClass = classId('CP FT 110');
   /* Em học ở CP từ 01/06 đến 31/07, chuyển sang MB từ 01/08. */
   conn.prepare(`UPDATE enrollments SET started_at = '2026-08-01' WHERE id = ?`).run(st.enr);
   conn.prepare(
@@ -8496,8 +8496,8 @@ const prgSit = (attemptId: number, assessed: string) => (conn.prepare(
 const prgSettled = (attemptId: number, assessed: string) => (conn.prepare(
   `SELECT COUNT(*) n FROM attempt_schedule_history WHERE attempt_id = ? AND action = 'skill_no_show_settled' AND field = ?`,
 ).get(attemptId, assessed) as any).n as number;
-const prgWriting1 = loadPrincipal(teacherOfSkill('MB-FT 101', 'writing1'));
-const prgWriting2 = loadPrincipal(teacherOfSkill('MB-FT 101', 'writing2'));
+const prgWriting1 = loadPrincipal(teacherOfSkill('MB FT 101', 'writing1'));
+const prgWriting2 = loadPrincipal(teacherOfSkill('MB FT 101', 'writing2'));
 
 check('PR-G · Tiền đề: bộ demo có đủ lượt FT chưa chấm ở tuần W3 SEP để dựng các phép kiểm', () => {
   assert(prgWeekEnd === PRG_SUN, `Cuối tuần phải là Chủ nhật ${PRG_SUN}, đang là ${prgWeekEnd}`);
@@ -8957,7 +8957,7 @@ check('C02 (đã chốt 20/09): GVCN xử lý case học thuật ĐÚNG môn mì
  * phạm vi). Đúng luật hợp đồng số liệu: số là `ids.length`, không có đường đếm riêng.
  */
 const nowIsoPrn = () => new Date().toISOString();
-const prnClass = classId('MB-FT 101');
+const prnClass = classId('MB FT 101');
 const prnMake = (name: string, target = 7): { id: number; cycleId: number } => {
   intake.commitIntake(P.admin, { classId: prnClass, rows: [{ fullName: name, target }], dateFormat: 'iso', idempotencyKey: 'prn-' + name });
   const st = conn.prepare('SELECT id FROM students WHERE full_name = ?').get(name) as any;

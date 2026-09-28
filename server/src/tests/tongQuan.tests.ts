@@ -31,11 +31,11 @@ export async function runTongQuanTests(t: YThucTestKit) {
   const mbBranch = (conn.prepare(`SELECT id FROM branches WHERE code = 'MB'`).get() as any).id as number;
   let soThuTu = 0;
   /** Học viên mới trong một lớp có sẵn của bộ demo, một lộ trình đang chạy, một lượt Test ở tuần `weekStart`. */
-  function taoHocVien(o: { classCode: 'MB-FOU 12' | 'MB-FT 101'; weekStart: string }) {
+  function taoHocVien(o: { classCode: 'MB FOU 12' | 'MB FT 101'; weekStart: string }) {
     soThuTu += 1;
     const tag = `PA-${soThuTu}`;
     const cid = classId(o.classCode);
-    const ft = o.classCode === 'MB-FT 101';
+    const ft = o.classCode === 'MB FT 101';
     const sid = Number(conn.prepare(
       `INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`,
     ).run(`PISA-${tag}`, `Học viên ${tag}`, `hoc vien ${tag.toLowerCase()}`, mbBranch, NOW).lastInsertRowid);
@@ -160,8 +160,8 @@ export async function runTongQuanTests(t: YThucTestKit) {
 
   // ================================================================== 3. Lọc chương trình
   check('PR-Pa · Chương trình: cùng một chỉ số, Lớp thường chỉ có em lớp thường, Fast Track chỉ có em FT, cả hai tập nằm trong Cả hai', () => {
-    const thuong = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
-    const ft = taoHocVien({ classCode: 'MB-FT 101', weekStart: '2026-09-07' });
+    const thuong = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
+    const ft = taoHocVien({ classCode: 'MB FT 101', weekStart: '2026-09-07' });
     const cThuong = moCase(thuong.sid, 'listening');
     const cFt = moCase(ft.sid, 'reading');
     for (const [id, a, b] of [['hv-co-case-mo', thuong.sid, ft.sid], ['case-mo', cThuong.id, cFt.id]] as const) {
@@ -187,12 +187,12 @@ export async function runTongQuanTests(t: YThucTestKit) {
   });
 
   check('PR-Pa · tachTheoLop: gom theo lớp, hai lớp nhiều nhất, còn lại "+k lớp"; một phần tử ghi đúng lớp', () => {
-    const a = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
-    const b = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
-    const c = taoHocVien({ classCode: 'MB-FT 101', weekStart: '2026-09-07' });
-    eq(chuongTrinh.tachTheoLop('hoc-vien', [a.sid, b.sid, c.sid]), 'MB-FOU 12 (2) · MB-FT 101 (1)', 'Hai lớp');
-    eq(chuongTrinh.tachTheoLop('hoc-vien', [a.sid, b.sid, c.sid], 1), 'MB-FOU 12 (2) · +1 lớp', 'Quá toiDa thì "+k lớp"');
-    eq(chuongTrinh.tachTheoLop('hoc-vien', [c.sid]), 'MB-FT 101', 'Một em');
+    const a = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
+    const b = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
+    const c = taoHocVien({ classCode: 'MB FT 101', weekStart: '2026-09-07' });
+    eq(chuongTrinh.tachTheoLop('hoc-vien', [a.sid, b.sid, c.sid]), 'MB FOU 12 (2) · MB FT 101 (1)', 'Hai lớp');
+    eq(chuongTrinh.tachTheoLop('hoc-vien', [a.sid, b.sid, c.sid], 1), 'MB FOU 12 (2) · +1 lớp', 'Quá toiDa thì "+k lớp"');
+    eq(chuongTrinh.tachTheoLop('hoc-vien', [c.sid]), 'MB FT 101', 'Một em');
     eq(chuongTrinh.tachTheoLop('hoc-vien', []), '', 'Rỗng');
     const m = chuongTrinh.lopCuaTap('hoc-vien', [a.sid, c.sid]);
     eq([m.get(a.sid).isFt, m.get(c.sid).isFt], [false, true], 'isFt theo lớp đang học');
@@ -200,7 +200,7 @@ export async function runTongQuanTests(t: YThucTestKit) {
 
   // ================================================================== 4. Ba chỉ số mới
   check('PR-Pa · Chỉ số case-chua-co-nguoi-phu-trach: Case mở không người phụ trách có; gán người thì hết; luôn ⊆ case-mo', () => {
-    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     const c = moCase(hv.sid, 'reading');
     conn.prepare('UPDATE sos_cases SET owner_user_id = NULL WHERE id = ?').run(c.id);
     assert(ids('case-chua-co-nguoi-phu-trach').includes(c.id), 'Case không người phụ trách phải có');
@@ -227,7 +227,7 @@ export async function runTongQuanTests(t: YThucTestKit) {
     const gv = metricsSvc.metricSet(P.lrTeacher, 'bai-qua-han-nhap-diem', {}).ids as number[];
     const lopGv = new Set((conn.prepare(`SELECT class_id FROM teacher_assignments WHERE user_id = ? AND status = 'active'`)
       .all(P.lrTeacher.userId) as any[]).map((r) => r.class_id));
-    assert(gv.length > 0, 'GV Listening MB-FT 101 phải có ít nhất một lượt quá hạn nhập điểm trong bộ demo — nếu không, vòng kiểm bên dưới vô nghĩa');
+    assert(gv.length > 0, 'GV Listening MB FT 101 phải có ít nhất một lượt quá hạn nhập điểm trong bộ demo — nếu không, vòng kiểm bên dưới vô nghĩa');
     for (const a of gv) {
       const cl = (conn.prepare('SELECT class_id FROM assessment_attempts WHERE id = ?').get(a) as any).class_id;
       assert(lopGv.has(cl), `GV thấy lượt của lớp không dạy: ${a}`);
@@ -236,14 +236,14 @@ export async function runTongQuanTests(t: YThucTestKit) {
 
   await checkAsync('PR-Pa · bai-qua-han-nhap-diem: người vừa dạy lớp ở MB vừa là Quản lý CP thấy (lớp mình dạy) ∪ (cả CP) — không nới thành cả MB', async () => {
     const debt: any = await import('../worklist/scoreDebt.ts');
-    const fou12 = classId('MB-FOU 12');
-    /* Giáo viên MB KHÔNG dạy MB-FOU 12 (bộ demo: GV Listening MB-FT 102) — để lượt tạo ở MB-FOU 12 nằm trong chi nhánh mà ngoài lớp của người này. */
+    const fou12 = classId('MB FOU 12');
+    /* Giáo viên MB KHÔNG dạy MB FOU 12 (bộ demo: GV Listening MB FT 102) — để lượt tạo ở MB FOU 12 nằm trong chi nhánh mà ngoài lớp của người này. */
     const gvRow = conn.prepare(
       `SELECT DISTINCT ta.user_id FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
         WHERE ta.status = 'active' AND c.branch_id = ? AND ta.user_id NOT IN (SELECT user_id FROM teacher_assignments WHERE class_id = ?)
         ORDER BY ta.user_id LIMIT 1`,
     ).get(mbBranch, fou12) as any;
-    assert(gvRow, 'Bộ demo phải có một giáo viên MB không dạy MB-FOU 12 — nếu không, phép kiểm này không tách được "cả MB" khỏi "lớp mình dạy"');
+    assert(gvRow, 'Bộ demo phải có một giáo viên MB không dạy MB FOU 12 — nếu không, phép kiểm này không tách được "cả MB" khỏi "lớp mình dạy"');
     const cp = (conn.prepare(`SELECT id FROM branches WHERE code = 'CP'`).get() as any).id as number;
     const roleId = (conn.prepare(`SELECT id FROM roles WHERE key = 'manager'`).get() as any).id as number;
     const grant = Number(conn.prepare(
@@ -251,9 +251,9 @@ export async function runTongQuanTests(t: YThucTestKit) {
     ).run(gvRow.user_id, roleId, cp, NOW).lastInsertRowid);
     try {
       const lai = loadPrincipal(gvRow.user_id);
-      const ngoaiLop = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+      const ngoaiLop = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
       const cells = (debt.scoreDebtCells(P.admin, TODAY, null) as any[]).filter((x) => x.overdue);
-      assert(cells.some((x) => x.attemptId === ngoaiLop.attemptId), 'Lượt MB-FOU 12 tuần 07/09 phải có ô quá hạn ở ngày 14/09 — nếu không, phép kiểm không có gì để lọt');
+      assert(cells.some((x) => x.attemptId === ngoaiLop.attemptId), 'Lượt MB FOU 12 tuần 07/09 phải có ô quá hạn ở ngày 14/09 — nếu không, phép kiểm không có gì để lọt');
       const lopGv = new Set((conn.prepare(`SELECT class_id FROM teacher_assignments WHERE user_id = ? AND status = 'active'`)
         .all(lai.userId) as any[]).map((r) => r.class_id as number));
       const branchOf = (cid: number) => (conn.prepare('SELECT branch_id FROM classes WHERE id = ?').get(cid) as any).branch_id as number;
@@ -268,7 +268,7 @@ export async function runTongQuanTests(t: YThucTestKit) {
   });
 
   check('PR-Pa · rowsFor: tín hiệu ghi tên môn (không chữ thô "listening"); bài thi có dòng', () => {
-    const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'listening', 10, 40);
     const sg = tinHieu(hv.attemptId, 'listening');
     const row = metricsSvc.rowsFor('tin-hieu', [sg.id])[0];
@@ -312,16 +312,16 @@ export async function runTongQuanTests(t: YThucTestKit) {
   });
 
   check('PR-Pa · Học viên cần hỗ trợ: em có SOS ở lớp tôi dạy có mặt kèm nhãn SOS; em không có gì thì không; GV lớp khác không thấy', () => {
-    const co = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    const co = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     for (const [s, sc, tt] of [['listening', 10, 40], ['reading', 10, 40], ['writing', 5, 20], ['speaking', 20, 25]] as const) diem(co.attemptId, s, sc, tt);
-    const khong = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+    const khong = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     for (const [s, sc, tt] of [['listening', 35, 40], ['reading', 35, 40], ['writing', 18, 20], ['speaking', 22, 25]] as const) diem(khong.attemptId, s, sc, tt);
     const r = tq.hocVienCanHoTro(P.normalCoreTeacher);
     const dong = r.rows.find((x: any) => x.studentId === co.sid);
     assert(dong && /^SOS [123]/.test(dong.huyHieu?.text ?? ''), `Thiếu em có SOS hoặc thiếu nhãn: ${JSON.stringify(dong)}`);
     assert(!r.rows.some((x: any) => x.studentId === khong.sid), 'Em đạt hết không phải "cần hỗ trợ"');
     eq(r.tong, r.rows.length, 'tong = số dòng');
-    assert(!tq.hocVienCanHoTro(P.w2Teacher /* GV W2 MB-FT 101, không dạy MB-FOU 12 */).rows.some((x: any) => x.studentId === co.sid), 'GV lớp khác thấy em');
+    assert(!tq.hocVienCanHoTro(P.w2Teacher /* GV W2 MB FT 101, không dạy MB FOU 12 */).rows.some((x: any) => x.studentId === co.sid), 'GV lớp khác thấy em');
     const sos = r.rows.filter((x: any) => x.huyHieu && /^SOS/.test(x.huyHieu.text)).map((x: any) => Number(x.huyHieu.text[4]));
     assert(sos.every((v: number, i: number) => i === 0 || sos[i - 1] >= v), 'Phải xếp mức SOS giảm dần');
   });
@@ -383,15 +383,15 @@ export async function runTongQuanTests(t: YThucTestKit) {
 
   // ================================================================== 8. Nợ S1 (2)
   check('PR-Pa · Nợ S1: không ai dạy Speaking → tín hiệu về GVCN; GVCN thấy hai nút; Tạo Case thành công, gửi lại cùng khoá ra cùng Case; dòng biến mất', () => {
-    const cid = classId('MB-FOU 12');
+    const cid = classId('MB FOU 12');
     const tam = (conn.prepare(`SELECT id FROM teacher_assignments WHERE class_id = ? AND skill = 'speaking' AND status = 'active'`)
       .all(cid) as any[]).map((r) => r.id as number);
-    assert(tam.length > 0, 'Bộ demo phải có GV Speaking ở MB-FOU 12');
+    assert(tam.length > 0, 'Bộ demo phải có GV Speaking ở MB FOU 12');
     const ph = tam.map(() => '?').join(',');
     conn.prepare(`UPDATE teacher_assignments SET status = 'ended' WHERE id IN (${ph})`).run(...tam);
     try {
       const gvcn = loadPrincipal(P.normalCoreTeacher.userId);
-      const hv = taoHocVien({ classCode: 'MB-FOU 12', weekStart: '2026-09-07' });
+      const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
       diem(hv.attemptId, 'speaking', 5, 25);
       const sg = tinHieu(hv.attemptId, 'speaking');
       assert(sg && sg.owner_user_id === gvcn.userId, `Tín hiệu Speaking phải về GVCN: ${sg?.owner_user_id}`);

@@ -132,8 +132,8 @@ export async function runYThucGonTests(t: YThucTestKit) {
   const { createApp } = await import('../app.ts');
   const { createSession } = await import('../auth.ts');
 
-  const gvcn = P.coreTeacher; // chủ nhiệm MB-FT 101
-  const CLASS = t.classId('MB-FT 101');
+  const gvcn = P.coreTeacher; // chủ nhiệm MB FT 101
+  const CLASS = t.classId('MB FT 101');
   const mbBranch = (conn.prepare(`SELECT id FROM branches WHERE code = 'MB'`).get() as any).id as number;
   const outsider = loadPrincipal((conn.prepare(
     `SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id
@@ -174,7 +174,7 @@ export async function runYThucGonTests(t: YThucTestKit) {
   };
 
   await checkAsync('PR-YT2 · Q1/Q2 PATCH /measures/:id violationIds: thêm 1 + bỏ 1 một lần → measure_violations đúng, hai dòng lịch sử measure, một audit', async () => {
-    const s = taoHocVien('MB-FT 101', true);
+    const s = taoHocVien('MB FT 101', true);
     const v1 = ghi(s.sid, 'Không nộp bài Writing Task 2 — dùng để kiểm PATCH violationIds');
     const v2 = ghi(s.sid, 'Nói chuyện riêng nhiều lần trong giờ — dùng để kiểm PATCH violationIds', undefined, 'conduct');
     const v3 = ghi(s.sid, 'Đi muộn không lý do — dùng để kiểm PATCH violationIds', undefined, 'attendance');
@@ -194,7 +194,7 @@ export async function runYThucGonTests(t: YThucTestKit) {
   });
 
   await checkAsync('PR-YT2 · PATCH /measures/:id violationIds: [] → 400', async () => {
-    const s = taoHocVien('MB-FT 101', true);
+    const s = taoHocVien('MB FT 101', true);
     const v = ghi(s.sid, 'Vi phạm dùng để tạo PA rồi thử PATCH violationIds rỗng');
     const m = measSvc.createMeasure(gvcn, { studentId: s.sid, kind: 'talk_short', violationIds: [v] }) as any;
     const res = await call(gvcn, 'PATCH', `/measures/${m.id}`, { violationIds: [] });
@@ -202,17 +202,17 @@ export async function runYThucGonTests(t: YThucTestKit) {
   });
 
   await checkAsync('PR-YT2 · PATCH /measures/:id violationIds có vi phạm của học viên khác → 400', async () => {
-    const s = taoHocVien('MB-FT 101', true);
+    const s = taoHocVien('MB FT 101', true);
     const v = ghi(s.sid, 'Vi phạm dùng để tạo PA rồi thử trộn vi phạm của học viên khác');
     const m = measSvc.createMeasure(gvcn, { studentId: s.sid, kind: 'talk_short', violationIds: [v] }) as any;
-    const other = taoHocVien('MB-FT 101', true);
+    const other = taoHocVien('MB FT 101', true);
     const vOther = ghi(other.sid, 'Vi phạm của học viên khác — dùng để kiểm 400 khi trộn học viên');
     const res = await call(gvcn, 'PATCH', `/measures/${m.id}`, { violationIds: [vOther] });
     assert(res.status === 400, `trộn vi phạm khác học viên phải 400, được ${res.status}`);
   });
 
   await checkAsync('PR-YT2 · PATCH violationIds trên PA đã thực hiện → 400 (khoá như requirePreparing)', async () => {
-    const s = taoHocVien('MB-FT 101', true);
+    const s = taoHocVien('MB FT 101', true);
     const v = ghi(s.sid, 'Vi phạm dùng để kiểm PA đã thực hiện khoá violationIds');
     const m = measSvc.createMeasure(gvcn, { studentId: s.sid, kind: 'talk_short', violationIds: [v] }) as any;
     measSvc.confirmMeasure(gvcn, m.id, { performedOn: TODAY, performedBy: gvcn.userId, note: 'Đã trao đổi với em' });
@@ -221,7 +221,7 @@ export async function runYThucGonTests(t: YThucTestKit) {
   });
 
   await checkAsync('PR-YT2 · gắn vi phạm đang ở PA đã thực hiện vào PA đang chuẩn bị → được (§3.11: checkViolationSet không lọc trạng thái)', async () => {
-    const s = taoHocVien('MB-FT 101', true);
+    const s = taoHocVien('MB FT 101', true);
     const va = ghi(s.sid, 'Vi phạm sẽ ở PA đang chuẩn bị');
     const vb = ghi(s.sid, 'Vi phạm sẽ ở PA đã thực hiện, sau đó gắn thêm vào PA đang chuẩn bị');
     const done = measSvc.createMeasure(gvcn, { studentId: s.sid, kind: 'talk_short', violationIds: [vb] }) as any;
@@ -234,7 +234,7 @@ export async function runYThucGonTests(t: YThucTestKit) {
   });
 
   await checkAsync('PR-YT2 · HTTP GET /students/:id/measure-kinds?excludeMeasureId: không truyền → Thư cảnh cáo 1 khoá; có truyền id của chính PA đó → mở', async () => {
-    const s = taoHocVien('MB-FT 101', true);
+    const s = taoHocVien('MB FT 101', true);
     const v = ghi(s.sid, 'Vi phạm dùng để tạo Thư cảnh cáo lần 1 (kiểm excludeMeasureId)');
     const w1 = measSvc.createMeasure(gvcn, { studentId: s.sid, kind: 'warning_1', violationIds: [v] }) as any;
     const noExclude = await call(gvcn, 'GET', `/students/${s.sid}/measure-kinds`);
@@ -246,9 +246,9 @@ export async function runYThucGonTests(t: YThucTestKit) {
   });
 
   await checkAsync('PR-YT2 · HTTP GET /classes/:id/violations: đủ ba trạng thái, from lọc đúng, GV không dạy lớp → 403, HV đã rời lớp không có', async () => {
-    const sA = taoHocVien('MB-FT 101', true);
-    const sB = taoHocVien('MB-FT 101', true);
-    const sLeft = taoHocVien('MB-FT 101', true);
+    const sA = taoHocVien('MB FT 101', true);
+    const sB = taoHocVien('MB FT 101', true);
+    const sLeft = taoHocVien('MB FT 101', true);
     const oldOn = addDays(TODAY, -10);
     const newOn = addDays(TODAY, -1);
 
@@ -279,8 +279,8 @@ export async function runYThucGonTests(t: YThucTestKit) {
   });
 
   await checkAsync('PR-YT2 · Q14 GET /students/:id/violations trả chuKy: FT có cycleId, lớp thường cycleId null (so classId)', async () => {
-    const ft = taoHocVien('MB-FT 101', true);
-    const normal = taoHocVien('MB-FOU 12', false);
+    const ft = taoHocVien('MB FT 101', true);
+    const normal = taoHocVien('MB FOU 12', false);
     const ftRes = await call(gvcn, 'GET', `/students/${ft.sid}/violations`);
     assert(ftRes.status === 200 && ftRes.json?.chuKy?.cycleId !== null, `FT phải có cycleId: ${JSON.stringify(ftRes.json?.chuKy)}`);
     const normalRes = await call(P.normalCoreTeacher, 'GET', `/students/${normal.sid}/violations`);
@@ -289,7 +289,7 @@ export async function runYThucGonTests(t: YThucTestKit) {
   });
 
   await checkAsync('PR-YT2 · Q15 xoá vi phạm DUY NHẤT của PA đang chuẩn bị → 400, dữ liệu không đổi; PA đã thực hiện vẫn xoá được (V14′)', async () => {
-    const s9 = taoHocVien('MB-FT 101', true);
+    const s9 = taoHocVien('MB FT 101', true);
     const v9 = ghi(s9.sid, 'Vi phạm duy nhất của PA đang chuẩn bị — dùng để kiểm chặn xoá Q15 qua HTTP');
     const m9 = measSvc.createMeasure(gvcn, { studentId: s9.sid, kind: 'talk_short', violationIds: [v9] }) as any;
     const del9 = await call(gvcn, 'DELETE', `/violations/${v9}`);
@@ -297,7 +297,7 @@ export async function runYThucGonTests(t: YThucTestKit) {
     const linkCount = (conn.prepare('SELECT COUNT(*) n FROM measure_violations WHERE measure_id = ?').get(m9.id) as any).n;
     assert(linkCount === 1, 'dữ liệu không đổi sau khi bị chặn');
 
-    const s10 = taoHocVien('MB-FT 101', true);
+    const s10 = taoHocVien('MB FT 101', true);
     const v10 = ghi(s10.sid, 'Vi phạm duy nhất của PA đã thực hiện — dùng để kiểm V14′ qua HTTP');
     const m10 = measSvc.createMeasure(gvcn, { studentId: s10.sid, kind: 'talk_short', violationIds: [v10] }) as any;
     measSvc.confirmMeasure(gvcn, m10.id, { performedOn: TODAY, performedBy: gvcn.userId, note: 'Đã trao đổi' });
@@ -308,7 +308,7 @@ export async function runYThucGonTests(t: YThucTestKit) {
   });
 
   check('PR-YT2 · Q10 listMeasures({classId}) JSON từng phần tử bằng hệt gọi measureDetail lẻ', () => {
-    const s = taoHocVien('MB-FT 101', true);
+    const s = taoHocVien('MB FT 101', true);
     const v1 = ghi(s.sid, 'Vi phạm 1 — dùng để kiểm listMeasures theo lô so với gọi lẻ');
     const v2 = ghi(s.sid, 'Vi phạm 2 — dùng để kiểm listMeasures theo lô so với gọi lẻ', undefined, 'conduct');
     measSvc.createMeasure(gvcn, { studentId: s.sid, kind: 'talk_short', violationIds: [v1] });
@@ -366,13 +366,13 @@ export async function runYThucGonTests(t: YThucTestKit) {
   });
 
   check('PR-YT2 · Q19 classId ngoài chi nhánh của Quản lý → 403', () => {
-    const cpClass = classId('CP-FT 110');
+    const cpClass = classId('CP FT 110');
     assertThrows(() => thongKeSvc.yThucMetric(P.mbManager, 'vi-pham-theo-nhom', { classId: cpClass }), /phạm vi/, 'lớp ngoài chi nhánh phải 403');
     assertThrows(() => phoiHopSvc.phoiHopMetric(P.mbManager, 'phoi-hop-luot-sos', { classId: cpClass }), /phạm vi/, 'lớp ngoài chi nhánh phải 403 (Phối hợp)');
   });
 
   check('PR-YT2 · Q19 classId: vi-pham-tong chỉ còn vi phạm GHI ở lớp đó; vi-pham-chua-xu-ly chỉ còn HV ĐANG HỌC lớp đó', () => {
-    const CLASS = classId('MB-FT 101');
+    const CLASS = classId('MB FT 101');
     const tong = thongKeSvc.yThucMetric(P.mbManager, 'vi-pham-tong', { classId: CLASS }) as any;
     for (const id of tong.ids) {
       const row = conn.prepare('SELECT class_id FROM violations WHERE id = ?').get(id) as any;
@@ -387,7 +387,7 @@ export async function runYThucGonTests(t: YThucTestKit) {
   });
 
   check('PR-YT2 · Q19 phoi-hop-luot-sos + classId: chỉ còn lượt của lớp, byKind vẫn cộng đúng tổng', () => {
-    const CLASS = classId('MB-FT 101');
+    const CLASS = classId('MB FT 101');
     const r = phoiHopSvc.phoiHopMetric(P.mbManager, 'phoi-hop-luot-sos', { classId: CLASS }) as any;
     for (const id of r.ids) {
       const row = conn.prepare('SELECT class_id FROM assessment_attempts WHERE id = ?').get(id) as any;
@@ -398,7 +398,7 @@ export async function runYThucGonTests(t: YThucTestKit) {
   });
 
   check('PR-YT2 · Q19 chỉ số học thuật (case-mo) + classId → 400', () => {
-    assertThrows(() => metricsSvc.metricSet(P.mbManager, 'case-mo', { classId: classId('MB-FT 101') }),
+    assertThrows(() => metricsSvc.metricSet(P.mbManager, 'case-mo', { classId: classId('MB FT 101') }),
       /chưa lọc theo lớp/, 'case-mo + classId phải 400');
   });
 
@@ -412,7 +412,7 @@ export async function runYThucGonTests(t: YThucTestKit) {
     const before1 = soCauSql();
     thongKeSvc.yThucMetric(P.mbManager, 'vi-pham-theo-nhom', { branchId: mbBranch });
     const d1 = soCauSql() - before1;
-    const s = taoHocVien('MB-FT 101', true);
+    const s = taoHocVien('MB FT 101', true);
     for (let i = 0; i < 20; i += 1) ghi(s.sid, `Vi phạm thêm #${i} để kiểm không N+1 cho vi-pham-theo-nhom`);
     const before2 = soCauSql();
     thongKeSvc.yThucMetric(P.mbManager, 'vi-pham-theo-nhom', { branchId: mbBranch });
@@ -438,8 +438,8 @@ export async function runYThucGonTests(t: YThucTestKit) {
     const teacherA = P.coreTeacher.userId;
     const teacherB = P.w1Teacher.userId;
     const now = new Date().toISOString();
-    const classA = (intake.createClass(P.admin, { code: `MB-FT ${tag}A`, branchId: mbBranch, kind: 'FT', isFastTrack: true, startDate: '2026-08-03' }) as any).id as number;
-    const classB = (intake.createClass(P.admin, { code: `MB-FT ${tag}B`, branchId: mbBranch, kind: 'FT', isFastTrack: true, startDate: '2026-08-03' }) as any).id as number;
+    const classA = (intake.createClass(P.admin, { code: `MB FT ${tag}A`, branchId: mbBranch, kind: 'FT', isFastTrack: true, startDate: '2026-08-03' }) as any).id as number;
+    const classB = (intake.createClass(P.admin, { code: `MB FT ${tag}B`, branchId: mbBranch, kind: 'FT', isFastTrack: true, startDate: '2026-08-03' }) as any).id as number;
     conn.prepare(`INSERT INTO teacher_assignments (class_id, user_id, skill, is_core, status, effective_from, created_at) VALUES (?, ?, NULL, 1, 'active', '2026-01-01', ?)`).run(classA, teacherA, now);
     conn.prepare(`INSERT INTO teacher_assignments (class_id, user_id, skill, is_core, status, effective_from, created_at) VALUES (?, ?, NULL, 1, 'active', '2026-01-01', ?)`).run(classB, teacherB, now);
     const sid = Number(conn.prepare(
