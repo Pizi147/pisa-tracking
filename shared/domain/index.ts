@@ -55,3 +55,5 @@ export * from './loiForm.ts';
 export * from './viPhamLop.ts';
 export * from './hoanTac.ts';
 export * from './nhatKy.ts';
+export * from './tenLop.ts';
+export * from './phanCong.ts';

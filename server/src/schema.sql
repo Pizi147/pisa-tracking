@@ -55,7 +55,7 @@ CREATE TABLE programme_checkpoints (
 
 CREATE TABLE classes (
   id INTEGER PRIMARY KEY,
-  code TEXT NOT NULL UNIQUE,          -- luôn bắt đầu bằng mã chi nhánh: "CP-FT 110"
+  code TEXT NOT NULL UNIQUE,          -- "CP FT 110" — máy ghép {CN} {ký hiệu} {số} (T1)
   branch_id INTEGER NOT NULL REFERENCES branches(id),
   kind TEXT NOT NULL,                 -- nhãn gốc do quản lý đặt: FT, FOUND, BE, ELE...
   -- Mã chương trình đã CHUẨN HOÁ. `kind` giữ nguyên chữ người dùng gõ (kể cả "FOUND" cũ),
@@ -88,6 +88,11 @@ CREATE TABLE classes (
   progress_week_override INTEGER,
   final_week_override INTEGER,
 
+  -- Chụp lúc tạo lớp — PF1; NULL với FT. Cột *_override ở trên vẫn đè lên.
+  so_tuan INTEGER,
+  tuan_giua_khoa INTEGER,
+  tuan_cuoi_khoa INTEGER,
+
   /*
    * LỚP NÀY HỌC TIẾP TỪ LỚP NÀO — chuỗi chuyển tiếp FOU → BE → FT.
    *
@@ -104,6 +109,8 @@ CREATE TABLE classes (
 );
 CREATE INDEX idx_class_branch ON classes(branch_id);
 CREATE INDEX idx_class_status ON classes(status);
+-- Mã lớp trùng so bằng chuẩn hoá (bỏ "-", khoảng trắng, hoa/thường) — K5-68, = chuanHoaMaLop.
+CREATE UNIQUE INDEX ux_classes_ma_chuan ON classes (lower(replace(replace(code, '-', ''), ' ', '')));
 
 -- Kỹ năng lớp có học và số buổi chính mỗi tuần. Quản lý cấu hình, không suy từ tên lớp.
 CREATE TABLE class_skills (

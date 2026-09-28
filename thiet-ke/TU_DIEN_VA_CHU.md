@@ -291,9 +291,28 @@ câu báo máy chủ `phương án xử lý`) và D3 (bỏ "Hãy") đã ghi ở 
 | Nhật ký thay đổi (Quản trị) | nhãn tiếng Việt (`Huỷ phần còn lại của lượt`), mã máy chỉ ở tooltip | `attempt.cancel_part` |
 | ⓘ số liệu — không đếm trùng | `Mỗi học viên chỉ đếm 1 lần` · `Mỗi Case chỉ đếm 1 lần` | `COUNT DISTINCT student_id` |
 
+## 10. PR-LOP — 29/09/2026 · ba chữ về lớp (K1-50)
+
+Ba chữ khác nhau, không dùng lẫn. Panel Tạo lớp hỏi đúng thứ tự: Chi nhánh → **Kiểu lớp** → **Lộ trình** (FT) hoặc
+**Chương trình** (Lớp thường) → Số lớp.
+
+| Chữ | Nghĩa · giá trị hiện trên màn | Không viết |
+|---|---|---|
+| `Kiểu lớp` | `Fast Track` · `Lớp thường` | `Loại lớp`, `Normal`, `FT/Normal` |
+| `Lộ trình` | chỉ lớp Fast Track: `LT1` · `LT2` · `RF` (tên dài ở tooltip/Quản trị: `Lộ trình 1` · `Lộ trình 2` · `Refire`) | `Chương trình` cho LT1/LT2/RF |
+| `Chương trình` | chỉ Lớp thường: `Pre FOU` · `FOU` · `BE` · `ELE` (tên dài ở Quản trị, ví dụ `Pre Foundation`) | mã máy `PREFOU`, `FOUND`; `Lộ trình` cho FOU/BE/ELE |
+
+| Chỗ | Chữ dùng | Không viết |
+|---|---|---|
+| Tên lớp (máy ghép, không gõ tay) | `{CN} {FT \| FT RF \| Pre FOU \| FOU \| BE \| ELE} {số}` — `MB FT 101`, `MB FT RF 12`, `CP FOU 03` | `MB-FT 101` (tên cũ chỉ còn trong nhật ký, hành trình — là lịch sử) |
+| Xem trước tên ở panel Tạo lớp | `Lớp sẽ là MB FT RF 12` | — |
+| Ô Số lớp — dòng phụ | `1–4 chữ số, được thêm một chữ cái cuối (101A)` | — |
+| Pre FOU chưa mở (tới PR-MON) | nút mờ, `Mở cùng đợt cập nhật hệ môn học` | — |
+| Lỗi luật phân công dưới ô | `Chỉ chọn một GVCN` · `Mỗi môn một người` · `Lớp không có môn này` · `GVCN phải dạy ít nhất một kỹ năng — chọn kỹ năng cho cô/thầy này` · `Lớp Pre FOU chỉ có GVCN — GVCN dạy luôn` | câu dài liệt kê luật ở chân form |
+
 ---
 
-## 10. PR-NEN — 28/09/2026 (nền giao diện)
+## 11. PR-NEN — 28/09/2026 (nền giao diện)
 
 Chữ mới của PR nền giao diện (ô ngày, ô "Khác", ô chọn người, nhãn trạng thái, bàn phím) — chờ chủ sản phẩm duyệt cùng PR.
 Luật cách dùng ở `HE_GIAO_DIEN.md` §3, §9, §10.
@@ -309,5 +328,5 @@ Luật cách dùng ở `HE_GIAO_DIEN.md` §3, §9, §10.
 | Ô "Khác" | nhãn mặc định `Ghi rõ *` ngay dưới lựa chọn "Khác"; nhãn riêng từng chỗ: `Tên đề xuất` (PA đề xuất) · `Tên phương án` (xử lý Ý thức) · `Tên việc` (việc Phối hợp SOS) · `Ghi rõ lý do` (chuyển lớp / kết thúc học); chữ mờ mặc định `Ví dụ: Đi muộn giờ ăn trưa`; lỗi `Ghi rõ "Khác" là gì` · `Cần ít nhất 3 ký tự (đang có {n})` |
 | Ô chọn người — dòng cuối | `Dùng tên ngoài hệ thống: «{tên}»`; chưa gõ tên: `Dùng tên ngoài hệ thống: gõ tên ở ô trên`; tên đã chọn hiện dòng phụ `ngoài hệ thống`; tên quá ngắn: `Gõ tên ngoài hệ thống (ít nhất 2 ký tự).` — thay mọi chữ "người ngoài" (Q23) |
 | Sáu nhãn trạng thái chung (`NhanTrangThai`) | `Cần làm` · `Đang làm` · `Chờ duyệt` · `Quá hạn` (biết số ngày: `Quá hạn · {n} ngày`) · `Xong` · `Đã huỷ` |
-| Ô tìm học viên ở đầu trang | không có kết quả: `Không tìm thấy học viên` |
+| Ô tìm học viên, lớp ở đầu trang | không có kết quả: `Không tìm thấy học viên hoặc lớp` |
 | Liên kết đầu trang (chỉ hiện khi bấm Tab) | `Bỏ qua tới nội dung` |

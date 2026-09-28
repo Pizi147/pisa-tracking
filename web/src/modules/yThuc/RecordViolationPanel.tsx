@@ -28,7 +28,7 @@ export function RecordViolationPanel({
 }: {
   open: boolean; onClose: () => void;
   studentId: number; studentName?: string;
-  /** Mã lớp hiện ở đầu ngăn (`Ghi nhận vi phạm · Tên HV · MB-FOU 12`). */
+  /** Mã lớp hiện ở đầu ngăn (`Ghi nhận vi phạm · Tên HV · MB FOU 12`). */
   lop?: string | null;
   onDone?: () => void;
   /** Mở từ trang lớp: chọn học viên ngay ở đầu form (như QuickReport). */

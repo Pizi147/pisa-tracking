@@ -21,8 +21,8 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
   const { can } = await import('../permissions.ts');
   console.log('\nPR-Rc2 · Kế hoạch Test');
 
-  const mbClass = classId('MB-FT 101');
-  /** MT1/MT2/MT3 liên tiếp cùng lộ trình ở MB-FT 101 — cùng câu truy vấn của phép T13/T15 ở `run.ts`. */
+  const mbClass = classId('MB FT 101');
+  /** MT1/MT2/MT3 liên tiếp cùng lộ trình ở MB FT 101 — cùng câu truy vấn của phép T13/T15 ở `run.ts`. */
   function threeConsecutiveMocks() {
     const rows = conn.prepare(
       `SELECT a.id AS attemptId, a.attempt_no, a.cycle_id, s.skill, s.planned_period_id
@@ -105,7 +105,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
         ORDER BY a.id` : ''}
         LIMIT 1`,
     ).get(mbClass) as any;
-    assert(row, 'Seed thiếu một MT1 ở MB-FT 101 để dựng đợt hoàn tất (R11)');
+    assert(row, 'Seed thiếu một MT1 ở MB FT 101 để dựng đợt hoàn tất (R11)');
     const per = week.ensurePeriod('2026-05-04');
     conn.prepare(`UPDATE attempt_skills SET required=1, sit_status='scheduled', planned_period_id=? WHERE attempt_id=?`)
       .run(per.id, row.attemptId);
@@ -160,12 +160,12 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
   });
 
   check('PR-Rc2 · R11(c) Lớp thường: bốn môn có điểm + hết CN → GVBM bị chặn, Quản lý sửa được; dấu "-" không làm hoàn tất', () => {
-    const foundationClass = classId('MB-FOU 12');
+    const foundationClass = classId('MB FOU 12');
     const row = conn.prepare(
       `SELECT id AS attemptId FROM assessment_attempts
         WHERE class_id = ? AND status != 'cancelled' AND kind = 'progress' LIMIT 1`,
     ).get(foundationClass) as any;
-    assert(row, 'Seed thiếu một bài Giữa khoá ở MB-FOU 12 để kiểm R11 lớp thường');
+    assert(row, 'Seed thiếu một bài Giữa khoá ở MB FOU 12 để kiểm R11 lớp thường');
     const attemptId = row.attemptId as number;
     const per = week.ensurePeriod('2026-05-04');
     conn.prepare(`UPDATE attempt_skills SET required=1, sit_status='scheduled', planned_period_id=? WHERE attempt_id=?`)
@@ -410,7 +410,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
         WHERE e.class_id = ? AND s.status = 'active' AND s.archived_at IS NULL
         ORDER BY s.id LIMIT 3`,
     ).all(mbClass) as any[];
-    assert(students3.length === 3, 'Seed thiếu ít nhất 3 HV đang học ở MB-FT 101 để kiểm Task5');
+    assert(students3.length === 3, 'Seed thiếu ít nhất 3 HV đang học ở MB FT 101 để kiểm Task5');
     const [hvA, hvB, hvC] = students3;
     const attemptNo = 90; // số MT ảo, chắc chắn chưa em nào có, tránh đụng lịch thật
     const far0 = week.ensurePeriod('2029-06-04'); // Thứ Hai
@@ -502,10 +502,10 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
   });
 
   check('PR-Rc2 · Task6(a) luoiThuong: hai cột Giữa/Cuối × 4 kỹ năng từng em; lớp mới chưa có bài → deXuat khớp planRegularTests', () => {
-    const foundationClass = classId('MB-FOU 12');
+    const foundationClass = classId('MB FOU 12');
     const foundation = keHoachMod.luoiThuong(P.mbManager, foundationClass);
-    assert(foundation.cot.length === 2 && foundation.cot[0].nhan === 'Giữa khoá' && foundation.cot[1].nhan === 'Cuối khoá', 'MB-FOU 12 phải có 2 cột Giữa/Cuối khoá');
-    assert(foundation.hang.length >= 2, 'MB-FOU 12 phải có hàng từng học viên');
+    assert(foundation.cot.length === 2 && foundation.cot[0].nhan === 'Giữa khoá' && foundation.cot[1].nhan === 'Cuối khoá', 'MB FOU 12 phải có 2 cột Giữa/Cuối khoá');
+    assert(foundation.hang.length >= 2, 'MB FOU 12 phải có hàng từng học viên');
     for (const h of foundation.hang) {
       for (const kind of ['progress', 'final']) {
         const o = h.dot[kind];
@@ -516,7 +516,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
 
     const branch = conn.prepare('SELECT branch_id AS id FROM classes WHERE id = ?').get(mbClass) as any;
     const now = new Date().toISOString();
-    /* Lớp thường MỚI DỰNG, chắc chắn chưa có bài — seed sẵn có của MB-FOU 12/BC-ELE 01 đã ở giữa/cuối khoá. */
+    /* Lớp thường MỚI DỰNG, chắc chắn chưa có bài — seed sẵn có của MB FOU 12/BC ELE 01 đã ở giữa/cuối khoá. */
     const info = conn.prepare(
       `INSERT INTO classes (code, branch_id, kind, programme_code, route, is_fast_track, start_date,
                             start_period_id, status, note, created_at)
@@ -545,7 +545,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
   });
 
   check('PR-Rc2 · Task6(b) R14: reportRegularNoShow một em môn L → kn.listening của em đó da-doi với tuần mới, em khác không đổi', () => {
-    const foundationClass = classId('MB-FOU 12');
+    const foundationClass = classId('MB FOU 12');
     const row = conn.prepare(
       `SELECT a.id AS attemptId, a.student_id, ask.planned_period_id, pr.week_start
          FROM assessment_attempts a
@@ -554,7 +554,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
          JOIN report_periods pr ON pr.id = ask.planned_period_id
         WHERE a.class_id = ? AND a.status != 'cancelled' AND a.kind='progress' AND s.status='active' AND s.archived_at IS NULL LIMIT 1`,
     ).get(foundationClass) as any;
-    assert(row, 'Seed thiếu một bài Giữa khoá ở MB-FOU 12 đã có lịch L để kiểm R14');
+    assert(row, 'Seed thiếu một bài Giữa khoá ở MB FOU 12 đã có lịch L để kiểm R14');
     /* Dùng ĐÚNG tuần L đã có sẵn trong seed (không tự đặt tuần khác) — tránh chạm T15 với bài Cuối khoá cùng
        lộ trình. Chỉ cần "hôm nay" đã qua tuần đó để "-" ghi được (Rc1). */
     conn.prepare(`UPDATE attempt_skills SET sit_status='scheduled' WHERE attempt_id=? AND skill='listening'`)
@@ -579,13 +579,13 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
   });
 
   check('PR-Rc2 · Task6(c)(d) luuDot lớp thường: đổi W của MỘT em; em đã có điểm → giu; setSkillWeek từ chối dời môn đã có raw_score', () => {
-    const foundationClass = classId('MB-FOU 12');
+    const foundationClass = classId('MB FOU 12');
     const attempts = conn.prepare(
       `SELECT a.id AS attemptId, a.student_id FROM assessment_attempts a
          JOIN students s ON s.id = a.student_id JOIN enrollments e ON e.student_id=s.id AND e.status='active' AND e.class_id=a.class_id
         WHERE a.class_id = ? AND a.status != 'cancelled' AND a.kind='progress' AND s.status='active' AND s.archived_at IS NULL`,
     ).all(foundationClass) as any[];
-    assert(attempts.length >= 2, 'Seed thiếu ít nhất 2 bài Giữa khoá ở MB-FOU 12 để kiểm luuDot lớp thường');
+    assert(attempts.length >= 2, 'Seed thiếu ít nhất 2 bài Giữa khoá ở MB FOU 12 để kiểm luuDot lớp thường');
     /* CHỈ THAO TÁC TRÊN HAI EM ĐÃ KIỂM SOÁT ĐƯỢC — các em khác trong lớp thật có lộ trình/lịch riêng. */
     const [emCoDiem, emMove] = attempts;
 
@@ -708,10 +708,10 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
   });
 
   check('PR-Rc2 · Rà planning(1) Lớp đã kết thúc không hiện ở danhSachLop (cả FT lẫn lớp thường)', () => {
-    /* MB-FOU 03, MB-BE 08 là hai lớp `status='ended'` có sẵn trong seed (giữ lại để tra lịch sử — journeys.ts). */
+    /* MB FOU 03, MB BE 08 là hai lớp `status='ended'` có sẵn trong seed (giữ lại để tra lịch sử — journeys.ts). */
     const dsLop = keHoachMod.danhSachLop(P.mbManager, {});
     const maLop = dsLop.lop.map((l: any) => l.code);
-    assert(!maLop.includes('MB-FOU 03') && !maLop.includes('MB-BE 08'),
+    assert(!maLop.includes('MB FOU 03') && !maLop.includes('MB BE 08'),
       `Lớp đã kết thúc không được hiện ở danhSachLop, đang có: ${JSON.stringify(maLop)}`);
     assert(dsLop.lop.some((l: any) => l.loai === 'thuong') && dsLop.lop.some((l: any) => l.loai === 'ft'), 'danhSachLop phải có cả lớp FT lẫn lớp thường');
   });
@@ -721,10 +721,10 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
       `SELECT s.id, s.full_name FROM students s
          JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
          JOIN classes c ON c.id = e.class_id
-        WHERE c.code = 'CP-FT 110' AND s.status = 'active' AND s.archived_at IS NULL
+        WHERE c.code = 'CP FT 110' AND s.status = 'active' AND s.archived_at IS NULL
         LIMIT 1`,
     ).get() as any;
-    assert(outside, 'Seed thiếu HV đang học ở CP-FT 110 (chi nhánh khác) để kiểm lọc studentIds');
+    assert(outside, 'Seed thiếu HV đang học ở CP FT 110 (chi nhánh khác) để kiểm lọc studentIds');
 
     const inside = conn.prepare(
       `SELECT DISTINCT s.id FROM students s
@@ -733,7 +733,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
         WHERE e.class_id = ? AND s.status = 'active' AND s.archived_at IS NULL
         ORDER BY s.id LIMIT 1`,
     ).get(mbClass) as any;
-    assert(inside, 'Seed thiếu HV đang học ở MB-FT 101 để kiểm lọc studentIds');
+    assert(inside, 'Seed thiếu HV đang học ở MB FT 101 để kiểm lọc studentIds');
 
     const attemptNo = 91; // số MT ảo, chắc chắn chưa em nào có, tránh đụng lịch thật
     const far = week.ensurePeriod('2029-08-06'); // Thứ Hai, xa mọi lịch thật
@@ -830,7 +830,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
          JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
         WHERE e.class_id = ? AND s.status = 'active' AND s.archived_at IS NULL ORDER BY s.id LIMIT 1`,
     ).get(mbClass) as any;
-    assert(hv, 'Seed thiếu HV ở MB-FT 101');
+    assert(hv, 'Seed thiếu HV ở MB FT 101');
     const A = week.ensurePeriod('2027-03-01');
     const A7 = week.ensurePeriod('2027-03-08');
     const mt = attemptsMod.createAttempt(P.mbManager, { studentId: hv.id, attemptNo: 80, periodId: A.id }) as any;
@@ -875,7 +875,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
 
   // ------------------------------------------------------------ PR-UX2 · Task 3–5 (máy chủ theo từng kỹ năng)
 
-  /** HV đang học MB-FT 101 có lộ trình đang chạy, thứ tự theo id — chỉ dùng số MT ảo ≥ 80, tuần 2027 trở đi. */
+  /** HV đang học MB FT 101 có lộ trình đang chạy, thứ tự theo id — chỉ dùng số MT ảo ≥ 80, tuần 2027 trở đi. */
   const hvFT = (offset: number) => (conn.prepare(
     `SELECT DISTINCT s.id FROM students s
        JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
@@ -954,7 +954,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     assert(o.trangThai === 'khong-yeu-cau' && o.batBuoc === false, 'S bị bỏ phải là khong-yeu-cau');
     const thuong = conn.prepare(
       `SELECT a.id FROM assessment_attempts a WHERE a.class_id = ? AND a.kind = 'progress' AND a.status != 'cancelled' LIMIT 1`,
-    ).get(classId('MB-FOU 12')) as any;
+    ).get(classId('MB FOU 12')) as any;
     assertThrows(
       () => keHoachMod.luuDot(P.mbManager, { attemptId: thuong.id, kyNang: [{ skill: 'speaking', bo: true }], lyDoBo: 'thử' }),
       /bốn môn/, 'Lớp thường không được bỏ kỹ năng',
@@ -985,13 +985,13 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
   }
 
   check('UX2 · lớp thường theo HV: luuDot một em đổi S, em khác cùng lớp giữ nguyên; xepMoiThuong tạo đúng 1 lượt cho 1 em', () => {
-    const foundationClass = classId('MB-FOU 12');
+    const foundationClass = classId('MB FOU 12');
     const dong = conn.prepare(
       `SELECT a.id AS attemptId, a.student_id FROM assessment_attempts a
          JOIN students s ON s.id = a.student_id JOIN enrollments e ON e.student_id=s.id AND e.status='active' AND e.class_id=a.class_id
         WHERE a.class_id = ? AND a.status != 'cancelled' AND a.kind='progress' AND s.status='active' AND s.archived_at IS NULL`,
     ).all(foundationClass) as any[];
-    assert(dong.length >= 2, 'Seed thiếu ít nhất 2 bài Giữa khoá ở MB-FOU 12');
+    assert(dong.length >= 2, 'Seed thiếu ít nhất 2 bài Giữa khoá ở MB FOU 12');
     const [emA, emB] = dong;
     conn.prepare(`DELETE FROM assessment_scores WHERE attempt_id=? AND skill='speaking'`).run(emA.attemptId);
     conn.prepare(`UPDATE attempt_skills SET sit_status='scheduled' WHERE attempt_id=? AND skill='speaking'`).run(emA.attemptId);
@@ -1023,10 +1023,10 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     assert(dem(em2) === 0, 'Bị từ chối mà vẫn tạo bài');
   });
 
-  check('UX2 · nhãn tuần n/N: luoiThuong MB-FOU 12 nhanDeXuat W4/8 · W8/8; BC-ELE 01 W5/10 · W10/10; nhanTuanKhoa(tuần sau khoá) = "sau khoá"', () => {
-    const fou = keHoachMod.luoiThuong(P.mbManager, classId('MB-FOU 12'));
+  check('UX2 · nhãn tuần n/N: luoiThuong MB FOU 12 nhanDeXuat W4/8 · W8/8; BC ELE 01 W5/10 · W10/10; nhanTuanKhoa(tuần sau khoá) = "sau khoá"', () => {
+    const fou = keHoachMod.luoiThuong(P.mbManager, classId('MB FOU 12'));
     assert(fou.cot[0].nhanDeXuat === 'W4/8' && fou.cot[1].nhanDeXuat === 'W8/8', `FOU phải W4/8 · W8/8, ra ${fou.cot.map((c: any) => c.nhanDeXuat)}`);
-    const ele = keHoachMod.luoiThuong(P.bcManager, classId('BC-ELE 01'));
+    const ele = keHoachMod.luoiThuong(P.bcManager, classId('BC ELE 01'));
     assert(ele.cot[0].nhanDeXuat === 'W5/10' && ele.cot[1].nhanDeXuat === 'W10/10', `ELE phải W5/10 · W10/10, ra ${ele.cot.map((c: any) => c.nhanDeXuat)}`);
     assert(d.nhanTuanKhoa(addDays(fou.cot[1].deXuat, 7), fou.khaiGiang, fou.tongTuan) === 'sau khoá', 'Tuần sau hết khoá phải là "sau khoá"');
     assert(d.nhanTuanKhoa(fou.cot[0].deXuat, fou.khaiGiang, fou.tongTuan) === 'W4/8', 'nhanTuanKhoa khớp nhanDeXuat');
@@ -1034,10 +1034,10 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
 
   check('UX2 · danhSachLop: lớp FT có tomTat dạng "MT{n} đang thi…", có chiNhanh; lớp thường tomTat có "đang W"', () => {
     const ds = keHoachMod.danhSachLop(P.mbManager, {});
-    const ft = ds.lop.find((l: any) => l.code === 'MB-FT 101');
-    assert(ft && /^MT\d+ đang thi/.test(ft.tomTat) && ft.chiNhanh, `MB-FT 101 phải có tomTat "MT… đang thi" và chiNhanh, ra ${JSON.stringify(ft)}`);
-    const thuong = ds.lop.find((l: any) => l.code === 'MB-FOU 12');
-    assert(thuong && /đang W\d+\/8/.test(thuong.tomTat), `MB-FOU 12 phải có tomTat "đang W…/8", ra ${JSON.stringify(thuong)}`);
+    const ft = ds.lop.find((l: any) => l.code === 'MB FT 101');
+    assert(ft && /^MT\d+ đang thi/.test(ft.tomTat) && ft.chiNhanh, `MB FT 101 phải có tomTat "MT… đang thi" và chiNhanh, ra ${JSON.stringify(ft)}`);
+    const thuong = ds.lop.find((l: any) => l.code === 'MB FOU 12');
+    assert(thuong && /đang W\d+\/8/.test(thuong.tomTat), `MB FOU 12 phải có tomTat "đang W…/8", ra ${JSON.stringify(thuong)}`);
     assert(typeof thuong.hvChuaCoLich === 'number', 'Lớp thường phải có hvChuaCoLich');
   });
 
@@ -1078,7 +1078,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     const mbBranch = (conn.prepare('SELECT branch_id AS id FROM classes WHERE id = ?').get(mbClass) as any).id;
     const attemptMB = (conn.prepare(`SELECT id, student_id FROM assessment_attempts WHERE class_id = ? AND status != 'cancelled' LIMIT 1`).get(mbClass) as any);
     const per = week.ensurePeriod('2031-03-03');
-    const thuongMB = classId('MB-FOU 12');
+    const thuongMB = classId('MB FOU 12');
     e403(() => keHoachMod.luoiFT(P.cpManager, mbClass), 'luoiFT');
     e403(() => keHoachMod.luoiThuong(P.cpManager, thuongMB), 'luoiThuong');
     e403(() => keHoachMod.kiemDot(P.cpManager, { attemptId: attemptMB.id, kyNang: [{ skill: 'listening', periodId: per.id }] }), 'kiemDot');

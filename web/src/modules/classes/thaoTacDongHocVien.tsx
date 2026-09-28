@@ -29,7 +29,7 @@ export function nhapDiemCua(
  */
 export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone, maLop }: {
   laLopThuong: boolean; quyen: QuyenDong; onDone: () => void;
-  /** Mã lớp hiện ở đầu các ngăn mở từ dòng học viên (`Tên HV · MB-FOU 12`). */
+  /** Mã lớp hiện ở đầu các ngăn mở từ dòng học viên (`Tên HV · MB FOU 12`). */
   maLop?: string | null;
 }): { mucCua: (d: DongChoMenu) => MucMenu[]; panels: ReactNode } {
   const navigate = useNavigate();

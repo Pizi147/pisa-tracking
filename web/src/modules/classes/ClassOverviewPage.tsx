@@ -48,10 +48,12 @@ export default function ClassOverviewPage() {
   /*
    * LỐI VÀO TỪ VIỆC ĐỎ / BADGE "Hết khoá" (PR-LT): `?viec=chuyen-tiep` mở panel Chuyển tiếp
    * lớp MỘT LẦN rồi xoá tham số khỏi URL — không mở lại nếu người dùng tự đóng rồi tải lại.
+   * `?viec=phan-cong` (PR-LOP, K1-05): việc "lớp thiếu GV môn" mở thẳng Sửa phân công.
    */
   useEffect(() => {
-    if (data && params.get('viec') === 'chuyen-tiep' && data.viewer.coTheChuyenTiep) {
-      setViec('chuyen-tiep');
+    const v = params.get('viec');
+    if (data && ((v === 'chuyen-tiep' && data.viewer.coTheChuyenTiep) || (v === 'phan-cong' && data.viewer.canAssign))) {
+      setViec(v);
       doiThamSo({ viec: null });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -94,7 +96,7 @@ export default function ClassOverviewPage() {
       <TeacherAssignPanel open={viec === 'phan-cong'} onClose={dong} classId={data.id} classCode={data.code} onDone={xong} />
       {viec === 'thong-tin' && (
         <SuaThongTinLopPanel onClose={dong} onDone={xong}
-          lop={{ id: data.id, code: data.code, route: data.route, note: data.note,
+          lop={{ id: data.id, code: data.code, branchCode: data.branchCode, route: data.route, note: data.note,
             programmeCode: data.programme?.code ?? null, soHocVien: data.summary?.studentCount ?? 0 }} />
       )}
       {viec === 'xoa-lop' && <XoaLopPanel classId={data.id} classCode={data.code} onClose={dong} />}

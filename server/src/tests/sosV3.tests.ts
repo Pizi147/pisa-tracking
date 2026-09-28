@@ -278,7 +278,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
   const regularSvc: any = await import('../normal/regular.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const { assertThrows, P, TODAY, addDays } = t;
-  const CLASS = t.classId('MB-FT 101');
+  const CLASS = t.classId('MB FT 101');
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const count = (sql: string, ...a: unknown[]) => (get(sql, ...a)?.n ?? 0) as number;
@@ -415,7 +415,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
 
   check('PR-T · Q-V3-1 (§10#8) Lớp NORMAL trượt hai môn ở Progress Test: KHÔNG tự tạo case, KHÔNG phương án điền sẵn, KHÔNG Phối hợp SOS — vẫn chỉ là tín hiệu chờ xác minh', () => {
     const regular: any = regularSvc;
-    const fou = get("SELECT id FROM classes WHERE code = 'MB-FOU 12'");
+    const fou = get("SELECT id FROM classes WHERE code = 'MB FOU 12'");
     intake.commitIntake(P.admin, { classId: fou.id, rows: [{ fullName: 'PT Normal' }], dateFormat: 'iso', idempotencyKey: 'pt-normal' });
     regular.planRegularTests(P.admin, fou.id);                     // idempotent: chỉ tạo bài còn thiếu cho em mới
     const stu = get("SELECT id FROM students WHERE full_name = 'PT Normal'");
@@ -472,7 +472,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
   const sosAuto: any = await load('../cases/sosAuto.ts');
   const migN1: any = await load('../migrate/prN1.ts');
   const phoiHop: any = await load('../yThuc/phoiHop.ts');
-  const gvcn = P.coreTeacher;      // chủ nhiệm MB-FT 101
+  const gvcn = P.coreTeacher;      // chủ nhiệm MB FT 101
   const coordOf = (attemptId: number) => all('SELECT * FROM sos_coordination_actions WHERE attempt_id = ? ORDER BY id', attemptId);
   const rowOf = (attemptId: number, kind: string) => coordOf(attemptId).find((r) => r.kind === kind);
   const effectivenessSvc: any = await import('../cases/effectiveness.ts');
@@ -1070,7 +1070,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     migrateMod.migrateSosV3(m, []);
     const NOW = '2026-09-10T00:00:00.000Z';
     const q = (sql: string, ...a: unknown[]) => Number(m.prepare(sql).run(...a).lastInsertRowid);
-    q(`INSERT INTO classes (id, code, branch_id, kind, status, created_at) VALUES (1, 'MB-FT 1', 1, 'FT', 'active', ?)`, NOW);
+    q(`INSERT INTO classes (id, code, branch_id, kind, status, created_at) VALUES (1, 'MB FT 1', 1, 'FT', 'active', ?)`, NOW);
     const viol = (valid: number, desc: string) => q(
       `INSERT INTO violations (student_id, class_id, category, occurred_on, reported_on, reported_by, description, valid, invalid_reason, invalidated_by, invalidated_at, created_at)
        VALUES (1, 1, 'homework', '2026-09-01', '2026-09-02', 1, ?, ?, ?, ?, ?, ?)`, desc, valid, valid ? null : 'Em đã nộp, tôi bỏ sót', valid ? null : 1, valid ? null : NOW, NOW);

@@ -1,10 +1,16 @@
 import { db, tx } from '../db.ts';
-import { MOCK_FT_STUDY_WEEK, PERMISSIONS, PROGRAMME_TEMPLATES, programmeOf, type Route } from '../../../shared/domain/index.ts';
+import {
+  CHO_TAO_PRE_FOU, ENTRY_SKILLS, MOCK_FT_STUDY_WEEK, PERMISSIONS, PROGRAMME_TEMPLATES, chuanHoaMaLop, ghepMaLop, khoaMaLopSql, kiemSoLop,
+  moRongPhanCong, programmeOf, type Route, type SlotPhanCong,
+} from '../../../shared/domain/index.ts';
+import { demoToday } from '../demoConfig.ts';
+import { docSlots, ghiPhanCong, kiemTruocPhanCong } from './classes.ts';
+import { allProgrammes, mocChupVaoLop, programmeByCode } from '../normal/regular.ts';
 import { activeRouteCodes } from '../platform/sysconfig.ts';
 import { addDays, badRequest, isIsoDate, normalizeName, notFound, nowIso, padCode } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
-import { ensurePeriod, mondayOf } from '../platform/week.ts';
+import { ensurePeriod, mondayOf, periodById } from '../platform/week.ts';
 import { ensureSkillRows } from '../fasttrack/skillSchedule.ts';
 
 /**
@@ -228,8 +234,8 @@ export function previewIntake(
   }
 
   /* Chương trình quyết định bộ cột: Fast Track có band từng kỹ năng và target, Normal không. */
-  const tpl = cls.programme_code ? PROGRAMME_TEMPLATES[programmeOf(cls.programme_code) ?? 'FT'] : null;
-  const ratio = (tpl?.scoringMode ?? 'ielts_band') === 'ratio';
+  const pc = cls.programme_code ? programmeOf(cls.programme_code) ?? 'FT' : null;
+  const ratio = ((pc ? programmeByCode(pc)?.scoringMode ?? PROGRAMME_TEMPLATES[pc]?.scoringMode : null) ?? 'ielts_band') === 'ratio';
 
   const defaultWeek = input.defaultStartWeek
     ? mondayOf(input.defaultStartWeek)
@@ -492,7 +498,10 @@ export function commitIntake(
   return result;
 }
 
-/** Tạo lớp mới. Kỹ năng lấy theo cấu hình gửi lên, không suy từ tên lớp. */
+/**
+ * GHI một lớp mới — hàm nội bộ (seed, phép kiểm, Chuyển tiếp); đường Tạo lớp của người dùng đi qua `taoLopVaPhanCong` (kiểm mẫu
+ * tên đầy đủ + phân công). Kỹ năng lấy theo cấu hình gửi lên, không suy từ tên lớp.
+ */
 export function createClass(p: Principal, input: {
   code: string; branchId: number; kind: string; route?: Route | null;
   isFastTrack?: boolean; startDate?: string | null; skills?: string[]; note?: string | null;
@@ -507,12 +516,14 @@ export function createClass(p: Principal, input: {
   if (!branch) throw notFound('Không tìm thấy chi nhánh');
   const code = (input.code ?? '').trim();
   if (!code) throw badRequest('Cần mã lớp.');
-  // Mã lớp luôn bắt đầu bằng mã chi nhánh.
-  if (!code.toUpperCase().startsWith(`${branch.code.toUpperCase()}-`)) {
-    throw badRequest(`Mã lớp phải bắt đầu bằng "${branch.code}-", ví dụ ${branch.code}-FT 101.`);
+  // Mã lớp luôn bắt đầu bằng mã chi nhánh — nhận tên cũ `CN-` lẫn mới `CN ` (Q5).
+  if (!new RegExp(`^${branch.code}[\\s-]`, 'i').test(code)) {
+    throw badRequest(`Mã lớp phải bắt đầu bằng "${branch.code} ", ví dụ ${branch.code} FT 101.`);
   }
-  if (conn.prepare('SELECT id FROM classes WHERE code = ?').get(code)) throw badRequest(`Đã có lớp ${code}.`);
+  // Trùng so bằng mã chuẩn hoá (bỏ "-", khoảng trắng, hoa/thường) — khớp chỉ mục ux_classes_ma_chuan (Q3, K5-68).
+  if (conn.prepare(`SELECT id FROM classes WHERE ${khoaMaLopSql()} = ?`).get(chuanHoaMaLop(code))) throw badRequest(`Đã có lớp ${code}.`);
   if (input.startDate && !isIsoDate(input.startDate)) throw badRequest('Ngày khai giảng không hợp lệ.');
+  const ct = programmeOf(input.kind ?? 'FT');
 
   return tx(() => {
     const info = conn
@@ -524,25 +535,67 @@ export function createClass(p: Principal, input: {
          * dựng ra bảng band IELTS cho một lớp Foundation — lỗi im lặng đã từng xảy ra.
          */
         `INSERT INTO classes (code, branch_id, kind, programme_code, route, is_fast_track,
-                              start_date, start_period_id, previous_class_id, status, note, created_at)
-         VALUES (?,?,?,?,?,?,?,?,?, 'active', ?, ?)`,
+                              start_date, start_period_id, previous_class_id, status, note, created_at,
+                              so_tuan, tuan_giua_khoa, tuan_cuoi_khoa)
+         VALUES (?,?,?,?,?,?,?,?,?, 'active', ?, ?, ?,?,?)`,
       )
       .run(code, input.branchId, (input.kind ?? 'FT').trim(),
-           programmeOf(input.kind ?? 'FT'), input.route ?? null,
+           ct, input.route ?? null,
            input.isFastTrack ? 1 : 0, input.startDate ?? null, input.startPeriodId ?? null,
            input.previousClassId ?? null,
-           input.note ?? null, nowIso());
+           input.note ?? null, nowIso(),
+           ...mocChupVaoLop(ct));   // PF1: lớp giữ số tuần lúc tạo — Quản trị sửa sau chỉ áp lớp mở sau
     const id = Number(info.lastInsertRowid);
-    /* Không khai kỹ năng thì lấy ĐÚNG bộ môn của chương trình lớp đó, không mặc định bộ FT. */
-    const prog = programmeOf(input.kind ?? 'FT');
-    const fallback = prog && prog !== 'FT'
-      ? [...PROGRAMME_TEMPLATES[prog].skills]
-      : ['listening', 'reading', 'writing1', 'writing2', 'speaking'];
+    /* Không khai kỹ năng thì lấy ĐÚNG bộ môn của chương trình lớp đó (bảng `programmes`, K5-45), không mặc định bộ FT. */
+    const fallback = allProgrammes().get(ct ?? '')?.skills
+      ?? (ct ? PROGRAMME_TEMPLATES[ct]?.skills : null) ?? ENTRY_SKILLS;
     for (const skill of input.skills?.length ? input.skills : fallback) {
       conn.prepare('INSERT INTO class_skills (class_id, skill, sessions_per_week) VALUES (?,?,1)').run(id, skill);
     }
     writeAudit({ actorUserId: p.userId, action: 'class.create', entityType: 'class', entityId: id,
       entityLabel: code, after: input });
     return conn.prepare('SELECT * FROM classes WHERE id = ?').get(id);
+  });
+}
+
+export type TaoLopInput = {
+  branchId: number; chuongTrinh: string; loTrinh?: string | null; so: string;
+  startPeriodId?: number | null; slots?: SlotPhanCong[]; previousClassId?: number | null; note?: string | null;
+};
+
+/**
+ * YC-1/T5/L4: TẠO LỚP = MỘT lệnh, MỘT giao dịch (lớp + phân công). Tên lớp do máy ghép `{CN} {ký hiệu} {số}` (T1); kiểm tên + ba
+ * luật phân công TRƯỚC, sai thì không ghi gì — không còn "lớp tàng hình" không ai phụ trách. Thiếu phân công vẫn tạo được (L4).
+ */
+export function taoLopVaPhanCong(p: Principal, input: TaoLopInput): { id: number; code: string } {
+  require_(p, PERMISSIONS.STUDENT_EDIT, { branchId: input.branchId }, 'Bạn không có quyền tạo lớp ở chi nhánh này.');
+  const slots0 = docSlots(input.slots);
+  if (slots0.length) require_(p, PERMISSIONS.CLASS_ASSIGN, { branchId: input.branchId }, 'Bạn không có quyền phân công giáo viên ở chi nhánh này.');
+  const conn = db();
+  const branch = conn.prepare('SELECT * FROM branches WHERE id = ?').get(input.branchId) as any;
+  if (!branch) throw notFound('Không tìm thấy chi nhánh');
+  const ct = programmeOf(String(input.chuongTrinh ?? ''));
+  const prog = ct ? allProgrammes().get(ct) : null;
+  if (!ct || !prog) throw badRequest('Chọn chương trình của lớp.');
+  if (ct === 'PREFOU' && !CHO_TAO_PRE_FOU) throw badRequest('Lớp Pre FOU chưa mở — sẽ mở cùng đợt cập nhật hệ môn học.');
+  const loTrinh = ct === 'FT' ? String(input.loTrinh ?? '') : null;
+  if (ct === 'FT' && !activeRouteCodes().includes(loTrinh!)) throw badRequest('Chọn lộ trình LT1, LT2 hoặc RF.');
+  const loiSo = kiemSoLop(String(input.so ?? ''));
+  if (loiSo) throw badRequest(loiSo);
+  if (ct !== 'FT' && !input.startPeriodId) throw badRequest('Chọn tuần khai giảng — mốc Giữa/Cuối khoá đếm từ tuần này.');
+  /* Lớp thường: ngày khai giảng = thứ Hai của tuần khai giảng (mốc Giữa/Cuối khoá đếm từ đây). */
+  const tuan = input.startPeriodId ? periodById(input.startPeriodId) : null;
+  if (input.startPeriodId && !tuan) throw badRequest('Tuần khai giảng không hợp lệ.');
+  const slots = moRongPhanCong(ct, prog.skills, slots0);   // Pre FOU: GVCN tự nhận ô Tổng hợp (T56)
+  kiemTruocPhanCong(null, input.branchId, ct, prog.skills, slots);
+  const code = ghepMaLop(branch.code, ct, loTrinh, String(input.so));
+  return tx(() => {
+    const lop = createClass(p, {
+      code, branchId: input.branchId, kind: ct, route: loTrinh as Route | null, isFastTrack: ct === 'FT',
+      startDate: tuan?.week_start ?? null, startPeriodId: input.startPeriodId ?? null,
+      previousClassId: input.previousClassId ?? null, note: input.note ?? null,
+    }) as any;
+    if (slots.length) ghiPhanCong(p, lop.id, slots, demoToday());
+    return { id: lop.id as number, code };
   });
 }

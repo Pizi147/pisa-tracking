@@ -11,8 +11,10 @@ import { ENTRY_SKILLS } from './skills.ts';
  * `FOU` là mã canonical của Foundation. `FOUND` là mã đã từng dùng — chỉ ánh xạ khi
  * đọc dữ liệu cũ, KHÔNG tự đổi mã lớp lịch sử.
  */
-export const PROGRAMME_CODES = ['FT', 'FOU', 'BE', 'ELE'] as const;
+export const PROGRAMME_CODES = ['FT', 'PREFOU', 'FOU', 'BE', 'ELE'] as const;
 export type ProgrammeCode = (typeof PROGRAMME_CODES)[number];
+/** PF1: chương trình không chia môn — một ô `tong_hop`, lớp chỉ có GVCN và GVCN dạy luôn (T56). */
+export const CHUONG_TRINH_KHONG_CHIA_MON: readonly string[] = ['PREFOU'];
 export const LEGACY_PROGRAMME_CODE: Record<string, ProgrammeCode> = { FOUND: 'FOU' };
 
 /** Cách chấm của một chương trình. Tách khỏi chương trình để sau này thêm loại khác. */
@@ -94,6 +96,7 @@ export const LEGACY_REGULAR_SKILL_MAP: Record<string, RegularSkill> = {
 export const SKILL_SHORT: Record<string, string> = {
   listening: 'L', reading: 'R', writing1: 'W1', writing2: 'W2', speaking: 'S',
   writing: 'W',
+  tong_hop: 'Tổng hợp',
   // Hai mã CŨ, chỉ để dữ liệu chưa di trú không hiện mã thô trên giao diện.
   prep_writing: 'W', pronunciation: 'S',
 };
@@ -101,6 +104,7 @@ export const skillShort = (k: string) => SKILL_SHORT[k] ?? k;
 
 /**
  * Mốc kiểm tra tính theo TUẦN HỌC của lớp, không phải tuần thứ mấy của tháng.
+ * Pre FOU 5 tuần: chỉ cuối khoá tuần 5 (một ô Tổng hợp).
  * FOU 8 tuần: giữa khoá tuần 4, cuối khoá tuần 8.
  * BE/ELE 10 tuần: giữa khoá tuần 5, cuối khoá tuần 10.
  */
@@ -118,6 +122,11 @@ export const PROGRAMME_TEMPLATES: Record<ProgrammeCode, ProgrammeTemplate> = {
     code: 'FT', name: 'Fast Track', weeks: null, scoringMode: 'ielts_band',
     skills: ENTRY_SKILLS,
     checkpoints: [],   // MT theo mốc riêng của FT, xem MOCK_FT_STUDY_WEEK
+  },
+  PREFOU: {
+    code: 'PREFOU', name: 'Pre Foundation', weeks: 5, scoringMode: 'ratio',
+    skills: ['tong_hop'],
+    checkpoints: [{ kind: 'final', studyWeek: 5 }],
   },
   FOU: {
     code: 'FOU', name: 'Foundation', weeks: 8, scoringMode: 'ratio',

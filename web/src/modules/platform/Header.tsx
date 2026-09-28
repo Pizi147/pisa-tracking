@@ -1,26 +1,27 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSession } from '../../lib/session.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { api } from '../../lib/api.ts';
 import { Info } from '../../ui/ui.tsx';
 import { roleLabel, skillShort } from '../../lib/format.ts';
-import { buocDanhSach, duongThongBao } from '@shared/domain/index.ts';
+import { buocDanhSach, chuanHoaMaLop, duongThongBao } from '@shared/domain/index.ts';
 
 type SearchHit = { id: number; studentCode: string; fullName: string; classCode: string | null };
+type LopRef = { id: number; code: string; student_count: number };
 
-/** Thanh phải: tìm học viên, thông báo, tài khoản. Không lặp lại điều hướng chính. */
+/** Thanh phải: tìm học viên + lớp (K1-43), thông báo, tài khoản. Không lặp lại điều hướng chính. */
 export function Header() {
   const { session, signOut } = useSession();
   const navigate = useNavigate();
   const [q, setQ] = useState('');
   const [openMenu, setOpenMenu] = useState<null | 'account' | 'notif'>(null);
   const [hits, setHits] = useState<SearchHit[]>([]);
-  /** Lượt tìm cuối đã trả về (để "Không tìm thấy học viên" không hiện khi đang chờ). */
+  /** Lượt tìm cuối đã trả về (để "Không tìm thấy…" không hiện khi đang chờ). */
   const [daTim, setDaTim] = useState(false);
   /** Danh sách kết quả đang hiện (bấm ra ngoài / Esc thì ẩn, gõ hoặc vào lại ô thì hiện). */
   const [moTim, setMoTim] = useState(false);
-  /** Chỉ số dòng đang sáng khi đi bằng mũi tên (−1 = chưa chọn). */
+  /** Chỉ số dòng đang sáng khi đi bằng mũi tên, đếm chung học viên rồi lớp (−1 = chưa chọn). */
   const [dong, setDong] = useState(-1);
   const boxRef = useRef<HTMLDivElement>(null);
   const oTim = useRef<HTMLInputElement>(null);
@@ -28,17 +29,24 @@ export function Header() {
   const nutTaiKhoan = useRef<HTMLButtonElement>(null);
   const idDs = useId();
   const notifications = useApi<any[]>('/notifications');
+  /* Danh sách lớp trong phạm vi: đọc một lần (useApi nhớ sẵn), lọc tại chỗ theo mã chuẩn hoá — gõ "ft101" ra MB FT 101. */
+  const lopRef = useApi<LopRef[]>('/ref/classes');
+  const timDu = q.trim().length >= 2;
+  const khoaLop = chuanHoaMaLop(q);
+  const lops = timDu && khoaLop
+    ? (lopRef.data ?? []).filter((l) => chuanHoaMaLop(l.code).includes(khoaLop)).slice(0, 4)
+    : [];
 
   useEffect(() => {
     setDaTim(false);                                   // lượt mới: chưa trả về thì không báo "Không tìm thấy", Enter không mở kết quả cũ
-    if (q.trim().length < 2) { setHits([]); setDong(-1); return; }
+    if (!timDu) { setHits([]); setDong(-1); return; }
     const t = setTimeout(() => {
       api.get<{ rows: SearchHit[] }>(`/students?q=${encodeURIComponent(q)}`)
-        .then((d) => { setHits((d.rows ?? []).slice(0, 8)); setDaTim(true); setDong(-1); })
+        .then((d) => { setHits((d.rows ?? []).slice(0, 6)); setDaTim(true); setDong(-1); })
         .catch(() => { setHits([]); setDaTim(false); setDong(-1); });
     }, 250);
     return () => clearTimeout(t);
-  }, [q]);
+  }, [q, timDu]);
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
@@ -48,8 +56,10 @@ export function Header() {
     return () => document.removeEventListener('mousedown', onClick);
   }, []);
 
-  const coDs = moTim && hits.length > 0;
-  const khongThay = moTim && q.trim().length >= 2 && daTim && hits.length === 0;
+  /* Một danh sách cho bàn phím: học viên trước, lớp sau. */
+  const den = [...hits.map((h) => `/hoc-vien/${h.id}`), ...lops.map((l) => `/hoc-vien/lop/${l.id}`)];
+  const coDs = moTim && timDu && den.length > 0;
+  const khongThay = moTim && timDu && daTim && den.length === 0;
   const dangMo = coDs || khongThay || openMenu !== null;
 
   /* Esc đóng menu/danh sách đang mở và trả focus về nút/ô đã mở nó — pha bắt + chặn lan (cùng mẫu MenuDong).
@@ -68,7 +78,19 @@ export function Header() {
     return () => document.removeEventListener('keydown', phim, true);
   }, [dangMo, openMenu]);
 
-  const moHocVien = (h: SearchHit) => { navigate(`/hoc-vien/${h.id}`); setQ(''); setHits([]); setDaTim(false); setMoTim(false); setDong(-1); };
+  const moMuc = (i: number) => { navigate(den[i]); setQ(''); setHits([]); setDaTim(false); setMoTim(false); setDong(-1); };
+  /** Thuộc tính chung của một dòng kết quả (học viên hay lớp) — `i` đếm chung cả hai nhóm. */
+  const nutMuc = (i: number) => ({
+    id: `${idDs}-${i}`,
+    type: 'button' as const,
+    role: 'option',
+    'aria-selected': i === dong,
+    tabIndex: -1,
+    className: `w-full min-h-[44px] sm:min-h-0 text-left px-3 py-2 text-sm ${i === dong ? 'bg-white/5' : 'hover:bg-white/5'}`,
+    onMouseEnter: () => setDong(i),
+    onMouseDown: (e: ReactMouseEvent) => e.preventDefault(),
+    onClick: () => moMuc(i),
+  });
 
   const unread = useMemo(() => (notifications.data ?? []).filter((n) => !n.read_at).length, [notifications.data]);
   const core = (session?.assignments ?? []).filter((a) => a.isCore);
@@ -80,21 +102,21 @@ export function Header() {
         <input
           ref={oTim}
           className="field"
-          placeholder="Tìm học viên…"
+          placeholder="Tìm học viên, lớp…"
           value={q}
           onChange={(e) => { setQ(e.target.value); setMoTim(true); }}
           onFocus={() => setMoTim(true)}
           onBlur={(e) => { if (!e.currentTarget.parentElement?.contains(e.relatedTarget as Node | null)) setMoTim(false); }}
           onKeyDown={(e) => {
             if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {           // Home/End để nguyên cho con trỏ (như ô chọn người)
-              if (!hits.length) return;
+              if (!den.length) return;
               e.preventDefault();
               setMoTim(true);
-              const k = buocDanhSach(hits.length, dong, e.key);
+              const k = buocDanhSach(den.length, dong, e.key);
               if (k !== null) setDong(k);
             } else if (e.key === 'Enter' && coDs && daTim) {
               e.preventDefault();
-              moHocVien(hits[dong] ?? hits[0]);
+              moMuc(dong >= 0 && dong < den.length ? dong : 0);
             }
           }}
           role="combobox"
@@ -103,27 +125,27 @@ export function Header() {
           aria-activedescendant={coDs && dong >= 0 ? `${idDs}-${dong}` : undefined}
           aria-autocomplete="list"
           autoComplete="off"
-          aria-label="Tìm học viên trong phạm vi được cấp quyền"
+          aria-label="Tìm học viên, lớp trong phạm vi được cấp quyền"
         />
         {coDs && (
-          <ul id={idDs} role="listbox" aria-label="Kết quả tìm học viên"
+          <ul id={idDs} role="listbox" aria-label="Kết quả tìm học viên, lớp"
             className="absolute z-40 mt-1 w-[min(18rem,calc(100vw-2rem))] right-0 card overflow-hidden shadow-2xl list-none p-0 m-0">
+            {hits.length > 0 && <li role="none" aria-hidden className="px-3 pt-2 pb-1 text-[11px] text-slate-500">Học viên</li>}
             {hits.map((h, i) => (
-              <li key={h.id} role="none">
-                <button
-                  id={`${idDs}-${i}`}
-                  type="button"
-                  role="option"
-                  aria-selected={i === dong}
-                  tabIndex={-1}
-                  className={`w-full min-h-[44px] sm:min-h-0 text-left px-3 py-2 text-sm ${i === dong ? 'bg-white/5' : 'hover:bg-white/5'}`}
-                  onMouseEnter={() => setDong(i)}
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => moHocVien(h)}
-                >
+              <li key={`hv${h.id}`} role="none">
+                <button {...nutMuc(i)}>
                   <span className="text-slate-100">{h.fullName}</span>
                   <span className="text-slate-500 text-xs ml-2">{h.studentCode}</span>
                   {h.classCode && <span className="text-slate-500 text-xs ml-2">{h.classCode}</span>}
+                </button>
+              </li>
+            ))}
+            {lops.length > 0 && <li role="none" aria-hidden className="px-3 pt-2 pb-1 text-[11px] text-slate-500">Lớp</li>}
+            {lops.map((l, j) => (
+              <li key={`lop${l.id}`} role="none">
+                <button {...nutMuc(hits.length + j)}>
+                  <span className="text-slate-100">{l.code}</span>
+                  <span className="text-slate-500 text-xs ml-2 tabular-nums">· {l.student_count} HV</span>
                 </button>
               </li>
             ))}
@@ -131,7 +153,7 @@ export function Header() {
         )}
         {khongThay && (
           <div role="status" className="absolute z-40 mt-1 w-[min(18rem,calc(100vw-2rem))] right-0 card shadow-2xl px-3 py-2 text-[13px] text-slate-400">
-            Không tìm thấy học viên
+            Không tìm thấy học viên hoặc lớp
           </div>
         )}
       </div>

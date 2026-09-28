@@ -350,7 +350,7 @@ export async function runCongViecTests(t: YThucTestKit) {
   const { createSession } = await import('../auth.ts');
 
   const mbBranchId = (conn.prepare(`SELECT id FROM branches WHERE code = 'MB'`).get() as any).id as number;
-  const mbClassId3 = (conn.prepare(`SELECT id FROM classes WHERE code = 'MB-FT 101'`).get() as any).id as number;
+  const mbClassId3 = (conn.prepare(`SELECT id FROM classes WHERE code = 'MB FT 101'`).get() as any).id as number;
 
   const owingTeacherAt = (branchId: number) => {
     const row = conn.prepare(

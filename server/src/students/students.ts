@@ -207,8 +207,8 @@ export function transferStudent(p: Principal, studentId: number, toClassId: numb
   /* Q7: chuyển THẬT sang Fast Track (không phải chỉ ghi dự định) bắt buộc Mục tiêu band. Không áp dụng khi xếp lớp lần đầu. */
   if (enr) {
     const luatXem = luatDoiLop(
-      { ma: (enr.programme_code ?? null) as ProgrammeCode | null, ft: !!enr.is_fast_track },
-      { ma: (toClass.programme_code ?? null) as ProgrammeCode | null, ft: !!toClass.is_fast_track },
+      { ma: (enr.programme_code ?? null) as ProgrammeCode | null, ft: !!enr.is_fast_track, lt: enr.route },
+      { ma: (toClass.programme_code ?? null) as ProgrammeCode | null, ft: !!toClass.is_fast_track, lt: toClass.route },
       'giua-khoa',
     );
     if (luatXem.canMucTieu && (handover?.mucTieu === null || handover?.mucTieu === undefined)) {

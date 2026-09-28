@@ -245,7 +245,7 @@ export async function runPhanTichTests(t: YThucTestKit) {
   });
 
   await checkAsync('PR-Pb · Q8: FT — band Writing tổng hợp đạt kỳ vọng thì KHÔNG sinh kn:writing1 dù riêng W1 dưới kỳ vọng', async () => {
-    const cid = classId('MB-FT 101');
+    const cid = classId('MB FT 101');
     const cls = conn.prepare('SELECT branch_id FROM classes WHERE id = ?').get(cid) as any;
     const tag = `PB2Q8-${Date.now()}`;
     const now = new Date().toISOString();
@@ -368,7 +368,7 @@ export async function runPhanTichTests(t: YThucTestKit) {
     };
   };
   const cong = (iso: string, n: number) => new Date(Date.parse(`${iso}T00:00:00Z`) + n * 86400000).toISOString().slice(0, 10);
-  const CID_FT = classId('MB-FT 101');
+  const CID_FT = classId('MB FT 101');
 
   check('UX4 · Vấn đề HV: ct=ft/thuong/ca-hai chỉ có 4 hàng kỹ năng, không W1/W2 riêng', () => {
     const kit = baiTapUx4();
@@ -804,7 +804,7 @@ export async function runPhanTichTests(t: YThucTestKit) {
       }
       const dongLop = (kq: any) => kq.lop.find((x: any) => x.classId === CID_FT);
       const truoc = dongLop(yThucSvc.yThucPhanTich(P.admin, FY()));
-      assert(!!truoc, 'lớp FT MB-FT 101 phải hiện rõ (có vi phạm chưa xử lý)');
+      assert(!!truoc, 'lớp FT MB FT 101 phải hiện rõ (có vi phạm chưa xử lý)');
       m.yt.vp(m.c, CID_FT, cong(d.tuDauKhoang(TODAY, 8), -3));       // một vi phạm ở KỲ TRƯỚC
       const sau = dongLop(yThucSvc.yThucPhanTich(P.admin, FY()));
       eq(sau.soVoiTruoc, truoc.soVoiTruoc - 1, 'thêm một vi phạm kỳ trước → "± kỳ trước" giảm 1, số vi phạm kỳ này giữ nguyên');
@@ -869,7 +869,7 @@ export async function runPhanTichTests(t: YThucTestKit) {
   console.log('\nPR-UX4 · Bỏ quên: Cần xử lý + bộ lọc Danh sách Case');
   const boQuenSvc: any = await import('../phanTich/boQuen.ts');
   const tongQuanSvc: any = await import('../worklist/tongQuan.ts');
-  const CID_THUONG = classId('MB-FOU 12');
+  const CID_THUONG = classId('MB FOU 12');
   const LOAI_BQ = ['can-ho-tro-2-lan', 'bo-qua-van-can-ho-tro'] as const;
   const METRIC_BQ = { 'can-ho-tro-2-lan': 'hv-can-ho-tro-2-lan-chua-case', 'bo-qua-van-can-ho-tro': 'hv-bo-qua-van-can-ho-tro' } as const;
   const taoBoQuen = () => {
@@ -1178,7 +1178,7 @@ export async function runPhanTichTests(t: YThucTestKit) {
   const caseSvc: any = await import('../cases/cases.ts');
 
   check("PR-Pb · Danh sách Case: listCases({ classKind: 'normal', classId }) chỉ trả Case của đúng lớp đó", () => {
-    const cid = classId('MB-FOU 12');
+    const cid = classId('MB FOU 12');
     const r = caseSvc.listCases(P.mbManager, { classKind: 'normal', classId: cid });
     assert(!r.scopeEmpty, 'QL Monbay phải có phạm vi');
     for (const row of r.rows) {

@@ -261,11 +261,11 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
 
   check('PR-UX5 (1) · chuoiDiem lớp thường: title "Giữa khoá … ngưỡng 70%", KHÔNG chữ "kỳ vọng" / "MT" (Q1)', () => {
     const m = d.chuoiDiem([
-      { gt: 13, tong: 20, chuaDat: true, attemptNo: 1, kind: 'progress', maLop: 'MB-FOU 03' },
-      { gt: 16, tong: 20, chuaDat: false, attemptNo: 2, kind: 'final', maLop: 'MB-FOU 03' },
+      { gt: 13, tong: 20, chuaDat: true, attemptNo: 1, kind: 'progress', maLop: 'MB FOU 03' },
+      { gt: 16, tong: 20, chuaDat: false, attemptNo: 2, kind: 'final', maLop: 'MB FOU 03' },
     ], 'ratio', false);
-    assert(m[0].title === 'Giữa khoá MB-FOU 03 · 65% (13/20) · Chưa đạt — ngưỡng 70%', `Title: ${m[0].title}`);
-    assert(m[1].title === 'Cuối khoá MB-FOU 03 · 80% (16/20) · Đạt', `Title đạt: ${m[1].title}`);
+    assert(m[0].title === 'Giữa khoá MB FOU 03 · 65% (13/20) · Chưa đạt — ngưỡng 70%', `Title: ${m[0].title}`);
+    assert(m[1].title === 'Cuối khoá MB FOU 03 · 80% (16/20) · Đạt', `Title đạt: ${m[1].title}`);
     for (const x of m) assert(!x.title.includes('kỳ vọng') && !x.title.includes('MT'), `Không "kỳ vọng"/"MT": ${x.title}`);
   });
 
@@ -298,9 +298,9 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
   });
 
   check('PR-UX5 (1) · nhanGhim lớp thường: "Giữa · SOS 1" / "Cuối · Đạt" / "Cuối · tạm thời", không chữ "MT"', () => {
-    const base = { cheDo: 'ratio' as const, attemptNo: 1, overall: null, soYeuCau: 4, maLop: 'MB-FOU 03' };
+    const base = { cheDo: 'ratio' as const, attemptNo: 1, overall: null, soYeuCau: 4, maLop: 'MB FOU 03' };
     const g = d.nhanGhim({ ...base, kind: 'progress', sosLevel: 1, soDat: 3, soCoDiem: 4 });
-    assert(g.chu === 'Giữa · SOS 1' && g.mau === 'sos1' && g.day === 'Giữa khoá MB-FOU 03 · 3/4 môn đạt · SOS 1', `Giữa: ${JSON.stringify(g)}`);
+    assert(g.chu === 'Giữa · SOS 1' && g.mau === 'sos1' && g.day === 'Giữa khoá MB FOU 03 · 3/4 môn đạt · SOS 1', `Giữa: ${JSON.stringify(g)}`);
     const c = d.nhanGhim({ ...base, kind: 'final', sosLevel: 0, soDat: 4, soCoDiem: 4 });
     assert(c.chu === 'Cuối · Đạt' && c.mau === 'dat', `Cuối đạt: ${JSON.stringify(c)}`);
     const t = d.nhanGhim({ ...base, kind: 'final', sosLevel: 2, soDat: 2, soCoDiem: 3 });
@@ -617,7 +617,7 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
   });
 
   check('PR-Qb (3) · Q18: currentClass.khoa chỉ có ở lớp thường (mã đúng chương trình), FT là null', () => {
-    const hocVienLopThuong = (conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = (SELECT id FROM classes WHERE code = 'MB-FOU 12') AND status = 'active' LIMIT 1`).get() as any).student_id;
+    const hocVienLopThuong = (conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = (SELECT id FROM classes WHERE code = 'MB FOU 12') AND status = 'active' LIMIT 1`).get() as any).student_id;
     const profLopThuong = studentProfile(P.admin, hocVienLopThuong);
     assert(profLopThuong.currentClass?.khoa?.ma === 'FOU', `Lớp thường phải có khoa.ma = FOU: ${JSON.stringify(profLopThuong.currentClass?.khoa)}`);
     const profFt = studentProfile(P.admin, HV1);

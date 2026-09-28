@@ -29,7 +29,7 @@ export type PanelYThuc =
 export function usePanelYThuc({ canManage, onDone, roster, maLop }: {
   canManage: boolean;
   onDone: () => void;
-  /** Mã lớp hiện ở đầu các ngăn (`Ghi nhận vi phạm · Tên HV · MB-FOU 12`). */
+  /** Mã lớp hiện ở đầu các ngăn (`Ghi nhận vi phạm · Tên HV · MB FOU 12`). */
   maLop?: string | null;
   /** Mở `+ Ghi nhận vi phạm` từ trang lớp: cho chọn học viên ngay trong form. */
   roster?: { id: number; name: string; code?: string | null }[];

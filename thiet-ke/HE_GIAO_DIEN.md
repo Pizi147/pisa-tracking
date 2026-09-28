@@ -330,7 +330,7 @@ hàng dưới. Đây là lỗi của component + khung chứa, không phải l�
 - **Đóng thì trả focus** về nút đã mở. Panel đổi nội dung tại chỗ (nút mở nằm trong panel cũ đã mất) thì focus về nút mở
   ban đầu. Lịch chọn xong trả focus về nút lịch.
 - **Menu ⋯:** mở ra là focus mục đầu; `↑`/`↓`/`Home`/`End` đi vòng; `Enter` chọn; `Tab` hoặc `Esc` đóng và về nút ⋯.
-- **Ô tìm học viên ở đầu trang:** `↑`/`↓` chọn dòng, `Enter` mở hồ sơ. Không có kết quả thì hiện `Không tìm thấy học viên`
+- **Ô tìm học viên ở đầu trang:** `↑`/`↓` chọn dòng (học viên rồi lớp), `Enter` mở. Không có kết quả thì hiện `Không tìm thấy học viên hoặc lớp`
   — chỉ sau khi lượt tìm đã trả về, không hiện lúc đang chờ.
 - **`Bỏ qua tới nội dung`:** liên kết đầu tiên của trang, chỉ hiện khi bấm `Tab`; chuyển focus thẳng vào vùng nội dung, bỏ
   qua thanh điều hướng. Không thêm một bước vào lịch sử trình duyệt (nút Quay lại không bị kẹt).

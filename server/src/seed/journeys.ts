@@ -1,3 +1,5 @@
+import type { Route } from '../../../shared/domain/index.ts';
+
 /**
  * BỘ DEMO DỰNG TỪ HÀNH TRÌNH — mục 11.
  *
@@ -158,7 +160,7 @@ export type CaseSeed = {
 
 export type CycleSeed = {
   seq: number;
-  route?: 'LT1' | 'LT2' | null;
+  route?: Route | null;
   target?: number | null;
   /** Tuần bắt đầu học của lộ trình (thứ Hai). */
   startWeek?: string | null;
@@ -223,7 +225,7 @@ export const TEACHERS = [
 ] as const;
 
 export type ClassSeed = {
-  code: string; branch: string; kind: string; route: 'LT1' | 'LT2' | null;
+  code: string; branch: string; kind: string; route: Route | null;
   isFastTrack: boolean;
   /** Thứ Hai của tuần khai giảng. */
   startDate: string;
@@ -235,7 +237,7 @@ export type ClassSeed = {
 };
 
 /**
- * MƯỜI BA LỚP, trong đó hai lớp đã kết thúc — chúng tồn tại vì hành trình J01 đi qua đó,
+ * MƯỜI BỐN LỚP, trong đó hai lớp đã kết thúc — chúng tồn tại vì hành trình J01 đi qua đó,
  * và lịch sử của em phải mở lại được nguyên vẹn.
  *
  * Vài lớp CỐ TÌNH THIẾU NGƯỜI: nhãn "Thiếu GV W1, W2" và "Chưa có GVCN" chỉ chứng minh được
@@ -244,13 +246,13 @@ export type ClassSeed = {
 export const CLASSES: ClassSeed[] = [
   /* ------------------------------------------------------------------ Monbay */
   {
-    code: 'MB-FOU 03', branch: 'MB', kind: 'FOU', route: null, isFastTrack: false,
+    code: 'MB FOU 03', branch: 'MB', kind: 'FOU', route: null, isFastTrack: false,
     startDate: '2025-12-01', status: 'ended',
     teachers: { listening: 'T_HA', reading: 'T_HA', writing: 'T_KHOA', speaking: 'T_TRANG' },
     core: 'T_HA', note: 'Lớp đã kết thúc — giữ lại để tra lịch sử.',
   },
   {
-    code: 'MB-BE 08', branch: 'MB', kind: 'BE', route: null, isFastTrack: false,
+    code: 'MB BE 08', branch: 'MB', kind: 'BE', route: null, isFastTrack: false,
     startDate: '2026-02-16', status: 'ended',
     teachers: { listening: 'T_HA', reading: 'T_KHOA', writing: 'T_KHOA', speaking: 'T_TRANG' },
     core: 'T_KHOA', note: 'Lớp đã kết thúc — giữ lại để tra lịch sử.',
@@ -263,7 +265,7 @@ export const CLASSES: ClassSeed[] = [
      * "chỉ sửa được kỹ năng mình phụ trách" có ý nghĩa: cô dạy Task 1 ĐỌC được điểm Task 2
      * nhưng KHÔNG sửa được. Giao cả hai cho một người thì luật đó không bao giờ lộ ra.
      */
-    code: 'MB-FT 101', branch: 'MB', kind: 'FT', route: 'LT1', isFastTrack: true,
+    code: 'MB FT 101', branch: 'MB', kind: 'FT', route: 'LT1', isFastTrack: true,
     startDate: '2026-06-01', status: 'active',
     teachers: {
       listening: 'T_HA', reading: 'T_HA', writing1: 'T_KHOA', writing2: 'T_LINH', speaking: 'T_TRANG',
@@ -272,7 +274,7 @@ export const CLASSES: ClassSeed[] = [
   },
   {
     /* Lớp Fast Track thứ hai của Monbay — cùng chi nhánh, khác lộ trình và khác lịch MT. */
-    code: 'MB-FT 102', branch: 'MB', kind: 'FT', route: 'LT2', isFastTrack: true,
+    code: 'MB FT 102', branch: 'MB', kind: 'FT', route: 'LT2', isFastTrack: true,
     startDate: '2026-06-29', status: 'active',
     teachers: {
       listening: 'T_LINH', reading: 'T_LINH', writing1: 'T_KHOA', writing2: 'T_KHOA', speaking: 'T_TRANG',
@@ -280,7 +282,14 @@ export const CLASSES: ClassSeed[] = [
     core: 'T_LINH',
   },
   {
-    code: 'MB-FOU 12', branch: 'MB', kind: 'FOU', route: null, isFastTrack: false,
+    /* Lớp lộ trình RF — chưa có HV: kỳ vọng và lịch MT của RF thuộc PR-MT. */
+    code: 'MB FT RF 12', branch: 'MB', kind: 'FT', route: 'RF', isFastTrack: true,
+    startDate: '2026-09-07', status: 'active',
+    teachers: { listening: 'T_HA', reading: 'T_KHOA', writing1: 'T_KHOA', writing2: 'T_LINH', speaking: 'T_TRANG' },
+    core: 'T_KHOA',
+  },
+  {
+    code: 'MB FOU 12', branch: 'MB', kind: 'FOU', route: null, isFastTrack: false,
     startDate: '2026-07-27', status: 'active',
     teachers: { listening: 'T_HA', reading: 'T_HA', writing: 'T_KHOA', speaking: 'T_TRANG' },
     core: 'T_HA', note: 'Tuần 8/8 — đang trong tuần Final Test.',
@@ -288,7 +297,7 @@ export const CLASSES: ClassSeed[] = [
 
   /* ------------------------------------------------------------------ Bãi Cháy */
   {
-    code: 'BC-FT 205', branch: 'BC', kind: 'FT', route: 'LT2', isFastTrack: true,
+    code: 'BC FT 205', branch: 'BC', kind: 'FT', route: 'LT2', isFastTrack: true,
     startDate: '2026-06-08', status: 'active',
     teachers: {
       listening: 'T_QUAN', reading: 'T_QUAN', writing1: 'T_HAN', writing2: 'T_QUAN', speaking: 'T_TRANG',
@@ -297,7 +306,7 @@ export const CLASSES: ClassSeed[] = [
   },
   {
     /* Chưa ai nhận chủ nhiệm — lớp mới khai giảng ở chi nhánh xa. */
-    code: 'BC-ELE 01', branch: 'BC', kind: 'ELE', route: null, isFastTrack: false,
+    code: 'BC ELE 01', branch: 'BC', kind: 'ELE', route: null, isFastTrack: false,
     startDate: '2026-08-17', status: 'active',
     teachers: { listening: 'T_QUAN', reading: 'T_QUAN', writing: 'T_HAN', speaking: 'T_HAN' },
     note: 'Tuần 5/10 — đang trong tuần Progress Test. Chưa có GVCN.',
@@ -305,7 +314,7 @@ export const CLASSES: ClassSeed[] = [
 
   /* ------------------------------------------------------------------ Cẩm Phả */
   {
-    code: 'CP-FT 110', branch: 'CP', kind: 'FT', route: 'LT1', isFastTrack: true,
+    code: 'CP FT 110', branch: 'CP', kind: 'FT', route: 'LT1', isFastTrack: true,
     startDate: '2026-04-13', status: 'active',
     teachers: {
       listening: 'T_NAM', reading: 'T_NAM', writing1: 'T_DUNG', writing2: 'T_DUNG', speaking: 'T_NAM',
@@ -315,20 +324,20 @@ export const CLASSES: ClassSeed[] = [
 
   /* ------------------------------------------------------------------ Hải Dương */
   {
-    code: 'HD-FOU 05', branch: 'HD', kind: 'FOU', route: null, isFastTrack: false,
+    code: 'HD FOU 05', branch: 'HD', kind: 'FOU', route: null, isFastTrack: false,
     startDate: '2026-06-01', status: 'active',
     teachers: { listening: 'T_YEN', reading: 'T_YEN', writing: 'T_DUNG', speaking: 'T_YEN' },
     core: 'T_YEN', note: 'Đã học hết 8 tuần — còn hai em chưa được xếp lớp tiếp.',
   },
   {
-    code: 'HD-BE 21', branch: 'HD', kind: 'BE', route: null, isFastTrack: false,
+    code: 'HD BE 21', branch: 'HD', kind: 'BE', route: null, isFastTrack: false,
     startDate: '2026-08-03', status: 'active',
     teachers: { listening: 'T_YEN', reading: 'T_YEN', writing: 'T_DUNG', speaking: 'T_YEN' },
     core: 'T_YEN', note: 'Lớp đích của luồng FOU → BE. Tuần 7/10.',
   },
   {
     /* Lớp mới mở, chưa xếp xong người: thiếu giáo viên cả hai phần Writing. */
-    code: 'HD-FT 302', branch: 'HD', kind: 'FT', route: 'LT1', isFastTrack: true,
+    code: 'HD FT 302', branch: 'HD', kind: 'FT', route: 'LT1', isFastTrack: true,
     startDate: '2026-08-10', status: 'active',
     teachers: { listening: 'T_YEN', reading: 'T_YEN', speaking: 'T_YEN' },
     core: 'T_YEN', note: 'MT1 rơi đúng tuần này. Thiếu GV W1 và W2.',
@@ -336,7 +345,7 @@ export const CLASSES: ClassSeed[] = [
 
   /* ------------------------------------------------------------------ Uông Bí */
   {
-    code: 'UB-FT 401', branch: 'UB', kind: 'FT', route: 'LT2', isFastTrack: true,
+    code: 'UB FT 401', branch: 'UB', kind: 'FT', route: 'LT2', isFastTrack: true,
     startDate: '2026-02-23', status: 'active',
     teachers: {
       listening: 'T_KIEN', reading: 'T_KIEN', writing1: 'T_KIEN', writing2: 'T_KIEN', speaking: 'T_KIEN',
@@ -349,7 +358,7 @@ export const CLASSES: ClassSeed[] = [
      * tên lớp cũ chỉ vì phần mềm chuẩn hoá lại mã là chuyện không được phép. Hệ thống đọc mã
      * cũ ra đúng chương trình Foundation mà không sửa gì trên mã lớp. Thiếu GV Speaking.
      */
-    code: 'UB-FOUND 07', branch: 'UB', kind: 'FOUND', route: null, isFastTrack: false,
+    code: 'UB FOU 07', branch: 'UB', kind: 'FOUND', route: null, isFastTrack: false,
     startDate: '2026-07-06', status: 'active',
     teachers: { listening: 'T_KIEN', reading: 'T_KIEN', writing: 'T_KIEN' },
     core: 'T_KIEN', note: 'Đã học hết chương trình. Thiếu GV Speaking.',

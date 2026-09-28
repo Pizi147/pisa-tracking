@@ -89,8 +89,8 @@ function coreTeacherOf(classCode: string) {
   return row.id as number;
 }
 
-const LOP_FT = classId('MB-FT 101');
-const LOP_THUONG = classId('MB-FOU 12');
+const LOP_FT = classId('MB FT 101');
+const LOP_THUONG = classId('MB FOU 12');
 const CN = (conn.prepare('SELECT branch_id AS b FROM classes WHERE id = ?').get(LOP_FT) as any).b as number;
 const HV = (
   conn
@@ -105,13 +105,13 @@ const KASE = (
     )
     .get(HV) as any
 )?.id as number | undefined;
-assert(KASE, `Seed thiếu Case cho HV mẫu (id ${HV}) ở lớp MB-FT 101 — DUONG_DO cần một Case thật`);
+assert(KASE, `Seed thiếu Case cho HV mẫu (id ${HV}) ở lớp MB FT 101 — DUONG_DO cần một Case thật`);
 
 const USER: Record<Vai, number> = {
   QL: userByRole('manager', 'MB'),
-  GVCN: coreTeacherOf('MB-FT 101'),
-  GVBM: subjectOnlyTeacherOf('MB-FT 101'),
-  GVCN_THUONG: coreTeacherOf('MB-FOU 12'),
+  GVCN: coreTeacherOf('MB FT 101'),
+  GVBM: subjectOnlyTeacherOf('MB FT 101'),
+  GVCN_THUONG: coreTeacherOf('MB FOU 12'),
   QT: userByRole('system_admin', null),
 };
 /** Quản lý chi nhánh CP — dùng riêng ở Task 2 phép kiểm (c)/(e) (chi nhánh KHÁC với MB của mọi vai trên). */
@@ -333,7 +333,7 @@ check('PR-TD Task2(c) · HV có ghi danh CŨ ở chi nhánh khác branch_id hi�
     .prepare(`INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`)
     .run('PR-TD-C1', 'PR TD C1', 'pr td c1', CN, now); // branch_id HIỆN TẠI = MB
   const hvC = Number(info.lastInsertRowid);
-  const lopCp = classId('CP-FT 110'); // ghi danh CŨ ở CP — chi nhánh KHÁC branch_id hiện tại
+  const lopCp = classId('CP FT 110'); // ghi danh CŨ ở CP — chi nhánh KHÁC branch_id hiện tại
   conn
     .prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, ended_at, created_at) VALUES (?,?, 'transferred', ?, ?, ?)`)
     .run(hvC, lopCp, '2026-01-01', '2026-02-01', now);
@@ -522,7 +522,7 @@ await checkAsync(
     const thayTruoc = (truoc.json.rows as any[]).some((r) => r.id === caseE);
     assert(!thayTruoc, 'Quản lý CP KHÔNG được thấy Case của một HV còn gắn chi nhánh MB');
 
-    const lopCp = classId('CP-FT 110');
+    const lopCp = classId('CP FT 110');
     const chuyen = await callHttpUser(USER.QT, 'POST', `/students/${hvE}/transfer`, {
       toClassId: lopCp, effectiveDate: '2026-09-23', reasonCode: 'doi_lich_hoc',
       handoverNote: 'Bàn giao cho phép kiểm PR-TD Task2(e)',

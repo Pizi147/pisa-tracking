@@ -497,7 +497,7 @@ export function listTasks(p: Principal, f: TaskFilters = {}) {
 /**
  * VIỆC QUẢN LÝ GIAO CHO GIÁO VIÊN, TOẢ RA THÀNH PHƯƠNG ÁN CỦA TỪNG EM.
  *
- * Quản lý giao "cả lớp MB-FT 101 tăng luyện nghe chi tiết" thì việc đó phải xuất hiện trong
+ * Quản lý giao "cả lớp MB FT 101 tăng luyện nghe chi tiết" thì việc đó phải xuất hiện trong
  * hồ sơ của từng em — nếu không, ba tháng sau đọc lại hành trình một em sẽ không thấy vì sao
  * cách dạy đổi. Nhưng nó vẫn là MỘT việc: giáo viên cập nhật một lần, không phải mười ba lần.
  *
