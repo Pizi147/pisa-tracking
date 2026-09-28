@@ -354,4 +354,38 @@ export async function runPrDuyetTests(t: YThucTestKit) {
     const sau = conn.prepare('SELECT trang_thai, ly_do_dong FROM yeu_cau_duyet WHERE id = ?').get(the.id) as any;
     assert(sau.trang_thai === 'tu_dong' && sau.ly_do_dong === 'Việc gốc đã xong', JSON.stringify(sau));
   });
+
+  // ---------------------------------------------------------------- khối 10: Tổng quan, badge, Quản trị, Vận hành tên ngoài
+  const tongQuanSvc: any = await import('../worklist/tongQuan.ts');
+  const accountsSvc: any = await import('../platform/accounts.ts');
+  const mgmtSvc: any = await import('../worklist/mgmttasks.ts');
+  const { navOf } = await import('../platform/nav.ts');
+  check('DUYET (10) · Tổng quan QL có số Chờ duyệt (đọc từ hộp); Cần xử lý không còn "PA chờ duyệt"/"Case quá hạn xác định nguyên nhân"; cờ nav', () => {
+    const r = tongQuanSvc.tongQuanQuanLy(P.mbManager, { branchId: null, ct: 'ca-hai' });
+    const dem = yc.demYeuCau(P.mbManager);
+    assert(r.choDuyet && r.choDuyet.cho === dem.cho && r.choDuyet.quaHan === dem.quaHan && r.choDuyet.baoLen === dem.baoLen, JSON.stringify(r.choDuyet));
+    assert(!r.canXuLy.some((x: any) => x.metricId === 'pa-cho-duyet' || x.metricId === 'case-xac-dinh-nguyen-nhan-qua-han'), 'còn dòng thẻ');
+    assert(navOf(P.mbManager).workApprove && !navOf(P.coreTeacher).workApprove && navOf(P.coreTeacher).workRequests, 'cờ workApprove/workRequests');
+    for (const ma of ['request.approve', 'request.decline', 'request.answer', 'request.create']) {
+      assert(d.nhanHanhDongNhatKy(ma) !== 'Thao tác hệ thống', `thiếu nhãn nhật ký ${ma}`);
+    }
+  });
+  check('DUYET (10) · Đăng ký tài khoản → Quản trị nhận thông báo "dang_ky", chuông mở Quản trị', () => {
+    const { userId } = accountsSvc.register({ email: `dangkyduyet${Date.now()}.pisa@gmail.com`, password: 'MatKhau#2026a', fullName: 'Giáo viên Đăng ký Thử', branches: ['MB'] });
+    const tb = conn.prepare(`SELECT * FROM notifications WHERE user_id = ? AND kind = 'dang_ky' AND entity_id = ?`).get(P.admin.userId, userId) as any;
+    assert(tb && tb.title.includes('Giáo viên Đăng ký Thử') && d.duongThongBao(tb) === '/quan-tri', JSON.stringify(tb));
+  });
+  check('DUYET (10) · Vận hành: người phụ trách ngoài hệ thống (≥ 2 ký tự) lưu tên, không tài khoản; chọn tài khoản thì bỏ tên ngoài', () => {
+    const tao = (o: any) => mgmtSvc.createMgmtTask(P.mbManager, { title: `Việc thử tên ngoài ${Date.now()}`, group: 'curriculum', branchId: (conn.prepare("SELECT id FROM branches WHERE code = 'MB'").get() as any).id, ...o });
+    const a = tao({ assigneeName: '  Tổ chuyên môn  ' });
+    const ra = conn.prepare('SELECT assignee_user_id, assignee_name FROM tasks WHERE id = ?').get(a.id) as any;
+    assert(ra.assignee_user_id === null && ra.assignee_name === 'Tổ chuyên môn' && a.assigneeName === 'Tổ chuyên môn' && a.assigneeNgoai === true, JSON.stringify([ra, a.assigneeName]));
+    const dong = mgmtSvc.listMgmtTasks(P.mbManager, {}).rows.find((x: any) => x.id === a.id);
+    assert(dong && dong.assigneeName === 'Tổ chuyên môn' && dong.assigneeNgoai === true, JSON.stringify(dong));
+    assert(maLoi(() => tao({ assigneeName: 'T' })) === 400, 'tên 1 ký tự');
+    const b = tao({ assigneeUserId: P.coreTeacher.userId, assigneeName: 'Bị bỏ' });
+    assert((conn.prepare('SELECT assignee_name FROM tasks WHERE id = ?').get(b.id) as any).assignee_name === null, 'có tài khoản mà vẫn lưu tên ngoài');
+    mgmtSvc.editMgmtTask(P.mbManager, a.id, { assigneeUserId: P.coreTeacher.userId });
+    assert((conn.prepare('SELECT assignee_name FROM tasks WHERE id = ?').get(a.id) as any).assignee_name === null, 'đổi sang tài khoản không xoá tên ngoài');
+  });
 }

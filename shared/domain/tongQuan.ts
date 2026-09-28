@@ -82,8 +82,8 @@ export const CAN_XU_LY: readonly {
   denLoc?: LoaiBoQuen;
 }[] = [
   { metricId: 'tin-hieu-qua-han', nhan: 'tín hiệu cần xác minh quá hạn', nut: 'Mở', mau: 'do' },
-  { metricId: 'case-xac-dinh-nguyen-nhan-qua-han', nhan: 'Case quá hạn xác định nguyên nhân', nut: 'Mở', mau: 'do' },
-  { metricId: 'pa-cho-duyet', nhan: 'PA chờ Quản lý duyệt', nut: 'Duyệt', mau: 'vang', canQuyenDuyet: true },
+  /* PR-DUYET (K1-01): "PA chờ Quản lý duyệt" và "Case quá hạn xác định nguyên nhân" không còn ở đây — chúng là thẻ ở hộp Chờ duyệt
+     (dải "Chờ duyệt n · k quá hạn · Báo lên m" trên đầu khối). Hai chỉ số vẫn sống cho Phân tích / branch-pulse. */
   { metricId: 'case-chua-co-nguoi-phu-trach', nhan: 'Case chưa có người phụ trách', nut: 'Xem', mau: 'vang' },
   { metricId: 'hv-can-ho-tro-2-lan-chua-case', nhan: 'học viên cần hỗ trợ 2 lần Test liền, chưa có Case mở', nut: 'Xem', mau: 'vang', denLoc: 'can-ho-tro-2-lan' },
   { metricId: 'hv-bo-qua-van-can-ho-tro', nhan: 'học viên bị Bỏ qua tín hiệu, lần Test sau vẫn chưa đạt', nut: 'Xem', mau: 'vang', denLoc: 'bo-qua-van-can-ho-tro' },

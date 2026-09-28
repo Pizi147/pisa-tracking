@@ -101,6 +101,9 @@ export function duongThongBao(n: ThongBaoRow): string | null {
       return n.attempt_id != null ? `/mock-test/${n.attempt_id}` : null;
     case 'discipline_measure':
       return n.student_id != null ? duongHoSoHocVien(n.student_id, { tab: 'y-thuc' }) : null;
+    /* PR-DUYET (K1-41): đăng ký tài khoản mới → Quản trị (tab mặc định là Tài khoản, khối Đăng ký chờ duyệt). */
+    case 'user':
+      return n.kind === 'dang_ky' ? '/quan-tri' : null;
     /* PR-DUYET (K5-13): chuông chỉ TRỎ thẻ — người xin về Yêu cầu của tôi, người duyệt về hộp Chờ duyệt. */
     case 'yeu_cau_duyet':
       return duongThe(n.entity_id, n.kind === 'duyet_ket_qua' ? 'nguoi-xin' : 'duyet');

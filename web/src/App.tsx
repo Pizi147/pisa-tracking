@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react';
 import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useSession } from './lib/session.tsx';
+import { useApi } from './lib/useApi.ts';
 import { DemoBar } from './modules/platform/DemoBar.tsx';
 import { LA_BAN_CHINH } from './lib/banChinh.ts';
 import { Header } from './modules/platform/Header.tsx';
@@ -18,7 +19,7 @@ import CongViecPage from './modules/congViec/CongViecPage.tsx';
 import AdminPage from './modules/platform/AdminPage.tsx';
 import ProfilePage from './modules/platform/ProfilePage.tsx';
 import WelcomePage from './modules/platform/WelcomePage.tsx';
-import { NAV_RONG, duongMoi, khuVucCuaDuong, khuVucHienThi, type KhuVucMuc } from '@shared/domain/index.ts';
+import { NAV_RONG, duongMoi, khuVucCuaDuong, khuVucHienThi, type DemYeuCau, type KhuVucMuc } from '@shared/domain/index.ts';
 
 /**
  * Trang thử thành phần dùng chung (PR-E Step 9) — CHỈ có khi chạy `npm run dev`. Điều kiện đứng
@@ -32,7 +33,17 @@ const ThanhPhanDemo = import.meta.env.DEV ? lazy(() => import('./modules/dev/Tha
  * Máy tính: thanh ngang trên cùng. Điện thoại: thanh dưới 4 nút (G-11). Khu nào không có quyền thì bỏ hẳn.
  * Mục đang sáng tính theo khu vực của đường dẫn (`khuVucCuaDuong`), nên màn nhập điểm vẫn sáng mục Test.
  */
-function NavItem({ muc, active }: { muc: KhuVucMuc; active: boolean }) {
+/** PR-DUYET (K1-44, Q10): số chờ duyệt cạnh mục Công việc của QL — đỏ khi có thẻ quá hạn, không thì trung tính. */
+function SoCho({ dem }: { dem?: DemYeuCau | null }) {
+  if (!dem?.cho) return null;
+  return (
+    <span aria-label={`${dem.cho} yêu cầu chờ duyệt${dem.quaHan ? `, ${dem.quaHan} quá hạn` : ''}`}
+      className={`ml-1.5 inline-flex min-w-[1.25rem] justify-center rounded-full border px-1 text-[10.5px] font-semibold leading-4 tabular-nums ${
+        dem.quaHan ? 'border-late-line bg-late-bg text-late' : 'border-transparent bg-white/10 text-slate-300'}`}>{dem.cho}</span>
+  );
+}
+
+function NavItem({ muc, active, dem }: { muc: KhuVucMuc; active: boolean; dem?: DemYeuCau | null }) {
   return (
     <Link to={muc.to} aria-current={active ? 'page' : undefined}
       className={`px-3 py-1.5 rounded-lg text-sm no-underline whitespace-nowrap transition-colors border ${
@@ -40,18 +51,18 @@ function NavItem({ muc, active }: { muc: KhuVucMuc; active: boolean }) {
           ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)] border-[color:var(--accent-line)]'
           : 'text-slate-300 border-transparent hover:bg-white/5'
       }`}>
-      {muc.label}
+      {muc.label}{muc.key === 'cong-viec' && <SoCho dem={dem} />}
     </Link>
   );
 }
 
-function NutDay({ muc, active }: { muc: KhuVucMuc; active: boolean }) {
+function NutDay({ muc, active, dem }: { muc: KhuVucMuc; active: boolean; dem?: DemYeuCau | null }) {
   return (
     <Link to={muc.to} aria-current={active ? 'page' : undefined} title={muc.label}
       className={`flex-1 min-w-0 text-center py-2.5 text-[11px] no-underline truncate ${
         active ? 'text-[color:var(--accent-strong)] font-semibold' : 'text-slate-400'
       }`}>
-      {muc.labelNgan}
+      {muc.labelNgan}{muc.key === 'cong-viec' && <SoCho dem={dem} />}
     </Link>
   );
 }
@@ -59,6 +70,8 @@ function NutDay({ muc, active }: { muc: KhuVucMuc; active: boolean }) {
 export default function App() {
   const { session, loading } = useSession();
   const location = useLocation();
+  /* Một lần mỗi lần đổi trang (không hỏi lặp theo giờ); chỉ người duyệt được (Q10). */
+  const dem = useApi<DemYeuCau>(session?.authenticated && session.nav?.workApprove ? '/yeu-cau/dem' : null, [location.pathname]).data;
 
   if (loading) return <div className="p-8 max-w-4xl mx-auto"><Skeleton rows={8} /></div>;
   if (!session?.authenticated) return <WelcomePage />;
@@ -88,7 +101,7 @@ export default function App() {
             </div>
           </div>
           <nav aria-label="Điều hướng chính" className="hidden md:flex items-center gap-1 min-w-0 overflow-x-auto">
-            {items.map((m) => <NavItem key={m.key} muc={m} active={dangO === m.key} />)}
+            {items.map((m) => <NavItem key={m.key} muc={m} active={dangO === m.key} dem={dem} />)}
           </nav>
           <div className="flex-1 min-w-0" />
           <Header />
@@ -130,7 +143,7 @@ export default function App() {
           menu ⋯ của dòng (z-[60]) và Toast (z-[100]). */}
       <nav aria-label="Điều hướng chính" className="md:hidden fixed bottom-0 inset-x-0 z-30 flex border-t bg-[color:var(--surface)]"
         style={{ borderColor: 'var(--line)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
-        {items.map((m) => <NutDay key={m.key} muc={m} active={dangO === m.key} />)}
+        {items.map((m) => <NutDay key={m.key} muc={m} active={dangO === m.key} dem={dem} />)}
       </nav>
     </div>
   );

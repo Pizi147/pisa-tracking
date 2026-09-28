@@ -1928,6 +1928,7 @@ api.post('/mgmt-tasks', requireAuth, wrap((req) => {
     title: String(b.title ?? ''), group: String(b.group ?? ''),
     branchId: b.branchId ? Number(b.branchId) : null,
     assigneeUserId: b.assigneeUserId ? Number(b.assigneeUserId) : null,
+    assigneeName: typeof b.assigneeName === 'string' ? b.assigneeName : null,
     watcherUserId: b.watcherUserId ? Number(b.watcherUserId) : null,
     due: b.due ?? null, note: b.note ?? null,
     parentTaskId: b.parentTaskId ? Number(b.parentTaskId) : null,
