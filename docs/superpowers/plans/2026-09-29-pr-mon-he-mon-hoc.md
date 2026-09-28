@@ -599,6 +599,10 @@ K5-45 T4 (+LOP) · K5-46 T2 · K5-47 T1/T5 · K5-48 T2 · K5-57 T5 · K5-67 T2.
 
 ## Nhật ký
 
+- **Task 0 (29/09, Opus 5.5 — phương án B):** nhánh `pr-mon-he-mon-hoc` từ `origin/main` fb51181. DUYET/MT/NHAP **chưa** merge (🛑 4c không
+  áp). `npm ci` → `npm run check` xanh: **mốc B = 1444** phép kiểm + 20 tốc độ. Dòng mã khớp kế hoạch (lệch ≤ 4: `ALL_SKILLS` dùng ở
+  `accounts.ts:359`, không :363); không cần bảng "dòng thật".
+
 ## Chủ sản phẩm chốt 29/09
 
 - Tên đầy đủ môn FOU: **G+V = Grammar + Vocabulary**, **P = Pronunciation**.
