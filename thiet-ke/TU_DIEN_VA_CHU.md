@@ -162,7 +162,7 @@ Bỏ `Tham gia trên lớp` (Y04). Dữ liệu cũ đổi sang `Thái độ / h�
 6. `Thư cảnh cáo lần 2`
 7. `Đình chỉ học`
 8. `Thư cảnh cáo lần 3`
-9. `Khác` → ô **Ghi rõ** ngay dưới, ≥ 3 ký tự (PR-NEN, T13)
+9. `Khác` → ô **Tên phương án** ngay dưới (ô `OKhac`), ≥ 3 ký tự (PR-NEN, T13)
 
 Thứ tự này là thứ tự **BÀY RA**, không phải quy trình bắt buộc. Trên màn có chữ `nhẹ ─ nặng`
 ở hai đầu danh sách để người đọc biết mức tương đối.
@@ -306,7 +306,7 @@ Luật cách dùng ở `HE_GIAO_DIEN.md` §3, §9, §10.
 | Ô ngày — câu lỗi dưới ô | `Gõ dạng dd/mm/yyyy` · `Gõ dạng mm/yyyy` · `Năm cần đủ 4 số, ví dụ 28/09/2026` · `Ngày không có thật` · `Không được sau hôm nay` · `Không được sau {ngày}` · `Không được trước {ngày}` (ô tháng: `… tháng {mm/yyyy}`) |
 | Lịch — hàng gợi ý dưới lưới | tiêu đề `Gần đây`; ngày `Hôm nay, 28/09` · `Hôm qua, 27/09` · `Thứ Bảy, 26/09` …; tuần `Tuần này` · `Tuần trước` · `2 tuần trước` (chỗ chỉ nhận từ tuần này: `Tuần này` · `Tuần sau` · `2 tuần sau`); tháng `Tháng này` · `10/2026` … |
 | Bộ chọn tuần — ô gõ trong lịch | `Gõ ngày` · chữ mờ `Ví dụ: 28/09/2026` |
-| Ô "Khác" | nhãn `Ghi rõ *` ngay dưới lựa chọn "Khác"; chữ mờ mặc định `Ví dụ: Đi muộn giờ ăn trưa`; lỗi `Ghi rõ "Khác" là gì` · `Cần ít nhất 3 ký tự (đang có {n})` |
+| Ô "Khác" | nhãn mặc định `Ghi rõ *` ngay dưới lựa chọn "Khác"; nhãn riêng từng chỗ: `Tên đề xuất` (PA đề xuất) · `Tên phương án` (xử lý Ý thức) · `Tên việc` (việc Phối hợp SOS) · `Ghi rõ lý do` (chuyển lớp / kết thúc học); chữ mờ mặc định `Ví dụ: Đi muộn giờ ăn trưa`; lỗi `Ghi rõ "Khác" là gì` · `Cần ít nhất 3 ký tự (đang có {n})` |
 | Ô chọn người — dòng cuối | `Dùng tên ngoài hệ thống: «{tên}»`; chưa gõ tên: `Dùng tên ngoài hệ thống: gõ tên ở ô trên`; tên đã chọn hiện dòng phụ `ngoài hệ thống`; tên quá ngắn: `Gõ tên ngoài hệ thống (ít nhất 2 ký tự).` — thay mọi chữ "người ngoài" (Q23) |
 | Sáu nhãn trạng thái chung (`NhanTrangThai`) | `Cần làm` · `Đang làm` · `Chờ duyệt` · `Quá hạn` (biết số ngày: `Quá hạn · {n} ngày`) · `Xong` · `Đã huỷ` |
 | Ô tìm học viên ở đầu trang | không có kết quả: `Không tìm thấy học viên` |

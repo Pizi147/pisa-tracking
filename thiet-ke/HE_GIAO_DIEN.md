@@ -98,7 +98,7 @@ có ít nhất hai màn gọi nó" vẫn giữ.
 |---|---|---|
 | `ONgay` | `web/src/ui/ONgay.tsx` | Mọi ô ngày · tuần · tháng · ngày-hoặc-tháng: gõ `dd/mm/yyyy` hoặc bấm biểu tượng lịch (mục 9) |
 | `LichNho` | `web/src/ui/LichNho.tsx` | Lịch tự vẽ, lõi chung của `ONgay` và `WeekPicker`: lưới tháng, chọn cả tuần, hàng "Gần đây" |
-| `OKhac` | `web/src/ui/OKhac.tsx` | Chọn "Khác" → ô **Ghi rõ** ngay dưới, bắt buộc ≥ 3 ký tự (mục 10) |
+| `OKhac` | `web/src/ui/OKhac.tsx` | Chọn "Khác" → ô chữ nhỏ ngay dưới (nhãn mặc định `Ghi rõ`, mỗi chỗ có thể đặt nhãn riêng), bắt buộc ≥ 3 ký tự (mục 10) |
 | `NutChon` | `web/src/ui/ui.tsx` | Lựa chọn trong form (chọn một trong vài nút): đang chọn = nền `ink-800` + viền `teal-600` + ✓, khác hẳn nút chính (Lưu). Dấu ✓ luôn giữ chỗ nên chữ không nhảy khi chọn |
 | `BoLocDoan` | `web/src/ui/ui.tsx` | Một kiểu cho mọi bộ lọc dạng nút liền nhau (có số đếm bên cạnh). Tab của trang vẫn là `HangTab` gạch chân |
 | `NhanTrangThai` | `web/src/ui/ui.tsx` | Sáu nhãn trạng thái chung: `Cần làm` · `Đang làm` · `Chờ duyệt` · `Quá hạn` (kèm số ngày) · `Xong` · `Đã huỷ`. Đang áp ở Phối hợp SOS, bảng Case, Học viên & Lớp (góc SOS); Vận hành giữ `Status` |
@@ -121,8 +121,8 @@ Việc Vận hành chưa nhận tên ngoài hệ thống: cần thêm cột tron
 | `<SoLieu>` | F01/F10 — hai màn cùng tên số, khác tập | `HOP_DONG_SO_LIEU.md` |
 | `<NgayNghiepVu>` | MT-P10 — ngày demo 14/09, thao tác 19/09 | 7 |
 
-Không thêm component thứ sáu trong đợt này. Component mới chỉ vào bộ dùng chung khi có **ít
-nhất hai màn** gọi nó.
+~~Không thêm component thứ sáu trong đợt này.~~ (đợt PR-E; đã thay bởi đặc tả 27/09 §7.6 — xem bảng PR-NEN ở trên.)
+Component mới chỉ vào bộ dùng chung khi có **ít nhất hai màn** gọi nó.
 
 ---
 
@@ -134,7 +134,7 @@ nhất hai màn** gọi nó.
 ```
 
 `loai` là **bắt buộc**, không có giá trị mặc định. Bảng có mười loại: sáu đồng hồ đã gắn theo rule book, bốn loại PR-NEN
-thêm sẵn tên (Q16) để các PR sau gắn luật. Ngoài bảng còn `viec-van-hanh` (hạn việc Vận hành, PR-Ra). Danh sách trong mã:
+thêm sẵn tên (Q16) để các PR sau gắn luật. Ngoài bảng còn `viec-van-hanh` (hạn việc Vận hành, PR-Ra) và `du-kien-ket-thuc` (không phải hạn, tả ngay dưới bảng). Danh sách trong mã:
 `DEADLINE_KINDS` ở `shared/domain/display.ts`.
 
 | `loai` | Nhãn hiển thị | Luật | Nguồn |
@@ -251,7 +251,8 @@ Một ô cho **mọi** ngày, tuần, tháng trên web (trừ thanh ngày của 
 - **Gõ hoặc bấm lịch.** Ô hiện `dd/mm/yyyy` (tháng `mm/yyyy`); nút biểu tượng lịch bên phải (hoặc `Alt + ↓`) mở `LichNho`.
   Giá trị gửi máy chủ luôn là dạng máy (`2026-09-28`, tháng `2026-09`) — người dùng không bao giờ thấy dạng này.
 - **Cách gõ được nhận:** dấu `/`, `.` hoặc `-`; `d/m` hay `dd/mm` không kèm năm = năm của hôm nay (Q5). Năm 2 chữ số
-  **không** nhận (báo `Năm cần đủ 4 số, ví dụ 28/09/2026`) để không đoán sai thế kỷ (Q6). Ngày không có thật (31/02) báo
+  **không** nhận, để không đoán sai thế kỷ (Q6): ô ngày và ô tuần báo `Năm cần đủ 4 số, ví dụ 28/09/2026`, ô tháng báo
+  `Gõ dạng mm/yyyy`. Ngày không có thật (31/02) báo
   `Ngày không có thật`.
 - **Chỉ kiểm khi rời ô hoặc bấm Enter**, không kiểm từng phím.
 - **Gõ sai:** ô giữ nguyên chữ đã gõ, hiện câu lỗi ngay dưới ô, và báo về form là **rỗng** — giống ô ngày cũ của trình
@@ -336,7 +337,11 @@ hàng dưới. Đây là lỗi của component + khung chứa, không phải l�
 
 ### Ô "Khác" `OKhac` (T13)
 
-- Chọn "Khác" → ô **Ghi rõ** hiện ngay dưới, bắt buộc ≥ 3 ký tự. Luật cũ "Khác thì mô tả ≥ 30 ký tự" đã bỏ (Q10). Kiểm ở
+- Chọn "Khác" → ô chữ nhỏ hiện ngay dưới, bắt buộc ≥ 3 ký tự. Nhãn `Ghi rõ *` là **mặc định**; chỗ cần chữ cụ thể hơn đặt
+  nhãn riêng: `Tên đề xuất` (PA đề xuất "Khác": Ghi kết quả PA, Thêm PA, PA điền sẵn từ SOS) · `Tên phương án` (xử lý Ý thức
+  "Khác": Tạo phương án, panel Phương án xử lý) · `Tên việc` (thêm việc Phối hợp SOS) · `Ghi rõ lý do` (lý do chuyển lớp / kết thúc
+  học). Giữ nhãn mặc định `Ghi rõ`: phân loại nguyên nhân (form tạo Case, Xác định nguyên nhân SOS), lý do Không cần theo dõi,
+  lý do bỏ việc Phối hợp, nhóm vi phạm. Luật cũ "Khác thì mô tả ≥ 30 ký tự" đã bỏ (Q10). Kiểm ở
   cả web và máy chủ.
 - Câu lỗi hiện sau khi rời ô hoặc bấm Lưu: `Ghi rõ "Khác" là gì` · `Cần ít nhất 3 ký tự (đang có {n})`.
 - Ô **chỉ tự focus khi vừa chọn "Khác"**. Mở form sửa một bản ghi đã là "Khác" thì không nhảy vào ô.
