@@ -106,8 +106,8 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     const dp = v.find((x: any) => /^Đề ra PA/.test(x.viec));
     assert(dp && dp.viec === 'Đề ra PA W2' && dp.quaHanNgay === null, JSON.stringify(dp));
     const gk = v.find((x: any) => /^Ghi kết quả/.test(x.viec));
-    assert(gk && gk.viec === 'Ghi kết quả L' && gk.han === 'CN 13/09' && gk.quaHanNgay === 3 && gk.tone === 'danger'
-      && gk.title === 'Ghi kết quả PA L · hạn CN 13/09 · quá hạn 3 ngày', JSON.stringify(gk));
+    assert(gk && gk.viec === 'Ghi kết quả L' && gk.han === 'hết T2 13/09' && gk.quaHanNgay === 3 && gk.tone === 'danger'
+      && gk.title === 'Ghi kết quả PA L · hạn hết T2 13/09 · quá hạn 3 ngày', JSON.stringify(gk));
     assert(!/Cập nhật|Xác định nguyên nhân/.test(JSON.stringify(v)), JSON.stringify(v));
   });
 

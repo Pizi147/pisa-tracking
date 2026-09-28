@@ -10,12 +10,20 @@
  * Lớp Normal không có gì trong file này (Q-V3-1): Normal giữ mô hình tín hiệu cũ.
  */
 import type { InterventionKind } from './cases.ts';
-import { weeklyUpdateDue } from './cases.ts';
 
 function addDaysIso(date: string, n: number): string {
   const d = new Date(`${date.slice(0, 10)}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() + n);
   return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Chủ nhật của tuần (T2→CN) chứa ngày này — chính ngày đó nếu là Chủ nhật. PR-N1: trước đây mượn `weeklyUpdateDue`, nhưng hạn
+ * ghi kết quả tuần đã sang Thứ Hai (R-PA1) còn "dự kiến kết thúc 1 tháng" vẫn là Chủ nhật — nên tách riêng, kết quả không đổi.
+ */
+function chuNhatCuaTuan(date: string): string {
+  const dow = new Date(`${date.slice(0, 10)}T00:00:00Z`).getUTCDay();   // 0 = Chủ nhật
+  return addDaysIso(date, dow === 0 ? 0 : 7 - dow);
 }
 
 // ---------------------------------------------------------------- phương án học thuật điền sẵn (đặc tả §4)
@@ -82,7 +90,7 @@ export function sosPlanEndDate(
   ctx: { createdOn: string; nextMtSunday?: string | null; examDate?: string | null },
 ): string | null {
   switch (span) {
-    case 'one_month': return weeklyUpdateDue(addDaysIso(ctx.createdOn, 31));
+    case 'one_month': return chuNhatCuaTuan(addDaysIso(ctx.createdOn, 31));
     case 'until_next_mt': return ctx.nextMtSunday ?? null;
     case 'until_exam': return ctx.examDate ?? null;
     case 'expert': return null;

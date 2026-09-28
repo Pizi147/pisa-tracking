@@ -1082,5 +1082,14 @@ function Band({ v, kyVong, faded, soSanh = true }: { v: number | null; kyVong: n
 - Dòng thật lệch kế hoạch (Task 0): không lệch > 20 dòng — `weeklyUpdateDue` :750, `planEndDefault` :763, `lopMoSan` :235,
   `dangSua =` :417, `toneTheoNhan` `format.ts:84`, `migrateXoaDuLieu(conn, applied)` `migrate.ts:452`, `runXoaDuLieuTests`
   `run.ts:9650`, `approvalDue`/`startDue` `cases.ts:840/994`.
-- Số chỗ sửa kỳ vọng chữ/ngày (Task 1, 2, 9): …
+- Số chỗ sửa kỳ vọng chữ/ngày (Task 1, 2, 9): Task 1 = **9** kỳ vọng — `run.ts` 6 (`weeklyUpdateDue` 14/09, 19/09, 20/09 → 21/09;
+  dữ liệu mẫu `action_due` 20/09 → 21/09; `<Han>` cap-nhat-pa chữ → `Ghi kết quả tuần W3 SEP · hạn hết T2 23/09`; quá hạn
+  cap-nhat-pa hạn CN 06/09 → hạn hết T2 07/09, 8 → 7 ngày), `hocVienLop.tests.ts` 2 (`han`/`title` `CN dd/mm` → `hết T2 dd/mm`,
+  giữ ngày đầu vào `nextDue` để không đổi điều kiện quá hạn), `panelUx3.tests.ts` 1 (cùng kiểu). Ngoài ra chỉ đổi câu báo lỗi
+  `run.ts` (:2441, :2618) và tên 2 phép kiểm, không đổi điều kiện; …
 - Kết quả `chay-thu:n1` trên DB demo: … PA dời · … PA chạy thiếu hạn · … PA huỷ còn chờ duyệt
+- Task 1: `sosPlanEndDate('one_month')` (`shared/domain/sos.ts`, ngoài danh sách file) mượn `weeklyUpdateDue` làm "Chủ nhật
+  đầu tiên từ ngày đó" → đổi hạn tuần sang Thứ Hai sẽ lén dời dự kiến kết thúc SOS 1 tháng sang Thứ Hai. Tách hàm cục bộ
+  `chuNhatCuaTuan` trong `sos.ts`, kết quả giữ nguyên (sosV3 :109/:111 xanh; thêm phép kiểm chặn ở `suaLoiNong`). Không đổi luật.
+- Task 1: `REPO` trong `suaLoiNong.tests.ts` đúng như kế hoạch (4 cấp từ `dist-server/server/src/tests/` về gốc worktree) —
+  thêm phép kiểm `N1 (0)` xác nhận lúc chạy. `YThucTestKit` có đủ 10 trường truyền vào. Mốc sau Task 1: **1375** (+8).
