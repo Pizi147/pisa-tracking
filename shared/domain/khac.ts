@@ -14,3 +14,8 @@ export function ghepKhac(ghiRo: string, moTa: string): string {
   if (!b) return a;
   return b === a || b.startsWith(`${a} — `) ? b : `${a} — ${b}`;
 }
+/** Ngược của `ghepKhac` (form sửa): phần trước " — " ĐẦU TIÊN là Ghi rõ, phần sau là mô tả — cùng luật máy chủ (`violations.ts`). */
+export function tachKhac(moTa: string): { ghiRo: string; moTa: string } {
+  const i = moTa.indexOf(' — ');
+  return i < 0 ? { ghiRo: '', moTa } : { ghiRo: moTa.slice(0, i).trim(), moTa: moTa.slice(i + 3).trim() };
+}

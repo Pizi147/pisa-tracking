@@ -184,7 +184,7 @@ export function PhuongAnPanel({ measureId, onClose, onDone, onXacNhan, onSuaViPh
                 ))}
               </select>
             </Truong>
-            <OKhac hien={kind === 'other'} value={customName} onChange={setCustomName} nhan="Tên phương án" goiY="Ví dụ: Viết bản cam kết" />
+            <OKhac hien={kind === 'other'} value={customName} onChange={setCustomName} nhan="Tên phương án" goiY="Ví dụ: Viết bản cam kết" loi={loiGhiRo} />
           </div>
           <Truong nhan="Phụ trách" as="div">
             <ChonNguoi nhom="nhan_vien" choNgoai={false} value={owner} onChange={setOwner} />

@@ -124,7 +124,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
 
   check('NEN (4) · thành phần chung: OKhac ≥ 3, đang chọn ≠ nút chính, 6 nhãn, focus panel, menu mũi tên, ChonNguoi không bắt gõ', () => {
     const ok = doc('web/src/ui/OKhac.tsx');
-    assert(/kiemGhiRoKhac\(/.test(ok) && /autoFocus/.test(ok), 'OKhac chưa dùng kiemGhiRoKhac / không tự focus');
+    assert(/kiemGhiRoKhac\(/.test(ok) && /\.focus\(\)/.test(ok), 'OKhac chưa dùng kiemGhiRoKhac / không tự focus');
     const ui = doc('web/src/ui/ui.tsx');
     for (const x of ['export function NutChon', 'export function BoLocDoan', 'export function NhanTrangThai', 'aria-pressed', 'bg-ink-800', 'teal-600'])
       assert(ui.includes(x), `ui.tsx thiếu ${x}`);
@@ -191,5 +191,16 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     for (const f of ds) assert(/<OKhac\b/.test(doc(f)), `${f} chưa dùng OKhac`);
     const web = tepNguon('web/src').map(doc).join('\n');
     assert(!/VIOLATION_OTHER_DESCRIPTION_MIN|endsWith\('\.other'\) \? 30|Mô tả rõ hơn \(chọn "Khác"\)/.test(web), 'còn luật 30 ký tự');
+  });
+
+  check('NEN (6) · tachKhac ngược ghepKhac: tách ở " — " đầu tiên, không có dấu thì Ghi rõ rỗng', () => {
+    const j = (x: unknown) => JSON.stringify(x);
+    const t = d.tachKhac(d.ghepKhac('Mượn máy bạn', 'Dùng điện thoại trong giờ'));
+    assert(t.ghiRo === 'Mượn máy bạn' && t.moTa === 'Dùng điện thoại trong giờ', j(t));
+    assert(d.ghepKhac(t.ghiRo, t.moTa) === 'Mượn máy bạn — Dùng điện thoại trong giờ', 'ghép lại ra chuỗi cũ');
+    const abc = d.tachKhac('A — B — C');
+    assert(abc.ghiRo === 'A' && abc.moTa === 'B — C', j(abc));
+    const khong = d.tachKhac('Không nộp bài ba buổi liền');
+    assert(khong.ghiRo === '' && khong.moTa === 'Không nộp bài ba buổi liền', j(khong));
   });
 }

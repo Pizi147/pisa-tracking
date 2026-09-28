@@ -24,6 +24,7 @@ export function CauseDeterminationPanel({ caseId, topic, currentCode, onClose, o
   const [ghiRo, setGhiRo] = useState('');
   const [busy, setBusy] = useState(false);
   const causes = topic ? issuesForTopic(topic) : [];
+  /* K2-3 (điện thoại không có hover): câu Ghi rõ hiện ngay dưới ô từ lúc chọn Khác, không đợi rời ô — ba form nhỏ trong file này. */
   const loiGhiRo = laKhac(code) ? kiemGhiRoKhac(ghiRo) : null;
 
   const save = async () => {
@@ -53,7 +54,7 @@ export function CauseDeterminationPanel({ caseId, topic, currentCode, onClose, o
           ))}
         </div>
       )}
-      <OKhac hien={laKhac(code)} value={ghiRo} onChange={setGhiRo} goiY="Ví dụ: Chưa quen dạng bài mới" />
+      <OKhac hien={laKhac(code)} value={ghiRo} onChange={setGhiRo} goiY="Ví dụ: Chưa quen dạng bài mới" loi={loiGhiRo} />
       <div className="flex gap-1.5">
         <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>Huỷ</button>
         {causes.length > 0 && (
@@ -157,7 +158,7 @@ export function PresetPlanActions({ interventionId, description, followupDue, on
           {catalogue.proposals.map((k: string) => <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k as keyof typeof INTERVENTION_KIND_LABEL]}</option>)}
         </optgroup>
       </select>
-      <OKhac hien={kind === 'other_proposal'} value={ghiRo} onChange={setGhiRo} nhan="Tên đề xuất" goiY="Ví dụ: Học kèm 1-1 với trợ giảng" />
+      <OKhac hien={kind === 'other_proposal'} value={ghiRo} onChange={setGhiRo} nhan="Tên đề xuất" goiY="Ví dụ: Học kèm 1-1 với trợ giảng" loi={loiGhiRo} />
       <textarea className="field w-full" rows={2} placeholder="Mô tả phương án mới" value={desc} onChange={(e) => setDesc(e.target.value)} />
       <ChonNguoi nhom="giao_vien" value={nguoi} onChange={setNguoi} />
       <label className="flex items-center gap-1.5 text-[11px] text-slate-400">
@@ -205,7 +206,7 @@ export function DismissCaseForm({ caseId, onClose, onDone }: { caseId: number; o
           </button>
         ))}
       </div>
-      <OKhac hien={reasonNeedsText(reason)} value={text} onChange={setText} goiY="Ví dụ: Em nghỉ ốm cả tuần thi" />
+      <OKhac hien={reasonNeedsText(reason)} value={text} onChange={setText} goiY="Ví dụ: Em nghỉ ốm cả tuần thi" loi={loiGhiRo} />
       {missing && <p className="text-xs text-amber-200/90 m-0">{missing}</p>}
       <div className="flex gap-1.5">
         <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>Huỷ</button>

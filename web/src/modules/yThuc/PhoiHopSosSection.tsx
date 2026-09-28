@@ -217,7 +217,7 @@ function RemoveCoordinationForm({ actionId, onClose, onChanged }: {
           </button>
         ))}
       </div>
-      <OKhac hien={reasonNeedsText(reason)} value={text} onChange={setText} goiY="Ví dụ: Gia đình xin dời sang tuần sau" />
+      <OKhac hien={reasonNeedsText(reason)} value={text} onChange={setText} goiY="Ví dụ: Gia đình xin dời sang tuần sau" loi={loiGhiRo} />
       {missing && <p className="text-xs text-amber-200/90 m-0">{missing}</p>}
       <div className="flex gap-1.5">
         <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>Huỷ</button>
@@ -261,7 +261,7 @@ function AddCoordinationForm({ attemptId, existing, onClose, onChanged }: {
           </button>
         ))}
       </div>
-      <OKhac hien={kind === 'other'} value={customName} onChange={setCustomName} nhan="Tên việc" goiY="Ví dụ: Gặp trợ giảng sau giờ học" />
+      <OKhac hien={kind === 'other'} value={customName} onChange={setCustomName} nhan="Tên việc" goiY="Ví dụ: Gặp trợ giảng sau giờ học" loi={loiGhiRo} />
       {missing && <p className="text-xs text-amber-200/90 m-0">{missing}</p>}
       <div className="flex gap-1.5">
         <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>Huỷ</button>

@@ -9,7 +9,7 @@ import { BangChung } from '../../ui/BangChung.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
 import {
   VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, VIOLATION_DESCRIPTION_MIN,
-  VIOLATION_SKILLS, VIOLATION_SKILL_LABEL, cauCanhBaoTrung, type ViolationCategory, dsLoi, kiemGhiRoKhac,
+  VIOLATION_SKILLS, VIOLATION_SKILL_LABEL, cauCanhBaoTrung, type ViolationCategory, dsLoi, kiemGhiRoKhac, tachKhac,
 } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 
@@ -72,9 +72,8 @@ export function RecordViolationPanel({
     if (violation) {
       setCategory(violation.category); setSkill(violation.skill ?? ''); setOccurredOn(violation.occurredOn);
       /* Sửa vi phạm "Khác" đã lưu "A — B": A về ô Ghi rõ, B về ô Mô tả — lưu lại gửi B + ghiRoKhac, không thành "A — A — B". */
-      const cat = violation.category === 'other' ? violation.description.indexOf(' — ') : -1;
-      setGhiRo(cat > 0 ? violation.description.slice(0, cat) : '');
-      setDescription(cat > 0 ? violation.description.slice(cat + 3) : violation.description); setDaChonMon(true);
+      const t = violation.category === 'other' ? tachKhac(violation.description) : { ghiRo: '', moTa: violation.description };
+      setGhiRo(t.ghiRo); setDescription(t.moTa); setDaChonMon(true);
     } else {
       reset();
     }
@@ -100,11 +99,17 @@ export function RecordViolationPanel({
 
   const minLen = VIOLATION_DESCRIPTION_MIN; /* PR-NEN: luật 30 ký tự của "Khác" đã bỏ (T13); "Khác" cần ô Ghi rõ ≥ 3. */
   const laNhomKhac = category === 'other';
-  const loiGhiRo = laNhomKhac ? kiemGhiRoKhac(ghiRo) : null;
+  /*
+   * Vi phạm "Khác" CŨ (trước T13: không có Ghi rõ, hoặc mô tả sau " — " ngắn) mà chưa đụng Ghi rõ/Mô tả (chỉ đổi ngày/môn): không bắt
+   * luật nào của hai ô này, gửi lại đúng mô tả đang lưu, KHÔNG gửi ghiRoKhac → máy chủ không kiểm, không ghi lịch sử (sửa Task 2).
+   */
+  const goc = violation?.category === 'other' ? tachKhac(violation.description) : null;
+  const chuaDung = !!goc && laNhomKhac && ghiRo === goc.ghiRo && description === goc.moTa;
+  const loiGhiRo = laNhomKhac && !chuaDung ? kiemGhiRoKhac(ghiRo) : null;
   /* Ô lỗi (YC-12.5.2): lý do dưới ô khi rời ô; chân "n ô cần sửa ↑" sau khi bấm Lưu. */
   const loi = dsLoi([
     ...(students && !editing ? [{ khoa: 'hoc-vien', nhan: 'Học viên', chon: true }] : []),
-    { khoa: 'mo-ta', nhan: 'Mô tả', toiThieu: minLen },
+    ...(!chuaDung ? [{ khoa: 'mo-ta', nhan: 'Mô tả', toiThieu: minLen }] : []),
   ], { 'hoc-vien': studentId, 'mo-ta': description });
   const thieu = [...loi.map((l) => l.nhan), ...(loiGhiRo ? ['Ghi rõ'] : [])];
 
@@ -149,8 +154,8 @@ export function RecordViolationPanel({
       if (editing && violation) {
         /* Luôn gửi cả nhóm + mô tả (máy chủ bỏ qua ghiRoKhac nếu không kèm hai trường này); ghiRoKhac CHỈ khi nhóm Khác. */
         await api.patch(`/violations/${violation.id}`, {
-          category, skill: skill || null, occurredOn: occurredOn || undefined, description,
-          ...(laNhomKhac ? { ghiRoKhac: ghiRo.trim() } : {}),
+          category, skill: skill || null, occurredOn: occurredOn || undefined,
+          ...(chuaDung ? { description: violation.description } : { description, ...(laNhomKhac ? { ghiRoKhac: ghiRo.trim() } : {}) }),
         });
         invalidate('/violations'); invalidate('/measures'); invalidate('/classes'); invalidate('/students'); invalidate('/y-thuc');
         toast.push('ok', 'Đã lưu vi phạm');
@@ -233,7 +238,7 @@ export function RecordViolationPanel({
             ))}
           </div>
           <OKhac hien={laNhomKhac} value={ghiRo} onChange={setGhiRo}
-            loi={lf.daBam ? loiGhiRo : null} />
+            loi={lf.daBam ? loiGhiRo : null} khongBaoLoi={chuaDung} />
         </Truong>
 
         <Truong nhan="Mô tả" batBuoc loi={lf.loiCua(loi, 'mo-ta')} dem={{ co: description.trim().length, can: minLen }}>
