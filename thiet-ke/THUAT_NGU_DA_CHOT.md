@@ -21,7 +21,7 @@ Vài dòng gộp nhiều lựa chọn cùng loại bằng dấu " · " (ví dụ
 
 | Mã | Chữ đang dùng | Ở đâu | Nghĩa là gì | Loại | Nguồn | Gợi ý | **Sửa thành** |
 |---|---|---|---|---|---|---|---|
-| g1-001 | PISA Progress | Thanh trên cùng · tên ứng dụng, Màn đăng nhập | Tên của phần mềm theo dõi tiến bộ học viên của trung tâm. | Tiếng Anh | Cả hai |  |  |
+| g1-001 | PISA Progress | Thanh trên cùng · tên ứng dụng, Màn đăng nhập | Tên của phần mềm theo dõi tiến bộ học viên của trung tâm. | Tiếng Anh | Cả hai | Chủ sản phẩm 28/09 (YC-6, PR-N1) | **Pisa Tracking** |
 | g1-002 | Tổng quan | Thanh điều hướng · mục 1, Tổng quan · tiêu đề trang và tab | Trang đầu tiên: việc cần làm hôm nay và vài con số chính. |  | Cả hai |  |  |
 | g1-003 | Học viên | Thanh điều hướng (hiện tại), Học viên & Lớp · tab, điện thoại · nút đáy, Nhiều bảng · cột | Trang danh sách học viên theo lớp và theo việc cần chú ý. |  | Cả hai |  |  |
 | g1-004 | Học viên & Lớp | Thanh điều hướng mới · mục 2, trang gộp học viên và lớp | Khu vực mới gộp danh sách học viên, danh sách lớp và hồ sơ lớp vào một chỗ. |  | Mockup mới |  |  |

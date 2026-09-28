@@ -105,9 +105,10 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot }: {
                 <span className="text-sm font-bold tabular-nums text-slate-100">{k.chinh}</span>
                 {k.thieu && <span className="text-[11px] font-semibold text-bad">{k.thieu}</span>}
                 {k.dat && <span className="text-[10px] text-slate-400" title={thuong ? 'Đạt mọi môn' : 'Đạt kỳ vọng'}>✓</span>}
-                {k.sos && (k.sosTamThoi
-                  ? <Nhan tone="muted" dut title="Tạm thời: chưa đủ điểm các môn">{k.sos}</Nhan>
-                  : <Level tone={sosTone(s.standing?.sosLevel ?? null)}>{k.sos}</Level>)}
+                {k.sos && (
+                  <Level tone={sosTone(s.standing?.sosLevel ?? null)} dut={k.sosTamThoi}
+                    title={k.sosTamThoi ? 'Tạm thời: chưa đủ điểm các môn' : undefined}>{k.sos}{k.sosTamThoi ? ' tạm thời' : ''}</Level>
+                )}
               </span>
               {k.phu && <span className="block truncate text-[11px] text-slate-500" title={k.phu}>{k.phu}</span>}
             </td>

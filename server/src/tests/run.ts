@@ -7998,7 +7998,7 @@ check('PR-E · <KetQuaDot>: năm nhánh câu chữ đúng bảng ở HE_GIAO_DIE
   assert(s(0, null).tone === 'muted', 'Nhánh 1 phải xám');
   assert(s(2, 0).text === 'Các kỹ năng đã chấm đều đạt · còn thiếu 2', `Nhánh 2: "${s(2, 0).text}"`);
   assert(s(2, 0).tone === 'muted', 'Nhánh 2 phải xám');
-  assert(s(2, 1).text === 'SOS 1' && s(2, 1).tamThoi === true && s(2, 1).title === 'Tạm thời: 2/4 kỹ năng có điểm', `Nhánh 3: "${s(2, 1).text}"`);
+  assert(s(2, 1).text === 'SOS 1 tạm thời · 2/4 kỹ năng' && s(2, 1).tamThoi === true && s(2, 1).title === 'Tạm thời: 2/4 kỹ năng có điểm', `Nhánh 3: "${s(2, 1).text}"`);
   assert(s(2, 1).tone === 'danger' && /tạm thời/i.test(s(2, 1).title ?? ''), 'Nhánh 3 phải đỏ và giữ chữ "tạm thời" ở tooltip');
   assert(s(4, 0, true).text === 'Đã đủ điểm · Đạt kỳ vọng', `Nhánh 4: "${s(4, 0, true).text}"`);
   assert(s(4, 0, true).overall === 'passed' && s(4, 0, true).passBadge === true, 'Đủ điểm và đạt thì mới có badge đạt');

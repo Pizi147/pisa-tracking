@@ -5,11 +5,13 @@ import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { ConfirmDialog } from '../../ui/Drawer.tsx';
 import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { ChonThang, ChonTuan } from '../../ui/ChonNgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
   CASE_CATEGORY_LABEL, NO_HANDOVER_NOTE, TRANSFER_REASONS, TRANSFER_REASON_LABEL, mondayOfDate, tuanLich, type NguoiChon,
+  dsLoi, type LuatTruong,
 } from '@shared/domain/index.ts';
 
 type LopDich = { id: number; code: string; chiNhanhId: number; ma: string | null; ft: boolean; tenChuongTrinh: string | null; tuan: string | null; gvcn: string | null };
@@ -59,7 +61,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone }: {
   const [mucTieu, setMucTieu] = useState('');
   const [thangThi, setThangThi] = useState('');
   const [nguoiNhan, setNguoiNhan] = useState<Record<number, NguoiChon | null>>({});
-  const [daBam, setDaBam] = useState(false);
+  const lf = useLoiForm();
   const [hoiXacNhan, setHoiXacNhan] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -85,16 +87,21 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone }: {
     return null;
   };
 
-  /* Gom NHÃN ô còn thiếu — chỉ hiện SAU khi bấm Chuyển lớp (Q4). */
-  const thieu: string[] = [];
-  if (!toClassId) thieu.push('Lớp');
-  if (!reasonCode) thieu.push('Lý do');
-  else if (reasonCode === 'khac' && !reasonNote.trim()) thieu.push('Ghi rõ lý do');
-  if (luat?.canMucTieu && !mucTieu) thieu.push('Mục tiêu band');
-  if ((!canLuuY || !noNote) && !luuY.trim()) thieu.push('Ghi chú bàn giao');
+  /* Ô lỗi (YC-12.5.2): lý do dưới ô khi rời ô; chân "n ô cần sửa ↑" sau khi bấm Chuyển lớp. */
+  const LUAT: LuatTruong[] = [
+    { khoa: 'lop', nhan: 'Lớp', chon: true },
+    { khoa: 'ly-do', nhan: 'Lý do', chon: true },
+    ...(reasonCode === 'khac' ? [{ khoa: 'ghi-ro', nhan: 'Ghi rõ lý do', toiThieu: 3 }] : []),
+    ...(luat?.canMucTieu ? [{ khoa: 'muc-tieu', nhan: 'Mục tiêu band', chon: true }] : []),
+    ...(!canLuuY || !noNote ? [{ khoa: 'ban-giao', nhan: 'Ghi chú bàn giao', toiThieu: 1 }] : []),
+  ];
+  const loi = dsLoi(LUAT, { lop: toClassId, 'ly-do': reasonCode, 'ghi-ro': reasonNote, 'muc-tieu': mucTieu, 'ban-giao': luuY });
+  const thieu = loi.map((l) => l.nhan);
+  const loiCua = (khoa: string) => lf.loiCua(loi, khoa);
+  const o = (khoa: string) => lf.o(loi, khoa);
 
   const bamChuyen = () => {
-    setDaBam(true);
+    lf.bam();
     if (thieu.length > 0) return;
     setHoiXacNhan(true);
   };
@@ -129,7 +136,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone }: {
   return (
     <KhungPanel tieuDe="Chuyển lớp" hocVien={studentName} lop={lop} onDong={onClose}
       chan={{
-        conThieu: daBam ? thieu : undefined,
+        conThieu: lf.conThieu(loi),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={bamChuyen} disabled={busy}>Chuyển lớp</button>,
       }}>
       {lopDich.loading ? <p className="mt-3 text-sm text-slate-500">Đang tải…</p> : (
@@ -148,8 +155,8 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone }: {
             {chiNhanhId !== null && chiNhanhId !== xem.data?.hienTai.chiNhanhId && (
               <p className="m-0 text-xs text-soon">Quản lý chi nhánh và GVCN lớp mới sẽ nhận thông báo.</p>
             )}
-            <Truong nhan="Lớp" batBuoc>
-              <select className="field w-full" value={toClassId ?? ''} onChange={(e) => setToClassId(Number(e.target.value) || null)}>
+            <Truong nhan="Lớp" batBuoc loi={loiCua('lop')}>
+              <select className="field w-full" {...o('lop')} value={toClassId ?? ''} onChange={(e) => setToClassId(Number(e.target.value) || null)}>
                 <option value="">Chọn lớp</option>
                 {lopCuaChiNhanh.map((l) => (
                   <option key={l.id} value={l.id}>
@@ -158,8 +165,8 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone }: {
                 ))}
               </select>
             </Truong>
-            <Truong nhan="Lý do" batBuoc as="div">
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <Truong nhan="Lý do" batBuoc as="div" loi={loiCua('ly-do')}>
+              <div {...o('ly-do')} tabIndex={-1} className="grid grid-cols-2 gap-2 outline-none sm:grid-cols-4">
                 {TRANSFER_REASONS.map((r) => (
                   <button key={r} type="button" aria-pressed={reasonCode === r}
                     className={`btn min-h-[44px] justify-center px-1 sm:min-h-0 ${reasonCode === r ? 'btn-primary' : ''}`}
@@ -168,14 +175,14 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone }: {
               </div>
             </Truong>
             {reasonCode === 'khac' && (
-              <Truong nhan="Ghi rõ lý do" batBuoc>
-                <input className="field w-full" value={reasonNote} onChange={(e) => setReasonNote(e.target.value)} />
+              <Truong nhan="Ghi rõ lý do" batBuoc loi={loiCua('ghi-ro')}>
+                <input className="field w-full" {...o('ghi-ro')} value={reasonNote} onChange={(e) => setReasonNote(e.target.value)} />
               </Truong>
             )}
             {luat?.canMucTieu && (
               <Hang2>
-                <Truong nhan="Mục tiêu band" batBuoc>
-                  <input className="field w-full" type="number" step="0.5" min={0} max={9} value={mucTieu} onChange={(e) => setMucTieu(e.target.value)} />
+                <Truong nhan="Mục tiêu band" batBuoc loi={loiCua('muc-tieu')}>
+                  <input className="field w-full" {...o('muc-tieu')} type="number" step="0.5" min={0} max={9} value={mucTieu} onChange={(e) => setMucTieu(e.target.value)} />
                 </Truong>
                 <Truong nhan="Tháng dự kiến thi" tuyChon>
                   <ChonThang value={thangThi} onChange={setThangThi} chuaChon="Chưa chọn" />
@@ -191,8 +198,8 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone }: {
 
           <Khoi tieuDe="Bàn giao"
             luat="Ghi những gì người nhận lớp cần biết. Em còn Case dở thì bắt buộc phải có ghi chú; không có gì cần dặn thì chọn ô bên dưới (chỉ khi em không còn Case).">
-            <Truong nhan="Ghi chú bàn giao" batBuoc={!noNote || !canLuuY}>
-              <textarea className="field w-full" rows={2} value={luuY} disabled={noNote && canLuuY} onChange={(e) => setLuuY(e.target.value)}
+            <Truong nhan="Ghi chú bàn giao" batBuoc={!noNote || !canLuuY} loi={loiCua('ban-giao')}>
+              <textarea className="field w-full" {...o('ban-giao')} rows={2} value={luuY} disabled={noNote && canLuuY} onChange={(e) => setLuuY(e.target.value)}
                 placeholder="Ví dụ: còn dở Case Listening" />
             </Truong>
             {canLuuY && (

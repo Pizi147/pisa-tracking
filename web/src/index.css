@@ -171,6 +171,13 @@
   .hang-lon > td:first-child { box-shadow: inset 3px 0 0 var(--hang-lon-vach); }
   .hang-lon.dong > td { background: var(--hang-lon-dong-bg); }
   .hang-lon.dong > td:first-child { box-shadow: inset 3px 0 0 var(--hang-lon-dong-vach); }
+  /* PR-N1 (YC-11.1): hàng lớp ĐANG MỞ dính ngay dưới tiêu đề cột khi cuộn trong <main> — luôn biết đang xem lớp nào. */
+  @media (min-width: 768px) {
+    .hang-lon.hang-lon-dinh > td {
+      position: sticky; top: 40px; z-index: 9; /* = chiều cao thead (.th) đo ở Task 13 */
+      background: linear-gradient(var(--hang-lon-bg), var(--hang-lon-bg)), var(--surface);
+    }
+  }
   .hang-con > td { background: var(--hang-con-bg); font-size: 11.5px; color: var(--hang-con-chu); height: 32px; }
   .hang-con > td:first-child { padding-left: calc(0.75rem + 32px); }
   /* Cùng kiểu cho danh sách (không phải bảng): đầu nhóm + thân nhóm. */

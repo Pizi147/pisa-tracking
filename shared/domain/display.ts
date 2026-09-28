@@ -186,19 +186,19 @@ export function attemptProgressView(i: AttemptProgressInput): AttemptProgressVie
 
   if (scored < required) {
     if (sos !== null && sos > 0) {
-      /* Số tạm KHÔNG được nói như số cuối: mới chấm một phần, mức SOS còn có thể đổi khi đủ điểm. Chữ "tạm thời" ở tooltip
-         + viền nét đứt ở `KetQuaDot`; câu chính gọn (PR-UX3 Q13). */
+      /* Số tạm KHÔNG được nói như số cuối: mới chấm một phần, mức SOS còn có thể đổi khi đủ điểm. PR-N1 A2: chữ "tạm thời"
+         nằm NGAY trong câu (không chỉ tooltip) + màu của mức SOS với viền nét đứt ở `KetQuaDot`. */
       const tam = { tamThoi: true, title: `Tạm thời: ${scored}/${required} ${donVi} có điểm` };
-      if (ratio) return { ...incomplete(`Đạt ${scored - sos}/${scored} ${donVi}`, 'danger'), ...tam };
-      return { ...incomplete(`SOS ${sos}`, 'danger'), ...tam };
+      if (ratio) return { ...incomplete(`${scored - sos}/${scored} ${donVi} đạt · tạm thời`, 'danger'), ...tam };
+      return { ...incomplete(`SOS ${sos} tạm thời · ${scored}/${required} ${donVi}`, 'danger'), ...tam };
     }
     if (sos === 0) {
       return incomplete(ratio
-        ? `Đạt ${scored}/${scored} ${donVi} đã chấm · còn ${required - scored} ${donVi}`
+        ? `${scored}/${scored} ${donVi} đạt · còn ${required - scored} ${donVi}`
         : `Các ${donVi} đã chấm đều đạt · còn thiếu ${required - scored}`, 'muted');
     }
     return incomplete(ratio
-      ? `Đạt ${scored}/${scored} ${donVi} đã chấm · còn ${required - scored} ${donVi}`
+      ? `${scored}/${scored} ${donVi} đạt · còn ${required - scored} ${donVi}`
       : `${scored}/${required} ${donVi} có điểm`, 'muted');
   }
 
@@ -206,13 +206,14 @@ export function attemptProgressView(i: AttemptProgressInput): AttemptProgressVie
   if (sos !== null && sos > 0) {
     const soChuaDatThat = ratio ? (soMonChuaDat ?? sos) : sos;
     return {
-      text: ratio ? `Chưa đạt ${soChuaDatThat}/${required} ${donVi} · SOS ${sos}` : `Đã đủ điểm · SOS ${sos}`,
+      /* PR-N1 A4: "x/y môn đạt" — không nhãn đỏ nào mở đầu bằng "Đạt" ("0/4 môn đạt · SOS 3"). */
+      text: ratio ? `${required - soChuaDatThat}/${required} ${donVi} đạt · SOS ${sos}` : `Đã đủ điểm · SOS ${sos}`,
       tone: 'danger', overall: 'not-passed', overallText: ratio ? 'Chưa đạt' : 'Chưa đạt kỳ vọng', passBadge: false,
     };
   }
   if (passed === true) {
     return {
-      text: ratio ? `Đạt ${required}/${required} ${donVi}` : 'Đã đủ điểm · Đạt kỳ vọng',
+      text: ratio ? `${required}/${required} ${donVi} đạt` : 'Đã đủ điểm · Đạt kỳ vọng',
       tone: 'info', overall: 'passed', overallText: ratio ? 'Đạt' : 'Đạt kỳ vọng', passBadge: true,
     };
   }
@@ -223,7 +224,7 @@ export function attemptProgressView(i: AttemptProgressInput): AttemptProgressVie
     };
   }
   return {
-    text: ratio ? `Đạt ${required}/${required} ${donVi} đã chấm` : 'Đã đủ điểm · chưa có kỳ vọng để so',
+    text: ratio ? `${required}/${required} ${donVi} đã chấm` : 'Đã đủ điểm · chưa có kỳ vọng để so',
     tone: 'muted', overall: 'no-expectation',
     overallText: 'Chưa có kỳ vọng', passBadge: false,
   };

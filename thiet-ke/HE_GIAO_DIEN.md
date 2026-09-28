@@ -109,7 +109,7 @@ rule book:
 |---|---|---|---|
 | `xac-minh-sos` | `Xác minh nguyên nhân · hạn {ngày}` | 3 ngày tính cả ngày đầu | RB 3.4 |
 | `lap-pa` | `Cần có phương án · hạn {ngày}` | 5 ngày Cần chú ý / 3 ngày Gấp | RB 4.2 |
-| `cap-nhat-pa` | `Cập nhật kết quả · trước CN {ngày}` | Hằng tuần, hết Chủ nhật | RB 5 |
+| `cap-nhat-pa` | `Ghi kết quả tuần W4 SEP · hạn hết T2 28/09` | Hằng tuần, hết **Thứ Hai** tuần sau | §5.6 R-PA1 (PR-N1) |
 | `thuc-hien-y-thuc` | `Thực hiện xong · hạn {ngày}` | 3 ngày Gấp / 5 ngày Cần chú ý | RB 6.2 |
 | `hoan-thanh-y-thuc` | `Kết luận đợt · hạn {ngày}` | 7 ngày tính cả ngày mở | RB 6.2 |
 | `nhap-diem` | `Hạn nhập điểm {ngày}` | FT: hết thứ Tư tuần kế tuần thi | RB 9.2 |
@@ -124,7 +124,20 @@ Quy tắc hiển thị:
 - Có hẹn xử lý mới: hiện cả hai, cách nhau dấu `·` — `Hạn nhập điểm 23/09 · Hẹn xử lý 30/09`.
   Không ghi đè hạn gốc (RB 9.1).
 - Dời hạn có quyền: giữ `han` gốc trong dữ liệu, thêm `hanMoi` + lý do; tooltip hiện lịch sử.
-- Không đơn vị "ngày" cho loại `cap-nhat-pa` — nó là mốc Chủ nhật, không phải số ngày còn lại.
+- Không đơn vị "ngày" cho loại `cap-nhat-pa` — nó là mốc Thứ Hai, không phải số ngày còn lại.
+- Mọi hạn "*n* ngày" tính **cả ngày đầu** (`hanTheoNgay(ngàyĐầu, n)`, PR-N1): gửi 14/09, hạn 5 ngày → hết 18/09.
+
+### 4a. Báo lỗi form (PR-N1, YC-12.5.2)
+
+- Rời một ô sai → ô viền đỏ + **một câu ngay dưới ô** nói thiếu gì (`Cần ít nhất 15 ký tự (đang có 8)`, `Chưa chọn`,
+  `Chưa điền`); ô có số ký tự tối thiểu thì có bộ đếm nhỏ `8/15` bên phải nhãn.
+- Chưa bấm Lưu thì chân form **không** nói gì. Bấm Lưu mà còn ô sai → mọi ô sai hiện lý do, chân có **một dòng xám nhỏ**
+  `n ô cần sửa ↑` (tên ô ở tooltip); bấm dòng đó → cuộn tới và focus ô lỗi đầu tiên. Không chữ vàng, không liệt kê luật ở chân.
+- Câu chặn không gắn với ô nào (ví dụ "Còn 1 PA đang chạy") → chân nói thẳng câu đó, cùng kiểu xám.
+
+### 4b. Toast Hoàn tác (PR-N1, UX-C C1)
+
+- Mọi thao tác hoàn tác được: `toast.hoanTac(...)` — 5 giây, nút `Hoàn tác (5)` đếm lùi; toast trung tính (không xanh).
 
 ---
 

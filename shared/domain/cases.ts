@@ -457,7 +457,8 @@ export const URGENCY_LABEL: Record<string, string> = {
   normal: 'Bình thường', attention: 'Bình thường', urgent: 'Gấp',
 };
 export const URGENCY_TONE: Record<string, 'neutral' | 'warn' | 'danger'> = {
-  normal: 'neutral', attention: 'warn', urgent: 'danger',
+  /* PR-N1 A8: "Bình thường" không tô màu cảnh báo — chỉ "Gấp" có màu. */
+  normal: 'neutral', attention: 'neutral', urgent: 'danger',
 };
 
 // ---------------------------------------------------------------- Ý thức KHÔNG còn nằm ở đây

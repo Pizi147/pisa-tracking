@@ -4,9 +4,10 @@ import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { MEASURE_KINDS, MEASURE_KIND_LABEL, ngay, type MeasureKind, type NguoiChon } from '@shared/domain/index.ts';
+import { MEASURE_KINDS, MEASURE_KIND_LABEL, dsLoi, ngay, type MeasureKind, type NguoiChon } from '@shared/domain/index.ts';
 
 type KindRow = { kind: MeasureKind; label: string; available: boolean; reason: string | null };
 
@@ -39,12 +40,12 @@ export function CreateMeasurePanel({
   const [picked, setPicked] = useState<Set<number>>(new Set());
   /* YT-9: null = để trống, máy chủ tự điền GVCN của lớp như cũ. */
   const [owner, setOwner] = useState<NguoiChon | null>(null);
-  const [daBam, setDaBam] = useState(false);
+  const lf = useLoiForm();
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!open) return;
-    setKind('talk_short'); setCustomName(''); setNote(''); setOwner(null); setDaBam(false);
+    setKind('talk_short'); setCustomName(''); setNote(''); setOwner(null); lf.datLai();
     setPicked(new Set(violations.map((v) => v.id)));
   }, [open]);
 
@@ -52,12 +53,12 @@ export function CreateMeasurePanel({
   const availability = kinds.data?.rows ?? [];
   const isLocked = (k: string) => availability.find((r) => r.kind === k)?.available === false;
   const lockReason = (k: string) => availability.find((r) => r.kind === k)?.reason ?? null;
-  const thieu: string[] = [];
-  if (!list.length) thieu.push('Vi phạm (cần ít nhất một)');
-  if (kind === 'other' && !customName.trim()) thieu.push('Tên phương án');
+  const loi = dsLoi(kind === 'other' ? [{ khoa: 'ten-pa', nhan: 'Tên phương án', toiThieu: 1 }] : [], { 'ten-pa': customName });
+  if (!list.length) loi.unshift({ khoa: 'vi-pham', nhan: 'Vi phạm', lyDo: 'Cần ít nhất một vi phạm' });
+  const thieu = loi.map((l) => l.nhan);
 
   const create = async (confirmNow: boolean) => {
-    setDaBam(true);
+    lf.bam();
     if (thieu.length > 0) return;
     setBusy(true);
     try {
@@ -83,7 +84,7 @@ export function CreateMeasurePanel({
   return (
     <KhungPanel tieuDe="Tạo PA xử lý" hocVien={studentName} lop={lop} onDong={onClose}
       chan={{
-        conThieu: daBam ? thieu : undefined,
+        conThieu: lf.conThieu(loi),
         phu: <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => create(false)}>Lưu nháp</button>,
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => create(true)}>Đã làm luôn</button>,
       }}>
@@ -105,8 +106,8 @@ export function CreateMeasurePanel({
           </Truong>
         </Hang2>
         {kind === 'other' && (
-          <Truong nhan="Tên phương án" batBuoc>
-            <input className="field w-full" value={customName} onChange={(e) => setCustomName(e.target.value)} />
+          <Truong nhan="Tên phương án" batBuoc loi={lf.loiCua(loi, 'ten-pa')}>
+            <input className="field w-full" {...lf.o(loi, 'ten-pa')} value={customName} onChange={(e) => setCustomName(e.target.value)} />
           </Truong>
         )}
         <Truong nhan="Ghi chú" tuyChon>
@@ -116,7 +117,9 @@ export function CreateMeasurePanel({
 
       <Khoi tieuDe={`Vi phạm được gom · ${list.length}`}>
         {list.length === 0 ? (
-          <p className="m-0 text-xs text-slate-500">Không còn vi phạm nào được chọn.</p>
+          <p {...lf.o(loi, 'vi-pham')} tabIndex={-1} className={`m-0 text-xs outline-none ${lf.loiCua(loi, 'vi-pham') ? 'text-late' : 'text-slate-500'}`}>
+            Không còn vi phạm nào được chọn{lf.loiCua(loi, 'vi-pham') ? ' — cần ít nhất một vi phạm' : '.'}
+          </p>
         ) : (
           <ul className="m-0 list-none space-y-1.5 p-0">
             {list.map((v) => (

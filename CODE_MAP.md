@@ -364,7 +364,12 @@ Hướng dẫn cho chủ sản phẩm: `TRIEN_KHAI.md`. Kế hoạch: `docs/supe
 | Sáu họ nhãn (`Level` · `Status` · `Task` · `Alert` · `Outcome` · `Info`), nút, thẻ, bảng | `web/src/ui/ui.tsx` |
 | Panel trượt bên phải | `web/src/ui/Drawer.tsx` |
 | Ô chọn tuần, bộ lọc chi nhánh | `web/src/ui/Filters.tsx` |
-| Thông báo nổi | `web/src/ui/Toast.tsx` |
+| Thông báo nổi | `web/src/ui/Toast.tsx` · `toast.hoanTac(text, onHoanTac, { key })` = toast Hoàn tác chung 5 giây, nút đếm lùi (PR-N1 C1; `shared/domain/hoanTac.ts` `HOAN_TAC_MS`, `giayHoanTacConLai`) |
+| Báo lỗi form (PR-N1, YC-12.5.2) | `web/src/ui/loiForm.tsx` (`useLoiForm`: `o(loi, khoa)` gắn lên ô, `loiCua` → `Truong loi`, `conThieu` → chân; `DongCanSua` "n ô cần sửa ↑") · luật thuần `shared/domain/loiForm.ts` (`kiemTruong`, `dsLoi`, `nhanCanSua`) |
+| Hạn "n ngày" và nhãn tuần ghi kết quả PA (PR-N1) | `shared/domain/cases.ts` (`weeklyUpdateDue` = hết Thứ Hai, `hanTheoNgay`, `HAN_DUYET_NGAY`) · `display.ts` (`nhanTuanGhiKetQua`) |
+| Nhãn tiếng Việt của Nhật ký thay đổi | `shared/domain/nhatKy.ts` (`nhanHanhDongNhatKy`) → `web/src/modules/platform/AdminPage.tsx` |
+| Tab Ý thức lớp: số = dòng | `shared/domain/viPhamLop.ts` (`dongViPhamLop`) → `web/src/modules/yThuc/ClassYThucCard.tsx` |
+| Migrate PR-N1 (dời hạn CN → T2, PA quy chế chạy ngay) + chạy thử chỉ đọc | `server/src/migrate/prN1.ts` · `server/src/migrate/chayThuN1.ts` (`npm run chay-thu:n1`) · phép kiểm `server/src/tests/suaLoiNong.tests.ts` |
 | Tên hiển thị của mọi mã máy | `web/src/lib/format.ts` |
 
 ---

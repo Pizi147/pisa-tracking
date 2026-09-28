@@ -81,7 +81,7 @@ export default function App() {
             <div className="w-7 h-7 rounded-md border grid place-items-center font-bold text-xs"
               style={{ background: 'var(--accent-soft)', borderColor: 'var(--accent-line)', color: 'var(--accent)' }}>P</div>
             <div className="leading-tight hidden sm:block">
-              <div className="text-sm font-semibold text-slate-100">PISA Progress</div>
+              <div className="text-sm font-semibold text-slate-100">Pisa Tracking</div>
               {!banChinh && <div className="text-[10px] text-slate-500">Bản demo nội bộ</div>}
             </div>
           </div>

@@ -87,8 +87,8 @@ export function standingLine(s: Standing): string {
       ? (ratio ? 'Chưa có kết quả trong khoá này' : 'Chưa có kết quả trong lộ trình này')
       : `${s.attemptLabel}: chưa đủ điểm để kết luận`;
   } else if (ratio) {
-    /* Lớp thường (đặc tả §2): "Đạt 3/4 môn", không "đạt kỳ vọng". Mức SOS vẫn hiện vì hồ sơ cần nó (§3.10). */
-    head = `${s.attemptLabel}: Đạt ${s.scored - (s.failed ?? 0)}/${s.required} môn`;
+    /* Lớp thường (đặc tả §2; PR-N1 A4): "3/4 môn đạt", không "đạt kỳ vọng". Mức SOS vẫn hiện vì hồ sơ cần nó (§3.10). */
+    head = `${s.attemptLabel}: ${s.scored - (s.failed ?? 0)}/${s.required} môn đạt`;
     if (s.sosLevel > 0) head += ` · ${SOS_LABEL[s.sosLevel as 1 | 2 | 3]}${s.provisional ? ' tạm thời' : ''}`;
   } else {
     head = s.sosLevel === 0

@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, CONFIRM_EDIT_REASON, academicSupportFor, reasonNeedsText, sosPlanEndDate, weeklyUpdateDue,
+  CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, CONFIRM_EDIT_REASON, academicSupportFor, ngay, reasonNeedsText, sosPlanEndDate, weeklyUpdateDue,
   type AcademicSupportPreset, type CaseDismissReason,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -10,7 +10,7 @@ import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { suggestCaseOwner } from './owner.ts';
 import { examPlanOf } from '../fasttrack/cycles.ts';
 import { caseAccess, caseDetail, recordIntervention } from './cases.ts';
-import { PA_QUY_CHE_CHUA_GHI, UNCONFIRMED_PRESET, sosCaseState } from './sosState.ts';
+import { PA_QUY_CHE_CHUA_GHI, UNCONFIRMED_PRESET, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
 import { ghiBanDieuChinh } from './planRevisions.ts';
 
 export { UNCONFIRMED_PRESET, NOT_UNCONFIRMED_PRESET, PA_QUY_CHE_CHUA_GHI } from './sosState.ts';
@@ -150,7 +150,7 @@ export function announceAutoCase(input: {
     notify({
       userId: input.ownerUserId, kind: 'sos',
       title: `Case mới từ SOS: ${input.skillLabel} — ${st?.full_name ?? ''}`,
-      body: `Xác định nguyên nhân (PA theo quy chế đã tự chạy). Hạn ${input.verifyDue}.`,
+      body: `Xác định nguyên nhân (PA theo quy chế đã tự chạy). Hạn ${ngay(input.verifyDue, demoToday())}.`,
       entityType: 'sos_case', entityId: input.caseId, dedupKey: `sos-case:${input.caseId}`,
     });
   }
@@ -223,7 +223,7 @@ export function confirmPresetPlan(p: Principal, interventionId: number, patch: {
         after: { description, performerUserId: iv.performer_user_id ?? null, performerName: iv.performer_name ?? null, followupDue },
       });
     }
-    db().prepare("UPDATE sos_cases SET status = 'in_progress', updated_at = ? WHERE id = ? AND status = 'open'").run(nowIso(), iv.case_id);
+    dongBoTrangThaiCase(iv.case_id);
     const c = db().prepare('SELECT student_id, cycle_id FROM sos_cases WHERE id = ?').get(iv.case_id) as any;
     addJourney({
       studentId: c.student_id, cycleId: c.cycle_id ?? null, eventType: 'intervention', eventDate: today,

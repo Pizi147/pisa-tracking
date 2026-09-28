@@ -3,8 +3,9 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonThang } from '../../ui/ChonNgay.tsx';
-import { huongTiepKhaDung, nhanHuong, type Huong } from '@shared/domain/index.ts';
+import { dsLoi, huongTiepKhaDung, nhanHuong, type Huong } from '@shared/domain/index.ts';
 
 type LoTrinhTiepData = {
   lop: { id: number; code: string; ma: string | null; maKe: string | null; laLopThuong: boolean; dangHoc: boolean } | null;
@@ -46,7 +47,7 @@ function NoiDungLoTrinhTiep({ onClose, studentId, studentName, lop, onDone }: {
   const [mucTieu, setMucTieu] = useState('');
   const [thangThi, setThangThi] = useState('');
   const [ghiChu, setGhiChu] = useState('');
-  const [daBam, setDaBam] = useState(false);
+  const lf = useLoiForm();
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -76,9 +77,10 @@ function NoiDungLoTrinhTiep({ onClose, studentId, studentName, lop, onDone }: {
       : !l.ft && l.ma === lopHoc.maKe
   ));
 
+  const loi = dsLoi([{ khoa: 'huong', nhan: 'Hướng đi', chon: true }], { huong });
   const luu = async () => {
-    setDaBam(true);
-    if (!huong) return;
+    lf.bam();
+    if (loi.length > 0) return;
     setBusy(true);
     try {
       await api.put(`/students/${studentId}/lo-trinh-tiep`, {
@@ -96,11 +98,11 @@ function NoiDungLoTrinhTiep({ onClose, studentId, studentName, lop, onDone }: {
   return (
     <KhungPanel tieuDe="Lộ trình tiếp theo" hocVien={studentName} lop={lop} onDong={onClose}
       chan={{
-        conThieu: daBam && !huong ? ['Hướng đi'] : undefined,
+        conThieu: lf.conThieu(loi),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy}>Lưu</button>,
       }}>
       <Khoi tieuDe="Hướng đi" luat="Chỉ là dự định, chưa đổi lớp. Ghi trước để người kế nhiệm biết em sẽ đi đâu sau lớp này.">
-        <div role="radiogroup" aria-label="Hướng đi" className="space-y-1.5">
+        <div {...lf.o(loi, 'huong')} tabIndex={-1} role="radiogroup" aria-label="Hướng đi" className="space-y-1.5 outline-none">
           {cacHuong.map((h) => {
             const chon = huong === h;
             return (
@@ -118,6 +120,7 @@ function NoiDungLoTrinhTiep({ onClose, studentId, studentName, lop, onDone }: {
             );
           })}
         </div>
+        {lf.loiCua(loi, 'huong') && <span className="block text-[11px] text-late">{lf.loiCua(loi, 'huong')}</span>}
       </Khoi>
 
       {huong && (

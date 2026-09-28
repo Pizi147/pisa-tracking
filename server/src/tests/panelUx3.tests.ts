@@ -122,11 +122,11 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     assert(b.hien.length === 2, 'tối đa 2 badge');
   });
 
-  check('UX3 (1) · attemptProgressView: SOS tạm thời (IELTS "SOS 2"; lớp thường "Đạt 1/3 môn") có tamThoi + tooltip, không ⚠', () => {
+  check('UX3 (1) · attemptProgressView: SOS tạm thời (IELTS "SOS 2 tạm thời"; lớp thường "1/3 môn đạt · tạm thời") có tamThoi + tooltip, không ⚠', () => {
     const ielts = d.attemptProgressView({ scored: 2, required: 4, passed: null, sos: 2 });
-    assert(ielts.text === 'SOS 2' && ielts.tamThoi === true && ielts.title === 'Tạm thời: 2/4 kỹ năng có điểm', JSON.stringify(ielts));
+    assert(ielts.text === 'SOS 2 tạm thời · 2/4 kỹ năng' && ielts.tamThoi === true && ielts.title === 'Tạm thời: 2/4 kỹ năng có điểm', JSON.stringify(ielts));
     const ratio = d.attemptProgressView({ scored: 3, required: 4, passed: null, sos: 2, cheDo: 'ratio' });
-    assert(ratio.text === 'Đạt 1/3 môn' && ratio.tamThoi === true && ratio.title === 'Tạm thời: 3/4 môn có điểm', JSON.stringify(ratio));
+    assert(ratio.text === '1/3 môn đạt · tạm thời' && ratio.tamThoi === true && ratio.title === 'Tạm thời: 3/4 môn có điểm', JSON.stringify(ratio));
     const dayDu = d.attemptProgressView({ scored: 4, required: 4, passed: false, sos: 2 });
     assert(!dayDu.tamThoi, 'đủ điểm thì không còn tạm thời');
     assert(!/⚠/.test(JSON.stringify([ielts, ratio, dayDu])), '⚠ chỉ nghĩa quá hạn');

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { DauDuoi } from '../../ui/Nhan.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { Empty, Skeleton } from '../../ui/ui.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
@@ -98,7 +99,12 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi }: { classId: n
 function ODiemThuong({ o, tuan, homNay }: { o: ODiem | null; tuan: string | null; homNay: string }) {
   if (o && o.score !== null && o.total !== null) {
     const truot = o.outcome === 'fail';
-    return <span className={truot ? 'font-semibold text-rose-300' : 'text-slate-100'} title={truot ? 'Chưa đạt' : 'Đạt'}>{o.score}/{o.total}</span>;
+    /* PR-N1 A3: trượt có dấu mảnh ▾ — không chỉ dựa vào màu. */
+    return (
+      <span className={truot ? 'font-semibold text-rose-300' : 'text-slate-100'} title={truot ? 'Chưa đạt' : 'Đạt'}>
+        {truot && <DauDuoi />}{o.score}/{o.total}
+      </span>
+    );
   }
   if (tuan) {
     /* Tuần thi đã QUA mà vẫn chưa có điểm là một dạng quá hạn nhập điểm — khác với tuần chưa tới lịch. */

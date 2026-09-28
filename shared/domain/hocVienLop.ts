@@ -102,7 +102,7 @@ export function ketQuaGanNhat(k: KetQuaVao | null): KetQuaHien {
   const dat = k.sosLevel === 0 && !k.provisional;
   if (k.mode === 'ratio') {
     const soDat = k.scored - (k.failed ?? 0);
-    const chinh = k.scored < k.required ? `Đạt ${soDat}/${k.scored} môn đã chấm` : `Đạt ${soDat}/${k.required} môn`;
+    const chinh = k.scored < k.required ? `${soDat}/${k.scored} môn đạt (đã chấm)` : `${soDat}/${k.required} môn đạt`;
     const truot = k.failedSkills.map((f) => `${skillShort(f.skill)} ${f.score}/${f.total}`).join(', ');
     const phu = [k.attemptLabel, truot ? `chưa đạt ${truot}` : null,
       k.scored < k.required ? `còn ${k.required - k.scored} môn chưa có điểm` : null].filter(Boolean).join(' · ');
@@ -234,7 +234,8 @@ export function sapXepHocVien<T extends DongDeXep>(rows: readonly T[], cach: Sap
 
 export function lopMoSan(i: { thamSoOpen: number[] | null; lopHien: number[]; dangLoc: boolean }): number[] {
   if (i.thamSoOpen !== null) return i.thamSoOpen.filter((id) => i.lopHien.includes(id));
-  return i.dangLoc ? i.lopHien.slice(0, 5) : i.lopHien.slice(0, 1);
+  /* T17 (PR-N1): không lọc → không tự mở lớp nào (danh sách gọn, người dùng tự chọn); đang lọc → mở tối đa 5 lớp có kết quả. */
+  return i.dangLoc ? i.lopHien.slice(0, 5) : [];
 }
 
 // ---------------------------------------------------------------- việc tiếp theo (Q13)

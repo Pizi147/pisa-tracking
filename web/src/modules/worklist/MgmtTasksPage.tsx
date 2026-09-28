@@ -34,7 +34,8 @@ type Row = {
 
 /** Trạng thái công việc dùng cùng họ nhãn với cả hệ thống (mục 10). */
 const KIND: Record<string, 'doing' | 'waiting' | 'done' | 'idle'> = {
-  not_started: 'idle', doing: 'doing', done: 'done', paused: 'waiting', stopped: 'idle',
+  /* PR-N1 A8: "Tiếp tục xử lý" trung tính — xanh dương chỉ còn cho ô điểm. */
+  not_started: 'idle', doing: 'idle', done: 'done', paused: 'waiting', stopped: 'idle',
 };
 
 const TRANG_THAI_LABEL: Record<TrangThaiLoc, string> = {
