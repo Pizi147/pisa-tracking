@@ -830,7 +830,7 @@ export function scoreHistoryOf(attemptId: number) {
       id: l.id,
       kind: l.action === 'score.override' ? 'override' : l.action === 'score.edit' ? 'edit' : 'no_show',
       skill: l.entity_label as string,
-      skillLabel: ENTRY_SKILL_LABEL[l.entity_label as EntrySkill] ?? l.entity_label,
+      skillLabel: tenMon(null, l.entity_label),   // gồm cả môn lớp thường (trước đây `writing` hiện mã thô)
       before: scoreSummaryText(before), after: afterText,
       actorName: l.actor_name as string | null, createdAt: l.created_at as string,
       /* RB-5 — lý do hiệu chỉnh nằm ngay trong bản "sau" của nhật ký; lần nhập đầu không có. */

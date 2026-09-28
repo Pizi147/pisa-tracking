@@ -78,7 +78,7 @@ export function hocVienCanHoTro(p: Principal): { rows: DongHvCanHoTro[]; tong: n
     caseHv.set(c.id, c.studentId);
     const x = caseCua.get(c.studentId) ?? { n: 0, mon: new Set<string>() };
     x.n += 1;
-    if (c.topic) x.mon.add(caseTopicLabel(c.topic));
+    if (c.topic) x.mon.add(caseTopicLabel(c.topic, c.chuongTrinh));
     caseCua.set(c.studentId, x);
   }
   const paQuaHan = new Map<number, number>();

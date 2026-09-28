@@ -1,10 +1,11 @@
 import { db } from '../db.ts';
 import {
-  ASSESSED_SKILL_LABEL, ATTEMPT_KIND_SHORT, ENTRY_SKILL_LABEL,
+  ASSESSED_SKILL_LABEL, ATTEMPT_KIND_SHORT,
   INTERVENTION_KIND_LABEL, PERMISSIONS,
-  REGULAR_SKILL_LABEL, SOS_LABEL, URGENCY_LABEL, caseHeadline, caseTopicLabel, cycleDeadline,
+  SOS_LABEL, URGENCY_LABEL, caseHeadline, caseTopicLabel, cycleDeadline,
   duongHoSoHocVien, duongLichTest, nhanDotNgan, planDueDate, trongHaiTuanCuoi, tuanLich, urgencyFromSos,
-  type AssessedSkill, type AttemptKind, type EntrySkill, type InterventionKind,
+  tenMon,
+  type AssessedSkill, type AttemptKind, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays } from '../util.ts';
@@ -234,8 +235,8 @@ function urgencyOf(date: string | null, today: string): WorkUrgency {
   return 'normal';
 }
 
-/** Đuôi tiêu đề: " Reading" hay "" khi case không có kỹ năng. */
-const duoiKyNang = (topic: string | null | undefined) => (topic ? ` ${caseTopicLabel(topic)}` : '');
+/** Đuôi tiêu đề: " Reading" hay "" khi case không có kỹ năng. `ct` = chương trình lớp (FOU "Grammar + Vocabulary"). */
+const duoiKyNang = (topic: string | null | undefined, ct: string | null) => (topic ? ` ${caseTopicLabel(topic, ct)}` : '');
 
 /**
  * Nhãn đợt (mockup 17 #13): bài không phải Mock thì gọi đúng tên ("Giữa khoá", "Cuối khoá"), Mock thì "MT{n}" —
@@ -252,6 +253,21 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
 
   const conn = db();
   const items: WorkItem[] = [];
+  /*
+   * Chương trình + cách chấm của MỌI lớp — một câu, nạp lười (MH2 tên môn, MH4 khung). ponytail: đọc cả bảng lớp (vài trăm
+   * dòng); nhiều nghìn lớp thì đổi sang IN (…) theo tập classId của các dòng.
+   */
+  let lopMap: Map<number, { ct: string | null; mode: string | null }> | null = null;
+  const lopCua = (classId: number | null | undefined) => {
+    if (!lopMap) {
+      lopMap = new Map();
+      for (const r of conn.prepare('SELECT c.id, c.programme_code, pg.scoring_mode FROM classes c LEFT JOIN programmes pg ON pg.code = c.programme_code').all() as any[]) {
+        lopMap.set(r.id, { ct: r.programme_code ?? null, mode: r.scoring_mode ?? null });
+      }
+    }
+    return classId ? lopMap.get(classId) ?? null : null;
+  };
+  const ctCua = (classId: number | null | undefined) => lopCua(classId)?.ct ?? null;
   const attempts = listAttempts(p, { branchId: f.branchId ?? undefined }).rows
     .filter((a: any) => a.status !== 'cancelled');
   /*
@@ -346,9 +362,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       const testLabel = d.kind && d.kind !== 'mock'
         ? (ATTEMPT_KIND_SHORT[d.kind as AttemptKind] ?? 'Bài kiểm tra')
         : `MT${d.attemptNo}`;
-      const skillLabel = ENTRY_SKILL_LABEL[d.skill as EntrySkill]
-        ?? REGULAR_SKILL_LABEL[d.skill as keyof typeof REGULAR_SKILL_LABEL]
-        ?? d.skill;
+      const skillLabel = tenMon(ctCua(d.classId), d.skill);
       const k = `${d.classId ?? 0}|${d.kind ?? 'mock'}|${d.attemptNo ?? 0}|${d.skill}|u${d.ownerId ?? 0}`;
       let b = buckets.get(k);
       if (!b) {
@@ -511,7 +525,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       reason: iv.asked_manager
         ? `${iv.proposer_name ?? 'Giáo viên'} xin ý kiến: ${what}`
         : (iv.proposer_name ? `${iv.proposer_name} đề xuất: ${what}` : `Đề xuất: ${what}`),
-      tieuDe: iv.asked_manager ? 'Trả lời giáo viên' : `Duyệt PA học thuật${duoiKyNang(iv.topic)}`,
+      tieuDe: iv.asked_manager ? 'Trả lời giáo viên' : `Duyệt PA học thuật${duoiKyNang(iv.topic, ctCua(iv.eff_class_id))}`,
       actionLabel: iv.asked_manager ? 'Trả lời giáo viên' : 'Duyệt PA học thuật',
       href: iv.eff_student_id ? `/hoc-vien/${iv.eff_student_id}` : `/hoc-thuat/case/${iv.case_id}`,
       /* Việc này là của QUẢN LÝ đang xem, dù người đề xuất là giáo viên khác. */
@@ -633,7 +647,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       reason: [(iv.description ?? '').trim() || INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] || 'PA học thuật',
         tuanCuoi ? 'tuần cuối — ghi kết quả và kết luận PA' : null,
         mine ? null : 'người thực hiện chưa ghi'].filter(Boolean).join(' — '),
-      tieuDe: `Ghi kết quả PA${duoiKyNang(iv.topic)}`, actionLabel: 'Ghi kết quả',
+      tieuDe: `Ghi kết quả PA${duoiKyNang(iv.topic, ctCua(iv.eff_class_id))}`, actionLabel: 'Ghi kết quả',
       href: iv.eff_student_id
         ? duongHoSoHocVien(iv.eff_student_id, { caseId: iv.case_id, paId: iv.id, viec: 'ghi-ket-qua' })
         : `/hoc-thuat/case/${iv.case_id}`,
@@ -794,7 +808,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       reason: head,
       contextLabel: nhanDot(c.attempt_kind, c.attempt_no),
       count: null,
-      tieuDe: `Đề ra PA học thuật${duoiKyNang(c.topic)}`,
+      tieuDe: `Đề ra PA học thuật${duoiKyNang(c.topic, ctCua(c.eff_class_id))}`,
       actionLabel: 'Đề ra PA',
       href: c.eff_student_id ? `/hoc-vien/${c.eff_student_id}` : `/hoc-thuat/case/${c.id}`,
       /* Chưa ai nhận — và đó chính là vấn đề, nên để trống chứ không gán bừa cho người xem. */
@@ -841,7 +855,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     const asManager = u === 'overdue' && can(p, PERMISSIONS.CASE_APPROVE, { classId: c.eff_class_id, studentId: c.eff_student_id });
     if (!mine && !asManager) continue;
     const missing = [c.has_cause ? null : 'chưa chọn nguyên nhân'].filter(Boolean) as string[];
-    const skillLabel = c.topic ? caseTopicLabel(c.topic) : 'Kỹ năng';
+    const skillLabel = c.topic ? caseTopicLabel(c.topic, ctCua(c.eff_class_id)) : 'Kỹ năng';
     items.push({
       key: `cause:${c.id}`, group: 'cause', urgency: u,
       studentId: c.eff_student_id, studentName: c.full_name ?? 'Học viên',

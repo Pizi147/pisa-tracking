@@ -236,8 +236,10 @@ export function caseTitle(c: {
   category: string | null; latestAttemptNo?: number | null;
   /** `mock` | `progress` | `final`. Lớp Normal KHÔNG được gọi bài của mình là "MT". */
   latestAttemptKind?: string | null;
+  /** Mã chương trình của lớp (MH2): FOU → "Grammar + Vocabulary", Pre FOU → "Tổng hợp". Không rõ → tên chung. */
+  chuongTrinh?: string | null;
 }): string {
-  const label = caseCategoryLabel(c.category);
+  const label = c.category ? tenMon(c.chuongTrinh, c.category) : caseCategoryLabel(c.category);
   /*
    * TIỀN TỐ GỌI ĐÚNG TÊN BÀI. Trước vòng 5 mọi case đều mang tiền tố "MT{n}", kể cả case
    * sinh từ một bài Progress Test của lớp Foundation — người đọc thấy "MT1" ở một lớp

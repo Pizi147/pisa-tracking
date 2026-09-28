@@ -3,7 +3,7 @@ import multer from 'multer';
 import { db, isInitialised } from '../db.ts';
 import { laBanChinh } from '../moiTruong.ts';
 import {
-  ENTRY_SKILLS, ENTRY_SKILL_LABEL, ISSUE_TAXONOMY, THEO_DONG,
+  ENTRY_SKILLS, ENTRY_SKILL_LABEL, ISSUE_TAXONOMY, THEO_DONG, tenMonNgan,
   PERMISSIONS, ROLE_LABEL, WORK_SCOPES, chuongTrinhTuThamSo, khoangTuThamSo, laLoaiBoQuen, thamSoNguoi, tuDauKhoang,
   type Role, type TheoDong, type WorkScope,
 } from '../../../shared/domain/index.ts';
@@ -131,12 +131,14 @@ api.get('/demo/session', wrap((req) => {
   const conn = db();
   /* PR-TD: một câu IN cho mọi mã lớp của phân công, thay vì một câu mỗi phân công. */
   const maLopCua = new Map<number, string>();
+  const ctLopCua = new Map<number, string | null>();
   const lopIds = [...new Set(p.assignments.map((a) => a.classId))];
   if (lopIds.length) {
     for (const r of conn
-      .prepare(`SELECT id, code FROM classes WHERE id IN (${lopIds.map(() => '?').join(',')})`)
+      .prepare(`SELECT id, code, programme_code FROM classes WHERE id IN (${lopIds.map(() => '?').join(',')})`)
       .all(...lopIds) as any[]) {
       maLopCua.set(r.id, r.code);
+      ctLopCua.set(r.id, r.programme_code ?? null);
     }
   }
   return {
@@ -146,7 +148,9 @@ api.get('/demo/session', wrap((req) => {
     roleLabels: p.roleKeys.map((r) => ROLE_LABEL[r as Role] ?? r),
     grants: permissionSummary(p),
     assignments: p.assignments.map((a) => (
-      { classId: a.classId, classCode: maLopCua.get(a.classId) ?? null, skill: a.skill, isCore: a.isCore }
+      { classId: a.classId, classCode: maLopCua.get(a.classId) ?? null, skill: a.skill, isCore: a.isCore,
+        /* K1-45: tên môn theo chương trình lớp, dựng sẵn (FOU "G+V"). */
+        nhanMon: a.skill ? tenMonNgan(ctLopCua.get(a.classId) ?? null, a.skill) : null }
     )),
     demoDate: demoToday(),
     scenario: scenarioMode(),

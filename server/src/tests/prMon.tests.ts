@@ -274,4 +274,25 @@ export async function runPrMonTests(t: YThucTestKit) {
     const src = doc('server/src/phanTich/boQuen.ts');
     assert(src.includes('khoaHo(hopLe[0]) === khoaHo(hopLe[1])') && src.includes("=== 'FOU' ? 'FOU' : 'thuong'"), 'boQuen chưa so khoá họ');
   });
+  // ------------------------------------------------------------------ Task 6 · tên môn phía máy chủ
+  const mywork: any = await import('../worklist/mywork.ts');
+  check('MON (6) · một nguồn tên môn (máy chủ): chỉ normal.ts tra REGULAR_SKILL_LABEL[ / SKILL_SHORT[ (MH2)', () => {
+    const lo = [...quet('server/src'), ...quet('shared/domain')]
+      .filter((f) => !/\/tests\//.test(f) && path.basename(f) !== 'normal.ts')
+      .filter((f) => /REGULAR_SKILL_LABEL\[|(^|[^_A-Z])SKILL_SHORT\[/.test(doc(f)));
+    assert(lo.length === 0, `còn tự tra bảng tên môn: ${lo.join(', ')}`);
+  });
+  check('MON (6) · FOU trả G+V/P: regularSheet, Case, việc /my-work (MH2, K5-40)', () => {
+    const sh = regularMod.regularSheet(P.admin, classId('MB FOU 12'));
+    assert(sh.skillLabels.writing === 'Grammar + Vocabulary' && sh.monNgan.speaking === 'P' && sh.monNgan.writing === 'G+V',
+      JSON.stringify({ l: sh.skillLabels, n: sh.monNgan }));
+    assert(sh.rows.every((r: any) => r.skillSchedule.find((x: any) => x.skill === 'speaking')?.label === 'Pronunciation'), 'nhãn lịch từng môn');
+    const fou = taoHv('MB FOU 12', 'FOU');
+    const c = moCase(P.mbManager, fou, 'writing', 'student.gv.vocabulary');
+    const ct = cases.caseDetail(P.admin, c.id);
+    assert(ct.chuongTrinh === 'FOU' && ct.topicLabel === 'Grammar + Vocabulary' && ct.categoryLabel === 'Grammar + Vocabulary',
+      JSON.stringify({ ct: ct.chuongTrinh, t: ct.topicLabel, c: ct.categoryLabel }));
+    const dong = (mywork.myWork(P.mbManager).groups as any[]).flatMap((g) => g.items).find((i: any) => i.caseId === c.id);
+    assert(!!dong && /Grammar \+ Vocabulary/.test(dong.tieuDe) && !/writing|Writing/.test(dong.tieuDe), JSON.stringify(dong?.tieuDe));
+  });
 }

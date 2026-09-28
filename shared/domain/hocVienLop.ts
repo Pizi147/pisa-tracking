@@ -4,7 +4,7 @@
  * Mọi quyết định "hiện chữ gì, hiện mấy cái, xếp thế nào" của hai màn nằm ở đây để kiểm được bằng harness máy chủ (web không có bộ
  * kiểm thử). Component React chỉ vẽ.
  */
-import { skillShort, tenMon } from './normal.ts';
+import { skillShort, tenMon, tenMonNgan } from './normal.ts';
 import { deadlineView } from './display.ts';
 import { tuanKhoa, tuanLich } from './hienThiNgay.ts';
 import { CLASS_PHASE_LABEL, type ClassPhase } from './fasttrack.ts';
@@ -87,6 +87,8 @@ export type KetQuaVao = {
   overall: number | null; expectation: number | null;
   belowSkills: { skill: string; band: number }[];
   failedSkills: { skill: string; score: number; total: number }[];
+  /** Mã chương trình của lộ trình (MH2: FOU "G+V", "P"). Không có → tên chung. */
+  chuongTrinh?: string | null;
 };
 export type KetQuaHien = {
   chinh: string; thieu: string | null; dat: boolean; sos: string | null; phu: string | null;
@@ -104,7 +106,7 @@ export function ketQuaGanNhat(k: KetQuaVao | null): KetQuaHien {
   if (k.mode === 'ratio') {
     const soDat = k.scored - (k.failed ?? 0);
     const chinh = k.scored < k.required ? `${soDat}/${k.scored} môn đạt (đã chấm)` : `${soDat}/${k.required} môn đạt`;
-    const truot = k.failedSkills.map((f) => `${skillShort(f.skill)} ${f.score}/${f.total}`).join(', ');
+    const truot = k.failedSkills.map((f) => `${tenMonNgan(k.chuongTrinh, f.skill)} ${f.score}/${f.total}`).join(', ');
     const phu = [k.attemptLabel, truot ? `chưa đạt ${truot}` : null,
       k.scored < k.required ? `còn ${k.required - k.scored} môn chưa có điểm` : null].filter(Boolean).join(' · ');
     return { chinh, thieu: null, dat: dat && k.scored === k.required, sos, phu: catDongPhu(phu), ...(sosTamThoi ? { sosTamThoi } : {}) };
@@ -156,11 +158,13 @@ export function badgeLop(c: {
   /** Số bài chờ chấm của lớp (0 = không hiện badge). */
   soBaiChoCham: number; needScoresTitle: string | null;
   soCaseMo: number; phase: string; missingCount: number; soChuaLoTrinhTiep?: number;
+  /** Mã chương trình lớp — tên ô thiếu GV theo chương trình (FOU "G+V"). */
+  chuongTrinh?: string | null;
 }): { hien: BadgeLop[]; an: BadgeLop[] } {
   const all: BadgeLop[] = [];
   if (c.needsPlacement) all.push({ key: 'het-khoa', nhan: `${c.canXepLop} HV chờ xếp lớp`, tone: 'warn', title: 'Lớp đã hết khoá: những học viên này chưa được xếp lớp tiếp' });
   if (c.soChuaLoTrinhTiep) all.push({ key: 'chua-lo-trinh', nhan: `${c.soChuaLoTrinhTiep} HV chưa có lộ trình tiếp theo`, tone: 'warn' });
-  if (c.missingSkills.length) all.push({ key: 'thieu-gv', nhan: `Thiếu GV ${c.missingSkills.map(skillShort).join(', ')}`, tone: 'warn' });
+  if (c.missingSkills.length) all.push({ key: 'thieu-gv', nhan: `Thiếu GV ${c.missingSkills.map((k) => tenMonNgan(c.chuongTrinh, k)).join(', ')}`, tone: 'warn' });
   if (c.soBaiChoCham > 0) all.push({ key: 'cham', nhan: `${c.soBaiChoCham} bài chờ chấm`, tone: 'warn', title: c.needScoresTitle ?? undefined });
   if (c.soCaseMo > 0) all.push({ key: 'case', nhan: `${c.soCaseMo} Case mở`, tone: 'muted' });
   if (CHANG_THI.includes(c.phase)) all.push({ key: 'chang', nhan: CLASS_PHASE_LABEL[c.phase as ClassPhase], tone: 'info' });
@@ -172,7 +176,7 @@ export function badgeLop(c: {
 
 export type NhomGiaoVien = { id: number | null; ten: string; kyNang: string[]; nhan: string; title: string };
 export function nhomGiaoVienBoMon(
-  kyNangLop: readonly string[], phanCong: readonly { skill: string; id: number; name: string }[],
+  kyNangLop: readonly string[], phanCong: readonly { skill: string; id: number; name: string }[], ct: string | null = null,
 ): NhomGiaoVien[] {
   const nhom: NhomGiaoVien[] = [];
   const theoKhoa = new Map<string, NhomGiaoVien>();
@@ -188,8 +192,8 @@ export function nhomGiaoVienBoMon(
     g.kyNang.push(k);
   }
   for (const g of nhom) {
-    g.nhan = g.kyNang.map(skillShort).join(' · ');
-    g.title = g.kyNang.map(tenKyNang).join(' · ');
+    g.nhan = g.kyNang.map((k) => tenMonNgan(ct, k)).join(' · ');
+    g.title = g.kyNang.map((k) => tenMon(ct, k)).join(' · ');
   }
   return nhom;
 }
@@ -254,17 +258,20 @@ export type ViecTiepTheo = {
   viec: string; han: string | null; quaHanNgay: number | null; tone: 'danger' | 'warn' | 'info'; title: string;
 };
 
-const nhanKyNang = (topic: string | null) => (topic ? skillShort(topic) : 'Case');
+const nhanKyNang = (topic: string | null, ct: string | null) => (topic ? tenMonNgan(ct, topic) : 'Case');
 
 export function viecTiepTheoCua(i: {
   /** `han` (PR-N1 A6): hạn nhập điểm sớm nhất người xem còn nợ — có thì việc trễ nói "quá hạn n ngày". */
   nhapDiem: { kyNang: string[]; dot: string | null; quaHan: boolean; han?: string | null } | null;
   cases: readonly CaseChoViec[];
   homNay: string;
+  /** Mã chương trình lớp (MH2). */
+  chuongTrinh?: string | null;
 }): ViecTiepTheo[] {
+  const ct = i.chuongTrinh ?? null;
   const out: ViecTiepTheo[] = [];
   if (i.nhapDiem && i.nhapDiem.kyNang.length) {
-    const viec = `Nhập điểm ${i.nhapDiem.kyNang.map(skillShort).join(', ')}${i.nhapDiem.dot ? ` · ${i.nhapDiem.dot}` : ''}`;
+    const viec = `Nhập điểm ${i.nhapDiem.kyNang.map((k) => tenMonNgan(ct, k)).join(', ')}${i.nhapDiem.dot ? ` · ${i.nhapDiem.dot}` : ''}`;
     if (i.nhapDiem.han) {
       /* Cùng luật với <Han loai="nhap-diem">: số ngày trễ đếm từ hạn, không chỉ "quá hạn" trơn (A6). */
       const v = deadlineView({ kind: 'nhap-diem', due: i.nhapDiem.han, today: i.homNay });
@@ -284,17 +291,17 @@ export function viecTiepTheoCua(i: {
     if (c.state === 'done') continue;
     if (c.state === 'no_plan') {
       /* Danh sách chưa có hạn lập PA (PR-UX3 Q11) nên không kèm số ngày. */
-      const viec = `Đề ra PA ${nhanKyNang(c.topic)}`;
+      const viec = `Đề ra PA ${nhanKyNang(c.topic, ct)}`;
       out.push({ viec, han: null, quaHanNgay: null, tone: 'warn', title: viec });
       continue;
     }
     if (!c.nextDue) continue;
     /* Cùng luật với <Han loai="cap-nhat-pa"> (G-10): một hàm `deadlineView` cho mọi chỗ hiện hạn. */
     const v = deadlineView({ kind: 'cap-nhat-pa', due: c.nextDue, today: i.homNay });
-    const viec = `Ghi kết quả ${nhanKyNang(c.topic)}`;
+    const viec = `Ghi kết quả ${nhanKyNang(c.topic, ct)}`;
     out.push({
       viec, han: v.han.replace(/^hạn /, ''), quaHanNgay: v.daysOverdue, tone: v.tone === 'overdue' ? 'danger' : 'info',
-      title: `Ghi kết quả PA ${nhanKyNang(c.topic)} · ${v.han}${v.quaHan ? ` · ${v.quaHan}` : ''}`,
+      title: `Ghi kết quả PA ${nhanKyNang(c.topic, ct)} · ${v.han}${v.quaHan ? ` · ${v.quaHan}` : ''}`,
     });
   }
   const hang = { danger: 0, warn: 1, info: 2 } as const;

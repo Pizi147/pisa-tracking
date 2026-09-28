@@ -626,6 +626,14 @@ K5-45 T4 (+LOP) · K5-46 T2 · K5-47 T1/T5 · K5-48 T2 · K5-57 T5 · K5-67 T2.
   `chuongTrinh`; form vi phạm hỏi cả khi sửa để có danh sách môn. `QuickReport` luôn hỏi `/case-topics` (kể cả mở từ tín hiệu) để có
   `chuongTrinh`. Sửa kỳ vọng 5 phép kiểm cũ dùng mã nguyên nhân IELTS cho em FOU (S1, S17, PR-Pa Nợ S1, PR-Form ×2 → bộ G+V/P;
   cùng điều kiện). `CaseSosControls` (ghi nguyên nhân trong Case) chờ `chuongTrinh` của Case — Task 6/7.
+- **Task 6:** 1466 (+2). Grep trước **28** dòng → sau **13** (mọi dòng còn lại có `ct` hoặc "giữ — FT": `sos.ts:438` MT, `phanTichLop.ts:82`
+  khung FT, `routes/index.ts` `/ref/issue-taxonomy` chủ đề FT, `hocVienLop.ts:120` `belowSkills` FT; `tenKyNang`/`caseTopicLabel`
+  là định nghĩa). Thêm ngoài bảng: `caseTitle` nhận `chuongTrinh` (tiêu đề "Giữa khoá - Grammar + Vocabulary dưới kỳ vọng"),
+  `caseDetail`/`listCases` trả `chuongTrinh` + `categoryLabel` theo chương trình, `labelOf` tín hiệu đọc `programme_code` từ
+  `SIGNAL_SELECT`, `phoiHop.ts`/`meeting.ts` nhãn môn qua `tenMon` (trước lộ mã `writing`), `Standing.chuongTrinh`,
+  `KetQuaVao.chuongTrinh`, `badgeLop`/`viecTiepTheoCua` nhận `chuongTrinh`, phiên đăng nhập `assignments[].nhanMon`. `myWork`: bảng
+  tra lớp → {chương trình, cách chấm} nạp lười MỘT câu (`ponytail:` đọc cả bảng lớp) — Task 9 dùng lại cho `khung`. `xoaTaiKhoan`
+  gộp cảnh báo theo tên môn hiện ra. Sửa kỳ vọng 3 phép kiểm PR-Qa lớp FOU (W → G+V, S → P; cùng điều kiện).
 
 ## Chủ sản phẩm chốt 29/09
 

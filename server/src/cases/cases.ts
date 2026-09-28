@@ -16,7 +16,7 @@ import {
   HAN_DUYET_NGAY, hanTheoNgay,
   type NextStep, type RescheduleTarget,
   issueBranchOf, issueLabel, caseTopicLabel, urgencyFromSos,
-  caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac, programmeOf,
+  caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac, programmeOf, tenMon,
   type CaseOutcome, type FollowUpOutcome, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -68,8 +68,9 @@ export function caseTitleOf(c: {
   if (own) return own;
   const latest = db()
     .prepare(
-      `SELECT m.attempt_no, a.kind FROM case_milestones m
+      `SELECT m.attempt_no, a.kind, cl.programme_code AS ct FROM case_milestones m
          LEFT JOIN assessment_attempts a ON a.id = m.attempt_id
+         LEFT JOIN classes cl ON cl.id = a.class_id
         WHERE m.case_id = ? AND m.attempt_no IS NOT NULL
         ORDER BY m.attempt_no DESC LIMIT 1`,
     )
@@ -78,6 +79,7 @@ export function caseTitleOf(c: {
     category: c.category ?? categoryOf(c.topic),
     latestAttemptNo: latest?.attempt_no ?? null,
     latestAttemptKind: latest?.kind ?? null,
+    chuongTrinh: latest?.ct ?? null,
   });
 }
 
@@ -1441,7 +1443,7 @@ export function caseDetail(p: Principal, caseId: number) {
     .prepare('SELECT id, student_code, full_name, status FROM students WHERE id = ?')
     .get(c.eff_student_id) as any;
   const cycle = c.eff_cycle_id
-    ? conn.prepare('SELECT id, seq, route, target_score, exam_month, exam_period_id FROM learning_cycles WHERE id = ?')
+    ? conn.prepare('SELECT id, seq, route, target_score, exam_month, exam_period_id, programme_code FROM learning_cycles WHERE id = ?')
         .get(c.eff_cycle_id) as any
     : null;
 
@@ -1542,6 +1544,7 @@ export function caseDetail(p: Principal, caseId: number) {
       decisionNote: (f.decision_note ?? null) as string | null,
     }));
 
+  const ctCase: string | null = cycle ? cycle.programme_code ?? programmeCodeOfCycle(cycle.id) : null;
   const history = conn
     .prepare(
       `SELECT h.*, u.full_name AS actor_name FROM sos_case_history h
@@ -1558,10 +1561,12 @@ export function caseDetail(p: Principal, caseId: number) {
     attemptId: c.attempt_id, attemptNo: c.attempt_no ?? null,
     /** Chủ đề — kỹ năng của case; mọi vấn đề đều phải có chỗ cất. */
     topic: c.topic as string | null,
-    topicLabel: c.topic ? caseTopicLabel(c.topic) : null,
+    /** MH2: mã chương trình của lộ trình Case — web gọi `tenMon(chuongTrinh, …)` (FOU G+V/P, Pre FOU Tổng hợp). */
+    chuongTrinh: ctCase,
+    topicLabel: c.topic ? caseTopicLabel(c.topic, ctCase) : null,
     /** HẠNG MỤC — đơn vị của case từ vòng 4, dùng chung cho lớp FT và lớp Normal. */
     category: c.category ?? categoryOf(c.topic),
-    categoryLabel: caseCategoryLabel(c.category ?? categoryOf(c.topic)),
+    categoryLabel: (c.category ?? categoryOf(c.topic)) ? tenMon(ctCase, c.category ?? categoryOf(c.topic)) : caseCategoryLabel(null),
     /** Tên case tự sinh theo mốc mới nhất, ví dụ "MT2 - Listening dưới kỳ vọng". */
     title: caseTitleOf(c),
     /*
@@ -1583,8 +1588,8 @@ export function caseDetail(p: Principal, caseId: number) {
      */
     ratio: isRatioCycle(cycle ?? {}),
     /** Các hạng mục hợp lệ của lớp này — năm ô với FT, bốn ô với Normal. */
-    categories: caseCategoriesFor(isRatioCycle(cycle ?? {}) ? 'ratio' : 'ielts_band')
-      .map((k) => ({ code: k, label: caseCategoryLabel(k) })),
+    categories: caseCategoriesFor(isRatioCycle(cycle ?? {}) ? 'ratio' : 'ielts_band', ctCase)
+      .map((k) => ({ code: k, label: tenMon(ctCase, k) })),
     /** Số kỹ năng dưới kỳ vọng của CẢ LƯỢT. NULL với vấn đề giáo viên báo — không phải SOS 0. */
     sosLevel: c.sos_level,
     /**
@@ -1782,6 +1787,7 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
               cc.branch_id AS home_branch_id,
               COALESCE(ac.code, cc.code) AS class_code,
               COALESCE(ac.is_fast_track, cc.is_fast_track) AS class_is_ft,
+              COALESCE(ac.programme_code, cc.programme_code) AS class_ct,
               s.full_name, s.student_code,
               a.attempt_no, a.kind AS attempt_kind,
               u.full_name AS reporter_name,
@@ -1908,14 +1914,17 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
         category: r.category ?? categoryOf(r.topic),
         latestAttemptNo: latestAttemptByCase.get(r.id) ?? r.attempt_no ?? null,
         latestAttemptKind: r.attempt_kind ?? null,
+        chuongTrinh: r.class_ct ?? null,
       }),
+      /** MH2: mã chương trình của lớp Case (tên môn FOU G+V/P, Pre FOU Tổng hợp). */
+      chuongTrinh: (r.class_ct ?? null) as string | null,
       category: r.category ?? categoryOf(r.topic),
-      categoryLabel: caseCategoryLabel(r.category ?? categoryOf(r.topic)),
+      categoryLabel: (r.category ?? categoryOf(r.topic)) ? tenMon(r.class_ct, r.category ?? categoryOf(r.topic)) : caseCategoryLabel(null),
       primaryCode: r.primary_code,
       primaryLabel: r.primary_code ? issueLabel(r.primary_code) : null,
       /** Chủ đề: một trong năm ô L·R·W1·W2·S. */
       topic: r.topic as string | null,
-      topicLabel: r.topic ? caseTopicLabel(r.topic) : null,
+      topicLabel: r.topic ? caseTopicLabel(r.topic, r.class_ct) : null,
       /** Nhánh phân loại nguyên nhân, khi đã có người dạy nhận định. */
       issueBranch: issueBranchOf(r.primary_code),
       status: r.status as string,

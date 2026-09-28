@@ -8,7 +8,7 @@
  * Chỉ học viên ĐANG HỌC lớp này (không lưu trữ), chỉ lộ trình đang chạy. Chưa có điểm KHÁC trượt: không vào mẫu số.
  */
 import {
-  ENTRY_SKILLS, ENTRY_SKILL_SHORT, PERMISSIONS, REGULAR_SKILLS, categoryOf, skillShort, tenKyNang,
+  ENTRY_SKILLS, ENTRY_SKILL_SHORT, PERMISSIONS, REGULAR_SKILLS, categoryOf, tenKyNang, tenMon, tenMonNgan,
 } from '../../../shared/domain/index.ts';
 import { db } from '../db.ts';
 import { require_, type Principal } from '../permissions.ts';
@@ -55,12 +55,12 @@ export function phanTichLop(p: Principal, classId: number): PhanTichLop {
     const mon = [...(prog?.skills ?? REGULAR_SKILLS)];
     for (const a of attempts) {
       if (a.kind !== 'progress' && a.kind !== 'final') continue;
-      const r = evaluateRegular(mon, (bundle.scores.get(a.id) ?? []) as any);
+      const r = evaluateRegular(mon, (bundle.scores.get(a.id) ?? []) as any, prog?.code);
       for (const x of r.skills) if (x.outcome === 'pass' || x.outcome === 'fail') cong(`${x.skill}|${a.kind}`, x.outcome === 'pass');
     }
     return {
       loai: 'thuong',
-      dong: mon.map((k) => ({ key: k, nhan: skillShort(k), tenDayDu: tenKyNang(k), category: categoryOf(k) ?? k })),
+      dong: mon.map((k) => ({ key: k, nhan: tenMonNgan(prog?.code, k), tenDayDu: tenMon(prog?.code, k), category: categoryOf(k) ?? k })),
       cot: [{ key: 'progress', nhan: 'Giữa khoá' }, { key: 'final', nhan: 'Cuối khoá' }],
       o, soHocVien: hv.length,
     };

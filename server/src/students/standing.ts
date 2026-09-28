@@ -65,6 +65,8 @@ export type Standing = {
   belowSkills: { skill: string; band: number }[];
   /** Lớp thường: môn chưa đạt của lượt đó, kèm điểm đúng/tổng — cột "Kết quả gần nhất" ghi "chưa đạt W 12/20". FT: []. */
   failedSkills: { skill: string; score: number; total: number }[];
+  /** Mã chương trình của lộ trình (MH2: tên môn FOU G+V/P, Pre FOU Tổng hợp). */
+  chuongTrinh: string | null;
 
   /** Lượt kế tiếp đã lên kế hoạch mà chưa có điểm — để nói "đang chờ kết quả MT3". */
   nextAttemptNo: number | null;
@@ -109,7 +111,7 @@ const EMPTY = (studentId: number, cycleId: number | null): Standing => ({
   studentId, cycleId, mode: null,
   attemptId: null, attemptNo: null, attemptKind: null, attemptLabel: null, periodCode: null,
   sosLevel: null, provisional: false, scored: 0, required: 0, failed: null,
-  overall: null, expectation: null, belowSkills: [], failedSkills: [],
+  overall: null, expectation: null, belowSkills: [], failedSkills: [], chuongTrinh: null,
   nextAttemptNo: null, nextAttemptLabel: null, nextPeriodCode: null,
   openCases: 0, handoverCases: 0,
 });
@@ -198,6 +200,7 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
       cycle.programme_code as keyof typeof PROGRAMME_TEMPLATES
     ]?.scoringMode === 'ratio';
     s.mode = ratio ? 'ratio' : 'ielts_band';
+    s.chuongTrinh = cycle.programme_code ?? null;
     const list = byStudent.get(studentId) ?? [];
 
     /*

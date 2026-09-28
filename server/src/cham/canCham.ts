@@ -16,7 +16,7 @@ import {
   activeAt, can, classScopeSql, defaultWorkScope, editableSkills, mySkills, scopeFor, type Principal,
 } from '../permissions.ts';
 import {
-  ATTEMPT_KIND_SHORT, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, PERMISSIONS, SKILL_SHORT, lopTuMo, tenMonNgan, nhanLopLichTest, noShowStateOf,
+  ATTEMPT_KIND_SHORT, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, PERMISSIONS, lopTuMo, tenMonNgan, nhanLopLichTest, noShowStateOf,
   trangThaiChamLabel, type AssessedSkill, type AttemptKind, type LoaiNhanLop, type PhamViLichTest,
 } from '../../../shared/domain/index.ts';
 import { classScoreSheet, conBaiCanCham, listAttempts, type MonDoiLich } from '../fasttrack/attempts.ts';
@@ -454,7 +454,7 @@ export function lichTest(
       const q = qs.toString();
       d = {
         key, dotLabel: dot, kyNang: [r.skill],
-        kyNangLabel: SKILL_SHORT[r.skill] ?? r.skill, soHv: 0, conBai: 0, quaHan: false,
+        kyNangLabel: tenMonNgan(r.programme_code, r.skill), soHv: 0, conBai: 0, quaHan: false,
         href: `/nhap-diem/${r.class_id}${q ? `?${q}` : ''}`,
       };
       lop.dong.set(key, d);

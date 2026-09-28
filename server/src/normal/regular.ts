@@ -2,8 +2,8 @@ import { db, tx } from '../db.ts';
 import { addMilestone, followUntilAfter } from '../cases/sos.ts';
 import { raiseSignal, reconcileCorrectedSignals } from '../cases/signals.ts';
 import {
-  ATTEMPT_KIND_LABEL, PERMISSIONS, RATIO_PASS_THRESHOLD, REGULAR_SKILL_LABEL,
-  caseCategoriesFor, categoryOf, kiemLyDo, ngay, ratioResult, sosFromFailCount, tenMon, tuanKeTiep, tuanLich,
+  ATTEMPT_KIND_LABEL, PERMISSIONS, RATIO_PASS_THRESHOLD,
+  caseCategoriesFor, categoryOf, kiemLyDo, ngay, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanKeTiep, tuanLich,
   type AssessedSkill, type AttemptKind, type CaseCategory, type RatioOutcome, type SosLevel,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -867,13 +867,15 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
   return {
     class: { id: cls.id, code: cls.code, branchName: cls.branch_name, startDate: cls.start_date },
     programme: prog,
-    skillLabels: Object.fromEntries(prog.skills.map((k) => [k, REGULAR_SKILL_LABEL[k as keyof typeof REGULAR_SKILL_LABEL] ?? k])),
+    /** MH2: tên môn theo chương trình — FOU `writing` = Grammar + Vocabulary / G+V, `speaking` = Pronunciation / P; Pre FOU Tổng hợp. */
+    skillLabels: Object.fromEntries(prog.skills.map((k) => [k, tenMon(prog.code, k)])),
+    monNgan: Object.fromEntries(prog.skills.map((k) => [k, tenMonNgan(prog.code, k)])),
     editableSkills: editable,
     canPlan: can(p, PERMISSIONS.PLAN_WEEK, { classId }),
     passThreshold: RATIO_PASS_THRESHOLD,
     rows: attempts.map((a) => {
       const rows = byAttempt.get(a.id) ?? [];
-      const result = evaluateRegular(prog.skills, rows);
+      const result = evaluateRegular(prog.skills, rows, prog.code);
       const failing = result.skills.filter((s) => s.outcome === 'fail').map((s) => s.skill);
       const dongCases = casesOf(a.student_id, a.cycle_id ?? null, failing);
       const c = dongCases[0] ?? null;
@@ -907,7 +909,7 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
           const scored = row?.raw_score !== null && row?.raw_score !== undefined;
           return {
             skill: k,
-            label: REGULAR_SKILL_LABEL[k as keyof typeof REGULAR_SKILL_LABEL] ?? k,
+            label: tenMon(prog.code, k),
             periodCode: v.periodCode, weekRange: v.weekRange,
             /** Thứ Hai của tuần thi môn này — lưới viết tuần bằng `tuanLich` (G-6), không hiện mã tuần có năm. */
             weekStart: v.weekStart,

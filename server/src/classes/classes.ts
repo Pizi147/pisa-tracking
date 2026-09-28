@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS, awaitingScore, chuanHoaMaLop, soSanhLop, kiemPhanCong, moRongPhanCong, nhanKetThucVi, nhanTiepTheo,
-  oPhanCong, pendingSkillsOf, skillShort, trongHaiTuanCuoi, viecTiepTheoCua,
+  oPhanCong, pendingSkillsOf, tenMonNgan, trongHaiTuanCuoi, viecTiepTheoCua,
   type AssessedSkill, type SlotPhanCong, type AttemptKind, type PendingCell, type ProgrammeCode, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -410,7 +410,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
          * Bài kiểm tra lớp thường: không có band, không có Overall, không có kỳ vọng theo
          * target. Chỉ có đạt/trượt theo tỷ lệ điểm đạt/tổng điểm, và số môn trượt ra mức SOS.
          */
-        const r = evaluateRegular(prog!.skills, scores);
+        const r = evaluateRegular(prog!.skills, scores, prog!.code);
         /* Lịch và hạn của TỪNG môn — bốn môn của một bài có thể trải hai ba tuần. */
         const regViews = regularSkillViews(a, bundle.skillRows.get(a.id), scores, today, prog!.skills);
         return {
@@ -623,6 +623,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
         })(),
         cases: caseMo.get(s.id) ?? [],
         homNay: today,
+        chuongTrinh: prog?.code ?? null,
       }),
       /* Cột Khoá "tiếp theo: …" (PR-LT, Q1/Q4) — chỉ có nghĩa cho lớp thường còn đang học. */
       tiepTheo: isRatio ? nhanTiepTheo(tiepTheoLop.get(s.id) ?? null, maChuongTrinhHienTai) : null,
@@ -863,7 +864,7 @@ export function kiemTruocPhanCong(
 ): void {
   const loi = kiemPhanCong(chuongTrinh, kyNang, slots)[0];
   if (loi) {
-    const nhanO = oPhanCong(chuongTrinh, kyNang).find((o) => o.khoa === loi.khoa)?.nhan ?? skillShort(loi.khoa);
+    const nhanO = oPhanCong(chuongTrinh, kyNang).find((o) => o.khoa === loi.khoa)?.nhan ?? tenMonNgan(chuongTrinh, loi.khoa);
     throw badRequest(`${nhanO}: ${loi.lyDo}`);
   }
   const duocXep = new Set(teacherCandidatesBranch(branchId, classId).map((u) => u.id as number));
