@@ -31,7 +31,8 @@ Thành công: mở màn nào cũng thấy ngay (1) điều quan trọng nhất v
 - Toàn bộ giao diện **tiếng Việt**. Chữ theo `thiet-ke/TU_DIEN_VA_CHU.md` và `thiet-ke/THUAT_NGU_DA_CHOT.md`.
 - **Nền tối là thói quen** của người dùng.
 - Phải dùng được ở bề rộng **375 px** (điện thoại) và **chỉ bằng bàn phím**.
-- Hai mục điều hướng chính: Tổng quan ("tôi phải làm gì bây giờ") · Học viên ("lớp tôi đang thế nào").
+- Bốn khu vực chính: Tổng quan ("tôi phải làm gì bây giờ") · Học viên & Lớp ("lớp tôi đang thế nào") · Test · Công việc.
+  Khu nào tài khoản không có quyền thì không hiện.
 
 ## Capabilities and Constraints
 
