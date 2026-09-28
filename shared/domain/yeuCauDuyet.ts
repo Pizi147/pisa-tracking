@@ -42,9 +42,6 @@ export const LOAI_YC_META: Record<LoaiYeuCau, LoaiYcMeta> = {
   bao_len_nguyen_nhan: { phanLoai: 'bao-len', nhan: 'Case chờ nguyên nhân quá hạn', kieuNut: 'nhac', hanNgay: null, hangLoat: false },
 };
 
-export function laLoaiYeuCau(x: unknown): x is LoaiYeuCau {
-  return typeof x === 'string' && (LOAI_YEU_CAU as readonly string[]).includes(x);
-}
 export function laPhanLoai(x: unknown): x is PhanLoai {
   return typeof x === 'string' && (PHAN_LOAI as readonly string[]).includes(x);
 }

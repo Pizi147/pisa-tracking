@@ -37,9 +37,11 @@ const ThanhPhanDemo = import.meta.env.DEV ? lazy(() => import('./modules/dev/Tha
 function SoCho({ dem }: { dem?: DemYeuCau | null }) {
   if (!dem?.cho) return null;
   return (
-    <span aria-label={`${dem.cho} yêu cầu chờ duyệt${dem.quaHan ? `, ${dem.quaHan} quá hạn` : ''}`}
-      className={`ml-1.5 inline-flex min-w-[1.25rem] justify-center rounded-full border px-1 text-[10.5px] font-semibold leading-4 tabular-nums ${
+    <>
+      <span aria-hidden className={`ml-1.5 inline-flex min-w-[1.25rem] justify-center rounded-full border px-1 text-[10.5px] font-semibold leading-4 tabular-nums ${
         dem.quaHan ? 'border-late-line bg-late-bg text-late' : 'border-transparent bg-white/10 text-slate-300'}`}>{dem.cho}</span>
+      <span className="sr-only">, {dem.cho} yêu cầu chờ duyệt{dem.quaHan ? `, ${dem.quaHan} quá hạn` : ''}</span>
+    </>
   );
 }
 

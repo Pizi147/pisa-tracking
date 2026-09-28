@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { fmtTime } from '../../lib/format.ts';
@@ -46,6 +46,13 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   const [moHet, setMoHet] = useState(false);
   const [daNhac, setDaNhac] = useState<string | null>((yc.duLieu?.daNhacLuc as string | null) ?? null);
   const nutMo = useRef<HTMLButtonElement | null>(null);
+  /* "Xem thêm" chỉ khi chữ THẬT SỰ bị cắt ở 2 dòng (đo, không đoán theo số ký tự). */
+  const khungDong = useRef<HTMLDivElement | null>(null);
+  const [biCat, setBiCat] = useState(false);
+  useLayoutEffect(() => {
+    const el = khungDong.current;
+    if (el && !moHet) setBiCat(el.scrollHeight > el.clientHeight + 1);
+  }, [yc.dong, moHet]);
   const oNhap = useRef<HTMLTextAreaElement | null>(null);
   const cho = yc.trangThai === 'cho';
   const coNut = cho && !laNguoiXin;
@@ -55,7 +62,8 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   const moO = (loai: NonNullable<O>['loai'], nut: HTMLButtonElement) => {
     nutMo.current = nut; setO({ loai }); setChu(''); setDaBam(false); setLoiMay(null);
   };
-  const dongO = () => { setO(null); setLoiMay(null); requestAnimationFrame(() => nutMo.current?.focus()); };
+  /* Đóng ô: nút gốc vẫn trong DOM (chỉ mờ khi ô mở) — đợi React bỏ `disabled` rồi mới trả focus. */
+  const dongO = () => { setO(null); setLoiMay(null); setTimeout(() => nutMo.current?.focus(), 0); };
 
   const gui = async (duongDan: string, than: Record<string, unknown>, xongChu: string) => {
     if (busy) return;
@@ -107,7 +115,6 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   const hanV = yc.hanDuyet ? deadlineView({ kind: 'duyet', due: yc.hanDuyet, today: homNay }) : null;
   const tang1 = !hanV ? null : hanV.tone === 'overdue' ? `Quá hạn ${hanV.daysOverdue} ngày` : hanV.homNay ? 'Hạn hôm nay' : hanV.con ? hanV.con[0].toUpperCase() + hanV.con.slice(1) : null;
   const tt = nhanTrangThaiYc(yc.trangThai, yc.tuDuyet);
-  const lyDoDai = yc.dong.join(' ').length > 160;
   const nhanO = o?.loai === 'tu-choi' ? 'Lý do từ chối (người gửi sẽ đọc)' : o?.loai === 'tra-loi' ? 'Câu trả lời cho giáo viên' : 'Ghi chú việc đã xử lý ở màn gốc';
   /* Nút mở thêm một bước (chọn tuần / ghi chú) có dấu "…", như Từ chối… — Duyệt trơn là quyết ngay. */
   const duyetCoBuoc = yc.loai === 'lich_thi' || canGhiChu;
@@ -135,14 +142,14 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
             </p>
           </div>
           <div className={`mt-1 text-[13px] leading-snug text-slate-300 ${gon ? '' : 'sm:pl-[6.5rem]'}`}>
-            <div className={moHet ? '' : 'line-clamp-2'}>
+            <div ref={khungDong} className={moHet ? '' : 'line-clamp-2'}>
               {yc.dong.map((d, i) => <p key={i} className="m-0">{d}</p>)}
             </div>
-            {lyDoDai && (
-              <button type="button" className="mt-0.5 text-[12px] text-teal-300 hover:underline" onClick={() => setMoHet(!moHet)}
+            {(biCat || moHet) && (
+              <button type="button" className="mt-0.5 min-h-[44px] text-[12px] text-teal-300 hover:underline sm:min-h-0" onClick={() => setMoHet(!moHet)}
                 aria-expanded={moHet}>{moHet ? 'Thu gọn' : 'Xem thêm'}</button>
             )}
-            {yc.neuDuyet && cho && <p className="m-0 mt-1 text-[12px] text-slate-500">Nếu duyệt: {yc.neuDuyet}</p>}
+            {yc.neuDuyet && cho && <p className="m-0 mt-1 text-[12px] text-slate-400">Nếu duyệt: {yc.neuDuyet}</p>}
             {!cho && <KetQua yc={yc} ngan={ngan} />}
           </div>
         </div>
@@ -152,7 +159,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
             tang1 && (
               <div className="tabular-nums">
                 <div className={`text-sm font-bold ${hanV!.tone === 'overdue' ? 'text-late' : hanV!.homNay ? 'text-soon' : 'text-slate-100'}`}>{tang1}</div>
-                <div className="text-[12px] text-slate-500">{hanV!.han}</div>
+                <div className="text-[12px] text-slate-400">{hanV!.han}</div>
               </div>
             )
           ) : (
@@ -162,16 +169,17 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
             </div>
           )}
           {laNguoiXin && cho && <div><NhanTrangThai t="cho-duyet" /></div>}
-          {(coNut || yc.mo) && !o && (
+          {(coNut || yc.mo) && (
             <div className="flex flex-wrap gap-1.5 sm:justify-end">
               {coNut && yc.kieuNut === 'duyet-tu-choi' && <>
-                <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={busy}
-                  onClick={(e) => duyet(e.currentTarget)}>{busy ? 'Đang lưu…' : duyetCoBuoc ? 'Duyệt…' : 'Duyệt'}</button>
-                <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy}
+                <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !!o}
+                  aria-expanded={o?.loai === 'tuan' || o?.loai === 'ghi-chu'}
+                  onClick={(e) => duyet(e.currentTarget)}>{busy && !o ? 'Đang lưu…' : duyetCoBuoc ? 'Duyệt…' : 'Duyệt'}</button>
+                <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy || !!o} aria-expanded={o?.loai === 'tu-choi'}
                   onClick={(e) => moO('tu-choi', e.currentTarget)}>Từ chối…</button>
               </>}
               {coNut && yc.kieuNut === 'tra-loi' && <>
-                <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={busy}
+                <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !!o} aria-expanded={o?.loai === 'tra-loi'}
                   onClick={(e) => moO('tra-loi', e.currentTarget)}>Trả lời…</button>
                 {onThemPa && typeof yc.duLieu?.caseId === 'number' && (
                   <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => onThemPa(yc.duLieu!.caseId as number)}>
@@ -181,7 +189,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
               </>}
               {coNut && yc.kieuNut === 'nhac' && (
                 daNhac
-                  ? <span className="self-center whitespace-nowrap text-[12px] text-slate-500">✓ Đã nhắc {fmtTime(daNhac)}</span>
+                  ? <span className="self-center whitespace-nowrap text-[12px] text-slate-400">✓ Đã nhắc {fmtTime(daNhac)}</span>
                   : <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={nhac}>
                     Nhắc {typeof yc.duLieu?.tenGv === 'string' ? yc.duLieu.tenGv : 'GV'}
                   </button>
@@ -198,7 +206,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
             <div>
               <label className="mb-1 block text-[12px] text-slate-400" htmlFor={`${uid}-tuan`}>Tuần thi mới</label>
               <ONgay id={`${uid}-tuan`} kieu="tuan" value={tuan || null} onChange={setTuan} toiThieu={homNay} ariaLabel="Tuần thi mới" />
-              <p className="m-0 mt-1 text-[11px] text-slate-500">Mặc định là tuần GV đề nghị. Tuần đã bắt đầu thì không chọn được.</p>
+              <p className="m-0 mt-1 text-[11px] text-slate-400">Mặc định là tuần GV đề nghị. Tuần đã bắt đầu thì không chọn được.</p>
             </div>
           ) : (
             <div>
@@ -229,6 +237,6 @@ function KetQua({ yc, ngan }: { yc: TheYeuCauDto; ngan: (d: string | null | unde
   const ai = yc.nguoiDuyet ? `${yc.nguoiDuyet}` : 'Quản lý';
   if (yc.trangThai === 'tu_choi') return <p className="m-0 mt-1 text-[12px] text-slate-400">{ai} từ chối{yc.xuLyLuc ? ` ${ngan(yc.xuLyLuc)}` : ''}: “{yc.lyDoTuChoi}”</p>;
   if (yc.trangThai === 'da_tra_loi') return <p className="m-0 mt-1 text-[12px] text-slate-400">{ai} trả lời: “{yc.traLoi}”</p>;
-  if (yc.trangThai === 'tu_dong') return <p className="m-0 mt-1 text-[12px] text-slate-500">Tự đóng: {yc.lyDoDong}</p>;
+  if (yc.trangThai === 'tu_dong') return <p className="m-0 mt-1 text-[12px] text-slate-400">Tự đóng: {yc.lyDoDong}</p>;
   return yc.traLoi ? <p className="m-0 mt-1 text-[12px] text-slate-400">{ai}: “{yc.traLoi}”</p> : null;
 }

@@ -78,14 +78,14 @@ export function DeXuatSuaPanel({ studentId, studentName, lop, truongDau, hienTai
               <div className="flex items-center gap-2">
                 <input className="field w-24 tabular-nums" type="number" inputMode="decimal" step="0.5" min={0} max={9}
                   {...lf.o(loi, 'moi')} value={moi} onChange={(e) => setMoi(e.target.value)} />
-                {hienTai?.target != null && <span className="text-xs text-slate-500 tabular-nums">đang là {hienTai.target.toFixed(1)}</span>}
+                {hienTai?.target != null && <span className="text-xs text-slate-400 tabular-nums">đang là {hienTai.target.toFixed(1)}</span>}
               </div>
             ) : truong === 'lo-trinh' ? (
               <div className="flex flex-wrap gap-1.5" {...lf.o(loi, 'moi')}>
                 {(routes.data ?? []).filter((r) => r.code !== hienTai?.route).map((r) => (
                   <NutChon key={r.code} nho chon={moi === r.code} onClick={() => setMoi(r.code)} title={r.name}>{r.code}</NutChon>
                 ))}
-                {hienTai?.route && <span className="self-center text-xs text-slate-500">đang là {hienTai.route}</span>}
+                {hienTai?.route && <span className="self-center text-xs text-slate-400">đang là {hienTai.route}</span>}
               </div>
             ) : (
               <input className="field w-full" maxLength={200} {...lf.o(loi, 'moi')} value={moi} onChange={(e) => setMoi(e.target.value)}

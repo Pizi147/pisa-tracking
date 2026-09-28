@@ -21,7 +21,7 @@ export function YeuCauCuaToi() {
   const cho = ds.filter((x) => x.trangThai === 'cho').length;
   return (
     <div className="space-y-2">
-      <p className="m-0 text-[12px] tabular-nums text-slate-500">{cho} đang chờ Quản lý · {ds.length - cho} đã xử lý (60 ngày)</p>
+      <p className="m-0 text-[12px] tabular-nums text-slate-400">{cho} đang chờ Quản lý · {ds.length - cho} đã xử lý (60 ngày)</p>
       {ds.map((y) => <TheYeuCau key={y.id} yc={y} laNguoiXin nhanManh={nhan === y.id} onXong={reload} />)}
     </div>
   );

@@ -206,7 +206,9 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       const tuAp = TRUONG_TU_AP.includes(d.truong);
       const hien = (x: unknown) => (x === null || x === undefined || x === '' ? 'chưa có' : typeof x === 'number' ? x.toFixed(1) : String(x));
       return {
-        tieuDe: d.truong === 'khac' ? `Đề xuất sửa: ${hien(d.moi)}` : `Đề xuất sửa ${nhan} ${hien(d.cu)} → ${hien(d.moi)}`,
+        /* Không có giá trị cũ (lịch MT, khác) thì không ghi "chưa có →" — nói thẳng nội dung đề xuất. */
+        tieuDe: d.truong === 'khac' ? `Đề xuất sửa: ${hien(d.moi)}`
+          : d.cu == null && !tuAp ? `Đề xuất sửa ${nhan}: ${hien(d.moi)}` : `Đề xuất sửa ${nhan} ${hien(d.cu)} → ${hien(d.moi)}`,
         dong: [`${nguoiXin(yc, ngu)} (${ngay(yc.tao_luc, ngu)}): “${yc.ly_do ?? ''}”`],
         neuDuyet: tuAp
           ? (d.truong === 'target' ? 'Target đổi từ hôm nay; kỳ vọng của các lượt đã thi giữ nguyên.' : 'Lộ trình đổi ngay.')

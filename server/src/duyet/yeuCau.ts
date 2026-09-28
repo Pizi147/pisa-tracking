@@ -7,7 +7,7 @@
  */
 import { db, tx } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, notFound, nowIso, addDays } from '../util.ts';
+import { badRequest, notFound, nowIso, addDays, todayInBusinessTz } from '../util.ts';
 import { can, napTruocPhamVi, require_, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
@@ -22,6 +22,15 @@ const P_DUYET = PERMISSIONS.REQUEST_APPROVE;
 const NGAY_DA_XU_LY = 30;
 const NGAY_CUA_TOI = 60;
 const DO_DAI_LY_DO = 3;
+
+/**
+ * MỐC GỬI / MỐC XỬ LÝ của thẻ theo NGÀY NGHIỆP VỤ. Bản chính (ngày nghiệp vụ = hôm nay) → giờ thật. Bản demo (ngày demo cố định,
+ * khác đồng hồ) → trưa ngày demo, để thẻ không ghi "đề xuất 29/09" giữa một ngày demo 14/09 (và lọc 30/60 ngày tính đúng).
+ */
+function mocNghiepVu(): string {
+  const ngay = demoToday();
+  return ngay === todayInBusinessTz() ? nowIso() : `${ngay}T05:00:00.000Z`;
+}
 
 function metaCua(loai: string): LoaiYcMeta {
   const m = (LOAI_YC_META as Record<string, LoaiYcMeta>)[loai];
@@ -84,7 +93,7 @@ export function taoYeuCau(conn: any, v: TaoYeuCauVao): number | null {
                                 ly_do, bang_chung, du_lieu, han_duyet, trang_thai, tao_luc)
      VALUES (?,?,?,?,?,?,?,?,?,?,?,?, 'cho', ?) ON CONFLICT DO NOTHING`,
   ).run(v.loai, meta.phanLoai, v.doiTuongLoai, v.doiTuongId, hocVienId, lopId, chiNhanhId, v.nguoiXin,
-    v.lyDo?.trim() || null, json(v.bangChung), json(v.duLieu), han, nowIso());
+    v.lyDo?.trim() || null, json(v.bangChung), json(v.duLieu), han, mocNghiepVu());
   if (!info.changes) return null;
   const id = Number(info.lastInsertRowid);
   const hv = tenHocVien(conn, hocVienId);
@@ -128,7 +137,7 @@ export function chotYeuCau(
           WHERE id = ? AND trang_thai = 'cho'`,
       ).run(trangThai, nguoiDuyet, trangThai === 'tu_choi' ? lyDo : null,
         trangThai === 'da_tra_loi' ? (v.traLoi?.trim() || null) : trangThai === 'duyet' ? lyDo : null,
-        trangThai === 'tu_dong' ? lyDo : null, tuDuyet ? 1 : 0, nowIso(), r.id).changes as number;
+        trangThai === 'tu_dong' ? lyDo : null, tuDuyet ? 1 : 0, mocNghiepVu(), r.id).changes as number;
       if (!doi) continue;
       n += doi;
       const baoNguoiXin = r.nguoi_xin != null && r.nguoi_xin !== nguoiDuyet && !(trangThai === 'tu_dong' && meta.kieuNut === 'nhac');

@@ -93,7 +93,7 @@ export function HopChoDuyet() {
           muc={[{ key: 'cho', nhan: 'Đang chờ' }, { key: 'da-xu-ly', nhan: 'Đã xử lý (30 ngày)' }]} />
         <BranchFilter branchId={branchId} onBranch={(id) => setParam('cn', id ? String(id) : null)} />
       </div>
-      {xem === 'cho' && ds.length > 1 && <p className="m-0 text-[12px] text-slate-500">Xếp: quá hạn trước → hạn gần nhất</p>}
+      {xem === 'cho' && ds.length > 1 && <p className="m-0 text-[12px] text-slate-400">Xếp: quá hạn trước → hạn gần nhất</p>}
 
       {theLac && (
         <p role="status" className="m-0 flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2 text-[13px] text-slate-300"
