@@ -501,6 +501,19 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(again.id === v && again.description === 'Mô tả sửa lần ba, vẫn hợp lệ', 'Sửa phải trả về bản ghi mới');
   });
 
+  check('PR-NEN · V09 vi phạm "Khác" CŨ (mô tả không có tiền tố Ghi rõ) vẫn đổi được ngày/môn khi form gửi lại nguyên nhóm + mô tả', () => {
+    const st = makeStudent('V09K');
+    const v = vid(record(gvbm, st.id, { description: 'Mô tả cũ không có tiền tố' }));
+    conn.prepare(`UPDATE violations SET category = 'other' WHERE id = ?`).run(v); // dữ liệu trước T13: Khác không có Ghi rõ
+    const sua = viol.editViolation(gvbm, v, {
+      category: 'other', description: 'Mô tả cũ không có tiền tố', occurredOn: addDays(TODAY, -1), skill: 'reading',
+    }) as any;
+    assert(sua.description === 'Mô tả cũ không có tiền tố' && sua.category === 'other', `Mô tả/nhóm phải giữ nguyên: ${JSON.stringify(sua)}`);
+    const row = conn.prepare('SELECT occurred_on, skill FROM violations WHERE id = ?').get(v) as any;
+    assert(row.occurred_on === addDays(TODAY, -1) && row.skill === 'reading', `Ngày/môn phải đổi: ${JSON.stringify(row)}`);
+    assertThrows(() => viol.editViolation(gvbm, v, { category: 'other', description: 'Mô tả cũ đã sửa lại khác đi' }), /Ghi rõ "Khác"/, 'Đổi mô tả của Khác cũ thì phải ghi rõ');
+  });
+
   check('PR-J · V10 Ai sửa hoặc xoá được: người ghi (của mình) · GVCN của lớp · Quản lý trong phạm vi — GV khác không sửa được vi phạm đồng nghiệp', () => {
     const st = makeStudent('V10');
     const v = vid(record(gvbm, st.id, { description: 'Vi phạm do GV Writing 1 ghi' }));

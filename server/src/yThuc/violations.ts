@@ -267,9 +267,16 @@ export function editViolation(p: Principal, id: number, patch: {
   if (!canEditViolation(p, row)) throw forbidden(EDIT_VIOLATION_MESSAGE);
 
   const category = patch.category === undefined ? (row.category as ViolationCategory) : checkCategory(patch.category);
-  const description = patch.description === undefined && patch.category === undefined
-    ? row.description
-    : checkDescription(category, patch.description === undefined ? row.description : patch.description, patch.ghiRoKhac);
+  /*
+   * Form sửa luôn gửi lại nhóm + mô tả dù không đổi. Chỉ kiểm/ghép lại mô tả khi THẬT SỰ đổi nhóm, đổi mô tả, hoặc gửi chữ Ghi rõ —
+   * để vi phạm "Khác" cũ (trước T13, mô tả không có tiền tố Ghi rõ) vẫn đổi được ngày/môn mà không bị bắt viết lại mô tả.
+   */
+  const moTaGui = patch.description === undefined ? undefined : String(patch.description ?? '').trim();
+  const canKiemMoTa = category !== row.category || (moTaGui !== undefined && moTaGui !== row.description)
+    || patch.ghiRoKhac !== undefined;
+  const description = canKiemMoTa
+    ? checkDescription(category, moTaGui ?? row.description, patch.ghiRoKhac)
+    : row.description;
   const skill = patch.skill === undefined ? row.skill : checkSkill(patch.skill);
   const occurredOn = patch.occurredOn === undefined ? row.occurred_on : checkOccurredOn(patch.occurredOn);
 
