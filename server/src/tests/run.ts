@@ -9656,6 +9656,11 @@ await runXoaDuLieuTests({ check, checkAsync, assert, assertThrows, conn, TODAY, 
 const { runSuaLoiNongTests } = await import('./suaLoiNong.tests.ts');
 await runSuaLoiNongTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
+// ==================================================================== PR-NEN (Nền giao diện: ô ngày, Khác, chọn người, trạng thái, panel, bàn phím)
+
+const { runThanhPhanChungTests } = await import('./thanhPhanChung.tests.ts');
+await runThanhPhanChungTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
