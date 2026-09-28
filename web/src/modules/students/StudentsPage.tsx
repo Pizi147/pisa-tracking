@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { invalidate } from '../../lib/api.ts';
-import { Alert, Card, Empty, ErrorState, Level, SectionNote, Skeleton, Status, Th } from '../../ui/ui.tsx';
+import { Alert, Card, Empty, ErrorState, Level, NhanTrangThai, SectionNote, Skeleton, Th } from '../../ui/ui.tsx';
 import { Nhan, toneNhanTuBadge } from '../../ui/Nhan.tsx';
 import { HangNhom } from '../../ui/HangNhom.tsx';
 import { attemptHref, caseStatusLabel, sosTone } from '../../lib/format.ts';
@@ -14,7 +14,7 @@ import { ClassCreatePanel } from '../classes/ClassCreatePanel.tsx';
 import { TenGiaoVien } from '../classes/TenGiaoVien.tsx';
 import { BangHocVienLop } from './BangHocVienLop.tsx';
 import {
-  LOC_HOC_VIEN, LOC_HOC_VIEN_NHAN, PHAM_VI_NHAN, badgeLop, docThamSoLoc, duongLichTest, lopMoSan, needScoresText, skillShort,
+  LOC_HOC_VIEN, LOC_HOC_VIEN_NHAN, PHAM_VI_NHAN, badgeLop, docThamSoLoc, duongLichTest, lopMoSan, needScoresText, skillShort, trangThaiCaseDong,
   type BadgeLop, type LocHocVien, type PhamVi, type SapXep, type WorkScope,
 } from '@shared/domain/index.ts';
 
@@ -414,9 +414,8 @@ export function WorkQueue({ view, branchId, q, scope }: {
                       <div className="flex flex-col items-start gap-0.5">
                         <span className="flex items-center gap-1">
                           <Level tone={sosTone(r.caseLevel)}>SOS {r.caseLevel}</Level>
-                          <Status kind={r.caseStatus === 'done' ? 'done' : r.caseStatus === 'open' ? 'idle' : 'doing'}>
-                            {caseStatusLabel(r.caseStatus ?? 'open')}
-                          </Status>
+                          {/* PR-NEN (Q15): nhãn 6 chữ chung; chữ trạng thái case cũ còn ở tooltip. */}
+                          <NhanTrangThai t={trangThaiCaseDong(r.caseStatus)} title={caseStatusLabel(r.caseStatus ?? 'open')} />
                         </span>
                         <span className="text-[10px] text-slate-500">
                           {r.caseFollowUp ?? 'Chưa có follow-up'}

@@ -233,7 +233,7 @@ export function attemptProgressView(i: AttemptProgressInput): AttemptProgressVie
 // ====================================================================== <Han>
 
 /**
- * BẢY LOẠI, SÁU ĐỒNG HỒ KHÁC NHAU + một thứ KHÔNG PHẢI HẠN.
+ * MƯỜI MỘT LOẠI HẠN, mỗi loại một đồng hồ riêng + một thứ KHÔNG PHẢI HẠN (`du-kien-ket-thuc`).
  *
  * Rule book §9.2: hạn thực hiện PA, cập nhật PA, nhập điểm và duyệt lịch không dùng chung một
  * trường — nên cũng không được dùng chung một cách hiển thị. `du-kien-ket-thuc` là ngày DỰ
@@ -242,6 +242,8 @@ export function attemptProgressView(i: AttemptProgressInput): AttemptProgressVie
 export const DEADLINE_KINDS = [
   'xac-minh-sos', 'lap-pa', 'cap-nhat-pa', 'thuc-hien-y-thuc', 'hoan-thanh-y-thuc', 'nhap-diem',
   'du-kien-ket-thuc', 'viec-van-hanh',
+  /* PR-NEN Q16 (K1-56 + T66): bốn loại hạn mới — chưa chỗ nào gắn, PR sau gắn khi có hạn thật. */
+  'duyet', 'xu-ly-vi-pham', 'ke-hoach-bo-tro', 'mini-test',
 ] as const;
 export type DeadlineKind = (typeof DEADLINE_KINDS)[number];
 
@@ -251,7 +253,8 @@ export type DeadlineKind = (typeof DEADLINE_KINDS)[number];
  * PR-N1 (R-PA1/R-PA3): hạn ghi kết quả tuần là HẾT THỨ HAI tuần kế tiếp; việc có hạn nói rõ tuần ("Ghi kết quả tuần W4 SEP").
  */
 const DEADLINE_VIEC: Record<DeadlineKind, { viec: string; tien: 'hạn' | 'hạn hết T2' | 'dự kiến kết thúc' }> = {
-  'xac-minh-sos': { viec: 'Xác minh nguyên nhân', tien: 'hạn' },
+  /* PR-NEN Q16: giữ khoá `xac-minh-sos`, chữ đổi theo thuật ngữ chốt (như N1 Q4). */
+  'xac-minh-sos': { viec: 'Xác nhận nguyên nhân', tien: 'hạn' },
   'lap-pa': { viec: 'Đề ra PA', tien: 'hạn' },
   'cap-nhat-pa': { viec: 'Ghi kết quả PA', tien: 'hạn hết T2' },
   'thuc-hien-y-thuc': { viec: 'Thực hiện xong', tien: 'hạn' },
@@ -260,6 +263,10 @@ const DEADLINE_VIEC: Record<DeadlineKind, { viec: string; tien: 'hạn' | 'hạn
   'du-kien-ket-thuc': { viec: 'Dự kiến kết thúc', tien: 'dự kiến kết thúc' },
   /* PR-Ra Q9: quá hạn tính theo hạn HIỆN TẠI — hạn gốc/lý do dời hiện ở dòng phụ riêng (`dongHanDaDoi`), không qua `originalDue` ở đây. */
   'viec-van-hanh': { viec: 'Việc', tien: 'hạn' },
+  duyet: { viec: 'Duyệt', tien: 'hạn' },
+  'xu-ly-vi-pham': { viec: 'Xử lý vi phạm', tien: 'hạn' },
+  'ke-hoach-bo-tro': { viec: 'Nộp kế hoạch bổ trợ', tien: 'hạn' },
+  'mini-test': { viec: 'Mini Test', tien: 'hạn' },
 };
 
 /** "quá hạn 15 ngày" · gọn: "15 ngày" · không biết số ngày: "quá hạn". */

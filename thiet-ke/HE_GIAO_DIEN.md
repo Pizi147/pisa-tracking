@@ -107,12 +107,16 @@ rule book:
 
 | `loai` | Nhãn hiển thị | Luật | Nguồn |
 |---|---|---|---|
-| `xac-minh-sos` | `Xác minh nguyên nhân · hạn {ngày}` | 3 ngày tính cả ngày đầu | RB 3.4 |
+| `xac-minh-sos` | `Xác nhận nguyên nhân · hạn {ngày}` | 3 ngày tính cả ngày đầu | RB 3.4 |
 | `lap-pa` | `Cần có phương án · hạn {ngày}` | 5 ngày Cần chú ý / 3 ngày Gấp | RB 4.2 |
 | `cap-nhat-pa` | `Ghi kết quả tuần W4 SEP · hạn hết T2 28/09` | Hằng tuần, hết **Thứ Hai** tuần sau | §5.6 R-PA1 (PR-N1) |
 | `thuc-hien-y-thuc` | `Thực hiện xong · hạn {ngày}` | 3 ngày Gấp / 5 ngày Cần chú ý | RB 6.2 |
 | `hoan-thanh-y-thuc` | `Kết luận đợt · hạn {ngày}` | 7 ngày tính cả ngày mở | RB 6.2 |
 | `nhap-diem` | `Hạn nhập điểm {ngày}` | FT: hết thứ Tư tuần kế tuần thi | RB 9.2 |
+| `duyet` | `Duyệt · hạn {ngày}` | chưa gắn — PR sau | K1-56, T66 (PR-NEN Q16) |
+| `xu-ly-vi-pham` | `Xử lý vi phạm · hạn {ngày}` | chưa gắn — PR sau | K1-56 (PR-NEN Q16) |
+| `ke-hoach-bo-tro` | `Nộp kế hoạch bổ trợ · hạn {ngày}` | chưa gắn — PR sau | K1-56 (PR-NEN Q16) |
+| `mini-test` | `Mini Test · hạn {ngày}` | chưa gắn — PR sau | T66 (PR-NEN Q16) |
 
 Thêm một giá trị **không phải hạn**: `du-kien-ket-thuc` → `Dự kiến kết thúc {ngày}`, luôn tone
 trung tính, **không bao giờ đỏ**, không bao giờ ghi "quá hạn". Đây là chỗ F11 sai: dự kiến kết

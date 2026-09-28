@@ -28,10 +28,10 @@ export function trangThaiPhoiHop(status: string | null | undefined): TrangThai {
   return 'can-lam';
 }
 
-/** Trạng thái case (đóng/huỷ/mở/chưa có kế hoạch/đang xử lý) → nhãn chung. */
+/** Trạng thái case (đóng/huỷ/mở/chưa xử lý/chưa có kế hoạch/đang xử lý) → nhãn chung. `chua_xu_ly`: Case từ SOS chưa đủ nguyên nhân (N1 Q28-5). */
 export function trangThaiCaseDong(state: string | null | undefined): TrangThai {
   if (state === 'done' || state === 'closed') return 'xong';
   if (state === 'dismissed' || state === 'cancelled') return 'da-huy';
-  if (!state || state === 'open' || state === 'no_plan') return 'can-lam';
+  if (!state || state === 'open' || state === 'chua_xu_ly' || state === 'no_plan') return 'can-lam';
   return 'dang-lam';
 }

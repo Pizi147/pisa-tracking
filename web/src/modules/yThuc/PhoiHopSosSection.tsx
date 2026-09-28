@@ -1,16 +1,18 @@
 import { useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Empty, Info, Skeleton, Status } from '../../ui/ui.tsx';
+import { Empty, NhanTrangThai, Skeleton } from '../../ui/ui.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import {
   COORDINATION_KINDS, COORDINATION_KIND_LABEL, COORDINATION_USER_REMOVE_REASONS, COORDINATION_REMOVE_REASON_LABEL,
-  type CoordinationKind, kiemGhiRoKhac, reasonNeedsText,
+  type CoordinationKind, type NguoiChon, kiemGhiRoKhac, nguoiThieu, reasonNeedsText, trangThaiPhoiHop,
 } from '@shared/domain/index.ts';
 import { fmtDate, sosLabel } from '../../lib/format.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
+import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
+import { Hang2, Truong } from '../../ui/KhungPanel.tsx';
 
 type CoordAction = {
   id: number; kind: string; kindLabel: string; customName: string | null; name: string;
@@ -88,7 +90,7 @@ export function TheSos({ t, cot1 = 'luot', onGoAcademic, onChanged }: {
           ) : <span className="block text-[11px] text-slate-500">Học thuật theo dõi ở bảng kỹ năng</span>}
         </div>
         <div className="justify-self-end">
-          {t.summary.complete ? <Status kind="done">Hoàn thành</Status> : <Status kind="doing">Đang xử lý</Status>}
+          <NhanTrangThai t={t.summary.complete ? 'xong' : 'dang-lam'} />
         </div>
       </div>
 
@@ -118,8 +120,9 @@ function ActionRow({ a, canAct, onChanged }: { a: CoordAction; canAct: boolean; 
   const [removing, setRemoving] = useState(false);
   const dongPhu = a.status === 'done'
     ? `${fmtDate(a.performedOn)}${a.performerName ? ` · ${a.performerName}` : ''}`
-    : a.status === 'removed' ? `Đã bỏ · ${a.removeReasonLabel ?? ''}`
-    /* Người không có quyền: cột phải đã là nhãn `Cần xử lý` — không lặp ở dòng phụ (rà soát 22/09). */
+    /* PR-NEN: nhãn cột phải đã nói "Đã huỷ" — dòng phụ chỉ còn lý do, không lặp. */
+    : a.status === 'removed' ? (a.removeReasonLabel ?? '')
+    /* Người không có quyền: cột phải đã là nhãn `Cần làm` — không lặp ở dòng phụ (rà soát 22/09). */
     : canAct ? 'Cần xử lý' : '';
 
   return (
@@ -130,14 +133,13 @@ function ActionRow({ a, canAct, onChanged }: { a: CoordAction; canAct: boolean; 
           {dongPhu && <span className="block text-[11px] text-slate-500 mt-0.5">{dongPhu}</span>}
         </span>
         <span className="flex flex-wrap gap-1.5 justify-end">
-          {a.status === 'done' ? <Status kind="done">Đã xong</Status>
-            : a.status === 'removed' ? <Info>Đã bỏ</Info>
-            : canAct ? (
-              <>
-                <button type="button" className="btn btn-sm btn-primary" onClick={() => setConfirming(!confirming)}>Xác nhận</button>
-                <button type="button" className="btn btn-sm btn-ghost" onClick={() => setRemoving(!removing)}>Bỏ ▾</button>
-              </>
-            ) : <Status kind="waiting">Cần xử lý</Status>}
+          {/* Việc chờ mà người xem làm được: hai nút đứng chỗ nhãn (dòng phụ đã nói "Cần xử lý"); còn lại là nhãn 6 chữ chung. */}
+          {a.status === 'pending' && canAct ? (
+            <>
+              <button type="button" className="btn btn-sm btn-primary" onClick={() => setConfirming(!confirming)}>Xác nhận</button>
+              <button type="button" className="btn btn-sm btn-ghost" onClick={() => setRemoving(!removing)}>Bỏ ▾</button>
+            </>
+          ) : <NhanTrangThai t={trangThaiPhoiHop(a.status)} />}
         </span>
       </div>
       {confirming && <ConfirmCoordinationForm actionId={a.id} onClose={() => setConfirming(false)} onChanged={onChanged} />}
@@ -153,12 +155,19 @@ function ConfirmCoordinationForm({ actionId, onClose, onChanged }: {
   const { homNay: today } = useNgayNghiepVu();
   const [performedOn, setPerformedOn] = useState(today);
   const [note, setNote] = useState('');
+  /* PR-NEN T14 (M11): mặc định "Tôi" — máy chủ tự lấy người đang đăng nhập khi không gửi tên (`confirmCoordination`). */
+  const [nguoi, setNguoi] = useState<NguoiChon | null>({ kieu: 'toi' });
   const [busy, setBusy] = useState(false);
+  const loiNguoi = nguoiThieu(nguoi, false);
 
   const save = async () => {
+    if (loiNguoi) return;
     setBusy(true);
     try {
-      await api.post(`/phoi-hop-sos/${actionId}/confirm`, { performedOn, note: note.trim() || undefined });
+      await api.post(`/phoi-hop-sos/${actionId}/confirm`, {
+        performedOn, note: note.trim() || undefined,
+        performerName: !nguoi || nguoi.kieu === 'toi' ? undefined : nguoi.ten.trim(),
+      });
       invalidate('/classes'); invalidate('/students');
       toast.push('ok', 'Đã lưu');
       onChanged?.(); onClose();
@@ -167,18 +176,20 @@ function ConfirmCoordinationForm({ actionId, onClose, onChanged }: {
 
   return (
     <div className="mt-2 rounded-lg p-2.5 space-y-2" style={{ background: 'var(--surface-1)' }}>
-      <div className="flex flex-wrap items-center gap-2">
-        <label className="flex items-center gap-1.5 text-[11px] text-slate-400">
-          Ngày thực hiện
-          <span className="w-[11.5rem]"><ONgay kieu="ngay" value={performedOn} onChange={setPerformedOn} toiDa={today} /></span>
-        </label>
-      </div>
+      <Hang2>
+        <Truong nhan="Ngày thực hiện" batBuoc>
+          <span className="block w-[11.5rem]"><ONgay kieu="ngay" value={performedOn} onChange={setPerformedOn} toiDa={today} /></span>
+        </Truong>
+        <Truong nhan="Người thực hiện" as="div" loi={loiNguoi}>
+          <ChonNguoi nhom="nhan_vien" value={nguoi} onChange={setNguoi} />
+        </Truong>
+      </Hang2>
       <textarea className="field w-full" rows={2} placeholder="Ghi chú (tuỳ chọn)" value={note}
         onChange={(e) => setNote(e.target.value)} />
       <BangChung ownerType="sos_coordination_action" ownerId={actionId} canEdit tieuDe="" />
       <div className="flex gap-1.5">
         <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>Huỷ</button>
-        <button type="button" className="btn btn-sm btn-primary" disabled={busy || !performedOn} onClick={save}>Lưu</button>
+        <button type="button" className="btn btn-sm btn-primary" disabled={busy || !performedOn || !!loiNguoi} title={loiNguoi ?? undefined} onClick={save}>Lưu</button>
       </div>
     </div>
   );

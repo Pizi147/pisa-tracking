@@ -90,7 +90,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(d.TRANG_THAI.map((x: any) => d.NHAN_TRANG_THAI[x]).join(' · ') === 'Cần làm · Đang làm · Chờ duyệt · Quá hạn · Xong · Đã huỷ', 'nhãn');
     assert(d.chuTrangThai('qua-han', 2) === 'Quá hạn · 2 ngày' && d.chuTrangThai('qua-han') === 'Quá hạn' && d.chuTrangThai('xong', 3) === 'Xong', 'chữ');
     assert(d.trangThaiPhoiHop('pending') === 'can-lam' && d.trangThaiPhoiHop('done') === 'xong' && d.trangThaiPhoiHop('removed') === 'da-huy', 'phối hợp');
-    assert(d.trangThaiCaseDong('done') === 'xong' && d.trangThaiCaseDong('no_plan') === 'can-lam' && d.trangThaiCaseDong('open') === 'can-lam'
+    assert(d.trangThaiCaseDong('done') === 'xong' && d.trangThaiCaseDong('no_plan') === 'can-lam' && d.trangThaiCaseDong('open') === 'can-lam' && d.trangThaiCaseDong('chua_xu_ly') === 'can-lam'
       && d.trangThaiCaseDong('working') === 'dang-lam' && d.trangThaiCaseDong('dismissed') === 'da-huy', 'case');
   });
   check('NEN (1) · phím: danh sách vòng, Tab vòng trong panel, lịch đi theo ngày/tuần/tháng', () => {
@@ -202,5 +202,19 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(abc.ghiRo === 'A' && abc.moTa === 'B — C', j(abc));
     const khong = d.tachKhac('Không nộp bài ba buổi liền');
     assert(khong.ghiRo === '' && khong.moTa === 'Không nộp bài ba buổi liền', j(khong));
+  });
+
+  check('NEN (7) · K1-56: 4 loại hạn mới có việc + tiền tố; Xác nhận nguyên nhân thay "Xác minh"', () => {
+    for (const k of ['duyet', 'xu-ly-vi-pham', 'ke-hoach-bo-tro', 'mini-test']) assert(d.DEADLINE_KINDS.includes(k as any), `thiếu loại ${k}`);
+    const v = d.deadlineView({ kind: 'duyet', due: '2026-10-02', today: '2026-09-28' });
+    assert(/^Duyệt · hạn 02\/10/.test(v.text), v.text);
+    assert(d.deadlineView({ kind: 'xac-minh-sos', due: '2026-09-30', today: '2026-09-28' }).text.startsWith('Xác nhận nguyên nhân'), 'xac-minh-sos');
+  });
+
+  check('NEN (7) · T14: ô chọn người mở danh sách ngay; trạng thái quy trình dùng NhanTrangThai', () => {
+    assert(/buocDanhSach\(/.test(doc('web/src/modules/congViec/ChonPhuTrach.tsx')), 'menu ChonPhuTrach chưa đi bằng mũi tên');
+    assert(/<ChonNguoi/.test(doc('web/src/modules/yThuc/PhoiHopSosSection.tsx')), 'Phối hợp SOS chưa có ô người thực hiện');
+    for (const f of ['web/src/modules/yThuc/PhoiHopSosSection.tsx', 'web/src/modules/cases/CaseBoardPage.tsx', 'web/src/modules/students/StudentsPage.tsx'])
+      assert(/<NhanTrangThai\b/.test(doc(f)) && !/<Status kind/.test(doc(f)), `${f} chưa dùng NhanTrangThai`);
   });
 }

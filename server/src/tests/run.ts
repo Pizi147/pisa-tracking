@@ -8036,7 +8036,7 @@ check('PR-E · <KetQuaDot>: đủ điểm nhưng thiếu kỳ vọng thì không
 
 check('PR-E · <Han>: sáu loại hạn có sáu nhãn khác nhau, đúng bảng HE_GIAO_DIEN §4 (việc · mốc, PR-UX0 B-3)', () => {
   const t = (loai: any, han = '2026-09-23') => domain.deadlineView({ kind: loai, due: han, today: '2026-09-14' }).text;
-  assert(t('xac-minh-sos') === 'Xác minh nguyên nhân · hạn 23/09', `xac-minh-sos: "${t('xac-minh-sos')}"`);
+  assert(t('xac-minh-sos') === 'Xác nhận nguyên nhân · hạn 23/09', `xac-minh-sos: "${t('xac-minh-sos')}"`);
   assert(t('lap-pa') === 'Đề ra PA · hạn 23/09', `lap-pa: "${t('lap-pa')}"`);
   assert(t('cap-nhat-pa') === 'Ghi kết quả tuần W3 SEP · hạn hết T2 23/09', `cap-nhat-pa: "${t('cap-nhat-pa')}"`);
   assert(t('thuc-hien-y-thuc') === 'Thực hiện xong · hạn 23/09', `thuc-hien-y-thuc: "${t('thuc-hien-y-thuc')}"`);
