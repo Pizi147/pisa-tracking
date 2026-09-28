@@ -1484,7 +1484,7 @@ check('[12.1] Lớp là quyết định của cả lô, cột "Lớp" trong file
   });
   assert(pv.rows[0].classCode === 'MB FT 101',
     `Cột lớp trong file đã đè lên ô chọn lớp: ${pv.rows[0].classCode}`);
-  assert(pv.rows[0].issues.some((i) => i.field === 'classCode' && /Bỏ qua cột lớp/.test(i.message)),
+  assert(pv.rows[0].issues.some((i) => i.field === 'classCode' && /Bỏ qua — cả lô vào MB FT 101/.test(i.message)),
     'Bỏ qua cột lớp mà không nói — người nhập tưởng em vào lớp ghi trong file');
 });
 

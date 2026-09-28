@@ -211,28 +211,26 @@ export function previewIntake(
      * THIẾU TÊN LÀ LỖI TẠI DÒNG ĐÓ, không phải lý do tạo một em tên '-' (mục 12.1).
      * Dòng hỏng vẫn nằm lại trong lưới để người nhập sửa; cả lô không vì thế mà hỏng.
      */
-    if (!name || name === '-') loi('fullName', 'Thiếu họ tên');
+    if (!name || name === '-') loi('fullName', 'Chưa điền');
 
     const dob = docNgayNhap(r.dob, homNay, { toiDa: homNay });
     if (dob.loi) loi('dob', dob.loi);
 
     const email = docEmail(r.email);
     if (email.loi) loi('email', email.loi);
-    else if (!email.email) loi('email', 'Bắt buộc — còn trống');
+    else if (!email.email) loi('email', 'Chưa điền');
 
     /*
      * OVR, BỐN BAND, TARGET, THI DỰ KIẾN — chỉ Fast Track. Lớp thường có dữ liệu ở đây là do file trộn: bỏ qua có báo (Q4),
      * không chặn cả dòng — cùng cách với cột Lớp/Lộ trình.
      */
     const band: Record<string, number | null> = {};
-    const COT_BAND: [keyof IntakeRow, string][] = [
-      ['baselineScore', 'OVR'], ['entryListening', 'L'], ['entryReading', 'R'], ['entryWriting', 'W'], ['entrySpeaking', 'S'],
-    ];
-    for (const [key, label] of COT_BAND) {
+    const COT_BAND = ['baselineScore', 'entryListening', 'entryReading', 'entryWriting', 'entrySpeaking'] as const;
+    for (const key of COT_BAND) {
       const v = bandOf(r[key] as any);
       band[key] = null;
       if (ratio) { if (coDuLieu(r[key])) luuY(key, 'Bỏ qua — lớp thường không có điểm đầu vào IELTS'); }
-      else if (v === 'invalid') loi(key, `${label} phải là band 0–9, bước 0,5`);
+      else if (v === 'invalid') loi(key, 'Gõ band 0–9, bước 0,5 — ví dụ 5.5');
       else band[key] = v;
     }
 
@@ -240,7 +238,7 @@ export function previewIntake(
     if (ratio) { if (coDuLieu(r.target)) luuY('target', 'Bỏ qua — lớp thường không có target'); }
     else {
       const t = bandOf(r.target);
-      if (t === 'invalid') loi('target', 'Target phải là band 0–9, bước 0,5');
+      if (t === 'invalid') loi('target', 'Gõ band 0–9, bước 0,5 — ví dụ 6.5');
       else if (t === null) luuY('target', 'Chưa có — vẫn thêm được, bổ sung sau để tính kỳ vọng');
       else target = t;
     }
@@ -267,7 +265,7 @@ export function previewIntake(
       luuY('route', `Bỏ qua — lộ trình theo lớp (${cls.route ?? 'lớp thường'})`);
     }
     if (r.classCode && r.classCode.trim() && r.classCode.trim().toLowerCase() !== cls.code.toLowerCase()) {
-      luuY('classCode', `Bỏ qua cột lớp "${r.classCode}" — cả lô này vào ${cls.code} theo ô chọn ở trên`);
+      luuY('classCode', `Bỏ qua — cả lô vào ${cls.code} (lớp chọn ở đầu panel)`);
     }
 
     /*

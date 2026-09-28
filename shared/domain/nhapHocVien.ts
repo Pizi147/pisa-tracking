@@ -22,7 +22,7 @@ export function docNgayNhap(raw: unknown, homNay: string,
   luat: { choThang?: boolean; toiDa?: string | null; toiThieu?: string | null } = {}): { iso: string | null; loi: string | null } {
   const s = String(raw ?? '').trim();
   if (TRONG.has(s.toLowerCase())) return { iso: null, loi: null };
-  const mau = luat.choThang ? 'Gõ dd/mm/yyyy hoặc mm/yyyy' : 'Gõ dd/mm/yyyy';
+  const mau = luat.choThang ? 'Gõ dạng dd/mm/yyyy hoặc mm/yyyy' : 'Gõ dạng dd/mm/yyyy';
   let text = s;
   let kieu: 'ngay' | 'thang';
   if (ISO_NGAY.test(s)) { text = `${s.slice(8, 10)}/${s.slice(5, 7)}/${s.slice(0, 4)}`; kieu = 'ngay'; }

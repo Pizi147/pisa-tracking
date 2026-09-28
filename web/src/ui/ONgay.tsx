@@ -36,9 +36,11 @@ type Props = {
   id?: string;
   onBlur?: () => void;
   invalid?: boolean;
+  /** Trong lưới (Thêm học viên): không vẽ dòng phụ tuần và dòng lỗi dưới ô — hàng cao đều; hai dòng đó vào `title` của ô gõ. */
+  gon?: boolean;
 };
 
-export function ONgay({ kieu, value, onChange, toiThieu, toiDa, moc, catHomNay, goiY, disabled, ariaLabel, id, onBlur, invalid }: Props) {
+export function ONgay({ kieu, value, onChange, toiThieu, toiDa, moc, catHomNay, goiY, disabled, ariaLabel, id, onBlur, invalid, gon }: Props) {
   const { homNay } = useNgayNghiepVu();
   const luat: LuatONgay = { toiThieu, toiDa, moc, catHomNay };
   const [text, setText] = useState(hienONgay(value, kieu));
@@ -62,17 +64,18 @@ export function ONgay({ kieu, value, onChange, toiThieu, toiDa, moc, catHomNay, 
   return (
     <span className="block min-w-0">
       <span className="flex min-w-0 items-stretch gap-1.5">
-        <input id={idO} className="field min-w-0 flex-1 tabular-nums" inputMode="numeric" autoComplete="off" value={text} disabled={disabled}
+        <input id={idO} className={`field min-w-0 flex-1 tabular-nums${gon && (invalid || loi) ? ' border-late' : ''}`}
+          title={gon ? [phu, loi].filter(Boolean).join(' · ') || undefined : undefined} inputMode="numeric" autoComplete="off" value={text} disabled={disabled}
           placeholder={goiY ?? (kieu === 'thang' ? 'mm/yyyy' : 'dd/mm/yyyy')} aria-label={ariaLabel} aria-invalid={invalid || !!loi || undefined}
-          aria-describedby={[phu && `${idO}-phu`, loi && `${idO}-loi`].filter(Boolean).join(' ') || undefined}
+          aria-describedby={gon ? undefined : [phu && `${idO}-phu`, loi && `${idO}-loi`].filter(Boolean).join(' ') || undefined}
           onChange={(e) => setText(e.target.value)} onBlur={() => { chot(); onBlur?.(); }}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); chot(); } else if (e.key === 'ArrowDown' && e.altKey) { e.preventDefault(); setMo(true); } }} />
         <button ref={nut} type="button" className="btn flex-none min-h-[44px] min-w-[44px] justify-center px-0 sm:min-h-0 sm:min-w-[36px]"
           aria-label={kieu === 'thang' ? 'Mở lịch tháng' : 'Mở lịch'} aria-haspopup="dialog" aria-expanded={mo} disabled={disabled}
           onClick={() => setMo((v) => !v)}><BieuTuongLich /></button>
       </span>
-      {phu && <span id={`${idO}-phu`} className="mt-1 block truncate text-[11.5px] tabular-nums text-slate-400">{phu}</span>}
-      {loi && <span id={`${idO}-loi`} className="mt-1 block text-[11px] text-late" role="alert">{loi}</span>}
+      {phu && !gon && <span id={`${idO}-phu`} className="mt-1 block truncate text-[11.5px] tabular-nums text-slate-400">{phu}</span>}
+      {loi && !gon && <span id={`${idO}-loi`} className="mt-1 block text-[11px] text-late" role="alert">{loi}</span>}
       {mo && <LichNho kieu={kieu} value={value || null} homNay={homNay} luat={luat} neo={nut}
         onChon={(iso) => { if (iso !== value) onChange(iso); setText(hienONgay(iso, kieu)); setLoi(null); setMo(false); nut.current?.focus(); }} onDong={() => setMo(false)} />}
     </span>
