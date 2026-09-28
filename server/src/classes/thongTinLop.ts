@@ -5,7 +5,7 @@
  */
 import { db, tx } from '../db.ts';
 import {
-  CHO_TAO_PRE_FOU, PERMISSIONS, PROGRAMME_TEMPLATES, chuanHoaMaLop, ghepMaLop, kiemSoLop, kyHieuLop, programmeOf, tachSoLop,
+  CHO_TAO_PRE_FOU, PERMISSIONS, PROGRAMME_TEMPLATES, chuanHoaMaLop, ghepMaLop, khoaMaLopSql, kiemSoLop, kyHieuLop, programmeOf, tachSoLop,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, notFound } from '../util.ts';
@@ -80,7 +80,7 @@ export function capNhatThongTinLop(
     if (!so) throw badRequest('Tên lớp chưa theo mẫu — gõ số lớp để máy đặt lại tên.');
     const code = ghepMaLop(cn, chuongTrinh!, route, so);
     if (code !== c.code) {
-      if (conn.prepare("SELECT id FROM classes WHERE lower(replace(replace(code, '-', ''), ' ', '')) = ? AND id != ?").get(chuanHoaMaLop(code), classId)) {
+      if (conn.prepare(`SELECT id FROM classes WHERE ${khoaMaLopSql()} = ? AND id != ?`).get(chuanHoaMaLop(code), classId)) {
         throw badRequest(`Đã có lớp ${code}.`);   // so chuẩn hoá — khớp chỉ mục ux_classes_ma_chuan (Q3)
       }
       moi.code = code;

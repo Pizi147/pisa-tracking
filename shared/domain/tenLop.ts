@@ -29,6 +29,8 @@ export function ghepMaLop(maCn: string, chuongTrinh: string, loTrinh: string | n
   return `${maCn.trim().toUpperCase()} ${kh} ${so.trim().toUpperCase()}`;
 }
 export const chuanHoaMaLop = (s: string) => s.toLowerCase().replace(/[\s-]/g, '');
+/** = chuanHoaMaLop viết bằng SQL — phải khớp chỉ mục ux_classes_ma_chuan trong schema.sql. */
+export const khoaMaLopSql = (cot = 'code') => `lower(replace(replace(${cot}, '-', ''), ' ', ''))`;
 
 /** Phần sau tiền tố chi nhánh: "FT RF 12" → { kh: 'FT RF', so: '12' } — nhận '-' và khoảng trắng tuỳ ý (tên cũ).
  *  Mã chi nhánh chỉ gồm chữ in hoa + số (initBanChinh kiểm `^[A-Z0-9]+$`) nên đưa thẳng vào RegExp được. */

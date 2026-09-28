@@ -3,9 +3,8 @@
  * đổi tên lớp cũ sang `{CN} {ký hiệu} {số}` (BỎ QUA lớp va chạm / không theo mẫu — in ở `chay-thu:lop`) · chỉ mục mã lớp chuẩn hoá khi sạch.
  */
 import { tx } from '../db.ts';
-import { chuanHoaMaLop, tenMoiChoLopCu } from '../../../shared/domain/index.ts';
+import { chuanHoaMaLop, khoaMaLopSql, tenMoiChoLopCu } from '../../../shared/domain/index.ts';
 
-const KHOA_SQL = "lower(replace(replace(code, '-', ''), ' ', ''))";   // = chuanHoaMaLop, viết bằng SQL
 const coCot = (conn: any, cot: string) => (conn.prepare('SELECT name FROM pragma_table_info(?)').all('classes') as any[]).some((c) => c.name === cot);
 
 export function keHoachDoiTenLop(conn: any) {
@@ -59,9 +58,9 @@ export function migratePrLop(conn: any, applied: string[]) {
     if (kh.doi.length) applied.push(`Đổi tên ${kh.doi.length} lớp sang mẫu mới (T2)`);
     const boQua = kh.vaCham.length + kh.khongTheoMau.length;
     if (boQua) applied.push(`Giữ nguyên tên ${boQua} lớp trùng/không theo mẫu — xem lệnh chạy thử đổi tên lớp`);
-    const trung = conn.prepare(`SELECT ${KHOA_SQL} AS k FROM classes GROUP BY k HAVING COUNT(*) > 1 LIMIT 1`).get();
+    const trung = conn.prepare(`SELECT ${khoaMaLopSql()} AS k FROM classes GROUP BY k HAVING COUNT(*) > 1 LIMIT 1`).get();
     if (!trung && !conn.prepare("SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = 'ux_classes_ma_chuan'").get()) {
-      conn.exec(`CREATE UNIQUE INDEX ux_classes_ma_chuan ON classes (${KHOA_SQL})`);
+      conn.exec(`CREATE UNIQUE INDEX ux_classes_ma_chuan ON classes (${khoaMaLopSql()})`);
       applied.push('Khoá trùng tên lớp không phân biệt hoa/thường, dấu "-"');
     }
   });

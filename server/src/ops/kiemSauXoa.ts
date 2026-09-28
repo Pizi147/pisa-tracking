@@ -8,6 +8,7 @@
  * Chạy: nạp TURSO_DATABASE_URL + TURSO_AUTH_TOKEN (TRIEN_KHAI.md §11.1) rồi `npm run kiem-sau-xoa`. Không có biến Turso → DB cục bộ.
  */
 import { DB_PATH, db } from '../db.ts';
+import { chuanHoaMaLop, khoaMaLopSql } from '../../../shared/domain/index.ts';
 
 const conn = db();
 console.log(`[kiem-sau-xoa] Database: ${DB_PATH}`);
@@ -15,7 +16,7 @@ console.log(`[kiem-sau-xoa] Database: ${DB_PATH}`);
 const HV_THU = ['PISA-000001', 'PISA-000002', 'PISA-000003'];
 const LOP_THU = 'MB FT THU 01';
 /* So chuẩn hoá (bỏ `-`, khoảng trắng, hoa/thường): tên cũ `MB-FT THU 01` hay tên mới đều ra. */
-const LOP_THU_CHUAN = 'mbftthu01';
+const LOP_THU_CHUAN = chuanHoaMaLop(LOP_THU);
 
 console.log('\n(1) Học viên thử');
 const hv = conn.prepare(
@@ -29,7 +30,7 @@ console.log(`\n(2) Lớp ${LOP_THU}`);
 const lop = conn.prepare(
   `SELECT c.id, c.code, c.status, c.finished_at,
           (SELECT COUNT(*) FROM enrollments e WHERE e.class_id = c.id) AS so_ghi_danh
-     FROM classes c WHERE lower(replace(replace(c.code,'-',''),' ','')) = ?`,
+     FROM classes c WHERE ${khoaMaLopSql('c.code')} = ?`,
 ).all(LOP_THU_CHUAN) as any[];
 if (lop.length) console.table(lop); else console.log('  không còn lớp');
 
