@@ -1,37 +1,6 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { useGiuFocus } from './giuFocus.ts';
 
-/** @deprecated Dùng `KhungPanel` (UX-E E1: một khung panel). Chỉ còn TransitionPanel, ClassCreatePanel chờ PR-LOP — Task 11 xoá hàm này. */
-export function Drawer({ open, onClose, title, subtitle, children, footer, width = 'max-w-2xl' }: {
-  open: boolean; onClose: () => void; title: ReactNode; subtitle?: ReactNode;
-  children: ReactNode; footer?: ReactNode; width?: string;
-}) {
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
-
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true">
-      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className={`relative h-full w-full ${width} bg-[#0b141d] border-l flex flex-col shadow-2xl`} style={{ borderColor: 'var(--line-strong)' }}>
-        <header className="flex items-start justify-between gap-4 px-5 py-4 border-b" style={{ borderColor: 'var(--line)' }}>
-          <div className="min-w-0">
-            <h2 className="text-base font-semibold text-slate-100 truncate">{title}</h2>
-            {subtitle && <div className="text-xs text-slate-400 mt-0.5">{subtitle}</div>}
-          </div>
-          <button className="btn btn-sm btn-ghost" onClick={onClose} aria-label="Đóng">✕</button>
-        </header>
-        <div className="flex-1 overflow-y-auto p-5">{children}</div>
-        {footer && <footer className="px-5 py-3 border-t flex justify-end gap-2" style={{ borderColor: 'var(--line)' }}>{footer}</footer>}
-      </div>
-    </div>
-  );
-}
-
 export function Modal({ open, onClose, title, children, footer, width = 'max-w-lg' }: {
   open: boolean; onClose: () => void; title: ReactNode; children: ReactNode; footer?: ReactNode; width?: string;
 }) {

@@ -250,8 +250,9 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
 
   // ==================================================================== 7. Báo lỗi rõ cho mọi form KhungPanel còn lại
   check('N1 (7) · mọi form KhungPanel (trừ dev/, panel chỉ xem) dùng useLoiForm', () => {
-    /* PR-NEN Task 9 đổi Drawer → KhungPanel: panel chỉ xem (NeedsEvaluation, phanTich/dungChung) + panel còn chờ áp useLoiForm. */
-    const bo = /modules[\/]dev[\/]|PhuongAnPanel|XemPhuongAnPanel|NeedsEvaluation|phanTich[\/]dungChung|AccountsAdmin|CatalogAdmin|IntakePanel|StudentPlanPanel|MeetingPage|MgmtTasksPage|XoaKetThucLopPanel/;
+    /* PR-NEN Task 9 đổi Drawer → KhungPanel: panel chỉ xem (NeedsEvaluation, phanTich/dungChung) + panel còn chờ áp useLoiForm;
+       TransitionPanel báo lỗi ngay tại từng dòng HV (không phải form ô bắt buộc). */
+    const bo = /modules[\/]dev[\/]|PhuongAnPanel|XemPhuongAnPanel|NeedsEvaluation|phanTich[\/]dungChung|AccountsAdmin|CatalogAdmin|IntakePanel|StudentPlanPanel|ClassProgressPanel|MeetingPage|MgmtTasksPage|XoaKetThucLopPanel|TransitionPanel/;
     const thieu = tepTsx('web/src/modules').filter((f) => !bo.test(f) && /<KhungPanel/.test(docSach(f)) && !/useLoiForm\(/.test(docSach(f)));
     assert(thieu.length === 0, thieu.join(', '));
     const conCu = tepTsx('web/src/modules').filter((f) => !bo.test(f) && /conThieu: daBam/.test(docSach(f)));

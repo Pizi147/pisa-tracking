@@ -152,7 +152,6 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
 
   check('NEN (5) · YC-9: không còn ô ngày/tháng của trình duyệt (trừ thanh ngày bản demo — T12 e); không còn NgayDoiDuoc', () => {
     const sai = tepNguon('web/src').filter((f) => !/modules\/platform\/DemoBar\.tsx$/.test(f)
-      && !/modules\/classes\//.test(f)                                   // phần chờ LOP — Task 11 bỏ dòng loại trừ này
       && /type="date"|type="month"/.test(doc(f)));
     assert(sai.length === 0, sai.join(', '));
     const con = tepNguon('web/src').filter((f) => /NgayDoiDuoc/.test(doc(f)));
@@ -219,8 +218,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
   });
 
   check('NEN (8) · B3: không nút lựa chọn nào dùng btn-primary; E6: tab trang là HangTab, bộ lọc là BoLocDoan', () => {
-    const sai = tepNguon('web/src').filter((f) => !/modules\/classes\//.test(f)    // phần chờ LOP — Task 11 bỏ loại trừ
-      && /\?\s*'btn-primary'\s*:\s*''/.test(doc(f)));
+    const sai = tepNguon('web/src').filter((f) => /\?\s*'btn-primary'\s*:\s*''/.test(doc(f)));
     assert(sai.length === 0, sai.join(', '));
     assert(/<HangTab\b/.test(doc('web/src/modules/platform/AdminPage.tsx')), 'Quản trị còn kiểu tab viên bo');
     for (const f of ['web/src/modules/yThuc/ClassYThucCard.tsx', 'web/src/modules/yThuc/StudentYThucSection.tsx', 'web/src/modules/students/HanhTrinh.tsx'])
@@ -228,7 +226,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
   });
 
   check('NEN (9) · E1: không còn Drawer; E3: Esc/mũi tên ở đầu trang, "Không tìm thấy học viên", "Bỏ qua tới nội dung"', () => {
-    const sai = tepNguon('web/src').filter((f) => !/modules\/classes\//.test(f) && /<Drawer\b/.test(doc(f)));   // Task 11 bỏ loại trừ
+    const sai = tepNguon('web/src').filter((f) => /<Drawer\b/.test(doc(f)));
     assert(sai.length === 0, sai.join(', '));
     const h = doc('web/src/modules/platform/Header.tsx');
     assert(/Không tìm thấy học viên/.test(h) && /buocDanhSach\(/.test(h) && /'Escape'/.test(h) && /role="combobox"/.test(h), 'Header');

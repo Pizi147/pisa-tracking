@@ -16,8 +16,11 @@ export const khoPanelChung = taoKhoPanel();
  * `DongCanSua`) — chỉ truyền `conThieu` SAU khi bấm Lưu; lý do từng ô nằm dưới ô (`Truong loi`). CHỈ thân cuộn, trang sau khoá cuộn. Mở việc khác thì THAY nội dung, không
  * chồng panel (`khoPanelChung`). Không chữ dev; chữ mẫu bắt đầu "Ví dụ:".
  */
-export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, quayLai, chan, onDong, children }: {
+export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, quayLai, chan, longTrong, onDong, children }: {
   tieuDe: string; hocVien?: string | null; lop?: string | null;
+  /** Không vào `khoPanelChung`: panel con mở đè (Chuyển tiếp → Tạo lớp) không đóng panel này, state giữ nguyên.
+   *  Người gọi tự cho `onDong` rỗng khi panel con đang mở để Esc chỉ đóng panel trên. */
+  longTrong?: boolean;
   /** `toan`: lưới nhập hàng loạt nhiều cột (Thêm học viên) — rộng theo màn tới 1440px, không ép 10 cột vào ngăn hẹp. */
   rong?: 'hep' | 'rong' | 'toan';
   tabs?: ReactNode; ngCanh?: ReactNode; quayLai?: { nhan: string; onClick: () => void };
@@ -33,9 +36,10 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
   dongRef.current = onDong;
 
   useEffect(() => {
+    if (longTrong) return undefined;
     khoPanelChung.mo(id, () => dongRef.current());
     return () => khoPanelChung.dong(id);
-  }, [id]);
+  }, [id, longTrong]);
 
   useEffect(() => {
     const cu = document.body.style.overflow;

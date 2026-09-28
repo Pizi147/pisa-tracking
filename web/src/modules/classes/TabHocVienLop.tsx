@@ -1,3 +1,4 @@
+import { BoLocDoan } from '../../ui/ui.tsx';
 import { ClassRoster } from '../students/ClassRoster.tsx';
 import { BangDiemLopThuong } from './BangDiemLopThuong.tsx';
 import { BangCanHoTro } from './BangCanHoTro.tsx';
@@ -20,16 +21,8 @@ export function TabHocVienLop({ lop, cheDo, onCheDo, onDoi, onThemHocVien }: {
   };
   return (
     <div className="space-y-2">
-      <div role="group" aria-label="Cách xem" className="inline-flex overflow-hidden rounded-lg border" style={{ borderColor: 'var(--line)' }}>
-        {(['diem', 'can-ho-tro'] as const).map((m) => (
-          <button key={m} type="button" aria-pressed={cheDo === m} onClick={() => onCheDo(m)}
-            className={`border-0 px-3 py-1 text-xs font-semibold cursor-pointer ${
-              cheDo === m ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)]' : 'bg-transparent text-slate-400 hover:bg-white/5'
-            }`}>
-            {m === 'diem' ? 'Điểm' : 'Cần hỗ trợ'}
-          </button>
-        ))}
-      </div>
+      <BoLocDoan ariaLabel="Cách xem" value={cheDo} onChange={onCheDo}
+        muc={[{ key: 'diem', nhan: 'Điểm' }, { key: 'can-ho-tro', nhan: 'Cần hỗ trợ' }]} />
       {cheDo === 'can-ho-tro'
         ? <BangCanHoTro classId={lop.id} maLop={lop.code} laLopThuong={thuong} quyen={quyen} onDoi={onDoi} />
         : thuong
