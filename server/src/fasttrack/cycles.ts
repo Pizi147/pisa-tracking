@@ -1,6 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
-  BASELINE_SOURCES, CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, CYCLE_STATUSES, PERMISSIONS, tuanLich, type ExamPlan, type Route,
+  BASELINE_SOURCES, CO_DIEM_SQL, CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, CYCLE_STATUSES, PERMISSIONS, soMtKeTiep, tuanLich,
+  type ExamPlan, type LuotSo, type Route,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
@@ -34,12 +35,15 @@ export function cycleById(id: number) {
   return (db().prepare('SELECT * FROM learning_cycles WHERE id = ?').get(id) as any) ?? null;
 }
 
-/** Số MT tiếp theo TRONG lộ trình. Học lại cùng lộ trình thì số này tăng tiếp. */
+/** Lượt của một lộ trình ở dạng luật đánh số (T36, Q-B) — một câu, kể cả lượt đã huỷ (còn điểm hay không). */
+export function luotSoCuaLoTrinh(cycleId: number): LuotSo[] {
+  return (db().prepare(`SELECT a.attempt_no, a.status, ${CO_DIEM_SQL('a')} AS coDiem FROM assessment_attempts a WHERE a.cycle_id = ?`)
+    .all(cycleId) as any[]).map((r) => ({ attempt_no: r.attempt_no, status: r.status, coDiem: !!r.coDiem }));
+}
+
+/** Số MT tiếp theo TRONG lộ trình. Học lại cùng lộ trình thì số này tăng tiếp; số huỷ không điểm được dùng lại (Q-B). */
 export function nextAttemptNo(cycleId: number): number {
-  const row = db()
-    .prepare('SELECT MAX(attempt_no) AS n FROM assessment_attempts WHERE cycle_id = ?')
-    .get(cycleId) as any;
-  return (row?.n ?? 0) + 1;
+  return soMtKeTiep(luotSoCuaLoTrinh(cycleId));
 }
 
 /**

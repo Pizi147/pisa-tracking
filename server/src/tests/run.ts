@@ -697,11 +697,14 @@ check('Đổi tuần ghi lại lịch sử và dời cả hạn nhập điểm t
   assert(cw.length >= 1, 'Thiếu lịch sử tuần kế hoạch hoàn tất');
 });
 check('Huỷ giữ lý do và lịch sử, không tăng số MT', () => {
-  const a = conn.prepare(`SELECT * FROM assessment_attempts WHERE class_id = ? AND status='planned' LIMIT 1`)
+  /* PR-MT (M-12): "Huỷ cả lượt" chỉ với lượt LỚN NHẤT chưa có điểm — chọn đúng lượt như thế để thử. */
+  const a = conn.prepare(`SELECT * FROM assessment_attempts a WHERE a.class_id = ? AND a.status='planned'
+      AND a.attempt_no = (SELECT MAX(x.attempt_no) FROM assessment_attempts x WHERE x.cycle_id = a.cycle_id AND x.status != 'cancelled')
+      AND NOT EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND (s.band IS NOT NULL OR s.raw_score IS NOT NULL)) LIMIT 1`)
     .get(classId('CP FT 110')) as any;
   const before = (conn.prepare('SELECT COUNT(*) n FROM assessment_attempts WHERE cycle_id = ?').get(a.cycle_id) as any).n;
-  assertThrows(() => attempts.cancelAttempt(P.cpManager, a.id, ''), /lý do/, 'Huỷ mà không ghi lý do');
-  attempts.cancelAttempt(P.cpManager, a.id, 'Học viên nghỉ ốm');
+  assertThrows(() => attempts.huyLuot(P.cpManager, a.id, { lyDo: '' }), /lý do/, 'Huỷ mà không ghi lý do');
+  attempts.huyLuot(P.cpManager, a.id, { lyDo: 'Học viên nghỉ ốm' });
   const after = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(a.id) as any;
   const count = (conn.prepare('SELECT COUNT(*) n FROM assessment_attempts WHERE cycle_id = ?').get(a.cycle_id) as any).n;
   assert(after.status === 'cancelled' && after.cancel_reason === 'Học viên nghỉ ốm', 'Huỷ không lưu lý do');
@@ -9092,7 +9095,7 @@ check('PR-N · N1 do-phu-danh-gia: HV có dữ liệu đủ điều kiện / HV 
   const E = prnMake('PRN Đủ Điểm Trượt'), F = prnMake('PRN Chưa Chấm Gì'), G = prnMake('PRN Chưa Có Đợt'), H = prnMake('PRN Đợt Đã Huỷ');
   const e1 = prnAttempt(E, '2026-08-03'); prnFull(e1, 4.5);                          // ĐỦ điểm nhưng TRƯỢT — vẫn có dữ liệu
   prnAttempt(F, '2026-08-03');                                                       // đến lịch, chưa chấm gì
-  const h1 = prnAttempt(H, '2026-08-03'); attempts.cancelAttempt(P.admin, h1, 'Kiểm thử phép đếm');
+  const h1 = prnAttempt(H, '2026-08-03'); attempts.huyLuot(P.admin, h1, { lyDo: 'Kiểm thử phép đếm' });
   const r = prnIds(P.admin, 'do-phu-danh-gia');
   assert(r.numeratorIds.every((id: number) => r.ids.includes(id)), 'Tử số phải là tập con của mẫu số');
   assert(r.ids.includes(E.id) && r.numeratorIds.includes(E.id), 'E đủ điểm (dù trượt) phải nằm ở cả mẫu số và tử số — độ phủ không phải tỷ lệ đạt');

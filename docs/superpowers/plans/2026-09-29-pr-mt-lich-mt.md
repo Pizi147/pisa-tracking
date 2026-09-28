@@ -575,6 +575,14 @@ khác ngày với bản thử thì chạy thử lại. 5. Chạy thử lần n�
   `PLAN_WEEK` ở lớp đó — mọi ô, sửa ô đã có điểm vẫn phải có lý do RB-5) **hoặc** (GVCN lớp — chỉ ô trống, Q8). `editableSkills(…, luot?)`
   theo cùng luật; `mySkills` giữ nguyên (MT lịch sử không phải nợ). R11 lịch sử: vẫn cần đủ điểm như `dotDaHoanTat`, chỉ thay mốc
   "Chủ nhật tuần muộn nhất" bằng "lần nhập cuối + 7 ngày". Nhật ký `score.lich_su` hiện trong Lịch sử thay đổi của hồ sơ Test như "edit".
+- **Task 7:** `luotSoCuaLoTrinh` + `nextAttemptNo = soMtKeTiep` ở `cycles.ts`; chốt `kiemSoMtMoi` trong `createAttempt`; hồi sinh dòng huỷ
+  không điểm (`hoiSinhLuot`, nhật ký `attempt.recreate`, xoá dấu "-" cũ không phải điểm). `cancelAttempt` **bỏ**, thay bằng `huyLuot`
+  (route `/attempts/:id/cancel` nhận `cach`); hệ quả `heQuaHuyLuot` trả trong `attemptDetail.viewer.huyLuot` (không thêm route).
+  **Hiểu kế hoạch:** "cả hai cách đóng thứ sinh từ lượt" mâu thuẫn phép kiểm (d) → làm theo (d): chỉ **Huỷ cả lượt** đóng Case (mọi mốc từ
+  lượt, chưa có kết quả PA) + Phối hợp mở; Huỷ phần còn lại không đóng gì (phần có điểm là thật). Phối hợp bị huỷ dùng mã hệ thống mới
+  `system_luot_huy` "Lượt Test đã huỷ" (không dùng `system_sos_changed` vì chữ nói sai lý do) — phép kiểm T1 cũ cập nhật danh sách 6 mã.
+  Lưới Kế hoạch Test: `soKeTiep` theo em, ô xa hơn hiện `—` mờ. Dữ liệu phép kiểm cũ: "Huỷ giữ lý do" chọn lượt lớn nhất chưa điểm;
+  sosV3 CANCEL dựng dữ liệu cũ bằng SQL (lượt có điểm nay không huỷ cả lượt được); keHoachTest MT80–95 → em thử mới + MT1/MT2 thật.
 
 ## Planning chốt 29/09
 

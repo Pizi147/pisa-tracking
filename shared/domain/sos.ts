@@ -123,8 +123,8 @@ export const COORDINATION_STATUS_LABEL: Record<CoordinationStatus, string> = {
 
 /** BỐN lý do người dùng chọn nhanh khi bỏ một việc (P06) — chỉ `Khác` hiện ô chữ. */
 export const COORDINATION_USER_REMOVE_REASONS = ['not_needed', 'handled_otherwise', 'duplicate_measure', 'other'] as const;
-/** Thêm `system_sos_changed` — chỉ HỆ THỐNG ghi khi sửa điểm làm mức SOS đổi (P03). Người dùng không chọn được mã này. */
-export const COORDINATION_REMOVE_REASONS = [...COORDINATION_USER_REMOVE_REASONS, 'system_sos_changed'] as const;
+/** Thêm hai mã chỉ HỆ THỐNG ghi: sửa điểm làm mức SOS đổi (P03) · lượt bị "Huỷ cả lượt" (PR-MT, T67). Người dùng không chọn được. */
+export const COORDINATION_REMOVE_REASONS = [...COORDINATION_USER_REMOVE_REASONS, 'system_sos_changed', 'system_luot_huy'] as const;
 export type CoordinationRemoveReason = (typeof COORDINATION_REMOVE_REASONS)[number];
 export const COORDINATION_REMOVE_REASON_LABEL: Record<CoordinationRemoveReason, string> = {
   not_needed: 'Không cần trong trường hợp này',
@@ -132,6 +132,7 @@ export const COORDINATION_REMOVE_REASON_LABEL: Record<CoordinationRemoveReason, 
   duplicate_measure: 'Trùng với phương án xử lý khác',
   other: 'Khác',
   system_sos_changed: 'Điểm được sửa — mức SOS không còn cần việc này',
+  system_luot_huy: 'Lượt Test đã huỷ',
 };
 
 /** BA lý do chọn nhanh khi GVBM bấm `Không cần theo dõi` (S05). */

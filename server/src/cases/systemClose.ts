@@ -55,6 +55,8 @@ export function closeCasesBySystem(input: {
   cycleIds?: number[] | null;
   /** Chỉ Case/tín hiệu của chương trình này (S17). Bỏ trống = mọi chương trình. */
   programme?: 'ratio' | 'band' | null;
+  /** PR-MT (T67): chỉ đúng các Case này (huỷ lượt) — không thu hồi tín hiệu nào khác. */
+  caseIds?: number[] | null;
 }): { closedCaseIds: number[]; withdrawnSignalIds: number[] } {
   const conn = db();
   const label = SYSTEM_CLOSE_REASON_LABEL[input.reason];
@@ -68,8 +70,8 @@ export function closeCasesBySystem(input: {
          LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
         WHERE COALESCE(sc.student_id, a.student_id) = ? AND sc.status != 'done' ORDER BY sc.id`,
     )
-    .all(input.studentId) as any[]).filter((c) => inScope(c.eff_cycle_id ?? null, c));
-  const pendingSignals = (conn
+    .all(input.studentId) as any[]).filter((c) => inScope(c.eff_cycle_id ?? null, c) && (!input.caseIds || input.caseIds.includes(c.id)));
+  const pendingSignals = input.caseIds ? [] : (conn
     .prepare(`SELECT * FROM case_signals WHERE student_id = ? AND status = 'pending' ORDER BY id`)
     .all(input.studentId) as any[]).filter((s) => inScope(s.cycle_id ?? null, { category: s.category, topic: s.skill, attempt_id: s.attempt_id }));
 

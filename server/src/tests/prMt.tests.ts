@@ -339,4 +339,65 @@ export async function runPrMtTests(t: YThucTestKit) {
     assert((conn.prepare('SELECT COUNT(*) n FROM case_interventions WHERE case_id = ? AND preset = 1').get(cs[0].id) as any).n === 1, 'PA quy chế');
     assert((conn.prepare('SELECT COUNT(*) n FROM sos_coordination_actions WHERE attempt_id = ?').get(mt3.id) as any).n > 0, 'Phối hợp');
   });
+
+  // ---------------------------------------------------------------- khối 7: đánh số liền mạch, huỷ cả lượt / huỷ phần còn lại (D6)
+  const keHoach: any = await import('../keHoach/keHoachTest.ts');
+  const QL = P.mbManager;
+  const t4 = (id: number) => ({ listening: id, reading: id, writing: id, speaking: id });
+  const tuanXa = (n: number) => week.ensurePeriod(addDays(tuanNay, 7 * n)).id;
+  const s7 = them('MB FT 101', 'PRMT Em Đánh Số', tuanNay);
+  const [m1, m2, m3] = luotCua(s7);
+  check('PR-MT (7) · Huỷ cả lượt chỉ với lượt lớn nhất chưa điểm; MT3 huỷ rồi tạo lại → CÙNG id, số MT3 (Q-B, M-12)', () => {
+    assertThrows(() => attemptsSvc.huyLuot(QL, m2.id, { lyDo: 'Thử huỷ ở giữa', cach: 'ca-luot' }), /Chỉ huỷ cả lượt được với lượt lớn nhất/, 'MT2 khi còn MT3');
+    const kq = attemptsSvc.huyLuot(QL, m3.id, { lyDo: 'Em xin hoãn MT3' });
+    assert(kq.cach === 'ca-luot', JSON.stringify(kq));
+    const lai = attemptsSvc.createAttempt(QL, { studentId: s7, periodId: tuanXa(20) });
+    assert(lai.id === m3.id && lai.attempt_no === 3 && lai.status === 'planned', JSON.stringify(lai));
+    const nk = conn.prepare(`SELECT action FROM audit_logs WHERE entity_type = 'assessment_attempt' AND entity_id = ? ORDER BY id DESC`).get(m3.id) as any;
+    assert(nk.action === 'attempt.recreate', nk.action);
+  });
+  check('PR-MT (7) · MT3 khi mới có MT1 → chặn ở MỘT chốt: POST /attempts, Kế hoạch Test xếp mới, xếp hàng loạt (K4-08, YC-13.3)', () => {
+    attemptsSvc.huyLuot(QL, m3.id, { lyDo: 'Huỷ để thử đánh số' });
+    attemptsSvc.huyLuot(QL, m2.id, { lyDo: 'Huỷ để thử đánh số' });
+    assertThrows(() => attemptsSvc.createAttempt(QL, { studentId: s7, attemptNo: 3, periodId: tuanXa(20) }), /Chưa có MT2/, 'POST /attempts');
+    assertThrows(() => keHoach.xepMoi(QL, { studentId: s7, attemptNo: 3, tuan: t4(tuanXa(20)), force: true }), /Chưa có MT2/, 'xep-moi');
+    const xt = keHoach.xepHangLoat(QL, { classId: MB101, attemptNo: 3, studentIds: [s7], tuan: t4(tuanXa(20)), xemTruoc: true });
+    assert(xt.dong[0].hanhDong === 'loi' && /Chưa có MT2/.test(xt.dong[0].loi), JSON.stringify(xt.dong[0]));
+    const luu = keHoach.xepHangLoat(QL, { classId: MB101, attemptNo: 3, studentIds: [s7], tuan: t4(tuanXa(20)), force: true });
+    assert(luu.daLuu === 0 && luotCua(s7).length === 1, 'hàng loạt đã tạo MT3');
+    assert(keHoach.luoiFT(QL, MB101).hang.find((h: any) => h.studentId === s7).soKeTiep === 2, 'lưới: "+ xếp" chỉ ở MT2');
+  });
+  check('PR-MT (7) · Huỷ phần còn lại MT2 có L R → W S huỷ, số và trạng thái giữ; Case có điểm thật KHÔNG đóng (Q12, Q13)', () => {
+    const sid = them('MB FT 101', 'PRMT Em Huỷ Phần', tuanNay);
+    const mt2 = luotCua(sid)[1];
+    attemptsSvc.saveScore(P.admin, mt2.id, 'listening', { rawScore: scoringSvc.LISTENING_BY_RAW.indexOf(5) });
+    attemptsSvc.saveScore(P.admin, mt2.id, 'reading', { rawScore: scoringSvc.READING_BY_RAW.indexOf(6) });
+    const cid = Number(conn.prepare(`INSERT INTO sos_cases (student_id, cycle_id, category, status, created_at) VALUES (?, ?, 'listening', 'open', ?)`)
+      .run(sid, mt2.cycle_id, TODAY).lastInsertRowid);
+    conn.prepare(`INSERT INTO case_milestones (case_id, kind, attempt_id, attempt_no, occurred_on, created_at) VALUES (?, 'opened', ?, 2, ?, ?)`)
+      .run(cid, mt2.id, TODAY, TODAY);
+    assert(attemptsSvc.attemptDetail(QL, mt2.id).viewer.huyLuot.cachDuoc === 'phan-con-lai', 'MT2 ở giữa, có điểm');
+    const kq = attemptsSvc.huyLuot(QL, mt2.id, { lyDo: 'Em nghỉ phần còn lại' });
+    assert(kq.cach === 'phan-con-lai' && kq.kyNangHuy.sort().join() === 'speaking,writing', JSON.stringify(kq));
+    const sau = conn.prepare('SELECT attempt_no, status FROM assessment_attempts WHERE id = ?').get(mt2.id) as any;
+    assert(sau.attempt_no === 2 && sau.status === 'planned', JSON.stringify(sau));
+    assert((conn.prepare('SELECT status FROM sos_cases WHERE id = ?').get(cid) as any).status === 'open', 'Case có điểm thật bị đóng');
+  });
+  check('PR-MT (7) · Huỷ cả lượt: Phối hợp mở + Case chỉ sinh từ lượt đó → đóng "Lượt đã huỷ"; hộp nói trước đúng số (T67, K4-10)', () => {
+    const sid = them('MB FT 101', 'PRMT Em Huỷ Cả Lượt', tuanNay);
+    const mt3 = luotCua(sid)[2];
+    conn.prepare(`INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, preset, status, created_at) VALUES (?, ?, 'talk_student', 1, 'pending', ?)`)
+      .run(mt3.id, sid, TODAY);
+    const cid = Number(conn.prepare(`INSERT INTO sos_cases (student_id, cycle_id, category, status, created_at) VALUES (?, ?, 'reading', 'open', ?)`)
+      .run(sid, mt3.cycle_id, TODAY).lastInsertRowid);
+    conn.prepare(`INSERT INTO case_milestones (case_id, kind, attempt_id, attempt_no, occurred_on, created_at) VALUES (?, 'opened', ?, 3, ?, ?)`)
+      .run(cid, mt3.id, TODAY, TODAY);
+    const hq = attemptsSvc.attemptDetail(QL, mt3.id).viewer.huyLuot;
+    assert(hq.cachDuoc === 'ca-luot' && hq.case === 1 && hq.phoiHop === 1, JSON.stringify(hq));
+    attemptsSvc.huyLuot(QL, mt3.id, { lyDo: 'Em chuyển sang học lịch khác' });
+    const ph = conn.prepare('SELECT status, remove_reason_code FROM sos_coordination_actions WHERE attempt_id = ?').get(mt3.id) as any;
+    assert(ph.status === 'removed' && ph.remove_reason_code === 'system_luot_huy', JSON.stringify(ph));
+    const c = conn.prepare('SELECT status, system_close_reason FROM sos_cases WHERE id = ?').get(cid) as any;
+    assert(c.status === 'done' && c.system_close_reason === 'luot_da_huy' && d.SYSTEM_CLOSE_REASON_LABEL.luot_da_huy === 'Lượt đã huỷ', JSON.stringify(c));
+  });
 }

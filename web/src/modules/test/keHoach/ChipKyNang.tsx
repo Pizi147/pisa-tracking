@@ -8,8 +8,10 @@ import { TEN_KY_NANG, type KnO } from './kieu.ts';
  * Màu chỉ dùng token nghĩa (N-1): xong `--done` · đã xếp `--doing` · đã dời `--soon` · chưa xếp viền đứt `--muted`.
  * `onMo(kỹ năng, phần tử)` mở hộp sửa neo cạnh chip vừa bấm.
  */
-export function ChipKyNang({ kn, attemptId, loai, khaiGiang, tongTuan, deXuat, nhanDeXuat, tenDot, onMo }: {
+export function ChipKyNang({ kn, attemptId, loai, khaiGiang, tongTuan, deXuat, nhanDeXuat, tenDot, chuaToiLuot, onMo }: {
   kn: KnO; attemptId: number | null; loai: 'ft' | 'thuong';
+  /** PR-MT (K4-08): ô FT trống nhưng chưa tới lượt (số MT liền mạch) — không có "+ xếp". */
+  chuaToiLuot?: boolean;
   khaiGiang?: string | null; tongTuan?: number | null;
   /** Lớp thường chưa có bài: tuần đề xuất (thứ Hai) và nhãn tuần khoá của nó. */
   deXuat?: string | null; nhanDeXuat?: string | null;
@@ -19,6 +21,9 @@ export function ChipKyNang({ kn, attemptId, loai, khaiGiang, tongTuan, deXuat, n
   const bao = 'flex h-[44px] w-full flex-col justify-center gap-[3px]';
 
   if (attemptId === null) {
+    if (loai === 'ft' && chuaToiLuot) {
+      return <div className={`${bao} items-center text-[11px] text-slate-600`} title={`Xếp MT trước rồi mới tới ${tenDot}`}>—</div>;
+    }
     if (loai === 'ft') {
       return (
         <button type="button" onClick={(e) => onMo(null, e.currentTarget)} title={`Xếp ${tenDot} cho em này`}

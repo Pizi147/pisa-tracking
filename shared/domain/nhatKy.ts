@@ -7,7 +7,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'attachment.add': 'Thêm bằng chứng', 'attachment.delete': 'Xoá bằng chứng',
   'attempt.absence_move': 'Dời lịch Test vì vắng', 'attempt.cancel': 'Huỷ lượt Test',
   'attempt.cancel_appointment': 'Huỷ lịch hẹn thi môn', 'attempt.cancel_part': 'Huỷ phần còn lại của lượt',
-  'attempt.create': 'Tạo lượt Test', 'attempt.no_show_settled': 'Chốt vắng thi',
+  'attempt.create': 'Tạo lượt Test', 'attempt.no_show_settled': 'Chốt vắng thi', 'attempt.recreate': 'Tạo lại lượt Test (số dùng lại)',
   'attempt.restore_part': 'Khôi phục phần đã huỷ', 'attempt.restore_skill': 'Khôi phục kỹ năng thi',
   'attempt.skip_skill': 'Bỏ kỹ năng không thi', 'attempt.sit_status': 'Ghi đã thi / vắng', 'attempt.skill_week': 'Đổi tuần thi kỹ năng',
   'case.auto_from_sos': 'Tạo Case từ SOS', 'case.backfill': 'Nhập bù Case đã xong', 'case.backfill.done': 'Nhập bù Case đã xong',

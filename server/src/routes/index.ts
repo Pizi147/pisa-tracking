@@ -783,7 +783,8 @@ api.post('/attempts/:id/deadline', requireAuth, wrap((req) => {
 
 api.post('/attempts/:id/cancel', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return attemptSvc.cancelAttempt(principalOf(req), pInt(req, 'id'), String(req.body?.reason ?? ''));
+  const cach = req.body?.cach === 'ca-luot' || req.body?.cach === 'phan-con-lai' ? req.body.cach : null;
+  return attemptSvc.huyLuot(principalOf(req), pInt(req, 'id'), { lyDo: String(req.body?.reason ?? ''), cach });
 }));
 
 api.post('/attempts/:id/reopen', requireAuth, wrap((req) => {

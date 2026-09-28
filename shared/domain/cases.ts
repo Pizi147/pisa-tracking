@@ -491,12 +491,14 @@ export const DISPOSITION_LABEL: Record<Disposition, string> = {
  * không tính. PA đã xong có kết quả thật trước đó VẪN tính hiệu quả (planning review 22/09, Q7). Lịch sử giữ nguyên.
  * Chữ "lớp thường" thay "Normal" theo đặc tả §2 (không viết "Normal" trên màn).
  */
-export const SYSTEM_CLOSE_REASONS = ['course_ended', 'moved_to_normal', 'moved_to_ft'] as const;
+export const SYSTEM_CLOSE_REASONS = ['course_ended', 'moved_to_normal', 'moved_to_ft', 'luot_da_huy'] as const;
 export type SystemCloseReason = (typeof SYSTEM_CLOSE_REASONS)[number];
 export const SYSTEM_CLOSE_REASON_LABEL: Record<SystemCloseReason, string> = {
   course_ended: 'Học viên kết thúc khoá',
   moved_to_normal: 'Chuyển sang lớp thường',
   moved_to_ft: 'Chuyển sang Fast Track',
+  /* PR-MT (T67): huỷ cả lượt → Case sinh RIÊNG từ lượt đó đóng theo; không tính thất bại, không vào hiệu quả PA. */
+  luot_da_huy: 'Lượt đã huỷ',
 };
 
 /**

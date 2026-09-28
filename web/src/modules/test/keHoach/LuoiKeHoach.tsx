@@ -90,6 +90,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien }: {
                 return (
                   <td key={c.key} className="td py-1.5 align-middle">
                     <ChipKyNang kn={dot.kn} attemptId={dot.attemptId} loai={loai} khaiGiang={khaiGiang} tongTuan={tongTuan}
+                      chuaToiLuot={loai === 'ft' && c.dot.loai === 'ft' && c.dot.attemptNo !== (h as HangFT).soKeTiep}
                       deXuat={c.deXuat} nhanDeXuat={c.nhanDeXuat} tenDot={nhanDot(c.dot)}
                       onMo={(skill, el) => setHop({ anchor: el, hang: h, cot: c, kyNangDau: skill })} />
                   </td>

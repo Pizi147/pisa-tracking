@@ -48,6 +48,8 @@ type Detail = {
     /** Kỹ năng dời lịch/xác nhận thi được — GVCN·GVBM Normal + Quản lý mọi kỹ năng (SCH-01). */
     moveableSkills: string[];
     canEditSos: boolean; editableSkills: string[];
+    /** PR-MT (M-12): cách huỷ được phép + hệ quả thật — `null` khi không huỷ được. */
+    huyLuot: HeQuaHuy | null;
   };
 };
 
@@ -133,9 +135,11 @@ export default function MockDetailPage() {
       label: d.deadlineOverride ? 'Sửa hẹp xử lý cả đợt' : 'Hẹn xử lý cả đợt', onClick: () => setDeadlineOpen(true),
       hint: 'Một hạn riêng cho cả đợt',
     }] : []),
-    ...(d.viewer.canCancel && d.status === 'planned' ? [{
-      label: `Huỷ lượt MT${d.attemptNo}`, danger: true, onClick: () => setCancelOpen(true),
-      hint: 'Huỷ phần thi chưa có điểm; phần đã có điểm giữ nguyên',
+    /* PR-MT (M-12, Q-B): MỘT mục theo cách huỷ được phép — "Huỷ cả lượt" chỉ với lượt lớn nhất chưa có điểm. */
+    ...(d.viewer.huyLuot?.cachDuoc && d.status === 'planned' ? [{
+      label: d.viewer.huyLuot.cachDuoc === 'ca-luot' ? `Huỷ cả lượt MT${d.attemptNo}` : 'Huỷ phần còn lại', danger: true,
+      onClick: () => setCancelOpen(true),
+      hint: d.viewer.huyLuot.cachDuoc === 'ca-luot' ? `Số MT${d.attemptNo} dùng lại được` : 'Kỹ năng đã có điểm giữ nguyên',
     }] : []),
     ...(d.viewer.canCancel && cancelled ? [{
       label: `Mở lại lượt MT${d.attemptNo}`,
@@ -232,8 +236,10 @@ export default function MockDetailPage() {
       <WeekModal open={weekOpen} onClose={() => setWeekOpen(false)} attemptId={d.id}
         currentPeriodId={d.period?.id ?? null} onDone={reload} />
       <DeadlineModal open={deadlineOpen} onClose={() => setDeadlineOpen(false)} detail={d} onDone={reload} />
-      <CancelDialog open={cancelOpen} onClose={() => setCancelOpen(false)} attemptId={d.id}
-        attemptNo={d.attemptNo} scoredSkills={d.result.scoredRequired} onDone={reload} />
+      {d.viewer.huyLuot?.cachDuoc && (
+        <CancelDialog open={cancelOpen} onClose={() => setCancelOpen(false)} attemptId={d.id}
+          attemptNo={d.attemptNo} heQua={d.viewer.huyLuot} onDone={reload} />
+      )}
     </div>
   );
 }
@@ -621,7 +627,8 @@ const historyValue = (v: string) => SIT_LABEL[v] ?? v;
 const actionLabel = (a: string) =>
   ({
     created: 'Tạo kế hoạch', week_set: 'Đổi lịch', lrw_set: 'Chốt buổi chính',
-    speaking_set: 'Chốt buổi Speaking', cancelled: 'Huỷ lượt', reopened: 'Mở lại',
+    speaking_set: 'Chốt buổi Speaking', cancelled: 'Huỷ cả lượt', reopened: 'Mở lại', recreated: 'Tạo lại (số dùng lại)',
+    skill_part_cancelled: 'Huỷ phần còn lại',
     skill_skipped: KY_NANG_KHONG_KIEM_TRA, skill_restored: KIEM_TRA_LAI_KY_NANG,
     deadline_set: 'Hẹn xử lý cả đợt', deadline_cleared: 'Bỏ hẹn xử lý cả đợt',
     skill_week_set: 'Đổi lịch', skill_week_moved_absence: 'Dời do vắng',
@@ -866,33 +873,39 @@ function DeadlineModal({ open, onClose, detail, onDone }: {
   );
 }
 
-function CancelDialog({ open, onClose, attemptId, attemptNo, scoredSkills, onDone }: {
-  open: boolean; onClose: () => void; attemptId: number; attemptNo: number; scoredSkills: number; onDone: () => void;
+type HeQuaHuy = { cachDuoc: 'ca-luot' | 'phan-con-lai' | null; case: number; pa: number; phoiHop: number };
+
+/** HỘP HUỶ LƯỢT (PR-MT, M-12, T67): nói trước đúng hệ quả của cách huỷ được phép — không bấm rồi mới biết. */
+function CancelDialog({ open, onClose, attemptId, attemptNo, heQua, onDone }: {
+  open: boolean; onClose: () => void; attemptId: number; attemptNo: number; heQua: HeQuaHuy; onDone: () => void;
 }) {
   const toast = useToast();
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
+  const caLuot = heQua.cachDuoc === 'ca-luot';
+  const dong = [heQua.case ? `${heQua.case} Case` : null, heQua.phoiHop ? `${heQua.phoiHop} việc Phối hợp` : null].filter(Boolean);
   return (
     <ConfirmDialog
-      open={open} onClose={onClose} danger busy={busy} title={`Huỷ lượt MT${attemptNo}`} confirmLabel="Huỷ lượt"
+      open={open} onClose={onClose} danger busy={busy}
+      title={caLuot ? `Huỷ cả lượt MT${attemptNo}` : `Huỷ phần còn lại của MT${attemptNo}`}
+      confirmLabel={caLuot ? 'Huỷ cả lượt' : 'Huỷ phần còn lại'}
       body={
         <div className="space-y-2">
           <p>
-            Huỷ <strong>mọi phần thi chưa có điểm</strong> của MT{attemptNo}.{' '}
-            {scoredSkills > 0
-              ? `${scoredSkills} kỹ năng đã có điểm vẫn được giữ nguyên trong lịch sử.`
-              : 'Chưa kỹ năng nào có điểm.'}{' '}
-            Không đổi số MT; lượt đã huỷ không tính vào “đã xong” hay “thiếu điểm”.
+            {caLuot
+              ? <>Huỷ <strong>cả lượt</strong> MT{attemptNo}. Số MT{attemptNo} sẽ dùng lại được khi xếp lượt mới.</>
+              : <>Huỷ các kỹ năng <strong>chưa có điểm và chưa thi</strong>. MT{attemptNo} giữ số; kỹ năng đã có điểm giữ nguyên.</>}
           </p>
+          {dong.length > 0 && <p>Đóng {dong.join(', ')} sinh từ lượt này.</p>}
           <input className="field" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Lý do huỷ (bắt buộc)" />
         </div>
       }
       onConfirm={async () => {
         setBusy(true);
         try {
-          await api.post(`/attempts/${attemptId}/cancel`, { reason });
+          await api.post(`/attempts/${attemptId}/cancel`, { reason, cach: heQua.cachDuoc });
           invalidate('/attempts'); invalidate('/overview');
-          onDone(); onClose(); toast.push('ok', 'Đã huỷ lượt MT');
+          onDone(); onClose(); toast.push('ok', caLuot ? `Đã huỷ cả lượt MT${attemptNo}` : 'Đã huỷ phần còn lại');
         } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
       }}
     />

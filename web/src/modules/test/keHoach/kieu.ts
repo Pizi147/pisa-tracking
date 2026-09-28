@@ -14,7 +14,8 @@ export type LopKH = {
 export type DanhSachLop = { tieuDe: string; lop: LopKH[] };
 
 export type DotFT = { attemptId: number | null; trangThaiDot: string | null; kn: KnO };
-export type HangFT = { studentId: number; ten: string; ma: string; vaoMuon: boolean; dot: Record<number, DotFT> };
+/** `soKeTiep` (PR-MT, K4-08): chỉ ô MT này có "+ xếp" — số MT liền mạch. */
+export type HangFT = { studentId: number; ten: string; ma: string; vaoMuon: boolean; dot: Record<number, DotFT>; soKeTiep: number };
 export type LuoiFTData = { classId: number; classCode: string; cot: number[]; hang: HangFT[] };
 
 export type DotThuong = { attemptId: number | null; kn: KnO };
