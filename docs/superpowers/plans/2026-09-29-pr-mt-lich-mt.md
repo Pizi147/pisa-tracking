@@ -540,3 +540,4 @@ khác ngày với bản thử thì chạy thử lại. 5. Chạy thử lần n�
 ## Planning chốt 29/09
 
 - Chủ sản phẩm sẽ **reset database trước khi deploy bản chính** (GV chưa dùng) → **BỎ lệnh `bo-sung-mt-mac-dinh` (T35) và phần chạy thử danh sách bổ sung** (không có dữ liệu thật để bổ sung). Câu hỏi "bổ sung MT còn thiếu cho em đã có 1–2 lượt" không còn cần. Migrate cột `lich_su` + `chay-thu:mt` (đếm nhanh) vẫn giữ cho DB THỬ/demo.
+- **LÀM RÕ (chủ sản phẩm 29/09):** chỉ bỏ lệnh sửa dữ liệu cũ `bo-sung-mt-mac-dinh`. **GIỮ NGUYÊN** việc tự tạo MT mặc định khi thêm học viên mới (`taoMtMacDinh` gọi trong `commitIntake`, Task 3) — kể cả học viên đã học lâu: MT có tuần thi đã qua là **MT lịch sử**, GVCN/QL nhập đủ 4 kỹ năng (kịch bản H1 §10.4). Sau khi reset database, mọi học viên đều vào qua đường này.
