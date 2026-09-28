@@ -344,6 +344,10 @@ hàng dưới. Đây là lỗi của component + khung chứa, không phải l�
   lý do bỏ việc Phối hợp, nhóm vi phạm. Luật cũ "Khác thì mô tả ≥ 30 ký tự" đã bỏ (Q10). Kiểm ở
   cả web và máy chủ.
 - Câu lỗi hiện sau khi rời ô hoặc bấm Lưu: `Ghi rõ "Khác" là gì` · `Cần ít nhất 3 ký tự (đang có {n})`.
+- Form có `useLoiForm` (§4a): ô Ghi rõ là một dòng trong luật của form (khoá `ghi-ro`) — viền đỏ + câu dưới ô, tính vào chân
+  "n ô cần sửa ↑", bấm → nhảy tới ô. Form chưa có `useLoiForm` (khối SOS trong Case: nguyên nhân, thay PA, Không cần theo dõi; Phối hợp SOS;
+  panel Phương án xử lý): nút chính mờ khi Ghi rõ chưa đạt, câu lỗi dưới ô. Ô ngày bắt buộc trong luật form nhận `id`/`onBlur`/`invalid` của `useLoiForm` qua `ONgay`
+  (và lớp bọc `ChonNgayGan`/`ChonTuan`).
 - Ô **chỉ tự focus khi vừa chọn "Khác"**. Mở form sửa một bản ghi đã là "Khác" thì không nhảy vào ô.
 - Vi phạm "Khác" ghi trước luật mới vẫn sửa được ngày, môn mà **không bị bắt thêm Ghi rõ**; chỉ khi đổi nhóm hoặc sửa mô tả
   mới phải có Ghi rõ.

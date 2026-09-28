@@ -3,7 +3,7 @@ import { taoKhoPanel } from '@shared/domain/index.ts';
 import { NutLuat } from './NutLuat.tsx';
 import { DongCanSua, type MucThieu } from './loiForm.tsx';
 import { useGiuFocus } from './giuFocus.ts';
-import { BaoOTrongNhan } from './ONgay.tsx';
+import { BaoOTrongNhan, coOTuNhan } from './ONgay.tsx';
 
 /** Kho dùng chung toàn web: mở panel này thì panel đang mở phải đóng (G-8, N-4). */
 export const khoPanelChung = taoKhoPanel();
@@ -111,11 +111,12 @@ export function Truong({ nhan, batBuoc, tuyChon, phu, loi, dem, as = 'label', ch
   nhan: string; batBuoc?: boolean; tuyChon?: boolean; phu?: string; loi?: string | null; dem?: { co: number; can: number };
   as?: 'label' | 'div'; children: ReactNode;
 }) {
-  /* Ô ngày bên trong báo id → nhãn không bọc nút lịch (`BaoOTrongNhan`). */
+  /* Ô ngày / ô chọn người bên trong báo id → nhãn `<label htmlFor>`, không bọc nút lịch (`BaoOTrongNhan`). Thẻ khung chỉ theo props. */
   const [idO, setIdO] = useState<string | null>(null);
-  const Vo = idO ? 'div' : as;
+  const Vo = as === 'div' || coOTuNhan(children) ? 'div' : 'label';
   /* `as="div"` không có ô để nhãn trỏ vào (nhóm NutChon…) → nhóm mang tên của nhãn, trình đọc màn hình đọc "Mức độ, nhóm". */
   const idNhan = useId();
+  const troO = Vo === 'div' ? idO : null;
   const nhom = Vo === 'div' && !idO ? { role: 'group', 'aria-labelledby': idNhan } : {};
   const chu = <>
     <span className="min-w-0 flex-1">
@@ -128,8 +129,9 @@ export function Truong({ nhan, batBuoc, tuyChon, phu, loi, dem, as = 'label', ch
   return (
     <BaoOTrongNhan.Provider value={setIdO}>
       <Vo className="block min-w-0" {...nhom}>
-        {idO ? <label htmlFor={idO} className={lopNhan}>{chu}</label> : <span id={idNhan} className={lopNhan}>{chu}</span>}
-        {loi ? <div className="[&_.field]:border-late [&_.field]:ring-1 [&_.field]:ring-late/40">{children}</div> : children}
+        {troO ? <label htmlFor={troO} className={lopNhan}>{chu}</label> : <span id={idNhan} className={lopNhan}>{chu}</span>}
+        {/* Luôn cùng một lớp bọc (`contents`, không đổi bố cục): bọc/bỏ bọc theo `loi` làm ô dựng lại → mất focus khi đang gõ. */}
+        <div className={loi ? 'contents [&_.field]:border-late [&_.field]:ring-1 [&_.field]:ring-late/40' : 'contents'}>{children}</div>
         {phu && <span className="mt-1 block truncate text-[10.5px] text-slate-500">{phu}</span>}
         {loi && <span className="mt-1 block text-[11px] text-late">{loi}</span>}
       </Vo>

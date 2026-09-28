@@ -13,7 +13,7 @@ import { ChonThang, ChonTuan } from '../../ui/ChonNgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
   CASE_CATEGORY_LABEL, NO_HANDOVER_NOTE, TRANSFER_REASONS, TRANSFER_REASON_LABEL, mondayOfDate, tuanLich, type NguoiChon,
-  dsLoi, type LuatTruong, kiemGhiRoKhac,
+  dsLoi, type LuatTruong, kiemGhiRoKhac, KHAC_TOI_THIEU,
 } from '@shared/domain/index.ts';
 
 type LopDich = { id: number; code: string; chiNhanhId: number; ma: string | null; ft: boolean; tenChuongTrinh: string | null; tuan: string | null; gvcn: string | null };
@@ -93,12 +93,12 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone }: {
   const LUAT: LuatTruong[] = [
     { khoa: 'lop', nhan: 'Lớp', chon: true },
     { khoa: 'ly-do', nhan: 'Lý do', chon: true },
+    ...(reasonCode === 'khac' ? [{ khoa: 'ghi-ro', nhan: 'Ghi rõ lý do', toiThieu: KHAC_TOI_THIEU }] : []),
     ...(luat?.canMucTieu ? [{ khoa: 'muc-tieu', nhan: 'Mục tiêu band', chon: true }] : []),
     ...(!canLuuY || !noNote ? [{ khoa: 'ban-giao', nhan: 'Ghi chú bàn giao', toiThieu: 1 }] : []),
   ];
   const loi = dsLoi(LUAT, { lop: toClassId, 'ly-do': reasonCode, 'ghi-ro': reasonNote, 'muc-tieu': mucTieu, 'ban-giao': luuY });
-  const loiGhiRo = reasonCode === 'khac' ? kiemGhiRoKhac(reasonNote) : null;
-  const thieu = [...loi.map((l) => l.nhan), ...(loiGhiRo ? ['Ghi rõ lý do'] : [])];
+  const thieu = loi.map((l) => l.nhan);
   const loiCua = (khoa: string) => lf.loiCua(loi, khoa);
   const o = (khoa: string) => lf.o(loi, khoa);
 
@@ -175,7 +175,8 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone }: {
                 ))}
               </div>
               <OKhac hien={reasonCode === 'khac'} value={reasonNote} onChange={setReasonNote} nhan="Ghi rõ lý do"
-                goiY="Ví dụ: Gia đình chuyển nhà sang quận khác" loi={lf.daBam ? loiGhiRo : null} />
+                goiY="Ví dụ: Gia đình chuyển nhà sang quận khác"
+                id={lf.oId('ghi-ro')} onBlur={lf.roi('ghi-ro')} loi={lf.hien('ghi-ro') ? kiemGhiRoKhac(reasonNote) : null} />
             </Truong>
             {luat?.canMucTieu && (
               <Hang2>

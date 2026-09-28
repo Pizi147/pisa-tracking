@@ -248,4 +248,19 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(/document\.activeElement/.test(doc('web/src/ui/giuFocus.ts').split('useEffect(')[1] ?? ''), 'giuFocus thiếu dự phòng khi focus đã rơi về body');
     assert(/useState\(!!tuMo\)/.test(doc('web/src/ui/PeoplePicker.tsx')), 'ChonNguoi tự mở danh sách khi vừa vẽ (Q18)');
   });
+
+  check('NEN (R2) · form có useLoiForm: Ghi rõ là một dòng luật, ô ngày bắt buộc nhận id/onBlur; khung Truong/Field không đổi thẻ; nhãn ChonNguoi có đích', () => {
+    const m = 'web/src/modules/';
+    for (const f of ['cases/QuickReport.tsx', 'cases/ThaoTacCase.tsx', 'cases/CapNhatTuan.tsx', 'students/ChuyenLopPanel.tsx',
+      'yThuc/CreateMeasurePanel.tsx', 'yThuc/RecordViolationPanel.tsx']) {
+      const s = doc(m + f);
+      assert(/khoa: 'ghi-ro'/.test(s) && /id=\{lf\.oId\('ghi-ro'\)\}/.test(s) && !/loiGhiRo/.test(s), `${f}: Ghi rõ chưa vào luật useLoiForm / còn cơ chế dự phòng`);
+    }
+    assert(/id=\{lf\.oId\('tu-tuan'\)\}/.test(doc(m + 'cases/QuickReport.tsx')) && /id=\{lf\.oId\('ngay-lam'\)\}/.test(doc(m + 'cases/ThaoTacCase.tsx'))
+      && /id=\{lf\.oId\('han'\)\}/.test(doc(m + 'cases/CapNhatTuan.tsx')), 'ô ngày bắt buộc chưa nhận id của useLoiForm');
+    const khung = doc('web/src/ui/KhungPanel.tsx') + doc('web/src/ui/ui.tsx');
+    assert(!/idO \? 'div'/.test(khung) && (khung.match(/coOTuNhan\(children\)/g) ?? []).length === 2, 'khung Truong/Field còn đổi thẻ theo id ô báo lên');
+    assert(!/loi \? <div/.test(doc('web/src/ui/KhungPanel.tsx')), 'Truong còn bọc/bỏ bọc ô theo loi (ô dựng lại, mất focus)');
+    assert(/<button id=\{`\$\{uid\}-o`\}/.test(doc('web/src/ui/PeoplePicker.tsx')), 'ChonNguoi đang hiện tên: nhãn không trỏ vào nút Đổi');
+  });
 }

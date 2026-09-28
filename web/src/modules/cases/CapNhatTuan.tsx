@@ -15,7 +15,7 @@ import {
   NUT_LUU_KET_QUA, PLAN_DECISIONS, PLAN_DECISION_HINT, PLAN_DECISION_NGAN, PLAN_DECISION_NGHIA,
   RESCHEDULE_TARGETS, RESCHEDULE_TARGET_LABEL,
   decisionBlockedReason, decisionNeedsReason, deadlineView, interventionKindsFor, ngay, nhanTuanGhiKetQua, outcomeLabelFor,
-  nguoiThanhPayload, type NguoiChon, type PlanDecision, dsLoi, type LuatTruong, kiemGhiRoKhac,
+  nguoiThanhPayload, type NguoiChon, type PlanDecision, dsLoi, type LuatTruong, kiemGhiRoKhac, KHAC_TOI_THIEU,
 } from '@shared/domain/index.ts';
 
 /**
@@ -84,7 +84,6 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
   const [newDesc, setNewDesc] = useState('');
   /* PA mới là đề xuất "Khác" (T13): ô Tên đề xuất ngay dưới; máy chủ ghép "{tên} — {mô tả}" (Q9). */
   const [newGhiRo, setNewGhiRo] = useState('');
-  const loiGhiRo = newKind === 'other_proposal' ? kiemGhiRoKhac(newGhiRo) : null;
   const [newNguoi, setNewNguoi] = useState<NguoiChon | null>({ kieu: 'toi' });
   const [newTarget, setNewTarget] = useState<string>(RESCHEDULE_TARGETS[0]);
   const lf = useLoiForm();
@@ -105,18 +104,18 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
     { khoa: 'ket-qua', nhan: 'Kết quả', chon: true },
     { khoa: 'tien-trien', nhan: 'Tiến triển', toiThieu: 8 },
     { khoa: 'quyet-dinh', nhan: 'Quyết định', chon: true },
+    ...(decision === 'replace' && newKind === 'other_proposal' ? [{ khoa: 'ghi-ro', nhan: 'Tên đề xuất', toiThieu: KHAC_TOI_THIEU }] : []),
     ...(decision === 'replace' ? [{ khoa: 'pa-moi', nhan: 'Nội dung PA mới', toiThieu: 8 }] : []),
     ...(needReason ? [{ khoa: 'ly-do', nhan: decision === 'adjust' ? 'Lý do điều chỉnh' : 'Lý do thay', toiThieu: 8 }] : []),
     ...(decision === 'ask_manager' ? [{ khoa: 'ly-do', nhan: 'Cần Quản lý giúp gì', toiThieu: 8 }] : []),
   ];
-  const loi = dsLoi(LUAT, { 'ket-qua': outcome, 'tien-trien': progress, 'quyet-dinh': decision, 'pa-moi': newDesc, 'ly-do': reason });
+  const loi = dsLoi(LUAT, { 'ket-qua': outcome, 'tien-trien': progress, 'quyet-dinh': decision, 'ghi-ro': newGhiRo, 'pa-moi': newDesc, 'ly-do': reason });
   if (decision === 'adjust') {
     if (!adjustChanged) loi.push({ khoa: 'noi-dung', nhan: 'Nội dung PA', lyDo: 'Đổi ít nhất một ô: nội dung, người làm hoặc hạn' });
     else if (descChanged && desc.trim().length < 8) loi.push({ khoa: 'noi-dung', nhan: 'Nội dung PA', lyDo: `Cần ít nhất 8 ký tự (đang có ${desc.trim().length})` });
     else if (dueChanged && !!on && due < on) loi.push({ khoa: 'han', nhan: 'Hạn kết thúc PA', lyDo: 'Không được sớm hơn ngày ghi' });
   }
-  /* PR-NEN (T13): "Khác" — ô Tên đề xuất (OKhac); gộp vào luật ở R2. */
-  const thieu = [...loi.map((l) => l.nhan), ...(decision === 'replace' && loiGhiRo ? ['Tên đề xuất'] : [])];
+  const thieu = loi.map((l) => l.nhan);
   const loiCua = (khoa: string) => lf.loiCua(loi, khoa);
   const o = (khoa: string) => lf.o(loi, khoa);
 
@@ -172,10 +171,9 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
             <Truong nhan="Người thực hiện" as="div">
               <ChonNguoi nhom="giao_vien" value={nguoi} onChange={setNguoi} />
             </Truong>
-            <Truong nhan="Đến (hạn kết thúc PA)" as="div" loi={loiCua('han')}>
-              <div {...o('han')} tabIndex={-1} className="outline-none">
-                <ChonTuan moc="cuoi" catHomNay={false} lui={0} toi={12} value={due} onChange={setDue} ariaLabel="Đến (hạn kết thúc PA)" />
-              </div>
+            <Truong nhan="Đến (hạn kết thúc PA)" loi={loiCua('han')}>
+              <ChonTuan moc="cuoi" catHomNay={false} lui={0} toi={12} value={due} onChange={setDue} ariaLabel="Đến (hạn kết thúc PA)"
+                id={lf.oId('han')} onBlur={lf.roi('han')} invalid={!!loiCua('han')} />
             </Truong>
           </Hang2>
           <Truong nhan="Lý do điều chỉnh" batBuoc phu="Phải đổi ít nhất một trong ba ô trên" loi={loiCua('ly-do')}>
@@ -199,7 +197,8 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
               </select>
             </Truong>
             <OKhac hien={newKind === 'other_proposal'} value={newGhiRo} onChange={setNewGhiRo} nhan="Tên đề xuất"
-              goiY="Ví dụ: Học kèm 1-1 với trợ giảng" loi={lf.daBam ? loiGhiRo : null} />
+              goiY="Ví dụ: Học kèm 1-1 với trợ giảng"
+              id={lf.oId('ghi-ro')} onBlur={lf.roi('ghi-ro')} loi={lf.hien('ghi-ro') ? kiemGhiRoKhac(newGhiRo) : null} />
           </div>
           <Truong nhan="Nội dung" batBuoc phu="Ví dụ: 10 phút chữa câu mỗi buổi, hai bài viết lại mỗi tuần" loi={loiCua('pa-moi')}>
             <textarea className="field w-full" {...o('pa-moi')} rows={2} value={newDesc} onChange={(e) => setNewDesc(e.target.value)} />

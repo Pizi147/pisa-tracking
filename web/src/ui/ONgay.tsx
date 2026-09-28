@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { Children, createContext, isValidElement, useContext, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { canDongBoONgay, chotONgay, hienONgay, phuONgay, type KieuONgay, type LuatONgay } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
 import { LichNho } from './LichNho.tsx';
@@ -14,6 +14,12 @@ import { LichNho } from './LichNho.tsx';
  * dòng phụ, dòng lỗi — HTML sai, tên truy cập lẫn "Mở lịch") sang `<div>` + `<label htmlFor>`. Nơi gọi không phải sửa gì.
  */
 export const BaoOTrongNhan = createContext<((id: string | null) => void) | null>(null);
+/**
+ * Ô tự vẽ nhãn riêng (ô ngày, ô chọn người — gắn `tuNhan = true`) nằm TRỰC TIẾP dưới `Truong`/`Field` → khung là `<div>` ngay từ lần
+ * vẽ đầu. Thẻ khung quyết từ props, không từ id ô báo lên: đổi thẻ sau khi vẽ làm React dựng lại ô (hiệu ứng chạy hai lần).
+ */
+export const coOTuNhan = (children: ReactNode) =>
+  Children.toArray(children).some((c) => isValidElement(c) && !!(c.type as { tuNhan?: boolean }).tuNhan);
 
 type Props = {
   kieu: KieuONgay;
@@ -72,6 +78,7 @@ export function ONgay({ kieu, value, onChange, toiThieu, toiDa, moc, catHomNay, 
     </span>
   );
 }
+ONgay.tuNhan = true;
 
 /** Biểu tượng lịch nét mảnh 14 px (không emoji — luật "dấu nhỏ gọn"). */
 function BieuTuongLich() {

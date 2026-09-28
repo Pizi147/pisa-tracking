@@ -8,7 +8,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { MEASURE_KINDS, MEASURE_KIND_LABEL, dsLoi, kiemGhiRoKhac, ngay, type MeasureKind, type NguoiChon } from '@shared/domain/index.ts';
+import { KHAC_TOI_THIEU, MEASURE_KINDS, MEASURE_KIND_LABEL, dsLoi, kiemGhiRoKhac, ngay, type MeasureKind, type NguoiChon } from '@shared/domain/index.ts';
 
 type KindRow = { kind: MeasureKind; label: string; available: boolean; reason: string | null };
 
@@ -54,10 +54,9 @@ export function CreateMeasurePanel({
   const availability = kinds.data?.rows ?? [];
   const isLocked = (k: string) => availability.find((r) => r.kind === k)?.available === false;
   const lockReason = (k: string) => availability.find((r) => r.kind === k)?.reason ?? null;
-  const loi = dsLoi([], {});
+  const loi = dsLoi(kind === 'other' ? [{ khoa: 'ghi-ro', nhan: 'Tên phương án', toiThieu: KHAC_TOI_THIEU }] : [], { 'ghi-ro': customName });
   if (!list.length) loi.unshift({ khoa: 'vi-pham', nhan: 'Vi phạm', lyDo: 'Cần ít nhất một vi phạm' });
-  const loiGhiRo = kind === 'other' ? kiemGhiRoKhac(customName) : null;
-  const thieu = [...loi.map((l) => l.nhan), ...(loiGhiRo ? ['Tên phương án'] : [])];
+  const thieu = loi.map((l) => l.nhan);
 
   const create = async (confirmNow: boolean) => {
     lf.bam();
@@ -105,7 +104,8 @@ export function CreateMeasurePanel({
               </select>
             </Truong>
             <OKhac hien={kind === 'other'} value={customName} onChange={setCustomName} nhan="Tên phương án"
-              goiY="Ví dụ: Viết bản cam kết" loi={lf.daBam ? loiGhiRo : null} />
+              goiY="Ví dụ: Viết bản cam kết"
+              id={lf.oId('ghi-ro')} onBlur={lf.roi('ghi-ro')} loi={lf.hien('ghi-ro') ? kiemGhiRoKhac(customName) : null} />
           </div>
           <Truong nhan="Phụ trách" as="div">
             <ChonNguoi nhom="nhan_vien" choNgoai={false} value={owner} onChange={setOwner} macDinhTrong="Mặc định: GVCN của lớp" />

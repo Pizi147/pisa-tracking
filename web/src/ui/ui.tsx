@@ -1,7 +1,7 @@
 import { useId, useState, type MouseEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { chuTrangThai, type TrangThai } from '@shared/domain/index.ts';
-import { BaoOTrongNhan } from './ONgay.tsx';
+import { BaoOTrongNhan, coOTuNhan } from './ONgay.tsx';
 
 export function Card({ title, action, children, className = '', bodyClass = 'p-4' }: {
   title?: ReactNode; action?: ReactNode; children: ReactNode; className?: string; bodyClass?: string;
@@ -316,16 +316,17 @@ export function KpiTile({ label, value, tone = 'neutral', to, sub }: {
 export function Field({ label, children, hint, required, as = 'label' }: {
   label: string; children: ReactNode; hint?: string; required?: boolean; as?: 'label' | 'div';
 }) {
-  /* Ô ngày bên trong báo id → nhãn không bọc nút lịch (`BaoOTrongNhan`, như `Truong`). */
+  /* Ô ngày bên trong báo id → nhãn không bọc nút lịch (`BaoOTrongNhan`, như `Truong`). Thẻ khung chỉ theo props (không dựng lại ô). */
   const [idO, setIdO] = useState<string | null>(null);
-  const Wrap = idO ? 'div' : as;
+  const Wrap = as === 'div' || coOTuNhan(children) ? 'div' : 'label';
   const idNhan = useId();
+  const troO = Wrap === 'div' ? idO : null;
   const nhom = Wrap === 'div' && !idO ? { role: 'group', 'aria-labelledby': idNhan } : {};
   const chu = <>{label}{required && <><span aria-hidden className="text-bad"> *</span><span className="sr-only"> (bắt buộc)</span></>}</>;
   return (
     <BaoOTrongNhan.Provider value={setIdO}>
       <Wrap className="block" {...nhom}>
-        {idO ? <label htmlFor={idO} className="label">{chu}</label> : <span id={idNhan} className="label">{chu}</span>}
+        {troO ? <label htmlFor={troO} className="label">{chu}</label> : <span id={idNhan} className="label">{chu}</span>}
         {children}
         {hint && <span className="block text-[11px] text-slate-500 mt-1">{hint}</span>}
       </Wrap>

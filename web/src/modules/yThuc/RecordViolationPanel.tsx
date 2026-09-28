@@ -10,7 +10,7 @@ import { OKhac } from '../../ui/OKhac.tsx';
 import { NutChon } from '../../ui/ui.tsx';
 import {
   VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, VIOLATION_DESCRIPTION_MIN,
-  VIOLATION_SKILLS, VIOLATION_SKILL_LABEL, cauCanhBaoTrung, type ViolationCategory, dsLoi, kiemGhiRoKhac, tachKhac,
+  VIOLATION_SKILLS, VIOLATION_SKILL_LABEL, cauCanhBaoTrung, type ViolationCategory, dsLoi, kiemGhiRoKhac, tachKhac, KHAC_TOI_THIEU,
 } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 
@@ -106,13 +106,13 @@ export function RecordViolationPanel({
    */
   const goc = violation?.category === 'other' ? tachKhac(violation.description) : null;
   const chuaDung = !!goc && laNhomKhac && ghiRo === goc.ghiRo && description === goc.moTa;
-  const loiGhiRo = laNhomKhac && !chuaDung ? kiemGhiRoKhac(ghiRo) : null;
   /* Ô lỗi (YC-12.5.2): lý do dưới ô khi rời ô; chân "n ô cần sửa ↑" sau khi bấm Lưu. */
   const loi = dsLoi([
     ...(students && !editing ? [{ khoa: 'hoc-vien', nhan: 'Học viên', chon: true }] : []),
+    ...(laNhomKhac && !chuaDung ? [{ khoa: 'ghi-ro', nhan: 'Ghi rõ', toiThieu: KHAC_TOI_THIEU }] : []),
     ...(!chuaDung ? [{ khoa: 'mo-ta', nhan: 'Mô tả', toiThieu: minLen }] : []),
-  ], { 'hoc-vien': studentId, 'mo-ta': description });
-  const thieu = [...loi.map((l) => l.nhan), ...(loiGhiRo ? ['Ghi rõ'] : [])];
+  ], { 'hoc-vien': studentId, 'ghi-ro': ghiRo, 'mo-ta': description });
+  const thieu = loi.map((l) => l.nhan);
 
   const hoanTac = async (id: number) => {
     try {
@@ -238,7 +238,7 @@ export function RecordViolationPanel({
             ))}
           </div>
           <OKhac hien={laNhomKhac} value={ghiRo} onChange={setGhiRo}
-            loi={lf.daBam ? loiGhiRo : null} khongBaoLoi={chuaDung} />
+            id={lf.oId('ghi-ro')} onBlur={lf.roi('ghi-ro')} loi={lf.hien('ghi-ro') ? kiemGhiRoKhac(ghiRo) : null} khongBaoLoi={chuaDung} />
         </Truong>
 
         <Truong nhan="Mô tả" batBuoc loi={lf.loiCua(loi, 'mo-ta')} dem={{ co: description.trim().length, can: minLen }}>

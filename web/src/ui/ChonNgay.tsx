@@ -8,6 +8,9 @@ import { ONgay } from './ONgay.tsx';
  * Không đọc đồng hồ trình duyệt — "hôm nay" là ngày nghiệp vụ.
  */
 
+/** Báo lỗi form (N1 `useLoiForm`): `id={lf.oId(k)} onBlur={lf.roi(k)} invalid={…}` đi thẳng vào ô gõ của `ONgay`. */
+type LoiO = { id?: string; onBlur?: () => void; invalid?: boolean };
+
 const DAY_MS = 86_400_000;
 /** Cộng `n` ngày vào ISO. */
 function cong(iso: string, n: number): string {
@@ -23,29 +26,29 @@ function thangCong(iso: string, n: number): string {
  * Ngày không quá hôm nay. Bản cũ: gợi ý `soNgay` ngày gần nhất + "Ngày khác…" gõ bất kỳ ngày nào ≤ hôm nay — nên luật chỉ là
  * `toiDa = hôm nay`; `soNgay` không còn giới hạn gì (giữ trong chữ ký cho nơi gọi cũ).
  */
-export function ChonNgayGan({ value, onChange, disabled, ariaLabel, chuaChon }: {
+export function ChonNgayGan({ value, onChange, disabled, ariaLabel, chuaChon, ...lo }: {
   value: string; onChange: (v: string) => void; soNgay?: number; disabled?: boolean; ariaLabel?: string; chuaChon?: string;
-}) {
+} & LoiO) {
   const { homNay } = useNgayNghiepVu();
-  return <ONgay kieu="ngay" value={value} onChange={onChange} toiDa={homNay || null} disabled={disabled} ariaLabel={ariaLabel} goiY={chuaChon} />;
+  return <ONgay kieu="ngay" value={value} onChange={onChange} toiDa={homNay || null} disabled={disabled} ariaLabel={ariaLabel} goiY={chuaChon} {...lo} />;
 }
 
 /**
  * Tuần. `moc="dau"` (mặc định): giá trị là thứ Hai, từ `lui` tuần trước tới `toi` tuần sau tuần này. `moc="cuoi"`: giá trị là
  * Chủ nhật của tuần đó, cắt về hôm nay khi là tuần hiện tại và `catHomNay` (máy chủ chặn ngày tương lai) — dùng cho ô "Đến".
  */
-export function ChonTuan({ value, onChange, lui = 8, toi = 0, moc = 'dau', catHomNay = true, disabled, ariaLabel, chuaChon }: {
+export function ChonTuan({ value, onChange, lui = 8, toi = 0, moc = 'dau', catHomNay = true, disabled, ariaLabel, chuaChon, ...lo }: {
   value: string; onChange: (v: string) => void; lui?: number; toi?: number; moc?: 'dau' | 'cuoi';
   /** `moc="cuoi"`: cắt Chủ nhật về hôm nay cho tuần hiện tại (mặc định, cho việc ĐÃ xảy ra). `false` cho hạn tương lai. */
   catHomNay?: boolean;
   disabled?: boolean; ariaLabel?: string; chuaChon?: string;
-}) {
+} & LoiO) {
   const { homNay } = useNgayNghiepVu();
   const t2 = homNay ? mondayOfDate(homNay) : null;
   const toiThieu = t2 ? cong(t2, -7 * lui) : null;
   const toiDa = !t2 ? null : moc === 'cuoi' ? (catHomNay && toi === 0 ? homNay : cong(t2, 7 * toi + 6)) : cong(t2, 7 * toi);
   return <ONgay kieu="tuan" value={value} onChange={onChange} moc={moc} catHomNay={catHomNay} disabled={disabled} ariaLabel={ariaLabel}
-    goiY={chuaChon} toiThieu={toiThieu} toiDa={toiDa} />;
+    goiY={chuaChon} toiThieu={toiThieu} toiDa={toiDa} {...lo} />;
 }
 
 /** Tháng, `soThang` tháng từ tháng này. Giá trị `2026-11`. */
@@ -56,3 +59,6 @@ export function ChonThang({ value, onChange, soThang = 18, disabled, ariaLabel, 
   return <ONgay kieu="thang" value={value} onChange={onChange} toiThieu={homNay ? homNay.slice(0, 7) : null}
     toiDa={homNay ? thangCong(homNay, soThang - 1) : null} disabled={disabled} ariaLabel={ariaLabel} goiY={chuaChon} />;
 }
+ChonNgayGan.tuNhan = true;
+ChonTuan.tuNhan = true;
+ChonThang.tuNhan = true;

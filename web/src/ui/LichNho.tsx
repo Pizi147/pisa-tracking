@@ -206,7 +206,7 @@ export function LichNho({ kieu, value, homNay, luat, neo, onChon, onDong, goNgay
       ref={khung} role="dialog" aria-label={tieuDe} tabIndex={-1}
       className="fixed z-[70] surface-2 overflow-y-auto overscroll-contain rounded-lg border p-3 shadow-xl"
       style={{
-        borderColor: 'var(--line-strong)', maxHeight: 'calc(100vh - 16px)',
+        borderColor: 'var(--line-strong)', maxHeight: 'calc(100dvh - 16px)',
         top: viTri?.top ?? 0, left: viTri?.left ?? 0, width: viTri?.width ?? 'min(320px, calc(100vw - 16px))',
         visibility: viTri ? 'visible' : 'hidden',
       }}

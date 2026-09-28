@@ -221,7 +221,9 @@ export function ChonNguoi({
   const { rows, loading } = useNguoiSearch(term, nhom, studentId, editing, trongPhamVi);
   /* Nằm dưới Truong/Field: nhãn trỏ vào ô gõ (label htmlFor), không bọc cả danh sách + nút "Đổi" (`BaoOTrongNhan`). */
   const bao = useContext(BaoOTrongNhan);
-  useLayoutEffect(() => { bao?.(`${uid}-o`); return () => bao?.(null); }, [bao, uid]);
+  /* Đang hiện tên (chưa sửa): nhãn trỏ vào nút "Đổi"; không có nút (disabled) thì không trỏ đâu. */
+  const coO = editing || !disabled;
+  useLayoutEffect(() => { bao?.(coO ? `${uid}-o` : null); return () => bao?.(null); }, [bao, uid, coO]);
 
   /* Chỉ khi VỪA chuyển sang sửa (bấm "Đổi") mới focus + mở; lúc vẽ đầu thì không, trừ `tuMo`. */
   const suaTruoc = useRef(tuMo ? false : editing);
@@ -283,7 +285,7 @@ export function ChonNguoi({
           <span className="text-slate-100">{chinh}</span>
           {phu && <span className="text-slate-500 text-[11px]"> · {phu}</span>}
         </span>
-        {!disabled && <button type="button" className="btn btn-sm min-h-[44px] shrink-0 sm:min-h-0" onClick={() => setEditing(true)}>Đổi</button>}
+        {!disabled && <button id={`${uid}-o`} type="button" className="btn btn-sm min-h-[44px] shrink-0 sm:min-h-0" onClick={() => setEditing(true)}>Đổi</button>}
       </div>
     );
   }
@@ -372,3 +374,4 @@ export function ChonNguoi({
     </div>
   );
 }
+ChonNguoi.tuNhan = true;

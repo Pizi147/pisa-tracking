@@ -78,7 +78,7 @@ export function ChonPhuTrach({ value, valueName, onChange }: {
         <svg aria-hidden width="8" height="5" viewBox="0 0 8 5" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M1 1l3 3 3-3" /></svg>
       </button>
       {typeof value === 'number' && (
-        <button type="button" className="min-h-[44px] min-w-[32px] text-slate-500 hover:text-slate-200 text-xs sm:min-h-0 sm:min-w-0" aria-label="Bỏ chọn giáo viên, về Tất cả trong phạm vi"
+        <button type="button" className="min-h-[44px] min-w-[44px] text-slate-500 hover:text-slate-200 text-xs sm:min-h-0 sm:min-w-0" aria-label="Bỏ chọn giáo viên, về Tất cả trong phạm vi"
           onClick={() => onChange('tat-ca')}>✕</button>
       )}
       {open && !picking && (

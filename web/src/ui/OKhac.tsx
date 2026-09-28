@@ -23,7 +23,7 @@ export function OKhac({ hien, value, onChange, nhan = 'Ghi rõ', goiY = 'Ví d�
   return (
     <label className="mt-1.5 block min-w-0">
       <span className="mb-1 block text-[11.5px] font-bold text-slate-200">{nhan}<span aria-hidden className="text-bad"> *</span><span className="sr-only"> (bắt buộc)</span></span>
-      <input ref={o} id={id} className="field w-full" maxLength={200} value={value} placeholder={goiY} aria-invalid={!!cau || undefined} aria-describedby={cau ? idLoi : undefined}
+      <input ref={o} id={id} className={`field w-full${cau ? ' border-late ring-1 ring-late/40' : ''}`} maxLength={200} value={value} placeholder={goiY} aria-invalid={!!cau || undefined} aria-describedby={cau ? idLoi : undefined}
         onChange={(e) => onChange(e.target.value)} onBlur={() => { setDaRoi(true); onBlur?.(); }} />
       {cau && <span id={idLoi} className="mt-1 block text-[11px] text-late">{cau}</span>}
     </label>

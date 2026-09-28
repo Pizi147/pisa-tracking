@@ -17,7 +17,7 @@ import {
   ENTRY_SKILL_LABEL, URGENCY_LEVELS, URGENCY_LABEL, issuesForTopic, DEFAULT_URGENCY,
   CASE_OUTCOMES, CASE_OUTCOME_LABEL, REGULAR_SKILL_LABEL,
   categoryOf, componentsFor, componentsAreCounts,
-  nguoiThanhPayload, nguoiThieu, skillShort, tuanLich, type NguoiChon, dsLoi, type LuatTruong, laKhac, kiemGhiRoKhac,
+  nguoiThanhPayload, nguoiThieu, skillShort, tuanLich, type NguoiChon, dsLoi, type LuatTruong, laKhac, kiemGhiRoKhac, KHAC_TOI_THIEU,
 } from '@shared/domain/index.ts';
 
 type DaLuu = { id: number; tieuDe: string; gop: boolean; canEdit: boolean };
@@ -274,18 +274,18 @@ export function QuickReport({
   const LUAT: LuatTruong[] = [
     ...(students ? [{ khoa: 'hoc-vien', nhan: 'Học viên', chon: true }] : []),
     { khoa: 'ky-nang', nhan: 'Kỹ năng', chon: true }, { khoa: 'phan-loai', nhan: 'Phân loại vấn đề', chon: true },
+    /* PR-NEN (T13): phân loại "Khác" → ô Ghi rõ ≥ 3 ký tự ngay dưới (OKhac); Mô tả chỉ còn luật 15 ký tự. */
+    ...(laKhac(primaryCode) ? [{ khoa: 'ghi-ro', nhan: 'Ghi rõ', toiThieu: KHAC_TOI_THIEU }] : []),
     { khoa: 'ten', nhan: 'Tên Case', toiThieu: 6 },
     { khoa: 'mo-ta', nhan: 'Mô tả', toiThieu: 15 },
     ...(mode === 'backfill' ? [{ khoa: 'tu-tuan', nhan: 'Từ tuần', chon: true }, { khoa: 'den-tuan', nhan: 'Đến tuần', chon: true },
       { khoa: 'ket-qua', nhan: 'Kết quả cuối', chon: true }, { khoa: 'vi-sao', nhan: 'Vì sao kết luận vậy', toiThieu: 10 }] : []),
   ];
-  const loi = dsLoi(LUAT, { 'hoc-vien': studentId, 'ky-nang': topic, 'phan-loai': primaryCode, ten: title, 'mo-ta': summary,
+  const loi = dsLoi(LUAT, { 'hoc-vien': studentId, 'ky-nang': topic, 'phan-loai': primaryCode, 'ghi-ro': ghiRo, ten: title, 'mo-ta': summary,
     'tu-tuan': bfFrom, 'den-tuan': bfTo, 'ket-qua': bfOutcome, 'vi-sao': bfNote });
   if (mode === 'backfill' && bfFrom && bfTo && bfFrom > bfTo) loi.push({ khoa: 'den-tuan', nhan: 'Đến tuần', lyDo: 'Không được trước Từ tuần' });
   if (mode === 'backfill' && !bfActions.some((a) => a.description.trim())) loi.push({ khoa: 'pa-0', nhan: 'Phương án đã áp dụng', lyDo: 'Chưa có PA nào' });
-  /* PR-NEN (T13): "Khác" → ô Ghi rõ ≥ 3 (OKhac), bỏ luật 30 ký tự của Mô tả; gộp vào luật ở R2. */
-  const loiGhiRo = laKhac(primaryCode) ? kiemGhiRoKhac(ghiRo) : null;
-  const thieu = [...loi.map((l) => l.nhan), ...(loiGhiRo ? ['Ghi rõ'] : [])];
+  const thieu = loi.map((l) => l.nhan);
   const oLoi = lf.conThieu(loi);
   const loiCua = (khoa: string) => lf.loiCua(loi, khoa);
   const o = (khoa: string) => lf.o(loi, khoa);
@@ -385,7 +385,7 @@ export function QuickReport({
             </select>
           </Truong>
           <OKhac hien={laKhac(primaryCode)} value={ghiRo} onChange={setGhiRo} goiY="Ví dụ: Chưa quen dạng bài mới"
-            loi={lf.daBam ? loiGhiRo : null} />
+            id={lf.oId('ghi-ro')} onBlur={lf.roi('ghi-ro')} loi={lf.hien('ghi-ro') ? kiemGhiRoKhac(ghiRo) : null} />
         </div>
 
         {/* Nhập bù là chuyện ĐÃ XONG — không còn "mức độ" để xin. */}
@@ -424,15 +424,13 @@ export function QuickReport({
         <>
           <Khoi tieuDe="Đã áp dụng">
             <Hang2>
-              <Truong nhan="Từ tuần" batBuoc as="div" loi={loiCua('tu-tuan')}>
-                <div {...o('tu-tuan')} tabIndex={-1} className="outline-none">
-                  <ChonTuan moc="dau" lui={26} toi={0} value={bfFrom} onChange={setBfFrom} chuaChon="Chọn tuần" ariaLabel="Từ tuần" />
-                </div>
+              <Truong nhan="Từ tuần" batBuoc loi={loiCua('tu-tuan')}>
+                <ChonTuan moc="dau" lui={26} toi={0} value={bfFrom} onChange={setBfFrom} chuaChon="Chọn tuần" ariaLabel="Từ tuần"
+                  id={lf.oId('tu-tuan')} onBlur={lf.roi('tu-tuan')} invalid={!!loiCua('tu-tuan')} />
               </Truong>
-              <Truong nhan="Đến tuần" batBuoc as="div" loi={loiCua('den-tuan')}>
-                <div {...o('den-tuan')} tabIndex={-1} className="outline-none">
-                  <ChonTuan moc="cuoi" lui={26} toi={0} value={bfTo} onChange={setBfTo} chuaChon="Chọn tuần" ariaLabel="Đến tuần" />
-                </div>
+              <Truong nhan="Đến tuần" batBuoc loi={loiCua('den-tuan')}>
+                <ChonTuan moc="cuoi" lui={26} toi={0} value={bfTo} onChange={setBfTo} chuaChon="Chọn tuần" ariaLabel="Đến tuần"
+                  id={lf.oId('den-tuan')} onBlur={lf.roi('den-tuan')} invalid={!!loiCua('den-tuan')} />
               </Truong>
             </Hang2>
             <div className="space-y-2">

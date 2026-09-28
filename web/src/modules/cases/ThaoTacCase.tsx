@@ -12,7 +12,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
   CASE_OUTCOMES, CASE_OUTCOME_LABEL, HAN_DUYET_NGAY, INTERVENTION_KIND_LABEL, RESCHEDULE_TARGETS, RESCHEDULE_TARGET_LABEL,
   componentsAreCounts, componentsFor, interventionKindsFor, isProposalKind,
-  ngay, nguoiThanhPayload, planEndDefault, type NguoiChon, dsLoi, kiemGhiRoKhac,
+  ngay, nguoiThanhPayload, planEndDefault, type NguoiChon, dsLoi, kiemGhiRoKhac, KHAC_TOI_THIEU,
 } from '@shared/domain/index.ts';
 import { ComponentsField, componentsPayload } from './ChiTietKyNang.tsx';
 
@@ -59,11 +59,11 @@ export function ThemPaPanel({ caseId, studentId, hocVien, lop, quayLai, onClose,
   const deXuat = isProposalKind(kind);
 
   const loi = dsLoi([
+    ...(laKhacPa ? [{ khoa: 'ghi-ro', nhan: 'Tên đề xuất', toiThieu: KHAC_TOI_THIEU }] : []),
     { khoa: 'mo-ta', nhan: 'Mô tả', toiThieu: 8 },
     ...(status === 'completed' ? [{ khoa: 'ngay-lam', nhan: 'Ngày đã làm', chon: true }] : []),
-  ], { 'mo-ta': description, 'ngay-lam': completedDate });
-  const loiGhiRo = laKhacPa ? kiemGhiRoKhac(ghiRo) : null;
-  const thieu = [...(loiGhiRo ? ['Tên đề xuất'] : []), ...loi.map((l) => l.nhan)];
+  ], { 'ghi-ro': ghiRo, 'mo-ta': description, 'ngay-lam': completedDate });
+  const thieu = loi.map((l) => l.nhan);
 
   const luu = async () => {
     lf.bam();
@@ -116,7 +116,7 @@ export function ThemPaPanel({ caseId, studentId, hocVien, lop, quayLai, onClose,
             </select>
           </Truong>
           <OKhac hien={laKhacPa} value={ghiRo} onChange={setGhiRo} nhan="Tên đề xuất" goiY="Ví dụ: Học kèm 1-1 với trợ giảng"
-            loi={lf.daBam ? loiGhiRo : null} />
+            id={lf.oId('ghi-ro')} onBlur={lf.roi('ghi-ro')} loi={lf.hien('ghi-ro') ? kiemGhiRoKhac(ghiRo) : null} />
         </div>
         {kind === 'reschedule_mt' && (
           <Truong nhan="Lùi cái gì" batBuoc as="div">
@@ -148,10 +148,9 @@ export function ThemPaPanel({ caseId, studentId, hocVien, lop, quayLai, onClose,
             <ChonNguoi nhom="giao_vien" studentId={studentId} value={nguoi} onChange={setNguoi} />
           </Truong>
           {status === 'completed' ? (
-            <Truong nhan="Ngày đã làm" batBuoc as="div" loi={lf.loiCua(loi, 'ngay-lam')}>
-              <div {...lf.o(loi, 'ngay-lam')} tabIndex={-1} className="outline-none">
-                <ChonNgayGan value={completedDate} onChange={setCompletedDate} soNgay={30} chuaChon="Chọn ngày" ariaLabel="Ngày đã làm" />
-              </div>
+            <Truong nhan="Ngày đã làm" batBuoc loi={lf.loiCua(loi, 'ngay-lam')}>
+              <ChonNgayGan value={completedDate} onChange={setCompletedDate} soNgay={30} chuaChon="Chọn ngày" ariaLabel="Ngày đã làm"
+                id={lf.oId('ngay-lam')} onBlur={lf.roi('ngay-lam')} invalid={!!lf.loiCua(loi, 'ngay-lam')} />
             </Truong>
           ) : (
             <Truong nhan="Ngày bắt đầu">
