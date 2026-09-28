@@ -4,8 +4,8 @@ import {
   INTERVENTION_KIND_LABEL, PERMISSIONS,
   SOS_LABEL, URGENCY_LABEL, caseHeadline, caseTopicLabel, cycleDeadline,
   duongHoSoHocVien, duongLichTest, nhanDotNgan, planDueDate, trongHaiTuanCuoi, tuanLich, urgencyFromSos,
-  tenMon,
-  type AssessedSkill, type AttemptKind, type InterventionKind,
+  khungCua, tenMon,
+  type AssessedSkill, type Khung, type AttemptKind, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays } from '../util.ts';
@@ -70,6 +70,8 @@ export type WorkItem = {
   owner: string | null;
   /** Người đang xem CHÍNH LÀ người phụ trách việc này. */
   mine: boolean;
+  /** MH4, K1-30: khung của lớp (Fast Track / Lớp thường). `null` = việc không gắn lớp → hiện ở mọi khung. */
+  khung?: Khung | null;
   due: string | null;
   statusLabel: string;
   /**
@@ -1035,6 +1037,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     }
   }
 
+  ganKhung(items, lopCua);
+
   const groups = order
     .map((g) => {
       const list = items.filter((i) => i.group === g)
@@ -1084,4 +1088,12 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     scopeEmpty: false,
     xemNguoiKhac,
   };
+}
+
+/** MH4: gán khung cho mọi dòng việc từ bảng tra lớp đã nạp (không thêm câu SQL). Dòng không gắn lớp → `null`. */
+function ganKhung(items: WorkItem[], lopCua: (classId: number | null | undefined) => { mode: string | null } | null) {
+  for (const it of items) {
+    const l = it.classId ? lopCua(it.classId) : null;
+    it.khung = l ? khungCua(l.mode) : null;
+  }
 }

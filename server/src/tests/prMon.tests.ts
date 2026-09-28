@@ -359,4 +359,40 @@ export async function runPrMonTests(t: YThucTestKit) {
     assert(k.chinh === '52%' && k.sos === null, JSON.stringify(k));
     assert(/: 52%/.test(standingMod.standingLine(st)) && !/SOS/.test(standingMod.standingLine(st)), standingMod.standingLine(st));
   });
+  // ------------------------------------------------------------------ Task 9 · hai khung FT / Lớp thường
+  const chamMod: any = await import('../cham/canCham.ts');
+  check('MON (9) · Lịch Test tách khung: cộng hai khung = tổng; nợ có chuongTrinh; bộ môn theo lớp (MH4, K4-05)', () => {
+    const tuan = week.ensurePeriod(TODAY).id;
+    const r = chamMod.lichTest(P.admin, tuan, null, TODAY, { phamVi: 'tat-ca' });
+    const k = r.tongQuanKhung;
+    assert(k.ft.tong + k.thuong.tong === r.tongQuan.tong && k.ft.conPhaiCham + k.thuong.conPhaiCham === r.tongQuan.conPhaiCham,
+      JSON.stringify({ k, t: r.tongQuan }));
+    assert(k.ft.no.bai + k.thuong.no.bai === r.tongQuan.no.bai && k.ft.quaHan + k.thuong.quaHan === r.tongQuan.quaHan, 'nợ / quá hạn');
+    assert(r.lop.some((l: any) => l.mode === 'ielts_band') && r.lop.some((l: any) => l.mode === 'ratio'), 'tuần demo phải có cả hai khung');
+    assert(r.no.every((x: any) => 'chuongTrinh' in x), 'dòng nợ thiếu chuongTrinh');
+    const fou = r.lop.find((l: any) => l.classCode === 'MB FOU 12');
+    const pf = r.lop.find((l: any) => l.classCode === 'MB Pre FOU 03');
+    assert(fou?.boMon.length === 4 && pf?.boMon.join() === 'tong_hop', JSON.stringify({ fou: fou?.boMon, pf: pf?.boMon }));
+  });
+  check('MON (9) · /my-work gán khung: lớp FOU → thuong, lớp FT → ft, việc không gắn lớp → null (K1-30)', () => {
+    const it = mywork.myWork(P.admin, { nguoi: 'tat-ca' }).items as any[];
+    const cua = (code: string) => it.filter((x) => x.classCode === code);
+    assert(cua('MB FOU 12').length > 0 && cua('MB FOU 12').every((x) => x.khung === 'thuong'), 'FOU');
+    assert(cua('MB FT 101').length > 0 && cua('MB FT 101').every((x) => x.khung === 'ft'), 'FT');
+    assert(it.filter((x) => !x.classId).every((x) => x.khung === null), 'không lớp');
+  });
+  check('MON (9) · Tổng hợp Test: không cột môn khi Lớp thường / Cả hai; Tổng quan không câu "môn dưới kỳ vọng" ngoài FT (MH5)', () => {
+    const kn = (ct: string) => d.cotTongHopFor(ct as any).filter((c: any) => c.khoa.startsWith('kn:')).length;
+    assert(kn('thuong') === 0 && kn('ca-hai') === 0 && kn('ft') === 5, `${kn('thuong')} ${kn('ca-hai')} ${kn('ft')}`);
+    const ung = [{ loai: 'mon-duoi-ky-vong', metricId: 'hv-duoi-ky-vong-mon', tu: 9, mau: 10, nhanMon: 'Writing', extra: { skill: 'writing' } }];
+    assert(d.chonDiemDangChuY(ung as any, 'thuong').length === 0 && d.chonDiemDangChuY(ung as any, 'ft').length === 1, 'chonDiemDangChuY');
+  });
+  check('MON (9) · CongTacKhung: BoLocDoan, localStorage bọc try, ba trang dùng chung', () => {
+    const src = doc('web/src/ui/CongTacKhung.tsx');
+    assert(/BoLocDoan/.test(src) && /try\s*\{[^}]*localStorage\.getItem/.test(src) && /try\s*\{[^}]*localStorage\.setItem/.test(src), 'CongTacKhung');
+    for (const f of ['web/src/modules/test/LichTestTab.tsx', 'web/src/modules/test/KeHoachTestTab.tsx', 'web/src/modules/congViec/HoTroHocVienTab.tsx']) {
+      assert(/<CongTacKhung/.test(doc(f)), `${f} chưa dùng CongTacKhung`);
+    }
+    assert(!/HangTab/.test(doc('web/src/modules/test/LichTestTab.tsx')), 'Lịch Test còn HangTab khung cũ');
+  });
 }

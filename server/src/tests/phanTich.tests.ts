@@ -1215,7 +1215,8 @@ export async function runPhanTichTests(t: YThucTestKit) {
     const cotFt = d.cotTongHopFor('ft').find((c: any) => c.khoa === 'kn:listening');
     const cotThuong = d.cotTongHopFor('thuong').find((c: any) => c.khoa === 'kn:listening');
     assert(cotFt.goiY.includes('dưới kỳ vọng') && !cotFt.goiY.includes('chưa đạt'), `Tooltip FT: ${cotFt.goiY}`);
-    assert(cotThuong.goiY.includes('chưa đạt') && !cotThuong.goiY.includes('dưới kỳ vọng'), `Tooltip lớp thường: ${cotThuong.goiY}`);
+    /* PR-MON (MH3): khung Lớp thường không có cột theo môn. */
+    assert(cotThuong === undefined, 'Lớp thường còn cột kn:');
   });
 
   check("PR-Pb · #3: \"Đang xử lý\" không đếm Case đã status='done' dù từng có hỗ trợ; \"Case\" vẫn đếm", () => {

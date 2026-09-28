@@ -106,8 +106,7 @@ export function kyNangTheoCt(ct: ChuongTrinh): readonly CaseCategory[] {
 }
 
 /** Tooltip đầy đủ của một kỹ năng — ở "Cả hai", W cần nói rõ là Writing của lớp thường (Q7) để không lẫn với W1/W2. */
-export function kyNangTooltip(cat: CaseCategory, ct: ChuongTrinh): string {
-  if (cat === 'writing' && ct === 'ca-hai') return 'Writing (lớp thường)';
+export function kyNangTooltip(cat: CaseCategory, _ct: ChuongTrinh): string {
   return CASE_CATEGORY_LABEL[cat];
 }
 
@@ -198,8 +197,12 @@ const COT_XU_LY: CotTongHop[] = [
   { khoa: 'thieuPa', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Thiếu PA học thuật', goiY: 'Case chưa ai ghi sẽ làm gì — tình trạng hôm nay.' },
 ];
 
-/** Cột kỹ năng "dưới kỳ vọng", sinh từ `kyNangTheoCt` — khoá kỹ thuật `kn:<hạng mục>`, không lộ ra màn (chỉ dùng nội bộ). */
+/**
+ * Cột kỹ năng "dưới kỳ vọng", sinh từ `kyNangTheoCt` — khoá kỹ thuật `kn:<hạng mục>`, không lộ ra màn (chỉ dùng nội bộ).
+ * MH3/MH5 (PR-MON): CHỈ khung Fast Track có cột môn — Lớp thường không lọc/cột theo môn, "Cả hai" không trộn môn hai khung.
+ */
 export function cotKyNangFor(ct: ChuongTrinh): CotTongHop[] {
+  if (ct !== 'ft') return [];
   return kyNangTheoCt(ct).map((cat) => ({
     khoa: `kn:${cat}`, nhom: 'ky-nang' as const, donVi: 'hoc-vien' as const,
     nhan: () => CASE_CATEGORY_SHORT[cat],

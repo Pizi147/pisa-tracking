@@ -16,7 +16,7 @@ import {
   activeAt, can, classScopeSql, defaultWorkScope, editableSkills, mySkills, scopeFor, type Principal,
 } from '../permissions.ts';
 import {
-  ATTEMPT_KIND_SHORT, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, PERMISSIONS, boMonLich, lopTuMo, tenMonNgan, nhanLopLichTest, noShowStateOf,
+  ATTEMPT_KIND_SHORT, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, PERMISSIONS, boMonLich, khungCua, lopTuMo, tenMonNgan, type Khung, nhanLopLichTest, noShowStateOf,
   trangThaiChamLabel, type AssessedSkill, type AttemptKind, type LoaiNhanLop, type PhamViLichTest,
 } from '../../../shared/domain/index.ts';
 import { classScoreSheet, conBaiCanCham, listAttempts, type MonDoiLich } from '../fasttrack/attempts.ts';
@@ -179,8 +179,8 @@ export function noTuanTruoc(
   p: Principal,
   f: { branchId?: number | null; classIds: ReadonlySet<number> | null; truocTuan: string; lopCuaToi: ReadonlySet<number> },
   today: string = demoToday(),
-): { dong: DongNo[]; quaHanBai: number } {
-  if (f.classIds && !f.classIds.size) return { dong: [], quaHanBai: 0 };
+): { dong: DongNo[]; quaHanBai: number; quaHanBaiKhung: Record<Khung, number> } {
+  if (f.classIds && !f.classIds.size) return { dong: [], quaHanBai: 0, quaHanBaiKhung: { ft: 0, thuong: 0 } };
   const motLop = f.classIds && f.classIds.size === 1 ? [...f.classIds][0] : undefined;
   const { rows } = listAttempts(p, { branchId: f.branchId ?? undefined, classId: motLop, scope: 'managed' });
   /* Một câu mỗi LỚP (như `isRatioClass` trước đây), không mỗi dòng: cách chấm + mã chương trình. */
@@ -205,6 +205,7 @@ export function noTuanTruoc(
   const gom = new Map<string, Gom>();
   const doi: Doi[] = [];
   let quaHanBai = 0;
+  const quaHanBaiKhung: Record<Khung, number> = { ft: 0, thuong: 0 };
   for (const a of rows as any[]) {
     if (!a.classId || a.status === 'cancelled' || !conBaiCanCham(a)) continue;
     if (f.classIds && !f.classIds.has(a.classId)) continue;
@@ -228,7 +229,7 @@ export function noTuanTruoc(
       cu._hs.add(a.studentId);
       cu._aid.add(a.id);
       if (x.deadline && (!cu.han || x.deadline < cu.han)) cu.han = x.deadline;
-      if (x.deadline && isOverdue(x.deadline, today)) quaHanBai += 1;
+      if (x.deadline && isOverdue(x.deadline, today)) { quaHanBai += 1; quaHanBaiKhung[khungCua(lopOf(a.classId).mode)] += 1; }
       /* Lùi lịch CHỈ khi có bằng chứng dời thật (`moved` — dấu "-" hoặc dời do vắng), không suy từ thứ tự tuần. */
       if (x.moved) {
         doi.push({
@@ -261,7 +262,7 @@ export function noTuanTruoc(
   /* Quá hạn trước, rồi hạn tăng dần, rồi mã lớp. */
   dong.sort((x, y) => (Number(y.quaHan) - Number(x.quaHan))
     || (x.han ?? '9999').localeCompare(y.han ?? '9999') || x.classCode.localeCompare(y.classCode));
-  return { dong, quaHanBai };
+  return { dong, quaHanBai, quaHanBaiKhung };
 }
 
 // ---------------------------------------------------------------- Lịch Test
@@ -301,6 +302,8 @@ export type LichTest = {
   coPhanCong: boolean;
   lopDangLoc: { id: number; code: string } | null;
   tongQuan: { daCham: number; tong: number; conPhaiCham: number; no: { bai: number; lop: number }; quaHan: number };
+  /** MH4, K4-05: cùng dải số tách theo khung (công tắc Fast Track · Lớp thường); cộng hai khung = `tongQuan`. */
+  tongQuanKhung: Record<Khung, LichTest['tongQuan']>;
   no: DongNo[];
   lop: LopLichTest[];
 };
@@ -362,6 +365,10 @@ export function lichTest(
   const rong: LichTest = {
     scopeEmpty: scope.none, tuan: null, phamVi, coPhamViRong: false, coPhanCong, lopDangLoc: null,
     tongQuan: { daCham: 0, tong: 0, conPhaiCham: 0, no: { bai: 0, lop: 0 }, quaHan: 0 }, no: [], lop: [],
+    tongQuanKhung: {
+      ft: { daCham: 0, tong: 0, conPhaiCham: 0, no: { bai: 0, lop: 0 }, quaHan: 0 },
+      thuong: { daCham: 0, tong: 0, conPhaiCham: 0, no: { bai: 0, lop: 0 }, quaHan: 0 },
+    },
   };
   if (scope.none) return rong;
   const conn = db();
@@ -422,6 +429,7 @@ export function lichTest(
   };
   const byLop = new Map<string, LopTam>();
   let quaHanTuan = 0;
+  const quaHanTuanKhung: Record<Khung, number> = { ft: 0, thuong: 0 };
   for (const r of rows) {
     /* Chỉ đếm lượt còn ngồi thi (chưa vắng, chưa huỷ phần thi): em vắng không làm dòng thành "Đã chấm xong". */
     if (r.sit_status !== 'scheduled' && r.sit_status !== 'sat') continue;
@@ -486,7 +494,9 @@ export function lichTest(
       /* Hạn theo đúng thứ tự của `viewSkill`: hạn riêng của môn → hạn riêng của đợt → hạn mặc định theo tuần môn. */
       const han = r.han_mon ?? r.han_dot ?? skillScoreDeadline(mode === 'ratio' ? 'ratio' : 'band', tuan.week_start);
       if (!lop._hanNo || han < lop._hanNo) lop._hanNo = han;
-      if (!chuaToiHan && isOverdue(han, today)) { d.quaHan = true; lop.quaHan = true; quaHanTuan += con.length; }
+      if (!chuaToiHan && isOverdue(han, today)) {
+        d.quaHan = true; lop.quaHan = true; quaHanTuan += con.length; quaHanTuanKhung[khungCua(lop.mode)] += con.length;
+      }
     }
   }
 
@@ -523,6 +533,16 @@ export function lichTest(
       no: { bai: no.dong.reduce((n, d) => n + d.conBai, 0), lop: new Set(no.dong.map((d) => d.classId)).size },
       quaHan: quaHanTuan + no.quaHanBai,
     },
+    tongQuanKhung: Object.fromEntries((['ft', 'thuong'] as const).map((k) => {
+      const l = lop.filter((x) => khungCua(x.mode) === k);
+      const n = no.dong.filter((x) => khungCua(x.mode) === k);
+      const t = l.reduce((s, x) => s + x.tong, 0), c = l.reduce((s, x) => s + x.conBai, 0);
+      return [k, {
+        tong: t, conPhaiCham: c, daCham: t - c,
+        no: { bai: n.reduce((s, d) => s + d.conBai, 0), lop: new Set(n.map((d) => d.classId)).size },
+        quaHan: quaHanTuanKhung[k] + no.quaHanBaiKhung[k],
+      }];
+    })) as Record<Khung, LichTest['tongQuan']>,
     no: no.dong,
     lop,
   };

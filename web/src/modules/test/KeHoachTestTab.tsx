@@ -4,7 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
-import { HangTab } from '../../ui/HangTab.tsx';
+import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
 import { BranchFilter } from '../../ui/Filters.tsx';
 import { NganXepHangLoat } from './keHoach/NganXepHangLoat.tsx';
 import { LopKeHoach } from './keHoach/LopKeHoach.tsx';
@@ -36,8 +36,11 @@ export function KeHoachTestTab() {
   const lopThuong = useMemo(() => (data?.lop ?? []).filter((l) => l.loai === 'thuong'), [data]);
   const coCaHai = lopFT.length > 0 && lopThuong.length > 0;
   const loaiTheoLop = classIdParam ? data?.lop.find((l) => l.id === classIdParam)?.loai : undefined;
+  /* Q8: `loai` trên đường dẫn thắng, rồi lớp đang mở, rồi lựa chọn đã nhớ trên máy, rồi Fast Track. */
+  const daNho = khungDaNho('ke-hoach-test');
   const loai: 'ft' | 'thuong' = coCaHai
-    ? (loaiParam === 'thuong' || loaiParam === 'ft' ? loaiParam : (loaiTheoLop ?? 'ft'))
+    ? (loaiParam === 'thuong' || loaiParam === 'ft' ? loaiParam
+      : loaiTheoLop ?? (daNho === 'ft' || daNho === 'thuong' ? daNho : 'ft'))
     : (lopFT.length ? 'ft' : 'thuong');
 
   /* Q9: mở sẵn `?classId=` nếu có; không thì lớp đầu tiên có việc (FT chưa có lịch tiếp · thường có em chưa có bài). */
@@ -82,6 +85,9 @@ export function KeHoachTestTab() {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-end gap-x-3 gap-y-2">
+        {/* MH4: công tắc khung đứng ĐẦU hàng lọc (chỉ hiện khi có cả hai khung). */}
+        <CongTacKhung trang="ke-hoach-test" value={loai} dem={{ ft: lopFT.length, thuong: lopThuong.length }} donVi="lớp"
+          onChange={(k) => { if (k !== 'tat-ca') setLoai(k); }} />
         {branchCount > 1 && (
           <>
             <div className="hidden sm:block"><BranchFilter branchId={branchId} onBranch={(id) => {
@@ -102,12 +108,6 @@ export function KeHoachTestTab() {
           </>
         )}
         <TimLop lop={data.lop} value={chu} onChange={setChu} onChon={chonLop} className="min-w-0 basis-full sm:basis-auto sm:w-56" />
-        {coCaHai && (
-          <div className="min-w-0">
-            <HangTab ariaLabel="Loại lớp" cap="con" value={loai} onChange={setLoai}
-              tabs={[{ key: 'ft', label: 'Fast Track' }, { key: 'thuong', label: 'Lớp thường' }]} />
-          </div>
-        )}
         <span className="pb-2">
           <NutLuat label="Luật xếp lịch Test">
             <span className="block">

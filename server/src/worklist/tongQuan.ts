@@ -38,7 +38,7 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null; ct: 
   /* ĐIỂM ĐÁNG CHÚ Ý — ba luật (plan Q6), mỗi ứng viên là một chỉ số có sẵn. */
   const ung: UngVienChuY[] = [];
   /* `hv-duoi-ky-vong-mon` là chỉ số khung Fast Track: 4 kỹ năng đánh giá (MH5). */
-  for (const skill of ASSESSED_SKILLS) {
+  for (const skill of f.ct === 'ft' ? ASSESSED_SKILLS : []) {
     const r = metricSet(p, 'hv-duoi-ky-vong-mon', { ...base, skill });
     ung.push({ loai: 'mon-duoi-ky-vong', metricId: 'hv-duoi-ky-vong-mon', extra: { skill }, tu: r.n,
       mau: r.denominatorIds?.length ?? 0, nhanMon: tenMon(null, skill) });

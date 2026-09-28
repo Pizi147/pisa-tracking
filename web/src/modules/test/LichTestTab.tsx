@@ -4,7 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { BranchFilter, WeekPicker } from '../../ui/Filters.tsx';
-import { HangTab } from '../../ui/HangTab.tsx';
+import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useManHinhHep } from '../cham/LuoiChamLop.tsx';
@@ -16,7 +16,7 @@ import { HangLop } from './lichTest/HangLop.tsx';
 import { dangMo, docMo, ghiMo } from './lichTest/moLop.ts';
 
 type Loai = 'ft' | 'thuong';
-const loaiCua = (l: LopLichTest): Loai => (l.mode === 'ielts_band' ? 'ft' : 'thuong');
+const loaiCua = (l: { mode: LopLichTest['mode'] }): Loai => (l.mode === 'ielts_band' ? 'ft' : 'thuong');
 
 /** Gộp tải lại dải số sau lần lưu cuối (Q14) — tải lại mỗi ô làm nặng Turso. */
 const GOP_TAI_LAI_MS = 1500;
@@ -27,7 +27,8 @@ const GOP_TAI_LAI_MS = 1500;
  *   hàng lọc   tuần · "Lớp tôi dạy | Tất cả" (chỉ khi hai tập khác nhau) · chi nhánh · chip "Đang lọc: lớp …"
  *   dải số     đã chấm x/y · còn phải chấm · nợ tuần trước · quá hạn — bấm được (G-10)
  *   khối Nợ    bài còn nợ các tuần trước, bấm Chấm mở lưới ngay dưới dòng
- *   tab nhỏ    Fast Track · n lớp | Lớp thường · n lớp; mỗi lớp một hàng lớn thu gọn, tự mở lớp còn bài của người xem
+ *   công tắc   Fast Track · n lớp | Lớp thường · n lớp ở HÀNG LỌC (MH4, K4-05) — áp cho dải số, khối Nợ và danh sách lớp;
+ *              nhớ theo máy, `loai` trên đường dẫn thắng; chỉ một khung có lớp/nợ thì ẩn. Mỗi lớp một hàng lớn thu gọn.
  *
  * Mọi trạng thái nằm trên đường dẫn (replace): `periodId`, `branchId`, `phamVi`, `loai`, `classId`, `kn` — F5 và Back
  * giữ đúng chỗ. Máy chủ trả đủ trong MỘT lời gọi; không có `periodId` thì máy chủ tự lấy tuần hiện tại.
@@ -121,21 +122,25 @@ export function LichTestTab() {
     if (moi[l.key]) setConTro((s) => new Set(s).add(l.key));
   };
 
-  const tabs = useMemo(() => {
-    const dem = (k: Loai) => (data?.lop ?? []).filter((l) => loaiCua(l) === k).length;
-    return ([['ft', `Fast Track · ${dem('ft')} lớp`], ['thuong', `Lớp thường · ${dem('thuong')} lớp`]] as const)
-      .filter(([k]) => dem(k) > 0).map(([key, label]) => ({ key: key as Loai, label }));
-  }, [data?.lop]);
+  /* Số lớp theo khung = lớp có lượt tuần này HOẶC còn nợ tuần trước (khung không có gì thì công tắc không mời chọn nó). */
+  const dem = useMemo(() => {
+    const lop = (k: Loai) => new Set([...(data?.lop ?? []), ...(data?.no ?? [])].filter((x) => loaiCua(x) === k).map((x) => x.classId)).size;
+    return { ft: lop('ft'), thuong: lop('thuong') };
+  }, [data?.lop, data?.no]);
   const loai: Loai | null = useMemo(() => {
     if (!data) return null;
-    const co = (k: Loai | null | undefined) => !!k && tabs.some((t) => t.key === k);
+    const co = (k: string | null | undefined): k is Loai => (k === 'ft' || k === 'thuong') && dem[k] > 0;
     if (co(loaiParam)) return loaiParam;
-    const theoLop = data.lop.find((l) => l.classId === urlClassId);
+    const theoLop = [...data.lop, ...data.no].find((l) => l.classId === urlClassId);
     if (theoLop && co(loaiCua(theoLop))) return loaiCua(theoLop);
-    /* Tab đầu (theo thứ tự tab FT → thường) có lớp tự mở, rồi tab đầu có lớp. */
-    return tabs.find((t) => data.lop.some((l) => l.moSan && loaiCua(l) === t.key))?.key ?? tabs[0]?.key ?? null;
-  }, [data, tabs, loaiParam, urlClassId]);
+    const daNho = khungDaNho('lich-test');
+    if (co(daNho)) return daNho;
+    /* Khung đầu (FT → thường) có lớp tự mở, rồi khung đầu có lớp/nợ. */
+    return (['ft', 'thuong'] as const).find((k) => data.lop.some((l) => l.moSan && loaiCua(l) === k))
+      ?? (['ft', 'thuong'] as const).find((k) => dem[k] > 0) ?? null;
+  }, [data, dem, loaiParam, urlClassId]);
   const lopTab = (data?.lop ?? []).filter((l) => loaiCua(l) === loai);
+  const noTab = (data?.no ?? []).filter((d) => !loai || loaiCua(d) === loai);
 
   const cuon = (id: string) => requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: 'start', behavior: 'smooth' }));
   const bamSo = (o: OSo) => {
@@ -145,11 +150,11 @@ export function LichTestTab() {
       setEpMo((s) => new Set([...s, ...lopTab.filter((l) => l.conBai > 0).map((l) => l.key)]));
       cuon('lich-test-lop'); return;
     }
-    if (o === 'no') { setMoNo(true); cuon(data.no.length ? 'lich-test-no' : 'lich-test-lop'); return; }
+    if (o === 'no') { setMoNo(true); cuon(noTab.length ? 'lich-test-no' : 'lich-test-lop'); return; }
     /* Quá hạn: khối Nợ chỉ bài quá hạn + mở các lớp tuần này có bài quá hạn. */
-    setMoNo(true); setChiQuaHan(data.no.some((d) => d.quaHan));
-    setEpMo((s) => new Set([...s, ...data.lop.filter((l) => l.quaHan).map((l) => l.key)]));
-    cuon(data.no.some((d) => d.quaHan) ? 'lich-test-no' : 'lich-test-lop');
+    setMoNo(true); setChiQuaHan(noTab.some((d) => d.quaHan));
+    setEpMo((s) => new Set([...s, ...lopTab.filter((l) => l.quaHan).map((l) => l.key)]));
+    cuon(noTab.some((d) => d.quaHan) ? 'lich-test-no' : 'lich-test-lop');
   };
 
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
@@ -168,6 +173,23 @@ export function LichTestTab() {
           <WeekPicker periodId={periodParam ?? data.tuan?.id ?? null} label="Tuần"
             onPeriod={(id) => datThamSo({ periodId: id ? String(id) : null })} />
         </div>
+        {loai && (
+          <CongTacKhung trang="lich-test" value={loai} dem={dem} donVi="lớp"
+            onChange={(k) => datThamSo({ loai: k === 'tat-ca' ? null : k })} />
+        )}
+        {loai === 'thuong' && (
+          <span className="self-center">
+            <NutLuat label="Luật lưới lớp thường">
+              <span className="block">
+                Mỗi ô hai số: số câu đúng / tổng số câu (Writing, Speaking chấm theo thang điểm thì điểm đạt / tổng
+                điểm). Ô tổng đầu cột + nút ↓ điền nhanh cả cột; em làm đề khác thì sửa riêng ô đó — viền vàng khi
+                khác tổng của cột.
+              </span>
+              <span className="block">Dưới 70% là chưa đạt (tô đỏ nhẹ). Thiếu điểm khác chưa đạt.</span>
+              <span className="block">Gõ "-" khi em vắng: môn đó tự dời sang tuần sau, môn khác không đổi.</span>
+            </NutLuat>
+          </span>
+        )}
         {data.coPhamViRong && (
           <div className="inline-flex overflow-hidden rounded-md border" role="group" aria-label="Lớp"
             style={{ borderColor: 'var(--line-strong)' }}>
@@ -201,10 +223,10 @@ export function LichTestTab() {
         </div>
       ) : (
         <>
-          <DaiSo tq={data.tongQuan} tenTuan={tenTuan} onBam={bamSo} />
-          <KhoiNo no={data.no} mo={moNo} onMo={() => setMoNo((v) => !v)}
+          <DaiSo tq={loai ? data.tongQuanKhung[loai] : data.tongQuan} tenTuan={tenTuan} onBam={bamSo} />
+          <KhoiNo no={noTab} mo={moNo} onMo={() => setMoNo((v) => !v)}
             chiQuaHan={chiQuaHan} onBoQuaHan={() => setChiQuaHan(false)}
-            dongMo={dongMo} chuaLuu={chuaLuu} baoChuaLuu={baoChuaLuu}
+            dongMo={dongMo && (!loai || loaiCua(dongMo.d) === loai) ? dongMo : null} chuaLuu={chuaLuu} baoChuaLuu={baoChuaLuu}
             onMoDong={(d, viTri) => {
               /* Dòng đang mở còn ô chưa lưu: đóng nó là mất giá trị đã gõ — hỏi trước. */
               const n = dongMo ? chuaLuu[`no:${dongMo.d.key}`] ?? 0 : 0;
@@ -214,28 +236,9 @@ export function LichTestTab() {
             hep={hep} homNay={homNay} onDaLuu={baoDaLuu} knUrl={dongMo?.d.classId === urlClassId ? urlKn : null} />
 
           <div id="lich-test-lop" className="space-y-2">
-            {tabs.length > 0 && loai && (
-              <div className="flex items-end gap-2">
-                <div className="min-w-0">
-                  <HangTab cap="con" ariaLabel="Loại lớp" value={loai} tabs={tabs}
-                    onChange={(k) => datThamSo({ loai: k })} />
-                </div>
-                {tabs.some((t) => t.key === 'thuong') && (
-                  <span className="pb-2">
-                    <NutLuat label="Luật lưới lớp thường">
-                      <span className="block">
-                        Mỗi ô hai số: số câu đúng / tổng số câu (Writing, Speaking chấm theo thang điểm thì điểm đạt / tổng
-                        điểm). Ô tổng đầu cột + nút ↓ điền nhanh cả cột; em làm đề khác thì sửa riêng ô đó — viền vàng khi
-                        khác tổng của cột.
-                      </span>
-                      <span className="block">Dưới 70% là chưa đạt (tô đỏ nhẹ). Thiếu điểm khác chưa đạt.</span>
-                      <span className="block">Gõ "-" khi em vắng: môn đó tự dời sang tuần sau, môn khác không đổi.</span>
-                    </NutLuat>
-                  </span>
-                )}
-                <div className="flex-1" />
-                {lopTab.length > 1 && (
-                  <button type="button" className="min-h-[36px] px-1 pb-2 text-xs text-slate-400 hover:text-slate-100"
+            {lopTab.length > 1 && (
+              <div className="flex justify-end">
+                <button type="button" className="min-h-[36px] px-1 text-xs text-slate-400 hover:text-slate-100"
                     onClick={() => {
                       const moHet = !lopTab.every(moCua);
                       const moi = { ...nho, ...Object.fromEntries(lopTab.map((l) => [l.key, moHet])) };
@@ -244,7 +247,6 @@ export function LichTestTab() {
                     }}>
                     {lopTab.every(moCua) ? 'Thu tất cả' : 'Mở tất cả'}
                   </button>
-                )}
               </div>
             )}
             {lopTab.length > 0 && data.tuan ? (

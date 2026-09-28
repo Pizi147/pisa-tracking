@@ -32,6 +32,8 @@ export type LichTest = {
   phamVi: PhamViLichTest; coPhamViRong: boolean; coPhanCong: boolean;
   lopDangLoc: { id: number; code: string } | null;
   tongQuan: { daCham: number; tong: number; conPhaiCham: number; no: { bai: number; lop: number }; quaHan: number };
+  /** Cùng dải số tách theo khung (MH4) — công tắc Fast Track · Lớp thường. */
+  tongQuanKhung: Record<'ft' | 'thuong', LichTest['tongQuan']>;
   no: DongNo[];
   lop: LopLichTest[];
 };

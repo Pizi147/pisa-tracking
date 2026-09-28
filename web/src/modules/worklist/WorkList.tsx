@@ -9,6 +9,8 @@ export type WorkItem = {
   key: string; group: string; urgency: 'overdue' | 'today' | 'normal';
   studentId: number | null; studentName: string;
   classId: number | null; classCode: string | null;
+  /** MH4: khung của lớp; `null` = việc không gắn lớp (hiện ở mọi khung). */
+  khung?: 'ft' | 'thuong' | null;
   attemptId: number | null; attemptNo: number | null; caseId: number | null;
   level: { tone: 'ok' | 'info' | 'warn' | 'danger'; text: string } | null;
   reason: string; actionLabel: string; href: string;

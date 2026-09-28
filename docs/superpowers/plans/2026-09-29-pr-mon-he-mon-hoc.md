@@ -655,6 +655,16 @@ K5-45 T4 (+LOP) · K5-46 T2 · K5-47 T1/T5 · K5-48 T2 · K5-57 T5 · K5-67 T2.
   tròn đúng 52/64/78. Sửa kỳ vọng 4 phép kiểm cũ (cùng điều kiện): [18.1] "đủ dòng lịch" theo bộ môn chương trình; PR-UX1 môn tuần ∈
   `boMon`; UX2 câu "cả 4 môn"; LOP (5) Pre FOU nay tạo được, GVCN nhận `tong_hop`. `tocDoDuong.ts` đã có dòng
   `/ke-hoach-test/thuong/{lopThuong}`; không có chỗ đặt lớp Pre FOU → không thêm dòng đo.
+- **Task 9:** 1476 (+4). `CongTacKhung` (`web/src/ui/`) — `BoLocDoan`, localStorage bọc try/catch, chỉ một khung có dữ liệu → không vẽ.
+  Lịch Test: công tắc ở hàng lọc đầu trang (sau Tuần, trước "Lớp tôi dạy / Tất cả"), `NutLuat` lớp thường cạnh nó; áp cho dải số
+  (`tongQuanKhung`, tính cùng vòng — thêm đếm quá hạn theo khung trong `noTuanTruoc`), khối Nợ, danh sách lớp; dòng Nợ đang mở của
+  khung kia không bị chèn vào. Bỏ `HangTab` cũ. Kế hoạch Test: công tắc đứng đầu hàng lọc, nhớ theo máy. Công việc: **tham số URL là
+  `khung`** (không `loai` — màn này `loai` đã là Loại việc); mặc định Tất cả; chỉ một khung có việc thì không lọc (lựa chọn đã nhớ không
+  giấu việc). `myWork` gán `khung` qua `ganKhung` dùng lại bảng tra lớp của Task 6 (không thêm câu SQL). MH5: `cotKyNangFor` rỗng khi
+  khác FT; `chonDiemDangChuY` bỏ câu môn khi khác FT, máy chủ không đọc chỉ số môn khi khác FT; `kyNangTooltip` bỏ nhánh "Cả hai" (chữ
+  "chưa đạt" cho lớp thường thành chết → bỏ). impeccable `layout`: `detect --scope layout` sạch; đánh giá trên màn thật dồn sang Task 12.
+  Sửa kỳ vọng 2 phép kiểm cũ (PR-Pa Điểm đáng chú ý đo trên ct=ft + khẳng định không câu môn ở thường/Cả hai; PR-Pb #2 lớp thường không
+  cột `kn:`).
 
 ## Chủ sản phẩm chốt 29/09
 
