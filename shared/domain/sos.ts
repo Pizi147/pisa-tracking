@@ -11,7 +11,7 @@
  */
 import type { InterventionKind } from './cases.ts';
 
-function addDaysIso(date: string, n: number): string {
+export function addDaysIso(date: string, n: number): string {
   const d = new Date(`${date.slice(0, 10)}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() + n);
   return d.toISOString().slice(0, 10);
@@ -65,11 +65,13 @@ export const ACADEMIC_SUPPORT_EXPERT_TEXT = 'Hỗ trợ chuyên môn — cần G
 
 export type AcademicSupportPreset = AcademicSupportRule & { description: string };
 
-/** Ô của bảng §4 cho một lượt. `null` khi mức SOS không phải 1–3 (không có gì để điền). MT < 1 là lỗi gọi hàm. */
-export function academicSupportFor(attemptNo: number, sosLevel: number | null | undefined): AcademicSupportPreset | null {
+/** Ô của bảng §4 cho một lượt. `null` khi mức SOS không phải 1–3 (không có gì để điền). MT < 1 là lỗi gọi hàm.
+ *  RF (T4): mọi MT dùng hàng "MT3 trở đi" — `route` là lộ trình CỦA LƯỢT (K5-49). */
+export function academicSupportFor(attemptNo: number, sosLevel: number | null | undefined, route?: string | null): AcademicSupportPreset | null {
   if (!Number.isInteger(attemptNo) || attemptNo < 1) throw new Error(`Số MT không hợp lệ: ${attemptNo}`);
   if (sosLevel !== 1 && sosLevel !== 2 && sosLevel !== 3) return null;
-  const rule = DEFAULT_ACADEMIC_SUPPORT[Math.min(attemptNo, 5) as 1 | 2 | 3 | 4 | 5][sosLevel];
+  const hang = route === 'RF' ? Math.max(3, attemptNo) : attemptNo;
+  const rule = DEFAULT_ACADEMIC_SUPPORT[Math.min(hang, 5) as 1 | 2 | 3 | 4 | 5][sosLevel];
   const description =
     rule.span === 'one_month' ? 'Tự học · 1 tháng'
     : rule.span === 'until_next_mt' ? `Tutor · đến MT${attemptNo + 1}`
@@ -160,11 +162,12 @@ export const DEFAULT_SOS_COORDINATION: Record<1 | 2 | 3 | 4, Record<SosLevelKey,
   4: { 1: HS_GD, 2: HS_GD_GVCN, 3: [...HS_GD_GVCN, 'cx_meeting_student'] },
 };
 
-/** Các việc điền sẵn cho một lượt Mock có SOS. Mức 0 (hoặc không xác định) thì không có việc nào. */
-export function sosCoordinationFor(attemptNo: number, sosLevel: number | null | undefined): readonly CoordinationKind[] {
+/** Các việc điền sẵn cho một lượt Mock có SOS. Mức 0 (hoặc không xác định) thì không có việc nào. RF (T4): hàng MT4 cho mọi MT. */
+export function sosCoordinationFor(attemptNo: number, sosLevel: number | null | undefined, route?: string | null): readonly CoordinationKind[] {
   if (!Number.isInteger(attemptNo) || attemptNo < 1) throw new Error(`Số MT không hợp lệ: ${attemptNo}`);
   if (sosLevel !== 1 && sosLevel !== 2 && sosLevel !== 3) return [];
-  return DEFAULT_SOS_COORDINATION[Math.min(attemptNo, 4) as 1 | 2 | 3 | 4][sosLevel];
+  const hang = route === 'RF' ? Math.max(4, attemptNo) : attemptNo;
+  return DEFAULT_SOS_COORDINATION[Math.min(hang, 4) as 1 | 2 | 3 | 4][sosLevel];
 }
 
 /**
