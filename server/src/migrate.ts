@@ -11,6 +11,7 @@ import { seedRoutes } from './platform/sysconfig.ts';
 import { ROLE_PERMISSIONS } from './seed/data.ts';
 import { migratePrN1 } from './migrate/prN1.ts';
 import { migratePrLop } from './migrate/prLop.ts';
+import { migratePrDuyet } from './migrate/prDuyet.ts';
 
 /**
  * Giá trị cũ của cột `track` cho case Ý thức. Mô hình Case Ý thức đã BỎ 21/09/2026 (rule book mục 18) — hằng số này chỉ để NÂNG CẤP
@@ -455,6 +456,8 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     /* PR-N1: hạn ghi kết quả PA hết Thứ Hai (R-PA5). */ migratePrN1(conn, applied);
     /* PR-LOP: số tuần lớp, RF, Pre FOU, đổi tên lớp (T2, T78). */
     migratePrLop(conn, applied);
+    /* PR-DUYET: hộp Chờ duyệt (bảng yeu_cau_duyet + thẻ từ hai luồng cũ), tasks.assignee_name, notifications.duong. */
+    migratePrDuyet(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống

@@ -21,13 +21,14 @@ import { conLaiMs } from '../platform/hanGio.ts';
 
 const CHI_ADMIN = 'Chỉ Quản trị hệ thống mới xoá được học viên.';
 
-/** Bao đóng theo FK của `students` (29 bảng) — phép kiểm X1 so bằng đúng với đồ thị dựng từ PRAGMA. */
+/** Bao đóng theo FK của `students` (30 bảng) — phép kiểm X1 so bằng đúng với đồ thị dựng từ PRAGMA. */
 export const BANG_CUA_HOC_VIEN: readonly string[] = [
   'students', 'enrollments', 'learning_cycles', 'lo_trinh_tiep_theo', 'journey_events', 'teacher_estimates', 'cycle_target_revisions',
   'assessment_attempts', 'assessment_scores', 'attempt_skills', 'attempt_skill_skips', 'attempt_schedule_history', 'skill_move_requests',
   'sos_cases', 'case_interventions', 'case_followups', 'case_intervention_revisions', 'case_issues', 'case_sources', 'case_milestones',
   'sos_case_history', 'case_signals', 'task_students', 'task_case_links',
   'violations', 'violation_history', 'discipline_measures', 'measure_violations', 'sos_coordination_actions',
+  'yeu_cau_duyet',
 ];
 
 /** Dòng của NGƯỜI KHÁC trỏ vào dữ liệu của em (Q5) — đặt NULL, không xoá. Cả ba cột cho phép NULL. */
@@ -44,6 +45,7 @@ const V = `SELECT id FROM violations WHERE student_id = ?1 OR cycle_id IN (${Y})
 const M = `SELECT id FROM discipline_measures WHERE student_id = ?1 OR cycle_id IN (${Y})`;
 const X = `SELECT id FROM sos_coordination_actions WHERE student_id = ?1 OR attempt_id IN (${A})`;
 const R = `SELECT id FROM skill_move_requests WHERE attempt_id IN (${A})`;
+const Q = 'SELECT id FROM yeu_cau_duyet WHERE hoc_vien_id = ?1';
 
 /** Tệp đính kèm theo liên kết mềm `owner_type/owner_id` (không có FK). `unit_report` không thuộc học viên. */
 const DK_TEP = `(owner_type = 'sos_case' AND owner_id IN (${C}))
@@ -61,7 +63,8 @@ const DK_THONG_BAO = `(entity_type = 'student' AND entity_id = ?1)
   OR (entity_type = 'skill_move_requests' AND entity_id IN (${R}))
   OR (entity_type = 'case_intervention' AND entity_id IN (${I}))
   OR (entity_type = 'violation' AND entity_id IN (${V}))
-  OR (entity_type = 'sos_coordination_action' AND entity_id IN (${X}))`;
+  OR (entity_type = 'sos_coordination_action' AND entity_id IN (${X}))
+  OR (entity_type = 'yeu_cau_duyet' AND entity_id IN (${Q}))`;
 
 /**
  * THỨ TỰ CON → CHA trong `tx`. Tập được tính LẠI ở từng câu, nên một câu chỉ được dùng tập của bảng CHƯA xoá (ví dụ mọi câu dùng C
@@ -78,6 +81,8 @@ export const CAU_XOA_HOC_VIEN: readonly { bang: string; sql: string }[] = [
   { bang: 'attachments#tep', sql: `SELECT url FROM attachments WHERE kind = 'file' AND (${DK_TEP})` },
   { bang: 'attachments', sql: `DELETE FROM attachments WHERE ${DK_TEP}` },
   { bang: 'notifications', sql: `DELETE FROM notifications WHERE ${DK_THONG_BAO}` },
+  /* PR-DUYET: thẻ Chờ duyệt của em (đối tượng là PA/đề nghị dời/lộ trình của em — xoá cùng em) */
+  { bang: 'yeu_cau_duyet', sql: 'DELETE FROM yeu_cau_duyet WHERE hoc_vien_id = ?1' },
   /* Case học thuật và mọi thứ treo dưới Case */
   { bang: 'task_case_links', sql: `DELETE FROM task_case_links WHERE case_id IN (${C})` },
   { bang: 'task_students', sql: `DELETE FROM task_students WHERE student_id = ?1 OR case_id IN (${C}) OR intervention_id IN (${I})` },
