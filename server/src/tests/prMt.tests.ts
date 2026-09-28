@@ -60,4 +60,33 @@ export async function runPrMtTests(t: YThucTestKit) {
     assert(d.mocKeTiep([M(1, '2026-09-28')], '2026-09-29')?.attempt_no === 1, 'tuần này vẫn tính');
     assert(d.mocKeTiep([M(1, '2026-09-21')], '2026-09-29') === null, 'tuần trước không tính');
   });
+
+  const mig: any = await import('../migrate/prMt.ts');
+  const { default: Database } = await import('libsql');
+  check('PR-MT (2) · migratePrMt: DB cũ thêm cột lich_su mặc định 0, chạy lại không đổi gì; DB từ schema.sql đã có cột (T78)', () => {
+    const mem = new Database(':memory:');
+    mem.exec('CREATE TABLE assessment_attempts (id INTEGER PRIMARY KEY, attempt_no INTEGER)');
+    mem.exec('INSERT INTO assessment_attempts (attempt_no) VALUES (1)');
+    const lan1: string[] = []; mig.migratePrMt(mem, lan1);
+    const lan2: string[] = []; mig.migratePrMt(mem, lan2);
+    assert(lan1.length === 1 && lan2.length === 0, `${lan1.length}/${lan2.length}`);
+    assert((mem.prepare('SELECT lich_su FROM assessment_attempts').get() as any).lich_su === 0, 'dòng cũ = lượt thường');
+    mem.close();
+    const lan3: string[] = []; mig.migratePrMt(t.conn, lan3);
+    assert(lan3.length === 0, 'schema.sql đã có cột');
+  });
+  check('PR-MT (2) · chạy thử: lotrinhNhaySo bắt lộ trình MT1 + MT3; luotHuyGiua bắt lượt huỷ ở giữa (K4-09 phần báo)', () => {
+    const now = '2026-09-29';
+    const sid = Number(t.conn.prepare(`INSERT INTO students (student_code, full_name, normalized_name, status, created_at)
+      VALUES ('PRMT-NHAY', 'Em Nhảy Số', 'em nhay so', 'active', ?)`).run(now).lastInsertRowid);
+    const cid = Number(t.conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, started_at, status, created_at)
+      VALUES (?, 1, 'LT1', ?, 'completed', ?)`).run(sid, now, now).lastInsertRowid);
+    const them = (n: number, status: string) => t.conn.prepare(`INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, status, created_at)
+      VALUES (?,?,?, 'mock', ?, ?)`).run(cid, sid, n, status, now);
+    them(1, 'done'); them(2, 'cancelled'); them(3, 'planned');
+    const nhay = mig.lotrinhNhaySo(t.conn).find((x: any) => x.hv === 'PRMT-NHAY');
+    assert(nhay?.so === 'MT1, MT3', JSON.stringify(nhay));
+    const huy = mig.luotHuyGiua(t.conn).filter((x: any) => x.hv === 'PRMT-NHAY');
+    assert(huy.length === 1 && huy[0].mt === 'MT2' && !huy[0].coDiem, JSON.stringify(huy));
+  });
 }

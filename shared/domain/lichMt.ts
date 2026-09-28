@@ -77,6 +77,9 @@ export function hanDuyetDoiLan2(ngayGui: string): string {
 
 /** Điều kiện SQL "lượt tính nợ/hạn" — chèn vào WHERE mọi nơi đếm nợ, hạn, quá hạn, chờ chấm (Task 5). */
 export const LUOT_TINH_NO_SQL = (a: string) => `${a}.lich_su = 0`;
+/** "Lượt đã có điểm" (Q-B, K2-33): ít nhất một ô có band hoặc điểm thô. Dấu "-" không phải điểm. Trả 0/1. */
+export const CO_DIEM_SQL = (a: string) =>
+  `EXISTS (SELECT 1 FROM assessment_scores sx WHERE sx.attempt_id = ${a}.id AND (sx.band IS NOT NULL OR sx.raw_score IS NOT NULL))`;
 
 /** Mốc đánh giá kế tiếp (K2-05, K2-31): lượt `planned`, không lịch sử, tuần từ thứ Hai tuần này trở đi — sớm nhất. */
 export function mocKeTiep<T extends { status: string; lich_su: number; weekStart: string | null; attempt_no: number }>(

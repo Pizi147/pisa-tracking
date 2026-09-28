@@ -501,6 +501,7 @@ CREATE TABLE assessment_attempts (
   created_by INTEGER REFERENCES users(id),
   created_at TEXT NOT NULL,
   updated_at TEXT,
+  lich_su INTEGER NOT NULL DEFAULT 0, -- MT lịch sử: tuần thi đã qua trước ngày tạo lượt, lưu lúc tạo (T34)
   UNIQUE (cycle_id, attempt_no)
 );
 CREATE INDEX idx_attempt_student ON assessment_attempts(student_id);

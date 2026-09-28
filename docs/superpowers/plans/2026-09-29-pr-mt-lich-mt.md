@@ -541,6 +541,11 @@ khác ngày với bản thử thì chạy thử lại. 5. Chạy thử lần n�
   **1444** phép kiểm + 20 tốc độ. Dòng mã kế hoạch dẫn khớp (lệch ≤ 20 dòng), trừ `requestAbsenceMove` ở absence.ts:176 (kế hoạch :143 —
   thân vòng lặp vẫn :196-290), `scoreEditPath` permissions.ts:509, `updateCycle` cycles.ts:126 (kế hoạch :200 — phần đổi tuần bắt đầu nằm
   trong hàm này).
+- **Task 2:** theo Planning chốt 29/09, `chayThuMt.ts` **không** in danh sách bổ sung (bỏ `keHoachBoSung`); thay mục (2) bằng "em FT đang
+  học chưa có lượt MT nào" (sau reset + PR-MT danh sách này phải rỗng — dùng để soát). `CO_DIEM_SQL` (lượt có điểm = band hoặc điểm thô)
+  đặt cạnh `LUOT_TINH_NO_SQL` ở `lichMt.ts`. `chay-thu:mt` trên DB demo worktree: (1) đã có cột · (2) 0 em · (3) 1 em thiếu tuần bắt đầu
+  (PISA-000032 HD FT 302) · (4) 3 lộ trình nhảy số — PISA-000040 `MT1, MT2, MT5`, PISA-000042 `MT2`, PISA-000044 `MT3` (seed sosV3, sửa ở
+  Task 10) · (5) 0 lượt huỷ ở giữa.
 
 ## Planning chốt 29/09
 
