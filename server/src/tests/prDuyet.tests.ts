@@ -273,4 +273,49 @@ export async function runPrDuyetTests(t: YThucTestKit) {
     const xyk = casesSvc.caseDetail(P.lrTeacher, caseId).interventions.find((x: any) => x.id === ivId).xinYKien;
     assert(xyk?.trangThai === 'da_tra_loi' && xyk.traLoi.includes('thứ Tư') && xyk.nguoiDuyet, JSON.stringify(xyk));
   });
+
+  // ---------------------------------------------------------------- khối 6: Đề xuất sửa thông tin HV (T44, Câu 1 = B)
+  const cyclesSvc: any = await import('../fasttrack/cycles.ts');
+  const deXuat6: any = await import('../duyet/deXuatSua.ts');
+  const cycCua = (sid: number) => conn.prepare(`SELECT * FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(sid) as any;
+  const hvCoTarget = () => {
+    const { sid } = hvMoi();
+    conn.prepare('UPDATE learning_cycles SET target_score = 6.5 WHERE student_id = ?').run(sid);
+    return { sid, cyc: cycCua(sid) };
+  };
+  check('DUYET (6) · GVCN không tự sửa target/lộ trình (403, chỉ lối Đề xuất sửa); ghi chú, tháng thi vẫn sửa được; QL sửa được', () => {
+    const { cyc } = hvCoTarget();
+    assert(maLoi(() => cyclesSvc.reviseTarget(P.coreTeacher, cyc.id, { newTarget: 7, reason: 'Thử' })) === 403
+      && /Đề xuất sửa/.test(chuLoi(() => cyclesSvc.reviseTarget(P.coreTeacher, cyc.id, { newTarget: 7, reason: 'Thử' }))), 'GVCN đổi target');
+    assert(maLoi(() => cyclesSvc.updateCycle(P.coreTeacher, cyc.id, { route: 'LT2' })) === 403, 'GVCN đổi lộ trình');
+    assert(maLoi(() => cyclesSvc.createCycle(P.coreTeacher, { studentId: cyc.student_id, route: 'LT2' })) === 403, 'GVCN mở lộ trình mới');
+    cyclesSvc.updateCycle(P.coreTeacher, cyc.id, { note: 'Ghi chú của GVCN', examMonth: '2026-12', targetScore: 6.5, route: cyc.route });
+    assert(cycCua(cyc.student_id).exam_month === '2026-12', 'GVCN không sửa được tháng thi');
+    cyclesSvc.reviseTarget(P.mbManager, cyc.id, { newTarget: 7, reason: 'QL đổi' });
+    assert(cycCua(cyc.student_id).target_score === 7, 'QL không đổi được target');
+  });
+  check('DUYET (6) · GVBM gửi Đề xuất sửa target 6.5 → 7.0 → thẻ; QL Duyệt → đổi target, lịch sử ghi lý do đề xuất và người duyệt', () => {
+    const { sid, cyc } = hvCoTarget();
+    assert(maLoi(() => deXuat6.guiDeXuatSua(P.lrTeacher, sid, { truong: 'target', moi: 7, lyDo: 'ngắn' })) === 400, 'lý do ngắn');
+    assert(maLoi(() => deXuat6.guiDeXuatSua(P.lrTeacher, sid, { truong: 'target', moi: 7.3, lyDo: 'PH đăng ký thi 12/2026, cần 7.0' })) === 400, 'band lẻ');
+    assert(maLoi(() => deXuat6.guiDeXuatSua(P.cpManager, sid, { truong: 'target', moi: 7, lyDo: 'PH đăng ký thi 12/2026, cần 7.0' })) === 403, 'ngoài phạm vi');
+    const { id } = deXuat6.guiDeXuatSua(P.lrTeacher, sid, { truong: 'target', moi: 7, lyDo: 'PH đăng ký thi 12/2026, cần 7.0' });
+    assert(maLoi(() => deXuat6.guiDeXuatSua(P.lrTeacher, sid, { truong: 'target', moi: 7.5, lyDo: 'PH đăng ký thi 12/2026, cần 7.5' })) === 400, 'thẻ đôi');
+    const tren = yc.hopChoDuyet(P.mbManager).the.find((x: any) => x.id === id);
+    assert(tren?.tieuDe === 'Đề xuất sửa target 6.5 → 7.0' && tren.phanLoai === 'thong-tin-hv', JSON.stringify(tren));
+    yc.duyetYeuCau(P.mbManager, id);
+    const rev = conn.prepare('SELECT * FROM cycle_target_revisions WHERE cycle_id = ? ORDER BY id DESC LIMIT 1').get(cyc.id) as any;
+    assert(cycCua(sid).target_score === 7 && rev.reason === 'PH đăng ký thi 12/2026, cần 7.0' && rev.actor_user_id === P.mbManager.userId, JSON.stringify(rev));
+  });
+  check('DUYET (6) · Đề xuất sửa lớp: Duyệt không ghi chú → 400; có ghi chú → Đã duyệt, KHÔNG tự chuyển lớp; ⋮ có mục Đề xuất sửa cho GV không có cycle.edit', () => {
+    const { sid } = hvMoi();
+    const lopTruoc = (conn.prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active'`).get(sid) as any).class_id;
+    const { id } = deXuat6.guiDeXuatSua(P.coreTeacher, sid, { truong: 'lop', moi: 'Chuyển sang MB FT 102', lyDo: 'Em theo kịp lớp nhanh hơn, PH đồng ý' });
+    assert(maLoi(() => yc.duyetYeuCau(P.mbManager, id)) === 400, 'duyệt lớp không ghi chú');
+    yc.duyetYeuCau(P.mbManager, id, { ghiChu: 'Đã xử lý' });
+    const sau = (conn.prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active'`).get(sid) as any).class_id;
+    assert(theCua('sua_thong_tin', sid).trang_thai === 'duyet' && sau === lopTruoc, 'tự chuyển lớp');
+    const muc = d.mucQuanLyHocVien({ canEdit: false, lopHoc: null, cycle: { ratio: false }, status: 'active', deXuatSua: true }).map((x: any) => x.key);
+    assert(muc.join() === 'de-xuat-sua' && d.NHAN_VIEC_QUAN_LY['de-xuat-sua'] === 'Đề xuất sửa thông tin…', muc.join());
+  });
 }

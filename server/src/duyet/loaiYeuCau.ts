@@ -18,6 +18,9 @@ import { ensurePeriod } from '../platform/week.ts';
 import { addJourney } from '../platform/audit.ts';
 import { db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
+import { badRequest } from '../util.ts';
+import { reviseTarget, updateCycle } from '../fasttrack/cycles.ts';
+import { NHAN_TRUONG_DE_XUAT, TRUONG_TU_AP, hienTaiCua, type TruongDeXuat } from './deXuatSua.ts';
 
 export type YeuCauRow = {
   id: number; loai: LoaiYeuCau; doi_tuong_loai: string; doi_tuong_id: number; hoc_vien_id: number | null;
@@ -168,6 +171,45 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         ],
         mo: yc.hoc_vien_id && x ? duongHoSoHocVien(yc.hoc_vien_id, { caseId: x.case_id }) : undefined,
         duLieu: x ? { caseId: x.case_id } : undefined,
+      };
+    },
+  },
+  /* ------------------------------------------------------------ PR-DUYET · Đề xuất sửa thông tin HV (T44, Q6) */
+  {
+    loai: 'sua_thong_tin',
+    khiDuyet: (p, yc, v) => {
+      const d = JSON.parse(yc.du_lieu ?? '{}') as { truong: TruongDeXuat; moi: string | number };
+      if (!TRUONG_TU_AP.includes(d.truong)) {
+        /* Q6: lớp / lịch MT / khác cần chọn chi tiết ở màn gốc — Duyệt chỉ ghi nhận Quản lý đã làm gì. */
+        if ((v.ghiChu ?? '').length < 3) throw badRequest('Làm ở màn gốc trước, rồi ghi đã làm gì (ví dụ "Đã chuyển sang lớp MB FT 102") và bấm Duyệt.');
+        return;
+      }
+      const cyc = hienTaiCua(db(), yc.hoc_vien_id!).cycle;
+      if (!cyc) throw badRequest('Em không còn lộ trình đang chạy — không áp được đề xuất.');
+      if (d.truong === 'target') reviseTarget(p, cyc.id, { newTarget: Number(d.moi), reason: yc.ly_do });
+      else updateCycle(p, cyc.id, { route: String(d.moi) });
+    },
+    /* Em thôi học / lưu trữ, hoặc giá trị hiện tại đã bằng giá trị đề xuất (ai đó đã sửa rồi). */
+    chet: {
+      sql: `EXISTS (SELECT 1 FROM students s WHERE s.id = y.hoc_vien_id AND (s.status != 'active' OR s.archived_at IS NOT NULL))
+         OR (y.doi_tuong_loai = 'student:target' AND EXISTS (SELECT 1 FROM learning_cycles lc WHERE lc.student_id = y.hoc_vien_id
+               AND lc.status = 'active' AND lc.target_score = CAST(json_extract(y.du_lieu, '$.moi') AS REAL)))
+         OR (y.doi_tuong_loai = 'student:lo-trinh' AND EXISTS (SELECT 1 FROM learning_cycles lc WHERE lc.student_id = y.hoc_vien_id
+               AND lc.status = 'active' AND lc.route = json_extract(y.du_lieu, '$.moi')))`,
+      lyDo: 'Học viên không còn học hoặc thông tin đã được sửa',
+    },
+    moTa: (yc, ngu) => {
+      const d = JSON.parse(yc.du_lieu ?? '{}') as { truong: TruongDeXuat; cu: unknown; moi: unknown };
+      const nhan = NHAN_TRUONG_DE_XUAT[d.truong] ?? 'thông tin';
+      const tuAp = TRUONG_TU_AP.includes(d.truong);
+      const hien = (x: unknown) => (x === null || x === undefined || x === '' ? 'chưa có' : typeof x === 'number' ? x.toFixed(1) : String(x));
+      return {
+        tieuDe: d.truong === 'khac' ? `Đề xuất sửa: ${hien(d.moi)}` : `Đề xuất sửa ${nhan} ${hien(d.cu)} → ${hien(d.moi)}`,
+        dong: [`${nguoiXin(yc, ngu)} (${ngay(yc.tao_luc, ngu)}): “${yc.ly_do ?? ''}”`],
+        neuDuyet: tuAp
+          ? (d.truong === 'target' ? 'Target đổi từ hôm nay; kỳ vọng của các lượt đã thi giữ nguyên.' : 'Lộ trình đổi ngay.')
+          : 'Không tự áp — sửa ở màn gốc trước, rồi Duyệt kèm ghi chú đã làm gì.',
+        duLieu: { canGhiChu: !tuAp },
       };
     },
   },

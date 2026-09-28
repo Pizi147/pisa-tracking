@@ -84,13 +84,18 @@ export function examPlanOf(cycle: {
   return none;
 }
 
+/** PR-DUYET (T44, Câu 1 = B): GVCN không tự sửa target/lộ trình — gửi Đề xuất sửa. Chuyển lớp vẫn là của GVCN. */
+export const CHI_QL_SUA = 'Target và lộ trình do Quản lý sửa. Bấm "Đề xuất sửa" để gửi Quản lý duyệt.';
+
 export function createCycle(p: Principal, input: {
   studentId: number; route?: Route | null; targetScore?: number | null;
   examPeriodId?: number | null; startedAt?: string; note?: string | null;
 }) {
-  require_(p, PERMISSIONS.STUDENT_EDIT, { studentId: input.studentId },
-    'Bạn không có quyền mở lộ trình mới cho học viên này.');
   const conn = db();
+  /* PR-DUYET (T44): mở lộ trình MỚI cho em đã có lộ trình = đổi lộ trình → Quản lý (`cycle.edit`). Lộ trình đầu tiên lúc thêm HV giữ `student.edit`. */
+  const daCo = !!conn.prepare('SELECT 1 FROM learning_cycles WHERE student_id = ? LIMIT 1').get(input.studentId);
+  if (daCo) require_(p, PERMISSIONS.CYCLE_EDIT, { studentId: input.studentId }, CHI_QL_SUA);
+  else require_(p, PERMISSIONS.STUDENT_EDIT, { studentId: input.studentId }, 'Bạn không có quyền mở lộ trình mới cho học viên này.');
   const student = conn.prepare('SELECT * FROM students WHERE id = ?').get(input.studentId) as any;
   if (!student) throw notFound('Không tìm thấy học viên');
   if (input.examPeriodId && !periodById(Number(input.examPeriodId))) throw badRequest('Tuần dự kiến thi không hợp lệ.');
@@ -127,6 +132,11 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
   require_(p, PERMISSIONS.STUDENT_EDIT, { studentId: c.student_id });
+  /* PR-DUYET (T44): đổi target / lộ trình cần `cycle.edit` — chỉ khi giá trị THẬT SỰ đổi (panel gửi cả ô không sửa). Thi dự kiến giữ `student.edit` (Q7). */
+  const doiTarget = patch.targetScore !== undefined && Number(patch.targetScore ?? NaN) !== Number(c.target_score ?? NaN)
+    && !(patch.targetScore == null && c.target_score == null);
+  const doiLoTrinh = patch.route !== undefined && (patch.route ?? null) !== (c.route ?? null);
+  if (doiTarget || doiLoTrinh) require_(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id }, CHI_QL_SUA);
   if (patch.status !== undefined && !(CYCLE_STATUSES as readonly string[]).includes(String(patch.status))) {
     throw badRequest('Trạng thái lộ trình không hợp lệ.');
   }
@@ -377,8 +387,7 @@ export function reviseTarget(p: Principal, cycleId: number, input: {
 }) {
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
-  require_(p, PERMISSIONS.STUDENT_EDIT, { studentId: c.student_id },
-    'Bạn không có quyền đổi mục tiêu của lộ trình này.');
+  require_(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id }, CHI_QL_SUA);
   const target = input.newTarget === null || input.newTarget === ('' as any) ? null : Number(input.newTarget);
   if (target !== null && (!Number.isFinite(target) || target < 0 || target > 9)) {
     throw badRequest('Mục tiêu phải nằm trong khoảng 0–9.');

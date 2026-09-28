@@ -45,6 +45,7 @@ import * as profileSvc from '../students/profile.ts';
 import { hanhTrinhHocVien } from '../students/hanhTrinh.ts';
 import { thongBaoCua } from '../platform/thongBao.ts';
 import * as yeuCauSvc from '../duyet/yeuCau.ts';
+import * as deXuatSuaSvc from '../duyet/deXuatSua.ts';
 import * as classSvc from '../classes/classes.ts';
 import * as scheduleSvc from '../classes/schedule.ts';
 import * as intakeSvc from '../classes/intake.ts';
@@ -1286,6 +1287,12 @@ api.put('/cycles/:id/baseline', requireAuth, wrap((req) => {
 api.put('/cycles/:id/outcome', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return cycleSvc.setOutcome(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
+/** PR-DUYET (T44): GV của lớp gửi Đề xuất sửa thông tin HV — thành thẻ ở hộp Chờ duyệt. */
+api.post('/students/:id/de-xuat-sua', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return deXuatSuaSvc.guiDeXuatSua(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
 /** Đổi mục tiêu: có hiệu lực từ ngày ghi trở đi, KHÔNG chấm lại các lượt đã chốt. */

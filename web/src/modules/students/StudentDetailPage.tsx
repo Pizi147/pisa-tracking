@@ -233,6 +233,7 @@ export default function StudentDetailPage() {
               {/* ⋮ = MENU THẢ; mỗi mục mở THẲNG panel của việc đó (Q10). Không có quyền nào → Menu không vẽ gì. */}
               <Menu label="⋮" className="btn" items={mucQuanLyHocVien({
                 canEdit: data.viewer.canEdit, lopHoc: data.lopHoc ?? null, cycle: cy, status: data.status, coTheXoa: !!data.viewer.coTheXoa,
+                deXuatSua: !!data.viewer.coTheDeXuatSua,
               }).map((m) => ({
                 label: m.nhan, danger: m.nguyHiem, keTruoc: m.keTruoc,
                 onClick: () => (m.key === 'lo-trinh' ? setPlanOpen(true) : setViecQuanLy(m.key)),
@@ -367,6 +368,8 @@ export default function StudentDetailPage() {
           cycleId={cy.id}
           studentName={data.fullName}
           ratio={!!cy.ratio}
+          canEditCycle={!!data.viewer.canEditCycle}
+          onDeXuatSua={() => { setPlanOpen(false); setViecQuanLy('de-xuat-sua'); }}
           onClose={() => setPlanOpen(false)}
           onDone={reload}
         />
