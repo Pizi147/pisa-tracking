@@ -7,8 +7,10 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { fmtBand } from '../../lib/format.ts';
 import {
-  CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, NHAN_VIEC_QUAN_LY, mucQuanLyHocVien, ngay, type LopHocQuyen, type ViecQuanLy, dsLoi,
+  CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, NHAN_VIEC_QUAN_LY, mucQuanLyHocVien, type LopHocQuyen, type ViecQuanLy, dsLoi, docEmail,
 } from '@shared/domain/index.ts';
+import { ONgay } from '../../ui/ONgay.tsx';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { LoTrinhTiepPanel } from './LoTrinhTiepPanel.tsx';
 import { ChuyenLopPanel } from './ChuyenLopPanel.tsx';
 import { XoaHocVienPanel } from './XoaHocVienPanel.tsx';
@@ -29,7 +31,7 @@ export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempt
   viec: ViecQuanLy | null; onClose: () => void;
   student: {
     id: number; name: string; classId: number | null;
-    dob?: string | null; consultantName?: string | null; note?: string | null; status?: string;
+    dob?: string | null; email?: string | null; consultantName?: string | null; note?: string | null; status?: string;
   };
   /** Mã lớp hiện ở đầu ngăn. */
   lop?: string | null;
@@ -202,45 +204,50 @@ function KetLuanLoTrinhPanel({ studentName, lop, onClose, onDone, cycle, attempt
   );
 }
 
-/** Ngày sinh gõ dạng dd/mm/yyyy (ô ngày của trình duyệt hiện theo máy, G-6). Trả ISO, hoặc `null` khi rỗng, `undefined` khi sai dạng. */
-function docNgaySinh(s: string): string | null | undefined {
-  const t = s.trim();
-  if (!t) return null;
-  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(t);
-  if (!m) return undefined;
-  const iso = `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
-  const d = new Date(`${iso}T00:00:00Z`);
-  return Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== iso ? undefined : iso;
-}
-
 /**
  * THÔNG TIN HỌC VIÊN — mục 1 của menu (mục 5.1). Với lớp Fast Track, mục tiêu và kế hoạch thi thật sửa ở mục `Lộ trình`; với lớp thường,
  * giai đoạn đang học đọc ở đây, sửa `Lộ trình tiếp theo` ở mục riêng (PR-LT).
  */
 function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle }: ChungViec & {
-  student: { id: number; name: string; dob?: string | null; consultantName?: string | null; note?: string | null };
+  student: { id: number; name: string; dob?: string | null; email?: string | null; consultantName?: string | null; note?: string | null };
   cycle: any | null;
 }) {
   const toast = useToast();
+  const { homNay } = useNgayNghiepVu();
   const [fullName, setFullName] = useState(student.name);
-  const [dob, setDob] = useState(student.dob ? ngay(student.dob, null) : '');
+  /* Ô ngày thống nhất: giá trị ISO; gõ sai thì ô tự báo lỗi dưới ô và trả '' (xem `luu` — không để '' đó xoá mất ngày sinh). */
+  const [dob, setDob] = useState(student.dob ?? '');
+  const [email, setEmail] = useState(student.email ?? '');
+  const tuanCu: string = cycle?.startWeek?.week_start ?? '';
+  const [tuan, setTuan] = useState(tuanCu);
   const [consultantName, setConsultant] = useState(student.consultantName ?? '');
   const [note, setNote] = useState(student.note ?? '');
   const lf = useLoiForm();
   const [busy, setBusy] = useState(false);
-  const dobIso = docNgaySinh(dob);
   const loi = dsLoi([{ khoa: 'ho-ten', nhan: 'Họ tên', toiThieu: 1 }], { 'ho-ten': fullName });
-  if (dobIso === undefined) loi.push({ khoa: 'ngay-sinh', nhan: 'Ngày sinh', lyDo: 'Gõ dd/mm/yyyy, ví dụ 25/03/2008' });
+  const loiEmail = docEmail(email).loi;
+  if (loiEmail) loi.push({ khoa: 'email', nhan: 'Email', lyDo: loiEmail });
+  if (cycle && !tuan) loi.push({ khoa: 'tuan', nhan: 'Tuần bắt đầu', lyDo: 'Chưa chọn' });
   const thieu = loi.map((l) => l.nhan);
 
   const luu = async () => {
     lf.bam();
     if (thieu.length > 0) return;
+    /* Ô ngày sinh còn chữ mà giá trị rỗng = gõ sai (lỗi đang hiện dưới ô) — không gửi '' đi xoá ngày sinh cũ. */
+    if (!dob && (document.getElementById(lf.oId('ngay-sinh')) as HTMLInputElement | null)?.value.trim()) {
+      toast.push('error', 'Ngày sinh chưa đúng — sửa lại hoặc xoá hết ô.');
+      return;
+    }
     setBusy(true);
     try {
       await api.patch(`/students/${student.id}`, {
-        fullName, dob: dobIso ?? null, consultantName: consultantName || null, note: note || null,
+        fullName, dob: dob || null, email: email.trim() || null, consultantName: consultantName || null, note: note || null,
       });
+      /* Tuần bắt đầu nằm ở LỘ TRÌNH — chỉ gửi khi đổi (máy chủ kiểm lại, và tự dời lịch MT hệ thống đã xếp). */
+      if (cycle && tuan !== tuanCu) {
+        await api.patch(`/cycles/${cycle.id}`, { startWeek: tuan });
+        invalidate('/cycles'); invalidate('/attempts');
+      }
       invalidate('/students'); toast.push('ok', 'Đã lưu'); onDone();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
@@ -255,8 +262,13 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle }: Ch
         <Truong nhan="Họ tên" batBuoc loi={lf.loiCua(loi, 'ho-ten')}>
           <input className="field w-full" {...lf.o(loi, 'ho-ten')} value={fullName} onChange={(e) => setFullName(e.target.value)} />
         </Truong>
-        <Truong nhan="Ngày sinh" tuyChon loi={lf.loiCua(loi, 'ngay-sinh')}>
-          <input className="field w-full" {...lf.o(loi, 'ngay-sinh')} inputMode="numeric" value={dob} onChange={(e) => setDob(e.target.value)} placeholder="Ví dụ: 25/03/2008" />
+        <Truong nhan="Ngày sinh" tuyChon>
+          <ONgay kieu="ngay" toiDa={homNay} id={lf.oId('ngay-sinh')} value={dob} onChange={setDob} />
+        </Truong>
+        <Truong nhan="Email" tuyChon loi={lf.loiCua(loi, 'email')}
+          phu={!email.trim() && !student.email ? 'Chưa có email — bổ sung khi có' : undefined}>
+          <input className="field w-full" type="email" inputMode="email" autoComplete="off" {...lf.o(loi, 'email')}
+            value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Ví dụ: an.nguyen@gmail.com" />
         </Truong>
         <Truong nhan="Người tư vấn" tuyChon>
           <input className="field w-full" value={consultantName} onChange={(e) => setConsultant(e.target.value)} />
@@ -270,17 +282,19 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle }: Ch
           luat={cycle.ratio
             ? 'Giai đoạn là chương trình đang học; tuần kết thúc suy ra từ tuần bắt đầu và độ dài chương trình. Ghi dự định sau lớp này ở mục Lộ trình tiếp theo.'
             : 'Sửa mục tiêu, kế hoạch thi thật, điểm đầu vào và lịch MT ở mục Lộ trình. Đổi mục tiêu ở đâu cũng bắt ghi lý do và ngày hiệu lực.'}>
+          <Truong nhan="Tuần bắt đầu" batBuoc loi={lf.loiCua(loi, 'tuan')}>
+            <ONgay kieu="tuan" id={lf.oId('tuan')} onBlur={lf.roi('tuan')} invalid={!!lf.loiCua(loi, 'tuan')}
+              value={tuan} onChange={setTuan} />
+          </Truong>
           {cycle.ratio ? (
             <p className="m-0 text-sm text-slate-200">
               {cycle.programmeName ?? cycle.label}
-              {cycle.startWeek && <span className="text-slate-500"> · bắt đầu {cycle.startWeek.code}</span>}
               {cycle.endWeek && <span className="text-slate-500"> · kết thúc {cycle.endWeek.code}</span>}
             </p>
           ) : (
             <p className="m-0 text-sm text-slate-200">
               {cycle.label}
               {cycle.target !== null && cycle.target !== undefined && <span className="text-slate-500"> · mục tiêu {fmtBand(cycle.target)}</span>}
-              {cycle.startWeek && <span className="text-slate-500"> · vào học {cycle.startWeek.code}</span>}
               {cycle.examPlan?.confidence !== 'none' && <span className="text-slate-500"> · dự kiến thi {cycle.examPlan?.label}</span>}
             </p>
           )}
