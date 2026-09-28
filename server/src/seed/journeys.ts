@@ -1,3 +1,5 @@
+import type { Route } from '../../../shared/domain/index.ts';
+
 /**
  * BỘ DEMO DỰNG TỪ HÀNH TRÌNH — mục 11.
  *
@@ -158,7 +160,7 @@ export type CaseSeed = {
 
 export type CycleSeed = {
   seq: number;
-  route?: 'LT1' | 'LT2' | null;
+  route?: Route | null;
   target?: number | null;
   /** Tuần bắt đầu học của lộ trình (thứ Hai). */
   startWeek?: string | null;
@@ -223,7 +225,7 @@ export const TEACHERS = [
 ] as const;
 
 export type ClassSeed = {
-  code: string; branch: string; kind: string; route: 'LT1' | 'LT2' | null;
+  code: string; branch: string; kind: string; route: Route | null;
   isFastTrack: boolean;
   /** Thứ Hai của tuần khai giảng. */
   startDate: string;
@@ -235,7 +237,7 @@ export type ClassSeed = {
 };
 
 /**
- * MƯỜI BA LỚP, trong đó hai lớp đã kết thúc — chúng tồn tại vì hành trình J01 đi qua đó,
+ * MƯỜI BỐN LỚP, trong đó hai lớp đã kết thúc — chúng tồn tại vì hành trình J01 đi qua đó,
  * và lịch sử của em phải mở lại được nguyên vẹn.
  *
  * Vài lớp CỐ TÌNH THIẾU NGƯỜI: nhãn "Thiếu GV W1, W2" và "Chưa có GVCN" chỉ chứng minh được
@@ -278,6 +280,13 @@ export const CLASSES: ClassSeed[] = [
       listening: 'T_LINH', reading: 'T_LINH', writing1: 'T_KHOA', writing2: 'T_KHOA', speaking: 'T_TRANG',
     },
     core: 'T_LINH',
+  },
+  {
+    /* Lớp lộ trình RF — chưa có HV: kỳ vọng và lịch MT của RF thuộc PR-MT. */
+    code: 'MB FT RF 12', branch: 'MB', kind: 'FT', route: 'RF', isFastTrack: true,
+    startDate: '2026-09-07', status: 'active',
+    teachers: { listening: 'T_HA', reading: 'T_KHOA', writing1: 'T_KHOA', writing2: 'T_LINH', speaking: 'T_TRANG' },
+    core: 'T_KHOA',
   },
   {
     code: 'MB FOU 12', branch: 'MB', kind: 'FOU', route: null, isFastTrack: false,
