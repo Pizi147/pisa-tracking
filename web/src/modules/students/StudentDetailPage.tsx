@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { Card, DaiChiXem, Empty, ErrorState, Info, Level, Outcome, Skeleton, Status, Th} from '../../ui/ui.tsx';
+import { BoLocDoan, Card, DaiChiXem, Empty, ErrorState, Info, Level, Outcome, Skeleton, Status, Th} from '../../ui/ui.tsx';
 import { Modal } from '../../ui/Drawer.tsx';
 import { api, invalidate } from '../../lib/api.ts';
 import { cuonOnDinh } from '../../lib/cuonOnDinh.ts';
@@ -224,8 +224,8 @@ export default function StudentDetailPage() {
 
             <div className="flex flex-wrap gap-2 items-start">
               {data.journeyStrip?.length > 1 && (
-                <button className={`btn ${cycleOpen ? 'btn-primary' : ''}`}
-                  onClick={() => setCycleOpen(!cycleOpen)}>Lộ trình</button>
+                <button type="button" className="btn" aria-expanded={cycleOpen}
+                  onClick={() => setCycleOpen(!cycleOpen)}>Lộ trình <span aria-hidden className="text-[10px] text-slate-400">{cycleOpen ? '▾' : '▸'}</span></button>
               )}
               {data.viewer.canReport && !data.lopHoc?.chiXem && (
                 <button className="btn btn-primary" onClick={() => setReportOpen(true)}>+ Case</button>
@@ -248,16 +248,8 @@ export default function StudentDetailPage() {
             <div className="flex flex-wrap items-center gap-1.5 mt-3 pt-3 border-t"
                  style={{ borderColor: 'var(--line)' }}>
               <span className="text-[11px] text-slate-500 mr-1">Chọn lộ trình để xem</span>
-              {data.journeyStrip.map((j: any, i: number) => (
-                <span key={j.id} className="flex items-center gap-1.5">
-                  {i > 0 && <span className="text-slate-700" aria-hidden>→</span>}
-                  <button className={`btn btn-sm ${j.id === cy?.id ? 'btn-primary' : ''}`}
-                    onClick={() => setCycle(j.id)}>
-                    {j.label}
-                    {j.current && <span className="opacity-70 ml-1">· đang học</span>}
-                  </button>
-                </span>
-              ))}
+              <BoLocDoan ariaLabel="Chọn lộ trình để xem" value={String(cy?.id ?? '')} onChange={(k) => setCycle(Number(k))}
+                muc={data.journeyStrip.map((j: any) => ({ key: String(j.id), nhan: j.current ? `${j.label} · đang học` : j.label }))} />
             </div>
           )}
         </div>

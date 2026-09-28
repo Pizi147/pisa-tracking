@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Card, Empty, Field, Forbidden, Info, SectionNote, Skeleton, Th} from '../../ui/ui.tsx';
-import { Drawer } from '../../ui/Drawer.tsx';
+import { BoLocDoan, Card, Empty, Field, Forbidden, Info, NutChon, SectionNote, Skeleton, Th} from '../../ui/ui.tsx';
+import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { fmtDate, skillLabel } from '../../lib/format.ts';
 import { PERMISSION_LABEL, ROLES, ROLE_LABEL, ngay, roleLabel, type Role } from '@shared/domain/index.ts';
 import { MenuDong } from '../../ui/MenuDong.tsx';
@@ -87,11 +87,9 @@ export function AccountsAdmin() {
       <Card title={`Tài khoản (${rows.length})`} bodyClass="p-0"
         action={
           <span className="flex flex-wrap items-center gap-1.5">
-            <button type="button" className={`btn btn-sm ${loc === 'dang-dung' ? 'btn-primary' : ''}`} aria-pressed={loc === 'dang-dung'}
-              onClick={() => setLoc('dang-dung')}>Đang dùng ({dangDung.length})</button>
-            <button type="button" className={`btn btn-sm ${loc === 'da-xoa' ? 'btn-primary' : ''}`} aria-pressed={loc === 'da-xoa'}
-              onClick={() => setLoc('da-xoa')}>Đã xoá ({daXoa.length})</button>
-            <button className="btn btn-sm btn-primary" onClick={() => setCreating(true)}>+ Tạo tài khoản</button>
+            <BoLocDoan ariaLabel="Lọc tài khoản" value={loc} onChange={setLoc}
+              muc={[{ key: 'dang-dung', nhan: 'Đang dùng', so: dangDung.length }, { key: 'da-xoa', nhan: 'Đã xoá', so: daXoa.length }]} />
+            <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => setCreating(true)}>+ Tạo tài khoản</button>
           </span>
         }>
         <div className="table-scroll">
@@ -143,7 +141,7 @@ export function AccountsAdmin() {
                       <span className="text-xs text-slate-500">Đã xoá {ngay(u.deletedAt)}</span>
                     ) : (
                       <span className="inline-flex items-center gap-1.5">
-                        <button className="btn btn-sm" onClick={() => setEditing(u)}>Sửa</button>
+                        <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setEditing(u)}>Sửa</button>
                         <MenuDong nhan="Thêm thao tác" muc={[{ key: 'xoa', nhan: 'Xoá tài khoản', nguyHiem: true, onChon: () => setXoaId(u.id) }]} />
                       </span>
                     )}
@@ -226,15 +224,14 @@ function PendingRow({ user, branches, onDone }: {
         <span className="text-[11px] text-slate-500 mr-2">Chi nhánh (người đăng ký tự khai, sửa được):</span>
         <span className="inline-flex flex-wrap gap-1 align-middle">
           {branches.map((b) => (
-            <button key={b.code} type="button"
-              className={`btn btn-sm ${picked.has(b.code) ? 'btn-primary' : ''}`}
+            <NutChon key={b.code} nho chon={picked.has(b.code)}
               onClick={() => setPicked((s) => {
                 const next = new Set(s);
                 if (next.has(b.code)) next.delete(b.code); else next.add(b.code);
                 return next;
               })}>
               {b.code}
-            </button>
+            </NutChon>
           ))}
         </span>
       </div>
@@ -305,17 +302,12 @@ function AccountDialog({ account, branches, onClose, onDone }: {
   };
 
   return (
-    <Drawer
-      open onClose={onClose} width="max-w-2xl"
-      title={editing ? 'Sửa tài khoản' : 'Tạo tài khoản'}
-      subtitle={editing ? account!.fullName : undefined}
-      footer={
-        <>
-          <button className="btn" onClick={onClose} disabled={busy}>Đóng</button>
-          <button className="btn btn-primary" onClick={save} disabled={busy}>Lưu</button>
-        </>
-      }>
-      <div className="space-y-4">
+    <KhungPanel tieuDe={editing ? 'Sửa tài khoản' : 'Tạo tài khoản'} hocVien={editing ? account!.fullName : null} rong="rong" onDong={onClose}
+      chan={{
+        huy: { nhan: 'Đóng', onClick: onClose, disabled: busy },
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={save} disabled={busy}>Lưu</button>,
+      }}>
+      <div className="space-y-4 pt-3">
         {!editing && (
           <>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -362,8 +354,7 @@ function AccountDialog({ account, branches, onClose, onDone }: {
                   <span className="text-xs text-slate-400">Toàn hệ thống — không gắn chi nhánh</span>
                 ) : (
                   branches.map((b) => (
-                    <button key={b.code} type="button"
-                      className={`btn btn-sm ${g.branches.has(b.code) ? 'btn-primary' : ''}`}
+                    <NutChon key={b.code} nho chon={g.branches.has(b.code)}
                       onClick={() => setGrants(grants.map((x, j) => {
                         if (j !== i) return x;
                         const next = new Set(x.branches);
@@ -371,7 +362,7 @@ function AccountDialog({ account, branches, onClose, onDone }: {
                         return { ...x, branches: next };
                       }))}>
                       {b.code}
-                    </button>
+                    </NutChon>
                   ))
                 )}
                 <button className="btn btn-sm btn-ghost ml-auto" type="button"
@@ -434,6 +425,6 @@ function AccountDialog({ account, branches, onClose, onDone }: {
           </>
         )}
       </div>
-    </Drawer>
+    </KhungPanel>
   );
 }

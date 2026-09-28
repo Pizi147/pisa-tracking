@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
-import { Drawer } from '../../ui/Drawer.tsx';
+import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { WeekPicker } from '../../ui/Filters.tsx';
 import { useToast } from '../../ui/Toast.tsx';
+import { ONgay } from '../../ui/ONgay.tsx';
 import { Empty, Field, SectionNote, Skeleton, Status, Th} from '../../ui/ui.tsx';
 import { fmtDate } from '../../lib/format.ts';
 import { BASELINE_SOURCES, BASELINE_SOURCE_LABEL } from '@shared/domain/index.ts';
@@ -90,19 +91,13 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onClose, onDone 
   ).length;
 
   return (
-    <Drawer
-      open onClose={onClose} width="max-w-2xl"
-      title="Lộ trình"
-      subtitle={studentName}
-      footer={
-        <>
-          <button className="btn" onClick={onClose} disabled={busy}>Đóng</button>
-          <button className="btn btn-primary" onClick={save} disabled={busy}>Lưu</button>
-        </>
-      }
-    >
-      {cycle.loading ? <Skeleton rows={6} /> : (
-        <div className="space-y-4">
+    <KhungPanel tieuDe="Lộ trình" hocVien={studentName} rong="rong" onDong={onClose}
+      chan={{
+        huy: { nhan: 'Đóng', onClick: onClose, disabled: busy },
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={save} disabled={busy}>Lưu</button>,
+      }}>
+      {cycle.loading ? <div className="pt-3"><Skeleton rows={6} /></div> : (
+        <div className="space-y-4 pt-3">
           <Field as="div" label="Tuần bắt đầu học" required
             hint="Tuần này là TUẦN HỌC THỨ 1 của em. Lịch MT mặc định tính ra từ đây.">
             <WeekPicker periodId={startPeriodId} label={null}
@@ -122,8 +117,7 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onClose, onDone 
             <>
               <Field label="Tháng dự kiến thi"
                 hint="Biết được ngay lúc tư vấn. Đủ để xếp lịch cả khoá.">
-                <input type="month" className="field w-full" value={examMonth}
-                  onChange={(e) => { setTouched(true); setExamMonth(e.target.value); }} />
+                <ONgay kieu="thang" value={examMonth} onChange={(v) => { setTouched(true); setExamMonth(v); }} />
               </Field>
               <Field as="div" label="Tuần dự kiến thi"
                 hint="Chốt được thì hệ thống mới đếm ngược. Chưa chốt cứ để trống.">
@@ -218,7 +212,7 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onClose, onDone 
           )}
         </div>
       )}
-    </Drawer>
+    </KhungPanel>
   );
 }
 
@@ -296,8 +290,7 @@ function TargetAndBaseline({ cycleId, cy, onDone }: {
           </Field>
           <Field label="Có hiệu lực từ ngày" required
             hint="Các lượt trước ngày này giữ nguyên kỳ vọng cũ.">
-            <input type="date" className="field" value={effectiveFrom}
-              onChange={(e) => setEffectiveFrom(e.target.value)} />
+            <ONgay kieu="ngay" value={effectiveFrom} onChange={setEffectiveFrom} />
           </Field>
           <button className="btn btn-primary btn-sm" disabled={busy || !reason.trim() || !newTarget}
             onClick={saveTarget}>

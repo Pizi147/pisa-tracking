@@ -6,6 +6,7 @@ import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm, type MucThieu } from '../../ui/loiForm.tsx';
 import { WeekPicker } from '../../ui/Filters.tsx';
 import { useToast } from '../../ui/Toast.tsx';
+import { NutChon } from '../../ui/ui.tsx';
 import {
   CHO_TAO_PRE_FOU, ENTRY_SKILLS, PROGRAMME_TEMPLATES,
   chuanHoaMaLop, dsLoi, ghepMaLop, kiemPhanCong, kiemSoLop, kyHieuLop, locSoLop, oPhanCong, type LoiTruong, type OPhanCong,
@@ -210,26 +211,17 @@ export function LuoiPhanCong({ oList, chon, onChon, nguoi, loi, oId, nhanTrong, 
   );
 }
 
-/** Nút phân đoạn: mục đang chọn viền + nền accent nhạt (không `btn-primary` — B3). */
+/** Một hàng lựa chọn trong form: `NutChon` (đang chọn nền ink-800 + viền teal + ✓, không `btn-primary` — B3, Q19). */
 export function PhanDoan({ nhan, giaTri, onChon, muc }: {
   nhan: string; giaTri: string; onChon: (v: string) => void;
   muc: { v: string; nhan: string; tat?: boolean; title?: string }[];
 }) {
   return (
-    <div className="inline-flex overflow-hidden rounded-lg border" style={{ borderColor: 'var(--line-strong)' }} role="group" aria-label={nhan}>
-      {muc.map((m) => {
-        const on = m.v === giaTri;
-        return (
-          <button key={m.v} type="button" aria-pressed={on} disabled={m.tat} title={m.title}
-            className={`min-h-[44px] border-0 border-r px-3 text-xs font-semibold last:border-r-0 disabled:opacity-40 sm:min-h-[30px] ${on ? 'text-slate-100' : 'text-slate-400'}`}
-            style={{
-              borderColor: 'var(--line-strong)',
-              background: on ? 'var(--accent-soft)' : 'transparent',
-              boxShadow: on ? 'inset 0 0 0 1px var(--accent-line)' : undefined,
-            }}
-            onClick={() => onChon(m.v)}>{m.nhan}</button>
-        );
-      })}
+    <div className="flex flex-wrap gap-1.5" role="group" aria-label={nhan}>
+      {muc.map((m) => (
+        <NutChon key={m.v} nho chon={m.v === giaTri} disabled={m.tat} title={m.title} className="disabled:opacity-40"
+          onClick={() => onChon(m.v)}>{m.nhan}</NutChon>
+      ))}
     </div>
   );
 }

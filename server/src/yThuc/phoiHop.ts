@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   COORDINATION_KINDS, COORDINATION_KIND_LABEL, COORDINATION_REMOVE_REASON_LABEL, COORDINATION_STATUS_LABEL,
-  COORDINATION_USER_REMOVE_REASONS, ENTRY_SKILL_LABEL, coordinationSummary, reasonNeedsText, sosCoordinationFor,
+  COORDINATION_USER_REMOVE_REASONS, ENTRY_SKILL_LABEL, coordinationSummary, kiemGhiRoKhac, reasonNeedsText, sosCoordinationFor,
   type CoordinationKind, type CoordinationRemoveReason, type CoordinationStatus, type EntrySkill,
 } from '../../../shared/domain/index.ts';
 import type { Principal } from '../permissions.ts';
@@ -237,7 +237,10 @@ export function addCoordination(p: Principal, attemptId: number, input: { kind?:
     throw badRequest(`Chọn loại việc: ${COORDINATION_KINDS.map((k) => COORDINATION_KIND_LABEL[k]).join(' · ')}.`);
   }
   const name = capText(input.customName, 100, 'Tên việc');
-  if (kind === 'other' && !name) throw badRequest('Việc loại "Khác" cần ghi tên việc.');
+  if (kind === 'other') {
+    const loi = kiemGhiRoKhac(name);
+    if (loi) throw badRequest(`Việc loại "Khác": ${loi}.`);
+  }
   if (kind !== 'other' && name) throw badRequest('Chỉ việc loại "Khác" mới có tên riêng.');
   if ((a.kind ?? 'mock') !== 'mock' || !(resultOf(a).sosLevel && resultOf(a).sosLevel! >= 1)) {
     throw badRequest('Chỉ lượt Mock Test Fast Track có SOS mới có Phối hợp SOS.');
@@ -303,7 +306,10 @@ export function removeCoordination(p: Principal, id: number, input: { reasonCode
     throw badRequest(`Chọn một lý do: ${COORDINATION_USER_REMOVE_REASONS.map((c) => COORDINATION_REMOVE_REASON_LABEL[c]).join(' · ')}.`);
   }
   const text = capText(input.reasonText, 300, 'Lý do');
-  if (reasonNeedsText(code) && !text) throw badRequest('Chọn "Khác" thì phải ghi rõ lý do bằng chữ.');
+  if (reasonNeedsText(code)) {
+    const loi = kiemGhiRoKhac(text);
+    if (loi) throw badRequest(`Lý do "Khác": ${loi}.`);
+  }
   tx(() => {
     db()
       .prepare(

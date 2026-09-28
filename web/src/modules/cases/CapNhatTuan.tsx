@@ -5,14 +5,17 @@ import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { QuaHan } from '../../ui/Nhan.tsx';
-import { ChonTuan, NgayDoiDuoc } from '../../ui/ChonNgay.tsx';
+import { ChonTuan } from '../../ui/ChonNgay.tsx';
+import { ONgay } from '../../ui/ONgay.tsx';
+import { OKhac } from '../../ui/OKhac.tsx';
+import { NutChon } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
   FOLLOWUP_OUTCOMES, INTERVENTION_KIND_LABEL, OUTCOME_MARK,
   NUT_LUU_KET_QUA, PLAN_DECISIONS, PLAN_DECISION_HINT, PLAN_DECISION_NGAN, PLAN_DECISION_NGHIA,
   RESCHEDULE_TARGETS, RESCHEDULE_TARGET_LABEL,
   decisionBlockedReason, decisionNeedsReason, deadlineView, interventionKindsFor, ngay, nhanTuanGhiKetQua, outcomeLabelFor,
-  nguoiThanhPayload, type NguoiChon, type PlanDecision, dsLoi, type LuatTruong,
+  nguoiThanhPayload, type NguoiChon, type PlanDecision, dsLoi, type LuatTruong, kiemGhiRoKhac, KHAC_TOI_THIEU,
 } from '@shared/domain/index.ts';
 
 /**
@@ -79,6 +82,8 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
   const kinds = interventionKindsFor();
   const [newKind, setNewKind] = useState<string>(kinds.selfServe[0]);
   const [newDesc, setNewDesc] = useState('');
+  /* PA mới là đề xuất "Khác" (T13): ô Tên đề xuất ngay dưới; máy chủ ghép "{tên} — {mô tả}" (Q9). */
+  const [newGhiRo, setNewGhiRo] = useState('');
   const [newNguoi, setNewNguoi] = useState<NguoiChon | null>({ kieu: 'toi' });
   const [newTarget, setNewTarget] = useState<string>(RESCHEDULE_TARGETS[0]);
   const lf = useLoiForm();
@@ -99,11 +104,12 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
     { khoa: 'ket-qua', nhan: 'Kết quả', chon: true },
     { khoa: 'tien-trien', nhan: 'Tiến triển', toiThieu: 8 },
     { khoa: 'quyet-dinh', nhan: 'Quyết định', chon: true },
+    ...(decision === 'replace' && newKind === 'other_proposal' ? [{ khoa: 'ghi-ro', nhan: 'Tên đề xuất', toiThieu: KHAC_TOI_THIEU }] : []),
     ...(decision === 'replace' ? [{ khoa: 'pa-moi', nhan: 'Nội dung PA mới', toiThieu: 8 }] : []),
     ...(needReason ? [{ khoa: 'ly-do', nhan: decision === 'adjust' ? 'Lý do điều chỉnh' : 'Lý do thay', toiThieu: 8 }] : []),
     ...(decision === 'ask_manager' ? [{ khoa: 'ly-do', nhan: 'Cần Quản lý giúp gì', toiThieu: 8 }] : []),
   ];
-  const loi = dsLoi(LUAT, { 'ket-qua': outcome, 'tien-trien': progress, 'quyet-dinh': decision, 'pa-moi': newDesc, 'ly-do': reason });
+  const loi = dsLoi(LUAT, { 'ket-qua': outcome, 'tien-trien': progress, 'quyet-dinh': decision, 'ghi-ro': newGhiRo, 'pa-moi': newDesc, 'ly-do': reason });
   if (decision === 'adjust') {
     if (!adjustChanged) loi.push({ khoa: 'noi-dung', nhan: 'Nội dung PA', lyDo: 'Đổi ít nhất một ô: nội dung, người làm hoặc hạn' });
     else if (descChanged && desc.trim().length < 8) loi.push({ khoa: 'noi-dung', nhan: 'Nội dung PA', lyDo: `Cần ít nhất 8 ký tự (đang có ${desc.trim().length})` });
@@ -136,6 +142,7 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
           kind: newKind, description: newDesc,
           ...nguoiThanhPayload(newNguoi),
           rescheduleTarget: newKind === 'reschedule_mt' ? newTarget : null,
+          ...(newKind === 'other_proposal' ? { ghiRoKhac: newGhiRo.trim() } : {}),
         };
       }
       await api.post(`/interventions/${pa.id}/result`, body);
@@ -164,10 +171,9 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
             <Truong nhan="Người thực hiện" as="div">
               <ChonNguoi nhom="giao_vien" value={nguoi} onChange={setNguoi} />
             </Truong>
-            <Truong nhan="Đến (hạn kết thúc PA)" as="div" loi={loiCua('han')}>
-              <div {...o('han')} tabIndex={-1} className="outline-none">
-                <ChonTuan moc="cuoi" catHomNay={false} lui={0} toi={12} value={due} onChange={setDue} ariaLabel="Đến (hạn kết thúc PA)" />
-              </div>
+            <Truong nhan="Đến (hạn kết thúc PA)" loi={loiCua('han')}>
+              <ChonTuan moc="cuoi" catHomNay={false} lui={0} toi={12} value={due} onChange={setDue} ariaLabel="Đến (hạn kết thúc PA)"
+                id={lf.oId('han')} onBlur={lf.roi('han')} invalid={!!loiCua('han')} />
             </Truong>
           </Hang2>
           <Truong nhan="Lý do điều chỉnh" batBuoc phu="Phải đổi ít nhất một trong ba ô trên" loi={loiCua('ly-do')}>
@@ -179,16 +185,21 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
     if (d === 'replace') {
       return (
         <div className="space-y-3">
-          <Truong nhan="PA mới" batBuoc>
-            <select className="field w-full" value={newKind} onChange={(e) => setNewKind(e.target.value)}>
-              <optgroup label="Bạn tự làm được">
-                {kinds.selfServe.map((k) => <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k] ?? k}</option>)}
-              </optgroup>
-              <optgroup label="Cần Quản lý duyệt">
-                {kinds.proposals.map((k) => <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k] ?? k} · cần QL duyệt</option>)}
-              </optgroup>
-            </select>
-          </Truong>
+          <div>
+            <Truong nhan="PA mới" batBuoc>
+              <select className="field w-full" value={newKind} onChange={(e) => setNewKind(e.target.value)}>
+                <optgroup label="Bạn tự làm được">
+                  {kinds.selfServe.map((k) => <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k] ?? k}</option>)}
+                </optgroup>
+                <optgroup label="Cần Quản lý duyệt">
+                  {kinds.proposals.map((k) => <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k] ?? k} · cần QL duyệt</option>)}
+                </optgroup>
+              </select>
+            </Truong>
+            <OKhac hien={newKind === 'other_proposal'} value={newGhiRo} onChange={setNewGhiRo} nhan="Tên đề xuất"
+              goiY="Ví dụ: Học kèm 1-1 với trợ giảng"
+              id={lf.oId('ghi-ro')} onBlur={lf.roi('ghi-ro')} loi={lf.hien('ghi-ro') ? kiemGhiRoKhac(newGhiRo) : null} />
+          </div>
           <Truong nhan="Nội dung" batBuoc phu="Ví dụ: 10 phút chữa câu mỗi buổi, hai bài viết lại mỗi tuần" loi={loiCua('pa-moi')}>
             <textarea className="field w-full" {...o('pa-moi')} rows={2} value={newDesc} onChange={(e) => setNewDesc(e.target.value)} />
           </Truong>
@@ -221,7 +232,7 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
       );
     }
     if (d === 'end') {
-      return <NgayDoiDuoc tien="Ngày kết thúc" value={endOn} onChange={setEndOn} />;
+      return <Truong nhan="Ngày kết thúc"><ONgay kieu="ngay" value={endOn} onChange={setEndOn} toiDa={homNay} /></Truong>;
     }
     return null;
   };
@@ -247,19 +258,17 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
         <div>
           <div {...o('ket-qua')} tabIndex={-1} className="grid grid-cols-2 gap-2 outline-none sm:grid-cols-4" role="group" aria-label={tuanGhi}>
             {FOLLOWUP_OUTCOMES.filter((o) => o !== 'insufficient').map((o) => (
-              <button key={o} type="button" aria-pressed={outcome === o}
-                className={`btn min-h-[44px] justify-center whitespace-nowrap px-1.5 text-xs sm:min-h-0 ${outcome === o ? 'btn-primary' : ''}`} onClick={() => pickOutcome(o)}>
+              <NutChon key={o} chon={outcome === o} onClick={() => pickOutcome(o)}
+                className="justify-center whitespace-nowrap px-1.5 text-xs">
                 {OUTCOME_MARK[o] ?? ''} {outcomeLabelFor(o)}
-              </button>
+              </NutChon>
             ))}
           </div>
-          <p className="m-0 mt-1.5 text-[11px] text-slate-500">
-            Chưa có bài để so?{' '}
-            <button type="button" aria-pressed={outcome === 'insufficient'}
-              className={`link appearance-none border-0 bg-transparent p-0 ${outcome === 'insufficient' ? 'font-bold text-slate-100' : ''}`}
-              onClick={() => pickOutcome('insufficient')}>
-              {outcomeLabelFor('insufficient')}{outcome === 'insufficient' ? ' ✓' : ''}
-            </button>
+          <p className="m-0 mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
+            Chưa có bài để so?
+            <NutChon nho chon={outcome === 'insufficient'} onClick={() => pickOutcome('insufficient')}>
+              {outcomeLabelFor('insufficient')}
+            </NutChon>
           </p>
           {loiCua('ket-qua') && <span className="mt-1 block text-[11px] text-late">{loiCua('ket-qua')}</span>}
         </div>
@@ -310,7 +319,7 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
         </Khoi>
       )}
       <div className="mt-3.5">
-        <NgayDoiDuoc tien="Ngày ghi" value={on} onChange={setOn} />
+        <Truong nhan="Ngày ghi"><ONgay kieu="ngay" value={on} onChange={setOn} toiDa={homNay} /></Truong>
       </div>
     </KhungPanel>
   );

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { Card, Empty, ErrorState, Info, Skeleton } from '../../ui/ui.tsx';
+import { BoLocDoan, Card, Empty, ErrorState, Info, Skeleton } from '../../ui/ui.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { DongThoiGian } from '../../ui/DongThoiGian.tsx';
@@ -188,38 +188,22 @@ export function ClassYThucCard({ classId }: { classId: number }) {
       {sub === 'violations' && (
         <div className="p-4 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex flex-wrap gap-1">
-              <button className={`btn btn-sm ${!category ? 'btn-primary' : ''}`} onClick={() => setCategory(null)}>Tất cả</button>
-              {VIOLATION_CATEGORIES.map((c) => (
-                <button key={c} className={`btn btn-sm ${category === c ? 'btn-primary' : ''}`} onClick={() => setCategory(c)}>
-                  {VIOLATION_CATEGORY_LABEL[c as ViolationCategory]}
-                </button>
-              ))}
-            </div>
-            <div className="flex gap-1">
-              <button className={`btn btn-sm ${mode === 'byStudent' ? 'btn-primary' : ''}`} onClick={() => setMode('byStudent')}>Theo học viên</button>
-              <button className={`btn btn-sm ${mode === 'byTime' ? 'btn-primary' : ''}`} onClick={() => setMode('byTime')}>Theo thời gian</button>
-            </div>
+            <BoLocDoan ariaLabel="Nhóm vi phạm" value={category ?? ''} onChange={(k) => setCategory(k || null)}
+              muc={[{ key: '', nhan: 'Tất cả' }, ...VIOLATION_CATEGORIES.map((c) => ({ key: c as string, nhan: VIOLATION_CATEGORY_LABEL[c as ViolationCategory] }))]} />
+            <BoLocDoan ariaLabel="Cách xem" value={mode} onChange={setMode}
+              muc={[{ key: 'byStudent', nhan: 'Theo học viên' }, { key: 'byTime', nhan: 'Theo thời gian' }]} />
           </div>
 
           {/* YT-12 (Q13): bốn chip bộ lọc phụ, áp cho cả hai chế độ. */}
-          <div className="flex flex-wrap gap-1">
-            {BO_LOC_PHU.map((b) => (
-              <button key={b} className={`btn btn-sm ${boLocPhu === b ? 'btn-primary' : ''}`}
-                title={b === 'qua-5-ngay' ? 'Vi phạm chưa xử lý quá 5 ngày' : undefined}
-                onClick={() => setBoLocPhu(b)}>
-                {BO_LOC_PHU_LABEL[b]}
-              </button>
-            ))}
+          <div>
+            <BoLocDoan ariaLabel="Lọc thêm" value={boLocPhu} onChange={setBoLocPhu}
+              muc={BO_LOC_PHU.map((b) => ({ key: b, nhan: BO_LOC_PHU_LABEL[b], title: b === 'qua-5-ngay' ? 'Vi phạm chưa xử lý quá 5 ngày' : undefined }))} />
           </div>
 
           {mode === 'byTime' && (
-            <div className="flex flex-wrap gap-1">
-              {(['7', '30', 'all'] as const).map((k) => (
-                <button key={k} className={`btn btn-sm ${khoang === k ? 'btn-primary' : ''}`} onClick={() => setKhoang(k)}>
-                  {KHOANG_LABEL[k]}
-                </button>
-              ))}
+            <div>
+              <BoLocDoan ariaLabel="Khoảng thời gian" value={khoang} onChange={setKhoang}
+                muc={(['7', '30', 'all'] as const).map((k) => ({ key: k, nhan: KHOANG_LABEL[k] }))} />
             </div>
           )}
 
@@ -323,7 +307,7 @@ export function ClassYThucCard({ classId }: { classId: number }) {
                                     <span className="block text-sm font-medium text-slate-100">{m.kindLabel}</span>
                                     <span className="block text-[11px] text-slate-500">Đang chuẩn bị · {m.violationCount} vi phạm</span>
                                     <span className="block mt-1">
-                                      <button type="button" className={`btn btn-sm ${d.canManage ? 'btn-primary' : ''}`} onClick={() => moPhuongAn(m)}>
+                                      <button type="button" className={d.canManage ? 'btn btn-sm btn-primary' : 'btn btn-sm'} onClick={() => moPhuongAn(m)}>
                                         {d.canManage ? 'Mở phương án' : 'Xem'}
                                       </button>
                                     </span>

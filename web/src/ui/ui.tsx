@@ -1,5 +1,7 @@
-import type { MouseEvent, ReactNode } from 'react';
+import { useId, useState, type MouseEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { chuTrangThai, type TrangThai } from '@shared/domain/index.ts';
+import { BaoOTrongNhan, coOTuNhan } from './ONgay.tsx';
 
 export function Card({ title, action, children, className = '', bodyClass = 'p-4' }: {
   title?: ReactNode; action?: ReactNode; children: ReactNode; className?: string; bodyClass?: string;
@@ -170,7 +172,7 @@ export function Info({ children, title, pending }: { children: ReactNode; title?
  * thái công việc, không phải một kết quả tốt: một phương án hoàn thành với kết quả "Kém hơn"
  * mà hiện màu xanh là nói dối người đọc. Kết quả có họ nhãn riêng ở ngay bên dưới.
  *
- *   xanh dương  đang thực hiện
+ *   trung tính  đang thực hiện (Q14: xanh dương chỉ dành cho ô điểm)
  *   vàng        đang chờ (chờ duyệt, chờ tới hạn)
  *   xám         đã hoàn thành; viền đứt = chưa bắt đầu
  */
@@ -178,7 +180,7 @@ const STATUS_MARK: Record<'doing' | 'waiting' | 'done' | 'idle', string> = {
   doing: '▶', waiting: '◷', done: '✓', idle: '·',
 };
 const STATUS_CLASS: Record<'doing' | 'waiting' | 'done' | 'idle', string> = {
-  doing: 'bg-doing-bg text-doing border-doing-line',
+  doing: 'bg-white/[.06] text-slate-200 border-transparent',
   waiting: 'bg-soon-bg text-soon border-soon-line',
   done: 'bg-done-bg text-done border-done-line',
   idle: 'bg-transparent text-faint border-dashed border-muted-line',
@@ -314,13 +316,21 @@ export function KpiTile({ label, value, tone = 'neutral', to, sub }: {
 export function Field({ label, children, hint, required, as = 'label' }: {
   label: string; children: ReactNode; hint?: string; required?: boolean; as?: 'label' | 'div';
 }) {
-  const Wrap = as;
+  /* Ô ngày bên trong báo id → nhãn không bọc nút lịch (`BaoOTrongNhan`, như `Truong`). Thẻ khung chỉ theo props (không dựng lại ô). */
+  const [idO, setIdO] = useState<string | null>(null);
+  const Wrap = as === 'div' || coOTuNhan(children) ? 'div' : 'label';
+  const idNhan = useId();
+  const troO = Wrap === 'div' ? idO : null;
+  const nhom = Wrap === 'div' && !idO ? { role: 'group', 'aria-labelledby': idNhan } : {};
+  const chu = <>{label}{required && <><span aria-hidden className="text-bad"> *</span><span className="sr-only"> (bắt buộc)</span></>}</>;
   return (
-    <Wrap className="block">
-      <span className="label">{label}{required && <span className="text-bad"> *</span>}</span>
-      {children}
-      {hint && <span className="block text-[11px] text-slate-500 mt-1">{hint}</span>}
-    </Wrap>
+    <BaoOTrongNhan.Provider value={setIdO}>
+      <Wrap className="block" {...nhom}>
+        {troO ? <label htmlFor={troO} className="label">{chu}</label> : <span id={idNhan} className="label">{chu}</span>}
+        {children}
+        {hint && <span className="block text-[11px] text-slate-500 mt-1">{hint}</span>}
+      </Wrap>
+    </BaoOTrongNhan.Provider>
   );
 }
 
@@ -444,4 +454,52 @@ export function ExamPlanText({ plan }: { plan?: { confidence: string; label: str
     return <span className="text-slate-300" title="Chưa chốt tuần thi nên chưa đếm ngược">{plan.label}</span>;
   }
   return <span className="text-slate-100 font-medium">{plan.label}</span>;
+}
+
+/** ĐANG CHỌN (UX-B B3, HE §2 "Đang chọn"): viền teal-600 + nền ink-800 + ✓ nhỏ + aria-pressed — KHÁC nút chính (xanh đặc = Lưu). */
+/* `!`: `.btn:hover:not(:disabled)` (index.css) mạnh hơn lớp Tailwind thường — không có `!` thì rê chuột là mất kiểu đang chọn. */
+const CHON = '!border-teal-600 !bg-ink-800 text-slate-100';
+type NutChonProps = {
+  chon: boolean; onClick: () => void; children: ReactNode; nho?: boolean; className?: string; disabled?: boolean; title?: string;
+};
+export function NutChon({ chon, onClick, children, nho, className = '', disabled, title }: NutChonProps) {
+  return (
+    <button type="button" aria-pressed={chon} onClick={onClick} disabled={disabled} title={title}
+      className={`btn ${nho ? 'btn-sm' : ''} min-h-[44px] gap-1 sm:min-h-0 ${chon ? CHON : ''} ${className}`}>
+      <span aria-hidden className={`text-[10px] leading-none text-teal-300 ${chon ? '' : 'invisible'}`}>✓</span>{children}
+    </button>
+  );
+}
+
+/** BỘ LỌC NÚT ĐOẠN (UX-E E6): một kiểu cho mọi bộ lọc; tab trang vẫn là `HangTab` gạch chân. */
+type BoLocDoanProps<K extends string> = {
+  muc: { key: K; nhan: string; so?: number | null; title?: string }[]; value: K; onChange: (k: K) => void; ariaLabel: string;
+};
+export function BoLocDoan<K extends string>({ muc, value, onChange, ariaLabel }: BoLocDoanProps<K>) {
+  return (
+    <div role="group" aria-label={ariaLabel} className="inline-flex max-w-full overflow-x-auto rounded-lg border" style={{ borderColor: 'var(--line-strong)' }}>
+      {muc.map((m, i) => {
+        const chon = m.key === value;
+        return (
+          <button key={m.key} type="button" aria-pressed={chon} title={m.title} onClick={() => onChange(m.key)} style={{ borderColor: 'var(--line)' }}
+            className={`inline-flex min-h-[44px] items-center gap-1 whitespace-nowrap px-3 text-xs font-semibold sm:min-h-[32px] ${i ? 'border-l' : ''} ${
+              chon ? 'bg-ink-800 text-slate-100 shadow-[inset_0_0_0_1px_theme(colors.teal.600)]' : 'bg-transparent text-slate-400 hover:text-slate-200'}`}>
+            <span aria-hidden className={`text-[10px] text-teal-300 ${chon ? '' : 'invisible'}`}>✓</span>{m.nhan}
+            {m.so != null && <span className="tabular-nums text-slate-500">{m.so}</span>}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** NHÃN TRẠNG THÁI CHÍNH (§7.3, brainstorm C.2) — một dòng một nhãn; màu điểm/SOS không dùng ở đây. */
+const NHAN_LOP: Record<TrangThai, string> = {
+  'can-lam': 'border-[color:var(--line-strong)] text-slate-200', 'dang-lam': 'border-transparent bg-white/[.06] text-slate-200',
+  'cho-duyet': 'border-wait-line bg-wait-bg text-wait', 'qua-han': 'border-late-line bg-late-bg text-late',
+  xong: 'border-transparent text-done', 'da-huy': 'border-transparent text-slate-500 line-through decoration-1',
+};
+export function NhanTrangThai({ t, soNgay, title }: { t: TrangThai; soNgay?: number | null; title?: string }) {
+  return <span title={title} className={`inline-flex items-center whitespace-nowrap rounded-md border px-1.5 py-0.5 text-[11.5px] font-semibold tabular-nums ${NHAN_LOP[t]}`}>
+    {chuTrangThai(t, soNgay)}</span>;
 }

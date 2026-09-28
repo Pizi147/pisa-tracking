@@ -177,7 +177,7 @@ export async function runPrLopTests(t: YThucTestKit) {
     for (const f of ['TeacherAssignPanel', 'SuaThongTinLopPanel', 'ClassCreatePanel']) {
       assert(/useLoiForm\(/.test(docSach(`${lopDir}${f}.tsx`)), `${f} chưa báo lỗi theo PR-N1 (useLoiForm)`);
     }
-    /* Chuyển tiếp là Drawer lỗi theo từng dòng HV (không phải form KhungPanel) — giữ lỗi tại dòng. */
+    /* Chuyển tiếp (KhungPanel longTrong) báo lỗi theo từng dòng HV (không phải form ô bắt buộc) — giữ lỗi tại dòng. */
     assert(/\bloi=/.test(tp), 'TransitionPanel chưa báo lỗi tại dòng');
     assert(/'phan-cong'/.test(docSach(lopDir + 'ClassOverviewPage.tsx')), 'hồ sơ lớp chưa nhận ?viec=phan-cong');
     const lop = conn.prepare(`SELECT id FROM classes WHERE code = 'MB FT 101'`).get() as any;

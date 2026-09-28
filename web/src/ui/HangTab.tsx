@@ -17,7 +17,7 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, ca
         const active = t.key === value;
         return (
           <button key={t.key} type="button" role="tab" aria-selected={active} onClick={() => onChange(t.key)}
-            className={`whitespace-nowrap px-3 py-2 -mb-px border-b-2 font-semibold appearance-none bg-transparent cursor-pointer ${
+            className={`min-h-[44px] whitespace-nowrap px-3 py-2 -mb-px sm:min-h-0 border-b-2 font-semibold appearance-none bg-transparent cursor-pointer ${
               cap === 'con' ? 'text-xs' : 'text-sm'
             } ${active ? 'border-[color:var(--accent)] text-slate-100' : 'border-transparent text-slate-400 hover:text-slate-200'}`}>
             {t.label}

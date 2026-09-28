@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Drawer } from '../../ui/Drawer.tsx';
+import { KhungPanel } from '../../ui/KhungPanel.tsx';
+import { ONgay } from '../../ui/ONgay.tsx';
 import { ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
 import {
   HUONG_CHUYEN_TIEP, kiemDongChuyenTiep, nhanHuong, nhanHuongNgan, tomTatChuyenTiep, tuanLich,
@@ -73,8 +74,8 @@ export function TransitionPanel({ classId, open, onClose, onDone }: {
   };
   /**
    * "+ Mở lớp mới" (K2-16, Q8) mở panel Tạo lớp (lớp thật, tạo ngay). Tạo xong: mọi dòng đang chọn "+ Mở lớp mới" và lớp đích
-   * chung nhận lớp đó; huỷ: bỏ chọn. Panel Tạo lớp là `KhungPanel`, Chuyển tiếp là `Drawer` (không ở `khoPanelChung`) nên hai
-   * panel chồng được mà Chuyển tiếp không mất state.
+   * chung nhận lớp đó; huỷ: bỏ chọn. Chuyển tiếp là `KhungPanel longTrong` (không ở `khoPanelChung`) nên panel Tạo lớp mở
+   * đè được mà Chuyển tiếp không mất state; khi Tạo lớp mở, `onDong` rỗng để Esc chỉ đóng panel trên.
    */
   const ganLopMoi = (v: number | '') => {
     setDongs((m) => Object.fromEntries(Object.entries(m).map(([k, d]) => [k, d.toClassId === 'new' ? { ...d, toClassId: v } : d])));
@@ -140,38 +141,38 @@ export function TransitionPanel({ classId, open, onClose, onDone }: {
 
   return (
     <>
-    <Drawer
-      open={open} onClose={taoLop ? () => {} : close} width="max-w-4xl"
-      title={data ? `Chuyển tiếp lớp · ${data.from.code} kết thúc ${data.tuanKetThuc ? tuanLich(data.tuanKetThuc, data.today) : ''} · ${students.length} HV` : 'Chuyển tiếp lớp'}
-      footer={buoc === 1 ? (
-        <>
-          <button className="btn" onClick={close} disabled={busy}>Đóng</button>
-          <button className="btn btn-primary" onClick={() => setBuoc(2)} disabled={coLoi || !data?.canEdit}
+    {open && (
+    <KhungPanel longTrong rong="rong" onDong={taoLop ? () => {} : close}
+      tieuDe={data ? `Chuyển tiếp lớp · ${data.from.code} kết thúc ${data.tuanKetThuc ? tuanLich(data.tuanKetThuc, data.today) : ''} · ${students.length} HV` : 'Chuyển tiếp lớp'}
+      chan={buoc === 1 ? {
+        huy: { nhan: 'Đóng', onClick: close, disabled: busy },
+        chinh: (
+          <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => setBuoc(2)} disabled={coLoi || !data?.canEdit}
             title={coLoi ? `Còn ${rows.filter((r) => r.loi).length} em chưa điền đủ` : undefined}>
             Tiếp tục
           </button>
-        </>
-      ) : (
-        <>
-          <button className="btn" onClick={() => setBuoc(1)} disabled={busy}>Quay lại</button>
-          <button className="btn btn-primary" onClick={submit} disabled={busy}>
+        ),
+      } : {
+        huy: { nhan: 'Quay lại', onClick: () => setBuoc(1), disabled: busy },
+        chinh: (
+          <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={submit} disabled={busy}>
             {busy ? 'Đang chuyển…' : `Xác nhận chuyển ${soDoiLop} HV`}
           </button>
-        </>
-      )}
+        ),
+      }}
     >
       {error && <ErrorState message={error.message} hint={error.hint} onRetry={reload} />}
       {loading && <Skeleton rows={8} />}
       {data && buoc === 1 && (
-        <div className="space-y-4">
+        <div className="space-y-4 pt-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs text-slate-500 m-0" title="Hệ thống không tự chuyển ai. Lớp cũ giữ nguyên trong lịch sử.">
               ⓘ Mỗi em chọn một hướng riêng. Chưa xác nhận thì chưa đổi gì.
             </p>
-            <label className="flex items-center gap-2">
-              <span className="label m-0">Ngày chuyển</span>
-              <input type="date" className="field" value={ngay} onChange={(e) => setNgay(e.target.value)} />
-            </label>
+            <div className="flex items-center gap-2">
+              <span className="label m-0" aria-hidden>Ngày chuyển</span>
+              <span className="w-44"><ONgay kieu="ngay" value={ngay} onChange={setNgay} ariaLabel="Ngày chuyển" /></span>
+            </div>
           </div>
 
           {data.alreadyLinked?.length > 0 && (
@@ -224,7 +225,7 @@ export function TransitionPanel({ classId, open, onClose, onDone }: {
         </div>
       )}
       {data && buoc === 2 && (
-        <div className="space-y-3">
+        <div className="space-y-3 pt-3">
           <div className="surface-2 rounded-lg p-3">
             <ul className="list-disc pl-5 m-0 space-y-1">
               {tomTat.cau.map((c, i) => <li key={i} className="text-sm text-slate-200">{c}</li>)}
@@ -235,7 +236,8 @@ export function TransitionPanel({ classId, open, onClose, onDone }: {
           </div>
         </div>
       )}
-    </Drawer>
+    </KhungPanel>
+    )}
     {open && taoLop && data && (
       <ClassCreatePanel moHoSo={false}
         macDinh={{ ...(data.goiYLopMoi ?? { branchId: data.from.branchId }), previousClassId: data.from.id }}
@@ -248,17 +250,22 @@ export function TransitionPanel({ classId, open, onClose, onDone }: {
 
 function CanDienThem({ s, d, suaDong }: { s: any; d: Dong; suaDong: (p: Partial<Dong>) => void }) {
   if (d.huong === 'fast_track') return (
-    <div className="flex flex-wrap gap-1.5">
-      <input className="field w-20" type="number" step="0.5" min={0} max={9} placeholder="Mục tiêu"
+    <div className="flex flex-wrap items-end gap-1.5">
+      <input className="field w-20 tabular-nums" type="number" step="0.5" min={0} max={9} placeholder="Mục tiêu" aria-label="Mục tiêu"
         value={d.mucTieu} onChange={(e) => suaDong({ mucTieu: e.target.value })} />
-      <input className="field w-28" type="month" placeholder="Dự kiến thi"
-        value={d.thangThi} onChange={(e) => suaDong({ thangThi: e.target.value })} />
+      <span className="block w-36">
+        <span className="block text-[10.5px] text-slate-500 mb-0.5" aria-hidden>Dự kiến thi</span>
+        <ONgay kieu="thang" value={d.thangThi} onChange={(v) => suaDong({ thangThi: v })} ariaLabel="Tháng dự kiến thi" />
+      </span>
     </div>
   );
   if (d.huong === 'bao_luu' || d.huong === 'xep_sau') return (
-    <div className="flex flex-wrap gap-1.5">
-      <input className="field flex-1 min-w-[8rem]" placeholder="Lý do" value={d.lyDo} onChange={(e) => suaDong({ lyDo: e.target.value })} />
-      <input className="field w-32" type="date" placeholder="Xem lại" value={d.ngayXemLai} onChange={(e) => suaDong({ ngayXemLai: e.target.value })} />
+    <div className="flex flex-wrap items-end gap-1.5">
+      <input className="field flex-1 min-w-[8rem]" placeholder="Lý do" aria-label="Lý do" value={d.lyDo} onChange={(e) => suaDong({ lyDo: e.target.value })} />
+      <span className="block w-40">
+        <span className="block text-[10.5px] text-slate-500 mb-0.5" aria-hidden>Xem lại</span>
+        <ONgay kieu="ngay" value={d.ngayXemLai} onChange={(v) => suaDong({ ngayXemLai: v })} ariaLabel="Ngày xem lại" />
+      </span>
     </div>
   );
   if (d.huong === 'dung_hoc') return (

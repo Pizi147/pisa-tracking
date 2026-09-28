@@ -27,16 +27,19 @@ Cụ thể hóa `PISA-Design-Plan-after-PR28.md` mục 18.1 thành thứ code đ
 
 ### Màu nền và bề mặt
 
+Màu nền thật khai báo **một chỗ** ở `web/src/index.css :root` (biến CSS). Bảng `ink` trong `tailwind.config.js`
+chỉ còn dùng cho màu "Đang chọn" (`ink-800`).
+
 | Token | Giá trị hiện có | Dùng ở đâu |
 |---|---|---|
-| Nền trang | `ink-950` | `body` |
-| Bề mặt nội dung | `ink-900` | Card, panel, bảng |
-| Bề mặt nổi | `ink-850` | Popover, dropdown, hàng đang hover |
-| Đang chọn | `ink-800` + viền `teal-600` | Tab đang mở, hàng đang chọn |
-| Viền | `ink-700` | Đường kẻ bảng, viền card |
+| Nền trang | `--bg` (`#0c1220`) | `body` |
+| Bề mặt nội dung | `--surface` (`#141d2f`) | Card (lớp `.card`), panel `KhungPanel`, bảng |
+| Bề mặt nổi | `--surface-2` (`#1a2437`, lớp `.surface-2`) | Popover, menu ⋯, lịch `LichNho`, nút thường (`.btn`), đầu cột bảng |
+| Đang chọn | `ink-800` + viền `teal-600` + dấu ✓ nhỏ | Nút đang chọn `NutChon`, bộ lọc `BoLocDoan`, ngày/tuần đang chọn trên lịch |
+| Viền | `--line` (mọi viền mặc định), `--line-strong` (viền panel, ô nhập, nút) | Đường kẻ bảng, viền card |
 
-Chỉ ba mức nền nội dung. Thấy một sắc xanh thứ tư trong màn nào là lỗi cần gỡ, không phải
-phong cách riêng của màn đó (design plan 18.1).
+Hàng đang rê chuột dùng nền trắng rất mờ (`bg-white/5`), không phải một mức nền riêng. Chỉ ba mức nền nội dung.
+Thấy một sắc xanh thứ tư trong màn nào là lỗi cần gỡ, không phải phong cách riêng của màn đó (design plan 18.1).
 
 ### Màu ý nghĩa — chỉ bốn, và chỉ cho điểm số
 
@@ -77,10 +80,38 @@ bảng có giao năm. Mã tuần luôn kèm khoảng ngày: `W3 SEP 2026 · 14�
 
 `Card` · `Level` · `Task` · `Info` · `Status` · `Alert` · `Outcome` · `Empty` · `ErrorState` ·
 `Forbidden` · `Skeleton` · `KpiTile` · `Field` · `SectionNote` · `DataCell` · `Th` ·
-`BandCell` · `ExamPlanText`. Thêm ở `web/src/ui/`: `Drawer` · `Filters` (chứa week picker) ·
-`PeoplePicker` · `SaveState` · `Toast`.
+`BandCell` · `ExamPlanText`. Thêm ở `web/src/ui/`: `KhungPanel` (khung panel duy nhất) · `Modal` và
+`ConfirmDialog` (trong file `Drawer.tsx`) · `Filters` (chứa `WeekPicker`) · `PeoplePicker` (`ChonNguoi`) ·
+`ChonNgay` (`ChonNgayGan` · `ChonTuan` · `ChonThang` — nay chỉ là lớp bọc `ONgay`) · `MenuDong` · `HangTab` ·
+`SaveState` · `Toast`.
 
-### Cần thêm — năm component, mỗi cái đóng một lỗi đã có thật
+`Drawer` (panel cũ) **không dùng cho chỗ mới**: PR-NEN đã chuyển mọi panel sang `KhungPanel` (UX-E E1). Hàm `Drawer` còn
+tạm trong `Drawer.tsx` (đánh dấu bỏ) chỉ vì `TransitionPanel` và `ClassCreatePanel` đang chờ PR-LOP; PR-LOP merge xong thì
+xoá.
+
+### Thêm ở PR-NEN — đặc tả 27/09 §7.6
+
+Đặc tả 27/09 §7.6 thay luật cũ "không thêm component thứ sáu trong đợt này". Luật "component mới chỉ vào bộ dùng chung khi
+có ít nhất hai màn gọi nó" vẫn giữ.
+
+| Thành phần | File | Dùng cho |
+|---|---|---|
+| `ONgay` | `web/src/ui/ONgay.tsx` | Mọi ô ngày · tuần · tháng · ngày-hoặc-tháng: gõ `dd/mm/yyyy` hoặc bấm biểu tượng lịch (mục 9) |
+| `LichNho` | `web/src/ui/LichNho.tsx` | Lịch tự vẽ, lõi chung của `ONgay` và `WeekPicker`: lưới tháng, chọn cả tuần, hàng "Gần đây" |
+| `OKhac` | `web/src/ui/OKhac.tsx` | Chọn "Khác" → ô chữ nhỏ ngay dưới (nhãn mặc định `Ghi rõ`, mỗi chỗ có thể đặt nhãn riêng), bắt buộc ≥ 3 ký tự (mục 10) |
+| `NutChon` | `web/src/ui/ui.tsx` | Lựa chọn trong form (chọn một trong vài nút): đang chọn = nền `ink-800` + viền `teal-600` + ✓, khác hẳn nút chính (Lưu). Dấu ✓ luôn giữ chỗ nên chữ không nhảy khi chọn |
+| `BoLocDoan` | `web/src/ui/ui.tsx` | Một kiểu cho mọi bộ lọc dạng nút liền nhau (có số đếm bên cạnh). Tab của trang vẫn là `HangTab` gạch chân |
+| `NhanTrangThai` | `web/src/ui/ui.tsx` | Sáu nhãn trạng thái chung: `Cần làm` · `Đang làm` · `Chờ duyệt` · `Quá hạn` (kèm số ngày) · `Xong` · `Đã huỷ`. Đang áp ở Phối hợp SOS, bảng Case, Học viên & Lớp (góc SOS); Vận hành giữ `Status` |
+| `useGiuFocus` | `web/src/ui/giuFocus.ts` | Giữ focus trong panel, Modal, lịch: Tab đi vòng bên trong, đóng thì trả focus (mục 10) |
+
+`ChonNguoi` đổi cách dùng: vào ô là có danh sách ngay (chưa gõ: 20 người, giáo viên cùng lớp đứng đầu), không còn bắt gõ 3
+ký tự. Chỗ nhận người ngoài hệ thống luôn có dòng cuối `Dùng tên ngoài hệ thống: «tên»` (tên ≥ 2 ký tự). Người theo dõi
+việc Vận hành và người phụ trách xử lý Ý thức **chỉ nhận tài khoản**, vì họ phải đăng nhập mới thấy và nhận việc (Q13).
+Việc Vận hành chưa nhận tên ngoài hệ thống: cần thêm cột trong cơ sở dữ liệu, nên chuyển sang PR-DUYET (Q12).
+
+`Status kind="doing"` (Đang thực hiện) đổi sang màu trung tính — xanh dương chỉ dành cho ô điểm (Q14).
+
+### Năm component của PR-E — mỗi cái đóng một lỗi đã có thật
 
 | Component | Đóng lỗi nào | Mục |
 |---|---|---|
@@ -90,8 +121,8 @@ bảng có giao năm. Mã tuần luôn kèm khoảng ngày: `W3 SEP 2026 · 14�
 | `<SoLieu>` | F01/F10 — hai màn cùng tên số, khác tập | `HOP_DONG_SO_LIEU.md` |
 | `<NgayNghiepVu>` | MT-P10 — ngày demo 14/09, thao tác 19/09 | 7 |
 
-Không thêm component thứ sáu trong đợt này. Component mới chỉ vào bộ dùng chung khi có **ít
-nhất hai màn** gọi nó.
+~~Không thêm component thứ sáu trong đợt này.~~ (đợt PR-E; đã thay bởi đặc tả 27/09 §7.6 — xem bảng PR-NEN ở trên.)
+Component mới chỉ vào bộ dùng chung khi có **ít nhất hai màn** gọi nó.
 
 ---
 
@@ -102,17 +133,22 @@ nhất hai màn** gọi nó.
 <Han loai="nhap-diem" han="2026-09-23" hen="2026-09-30" />
 ```
 
-`loai` là **bắt buộc**, không có giá trị mặc định. Sáu loại, đúng sáu đồng hồ khác nhau trong
-rule book:
+`loai` là **bắt buộc**, không có giá trị mặc định. Bảng có mười loại: sáu đồng hồ đã gắn theo rule book, bốn loại PR-NEN
+thêm sẵn tên (Q16) để các PR sau gắn luật. Ngoài bảng còn `viec-van-hanh` (hạn việc Vận hành, PR-Ra) và `du-kien-ket-thuc` (không phải hạn, tả ngay dưới bảng). Danh sách trong mã:
+`DEADLINE_KINDS` ở `shared/domain/display.ts`.
 
 | `loai` | Nhãn hiển thị | Luật | Nguồn |
 |---|---|---|---|
-| `xac-minh-sos` | `Xác minh nguyên nhân · hạn {ngày}` | 3 ngày tính cả ngày đầu | RB 3.4 |
+| `xac-minh-sos` | `Xác nhận nguyên nhân · hạn {ngày}` | 3 ngày tính cả ngày đầu | RB 3.4 |
 | `lap-pa` | `Cần có phương án · hạn {ngày}` | 5 ngày Cần chú ý / 3 ngày Gấp | RB 4.2 |
 | `cap-nhat-pa` | `Ghi kết quả tuần W4 SEP · hạn hết T2 28/09` | Hằng tuần, hết **Thứ Hai** tuần sau | §5.6 R-PA1 (PR-N1) |
 | `thuc-hien-y-thuc` | `Thực hiện xong · hạn {ngày}` | 3 ngày Gấp / 5 ngày Cần chú ý | RB 6.2 |
 | `hoan-thanh-y-thuc` | `Kết luận đợt · hạn {ngày}` | 7 ngày tính cả ngày mở | RB 6.2 |
 | `nhap-diem` | `Hạn nhập điểm {ngày}` | FT: hết thứ Tư tuần kế tuần thi | RB 9.2 |
+| `duyet` | `Duyệt · hạn {ngày}` | chưa gắn — PR sau | K1-56, T66 (PR-NEN Q16) |
+| `xu-ly-vi-pham` | `Xử lý vi phạm · hạn {ngày}` | chưa gắn — PR sau | K1-56 (PR-NEN Q16) |
+| `ke-hoach-bo-tro` | `Nộp kế hoạch bổ trợ · hạn {ngày}` | chưa gắn — PR sau | K1-56 (PR-NEN Q16) |
+| `mini-test` | `Mini Test · hạn {ngày}` | chưa gắn — PR sau | T66 (PR-NEN Q16) |
 
 Thêm một giá trị **không phải hạn**: `du-kien-ket-thuc` → `Dự kiến kết thúc {ngày}`, luôn tone
 trung tính, **không bao giờ đỏ**, không bao giờ ghi "quá hạn". Đây là chỗ F11 sai: dự kiến kết
@@ -205,9 +241,51 @@ Mẫu câu rỗng đã chốt (design plan 20.5): `Chưa có phương án hỗ t
 
 ---
 
-## 9. Bộ chọn tuần — sửa bố cục, không viết lại
+## 9. Ô ngày và bộ chọn tuần
 
-Lỗi hiện tại (design plan 22.3): nút `Trước` một hàng, trường tuần một hàng, `Sau`/`Tuần này`
+### Ô ngày `ONgay` (PR-NEN, T11)
+
+Một ô cho **mọi** ngày, tuần, tháng trên web (trừ thanh ngày của bản demo, Q3). Bốn kiểu: `ngay` · `tuan` · `thang` ·
+`ngay-hoac-thang`. Luật thuần ở `shared/domain/oNgay.ts`, có phép kiểm.
+
+- **Gõ hoặc bấm lịch.** Ô hiện `dd/mm/yyyy` (tháng `mm/yyyy`); nút biểu tượng lịch bên phải (hoặc `Alt + ↓`) mở `LichNho`.
+  Giá trị gửi máy chủ luôn là dạng máy (`2026-09-28`, tháng `2026-09`) — người dùng không bao giờ thấy dạng này.
+- **Cách gõ được nhận:** dấu `/`, `.` hoặc `-`; `d/m` hay `dd/mm` không kèm năm = năm của hôm nay (Q5). Năm 2 chữ số
+  **không** nhận, để không đoán sai thế kỷ (Q6): ô ngày và ô tuần báo `Năm cần đủ 4 số, ví dụ 28/09/2026`, ô tháng báo
+  `Gõ dạng mm/yyyy`. Ngày không có thật (31/02) báo
+  `Ngày không có thật`.
+- **Chỉ kiểm khi rời ô hoặc bấm Enter**, không kiểm từng phím.
+- **Gõ sai:** ô giữ nguyên chữ đã gõ, hiện câu lỗi ngay dưới ô, và báo về form là **rỗng** — giống ô ngày cũ của trình
+  duyệt — nên luật "thiếu ngày thì không Lưu được" của form vẫn chặn.
+- **Ngày có sẵn mà chưa đụng tới thì không kiểm lại.** Mở form sửa một bản ghi cũ có ngày nằm ngoài luật hiện tại, chỉ
+  Tab qua ô, không bị báo lỗi giả.
+- **Xoá hết chữ:** báo rỗng; nơi có mặc định (ví dụ "hôm nay") thì ô hiện lại mặc định.
+- **Luật khoảng:** mỗi chỗ giữ đúng luật **đang có** (`không sau hôm nay`, `không trước …`, số tuần lùi/tới, số tháng) —
+  không thêm luật mới (Q8). Lỗi: `Không được sau hôm nay` · `Không được trước {ngày}`.
+- **Kiểu tuần:** gõ ngày nào cũng nhảy về Thứ Hai của tuần đó; dòng phụ dưới ô: `W4 SEP · 21/09 – 27/09` (Q4). Ô "Đến"
+  (`moc="cuoi"`) lưu **Chủ nhật** của tuần, riêng tuần đang diễn ra thì lưu **hôm nay**; ô hiện đúng ngày đã lưu đó, kèm
+  cùng dòng phụ tuần.
+- **"Hôm nay"** là ngày nghiệp vụ (`useNgayNghiepVu`), không đọc đồng hồ máy.
+- `ChonNgayGan` · `ChonTuan` · `ChonThang` giữ tên cũ, nay chỉ là lớp bọc `ONgay` (không còn danh sách thả). Dòng chữ
+  "hôm nay · Đổi" (`NgayDoiDuoc`) đã bỏ: các ô đó là ô ngày có sẵn hôm nay (Q2).
+- Kiểu `ngay-hoac-thang` đã dựng và có phép kiểm, chưa ô nào dùng; chỗ dùng đầu tiên là PR-NHAP (Q21).
+
+### Lịch `LichNho`
+
+- Vẽ qua portal ra ngoài trang, `position: fixed` — panel, Modal không cắt được. Bám dưới nút mở, hết chỗ thì lật lên trên.
+- Lưới tháng Thứ Hai → Chủ nhật. Kiểu tuần chọn **cả hàng**. Kiểu tháng: đầu là năm, thân Th1 … Th12. Ngày ngoài luật mờ,
+  gạch ngang, không chọn được.
+- Hàng **"Gần đây"** dưới lưới (Q7), đã lọc theo luật của từng chỗ:
+  - Ngày: 5 ngày lùi từ `Hôm nay`; chỗ chỉ nhận từ hôm nay trở đi thì 5 ngày từ hôm nay tới.
+  - Tuần: `Tuần này` · `Tuần trước` · `2 tuần trước`; chỗ chỉ nhận từ tuần này trở đi thì `Tuần này` · `Tuần sau` ·
+    `2 tuần sau`.
+  - Tháng: 3 tháng (`Tháng này` …).
+- Bàn phím trong lưới: `←`/`→` một ngày, `↑`/`↓` một tuần, `Home`/`End` đầu/cuối tuần, `PageUp`/`PageDown` một tháng;
+  `Enter` hoặc `Space` chọn.
+
+### Bộ chọn tuần `WeekPicker` — sửa bố cục, không viết lại
+
+Lỗi cũ (design plan 22.3): nút `Trước` một hàng, trường tuần một hàng, `Sau`/`Tuần này`
 hàng dưới. Đây là lỗi của component + khung chứa, không phải lỗi của một màn.
 
 ```
@@ -217,12 +295,9 @@ hàng dưới. Đây là lỗi của component + khung chứa, không phải l�
 - Một hàng `flex`, `gap: 8px`, cao 40–44px. Nút mũi tên `flex: none`; trường tuần `flex: 1`
   với **`min-width: 0`** — thiếu dòng này là nguyên nhân wrap.
 - Panel hẹp (~600px): `Trước / trường / Sau` vẫn cùng hàng; chỉ `Tuần này` xuống hàng, có chủ ý.
-- Bấm trường tuần mở **một popover lịch**: gõ ngày hoặc chọn tuần, đổi tháng/năm. Không dropdown
-  hàng chục tuần.
+- Bấm trường tuần mở **`LichNho`** (cùng lịch với `ONgay`): ô `Gõ ngày` (`dd/mm/yyyy`), lưới chọn cả tuần, đổi tháng,
+  hàng "Gần đây". Không dropdown hàng chục tuần.
 - Trường tuần luôn ghi tuần **đang chọn thật**. Không để trống rồi chú thích bên dưới.
-- Popover render qua portal, kiểm z-index trong `Drawer` và modal — hiện đang bị cắt.
-- Quét mọi nơi dùng: `CaseBoardPage` · `MeetingPage` · `TransitionPanel` · `ClassCreatePanel` ·
-  `ClassProgressPanel` · `StudentPlanPanel` · `ScoreSheetPage` · `MockPlanPanel` · `Filters`.
 
 ---
 
@@ -242,6 +317,44 @@ hàng dưới. Đây là lỗi của component + khung chứa, không phải l�
 - Bảng nhập điểm: `Tab` sang ô kế, `Enter` xuống dòng, gõ `-` là lệnh **Không có bài**, `Esc`
   hủy ô đang sửa. Mỗi dòng có trạng thái lưu riêng (`SaveState`), không lưu cả bảng một lần rồi
   báo một lỗi chung.
+- Trên điện thoại, ô bấm phải cao ít nhất 44px.
+
+### Bàn phím và focus (PR-NEN, UX-E E2 · E3)
+
+- **`Esc` chỉ đóng lớp trên cùng**, từng lớp một: lịch → menu (menu ⋯, danh sách chọn người) → Modal → panel. Đóng lịch
+  không đóng panel đang chứa nó.
+- Menu và danh sách ở **đầu trang** (tìm học viên, thông báo, tài khoản) chỉ nhận `Esc` khi focus đang ở trong đầu trang —
+  menu bỏ ngỏ không giành `Esc` của panel hay hộp thoại mở sau.
+- **Panel, Modal, lịch nhận focus ở khung** (không tự nhảy vào ô đầu — tránh bật bàn phím ảo trên điện thoại; trình đọc màn
+  hình đọc tên panel, Q18). `Tab`/`Shift + Tab` đi vòng bên trong, không lọt ra trang phía sau.
+- **Đóng thì trả focus** về nút đã mở. Panel đổi nội dung tại chỗ (nút mở nằm trong panel cũ đã mất) thì focus về nút mở
+  ban đầu. Lịch chọn xong trả focus về nút lịch.
+- **Menu ⋯:** mở ra là focus mục đầu; `↑`/`↓`/`Home`/`End` đi vòng; `Enter` chọn; `Tab` hoặc `Esc` đóng và về nút ⋯.
+- **Ô tìm học viên ở đầu trang:** `↑`/`↓` chọn dòng (học viên rồi lớp), `Enter` mở. Không có kết quả thì hiện `Không tìm thấy học viên hoặc lớp`
+  — chỉ sau khi lượt tìm đã trả về, không hiện lúc đang chờ.
+- **`Bỏ qua tới nội dung`:** liên kết đầu tiên của trang, chỉ hiện khi bấm `Tab`; chuyển focus thẳng vào vùng nội dung, bỏ
+  qua thanh điều hướng. Không thêm một bước vào lịch sử trình duyệt (nút Quay lại không bị kẹt).
+
+### Ô "Khác" `OKhac` (T13)
+
+- Chọn "Khác" → ô chữ nhỏ hiện ngay dưới, bắt buộc ≥ 3 ký tự. Nhãn `Ghi rõ *` là **mặc định**; chỗ cần chữ cụ thể hơn đặt
+  nhãn riêng: `Tên đề xuất` (PA đề xuất "Khác": Ghi kết quả PA, Thêm PA, PA điền sẵn từ SOS) · `Tên phương án` (xử lý Ý thức
+  "Khác": Tạo phương án, panel Phương án xử lý) · `Tên việc` (thêm việc Phối hợp SOS) · `Ghi rõ lý do` (lý do chuyển lớp / kết thúc
+  học). Giữ nhãn mặc định `Ghi rõ`: phân loại nguyên nhân (form tạo Case, Xác định nguyên nhân SOS), lý do Không cần theo dõi,
+  lý do bỏ việc Phối hợp, nhóm vi phạm. Luật cũ "Khác thì mô tả ≥ 30 ký tự" đã bỏ (Q10). Kiểm ở
+  cả web và máy chủ.
+- Câu lỗi hiện sau khi rời ô hoặc bấm Lưu: `Ghi rõ "Khác" là gì` · `Cần ít nhất 3 ký tự (đang có {n})`.
+- Form có `useLoiForm` (§4a): ô Ghi rõ là một dòng trong luật của form (khoá `ghi-ro`) — viền đỏ + câu dưới ô, tính vào chân
+  "n ô cần sửa ↑", bấm → nhảy tới ô. Form chưa có `useLoiForm` (khối SOS trong Case: nguyên nhân, thay PA, Không cần theo dõi; Phối hợp SOS;
+  panel Phương án xử lý): nút chính mờ khi Ghi rõ chưa đạt, câu lỗi dưới ô. Ô ngày bắt buộc trong luật form nhận `id`/`onBlur`/`invalid` của `useLoiForm` qua `ONgay`
+  (và lớp bọc `ChonNgayGan`/`ChonTuan`).
+- Ô **chỉ tự focus khi vừa chọn "Khác"**. Mở form sửa một bản ghi đã là "Khác" thì không nhảy vào ô.
+- Vi phạm "Khác" ghi trước luật mới vẫn sửa được ngày, môn mà **không bị bắt thêm Ghi rõ**; chỉ khi đổi nhóm hoặc sửa mô tả
+  mới phải có Ghi rõ.
+- Chữ Ghi rõ lưu vào cột có sẵn của từng chỗ. Vi phạm và PA đề xuất không có cột riêng nên ghép vào đầu mô tả
+  `{ghi rõ} — {mô tả}` (Q9).
+- Ba mục "Khác" trong bảng kiểm đặc tả 27/09 §10.2 **không có danh sách để áp**: báo cáo tutor (chỉ là dòng chữ tự do),
+  loại việc Vận hành (không có mục Khác), lý do từ chối duyệt (chưa có — PR-DUYET).
 
 ---
 

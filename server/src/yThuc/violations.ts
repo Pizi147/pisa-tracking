@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, VIOLATION_DESCRIPTION_MIN, VIOLATION_OTHER_DESCRIPTION_MIN,
+  VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, VIOLATION_DESCRIPTION_MIN, ghepKhac, kiemGhiRoKhac,
   VIOLATION_SKILLS, VIOLATION_SKILL_LABEL, VIOLATION_STATE_LABEL, MEASURE_KIND_LABEL, MEASURE_STATUS_LABEL,
   violationAgeDays, violationAgeLabel, violationState,
   type ViolationCategory, type ViolationState, type MeasureKind,
@@ -113,16 +113,19 @@ function checkCategory(category: unknown): ViolationCategory {
   return category as ViolationCategory;
 }
 
-function checkDescription(category: ViolationCategory, description: unknown): string {
+function checkDescription(category: ViolationCategory, description: unknown, ghiRoKhac?: string | null): string {
   const text = String(description ?? '').trim();
   if (text.length < VIOLATION_DESCRIPTION_MIN) {
     throw badRequest(`Mô tả vi phạm cần từ ${VIOLATION_DESCRIPTION_MIN} ký tự — nói rõ em đã làm gì, ở buổi nào.`);
   }
-  /* V05: nhóm `Khác` mà mô tả ngắn thì `Khác` thành đúng cái ô "chưa rõ" vô nghĩa. */
-  if (category === 'other' && text.length < VIOLATION_OTHER_DESCRIPTION_MIN) {
-    throw badRequest(`Chọn nhóm "Khác" thì mô tả phải từ ${VIOLATION_OTHER_DESCRIPTION_MIN} ký tự để nói rõ đó là việc gì.`);
-  }
-  return text;
+  if (category !== 'other') return text;
+  /*
+   * V05 (bản T13): nhóm Khác cần ô Ghi rõ ≥ 3 ký tự. Vi phạm không có cột riêng cho chữ đó (Q9) nên ghép vào đầu mô tả
+   * `{ghi rõ} — {mô tả}`. Sửa lại mà không gửi `ghiRoKhac`: phần trước " — " của mô tả đang lưu chính là chữ Ghi rõ cũ.
+   */
+  const loi = kiemGhiRoKhac(ghiRoKhac ?? (text.includes(' — ') ? text.split(' — ')[0] : ''));
+  if (loi) throw badRequest(`Chọn nhóm "Khác": ${loi}.`);
+  return ghepKhac(ghiRoKhac ?? '', text);
 }
 
 function checkSkill(skill: unknown): string | null {
@@ -176,6 +179,8 @@ export function recordViolation(p: Principal, input: {
   studentId: number;
   category?: string;
   description?: string;
+  /** Nhóm `Khác` (T13): chữ ô Ghi rõ, ≥ 3 ký tự — ghép vào đầu mô tả. */
+  ghiRoKhac?: string | null;
   occurredOn?: string | null;
   /** `undefined` = tự điền theo phân công (V04); `null` hoặc rỗng = người ghi chủ động để trống. */
   skill?: string | null;
@@ -200,7 +205,7 @@ export function recordViolation(p: Principal, input: {
   }
 
   const category = checkCategory(input.category);
-  const description = checkDescription(category, input.description);
+  const description = checkDescription(category, input.description, input.ghiRoKhac);
   const occurredOn = checkOccurredOn(input.occurredOn);
   const skill = input.skill === undefined ? defaultSkillFor(p, classId) : checkSkill(input.skill);
   const cycle = currentCycle(input.studentId);
@@ -254,15 +259,24 @@ export function noteMeasureChange(violationId: number, oldMeasureId: number | nu
  */
 export function editViolation(p: Principal, id: number, patch: {
   description?: string; category?: string; skill?: string | null; occurredOn?: string | null;
+  /** Nhóm `Khác` (T13): chữ ô Ghi rõ. Không gửi thì lấy phần trước " — " của mô tả đang lưu. */
+  ghiRoKhac?: string | null;
 }): ViolationView {
   const row = loadRow(id);
   requireViewStudent(p, row.student_id);
   if (!canEditViolation(p, row)) throw forbidden(EDIT_VIOLATION_MESSAGE);
 
   const category = patch.category === undefined ? (row.category as ViolationCategory) : checkCategory(patch.category);
-  const description = patch.description === undefined && patch.category === undefined
-    ? row.description
-    : checkDescription(category, patch.description === undefined ? row.description : patch.description);
+  /*
+   * Form sửa luôn gửi lại nhóm + mô tả dù không đổi. Chỉ kiểm/ghép lại mô tả khi THẬT SỰ đổi nhóm, đổi mô tả, hoặc gửi chữ Ghi rõ —
+   * để vi phạm "Khác" cũ (trước T13, mô tả không có tiền tố Ghi rõ) vẫn đổi được ngày/môn mà không bị bắt viết lại mô tả.
+   */
+  const moTaGui = patch.description === undefined ? undefined : String(patch.description ?? '').trim();
+  const canKiemMoTa = category !== row.category || (moTaGui !== undefined && moTaGui !== row.description)
+    || patch.ghiRoKhac !== undefined;
+  const description = canKiemMoTa
+    ? checkDescription(category, moTaGui ?? row.description, patch.ghiRoKhac)
+    : row.description;
   const skill = patch.skill === undefined ? row.skill : checkSkill(patch.skill);
   const occurredOn = patch.occurredOn === undefined ? row.occurred_on : checkOccurredOn(patch.occurredOn);
 

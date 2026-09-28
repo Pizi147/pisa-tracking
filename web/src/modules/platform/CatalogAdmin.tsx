@@ -3,7 +3,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Card, Field, Forbidden, Info, SectionNote, Skeleton, Th } from '../../ui/ui.tsx';
-import { Drawer } from '../../ui/Drawer.tsx';
+import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { THU_TU_KY_HIEU, kyHieuLop, oPhanCong, skillShort, type KyHieuLop } from '@shared/domain/index.ts';
 
 type RouteRow = {
@@ -167,14 +167,12 @@ function RouteDialog({ row, onClose, onDone }: { row: RouteRow; onClose: () => v
   };
 
   return (
-    <Drawer open onClose={onClose} width="max-w-lg" title={`Sửa lộ trình ${row.code}`}
-      footer={
-        <>
-          <button className="btn" onClick={onClose} disabled={busy}>Huỷ</button>
-          <button className="btn btn-primary" onClick={save} disabled={busy || !f.name.trim()}>Lưu</button>
-        </>
-      }>
-      <div className="space-y-4">
+    <KhungPanel tieuDe={`Sửa lộ trình ${row.code}`} onDong={onClose}
+      chan={{
+        huy: { nhan: 'Huỷ', onClick: onClose, disabled: busy },
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={save} disabled={busy || !f.name.trim()}>Lưu</button>,
+      }}>
+      <div className="space-y-4 pt-3">
         <Field label="Tên gọi" required>
           <input className="field w-full" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
         </Field>
@@ -192,7 +190,7 @@ function RouteDialog({ row, onClose, onDone }: { row: RouteRow; onClose: () => v
           </SectionNote>
         )}
       </div>
-    </Drawer>
+    </KhungPanel>
   );
 }
 
@@ -227,14 +225,12 @@ function ProgrammeDialog({ row, onClose, onDone }: {
   };
 
   return (
-    <Drawer open onClose={onClose} width="max-w-lg" title={`Sửa chương trình ${kh ?? row.name}`}
-      footer={
-        <>
-          <button className="btn" onClick={onClose} disabled={busy}>Huỷ</button>
-          <button className="btn btn-primary" onClick={save} disabled={busy || !f.name.trim()}>Lưu</button>
-        </>
-      }>
-      <div className="space-y-4">
+    <KhungPanel tieuDe={`Sửa chương trình ${kh ?? row.name}`} onDong={onClose}
+      chan={{
+        huy: { nhan: 'Huỷ', onClick: onClose, disabled: busy },
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={save} disabled={busy || !f.name.trim()}>Lưu</button>,
+      }}>
+      <div className="space-y-4 pt-3">
         <Field label="Tên gọi" required>
           <input className="field w-full" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
         </Field>
@@ -277,6 +273,6 @@ function ProgrammeDialog({ row, onClose, onDone }: {
           </SectionNote>
         )}
       </div>
-    </Drawer>
+    </KhungPanel>
   );
 }

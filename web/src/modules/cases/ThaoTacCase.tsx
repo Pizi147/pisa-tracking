@@ -4,12 +4,15 @@ import { useToast } from '../../ui/Toast.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
-import { ChonNgayGan, ChonTuan, NgayDoiDuoc } from '../../ui/ChonNgay.tsx';
+import { ChonNgayGan, ChonTuan } from '../../ui/ChonNgay.tsx';
+import { ONgay } from '../../ui/ONgay.tsx';
+import { OKhac } from '../../ui/OKhac.tsx';
+import { NutChon } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
   CASE_OUTCOMES, CASE_OUTCOME_LABEL, HAN_DUYET_NGAY, INTERVENTION_KIND_LABEL, RESCHEDULE_TARGETS, RESCHEDULE_TARGET_LABEL,
   componentsAreCounts, componentsFor, interventionKindsFor, isProposalKind,
-  ngay, nguoiThanhPayload, planEndDefault, type NguoiChon, dsLoi,
+  ngay, nguoiThanhPayload, planEndDefault, type NguoiChon, dsLoi, kiemGhiRoKhac, KHAC_TOI_THIEU,
 } from '@shared/domain/index.ts';
 import { ComponentsField, componentsPayload } from './ChiTietKyNang.tsx';
 
@@ -40,6 +43,9 @@ export function ThemPaPanel({ caseId, studentId, hocVien, lop, quayLai, onClose,
   const catalogue = interventionKindsFor();
   const [kind, setKind] = useState<string>(catalogue.selfServe[0]);
   const [description, setDescription] = useState('');
+  /* PA đề xuất "Khác" (T13): ô Tên đề xuất ngay dưới; máy chủ ghép "{tên} — {mô tả}" (Q9). Đổi loại vẫn giữ chữ đã gõ. */
+  const [ghiRo, setGhiRo] = useState('');
+  const laKhacPa = kind === 'other_proposal';
   /* Mặc định ĐANG THEO DÕI: PA vừa lập thì đang chạy, không phải đã xong. */
   const [status, setStatus] = useState<'started' | 'completed'>('started');
   const [nguoi, setNguoi] = useState<NguoiChon | null>({ kieu: 'toi' });
@@ -53,9 +59,10 @@ export function ThemPaPanel({ caseId, studentId, hocVien, lop, quayLai, onClose,
   const deXuat = isProposalKind(kind);
 
   const loi = dsLoi([
+    ...(laKhacPa ? [{ khoa: 'ghi-ro', nhan: 'Tên đề xuất', toiThieu: KHAC_TOI_THIEU }] : []),
     { khoa: 'mo-ta', nhan: 'Mô tả', toiThieu: 8 },
     ...(status === 'completed' ? [{ khoa: 'ngay-lam', nhan: 'Ngày đã làm', chon: true }] : []),
-  ], { 'mo-ta': description, 'ngay-lam': completedDate });
+  ], { 'ghi-ro': ghiRo, 'mo-ta': description, 'ngay-lam': completedDate });
   const thieu = loi.map((l) => l.nhan);
 
   const luu = async () => {
@@ -71,6 +78,7 @@ export function ThemPaPanel({ caseId, studentId, hocVien, lop, quayLai, onClose,
         followupDue: followupDue || undefined,
         rescheduleTarget: kind === 'reschedule_mt' ? rescheduleTarget : undefined,
         needsApproval: deXuat,
+        ...(laKhacPa ? { ghiRoKhac: ghiRo.trim() } : {}),
       });
       invalidate('/cases'); invalidate('/students'); invalidate('/overview');
       toast.push('ok', deXuat ? 'Đã gửi Quản lý duyệt' : 'Đã ghi lại');
@@ -92,28 +100,31 @@ export function ThemPaPanel({ caseId, studentId, hocVien, lop, quayLai, onClose,
         luat={deXuat
           ? `Đây là một ĐỀ XUẤT nên Quản lý phải trả lời trong ${HAN_DUYET_NGAY} ngày, tính cả hôm gửi. Trong lúc chờ thì chưa ghi kết quả được.`
           : 'Chọn một mục trong "Cần Quản lý duyệt" tức là đang xin ý kiến Quản lý.'}>
-        <Truong nhan="Loại PA" batBuoc>
-          <select className="field w-full" value={kind} onChange={(e) => setKind(e.target.value)}>
-            <optgroup label="Bạn tự làm được">
-              {catalogue.selfServe.map((k: string) => (
-                <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k as keyof typeof INTERVENTION_KIND_LABEL]}</option>
-              ))}
-            </optgroup>
-            <optgroup label="Cần Quản lý duyệt">
-              {catalogue.proposals.map((k: string) => (
-                <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k as keyof typeof INTERVENTION_KIND_LABEL]} · cần QL duyệt</option>
-              ))}
-            </optgroup>
-          </select>
-        </Truong>
+        <div>
+          <Truong nhan="Loại PA" batBuoc>
+            <select className="field w-full" value={kind} onChange={(e) => setKind(e.target.value)}>
+              <optgroup label="Bạn tự làm được">
+                {catalogue.selfServe.map((k: string) => (
+                  <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k as keyof typeof INTERVENTION_KIND_LABEL]}</option>
+                ))}
+              </optgroup>
+              <optgroup label="Cần Quản lý duyệt">
+                {catalogue.proposals.map((k: string) => (
+                  <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k as keyof typeof INTERVENTION_KIND_LABEL]} · cần QL duyệt</option>
+                ))}
+              </optgroup>
+            </select>
+          </Truong>
+          <OKhac hien={laKhacPa} value={ghiRo} onChange={setGhiRo} nhan="Tên đề xuất" goiY="Ví dụ: Học kèm 1-1 với trợ giảng"
+            id={lf.oId('ghi-ro')} onBlur={lf.roi('ghi-ro')} loi={lf.hien('ghi-ro') ? kiemGhiRoKhac(ghiRo) : null} />
+        </div>
         {kind === 'reschedule_mt' && (
           <Truong nhan="Lùi cái gì" batBuoc as="div">
             <div className="grid grid-cols-2 gap-2">
               {RESCHEDULE_TARGETS.map((t) => (
-                <button key={t} type="button" aria-pressed={rescheduleTarget === t}
-                  className={`btn justify-center ${rescheduleTarget === t ? 'btn-primary' : ''}`} onClick={() => setRescheduleTarget(t)}>
+                <NutChon key={t} chon={rescheduleTarget === t} className="justify-center" onClick={() => setRescheduleTarget(t)}>
                   {RESCHEDULE_TARGET_LABEL[t]}
-                </button>
+                </NutChon>
               ))}
             </div>
           </Truong>
@@ -124,10 +135,10 @@ export function ThemPaPanel({ caseId, studentId, hocVien, lop, quayLai, onClose,
         </Truong>
         <Truong nhan="Tình trạng" batBuoc as="div">
           <div className="grid grid-cols-2 gap-2">
-            <button type="button" aria-pressed={status === 'started'} className={`btn justify-center ${status === 'started' ? 'btn-primary' : ''}`}
-              onClick={() => setStatus('started')}>Đang theo dõi</button>
-            <button type="button" aria-pressed={status === 'completed'} className={`btn justify-center ${status === 'completed' ? 'btn-primary' : ''}`}
-              onClick={() => setStatus('completed')}>Đã xong</button>
+            <NutChon chon={status === 'started'} className="justify-center"
+              onClick={() => setStatus('started')}>Đang theo dõi</NutChon>
+            <NutChon chon={status === 'completed'} className="justify-center"
+              onClick={() => setStatus('completed')}>Đã xong</NutChon>
           </div>
         </Truong>
       </Khoi>
@@ -137,10 +148,9 @@ export function ThemPaPanel({ caseId, studentId, hocVien, lop, quayLai, onClose,
             <ChonNguoi nhom="giao_vien" studentId={studentId} value={nguoi} onChange={setNguoi} />
           </Truong>
           {status === 'completed' ? (
-            <Truong nhan="Ngày đã làm" batBuoc as="div" loi={lf.loiCua(loi, 'ngay-lam')}>
-              <div {...lf.o(loi, 'ngay-lam')} tabIndex={-1} className="outline-none">
-                <ChonNgayGan value={completedDate} onChange={setCompletedDate} soNgay={30} chuaChon="Chọn ngày" ariaLabel="Ngày đã làm" />
-              </div>
+            <Truong nhan="Ngày đã làm" batBuoc loi={lf.loiCua(loi, 'ngay-lam')}>
+              <ChonNgayGan value={completedDate} onChange={setCompletedDate} soNgay={30} chuaChon="Chọn ngày" ariaLabel="Ngày đã làm"
+                id={lf.oId('ngay-lam')} onBlur={lf.roi('ngay-lam')} invalid={!!lf.loiCua(loi, 'ngay-lam')} />
             </Truong>
           ) : (
             <Truong nhan="Ngày bắt đầu">
@@ -206,10 +216,9 @@ export function HoanThanhCasePanel({ caseId, category, categoryLabel, ratio, hoc
         <Truong nhan="Sau cả đợt hỗ trợ, em tiến bộ đến đâu?" batBuoc as="div">
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="group">
             {CASE_OUTCOMES.map((o) => (
-              <button key={o} type="button" aria-pressed={outcome === o}
-                className={`btn min-h-[44px] justify-center sm:min-h-0 ${outcome === o ? 'btn-primary' : ''}`} onClick={() => setOutcome(o)}>
+              <NutChon key={o} chon={outcome === o} className="justify-center" onClick={() => setOutcome(o)}>
                 {CASE_OUTCOME_LABEL[o]}
-              </button>
+              </NutChon>
             ))}
           </div>
         </Truong>
@@ -218,7 +227,7 @@ export function HoanThanhCasePanel({ caseId, category, categoryLabel, ratio, hoc
           <textarea className="field w-full" {...lf.o(loi, 'vi-sao')} rows={3} value={note} onChange={(e) => setNote(e.target.value)}
             placeholder="Ví dụ: MT3 Listening lên 6.0" />
         </Truong>
-        <NgayDoiDuoc tien="Ngày hoàn thành" value={closedOn} onChange={setClosedOn} soNgay={30} />
+        <Truong nhan="Ngày hoàn thành"><ONgay kieu="ngay" value={closedOn} onChange={setClosedOn} toiDa={homNay} /></Truong>
       </Khoi>
       {components.length > 0 && (
         <Khoi tieuDe="Điểm chi tiết · không bắt buộc">
@@ -270,10 +279,9 @@ export function TraLoiDeXuatPanel({ iv, hocVien, lop, quayLai, onClose, onSaved 
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={gui}>Gửi</button>,
       }}>
       <Khoi tieuDe="Quyết định">
-        <div role="radiogroup" aria-label="Quyết định" className="grid grid-cols-3 gap-2">
+        <div role="group" aria-label="Quyết định" className="grid grid-cols-3 gap-2">
           {([['approved', 'Duyệt'], ['declined', 'Không duyệt'], ['comment', 'Góp ý']] as const).map(([k, t]) => (
-            <button key={k} type="button" role="radio" aria-checked={decision === k}
-              className={`btn min-h-[44px] justify-center sm:min-h-0 ${decision === k ? 'btn-primary' : ''}`} onClick={() => setDecision(k)}>{t}</button>
+            <NutChon key={k} chon={decision === k} className="justify-center" onClick={() => setDecision(k)}>{t}</NutChon>
           ))}
         </div>
         <p className="m-0 text-[11px] text-slate-500">{NGHIA[decision]}</p>

@@ -416,11 +416,16 @@ export async function runYThucTests(t: YThucTestKit) {
     } finally { conn.prepare('DELETE FROM teacher_assignments WHERE id = ?').run(extra); }
   });
 
-  check('PR-J · V05 Nhóm `Khác` thì mô tả phải từ 30 ký tự; nhóm khác thì 10 là đủ', () => {
+  check('PR-NEN · V05 (bản T13) Nhóm `Khác` cần ô Ghi rõ ≥ 3 ký tự, ghép vào đầu mô tả; nhóm khác thì 10 là đủ', () => {
     const st = makeStudent('V05');
-    assertThrows(() => record(gvbm, st.id, { category: 'other', description: 'Em có chuyện gì đó lạ lắm.' }), /30 ký tự/, 'Khác với 26 ký tự');
-    const ok = record(gvbm, st.id, { category: 'other', description: 'Em mang điện thoại vào phòng thi thử và sử dụng.' });
-    assert(ok.violation.category === 'other', 'Khác với ≥ 30 ký tự phải được nhận');
+    assertThrows(() => record(gvbm, st.id, { category: 'other', description: 'Không mang sách buổi 12' }), /Ghi rõ "Khác" là gì/, 'Khác không ghi rõ');
+    assertThrows(() => record(gvbm, st.id, { category: 'other', description: 'Không mang sách buổi 12', ghiRoKhac: 'ab' }), /ít nhất 3 ký tự/, 'Ghi rõ 2 ký tự');
+    const ok = record(gvbm, st.id, { category: 'other', description: 'Không mang sách buổi 12', ghiRoKhac: 'Quên sách' });
+    assert(ok.violation.category === 'other', 'Khác có ghi rõ ≥ 3 ký tự phải được nhận');
+    assert(ok.violation.description === 'Quên sách — Không mang sách buổi 12', `Ghép ghi rõ vào mô tả: ${ok.violation.description}`);
+    /* Sửa lại mô tả đã có tiền tố mà không gửi ghiRoKhac: tiền tố đủ làm chữ "Khác", không ghép hai lần. */
+    const sua = viol.editViolation(gvbm, ok.violation.id, { description: 'Quên sách — Không mang sách buổi 12 và 13' }) as any;
+    assert(sua.description === 'Quên sách — Không mang sách buổi 12 và 13', `Sửa không ghép hai lần: ${sua.description}`);
     assert(record(gvbm, st.id, { category: 'attendance', description: 'Đi muộn 20 phút' }).violation.id > 0, 'Nhóm thường: 10 ký tự là đủ');
   });
 
@@ -489,11 +494,24 @@ export async function runYThucTests(t: YThucTestKit) {
     viol.editViolation(gvbm, v, { description: 'Mô tả đã sửa cho rõ hơn' });
     assert(one('SELECT COUNT(*) n FROM violation_history WHERE violation_id = ?', v) === 4, 'Không đổi gì thì không ghi lịch sử');
     assertThrows(() => viol.editViolation(gvbm, v, { description: 'ngắn' }), /10 ký tự/, 'Sửa xuống dưới 10 ký tự');
-    assertThrows(() => viol.editViolation(gvbm, v, { category: 'other' }), /30 ký tự/, 'Đổi sang Khác mà mô tả dưới 30 ký tự');
+    assertThrows(() => viol.editViolation(gvbm, v, { category: 'other' }), /Ghi rõ "Khác"/, 'Đổi sang Khác mà không ghi rõ Khác là gì');
     assertThrows(() => viol.editViolation(gvbm, v, { occurredOn: addDays(TODAY, 3) }), /tương lai/, 'Đổi sang ngày tương lai');
     assertThrows(() => viol.editViolation(gvbm, v, { occurredOn: '2026-99-99' }), /Ngày xảy ra/, 'Đổi sang ngày sai định dạng');
     const again = viol.editViolation(gvbm, v, { description: 'Mô tả sửa lần ba, vẫn hợp lệ' }) as any;
     assert(again.id === v && again.description === 'Mô tả sửa lần ba, vẫn hợp lệ', 'Sửa phải trả về bản ghi mới');
+  });
+
+  check('PR-NEN · V09 vi phạm "Khác" CŨ (mô tả không có tiền tố Ghi rõ) vẫn đổi được ngày/môn khi form gửi lại nguyên nhóm + mô tả', () => {
+    const st = makeStudent('V09K');
+    const v = vid(record(gvbm, st.id, { description: 'Mô tả cũ không có tiền tố' }));
+    conn.prepare(`UPDATE violations SET category = 'other' WHERE id = ?`).run(v); // dữ liệu trước T13: Khác không có Ghi rõ
+    const sua = viol.editViolation(gvbm, v, {
+      category: 'other', description: 'Mô tả cũ không có tiền tố', occurredOn: addDays(TODAY, -1), skill: 'reading',
+    }) as any;
+    assert(sua.description === 'Mô tả cũ không có tiền tố' && sua.category === 'other', `Mô tả/nhóm phải giữ nguyên: ${JSON.stringify(sua)}`);
+    const row = conn.prepare('SELECT occurred_on, skill FROM violations WHERE id = ?').get(v) as any;
+    assert(row.occurred_on === addDays(TODAY, -1) && row.skill === 'reading', `Ngày/môn phải đổi: ${JSON.stringify(row)}`);
+    assertThrows(() => viol.editViolation(gvbm, v, { category: 'other', description: 'Mô tả cũ đã sửa lại khác đi' }), /Ghi rõ "Khác"/, 'Đổi mô tả của Khác cũ thì phải ghi rõ');
   });
 
   check('PR-J · V10 Ai sửa hoặc xoá được: người ghi (của mình) · GVCN của lớp · Quản lý trong phạm vi — GV khác không sửa được vi phạm đồng nghiệp', () => {

@@ -5,16 +5,19 @@ import { useToast } from '../../ui/Toast.tsx';
 import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
-import { ChonTuan, NgayDoiDuoc } from '../../ui/ChonNgay.tsx';
+import { ChonTuan } from '../../ui/ChonNgay.tsx';
+import { ONgay } from '../../ui/ONgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
+import { OKhac } from '../../ui/OKhac.tsx';
+import { NutChon } from '../../ui/ui.tsx';
 import { ComponentsField, componentsPayload } from './ChiTietKyNang.tsx';
 import {
   ENTRY_SKILL_LABEL, URGENCY_LEVELS, URGENCY_LABEL, issuesForTopic, DEFAULT_URGENCY,
   CASE_OUTCOMES, CASE_OUTCOME_LABEL, REGULAR_SKILL_LABEL,
   categoryOf, componentsFor, componentsAreCounts,
-  nguoiThanhPayload, nguoiThieu, skillShort, tuanLich, type NguoiChon, dsLoi, type LuatTruong,
+  nguoiThanhPayload, nguoiThieu, skillShort, tuanLich, type NguoiChon, dsLoi, type LuatTruong, laKhac, kiemGhiRoKhac, KHAC_TOI_THIEU,
 } from '@shared/domain/index.ts';
 
 type DaLuu = { id: number; tieuDe: string; gop: boolean; canEdit: boolean };
@@ -73,6 +76,8 @@ export function QuickReport({
   const [urgency, setUrgency] = useState<string>(DEFAULT_URGENCY);
   const [topic, setTopic] = useState('');
   const [primaryCode, setPrimaryCode] = useState('');
+  /* Phân loại "Khác" (T13): ô Ghi rõ ngay dưới, lưu ở `case_issues.observation` (Q9). Đổi phân loại vẫn giữ chữ đã gõ. */
+  const [ghiRo, setGhiRo] = useState('');
   const [detectedAt, setDetectedAt] = useState('');
   const [busy, setBusy] = useState(false);
   /* YC-12.5.2: lỗi hiện dưới ô khi rời ô; sau khi bấm nút chính, chân có thêm "n ô cần sửa ↑". */
@@ -181,6 +186,7 @@ export function QuickReport({
         studentId, cycleId: cycleId ?? undefined, title: title.trim() || null, summary, urgency,
         topic,
         primaryCode: primaryCode || undefined,
+        observation: laKhac(primaryCode) ? ghiRo.trim() : undefined,
         detectedAt: detectedAt || undefined,
         idempotencyKey,
         fromSignalId: signal?.id ?? undefined,
@@ -212,6 +218,7 @@ export function QuickReport({
       const res = await api.post<any>('/cases/backfill', {
         studentId, cycleId: cycleId ?? undefined,
         topic, primaryCode: primaryCode || undefined,
+        observation: laKhac(primaryCode) ? ghiRo.trim() : undefined,
         title: title.trim() || null, summary,
         fromDate: bfFrom, toDate: bfTo,
         actions: bfActions.map((a) => ({
@@ -264,17 +271,17 @@ export function QuickReport({
   const bfCounts = componentsAreCounts(category);
 
   /* Ô lỗi (YC-12.5.2): lý do dưới ô khi rời ô; chân chỉ đếm "n ô cần sửa ↑" sau khi bấm nút chính — không toast trước khi gửi. */
-  /* "Khác" → 30 ký tự là luật cũ; PR-NEN (T13) bỏ khi có OKhac. */
-  const moTaToiThieu = primaryCode.endsWith('.other') ? 30 : 15;
   const LUAT: LuatTruong[] = [
     ...(students ? [{ khoa: 'hoc-vien', nhan: 'Học viên', chon: true }] : []),
     { khoa: 'ky-nang', nhan: 'Kỹ năng', chon: true }, { khoa: 'phan-loai', nhan: 'Phân loại vấn đề', chon: true },
+    /* PR-NEN (T13): phân loại "Khác" → ô Ghi rõ ≥ 3 ký tự ngay dưới (OKhac); Mô tả chỉ còn luật 15 ký tự. */
+    ...(laKhac(primaryCode) ? [{ khoa: 'ghi-ro', nhan: 'Ghi rõ', toiThieu: KHAC_TOI_THIEU }] : []),
     { khoa: 'ten', nhan: 'Tên Case', toiThieu: 6 },
-    { khoa: 'mo-ta', nhan: 'Mô tả', toiThieu: moTaToiThieu },
+    { khoa: 'mo-ta', nhan: 'Mô tả', toiThieu: 15 },
     ...(mode === 'backfill' ? [{ khoa: 'tu-tuan', nhan: 'Từ tuần', chon: true }, { khoa: 'den-tuan', nhan: 'Đến tuần', chon: true },
       { khoa: 'ket-qua', nhan: 'Kết quả cuối', chon: true }, { khoa: 'vi-sao', nhan: 'Vì sao kết luận vậy', toiThieu: 10 }] : []),
   ];
-  const loi = dsLoi(LUAT, { 'hoc-vien': studentId, 'ky-nang': topic, 'phan-loai': primaryCode, ten: title, 'mo-ta': summary,
+  const loi = dsLoi(LUAT, { 'hoc-vien': studentId, 'ky-nang': topic, 'phan-loai': primaryCode, 'ghi-ro': ghiRo, ten: title, 'mo-ta': summary,
     'tu-tuan': bfFrom, 'den-tuan': bfTo, 'ket-qua': bfOutcome, 'vi-sao': bfNote });
   if (mode === 'backfill' && bfFrom && bfTo && bfFrom > bfTo) loi.push({ khoa: 'den-tuan', nhan: 'Đến tuần', lyDo: 'Không được trước Từ tuần' });
   if (mode === 'backfill' && !bfActions.some((a) => a.description.trim())) loi.push({ khoa: 'pa-0', nhan: 'Phương án đã áp dụng', lyDo: 'Chưa có PA nào' });
@@ -355,11 +362,11 @@ export function QuickReport({
           ) : (
             <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.max(topics.length, 1)}, minmax(0, 1fr))` }}>
               {topics.map((k) => (
-                <button key={k} type="button" aria-pressed={topic === k} title={topicLabel(k)}
-                  className={`btn min-h-[44px] justify-center px-1 sm:min-h-0 ${topic === k ? 'btn-primary' : ''}`}
+                <NutChon key={k} chon={topic === k} title={topicLabel(k)}
+                  className="justify-center px-1"
                   onClick={() => { setTopic(k); setPrimaryCode(''); }}>
                   {topicShort(k)}
-                </button>
+                </NutChon>
               ))}
             </div>
           )}
@@ -367,24 +374,28 @@ export function QuickReport({
         </Truong>
 
         {/* Phân loại BẮT BUỘC (máy chủ cần `primaryCode`): select ≥ 5 lựa chọn, gợi ý của lựa chọn nằm ở `title` (Q6). */}
-        <Truong nhan="Phân loại vấn đề" batBuoc loi={loiCua('phan-loai')}>
-          <select className="field w-full" {...o('phan-loai')} value={primaryCode} disabled={!topic}
-            title={causes.find((i) => i.code === primaryCode)?.hint}
-            onChange={(e) => setPrimaryCode(e.target.value)}>
-            <option value="">{topic ? 'Chọn phân loại' : ''}</option>
-            {causes.map((i) => <option key={i.code} value={i.code} title={i.hint}>{i.label}</option>)}
-          </select>
-        </Truong>
+        {/* OKhac là <label> riêng → đặt ngay SAU Truong (không lồng label), cùng một khối để sát ô chọn. */}
+        <div>
+          <Truong nhan="Phân loại vấn đề" batBuoc loi={loiCua('phan-loai')}>
+            <select className="field w-full" {...o('phan-loai')} value={primaryCode} disabled={!topic}
+              title={causes.find((i) => i.code === primaryCode)?.hint}
+              onChange={(e) => setPrimaryCode(e.target.value)}>
+              <option value="">{topic ? 'Chọn phân loại' : ''}</option>
+              {causes.map((i) => <option key={i.code} value={i.code} title={i.hint}>{i.label}</option>)}
+            </select>
+          </Truong>
+          <OKhac hien={laKhac(primaryCode)} value={ghiRo} onChange={setGhiRo} goiY="Ví dụ: Chưa quen dạng bài mới"
+            id={lf.oId('ghi-ro')} onBlur={lf.roi('ghi-ro')} loi={lf.hien('ghi-ro') ? kiemGhiRoKhac(ghiRo) : null} />
+        </div>
 
         {/* Nhập bù là chuyện ĐÃ XONG — không còn "mức độ" để xin. */}
         {mode === 'now' && (
           <Truong nhan="Mức độ" batBuoc phu="Nhận định của người báo, không phải mức SOS" as="div">
             <div className="grid grid-cols-2 gap-2">
               {URGENCY_LEVELS.map((u) => (
-                <button key={u} type="button" aria-pressed={urgency === u}
-                  className={`btn min-h-[44px] justify-center sm:min-h-0 ${urgency === u ? 'btn-primary' : ''}`} onClick={() => setUrgency(u)}>
+                <NutChon key={u} chon={urgency === u} className="justify-center" onClick={() => setUrgency(u)}>
                   {URGENCY_LABEL[u]}
-                </button>
+                </NutChon>
               ))}
             </div>
           </Truong>
@@ -396,7 +407,7 @@ export function QuickReport({
             placeholder="Ví dụ: Reading — sai dạng True/False/Not Given" />
         </Truong>
         <Truong nhan="Mô tả và dẫn chứng" batBuoc phu="Sai ở đâu, bài hay buổi nào" loi={loiCua('mo-ta')}
-          dem={{ co: summary.trim().length, can: moTaToiThieu }}>
+          dem={{ co: summary.trim().length, can: 15 }}>
           <textarea className="field w-full" {...o('mo-ta')} rows={3} value={summary} onChange={(e) => setSummary(e.target.value)}
             placeholder="Ví dụ: Giữa khoá sai 4/5 câu Not Given" />
         </Truong>
@@ -404,7 +415,7 @@ export function QuickReport({
 
       {mode === 'now' && (
         <Khoi tieuDe="Theo dõi">
-          <NgayDoiDuoc tien="Bắt đầu theo dõi" value={detectedAt || homNay} onChange={setDetectedAt} soNgay={30} />
+          <Truong nhan="Bắt đầu theo dõi"><ONgay kieu="ngay" value={detectedAt || homNay} onChange={setDetectedAt} toiDa={homNay} /></Truong>
         </Khoi>
       )}
 
@@ -413,15 +424,13 @@ export function QuickReport({
         <>
           <Khoi tieuDe="Đã áp dụng">
             <Hang2>
-              <Truong nhan="Từ tuần" batBuoc as="div" loi={loiCua('tu-tuan')}>
-                <div {...o('tu-tuan')} tabIndex={-1} className="outline-none">
-                  <ChonTuan moc="dau" lui={26} toi={0} value={bfFrom} onChange={setBfFrom} chuaChon="Chọn tuần" ariaLabel="Từ tuần" />
-                </div>
+              <Truong nhan="Từ tuần" batBuoc loi={loiCua('tu-tuan')}>
+                <ChonTuan moc="dau" lui={26} toi={0} value={bfFrom} onChange={setBfFrom} chuaChon="Chọn tuần" ariaLabel="Từ tuần"
+                  id={lf.oId('tu-tuan')} onBlur={lf.roi('tu-tuan')} invalid={!!loiCua('tu-tuan')} />
               </Truong>
-              <Truong nhan="Đến tuần" batBuoc as="div" loi={loiCua('den-tuan')}>
-                <div {...o('den-tuan')} tabIndex={-1} className="outline-none">
-                  <ChonTuan moc="cuoi" lui={26} toi={0} value={bfTo} onChange={setBfTo} chuaChon="Chọn tuần" ariaLabel="Đến tuần" />
-                </div>
+              <Truong nhan="Đến tuần" batBuoc loi={loiCua('den-tuan')}>
+                <ChonTuan moc="cuoi" lui={26} toi={0} value={bfTo} onChange={setBfTo} chuaChon="Chọn tuần" ariaLabel="Đến tuần"
+                  id={lf.oId('den-tuan')} onBlur={lf.roi('den-tuan')} invalid={!!loiCua('den-tuan')} />
               </Truong>
             </Hang2>
             <div className="space-y-2">
@@ -446,10 +455,10 @@ export function QuickReport({
                         </Hang2>
                         <span className="flex gap-2">
                           {a.description.trim() && (
-                            <button type="button" className="btn btn-sm" onClick={() => setMoSua(moSua.filter((x) => x !== i))}>Xong</button>
+                            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setMoSua(moSua.filter((x) => x !== i))}>Xong</button>
                           )}
                           {bfActions.length > 1 && (
-                            <button type="button" className="btn btn-sm btn-ghost" onClick={() => {
+                            <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={() => {
                               setBfActions(bfActions.filter((_, j) => j !== i));
                               setMoSua(moSua.filter((x) => x !== i).map((x) => (x > i ? x - 1 : x)));
                               setBfErrors({});
@@ -469,7 +478,7 @@ export function QuickReport({
                   </div>
                 );
               })}
-              <button type="button" className="btn btn-sm btn-ghost"
+              <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0"
                 onClick={() => { setMoSua([...moSua, bfActions.length]); setBfActions([...bfActions, { description: '', nguoi: { kieu: 'toi' }, fromDate: '', toDate: '' }]); }}>
                 + Thêm PA đã áp dụng
               </button>
@@ -480,10 +489,9 @@ export function QuickReport({
             <Truong nhan="Kết quả cuối" batBuoc as="div" loi={loiCua('ket-qua')}>
               <div {...o('ket-qua')} tabIndex={-1} className="grid grid-cols-2 gap-2 outline-none sm:grid-cols-4">
                 {CASE_OUTCOMES.map((o) => (
-                  <button key={o} type="button" aria-pressed={bfOutcome === o}
-                    className={`btn min-h-[44px] justify-center sm:min-h-0 ${bfOutcome === o ? 'btn-primary' : ''}`} onClick={() => setBfOutcome(o)}>
+                  <NutChon key={o} chon={bfOutcome === o} className="justify-center" onClick={() => setBfOutcome(o)}>
                     {CASE_OUTCOME_LABEL[o]}
-                  </button>
+                  </NutChon>
                 ))}
               </div>
             </Truong>
@@ -512,7 +520,7 @@ export function QuickReport({
             Đã có Case nhập bù <strong>“{bfDup.title}”</strong> trùng khoảng {ngan(bfDup.from)} → {ngan(bfDup.to)}. Cùng một lần?
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
-            <button type="button" className="btn btn-sm" disabled={busy} onClick={() => sendBackfill({ confirmDuplicate: true })}>Lần khác, vẫn ghi riêng</button>
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => sendBackfill({ confirmDuplicate: true })}>Lần khác, vẫn ghi riêng</button>
           </div>
         </div>
       )}
@@ -523,8 +531,8 @@ export function QuickReport({
             <span className="text-slate-400"> Mở {ngan(dup.detectedAt)}{dup.interventionCount > 0 ? ` · ${dup.interventionCount} PA` : ' · chưa có PA'}.</span>
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
-            <button type="button" className="btn btn-primary btn-sm" disabled={busy} onClick={() => send({ mergeIntoExisting: true })}>Ghi vào Case đang có</button>
-            <button type="button" className="btn btn-sm" disabled={busy} onClick={() => send({ parallel: true })}>Vấn đề khác, mở Case riêng</button>
+            <button type="button" className="btn btn-primary btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => send({ mergeIntoExisting: true })}>Ghi vào Case đang có</button>
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => send({ parallel: true })}>Vấn đề khác, mở Case riêng</button>
           </div>
         </div>
       )}

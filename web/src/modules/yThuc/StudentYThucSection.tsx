@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
-import { Empty, ErrorState, Skeleton, Status } from '../../ui/ui.tsx';
+import { BoLocDoan, Empty, ErrorState, Skeleton, Status } from '../../ui/ui.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { OSoNho } from '../../ui/OSoNho.tsx';
 import { DongThoiGian, type DongThoiGianMuc } from '../../ui/DongThoiGian.tsx';
@@ -141,7 +141,7 @@ export function StudentYThucSection({ studentId, studentName, canRecordViolation
       tieuDe: m.kindLabel,
       dongPhu: `${m.statusLabel} · gồm ${m.violationCount} vi phạm`,
       cuoi: (
-        <button type="button" className={`btn btn-sm ${dangChuanBi && canManageDiscipline ? 'btn-primary' : ''}`} onClick={() => moPhuongAn(m)}>
+        <button type="button" className={dangChuanBi && canManageDiscipline ? 'btn btn-sm btn-primary' : 'btn btn-sm'} onClick={() => moPhuongAn(m)}>
           {dangChuanBi && canManageDiscipline ? 'Mở' : 'Xem'}
         </button>
       ),
@@ -183,21 +183,10 @@ export function StudentYThucSection({ studentId, studentName, canRecordViolation
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex flex-wrap gap-1">
-              <button className={`btn btn-sm ${!category ? 'btn-primary' : ''}`} onClick={() => setCategory(null)}>Tất cả</button>
-              {VIOLATION_CATEGORIES.map((c) => (
-                <button key={c} className={`btn btn-sm ${category === c ? 'btn-primary' : ''}`} onClick={() => setCategory(c)}>
-                  {VIOLATION_CATEGORY_LABEL[c as ViolationCategory]}
-                </button>
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-1">
-              {RANGES.map((r) => (
-                <button key={r.key} className={`btn btn-sm ${range === r.key ? 'btn-primary' : ''}`} onClick={() => setRange(r.key)}>
-                  {r.label}
-                </button>
-              ))}
-            </div>
+            <BoLocDoan ariaLabel="Nhóm vi phạm" value={category ?? ''} onChange={(k) => setCategory(k || null)}
+              muc={[{ key: '', nhan: 'Tất cả' }, ...VIOLATION_CATEGORIES.map((c) => ({ key: c as string, nhan: VIOLATION_CATEGORY_LABEL[c as ViolationCategory] }))]} />
+            <BoLocDoan ariaLabel="Khoảng thời gian" value={range} onChange={setRange}
+              muc={RANGES.map((r) => ({ key: r.key, nhan: r.label }))} />
           </div>
 
           <DongThoiGian coCotChon={canManageDiscipline} muc={muc} rong={<Empty title="Chưa có gì trong khoảng này" />} />

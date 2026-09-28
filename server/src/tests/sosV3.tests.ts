@@ -630,8 +630,8 @@ export async function runSosV3Tests(t: YThucTestKit) {
 
   check('PR-T · S05 Lý do: chỉ `Khác` cần chữ; mã lạ bị từ chối; không đóng được case đã có phương án ĐANG CHẠY (dùng đường chốt kết quả thường) hay case tạo tay (không phải case từ SOS)', () => {
     const f = freshSos('S05b');
-    assertThrows(() => sosAuto.dismissSosCase(w2T, f.w2.id, { reasonCode: 'other' }), /ghi rõ|chữ/, '`Khác` mà không có chữ');
-    assertThrows(() => sosAuto.dismissSosCase(w2T, f.w2.id, { reasonCode: 'other', reasonText: '   ' }), /ghi rõ|chữ/, '`Khác` toàn khoảng trắng');
+    assertThrows(() => sosAuto.dismissSosCase(w2T, f.w2.id, { reasonCode: 'other' }), /ghi rõ|chữ/i, '`Khác` mà không có chữ');
+    assertThrows(() => sosAuto.dismissSosCase(w2T, f.w2.id, { reasonCode: 'other', reasonText: '   ' }), /ghi rõ|chữ/i, '`Khác` toàn khoảng trắng');
     assertThrows(() => sosAuto.dismissSosCase(w2T, f.w2.id, { reasonCode: 'bay-ba' }), /lý do/, 'Mã lạ');
     assert(get('SELECT status FROM sos_cases WHERE id = ?', f.w2.id).status !== 'done', 'Lỗi thì case không đóng');
     sosAuto.dismissSosCase(w2T, f.w2.id, { reasonCode: 'other', reasonText: 'Em ốm dài ngày, bài này không phản ánh năng lực' });
@@ -815,7 +815,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     const add = (kind: string, customName?: string) => phoiHop.addCoordination(gvcn, f.a.id, { kind, customName });
     add('cx_meeting_student'); add('cx_meeting_family');
     add('other', 'Gặp riêng phụ huynh'); add('other', 'Nhờ CS nhắc lịch học');
-    assertThrows(() => add('other'), /tên/, '`Khác` không tên');
+    assertThrows(() => add('other'), /tên|Ghi rõ/, '`Khác` không tên');
     assertThrows(() => add('other', 'Gặp riêng phụ huynh'), /đã có/, 'Trùng tên');
     assertThrows(() => add('talk_student'), /đã có/, 'Trùng loại đã điền sẵn');
     assertThrows(() => add('report_gia_dinh'), /loại/, 'Loại lạ (Report cho gia đình không phải việc SOS)');
@@ -831,7 +831,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     const fam = rowOf(f.a.id, 'talk_family').id;
     assertThrows(() => phoiHop.removeCoordination(gvcn, fam, {}), /lý do/, 'Không lý do');
     assertThrows(() => phoiHop.removeCoordination(gvcn, fam, { reasonCode: 'system_sos_changed' }), /lý do/, 'Lý do của hệ thống');
-    assertThrows(() => phoiHop.removeCoordination(gvcn, fam, { reasonCode: 'other' }), /ghi rõ|chữ/, '`Khác` không chữ');
+    assertThrows(() => phoiHop.removeCoordination(gvcn, fam, { reasonCode: 'other' }), /ghi rõ|chữ/i, '`Khác` không chữ');
     assertThrows(() => phoiHop.removeCoordination(gvcn, fam, { reasonCode: 'bay-ba' }), /lý do/, 'Mã lạ');
     phoiHop.confirmCoordination(gvcn, rowOf(f.a.id, 'talk_student').id, { performedOn: TODAY });
     assert((phoiHop.coordinationOfStudent(gvcn, f.st.id) as any).rows[0].summary.label === '1/3', 'Trước khi bỏ: 1/3');

@@ -1,7 +1,9 @@
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { taoKhoPanel } from '@shared/domain/index.ts';
 import { NutLuat } from './NutLuat.tsx';
 import { DongCanSua, type MucThieu } from './loiForm.tsx';
+import { useGiuFocus } from './giuFocus.ts';
+import { BaoOTrongNhan, coOTuNhan } from './ONgay.tsx';
 
 /** Kho dùng chung toàn web: mở panel này thì panel đang mở phải đóng (G-8, N-4). */
 export const khoPanelChung = taoKhoPanel();
@@ -14,23 +16,30 @@ export const khoPanelChung = taoKhoPanel();
  * `DongCanSua`) — chỉ truyền `conThieu` SAU khi bấm Lưu; lý do từng ô nằm dưới ô (`Truong loi`). CHỈ thân cuộn, trang sau khoá cuộn. Mở việc khác thì THAY nội dung, không
  * chồng panel (`khoPanelChung`). Không chữ dev; chữ mẫu bắt đầu "Ví dụ:".
  */
-export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, quayLai, chan, onDong, children }: {
-  tieuDe: string; hocVien?: string | null; lop?: string | null; rong?: 'hep' | 'rong';
+export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, quayLai, chan, longTrong, onDong, children }: {
+  tieuDe: string; hocVien?: string | null; lop?: string | null;
+  /** Không vào `khoPanelChung`: panel con mở đè (Chuyển tiếp → Tạo lớp) không đóng panel này, state giữ nguyên.
+   *  Người gọi tự cho `onDong` rỗng khi panel con đang mở để Esc chỉ đóng panel trên. */
+  longTrong?: boolean;
+  /** `toan`: lưới nhập hàng loạt nhiều cột (Thêm học viên) — rộng theo màn tới 1440px, không ép 10 cột vào ngăn hẹp. */
+  rong?: 'hep' | 'rong' | 'toan';
   tabs?: ReactNode; ngCanh?: ReactNode; quayLai?: { nhan: string; onClick: () => void };
   chan?: {
-    huy?: { nhan?: string; onClick: () => void }; xoa?: { onClick: () => void; nhan?: string };
+    huy?: { nhan?: string; onClick: () => void; disabled?: boolean }; xoa?: { onClick: () => void; nhan?: string };
     phu?: ReactNode; chinh?: ReactNode; conThieu?: (string | MucThieu)[];
   };
   onDong: () => void; children: ReactNode;
 }) {
   const id = useId();
+  const khung = useRef<HTMLDivElement>(null);
   const dongRef = useRef(onDong);
   dongRef.current = onDong;
 
   useEffect(() => {
+    if (longTrong) return undefined;
     khoPanelChung.mo(id, () => dongRef.current());
     return () => khoPanelChung.dong(id);
-  }, [id]);
+  }, [id, longTrong]);
 
   useEffect(() => {
     const cu = document.body.style.overflow;
@@ -39,20 +48,24 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
   }, []);
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !e.defaultPrevented) dongRef.current(); };
+    /* Esc chỉ đóng lớp TRÊN CÙNG: `Modal` mở chồng trong panel (không portal) tự đóng bằng Esc — panel đứng yên. */
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !e.defaultPrevented && !khung.current?.querySelector('[aria-modal="true"]')) dongRef.current();
+    };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
   const ngu = [hocVien, lop].filter(Boolean).join(' · ');
   const huy = chan?.huy ?? { onClick: onDong };
+  useGiuFocus(khung);
   return (
     <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label={tieuDe}>
       <div className="absolute inset-0 bg-black/60" onClick={onDong} />
-      <div className={`relative flex h-full w-full flex-col border-l shadow-2xl ${rong === 'rong' ? 'sm:w-[720px]' : 'sm:w-[560px]'}`}
+      <div ref={khung} tabIndex={-1} className={`relative flex h-full w-full flex-col rounded-none border-l shadow-2xl -outline-offset-2 ${rong === 'toan' ? 'max-w-[1440px]' : rong === 'rong' ? 'sm:w-[720px]' : 'sm:w-[560px]'}`}
         style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
         <header className="flex h-[52px] shrink-0 items-center gap-2 border-b px-4" style={{ borderColor: 'var(--line)' }}>
-          <h2 className="m-0 whitespace-nowrap text-sm font-extrabold text-slate-100">{tieuDe}</h2>
+          <h2 className="m-0 min-w-0 truncate text-sm font-extrabold text-slate-100" title={tieuDe}>{tieuDe}</h2>
           {ngu && <span className="min-w-0 flex-1 truncate text-xs text-slate-400" title={ngu}>{ngu}</span>}
           {!ngu && <span className="flex-1" />}
           <button type="button" className="btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-[32px] sm:min-w-[32px]" onClick={onDong} aria-label="Đóng">✕</button>
@@ -69,7 +82,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
           <footer className="shrink-0 border-t" style={{ borderColor: 'var(--line)' }}>
             {chan.conThieu?.length ? <DongCanSua muc={chan.conThieu} /> : null}
             <div className="flex items-center gap-2 px-4 py-2.5">
-              <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={huy.onClick}>{huy.nhan ?? 'Huỷ'}</button>
+              <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={huy.onClick} disabled={huy.disabled}>{huy.nhan ?? 'Huỷ'}</button>
               {chan.xoa && <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" onClick={chan.xoa.onClick}>{chan.xoa.nhan ?? 'Xoá'}</button>}
               <span className="flex-1" />
               {chan.phu}
@@ -102,20 +115,31 @@ export function Truong({ nhan, batBuoc, tuyChon, phu, loi, dem, as = 'label', ch
   nhan: string; batBuoc?: boolean; tuyChon?: boolean; phu?: string; loi?: string | null; dem?: { co: number; can: number };
   as?: 'label' | 'div'; children: ReactNode;
 }) {
-  const Vo = as;
+  /* Ô ngày / ô chọn người bên trong báo id → nhãn `<label htmlFor>`, không bọc nút lịch (`BaoOTrongNhan`). Thẻ khung chỉ theo props. */
+  const [idO, setIdO] = useState<string | null>(null);
+  const Vo = as === 'div' || coOTuNhan(children) ? 'div' : 'label';
+  /* `as="div"` không có ô để nhãn trỏ vào (nhóm NutChon…) → nhóm mang tên của nhãn, trình đọc màn hình đọc "Mức độ, nhóm". */
+  const idNhan = useId();
+  const troO = Vo === 'div' ? idO : null;
+  const nhom = Vo === 'div' && !idO ? { role: 'group', 'aria-labelledby': idNhan } : {};
+  const chu = <>
+    <span className="min-w-0 flex-1">
+      {nhan}{batBuoc && <><span aria-hidden className="text-bad"> *</span><span className="sr-only"> (bắt buộc)</span></>}
+      {tuyChon && <span className="font-normal text-slate-500"> (không bắt buộc)</span>}
+    </span>
+    {dem && <span className={`text-[10.5px] font-normal tabular-nums ${dem.co < dem.can ? 'text-slate-500' : 'text-slate-400'}`}>{dem.co}/{dem.can}</span>}
+  </>;
+  const lopNhan = 'mb-1 flex items-baseline gap-2 text-[11.5px] font-bold text-slate-200';
   return (
-    <Vo className="block min-w-0">
-      <span className="mb-1 flex items-baseline gap-2 text-[11.5px] font-bold text-slate-200">
-        <span className="min-w-0 flex-1">
-          {nhan}{batBuoc && <span className="text-bad"> *</span>}
-          {tuyChon && <span className="font-normal text-slate-500"> (không bắt buộc)</span>}
-        </span>
-        {dem && <span className={`text-[10.5px] font-normal tabular-nums ${dem.co < dem.can ? 'text-slate-500' : 'text-slate-400'}`}>{dem.co}/{dem.can}</span>}
-      </span>
-      {loi ? <div className="[&_.field]:border-late [&_.field]:ring-1 [&_.field]:ring-late/40">{children}</div> : children}
-      {phu && <span className="mt-1 block truncate text-[10.5px] text-slate-500">{phu}</span>}
-      {loi && <span className="mt-1 block text-[11px] text-late">{loi}</span>}
-    </Vo>
+    <BaoOTrongNhan.Provider value={setIdO}>
+      <Vo className="block min-w-0" {...nhom}>
+        {troO ? <label htmlFor={troO} className={lopNhan}>{chu}</label> : <span id={idNhan} className={lopNhan}>{chu}</span>}
+        {/* Luôn cùng một lớp bọc (`contents`, không đổi bố cục): bọc/bỏ bọc theo `loi` làm ô dựng lại → mất focus khi đang gõ. */}
+        <div className={loi ? 'contents [&_.field]:border-late [&_.field]:ring-1 [&_.field]:ring-late/40' : 'contents'}>{children}</div>
+        {phu && <span className="mt-1 block truncate text-[10.5px] text-slate-500">{phu}</span>}
+        {loi && <span className="mt-1 block text-[11px] text-late">{loi}</span>}
+      </Vo>
+    </BaoOTrongNhan.Provider>
   );
 }
 

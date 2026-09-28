@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { DauDuoi } from '../../ui/Nhan.tsx';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { Empty, ExamPlanText, Level, Outcome, Skeleton, Status, Task, Th } from '../../ui/ui.tsx';
+import { BoLocDoan, Empty, ExamPlanText, Level, Outcome, Skeleton, Status, Task, Th } from '../../ui/ui.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
 import { CanhBaoYThuc } from '../classes/CanhBaoYThuc.tsx';
@@ -107,10 +107,8 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents }: {
         <span className="text-[11px] text-slate-500">
           Điểm của {depth} mốc gần nhất, mốc mới nhất ở trên.
         </span>
-        <span className="flex gap-1">
-          <button className={`btn btn-sm ${depth === 2 ? 'btn-primary' : ''}`} onClick={() => setDepth(2)}>Gọn</button>
-          <button className={`btn btn-sm ${depth === 3 ? 'btn-primary' : ''}`} onClick={() => setDepth(3)}>Đầy đủ</button>
-        </span>
+        <BoLocDoan ariaLabel="Số mốc điểm" value={depth === 3 ? '3' : '2'} onChange={(k) => setDepth(k === '3' ? 3 : 2)}
+          muc={[{ key: '2', nhan: 'Gọn' }, { key: '3', nhan: 'Đầy đủ' }]} />
       </div>
 
       <div className="overflow-x-auto">

@@ -4,12 +4,15 @@ import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-import { Alert, Card, Empty, ErrorState, Field, Forbidden, Info, SectionNote, Skeleton, Status, Th } from '../../ui/ui.tsx';
-import { Drawer, Modal } from '../../ui/Drawer.tsx';
+import { Alert, Card, Empty, ErrorState, Field, Forbidden, Info, NutChon, SectionNote, Skeleton, Status, Th } from '../../ui/ui.tsx';
+import { Modal } from '../../ui/Drawer.tsx';
+import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { BranchFilter } from '../../ui/Filters.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { ONgay } from '../../ui/ONgay.tsx';
+import { NutLuat } from '../../ui/NutLuat.tsx';
 import { fmtDate } from '../../lib/format.ts';
 import {
   HANG_SO, HANG_SO_LABEL, TASK_GROUPS, TASK_GROUP_LABEL, TASK_PROGRESS, TASK_PROGRESS_LABEL,
@@ -162,7 +165,7 @@ export function TasksBoard() {
       >
         {/* ── hàng lọc: Nhóm · Trạng thái · Người phụ trách (§18.4 — không quá 10 nút một hàng) ── */}
         <div className="px-4 py-3 border-b flex flex-wrap items-center gap-3" style={{ borderColor: 'var(--line)' }}>
-          <label className="flex items-center gap-1.5 text-xs text-slate-400">
+          <label className="flex items-center gap-1.5 whitespace-nowrap text-xs text-slate-400">
             Nhóm:
             <select className="field" value={group} onChange={(e) => setParam('nhom', e.target.value || null)}>
               <option value="">Mọi nhóm</option>
@@ -171,7 +174,7 @@ export function TasksBoard() {
               ))}
             </select>
           </label>
-          <label className="flex items-center gap-1.5 text-xs text-slate-400">
+          <label className="flex items-center gap-1.5 whitespace-nowrap text-xs text-slate-400">
             Trạng thái:
             <select className="field" value={progress} onChange={(e) => setParam('trangThai', e.target.value === 'mo' ? null : e.target.value)}>
               {TRANG_THAI_LOC.map((t) => (
@@ -275,13 +278,13 @@ export function NganViecVanHanh({ taskId, onClose, onDone }: {
   const [editing, setEditing] = useState(false);
   const [addingSub, setAddingSub] = useState(false);
 
+  if (taskId === null) return null;
   return (
-    <Drawer open={taskId !== null} onClose={onClose} width="max-w-2xl"
-      title={data?.title ?? 'Công việc'}
-      subtitle={data ? `${TASK_GROUP_LABEL[data.group as keyof typeof TASK_GROUP_LABEL] ?? ''}` : undefined}>
-      {loading && <Skeleton rows={6} />}
+    <KhungPanel tieuDe={data?.title ?? 'Công việc'} rong="rong" onDong={onClose}
+      ngCanh={data ? TASK_GROUP_LABEL[data.group as keyof typeof TASK_GROUP_LABEL] || undefined : undefined}>
+      {loading && <div className="pt-3"><Skeleton rows={6} /></div>}
       {data && (
-        <div className="space-y-4">
+        <div className="space-y-4 pt-3">
           <div className="flex flex-wrap items-center gap-2">
             <Status kind={KIND[data.progress] ?? 'idle'}>{data.progressLabel}</Status>
             <Han loai="viec-van-hanh" han={data.due} />
@@ -294,7 +297,7 @@ export function NganViecVanHanh({ taskId, onClose, onDone }: {
           {data.dueHistory?.length > 0 && (
             <section>
               <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-1.5">Lịch sử dời hạn</h3>
-              <ul className="list-none p-0 m-0 space-y-1 text-xs text-slate-400">
+              <ul className="list-none p-0 m-0 space-y-1 text-xs tabular-nums text-slate-400">
                 {data.dueHistory.map((h: any, i: number) => (
                   <li key={i}>
                     {h.old ? fmtDate(h.old) : '—'} → {h.new ? fmtDate(h.new) : '—'}
@@ -320,11 +323,11 @@ export function NganViecVanHanh({ taskId, onClose, onDone }: {
 
           {data.viewer.canUpdate && (
             <div className="flex flex-wrap gap-2">
-              <button className="btn btn-primary btn-sm" onClick={() => setUpdating(true)}>Cập nhật tiến độ</button>
+              <button type="button" className="btn btn-primary btn-sm min-h-[44px] sm:min-h-0" onClick={() => setUpdating(true)}>Cập nhật tiến độ</button>
               {data.viewer.canEdit && (
                 <>
-                  <button className="btn btn-sm" onClick={() => setEditing(true)}>Sửa</button>
-                  <button className="btn btn-sm" onClick={() => setAddingSub(true)}>+ Công việc con</button>
+                  <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setEditing(true)}>Sửa</button>
+                  <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setAddingSub(true)}>+ Công việc con</button>
                 </>
               )}
             </div>
@@ -335,7 +338,7 @@ export function NganViecVanHanh({ taskId, onClose, onDone }: {
             <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-2">
               Công việc con
               {data.subtasks.length > 0 && (
-                <span className="text-slate-500 font-normal ml-2">
+                <span className="text-slate-500 font-normal tabular-nums ml-2">
                   {data.subtasks.filter((x: any) => x.progress === 'done').length}/{data.subtasks.length} hoàn thành
                 </span>
               )}
@@ -350,7 +353,7 @@ export function NganViecVanHanh({ taskId, onClose, onDone }: {
                       <span className={`text-sm ${x.overdue ? 'text-rose-300' : 'text-slate-100'}`}>{x.title}</span>
                       <Status kind={KIND[x.progress] ?? 'idle'}>{x.progressLabel}</Status>
                     </span>
-                    <span className="block text-[11px] text-slate-500 mt-0.5">
+                    <span className="block text-[11px] tabular-nums text-slate-500 mt-0.5">
                       {x.assigneeName ?? 'chưa giao'}
                       {x.due ? ` · hạn ${fmtDate(x.due)}` : ''}
                       {x.stopReason ? ` · ${x.stopReason}` : ''}
@@ -382,9 +385,12 @@ export function NganViecVanHanh({ taskId, onClose, onDone }: {
 
           {data.cases.length > 0 && (
             <section>
-              <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-2">
+              <h3 className="flex items-center gap-1.5 text-sm font-semibold text-slate-200 mt-0 mb-2">
                 Case làm căn cứ
-                <span className="text-slate-500 ml-1.5 cursor-help" title="Liên kết này chỉ là CĂN CỨ. Hoàn thành công việc quản lý KHÔNG đóng case nào, và cũng không tự tạo phương án cho em nào.">ⓘ</span>
+                {/* ⓘ bấm được (không chỉ rê chuột — luật "không thao tác nào chỉ hiện khi hover"). */}
+                <NutLuat label="Về Case làm căn cứ">
+                  Liên kết này chỉ là CĂN CỨ. Hoàn thành công việc quản lý KHÔNG đóng case nào, và cũng không tự tạo phương án cho em nào.
+                </NutLuat>
               </h3>
               <ul className="list-none p-0 m-0 space-y-1 text-xs text-slate-300">
                 {data.cases.map((c: any) => (
@@ -408,7 +414,7 @@ export function NganViecVanHanh({ taskId, onClose, onDone }: {
         <CreateTask open={addingSub} onClose={() => setAddingSub(false)} parent={data}
           branchId={data.branchId} onDone={() => { reload(); onDone(); }} />
       )}
-    </Drawer>
+    </KhungPanel>
   );
 }
 
@@ -462,11 +468,9 @@ function UpdateDialog({ open, onClose, task, onDone }: {
         <Field label="Trạng thái">
           <div className="flex flex-wrap gap-1.5">
             {TASK_PROGRESS.map((s) => (
-              <button key={s} type="button"
-                className={`btn btn-sm ${progress === s ? 'btn-primary' : ''}`}
-                onClick={() => setProgress(s)}>
+              <NutChon key={s} nho chon={progress === s} onClick={() => setProgress(s)}>
                 {TASK_PROGRESS_LABEL[s]}
-              </button>
+              </NutChon>
             ))}
           </div>
         </Field>
@@ -488,7 +492,7 @@ function UpdateDialog({ open, onClose, task, onDone }: {
               <ChonNguoi value={help} onChange={setHelp} nhom="nhan_vien" choToi={false} choNgoai ariaLabel="Người cần hỗ trợ" />
             </Field>
             <Field label="Ngày xem lại" required hint="Từ ngày cập nhật trở đi.">
-              <input type="date" className="field" min={homNay} value={reviewOn} onChange={(e) => setReviewOn(e.target.value)} />
+              <ONgay kieu="ngay" value={reviewOn} onChange={setReviewOn} toiThieu={homNay} />
             </Field>
           </>
         )}
@@ -562,7 +566,7 @@ function SuaViec({ open, onClose, task, onDone }: {
           <ChonNguoi value={watcher} onChange={setWatcher} nhom="nhan_vien" choNgoai={false} macDinhTrong="Không có" />
         </Field>
         <Field label="Hạn">
-          <input type="date" className="field" value={due} onChange={(e) => setDue(e.target.value)} />
+          <ONgay kieu="ngay" value={due} onChange={setDue} />
         </Field>
         {canDoi && (
           <Field label="Lý do dời hạn" required hint="2–200 ký tự — hạn cũ vẫn hiện lại ở cột Hạn, không mất.">
@@ -659,7 +663,7 @@ function CreateTask({ open, onClose, onDone, branchId, parent, defaultGroup, uni
         </Field>
         <Field label="Hạn"
           hint={parent ? 'Mặc định là hạn của việc cha trừ một ngày — sửa được ngay.' : undefined}>
-          <input type="date" className="field" value={due} onChange={(e) => setDue(e.target.value)} />
+          <ONgay kieu="ngay" value={due} onChange={setDue} />
         </Field>
         {!parent && (
           <Field label="Chi nhánh">

@@ -3,8 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Card, Empty, ErrorState, Info, Outcome, Skeleton, Status, Th } from '../../ui/ui.tsx';
-import { Drawer } from '../../ui/Drawer.tsx';
+import { Card, Empty, ErrorState, Info, NutChon, Outcome, Skeleton, Status, Th } from '../../ui/ui.tsx';
+import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { WeekPicker, usePeriodWindow, resolveWeek } from '../../ui/Filters.tsx';
 import { SignalList } from './SignalList.tsx';
 import { ManagerTaskList, ManagerTasks } from './ManagerTasks.tsx';
@@ -291,23 +291,19 @@ function NganBaoCao({ unit, cell, periodId, editable, editWindow, onClose, onSav
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(null); }
   };
 
+  if (!unit || !cell) return null;
   return (
-    <Drawer open={!!(unit && cell)} onClose={onClose} width="max-w-lg"
-      title={unit && cell ? `${unit.unitName} · ${cell.label}` : 'Báo cáo'}
-      subtitle={cell
-        ? (cell.submittedAt ? `đã nộp ${fmtDateTime(cell.submittedAt)}${cell.submittedBy ? ` · ${cell.submittedBy}` : ''}`
-          : cell.updatedAt ? `nháp lưu ${fmtDateTime(cell.updatedAt)}` : undefined)
-        : undefined}>
-      {unit && cell && (
-        <div className="space-y-4">
+    <KhungPanel tieuDe={`${unit.unitName} · ${cell.label}`} onDong={onClose}
+      ngCanh={cell.submittedAt ? `đã nộp ${fmtDateTime(cell.submittedAt)}${cell.submittedBy ? ` · ${cell.submittedBy}` : ''}`
+        : cell.updatedAt ? `nháp lưu ${fmtDateTime(cell.updatedAt)}` : undefined}>
+        <div className="space-y-4 pt-3">
           {chiDoc && <Info>Chỉ đọc — {editable ? 'bạn không có quyền sửa đơn vị này' : 'kỳ tháng chỉ để đọc'}.</Info>}
 
           <div className="flex gap-1.5">
             {UNIT_STATUSES.map((s) => (
-              <button key={s} type="button" disabled={chiDoc}
-                className={`btn btn-sm ${status === s ? 'btn-primary' : ''}`} onClick={() => setStatus(s)}>
+              <NutChon key={s} nho disabled={chiDoc} chon={status === s} onClick={() => setStatus(s)}>
                 {unitStatusLabel(s)}
-              </button>
+              </NutChon>
             ))}
           </div>
           <textarea className="field" rows={4} disabled={chiDoc} value={note} onChange={(e) => setNote(e.target.value)}
@@ -382,10 +378,9 @@ function NganBaoCao({ unit, cell, periodId, editable, editWindow, onClose, onSav
             </div>
           )}
         </div>
-      )}
       {/* để tsc khỏi kêu unused khi key đổi giữa các lần mở — theo dõi qua effect ở trên. */}
       <span className="hidden" aria-hidden>{key}</span>
-    </Drawer>
+    </KhungPanel>
   );
 }
 

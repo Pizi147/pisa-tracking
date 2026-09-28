@@ -41,6 +41,6 @@ export function nguoiThanhPayloadYThuc(v: NguoiChon | null): { performedBy?: num
 /** Câu báo thiếu gì, hoặc `null` nếu đã đủ. */
 export function nguoiThieu(v: NguoiChon | null, batBuoc: boolean): string | null {
   if (!v) return batBuoc ? 'Chọn người thực hiện.' : null;
-  if (v.kieu === 'ngoai' && v.ten.trim().length < 2) return 'Gõ tên người ngoài (ít nhất 2 ký tự).';
+  if (v.kieu === 'ngoai' && v.ten.trim().length < 2) return 'Gõ tên ngoài hệ thống (ít nhất 2 ký tự).';
   return null;
 }

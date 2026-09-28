@@ -9,8 +9,8 @@ import { PERMISSIONS, type NhomNguoi } from '../../../shared/domain/index.ts';
  * TÌM NGƯỜI CHO Ô CHỌN `ChonNguoi` — `GET /ref/nguoi` (PR-Form F-2, Q2).
  *
  * Khác `searchPeople` (`worklist/meeting.ts`, đòi `MEETING_VIEW`): route này chỉ cần đăng nhập — mọi giáo viên phải tự chọn
- * được người thực hiện cho case của mình. Có ngưỡng gõ ≥ 3 ký tự, tìm không phân biệt hoa thường / dấu, và trước khi gõ gì
- * gợi ý sẵn giáo viên đang dạy lớp của học viên (Q6) — trường hợp thường gặp nhất.
+ * được người thực hiện cho case của mình. Bấm là có danh sách (T14): chưa gõ → 20 người, GV cùng lớp đứng đầu; tìm không phân
+ * biệt hoa thường / dấu. GV đang dạy lớp của học viên (Q6) — trường hợp thường gặp nhất — luôn đứng đầu.
  */
 
 const ROLE_KEYS_OF: Record<NhomNguoi, readonly string[]> = {
@@ -108,22 +108,11 @@ export function timNguoi(
     cungLop: cungLopIds.has(row.id), monDay: monDayOf.get(row.id) ?? [],
   });
 
-  if (term.length < 3) {
-    if (!cungLopIds.size) return [];
-    return nguoiHopLe(nhom, [...cungLopIds], branchIds)
-      .map(build)
-      .sort((a, b) => a.name.localeCompare(b.name, 'vi'))
-      .slice(0, 6);
-  }
-
+  /* T14: chưa gõ → 20 người (GV cùng lớp đứng đầu); có gõ (kể cả 1–2 ký tự) → 12 người khớp. */
   const needle = normalizeName(term);
-  const matched = nguoiHopLe(nhom, null, branchIds)
-    .filter((r) => normalizeName(r.full_name).includes(needle) || normalizeName(r.code).includes(needle));
-  return matched
+  return nguoiHopLe(nhom, null, branchIds)
+    .filter((r) => !needle || normalizeName(r.full_name).includes(needle) || normalizeName(r.code).includes(needle))
     .map(build)
-    .sort((a, b) => {
-      if (a.cungLop !== b.cungLop) return a.cungLop ? -1 : 1;
-      return a.name.localeCompare(b.name, 'vi');
-    })
-    .slice(0, 12);
+    .sort((a, b) => (a.cungLop !== b.cungLop ? (a.cungLop ? -1 : 1) : a.name.localeCompare(b.name, 'vi')))
+    .slice(0, needle ? 12 : 20);
 }

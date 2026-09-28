@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useEffect, useRef, useState } from 'react';
 import { useApi } from '../lib/useApi.ts';
 import { useSession } from '../lib/session.tsx';
 import { api } from '../lib/api.ts';
 import { useToast } from './Toast.tsx';
 import { addDaysStr } from '../lib/format.ts';
-import { mondayOfDate, owningMonthOf, tuanLich } from '@shared/domain/index.ts';
+import { mondayOfDate, tuanLich } from '@shared/domain/index.ts';
+import { LichNho } from './LichNho.tsx';
 
 export type Period = { id: number; code: string; weekStart: string; weekEnd: string; range: string };
 export type Branch = { id: number; code: string; name: string };
@@ -58,24 +58,6 @@ function rangeOf(weekStart: string): string {
 }
 
 /**
- * Lưới lịch tháng, MỖI HÀNG LÀ MỘT TUẦN thứ Hai→Chủ nhật — chọn một ngày trong hàng nào thì
- * chọn cả tuần đó. Có ngày đệm của tháng liền kề để lưới luôn tròn tuần.
- */
-function monthGrid(year: number, month: number): string[][] {
-  const first = `${year}-${String(month).padStart(2, '0')}-01`;
-  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
-  const last = `${year}-${String(month).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`;
-  const rows: string[][] = [];
-  let cursor = mondayOfDate(first);
-  do {
-    const row: string[] = [];
-    for (let i = 0; i < 7; i += 1) { row.push(cursor); cursor = addDaysStr(cursor, 1); }
-    rows.push(row);
-  } while (rows[rows.length - 1][6] < last);
-  return rows;
-}
-
-/**
  * RESOLVE ĐÚNG MỘT TUẦN THÀNH ID THẬT — gọi khi người dùng THẬT SỰ chọn một tuần (mũi tên,
  * lịch tháng, gõ ngày, "Tuần này"), không phải khi chỉ đang hiển thị cửa sổ. Đây là ĐƯỜNG DUY
  * NHẤT tạo một hàng `report_periods` từ giao diện chọn tuần, và luôn đúng một hàng.
@@ -97,9 +79,8 @@ export function resolveWeek(weekStart: string): Promise<{ id: number }> {
  *   · cao 40px, gap 8px. Bề rộng do KHUNG CHỨA quyết định, không còn `w-52` cố định của từng nơi gọi.
  *   · trường luôn ghi tuần ĐANG CHỌN THẬT; chưa chọn (và không cho bỏ trống) thì neo tuần hiện tại.
  *
- * POPOVER: gõ ngày hoặc bấm lịch tháng (đổi tháng/năm), không dropdown hàng chục tuần (sổ §13.8).
- * Vẽ qua PORTAL ra `document.body` với `position: fixed` — nên `Drawer`/modal (cắt nội dung bằng
- * `overflow`) không cắt được nó. Mã tuần HIỆN RA dạng `W3 SEP` qua `tuanLich` (G-6 — chỉ thêm năm khi khác năm), không có
+ * POPOVER: lõi lịch chung `LichNho` (kiểu tuần, có ô "Gõ ngày") — gõ ngày hoặc bấm lịch tháng, không dropdown hàng
+ * chục tuần (sổ §13.8). `LichNho` vẽ qua PORTAL, `position: fixed`, tự lo vị trí, bấm ngoài và Esc (chỉ đóng lịch). Mã tuần HIỆN RA dạng `W3 SEP` qua `tuanLich` (G-6 — chỉ thêm năm khi khác năm), không có
  * hàm tính tuần thứ hai ở đây.
  */
 export function WeekPicker({ periodId, onPeriod, label = 'Tuần', scope, clearable }: {
@@ -159,65 +140,7 @@ export function WeekPicker({ periodId, onPeriod, label = 'Tuần', scope, cleara
 
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [calYear, setCalYear] = useState(() => owningMonthOf(shown?.weekStart ?? todayWeekStart).year);
-  const [calMonth, setCalMonth] = useState(() => owningMonthOf(shown?.weekStart ?? todayWeekStart).month);
-  const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
-  const box = useRef<HTMLDivElement>(null);
   const field = useRef<HTMLButtonElement>(null);
-  const pop = useRef<HTMLDivElement>(null);
-
-  /** Đặt popover bám dưới trường tuần, kẹp trong màn hình; hết chỗ phía dưới thì lật lên trên. */
-  const place = useCallback(() => {
-    const el = field.current;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    const width = Math.min(320, window.innerWidth - 16);
-    const left = Math.min(Math.max(8, r.left), window.innerWidth - width - 8);
-    const height = pop.current?.offsetHeight ?? 420;
-    const below = r.bottom + 4;
-    const top = below + height > window.innerHeight && r.top - height - 4 > 8 ? r.top - height - 4 : below;
-    setPos({ top, left, width });
-  }, []);
-
-  useLayoutEffect(() => { if (open) place(); }, [open, place, calMonth, calYear]);
-
-  useEffect(() => {
-    if (!open) return;
-    const away = (e: MouseEvent) => {
-      const t = e.target as Node;
-      if (box.current?.contains(t) || pop.current?.contains(t)) return;
-      setOpen(false);
-    };
-    /*
-     * ESC CHỈ ĐÓNG POPOVER, không đóng luôn `Drawer`/modal đang chứa nó: nghe ở pha bắt (capture)
-     * và chặn lan, nên listener bấm-Esc-đóng-ngăn-kéo ở pha nổi không nhận được sự kiện này.
-     */
-    const esc = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      e.stopPropagation();
-      setOpen(false);
-      field.current?.focus();
-    };
-    const reposition = () => place();
-    document.addEventListener('mousedown', away);
-    document.addEventListener('keydown', esc, true);
-    window.addEventListener('resize', reposition);
-    window.addEventListener('scroll', reposition, true);
-    return () => {
-      document.removeEventListener('mousedown', away);
-      document.removeEventListener('keydown', esc, true);
-      window.removeEventListener('resize', reposition);
-      window.removeEventListener('scroll', reposition, true);
-    };
-  }, [open, place]);
-
-  // Mở popover thì lịch neo lại đúng tháng đang xem — không giữ tháng của lần mở trước.
-  useEffect(() => {
-    if (!open) return;
-    const om = owningMonthOf(shown?.weekStart ?? todayWeekStart);
-    setCalYear(om.year); setCalMonth(om.month);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ neo lại MỖI LẦN MỞ, cố ý bỏ qua shown/todayWeekStart
-  }, [open]);
 
   async function pick(weekStart: string) {
     setBusy(true);
@@ -237,20 +160,8 @@ export function WeekPicker({ periodId, onPeriod, label = 'Tuần', scope, cleara
     void pick(addDaysStr(base, 7 * deltaWeeks));
   }
 
-  const prevMonth = () => setCalMonth((m) => {
-    if (m === 1) { setCalYear((y) => y - 1); return 12; }
-    return m - 1;
-  });
-  const nextMonth = () => setCalMonth((m) => {
-    if (m === 12) { setCalYear((y) => y + 1); return 1; }
-    return m + 1;
-  });
-
-  /** Gợi ý tuần gần đây: hôm nay và ba tuần trước — không cần gõ/bấm lịch cho việc hay gặp nhất. */
-  const recent = [0, -1, -2, -3].map((n) => addDaysStr(todayWeekStart, 7 * n));
-
   return (
-    <div className="block min-w-0" ref={box}>
+    <div className="block min-w-0">
       {label && <span className="label">{label}</span>}
       <div className="flex flex-wrap items-stretch gap-2">
         {/* NHÓM KHÔNG TÁCH HÀNG: mũi tên · trường tuần · mũi tên. */}
@@ -262,7 +173,7 @@ export function WeekPicker({ periodId, onPeriod, label = 'Tuần', scope, cleara
           >‹</button>
           <button
             ref={field} type="button"
-            className="field flex-1 min-w-0 h-11 text-left flex items-center justify-between gap-2"
+            className="field flex-1 min-w-0 h-11 text-left flex items-center justify-between gap-2 tabular-nums"
             aria-haspopup="dialog" aria-expanded={open}
             onClick={() => setOpen((v) => !v)} disabled={busy}
           >
@@ -289,65 +200,9 @@ export function WeekPicker({ periodId, onPeriod, label = 'Tuần', scope, cleara
         )}
       </div>
 
-      {open && createPortal(
-        <div
-          ref={pop} role="dialog" aria-label="Chọn tuần"
-          className="fixed z-[70] surface-2 rounded-lg border shadow-xl p-3"
-          style={{
-            borderColor: 'var(--line-strong)',
-            top: pos?.top ?? 0, left: pos?.left ?? 0, width: pos?.width ?? 320,
-            /* Chưa đo xong vị trí thì ẩn — không nhấp nháy ở góc trên trái. */
-            visibility: pos ? 'visible' : 'hidden',
-          }}
-        >
-          <label className="block mb-2">
-            <span className="label">Gõ ngày</span>
-            <input
-              type="date" className="field"
-              onChange={(e) => { if (e.target.value) void pick(mondayOfDate(e.target.value)); }}
-            />
-          </label>
-
-          <div className="flex items-center justify-between mb-2">
-            <button type="button" className="btn btn-sm px-2" onClick={prevMonth} aria-label="Tháng trước">‹</button>
-            <span className="text-sm text-slate-200">Tháng {calMonth}/{calYear}</span>
-            <button type="button" className="btn btn-sm px-2" onClick={nextMonth} aria-label="Tháng sau">›</button>
-          </div>
-
-          <div className="grid grid-cols-7 gap-0.5 text-[11px] text-slate-500 mb-1">
-            {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map((d) => <div key={d} className="text-center">{d}</div>)}
-          </div>
-          <div className="space-y-0.5">
-            {monthGrid(calYear, calMonth).map((row) => (
-              <div
-                key={row[0]}
-                className={`grid grid-cols-7 gap-0.5 rounded ${shown && row[0] === shown.weekStart ? 'bg-white/10' : ''}`}
-              >
-                {row.map((d) => {
-                  const inMonth = d.slice(0, 4) === String(calYear) && d.slice(5, 7) === String(calMonth).padStart(2, '0');
-                  const isToday = d === today;
-                  return (
-                    <button
-                      key={d} type="button" disabled={busy}
-                      className={`text-center rounded py-0.5 hover:bg-white/10 ${inMonth ? 'text-slate-200' : 'text-slate-600'} ${isToday ? 'font-semibold underline' : ''}`}
-                      onClick={() => void pick(mondayOfDate(d))}
-                    >{Number(d.slice(8, 10))}</button>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-
-          <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t" style={{ borderColor: 'var(--line)' }}>
-            <span className="text-[11px] text-slate-500 w-full mb-0.5">Gần đây</span>
-            {recent.map((ws, i) => (
-              <button key={ws} type="button" className="btn btn-sm" disabled={busy} onClick={() => void pick(ws)}>
-                {i === 0 ? 'Tuần này' : rangeOf(ws)}
-              </button>
-            ))}
-          </div>
-        </div>,
-        document.body,
+      {open && (
+        <LichNho kieu="tuan" goNgay value={shown?.weekStart ?? null} homNay={today} luat={{}} neo={field}
+          onChon={(t2) => { if (!busy) void pick(t2); }} onDong={() => setOpen(false)} />
       )}
     </div>
   );

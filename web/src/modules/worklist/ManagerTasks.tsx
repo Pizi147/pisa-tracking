@@ -4,7 +4,8 @@ import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Modal } from '../../ui/Drawer.tsx';
-import { Card, Empty, Field, SectionNote, Skeleton, Task } from '../../ui/ui.tsx';
+import { ONgay } from '../../ui/ONgay.tsx';
+import { Card, Empty, Field, NutChon, SectionNote, Skeleton, Task } from '../../ui/ui.tsx';
 import { fmtDate } from '../../lib/format.ts';
 import {
   ENTRY_SKILLS, ENTRY_SKILL_LABEL,
@@ -132,10 +133,8 @@ function TaskDialog({ open, onClose, periodId, onDone }: {
       <div className="space-y-3">
         <Field label="Loại việc">
           <div className="flex gap-1 flex-wrap">
-            <button type="button" className={`btn btn-sm ${kind === 'branch_ops' ? 'btn-primary' : ''}`}
-              onClick={() => setKind('branch_ops')}>Việc chi nhánh</button>
-            <button type="button" className={`btn btn-sm ${kind === 'teacher_task' ? 'btn-primary' : ''}`}
-              onClick={() => setKind('teacher_task')}>Giao giáo viên</button>
+            <NutChon nho chon={kind === 'branch_ops'} onClick={() => setKind('branch_ops')}>Việc chi nhánh</NutChon>
+            <NutChon nho chon={kind === 'teacher_task'} onClick={() => setKind('teacher_task')}>Giao giáo viên</NutChon>
           </div>
         </Field>
 
@@ -159,8 +158,7 @@ function TaskDialog({ open, onClose, periodId, onDone }: {
             <Field label="Kỹ năng nào" required>
               <div className="flex gap-1 flex-wrap">
                 {topics.map((k) => (
-                  <button key={k} type="button" className={`btn btn-sm ${topic === k ? 'btn-primary' : ''}`}
-                    onClick={() => setTopic(k)}>{topicLabel(k)}</button>
+                  <NutChon key={k} nho chon={topic === k} onClick={() => setTopic(k)}>{topicLabel(k)}</NutChon>
                 ))}
               </div>
             </Field>
@@ -175,7 +173,7 @@ function TaskDialog({ open, onClose, periodId, onDone }: {
         )}
 
         <Field label="Hạn">
-          <input type="date" className="field" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+          <ONgay kieu="ngay" value={dueDate} onChange={setDueDate} />
         </Field>
         <Field label="Ghi chú">
           <input className="field" value={note} onChange={(e) => setNote(e.target.value)} />

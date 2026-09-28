@@ -112,7 +112,7 @@ export function KhoiNo({ no, mo, onMo, chiQuaHan, onBoQuaHan, dongMo, onMoDong, 
               const k = kyNangCua(d, homNay);
               const dangMo = dongMo?.d.key === d.key;
               const nut = (
-                <button type="button" className={`btn btn-sm min-h-[44px] md:min-h-0 ${d.duocCham && !xong ? 'btn-primary' : ''}`}
+                <button type="button" className={d.duocCham && !xong ? 'btn btn-sm btn-primary min-h-[44px] md:min-h-0' : 'btn btn-sm min-h-[44px] md:min-h-0'}
                   aria-expanded={dangMo}
                   title={dangMo ? 'Thu lưới lại' : d.duocCham ? 'Mở lưới ngay dưới dòng, chỉ các em còn nợ' : 'Xem lưới (môn người khác dạy)'}
                   onClick={() => onMoDong(dangMo ? null : d, i)}>

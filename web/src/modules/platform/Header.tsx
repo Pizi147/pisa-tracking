@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSession } from '../../lib/session.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { api } from '../../lib/api.ts';
 import { Info } from '../../ui/ui.tsx';
 import { roleLabel, skillShort } from '../../lib/format.ts';
-import { chuanHoaMaLop, duongThongBao } from '@shared/domain/index.ts';
+import { buocDanhSach, chuanHoaMaLop, duongThongBao } from '@shared/domain/index.ts';
 
 type SearchHit = { id: number; studentCode: string; fullName: string; classCode: string | null };
 type LopRef = { id: number; code: string; student_count: number };
@@ -16,10 +16,18 @@ export function Header() {
   const navigate = useNavigate();
   const [q, setQ] = useState('');
   const [openMenu, setOpenMenu] = useState<null | 'account' | 'notif'>(null);
-  /* null = chưa có kết quả học viên cho chữ đang gõ (đang chờ) — chưa nói "Không tìm thấy". */
-  const [hits, setHits] = useState<SearchHit[] | null>(null);
+  const [hits, setHits] = useState<SearchHit[]>([]);
+  /** Lượt tìm cuối đã trả về (để "Không tìm thấy…" không hiện khi đang chờ). */
+  const [daTim, setDaTim] = useState(false);
+  /** Danh sách kết quả đang hiện (bấm ra ngoài / Esc thì ẩn, gõ hoặc vào lại ô thì hiện). */
   const [moTim, setMoTim] = useState(false);
+  /** Chỉ số dòng đang sáng khi đi bằng mũi tên, đếm chung học viên rồi lớp (−1 = chưa chọn). */
+  const [dong, setDong] = useState(-1);
   const boxRef = useRef<HTMLDivElement>(null);
+  const oTim = useRef<HTMLInputElement>(null);
+  const nutThongBao = useRef<HTMLButtonElement>(null);
+  const nutTaiKhoan = useRef<HTMLButtonElement>(null);
+  const idDs = useId();
   const notifications = useApi<any[]>('/notifications');
   /* Danh sách lớp trong phạm vi: đọc một lần (useApi nhớ sẵn), lọc tại chỗ theo mã chuẩn hoá — gõ "ft101" ra MB FT 101. */
   const lopRef = useApi<LopRef[]>('/ref/classes');
@@ -30,17 +38,15 @@ export function Header() {
     : [];
 
   useEffect(() => {
-    setHits(null);
-    if (!timDu) return;
+    setDaTim(false);                                   // lượt mới: chưa trả về thì không báo "Không tìm thấy", Enter không mở kết quả cũ
+    if (!timDu) { setHits([]); setDong(-1); return; }
     const t = setTimeout(() => {
       api.get<{ rows: SearchHit[] }>(`/students?q=${encodeURIComponent(q)}`)
-        .then((d) => setHits((d.rows ?? []).slice(0, 6)))
-        .catch(() => setHits([]));
+        .then((d) => { setHits((d.rows ?? []).slice(0, 6)); setDaTim(true); setDong(-1); })
+        .catch(() => { setHits([]); setDaTim(false); setDong(-1); });
     }, 250);
     return () => clearTimeout(t);
   }, [q, timDu]);
-
-  const dong = () => { setQ(''); setHits(null); setMoTim(false); };
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
@@ -50,6 +56,42 @@ export function Header() {
     return () => document.removeEventListener('mousedown', onClick);
   }, []);
 
+  /* Một danh sách cho bàn phím: học viên trước, lớp sau. */
+  const den = [...hits.map((h) => `/hoc-vien/${h.id}`), ...lops.map((l) => `/hoc-vien/lop/${l.id}`)];
+  const coDs = moTim && timDu && den.length > 0;
+  const khongThay = moTim && timDu && daTim && den.length === 0;
+  const dangMo = coDs || khongThay || openMenu !== null;
+
+  /* Esc đóng menu/danh sách đang mở và trả focus về nút/ô đã mở nó — pha bắt + chặn lan (cùng mẫu MenuDong).
+     CHỈ khi focus đang ở trong đầu trang: menu bỏ ngỏ không được giành Esc của panel/hộp thoại mở sau. */
+  useEffect(() => {
+    if (!dangMo) return undefined;
+    const phim = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || !boxRef.current?.contains(document.activeElement)) return;
+      e.stopPropagation();
+      e.preventDefault();
+      const ve = openMenu === 'notif' ? nutThongBao.current : openMenu === 'account' ? nutTaiKhoan.current : oTim.current;
+      setOpenMenu(null); setMoTim(false); setDong(-1);
+      ve?.focus();
+    };
+    document.addEventListener('keydown', phim, true);
+    return () => document.removeEventListener('keydown', phim, true);
+  }, [dangMo, openMenu]);
+
+  const moMuc = (i: number) => { navigate(den[i]); setQ(''); setHits([]); setDaTim(false); setMoTim(false); setDong(-1); };
+  /** Thuộc tính chung của một dòng kết quả (học viên hay lớp) — `i` đếm chung cả hai nhóm. */
+  const nutMuc = (i: number) => ({
+    id: `${idDs}-${i}`,
+    type: 'button' as const,
+    role: 'option',
+    'aria-selected': i === dong,
+    tabIndex: -1,
+    className: `w-full min-h-[44px] sm:min-h-0 text-left px-3 py-2 text-sm ${i === dong ? 'bg-white/5' : 'hover:bg-white/5'}`,
+    onMouseEnter: () => setDong(i),
+    onMouseDown: (e: ReactMouseEvent) => e.preventDefault(),
+    onClick: () => moMuc(i),
+  });
+
   const unread = useMemo(() => (notifications.data ?? []).filter((n) => !n.read_at).length, [notifications.data]);
   const core = (session?.assignments ?? []).filter((a) => a.isCore);
   const skills = (session?.assignments ?? []).filter((a) => a.skill);
@@ -58,53 +100,72 @@ export function Header() {
     <div className="flex items-center gap-2 min-w-0" ref={boxRef}>
       <div className="relative w-28 sm:w-52 lg:w-64 shrink">
         <input
+          ref={oTim}
           className="field"
           placeholder="Tìm học viên, lớp…"
           value={q}
           onChange={(e) => { setQ(e.target.value); setMoTim(true); }}
           onFocus={() => setMoTim(true)}
+          onBlur={(e) => { if (!e.currentTarget.parentElement?.contains(e.relatedTarget as Node | null)) setMoTim(false); }}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {           // Home/End để nguyên cho con trỏ (như ô chọn người)
+              if (!den.length) return;
+              e.preventDefault();
+              setMoTim(true);
+              const k = buocDanhSach(den.length, dong, e.key);
+              if (k !== null) setDong(k);
+            } else if (e.key === 'Enter' && coDs && daTim) {
+              e.preventDefault();
+              moMuc(dong >= 0 && dong < den.length ? dong : 0);
+            }
+          }}
+          role="combobox"
+          aria-expanded={coDs}
+          aria-controls={idDs}
+          aria-activedescendant={coDs && dong >= 0 ? `${idDs}-${dong}` : undefined}
+          aria-autocomplete="list"
+          autoComplete="off"
           aria-label="Tìm học viên, lớp trong phạm vi được cấp quyền"
         />
-        {moTim && timDu && (hits !== null || lops.length > 0) && (
-          <ul className="absolute z-40 mt-1 w-[min(18rem,calc(100vw-2rem))] right-0 card overflow-hidden shadow-2xl list-none p-0 m-0">
-            {!!hits?.length && <li className="px-3 pt-2 pb-1 text-[11px] text-slate-500">Học viên</li>}
-            {(hits ?? []).map((h) => (
-              <li key={`hv${h.id}`}>
-                <button
-                  className="w-full text-left px-3 py-2 hover:bg-white/5 text-sm"
-                  onClick={() => { navigate(`/hoc-vien/${h.id}`); dong(); }}
-                >
+        {coDs && (
+          <ul id={idDs} role="listbox" aria-label="Kết quả tìm học viên, lớp"
+            className="absolute z-40 mt-1 w-[min(18rem,calc(100vw-2rem))] right-0 card overflow-hidden shadow-2xl list-none p-0 m-0">
+            {hits.length > 0 && <li role="none" aria-hidden className="px-3 pt-2 pb-1 text-[11px] text-slate-500">Học viên</li>}
+            {hits.map((h, i) => (
+              <li key={`hv${h.id}`} role="none">
+                <button {...nutMuc(i)}>
                   <span className="text-slate-100">{h.fullName}</span>
                   <span className="text-slate-500 text-xs ml-2">{h.studentCode}</span>
                   {h.classCode && <span className="text-slate-500 text-xs ml-2">{h.classCode}</span>}
                 </button>
               </li>
             ))}
-            {lops.length > 0 && <li className="px-3 pt-2 pb-1 text-[11px] text-slate-500">Lớp</li>}
-            {lops.map((l) => (
-              <li key={`lop${l.id}`}>
-                <button
-                  className="w-full text-left px-3 py-2 hover:bg-white/5 text-sm"
-                  onClick={() => { navigate(`/hoc-vien/lop/${l.id}`); dong(); }}
-                >
+            {lops.length > 0 && <li role="none" aria-hidden className="px-3 pt-2 pb-1 text-[11px] text-slate-500">Lớp</li>}
+            {lops.map((l, j) => (
+              <li key={`lop${l.id}`} role="none">
+                <button {...nutMuc(hits.length + j)}>
                   <span className="text-slate-100">{l.code}</span>
                   <span className="text-slate-500 text-xs ml-2 tabular-nums">· {l.student_count} HV</span>
                 </button>
               </li>
             ))}
-            {hits !== null && hits.length === 0 && lops.length === 0 && (
-              <li className="px-3 py-2 text-sm text-slate-500">Không tìm thấy</li>
-            )}
           </ul>
+        )}
+        {khongThay && (
+          <div role="status" className="absolute z-40 mt-1 w-[min(18rem,calc(100vw-2rem))] right-0 card shadow-2xl px-3 py-2 text-[13px] text-slate-400">
+            Không tìm thấy học viên hoặc lớp
+          </div>
         )}
       </div>
 
       <div className="relative">
-        <button className="btn btn-sm" onClick={() => setOpenMenu(openMenu === 'notif' ? null : 'notif')}
-          aria-label="Thông báo">
+        <button ref={nutThongBao} className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setOpenMenu(openMenu === 'notif' ? null : 'notif')}
+          aria-label="Thông báo" aria-expanded={openMenu === 'notif'}>
           <span className="hidden sm:inline">Thông báo</span>
-          <span className="sm:hidden" aria-hidden>🔔</span>
-          {unread > 0 && <span className="ml-1 rounded bg-sky-300/25 text-sky-200 px-1.5 text-[10px]">{unread}</span>}
+          {/* Chuông nét mảnh 14 px thay emoji (luật "dấu nhỏ gọn"). */}
+          <svg className="sm:hidden" aria-hidden width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M4 11V7a4 4 0 0 1 8 0v4l1.5 1.5h-11L4 11ZM6.5 14a1.5 1.5 0 0 0 3 0" strokeLinejoin="round" /></svg>
+          {unread > 0 && <span className="ml-1 rounded bg-sky-300/25 text-sky-200 px-1.5 text-[10px] tabular-nums">{unread}</span>}
         </button>
         {openMenu === 'notif' && (
           <div className="absolute right-0 mt-1 w-[min(24rem,calc(100vw-2rem))] card z-40 shadow-2xl max-h-96 overflow-y-auto">
@@ -135,7 +196,8 @@ export function Header() {
       </div>
 
       <div className="relative">
-        <button className="btn btn-sm" onClick={() => setOpenMenu(openMenu === 'account' ? null : 'account')}>
+        <button ref={nutTaiKhoan} className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setOpenMenu(openMenu === 'account' ? null : 'account')}
+          aria-expanded={openMenu === 'account'}>
           <span className="text-slate-200 truncate max-w-[6rem] sm:max-w-[10rem]">{session?.user?.fullName}</span>
         </button>
         {openMenu === 'account' && (

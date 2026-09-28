@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   MEASURE_KINDS, MEASURE_KIND_LABEL, MEASURE_STATUS_LABEL, MEASURE_REQUIRED_FIELDS,
-  isWarningKind, measureMissing, measureNotifiesManager, warningPrerequisite,
+  isWarningKind, kiemGhiRoKhac, measureMissing, measureNotifiesManager, warningPrerequisite,
   type MeasureKind, type MeasureStatus,
 } from '../../../shared/domain/index.ts';
 import type { Principal } from '../permissions.ts';
@@ -232,7 +232,9 @@ function checkKind(kind: unknown): MeasureKind {
 function checkCustomName(kind: MeasureKind, name: unknown): string | null {
   const text = String(name ?? '').trim();
   if (kind !== 'other') return null;
-  if (!text) throw badRequest('Loại "Khác" cần ghi tên phương án xử lý — GVCN tự đặt.');
+  /* T13: tên phương án của loại "Khác" (GVCN tự đặt) cần ≥ 3 ký tự. */
+  const loi = kiemGhiRoKhac(text);
+  if (loi) throw badRequest(`Loại "Khác" — tên phương án: ${loi}.`);
   return text.slice(0, 120);
 }
 

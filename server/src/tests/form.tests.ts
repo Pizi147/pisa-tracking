@@ -47,8 +47,8 @@ export async function runFormTests(t: YThucTestKit) {
     assert(domain.nguoiThieu(null, true) === 'Chọn người thực hiện.', 'thiếu + bắt buộc');
     assert(domain.nguoiThieu(null, false) === null, 'thiếu + không bắt buộc → null');
     assert(
-      domain.nguoiThieu({ kieu: 'ngoai', ten: 'A' }, true) === 'Gõ tên người ngoài (ít nhất 2 ký tự).',
-      'người ngoài tên quá ngắn',
+      domain.nguoiThieu({ kieu: 'ngoai', ten: 'A' }, true) === 'Gõ tên ngoài hệ thống (ít nhất 2 ký tự).',
+      'tên ngoài hệ thống quá ngắn',
     );
     assert(domain.nguoiThieu({ kieu: 'ngoai', ten: 'An' }, true) === null, 'người ngoài tên đủ dài → null');
     assert(domain.nguoiThieu({ kieu: 'toi' }, true) === null, 'đã chọn Tôi → null');
@@ -128,8 +128,9 @@ export async function runFormTests(t: YThucTestKit) {
       assert(searchTeacher.status === 200, `200: ${searchTeacher.status} ${JSON.stringify(searchTeacher.json)}`);
     });
 
-    check('PR-Form · dưới 3 ký tự, không studentId → mảng rỗng', () => {
-      assert(Array.isArray(noStudent.json) && noStudent.json.length === 0, `[]: ${JSON.stringify(noStudent.json)}`);
+    check('PR-NEN · q rỗng/ngắn vẫn trả danh sách (T14)', () => {
+      assert(Array.isArray(noStudent.json) && noStudent.json.length > 0 && noStudent.json.every((r: any) => !!r.name),
+        `Có danh sách, mọi dòng có tên: ${JSON.stringify(noStudent.json)}`);
     });
 
     check('PR-Form · gõ không dấu "tran ngoc" tìm ra GV "Trần Ngọc Hà"', () => {
@@ -149,10 +150,12 @@ export async function runFormTests(t: YThucTestKit) {
       assert(!names.includes(lockedName), `Tài khoản khoá không được hiện: ${lockedName} trong ${JSON.stringify(names)}`);
     });
 
-    check('PR-Form · studentId của em lớp MB FOU 12 + q rỗng → đúng các GV đang dạy lớp đó, cungLop = true', () => {
+    check('PR-Form · studentId của em lớp MB FOU 12 + q rỗng → các GV đang dạy lớp đó (cungLop = true) đứng đầu (PR-NEN T14: sau đó là người khác, tối đa 20)', () => {
       const rows = suggestFou.json ?? [];
-      assert(Array.isArray(rows) && rows.length > 0, `phải gợi ý ít nhất một GV: ${JSON.stringify(rows)}`);
-      assert(rows.every((r: any) => r.cungLop === true), `mọi dòng gợi ý trước khi gõ phải cungLop=true: ${JSON.stringify(rows)}`);
+      assert(Array.isArray(rows) && rows.length > 0 && rows.length <= 20, `phải gợi ý ít nhất một GV, tối đa 20: ${JSON.stringify(rows)}`);
+      const dauKhac = rows.findIndex((r: any) => r.cungLop !== true);
+      assert(rows[0].cungLop === true && (dauKhac === -1 || rows.slice(dauKhac).every((r: any) => r.cungLop !== true)),
+        `GV cùng lớp phải đứng đầu, trước mọi người khác: ${JSON.stringify(rows)}`);
       const names = rows.map((r: any) => r.name);
       assert(names.includes('Trần Ngọc Hà'), `GVCN MB FOU 12 phải nằm trong gợi ý: ${JSON.stringify(names)}`);
     });

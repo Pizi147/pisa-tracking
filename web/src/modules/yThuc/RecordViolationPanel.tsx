@@ -6,9 +6,11 @@ import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
+import { OKhac } from '../../ui/OKhac.tsx';
+import { NutChon } from '../../ui/ui.tsx';
 import {
-  VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, VIOLATION_DESCRIPTION_MIN, VIOLATION_OTHER_DESCRIPTION_MIN,
-  VIOLATION_SKILLS, VIOLATION_SKILL_LABEL, cauCanhBaoTrung, type ViolationCategory, dsLoi,
+  VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, VIOLATION_DESCRIPTION_MIN,
+  VIOLATION_SKILLS, VIOLATION_SKILL_LABEL, cauCanhBaoTrung, type ViolationCategory, dsLoi, kiemGhiRoKhac, tachKhac, KHAC_TOI_THIEU,
 } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 
@@ -48,6 +50,8 @@ export function RecordViolationPanel({
   const [daChonMon, setDaChonMon] = useState(false);
   const [occurredOn, setOccurredOn] = useState(today);
   const [description, setDescription] = useState('');
+  /* Nhóm "Khác" (T13): ô Ghi rõ ngay dưới. Không có cột riêng → máy chủ ghép "{ghi rõ} — {mô tả}" (Q9). Đổi nhóm vẫn giữ chữ đã gõ. */
+  const [ghiRo, setGhiRo] = useState('');
   const [busy, setBusy] = useState(false);
   const lf = useLoiForm();
   /* K2-6f (Q4): ghi mới xong không đóng — chuyển sang bước "Đã ghi" + Bằng chứng. */
@@ -60,7 +64,7 @@ export function RecordViolationPanel({
   );
 
   const reset = () => {
-    setCategory('homework'); setSkill(''); setOccurredOn(today); setDescription(''); setDaChonMon(false);
+    setCategory('homework'); setSkill(''); setOccurredOn(today); setDescription(''); setGhiRo(''); setDaChonMon(false);
     setDaGhi(null); setXemTrung(false); lf.datLai();
   };
 
@@ -68,7 +72,9 @@ export function RecordViolationPanel({
     if (!open) return;
     if (violation) {
       setCategory(violation.category); setSkill(violation.skill ?? ''); setOccurredOn(violation.occurredOn);
-      setDescription(violation.description); setDaChonMon(true);
+      /* Sửa vi phạm "Khác" đã lưu "A — B": A về ô Ghi rõ, B về ô Mô tả — lưu lại gửi B + ghiRoKhac, không thành "A — A — B". */
+      const t = violation.category === 'other' ? tachKhac(violation.description) : { ghiRo: '', moTa: violation.description };
+      setGhiRo(t.ghiRo); setDescription(t.moTa); setDaChonMon(true);
     } else {
       reset();
     }
@@ -92,12 +98,20 @@ export function RecordViolationPanel({
   const defaultSkill = editing ? null : (similar.data?.defaultSkill ?? null);
   const displaySkill = daChonMon ? skill : (defaultSkill ?? skill);
 
-  const minLen = category === 'other' ? VIOLATION_OTHER_DESCRIPTION_MIN : VIOLATION_DESCRIPTION_MIN;
+  const minLen = VIOLATION_DESCRIPTION_MIN; /* PR-NEN: luật 30 ký tự của "Khác" đã bỏ (T13); "Khác" cần ô Ghi rõ ≥ 3. */
+  const laNhomKhac = category === 'other';
+  /*
+   * Vi phạm "Khác" CŨ (trước T13: không có Ghi rõ, hoặc mô tả sau " — " ngắn) mà chưa đụng Ghi rõ/Mô tả (chỉ đổi ngày/môn): không bắt
+   * luật nào của hai ô này, gửi lại đúng mô tả đang lưu, KHÔNG gửi ghiRoKhac → máy chủ không kiểm, không ghi lịch sử (sửa Task 2).
+   */
+  const goc = violation?.category === 'other' ? tachKhac(violation.description) : null;
+  const chuaDung = !!goc && laNhomKhac && ghiRo === goc.ghiRo && description === goc.moTa;
   /* Ô lỗi (YC-12.5.2): lý do dưới ô khi rời ô; chân "n ô cần sửa ↑" sau khi bấm Lưu. */
   const loi = dsLoi([
     ...(students && !editing ? [{ khoa: 'hoc-vien', nhan: 'Học viên', chon: true }] : []),
-    { khoa: 'mo-ta', nhan: 'Mô tả', toiThieu: minLen },
-  ], { 'hoc-vien': studentId, 'mo-ta': description });
+    ...(laNhomKhac && !chuaDung ? [{ khoa: 'ghi-ro', nhan: 'Ghi rõ', toiThieu: KHAC_TOI_THIEU }] : []),
+    ...(!chuaDung ? [{ khoa: 'mo-ta', nhan: 'Mô tả', toiThieu: minLen }] : []),
+  ], { 'hoc-vien': studentId, 'ghi-ro': ghiRo, 'mo-ta': description });
   const thieu = loi.map((l) => l.nhan);
 
   const hoanTac = async (id: number) => {
@@ -139,8 +153,10 @@ export function RecordViolationPanel({
     setBusy(true);
     try {
       if (editing && violation) {
+        /* Luôn gửi cả nhóm + mô tả (máy chủ bỏ qua ghiRoKhac nếu không kèm hai trường này); ghiRoKhac CHỈ khi nhóm Khác. */
         await api.patch(`/violations/${violation.id}`, {
-          category, skill: skill || null, occurredOn: occurredOn || undefined, description,
+          category, skill: skill || null, occurredOn: occurredOn || undefined,
+          ...(chuaDung ? { description: violation.description } : { description, ...(laNhomKhac ? { ghiRoKhac: ghiRo.trim() } : {}) }),
         });
         invalidate('/violations'); invalidate('/measures'); invalidate('/classes'); invalidate('/students'); invalidate('/y-thuc');
         toast.push('ok', 'Đã lưu vi phạm');
@@ -151,6 +167,7 @@ export function RecordViolationPanel({
           /* YT-4: chưa đụng ô Môn thì không gửi trường này — máy chủ tự điền. Đã đụng thì gửi đúng giá trị, kể cả rỗng (chủ ý để trống). */
           ...(daChonMon ? { skill: skill || null } : {}),
           occurredOn: occurredOn || undefined, description, idempotencyKey,
+          ...(laNhomKhac ? { ghiRoKhac: ghiRo.trim() } : {}),
         });
         invalidate('/violations'); invalidate('/measures'); invalidate('/classes'); invalidate('/students'); invalidate('/y-thuc');
         /* K2-6f: KHÔNG đóng — chuyển sang bước "Đã ghi" + Bằng chứng. `onDone` chỉ chạy khi đóng thật (props không đổi). */
@@ -215,12 +232,13 @@ export function RecordViolationPanel({
         <Truong nhan="Nhóm" batBuoc as="div">
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {VIOLATION_CATEGORIES.map((c) => (
-              <button key={c} type="button" aria-pressed={category === c}
-                className={`btn min-h-[44px] justify-center sm:min-h-0 ${category === c ? 'btn-primary' : ''}`} onClick={() => setCategory(c)}>
+              <NutChon key={c} chon={category === c} className="justify-center" onClick={() => setCategory(c)}>
                 {VIOLATION_CATEGORY_LABEL[c as ViolationCategory]}
-              </button>
+              </NutChon>
             ))}
           </div>
+          <OKhac hien={laNhomKhac} value={ghiRo} onChange={setGhiRo}
+            id={lf.oId('ghi-ro')} onBlur={lf.roi('ghi-ro')} loi={lf.hien('ghi-ro') ? kiemGhiRoKhac(ghiRo) : null} khongBaoLoi={chuaDung} />
         </Truong>
 
         <Truong nhan="Mô tả" batBuoc loi={lf.loiCua(loi, 'mo-ta')} dem={{ co: description.trim().length, can: minLen }}>

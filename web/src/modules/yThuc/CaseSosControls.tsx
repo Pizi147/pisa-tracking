@@ -2,9 +2,12 @@ import { useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
+import { ONgay } from '../../ui/ONgay.tsx';
+import { OKhac } from '../../ui/OKhac.tsx';
+import { NutChon } from '../../ui/ui.tsx';
 import {
   CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, INTERVENTION_KIND_LABEL, issuesForTopic,
-  interventionKindsFor, reasonNeedsText, nguoiThanhPayload, type CaseDismissReason, type NguoiChon,
+  interventionKindsFor, reasonNeedsText, nguoiThanhPayload, type CaseDismissReason, type NguoiChon, laKhac, kiemGhiRoKhac,
 } from '@shared/domain/index.ts';
 
 const invalidateCases = () => { invalidate('/cases'); invalidate('/students'); invalidate('/overview'); invalidate('/my-work'); };
@@ -18,14 +21,19 @@ export function CauseDeterminationPanel({ caseId, topic, currentCode, onClose, o
 }) {
   const toast = useToast();
   const [code, setCode] = useState(currentCode ?? '');
+  /* "Khác" (T13): ô Ghi rõ ngay dưới, lưu ở `observation` (Q9). */
+  const [ghiRo, setGhiRo] = useState('');
   const [busy, setBusy] = useState(false);
   const causes = topic ? issuesForTopic(topic) : [];
+  /* K2-3 (điện thoại không có hover): câu Ghi rõ hiện ngay dưới ô từ lúc chọn Khác, không đợi rời ô — ba form nhỏ trong file này. */
+  const loiGhiRo = laKhac(code) ? kiemGhiRoKhac(ghiRo) : null;
 
   const save = async () => {
     if (!code) { toast.push('error', 'Chọn phân loại vấn đề.'); return; }
+    if (loiGhiRo) return;
     setBusy(true);
     try {
-      await api.put(`/cases/${caseId}/issues`, { primaryCode: code });
+      await api.put(`/cases/${caseId}/issues`, { primaryCode: code, observation: laKhac(code) ? ghiRo.trim() : undefined });
       invalidateCases();
       toast.push('ok', 'Đã chọn nguyên nhân');
       onClose(); onDone?.();
@@ -39,18 +47,17 @@ export function CauseDeterminationPanel({ caseId, topic, currentCode, onClose, o
       ) : (
         <div className="flex gap-1 flex-wrap">
           {causes.map((i) => (
-            <button key={i.code} type="button" title={i.hint}
-              className={`btn btn-sm ${code === i.code ? 'btn-primary' : ''}`}
-              onClick={() => setCode(i.code)}>
+            <NutChon key={i.code} nho title={i.hint} chon={code === i.code} onClick={() => setCode(i.code)}>
               {i.label}
-            </button>
+            </NutChon>
           ))}
         </div>
       )}
+      <OKhac hien={laKhac(code)} value={ghiRo} onChange={setGhiRo} goiY="Ví dụ: Chưa quen dạng bài mới" loi={loiGhiRo} />
       <div className="flex gap-1.5">
         <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>Huỷ</button>
         {causes.length > 0 && (
-          <button type="button" className="btn btn-sm btn-primary" disabled={busy || !code} onClick={save}>Lưu</button>
+          <button type="button" className="btn btn-sm btn-primary" disabled={busy || !code || !!loiGhiRo} title={loiGhiRo ?? undefined} onClick={save}>Lưu</button>
         )}
       </div>
     </div>
@@ -75,6 +82,8 @@ export function PresetPlanActions({ interventionId, description, followupDue, on
   const [reason, setReason] = useState('');
   const catalogue = interventionKindsFor();
   const [kind, setKind] = useState<string>(catalogue.selfServe[0]);
+  /* PA đề xuất "Khác" (T13): ô Tên đề xuất ngay dưới; máy chủ ghép vào mô tả (Q9). */
+  const [ghiRo, setGhiRo] = useState('');
   const [nguoi, setNguoi] = useState<NguoiChon | null>({ kieu: 'toi' });
 
   const confirmNow = async (patch: Record<string, unknown> = {}) => {
@@ -89,13 +98,15 @@ export function PresetPlanActions({ interventionId, description, followupDue, on
 
   /* K2-3: ràng buộc nói TRƯỚC khi bấm — nút mờ + câu thiếu gì, không báo lỗi đỏ sau khi bấm. */
   const replaceMissing = desc.trim().length < 8 ? 'Mô tả phương án mới cần ít nhất 8 ký tự.' : null;
+  const loiGhiRo = kind === 'other_proposal' ? kiemGhiRoKhac(ghiRo) : null;
 
   const replace = async () => {
-    if (replaceMissing) return;
+    if (replaceMissing || loiGhiRo) return;
     setBusy(true);
     try {
       await api.post(`/interventions/${interventionId}/replace`, {
         kind, description: desc, ...nguoiThanhPayload(nguoi), followupDue: due || undefined,
+        ...(kind === 'other_proposal' ? { ghiRoKhac: ghiRo.trim() } : {}),
       });
       invalidateCases();
       toast.push('ok', 'Đã thay phương án');
@@ -117,10 +128,10 @@ export function PresetPlanActions({ interventionId, description, followupDue, on
     return (
       <div className="rounded-lg mt-2 p-2.5 space-y-2 w-full" style={{ background: 'var(--surface-1)' }}>
         <textarea className="field w-full" rows={2} value={desc} onChange={(e) => setDesc(e.target.value)} />
-        <label className="flex items-center gap-1.5 text-[11px] text-slate-400">
-          Dự kiến kết thúc
-          <input type="date" className="field" style={{ width: '9.5rem' }} value={due} onChange={(e) => setDue(e.target.value)} />
-        </label>
+        <div className="flex items-baseline gap-1.5 text-[11px] text-slate-400">
+          <span aria-hidden>Dự kiến kết thúc</span>
+          <span className="w-[11.5rem]"><ONgay kieu="ngay" value={due} onChange={setDue} ariaLabel="Dự kiến kết thúc" /></span>
+        </div>
         <label className="block">
           <span className="block text-[11px] text-slate-400 mb-1">Lý do sửa (không bắt buộc)</span>
           <input className="field w-full" maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} />
@@ -146,16 +157,17 @@ export function PresetPlanActions({ interventionId, description, followupDue, on
           {catalogue.proposals.map((k: string) => <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k as keyof typeof INTERVENTION_KIND_LABEL]}</option>)}
         </optgroup>
       </select>
+      <OKhac hien={kind === 'other_proposal'} value={ghiRo} onChange={setGhiRo} nhan="Tên đề xuất" goiY="Ví dụ: Học kèm 1-1 với trợ giảng" loi={loiGhiRo} />
       <textarea className="field w-full" rows={2} placeholder="Mô tả phương án mới" value={desc} onChange={(e) => setDesc(e.target.value)} />
       <ChonNguoi nhom="giao_vien" value={nguoi} onChange={setNguoi} />
-      <label className="flex items-center gap-1.5 text-[11px] text-slate-400">
-        Dự kiến kết thúc
-        <input type="date" className="field" style={{ width: '9.5rem' }} value={due} onChange={(e) => setDue(e.target.value)} />
-      </label>
+      <div className="flex items-baseline gap-1.5 text-[11px] text-slate-400">
+        <span aria-hidden>Dự kiến kết thúc</span>
+        <span className="w-[11.5rem]"><ONgay kieu="ngay" value={due} onChange={setDue} ariaLabel="Dự kiến kết thúc" /></span>
+      </div>
       {replaceMissing && <p className="text-xs text-amber-200/90 m-0">{replaceMissing}</p>}
       <div className="flex gap-1.5">
         <button type="button" className="btn btn-sm" onClick={() => setMode(null)} disabled={busy}>Huỷ</button>
-        <button type="button" className="btn btn-sm btn-primary" disabled={busy || !!replaceMissing} title={replaceMissing ?? undefined} onClick={replace}>Thay phương án</button>
+        <button type="button" className="btn btn-sm btn-primary" disabled={busy || !!replaceMissing || !!loiGhiRo} title={loiGhiRo ?? replaceMissing ?? undefined} onClick={replace}>Thay phương án</button>
       </div>
     </div>
   );
@@ -169,15 +181,14 @@ export function DismissCaseForm({ caseId, onClose, onDone }: { caseId: number; o
   const [busy, setBusy] = useState(false);
 
   /* K2-3: ràng buộc nói TRƯỚC khi bấm — nút mờ + câu thiếu gì, không báo lỗi đỏ sau khi bấm. */
-  const missing = !reason ? 'Chọn một lý do.'
-    : reasonNeedsText(reason) && !text.trim() ? 'Chọn "Khác" thì phải ghi rõ lý do.'
-    : null;
+  const loiGhiRo = reasonNeedsText(reason) ? kiemGhiRoKhac(text) : null;
+  const missing = !reason ? 'Chọn một lý do.' : null;
 
   const save = async () => {
-    if (missing) return;
+    if (missing || loiGhiRo) return;
     setBusy(true);
     try {
-      await api.post(`/cases/${caseId}/dismiss`, { reasonCode: reason, reasonText: text.trim() || undefined });
+      await api.post(`/cases/${caseId}/dismiss`, { reasonCode: reason, reasonText: reasonNeedsText(reason) ? text.trim() : undefined });
       invalidateCases();
       toast.push('ok', 'Case đã đóng — Không cần theo dõi');
       onClose(); onDone?.();
@@ -188,19 +199,16 @@ export function DismissCaseForm({ caseId, onClose, onDone }: { caseId: number; o
     <div className="rounded-lg mt-2 p-2.5 space-y-2" style={{ background: 'var(--surface-1)' }}>
       <div className="flex flex-wrap gap-1.5">
         {CASE_DISMISS_REASONS.map((r) => (
-          <button key={r} type="button" className={`btn btn-sm ${reason === r ? 'btn-primary' : ''}`}
-            onClick={() => setReason(r)}>
+          <NutChon key={r} nho chon={reason === r} onClick={() => setReason(r)}>
             {CASE_DISMISS_REASON_LABEL[r as CaseDismissReason]}
-          </button>
+          </NutChon>
         ))}
       </div>
-      {reasonNeedsText(reason) && (
-        <input className="field" placeholder="Lý do" value={text} onChange={(e) => setText(e.target.value)} />
-      )}
+      <OKhac hien={reasonNeedsText(reason)} value={text} onChange={setText} goiY="Ví dụ: Em nghỉ ốm cả tuần thi" loi={loiGhiRo} />
       {missing && <p className="text-xs text-amber-200/90 m-0">{missing}</p>}
       <div className="flex gap-1.5">
         <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>Huỷ</button>
-        <button type="button" className="btn btn-sm btn-danger" disabled={busy || !!missing} title={missing ?? undefined} onClick={save}>Không cần theo dõi</button>
+        <button type="button" className="btn btn-sm btn-danger" disabled={busy || !!missing || !!loiGhiRo} title={missing ?? loiGhiRo ?? undefined} onClick={save}>Không cần theo dõi</button>
       </div>
     </div>
   );

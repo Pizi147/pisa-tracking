@@ -4,7 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
+import { BoLocDoan, Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { BranchFilter } from '../../ui/Filters.tsx';
 import { fmtTime } from '../../lib/format.ts';
 import { NhomViec } from '../worklist/NhomViec.tsx';
@@ -92,14 +92,14 @@ export function HoTroHocVienTab() {
     if (it.nhac) {
       if (it.nhac.daNhacLuc) return <span className="text-[11px] text-slate-500 whitespace-nowrap">✓ Đã nhắc {fmtTime(it.nhac.daNhacLuc)}</span>;
       return (
-        <button type="button" className="btn btn-sm" disabled={dangNhac[it.key]} onClick={(e) => { e.stopPropagation(); bamNhac(it); }}>
+        <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={dangNhac[it.key]} onClick={(e) => { e.stopPropagation(); bamNhac(it); }}>
           Nhắc
         </button>
       );
     }
     if (it.duyet) {
       return (
-        <button type="button" className="btn btn-sm" onClick={(e) => { e.stopPropagation(); setDuyetDong(it); }}>
+        <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={(e) => { e.stopPropagation(); setDuyetDong(it); }}>
           Duyệt
         </button>
       );
@@ -112,13 +112,9 @@ export function HoTroHocVienTab() {
     <div className="space-y-4">
       {/* ───────────────────────────────────────────────── hàng lọc — một hàng, xuống dòng ở màn hẹp */}
       <div className="flex flex-wrap items-center gap-1.5">
-        {LOC_NHANH.map((k) => (
-          <button key={k} className={`btn btn-sm ${loc === k ? 'btn-primary' : ''}`}
-            onClick={() => setParam('loc', k === 'tat-ca' ? null : k)}>
-            {LOC_NHANH_LABEL[k]} <span className="tabular-nums opacity-70 ml-1">{demHan[k]}</span>
-          </button>
-        ))}
-        <span className="w-px h-5 mx-1" style={{ background: 'var(--line)' }} />
+        <BoLocDoan ariaLabel="Lọc nhanh" value={loc} onChange={(k) => setParam('loc', k === 'tat-ca' ? null : k)}
+          muc={LOC_NHANH.map((k) => ({ key: k, nhan: LOC_NHANH_LABEL[k], so: demHan[k] }))} />
+        <span className="mx-1 hidden h-5 w-px sm:block" style={{ background: 'var(--line)' }} />
         {laQuanLy && data && (
           <ChonPhuTrach
             value={nguoi}
@@ -131,7 +127,7 @@ export function HoTroHocVienTab() {
             }}
           />
         )}
-        <label className="flex items-center gap-1.5 text-xs text-slate-400">
+        <label className="flex items-center gap-1.5 whitespace-nowrap text-xs text-slate-400">
           Loại việc:
           <select className="field" value={loai ?? ''} onChange={(e) => setParam('loai', e.target.value || null)}>
             <option value="">Mọi loại</option>

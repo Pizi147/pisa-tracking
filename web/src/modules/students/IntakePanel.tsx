@@ -2,10 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Drawer } from '../../ui/Drawer.tsx';
-import { Outcome, SectionNote, Th} from '../../ui/ui.tsx';
+import { KhungPanel } from '../../ui/KhungPanel.tsx';
+import { Field, Outcome, SectionNote, Th } from '../../ui/ui.tsx';
 import { ngay } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { ONgay } from '../../ui/ONgay.tsx';
 
 
 type Row = {
@@ -175,30 +176,24 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
   }, [pv, skipRows]);
 
   return (
-    <Drawer
-      open
-      onClose={onClose}
-      width="max-w-[1440px]"
-      title={cls ? `Thêm học viên vào ${cls.code}` : 'Thêm học viên'}
-      subtitle="Chọn lớp, rồi dán từ Excel/Google Sheets hoặc gõ thẳng vào lưới"
-      footer={
-        <>
-          <button className="btn" onClick={onClose} disabled={busy}>Đóng</button>
-          <button className="btn btn-primary" onClick={commit}
+    <KhungPanel tieuDe="Thêm học viên" lop={cls?.code} rong="toan" onDong={onClose}
+      ngCanh="Chọn lớp, rồi dán từ Excel/Google Sheets hoặc gõ thẳng vào lưới"
+      chan={{
+        huy: { nhan: 'Đóng', onClick: onClose, disabled: busy },
+        chinh: (
+          <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={commit}
             disabled={busy || !classId || willAdd === 0 || blocking > 0}>
             {busy ? 'Đang lưu…' : willAdd > 0 ? `Thêm ${willAdd} học viên` : 'Thêm học viên'}
           </button>
-        </>
-      }
-    >
-      <div className="space-y-4">
+        ),
+      }}>
+      <div className="space-y-4 pt-3">
         {/*
           LỚP VÀ TUẦN BẮT ĐẦU — hai quyết định của CẢ LÔ, đặt ở trên cùng (mục 12.1).
           Lớp quyết định bảng bên dưới có những cột nào, nên nó phải được chọn trước.
         */}
         <div className="surface-2 rounded-lg p-3 grid gap-3 sm:grid-cols-2">
-          <label className="block">
-            <span className="label">Thêm vào lớp <span className="text-rose-300">*</span></span>
+          <Field label="Thêm vào lớp" required hint="Cột “Lớp” trong file dán sẽ bị bỏ qua.">
             <select className="field w-full" value={classId ?? ''}
               onChange={(e) => { setClassId(Number(e.target.value) || null); setPreview(null); }}>
               <option value="">Chọn lớp…</option>
@@ -206,20 +201,13 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
                 <option key={c.id} value={c.id}>{c.code}{c.programme_name ? ` · ${c.programme_name}` : ''}</option>
               ))}
             </select>
-            <span className="block text-[11px] text-slate-500 mt-1">
-              Cột “Lớp” trong file dán sẽ bị bỏ qua.
-            </span>
-          </label>
-          <label className="block">
-            <span className="label">Tuần bắt đầu học</span>
-            <input type="date" className="field w-full" value={startWeek}
-              onChange={(e) => { setStartWeek(e.target.value); setPreview(null); }} />
-            <span className="block text-[11px] text-slate-500 mt-1">
-              {pv?.defaultStartWeek
-                ? `Đang dùng tuần bắt đầu ${ngay(pv.defaultStartWeek, homNay)}. Có thể chọn tuần bắt đầu riêng cho từng học viên.`
-                : 'Bỏ trống thì lấy ngày bắt đầu của lớp. Có thể chọn tuần bắt đầu riêng cho từng học viên.'}
-            </span>
-          </label>
+          </Field>
+          <Field label="Tuần bắt đầu học"
+            hint={pv?.defaultStartWeek
+              ? `Đang dùng tuần bắt đầu ${ngay(pv.defaultStartWeek, homNay)}. Có thể chọn tuần bắt đầu riêng cho từng học viên.`
+              : 'Bỏ trống thì lấy ngày bắt đầu của lớp. Có thể chọn tuần bắt đầu riêng cho từng học viên.'}>
+            <ONgay kieu="tuan" value={startWeek} onChange={(v) => { setStartWeek(v); setPreview(null); }} />
+          </Field>
           {pv && (
             <p className="text-xs text-slate-400 m-0 sm:col-span-2">
               {ratio
@@ -261,7 +249,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
                 <option value="iso">Năm-Tháng-Ngày — 2008-05-12</option>
               </select>
             </label>
-            <button className="btn btn-sm w-full justify-center" onClick={() => void handlePaste(pasteText)} disabled={!pasteText.trim()}>
+            <button type="button" className="btn btn-sm min-h-[44px] w-full justify-center sm:min-h-0" onClick={() => void handlePaste(pasteText)} disabled={!pasteText.trim()}>
               Đọc nội dung đã dán
             </button>
           </div>
@@ -285,7 +273,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
                 return (
                   <tr key={i} className={skipped ? 'row-muted' : ''}
                     data-needs-fix={!skipped && !!rowPv?.issues.some((x) => !isWarning(x.message)) ? 'true' : undefined}>
-                    <td className="td text-xs text-slate-500">{i + 1}</td>
+                    <td className="td text-xs tabular-nums text-slate-500">{i + 1}</td>
                     {cols.map((c) => {
                       const issue = rowPv?.issues.find((x) => x.field === c.key);
                       return (
@@ -303,7 +291,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
                             onChange={(e) => setCell(i, c.key, e.target.value)}
                           />
                           {issue && (
-                            <div className={`text-[11px] mt-0.5 ${isWarning(issue.message) ? 'text-amber-200' : 'text-rose-200'}`}>
+                            <div className={`text-[11px] mt-0.5 ${isWarning(issue.message) ? 'text-soon' : 'text-late'}`}>
                               {issue.message}
                             </div>
                           )}
@@ -330,11 +318,11 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button className="btn btn-sm" onClick={() => setRows((rs) => [...rs, { ...EMPTY }])}>
+          <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setRows((rs) => [...rs, { ...EMPTY }])}>
             Thêm dòng
           </button>
           {rows.length > 1 && (
-            <button className="btn btn-sm" onClick={() => { setRows((rs) => rs.slice(0, -1)); setPreview(null); }}>
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => { setRows((rs) => rs.slice(0, -1)); setPreview(null); }}>
               Bớt dòng cuối
             </button>
           )}
@@ -345,7 +333,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
             */}
           {pv && (blocking > 0 ? (
             <button
-              className="btn btn-sm"
+              type="button" className="btn btn-sm min-h-[44px] sm:min-h-0"
               onClick={() => document.querySelector('[data-needs-fix="true"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
             >
               Xem {blocking} dòng cần sửa
@@ -386,6 +374,6 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
           xếp lịch.
         </SectionNote>
       </div>
-    </Drawer>
+    </KhungPanel>
   );
 }

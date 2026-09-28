@@ -9,8 +9,9 @@ import { Nhan } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
+import { OKhac } from '../../ui/OKhac.tsx';
 import {
-  MEASURE_KINDS, MEASURE_KIND_LABEL, chiaThemViPham, ngay, thanPatchPhuongAn, type MeasureKind, type NguoiChon,
+  MEASURE_KINDS, MEASURE_KIND_LABEL, chiaThemViPham, kiemGhiRoKhac, ngay, thanPatchPhuongAn, type MeasureKind, type NguoiChon,
   type PatchPhuongAnGoc, type ViolationState,
 } from '@shared/domain/index.ts';
 import { ChiTietViPham } from './ChiTietViPham.tsx';
@@ -101,6 +102,8 @@ export function PhuongAnPanel({ measureId, onClose, onDone, onXacNhan, onSuaViPh
     ownerUserId, violationIds: [...picked],
   });
   const dirty = patch !== null;
+  /* Loại "Khác" (T13): Tên phương án ≥ 3 ký tự — chặn lưu thay đổi khi chưa đủ (PA cũ không đổi gì vẫn bấm Đã thực hiện được). */
+  const loiGhiRo = dirty && kind === 'other' ? kiemGhiRoKhac(customName) : null;
   const choSua = !dirty;
   const choXoa = !dirty && !laDuyNhat;
 
@@ -122,7 +125,7 @@ export function PhuongAnPanel({ measureId, onClose, onDone, onXacNhan, onSuaViPh
   };
 
   const luu = async () => {
-    if (!patch) return;
+    if (!patch || loiGhiRo) return;
     setBusy(true);
     try { await api.patch(`/measures/${measureId}`, patch); ghiXongToast(); }
     catch (e: any) { toast.push('error', e.message); }
@@ -130,6 +133,7 @@ export function PhuongAnPanel({ measureId, onClose, onDone, onXacNhan, onSuaViPh
   };
 
   const xacNhan = async () => {
+    if (loiGhiRo) return;
     setBusy(true);
     try {
       if (patch) { await api.patch(`/measures/${measureId}`, patch); ghiXongToast(); }
@@ -164,30 +168,28 @@ export function PhuongAnPanel({ measureId, onClose, onDone, onXacNhan, onSuaViPh
         huy: { nhan: 'Đóng', onClick: onClose },
         xoa: { nhan: 'Xoá PA', onClick: () => setHoiXoa(true) },
         phu: (
-          <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy || !patch} title={!patch ? 'Chưa có gì thay đổi' : undefined} onClick={luu}>Lưu</button>
+          <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy || !patch || !!loiGhiRo} title={!patch ? 'Chưa có gì thay đổi' : loiGhiRo ?? undefined} onClick={luu}>Lưu</button>
         ),
-        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={xacNhan}>Đã thực hiện</button>,
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !!loiGhiRo} title={loiGhiRo ?? undefined} onClick={xacNhan}>Đã thực hiện</button>,
       }}>
       <Khoi tieuDe="Phương án">
         <Hang2>
-          <Truong nhan="Loại" batBuoc>
-            <select className="field w-full" value={kind} onChange={(e) => setKind(e.target.value)}>
-              {MEASURE_KINDS.map((k) => (
-                <option key={k} value={k} disabled={isLocked(k) && k !== d.kind} title={isLocked(k) && k !== d.kind ? lockReason(k) ?? undefined : undefined}>
-                  {MEASURE_KIND_LABEL[k]}
-                </option>
-              ))}
-            </select>
-          </Truong>
+          <div>
+            <Truong nhan="Loại" batBuoc>
+              <select className="field w-full" value={kind} onChange={(e) => setKind(e.target.value)}>
+                {MEASURE_KINDS.map((k) => (
+                  <option key={k} value={k} disabled={isLocked(k) && k !== d.kind} title={isLocked(k) && k !== d.kind ? lockReason(k) ?? undefined : undefined}>
+                    {MEASURE_KIND_LABEL[k]}
+                  </option>
+                ))}
+              </select>
+            </Truong>
+            <OKhac hien={kind === 'other'} value={customName} onChange={setCustomName} nhan="Tên phương án" goiY="Ví dụ: Viết bản cam kết" loi={loiGhiRo} />
+          </div>
           <Truong nhan="Phụ trách" as="div">
             <ChonNguoi nhom="nhan_vien" choNgoai={false} value={owner} onChange={setOwner} />
           </Truong>
         </Hang2>
-        {kind === 'other' && (
-          <Truong nhan="Tên phương án" batBuoc>
-            <input className="field w-full" value={customName} onChange={(e) => setCustomName(e.target.value)} />
-          </Truong>
-        )}
         <Truong nhan="Nội dung" tuyChon>
           <textarea className="field w-full" rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
         </Truong>
