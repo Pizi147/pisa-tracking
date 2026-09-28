@@ -4,7 +4,7 @@ import { db, isInitialised } from '../db.ts';
 import { laBanChinh } from '../moiTruong.ts';
 import {
   ENTRY_SKILLS, ENTRY_SKILL_LABEL, ISSUE_TAXONOMY, THEO_DONG,
-  PERMISSIONS, REGULAR_SKILLS, ROLE_LABEL, WORK_SCOPES, chuongTrinhTuThamSo, khoangTuThamSo, laLoaiBoQuen, thamSoNguoi, tuDauKhoang,
+  PERMISSIONS, ROLE_LABEL, WORK_SCOPES, chuongTrinhTuThamSo, khoangTuThamSo, laLoaiBoQuen, thamSoNguoi, tuDauKhoang,
   type Role, type TheoDong, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { kiemGhiRoKhac, laKhac, soSanhLop, transferReasonText } from '../../../shared/domain/index.ts';
@@ -2027,8 +2027,8 @@ api.get('/auth/info', wrap(() => ({
   emailSuffix: accountSvc.EMAIL_SUFFIX,
   /* Bản chính: không bao giờ gửi mật khẩu mặc định ra ngoài. */
   ...(laBanChinh() ? {} : { demoAdmin: { email: accountSvc.DEFAULT_ADMIN_EMAIL, password: accountSvc.DEFAULT_ADMIN_PASSWORD } }),
-  /* Gộp hai bộ kỹ năng và BỎ TRÙNG: Listening có ở cả hai, hiện hai lần là một lỗi nhìn thấy ngay. */
-  skills: [...new Set([...ENTRY_SKILLS, ...REGULAR_SKILLS])],
+  /* MH1: kỹ năng phụ trách được chỉ 5 ô L · R · W1 · W2 · S. */
+  skills: [...ENTRY_SKILLS],
 })));
 
 api.get('/me/profile', requireAuth, wrap((req) => accountSvc.myProfile(principalOf(req))));
@@ -2047,6 +2047,9 @@ api.post('/admin/accounts/:id/decline', requireAuth, wrap((req) => accountSvc.de
 )));
 api.put('/admin/accounts/:id/roles', requireAuth, wrap((req) => accountSvc.setRoles(
   principalOf(req), Number(req.params.id), Array.isArray(req.body?.roles) ? req.body.roles : [],
+)));
+api.put('/admin/accounts/:id/skills', requireAuth, wrap((req) => accountSvc.setUserSkills(
+  principalOf(req), Number(req.params.id), Array.isArray(req.body?.skills) ? req.body.skills.map(String) : [],
 )));
 api.put('/admin/accounts/:id/permissions', requireAuth, wrap((req) => accountSvc.setUserPermissions(
   principalOf(req), Number(req.params.id), Array.isArray(req.body?.items) ? req.body.items : [],

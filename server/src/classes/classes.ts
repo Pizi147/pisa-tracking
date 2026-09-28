@@ -770,7 +770,8 @@ export function teacherCandidatesBranch(branchId: number, classId: number | null
               (SELECT COUNT(DISTINCT ta.class_id) FROM teacher_assignments ta
                 WHERE ta.user_id = u.id AND ta.status = 'active') AS load_classes,
               (SELECT COUNT(*) FROM teacher_assignments ta
-                WHERE ta.user_id = u.id AND ta.class_id = ? AND ta.status = 'active') AS here
+                WHERE ta.user_id = u.id AND ta.class_id = ? AND ta.status = 'active') AS here,
+              (SELECT GROUP_CONCAT(us.skill) FROM user_skills us WHERE us.user_id = u.id) AS skills
          FROM users u
          JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active'
          JOIN roles r ON r.id = ur.role_id

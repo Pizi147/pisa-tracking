@@ -2,7 +2,7 @@
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runPrMonTests(t: YThucTestKit) {
-  const { check, assert } = t;
+  const { check, checkAsync, assert, assertThrows, conn, P } = t;
   const d = await import('../../../shared/domain/index.ts');
   console.log('\nPR-MON · Hệ môn học, Pre FOU, hai khung');
 
@@ -52,5 +52,74 @@ export async function runPrMonTests(t: YThucTestKit) {
     const pa = d.LOI_CHUNG.find((n) => n.khoa === 'phat-am');
     assert(!!pa && pa.ma.includes('student.phat_am.sound') && pa.ma.includes('student.speaking.pronunciation'), 'nhóm Phát âm');
     assert(d.LOI_CHUNG.find((n) => n.khoa === 'ngu-phap')!.ma.includes('student.gv.grammar'), 'G+V vào Ngữ pháp');
+  });
+
+  // ------------------------------------------------------------------ Task 2 · migrate kỹ năng phụ trách được
+  const mig: any = await import('../migrate/prMon.ts');
+  const accounts: any = await import('../platform/accounts.ts');
+  const clsMod: any = await import('../classes/classes.ts');
+  const kyNangCua = (id: number) => (conn.prepare('SELECT skill FROM user_skills WHERE user_id = ? ORDER BY skill').all(id) as any[]).map((r) => r.skill).join(',');
+  const datKyNang = (id: number, ds: string[]) => {
+    conn.prepare('DELETE FROM user_skills WHERE user_id = ?').run(id);
+    for (const s of ds) conn.prepare('INSERT INTO user_skills (user_id, skill) VALUES (?, ?)').run(id, s);
+  };
+  const [A, B, C] = [P.w1Teacher.userId, P.w2Teacher.userId, P.sTeacher.userId];
+  const giu = new Map([A, B, C].map((id) => [id, kyNangCua(id).split(',').filter(Boolean)]));
+  const traLai = () => { for (const [id, ds] of giu) datKyNang(id, ds); };
+
+  check('MON (2) · chạy thử chỉ đọc: keHoachDoiKyNang đúng người, bảng không đổi', () => {
+    try {
+      datKyNang(A, ['writing']); datKyNang(B, ['writing1', 'writing']); datKyNang(C, ['pronunciation']);
+      const dem = () => (conn.prepare('SELECT COUNT(*) AS n, GROUP_CONCAT(user_id || skill) AS h FROM user_skills').get() as any);
+      const truoc = dem();
+      const kh = mig.keHoachDoiKyNang(conn);
+      const cua = (id: number) => kh.find((x: any) => x.userId === id);
+      assert(cua(A)?.moi.join() === 'writing1,writing2' && cua(B)?.moi.join() === 'writing1,writing2' && cua(C)?.moi.join() === 'speaking',
+        JSON.stringify([cua(A), cua(B), cua(C)]));
+      const sau = dem();
+      assert(truoc.n === sau.n && truoc.h === sau.h, 'chạy thử đã ghi vào bảng');
+      const fou = mig.demCaseFouNguyenNhanIelts(conn);
+      assert(typeof fou.soCase === 'number' && fou.mau.length <= 20, 'đếm Case FOU');
+    } finally { traLai(); }
+  });
+  check('MON (2) · migrate user_skills: W lớp thường → W1 + W2, Pron → S; chạy lần 2 không đổi gì (MH1, K5-29)', () => {
+    try {
+      datKyNang(A, ['writing']); datKyNang(B, ['writing1', 'writing']); datKyNang(C, ['pronunciation']);
+      const applied: string[] = [];
+      mig.migratePrMon(conn, applied);
+      assert(applied.length === 1, JSON.stringify(applied));
+      assert(kyNangCua(A) === 'writing1,writing2' && kyNangCua(B) === 'writing1,writing2' && kyNangCua(C) === 'speaking',
+        `${kyNangCua(A)} | ${kyNangCua(B)} | ${kyNangCua(C)}`);
+      mig.migratePrMon(conn, applied);
+      assert(applied.length === 1, 'lần 2 lại thêm dòng applied');
+      assert(!(conn.prepare("SELECT 1 FROM user_skills WHERE skill IN ('writing','prep_writing','pronunciation')").get()), 'còn mã cũ');
+    } finally { traLai(); }
+  });
+  await checkAsync('MON (2) · MH1: /auth/info và allSkills đúng 5 mã; setSkills(writing) → W1 + W2; GV thường PUT kỹ năng → 403', async () => {
+    const { createApp } = await import('../app.ts');
+    const may = createApp().listen(0);
+    const cong = (may.address() as any).port as number;
+    try {
+      const info = await (await fetch(`http://127.0.0.1:${cong}/api/auth/info`)).json() as any;
+      assert(info.skills.join() === d.ENTRY_SKILLS.join(), `/auth/info: ${info.skills}`);
+      assert(accounts.myProfile(P.w1Teacher).allSkills.join() === d.ENTRY_SKILLS.join(), 'allSkills');
+      const r = accounts.setUserSkills(P.admin, A, ['writing', 'listening']);
+      assert(r.skills.join() === 'listening,writing1,writing2' && kyNangCua(A) === 'listening,writing1,writing2', kyNangCua(A));
+      const s = await fetch(`http://127.0.0.1:${cong}/api/demo/session`, { method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ userId: P.sTeacher.userId }) });
+      const cookie = (s.headers.get('set-cookie') ?? '').split(';')[0];
+      assert(!!cookie, 'không có phiên demo');
+      const put = await fetch(`http://127.0.0.1:${cong}/api/admin/accounts/${A}/skills`, { method: 'PUT',
+        headers: { 'content-type': 'application/json', cookie }, body: JSON.stringify({ skills: ['speaking'] }) });
+      assert(put.status === 403, `GV thường sửa kỹ năng người khác: ${put.status}`);
+      assertThrows(() => accounts.setUserSkills(P.sTeacher, A, ['speaking']), /Quản trị/, 'hàm dịch vụ cũng chặn');
+    } finally { traLai(); may.close(); }
+  });
+  check('MON (2) · teacherCandidatesBranch có cột skills (một câu, không N+1)', () => {
+    const mb = (conn.prepare("SELECT id FROM branches WHERE code = 'MB'").get() as any).id;
+    const ds = clsMod.teacherCandidatesBranch(mb) as any[];
+    const a = ds.find((x) => x.id === A);
+    const tach = (s: unknown) => String(s ?? '').split(',').filter(Boolean).sort().join(',');
+    assert(!!a && 'skills' in a && tach(a.skills) === kyNangCua(A), JSON.stringify(a));
   });
 }
