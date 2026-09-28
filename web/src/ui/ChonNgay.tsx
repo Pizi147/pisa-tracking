@@ -1,4 +1,3 @@
-import { useId } from 'react';
 import { mondayOfDate } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
 import { ONgay } from './ONgay.tsx';
@@ -56,21 +55,4 @@ export function ChonThang({ value, onChange, soThang = 18, disabled, ariaLabel, 
   const { homNay } = useNgayNghiepVu();
   return <ONgay kieu="thang" value={value} onChange={onChange} toiThieu={homNay ? homNay.slice(0, 7) : null}
     toiDa={homNay ? thangCong(homNay, soThang - 1) : null} disabled={disabled} ariaLabel={ariaLabel} goiY={chuaChon} />;
-}
-
-/**
- * @deprecated Task 5 thay 4 chỗ gọi bằng `ONgay` rồi xoá hàm này. Tạm thời: nhãn + ô ngày (không sau hôm nay) — hết dòng
- * chữ "hôm nay" kèm nút bấm mới hiện ô (T12 a). `soNgay`/`khiMo` giữ trong chữ ký cho nơi gọi cũ, không còn tác dụng.
- */
-export function NgayDoiDuoc({ tien, value, onChange }: {
-  tien: string; value: string; onChange: (v: string) => void; soNgay?: number; khiMo?: boolean;
-}) {
-  const { homNay } = useNgayNghiepVu();
-  const id = useId();
-  return (
-    <div className="block">
-      <label htmlFor={id} className="mb-1 block text-[11.5px] font-bold text-slate-200">{tien}</label>
-      <ONgay id={id} kieu="ngay" value={value} onChange={onChange} toiDa={homNay || null} />
-    </div>
-  );
 }

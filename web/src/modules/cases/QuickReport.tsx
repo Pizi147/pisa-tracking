@@ -5,7 +5,8 @@ import { useToast } from '../../ui/Toast.tsx';
 import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
-import { ChonTuan, NgayDoiDuoc } from '../../ui/ChonNgay.tsx';
+import { ChonTuan } from '../../ui/ChonNgay.tsx';
+import { ONgay } from '../../ui/ONgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
@@ -404,7 +405,7 @@ export function QuickReport({
 
       {mode === 'now' && (
         <Khoi tieuDe="Theo dõi">
-          <NgayDoiDuoc tien="Bắt đầu theo dõi" value={detectedAt || homNay} onChange={setDetectedAt} soNgay={30} />
+          <Truong nhan="Bắt đầu theo dõi"><ONgay kieu="ngay" value={detectedAt || homNay} onChange={setDetectedAt} toiDa={homNay} /></Truong>
         </Khoi>
       )}
 

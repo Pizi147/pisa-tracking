@@ -10,6 +10,7 @@ import { BranchFilter } from '../../ui/Filters.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { ONgay } from '../../ui/ONgay.tsx';
 import { fmtDate } from '../../lib/format.ts';
 import {
   HANG_SO, HANG_SO_LABEL, TASK_GROUPS, TASK_GROUP_LABEL, TASK_PROGRESS, TASK_PROGRESS_LABEL,
@@ -488,7 +489,7 @@ function UpdateDialog({ open, onClose, task, onDone }: {
               <ChonNguoi value={help} onChange={setHelp} nhom="nhan_vien" choToi={false} choNgoai ariaLabel="Người cần hỗ trợ" />
             </Field>
             <Field label="Ngày xem lại" required hint="Từ ngày cập nhật trở đi.">
-              <input type="date" className="field" min={homNay} value={reviewOn} onChange={(e) => setReviewOn(e.target.value)} />
+              <ONgay kieu="ngay" value={reviewOn} onChange={setReviewOn} toiThieu={homNay} />
             </Field>
           </>
         )}
@@ -562,7 +563,7 @@ function SuaViec({ open, onClose, task, onDone }: {
           <ChonNguoi value={watcher} onChange={setWatcher} nhom="nhan_vien" choNgoai={false} macDinhTrong="Không có" />
         </Field>
         <Field label="Hạn">
-          <input type="date" className="field" value={due} onChange={(e) => setDue(e.target.value)} />
+          <ONgay kieu="ngay" value={due} onChange={setDue} />
         </Field>
         {canDoi && (
           <Field label="Lý do dời hạn" required hint="2–200 ký tự — hạn cũ vẫn hiện lại ở cột Hạn, không mất.">
@@ -659,7 +660,7 @@ function CreateTask({ open, onClose, onDone, branchId, parent, defaultGroup, uni
         </Field>
         <Field label="Hạn"
           hint={parent ? 'Mặc định là hạn của việc cha trừ một ngày — sửa được ngay.' : undefined}>
-          <input type="date" className="field" value={due} onChange={(e) => setDue(e.target.value)} />
+          <ONgay kieu="ngay" value={due} onChange={setDue} />
         </Field>
         {!parent && (
           <Field label="Chi nhánh">

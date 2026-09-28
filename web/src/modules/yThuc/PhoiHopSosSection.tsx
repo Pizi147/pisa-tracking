@@ -9,6 +9,7 @@ import {
 } from '@shared/domain/index.ts';
 import { fmtDate, sosLabel } from '../../lib/format.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { ONgay } from '../../ui/ONgay.tsx';
 
 type CoordAction = {
   id: number; kind: string; kindLabel: string; customName: string | null; name: string;
@@ -168,8 +169,7 @@ function ConfirmCoordinationForm({ actionId, onClose, onChanged }: {
       <div className="flex flex-wrap items-center gap-2">
         <label className="flex items-center gap-1.5 text-[11px] text-slate-400">
           Ngày thực hiện
-          <input type="date" className="field" style={{ width: '9.5rem' }} value={performedOn} max={today}
-            onChange={(e) => setPerformedOn(e.target.value)} />
+          <span className="w-[11.5rem]"><ONgay kieu="ngay" value={performedOn} onChange={setPerformedOn} toiDa={today} /></span>
         </label>
       </div>
       <textarea className="field w-full" rows={2} placeholder="Ghi chú (tuỳ chọn)" value={note}

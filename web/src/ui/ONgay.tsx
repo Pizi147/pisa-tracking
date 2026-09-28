@@ -39,7 +39,9 @@ export function ONgay({ kieu, value, onChange, toiThieu, toiDa, moc, catHomNay, 
     if (text === hienONgay(value, kieu)) { setLoi(null); return; }
     const r = docONgay(text, kieu, homNay, luat);
     if (r.iso) { if (r.iso !== value) onChange(r.iso); setText(hienONgay(r.iso, kieu)); }
-    else if (!text.trim() && value) onChange('');
+    /* Xoá chữ: báo '' rồi hiện lại theo `value` — nơi gọi có mặc định (`detectedAt || homNay`) thì ô không trống mà form vẫn gửi
+       mặc định; nơi gọi xoá thật thì hiệu ứng đồng bộ `value` đưa chữ về ''. */
+    else if (!text.trim() && value) { onChange(''); setText(hienONgay(value, kieu)); }
     setLoi(r.loi);
   };
   const phu = phuONgay(value, kieu, homNay);

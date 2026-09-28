@@ -4,7 +4,8 @@ import { useToast } from '../../ui/Toast.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
-import { ChonNgayGan, ChonTuan, NgayDoiDuoc } from '../../ui/ChonNgay.tsx';
+import { ChonNgayGan, ChonTuan } from '../../ui/ChonNgay.tsx';
+import { ONgay } from '../../ui/ONgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
   CASE_OUTCOMES, CASE_OUTCOME_LABEL, HAN_DUYET_NGAY, INTERVENTION_KIND_LABEL, RESCHEDULE_TARGETS, RESCHEDULE_TARGET_LABEL,
@@ -218,7 +219,7 @@ export function HoanThanhCasePanel({ caseId, category, categoryLabel, ratio, hoc
           <textarea className="field w-full" {...lf.o(loi, 'vi-sao')} rows={3} value={note} onChange={(e) => setNote(e.target.value)}
             placeholder="Ví dụ: MT3 Listening lên 6.0" />
         </Truong>
-        <NgayDoiDuoc tien="Ngày hoàn thành" value={closedOn} onChange={setClosedOn} soNgay={30} />
+        <Truong nhan="Ngày hoàn thành"><ONgay kieu="ngay" value={closedOn} onChange={setClosedOn} toiDa={homNay} /></Truong>
       </Khoi>
       {components.length > 0 && (
         <Khoi tieuDe="Điểm chi tiết · không bắt buộc">

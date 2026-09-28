@@ -4,6 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Modal } from '../../ui/Drawer.tsx';
+import { ONgay } from '../../ui/ONgay.tsx';
 import { Card, Empty, Field, SectionNote, Skeleton, Task } from '../../ui/ui.tsx';
 import { fmtDate } from '../../lib/format.ts';
 import {
@@ -175,7 +176,7 @@ function TaskDialog({ open, onClose, periodId, onDone }: {
         )}
 
         <Field label="Hạn">
-          <input type="date" className="field" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+          <ONgay kieu="ngay" value={dueDate} onChange={setDueDate} />
         </Field>
         <Field label="Ghi chú">
           <input className="field" value={note} onChange={(e) => setNote(e.target.value)} />

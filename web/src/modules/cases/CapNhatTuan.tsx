@@ -5,7 +5,8 @@ import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { QuaHan } from '../../ui/Nhan.tsx';
-import { ChonTuan, NgayDoiDuoc } from '../../ui/ChonNgay.tsx';
+import { ChonTuan } from '../../ui/ChonNgay.tsx';
+import { ONgay } from '../../ui/ONgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
   FOLLOWUP_OUTCOMES, INTERVENTION_KIND_LABEL, OUTCOME_MARK,
@@ -221,7 +222,7 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
       );
     }
     if (d === 'end') {
-      return <NgayDoiDuoc tien="Ngày kết thúc" value={endOn} onChange={setEndOn} />;
+      return <Truong nhan="Ngày kết thúc"><ONgay kieu="ngay" value={endOn} onChange={setEndOn} toiDa={homNay} /></Truong>;
     }
     return null;
   };
@@ -310,7 +311,7 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
         </Khoi>
       )}
       <div className="mt-3.5">
-        <NgayDoiDuoc tien="Ngày ghi" value={on} onChange={setOn} />
+        <Truong nhan="Ngày ghi"><ONgay kieu="ngay" value={on} onChange={setOn} toiDa={homNay} /></Truong>
       </div>
     </KhungPanel>
   );

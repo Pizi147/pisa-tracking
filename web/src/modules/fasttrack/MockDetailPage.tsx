@@ -16,6 +16,7 @@ import {
 } from '../../lib/format.ts';
 import { ASSESSED_SKILL_LABEL, ATTEMPT_KIND_SHORT, tuanLich, type AttemptKind } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { ONgay } from '../../ui/ONgay.tsx';
 import { KIEM_TRA_LAI_KY_NANG, KY_NANG_KHONG_KIEM_TRA, TOOLTIP_TUAN_HOAN_TAT } from '../../ui/chu.ts';
 import { usePeriods } from '../../ui/Filters.tsx';
 
@@ -746,7 +747,7 @@ function SkillDeadlineModal({ open, row, attemptId, onClose, onDone }: {
         </p>
         <label className="block">
           <span className="label">Hẹn xử lý cho kỹ năng này</span>
-          <input type="date" className="field" value={date} onChange={(e) => setDate(e.target.value)} />
+          <ONgay kieu="ngay" value={date} onChange={setDate} />
         </label>
         <label className="block">
           <span className="label">Lý do</span>
@@ -848,7 +849,7 @@ function DeadlineModal({ open, onClose, detail, onDone }: {
       <div className="space-y-3">
         <label className="block">
           <span className="label">Hẹn xử lý</span>
-          <input type="date" className="field" value={date} onChange={(e) => setDate(e.target.value)} />
+          <ONgay kieu="ngay" value={date} onChange={setDate} />
         </label>
         <label className="block">
           <span className="label">Lý do</span>

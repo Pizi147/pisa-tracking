@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
+import { ONgay } from '../../ui/ONgay.tsx';
 import {
   CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, INTERVENTION_KIND_LABEL, issuesForTopic,
   interventionKindsFor, reasonNeedsText, nguoiThanhPayload, type CaseDismissReason, type NguoiChon,
@@ -119,7 +120,7 @@ export function PresetPlanActions({ interventionId, description, followupDue, on
         <textarea className="field w-full" rows={2} value={desc} onChange={(e) => setDesc(e.target.value)} />
         <label className="flex items-center gap-1.5 text-[11px] text-slate-400">
           Dự kiến kết thúc
-          <input type="date" className="field" style={{ width: '9.5rem' }} value={due} onChange={(e) => setDue(e.target.value)} />
+          <span className="w-[11.5rem]"><ONgay kieu="ngay" value={due} onChange={setDue} /></span>
         </label>
         <label className="block">
           <span className="block text-[11px] text-slate-400 mb-1">Lý do sửa (không bắt buộc)</span>
@@ -150,7 +151,7 @@ export function PresetPlanActions({ interventionId, description, followupDue, on
       <ChonNguoi nhom="giao_vien" value={nguoi} onChange={setNguoi} />
       <label className="flex items-center gap-1.5 text-[11px] text-slate-400">
         Dự kiến kết thúc
-        <input type="date" className="field" style={{ width: '9.5rem' }} value={due} onChange={(e) => setDue(e.target.value)} />
+        <span className="w-[11.5rem]"><ONgay kieu="ngay" value={due} onChange={setDue} /></span>
       </label>
       {replaceMissing && <p className="text-xs text-amber-200/90 m-0">{replaceMissing}</p>}
       <div className="flex gap-1.5">

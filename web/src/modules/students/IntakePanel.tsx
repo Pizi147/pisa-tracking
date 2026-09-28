@@ -6,6 +6,7 @@ import { Drawer } from '../../ui/Drawer.tsx';
 import { Outcome, SectionNote, Th} from '../../ui/ui.tsx';
 import { ngay } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { ONgay } from '../../ui/ONgay.tsx';
 
 
 type Row = {
@@ -212,8 +213,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
           </label>
           <label className="block">
             <span className="label">Tuần bắt đầu học</span>
-            <input type="date" className="field w-full" value={startWeek}
-              onChange={(e) => { setStartWeek(e.target.value); setPreview(null); }} />
+            <ONgay kieu="tuan" value={startWeek} onChange={(v) => { setStartWeek(v); setPreview(null); }} />
             <span className="block text-[11px] text-slate-500 mt-1">
               {pv?.defaultStartWeek
                 ? `Đang dùng tuần bắt đầu ${ngay(pv.defaultStartWeek, homNay)}. Có thể chọn tuần bắt đầu riêng cho từng học viên.`

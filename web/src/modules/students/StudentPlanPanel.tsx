@@ -4,6 +4,7 @@ import { api, invalidate } from '../../lib/api.ts';
 import { Drawer } from '../../ui/Drawer.tsx';
 import { WeekPicker } from '../../ui/Filters.tsx';
 import { useToast } from '../../ui/Toast.tsx';
+import { ONgay } from '../../ui/ONgay.tsx';
 import { Empty, Field, SectionNote, Skeleton, Status, Th} from '../../ui/ui.tsx';
 import { fmtDate } from '../../lib/format.ts';
 import { BASELINE_SOURCES, BASELINE_SOURCE_LABEL } from '@shared/domain/index.ts';
@@ -122,8 +123,7 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onClose, onDone 
             <>
               <Field label="Tháng dự kiến thi"
                 hint="Biết được ngay lúc tư vấn. Đủ để xếp lịch cả khoá.">
-                <input type="month" className="field w-full" value={examMonth}
-                  onChange={(e) => { setTouched(true); setExamMonth(e.target.value); }} />
+                <ONgay kieu="thang" value={examMonth} onChange={(v) => { setTouched(true); setExamMonth(v); }} />
               </Field>
               <Field as="div" label="Tuần dự kiến thi"
                 hint="Chốt được thì hệ thống mới đếm ngược. Chưa chốt cứ để trống.">
@@ -296,8 +296,7 @@ function TargetAndBaseline({ cycleId, cy, onDone }: {
           </Field>
           <Field label="Có hiệu lực từ ngày" required
             hint="Các lượt trước ngày này giữ nguyên kỳ vọng cũ.">
-            <input type="date" className="field" value={effectiveFrom}
-              onChange={(e) => setEffectiveFrom(e.target.value)} />
+            <ONgay kieu="ngay" value={effectiveFrom} onChange={setEffectiveFrom} />
           </Field>
           <button className="btn btn-primary btn-sm" disabled={busy || !reason.trim() || !newTarget}
             onClick={saveTarget}>

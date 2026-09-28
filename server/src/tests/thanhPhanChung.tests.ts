@@ -149,4 +149,13 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     const vong = d.traFocusVe('m', () => false, () => 'k', () => 'm');
     assert(vong === null, 'vòng lặp phải dừng');
   });
+
+  check('NEN (5) · YC-9: không còn ô ngày/tháng của trình duyệt (trừ thanh ngày bản demo — T12 e); không còn NgayDoiDuoc', () => {
+    const sai = tepNguon('web/src').filter((f) => !/modules\/platform\/DemoBar\.tsx$/.test(f)
+      && !/modules\/classes\//.test(f)                                   // phần chờ LOP — Task 11 bỏ dòng loại trừ này
+      && /type="date"|type="month"/.test(doc(f)));
+    assert(sai.length === 0, sai.join(', '));
+    const con = tepNguon('web/src').filter((f) => /NgayDoiDuoc/.test(doc(f)));
+    assert(con.length === 0, `còn NgayDoiDuoc: ${con.join(', ')}`);
+  });
 }
