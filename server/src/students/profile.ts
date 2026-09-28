@@ -736,7 +736,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   const progHienTai = current ? programmeOfClass(current.class_id) : null;
 
   return {
-    id: s.id, studentCode: s.student_code, fullName: s.full_name, dob: s.dob,
+    id: s.id, studentCode: s.student_code, fullName: s.full_name, dob: s.dob, email: s.email ?? null,
     status: s.status, finishedAt: s.finished_at, archivedAt: s.archived_at,
     consultantName: s.consultant_name, note: s.note,
     pendingSignals: signals,

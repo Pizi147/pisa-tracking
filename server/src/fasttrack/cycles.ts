@@ -1,14 +1,14 @@
 import { db, tx } from '../db.ts';
 import {
   BASELINE_SOURCES, CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, CYCLE_STATUSES, PERMISSIONS, type ExamPlan, type Route,
-  mondayOfDate, ngay,
+  docNgayNhap, mondayOfDate, ngay,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
 import { badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
-import { periodById } from '../platform/week.ts';
+import { ensurePeriod, mondayOf, periodById } from '../platform/week.ts';
 import { applySuggestedMockWeeks } from '../classes/schedule.ts';
 
 /**
@@ -134,6 +134,18 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
   require_(p, PERMISSIONS.STUDENT_EDIT, { studentId: c.student_id });
+  if (patch.startWeek !== undefined) {           // Thông tin HV gửi Thứ Hai ISO từ ô ngày thống nhất kiểu tuần
+    const w = docNgayNhap(patch.startWeek, demoToday());
+    if (!w.iso) throw badRequest(`Tuần bắt đầu: ${w.loi ?? 'bắt buộc'}`);
+    patch = { ...patch, startPeriodId: ensurePeriod(mondayOf(w.iso)).id };
+  }
+  if (patch.examDate !== undefined) {            // T9: ngày → lưu ngày + suy tháng, tuần; tháng → chỉ tháng; trống → xoá cả hai
+    const t = docNgayNhap(patch.examDate, demoToday(), { choThang: true });
+    if (t.loi) throw badRequest(`Thi dự kiến: ${t.loi}`);
+    const la = t.iso?.length === 10;
+    patch = { ...patch, examMonth: t.iso ? t.iso.slice(0, 7) : null, examDateGhi: la ? t.iso : null,
+      ...(la ? { examPeriodId: ensurePeriod(mondayOf(t.iso!)).id } : {}) };
+  }
   if (patch.status !== undefined && !(CYCLE_STATUSES as readonly string[]).includes(String(patch.status))) {
     throw badRequest('Trạng thái lộ trình không hợp lệ.');
   }
@@ -151,6 +163,8 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
      * `student.edit` đã bao đúng ba vai đó, nên không thêm quyền mới.
      */
     startPeriodId: 'start_period_id', examMonth: 'exam_month', examPeriodId: 'exam_period_id',
+    /* Khoá NỘI BỘ (T9): người gọi gửi `examDate`, khối trên đổi thành `examDateGhi` đã kiểm. */
+    examDateGhi: 'exam_date',
   };
   const sets: string[] = []; const params: unknown[] = [];
   for (const [k, v] of Object.entries(patch)) {

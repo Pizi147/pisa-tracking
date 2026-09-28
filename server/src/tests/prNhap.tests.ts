@@ -144,4 +144,42 @@ export async function runPrNhapTests(t: YThucTestKit) {
     assert(sai.issues.some((i: any) => i.row === 0 && i.field === 'startWeek' && i.muc === 'loi'), 'tuần cả lô sai không báo');
     assert(sai.rows[0].issues.some((i: any) => i.field === 'startWeek' && i.muc === 'loi'), 'dòng theo tuần cả lô sai vẫn thêm được');
   });
+
+  const students: any = await import('../students/students.ts');
+  const cycles: any = await import('../fasttrack/cycles.ts');
+  const { missingForStudent } = await import('../classes/schedule.ts');
+  check('NHAP (4) · Thông tin HV: GVCN sửa email/ngày sinh có kiểm ở máy chủ; ngày thi, tuần bắt đầu ở lộ trình', () => {
+    const sid = (conn.prepare("SELECT id FROM students WHERE full_name = 'Nhập Có Email'").get() as any).id;
+    const email = () => (conn.prepare('SELECT email FROM students WHERE id = ?').get(sid) as any).email;
+    students.updateStudent(P.coreTeacher, sid, { email: ' Moi.Email@Gmail.com ' });
+    assert(email() === 'moi.email@gmail.com', String(email()));
+    t.assertThrows(() => students.updateStudent(P.coreTeacher, sid, { dob: '31/02/2010' }), /Ngày không có thật/, 'ngày sinh 31/02');
+    t.assertThrows(() => students.updateStudent(P.coreTeacher, sid, { email: 'abc' }), /Email/, 'email sai dạng');
+    t.assertThrows(() => students.updateStudent(P.coreTeacher, sid, { fullName: '  ' }), /Họ tên/, 'họ tên trống');
+    students.updateStudent(P.coreTeacher, sid, { email: '', dob: '12/05/2010' });
+    const s = conn.prepare('SELECT email, dob FROM students WHERE id = ?').get(sid) as any;
+    assert(s.email === null && s.dob === '2010-05-12', JSON.stringify(s));
+
+    const cy = () => conn.prepare(`SELECT lc.*, sp.week_start AS sw FROM learning_cycles lc
+                                     LEFT JOIN report_periods sp ON sp.id = lc.start_period_id WHERE lc.student_id = ?`).get(sid) as any;
+    const cid = cy().id;
+    cycles.updateCycle(P.coreTeacher, cid, { examDate: '15/01/2027' });
+    const a = cy();
+    const tuanThi = (conn.prepare('SELECT week_start FROM report_periods WHERE id = ?').get(a.exam_period_id) as any)?.week_start;
+    assert(a.exam_date === '2027-01-15' && a.exam_month === '2027-01' && tuanThi === '2027-01-11', JSON.stringify({ a, tuanThi }));
+    cycles.updateCycle(P.coreTeacher, cid, { examDate: '05/2027' });
+    const b = cy();
+    assert(b.exam_date === null && b.exam_month === '2027-05', JSON.stringify(b));
+    t.assertThrows(() => cycles.updateCycle(P.coreTeacher, cid, { examDate: '13/2027' }), /Thi dự kiến/, 'tháng 13');
+    cycles.updateCycle(P.coreTeacher, cid, { startWeek: '2026-10-07' });
+    assert(cy().sw === '2026-10-05', String(cy().sw));
+  });
+
+  check('NHAP (4) · H6: thiếu email KHÔNG bật "Thiếu thông tin"', () => {
+    const thieu = missingForStudent({
+      cycle: { start_period_id: 1, exam_month: '2027-01', target_score: 6.5, baseline: true },
+      student: { dob: '2010-05-12' }, isFastTrack: true,
+    } as any);
+    assert(thieu.length === 0, JSON.stringify(thieu));
+  });
 }
