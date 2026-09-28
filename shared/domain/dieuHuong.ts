@@ -6,7 +6,7 @@
  */
 export type KhuVuc = 'tong-quan' | 'hoc-vien' | 'test' | 'cong-viec';
 export type TabTest = 'lich' | 'ke-hoach';
-export type TabCongViec = 'ho-tro' | 'van-hanh' | 'bao-cao';
+export type TabCongViec = 'cho-duyet' | 'ho-tro' | 'yeu-cau' | 'van-hanh' | 'bao-cao';
 export type TabTongQuan = 'tong-quan' | 'phan-tich';
 
 export type NavQuyen = {
@@ -15,6 +15,8 @@ export type NavQuyen = {
   analysis: boolean;
   test: boolean; testGrade: boolean; testSchedule: boolean; testPlan: boolean;
   work: boolean; workSupport: boolean; workOps: boolean; workReports: boolean;
+  /** PR-DUYET: hộp Chờ duyệt (`request.approve` — QL, Quản trị) · Yêu cầu của tôi (mọi người có việc học viên). */
+  workApprove: boolean; workRequests: boolean;
   /** Cờ cũ — giữ để mã chưa chuyển vẫn chạy; PR sau bỏ dần. */
   mocks: boolean; meeting: boolean; academic: boolean; mgmtTasks: boolean;
 };
@@ -22,7 +24,7 @@ export type NavQuyen = {
 export const NAV_RONG: NavQuyen = {
   overview: true, students: false, admin: false, analysis: false,
   test: false, testGrade: false, testSchedule: false, testPlan: false,
-  work: false, workSupport: false, workOps: false, workReports: false,
+  work: false, workSupport: false, workOps: false, workReports: false, workApprove: false, workRequests: false,
   mocks: false, meeting: false, academic: false, mgmtTasks: false,
 };
 
@@ -42,8 +44,10 @@ const HIEN: Record<KhuVuc, (n: NavQuyen) => boolean> = {
   'cong-viec': (n) => n.work,
 };
 
+/** PR-DUYET: người duyệt được vào thẳng Công việc › Chờ duyệt (tab đầu của họ); `/cong-viec` vẫn là Việc học viên (link cũ không gãy). */
 export function khuVucHienThi(nav: NavQuyen): KhuVucMuc[] {
-  return KHU_VUC.filter((k) => HIEN[k.key](nav));
+  return KHU_VUC.filter((k) => HIEN[k.key](nav))
+    .map((k) => (k.key === 'cong-viec' && nav.workApprove ? { ...k, to: DUONG_TAB_CONG_VIEC['cho-duyet'] } : k));
 }
 
 const thuoc = (p: string, goc: string) => p === goc || p.startsWith(`${goc}/`);
@@ -96,15 +100,19 @@ export function duongLichTest(o: { classId?: number | null; periodId?: number | 
 
 // ---------------------------------------------------------------- Công việc
 
-const TAB_CONG_VIEC: readonly TabCongViec[] = ['ho-tro', 'van-hanh', 'bao-cao'];
+const TAB_CONG_VIEC: readonly TabCongViec[] = ['cho-duyet', 'ho-tro', 'yeu-cau', 'van-hanh', 'bao-cao'];
+/** PR-DUYET (K1-29): "Hỗ trợ học viên" → "Việc học viên". */
 export const TAB_CONG_VIEC_LABEL: Record<TabCongViec, string> = {
-  'ho-tro': 'Hỗ trợ học viên', 'van-hanh': 'Vận hành', 'bao-cao': 'Báo cáo đơn vị',
+  'cho-duyet': 'Chờ duyệt', 'ho-tro': 'Việc học viên', 'yeu-cau': 'Yêu cầu của tôi', 'van-hanh': 'Vận hành', 'bao-cao': 'Báo cáo đơn vị',
 };
 export const DUONG_TAB_CONG_VIEC: Record<TabCongViec, string> = {
-  'ho-tro': '/cong-viec', 'van-hanh': '/cong-viec/van-hanh', 'bao-cao': '/cong-viec/bao-cao',
+  'cho-duyet': '/cong-viec/cho-duyet', 'ho-tro': '/cong-viec', 'yeu-cau': '/cong-viec/yeu-cau',
+  'van-hanh': '/cong-viec/van-hanh', 'bao-cao': '/cong-viec/bao-cao',
 };
+/** Người duyệt không có tab Yêu cầu của tôi (họ tự gửi thì tự duyệt ngay trong hộp, Q-D). */
 const HIEN_CONG_VIEC: Record<TabCongViec, (n: NavQuyen) => boolean> = {
-  'ho-tro': (n) => n.workSupport, 'van-hanh': (n) => n.workOps, 'bao-cao': (n) => n.workReports,
+  'cho-duyet': (n) => n.workApprove, 'ho-tro': (n) => n.workSupport, 'yeu-cau': (n) => n.workRequests && !n.workApprove,
+  'van-hanh': (n) => n.workOps, 'bao-cao': (n) => n.workReports,
 };
 
 export function tabCongViecHienThi(nav: NavQuyen): TabCongViec[] {
@@ -113,7 +121,7 @@ export function tabCongViecHienThi(nav: NavQuyen): TabCongViec[] {
 /** Không có đoạn sau `/cong-viec` = tab 1. Đoạn lạ → null (trang tự chuyển về tab đầu). */
 export function tabCongViecTuDuong(seg: string | undefined): TabCongViec | null {
   if (!seg) return 'ho-tro';
-  return seg === 'van-hanh' || seg === 'bao-cao' ? seg : null;
+  return (TAB_CONG_VIEC as readonly string[]).includes(seg) && seg !== 'ho-tro' ? (seg as TabCongViec) : null;
 }
 
 // ---------------------------------------------------------------- Tổng quan

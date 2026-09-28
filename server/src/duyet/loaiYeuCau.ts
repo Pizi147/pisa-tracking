@@ -125,8 +125,8 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       return {
         tieuDe: `Dời ${kn}${dot ? ` ${dot}` : ''} lần ${x?.move_no ?? 2}`,
         dong: [
-          `${nguoiXin(yc, ngu)}: ${yc.ly_do || 'vắng'}${x?.tuan ? ` · đề nghị ${x.tuan}` : ''}`,
-          `Hết ${ngay(yc.han_duyet, ngu)} không duyệt thì yêu cầu tự huỷ, phần thi bị huỷ.`,
+          `${nguoiXin(yc, ngu)}: ${yc.ly_do || 'em vắng buổi thi'}${x?.tuan ? ` · đề nghị ${x.tuan}` : ''}`,
+          `Hết ${ngay(yc.han_duyet, ngu)} chưa duyệt thì yêu cầu tự huỷ và phần thi bị huỷ.`,
         ],
         neuDuyet: x?.tuan ? `${kn} thi tuần ${x.tuan}.` : undefined,
         mo: x ? attemptHref({ id: x.attempt_id, kind: x.kind, classId: x.class_id }) : undefined,
@@ -210,7 +210,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         dong: [`${nguoiXin(yc, ngu)} (${ngay(yc.tao_luc, ngu)}): “${yc.ly_do ?? ''}”`],
         neuDuyet: tuAp
           ? (d.truong === 'target' ? 'Target đổi từ hôm nay; kỳ vọng của các lượt đã thi giữ nguyên.' : 'Lộ trình đổi ngay.')
-          : 'Không tự áp — sửa ở màn gốc trước, rồi Duyệt kèm ghi chú đã làm gì.',
+          : 'hệ thống không tự đổi — sửa ở màn gốc trước, rồi Duyệt và ghi đã làm gì.',
         duLieu: { canGhiChu: !tuAp },
       };
     },

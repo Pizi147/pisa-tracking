@@ -22,6 +22,7 @@ export function navOf(p: Principal): NavQuyen {
     test: attempt, testGrade: attempt, testSchedule: attempt, testPlan: plan,
     work: attempt || board || meeting,
     workSupport: attempt, workOps: board, workReports: meeting,
+    workApprove: can(p, PERMISSIONS.REQUEST_APPROVE, { anyScope: true }), workRequests: attempt,
     mocks: attempt, meeting, academic: meeting, mgmtTasks: board,
   };
 }
