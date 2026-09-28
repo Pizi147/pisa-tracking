@@ -88,8 +88,8 @@ export type KetQuaLichMacDinh = { created: LuotMacDinh[]; moved: { attemptNo: nu
  * NGÀY TẠO của lượt theo lịch nghiệp vụ. `created_at` là giờ máy thật; ở demo đồng hồ nghiệp vụ có thể lùi hơn giờ thật, nên lấy
  * ngày sớm hơn trong hai — bản chính `created_at` luôn ≤ hôm nay nên kết quả đúng bằng `created_at`.
  */
-export function ngayTaoLuot(createdAt: string): string {
-  const d = createdAt.slice(0, 10); const h = demoToday();
+export function ngayTaoLuot(createdAt: string, homNay: string = demoToday()): string {
+  const d = createdAt.slice(0, 10); const h = homNay.slice(0, 10);
   return d < h ? d : h;
 }
 

@@ -16,7 +16,7 @@ import {
   activeAt, can, classScopeSql, defaultWorkScope, editableSkills, mySkills, scopeFor, type Principal,
 } from '../permissions.ts';
 import {
-  ATTEMPT_KIND_SHORT, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, PERMISSIONS, SKILL_SHORT, lopTuMo, nhanLopLichTest, noShowStateOf,
+  ATTEMPT_KIND_SHORT, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, LUOT_TINH_NO_SQL, PERMISSIONS, SKILL_SHORT, lopTuMo, nhanLopLichTest, noShowStateOf,
   trangThaiChamLabel, type AssessedSkill, type AttemptKind, type LoaiNhanLop, type PhamViLichTest,
 } from '../../../shared/domain/index.ts';
 import { classScoreSheet, conBaiCanCham, listAttempts, type MonDoiLich } from '../fasttrack/attempts.ts';
@@ -373,7 +373,8 @@ export function lichTest(
 
   const cs = classScopeSql(scope);
   const params: unknown[] = [...cs.params, periodId];
-  let where = `${cs.sql} AND a.status != 'cancelled' AND ask.required = 1 AND ask.planned_period_id = ?`;
+  /* PR-MT (M3, K4-01): MT lịch sử không vào tổng / còn bài / quá hạn / tự mở / dải số — nhắc riêng một dòng mờ (`mtLichSuChuaNhap`). */
+  let where = `${cs.sql} AND a.status != 'cancelled' AND ${LUOT_TINH_NO_SQL('a')} AND ask.required = 1 AND ask.planned_period_id = ?`;
   if (branchId) { where += ' AND c.branch_id = ?'; params.push(branchId); }
   const rows = conn
     .prepare(

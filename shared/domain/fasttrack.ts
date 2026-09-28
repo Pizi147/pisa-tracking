@@ -174,6 +174,8 @@ export const SIT_STATUS_LABEL: Record<SitStatus, string> = {
 export const SKILL_PROGRESS = [
   'skipped', 'not_scheduled', 'upcoming', 'due', 'sat', 'absent', 'scored',
   'reschedule_pending', 'cancelled',
+  /* PR-MT (T34): MT lịch sử chưa có điểm — nhập bù, KHÔNG nợ, không hạn (không thuộc `awaitingScore`). */
+  'lich_su',
 ] as const;
 export type SkillProgress = (typeof SKILL_PROGRESS)[number];
 export const SKILL_PROGRESS_LABEL: Record<SkillProgress, string> = {
@@ -190,6 +192,7 @@ export const SKILL_PROGRESS_LABEL: Record<SkillProgress, string> = {
   scored: 'Đã có điểm',
   reschedule_pending: 'Chờ duyệt dời',
   cancelled: 'Đã huỷ phần thi',
+  lich_su: 'Nhập bù, không có hạn',
 };
 
 /**

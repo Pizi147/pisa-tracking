@@ -291,6 +291,7 @@ export function skillCells(
       scored: scoredAssessed(assessed),
       today,
       pendingMove: pendingView(attempt.id, assessed),
+      lichSu: !!attempt.lich_su,
     });
     const row = rows.find((r) => r.skill === skill);
 
@@ -365,7 +366,7 @@ export function skillCells(
       /* Quá hạn tính trên Ô NÀY: W2 còn trống thì W2 quá hạn, W1 đã nộp thì không. */
       overdue: required && !cellScored && !!view.deadline && !!view.weekStart
         && view.weekStart <= today && view.deadline < today
-        && progress !== 'absent' && progress !== 'cancelled'
+        && progress !== 'absent' && progress !== 'cancelled' && !attempt.lich_su
         /* Đã báo "không có bài" thì không nợ điểm ở ô này — hạn nhập điểm chỉ áp cho bài CÓ thực hiện. */
         && noShow === null,
       progress,
@@ -720,6 +721,8 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
       cycleSeq: a.cycle_seq,
       route: a.route,
       attemptNo: a.attempt_no,
+      /** PR-MT (T34): MT lịch sử — nhập bù, không hạn, không nợ. */
+      lichSu: !!a.lich_su,
       target: a.target_at_attempt,
       /** TUẦN của lượt MT. Đây là thứ duy nhất định vị lượt này trên lịch. */
       period: a.planned_period_id
@@ -879,6 +882,7 @@ export function attemptDetail(p: Principal, attemptId: number) {
       attemptCancelled: a.status === 'cancelled',
       scored: entrySkillsOf(skill).every((k) => (scores.find((x) => x.skill === k)?.band ?? null) !== null),
       pendingMove: pendingView(a.id, skill),
+      lichSu: !!a.lich_su,
     });
     return { ...view, label: ASSESSED_SKILL_LABEL[skill] };
   });

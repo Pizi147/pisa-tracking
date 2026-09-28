@@ -1,14 +1,14 @@
 import { db } from '../db.ts';
 import {
   ASSESSED_SKILL_LABEL, ATTEMPT_KIND_SHORT, ENTRY_SKILL_LABEL,
-  INTERVENTION_KIND_LABEL, PERMISSIONS,
+  INTERVENTION_KIND_LABEL, LUOT_TINH_NO_SQL, PERMISSIONS,
   REGULAR_SKILL_LABEL, SOS_LABEL, URGENCY_LABEL, caseHeadline, caseTopicLabel, cycleDeadline,
   duongHoSoHocVien, duongLichTest, nhanDotNgan, planDueDate, trongHaiTuanCuoi, tuanLich, urgencyFromSos,
   type AssessedSkill, type AttemptKind, type EntrySkill, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays } from '../util.ts';
-import { can, napTruocPhamVi, scopeFor, teachesClass, type Principal } from '../permissions.ts';
+import { activeAt, can, napTruocPhamVi, scopeFor, teachesClass, type Principal } from '../permissions.ts';
 import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
 import { classAlerts } from '../classes/schedule.ts';
 import { demChuaLoTrinh } from '../classes/loTrinhTiep.ts';
@@ -194,7 +194,7 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   },
   missing_data: {
     label: 'Thiếu dữ liệu cần cho đánh giá',
-    hint: 'Thiếu những thông tin mà không có thì không đánh giá hay lên kế hoạch được: bài chưa xếp vào tuần nào, lớp chưa có tuần bắt đầu, học viên FT chưa có mục tiêu.',
+    hint: 'Thiếu những thông tin mà không có thì không đánh giá hay lên kế hoạch được: bài chưa xếp vào tuần nào, học viên FT chưa có mục tiêu.',
   },
   mgmt: {
     label: 'Công việc được giao',
@@ -549,7 +549,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
          LEFT JOIN classes cl ON cl.id = a.class_id
          LEFT JOIN report_periods pr ON pr.id = r.to_period_id
          LEFT JOIN users ru ON ru.id = r.requested_by
-        WHERE r.status = 'pending'`,
+        WHERE r.status = 'pending' AND ${LUOT_TINH_NO_SQL('a')}`,
     )
     .all() as any[];
 
@@ -864,7 +864,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
 
   // ---------------------------------------------------------------- 4. chốt tuần MT
   for (const a of attempts as any[]) {
-    if (a.period || a.status !== 'planned') continue;
+    if (a.period || a.status !== 'planned' || a.lichSu) continue;
     if (!can(p, PERMISSIONS.PLAN_WEEK, { classId: a.classId })) continue;
     items.push({
       key: `week:${a.id}`, group: 'missing_data', urgency: 'normal',
@@ -878,6 +878,34 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       ownerId: p.userId, owner: null, mine: true,
       due: null, statusLabel: 'Chưa có tuần',
     });
+  }
+
+  /*
+   * K5-09: HỌC VIÊN FT CHƯA CÓ TARGET — không có target thì không có kỳ vọng, SOS và Case không bao giờ sinh ra. Việc của GVCN lớp
+   * (người điền hồ sơ), không hạn. Một câu cho mọi lớp người xem chủ nhiệm.
+   */
+  {
+    const lopCn = [...new Set(p.assignments.filter((x) => x.isCore && activeAt(x, today)).map((x) => x.classId))];
+    if (lopCn.length) {
+      for (const h of conn.prepare(
+        `SELECT s.id, s.full_name, e.class_id, c.code AS class_code FROM learning_cycles cy
+           JOIN students s ON s.id = cy.student_id AND s.status = 'active' AND s.archived_at IS NULL
+           JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
+           JOIN classes c ON c.id = e.class_id
+          WHERE cy.status = 'active' AND cy.route IS NOT NULL AND cy.target_score IS NULL
+            AND e.class_id IN (${lopCn.map(() => '?').join(',')}) AND (? IS NULL OR c.branch_id = ?)
+          ORDER BY c.code, s.full_name`,
+      ).all(...lopCn, f.branchId ?? null, f.branchId ?? null) as any[]) {
+        items.push({
+          key: `target:${h.id}`, group: 'missing_data', urgency: 'normal',
+          studentId: h.id, studentName: h.full_name, classId: h.class_id, classCode: h.class_code,
+          attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: null, count: null,
+          reason: 'Chưa có target nên chưa tính được kỳ vọng từng MT',
+          tieuDe: 'Điền target', actionLabel: 'Điền target', href: `/hoc-vien/${h.id}`,
+          ownerId: p.userId, owner: null, mine: true, due: null, statusLabel: 'Chưa có target',
+        });
+      }
+    }
   }
 
   // ------------------------------------------------- 5. case chưa có người phụ trách

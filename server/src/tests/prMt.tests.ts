@@ -223,4 +223,67 @@ export async function runPrMtTests(t: YThucTestKit) {
     const th = tongHopSvc.tongHop(P.admin, { branchId: null, ct: 'ft', soTuan: 4, classId: classId('MB FT RF 12'), theo: 'lop' });
     assert(th.tong['kn:listening'] === 2, JSON.stringify(th.tong));
   });
+
+  // ---------------------------------------------------------------- khối 5: MT lịch sử không vào nợ / hạn / độ phủ; mốc kế tiếp
+  const cham: any = await import('../cham/canCham.ts');
+  const debt: any = await import('../worklist/scoreDebt.ts');
+  const mywork: any = await import('../worklist/mywork.ts');
+  const clsSvc: any = await import('../classes/classes.ts');
+  const metrics: any = await import('../worklist/metrics.ts');
+  const pulse: any = await import('../worklist/branchpulse.ts');
+  const standingSvc: any = await import('../students/standing.ts');
+  const danhGia: any = await import('../worklist/danhGia.ts');
+  const H1_BAT_DAU = addDays(tuanNay, -7 * 22);
+  const tuanMtH1 = [6, 12, 16].map((w) => addDays(H1_BAT_DAU, 7 * (w - 1)));
+  const MB101 = classId('MB FT 101');
+  /** Mọi con số mà một em cũ (MT lịch sử chưa điểm) KHÔNG được làm đổi (M3, K4-01). */
+  const chup = () => JSON.stringify({
+    lichTest: tuanMtH1.map((ws) => {
+      const r = cham.lichTest(P.mbManager, week.ensurePeriod(ws).id, null, TODAY, { phamVi: 'tat-ca' });
+      return { tq: r.tongQuan, no: r.no.length, lop: r.lop.map((l: any) => [l.classCode, l.tong, l.conBai, l.quaHan]) };
+    }),
+    no: (() => { const c = debt.scoreDebtCells(P.admin, TODAY, null); return [c.length, c.filter((x: any) => x.overdue).length]; })(),
+    viec: [P.lrTeacher, P.w1Teacher, P.sTeacher].map((u) => mywork.myWork(u).groups.find((g: any) => g.key === 'score')?.items.length ?? 0),
+    badge: clsSvc.listClassSummaries(P.mbManager).rows.find((r: any) => r.id === MB101)?.needScores,
+    chiSo: ['bai-qua-han-nhap-diem', 'do-phu-danh-gia'].map((id) => { const m = metrics.metricSet(P.admin, id); return [m.n, m.numeratorIds?.length ?? null, m.denominatorIds?.length ?? null]; }),
+    pulse: pulse.branchPulse(P.admin).people.map((x: any) => [x.id, x.mtPending, x.mtOverdue]),
+  });
+  const truoc = chup();
+  const r5 = intake.commitIntake(P.admin, { classId: MB101, dateFormat: 'iso',
+    rows: [{ fullName: 'PRMT Em Cũ H1b', target: 6.5, startWeek: H1_BAT_DAU, examMonth: '2027-03' }] });
+  const sH1b = r5.studentIds[0] as number;
+  conn.prepare("UPDATE learning_cycles SET exam_month = '2027-03' WHERE student_id = ?").run(sH1b);   // Thêm HV không nhận tháng thi từ file
+  check('PR-MT (5) · H1: thêm em đã học 22 tuần (MT1–MT3 lịch sử chưa điểm) → Lịch Test, Nợ, Việc cần làm, badge, chỉ số, Theo giáo viên KHÔNG đổi (M3, K4-01)', () => {
+    assert(luotCua(sH1b).length === 3 && luotCua(sH1b).every((x) => x.lich_su === 1), JSON.stringify(luotCua(sH1b)));
+    const sau = chup();
+    assert(sau === truoc, `trước ${truoc}\nsau   ${sau}`);
+  });
+  check('PR-MT (5) · Mốc kế tiếp: em cũ H1 không bật "Thiếu mốc đánh giá"; em mới hôm nay → MT1 (không phải MT3) (K2-05, K2-31)', () => {
+    const hang = clsSvc.classRoster(P.mbManager, MB101);
+    const h1 = hang.find((x: any) => x.id === sH1b);
+    assert(h1 && !h1.missing.some((m: any) => m.key === 'next_milestone') && h1.next === null, JSON.stringify(h1?.missing));
+    const moi = them('MB FT 101', 'PRMT Em Sắp Tới', tuanNay);
+    assert(standingSvc.standingFor([moi]).get(moi).nextAttemptNo === 1, 'standing: lượt sắp tới phải là MT1');
+    const r = clsSvc.classRoster(P.mbManager, MB101).find((x: any) => x.id === moi);
+    assert(r?.next?.attemptNo === 1 && !r.missing.some((m: any) => m.key === 'next_milestone'), JSON.stringify(r?.next));
+  });
+  check('PR-MT (5) · Em FT chưa có target → việc "Điền target" nhóm Thiếu dữ liệu cho GVCN, không hạn (K5-09)', () => {
+    const r = intake.commitIntake(P.admin, { classId: MB101, dateFormat: 'iso', rows: [{ fullName: 'PRMT Em Thiếu Target', startWeek: tuanNay }] });
+    const sid = r.studentIds[0];
+    const g = mywork.myWork(P.coreTeacher).groups.find((x: any) => x.key === 'missing_data');
+    const it = g?.items.find((x: any) => x.key === `target:${sid}`);
+    assert(it && it.due === null && it.mine, JSON.stringify(it));
+  });
+  check('PR-MT (5) · "Mới nhất" = số MT lớn nhất của lộ trình, không theo tuần (K5-54)', () => {
+    const sid = them('MB FT 101', 'PRMT Em Mới Nhất', tuanNay);
+    const [m1, m2] = luotCua(sid);
+    const tuan = (id: number, ws: string) => {
+      const pid = week.ensurePeriod(ws).id;
+      conn.prepare('UPDATE assessment_attempts SET planned_period_id = ? WHERE id = ?').run(pid, id);
+      conn.prepare('UPDATE attempt_skills SET planned_period_id = ? WHERE attempt_id = ?').run(pid, id);
+    };
+    tuan(m1.id, addDays(tuanNay, -7)); tuan(m2.id, addDays(tuanNay, -14));   // MT2 nằm tuần SỚM hơn MT1
+    for (const a of [m1, m2]) conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, band, entered_at) VALUES (?, 'speaking', 6, ?)`).run(a.id, TODAY);
+    assert(danhGia.latestAttempts([sid], 'valid', TODAY).get(sid)?.attemptNo === 2, 'phải chọn MT2');
+  });
 }

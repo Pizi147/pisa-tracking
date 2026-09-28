@@ -264,13 +264,16 @@ export function viewSkill(input: {
    * phải hỏi một câu chung thay vì hỏi từng dòng.
    */
   pendingMove?: { id: number; decideBy: string; toWeek: string | null; moveNo: number } | null;
+  /** PR-MT (T34, M3): lượt MT lịch sử — không nợ, không hạn, không quá hạn. Chốt MỘT chỗ; mọi nơi đếm nợ đọc `progress` này. */
+  lichSu?: boolean;
 }): SkillScheduleView {
   const { row, mode, scored } = input;
   const today = input.today ?? demoToday();
   const required = !!row.required;
   const weekStart = row.week_start ?? null;
+  const lichSu = !!input.lichSu;
 
-  const dl = required && !input.attemptCancelled && row.sit_status !== 'cancelled'
+  const dl = required && !lichSu && !input.attemptCancelled && row.sit_status !== 'cancelled'
     ? effectiveSkillDeadline({
         mode, weekStart,
         skillOverride: row.deadline_override,
@@ -282,6 +285,7 @@ export function viewSkill(input: {
   if (!required) progress = 'skipped';
   else if (input.attemptCancelled || row.sit_status === 'cancelled') progress = 'cancelled';
   else if (scored) progress = 'scored';
+  else if (lichSu) progress = 'lich_su';
   /*
    * CHỜ DUYỆT DỜI đứng TRƯỚC "vắng": lịch cũ vẫn nguyên đó, nhưng điều đang thật sự xảy ra
    * là một đề nghị nằm chờ. Hiện "vắng" lúc này là giấu mất việc phải làm của Quản lý.
@@ -318,7 +322,7 @@ export function viewSkill(input: {
     overdue:
       required && !scored && !!dl.date && !!weekStart
       && weekStart <= today && isOverdue(dl.date, today)
-      && progress !== 'absent' && progress !== 'cancelled',
+      && progress !== 'absent' && progress !== 'cancelled' && !lichSu,
     scored,
     progress,
     absenceMoveCount: row.absence_move_count,

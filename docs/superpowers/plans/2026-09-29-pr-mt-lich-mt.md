@@ -560,6 +560,16 @@ khác ngày với bản thử thì chạy thử lại. 5. Chạy thử lần n�
   từng lượt. Sửa gốc: `hanhTrinh.ts` nạp điểm / phạm vi / chương trình theo lô, `typedResult(a, pre?)` nhận dữ liệu nạp sẵn.
   **Câu hỏi cho planning:** `createAttempt` tạo MỚI ở tuần đã qua vẫn `lich_su = 0` (kế hoạch chỉ ghi tính cờ ở lõi tự tạo, dời theo tuần
   bắt đầu và hồi sinh) — T34 nói chung "lượt có tuần thi kết thúc trước ngày tạo". Giữ theo kế hoạch; PR-XLMT (xếp MT lịch sử) quyết.
+- **Task 4:** `routeCuaLuot(a)` ở `attempts.ts` — hàng đã có cột `route` thì dùng, không thì một câu nhớ theo `cycle_id` trong request.
+  Mọi danh sách thêm `route` vào SELECT sẵn có (tongHop, danhGia, weekly, phoiHop, phanTichLop, skillSupportBoard, profile, hanhTrinh) —
+  không thêm câu mỗi dòng; trần tốc độ không đổi.
+- **Task 5:** chốt `viewSkill({ lichSu })` → `progress 'lich_su'` (nhãn "Nhập bù, không có hạn"), không hạn, không quá hạn. Lịch Test
+  (`lichTest`) và `scoreDebtCells` lọc bằng `LUOT_TINH_NO_SQL` ngay trong SQL. Mốc kế tiếp: `mocKeTiep` + `MOC_KE_TIEP_SQL` +
+  `coMocTiepTheo` (lichMt.ts) dùng ở `classRoster` (next, Thiếu mốc), `hocVienLop` (một cột đếm thêm, lớp thường giữ cách cũ) và
+  `standing` (lượt sắp tới). Lớp thường giữ luật "Thiếu mốc" cũ (K2-05 nói FT). K5-54: `attemptsNewestFirst` xếp theo lộ trình mới nhất
+  rồi số MT lớn nhất. `luotSinhViecRow(a, homNay)` (danhGia.ts) dùng cho SOS hiện tại + Bỏ quên. K5-09: việc "Điền target" (nhóm Thiếu dữ
+  liệu, GVCN, không hạn); câu gợi ý nhóm bỏ "lớp chưa có tuần bắt đầu" (không có loại việc đó). Phần web của Task 5 (DeadlinePill,
+  LuoiFT…) làm chung ở Task 9.
 
 ## Planning chốt 29/09
 

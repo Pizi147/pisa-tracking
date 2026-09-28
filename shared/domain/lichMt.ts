@@ -90,3 +90,11 @@ export function mocKeTiep<T extends { status: string; lich_su: number; weekStart
   con.sort((a, b) => a.weekStart!.localeCompare(b.weekStart!) || a.attempt_no - b.attempt_no);
   return con[0] ?? null;
 }
+
+/** Cùng luật `mocKeTiep` cho câu đếm theo lô (không N+1). Tham số `?` = thứ Hai của tuần này. */
+export const MOC_KE_TIEP_SQL = (a: string, rp: string) => `${a}.status = 'planned' AND ${a}.lich_su = 0 AND ${rp}.week_start >= ?`;
+
+/** K2-05: em FT "có mốc đánh giá tiếp theo" = có mốc kế tiếp, HOẶC đã qua MT cuối của lịch mặc định và đã có ngày/tháng thi. */
+export function coMocTiepTheo(o: { coMoc: boolean; route: string | null; mtCuoi: number; coNgayThi: boolean }): boolean {
+  return o.coMoc || (lichMtMacDinh(o.route).length > 0 && o.mtCuoi >= lichMtMacDinh(o.route).length && o.coNgayThi);
+}

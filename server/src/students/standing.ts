@@ -1,6 +1,7 @@
 import { db } from '../db.ts';
+import { demoToday } from '../demoConfig.ts';
 import {
-  ASSESSED_SKILLS, PROGRAMME_TEMPLATES, REGULAR_SKILLS, SOS_LABEL,
+  ASSESSED_SKILLS, PROGRAMME_TEMPLATES, REGULAR_SKILLS, SOS_LABEL, mocKeTiep,
 } from '../../../shared/domain/index.ts';
 import { entryBandsOf, loadBundle } from '../fasttrack/attempts.ts';
 import { evaluateAttempt } from '../fasttrack/scoring.ts';
@@ -162,7 +163,7 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
   const cph = cycleIds.map(() => '?').join(',');
   const attempts = conn
     .prepare(
-      `SELECT a.*, pr.code AS period_code FROM assessment_attempts a
+      `SELECT a.*, pr.code AS period_code, pr.week_start AS weekStart FROM assessment_attempts a
          LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
         WHERE a.cycle_id IN (${cph}) AND a.status != 'cancelled'
         ORDER BY a.attempt_no`,
@@ -189,6 +190,7 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
     if (s.cycleId !== null && r.cycle_id !== null && r.cycle_id !== s.cycleId) s.handoverCases += 1;
   }
 
+  const homNay = demoToday();
   for (const [studentId, cycle] of cycleOf) {
     const s = out.get(studentId)!;
     const ratio = !!cycle.programme_code && PROGRAMME_TEMPLATES[
@@ -196,6 +198,13 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
     ]?.scoringMode === 'ratio';
     s.mode = ratio ? 'ratio' : 'ielts_band';
     const list = byStudent.get(studentId) ?? [];
+    /* K2-31: "lượt sắp tới" = mốc kế tiếp (planned, không lịch sử, từ tuần này, sớm nhất) — không phải lượt planned cuối danh sách. */
+    const moc = mocKeTiep(list, homNay);
+    if (moc) {
+      s.nextAttemptNo = moc.attempt_no;
+      s.nextAttemptLabel = labelOf(moc.kind, moc.attempt_no);
+      s.nextPeriodCode = moc.period_code ?? null;
+    }
 
     /*
      * LƯỢT MỚI NHẤT CÓ ĐIỂM, duyệt từ cuối lên.
@@ -207,15 +216,7 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
     for (let i = list.length - 1; i >= 0; i -= 1) {
       const a = list[i];
       const scores = bundle.scores.get(a.id) ?? [];
-      if (!scores.length) {
-        /* Chưa có điểm: ghi lại làm "lượt đang chờ" rồi đi tiếp xuống lượt cũ hơn. */
-        if (s.nextAttemptNo === null) {
-          s.nextAttemptNo = a.attempt_no;
-          s.nextAttemptLabel = labelOf(a.kind, a.attempt_no);
-          s.nextPeriodCode = a.period_code ?? null;
-        }
-        continue;
-      }
+      if (!scores.length) continue;   /* chưa có điểm: đi tiếp xuống lượt cũ hơn */
       s.attemptId = a.id;
       s.attemptNo = a.attempt_no;
       s.attemptKind = a.kind ?? 'mock';
