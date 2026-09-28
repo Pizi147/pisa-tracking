@@ -910,4 +910,5 @@ export function ClassCreatePanel(props: {
 6. `kiemSauXoa.ts` tìm `MB-FT THU 01` — tên này **không theo mẫu**, migrate không đổi → lệnh vẫn đúng, nhưng đã đổi sang so chuẩn hoá.
 
 ## Nhật ký
-- (Task 0) N1 đã merge: … · mốc B: … phép kiểm.
+- (Task 0) N1 đã merge: **một phần** — #108 gồm Task 0–5b của N1; `web/src/ui/loiForm.tsx`, `shared/domain/loiForm.ts` **chưa có** → Task 8/9 dùng `Truong loi` + `conThieu: string[]` sẵn có, đổi sang `useLoiForm` sau khi N1 Task 6 merge (rebase). · mốc B: **1390** phép kiểm (+ 20 tốc độ). · Dòng mã đối chiếu: lệch ≤ 20 dòng (`setClassTeachers` :837, `computeProgress` :281, `suggestClassCode` :27, `phamViMacDinh` shared/domain/hocVienLop.ts:72, `ORDER BY b.id, c.code` classes.ts:140, `createClass` intake.ts:496, dòng N1 ở migrate.ts:454).
+- (Task 0) Chạy bằng skill subagent-driven-development theo lệnh chủ sản phẩm (subagent cùng model Opus 5.5, không Haiku); không rà từng Task bằng subagent (Quy trình nhanh) — người rà là session riêng.
