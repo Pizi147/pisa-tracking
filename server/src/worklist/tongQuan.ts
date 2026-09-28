@@ -11,6 +11,7 @@ import { warningsFor } from '../yThuc/canhBao.ts';
 import { latestAttempts, studentsInScope } from './danhGia.ts';
 import { metricSet } from './metrics.ts';
 import { tachTheoLop } from './chuongTrinh.ts';
+import { quetYeuCau } from '../duyet/yeuCau.ts';
 
 /**
  * TỔNG QUAN (PR-Pa, đặc tả §3.2). File này KHÔNG ĐẾM gì: mọi số lấy từ `metricSet` (hợp đồng số liệu luật 1), ở đây chỉ
@@ -19,6 +20,7 @@ import { tachTheoLop } from './chuongTrinh.ts';
 
 export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh }) {
   if (scopeFor(p, PERMISSIONS.MEETING_VIEW).none) throw forbidden('Khối này dành cho Quản lý.');
+  quetYeuCau();   // PR-DUYET (K5-17)
   const base = { branchId: f.branchId ?? null, program: f.ct };
 
   /* CẦN XỬ LÝ — mỗi dòng một chỉ số của sổ. */

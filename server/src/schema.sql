@@ -1736,3 +1736,5 @@ CREATE TABLE yeu_cau_duyet (
 CREATE INDEX ix_ycd_trang_thai ON yeu_cau_duyet (trang_thai, phan_loai);
 CREATE INDEX ix_ycd_doi_tuong ON yeu_cau_duyet (doi_tuong_loai, doi_tuong_id);
 CREATE UNIQUE INDEX ux_ycd_dang_cho ON yeu_cau_duyet (loai, doi_tuong_loai, doi_tuong_id) WHERE trang_thai = 'cho';
+-- quét quá hạn duyệt tra "đã báo chưa" theo dedup_key (không theo người nhận)
+CREATE INDEX ix_notifications_dedup ON notifications (dedup_key);

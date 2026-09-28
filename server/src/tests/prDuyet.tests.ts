@@ -52,7 +52,7 @@ export async function runPrDuyetTests(t: YThucTestKit) {
   });
 
   const mig: any = await import('../migrate/prDuyet.ts');
-  const { conn } = t;
+  const { conn, TODAY } = t;
   check('DUYET (2) · migrate hai lần: lần hai không thêm thẻ; PA chờ đều có thẻ, PA huỷ/Case đóng không; chạy thử chỉ đọc', () => {
     const dem = () => (conn.prepare('SELECT COUNT(*) n FROM yeu_cau_duyet').get() as any).n as number;
     const lan1: string[] = []; mig.migratePrDuyet(conn, lan1);
@@ -73,4 +73,95 @@ export async function runPrDuyetTests(t: YThucTestKit) {
     const kh = mig.keHoachDuyet(conn);
     assert(kh.mauPa.length === 0 && kh.mauDoi.length === 0 && typeof kh.gvcnMatQuyen === 'number' && dem() === sau1, 'chạy thử sau migrate: 0 thẻ mới, không ghi');
   });
+
+  // ---------------------------------------------------------------- khối 3: lõi hộp, dùng một loại GIẢ đăng ký tạm
+  const yc: any = await import('../duyet/yeuCau.ts');
+  const { DINH_NGHIA_LOAI } = await import('../duyet/loaiYeuCau.ts');
+  const maLoi = (fn: () => unknown): number | string => {
+    try { fn(); return 'không ném'; } catch (e: any) { return e?.status ?? String(e?.message ?? e); }
+  };
+  const chuLoi = (fn: () => unknown): string => { try { fn(); return ''; } catch (e: any) { return String(e?.message ?? e); } };
+  const mb = classId('MB FT 101');
+  /* Em chỉ có MỘT ghi danh đang học (ở MB FT 101) — phép kiểm trước có thể đã chuyển lớp vài em. */
+  const hvMb = (conn.prepare(`SELECT e.student_id AS id FROM enrollments e WHERE e.class_id = ? AND e.status = 'active'
+      AND (SELECT COUNT(*) FROM enrollments x WHERE x.student_id = e.student_id AND x.status = 'active') = 1 ORDER BY e.id LIMIT 1`).get(mb) as any).id as number;
+  const GIA = 'thu_hop' as any;
+  (d.LOAI_YC_META as any)[GIA] = { phanLoai: 'hoc-thuat', nhan: 'Thử hộp', kieuNut: 'duyet-tu-choi', hanNgay: 5, hangLoat: true };
+  const daDuyet: number[] = [];
+  DINH_NGHIA_LOAI.push({
+    loai: GIA, khiDuyet: (_p: any, y: any) => { daDuyet.push(y.id); },
+    chet: { sql: 'y.doi_tuong_id < 0', lyDo: 'Đối tượng thử đã mất' },
+    moTa: (y: any, ngu: any) => ({ tieuDe: `Thử · ${ngu.hocVien.get(y.hoc_vien_id) ?? ''}`, dong: [y.ly_do ?? ''] }),
+  });
+  let seq = 900000;
+  const tao = (o: Record<string, unknown> = {}) => yc.taoYeuCau(conn, {
+    loai: GIA, doiTuongLoai: 'thu', doiTuongId: ++seq, hocVienId: hvMb, nguoiXin: P.coreTeacher.userId, lyDo: 'Lý do thử', ...o });
+  const docThe = (id: number) => conn.prepare('SELECT * FROM yeu_cau_duyet WHERE id = ?').get(id) as any;
+  try {
+    check('DUYET (3) · tạo thẻ: QL MB thấy, QL CP không, GVCN mở hộp → 403; trùng (loại, đối tượng) không tạo đôi; báo duyet_moi', () => {
+      const id = tao();
+      assert(id && docThe(id).lop_id === mb && docThe(id).chi_nhanh_id && docThe(id).han_duyet, JSON.stringify(docThe(id)));
+      assert(yc.taoYeuCau(conn, { loai: GIA, doiTuongLoai: 'thu', doiTuongId: seq, hocVienId: hvMb, nguoiXin: null }) === null, 'tạo đôi');
+      assert(yc.hopChoDuyet(P.mbManager).the.some((x: any) => x.id === id), 'QL MB không thấy');
+      assert(!yc.hopChoDuyet(P.cpManager).the.some((x: any) => x.id === id), 'QL CP thấy thẻ MB');
+      assert(maLoi(() => yc.hopChoDuyet(P.coreTeacher)) === 403, 'GVCN mở được hộp');
+      assert(yc.yeuCauCuaToi(P.coreTeacher).the.some((x: any) => x.id === id && x.tieuDe.startsWith('Thử')), 'Yêu cầu của tôi');
+      assert(!!conn.prepare(`SELECT 1 FROM notifications WHERE user_id = ? AND kind = 'duyet_moi' AND entity_id = ?`).get(P.mbManager.userId, id), 'thiếu duyet_moi');
+      const dem = yc.demYeuCau(P.mbManager);
+      assert(dem.cho >= 1 && yc.demYeuCau(P.coreTeacher).cuaToiCho >= 1 && yc.demYeuCau(P.coreTeacher).cho === 0, JSON.stringify(dem));
+    });
+    check('DUYET (3) · duyệt hai lần → lần hai 400 "đã được xử lý"; khiDuyet chạy đúng một lần; người xin nhận duyet_ket_qua', () => {
+      const id = tao();
+      const r = yc.duyetYeuCau(P.mbManager, id, { ghiChu: 'Đồng ý' });
+      assert(r.ok && docThe(id).trang_thai === 'duyet' && docThe(id).nguoi_duyet === P.mbManager.userId && docThe(id).tra_loi === 'Đồng ý', JSON.stringify(docThe(id)));
+      assert(maLoi(() => yc.duyetYeuCau(P.mbManager, id)) === 400 && /đã được xử lý/.test(chuLoi(() => yc.duyetYeuCau(P.mbManager, id))), 'lần hai');
+      assert(daDuyet.filter((x) => x === id).length === 1, 'khiDuyet chạy lại');
+      assert(yc.chotYeuCau(conn, { doiTuongLoai: 'thu', doiTuongId: docThe(id).doi_tuong_id }, 'duyet', {}) === 0, 'chốt lần hai phải trả 0');
+      const kq = conn.prepare(`SELECT title FROM notifications WHERE user_id = ? AND kind = 'duyet_ket_qua' AND entity_id = ?`).all(P.coreTeacher.userId, id) as any[];
+      assert(kq.length === 1 && /đã duyệt/.test(kq[0].title), JSON.stringify(kq));
+      assert(maLoi(() => yc.duyetYeuCau(P.cpManager, tao())) === 403, 'QL CP duyệt thẻ MB');
+      assert(maLoi(() => yc.duyetYeuCau(P.coreTeacher, tao())) === 403, 'GVCN duyệt');
+    });
+    check('DUYET (3) · từ chối thiếu lý do → 400; có lý do → tu_choi; trả lời thẻ Duyệt → 400; duyệt hàng loạt báo riêng thẻ lỗi; câu lỗi không lộ mã', () => {
+      const id = tao();
+      assert(maLoi(() => yc.tuChoiYeuCau(P.mbManager, id, '  ')) === 400 && maLoi(() => yc.tuChoiYeuCau(P.mbManager, id, 'ab')) === 400, 'thiếu lý do');
+      yc.tuChoiYeuCau(P.mbManager, id, 'Chưa đủ căn cứ');
+      assert(docThe(id).trang_thai === 'tu_choi' && docThe(id).ly_do_tu_choi === 'Chưa đủ căn cứ', JSON.stringify(docThe(id)));
+      assert(maLoi(() => yc.traLoiYeuCau(P.mbManager, tao(), 'Trả lời')) === 400, 'trả lời thẻ Duyệt');
+      const a = tao(); const b = tao();
+      yc.duyetYeuCau(P.mbManager, b);
+      const r = yc.duyetNhieu(P.mbManager, [a, b]);
+      assert(r.ok.length === 1 && r.ok[0] === a && r.loi.length === 1 && r.loi[0].id === b, JSON.stringify(r));
+      assert(maLoi(() => yc.duyetNhieu(P.mbManager, [])) === 400, 'rỗng');
+      for (const loi of [chuLoi(() => yc.tuChoiYeuCau(P.mbManager, a, '')), chuLoi(() => yc.hopChoDuyet(P.coreTeacher)), chuLoi(() => yc.duyetYeuCau(P.mbManager, a))]) {
+        assert(loi && !/[a-z]+_[a-z]+|request[.]/.test(loi), `câu lỗi lộ mã: ${loi}`);
+      }
+    });
+    check('DUYET (3) · QL tự gửi rồi tự duyệt → tu_duyet = 1, Quản trị nhận một thông báo, QL không tự báo mình', () => {
+      const id = tao({ nguoiXin: P.mbManager.userId });
+      const r = yc.duyetYeuCau(P.mbManager, id);
+      assert(r.tuDuyet && docThe(id).tu_duyet === 1, JSON.stringify(docThe(id)));
+      const n = conn.prepare(`SELECT COUNT(*) n FROM notifications WHERE user_id = ? AND entity_id = ? AND kind = 'duyet_tu_duyet'`).get(P.admin.userId, id) as any;
+      assert(n.n === 1, `Quản trị nhận ${n.n} thông báo tự duyệt`);
+      assert(!conn.prepare(`SELECT 1 FROM notifications WHERE user_id = ? AND kind IN ('duyet_ket_qua', 'duyet_moi') AND entity_id = ?`).get(P.mbManager.userId, id), 'tự báo cho mình');
+    });
+    check('DUYET (3) · quét: đối tượng "chết" → tu_dong + lý do; quá hạn → đúng MỘT thông báo cho QL và Quản trị sau hai lần quét', () => {
+      const chet = tao({ doiTuongId: -(++seq) });
+      yc.quetYeuCau(TODAY);
+      assert(docThe(chet).trang_thai === 'tu_dong' && docThe(chet).ly_do_dong === 'Đối tượng thử đã mất', JSON.stringify(docThe(chet)));
+      const qua = tao({ hanDuyet: t.addDays(TODAY, -2) });
+      yc.quetYeuCau(TODAY); yc.quetYeuCau(TODAY);
+      const dem = (uid: number) => (conn.prepare(`SELECT COUNT(*) n FROM notifications WHERE user_id = ? AND kind = 'duyet_qua_han' AND entity_id = ?`).get(uid, qua) as any).n;
+      assert(dem(P.mbManager.userId) === 1 && dem(P.admin.userId) === 1 && dem(P.cpManager.userId) === 0, `${dem(P.mbManager.userId)} · ${dem(P.admin.userId)} · ${dem(P.cpManager.userId)}`);
+      assert(yc.demYeuCau(P.mbManager).quaHan >= 1, 'đếm quá hạn');
+      const duong = (kind: string) => d.duongThongBao({ entity_type: 'yeu_cau_duyet', entity_id: qua, kind, student_id: null, attempt_id: null });
+      assert(duong('duyet_qua_han') === `/cong-viec/cho-duyet?the=${qua}` && duong('duyet_ket_qua') === `/cong-viec/yeu-cau?the=${qua}`, 'đường thông báo');
+    });
+  } finally {
+    DINH_NGHIA_LOAI.splice(DINH_NGHIA_LOAI.findIndex((x) => x.loai === GIA), 1);
+    conn.prepare(`UPDATE yeu_cau_duyet SET trang_thai = 'tu_dong', ly_do_dong = 'thẻ thử', xu_ly_luc = ? WHERE loai = ? AND trang_thai = 'cho'`).run(new Date().toISOString(), GIA);
+    conn.prepare('DELETE FROM notifications WHERE entity_type = ? AND entity_id IN (SELECT id FROM yeu_cau_duyet WHERE loai = ?)').run('yeu_cau_duyet', GIA);
+    conn.prepare('DELETE FROM yeu_cau_duyet WHERE loai = ?').run(GIA);
+    delete (d.LOAI_YC_META as any)[GIA];
+  }
 }

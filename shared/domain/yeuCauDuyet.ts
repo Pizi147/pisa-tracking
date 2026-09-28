@@ -99,3 +99,39 @@ export function nhanTrangThaiYc(t: TrangThaiYc, tuDuyet = false): { t: TrangThai
     case 'tu_dong': return { t: 'da-huy', chu: 'Tự đóng' };
   }
 }
+
+/** Một thẻ như máy chủ trả cho giao diện (`GET /yeu-cau`). Chữ đã dựng sẵn — giao diện không tự ghép từ mã. */
+export type TheYeuCauDto = {
+  id: number;
+  loai: LoaiYeuCau;
+  nhanLoai: string;
+  phanLoai: PhanLoai;
+  nhanPhanLoai: string;
+  kieuNut: KieuNut;
+  hangLoat: boolean;
+  tieuDe: string;
+  dong: string[];
+  neuDuyet: string | null;
+  /** Đường "Mở" (hồ sơ HV / Ngăn Case / trang lượt thi). */
+  mo: string | null;
+  hocVienId: number | null;
+  hocVien: string | null;
+  lopId: number | null;
+  lop: string | null;
+  nguoiXinId: number | null;
+  /** `null` = hệ thống (Báo lên). */
+  nguoiXin: string | null;
+  nguoiDuyet: string | null;
+  lyDo: string | null;
+  lyDoTuChoi: string | null;
+  traLoi: string | null;
+  lyDoDong: string | null;
+  hanDuyet: string | null;
+  trangThai: TrangThaiYc;
+  tuDuyet: boolean;
+  taoLuc: string;
+  xuLyLuc: string | null;
+  duLieu: Record<string, unknown> | null;
+};
+
+export type DemYeuCau = { cho: number; quaHan: number; baoLen: number; cuaToiCho: number; cuaToiTuChoi: number };

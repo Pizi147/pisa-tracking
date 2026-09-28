@@ -16,6 +16,7 @@ import { myMgmtTasks } from './mgmttasks.ts';
 import { listSignals, type SignalAction } from '../cases/signals.ts';
 import { NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds } from '../cases/sosState.ts';
 import { settleNoShows, sweepExpiredMoves } from '../fasttrack/absence.ts';
+import { quetYeuCau } from '../duyet/yeuCau.ts';
 
 /**
  * VIỆC CỦA CHÍNH NGƯỜI ĐANG XEM.
@@ -251,6 +252,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   if (scope.none) return { summary: { total: 0, overdue: 0, today: 0 }, groups: [], scopeEmpty: true, xemNguoiKhac: false };
 
   const conn = db();
+  quetYeuCau(today);   // PR-DUYET (K5-17): thẻ chết tự đóng, Báo lên tự tạo — một lần mỗi request
   const items: WorkItem[] = [];
   const attempts = listAttempts(p, { branchId: f.branchId ?? undefined }).rows
     .filter((a: any) => a.status !== 'cancelled');

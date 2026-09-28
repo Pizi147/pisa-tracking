@@ -23,6 +23,8 @@ CREATE TABLE IF NOT EXISTS yeu_cau_duyet (
 CREATE INDEX IF NOT EXISTS ix_ycd_trang_thai ON yeu_cau_duyet (trang_thai, phan_loai);
 CREATE INDEX IF NOT EXISTS ix_ycd_doi_tuong ON yeu_cau_duyet (doi_tuong_loai, doi_tuong_id);
 CREATE UNIQUE INDEX IF NOT EXISTS ux_ycd_dang_cho ON yeu_cau_duyet (loai, doi_tuong_loai, doi_tuong_id) WHERE trang_thai = 'cho';
+-- quét quá hạn tra "đã báo chưa" theo dedup_key (không theo người nhận)
+CREATE INDEX IF NOT EXISTS ix_notifications_dedup ON notifications (dedup_key);
 `;
 
 /* PA đang chờ QL của Case còn mở — cùng điều kiện nhóm việc `decide` cũ (mywork.ts, trước PR-DUYET). */

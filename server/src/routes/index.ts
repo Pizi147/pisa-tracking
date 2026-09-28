@@ -44,6 +44,7 @@ import * as prefSvc from '../platform/prefs.ts';
 import * as profileSvc from '../students/profile.ts';
 import { hanhTrinhHocVien } from '../students/hanhTrinh.ts';
 import { thongBaoCua } from '../platform/thongBao.ts';
+import * as yeuCauSvc from '../duyet/yeuCau.ts';
 import * as classSvc from '../classes/classes.ts';
 import * as scheduleSvc from '../classes/schedule.ts';
 import * as intakeSvc from '../classes/intake.ts';
@@ -1560,6 +1561,38 @@ api.post('/phoi-hop-sos/:id/remove', requireAuth, wrap((req) => {
 api.post('/interventions/:id/respond', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return caseSvc.respondToPlan(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
+/*
+ * HỘP CHỜ DUYỆT (PR-DUYET, T41, §7.6): `hop=cho-duyet` (QL, Quản trị — 403 với GV) · `hop=cua-toi` (mọi vai: thẻ mình đã gửi).
+ * Quyết định kiểm quyền theo phạm vi CỦA THẺ; thẻ đã xử lý → 400 "đã được xử lý" để giao diện làm mới danh sách.
+ */
+api.get('/yeu-cau', requireAuth, wrap((req) => {
+  const p = principalOf(req);
+  if (qStr(req, 'hop') === 'cua-toi') return yeuCauSvc.yeuCauCuaToi(p);
+  const xem = qStr(req, 'xem');
+  return yeuCauSvc.hopChoDuyet(p, {
+    phanLoai: (qStr(req, 'phanLoai') as any) ?? null, xem: xem === 'da-xu-ly' ? 'da-xu-ly' : 'cho',
+    studentId: qInt(req, 'studentId') ?? null, branchId: qInt(req, 'branchId') ?? null,
+  });
+}));
+api.get('/yeu-cau/dem', requireAuth, wrap((req) => yeuCauSvc.demYeuCau(principalOf(req))));
+api.post('/yeu-cau/duyet-nhieu', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return yeuCauSvc.duyetNhieu(principalOf(req), (req.body ?? {}).ids);
+}));
+api.post('/yeu-cau/:id/duyet', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = (req.body ?? {}) as Record<string, any>;
+  return yeuCauSvc.duyetYeuCau(principalOf(req), pInt(req, 'id'), { ghiChu: typeof b.ghiChu === 'string' ? b.ghiChu : null, duLieu: b.duLieu });
+}));
+api.post('/yeu-cau/:id/tu-choi', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return yeuCauSvc.tuChoiYeuCau(principalOf(req), pInt(req, 'id'), (req.body ?? {}).lyDo);
+}));
+api.post('/yeu-cau/:id/tra-loi', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return yeuCauSvc.traLoiYeuCau(principalOf(req), pInt(req, 'id'), (req.body ?? {}).traLoi);
 }));
 
 /**
