@@ -829,7 +829,7 @@ export const NEXT_STEP_HINT: Record<NextStep, string> = {
   continue: 'Giữ nguyên phương án, mở đợt mới để làm tiếp.',
   adjust: 'Cùng phương án, sửa mô tả, người thực hiện hoặc ngày dự kiến kết thúc. Bản cũ giữ trong lịch sử.',
   propose: 'Khép phương án cũ với lý do "Được thay thế" và mở phương án mới.',
-  ask_manager: 'Chuyển sang chờ Quản lý quyết định. Thời gian chờ tính cho Quản lý.',
+  ask_manager: 'Lưu kết quả tuần như Giữ nguyên và gửi câu hỏi cho Quản lý. PA vẫn chạy.',
 };
 
 /** Kết quả tốt được phép khép lại; kết quả chưa tốt BẮT BUỘC đi tiếp. */
@@ -913,7 +913,7 @@ export const PLAN_DECISION_HINT: Record<PlanDecision, string> = {
   adjust: 'Cùng phương án, sửa mô tả, người thực hiện hoặc ngày dự kiến kết thúc. Bản cũ giữ trong lịch sử.',
   replace: 'Khép phương án này (Được thay thế) và mở phương án mới. Đổi loại phương án thì chọn ở đây.',
   end: 'Khép phương án này. Case chỉ hoàn thành được khi mọi phương án đã khép.',
-  ask_manager: 'Chuyển sang chờ Quản lý quyết định. Thời gian chờ tính cho Quản lý.',
+  ask_manager: 'Lưu kết quả tuần như Giữ nguyên và gửi câu hỏi cho Quản lý. PA vẫn chạy.',
 };
 
 /** Bản NGẮN cho danh sách dọc trong panel Ghi kết quả (PR-UX3, mockup 15 §4): tên một dòng + `PLAN_DECISION_NGHIA` một dòng nghĩa. */
@@ -925,7 +925,7 @@ export const PLAN_DECISION_NGHIA: Record<PlanDecision, string> = {
   adjust: 'Cùng PA, sửa nội dung, người làm hoặc hạn',
   replace: 'Khép PA này, mở PA khác thay vào',
   end: 'Khép PA này; Case chỉ xong khi mọi PA đã khép',
-  ask_manager: 'Chuyển Quản lý quyết định',
+  ask_manager: 'Lưu như Giữ nguyên, gửi câu hỏi cho Quản lý',
 };
 /** Nút chính ở chân panel theo quyết định đang chọn. */
 export const NUT_LUU_KET_QUA: Record<PlanDecision, string> = {

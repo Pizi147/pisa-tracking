@@ -233,4 +233,44 @@ export async function runPrDuyetTests(t: YThucTestKit) {
     const the = theCua('de_xuat_pa', ivId);
     assert(the.trang_thai === 'tu_dong' && /Case đã đóng/.test(the.ly_do_dong), JSON.stringify(the));
   });
+
+  // ---------------------------------------------------------------- khối 5: Xin ý kiến (T64) — PA không dừng
+  const paChay = () => {
+    const { sid, caseId } = hvMoi();
+    const r = casesSvc.recordIntervention(P.lrTeacher, caseId, {
+      kind: 'self_study', description: 'Tự học nghe chép 15 phút mỗi ngày', status: 'started', startedDate: t.addDays(TODAY, -7), performerSelf: true,
+    }) as any;
+    return { sid, caseId, ivId: r.interventions[r.interventions.length - 1].id as number };
+  };
+  check('DUYET (5) · Xin hỗ trợ QL: PA vẫn Đang làm, hạn tuần sang Thứ Hai như Giữ nguyên, dự kiến kết thúc không đổi; một thẻ Xin ý kiến 5 ngày', () => {
+    const { ivId } = paChay();
+    const truoc = conn.prepare('SELECT followup_due FROM case_interventions WHERE id = ?').get(ivId) as any;
+    assert(chuLoi(() => casesSvc.updateResult(P.lrTeacher, ivId, { decision: 'ask_manager', outcome: 'unchanged', note: 'Em vẫn nghe sót số', observedOn: TODAY }))
+      .includes('cần Quản lý giúp gì'), 'thiếu câu hỏi vẫn gửi được');
+    casesSvc.updateResult(P.lrTeacher, ivId, { decision: 'ask_manager', outcome: 'unchanged', note: 'Em vẫn nghe sót số',
+      decisionNote: 'Có nên chuyển sang tutor không?', observedOn: TODAY });
+    const iv = conn.prepare('SELECT status, approval_state, action_due, followup_due FROM case_interventions WHERE id = ?').get(ivId) as any;
+    assert(iv.status === 'started' && iv.approval_state == null && iv.action_due === d.weeklyUpdateDue(t.addDays(TODAY, 1))
+      && iv.followup_due === truoc.followup_due, JSON.stringify(iv));
+    const the = theCua('xin_y_kien', ivId);
+    assert(the?.trang_thai === 'cho' && the.ly_do === 'Có nên chuyển sang tutor không?' && the.han_duyet === d.hanDuyetMacDinh('xin_y_kien', TODAY),
+      JSON.stringify(the));
+    const tren = yc.hopChoDuyet(P.mbManager).the.find((x: any) => x.id === the.id);
+    assert(tren && tren.kieuNut === 'tra-loi' && tren.tieuDe.startsWith('Xin ý kiến · PA') && tren.dong.some((x: string) => x.startsWith('Kết quả tuần: ')),
+      JSON.stringify(tren));
+  });
+  check('DUYET (5) · Trả lời thiếu chữ → 400; có chữ → Đã trả lời, GV nhận câu trả lời, Ngăn Case có dòng trả lời; Duyệt thẻ này → 400', () => {
+    const { caseId, ivId } = paChay();
+    casesSvc.updateResult(P.lrTeacher, ivId, { decision: 'ask_manager', outcome: 'worse', note: 'Em vẫn nghe sót số',
+      decisionNote: 'Cần Quản lý xếp tutor giúp em', observedOn: TODAY });
+    const id = theCua('xin_y_kien', ivId).id;
+    assert(casesSvc.caseDetail(P.lrTeacher, caseId).interventions.find((x: any) => x.id === ivId).xinYKien?.trangThai === 'cho', 'Ngăn Case thiếu dòng chờ');
+    assert(maLoi(() => yc.traLoiYeuCau(P.mbManager, id, ' ')) === 400 && maLoi(() => yc.duyetYeuCau(P.mbManager, id)) === 400, '400');
+    yc.traLoiYeuCau(P.mbManager, id, 'Xếp tutor thứ Tư, tôi báo tổ');
+    assert(theCua('xin_y_kien', ivId).trang_thai === 'da_tra_loi' && theCua('xin_y_kien', ivId).tra_loi === 'Xếp tutor thứ Tư, tôi báo tổ', 'chưa chốt');
+    const tb = conn.prepare(`SELECT title FROM notifications WHERE user_id = ? AND kind = 'duyet_ket_qua' AND entity_id = ?`).get(P.lrTeacher.userId, id) as any;
+    assert(tb && tb.title.includes('Xếp tutor thứ Tư'), JSON.stringify(tb));
+    const xyk = casesSvc.caseDetail(P.lrTeacher, caseId).interventions.find((x: any) => x.id === ivId).xinYKien;
+    assert(xyk?.trangThai === 'da_tra_loi' && xyk.traLoi.includes('thứ Tư') && xyk.nguoiDuyet, JSON.stringify(xyk));
+  });
 }

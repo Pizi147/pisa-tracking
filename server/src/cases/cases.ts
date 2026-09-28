@@ -33,7 +33,7 @@ import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, dongBoTrangThaiCase, sosCaseState 
 import { PLAN_DECISIONS, decisionToStep, type PlanDecision } from '../../../shared/domain/index.ts';
 import { apDungDieuChinh, chuanHoaDieuChinh, lichSuDieuChinhCuaCase } from './planRevisions.ts';
 import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
-import { chotYeuCau, taoYeuCau } from '../duyet/yeuCau.ts';
+import { chotYeuCau, taoYeuCau, theCuaDoiTuong } from '../duyet/yeuCau.ts';
 
 /**
  * CASE HỌC VỤ — một vòng đời cho cả hai nguồn.
@@ -1389,6 +1389,9 @@ export function caseDetail(p: Principal, caseId: number) {
 
   /* PR-S2 (S2): lịch sử điều chỉnh của mọi PA trong Case, một truy vấn. */
   const revs = lichSuDieuChinhCuaCase(caseId);
+  /* PR-DUYET (Task 5, 9): thẻ hộp Chờ duyệt của mọi PA trong Case — một câu cho cả Case. */
+  const theCuaPa = theCuaDoiTuong('intervention',
+    (conn.prepare('SELECT id FROM case_interventions WHERE case_id = ?').all(caseId) as any[]).map((r) => r.id as number));
   const interventions = (conn
     .prepare(
       `SELECT iv.*, u.full_name AS performer_account, r.full_name AS recorder_name,
@@ -1450,6 +1453,10 @@ export function caseDetail(p: Principal, caseId: number) {
       approvalAt: iv.approval_at as string | null,
       /** PR-S2 (S2): mỗi lần sửa nội dung PA, cũ trước mới sau. Hàng chính luôn là bản hiện tại. */
       revisions: revs.get(iv.id) ?? [],
+      /** PR-DUYET: thẻ ĐANG CHỜ mới nhất của PA (Đề xuất PA / Xin ý kiến) — Ngăn Case nhúng `TheYeuCau` khi người xem duyệt được. */
+      yeuCau: theCuaPa.find((y) => y.doiTuongId === iv.id && y.trangThai === 'cho') ?? null,
+      /** PR-DUYET (T64): lần Xin ý kiến mới nhất của PA (chờ hoặc đã trả lời) — dòng tím dưới PA. */
+      xinYKien: theCuaPa.find((y) => y.doiTuongId === iv.id && y.loai === 'xin_y_kien' && y.trangThai !== 'tu_dong') ?? null,
     }));
 
   const followups = (conn
@@ -2795,6 +2802,10 @@ export function updateResult(p: Principal, interventionId: number, input: {
   if ((nextStep === 'adjust' || nextStep === 'propose') && (decisionNote ?? '').length < 8) {
     throw badRequest('Điều chỉnh hoặc thay phương án thì phải ghi Lý do, ít nhất 8 ký tự.');
   }
+  /* PR-DUYET (T64): câu hỏi gửi Quản lý là nội dung của thẻ Xin ý kiến — bắt buộc. */
+  if (nextStep === 'ask_manager' && (decisionNote ?? '').length < 8) {
+    throw badRequest('Xin hỗ trợ Quản lý thì ghi rõ cần Quản lý giúp gì, ít nhất 8 ký tự.');
+  }
   /* T13: thay sang PA đề xuất "Khác" — báo thiếu Ghi rõ TRƯỚC khi ghi gì (`recordIntervention` kiểm lại lần nữa). */
   if (nextStep === 'propose' && input.newPlan?.kind === 'other_proposal') {
     const loi = kiemGhiRoKhac(input.newPlan.ghiRoKhac ?? input.ghiRoKhac);
@@ -2855,7 +2866,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
         )
         .run(completedOn, completedOn, performerUserId ?? null, performerNameToSave ?? null,
              nowIso(), interventionId);
-    } else if (nextStep === 'monitor' || nextStep === 'continue' || nextStep === 'adjust') {
+    } else if (nextStep === 'monitor' || nextStep === 'continue' || nextStep === 'adjust' || nextStep === 'ask_manager') {
       /*
        * MỞ CHU KỲ MỚI trên CHÍNH phương án này. Không tạo một phương án thứ hai giống hệt:
        * đó vẫn là cùng một việc, chỉ là làm tiếp thêm một vòng nữa.
@@ -2866,6 +2877,9 @@ export function updateResult(p: Principal, interventionId: number, input: {
        *
        * NGÀY DỰ KIẾN KẾT THÚC giữ nguyên: theo dõi thêm một tuần không được âm thầm đẩy lùi
        * ngày mà cả case đang trông vào.
+       *
+       * PR-DUYET (T64, K3-11): "Xin hỗ trợ QL" lưu y như Giữ nguyên — PA KHÔNG dừng, không mất mốc (T22) — rồi gửi câu hỏi
+       * thành thẻ Xin ý kiến (ngay dưới). Trước đây PA dừng hẳn chờ Quản lý.
        */
       const nextDue = weeklyUpdateDue(addDays(observedOn, 1));
       conn
@@ -2911,19 +2925,13 @@ export function updateResult(p: Principal, interventionId: number, input: {
             WHERE id = ?`,
         )
         .run(completedOn ?? observedOn, created, nowIso(), interventionId);
-    } else if (nextStep === 'ask_manager') {
-      /*
-       * CHỜ QUẢN LÝ. Chu kỳ thực hiện DỪNG ở đây và chỉ chạy lại khi có quyết định — thời
-       * gian chờ tính cho Quản lý, không tính là giáo viên đã có thời gian làm.
-       */
-      conn
-        .prepare(
-          `UPDATE case_interventions
-              SET status = 'planned', needs_approval = 1, approval_state = 'pending',
-                  approval_due = ?, action_due = NULL, followup_due = NULL, updated_at = ?
-            WHERE id = ?`,
-        )
-        .run(hanTheoNgay(observedOn, HAN_DUYET_NGAY), nowIso(), interventionId);
+    }
+    if (nextStep === 'ask_manager') {
+      taoYeuCau(conn, {
+        loai: 'xin_y_kien', doiTuongLoai: 'intervention', doiTuongId: interventionId,
+        hocVienId: c.eff_student_id, lopId: c.class_id ?? null, nguoiXin: p.userId,
+        lyDo: decisionNote, duLieu: { followupId },
+      });
     }
 
     dongBoTrangThaiCase(iv.case_id);

@@ -8,13 +8,16 @@
  */
 import type { Principal } from '../permissions.ts';
 import {
-  ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, caseTopicLabel, duongHoSoHocVien, nhanDotNgan, shortDate,
+  ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, caseTopicLabel, duongHoSoHocVien, nhanDotNgan, outcomeLabelFor, shortDate,
   type AssessedSkill, type InterventionKind, type LoaiYeuCau, type TrangThaiYc,
 } from '../../../shared/domain/index.ts';
 import { respondToPlan } from '../cases/cases.ts';
 import { decideAbsenceMove } from '../fasttrack/absence.ts';
 import { attemptHref } from '../fasttrack/attempts.ts';
 import { ensurePeriod } from '../platform/week.ts';
+import { addJourney } from '../platform/audit.ts';
+import { db } from '../db.ts';
+import { demoToday } from '../demoConfig.ts';
 
 export type YeuCauRow = {
   id: number; loai: LoaiYeuCau; doi_tuong_loai: string; doi_tuong_id: number; hoc_vien_id: number | null;
@@ -123,6 +126,48 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         neuDuyet: x?.tuan ? `${kn} thi tuần ${x.tuan}.` : undefined,
         mo: x ? attemptHref({ id: x.attempt_id, kind: x.kind, classId: x.class_id }) : undefined,
         duLieu: x?.week_start ? { tuanDeNghi: x.week_start } : undefined,
+      };
+    },
+  },
+  /* ------------------------------------------------------------ PR-DUYET · Xin ý kiến (T64) — PA KHÔNG dừng, QL chỉ Trả lời */
+  {
+    loai: 'xin_y_kien',
+    khiTraLoi: (p, yc, traLoi) => {
+      const iv = db().prepare(
+        `SELECT iv.case_id, iv.description, COALESCE(sc.cycle_id, a.cycle_id) AS cycle_id FROM case_interventions iv
+           JOIN sos_cases sc ON sc.id = iv.case_id LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE iv.id = ?`,
+      ).get(yc.doi_tuong_id) as any;
+      if (!yc.hoc_vien_id || !iv) return;
+      addJourney({
+        studentId: yc.hoc_vien_id, cycleId: iv.cycle_id ?? null, eventType: 'note', eventDate: demoToday(),
+        title: `Quản lý trả lời: ${traLoi.slice(0, 80)}`, detail: yc.ly_do ? `Giáo viên hỏi: ${yc.ly_do}` : null,
+        refTable: 'case_interventions', refId: yc.doi_tuong_id, createdBy: p.userId, dedupKey: `xin-y-kien:${yc.id}`,
+      });
+    },
+    chet: {
+      sql: `NOT EXISTS (SELECT 1 FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
+             WHERE iv.id = y.doi_tuong_id AND iv.status != 'cancelled' AND sc.status != 'done')`,
+      lyDo: 'PA đã huỷ hoặc Case đã đóng',
+    },
+    nap: (conn, ds) => {
+      const ids = ds.map((y) => y.id);
+      return new Map((conn.prepare(
+        `SELECT y.id, iv.kind, iv.description, iv.case_id, fu.outcome, fu.note, fu.observed_on
+           FROM yeu_cau_duyet y JOIN case_interventions iv ON iv.id = y.doi_tuong_id
+           LEFT JOIN case_followups fu ON fu.id = json_extract(y.du_lieu, '$.followupId')
+          WHERE y.id IN (${ids.map(() => '?').join(',')})`).all(...ids) as any[]).map((r) => [r.id as number, r]));
+    },
+    moTa: (yc, ngu) => {
+      const x = ngu.them.get(yc.id);
+      const tenPa = x ? (x.description || INTERVENTION_KIND_LABEL[x.kind as InterventionKind] || 'PA học thuật') : 'PA học thuật';
+      return {
+        tieuDe: `Xin ý kiến · PA ${tenPa.length > 60 ? `${tenPa.slice(0, 57)}…` : tenPa}`,
+        dong: [
+          `${nguoiXin(yc, ngu)} (${ngay(yc.tao_luc, ngu)}): “${yc.ly_do ?? ''}”`,
+          ...(x?.outcome ? [`Kết quả tuần: ${outcomeLabelFor(x.outcome)}${x.note ? ` — ${x.note}` : ''}`] : []),
+        ],
+        mo: yc.hoc_vien_id && x ? duongHoSoHocVien(yc.hoc_vien_id, { caseId: x.case_id }) : undefined,
+        duLieu: x ? { caseId: x.case_id } : undefined,
       };
     },
   },

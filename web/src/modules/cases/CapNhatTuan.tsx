@@ -39,7 +39,7 @@ const DA_LUU: Record<PlanDecision, string> = {
   adjust: 'Đã điều chỉnh PA, bản cũ giữ trong lịch sử',
   replace: 'Đã thay PA',
   end: 'Đã kết thúc PA',
-  ask_manager: 'Đã chuyển sang chờ Quản lý',
+  ask_manager: 'Đã gửi Quản lý — PA vẫn chạy',
 };
 
 /** Nghĩa ngắn (≤ 1 dòng) của dòng quyết định bị chặn — bản đủ ở `title`. */
@@ -227,7 +227,7 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
           <Truong nhan="Cần Quản lý giúp gì" batBuoc loi={loiCua('ly-do')}>
             <textarea className="field w-full" {...o('ly-do')} rows={2} value={reason} onChange={(e) => setReason(e.target.value)} />
           </Truong>
-          <p className="m-0 text-[11px] text-slate-500">Gửi Quản lý chi nhánh · nhận ở Việc cần làm</p>
+          <p className="m-0 text-[11px] text-slate-500">Gửi Quản lý · trả lời trong 5 ngày ở Chờ duyệt</p>
         </div>
       );
     }

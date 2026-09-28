@@ -247,6 +247,17 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
           Quản lý{iv.approvedBy ? ` (${iv.approvedBy})` : ''}: {iv.approvalNote}
         </p>
       )}
+      {/* PR-DUYET (T64): Xin ý kiến không dừng PA — dòng tím khi đang chờ, câu trả lời của QL khi đã có. */}
+      {iv.xinYKien?.trangThai === 'cho' && (
+        <p className="m-0 mt-1 text-xs text-wait tabular-nums">
+          Đã xin QL hỗ trợ {ngan(iv.xinYKien.taoLuc)} · chờ trả lời{iv.xinYKien.hanDuyet ? ` · hạn ${ngan(iv.xinYKien.hanDuyet)}` : ''}
+        </p>
+      )}
+      {iv.xinYKien?.trangThai === 'da_tra_loi' && (
+        <p className="m-0 mt-1 border-l pl-3 text-xs text-slate-300" style={{ borderColor: 'var(--line)' }}>
+          Quản lý{iv.xinYKien.nguoiDuyet ? ` (${iv.xinYKien.nguoiDuyet})` : ''} trả lời {ngan(iv.xinYKien.xuLyLuc)}: {iv.xinYKien.traLoi}
+        </p>
+      )}
       {revisions.length > 0 && (
         <details className="mt-1">
           <summary className="cursor-pointer text-[11px] text-slate-400">Đã điều chỉnh {revisions.length} lần</summary>

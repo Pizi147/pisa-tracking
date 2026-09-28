@@ -472,6 +472,7 @@ export async function runCongViecTests(t: YThucTestKit) {
   casesSvc.updateResult(P.lrTeacher, askIvId, {
     outcome: 'unchanged', decision: 'ask_manager', observedOn: TODAY,
     note: 'Đã thử tự học một tuần nhưng em vẫn chưa tiến bộ rõ, cần Quản lý cho ý kiến hướng tiếp theo.',
+    decisionNote: 'Có nên chuyển sang tutor không?',
   });
 
   check('PR-DUYET (thay PR-Ra Q6) · đề xuất PA học thuật là thẻ Đề xuất PA ở hộp QL MB (Duyệt/Từ chối), không còn dòng việc "decide"', () => {

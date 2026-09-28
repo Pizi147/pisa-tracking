@@ -250,6 +250,21 @@ function theRa(r: any, ngu: NguCanhThe): TheYeuCauDto {
   };
 }
 
+/**
+ * Mọi thẻ (mọi trạng thái, mới trước) của một nhóm đối tượng — ví dụ các PA của một Case (Ngăn Case: thẻ Đề xuất PA chờ duyệt,
+ * dòng Xin ý kiến). Một câu cho cả nhóm + các câu nạp chữ. Không lọc quyền: nơi gọi đã kiểm quyền xem đối tượng.
+ */
+export function theCuaDoiTuong(doiTuongLoai: string, ids: readonly number[]): (TheYeuCauDto & { doiTuongId: number })[] {
+  if (!ids.length) return [];
+  const conn = db();
+  const rows = conn.prepare(
+    `SELECT * FROM yeu_cau_duyet WHERE doi_tuong_loai = ? AND doi_tuong_id IN (${ids.map(() => '?').join(',')}) ORDER BY id DESC`,
+  ).all(doiTuongLoai, ...ids) as any[];
+  if (!rows.length) return [];
+  const ngu = napNguCanh(conn, rows, demoToday());
+  return rows.map((r) => ({ ...theRa(r, ngu), doiTuongId: r.doi_tuong_id as number }));
+}
+
 /** Thẻ trong phạm vi duyệt của người xem (quyền theo TỪNG thẻ, không anyScope). */
 function trongPhamVi(p: Principal, rows: any[]): any[] {
   napTruocPhamVi(rows.map((r) => r.hoc_vien_id));
