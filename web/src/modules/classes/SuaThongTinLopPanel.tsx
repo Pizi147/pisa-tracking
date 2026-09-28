@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { useLoiForm } from '../../ui/loiForm.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-import { CHO_TAO_PRE_FOU, ghepMaLop, kiemSoLop, kyHieuLop, locSoLop, tachSoLop } from '@shared/domain/index.ts';
+import { CHO_TAO_PRE_FOU, ghepMaLop, kiemSoLop, kyHieuLop, locSoLop, tachSoLop, type LoiTruong } from '@shared/domain/index.ts';
 import { PhanDoan } from './ClassCreatePanel.tsx';
 
 /**
@@ -28,18 +29,20 @@ export function SuaThongTinLopPanel({ lop, onClose, onDone }: {
   const [loTrinh, setLoTrinh] = useState(lop.route ?? 'LT1');
   const [note, setNote] = useState(lop.note ?? '');
   const [busy, setBusy] = useState(false);
-  const [daBam, setDaBam] = useState(false);
+  const lf = useLoiForm();
   const doiDuoc = lop.soHocVien === 0;
   const ft = chuongTrinh === 'FT';
 
   const loiSo = soCu === null ? null : kiemSoLop(so);
-  const loiSoHien = daBam || so !== '' ? loiSo : null;
+  const loi: LoiTruong[] = loiSo ? [{ khoa: 'so', nhan: 'Số lớp', lyDo: loiSo }] : [];
+  /* Số đã gõ mà sai mẫu → hiện ngay; ô trống → khi rời ô / sau khi bấm Lưu (YC-12.5.2). */
+  const loiSoHien = so !== '' ? loiSo : lf.loiCua(loi, 'so');
   const kh = kyHieuLop(chuongTrinh, ft ? loTrinh : null);
   const ma = soCu !== null && !loiSo && kh ? ghepMaLop(lop.branchCode, chuongTrinh, ft ? loTrinh : null, so) : null;
 
   const luu = async () => {
-    setDaBam(true);
-    if (loiSo) return;   // báo tại ô + "Còn thiếu: Số lớp" ở chân, không khoá nút
+    lf.bam();
+    if (loi.length) return;   // báo tại ô + "1 ô cần sửa ↑" ở chân, không khoá nút
     setBusy(true);
     try {
       await api.patch(`/classes/${lop.id}/thong-tin`, {
@@ -58,7 +61,7 @@ export function SuaThongTinLopPanel({ lop, onClose, onDone }: {
     <KhungPanel tieuDe="Sửa thông tin lớp" lop={lop.code} onDong={onClose}
       chan={{
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy}>Lưu</button>,
-        conThieu: daBam && loiSo ? ['Số lớp'] : undefined,
+        conThieu: lf.conThieu(loi),
       }}>
       <Khoi tieuDe="Thông tin lớp"
         luat={doiDuoc ? undefined : 'Lớp đã có học viên nên không đổi được chương trình. Lớp thường học tiếp khoá sau thì dùng Chuyển tiếp lớp.'}>
@@ -69,7 +72,7 @@ export function SuaThongTinLopPanel({ lop, onClose, onDone }: {
         ) : (
           <div>
             <Truong nhan="Số lớp" batBuoc phu="1–4 chữ số, được thêm một chữ cái cuối (101A)" loi={loiSoHien}>
-              <input className={`field w-28 tabular-nums ${loiSoHien ? 'border-late' : ''}`} inputMode="numeric" autoComplete="off"
+              <input className="field w-28 tabular-nums" {...lf.o(loi, 'so')} aria-invalid={!!loiSoHien} inputMode="numeric" autoComplete="off"
                 value={so} onChange={(e) => setSo(locSoLop(e.target.value))} />
             </Truong>
             <p className="m-0 mt-2 text-sm tabular-nums" aria-live="polite">

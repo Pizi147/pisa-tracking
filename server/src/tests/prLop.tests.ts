@@ -161,6 +161,7 @@ export async function runPrLopTests(t: YThucTestKit) {
     assert(/oPhanCong\(/.test(src) && /kiemPhanCong\(/.test(src) && /ghepMaLop\(/.test(src) && /locSoLop\(/.test(src), 'chưa dùng luật chung');
     assert(!/hai người dạy|TeacherPick|\+ Thêm giáo viên|Normal|Progress Test|Final Test/.test(src), 'còn chữ/ô cũ');
     assert(/CHO_TAO_PRE_FOU/.test(src) && /navigate\(`\/hoc-vien\/lop\//.test(src), 'PF6 / mở hồ sơ lớp');
+    assert(/useLoiForm\(/.test(src) && /dsLoi\(/.test(src) && !/SoOCanSua|Còn thiếu/.test(src), 'báo lỗi form chưa theo PR-N1 (YC-12.5.2)');
   });
 
   check('LOP (9) · Sửa phân công / Sửa thông tin lớp / Chuyển tiếp dùng luật chung, không ô gõ tên tự do (YC-4, K2-16, K2-18)', () => {
@@ -171,10 +172,11 @@ export async function runPrLopTests(t: YThucTestKit) {
     assert(!/MB-FT|setCode\(/.test(ttlSrc) && /locSoLop\(/.test(ttlSrc) && /ghepMaLop\(/.test(ttlSrc), 'Sửa thông tin lớp');
     const tp = docSach(lopDir + 'TransitionPanel.tsx');
     assert(!/newCode|suggestedCode|gvcnUserId|newClass:/.test(tp) && /<ClassCreatePanel/.test(tp), 'Chuyển tiếp');
-    /* ponytail: `loi=` thay `useLoiForm(` tới khi PR-N1 Task 6 merge. */
-    for (const f of ['TeacherAssignPanel', 'SuaThongTinLopPanel', 'TransitionPanel', 'ClassCreatePanel']) {
-      assert(/useLoiForm\(|\bloi=/.test(docSach(`${lopDir}${f}.tsx`)), `${f} chưa báo lỗi tại ô`);
+    for (const f of ['TeacherAssignPanel', 'SuaThongTinLopPanel', 'ClassCreatePanel']) {
+      assert(/useLoiForm\(/.test(docSach(`${lopDir}${f}.tsx`)), `${f} chưa báo lỗi theo PR-N1 (useLoiForm)`);
     }
+    /* Chuyển tiếp là Drawer lỗi theo từng dòng HV (không phải form KhungPanel) — giữ lỗi tại dòng. */
+    assert(/\bloi=/.test(tp), 'TransitionPanel chưa báo lỗi tại dòng');
     assert(/'phan-cong'/.test(docSach(lopDir + 'ClassOverviewPage.tsx')), 'hồ sơ lớp chưa nhận ?viec=phan-cong');
     const lop = conn.prepare(`SELECT id FROM classes WHERE code = 'MB FT 101'`).get() as any;
     assert(clsMod.classTeachers(P.admin, lop.id).programmeCode === 'FT', 'classTeachers thiếu programmeCode');

@@ -249,8 +249,8 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
   });
 
   // ==================================================================== 7. Báo lỗi rõ cho mọi form KhungPanel còn lại
-  check('N1 (7) · mọi form KhungPanel (trừ classes/, dev/, panel chỉ xem) dùng useLoiForm', () => {
-    const bo = /modules[\/](classes|dev)[\/]|PhuongAnPanel|XemPhuongAnPanel/;
+  check('N1 (7) · mọi form KhungPanel (trừ dev/, panel chỉ xem) dùng useLoiForm', () => {
+    const bo = /modules[\/]dev[\/]|PhuongAnPanel|XemPhuongAnPanel|XoaKetThucLopPanel/;
     const thieu = tepTsx('web/src/modules').filter((f) => !bo.test(f) && /<KhungPanel/.test(docSach(f)) && !/useLoiForm\(/.test(docSach(f)));
     assert(thieu.length === 0, thieu.join(', '));
     const conCu = tepTsx('web/src/modules').filter((f) => !bo.test(f) && /conThieu: daBam/.test(docSach(f)));

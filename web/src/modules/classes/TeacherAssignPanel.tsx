@@ -3,17 +3,19 @@ import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Khoi, KhungPanel } from '../../ui/KhungPanel.tsx';
+import { useLoiForm } from '../../ui/loiForm.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { Empty, Skeleton } from '../../ui/ui.tsx';
 import { skillLabel } from '../../lib/format.ts';
 import { kiemPhanCong, ngay, oPhanCong } from '@shared/domain/index.ts';
-import { LuoiPhanCong, SoOCanSua } from './ClassCreatePanel.tsx';
+import { LuoiPhanCong } from './ClassCreatePanel.tsx';
 
 /**
  * SỬA PHÂN CÔNG GIÁO VIÊN CỦA LỚP (PR-LOP, YC-4, mockup 21 mục 4) — MỘT panel `KhungPanel`, mỗi ô MỘT người.
  *
- * Ô theo chương trình (`oPhanCong`), lỗi luật (`kiemPhanCong`) hiện ngay tại ô và khoá Lưu — cùng hàm máy chủ kiểm.
+ * Ô theo chương trình (`oPhanCong`), lỗi luật (`kiemPhanCong`) hiện ngay tại ô và khoá Lưu — cùng hàm máy chủ kiểm; chân
+ * `n ô cần sửa ↑` của PR-N1 (`useLoiForm`) tính ngay (mọi lỗi ở đây là lỗi luật), bấm → tới ô lỗi đầu.
  * Dữ liệu cũ có nhiều người một ô (trước luật, Q11): hiện cả tên, bắt chọn lại một người, không tự bỏ ai.
  * Gửi lên NGUYÊN bức tranh đang hiển thị (`{ slots }`), không gửi từng thao tác: hai người sửa cùng lúc thì kết quả vẫn là
  * một trong hai bức tranh.
@@ -40,6 +42,7 @@ export function TeacherAssignPanel({ open, onClose, classId, classCode, onDone }
   const [nhieuNguoi, setNhieuNguoi] = useState<Record<string, string[]>>({});
   const [busy, setBusy] = useState(false);
   const [moDaDay, setMoDaDay] = useState(false);
+  const lf = useLoiForm();
 
   // Nạp bức tranh hiện tại một lần khi mở; sửa xong mới gửi lên.
   useEffect(() => {
@@ -85,7 +88,7 @@ export function TeacherAssignPanel({ open, onClose, classId, classCode, onDone }
     <KhungPanel tieuDe="Sửa phân công" lop={classCode} onDong={onClose}
       ngCanh={data && !data.viewer.canAssign ? <span className="text-slate-400">Chỉ xem: đổi phân công là việc của Quản lý và Admin chi nhánh.</span> : undefined}
       chan={{
-        phu: <SoOCanSua n={oLoi.length} />,
+        conThieu: data?.viewer.canAssign ? oLoi.map((o) => ({ nhan: o.nhan, oId: lf.oId(o.khoa) })) : undefined,
         chinh: data?.viewer.canAssign
           ? (
             <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !data || oLoi.length > 0}
@@ -99,7 +102,7 @@ export function TeacherAssignPanel({ open, onClose, classId, classCode, onDone }
         <>
           <Khoi tieuDe="Phân công"
             luat="Chỉ nhập được điểm môn mình được phân công. Bỏ phân công KHÔNG xoá lịch sử: dòng cũ được đóng lại theo ngày, nên báo cáo cũ đọc lại vẫn thấy đúng ai dạy lúc đó; điểm đã nhập giữ nguyên tên người nhập.">
-            <LuoiPhanCong oList={oList} chon={chon} nguoi={nguoi} loi={loiO} chiXem={!data.viewer.canAssign}
+            <LuoiPhanCong oList={oList} chon={chon} nguoi={nguoi} loi={loiO} oId={lf.oId} chiXem={!data.viewer.canAssign}
               nhanTrong={(k) => nhieuNguoi[k]?.join(' · ')}
               onChon={(khoa, v) => setChon((c) => ({ ...c, [khoa]: v }))} />
             <p className="m-0 text-[11px] text-slate-500">

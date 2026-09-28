@@ -1,13 +1,14 @@
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { useLoiForm, type MucThieu } from '../../ui/loiForm.tsx';
 import { WeekPicker } from '../../ui/Filters.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import {
   CHO_TAO_PRE_FOU, ENTRY_SKILLS, PROGRAMME_TEMPLATES,
-  chuanHoaMaLop, ghepMaLop, kiemPhanCong, kiemSoLop, kyHieuLop, locSoLop, oPhanCong, type OPhanCong,
+  chuanHoaMaLop, dsLoi, ghepMaLop, kiemPhanCong, kiemSoLop, kyHieuLop, locSoLop, oPhanCong, type LoiTruong, type OPhanCong,
 } from '@shared/domain/index.ts';
 
 type Branch = { id: number; code: string; name: string };
@@ -19,7 +20,7 @@ const CHUONG_TRINH_THUONG = ['PREFOU', 'FOU', 'BE', 'ELE'] as const;
  * TẠO LỚP MỚI (PR-LOP, mockup 21 mục 1–3) — MỘT lệnh `POST /classes` tạo lớp + phân công cùng giao dịch (YC-1).
  * Tên lớp do máy ghép `{CN} {ký hiệu} {số}`: người dùng chỉ chọn kiểu lớp/lộ trình/chương trình và gõ số (T1).
  * Mỗi ô phân công MỘT người (YC-4); lỗi luật phân công hiện ngay tại ô và khoá nút Tạo lớp (Q2) — cùng hàm máy chủ kiểm.
- * ponytail: lỗi ô thường tự giữ cờ "đã bấm" + `Truong loi` + `conThieu`; đổi sang `useLoiForm` khi PR-N1 Task 6 merge.
+ * Lỗi ô thường theo PR-N1 (YC-12.5.2, `useLoiForm`): hiện khi rời ô / sau khi bấm; chân một dòng xám `n ô cần sửa ↑`.
  */
 export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
   onClose: () => void;
@@ -41,7 +42,7 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
   const [so, setSo] = useState(locSoLop(macDinh?.so ?? ''));
   const [startPeriodId, setStartPeriodId] = useState<number | null>(macDinh?.startPeriodId ?? null);
   const [chon, setChon] = useState<Record<string, number | ''>>({});
-  const [daBam, setDaBam] = useState(false);
+  const lf = useLoiForm();
   const [busy, setBusy] = useState(false);
 
   const teachers = useApi<{ id: number; name: string; classCount: number }[]>(
@@ -71,19 +72,19 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
   const loiPc = kiemPhanCong(ct, kyNang, slots);
   const loiPcO = (khoa: string) => loiPc.find((l) => l.khoa === khoa)?.lyDo ?? null;
 
-  /* Lỗi ô thường: hiện sau khi bấm Tạo lớp; riêng số sai mẫu / trùng tên hiện ngay khi đã gõ. */
-  const loiO: { khoa: string; nhan: string; lyDo: string | null }[] = [
-    { khoa: 'chi-nhanh', nhan: 'Chi nhánh', lyDo: branchId ? null : 'Chọn chi nhánh' },
-    { khoa: 'so', nhan: 'Số lớp', lyDo: kiemSoLop(so) ?? (trung ? `Đã có lớp ${ma}` : null) },
-    { khoa: 'tuan', nhan: 'Tuần khai giảng', lyDo: kieu === 'THUONG' && !startPeriodId ? 'Chọn tuần khai giảng' : null },
+  /* Lỗi ô thường: hiện khi rời ô / sau khi bấm Tạo lớp; riêng số sai mẫu / trùng tên hiện ngay khi đã gõ. */
+  const loiSo = kiemSoLop(so) ?? (trung ? `Đã có lớp ${ma}` : null);
+  const loi: LoiTruong[] = [
+    ...dsLoi([{ khoa: 'chi-nhanh', nhan: 'Chi nhánh', chon: true }], { 'chi-nhanh': branchId }),
+    ...(loiSo ? [{ khoa: 'so', nhan: 'Số lớp', lyDo: loiSo }] : []),
+    ...dsLoi(kieu === 'THUONG' ? [{ khoa: 'tuan', nhan: 'Tuần khai giảng', chon: true }] : [], { tuan: startPeriodId }),
   ];
-  const loiHien = (khoa: string) => {
-    const l = loiO.find((x) => x.khoa === khoa)?.lyDo ?? null;
-    return daBam || (khoa === 'so' && so !== '') ? l : null;
-  };
-  const conLoi = loiO.filter((l) => l.lyDo);
-  /* "Còn thiếu" chỉ cho ô thường; lỗi LUẬT phân công (ô đã chọn, sai luật) hiện tại ô + khoá nút (Q2). */
-  const conThieu = daBam ? conLoi.map((l) => l.nhan) : undefined;
+  const loiHien = (khoa: string) => (khoa === 'so' && so !== '' ? loiSo : lf.loiCua(loi, khoa));
+  const o = (khoa: string) => ({ ...lf.o(loi, khoa), 'aria-invalid': !!loiHien(khoa) });
+  /* Chân: ô thường sau khi bấm; lỗi LUẬT phân công (ô đã chọn, sai luật) tính ngay — hiện tại ô + khoá nút (Q2). */
+  const conThieu: MucThieu[] = [
+    ...(lf.conThieu(loi) ?? []), ...oList.filter((x) => loiPcO(x.khoa)).map((x) => ({ nhan: x.nhan, oId: lf.oId(x.khoa) })),
+  ];
 
   const moc = (k: string) => mau?.checkpoints.find((c) => c.kind === k)?.studyWeek;
   const lopSeCo = ct === 'FT'
@@ -92,8 +93,8 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
       .filter(Boolean).join(' · ');
 
   const tao = async () => {
-    setDaBam(true);
-    if (conLoi.length || loiPc.length) return;
+    lf.bam();
+    if (loi.length || loiPc.length) return;
     setBusy(true);
     try {
       const r = await api.post<{ id: number; code: string }>('/classes', {
@@ -115,12 +116,11 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={tao}
             disabled={busy || loiPc.length > 0} title={loiPcDau}>Tạo lớp</button>
         ),
-        phu: <SoOCanSua n={new Set(loiPc.map((l) => l.khoa)).size} />,
         conThieu,
       }}>
       <div className="space-y-3 pt-3.5">
         <Truong nhan="Chi nhánh" batBuoc loi={loiHien('chi-nhanh')}>
-          <select className={`field w-full ${loiHien('chi-nhanh') ? 'border-late' : ''}`} value={branchId ?? ''}
+          <select className="field w-full" {...o('chi-nhanh')} value={branchId ?? ''}
             onChange={(e) => { setBranchId(e.target.value ? Number(e.target.value) : null); setChon({}); }}>
             <option value="">— Chọn chi nhánh —</option>
             {dsCn.map((b) => <option key={b.id} value={b.id}>{b.name} ({b.code})</option>)}
@@ -149,7 +149,7 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
 
         <div>
           <Truong nhan="Số lớp" batBuoc phu="1–4 chữ số, được thêm một chữ cái cuối (101A)" loi={loiHien('so')}>
-            <input className={`field w-28 tabular-nums ${loiHien('so') ? 'border-late' : ''}`} inputMode="numeric" autoComplete="off"
+            <input className="field w-28 tabular-nums" {...o('so')} inputMode="numeric" autoComplete="off"
               value={so} onChange={(e) => setSo(locSoLop(e.target.value))} />
           </Truong>
           <p className="m-0 mt-2 text-sm tabular-nums" aria-live="polite">
@@ -160,13 +160,13 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
         </div>
 
         <Truong nhan="Tuần khai giảng" as="div" batBuoc={kieu === 'THUONG'} loi={loiHien('tuan')}>
-          <WeekPicker periodId={startPeriodId} label={null} scope="planning" onPeriod={setStartPeriodId} />
+          <div {...o('tuan')}><WeekPicker periodId={startPeriodId} label={null} scope="planning" onPeriod={setStartPeriodId} /></div>
         </Truong>
         {lopSeCo && <p className="m-0 text-xs text-slate-400 tabular-nums">Lớp này sẽ có: {lopSeCo}</p>}
       </div>
 
       <Khoi tieuDe="Phân công">
-        <LuoiPhanCong oList={oList} chon={chon} nguoi={teachers.data ?? []} loi={loiPcO}
+        <LuoiPhanCong oList={oList} chon={chon} nguoi={teachers.data ?? []} loi={loiPcO} oId={lf.oId}
           onChon={(khoa, v) => setChon((c) => ({ ...c, [khoa]: v }))} />
         <p className="m-0 text-[11px] text-slate-500">
           {oList.length === 1
@@ -182,20 +182,19 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
  * Lưới ô phân công (mockup 21 mục 1, 4) — Tạo lớp và Sửa phân công dùng chung: nhãn trái cùng bề rộng, mỗi ô MỘT `<select>`,
  * lỗi một dòng dưới ô. `nhanTrong` thay chữ mục rỗng (dữ liệu cũ nhiều người một ô hiện cả tên).
  */
-export function LuoiPhanCong({ oList, chon, onChon, nguoi, loi, nhanTrong, chiXem }: {
-  oList: OPhanCong[]; chon: Record<string, number | ''>; onChon: (khoa: string, v: number | '') => void;
+export function LuoiPhanCong({ oList, chon, onChon, nguoi, loi, oId, nhanTrong, chiXem }: {
+  oList: OPhanCong[]; chon: Record<string, number | ''>; onChon: (khoa: string, v: number | '') => void; oId: (khoa: string) => string;
   nguoi: { id: number; name: string; classCount: number }[];
   loi: (khoa: string) => string | null; nhanTrong?: (khoa: string) => string | undefined; chiXem?: boolean;
 }) {
-  const id = useId();
   return (
     <div className="grid grid-cols-[6rem_1fr] items-center gap-x-2.5 gap-y-1.5">
       {oList.map((o) => {
         const l = loi(o.khoa);
         return (
           <div key={o.khoa} className="contents">
-            <label htmlFor={`${id}-${o.khoa}`} className="text-xs font-bold text-slate-200">{o.nhan}</label>
-            <select id={`${id}-${o.khoa}`} className={`field w-full ${l ? 'border-late' : ''}`} value={chon[o.khoa] ?? ''}
+            <label htmlFor={oId(o.khoa)} className="text-xs font-bold text-slate-200">{o.nhan}</label>
+            <select id={oId(o.khoa)} className={`field w-full ${l ? 'border-late' : ''}`} value={chon[o.khoa] ?? ''}
               aria-invalid={l ? true : undefined} disabled={chiXem}
               onChange={(e) => onChon(o.khoa, e.target.value ? Number(e.target.value) : '')}>
               <option value="">{nhanTrong?.(o.khoa) ?? '— Chưa chọn —'}</option>
@@ -209,11 +208,6 @@ export function LuoiPhanCong({ oList, chon, onChon, nguoi, loi, nhanTrong, chiXe
       })}
     </div>
   );
-}
-
-/** Chân panel: `n ô cần sửa ↑` (mockup 21) cho lỗi luật phân công. ponytail: thay bằng `DongCanSua` khi PR-N1 Task 6 merge. */
-export function SoOCanSua({ n }: { n: number }) {
-  return n ? <span className="text-[11px] text-slate-500 tabular-nums">{n} ô cần sửa ↑</span> : null;
 }
 
 /** Nút phân đoạn: mục đang chọn viền + nền accent nhạt (không `btn-primary` — B3). */
