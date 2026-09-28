@@ -511,8 +511,8 @@ $env:PISA_CHO_PHEP_MIGRATE_TURSO='<URL database CHÍNH, bỏ libsql:// ở đầ
 npm run chay-thu:n1
 ```
 
-> PR-N1 in bốn số: PA đang chạy sẽ dời hạn Chủ nhật → Thứ Hai · PA chạy mà không có hạn · PA đã huỷ còn "chờ duyệt" ·
-> PA quy chế SOS chờ xác nhận sẽ thành đang chạy. Số (2) lớn hơn 0 ở PA **đang chạy** → chụp màn hình gửi planning trước bước 3.
+> PR-N1 in năm số: PA đang chạy sẽ dời hạn Chủ nhật → Thứ Hai · PA chạy mà không có hạn · PA đã huỷ còn "chờ duyệt" ·
+> PA quy chế SOS chờ xác nhận sẽ thành đang chạy · Case từ SOS đổi nhãn Chưa xử lý / Đang xử lý (luật Q28-5, chỉ đổi nhãn). Số (2) lớn hơn 0 ở PA **đang chạy** → chụp màn hình gửi planning trước bước 3.
 
 **Bước 3 — nâng cấp:**
 

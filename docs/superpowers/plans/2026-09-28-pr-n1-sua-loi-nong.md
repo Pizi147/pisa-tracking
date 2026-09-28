@@ -1165,3 +1165,14 @@ function Band({ v, kyVong, faded, soSanh = true }: { v: number | null; kyVong: n
 - Task 13: 16 kịch bản KIỂM đạt ở bản mới (ảnh `thiet-ke/anh/pr-n1/*-1440.png`, `*-375.png`; bản trước `*-truoc.png` chụp từ `main` 3432d97
   cùng kịch bản, seed riêng, cổng 4158/5358). Ngoài phạm vi: nhật ký Quản trị còn mã máy trong **tên đối tượng** do máy chủ ghi
   (`Xác nhận việc phối hợp SOS · talk_family`) — chuyển PR khác.
+- **Sau rà của chủ sản phẩm (28/09, trả lời 3 câu ở PR #110)** — commit `PR-N1 (13b)` + gộp `main` (#111, xung đột một dòng §8 hàng PR-SOS: giữ cả hai):
+  (1) Hàng lớp dính: tách **mỗi lớp một `<table>`** (cùng `CotBangLop`), tiêu đề cột là khối dính riêng (`md:sticky`), bảng lớp có
+  `thead` `sr-only` cho trình đọc màn hình. `td` dính chỉ trong bảng của nó → cuộn hết lớp là bị lớp sau đẩy lên, không còn chồng.
+  (2) **Q28-5** (thêm vào đặc tả §3.1d): Case từ SOS "Đang xử lý" ⇔ có nguyên nhân chính VÀ có PA chưa huỷ do người xác nhận
+  (`preset = 0` hoặc `confirmed_by` có người). Một điều kiện SQL `CASE_SOS_DANG_XU_LY` (sosState.ts) cho `dongBoTrangThaiCase`
+  (gọi ở thêm PA, xong PA, ghi kết quả, xác nhận PA quy chế, phân loại nguyên nhân — thay 4 câu `open → in_progress` cũ) và migrate
+  `migrateTrangThaiCaseSos` (+ số (5) ở `chay-thu:n1`). Trạng thái tính ra thêm `chua_xu_ly` ("Chưa xử lý") ở danh sách Case (thêm ô
+  thứ tư), bảng kỹ năng hồ sơ HV, ô tổng hợp. Case GV tự báo giữ luật cũ. Panel Xác nhận PA (Q28-3) vẫn ở PR-SOS — tới lúc đó Case
+  từ SOS chỉ thành "Đang xử lý" khi GV tự thêm PA (sau khi có nguyên nhân). Seed mới: 0 Case đổi.
+  (3) Dấu dưới kỳ vọng: ký tự ▾ của Inter ở cỡ nhỏ chỉ như dấu chấm → `DauDuoi` (SVG tam giác 7×5, `ui/Nhan.tsx`) ở bảng điểm FT và
+  lưới lớp thường. Check: **1401** (+1 phép kiểm N1 (13b)).

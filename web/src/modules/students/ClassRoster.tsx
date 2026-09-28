@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { DauDuoi } from '../../ui/Nhan.tsx';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Empty, ExamPlanText, Level, Outcome, Skeleton, Status, Task, Th } from '../../ui/ui.tsx';
@@ -263,7 +264,7 @@ function Band({ v, kyVong, faded, soSanh = true }: { v: number | null; kyVong: n
   const tone = !soSanh || kyVong === null ? 'text-slate-100' : duoi ? 'text-rose-200' : 'text-emerald-200';
   return (
     <span className={`tabular-nums text-xs ${tone} ${faded ? 'opacity-55' : ''}`} title={kyVong !== null ? `kỳ vọng ${fmtBand(kyVong)}` : undefined}>
-      {duoi && <span aria-hidden className="mr-0.5 inline-block text-[11px] font-bold leading-none">▾</span>}{fmtBand(v)}
+      {duoi && <DauDuoi />}{fmtBand(v)}
     </span>
   );
 }
