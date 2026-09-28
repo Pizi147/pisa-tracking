@@ -21,6 +21,15 @@ function hop(y: number, m: number, d: number): string | null {
 }
 const thangHien = (iso: string) => `${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 
+/**
+ * Giá trị lưu của một tuần: Thứ Hai, hoặc Chủ nhật khi `moc="cuoi"`. Chủ nhật chỉ cắt về hôm nay khi tuần đó chứa hôm nay
+ * (và `catHomNay` không tắt); tuần tương lai giữ Chủ nhật thật để `loiKhoangNgay` chặn, không lặng lẽ đổi thành hôm nay.
+ */
+function chotTuan(iso: string, homNay: string, luat: LuatONgay): string {
+  if (luat.moc !== 'cuoi') return mondayOfDate(iso);
+  return cuoiTuan(iso, luat.catHomNay === false || mondayOfDate(iso) > homNay ? undefined : homNay);
+}
+
 export function loiKhoangNgay(iso: string, homNay: string, luat: LuatONgay = {}): string | null {
   const la = iso.length === 7;                                   // giá trị là tháng thì so theo tháng
   const cat = (x: string) => (la ? x.slice(0, 7) : x);
@@ -46,7 +55,7 @@ export function docONgay(text: string, kieu: KieuONgay, homNay: string, luat: Lu
     if (y.length !== 4) return { iso: null, loi: 'Năm cần đủ 4 số, ví dụ 28/09/2026' };
     iso = hop(+y, +phan[1], +phan[0]);
     if (!iso) return { iso: null, loi: 'Ngày không có thật' };
-    if (kieu === 'tuan') iso = luat.moc === 'cuoi' ? cuoiTuan(iso, luat.catHomNay === false ? undefined : homNay) : mondayOfDate(iso);
+    if (kieu === 'tuan') iso = chotTuan(iso, homNay, luat);
   }
   const loi = loiKhoangNgay(iso, homNay, luat);
   return loi ? { iso: null, loi } : { iso, loi: null };
@@ -67,20 +76,24 @@ export function phuONgay(iso: string | null | undefined, kieu: KieuONgay, homNay
 
 const THU = ['Chủ nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
 const NHAN_TUAN = ['Tuần này', 'Tuần trước', '2 tuần trước'];
+const NHAN_TUAN_TOI = ['Tuần này', 'Tuần sau', '2 tuần sau'];
 
 /**
  * "Gần đây" dưới ô ngày — vài lựa chọn bấm một lần, đã lọc qua luật từng chỗ (`loiKhoangNgay`).
  * Ngày: 5 ngày lùi từ hôm nay; chỗ chỉ nhận hôm nay trở đi (lọc xong còn < 3) → 5 ngày từ hôm nay tới.
- * Tuần: tuần này · tuần trước · 2 tuần trước (`moc="cuoi"` → giá trị là Chủ nhật). Tháng: 3 tháng, lùi khi `toiDa` ≤ tháng này.
+ * Tuần: tuần này · tuần trước · 2 tuần trước; chỗ chỉ nhận từ tuần này (lọc còn < 3) → tuần này · tuần sau · 2 tuần sau
+ * (`moc="cuoi"` → giá trị là Chủ nhật). Tháng: 3 tháng, lùi khi `toiDa` ≤ tháng này.
  */
 export function goiYGanDay(kieu: KieuONgay, homNay: string, luat: LuatONgay = {}): LuaChon[] {
   const loc = (ds: LuaChon[]) => ds.filter((x) => loiKhoangNgay(x.giaTri, homNay, luat) === null);
   if (kieu === 'tuan') {
-    return loc(dsTuan(homNay, 2, 0).reverse().map((x, i) => ({
-      giaTri: luat.moc === 'cuoi' ? cuoiTuan(x.giaTri, luat.catHomNay === false ? undefined : homNay) : x.giaTri,
-      nhan: NHAN_TUAN[i],
+    const tuan = (ds: LuaChon[], nhan: string[]) => loc(ds.map((x, i) => ({
+      giaTri: chotTuan(x.giaTri, homNay, luat),
+      nhan: nhan[i],
       phu: `${x.nhan} · ${x.phu}`,
     })));
+    const lui = tuan(dsTuan(homNay, 2, 0).reverse(), NHAN_TUAN);
+    return lui.length >= 3 ? lui : tuan(dsTuan(homNay, 0, 2), NHAN_TUAN_TOI);
   }
   if (kieu === 'thang') {
     const thangNay = homNay.slice(0, 7);

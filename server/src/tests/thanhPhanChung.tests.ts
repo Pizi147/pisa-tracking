@@ -42,6 +42,15 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(d.docONgay('28/09/2026', 'tuan', '2026-09-30', { moc: 'cuoi' }).iso === '2026-09-30', 'cắt về hôm nay');
     assert(d.docONgay('28/09/2026', 'tuan', '2026-09-30', { moc: 'cuoi', catHomNay: false }).iso === '2026-10-04', 'hạn tương lai không cắt');
   });
+  check('NEN (1) · tuần tương lai không bị cắt về hôm nay; Gần đây có tuần tới khi chỉ nhận từ tuần này', () => {
+    const r = d.docONgay('12/10/2026', 'tuan', H, { moc: 'cuoi', toiDa: H }); assert(r.loi === 'Không được sau hôm nay', JSON.stringify(r));
+    assert(d.docONgay('12/10/2026', 'tuan', H, { moc: 'cuoi' }).iso === '2026-10-18', 'tuần tương lai giữ Chủ nhật thật');
+    const w = d.goiYGanDay('tuan', H, { toiThieu: H });
+    assert(w.length === 3 && w[0].nhan === 'Tuần này' && w[0].giaTri === H && w.every((x: any) => x.giaTri >= H)
+      && w.map((x: any) => x.nhan).join(' · ') === 'Tuần này · Tuần sau · 2 tuần sau', JSON.stringify(w));
+    const c = d.goiYGanDay('tuan', '2026-09-30', { toiThieu: H, moc: 'cuoi' });
+    assert(c.map((x: any) => x.giaTri).join(',') === '2026-09-30,2026-10-11,2026-10-18', JSON.stringify(c));
+  });
   check('NEN (1) · tháng và ngày-hoặc-tháng: m/yyyy là tháng, dd/mm[/yyyy] là ngày', () => {
     assert(d.docONgay('9/2026', 'thang', H).iso === '2026-09', 'tháng');
     assert(d.docONgay('28/09/2026', 'thang', H).iso === '2026-09', 'gõ cả ngày vẫn lấy tháng');
