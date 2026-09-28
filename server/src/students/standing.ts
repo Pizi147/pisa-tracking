@@ -240,7 +240,7 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
            * trình — đúng như `resultOf` ở `attempts.ts:155` đã làm, để SOS/kỳ vọng không đổi ngược khi hồ sơ sửa
            * mục tiêu sau này. */
           a.target_at_attempt ?? cycle.target_score ?? null, a.attempt_no,
-          entryBandsOf(scores as any), skips.map((x: any) => x.skill ?? x),
+          entryBandsOf(scores as any), skips.map((x: any) => x.skill ?? x), a.route ?? cycle.route,
         );
         s.sosLevel = r.sosLevel;
         s.provisional = r.provisional;

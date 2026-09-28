@@ -112,7 +112,8 @@ function attemptsNewestFirstGoc(studentIds: number[]): Map<number, any[]> {
     const chunk = studentIds.slice(i, i + 400);
     for (const r of db()
       .prepare(
-        `SELECT a.*, c.programme_code, pr.week_start AS period_start
+        `SELECT a.*, c.programme_code, pr.week_start AS period_start,
+                (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route
            FROM assessment_attempts a
            LEFT JOIN classes c ON c.id = a.class_id
            LEFT JOIN report_periods pr ON pr.id = a.planned_period_id

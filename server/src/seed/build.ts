@@ -471,7 +471,8 @@ function academicSignals(
       .filter((r) => ratioResult(r.raw_score, r.raw_total).outcome === 'fail')
       .map((r) => r.skill as string);
   } else {
-    expectation = expectationFor(a.target_at_attempt, a.attempt_no);
+    expectation = expectationFor(a.target_at_attempt, a.attempt_no,
+      (conn.prepare('SELECT route FROM learning_cycles WHERE id = ?').get(a.cycle_id) as any)?.route);
     const entry: Record<string, number | null> = {};
     for (const r of scores) entry[r.skill] = r.band;
     const skips = (conn

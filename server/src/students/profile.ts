@@ -9,7 +9,7 @@ import { outcomeGroup } from '../cases/effectiveness.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, diffDays, notFound } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
-import { entryBandsOf, scoresOf, skipsOf } from '../fasttrack/attempts.ts';
+import { entryBandsOf, routeCuaLuot, scoresOf, skipsOf } from '../fasttrack/attempts.ts';
 import { assessedBands, evaluateAttempt } from '../fasttrack/scoring.ts';
 import { evaluateRegular, isRatioCycle, programmeByCode, programmeCodeOfCycle, programmeOfClass } from '../normal/regular.ts';
 import { cycleById, cyclesOf, currentCycle, examPlanOf, targetRevisions } from '../fasttrack/cycles.ts';
@@ -70,7 +70,7 @@ export function typedResult(attempt: any, pre?: { scores: any[]; skips: Assessed
     return { mode: 'ratio' as const, ratio: r, ft: null };
   }
   const r = evaluateAttempt(attempt.target_at_attempt, attempt.attempt_no,
-    entryBandsOf(pre?.scores ?? scoresOf(attempt.id)), pre?.skips ?? skipsOf(attempt.id));
+    entryBandsOf(pre?.scores ?? scoresOf(attempt.id)), pre?.skips ?? skipsOf(attempt.id), routeCuaLuot(attempt));
   return { mode: 'ielts' as const, ratio: null, ft: r };
 }
 
@@ -534,7 +534,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   const attemptRows = selected
     ? conn
       .prepare(
-        `SELECT a.*, c.code AS class_code, pr.code AS period_code, pr.week_start
+        `SELECT a.*, c.code AS class_code, pr.code AS period_code, pr.week_start, (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route
            FROM assessment_attempts a
            LEFT JOIN classes c ON c.id = a.class_id
            LEFT JOIN report_periods pr ON pr.id = a.planned_period_id

@@ -106,9 +106,10 @@ export function failingEntrySkills(
   });
 }
 
-export function expectationFor(target: number | null, attemptNo: number): number | null {
+/** `route` = lộ trình CỦA LƯỢT (K5-49): RF mọi MT kỳ vọng = target (M2). */
+export function expectationFor(target: number | null, attemptNo: number, route?: string | null): number | null {
   if (target === null || target === undefined) return null;
-  return target - expectationDelta(attemptNo);
+  return target - expectationDelta(attemptNo, route);
 }
 
 export type SkillVerdict = {
@@ -160,8 +161,9 @@ export function evaluateAttempt(
   attemptNo: number,
   entry: EntryBands,
   skippedSkills: readonly string[] = [],
+  route?: string | null,
 ): AttemptResult {
-  const expectation = expectationFor(target, attemptNo);
+  const expectation = expectationFor(target, attemptNo, route);
   const bands = assessedBands(entry);
   const skipped = ASSESSED_SKILLS.filter((s) => skippedSkills.includes(s));
   const required = ASSESSED_SKILLS.filter((s) => !skippedSkills.includes(s));

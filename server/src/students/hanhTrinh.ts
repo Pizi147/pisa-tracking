@@ -92,7 +92,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
   // -------------------------------------------------------------- (2) lượt đánh giá
   const attemptRows = conn
     .prepare(
-      `SELECT a.*, c.code AS class_code, pr.week_start AS week_start
+      `SELECT a.*, c.code AS class_code, pr.week_start AS week_start, (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route
          FROM assessment_attempts a
          LEFT JOIN classes c ON c.id = a.class_id
          LEFT JOIN report_periods pr ON pr.id = a.planned_period_id

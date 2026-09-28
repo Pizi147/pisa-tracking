@@ -176,4 +176,51 @@ export async function runPrMtTests(t: YThucTestKit) {
     assert(trung.n === 1, `Case ${c.category} mở: ${trung.n}`);
     assert(conn.prepare(`SELECT 1 FROM case_milestones WHERE case_id = ? AND kind = 'route_changed'`).get(c.id), 'thiếu mốc Sang lộ trình');
   });
+
+  // ---------------------------------------------------------------- khối 4: kỳ vọng / PA quy chế / Phối hợp theo lộ trình của lượt
+  const attemptsSvc: any = await import('../fasttrack/attempts.ts');
+  const scoringSvc: any = await import('../fasttrack/scoring.ts');
+  const casesSvc: any = await import('../cases/cases.ts');
+  const ptLop: any = await import('../classes/phanTichLop.ts');
+  const tongHopSvc: any = await import('../phanTich/tongHop.ts');
+  /** Em mới có MT1 ĐÚNG tuần này (lượt thường) — chọn tuần bắt đầu lùi (tuần học của MT1 − 1) tuần. */
+  const emMt1TuanNay = (lop: string, ten: string, route: string) => {
+    const sid = them(lop, ten, addDays(tuanNay, -7 * (d.tuanHocCuaMt(route, 1) - 1)));
+    return { sid, a: luotCua(sid)[0] };
+  };
+  const nhap = (a: any, b: { l: number; r: number; w: number; s: number }) => {
+    attemptsSvc.saveScore(P.admin, a.id, 'listening', { rawScore: scoringSvc.LISTENING_BY_RAW.indexOf(b.l) });
+    attemptsSvc.saveScore(P.admin, a.id, 'reading', { rawScore: scoringSvc.READING_BY_RAW.indexOf(b.r) });
+    for (const k of ['writing1', 'writing2']) attemptsSvc.saveScore(P.admin, a.id, k, { criteria: [b.w, b.w, b.w, b.w] });
+    attemptsSvc.saveScore(P.admin, a.id, 'speaking', { criteria: [b.s, b.s, b.s, b.s] });
+    return attemptsSvc.attemptDetail(P.admin, a.id).result;
+  };
+  const rf1 = emMt1TuanNay('MB FT RF 12', 'PRMT RF D1', 'RF');
+  const lt1 = emMt1TuanNay('MB FT 101', 'PRMT LT1 so sánh', 'LT1');
+  check('PR-MT (4) · RF target 6.5, MT1 L 6.0 → dưới kỳ vọng 6.5, SOS 1; LT1 cùng điểm → kỳ vọng 5.5, đạt (M2, Q27-4)', () => {
+    assert(rf1.a.no === 1 && rf1.a.lich_su === 0 && lt1.a.lich_su === 0, JSON.stringify([rf1.a, lt1.a]));
+    const r = nhap(rf1.a, { l: 6, r: 7, w: 7, s: 7 });
+    assert(r.expectation === 6.5 && r.sosLevel === 1, `RF: kỳ vọng ${r.expectation}, SOS ${r.sosLevel}`);
+    const l = nhap(lt1.a, { l: 6, r: 7, w: 7, s: 7 });
+    assert(l.expectation === 5.5 && l.sosLevel === 0, `LT1: kỳ vọng ${l.expectation}, SOS ${l.sosLevel}`);
+  });
+  const rf2 = emMt1TuanNay('MB FT RF 12', 'PRMT RF D1 SOS2', 'RF');
+  check('PR-MT (4) · RF MT1 SOS 2 → PA quy chế `Tutor · đến lúc thi` (hàng MT3), Phối hợp theo hàng MT4 (T4, D1)', () => {
+    const r = nhap(rf2.a, { l: 6, r: 6, w: 7, s: 7 });
+    assert(r.sosLevel === 2, `SOS ${r.sosLevel}`);
+    const pa = conn.prepare(
+      `SELECT ci.description FROM case_interventions ci JOIN sos_cases sc ON sc.id = ci.case_id
+        WHERE sc.student_id = ? AND ci.preset = 1`).all(rf2.sid) as any[];
+    assert(pa.length === 2 && pa.every((x) => x.description === 'Tutor · đến lúc thi'), JSON.stringify(pa));
+    const ph = (conn.prepare('SELECT kind FROM sos_coordination_actions WHERE attempt_id = ? ORDER BY kind').all(rf2.a.id) as any[]).map((x) => x.kind);
+    assert(JSON.stringify(ph) === JSON.stringify([...d.DEFAULT_SOS_COORDINATION[4][2]].sort()), JSON.stringify(ph));
+  });
+  check('PR-MT (4) · bảng Case, Phân tích lớp, Tổng hợp Test cùng ra kỳ vọng 6.5 cho em RF (K5-49)', () => {
+    const row = casesSvc.skillSupportBoard(P.admin, rf1.sid).rows.find((x: any) => x.category === 'listening');
+    assert(row?.expectation === 6.5 && row.gap === -0.5, JSON.stringify(row && { e: row.expectation, g: row.gap }));
+    const o = ptLop.phanTichLop(P.admin, classId('MB FT RF 12')).o['listening|mt1'];
+    assert(o?.tong === 2 && o.dat === 0, JSON.stringify(o));
+    const th = tongHopSvc.tongHop(P.admin, { branchId: null, ct: 'ft', soTuan: 4, classId: classId('MB FT RF 12'), theo: 'lop' });
+    assert(th.tong['kn:listening'] === 2, JSON.stringify(th.tong));
+  });
 }

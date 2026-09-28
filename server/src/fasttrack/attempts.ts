@@ -157,6 +157,17 @@ export function entryBandsOf(rows: ScoreRow[]) {
   return map;
 }
 
+/**
+ * LỘ TRÌNH CỦA LƯỢT (K5-49) — `learning_cycles.route` theo `cycle_id`, không phải lộ trình hiện tại của em. Hàng đã JOIN `cy.route` thì
+ * dùng luôn; không thì một câu, nhớ theo `cycle_id` trong request. Danh sách phải JOIN sẵn — không hỏi theo từng dòng.
+ */
+export function routeCuaLuot(attempt: any): string | null {
+  if ('route' in attempt) return attempt.route ?? null;
+  if (!attempt.cycle_id) return null;
+  return nho(`lo-trinh:${attempt.cycle_id}`, () =>
+    (db().prepare('SELECT route FROM learning_cycles WHERE id = ?').get(attempt.cycle_id) as any)?.route ?? null);
+}
+
 export function resultOf(attempt: any, rows?: ScoreRow[], skips?: AssessedSkill[]): AttemptResult {
   const scores = rows ?? scoresOf(attempt.id);
   return evaluateAttempt(
@@ -164,6 +175,7 @@ export function resultOf(attempt: any, rows?: ScoreRow[], skips?: AssessedSkill[
     attempt.attempt_no,
     entryBandsOf(scores),
     skips ?? skipsOf(attempt.id),
+    routeCuaLuot(attempt),
   );
 }
 
