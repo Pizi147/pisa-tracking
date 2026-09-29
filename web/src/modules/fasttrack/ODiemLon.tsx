@@ -73,7 +73,6 @@ export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo, sav
 }) {
   const oCua = (k: string) => cells.find((c) => c.skill === k);
   const baiCua = (k: KyNangLon) => (k === 'writing' ? [oCua('writing1'), oCua('writing2')] : [oCua(k)]).filter((c): c is Cell => !!c);
-  const khung = useRef<HTMLDivElement>(null);
   const dai = useRef<HTMLDivElement>(null);
   /* Esc đóng khung sửa (không nằm trong ô đang gõ lý do của hộp khác — `InlineScoreEditor` tự bắt Esc của nó trước). */
   useEffect(() => {
@@ -154,7 +153,7 @@ export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo, sav
       </div>
 
       {mo && (
-        <div ref={khung} id="khung-sua-diem" role="region" aria-label={`Nhập điểm ${NHAN[mo]}`}
+        <div id="khung-sua-diem" role="region" aria-label={`Nhập điểm ${NHAN[mo]}`}
           className="rounded-lg border px-3 py-3" style={{ borderColor: 'var(--line-strong)' }}>
           <div className="mb-2 flex items-center justify-between gap-2">
             <span className="text-sm font-medium text-slate-100">{NHAN[mo]}</span>
