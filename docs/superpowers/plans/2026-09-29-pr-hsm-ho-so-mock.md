@@ -514,3 +514,8 @@ Không có câu bắt buộc — mọi điểm mở đã vào bảng Q theo khuy
   "tổng + Điền cả cột" gói dòng (`flex-wrap`, cột 136 px); câu lỗi dưới ô cắt ở 104 px (tooltip + DOM giữ câu đủ); điện thoại: dòng
   W/S không sửa được có chỗ trống 44 px thay ✎ để số thẳng cột. `nhanLuot` đặt ở `shared/domain/fasttrack.ts` (bộ kiểm đọc được).
   Lịch Test: `COT_DAU_LICH_TEST = [190, 120, 110]`; bảng Nợ đổi 150/110/auto → 190/120/110, cột trạng thái thành auto.
+- **Task 5** — 1739 đạt. **Tầng 1 của màn này là: 4 điểm kỹ năng + Overall.** layout/harden/adapt xét trên mã (ảnh ở Task 9):
+  tên dài `break-words`; nhận xét 1000 ký tự `pre-wrap break-words`, ô tự cao; lỗi mạng khi lưu nhận xét → "Chưa lưu — thử lại" giữ chữ;
+  không quyền → chữ thường, phần rỗng ẩn; 375 px `grid-cols-2`, Overall `col-span-2`, dòng phụ `truncate` + tooltip. "Mở lại lượt"
+  dời từ menu "Chỉnh lịch" ra dải "Đã huỷ" (một chỗ, không lặp). Bảng dưới đổi tên "Lịch kiểm tra" (không còn điểm). `NutGvCham`
+  thêm `goiY` (hồ sơ Mock: "Lưu ngay cho bài Speaking này.").

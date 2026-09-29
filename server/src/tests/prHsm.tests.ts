@@ -216,4 +216,14 @@ export async function runPrHsmTests(t: YThucTestKit) {
     assert(d.nhanLuot('planned', 2, 4) === 'Đang chấm · 2/4' && d.nhanLuot('planned', 0, 4) === 'Đã lên lịch', 'nhanLuot planned');
     assert(d.nhanLuot('cancelled', 2, 4) === 'Đã huỷ' && d.nhanLuot('done', 4, 4) === 'Đã xong', 'nhanLuot huỷ / xong');
   });
+
+  // ------------------------------------------------------------------ khối 5: hồ sơ Mock M10 (đọc nguồn)
+  check('HSM (5) · hồ sơ Mock: dải ODiemLon, sosLevel (không failedCount), bỏ "Writing (tổng)"; ODiemLon dùng InlineScoreEditor + tabular-nums', () => {
+    const mock = docSach('web/src/modules/fasttrack/MockDetailPage.tsx');
+    assert(/<DaiODiemLon/.test(mock) && /sosLevel/.test(mock) && !/failedCount/.test(mock), 'MockDetailPage: dải ô lớn / sosLevel');
+    assert(!mock.includes('Writing (tổng)') && !/<InlineScoreEditor/.test(mock), 'bảng dưới còn dòng Writing (tổng) / trình sửa trong dòng');
+    assert(/<ONhanXet/.test(mock) && /nhanLuot\(/.test(mock), 'khối nhận xét / nhanLuot');
+    const lon = docSach('web/src/modules/fasttrack/ODiemLon.tsx');
+    assert(/<InlineScoreEditor/.test(lon) && /tabular-nums/.test(lon) && /text-\[28px\] font-bold/.test(lon), 'ODiemLon');
+  });
 }

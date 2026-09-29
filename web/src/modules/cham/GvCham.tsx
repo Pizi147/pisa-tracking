@@ -48,6 +48,8 @@ export function useGvChamCot(classId: number | null | undefined, periodId: numbe
   return [v, dat] as const;
 }
 
+const GOI_Y_COT = 'Áp cho các bài Speaking lưu sau đó ở lớp này, tuần này. Sửa riêng một em trong hộp tiêu chí.';
+
 /** Tên ngắn để hiện trên nút: "Tôi", tên tài khoản, tên người ngoài. */
 export function tenNgan(v: NguoiChon | null): string | null {
   if (!v) return null;
@@ -58,13 +60,17 @@ export function tenNgan(v: NguoiChon | null): string | null {
  * NÚT "GV chấm: {tên} ▾" — gọn, dưới chữ "S (band)" của tiêu đề cột (máy tính) hoặc đầu danh sách (điện thoại, `lon`).
  * Bấm mở hộp nhỏ chọn người (`ChonNguoi nhom="nhan_vien" choNgoai`).
  */
-export function NutGvCham({ value, onChange, lon = false }: { value: NguoiChon | null; onChange: (v: NguoiChon | null) => void; lon?: boolean }) {
+export function NutGvCham({ value, onChange, lon = false, goiY = GOI_Y_COT }: {
+  value: NguoiChon | null; onChange: (v: NguoiChon | null) => void; lon?: boolean;
+  /** Câu giải thích dưới ô chọn — cột S (mặc định) hay một bài (hồ sơ Mock). */
+  goiY?: string;
+}) {
   const [mo, setMo] = useState(false);
   const ten = tenNgan(value);
   return (
     <>
       <button type="button" onClick={() => setMo(true)} aria-haspopup="dialog"
-        title="GV chấm Speaking — áp cho các bài S lưu sau đó ở lớp này, tuần này."
+        title={`GV chấm Speaking — ${goiY}`}
         className={`inline-flex max-w-full items-center gap-1 normal-case tracking-normal text-xs text-slate-400 hover:text-slate-200 ${lon ? 'min-h-[44px] px-1' : ''}`}>
         <span className="truncate">GV chấm: {ten ?? <span className="text-slate-500">chưa chọn</span>}</span>
         <span className="text-slate-500"><MuiTenGap mo /></span>
@@ -73,9 +79,7 @@ export function NutGvCham({ value, onChange, lon = false }: { value: NguoiChon |
         footer={<button className="btn" onClick={() => setMo(false)}>Xong</button>}>
         <div className="space-y-2">
           <ChonNguoi value={value} onChange={(v) => { onChange(v); }} nhom="nhan_vien" choNgoai ariaLabel="GV chấm Speaking" />
-          <p className="m-0 text-xs text-slate-400">
-            Áp cho các bài Speaking lưu sau đó ở lớp này, tuần này. Sửa riêng một em trong hộp tiêu chí.
-          </p>
+          <p className="m-0 text-xs text-slate-400">{goiY}</p>
         </div>
       </Modal>
     </>
