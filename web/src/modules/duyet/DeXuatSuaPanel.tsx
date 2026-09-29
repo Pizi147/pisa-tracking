@@ -40,7 +40,7 @@ export function DeXuatSuaPanel({ studentId, studentName, lop, truongDau, hienTai
   ];
   const loi = [
     ...dsLoi(luat, { truong, moi, 'ly-do': lyDo }),
-    ...(truong === 'target' && moi !== '' && moi !== KCK && !hopLeTarget(moi) ? [{ khoa: 'moi', nhan: 'Target mới', lyDo: 'Band từ 0 đến 9, bước 0.5' }] : []),
+    ...(truong === 'target' && moi !== '' && moi !== KCK && !hopLeTarget(moi) ? [{ khoa: 'moi', nhan: 'Target mới', lyDo: 'Band từ 0 đến 9, bước 0.5 — hoặc chọn Không cam kết (KCK)' }] : []),
   ];
 
   const gui = async () => {
@@ -73,13 +73,14 @@ export function DeXuatSuaPanel({ studentId, studentName, lop, truongDau, hienTai
           </div>
         </Truong>
         {truong && (
-          <Truong nhan={truong === 'target' ? 'Target mới' : truong === 'lo-trinh' ? 'Lộ trình mới' : 'Giá trị mới'} batBuoc loi={lf.loiCua(loi, 'moi')}>
+          <Truong nhan={truong === 'target' ? 'Target mới' : truong === 'lo-trinh' ? 'Lộ trình mới' : 'Giá trị mới'} batBuoc loi={lf.loiCua(loi, 'moi')}
+            as={truong === 'target' ? 'div' : undefined} phu={truong === 'target' ? `KCK: ${GIAI_THICH_KCK}.` : undefined}>
             {truong === 'target' ? (
               <div className="flex flex-wrap items-center gap-2">
-                <input className="field w-24 tabular-nums" type="number" inputMode="decimal" step="0.5" min={0} max={9}
+                <input className="field w-24 tabular-nums" aria-label="Band target mới" type="number" inputMode="decimal" step="0.5" min={0} max={9}
                   {...lf.o(loi, 'moi')} value={moi === KCK ? '' : moi} disabled={moi === KCK} onChange={(e) => setMoi(e.target.value)} />
                 {!hienTai?.khongCamKet && (
-                  <NutChon nho chon={moi === KCK} title={GIAI_THICH_KCK} onClick={() => setMoi(moi === KCK ? '' : KCK)}>Không cam kết (KCK)</NutChon>
+                  <NutChon nho chon={moi === KCK} onClick={() => setMoi(moi === KCK ? '' : KCK)}>Không cam kết (KCK)</NutChon>
                 )}
                 {(hienTai?.target != null || hienTai?.khongCamKet) && (
                   <span className="text-xs text-slate-400 tabular-nums">đang là <TargetText band={hienTai.target} kck={hienTai.khongCamKet} /></span>

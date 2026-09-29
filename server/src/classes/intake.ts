@@ -262,7 +262,7 @@ export function previewIntake(
     else if (laKck(r.target)) target = KCK;          // Q29-1: KCK / '-' = không cam kết (khác ô trống = chưa có)
     else {
       const t = bandOf(r.target);
-      if (t === 'invalid') loi('target', 'Gõ band 0–9, bước 0,5 — ví dụ 6.5');
+      if (t === 'invalid') loi('target', 'Gõ band 0–9, bước 0,5 (ví dụ 6.5), hoặc KCK nếu em không cam kết');
       else if (t === null) luuY('target', 'Chưa có — vẫn thêm được, bổ sung sau để tính kỳ vọng. Em không cam kết đầu ra thì gõ KCK');
       else target = t;
     }
