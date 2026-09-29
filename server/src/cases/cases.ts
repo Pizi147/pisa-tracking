@@ -16,7 +16,7 @@ import {
   HAN_DUYET_NGAY, hanTheoNgay,
   type NextStep, type RescheduleTarget,
   issueBranchOf, issueLabel, caseTopicLabel, urgencyFromSos,
-  caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac, chanHoanThanh, laLanGhiCuoi, mocChuPa, programmeOf, quyetDinhChoPa, tenCaseSos, tenMon, tenMonNgan,
+  caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac, chanHoanThanh, laLanGhiCuoi, mocChuPa, programmeOf, quyetDinhChoPa, trangThaiCaseV4, viecTiepCuaCase, tenCaseSos, tenMon, tenMonNgan,
   type CaseOutcome, type FollowUpOutcome, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -2451,6 +2451,7 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>) {
     .all(caseId) as any[];
   /* PR-S2 (S2): lịch sử điều chỉnh, một truy vấn cho cả Case (gộp nhiều Case: xem plan PR-S2 Q18). */
   const revs = lichSuDieuChinhCuaCase(caseId);
+  const mtKe = mtKeTheoPa(caseId);
 
   const plans = ivs.map((iv) => {
     const last = follows.find((f) => f.intervention_id === iv.id && f.outcome) ?? null;
@@ -2465,6 +2466,11 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>) {
       /* PA theo quy chế SOS (§3.2, PR-K): từ PR-N1 (S4-1) chạy ngay lúc tạo — giao diện hiện dấu `🔒 theo quy chế` cạnh tên. */
       preset: iv.preset === 1,
       confirmedAt: iv.confirmed_at ?? null,
+      /* PR-SOS: PA bắt buộc · Chờ xác nhận · chữ mốc · lần ghi tới là "Ghi kết quả cuối" (HangPA, T22, K3-14). */
+      batBuoc: iv.preset === 1,
+      choXacNhan: iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned',
+      mocChu: iv.preset === 1 ? mocChuPa({ span: iv.moc_quy_che ?? null, followupDue: iv.followup_due ?? null, mtKe: mtKe(iv), daXacNhan: !!iv.confirmed_at }, today) : null,
+      lanCuoi: iv.status === 'started' && laLanGhiCuoi({ preset: iv.preset === 1, followupDue: iv.followup_due ?? null, actionDue: iv.action_due ?? null }, today),
       performer: iv.performer_user_name ?? iv.performer_name ?? null,
       status: iv.status as string,
       statusLabel: INTERVENTION_STATUS_LABEL[iv.status as keyof typeof INTERVENTION_STATUS_LABEL] ?? iv.status,
@@ -2519,6 +2525,12 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>) {
     };
   });
 
+  const sos = sosCaseState(caseId);
+  const v4 = {
+    status: c.status, fromSos: sos.fromSos, hasCause: sos.hasCause, dismissed: !!sos.dismissed, systemClosed: !!c.system_close_reason,
+    choDuyetKhongTheoDoi: !!sos.choDuyetKhongTheoDoi, coPaChoXacNhan: sos.coPaChoXacNhan, hanXacNhan: sos.dueOn,
+    lyDoHeThong: c.system_close_reason ? SYSTEM_CLOSE_REASON_LABEL[c.system_close_reason as keyof typeof SYSTEM_CLOSE_REASON_LABEL] ?? null : null,
+  };
   /* Lượt đánh giá mà case này đã đi qua — "MT2 · 17/08" ở chân thẻ (lớp thường: "Giữa khoá"/"Cuối khoá" thay MT{n}). */
   const attempts = (conn
     .prepare(
@@ -2538,7 +2550,13 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>) {
     issueLabel: issue?.taxonomy_code ? issueLabel(issue.taxonomy_code) : null,
     summary: c.summary ?? null,
     /* Case tự tạo từ SOS còn chờ GVBM xác định nguyên nhân / xác nhận phương án điền sẵn (§3.2, §7.5 — PR-K). */
-    sos: sosCaseState(caseId),
+    sos,
+    /** PR-SOS (§7.3, K3-07): MỘT nhãn trạng thái + MỘT việc tiếp của Case — bảng kỹ năng, Ngăn Case, đầu hồ sơ đọc chung. */
+    trangThaiV4: trangThaiCaseV4(v4, today),
+    viecTiep: viecTiepCuaCase(v4, plans.map((pl) => ({
+      id: pl.id, ten: pl.name, batBuoc: pl.batBuoc, choXacNhan: pl.choXacNhan, xong: pl.status === 'completed',
+      actionDue: pl.actionDue, followupDue: pl.followupDue, choDuyet: pl.pendingApproval,
+    })), today, c.origin_kind === 'mock' ? null : planDueDate(String(c.detected_at ?? c.created_at ?? today).slice(0, 10), c.urgency)),
     plans,
     attempts,
     followUntil: c.follow_until ?? null,

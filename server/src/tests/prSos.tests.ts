@@ -400,4 +400,57 @@ export async function runPrSosTests(t: YThucTestKit) {
     assert(get(`SELECT new_value v FROM sos_case_history WHERE case_id = ? AND field = 'pa_performer'`, c.id)?.v.includes(' → '), 'thiếu lịch sử bàn giao');
     assert(/banGiaoPaQuyChe\(/.test(fs.readFileSync(path.join(REPO, 'server/src/classes/luatLoTrinh.ts'), 'utf8')), 'Chuyển lớp chưa gọi bàn giao');
   });
+
+  // ------------------------------------------------------------------ Task 7 · Việc cần làm, Tạm dừng, số liệu
+  const studentsSvc: any = await import('../students/students.ts');
+  const profileSvc: any = await import('../students/profile.ts');
+  const viecCua = (who: any) => myworkSvc.myWork(who, {}).items as any[];
+  check('SOS (7) · Việc GVBM: "Xác nhận nguyên nhân Writing Task 2 · {HV}" → sau Xác nhận Case: "Xác nhận PA · … · {HV}" cùng hạn, nhóm Case học thuật; PA chờ xác nhận không sinh Ghi kết quả', () => {
+    const { st } = mt2W2('T7a');
+    const c = cvL(st);
+    const iv = plansOf(c.id)[0];
+    const cause = viecCua(P.w2Teacher).find((i) => i.key === `cause:${c.id}`);
+    assert(cause && cause.tieuDe === `Xác nhận nguyên nhân Writing Task 2 · ${st.name}` && cause.due === c.han_xac_nhan && cause.actionLabel === 'Xác nhận nguyên nhân', JSON.stringify(cause));
+    assert(profileSvc.studentProfile(P.w2Teacher, st.id).headline.next?.text === 'Xác nhận nguyên nhân Writing Task 2', 'đầu hồ sơ chưa dùng việc tiếp v4');
+    sosAuto.xacNhanCase(P.w2Teacher, c.id, { primaryCode: W2_CODE, urgency: 'attention', moTa: 'Em viết lạc đề ở Task 2, lập luận yếu.' });
+    const ds = viecCua(P.w2Teacher);
+    const xn = ds.find((i) => i.key === `xnpa:${iv.id}`);
+    assert(xn && xn.group === 'xac_nhan_pa' && xn.tieuDe === `Xác nhận PA · Writing Task 2 · ${st.name}` && xn.due === c.han_xac_nhan, JSON.stringify(xn));
+    assert(!ds.some((i) => i.key === `cause:${c.id}` || i.key === `action:${iv.id}`), 'còn dòng cause hoặc Ghi kết quả cho PA chờ xác nhận');
+    assert(d.nhomViecCua('xac_nhan_pa') === 'case-hoc-thuat' && d.LOAI_HAN_CUA_VIEC.xac_nhan_pa === 'xac-minh-sos', 'nhóm / loại hạn');
+  });
+  check('SOS (7) · Em Tạm dừng: không dòng cause / Xác nhận PA / Ghi kết quả, không Báo lên; Quay lại → hạn tính lại từ ngày quay lại (K3-41)', () => {
+    const { st } = mt2W2('T7b');
+    const c = cvL(st); const cS = caseOf(st.id, 'speaking');
+    const { iv } = (() => {
+      sosAuto.xacNhanCase(P.admin, cS.id, { primaryCode: d.issuesForTopic('speaking', null)[0].code, urgency: 'attention', moTa: 'Em nói ngắn, thiếu ý mở rộng.' });
+      sosAuto.xacNhanPaQuyChe(P.admin, plansOf(cS.id)[0].id, { description: 'Tự học Speaking, ghi âm mỗi tuần một bài.' });
+      return { iv: plansOf(cS.id)[0] };
+    })();
+    conn.prepare('UPDATE sos_cases SET han_xac_nhan = ? WHERE id = ?').run(addDays(TODAY, -3), c.id);
+    conn.prepare('UPDATE case_interventions SET action_due = ? WHERE id = ?').run(addDays(TODAY, -3), iv.id);
+    studentsSvc.setStudentStatus(P.admin, st.id, 'inactive', TODAY, 'Nghỉ ốm dài ngày');
+    const khoa = (myworkSvc.myWork(P.admin, { nguoi: 'tat-ca' }).items as any[]).map((i: any) => i.key as string);
+    assert(!khoa.includes(`cause:${c.id}`) && !khoa.includes(`action:${iv.id}`), 'em Tạm dừng còn dòng việc Case');
+    yc.quetYeuCau(TODAY);
+    assert(!get(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_nguyen_nhan' AND doi_tuong_id = ? AND trang_thai = 'cho'`, c.id), 'em Tạm dừng bị Báo lên');
+    studentsSvc.setStudentStatus(P.admin, st.id, 'active', TODAY, 'Quay lại học');
+    assert(get('SELECT han_xac_nhan h FROM sos_cases WHERE id = ?', c.id).h === d.hanXacNhan(TODAY), 'hạn xác nhận chưa tính lại');
+    assert(get('SELECT action_due h FROM case_interventions WHERE id = ?', iv.id).h === d.weeklyUpdateDue(TODAY), 'hạn ghi kết quả chưa tính lại');
+  });
+  check('SOS (7) · Hiệu quả PA: PA huỷ không theo dõi, PA chờ xác nhận, PA hệ thống đóng không vào N; cột Xử lý Tổng hợp theo trạng thái v4 (K1-20, K1-23, K5-55)', () => {
+    const { st } = mt2W2('T7c');
+    const c = cvL(st);
+    sosAuto.guiKhongTheoDoi(P.w2Teacher, c.id, { reasonCode: 'single_incident' });
+    yc.duyetYeuCau(P.mbManager, theKtd(c.id).id);
+    const ids = new Set((effectiveness.planOutcomes({ studentIds: [st.id] }) as any[]).map((r: any) => r.id));
+    for (const iv of all('SELECT id FROM case_interventions WHERE case_id IN (SELECT id FROM sos_cases WHERE student_id = ?)', st.id)) {
+      assert(!ids.has(iv.id), `PA ${iv.id} vào hiệu quả`);
+    }
+    const map = d.COT_XU_LY_V4;
+    assert(map['cho-nguyen-nhan'] === 'choNguyenNhan' && map['cho-xac-nhan-pa'] === 'dangLam' && map['huy-khong-theo-doi'] === 'xongHuy'
+      && map['cho-duyet-khong-theo-doi'] === 'choDuyet', JSON.stringify(map));
+    const cot = d.cotTongHopFor('ft').filter((x: any) => x.nhom === 'xu-ly').map((x: any) => x.nhan('ft'));
+    assert(cot.join('|') === 'HV có Case|Case|Chờ nguyên nhân|Chờ Quản lý duyệt|Đang làm|Xong/Huỷ', cot.join('|'));
+  });
 }

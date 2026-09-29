@@ -130,7 +130,7 @@ export async function runHoSoHocVienTests(t: YThucTestKit) {
       coNext++;
       assert(typeof next.overdue === 'boolean', `HV ${student_id}: next.overdue phải là boolean: ${JSON.stringify(next)}`);
       assert(next.overdue === (next.due !== null && next.due < t.TODAY), `HV ${student_id}: overdue phải = (due < hôm nay ${t.TODAY}): ${JSON.stringify(next)}`);
-      assert(/^(Xác định nguyên nhân|Xác nhận PA gợi ý|Xác minh SOS|Đề ra PA|Ghi kết quả PA|Chờ Quản lý duyệt PA) /.test(next.text), `HV ${student_id}: câu phải bắt đầu bằng động từ: "${next.text}"`);
+      assert(/^(Xác nhận nguyên nhân|Xác nhận PA|Xác minh SOS|Đề ra PA|Ghi kết quả PA|Ghi kết quả cuối|Hoàn thành Case|Chờ Quản lý duyệt PA) /.test(next.text), `HV ${student_id}: câu phải bắt đầu bằng động từ: "${next.text}"`);
       /* Mục 3 (chủ sản phẩm 22/09): tên kỹ năng ĐẦY ĐỦ, không viết tắt L / R / W1 / W2 / S. */
       assert(!/ (L|R|W|W1|W2|S)$/.test(next.text), `HV ${student_id}: câu phải dùng tên đầy đủ của kỹ năng: "${next.text}"`);
       /* Rà soát 22/09: "Ghi kết quả PA" CHƯA quá hạn (trước đây "Cập nhật PA") chỉ là dự phòng — không được chen trước việc khác (thứ tự ưu tiên cũ giữ nguyên). */
@@ -143,7 +143,7 @@ export async function runHoSoHocVienTests(t: YThucTestKit) {
     assert(coNext > 0, 'Phải có ít nhất một học viên có việc cần làm tiếp');
   });
 
-  await t.checkAsync('PR-HV · Q7 (mục 1) Case từ SOS chờ xác định nguyên nhân → ô "Việc cần làm tiếp" là "Xác định nguyên nhân {kỹ năng}", hạn = hạn xác định, đứng trước mọi việc khác', async () => {
+  await t.checkAsync('PR-HV · Q7 (mục 1) → PR-SOS: Case từ SOS chờ xác nhận nguyên nhân → ô "Việc cần làm tiếp" là "Xác nhận nguyên nhân {kỹ năng}", hạn = hạn xác nhận, đứng trước mọi việc khác', async () => {
     const profile: any = await import('../students/profile.ts');
     const casesMod: any = await import('../cases/cases.ts');
     const max = t.seedMax.sos_cases ?? Number.MAX_SAFE_INTEGER;
@@ -156,10 +156,10 @@ export async function runHoSoHocVienTests(t: YThucTestKit) {
       if (cho.length > 0) {
         n++;
         assert(next, `HV ${student_id}: có case chờ xác định nguyên nhân mà ô "Việc cần làm tiếp" lại rỗng ("Không có")`);
-        assert(/^Xác định nguyên nhân /.test(next.text), `HV ${student_id}: phải là "Xác định nguyên nhân …" (đứng trước mọi việc khác), được "${next.text}"`);
+        assert(/^Xác nhận nguyên nhân /.test(next.text), `HV ${student_id}: phải là "Xác nhận nguyên nhân …" (đứng trước mọi việc khác), được "${next.text}"`);
         const som = cho.map((x) => x.c.sos.dueOn ?? '9999').sort()[0];
         const dung = cho.find((x) => (x.c.sos.dueOn ?? '9999') === som)!;
-        assert(next.text === `Xác định nguyên nhân ${dung.r.label}` && next.due === (dung.c.sos.dueOn ?? null), `HV ${student_id}: mong "Xác định nguyên nhân ${dung.r.label}" hạn ${dung.c.sos.dueOn}, được ${JSON.stringify(next)}`);
+        assert(next.text === `Xác nhận nguyên nhân ${dung.r.label}` && next.due === (dung.c.sos.dueOn ?? null), `HV ${student_id}: mong "Xác nhận nguyên nhân ${dung.r.label}" hạn ${dung.c.sos.dueOn}, được ${JSON.stringify(next)}`);
         continue;
       }
       /* PR-N1 S4-1: PA quy chế tự chạy — không còn việc "Xác nhận PA gợi ý". */

@@ -16,7 +16,7 @@ import { classAlerts } from '../classes/schedule.ts';
 import { demChuaLoTrinh } from '../classes/loTrinhTiep.ts';
 import { myMgmtTasks } from './mgmttasks.ts';
 import { listSignals, type SignalAction } from '../cases/signals.ts';
-import { NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds } from '../cases/sosState.ts';
+import { NOT_UNCONFIRMED_PRESET, UNCONFIRMED_PRESET, awaitingCauseCaseIds } from '../cases/sosState.ts';
 import { dienMocQuyChe } from '../cases/sosAuto.ts';
 import { settleNoShows, sweepExpiredMoves } from '../fasttrack/absence.ts';
 import { demYeuCau, quetYeuCau } from '../duyet/yeuCau.ts';
@@ -112,7 +112,7 @@ export type WorkItem = {
  * chắn nhất để nó không bao giờ được làm.
  */
 export type WorkGroupKey =
-  | 'verify' | 'cause' | 'score' | 'no_plan' | 'result'
+  | 'verify' | 'cause' | 'xac_nhan_pa' | 'score' | 'no_plan' | 'result'
   | 'no_owner' | 'placement' | 'next_step' | 'missing_data' | 'mgmt';
 
 /**
@@ -144,9 +144,14 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
    * "xác nhận PA gợi ý". Không có dòng này thì hạn ba ngày vô hình.
    */
   cause: {
-    label: 'Xác định nguyên nhân',
-    hint: 'Mock Test có SOS đã tự tạo Case và PA theo quy chế cho kỹ năng này. Bạn có ba ngày (tính cả ngày đầu) để xác định nguyên nhân — '
-      + 'hoặc đóng "Không cần theo dõi" nếu em không cần theo dõi. Quản lý chỉ thấy dòng này khi đã quá hạn.',
+    label: 'Xác nhận nguyên nhân',
+    hint: 'Mock Test có SOS đã tự tạo Case cho kỹ năng này. Chọn Xác nhận nguyên nhân, hoặc Không cần theo dõi (gửi Quản lý duyệt) — '
+      + '3 ngày, tính cả hôm nay.',
+  },
+  /* PR-SOS (§3.1d): đã Xác nhận Case mà PA theo quy chế còn chờ xác nhận — PA chưa chạy tới khi bấm Xác nhận PA. */
+  xac_nhan_pa: {
+    label: 'Xác nhận PA',
+    hint: 'Đã xác nhận Case — còn xác nhận PA theo quy chế để PA bắt đầu.',
   },
 
   /* ---------------------------------------------------- ba nhóm học thuật chính (mục 3.2) */
@@ -490,7 +495,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           AND sc.status != 'done'
           AND COALESCE(iv.approval_state, '') != 'pending'
           AND ${NOT_UNCONFIRMED_PRESET('iv')}
-          AND s.archived_at IS NULL`,
+          AND s.archived_at IS NULL AND s.status = 'active'`,   /* K3-41: em Tạm dừng dừng hạn */
     )
     .all(addDays(today, 1)) as any[];
   napTruocPhamVi(ghiKetQua.map((r) => r.eff_student_id));
@@ -625,7 +630,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
          LEFT JOIN classes ac ON ac.id = a.class_id
          LEFT JOIN classes cc ON cc.id = cur.class_id
         WHERE sc.status != 'done' AND COALESCE(sc.sos_level, 1) > 0
-          AND sc.disposition IS NULL
+          AND sc.disposition IS NULL AND COALESCE(s.status, 'active') = 'active'   /* K3-41: em Tạm dừng dừng hạn */
         GROUP BY sc.id`,
     )
     .all() as any[];
@@ -684,39 +689,44 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     });
   }
 
-  // ------------------------------------- 3b. case TỰ TẠO TỪ SOS còn chờ xác định nguyên nhân (S04)
+  // ------------------------------------- 3b. case TỰ TẠO TỪ SOS: Xác nhận nguyên nhân · Xác nhận PA (S4-2, §3.1d)
   /*
-   * MỘT DÒNG MỖI CASE. Hạn = `sos_cases.han_xac_nhan` (3 ngày tính cả ngày đầu), hết ngày hạn mới tính quá hạn — cùng luật với mọi hạn khác.
+   * MỘT DÒNG MỖI CASE (nguyên nhân) / MỖI PA (xác nhận PA). Hạn = `sos_cases.han_xac_nhan` (3 ngày tính cả ngày đầu), hết ngày hạn mới tính
+   * quá hạn. "Chờ nguyên nhân" là của `awaitingCauseCaseIds` (đã loại thẻ Không cần theo dõi đang chờ).
    *
-   * AI THẤY: người phụ trách case (GVBM đúng kỹ năng) thấy ngay từ đầu; Quản lý trong phạm vi CHỈ thấy khi đã quá hạn (cùng cách với "Cập nhật kết quả"),
-   * và người khác — kể cả GVBM kỹ năng khác — không thấy. Mọi trường hợp đều kiểm đúng quyền sửa case theo kỹ năng (C02).
+   * AI THẤY: người phụ trách case (GVBM đúng kỹ năng); "Của GV (nhắc)" liệt kê dòng của GV cho Quản lý. Em Tạm dừng không sinh dòng (K3-41).
+   * Mọi trường hợp đều kiểm đúng quyền sửa case theo kỹ năng (C02).
    */
-  const causeCandidates = conn
-    .prepare(
-      `SELECT sc.id, sc.topic, sc.summary, sc.origin_kind, sc.sos_level, sc.urgency, sc.owner_user_id, sc.attempt_id,
+  const cotCase = `sc.id, sc.topic, sc.summary, sc.origin_kind, sc.sos_level, sc.urgency, sc.owner_user_id, sc.attempt_id,
               COALESCE(sc.student_id, a.student_id) AS eff_student_id,
               COALESCE(a.class_id, cur.class_id) AS eff_class_id,
               COALESCE(ac.branch_id, cc.branch_id) AS eff_branch_id,
               COALESCE(ac.code, cc.code) AS class_code,
-              s.full_name, a.attempt_no, a.kind AS attempt_kind,
-              sc.han_xac_nhan AS due,
-              EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary') AS has_cause
-         FROM sos_cases sc
-         LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+              s.full_name, a.attempt_no, a.kind AS attempt_kind, sc.han_xac_nhan AS due`;
+  const noiCase = `LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
          LEFT JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
          LEFT JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active'
          LEFT JOIN classes ac ON ac.id = a.class_id
-         LEFT JOIN classes cc ON cc.id = cur.class_id
-        WHERE sc.status != 'done' AND s.archived_at IS NULL
+         LEFT JOIN classes cc ON cc.id = cur.class_id`;
+  const causeCandidates = conn
+    .prepare(
+      `SELECT ${cotCase} FROM sos_cases sc ${noiCase}
+        WHERE sc.status != 'done' AND s.archived_at IS NULL AND s.status = 'active'
           AND EXISTS (SELECT 1 FROM case_interventions pv WHERE pv.case_id = sc.id AND pv.preset = 1)`,
     )
     .all() as any[];
   const waiting = new Set(awaitingCauseCaseIds(causeCandidates.map((c) => c.id as number)));
-  napTruocPhamVi(causeCandidates.map((r) => r.eff_student_id));
-  for (const c of causeCandidates) {
-    if (!waiting.has(c.id)) continue;
-    if (f.branchId && c.eff_branch_id !== f.branchId) continue;
-    if (!can(p, PERMISSIONS.SOS_EDIT, { classId: c.eff_class_id, studentId: c.eff_student_id, skill: c.topic ?? undefined })) continue;
+  const xacNhanPa = conn
+    .prepare(
+      `SELECT ${cotCase}, iv.id AS iv_id FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id ${noiCase}
+        WHERE ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND sc.status != 'done' AND s.archived_at IS NULL AND s.status = 'active'
+          AND EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary')`,
+    )
+    .all() as any[];
+  napTruocPhamVi([...causeCandidates, ...xacNhanPa].map((r) => r.eff_student_id));
+  const dongCase = (c: any, loai: 'cause' | 'xac_nhan_pa') => {
+    if (f.branchId && c.eff_branch_id !== f.branchId) return;
+    if (!can(p, PERMISSIONS.SOS_EDIT, { classId: c.eff_class_id, studentId: c.eff_student_id, skill: c.topic ?? undefined })) return;
     const u = urgencyOf(c.due ?? null, today);
     const mine = c.owner_user_id === p.userId;
     /*
@@ -724,30 +734,32 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
      * (`nguoi=tat-ca`) liệt kê dòng của GV kèm tên như mọi nhóm khác.
      */
     const cuaGv = tatCa && can(p, PERMISSIONS.CASE_APPROVE, { classId: c.eff_class_id, studentId: c.eff_student_id });
-    if (!mine && !cuaGv) continue;
-    const missing = [c.has_cause ? null : 'chưa chọn nguyên nhân'].filter(Boolean) as string[];
+    if (!mine && !cuaGv) return;
     const skillLabel = c.topic ? caseTopicLabel(c.topic, ctCua(c.eff_class_id)) : 'Kỹ năng';
+    const hv = c.full_name ?? 'Học viên';
+    const nguyenNhan = loai === 'cause';
     items.push({
-      key: `cause:${c.id}`, group: 'cause', urgency: u,
-      studentId: c.eff_student_id, studentName: c.full_name ?? 'Học viên',
+      key: nguyenNhan ? `cause:${c.id}` : `xnpa:${c.iv_id}`, group: loai, urgency: u,
+      studentId: c.eff_student_id, studentName: hv,
       classId: c.eff_class_id ?? null, classCode: c.class_code ?? null,
       attemptId: c.attempt_id ?? null, attemptNo: c.attempt_no ?? null,
       caseId: c.id as number, level: levelOf(c),
       contextLabel: nhanDot(c.attempt_kind, c.attempt_no),
       count: null,
       reason: [
-        `${skillLabel} dưới kỳ vọng — ${missing.join(' và ')}`,
+        nguyenNhan ? `${skillLabel} dưới kỳ vọng — chưa xác nhận nguyên nhân` : `${skillLabel} — PA theo quy chế chưa bắt đầu`,
         mine ? null : 'người phụ trách chưa làm',
       ].filter(Boolean).join(' — '),
-      tieuDe: `Xác định nguyên nhân ${skillLabel}`,
-      actionLabel: 'Xác định nguyên nhân',
+      tieuDe: nguyenNhan ? `Xác nhận nguyên nhân ${skillLabel} · ${hv}` : `Xác nhận PA · ${skillLabel} · ${hv}`,
+      actionLabel: nguyenNhan ? 'Xác nhận nguyên nhân' : 'Xác nhận PA',
       /* PR-DUYET (K5-12): mở thẳng Ngăn Case — Nhắc lưu đường này vào thông báo, chuông về đúng chỗ. */
       href: c.eff_student_id ? duongHoSoHocVien(c.eff_student_id, { caseId: c.id }) : `/hoc-thuat/case/${c.id}`,
       ownerId: c.owner_user_id ?? null, owner: null, mine,
-      due: c.due ?? null, statusLabel: 'Chờ xác định nguyên nhân',
+      due: c.due ?? null, statusLabel: nguyenNhan ? 'Chờ xác nhận nguyên nhân' : 'Chờ xác nhận PA',
     });
-  }
-
+  };
+  for (const c of causeCandidates) if (waiting.has(c.id)) dongCase(c, 'cause');
+  for (const c of xacNhanPa) dongCase(c, 'xac_nhan_pa');
   // ---------------------------------------------------------------- 4. chốt tuần MT
   for (const a of attempts as any[]) {
     if (a.period || a.status !== 'planned' || a.lichSu) continue;
@@ -939,7 +951,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * còn lại. "Cần xếp lớp tiếp" đứng ngay sau ba nhóm chính vì nó treo cả một lớp.
    */
   const order: WorkGroupKey[] = [
-    'verify', 'cause', 'score', 'no_plan', 'result',
+    'verify', 'cause', 'xac_nhan_pa', 'score', 'no_plan', 'result',
     'placement', 'next_step', 'no_owner', 'mgmt', 'missing_data',
   ];
   const weight = (u: WorkUrgency) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);

@@ -1,6 +1,6 @@
 import { db } from '../db.ts';
 import {
-  LEGACY_REGULAR_SKILL_MAP, METRIC_UNIT_LABEL, PERMISSIONS, isNoPlanCase, khoaDot,
+  COT_XU_LY_V4, LEGACY_REGULAR_SKILL_MAP, METRIC_UNIT_LABEL, PERMISSIONS, isNoPlanCase, khoaDot, trangThaiCaseV4,
   nhanDot, thuTuDot, tuDauKhoang, type ChuongTrinh, type CotTongHop, type DongTongHop, type TheoDong, type TongHopKetQua,
 } from '../../../shared/domain/index.ts';
 import { cotTongHopFor } from '../../../shared/domain/phanTich.ts';
@@ -14,6 +14,7 @@ import { expectationFor, failingEntrySkills } from '../fasttrack/scoring.ts';
 import { allProgrammes, type ProgrammeInfo } from '../normal/regular.ts';
 import { evaluateAttemptRow, luotKck } from '../worklist/danhGia.ts';
 import { rowsFor, type MetricRow } from '../worklist/metrics.ts';
+import { CO_THE_KHONG_THEO_DOI, UNCONFIRMED_PRESET } from '../cases/sosState.ts';
 
 /**
  * TỔNG HỢP TEST + SOS (P10, §3.3) — góc nhìn mặc định của Phân tích. Đi đúng đường `nguon` như bảng chi nhánh của
@@ -209,10 +210,12 @@ function tinh(p: Principal, f: FilterTongHop) {
     if (!chunk.length) continue;
     for (const r of conn
       .prepare(
-        `SELECT a.id AS attempt_id, sc.id AS case_id, sc.student_id, sc.status, sc.disposition,
-                (SELECT MAX(COALESCE(i.completed_date, i.started_date))
-                   FROM case_interventions i WHERE i.case_id = sc.id AND i.status != 'cancelled') AS support_done,
-                (SELECT COUNT(*) FROM case_interventions i2 WHERE i2.case_id = sc.id) AS iv_count
+        `SELECT a.id AS attempt_id, sc.id AS case_id, sc.student_id, sc.status, sc.han_xac_nhan,
+                sc.dismiss_reason_code, sc.system_close_reason,
+                EXISTS (SELECT 1 FROM case_interventions p WHERE p.case_id = sc.id AND p.preset = 1) AS from_sos,
+                EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary') AS has_cause,
+                EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sc.id AND ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned') AS pa_cho,
+                ${CO_THE_KHONG_THEO_DOI('sc')} AS co_the
            FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id
           WHERE a.id IN (${chunk.map(() => '?').join(',')}) AND COALESCE(sc.sos_level, 1) > 0`,
       )
@@ -220,14 +223,17 @@ function tinh(p: Principal, f: FilterTongHop) {
       const dong = dongCua.get(r.attempt_id);
       if (!dong) continue;
       const cha = hangMap.get(dong.cha)!, con = cha.con.get(dong.con)!;
-      const trang = trangThaiXuLy({ supportDone: r.support_done, status: r.status, disposition: r.disposition, ivCount: r.iv_count }, today);
-      /* Nhóm Xử lý là "tình trạng HIỆN TẠI" (Q18) — Case đã status='done' không còn "đang xử lý" dù từng có hỗ trợ. */
-      const dangXuLyThat = trang === 'dangXuLy' && r.status !== 'done';
+      /* PR-SOS (K1-20): nhóm Xử lý theo MỘT nhãn trạng thái Case (`trangThaiCaseV4`) — tình trạng HÔM NAY (Q18). */
+      const tt = trangThaiCaseV4({
+        status: r.status, fromSos: !!r.from_sos, hasCause: !!r.has_cause, dismissed: !!r.dismiss_reason_code, systemClosed: !!r.system_close_reason,
+        choDuyetKhongTheoDoi: !!r.co_the && r.status !== 'done', coPaChoXacNhan: !!r.pa_cho, hanXacNhan: r.han_xac_nhan ?? null,
+      }, today);
+      const cot = COT_XU_LY_V4[tt.k];
       for (const tap of [cha.tap, con.tap, tongTap]) {
         them(tap, 'case', r.case_id);
         if (r.student_id) them(tap, 'hvCoCase', r.student_id);
-        if (dangXuLyThat) them(tap, 'dangXuLy', r.case_id);
-        else if (trang === 'thieuPa') them(tap, 'thieuPa', r.case_id);
+        them(tap, cot, r.case_id);
+        if (tt.k === 'cho-nguyen-nhan' && tt.t === 'qua-han') them(tap, 'choNguyenNhanQuaHan', r.case_id);
       }
     }
   }
@@ -250,12 +256,14 @@ const soCuaTap = (tap: Tap, cols: readonly string[]): Record<string, number> =>
 
 export function tongHop(p: Principal, f: FilterTongHop): TongHopKetQua {
   const r = tinh(p, f);
+  /* PR-SOS: `choNguyenNhanQuaHan` đi kèm (số trong ngoặc của cột Chờ nguyên nhân), không phải cột riêng. */
   const cols = cotTongHopFor(r.ct).map((c) => c.khoa);
+  const oCols = [...cols, 'choNguyenNhanQuaHan'];
   const gon = (d: DongRaw): DongTongHop => ({
-    khoa: d.khoa, nhan: d.nhan, phu: d.phu, o: soCuaTap(d.tap, cols),
+    khoa: d.khoa, nhan: d.nhan, phu: d.phu, o: soCuaTap(d.tap, oCols),
     con: (d as any).conSorted?.length ? (d as any).conSorted.map(gon) : undefined,
   });
-  return { theo: r.theo, ct: r.ct, cot: cols, hang: r.hang.map(gon), tong: soCuaTap(r.tongTap, cols), scopeEmpty: r.scopeEmpty };
+  return { theo: r.theo, ct: r.ct, cot: cols, hang: r.hang.map(gon), tong: soCuaTap(r.tongTap, oCols), scopeEmpty: r.scopeEmpty };
 }
 
 /** Danh sách của MỘT ô — tính lại bằng chính `tinh`, nên danh sách luôn đúng bằng con số (G-10). */

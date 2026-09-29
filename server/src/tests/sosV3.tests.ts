@@ -711,17 +711,17 @@ export async function runSosV3Tests(t: YThucTestKit) {
     const due = domain.hanXacNhan(TODAY);   // PR-SOS: hạn ở `sos_cases.han_xac_nhan`
     const mine = item(w2T, f.w2.id);
     assert(mine && mine.group === 'cause' && mine.urgency === 'normal' && mine.due === due && mine.mine === true && mine.caseId === f.w2.id
-      && mine.actionLabel === 'Xác định nguyên nhân' && mine.statusLabel === 'Chờ xác định nguyên nhân' && !('overdueLabel' in mine) && mine.studentId === f.st.id,
+      && mine.actionLabel === 'Xác nhận nguyên nhân' && mine.statusLabel === 'Chờ xác nhận nguyên nhân' && !('overdueLabel' in mine) && mine.studentId === f.st.id,
     `Dòng của GVBM: ${JSON.stringify(mine)}`);
-    assert(/chưa chọn nguyên nhân/.test(mine.reason) && !/PA học thuật|xác nhận/.test(mine.reason), `Lý do chỉ nói thiếu nguyên nhân (K5-07): ${mine.reason}`);
+    assert(/chưa xác nhận nguyên nhân/.test(mine.reason) && !/PA học thuật|gợi ý/.test(mine.reason), `Lý do chỉ nói thiếu nguyên nhân (K5-07): ${mine.reason}`);
     assert(!item(P.mbManager, f.w2.id) && !item(w1T, f.w2.id), 'Chưa quá hạn thì Quản lý không thấy; GVBM kỹ năng khác không thấy');
     const groups = myworkSvc.myWork(w2T, {}).groups as any[];
-    assert(groups.some((g: any) => g.key === 'cause' && g.label === 'Xác định nguyên nhân' && g.items.some((i: any) => i.key === key(f.w2.id))), 'Phải có nhóm `cause` trong danh sách nhóm');
+    assert(groups.some((g: any) => g.key === 'cause' && g.label === 'Xác nhận nguyên nhân' && g.items.some((i: any) => i.key === key(f.w2.id))), 'Phải có nhóm `cause` trong danh sách nhóm');
     /* Quá hạn: hết ngày hạn mới tính (hạn = hôm qua). */
     conn.prepare('UPDATE sos_cases SET han_xac_nhan = ? WHERE id = ?').run(addDays(TODAY, -1), f.w2.id);
     const late = item(w2T, f.w2.id), mgr = itemQl(P.mbManager, f.w2.id);
     assert(!item(P.mbManager, f.w2.id), 'Quản lý "Của tôi" còn dòng cause quá hạn của GV (K1-57: đã là thẻ Báo lên)');
-    assert(late.urgency === 'overdue' && !/quá hạn/.test(late.reason) && late.tieuDe.startsWith('Xác định nguyên nhân'), `Quá hạn của GVBM: ${JSON.stringify(late)}`);
+    assert(late.urgency === 'overdue' && !/quá hạn/.test(late.reason) && late.tieuDe.startsWith('Xác nhận nguyên nhân'), `Quá hạn của GVBM: ${JSON.stringify(late)}`);
     assert(mgr && mgr.urgency === 'overdue' && mgr.mine === false && /chưa/.test(mgr.reason), `Quản lý thấy khi quá hạn: ${JSON.stringify(mgr)}`);
     assert(!itemQl(P.cpManager, f.w2.id) && !item(w1T, f.w2.id), 'Quản lý chi nhánh khác và GVBM kỹ năng khác không thấy dù quá hạn');
     assert(myworkSvc.myWork(w2T, {}).summary.overdue >= 1, 'Tính vào tổng số việc quá hạn');

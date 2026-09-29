@@ -265,6 +265,20 @@ export function banGiaoPaQuyChe(studentId: number, toClassId: number, actorUserI
         `${r.ten_cu ?? r.performer_name ?? '—'} → ${tenMoi} (GV ${caseTopicLabel(r.topic ?? r.category ?? '')} ${lop})`, actorUserId, nowIso());
   }
 }
+/**
+ * EM QUAY LẠI HỌC (K3-41, Q14): Tạm dừng dừng hạn Case bằng cách LỌC em `inactive` khỏi Việc / Báo lên; quay lại thì hạn tính lại từ ngày
+ * quay lại — Case còn chờ (nguyên nhân / xác nhận PA) nhận hạn xác nhận mới, PA đang chạy nhận hạn ghi kết quả mới. Chạy trong tx của nơi gọi.
+ */
+export function datLaiHanCase(studentId: number, homNay: string) {
+  const conn = db();
+  conn.prepare(`UPDATE sos_cases SET han_xac_nhan = ?, updated_at = ? WHERE student_id = ? AND status != 'done' AND han_xac_nhan IS NOT NULL
+      AND (NOT EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sos_cases.id AND ci.role = 'primary')
+           OR EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sos_cases.id AND ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned'))`)
+    .run(hanXacNhan(homNay), nowIso(), studentId);
+  conn.prepare(`UPDATE case_interventions SET action_due = ?, updated_at = ? WHERE status = 'started' AND action_due IS NOT NULL
+      AND COALESCE(approval_state, '') != 'pending' AND case_id IN (SELECT id FROM sos_cases WHERE student_id = ? AND status != 'done')`)
+    .run(weeklyUpdateDue(homNay), nowIso(), studentId);
+}
 /** Lượt MT đã sinh PA quy chế này: mốc `opened`/`repeat` mới nhất của Case tạo không muộn hơn PA. */
 function luotSinhPa(iv: any): any | null {
   return db().prepare(`SELECT a.* FROM case_milestones m JOIN assessment_attempts a ON a.id = m.attempt_id

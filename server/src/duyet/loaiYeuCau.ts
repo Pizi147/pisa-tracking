@@ -236,7 +236,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         `SELECT sc.id, sc.owner_user_id, COALESCE(sc.student_id, a.student_id) AS sid, a.class_id, sc.han_xac_nhan AS han
            FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
            JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
-          WHERE sc.status != 'done' AND s.archived_at IS NULL
+          WHERE sc.status != 'done' AND s.archived_at IS NULL AND s.status = 'active'   /* K3-41: em Tạm dừng không bị Báo lên */
             AND sc.han_xac_nhan < ?
             AND NOT EXISTS (SELECT 1 FROM yeu_cau_duyet y WHERE y.loai = 'bao_len_nguyen_nhan' AND y.doi_tuong_loai = 'sos_case'
                              AND y.doi_tuong_id = sc.id AND y.trang_thai = 'cho')`,

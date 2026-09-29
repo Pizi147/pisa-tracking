@@ -465,13 +465,17 @@ function headlineOf(p: Principal, studentId: number, cycleId: number | null) {
   const duPhong: Next[] = [];
   /* Mục 3 (chủ sản phẩm 22/09): TÊN ĐẦY ĐỦ kỹ năng ("Writing Task 2"), không viết tắt "W2". */
   const sk = (r: any) => r.label;
-  /* Mục 1 (chủ sản phẩm 22/09): case từ SOS CHỜ XÁC ĐỊNH NGUYÊN NHÂN là việc chặn đầu chuỗi — xếp TRƯỚC mọi ứng viên khác
-     (hạn = hạn xác định nguyên nhân). PA theo quy chế tự chạy từ lúc tạo (PR-N1, S4-1) — không còn việc "xác nhận PA". */
+  /* Mục 1 (chủ sản phẩm 22/09) + PR-SOS (K3-07): việc tiếp của từng Case lấy từ `viecTiepCuaCase` (thẻ Case của bảng kỹ năng). Xác nhận
+     nguyên nhân / Xác nhận PA là việc chặn đầu chuỗi — xếp TRƯỚC mọi ứng viên khác (hạn = hạn xác nhận). */
   const xacDinh: Next[] = [];
   for (const r of rows) {
     for (const c of r.cases) {
-      if (c.status === 'done') continue;
-      if (c.sos?.awaitingCause) xacDinh.push({ text: `Xác định nguyên nhân ${sk(r)}`, due: c.sos.dueOn ?? null, rank: 0, category: r.category });
+      if (c.status === 'done' || !c.viecTiep) continue;
+      const v = c.viecTiep as { chu: string; han: string | null };
+      if (v.chu === 'Xác nhận nguyên nhân') xacDinh.push({ text: `Xác nhận nguyên nhân ${sk(r)}`, due: v.han, rank: 0, category: r.category });
+      else if (v.chu.startsWith('Xác nhận PA')) xacDinh.push({ text: `Xác nhận PA ${sk(r)}`, due: v.han, rank: 1, category: r.category });
+      else if (v.chu.startsWith('Ghi kết quả cuối')) cands.push({ text: `Ghi kết quả cuối ${sk(r)}`, due: v.han, rank: 1, category: r.category, loai: 'cap-nhat-pa' });
+      else if (v.chu === 'Hoàn thành Case') cands.push({ text: `Hoàn thành Case ${sk(r)}`, due: null, rank: 2, category: r.category });
     }
     if (r.signal) cands.push({ text: `Xác minh SOS ${sk(r)}`, due: r.signal.verifyDue ?? null, rank: 0, category: r.category });
     if (r.state === 'no_plan') cands.push({ text: `Đề ra PA ${sk(r)}`, due: null, rank: 1, category: r.category });
@@ -491,7 +495,8 @@ function headlineOf(p: Principal, studentId: number, cycleId: number | null) {
   });
 
   duPhong.sort((a, b) => (a.due! < b.due! ? -1 : 1));
-  xacDinh.sort((a, b) => (a.due ?? '9999') < (b.due ?? '9999') ? -1 : 1);
+  /* Xác nhận nguyên nhân trước Xác nhận PA (chặn đầu chuỗi), rồi hạn sớm hơn. */
+  xacDinh.sort((a, b) => a.rank - b.rank || ((a.due ?? '9999') < (b.due ?? '9999') ? -1 : 1));
   const chon = xacDinh[0] ?? cands[0] ?? duPhong[0] ?? null;
   return {
     below, signals, openCases: open,
