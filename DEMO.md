@@ -442,3 +442,18 @@ Dựng bằng hàm nghiệp vụ (`server/src/seed/xlmtSeed.ts`), sau ngày demo
 | X2 · huỷ phần còn lại | **Mạc Đức Long** (MB FT 102) | MT1 W S đã huỷ → chip gạch ngang `· đã huỷ`; chip **Cần xếp lại (n)** đếm em này |
 | X3 · MT lịch sử tuần đã qua | **Đoàn Khánh Chi** (MB FT 101) | MT1–MT3 `lịch sử` (đã nhập bù); chọn MT4 tuần 3 tuần trước cho cả 4 kỹ năng → `Tạo MT4 · … · MT lịch sử`; chỉ L tuần đã qua → chặn |
 | X4 · ⋯ ô lớp thường | **Âu Nhật Nam** (MB FOU 12) | Lưới chấm lớp thường: ô L dời sang tuần này vì Báo vắng; ⋯ ô → thao tác theo trạng thái + **Lịch sử** (ngăn Lịch sử một bài) |
+
+## 12. PR-HSM — hồ sơ Mock, nhận xét W/S, GV chấm Speaking (chỉ máy dev)
+Dựng bằng `saveScore` (`server/src/seed/hsmSeed.ts`) sau PR-KCK. Tài khoản gợi ý: **GVBM Phạm Thu Trang** (Speaking MB FT 101),
+**Lê Minh Khoa** (W1) · **Cao Khánh Linh** (W2), **Quản lý Nguyễn Khánh Vy**, **GVCN Trần Ngọc Hà**.
+
+| Kịch bản | Học viên | Bạn sẽ thấy |
+|---|---|---|
+| H1 · hồ sơ Mock đủ | **Tạ Minh Quân** MT3 (MB FT 101) | Năm ô điểm lớn; W `W1 … · W2 …`; S `GV chấm: Phạm Thu Trang`; khối Nhận xét Writing (Task 1 · Task 2) + Speaking |
+| H2 · GV chấm người ngoài | **Nguyễn Minh An** MT1 (MB FT 101) | Ô S `GV chấm: Cô Lan (giám khảo ngoài)` |
+| H3 · đang chấm | **Lương Bảo Anh** MT3 (MB FT 101) | Hồ sơ HV › Mock Test: Kết quả "… còn thiếu 2"; lưới FT cột Trạng thái `Đang chấm · 2/4` |
+| H4 · lượt huỷ | **Phạm Khánh Linh** MT3 | Dải "Đã huỷ · lý do · ai · ngày" + **Mở lại lượt MT3** (Quản lý) |
+| H4 · MT lịch sử | **Đoàn Khánh Chi** MT1–MT3 | Nhãn `lịch sử`, "Nhập bù, không có hạn"; GVCN Hà sửa được ô lớn |
+| H4 · vắng lần 2 chờ duyệt | **Kiều Thu Trang** MT1 (MB FT 102) | Ô S tím `chờ Quản lý duyệt dời lần 2 · hạn …` |
+| H4 · huỷ phần | **Mạc Đức Long** MT1 (MB FT 102) | Ô W, S `Đã huỷ phần thi`; hồ sơ HV nhãn `huỷ phần` |
+| H4 · RF | **Phan Gia Hân** (MB FT RF 12) | Đầu hồ sơ Mock chữ `RF`, `Kỳ vọng x = target`; hồ sơ HV một dòng "Lộ trình RF — kỳ vọng mọi MT bằng target." |

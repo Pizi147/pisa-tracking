@@ -584,3 +584,16 @@ Nguồn: `thiet-ke/NGUON-Rule-v3-YThuc-PhoiHop-2026-09-21.md`. Đặc tả: `thi
   nghị Quản lý duyệt (Q-A). Mở từ thứ Hai tuần thi; không cho MT lịch sử. Lớp thường: Báo vắng có lý do = dấu "-" dời tuần sau, thêm GVCN.
 - **Quản lý sửa / xoá điểm có lý do ở mọi lúc** (chủ sản phẩm chốt 29/09) — không còn chờ đợt hoàn tất (R11 vẫn chặn GVBM sau hoàn tất).
 - **Cần xếp lại (Q7):** kỹ năng vắng chưa có đề nghị chờ + phần thi đã huỷ, lượt còn chạy, không lịch sử. Trễ (chưa chấm) không tính.
+
+## PR-HSM — hồ sơ Mock, nhận xét W/S, GV chấm Speaking (30/09/2026)
+
+- **Nhận xét W/S (YC-13.5):** mỗi **bài nhập** W1, W2, S có một nhận xét, **không bắt buộc**, tối đa 1000 ký tự; L/R không có. Nhận xét
+  **không phải điểm**: sửa không cần lý do, không đổi "Nhập bởi", không tính lại SOS; nhật ký giữ bản trước/sau. Ghi được cả khi ô
+  chưa có điểm, nhưng không với bài vắng / đã huỷ / ngoài phạm vi. Ô **mất hết điểm** (Huỷ điểm, Thi lại, xoá tay) thì nhận xét và GV
+  chấm cũng xoá — nhật ký giữ bản cũ. Quyền sửa nhận xét = quyền sửa chính ô điểm đó (hoàn tất → chỉ Quản lý; MT lịch sử → thêm GVCN).
+- **GV chấm Speaking (T39):** tài khoản nhân viên **hoặc** tên người ngoài (2–100 ký tự). Chọn **một lần** ở đầu cột S của lưới, nhớ
+  trên máy theo lớp × tuần, áp cho các bài S lưu sau đó; sửa riêng một em trong hộp tiêu chí hoặc ở hồ sơ Mock.
+- **Bài đã xác nhận vắng không nhập trong lưới (T53 Q6):** ô hiện "vắng", không ô nhập — nhập bù thì Quản lý "Xếp lại bài vắng" /
+  "Khôi phục" trước.
+- **Hồ sơ Mock:** năm ô điểm lớn L · R · W · S · Overall; ai sửa được bài nào (GVBM đúng kỹ năng · Quản lý · GVCN với MT lịch sử) bấm ô
+  là sửa tại chỗ, sửa điểm đã có vẫn ghi lý do (RB-5). Kết quả đợt dùng mức SOS (chặn trần 3), không đếm số môn trượt.

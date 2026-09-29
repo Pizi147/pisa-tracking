@@ -452,3 +452,15 @@ Một nguồn: `CHU_THAO_TAC` (`shared/domain/thaoTacMt.ts`). Menu hồ sơ Mock
 | Chip lưới | `· vắng` · `· chờ duyệt` · `· trễ` · `· đã huỷ` (tooltip câu đủ) | mã `absent`, `cancelled` |
 | Nút đầu Kế hoạch Test | `Xếp lịch MT…` (Fast Track) · `Xếp lịch Test…` (Lớp thường) | "Xếp lịch hàng loạt…" |
 | Lỗi lý do | `{Thao tác}: cần ghi lý do.` · `{Thao tác}: lý do cần ít nhất 5 ký tự.` | "Thiếu lý do" |
+
+## 16. PR-HSM — 30/09/2026 · hồ sơ Mock, nhận xét W/S, GV chấm Speaking
+
+| Việc | Chữ | Không dùng |
+|---|---|---|
+| Nhận xét một bài (W1, W2, S) | `+ Nhận xét` (dòng gập trong hộp tiêu chí) · nhãn `Nhận xét (không bắt buộc)` · hồ sơ Mock: `Nhận xét Writing` (Task 1 · Task 2) · `Nhận xét Speaking` | "Ghi chú", "Comment" |
+| Người chấm Speaking | `GV chấm: {tên} ▾` (đầu cột S) · `GV chấm: chưa chọn` · người ngoài như "Cô Lan (giám khảo ngoài)" | "Giám khảo", "Examiner" |
+| Nút ghi "-" trên điện thoại | `Vắng` · toast `Đã ghi vắng {môn} · {em}` + **Hoàn tác** (lớp thường thêm ` — dời sang tuần sau`) | "−" trơ trọi |
+| Điền tổng xuống cột (lưới lớp thường) | `Điền cả cột` | "↓" |
+| Lượt đã có ≥ 1 kỹ năng còn thiếu | `Đang chấm · 2/4` | "Đã lên lịch" |
+| Tiêu chí Writing Task 2 | `TR — Task Response` (Task 1 vẫn `TA — Task Achievement`) | "TA" cho Task 2 |
+| Bài đã xác nhận vắng ở lưới | chữ `vắng` · tooltip `Đã xác nhận vắng — Quản lý xếp lại bài trước khi nhập.` | ô nhập mở rồi máy chủ từ chối |
