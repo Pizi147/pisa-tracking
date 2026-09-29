@@ -380,7 +380,7 @@ export function saveRegularScore(
   const prog = a.class_id ? programmeOfClass(a.class_id) : null;
   if (!prog || prog.scoringMode !== 'ratio') throw badRequest('Lượt này không thuộc lớp thường.');
   if (!prog.skills.includes(skill)) {
-    throw badRequest(`Chương trình ${prog.code} không có kỹ năng "${skill}".`);
+    throw badRequest(`Lớp ${prog.name} không có kỹ năng ${tenMon(prog.code, skill)}.`);
   }
   /* Dấu "-" đi đường riêng vì nó KHÔNG phải một điểm: nó là một lần dời lịch (C08). */
   if (patch.noShow !== undefined) {
@@ -505,7 +505,7 @@ export function reportRegularNoShow(
 
   const prog = a.class_id ? programmeOfClass(a.class_id) : null;
   if (!prog || prog.scoringMode !== 'ratio') throw badRequest('Lượt này không thuộc lớp thường.');
-  if (!prog.skills.includes(skill)) throw badRequest(`Chương trình ${prog.code} không có kỹ năng "${skill}".`);
+  if (!prog.skills.includes(skill)) throw badRequest(`Lớp ${prog.name} không có kỹ năng ${tenMon(prog.code, skill)}.`);
 
   /*
    * Ghi dấu là việc của NGƯỜI CHẤM môn đó (hoặc người nhập bù) — cùng cửa với nhập điểm.
@@ -530,7 +530,7 @@ export function reportRegularNoShow(
   return tx(() => {
     const row = ensureSkillRows(attemptId).find((r) => r.skill === skill);
     if (!row) throw badRequest(`Bài này chưa có dòng lịch cho ${skill}.`);
-    if (!row.required) throw badRequest(`Kỹ năng ${skill} không nằm trong phạm vi yêu cầu của bài này.`);
+    if (!row.required) throw badRequest(`Kỹ năng ${tenMon(null, skill)} không nằm trong phạm vi yêu cầu của bài này.`);
 
     const existing = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?')
       .get(attemptId, skill) as any;

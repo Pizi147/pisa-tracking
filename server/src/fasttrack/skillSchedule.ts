@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  ASSESSED_SKILLS, CHU_KY_NANG, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, boMonLich, tuanLich,
+  ASSESSED_SKILLS, CHU_KY_NANG, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, boMonLich, tenMon, tuanLich,
   type AssessedSkill, type SitStatus, type SkillProgress,
 } from '../../../shared/domain/index.ts';
 import { badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -594,7 +594,7 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
     'Bạn không có quyền đổi lịch thi của kỹ năng này.',
   );
   if (attempt.status === 'cancelled') throw badRequest('Đợt này đã huỷ. Mở lại trước khi đổi lịch.');
-  if (!row.required) throw badRequest(`Kỹ năng ${skill} không nằm trong phạm vi yêu cầu của đợt này.`);
+  if (!row.required) throw badRequest(`Kỹ năng ${tenMon(null, skill)} không nằm trong phạm vi yêu cầu của đợt này.`);
 
   const period = db().prepare('SELECT * FROM report_periods WHERE id = ?').get(periodId) as any;
   if (!period) throw notFound('Không tìm thấy tuần');
@@ -747,7 +747,7 @@ export function setSitStatus(p: Principal, attemptId: number, skill: string, sta
     p, { classId: attempt.class_id, studentId: attempt.student_id, skill: row.skill },
     'Bạn không có quyền xác nhận trạng thái thi của kỹ năng này.',
   );
-  if (!row.required) throw badRequest(`Kỹ năng ${skill} không nằm trong phạm vi yêu cầu của đợt này.`);
+  if (!row.required) throw badRequest(`Kỹ năng ${tenMon(null, skill)} không nằm trong phạm vi yêu cầu của đợt này.`);
   if (status === 'absent' && hasScore(attemptId, row.skill)) {
     throw badRequest(`${skill} đã có điểm ở đợt này, không thể xác nhận là vắng.`);
   }

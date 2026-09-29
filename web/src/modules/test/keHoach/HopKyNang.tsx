@@ -237,7 +237,8 @@ function DongKyNangHop({ k, o, khoa, moi, loai, d, noiBat, khaiGiang, tongTuan, 
           aria-label={`${tenMon(ct, k)} — ${d.tick ? 'bỏ khỏi đợt' : 'đưa lại vào đợt'}`} title={d.tick ? 'Bỏ khỏi đợt' : 'Đưa lại vào đợt'} />
       ) : <span />}
       <div className="mt-2.5 text-xs text-slate-200">
-        <b title={tenMon(ct, k)}>{tenMonNgan(ct, k)}</b> <span className="text-slate-400">{tenMon(ct, k)}</span>
+        <b title={tenMon(ct, k)}>{tenMonNgan(ct, k)}</b>
+        {tenMonNgan(ct, k) !== tenMon(ct, k) && <> <span className="text-slate-400">{tenMon(ct, k)}</span></>}
         {loai === 'ft' && k === 'writing' && <span className="ml-1 cursor-help text-slate-500" title="W = chấm cả W1 và W2">ⓘ</span>}
       </div>
       <div className="min-w-0">

@@ -1270,7 +1270,7 @@ export function saveScore(
   const assessed = assessedSkillOf(skill);
   const scheduleRow = ensureSkillRows(attemptId).find((r) => r.skill === assessed)!;
   if (!scheduleRow.required) {
-    throw badRequest(`Kỹ năng ${assessed} không nằm trong phạm vi yêu cầu của đợt này.`);
+    throw badRequest(`Kỹ năng ${tenMon(null, assessed)} không nằm trong phạm vi yêu cầu của đợt này.`);
   }
   /*
    * KHÔNG NHẬP ĐIỂM VÀO PHẦN ĐÃ HUỶ hoặc ĐÃ XÁC NHẬN VẮNG (mục 10.6).

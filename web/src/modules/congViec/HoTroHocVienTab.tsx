@@ -129,6 +129,7 @@ export function HoTroHocVienTab() {
       <div className="flex flex-wrap items-center gap-1.5">
         <CongTacKhung trang="cong-viec" coTatCa value={khung} dem={demKhung}
           onChange={(k) => setParam('khung', k === 'tat-ca' ? null : k)} />
+        {demKhung.ft > 0 && demKhung.thuong > 0 && <span className="mx-1 hidden h-5 w-px sm:block" style={{ background: 'var(--line)' }} />}
         <BoLocDoan ariaLabel="Lọc nhanh" value={loc} onChange={(k) => setParam('loc', k === 'tat-ca' ? null : k)}
           muc={LOC_NHANH.map((k) => ({ key: k, nhan: LOC_NHANH_LABEL[k], so: demHan[k] }))} />
         <span className="mx-1 hidden h-5 w-px sm:block" style={{ background: 'var(--line)' }} />

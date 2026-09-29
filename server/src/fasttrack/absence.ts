@@ -188,7 +188,7 @@ export function requestAbsenceMove(p: Principal, attemptId: number, skills: stri
   if (!list.length) throw badRequest('Chưa chọn kỹ năng nào.');
   const boMon = boMonCuaLuot(db(), attemptId);
   for (const s of list) {
-    if (!boMon.includes(s)) throw badRequest(`Kỹ năng ${s} không hợp lệ.`);
+    if (!boMon.includes(s)) throw badRequest(`Kỹ năng ${tenMon(null, s)} không có trong lượt này.`);
   }
 
   const today = opts.today ?? demoToday();

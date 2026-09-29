@@ -178,7 +178,7 @@ export function LichTestTab() {
             onChange={(k) => datThamSo({ loai: k === 'tat-ca' ? null : k })} />
         )}
         {loai === 'thuong' && (
-          <span className="self-center">
+          <span className="inline-flex min-h-[44px] items-center sm:min-h-[32px]">
             <NutLuat label="Luật lưới lớp thường">
               <span className="block">
                 Mỗi ô hai số: số câu đúng / tổng số câu (Writing, Speaking chấm theo thang điểm thì điểm đạt / tổng

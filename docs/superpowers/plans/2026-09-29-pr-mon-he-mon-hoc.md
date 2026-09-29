@@ -674,6 +674,15 @@ K5-45 T4 (+LOP) · K5-46 T2 · K5-47 T1/T5 · K5-48 T2 · K5-57 T5 · K5-67 T2.
 - **Task 11:** `CODE_MAP.md` (Normal: tên môn, bộ môn một lượt, nguyên nhân theo môn, % Pre FOU; Dùng chung: `CongTacKhung`, `ChonKyNang`,
   Migrate PR-MON) · `TRIEN_KHAI.md` §11.1 khối "Đợt 2 — PR-MON" · `thiet-ke/TU_DIEN_VA_CHU.md` §12 · `thiet-ke/HE_GIAO_DIEN.md` §12 ·
   `plan.md` một dòng nhật ký. Không chạy lại check.
+- **Task 12:** cổng rebase — `origin/main` chỉ thêm `PROMPT_BAN_GIAO_PLANNING.md` (#116), DUYET/MT/NHAP **chưa** merge → rebase sạch.
+  impeccable `audit`: `detect` trên mọi file web đã sửa = `[]`; xem ảnh → `polish`: ⓘ luật lớp thường thẳng hàng công tắc (Lịch
+  Test), vạch ngăn giữa hai nhóm "Tất cả" (Công việc), hộp kỹ năng Pre FOU không in "Tổng hợp Tổng hợp", **lộ mã `PREFOU`** ở đầu hàng
+  lớp Kế hoạch Test và gợi ý mốc Tiến độ lớp → `kyHieuLop`; câu lỗi máy chủ còn lộ mã (`Chương trình PREFOU không có kỹ năng
+  "listening"`, `Kỹ năng listening …`) → `tenMon`. Bấm thử K1–K13 (Playwright kênh Chrome, 1440 + 375 px, seed lại trước lượt cuối):
+  **13/13 đạt**, kết quả `thiet-ke/anh/pr-mon/ket-qua-bam-thu.txt`, 21 ảnh `sau-*`. **Không chụp ảnh "trước"** (phần lớn màn Pre FOU /
+  công tắc khung chưa tồn tại trước PR này). DB demo: `migrate` → lượt Pre FOU vẫn 1 dòng `tong_hop`; `chay-thu:mon` (1) 0 · (2) 2 ·
+  (3) **1** (lớp demo `MB Pre FOU 03` — bản chính phải 0) · (4) 0/0. `npm run check` 1478 + 20 tốc độ. `/ponytail-review`: net −1
+  (không sửa).
 
 ## Chủ sản phẩm chốt 29/09
 
