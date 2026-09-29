@@ -10,9 +10,8 @@ import { allProgrammes, mocChupVaoLop, programmeByCode } from '../normal/regular
 import { activeRouteCodes } from '../platform/sysconfig.ts';
 import { addDays, badRequest, isIsoDate, kiemKieuO, normalizeName, notFound, nowIso, padCode } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
-import { addJourney, writeAudit } from '../platform/audit.ts';
-import { ensurePeriod, ensurePeriods, mondayOf, periodById } from '../platform/week.ts';
-import { ensureSkillRows } from '../fasttrack/skillSchedule.ts';
+import { writeAudit } from '../platform/audit.ts';
+import { ensurePeriods, mondayOf, periodById } from '../platform/week.ts';
 import { taoMtMacDinhLo } from '../fasttrack/mtMacDinh.ts';
 
 /**
