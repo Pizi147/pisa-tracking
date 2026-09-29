@@ -571,6 +571,20 @@ export async function runPrHvlTests(t: YThucTestKit) {
     assert(!/disabled=\{coLoi \|\| !data\?\.canEdit\}/.test(tp), 'nút Tiếp tục không được khoá vì lỗi (phải bấm được để hiện lỗi)');
   });
 
+  // ------------------------------------------------------------------ Task 9 · điện thoại: bảng → thẻ (D2)
+
+  check('PR-HVL (9) · D2: TheDong dùng chung; StudentsPage/BangHocVienLop, ClassRoster, BangDiemLopThuong, BangCanHoTro có nhánh điện thoại (< 640 px) dùng TheDong; tablet cuộn ngang trong vùng bảng, cột tên dính', () => {
+    const td = web('ui/TheDong.tsx');
+    assert(/export function TheDong/.test(td) && /export function useDienThoai/.test(td) && /max-width: 639px/.test(td) && /tabular-nums/.test(td), 'TheDong.tsx');
+    for (const f of ['modules/students/BangHocVienLop.tsx', 'modules/students/ClassRoster.tsx', 'modules/classes/BangDiemLopThuong.tsx', 'modules/classes/BangCanHoTro.tsx']) {
+      assert(/<TheDong\b/.test(web(f)), `${f} chưa dùng TheDong`);
+    }
+    const sp = web('modules/students/StudentsPage.tsx');
+    assert(/useDienThoai\(\)/.test(sp) && /<HopLop key=\{c\.id\} the /.test(sp) && /if \(the\)/.test(sp), 'StudentsPage phải có nhánh thẻ gập ở điện thoại');
+    assert(/aria-expanded=\{mo\}/.test(sp), 'thẻ lớp gập cần aria-expanded');
+    assert(/sticky-col/.test(web('modules/students/ClassRoster.tsx')) && /sticky-col/.test(web('modules/classes/BangDiemLopThuong.tsx')), 'cột tên dính (640–1023 px)');
+  });
+
   check('PR-HVL (2) · roster: `history[i].lichSu` là cờ thật của mốc; Standing có `nextWeekStart` (cột Sắp tới)', () => {
     let coMoc = 0;
     for (const lopId of (conn.prepare(`SELECT id FROM classes WHERE status = 'active'`).all() as any[]).map((r) => r.id as number)) {

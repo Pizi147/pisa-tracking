@@ -7,6 +7,7 @@ import { Alert, Card, Empty, ErrorState, Level, NhanTrangThai, SectionNote, Skel
 import { Nhan, toneNhanTuBadge } from '../../ui/Nhan.tsx';
 import { HangNhom } from '../../ui/HangNhom.tsx';
 import { CongTacKhung, khungDaNho, type KhungLoc } from '../../ui/CongTacKhung.tsx';
+import { useDienThoai } from '../../ui/TheDong.tsx';
 import { attemptHref, caseStatusLabel, sosTone } from '../../lib/format.ts';
 import type { Branch } from '../../ui/Filters.tsx';
 import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
@@ -70,6 +71,7 @@ export default function StudentsPage() {
   const [draftQ, setDraftQ] = useState(q);
   const [them, setThem] = useState<{ id: number; code: string } | null | 'dong'>('dong');
   const [taoLop, setTaoLop] = useState(false);
+  const dienThoai = useDienThoai();
 
   const setParam = useCallback((patch: Record<string, string | null>) => {
     const next = new URLSearchParams(params);
@@ -223,7 +225,18 @@ export default function StudentsPage() {
          * Điện thoại: cả khối cuộn ngang, không dính.
          */
         <div className="space-y-3">
-          {nhomLop.map((g) => (
+          {/* Điện thoại (< 640 px, D2): mỗi lớp một thẻ gập, mỗi em một thẻ con — không bảng, không cuộn ngang. */}
+          {dienThoai && nhomLop.map((g) => (
+            <section key={g.k} className="space-y-2" aria-label={g.k === 'ft' ? 'Lớp Fast Track' : 'Lớp thường'}>
+              {nhomLop.length > 1 && <h2 className="m-0 px-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{g.k === 'ft' ? 'Fast Track' : 'Lớp thường'}</h2>}
+              {g.lop.map((c) => (
+                <HopLop key={c.id} the lop={c} mo={openIds.includes(c.id)} onDoiMo={() => doiMo(c.id)}
+                  chiHien={dangLoc ? (idsTheoLop.get(c.id) ?? new Set()) : null} sapXep={sapXep}
+                  onThemHocVien={() => setThem({ id: c.id, code: c.code })} onDoi={trang.reload} />
+              ))}
+            </section>
+          ))}
+          {!dienThoai && nhomLop.map((g) => (
             <section key={g.k} className="card overflow-x-auto md:overflow-visible" aria-label={g.k === 'ft' ? 'Lớp Fast Track' : 'Lớp thường'}>
               <div className="md:sticky md:top-0 md:z-10" aria-hidden>
                 <table className="w-full min-w-[860px] table-fixed text-sm">
@@ -271,9 +284,11 @@ function CotBangLop() {
  * HÀNG LỚN của một lớp (đặc tả §3.6; PR-UX0 N-2): ▸ · mã (mở Hồ sơ lớp) · chương trình · n HV · GVCN · tối đa 2 badge (+n) · ⋯.
  * ⋯ của lớp: Hồ sơ lớp · Nhập điểm Test (Q11, Q6) · + Học viên — chỉ mục người xem làm được.
  */
-function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi }: {
+function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, the = false }: {
   lop: LopTrenTrang; mo: boolean; onDoiMo: () => void; chiHien: Set<number> | null; sapXep: SapXep;
   onThemHocVien: () => void; onDoi: () => void;
+  /** Điện thoại: thẻ gập thay cho `<tbody>` (cùng nội dung: mã · chương trình · n HV · GVCN · badge · ⋯). */
+  the?: boolean;
 }) {
   const navigate = useNavigate();
   const { session } = useSession();
@@ -301,6 +316,42 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi }: {
     ...(lop.viewer.coTheSuaHocVien ? [{ key: 'them', nhan: '+ Học viên', onChon: onThemHocVien }] : []),
   ];
 
+  const menuBadgeAn = b.an.length > 0 && (
+    /* B4: "+n" bấm được — mỗi mục là một badge còn ẩn, bấm đi đúng đích (không có đích riêng thì mở Hồ sơ lớp, nơi số đó hiện). */
+    <MenuDong bieuTuong={`+${b.an.length}`} nhan={`${b.an.length} việc khác của lớp ${lop.code}`}
+      muc={b.an.map((x) => ({ key: x.key, nhan: x.nhan, onChon: () => navigate(denBadge(x) ?? `/hoc-vien/lop/${lop.id}`) }))} />
+  );
+  const cacBadge = b.hien.map((x) => {
+    const den = denBadge(x);
+    return den
+      ? <Nhan key={x.key} tone={toneNhanTuBadge(x.tone)} title={x.title} onClick={() => navigate(den)}>{x.nhan}</Nhan>
+      : <Nhan key={x.key} tone={toneNhanTuBadge(x.tone)} title={x.title}>{x.nhan}</Nhan>;
+  });
+
+  if (the) {
+    return (
+      <div className="card overflow-hidden" aria-label={`Lớp ${lop.code}`}>
+        <div className="flex items-start gap-2 p-3">
+          <button type="button" aria-expanded={mo} onClick={onDoiMo}
+            className="flex min-h-[44px] min-w-0 flex-1 cursor-pointer items-start gap-2 border-0 bg-transparent p-0 text-left">
+            <svg aria-hidden viewBox="0 0 8 8" width="8" height="8" className={`mt-[7px] shrink-0 text-slate-400 transition-transform ${mo ? 'rotate-90' : ''}`}>
+              <path d="M2.5 1 6 4 2.5 7" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span className="min-w-0">
+              <span className="block font-extrabold text-slate-100">{lop.code}</span>
+              <span className="block text-[11px] text-slate-400">
+                {lop.programmeName ?? '—'} · {lop.studentCount} HV{lop.gvcn && <> · GVCN {lop.gvcn.name}</>}
+              </span>
+            </span>
+          </button>
+          <MenuDong muc={mucLop} nhan="Thao tác với lớp" />
+        </div>
+        {(cacBadge.length > 0 || menuBadgeAn) && <div className="flex flex-wrap items-center gap-1.5 px-3 pb-2">{cacBadge}{menuBadgeAn}</div>}
+        {mo && <BangHocVienLop the lop={lop} chiHien={chiHien} sapXep={sapXep} onDoi={onDoi} soCot={1} />}
+      </div>
+    );
+  }
+
   return (
     <tbody>
       <HangNhom mo={mo} onMo={onDoiMo} nhan={`lớp ${lop.code}`} soCotDau={3} className={mo ? 'hang-lon-dinh' : ''}
@@ -317,19 +368,7 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi }: {
           </span>
         }>
         <td className="px-3" colSpan={3}>
-          <span className="flex items-center justify-end gap-1.5">
-            {b.hien.map((x) => {
-              const den = denBadge(x);
-              return den
-                ? <Nhan key={x.key} tone={toneNhanTuBadge(x.tone)} title={x.title} onClick={() => navigate(den)}>{x.nhan}</Nhan>
-                : <Nhan key={x.key} tone={toneNhanTuBadge(x.tone)} title={x.title}>{x.nhan}</Nhan>;
-            })}
-            {b.an.length > 0 && (
-              /* B4: "+n" bấm được — mỗi mục là một badge còn ẩn, bấm đi đúng đích (không có đích riêng thì mở Hồ sơ lớp, nơi số đó hiện). */
-              <MenuDong bieuTuong={`+${b.an.length}`} nhan={`${b.an.length} việc khác của lớp ${lop.code}`}
-                muc={b.an.map((x) => ({ key: x.key, nhan: x.nhan, onChon: () => navigate(denBadge(x) ?? `/hoc-vien/lop/${lop.id}`) }))} />
-            )}
-          </span>
+          <span className="flex items-center justify-end gap-1.5">{cacBadge}{menuBadgeAn}</span>
         </td>
         <td className="px-2 text-center"><MenuDong muc={mucLop} nhan="Thao tác với lớp" /></td>
       </HangNhom>

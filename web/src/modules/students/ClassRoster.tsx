@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Empty, ExamPlanText, Level, Outcome, Skeleton, TargetText, Th } from '../../ui/ui.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
+import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
 import { CanhBaoYThuc } from '../classes/CanhBaoYThuc.tsx';
 import { duongViecTiep, nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from '../classes/thaoTacDongHocVien.tsx';
@@ -79,6 +80,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents }: {
   /* K2-11, Q11: cố định 2 mốc — đủ trả lời "em đang lên hay xuống"; bỏ công tắc số mốc. */
   const depth = 2;
   const tt = useThaoTacDongHocVien({ laLopThuong: false, quyen, maLop, onDone: () => { reload(); onDoi(); } });
+  const dienThoai = useDienThoai();
 
   if (loading) return <div className="surface-2 rounded-lg p-3"><Skeleton rows={3} /></div>;
   if (error) {
@@ -103,6 +105,55 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents }: {
   const skills = FT_SKILLS;
   const skillLabel = skillShort;
 
+  /* D2: điện thoại (< 640 px) — mỗi em một thẻ: Target · Dự kiến thi · mốc gần nhất (OVR + L R W S thẳng hàng) · Theo dõi. */
+  if (dienThoai) {
+    return (
+      <div className="surface-2 overflow-hidden rounded-lg">
+        <p className="m-0 border-b px-3 py-2 text-[11px] text-slate-500" style={{ borderColor: 'var(--line)' }}>Mốc gần nhất của từng em (điểm 2 mốc gần nhất ở bảng trên máy tính).</p>
+        {data.map((s) => {
+          const h = s.history[0];
+          return (
+            <TheDong key={s.id} className={s.status !== 'active' ? 'row-muted' : ''}
+              dau={(
+                <>
+                  <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                    <Link className="link font-semibold" to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>
+                    <span className="text-[10px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
+                    <MissingBadge items={s.missing} gon />
+                    <CanhBaoYThuc cb={s.canhBaoYThuc} />
+                  </span>
+                  <span className="mt-1 block"><KetLuan row={s} /></span>
+                </>
+              )}
+              hanhDong={<MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, false, s.timeline) })} />}
+              dong={[
+                { nhan: 'Target', noiDung: <TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /> },
+                { nhan: 'Dự kiến thi', noiDung: <ExamPlanText plan={s.examPlan} /> },
+                { nhan: 'Mốc', noiDung: !h ? <span className="text-slate-600">chưa có điểm</span> : (
+                  <>
+                    <Link className="no-underline" to={duongHoSoHocVien(s.id, { dot: h.id })} title={`Mở hồ sơ ${s.fullName} ở ${h.label}`}>
+                      <span className="text-slate-200">{h.label}</span>
+                      {h.lichSu && <> <ChipLichSu /></>}
+                    </Link>
+                    {' · OVR '}<Band v={h.overall} kyVong={h.expectation ?? null} faded={false} lichSu={h.lichSu} />
+                    <span className="mt-0.5 grid grid-cols-4 gap-x-2">
+                      {(['listening', 'reading', 'writing', 'speaking'] as const).map((k) => (
+                        <span key={k}><span className="text-slate-500">{skillLabel(k)} </span>
+                          <Band v={k === 'writing' ? h.writing ?? null : h.bands?.[k] ?? null} kyVong={h.expectation ?? null} faded={false} lichSu={h.lichSu} />
+                        </span>
+                      ))}
+                    </span>
+                  </>
+                ) },
+                { nhan: 'Theo dõi', noiDung: <FollowCell row={s} classId={classId} /> },
+              ]} />
+          );
+        })}
+        {tt.panels}
+      </div>
+    );
+  }
+
   return (
     <div className="surface-2 rounded-lg">
       <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 border-b"
@@ -121,7 +172,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents }: {
           </colgroup>
           <thead>
             <tr>
-              <Th hint="Tên em, và một câu về kết quả mốc gần nhất của em.">Học viên</Th>
+              <Th hint="Tên em, và một câu về kết quả mốc gần nhất của em." className="sticky-col">Học viên</Th>
               <Th align="right" hint="Điểm mục tiêu của lộ trình em đang học. KCK = không cam kết đầu ra, không tính SOS.">Target</Th>
               <Th hint="Kỳ thi IELTS thật, ở đúng mức chắc chắn đang biết: tuần, hoặc mới có tháng, hoặc chưa xác định.">
                 Dự kiến thi
@@ -149,7 +200,8 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents }: {
               const span = Math.max(rows.length, 1);
               return (
                 <tr key={s.id} className={`row-hover align-top ${s.status !== 'active' ? 'row-muted' : ''}`}>
-                  <td className="td">
+                  {/* 640–1023 px: bảng cuộn ngang TRONG vùng bảng, cột tên dính (mỗi lớp một bảng nên không bám cả trang). */}
+                  <td className="td sticky-col [background:var(--surface-2)]">
                     <span className="flex min-w-0 flex-wrap items-center gap-1.5">
                       <Link className="link" to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>
                       <span className="text-[10px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>

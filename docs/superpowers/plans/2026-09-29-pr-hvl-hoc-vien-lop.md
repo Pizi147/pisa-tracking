@@ -539,4 +539,11 @@ Phần "n em chờ Quản lý quyết" thuộc PR-LT2b (không làm).
 `standingFor`". `/students/1/lo-trinh-tiep` 12 → 20 (panel mở hiếm, một em; kế hoạch không đặt trần). Đã ghi trần `TRAN` cho transition = đo + 2 (37; QT 36). Nếu planning muốn giữ +5: web chỉ cần truyền `standing` từ roster sang hai panel (đã có ở `ClassRoster` / bảng lớp) thay vì máy chủ trả — nhưng trái lời kế hoạch "máy chủ trả thêm `ketQua`".
 Không phép kiểm cũ nào phải sửa (không phép nào đọc nguồn ba file này).
 
+**Task 9 (30/09) — 1760 phép kiểm.** `web/src/ui/TheDong.tsx` (mới): `useDienThoai()` (`matchMedia (max-width: 639px)`, chỉ MỘT biến thể được vẽ — không vẽ cả bảng lẫn thẻ rồi ẩn bằng CSS để khỏi tải roster hai lần) + `TheDong` (đầu thẻ: tên đậm + mã + badge + ⋯ do `MenuDong` tự nới 44 px · các dòng `nhãn · giá trị` theo đúng thứ tự cột, `tabular-nums`).
+**Khác kế hoạch (chữ):** kế hoạch ghi "bảng `hidden sm:block`, thẻ `sm:hidden`"; làm bằng hook `useDienThoai` thay cho lớp CSS `sm:hidden` — cùng ngưỡng 640 px, nhưng không tải/vẽ hai lần. Phép kiểm "bốn file có nhánh `sm:hidden`" viết lại thành "bốn file dùng `<TheDong>` + `useDienThoai`".
+Dùng ở: Học viên & Lớp (`StudentsPage` → `HopLop the` = thẻ lớp gập có `aria-expanded`, badge + "+n" + ⋯; `BangHocVienLop the` = mỗi em một thẻ: Kết quả · Mục tiêu/Khoá · Sắp tới · Case · Việc tiếp, hàng "Cả lớp" thành một dòng chữ; ô Kết quả tách thành `KetQuaOHocVien` dùng chung bảng và thẻ) ·
+`ClassRoster` (Điểm FT: Target · Dự kiến thi · Mốc `MT2 · OVR` + L R W S thẳng hàng 4 cột · Theo dõi; MT lịch sử xám + nhãn) · `BangDiemLopThuong` (mỗi mốc một dòng `L 14/20 · R … · %`) · `BangCanHoTro` (mỗi Case của hàng kỹ năng một thẻ: Trạng thái · Phương án · Việc tiếp; `DongCase` dùng chung `cacPa`/`cauViec` cho bảng và thẻ).
+640–1023 px: `ClassRoster`/`BangDiemLopThuong` giữ bảng cuộn ngang TRONG vùng bảng, cột tên dính bằng lớp `sticky-col` sẵn có (mỗi lớp một bảng nên không bám cả trang). `impeccable adapt`: đọc reference + áp dụng (một cột, ô bấm 44 px, không hover-only); `detect` sạch; kiểm 375 px / 768 px bằng mắt một lần ở Task 11.
+Chuyển cho PR-UXD: `TheDong` là mẫu D1 dùng lại cho các bảng còn lại (D1, D3–D9).
+
 > **Chủ sản phẩm chốt 30/09:** **có** cột "Sắp tới" (M3) ở danh sách Học viên & Lớp.

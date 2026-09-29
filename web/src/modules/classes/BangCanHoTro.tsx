@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Empty, ErrorState, Level, NhanTrangThai, Skeleton, TargetText } from '../../ui/ui.tsx';
 import { ViecTiep } from '../../ui/ViecTiep.tsx';
+import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { sosTone } from '../../lib/format.ts';
@@ -57,6 +58,7 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
   const [moThem, setMoThem] = useState<Set<string>>(new Set());
   const tai = () => { trang.reload(); roster.reload(); onDoi(); };
   const tt = useThaoTacDongHocVien({ laLopThuong, quyen, maLop, onDone: tai });
+  const dienThoai = useDienThoai();
   const rosterTheoEm = useMemo(() => new Map((roster.data ?? []).map((s) => [s.id, s])), [roster.data]);
   const d = trang.data;
   const em = useMemo(() => sapEmCanHoTro(d?.em ?? []), [d]);
@@ -143,7 +145,7 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
                 return (
                   <div key={h.khoa}>
                     {(hienHet ? h.cases : h.hien).map((c, i) => (
-                      <DongCase key={c.id} h={h} c={c} dau={i === 0} ct={ct} homNay={homNay}
+                      <DongCase key={c.id} h={h} c={c} dau={i === 0} ct={ct} homNay={homNay} the={dienThoai}
                         onMo={(viec, paId) => setNgan({ caseId: c.id, viec, paId, em: e.ten })} />
                     ))}
                     {h.them > 0 && (
@@ -172,8 +174,10 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
 }
 
 /** Một dòng Case trong hàng kỹ năng: Kỹ năng (chỉ dòng đầu) · Case · Phương án đang làm · Việc tiếp + hạn. */
-function DongCase({ h, c, dau, ct, homNay, onMo }: {
+function DongCase({ h, c, dau, ct, homNay, onMo, the = false }: {
   h: HangKyNang<CaseCua>; c: CaseCua; dau: boolean; ct: string | null; homNay: string;
+  /** Điện thoại (D2): mỗi Case của hàng kỹ năng là một `TheDong` (mockup M4 "trên điện thoại"). */
+  the?: boolean;
   onMo: (viec?: 'ghi-ket-qua' | 'xac-nhan' | 'xac-nhan-pa', paId?: number) => void;
 }) {
   const [viec] = viecTiepCuaEm({ nhapDiem: null, cases: [{ caseId: c.id, topic: c.topic, viecTiep: c.viecTiep }], yThuc: null, homNay, chuongTrinh: ct });
@@ -181,6 +185,36 @@ function DongCase({ h, c, dau, ct, homNay, onMo }: {
   const loai = !viec ? undefined : viec.viec.startsWith('Xác nhận nguyên nhân') ? 'xac-nhan' as const
     : viec.viec.startsWith('Xác nhận PA') ? 'xac-nhan-pa' as const : d?.ghiKetQua && d.paId != null ? 'ghi-ket-qua' as const : undefined;
   const dangLam = c.pas.filter((p) => !p.xong);
+  const cacPa = dangLam.length === 0 ? <span className="text-slate-600">—</span> : dangLam.map((p) => (
+    <span key={p.id} className="block" data-pa-id={p.id}>
+      <span className="text-slate-200">{p.batBuoc && <span title="PA theo quy chế" className="mr-1 inline-flex align-middle"><KhoaQuyChe /></span>}{p.ten}</span>
+      {p.choXacNhan ? <span className="text-slate-500"> · Chờ xác nhận</span>
+        : p.choDuyet ? <span className="text-slate-500"> · Chờ Quản lý duyệt</span>
+        : <span className="text-slate-500">{[p.nguoi, p.mocChu].filter(Boolean).map((x) => ` · ${x}`).join('')}</span>}
+    </span>
+  ));
+  const cauViec = viec ? <ViecTiep v={viec} onBam={() => onMo(loai, d?.paId)} /> : <span className="text-slate-600">—</span>;
+  if (the) {
+    return (
+      <TheDong
+        dau={(
+          <span className="block min-w-0">
+            <span className="text-xs font-semibold text-slate-300" title={h.tenDu}>{h.nhan}</span>{' · '}
+            <button type="button" className="link cursor-pointer border-0 bg-transparent p-0 text-left text-xs font-semibold" title={c.tieuDe}
+              onClick={() => onMo()}><TenCase c={{ title: c.tieuDe, tenSos: c.tenSos }} /></button>
+            {(c.nguyenNhan || c.moTu) && <span className="block text-[11.5px] text-slate-500">{[c.nguyenNhan, c.moTu].filter(Boolean).join(' · ')}</span>}
+          </span>
+        )}
+        dong={[
+          { nhan: 'Trạng thái', noiDung: (
+            <span className="flex flex-wrap items-center gap-x-1.5"><NhanTrangThai t={c.trangThai.t} title={c.trangThai.chu} />
+              {c.banGiaoTu && <span className="text-slate-500" title="Case mang từ lớp trước sang">từ {c.banGiaoTu}</span>}</span>
+          ) },
+          { nhan: 'Phương án', noiDung: <span className="text-[11.5px]">{cacPa}</span> },
+          { nhan: 'Việc tiếp', noiDung: cauViec },
+        ]} />
+    );
+  }
   return (
     <div className={`px-3 py-2 ${LUOI}`}>
       <span className={`text-xs font-semibold text-slate-300 ${dau ? '' : 'md:invisible'}`} title={h.tenDu}>{h.nhan}</span>
@@ -193,19 +227,8 @@ function DongCase({ h, c, dau, ct, homNay, onMo }: {
           {c.banGiaoTu && <span title="Case mang từ lớp trước sang">từ {c.banGiaoTu}</span>}
         </span>
       </span>
-      <span className="min-w-0 text-[11.5px] text-slate-300">
-        {dangLam.length === 0 ? <span className="text-slate-600">—</span> : dangLam.map((p) => (
-          <span key={p.id} className="block" data-pa-id={p.id}>
-            <span className="text-slate-200">{p.batBuoc && <span title="PA theo quy chế" className="mr-1 inline-flex align-middle"><KhoaQuyChe /></span>}{p.ten}</span>
-            {p.choXacNhan ? <span className="text-slate-500"> · Chờ xác nhận</span>
-              : p.choDuyet ? <span className="text-slate-500"> · Chờ Quản lý duyệt</span>
-              : <span className="text-slate-500">{[p.nguoi, p.mocChu].filter(Boolean).map((x) => ` · ${x}`).join('')}</span>}
-          </span>
-        ))}
-      </span>
-      <span className="min-w-0">
-        {viec ? <ViecTiep v={viec} onBam={() => onMo(loai, d?.paId)} /> : <span className="text-[11.5px] text-slate-600">—</span>}
-      </span>
+      <span className="min-w-0 text-[11.5px] text-slate-300">{cacPa}</span>
+      <span className="min-w-0">{cauViec}</span>
     </div>
   );
 }

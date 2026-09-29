@@ -1,5 +1,5 @@
 import type { NhanYThucEm } from '@shared/domain/index.ts';
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
@@ -8,6 +8,7 @@ import { QuaHan } from '../../ui/Nhan.tsx';
 import { DanhSachViecTiep } from '../../ui/ViecTiep.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { HangCon } from '../../ui/HangNhom.tsx';
+import { TheDong } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { fmtBand, sosTone } from '../../lib/format.ts';
 import { MissingBadge } from './MissingBadge.tsx';
@@ -47,12 +48,14 @@ export type LopChoBang = {
  * cột do trang Học viên & Lớp dựng MỘT lần cho mỗi nhóm khung. Bảy cột: Học viên (tên đậm, mã 6 số mờ) · Kết quả gần nhất (chính + tối đa
  * hai dòng chữ, không "…") · Mục tiêu (FT) / Khoá (lớp thường) · Sắp tới · Case · Việc tiếp theo (bấm được) · ⋯. Việc Nhập điểm trùng
  * chữ ở ≥ 2 em thành MỘT hàng "Cả lớp" đầu lớp. `chiHien` = id học viên còn lại sau chip lọc / ô tìm (máy chủ tính); `null` = mọi em đang học.
- * Nằm ở: Học viên & Lớp (menu trái) → mở một lớp.
+ * Nằm ở: Học viên & Lớp (menu trái) → mở một lớp. Điện thoại (< 640 px, D2): `the` = mỗi em một `TheDong` thay vì `<tr>` (cùng dữ liệu, cùng thứ tự cột).
  */
-export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot }: {
+export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false }: {
   lop: LopChoBang; chiHien: Set<number> | null; sapXep: SapXep; onDoi: () => void;
   /** Số cột của bảng ngoài — để hàng lỗi / đang tải / rỗng trải hết bề ngang. */
   soCot: number;
+  /** Vẽ thẻ (điện thoại) thay vì hàng bảng. */
+  the?: boolean;
 }) {
   const { homNay } = useNgayNghiepVu();
   const thuong = lop.scoringMode === 'ratio';
@@ -76,19 +79,67 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot }: {
         tuanKetThuc: lop.tuanKetThuc, tiepTheo: s.tiepTheo, nhacLoTrinh: !!lop.nhacLoTrinh && s.chuaLoTrinh, homNay })
     : null;
 
+  const trong = (n: ReactNode) => (the ? <div>{n}</div> : <HangCon><td colSpan={soCot}>{n}</td></HangCon>);
   if (error) {
-    return (
-      <HangCon><td colSpan={soCot} className="px-4 py-3 text-xs text-bad">
+    return trong(
+      <div className="px-4 py-3 text-xs text-bad">
         {error.message} <button type="button" className="btn btn-sm ml-2" onClick={reload}>Thử lại</button>
-      </td></HangCon>
+      </div>,
     );
   }
-  if (loading || !data) return <HangCon><td colSpan={soCot} className="p-3"><Skeleton rows={3} /></td></HangCon>;
+  if (loading || !data) return trong(<div className="p-3"><Skeleton rows={3} /></div>);
   if (!rows.length) {
+    return trong(<Empty title={chiHien ? 'Không có học viên nào khớp bộ lọc trong lớp này' : 'Lớp chưa có học viên'} />);
+  }
+
+  if (the) {
     return (
-      <HangCon><td colSpan={soCot}>
-        <Empty title={chiHien ? 'Không có học viên nào khớp bộ lọc trong lớp này' : 'Lớp chưa có học viên'} />
-      </td></HangCon>
+      <div>
+        {chung && (
+          <p className="m-0 border-t px-3 py-2 text-xs" style={{ borderColor: 'var(--line)' }}>
+            <span className="text-slate-500">Cả lớp: </span>
+            <span className="text-slate-200">
+              {denChung ? <Link to={denChung} className="link">{chung.viec.viec}</Link> : chung.viec.viec}
+              {chung.viec.quaHanNgay !== null ? <> <QuaHan ngay={chung.viec.quaHanNgay} /></>
+                : chung.viec.han ? <span className="text-slate-500"> · {chung.viec.han}</span> : null}
+            </span>
+            <span className="text-slate-500"> · {chung.soEm} em{denChung ? ' →' : ''}</span>
+          </p>
+        )}
+        {rows.map((s) => {
+          const k = ketQuaGanNhat(s.standing);
+          const khoa = khoaCua(s);
+          const sapToi = s.standing?.nextAttemptLabel
+            ? `${s.standing.nextAttemptLabel}${s.standing.nextWeekStart ? ` · ${tuanLich(s.standing.nextWeekStart, homNay)}` : ''}` : null;
+          return (
+            <TheDong key={s.id} className={s.status !== 'active' ? 'row-muted' : ''}
+              dau={(
+                <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                  <Link className="link font-semibold" to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>
+                  <span className="text-[10px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
+                  <MissingBadge items={s.missing} gon />
+                  <CanhBaoYThuc cb={s.canhBaoYThuc} />
+                </span>
+              )}
+              hanhDong={(
+                <MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(lop.id, thuong, s.timeline) })} />
+              )}
+              dong={[
+                { nhan: 'Kết quả', noiDung: <KetQuaOHocVien k={k} standing={s.standing} thuong={thuong} /> },
+                { nhan: thuong ? 'Khoá' : 'Mục tiêu', noiDung: thuong
+                  ? <>{khoa?.chinh}{khoa?.phu && <span className="block text-[11px] text-slate-500">{khoa.phu}</span>}</>
+                  : <TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /> },
+                { nhan: 'Sắp tới', noiDung: sapToi ?? <span className="text-slate-600">—</span> },
+                { nhan: 'Case', noiDung: s.openCases || <span className="text-slate-600">—</span> },
+                { nhan: 'Việc tiếp', noiDung: (
+                  <DanhSachViecTiep viec={conLai.get(s.id) ?? []}
+                    den={(v) => duongViecTiep(v, { studentId: s.id, classId: lop.id, laLopThuong: thuong, timeline: s.timeline })} />
+                ) },
+              ]} />
+          );
+        })}
+        {createPortal(tt.panels, document.body)}
+      </div>
     );
   }
 
@@ -122,19 +173,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot }: {
                 <CanhBaoYThuc cb={s.canhBaoYThuc} />
               </span>
             </td>
-            <td className="td">
-              <span className="flex flex-wrap items-center gap-x-1.5">
-                <span className="text-sm font-bold tabular-nums text-slate-100">{k.chinh}</span>
-                {k.lech && <span className="text-[11px] font-semibold tabular-nums text-bad" title={`Dưới kỳ vọng ${k.lech.replace('−', '')}`}>{k.lech}</span>}
-                {k.dat && <span className="text-[10px] text-slate-400" title={thuong ? 'Đạt mọi môn' : 'Đạt kỳ vọng'}>✓</span>}
-                {k.sos && (
-                  <Level tone={sosTone(s.standing?.sosLevel ?? null)} dut={k.sosTamThoi}
-                    title={k.sosTamThoi ? 'Tạm thời: chưa đủ điểm các môn' : undefined}>{k.sos}{k.sosTamThoi ? ' tạm thời' : ''}</Level>
-                )}
-              </span>
-              {k.dong1 && <span className="block text-[12px] leading-4 text-slate-500">{k.dong1}</span>}
-              {k.dong2 && <span className="block text-[12px] leading-4 text-slate-500">{k.dong2}</span>}
-            </td>
+            <td className="td"><KetQuaOHocVien k={k} standing={s.standing} thuong={thuong} /></td>
             <td className="td">
               {thuong ? (
                 <>
@@ -163,6 +202,25 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot }: {
         );
       })}
       {createPortal(tt.panels, document.body)}
+    </>
+  );
+}
+
+/** Ô Kết quả gần nhất — chung cho hàng bảng và thẻ điện thoại: số chính + độ lệch FT + ✓ + SOS (FT) và tối đa hai dòng chữ 12 px, không cắt "…". */
+function KetQuaOHocVien({ k, standing, thuong }: { k: ReturnType<typeof ketQuaGanNhat>; standing: KetQuaVao | null; thuong: boolean }) {
+  return (
+    <>
+      <span className="flex flex-wrap items-center gap-x-1.5">
+        <span className="text-sm font-bold tabular-nums text-slate-100">{k.chinh}</span>
+        {k.lech && <span className="text-[11px] font-semibold tabular-nums text-bad" title={`Dưới kỳ vọng ${k.lech.replace('−', '')}`}>{k.lech}</span>}
+        {k.dat && <span className="text-[10px] text-slate-400" title={thuong ? 'Đạt mọi môn' : 'Đạt kỳ vọng'}>✓</span>}
+        {k.sos && (
+          <Level tone={sosTone(standing?.sosLevel ?? null)} dut={k.sosTamThoi}
+            title={k.sosTamThoi ? 'Tạm thời: chưa đủ điểm các môn' : undefined}>{k.sos}{k.sosTamThoi ? ' tạm thời' : ''}</Level>
+        )}
+      </span>
+      {k.dong1 && <span className="block text-[12px] leading-4 text-slate-500">{k.dong1}</span>}
+      {k.dong2 && <span className="block text-[12px] leading-4 text-slate-500">{k.dong2}</span>}
     </>
   );
 }
