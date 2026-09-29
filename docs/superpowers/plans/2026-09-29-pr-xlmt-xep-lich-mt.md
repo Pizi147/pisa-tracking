@@ -631,6 +631,13 @@ if (chuaQua.length) luuY('daThiToiMt', `Đã thi tới MT${daThiToiMt} nhưng ${
   "{môn} không ở trạng thái chờ thi" → "{môn} không còn chờ thi (đã thi, đang vắng hoặc đã huỷ) — không báo vắng được" · menu đầu
   trang "Đổi lịch cả đợt" / "Hẹn xử lý cả đợt" → "Dời lịch thi cả đợt" / "Dời hạn chấm cả đợt"; nhãn "Hẹn xử lý cả đợt {ngày}" →
   "Hạn chấm cả đợt {ngày}". Sáu tên T38 giữ nguyên.
+- **Task 6:** chữ trên chip dùng đuôi NGẮN (`· vắng` · `· chờ duyệt` · `· trễ` · `· đã huỷ`) để chip 20 px không xuống dòng ở ô 176 px;
+  câu đủ ("vắng · Quản lý xếp lại", "chờ Quản lý duyệt đề nghị dời"…) ở tooltip và chú giải "Luật xếp lịch Test". Hộp kỹ năng: menu ⋯
+  bỏ cả "Dời lịch thi" (dòng có ô tuần) lẫn "Bỏ kỹ năng khỏi đợt" / "Đưa lại vào đợt" (dòng có ô tích — một việc một chỗ); dòng đã huỷ
+  phần thi có "Khôi phục và đặt tuần" trong ⋯. Ô lý do dùng chung cho bỏ kỹ năng và dời bài tuần đã bắt đầu (≥ 5 ký tự, có bộ đếm).
+  Nút đầu trang "Xếp lịch MT…" / "Xếp lịch Test…" (không cần mở lớp trước) làm cùng Task 7 vì cần ngăn mới.
+- **Task 6 — layout:** tầng 1 của màn Kế hoạch Test là **em cần xếp / xếp lại** (chip "Cần xếp lại (n)" cạnh công tắc khung, lọc
+  lớp + hàng). Detector `--scope layout` sạch. Cột ⋯ 28 px cố định (kể cả khi rỗng) để 4 dòng kỹ năng thẳng cột.
 
 ## Chủ sản phẩm chốt 29/09 (thay các chỗ lệch trong kế hoạch)
 
