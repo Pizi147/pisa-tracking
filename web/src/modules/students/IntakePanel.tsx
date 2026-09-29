@@ -27,7 +27,7 @@ const dongTrong = (r: Row) => Object.values(r).every((v) => !String(v ?? '').tri
 /* Bề rộng cột theo M2 (px). Cột Tình trạng do panel vẽ, không nằm trong `cotLuoiNhap`. */
 const RONG: Partial<Record<CotNhap, number>> = {
   fullName: 170, dob: 104, email: 190, baselineScore: 56, entryListening: 48, entryReading: 48, entryWriting: 48,
-  entrySpeaking: 48, target: 60, examDate: 104, daThiToiMt: 72, startWeek: 150,
+  entrySpeaking: 48, target: 60, examDate: 104, daThiToiMt: 104, startWeek: 172,
 };
 const GOI_Y_COT: Partial<Record<CotNhap, string>> = {
   dob: 'Gõ dd/mm/yyyy.',
@@ -157,7 +157,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
         phu: pv && hangCoDuLieu.length > 0 && (
           <span className="text-xs text-slate-400 tabular-nums">
             {san} dòng sẵn sàng
-            {canSua > 0 && <> · <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-xs"
+            {canSua > 0 && <> · <button type="button" className="link inline-flex min-h-[44px] items-center appearance-none border-0 bg-transparent p-0 text-xs sm:min-h-0"
               onClick={denDongCanSua}>{canSua} dòng cần sửa</button></>}
           </span>
         ),
@@ -231,7 +231,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
         )}
 
         <div className="overflow-x-auto">
-          <table className="w-full table-fixed text-sm" style={{ minWidth: lopThuong ? 720 : 1250 }}>
+          <table className="w-full table-fixed text-sm" style={{ minWidth: lopThuong ? 740 : 1300 }}>
             <colgroup>
               <col style={{ width: 32 }} />
               {cols.map((c) => <col key={c.key} style={{ width: RONG[c.key] }} />)}
@@ -292,7 +292,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
                           : ds.length === 0 ? <span className="text-ok">✓ Sẵn sàng</span>
                           : (
                             <button type="button" aria-expanded={mo} onClick={() => setMoDong(mo ? null : i)}
-                              className={`inline-flex items-center gap-1.5 appearance-none border-0 bg-transparent p-0 text-xs ${nLoi ? 'text-late' : 'text-soon'}`}>
+                              className={`inline-flex min-h-[44px] items-center gap-1.5 appearance-none border-0 bg-transparent p-0 text-xs sm:min-h-0 ${nLoi ? 'text-late' : 'text-soon'}`}>
                               {[nLoi && `${nLoi} lỗi`, nLuuY && `${nLuuY} lưu ý`].filter(Boolean).join(' · ')}
                               <MuiTen mo={mo} />
                             </button>
@@ -308,7 +308,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
                             {ds.map((x, k) => (
                               <span key={k}> · <b className={x.muc === 'loi' ? 'text-late' : 'text-soon'}>{nhanCotNhap(x.field)}</b>: {x.message}</span>
                             ))}
-                            <button type="button" className="link ml-3 appearance-none border-0 bg-transparent p-0 text-xs"
+                            <button type="button" className="link ml-3 inline-flex min-h-[44px] items-center appearance-none border-0 bg-transparent p-0 text-xs align-middle sm:min-h-0"
                               onClick={() => { doiLuoi((rs) => (rs.length > 1 ? rs.filter((_, j) => j !== i) : [{}])); setMoDong(null); }}>
                               Xoá dòng này
                             </button>
