@@ -784,6 +784,24 @@ api.post('/attempts/:id/skills/:skill/restore', requireAuth, wrap((req) => {
   });
 }));
 
+/** PR-XLMT (T38, K4-28): Báo vắng FT — ghi "-" mọi ô của kỹ năng + chốt ngay (lần 1 tự dời, lần 2 chờ Quản lý duyệt). */
+api.post('/attempts/:id/skills/:skill/bao-vang', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return absenceSvc.baoVang(principalOf(req), pInt(req, 'id'), String(req.params.skill), String(req.body?.lyDo ?? ''));
+}));
+
+/** PR-XLMT (T37 "ép vào đợt trùng"): Quản lý cho thi lại kỹ năng đã có điểm — xoá ô (lịch sử giữ), đặt tuần mới. */
+api.post('/ke-hoach-test/thi-lai', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = req.body ?? {};
+  const periodId = toInt(b.periodId);
+  if (!periodId) throw badRequest('Cần chọn tuần thi lại.');
+  return keHoachSvc.thiLai(principalOf(req), {
+    attemptId: toInt(b.attemptId) ?? 0, skills: Array.isArray(b.skills) ? b.skills.map(String) : [],
+    periodId, lyDo: String(b.lyDo ?? ''), force: b.force === true,
+  });
+}));
+
 api.post('/attempts/:id/deadline', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return attemptSvc.setDeadlineOverride(principalOf(req), pInt(req, 'id'),

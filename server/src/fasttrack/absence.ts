@@ -1,10 +1,10 @@
 import { db, tx } from '../db.ts';
 import {
-  ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, PERMISSIONS, hanDuyetDoiLan2, ngay, tenMon, tenMonNgan, tuanLich,
+  ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, PERMISSIONS, hanDuyetDoiLan2, kiemLyDoThaoTac, ngay, tenMon, tenMonNgan, tuanLich,
   type AssessedSkill,
 } from '../../../shared/domain/index.ts';
 import { assessedSkillOf, entrySkillsOf } from './scoring.ts';
-import { addDays, badRequest, notFound, nowIso } from '../util.ts';
+import { addDays, badRequest, forbidden, notFound, nowIso } from '../util.ts';
 import { can, isCoreTeacherOf, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { writeAudit, notify } from '../platform/audit.ts';
@@ -853,4 +853,45 @@ export function openMoveRequests(p: Principal, limit = 50) {
     )
     .all(limit) as any[];
   return rows.filter((r) => can(p, PERMISSIONS.PLAN_WEEK, { classId: r.class_id, studentId: r.student_id }));
+}
+
+/**
+ * T38 "Báo vắng" (PR-XLMT, K4-28, Q10): ghi "-" cho MỌI ô nhập của kỹ năng (W = W1 + W2) rồi CHỐT NGAY qua `settleGroup` —
+ * lần vắng đầu máy tự dời, từ lần 2 thành đề nghị chờ Quản lý (Q-A, nằm sẵn trong `settleGroup`). GVCN của lớp / Quản lý.
+ */
+export function baoVang(p: Principal, attemptId: number, skill: string, lyDo: string, today: string = demoToday()) {
+  const conn = db();
+  const a = loadAttempt(attemptId);
+  if (!canRequest(p, a)) throw forbidden('Chỉ giáo viên chủ nhiệm của lớp và Quản lý báo vắng được.');
+  if (a.kind !== 'mock') throw badRequest('Bài lớp thường báo vắng ở bảng điểm lớp thường.');
+  if (a.status === 'cancelled') throw badRequest('Đợt này đã huỷ.');
+  if (a.lich_su) throw badRequest('MT lịch sử không vào luồng vắng — nhập bù điểm, không dời lịch.');
+  const loi = kiemLyDoThaoTac('Báo vắng', lyDo);
+  if (loi) throw badRequest(loi);
+  const row = ensureSkillRows(attemptId).find((r) => r.skill === skill);
+  if (!row?.required) throw badRequest('Kỹ năng không nằm trong đợt này.');
+  if (row.sit_status !== 'scheduled' || !row.planned_period_id || !row.week_start || !row.week_end) {
+    throw badRequest(`${skillName(skill)} không ở trạng thái chờ thi.`);
+  }
+  if (row.week_start.slice(0, 10) > mondayOf(today)) {
+    throw badRequest(`${skillName(skill)} chưa tới tuần thi — muốn đổi tuần thì "Dời lịch thi".`);
+  }
+  return tx(() => {
+    const ids: number[] = [];
+    for (const e of entrySkillsOf(skill as AssessedSkill)) {
+      const s = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, e) as any;
+      if (s && ((s.band ?? null) !== null || (s.raw_score ?? null) !== null)) throw badRequest(`${skillName(skill)} đã có điểm — không báo vắng.`);
+      if (s) {
+        conn.prepare(`UPDATE assessment_scores SET no_show_period_id = ?, no_show_by = ?, no_show_at = ?, no_show_late = 0, no_show_settled_at = NULL WHERE id = ?`)
+          .run(row.planned_period_id, p.userId, nowIso(), s.id);
+        ids.push(s.id);
+      } else {
+        ids.push(Number(conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, no_show_period_id, no_show_by, no_show_at) VALUES (?,?,?,?,?)`)
+          .run(attemptId, e, row.planned_period_id, p.userId, nowIso()).lastInsertRowid));
+      }
+    }
+    settleGroup(conn, attemptId, row.id, skill, row.week_end!, row.period_code ?? '', ids, p.userId, `Báo vắng: ${lyDo.trim()}`, today);
+    const sau = ensureSkillRows(attemptId).find((r) => r.skill === skill)!;
+    return { daDoi: sau.sit_status === 'scheduled', tuanMoi: sau.week_start, choDuyet: !!pendingMove(attemptId, skill) };
+  });
 }

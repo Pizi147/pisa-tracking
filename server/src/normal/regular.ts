@@ -3,7 +3,7 @@ import { addMilestone, followUntilAfter } from '../cases/sos.ts';
 import { raiseSignal, reconcileCorrectedSignals } from '../cases/signals.ts';
 import {
   ATTEMPT_KIND_LABEL, PERMISSIONS, RATIO_PASS_THRESHOLD,
-  caseCategoriesFor, categoryOf, kiemLyDo, ngay, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanKeTiep, tuanLich,
+  caseCategoriesFor, categoryOf, kiemLyDo, kiemLyDoThaoTac, ngay, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanKeTiep, tuanLich,
   type AssessedSkill, type AttemptKind, type CaseCategory, type RatioOutcome, type SosLevel,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -15,6 +15,7 @@ import { regularSkillViews, weekStartOf } from '../fasttrack/attempts.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { checkSkillWeekMove, ensureSkillRows, loadSkillRows, setSkillWeek } from '../fasttrack/skillSchedule.ts';
 import { dotHoanTat, dotHoanTatMany, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
+import { canRequest } from '../fasttrack/absence.ts';
 import { classProgress } from '../classes/schedule.ts';
 
 /**
@@ -387,7 +388,7 @@ export function saveRegularScore(
     if (patch.score !== undefined || patch.total !== undefined) {
       throw badRequest('Một lần gửi chỉ làm một việc: nhập điểm, hoặc ghi/gỡ dấu "-".');
     }
-    return reportRegularNoShow(p, attemptId, skill, patch.noShow === true, today);
+    return reportRegularNoShow(p, attemptId, skill, patch.noShow === true, today, patch.lyDo ?? undefined);
   }
   /*
    * Cùng hai đường vào như lớp FT: giáo viên nhập kỹ năng MÌNH ĐƯỢC PHÂN CÔNG, còn Admin
@@ -497,6 +498,8 @@ export function saveRegularScore(
  */
 export function reportRegularNoShow(
   p: Principal, attemptId: number, skill: string, bat: boolean, today: string = demoToday(),
+  /** K4-32 (PR-XLMT): "Báo vắng" từ menu ⋯ ô lưới — có lý do (ghi vào nhật ký lịch). Gõ "-" trong ô thì không có. */
+  lyDo?: string,
 ): { moved: boolean; tuanCu: string | null; tuanMoi: string | null; result: RegularResult } {
   const conn = db();
   const a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
@@ -506,6 +509,7 @@ export function reportRegularNoShow(
   const prog = a.class_id ? programmeOfClass(a.class_id) : null;
   if (!prog || prog.scoringMode !== 'ratio') throw badRequest('Lượt này không thuộc lớp thường.');
   if (!prog.skills.includes(skill)) throw badRequest(`Lớp ${prog.name} không có kỹ năng ${tenMon(prog.code, skill)}.`);
+  if (lyDo !== undefined && bat) { const loi = kiemLyDoThaoTac('Báo vắng', lyDo); if (loi) throw badRequest(loi); }
 
   /*
    * Ghi dấu là việc của NGƯỜI CHẤM môn đó (hoặc người nhập bù) — cùng cửa với nhập điểm.
@@ -522,7 +526,7 @@ export function reportRegularNoShow(
       );
     }
     path = 'override';
-  } else if (!path) {
+  } else if (!path && !(lyDo !== undefined && bat && canRequest(p, a))) {   // K4-32: Báo vắng — thêm GVCN của lớp / Quản lý
     require_(p, PERMISSIONS.SCORE_EDIT, { classId: a.class_id, studentId: a.student_id, skill },
       'Bạn chỉ ghi được dấu "-" cho kỹ năng mình được phân công.');
   }
@@ -592,7 +596,7 @@ export function reportRegularNoShow(
       }
       /* Dời bằng ĐÚNG hàm dời lịch chung — `force` chỉ vượt được cảnh báo, không bao giờ vượt được chặn. */
       setSkillWeek(p, attemptId, skill, moi.id, {
-        reason: `Báo "-": em không làm bài tuần ${cu.code ?? '?'} — môn này dời sang tuần sau (C08).`,
+        reason: lyDo !== undefined ? `Báo vắng: ${lyDo.trim()}` : `Báo "-": em không làm bài tuần ${cu.code ?? '?'} — môn này dời sang tuần sau (C08).`,
         force: true,
       });
       writeAudit({

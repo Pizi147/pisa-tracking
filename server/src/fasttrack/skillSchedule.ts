@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  ASSESSED_SKILLS, CHU_KY_NANG, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, boMonLich, tenMon, tuanLich,
+  ASSESSED_SKILLS, CHU_KY_NANG, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, boMonLich, kiemLyDoThaoTac, tenMon, tuanLich,
   type AssessedSkill, type SitStatus, type SkillProgress,
 } from '../../../shared/domain/index.ts';
 import { badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -10,7 +10,7 @@ import { writeAudit } from '../platform/audit.ts';
 import { programmeByCode } from '../normal/regular.ts';
 import { rutDeNghiDoi } from './absence.ts';
 import {
-  effectiveSkillDeadline, isOverdue, weekInfo, type ScoringMode,
+  effectiveSkillDeadline, isOverdue, mondayOf, weekInfo, type ScoringMode,
 } from '../platform/week.ts';
 
 /**
@@ -592,6 +592,9 @@ function hasScore(attemptId: number, skill: string): boolean {
 export function setSkillWeek(p: Principal, attemptId: number, skill: string, periodId: number, opts: {
   reason?: string | null;
   force?: boolean;
+  /** Đặt tuần cho kỹ năng của lượt VỪA TẠO trong cùng lần xếp — không phải "dời", không đòi lý do (K4-15). */
+  khiTao?: boolean;
+  today?: string;
 } = {}) {
   const { attempt, row } = loadOne(attemptId, skill);
   requireMoveSkillSchedule(
@@ -613,6 +616,11 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
   }
   if (row.sit_status === 'sat') {
     throw badRequest(`${skill} đã được xác nhận là đã thi. Việc còn lại là chấm, không phải dời lịch.`);
+  }
+  /* K4-15 (PR-XLMT): dời bài mà TUẦN THI ĐÃ BẮT ĐẦU phải có lý do; bài vắng giữ lý do mặc định "Quản lý xếp trực tiếp" (K4-12). */
+  if (!opts.khiTao && row.sit_status !== 'absent' && row.week_start && row.week_start.slice(0, 10) <= mondayOf(opts.today ?? demoToday())) {
+    const loi = kiemLyDoThaoTac('Dời lịch thi', opts.reason);
+    if (loi) throw badRequest(loi);
   }
 
   const check = checkSkillWeekMove({ attemptId, skill: row.skill, newWeekStart: period.week_start });
@@ -683,7 +691,11 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
  *      một đợt thiếu kết quả thành "hoàn tất" mà không ai phải giải thích gì.
  *   3. Bỏ môn phải có lý do, và dấu vắng cũ vẫn nằm nguyên trong lịch sử.
  */
-export function setSkillScope(p: Principal, attemptId: number, skill: string, required: boolean, reason?: string | null) {
+export function setSkillScope(
+  p: Principal, attemptId: number, skill: string, required: boolean, reason?: string | null,
+  /** `khiTao`: bỏ kỹ năng ngay lúc tạo lượt (lên kế hoạch) — chưa có buổi thi nào nên không chặn "đã tới tuần". */
+  opts: { khiTao?: boolean; today?: string } = {},
+) {
   const { attempt, row } = loadOne(attemptId, skill);
   require_(p, PERMISSIONS.ATTEMPT_SKIP_SKILL, { classId: attempt.class_id, studentId: attempt.student_id },
     'Chỉ Quản lý mới đổi được phạm vi kỹ năng của một đợt.');
@@ -695,13 +707,21 @@ export function setSkillScope(p: Principal, attemptId: number, skill: string, re
         'Lớp Normal luôn phải đủ bốn môn L/R/W/S. Không có thao tác miễn môn để hoàn tất Progress/Final Test.',
       );
     }
+    /* K4-13 (PR-XLMT): đã có điểm → dùng "Huỷ điểm"; đã tới tuần thi → dùng "Báo vắng". */
+    if (hasScore(attemptId, row.skill)) {
+      throw badRequest(`${tenMon(null, skill)} đã có điểm — không bỏ khỏi đợt. Muốn bỏ điểm thì dùng "Huỷ điểm".`);
+    }
+    if (!opts.khiTao && row.week_start && row.week_start.slice(0, 10) <= mondayOf(opts.today ?? demoToday())) {
+      throw badRequest(`${tenMon(null, skill)} đã tới tuần thi — không bỏ khỏi đợt nữa. Em vắng thì dùng "Báo vắng".`);
+    }
     if (row.sit_status === 'absent') {
       throw badRequest(
         `${skill} đã được xác nhận vắng. Không bỏ môn khỏi phạm vi sau khi vắng — `
         + 'xếp lại lịch hoặc huỷ phần thi, đợt vẫn là đợt chưa đủ kết quả.',
       );
     }
-    if (!reason?.trim()) throw badRequest('Cần ghi lý do khi bỏ một kỹ năng khỏi phạm vi yêu cầu.');
+    const loi = kiemLyDoThaoTac('Bỏ kỹ năng khỏi đợt', reason);
+    if (loi) throw badRequest(loi);
   }
 
   return tx(() => {
@@ -785,6 +805,7 @@ export function setSkillDeadline(p: Principal, attemptId: number, skill: string,
   require_(p, PERMISSIONS.DEADLINE_OVERRIDE, { classId: attempt.class_id, studentId: attempt.student_id },
     'Chỉ Quản lý mới đặt được hạn chấm riêng.');
   if (date && !isIsoDate(date)) throw badRequest('Hạn không hợp lệ.');
+  if (date) { const loi = kiemLyDoThaoTac('Dời hạn chấm', reason); if (loi) throw badRequest(loi); }   // K4-15
   db()
     .prepare(
       `UPDATE attempt_skills SET deadline_override = ?, deadline_override_by = ?, deadline_override_at = ?,

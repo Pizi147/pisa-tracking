@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, ENTRY_SKILLS, ENTRY_SKILL_LABEL, MOCK_FT_STUDY_WEEK, NO_SHOW_OVERRIDDEN_NOTE,
-  PERMISSIONS, awaitingScore, cachHuyLuot, kiemLyDo, kiemSoMtMoi, laLichSu, ngay, noShowStateOf, noShowText, pendingSkillsOf, soMtKeTiep, tenMon, tuanLich,
+  PERMISSIONS, awaitingScore, cachHuyLuot, kiemLyDo, kiemLyDoThaoTac, kiemSoMtMoi, laLichSu, ngay, noShowStateOf, noShowText, pendingSkillsOf, soMtKeTiep, tenMon, tuanLich,
   type CachHuy,
   type AssessedSkill, type EntrySkill, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
@@ -1166,8 +1166,8 @@ function hasAnyBand(attemptId: number, skill: string): boolean {
  * thao tác miễn môn, và không bỏ một môn khỏi phạm vi SAU khi đã xác nhận em vắng môn đó.
  * Ở đây chỉ còn việc tính lại kết luận của đợt sau khi phạm vi đổi.
  */
-export function setSkillSkip(p: Principal, attemptId: number, skill: string, skipped: boolean, reason?: string) {
-  const r = setSkillScope(p, attemptId, skill, !skipped, reason ?? null);
+export function setSkillSkip(p: Principal, attemptId: number, skill: string, skipped: boolean, reason?: string, opts: { khiTao?: boolean } = {}) {
+  const r = setSkillScope(p, attemptId, skill, !skipped, reason ?? null, opts);
   refreshOutcome(p, attemptId);
   return r;
 }
@@ -1178,6 +1178,7 @@ export function setDeadlineOverride(p: Principal, attemptId: number, date: strin
   require_(p, PERMISSIONS.DEADLINE_OVERRIDE, { classId: a.class_id, studentId: a.student_id },
     'Chỉ Quản lý và Admin chi nhánh mới đặt được hạn riêng.');
   if (date && !isIsoDate(date)) throw badRequest('Hạn không hợp lệ.');
+  if (date) { const loi = kiemLyDoThaoTac('Dời hạn chấm', reason); if (loi) throw badRequest(loi); }   // K4-15
   db()
     .prepare(
       `UPDATE assessment_attempts SET deadline_override = ?, deadline_override_by = ?,

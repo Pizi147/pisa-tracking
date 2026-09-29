@@ -602,6 +602,18 @@ if (chuaQua.length) luuY('daThiToiMt', `Đã thi tới MT${daThiToiMt} nhưng ${
 - **Model thật:** Opus 5.5 (phương án B của Bảng điều hành).
 - **Task 0 (29/09):** nhánh từ `origin/main` @ c3f38f3. PR-SOS / PR-YT4 / PR-TOC **chưa** merge (chỉ có commit kế hoạch). **Mốc B = 1575**
   phép kiểm (+20 tốc độ). Dòng mã khớp kế hoạch (lệch ≤ 20 dòng); `schema.sql` nằm ở `server/src/schema.sql`.
+- **Task 1:** `DotFT.do/huyPhan` để sang Task 3 (cùng chỗ máy chủ tính). `OKyNang` thêm `sit/tuanKetThuc/choDuyet` (máy chủ
+  `choDuyet` thật ở Task 3). Ngày demo của bộ kiểm = 14/09/2026 (`TODAY`).
+- **Task 2 — cờ `khiTao`:** `setSkillWeek` / `setSkillScope` (+ `setSkillSkip`, `luuDot`) nhận `khiTao` cho lượt VỪA TẠO trong cùng
+  lần xếp (`xepMoi`, `xepMoiThuong`, `planning.ts` bỏ kỹ năng lúc lên kế hoạch): đặt tuần / bỏ kỹ năng lúc tạo không phải "dời", không
+  đòi lý do, không chặn "đã tới tuần".
+- **Task 2 — 🛑 đã hỏi chủ sản phẩm (29/09):** kế hoạch cho Quản lý Thi lại / Huỷ điểm trước hoàn tất, nhưng mã chỉ cho Quản lý sửa
+  điểm SAU hoàn tất (R11). Chủ sản phẩm chọn **"Mở cả sửa điểm cho Quản lý"**: `permissions.ts` `scoreEditPath` + `editableSkills`
+  thêm vế `PLAN_WEEK` → đường `override` (RB-5 vẫn đòi lý do khi sửa ô đã có điểm). Áp cho cả FT và lớp thường (cùng một gốc).
+- **Phép kiểm cũ đã sửa (không xoá):** `run.ts` "Bỏ một kỹ năng… đã có điểm" → nay khẳng định bị chặn + điểm giữ; phần tính lại mẫu
+  số chuyển sang một đợt chưa tới tuần (K4-13). `run.ts` "Ô điểm nói rõ kỹ năng có bắt buộc" → người xem không sửa được đổi từ Quản lý
+  sang GV Writing 1. `chamDiem.tests.ts` PR-Rc1 C08 Quyền → Quản lý nay ghi được "-". `keHoachTest.tests.ts` 3 lời gọi `luuDot` dời
+  bài tuần đã bắt đầu → thêm `reason` (K4-15).
 
 ## Chủ sản phẩm chốt 29/09 (thay các chỗ lệch trong kế hoạch)
 

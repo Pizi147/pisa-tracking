@@ -471,7 +471,9 @@ export function editableSkills(p: Principal, classId: number, skills: readonly s
   return skills.filter(
     (skill) => can(p, PERMISSIONS.SCORE_EDIT, { classId, skill })
       || qlLichSu || (gvcnLichSu && !luot!.oCoDiem.includes(skill))
-      || can(p, PERMISSIONS.SCORE_OVERRIDE, { classId }),
+      || can(p, PERMISSIONS.SCORE_OVERRIDE, { classId })
+      /* PR-XLMT (chủ sản phẩm chốt 29/09): Quản lý sửa/xoá điểm có lý do (RB-5) ở MỌI lúc, không chỉ sau hoàn tất. */
+      || can(p, PERMISSIONS.PLAN_WEEK, { classId }),
   );
 }
 
@@ -522,7 +524,8 @@ export function scoreEditPath(p: Principal, classId: number, skill: string,
   attempt?: { lich_su: number; coDiemO: boolean }): 'assigned' | 'lich_su' | 'override' | null {
   if (can(p, PERMISSIONS.SCORE_EDIT, { classId, skill })) return 'assigned';
   if (attempt?.lich_su === 1 && (can(p, PERMISSIONS.PLAN_WEEK, { classId }) || (!attempt.coDiemO && isCoreTeacherOf(p, classId)))) return 'lich_su';
-  if (can(p, PERMISSIONS.SCORE_OVERRIDE, { classId })) return 'override';
+  /* PR-XLMT (chủ sản phẩm chốt 29/09): Quản lý (xếp lịch được lớp đó) sửa điểm qua đường `override` ở mọi lúc — RB-5 vẫn đòi lý do. */
+  if (can(p, PERMISSIONS.SCORE_OVERRIDE, { classId }) || can(p, PERMISSIONS.PLAN_WEEK, { classId })) return 'override';
   return null;
 }
 

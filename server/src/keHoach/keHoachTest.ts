@@ -10,7 +10,7 @@
  */
 import { db, tx } from '../db.ts';
 import {
-  KY_NANG_KE_HOACH, O_KE_HOACH, PERMISSIONS, boMonLich, kiemSoMtMoi, laVaoMuon, soMtKeTiep, soSanhLop, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang,
+  KY_NANG_KE_HOACH, O_KE_HOACH, PERMISSIONS, boMonLich, kiemLyDoThaoTac, kiemSoMtMoi, laVaoMuon, soMtKeTiep, soSanhLop, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang,
   tuanKhoa as tuanKhoaCua,
   type BaiXemTruoc, type DongHangLoat, type KyNangKH, type OKyNang,
 } from '../../../shared/domain/index.ts';
@@ -18,9 +18,9 @@ import { badRequest, notFound } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { entrySkillsOf } from '../fasttrack/scoring.ts';
-import { createAttempt, loadBundle, setSkillSkip } from '../fasttrack/attempts.ts';
+import { createAttempt, loadBundle, saveScore, scoresOf, setSkillSkip } from '../fasttrack/attempts.ts';
 import { currentCycle, luotSoCuaLoTrinh, nextAttemptNo } from '../fasttrack/cycles.ts';
-import { checkWeekVsNeighbours, loadSkillRows, setSkillWeek } from '../fasttrack/skillSchedule.ts';
+import { checkWeekVsNeighbours, loadSkillRows, setSitStatus, setSkillWeek } from '../fasttrack/skillSchedule.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { classProgress, classProgressMany } from '../classes/schedule.ts';
 import { planRegularTests, programmeByCode, programmeOfClass } from '../normal/regular.ts';
@@ -339,6 +339,8 @@ export function kiemDot(p: Principal, i: { attemptId: number; kyNang: YeuCauKyNa
 export function luuDot(p: Principal, i: {
   attemptId: number; kyNang: Array<{ skill: KyNangKH; periodId?: number | null; bo?: boolean }>;
   lyDoBo?: string | null; force?: boolean; reason?: string | null;
+  /** Lượt vừa tạo trong cùng lần xếp (`xepMoiThuong`) — đặt tuần, không phải dời (K4-15). */
+  khiTao?: boolean;
 }): { ok: true; doi: KyNangKH[] } {
   const a = docDot(i.attemptId);
   require_(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id }, PLAN_MSG);
@@ -363,9 +365,36 @@ export function luuDot(p: Principal, i: {
     }
     const doi = kiem.bai.filter((b) => b.ghiChu === 'doi' || b.ghiChu === 'canh-bao');
     for (const b of doi) {
-      setSkillWeek(p, i.attemptId, b.skill, datTuan.find((k) => k.skill === b.skill)!.periodId, { reason: i.reason ?? null, force: true });
+      setSkillWeek(p, i.attemptId, b.skill, datTuan.find((k) => k.skill === b.skill)!.periodId, { reason: i.reason ?? null, force: true, khiTao: i.khiTao });
     }
     return { ok: true as const, doi: doi.map((b) => b.skill) };
+  });
+}
+
+/**
+ * THI LẠI (T37 "ép vào đợt trùng", §5.5, Q13 — chủ sản phẩm chốt 29/09 câu 1 = A): Quản lý cho em thi lại kỹ năng ĐÃ CÓ ĐIỂM ở
+ * chính đợt đó — xoá ô (RB-5 ghi lý do, lịch sử điểm giữ giá trị cũ) → "chờ thi" → tuần mới. Mọi ô của kỹ năng (W1 + W2). Một `tx`.
+ */
+export function thiLai(p: Principal, i: { attemptId: number; skills: string[]; periodId: number; lyDo: string; force?: boolean }) {
+  const a = docDot(i.attemptId);
+  require_(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id }, PLAN_MSG);
+  if (a.kind !== 'mock' || a.lich_su || a.status === 'cancelled') throw badRequest('Chỉ thi lại được ở lượt Mock đang chạy.');
+  const loi = kiemLyDoThaoTac('Thi lại', i.lyDo);
+  if (loi) throw badRequest(loi);
+  if (!i.skills?.length) throw badRequest('Chưa chọn kỹ năng thi lại.');
+  const lyDo = `Thi lại: ${i.lyDo.trim()}`;
+  return tx(() => {
+    for (const k of i.skills.map(chonKyNang)) {
+      for (const e of entrySkillsOf(k as any)) {
+        const s = scoresOf(i.attemptId).find((x) => x.skill === e);
+        if (s && (s.band != null || s.raw_score != null)) {
+          saveScore(p, i.attemptId, e, { rawScore: null, criteria: [null, null, null, null], lyDo });
+        }
+      }
+      setSitStatus(p, i.attemptId, k, 'scheduled', lyDo);
+      setSkillWeek(p, i.attemptId, k, i.periodId, { reason: lyDo, force: !!i.force });
+    }
+    return { ok: true as const };
   });
 }
 
@@ -444,9 +473,9 @@ export function xepMoi(p: Principal, i: {
     const created = createAttempt(p, { studentId: i.studentId, cycleId: cycle.id, attemptNo, periodId: som.id }) as any;
     conn.prepare(`UPDATE assessment_attempts SET plan_source = 'manual' WHERE id = ?`).run(created.id);
     for (const k of dungTuan) {
-      if (tuan[k] !== som.id) setSkillWeek(p, created.id, k, tuan[k]!, { force: true });
+      if (tuan[k] !== som.id) setSkillWeek(p, created.id, k, tuan[k]!, { force: true, khiTao: true });
     }
-    for (const k of bo) setSkillSkip(p, created.id, k, true, i.lyDoBo ?? undefined);
+    for (const k of bo) setSkillSkip(p, created.id, k, true, i.lyDoBo ?? undefined, { khiTao: true });
     return created;
   });
 }
@@ -577,7 +606,7 @@ export function xepMoiThuong(p: Principal, i: {
           ORDER BY a.id DESC LIMIT 1`,
       )
       .get(i.studentId, i.classId, i.kind) as any;
-    luuDot(p, { attemptId: moi.id, kyNang: bo.map((k) => ({ skill: k, periodId: tuan[k] })), force: true });
+    luuDot(p, { attemptId: moi.id, kyNang: bo.map((k) => ({ skill: k, periodId: tuan[k] })), force: true, khiTao: true });
     return { id: moi.id as number };
   });
 }

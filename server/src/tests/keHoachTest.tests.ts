@@ -321,7 +321,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
       .get(mt2.attemptId) as any;
     /* Hộp chip gửi cả L, R, W (cùng tuần mới) — W đã có điểm nên bị bỏ qua; S không gửi nên không đổi. */
     const r = keHoachMod.luuDot(P.mbManager, {
-      attemptId: mt2.attemptId, force: true,
+      attemptId: mt2.attemptId, force: true, reason: 'PR-XLMT: tuần thi đã bắt đầu cần lý do',
       kyNang: [{ skill: 'listening', periodId: per.id }, { skill: 'reading', periodId: per.id }, { skill: 'writing', periodId: per.id }],
     });
     assert(r.doi.includes('listening') && r.doi.includes('reading'), `listening, reading phải đổi tuần, đang ra ${JSON.stringify(r)}`);
@@ -617,7 +617,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     assert(rowWCoDiem.planned_period_id !== target.id, 'Em đã có điểm mà W vẫn bị đổi tuần');
 
     const lNow = conn.prepare(`SELECT planned_period_id p FROM attempt_skills WHERE attempt_id=? AND skill='listening'`).get(emMove.attemptId) as any;
-    const ket = keHoachMod.luuDot(P.mbManager, { attemptId: emMove.attemptId, kyNang: [{ skill: 'writing', periodId: target.id }], force: true });
+    const ket = keHoachMod.luuDot(P.mbManager, { attemptId: emMove.attemptId, kyNang: [{ skill: 'writing', periodId: target.id }], force: true, reason: 'PR-XLMT: tuần thi đã bắt đầu cần lý do' });
     assert(ket.doi.join() === 'writing', `Chỉ W của em này được đổi, đang ra ${JSON.stringify(ket)}`);
     const rowW = conn.prepare(`SELECT planned_period_id FROM attempt_skills WHERE attempt_id=? AND skill='writing'`)
       .get(emMove.attemptId) as any;
@@ -986,7 +986,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     const sA = tuanCua(emA.attemptId, 'speaking').w as string;
     const sB = tuanCua(emB.attemptId, 'speaking').w as string;
     const target = week.ensurePeriod(addDays(sA, -7));
-    keHoachMod.luuDot(P.mbManager, { attemptId: emA.attemptId, force: true, kyNang: [{ skill: 'speaking', periodId: target.id }] });
+    keHoachMod.luuDot(P.mbManager, { attemptId: emA.attemptId, force: true, reason: 'PR-XLMT: tuần thi đã bắt đầu cần lý do', kyNang: [{ skill: 'speaking', periodId: target.id }] });
     assert(tuanCua(emA.attemptId, 'speaking').w === target.weekStart, 'S của em A phải đổi');
     assert(tuanCua(emB.attemptId, 'speaking').w === sB, 'S của em B (cùng lớp) phải giữ nguyên');
 

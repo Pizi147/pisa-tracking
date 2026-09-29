@@ -101,3 +101,130 @@ export async function runPrXlmtTests(t: YThucTestKit) {
     assert(JSON.stringify(t2) === JSON.stringify({ doi: 1, xepNot: 1, tao: 2, thiLai: 1, canhBao: 1, chan: 1, soEm: 5, soBai: 15 }), JSON.stringify(t2));
   });
 }
+
+export async function runPrXlmtMayChu(t: YThucTestKit) {
+  const { check, assert, assertThrows, conn, P, TODAY, classId } = t;
+  const intake: any = await import('../classes/intake.ts');
+  const week: any = await import('../platform/week.ts');
+  const skillSch: any = await import('../fasttrack/skillSchedule.ts');
+  const attemptsSvc: any = await import('../fasttrack/attempts.ts');
+  const absence: any = await import('../fasttrack/absence.ts');
+  const regular: any = await import('../normal/regular.ts');
+  const keHoach: any = await import('../keHoach/keHoachTest.ts');
+  const tuanNay = week.mondayOf(TODAY);
+  const tuan = (n: number) => week.ensurePeriod(t.addDays(tuanNay, 7 * n));
+
+  /** Thêm một em vào lớp FT, tuần bắt đầu tuần này → lịch MT mặc định (MT1 tuần học 6…). */
+  const them = (lop: string, ten: string) => {
+    const r = intake.commitIntake(P.admin, { classId: classId(lop), rows: [{ fullName: ten, target: 6.5, startWeek: tuanNay, email: 'hv@demo.test' }] });
+    assert(r.added === 1, `thêm ${ten}: ${JSON.stringify(r.failed)}`);
+    return r.studentIds[0] as number;
+  };
+  const luotCua = (sid: number) => conn.prepare(
+    `SELECT a.id, a.attempt_no AS no FROM assessment_attempts a JOIN learning_cycles cy ON cy.id = a.cycle_id AND cy.status = 'active'
+      WHERE a.student_id = ? AND a.status != 'cancelled' ORDER BY a.attempt_no`).all(sid) as any[];
+  /** Đưa cả lượt (mọi kỹ năng) về tuần `w` — dựng dữ liệu, không đi đường nghiệp vụ. */
+  const datTuan = (attemptId: number, w: number) => {
+    conn.prepare('UPDATE assessment_attempts SET planned_period_id = ? WHERE id = ?').run(w, attemptId);
+    conn.prepare('UPDATE attempt_skills SET planned_period_id = ? WHERE attempt_id = ?').run(w, attemptId);
+  };
+  const lich = (attemptId: number, skill: string) => conn.prepare(
+    `SELECT k.sit_status, k.absence_move_count AS lan, k.required, p.week_start AS tuan FROM attempt_skills k
+       LEFT JOIN report_periods p ON p.id = k.planned_period_id WHERE k.attempt_id = ? AND k.skill = ?`).get(attemptId, skill) as any;
+  const diem = (attemptId: number, skill: string, band = 6) => conn.prepare(
+    `INSERT INTO assessment_scores (attempt_id, skill, band, raw_score) VALUES (?,?,?,?)`).run(attemptId, skill, band, 30);
+
+  const sX = them('MB FT 101', 'XLMT Em Hai');
+  const [m1, m2, m3] = luotCua(sX);
+  datTuan(m1.id, tuan(0).id);
+
+  check('PR-XLMT (2) · Dời lịch thi: tuần thi đã bắt đầu → bắt lý do; tuần tương lai → không cần (K4-15)', () => {
+    assertThrows(() => skillSch.setSkillWeek(P.mbManager, m1.id, 'listening', tuan(1).id, { force: true }),
+      /Dời lịch thi: cần ghi lý do/, 'tuần này không lý do');
+    assertThrows(() => skillSch.setSkillWeek(P.mbManager, m1.id, 'listening', tuan(1).id, { force: true, reason: 'ab' }),
+      /ít nhất 5 ký tự/, 'lý do ngắn');
+    skillSch.setSkillWeek(P.mbManager, m1.id, 'listening', tuan(1).id, { force: true, reason: 'Lịch học đổi' });
+    skillSch.setSkillWeek(P.mbManager, m1.id, 'listening', tuan(2).id, { force: true });
+    assert(lich(m1.id, 'listening').tuan === t.addDays(tuanNay, 14), JSON.stringify(lich(m1.id, 'listening')));
+  });
+
+  check('PR-XLMT (2) · Dời hạn chấm (kỹ năng / cả đợt) không lý do → lỗi; có lý do → được (K4-15)', () => {
+    const han = t.addDays(tuanNay, 20);
+    assertThrows(() => skillSch.setSkillDeadline(P.mbManager, m1.id, 'reading', han, null), /Dời hạn chấm: cần ghi lý do/, 'kỹ năng');
+    assertThrows(() => attemptsSvc.setDeadlineOverride(P.mbManager, m1.id, han), /Dời hạn chấm: cần ghi lý do/, 'cả đợt');
+    skillSch.setSkillDeadline(P.mbManager, m1.id, 'reading', han, 'GV ốm tuần này');
+    skillSch.setSkillDeadline(P.mbManager, m1.id, 'reading', null, null);   // gỡ hạn không cần lý do
+  });
+
+  check('PR-XLMT (2) · Bỏ kỹ năng: đã có điểm → "Huỷ điểm"; đã tới tuần thi → "Báo vắng"; tương lai + lý do → được (K4-13)', () => {
+    assertThrows(() => attemptsSvc.setSkillSkip(P.mbManager, m1.id, 'reading', true, 'Không thi R đợt này'), /đã tới tuần thi.*Báo vắng/, 'tới tuần');
+    diem(m2.id, 'listening');
+    assertThrows(() => attemptsSvc.setSkillSkip(P.mbManager, m2.id, 'listening', true, 'Không thi L đợt này'), /đã có điểm.*Huỷ điểm/, 'có điểm');
+    assertThrows(() => attemptsSvc.setSkillSkip(P.mbManager, m2.id, 'reading', true, 'ab'), /Bỏ kỹ năng khỏi đợt: lý do cần ít nhất/, 'lý do ngắn');
+    attemptsSvc.setSkillSkip(P.mbManager, m2.id, 'reading', true, 'Em miễn R đợt này');
+    assert(lich(m2.id, 'reading').required === 0, 'đã bỏ');
+    attemptsSvc.setSkillSkip(P.mbManager, m2.id, 'reading', false);
+  });
+
+  check('PR-XLMT (2) · Báo vắng (GVCN): lần 1 máy tự dời tuần kế tiếp; lần 2 thành đề nghị + thẻ Lịch thi (K4-28, Q-A)', () => {
+    const r1 = absence.baoVang(P.coreTeacher, m1.id, 'speaking', 'Em ốm cả tuần', TODAY);
+    assert(r1.daDoi && !r1.choDuyet && r1.tuanMoi === t.addDays(tuanNay, 7), JSON.stringify(r1));
+    const l = lich(m1.id, 'speaking');
+    assert(l.sit_status === 'scheduled' && l.lan === 1, JSON.stringify(l));
+    const h = conn.prepare(`SELECT reason FROM attempt_schedule_history WHERE attempt_id = ? AND action = 'skill_no_show_settled' AND field = 'speaking'`).get(m1.id) as any;
+    assert(/Báo vắng: Em ốm cả tuần/.test(h?.reason ?? ''), JSON.stringify(h));
+    const r2 = absence.baoVang(P.coreTeacher, m1.id, 'speaking', 'Em vẫn còn ốm', t.addDays(tuanNay, 8));
+    assert(!r2.daDoi && r2.choDuyet, JSON.stringify(r2));
+    const yc = conn.prepare(`SELECT 1 FROM yeu_cau_duyet y JOIN skill_move_requests r ON r.id = y.doi_tuong_id
+      WHERE r.attempt_id = ? AND r.skill = 'speaking' AND r.status = 'pending'`).get(m1.id);
+    assert(yc, 'thiếu thẻ Lịch thi cho đề nghị lần 2');
+  });
+
+  check('PR-XLMT (2) · Báo vắng bị chặn: GVBM · tuần tương lai · MT lịch sử · đã có điểm · lý do ngắn', () => {
+    assertThrows(() => absence.baoVang(P.subjectTeacher, m1.id, 'writing', 'Em ốm cả tuần', TODAY), /chủ nhiệm/, 'GVBM');
+    assertThrows(() => absence.baoVang(P.coreTeacher, m2.id, 'writing', 'Em ốm cả tuần', TODAY), /chưa tới tuần thi/, 'tương lai');
+    assertThrows(() => absence.baoVang(P.coreTeacher, m1.id, 'writing', 'ốm', TODAY), /Báo vắng: lý do cần ít nhất/, 'ngắn');
+    diem(m1.id, 'reading');
+    assertThrows(() => absence.baoVang(P.coreTeacher, m1.id, 'reading', 'Em ốm cả tuần', TODAY), /đã có điểm/, 'có điểm');
+    conn.prepare('UPDATE assessment_attempts SET lich_su = 1 WHERE id = ?').run(m3.id);
+    try {
+      assertThrows(() => absence.baoVang(P.coreTeacher, m3.id, 'writing', 'Em ốm cả tuần', TODAY), /MT lịch sử/, 'lịch sử');
+    } finally { conn.prepare('UPDATE assessment_attempts SET lich_su = 0 WHERE id = ?').run(m3.id); }
+  });
+
+  check('PR-XLMT (2) · Lớp thường Báo vắng có lý do (GVCN): dời tuần sau, nhật ký lịch ghi lý do (K4-32)', () => {
+    const LOP = classId('MB FOU 12');
+    const NOW = new Date().toISOString();
+    const branch = (conn.prepare('SELECT branch_id AS b FROM classes WHERE id = ?').get(LOP) as any).b;
+    const sid = Number(conn.prepare(`INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`)
+      .run('XLMT-T1', 'XLMT Lớp Thường', 'xlmt lop thuong', branch, NOW).lastInsertRowid);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', '2026-07-27', ?)`).run(sid, LOP, NOW);
+    const cy = Number(conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, programme_code, started_at, status, created_at) VALUES (?, 1, NULL, 'FOU', '2026-07-27', 'active', ?)`)
+      .run(sid, NOW).lastInsertRowid);
+    const aid = Number(conn.prepare(`INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id, status, created_at) VALUES (?,?,1,'progress',?,?,'planned',?)`)
+      .run(cy, sid, LOP, tuan(0).id, NOW).lastInsertRowid);
+    skillSch.ensureSkillRows(aid);
+    assertThrows(() => regular.reportRegularNoShow(P.normalCoreTeacher, aid, 'listening', true, TODAY, 'ab'), /Báo vắng: lý do cần ít nhất/, 'ngắn');
+    const r = regular.reportRegularNoShow(P.normalCoreTeacher, aid, 'listening', true, TODAY, 'Em nghỉ có phép');
+    assert(r.moved && lich(aid, 'listening').tuan === t.addDays(tuanNay, 7), JSON.stringify(r));
+    const h = conn.prepare(`SELECT reason FROM attempt_schedule_history WHERE attempt_id = ? AND field = 'listening' ORDER BY id DESC`).get(aid) as any;
+    assert(h?.reason === 'Báo vắng: Em nghỉ có phép', JSON.stringify(h));
+  });
+
+  check('PR-XLMT (2) · Thi lại (Quản lý): L đã có điểm → ô trống, lịch sử điểm còn giá trị cũ, chờ thi, tuần mới; GVCN → 403 (T37, Q13)', () => {
+    const sT = them('MB FT 101', 'XLMT Em Thi Lại');
+    const a = luotCua(sT)[0];
+    datTuan(a.id, tuan(0).id);
+    attemptsSvc.saveScore(P.lrTeacher, a.id, 'listening', { rawScore: 30 }, TODAY);
+    assert(attemptsSvc.scoresOf(a.id).find((s: any) => s.skill === 'listening')?.band != null, 'chưa có điểm L');
+    assertThrows(() => keHoach.thiLai(P.coreTeacher, { attemptId: a.id, skills: ['listening'], periodId: tuan(2).id, lyDo: 'Em làm lại bài' }), /Quản lý/, 'GVCN');
+    assertThrows(() => keHoach.thiLai(P.mbManager, { attemptId: a.id, skills: ['listening'], periodId: tuan(2).id, lyDo: 'ab' }), /Thi lại: lý do/, 'ngắn');
+    keHoach.thiLai(P.mbManager, { attemptId: a.id, skills: ['listening'], periodId: tuan(2).id, lyDo: 'Đề lỗi, thi lại', force: true });
+    const s = attemptsSvc.scoresOf(a.id).find((x: any) => x.skill === 'listening');
+    assert(s?.band == null && s?.raw_score == null, JSON.stringify(s));
+    const l = lich(a.id, 'listening');
+    assert(l.sit_status === 'scheduled' && l.tuan === t.addDays(tuanNay, 14), JSON.stringify(l));
+    const ls = JSON.stringify(attemptsSvc.scoreHistoryOf(a.id));
+    assert(/Đề lỗi, thi lại/.test(ls), `lịch sử điểm thiếu lý do: ${ls.slice(0, 300)}`);
+  });
+}
