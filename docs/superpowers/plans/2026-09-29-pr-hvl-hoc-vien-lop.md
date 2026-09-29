@@ -466,5 +466,11 @@ Nằm ở: bốn bảng của **Học viên & Lớp** và **Hồ sơ lớp → t
 <!-- Session code ghi ở đây: mốc B, số câu SQL trước/sau từng route, dòng mã thật lệch, phép kiểm cũ đã sửa chữ mong đợi (từng phép + lý do),
      trước/sau clarify, file chồng với HSM/XUAT phát hiện thêm, 🛑 đã hỏi, model thật. -->
 
+**Task 0 (30/09).** Model thật: **Claude Sonnet 5.5** (Co-Authored-By theo đó). Worktree `pr-hvl-hoc-vien-lop` từ `origin/main` `e7d6af94` (kế hoạch đã có trên main).
+PR-HSM (`pr-hsm-ho-so-mock`) chưa merge (worktree đang ở `e7d6af94`); PR-XUAT/PR-SANG chưa merge. Chưa thấy file chồng ngoài bảng "Chồng file" (kiểm lại ở cổng rebase Task 11).
+**Mốc B = 1722 phép kiểm** (`run.js`) · 24 phép kiểm tốc độ (`tocDo.run.js`). Số câu SQL mốc (lớp demo id 3): `/hoc-vien-lop` **51** (QT 49) · `/classes/3/roster` **46** (QT 43) ·
+`/cases?classId=3` **17** (QT 14) · `/classes/3/phan-tich-lop` **19–20** (QT 18) · `/classes/3/issue-board?category=listening` **22** (QT 21).
+Dòng mã thật khớp kế hoạch (lệch ≤ 20 dòng).
+
 
 > **Chủ sản phẩm chốt 30/09:** **có** cột "Sắp tới" (M3) ở danh sách Học viên & Lớp.
