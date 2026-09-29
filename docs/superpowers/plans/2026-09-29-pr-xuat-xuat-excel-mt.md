@@ -484,5 +484,16 @@ audit, số đo Turso (Task 7), Task 8 đã/chưa, 🛑 đã hỏi. -->
 - **Task 5 — số đo tốc độ:** xem trước `GET /xuat-mt/xem-truoc` (MT1–MT8): QL/QT/GVCN **16 câu**, khung thường (GVCN_THUONG) **19 câu**, **không đổi sau khi nhân dữ liệu ×3** (bảng "trước → sau" không có dòng nào của đường này) → TRAN 26/26/26/29.
   `POST /xuat-mt` cả chi nhánh MB, MT1–MT8, cột đầy đủ, sau nhân dữ liệu: **16 câu / 550 lượt / 146 KB** (gồm ~8 câu của lớp HTTP + 1 `writeAudit`) → `TRAN_GHI_LO.xuatMtChiNhanh` = 26. Phép (2)(d) ở mức hàm: 8 câu cho cả 1 lượt và 525 lượt.
   Số phép: 1722 (mốc B) → **1739** + 25 tốc độ (24 + 1 phép POST xuất).
+- **Task 6 — impeccable `audit` (bộ dò `impeccable detect` trên 5 tệp giao diện: 0 phát hiện; đọc tay thêm):** Trợ năng 3/4 (nhóm nút có `aria-label`, lỗi `role=alert`, xem trước `aria-live`; chip lớp có chữ ẩn "bỏ lớp") ·
+  Hiệu năng 4/4 (xlsx nạp động, xem trước hẹn 400 ms, huỷ hẹn cũ) · Responsive 4/4 (375 px không cuộn ngang, mọi nút trong ngăn ≥ 44 px) · Theo token 4/4 (không mã màu, không chữ < 12 px) · Toàn vẹn 4/4. Không có P0–P2.
+  P3 (không sửa, ngoài phạm vi): hai nút `btn-sm` cạnh "Cột hiện ▾" ở Tổng hợp Test cao 32 px trên điện thoại (giống nút cũ cạnh đó). **polish:** không cần đổi khoảng cách/thẳng cột sau ảnh 1440/375; trạng thái tải ("Đang tính…"), rỗng, lỗi máy chủ và lỗi thời gian đều có.
+- **Task 6 — bấm thử (Playwright kênh Chrome, đăng nhập demo, ảnh ở `thiet-ke/anh/pr-xuat/`, tệp mở lại bằng `xlsx` ở Node):**
+  X1 QL Vy Lịch Test, W1–W4 SEP → xem trước 32 lượt · 32 học viên · 3 lớp; tệp `Pisa-Tracking_MT_Monbay_W1SEP-W4SEP.xlsx`: sheet `Mock Test` **32 dòng × 16 cột** + `Bộ lọc đã dùng` 13 dòng = số xem trước ✓.
+  X2 Chỉ lượt đủ điểm + Cột đầy đủ → 4 lượt; 35 cột (16 + 19), có W1, W2, 12 tiêu chí, Tuần L, Người nhập ✓. X3 MT3 + lớp MB FT 101 → 30 lượt, chỉ MT3, chỉ lớp đó; KCK 2 em (Target `KCK`, Kỳ vọng/SOS trống); MT lịch sử `Chưa có điểm · lịch sử` ✓.
+  X4 Từ tuần sau Đến tuần → "Tuần bắt đầu phải trước hoặc bằng tuần kết thúc." dưới Thời gian, nút Xuất tắt ✓. X5 GVCN Hà, hồ sơ lớp MB FT 101 ⋮ → ngăn có lớp chọn sẵn, Theo đợt, 92 lượt · 31 học viên · 1 lớp ✓
+  (Hà cũng là GVCN MB FOU 12 nên khung Lớp thường có thêm lớp của mình — đúng luật "lớp mình"). X6 GVBM Trang: không nút ở Lịch Test, hồ sơ lớp không có ⋮ , gọi thẳng POST → **403** "Bạn chưa có phạm vi xuất kết quả Test — chỉ Quản lý, Quản trị và GVCN (lớp mình)." ✓
+  X7 GVCN lớp thường: tiêu đề "Xuất kết quả Test lớp thường", 15 lượt · 10 học viên · 3 lớp; sheet `FOU · Giữa–Cuối khoá` 11 dòng × 12 cột (Listening %, Reading %, Grammar + Vocabulary %, Pronunciation %, % tổng…), `PREFOU · Giữa–Cuối khoá` 4 dòng × 9 cột; không chữ SOS ✓.
+  X8 Quản trị › Phân tích › Tổng hợp Test: hai nút "⤓ Xuất bảng này" · "Xuất kết quả từng lượt"; ngăn mở, 55 lượt · 43 học viên · 7 lớp ✓. X9 375 px: scrollWidth 375/375, không nút < 44 px, dòng đếm ngay trên nút ✓.
+  X10 Quản trị › Quyền và nhật ký: "Xuất Excel kết quả Test · 30 lượt · Monbay · Theo đợt: MT3 · cột gọn — Nguyễn Khánh Vy" ✓. Ảnh trước (main) / sau: `truoc-*` / `sau-*` (Lịch Test, hồ sơ lớp ⋮, Tổng hợp Test).
 
 > **Chủ sản phẩm chốt 30/09:** GVBM **không** xuất Excel — chỉ GVCN, Quản lý, Quản trị. Lượt rải hai tuần: tính theo tuần bắt đầu thi (tự quyết theo khuyến nghị).
