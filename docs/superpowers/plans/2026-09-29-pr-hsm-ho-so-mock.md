@@ -494,3 +494,6 @@ Không có câu bắt buộc — mọi điểm mở đã vào bảng Q theo khuy
 ## Nhật ký thực thi
 
 <!-- Session code ghi ở đây: mốc B, dòng mã thật lệch, phép kiểm cũ phải sửa, trước/sau clarify, 🛑 đã hỏi, id GV Writing demo, model thật. -->
+
+- **30/09 · Task 0** — model thật **Opus 5.5** (phương án B). Nhánh `pr-hsm-ho-so-mock` từ `origin/main` e7d6af94 (kế hoạch đã có trên main).
+  **Mốc B = 1722 phép kiểm** (+ 24 tốc độ). Đối chiếu dòng mã: khớp hết (lệch 0).
