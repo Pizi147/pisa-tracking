@@ -293,9 +293,6 @@ export function lopMoSan(i: { thamSoOpen: number[] | null; lopHien: number[]; da
 
 // ---------------------------------------------------------------- việc tiếp theo (Q13)
 
-export type CaseChoViec = {
-  id?: number; topic: string | null; state: string; nextDue: string | null; dueOverdue: boolean; sosLevel?: number | null;
-};
 /**
  * Một việc ở cột "Việc tiếp theo" (PR-UX3, B-2/B-3, mockup 17 #14–#15): `viec` là chữ chính (động từ + đối tượng), hạn là
  * mẩu riêng (`han` = "hết T2 14/09", `quaHanNgay` = số ngày trễ) — giao diện nối "⚠ quá hạn 3 ngày" đỏ hoặc "· hết T2 14/09" mờ
@@ -304,63 +301,13 @@ export type CaseChoViec = {
  */
 export type ViecTiepTheo = {
   viec: string; han: string | null; quaHanNgay: number | null; tone: 'danger' | 'warn' | 'info'; title: string;
-  /** B8: đích để web dựng link. `viecTiepCuaEm` luôn có; `viecTiepTheoCua` cũ (bị thay ở PR-HVL Task 5) không. */
-  dich?: DichViec;
+  /** B8: đích để web dựng link. */
+  dich: DichViec;
 };
 /** Việc bấm được đi đâu (B8): lưới nhập điểm · tab Ý thức của em · Ngăn Case (kèm PA / việc Ghi kết quả). */
 export type DichViec = { loai: 'nhap-diem' } | { loai: 'y-thuc' } | { loai: 'case'; caseId: number; paId?: number; ghiKetQua?: boolean };
 /** Một Case mở của em như `viecTiepCuaEm` cần: `viecTiep` là kết quả NGUYÊN của `viecTiepCuaCase` (một nguồn luật SOS). */
 export type CaseViec = { caseId: number; topic: string | null; viecTiep: ViecTiepCase | null };
-
-const nhanKyNang = (topic: string | null, ct: string | null) => (topic ? tenMonNgan(ct, topic) : 'Case');
-
-export function viecTiepTheoCua(i: {
-  /** `han` (PR-N1 A6): hạn nhập điểm sớm nhất người xem còn nợ — có thì việc trễ nói "quá hạn n ngày". */
-  nhapDiem: { kyNang: string[]; dot: string | null; quaHan: boolean; han?: string | null } | null;
-  cases: readonly CaseChoViec[];
-  homNay: string;
-  /** Mã chương trình lớp (MH2). */
-  chuongTrinh?: string | null;
-}): ViecTiepTheo[] {
-  const ct = i.chuongTrinh ?? null;
-  const out: ViecTiepTheo[] = [];
-  if (i.nhapDiem && i.nhapDiem.kyNang.length) {
-    const viec = `Nhập điểm ${i.nhapDiem.kyNang.map((k) => tenMonNgan(ct, k)).join(', ')}${i.nhapDiem.dot ? ` · ${i.nhapDiem.dot}` : ''}`;
-    if (i.nhapDiem.han) {
-      /* Cùng luật với <Han loai="nhap-diem">: số ngày trễ đếm từ hạn, không chỉ "quá hạn" trơn (A6). */
-      const v = deadlineView({ kind: 'nhap-diem', due: i.nhapDiem.han, today: i.homNay });
-      const tre = i.nhapDiem.quaHan || v.tone === 'overdue';
-      out.push({
-        viec, han: v.han.replace(/^hạn /, ''), quaHanNgay: v.daysOverdue, tone: tre ? 'danger' : 'warn',
-        title: `${viec} · ${v.han}${v.quaHan ? ` · ${v.quaHan}` : tre ? ' · quá hạn' : ''}`,
-      });
-    } else {
-      out.push({
-        viec, han: null, quaHanNgay: null, tone: i.nhapDiem.quaHan ? 'danger' : 'warn',
-        title: i.nhapDiem.quaHan ? `${viec} · quá hạn` : viec,
-      });
-    }
-  }
-  for (const c of i.cases) {
-    if (c.state === 'done') continue;
-    if (c.state === 'no_plan') {
-      /* Danh sách chưa có hạn lập PA (PR-UX3 Q11) nên không kèm số ngày. */
-      const viec = `Đề ra PA ${nhanKyNang(c.topic, ct)}`;
-      out.push({ viec, han: null, quaHanNgay: null, tone: 'warn', title: viec });
-      continue;
-    }
-    if (!c.nextDue) continue;
-    /* Cùng luật với <Han loai="cap-nhat-pa"> (G-10): một hàm `deadlineView` cho mọi chỗ hiện hạn. */
-    const v = deadlineView({ kind: 'cap-nhat-pa', due: c.nextDue, today: i.homNay });
-    const viec = `Ghi kết quả ${nhanKyNang(c.topic, ct)}`;
-    out.push({
-      viec, han: v.han.replace(/^hạn /, ''), quaHanNgay: v.daysOverdue, tone: v.tone === 'overdue' ? 'danger' : 'info',
-      title: `Ghi kết quả PA ${nhanKyNang(c.topic, ct)} · ${v.han}${v.quaHan ? ` · ${v.quaHan}` : ''}`,
-    });
-  }
-  const hang = { danger: 0, warn: 1, info: 2 } as const;
-  return out.map((v, idx) => ({ v, idx })).sort((a, b) => hang[a.v.tone] - hang[b.v.tone] || a.idx - b.idx).map((x) => x.v);
-}
 
 /** Bỏ tên PA dài, giữ động từ: "Xác nhận PA Ôn lại bài" → "Xác nhận PA L". */
 const RUT_GON = ['Xác nhận PA', 'Ghi kết quả cuối', 'Ghi kết quả PA'];
@@ -448,14 +395,6 @@ export function tachViecChung(dong: readonly { id: number; viec: readonly ViecTi
   /* Trong các em trùng chữ, lấy bản nặng nhất (đỏ trước) làm đại diện. */
   const dai = chon ? [...chon].sort((a, b) => HANG_TONE[a.tone] - HANG_TONE[b.tone])[0] : null;
   return { chung: dai && chon ? { viec: dai, soEm: chon.length } : null, conLai };
-}
-
-/** Case nói trước ở chế độ "Cần hỗ trợ": quá hạn cập nhật → chưa có PA học thuật → mức SOS cao. */
-export function chonCaseChinh<T extends CaseChoViec>(ds: readonly T[]): T | null {
-  const mo = ds.filter((c) => c.state !== 'done');
-  if (!mo.length) return null;
-  const hang = (c: T) => (c.dueOverdue ? 0 : c.state === 'no_plan' ? 1 : 2);
-  return [...mo].sort((a, b) => hang(a) - hang(b) || (b.sosLevel ?? 0) - (a.sosLevel ?? 0) || (a.id ?? 0) - (b.id ?? 0))[0];
 }
 
 // ---------------------------------------------------------------- Cần hỗ trợ theo kỹ năng (M4, T19, K2-36, K2-42)

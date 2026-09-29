@@ -6,11 +6,13 @@ import { QuaHan } from './Nhan.tsx';
  * MỘT VIỆC Ở CỘT "VIỆC TIẾP THEO" (PR-UX3, B-2/B-3): chữ việc không khung, sau đó hoặc "⚠ quá hạn 3 ngày" đỏ (quá hạn; PR-N1 A6
  * luôn đủ chữ, không dạng gọn) hoặc "· hết T2 14/09" mờ. Câu đầy đủ ở tooltip. Không badge — việc là chữ, badge dành cho trạng thái.
  * `den` (B8): có thì chữ việc là liên kết tới nơi làm việc đó (Ngăn Case, lưới nhập điểm, tab Ý thức); hạn vẫn là chữ mờ bên cạnh.
+ * `onBam`: thay cho `den` khi việc mở ngay tại chỗ (Cần hỗ trợ mở Ngăn Case không rời trang lớp).
  */
-export function ViecTiep({ v, den }: { v: ViecTiepTheo; den?: string | null }) {
+export function ViecTiep({ v, den, onBam }: { v: ViecTiepTheo; den?: string | null; onBam?: () => void }) {
   return (
     <span className="block truncate text-xs text-slate-200" title={v.title}>
-      {den ? <Link to={den} className="link">{v.viec}</Link> : v.viec}
+      {onBam ? <button type="button" className="link cursor-pointer border-0 bg-transparent p-0 text-left text-xs" onClick={onBam}>{v.viec}</button>
+        : den ? <Link to={den} className="link">{v.viec}</Link> : v.viec}
       {v.quaHanNgay !== null ? <> <QuaHan ngay={v.quaHanNgay} /></>
         : v.han ? <span className="text-slate-500"> · {v.han}</span> : null}
     </span>

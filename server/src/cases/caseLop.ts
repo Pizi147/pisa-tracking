@@ -23,8 +23,8 @@ export type CaseChiTiet = {
   id: number; studentId: number; topic: string | null; sosLevel: number | null;
   /** `[MT1] Reading không đạt [SOS 3]` với Case SOS Fast Track (`tenCaseSos`), còn lại tên Case như cũ. */
   tieuDe: string;
-  /** Mã MT của Case SOS (chip `[MT1]` ở web) — null với Case tay / lớp thường. */
-  mt: number | null;
+  /** Ba phần của tên Case SOS Fast Track (web vẽ chip `[MT1]` + phần giữa + chip SOS) — null với Case tay / lớp thường. */
+  tenSos: { mt: number | null; giua: string; sos: number | null } | null;
   nguyenNhan: string | null; urgency: string | null;
   /** "Gấp · mở 14/09" — dòng phụ dưới tên Case (web nối `nguyenNhan · moTu`). */
   moTu: string;
@@ -106,7 +106,7 @@ export function chiTietCaseMo(cases: readonly MappedCase[]): Map<number, CaseChi
     out.set(c.id, {
       id: c.id, studentId: c.studentId as number, topic: c.topic, sosLevel: c.sosLevel,
       tieuDe: laSosFt ? tenCaseSos({ mt: mt ?? null, giua, sos: c.sosLevel }) : c.title,
-      mt: laSosFt ? mt ?? null : null,
+      tenSos: laSosFt ? { mt: mt ?? null, giua, sos: c.sosLevel } : null,
       nguyenNhan: c.primaryLabel, urgency: c.urgency,
       moTu: [c.urgency ? URGENCY_LABEL[c.urgency] ?? null : null, c.detectedAt ? `mở ${ngay(c.detectedAt, homNay)}` : null].filter(Boolean).join(' · '),
       trangThai: trangThaiCaseV4(v4, homNay), viecTiep,

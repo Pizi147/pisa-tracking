@@ -151,7 +151,7 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
   });
   // ==================================================================== 4. Web: chữ hạn "hết Thứ Hai" + A5 + A6
   check('N1 (4) · A6: việc Nhập điểm trễ có số ngày; không còn "⚠ n ngày" gọn; chữ hạn PA không còn Chủ nhật', () => {
-    const v = d.viecTiepTheoCua({ nhapDiem: { kyNang: ['reading'], dot: 'MT2', quaHan: true, han: '2026-09-20' }, cases: [], homNay: '2026-09-24' })[0];
+    const v = d.viecTiepCuaEm({ nhapDiem: { kyNang: ['reading'], dot: 'MT2', quaHan: true, han: '2026-09-20' }, cases: [], yThuc: null, homNay: '2026-09-24' })[0];
     assert(v.quaHanNgay === 4 && /quá hạn 4 ngày/.test(v.title), JSON.stringify(v));
     assert(!/QuaHan[^>]*\bgon\b/.test(docSach('web/src/ui/ViecTiep.tsx')), 'ViecTiep còn dạng gọn');
     for (const f of ['web/src/modules/cases/CasePanel.tsx', 'web/src/modules/cases/SkillBoard.tsx', 'web/src/modules/cases/ThaoTacCase.tsx'])
@@ -159,10 +159,10 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     assert(!/'1 · Kết quả tuần này'/.test(docSach('web/src/modules/cases/CapNhatTuan.tsx')), 'CapNhatTuan còn tiêu đề cũ');
     assert(!/hạn \$\{ngay\(it\.due/.test(docSach('web/src/modules/worklist/WorkList.tsx')), 'WorkList còn ngày trơn không trạng thái (A5)');
   });
-  check('N1 (4) · A6: nhập điểm không có hạn / chưa trễ giữ chữ cũ; máy chủ truyền hanNhap vào viecTiepTheoCua', () => {
-    const a = d.viecTiepTheoCua({ nhapDiem: { kyNang: ['reading'], dot: 'MT2', quaHan: false, han: null }, cases: [], homNay: '2026-09-24' })[0];
+  check('N1 (4) · A6: nhập điểm không có hạn / chưa trễ giữ chữ cũ; máy chủ truyền hanNhap vào viecTiepCuaEm', () => {
+    const a = d.viecTiepCuaEm({ nhapDiem: { kyNang: ['reading'], dot: 'MT2', quaHan: false, han: null }, cases: [], yThuc: null, homNay: '2026-09-24' })[0];
     assert(a.han === null && a.quaHanNgay === null && a.title === 'Nhập điểm R · MT2', JSON.stringify(a));
-    const b = d.viecTiepTheoCua({ nhapDiem: { kyNang: ['reading'], dot: 'MT2', quaHan: false, han: '2026-09-27' }, cases: [], homNay: '2026-09-24' })[0];
+    const b = d.viecTiepCuaEm({ nhapDiem: { kyNang: ['reading'], dot: 'MT2', quaHan: false, han: '2026-09-27' }, cases: [], yThuc: null, homNay: '2026-09-24' })[0];
     assert(b.han === '27/09' && b.quaHanNgay === null && b.tone === 'warn' && !/quá hạn/.test(b.title), JSON.stringify(b));
     const src = docSach('server/src/classes/classes.ts');
     assert((src.match(/hanNhap:/g) ?? []).length >= 2 && /han: timeline\.map\(\(t\) => t\.hanNhap\)/.test(src), 'classes.ts chưa có hanNhap');

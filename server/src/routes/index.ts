@@ -55,6 +55,7 @@ import * as lichSuLopSvc from '../classes/lichSuLop.ts';
 import * as hocVienLopSvc from '../classes/hocVienLop.ts';
 import * as luuTruSvc from '../classes/luuTru.ts';
 import * as phanTichLopSvc from '../classes/phanTichLop.ts';
+import { canHoTroLop } from '../classes/canHoTro.ts';
 import * as thongTinLopSvc from '../classes/thongTinLop.ts';
 import * as xoaKetThucLopSvc from '../classes/xoaKetThucLop.ts';
 import * as xoaHocVienSvc from '../students/xoaHocVien.ts';
@@ -1193,6 +1194,12 @@ api.get('/hoc-vien-lop/luu-tru', requireAuth, wrap((req) => {
 api.get('/classes/:id/phan-tich-lop', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return phanTichLopSvc.phanTichLop(principalOf(req), pInt(req, 'id'));
+}));
+
+/** Tab Học viên › Cần hỗ trợ (PR-HVL, M4): mỗi em có Case mở một khối — Case + PA + việc tiếp, theo lô (không N+1). */
+api.get('/classes/:id/can-ho-tro', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return canHoTroLop(principalOf(req), pInt(req, 'id'));
 }));
 
 /** ⋮ Sửa thông tin lớp: mã lớp, LT (FT), ghi chú; chương trình chỉ khi lớp chưa có học viên và bài Test. */

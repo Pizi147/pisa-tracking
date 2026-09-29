@@ -5,7 +5,7 @@
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runPrHvlTests(t: YThucTestKit) {
-  const { check, assert } = t;
+  const { check, assert, assertThrows } = t;
   const d: any = await import('../../../shared/domain/index.ts');
   const eq = (got: unknown, want: unknown, m: string) =>
     assert(JSON.stringify(got) === JSON.stringify(want), `${m}: ${JSON.stringify(got)} ≠ ${JSON.stringify(want)}`);
@@ -357,6 +357,75 @@ export async function runPrHvlTests(t: YThucTestKit) {
     assert(/k\.dong1/.test(b) && !/truncate/.test(kq), 'dòng Kết quả còn truncate');
     assert(/tachViecChung/.test(b) && /Cả lớp:/.test(b) && /duongViecTiep/.test(b) && /font-semibold/.test(b), 'thiếu Cả lớp / link việc / tên đậm');
     assert(/den \? <Link to=\{den\}/.test(web('ui/ViecTiep.tsx')), 'ViecTiep chưa có link');
+  });
+
+  // ------------------------------------------------------------------ Task 5 · máy chủ Cần hỗ trợ theo kỹ năng
+
+  const canHoTro: any = await import('../classes/canHoTro.ts');
+  const LOP_FT = classId('MB FT 101');
+  const LOP_FOU = classId('MB FOU 12');
+
+  check('PR-HVL (5) · can-ho-tro: quyền (GV lớp khác bị chặn); chỉ em có Case mở; `tong` khớp; mọi Case vào đúng một hàng', () => {
+    assertThrows(() => canHoTro.canHoTroLop(P.cpManager, LOP_FT), /ngoài phạm vi/, 'Quản lý chi nhánh khác');
+    const r = canHoTro.canHoTroLop(P.admin, LOP_FT);
+    assert(r.em.length > 0 && r.em.every((e: any) => e.cases.length > 0), 'Chỉ em có Case mở (T19)');
+    eq([r.tong.soEm, r.tong.soCase], [r.em.length, r.em.reduce((n: number, e: any) => n + e.cases.length, 0)], 'tong.soEm / soCase');
+    const tatCa = r.em.flatMap((e: any) => e.cases);
+    eq(r.tong.quaHan, tatCa.filter((c: any) => c.quaHan).length, 'tong.quaHan');
+    eq(r.tong.choDuyet, tatCa.filter((c: any) => c.trangThai.k === 'cho-duyet-khong-theo-doi').length + tatCa.reduce((n: number, c: any) => n + c.pas.filter((p: any) => p.choDuyet && !p.xong).length, 0), 'tong.choDuyet');
+    for (const e of r.em) {
+      const hang = d.hangCanHoTro({ ct: r.ct, cases: e.cases });
+      const dem = hang.reduce((n: number, h: any) => n + (h.kind === 'hang' ? h.cases.length : 0), 0);
+      eq(dem, e.cases.length, `em ${e.id}: mọi Case vào đúng một hàng`);
+    }
+    eq(r.em.map((e: any) => e.id).sort(), [...new Set(canHoTro.canHoTroLop(P.mbManager, LOP_FT).em.map((e: any) => e.id))].sort(), 'QL thấy cùng tập em');
+  });
+
+  check('PR-HVL (5) · can-ho-tro: GVBM thuần có kyNangToi và laGvbmThuan; GVCN/Quản trị thì không (công tắc "Chỉ kỹ năng tôi dạy")', () => {
+    const gvbm = canHoTro.canHoTroLop(P.subjectTeacher, LOP_FT);
+    assert(gvbm.laGvbmThuan && gvbm.kyNangToi.length >= 1 && gvbm.kyNangToi.length < gvbm.boMon.length, JSON.stringify({ a: gvbm.laGvbmThuan, k: gvbm.kyNangToi, b: gvbm.boMon }));
+    assert(!canHoTro.canHoTroLop(P.coreTeacher, LOP_FT).laGvbmThuan && !canHoTro.canHoTroLop(P.admin, LOP_FT).laGvbmThuan, 'GVCN/Quản trị không phải GVBM thuần');
+  });
+
+  check('PR-HVL (5) · can-ho-tro lớp FOU: bộ môn L R W S, hàng G+V và P theo chương trình; việc "Ghi kết quả" của FT nói "hạn hết T2"', () => {
+    const fou = canHoTro.canHoTroLop(P.admin, LOP_FOU);
+    eq([fou.ct, fou.boMon], ['FOU', ['listening', 'reading', 'writing', 'speaking']], 'FOU');
+    const hang = d.hangCanHoTro({ ct: fou.ct, cases: [] });
+    eq(hang.map((h: any) => h.nhan), ['Không có Case: L · R · G+V · P'], 'FOU không Case: một dòng gộp');
+    const ft = canHoTro.canHoTroLop(P.admin, LOP_FT);
+    const ghi = ft.em.flatMap((e: any) => e.cases).map((c: any) => c.viecTiep).filter((v: any) => v?.chu.startsWith('Ghi kết quả') && v.han);
+    assert(ghi.length > 0, 'Bộ demo phải có Case đang chờ ghi kết quả');
+    for (const v of ghi) {
+      const [x] = d.viecTiepCuaEm({ nhapDiem: null, cases: [{ caseId: 1, topic: 'reading', viecTiep: v }], yThuc: null, homNay: TODAY });
+      assert(/^hết T2 \d\d\/\d\d$/.test(x.han ?? ''), `Hạn Ghi kết quả: ${x.han}`);
+    }
+  });
+
+  check('PR-HVL (5) · can-ho-tro: thêm 10 Case cho một em → chênh ≤ 1 câu SQL (không N+1)', () => {
+    const r0 = canHoTro.canHoTroLop(P.admin, LOP_FT);
+    const em = r0.em[0];
+    const cy = (conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(em.id) as any)?.id ?? null;
+    const dem = () => { const a = soCauSql(); canHoTro.canHoTroLop(P.admin, LOP_FT); return soCauSql() - a; };
+    const truoc = dem();
+    const ins = conn.prepare(`INSERT INTO sos_cases (student_id, cycle_id, category, topic, origin_kind, status, sos_level, detected_at, created_at)
+      VALUES (?, ?, 'listening', 'listening', 'teacher_report', 'open', 1, ?, ?)`);
+    const moi: number[] = [];
+    for (let i = 0; i < 10; i++) moi.push(Number(ins.run(em.id, cy, TODAY, new Date().toISOString()).lastInsertRowid));
+    try {
+      const sau = dem();
+      assert(sau <= truoc + 1, `${truoc} → ${sau} câu`);
+      eq(canHoTro.canHoTroLop(P.admin, LOP_FT).em.find((e: any) => e.id === em.id).cases.length, em.cases.length + 10, '10 Case mới có mặt');
+    } finally {
+      conn.prepare(`DELETE FROM sos_cases WHERE id IN (${moi.map(() => '?').join(',')})`).run(...moi);
+    }
+  });
+
+  check('PR-HVL (5) · web Cần hỗ trợ: hàng theo kỹ năng (`hangCanHoTro`), mở Ngăn Case tại chỗ, công tắc "Chỉ kỹ năng tôi dạy"; không còn luật một-Case-chính/em', () => {
+    const b = web('modules/classes/BangCanHoTro.tsx');
+    assert(/hangCanHoTro\(/.test(b) && /sapEmCanHoTro\(/.test(b) && /<NganCase /.test(b) && /Chỉ kỹ năng tôi dạy/.test(b), 'thiếu hàng theo kỹ năng / Ngăn Case tại chỗ / công tắc');
+    assert(!/chonCaseChinh|viecTiepTheoCua|Chưa có PA học thuật|\/cases\?classId=/.test(b), 'còn luật/chữ cũ');
+    assert(!/\u{1F512}/u.test(b), 'ổ khoá phải là SVG (KhoaQuyChe), không phải emoji');
+    assert(/tenSos/.test(b) && /export function TenCase/.test(web('modules/cases/SkillBoard.tsx')), 'chip [MT1] dùng TenCase của SkillBoard');
   });
 
   check('PR-HVL (2) · roster: `history[i].lichSu` là cờ thật của mốc; Standing có `nextWeekStart` (cột Sắp tới)', () => {

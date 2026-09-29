@@ -186,27 +186,25 @@ export async function runHocVienLopTests(t: YThucTestKit) {
   });
 
   check('PR-Qa · Q13 việc tiếp theo: nhập điểm + việc của Case, quá hạn lên đầu, chữ hạn trùng <Han>', () => {
-    const v = d.viecTiepTheoCua({
+    /* PR-HVL (K2-04): việc của Case lấy NGUYÊN `viecTiepCuaCase` (đầu vào `viecTiep`); `viecTiepTheoCua` cũ đã bị `viecTiepCuaEm` thay. */
+    const v = d.viecTiepCuaEm({
       nhapDiem: { kyNang: ['listening', 'writing'], dot: 'Giữa khoá', quaHan: false },
       cases: [
-        { id: 1, topic: 'writing2', state: 'no_plan', nextDue: null, dueOverdue: false },
-        { id: 2, topic: 'listening', state: 'working', nextDue: '2026-09-13', dueOverdue: true },
-        { id: 3, topic: 'reading', state: 'working', nextDue: '2026-09-20', dueOverdue: false },
-        { id: 4, topic: 'speaking', state: 'working', nextDue: null, dueOverdue: false },
+        { caseId: 1, topic: 'writing2', viecTiep: { chu: 'Đề ra PA', loaiHan: 'lap-pa', han: null } },
+        { caseId: 2, topic: 'listening', viecTiep: { chu: 'Ghi kết quả PA Nghe podcast', loaiHan: 'cap-nhat-pa', han: '2026-09-13', paId: 9 } },
+        { caseId: 3, topic: 'reading', viecTiep: { chu: 'Ghi kết quả PA Đọc báo', loaiHan: 'cap-nhat-pa', han: '2026-09-20', paId: 10 } },
+        { caseId: 4, topic: 'speaking', viecTiep: null },
       ],
+      yThuc: null,
       homNay: '2026-09-14',
     });
-    eq(v, [
-      { viec: 'Ghi kết quả L', han: 'hết T2 13/09', quaHanNgay: 1, tone: 'danger', title: 'Ghi kết quả PA L · hạn hết T2 13/09 · quá hạn 1 ngày' },
-      { viec: 'Nhập điểm L, W · Giữa khoá', han: null, quaHanNgay: null, tone: 'warn', title: 'Nhập điểm L, W · Giữa khoá' },
-      { viec: 'Đề ra PA W2', han: null, quaHanNgay: null, tone: 'warn', title: 'Đề ra PA W2' },
-      { viec: 'Ghi kết quả R', han: 'hết T2 20/09', quaHanNgay: null, tone: 'info', title: 'Ghi kết quả PA R · hạn hết T2 20/09' },
-    ], 'Thứ tự và chữ');
-    eq(d.chonCaseChinh([
-      { id: 5, topic: 'reading', state: 'working', nextDue: null, dueOverdue: false, sosLevel: 3 },
-      { id: 6, topic: 'listening', state: 'no_plan', nextDue: null, dueOverdue: false, sosLevel: 1 },
-      { id: 7, topic: 'speaking', state: 'done', nextDue: null, dueOverdue: true, sosLevel: 3 },
-    ]).id, 6, 'Case chưa có PA học thuật trước Case đang chạy; Case đã xong không tính');
+    eq(v.map((x: any) => [x.viec, x.han, x.quaHanNgay, x.tone, x.title]), [
+      ['Ghi kết quả PA L', 'hết T2 13/09', 1, 'danger', 'Ghi kết quả PA Nghe podcast · Listening · hạn hết T2 13/09 · quá hạn 1 ngày'],
+      ['Nhập điểm L, W · Giữa khoá', null, null, 'warn', 'Nhập điểm L, W · Giữa khoá'],
+      ['Đề ra PA W2', null, null, 'warn', 'Đề ra PA · Writing Task 2'],
+      ['Ghi kết quả PA R', 'hết T2 20/09', null, 'info', 'Ghi kết quả PA Đọc báo · Reading · hạn hết T2 20/09'],
+    ], 'Thứ tự và chữ (Case không việc bị bỏ)');
+    /* Ý kiểm cũ "Case nói trước" (chonCaseChinh) nay là thứ tự hàng của `hangCanHoTro` — kiểm ở prHvl.tests.ts (T19). */
   });
 
   check('PR-Qa · Q2 tên GV chưa là link khi chưa có trang hồ sơ GV; GV chỉ xem được hồ sơ của chính mình', () => {

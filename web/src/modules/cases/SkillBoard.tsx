@@ -274,7 +274,7 @@ function CotCase({ row }: { row: Row }) {
 
 /** Chip nhỏ, viền mảnh — `[MT1]`, `[SOS 3]` trong tên Case (T21). SOS chỉ hiện Ở ĐÂY, một lần (K3-08). */
 const CHIP_SOS: Record<number, string> = { 1: 'bg-sos1-bg text-sos1', 2: 'bg-sos2-bg text-sos2', 3: 'bg-sos3-bg text-sos3' };
-function TenCase({ c }: { c: CaseCard }) {
+export function TenCase({ c }: { c: Pick<CaseCard, 'title' | 'tenSos'> }) {
   if (!c.tenSos) return <>{c.title}</>;
   const { mt, giua, sos } = c.tenSos;
   return (
@@ -295,7 +295,7 @@ function MuiTen({ mo }: { mo: boolean }) {
   );
 }
 /** Ổ khoá 12px nét 1.5 — PA theo quy chế. */
-function KhoaQuyChe() {
+export function KhoaQuyChe() {
   return (
     <svg aria-hidden viewBox="0 0 12 12" width="12" height="12" className="shrink-0 text-slate-400">
       <rect x="2.25" y="5.25" width="7.5" height="5.5" rx="1" fill="none" stroke="currentColor" strokeWidth="1.5" />
