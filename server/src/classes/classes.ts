@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS, awaitingScore, chuanHoaMaLop, soSanhLop, kiemPhanCong, moRongPhanCong, nhanKetThucVi, nhanTiepTheo,
-  oPhanCong, pendingSkillsOf, tenMonNgan, trongHaiTuanCuoi, viecTiepTheoCua,
+  oPhanCong, pendingSkillsOf, tenMonNgan, trongHaiTuanCuoi, viecTiepCuaEm,
   type AssessedSkill, type SlotPhanCong, type AttemptKind, type PendingCell, type ProgrammeCode, type WorkScope,
   coMocTiepTheo, mocKeTiep,
 } from '../../../shared/domain/index.ts';
@@ -18,7 +18,7 @@ import { dotHoanTatMany, type HoanTatInfo } from '../fasttrack/hoanTat.ts';
 import { standingFor, standingLine } from '../students/standing.ts';
 import { allProgrammes, evaluateRegular, programmeOfClass } from '../normal/regular.ts';
 import { classProgressMany, missingForClasses, missingForStudent } from './schedule.ts';
-import { canhBaoTheoHocVien, caseMoTheoHocVien, soEmCanXuLyYThuc } from './dongHocVien.ts';
+import { canhBaoTheoHocVien, caseViecTheoHocVien, soEmCanXuLyYThuc } from './dongHocVien.ts';
 import { demChuaLoTrinh, tiepTheoTheoHocVien } from './loTrinhTiep.ts';
 import { listCases } from '../cases/cases.ts';
 import { trongBoNho } from '../platform/nguCanhRequest.ts';
@@ -393,7 +393,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
 
   /* PR-Qa: nhãn cảnh báo Ý thức 5 ngày (YT-8) và Case đang mở cho "Việc tiếp theo" — mỗi thứ MỘT lần cho cả lớp. */
   const canhBao = canhBaoTheoHocVien(p, classId);
-  const caseMo = caseMoTheoHocVien(p, classId);
+  const caseViec = caseViecTheoHocVien(p, classId);
   /* PR-LT: Lộ trình tiếp theo của cả lớp — một câu, cột Khoá dùng ngay, không hỏi lại theo từng em. */
   const tiepTheoLop = tiepTheoTheoHocVien([classId]);
   const maChuongTrinhHienTai = (prog?.code ?? null) as ProgrammeCode | null;
@@ -551,6 +551,8 @@ export function classRoster(p: Principal, classId: number, q?: string) {
       .map((t) => ({
         id: t.id, label: t.kindLabel, kind: t.kind, periodCode: t.periodCode,
         sosLevel: t.sosLevel, evaluable: t.evaluable,
+        /* Rà #119: MT lịch sử có điểm thật nhưng không phải hiện trạng — bảng điểm vẽ xám + nhãn "lịch sử". */
+        lichSu: !!t.lichSu,
         scoredRequired: t.scoredRequired, requiredCount: t.requiredCount,
         overall: t.overall,
         expectation: t.expectation, writing: t.writing,
@@ -629,7 +631,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
       myPending: [...new Set(timeline.flatMap((t) => t.myPending))],
       canhBaoYThuc: canhBao.get(s.id) ?? null,
       /* Cột "Việc tiếp theo" (Q13): nhập điểm của CHÍNH người xem ở đợt đang chờ + việc của từng Case chưa xong. */
-      viecTiepTheo: viecTiepTheoCua({
+      viecTiepTheo: viecTiepCuaEm({
         nhapDiem: (() => {
           const cho = [...new Set(timeline.flatMap((t) => t.myPending))];
           if (!cho.length) return null;
@@ -639,7 +641,8 @@ export function classRoster(p: Principal, classId: number, q?: string) {
             han: timeline.map((t) => t.hanNhap).filter(Boolean).sort()[0] ?? null,
           };
         })(),
-        cases: caseMo.get(s.id) ?? [],
+        cases: caseViec.get(s.id) ?? [],
+        yThuc: canhBao.get(s.id) ?? null,
         homNay: today,
         chuongTrinh: prog?.code ?? null,
       }),

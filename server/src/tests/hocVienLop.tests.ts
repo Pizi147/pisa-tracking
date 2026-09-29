@@ -378,7 +378,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     const row = classes.classRoster(P.admin, LOP_THUONG).find((s: any) => s.id === b.sid);
     /* PR-N1 A6: máy chủ truyền hạn nhập điểm (`hanNhap`) → việc trễ nói đủ "quá hạn n ngày". */
     // PR-MON (MH2): lớp FOU — ô W hiện G+V.
-    eq(row.viecTiepTheo[0], { viec: 'Nhập điểm G+V · Giữa khoá', han: '13/09', quaHanNgay: 1, tone: 'danger', title: 'Nhập điểm G+V · Giữa khoá · hạn 13/09 · quá hạn 1 ngày' }, 'Writing tuần 07/09 chưa có điểm, hạn CN 13/09 đã qua');
+    eq(row.viecTiepTheo[0], { viec: 'Nhập điểm G+V · Giữa khoá', han: '13/09', quaHanNgay: 1, tone: 'danger', dich: { loai: 'nhap-diem' }, title: 'Nhập điểm G+V · Giữa khoá · hạn 13/09 · quá hạn 1 ngày' }, 'Writing tuần 07/09 chưa có điểm, hạn CN 13/09 đã qua');
     const t = row.timeline.find((x: any) => x.kind === 'progress');
     eq(t.tuanMon.writing, '2026-09-07', 'Tuần thi của môn Writing');
     assert(row.viecTiepTheo.every((v: any) => !/MT\d|kỳ vọng/.test(v.viec)), 'Chữ FT lọt vào lớp thường');

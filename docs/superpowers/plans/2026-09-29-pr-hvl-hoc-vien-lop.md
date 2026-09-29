@@ -483,4 +483,11 @@ Phép kiểm cũ sửa chữ mong đợi (giữ ý kiểm): `hocVienLop.tests.ts
 chữ cột FT + FOU (`Không đạt: L`, `Không đạt: G+V`), đếm chip (`can-lam ≥ số em Case quá hạn`; Task 3 viết lại chặt hơn) · `panelUx3.tests.ts:114` badge · `lenLop.tests.ts:155` badge gộp `xep-lop` ·
 `nenGiaoDien.tests.ts:125` badge 7 loại (miễn ≤ 3 từ cho `xep-lop`, `qua-han`, `chang`). Thêm `prHvl.tests.ts` (`runPrHvlTests`, đăng ký cuối `run.ts`).
 
+**Task 2 (30/09) — 1738 phép kiểm.** Máy chủ: `sosCaseStateMany` (`sosState.ts`; `sosCaseState(id)` = `sosCaseStateMany([id])`), `chiTietCaseMo` (`server/src/cases/caseLop.ts` mới: 4 câu mỗi lô 400 — `sosCaseStateMany`,
+`sos_cases` (tên riêng + lý do hệ thống đóng), `case_interventions ⟕ users`, `case_milestones`), `caseViecTheoHocVien` thay `caseMoTheoHocVien`, `classRoster` dùng `viecTiepCuaEm` (truyền Ý thức `canhBao`),
+`history[i].lichSu`, `Standing.nextWeekStart`. Quyết định: `CaseChiTiet` thêm `sosLevel`, `mt`, `xong` (PA) — web cần chip `[MT1]` / lọc PA đang làm; `giua` (phần giữa tên Case SOS) lấy `sos_cases.title` ||
+`{tên môn} không đạt` từ `MappedCase.topicLabel` (không gọi `tenGiuaCua` từng Case — hàm đó hỏi DB); Case không chủ đề → "Không đạt" (không dính dấu cách). Nguyên nhân = `MappedCase.primaryLabel` (không đọc lại `case_issues`).
+**Số câu SQL:** roster lớp 3: 46 → **50** (QT 43 → 47), lớp 6: 42 → 46 · trần `TRAN` hạ về mốc + 6 (52 · QT 49). Thêm 10 Case cho một em: roster chênh ≤ 1 câu; `chiTietCaseMo` 3 Case = mọi Case cùng số câu.
+Phép kiểm cũ sửa: `hocVienLop.tests.ts` "Q13 việc tiếp theo ở dòng học viên" — thêm `dich: { loai: 'nhap-diem' }` vào chuỗi mong đợi (giữ ý kiểm).
+
 > **Chủ sản phẩm chốt 30/09:** **có** cột "Sắp tới" (M3) ở danh sách Học viên & Lớp.

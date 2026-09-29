@@ -167,4 +167,111 @@ export async function runPrHvlTests(t: YThucTestKit) {
     eq(d.nutChinhDauTrang(g).loai, null, 'Không nút');
     eq(d.nutChinhDauTrang({ ...g, thuong: false, phase: 'final_week' }).loai, null, 'FT không có "Chuyển tiếp lớp"');
   });
+
+  // ------------------------------------------------------------------ Task 2 · máy chủ: Case mở theo lô
+
+  const { conn, P, TODAY, classId } = t;
+  const sosState: any = await import('../cases/sosState.ts');
+  const caseLop: any = await import('../cases/caseLop.ts');
+  const casesMod: any = await import('../cases/cases.ts');
+  const classesMod: any = await import('../classes/classes.ts');
+  const dongHv: any = await import('../classes/dongHocVien.ts');
+  const { soCauSql } = await import('../platform/nguCanhRequest.ts');
+  const moTatCa = () => casesMod.listCases(P.admin, {}).rows.filter((c: any) => c.status !== 'done' && c.studentId !== null) as any[];
+
+  check('PR-HVL (2) · sosCaseStateMany khớp định nghĩa độc lập (`awaitingCauseCaseIds`, `LA_CASE_SOS`) trên mọi Case demo; Case lạ → rỗng', () => {
+    const ids = (conn.prepare('SELECT id FROM sos_cases ORDER BY id').all() as any[]).map((r) => r.id as number);
+    const nhieu = sosState.sosCaseStateMany(ids);
+    eq(ids.filter((id) => nhieu.get(id).awaitingCause), sosState.awaitingCauseCaseIds(ids), 'awaitingCause');
+    const laSos = (conn.prepare(`SELECT sc.id FROM sos_cases sc WHERE ${sosState.LA_CASE_SOS('sc')} ORDER BY sc.id`).all() as any[]).map((r) => r.id);
+    eq(ids.filter((id) => nhieu.get(id).fromSos), laSos, 'fromSos');
+    assert(ids.length > 5 && laSos.length > 0, 'Bộ demo phải có Case SOS');
+    eq(sosState.sosCaseState(99999999), { fromSos: false, hasCause: false, awaitingCause: false, dueOn: null, dismissed: null, choDuyetKhongTheoDoi: null, coPaChoXacNhan: false }, 'Case không có');
+  });
+
+  check('PR-HVL (2) · chiTietCaseMo: trạng thái v4 + việc tiếp = đúng `caseDetail` (một nguồn luật SOS); PA đủ; tên Case SOS ba phần', () => {
+    const mo = moTatCa();
+    const ct = caseLop.chiTietCaseMo(mo);
+    assert(mo.length >= 10 && ct.size === mo.length, `Case mở ${mo.length}, chi tiết ${ct.size}`);
+    let soSos = 0;
+    for (const c of mo.slice(0, 25)) {
+      const x = ct.get(c.id);
+      const dt = casesMod.caseDetail(P.admin, c.id);
+      eq(x.viecTiep, dt.viecTiep, `viecTiep Case ${c.id}`);
+      eq([x.trangThai.k, x.trangThai.t], [dt.trangThaiV4.k, dt.trangThaiV4.t], `trạng thái Case ${c.id}`);
+      eq(x.pas.length, dt.interventions.filter((i: any) => i.status !== 'cancelled').length, `số PA Case ${c.id}`);
+      const theoId = (a: any[]) => [...a].sort((p, q) => p.id - q.id).map((i) => i.mocChu);
+      eq(theoId(x.pas), theoId(dt.interventions.filter((i: any) => i.status !== 'cancelled')), `mốc chữ PA Case ${c.id}`);
+      if (dt.tenSos && c.topic) { soSos++; eq(x.tieuDe, d.tenCaseSos(dt.tenSos), `tên SOS Case ${c.id}`); }
+    }
+    assert(soSos > 0, 'Phải có Case SOS Fast Track trong mẫu');
+  });
+
+  check('PR-HVL (2) · số câu SQL của chiTietCaseMo cố định: 3 Case và mọi Case mở cùng số câu (một câu mỗi bảng theo lô)', () => {
+    const mo = moTatCa();
+    assert(mo.length > 6, 'cần nhiều Case');
+    const dem = (ds: any[]) => { const a = soCauSql(); caseLop.chiTietCaseMo(ds); return soCauSql() - a; };
+    const it = dem(mo.slice(0, 3)); const tat = dem(mo);
+    eq(tat, it, 'Chênh số câu giữa 3 Case và mọi Case');
+    assert(it <= 6, `${it} câu cho một lô`);
+  });
+
+  check('PR-HVL (2) · roster FT: em Chờ xác nhận nguyên nhân → "Xác nhận nguyên nhân L" (warn, đích Case); em Ý thức bắt buộc → "Xử lý vi phạm"', () => {
+    const cho = sosState.awaitingCauseCaseIds(moTatCa().map((c) => c.id));
+    assert(cho.length > 0, 'Bộ demo phải có Case chờ xác nhận nguyên nhân');
+    let thay = 0;
+    for (const id of cho.slice(0, 6)) {
+      const c: any = moTatCa().find((x) => x.id === id);
+      if (!c.homeClassId) continue;
+      const r = classesMod.classRoster(P.admin, c.homeClassId).find((x: any) => x.id === c.studentId);
+      const v = r?.viecTiepTheo.find((x: any) => x.dich?.loai === 'case' && x.dich.caseId === id);
+      if (!v) continue;
+      thay++;
+      assert(/^Xác nhận nguyên nhân/.test(v.viec) && ['warn', 'danger'].includes(v.tone) && v.dich.ghiKetQua === false, JSON.stringify(v));
+    }
+    assert(thay > 0, 'Không em nào có việc Xác nhận nguyên nhân ở cột Việc tiếp theo');
+    let yt = 0;
+    for (const lopId of (conn.prepare(`SELECT id FROM classes WHERE status = 'active'`).all() as any[]).map((r) => r.id as number)) {
+      for (const [sid] of dongHv.canhBaoTheoHocVien(P.admin, lopId)) {
+        const r = classesMod.classRoster(P.admin, lopId).find((x: any) => x.id === sid);
+        if (r?.viecTiepTheo.some((x: any) => x.viec === 'Xử lý vi phạm' && x.dich.loai === 'y-thuc')) yt++;
+      }
+    }
+    assert(yt > 0, 'Không em Ý thức nào có việc "Xử lý vi phạm"');
+  });
+
+  check('PR-HVL (2) · đếm câu roster: thêm 10 Case cho một em → chênh ≤ 1 câu (không N+1)', () => {
+    const lop = classId('MB FT 101');
+    const hv = classesMod.classRoster(P.admin, lop)[0];
+    const dem = () => { const a = soCauSql(); classesMod.classRoster(P.admin, lop); return soCauSql() - a; };
+    const truoc = dem();
+    const ins = conn.prepare(`INSERT INTO sos_cases (student_id, cycle_id, category, topic, origin_kind, status, sos_level, detected_at, created_at)
+      VALUES (?, ?, 'reading', 'reading', 'teacher_report', 'open', 1, ?, ?)`);
+    const moi: number[] = [];
+    for (let i = 0; i < 10; i++) moi.push(Number(ins.run(hv.id, hv.cycle?.id ?? null, TODAY, new Date().toISOString()).lastInsertRowid));
+    try {
+      const sau = dem();
+      assert(sau <= truoc + 1, `Roster ${truoc} → ${sau} câu khi thêm 10 Case`);
+      const r = classesMod.classRoster(P.admin, lop).find((x: any) => x.id === hv.id);
+      assert(r.viecTiepTheo.filter((x: any) => x.dich?.loai === 'case').length >= 10, 'Việc của 10 Case mới phải có mặt');
+    } finally {
+      conn.prepare(`DELETE FROM sos_cases WHERE id IN (${moi.map(() => '?').join(',')})`).run(...moi);
+    }
+  });
+
+  check('PR-HVL (2) · roster: `history[i].lichSu` là cờ thật của mốc; Standing có `nextWeekStart` (cột Sắp tới)', () => {
+    let coMoc = 0;
+    for (const lopId of (conn.prepare(`SELECT id FROM classes WHERE status = 'active'`).all() as any[]).map((r) => r.id as number)) {
+      for (const r of classesMod.classRoster(P.admin, lopId)) {
+        for (const h of r.history) {
+          assert(typeof h.lichSu === 'boolean', `history.lichSu thiếu ở em ${r.id}`);
+          eq(h.lichSu, !!r.timeline.find((x: any) => x.id === h.id)?.lichSu, `cờ lichSu mốc ${h.id}`);
+        }
+        const st = r.standing;
+        if (st?.nextAttemptNo != null) { coMoc++; assert(/^\d{4}-\d{2}-\d{2}/.test(st.nextWeekStart ?? ''), `nextWeekStart em ${r.id}: ${st.nextWeekStart}`); }
+        else assert(!st || st.nextWeekStart === null, `nextWeekStart lẻ loi em ${r.id}`);
+      }
+    }
+    assert(coMoc > 0, 'Phải có em có mốc kế tiếp');
+  });
 }
