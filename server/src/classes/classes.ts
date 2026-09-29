@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS, awaitingScore, chuanHoaMaLop, soSanhLop, kiemPhanCong, moRongPhanCong, nhanKetThucVi, nhanTiepTheo,
-  oPhanCong, pendingSkillsOf, skillShort, trongHaiTuanCuoi, viecTiepTheoCua,
+  oPhanCong, pendingSkillsOf, tenMonNgan, trongHaiTuanCuoi, viecTiepTheoCua,
   type AssessedSkill, type SlotPhanCong, type AttemptKind, type PendingCell, type ProgrammeCode, type WorkScope,
   coMocTiepTheo, mocKeTiep,
 } from '../../../shared/domain/index.ts';
@@ -203,7 +203,7 @@ function listClassSummariesThat(p: Principal, f: { branchId?: number; q?: string
       const editableOrAll = skillsByClass.get(a.class_id) ?? [];
       const mineSkills = mineByClass.get(a.class_id) ?? [];
       /* Hỏi theo TỪNG MÔN: bốn môn của một bài có thể ở ba tuần khác nhau (mục 10.1). */
-      const views = regularSkillViews(a, bundle.skillRows.get(a.id), rows, today);
+      const views = regularSkillViews(a, bundle.skillRows.get(a.id), rows, today, editableOrAll);
       const cells: PendingCell[] = editableOrAll.map((k) => {
         const row = rows.find((r) => r.skill === k);
         const v = views.get(k);
@@ -420,9 +420,9 @@ export function classRoster(p: Principal, classId: number, q?: string) {
          * Bài kiểm tra lớp thường: không có band, không có Overall, không có kỳ vọng theo
          * target. Chỉ có đạt/trượt theo tỷ lệ điểm đạt/tổng điểm, và số môn trượt ra mức SOS.
          */
-        const r = evaluateRegular(prog!.skills, scores);
+        const r = evaluateRegular(prog!.skills, scores, prog!.code);
         /* Lịch và hạn của TỪNG môn — bốn môn của một bài có thể trải hai ba tuần. */
-        const regViews = regularSkillViews(a, bundle.skillRows.get(a.id), scores, today);
+        const regViews = regularSkillViews(a, bundle.skillRows.get(a.id), scores, today, prog!.skills);
         return {
           id: a.id, attemptNo: a.attempt_no, cycleSeq: a.cycle_seq, route: null,
           kind: a.kind, kindLabel: ATTEMPT_KIND_SHORT[a.kind as AttemptKind] ?? a.kind,
@@ -641,6 +641,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
         })(),
         cases: caseMo.get(s.id) ?? [],
         homNay: today,
+        chuongTrinh: prog?.code ?? null,
       }),
       /* Cột Khoá "tiếp theo: …" (PR-LT, Q1/Q4) — chỉ có nghĩa cho lớp thường còn đang học. */
       tiepTheo: isRatio ? nhanTiepTheo(tiepTheoLop.get(s.id) ?? null, maChuongTrinhHienTai) : null,
@@ -698,7 +699,11 @@ function classOverviewThat(p: Principal, classId: number) {
     id: cls.id, code: cls.code, kind: cls.kind, route: cls.route,
     isFastTrack: cls.is_fast_track === 1, startDate: cls.start_date, note: cls.note,
     branchId: cls.branch_id, branchCode: cls.branch_code, branchName: cls.branch_name,
-    programme: prog ? { code: prog.code, name: prog.name, weeks: prog.weeks, scoringMode: prog.scoringMode } : null,
+    programme: prog ? {
+      code: prog.code, name: prog.name, weeks: prog.weeks, scoringMode: prog.scoringMode,
+      /* K2-12, PF6: nhóm cột bảng điểm lớp theo MỐC của chương trình (Pre FOU chỉ Cuối khoá) — không cố định Giữa/Cuối. */
+      checkpoints: prog.checkpoints.map((c) => c.kind),
+    } : null,
     status: cls.status as string, finishedAt: cls.finished_at ?? null,
     summary,
     skills: skills.map((s) => ({ skill: s.skill, sessionsPerWeek: s.sessions_per_week })),
@@ -791,7 +796,8 @@ export function teacherCandidatesBranch(branchId: number, classId: number | null
               (SELECT COUNT(DISTINCT ta.class_id) FROM teacher_assignments ta
                 WHERE ta.user_id = u.id AND ta.status = 'active') AS load_classes,
               (SELECT COUNT(*) FROM teacher_assignments ta
-                WHERE ta.user_id = u.id AND ta.class_id = ? AND ta.status = 'active') AS here
+                WHERE ta.user_id = u.id AND ta.class_id = ? AND ta.status = 'active') AS here,
+              (SELECT GROUP_CONCAT(us.skill) FROM user_skills us WHERE us.user_id = u.id) AS skills
          FROM users u
          JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active'
          JOIN roles r ON r.id = ur.role_id
@@ -845,7 +851,9 @@ export function classTeachers(p: Principal, classId: number) {
       .map((a) => ({ skill: a.skill, userId: a.user_id, name: a.full_name, from: a.effective_from })),
     candidates: teacherCandidatesBranch(cls.branch_id, classId)
       .map((u) => ({ id: u.id, name: u.full_name, code: u.code, title: u.title,
-                     classCount: u.load_classes, inThisClass: u.here > 0 })),
+                     classCount: u.load_classes, inThisClass: u.here > 0,
+                     /* MH6: kỹ năng tự khai — gợi ý phân công (xếp trước, dòng phụ), không tự điền. */
+                     skills: String(u.skills ?? '').split(',').filter(Boolean) })),
     past: past.map((a) => ({
       name: a.full_name, skill: a.skill, isCore: a.is_core === 1,
       from: a.effective_from, to: a.effective_to,
@@ -883,7 +891,7 @@ export function kiemTruocPhanCong(
 ): void {
   const loi = kiemPhanCong(chuongTrinh, kyNang, slots)[0];
   if (loi) {
-    const nhanO = oPhanCong(chuongTrinh, kyNang).find((o) => o.khoa === loi.khoa)?.nhan ?? skillShort(loi.khoa);
+    const nhanO = oPhanCong(chuongTrinh, kyNang).find((o) => o.khoa === loi.khoa)?.nhan ?? tenMonNgan(chuongTrinh, loi.khoa);
     throw badRequest(`${nhanO}: ${loi.lyDo}`);
   }
   const duocXep = new Set(teacherCandidatesBranch(branchId, classId).map((u) => u.id as number));

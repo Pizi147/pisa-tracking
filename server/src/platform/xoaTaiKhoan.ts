@@ -13,7 +13,7 @@
  * đang giao cho người này (Q12).
  */
 import { db, tx } from '../db.ts';
-import { PERMISSIONS, tenKyNang } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, tenMon } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, notFound, nowIso } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
@@ -146,15 +146,16 @@ export function xemXoaTaiKhoan(p: Principal, userId: number): XemXoaTaiKhoan {
   const canhBao: string[] = [];
   /* GVBM đang dạy lớp còn hoạt động — lớp sẽ thiếu GV môn đó. */
   const mon = conn.prepare(
-    `SELECT DISTINCT c.code, ta.skill FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
+    `SELECT DISTINCT c.code, c.programme_code, ta.skill FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
       WHERE ta.user_id = ?1 AND ta.skill IS NOT NULL AND ta.status = 'active' AND c.status = 'active'
         AND (ta.effective_to IS NULL OR ta.effective_to >= ?2)
       ORDER BY c.code, ta.skill`,
-  ).all(userId, homNay) as { code: string; skill: string }[];
+  ).all(userId, homNay) as { code: string; programme_code: string | null; skill: string }[];
   /* Gộp theo môn — một GV Speaking dạy 4 lớp là MỘT dòng "Lớp A, B, C, D sẽ thiếu GV môn Speaking.", không phải bốn. */
   const theoMon = new Map<string, string[]>();
-  for (const m of mon) theoMon.set(m.skill, [...(theoMon.get(m.skill) ?? []), m.code]);
-  for (const [skill, lop] of theoMon) canhBao.push(`Lớp ${lop.join(', ')} sẽ thiếu GV môn ${tenKyNang(skill)}.`);
+  /* Gộp theo TÊN MÔN hiện ra (MH2): ô `writing` là "Writing" ở BE nhưng "Grammar + Vocabulary" ở FOU. */
+  for (const m of mon) { const ten = tenMon(m.programme_code, m.skill); theoMon.set(ten, [...(theoMon.get(ten) ?? []), m.code]); }
+  for (const [ten, lop] of theoMon) canhBao.push(`Lớp ${lop.join(', ')} sẽ thiếu GV môn ${ten}.`);
   /* Q12: việc đang giao cho người này. */
   const viec = (conn.prepare(
     `SELECT (SELECT COUNT(*) FROM sos_cases WHERE owner_user_id = ?1 AND status != 'done')

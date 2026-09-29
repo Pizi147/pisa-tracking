@@ -88,8 +88,10 @@ export function laVaoMuon(vaoLop: string | null, khaiGiang: string | null): bool
 
 /** Bốn kỹ năng của Kế hoạch Test. W = chấm cả W1 và W2 — một lịch W đặt cho cả hai (G-7). */
 export const KY_NANG_KE_HOACH = ['listening', 'reading', 'writing', 'speaking'] as const;
-export type KyNangKH = (typeof KY_NANG_KE_HOACH)[number];
-export const CHU_KY_NANG: Record<KyNangKH, 'L' | 'R' | 'W' | 'S'> = { listening: 'L', reading: 'R', writing: 'W', speaking: 'S' };
+/** Mọi ô xếp lịch được: 4 kỹ năng (FT, FOU/BE/ELE) + ô `tong_hop` của Pre FOU (PF6). Lớp thường dùng đúng bộ môn chương trình. */
+export const O_KE_HOACH = [...KY_NANG_KE_HOACH, 'tong_hop'] as const;
+export type KyNangKH = (typeof O_KE_HOACH)[number];
+export const CHU_KY_NANG: Record<KyNangKH, string> = { listening: 'L', reading: 'R', writing: 'W', speaking: 'S', tong_hop: 'Tổng hợp' };
 
 /**
  * Một kỹ năng của một đợt: `khoa` != null → dòng chỉ đọc (đã có điểm / đã thi / đã huỷ phần thi). `periodId` là tuần hiện có
@@ -115,7 +117,7 @@ export function trangThaiKyNang(k: { batBuoc: boolean; tuan: string | null; xong
 export function gomChip(kn: Partial<Record<KyNangKH, OKyNang>>): {
   xong: boolean; tuanXong: string | null; chip: ChipKH[]; them: number;
 } {
-  const co = KY_NANG_KE_HOACH
+  const co = O_KE_HOACH
     .map((k) => ({ k, o: kn[k] }))
     .filter((x): x is { k: KyNangKH; o: OKyNang } => !!x.o && x.o.trangThai !== 'khong-yeu-cau');
   if (co.length === 0) return { xong: false, tuanXong: null, chip: [], them: 0 };
@@ -186,7 +188,7 @@ export function emGiuLaiSauLuu(dong: DongHangLoat[]): number[] {
 
 /** Gộp bài cùng `tu` + `den` + `ghiChu` thành một dòng xem trước (`L R W — → W1 OCT`), thứ tự L→S. */
 export function gomBaiXemTruoc(bai: BaiXemTruoc[]): Array<Omit<BaiXemTruoc, 'skill'> & { kyNang: KyNangKH[] }> {
-  const thuTu = (k: KyNangKH) => KY_NANG_KE_HOACH.indexOf(k);
+  const thuTu = (k: KyNangKH) => O_KE_HOACH.indexOf(k);
   const nhom = new Map<string, Omit<BaiXemTruoc, 'skill'> & { kyNang: KyNangKH[] }>();
   for (const b of [...bai].sort((x, y) => thuTu(x.skill) - thuTu(y.skill))) {
     const key = `${b.tu ?? ''}|${b.den ?? ''}|${b.ghiChu}`;

@@ -203,7 +203,11 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 
 | Muốn sửa | Mở file |
 |---|---|
-| Bốn môn của Normal (L/R/W/S) | `shared/domain/normal.ts` → `REGULAR_SKILLS` |
+| Bốn ô môn của FOU/BE/ELE (L/R/W/S); Pre FOU một ô `tong_hop` | `shared/domain/normal.ts` → `REGULAR_SKILLS`, `PROGRAMME_TEMPLATES` (bảng `programme_skills` thắng) |
+| **Tên môn theo chương trình** (PR-MON, MH2 — MỘT nguồn: FOU `W` = G+V / Grammar + Vocabulary, `S` = P / Pronunciation; Pre FOU Tổng hợp) | `shared/domain/normal.ts` → `tenMon(ct, ô)`, `tenMonNgan(ct, ô)`; `skillLabel`/`skillShort` (web `lib/format.ts`), `tenKyNang`, `caseTopicLabel` chỉ là lớp mỏng. Máy chủ gửi kèm `chuongTrinh` (Case, Lịch Test, hồ sơ HV, lưới `monNgan`) |
+| Bộ môn xếp lịch của MỘT lượt (FT 4 kỹ năng đánh giá; lớp thường theo chương trình) | `server/src/fasttrack/skillSchedule.ts` → `boMonCuaLuot` · luật `shared/domain/normal.ts` → `boMonLich` · `regularSkillViews(…, skills)` bắt buộc truyền bộ môn |
+| Nguyên nhân Case theo môn (FOU G+V: Từ vựng/Ngữ pháp · P: Âm/Trọng âm/Ngữ điệu · Pre FOU nhóm Tổng hợp) | `shared/domain/cases.ts` → `nhanhPhanLoai`, `issuesForTopic(topic, ct)`, `ISSUE_TAXONOMY` (nhánh `gv`, `phat_am`, `tong_hop`) |
+| Pre FOU: kết quả là % tổng (không SOS) | `server/src/normal/regular.ts` → `evaluateRegular` (`tyLeTong`) · `shared/domain/chamDiem.ts` → `ketQuaThuong` · `hocVienLop.ts` → `ketQuaGanNhat` · `hanhTrinh.ts` → `nhanGhim` |
 | Số tuần và mốc kiểm tra từng chương trình | `shared/domain/normal.ts` → `PROGRAMME_TEMPLATES` |
 | Ngưỡng đạt (70%) và cách chấm theo tỷ lệ | `shared/domain/normal.ts` → `ratioResult` · `RATIO_PASS_THRESHOLD` |
 | Bảng nhập điểm Progress/Final Test (lưới lớp thường) | `web/src/modules/cham/LuoiThuong.tsx` · `server/src/normal/regular.ts` → `regularSheet` — xem mục "Chấm điểm" bên dưới |
@@ -381,6 +385,8 @@ Hướng dẫn cho chủ sản phẩm: `TRIEN_KHAI.md`. Kế hoạch: `docs/supe
 | Ô ngày · tuần · tháng (gõ + lịch), lịch tự vẽ | `web/src/ui/ONgay.tsx` · `web/src/ui/LichNho.tsx` · luật `shared/domain/oNgay.ts` |
 | Ô "Khác" → Ghi rõ | `web/src/ui/OKhac.tsx` · luật `shared/domain/khac.ts` |
 | Nút đang chọn, bộ lọc nút đoạn, nhãn trạng thái | `web/src/ui/ui.tsx` → `NutChon`, `BoLocDoan`, `NhanTrangThai` · luật `shared/domain/trangThai.ts` |
+| Công tắc hai khung `Fast Track · Lớp thường` (Lịch Test, Kế hoạch Test) / `Tất cả · …` (Công việc) — nhớ theo máy | `web/src/ui/CongTacKhung.tsx` (`CongTacKhung`, `khungDaNho`) · khung của dòng: `shared/domain/normal.ts` → `khungCua` · máy chủ `LichTest.tongQuanKhung`, `WorkItem.khung` |
+| Ô chọn kỹ năng phụ trách được (5 ô L R W1 W2 S) | `web/src/modules/platform/ProfilePage.tsx` → `ChonKyNang` (dùng lại ở Quản trị › Tài khoản, Đăng ký) · Quản trị sửa: `PUT /admin/accounts/:id/skills` → `setUserSkills` |
 | Giữ và trả focus (panel, Modal, lịch), phím mũi tên | `web/src/ui/giuFocus.ts` · luật `shared/domain/banPhim.ts` |
 | Ô chọn tuần, bộ lọc chi nhánh | `web/src/ui/Filters.tsx` |
 | Thông báo nổi | `web/src/ui/Toast.tsx` · `toast.hoanTac(text, onHoanTac, { key })` = toast Hoàn tác chung 5 giây, nút đếm lùi (PR-N1 C1; `shared/domain/hoanTac.ts` `HOAN_TAC_MS`, `giayHoanTacConLai`) |
@@ -393,6 +399,7 @@ Hướng dẫn cho chủ sản phẩm: `TRIEN_KHAI.md`. Kế hoạch: `docs/supe
 | Migrate PR-DUYET (bảng `yeu_cau_duyet` + chỉ mục một phần `ux_ycd_dang_cho`, chỉ mục `ix_notifications_dedup`, cột `tasks.assignee_name`, `notifications.duong`, chép PA chờ duyệt / đề nghị dời đang chờ thành thẻ) + chạy thử chỉ đọc | `server/src/migrate/prDuyet.ts` (`migratePrDuyet`, `napYeuCauTuNguonCu` — seed gọi lại, `keHoachDuyet`) · `server/src/migrate/chayThuDuyet.ts` (`npm run chay-thu:duyet`) · phép kiểm `server/src/tests/prDuyet.tests.ts` |
 | **Hộp Chờ duyệt** (PR-DUYET, §5.5, M8) — một bảng `yeu_cau_duyet` cho mọi thứ "xin QL quyết": Đề xuất PA · Xin ý kiến · Dời lịch lần 2 · Đề xuất sửa thông tin HV · Báo lên Case chờ nguyên nhân quá hạn. Giao kèo loại thẻ: PR sau chỉ thêm MỘT phần tử | luật thuần `shared/domain/yeuCauDuyet.ts` (`LOAI_YEU_CAU`, `LOAI_YC_META`, `sapThe`, `demChip`, `duongThe`, `nhanTrangThaiYc`, `TheYeuCauDto`) · lõi `server/src/duyet/yeuCau.ts` (`taoYeuCau`, `chotYeuCau` idempotent, `hopChoDuyet`, `yeuCauCuaToi`, `demYeuCau`, `duyetYeuCau`/`tuChoiYeuCau`/`traLoiYeuCau`/`duyetNhieu`, `quetYeuCau` quét khi đọc, `theCuaDoiTuong`) · giao kèo `server/src/duyet/loaiYeuCau.ts` (`DINH_NGHIA_LOAI`) · Đề xuất sửa `server/src/duyet/deXuatSua.ts` · routes `GET /yeu-cau`, `/yeu-cau/dem`, `POST /yeu-cau/:id/duyet|tu-choi|tra-loi`, `/yeu-cau/duyet-nhieu`, `POST /students/:id/de-xuat-sua` · web `web/src/modules/duyet/` (`TheYeuCau` một khuôn cho hộp · Yêu cầu của tôi · Ngăn Case; `HopChoDuyet`; `YeuCauCuaToi`; `DeXuatSuaPanel`) · dải Tổng quan `worklist/KhoiCanXuLy.tsx`, badge `App.tsx` · demo `server/src/seed/duyetSeed.ts` |
 | Migrate PR-MT (cột `assessment_attempts.lich_su`, dữ liệu cũ = lượt thường) + chạy thử chỉ đọc | `server/src/migrate/prMt.ts` (`migratePrMt`, `lotrinhNhaySo`, `luotHuyGiua`) · `server/src/migrate/chayThuMt.ts` (`npm run chay-thu:mt`) · phép kiểm `server/src/tests/prMt.tests.ts` · dữ liệu thử cho phép kiểm cũ `server/src/tests/luotThu.ts` · bộ demo `server/src/seed/prMtSeed.ts` |
+| Migrate PR-MON (`user_skills`: Writing lớp thường → W1 + W2, Pronunciation → S) + chạy thử chỉ đọc | `server/src/migrate/prMon.ts` (`migratePrMon`, `keHoachDoiKyNang`, `demCaseFouNguyenNhanIelts`) · `server/src/migrate/chayThuMon.ts` (`npm run chay-thu:mon`) · phép kiểm `server/src/tests/prMon.tests.ts` |
 | Tên hiển thị của mọi mã máy | `web/src/lib/format.ts` |
 
 ---

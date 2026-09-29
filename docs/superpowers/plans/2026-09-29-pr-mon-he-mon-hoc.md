@@ -599,6 +599,128 @@ K5-45 T4 (+LOP) · K5-46 T2 · K5-47 T1/T5 · K5-48 T2 · K5-57 T5 · K5-67 T2.
 
 ## Nhật ký
 
+- **Task 0 (29/09, Opus 5.5 — phương án B):** nhánh `pr-mon-he-mon-hoc` từ `origin/main` fb51181. DUYET/MT/NHAP **chưa** merge (🛑 4c không
+  áp). `npm ci` → `npm run check` xanh: **mốc B = 1444** phép kiểm + 20 tốc độ. Dòng mã khớp kế hoạch (lệch ≤ 4: `ALL_SKILLS` dùng ở
+  `accounts.ts:359`, không :363); không cần bảng "dòng thật".
+- **Task 1:** 1450 (+6). Lệch kế hoạch: `hoKyNang` nhận thêm `gv` → writing, `phat_am` → speaking (nhánh nguyên nhân FOU nằm ở ô W/S;
+  `tong_hop` vẫn null) — cần vì `hieuQuaPa.ts`/`vanDeHv.ts` dùng nhánh làm họ; Case Pre FOU bị bỏ khỏi hai bảng họ kỹ năng (không đếm
+  "chưa phân loại"). `kyNangTheoCt('ca-hai')` lọc `tong_hop` (giữ hành vi, Task 9 bỏ cột). Sửa kỳ vọng 2 phép kiểm UX4 (thêm nhóm Phát
+  âm; mã "một kỹ năng" đổi từ Speaking · Phát âm sang Reading · Tư duy logic — cùng điều kiện). `grep NHAN_O_TAM` rỗng.
+- **Task 2:** 1454 (+4). Thêm nhãn nhật ký `user_skills_set` "Sửa kỹ năng tài khoản" (`nhatKy.ts`). DB demo worktree (seed không có GV
+  khai `writing` → chèn tay GV Trang `writing` + `pronunciation`): chạy thử (1) 1 GV `pronunciation, writing → speaking, writing1,
+  writing2` · (2) 2 Case FOU mã IELTS (#12 `student.writing.organisation`, #26 `student.writing.grammar`) · (3) 0 lớp Pre FOU · (4) 0/0.
+  `npm run migrate` → "Đổi kỹ năng phụ trách được của 1 dòng" (dòng `pronunciation` đã được bước đổi mã cũ có sẵn đổi sang
+  `speaking` trước) → chạy thử lại (1) = 0; Trang còn `speaking, writing1, writing2`.
+- **Task 3:** 1457 (+3). `SkillRow.skill`, `SkillScheduleView.skill`, `blocking`, `hasScore`/`hasAnyBand` nới thành `string`;
+  `skippedSkillsOf` giữ `AssessedSkill[]` (ép kiểu tại chỗ — phạm vi chỉ dùng ở FT). `loadOne` (dùng chung `setSkillWeek`/`setSitStatus`)
+  kiểm bằng `boMonCuaLuot`. `absence.ts` `skillName` → `tenMon(null, s)` (không lộ `tong_hop`); `blockingLabels` ở chi tiết lượt →
+  `tenMon(null, k)` dự phòng. `scoreDebt.ts:71` tạm truyền `REGULAR_SKILLS` (Task 4 đổi sang bộ chương trình).
+- **Task 4:** 1460 (+3). `standing.ts`: `allProgrammes()` đọc lười MỘT lần/danh sách (gọi trong vòng làm phép kiểm N+1 PR-LT (3)
+  28 → 34 câu vỡ); nhận diện `ratio` vẫn qua `PROGRAMME_TEMPLATES` (không nằm trong phạm vi). `canCham.ts`: `DongNo.chuongTrinh` thêm
+  luôn ở Task này (cần cho `kyNangLabelOf`), lấy qua `programmeOfClass` một lần/lớp thay `isRatioClass` (cùng số câu). `tongQuan.ts:40`
+  đổi danh sách viết tay → `ASSESSED_SKILLS` + `tenMon(null, …)` ngay Task này (phép quét Task 4 không có nó trong bảng trắng); lọc
+  theo khung vẫn ở Task 9. `seed/build.ts` dùng `boMonLich(programme_code lớp)`.
+- **Task 5:** 1464 (+4). Quyền Pre FOU đi qua dòng `tong_hop` của GVCN — không sửa `owner.ts`/quyền. `reportIssue`: Pre FOU chỉ nhận
+  chủ đề `tong_hop` (trước đây hợp với 5 ô FT — em Pre FOU mở được Case Listening); câu lỗi phân loại không còn lộ mã ("…không thuộc bộ
+  phân loại của Grammar + Vocabulary"). `defaultSkillFor` (vi phạm) không tự điền `tong_hop`. `/violations/similar` trả thêm
+  `chuongTrinh`; form vi phạm hỏi cả khi sửa để có danh sách môn. `QuickReport` luôn hỏi `/case-topics` (kể cả mở từ tín hiệu) để có
+  `chuongTrinh`. Sửa kỳ vọng 5 phép kiểm cũ dùng mã nguyên nhân IELTS cho em FOU (S1, S17, PR-Pa Nợ S1, PR-Form ×2 → bộ G+V/P;
+  cùng điều kiện). `CaseSosControls` (ghi nguyên nhân trong Case) chờ `chuongTrinh` của Case — Task 6/7.
+- **Task 6:** 1466 (+2). Grep trước **28** dòng → sau **13** (mọi dòng còn lại có `ct` hoặc "giữ — FT": `sos.ts:438` MT, `phanTichLop.ts:82`
+  khung FT, `routes/index.ts` `/ref/issue-taxonomy` chủ đề FT, `hocVienLop.ts:120` `belowSkills` FT; `tenKyNang`/`caseTopicLabel`
+  là định nghĩa). Thêm ngoài bảng: `caseTitle` nhận `chuongTrinh` (tiêu đề "Giữa khoá - Grammar + Vocabulary dưới kỳ vọng"),
+  `caseDetail`/`listCases` trả `chuongTrinh` + `categoryLabel` theo chương trình, `labelOf` tín hiệu đọc `programme_code` từ
+  `SIGNAL_SELECT`, `phoiHop.ts`/`meeting.ts` nhãn môn qua `tenMon` (trước lộ mã `writing`), `Standing.chuongTrinh`,
+  `KetQuaVao.chuongTrinh`, `badgeLop`/`viecTiepTheoCua` nhận `chuongTrinh`, phiên đăng nhập `assignments[].nhanMon`. `myWork`: bảng
+  tra lớp → {chương trình, cách chấm} nạp lười MỘT câu (`ponytail:` đọc cả bảng lớp) — Task 9 dùng lại cho `khung`. `xoaTaiKhoan`
+  gộp cảnh báo theo tên môn hiện ra. Sửa kỳ vọng 3 phép kiểm PR-Qa lớp FOU (W → G+V, S → P; cùng điều kiện).
+- **Task 7:** 1467 (+1). Grep trước **67** dòng → sau **30** (giữ — FT: `LuoiFT`, `ScoreEntry`, `MockDetailPage`, `ChamDiemPage` nhánh
+  `laFt`, `ClassRoster`, `ManagerTasks` chủ đề FT; bộ lọc chung MH3: chip `CaseBoardPage`, `ChuyenLopPanel`; dự phòng `Header`
+  `nhanMon ??`, `HanhTrinh` `nhanNgan ??`; `ProfilePage`/`WelcomePage` → Task 10). Làm luôn ở Task này (cùng file): `BangDiemLopThuong`
+  nhóm cột theo `programme.checkpoints` (hồ sơ lớp trả thêm) — bỏ `BAI`/`MON_MAC_DINH`, Pre FOU thêm cột `%` (K2-12, Task 8);
+  `LopLichTest.chuongTrinh/boMon` (Task 9) để bỏ `BON_MON`; `HanhTrinh` Pre FOU ẩn chip lọc (Task 8). Máy chủ thêm: `listAttempts`
+  dòng lớp thường `programmeCode`, bảng kỹ năng hồ sơ HV theo chương trình (`caseCategoriesFor(…, ct)`, `label/short` qua `tenMon`,
+  trả `chuongTrinh`), `hanhTrinh` hộp theo chương trình + `nhanNgan`, `violations` `skillLabel` theo lớp, `profile` tiến độ kỹ năng.
+  `CauseDeterminationPanel` (ghi nguyên nhân) nhận `ct` → FOU G+V/P (K8). `ChamDiemPage` bỏ chú giải cố định "W = Writing".
+- **Task 8:** 1472 (+5). **Lỗi thật tìm thấy:** bước migrate cũ `migrateSkillSchedule` (`migrate.ts:~2034`) dựng dòng lịch cho mọi lượt
+  "< 4 dòng" → mỗi lần `npm run migrate` sẽ chèn L R W S vào lượt Pre FOU. Sửa ngoài bảng ranh giới (một điều kiện `NOT EXISTS … PREFOU`,
+  chống hỏng dữ liệu) + phép kiểm MON (3) chạy lại `migrate()` giữ 1 dòng. Kế hoạch Test: `KyNangKH` nhận thêm `tong_hop` qua
+  `O_KE_HOACH` (FT vẫn `KY_NANG_KE_HOACH`); `luoiThuong` trả `cot` theo mốc + `boMon`; `xepMoiThuong`/`xetMotEm`/`xepHangLoat` đếm
+  "đủ" theo bộ môn ("Cần chọn tuần cho 1 môn." / "cả 4 môn"); web `HopKyNang` lặp `ky` (bộ môn), `ChipKyNang` tên theo chương trình.
+  Ngăn Xếp lịch hàng loạt web giữ 4 kỹ năng (kiểu `Ky4`) — khung thường là PR-XLMT. Pre FOU %: `ketQuaThuong` ở lưới (tông đạt/chưa
+  đạt, không nhãn SOS), `ketQuaGanNhat`/`standingLine` (`Standing.tyLeTong/khongChiaMon`), ghim Hành trình `Cuối · 52%`, Tổng quan
+  "HV cần hỗ trợ" `Cuối khoá 52%` (`AttemptEval.tyLeTong`). Điện thoại (impeccable `adapt`, không PRODUCT.md — sửa hẹp theo mã): một
+  môn → dòng `Cuối khoá · Tổng hợp` + `đã nhập/tổng` thay hàng chip. `CHO_TAO_PRE_FOU = true`. Demo D12 `MB Pre FOU 03` (khai giảng
+  17/08, tuần 5/5 = tuần demo, GVCN Hà dạy luôn): 26/50 = 52% · 32/50 = 64% · 39/50 = 78% · 1 em chưa nhập (nợ). Điểm dùng tổng 50 để %
+  tròn đúng 52/64/78. Sửa kỳ vọng 4 phép kiểm cũ (cùng điều kiện): [18.1] "đủ dòng lịch" theo bộ môn chương trình; PR-UX1 môn tuần ∈
+  `boMon`; UX2 câu "cả 4 môn"; LOP (5) Pre FOU nay tạo được, GVCN nhận `tong_hop`. `tocDoDuong.ts` đã có dòng
+  `/ke-hoach-test/thuong/{lopThuong}`; không có chỗ đặt lớp Pre FOU → không thêm dòng đo.
+- **Task 9:** 1476 (+4). `CongTacKhung` (`web/src/ui/`) — `BoLocDoan`, localStorage bọc try/catch, chỉ một khung có dữ liệu → không vẽ.
+  Lịch Test: công tắc ở hàng lọc đầu trang (sau Tuần, trước "Lớp tôi dạy / Tất cả"), `NutLuat` lớp thường cạnh nó; áp cho dải số
+  (`tongQuanKhung`, tính cùng vòng — thêm đếm quá hạn theo khung trong `noTuanTruoc`), khối Nợ, danh sách lớp; dòng Nợ đang mở của
+  khung kia không bị chèn vào. Bỏ `HangTab` cũ. Kế hoạch Test: công tắc đứng đầu hàng lọc, nhớ theo máy. Công việc: **tham số URL là
+  `khung`** (không `loai` — màn này `loai` đã là Loại việc); mặc định Tất cả; chỉ một khung có việc thì không lọc (lựa chọn đã nhớ không
+  giấu việc). `myWork` gán `khung` qua `ganKhung` dùng lại bảng tra lớp của Task 6 (không thêm câu SQL). MH5: `cotKyNangFor` rỗng khi
+  khác FT; `chonDiemDangChuY` bỏ câu môn khi khác FT, máy chủ không đọc chỉ số môn khi khác FT; `kyNangTooltip` bỏ nhánh "Cả hai" (chữ
+  "chưa đạt" cho lớp thường thành chết → bỏ). impeccable `layout`: `detect --scope layout` sạch; đánh giá trên màn thật dồn sang Task 12.
+  Sửa kỳ vọng 2 phép kiểm cũ (PR-Pa Điểm đáng chú ý đo trên ct=ft + khẳng định không câu môn ở thường/Cả hai; PR-Pb #2 lớp thường không
+  cột `kn:`).
+- **Task 10:** 1478 (+2). `ChonKyNang` (export ở `ProfilePage.tsx`, lặp `ENTRY_SKILLS`, nhãn ngắn + `title` tên đầy đủ) dùng ở Hồ sơ cá
+  nhân, Quản trị › Tài khoản (ô trong ngăn Tạo/Sửa — lưu qua `PUT /admin/accounts/:id/skills` chỉ khi đổi; Tạo gửi kèm `skills`) và
+  Đăng ký. Hồ sơ cá nhân: Lưu xuống chân thẻ. Gợi ý phân công: `/ref/teachers` và `classTeachers().candidates` trả `skills`; `LuoiPhanCong`
+  (Tạo lớp + Phân công lớp) xếp trước người khai kỹ năng hợp `kyNangGoiY(ct, ô)`, thêm "— dạy được W1, W2" trong `<option>` (option
+  không có dòng thứ hai — nối cùng dòng); không tự điền. `CatalogAdmin` đã đúng (FOU `L · R · G+V · P` qua `oPhanCong`, Pre FOU
+  `Tổng hợp` qua dự phòng `skillShort`) — không sửa.
+- **Task 11:** `CODE_MAP.md` (Normal: tên môn, bộ môn một lượt, nguyên nhân theo môn, % Pre FOU; Dùng chung: `CongTacKhung`, `ChonKyNang`,
+  Migrate PR-MON) · `TRIEN_KHAI.md` §11.1 khối "Đợt 2 — PR-MON" · `thiet-ke/TU_DIEN_VA_CHU.md` §12 · `thiet-ke/HE_GIAO_DIEN.md` §12 ·
+  `plan.md` một dòng nhật ký. Không chạy lại check.
+- **Task 12:** cổng rebase — `origin/main` chỉ thêm `PROMPT_BAN_GIAO_PLANNING.md` (#116), DUYET/MT/NHAP **chưa** merge → rebase sạch.
+  impeccable `audit`: `detect` trên mọi file web đã sửa = `[]`; xem ảnh → `polish`: ⓘ luật lớp thường thẳng hàng công tắc (Lịch
+  Test), vạch ngăn giữa hai nhóm "Tất cả" (Công việc), hộp kỹ năng Pre FOU không in "Tổng hợp Tổng hợp", **lộ mã `PREFOU`** ở đầu hàng
+  lớp Kế hoạch Test và gợi ý mốc Tiến độ lớp → `kyHieuLop`; câu lỗi máy chủ còn lộ mã (`Chương trình PREFOU không có kỹ năng
+  "listening"`, `Kỹ năng listening …`) → `tenMon`. Bấm thử K1–K13 (Playwright kênh Chrome, 1440 + 375 px, seed lại trước lượt cuối):
+  **13/13 đạt**, kết quả `thiet-ke/anh/pr-mon/ket-qua-bam-thu.txt`, 21 ảnh `sau-*`. **Không chụp ảnh "trước"** (phần lớn màn Pre FOU /
+  công tắc khung chưa tồn tại trước PR này). DB demo: `migrate` → lượt Pre FOU vẫn 1 dòng `tong_hop`; `chay-thu:mon` (1) 0 · (2) 2 ·
+  (3) **1** (lớp demo `MB Pre FOU 03` — bản chính phải 0) · (4) 0/0. `npm run check` 1478 + 20 tốc độ. `/ponytail-review`: net −1
+  (không sửa).
+- **Sửa theo rà PR #118 (29/09, Opus 5.5):** 1480 (+2) + 20 tốc độ. (1) Ngăn Xếp lịch hàng loạt lặp `ky` = `data.boMon` (lớp thường) /
+  `KY` (FT), tên qua `tenMon`/`tenMonNgan`, chữ "Chọn cả 4 kỹ năng" → theo số môn thật ("Chọn Tổng hợp", "Chọn cả 4 môn"), tiêu đề
+  khối/cột "Môn" ở khung thường, ⓘ "W = W1 + W2" chỉ FT; `chuTinhTrang(kn, ct)`; bỏ `Ky4`/`chuKyNang`/`TEN_KY_NANG` không còn dùng. Bấm
+  thử QL Vy trên `MB Pre FOU 03`: đổi tuần → "Lưu lịch cho 1 em · 1 bài" (1440 + 375, ảnh `sau-ra-xep-hang-loat-PreFOU-*`); phép kiểm
+  máy chủ `xepHangLoat` Pre FOU ra đủ bài `tong_hop`. (2) `mywork.ts` "Duyệt dời …" → `tenMon(chương trình lớp, r.skill)`. (3) Luật lưới
+  lớp thường ở Lịch Test nêu tên môn thật của các lớp đang xem. (4) Lưới Pre FOU: dưới ô chỉ "Đạt"/"Chưa đạt" (`chiChuKetQua`), % chỉ
+  ở cột Kết quả (ảnh `sau-ra-luoi-PreFOU-mot-cho-phan-tram.png`). (5) `setSkills`: `prep_writing` → W1 + W2, `pronunciation` → S (bảng
+  `DOI_MA_CU`), có phép kiểm.
+
+### GỘP — làm SAU khi planning báo PR-MT #119 đã merge (thứ tự: DUYET #117 → MT #119 → NHAP → MON cuối)
+
+`git merge origin/main` (khi đó main có DUYET + MT, có thể cả NHAP). Với MT: xung đột ~21 file / 29 khúc, phần lớn import → lấy hợp hai bên. Chú ý:
+- `server/src/fasttrack/absence.ts` (~:191, có thể không báo xung đột nhưng làm đỏ phép MON(6)): `moTaDoiLan2` dùng `SKILL_SHORT[` →
+  `tenMonNgan(chương trình lớp, req.skill)`.
+- `web/.../keHoach/ChipKyNang.tsx`: gộp `ct` với `chuaToiLuot`/`lichSu`; dùng `tenMonNgan(ct, k)` thay `CHU_KY_NANG[k]`. `LuoiKeHoach.tsx`
+  truyền cả `ct`, `chuaToiLuot`, `lichSu`.
+- `KhoiNo.tsx`: giữ `tenMon(d.chuongTrinh, …)` + thêm `phu`. `keHoachTest.ts:620`: giữ `i.bo`/`cauThieuMon` + khối `kiemSoMtMoi`.
+- `canCham.ts`: giữ `tongQuanKhung` + `nhacLichSu`, `quaHanTuanKhung` + `deNghi`, bỏ `SKILL_SHORT`. `standing.ts`: giữ `boMonCua` +
+  `homNay`/`mocKeTiep` (và bộ lọc M-14 mới của MT).
+- `attempts.ts` `regularSkillViews`: giữ CẢ cờ `lichSu` (MT) và vòng `skills` (MON).
+- `migrate.ts`: gọi đủ `migratePrDuyet`, `migratePrMt` (, `migratePrNhap`), `migratePrMon` đứng CUỐI.
+- `package.json`, `tests/run.ts`, `CODE_MAP.md`, `TRIEN_KHAI.md`, `TU_DIEN_VA_CHU.md`, `shared/domain/hanhTrinh.ts`: lấy cả hai bên.
+- Thẻ Lịch thi trong hộp Chờ duyệt (của DUYET): tên môn qua `tenMonNgan` theo chương trình lớp.
+- Gộp xong `npm run check` một lần, push, báo planning.
+
+**Đã gộp 29/09** (main có DUYET #117 + MT #119 + NHAP #120; 23 file xung đột):
+- `migrate.ts`: DUYET → MT → NHAP → MON cuối. `standing.ts` giữ `boMonCua` + bộ lọc M-14. `regularSkillViews` ở main KHÔNG có cờ
+  `lichSu` (MT đặt cờ ở chỗ khác) → giữ vòng `skills` của MON là đủ.
+- `mywork.ts`: DUYET đã bỏ khối "Duyệt dời"/"Duyệt kế hoạch" (chuyển sang hộp Chờ duyệt) → sửa tên môn ở thẻ Lịch thi
+  (`duyet/loaiYeuCau.ts` + `chuTheDoiLan2`): `tenMonNgan` theo chương trình lớp.
+- `keHoachTest.ts luuDot`: câu chặn nêu môn theo chương trình lớp (trước là `CHU_KY_NANG`).
+- NHAP: cột L/R/W/S ở panel Thêm HV là điểm đầu vào IELTS, không phải môn chương trình → giữ nguyên.
+- Tốc độ: `QL /my-work?nguoi=7` sau gộp 70 câu > trần 69 (câu đọc lớp riêng của MON). Sửa: `lopMap` dùng lại `bangLop()`
+  (permissions.ts, thêm cột `programme_code`) + `allProgrammes()` đã nhớ trong request → 69 câu, không nâng trần.
+- Rà lần 2: xếp hàng loạt lớp một môn (Pre FOU) ẩn ô "Chọn …" (ô môn nhận id lỗi); nút "Luật xếp lịch Test" khung Lớp thường nói
+  theo môn chương trình (FOU L, R, G+V, P · Pre FOU Tổng hợp), không W1/W2. Ảnh `sau-gop-*.png` (1440 + 375).
+- `npm run check`: 1575 kiểm tra + tốc độ 20/20 (lần đầu đỏ vì trần tốc độ, chạy lại sau khi sửa).
+
 ## Chủ sản phẩm chốt 29/09
 
 - Tên đầy đủ môn FOU: **G+V = Grammar + Vocabulary**, **P = Pronunciation**.

@@ -284,7 +284,8 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     const s = standingMod.standingFor([b.sid]).get(b.sid);
     eq(s.failedSkills, [{ skill: 'writing', score: 12, total: 20 }], 'W 12/20 = 60% < 70%');
     eq([s.overall, s.expectation, s.belowSkills], [null, null, []], 'Lớp thường không có Overall/kỳ vọng');
-    eq(d.ketQuaGanNhat(s), { chinh: '3/4 môn đạt', thieu: null, dat: false, sos: 'SOS 1', phu: 'Giữa khoá · chưa đạt W 12/20' }, 'Chữ cột');
+    // PR-MON (MH2): em lớp FOU — ô W hiện G+V.
+    eq(d.ketQuaGanNhat(s), { chinh: '3/4 môn đạt', thieu: null, dat: false, sos: 'SOS 1', phu: 'Giữa khoá · chưa đạt G+V 12/20' }, 'Chữ cột');
   });
 
   // ------------------------------------------------------------------ Task 5 · GET /hoc-vien-lop
@@ -364,7 +365,8 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     diemThuong(at, { listening: [30, 40], reading: [32, 40], speaking: [8, 10] });
     const row = classes.classRoster(P.admin, LOP_THUONG).find((s: any) => s.id === b.sid);
     /* PR-N1 A6: máy chủ truyền hạn nhập điểm (`hanNhap`) → việc trễ nói đủ "quá hạn n ngày". */
-    eq(row.viecTiepTheo[0], { viec: 'Nhập điểm W · Giữa khoá', han: '13/09', quaHanNgay: 1, tone: 'danger', title: 'Nhập điểm W · Giữa khoá · hạn 13/09 · quá hạn 1 ngày' }, 'Writing tuần 07/09 chưa có điểm, hạn CN 13/09 đã qua');
+    // PR-MON (MH2): lớp FOU — ô W hiện G+V.
+    eq(row.viecTiepTheo[0], { viec: 'Nhập điểm G+V · Giữa khoá', han: '13/09', quaHanNgay: 1, tone: 'danger', title: 'Nhập điểm G+V · Giữa khoá · hạn 13/09 · quá hạn 1 ngày' }, 'Writing tuần 07/09 chưa có điểm, hạn CN 13/09 đã qua');
     const t = row.timeline.find((x: any) => x.kind === 'progress');
     eq(t.tuanMon.writing, '2026-09-07', 'Tuần thi của môn Writing');
     assert(row.viecTiepTheo.every((v: any) => !/MT\d|kỳ vọng/.test(v.viec)), 'Chữ FT lọt vào lớp thường');
@@ -407,7 +409,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     diemThuong(themLuot({ ...b, cid, no: 1, kind: 'progress', weekStart: '2026-09-07' }), { writing: [15, 20] });
     const r = ptl.phanTichLop(P.admin, cid);
     eq([r.loai, r.dong.map((x: any) => x.nhan).join(' '), r.cot.map((x: any) => x.nhan).join(' ')],
-      ['thuong', 'L R W S', 'Giữa khoá Cuối khoá'], 'Khung');
+      ['thuong', 'L R G+V P', 'Giữa khoá Cuối khoá'], 'Khung');   // PR-MON (MH2): lớp FOU
     eq(r.o['writing|progress'], { dat: 1, tong: 2 }, 'W Giữa khoá');
     eq(r.o['listening|progress'], { dat: 1, tong: 1 }, 'L Giữa khoá');
     assert(!/MT\d|kỳ vọng|Progress|Final/.test(JSON.stringify(r)), 'Chữ FT lọt vào lớp thường');

@@ -25,7 +25,7 @@ export type HoSoLop = {
   skills: { skill: string; sessionsPerWeek: number }[];
   coreTeachers: { id: number; name: string }[];
   skillTeachers: { skill: string; id: number; name: string }[];
-  programme: { code: string; name: string; weeks: number | null; scoringMode: string } | null;
+  programme: { code: string; name: string; weeks: number | null; scoringMode: string; checkpoints?: string[] } | null;
   soCaseMo: number;
   canhBaoYThuc: number;
   status?: string; finishedAt?: string | null;
@@ -58,7 +58,7 @@ export function DauTrangLop({ data, periodId, onViec, onCheDoCanHoTro }: {
   const thuong = data.programme?.scoringMode === 'ratio';
   const s = data.summary;
   const gvcn = data.coreTeachers[0] ?? null;
-  const nhom = nhomGiaoVienBoMon(data.skills.map((x) => x.skill), data.skillTeachers);
+  const nhom = nhomGiaoVienBoMon(data.skills.map((x) => x.skill), data.skillTeachers, data.programme?.code ?? null);
   const b = badgeLop({
     needsPlacement: !!s?.needsPlacement, canXepLop: s?.canXepLop ?? 0, missingSkills: s?.missingSkills ?? [],
     soBaiChoCham: s?.needScores ?? 0,
@@ -66,6 +66,7 @@ export function DauTrangLop({ data, periodId, onViec, onCheDoCanHoTro }: {
     soCaseMo: data.soCaseMo, phase: s?.phase ?? 'running',
     missingCount: (s?.missing ?? []).filter((m) => m.key !== 'teachers').length,
     soChuaLoTrinhTiep: s?.soChuaLoTrinhTiep ?? 0,
+    chuongTrinh: data.programme?.code ?? null,
   });
   const bamBadge = (x: BadgeLop): (() => void) | null =>
     x.key === 'case' ? onCheDoCanHoTro

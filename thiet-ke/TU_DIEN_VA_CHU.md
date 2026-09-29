@@ -372,3 +372,27 @@ Chữ mới của PR này — chờ chủ sản phẩm duyệt cùng PR. Không 
 | Thông báo máy tự dời | `Đã tự dời {kỹ năng} của {em} · MT{n} sang {W…} (vắng lần 1).` |  |
 | Case đóng vì huỷ lượt | `Lượt đã huỷ` · việc Phối hợp bỏ vì `Lượt Test đã huỷ` |  |
 | Mốc Case khi đổi LT ↔ RF | `Sang lộ trình mới` |  |
+
+---
+
+## 14. PR-MON — 29/09/2026 (hệ môn học, hai khung)
+
+Tên môn theo CHƯƠNG TRÌNH (một nguồn `tenMon` / `tenMonNgan`, `shared/domain/normal.ts`). Không dùng trong bộ lọc (MH3).
+
+| Chỗ | Chữ |
+|---|---|
+| Ô W của lớp FOU | ngắn `G+V` · đầy đủ (tooltip, tiêu đề Case, Excel) `Grammar + Vocabulary` |
+| Ô S của lớp FOU | ngắn `P` · đầy đủ `Pronunciation` |
+| Ô duy nhất của lớp Pre FOU | `Tổng hợp` (ngắn và đầy đủ như nhau) |
+| BE / ELE / Fast Track | giữ `L · R · W · S` · `L · R · W1 · W2 · S` |
+| Kết quả Pre FOU (lưới, hàng HV, Hành trình, Tổng quan) | `68%` · ghim `Cuối · 68%` · Tổng quan `Cuối khoá 55%` — không `SOS` |
+| Điện thoại, lưới Pre FOU | dòng đầu `Cuối khoá · Tổng hợp` (thay hàng chip môn) |
+| Nguyên nhân Case FOU G+V | `Từ vựng` · `Ngữ pháp` · `Khác` |
+| Nguyên nhân Case FOU P | `Âm` · `Trọng âm` · `Ngữ điệu` · `Khác` |
+| Nguyên nhân Case Pre FOU (Tổng hợp) | `Từ vựng / ngữ pháp` · `Kỹ năng nghe – đọc` · `Kỹ năng nói – viết` · `Tâm lý và độ tập trung` · `Khác` |
+| Nhóm lỗi chung mới (Vấn đề HV) | `Phát âm` |
+| Công tắc khung (Lịch Test, Kế hoạch Test) | `Fast Track · 3 lớp` · `Lớp thường · 2 lớp` |
+| Công tắc khung (Công việc) | `Tất cả` · `Fast Track` · `Lớp thường` (kèm số việc) |
+| Kế hoạch Test lớp thường — thiếu tuần | `Cần chọn tuần cho 1 môn.` · `Cần chọn tuần cho cả 4 môn.` |
+| Kỹ năng phụ trách được (Hồ sơ cá nhân, Quản trị, Đăng ký) | năm nút `L · R · W1 · W2 · S` (tooltip tên đầy đủ) |
+| Gợi ý phân công trong danh sách người | `Nguyễn A · 3 lớp — dạy được W1, W2` |

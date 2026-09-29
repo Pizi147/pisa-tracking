@@ -24,9 +24,10 @@ export function TabHocVienLop({ lop, cheDo, onCheDo, onDoi, onThemHocVien }: {
       <BoLocDoan ariaLabel="Cách xem" value={cheDo} onChange={onCheDo}
         muc={[{ key: 'diem', nhan: 'Điểm' }, { key: 'can-ho-tro', nhan: 'Cần hỗ trợ' }]} />
       {cheDo === 'can-ho-tro'
-        ? <BangCanHoTro classId={lop.id} maLop={lop.code} laLopThuong={thuong} quyen={quyen} onDoi={onDoi} />
+        ? <BangCanHoTro classId={lop.id} maLop={lop.code} laLopThuong={thuong} quyen={quyen} onDoi={onDoi} chuongTrinh={lop.programme?.code ?? null} />
         : thuong
-          ? <BangDiemLopThuong classId={lop.id} maLop={lop.code} quyen={quyen} onDoi={onDoi} />
+          ? <BangDiemLopThuong classId={lop.id} maLop={lop.code} quyen={quyen} onDoi={onDoi}
+              chuongTrinh={lop.programme?.code ?? null} moc={lop.programme?.checkpoints ?? null} />
           : <ClassRoster classId={lop.id} maLop={lop.code} quyen={quyen} onDoi={onDoi} onAddStudents={lop.viewer.canAddStudents ? onThemHocVien : undefined} />}
     </div>
   );

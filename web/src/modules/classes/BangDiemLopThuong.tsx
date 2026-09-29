@@ -7,7 +7,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { MissingBadge } from '../students/MissingBadge.tsx';
 import { CanhBaoYThuc } from './CanhBaoYThuc.tsx';
 import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from './thaoTacDongHocVien.tsx';
-import { maHocVienNgan, mondayOfDate, skillShort, tenKyNang, tuanLich } from '@shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, CHUONG_TRINH_KHONG_CHIA_MON, maHocVienNgan, mondayOfDate, tenMon, tenMonNgan, tuanLich, type AttemptKind } from '@shared/domain/index.ts';
 
 type ODiem = { score: number | null; total: number | null; outcome: string };
 type LuotThuong = {
@@ -23,15 +23,20 @@ type DongThuong = {
   ketThucVi?: string | null;
 };
 
-const MON_MAC_DINH = ['listening', 'reading', 'writing', 'speaking'];
-const BAI = [{ kind: 'progress', nhan: 'Giữa khoá' }, { kind: 'final', nhan: 'Cuối khoá' }] as const;
+/** Hồ sơ lớp cũ chưa gửi mốc: Giữa khoá + Cuối khoá như trước. */
+const MOC_MAC_DINH = ['progress', 'final'];
 
 /**
  * TAB HỌC VIÊN · CHẾ ĐỘ ĐIỂM · LỚP THƯỜNG (đặc tả §3.7, mockup 10b phương án A).
- * Hai nhóm cột Giữa khoá | Cuối khoá, mỗi nhóm L R W S. Ô `đúng/tổng`, đỏ nếu chưa đạt (dưới 70%). Chưa có điểm mà đã có lịch thì ghi
+ * Nhóm cột theo MỐC của chương trình (FOU/BE/ELE Giữa khoá | Cuối khoá; Pre FOU chỉ Cuối khoá — K2-12), mỗi nhóm là bộ môn của
+ * lớp, tên theo chương trình (FOU L R G+V P; Pre FOU một cột Tổng hợp + cột % — MH7). Ô `đúng/tổng`, đỏ nếu chưa đạt (dưới 70%). Chưa có điểm mà đã có lịch thì ghi
  * tuần thi (`W3 SEP`, G-6); chưa có lịch thì gạch. Thiếu điểm KHÁC chưa đạt: không tô đỏ.
  */
-export function BangDiemLopThuong({ classId, maLop, quyen, onDoi }: { classId: number; maLop?: string; quyen: QuyenDong; onDoi: () => void }) {
+export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = null, moc = null }: {
+  classId: number; maLop?: string; quyen: QuyenDong; onDoi: () => void;
+  /** Mã chương trình lớp (MH2) và mốc kiểm tra của chương trình (`progress`/`final`). */
+  chuongTrinh?: string | null; moc?: string[] | null;
+}) {
   const { homNay } = useNgayNghiepVu();
   const { data, loading, error, reload } = useApi<DongThuong[]>(`/classes/${classId}/roster`, [classId]);
   const tt = useThaoTacDongHocVien({ laLopThuong: true, quyen, maLop, onDone: () => { reload(); onDoi(); } });
@@ -40,28 +45,35 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi }: { classId: n
   if (loading || !data) return <Skeleton rows={4} />;
   const rows = data.filter((s) => !s.archived);
   if (!rows.length) return <Empty title="Lớp chưa có học viên" />;
-  const mon = rows[0].skills?.length ? rows[0].skills : MON_MAC_DINH;
+  const mon = rows[0].skills ?? [];
+  const BAI = (moc?.length ? moc : MOC_MAC_DINH).map((kind) => ({ kind, nhan: ATTEMPT_KIND_SHORT[kind as AttemptKind] ?? kind }));
+  /* MH7: Pre FOU không chia môn — thêm cột % tổng sau cột Tổng hợp của mỗi mốc. */
+  const coPhanTram = CHUONG_TRINH_KHONG_CHIA_MON.includes(chuongTrinh ?? '');
+  const soCot = mon.length + (coPhanTram ? 1 : 0);
 
   return (
     <div className="card overflow-x-auto">
       <table className="w-full min-w-[840px] table-fixed text-sm">
         <colgroup>
           <col className="w-[24%]" />
-          {BAI.flatMap((b) => mon.map((k) => <col key={`${b.kind}-${k}`} />))}
+          {BAI.flatMap((b) => [...mon, ...(coPhanTram ? ['%'] : [])].map((k) => <col key={`${b.kind}-${k}`} />))}
           <col className="w-12" />
         </colgroup>
         <thead>
           <tr>
             <th className="th align-bottom" rowSpan={2}>Học viên</th>
             {BAI.map((b) => (
-              <th key={b.kind} className="th border-b text-center" colSpan={mon.length} style={{ borderColor: 'var(--line)' }}>{b.nhan}</th>
+              <th key={b.kind} className="th border-b text-center" colSpan={soCot} style={{ borderColor: 'var(--line)' }}>{b.nhan}</th>
             ))}
             <th className="th" rowSpan={2}><span className="sr-only">Thao tác</span></th>
           </tr>
           <tr>
-            {BAI.flatMap((b) => mon.map((k) => (
-              <th key={`${b.kind}-${k}`} className="th text-center"><abbr className="no-underline" title={tenKyNang(k)}>{skillShort(k)}</abbr></th>
-            )))}
+            {BAI.flatMap((b) => [
+              ...mon.map((k) => (
+                <th key={`${b.kind}-${k}`} className="th text-center"><abbr className="no-underline" title={tenMon(chuongTrinh, k)}>{tenMonNgan(chuongTrinh, k)}</abbr></th>
+              )),
+              ...(coPhanTram ? [<th key={`${b.kind}-%`} className="th text-right" title="Điểm đạt / tổng điểm cả bài">%</th>] : []),
+            ])}
           </tr>
         </thead>
         <tbody>
@@ -78,11 +90,19 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi }: { classId: n
               </td>
               {BAI.flatMap((b) => {
                 const t = s.timeline.find((x) => x.kind === b.kind) ?? null;
-                return mon.map((k) => (
-                  <td key={`${b.kind}-${k}`} className="td text-center tabular-nums">
-                    <ODiemThuong o={t?.ratios?.[k] ?? null} tuan={t?.tuanMon?.[k] ?? null} homNay={homNay} />
-                  </td>
-                ));
+                const o = t?.ratios?.[mon[0]] ?? null;
+                return [
+                  ...mon.map((k) => (
+                    <td key={`${b.kind}-${k}`} className="td text-center tabular-nums">
+                      <ODiemThuong o={t?.ratios?.[k] ?? null} tuan={t?.tuanMon?.[k] ?? null} homNay={homNay} />
+                    </td>
+                  )),
+                  ...(coPhanTram ? [(
+                    <td key={`${b.kind}-%`} className="td text-right tabular-nums">
+                      {o && o.score !== null && o.total ? `${Math.round((o.score / o.total) * 100)}%` : <span className="text-slate-600">—</span>}
+                    </td>
+                  )] : []),
+                ];
               })}
               <td className="td text-center">
                 <MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, true, s.timeline) })} />

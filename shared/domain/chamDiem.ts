@@ -51,9 +51,11 @@ export function oLuoiThuong(i: { diem: number | null; tong: number | null; tongC
  * CÂU KẾT QUẢ CỦA MỘT DÒNG LỚP THƯỜNG. Thiếu điểm KHÁC chưa đạt (spec §3.5): môn chưa chấm không bị đếm thành môn
  * trượt, nên khi chưa đủ điểm thì nói rõ "trên số môn ĐÃ CHẤM".
  */
-export function ketQuaThuong(i: { dat: number; daCham: number; tong: number; thieu: string[] }): {
+export function ketQuaThuong(i: { dat: number; daCham: number; tong: number; thieu: string[]; tyLe?: number | null; khongChiaMon?: boolean }): {
   chinh: string; phu: string | null;
 } {
+  /* MH7: Pre FOU không chia môn — chỉ % tổng. Làm tròn CHỈ để hiện; đạt/không xét trên tỷ lệ chính xác ở máy chủ. */
+  if (i.khongChiaMon && i.tyLe != null) return { chinh: `${Math.round(i.tyLe * 100)}%`, phu: null };
   if (i.daCham === 0) return { chinh: 'Chưa nhập điểm', phu: null };
   const du = i.daCham >= i.tong;
   return {

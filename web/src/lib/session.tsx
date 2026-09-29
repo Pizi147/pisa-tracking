@@ -8,7 +8,11 @@ export type Grant = {
   branchId: number | null; branchName: string | null; permissions: string[];
 };
 
-export type Assignment = { classId: number; classCode: string | null; skill: string | null; isCore: boolean };
+export type Assignment = {
+  classId: number; classCode: string | null; skill: string | null; isCore: boolean;
+  /** K1-45: tên môn ngắn theo chương trình lớp, máy chủ dựng sẵn (FOU "G+V"). */
+  nhanMon?: string | null;
+};
 
 export type Session = {
   authenticated: boolean;

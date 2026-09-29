@@ -1,6 +1,6 @@
 import { db } from '../db.ts';
 import {
-  CAN_XU_LY, PERMISSIONS, REGULAR_SKILL_LABEL, SOS_LABEL, caseTopicLabel, chonDiemDangChuY, sapCanXuLy,
+  ASSESSED_SKILLS, ATTEMPT_KIND_SHORT, CAN_XU_LY, PERMISSIONS, type AttemptKind, SOS_LABEL, caseTopicLabel, tenMon, chonDiemDangChuY, sapCanXuLy,
   type ChuongTrinh, type DiemChuY, type DongCanXuLyGoc, type MaCanXuLy, type UngVienChuY,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -39,10 +39,11 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null; ct: 
 
   /* ĐIỂM ĐÁNG CHÚ Ý — ba luật (plan Q6), mỗi ứng viên là một chỉ số có sẵn. */
   const ung: UngVienChuY[] = [];
-  for (const skill of ['listening', 'reading', 'writing', 'speaking'] as const) {
+  /* `hv-duoi-ky-vong-mon` là chỉ số khung Fast Track: 4 kỹ năng đánh giá (MH5). */
+  for (const skill of f.ct === 'ft' ? ASSESSED_SKILLS : []) {
     const r = metricSet(p, 'hv-duoi-ky-vong-mon', { ...base, skill });
     ung.push({ loai: 'mon-duoi-ky-vong', metricId: 'hv-duoi-ky-vong-mon', extra: { skill }, tu: r.n,
-      mau: r.denominatorIds?.length ?? 0, nhanMon: REGULAR_SKILL_LABEL[skill] });
+      mau: r.denominatorIds?.length ?? 0, nhanMon: tenMon(null, skill) });
   }
   const tl = metricSet(p, 'ty-le-co-cai-thien', base);
   ung.push({ loai: 'pa-cai-thien', metricId: 'ty-le-co-cai-thien', tu: tl.numeratorIds?.length ?? 0, mau: tl.n });
@@ -80,7 +81,7 @@ export function hocVienCanHoTro(p: Principal): { rows: DongHvCanHoTro[]; tong: n
     caseHv.set(c.id, c.studentId);
     const x = caseCua.get(c.studentId) ?? { n: 0, mon: new Set<string>() };
     x.n += 1;
-    if (c.topic) x.mon.add(caseTopicLabel(c.topic));
+    if (c.topic) x.mon.add(caseTopicLabel(c.topic, c.chuongTrinh));
     caseCua.set(c.studentId, x);
   }
   const paQuaHan = new Map<number, number>();
@@ -114,7 +115,11 @@ export function hocVienCanHoTro(p: Principal): { rows: DongHvCanHoTro[]; tong: n
     const cb = canhBao.get(sid);
     const coCanhBao = !!cb?.active;
     if (sos <= 0 && !cs && !coCanhBao) continue;
-    const huyHieu = sos > 0
+    /* MH7: Pre FOU không chia môn — nhãn là bài + % tổng ("Cuối khoá 55%"), không "SOS 1". */
+    const phanTram = ev?.khongChiaMon && ev.tyLeTong != null
+      ? `${ATTEMPT_KIND_SHORT[ev.kind as AttemptKind] ?? 'Bài'} ${Math.round(ev.tyLeTong * 100)}%` : null;
+    const huyHieu = sos > 0 && phanTram ? { text: phanTram, tone: 'warn' as const }
+      : sos > 0
       ? { text: `${SOS_LABEL[sos as 1 | 2 | 3]}${ev?.provisional ? ' · tạm thời' : ''}`, tone: (sos >= 3 ? 'danger' : sos === 2 ? 'warn' : 'info') as 'info' | 'warn' | 'danger' }
       : coCanhBao ? { text: 'Ý thức', tone: 'info' as const } : null;
     const k = paQuaHan.get(sid) ?? 0;

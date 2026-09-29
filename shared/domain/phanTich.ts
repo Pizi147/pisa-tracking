@@ -102,12 +102,11 @@ export function tuDauKhoang(homNay: string, soTuan: number): string {
 export function kyNangTheoCt(ct: ChuongTrinh): readonly CaseCategory[] {
   if (ct === 'ft') return FT_CASE_CATEGORIES;
   if (ct === 'thuong') return NORMAL_CASE_CATEGORIES;
-  return CASE_CATEGORIES;
+  return CASE_CATEGORIES.filter((c) => c !== 'tong_hop');   // Pre FOU không có cột môn (MH3)
 }
 
 /** Tooltip đầy đủ của một kỹ năng — ở "Cả hai", W cần nói rõ là Writing của lớp thường (Q7) để không lẫn với W1/W2. */
-export function kyNangTooltip(cat: CaseCategory, ct: ChuongTrinh): string {
-  if (cat === 'writing' && ct === 'ca-hai') return 'Writing (lớp thường)';
+export function kyNangTooltip(cat: CaseCategory, _ct: ChuongTrinh): string {
   return CASE_CATEGORY_LABEL[cat];
 }
 
@@ -198,8 +197,12 @@ const COT_XU_LY: CotTongHop[] = [
   { khoa: 'thieuPa', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Thiếu PA học thuật', goiY: 'Case chưa ai ghi sẽ làm gì — tình trạng hôm nay.' },
 ];
 
-/** Cột kỹ năng "dưới kỳ vọng", sinh từ `kyNangTheoCt` — khoá kỹ thuật `kn:<hạng mục>`, không lộ ra màn (chỉ dùng nội bộ). */
+/**
+ * Cột kỹ năng "dưới kỳ vọng", sinh từ `kyNangTheoCt` — khoá kỹ thuật `kn:<hạng mục>`, không lộ ra màn (chỉ dùng nội bộ).
+ * MH3/MH5 (PR-MON): CHỈ khung Fast Track có cột môn — Lớp thường không lọc/cột theo môn, "Cả hai" không trộn môn hai khung.
+ */
 export function cotKyNangFor(ct: ChuongTrinh): CotTongHop[] {
+  if (ct !== 'ft') return [];
   return kyNangTheoCt(ct).map((cat) => ({
     khoa: `kn:${cat}`, nhom: 'ky-nang' as const, donVi: 'hoc-vien' as const,
     nhan: () => CASE_CATEGORY_SHORT[cat],
@@ -234,11 +237,16 @@ export function mauOKetQua(khoaCot: string, v: number): MauOKetQua | null {
  */
 export const LOI_CHUNG: readonly { khoa: string; nhan: string; ma: readonly string[] }[] = [
   { khoa: 'ngu-phap', nhan: 'Ngữ pháp',
-    ma: ['student.writing.grammar', 'student.speaking.grammar', 'student.reading.language', 'student.listening.language'] },
+    ma: ['student.writing.grammar', 'student.speaking.grammar', 'student.reading.language', 'student.listening.language',
+      'student.gv.grammar', 'student.tong_hop.language'] },
   { khoa: 'tu-vung', nhan: 'Từ vựng',
-    ma: ['student.writing.lexical', 'student.speaking.lexical', 'student.reading.language', 'student.listening.language'] },
+    ma: ['student.writing.lexical', 'student.speaking.lexical', 'student.reading.language', 'student.listening.language',
+      'student.gv.vocabulary', 'student.tong_hop.language'] },
   { khoa: 'to-chuc', nhan: 'Tổ chức ý / mạch lạc', ma: ['student.writing.organisation', 'student.speaking.fluency'] },
   { khoa: 'ky-nang-lam-bai', nhan: 'Kỹ năng làm bài', ma: ['student.reading.technique', 'student.listening.technique'] },
+  /* K1-22: Phát âm gom Speaking cũ và nhánh P của FOU. */
+  { khoa: 'phat-am', nhan: 'Phát âm',
+    ma: ['student.speaking.pronunciation', 'student.phat_am.sound', 'student.phat_am.stress', 'student.phat_am.intonation'] },
 ];
 
 export type HoKyNang = 'listening' | 'reading' | 'writing' | 'speaking';
@@ -249,8 +257,9 @@ export const NHAN_HO_KY_NANG: Record<HoKyNang, string> = {
 /** Họ kỹ năng của một hạng mục Case (W1/W2/Writing → writing); mã lạ → null. Dùng cho Q5 (Vấn đề HV) lẫn Q18 (Bỏ quên). */
 export function hoKyNang(k: string | null | undefined): HoKyNang | null {
   if (!k) return null;
-  if (k === 'writing1' || k === 'writing2' || k === 'writing' || k === 'prep_writing') return 'writing';
-  if (k === 'pronunciation') return 'speaking';
+  if (k === 'writing1' || k === 'writing2' || k === 'writing' || k === 'prep_writing' || k === 'gv') return 'writing';
+  if (k === 'pronunciation' || k === 'phat_am') return 'speaking';   // nhánh nguyên nhân FOU (T57) nằm ở ô W/S
+  // `tong_hop` (Pre FOU) → null: không thuộc họ kỹ năng nào.
   return k === 'listening' || k === 'reading' || k === 'speaking' ? k : null;
 }
 

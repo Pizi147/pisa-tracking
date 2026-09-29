@@ -3,8 +3,8 @@ import multer from 'multer';
 import { db, isInitialised } from '../db.ts';
 import { laBanChinh } from '../moiTruong.ts';
 import {
-  ENTRY_SKILLS, ENTRY_SKILL_LABEL, ISSUE_TAXONOMY, THEO_DONG,
-  PERMISSIONS, REGULAR_SKILLS, ROLE_LABEL, WORK_SCOPES, chuongTrinhTuThamSo, khoangTuThamSo, laLoaiBoQuen, thamSoNguoi, tuDauKhoang,
+  ENTRY_SKILLS, ENTRY_SKILL_LABEL, ISSUE_TAXONOMY, THEO_DONG, tenMonNgan,
+  PERMISSIONS, ROLE_LABEL, WORK_SCOPES, chuongTrinhTuThamSo, khoangTuThamSo, laLoaiBoQuen, thamSoNguoi, tuDauKhoang,
   type Role, type TheoDong, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { kiemGhiRoKhac, laKhac, soSanhLop, transferReasonText } from '../../../shared/domain/index.ts';
@@ -133,12 +133,14 @@ api.get('/demo/session', wrap((req) => {
   const conn = db();
   /* PR-TD: một câu IN cho mọi mã lớp của phân công, thay vì một câu mỗi phân công. */
   const maLopCua = new Map<number, string>();
+  const ctLopCua = new Map<number, string | null>();
   const lopIds = [...new Set(p.assignments.map((a) => a.classId))];
   if (lopIds.length) {
     for (const r of conn
-      .prepare(`SELECT id, code FROM classes WHERE id IN (${lopIds.map(() => '?').join(',')})`)
+      .prepare(`SELECT id, code, programme_code FROM classes WHERE id IN (${lopIds.map(() => '?').join(',')})`)
       .all(...lopIds) as any[]) {
       maLopCua.set(r.id, r.code);
+      ctLopCua.set(r.id, r.programme_code ?? null);
     }
   }
   return {
@@ -148,7 +150,9 @@ api.get('/demo/session', wrap((req) => {
     roleLabels: p.roleKeys.map((r) => ROLE_LABEL[r as Role] ?? r),
     grants: permissionSummary(p),
     assignments: p.assignments.map((a) => (
-      { classId: a.classId, classCode: maLopCua.get(a.classId) ?? null, skill: a.skill, isCore: a.isCore }
+      { classId: a.classId, classCode: maLopCua.get(a.classId) ?? null, skill: a.skill, isCore: a.isCore,
+        /* K1-45: tên môn theo chương trình lớp, dựng sẵn (FOU "G+V"). */
+        nhanMon: a.skill ? tenMonNgan(ctLopCua.get(a.classId) ?? null, a.skill) : null }
     )),
     demoDate: demoToday(),
     scenario: scenarioMode(),
@@ -340,7 +344,8 @@ api.get('/ref/teachers', requireAuth, wrap((req) => {
     .prepare(
       `SELECT u.id, u.code, u.full_name AS name, u.title,
               (SELECT COUNT(DISTINCT ta.class_id) FROM teacher_assignments ta
-                WHERE ta.user_id = u.id AND ta.status = 'active') AS classCount
+                WHERE ta.user_id = u.id AND ta.status = 'active') AS classCount,
+              (SELECT GROUP_CONCAT(us.skill) FROM user_skills us WHERE us.user_id = u.id) AS skills
          FROM users u
         WHERE u.status = 'active'
           AND EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id
@@ -348,7 +353,9 @@ api.get('/ref/teachers', requireAuth, wrap((req) => {
                          AND (? IS NULL OR ur.branch_id IS NULL OR ur.branch_id = ?))
         ORDER BY u.full_name`,
     )
-    .all(branchId ?? null, branchId ?? null);
+    .all(branchId ?? null, branchId ?? null)
+    /* MH6: kỹ năng tự khai (5 ô) — gợi ý phân công, không phải quyền. */
+    .map((u: any) => ({ ...u, skills: String(u.skills ?? '').split(',').filter(Boolean) }));
 }));
 
 api.get('/ref/units', requireAuth, wrap((req) => {
@@ -521,7 +528,7 @@ api.get('/ke-hoach-test/ft/:classId', requireAuth, wrap((req) =>
 function tuanTheoKyNang(v: any): Record<string, number> {
   const out: Record<string, number> = {};
   if (!v || typeof v !== 'object') return out;
-  for (const k of ['listening', 'reading', 'writing', 'speaking']) {
+  for (const k of ['listening', 'reading', 'writing', 'speaking', 'tong_hop']) {   // tong_hop: Pre FOU (PF6)
     const n = toInt(v[k]);
     if (n) out[k] = n;
   }
@@ -1024,11 +1031,14 @@ api.get('/violations/similar', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   const p = principalOf(req);
   const studentId = qInt(req, 'studentId') ?? 0;
+  const lop = accessSvc.activeClassOf(studentId);
   return {
     rows: violationSvc.similarViolations(p, {
       studentId, category: qStr(req, 'category') ?? '', occurredOn: qStr(req, 'occurredOn') ?? null,
     }),
-    defaultSkill: violationSvc.defaultSkillFor(p, accessSvc.activeClassOf(studentId)),
+    defaultSkill: violationSvc.defaultSkillFor(p, lop),
+    /* K5-47: form chọn môn theo chương trình lớp em đang học (`monViPham`). */
+    chuongTrinh: lop ? regularSvc.programmeOfClass(lop)?.code ?? null : null,
   };
 }));
 api.post('/violations', requireAuth, wrap((req) => {
@@ -2067,8 +2077,8 @@ api.get('/auth/info', wrap(() => ({
   emailSuffix: accountSvc.EMAIL_SUFFIX,
   /* Bản chính: không bao giờ gửi mật khẩu mặc định ra ngoài. */
   ...(laBanChinh() ? {} : { demoAdmin: { email: accountSvc.DEFAULT_ADMIN_EMAIL, password: accountSvc.DEFAULT_ADMIN_PASSWORD } }),
-  /* Gộp hai bộ kỹ năng và BỎ TRÙNG: Listening có ở cả hai, hiện hai lần là một lỗi nhìn thấy ngay. */
-  skills: [...new Set([...ENTRY_SKILLS, ...REGULAR_SKILLS])],
+  /* MH1: kỹ năng phụ trách được chỉ 5 ô L · R · W1 · W2 · S. */
+  skills: [...ENTRY_SKILLS],
 })));
 
 api.get('/me/profile', requireAuth, wrap((req) => accountSvc.myProfile(principalOf(req))));
@@ -2087,6 +2097,9 @@ api.post('/admin/accounts/:id/decline', requireAuth, wrap((req) => accountSvc.de
 )));
 api.put('/admin/accounts/:id/roles', requireAuth, wrap((req) => accountSvc.setRoles(
   principalOf(req), Number(req.params.id), Array.isArray(req.body?.roles) ? req.body.roles : [],
+)));
+api.put('/admin/accounts/:id/skills', requireAuth, wrap((req) => accountSvc.setUserSkills(
+  principalOf(req), Number(req.params.id), Array.isArray(req.body?.skills) ? req.body.skills.map(String) : [],
 )));
 api.put('/admin/accounts/:id/permissions', requireAuth, wrap((req) => accountSvc.setUserPermissions(
   principalOf(req), Number(req.params.id), Array.isArray(req.body?.items) ? req.body.items : [],

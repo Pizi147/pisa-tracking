@@ -4,7 +4,8 @@ import { api } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { Card, ErrorState, Field, Info, NutChon, SectionNote, Skeleton } from '../../ui/ui.tsx';
-import { skillLabel } from '../../lib/format.ts';
+import { skillLabel, skillShort } from '../../lib/format.ts';
+import { ENTRY_SKILLS } from '@shared/domain/index.ts';
 
 type Profile = {
   id: number; code: string; fullName: string; email: string | null; phone: string | null;
@@ -25,6 +26,26 @@ type Profile = {
  * gợi ý khi phân công; cái sau là phân công thật, và mới là thứ quyết định quyền nhập điểm.
  * Nhầm hai thứ này là tưởng khai thêm một kỹ năng ở đây thì được nhập điểm kỹ năng đó.
  */
+/**
+ * Ô CHỌN KỸ NĂNG PHỤ TRÁCH ĐƯỢC (MH1, K1-51) — đúng 5 ô nhập L · R · W1 · W2 · S, tên đầy đủ ở tooltip. Tên môn lớp thường (G+V,
+ * P, Tổng hợp) là tên của Ô LỚP, không phải năng lực của người. Dùng chung: Hồ sơ cá nhân · Quản trị › Tài khoản · Đăng ký.
+ */
+export function ChonKyNang({ value, onToggle, disabled }: {
+  value: ReadonlySet<string> | readonly string[]; onToggle: (k: string) => void; disabled?: boolean;
+}) {
+  const co = (k: string) => ('has' in value ? value.has(k) : value.includes(k));
+  return (
+    <div className="flex flex-wrap gap-1.5" role="group" aria-label="Kỹ năng phụ trách được">
+      {ENTRY_SKILLS.map((k) => (
+        <NutChon key={k} nho chon={co(k)} disabled={disabled} title={skillLabel(k)} onClick={() => onToggle(k)}
+          className="min-w-[52px] justify-center">
+          {skillShort(k)}
+        </NutChon>
+      ))}
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   const toast = useToast();
   const { session, reload: reloadSession } = useSession();
@@ -85,8 +106,7 @@ export default function ProfilePage() {
         </p>
       </div>
 
-      <Card title="Thông tin liên hệ"
-        action={<button className="btn btn-primary btn-sm" disabled={busy || !draft} onClick={save}>Lưu</button>}>
+      <Card title="Thông tin liên hệ">
         <div className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Họ và tên" required>
@@ -111,14 +131,12 @@ export default function ProfilePage() {
 
           <Field label="Kỹ năng bạn phụ trách được"
             hint="Đây là NĂNG LỰC, dùng để gợi ý khi phân công — không phải quyền nhập điểm.">
-            <div className="flex flex-wrap gap-1.5">
-              {data.allSkills.map((k) => (
-                <NutChon key={k} nho chon={d.skills.has(k)} onClick={() => toggleSkill(k)}>
-                  {skillLabel(k)}
-                </NutChon>
-              ))}
-            </div>
+            <ChonKyNang value={d.skills} onToggle={toggleSkill} />
           </Field>
+          {/* K1-54: Lưu ở CHÂN thẻ — sau khi đã đọc hết các ô, không lẫn với tiêu đề. */}
+          <div className="flex justify-end border-t pt-3" style={{ borderColor: 'var(--line)' }}>
+            <button className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !draft} onClick={save}>Lưu</button>
+          </div>
         </div>
       </Card>
 

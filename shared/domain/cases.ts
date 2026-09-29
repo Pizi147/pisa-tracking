@@ -1,7 +1,7 @@
 /** CASE — hạng mục, phân loại nguyên nhân, phương án, phê duyệt và kết quả. */
 
-import { ENTRY_SKILLS, ENTRY_SKILL_LABEL, type EntrySkill } from './skills.ts';
-import { REGULAR_SKILLS } from './normal.ts';
+import { ENTRY_SKILLS } from './skills.ts';
+import { REGULAR_SKILLS, programmeOf, tenMon } from './normal.ts';
 
 // ------------------------------------------------ Chủ đề của một case học thuật
 
@@ -10,9 +10,10 @@ import { REGULAR_SKILLS } from './normal.ts';
  * `GET /students/:id/case-topics`) và form (`QuickReport.tsx`), để hai nơi không lệch bộ.
  *
  * `ratio` = lớp thường (chấm theo tỷ lệ đạt/tổng): bốn môn L · R · W · S, đúng thứ tự này.
- * Không phải lớp thường (Fast Track): năm ô L · R · W1 · W2 · S.
+ * Không phải lớp thường (Fast Track): năm ô L · R · W1 · W2 · S. Pre FOU: một chủ đề "Tổng hợp" (PF6).
  */
-export function caseTopicsFor(ratio: boolean): readonly string[] {
+export function caseTopicsFor(ratio: boolean, ct?: string | null): readonly string[] {
+  if (programmeOf(ct) === 'PREFOU') return ['tong_hop'];
   return ratio ? REGULAR_SKILLS : ENTRY_SKILLS;
 }
 
@@ -31,8 +32,8 @@ export function caseTopicsFor(ratio: boolean): readonly string[] {
  * Học thuật dùng NĂM ô L · R · W1 · W2 · S chứ không phải bốn kỹ năng có band: một giáo viên chỉ dạy Task 2 thì việc hỗ trợ của họ
  * phải nằm ở W2, không lẫn vào "Writing".
  */
-export function caseTopicLabel(topic: string): string {
-  return ENTRY_SKILL_LABEL[topic as EntrySkill] ?? topic;
+export function caseTopicLabel(topic: string, ct?: string | null): string {
+  return tenMon(ct, topic);
 }
 
 /**
@@ -48,7 +49,7 @@ export function caseTopicLabel(topic: string): string {
  * đây — từ 21/09/2026 nó là vi phạm và biện pháp xử lý, không còn là một loại case.
  */
 export const CASE_CATEGORIES = [
-  'listening', 'reading', 'writing1', 'writing2', 'writing', 'speaking',
+  'listening', 'reading', 'writing1', 'writing2', 'writing', 'speaking', 'tong_hop',
 ] as const;
 export type CaseCategory = (typeof CASE_CATEGORIES)[number];
 
@@ -59,6 +60,7 @@ export const CASE_CATEGORY_LABEL: Record<CaseCategory, string> = {
   writing2: 'Writing Task 2',
   writing: 'Writing',
   speaking: 'Speaking',
+  tong_hop: 'Tổng hợp',
 };
 /**
  * HẠNG MỤC CASE → KỸ NĂNG ĐƯỢC PHÂN CÔNG.
@@ -70,10 +72,12 @@ export const CASE_CATEGORY_SKILL: Record<string, string> = {
   writing1: 'writing1', writing2: 'writing2',
   /* Lớp Normal chỉ có MỘT môn Writing, và phân công cũng chỉ có một ô `writing`. */
   writing: 'writing',
+  /* Pre FOU: ô duy nhất, GVCN dạy luôn (T56). */
+  tong_hop: 'tong_hop',
 };
 
 export const CASE_CATEGORY_SHORT: Record<CaseCategory, string> = {
-  listening: 'L', reading: 'R', writing1: 'W1', writing2: 'W2', writing: 'W', speaking: 'S',
+  listening: 'L', reading: 'R', writing1: 'W1', writing2: 'W2', writing: 'W', speaking: 'S', tong_hop: 'Tổng hợp',
 };
 
 /**
@@ -91,8 +95,9 @@ export const NORMAL_CASE_CATEGORIES = [
   'listening', 'reading', 'writing', 'speaking',
 ] as const;
 
-/** `ratio` = lớp Normal. Không rõ chương trình thì lấy bộ của Fast Track. */
-export function caseCategoriesFor(scoringMode: string | null | undefined): readonly CaseCategory[] {
+/** `ratio` = lớp Normal. Không rõ chương trình thì lấy bộ của Fast Track. Pre FOU: một hạng mục "Tổng hợp". */
+export function caseCategoriesFor(scoringMode: string | null | undefined, ct?: string | null): readonly CaseCategory[] {
+  if (programmeOf(ct) === 'PREFOU') return ['tong_hop'];
   return scoringMode === 'ratio' ? NORMAL_CASE_CATEGORIES : FT_CASE_CATEGORIES;
 }
 
@@ -165,6 +170,7 @@ const REGULAR_TO_CATEGORY: Record<string, CaseCategory> = {
   speaking: 'speaking',
   prep_writing: 'writing',
   pronunciation: 'speaking',
+  tong_hop: 'tong_hop',
 };
 
 /** Đưa một chủ đề bất kỳ (kỹ năng FT, kỹ năng lớp Normal) về đúng một hạng mục. */
@@ -231,8 +237,10 @@ export function caseTitle(c: {
   category: string | null; latestAttemptNo?: number | null;
   /** `mock` | `progress` | `final`. Lớp Normal KHÔNG được gọi bài của mình là "MT". */
   latestAttemptKind?: string | null;
+  /** Mã chương trình của lớp (MH2): FOU → "Grammar + Vocabulary", Pre FOU → "Tổng hợp". Không rõ → tên chung. */
+  chuongTrinh?: string | null;
 }): string {
-  const label = caseCategoryLabel(c.category);
+  const label = c.category ? tenMon(c.chuongTrinh, c.category) : caseCategoryLabel(c.category);
   /*
    * TIỀN TỐ GỌI ĐÚNG TÊN BÀI. Trước vòng 5 mọi case đều mang tiền tố "MT{n}", kể cả case
    * sinh từ một bài Progress Test của lớp Foundation — người đọc thấy "MT1" ở một lớp
@@ -291,8 +299,8 @@ export type IssueNode = {
 };
 
 export type IssueBranch = {
-  /** Khớp với chủ đề mạch. Writing dùng chung cho `writing1` và `writing2`. */
-  key: 'listening' | 'reading' | 'writing' | 'speaking';
+  /** Khớp với chủ đề mạch. Writing dùng chung cho `writing1` và `writing2`. FOU: `gv` (G+V), `phat_am` (P); Pre FOU: `tong_hop` (T57). */
+  key: 'listening' | 'reading' | 'writing' | 'speaking' | 'gv' | 'phat_am' | 'tong_hop';
   label: string;
   items: IssueNode[];
 };
@@ -359,6 +367,34 @@ export const ISSUE_TAXONOMY: IssueBranch[] = [
       other('student.speaking.other'),
     ],
   },
+  /* T57: nguyên nhân theo MÔN, không theo tiêu chí IELTS. FOU G+V, FOU P, Pre FOU Tổng hợp (mã mới, giữ tiền tố `student.` — Q6). */
+  {
+    key: 'gv', label: 'Grammar + Vocabulary',
+    items: [
+      { code: 'student.gv.vocabulary', label: 'Từ vựng' },
+      { code: 'student.gv.grammar', label: 'Ngữ pháp' },
+      other('student.gv.other'),
+    ],
+  },
+  {
+    key: 'phat_am', label: 'Pronunciation',
+    items: [
+      { code: 'student.phat_am.sound', label: 'Âm' },
+      { code: 'student.phat_am.stress', label: 'Trọng âm' },
+      { code: 'student.phat_am.intonation', label: 'Ngữ điệu' },
+      other('student.phat_am.other'),
+    ],
+  },
+  {
+    key: 'tong_hop', label: 'Tổng hợp',
+    items: [
+      { code: 'student.tong_hop.language', label: 'Từ vựng / ngữ pháp' },
+      { code: 'student.tong_hop.receptive', label: 'Kỹ năng nghe – đọc' },
+      { code: 'student.tong_hop.productive', label: 'Kỹ năng nói – viết' },
+      { code: 'student.tong_hop.focus', label: 'Tâm lý và độ tập trung' },
+      other('student.tong_hop.other'),
+    ],
+  },
 ];
 
 const ISSUE_INDEX: Record<string, { label: string; branch: IssueBranch['key'] }> = {};
@@ -380,9 +416,18 @@ export function issueBranchOf(code: string | null | undefined): IssueBranch['key
  * Bộ phân loại dùng được cho một chủ đề.
  *
  * W1 và W2 cùng dùng bộ Writing — hai task chấm riêng nhưng nguyên nhân thì cùng một họ.
+ * FOU: ô W là G+V, ô S là P — nguyên nhân theo môn (T57). `ct` không rõ → bộ theo kỹ năng như cũ.
  */
-export function issuesForTopic(topic: string): IssueNode[] {
-  const key = topic === 'writing1' || topic === 'writing2' ? 'writing' : topic;
+export function nhanhPhanLoai(topic: string, ct?: string | null): IssueBranch['key'] | null {
+  const c = programmeOf(ct);
+  if (topic === 'tong_hop') return 'tong_hop';
+  if (c === 'FOU' && (topic === 'writing' || topic === 'prep_writing')) return 'gv';
+  if (c === 'FOU' && (topic === 'speaking' || topic === 'pronunciation')) return 'phat_am';
+  const k = topic === 'writing1' || topic === 'writing2' || topic === 'prep_writing' ? 'writing' : topic === 'pronunciation' ? 'speaking' : topic;
+  return (['listening', 'reading', 'writing', 'speaking'] as const).includes(k as any) ? (k as IssueBranch['key']) : null;
+}
+export function issuesForTopic(topic: string, ct?: string | null): IssueNode[] {
+  const key = nhanhPhanLoai(topic, ct);
   return ISSUE_TAXONOMY.find((b) => b.key === key)?.items ?? [];
 }
 

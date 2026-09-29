@@ -2,9 +2,8 @@ import { Link } from 'react-router-dom';
 import { HangCon, HangNhom } from '../../../ui/HangNhom.tsx';
 import { Nhan } from '../../../ui/Nhan.tsx';
 import { Han } from '../../../ui/Han.tsx';
-import { skillLabel, skillShort } from '../../../lib/format.ts';
-import { chuOChuaLuu } from '@shared/domain/index.ts';
-import { BON_MON, TONE_NHAN_LOP, type LopLichTest } from './kieu.ts';
+import { chuOChuaLuu, tenMon, tenMonNgan } from '@shared/domain/index.ts';
+import { TONE_NHAN_LOP, type LopLichTest } from './kieu.ts';
 import { LuoiNhung } from './LuoiNhung.tsx';
 
 /**
@@ -29,16 +28,17 @@ function NhanLop({ l, chuaLuu = 0 }: { l: LopLichTest; chuaLuu?: number }) {
   );
 }
 
-/** L R W S — môn không thi tuần này mờ đi (tooltip tên đủ, G-7). */
+/** Bộ môn của lớp theo chương trình (FT L R W S · FOU L R G+V P · Pre FOU Tổng hợp) — môn không thi tuần này mờ đi (tooltip tên đủ, G-7). */
 function KyNang({ l }: { l: LopLichTest }) {
   return (
     <span className="inline-flex gap-1.5 font-semibold tabular-nums">
-      {BON_MON.map((k) => {
+      {l.boMon.map((k) => {
         const co = l.kyNangTuan.includes(k);
+        const ten = tenMon(l.chuongTrinh, k);
         return (
           <span key={k} className={co ? 'text-slate-200' : 'text-slate-600'}
-            title={co ? skillLabel(k) : `${skillLabel(k)} — không thi tuần này`}>
-            {skillShort(k)}
+            title={co ? ten : `${ten} — không thi tuần này`}>
+            {tenMonNgan(l.chuongTrinh, k)}
           </span>
         );
       })}

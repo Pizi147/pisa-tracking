@@ -126,7 +126,10 @@ export async function runPrLopTests(t: YThucTestKit) {
       slots: [{ userId: gv[0], skill: null, isCore: true }, { userId: gv[0], skill: 'reading', isCore: false }] });
     assert(r.code === 'MB FT RF 883' && (conn.prepare("SELECT COUNT(*) n FROM teacher_assignments WHERE class_id = ? AND status = 'active'").get(r.id) as any).n === 2, JSON.stringify(r));
     assertThrows(() => intakeMod.createClass(P.admin, { code: 'mb-ft rf 883', branchId: mb, kind: 'FT' }), /Đã có lớp/, 'trùng không phân biệt hoa/thường, dấu -');
-    assertThrows(() => intakeMod.taoLopVaPhanCong(P.admin, { branchId: mb, chuongTrinh: 'PREFOU', so: '03', startPeriodId: 1 }), /chưa mở/, 'PF6');
+    /* PR-MON mở Pre FOU (PF6): tạo được, GVCN tự nhận ô Tổng hợp (moRongPhanCong). */
+    const pf = intakeMod.taoLopVaPhanCong(P.admin, { branchId: mb, chuongTrinh: 'PREFOU', so: '93', startPeriodId: 1,
+      slots: [{ userId: gv[0], skill: null, isCore: true }] });
+    assert((conn.prepare("SELECT 1 FROM teacher_assignments WHERE class_id = ? AND skill = 'tong_hop' AND user_id = ? AND status = 'active'").get(pf.id, gv[0])), 'PF6: GVCN chưa nhận ô tong_hop');
     assertThrows(() => intakeMod.taoLopVaPhanCong(P.admin, { branchId: mb, chuongTrinh: 'BE', so: '12A3' }), /Chỉ gõ số/, 'số sai mẫu');
     conn.prepare('DELETE FROM teacher_assignments WHERE class_id = ?').run(r.id); conn.prepare('DELETE FROM class_skills WHERE class_id = ?').run(r.id);
     conn.prepare('DELETE FROM classes WHERE id = ?').run(r.id);

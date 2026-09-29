@@ -1,8 +1,8 @@
 import { db, tx } from '../db.ts';
 import {
   COORDINATION_KINDS, COORDINATION_KIND_LABEL, COORDINATION_REMOVE_REASON_LABEL, COORDINATION_STATUS_LABEL,
-  COORDINATION_USER_REMOVE_REASONS, ENTRY_SKILL_LABEL, coordinationSummary, kiemGhiRoKhac, reasonNeedsText, sosCoordinationFor,
-  type CoordinationKind, type CoordinationRemoveReason, type CoordinationStatus, type EntrySkill,
+  COORDINATION_USER_REMOVE_REASONS, coordinationSummary, tenMon, kiemGhiRoKhac, reasonNeedsText, sosCoordinationFor,
+  type CoordinationKind, type CoordinationRemoveReason, type CoordinationStatus,
 } from '../../../shared/domain/index.ts';
 import type { Principal } from '../permissions.ts';
 import { badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -139,7 +139,7 @@ function turnsOf(p: Principal, rows: any[]): CoordinationTurn[] {
   for (const [attemptId, list] of byAttempt) {
     const a = conn
       .prepare(
-        `SELECT a.*, s.full_name, s.student_code, c.code AS class_code FROM assessment_attempts a
+        `SELECT a.*, s.full_name, s.student_code, c.code AS class_code, c.programme_code FROM assessment_attempts a
            JOIN students s ON s.id = a.student_id LEFT JOIN classes c ON c.id = a.class_id WHERE a.id = ?`,
       )
       .get(attemptId) as any;
@@ -151,7 +151,7 @@ function turnsOf(p: Principal, rows: any[]): CoordinationTurn[] {
       attemptId, attemptNo: a.attempt_no, studentId: a.student_id, studentName: a.full_name, studentCode: a.student_code,
       classId: a.class_id ?? null, classCode: a.class_code ?? null,
       sosLevel: resultOf(a).sosLevel,
-      skills, skillLabels: skills.map((s) => ENTRY_SKILL_LABEL[s as EntrySkill] ?? s),
+      skills, skillLabels: skills.map((s) => tenMon(a.programme_code, s)),
       summary: coordinationSummary(list.map((r) => r.status)),
       actions: list.map((r) => shapeAction(r, attachments)),
       canAct: canManageDiscipline(p, a.student_id),

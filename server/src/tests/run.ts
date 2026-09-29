@@ -5970,10 +5970,14 @@ check('[10.1] Bộ demo có đủ cả hai chiều tách tuần và một bài N
 });
 
 check('[18.1] Mọi đợt đều có đủ bốn dòng lịch kỹ năng, không dòng nào bịa trạng thái vắng', () => {
+  /* PR-MON (PF6): "đủ" = bộ môn của chương trình — lớp thường đọc `programme_skills` (Pre FOU 1 dòng), FT 4 kỹ năng đánh giá. */
   const missing = conn
     .prepare(
       `SELECT COUNT(*) n FROM assessment_attempts a
-        WHERE (SELECT COUNT(*) FROM attempt_skills ask WHERE ask.attempt_id = a.id) <> 4`,
+         LEFT JOIN classes c ON c.id = a.class_id LEFT JOIN programmes pg ON pg.code = c.programme_code
+        WHERE (SELECT COUNT(*) FROM attempt_skills ask WHERE ask.attempt_id = a.id)
+              <> CASE WHEN pg.scoring_mode = 'ratio'
+                   THEN (SELECT COUNT(*) FROM programme_skills ps WHERE ps.programme_code = c.programme_code) ELSE 4 END`,
     )
     .get() as any;
   assert(missing.n === 0, `${missing.n} đợt chưa có đủ bốn dòng lịch kỹ năng`);
@@ -9736,8 +9740,13 @@ await runPrMtTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, ad
 // ==================================================================== PR-NHAP (Thêm học viên: email, ngày thi, cột theo tiêu đề)
 const { runPrNhapTests } = await import('./prNhap.tests.ts');
 await runPrNhapTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== PR-TOC (Thêm học viên theo lô, kiểm dữ liệu nhập)
 const { runPrTocTests } = await import('./prToc.tests.ts');
 await runPrTocTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
+// ==================================================================== PR-MON (Hệ môn học, Pre FOU một ô Tổng hợp, hai khung FT / Lớp thường)
+const { runPrMonTests } = await import('./prMon.tests.ts');
+await runPrMonTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

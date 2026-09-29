@@ -13,6 +13,7 @@ import type { WorkGroup, WorkItem } from '../worklist/WorkList.tsx';
 import { NganViecVanHanh } from '../worklist/MgmtTasksPage.tsx';
 import { useNhacYThuc } from '../yThuc/YThucReminders.tsx';
 import { ChonPhuTrach, type NguoiPhuTrach } from './ChonPhuTrach.tsx';
+import { CongTacKhung, khungDaNho, type KhungLoc } from '../../ui/CongTacKhung.tsx';
 import {
   LOC_NHANH, LOC_NHANH_LABEL, NHOM_VIEC, NHOM_VIEC_LABEL, demLocNhanh, gomNhomViec, khopLocNhanh, nhomViecCua, type LocNhanh, type NhomViec as MaNhomViec,
 } from '@shared/domain/index.ts';
@@ -64,7 +65,22 @@ export function HoTroHocVienTab() {
   const { data, loading, error, reload, setData } = useApi<Work>(url, [url]);
 
   const { homNay } = useNgayNghiepVu();
-  const items = data?.items ?? [];
+  /*
+   * MH4, K1-30 (Q3): công tắc khung, mặc định Tất cả ("việc vẫn gộp" — T60). Tham số `khung` trên đường dẫn thắng (`loai` ở màn này
+   * là link cũ của Nhóm việc), rồi lựa chọn đã nhớ trên máy. Việc không gắn lớp (`khung` null) hiện ở mọi khung. Lọc khung đứng TRƯỚC
+   * mọi bộ lọc khác, nên số trên chip hạn / nhóm đếm theo khung.
+   */
+  const khungUrl = params.get('khung');
+  const khungChon: KhungLoc = khungUrl === 'ft' || khungUrl === 'thuong' || khungUrl === 'tat-ca' ? khungUrl : khungDaNho('cong-viec') ?? 'tat-ca';
+  const tatCaViec = data?.items ?? [];
+  const demKhung = useMemo(() => ({
+    'tat-ca': tatCaViec.length,
+    ft: tatCaViec.filter((it) => it.khung === 'ft').length,
+    thuong: tatCaViec.filter((it) => it.khung === 'thuong').length,
+  }), [tatCaViec]);
+  /* Chỉ một khung có việc thì công tắc ẩn — khi đó không lọc (lựa chọn đã nhớ không được giấu mất việc). */
+  const khung: KhungLoc = demKhung.ft > 0 && demKhung.thuong > 0 ? khungChon : 'tat-ca';
+  const items = useMemo(() => (khung === 'tat-ca' ? tatCaViec : tatCaViec.filter((it) => !it.khung || it.khung === khung)), [tatCaViec, khung]);
   const trongNhom = useMemo(() => (nhom ? items.filter((it) => nhomViecCua(it.group) === nhom) : items), [items, nhom]);
   const demHan = useMemo(() => demLocNhanh(trongNhom, 'tat-ca', homNay), [trongNhom, homNay]);
   const locItems = useMemo(() => items.filter((it) => khopLocNhanh(it, loc, homNay)), [items, loc, homNay]);
@@ -111,6 +127,9 @@ export function HoTroHocVienTab() {
     <div className="space-y-4">
       {/* ───────────────────────────────────────────────── hàng lọc — một hàng, xuống dòng ở màn hẹp */}
       <div className="flex flex-wrap items-center gap-1.5">
+        <CongTacKhung trang="cong-viec" coTatCa value={khung} dem={demKhung}
+          onChange={(k) => setParam('khung', k === 'tat-ca' ? null : k)} />
+        {demKhung.ft > 0 && demKhung.thuong > 0 && <span className="mx-1 hidden h-5 w-px sm:block" style={{ background: 'var(--line)' }} />}
         <BoLocDoan ariaLabel="Lọc nhanh" value={loc} onChange={(k) => setParam('loc', k === 'tat-ca' ? null : k)}
           muc={LOC_NHANH.map((k) => ({ key: k, nhan: LOC_NHANH_LABEL[k], so: demHan[k] }))} />
         <span className="mx-1 hidden h-5 w-px sm:block" style={{ background: 'var(--line)' }} />

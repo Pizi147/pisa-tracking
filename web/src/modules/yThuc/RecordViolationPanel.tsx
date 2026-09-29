@@ -10,7 +10,7 @@ import { OKhac } from '../../ui/OKhac.tsx';
 import { NutChon } from '../../ui/ui.tsx';
 import {
   VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, VIOLATION_DESCRIPTION_MIN,
-  VIOLATION_SKILLS, VIOLATION_SKILL_LABEL, cauCanhBaoTrung, type ViolationCategory, dsLoi, kiemGhiRoKhac, tachKhac, KHAC_TOI_THIEU,
+  monViPham, tenMon, cauCanhBaoTrung, type ViolationCategory, dsLoi, kiemGhiRoKhac, tachKhac, KHAC_TOI_THIEU,
 } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 
@@ -82,10 +82,11 @@ export function RecordViolationPanel({
   }, [open, violation?.id]);
 
   /* V06 — cảnh báo trùng mềm: cùng học viên, cùng nhóm, cùng ngày. Hỏi lại mỗi khi một trong ba đổi. Q6: KHÔNG chặn Lưu. */
-  const similarQ = studentId && category && !editing
+  /* Hỏi cả khi đang sửa: cần `chuongTrinh` cho danh sách môn (K5-47); phần trùng chỉ dùng khi ghi mới. */
+  const similarQ = studentId && category
     ? `/violations/similar?studentId=${studentId}&category=${category}${occurredOn ? `&occurredOn=${occurredOn}` : ''}`
     : null;
-  const similar = useApi<{ rows: any[]; defaultSkill: string | null }>(similarQ, [studentId, category, occurredOn, editing]);
+  const similar = useApi<{ rows: any[]; defaultSkill: string | null; chuongTrinh: string | null }>(similarQ, [studentId, category, occurredOn, editing]);
   useEffect(() => { setXemTrung(false); }, [category, occurredOn, studentId]);
   const trungRows = !editing ? (similar.data?.rows ?? []) : [];
   const cauTrung = cauCanhBaoTrung(trungRows, today);
@@ -97,6 +98,10 @@ export function RecordViolationPanel({
    */
   const defaultSkill = editing ? null : (similar.data?.defaultSkill ?? null);
   const displaySkill = daChonMon ? skill : (defaultSkill ?? skill);
+  const ct = similar.data?.chuongTrinh ?? null;
+  const mon = monViPham(ct);
+  /* Dữ liệu cũ (vd. `pronunciation`, W1 ở lớp thường) vẫn hiện đúng tên khi sửa, dù không còn trong danh sách chọn. */
+  const dsMon = displaySkill && !mon.includes(displaySkill) ? [...mon, displaySkill] : mon;
 
   const minLen = VIOLATION_DESCRIPTION_MIN; /* PR-NEN: luật 30 ký tự của "Khác" đã bỏ (T13); "Khác" cần ô Ghi rõ ≥ 3. */
   const laNhomKhac = category === 'other';
@@ -220,12 +225,15 @@ export function RecordViolationPanel({
           <Truong nhan="Ngày" batBuoc>
             <ChonNgayGan value={occurredOn} onChange={setOccurredOn} soNgay={21} />
           </Truong>
+          {/* Pre FOU không chia môn → ẩn ô Môn (K5-47). */}
+          {dsMon.length > 0 && (
           <Truong nhan="Môn" phu={!daChonMon && defaultSkill ? 'Tự điền môn bạn dạy lớp này' : undefined}>
             <select className="field w-full" value={displaySkill} onChange={(e) => { setSkill(e.target.value); setDaChonMon(true); }}>
               <option value="">Chưa chọn</option>
-              {VIOLATION_SKILLS.map((s) => <option key={s} value={s}>{VIOLATION_SKILL_LABEL[s] ?? s}</option>)}
+              {dsMon.map((s) => <option key={s} value={s}>{tenMon(ct, s)}</option>)}
             </select>
           </Truong>
+          )}
         </Hang2>
 
         {/* Năm nhóm: danh sách hai hàng (≤ 4 nút/hàng), nút cao 44px ở điện thoại. */}

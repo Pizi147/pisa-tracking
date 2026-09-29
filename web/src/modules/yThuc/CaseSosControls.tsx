@@ -16,15 +16,17 @@ const invalidateCases = () => { invalidate('/cases'); invalidate('/students'); i
  * `XÁC ĐỊNH NGUYÊN NHÂN` (§7.5, S04) — mở đúng ô phân loại đang có trong form case (`issuesForTopic`,
  * dùng chung với QuickReport lúc tạo case) nhưng cho case ĐÃ TỒN TẠI, qua `PUT /cases/:id/issues`.
  */
-export function CauseDeterminationPanel({ caseId, topic, currentCode, onClose, onDone }: {
+export function CauseDeterminationPanel({ caseId, topic, currentCode, onClose, onDone, ct = null }: {
   caseId: number; topic: string | null; currentCode: string | null; onClose: () => void; onDone?: () => void;
+  /** Mã chương trình lộ trình Case — FOU ô W chỉ nguyên nhân G+V, ô S nhóm Phát âm (T57). */
+  ct?: string | null;
 }) {
   const toast = useToast();
   const [code, setCode] = useState(currentCode ?? '');
   /* "Khác" (T13): ô Ghi rõ ngay dưới, lưu ở `observation` (Q9). */
   const [ghiRo, setGhiRo] = useState('');
   const [busy, setBusy] = useState(false);
-  const causes = topic ? issuesForTopic(topic) : [];
+  const causes = topic ? issuesForTopic(topic, ct) : [];
   /* K2-3 (điện thoại không có hover): câu Ghi rõ hiện ngay dưới ô từ lúc chọn Khác, không đợi rời ô — ba form nhỏ trong file này. */
   const loiGhiRo = laKhac(code) ? kiemGhiRoKhac(ghiRo) : null;
 

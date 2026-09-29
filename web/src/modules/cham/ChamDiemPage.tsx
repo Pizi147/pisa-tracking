@@ -107,7 +107,7 @@ export default function ChamDiemPage() {
           <p className="text-xs text-slate-500 mt-0.5 mb-0">
             {data.branchName}
             {tuanMon && (
-              <span title="Tuần thi của từng môn. L = Listening · R = Reading · W = Writing · S = Speaking"> · {tuanMon}</span>
+              <span title="Tuần thi của từng môn (rê chuột lên tên cột để xem tên môn đầy đủ)"> · {tuanMon}</span>
             )}
             {laFt && (
               <span title={nhapDuoc.map((s) => `${skillShort(s)} = ${skillLabel(s)}`).join(' · ') || undefined}>

@@ -12,8 +12,8 @@ import { useToast } from '../../ui/Toast.tsx';
 import { Empty, Info, Level, Status } from '../../ui/ui.tsx';
 import { useTrangThaiLuuO } from '../../ui/SaveState.tsx';
 import { ODiemThuong, laTuChoi, type SaveOpts } from '../fasttrack/ScoreEntry.tsx';
-import { caseStatusLabel, skillLabel, skillShort, sosLabel, sosTone } from '../../lib/format.ts';
-import { ATTEMPT_KIND_SHORT, ketQuaThuong, ngay, tuanLich, type AttemptKind } from '@shared/domain/index.ts';
+import { caseStatusLabel, sosLabel, sosTone } from '../../lib/format.ts';
+import { ATTEMPT_KIND_SHORT, CHUONG_TRINH_KHONG_CHIA_MON, ketQuaThuong, ngay, tenMon, tenMonNgan, tuanLich, type AttemptKind } from '@shared/domain/index.ts';
 import { DauLuu, DauO, VIEN_LOI } from './LuoiFT.tsx';
 
 type SkillResult = {
@@ -41,6 +41,8 @@ type Row = {
   result: {
     skills: SkillResult[]; scored: number; required: number; complete: boolean;
     failedCount: number | null; sosLevel: number | null; passThreshold: number;
+    /** Σ điểm / Σ tổng — chỉ khi đủ mọi môn (K5-44). */
+    tyLeTong?: number | null;
   };
   cases: { id: number; status: string; level: number | null; skill: string; category: string }[];
   caseId: number | null; caseStatus: string | null; caseLevel: number | null;
@@ -49,7 +51,9 @@ type Row = {
 export type ThuongSheet = {
   class: { id: number; code: string; branchName: string; startDate: string | null };
   programme: { code: string; name: string; weeks: number | null; skills: string[]; checkpoints: { kind: AttemptKind; studyWeek: number }[] };
+  /** Tên môn theo chương trình (máy chủ dựng bằng `tenMon`/`tenMonNgan` — MH2). */
   skillLabels: Record<string, string>;
+  monNgan?: Record<string, string>;
   editableSkills: string[];
   canPlan: boolean;
   passThreshold: number;
@@ -145,7 +149,8 @@ export function tuanThiTheoMon(data: ThuongSheet | null | undefined, homNay: str
   const nhom: { tuan: string; mon: string[] }[] = [];
   for (const x of tuanCuaMon) {
     const cu = nhom.find((n) => n.tuan === x.tuan);
-    if (cu) cu.mon.push(skillShort(x.k)); else nhom.push({ tuan: x.tuan!, mon: [skillShort(x.k)] });
+    const ten = tenMonNgan(data.programme.code, x.k);
+    if (cu) cu.mon.push(ten); else nhom.push({ tuan: x.tuan!, mon: [ten] });
   }
   if (nhom.length === 1) return nhom[0].tuan;
   return nhom.map((n) => `${n.mon.join(', ')}: ${n.tuan}`).join(' · ');
@@ -170,7 +175,8 @@ const COT_KQ = 290;
  * Lưu một ô của lưới lớp thường cho MỘT dòng — cùng dáng `useSaveScore` của FT: trạng thái lưu riêng TỪNG Ô,
  * chặn gửi lặp cùng một ô, lỗi thì giữ bản nháp. `nem` = ném lỗi cho hộp lý do hiện câu lỗi tại ô.
  */
-export function useLuuThuong(attemptId: number, onReload: () => void) {
+export function useLuuThuong(attemptId: number, onReload: () => void, ct: string | null = null) {
+  const tenO = (k: string) => tenMon(ct, k);
   const toast = useToast();
   /* Trạng thái lưu THEO TỪNG Ô (PR-UX1): một ô hỏng không bị ô lưu sau che thành "Đã lưu". */
   const tt = useTrangThaiLuuO<Record<string, unknown>>(`thuong:${attemptId}`);
@@ -198,11 +204,11 @@ export function useLuuThuong(attemptId: number, onReload: () => void) {
        */
       if ('noShow' in body && laTuChoi(e)) {
         tt.bo(skill);
-        toast.push('error', `${skillLabel(skill)}: ${e.message}`);
+        toast.push('error', `${tenO(skill)}: ${e.message}`);
         return null;
       }
       tt.hongO(skill, body, e.message);
-      toast.push('error', `${skillLabel(skill)}: ${e.message}`);
+      toast.push('error', `${tenO(skill)}: ${e.message}`);
       return null;
     } finally {
       inflight.current.delete(skill);
@@ -216,7 +222,7 @@ export function useLuuThuong(attemptId: number, onReload: () => void) {
   const dau = async (skill: string, bat: boolean) => {
     const r = await gui(skill, { noShow: bat });
     if (r && r.moved) {
-      toast.push('ok', bat ? `Đã dời ${skillLabel(skill)} sang tuần sau.` : `Đã gỡ dấu "-" — ${skillLabel(skill)} về lại tuần cũ.`);
+      toast.push('ok', bat ? `Đã dời ${tenO(skill)} sang tuần sau.` : `Đã gỡ dấu "-" — ${tenO(skill)} về lại tuần cũ.`);
     }
     return r !== null;
   };
@@ -304,18 +310,18 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
                 return (
                   <th key={k} className={`th text-center ${kn === k ? 'text-[color:var(--accent-strong)]' : ''}`}>
                     <div className="flex flex-col items-center gap-1">
-                      <span title={data.skillLabels[k] ?? skillLabel(k)}>{skillShort(k)}</span>
+                      <span title={tenMon(data.programme.code, k)}>{tenMonNgan(data.programme.code, k)}</span>
                       {cotSuaDuoc(k) && (
                         <span className="flex items-center gap-1 normal-case tracking-normal font-normal">
                           <span className="text-[10px] text-slate-500">tổng</span>
                           <input className="field w-11 px-1 py-0.5 text-center text-[12px] tabular-nums"
                             inputMode="numeric" value={chuTong(k)} placeholder="—"
                             title="Tổng số câu của đề cả lớp làm — bấm ↓ để điền vào mọi ô còn trống tổng."
-                            aria-label={`Tổng số câu chung của cột ${skillLabel(k)}`}
+                            aria-label={`Tổng số câu chung của cột ${tenMon(data.programme.code, k)}`}
                             onChange={(e) => setTongGo((t) => ({ ...t, [k]: e.target.value }))} />
                           <button type="button" className="btn btn-sm btn-ghost px-1.5 py-0" disabled={n === null}
                             title="Điền tổng này vào mọi ô còn trống tổng của cột. Ô đã có tổng giữ nguyên."
-                            aria-label={`Điền tổng ${n ?? ''} xuống cột ${skillLabel(k)}`}
+                            aria-label={`Điền tổng ${n ?? ''} xuống cột ${tenMon(data.programme.code, k)}`}
                             onClick={() => n !== null && setDien((d) => ({ ...d, [k]: { gt: n, lan: (d[k]?.lan ?? 0) + 1 } }))}>
                             ↓
                           </button>
@@ -355,7 +361,7 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
   register: (col: number, el: HTMLInputElement | null) => void;
   onMove: (row: number, col: number, dr: number) => void;
 }) {
-  const { luu, dau, status, lastError, retry, o, loi, luuLai, soLoi } = useLuuThuong(row.attemptId, onReload);
+  const { luu, dau, status, lastError, retry, o, loi, luuLai, soLoi } = useLuuThuong(row.attemptId, onReload, sheet.programme.code);
   const homNay = sheet.today;
 
   return (
@@ -385,7 +391,7 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
         if (tuanDangXem && s?.weekStart && s.weekStart !== tuanDangXem && cell.diem === null && !s.noShow) {
           return (
             <td key={k} className="td py-1.5 text-center text-slate-500" data-kn={k}
-              title={`${sheet.skillLabels[k] ?? skillLabel(k)}: thi tuần ${tuanLich(s.weekStart, homNay)}`}>
+              title={`${tenMon(sheet.programme.code, k)}: thi tuần ${tuanLich(s.weekStart, homNay)}`}>
               {tuanLich(s.weekStart, homNay)}
             </td>
           );
@@ -393,7 +399,7 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
         if (dung) {
           return (
             <td key={k} className="td py-1.5 text-center" data-kn={k}>
-              <span className="text-[10px] text-slate-500 leading-tight" title={`${sheet.skillLabels[k] ?? skillLabel(k)}: ${chuDung}`}>{chuDung}</span>
+              <span className="text-[10px] text-slate-500 leading-tight" title={`${tenMon(sheet.programme.code, k)}: ${chuDung}`}>{chuDung}</span>
             </td>
           );
         }
@@ -406,7 +412,8 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
               tongCot={tongCot(k)}
               canEdit={canEdit}
               dienTong={dien[k] ?? null}
-              tenMon={sheet.skillLabels[k] ?? skillLabel(k)}
+              chiChuKetQua={CHUONG_TRINH_KHONG_CHIA_MON.includes(sheet.programme.code)}
+              tenMon={tenMon(sheet.programme.code, k)}
               tenHv={row.studentName}
               onSave={(p, o) => luu(k, p, o)}
               onDau={(bat) => dau(k, bat)}
@@ -418,7 +425,7 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
             />
             {quaHan && (
               <div className="text-[10px] text-slate-500 leading-none mt-0.5"
-                title={`${sheet.skillLabels[k] ?? skillLabel(k)}: hạn chấm ${ngay(s!.deadline, homNay)} đã qua`}>{quaHan}</div>
+                title={`${tenMon(sheet.programme.code, k)}: hạn chấm ${ngay(s!.deadline, homNay)} đã qua`}>{quaHan}</div>
             )}
           </td>
         );
@@ -440,9 +447,13 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
  */
 function KetQua({ row, sheet }: { row: Row; sheet: ThuongSheet }) {
   const r = row.result;
+  const ngan = (k: string) => tenMonNgan(sheet.programme.code, k);
+  const du = (k: string) => tenMon(sheet.programme.code, k);
   const dat = r.skills.filter((s) => s.outcome === 'pass').length;
-  const thieu = r.skills.filter((s) => s.outcome === 'missing').map((s) => skillShort(s.skill));
-  const kq = ketQuaThuong({ dat, daCham: r.scored, tong: r.required, thieu });
+  const thieu = r.skills.filter((s) => s.outcome === 'missing').map((s) => ngan(s.skill));
+  /* MH7: Pre FOU không chia môn — kết quả là % tổng, tông đạt/chưa đạt (không SOS). */
+  const khongChiaMon = CHUONG_TRINH_KHONG_CHIA_MON.includes(sheet.programme.code);
+  const kq = ketQuaThuong({ dat, daCham: r.scored, tong: r.required, thieu, tyLe: r.tyLeTong ?? null, khongChiaMon });
   const truot = (r.failedCount ?? 0) > 0;
 
   /* Dòng phụ — một dòng, ≤ ~60 ký tự. */
@@ -450,13 +461,13 @@ function KetQua({ row, sheet }: { row: Row; sheet: ThuongSheet }) {
   for (const s of row.skillSchedule) {
     if (!s.noShow || ketQuaCua(row, s.skill)?.outcome !== 'missing' || !s.weekStart) continue;
     const t = tuanLich(s.weekStart, sheet.today);
-    doi.set(t, [...(doi.get(t) ?? []), skillShort(s.skill)]);
+    doi.set(t, [...(doi.get(t) ?? []), s.skill]);
   }
   const doiDau = [...doi.entries()][0];
   const phu: { chu: string; tone: string; title: string } | null = doiDau
     ? {
-      chu: `${doiDau[1].join(', ')} dời sang ${doiDau[0]}`, tone: 'text-slate-400',
-      title: `${doiDau[1].map((k) => skillLabel(r.skills.find((s) => skillShort(s.skill) === k)?.skill ?? k)).join(', ')}: em không làm bài, môn đã dời sang ${doiDau[0]}.`,
+      chu: `${doiDau[1].map(ngan).join(', ')} dời sang ${doiDau[0]}`, tone: 'text-slate-400',
+      title: `${doiDau[1].map(du).join(', ')}: em không làm bài, môn đã dời sang ${doiDau[0]}.`,
     }
     : kq.phu
       ? {
@@ -465,15 +476,16 @@ function KetQua({ row, sheet }: { row: Row; sheet: ThuongSheet }) {
       }
       : null;
 
-  const chiTiet = r.skills.map((s) => `${skillShort(s.skill)} ${s.score === null ? '—' : `${s.score}/${s.total ?? '?'}`}`).join(' · ');
+  const chiTiet = r.skills.map((s) => `${ngan(s.skill)} ${s.score === null ? '—' : `${s.score}/${s.total ?? '?'}`}`).join(' · ');
   /* N-1b: màu kết quả Test — Đạt xanh lá · SOS 1 vàng · SOS 2 cam · SOS 3 đỏ · chưa đủ điểm xám. */
-  const tone = truot ? (r.sosLevel ? sosTone(r.sosLevel) : 'sos3') : r.complete ? 'ok' : 'muted';
+  const tone = khongChiaMon ? (truot ? 'warn' : r.complete ? 'ok' : 'muted')
+    : truot ? (r.sosLevel ? sosTone(r.sosLevel) : 'sos3') : r.complete ? 'ok' : 'muted';
   const chinh = r.scored === 0
     ? <span className="text-xs text-slate-500">{kq.chinh}</span>
     : (
       <Level tone={tone} title={chiTiet}>
         {kq.chinh}
-        {truot && r.sosLevel ? (
+        {truot && r.sosLevel && !khongChiaMon ? (
           <span title={`${sosLabel(r.sosLevel)} — mức cần hỗ trợ theo số môn chưa đạt (${r.failedCount} môn)`}>
             {` · ${sosLabel(r.sosLevel)}`}
           </span>
@@ -487,8 +499,8 @@ function KetQua({ row, sheet }: { row: Row; sheet: ThuongSheet }) {
   const nhanCase = dauCase && (
     <Status
       kind={dauCase.status === 'done' ? 'done' : dauCase.status === 'open' ? 'idle' : 'doing'}
-      title={cases.map((c) => `Case ${skillLabel(c.skill)} · ${caseStatusLabel(c.status)}`).join('\n')}>
-      Case {sheet.programme.skills.filter((k) => cases.some((c) => c.skill === k)).map(skillShort).join(', ')}
+      title={cases.map((c) => `Case ${du(c.skill)} · ${caseStatusLabel(c.status)}`).join('\n')}>
+      Case {sheet.programme.skills.filter((k) => cases.some((c) => c.skill === k)).map(ngan).join(', ')}
     </Status>
   );
 

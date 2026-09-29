@@ -69,7 +69,8 @@ export async function runPhanTichTests(t: YThucTestKit) {
     for (const ma of ['student.reading.language', 'student.listening.language']) {
       assert(cua('ngu-phap').includes(ma) && cua('tu-vung').includes(ma), `${ma} phải có ở cả Ngữ pháp và Từ vựng`);
     }
-    eq(d.LOI_CHUNG.map((x: any) => x.nhan), ['Ngữ pháp', 'Từ vựng', 'Tổ chức ý / mạch lạc', 'Kỹ năng làm bài'], 'bốn nhóm');
+    // PR-MON (K1-22): thêm nhóm Phát âm.
+    eq(d.LOI_CHUNG.map((x: any) => x.nhan), ['Ngữ pháp', 'Từ vựng', 'Tổ chức ý / mạch lạc', 'Kỹ năng làm bài', 'Phát âm'], 'năm nhóm');
   });
 
   check('UX4 · hoKyNang: writing1/writing2/writing → writing; mã lạ → null', () => {
@@ -316,7 +317,7 @@ export async function runPhanTichTests(t: YThucTestKit) {
   const soHvCua = (kq: any, khoa: string): number => timHang(kq, khoa)?.soHv ?? 0;
   const ISS = {
     wGram: 'student.writing.grammar', wLex: 'student.writing.lexical', wOrg: 'student.writing.organisation', wOther: 'student.writing.other',
-    rLang: 'student.reading.language', sGram: 'student.speaking.grammar', sPron: 'student.speaking.pronunciation',
+    rLang: 'student.reading.language', sGram: 'student.speaking.grammar', sPron: 'student.speaking.pronunciation', rLogic: 'student.reading.logic',
   };
   const baiTapUx4 = () => {
     const tao = { hv: [] as number[], ca: [] as number[], luot: [] as number[], chuKy: [] as number[] };
@@ -1053,7 +1054,8 @@ export async function runPhanTichTests(t: YThucTestKit) {
     try {
       const truoc = vanDeHvSvc.vanDeHv(P.admin, FV({ gop: true }));
       const a = kit.hv(CID_FT, 'gm1'), b = kit.hv(CID_FT, 'gm2');
-      kit.ca(a, 'speaking', [[ISS.sPron, 'primary']]);
+      // PR-MON (K1-22): Phát âm nay là nhóm chung → mã một kỹ năng dùng Reading · Tư duy logic.
+      kit.ca(a, 'reading', [[ISS.rLogic, 'primary']]);
       kit.ca(b, 'writing2', [[ISS.wOther, 'primary']]);
       kit.ca(b, 'speaking', [['student.speaking.other', 'secondary']]);
       const sau = vanDeHvSvc.vanDeHv(P.admin, FV({ gop: true }));
@@ -1062,11 +1064,11 @@ export async function runPhanTichTests(t: YThucTestKit) {
       eq(gom.loai, 'gom', 'loại gom');
       assert(/loại lỗi chỉ có ở một kỹ năng$/.test(gom.nhan), `nhãn nhóm: ${gom.nhan}`);
       const con = (kq: any, k: string) => timHang(kq, k);
-      eq(con(sau, `gom:mot|${ISS.sPron}`).nhan, 'Speaking · Phát âm', 'mã chỉ ở Speaking có dòng riêng kèm tên kỹ năng');
+      eq(con(sau, `gom:mot|${ISS.rLogic}`).nhan, 'Reading · Tư duy logic', 'mã chỉ ở Reading có dòng riêng kèm tên kỹ năng');
       eq((con(sau, 'gom:mot|khac')?.soHv ?? 0) - (con(truoc, 'gom:mot|khac')?.soHv ?? 0), 1, 'mọi "Khác" gộp MỘT dòng — em b có hai "Khác" (W, S) chỉ đếm 1');
       eq(con(sau, 'gom:mot|khac').nhan, 'Khác', 'nhãn dòng Khác');
       assert(sau.hang.every((h: any) => h.khoa.startsWith('chung:') || h.khoa === 'gom:mot'), 'không còn hàng kỹ năng');
-      assert(soHvCua(sau, `gom:mot|${ISS.sPron}`) - soHvCua(truoc, `gom:mot|${ISS.sPron}`) === 1, 'Phát âm +1');
+      assert(soHvCua(sau, `gom:mot|${ISS.rLogic}`) - soHvCua(truoc, `gom:mot|${ISS.rLogic}`) === 1, 'Tư duy logic +1');
     } finally { kit.don(); }
   });
 
@@ -1213,7 +1215,8 @@ export async function runPhanTichTests(t: YThucTestKit) {
     const cotFt = d.cotTongHopFor('ft').find((c: any) => c.khoa === 'kn:listening');
     const cotThuong = d.cotTongHopFor('thuong').find((c: any) => c.khoa === 'kn:listening');
     assert(cotFt.goiY.includes('dưới kỳ vọng') && !cotFt.goiY.includes('chưa đạt'), `Tooltip FT: ${cotFt.goiY}`);
-    assert(cotThuong.goiY.includes('chưa đạt') && !cotThuong.goiY.includes('dưới kỳ vọng'), `Tooltip lớp thường: ${cotThuong.goiY}`);
+    /* PR-MON (MH3): khung Lớp thường không có cột theo môn. */
+    assert(cotThuong === undefined, 'Lớp thường còn cột kn:');
   });
 
   check("PR-Pb · #3: \"Đang xử lý\" không đếm Case đã status='done' dù từng có hỗ trợ; \"Case\" vẫn đếm", () => {

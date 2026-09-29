@@ -1,0 +1,15 @@
+ĐẠT  K1 · cột: L=Listening · R=Reading · G+V=Grammar + Vocabulary · P=Pronunciation
+ĐẠT  K2a · bảng: cột Tổng hợp · 52% · 64% · 78% · không SOS (số cột tiêu đề 3)
+ĐẠT  K2b · sau khi gõ 30/40: Vũ Đức Anh PISA-000045 ✓ ✓ / Đạt · 75% 75%
+ĐẠT  K3 · chip: false · dòng đầu: true · ô nhập cao 44 px · không cuộn ngang: true
+ĐẠT  K4 · công tắc "✓ Fast Track · 1 lớp Lớp thường · 2 lớp" · FT không lẫn lớp thường · thường có FOU 12 (G+V) + Pre FOU (Tổng hợp) · tải lại nhớ: true
+ĐẠT  K5a · công tắc: true · lưới Pre FOU chỉ Cuối khoá: true · không lộ PREFOU: true
+ĐẠT  K5b · hộp kỹ năng: Lê Minh Châu · Cuối khoá ✕ Tổng hợp W3 SEP · đã có điểm Chưa đổi gì. Huỷ Lưu
+ĐẠT  K6 · nút: ✓ Tất cả 27 | Fast Track 15 | Lớp thường 9 · đứng đầu hàng lọc: true · Lớp thường ẩn việc MB FT 101: true
+ĐẠT  K7 · nút Pre FOU bấm được
+ĐẠT  K8 · bảng kỹ năng có G+V/P: true/true
+ĐẠT  K9 · hồ sơ một hàng Tổng hợp: true · ghim "Cuối · 52%": true
+ĐẠT  K10 · nút: L R W1 W2 S · Lưu ở chân: true
+ĐẠT  K11 · ô kỹ năng trong ngăn: true · sau lưu: Phạm Thu Trang NV-009 trang.pham.pisa@gmail.com Giáo viên · Monbay Giáo viên · Bãi Cháy — Writing Task 2 Sửa ⋯ · danh mục FOU/Pre FOU đúng: true
+ĐẠT  K12 · dòng gợi ý: Phạm Thu Trang · 7 lớp — dạy được W2
+ĐẠT  K13 · thuong: cột môn 0 · ca-hai: cột môn 0 · Lịch Test không cuộn ngang: true · Công việc: true

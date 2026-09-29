@@ -1,11 +1,11 @@
 import { db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import {
-  ASSESSED_SKILLS, PROGRAMME_TEMPLATES, REGULAR_SKILLS, SOS_LABEL, mocKeTiep,
+  ASSESSED_SKILLS, CHUONG_TRINH_KHONG_CHIA_MON, PROGRAMME_TEMPLATES, REGULAR_SKILLS, SOS_LABEL, boMonLich, mocKeTiep,
 } from '../../../shared/domain/index.ts';
 import { entryBandsOf, loadBundle } from '../fasttrack/attempts.ts';
 import { evaluateAttempt } from '../fasttrack/scoring.ts';
-import { evaluateRegular } from '../normal/regular.ts';
+import { allProgrammes, evaluateRegular } from '../normal/regular.ts';
 import { luotSinhViecRow } from '../worklist/danhGia.ts';
 
 /**
@@ -67,6 +67,11 @@ export type Standing = {
   belowSkills: { skill: string; band: number }[];
   /** Lớp thường: môn chưa đạt của lượt đó, kèm điểm đúng/tổng — cột "Kết quả gần nhất" ghi "chưa đạt W 12/20". FT: []. */
   failedSkills: { skill: string; score: number; total: number }[];
+  /** Mã chương trình của lộ trình (MH2: tên môn FOU G+V/P, Pre FOU Tổng hợp). */
+  chuongTrinh: string | null;
+  /** MH7: Pre FOU không chia môn — kết quả là % tổng (đủ điểm mới có), không phải SOS. */
+  khongChiaMon: boolean;
+  tyLeTong: number | null;
 
   /** Lượt kế tiếp đã lên kế hoạch mà chưa có điểm — để nói "đang chờ kết quả MT3". */
   nextAttemptNo: number | null;
@@ -88,6 +93,8 @@ export function standingLine(s: Standing): string {
     head = s.attemptId === null
       ? (ratio ? 'Chưa có kết quả trong khoá này' : 'Chưa có kết quả trong lộ trình này')
       : `${s.attemptLabel}: chưa đủ điểm để kết luận`;
+  } else if (s.khongChiaMon && s.tyLeTong !== null) {
+    head = `${s.attemptLabel}: ${Math.round(s.tyLeTong * 100)}%`;   // MH7: Pre FOU chỉ % tổng
   } else if (ratio) {
     /* Lớp thường (đặc tả §2; PR-N1 A4): "3/4 môn đạt", không "đạt kỳ vọng". Mức SOS vẫn hiện vì hồ sơ cần nó (§3.10). */
     head = `${s.attemptLabel}: ${s.scored - (s.failed ?? 0)}/${s.required} môn đạt`;
@@ -111,7 +118,7 @@ const EMPTY = (studentId: number, cycleId: number | null): Standing => ({
   studentId, cycleId, mode: null,
   attemptId: null, attemptNo: null, attemptKind: null, attemptLabel: null, periodCode: null,
   sosLevel: null, provisional: false, scored: 0, required: 0, failed: null,
-  overall: null, expectation: null, belowSkills: [], failedSkills: [],
+  overall: null, expectation: null, belowSkills: [], failedSkills: [], chuongTrinh: null, khongChiaMon: false, tyLeTong: null,
   nextAttemptNo: null, nextAttemptLabel: null, nextPeriodCode: null,
   openCases: 0, handoverCases: 0,
 });
@@ -191,6 +198,9 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
     if (s.cycleId !== null && r.cycle_id !== null && r.cycle_id !== s.cycleId) s.handoverCases += 1;
   }
 
+  /* Bộ môn lớp thường: đọc bảng MỘT lần cho cả danh sách, chỉ khi có em lớp thường (không N+1). */
+  let programmes: ReturnType<typeof allProgrammes> | null = null;
+  const boMonCua = (ct: string | null) => boMonLich(ct, (programmes ??= allProgrammes()).get(ct ?? '')?.skills);
   const homNay = demoToday();
   for (const [studentId, cycle] of cycleOf) {
     const s = out.get(studentId)!;
@@ -198,6 +208,7 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
       cycle.programme_code as keyof typeof PROGRAMME_TEMPLATES
     ]?.scoringMode === 'ratio';
     s.mode = ratio ? 'ratio' : 'ielts_band';
+    s.chuongTrinh = cycle.programme_code ?? null;
     const list = byStudent.get(studentId) ?? [];
     /* K2-31: "lượt sắp tới" = mốc kế tiếp (planned, không lịch sử, từ tuần này, sớm nhất) — không phải lượt planned cuối danh sách. */
     const moc = mocKeTiep(list, homNay);
@@ -227,13 +238,15 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
       s.periodCode = a.period_code ?? null;
 
       if (ratio) {
-        const tpl = PROGRAMME_TEMPLATES[cycle.programme_code as keyof typeof PROGRAMME_TEMPLATES];
-        const r = evaluateRegular([...(tpl?.skills ?? REGULAR_SKILLS)], scores as any);
+        /* Một nguồn bộ môn: bảng `programme_skills` (qua `allProgrammes`, nhớ trong request), hằng số chỉ dự phòng (K5-45). */
+        const r = evaluateRegular(boMonCua(cycle.programme_code), scores as any, cycle.programme_code);
         s.sosLevel = r.sosLevel;
         s.provisional = r.provisional;
         s.scored = r.scored;
         s.required = r.required;
         s.failed = r.failedCount;
+        s.tyLeTong = r.tyLeTong;
+        s.khongChiaMon = CHUONG_TRINH_KHONG_CHIA_MON.includes(cycle.programme_code ?? '');
         s.failedSkills = r.skills
           .filter((x) => x.outcome === 'fail' && x.score !== null && x.total !== null)
           .map((x) => ({ skill: x.skill, score: x.score as number, total: x.total as number }));
@@ -259,7 +272,7 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
       break;
     }
     if (s.attemptId === null && s.required === 0) {
-      s.required = ratio ? REGULAR_SKILLS.length : ASSESSED_SKILLS.length;
+      s.required = ratio ? boMonCua(cycle.programme_code).length : ASSESSED_SKILLS.length;
     }
   }
   return out;

@@ -129,13 +129,16 @@ export async function runTongQuanTests(t: YThucTestKit) {
       { loai: 'pa-cai-thien', metricId: 'ty-le-co-cai-thien', tu: 5, mau: 6 },
       { loai: 'dung-han', metricId: 'dung-han-cap-nhat', extra: { from: '2026-08-15' }, tu: 12, mau: 20 },
     ];
-    const r = d.chonDiemDangChuY(ds, 'ca-hai');
+    /* PR-MON (MH5): câu "môn dưới kỳ vọng" chỉ ở khung Fast Track — ba điểm đo trên ct=ft. */
+    const r = d.chonDiemDangChuY(ds, 'ft');
     eq(r.length, 3, 'Ba điểm');
     eq(r[0].cau, 'Writing: 5/10 học viên dưới kỳ vọng', 'Môn tỷ lệ cao nhất, ≥ 3 em (Reading 2/4 dưới ngưỡng)');
     eq([r[0].lienKet, r[0].soDanhSach], ['xem 5 học viên', 5], 'Link môn');
     eq([r[1].cau, r[1].soDanhSach], ['5/6 PA học thuật đã kết thúc có cải thiện', 6], 'PA cải thiện — danh sách là mẫu số');
     eq(r[2].cau, '12/20 lần cập nhật PA đúng hạn (30 ngày qua)', 'Đúng hạn < 80%');
-    eq(d.chonDiemDangChuY(ds, 'thuong')[0].cau, 'Writing: 5/10 học viên chưa đạt', 'Lớp thường');
+    for (const ct of ['thuong', 'ca-hai'] as const) {
+      assert(d.chonDiemDangChuY(ds, ct).every((x: any) => x.loai !== 'mon-duoi-ky-vong'), `${ct}: không trộn môn hai khung`);
+    }
     const it = d.chonDiemDangChuY([
       mon('Listening', 'listening', 2, 20), { loai: 'pa-cai-thien', metricId: 'ty-le-co-cai-thien', tu: 3, mau: 4 },
       { loai: 'dung-han', metricId: 'dung-han-cap-nhat', tu: 19, mau: 20 },
@@ -402,7 +405,7 @@ export async function runTongQuanTests(t: YThucTestKit) {
       const gui = () => cases.reportIssue(gvcn, {
         studentId: hv.sid, topic: 'speaking', fromSignalId: sg.id, idempotencyKey: `pa-e2e-${sg.id}`,
         title: 'Speaking — trả lời cụt, không mở rộng ý', summary: 'Part 2 nói dưới một phút, lặp từ nối; đã nghe lại bài thi.',
-        primaryCode: d.issuesForTopic('speaking')[0].code,
+        primaryCode: d.issuesForTopic('speaking', 'FOU')[0].code,   // PR-MON: FOU S = P
       }) as any;
       const c = gui();
       eq(gui().id, c.id, 'Gửi lại cùng idempotencyKey phải ra cùng Case');

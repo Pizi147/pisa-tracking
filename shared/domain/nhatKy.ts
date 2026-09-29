@@ -45,7 +45,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'task.create': 'Tạo công việc', 'task.update': 'Cập nhật công việc',
   'unit_report.link_task': 'Nối công việc vào báo cáo', 'unit_report.save': 'Lưu báo cáo đơn vị', 'unit_report.unlink_task': 'Bỏ công việc khỏi báo cáo',
   'user.delete': 'Xoá tài khoản', 'user_approved': 'Duyệt tài khoản', 'user_declined': 'Từ chối tài khoản', 'user_created': 'Tạo tài khoản',
-  'user_roles_set': 'Đổi vai tài khoản', 'user_permissions_set': 'Đổi quyền tài khoản', 'password_reset': 'Đặt lại mật khẩu',
+  'user_roles_set': 'Đổi vai tài khoản', 'user_permissions_set': 'Đổi quyền tài khoản', 'user_skills_set': 'Sửa kỹ năng tài khoản', 'password_reset': 'Đặt lại mật khẩu',
   'violation.delete': 'Xoá vi phạm', 'violation.edit': 'Sửa vi phạm', 'violation.record': 'Ghi vi phạm',
   'work.remind': 'Nhắc việc',
 };

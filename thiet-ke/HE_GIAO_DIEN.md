@@ -374,3 +374,17 @@ hàng dưới. Đây là lỗi của component + khung chứa, không phải l�
 5. Bộ chọn tuần thử trong panel 600px, modal rộng và mobile: không rớt hàng ngẫu nhiên, popover
    không bị cắt.
 6. Không còn màn nào tự viết câu tiến độ đợt Test ngoài `<KetQuaDot>` (grep `/4 kỹ năng`).
+
+
+---
+
+## 12. Hai khung và tên môn (PR-MON — MH3, MH4)
+
+- **Tên môn theo chương trình chỉ ở chỗ nói về BÀI:** bài test, lưới chấm / bảng điểm, hồ sơ lớp, hồ sơ HV, Kế hoạch Test và Lịch Test
+  khung Lớp thường, xuất Excel. **Không** đưa vào bộ lọc; khung Lớp thường **không có bộ lọc môn** và bảng Tổng hợp không có cột môn
+  (`cotKyNangFor` rỗng khi khác Fast Track; "Cả hai" không trộn môn hai khung — MH5).
+- **Công tắc khung** `CongTacKhung` = `BoLocDoan` (đang chọn ≠ nút chính), đứng **đầu hàng lọc** (Lịch Test: sau ô Tuần; Kế hoạch
+  Test và Công việc: ô đầu tiên), áp cho MỌI khối bên dưới (dải số, Nợ, danh sách lớp / việc). Chỉ một khung có dữ liệu → ẩn. Nhớ
+  theo máy (localStorage bọc try/catch); tham số đường dẫn thắng (`loai` ở Test, `khung` ở Công việc). Công việc mặc định **Tất cả**,
+  việc không gắn lớp hiện ở mọi khung.
+- **Pre FOU một môn:** không chip chọn môn, không chip lọc Hành trình; kết quả là `%` tổng, tông đạt / chưa đạt, không nhãn SOS.

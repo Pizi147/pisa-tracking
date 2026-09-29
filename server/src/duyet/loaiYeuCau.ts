@@ -8,8 +8,8 @@
  */
 import type { Principal } from '../permissions.ts';
 import {
-  ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, caseTopicLabel, duongHoSoHocVien, nhanDotNgan, outcomeLabelFor, shortDate,
-  type AssessedSkill, type InterventionKind, type LoaiYeuCau, type TrangThaiYc,
+  INTERVENTION_KIND_LABEL, caseTopicLabel, duongHoSoHocVien, nhanDotNgan, outcomeLabelFor, shortDate, tenMonNgan,
+  type InterventionKind, type LoaiYeuCau, type TrangThaiYc,
 } from '../../../shared/domain/index.ts';
 import { respondToPlan } from '../cases/cases.ts';
 import { chuTheDoiLan2, decideAbsenceMove } from '../fasttrack/absence.ts';
@@ -116,18 +116,20 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       lyDo: 'Đề nghị dời không còn chờ',
     },
     nap: (conn, ds) => napTheoDoiTuong(conn, ds,
-      `SELECT r.id, r.skill, r.move_no, r.attempt_id, a.attempt_no, a.kind, a.class_id, pr.code AS tuan, pr.week_start
+      `SELECT r.id, r.skill, r.move_no, r.attempt_id, a.attempt_no, a.kind, a.class_id, pr.code AS tuan, pr.week_start,
+              c.programme_code AS ct
          FROM skill_move_requests r JOIN assessment_attempts a ON a.id = r.attempt_id
+         LEFT JOIN classes c ON c.id = a.class_id
          LEFT JOIN report_periods pr ON pr.id = r.to_period_id
         WHERE r.id IN (?)`),
     moTa: (yc, ngu) => {
       const x = ngu.them.get(yc.id);
-      const kn = x ? ASSESSED_SKILL_LABEL[x.skill as AssessedSkill] ?? x.skill : 'kỹ năng';
+      const kn = x ? tenMonNgan(x.ct ?? null, x.skill) : 'kỹ năng';   // MH2: G+V / P / Tổng hợp theo chương trình lớp
       const dot = x ? nhanDotNgan(x.kind, x.attempt_no) : null;
       return {
         /* PR-MT (K4-04): thẻ Mock nói đủ trong một dòng — `Dời L · MT1 · lần 2 · Duyệt = L thi W1 OCT` (chuTheDoiLan2, chung với moTaDoiLan2). */
         tieuDe: x?.kind === 'mock'
-          ? chuTheDoiLan2({ skill: x.skill, attemptNo: x.attempt_no, moveNo: x.move_no, tuanDich: x.week_start ?? null, homNay: ngu.homNay })
+          ? chuTheDoiLan2({ skill: x.skill, attemptNo: x.attempt_no, moveNo: x.move_no, tuanDich: x.week_start ?? null, homNay: ngu.homNay, ct: x.ct ?? null })
           : `Dời ${kn}${dot ? ` ${dot}` : ''} lần ${x?.move_no ?? 2}`,
         dong: [
           `${nguoiXin(yc, ngu)}: ${yc.ly_do || 'em vắng buổi thi'}${x?.tuan ? ` · đề nghị ${x.tuan}` : ''}`,

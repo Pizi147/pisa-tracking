@@ -6,6 +6,7 @@ import { HangNhom } from '../../../ui/HangNhom.tsx';
 import { useToast } from '../../../ui/Toast.tsx';
 import { LuoiKeHoach } from './LuoiKeHoach.tsx';
 import type { LopKH, LuoiFTData, LuoiThuongData } from './kieu.ts';
+import { kyHieuLop } from '@shared/domain/index.ts';
 
 /**
  * MỘT LỚP TRONG KẾ HOẠCH TEST: hàng lớn `HangNhom` (N-2 — `▾/▸ {mã}` · `{chi nhánh} · {n} HV` · bên phải tóm tắt: FT
@@ -46,7 +47,7 @@ export function LopKeHoach({ lop, mo, onToggle, onHienDien }: {
               <span className="block min-w-0">
                 <span className="flex flex-wrap items-baseline gap-x-2">
                   <span>{lop.code}</span>
-                  <span className="text-[11px] font-normal text-slate-400">{[lop.chiNhanh, lop.chuongTrinh].filter(Boolean).join(' · ')}{(lop.chiNhanh || lop.chuongTrinh) && ' · '}{lop.soHv} HV</span>
+                  <span className="text-[11px] font-normal text-slate-400">{[lop.chiNhanh, kyHieuLop(lop.chuongTrinh, null) ?? lop.chuongTrinh].filter(Boolean).join(' · ')}{(lop.chiNhanh || lop.chuongTrinh) && ' · '}{lop.soHv} HV</span>
                 </span>
                 <span className="block truncate text-[11px] font-normal text-slate-400 sm:hidden">{lop.tomTat}{nutXep}</span>
               </span>

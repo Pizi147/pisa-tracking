@@ -1,8 +1,8 @@
 import { db, tx } from '../db.ts';
 import {
-  ENTRY_SKILL_LABEL, PERMISSIONS, REGULAR_SKILL_LABEL, SIGNAL_DISMISS_NOTE, SIGNAL_STATUS_LABEL,
-  SIGNAL_WITHDRAW_SCORE_FIXED, ngay, signalVerifyDue,
-  type CaseCategory, type EntrySkill, type SignalStatus,
+  PERMISSIONS, SIGNAL_DISMISS_NOTE, SIGNAL_STATUS_LABEL,
+  SIGNAL_WITHDRAW_SCORE_FIXED, ngay, signalVerifyDue, tenMon,
+  type CaseCategory, type SignalStatus,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, forbidden, notFound, nowIso } from '../util.ts';
@@ -151,11 +151,9 @@ export function raiseSignal(input: {
  * Hai bộ mã cùng tồn tại và đều đúng: Fast Track nhập theo năm ô (W1/W2 riêng), lớp Normal
  * chấm theo bốn môn (W là một). Tra cả hai bảng nhãn, không thì màn hình hiện ra mã thô.
  */
-export function labelOf(s: { skill: string | null }): string {
+export function labelOf(s: { skill: string | null; programme_code?: string | null }): string {
   if (!s.skill) return 'Chưa rõ kỹ năng';
-  return ENTRY_SKILL_LABEL[s.skill as EntrySkill]
-    ?? REGULAR_SKILL_LABEL[s.skill as keyof typeof REGULAR_SKILL_LABEL]
-    ?? s.skill;
+  return tenMon(s.programme_code ?? null, s.skill);   // MH2: FOU W → Grammar + Vocabulary (có mã chương trình khi đọc qua SIGNAL_SELECT)
 }
 
 // ---------------------------------------------------------------- đọc
@@ -207,7 +205,8 @@ const SIGNAL_SELECT = `
          a.attempt_no, a.kind AS attempt_kind,
          u.full_name AS owner_name,
          scr.raw_score AS score_value, scr.raw_total AS score_total,
-         COALESCE(pg.scoring_mode, pgc.scoring_mode) AS scoring_mode
+         COALESCE(pg.scoring_mode, pgc.scoring_mode) AS scoring_mode,
+         COALESCE(c.programme_code, cy.programme_code) AS programme_code
     FROM case_signals sg
     JOIN students s ON s.id = sg.student_id
     LEFT JOIN classes c ON c.id = sg.class_id

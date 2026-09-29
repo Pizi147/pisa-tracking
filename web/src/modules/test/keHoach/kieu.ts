@@ -1,5 +1,5 @@
 import {
-  CHU_KY_NANG, KY_NANG_KE_HOACH, gomChip, tuanLich,
+  KY_NANG_KE_HOACH, gomChip, tenMonNgan, tuanLich,
   type KyNangKH, type OKyNang,
 } from '@shared/domain/index.ts';
 
@@ -21,10 +21,12 @@ export type LuoiFTData = { classId: number; classCode: string; cot: number[]; ha
 export type DotThuong = { attemptId: number | null; kn: KnO };
 export type KindThuong = 'progress' | 'final';
 export type CotThuong = { kind: KindThuong; nhan: 'Giữa khoá' | 'Cuối khoá'; deXuat: string | null; nhanDeXuat: string | null };
-export type HangThuong = { studentId: number; ten: string; ma: string; dot: Record<KindThuong, DotThuong> };
+export type HangThuong = { studentId: number; ten: string; ma: string; dot: Partial<Record<KindThuong, DotThuong>> };
 export type LuoiThuongData = {
   classId: number; classCode: string; chuongTrinh: string | null; khaiGiang: string | null; tongTuan: number | null;
   tuanHienTai: string | null; hvChuaCoLich: number; cot: CotThuong[]; hang: HangThuong[];
+  /** Bộ môn của chương trình lớp (K4-16): FOU/BE/ELE 4 môn, Pre FOU `tong_hop`. */
+  boMon: KyNangKH[];
 };
 
 /** Một đợt của lớp: FT = MT{n}, lớp thường = Giữa khoá / Cuối khoá. */
@@ -37,10 +39,6 @@ export const khoaDot = (d: DotChon): string => (d.loai === 'ft' ? `mt${d.attempt
 export const thanDot = (d: DotChon) => (d.loai === 'ft' ? { attemptNo: d.attemptNo } : { kind: d.kind });
 
 export const KY = KY_NANG_KE_HOACH;
-export const chuKyNang = (k: KyNangKH) => CHU_KY_NANG[k];
-export const TEN_KY_NANG: Record<KyNangKH, string> = {
-  listening: 'Listening', reading: 'Reading', writing: 'Writing', speaking: 'Speaking',
-};
 
 /** Đợt của một em ở một cột. */
 export function dotCuaEm(
@@ -56,8 +54,8 @@ export function dotCuaEm(
 export const emXongDot = (o: { attemptId: number | null; kn: KnO }): boolean => o.attemptId !== null && gomChip(o.kn).xong;
 
 /** Tình trạng hiện có của một em bằng chữ: `L R W S · W4 OCT` (nhiều nhóm thì nối bằng " · "). */
-export function chuTinhTrang(kn: KnO): string {
+export function chuTinhTrang(kn: KnO, ct: string | null = null): string {
   const g = gomChip(kn);
   if (g.xong) return g.tuanXong ? `Xong · ${tuanLich(g.tuanXong)}` : 'Xong';
-  return g.chip.map((c) => `${c.kyNang.map((k) => CHU_KY_NANG[k]).join(' ')} · ${c.tuan ? tuanLich(c.tuan) : 'chưa xếp'}`).join(' · ');
+  return g.chip.map((c) => `${c.kyNang.map((k) => tenMonNgan(ct, k)).join(' ')} · ${c.tuan ? tuanLich(c.tuan) : 'chưa xếp'}`).join(' · ');
 }

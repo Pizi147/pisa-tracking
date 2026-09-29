@@ -19,8 +19,10 @@ type CaseDong = {
  * bước tiếp theo + hạn. Chỉ em có Case đang mở (Case theo `/cases?classId=` — lớp em ĐANG học). Case nói trước chọn bằng
  * `chonCaseChinh` (quá hạn → chưa có PA → mức SOS). Badge "n Case đang mở" ở đầu trang mở chế độ này (Q5).
  */
-export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi }: {
+export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuongTrinh = null }: {
   classId: number; maLop?: string; laLopThuong: boolean; quyen: QuyenDong; onDoi: () => void;
+  /** Mã chương trình lớp — tên môn theo chương trình ở cột việc tiếp theo (MH2). */
+  chuongTrinh?: string | null;
 }) {
   const { homNay } = useNgayNghiepVu();
   const roster = useApi<any[]>(`/classes/${classId}/roster`, [classId]);
@@ -63,7 +65,7 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi }: {
             {coCase.map((s) => {
               const ds = theoEm.get(s.id)!;
               const c = chonCaseChinh(ds)!;
-              const buoc = viecTiepTheoCua({ nhapDiem: null, cases: [c], homNay })[0] ?? null;
+              const buoc = viecTiepTheoCua({ nhapDiem: null, cases: [c], homNay, chuongTrinh })[0] ?? null;
               return (
                 <tr key={s.id} className="row-hover">
                   <td className="td h-12">

@@ -63,7 +63,8 @@ function tinh(p: Principal, f: FilterHieuQuaPa) {
 
   for (const r of rows) {
     const ma0 = loiChinh.get(r.caseId);
-    const ho = (ma0 ? issueBranchOf(ma0) : null) ?? hoKyNang(r.category);
+    const ho = hoKyNang(ma0 ? issueBranchOf(ma0) : null) ?? hoKyNang(r.category);
+    if (!ho && (r.category === 'tong_hop' || issueBranchOf(ma0) === 'tong_hop')) continue;   // Pre FOU không thuộc họ kỹ năng
     const ma = ma0 && issueBranchOf(ma0) ? ma0 : ho && ma0 ? `student.${ho}.other` : null;
     if (!ma || !ho) { caseChuaPhanLoai.add(r.caseId); continue; }
     const cha = `vd:${ma}`, con = `vd:${ma}|${r.kind}`;

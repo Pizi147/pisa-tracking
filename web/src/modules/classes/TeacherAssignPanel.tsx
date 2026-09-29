@@ -7,8 +7,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { Empty, Skeleton } from '../../ui/ui.tsx';
-import { skillLabel } from '../../lib/format.ts';
-import { kiemPhanCong, ngay, oPhanCong } from '@shared/domain/index.ts';
+import { kiemPhanCong, ngay, oPhanCong, tenMon } from '@shared/domain/index.ts';
 import { LuoiPhanCong } from './ClassCreatePanel.tsx';
 
 /**
@@ -26,7 +25,7 @@ type Teachers = {
   skills: string[];
   core: { userId: number; name: string; from: string }[];
   bySkill: { skill: string; userId: number; name: string; from: string }[];
-  candidates: { id: number; name: string; code: string; title: string | null; classCount: number; inThisClass: boolean }[];
+  candidates: { id: number; name: string; code: string; title: string | null; classCount: number; inThisClass: boolean; skills?: string[] }[];
   past: { name: string; skill: string | null; isCore: boolean; from: string; to: string | null }[];
   viewer: { canAssign: boolean };
 };
@@ -102,7 +101,7 @@ export function TeacherAssignPanel({ open, onClose, classId, classCode, onDone }
         <>
           <Khoi tieuDe="Phân công"
             luat="Chỉ nhập được điểm môn mình được phân công. Bỏ phân công KHÔNG xoá lịch sử: dòng cũ được đóng lại theo ngày, nên báo cáo cũ đọc lại vẫn thấy đúng ai dạy lúc đó; điểm đã nhập giữ nguyên tên người nhập.">
-            <LuoiPhanCong oList={oList} chon={chon} nguoi={nguoi} loi={loiO} oId={lf.oId} chiXem={!data.viewer.canAssign}
+            <LuoiPhanCong oList={oList} chon={chon} nguoi={nguoi} loi={loiO} oId={lf.oId} chiXem={!data.viewer.canAssign} chuongTrinh={data.programmeCode}
               nhanTrong={(k) => nhieuNguoi[k]?.join(' · ')}
               onChon={(khoa, v) => setChon((c) => ({ ...c, [khoa]: v }))} />
             <p className="m-0 text-[11px] text-slate-500">
@@ -122,7 +121,7 @@ export function TeacherAssignPanel({ open, onClose, classId, classCode, onDone }
                 <ul className="m-0 mt-1.5 list-none space-y-1 p-0">
                   {data.past.map((h, i) => (
                     <li key={i} className="text-xs text-slate-500">
-                      {h.name} · {h.isCore ? 'GVCN' : skillLabel(h.skill ?? '')} · {ngay(h.from, homNay)}{h.to ? ` → ${ngay(h.to, homNay)}` : ''}
+                      {h.name} · {h.isCore ? 'GVCN' : tenMon(data?.programmeCode ?? null, h.skill ?? '')} · {ngay(h.from, homNay)}{h.to ? ` → ${ngay(h.to, homNay)}` : ''}
                     </li>
                   ))}
                 </ul>

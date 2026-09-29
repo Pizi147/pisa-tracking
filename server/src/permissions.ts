@@ -144,11 +144,11 @@ export const activeAt = (a: Assignment, date: string) =>
  * dần theo năm, nên KHÔNG nạp cả bảng đó). `branchOfClass`/`classIsFastTrack` không nhận `p` (đặc tả hàm cũ) nên
  * không đi qua đối tượng principal được — đọc thẳng bộ nhớ request qua `nho`/`coNho`.
  */
-function bangLop(): Map<number, { branchId: number | null; isFastTrack: boolean }> {
+export function bangLop(): Map<number, { branchId: number | null; isFastTrack: boolean; ct: string | null }> {
   return nho('bang-lop', () => {
-    const map = new Map<number, { branchId: number | null; isFastTrack: boolean }>();
-    for (const r of db().prepare('SELECT id, branch_id, is_fast_track FROM classes').all() as any[]) {
-      map.set(r.id, { branchId: r.branch_id, isFastTrack: !!r.is_fast_track });
+    const map = new Map<number, { branchId: number | null; isFastTrack: boolean; ct: string | null }>();
+    for (const r of db().prepare('SELECT id, branch_id, is_fast_track, programme_code FROM classes').all() as any[]) {
+      map.set(r.id, { branchId: r.branch_id, isFastTrack: !!r.is_fast_track, ct: r.programme_code ?? null });
     }
     return map;
   });

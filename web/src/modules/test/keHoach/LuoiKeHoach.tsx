@@ -89,7 +89,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien }: {
                 const dot = o(h, c);
                 return (
                   <td key={c.key} className="td py-1.5 align-middle">
-                    <ChipKyNang kn={dot.kn} attemptId={dot.attemptId} loai={loai} khaiGiang={khaiGiang} tongTuan={tongTuan}
+                    <ChipKyNang kn={dot.kn} attemptId={dot.attemptId} loai={loai} ct={loai === 'thuong' ? (data as LuoiThuongData).chuongTrinh : null} khaiGiang={khaiGiang} tongTuan={tongTuan}
                       chuaToiLuot={loai === 'ft' && c.dot.loai === 'ft' && c.dot.attemptNo !== (h as HangFT).soKeTiep}
                       lichSu={!!dot.lichSu}
                       deXuat={c.deXuat} nhanDeXuat={c.nhanDeXuat} tenDot={nhanDot(c.dot)}
@@ -109,6 +109,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien }: {
             tieuDe={`${hop.hang.ten} · ${nhanDot(hop.cot.dot)}`} loai={loai} classId={data.classId} studentId={hop.hang.studentId}
             dot={hop.cot.dot} attemptId={dot.attemptId} kn={dot.kn} kyNangDau={hop.kyNangDau}
             deXuat={hop.cot.deXuat} khaiGiang={khaiGiang} tongTuan={tongTuan}
+            {...(loai === 'thuong' ? { ky: (data as LuoiThuongData).boMon, ct: (data as LuoiThuongData).chuongTrinh } : {})}
             onClose={() => setHop(null)} onSaved={onReload} onHienDien={onHienDien} />
         );
       })()}

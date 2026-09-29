@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, PERMISSIONS, SKILL_SHORT, hanDuyetDoiLan2, ngay, tuanLich,
+  ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, PERMISSIONS, hanDuyetDoiLan2, ngay, tenMon, tenMonNgan, tuanLich,
   type AssessedSkill,
 } from '../../../shared/domain/index.ts';
 import { assessedSkillOf, entrySkillsOf } from './scoring.ts';
@@ -12,7 +12,7 @@ import { nho } from '../platform/nguCanhRequest.ts';
 import { chotYeuCau, taoYeuCau } from '../duyet/yeuCau.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import {
-  checkSkillWeekMove, ensureSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf,
+  boMonCuaLuot, checkSkillWeekMove, ensureSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf,
 } from './skillSchedule.ts';
 
 /**
@@ -54,7 +54,7 @@ export type MoveRequest = {
   cancelled_part: number;
 };
 
-const skillName = (s: string) => ASSESSED_SKILL_LABEL[s as AssessedSkill] ?? s;
+const skillName = (s: string) => tenMon(null, s);   // gồm cả tong_hop (Pre FOU) — không hiện mã máy
 
 /** Lớp Normal huỷ LỊCH HẸN, Fast Track huỷ PHẦN THI. Hai hệ quả khác nhau (mục 10.6). */
 function isRatio(attempt: any): boolean {
@@ -167,17 +167,17 @@ export function tuanDichMacDinh(attemptId: number, skill: string, today: string)
 }
 
 /** Chữ thẻ "Dời lịch MT lần 2" (tiêu đề thẻ Lịch thi ở hộp Chờ duyệt): `Dời S · MT3 · lần 2 · Duyệt = S thi W2 OCT`. Hàm thuần. */
-export function chuTheDoiLan2(o: { skill: string; attemptNo: number | null; moveNo: number; tuanDich: string | null; homNay: string }): string {
-  const k = SKILL_SHORT[o.skill] ?? o.skill;
+export function chuTheDoiLan2(o: { skill: string; attemptNo: number | null; moveNo: number; tuanDich: string | null; homNay: string; ct?: string | null }): string {
+  const k = tenMonNgan(o.ct ?? null, o.skill);   // MH2: tên môn theo chương trình lớp (FOU G+V/P)
   return `Dời ${k} · MT${o.attemptNo ?? '?'} · lần ${o.moveNo} · Duyệt = ${k} thi ${o.tuanDich ? tuanLich(o.tuanDich, o.homNay) : '—'}`;
 }
 
 /** Như `chuTheDoiLan2`, đọc từ một đề nghị (giao kèo PR-MT → PR-DUYET). */
 export function moTaDoiLan2(req: { attempt_id: number; skill: string; move_no: number; to_period_id: number }): string {
   const conn = db();
-  const a = conn.prepare('SELECT attempt_no FROM assessment_attempts WHERE id = ?').get(req.attempt_id) as any;
+  const a = conn.prepare('SELECT a.attempt_no, c.programme_code FROM assessment_attempts a LEFT JOIN classes c ON c.id = a.class_id WHERE a.id = ?').get(req.attempt_id) as any;
   const w = conn.prepare('SELECT week_start FROM report_periods WHERE id = ?').get(req.to_period_id) as any;
-  return chuTheDoiLan2({ skill: req.skill, attemptNo: a?.attempt_no ?? null, moveNo: req.move_no, tuanDich: w?.week_start ?? null, homNay: demoToday() });
+  return chuTheDoiLan2({ skill: req.skill, attemptNo: a?.attempt_no ?? null, moveNo: req.move_no, tuanDich: w?.week_start ?? null, homNay: demoToday(), ct: a?.programme_code ?? null });
 }
 
 export type MoveOutcome = {
@@ -211,8 +211,9 @@ export function requestAbsenceMove(p: Principal, attemptId: number, skills: stri
   if (attempt.status === 'cancelled') throw badRequest('Đợt này đã huỷ.');
   const list = [...new Set(skills)];
   if (!list.length) throw badRequest('Chưa chọn kỹ năng nào.');
+  const boMon = boMonCuaLuot(db(), attemptId);
   for (const s of list) {
-    if (!(ASSESSED_SKILLS as readonly string[]).includes(s)) throw badRequest(`Kỹ năng ${s} không hợp lệ.`);
+    if (!boMon.includes(s)) throw badRequest(`Kỹ năng ${tenMon(null, s)} không có trong lượt này.`);
   }
 
   const today = opts.today ?? demoToday();

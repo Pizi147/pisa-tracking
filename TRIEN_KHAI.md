@@ -563,6 +563,20 @@ npm run chay-thu:mt
 **Đợt 2 — PR-NHAP:** migrate chỉ thêm 2 cột (`students.email`, `learning_cycles.exam_date`), không đổi dữ liệu cũ, **không có
 lệnh chạy thử**. Báo GV sau khi lên: thêm học viên mới **bắt buộc email**; bảng dán phải có **dòng tiêu đề**; ngày gõ `dd/mm/yyyy`;
 học viên cũ bổ sung email dần ở Thông tin học viên (không bắt).
+**Đợt 2 — PR-MON (hệ môn học) — CÓ migrate.** Cùng cửa sổ (biến Turso bản chính), trước bước 3, chạy lệnh CHỈ ĐỌC:
+
+```powershell
+npm run chay-thu:mon
+```
+
+> In bốn mục: (1) giáo viên sẽ đổi kỹ năng phụ trách được (`writing` lớp thường → W1 + W2; bảng `tên · cũ → mới`) · (2) số Case
+> lớp FOU có nguyên nhân kiểu IELTS (Writing/Speaking) — **giữ nguyên mã**, chỉ để biết · (3) số lớp Pre FOU — **phải 0** · (4) ô
+> `writing` ở lớp FT trong `class_skills`/`teacher_assignments` — **phải 0**. Mục (3) hoặc (4) khác 0 → dừng, chụp màn hình gửi
+> planning. Gửi kết quả mục (1) cho planning để anh/chị duyệt danh sách GV đổi kỹ năng.
+>
+> Sau bước 3 chạy lại `npm run chay-thu:mon`: mục (1) phải là **0**. Báo GV: lớp FOU hiện `G+V` (Grammar + Vocabulary) và `P`
+> (Pronunciation); mở được lớp Pre FOU (một ô Tổng hợp, chỉ GVCN); kỹ năng tự khai "Writing" cũ đã thành W1 + W2 (sửa ở Hồ sơ cá
+> nhân nếu sai).
 
 **Bước 3 — nâng cấp:**
 
