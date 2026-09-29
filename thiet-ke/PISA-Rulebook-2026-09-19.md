@@ -549,7 +549,7 @@ Nguồn: `thiet-ke/NGUON-Rule-v3-YThuc-PhoiHop-2026-09-21.md`. Đặc tả: `thi
   nhập/sửa mọi ô (sửa ô đã có điểm phải có lý do). Khoá sửa (R11) 7 ngày sau lần nhập cuối. Chỉ lượt lịch sử có tuần thi trong **4 tuần**
   trước ngày tạo mới sinh Case/PA quy chế/Phối hợp (ngày phát hiện = hôm nay).
 - **Đánh số liền mạch (T36):** MT(n) chỉ tạo khi đã có MT(n−1) — một chốt cho mọi đường tạo lượt. **Huỷ cả lượt** chỉ với MT cuối cùng
-  của lộ trình chưa có điểm nào — số đó dùng lại được; còn lại **Huỷ phần còn lại** (kỹ năng chưa điểm và chưa thi), lượt giữ số. Huỷ cả
+  của lộ trình chưa có điểm và chưa thi kỹ năng nào — số đó dùng lại được (xếp lại tính mốc lịch sử / cửa sổ 4 tuần từ lúc xếp lại); còn lại **Huỷ phần còn lại** (kỹ năng chưa điểm và chưa thi), lượt giữ số. Huỷ cả
   lượt đóng Case sinh riêng từ lượt đó ("Lượt đã huỷ", không tính thất bại) và việc Phối hợp còn mở.
 - **Dời do vắng (Q-A, T42):** dấu "-" chốt cuối Chủ nhật → lần 1 **máy tự dời** sang tuần kế tiếp (nếu còn thi được) và báo GVCN + GVBM
   đúng kỹ năng; lần 2 thành đề nghị chờ Quản lý, **hạn hết Chủ nhật của tuần gửi**, tuần đích mặc định = tuần chưa bắt đầu gần nhất hợp

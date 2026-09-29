@@ -24,7 +24,7 @@ import {
   setSkillScope, setSkillWeek, skillScheduleOf, skippedSkillsOf, viewSkill,
   type SkillRow, type SkillScheduleView,
 } from './skillSchedule.ts';
-import { canRequest as canRequestAbsence, flagLateNoShow, pendingMove, settleNoShows } from './absence.ts';
+import { canRequest as canRequestAbsence, flagLateNoShow, pendingMove, rutDeNghiDoi, settleNoShows } from './absence.ts';
 import { raiseSignalsForResult, stepsFor } from '../cases/sos.ts';
 import { reconcileCorrectedSignals } from '../cases/signals.ts';
 import { currentCycle, cycleById, examPlanOf, luotSoCuaLoTrinh } from './cycles.ts';
@@ -800,7 +800,8 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
     case 'my_scores':
       mapped = mapped.filter(conBaiCanCham);
       break;
-    case 'missing_scores': mapped = mapped.filter((m) => m.status !== 'cancelled' && !m.complete && m.scoredRequired > 0); break;
+    /* MT lịch sử (T34) không phải "thiếu điểm" — khớp đếm `missing_scores` ở signals.ts. */
+    case 'missing_scores': mapped = mapped.filter((m) => m.status !== 'cancelled' && !m.lichSu && !m.complete && m.scoredRequired > 0); break;
     case 'overdue': mapped = mapped.filter((m) => m.overdueSkills > 0); break;
     /* CÙNG luật với huy hiệu ở bảng lớp: case có mức SOS > 0 và chưa xong. Case không mang mức SOS (giáo viên báo) không phải case SOS. */
     case 'sos_open': mapped = mapped.filter((m) => m.caseId && m.caseStatus !== 'done' && (m.caseLevel ?? 0) > 0); break;
@@ -1030,10 +1031,12 @@ export function createAttempt(p: Principal, input: {
     const info = conn
       .prepare(
         `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id,
-                                          status, target_at_attempt, note, created_by, created_at)
-         VALUES (?,?,?, 'mock', ?,?, 'planned', ?,?,?,?)`,
+                                          status, target_at_attempt, note, created_by, created_at, lich_su)
+         VALUES (?,?,?, 'mock', ?,?, 'planned', ?,?,?,?,?)`,
       )
-      .run(cycle.id, student.id, attemptNo, classId, period.id, cycle.target_score, input.note ?? null, p.userId, nowIso());
+      /* T34 (rà #119 mục 5): xếp vào tuần đã kết thúc = MT lịch sử ngay lúc tạo — không sinh một lượt quá hạn từ ngày đầu. */
+      .run(cycle.id, student.id, attemptNo, classId, period.id, cycle.target_score, input.note ?? null, p.userId, nowIso(),
+        laLichSu(period.week_end, demoToday()) ? 1 : 0);
     const id = Number(info.lastInsertRowid);
     /*
      * Bốn dòng lịch kỹ năng được dựng NGAY khi tạo đợt, tất cả cùng tuần vừa chọn và mang
@@ -1054,15 +1057,17 @@ export function createAttempt(p: Principal, input: {
 }
 
 /**
- * Q-B: tạo lại số MT đã "Huỷ cả lượt" (không điểm) = HỒI SINH chính dòng đó — cùng id, `created_at` giữ, lịch kỹ năng dựng lại ở tuần
- * mới, dấu "-" cũ (không phải điểm) bỏ đi. `lich_su` tính lại theo HÔM NAY. Gọi trong tx của `createAttempt`.
+ * Q-B: tạo lại số MT đã "Huỷ cả lượt" (không điểm) = HỒI SINH chính dòng đó — cùng id, lịch kỹ năng dựng lại ở tuần mới, dấu "-" cũ
+ * (không phải điểm) bỏ đi, đề nghị dời cũ rút. `created_at` = LÚC XẾP LẠI và `lich_su` tính theo HÔM NAY — cửa sổ Case 4 tuần (M4) đo
+ * từ đây, không từ lần tạo đầu. Gọi trong tx của `createAttempt`.
  */
 function hoiSinhLuot(p: Principal, cu: any, o: { classId: number | null; period: any; targetScore: number | null; note: string | null; studentCode: string }) {
   const conn = db();
   conn.prepare(
     `UPDATE assessment_attempts SET status = 'planned', cancel_reason = NULL, cancelled_at = NULL, class_id = ?, planned_period_id = ?,
-            plan_source = 'manual', target_at_attempt = ?, note = ?, lich_su = ?, updated_at = ? WHERE id = ?`,
-  ).run(o.classId, o.period.id, o.targetScore, o.note, laLichSu(o.period.week_end, demoToday()) ? 1 : 0, nowIso(), cu.id);
+            plan_source = 'manual', target_at_attempt = ?, note = ?, lich_su = ?, created_at = ?, updated_at = ? WHERE id = ?`,
+  ).run(o.classId, o.period.id, o.targetScore, o.note, laLichSu(o.period.week_end, demoToday()) ? 1 : 0, nowIso(), nowIso(), cu.id);
+  rutDeNghiDoi(cu.id);   // phòng dữ liệu cũ: đề nghị của lượt đã huỷ không được sống lại cùng lượt
   conn.prepare('DELETE FROM assessment_scores WHERE attempt_id = ? AND band IS NULL AND raw_score IS NULL').run(cu.id);
   conn.prepare('DELETE FROM attempt_skills WHERE attempt_id = ?').run(cu.id);
   ensureSkillRows(cu.id);
@@ -1218,7 +1223,7 @@ export function huyLuot(p: Principal, attemptId: number, input: { lyDo: string; 
   const cach = input.cach ?? hq.cachDuoc;
   if (cach !== 'ca-luot' && cach !== 'phan-con-lai') throw badRequest('Cách huỷ không hợp lệ.');
   if (cach === 'ca-luot' && hq.cachDuoc !== 'ca-luot') {
-    throw badRequest('Chỉ huỷ cả lượt được với MT cuối cùng của lộ trình khi chưa có điểm nào — dùng "Huỷ phần còn lại".');
+    throw badRequest('Chỉ huỷ cả lượt được với MT cuối cùng của lộ trình khi chưa có điểm và chưa thi kỹ năng nào — dùng "Huỷ phần còn lại".');
   }
   const conn = db();
   return tx(() => {
@@ -1226,6 +1231,8 @@ export function huyLuot(p: Principal, attemptId: number, input: { lyDo: string; 
       conn.prepare(`UPDATE assessment_attempts SET status='cancelled', cancel_reason=?, cancelled_at=?, updated_at=? WHERE id=?`)
         .run(lyDo, nowIso(), nowIso(), attemptId);
       logSchedule(attemptId, { action: 'cancelled', reason: lyDo, actor: p.userId });
+      /* Đề nghị dời đang chờ của lượt này hết nghĩa — không rút thì hết hạn sẽ huỷ phần thi của lượt xếp lại sau (cùng id). */
+      rutDeNghiDoi(attemptId);
       addJourney({ studentId: a.student_id, eventType: 'mock_cancelled', eventDate: demoToday(),
         title: `Huỷ MT${a.attempt_no}`, detail: lyDo, refTable: 'assessment_attempts', refId: attemptId, createdBy: p.userId });
       writeAudit({ actorUserId: p.userId, action: 'attempt.cancel', entityType: 'assessment_attempt', entityId: attemptId,

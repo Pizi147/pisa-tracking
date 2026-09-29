@@ -217,7 +217,7 @@ export function previewIntake(
    */
   const classId = input.classId ?? input.defaultClassId ?? null;
   const cls = classId
-    ? (conn.prepare("SELECT id, code, route, start_date, programme_code, branch_id, status FROM classes WHERE id = ?")
+    ? (conn.prepare("SELECT id, code, route, start_date, programme_code, branch_id, status, is_fast_track FROM classes WHERE id = ?")
         .get(classId) as any)
     : null;
   if (!cls) {

@@ -339,7 +339,7 @@ Luật cách dùng ở `HE_GIAO_DIEN.md` §3, §9, §10.
 | Tình trạng / hạn của ô MT lịch sử | `Nhập bù, không có hạn` | "Quá hạn", "Chưa có hạn" |
 | Dòng nhắc cuối Lịch Test (GVCN, Quản lý) | `MT lịch sử chưa nhập · {n} em · {lớp} → Nhập` | số đỏ |
 | Việc cần làm (nhóm Thiếu dữ liệu) | `Nhập MT lịch sử · {n} em · không tính hạn` · trạng thái `Không tính hạn` |  |
-| Hồ sơ Test — huỷ | `Huỷ cả lượt MT{n}` (chỉ MT cuối cùng chưa có điểm; "Số MT{n} sẽ dùng lại được") · `Huỷ phần còn lại` ("MT{n} giữ số; kỹ năng đã có điểm giữ nguyên") | "Huỷ lượt" chung chung |
+| Hồ sơ Test — huỷ | `Huỷ cả lượt MT{n}` (chỉ MT cuối cùng chưa có điểm, chưa thi kỹ năng nào; "Số MT{n} sẽ dùng lại được") · `Huỷ phần còn lại` ("MT{n} giữ số; kỹ năng đã có điểm giữ nguyên") | "Huỷ lượt" chung chung |
 | Lỗi đánh số | `Chưa có MT{k} — xếp MT{k} trước rồi mới xếp MT{n}.` · `Lộ trình này đã có MT{n}. Đổi tuần thay vì tạo mới.` |  |
 | Nợ tuần trước — dời do vắng | dòng phụ `dời từ W3 SEP · vắng lần 1` |  |
 | Hàng lớp ở Lịch Test | `vắng · chờ Quản lý duyệt dời` | "chờ QL" (không viết tắt trên màn) |

@@ -121,13 +121,15 @@ function indexOfPending(): Map<string, MoveRequest> {
 }
 
 /**
- * PR-MT: Quản lý sửa trạng thái thi KHỎI "vắng" (em có thi, đổi kết luận) → đề nghị dời đang chờ của kỹ năng đó hết nghĩa: rút.
- * Không rút thì đề nghị hết hạn sẽ huỷ phần thi (C09) của một bài không còn vắng. Gọi trong tx của nơi gọi.
+ * PR-MT: RÚT đề nghị dời đang chờ — một kỹ năng (Quản lý sửa trạng thái thi KHỎI "vắng") hoặc CẢ LƯỢT (`skill` bỏ trống: huỷ cả lượt,
+ * tạo lại số đã huỷ). Không rút thì đề nghị hết hạn sẽ huỷ phần thi (C09) của một bài không còn vắng / của lượt vừa xếp lại.
+ * Gọi trong tx của nơi gọi.
  */
-export function rutDeNghiDoi(attemptId: number, skill: string): number {
+export function rutDeNghiDoi(attemptId: number, skill?: string): number {
   return writing(() => db()
-    .prepare(`UPDATE skill_move_requests SET status = 'withdrawn', updated_at = ? WHERE attempt_id = ? AND skill = ? AND status = 'pending'`)
-    .run(nowIso(), attemptId, skill).changes);
+    .prepare(`UPDATE skill_move_requests SET status = 'withdrawn', updated_at = ?
+               WHERE attempt_id = ? AND status = 'pending'${skill ? ' AND skill = ?' : ''}`)
+    .run(nowIso(), attemptId, ...(skill ? [skill] : [])).changes);
 }
 
 /** Đề nghị đang chờ của một kỹ năng, nếu có. */
@@ -401,6 +403,7 @@ export function decideAbsenceMove(p: Principal, requestId: number, input: {
   if (req.status !== 'pending') {
     throw badRequest(`Đề nghị này đã được xử lý (${req.status}) — không trả lời lại được.`);
   }
+  if (attempt.status === 'cancelled') throw badRequest('Lượt này đã huỷ — đề nghị dời không còn hiệu lực.');
 
   const today = demoToday();
   const rows = ensureSkillRows(req.attempt_id);
@@ -463,7 +466,8 @@ export function sweepExpiredMoves(): number {
   const conn = db();
   const today = demoToday();
   const due = conn
-    .prepare(`SELECT * FROM skill_move_requests WHERE status = 'pending' AND decide_by < ?`)
+    .prepare(`SELECT r.* FROM skill_move_requests r JOIN assessment_attempts a ON a.id = r.attempt_id
+               WHERE r.status = 'pending' AND r.decide_by < ? AND a.status != 'cancelled'`)   /* lượt đã huỷ: không huỷ phần thi của nó */
     .all(today) as MoveRequest[];
   if (!due.length) return 0;
 
@@ -693,8 +697,14 @@ export function settleNoShows(today: string = demoToday()): number {
   return settled;
 }
 
-/** Chốt MỘT buổi. Trả false khi buổi đã không còn `scheduled` (đã chốt/đã đổi) — nên chạy lặp là vô hại. */
-function settleGroup(
+/**
+ * Chốt MỘT buổi. Trả false khi buổi đã được chốt hoặc đã đổi — nên chạy lặp là vô hại.
+ *
+ * CHỐNG CHỐT HAI LẦN (rà #119 mục 4): máy tự dời trả bài về `scheduled` ở TUẦN MỚI, nên "còn scheduled" không đủ — tiến trình thứ hai
+ * (Netlify nhiều instance) đọc danh sách trước khi tiến trình đầu ghi sẽ chốt lại và sinh đề nghị "lần 2" giả. Điều kiện thật: dấu "-"
+ * đầu buổi CHƯA chốt và vẫn nằm ĐÚNG tuần đang xếp. Xuất ra để phép kiểm dựng lại cuộc đua bằng danh sách cũ.
+ */
+export function settleGroup(
   conn: any, attemptId: number, schedId: number, assessed: string, weekEnd: string, periodCode: string,
   scoreIds: number[], actor: number | null, reason: string, today: string = demoToday(),
 ): boolean {
@@ -704,12 +714,14 @@ function settleGroup(
     .prepare(
       `UPDATE attempt_skills
           SET sit_status = 'absent', absent_from_no_show = 1, sit_by = ?, sit_at = ?, sit_note = ?, updated_at = ?
-        WHERE id = ? AND sit_status = 'scheduled'`,
+        WHERE id = ? AND sit_status = 'scheduled'
+          AND EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.id = ? AND sc.no_show_settled_at IS NULL
+                         AND sc.no_show_period_id = attempt_skills.planned_period_id)`,
     )
-    .run(actor, effective, reason, nowIso(), schedId).changes;
+    .run(actor, effective, reason, nowIso(), schedId, scoreIds[0]).changes;
   if (!changed) return false;
   conn
-    .prepare(`UPDATE assessment_scores SET no_show_settled_at = ? WHERE id IN (${scoreIds.map(() => '?').join(',')})`)
+    .prepare(`UPDATE assessment_scores SET no_show_settled_at = ? WHERE id IN (${scoreIds.map(() => '?').join(',')}) AND no_show_settled_at IS NULL`)
     .run(nowIso(), ...scoreIds);
   logSchedule(attemptId, {
     action: 'skill_no_show_settled', field: assessed, oldValue: 'scheduled', newValue: 'absent',

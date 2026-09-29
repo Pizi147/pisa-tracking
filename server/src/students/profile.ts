@@ -2,7 +2,7 @@ import { db } from '../db.ts';
 import {
   ASSESSED_SKILLS, BASELINE_SOURCE_LABEL, CYCLE_OUTCOME_LABEL, ENTRY_SKILLS,
   ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, JOURNEY_GROUP, PERMISSIONS,
-  caseHeadline, issueLabel, caseCategoryLabel, categoryOf, quaHan, studyWeekOf,
+  caseHeadline, issueLabel, caseCategoryLabel, categoryOf, mocKeTiep, quaHan, studyWeekOf,
   type AssessedSkill, type EntrySkill, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { outcomeGroup } from '../cases/effectiveness.ts';
@@ -15,6 +15,7 @@ import { evaluateRegular, isRatioCycle, programmeByCode, programmeCodeOfCycle, p
 import { cycleById, cyclesOf, currentCycle, examPlanOf, targetRevisions } from '../fasttrack/cycles.ts';
 import { parseMetrics, skillSupportBoard } from '../cases/cases.ts';
 import { standingFor, standingLine } from './standing.ts';
+import { luotSinhViecRow } from '../worklist/danhGia.ts';
 import { missingForStudent, suggestedMockWeeks } from '../classes/schedule.ts';
 import { lopHocCua } from '../classes/loTrinhTiep.ts';
 import { listSignals } from '../cases/signals.ts';
@@ -534,7 +535,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   const attemptRows = selected
     ? conn
       .prepare(
-        `SELECT a.*, c.code AS class_code, pr.code AS period_code, pr.week_start, (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route
+        `SELECT a.*, c.code AS class_code, pr.code AS period_code, pr.week_start, pr.week_end AS period_end, (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route
            FROM assessment_attempts a
            LEFT JOIN classes c ON c.id = a.class_id
            LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
@@ -551,11 +552,14 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       .all(...ids) as any[]) caseByAttempt.set(r.attempt_id, r);
   }
 
+  const homNayHs = demoToday();
   const attempts = attemptRows.map((a) => {
     const t = typedResult(a);
     const c = caseByAttempt.get(a.id) ?? null;
     const base = {
       id: a.id, attemptNo: a.attempt_no, kind: a.kind, status: a.status, lichSu: !!a.lich_su,
+      /* M-14: false = MT lịch sử ngoài 4 tuần — không làm "Kết quả Test gần nhất" (ketQuaTestGanNhat). */
+      sinhViec: luotSinhViecRow(a, homNayHs),
       classCode: a.class_code, periodCode: a.period_code, weekStart: a.week_start ?? null,
       mode: t.mode,
       caseId: c?.id ?? null, caseStatus: c?.status ?? null,
@@ -610,9 +614,11 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   const today = demoToday();
   const examPlan = examPlanOf(selected);
 
-  // Mốc tiếp theo: lượt đã lên kế hoạch gần nhất chưa xong.
-  const nextRow = attemptRows.filter((a) => a.status === 'planned')
-    .sort((a, b) => a.attempt_no - b.attempt_no)[0] ?? null;
+  // Mốc tiếp theo. FT (K2-31): lượt planned, không lịch sử, từ tuần này, sớm nhất — cùng `mocKeTiep` với danh sách lớp.
+  // Lớp thường giữ luật cũ: lượt planned số nhỏ nhất.
+  const nextRow = selected?.route
+    ? mocKeTiep(attemptRows.map((a) => ({ ...a, weekStart: a.week_start ?? null })), today)
+    : attemptRows.filter((a) => a.status === 'planned').sort((a, b) => a.attempt_no - b.attempt_no)[0] ?? null;
 
   // --------------------------------------------------------- đường đi từng kỹ năng
   /*

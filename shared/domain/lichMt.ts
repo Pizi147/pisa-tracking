@@ -42,7 +42,8 @@ export function luotSinhViec(a: { lich_su: number; tuanKetThuc: string | null; c
   return !!a.tuanKetThuc && trongCuaSoCase(a.tuanKetThuc, a.created_at);
 }
 
-export type LuotSo = { attempt_no: number; status: string; coDiem: boolean };
+/** `daThi`: có kỹ năng đã thi (`sat`) mà chưa chấm — "Huỷ cả lượt" chặn như đã có điểm (còn nghĩa vụ chấm). */
+export type LuotSo = { attempt_no: number; status: string; coDiem: boolean; daThi?: boolean };
 
 /** Số MT kế tiếp của lộ trình. Lượt huỷ CÒN ĐIỂM (dữ liệu cũ) vẫn giữ số của nó; huỷ không điểm thì số được dùng lại. */
 export function soMtKeTiep(ds: LuotSo[]): number {
@@ -62,10 +63,10 @@ export function kiemSoMtMoi(ds: LuotSo[], n: number): string | null {
 
 export type CachHuy = 'ca-luot' | 'phan-con-lai' | null;
 
-/** Q-B, M-12: "Huỷ cả lượt" chỉ với lượt LỚN NHẤT còn hiệu lực và chưa có điểm nào; còn lại "Huỷ phần còn lại". */
+/** Q-B, M-12: "Huỷ cả lượt" chỉ với lượt LỚN NHẤT còn hiệu lực, chưa có điểm và chưa thi kỹ năng nào; còn lại "Huỷ phần còn lại". */
 export function cachHuyLuot(l: LuotSo, ds: LuotSo[]): CachHuy {
   if (l.status === 'cancelled') return null;
-  return !l.coDiem && l.attempt_no === Math.max(...ds.filter((x) => x.status !== 'cancelled').map((x) => x.attempt_no)) ? 'ca-luot' : 'phan-con-lai';
+  return !l.coDiem && !l.daThi && l.attempt_no === Math.max(...ds.filter((x) => x.status !== 'cancelled').map((x) => x.attempt_no)) ? 'ca-luot' : 'phan-con-lai';
 }
 
 /** T42, K4-04: hạn duyệt đề nghị dời lần 2 = Chủ nhật của TUẦN CHỨA NGÀY GỬI (không phải tuần đích). */

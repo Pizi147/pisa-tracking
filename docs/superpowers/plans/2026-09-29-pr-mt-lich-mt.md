@@ -481,13 +481,16 @@ nhãn lượt), `server/src/cham/canCham.ts` (dòng nhắc), `server/src/worklis
 | Việc | PR nhận | Lý do |
 |---|---|---|
 | Thẻ **Lịch thi** "Dời lịch MT lần 2" trong hộp Chờ duyệt, "Yêu cầu của tôi" cho GVCN, chuyển nhóm "Duyệt dời lịch do vắng" khỏi Việc của tôi — dùng giao kèo Task 8 | **PR-DUYET** | T41, T42 phần thẻ, K4-04 phần thẻ |
-| Cột **"Đã thi tới MT"** (0–8) ở panel Thêm HV FT → truyền `daThiToiMt`; câu xác nhận "MT2, MT3 sẽ dời sang …" khi sửa tuần bắt đầu ở Thông tin HV; giữ lời gọi `taoMtMacDinh` trong `commitIntake` khi viết lại; khối kết quả sau Thêm HV "n MT lịch sử chưa có điểm" | **PR-NHAP** | K2-33 (1)(2), K2-21, K2-32 |
+| Cột **"Đã thi tới MT"** (0–8) ở panel Thêm HV FT → truyền `daThiToiMt`; câu xác nhận "MT2, MT3 sẽ dời sang …" khi sửa tuần bắt đầu ở Thông tin HV; giữ lời gọi `taoMtMacDinh` trong `commitIntake` khi viết lại; khối kết quả sau Thêm HV "n MT lịch sử chưa có điểm"; **giữ mặc định tuần khai giảng của lớp** nhưng xem trước phải báo trước "n MT sẽ là MT lịch sử" (planning chốt 29/09, rà #119 mục 10) | **PR-NHAP** | K2-33 (1)(2), K2-21, K2-32 |
 | "Sắp tới" cột M3 dùng hàm mốc kế tiếp của Task 5 | PR-HVL | K2-31 |
 | Lưới Kế hoạch Test đầy đủ (cột tới MT8, chip dở/lịch sử/huỷ/chờ duyệt), Xếp lịch MT chọn tuần đã qua cho MT lịch sử, 6 tên thao tác T38 dùng `huyLuot` | PR-XLMT | K4-17, K4-18, K2-33 (1) phần xếp |
 | Nhập MT lịch sử tại chỗ ở hồ sơ Mock; M10 trạng thái huỷ/lịch sử/vắng-dời/RF | PR-HSM | K4-30 |
 | PA quy chế "đến MT(n+1) · chưa có lịch" + việc QL xếp lịch; chữ thông báo SOS theo S4-2 | PR-SOS | K3-14, K5-15 phần chữ |
 | Bỏ dòng "2 lần Test liền chưa có Case" | PR-UXF | K1-04 |
 | Cột "Trạng thái lượt" (lịch sử / đã huỷ) trong xuất Excel | PR-XUAT | T40 |
+| Hồ sơ Mock ghi "SOS 4" vì đếm `failedCount` (MockDetailPage.tsx:195) trong khi API trả `sosLevel` 3 | PR-HSM | rà #119 |
+| `GET /move-requests` lỗi 500 (`no such column s.code`, không màn nào gọi — có sẵn trên main) | PR-Dọn | rà #119 |
+| Chữ "cần QL duyệt" / "Chờ QL duyệt" ở Case (CapNhatTuan, ThaoTacCase, CasePanel) — viết đủ "Quản lý" (có sẵn trên main, khu Case) | PR-UXF / PR-SOS | TU_DIEN_VA_CHU, rà #119 mục 9 |
 
 ## Lệnh cho buổi deploy (đợt 2 — 🛑 chỉ chủ sản phẩm chạy, theo `TRIEN_KHAI.md`)
 
@@ -630,6 +633,23 @@ khác ngày với bản thử thì chạy thử lại. 5. Chạy thử lần n�
   → `self-start`; cột hạn lưới nhập điểm của hàng MT lịch sử nói "Đã nhập" khi mới có một ô → ưu tiên ô `lich_su`; trạng thái "Nhập bù,
   không có hạn" ở hồ sơ Mock bỏ màu chờ (vàng) → xám; ô "Lý do huỷ" có nhãn; link "→ Nhập" cao 44px trên điện thoại. Máy dò impeccable:
   0 phát hiện.
+- **Sửa theo rà #119 (29/09, Opus 5.5):** (1) M-14 `standingFor` + `latestResult` bỏ lượt `!luotSinhViecRow` (SELECT thêm `week_end`); đầu hồ sơ
+  HV nhận cờ `sinhViec` cho `ketQuaTestGanNhat`; "Mốc tiếp theo" ở hồ sơ FT dùng `mocKeTiep` (lớp thường giữ luật cũ); danh sách `/students`
+  "MT sắp tới" bỏ MT lịch sử. Khu "Kỹ năng cần hỗ trợ" (bảng kỹ năng, band gần nhất từng kỹ năng) **giữ** — là điểm thật, không phải mức SOS.
+  (2) `rutDeNghiDoi(attemptId, skill?)` rút cả lượt; gọi khi Huỷ cả lượt và khi tạo lại số; `sweepExpiredMoves`, `decideAbsenceMove`, việc dời ở
+  Việc cần làm bỏ lượt `cancelled`. (3) tín hiệu "bài Test còn thiếu điểm" + `need=missing_scores` bỏ MT lịch sử. (4) `settleGroup` chỉ chốt khi
+  dấu "-" đầu buổi CHƯA chốt và vẫn nằm đúng tuần đang xếp (xuất hàm để phép kiểm dựng lại cuộc đua bằng danh sách cũ). (5) `createAttempt`
+  tuần đã kết thúc → `lich_su = 1` lúc tạo. (6) `previewIntake` đọc `is_fast_track`. (7) `LuotSo.daThi` — kỹ năng `sat` chặn "Huỷ cả lượt".
+  (8) tạo lại số: `created_at` = lúc xếp lại. (9) lý do "Quản lý xếp trực tiếp" (bỏ "QL"). (10) PR-NHAP: giữ mặc định tuần khai giảng, xem trước
+  báo "n MT sẽ là MT lịch sử". Phép kiểm: khối 6 thêm M-14, khối 10 (mục 2–8).
+- **GỘP VỚI PR-DUYET (làm SAU khi planning báo #117 đã merge — thứ tự merge mới: #117 trước, PR-MT sau):** `git merge origin/main`, 9 file
+  xung đột. Dễ, giữ cả hai: package.json, migrate.ts (gọi cả hai), tests/run.ts, shared/domain/index.ts, CODE_MAP.md, TRIEN_KHAI.md,
+  TU_DIEN_VA_CHU.md. `worklist/mywork.ts`: bỏ khối việc dời lịch theo #117 (đã vào hộp Chờ duyệt); giữ import `mtLichSuChuaNhap` cạnh
+  `demYeuCau`/`quetYeuCau`; hộp Chờ duyệt phải lọc thẻ `skill_move` của lượt lịch sử hoặc đã huỷ. `fasttrack/absence.ts` (khó): giữ
+  `xuLyVangMotKyNang` của MT **và** `taoYeuCau` trong `insertRequest` của #117; thẻ lấy hạn `r.decideBy` = `hanDuyetDoiLan2`, `nguoi_xin` null
+  khi máy gửi, chữ thẻ dùng `moTaDoiLan2`. `rutDeNghiDoi`: bỏ `writing()` (#117 đã xoá), thêm `chotYeuCau(…,'tu_dong',{lyDo:'Rút — bài không
+  còn vắng'})`; sửa mục 2 (rút cả lượt) cũng phải đóng thẻ tương ứng. Phép kiểm K5-28 của #117 phải còn xanh. Gộp xong `npm run check` một
+  lần, bấm lại K9/K10 (dời do vắng → thẻ Lịch thi trong hộp), push, báo planning.
 
 ## Planning chốt 29/09
 

@@ -550,7 +550,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
          LEFT JOIN classes cl ON cl.id = a.class_id
          LEFT JOIN report_periods pr ON pr.id = r.to_period_id
          LEFT JOIN users ru ON ru.id = r.requested_by
-        WHERE r.status = 'pending' AND ${LUOT_TINH_NO_SQL('a')}`,
+        WHERE r.status = 'pending' AND a.status != 'cancelled' AND ${LUOT_TINH_NO_SQL('a')}`,
     )
     .all() as any[];
 

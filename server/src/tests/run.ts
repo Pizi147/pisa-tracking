@@ -8994,8 +8994,13 @@ const prnRaw = (skill: 'listening' | 'reading', band: number): number => {
   for (let r = 0; r <= 40; r += 1) if (scoring.bandFromRaw(skill, r) === band) return r;
   throw new Error(`Không có số câu đúng cho band ${band}`);
 };
-const prnAttempt = (st: { id: number; cycleId: number }, weekStart: string) =>
-  (attempts.createAttempt(P.admin, { studentId: st.id, cycleId: st.cycleId, classId: prnClass, periodId: periodOf(weekStart) }) as any).id as number;
+/* PR-MT (rà #119 mục 5): tạo lượt ở tuần đã qua nay thành MT lịch sử. Em thử PR-N là lượt THƯỜNG xếp từ trước tuần thi — đặt lại cờ
+ * như lúc được xếp (không nới phép kiểm: chỉ số đo lượt thường). */
+const prnAttempt = (st: { id: number; cycleId: number }, weekStart: string) => {
+  const id = (attempts.createAttempt(P.admin, { studentId: st.id, cycleId: st.cycleId, classId: prnClass, periodId: periodOf(weekStart) }) as any).id as number;
+  conn.prepare('UPDATE assessment_attempts SET lich_su = 0 WHERE id = ?').run(id);
+  return id;
+};
 const prnScore = (attemptId: number, skill: 'listening' | 'reading', band: number) =>
   attempts.saveScore(P.admin, attemptId, skill, { rawScore: prnRaw(skill, band) });
 const prnFull = (attemptId: number, band: number) => {

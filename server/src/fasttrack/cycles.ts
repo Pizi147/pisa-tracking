@@ -37,8 +37,10 @@ export function cycleById(id: number) {
 
 /** Lượt của một lộ trình ở dạng luật đánh số (T36, Q-B) — một câu, kể cả lượt đã huỷ (còn điểm hay không). */
 export function luotSoCuaLoTrinh(cycleId: number): LuotSo[] {
-  return (db().prepare(`SELECT a.attempt_no, a.status, ${CO_DIEM_SQL('a')} AS coDiem FROM assessment_attempts a WHERE a.cycle_id = ?`)
-    .all(cycleId) as any[]).map((r) => ({ attempt_no: r.attempt_no, status: r.status, coDiem: !!r.coDiem }));
+  return (db().prepare(`SELECT a.attempt_no, a.status, ${CO_DIEM_SQL('a')} AS coDiem,
+       EXISTS (SELECT 1 FROM attempt_skills k WHERE k.attempt_id = a.id AND k.sit_status = 'sat') AS daThi
+     FROM assessment_attempts a WHERE a.cycle_id = ?`)
+    .all(cycleId) as any[]).map((r) => ({ attempt_no: r.attempt_no, status: r.status, coDiem: !!r.coDiem, daThi: !!r.daThi }));
 }
 
 /** Số MT tiếp theo TRONG lộ trình. Học lại cùng lộ trình thì số này tăng tiếp; số huỷ không điểm được dùng lại (Q-B). */

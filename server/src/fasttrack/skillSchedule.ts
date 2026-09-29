@@ -651,7 +651,7 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
     logSchedule(attemptId, {
       action: vang ? 'skill_week_moved_absence' : 'skill_week_set',
       field: skill, oldValue: oldCode, newValue: period.code,
-      reason: opts.reason ?? (vang ? 'QL xếp trực tiếp' : null), actor: p.userId,
+      reason: opts.reason ?? (vang ? 'Quản lý xếp trực tiếp' : null), actor: p.userId,
     });
     const cw = recomputeCompletionWeek(attemptId, p.userId);
     writeAudit({

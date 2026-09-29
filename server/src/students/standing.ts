@@ -6,6 +6,7 @@ import {
 import { entryBandsOf, loadBundle } from '../fasttrack/attempts.ts';
 import { evaluateAttempt } from '../fasttrack/scoring.ts';
 import { evaluateRegular } from '../normal/regular.ts';
+import { luotSinhViecRow } from '../worklist/danhGia.ts';
 
 /**
  * TÌNH TRẠNG HỌC THUẬT HIỆN TẠI CỦA MỘT HỌC VIÊN — MỘT định nghĩa cho cả hệ thống.
@@ -163,7 +164,7 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
   const cph = cycleIds.map(() => '?').join(',');
   const attempts = conn
     .prepare(
-      `SELECT a.*, pr.code AS period_code, pr.week_start AS weekStart FROM assessment_attempts a
+      `SELECT a.*, pr.code AS period_code, pr.week_start AS weekStart, pr.week_end AS period_end FROM assessment_attempts a
          LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
         WHERE a.cycle_id IN (${cph}) AND a.status != 'cancelled'
         ORDER BY a.attempt_no`,
@@ -215,6 +216,8 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
      */
     for (let i = list.length - 1; i >= 0; i -= 1) {
       const a = list[i];
+      /* M-14: MT lịch sử có tuần thi NGOÀI 4 tuần trước ngày tạo không phải "hiện trạng" (cùng luật `latestAttempts`, danhGia.ts). */
+      if (!luotSinhViecRow(a, homNay)) continue;
       const scores = bundle.scores.get(a.id) ?? [];
       if (!scores.length) continue;   /* chưa có điểm: đi tiếp xuống lượt cũ hơn */
       s.attemptId = a.id;
