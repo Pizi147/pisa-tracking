@@ -1,8 +1,8 @@
 import { db, tx } from '../db.ts';
 import {
   VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, VIOLATION_DESCRIPTION_MIN, ghepKhac, kiemGhiRoKhac,
-  VIOLATION_SKILLS, VIOLATION_SKILL_LABEL, VIOLATION_STATE_LABEL, MEASURE_KIND_LABEL, MEASURE_STATUS_LABEL,
-  violationAgeDays, violationAgeLabel, violationState,
+  VIOLATION_SKILLS, VIOLATION_STATE_LABEL, MEASURE_KIND_LABEL, MEASURE_STATUS_LABEL,
+  violationAgeDays, violationAgeLabel, violationState, tenMon,
   type ViolationCategory, type ViolationState, type MeasureKind,
 } from '../../../shared/domain/index.ts';
 import type { Principal } from '../permissions.ts';
@@ -46,7 +46,7 @@ export type ViolationView = {
 };
 
 const SELECT = `
-  SELECT v.*, s.full_name AS student_name, s.student_code, c.code AS class_code,
+  SELECT v.*, s.full_name AS student_name, s.student_code, c.code AS class_code, c.programme_code AS class_ct,
          ru.full_name AS reported_by_name,
          EXISTS (SELECT 1 FROM measure_violations mv JOIN discipline_measures m ON m.id = mv.measure_id
                   WHERE mv.violation_id = v.id AND m.status = 'done') AS in_done,
@@ -65,7 +65,8 @@ export function shapeViolation(r: any, today = demoToday()): ViolationView {
     studentId: r.student_id, studentName: r.student_name, studentCode: r.student_code,
     classId: r.class_id ?? null, classCode: r.class_code ?? null, cycleId: r.cycle_id ?? null,
     category: r.category, categoryLabel: VIOLATION_CATEGORY_LABEL[r.category as ViolationCategory] ?? r.category,
-    skill: r.skill ?? null, skillLabel: r.skill ? VIOLATION_SKILL_LABEL[r.skill] ?? r.skill : null,
+    /* MH2: tên môn theo chương trình lớp (FOU "Grammar + Vocabulary"). */
+    skill: r.skill ?? null, skillLabel: r.skill ? tenMon(r.class_ct ?? null, r.skill) : null,
     occurredOn: r.occurred_on, reportedOn: r.reported_on,
     reportedBy: r.reported_by, reportedByName: r.reported_by_name ?? null,
     description: r.description,
@@ -157,7 +158,9 @@ export function defaultSkillFor(p: Principal, classId: number | null): string | 
       .filter((a) => a.classId === classId && a.skill && a.effectiveFrom <= today && (!a.effectiveTo || a.effectiveTo >= today))
       .map((a) => a.skill as string),
   );
-  return skills.size === 1 ? [...skills][0] : null;
+  /* Pre FOU: GVCN giữ ô `tong_hop` — không phải môn vi phạm (K5-47), nên không tự điền. */
+  const mot = skills.size === 1 ? [...skills][0] : null;
+  return mot && (VIOLATION_SKILLS as readonly string[]).includes(mot) ? mot : null;
 }
 
 // ---------------------------------------------------------------- ghi (V01–V08)

@@ -14,7 +14,7 @@ import { ClassCreatePanel } from '../classes/ClassCreatePanel.tsx';
 import { TenGiaoVien } from '../classes/TenGiaoVien.tsx';
 import { BangHocVienLop } from './BangHocVienLop.tsx';
 import {
-  LOC_HOC_VIEN, LOC_HOC_VIEN_NHAN, PHAM_VI_NHAN, badgeLop, docThamSoLoc, duongLichTest, lopMoSan, needScoresText, skillShort, trangThaiCaseDong,
+  LOC_HOC_VIEN, LOC_HOC_VIEN_NHAN, PHAM_VI_NHAN, badgeLop, docThamSoLoc, duongLichTest, lopMoSan, needScoresText, tenMonNgan, trangThaiCaseDong,
   type BadgeLop, type LocHocVien, type PhamVi, type SapXep, type WorkScope,
 } from '@shared/domain/index.ts';
 
@@ -258,6 +258,7 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi }: {
     needScoresTitle: lop.needScores > 0 ? needScoresText(lop.workScope, lop.needScores) : null,
     soCaseMo: lop.soCaseMo, phase: lop.phase,
     missingCount: lop.missing.filter((m) => m.key !== 'teachers').length, soChuaLoTrinhTiep: lop.soChuaLoTrinhTiep,
+    chuongTrinh: lop.programmeCode,
   });
   const denBadge = (x: BadgeLop): string | null =>
     /* PR-UX1: badge "n bài chờ chấm" mở Lịch Test lọc đúng lớp (Lịch Test tự mở "Lớp tôi dạy" cho GV). */
@@ -387,7 +388,7 @@ export function WorkQueue({ view, branchId, q, scope }: {
                   <td className="td text-xs">
                     {view === 'my_scores' && (
                       <div className="flex flex-col items-start gap-0.5">
-                        <span style={{ color: 'var(--accent)' }}>Nhập {r.pendingSkills.map(skillShort).join(', ')}</span>
+                        <span style={{ color: 'var(--accent)' }}>Nhập {r.pendingSkills.map((sk: string) => tenMonNgan(r.programmeCode ?? null, sk)).join(', ')}</span>
                         {/*
                           NÓI RÕ KHI QUẢN LÝ NHẬP HỘ (mục 3.3) — không đổi quyền, chỉ nói ra.
                           `myPendingSkills` KHÔNG đổi theo phạm vi đang xem, nên so nó với
@@ -400,7 +401,7 @@ export function WorkQueue({ view, branchId, q, scope }: {
                           <span className="text-[10px] text-slate-500">
                             {r.pendingSkills
                               .filter((sk: string) => !r.myPendingSkills.includes(sk))
-                              .map((sk: string) => `${skillShort(sk)}: ${r.pendingOwners?.[sk] ?? 'chưa phân công'}`)
+                              .map((sk: string) => `${tenMonNgan(r.programmeCode ?? null, sk)}: ${r.pendingOwners?.[sk] ?? 'chưa phân công'}`)
                               .join(' · ')} — bạn không phụ trách bài này, nhập sẽ được ghi là sửa hộ
                           </span>
                         )}

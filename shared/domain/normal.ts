@@ -1,6 +1,6 @@
 /** NORMAL — chương trình FOU/BE/ELE, mốc kiểm tra và cách chấm theo tỷ lệ. */
 
-import { ENTRY_SKILLS } from './skills.ts';
+import { ASSESSED_SKILLS, ENTRY_SKILLS } from './skills.ts';
 
 // ------------------------------------------------- Chương trình và lớp thường
 
@@ -64,7 +64,8 @@ export const ATTEMPT_KIND_SHORT: Record<AttemptKind, string> = {
 };
 
 /**
- * BỐN MÔN CỦA LỚP NORMAL, GIỐNG NHAU Ở MỌI CHƯƠNG TRÌNH: L · R · W · S.
+ * BỐN Ô MÔN CỦA LỚP THƯỜNG FOU/BE/ELE: L · R · W · S. Pre FOU chỉ một ô `tong_hop` (PF6).
+ * FOU giữ 4 ô chuẩn này, chỉ đổi TÊN HIỆN (`tenMon`: W → G+V, S → P — T55).
  *
  * Hai cái tên riêng đã bỏ hẳn từ vòng 5:
  *
@@ -100,7 +101,40 @@ export const SKILL_SHORT: Record<string, string> = {
   // Hai mã CŨ, chỉ để dữ liệu chưa di trú không hiện mã thô trên giao diện.
   prep_writing: 'W', pronunciation: 'S',
 };
-export const skillShort = (k: string) => SKILL_SHORT[k] ?? k;
+export const skillShort = (k: string) => tenMonNgan(null, k);
+
+/** T55: FOU giữ 4 ô chuẩn, chỉ đổi TÊN HIỆN. Pre FOU một ô `tong_hop` (PF6). Chương trình khác: tên chung. */
+const TEN_MON_RIENG: Record<string, Record<string, { ten: string; ngan: string }>> = {
+  FOU: { writing: { ten: 'Grammar + Vocabulary', ngan: 'G+V' }, speaking: { ten: 'Pronunciation', ngan: 'P' } },
+};
+const TEN_CHUNG: Record<string, string> = {
+  listening: 'Listening', reading: 'Reading', writing1: 'Writing Task 1', writing2: 'Writing Task 2',
+  writing: 'Writing', speaking: 'Speaking', tong_hop: 'Tổng hợp',
+};
+const oChuan = (o: string) => LEGACY_REGULAR_SKILL_MAP[o] ?? o;       // prep_writing → writing, pronunciation → speaking
+/** MH2: MỘT nơi ra tên môn. `ct` = mã chương trình của lớp/lộ trình (null = không rõ → tên chung). */
+export function tenMon(ct: string | null | undefined, o: string): string {
+  const k = oChuan(o);
+  return TEN_MON_RIENG[programmeOf(ct) ?? '']?.[k]?.ten ?? TEN_CHUNG[k] ?? o;
+}
+export function tenMonNgan(ct: string | null | undefined, o: string): string {
+  const k = oChuan(o);
+  return TEN_MON_RIENG[programmeOf(ct) ?? '']?.[k]?.ngan ?? SKILL_SHORT[k] ?? o;
+}
+/** Bộ môn xếp lịch của một lượt: FT (hoặc không rõ) → 4 kỹ năng đánh giá; lớp thường → bảng `programme_skills` (hằng số dự phòng). */
+export function boMonLich(ct: string | null | undefined, skillsBang?: readonly string[] | null): readonly string[] {
+  const c = programmeOf(ct);
+  if (!c || c === 'FT') return ASSESSED_SKILLS;                       // FT: lịch theo 4 kỹ năng đánh giá (W = W1 + W2)
+  return skillsBang?.length ? skillsBang : PROGRAMME_TEMPLATES[c]?.skills ?? REGULAR_SKILLS;
+}
+/** MH6, T55: ô môn của lớp → kỹ năng GV đã khai hợp để dạy ô đó (gợi ý phân công). */
+export function kyNangGoiY(_ct: string | null | undefined, o: string): readonly string[] {
+  if (o === 'writing') return ['writing1', 'writing2'];               // BE/ELE W, FOU G+V (T55, MH6)
+  return (ENTRY_SKILLS as readonly string[]).includes(o) ? [o] : [];   // tong_hop: GVCN dạy luôn — không gợi ý
+}
+/** Hai khung: Fast Track (band) và Lớp thường (tỷ lệ). */
+export type Khung = 'ft' | 'thuong';
+export const khungCua = (scoringMode: string | null | undefined): Khung => (scoringMode === 'ratio' ? 'thuong' : 'ft');
 
 /**
  * Mốc kiểm tra tính theo TUẦN HỌC của lớp, không phải tuần thứ mấy của tháng.

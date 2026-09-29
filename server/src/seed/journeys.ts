@@ -24,7 +24,7 @@ export const DEMO_DATE = '2026-09-14';
 /* ================================================================= kiểu dữ liệu kịch bản */
 
 export type FtSkill = 'listening' | 'reading' | 'writing1' | 'writing2' | 'speaking';
-export type NormalSkill = 'listening' | 'reading' | 'writing' | 'speaking';
+export type NormalSkill = 'listening' | 'reading' | 'writing' | 'speaking' | 'tong_hop';
 
 export type TestSeed = {
   no: number;
@@ -293,6 +293,13 @@ export const CLASSES: ClassSeed[] = [
     startDate: '2026-07-27', status: 'active',
     teachers: { listening: 'T_HA', reading: 'T_HA', writing: 'T_KHOA', speaking: 'T_TRANG' },
     core: 'T_HA', note: 'Tuần 8/8 — đang trong tuần Final Test.',
+  },
+  {
+    /* PR-MON D12: Pre FOU không chia môn — một ô Tổng hợp, chỉ GVCN (GVCN dạy luôn, T56). Tuần 5/5 = tuần Cuối khoá. */
+    code: 'MB Pre FOU 03', branch: 'MB', kind: 'PREFOU', route: null, isFastTrack: false,
+    startDate: '2026-08-17', status: 'active',
+    teachers: { tong_hop: 'T_HA' },
+    core: 'T_HA', note: 'Pre FOU 5 tuần — Cuối khoá tuần này, một em chưa nhập điểm.',
   },
 
   /* ------------------------------------------------------------------ Bãi Cháy */

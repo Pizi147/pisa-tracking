@@ -1,20 +1,17 @@
 import {
-  ASSESSED_SKILL_LABEL, ATTEMPT_STATUS_LABEL, CASE_STATUS_LABEL, CASE_STATUS_TONE, DUE_LABEL, ENTRY_SKILL_LABEL,
-  ENTRY_SKILL_SHORT, REGULAR_SKILL_LABEL, REGULAR_SKILL_SHORT, ROLE_LABEL, SKILL_PROGRESS_LABEL, SOS_LABEL, STUDENT_STATUS_LABEL,
+  ATTEMPT_STATUS_LABEL, CASE_STATUS_LABEL, CASE_STATUS_TONE, DUE_LABEL,
+  ROLE_LABEL, SKILL_PROGRESS_LABEL, SOS_LABEL, STUDENT_STATUS_LABEL,
   TASK_PROGRESS_LABEL, TASK_TYPE_LABEL, UNIT_STATUS_LABEL,
-  type AssessedSkill, type EntrySkill, type SkillProgress, type SosLevel, type StudentStatus,
+  tenMon, tenMonNgan,
+  type SkillProgress, type SosLevel, type StudentStatus,
 } from '@shared/domain/index.ts';
 
 /*
- * Tên đầy đủ của một kỹ năng, tra qua CẢ BA bộ.
- *
- * Thiếu `REGULAR_SKILL_LABEL` thì môn của lớp Normal rơi xuống nhánh cuối và hiện nguyên mã
- * máy trên giao diện — chữ thường, không dấu, giữa một danh sách tên riêng viết hoa.
+ * Tên kỹ năng KHÔNG theo chương trình (FT hoặc không rõ lớp) — lớp mỏng trên `tenMon(null, …)` (MH2: một nguồn). Chỗ nào biết
+ * chương trình lớp thì gọi thẳng `tenMon(ct, …)` / `tenMonNgan(ct, …)` (FOU G+V/P, Pre FOU Tổng hợp).
  */
-export const skillLabel = (s: string) =>
-  ENTRY_SKILL_LABEL[s as EntrySkill] ?? ASSESSED_SKILL_LABEL[s as AssessedSkill]
-  ?? REGULAR_SKILL_LABEL[s as keyof typeof REGULAR_SKILL_LABEL] ?? s;
-export const skillShort = (s: string) => ENTRY_SKILL_SHORT[s as EntrySkill] ?? REGULAR_SKILL_SHORT[s] ?? s;
+export const skillLabel = (s: string) => tenMon(null, s);
+export const skillShort = (s: string) => tenMonNgan(null, s);
 export const roleLabel = (s: string) => ROLE_LABEL[s as keyof typeof ROLE_LABEL] ?? s;
 /** Không dùng từ "thi" cho Mock — "thi" chỉ dành cho kỳ IELTS chính thức. */
 export const attemptStatusLabel = (s: string) => ATTEMPT_STATUS_LABEL[s as keyof typeof ATTEMPT_STATUS_LABEL] ?? s;

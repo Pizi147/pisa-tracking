@@ -14,10 +14,10 @@ import { OKhac } from '../../ui/OKhac.tsx';
 import { NutChon } from '../../ui/ui.tsx';
 import { ComponentsField, componentsPayload } from './ChiTietKyNang.tsx';
 import {
-  ENTRY_SKILL_LABEL, URGENCY_LEVELS, URGENCY_LABEL, issuesForTopic, DEFAULT_URGENCY,
-  CASE_OUTCOMES, CASE_OUTCOME_LABEL, REGULAR_SKILL_LABEL,
+  URGENCY_LEVELS, URGENCY_LABEL, issuesForTopic, DEFAULT_URGENCY,
+  CASE_OUTCOMES, CASE_OUTCOME_LABEL, tenMon, tenMonNgan,
   categoryOf, componentsFor, componentsAreCounts,
-  nguoiThanhPayload, nguoiThieu, skillShort, tuanLich, type NguoiChon, dsLoi, type LuatTruong, laKhac, kiemGhiRoKhac, KHAC_TOI_THIEU,
+  nguoiThanhPayload, nguoiThieu, tuanLich, type NguoiChon, dsLoi, type LuatTruong, laKhac, kiemGhiRoKhac, KHAC_TOI_THIEU,
 } from '@shared/domain/index.ts';
 
 type DaLuu = { id: number; tieuDe: string; gop: boolean; canEdit: boolean };
@@ -126,8 +126,9 @@ export function QuickReport({
    * học viên, trang lớp) hỏi máy chủ: lớp thường bốn ô L·R·W·S, Fast Track năm ô L·R·W1·W2·S
    * (Q8) — form không tự đoán chương trình.
    */
-  const chuDe = useApi<{ ratio: boolean; topics: string[] }>(
-    open && studentId && !signal ? `/students/${studentId}/case-topics${cycleId ? `?cycleId=${cycleId}` : ''}` : null,
+  /* Hỏi cả khi mở từ tín hiệu: cần mã chương trình để gọi đúng tên môn và bộ nguyên nhân (FOU G+V / P, Pre FOU Tổng hợp — T57). */
+  const chuDe = useApi<{ ratio: boolean; topics: string[]; chuongTrinh: string | null }>(
+    open && studentId ? `/students/${studentId}/case-topics${cycleId ? `?cycleId=${cycleId}` : ''}` : null,
     [open, studentId, cycleId, signal],
   );
   const topics: readonly string[] = signal?.skill ? [signal.skill] : (chuDe.data?.topics ?? []);
@@ -138,11 +139,11 @@ export function QuickReport({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topicsKey]);
 
-  const topicLabel = (k: string) => ENTRY_SKILL_LABEL[k as keyof typeof ENTRY_SKILL_LABEL]
-    ?? REGULAR_SKILL_LABEL[k as keyof typeof REGULAR_SKILL_LABEL] ?? k;
-  const causes = topic ? issuesForTopic(topic) : [];
-  /* Nút kỹ năng một hàng chia đều: viết tắt L R W W1 W2 S (tooltip là tên đầy đủ). */
-  const topicShort = (k: string) => skillShort(k);
+  const ct = chuDe.data?.chuongTrinh ?? null;
+  const topicLabel = (k: string) => tenMon(ct, k);
+  const causes = topic ? issuesForTopic(topic, ct) : [];
+  /* Nút kỹ năng một hàng chia đều: viết tắt L R W W1 W2 S, FOU G+V/P, Pre FOU Tổng hợp (tooltip là tên đầy đủ). */
+  const topicShort = (k: string) => tenMonNgan(ct, k);
   const nguoiNhan = (n: NguoiChon | null) => (!n || n.kieu === 'toi' ? 'tôi' : n.ten);
 
   const reset = () => {

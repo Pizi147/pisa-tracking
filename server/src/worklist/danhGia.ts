@@ -1,5 +1,5 @@
 import { db } from '../db.ts';
-import { PERMISSIONS, luotSinhViec } from '../../../shared/domain/index.ts';
+import { CHUONG_TRINH_KHONG_CHIA_MON, PERMISSIONS, luotSinhViec } from '../../../shared/domain/index.ts';
 import { ngayTaoLuot } from '../classes/schedule.ts';
 import { classScopeSql, scopeFor, type Principal } from '../permissions.ts';
 import { loadBundle, resultOf, type AttemptBundle } from '../fasttrack/attempts.ts';
@@ -45,6 +45,9 @@ export type AttemptEval = {
   provisional: boolean;
   /** Theo kỹ năng ĐÁNH GIÁ: listening · reading · writing · speaking. */
   skills: Record<string, SkillEval>;
+  /** MH7: lớp không chia môn (Pre FOU) — kết quả là % tổng (`tyLeTong`, đủ điểm mới có), không phải SOS. */
+  khongChiaMon?: boolean;
+  tyLeTong?: number | null;
 };
 
 /**
@@ -57,12 +60,15 @@ export function evaluateAttemptRow(
   const scores = bundle.scores.get(a.id) ?? [];
   const prog = a.programme_code ? programmes.get(a.programme_code) : null;
   if (prog?.scoringMode === 'ratio') {
-    const r = evaluateRegular(prog.skills, scores);
+    const r = evaluateRegular(prog.skills, scores, prog.code);
     const skills: Record<string, SkillEval> = {};
     for (const s of r.skills) {
       skills[s.skill] = { evaluable: s.outcome !== 'missing', under: s.outcome === 'fail' };
     }
-    return { complete: r.complete, scored: r.scored, required: r.required, sosLevel: r.sosLevel, provisional: r.provisional, skills };
+    return {
+      complete: r.complete, scored: r.scored, required: r.required, sosLevel: r.sosLevel, provisional: r.provisional, skills,
+      khongChiaMon: CHUONG_TRINH_KHONG_CHIA_MON.includes(prog.code), tyLeTong: r.tyLeTong,
+    };
   }
   const r = resultOf(a, scores, bundle.skips.get(a.id) ?? []);
   const skills: Record<string, SkillEval> = {};

@@ -1,5 +1,5 @@
 import {
-  ATTEMPT_KIND_SHORT, PROGRAMME_TEMPLATES, categoryOf, cycleDeadline, issuesForTopic,
+  ATTEMPT_KIND_SHORT, PROGRAMME_TEMPLATES, boMonLich, categoryOf, cycleDeadline, issuesForTopic,
   hanDuyetDoiLan2, mondayOfDate, planEndDefault, programmeOf, ratioResult, weeklyUpdateDue,
   type AttemptKind,
 } from '../../../shared/domain/index.ts';
@@ -257,7 +257,9 @@ function insertAttempt(
    * "Đã xong" ngay cạnh câu "Có điểm 2/4 kỹ năng" — hai câu nói ngược nhau trên cùng một
    * thẻ. Nên ở đây tính lại từ chính số điểm trong kịch bản.
    */
-  const scopeSkills = (['listening', 'reading', 'writing', 'speaking'] as const).filter((k) => k !== t.skip);
+  /* Bộ môn theo chương trình của lớp (seed dùng hằng số — FT 4 kỹ năng đánh giá, Pre FOU một ô `tong_hop`). */
+  const boMon = boMonLich((conn.prepare('SELECT programme_code FROM classes WHERE id = ?').get(classIdOf) as any)?.programme_code);
+  const scopeSkills = boMon.filter((k) => k !== t.skip);
   const scoredKeys = new Set<string>([
     ...Object.entries(t.bands ?? {}).filter(([, v]) => v !== undefined && v !== null).map(([k]) => k),
     ...Object.entries(t.ratios ?? {}).filter(([, v]) => !!v).map(([k]) => k),
@@ -304,8 +306,8 @@ function insertAttempt(
    * thì chắc chắn đã thi. KHÔNG dựng sẵn trạng thái vắng ở đây — vắng là một xác nhận của
    * người, và bộ demo nào cần nó thì khai riêng.
    */
-  for (const skill of ['listening', 'reading', 'writing', 'speaking'] as const) {
-    const ownWeek = t.skillWeeks?.[skill];
+  for (const skill of boMon) {
+    const ownWeek = t.skillWeeks?.[skill as keyof NonNullable<typeof t.skillWeeks>];
     const skillPeriod = ownWeek ? ensurePeriod(ownWeek) : period;
     const didSit = !inFuture && skillComplete(skill);
     conn

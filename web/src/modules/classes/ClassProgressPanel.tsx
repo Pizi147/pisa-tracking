@@ -7,7 +7,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { Field, SectionNote, Skeleton, Status } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { MOC_KIEM_TRA_FT, MOC_KIEM_TRA_NORMAL } from '../../ui/chu.ts';
-import { ngay, tuanLich } from '@shared/domain/index.ts';
+import { kyHieuLop, ngay, tuanLich } from '@shared/domain/index.ts';
 
 type Progress = {
   programmeCode: string | null; programmeName: string | null;
@@ -94,7 +94,7 @@ export function ClassProgressPanel({ classId, classCode, tieuDe, onClose, onDone
             <>
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="Tuần thi Giữa khoá (tuần học thứ)"
-                  hint={`Mặc định của ${data.programmeCode}: tuần ${data.progressOverridden ? '—' : data.progressWeek ?? '—'}. Để trống là dùng mặc định.`}>
+                  hint={`Mặc định của ${kyHieuLop(data.programmeCode, null) ?? data.programmeCode}: tuần ${data.progressOverridden ? '—' : data.progressWeek ?? '—'}. Để trống là dùng mặc định.`}>
                   <input type="number" min={1} max={data.totalWeeks ?? undefined} className="field w-full"
                     value={progressWeek} placeholder={String(data.progressWeek ?? '')}
                     onChange={(e) => { setTouched(true); setProgressWeek(e.target.value); }} />

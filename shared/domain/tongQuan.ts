@@ -121,11 +121,12 @@ export type DiemChuY = {
 export function chonDiemDangChuY(ds: UngVienChuY[], ct: ChuongTrinh): DiemChuY[] {
   const N = NGUONG_DANG_CHU_Y;
   const out: DiemChuY[] = [];
-  const mon = ds.filter((x) => x.loai === 'mon-duoi-ky-vong' && x.tu >= N.hvToiThieu && x.mau > 0)
+  /* MH5: "môn dưới kỳ vọng" là câu của khung Fast Track — Lớp thường / Cả hai không trộn môn hai khung. */
+  const mon = ct !== 'ft' ? undefined : ds.filter((x) => x.loai === 'mon-duoi-ky-vong' && x.tu >= N.hvToiThieu && x.mau > 0)
     .sort((a, b) => b.tu / b.mau - a.tu / a.mau || b.tu - a.tu)[0];
   if (mon) {
     out.push({ loai: mon.loai, metricId: mon.metricId, extra: mon.extra,
-      cau: `${mon.nhanMon}: ${mon.tu}/${mon.mau} học viên ${ct === 'thuong' ? 'chưa đạt' : 'dưới kỳ vọng'}`,
+      cau: `${mon.nhanMon}: ${mon.tu}/${mon.mau} học viên dưới kỳ vọng`,
       lienKet: `xem ${mon.tu} học viên`, soDanhSach: mon.tu });
   }
   const pa = ds.find((x) => x.loai === 'pa-cai-thien' && x.mau >= N.mauToiThieu);

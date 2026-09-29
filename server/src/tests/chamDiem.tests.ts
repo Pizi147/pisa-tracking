@@ -655,7 +655,8 @@ export async function runChamDiemTests(t: YThucTestKit) {
       for (const l of r.lop) {
         assert(l.daCham === l.tong - l.conBai, `${ten} ${l.key}: đã chấm = tổng − còn`);
         assert(l.conBaiCuaToi <= l.conBai, `${ten} ${l.key}: bài của tôi ≤ bài còn lại`);
-        assert(l.kyNangTuan.every((k: string) => BON_MON.includes(k)), `${ten} ${l.key}: kỹ năng tuần là môn đánh giá`);
+        /* PR-MON: môn tuần thuộc bộ môn của lớp (FT 4 kỹ năng đánh giá; Pre FOU `tong_hop`). */
+        assert(l.kyNangTuan.every((k: string) => l.boMon.includes(k)), `${ten} ${l.key}: kỹ năng tuần là môn đánh giá`);
       }
     }
   });

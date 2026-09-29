@@ -11,6 +11,9 @@
  * File này chỉ có TỪ VỰNG và LUẬT THUẦN (không đụng database) để máy chủ và giao diện đọc cùng một nơi.
  */
 
+import { ENTRY_SKILLS } from './skills.ts';
+import { CHUONG_TRINH_KHONG_CHIA_MON, boMonLich, programmeOf } from './normal.ts';
+
 // ---------------------------------------------------------------- lời chốt Y01–Y04
 
 /**
@@ -76,6 +79,15 @@ export const VIOLATION_SKILL_LABEL: Record<string, string> = {
   listening: 'Listening', reading: 'Reading', writing1: 'Writing Task 1', writing2: 'Writing Task 2',
   writing: 'Writing', speaking: 'Speaking', pronunciation: 'Pronunciation',
 };
+
+/** K5-47: DANH SÁCH CHỌN môn vi phạm theo chương trình của lớp. FT/không rõ: 5 ô nhập · lớp thường: bộ môn · Pre FOU: không chọn môn.
+ *  `VIOLATION_SKILLS` giữ nguyên để máy chủ vẫn nhận dữ liệu cũ. */
+export function monViPham(ct: string | null | undefined): readonly string[] {
+  const c = programmeOf(ct);
+  if (!c || c === 'FT') return ENTRY_SKILLS;
+  if (CHUONG_TRINH_KHONG_CHIA_MON.includes(c)) return [];
+  return boMonLich(c);
+}
 
 /**
  * BA TRẠNG THÁI NGƯỜI DÙNG THẤY của một vi phạm — SUY RA từ bảng nối `measure_violations`, không lưu (đặc tả §4.1).

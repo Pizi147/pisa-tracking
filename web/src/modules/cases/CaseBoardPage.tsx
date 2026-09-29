@@ -9,7 +9,7 @@ import { NganCase } from '../students/NganCase.tsx';
 import { CasePanel } from './CasePanel.tsx';
 import { fmtDate, sosLabel, sosTone } from '../../lib/format.ts';
 import {
-  CASE_CATEGORY_LABEL, ENTRY_SKILL_LABEL,
+  CASE_CATEGORY_LABEL, tenMon,
   FT_CASE_CATEGORIES, NORMAL_CASE_CATEGORIES, URGENCY_LABEL, trangThaiCaseDong,
   type ChuongTrinh,
 } from '@shared/domain/index.ts';
@@ -98,10 +98,8 @@ export function DanhSachCase({ branchId, ct, classId }: { branchId: number | nul
   /** Đếm trong đúng tập đang hiển thị, để số trên ô và số dòng bên dưới không lệch nhau. */
   const stateCount = (k: string) => inScope.filter((r) => r.state === k).length;
 
-  const topicLabel = (k: string) =>
-    ENTRY_SKILL_LABEL[k as keyof typeof ENTRY_SKILL_LABEL]
-    ?? CASE_CATEGORY_LABEL[k as keyof typeof CASE_CATEGORY_LABEL]
-    ?? k;
+  /* Bộ lọc không theo chương trình (MH3) — tên chung. */
+  const topicLabel = (k: string) => tenMon(null, k);
 
   return (
     <div className="space-y-4">

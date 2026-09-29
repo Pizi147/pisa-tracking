@@ -1,0 +1,44 @@
+import { BoLocDoan } from './ui.tsx';
+
+/**
+ * CÔNG TẮC HAI KHUNG (MH4, K4-05, Q3, Q8) — `Fast Track · Lớp thường` (Test) hoặc `Tất cả · Fast Track · Lớp thường` (Công việc).
+ * Một khung một bộ môn: không trộn môn hai khung (MH5). Nhớ theo máy (localStorage, bọc try/catch — trang vẫn chạy khi không đọc
+ * được); tham số `loai` trên đường dẫn thắng (nơi gọi đọc URL trước `khungDaNho`). Chỉ một khung có dữ liệu → không vẽ gì.
+ */
+export type KhungLoc = 'ft' | 'thuong' | 'tat-ca';
+type Trang = 'lich-test' | 'ke-hoach-test' | 'cong-viec';
+
+const khoa = (trang: Trang) => `pisa.khung.${trang}`;
+const hopLe = (v: unknown): v is KhungLoc => v === 'ft' || v === 'thuong' || v === 'tat-ca';
+
+export function khungDaNho(trang: Trang): KhungLoc | null {
+  try {
+    const v = localStorage.getItem(khoa(trang));
+    return hopLe(v) ? v : null;
+  } catch { return null; }
+}
+function nhoKhung(trang: Trang, k: KhungLoc) {
+  try { localStorage.setItem(khoa(trang), k); } catch { /* không lưu được thì thôi — lần sau về mặc định */ }
+}
+
+export function CongTacKhung({ trang, value, onChange, dem, donVi = '', coTatCa = false }: {
+  trang: Trang; value: KhungLoc; onChange: (k: KhungLoc) => void;
+  /** Số hiện cạnh tên khung (lớp, việc…); khung có số 0 coi như không có dữ liệu. */
+  dem?: Partial<Record<KhungLoc, number>>;
+  /** Chữ sau số: `Fast Track · 3 lớp`. Trống = chỉ số. */
+  donVi?: string;
+  coTatCa?: boolean;
+}) {
+  const coDuLieu = (['ft', 'thuong'] as const).filter((k) => (dem?.[k] ?? 1) > 0);
+  if (coDuLieu.length < 2) return null;
+  const nhan = (ten: string, k: KhungLoc) => (dem?.[k] != null && donVi ? `${ten} · ${dem[k]} ${donVi}` : ten);
+  return (
+    <BoLocDoan<KhungLoc> ariaLabel="Khung lớp" value={value}
+      onChange={(k) => { nhoKhung(trang, k); onChange(k); }}
+      muc={[
+        ...(coTatCa ? [{ key: 'tat-ca' as const, nhan: 'Tất cả', so: donVi ? null : dem?.['tat-ca'] ?? null }] : []),
+        { key: 'ft', nhan: nhan('Fast Track', 'ft'), so: donVi ? null : dem?.ft ?? null },
+        { key: 'thuong', nhan: nhan('Lớp thường', 'thuong'), so: donVi ? null : dem?.thuong ?? null },
+      ]} />
+  );
+}

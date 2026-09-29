@@ -3,7 +3,7 @@ import { lichMtMacDinh } from './lichMt.ts';
 export const THU_TU_KY_HIEU = ['FT', 'FT RF', 'Pre FOU', 'FOU', 'BE', 'ELE'] as const;
 export type KyHieuLop = (typeof THU_TU_KY_HIEU)[number];
 /** PF6: chỉ mở "Pre FOU" ở Tạo lớp khi PR-MON (một ô Tổng hợp) có trong cùng đợt deploy. PR-MON đổi dòng này thành `true`. */
-export const CHO_TAO_PRE_FOU = false;
+export const CHO_TAO_PRE_FOU = true;
 export const MAU_SO_LOP = /^\d{1,4}[A-Za-z]?$/;
 
 export function kyHieuLop(chuongTrinh: string | null, loTrinh: string | null): KyHieuLop | null {

@@ -421,7 +421,7 @@ export async function runFormTests(t: YThucTestKit) {
       const c = cases.reportIssue(P.normalCoreTeacher, {
         studentId: fou.sid, topic: 'writing', title: 'Case Writing lớp thường (PR-Form Task 4)',
         summary: 'Em còn yếu tổ chức ý ở bài viết lớp thường, cần hỗ trợ thêm.',
-        primaryCode: domain.issuesForTopic('writing')[0].code,
+        primaryCode: domain.issuesForTopic('writing', 'FOU')[0].code,   // PR-MON: FOU W = G+V
         idempotencyKey: `pr-form-t4-writing-${soThuTu}`,
       }) as any;
       assert(c.topic === 'writing', `Case phải mở đúng topic writing: ${c.topic}`);
@@ -431,7 +431,7 @@ export async function runFormTests(t: YThucTestKit) {
       const fou = taoHocVien('MB FOU 12');
       /* Quản lý: mở → ghi phương án → đóng case đều đi qua được, không vướng C02 (đúng kỹ năng) lẫn "chỉ GVCN đóng case". */
       const closed = cases.backfillCase(P.mbManager, {
-        studentId: fou.sid, topic: 'writing', primaryCode: domain.issuesForTopic('writing')[0].code,
+        studentId: fou.sid, topic: 'writing', primaryCode: domain.issuesForTopic('writing', 'FOU')[0].code,
         title: 'Nhập bù Writing lớp thường (S5)', summary: 'Nhập bù case Writing với điểm chi tiết theo kỹ năng.',
         fromDate: '2026-08-01', toDate: '2026-08-10',
         actions: [{ description: 'Ôn luyện tổ chức ý bài viết', performerSelf: true, fromDate: '2026-08-01', toDate: '2026-08-10' }],

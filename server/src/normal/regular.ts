@@ -2,8 +2,8 @@ import { db, tx } from '../db.ts';
 import { addMilestone, followUntilAfter } from '../cases/sos.ts';
 import { raiseSignal, reconcileCorrectedSignals } from '../cases/signals.ts';
 import {
-  ATTEMPT_KIND_LABEL, PERMISSIONS, RATIO_PASS_THRESHOLD, REGULAR_SKILL_LABEL,
-  caseCategoriesFor, categoryOf, kiemLyDo, ngay, ratioResult, sosFromFailCount, tuanKeTiep, tuanLich,
+  ATTEMPT_KIND_LABEL, PERMISSIONS, RATIO_PASS_THRESHOLD,
+  caseCategoriesFor, categoryOf, kiemLyDo, ngay, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanKeTiep, tuanLich,
   type AssessedSkill, type AttemptKind, type CaseCategory, type RatioOutcome, type SosLevel,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -125,7 +125,7 @@ export function isRatioCycle(c: { id?: number | null; route?: string | null; pro
 
 /** Bộ hạng mục case đúng với chương trình của lộ trình này. */
 export function caseCategoriesOfCycle(c: any): readonly CaseCategory[] {
-  return caseCategoriesFor(isRatioCycle(c) ? 'ratio' : 'ielts_band');
+  return caseCategoriesFor(isRatioCycle(c) ? 'ratio' : 'ielts_band', c?.programme_code ?? programmeCodeOfCycle(c?.id));
 }
 
 // ---------------------------------------------------------------- kết luận
@@ -152,6 +152,8 @@ export type RegularResult = {
   failedCount: number | null;
   sosLevel: SosLevel | null;
   passThreshold: number;
+  /** K5-44, MH7: Σ điểm / Σ tổng — CHỈ khi đủ mọi môn (thiếu → null), không làm tròn. Pre FOU hiện đúng số này. */
+  tyLeTong: number | null;
 };
 
 /**
@@ -165,13 +167,15 @@ export type RegularResult = {
  * Lớp thường KHÔNG có cơ chế miễn kỹ năng — dời lịch sang tuần khác thì được, nhưng bộ
  * kỹ năng của chương trình luôn đủ.
  */
-export function evaluateRegular(skills: string[], rows: { skill: string; raw_score: number | null; raw_total: number | null }[]): RegularResult {
+export function evaluateRegular(
+  skills: readonly string[], rows: { skill: string; raw_score: number | null; raw_total: number | null }[], ct?: string | null,
+): RegularResult {
   const results: RegularSkillResult[] = skills.map((skill) => {
     const row = rows.find((r) => r.skill === skill);
     const { outcome, ratio } = ratioResult(row?.raw_score ?? null, row?.raw_total ?? null);
     return {
       skill,
-      label: REGULAR_SKILL_LABEL[skill as keyof typeof REGULAR_SKILL_LABEL] ?? skill,
+      label: tenMon(ct, skill),
       score: row?.raw_score ?? null,
       total: row?.raw_total ?? null,
       ratio, outcome,
@@ -202,6 +206,9 @@ export function evaluateRegular(skills: string[], rows: { skill: string; raw_sco
     failedCount,
     sosLevel,
     passThreshold: RATIO_PASS_THRESHOLD,
+    tyLeTong: complete
+      ? results.reduce((s, r) => s + (r.score ?? 0), 0) / results.reduce((s, r) => s + (r.total ?? 0), 0)
+      : null,
   };
 }
 
@@ -227,7 +234,7 @@ export function regularResultOf(attemptId: number): RegularResult {
   const prog = a?.class_id ? programmeOfClass(a.class_id) : null;
   const rows = conn.prepare('SELECT skill, raw_score, raw_total FROM assessment_scores WHERE attempt_id = ?')
     .all(attemptId) as any[];
-  return evaluateRegular(prog?.skills ?? [], rows);
+  return evaluateRegular(prog?.skills ?? [], rows, prog?.code);
 }
 
 // ---------------------------------------------------------------- lên lịch
@@ -373,7 +380,7 @@ export function saveRegularScore(
   const prog = a.class_id ? programmeOfClass(a.class_id) : null;
   if (!prog || prog.scoringMode !== 'ratio') throw badRequest('Lượt này không thuộc lớp thường.');
   if (!prog.skills.includes(skill)) {
-    throw badRequest(`Chương trình ${prog.code} không có kỹ năng "${skill}".`);
+    throw badRequest(`Lớp ${prog.name} không có kỹ năng ${tenMon(prog.code, skill)}.`);
   }
   /* Dấu "-" đi đường riêng vì nó KHÔNG phải một điểm: nó là một lần dời lịch (C08). */
   if (patch.noShow !== undefined) {
@@ -498,7 +505,7 @@ export function reportRegularNoShow(
 
   const prog = a.class_id ? programmeOfClass(a.class_id) : null;
   if (!prog || prog.scoringMode !== 'ratio') throw badRequest('Lượt này không thuộc lớp thường.');
-  if (!prog.skills.includes(skill)) throw badRequest(`Chương trình ${prog.code} không có kỹ năng "${skill}".`);
+  if (!prog.skills.includes(skill)) throw badRequest(`Lớp ${prog.name} không có kỹ năng ${tenMon(prog.code, skill)}.`);
 
   /*
    * Ghi dấu là việc của NGƯỜI CHẤM môn đó (hoặc người nhập bù) — cùng cửa với nhập điểm.
@@ -523,7 +530,7 @@ export function reportRegularNoShow(
   return tx(() => {
     const row = ensureSkillRows(attemptId).find((r) => r.skill === skill);
     if (!row) throw badRequest(`Bài này chưa có dòng lịch cho ${skill}.`);
-    if (!row.required) throw badRequest(`Kỹ năng ${skill} không nằm trong phạm vi yêu cầu của bài này.`);
+    if (!row.required) throw badRequest(`Kỹ năng ${tenMon(null, skill)} không nằm trong phạm vi yêu cầu của bài này.`);
 
     const existing = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?')
       .get(attemptId, skill) as any;
@@ -720,7 +727,7 @@ export function refreshRegularOutcome(p: Principal, attemptId: number) {
       addMilestone({
         caseId: existing.id, kind: 'repeat', attemptId: a.id, attemptNo: a.attempt_no,
         sosLevel: r.sosLevel, occurredOn: detectedAt, createdBy: p.userId,
-        note: REGULAR_SKILL_LABEL[skill as keyof typeof REGULAR_SKILL_LABEL] ?? skill,
+        note: r.skills.find((x) => x.skill === skill)?.label ?? tenMon(null, skill),   // tên môn theo chương trình (FOU G+V)
         dedupKey: `mt:${a.id}:${existing.id}:repeat`,
       });
       conn2
@@ -860,17 +867,19 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
   return {
     class: { id: cls.id, code: cls.code, branchName: cls.branch_name, startDate: cls.start_date },
     programme: prog,
-    skillLabels: Object.fromEntries(prog.skills.map((k) => [k, REGULAR_SKILL_LABEL[k as keyof typeof REGULAR_SKILL_LABEL] ?? k])),
+    /** MH2: tên môn theo chương trình — FOU `writing` = Grammar + Vocabulary / G+V, `speaking` = Pronunciation / P; Pre FOU Tổng hợp. */
+    skillLabels: Object.fromEntries(prog.skills.map((k) => [k, tenMon(prog.code, k)])),
+    monNgan: Object.fromEntries(prog.skills.map((k) => [k, tenMonNgan(prog.code, k)])),
     editableSkills: editable,
     canPlan: can(p, PERMISSIONS.PLAN_WEEK, { classId }),
     passThreshold: RATIO_PASS_THRESHOLD,
     rows: attempts.map((a) => {
       const rows = byAttempt.get(a.id) ?? [];
-      const result = evaluateRegular(prog.skills, rows);
+      const result = evaluateRegular(prog.skills, rows, prog.code);
       const failing = result.skills.filter((s) => s.outcome === 'fail').map((s) => s.skill);
       const dongCases = casesOf(a.student_id, a.cycle_id ?? null, failing);
       const c = dongCases[0] ?? null;
-      const views = regularSkillViews({ ...a, period_start: a.week_start }, skillRows.get(a.id), rows as any, demoToday());
+      const views = regularSkillViews({ ...a, period_start: a.week_start }, skillRows.get(a.id), rows as any, demoToday(), prog.skills);
       /*
        * HẠN CỦA CẢ BÀI chỉ còn là hạn MUỘN NHẤT trong các môn còn phải chấm — một con số
        * để xếp thứ tự, không phải một luật riêng. Luật nằm ở từng môn, và cột "Hạn từng
@@ -900,7 +909,7 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
           const scored = row?.raw_score !== null && row?.raw_score !== undefined;
           return {
             skill: k,
-            label: REGULAR_SKILL_LABEL[k as keyof typeof REGULAR_SKILL_LABEL] ?? k,
+            label: tenMon(prog.code, k),
             periodCode: v.periodCode, weekRange: v.weekRange,
             /** Thứ Hai của tuần thi môn này — lưới viết tuần bằng `tuanLich` (G-6), không hiện mã tuần có năm. */
             weekStart: v.weekStart,

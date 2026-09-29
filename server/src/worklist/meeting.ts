@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  BRANCH_REPORT_CATEGORIES, ENTRY_SKILLS, ENTRY_SKILL_LABEL, PERMISSIONS,
+  BRANCH_REPORT_CATEGORIES, ENTRY_SKILLS, PERMISSIONS, tenMon,
   TASK_PROGRESS, TASK_PROGRESS_LABEL, TASK_TYPES,
   TUTOR_REPORT_CATEGORIES, UNIT_STATUSES, trangThaiDonVi, trangThaiO, type DueState,
 } from '../../../shared/domain/index.ts';
@@ -419,7 +419,7 @@ export function listTasks(p: Principal, f: TaskFilters = {}) {
   const rows = conn
     .prepare(
       `SELECT t.*, u.full_name AS assignee_name, ru.name AS unit_name, pr.code AS period_code,
-              pr.week_start AS period_start, cl.code AS class_code
+              pr.week_start AS period_start, cl.code AS class_code, cl.programme_code AS class_ct
          FROM tasks t
          LEFT JOIN classes cl ON cl.id = t.class_id
          LEFT JOIN users u ON u.id = t.assignee_user_id
@@ -460,7 +460,7 @@ export function listTasks(p: Principal, f: TaskFilters = {}) {
     kind: t.kind ?? 'branch_ops',
     classId: t.class_id ?? null, className: t.class_code ?? null,
     topic: t.topic ?? null,
-    topicLabel: t.topic ? ENTRY_SKILL_LABEL[t.topic as keyof typeof ENTRY_SKILL_LABEL] ?? t.topic : null,
+    topicLabel: t.topic ? tenMon(t.class_ct, t.topic) : null,
     studentCount: studentCounts.get(t.id) ?? 0,
     followers: followers.get(t.id) ?? [],
     unitId: t.reporting_unit_id, unitName: t.unit_name, branchId: t.branch_id,

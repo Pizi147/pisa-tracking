@@ -5,9 +5,9 @@ import { useSession } from '../../../lib/session.tsx';
 import { addDaysStr } from '../../../lib/format.ts';
 import { useToast } from '../../../ui/Toast.tsx';
 import {
-  gomBaiXemTruoc, mondayOfDate, nhanTuanKhoa, tuanLich, type BaiXemTruoc, type DongHangLoat, type KyNangKH, type OKyNang,
+  gomBaiXemTruoc, mondayOfDate, nhanTuanKhoa, tenMon, tenMonNgan, tuanLich, type BaiXemTruoc, type DongHangLoat, type KyNangKH, type OKyNang,
 } from '@shared/domain/index.ts';
-import { KY, TEN_KY_NANG, chuKyNang, thanDot, type DotChon, type KnO } from './kieu.ts';
+import { KY, thanDot, type DotChon, type KnO } from './kieu.ts';
 import { TuanNho, resolveTuan, type Tuan } from './TuanNho.tsx';
 
 type Dong = { tick: boolean; periodId: number | null; weekStart: string | null };
@@ -22,8 +22,10 @@ type Dong = { tick: boolean; periodId: number | null; weekStart: string | null }
  * Bộ chọn tuần KHỞI TẠO bằng TUẦN HIỆN CÓ của từng kỹ năng (Bổ sung sau rà #87): không để bộ chọn tự phát "tuần này" làm
  * nút Lưu mở ngay — Lưu mờ cho tới khi đổi tuần.
  */
-export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attemptId, kn, kyNangDau, deXuat, khaiGiang, tongTuan, onClose, onSaved, onHienDien }: {
+export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attemptId, kn, kyNangDau, deXuat, khaiGiang, tongTuan, onClose, onSaved, onHienDien, ky = KY, ct = null }: {
   anchor: HTMLElement; tieuDe: string; loai: 'ft' | 'thuong'; classId: number; studentId: number; dot: DotChon;
+  /** Lớp thường: bộ môn của chương trình (Pre FOU một dòng Tổng hợp — PF6); FT: 4 kỹ năng. `ct` = mã chương trình (tên FOU G+V/P). */
+  ky?: readonly KyNangKH[]; ct?: string | null;
   attemptId: number | null; kn: KnO; kyNangDau: KyNangKH | null;
   deXuat?: string | null; khaiGiang?: string | null; tongTuan?: number | null;
   onClose: () => void; onSaved: () => void; onHienDien: (open: boolean) => void;
@@ -35,7 +37,7 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
 
   const khoiTao = (): Record<KyNangKH, Dong> => {
     const o = {} as Record<KyNangKH, Dong>;
-    for (const k of KY) o[k] = moi ? { tick: true, periodId: null, weekStart: null } : { tick: kn[k]?.batBuoc ?? false, periodId: kn[k]?.periodId ?? null, weekStart: kn[k]?.tuan ?? null };
+    for (const k of ky) o[k] = moi ? { tick: true, periodId: null, weekStart: null } : { tick: kn[k]?.batBuoc ?? false, periodId: kn[k]?.periodId ?? null, weekStart: kn[k]?.tuan ?? null };
     return o;
   };
   const [rows, setRows] = useState<Record<KyNangKH, Dong>>(khoiTao);
@@ -57,7 +59,7 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
       const lrw = await resolveTuan(goc);
       const s = loai === 'thuong' ? lrw : await resolveTuan(addDaysStr(goc, 7));
       const dong = (t: Tuan): Dong => ({ tick: true, periodId: t.periodId, weekStart: t.weekStart });
-      if (!huy) setRows({ listening: dong(lrw), reading: dong(lrw), writing: dong(lrw), speaking: dong(s) });
+      if (!huy) setRows(Object.fromEntries(ky.map((k) => [k, dong(k === 'speaking' ? s : lrw)])) as Record<KyNangKH, Dong>);
     };
     void lam().catch(() => { /* người dùng vẫn chọn tay được */ });
     return () => { huy = true; };
@@ -73,10 +75,10 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
     if (batBuoc !== rows[k].tick) return true;
     return rows[k].tick && rows[k].periodId !== null && rows[k].periodId !== (o?.periodId ?? null);
   };
-  const coDoi = KY.some(daDoi);
-  const bo = KY.filter((k) => !moi && !laKhoa(k) && (kn[k]?.batBuoc ?? false) && !rows[k].tick);
-  const coTuan = KY.filter((k) => !laKhoa(k) && rows[k].tick && rows[k].periodId);
-  const thieuTuan = moi && KY.some((k) => !rows[k].periodId);
+  const coDoi = ky.some(daDoi);
+  const bo = ky.filter((k) => !moi && !laKhoa(k) && (kn[k]?.batBuoc ?? false) && !rows[k].tick);
+  const coTuan = ky.filter((k) => !laKhoa(k) && rows[k].tick && rows[k].periodId);
+  const thieuTuan = moi && ky.some((k) => !rows[k].periodId);
 
   /* Kiểm mỗi lần đổi tuần (trễ nhẹ, bỏ kết quả lượt cũ). */
   const khoaKiem = JSON.stringify(coTuan.map((k) => [k, rows[k].periodId, daDoi(k)]));
@@ -87,7 +89,7 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
       if (thieuTuan) { setBai(null); return; }
       const t = setTimeout(() => {
         const tuan: Record<string, number> = {};
-        for (const k of KY) tuan[k] = rows[k].periodId!;
+        for (const k of ky) tuan[k] = rows[k].periodId!;
         api.post<{ dong: DongHangLoat[] }>('/ke-hoach-test/hang-loat', {
           classId, ...thanDot(dot), studentIds: [studentId], tuan, xemTruoc: true,
         }).then((r) => {
@@ -114,12 +116,12 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
   const doiOk = (bai ?? []).filter((b) => b.ghiChu === 'moi' || b.ghiChu === 'doi');
 
   const dongTrangThai = useMemo(() => {
-    if (!bai) return { tone: 'muted' as const, chu: moi ? 'Chọn tuần cho cả 4 kỹ năng.' : '' };
+    if (!bai) return { tone: 'muted' as const, chu: moi ? (loai === 'thuong' ? `Chọn tuần cho ${ky.length === 1 ? 'môn' : `cả ${ky.length} môn`}.` : 'Chọn tuần cho cả 4 kỹ năng.') : '' };
     if (chan.length) return { tone: 'bad' as const, chu: `Chặn: ${[...new Set(chan.map((b) => b.cau))].join(' ')}` };
     if (canhBao.length) return { tone: 'soon' as const, chu: [...new Set(canhBao.map((b) => b.cau))].join(' ') };
     if (!doiOk.length) return { tone: 'muted' as const, chu: coDoi ? '' : 'Chưa đổi gì.' };
     const nhom = gomBaiXemTruoc([...doiOk, ...canhBao]).map((g) => (
-      `${g.kyNang.map(chuKyNang).join(' ')}: ${g.tu ? tuanLich(g.tu) : '—'} → ${g.den ? tuanLich(g.den) : '—'}`
+      `${g.kyNang.map((k) => tenMonNgan(ct, k)).join(' ')}: ${g.tu ? tuanLich(g.tu) : '—'} → ${g.den ? tuanLich(g.den) : '—'}`
     ));
     return { tone: 'muted' as const, chu: `${nhom.join(' · ')} · không trùng đợt khác.` };
   }, [bai, moi, coDoi]);   // eslint-disable-line react-hooks/exhaustive-deps
@@ -134,11 +136,11 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
     try {
       if (moi) {
         const tuan: Record<string, number> = {};
-        for (const k of KY) tuan[k] = rows[k].periodId!;
+        for (const k of ky) tuan[k] = rows[k].periodId!;
         if (dot.loai === 'ft') await api.post('/ke-hoach-test/xep-moi', { studentId, attemptNo: dot.attemptNo, tuan, force: dungForce });
         else await api.post('/ke-hoach-test/xep-moi', { classId, studentId, kind: dot.kind, tuan, force: dungForce });
       } else {
-        const kyNang = KY.filter((k) => daDoi(k) || (bo.includes(k))).map((k) => (
+        const kyNang = ky.filter((k) => daDoi(k) || (bo.includes(k))).map((k) => (
           !rows[k].tick ? { skill: k, bo: true }
             : !(kn[k]?.batBuoc ?? false) ? { skill: k, bo: false, periodId: rows[k].periodId }
               : { skill: k, periodId: rows[k].periodId }
@@ -193,8 +195,8 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
         <button type="button" className="btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-[28px] sm:min-w-[28px]" onClick={onClose} aria-label="Đóng">✕</button>
       </div>
       <div className="max-h-[70vh] space-y-2 overflow-y-auto px-3 py-2.5">
-        {KY.map((k) => (
-          <DongKyNangHop key={k} k={k} o={kn[k]} khoa={laKhoa(k)} moi={moi} loai={loai} d={cauHinh(k)}
+        {ky.map((k) => (
+          <DongKyNangHop key={k} k={k} o={kn[k]} khoa={laKhoa(k)} moi={moi} loai={loai} d={cauHinh(k)} ct={ct}
             noiBat={k === kyNangDau} khaiGiang={khaiGiang} tongTuan={tongTuan}
             onTick={(v) => setRows((s) => ({ ...s, [k]: { ...s[k], tick: v } }))}
             onTuan={(t) => setRows((s) => ({ ...s, [k]: { ...s[k], periodId: t.periodId, weekStart: t.weekStart } }))} goc={homNay} />
@@ -220,7 +222,8 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
   );
 }
 
-function DongKyNangHop({ k, o, khoa, moi, loai, d, noiBat, khaiGiang, tongTuan, onTick, onTuan, goc }: {
+function DongKyNangHop({ k, o, khoa, moi, loai, d, noiBat, khaiGiang, tongTuan, onTick, onTuan, goc, ct = null }: {
+  ct?: string | null;
   k: KyNangKH; o?: OKyNang; khoa: boolean; moi: boolean; loai: 'ft' | 'thuong'; d: Dong; noiBat: boolean;
   khaiGiang?: string | null; tongTuan?: number | null; onTick: (v: boolean) => void; onTuan: (t: Tuan) => void; goc: string | null;
 }) {
@@ -231,11 +234,12 @@ function DongKyNangHop({ k, o, khoa, moi, loai, d, noiBat, khaiGiang, tongTuan, 
     <div className={`grid items-start gap-2 rounded px-1 py-0.5 ${noiBat ? 'bg-white/5' : ''}`} style={{ gridTemplateColumns: coTick ? '20px 80px minmax(0,1fr)' : '0px 80px minmax(0,1fr)' }}>
       {coTick ? (
         <input type="checkbox" className="mt-3 accent-sky-400" checked={d.tick} onChange={(e) => onTick(e.target.checked)}
-          aria-label={`${TEN_KY_NANG[k]} — ${d.tick ? 'bỏ khỏi đợt' : 'đưa lại vào đợt'}`} title={d.tick ? 'Bỏ khỏi đợt' : 'Đưa lại vào đợt'} />
+          aria-label={`${tenMon(ct, k)} — ${d.tick ? 'bỏ khỏi đợt' : 'đưa lại vào đợt'}`} title={d.tick ? 'Bỏ khỏi đợt' : 'Đưa lại vào đợt'} />
       ) : <span />}
       <div className="mt-2.5 text-xs text-slate-200">
-        <b title={TEN_KY_NANG[k]}>{chuKyNang(k)}</b> <span className="text-slate-400">{TEN_KY_NANG[k]}</span>
-        {k === 'writing' && <span className="ml-1 cursor-help text-slate-500" title="W = chấm cả W1 và W2">ⓘ</span>}
+        <b title={tenMon(ct, k)}>{tenMonNgan(ct, k)}</b>
+        {tenMonNgan(ct, k) !== tenMon(ct, k) && <> <span className="text-slate-400">{tenMon(ct, k)}</span></>}
+        {loai === 'ft' && k === 'writing' && <span className="ml-1 cursor-help text-slate-500" title="W = chấm cả W1 và W2">ⓘ</span>}
       </div>
       <div className="min-w-0">
         {khoa ? (

@@ -788,8 +788,9 @@ export function datPhanTram(ketQua: 'pass' | 'fail' | 'missing' | undefined, tiL
  * tranh chỗ với "Quá hạn dd/mm" (chỉ hiện khi CHƯA có điểm). `leading-none` để ô hai dòng vẫn vừa hàng cao 56px — mọi
  * dòng của lưới cao bằng nhau (G-2). Màn điện thoại (`lon`) không vẽ dòng này dưới ô: câu đó nằm ở dòng phụ dưới tên em.
  */
-function DongDatPhanTram({ ketQua, tiLe }: { ketQua?: 'pass' | 'fail' | 'missing'; tiLe?: number | null }) {
-  const chu = datPhanTram(ketQua, tiLe);
+function DongDatPhanTram({ ketQua, tiLe, chiChu = false }: { ketQua?: 'pass' | 'fail' | 'missing'; tiLe?: number | null; chiChu?: boolean }) {
+  /* `chiChu`: chỉ "Đạt"/"Chưa đạt" (lưới Pre FOU: % đã ở cột Kết quả — không hiện hai lần). */
+  const chu = chiChu ? datPhanTram(ketQua, tiLe)?.split(' · ')[0] ?? null : datPhanTram(ketQua, tiLe);
   if (!chu) return null;
   return (
     <span className={`block text-[10px] leading-none mt-0.5 whitespace-nowrap tabular-nums ${ketQua === 'fail' ? 'text-rose-300/80' : 'text-slate-500'}`}>
@@ -823,7 +824,7 @@ const SO_NGUYEN = /^\d+$/;
  */
 export function ODiemThuong({
   cell, tongCot, canEdit, onSave, onDau, inputRef, onKeyDown, dienTong = null, tenMon = 'Môn', tenHv,
-  lon = false, tongLaySan = false,
+  lon = false, tongLaySan = false, chiChuKetQua = false,
 }: {
   cell: {
     diem: number | null; tong: number | null; tuanDoiTu: string | null; tuanHienTai: string | null;
@@ -842,6 +843,8 @@ export function ODiemThuong({
   tenHv?: string;
   lon?: boolean;
   tongLaySan?: boolean;
+  /** Dưới ô chỉ "Đạt"/"Chưa đạt", không % (Pre FOU: % ở cột Kết quả). */
+  chiChuKetQua?: boolean;
 }) {
   const toast = useToast();
   const dau = cell.dau ?? cell.tuanDoiTu !== null;
@@ -1003,7 +1006,7 @@ export function ODiemThuong({
             <span className={cell.ketQua === 'fail' ? 'text-rose-300' : ''}>{o.hien || `${cell.diem}/?`}</span>
             {lon && <ChoNutDau />}
           </span>
-          {!lon && <DongDatPhanTram ketQua={cell.ketQua} tiLe={cell.tiLe} />}
+          {!lon && <DongDatPhanTram ketQua={cell.ketQua} tiLe={cell.tiLe} chiChu={chiChuKetQua} />}
         </span>
       );
     }
@@ -1075,7 +1078,7 @@ export function ODiemThuong({
             </SuaDiemCoLyDo>
           )}
         </span>
-        {!lon && <DongDatPhanTram ketQua={cell.ketQua} tiLe={cell.tiLe} />}
+        {!lon && <DongDatPhanTram ketQua={cell.ketQua} tiLe={cell.tiLe} chiChu={chiChuKetQua} />}
       </span>
     );
   }

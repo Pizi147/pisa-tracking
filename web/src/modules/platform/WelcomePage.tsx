@@ -4,7 +4,7 @@ import { LA_BAN_CHINH } from '../../lib/banChinh.ts';
 import { ApiError, api } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { Alert, Field, Info, NutChon, SectionNote } from '../../ui/ui.tsx';
-import { skillLabel } from '../../lib/format.ts';
+import { ChonKyNang } from './ProfilePage.tsx';
 
 import { ROLES, ROLE_LABEL, type Role } from '@shared/domain/index.ts';
 
@@ -306,13 +306,7 @@ function RegisterForm({ info, onDone }: { info: AuthInfo | null; onDone: () => v
       </Field>
 
       <Field label="Kỹ năng bạn phụ trách được" hint="Dùng để gợi ý khi phân công lớp. Bỏ trống cũng được.">
-        <div className="flex flex-wrap gap-1.5">
-          {(info?.skills ?? []).map((s) => (
-            <NutChon key={s} nho chon={skills.has(s)} onClick={() => toggle(skills, s, setSkills)}>
-              {skillLabel(s)}
-            </NutChon>
-          ))}
-        </div>
+        <ChonKyNang value={skills} onToggle={(s) => toggle(skills, s, setSkills)} />
       </Field>
 
       <Field label="Ghi chú cho người duyệt">

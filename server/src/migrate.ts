@@ -14,6 +14,7 @@ import { migratePrLop } from './migrate/prLop.ts';
 import { migratePrDuyet } from './migrate/prDuyet.ts';
 import { migratePrMt } from './migrate/prMt.ts';
 import { migratePrNhap } from './migrate/prNhap.ts';
+import { migratePrMon } from './migrate/prMon.ts';
 
 /**
  * Giá trị cũ của cột `track` cho case Ý thức. Mô hình Case Ý thức đã BỎ 21/09/2026 (rule book mục 18) — hằng số này chỉ để NÂNG CẤP
@@ -463,6 +464,8 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     /* PR-MT: cột lich_su (MT lịch sử, T34). */ migratePrMt(conn, applied);
     /* PR-NHAP: email học viên + ngày thi dự kiến (T8, T9). */
     migratePrNhap(conn, applied);
+    /* PR-MON: kỹ năng phụ trách được chỉ L · R · W1 · W2 · S (MH1). */
+    migratePrMon(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống
@@ -2043,11 +2046,17 @@ function migrateSkillSchedule(conn: any, applied: string[]) {
     writing: ['writing1', 'writing2'], speaking: ['speaking'],
   };
 
+  /*
+   * PR-MON (PF6): lượt của lớp Pre FOU chỉ có MỘT dòng `tong_hop` — không phải "thiếu ba dòng". Bỏ qua lớp Pre FOU, nếu không
+   * mỗi lần migrate sẽ chèn thêm L R W S vào lượt Pre FOU.
+   */
+  const coCt = (conn.prepare('PRAGMA table_info(classes)').all() as any[]).some((c) => c.name === 'programme_code');
   const attempts = conn
     .prepare(
       `SELECT a.id, a.planned_period_id, a.status
          FROM assessment_attempts a
-        WHERE (SELECT COUNT(*) FROM attempt_skills ask WHERE ask.attempt_id = a.id) < 4`,
+        WHERE (SELECT COUNT(*) FROM attempt_skills ask WHERE ask.attempt_id = a.id) < 4${coCt
+          ? ` AND NOT EXISTS (SELECT 1 FROM classes c WHERE c.id = a.class_id AND c.programme_code = 'PREFOU')` : ''}`,
     )
     .all() as any[];
   if (!attempts.length) return;

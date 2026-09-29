@@ -48,7 +48,7 @@ const marks = (n: number) => Array.from({ length: n }, () => '?').join(',');
 /** Mã lỗi hiệu lực + họ kỹ năng của một dòng `case_issues` (Q5): mã lạ → "Khác" của kỹ năng theo hạng mục Case. */
 function locHo(ma: string, c: CaseInfo): { ho: HoKyNang; ma: string } | null {
   const nhanh = issueBranchOf(ma);
-  if (nhanh) return { ho: nhanh, ma };
+  if (nhanh) { const ho = hoKyNang(nhanh); return ho ? { ho, ma } : null; }   // tong_hop (Pre FOU) → null
   const ho = hoKyNang(c.category ?? categoryOf(c.topic));
   return ho ? { ho, ma: `student.${ho}.other` } : null;
 }

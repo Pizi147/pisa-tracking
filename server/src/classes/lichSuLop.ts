@@ -64,6 +64,7 @@ export function lichSuLop(p: Principal, studentId: number) {
             failed: r.failedCount, overall: null, expectation: null, belowSkills: [],
             failedSkills: r.skills.filter((x: any) => x.outcome === 'fail')
               .map((x: any) => ({ skill: x.skill, score: x.score ?? 0, total: x.total ?? 0 })),
+            khongChiaMon: r.skills.length === 1 && r.skills[0].skill === 'tong_hop', tyLeTong: r.tyLeTong,
           };
           const chinh = ketQuaGanNhat(kv).chinh;
           const nhanLuot = a.kind === 'final' ? 'Cuối khoá' : 'Giữa khoá';

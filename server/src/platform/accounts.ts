@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { db, tx } from '../db.ts';
-import { ENTRY_SKILLS, PERMISSIONS, REGULAR_SKILLS } from '../../../shared/domain/index.ts';
+import { ENTRY_SKILLS, PERMISSIONS } from '../../../shared/domain/index.ts';
 import { badRequest, forbidden, notFound, nowIso, padCode } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from './audit.ts';
@@ -164,10 +164,17 @@ export function register(input: {
   });
 }
 
-const ALL_SKILLS = [...new Set([...ENTRY_SKILLS, ...REGULAR_SKILLS])] as string[];
+/** MH1: kỹ năng "phụ trách được" chỉ là 5 ô nhập L · R · W1 · W2 · S. Tên môn lớp thường (G+V, P…) là của Ô LỚP, không của người. */
+const ALL_SKILLS = [...ENTRY_SKILLS] as string[];
+const DOI_MA_CU: Record<string, string[]> = {
+  writing: ['writing1', 'writing2'], prep_writing: ['writing1', 'writing2'], pronunciation: ['speaking'],
+};
 
 function setSkills(conn: any, userId: number, skills: string[]) {
-  const wanted = [...new Set(skills.map((s) => String(s)))].filter((s) => ALL_SKILLS.includes(s));
+  /* Form cũ còn mở trên máy GV có thể gửi mã lớp thường cũ → đổi đúng như migrate PR-MON (không bỏ im lặng):
+     `writing`/`prep_writing` → W1 + W2, `pronunciation` → S. */
+  const doi = skills.flatMap((s) => DOI_MA_CU[String(s)] ?? [String(s)]);
+  const wanted = [...new Set(doi)].filter((s) => ALL_SKILLS.includes(s));
   conn.prepare('DELETE FROM user_skills WHERE user_id = ?').run(userId);
   for (const s of wanted) {
     conn.prepare('INSERT INTO user_skills (user_id, skill) VALUES (?,?)').run(userId, s);
@@ -362,7 +369,7 @@ export function myProfile(p: Principal) {
     skills: (conn.prepare('SELECT skill FROM user_skills WHERE user_id = ?').all(u.id) as any[]).map((r) => r.skill),
     extraEmails: (conn.prepare('SELECT email FROM user_emails WHERE user_id = ? ORDER BY id').all(u.id) as any[])
       .map((r) => r.email),
-    /** Bộ kỹ năng chọn được — gồm cả kỹ năng riêng của lớp Normal. */
+    /** Bộ kỹ năng chọn được — 5 ô L · R · W1 · W2 · S (MH1). */
     allSkills: ALL_SKILLS,
     canSetPassword: !!u.password_hash,
   };
@@ -492,6 +499,24 @@ export function listAccounts(p: Principal) {
       )
       .all(u.id) as any[]),
   }));
+}
+
+/** K1-51, Q9: Quản trị sửa kỹ năng phụ trách được của một tài khoản. */
+export function setUserSkills(p: Principal, userId: number, skills: string[]): { skills: string[] } {
+  require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, 'Chỉ Quản trị hệ thống sửa được kỹ năng của tài khoản khác.');
+  const conn = db();
+  const user = conn.prepare('SELECT * FROM users WHERE id = ?').get(userId) as any;
+  if (!user) throw notFound('Không tìm thấy tài khoản.');
+  if (user.status === 'deleted') throw badRequest('Tài khoản đã xoá.');
+  return tx(() => {
+    setSkills(conn, userId, skills);
+    const moi = (conn.prepare('SELECT skill FROM user_skills WHERE user_id = ? ORDER BY skill').all(userId) as any[]).map((r) => r.skill);
+    writeAudit({
+      actorUserId: p.userId, action: 'user_skills_set', entityType: 'users', entityId: userId, entityLabel: user.full_name,
+      after: { note: moi.join(', ') || 'bỏ hết kỹ năng' },
+    });
+    return { skills: moi };
+  });
 }
 
 /** Người đang xem có phải Quản trị hệ thống không — dùng để bật/tắt màn quản trị. */

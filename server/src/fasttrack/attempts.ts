@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, ENTRY_SKILLS, ENTRY_SKILL_LABEL, MOCK_FT_STUDY_WEEK, NO_SHOW_OVERRIDDEN_NOTE,
-  PERMISSIONS, awaitingScore, cachHuyLuot, kiemLyDo, kiemSoMtMoi, laLichSu, ngay, noShowStateOf, noShowText, pendingSkillsOf, soMtKeTiep, tuanLich,
+  PERMISSIONS, awaitingScore, cachHuyLuot, kiemLyDo, kiemSoMtMoi, laLichSu, ngay, noShowStateOf, noShowText, pendingSkillsOf, soMtKeTiep, tenMon, tuanLich,
   type CachHuy,
   type AssessedSkill, type EntrySkill, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
@@ -410,11 +410,13 @@ export function skillCells(
  * nằm gọn trong `skillScoreDeadline`, và cả hai bên cùng hỏi một nơi.
  */
 export function regularSkillViews(
-  attempt: any, skillRows: SkillRow[] | undefined, scores: ScoreRow[], today = demoToday(),
+  attempt: any, skillRows: SkillRow[] | undefined, scores: ScoreRow[], today: string,
+  /** Bộ môn của chương trình lớp (K5-38, PF6) — BẮT BUỘC để mọi nơi gọi nói rõ bộ nào (Pre FOU một ô `tong_hop`). */
+  skills: readonly string[],
 ): Map<string, SkillScheduleView> {
-  const schedule = skillScheduleOf(attempt, skillRows);
+  const schedule = skillScheduleOf(attempt, skillRows, skills);
   const out = new Map<string, SkillScheduleView>();
-  for (const skill of ASSESSED_SKILLS) {
+  for (const skill of skills) {
     const row = schedule[skill];
     const entry = scores.find((r) => r.skill === skill);
     out.set(skill, viewSkill({
@@ -622,7 +624,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
        * Nên "đã đến lúc phải nhập điểm" phải hỏi theo TỪNG MÔN, không hỏi theo tuần của
        * cả bài. Hạn của lớp Normal là hết Chủ nhật của chính tuần thi môn đó.
        */
-      const views = regularSkillViews(a, bundle.skillRows.get(a.id), scores, today);
+      const views = regularSkillViews(a, bundle.skillRows.get(a.id), scores, today, regularSkills);
       const pendingOf = (k: string) => {
         const v = views.get(k);
         if (!v) return null;
@@ -647,6 +649,8 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
         kind: a.kind,
         studentId: a.student_id, studentName: a.full_name, studentCode: a.student_code,
         classId: a.class_id, classCode: a.class_code, branchId: a.branch_id, branchName: a.branch_name,
+        /** MH2: mã chương trình lớp — tên môn FOU G+V/P ở danh sách. */
+        programmeCode: a.programme_code ?? null,
         cycleId: a.cycle_id, cycleSeq: a.cycle_seq, route: null,
         attemptNo: a.attempt_no,
         target: null,
@@ -853,7 +857,7 @@ export function scoreHistoryOf(attemptId: number) {
       id: l.id,
       kind: l.action === 'score.override' ? 'override' : l.action === 'score.edit' || l.action === 'score.lich_su' ? 'edit' : 'no_show',
       skill: l.entity_label as string,
-      skillLabel: ENTRY_SKILL_LABEL[l.entity_label as EntrySkill] ?? l.entity_label,
+      skillLabel: tenMon(null, l.entity_label),   // gồm cả môn lớp thường (trước đây `writing` hiện mã thô)
       before: scoreSummaryText(before), after: afterText,
       actorName: l.actor_name as string | null, createdAt: l.created_at as string,
       /* RB-5 — lý do hiệu chỉnh nằm ngay trong bản "sau" của nhật ký; lần nhập đầu không có. */
@@ -926,7 +930,7 @@ export function attemptDetail(p: Principal, attemptId: number) {
     completionWeek: {
       valid: completion.valid,
       blocking: completion.blocking,
-      blockingLabels: completion.blocking.map((k: AssessedSkill) => ASSESSED_SKILL_LABEL[k]),
+      blockingLabels: completion.blocking.map((k: string) => ASSESSED_SKILL_LABEL[k as AssessedSkill] ?? tenMon(null, k)),
     },
     /** Lịch, phạm vi, trạng thái thi và hạn chấm của TỪNG kỹ năng (mục 10.1 · 10.5). */
     skillSchedule: scheduleRows,
@@ -1144,8 +1148,8 @@ export function setPlanningWeek(p: Principal, attemptId: number, periodId: numbe
 }
 
 /** Kỹ năng đánh giá này đã có band chưa (Writing cần ít nhất một trong hai task). */
-function hasAnyBand(attemptId: number, skill: AssessedSkill): boolean {
-  const entry = entrySkillsOf(skill);
+function hasAnyBand(attemptId: number, skill: string): boolean {
+  const entry = entrySkillsOf(skill as AssessedSkill)   // tong_hop (Pre FOU) → [tong_hop], không có band;
   const row = db()
     .prepare(
       `SELECT COUNT(*) AS n FROM assessment_scores
@@ -1249,7 +1253,7 @@ export function huyLuot(p: Principal, attemptId: number, input: { lyDo: string; 
     const diem = scoresOf(attemptId);
     const coDiem = (assessed: AssessedSkill) => entrySkillsOf(assessed)
       .some((k) => diem.some((d) => d.skill === k && ((d.band ?? null) !== null || (d.raw_score ?? null) !== null)));
-    const huy = ensureSkillRows(attemptId).filter((r) => r.required && r.sit_status === 'scheduled' && !coDiem(r.skill));
+    const huy = ensureSkillRows(attemptId).filter((r) => r.required && r.sit_status === 'scheduled' && !coDiem(r.skill as AssessedSkill));   // tong_hop (Pre FOU) → entrySkillsOf trả [tong_hop]
     for (const r of huy) {
       conn.prepare(`UPDATE attempt_skills SET sit_status = 'cancelled', updated_at = ? WHERE id = ?`).run(nowIso(), r.id);
       logSchedule(attemptId, { action: 'skill_part_cancelled', field: r.skill, oldValue: r.period_code, newValue: null, reason: lyDo, actor: p.userId });
@@ -1395,7 +1399,7 @@ export function saveScore(
   const assessed = assessedSkillOf(skill);
   const scheduleRow = ensureSkillRows(attemptId).find((r) => r.skill === assessed)!;
   if (!scheduleRow.required) {
-    throw badRequest(`Kỹ năng ${assessed} không nằm trong phạm vi yêu cầu của đợt này.`);
+    throw badRequest(`Kỹ năng ${tenMon(null, assessed)} không nằm trong phạm vi yêu cầu của đợt này.`);
   }
   /*
    * KHÔNG NHẬP ĐIỂM VÀO PHẦN ĐÃ HUỶ hoặc ĐÃ XÁC NHẬN VẮNG (mục 10.6).
