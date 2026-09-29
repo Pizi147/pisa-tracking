@@ -369,4 +369,13 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
     assert(/<svg/.test(dtg) && !/[✓✕▸◌●○]/.test(dtg), 'biểu tượng dòng thời gian phải là SVG');
     assert(!/KY_NANG_KHONG_KIEM_TRA|KIEM_TRA_LAI_KY_NANG/.test(docSach('web/src/ui/chu.ts')), 'chu.ts còn chữ cũ');
   });
+
+  check('PR-XLMT (5) · Hồ sơ Mock: thao tác theo `thaoTacKyNang`, không còn chữ cũ / hộp trùng; đề nghị dời mở thẻ Lịch thi (T38, #117)', () => {
+    const mock = docSach('web/src/modules/fasttrack/MockDetailPage.tsx');
+    for (const cu of ["'Ghi nhận vắng'", 'Hẹn xử lý', 'Đổi lịch cả đợt', 'DecideMoveModal', 'SkillWeekModal', 'SkillDeadlineModal', 'RestoreModal']) {
+      assert(!mock.includes(cu), `còn "${cu}"`);
+    }
+    assert(mock.includes('thaoTacKyNang(') && mock.includes('<HopThaoTacMt') && mock.includes('<TheYeuCau') && mock.includes('<DongThoiGianLuot'), 'thiếu nguồn chung');
+    assert(!/label: 'Lịch sử'/.test(mock), '"Lịch sử" không nằm trong menu dòng');
+  });
 }

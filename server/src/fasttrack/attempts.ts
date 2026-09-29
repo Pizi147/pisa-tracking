@@ -9,7 +9,7 @@ import { demoToday } from '../demoConfig.ts';
 import { badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { dotHoanTat, dotHoanTatMany, quyenSuaSauHoanTat } from './hoanTat.ts';
 import {
-  can, classScopeSql, defaultWorkScope, editableSkills, moveableSkills, mySkills, require_, scopeFor, scoreEditPath, type LuotQuyen,
+  can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, moveableSkills, mySkills, require_, scopeFor, scoreEditPath, type LuotQuyen,
   type Principal,
 } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
@@ -972,6 +972,8 @@ export function attemptDetail(p: Principal, attemptId: number) {
     scoreHistory: scoreHistoryOf(attemptId),
     viewer: {
       canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id }),
+      /** PR-XLMT (T38): GVCN của lớp — Báo vắng / Xếp lại bài vắng theo bảng thao tác `thaoTacKyNang`. */
+      laGvcn: !!a.class_id && isCoreTeacherOf(p, a.class_id),
       canCancel: can(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id }),
       /** PR-MT (M-12, K4-10): cách huỷ được phép + hệ quả thật, để hộp huỷ nói trước — không bấm rồi mới biết. */
       huyLuot: a.status !== 'cancelled' && can(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id })

@@ -869,9 +869,9 @@ export function baoVang(p: Principal, attemptId: number, skill: string, lyDo: st
   const loi = kiemLyDoThaoTac('Báo vắng', lyDo);
   if (loi) throw badRequest(loi);
   const row = ensureSkillRows(attemptId).find((r) => r.skill === skill);
-  if (!row?.required) throw badRequest('Kỹ năng không nằm trong đợt này.');
+  if (!row?.required) throw badRequest(`${skillName(skill)} không nằm trong đợt này.`);
   if (row.sit_status !== 'scheduled' || !row.planned_period_id || !row.week_start || !row.week_end) {
-    throw badRequest(`${skillName(skill)} không ở trạng thái chờ thi.`);
+    throw badRequest(`${skillName(skill)} không còn chờ thi (đã thi, đang vắng hoặc đã huỷ) — không báo vắng được.`);
   }
   if (row.week_start.slice(0, 10) > mondayOf(today)) {
     throw badRequest(`${skillName(skill)} chưa tới tuần thi — muốn đổi tuần thì "Dời lịch thi".`);

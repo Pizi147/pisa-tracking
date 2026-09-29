@@ -622,6 +622,15 @@ if (chuaQua.length) luuY('daThiToiMt', `Đã thi tới MT${daThiToiMt} nhưng ${
 - **Phép kiểm cũ đã sửa (Task 3):** `keHoachTest.tests.ts` — 4 lời gọi `luuDot`/`kiemDot` chọn tuần đích quanh lịch seed (trước ngày
   demo) → chạy trong `truocNgayDemo` (hôm nay lùi về 05/01/2026) để tuần đích là tương lai; Task5 em C "đã xong → giu" → thêm
   `dotTheoEm` (Quản lý bấm chip MT1 riêng, vì em đủ MT1 nay tự sang MT2); "Rà planning(2)" số MT ảo 91 → 8 (trần MT8).
+- **Task 5:** `TheYeuCauDto` thêm `doiTuongId` (một dòng ở `theRa`) để hồ sơ Mock tìm đúng thẻ Lịch thi của đề nghị dời (DTO cũ không
+  có id đối tượng); phân loại gửi `phanLoai=lich-thi`. Bỏ luôn `RestoreModal` (khôi phục qua `HopThaoTacMt`). Hộp chung nhận thêm
+  `dat-lich` (trạng thái `chua-xep`). Nút ⋯ dòng dùng `MenuDong` (không có mục thì không vẽ).
+- **Task 5 — clarify (trước → sau):** Dời lịch thi "Không tiêu lượt dời do vắng" → "Không tính là một lần dời do vắng" · Đưa lại
+  vào đợt "{môn} thi lại trong đợt này — xếp tuần sau khi đưa lại" → "{môn} trở lại danh sách thi của đợt này. Chưa có tuần thi thì
+  xếp tuần ngay sau đó" (tránh lẫn với "Thi lại") · Báo vắng "Kỹ năng không nằm trong đợt này" → "{môn} không nằm trong đợt này" ·
+  "{môn} không ở trạng thái chờ thi" → "{môn} không còn chờ thi (đã thi, đang vắng hoặc đã huỷ) — không báo vắng được" · menu đầu
+  trang "Đổi lịch cả đợt" / "Hẹn xử lý cả đợt" → "Dời lịch thi cả đợt" / "Dời hạn chấm cả đợt"; nhãn "Hẹn xử lý cả đợt {ngày}" →
+  "Hạn chấm cả đợt {ngày}". Sáu tên T38 giữ nguyên.
 
 ## Chủ sản phẩm chốt 29/09 (thay các chỗ lệch trong kế hoạch)
 
