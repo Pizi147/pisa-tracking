@@ -40,7 +40,8 @@ export function phanTichLop(p: Principal, classId: number): PhanTichLop {
   const cycleIds = [...mucTieu.keys()];
   const attempts = cycleIds.length
     ? conn.prepare(
-      `SELECT * FROM assessment_attempts WHERE cycle_id IN (${cycleIds.map(() => '?').join(',')}) AND status != 'cancelled'`,
+      `SELECT a.*, cy.route FROM assessment_attempts a JOIN learning_cycles cy ON cy.id = a.cycle_id
+        WHERE a.cycle_id IN (${cycleIds.map(() => '?').join(',')}) AND a.status != 'cancelled'`,
     ).all(...cycleIds) as any[]
     : [];
   const bundle = loadBundle(attempts.map((a) => a.id));
@@ -72,7 +73,7 @@ export function phanTichLop(p: Principal, classId: number): PhanTichLop {
   for (const a of attempts) {
     if ((a.kind ?? 'mock') !== 'mock') continue;
     soDot = Math.max(soDot, a.attempt_no);
-    const kyVong = expectationFor(mucTieu.get(a.cycle_id) ?? null, a.attempt_no);
+    const kyVong = expectationFor(mucTieu.get(a.cycle_id) ?? null, a.attempt_no, a.route);
     if (kyVong === null) continue;
     for (const s of (bundle.scores.get(a.id) ?? []) as any[]) {
       if (s.band === null || s.band === undefined) continue;

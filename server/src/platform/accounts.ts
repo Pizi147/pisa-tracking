@@ -3,7 +3,7 @@ import { db, tx } from '../db.ts';
 import { ENTRY_SKILLS, PERMISSIONS } from '../../../shared/domain/index.ts';
 import { badRequest, forbidden, notFound, nowIso, padCode } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
-import { writeAudit } from './audit.ts';
+import { notify, writeAudit } from './audit.ts';
 
 /**
  * TÀI KHOẢN VÀ ĐĂNG NHẬP — mục 7.1 đến 7.3.
@@ -153,6 +153,13 @@ export function register(input: {
            JSON.stringify(codes), input.note ?? null, nowIso());
     const userId = Number(info.lastInsertRowid);
     setSkills(conn, userId, input.skills ?? []);
+    /* PR-DUYET (K1-41): Quản trị biết có đăng ký mới ngay ở chuông — bấm về Quản trị › Tài khoản. */
+    for (const a of conn.prepare(
+      `SELECT DISTINCT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id JOIN users u ON u.id = ur.user_id
+        WHERE r.key = 'system_admin' AND ur.status = 'active' AND u.deleted_at IS NULL`).all() as any[]) {
+      notify({ userId: a.id, kind: 'dang_ky', title: `Đăng ký tài khoản mới — ${fullName}`, body: codes.join(', '),
+        entityType: 'user', entityId: userId, dedupKey: `dang_ky:${userId}` });
+    }
     return { userId };
   });
 }

@@ -7,7 +7,8 @@
  */
 import { db } from '../db.ts';
 import {
-  ENTRY_SKILLS, LOC_HOC_VIEN, PERMISSIONS, chuanHoaMaLop, phamViCoThe, phamViMacDinh, type LocHocVien, type PhamVi,
+  ENTRY_SKILLS, LOC_HOC_VIEN, MOC_KE_TIEP_SQL, PERMISSIONS, chuanHoaMaLop, coMocTiepTheo, mondayOfDate, phamViCoThe, phamViMacDinh,
+  type LocHocVien, type PhamVi,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays } from '../util.ts';
@@ -104,12 +105,17 @@ export function danhSachHocVienLop(
   const hv = conn.prepare(
     `SELECT e.class_id, s.id, s.full_name, s.normalized_name, s.student_code, s.dob, s.status,
             cy.id AS cycle_id, cy.start_period_id, cy.exam_month, cy.target_score, cy.baseline_attempt_id, cy.baseline_score,
-            (SELECT COUNT(*) FROM assessment_attempts a WHERE a.cycle_id = cy.id AND a.status = 'planned') AS so_luot_ke_hoach
+            cy.route, cy.exam_period_id,
+            (SELECT COUNT(*) FROM assessment_attempts a WHERE a.cycle_id = cy.id AND a.status = 'planned') AS so_luot_ke_hoach,
+            /* K2-05: FT đếm theo luật mốc kế tiếp (lichMt.ts) — MT lịch sử / tuần đã qua không phải "mốc tiếp theo". */
+            (SELECT COUNT(*) FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id
+              WHERE a.cycle_id = cy.id AND ${MOC_KE_TIEP_SQL('a', 'rp')}) AS so_moc_ke_tiep,
+            (SELECT COALESCE(MAX(a.attempt_no), 0) FROM assessment_attempts a WHERE a.cycle_id = cy.id AND a.status != 'cancelled') AS mt_cuoi
        FROM enrollments e
        JOIN students s ON s.id = e.student_id
        LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
       WHERE e.class_id IN (${ph}) AND e.status = 'active' AND s.archived_at IS NULL`,
-  ).all(...ids) as any[];
+  ).all(mondayOfDate(demoToday()), ...ids) as any[];
   const lopCuaHv = new Map<number, number>(hv.map((h) => [h.id as number, h.class_id as number]));
 
   /*
@@ -206,7 +212,10 @@ export function danhSachHocVienLop(
         : null,
       student: { dob: h.dob },
       isFastTrack: !!laFt.get(h.class_id),
-      hasNextMilestone: h.status === 'active' ? h.so_luot_ke_hoach > 0 : undefined,
+      hasNextMilestone: h.status !== 'active' ? undefined
+        : laFt.get(h.class_id)
+          ? coMocTiepTheo({ coMoc: h.so_moc_ke_tiep > 0, route: h.route ?? null, mtCuoi: h.mt_cuoi, coNgayThi: !!(h.exam_month || h.exam_period_id) })
+          : h.so_luot_ke_hoach > 0,
     });
     if (thieu.length) loc.push('thieu_tt');
     for (const k of loc) dem[k] += 1;

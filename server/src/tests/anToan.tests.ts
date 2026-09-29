@@ -516,8 +516,9 @@ export async function runAnToanTests(t: AnToanTestKit) {
       attemptsMod.saveScore(P.lrTeacher, attemptId, 'listening', { noShow: true }, '2026-09-09');
       const kq = cv.chotVangDinhKy({ ngay: TODAY });
       assert(kq.boQua === null && kq.daChot === 1, `Phải chốt đúng 1 buổi: ${JSON.stringify(kq)}`);
-      const s = conn.prepare(`SELECT sit_status, absent_from_no_show AS co FROM attempt_skills WHERE attempt_id = ? AND skill = 'listening'`).get(attemptId) as any;
-      assert(s.sit_status === 'absent' && s.co === 1, `Buổi Listening: ${JSON.stringify(s)}`);
+      /* PR-MT (Q-A, chủ sản phẩm chọn 29/09): chốt xong máy tự dời lần 1 TRONG CÙNG giao dịch cron — bài sang tuần 14/09, đếm vắng = 1. */
+      const s = conn.prepare(`SELECT sit_status, absent_from_no_show AS co, absence_move_count AS lan FROM attempt_skills WHERE attempt_id = ? AND skill = 'listening'`).get(attemptId) as any;
+      assert(s.sit_status === 'scheduled' && s.co === 0 && s.lan === 1, `Buổi Listening: ${JSON.stringify(s)}`);
       assert(cv.chotVangDinhKy({ ngay: TODAY }).daChot === 0, 'Lần hai lại chốt thêm');
     } finally { if (conn.inTransaction) conn.exec('ROLLBACK'); }
   });

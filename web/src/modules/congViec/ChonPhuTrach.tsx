@@ -18,8 +18,10 @@ export type NguoiPhuTrach = 'toi' | 'tat-ca' | number;
  * về nút. Esc bắt ở pha bắt + chặn lan — chỉ đóng menu/ô chọn, không đóng panel chứa nó. "Chọn giáo viên…" mở `ChonNguoi`
  * có sẵn danh sách (không bắt gõ trước); chỉ tài khoản — ngoại lệ T14 của bộ lọc.
  */
-export function ChonPhuTrach({ value, valueName, onChange }: {
+export function ChonPhuTrach({ value, valueName, onChange, chiChonGv }: {
   value: NguoiPhuTrach;
+  /** PR-DUYET (K1-29): "Của tôi · Của GV" đã là công tắc riêng — ô này chỉ còn việc chọn MỘT giáo viên cụ thể. */
+  chiChonGv?: boolean;
   /** Tên giáo viên đã biết trước (ví dụ vừa chọn từ ô tìm) — tránh phải tra lại. */
   valueName?: string | null;
   onChange: (v: NguoiPhuTrach, name?: string | null) => void;
@@ -62,7 +64,8 @@ export function ChonPhuTrach({ value, valueName, onChange }: {
   /* Menu vừa mở (chưa vào ô chọn) → focus mục đầu. */
   useEffect(() => { if (open && !picking) tro(0); }, [open, picking]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const nhan = value === 'toi' ? 'Tôi' : value === 'tat-ca' ? 'Tất cả trong phạm vi' : (ten ?? '…');
+  const nhan = chiChonGv ? (typeof value === 'number' ? (ten ?? '…') : 'một GV…')
+    : value === 'toi' ? 'Tôi' : value === 'tat-ca' ? 'Tất cả trong phạm vi' : (ten ?? '…');
   const muc = [
     { nhan: 'Tôi', chon: () => { onChange('toi'); dongVeNut(); } },
     { nhan: 'Tất cả trong phạm vi', chon: () => { onChange('tat-ca'); dongVeNut(); } },
@@ -72,8 +75,8 @@ export function ChonPhuTrach({ value, valueName, onChange }: {
   return (
     <div className="relative inline-flex items-center gap-1" ref={box}>
       <button ref={nut} type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" aria-haspopup="menu" aria-expanded={open}
-        onClick={() => { setOpen((o) => !o); setPicking(false); }}>
-        Người phụ trách: {nhan}
+        onClick={() => { setOpen((o) => !o); setPicking(!!chiChonGv); }}>
+        {chiChonGv ? 'Xem việc của' : 'Người phụ trách'}: {nhan}
         {/* ▾ ở chữ Inter 12px chỉ còn một chấm → vẽ SVG nét mảnh. */}
         <svg aria-hidden width="8" height="5" viewBox="0 0 8 5" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M1 1l3 3 3-3" /></svg>
       </button>

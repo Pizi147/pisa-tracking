@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
-import { gomNhomViec } from '@shared/domain/index.ts';
+import { gomNhomViec, type DemYeuCau } from '@shared/domain/index.ts';
 import { type WorkGroup, type WorkItem } from './WorkList.tsx';
 import { NhomViec } from './NhomViec.tsx';
 import { useNhacYThuc } from '../yThuc/YThucReminders.tsx';
@@ -22,6 +22,8 @@ export function ViecCuaToi() {
   const navigate = useNavigate();
   const { data, loading, error, reload } = useApi<Work>('/my-work');
   const nhac = useNhacYThuc();
+  /* PR-DUYET (K1-16): một dòng cho yêu cầu mình đã gửi Quản lý — ẩn khi không có gì. */
+  const dem = useApi<DemYeuCau>('/yeu-cau/dem').data;
   const nhom = useMemo(() => (data ? gomNhomViec(data.items ?? [], nhac.length) : []), [data, nhac.length]);
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   return (
@@ -30,6 +32,12 @@ export function ViecCuaToi() {
         <div className="p-4"><Empty title={data.scopeEmpty ? 'Bạn chưa được cấp phạm vi nào' : 'Không có việc nào đang chờ bạn'} /></div>
       ) : (
         <NhomViec nhom={nhom} nhac={nhac} soHien={5} onOpen={navigate} />
+      )}
+      {dem && (dem.cuaToiCho > 0 || dem.cuaToiTuChoi > 0) && (
+        <Link to="/cong-viec/yeu-cau" className="block border-t px-4 py-2.5 text-sm tabular-nums text-slate-300 no-underline hover:bg-white/5"
+          style={{ borderColor: 'var(--line)' }}>
+          {[dem.cuaToiCho > 0 && `${dem.cuaToiCho} yêu cầu đang chờ QL`, dem.cuaToiTuChoi > 0 && `${dem.cuaToiTuChoi} bị từ chối`].filter(Boolean).join(' · ')} →
+        </Link>
       )}
       <div className="px-4 py-2.5 border-t text-xs" style={{ borderColor: 'var(--line)' }}>
         <Link to="/cong-viec" className="link">Tất cả việc →</Link>

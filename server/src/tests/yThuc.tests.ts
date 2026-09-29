@@ -8,6 +8,7 @@
  * Mỗi mã luật V01–V14 · B01–B16 · W01–W06 của `thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` có ít nhất một phép kiểm,
  * tên phép kiểm bắt đầu bằng mã luật để tìm được bằng tay.
  */
+import { boLichTuTao } from './luotThu.ts';
 import type { Principal } from '../permissions.ts';
 
 export type YThucTestKit = {
@@ -338,10 +339,11 @@ export async function runYThucTests(t: YThucTestKit) {
   const one = (sql: string, ...args: unknown[]) => (conn.prepare(sql).get(...args) as any)?.n as number;
   /** Học viên mới, riêng cho từng phép kiểm, để số đếm của phép này không lẫn với phép khác. */
   const makeStudent = (name: string, classId = CLASS): { id: number; cycleId: number } => {
-    intake.commitIntake(P.admin, { classId, rows: [{ fullName: `PJ ${name}`, target: 7 }], dateFormat: 'iso', idempotencyKey: `pj-${name}` });
+    intake.commitIntake(P.admin, { classId, rows: [{ fullName: `PJ ${name}`, target: 7, email: 'hv@demo.test' }], idempotencyKey: `pj-${name}` });
     const st = conn.prepare('SELECT id FROM students WHERE full_name = ?').get(`PJ ${name}`) as any;
     const cy = conn.prepare("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'").get(st.id) as any;
     assert(st && cy, `Không dựng được học viên thử "${name}"`);
+    boLichTuTao(conn, cy.id);   // PR-MT: em thử Ý thức không cần lịch MT tự tạo (luotThu.ts)
     return { id: st.id, cycleId: cy.id };
   };
   /** Giáo viên KHÔNG có phân công nào ở lớp thử — kiểm "ngoài phạm vi". */

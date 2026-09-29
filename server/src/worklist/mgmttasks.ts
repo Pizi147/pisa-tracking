@@ -114,7 +114,8 @@ export function listMgmtTasks(p: Principal, f: TaskFilter = {}) {
   const rows = conn
     .prepare(
       `SELECT t.*, b.name AS branch_name,
-              a.full_name AS assignee_name, w.full_name AS watcher_name, h.full_name AS help_user_name,
+              COALESCE(a.full_name, t.assignee_name) AS assignee_name, t.assignee_name AS ten_ngoai,
+              w.full_name AS watcher_name, h.full_name AS help_user_name,
               (SELECT COUNT(*) FROM task_case_links l WHERE l.task_id = t.id) AS case_links
          FROM tasks t
          LEFT JOIN branches b ON b.id = t.branch_id
@@ -203,6 +204,8 @@ export function listMgmtTasks(p: Principal, f: TaskFilter = {}) {
       taskType: r.task_type as string,
       branchId: r.branch_id, branchName: r.branch_name ?? 'Toàn hệ thống',
       assigneeUserId: r.assignee_user_id, assigneeName: r.assignee_name ?? null,
+      /** PR-DUYET: người phụ trách là tên gõ tay, không phải tài khoản — hiện nhãn "ngoài hệ thống". */
+      assigneeNgoai: !r.assignee_user_id && !!r.ten_ngoai,
       watcherUserId: r.watcher_user_id, watcherName: r.watcher_name ?? null,
       due: r.due_date as string | null,
       progress: r.progress as TaskProgress,
@@ -298,7 +301,8 @@ export function mgmtTaskDetail(p: Principal, taskId: number) {
     id: t.id, code: t.code, title: t.title, note: t.note ?? null,
     group: t.group_key ?? null, taskType: t.task_type,
     branchId: t.branch_id,
-    assigneeUserId: t.assignee_user_id, assigneeName: names.get(t.assignee_user_id) ?? null,
+    assigneeUserId: t.assignee_user_id, assigneeName: names.get(t.assignee_user_id) ?? t.assignee_name ?? null,
+    assigneeNgoai: !t.assignee_user_id && !!t.assignee_name,
     watcherUserId: t.watcher_user_id, watcherName: names.get(t.watcher_user_id) ?? null,
     due: t.due_date ?? null, progress: t.progress,
     progressLabel: TASK_PROGRESS_LABEL[t.progress as TaskProgress] ?? t.progress,
@@ -349,9 +353,24 @@ function kiemNguoi(label: string, userId: number | null | undefined) {
   if (userId && !laNguoiHopLe(userId, 'nhan_vien')) throw badRequest(`${label} không hợp lệ.`);
 }
 
+/**
+ * PR-DUYET (PR-NEN Q12, YC-10): người phụ trách NGOÀI hệ thống — tên gõ tay (ví dụ "Tổ chuyên môn"), CHỈ khi không chọn tài khoản.
+ * Không nhận thông báo, không sinh dòng việc cho ai. Người theo dõi vẫn chỉ là tài khoản (NEN Q13).
+ */
+function tenNgoai(userId: number | null | undefined, ten: unknown): string | null {
+  if (userId) return null;
+  const s = typeof ten === 'string' ? ten.trim() : '';
+  if (!s) return null;
+  if (s.length < 2) throw badRequest('Tên người phụ trách ngoài hệ thống cần ít nhất 2 ký tự.');
+  if (s.length > 80) throw badRequest('Tên người phụ trách ngoài hệ thống tối đa 80 ký tự.');
+  return s;
+}
+
 export function createMgmtTask(p: Principal, input: {
   title: string; group: string; branchId?: number | null;
   assigneeUserId?: number | null; watcherUserId?: number | null;
+  /** Tên người phụ trách ngoài hệ thống — chỉ khi không có `assigneeUserId`. */
+  assigneeName?: string | null;
   due?: string | null; note?: string | null;
   parentTaskId?: number | null;
   caseIds?: number[];
@@ -368,6 +387,7 @@ export function createMgmtTask(p: Principal, input: {
   if (input.due && !isIsoDate(input.due)) throw badRequest('Hạn không hợp lệ.');
   kiemNguoi('Người phụ trách', input.assigneeUserId);
   kiemNguoi('Người theo dõi', input.watcherUserId);
+  const assigneeName = tenNgoai(input.assigneeUserId, input.assigneeName);
 
   const conn = db();
   let parent: any = null;
@@ -401,13 +421,13 @@ export function createMgmtTask(p: Principal, input: {
     const info = conn
       .prepare(
         `INSERT INTO tasks (code, title, kind, task_type, group_key, parent_task_id,
-                            branch_id, assignee_user_id, watcher_user_id, due_date,
+                            branch_id, assignee_user_id, assignee_name, watcher_user_id, due_date,
                             progress, note, source_type, source_unit_report_id, created_by, created_at)
-         VALUES (?,?, 'branch_ops', 'long_term', ?,?,?,?,?,?, 'not_started', ?,?,?,?,?)`,
+         VALUES (?,?, 'branch_ops', 'long_term', ?,?,?,?,?,?,?, 'not_started', ?,?,?,?,?)`,
       )
       .run(nextCode(conn), title, parent?.group_key ?? input.group, input.parentTaskId ?? null,
            taskBranchId,
-           input.assigneeUserId ?? null, input.watcherUserId ?? null,
+           input.assigneeUserId ?? null, assigneeName, input.watcherUserId ?? null,
            input.due ?? null, (input.note ?? '').trim() || null, sourceType, sourceUnitReportId, p.userId, nowIso());
     const id = Number(info.lastInsertRowid);
 
@@ -547,6 +567,7 @@ export function updateMgmtTask(p: Principal, taskId: number, input: {
 export function editMgmtTask(p: Principal, taskId: number, patch: {
   title?: string; group?: string; branchId?: number | null;
   assigneeUserId?: number | null; watcherUserId?: number | null;
+  assigneeName?: string | null;
   due?: string | null; note?: string | null;
   /** PR-Ra Q9: bắt buộc khi đổi hạn ĐANG CÓ sang ngày khác (2–200 ký tự). */
   lyDoDoiHan?: string | null;
@@ -581,6 +602,14 @@ export function editMgmtTask(p: Principal, taskId: number, patch: {
       });
     }
     put('assignee_user_id', patch.assigneeUserId);
+  }
+  if (patch.assigneeUserId !== undefined || patch.assigneeName !== undefined) {
+    const uid = patch.assigneeUserId !== undefined ? patch.assigneeUserId : t.assignee_user_id;
+    const ten = tenNgoai(uid, patch.assigneeName !== undefined ? patch.assigneeName : t.assignee_name);
+    if ((ten ?? null) !== (t.assignee_name ?? null)) {
+      historyRows.push({ field: 'assignee_name', oldValue: t.assignee_name ?? null, newValue: ten, reason: null });
+    }
+    put('assignee_name', ten);
   }
   if (patch.watcherUserId !== undefined) {
     kiemNguoi('Người theo dõi', patch.watcherUserId);

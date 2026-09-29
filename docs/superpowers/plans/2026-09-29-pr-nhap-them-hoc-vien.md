@@ -579,7 +579,42 @@ bấm K1, K2, K5, K8. 3. Migrate **DB CHÍNH** (`PISA_CHO_PHEP_MIGRATE_TURSO=<t�
 
 ## Nhật ký
 
-- (Task 0) PR-MT đã merge: … · tên hàm thật: … · mốc B: … · dòng lệch: …
+- (Task 0) PR-MT đã merge: **không** (`grep -i "PR-MT"` chỉ khớp commit kế hoạch bf56547/7f1a908; `fasttrack/mtMacDinh.ts` chưa có
+  trên `origin/main` fb51181) · tên hàm thật: chưa có · mốc B: **1444** (+ tốc độ 20) · dòng lệch: không (≤ 2 dòng: `parseDateAs` :181,
+  `blocking` :408, chú thích MT :479, `canPlanWeeks` :362, `docNgaySinh` :206, `isWarning` :164, khối 12 :1424). Model thật: Opus 5.5.
+- (Task 2) Thêm `cy.exam_date` vào hai câu SELECT đưa vào `examPlanOf` (`classes.ts` danh sách HV của lớp, `attempts.ts`
+  `ATTEMPT_SELECT`) — không thì màn lớp/Test vẫn hiện mã tuần trong khi hồ sơ hiện ngày. `sosAuto.examDateOf` giữ: có ngày thì
+  `exam_period_id` cũng được ghi (suy từ ngày) nên vẫn đúng.
+- (Task 3) Tuần cả lô gửi lên mà SAI → lỗi `row 0` **và** không thay bằng mặc định (kế hoạch ghi `w0?.iso ? … : tuanBatDauMacDinh`
+  — sẽ lặng lẽ ghi tuần khác tuần người nhập chọn); dòng không tự ghi tuần báo "Chưa có…". Bỏ tham số `skipRows` ở máy chủ (web
+  không gửi nữa, không phép kiểm nào dùng). Dòng xem trước trả thêm `consultant` (trước đây cột Tư vấn viên dán vào bị rơi ở bước ghi).
+  Phép kiểm PR-F dùng các em nhập ở khối 12 làm "em đã học trước 24/08" → hai lô đó ghi rõ `defaultStartWeek` = khai giảng lớp
+  (K2-19 đổi mặc định FT vào muộn sang tuần này).
+- (Task 5) `+ Thêm dòng` đặt ngay dưới lưới (bên trái, cạnh ghi chú) thay vì chân panel: `KhungPanel` (PR-NEN, dùng chung) chỉ có
+  nút Đóng ở trái; thêm khe mới ngoài ranh giới file. `ONgay gon`: viền `border-late` khi lỗi (không có luật CSS nào tô theo
+  `aria-invalid`). Mũi tên Tình trạng vẽ SVG tại chỗ (`MuiTenMo` là nút riêng — lồng nút trong nút sai HTML, và nó dùng ký tự ▸/▾).
+  impeccable `clarify`: lỗi ô ngày theo từ điển `Gõ dạng dd/mm/yyyy` · ô trống bắt buộc `Chưa điền` · band `Gõ band 0–9, bước 0,5 —
+  ví dụ 5.5` (dòng chi tiết đã ghi tên cột nên câu lỗi không lặp tên cột) · cột lớp `Bỏ qua — cả lô vào {lớp} (lớp chọn ở đầu panel)`.
+  Không có PRODUCT.md/DESIGN.md (luật repo: session code không `init`) → làm theo mã + từ điển.
+- (Task 6) Ô ngày sinh là `ONgay` (gõ sai thì ô trả '' ): `luu` đọc chữ trong ô — còn chữ mà giá trị rỗng thì chặn lưu, không gửi ''
+  xoá ngày sinh cũ. Tuần bắt đầu đặt trong khối "Giai đoạn đang học" (bỏ chữ "vào học/bắt đầu {tuần}" trùng với ô).
+- (Task 7) **Chờ PR-MT** — `git fetch` lúc xong Task 6 (59f1afa): chưa có commit merge PR-MT, `mtMacDinh.ts` chưa có. Dừng sau Task 8.
+- (Gộp main 4e0485a: PR-DUYET #117 + PR-MT #119) Xung đột: `shared/domain/index.ts`, `migrate.ts` (gọi đủ `migratePrDuyet`,
+  `migratePrMt`, `migratePrNhap`), `cycles.ts` (import + khối `startWeek/examDate` của NHAP đặt TRƯỚC khối quyền `cycle.edit` của
+  DUYET), `run.ts` (đăng ký DUYET, MT rồi NHAP), `sosV3Seed.ts`, `TRIEN_KHAI.md` — giữ cả hai phần. `intake.ts` tự gộp, lời gọi
+  `taoMtMacDinh` trong `commitIntake` còn nguyên. Lời gọi `commitIntake` mới của DUYET/MT (`duyetSeed`, `prMtSeed`, `keHoachTest.tests`,
+  `prMt.tests`) thêm email, bỏ `dateFormat`. Tên hàm thật khớp hợp đồng: `taoMtMacDinh`, `lichMtMacDinh`, `tuanHocCuaMt`, `laLichSu`.
+- (Task 7) **Planning chốt 29/09 (câu hỏi 1 của PR-MT) thay K2-19:** bỏ trống Tuần bắt đầu → TUẦN KHAI GIẢNG (cả lớp FT đã học lâu);
+  xem trước báo `Học từ {tuần} — n MT sẽ là MT lịch sử (MT1, …)`. `tuanBatDauMacDinh` sửa theo; bỏ phần ghi rõ tuần cho phép kiểm
+  PR-F ở khối 12 (mặc định đã về như cũ). Kết quả: `IntakeResult.mt = { soEm, soLuotLichSu, soEmCoLichSu, luotLichSuDau }` — nút
+  "Nhập điểm MT lịch sử" mở thẳng `/mock-test/{lượt lịch sử đầu}` (đường nhập điểm của lượt, tốt hơn hồ sơ HV). Câu "MT2, MT3 sẽ
+  dời sang …" đặt ở dòng phụ ngay dưới ô Tuần bắt đầu (không phải chân panel — `KhungPanel` không có khe `luat`; câu nằm cạnh ô gây ra nó).
+- (Task 9) impeccable `audit`: detector 0 phát hiện; bằng mắt: tiêu đề "Đã thi tới MT" bị cắt, ô tuần trong lưới hẹp trên điện
+  thoại, 3 nút chữ < 44 px ở 375 px → `polish` sửa cả ba. Bấm thử K1–K12 + M6 (Playwright kênh Chrome, API 4177 / Vite 5377): đạt
+  hết; hàng lưới cùng 49 px; 375 px không tràn trang, không nút < 44 px. M6 kiểm thêm ở máy chủ: đổi tuần bắt đầu 14/09 → MT1–MT3 dời
+  đúng W4 OCT · W1 DEC · W5 DEC như câu báo trước. K9: hồ sơ HV không hiện ngày thi ở đầu trang (từ trước PR) — nhãn `15/01/2027`
+  hiện ở Thông tin HV / Lộ trình. `/ponytail-review`: không có gì đáng cắt (≈ −6 dòng), không có chú thích `ponytail:`.
+  Ảnh `thiet-ke/anh/pr-nhap/` (01 trước chụp từ `origin/main` 4e0485a cùng cổng).
 
 ## Chủ sản phẩm chốt 29/09
 

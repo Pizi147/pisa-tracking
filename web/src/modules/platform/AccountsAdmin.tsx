@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { BoLocDoan, Card, Empty, Field, Forbidden, Info, NutChon, SectionNote, Skeleton, Th} from '../../ui/ui.tsx';
+import { BoLocDoan, Card, Field, Forbidden, Info, NutChon, SectionNote, Skeleton, Th} from '../../ui/ui.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { fmtDate, skillLabel } from '../../lib/format.ts';
 import { ChonKyNang } from './ProfilePage.tsx';
@@ -68,13 +68,11 @@ export function AccountsAdmin() {
   return (
     <div className="space-y-4">
       <Card
-        title={<span>Chờ duyệt {pending.length > 0 && <span className="text-amber-200">({pending.length})</span>}</span>}
+        title={<span>Đăng ký chờ duyệt {pending.length > 0 && <span className="text-amber-200 tabular-nums">({pending.length})</span>}</span>}
         bodyClass="p-0">
+        {/* PR-DUYET (K1-52, K5-63): duyệt tài khoản ở đây, ngoài hộp Chờ duyệt — việc của Quản trị. Rỗng thì một dòng xám. */}
         {pending.length === 0 ? (
-          <div className="p-4">
-            <Empty title="Không có đăng ký nào đang chờ"
-              hint="Giáo viên tự đăng ký ở màn đăng nhập sẽ xuất hiện tại đây." />
-          </div>
+          <p className="m-0 px-4 py-3 text-sm text-slate-500">Không có đăng ký nào đang chờ. Giáo viên tự đăng ký ở màn đăng nhập sẽ hiện ở đây.</p>
         ) : (
           <ul className="divide-y list-none p-0 m-0" style={{ borderColor: 'var(--line)' }}>
             {pending.map((u) => (

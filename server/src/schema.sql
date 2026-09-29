@@ -277,6 +277,7 @@ CREATE TABLE students (
   archived_at TEXT,                   -- lưu trữ là cách ẩn khỏi danh sách, không phải trạng thái thứ tư
   consultant_name TEXT,               -- metadata hồ sơ, KHÔNG phải một vai trò tài khoản
   note TEXT,
+  email TEXT,                         -- T8: bắt buộc khi thêm mới, HS cũ có thể trống — không vào badge Thiếu thông tin
   created_at TEXT NOT NULL
 );
 CREATE INDEX idx_student_name ON students(normalized_name);
@@ -324,6 +325,7 @@ CREATE TABLE learning_cycles (
    * Chỉ đếm ngược khi đã có tuần; biết mỗi tháng thì không đếm ngược.
    */
   exam_period_id INTEGER REFERENCES report_periods(id),
+  exam_date TEXT,                     -- T9: ngày cụ thể; có ngày thì `exam_month` + `exam_period_id` suy từ ngày
 
   -- ĐIỂM XUẤT PHÁT. Phải ghi rõ NGUỒN, vì "em vào học ở mức nào" là câu hỏi khác hẳn
   -- "bài Mock đầu tiên được mấy điểm". Không có căn cứ thì để trống và hiển thị "chưa rõ",
@@ -501,6 +503,7 @@ CREATE TABLE assessment_attempts (
   created_by INTEGER REFERENCES users(id),
   created_at TEXT NOT NULL,
   updated_at TEXT,
+  lich_su INTEGER NOT NULL DEFAULT 0, -- MT lịch sử: tuần thi đã qua trước ngày tạo lượt, lưu lúc tạo (T34)
   UNIQUE (cycle_id, attempt_no)
 );
 CREATE INDEX idx_attempt_student ON assessment_attempts(student_id);
@@ -1380,7 +1383,9 @@ CREATE TABLE tasks (
   -- Người cần hỗ trợ khi Tạm ngưng (PR-Ra, Q10) — một trong hai; rời Tạm ngưng thì cả hai về NULL.
   -- help_user_id một tài khoản, help_name người ngoài gõ tay (ví dụ "Tổ chuyên môn").
   help_user_id INTEGER REFERENCES users(id),
-  help_name TEXT
+  help_name TEXT,
+  -- PR-DUYET (NEN Q12): người phụ trách NGOÀI hệ thống, gõ tay (ví dụ "Tổ chuyên môn") — chỉ khi assignee_user_id NULL; không nhận thông báo.
+  assignee_name TEXT
 );
 CREATE INDEX idx_task_period ON tasks(period_id);
 CREATE INDEX idx_task_assignee ON tasks(assignee_user_id);
@@ -1494,6 +1499,7 @@ CREATE TABLE notifications (
   dedup_key TEXT NOT NULL,
   read_at TEXT,
   created_at TEXT NOT NULL,
+  duong TEXT,                         -- PR-DUYET: đường mở riêng (Nhắc trỏ đúng dòng việc); NULL = suy từ entity
   UNIQUE (user_id, dedup_key)
 );
 
@@ -1712,3 +1718,26 @@ CREATE TABLE sos_coordination_actions (
 CREATE UNIQUE INDEX uq_sca_attempt_kind ON sos_coordination_actions(attempt_id, kind, COALESCE(custom_name, ''));
 CREATE INDEX idx_sca_attempt ON sos_coordination_actions(attempt_id);
 CREATE INDEX idx_sca_student ON sos_coordination_actions(student_id, status);
+
+/*
+ * HỘP CHỜ DUYỆT (PR-DUYET, §5.5, §7.6) — mọi thứ "ai đó xin Quản lý quyết" là MỘT thẻ ở đây. Bảng nguồn (case_interventions,
+ * skill_move_requests…) vẫn là sự thật của từng luồng; thẻ là hộp thư, chốt cùng giao dịch với nguồn. Loại/phân loại: yeuCauDuyet.ts.
+ * doi_tuong_loai: 'intervention' | 'skill_move' | 'student:<trường>' | 'sos_case' | … · bang_chung/du_lieu: JSON · nguoi_xin NULL = hệ thống.
+ * trang_thai: cho | duyet | tu_choi | tu_dong | da_tra_loi. Một thẻ đang chờ cho mỗi (loại, đối tượng) — ux_ycd_dang_cho.
+ */
+CREATE TABLE yeu_cau_duyet (
+  id INTEGER PRIMARY KEY,
+  loai TEXT NOT NULL, phan_loai TEXT NOT NULL,
+  doi_tuong_loai TEXT NOT NULL, doi_tuong_id INTEGER NOT NULL,
+  hoc_vien_id INTEGER REFERENCES students(id), lop_id INTEGER REFERENCES classes(id), chi_nhanh_id INTEGER REFERENCES branches(id),
+  nguoi_xin INTEGER REFERENCES users(id),
+  ly_do TEXT, bang_chung TEXT, du_lieu TEXT,
+  han_duyet TEXT, trang_thai TEXT NOT NULL DEFAULT 'cho',
+  nguoi_duyet INTEGER REFERENCES users(id), ly_do_tu_choi TEXT, tra_loi TEXT, ly_do_dong TEXT,
+  tu_duyet INTEGER NOT NULL DEFAULT 0, tao_luc TEXT NOT NULL, xu_ly_luc TEXT
+);
+CREATE INDEX ix_ycd_trang_thai ON yeu_cau_duyet (trang_thai, phan_loai);
+CREATE INDEX ix_ycd_doi_tuong ON yeu_cau_duyet (doi_tuong_loai, doi_tuong_id);
+CREATE UNIQUE INDEX ux_ycd_dang_cho ON yeu_cau_duyet (loai, doi_tuong_loai, doi_tuong_id) WHERE trang_thai = 'cho';
+-- quét quá hạn duyệt tra "đã báo chưa" theo dedup_key (không theo người nhận)
+CREATE INDEX ix_notifications_dedup ON notifications (dedup_key);

@@ -3,6 +3,7 @@ import {
   ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS, awaitingScore, chuanHoaMaLop, soSanhLop, kiemPhanCong, moRongPhanCong, nhanKetThucVi, nhanTiepTheo,
   oPhanCong, pendingSkillsOf, tenMonNgan, trongHaiTuanCuoi, viecTiepTheoCua,
   type AssessedSkill, type SlotPhanCong, type AttemptKind, type PendingCell, type ProgrammeCode, type WorkScope,
+  coMocTiepTheo, mocKeTiep,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, notFound, nowIso } from '../util.ts';
@@ -21,6 +22,7 @@ import { canhBaoTheoHocVien, caseMoTheoHocVien } from './dongHocVien.ts';
 import { demChuaLoTrinh, tiepTheoTheoHocVien } from './loTrinhTiep.ts';
 import { classWarning } from '../yThuc/canhBao.ts';
 import { listCases } from '../cases/cases.ts';
+import { trongBoNho } from '../platform/nguCanhRequest.ts';
 
 /**
  * Màn Học viên lấy LỚP làm gốc.
@@ -116,7 +118,14 @@ function progressMapOf(classIds: number[], programmes: ReturnType<typeof allProg
 }
 
 /** Một truy vấn cho mỗi loại dữ liệu, không hỏi lại theo từng lớp. */
+/*
+ * PR-DUYET (K5-28): sổ đề nghị dời đang chờ (`pendingMove`, gọi ở từng ô lịch) nay nhớ THEO REQUEST. Hai trang đọc nặng dưới
+ * đây tự mở bộ nhớ tạm (`trongBoNho`, như `listCases`) để gọi ngoài request GET (phép kiểm, lệnh ops) vẫn nạp sổ một lần.
+ */
 export function listClassSummaries(p: Principal, f: { branchId?: number; q?: string; scope?: WorkScope } = {}) {
+  return trongBoNho(() => listClassSummariesThat(p, f));
+}
+function listClassSummariesThat(p: Principal, f: { branchId?: number; q?: string; scope?: WorkScope }) {
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   if (scope.none) return { rows: [] as ClassSummary[], scopeEmpty: true };
   const workScope: WorkScope = f.scope ?? defaultWorkScope(p);
@@ -147,7 +156,8 @@ export function listClassSummaries(p: Principal, f: { branchId?: number; q?: str
   const attempts = conn
     .prepare(
       `SELECT a.id, a.class_id, a.status, a.planned_period_id,
-              a.deadline_override, a.target_at_attempt, a.attempt_no,
+              a.deadline_override, a.target_at_attempt, a.attempt_no, a.lich_su,
+              (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route,
               rp.week_start AS period_start, rp.week_end AS period_end
          FROM assessment_attempts a
          LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
@@ -289,7 +299,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
   let sql = `SELECT s.*, e.status AS enrollment_status, e.end_kind AS enrollment_end_kind,
                     cy.id AS cycle_id, cy.seq AS cycle_seq, cy.route, cy.target_score,
                     cy.baseline_attempt_id, cy.baseline_score,
-                    cy.start_period_id, cy.exam_month, cy.exam_period_id, sp.week_start AS start_week,
+                    cy.start_period_id, cy.exam_month, cy.exam_period_id, cy.exam_date, sp.week_start AS start_week,
                     ep.code AS exam_week_code, ep.week_start AS exam_week_start
                FROM enrollments e
                JOIN students s ON s.id = e.student_id
@@ -416,7 +426,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
         return {
           id: a.id, attemptNo: a.attempt_no, cycleSeq: a.cycle_seq, route: null,
           kind: a.kind, kindLabel: ATTEMPT_KIND_SHORT[a.kind as AttemptKind] ?? a.kind,
-          periodCode: a.period_code,
+          periodCode: a.period_code, weekStart: (a.week_start ?? null) as string | null, lichSu: false,
           status: a.status,
           scoredRequired: r.scored, requiredCount: r.required,
           // Lớp thường KHÔNG có Overall IELTS — để trống thay vì dựng một con số giả.
@@ -466,7 +476,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
         hoanTatOf.get(a.id) ?? { hoanTat: false, chuNhatCuoi: null });
       return {
         id: a.id, attemptNo: a.attempt_no, cycleSeq: a.cycle_seq, route: a.route,
-        periodCode: a.period_code,
+        periodCode: a.period_code, weekStart: (a.week_start ?? null) as string | null, lichSu: !!a.lich_su,
         status: a.status,
         kind: a.kind, kindLabel: `MT${a.attempt_no}`,
         scoredRequired: result.scoredRequired, requiredCount: result.required.length,
@@ -494,6 +504,10 @@ export function classRoster(p: Principal, classId: number, q?: string) {
       };
     });
     const done = timeline.filter((t) => t.evaluable);
+    const mocFt = isRatio ? null : (() => {
+      const m = mocKeTiep(timeline.map((t) => ({ id: t.id, status: t.status, lich_su: t.lichSu ? 1 : 0, weekStart: t.weekStart, attempt_no: t.attemptNo })), today);
+      return m ? timeline.find((t) => t.id === m.id) ?? null : null;
+    })();
     /*
      * SÁU CỘT ĐIỂM của bảng lớp (mục 8.4): OVR · L · R · S · W1 · W2.
      *
@@ -602,11 +616,15 @@ export function classRoster(p: Principal, classId: number, q?: string) {
          * nhưng chỉ khi em CÒN ĐANG HỌC. Em đã kết thúc thì không cần mốc tiếp nào nữa.
          */
         hasNextMilestone: s.status === 'active'
-          ? timeline.some((t) => t.status === 'planned')
+          ? (isRatio ? timeline.some((t) => t.status === 'planned') : coMocTiepTheo({
+            coMoc: !!mocFt, route: s.route ?? null, coNgayThi: !!(s.exam_month || s.exam_period_id),
+            mtCuoi: Math.max(0, ...timeline.filter((t) => t.status !== 'cancelled').map((t) => t.attemptNo)),
+          }))
           : undefined,
       }),
       latest: done.length ? done[done.length - 1] : null,
-      next: timeline.find((t) => t.status === 'planned') ?? null,
+      /* FT: mốc kế tiếp = lượt planned, không lịch sử, từ tuần này — sớm nhất (K2-05), không phải lượt planned đầu danh sách. */
+      next: isRatio ? timeline.find((t) => t.status === 'planned') ?? null : mocFt,
       timeline,
       myPending: [...new Set(timeline.flatMap((t) => t.myPending))],
       canhBaoYThuc: canhBao.get(s.id) ?? null,
@@ -634,6 +652,9 @@ export function classRoster(p: Principal, classId: number, q?: string) {
 
 /** Trang tổng quan một lớp: thông tin lớp, phân công, và những việc cần chú ý. */
 export function classOverview(p: Principal, classId: number) {
+  return trongBoNho(() => classOverviewThat(p, classId));
+}
+function classOverviewThat(p: Principal, classId: number) {
   const conn = db();
   const cls = conn
     .prepare(

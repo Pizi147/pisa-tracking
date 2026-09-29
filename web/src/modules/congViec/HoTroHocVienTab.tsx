@@ -10,13 +10,12 @@ import { fmtTime } from '../../lib/format.ts';
 import { NhomViec } from '../worklist/NhomViec.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import type { WorkGroup, WorkItem } from '../worklist/WorkList.tsx';
-import { TraLoiDeXuatPanel } from '../cases/ThaoTacCase.tsx';
 import { NganViecVanHanh } from '../worklist/MgmtTasksPage.tsx';
 import { useNhacYThuc } from '../yThuc/YThucReminders.tsx';
 import { ChonPhuTrach, type NguoiPhuTrach } from './ChonPhuTrach.tsx';
 import { CongTacKhung, khungDaNho, type KhungLoc } from '../../ui/CongTacKhung.tsx';
 import {
-  LOC_NHANH, LOC_NHANH_LABEL, demLoaiViec, demLocNhanh, gomNhomViec, khopLocNhanh, type LocNhanh,
+  LOC_NHANH, LOC_NHANH_LABEL, NHOM_VIEC, NHOM_VIEC_LABEL, demLocNhanh, gomNhomViec, khopLocNhanh, nhomViecCua, type LocNhanh, type NhomViec as MaNhomViec,
 } from '@shared/domain/index.ts';
 
 type Work = {
@@ -34,8 +33,8 @@ const thamSoNguoi = (s: string | null): NguoiPhuTrach => {
  * CÔNG VIỆC › HỖ TRỢ HỌC VIÊN (PR-Ra, đặc tả §3.4).
  *
  * Bốn nhóm cố định như Tổng quan (`NhomViec`), cộng ba chiều lọc đứng cùng một hàng: lọc
- * nhanh theo hạn (Q4), Người phụ trách (chỉ QL/QT, Q1–Q2), Loại việc. QL có thêm nút Nhắc/Duyệt
- * ngay trên dòng (Q5–Q6). GV chỉ thấy việc của mình — không có ô Người phụ trách.
+ * nhanh theo hạn (Q4), Của tôi · Của GV (nhắc) + chọn một GV (chỉ QL/QT, Q1–Q2, K1-29), chip 4 nhóm có số (K1-30). QL có nút
+ * Nhắc ngay trên dòng (Q5); Duyệt nằm ở hộp Chờ duyệt (PR-DUYET, K1-32). GV chỉ thấy việc của mình.
  */
 export function HoTroHocVienTab() {
   const { session } = useSession();
@@ -46,7 +45,9 @@ export function HoTroHocVienTab() {
   const laQuanLy = !!session?.nav?.workOps;
   const nguoi = laQuanLy ? thamSoNguoi(params.get('nguoi')) : 'toi';
   const loc: LocNhanh = (LOC_NHANH as readonly string[]).includes(params.get('loc') ?? '') ? (params.get('loc') as LocNhanh) : 'tat-ca';
-  const loai = params.get('loai');
+  /* PR-DUYET (K1-30): chip 4 nhóm `nhom=`; link cũ `loai=` (một loại việc) vẫn đọc — quy về nhóm chứa loại đó. */
+  const nhomTs = params.get('nhom') ?? (params.get('loai') ? nhomViecCua(params.get('loai')!) : null);
+  const nhom: MaNhomViec | null = (NHOM_VIEC as readonly string[]).includes(nhomTs ?? '') ? (nhomTs as MaNhomViec) : null;
   const moViec = params.get('mo-viec') ? Number(params.get('mo-viec')) : null;
   const nhac = useNhacYThuc();
 
@@ -66,7 +67,8 @@ export function HoTroHocVienTab() {
   const { homNay } = useNgayNghiepVu();
   /*
    * MH4, K1-30 (Q3): công tắc khung, mặc định Tất cả ("việc vẫn gộp" — T60). Tham số `khung` trên đường dẫn thắng (`loai` ở màn này
-   * đã là Loại việc), rồi lựa chọn đã nhớ trên máy. Việc không gắn lớp (`khung` null) hiện ở mọi khung.
+   * là link cũ của Nhóm việc), rồi lựa chọn đã nhớ trên máy. Việc không gắn lớp (`khung` null) hiện ở mọi khung. Lọc khung đứng TRƯỚC
+   * mọi bộ lọc khác, nên số trên chip hạn / nhóm đếm theo khung.
    */
   const khungUrl = params.get('khung');
   const khungChon: KhungLoc = khungUrl === 'ft' || khungUrl === 'thuong' || khungUrl === 'tat-ca' ? khungUrl : khungDaNho('cong-viec') ?? 'tat-ca';
@@ -79,18 +81,23 @@ export function HoTroHocVienTab() {
   /* Chỉ một khung có việc thì công tắc ẩn — khi đó không lọc (lựa chọn đã nhớ không được giấu mất việc). */
   const khung: KhungLoc = demKhung.ft > 0 && demKhung.thuong > 0 ? khungChon : 'tat-ca';
   const items = useMemo(() => (khung === 'tat-ca' ? tatCaViec : tatCaViec.filter((it) => !it.khung || it.khung === khung)), [tatCaViec, khung]);
-  const demHan = useMemo(() => demLocNhanh(items, loai ?? 'tat-ca', homNay), [items, loai, homNay]);
-  const demLoai = useMemo(() => demLoaiViec(items, loc, homNay), [items, loc, homNay]);
+  const trongNhom = useMemo(() => (nhom ? items.filter((it) => nhomViecCua(it.group) === nhom) : items), [items, nhom]);
+  const demHan = useMemo(() => demLocNhanh(trongNhom, 'tat-ca', homNay), [trongNhom, homNay]);
   const locItems = useMemo(() => items.filter((it) => khopLocNhanh(it, loc, homNay)), [items, loc, homNay]);
-  const cuoiItems = useMemo(() => (loai ? locItems.filter((it) => it.group === loai) : locItems), [locItems, loai]);
+  const cuoiItems = useMemo(() => (nhom ? locItems.filter((it) => nhomViecCua(it.group) === nhom) : locItems), [locItems, nhom]);
   /* Ý thức & Phối hợp là nhắc MỀM của chính người xem — không có ý nghĩa khi đang xem việc người khác. */
-  const soNhacYThuc = nguoi === 'toi' ? nhac.length : 0;
-  const nhom = useMemo(() => gomNhomViec(cuoiItems, soNhacYThuc), [cuoiItems, soNhacYThuc]);
+  const soNhacYThuc = nguoi === 'toi' && (!nhom || nhom === 'y-thuc') ? nhac.length : 0;
+  const demNhom = useMemo(() => {
+    const out = Object.fromEntries(NHOM_VIEC.map((k) => [k, 0])) as Record<MaNhomViec, number>;
+    for (const it of locItems) out[nhomViecCua(it.group)] += 1;
+    out['y-thuc'] += nguoi === 'toi' ? nhac.length : 0;
+    return out;
+  }, [locItems, nguoi, nhac.length]);
+  const dsNhom = useMemo(() => gomNhomViec(cuoiItems, soNhacYThuc), [cuoiItems, soNhacYThuc]);
   /* Đang lọc thì kết quả đã ít — mở hết luôn, không bắt bấm thêm một lần gập/mở nữa. */
-  const moHet = loc !== 'tat-ca' || !!loai;
+  const moHet = loc !== 'tat-ca' || !!nhom;
 
   const [dangNhac, setDangNhac] = useState<Record<string, boolean>>({});
-  const [duyetDong, setDuyetDong] = useState<WorkItem | null>(null);
 
   const bamNhac = async (it: WorkItem) => {
     if (!it.nhac || dangNhac[it.key]) return;
@@ -112,13 +119,6 @@ export function HoTroHocVienTab() {
         </button>
       );
     }
-    if (it.duyet) {
-      return (
-        <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={(e) => { e.stopPropagation(); setDuyetDong(it); }}>
-          Duyệt
-        </button>
-      );
-    }
     return null;
   };
 
@@ -134,26 +134,22 @@ export function HoTroHocVienTab() {
           muc={LOC_NHANH.map((k) => ({ key: k, nhan: LOC_NHANH_LABEL[k], so: demHan[k] }))} />
         <span className="mx-1 hidden h-5 w-px sm:block" style={{ background: 'var(--line)' }} />
         {laQuanLy && data && (
-          <ChonPhuTrach
-            value={nguoi}
-            onChange={(v, name) => {
-              /* Mặc định KHÔNG có `nguoi` trên URL là "Tất cả trong phạm vi" (`thamSoNguoi` ở trên
-                 trả về khi param lạ/thiếu) — xoá tham số ở đây thì đúng "tất cả", còn "Tôi" phải GHI
-                 rõ `nguoi=toi` chứ xoá tham số sẽ rơi lại về "tất cả", không phải "tôi". */
-              setParam('nguoi', v === 'tat-ca' ? null : String(v));
-              if (typeof v === 'number' && name) toast.push('ok', `Đang xem việc của ${name}`);
-            }}
-          />
+          <>
+            {/* Mặc định KHÔNG có `nguoi` trên URL là "tất cả" (`thamSoNguoi`) — "Của tôi" phải GHI rõ `nguoi=toi`. */}
+            <BoLocDoan ariaLabel="Việc của ai" value={nguoi === 'toi' ? 'toi' : 'tat-ca'}
+              onChange={(k) => setParam('nguoi', k === 'toi' ? 'toi' : null)}
+              muc={[{ key: 'toi', nhan: 'Của tôi' }, { key: 'tat-ca', nhan: 'Của GV (nhắc)', title: 'Việc của giáo viên trong phạm vi — Nhắc ngay trên dòng' }]} />
+            <ChonPhuTrach chiChonGv value={nguoi}
+              onChange={(v, name) => {
+                setParam('nguoi', v === 'tat-ca' ? null : String(v));
+                if (typeof v === 'number' && name) toast.push('ok', `Đang xem việc của ${name}`);
+              }} />
+          </>
         )}
-        <label className="flex items-center gap-1.5 whitespace-nowrap text-xs text-slate-400">
-          Loại việc:
-          <select className="field" value={loai ?? ''} onChange={(e) => setParam('loai', e.target.value || null)}>
-            <option value="">Mọi loại</option>
-            {data?.groups.filter((g) => (demLoai[g.key] ?? 0) > 0).map((g) => (
-              <option key={g.key} value={g.key}>{g.label} ({demLoai[g.key] ?? 0})</option>
-            ))}
-          </select>
-        </label>
+        <BoLocDoan ariaLabel="Nhóm việc" value={nhom ?? 'tat-ca'}
+          onChange={(k) => { const next = new URLSearchParams(params); next.delete('loai'); if (k === 'tat-ca') next.delete('nhom'); else next.set('nhom', k); setParams(next, { replace: true }); }}
+          muc={[{ key: 'tat-ca', nhan: 'Tất cả', so: locItems.length + (nguoi === 'toi' ? nhac.length : 0) },
+            ...NHOM_VIEC.map((k) => ({ key: k, nhan: NHOM_VIEC_LABEL[k], so: demNhom[k] }))]} />
         <BranchFilter branchId={branchId} onBranch={(id) => setParam('cn', id ? String(id) : null)} />
       </div>
 
@@ -161,22 +157,13 @@ export function HoTroHocVienTab() {
       {data && (data.scopeEmpty) && (
         <Card><Empty title="Bạn chưa được cấp phạm vi nào" /></Card>
       )}
-      {data && !data.scopeEmpty && nhom.length === 0 && (
+      {data && !data.scopeEmpty && dsNhom.length === 0 && (
         <Card><Empty title="Không có việc nào khớp bộ lọc" /></Card>
       )}
-      {data && !data.scopeEmpty && nhom.length > 0 && (
+      {data && !data.scopeEmpty && dsNhom.length > 0 && (
         <Card bodyClass="p-0">
-          <NhomViec nhom={nhom} nhac={nguoi === 'toi' ? nhac : []} soHien={10} moHet={moHet} onOpen={navigate} nutPhu={nutPhu} />
+          <NhomViec nhom={dsNhom} nhac={nguoi === 'toi' ? nhac : []} soHien={10} moHet={moHet} onOpen={navigate} nutPhu={nutPhu} />
         </Card>
-      )}
-
-      {duyetDong?.duyet && (
-        <TraLoiDeXuatPanel
-          hocVien={duyetDong.studentName} lop={duyetDong.classCode}
-          iv={{ id: duyetDong.duyet.interventionId, kind: duyetDong.duyet.kind, description: duyetDong.duyet.description }}
-          onClose={() => setDuyetDong(null)}
-          onSaved={() => { invalidate('/my-work'); setDuyetDong(null); }}
-        />
       )}
 
       {/*

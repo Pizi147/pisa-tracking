@@ -9,7 +9,7 @@ import { badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { countAttachments } from '../platform/attachments.ts';
-import { loadBundle, resultOf } from '../fasttrack/attempts.ts';
+import { loadBundle, resultOf, routeCuaLuot } from '../fasttrack/attempts.ts';
 import { branchSql, checkClassInScope, classSql, statScope } from './thongKe.ts';
 import { canManageDiscipline, requireManageDiscipline, requireViewClass, requireViewStudent } from './access.ts';
 
@@ -45,10 +45,10 @@ const ACT_MESSAGE = 'Chỉ giáo viên chủ nhiệm của lớp em đang học 
  *   · việc điền sẵn `pending` mà bảng mới không còn → tự `removed · system_sos_changed` (P03). Việc `done` GIỮ NGUYÊN — việc đã làm thật không bị xoá;
  *     việc GVCN tự thêm (`preset = 0`) và việc GVCN đã tự bỏ không bao giờ bị máy đụng.
  */
-export function syncSosCoordination(attempt: { id: number; student_id: number; attempt_no: number }, sosLevel: number | null) {
+export function syncSosCoordination(attempt: { id: number; student_id: number; attempt_no: number; cycle_id?: number | null }, sosLevel: number | null) {
   if (sosLevel === null) return;
   const conn = db();
-  const want = sosCoordinationFor(attempt.attempt_no, sosLevel);
+  const want = sosCoordinationFor(attempt.attempt_no, sosLevel, routeCuaLuot(attempt));   // T4: RF theo hàng MT4
   const existing = conn.prepare('SELECT * FROM sos_coordination_actions WHERE attempt_id = ?').all(attempt.id) as any[];
   const now = nowIso();
   let added = 0, revived = 0, removed = 0;
@@ -355,7 +355,7 @@ export function phoiHopMetric(
   const args = [...b.args, ...cl.args, ...(f.from ? [f.from] : []), ...(f.to ? [f.to] : [])];
   const attempts = db()
     .prepare(
-      `SELECT DISTINCT a.* FROM assessment_attempts a
+      `SELECT DISTINCT a.*, (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route FROM assessment_attempts a
          JOIN sos_coordination_actions x ON x.attempt_id = a.id
          LEFT JOIN classes c ON c.id = a.class_id
          LEFT JOIN report_periods rp ON rp.id = a.planned_period_id

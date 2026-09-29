@@ -74,9 +74,10 @@ export async function runTongQuanTests(t: YThucTestKit) {
     eq(d.CHUONG_TRINH_LABEL, { thuong: 'Lớp thường', ft: 'Fast Track', 'ca-hai': 'Cả hai' }, 'Nhãn');
   });
 
-  check('PR-Pa · Gom nhóm việc GV: 12 loại việc về đúng 4 nhóm, nhóm có việc quá hạn tự mở, Ý thức không bao giờ tự mở', () => {
-    const cham = ['score', 'decide_move'];
-    const kase = ['verify', 'cause', 'no_plan', 'result', 'decide', 'do_plan', 'no_owner'];
+  check('PR-Pa · Gom nhóm việc GV: 10 loại việc về đúng 4 nhóm, nhóm có việc quá hạn tự mở, Ý thức không bao giờ tự mở', () => {
+    /* PR-DUYET: `decide`, `decide_move` không còn là loại việc (thẻ ở hộp Chờ duyệt). */
+    const cham = ['score'];
+    const kase = ['verify', 'cause', 'no_plan', 'result', 'do_plan', 'no_owner'];
     const van = ['placement', 'mgmt', 'missing_data'];
     for (const g of cham) eq(d.nhomViecCua(g), 'cham-diem', g);
     for (const g of kase) eq(d.nhomViecCua(g), 'case-hoc-thuat', g);
@@ -98,9 +99,9 @@ export async function runTongQuanTests(t: YThucTestKit) {
     eq(d.LOAI_HAN_CUA_VIEC.score, 'nhap-diem', 'Hạn nhập điểm');
   });
 
-  check('PR-Pa · Cần xử lý: đúng thứ tự design §4.1, bỏ dòng 0, tối đa 8, "PA chờ Quản lý duyệt" chỉ khi duyệt được', () => {
+  check('PR-Pa · Cần xử lý: đúng thứ tự design §4.1, bỏ dòng 0, tối đa 10; PR-DUYET bỏ "PA chờ duyệt" + "Case quá hạn xác định nguyên nhân" (thành thẻ)', () => {
     eq(d.CAN_XU_LY.map((x: any) => x.metricId), [
-      'tin-hieu-qua-han', 'case-xac-dinh-nguyen-nhan-qua-han', 'pa-cho-duyet', 'case-chua-co-nguoi-phu-trach',
+      'tin-hieu-qua-han', 'case-chua-co-nguoi-phu-trach',
       'hv-can-ho-tro-2-lan-chua-case', 'hv-bo-qua-van-can-ho-tro',
       'case-thieu-pa', 'pa-can-cap-nhat', 'bai-qua-han-nhap-diem', 'hv-can-xu-ly',
     ], 'Thứ tự (PR-UX4 chèn hai dòng "bỏ quên" sau Case chưa có người phụ trách)');
@@ -110,12 +111,12 @@ export async function runTongQuanTests(t: YThucTestKit) {
     ], 'Hai dòng mới: nút Xem, màu vàng, mở bộ lọc Danh sách Case');
     const dem = { 'pa-can-cap-nhat': 3, 'tin-hieu-qua-han': 2, 'pa-cho-duyet': 1, 'case-thieu-pa': 0 };
     const co = d.sapCanXuLy(dem, true);
-    eq(co.map((x: any) => [x.metricId, x.n]), [['tin-hieu-qua-han', 2], ['pa-cho-duyet', 1], ['pa-can-cap-nhat', 3]], 'Có quyền duyệt');
+    eq(co.map((x: any) => [x.metricId, x.n]), [['tin-hieu-qua-han', 2], ['pa-can-cap-nhat', 3]], 'PA chờ duyệt không còn là dòng Cần xử lý');
     eq(d.sapCanXuLy(dem, false).map((x: any) => x.metricId), ['tin-hieu-qua-han', 'pa-can-cap-nhat'], 'Không quyền duyệt');
     eq(co[0].nhan, 'tín hiệu cần xác minh quá hạn', 'Chữ g11-041 + g8-070');
-    eq(co[1].nut, 'Duyệt', 'Nút g3-020');
+    eq(co[1].nut, 'Xem', 'Nút');
     const all = Object.fromEntries(d.CAN_XU_LY.map((x: any) => [x.metricId, 5]));
-    assert(d.sapCanXuLy(all, true).length === d.CAN_XU_LY_TOI_DA && d.CAN_XU_LY_TOI_DA === 10, 'Tối đa 10 dòng (8 + hai dòng "bỏ quên")');
+    assert(d.sapCanXuLy(all, true).length === d.CAN_XU_LY.length && d.CAN_XU_LY.length === 8 && d.CAN_XU_LY_TOI_DA === 10, 'Đủ 8 dòng, trần 10');
     eq(d.sapCanXuLy({ 'hv-bo-qua-van-can-ho-tro': 2 }, false)[0].denLoc, 'bo-qua-van-can-ho-tro', 'denLoc đi kèm dòng');
     assert(!('denLoc' in d.sapCanXuLy({ 'case-thieu-pa': 1 }, false)[0]), 'Dòng thường không có denLoc');
   });

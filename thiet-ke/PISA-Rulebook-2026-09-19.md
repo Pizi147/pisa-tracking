@@ -66,6 +66,7 @@ Thứ tự ưu tiên: quyết định trực tiếp mới nhất → sổ chốt
 | Kỳ vọng MT1 | Target của lộ trình tại thời điểm đánh giá − 1.0 |
 | Kỳ vọng MT2 | Target − 0.5 |
 | Kỳ vọng MT3 trở đi | Bằng target |
+| Kỳ vọng lộ trình RF (PR-MT, M2) | **Mọi MT bằng target**; PA quy chế theo hàng "MT3 trở đi", Phối hợp theo hàng MT4. Lộ trình là lộ trình **của lượt** |
 | Band W1, W2, S | Trung bình đủ 4 tiêu chí, làm tròn 0.5 theo bộ tính hiện hành |
 | Writing tổng | `(W1 + 2 × W2) / 3`, làm tròn 0.5 |
 | Overall | Trung bình L/R/W/S, làm tròn 0.5; chỉ có khi đủ cả bốn kỹ năng và đợt yêu cầu cả bốn |
@@ -537,3 +538,19 @@ Nguồn: `thiet-ke/NGUON-Rule-v3-YThuc-PhoiHop-2026-09-21.md`. Đặc tả: `thi
 | Tab `Ý thức` | **`Ý thức & Phối hợp`**, hai sub-tab `Vi phạm & xử lý` · `Phối hợp SOS`; hồ sơ lớp mặc định xem **theo học sinh** |
 | — | Case tạo tay giữ 5 ngày (**Bình thường**) / 3 ngày (Gấp) để có phương án |
 | — | Lớp Normal giữ mô hình tín hiệu (v3 chỉ nói Mock Test) |
+
+## PR-MT — lịch MT tự tạo, MT lịch sử, đánh số, dời do vắng (29/09/2026)
+
+- **M1 — thay luật cũ "nhập danh sách không lập lịch MT":** em có lộ trình FT (Thêm HV, vào lớp FT, mở lộ trình mới, đổi LT ↔ RF) →
+  hệ thống **tự tạo** MT1/MT2/MT3 ở tuần học 6/12/16 (RF: MT1/MT2 tuần 4/8), bốn kỹ năng cùng tuần. Tuần do hệ thống tính từ tuần bắt
+  đầu học, không lấy từ file dán. Không tự tạo MT4+. Đổi tuần bắt đầu → chỉ lượt hệ thống tự xếp, chưa có điểm, được dời theo.
+- **MT lịch sử (T34):** lượt có tuần thi kết thúc **trước ngày tạo lượt** — cờ lưu lúc tạo. Không nợ, không hạn, không quá hạn, không vào
+  Lịch Test/Nợ/Việc nhập điểm/độ phủ; không nhận dấu "-", không vào luồng vắng. GVCN của lớp nhập được ô trống cả 4 kỹ năng, Quản lý
+  nhập/sửa mọi ô (sửa ô đã có điểm phải có lý do). Khoá sửa (R11) 7 ngày sau lần nhập cuối. Chỉ lượt lịch sử có tuần thi trong **4 tuần**
+  trước ngày tạo mới sinh Case/PA quy chế/Phối hợp (ngày phát hiện = hôm nay).
+- **Đánh số liền mạch (T36):** MT(n) chỉ tạo khi đã có MT(n−1) — một chốt cho mọi đường tạo lượt. **Huỷ cả lượt** chỉ với MT cuối cùng
+  của lộ trình chưa có điểm và chưa thi kỹ năng nào — số đó dùng lại được (xếp lại tính mốc lịch sử / cửa sổ 4 tuần từ lúc xếp lại); còn lại **Huỷ phần còn lại** (kỹ năng chưa điểm và chưa thi), lượt giữ số. Huỷ cả
+  lượt đóng Case sinh riêng từ lượt đó ("Lượt đã huỷ", không tính thất bại) và việc Phối hợp còn mở.
+- **Dời do vắng (Q-A, T42):** dấu "-" chốt cuối Chủ nhật → lần 1 **máy tự dời** sang tuần kế tiếp (nếu còn thi được) và báo GVCN + GVBM
+  đúng kỹ năng; lần 2 thành đề nghị chờ Quản lý, **hạn hết Chủ nhật của tuần gửi**, tuần đích mặc định = tuần chưa bắt đầu gần nhất hợp
+  luật thứ tự đợt. Quản lý đổi tuần một kỹ năng đang vắng = một lần dời do vắng. Quản lý đổi kết luận khỏi "vắng" → đề nghị đang chờ rút.

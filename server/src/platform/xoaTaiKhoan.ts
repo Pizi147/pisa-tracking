@@ -7,8 +7,8 @@
  *                      email giải phóng `da-xoa-{id}@invalid` (tạo lại được tài khoản cùng email), bỏ mật khẩu + mọi phiên, kết thúc vai và
  *                      phân công. Các ô chọn người đã lọc `status='active'` nên người đã xoá tự ẩn (Q13).
  *
- * "Dấu vết" = một dòng ở bảng dữ liệu nghiệp vụ trỏ tới người này — 59 cột `dau_vet` của `COT_TRO_TAI_KHOAN` (dựng từ `PRAGMA
- * foreign_key_list`, 68 cột trỏ `users`; phép kiểm T1 đỏ khi có cột mới chưa phân loại).
+ * "Dấu vết" = một dòng ở bảng dữ liệu nghiệp vụ trỏ tới người này — 61 cột `dau_vet` của `COT_TRO_TAI_KHOAN` (dựng từ `PRAGMA
+ * foreign_key_list`, 70 cột trỏ `users`; phép kiểm T1 đỏ khi có cột mới chưa phân loại).
  * Chặn: tự xoá mình · Quản trị hệ thống cuối cùng · đang là GVCN lớp còn hoạt động. Cảnh báo (không chặn): lớp sẽ thiếu GV môn · việc
  * đang giao cho người này (Q12).
  */
@@ -27,13 +27,13 @@ const c = (bang: string, cot: string, loai: Loai, nhan: string) => ({ bang, cot,
 const DV = 'dau_vet' as const;
 const TL = 'thiet_lap' as const;
 
-/** 68 cột FK trỏ `users.id` (bảng tham chiếu của kế hoạch). `nhan` gộp dòng "Có dấu vết" của panel. */
+/** 70 cột FK trỏ `users.id` (bảng tham chiếu của kế hoạch). `nhan` gộp dòng "Có dấu vết" của panel. */
 export const COT_TRO_TAI_KHOAN: readonly { bang: string; cot: string; loai: Loai; nhan: string }[] = [
   /* thiết lập (9) — xoá hẳn thì xoá theo; xoá mềm xử lý riêng (Q11) */
   c('user_roles', 'user_id', TL, 'vai trò'), c('user_permissions', 'user_id', TL, 'quyền riêng'), c('user_emails', 'user_id', TL, 'email phụ'),
   c('user_skills', 'user_id', TL, 'kỹ năng'), c('user_prefs', 'user_id', TL, 'tuỳ chọn'), c('demo_sessions', 'user_id', TL, 'phiên đăng nhập'),
   c('teacher_assignments', 'user_id', TL, 'phân công'), c('notifications', 'user_id', TL, 'thông báo'), c('task_followers', 'user_id', TL, 'theo dõi công việc'),
-  /* dấu vết (59) */
+  /* dấu vết (61) */
   c('assessment_attempts', 'created_by', DV, 'lượt Test'), c('assessment_attempts', 'deadline_override_by', DV, 'lượt Test'),
   c('assessment_scores', 'entered_by', DV, 'điểm đã nhập'), c('assessment_scores', 'no_show_by', DV, 'điểm đã nhập'),
   c('attachments', 'uploaded_by', DV, 'tệp đính kèm'),
@@ -65,6 +65,7 @@ export const COT_TRO_TAI_KHOAN: readonly { bang: string; cot: string; loai: Loai
   c('unit_reports', 'reporter_user_id', DV, 'báo cáo đơn vị'), c('unit_reports', 'submitted_by', DV, 'báo cáo đơn vị'),
   /* Q10: lịch sử duyệt / cấp quyền cho NGƯỜI KHÁC — xoá hẳn là mất căn cứ "ai duyệt" */
   c('user_permissions', 'granted_by', DV, 'duyệt, cấp quyền'), c('users', 'approved_by', DV, 'duyệt, cấp quyền'),
+  c('yeu_cau_duyet', 'nguoi_xin', DV, 'yêu cầu duyệt'), c('yeu_cau_duyet', 'nguoi_duyet', DV, 'yêu cầu duyệt'),
   c('violation_history', 'actor_user_id', DV, 'vi phạm'), c('violations', 'reported_by', DV, 'vi phạm'), c('violations', 'invalidated_by', DV, 'vi phạm'),
 ];
 

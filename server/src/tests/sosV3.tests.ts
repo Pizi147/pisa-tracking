@@ -7,6 +7,7 @@
  * Quy ước TDD của file này: mọi mô-đun mới được nạp bằng `load(...)` — thiếu mô-đun thì phép kiểm ĐỎ với câu nói rõ thiếu gì,
  * không làm sập cả bộ.
  */
+import { boLichTuTao, luotThu } from './luotThu.ts';
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runSosV3Tests(t: YThucTestKit) {
@@ -92,7 +93,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
   check('PR-T · T1 Lý do bỏ việc: bốn lý do chọn nhanh + `system_sos_changed` (chỉ hệ thống dùng); ba lý do đóng case `Không cần theo dõi`', () => {
     assert(JSON.stringify(domain.COORDINATION_USER_REMOVE_REASONS) === JSON.stringify(['not_needed', 'handled_otherwise', 'duplicate_measure', 'other']),
       `Bốn lý do sai: ${domain.COORDINATION_USER_REMOVE_REASONS}`);
-    assert(JSON.stringify(domain.COORDINATION_REMOVE_REASONS) === JSON.stringify(['not_needed', 'handled_otherwise', 'duplicate_measure', 'other', 'system_sos_changed']), 'Năm mã lý do');
+    assert(JSON.stringify(domain.COORDINATION_REMOVE_REASONS) === JSON.stringify(['not_needed', 'handled_otherwise', 'duplicate_measure', 'other', 'system_sos_changed', 'system_luot_huy']), 'Sáu mã lý do (PR-MT thêm system_luot_huy — huỷ cả lượt, T67)');
     assert(domain.COORDINATION_REMOVE_REASON_LABEL.not_needed === 'Không cần trong trường hợp này'
       && domain.COORDINATION_REMOVE_REASON_LABEL.handled_otherwise === 'Đã xử lý theo cách khác'
       && domain.COORDINATION_REMOVE_REASON_LABEL.duplicate_measure === 'Trùng với phương án xử lý khác'
@@ -285,16 +286,17 @@ export async function runSosV3Tests(t: YThucTestKit) {
 
   /** Học viên MỚI, mục tiêu 7.0 (kỳ vọng MT1 6.0 · MT2 6.5 · MT3+ 7.0), riêng cho từng phép kiểm. */
   const makeStudent = (name: string): { id: number; cycleId: number } => {
-    intake.commitIntake(P.admin, { classId: CLASS, rows: [{ fullName: `PT ${name}`, target: 7 }], dateFormat: 'iso', idempotencyKey: `pt-${name}` });
+    intake.commitIntake(P.admin, { classId: CLASS, rows: [{ fullName: `PT ${name}`, target: 7, email: 'hv@demo.test' }], idempotencyKey: `pt-${name}` });
     const st = get('SELECT id FROM students WHERE full_name = ?', `PT ${name}`);
     const cy = get("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'", st.id);
     assert(st && cy, `Không dựng được học viên thử "${name}"`);
+    boLichTuTao(conn, cy.id);   // PR-MT: em thử tự dựng lượt cần — xem luotThu.ts
     return { id: st.id, cycleId: cy.id };
   };
-  /** Tuần đã qua (không phải tương lai) — điểm nhập được ngay. */
+  /** Tuần đã qua (không phải tương lai) — điểm nhập được ngay. PR-MT (T36): MT trước còn thiếu tạo trước, là MT lịch sử. */
   const PAST_WEEK = weekSvc.mondayOf(addDays(TODAY, -14));
-  const mkAttempt = (st: { id: number; cycleId: number }, no: number, weekStart: string = PAST_WEEK): any => attemptsSvc.createAttempt(P.admin, {
-    studentId: st.id, cycleId: st.cycleId, classId: CLASS, attemptNo: no, periodId: weekSvc.ensurePeriod(weekStart).id });
+  const mkAttempt = (st: { id: number; cycleId: number }, no: number, weekStart: string = PAST_WEEK): any => luotThu(conn, attemptsSvc.createAttempt, P.admin, {
+    studentId: st.id, cycleId: st.cycleId, classId: CLASS, no, periodId: weekSvc.ensurePeriod(weekStart).id });
   /*
    * RB-5 (PR-Rc1): sửa một ô đã có điểm nay phải kèm lý do. Hàm này vừa nhập lần đầu vừa sửa điểm nguồn, nên LUÔN gửi
    * một lý do — lần nhập đầu thì máy chủ bỏ qua nó. Luật "khi nào phải có lý do" có phép kiểm riêng ở chamDiem.tests.ts.
@@ -416,7 +418,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
   check('PR-T · Q-V3-1 (§10#8) Lớp NORMAL trượt hai môn ở Progress Test: KHÔNG tự tạo case, KHÔNG phương án điền sẵn, KHÔNG Phối hợp SOS — vẫn chỉ là tín hiệu chờ xác minh', () => {
     const regular: any = regularSvc;
     const fou = get("SELECT id FROM classes WHERE code = 'MB FOU 12'");
-    intake.commitIntake(P.admin, { classId: fou.id, rows: [{ fullName: 'PT Normal' }], dateFormat: 'iso', idempotencyKey: 'pt-normal' });
+    intake.commitIntake(P.admin, { classId: fou.id, rows: [{ fullName: 'PT Normal', email: 'hv@demo.test' }], idempotencyKey: 'pt-normal' });
     regular.planRegularTests(P.admin, fou.id);                     // idempotent: chỉ tạo bài còn thiếu cho em mới
     const stu = get("SELECT id FROM students WHERE full_name = 'PT Normal'");
     const attempt = get("SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'progress'", stu.id);
@@ -622,7 +624,8 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assertThrows(() => phoiHop.confirmCoordination(gvcn, rowOf(f.a.id, 'talk_student').id, { performedOn: TODAY, note: 'x'.repeat(1001) }), /quá dài/, 'Ghi chú quá dài');
     assertThrows(() => phoiHop.removeCoordination(gvcn, rowOf(f.a.id, 'talk_family').id, { reasonCode: 'other', reasonText: 'y'.repeat(301) }), /quá dài/, 'Lý do quá dài');
     assertThrows(() => phoiHop.addCoordination(gvcn, f.a.id, { kind: 'other', customName: 'z'.repeat(101) }), /quá dài/, 'Tên việc quá dài');
-    attemptsSvc.cancelAttempt(P.mbManager, f.a.id, 'Huỷ lượt để thử phép kiểm');
+    /* PR-MT (M-12): lượt ĐÃ CÓ ĐIỂM nay không "Huỷ cả lượt" được — dựng đúng dữ liệu CŨ (huỷ trước PR-MT) để thử chỗ đọc. */
+    conn.prepare(`UPDATE assessment_attempts SET status = 'cancelled', cancel_reason = 'Huỷ lượt để thử phép kiểm' WHERE id = ?`).run(f.a.id);
     assertThrows(() => phoiHop.addCoordination(gvcn, f.a.id, { kind: 'cx_meeting_student' }), /huỷ/, 'Thêm việc vào lượt đã huỷ');
     assert(!(phoiHop.coordinationOfStudent(gvcn, f.st.id) as any).rows.some((r: any) => r.attemptId === f.a.id), 'Lượt đã huỷ không hiện theo học viên');
     assert(!(phoiHop.coordinationOfClass(gvcn, CLASS, { includeDone: true }) as any).rows.some((r: any) => r.attemptId === f.a.id), 'Lượt đã huỷ không hiện theo lớp');
@@ -675,6 +678,8 @@ export async function runSosV3Tests(t: YThucTestKit) {
     const f = freshSos('CAUSE');
     const key = (id: number) => `cause:${id}`;
     const item = (who: any, id: number) => mywork(who).find((i: any) => i.key === key(id));
+    /* PR-DUYET (K1-57): Quản lý thấy dòng quá hạn của GV ở chế độ "Của GV (nhắc)" (`nguoi=tat-ca`); "Của tôi" không còn — thẻ Báo lên thay. */
+    const itemQl = (who: any, id: number) => (myworkSvc.myWork(who, { nguoi: 'tat-ca' }).items as any[]).find((i: any) => i.key === key(id));
     const due = domain.signalVerifyDue(TODAY);
     const mine = item(w2T, f.w2.id);
     assert(mine && mine.group === 'cause' && mine.urgency === 'normal' && mine.due === due && mine.mine === true && mine.caseId === f.w2.id
@@ -686,18 +691,19 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(groups.some((g: any) => g.key === 'cause' && g.label === 'Xác định nguyên nhân' && g.items.some((i: any) => i.key === key(f.w2.id))), 'Phải có nhóm `cause` trong danh sách nhóm');
     /* Quá hạn: hết ngày hạn mới tính (hạn = hôm qua). */
     conn.prepare('UPDATE case_signals SET verify_due = ? WHERE case_id = ?').run(addDays(TODAY, -1), f.w2.id);
-    const late = item(w2T, f.w2.id), mgr = item(P.mbManager, f.w2.id);
+    const late = item(w2T, f.w2.id), mgr = itemQl(P.mbManager, f.w2.id);
+    assert(!item(P.mbManager, f.w2.id), 'Quản lý "Của tôi" còn dòng cause quá hạn của GV (K1-57: đã là thẻ Báo lên)');
     assert(late.urgency === 'overdue' && !/quá hạn/.test(late.reason) && late.tieuDe.startsWith('Xác định nguyên nhân'), `Quá hạn của GVBM: ${JSON.stringify(late)}`);
     assert(mgr && mgr.urgency === 'overdue' && mgr.mine === false && /chưa/.test(mgr.reason), `Quản lý thấy khi quá hạn: ${JSON.stringify(mgr)}`);
-    assert(!item(P.cpManager, f.w2.id) && !item(w1T, f.w2.id), 'Quản lý chi nhánh khác và GVBM kỹ năng khác không thấy dù quá hạn');
+    assert(!itemQl(P.cpManager, f.w2.id) && !item(w1T, f.w2.id), 'Quản lý chi nhánh khác và GVBM kỹ năng khác không thấy dù quá hạn');
     assert(myworkSvc.myWork(w2T, {}).summary.overdue >= 1, 'Tính vào tổng số việc quá hạn');
     /* PR-N1 S4-1: có nguyên nhân là đủ — PA quy chế đã tự chạy, không còn vế "xác nhận PA". */
     cases.setIssues(w2T, f.w2.id, { primaryCode: 'student.writing.task' });
-    assert(!item(w2T, f.w2.id) && !item(P.mbManager, f.w2.id), 'Có nguyên nhân thì dòng biến mất, cả ở phía Quản lý');
+    assert(!item(w2T, f.w2.id) && !itemQl(P.mbManager, f.w2.id), 'Có nguyên nhân thì dòng biến mất, cả ở phía Quản lý');
     assertThrows(() => sosAuto.confirmPresetPlan(w2T, f.w2Plan.id), /đã được xác nhận rồi/, 'Xác nhận PA quy chế');
     /* Đóng `Không cần theo dõi` cũng làm dòng biến mất; case tạo tay không bao giờ có dòng này. */
     conn.prepare('UPDATE case_signals SET verify_due = ? WHERE case_id = ?').run(addDays(TODAY, -1), f.sp.id);
-    assert(item(P.mbManager, f.sp.id), 'Case Speaking quá hạn thì Quản lý thấy trước khi đóng');
+    assert(itemQl(P.mbManager, f.sp.id), 'Case Speaking quá hạn thì Quản lý thấy trước khi đóng');
     sosAuto.dismissSosCase(P.mbManager, f.sp.id, { reasonCode: 'single_incident' });
     assert(!item(gvcn, f.sp.id) && !item(P.mbManager, f.sp.id), 'Case đã đóng không còn dòng');
     const manual = cases.reportIssue(P.mbManager, { studentId: f.st.id, cycleId: f.st.cycleId, topic: 'reading', primaryCode: 'student.reading.logic',

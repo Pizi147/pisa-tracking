@@ -1,5 +1,5 @@
 import { db } from '../db.ts';
-import { PERMISSIONS } from '../../../shared/domain/index.ts';
+import { LUOT_TINH_NO_SQL, PERMISSIONS } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { require_, scopeFor, type Principal } from '../permissions.ts';
 import { reportEditWindow } from '../platform/week.ts';
@@ -88,6 +88,7 @@ export function signalsFor(p: Principal, f: { branchId?: number | null; periodId
   }
 
   // 2. Thiếu điểm — tự hết khi giáo viên nhập đủ. Lớp thường "có điểm" = có SỐ CÂU ĐÚNG (không bao giờ có band); FT giữ nguyên luật cũ.
+  //    MT lịch sử (T34) không phải nợ điểm — nhắc riêng bằng dòng mờ ở Lịch Test.
   for (const r of conn
     .prepare(
       `SELECT c.branch_id, COUNT(*) AS n FROM assessment_attempts a
@@ -96,7 +97,7 @@ export function signalsFor(p: Principal, f: { branchId?: number | null; periodId
          JOIN students s ON s.id = a.student_id
          JOIN report_periods rp ON rp.id = a.planned_period_id
         WHERE a.status != 'cancelled' AND s.archived_at IS NULL AND c.branch_id IN (${ph})
-          AND a.planned_period_id IS NOT NULL AND rp.week_start <= ?
+          AND a.planned_period_id IS NOT NULL AND rp.week_start <= ? AND ${LUOT_TINH_NO_SQL('a')}
           AND CASE WHEN COALESCE(pg.scoring_mode, '') = 'ratio'
                 THEN (SELECT COUNT(*) FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.raw_score IS NOT NULL)
                      < (SELECT COUNT(*) FROM programme_skills ps WHERE ps.programme_code = c.programme_code)

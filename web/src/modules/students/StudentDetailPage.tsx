@@ -27,7 +27,7 @@ import {
 import { HangTab } from '../../ui/HangTab.tsx';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
 import { Han } from '../../ui/Han.tsx';
-import { QuaHan } from '../../ui/Nhan.tsx';
+import { QuaHan, ChipLichSu } from '../../ui/Nhan.tsx';
 import { useSession } from '../../lib/session.tsx';
 
 type OpenCase = { caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'them-pa' } | null;
@@ -233,6 +233,7 @@ export default function StudentDetailPage() {
               {/* ⋮ = MENU THẢ; mỗi mục mở THẲNG panel của việc đó (Q10). Không có quyền nào → Menu không vẽ gì. */}
               <Menu label="⋮" className="btn" items={mucQuanLyHocVien({
                 canEdit: data.viewer.canEdit, lopHoc: data.lopHoc ?? null, cycle: cy, status: data.status, coTheXoa: !!data.viewer.coTheXoa,
+                deXuatSua: !!data.viewer.coTheDeXuatSua,
               }).map((m) => ({
                 label: m.nhan, danger: m.nguyHiem, keTruoc: m.keTruoc,
                 onClick: () => (m.key === 'lo-trinh' ? setPlanOpen(true) : setViecQuanLy(m.key)),
@@ -367,6 +368,8 @@ export default function StudentDetailPage() {
           cycleId={cy.id}
           studentName={data.fullName}
           ratio={!!cy.ratio}
+          canEditCycle={!!data.viewer.canEditCycle}
+          onDeXuatSua={() => { setPlanOpen(false); setViecQuanLy('de-xuat-sua'); }}
           onClose={() => setPlanOpen(false)}
           onDone={reload}
         />
@@ -392,7 +395,7 @@ export default function StudentDetailPage() {
         viec={viecQuanLy} onClose={() => setViecQuanLy(null)} lop={data.currentClass?.code}
         student={{
           id: data.id, name: data.fullName, classId: data.currentClass?.id ?? null,
-          dob: data.dob ?? null, consultantName: data.consultantName ?? null, note: data.note ?? null,
+          dob: data.dob ?? null, email: data.email ?? null, consultantName: data.consultantName ?? null, note: data.note ?? null,
           status: data.status,
         }}
         cycle={cy} attempts={data.attempts} onDone={reload}
@@ -520,7 +523,7 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen }: {
           {attempts.map((a) => (
             <tr key={a.id} id={`dot-${a.id}`} className="row-hover cursor-pointer" onClick={() => onOpen(a)}
               style={a.id === dotId ? { background: 'var(--accent-soft)' } : undefined}>
-              <td className="td tabular-nums">MT{a.attemptNo}</td>
+              <td className="td tabular-nums whitespace-nowrap">MT{a.attemptNo}{a.lichSu && <> <ChipLichSu /></>}</td>
               <td className="td text-slate-300">{a.classCode ?? '—'}</td>
               <td className="td whitespace-nowrap">
                 {a.weekStart ? tuanLich(a.weekStart, homNay) : <Info pending>Chưa có tuần</Info>}

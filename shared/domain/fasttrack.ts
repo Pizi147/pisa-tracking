@@ -10,9 +10,10 @@ export const mockLabel = (n: number) => `MT${n}`;
  * Kỳ vọng của một lần MT = target của lộ trình − mức trừ theo LẦN THỨ MẤY trong lộ trình đó.
  * MT1 trừ 1.0, MT2 trừ 0.5, từ MT3 trở đi bằng đúng target (nguồn: Quy trình SOS mục 3).
  * Học lại trong cùng lộ trình làm số MT tăng tiếp, nên MT6, MT7… cũng bằng target.
+ * RF (M2, Q27-4): MỌI MT bằng target — `route` là lộ trình CỦA LƯỢT (`learning_cycles.route` theo `cycle_id`, K5-49).
  */
-export function expectationDelta(attemptNo: number): number {
-  if (attemptNo <= 0) return 0;
+export function expectationDelta(attemptNo: number, route?: string | null): number {
+  if (attemptNo <= 0 || route === 'RF') return 0;
   return attemptNo === 1 ? 1.0 : attemptNo === 2 ? 0.5 : 0;
 }
 
@@ -173,6 +174,8 @@ export const SIT_STATUS_LABEL: Record<SitStatus, string> = {
 export const SKILL_PROGRESS = [
   'skipped', 'not_scheduled', 'upcoming', 'due', 'sat', 'absent', 'scored',
   'reschedule_pending', 'cancelled',
+  /* PR-MT (T34): MT lịch sử chưa có điểm — nhập bù, KHÔNG nợ, không hạn (không thuộc `awaitingScore`). */
+  'lich_su',
 ] as const;
 export type SkillProgress = (typeof SKILL_PROGRESS)[number];
 export const SKILL_PROGRESS_LABEL: Record<SkillProgress, string> = {
@@ -189,6 +192,7 @@ export const SKILL_PROGRESS_LABEL: Record<SkillProgress, string> = {
   scored: 'Đã có điểm',
   reschedule_pending: 'Chờ duyệt dời',
   cancelled: 'Đã huỷ phần thi',
+  lich_su: 'Nhập bù, không có hạn',
 };
 
 /**

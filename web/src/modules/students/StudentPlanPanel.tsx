@@ -35,15 +35,18 @@ type Suggested = {
  * Phần lịch MT vẫn giữ nguyên tinh thần cũ: hệ thống ĐỀ XUẤT rồi để người bấm áp, và khi áp
  * thì KHÔNG đụng vào lượt Quản lý đã chốt tay hay lượt đã làm xong.
  */
-export function StudentPlanPanel({ cycleId, studentName, ratio, onClose, onDone }: {
+export function StudentPlanPanel({ cycleId, studentName, ratio, canEditCycle = true, onDeXuatSua, onClose, onDone }: {
   cycleId: number; studentName: string; ratio: boolean;
+  /** PR-DUYET (T44): không có `cycle.edit` → target chỉ đọc, cạnh đó liên kết "Đề xuất sửa" (`onDeXuatSua`). */
+  canEditCycle?: boolean; onDeXuatSua?: () => void;
   onClose: () => void; onDone: () => void;
 }) {
   const toast = useToast();
   const cycle = useApi<any>(`/cycles/${cycleId}`);
   const sugg = useApi<Suggested[]>(ratio ? null : `/cycles/${cycleId}/suggested-mocks`, [cycleId]);
   const [startPeriodId, setStartPeriodId] = useState<number | null>(null);
-  const [examMonth, setExamMonth] = useState<string>('');
+  /** T9 · Thi dự kiến: ngày ISO (đã biết ngày) hoặc tháng `yyyy-mm` (mới biết tháng). */
+  const [thiDuKien, setThiDuKien] = useState<string>('');
   const [examPeriodId, setExamPeriodId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [touched, setTouched] = useState(false);
@@ -52,16 +55,19 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onClose, onDone 
   /* Chỉ nạp giá trị hiện tại MỘT LẦN, nếu không thì mỗi lần tải lại sẽ xoá cái người đang gõ. */
   if (cy && !touched) {
     if (startPeriodId === null && cy.start_period_id) setStartPeriodId(cy.start_period_id);
-    if (examMonth === '' && cy.exam_month) setExamMonth(cy.exam_month);
+    if (thiDuKien === '' && (cy.exam_date || cy.exam_month)) setThiDuKien(cy.exam_date ?? cy.exam_month);
     if (examPeriodId === null && cy.exam_period_id) setExamPeriodId(cy.exam_period_id);
   }
+
+  /* Q9: đã có NGÀY thi thì tuần suy từ ngày — ô tuần chỉ hiện khi mới biết tháng (hoặc chưa biết gì). */
+  const hienTuanThi = !/^\d{4}-\d{2}-\d{2}$/.test(thiDuKien);
 
   const save = async () => {
     setBusy(true);
     try {
       await api.patch(`/cycles/${cycleId}`, {
         startPeriodId: startPeriodId ?? null,
-        ...(ratio ? {} : { examMonth: examMonth || null, examPeriodId: examPeriodId ?? null }),
+        ...(ratio ? {} : { examDate: thiDuKien || null, ...(hienTuanThi ? { examPeriodId: examPeriodId ?? null } : {}) }),
       });
       invalidate('/cycles'); invalidate('/students'); invalidate('/classes'); invalidate('/attempts');
       toast.push('ok', 'Đã lưu kế hoạch học');
@@ -115,20 +121,24 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onClose, onDone 
           */}
           {!ratio && (
             <>
-              <Field label="Tháng dự kiến thi"
-                hint="Biết được ngay lúc tư vấn. Đủ để xếp lịch cả khoá.">
-                <ONgay kieu="thang" value={examMonth} onChange={(v) => { setTouched(true); setExamMonth(v); }} />
+              <Field label="Thi dự kiến"
+                hint="Gõ dd/mm/yyyy nếu đã biết ngày, mm/yyyy nếu mới biết tháng.">
+                <ONgay kieu="ngay-hoac-thang" value={thiDuKien} goiY="dd/mm/yyyy hoặc mm/yyyy"
+                  onChange={(v) => { setTouched(true); setThiDuKien(v); }} />
               </Field>
-              <Field as="div" label="Tuần dự kiến thi"
-                hint="Chốt được thì hệ thống mới đếm ngược. Chưa chốt cứ để trống.">
-                <WeekPicker periodId={examPeriodId} label={null} scope="planning" clearable
-                  onPeriod={(id) => { setTouched(true); setExamPeriodId(id); }} />
-              </Field>
+              {hienTuanThi && (
+                <Field as="div" label="Tuần dự kiến thi"
+                  hint="Chốt được thì hệ thống mới đếm ngược. Chưa chốt cứ để trống.">
+                  <WeekPicker periodId={examPeriodId} label={null} scope="planning" clearable
+                    onPeriod={(id) => { setTouched(true); setExamPeriodId(id); }} />
+                </Field>
+              )}
             </>
           )}
 
           {/* ------------------------------------------ MỤC TIÊU và ĐIỂM ĐẦU VÀO (mục 5.1) */}
-          {!ratio && <TargetAndBaseline cycleId={cycleId} cy={cy} onDone={() => { cycle.reload(); onDone(); }} />}
+          {!ratio && <TargetAndBaseline cycleId={cycleId} cy={cy} canEditCycle={canEditCycle} onDeXuatSua={onDeXuatSua}
+            onDone={() => { cycle.reload(); onDone(); }} />}
 
           {ratio ? (
             <SectionNote>
@@ -226,8 +236,8 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onClose, onDone 
  * Và nó KHÔNG chấm lại quá khứ: các lượt đã chốt giữ nguyên kỳ vọng tính theo mục tiêu lúc
  * đó. Đổi mục tiêu từ hôm nay mà viết lại mức SOS của ba tháng trước là sửa lịch sử.
  */
-function TargetAndBaseline({ cycleId, cy, onDone }: {
-  cycleId: number; cy: any; onDone: () => void;
+function TargetAndBaseline({ cycleId, cy, canEditCycle, onDeXuatSua, onDone }: {
+  cycleId: number; cy: any; canEditCycle: boolean; onDeXuatSua?: () => void; onDone: () => void;
 }) {
   const toast = useToast();
   const [openTarget, setOpenTarget] = useState(false);
@@ -273,11 +283,17 @@ function TargetAndBaseline({ cycleId, cy, onDone }: {
             ? <strong>{cy.target_score}</strong>
             : <span className="text-amber-300">chưa đặt</span>}
         </span>
-        <button className="btn btn-sm" onClick={() => setOpenTarget(!openTarget)}>
-          {openTarget ? 'Thôi' : 'Đổi mục tiêu'}
-        </button>
+        {canEditCycle ? (
+          <button className="btn btn-sm" onClick={() => setOpenTarget(!openTarget)}>
+            {openTarget ? 'Thôi' : 'Đổi mục tiêu'}
+          </button>
+        ) : onDeXuatSua && (
+          <button type="button" className="btn btn-sm btn-ghost" onClick={onDeXuatSua} title="Target do Quản lý sửa — gửi đề xuất để Quản lý duyệt">
+            Đề xuất sửa
+          </button>
+        )}
       </div>
-      {openTarget && (
+      {openTarget && canEditCycle && (
         <div className="space-y-2">
           <Field label="Mục tiêu mới" required>
             <input className="field max-w-[8rem]" type="number" step="0.5" min={0} max={9}

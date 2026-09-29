@@ -11,6 +11,9 @@ import { seedRoutes } from './platform/sysconfig.ts';
 import { ROLE_PERMISSIONS } from './seed/data.ts';
 import { migratePrN1 } from './migrate/prN1.ts';
 import { migratePrLop } from './migrate/prLop.ts';
+import { migratePrDuyet } from './migrate/prDuyet.ts';
+import { migratePrMt } from './migrate/prMt.ts';
+import { migratePrNhap } from './migrate/prNhap.ts';
 import { migratePrMon } from './migrate/prMon.ts';
 
 /**
@@ -456,6 +459,11 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     /* PR-N1: hạn ghi kết quả PA hết Thứ Hai (R-PA5). */ migratePrN1(conn, applied);
     /* PR-LOP: số tuần lớp, RF, Pre FOU, đổi tên lớp (T2, T78). */
     migratePrLop(conn, applied);
+    /* PR-DUYET: hộp Chờ duyệt (bảng yeu_cau_duyet + thẻ từ hai luồng cũ), tasks.assignee_name, notifications.duong. */
+    migratePrDuyet(conn, applied);
+    /* PR-MT: cột lich_su (MT lịch sử, T34). */ migratePrMt(conn, applied);
+    /* PR-NHAP: email học viên + ngày thi dự kiến (T8, T9). */
+    migratePrNhap(conn, applied);
     /* PR-MON: kỹ năng phụ trách được chỉ L · R · W1 · W2 · S (MH1). */
     migratePrMon(conn, applied);
 

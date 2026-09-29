@@ -107,6 +107,8 @@ export type LuotTomTat = {
   overall: number | null; expectation: number | null; sosLevel: number | null;
   /** Chỉ lớp thường — dùng để đếm số môn chưa đạt THẬT (`sosLevel` bị chặn trần ở 3, không dùng được khi trượt cả 4). */
   skills?: { outcome: string }[] | null;
+  /** M-14: `false` = MT lịch sử có tuần thi ngoài 4 tuần trước ngày tạo — không phải "hiện trạng". Thiếu = tính. */
+  sinhViec?: boolean;
 };
 export type KetQuaTestGanNhat = {
   attemptId: number; nhan: string; coDiem: number; yeuCau: number;
@@ -126,7 +128,7 @@ export type KetQuaTestGanNhat = {
  */
 export function ketQuaTestGanNhat(attempts: readonly LuotTomTat[], homNay?: string | null): KetQuaTestGanNhat | null {
   const a = [...attempts]
-    .filter((x) => x.status !== 'cancelled' && x.scored > 0)
+    .filter((x) => x.status !== 'cancelled' && x.scored > 0 && x.sinhViec !== false)
     .sort((x, y) => y.attemptNo - x.attemptNo)[0];
   if (!a) return null;
   const ratio = a.mode === 'ratio';

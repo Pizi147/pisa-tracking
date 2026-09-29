@@ -15,6 +15,7 @@ import {
 } from '@shared/domain/index.ts';
 import { LichSuDieuChinh, type BanDieuChinh } from './CapNhatTuan.tsx';
 import { NganCase } from '../students/NganCase.tsx';
+import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
 
 /**
  * MỘT VẤN ĐỀ HỌC VỤ (PR-UX3, N-4, mockup 15 §3) — kể theo hai câu người đọc cần: VẤN ĐỀ gì, và ĐÃ LÀM GÌ (các PA, mỗi PA một
@@ -64,8 +65,7 @@ export type CaseDetail = {
 };
 
 /** Nội dung của ngăn Case: một `KhungPanel` đổi nội dung theo view, không chồng panel. */
-export type ViewCase = { loai: 'case' } | { loai: 'ghi-ket-qua'; paId: number } | { loai: 'them-pa' }
-  | { loai: 'hoan-thanh' } | { loai: 'tra-loi'; paId: number };
+export type ViewCase = { loai: 'case' } | { loai: 'ghi-ket-qua'; paId: number } | { loai: 'them-pa' } | { loai: 'hoan-thanh' };
 
 /** "Case Listening" — tên ngắn của Case cho tiêu đề ngăn và dòng "← Case Listening". */
 export function tenNganCase(d: { categoryLabel: string | null; category: string | null; chuongTrinh?: string | null }): string {
@@ -250,6 +250,17 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
           Quản lý{iv.approvedBy ? ` (${iv.approvedBy})` : ''}: {iv.approvalNote}
         </p>
       )}
+      {/* PR-DUYET (T64): Xin ý kiến không dừng PA — dòng tím khi đang chờ, câu trả lời của QL khi đã có. */}
+      {iv.xinYKien?.trangThai === 'cho' && (
+        <p className="m-0 mt-1 text-xs text-wait tabular-nums">
+          Đã xin QL hỗ trợ {ngan(iv.xinYKien.taoLuc)} · chờ trả lời{iv.xinYKien.hanDuyet ? ` · hạn ${ngan(iv.xinYKien.hanDuyet)}` : ''}
+        </p>
+      )}
+      {iv.xinYKien?.trangThai === 'da_tra_loi' && (
+        <p className="m-0 mt-1 border-l pl-3 text-xs text-slate-300" style={{ borderColor: 'var(--line)' }}>
+          Quản lý{iv.xinYKien.nguoiDuyet ? ` (${iv.xinYKien.nguoiDuyet})` : ''} trả lời {ngan(iv.xinYKien.xuLyLuc)}: {iv.xinYKien.traLoi}
+        </p>
+      )}
       {revisions.length > 0 && (
         <details className="mt-1">
           <summary className="cursor-pointer text-[11px] text-slate-400">Đã điều chỉnh {revisions.length} lần</summary>
@@ -263,13 +274,16 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
             Ghi kết quả
           </button>
         )}
-        {choDuyet && data.viewer.canApprove && (
-          <button type="button" className="btn btn-sm" onClick={() => onViec({ loai: 'tra-loi', paId: iv.id })}>Trả lời đề xuất</button>
-        )}
-        {choDuyet && !data.viewer.canApprove && (
-          <span className="self-center text-xs text-slate-500">Đang chờ Quản lý trả lời; thời gian chờ tính cho Quản lý.</span>
+        {choDuyet && !(data.viewer.canApprove && iv.yeuCau) && (
+          <span className="self-center text-xs text-slate-500 tabular-nums">
+            Đang chờ Quản lý trả lời{iv.approvalDue ? ` · hạn ${ngan(iv.approvalDue)}` : ''} — thời gian chờ tính cho Quản lý.
+          </span>
         )}
       </div>
+      {/* PR-DUYET (K3-20): người duyệt được quyết NGAY dưới PA — cùng thẻ với hộp Chờ duyệt, không còn panel "Trả lời đề xuất". */}
+      {data.viewer.canApprove && iv.yeuCau && iv.yeuCau.loai === 'de_xuat_pa' && (
+        <div className="mt-2"><TheYeuCau gon yc={iv.yeuCau} onXong={() => onViec({ loai: 'case' })} /></div>
+      )}
     </li>
   );
 }

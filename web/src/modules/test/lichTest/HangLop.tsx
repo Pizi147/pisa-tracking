@@ -13,10 +13,18 @@ import { LuoiNhung } from './LuoiNhung.tsx';
 function NhanLop({ l, chuaLuu = 0 }: { l: LopLichTest; chuaLuu?: number }) {
   if (chuaLuu > 0) return <Nhan tone="bad" title="Ô viền đỏ chưa lưu được — bấm Lưu lại ở ô đó.">{chuOChuaLuu(chuaLuu)}</Nhan>;
   return (
-    <Nhan tone={TONE_NHAN_LOP[l.nhan.loai]}>
-      {l.nhan.chu}
-      {l.nhan.loai === 'da-cham' && <span className="ml-1 font-normal" aria-hidden>✓</span>}
-    </Nhan>
+    <>
+      <Nhan tone={TONE_NHAN_LOP[l.nhan.loai]}>
+        {l.nhan.chu}
+        {l.nhan.loai === 'da-cham' && <span className="ml-1 font-normal" aria-hidden>✓</span>}
+      </Nhan>
+      {/* PR-MT (YC-13.1): bài vắng tuần này đang chờ Quản lý duyệt dời lần 2 — dòng nhạt, không phải việc chấm. */}
+      {l.choDuyetDoi > 0 && (
+        <span className="block whitespace-nowrap text-[11px] text-wait" title="Đề nghị dời do vắng (từ lần 2) đang chờ Quản lý trả lời">
+          {l.choDuyetDoi > 1 ? `${l.choDuyetDoi} bài ` : ''}vắng · chờ Quản lý duyệt dời
+        </span>
+      )}
+    </>
   );
 }
 

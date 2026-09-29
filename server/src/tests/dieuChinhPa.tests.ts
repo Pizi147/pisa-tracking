@@ -235,7 +235,8 @@ export async function runDieuChinhPaTests(t: YThucTestKit) {
     cases.updateResult(P.lrTeacher, a.ivId, { decision: 'end', outcome: 'improved', note: 'Em nghe số và tên riêng đúng hết' });
     assertThrows(() => cases.updateResult(P.lrTeacher, a.ivId, ADJ_OK), /đã kết thúc/, 'Điều chỉnh PA đã kết thúc');
     const b = taoCase();
-    cases.updateResult(P.lrTeacher, b.ivId, { decision: 'ask_manager', outcome: 'unchanged', note: 'Tự học không đủ, cần Quản lý xếp tutor' });
+    /* PR-DUYET (T64): "Xin hỗ trợ QL" không còn dừng PA — PA "chờ duyệt" ở đây là PA đề xuất kiểu cũ (dữ liệu trước hộp Chờ duyệt). */
+    conn.prepare("UPDATE case_interventions SET status = 'planned', needs_approval = 1, approval_state = 'pending' WHERE id = ?").run(b.ivId);
     assertThrows(() => cases.updateResult(P.lrTeacher, b.ivId, ADJ_OK), /chờ Quản lý duyệt/, 'Điều chỉnh PA đang chờ duyệt');
     assert(revRows(a.ivId).length === 0 && revRows(b.ivId).length === 0, 'Bị từ chối mà vẫn có dòng lịch sử');
   });

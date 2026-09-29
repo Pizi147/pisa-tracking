@@ -13,8 +13,9 @@ export type LopKH = {
 };
 export type DanhSachLop = { tieuDe: string; lop: LopKH[] };
 
-export type DotFT = { attemptId: number | null; trangThaiDot: string | null; kn: KnO };
-export type HangFT = { studentId: number; ten: string; ma: string; vaoMuon: boolean; dot: Record<number, DotFT> };
+export type DotFT = { attemptId: number | null; trangThaiDot: string | null; kn: KnO; lichSu?: boolean };
+/** `soKeTiep` (PR-MT, K4-08): chỉ ô MT này có "+ xếp" — số MT liền mạch. */
+export type HangFT = { studentId: number; ten: string; ma: string; vaoMuon: boolean; dot: Record<number, DotFT>; soKeTiep: number };
 export type LuoiFTData = { classId: number; classCode: string; cot: number[]; hang: HangFT[] };
 
 export type DotThuong = { attemptId: number | null; kn: KnO };
@@ -43,7 +44,7 @@ export const KY = KY_NANG_KE_HOACH;
 export function dotCuaEm(
   data: { loai: 'ft'; luoi: LuoiFTData; hang: HangFT } | { loai: 'thuong'; luoi: LuoiThuongData; hang: HangThuong },
   d: DotChon,
-): { attemptId: number | null; kn: KnO } {
+): { attemptId: number | null; kn: KnO; lichSu?: boolean } {
   if (data.loai === 'ft' && d.loai === 'ft') return data.hang.dot[d.attemptNo] ?? { attemptId: null, kn: {} };
   if (data.loai === 'thuong' && d.loai === 'thuong') return data.hang.dot[d.kind] ?? { attemptId: null, kn: {} };
   return { attemptId: null, kn: {} };

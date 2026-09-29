@@ -58,6 +58,8 @@ export function nhacViec(p: Principal, i: { key: string; ownerId: number }): { d
     userId: i.ownerId, kind: 'nhac_viec',
     title: `${p.fullName} nhắc: ${row.actionLabel}`,
     body, entityType: 'nhac_viec', entityId: null, dedupKey,
+    /* PR-DUYET (K5-12): bấm chuông về đúng chỗ làm việc đó (hồ sơ HV / Ngăn Case), không phải trang Công việc chung. */
+    duong: row.href ?? null,
   });
   writeAudit({ actorUserId: p.userId, action: 'work.remind', entityType: 'nhac_viec', entityId: null, entityLabel: i.key });
 

@@ -24,6 +24,8 @@ type Row = {
   id: number; code: string; title: string; group: string | null; taskType: string;
   branchId: number | null; branchName: string;
   assigneeUserId: number | null; assigneeName: string | null;
+  /** PR-DUYET: tên gõ tay, không phải tài khoản. */
+  assigneeNgoai?: boolean;
   watcherUserId: number | null; watcherName: string | null;
   due: string | null; progress: string; progressLabel: string;
   stopReason: string | null; reviewOn: string | null;
@@ -52,6 +54,8 @@ const idOfNguoi = (v: NguoiChon | null, myId: number | null): number | null => {
   if (v.kieu === 'tai_khoan') return v.id;
   return null;
 };
+/** PR-DUYET (NEN Q12): "Dùng tên ngoài hệ thống" ở ô Người phụ trách — tên gửi riêng, không nhận thông báo. */
+const tenNgoaiCua = (v: NguoiChon | null): string | null => (v?.kieu === 'ngoai' ? v.ten : null);
 
 /**
  * TIẾN ĐỘ CÔNG VIỆC — MỘT bảng, không phải bốn bảng mở cùng lúc (mục 8.2).
@@ -232,6 +236,7 @@ export function TasksBoard() {
                       </td>
                       <td className="td text-slate-300">
                         {r.assigneeName ?? <span className="text-slate-600">chưa giao</span>}
+                        {r.assigneeNgoai && <span className="ml-1 whitespace-nowrap text-[11px] text-slate-500">ngoài hệ thống</span>}
                       </td>
                       <td className="td whitespace-nowrap">
                         <Han loai="viec-van-hanh" han={r.due} />
@@ -288,7 +293,7 @@ export function NganViecVanHanh({ taskId, onClose, onDone }: {
           <div className="flex flex-wrap items-center gap-2">
             <Status kind={KIND[data.progress] ?? 'idle'}>{data.progressLabel}</Status>
             <Han loai="viec-van-hanh" han={data.due} />
-            {data.assigneeName && <Info>{data.assigneeName}</Info>}
+            {data.assigneeName && <Info>{data.assigneeName}{data.assigneeNgoai ? ' · ngoài hệ thống' : ''}</Info>}
             {data.watcherName && <Info>theo dõi: {data.watcherName}</Info>}
           </div>
           {data.hanGoc && (
@@ -513,7 +518,8 @@ function SuaViec({ open, onClose, task, onDone }: {
   const [title, setTitle] = useState(task.title);
   const [group, setGroup] = useState(task.group ?? 'curriculum');
   const [assignee, setAssignee] = useState<NguoiChon | null>(task.assigneeUserId
-    ? { kieu: 'tai_khoan', id: task.assigneeUserId, ten: task.assigneeName ?? '' } : null);
+    ? { kieu: 'tai_khoan', id: task.assigneeUserId, ten: task.assigneeName ?? '' }
+    : task.assigneeNgoai && task.assigneeName ? { kieu: 'ngoai', ten: task.assigneeName } : null);
   const [watcher, setWatcher] = useState<NguoiChon | null>(task.watcherUserId
     ? { kieu: 'tai_khoan', id: task.watcherUserId, ten: task.watcherName ?? '' } : null);
   const [due, setDue] = useState(task.due ?? '');
@@ -536,6 +542,7 @@ function SuaViec({ open, onClose, task, onDone }: {
                 await api.patch(`/mgmt-tasks/${task.id}`, {
                   title, group,
                   assigneeUserId: idOfNguoi(assignee, session?.user?.id ?? null),
+                  assigneeName: tenNgoaiCua(assignee),
                   watcherUserId: idOfNguoi(watcher, session?.user?.id ?? null),
                   due: due || null,
                   lyDoDoiHan: canDoi ? lyDoDoiHan.trim() : null,
@@ -560,7 +567,7 @@ function SuaViec({ open, onClose, task, onDone }: {
           </select>
         </Field>
         <Field label="Người phụ trách">
-          <ChonNguoi value={assignee} onChange={setAssignee} nhom="nhan_vien" choNgoai={false} macDinhTrong="Chưa giao" />
+          <ChonNguoi value={assignee} onChange={setAssignee} nhom="nhan_vien" choNgoai macDinhTrong="Chưa giao" />
         </Field>
         <Field label="Người theo dõi" hint="Nhìn thấy công việc nhưng KHÔNG sửa được.">
           <ChonNguoi value={watcher} onChange={setWatcher} nhom="nhan_vien" choNgoai={false} macDinhTrong="Không có" />
@@ -627,6 +634,7 @@ function CreateTask({ open, onClose, onDone, branchId, parent, defaultGroup, uni
                 await api.post('/mgmt-tasks', {
                   title, group,
                   assigneeUserId: idOfNguoi(assignee, session?.user?.id ?? null),
+                  assigneeName: tenNgoaiCua(assignee),
                   watcherUserId: idOfNguoi(watcher, session?.user?.id ?? null),
                   due: due || null, branchId: branch || null, note: note || null,
                   parentTaskId: parent?.id ?? null,
@@ -656,7 +664,7 @@ function CreateTask({ open, onClose, onDone, branchId, parent, defaultGroup, uni
           </Field>
         )}
         <Field label="Người phụ trách">
-          <ChonNguoi value={assignee} onChange={setAssignee} nhom="nhan_vien" choToi choNgoai={false} macDinhTrong="Chưa giao" />
+          <ChonNguoi value={assignee} onChange={setAssignee} nhom="nhan_vien" choToi choNgoai macDinhTrong="Chưa giao" />
         </Field>
         <Field label="Người theo dõi" hint="Nhìn thấy công việc nhưng KHÔNG sửa được.">
           <ChonNguoi value={watcher} onChange={setWatcher} nhom="nhan_vien" choToi choNgoai={false} macDinhTrong="Không có" />

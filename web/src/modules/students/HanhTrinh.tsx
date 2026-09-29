@@ -22,7 +22,7 @@ import {
 type GiaiDoan = { loai: 'thuong' | 'ft'; tu: string; den: string | null };
 type Doan = { loai: 'khoa' | 'lo-trinh'; nhan: string; tu: string; den: string };
 type Ghim = {
-  attemptId: number; tuan: string; cheDo: 'ielts' | 'ratio'; attemptNo: number; kind: string;
+  attemptId: number; tuan: string; cheDo: 'ielts' | 'ratio'; attemptNo: number; kind: string; lichSu?: boolean;
   overall: number | null; sosLevel: number | null; soDat: number | null; soYeuCau: number; soCoDiem: number;
   maLop: string | null; kyVong: number | null; kyNangChuaDat: string[];
   khongChiaMon?: boolean; tyLe?: number | null;

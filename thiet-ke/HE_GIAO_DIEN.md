@@ -109,6 +109,12 @@ ký tự. Chỗ nhận người ngoài hệ thống luôn có dòng cuối `Dùn
 việc Vận hành và người phụ trách xử lý Ý thức **chỉ nhận tài khoản**, vì họ phải đăng nhập mới thấy và nhận việc (Q13).
 Việc Vận hành chưa nhận tên ngoài hệ thống: cần thêm cột trong cơ sở dữ liệu, nên chuyển sang PR-DUYET (Q12).
 
+### Thêm ở PR-DUYET — thẻ yêu cầu
+
+| Thành phần | File | Dùng cho |
+|---|---|---|
+| `TheYeuCau` | `web/src/modules/duyet/TheYeuCau.tsx` | MỘT khuôn thẻ (M8) cho hộp Chờ duyệt, Yêu cầu của tôi, Ngăn Case (`gon`), hồ sơ HV (PR-VAI): nhãn phân loại cùng bề rộng (`w-24`) · việc · học viên · lớp; lý do tối đa 2 dòng (`line-clamp-2`, "Xem thêm"); `Nếu duyệt: …` chữ phụ; cột phải: hạn duyệt là **tầng 1** (14 px đậm, đỏ khi quá hạn) rồi nút theo kiểu thẻ (`Duyệt` · `Từ chối…` · `Mở` / `Trả lời…` · `+ Thêm PA` / `Nhắc {GV}`). Từ chối / Trả lời / ghi chú / chọn tuần mở ô NGAY TRONG THẺ (≥ 3 ký tự, Esc đóng + trả focus, Enter gửi). Không Hoàn tác (Q15) |
+
 `Status kind="doing"` (Đang thực hiện) đổi sang màu trung tính — xanh dương chỉ dành cho ô điểm (Q14).
 
 ### Năm component của PR-E — mỗi cái đóng một lỗi đã có thật
@@ -145,7 +151,7 @@ thêm sẵn tên (Q16) để các PR sau gắn luật. Ngoài bảng còn `viec-
 | `thuc-hien-y-thuc` | `Thực hiện xong · hạn {ngày}` | 3 ngày Gấp / 5 ngày Cần chú ý | RB 6.2 |
 | `hoan-thanh-y-thuc` | `Kết luận đợt · hạn {ngày}` | 7 ngày tính cả ngày mở | RB 6.2 |
 | `nhap-diem` | `Hạn nhập điểm {ngày}` | FT: hết thứ Tư tuần kế tuần thi | RB 9.2 |
-| `duyet` | `Duyệt · hạn {ngày}` | chưa gắn — PR sau | K1-56, T66 (PR-NEN Q16) |
+| `duyet` | `Duyệt · hạn {ngày} · còn {n} ngày` (chưa quá hạn; hạn hôm nay = `còn 1 ngày`) | thẻ hộp Chờ duyệt: tầng 1 `Quá hạn n ngày` / `Hạn hôm nay` / `Còn n ngày`, dòng phụ `hạn {ngày}` | K1-56, T66 · PR-DUYET (M8) |
 | `xu-ly-vi-pham` | `Xử lý vi phạm · hạn {ngày}` | chưa gắn — PR sau | K1-56 (PR-NEN Q16) |
 | `ke-hoach-bo-tro` | `Nộp kế hoạch bổ trợ · hạn {ngày}` | chưa gắn — PR sau | K1-56 (PR-NEN Q16) |
 | `mini-test` | `Mini Test · hạn {ngày}` | chưa gắn — PR sau | T66 (PR-NEN Q16) |

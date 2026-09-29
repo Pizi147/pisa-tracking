@@ -3,7 +3,7 @@
  * và mở THẲNG panel của mục được chọn. Ẩn một mục không phải là chặn nó: máy chủ vẫn kiểm quyền.
  */
 export type ViecQuanLy = 'info' | 'lo-trinh-tiep' | 'lo-trinh' | 'chuyen-lop' | 'outcome' | 'tam-dung' | 'quay-lai' | 'ket-thuc' | 'luu-tru' | 'bo-luu-tru'
-  | 'xoa-hoc-vien';
+  | 'xoa-hoc-vien' | 'de-xuat-sua';
 
 export const NHAN_VIEC_QUAN_LY: Record<ViecQuanLy, string> = {
   info: 'Thông tin học viên',
@@ -17,6 +17,7 @@ export const NHAN_VIEC_QUAN_LY: Record<ViecQuanLy, string> = {
   'luu-tru': 'Lưu trữ',
   'bo-luu-tru': 'Bỏ lưu trữ',
   'xoa-hoc-vien': 'Xoá học viên',
+  'de-xuat-sua': 'Đề xuất sửa thông tin…',
 };
 
 export type LopHocQuyen = {
@@ -29,13 +30,15 @@ export type LopHocQuyen = {
  * Q15/Q18) · Tạm dừng/Quay lại/Kết thúc học · Lưu trữ/Bỏ lưu trữ · (PR-XOA) Xoá học viên — CUỐI CÙNG, sau đường kẻ, chữ đỏ, chỉ Quản trị
  * hệ thống (`coTheXoa` = `viewer.coTheXoa`). Không có mục nào → nơi gọi không vẽ ⋮ (GVBM không có mục nào).
  */
-export function mucQuanLyHocVien({ canEdit, lopHoc, cycle, status, coTheXoa }: {
+export function mucQuanLyHocVien({ canEdit, lopHoc, cycle, status, coTheXoa, deXuatSua }: {
   canEdit: boolean;
   lopHoc?: { quyen: LopHocQuyen } | null;
   cycle: { ratio?: boolean } | null;
   status?: string;
   /** PR-XOA: chỉ Quản trị hệ thống. */
   coTheXoa?: boolean;
+  /** PR-DUYET (T44): GV của lớp KHÔNG có `cycle.edit` (`viewer.coTheDeXuatSua`) — GVBM nay có ⋮ với đúng mục này. */
+  deXuatSua?: boolean;
 }): { key: ViecQuanLy; nhan: string; nguyHiem?: boolean; keTruoc?: boolean }[] {
   const quyen = lopHoc?.quyen;
   const ratio = !!cycle?.ratio;
@@ -44,6 +47,7 @@ export function mucQuanLyHocVien({ canEdit, lopHoc, cycle, status, coTheXoa }: {
   if (canEdit) ds.push('info');
   if (quyen?.ghiLoTrinhTiep) ds.push('lo-trinh-tiep');
   if (canEdit && cycle && !ratio) ds.push('lo-trinh');
+  if (deXuatSua && dangHoc) ds.push('de-xuat-sua');
   if (quyen?.chuyenLop) ds.push('chuyen-lop');
   if (canEdit && cycle && !ratio) ds.push('outcome');
   if (quyen?.tamDung && dangHoc) ds.push('tam-dung');

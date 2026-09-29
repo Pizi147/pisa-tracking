@@ -174,17 +174,14 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     'SELECT sit_status, sit_note, absent_from_no_show AS flag, absence_move_count FROM attempt_skills WHERE attempt_id = ? AND skill = ?',
   ).get(attemptId, skill) as any;
 
-  check('S11 · Chốt dấu "-" đánh cờ; sửa chữ sit_note KHÔNG làm mất quyền dời lần đầu của GVCN (sáng thứ Ba sau khi chốt)', () => {
+  check('S11 · Chốt dấu "-" đánh cờ cột riêng; máy tự dời lần đầu theo CỜ (sáng thứ Ba, tuần kế tiếp đã bắt đầu), dời xong cờ về 0', () => {
     const hv = taoHocVien({ classCode: 'MB FT 101', weekStart: '2026-09-14' });
     attempts.saveScore(P.lrTeacher, hv.attemptId, 'listening', { noShow: true }, '2026-09-16');
-    absence.settleNoShows('2026-09-21');
-    assert(sit(hv.attemptId, 'listening').sit_status === 'absent' && sit(hv.attemptId, 'listening').flag === 1,
-      `Chốt xong phải absent + cờ 1: ${JSON.stringify(sit(hv.attemptId, 'listening'))}`);
-    /* Lượt biên tập chữ sau này đổi câu ghi chú — cờ không được phụ thuộc vào câu chữ. */
-    conn.prepare(`UPDATE attempt_skills SET sit_note = 'Ghi chú đã biên tập lại' WHERE attempt_id = ? AND skill = 'listening'`).run(hv.attemptId);
-    const r = absence.requestAbsenceMove(P.lrTeacher, hv.attemptId, ['listening'], { today: '2026-09-22' }) as any;
-    assert(r.outcomes[0].result === 'moved', `GVCN phải dời lần đầu được ngay, đang ${JSON.stringify(r.outcomes[0])}`);
-    assert(sit(hv.attemptId, 'listening').flag === 0, 'Dời xong thì cờ phải về 0');
+    /* PR-MT (Q-A): tuần W4 SEP đã bắt đầu từ thứ Hai — chỉ bài có cờ `absent_from_no_show` mới được dời lần đầu vào tuần đang chạy. */
+    absence.settleNoShows('2026-09-22');
+    const s = sit(hv.attemptId, 'listening');
+    assert(s.sit_status === 'scheduled' && s.absence_move_count === 1 && s.flag === 0,
+      `Chốt xong máy phải tự dời lần 1 và cờ về 0: ${JSON.stringify(s)}`);
   });
 
   check('S11 · Vắng do Quản lý/GVCN xác nhận bằng tay KHÔNG mang cờ chốt dấu "-"', () => {
@@ -212,17 +209,20 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   check('S13 · GV báo lại "-" cùng tuần sau khi Quản lý đã đổi kết luận: không chốt lại, dấu không hiện lại, ô có MỘT dòng giải thích', () => {
     const hv = taoHocVien({ classCode: 'MB FT 101', weekStart: '2026-09-14' });
     attempts.saveScore(P.lrTeacher, hv.attemptId, 'listening', { noShow: true }, '2026-09-16');
-    absence.settleNoShows('2026-09-21');
+    /* PR-MT (Q-A): chốt MUỘN (28/09, tuần kế tiếp W4 SEP đã hết) nên máy không tự dời mà chuyển Quản lý — bài còn "vắng" để Quản lý đổi kết luận. */
+    absence.settleNoShows('2026-09-28');
     assert(settledCount(hv.attemptId, 'listening') === 1, 'Tiền đề: phải chốt đúng một lần');
     skillSchedule.setSitStatus(P.mbManager, hv.attemptId, 'listening', 'scheduled', 'Quản lý sửa: em có làm bài');
-    attempts.saveScore(P.lrTeacher, hv.attemptId, 'listening', { noShow: true }, '2026-09-22');
-    absence.settleNoShows('2026-09-23');
+    assert(!conn.prepare(`SELECT 1 FROM skill_move_requests WHERE attempt_id = ? AND status = 'pending'`).get(hv.attemptId),
+      'Quản lý đổi kết luận thì đề nghị dời máy đã gửi phải được rút');
+    attempts.saveScore(P.lrTeacher, hv.attemptId, 'listening', { noShow: true }, '2026-09-29');
+    absence.settleNoShows('2026-09-30');
     assert(sit(hv.attemptId, 'listening').sit_status === 'scheduled', 'Quyết định của Quản lý bị đè');
     assert(settledCount(hv.attemptId, 'listening') === 1, 'Không được chốt lần hai');
-    const cell = cellOf(hv, 'listening', '2026-09-22');
+    const cell = cellOf(hv, 'listening', '2026-09-29');
     assert(cell && cell.noShow === null, `Dấu "-" cũ không được sống lại: ${JSON.stringify(cell?.noShow)}`);
     assert(cell.noShowNote === domain.NO_SHOW_OVERRIDDEN_NOTE, `Thiếu dòng giải thích: ${JSON.stringify(cell.noShowNote)}`);
-    const other = cellOf(hv, 'reading', '2026-09-22');
+    const other = cellOf(hv, 'reading', '2026-09-29');
     assert(other.noShowNote === null, 'Ô không có chuyện gì thì không có dòng giải thích');
   });
 
@@ -271,7 +271,9 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
       'Sau Chủ nhật, W1 "-" mà W2 không "-" thì W1 vẫn là nợ — đúng như ô ở bảng chấm');
     attempts.saveScore(P.w2Teacher, hv.attemptId, 'writing2', { noShow: true }, '2026-09-18');
     const after = no('2026-09-21', hv.attemptId);
-    assert(!after.some((d) => d.skill === 'writing1' || d.skill === 'writing2'), `W1 + W2 cùng "-" đã chốt vắng mà vẫn nợ: ${JSON.stringify(after)}`);
+    /* PR-MT (Q-A): chốt vắng xong máy tự dời Writing sang W4 SEP — ô tuần cũ không còn nợ/quá hạn; buổi mới là việc của tuần này. */
+    assert(!after.some((d) => (d.skill === 'writing1' || d.skill === 'writing2') && d.overdue), `W1 + W2 cùng "-" đã chốt mà vẫn quá hạn: ${JSON.stringify(after)}`);
+    assert(sit(hv.attemptId, 'writing').absence_move_count === 1, 'Máy phải tự dời buổi Writing lần 1');
   });
 
   const pulse: any = await import('../worklist/branchpulse.ts');     // `check` không nhận hàm async — nạp ở ngoài

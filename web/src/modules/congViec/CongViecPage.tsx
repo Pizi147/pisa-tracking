@@ -4,12 +4,14 @@ import { HangTab } from '../../ui/HangTab.tsx';
 import { TasksBoard } from '../worklist/MgmtTasksPage.tsx';
 import { MeetingBoard } from '../worklist/MeetingPage.tsx';
 import { HoTroHocVienTab } from './HoTroHocVienTab.tsx';
+import { HopChoDuyet } from '../duyet/HopChoDuyet.tsx';
+import { YeuCauCuaToi } from '../duyet/YeuCauCuaToi.tsx';
 import {
   DUONG_TAB_CONG_VIEC, NAV_RONG, TAB_CONG_VIEC_LABEL, tabCongViecHienThi, tabCongViecTuDuong, type TabCongViec,
 } from '@shared/domain/index.ts';
 
 /**
- * CÔNG VIỆC — khung 3 tab (R1, spec §3.4). Mỗi tab có đường dẫn riêng; tab không có quyền thì bỏ hẳn.
+ * CÔNG VIỆC — khung tab (R1, spec §3.4; PR-DUYET thêm Chờ duyệt cho người duyệt, Yêu cầu của tôi cho GV). Mỗi tab có đường dẫn riêng; tab không có quyền thì bỏ hẳn.
  * Giáo viên chỉ có tab Hỗ trợ học viên nên không hiện hàng tab. Nội dung từng tab là màn cũ; PR-Ra làm lại.
  */
 export default function CongViecPage() {
@@ -42,7 +44,9 @@ export default function CongViecPage() {
         <HangTab ariaLabel="Công việc" value={tab} onChange={go}
           tabs={tabs.map((k) => ({ key: k, label: TAB_CONG_VIEC_LABEL[k] }))} />
       )}
+      {tab === 'cho-duyet' && <HopChoDuyet />}
       {tab === 'ho-tro' && <HoTroHocVienTab />}
+      {tab === 'yeu-cau' && <YeuCauCuaToi />}
       {tab === 'van-hanh' && <TasksBoard />}
       {tab === 'bao-cao' && <MeetingBoard />}
     </div>

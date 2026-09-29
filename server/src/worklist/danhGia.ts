@@ -1,5 +1,6 @@
 import { db } from '../db.ts';
-import { CHUONG_TRINH_KHONG_CHIA_MON, PERMISSIONS } from '../../../shared/domain/index.ts';
+import { CHUONG_TRINH_KHONG_CHIA_MON, PERMISSIONS, luotSinhViec } from '../../../shared/domain/index.ts';
+import { ngayTaoLuot } from '../classes/schedule.ts';
 import { classScopeSql, scopeFor, type Principal } from '../permissions.ts';
 import { loadBundle, resultOf, type AttemptBundle } from '../fasttrack/attempts.ts';
 import { allProgrammes, evaluateRegular, type ProgrammeInfo } from '../normal/regular.ts';
@@ -118,7 +119,8 @@ function attemptsNewestFirstGoc(studentIds: number[]): Map<number, any[]> {
     const chunk = studentIds.slice(i, i + 400);
     for (const r of db()
       .prepare(
-        `SELECT a.*, c.programme_code, pr.week_start AS period_start
+        `SELECT a.*, c.programme_code, pr.week_start AS period_start, pr.week_end AS period_end,
+                (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route
            FROM assessment_attempts a
            LEFT JOIN classes c ON c.id = a.class_id
            LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
@@ -129,11 +131,17 @@ function attemptsNewestFirstGoc(studentIds: number[]): Map<number, any[]> {
       out.get(r.student_id)!.push(r);
     }
   }
+  /* K5-54: "mới nhất" = số MT LỚN NHẤT của lộ trình mới nhất — không theo tuần hay ngày nhập (MT lịch sử nhập bù hôm nay vẫn là MT cũ). */
   for (const list of out.values()) {
-    list.sort((x, y) => (y.period_start ?? '').localeCompare(x.period_start ?? '')
-      || y.attempt_no - x.attempt_no || y.id - x.id);
+    list.sort((x, y) => y.cycle_id - x.cycle_id || y.attempt_no - x.attempt_no || y.id - x.id);
   }
   return out;
+}
+
+/** M-14: lượt này có được làm "hiện trạng" (SOS hiện tại, bỏ quên…) không — MT lịch sử ngoài cửa sổ 4 tuần thì không. */
+export function luotSinhViecRow(a: any, homNay: string): boolean {
+  if (!a.lich_su) return true;   // lượt thường: không cần hỏi ngày nghiệp vụ (tránh một câu mỗi dòng)
+  return luotSinhViec({ lich_su: 1, tuanKetThuc: a.period_end ?? null, created_at: ngayTaoLuot(a.created_at, homNay) });
 }
 
 /**
@@ -152,8 +160,11 @@ export function latestAttempts(studentIds: number[], pick: 'valid' | 'due', toda
     for (const [sid, list] of byStudent) {
       for (const a of list) {
         if (pick === 'due' && !(a.period_start && a.period_start <= today)) continue;
+        if (pick === 'valid' && !luotSinhViecRow(a, today)) continue;
         const ev = evaluateAttemptRow(a, bundle, programmes);
         if (pick === 'valid' && ev.scored === 0) continue;
+        /* Độ phủ: MT lịch sử chưa đủ điểm không phải "cần được đánh giá" (nhập bù, không hạn — T34). */
+        if (pick === 'due' && a.lich_su && !ev.complete) continue;
         out.set(sid, {
           attemptId: a.id, studentId: sid, kind: a.kind, weekStart: a.period_start ?? null, attemptNo: a.attempt_no, ...ev,
         });

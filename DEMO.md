@@ -137,6 +137,24 @@ Ba học viên MỚI ở `MB-FT 101`, dựng bằng chính các hàm nghiệp v�
 
 Ba mức SOS khác nhau (1 · 2 · 3) đều có mặt; có cả lượt đang xử lý lẫn đã hoàn thành. Bộ demo Ý thức (mục 1) nay dùng *xoá thẳng* thay cho "đánh dấu không chính xác": hai vi phạm đã xoá (Trần Thu Hà, Lê Quang Huy) chỉ còn dấu vết ở `audit_logs`.
 
+## 10. PR-MT — lịch MT tự tạo, MT lịch sử, lớp RF, dời do vắng (chỉ máy dev)
+
+Dựng bằng chính các hàm nghiệp vụ (`server/src/seed/prMtSeed.ts`), sau ngày demo 14/09/2026. Tài khoản gợi ý: **Quản lý Nguyễn Khánh Vy**,
+**GVCN Trần Ngọc Hà**.
+
+| Kịch bản | Học viên | Bạn sẽ thấy |
+|---|---|---|
+| D1 · lớp RF | **Phan Gia Hân** (MB FT RF 12) | Mới vào: MT1 W2 OCT (tuần học 4), MT2 W1 NOV (tuần học 8) |
+| D1 · RF có SOS | **Đặng Quốc Bảo** (MB FT RF 12) | MT1 kỳ vọng **= target 6.5** (không trừ); L R 6.0 → SOS 2 → PA quy chế `Tutor · đến lúc thi`, Phối hợp theo hàng MT4 |
+| D2/D3 · HS cũ | **Lê Minh Khang** (MB FT 101) | Thêm hôm nay, bắt đầu 17 tuần trước: MT1–MT3 nhãn `lịch sử`. MT2 đã nhập SOS 2 — **không** Case (ngoài 4 tuần). MT3 (2 tuần trước) chưa nhập — GVCN Hà nhập thử ở Lịch Test (dòng nhắc cuối trang) → ra Case |
+| D4 · dữ liệu cũ | **Trần Hữu Phúc** (MB FT 101) | Em FT không có lượt nào — dòng (2) của `npm run chay-thu:mt` |
+| D5 · máy tự dời | **Hồ Ngọc Diệp** | "-" cả bốn kỹ năng tuần trước → chốt sáng thứ Hai → máy dời sang tuần này (vắng lần 1); chuông GVCN + GVBM "Đã tự dời …" |
+| D5 · chờ duyệt lần 2 | **Ngô Bảo Châu** | Listening vắng lần 2 → đề nghị chờ Quản lý, hạn hết CN 20/09, tuần đích W4 SEP; Lịch Test hàng lớp `vắng · chờ Quản lý duyệt dời` |
+| D5 · đã duyệt | **Lý Thanh Tâm** | Đề nghị lần 2 đã được Quản lý duyệt → Listening sang W4 SEP, đã dời 2 lần |
+| D5 · hết hạn | **Võ Minh Triết** | Đề nghị gửi thứ Tư tuần trước, hạn hết CN 13/09 không ai trả lời → Listening bị huỷ phần thi |
+| D6 · huỷ lượt | **Phạm Khánh Linh** | MT3 "Huỷ cả lượt", MT2 huỷ rồi **tạo lại cùng số** (cùng dòng); Kế hoạch Test chỉ ô MT kế tiếp có "+ xếp" |
+| D16 · LT1 → RF | **Đinh Gia Huy** | Từ MB FT 101 sang MB FT RF 12: lộ trình RF mới có MT1/MT2; Case Listening đi theo (mốc "Sang lộ trình mới") |
+
 ## 4. Lịch thi tách theo từng kỹ năng
 
 Một đợt kiểm tra **không nhất thiết thi gọn một tuần**. Điểm vẫn thuộc **một đợt duy nhất**; **hạn chấm tính riêng từng môn**:

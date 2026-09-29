@@ -533,6 +533,36 @@ npm run kiem-lop-mo-coi
 > **Tên lớp cũ trong nhật ký, hành trình, thông báo cũ giữ nguyên** (là lịch sử) — chỉ tên lớp hiện tại đổi. Báo GV: tên
 > lớp mới bỏ dấu `-`; ô tìm vẫn nhận cả kiểu cũ.
 
+**Đợt 2 (PR-DUYET) — thêm một lệnh chạy thử CHỈ ĐỌC**, cùng cửa sổ, trên **bản sao** DB chính:
+
+```powershell
+npm run chay-thu:duyet
+```
+
+> In ba mục: (1) số thẻ Chờ duyệt sẽ tạo (Đề xuất PA · trong đó "Xin hỗ trợ QL" kiểu cũ · Dời lịch lần 2) + 5 dòng mẫu
+> `#id · HV · lớp · hạn dd/mm` · (2) thẻ chết bị bỏ (PA "chờ duyệt" đã huỷ / Case đã đóng; đề nghị dời đã quá hạn duyệt — tạo
+> rồi tự đóng ở lần mở đầu) · (3) số GVCN sẽ mất quyền tự sửa target/lộ trình (chuyển lớp vẫn giữ). Sau `npm run migrate` chạy
+> lại: mục (1) phải là **0**. Báo GV: "Xin hỗ trợ QL" không còn dừng PA; GVCN sửa target/lộ trình qua ⋮ › Đề xuất sửa thông tin.
+**Đợt 2 · PR-MT (lịch MT tự tạo, MT lịch sử, đánh số, RF, dời do vắng) — một lệnh chạy thử CHỈ ĐỌC**, cùng cửa sổ, trước bước 3:
+
+```powershell
+npm run chay-thu:mt
+```
+
+> `chay-thu:mt` in năm mục: (1) cột `lich_su` đã có chưa (chưa có → migrate thêm, dữ liệu cũ là lượt thường) · (2) em FT đang học
+> **chưa có lượt MT nào** · (3) em FT **thiếu tuần bắt đầu** (không lập được lịch MT mặc định) · (4) lộ trình có số MT **không liền
+> mạch** (ví dụ `MT1, MT3`) · (5) lượt đã huỷ ở giữa lộ trình (kiểu cũ). Chụp màn hình gửi planning. Chủ sản phẩm chốt 29/09: **reset
+> database trước khi deploy bản chính** nên **không** có lệnh bổ sung MT cho dữ liệu cũ — sau reset, mọi em vào qua Thêm HV và được
+> tạo lịch MT mặc định ngay (kể cả em đã học lâu: MT có tuần thi đã qua là **MT lịch sử** — nhập bù, không có hạn). Sau bước 3 chạy lại:
+> (1) phải là "đã có", (2) phải rỗng.
+>
+> **Báo GVCN sau deploy:** HS cũ có MT lịch sử (nhãn nhỏ `lịch sử`) — GVCN/Quản lý nhập bù đủ 4 kỹ năng, không tính nợ hay quá hạn;
+> khoá sửa 7 ngày sau lần nhập cuối. Bài vắng lần 1 (dấu "-") nay máy tự dời sang tuần kế tiếp; lần 2 thành đề nghị chờ Quản lý duyệt,
+> hạn hết Chủ nhật tuần gửi.
+
+**Đợt 2 — PR-NHAP:** migrate chỉ thêm 2 cột (`students.email`, `learning_cycles.exam_date`), không đổi dữ liệu cũ, **không có
+lệnh chạy thử**. Báo GV sau khi lên: thêm học viên mới **bắt buộc email**; bảng dán phải có **dòng tiêu đề**; ngày gõ `dd/mm/yyyy`;
+học viên cũ bổ sung email dần ở Thông tin học viên (không bắt).
 **Đợt 2 — PR-MON (hệ môn học) — CÓ migrate.** Cùng cửa sổ (biến Turso bản chính), trước bước 3, chạy lệnh CHỈ ĐỌC:
 
 ```powershell

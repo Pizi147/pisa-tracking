@@ -5,9 +5,9 @@
  */
 const NHAN_NHAT_KY: Record<string, string> = {
   'attachment.add': 'Thêm bằng chứng', 'attachment.delete': 'Xoá bằng chứng',
-  'attempt.absence_move': 'Dời lịch Test vì vắng', 'attempt.cancel': 'Huỷ lượt Test',
+  'attempt.absence_move': 'Dời lịch Test vì vắng', 'attempt.absence_auto_move': 'Máy tự dời do vắng lần 1', 'attempt.cancel': 'Huỷ lượt Test',
   'attempt.cancel_appointment': 'Huỷ lịch hẹn thi môn', 'attempt.cancel_part': 'Huỷ phần còn lại của lượt',
-  'attempt.create': 'Tạo lượt Test', 'attempt.no_show_settled': 'Chốt vắng thi',
+  'attempt.create': 'Tạo lượt Test', 'attempt.no_show_settled': 'Chốt vắng thi', 'attempt.recreate': 'Tạo lại lượt Test (số dùng lại)',
   'attempt.restore_part': 'Khôi phục phần đã huỷ', 'attempt.restore_skill': 'Khôi phục kỹ năng thi',
   'attempt.skip_skill': 'Bỏ kỹ năng không thi', 'attempt.sit_status': 'Ghi đã thi / vắng', 'attempt.skill_week': 'Đổi tuần thi kỹ năng',
   'case.auto_from_sos': 'Tạo Case từ SOS', 'case.backfill': 'Nhập bù Case đã xong', 'case.backfill.done': 'Nhập bù Case đã xong',
@@ -27,7 +27,10 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'measure.remove_violation': 'Bỏ vi phạm khỏi PA',
   'mgmt_task.create': 'Tạo công việc quản lý',
   'regular.no_show': 'Ghi vắng thi môn', 'regular.no_show_cleared': 'Bỏ ghi vắng thi môn', 'regular.plan': 'Xếp lịch bài lớp thường',
+  'request.approve': 'Duyệt yêu cầu', 'request.decline': 'Từ chối yêu cầu', 'request.answer': 'Trả lời Xin ý kiến',
+  'request.create': 'Gửi yêu cầu duyệt',
   'regular.score': 'Nhập điểm lớp thường', 'regular.score.override': 'Sửa điểm lớp thường',
+  'score.lich_su': 'Nhập điểm MT lịch sử',
   'report.unlock': 'Mở khoá báo cáo', 'report.relock': 'Khoá lại báo cáo',
   'role.permission.grant': 'Cấp quyền cho vai', 'role.permission.revoke': 'Bỏ quyền của vai', 'role.retired': 'Bỏ vai cũ', 'rule.changed': 'Đổi luật',
   'schedule.autoplan': 'Tự xếp lịch Test',

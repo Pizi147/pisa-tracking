@@ -1,6 +1,6 @@
 import {
   ATTEMPT_KIND_SHORT, PROGRAMME_TEMPLATES, boMonLich, categoryOf, cycleDeadline, issuesForTopic,
-  planEndDefault, programmeOf, ratioResult, weeklyUpdateDue,
+  hanDuyetDoiLan2, mondayOfDate, planEndDefault, programmeOf, ratioResult, weeklyUpdateDue,
   type AttemptKind,
 } from '../../../shared/domain/index.ts';
 import { addDays, normalizeName, nowIso, padCode } from '../util.ts';
@@ -89,11 +89,13 @@ export function buildJourneys(ctx: BuildCtx): BuildCounts {
     const finishedAt = s.status === 'finished' ? (s.finishedAt ?? null) : null;
     const info = conn
       .prepare(
-        `INSERT INTO students (student_code, full_name, normalized_name, dob, branch_id, status,
+        `INSERT INTO students (student_code, full_name, normalized_name, dob, email, branch_id, status,
                                consultant_name, note, finished_at, archived_at, created_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
       )
+      /* PR-NHAP T8/H6: mọi em demo có email; J01 là HS cũ THIẾU email (không bật "Thiếu thông tin"). */
       .run(ctx.nextStudentCode(), s.name, normalizeName(s.name), s.dob ?? null,
+           s.code === 'J01' ? null : `hv.${s.code.toLowerCase()}@demo.pisatracking.vn`,
            ctx.branchId.get(s.branch)!,
            s.status === 'finished' ? 'finished' : 'active',
            null, null, finishedAt, finishedAt, NOW);
@@ -348,13 +350,13 @@ function insertAttempt(
            t.absent.moveCount ?? 0, NOW, aid, t.absent.skill);
 
     /*
-     * ĐỀ NGHỊ ĐANG CHỜ DUYỆT: dời sang tuần kế tiếp của lịch đang có, hạn trả lời là ngày
-     * TRƯỚC khi tuần ấy bắt đầu. Cả hai con số suy từ chính lịch, không gõ tay — gõ tay thì
-     * bộ demo và luật thật sẽ lệch nhau ngay lần đầu ai đó đổi lịch.
+     * ĐỀ NGHỊ ĐANG CHỜ DUYỆT (PR-MT, T42 + K4-04): gửi hôm nay, hạn hết CHỦ NHẬT TUẦN GỬI; tuần đích là tuần kế tiếp của lịch, hoặc
+     * tuần chưa bắt đầu gần nhất nếu tuần đó đã qua. Suy từ chính lịch và cùng hàm luật với máy chủ — không gõ tay.
      */
     if (t.absent.pending) {
       const cur = t.skillWeeks?.[t.absent.skill] ?? t.week;
-      const to = ensurePeriod(addDays(cur, 7));
+      const keTiep = addDays(cur, 7);
+      const to = ensurePeriod(keTiep > DEMO_DATE ? keTiep : addDays(mondayOfDate(DEMO_DATE), 7));
       conn
         .prepare(
           `INSERT INTO skill_move_requests (attempt_id, skill, move_no, from_period_id, to_period_id,
@@ -367,7 +369,7 @@ function insertAttempt(
           aid, t.absent.skill, (t.absent.moveCount ?? 0) + 1,
           ensurePeriod(cur).id, to.id,
           t.absent.reason ?? 'Em ốm, gia đình đã báo trước',
-          who, DEMO_DATE, addDays(to.weekStart, -1),
+          who, DEMO_DATE, hanDuyetDoiLan2(DEMO_DATE),
           `seed-move:${aid}:${t.absent.skill}`, NOW,
         );
     }
@@ -473,7 +475,8 @@ function academicSignals(
       .filter((r) => ratioResult(r.raw_score, r.raw_total).outcome === 'fail')
       .map((r) => r.skill as string);
   } else {
-    expectation = expectationFor(a.target_at_attempt, a.attempt_no);
+    expectation = expectationFor(a.target_at_attempt, a.attempt_no,
+      (conn.prepare('SELECT route FROM learning_cycles WHERE id = ?').get(a.cycle_id) as any)?.route);
     const entry: Record<string, number | null> = {};
     for (const r of scores) entry[r.skill] = r.band;
     const skips = (conn

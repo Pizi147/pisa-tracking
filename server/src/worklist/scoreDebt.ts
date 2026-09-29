@@ -1,5 +1,5 @@
 import { db } from '../db.ts';
-import { boMonLich } from '../../../shared/domain/index.ts';
+import { LUOT_TINH_NO_SQL, boMonLich } from '../../../shared/domain/index.ts';
 import type { Principal } from '../permissions.ts';
 import { loadBundle, regularSkillViews, skillCells } from '../fasttrack/attempts.ts';
 import { settleNoShows } from '../fasttrack/absence.ts';
@@ -17,15 +17,16 @@ import { allProgrammes } from '../normal/regular.ts';
  */
 export type DebtCell = { attemptId: number; classId: number; skill: string; userId: number; overdue: boolean };
 
-/** Tiến độ KHÔNG phải nợ điểm: vắng đã xác nhận, huỷ phần thi, ngoài phạm vi, đang chờ Quản lý duyệt dời. */
-const NOT_DEBT = new Set(['absent', 'cancelled', 'skipped', 'reschedule_pending']);
+/** Tiến độ KHÔNG phải nợ điểm: vắng đã xác nhận, huỷ phần thi, ngoài phạm vi, đang chờ Quản lý duyệt dời, MT lịch sử (T34). */
+const NOT_DEBT = new Set(['absent', 'cancelled', 'skipped', 'reschedule_pending', 'lich_su']);
 
 export function scoreDebtCells(p: Principal, today: string, branchIds: number[] | null): DebtCell[] {
   if (Array.isArray(branchIds) && branchIds.length === 0) return [];
   /* Chốt "không dự thi" trước khi đọc — cùng khuôn với `classScoreSheet`; hàm idempotent. */
   settleNoShows(today);
   const conn = db();
-  const where = [`a.status != 'cancelled'`, `cl.status = 'active'`];
+  /* PR-MT (M3, K4-01): MT lịch sử không bao giờ là nợ — bỏ từ câu SQL (phủ Theo giáo viên, bai-qua-han-nhap-diem, Tổng quan). */
+  const where = [`a.status != 'cancelled'`, `cl.status = 'active'`, LUOT_TINH_NO_SQL('a')];
   const args: unknown[] = [];
   if (branchIds) { where.push(`cl.branch_id IN (${branchIds.map(() => '?').join(',')})`); args.push(...branchIds); }
   const rows = conn

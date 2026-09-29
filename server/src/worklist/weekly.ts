@@ -141,6 +141,7 @@ function weeklySets(
   const attempts = conn
     .prepare(
       `SELECT a.id, a.status, a.kind, a.attempt_no, a.class_id, a.planned_period_id, a.target_at_attempt,
+              (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route,
               c.programme_code,
               rp.id AS period_id, rp.code, rp.week_start, rp.week_end
          FROM assessment_attempts a

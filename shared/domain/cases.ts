@@ -213,7 +213,7 @@ export function caseDedupKey(input: {
  * biệt người dùng cần thấy: "vẫn chưa đạt kết quả" khác hẳn "tưởng xong rồi mà hỏng lại".
  */
 export const MILESTONE_KINDS = [
-  'opened', 'repeat', 'recurrence', 'passed', 'closed', 'extended',
+  'opened', 'repeat', 'recurrence', 'passed', 'closed', 'extended', 'route_changed',
 ] as const;
 export type MilestoneKind = (typeof MILESTONE_KINDS)[number];
 export const MILESTONE_KIND_LABEL: Record<MilestoneKind, string> = {
@@ -223,6 +223,7 @@ export const MILESTONE_KIND_LABEL: Record<MilestoneKind, string> = {
   passed: 'Đã đạt kỳ vọng',
   closed: 'Chốt kết quả',
   extended: 'Kéo dài theo dõi',
+  route_changed: 'Sang lộ trình mới',
 };
 
 /**
@@ -535,12 +536,14 @@ export const DISPOSITION_LABEL: Record<Disposition, string> = {
  * không tính. PA đã xong có kết quả thật trước đó VẪN tính hiệu quả (planning review 22/09, Q7). Lịch sử giữ nguyên.
  * Chữ "lớp thường" thay "Normal" theo đặc tả §2 (không viết "Normal" trên màn).
  */
-export const SYSTEM_CLOSE_REASONS = ['course_ended', 'moved_to_normal', 'moved_to_ft'] as const;
+export const SYSTEM_CLOSE_REASONS = ['course_ended', 'moved_to_normal', 'moved_to_ft', 'luot_da_huy'] as const;
 export type SystemCloseReason = (typeof SYSTEM_CLOSE_REASONS)[number];
 export const SYSTEM_CLOSE_REASON_LABEL: Record<SystemCloseReason, string> = {
   course_ended: 'Học viên kết thúc khoá',
   moved_to_normal: 'Chuyển sang lớp thường',
   moved_to_ft: 'Chuyển sang Fast Track',
+  /* PR-MT (T67): huỷ cả lượt → Case sinh RIÊNG từ lượt đó đóng theo; không tính thất bại, không vào hiệu quả PA. */
+  luot_da_huy: 'Lượt đã huỷ',
 };
 
 /**
@@ -874,7 +877,7 @@ export const NEXT_STEP_HINT: Record<NextStep, string> = {
   continue: 'Giữ nguyên phương án, mở đợt mới để làm tiếp.',
   adjust: 'Cùng phương án, sửa mô tả, người thực hiện hoặc ngày dự kiến kết thúc. Bản cũ giữ trong lịch sử.',
   propose: 'Khép phương án cũ với lý do "Được thay thế" và mở phương án mới.',
-  ask_manager: 'Chuyển sang chờ Quản lý quyết định. Thời gian chờ tính cho Quản lý.',
+  ask_manager: 'Lưu kết quả tuần như Giữ nguyên và gửi câu hỏi cho Quản lý. PA vẫn chạy.',
 };
 
 /** Kết quả tốt được phép khép lại; kết quả chưa tốt BẮT BUỘC đi tiếp. */
@@ -958,7 +961,7 @@ export const PLAN_DECISION_HINT: Record<PlanDecision, string> = {
   adjust: 'Cùng phương án, sửa mô tả, người thực hiện hoặc ngày dự kiến kết thúc. Bản cũ giữ trong lịch sử.',
   replace: 'Khép phương án này (Được thay thế) và mở phương án mới. Đổi loại phương án thì chọn ở đây.',
   end: 'Khép phương án này. Case chỉ hoàn thành được khi mọi phương án đã khép.',
-  ask_manager: 'Chuyển sang chờ Quản lý quyết định. Thời gian chờ tính cho Quản lý.',
+  ask_manager: 'Lưu kết quả tuần như Giữ nguyên và gửi câu hỏi cho Quản lý. PA vẫn chạy.',
 };
 
 /** Bản NGẮN cho danh sách dọc trong panel Ghi kết quả (PR-UX3, mockup 15 §4): tên một dòng + `PLAN_DECISION_NGHIA` một dòng nghĩa. */
@@ -970,7 +973,7 @@ export const PLAN_DECISION_NGHIA: Record<PlanDecision, string> = {
   adjust: 'Cùng PA, sửa nội dung, người làm hoặc hạn',
   replace: 'Khép PA này, mở PA khác thay vào',
   end: 'Khép PA này; Case chỉ xong khi mọi PA đã khép',
-  ask_manager: 'Chuyển Quản lý quyết định',
+  ask_manager: 'Lưu như Giữ nguyên, gửi câu hỏi cho Quản lý',
 };
 /** Nút chính ở chân panel theo quyết định đang chọn. */
 export const NUT_LUU_KET_QUA: Record<PlanDecision, string> = {
