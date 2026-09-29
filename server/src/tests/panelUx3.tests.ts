@@ -111,14 +111,14 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     assert(!/Cập nhật|Xác định nguyên nhân/.test(JSON.stringify(v)), JSON.stringify(v));
   });
 
-  check('UX3 (1) · badgeLop: "{n} bài chờ chấm" (tooltip giữ câu cũ), "{n} HV chờ xếp lớp", "{n} Case mở"', () => {
-    const b = d.badgeLop({ needsPlacement: true, canXepLop: 4, missingSkills: [], soBaiChoCham: 9, needScoresTitle: 'Bạn cần chấm: 9 bài',
-      soCaseMo: 3, phase: 'running', missingCount: 0 });
+  check('UX3 (1) · badgeLop: "{n} bài chờ chấm" (tooltip giữ câu cũ), "{n} HV cần xếp lớp tiếp" (PR-HVL B4: gộp hết khoá + chưa lộ trình)', () => {
+    const b = d.badgeLop({ vai: 'gv', needsPlacement: true, canXepLop: 4, missingSkills: [], soBaiChoCham: 9, needScoresTitle: 'Bạn cần chấm: 9 bài',
+      phase: 'running', missingCount: 1, soEmQuaHan: 2 });
     const tatCa = [...b.hien, ...b.an];
-    assert(tatCa.find((x: any) => x.key === 'het-khoa')?.nhan === '4 HV chờ xếp lớp', 'het-khoa');
+    assert(tatCa.find((x: any) => x.key === 'xep-lop')?.nhan === '4 HV cần xếp lớp tiếp', 'xep-lop');
     const cham = tatCa.find((x: any) => x.key === 'cham');
     assert(cham?.nhan === '9 bài chờ chấm' && cham?.title === 'Bạn cần chấm: 9 bài', JSON.stringify(cham));
-    assert(tatCa.find((x: any) => x.key === 'case')?.nhan === '3 Case mở', 'case');
+    assert(!tatCa.some((x: any) => x.key === 'case'), 'badge "Case mở" đã bỏ');
     assert(b.hien.length === 2, 'tối đa 2 badge');
   });
 

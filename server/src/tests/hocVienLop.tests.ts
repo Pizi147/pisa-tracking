@@ -80,11 +80,13 @@ export async function runHocVienLopTests(t: YThucTestKit) {
 
   check('PR-Qa · Q4 chip lọc: nhãn THUAT_NGU, khoá URL cũ vẫn mở đúng chip, missing_scores sang Test › Lịch Test', () => {
     eq(d.LOC_HOC_VIEN.map((k: string) => d.LOC_HOC_VIEN_NHAN[k].nhan),
-      ['Tất cả', 'Đang SOS', 'Có Case đang xử lý', 'Case thiếu PA học thuật', 'Case quá hạn cập nhật', 'Thiếu thông tin'], 'Nhãn chip');
+      ['Tất cả', 'Cần làm', 'Chờ duyệt', 'Đang SOS', 'Thiếu thông tin'], 'Nhãn chip');
     eq(d.docThamSoLoc(null), { loc: 'tat-ca' }, 'Không có view');
     eq(d.docThamSoLoc('classes'), { loc: 'tat-ca' }, 'view=classes cũ');
     eq(d.docThamSoLoc('sos_open'), { loc: 'sos' }, 'signals.ts dùng sos_open');
-    eq(d.docThamSoLoc('case_no_plan'), { loc: 'case_no_plan' }, 'WeeklyBoard');
+    eq(d.docThamSoLoc('case_no_plan'), { loc: 'can-lam' }, 'WeeklyBoard: ba chip Case cũ gộp thành Cần làm (K2-03)');
+    eq(d.docThamSoLoc('case_overdue'), { loc: 'can-lam' }, 'BranchPulse');
+    eq(d.docThamSoLoc('case_working'), { loc: 'can-lam' }, 'Link cũ');
     eq(d.docThamSoLoc('missing_scores'), { chuyenDen: '/test/lich' }, 'Việc nhập điểm nằm ở khu Test');
     eq(d.docThamSoLoc('la'), { loc: 'tat-ca' }, 'Khoá lạ');
   });
@@ -103,24 +105,24 @@ export async function runHocVienLopTests(t: YThucTestKit) {
   check('PR-Qa · §3.6 Kết quả gần nhất FT: Overall to + "Thiếu x" + chip SOS; dòng phụ đợt · kỳ vọng · kỹ năng thiếu', () => {
     const ft = { mode: 'ielts_band', attemptLabel: 'MT2', sosLevel: 1, provisional: false, scored: 4, required: 4, failed: null,
       overall: 6.0, expectation: 6.5, belowSkills: [{ skill: 'listening', band: 5.5 }], failedSkills: [] };
-    eq(d.ketQuaGanNhat(ft), { chinh: '6.0', thieu: 'Thiếu 0.5', dat: false, sos: 'SOS 1', phu: 'MT2 · kỳ vọng 6.5 · Thiếu L 5.5' }, 'Đủ điểm');
+    eq(d.ketQuaGanNhat(ft), { chinh: '6.0', lech: '−0.5', dat: false, sos: 'SOS 1', dong1: 'MT2 · kỳ vọng 6.5', dong2: 'Không đạt: L' }, 'Đủ điểm');
     eq(d.ketQuaGanNhat({ ...ft, overall: null, scored: 2, sosLevel: 2, provisional: true,
       belowSkills: [{ skill: 'writing', band: 5.5 }, { skill: 'speaking', band: 6.0 }] }),
-      { chinh: '—', thieu: null, dat: false, sos: 'SOS 2', phu: 'MT2 · kỳ vọng 6.5 · mới có 2/4 kỹ năng · Thiếu W 5.5, S 6.0', sosTamThoi: true }, 'Tạm thời');
+      { chinh: '—', lech: null, dat: false, sos: 'SOS 2', dong1: 'MT2 · kỳ vọng 6.5 · 2/4 kỹ năng có điểm', dong2: 'Không đạt: W S', sosTamThoi: true }, 'Tạm thời');
     eq(d.ketQuaGanNhat({ ...ft, overall: 6.5, expectation: 6.0, sosLevel: 0, belowSkills: [] }),
-      { chinh: '6.5', thieu: null, dat: true, sos: null, phu: 'MT2 · kỳ vọng 6.0' }, 'Đạt: chỉ ✓ nhỏ');
-    eq(d.ketQuaGanNhat(null), { chinh: '—', thieu: null, dat: false, sos: null, phu: 'Chưa có kết quả' }, 'Chưa thi');
+      { chinh: '6.5', lech: null, dat: true, sos: null, dong1: 'MT2 · kỳ vọng 6.0', dong2: null }, 'Đạt: chỉ ✓ nhỏ');
+    eq(d.ketQuaGanNhat(null), { chinh: '—', lech: null, dat: false, sos: null, dong1: 'Chưa có kết quả', dong2: null }, 'Chưa thi');
   });
 
   check('PR-Qa · §2/§3.6 Kết quả gần nhất lớp thường: "3/4 môn đạt", không "kỳ vọng", không "MT"', () => {
     const th = { mode: 'ratio', attemptLabel: 'Giữa khoá', sosLevel: 1, provisional: false, scored: 4, required: 4, failed: 1,
       overall: null, expectation: null, belowSkills: [], failedSkills: [{ skill: 'writing', score: 12, total: 20 }] };
     const k = d.ketQuaGanNhat(th);
-    eq(k, { chinh: '3/4 môn đạt', thieu: null, dat: false, sos: 'SOS 1', phu: 'Giữa khoá · chưa đạt W 12/20' }, 'Đủ điểm');
+    eq(k, { chinh: '3/4 môn đạt', lech: null, dat: false, sos: null, dong1: 'Giữa khoá', dong2: 'Không đạt: W' }, 'Đủ điểm (T58: lớp thường không SOS)');
     eq(d.ketQuaGanNhat({ ...th, attemptLabel: 'Cuối khoá', scored: 2, failed: 0, sosLevel: null, failedSkills: [] }),
-      { chinh: '2/2 môn đạt (đã chấm)', thieu: null, dat: false, sos: null, phu: 'Cuối khoá · còn 2 môn chưa có điểm' }, 'Còn thiếu môn');
+      { chinh: '2/2 môn đạt', lech: null, dat: false, sos: null, dong1: 'Cuối khoá · 2/4 môn có điểm', dong2: null }, 'Còn thiếu môn');
     eq(d.ketQuaGanNhat({ ...th, sosLevel: 0, failed: 0, failedSkills: [] }).dat, true, 'Đạt đủ bốn môn');
-    assert(!/kỳ vọng|MT\d|Overall|Normal/.test(JSON.stringify(k)), `Chữ FT lọt vào lớp thường: ${JSON.stringify(k)}`);
+    assert(!/kỳ vọng|MT\d|Overall|Normal|SOS|…/.test(JSON.stringify(k)), `Chữ FT / SOS / "…" lọt vào lớp thường: ${JSON.stringify(k)}`);
   });
 
   check('PR-Qa · §3.6 cột Khoá lớp thường "FOU · W8/8" + "kết thúc W4 SEP"; "tiếp theo: …" chỉ khi đã ghi', () => {
@@ -132,12 +134,18 @@ export async function runHocVienLopTests(t: YThucTestKit) {
   });
 
   check('PR-Qa · Q7 hộp lớp: tối đa 2 badge theo thứ tự ưu tiên, phần còn lại gom "+n"', () => {
-    const b = d.badgeLop({ needsPlacement: true, canXepLop: 4, missingSkills: ['writing'], soBaiChoCham: 3, needScoresTitle: 'Lớp còn 3 bài chưa nhập điểm',
-      soCaseMo: 2, phase: 'final_week', missingCount: 1 });
-    eq(b.hien.map((x: any) => x.nhan), ['4 HV chờ xếp lớp', 'Thiếu GV W'], 'Hai badge đầu');
-    eq(b.an.map((x: any) => x.key), ['cham', 'case', 'chang', 'thieu-tt'], 'Phần gom');
-    const c = d.badgeLop({ needsPlacement: false, canXepLop: 8, missingSkills: [], soBaiChoCham: 0, needScoresTitle: null, soCaseMo: 6, phase: 'running', missingCount: 0 });
-    eq(c.hien, [{ key: 'case', nhan: '6 Case mở', tone: 'muted' }], 'Chỉ Case');
+    const goc = { needsPlacement: true, canXepLop: 4, missingSkills: ['writing'], soBaiChoCham: 3, needScoresTitle: 'Lớp còn 3 bài chưa nhập điểm',
+      phase: 'final_week', missingCount: 1, soChoDuyet: 2, soEmQuaHan: 1 };
+    const ql = d.badgeLop({ ...goc, vai: 'ql' });
+    eq(ql.hien.map((x: any) => x.nhan), ['2 chờ duyệt', '4 HV cần xếp lớp tiếp'], 'B4: Quản lý — chờ duyệt, cần xếp lớp trước');
+    eq(ql.an.map((x: any) => x.key), ['cham', 'qua-han', 'thieu-gv', 'chang', 'thieu-tt'], 'Phần gom (Quản lý)');
+    const gv = d.badgeLop({ ...goc, vai: 'gv' });
+    eq(gv.hien.map((x: any) => x.nhan), ['3 bài chờ chấm', '1 HV quá hạn việc'], 'B4: GV — việc của mình trước');
+    eq(gv.an.map((x: any) => x.key), ['chang', 'thieu-gv', 'thieu-tt', 'xep-lop', 'cho-duyet'], 'Phần gom (GV)');
+    eq([...ql.hien, ...ql.an].find((x: any) => x.key === 'qua-han').tone, 'danger', 'qua-han tone danger');
+    eq([...ql.hien, ...ql.an].find((x: any) => x.key === 'cho-duyet').tone, 'info', 'cho-duyet tone info');
+    const c = d.badgeLop({ vai: 'gv', needsPlacement: false, canXepLop: 8, missingSkills: [], soBaiChoCham: 0, needScoresTitle: null, phase: 'running', missingCount: 0 });
+    eq(c.hien, [], 'Không còn badge "Case mở" (K2-06)');
     assert(!/Progress|Final/.test(Object.values(d.CLASS_PHASE_LABEL).join(' ')), 'CLASS_PHASE_LABEL còn Progress/Final');
     eq(d.CLASS_PHASE_LABEL.progress_week, 'Thi Giữa khoá tuần này', 'Chữ chặng thi');
   });
@@ -276,7 +284,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     eq([s.expectation, s.overall], [6, 6], 'MT2: kỳ vọng 6.5 − 0.5; Overall (5+6+6+6)/4 = 5.75 → 6.0');
     eq(s.belowSkills, [{ skill: 'listening', band: 5 }], 'Chỉ L dưới kỳ vọng');
     eq(s.failedSkills, [], 'FT không có môn đúng/tổng');
-    eq(d.ketQuaGanNhat(s), { chinh: '6.0', thieu: null, dat: false, sos: 'SOS 1', phu: 'MT2 · kỳ vọng 6.0 · Thiếu L 5.0' }, 'Chữ cột');
+    eq(d.ketQuaGanNhat(s), { chinh: '6.0', lech: null, dat: false, sos: 'SOS 1', dong1: 'MT2 · kỳ vọng 6.0', dong2: 'Không đạt: L' }, 'Chữ cột');
   });
 
   check('PR-Qa · §3.6 lớp thường: standingFor trả môn chưa đạt kèm đúng/tổng', () => {
@@ -287,7 +295,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     eq(s.failedSkills, [{ skill: 'writing', score: 12, total: 20 }], 'W 12/20 = 60% < 70%');
     eq([s.overall, s.expectation, s.belowSkills], [null, null, []], 'Lớp thường không có Overall/kỳ vọng');
     // PR-MON (MH2): em lớp FOU — ô W hiện G+V.
-    eq(d.ketQuaGanNhat(s), { chinh: '3/4 môn đạt', thieu: null, dat: false, sos: 'SOS 1', phu: 'Giữa khoá · chưa đạt G+V 12/20' }, 'Chữ cột');
+    eq(d.ketQuaGanNhat(s), { chinh: '3/4 môn đạt', lech: null, dat: false, sos: null, dong1: 'Giữa khoá', dong2: 'Không đạt: G+V' }, 'Chữ cột');
   });
 
   // ------------------------------------------------------------------ Task 5 · GET /hoc-vien-lop
@@ -316,7 +324,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     for (const k of d.LOC_HOC_VIEN) eq(r.dem[k], r.hocVien.filter((h: any) => h.loc.includes(k)).length, `Chip ${k}`);
     const ids = new Set(r.hocVien.map((h: any) => h.id));
     const quaHan = new Set(casesMod.listCases(P.admin, { queue: 'due' }).rows.filter((c: any) => ids.has(c.studentId)).map((c: any) => c.studentId));
-    eq(r.dem.case_overdue, quaHan.size, 'Case quá hạn cập nhật = hàng đợi due');
+    assert(r.dem['can-lam'] >= quaHan.size, `Cần làm (${r.dem['can-lam']}) phải gồm mọi em có Case quá hạn (${quaHan.size})`);
     const sos = [...standingMod.standingFor([...ids]).values()].filter((s: any) => (s.sosLevel ?? 0) > 0).length;
     eq(r.dem.sos, sos, 'Đang SOS = standing');
     assert(r.dem.sos > 0 && r.dem.thieu_tt >= 0, 'Bộ demo có em đang SOS');

@@ -202,9 +202,8 @@ export function danhSachHocVienLop(
     const loc: LocHocVien[] = ['tat-ca'];
     if ((standing.get(h.id)?.sosLevel ?? 0) > 0) loc.push('sos');
     const c = caseCua.get(h.id);
-    if (c?.working) loc.push('case_working');
-    if (c?.noPlan) loc.push('case_no_plan');
-    if (c?.overdue) loc.push('case_overdue');
+    /* Tạm (PR-HVL Task 1): ba cờ Case cũ gộp một chip "Cần làm"; Task 3 thay bằng `viecTiepCuaEm`. */
+    if (c?.working || c?.noPlan || c?.overdue) loc.push('can-lam');
     const thieu = missingForStudent({
       cycle: h.cycle_id
         ? { start_period_id: h.start_period_id, exam_month: h.exam_month, target_score: h.target_score, khong_cam_ket: h.khong_cam_ket,

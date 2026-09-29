@@ -473,4 +473,14 @@ PR-HSM (`pr-hsm-ho-so-mock`) chưa merge (worktree đang ở `e7d6af94`); PR-XUA
 Dòng mã thật khớp kế hoạch (lệch ≤ 20 dòng).
 
 
+**Task 1 (30/09) — 1732 phép kiểm (≥ mốc 1722).** Luật thuần xong ở `shared/domain/hocVienLop.ts`: `ketQuaGanNhat` hai dòng (`chinh/lech/dat/sos/dong1/dong2`), chip
+`tat-ca · can-lam · cho-duyet · sos · thieu_tt` + `demLoc`, `badgeLop` theo vai (`xep-lop`, `cho-duyet`, `qua-han`), `viecTiepCuaEm` + `tachViecChung`, `hangCanHoTro` + `sapEmCanHoTro`,
+`nutChinhDauTrang`. Quyết định nhỏ: (a) **giữ** `catDongPhu`/`DONG_PHU_TOI_DA` — `congViec.ts:186` còn dùng; (b) **giữ tạm** `viecTiepTheoCua`, `chonCaseChinh`, `CaseChoViec` (`dich` của
+`ViecTiepTheo` để tuỳ chọn) đến Task 5 vì `classes.ts` + `BangCanHoTro.tsx` chưa chuyển sang `viecTiepCuaEm` — build phải xanh sau từng Task; (c) việc "Đề ra PA" (Case chưa PA, không hạn) tone
+`warn` (để vẫn vào chip Cần làm như chip Case cũ); "Hoàn thành Case" tone `info`. **Vá tạm để build xanh (làm thật ở Task 3/4/7):** server `hocVienLop.ts` gộp 3 cờ Case cũ vào `can-lam`;
+web `StudentsPage/DauTrangLop` gọi `badgeLop` với `vai` từ `session.roles`, `BangHocVienLop` vẽ `lech/dong1/dong2`.
+Phép kiểm cũ sửa chữ mong đợi (giữ ý kiểm): `hocVienLop.tests.ts` — nhãn chip, `docThamSoLoc` (ba khoá Case cũ → `can-lam`), `ketQuaGanNhat` (FT đủ/tạm thời/đạt/chưa thi, lớp thường: T58 không SOS), badge hộp lớp,
+chữ cột FT + FOU (`Không đạt: L`, `Không đạt: G+V`), đếm chip (`can-lam ≥ số em Case quá hạn`; Task 3 viết lại chặt hơn) · `panelUx3.tests.ts:114` badge · `lenLop.tests.ts:155` badge gộp `xep-lop` ·
+`nenGiaoDien.tests.ts:125` badge 7 loại (miễn ≤ 3 từ cho `xep-lop`, `qua-han`, `chang`). Thêm `prHvl.tests.ts` (`runPrHvlTests`, đăng ký cuối `run.ts`).
+
 > **Chủ sản phẩm chốt 30/09:** **có** cột "Sắp tới" (M3) ở danh sách Học viên & Lớp.
