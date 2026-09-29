@@ -650,6 +650,13 @@ khác ngày với bản thử thì chạy thử lại. 5. Chạy thử lần n�
   khi máy gửi, chữ thẻ dùng `moTaDoiLan2`. `rutDeNghiDoi`: bỏ `writing()` (#117 đã xoá), thêm `chotYeuCau(…,'tu_dong',{lyDo:'Rút — bài không
   còn vắng'})`; sửa mục 2 (rút cả lượt) cũng phải đóng thẻ tương ứng. Phép kiểm K5-28 của #117 phải còn xanh. Gộp xong `npm run check` một
   lần, bấm lại K9/K10 (dời do vắng → thẻ Lịch thi trong hộp), push, báo planning.
+  **Đã làm (29/09, sau khi #117 merge):** 10 file xung đột (thêm `classes/luatLoTrinh.ts`: `mucTieu` theo quyền của DUYET + tự tạo MT,
+  chuyển Case của MT). `absence.ts`: lõi `xuLyVangMotKyNang` bỏ `notifyPlanners` (thẻ thay, như #117); lý do máy gửi đề nghị lần 2 = "Không dự
+  thi — dấu "-" còn nguyên đến hết Chủ nhật" (không ghi "máy tự dời" cho bài chưa dời). Thẻ Lịch thi: tiêu đề Mock = `chuTheDoiLan2` (hàm
+  thuần, `moTaDoiLan2` gọi lại nó — thẻ nạp theo lô, không N+1); luật "thẻ chết" thêm lượt đã huỷ / MT lịch sử. `TU_DIEN_VA_CHU`: PR-DUYET
+  giữ §12, PR-MT thành §13. `npm run check` **1521** + 20 tốc độ xanh. Bấm lại K9/K10: hộp Chờ duyệt có thẻ "Dời L · MT1 · lần 2 · Duyệt = L
+  thi W4 SEP" (Ngô Bảo Châu, hạn 20/09 = CN tuần gửi); chuông GVBM còn "Đã tự dời …". Còn lại cho PR-DUYET/PR-UXF: dòng thẻ "đề nghị W4 SEP
+  2026" và "Nếu duyệt: … tuần W4 SEP 2026" còn năm trong mã tuần (G-6) — chữ của #117, không sửa ở đây.
 
 ## Planning chốt 29/09
 

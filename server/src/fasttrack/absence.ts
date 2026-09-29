@@ -296,7 +296,8 @@ function xuLyVangMotKyNang(conn: any, actor: number | null, attempt: any, row: a
   const dich = (moveNo > 1 || escalate ? tuanDichMacDinh(attemptId, skill, today) : null) ?? target;
   const id = insertRequest(conn, {
     attemptId, skill, moveNo, from: row.planned_period_id, to: dich.id,
-    reason: o.lyDo, by: actor, on: today, decideBy: hanDeNghi, idem: o.idem,
+    /* Máy gửi (lần 2 / chuyển Quản lý) thì lý do là dấu "-", không phải "máy tự dời" — thẻ Lịch thi đọc câu này. */
+    reason: actor === null ? 'Không dự thi — dấu "-" còn nguyên đến hết Chủ nhật' : o.lyDo, by: actor, on: today, decideBy: hanDeNghi, idem: o.idem,
   });
   const han = `hết Chủ nhật ${ngay(hanDeNghi, today)}`;
   /* PR-DUYET: `insertRequest` đã tạo thẻ Lịch thi (hạn = `hanDuyetDoiLan2`, người xin null khi máy gửi) — không báo riêng người xếp lịch. */
