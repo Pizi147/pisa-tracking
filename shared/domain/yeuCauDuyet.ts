@@ -115,6 +115,8 @@ export function nhanTrangThaiYc(t: TrangThaiYc, tuDuyet = false): { t: TrangThai
 /** Một thẻ như máy chủ trả cho giao diện (`GET /yeu-cau`). Chữ đã dựng sẵn — giao diện không tự ghép từ mã. */
 export type TheYeuCauDto = {
   id: number;
+  /** Id đối tượng gốc (đề nghị dời, PA…) — PR-XLMT: hồ sơ Mock tìm đúng thẻ Lịch thi của một đề nghị dời. */
+  doiTuongId?: number | null;
   loai: LoaiYeuCau;
   nhanLoai: string;
   phanLoai: PhanLoai;

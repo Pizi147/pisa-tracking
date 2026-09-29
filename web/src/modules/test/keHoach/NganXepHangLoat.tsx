@@ -2,21 +2,21 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, invalidate } from '../../../lib/api.ts';
 import { useApi } from '../../../lib/useApi.ts';
 import { useSession } from '../../../lib/session.tsx';
-import { addDaysStr } from '../../../lib/format.ts';
 import { KhungPanel, Khoi } from '../../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../../ui/loiForm.tsx';
 import { Nhan, type ToneNhan } from '../../../ui/Nhan.tsx';
 import { useToast } from '../../../ui/Toast.tsx';
 import { NutChon } from '../../../ui/ui.tsx';
 import {
-  O_KE_HOACH, emGiuLaiSauLuu, gomBaiXemTruoc, gomChip, mondayOfDate, nhanTuanKhoa, tenMon, tenMonNgan, tomTatHangLoat, tuanLich,
+  O_KE_HOACH, emGiuLaiSauLuu, gomBaiXemTruoc, gomChip, mondayOfDate, kyHieuLop, nhanTuanKhoa, tenMon, tenMonNgan, tomTatHangLoat, tuanLich,
   type BaiXemTruoc, type DongHangLoat, type KyNangKH,
   dsLoi,
 } from '@shared/domain/index.ts';
 import {
   KY, chuTinhTrang, dotCuaEm, emXongDot, khoaDot, nhanDot, thanDot,
-  type DotChon, type LuoiFTData, type LuoiThuongData,
+  type DotChon, type LopKH, type LuoiThuongData,
 } from './kieu.ts';
+import { KhungXepLich } from './NganXepLichMt.tsx';
 import { TuanNho, resolveTuan, type Tuan } from './TuanNho.tsx';
 
 const TONE_GHI_CHU: Record<BaiXemTruoc['ghiChu'], { tone: ToneNhan; chu: string }> = {
@@ -27,37 +27,41 @@ const TONE_GHI_CHU: Record<BaiXemTruoc['ghiChu'], { tone: ToneNhan; chu: string 
 type Hang = { studentId: number; ten: string; o: (d: DotChon) => { attemptId: number | null; kn: Parameters<typeof gomChip>[0] } };
 
 /**
- * XẾP LỊCH HÀNG LOẠT (R9, mockup 14 (3)) — `KhungPanel` rộng 720px, bốn khối trên MỘT màn: Đợt · Học viên · Kỹ năng ·
- * Xem trước; chân dính: Đóng trái, `Lưu lịch cho {a} em · {b} bài` phải. Dùng chung cho FT (đợt = MT{n}) và lớp thường
- * (đợt = Giữa khoá / Cuối khoá). TỰ TẢI lưới của lớp — không nhận lưới từ cha.
+ * XẾP LỊCH TEST — KHUNG LỚP THƯỜNG (R9, mockup 14 (3); PR-XLMT K4-19, Q3: MỘT lớp mỗi lần) — `KhungPanel` rộng 720px: chip chương
+ * trình + ô Lớp ở đầu, rồi Đợt · Học viên · Môn · Xem trước; chân dính: Đóng trái, `Lưu lịch cho {a} em · {b} bài` phải. Đợt =
+ * Giữa khoá / Cuối khoá theo mốc chương trình, tuần đề xuất của lớp. Khung Fast Track là `NganXepLichMt` (công tắc đầu ngăn).
+ * TỰ TẢI lưới của lớp — không nhận lưới từ cha.
  *
  * Xem trước gọi `/ke-hoach-test/hang-loat` với `xemTruoc:true` mỗi khi khối 1–3 đổi. Lưu theo EM (Q1): em có bài bị chặn
  * thì cả em không lưu. R9b: lưu xong mà còn em lỗi thì panel KHÔNG đóng và chỉ còn các em đó — tick mặc định chỉ đặt MỘT
  * LẦN khi đổi đợt (không theo dữ liệu lưới), nên lưới tải lại sau khi lưu không ghi đè danh sách "chỉ em lỗi".
  */
-export function NganXepHangLoat({ loai, classId, classCode, onClose, onDone }: {
-  loai: 'ft' | 'thuong'; classId: number; classCode: string; onClose: () => void; onDone: () => void;
+export function NganXepHangLoat({ lopThuong, classIdBanDau, coFt, onDoiKhung, onClose, onDone }: {
+  lopThuong: LopKH[]; classIdBanDau: number | null; coFt: boolean; onDoiKhung: (k: 'ft' | 'thuong') => void;
+  onClose: () => void; onDone: () => void;
 }) {
   const toast = useToast();
   const { session } = useSession();
-  const ft = useApi<LuoiFTData>(loai === 'ft' ? `/ke-hoach-test/ft/${classId}` : null);
-  const th = useApi<LuoiThuongData>(loai === 'thuong' ? `/ke-hoach-test/thuong/${classId}` : null);
-  const sanSang = loai === 'ft' ? !!ft.data : !!th.data;
-  /* K4-16, PF6: khung lớp thường lặp ĐÚNG bộ môn của chương trình (Pre FOU một dòng Tổng hợp); FT 4 kỹ năng L R W S. */
-  const ky: readonly KyNangKH[] = loai === 'thuong' ? th.data?.boMon ?? [] : KY;
-  const ct = loai === 'thuong' ? th.data?.chuongTrinh ?? null : null;
+  /* Q3: chip chương trình lọc lớp (chỉ chương trình có lớp), rồi chọn MỘT lớp — tuần đề xuất khác nhau theo lớp. */
+  const dsCt = useMemo(() => [...new Set(lopThuong.map((l) => l.chuongTrinh).filter((c): c is string => !!c))].sort(), [lopThuong]);
+  const lopBanDau = lopThuong.find((l) => l.id === classIdBanDau) ?? lopThuong.find((l) => l.hvChuaCoLich > 0) ?? lopThuong[0] ?? null;
+  const [ctChon, setCtChon] = useState<string | null>(lopBanDau?.chuongTrinh ?? null);
+  const [classId, setClassId] = useState<number | null>(lopBanDau?.id ?? null);
+  const lopTheoCt = lopThuong.filter((l) => !ctChon || l.chuongTrinh === ctChon);
+  const th = useApi<LuoiThuongData>(classId ? `/ke-hoach-test/thuong/${classId}` : null);
+  const sanSang = !!th.data && th.data.classId === classId;
+  /* K4-16, PF6: lặp ĐÚNG bộ môn của chương trình (Pre FOU một dòng Tổng hợp). */
+  const ky: readonly KyNangKH[] = th.data?.boMon ?? [];
+  const ct = th.data?.chuongTrinh ?? null;
 
-  const dots: DotChon[] = useMemo(() => {
-    if (loai === 'ft') return (ft.data?.cot ?? []).map((n) => ({ loai: 'ft' as const, attemptNo: n }));
-    return (th.data?.cot ?? []).map((c) => ({ loai: 'thuong' as const, kind: c.kind }));
-  }, [loai, ft.data, th.data]);
+  const dots: DotChon[] = useMemo(() => (th.data?.cot ?? []).map((c) => ({ loai: 'thuong' as const, kind: c.kind })), [th.data]);
 
-  const hangs: Hang[] = useMemo(() => {
-    if (loai === 'ft') {
-      return (ft.data?.hang ?? []).map((h) => ({ studentId: h.studentId, ten: h.ten, o: (d) => dotCuaEm({ loai: 'ft', luoi: ft.data!, hang: h }, d) }));
-    }
-    return (th.data?.hang ?? []).map((h) => ({ studentId: h.studentId, ten: h.ten, o: (d) => dotCuaEm({ loai: 'thuong', luoi: th.data!, hang: h }, d) }));
-  }, [loai, ft.data, th.data]);
+  const hangs: Hang[] = useMemo(
+    () => (th.data?.hang ?? []).map((h) => ({ studentId: h.studentId, ten: h.ten, o: (d) => dotCuaEm({ loai: 'thuong', luoi: th.data!, hang: h }, d) })),
+    [th.data],
+  );
+  /* Đổi lớp: đợt, tick, xem trước làm lại từ đầu. */
+  useEffect(() => { setDot(null); daDatTick.current = null; }, [classId]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const dotXongCaLop = (d: DotChon) => hangs.length > 0 && hangs.every((h) => emXongDot(h.o(d)));
   const dotConXep = useMemo(() => dots.filter((d) => !dotXongCaLop(d)), [dots, hangs]);   // eslint-disable-line react-hooks/exhaustive-deps
@@ -105,8 +109,6 @@ export function NganXepHangLoat({ loai, classId, classCode, onClose, onDone }: {
     if (dot.loai === 'thuong') {
       const de = th.data?.cot.find((c) => c.kind === dot.kind)?.deXuat ?? homNay;
       dat(de, de);
-    } else {
-      dat(homNay ? addDaysStr(homNay, 7) : null, homNay);      // L R W = tuần hiện tại, S = tuần sau (Q18)
     }
     return () => { huy = true; };
   }, [dotKey, sanSang, homNay]);   // eslint-disable-line react-hooks/exhaustive-deps
@@ -127,7 +129,7 @@ export function NganXepHangLoat({ loai, classId, classCode, onClose, onDone }: {
   const khoaTuan = JSON.stringify(tuanGui);
 
   useEffect(() => {
-    if (!dot || !Object.keys(tuanGui).length || !studentIds.length) { setDong(null); setDangXem(false); return; }
+    if (!classId || !dot || !Object.keys(tuanGui).length || !studentIds.length) { setDong(null); setDangXem(false); return; }
     const seq = ++soDangXem.current;
     setDangXem(true);
     const timer = setTimeout(() => {
@@ -149,16 +151,16 @@ export function NganXepHangLoat({ loai, classId, classCode, onClose, onDone }: {
 
   const coKn = ky.some((k) => chonKn[k]);
   const loi = dsLoi([
-    { khoa: 'dot', nhan: 'Đợt', chon: true }, { khoa: 'hoc-vien', nhan: 'Học viên', chon: true }, { khoa: 'ky-nang', nhan: loai === 'ft' ? 'Kỹ năng' : 'Môn', chon: true },
+    { khoa: 'dot', nhan: 'Đợt', chon: true }, { khoa: 'hoc-vien', nhan: 'Học viên', chon: true }, { khoa: 'ky-nang', nhan: 'Môn', chon: true },
   ], { dot, 'hoc-vien': studentIds.length, 'ky-nang': coKn });
-  if (coKn && ky.some((k) => chonKn[k] && !tuan[k])) loi.push({ khoa: 'tuan', nhan: 'Tuần', lyDo: `${loai === 'ft' ? 'Kỹ năng' : 'Môn'} đã chọn còn thiếu tuần` });
+  if (coKn && ky.some((k) => chonKn[k] && !tuan[k])) loi.push({ khoa: 'tuan', nhan: 'Tuần', lyDo: `${'Môn'} đã chọn còn thiếu tuần` });
   const thieu = loi.map((l) => l.nhan);
   const loiCua = (khoa: string) => (lf.daBam ? loi.find((l) => l.khoa === khoa)?.lyDo ?? null : null);
   const dongLoi = (khoa: string) => (loiCua(khoa) ? <span className="block text-[11px] text-late">{loiCua(khoa)}</span> : null);
 
   const luu = async () => {
     lf.bam();
-    if (busy || thieu.length || !dot) return;
+    if (busy || thieu.length || !dot || !classId) return;
     if (luuDuoc.soEmLuu === 0) { toast.push('error', 'Chưa có bài nào lưu được — xem cột Ghi chú ở Xem trước.'); return; }
     setBusy(true);
     try {
@@ -187,12 +189,30 @@ export function NganXepHangLoat({ loai, classId, classCode, onClose, onDone }: {
   );
   const tatCaKn = ky.length > 0 && ky.every((k) => chonKn[k]);
   /* Chữ theo số môn thật: FT "cả 4 kỹ năng"; lớp thường "cả 4 môn"; Pre FOU "Chọn Tổng hợp". */
-  const chuChonCa = loai === 'ft' ? 'Chọn cả 4 kỹ năng' : ky.length === 1 ? `Chọn ${tenMon(ct, ky[0])}` : `Chọn cả ${ky.length} môn`;
+  const chuChonCa = ky.length === 1 ? `Chọn ${tenMon(ct, ky[0])}` : `Chọn cả ${ky.length} môn`;
 
   return (
-    <KhungPanel tieuDe={`Xếp lịch hàng loạt · ${classCode}`} rong="rong" onDong={onClose}
+    <KhungPanel tieuDe="Xếp lịch Test" rong="rong" onDong={onClose}
+      tabs={<KhungXepLich value="thuong" onChange={onDoiKhung} coFt={coFt} coThuong />}
       chan={{ huy: { nhan: 'Đóng', onClick: onClose }, chinh, conThieu: lf.conThieu(loi) }}>
-      {!sanSang ? <div className="py-6 text-sm text-slate-500">Đang tải lớp…</div> : (
+      <Khoi tieuDe="Lớp">
+        {dsCt.length > 1 && (
+          <div className="flex flex-wrap gap-1.5">
+            {dsCt.map((c) => (
+              <NutChon key={c} nho chon={ctChon === c} onClick={() => {
+                setCtChon(c);
+                if (!lopThuong.some((l) => l.id === classId && l.chuongTrinh === c)) setClassId(lopThuong.find((l) => l.chuongTrinh === c)?.id ?? null);
+              }}>{kyHieuLop(c, null) ?? c}</NutChon>
+            ))}
+          </div>
+        )}
+        <select className="field w-full sm:w-64" value={classId ?? ''} aria-label="Lớp"
+          onChange={(e) => setClassId(Number(e.target.value) || null)}>
+          {!classId && <option value="">Chọn lớp…</option>}
+          {lopTheoCt.map((l) => <option key={l.id} value={l.id}>{l.code}{l.chiNhanh ? ` · ${l.chiNhanh}` : ''}</option>)}
+        </select>
+      </Khoi>
+      {!classId ? <div className="py-6 text-sm text-slate-500">Chọn một lớp để xếp lịch.</div> : !sanSang ? <div className="py-6 text-sm text-slate-500">Đang tải lớp…</div> : (
         <>
           <Khoi tieuDe="Đợt">
             <div id={lf.oId('dot')} tabIndex={-1} className="flex flex-wrap gap-1.5 outline-none">
@@ -242,7 +262,7 @@ export function NganXepHangLoat({ loai, classId, classCode, onClose, onDone }: {
             {dongLoi('hoc-vien')}
           </Khoi>
 
-          <Khoi tieuDe={loai === 'ft' ? 'Kỹ năng' : 'Môn'} luat={loai === 'ft' ? <span className="block">W = chấm cả W1 và W2 — một lịch W đặt cho cả hai.</span> : undefined}>
+          <Khoi tieuDe="Môn">
             {/* Lớp một môn (Pre FOU): ô "Chọn …" trùng với ô môn bên dưới → ẩn. */}
             {ky.length > 1 && (
             <label className="flex min-h-[44px] items-center gap-2 text-sm text-slate-200 sm:min-h-[32px]">
@@ -254,7 +274,7 @@ export function NganXepHangLoat({ loai, classId, classCode, onClose, onDone }: {
             {dongLoi('ky-nang')}
             <div id={lf.oId('tuan')} tabIndex={-1} className="space-y-3 outline-none">
             {ky.map((k) => (
-              <DongKyNang key={k} k={k} ct={ct} oId={ky.length === 1 ? lf.oId('ky-nang') : undefined} laFt={loai === 'ft'} tick={chonKn[k]} onTick={(v) => setChonKn((s) => ({ ...s, [k]: v }))}
+              <DongKyNang key={k} k={k} ct={ct} oId={ky.length === 1 ? lf.oId('ky-nang') : undefined} laFt={false} tick={chonKn[k]} onTick={(v) => setChonKn((s) => ({ ...s, [k]: v }))}
                 tuan={tuan[k]} goc={homNay} onTuan={(t) => setTuan((s) => ({ ...s, [k]: t }))}
                 nhanKhoa={dot?.loai === 'thuong' && tuan[k]
                   ? nhanTuanKhoa(tuan[k]!.weekStart, th.data?.khaiGiang ?? null, th.data?.tongTuan ?? null) : null} />
@@ -263,7 +283,7 @@ export function NganXepHangLoat({ loai, classId, classCode, onClose, onDone }: {
             {dongLoi('tuan')}
             <div className="grid items-start gap-2" style={{ gridTemplateColumns: 'minmax(0,1fr) auto' }}>
               <div className="min-w-0">
-                <span className="mb-1 block text-[11.5px] font-bold text-slate-200">Áp một tuần cho mọi {loai === 'ft' ? 'kỹ năng' : 'môn'} đã chọn</span>
+                <span className="mb-1 block text-[11.5px] font-bold text-slate-200">Áp một tuần cho mọi môn đã chọn</span>
                 <TuanNho d={ap ?? { periodId: null, weekStart: null }} goc={homNay} onTuan={setAp} />
               </div>
               <button type="button" className="btn mt-[22px] min-h-[44px] sm:min-h-[32px]" disabled={!ap}
@@ -290,7 +310,7 @@ export function NganXepHangLoat({ loai, classId, classCode, onClose, onDone }: {
                     <colgroup><col style={{ width: 150 }} /><col style={{ width: 80 }} /><col style={{ width: 140 }} /><col /></colgroup>
                     <thead>
                       <tr className="text-left text-[10px] uppercase tracking-wide text-slate-500">
-                        <th className="py-1 font-bold">Học viên</th><th className="py-1 font-bold">{loai === 'ft' ? 'Kỹ năng' : 'Môn'}</th>
+                        <th className="py-1 font-bold">Học viên</th><th className="py-1 font-bold">{'Môn'}</th>
                         <th className="py-1 font-bold">Tuần cũ → mới</th><th className="py-1 font-bold">Ghi chú</th>
                       </tr>
                     </thead>

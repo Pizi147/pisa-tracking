@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, ENTRY_SKILLS, ENTRY_SKILL_LABEL, MOCK_FT_STUDY_WEEK, NO_SHOW_OVERRIDDEN_NOTE,
-  PERMISSIONS, awaitingScore, cachHuyLuot, kiemLyDo, kiemSoMtMoi, laLichSu, ngay, noShowStateOf, noShowText, pendingSkillsOf, soMtKeTiep, tenMon, tuanLich,
+  PERMISSIONS, awaitingScore, cachHuyLuot, kiemLyDo, kiemLyDoThaoTac, kiemSoMtMoi, laLichSu, ngay, noShowStateOf, noShowText, pendingSkillsOf, soMtKeTiep, tenMon, tuanLich,
   type CachHuy,
   type AssessedSkill, type EntrySkill, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
@@ -9,7 +9,7 @@ import { demoToday } from '../demoConfig.ts';
 import { badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { dotHoanTat, dotHoanTatMany, quyenSuaSauHoanTat } from './hoanTat.ts';
 import {
-  can, classScopeSql, defaultWorkScope, editableSkills, moveableSkills, mySkills, require_, scopeFor, scoreEditPath, type LuotQuyen,
+  can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, moveableSkills, mySkills, require_, scopeFor, scoreEditPath, type LuotQuyen,
   type Principal,
 } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
@@ -208,6 +208,8 @@ export function weekStartOf(attempt: any): string | null {
 
 export type SkillCell = {
   skill: EntrySkill;
+  /** PR-XLMT (rà #126): ô này là VIỆC nhập điểm của người xem (khác quyền sửa `canEdit`). */
+  viec: boolean;
   assessedSkill: AssessedSkill;
   required: boolean;
   rawScore: number | null;
@@ -273,6 +275,8 @@ export function skillCells(
   hoanTat: { hoanTat: boolean; chuNhatCuoi: string | null } = { hoanTat: false, chuNhatCuoi: null },
 ): SkillCell[] {
   const editable = attempt.class_id ? editableSkills(p, attempt.class_id, ENTRY_SKILLS, luotQuyen(attempt, rows, today)) : [];
+  /* PR-XLMT (rà #126): "việc nhập điểm" không tính vế Quản lý sửa mọi lúc. */
+  const viecList = attempt.class_id ? editableSkills(p, attempt.class_id, ENTRY_SKILLS, luotQuyen(attempt, rows, today), true) : [];
   const mine = attempt.class_id ? mySkills(p, attempt.class_id, ENTRY_SKILLS) : [];
   const mode = scoringModeOf(attempt);
   const schedule = skillScheduleOf(attempt, skillRows);
@@ -380,6 +384,9 @@ export function skillCells(
       progress,
       canEdit: required && !cancelled && view.sitStatus !== 'cancelled'
         && (hoanTat.hoanTat ? suaSauHoanTat : editable.includes(skill)),
+      /* Việc nhập điểm của người xem (bảng lớp "Nhập điểm …") — như `canEdit` nhưng trước hoàn tất bỏ quyền sửa mọi lúc của Quản lý. */
+      viec: required && !cancelled && view.sitStatus !== 'cancelled'
+        && (hoanTat.hoanTat ? suaSauHoanTat : viecList.includes(skill)),
       /* R11: đánh dấu "đợt đã hoàn tất" cho MỌI người xem — Quản lý vẫn `khoa && canEdit` (sửa qua hộp lý do). */
       khoa: hoanTat.hoanTat,
       /*
@@ -972,6 +979,8 @@ export function attemptDetail(p: Principal, attemptId: number) {
     scoreHistory: scoreHistoryOf(attemptId),
     viewer: {
       canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id }),
+      /** PR-XLMT (T38): GVCN của lớp — Báo vắng / Xếp lại bài vắng theo bảng thao tác `thaoTacKyNang`. */
+      laGvcn: !!a.class_id && isCoreTeacherOf(p, a.class_id),
       canCancel: can(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id }),
       /** PR-MT (M-12, K4-10): cách huỷ được phép + hệ quả thật, để hộp huỷ nói trước — không bấm rồi mới biết. */
       huyLuot: a.status !== 'cancelled' && can(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id })
@@ -1166,8 +1175,8 @@ function hasAnyBand(attemptId: number, skill: string): boolean {
  * thao tác miễn môn, và không bỏ một môn khỏi phạm vi SAU khi đã xác nhận em vắng môn đó.
  * Ở đây chỉ còn việc tính lại kết luận của đợt sau khi phạm vi đổi.
  */
-export function setSkillSkip(p: Principal, attemptId: number, skill: string, skipped: boolean, reason?: string) {
-  const r = setSkillScope(p, attemptId, skill, !skipped, reason ?? null);
+export function setSkillSkip(p: Principal, attemptId: number, skill: string, skipped: boolean, reason?: string, opts: { khiTao?: boolean } = {}) {
+  const r = setSkillScope(p, attemptId, skill, !skipped, reason ?? null, opts);
   refreshOutcome(p, attemptId);
   return r;
 }
@@ -1178,6 +1187,7 @@ export function setDeadlineOverride(p: Principal, attemptId: number, date: strin
   require_(p, PERMISSIONS.DEADLINE_OVERRIDE, { classId: a.class_id, studentId: a.student_id },
     'Chỉ Quản lý và Admin chi nhánh mới đặt được hạn riêng.');
   if (date && !isIsoDate(date)) throw badRequest('Hạn không hợp lệ.');
+  if (date) { const loi = kiemLyDoThaoTac('Dời hạn chấm', reason); if (loi) throw badRequest(loi); }   // K4-15
   db()
     .prepare(
       `UPDATE assessment_attempts SET deadline_override = ?, deadline_override_by = ?,
@@ -1713,8 +1723,9 @@ export function attemptHref(a: { id: number; kind?: string | null; classId?: num
 function pendingView(attemptId: number, skill: string) {
   const r = pendingMove(attemptId, skill);
   if (!r) return null;
+  /* Nhớ theo request (rà #126, tốc độ): màn Công việc dựng ô của cùng lượt nhiều lần — không tra lại mã tuần mỗi lần. */
   const w = r.to_period_id
-    ? (db().prepare('SELECT code FROM report_periods WHERE id = ?').get(r.to_period_id) as any)
+    ? nho(`ma-tuan:${r.to_period_id}`, () => db().prepare('SELECT code FROM report_periods WHERE id = ?').get(r.to_period_id) as any)
     : null;
   return { id: r.id, decideBy: r.decide_by, toWeek: w?.code ?? null, moveNo: r.move_no };
 }

@@ -323,9 +323,9 @@ function RegisterForm({ info, onDone }: { info: AuthInfo | null; onDone: () => v
   );
 }
 
-/** Tài khoản xem được kịch bản mới — PR-MT (Task 10): MT lịch sử, lớp RF, dời do vắng lần 2 · PR-YT4 (K1-55): Ý thức v4. */
+/** Tài khoản xem được kịch bản mới — PR-MT (Task 10): MT lịch sử, lớp RF, dời do vắng lần 2 · PR-YT4 (K1-55): Ý thức v4 · PR-XLMT: xếp lịch MT nhiều lớp. */
 const XEM_DUOC: Record<string, string[]> = {
-  'Nguyễn Khánh Vy': ['Xem được: MT lịch sử, lớp RF, dời lần 2', 'Chờ duyệt Ý thức + Báo lên'],
+  'Nguyễn Khánh Vy': ['Xem được: MT lịch sử, lớp RF, dời lần 2', 'Chờ duyệt Ý thức + Báo lên', 'Xếp lịch MT nhiều lớp, Cần xếp lại'],
   'Trần Ngọc Hà': ['Xem được: MT lịch sử, lớp RF, dời lần 2', 'Ý thức: em quá hạn, em bắt buộc, khai bậc, WL 2'],
 };
 

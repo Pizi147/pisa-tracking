@@ -11,6 +11,8 @@ import { addDaysIso } from './sos.ts';
 import { mondayOfDate } from './week.ts';
 
 export const CUA_SO_CASE_LICH_SU_NGAY = 28;
+/** T37: một lộ trình tối đa MT8. */
+export const MT_TOI_DA = 8;
 
 /** Tuần HỌC của từng MT mặc định theo lộ trình. `null` = lớp thường (không có MT). */
 export function lichMtMacDinh(route: string | null): number[] {
@@ -54,11 +56,34 @@ export function soMtKeTiep(ds: LuotSo[]): number {
 export function kiemSoMtMoi(ds: LuotSo[], n: number): string | null {
   const con = ds.filter((x) => x.status !== 'cancelled');
   if (!Number.isInteger(n) || n < 1) return 'Số MT không hợp lệ.';
+  if (n > MT_TOI_DA) return `Tối đa MT${MT_TOI_DA} cho một lộ trình.`;
   if (con.some((x) => x.attempt_no === n)) return `Lộ trình này đã có MT${n}. Đổi tuần thay vì tạo mới.`;
   const ke = soMtKeTiep(ds);
   if (n > ke) return `Chưa có MT${ke} — xếp MT${ke} trước rồi mới xếp MT${n}.`;
   if (ds.some((x) => x.attempt_no === n && x.status === 'cancelled' && x.coDiem)) return `MT${n} đã huỷ nhưng còn điểm — không dùng lại số này.`;
   return null;
+}
+
+/**
+ * K2-33(1), Q8: tuần đã qua CHỈ để TẠO MT lịch sử — mọi kỹ năng đều tuần đã qua VÀ em vào web sau các tuần đó.
+ * `ketThuc` = Chủ nhật tuần thi của từng kỹ năng (so Chủ nhật, không so thứ Hai).
+ */
+export function kiemTuanDaQua(o: { ketThuc: string[]; ngayVaoWeb: string; homNay: string; taoMoi: boolean }): { cau: string | null; lichSu: boolean } {
+  const qua = o.ketThuc.filter((w) => laLichSu(w, o.homNay));
+  if (!qua.length) return { cau: null, lichSu: false };
+  if (!o.taoMoi) return { cau: 'Không dời vào tuần đã qua — chọn tuần từ tuần này trở đi.', lichSu: false };
+  if (qua.length < o.ketThuc.length) return { cau: 'Tuần đã qua chỉ dùng để nhập MT lịch sử — chọn tuần đã qua cho mọi kỹ năng.', lichSu: false };
+  const muonNhat = [...qua].sort()[qua.length - 1];
+  if (o.ngayVaoWeb.slice(0, 10) <= muonNhat.slice(0, 10)) {
+    return { cau: 'Em đã có trên web từ trước tuần này — không xếp MT lịch sử vào tuần em đã học trên web.', lichSu: false };
+  }
+  return { cau: null, lichSu: true };
+}
+
+/** Rà #120: "Đã thi tới MT" = d mà MT1…MT(d) có MT rơi vào tuần chưa qua → số các MT đó (để nhắc lùi Tuần bắt đầu). */
+export function mtDaThiChuaQua(route: string | null, tuanBatDau: string, daThiToiMt: number, homNay: string): number[] {
+  return Array.from({ length: daThiToiMt }, (_, i) => i + 1)
+    .filter((n) => !laLichSu(addDaysIso(tuanBatDau.slice(0, 10), (tuanHocCuaMt(route, n) - 1) * 7 + 6), homNay));
 }
 
 export type CachHuy = 'ca-luot' | 'phan-con-lai' | null;

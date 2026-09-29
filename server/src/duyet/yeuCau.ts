@@ -277,7 +277,7 @@ function theRa(r: any, ngu: NguCanhThe): TheYeuCauDto {
   let duLieu: Record<string, unknown> | null = null;
   try { duLieu = r.du_lieu ? JSON.parse(r.du_lieu) : null; } catch { duLieu = null; }
   return {
-    id: r.id, loai: r.loai, nhanLoai: meta.nhan, phanLoai: meta.phanLoai, nhanPhanLoai: PHAN_LOAI_LABEL[meta.phanLoai],
+    id: r.id, loai: r.loai, nhanLoai: meta.nhan, phanLoai: meta.phanLoai, nhanPhanLoai: PHAN_LOAI_LABEL[meta.phanLoai], doiTuongId: r.doi_tuong_id ?? null,
     kieuNut: meta.kieuNut, hangLoat: meta.hangLoat,
     tieuDe: mt.tieuDe, phu: mt.phu ?? null, dong: mt.dong, neuDuyet: mt.neuDuyet ?? null,
     mo: mt.mo ?? (r.hoc_vien_id ? duongHoSoHocVien(r.hoc_vien_id) : null),

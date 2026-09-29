@@ -579,6 +579,10 @@ api.post('/ke-hoach-test/hang-loat', requireAuth, wrap((req) => {
     classId, attemptNo: toInt(req.body?.attemptNo) ?? undefined, kind: req.body?.kind || undefined,
     studentIds: Array.isArray(req.body?.studentIds) ? req.body.studentIds.map((x: any) => toInt(x)).filter(Boolean) : [],
     tuan: tuanTheoKyNang(req.body?.tuan), force: !!req.body?.force, xemTruoc: !!req.body?.xemTruoc,
+    /* PR-XLMT (K4-17, T37): đợt riêng từng em (Quản lý bấm chip), kỹ năng cho thi lại, lý do. */
+    dotTheoEm: req.body?.dotTheoEm && typeof req.body.dotTheoEm === 'object' ? req.body.dotTheoEm : undefined,
+    thiLai: req.body?.thiLai && typeof req.body.thiLai === 'object' ? req.body.thiLai : undefined,
+    lyDo: typeof req.body?.lyDo === 'string' ? req.body.lyDo : null,
   });
 }));
 
@@ -781,6 +785,33 @@ api.post('/attempts/:id/skills/:skill/restore', requireAuth, wrap((req) => {
   if (!periodId) throw badRequest('Khôi phục thì phải đặt luôn tuần mới — không để phần thi treo không lịch.');
   return absenceSvc.restoreCancelledSkill(principalOf(req), pInt(req, 'id'), String(req.params.skill), periodId, {
     reason: req.body?.reason ?? null,
+  });
+}));
+
+/** PR-XLMT (T38, K4-28): Báo vắng FT — ghi "-" mọi ô của kỹ năng + chốt ngay (lần 1 tự dời, lần 2 chờ Quản lý duyệt). */
+api.post('/attempts/:id/skills/:skill/bao-vang', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return absenceSvc.baoVang(principalOf(req), pInt(req, 'id'), String(req.params.skill), String(req.body?.lyDo ?? ''));
+}));
+
+/** PR-XLMT (T38, rà #126): Huỷ điểm một kỹ năng FT — mọi ô chọn (W1/W2) trong một giao dịch, lý do bắt buộc. */
+api.post('/attempts/:id/skills/:skill/huy-diem', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return keHoachSvc.huyDiem(principalOf(req), {
+    attemptId: pInt(req, 'id'), skill: String(req.params.skill),
+    o: Array.isArray(req.body?.o) ? req.body.o.map(String) : undefined, lyDo: String(req.body?.lyDo ?? ''),
+  });
+}));
+
+/** PR-XLMT (T37 "ép vào đợt trùng"): Quản lý cho thi lại kỹ năng đã có điểm — xoá ô (lịch sử giữ), đặt tuần mới. */
+api.post('/ke-hoach-test/thi-lai', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = req.body ?? {};
+  const periodId = toInt(b.periodId);
+  if (!periodId) throw badRequest('Cần chọn tuần thi lại.');
+  return keHoachSvc.thiLai(principalOf(req), {
+    attemptId: toInt(b.attemptId) ?? 0, skills: Array.isArray(b.skills) ? b.skills.map(String) : [],
+    periodId, lyDo: String(b.lyDo ?? ''), force: b.force === true,
   });
 }));
 

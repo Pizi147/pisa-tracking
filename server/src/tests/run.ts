@@ -1154,19 +1154,30 @@ check('[9.4] Case chỉ sống nhờ con số vừa sửa thì rút khỏi danh 
   assert(hist.n > 0, 'Rút case đã xoá mất lịch sử');
 });
 
-check('Bỏ một kỹ năng khỏi phạm vi sau khi đã có điểm thì giữ điểm và tính lại kết quả', () => {
-  const a = conn
+check('Bỏ một kỹ năng khỏi phạm vi: đã có điểm thì bị chặn, điểm giữ nguyên (PR-XLMT K4-13); chưa có điểm thì tính lại kết quả', () => {
+  const xong = conn
     .prepare(`SELECT * FROM assessment_attempts WHERE class_id = ? AND status='done' ORDER BY id DESC LIMIT 1`)
     .get(classId('CP FT 110')) as any;
-  const beforeScores = (conn.prepare('SELECT COUNT(*) n FROM assessment_scores WHERE attempt_id = ?').get(a.id) as any).n;
+  const beforeScores = (conn.prepare('SELECT COUNT(*) n FROM assessment_scores WHERE attempt_id = ?').get(xong.id) as any).n;
+  assertThrows(() => attempts.setSkillSkip(P.cpManager, xong.id, 'speaking', true, 'Quản lý chốt lại: đợt này không yêu cầu Speaking'),
+    /đã có điểm.*Huỷ điểm/, 'PR-XLMT K4-13: bỏ kỹ năng đã có điểm phải bị chặn');
+  const afterScores = (conn.prepare('SELECT COUNT(*) n FROM assessment_scores WHERE attempt_id = ?').get(xong.id) as any).n;
+  assert(afterScores === beforeScores, 'Đánh dấu không mock đã xoá điểm đã có');
+  /* PR-XLMT: phần "tính lại mẫu số" giữ nguyên, chuyển sang một đợt CHƯA TỚI tuần thi, Speaking chưa có điểm. */
+  const a = conn
+    .prepare(`SELECT a.* FROM assessment_attempts a JOIN attempt_skills k ON k.attempt_id = a.id AND k.skill = 'speaking' AND k.required = 1
+               JOIN report_periods p ON p.id = k.planned_period_id
+              WHERE a.class_id = ? AND a.status = 'planned' AND a.kind = 'mock' AND a.lich_su = 0 AND p.week_start > ?
+                AND NOT EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND (s.band IS NOT NULL OR s.raw_score IS NOT NULL))
+              ORDER BY a.id LIMIT 1`)
+    .get(classId('CP FT 110'), week.mondayOf(TODAY)) as any;
+  assert(a, 'Seed: CP FT 110 cần một đợt Mock chưa tới tuần thi');
   /*
    * Lý do phải là một lý do về PHẠM VI, không phải "học viên vắng". Bỏ môn vì em vắng
    * chính là đường lách mà mục 10.1 cấm, và hệ thống chặn nó ở chỗ khác — xem phép kiểm
    * "Không bỏ môn khỏi phạm vi sau khi đã xác nhận vắng" bên dưới.
    */
   attempts.setSkillSkip(P.cpManager, a.id, 'speaking', true, 'Quản lý chốt lại: đợt này không yêu cầu Speaking');
-  const afterScores = (conn.prepare('SELECT COUNT(*) n FROM assessment_scores WHERE attempt_id = ?').get(a.id) as any).n;
-  assert(afterScores === beforeScores, 'Đánh dấu không mock đã xoá điểm đã có');
   const d = attempts.attemptDetail(P.cpManager, a.id);
   assert(d.result.required.length === 3 && d.result.scopeNote === '3 kỹ năng', 'Chưa tính lại mẫu số');
   assert(d.result.overall === null, 'Không được giữ Overall bốn kỹ năng khi một kỹ năng không mock');
@@ -1324,18 +1335,19 @@ check('Ô điểm nói rõ kỹ năng có bắt buộc, độc lập với quy�
    * Đợt CHƯA hoàn tất: từ R11 (và Z2c-c A3 — màn chi tiết đọc đúng luật đó) Quản lý sửa được đợt đã hoàn tất, kèm lý do.
    * Phép này kiểm "bắt buộc" không phụ thuộc quyền, nên cần một đợt mà Quản lý thật sự không sửa được.
    */
+  /* PR-XLMT (chủ sản phẩm chốt 29/09): Quản lý nay sửa được điểm ở mọi lúc — người xem "không sửa được" là GV Writing 1 nhìn các ô L/R/S. */
   const a = (conn
-    .prepare(`SELECT a.* FROM assessment_attempts a WHERE a.status != 'cancelled' ORDER BY a.id`)
-    .all() as any[]).find((x) => !dotHoanTat(x.id, TODAY).hoanTat);
-  const d = attempts.attemptDetail(P.mbManager, a.id);
+    .prepare(`SELECT a.* FROM assessment_attempts a WHERE a.status != 'cancelled' AND a.class_id = ? AND a.kind = 'mock' ORDER BY a.id`)
+    .all(mbClass) as any[]).find((x) => !dotHoanTat(x.id, TODAY).hoanTat);
+  const d = attempts.attemptDetail(P.w1Teacher, a.id);
   assert(d.cells.length > 0, 'Không lấy được ô điểm nào để kiểm');
   assert(
     d.cells.every((c: any) => typeof c.required === 'boolean'),
     'Mọi ô điểm phải có trường required',
   );
   assert(
-    d.cells.some((c: any) => c.required) && d.cells.every((c: any) => !c.canEdit),
-    'Quản lý không sửa được ô nào nhưng vẫn phải thấy ô nào bắt buộc',
+    d.cells.some((c: any) => c.required && !c.canEdit),
+    'Người không sửa được ô vẫn phải thấy ô nào bắt buộc',
   );
 });
 check('Badge bằng đúng danh sách — cả ba vai, cả hai phạm vi', () => {
@@ -6610,7 +6622,7 @@ check('[10.6] Xử lý muộn: tuần kế tiếp đã qua thì CHUYỂN QUẢN 
   const mgr = loadPrincipal(userByRole('manager', a.branch_code));
   /* Buổi thi nằm ở quá khứ — GVCN xử lý muộn, tuần kế tiếp của nó cũng đã trôi qua. */
   skillSchedule.setSkillWeek(mgr, a.id, 'speaking', periodOf(addDays(demoToday(), -21)),
-    { reason: 'Buổi thi đã qua', force: true });
+    { reason: 'Buổi thi đã qua', force: true, today: addDays(demoToday(), -28) });   // PR-XLMT: lịch đặt từ 4 tuần trước (khi tuần đó chưa qua)
   skillSchedule.setSitStatus(mgr, a.id, 'speaking', 'absent', 'Giờ mới xác minh em vắng');
 
   const out = absence.requestAbsenceMove(mgr, a.id, ['speaking'], { reason: 'Xử lý muộn' });
@@ -9767,6 +9779,10 @@ await runPrSosTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 // ==================================================================== PR-YT4 (Ý thức v4: một hàm trạng thái, thang bắt buộc, QL duyệt)
 const { runPrYt4Tests } = await import('./prYt4.tests.ts');
 await runPrYt4Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== PR-XLMT (Xếp lịch MT nhiều lớp, thao tác MT theo trạng thái)
+const { runPrXlmtTests, runPrXlmtMayChu } = await import('./prXlmt.tests.ts');
+await runPrXlmtTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+await runPrXlmtMayChu({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-KCK (Target "không cam kết" — không SOS, Q29-1)
 const { runPrKckTests } = await import('./prKck.tests.ts');

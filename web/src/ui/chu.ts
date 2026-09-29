@@ -17,6 +17,4 @@ export const MOC_KIEM_TRA_NORMAL = 'Các mốc kiểm tra được tính từ tu
 export const CHUA_CO_PHUONG_AN = 'Chưa có phương án hỗ trợ';
 export const GOI_Y_THEM_PHUONG_AN = 'Thêm phương án hỗ trợ và người phụ trách.';
 
-/** Việc "Kỹ năng không kiểm tra trong đợt này" và việc ngược lại — thay cho "bỏ khỏi / đưa lại vào phạm vi". */
-export const KY_NANG_KHONG_KIEM_TRA = 'Kỹ năng không kiểm tra trong đợt này';
-export const KIEM_TRA_LAI_KY_NANG = 'Kiểm tra lại kỹ năng này trong đợt';
+/* PR-XLMT: "Kỹ năng không kiểm tra trong đợt này" / "Kiểm tra lại…" thay bằng `CHU_THAO_TAC` (T38: Bỏ kỹ năng khỏi đợt · Đưa lại vào đợt). */

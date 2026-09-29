@@ -19,8 +19,10 @@ const RONG_TEN = 180;
  * thẻ, cột tên dính trái (G-11); trên điện thoại tự cuộn tới đợt đang tới (đợt nhỏ nhất còn em chưa xong). Ô = `ChipKyNang`;
  * bấm chip mở `HopKyNang` neo cạnh chip.
  */
-export function LuoiKeHoach({ loai, data, onReload, onHienDien }: {
+export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = false }: {
   loai: 'ft' | 'thuong'; data: LuoiFTData | LuoiThuongData; onReload: () => void; onHienDien: (open: boolean) => void;
+  /** PR-XLMT (chip "Cần xếp lại"): chỉ còn hàng có kỹ năng vắng / phần thi đã huỷ. */
+  chiCanXepLai?: boolean;
 }) {
   const [hop, setHop] = useState<Hop | null>(null);
   const cuon = useRef<HTMLDivElement>(null);
@@ -53,8 +55,10 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien }: {
 
   const khaiGiang = loai === 'thuong' ? (data as LuoiThuongData).khaiGiang : null;
   const tongTuan = loai === 'thuong' ? (data as LuoiThuongData).tongTuan : null;
-  const hangs = data.hang as Array<HangFT | HangThuong>;
-  const o = (h: HangFT | HangThuong, c: Cot): { attemptId: number | null; kn: KnO; lichSu?: boolean } => dotCuaEm(
+  const canXepLai = (h: HangFT | HangThuong) => Object.values((h as HangFT).dot ?? {}).some((d) => !d.lichSu
+    && Object.values(d.kn).some((o) => o?.trangThai === 'vang' || o?.trangThai === 'da-huy'));
+  const hangs = (data.hang as Array<HangFT | HangThuong>).filter((h) => !chiCanXepLai || canXepLai(h));
+  const o = (h: HangFT | HangThuong, c: Cot): { attemptId: number | null; kn: KnO; lichSu?: boolean; do?: boolean } => dotCuaEm(
     loai === 'ft' ? { loai: 'ft', luoi: data as LuoiFTData, hang: h as HangFT } : { loai: 'thuong', luoi: data as LuoiThuongData, hang: h as HangThuong }, c.dot,
   );
 
@@ -91,7 +95,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien }: {
                   <td key={c.key} className="td py-1.5 align-middle">
                     <ChipKyNang kn={dot.kn} attemptId={dot.attemptId} loai={loai} ct={loai === 'thuong' ? (data as LuoiThuongData).chuongTrinh : null} khaiGiang={khaiGiang} tongTuan={tongTuan}
                       chuaToiLuot={loai === 'ft' && c.dot.loai === 'ft' && c.dot.attemptNo !== (h as HangFT).soKeTiep}
-                      lichSu={!!dot.lichSu}
+                      lichSu={!!dot.lichSu} dangDo={!!dot.do}
                       deXuat={c.deXuat} nhanDeXuat={c.nhanDeXuat} tenDot={nhanDot(c.dot)}
                       onMo={(skill, el) => setHop({ anchor: el, hang: h, cot: c, kyNangDau: skill })} />
                   </td>
@@ -107,7 +111,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien }: {
         return (
           <HopKyNang key={`${hop.hang.studentId}-${hop.cot.key}`} anchor={hop.anchor}
             tieuDe={`${hop.hang.ten} · ${nhanDot(hop.cot.dot)}`} loai={loai} classId={data.classId} studentId={hop.hang.studentId}
-            dot={hop.cot.dot} attemptId={dot.attemptId} kn={dot.kn} kyNangDau={hop.kyNangDau}
+            dot={hop.cot.dot} attemptId={dot.attemptId} kn={dot.kn} kyNangDau={hop.kyNangDau} lichSu={!!dot.lichSu}
             deXuat={hop.cot.deXuat} khaiGiang={khaiGiang} tongTuan={tongTuan}
             {...(loai === 'thuong' ? { ky: (data as LuoiThuongData).boMon, ct: (data as LuoiThuongData).chuongTrinh } : {})}
             onClose={() => setHop(null)} onSaved={onReload} onHienDien={onHienDien} />

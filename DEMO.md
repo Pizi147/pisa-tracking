@@ -427,3 +427,18 @@ thống. **Bỏ phân công không phải là xoá**: dòng cũ đóng theo ngà
 | **Báo cáo "đúng trạng thái cuối tuần trước"** | Không làm; tuần cũ ghi rõ "tình trạng hiện tại" | Cần lưu lịch sử trạng thái từng ngày |
 | **Cột "Trễ chấm TB"** | Bỏ; hệ thống chỉ biết tuần kế hoạch, không biết ngày làm bài | Muốn có lại phải khai ngày làm bài |
 | **Ngày sinh học viên** | Lưu và sửa được, không còn lên badge "Thiếu thông tin" | — |
+
+## 11. PR-XLMT — xếp lịch MT nhiều lớp, thao tác theo trạng thái (chỉ máy dev)
+
+Dựng bằng hàm nghiệp vụ (`server/src/seed/xlmtSeed.ts`), sau ngày demo 14/09/2026. Tài khoản gợi ý: **Quản lý Nguyễn Khánh Vy**; X4 thêm
+**GVCN lớp MB FOU 12**.
+
+| Kịch bản | Học viên | Bạn sẽ thấy |
+|---|---|---|
+| X1 · Tạo MT4 | **Tạ Minh Quân** (MB FT 101) | Kế hoạch Test › **Xếp lịch MT…** › đợt MT3: cột Sẽ xếp `Tạo MT4 · W4 SEP` (MT3 đủ 4 điểm) |
+| X1 · Xếp nốt | **Lương Bảo Anh** (MB FT 101) | MT3 có L R, chưa W S → `Xếp nốt W S · MT3`; dời bài tuần đã bắt đầu → hiện ô Lý do |
+| X1 · Dời | **Hà Gia Bình** (MB FT 101) | MT3 hai tuần nữa, chưa thi → `Dời MT3 · … → …` |
+| X2 · chờ duyệt | **Kiều Thu Trang** (MB FT 102) | S vắng, máy tự dời lần 1, vắng lần 2 → chip tím `S · chờ duyệt`; hồ sơ Mock › Trả lời đề nghị dời = thẻ Lịch thi |
+| X2 · huỷ phần còn lại | **Mạc Đức Long** (MB FT 102) | MT1 W S đã huỷ → chip gạch ngang `· đã huỷ`; chip **Cần xếp lại (n)** đếm em này |
+| X3 · MT lịch sử tuần đã qua | **Đoàn Khánh Chi** (MB FT 101) | MT1–MT3 `lịch sử` (đã nhập bù); chọn MT4 tuần 3 tuần trước cho cả 4 kỹ năng → `Tạo MT4 · … · MT lịch sử`; chỉ L tuần đã qua → chặn |
+| X4 · ⋯ ô lớp thường | **Âu Nhật Nam** (MB FOU 12) | Lưới chấm lớp thường: ô L dời sang tuần này vì Báo vắng; ⋯ ô → thao tác theo trạng thái + **Lịch sử** (ngăn Lịch sử một bài) |

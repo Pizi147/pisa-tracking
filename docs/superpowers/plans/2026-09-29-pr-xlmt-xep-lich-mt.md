@@ -599,8 +599,97 @@ if (chuaQua.length) luuY('daThiToiMt', `Đã thi tới MT${daThiToiMt} nhưng ${
 
 <!-- Session code ghi ở đây: mốc B, dòng mã thật lệch, phép kiểm cũ phải thêm lý do, trước/sau clarify, 🛑 đã hỏi, model thật. -->
 
+- **Model thật:** Opus 5.5 (phương án B của Bảng điều hành).
+- **Task 0 (29/09):** nhánh từ `origin/main` @ c3f38f3. PR-SOS / PR-YT4 / PR-TOC **chưa** merge (chỉ có commit kế hoạch). **Mốc B = 1575**
+  phép kiểm (+20 tốc độ). Dòng mã khớp kế hoạch (lệch ≤ 20 dòng); `schema.sql` nằm ở `server/src/schema.sql`.
+- **Task 1:** `DotFT.do/huyPhan` để sang Task 3 (cùng chỗ máy chủ tính). `OKyNang` thêm `sit/tuanKetThuc/choDuyet` (máy chủ
+  `choDuyet` thật ở Task 3). Ngày demo của bộ kiểm = 14/09/2026 (`TODAY`).
+- **Task 2 — cờ `khiTao`:** `setSkillWeek` / `setSkillScope` (+ `setSkillSkip`, `luuDot`) nhận `khiTao` cho lượt VỪA TẠO trong cùng
+  lần xếp (`xepMoi`, `xepMoiThuong`, `planning.ts` bỏ kỹ năng lúc lên kế hoạch): đặt tuần / bỏ kỹ năng lúc tạo không phải "dời", không
+  đòi lý do, không chặn "đã tới tuần".
+- **Task 2 — 🛑 đã hỏi chủ sản phẩm (29/09):** kế hoạch cho Quản lý Thi lại / Huỷ điểm trước hoàn tất, nhưng mã chỉ cho Quản lý sửa
+  điểm SAU hoàn tất (R11). Chủ sản phẩm chọn **"Mở cả sửa điểm cho Quản lý"**: `permissions.ts` `scoreEditPath` + `editableSkills`
+  thêm vế `PLAN_WEEK` → đường `override` (RB-5 vẫn đòi lý do khi sửa ô đã có điểm). Áp cho cả FT và lớp thường (cùng một gốc).
+- **Phép kiểm cũ đã sửa (không xoá):** `run.ts` "Bỏ một kỹ năng… đã có điểm" → nay khẳng định bị chặn + điểm giữ; phần tính lại mẫu
+  số chuyển sang một đợt chưa tới tuần (K4-13). `run.ts` "Ô điểm nói rõ kỹ năng có bắt buộc" → người xem không sửa được đổi từ Quản lý
+  sang GV Writing 1. `chamDiem.tests.ts` PR-Rc1 C08 Quyền → Quản lý nay ghi được "-". `keHoachTest.tests.ts` 3 lời gọi `luuDot` dời
+  bài tuần đã bắt đầu → thêm `reason` (K4-15).
+- **Task 3:** `xetMotEm` tách thành `xetMotEmThuong` (lớp thường, như cũ, bỏ dòng chết `existing.status === 'cancelled'`) và
+  `xetMotEmFT` (qua `viecXepMt`); dữ liệu FT đọc theo lô ở `docFtTheoLo` (lộ trình, lượt, lịch, điểm, đề nghị chờ — 5 câu cho cả danh
+  sách). Đo: xem trước 20 em / 2 lớp đạt trần 16 câu/em. Trần tốc độ chỉ nâng cho vai chạy câu mới (QL, QT): `/ke-hoach-test/lop`
+  21 → 22, `/ke-hoach-test/ft/3` 29 → 30. Phép kiểm "5 cột": cột = tới **MT kế tiếp** (em có MT1–MT5 → 6 cột cho ô "+ xếp"), không
+  cứng 8 — kiểm bằng công thức trên chính lưới, em có MT8 → đúng 8.
+- **Phép kiểm cũ đã sửa (Task 3):** `keHoachTest.tests.ts` — 4 lời gọi `luuDot`/`kiemDot` chọn tuần đích quanh lịch seed (trước ngày
+  demo) → chạy trong `truocNgayDemo` (hôm nay lùi về 05/01/2026) để tuần đích là tương lai; Task5 em C "đã xong → giu" → thêm
+  `dotTheoEm` (Quản lý bấm chip MT1 riêng, vì em đủ MT1 nay tự sang MT2); "Rà planning(2)" số MT ảo 91 → 8 (trần MT8).
+- **Task 5:** `TheYeuCauDto` thêm `doiTuongId` (một dòng ở `theRa`) để hồ sơ Mock tìm đúng thẻ Lịch thi của đề nghị dời (DTO cũ không
+  có id đối tượng); phân loại gửi `phanLoai=lich-thi`. Bỏ luôn `RestoreModal` (khôi phục qua `HopThaoTacMt`). Hộp chung nhận thêm
+  `dat-lich` (trạng thái `chua-xep`). Nút ⋯ dòng dùng `MenuDong` (không có mục thì không vẽ).
+- **Task 5 — clarify (trước → sau):** Dời lịch thi "Không tiêu lượt dời do vắng" → "Không tính là một lần dời do vắng" · Đưa lại
+  vào đợt "{môn} thi lại trong đợt này — xếp tuần sau khi đưa lại" → "{môn} trở lại danh sách thi của đợt này. Chưa có tuần thi thì
+  xếp tuần ngay sau đó" (tránh lẫn với "Thi lại") · Báo vắng "Kỹ năng không nằm trong đợt này" → "{môn} không nằm trong đợt này" ·
+  "{môn} không ở trạng thái chờ thi" → "{môn} không còn chờ thi (đã thi, đang vắng hoặc đã huỷ) — không báo vắng được" · menu đầu
+  trang "Đổi lịch cả đợt" / "Hẹn xử lý cả đợt" → "Dời lịch thi cả đợt" / "Dời hạn chấm cả đợt"; nhãn "Hẹn xử lý cả đợt {ngày}" →
+  "Hạn chấm cả đợt {ngày}". Sáu tên T38 giữ nguyên.
+- **Task 6:** chữ trên chip dùng đuôi NGẮN (`· vắng` · `· chờ duyệt` · `· trễ` · `· đã huỷ`) để chip 20 px không xuống dòng ở ô 176 px;
+  câu đủ ("vắng · Quản lý xếp lại", "chờ Quản lý duyệt đề nghị dời"…) ở tooltip và chú giải "Luật xếp lịch Test". Hộp kỹ năng: menu ⋯
+  bỏ cả "Dời lịch thi" (dòng có ô tuần) lẫn "Bỏ kỹ năng khỏi đợt" / "Đưa lại vào đợt" (dòng có ô tích — một việc một chỗ); dòng đã huỷ
+  phần thi có "Khôi phục và đặt tuần" trong ⋯. Ô lý do dùng chung cho bỏ kỹ năng và dời bài tuần đã bắt đầu (≥ 5 ký tự, có bộ đếm).
+  Nút đầu trang "Xếp lịch MT…" / "Xếp lịch Test…" (không cần mở lớp trước) làm cùng Task 7 vì cần ngăn mới.
+- **Task 6 — layout:** tầng 1 của màn Kế hoạch Test là **em cần xếp / xếp lại** (chip "Cần xếp lại (n)" cạnh công tắc khung, lọc
+  lớp + hàng). Detector `--scope layout` sạch. Cột ⋯ 28 px cố định (kể cả khi rỗng) để 4 dòng kỹ năng thẳng cột.
+- **Task 7:** công tắc khung đầu ngăn là `BoLocDoan` cục bộ (`KhungXepLich`) — KHÔNG dùng `CongTacKhung` vì nó nhớ theo máy và sẽ đổi
+  luôn khung của trang. Tiêu đề: FT "Xếp lịch Mock Test", Lớp thường "Xếp lịch Test" (lớp thường không có Mock Test). Xem trước gửi
+  MỌI em của các lớp đã chọn (để cột "Sẽ xếp" có cả em chưa chọn và để tick mặc định = em có việc), lưu chỉ em đã tick. Hộp thi lại ghi
+  kỹ năng + tuần đã có điểm, **không** ghi số điểm (lưới Kế hoạch Test không trả điểm — thêm là thêm câu SQL, ngoài trần +1). Lọc chi
+  nhánh trong ngăn tải lại danh sách lớp cho "+ lớp" (lớp đã chọn giữ). Điện thoại: dòng xem trước dính cuối thân ngăn, ngay trên nút.
+- **Task 7 — layout/clarify:** bảng `table-layout: fixed`, cột Mock Test rộng theo số MT (40 px/MT), chip MT dùng SVG ✓ ○ ◐ 10 px; cột
+  tên dính trái khi cuộn ngang ở 375 px. Dòng phụ đợt: "Em đã đủ điểm đợt này tự sang đợt kế tiếp; đợt còn dở thì xếp nốt kỹ năng còn
+  thiếu." Detector sạch trên mọi file giao diện của PR.
+- **Task 8:** `regularSheet` thêm `laGvcn` (một lần cho cả bảng, không câu SQL mới — đọc `p.assignments`). Hộp chung nhận thêm
+  `xep-lai` (lớp thường: đặt tuần mới cho bài vắng = một lần dời do vắng; hồ sơ Mock vẫn mở `AbsenceMoveModal`). Nhập/Sửa điểm không
+  lặp trong ⋯ (làm ngay trong ô). `suaLoiNong.tests.ts` N1 (7): thêm `NganLichSuBai` vào nhóm miễn "panel chỉ xem".
+- **Task 9:** X1 Tạ Minh Quân · Lương Bảo Anh · Hà Gia Bình (MB FT 101) · X2 Kiều Thu Trang (chờ duyệt) · Mạc Đức Long (huỷ phần còn
+  lại) (MB FT 102) · X3 Đoàn Khánh Chi (MT1–MT3 lịch sử **đã nhập bù** — em chỉ có MT lịch sử chưa điểm làm lệch phép kiểm độ phủ
+  PR-N, và kịch bản "đã thi ngoài web" vốn có điểm) · X4 Âu Nhật Nam (MB FOU 12, L tuần trước dời sang tuần này — để ô ở tuần tương
+  lai thì phép kiểm khác nhập điểm đè đúng dòng đó thành "điểm ở tương lai"). Đã kiểm dữ liệu sau `npm run seed`.
+- **Task 11 — rebase:** PR-TOC #121 đã merge; xung đột duy nhất ở dòng import `intake.ts` (giữ import TOC + `mtDaThiChuaQua`). PR-SOS /
+  PR-YT4 chưa merge. Sau rebase **1611** phép kiểm (+22 tốc độ). Hà Gia Bình (X1) dời MT3 sang 2 tuần nữa để ngăn ra đúng "Dời".
+- **Task 11 — bấm thử (Playwright kênh Chrome, API 4177 · Vite 5377):** K1 ✓ (Tạo MT4 / Xếp nốt W S / Dời MT3 / chặn T15 đúng câu) ·
+  K3 ✓ hộp thi lại · K6 ✓ chip Cần xếp lại (3), chờ duyệt / đã huỷ / trễ · K7 ✓ menu từng trạng thái ≤ 3 mục, không "Lịch sử" · K8 ✓
+  GVCN Báo vắng: lỗi độ dài → "Đã tự dời Writing sang W3 SEP (vắng lần 1)", dòng thời gian có Báo vắng · K9 ✓ thẻ Lịch thi trong hộp ·
+  K11 ✓ ⋯ ô L [Báo vắng · Lịch sử] + ngăn Lịch sử một bài · K12 ✓ khung Lớp thường · K13: GVBM Trang không sửa được S của Tạ Minh
+  Quân vì đợt đó **đã hoàn tất** (R11 — đúng luật) · K14 ✓ không cuộn ngang cả trang; sửa dòng xem trước dính bị cột tên đè (z-index).
+  Ảnh "sau" ở `thiet-ke/anh/pr-xlmt/`; **không** chụp ảnh "trước" (chạy song song bản main cần DB/cổng thứ hai — bỏ qua).
+- **Task 11 — audit/polish/ponytail-review:** detector impeccable sạch trên mọi file giao diện; thêm vùng bấm cho chip MT 20 px ở điện
+  thoại. `/ponytail-review`: gộp `menuTick`/`menuCua` (HopKyNang) về một `tatCua`. Chú thích `ponytail:` — PR **không thêm** cái nào;
+  **bỏ** một cái của PR-MT ở `luoiFT` (đã làm lưới theo lộ trình, Q12).
+
 ## Chủ sản phẩm chốt 29/09 (thay các chỗ lệch trong kế hoạch)
 
 - **Câu 1 = A:** Thi lại kỹ năng đã có điểm → xoá điểm cũ khỏi ô, giữ trong Lịch sử, SOS/kỳ vọng tính theo điểm mới. Không migrate.
 - **Câu 2 = A (planning chốt):** ngăn Xếp lịch khung Lớp thường xếp **một lớp mỗi lần**.
 - Planning duyệt bảng Q (Q1–Q14) như agent đề xuất.
+
+### Sửa theo rà #126 (Opus 5.5, rà gọn — 29/09)
+
+- **Tuần đã qua (K2-33):** chặn ở MỘT chỗ — `setSkillWeek` (trừ `khiTao` = tạo MT lịch sử đã qua `kiemTuanDaQua`); thi lại, lưu đợt, dời
+  thẳng, Xếp lại bài vắng đều đi qua đây. Kiểm đặt SAU "đã có điểm / đã thi" (lỗi gốc hơn nói trước). Dấu "-" lớp thường ghi bù tuần đã qua (C08 Q4, luật đã duyệt) được miễn bằng cờ `ghiBuDau` — đó là ghi lại việc đã xảy ra, không phải dời. `reportRegularNoShow` truyền
+  `today` của chính lời gọi. Ô `TuanNho` nhận `toiThieu` (nút ‹ không lùi qua tuần này); hộp chung báo "Tuần đã qua — chọn từ tuần này
+  trở đi". Phép kiểm cũ `[10.6] Xử lý muộn` dựng lịch quá khứ bằng `today` 4 tuần trước (dữ liệu dựng, luật được thử không đổi).
+- **"Việc của tôi":** `editableSkills(…, chiViec = true)` bỏ vế Quản lý sửa mọi lúc; ô FT thêm cờ `viec` (bảng lớp `myPending`/`hanNhap`
+  đọc `viec`, không đọc `canEdit`). Giữ đúng nghĩa của `main`: GV được phân công · Quản trị nhập bù · Quản lý sau hoàn tất (A3). Không
+  dùng `mySkills` thuần vì sẽ làm mất việc nhập bù của Quản trị và việc sau hoàn tất của Quản lý (hai phép kiểm cũ Q13, A3 đỏ).
+  Các nơi khác dùng `editableSkills` (`canCham.duocCham`, `hocVienLop.coTheNhapDiem`, danh sách lượt) là QUYỀN, không phải việc.
+- **Thi lại** chặn kỹ năng chưa có điểm. **Huỷ điểm** FT: route `POST /attempts/:id/skills/:skill/huy-diem` → `huyDiem` (một `tx`,
+  W1 + W2 không còn nửa điểm); hộp chung gọi một lần. **"-" đè ô đã có điểm:** FT `saveScore` và lớp thường `reportRegularNoShow` vốn đã
+  TỪ CHỐI (chặt hơn "cần lý do") — thêm phép kiểm chứng minh, không thêm mã.
+- **Trần xem trước** `POST /ke-hoach-test/hang-loat` (`TRAN_GHI_LO.xemTruocXepLichMt`): đo 78 câu / 63 em → trần 102.
+- **375 px:** ngăn Xếp lịch bỏ cột Lớp + Sẽ xếp trên điện thoại (xuống dưới tên em); dòng xem trước chuyển vào chân ngăn
+  (`KhungPanel chan.dongTren`, ngay trên nút) — không còn dính đè danh sách. **1440:** dòng không có ⋯ giữ chỗ `w-7` → nút chính thẳng cột.
+- **Gộp main** (PR-KCK #125): `intake.ts` lấy import của main + `mtDaThiChuaQua`; `seed.ts` giữ cả `buildXlmtDemo` và `buildKckDemo`.
+- **Gộp main lần 2 (PR-SOS #127, PR-YT4 #128):** xung đột chỉ ở chỗ thêm dòng — `run.ts` (giữ cả ba đăng ký, thứ tự theo merge), `suaLoiNong`
+  (danh sách miễn của main + `NganLichSuBai`), `WelcomePage` (mảng của main + dòng PR-XLMT), `DEMO.md` (main bỏ dòng "Giao diện Ý thức").
+  Sau gộp, trần `QL /my-work?nguoi=tat-ca` đo 77 > 75: tìm ra do dữ liệu demo X2 làm lộ hai chỗ tra theo từng dòng. Chủ sản phẩm chọn
+  hướng tốt cho tốc độ lâu dài → **gom câu SQL thay vì nâng trần**: `pendingView` nhớ mã tuần theo request (`nho`); danh sách tín hiệu SOS
+  nạp phạm vi cả lô (`napTruocPhamVi`) trước khi kiểm quyền từng tín hiệu. Đo lại: **68** câu (QL), 70 (QT) — trần 75 giữ nguyên.

@@ -320,16 +320,16 @@ export async function runChamDiemTests(t: YThucTestKit) {
     assert(tuanCuaMon(skillSched.loadSkillRows([attemptId]).get(attemptId), k) === '2026-09-14', 'Lịch giữ nguyên');
   });
 
-  check('PR-Rc1 · C08 Quyền: GVBM môn khác không ghi được "-"; Quản trị hệ thống ghi được; Quản lý bị chặn', () => {
+  check('PR-Rc1 · C08 Quyền: GVBM môn khác không ghi được "-"; Quản trị hệ thống ghi được; Quản lý ghi được (PR-XLMT: chủ sản phẩm chốt 29/09)', () => {
     const { attemptId } = taoBaiThuong('2026-09-14');
     const khong = BON_MON.find((k) => !monCuaGv.includes(k));
     assert(khong, `Seed: GVBM của MB FOU 12 dạy cả bốn môn (${monCuaGv.join(', ')}) — không còn môn nào để đối chứng`);
     assertThrows(() => regular.reportRegularNoShow(P.normalSubjectTeacher, attemptId, khong, true, '2026-09-16'),
       /phân công|quyền/, 'Môn không dạy thì không ghi được');
     assert(!dauCua(attemptId, khong!)?.no_show_period_id, 'Bị chặn thì không có dấu nào được ghi');
-    assertThrows(() => regular.reportRegularNoShow(P.mbManager, attemptId, 'speaking', true, '2026-09-16'),
-      /phân công|quyền/, 'Quản lý không có đường nhập bù điểm nên cũng không ghi được "-"');
-    const r = regular.reportRegularNoShow(P.admin, attemptId, 'speaking', true, '2026-09-16');
+    assert(regular.reportRegularNoShow(P.mbManager, attemptId, 'speaking', true, '2026-09-16').moved,
+      'Quản lý sửa điểm được ở mọi lúc (đường override) nên ghi được "-"');
+    const r = regular.reportRegularNoShow(P.admin, attemptId, khong!, true, '2026-09-16');
     assert(r.moved, 'Quản trị hệ thống ghi được (đường nhập bù score.override) và dời được lịch');
   });
 

@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
-import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
+import { Empty, ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
 import { BranchFilter } from '../../ui/Filters.tsx';
 import { NganXepHangLoat } from './keHoach/NganXepHangLoat.tsx';
+import { NganXepLichMt } from './keHoach/NganXepLichMt.tsx';
 import { LopKeHoach } from './keHoach/LopKeHoach.tsx';
 import { boMonLich, chuanHoaMaLop, kyHieuLop, tenMon, tenMonNgan } from '@shared/domain/index.ts';
 import { TimLop } from './keHoach/TimLop.tsx';
@@ -14,7 +15,7 @@ import type { DanhSachLop, LopKH } from './keHoach/kieu.ts';
 
 /**
  * TEST › KẾ HOẠCH TEST (mockup 14, PR-UX2) — CHỈ Quản lý. Một hàng điều khiển: Chi nhánh · ô tìm lớp · tab nhỏ
- * `Fast Track · Lớp thường` · ⓘ luật · nút `Xếp lịch hàng loạt…`; dưới là danh sách lớp (`LopKeHoach`), mỗi lớp một hàng
+ * `Fast Track · Lớp thường` · ⓘ luật · nút `Xếp lịch MT…` / `Xếp lịch Test…` (PR-XLMT: ngăn `NganXepLichMt` nhiều lớp · `NganXepHangLoat` một lớp thường); dưới là danh sách lớp (`LopKeHoach`), mỗi lớp một hàng
  * lớn mở ra lưới học viên × đợt — lớp thường làm y như Fast Track. Hộp kỹ năng (neo cạnh chip) và ngăn hàng loạt không
  * bao giờ mở chồng nhau (G-8): hộp mở thì nút hàng loạt tắt.
  */
@@ -30,7 +31,10 @@ export function KeHoachTestTab() {
   const [moList, setMoList] = useState<number[]>([]);
   const [daMoSan, setDaMoSan] = useState(false);
   const [hopMo, setHopMo] = useState(false);
-  const [hangLoat, setHangLoat] = useState<{ loai: 'ft' | 'thuong'; classId: number; code: string } | null>(null);
+  /* PR-XLMT (M9): ngăn Xếp lịch — khung FT (nhiều lớp) hoặc Lớp thường (một lớp); không cần mở lớp trước. */
+  const [xep, setXep] = useState<'ft' | 'thuong' | null>(null);
+  /* PR-XLMT (K4-11, Q7): chip "Cần xếp lại (n)" — chỉ còn lớp / học viên có kỹ năng vắng hoặc phần thi đã huỷ. */
+  const [chiXepLai, setChiXepLai] = useState(false);
 
   const lopFT = useMemo(() => (data?.lop ?? []).filter((l) => l.loai === 'ft'), [data]);
   const lopThuong = useMemo(() => (data?.lop ?? []).filter((l) => l.loai === 'thuong'), [data]);
@@ -71,7 +75,11 @@ export function KeHoachTestTab() {
       const ngan = tenMonNgan(ct, k), dai = tenMon(ct, k);
       return ngan === dai ? ngan : `${ngan} (${dai})`;
     }).join(', ')] as const), [lopThuong]);
-  const danhSach = (loai === 'ft' ? lopFT : lopThuong).filter((l) => !chu.trim() || chuanHoaMaLop(l.code).includes(chuanHoaMaLop(chu)));
+  const soCanXepLai = lopFT.reduce((n, l) => n + (l.canXepLai ?? 0), 0);
+  const locXepLai = loai === 'ft' && chiXepLai && soCanXepLai > 0;
+  const danhSach = (loai === 'ft' ? lopFT : lopThuong)
+    .filter((l) => !chu.trim() || chuanHoaMaLop(l.code).includes(chuanHoaMaLop(chu)))
+    .filter((l) => !locXepLai || l.canXepLai > 0);
   const toggle = (id: number) => setMoList((m) => (m.includes(id) ? m.filter((x) => x !== id) : [...m, id]));
   const chonLop = (l: LopKH) => {
     setChu(l.code);
@@ -82,7 +90,7 @@ export function KeHoachTestTab() {
   };
 
   const lopChon = [...moList].reverse().map((id) => data?.lop.find((l) => l.id === id)).find((l) => l && l.loai === loai) ?? null;
-  const lyDoTat = hopMo ? 'Đóng hộp kỹ năng trước' : !lopChon ? 'Mở một lớp trước' : undefined;
+  const lyDoTat = hopMo ? 'Đóng hộp kỹ năng trước' : undefined;
 
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (loading || !data) return <div className="space-y-3"><Skeleton rows={8} /></div>;
@@ -94,6 +102,17 @@ export function KeHoachTestTab() {
         {/* MH4: công tắc khung đứng ĐẦU hàng lọc (chỉ hiện khi có cả hai khung). */}
         <CongTacKhung trang="ke-hoach-test" value={loai} dem={{ ft: lopFT.length, thuong: lopThuong.length }} donVi="lớp"
           onChange={(k) => { if (k !== 'tat-ca') setLoai(k); }} />
+        {loai === 'ft' && soCanXepLai > 0 && (
+          <span className="pb-1">
+            <NutChon nho chon={locXepLai} onClick={() => {
+              const bat = !locXepLai;
+              setChiXepLai(bat);
+              if (bat) setMoList(lopFT.filter((l) => l.canXepLai > 0).map((l) => l.id));
+            }} title="Học viên có kỹ năng vắng hoặc phần thi đã huỷ — Quản lý cần xếp lại">
+              Cần xếp lại <span className="tabular-nums">({soCanXepLai})</span>
+            </NutChon>
+          </span>
+        )}
         {branchCount > 1 && (
           <>
             <div className="hidden sm:block"><BranchFilter branchId={branchId} onBranch={(id) => {
@@ -136,13 +155,17 @@ export function KeHoachTestTab() {
               Xám = đã thi xong · xanh dương = đã xếp · vàng = đã dời vì vắng · nét đứt = chưa xếp. Lớp thường ghi thêm tuần
               trong khoá (<b>W5/10</b>).
             </span>
+            <span className="block">
+              Cam = vắng, Quản lý xếp lại · tím = chờ Quản lý duyệt dời · viền đỏ = trễ (tuần thi đã hết, chưa có điểm) · gạch ngang =
+              đã huỷ phần thi. Dấu nửa tròn trước chip = đợt dở, còn kỹ năng phải thi.
+            </span>
             <span className="block">Hai đợt trùng tuần thì máy chặn; cách đúng một tuần thì hỏi lại để xác nhận.</span>
           </NutLuat>
         </span>
         <span className="flex-1" />
         <button type="button" className="btn btn-primary btn-sm min-h-[44px] sm:min-h-0" disabled={!!lyDoTat} title={lyDoTat}
-          onClick={() => lopChon && setHangLoat({ loai: lopChon.loai, classId: lopChon.id, code: lopChon.code })}>
-          <span className="hidden sm:inline">Xếp lịch hàng loạt…</span><span className="sm:hidden">Xếp hàng loạt…</span>
+          onClick={() => setXep(loai)}>
+          {loai === 'ft' ? 'Xếp lịch MT…' : 'Xếp lịch Test…'}
         </button>
       </div>
 
@@ -151,14 +174,18 @@ export function KeHoachTestTab() {
       ) : (
         <div className="space-y-3">
           {danhSach.map((l) => (
-            <LopKeHoach key={l.id} lop={l} mo={moList.includes(l.id)} onToggle={() => toggle(l.id)} onHienDien={setHopMo} />
+            <LopKeHoach key={l.id} lop={l} mo={moList.includes(l.id)} onToggle={() => toggle(l.id)} onHienDien={setHopMo} chiCanXepLai={locXepLai} />
           ))}
         </div>
       )}
 
-      {hangLoat && (
-        <NganXepHangLoat loai={hangLoat.loai} classId={hangLoat.classId} classCode={hangLoat.code}
-          onClose={() => setHangLoat(null)} onDone={reload} />
+      {xep === 'ft' && (
+        <NganXepLichMt lopDs={data.lop} lopMoSan={lopChon?.loai === 'ft' ? lopChon.id : null} coThuong={lopThuong.length > 0}
+          onDoiKhung={setXep} onClose={() => setXep(null)} onDone={reload} />
+      )}
+      {xep === 'thuong' && (
+        <NganXepHangLoat lopThuong={lopThuong} classIdBanDau={lopChon?.loai === 'thuong' ? lopChon.id : null} coFt={lopFT.length > 0}
+          onDoiKhung={setXep} onClose={() => setXep(null)} onDone={reload} />
       )}
     </div>
   );

@@ -15,8 +15,10 @@ export const resolveTuan = (weekStart: string) => api.post<{ id: number; weekSta
  * hay gặp nhất. Bấm giữa để mở bộ chọn đầy đủ (`WeekPicker`: gõ ngày, lịch tháng) khi cần nhảy xa. Bộ chọn đầy đủ nhận đúng
  * tuần HIỆN CÓ làm giá trị ban đầu, nên không tự phát "tuần này".
  */
-export function TuanNho({ d, goc, onTuan, nhanKhoa = null }: {
+export function TuanNho({ d, goc, onTuan, nhanKhoa = null, toiThieu = null }: {
   d: { periodId: number | null; weekStart: string | null }; goc: string | null; onTuan: (t: Tuan) => void; nhanKhoa?: string | null;
+  /** PR-XLMT (K2-33): thứ Hai sớm nhất được chọn — nút ‹ không lùi qua tuần này (dời lượt có sẵn không vào tuần đã qua). */
+  toiThieu?: string | null;
 }) {
   const [busy, setBusy] = useState(false);
   const [rong, setRong] = useState(false);
@@ -31,7 +33,7 @@ export function TuanNho({ d, goc, onTuan, nhanKhoa = null }: {
   return (
     <div className="min-w-0">
       <div className="flex items-stretch gap-1.5">
-        <button type="button" className={nut} disabled={busy || !co} onClick={() => buoc(-1)} aria-label="Tuần trước">‹</button>
+        <button type="button" className={nut} disabled={busy || !co || (!!toiThieu && co <= toiThieu)} onClick={() => buoc(-1)} aria-label="Tuần trước">‹</button>
         <button type="button" className="field flex min-h-[44px] min-w-0 flex-1 items-center justify-between gap-1 px-2 text-left text-xs sm:min-h-[32px]"
           aria-expanded={rong} onClick={() => setRong((v) => !v)}
           title={d.weekStart ? `${dm(d.weekStart)} – ${dm(addDaysStr(d.weekStart, 6))} · bấm để chọn tuần khác` : 'Chọn tuần khác'}>

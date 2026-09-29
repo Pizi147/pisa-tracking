@@ -708,6 +708,20 @@ const dongNhap = (tien: string, n: number, ft: boolean) => Array.from({ length: 
   } : {}),
 }));
 
+await checkAsync(`PR-XLMT · Xem trước Xếp lịch MT cả lớp MB FT 101 (POST /ke-hoach-test/hang-loat) ≤ ${TRAN_GHI_LO.xemTruocXepLichMt} câu SQL`, async () => {
+  const { ensurePeriod, mondayOf } = await import('../platform/week.ts');
+  const { demoToday } = await import('../demoConfig.ts');
+  const { addDays } = await import('../util.ts');
+  const tuan = ensurePeriod(addDays(mondayOf(demoToday()), 7)).id;   // tuần tới — mặc định của ngăn (K4-14)
+  const sids = (conn.prepare(`SELECT student_id AS id FROM enrollments WHERE class_id = ? AND status = 'active'`).all(LOP_FT) as any[]).map((x) => x.id);
+  const r = await doGhi('QL', '/ke-hoach-test/hang-loat', {
+    classId: LOP_FT, attemptNo: 3, studentIds: sids, xemTruoc: true, tuan: { listening: tuan, reading: tuan, writing: tuan, speaking: tuan },
+  });
+  assert(r.status === 200 && r.json.dong.length === sids.length, `Xem trước phải trả đủ ${sids.length} em: ${r.status}`);
+  console.log(`      (đo: ${sids.length} em, ${r.n} câu)`);
+  assert(r.n <= TRAN_GHI_LO.xemTruocXepLichMt, `${r.n} câu > trần ${TRAN_GHI_LO.xemTruocXepLichMt}`);
+});
+
 await checkAsync(`PR-TOC · Thêm 35 em lớp FT (POST /intake/commit) ≤ ${TRAN_GHI_LO.themHocVien35FT} câu SQL, đủ lịch MT mặc định`, async () => {
   const r = await doGhi('QL', '/intake/commit', { classId: LOP_FT, rows: dongNhap('Tốc Độ FT', 35, true), idempotencyKey: 'pr-toc-35' });
   assert(r.status === 200 && r.json.added === 35, `Phải thêm đủ 35 em: ${r.status} ${JSON.stringify(r.json)}`);

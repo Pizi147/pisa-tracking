@@ -7,22 +7,32 @@
  */
 
 import { studyWeekOf } from './fasttrack.ts';
-import { tuanKhoa } from './hienThiNgay.ts';
+import { tuanKhoa, tuanLich } from './hienThiNgay.ts';
+import { MT_TOI_DA, kiemSoMtMoi, type LuotSo } from './lichMt.ts';
+import { tenMonNgan } from './normal.ts';
+import { addDaysIso } from './sos.ts';
+import { mondayOfDate } from './week.ts';
 
-export type TrangThaiO = 'xong' | 'da-xep' | 'da-doi' | 'chua-xep' | 'khong-yeu-cau';
+/** PR-XLMT (K4-11, K4-18(3)) thêm `vang` · `cho-duyet` · `tre` · `da-huy`. */
+export type TrangThaiO = 'xong' | 'da-xep' | 'da-doi' | 'chua-xep' | 'khong-yeu-cau' | 'vang' | 'cho-duyet' | 'tre' | 'da-huy';
 
 /**
- * Trạng thái một Ô NHÓM (RLW hoặc S) của một đợt: không có kỹ năng bắt buộc nào trong nhóm → `khong-yeu-cau`;
- * mọi kỹ năng bắt buộc đã `xong` → `xong`; còn kỹ năng bắt buộc chưa có tuần → `chua-xep`; còn lại mà có kỹ năng
- * đã bị dời vì vắng (Q5) → `da-doi`; hết các trường hợp trên → `da-xep`.
+ * Trạng thái một Ô NHÓM của một đợt, thứ tự cố định: không có kỹ năng bắt buộc → `khong-yeu-cau` · mọi kỹ năng bắt buộc
+ * `xong` → `xong` · có chờ Quản lý duyệt dời → `cho-duyet` · có vắng → `vang` · có kỹ năng chưa có tuần → `chua-xep` · có
+ * phần thi đã huỷ → `da-huy` · có trễ → `tre` · có dời vì vắng (Q5) → `da-doi` · còn lại `da-xep`. Cờ PR-XLMT tuỳ chọn —
+ * vắng mặt = kết quả cũ.
  */
 export function trangThaiNhom(
-  kn: Array<{ batBuoc: boolean; tuan: string | null; xong: boolean; daDoi: boolean }>,
+  kn: Array<{ batBuoc: boolean; tuan: string | null; xong: boolean; daDoi: boolean; huy?: boolean; vang?: boolean; choDuyet?: boolean; tre?: boolean }>,
 ): TrangThaiO {
   const batBuoc = kn.filter((k) => k.batBuoc);
   if (batBuoc.length === 0) return 'khong-yeu-cau';
   if (batBuoc.every((k) => k.xong)) return 'xong';
+  if (batBuoc.some((k) => k.choDuyet)) return 'cho-duyet';
+  if (batBuoc.some((k) => k.vang)) return 'vang';
   if (batBuoc.some((k) => k.tuan === null)) return 'chua-xep';
+  if (batBuoc.some((k) => k.huy)) return 'da-huy';
+  if (batBuoc.some((k) => k.tre)) return 'tre';
   if (batBuoc.some((k) => k.daDoi)) return 'da-doi';
   return 'da-xep';
 }
@@ -100,12 +110,14 @@ export const CHU_KY_NANG: Record<KyNangKH, string> = { listening: 'L', reading: 
 export type OKyNang = {
   trangThai: TrangThaiO; tuan: string | null; periodId: number | null; doiTu: string | null; batBuoc: boolean;
   khoa: 'đã có điểm' | 'đã thi' | 'đã huỷ phần thi' | null;
+  /** PR-XLMT: trạng thái thi thô, Chủ nhật tuần thi, đang có đề nghị dời chờ duyệt — hộp và menu thao tác cần. */
+  sit: string | null; tuanKetThuc: string | null; choDuyet: boolean;
 };
 
 export type ChipKH = { kyNang: KyNangKH[]; tuan: string | null; trangThai: TrangThaiO; doiTu: string | null };
 
 /** Trạng thái MỘT kỹ năng = trạng thái nhóm chỉ có nó (không có luật thứ hai). */
-export function trangThaiKyNang(k: { batBuoc: boolean; tuan: string | null; xong: boolean; daDoi: boolean }): TrangThaiO {
+export function trangThaiKyNang(k: Parameters<typeof trangThaiNhom>[0][number]): TrangThaiO {
   return trangThaiNhom([k]);
 }
 
@@ -155,6 +167,8 @@ export type BaiXemTruoc = {
 };
 export type DongHangLoat = {
   studentId: number; ten: string; hanhDong: 'tao' | 'doi' | 'giu' | 'loi'; bai: BaiXemTruoc[]; loi: string | null;
+  /** PR-XLMT (khung FT): việc máy chọn cho em, số MT, MT lịch sử, cần lý do, kỹ năng đã có điểm (web hỏi thi lại). */
+  viec?: ViecXep['loai'] | 'thi-lai'; attemptNo?: number; lichSu?: boolean; canLyDo?: boolean; coDiem?: KyNangKH[];
 };
 
 /**
@@ -199,10 +213,87 @@ export function gomBaiXemTruoc(bai: BaiXemTruoc[]): Array<Omit<BaiXemTruoc, 'ski
   return [...nhom.values()];
 }
 
-/** Dòng tóm tắt của một lớp Fast Track (Q12): `MT3 đang thi · MT4 chưa xếp 4 em`, bỏ vế trống. */
-export function tomTatLopFT(i: { dangThi: number | null; chuaXep: { dot: number; soEm: number } | null }): string {
+/** Dòng tóm tắt của một lớp Fast Track (Q12): `MT3 đang thi · MT4 chưa xếp 4 em · 2 em cần xếp lại`, bỏ vế trống. */
+export function tomTatLopFT(i: { dangThi: number | null; chuaXep: { dot: number; soEm: number } | null; canXepLai?: number }): string {
   const ve: string[] = [];
   if (i.dangThi !== null) ve.push(`MT${i.dangThi} đang thi`);
   if (i.chuaXep && i.chuaXep.soEm > 0) ve.push(`MT${i.chuaXep.dot} chưa xếp ${i.chuaXep.soEm} em`);
+  if (i.canXepLai) ve.push(`${i.canXepLai} em cần xếp lại`);
   return ve.join(' · ');
+}
+
+// ---------------------------------------------------------------- PR-XLMT: xếp lịch MT nhiều lớp, việc từng em
+
+/** K4-14, M9: đợt mới — 4 kỹ năng CÙNG tuần tới (thứ Hai sau thứ Hai tuần này). Hộp kỹ năng và ngăn Xếp lịch MT dùng chung. */
+export function tuanMacDinhDotMoi(homNay: string): string { return addDaysIso(mondayOfDate(homNay), 7); }
+
+export type KnXep = { skill: KyNangKH; batBuoc: boolean; coDiem: boolean; daThi: boolean; huyPhan: boolean; choDuyet: boolean };
+export type LuotXep = { no: number; huy: boolean; lichSu: boolean; kn: KnXep[] };
+export type ViecXep =
+  | { loai: 'tao'; no: number } | { loai: 'doi'; no: number } | { loai: 'xep-not'; no: number; kyNang: KyNangKH[] }
+  | { loai: 'da-du'; no: number; coDiem: KyNangKH[] } | { loai: 'chan'; no: number; cau: string };
+
+/**
+ * K4-17 · T37 · M9: từ đợt đã chọn đi tới đợt ĐẦU TIÊN còn việc. `ep` = Quản lý bấm chip CHÍNH đợt đó cho riêng em (không
+ * tự chuyển): đợt đã đủ → `da-du` (web hỏi thi lại). Thứ tự kiểm cố định — không đảo: huỷ → lịch sử → còn kỹ năng phải thi.
+ */
+export function viecXepMt(ds: LuotXep[], chon: number, so: LuotSo[], ep = false): ViecXep {
+  for (let n = chon; n <= MT_TOI_DA; n++) {
+    const a = ds.find((x) => x.no === n && !x.huy);
+    if (!a) { const loi = kiemSoMtMoi(so, n); return loi ? { loai: 'chan', no: n, cau: loi } : { loai: 'tao', no: n }; }
+    if (a.lichSu) { if (ep) return { loai: 'chan', no: n, cau: `MT${n} là MT lịch sử — nhập bù điểm, không xếp lại.` }; continue; }
+    const can = a.kn.filter((k) => k.batBuoc && !k.huyPhan);
+    const conThi = can.filter((k) => !k.coDiem && !k.daThi && !k.choDuyet);
+    if (!conThi.length) {
+      if (can.some((k) => k.choDuyet)) return { loai: 'chan', no: n, cau: `MT${n} còn kỹ năng chờ Quản lý duyệt dời — trả lời đề nghị trước.` };
+      const cd = can.filter((k) => k.coDiem).map((k) => k.skill);
+      if (ep) return cd.length ? { loai: 'da-du', no: n, coDiem: cd } : { loai: 'chan', no: n, cau: `MT${n} đã thi, đang chờ chấm.` };
+      continue;
+    }
+    if (can.some((k) => k.coDiem || k.daThi)) return { loai: 'xep-not', no: n, kyNang: conThi.map((k) => k.skill) };
+    return { loai: 'doi', no: n };
+  }
+  return { loai: 'chan', no: MT_TOI_DA, cau: `Đã đủ MT${MT_TOI_DA} — tối đa của một lộ trình.` };
+}
+
+const dsMon = (ct: string | null, ks: readonly KyNangKH[]) => ks.map((k) => tenMonNgan(ct, k)).join(' ');
+
+/**
+ * Cột "Sẽ xếp" của ngăn Xếp lịch MT (M9): `Dời MT3 · W3 OCT → W2 OCT` · `Xếp nốt W S · MT3` · `Tạo MT4 · W2 OCT` ·
+ * `Tạo MT4 · W3 AUG · MT lịch sử` · `Thi lại L · MT3` · câu chặn. Tuần khác nhau giữa các kỹ năng → ghi theo từng nhóm.
+ */
+export function chuSeXep(d: DongHangLoat, ct: string | null): string {
+  if (d.hanhDong === 'loi') return d.loi ?? 'Không xếp được.';
+  const mt = `MT${d.attemptNo ?? ''}`;
+  const bai = d.bai.filter((b) => b.ghiChu !== 'giu');
+  if (d.hanhDong === 'giu' && d.coDiem?.length) return `${mt} đã có điểm ${dsMon(ct, d.coDiem)} — thi lại?`;
+  if (d.hanhDong === 'giu' || !bai.length) return 'Giữ nguyên — không có gì để xếp.';
+  const nhom = gomBaiXemTruoc(bai);
+  const tuanMoi = nhom.length === 1 ? tuanLich(nhom[0].den) : nhom.map((g) => `${dsMon(ct, g.kyNang)} ${tuanLich(g.den)}`).join(' · ');
+  if (d.viec === 'thi-lai') return `Thi lại ${dsMon(ct, bai.map((b) => b.skill))} · ${mt}`;
+  if (d.viec === 'xep-not') return `Xếp nốt ${dsMon(ct, bai.map((b) => b.skill))} · ${mt}`;
+  if (d.hanhDong === 'tao') return `Tạo ${mt} · ${tuanMoi}${d.lichSu ? ' · MT lịch sử' : ''}`;
+  const doi = nhom.length === 1
+    ? `${tuanLich(nhom[0].tu)} → ${tuanLich(nhom[0].den)}`
+    : nhom.map((g) => `${dsMon(ct, g.kyNang)} ${tuanLich(g.tu)} → ${tuanLich(g.den)}`).join(' · ');
+  return `Dời ${mt} · ${doi}`;
+}
+
+/** Dòng xem trước chân ngăn (C4): đếm EM theo việc; `soEm`/`soBai` = em/bài sẽ lưu (em chặn không lưu, bài `giu` không tính). */
+export function tomTatXepMt(dong: DongHangLoat[]): {
+  doi: number; xepNot: number; tao: number; thiLai: number; canhBao: number; chan: number; soEm: number; soBai: number;
+} {
+  const t = { doi: 0, xepNot: 0, tao: 0, thiLai: 0, canhBao: 0, chan: 0, soEm: 0, soBai: 0 };
+  for (const d of dong) {
+    if (d.hanhDong === 'loi') { t.chan += 1; continue; }
+    if (d.hanhDong === 'giu') continue;
+    if (d.viec === 'thi-lai') t.thiLai += 1;
+    else if (d.viec === 'xep-not') t.xepNot += 1;
+    else if (d.hanhDong === 'tao') t.tao += 1;
+    else t.doi += 1;
+    if (d.bai.some((b) => b.ghiChu === 'canh-bao')) t.canhBao += 1;
+    t.soEm += 1;
+    t.soBai += d.bai.filter((b) => b.ghiChu !== 'giu' && b.ghiChu !== 'chan').length;
+  }
+  return t;
 }

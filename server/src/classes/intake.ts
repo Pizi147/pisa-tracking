@@ -2,7 +2,7 @@ import { chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
   CHO_TAO_PRE_FOU, ENTRY_SKILLS, MOCK_FT_STUDY_WEEK, PERMISSIONS, PROGRAMME_TEMPLATES, chuanHoaMaLop, ghepMaLop, khoaMaLopSql, kiemSoLop,
   moRongPhanCong, programmeOf, type Route, type SlotPhanCong,
-  KCK, NGAY_SINH_TOI_THIEU, canNamGan, laKck, docEmail, docNgayNhap, laLichSu, nhanCotNhap, lichMtMacDinh, nhanDangCot, tuanBatDauMacDinh, tuanHocCuaMt, tuanLich, type VanDeNhap,
+  KCK, NGAY_SINH_TOI_THIEU, canNamGan, laKck, docEmail, docNgayNhap, laLichSu, nhanCotNhap, lichMtMacDinh, mtDaThiChuaQua, nhanDangCot, tuanBatDauMacDinh, tuanHocCuaMt, tuanLich, type VanDeNhap,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { docSlots, ghiPhanCong, kiemTruocPhanCong } from './classes.ts';
@@ -302,6 +302,11 @@ export function previewIntake(
         laLichSu(addDays(startWeek!, (tuanHocCuaMt(cls.route, n) - 1) * 7 + 6), homNay));
       if (lichSu.length) {
         luuY('startWeek', `Học từ ${tuanLich(startWeek)} — ${lichSu.length} MT sẽ là MT lịch sử (${lichSu.map((n) => 'MT' + n).join(', ')})`);
+      }
+      /* Rà #120 (PR-XLMT): đã thi tới MT d mà có MT ≤ d rơi vào tuần chưa qua → tuần bắt đầu để muộn quá, nhắc lùi. */
+      const chuaQua = daThiToiMt ? mtDaThiChuaQua(cls.route, startWeek, daThiToiMt, homNay) : [];
+      if (chuaQua.length) {
+        luuY('daThiToiMt', `Đã thi tới MT${daThiToiMt} nhưng ${chuaQua.map((n) => 'MT' + n).join(', ')} rơi vào tuần chưa qua — lùi Tuần bắt đầu về tuần em bắt đầu học thật`);
       }
     }
 

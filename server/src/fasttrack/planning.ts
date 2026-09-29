@@ -106,7 +106,7 @@ export function bulkPlan(p: Principal, input: {
      */
     conn.prepare(`UPDATE assessment_attempts SET plan_source = 'manual' WHERE id = ?`).run(created.id);
     for (const skill of notRequired) {
-      setSkillSkip(p, created.id, skill, true, 'Lượt này không yêu cầu kỹ năng đó ngay từ khi lên kế hoạch');
+      setSkillSkip(p, created.id, skill, true, 'Lượt này không yêu cầu kỹ năng đó ngay từ khi lên kế hoạch', { khiTao: true });
     }
     return created;
   }));

@@ -27,6 +27,8 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
   chan?: {
     huy?: { nhan?: string; onClick: () => void; disabled?: boolean }; xoa?: { onClick: () => void; nhan?: string };
     phu?: ReactNode; chinh?: ReactNode; conThieu?: (string | MucThieu)[];
+    /** Một dòng riêng NGAY TRÊN hàng nút (ví dụ dòng xem trước trên điện thoại — PR-XLMT). Nơi gọi tự ẩn/hiện theo cỡ màn. */
+    dongTren?: ReactNode;
   };
   onDong: () => void; children: ReactNode;
 }) {
@@ -81,6 +83,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
         {chan && (
           <footer className="shrink-0 border-t" style={{ borderColor: 'var(--line)' }}>
             {chan.conThieu?.length ? <DongCanSua muc={chan.conThieu} /> : null}
+            {chan.dongTren}
             <div className="flex items-center gap-2 px-4 py-2.5">
               <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={huy.onClick} disabled={huy.disabled}>{huy.nhan ?? 'Huỷ'}</button>
               {chan.xoa && <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" onClick={chan.xoa.onClick}>{chan.xoa.nhan ?? 'Xoá'}</button>}

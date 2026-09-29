@@ -13,7 +13,13 @@ import { Empty, Info, Level, Status } from '../../ui/ui.tsx';
 import { useTrangThaiLuuO } from '../../ui/SaveState.tsx';
 import { ODiemThuong, laTuChoi, type SaveOpts } from '../fasttrack/ScoreEntry.tsx';
 import { caseStatusLabel, sosLabel, sosTone } from '../../lib/format.ts';
-import { ATTEMPT_KIND_SHORT, CHUONG_TRINH_KHONG_CHIA_MON, ketQuaThuong, ngay, tenMon, tenMonNgan, tuanLich, type AttemptKind } from '@shared/domain/index.ts';
+import {
+  ATTEMPT_KIND_SHORT, CHU_THAO_TAC, CHUONG_TRINH_KHONG_CHIA_MON, ketQuaThuong, mondayOfDate, ngay, tenMon, tenMonNgan, thaoTacKyNang, trangThaiTT, tuanLich,
+  type AttemptKind, type ThaoTac,
+} from '@shared/domain/index.ts';
+import { MenuDong } from '../../ui/MenuDong.tsx';
+import { HopThaoTacMt, THAO_TAC_CO_HOP } from '../fasttrack/HopThaoTacMt.tsx';
+import { NganLichSuBai } from './NganLichSuBai.tsx';
 import { DauLuu, DauO, VIEN_LOI } from './LuoiFT.tsx';
 
 type SkillResult = {
@@ -56,6 +62,8 @@ export type ThuongSheet = {
   monNgan?: Record<string, string>;
   editableSkills: string[];
   canPlan: boolean;
+  /** PR-XLMT: người xem là GVCN của lớp (menu ⋯ ô: Báo vắng, Xếp lại bài vắng). */
+  laGvcn?: boolean;
   passThreshold: number;
   rows: Row[];
   today: string;
@@ -363,6 +371,38 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
 }) {
   const { luu, dau, status, lastError, retry, o, loi, luuLai, soLoi } = useLuuThuong(row.attemptId, onReload, sheet.programme.code);
   const homNay = sheet.today;
+  const ct = sheet.programme.code;
+  const [hop, setHop] = useState<{ t: ThaoTac; k: string } | null>(null);
+  const [lichSu, setLichSu] = useState<string | null>(null);
+  /*
+   * MENU ⋯ TỪNG Ô (K4-32): thao tác theo `thaoTacKyNang` (laFt = false → không bao giờ có "Bỏ kỹ năng khỏi đợt") + mục cuối
+   * "Lịch sử" (không phải thao tác, ngoài ≤ 3 — Q5). Nhập/Sửa điểm làm ngay trong ô nên không lặp trong menu. Nút ⋯ đứng SAU ô nhập
+   * trong DOM: Tab đi qua ô nhập trước, Enter/mũi tên của ô giữ nguyên.
+   */
+  const menuO = (k: string) => {
+    const s = lichCua(row, k);
+    const coDiem = (ketQuaCua(row, k)?.score ?? null) !== null;
+    const tt = trangThaiTT({ batBuoc: true, tuanBatDau: s?.weekStart ?? null, coDiem, sit: s?.sitStatus ?? null, choDuyet: false, lichSu: false, homNay });
+    const tat = thaoTacKyNang(tt, { nhapDiem: s?.canEdit ?? false, quanLy: sheet.canPlan, gvcn: !!sheet.laGvcn, laFt: false, dotHoanTat: !!row.hoanTat });
+    const ds = [...(tat.chinh && THAO_TAC_CO_HOP.includes(tat.chinh) ? [tat.chinh] : []), ...tat.menu];
+    return (
+      <span className="absolute right-0.5 top-0.5 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100">
+        <MenuDong nhan={`Thao tác · ${tenMon(ct, k)} · ${row.studentName}`} muc={[
+          ...ds.map((x) => ({ key: x, nhan: CHU_THAO_TAC[x], onChon: () => setHop({ t: x, k }), nguyHiem: x === 'huy-diem' })),
+          { key: 'lich-su', nhan: 'Lịch sử', onChon: () => setLichSu(k), keTruoc: ds.length > 0 },
+        ]} />
+      </span>
+    );
+  };
+  const hopO = hop && (() => {
+    const s = lichCua(row, hop.k);
+    return (
+      <HopThaoTacMt key={`${hop.t}:${hop.k}`} thaoTac={hop.t} attemptId={row.attemptId} skill={hop.k} ct={ct} laThuong
+        tuanDaBatDau={!!s?.weekStart && s.weekStart.slice(0, 10) <= mondayOfDate(homNay)}
+        row={{ periodId: null, weekStart: s?.weekStart ?? null, deadline: s?.deadline ?? null }}
+        onClose={() => setHop(null)} onDone={onReload} />
+    );
+  })();
 
   return (
     <tr className={`row-hover h-14 ${row.studentStatus !== 'active' ? 'row-muted' : ''} ${active ? 'row-active' : ''}`}
@@ -390,21 +430,23 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
          */
         if (tuanDangXem && s?.weekStart && s.weekStart !== tuanDangXem && cell.diem === null && !s.noShow) {
           return (
-            <td key={k} className="td py-1.5 text-center text-slate-500" data-kn={k}
+            <td key={k} className="td group relative py-1.5 text-center text-slate-500" data-kn={k}
               title={`${tenMon(sheet.programme.code, k)}: thi tuần ${tuanLich(s.weekStart, homNay)}`}>
               {tuanLich(s.weekStart, homNay)}
+              {menuO(k)}
             </td>
           );
         }
         if (dung) {
           return (
-            <td key={k} className="td py-1.5 text-center" data-kn={k}>
+            <td key={k} className="td group relative py-1.5 text-center" data-kn={k}>
               <span className="text-[10px] text-slate-500 leading-tight" title={`${tenMon(sheet.programme.code, k)}: ${chuDung}`}>{chuDung}</span>
+              {menuO(k)}
             </td>
           );
         }
         return (
-          <td key={k} className={`td py-1.5 text-center relative ${o[k] === 'loi' ? VIEN_LOI : ''}`} data-kn={k}
+          <td key={k} className={`td group py-1.5 text-center relative ${o[k] === 'loi' ? VIEN_LOI : ''}`} data-kn={k}
             data-trong={trong ? '1' : undefined} data-luu={o[k]}>
             <DauO tt={o[k]} loi={loi[k]} onLuuLai={() => luuLai(k)} />
             <ODiemThuong
@@ -427,11 +469,14 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
               <div className="text-[10px] text-slate-500 leading-none mt-0.5"
                 title={`${tenMon(sheet.programme.code, k)}: hạn chấm ${ngay(s!.deadline, homNay)} đã qua`}>{quaHan}</div>
             )}
+            {menuO(k)}
           </td>
         );
       })}
       <td className="td py-1.5">
         <KetQua row={row} sheet={sheet} />
+        {hopO}
+        {lichSu && <NganLichSuBai attemptId={row.attemptId} skill={lichSu} ct={ct} tenHv={row.studentName} onClose={() => setLichSu(null)} />}
       </td>
     </tr>
   );

@@ -21,8 +21,8 @@ Rule book mục 2. Vi phạm bảng này là lỗi nghiệp vụ, không phải 
 | Đã có đủ điểm các môn bắt buộc của đợt | `Đã đủ điểm` | "đạt", "hoàn tất" |
 | Overall đủ dữ liệu và đạt kỳ vọng | `Đạt kỳ vọng` | "đạt cả đợt" khi còn thiếu môn |
 | GV báo học viên không làm bài | `Không có bài` (trước CN) → `Không dự thi` (sau chốt) | "vắng" khi chưa chốt, "0 điểm" |
-| Lùi ngày xử lý/chấm bài | `Hẹn xử lý` | "dời lịch thi" |
-| Đổi tuần thi | `Đổi lịch` | "hẹn xử lý" |
+| Lùi ngày xử lý/chấm bài | `Dời hạn chấm` (PR-XLMT, thay `Hẹn xử lý`) | "dời lịch thi" |
+| Đổi tuần thi | `Dời lịch thi` (PR-XLMT, thay `Đổi lịch`) | "dời hạn chấm" |
 
 Ba đơn vị đếm **không bao giờ cộng vào nhau**: số SOS hiện tại · số case đang mở · số phương án.
 
@@ -41,7 +41,7 @@ tooltip, aria-label. Không đổi một chỗ rồi coi là xong.
 | Tuần hoàn tất | `Tuần dự kiến hoàn tất` |
 | Target lúc đánh giá | `Mục tiêu tại thời điểm đánh giá` |
 | Chưa xác nhận đã thi | `Chờ nhập điểm` — **và bỏ hẳn vai trò cổng chặn chấm** |
-| Bỏ khỏi phạm vi | `Kỹ năng không kiểm tra trong đợt này` |
+| Bỏ khỏi phạm vi | `Bỏ kỹ năng khỏi đợt` · ngược lại `Đưa lại vào đợt` (PR-XLMT, thay `Kỹ năng không kiểm tra trong đợt này`) |
 | Hủy lượt MT *(nút đỏ đầu trang)* | Chuyển vào menu ngoại lệ theo quyền, ghi rõ hủy phần nào |
 
 ### Khối case và phương án
@@ -432,3 +432,23 @@ Tên môn theo CHƯƠNG TRÌNH (một nguồn `tenMon` / `tenMonNgan`, `shared/d
 | Kế hoạch Test lớp thường — thiếu tuần | `Cần chọn tuần cho 1 môn.` · `Cần chọn tuần cho cả 4 môn.` |
 | Kỹ năng phụ trách được (Hồ sơ cá nhân, Quản trị, Đăng ký) | năm nút `L · R · W1 · W2 · S` (tooltip tên đầy đủ) |
 | Gợi ý phân công trong danh sách người | `Nguyễn A · 3 lớp — dạy được W1, W2` |
+
+## 15. PR-XLMT — 29/09/2026 · sáu tên thao tác MT, xếp lịch MT nhiều lớp
+
+Một nguồn: `CHU_THAO_TAC` (`shared/domain/thaoTacMt.ts`). Menu hồ sơ Mock, hộp kỹ năng Kế hoạch Test và ⋯ ô lưới lớp thường cùng chữ.
+
+| Việc | Chữ | Không dùng |
+|---|---|---|
+| Đổi tuần thi một kỹ năng | `Dời lịch thi` · cả đợt `Dời lịch thi cả đợt` | "Đổi lịch", "Đổi lịch cả đợt" |
+| Lùi hạn chấm | `Dời hạn chấm` · cả đợt `Dời hạn chấm cả đợt` · nhãn `Hạn chấm cả đợt {ngày}` | "Hẹn xử lý", "Sửa hẹn xử lý" |
+| Bỏ / đưa lại kỹ năng (chỉ Fast Track, chưa tới tuần thi, chưa điểm) | `Bỏ kỹ năng khỏi đợt` · `Đưa lại vào đợt` | "Kỹ năng không kiểm tra trong đợt này" |
+| Em vắng buổi thi (ghi "-" + chốt ngay) | `Báo vắng` | "Ghi nhận vắng", "Bỏ ghi nhận vắng" |
+| Xoá điểm đã nhập (lý do bắt buộc, điểm cũ còn trong Lịch sử) | `Huỷ điểm` | "Xoá điểm" |
+| Huỷ lượt | `Huỷ cả lượt MT{n}` · `Huỷ phần còn lại` (giữ chữ PR-MT, Q2) | "Huỷ lượt MTn" |
+| Nút chính khác | `Nhập điểm` · `Sửa điểm` · `Xếp lịch` · `Xếp lại bài vắng` · `Trả lời đề nghị dời` · `Khôi phục và đặt tuần` | "Xử lý vắng", "Trả lời đề nghị" |
+| Ngăn xếp lịch — đợt dở | `Xếp nốt W S · MT3` | "Bổ sung" |
+| Ngăn xếp lịch — thi lại kỹ năng đã có điểm | `Thi lại L · MT3`; hộp hỏi "Cho {em} thi lại {môn} của MT{n}? … điểm cũ giữ trong Lịch sử." | "Ép", "Ghi đè điểm" |
+| Chip lọc Kế hoạch Test | `Cần xếp lại (n)` — vắng chưa có đề nghị + phần thi đã huỷ | "Cần xử lý" |
+| Chip lưới | `· vắng` · `· chờ duyệt` · `· trễ` · `· đã huỷ` (tooltip câu đủ) | mã `absent`, `cancelled` |
+| Nút đầu Kế hoạch Test | `Xếp lịch MT…` (Fast Track) · `Xếp lịch Test…` (Lớp thường) | "Xếp lịch hàng loạt…" |
+| Lỗi lý do | `{Thao tác}: cần ghi lý do.` · `{Thao tác}: lý do cần ít nhất 5 ký tự.` | "Thiếu lý do" |
