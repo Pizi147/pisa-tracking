@@ -90,9 +90,10 @@ export function loadBundle(attemptIds: number[]): AttemptBundle {
   if (!attemptIds.length) return bundle;
   bundle.skillRows = loadSkillRows(attemptIds);
   const conn = db();
-  // SQLite giới hạn số tham số của một câu lệnh, nên chia lô thay vì nối một danh sách dài.
-  for (let i = 0; i < attemptIds.length; i += 400) {
-    const chunk = attemptIds.slice(i, i + 400);
+  // SQLite giới hạn số tham số của một câu lệnh (999 ở bản cũ), nên chia lô thay vì nối một danh sách dài. PR-MT: 400 → 900 —
+  // mỗi em FT nay có sẵn 3 MT từ ngày đầu (M1), lô 400 làm danh sách chi nhánh tách thêm lô sớm.
+  for (let i = 0; i < attemptIds.length; i += 900) {
+    const chunk = attemptIds.slice(i, i + 900);
     const ph = chunk.map(() => '?').join(',');
     for (const r of conn
       .prepare(
@@ -164,8 +165,8 @@ export function entryBandsOf(rows: ScoreRow[]) {
  * dùng luôn; không thì một câu, nhớ theo `cycle_id` trong request. Danh sách phải JOIN sẵn — không hỏi theo từng dòng.
  */
 /** Quyền theo lượt (MT lịch sử): cờ + các ô đã có điểm của CHÍNH lượt — đọc từ điểm đã nạp sẵn, không hỏi lại. */
-function luotQuyen(a: any, rows: ScoreRow[]): LuotQuyen {
-  return { lich_su: a.lich_su ?? 0, oCoDiem: rows.filter((r) => (r.band ?? null) !== null || (r.raw_score ?? null) !== null).map((r) => r.skill) };
+function luotQuyen(a: any, rows: ScoreRow[], today?: string): LuotQuyen {
+  return { lich_su: a.lich_su ?? 0, oCoDiem: rows.filter((r) => (r.band ?? null) !== null || (r.raw_score ?? null) !== null).map((r) => r.skill), today };
 }
 
 export function routeCuaLuot(attempt: any): string | null {
@@ -271,7 +272,7 @@ export function skillCells(
   /** R11: truyền từ nơi gọi (`dotHoanTatMany` cho cả bảng) — không tự hỏi lại lẻ từng dòng ở đây. */
   hoanTat: { hoanTat: boolean; chuNhatCuoi: string | null } = { hoanTat: false, chuNhatCuoi: null },
 ): SkillCell[] {
-  const editable = attempt.class_id ? editableSkills(p, attempt.class_id, ENTRY_SKILLS, luotQuyen(attempt, rows)) : [];
+  const editable = attempt.class_id ? editableSkills(p, attempt.class_id, ENTRY_SKILLS, luotQuyen(attempt, rows, today)) : [];
   const mine = attempt.class_id ? mySkills(p, attempt.class_id, ENTRY_SKILLS) : [];
   const mode = scoringModeOf(attempt);
   const schedule = skillScheduleOf(attempt, skillRows);

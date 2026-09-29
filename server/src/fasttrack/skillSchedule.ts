@@ -166,8 +166,8 @@ export function loadSkillRows(attemptIds: number[]): Map<number, SkillRow[]> {
   const out = new Map<number, SkillRow[]>();
   if (!attemptIds.length) return out;
   const conn = db();
-  for (let i = 0; i < attemptIds.length; i += 400) {
-    const chunk = attemptIds.slice(i, i + 400);
+  for (let i = 0; i < attemptIds.length; i += 900) {   // cùng cỡ lô với loadBundle (PR-MT)
+    const chunk = attemptIds.slice(i, i + 900);
     const ph = chunk.map(() => '?').join(',');
     for (const r of conn.prepare(`${SELECT_SKILLS} WHERE ask.attempt_id IN (${ph})`).all(...chunk) as SkillRow[]) {
       if (!out.has(r.attempt_id)) out.set(r.attempt_id, []);

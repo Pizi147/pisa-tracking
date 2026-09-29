@@ -607,6 +607,20 @@ khác ngày với bản thử thì chạy thử lại. 5. Chạy thử lần n�
   · tooltip nhãn `lịch sử` nói đúng T34 ("tuần thi đã qua trước khi lượt này được tạo"). Giữ nguyên (chữ kế hoạch đã chốt): nhãn
   `lịch sử`, dòng nhắc `MT lịch sử chưa nhập · 3 em · MB FT 101 → Nhập` (thêm `aria-label` cho link), `Nhập bù, không có hạn`, `dời từ
   W3 SEP · vắng lần 1`, hộp huỷ "Số MT3 sẽ dùng lại được…" / "MT2 giữ số; kỹ năng đã có điểm giữ nguyên.".
+- **Task 10:** bộ demo ở file riêng `seed/prMtSeed.ts` (đi qua hàm nghiệp vụ như `sosV3Seed.ts`, gọi sau sosV3) thay vì sửa
+  `students.ts`/`journeys.ts`. D1 Phan Gia Hân + Đặng Quốc Bảo (MT1 tuần trước, SOS 2 → PA "Tutor · đến lúc thi", Phối hợp hàng MT4) ·
+  D2/D3 Lê Minh Khang bắt đầu **17** tuần trước (không phải 22) để MT3 rơi 2 tuần trước (H3 trong cửa sổ) còn MT2 −6 tuần có SOS 2 (H2
+  ngoài cửa sổ) — một em đủ cả K3 · D4 Trần Hữu Phúc (không lượt nào) · D5 **bốn** em: Hồ Ngọc Diệp (máy tự dời lần 1, thông báo GVCN +
+  GVBM — cho K10), Ngô Bảo Châu (chờ duyệt lần 2), Lý Thanh Tâm (đã duyệt), Võ Minh Triết (hết hạn → huỷ phần thi); "lần 1 đã dời" của
+  Châu/Tâm/Triết ghi thẳng một dòng lịch sử (không chạy lùi thời gian) · D6 Phạm Khánh Linh (MT3, MT2 huỷ cả lượt → MT2 tạo lại cùng
+  dòng) · D16 Đinh Gia Huy (LT1 Case Listening → MB FT RF 12, Case đi theo). `build.ts`: đề nghị dời mẫu theo luật mới (hạn CN tuần gửi,
+  tuần đích chưa bắt đầu). WelcomePage: dòng "Xem được: MT lịch sử, lớp RF, dời lần 2" cho Nguyễn Khánh Vy, Trần Ngọc Hà.
+  `chay-thu:mt` trên DB demo: (2) 1 em — PISA-000048 Trần Hữu Phúc (D4) · (3) 1 em thiếu tuần bắt đầu (PISA-000032) · (4) 1 lộ trình nhảy
+  số PISA-000040 `MT1, MT2, MT5` (seed build.ts cũ, không phải lỗi PR) · (5) 0.
+  **Phép kiểm cũ đổi theo dữ liệu demo mới:** [18.1] bỏ qua dòng vắng máy chốt (`absent_from_no_show = 1`) · "Tuần kế hoạch hoàn tất"
+  loại kỹ năng đã huỷ phần thi (khớp `completionWeekOf`) · oracle PR-N `prnLatestValid` theo K5-54 + M-14. **Hiệu năng:** `loadBundle` /
+  `loadSkillRows` chia lô 900 thay 400 (Bỏ quên vượt trần 16 vì mỗi em FT nay có 3 MT); `editableSkills` nhận `today` từ nơi gọi (tránh
+  một câu ngày demo mỗi lượt lịch sử — lỗi tôi gây ra ở Task 6, phép kiểm "Danh sách lớp … N+1" bắt được).
 
 ## Planning chốt 29/09
 

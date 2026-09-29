@@ -592,17 +592,18 @@ check('Kỹ năng chưa đến tuần thi thì KHÔNG hiện nợ và KHÔNG qu�
   }
 });
 check('Tuần kế hoạch hoàn tất = tuần muộn nhất trong các kỹ năng bắt buộc', () => {
+  /* Kỹ năng đã huỷ phần thi không kéo tuần hoàn tất (`completionWeekOf`) — bộ demo PR-MT có một bài hết hạn duyệt dời bị huỷ phần thi. */
   const split = conn
     .prepare(`SELECT a.id, a.planned_period_id FROM assessment_attempts a
                 WHERE (SELECT COUNT(DISTINCT ask.planned_period_id) FROM attempt_skills ask
-                        WHERE ask.attempt_id = a.id AND ask.required = 1) > 1
+                        WHERE ask.attempt_id = a.id AND ask.required = 1 AND ask.sit_status != 'cancelled') > 1
                 LIMIT 1`)
     .get() as any;
   assert(split, 'Bộ demo thiếu đợt tách tuần');
   const latest = conn
     .prepare(`SELECT ask.planned_period_id AS id FROM attempt_skills ask
                 JOIN report_periods pr ON pr.id = ask.planned_period_id
-               WHERE ask.attempt_id = ? AND ask.required = 1
+               WHERE ask.attempt_id = ? AND ask.required = 1 AND ask.sit_status != 'cancelled'
                ORDER BY pr.week_start DESC LIMIT 1`)
     .get(split.id) as any;
   assert(split.planned_period_id === latest.id,
@@ -5971,7 +5972,8 @@ check('[18.1] Mọi đợt đều có đủ bốn dòng lịch kỹ năng, khôn
 
   /* Bước nâng cấp không được dựng ra một xác nhận vắng nào — mục 18.1 nói rõ. */
   const seeded = conn
-    .prepare(`SELECT COUNT(*) n FROM attempt_skills WHERE sit_status = 'absent' AND sit_by IS NULL`)
+    /* PR-MT: dòng vắng do MÁY chốt dấu "-" (cờ `absent_from_no_show`) có người xác nhận là "máy" — không phải dữ liệu bịa. */
+    .prepare(`SELECT COUNT(*) n FROM attempt_skills WHERE sit_status = 'absent' AND sit_by IS NULL AND absent_from_no_show = 0`)
     .get() as any;
   assert(seeded.n === 0, 'Có dòng vắng không do ai xác nhận — bước nâng cấp đã bịa dữ liệu');
 
@@ -9012,12 +9014,15 @@ const prnLatestValid = (branchCode: string | null) => {
   ).all(...(branchCode ? [branchCode] : [])) as any[];
   const out = new Map<number, { attemptId: number; sos: number | null; complete: boolean }>();
   for (const s of students) {
-    const a = conn.prepare(
-      `SELECT a.id, a.kind FROM assessment_attempts a LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
+    /* PR-MT: "mới nhất" = số MT lớn nhất của lộ trình mới nhất (K5-54); MT lịch sử ngoài cửa sổ 4 tuần không là hiện trạng (M-14). */
+    const a = (conn.prepare(
+      `SELECT a.id, a.kind, a.lich_su, a.created_at, pr.week_end FROM assessment_attempts a LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
         WHERE a.student_id = ? AND a.status != 'cancelled'
           AND EXISTS (SELECT 1 FROM assessment_scores x WHERE x.attempt_id = a.id AND (x.band IS NOT NULL OR x.raw_score IS NOT NULL))
-        ORDER BY COALESCE(pr.week_start, '') DESC, a.attempt_no DESC, a.id DESC LIMIT 1`,
-    ).get(s.id) as any;
+        ORDER BY a.cycle_id DESC, a.attempt_no DESC, a.id DESC`,
+    ).all(s.id) as any[]).find((x) => !x.lich_su || domain.luotSinhViec({
+      lich_su: 1, tuanKetThuc: x.week_end, created_at: x.created_at.slice(0, 10) < TODAY ? x.created_at : TODAY,
+    }));
     if (!a) continue;
     if (a.kind === 'mock') {
       const r = (attempts.attemptDetail(P.admin, a.id) as any).result;

@@ -48,7 +48,7 @@ console.log(`\n(4) ${nhay.length} lộ trình có số MT không liền mạch (
 bang(nhay);
 
 const huy = luotHuyGiua(conn);
-console.log(`\n(5) ${huy.length} lượt đã huỷ ở giữa lộ trình (kiểu cũ — nay chỉ huỷ cả lượt được với lượt lớn nhất)`);
+console.log(`\n(5) ${huy.length} lượt đã huỷ ở giữa lộ trình (kiểu cũ — nay chỉ huỷ cả lượt được với MT cuối cùng của lộ trình)`);
 bang(huy);
 
 console.log('\n[chay-thu:mt] Xong — database không bị đổi.');

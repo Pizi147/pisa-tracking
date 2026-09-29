@@ -466,7 +466,8 @@ export function classScopeSql(scope: Scope, alias = 'c'): { sql: string; params:
 export function editableSkills(p: Principal, classId: number, skills: readonly string[], luot?: LuotQuyen): string[] {
   const lichSu = !!luot?.lich_su;
   const qlLichSu = lichSu && can(p, PERMISSIONS.PLAN_WEEK, { classId });
-  const gvcnLichSu = lichSu && isCoreTeacherOf(p, classId);
+  /* `today` từ nơi gọi (danh sách) — không hỏi ngày nghiệp vụ lại cho từng lượt. */
+  const gvcnLichSu = lichSu && !qlLichSu && isCoreTeacherOf(p, classId, luot!.today);
   return skills.filter(
     (skill) => can(p, PERMISSIONS.SCORE_EDIT, { classId, skill })
       || qlLichSu || (gvcnLichSu && !luot!.oCoDiem.includes(skill))
@@ -478,7 +479,7 @@ export function editableSkills(p: Principal, classId: number, skills: readonly s
  * PR-MT (K5-31, Q8, T34): lượt MT cụ thể đang xét quyền — MT lịch sử thì GVCN của lớp nhập được Ô TRỐNG ở cả bốn kỹ năng; Quản lý
  * (xếp tuần được lớp đó) nhập/sửa được mọi ô — sửa ô đã có điểm vẫn phải ghi lý do (RB-5). `oCoDiem` = các ô nhập đã có điểm.
  */
-export type LuotQuyen = { lich_su: number; oCoDiem: readonly string[] };
+export type LuotQuyen = { lich_su: number; oCoDiem: readonly string[]; today?: string };
 
 /**
  * KỸ NĂNG LÀ VIỆC CỦA CHÍNH NGƯỜI NÀY — chỉ đường PHÂN CÔNG, không tính đường sửa hộ.

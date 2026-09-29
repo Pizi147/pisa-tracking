@@ -149,6 +149,7 @@ export function listClassSummaries(p: Principal, f: { branchId?: number; q?: str
     .prepare(
       `SELECT a.id, a.class_id, a.status, a.planned_period_id,
               a.deadline_override, a.target_at_attempt, a.attempt_no, a.lich_su,
+              (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route,
               rp.week_start AS period_start, rp.week_end AS period_end
          FROM assessment_attempts a
          LEFT JOIN report_periods rp ON rp.id = a.planned_period_id

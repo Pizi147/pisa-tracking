@@ -329,6 +329,12 @@ function RegisterForm({ info, onDone }: { info: AuthInfo | null; onDone: () => v
   );
 }
 
+/** PR-MT (Task 10): tài khoản xem được kịch bản mới — MT lịch sử, lớp RF, dời do vắng lần 2. */
+const XEM_DUOC: Record<string, string> = {
+  'Nguyễn Khánh Vy': 'Xem được: MT lịch sử, lớp RF, dời lần 2',
+  'Trần Ngọc Hà': 'Xem được: MT lịch sử, lớp RF, dời lần 2',
+};
+
 function DemoAccounts({ accounts, loading }: { accounts: Account[]; loading: boolean }) {
   const { switchAccount } = useSession();
   const [busy, setBusy] = useState<number | null>(null);
@@ -364,6 +370,7 @@ function DemoAccounts({ accounts, loading }: { accounts: Account[]; loading: boo
                     {a.grants.map((r, i) => <Info key={i}>{r.roleName} · {r.scope}</Info>)}
                     {a.assignmentCount > 0 && <Info>{a.assignmentCount} phân công</Info>}
                   </div>
+                  {XEM_DUOC[a.fullName] && <div className="mt-2 text-[11px] text-slate-500">{XEM_DUOC[a.fullName]}</div>}
                 </button>
               ))}
             </div>
