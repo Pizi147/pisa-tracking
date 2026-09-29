@@ -9747,6 +9747,9 @@ await runPrTocTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 // ==================================================================== PR-MON (Hệ môn học, Pre FOU một ô Tổng hợp, hai khung FT / Lớp thường)
 const { runPrMonTests } = await import('./prMon.tests.ts');
 await runPrMonTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== PR-XLMT (Xếp lịch MT nhiều lớp, thao tác MT theo trạng thái)
+const { runPrXlmtTests } = await import('./prXlmt.tests.ts');
+await runPrXlmtTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

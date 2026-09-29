@@ -182,6 +182,7 @@ function oKyNangCua(cheDo: CheDo, row: any, scores: any[], daDoi: boolean, doiTu
     trangThai: trangThaiKyNang({ batBuoc, tuan: row.week_start ?? null, xong: xongKyNang(cheDo, row.skill, scores), daDoi }),
     tuan: row.week_start ?? null, periodId: row.planned_period_id ?? null, doiTu: daDoi ? doiTu : null, batBuoc,
     khoa: khoaCua(cheDo, row, scores),
+    sit: row.sit_status ?? null, tuanKetThuc: row.week_end ?? null, choDuyet: false,
   };
 }
 

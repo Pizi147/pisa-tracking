@@ -138,8 +138,11 @@ export function khoaDot(kind: string, attemptNo: number | null): string {
   if (kind === 'final') return 'cuoi';
   return `mt:${attemptNo ?? 0}`;
 }
-const THU_TU_DOT: Record<string, number> = { 'mt:1': 1, 'mt:2': 2, 'mt:3': 3, 'mt:4': 4, 'mt:5': 5, giua: 6, cuoi: 7 };
-export function thuTuDot(khoa: string): number { return THU_TU_DOT[khoa] ?? 99; }
+/** K1-21: `mt:n` → n (tới MT8 và hơn); Giữa/Cuối khoá đứng sau mọi MT; khoá lạ xếp cuối. */
+export function thuTuDot(khoa: string): number {
+  const n = khoa.startsWith('mt:') ? Number(khoa.slice(3)) : NaN;
+  return khoa === 'giua' ? 1000 : khoa === 'cuoi' ? 1001 : Number.isInteger(n) && n > 0 ? n : 9999;
+}
 
 // ------------------------------------------------------------------ cột bảng Tổng hợp (P10, Q14, Q17, Q18)
 
