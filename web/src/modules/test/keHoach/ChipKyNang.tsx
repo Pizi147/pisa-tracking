@@ -62,7 +62,7 @@ export function ChipKyNang({ kn, attemptId, loai, khaiGiang, tongTuan, deXuat, n
     const cls = `${CHIP_CLS} bg-done-bg text-done border-done-line`;
     return (
       <div className={bao}>
-        {lichSu && <ChipLichSu />}
+        {lichSu && <span className="self-start"><ChipLichSu /></span>}
         {loai === 'ft' ? (
           <Link to={`/mock-test/${attemptId}`} className={`${cls} no-underline`} title="Đã thi — mở hồ sơ đợt">{noiDung}</Link>
         ) : (
@@ -82,7 +82,8 @@ export function ChipKyNang({ kn, attemptId, loai, khaiGiang, tongTuan, deXuat, n
   const them = conLai.length;
   return (
     <div className={bao}>
-      {lichSu && <ChipLichSu />}
+      {/* self-start: cột flex kéo giãn con theo bề ngang — nhãn phải gọn cạnh chip, không thành một khung trống cả ô. */}
+      {lichSu && <span className="self-start"><ChipLichSu /></span>}
       {hienThi.map((c, i) => (
         <Chip key={i} c={c} loai={loai} khaiGiang={khaiGiang} tongTuan={tongTuan}
           them={i === soDong - 1 && them > 0 ? { n: them, ds: conLai.map((x) => `${x.kyNang.map((k) => CHU_KY_NANG[k]).join(' ')} · ${x.tuan ? tuanLich(x.tuan) : 'chưa xếp'}`).join('\n') } : null}

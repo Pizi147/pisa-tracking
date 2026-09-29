@@ -464,7 +464,8 @@ function SkillWorkTable({ d, save, onDone, onOpenHistory }: {
           <Label>Tình trạng và hạn</Label>
           {r.required && (
             <Status kind={prog === 'scored' ? 'done'
-              : prog === 'skipped' || prog === 'cancelled' || prog === 'not_scheduled' ? 'idle'
+              /* MT lịch sử: nhập bù, không hạn — xám như việc "không tính hạn", không màu chờ. */
+              : prog === 'skipped' || prog === 'cancelled' || prog === 'not_scheduled' || prog === 'lich_su' ? 'idle'
               : prog === 'due' || prog === 'sat' ? 'doing' : 'waiting'}>
               {progressLabel(prog)}
             </Status>
@@ -902,7 +903,8 @@ function CancelDialog({ open, onClose, attemptId, attemptNo, heQua, onDone }: {
               : <>Huỷ các kỹ năng <strong>chưa có điểm và chưa thi</strong>. MT{attemptNo} giữ số; kỹ năng đã có điểm giữ nguyên.</>}
           </p>
           {dong.length > 0 && <p>Đóng {dong.join(', ')} sinh từ lượt này.</p>}
-          <input className="field" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Lý do huỷ (bắt buộc)" />
+          <input className="field" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Lý do huỷ (bắt buộc)"
+            aria-label="Lý do huỷ (bắt buộc)" />
         </div>
       }
       onConfirm={async () => {

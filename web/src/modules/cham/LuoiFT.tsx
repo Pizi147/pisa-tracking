@@ -174,7 +174,8 @@ function DeadlineSummary({ cells }: { cells: Cell[] }) {
     </span>
   ) : null;
   if (!owing.length) {
-    const first = cells.find((c) => c.required && !c.noShow);
+    /* PR-MT: MT lịch sử không có hạn nên không vào `owing` — còn ô nhập bù thì nói "Nhập bù", đừng lấy ô đã có điểm nói "Đã nhập". */
+    const first = cells.find((c) => c.progress === 'lich_su') ?? cells.find((c) => c.required && !c.noShow);
     return (
       <div className="flex flex-col items-start gap-0.5 min-w-0">
         {first ? <DeadlinePill cell={first} /> : null}
