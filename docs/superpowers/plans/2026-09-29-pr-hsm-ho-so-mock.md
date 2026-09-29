@@ -494,3 +494,53 @@ Không có câu bắt buộc — mọi điểm mở đã vào bảng Q theo khuy
 ## Nhật ký thực thi
 
 <!-- Session code ghi ở đây: mốc B, dòng mã thật lệch, phép kiểm cũ phải sửa, trước/sau clarify, 🛑 đã hỏi, id GV Writing demo, model thật. -->
+
+- **30/09 · Task 0** — model thật **Opus 5.5** (phương án B). Nhánh `pr-hsm-ho-so-mock` từ `origin/main` e7d6af94 (kế hoạch đã có trên main).
+  **Mốc B = 1722 phép kiểm** (+ 24 tốc độ). Đối chiếu dòng mã: khớp hết (lệch 0).
+- **Task 1** — 1727 đạt. Phép kiểm cũ sửa dữ liệu (không xoá): `xoaDuLieu.tests.ts` PR-XOA T1 đếm cột FK trỏ `users` 73 → **74**
+  (`assessment_scores.examiner_user_id` phân loại **dấu vết** "điểm đã nhập" ở `xoaTaiKhoan.ts` — GV chấm = đã làm việc, xoá mềm).
+  `CRITERIA`/`CRITERIA_SHORT`/`criteriaSetFor` đã xoá ở Task 1 (chỉ `ScoreEntry.tsx` dùng) thay vì chờ Task 3.
+- **Task 2** — 1736 đạt. `/students/1` +1 câu (91→92 QL, 93→94 GVCN/GVBM) — dưới trần 100, không nâng. Thêm nhãn nhật ký
+  `score.nhan_xet` = "Sửa nhận xét" (`nhatKy.ts`; phép kiểm N1 (11) đòi mọi hành động có nhãn tiếng Việt). Hoàn tất R11 trong
+  phép kiểm cần đủ 4 kỹ năng có điểm (`dotDaHoanTat`) — dữ liệu dựng thêm L/R/W1/W2.
+- **Task 3 · clarify** — trước → sau: nút điện thoại "−" (chỉ dấu) → **"Vắng"** (tên đọc màn hình "Vắng — Không có bài — em có lịch mà
+  không làm bài", khớp chữ thấy); toast "Đã ghi vắng {môn} · {em}" + Hoàn tác, lớp thường thêm hệ quả " — dời sang tuần sau"; lỗi nhập
+  chỉ ở tooltip → **một dòng dưới ô** (`role="alert"`, câu đầy đủ, cắt hiển thị có tooltip); ô vắng "—" → **"vắng"** + "Đã xác nhận
+  vắng — Quản lý xếp lại bài trước khi nhập."; hộp tiêu chí thêm "+ Nhận xét" → "Nhận xét (không bắt buộc)", "GV chấm · Đổi"; đầu cột S
+  "GV chấm: {tên} ▾" / "GV chấm: chưa chọn", câu giải thích giữ nguyên kế hoạch. impeccable: không có PRODUCT.md (không init — CLAUDE.md).
+  1737 đạt (lần 1 segfault 139, chạy lại xanh).
+- **Task 4** — 1738 đạt. `layout` (xét trên mã, ảnh ở Task 9): cột S nới **104 → 150 px** để nút "GV chấm: {tên} ▾" nằm dưới "S (band)"
+  không cắt tên ngắn; cột W 56 px sau W2; mọi cột số lưới FT căn phải (tiêu đề + ô); lớp thường ô đúng/tổng căn phải, đầu cột
+  "tổng + Điền cả cột" gói dòng (`flex-wrap`, cột 136 px); câu lỗi dưới ô cắt ở 104 px (tooltip + DOM giữ câu đủ); điện thoại: dòng
+  W/S không sửa được có chỗ trống 44 px thay ✎ để số thẳng cột. `nhanLuot` đặt ở `shared/domain/fasttrack.ts` (bộ kiểm đọc được).
+  Lịch Test: `COT_DAU_LICH_TEST = [190, 120, 110]`; bảng Nợ đổi 150/110/auto → 190/120/110, cột trạng thái thành auto.
+- **Task 5** — 1739 đạt. **Tầng 1 của màn này là: 4 điểm kỹ năng + Overall.** layout/harden/adapt xét trên mã (ảnh ở Task 9):
+  tên dài `break-words`; nhận xét 1000 ký tự `pre-wrap break-words`, ô tự cao; lỗi mạng khi lưu nhận xét → "Chưa lưu — thử lại" giữ chữ;
+  không quyền → chữ thường, phần rỗng ẩn; 375 px `grid-cols-2`, Overall `col-span-2`, dòng phụ `truncate` + tooltip. "Mở lại lượt"
+  dời từ menu "Chỉnh lịch" ra dải "Đã huỷ" (một chỗ, không lặp). Bảng dưới đổi tên "Lịch kiểm tra" (không còn điểm). `NutGvCham`
+  thêm `goiY` (hồ sơ Mock: "Lưu ngay cho bài Speaking này.").
+- **Task 6** — 1740 đạt. Nhãn cạnh MT: khi đã có chip `lịch sử` thì còn 1 chỗ cho nhãn khác (tổng ≤ 2), dư → `+n`.
+- **Task 7** — 1740 đạt. H1 Tạ Minh Quân MT3 (lượt 167): nhận xét W1/W2/S + GV chấm Phạm Thu Trang (id 9). H2 Nguyễn Minh An MT1
+  (lượt 5): GV chấm "Cô Lan (giám khảo ngoài)". H3/H4 dùng dữ liệu có sẵn (không thêm vào `hsmSeed.ts`): lượt huỷ = Phạm Khánh Linh MT3
+  (159) · MT lịch sử = Đoàn Khánh Chi MT1–3 (180–182) · chờ duyệt = Kiều Thu Trang MT1 (174) · huỷ phần = Mạc Đức Long MT1 (177) ·
+  RF = Phan Gia Hân (138) · Lương Bảo Anh MT3 (170). **GV Writing của `MB FT 101`: W1 Lê Minh Khoa id 8 · W2 Cao Khánh Linh id 10.**
+- **Task 9 · bấm thử + audit/polish** — không có commit mới trên `origin/main` (không rebase). Bấm thử API 4157 / Vite 5357 (bản `main`
+  4158 / 5358 ở thư mục tạm để chụp ảnh "trước"), Playwright kênh Chrome: **K1–K7, K9–K15 đạt** (K8 có phép kiểm đọc nguồn). Ghi nhận:
+  lượt H1 (Quân MT3) đã **hoàn tất** → GVBM Trang chỉ xem (đúng R11); K1b dùng Lương Bảo Anh MT3 (Trang chỉ bấm được ô S), K2–K3 dùng
+  Quản lý Vy, K4 dùng GV W1 Khoa trên lượt 170. Sửa sau audit: (1) lưới FT cuộn ngang ở 1440 → Hạn 200→140, S 150→130, Kết quả 176→150
+  (bảng đúng 1400 px), ô Hạn gói dòng thay vì tràn sang cột L; (2) ô chỉ đọc/ô nhập căn phải (`items-end`); (3) "vắng" theo
+  `sitStatus === 'absent'` (đang chờ duyệt dời có `progress = reschedule_pending`); (4) bảng lớp Lịch Test có cột tự giãn → ba cột đầu
+  đúng 190/120/110 như bảng Nợ. Detector impeccable: 0 phát hiện. Ảnh ở `thiet-ke/anh/pr-hsm/` (`*-truoc.png` / `*-sau.png`).
+- **Task 9b (chủ sản phẩm thêm 30/09, ngoài kế hoạch)** — "GV có dạy Speaking được nhập điểm S Mock". Chủ sản phẩm chọn: **cùng chi
+  nhánh · chỉ là quyền (không thành việc) · làm trong PR-HSM**. Làm: `lopFtChoGvSpeaking` ở `permissions.ts` (GV có phân công S đang hiệu
+  lực ở lớp FT + vai giáo viên còn quyền nhập điểm ở chi nhánh đó → mọi lớp FT cùng chi nhánh), nối vào `editableSkills` (trừ nhánh
+  `chiViec`), `scoreEditPath` (`assigned` → nhật ký `score.edit`), `teacherAllows(ATTEMPT_VIEW)` **chỉ khi hỏi theo lớp**; Lịch Test
+  thêm các lớp này vào "Tất cả". **Không** mở rộng `scopeFor(ATTEMPT_VIEW)` chung (sẽ lộ Case/tín hiệu/việc/hồ sơ HV lớp khác) và không
+  đổi `mySkills`. Phép kiểm HSM (7). 1741 đạt. Người rà: xem kỹ phần quyền này.
+- **Task 10 (chủ sản phẩm cho 30/09)** — DB THỬ `pisatracking-demo-pizi147`: sao lưu 72 s (63 bảng, 3545 dòng, kiểm toàn vẹn) → migrate
+  lần 1 221 s: **đúng một dòng PR-HSM** (kèm các dòng PR-KCK, PR-SOS, Ý thức v4 của đợt 3 mà DB thử chưa nâng) → lần 2 224 s: không dòng
+  PR-HSM (ba dòng luôn-in của migrate cũ, "0 lộ trình") → `netlify deploy --build` nháp 127 s (không `--prod`). Bấm thử trên nháp (chủ sản
+  phẩm đăng nhập Netlify + tài khoản demo Phạm Thu Trang — session không gõ mật khẩu): hồ sơ Mock lượt 221 (MT1 lịch sử) → bấm ô S, nhập
+  FC 6.5 · LR 6 · GRA 6 · P 7 → band 6.5 "Đạt kỳ vọng"; GV chấm = Tôi (Phạm Thu Trang); nhận xét S; tải lại → cả ba còn. Lưu chỉ-nhận-xét
+  **1,8 s**, tải hồ sơ Mock 0,5–0,7 s (< 3 s). Nhận xét W2 không thử (Trang không dạy W2). Sửa sau thử: nhãn "Nhận xét" bị bẻ dòng ở
+  màn ~350 px → `shrink-0 whitespace-nowrap` (chưa deploy lại nháp — chỉ CSS). Không chạm DB CHÍNH.

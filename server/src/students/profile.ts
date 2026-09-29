@@ -558,6 +558,17 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       .prepare(`SELECT id, attempt_id, sos_level, status, urgency FROM sos_cases WHERE attempt_id IN (${ids.map(() => '?').join(',')})`)
       .all(...ids) as any[]) caseByAttempt.set(r.attempt_id, r);
   }
+  /* PR-HSM (F8, K4-33): nhãn "dời S" / "huỷ phần" ở bảng Mock Test — MỘT câu cả lô trên lịch từng kỹ năng. */
+  const kyNangCua = new Map<number, any[]>();
+  if (attemptRows.length) {
+    const ids = attemptRows.map((a) => a.id);
+    for (let i = 0; i < ids.length; i += 900) {
+      const lo = ids.slice(i, i + 900);
+      for (const r of conn
+        .prepare(`SELECT attempt_id, skill, sit_status, absence_move_count FROM attempt_skills WHERE required = 1 AND attempt_id IN (${lo.map(() => '?').join(',')})`)
+        .all(...lo) as any[]) kyNangCua.set(r.attempt_id, [...(kyNangCua.get(r.attempt_id) ?? []), r]);
+    }
+  }
 
   const homNayHs = demoToday();
   const attempts = attemptRows.map((a) => {
@@ -570,11 +581,14 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       classCode: a.class_code, periodCode: a.period_code, weekStart: a.week_start ?? null,
       mode: t.mode,
       caseId: c?.id ?? null, caseStatus: c?.status ?? null,
+      /* PR-HSM (K4-33): kỹ năng từng dời do vắng / đang vắng · có phần bị huỷ mà lượt chưa huỷ. */
+      doiKyNang: (kyNangCua.get(a.id) ?? []).filter((k) => k.absence_move_count > 0 || k.sit_status === 'absent').map((k) => k.skill as string),
+      huyPhan: a.status !== 'cancelled' && (kyNangCua.get(a.id) ?? []).some((k) => k.sit_status === 'cancelled'),
     };
     if (t.mode === 'ratio') {
       const r = t.ratio!;
       return {
-        ...base, expectation: null, bands: null, overall: null,
+        ...base, expectation: null, bands: null, overall: null, evaluable: null,
         skills: r.skills, scored: r.scored, required: r.required,
         complete: r.complete, provisional: r.provisional,
         sosLevel: r.sosLevel, scopeNote: null,
@@ -582,7 +596,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     }
     const r = t.ft!;
     return {
-      ...base, expectation: r.expectation, bands: r.bands, overall: r.overall, skills: null,
+      ...base, expectation: r.expectation, bands: r.bands, overall: r.overall, evaluable: r.evaluable, skills: null,
       scored: r.scoredRequired, required: r.required.length,
       complete: r.complete, provisional: r.provisional,
       sosLevel: r.sosLevel, scopeNote: r.scopeNote,

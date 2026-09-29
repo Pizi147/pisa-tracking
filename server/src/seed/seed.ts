@@ -16,6 +16,7 @@ import { buildYThuc } from './yThucSeed.ts';
 import { buildKckDemo, buildSosV3Demo } from './sosV3Seed.ts';
 import { buildPrMtDemo } from './prMtSeed.ts';
 import { buildXlmtDemo } from './xlmtSeed.ts';
+import { buildHsmDemo } from './hsmSeed.ts';
 import { buildHvlDemo } from './hvlSeed.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
 import { dienMocLop } from '../migrate/prLop.ts';
@@ -238,6 +239,8 @@ export function runSeed() {
     buildHvlDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
     /* BỘ DEMO PR-KCK (Q29-1): hai em Target KCK — có MT, có điểm dưới band mà không SOS. */
     buildKckDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
+    /* BỘ DEMO PR-HSM (H1–H2): nhận xét W/S + GV chấm Speaking (tài khoản và người ngoài) — qua `saveScore`. */
+    buildHsmDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
     /*
      * Ý THỨC v4 (PR-YT4, D14/D15/H5): SAU ngày demo (đề xuất QL duyệt đi qua hàm dịch vụ đọc `demoToday()`), TRƯỚC `buildDuyetDemo`
      * (lần `quetYeuCau` của nó sinh thẻ Báo lên Ý thức).
