@@ -1,165 +1,106 @@
-import { useState } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { ErrorState, SectionNote, Skeleton, Th } from '../../ui/ui.tsx';
 import { TyLe } from '../../ui/TyLe.tsx';
 import { NeedsEvaluation } from '../cases/NeedsEvaluation.tsx';
+import { SoO } from '../phanTich/dungChung.tsx';
 import { caseCategoryLabel } from '@shared/domain/index.ts';
 
-type Row = {
-  code: string; label: string;
-  cases: number; openCases: number;
-  /** HV ĐANG GẶP — chỉ em có case chưa kết luận (hiện trạng). */
-  students: number;
-  studentsEver: number;
-  noPlan: number;
-  plans: number; running: number;
-  success: number; failure: number;
-};
-type PlanKind = {
+type KePa = {
   kind: string; label: string;
-  success: number; failure: number;
-  improved: number; partial: number;
-  decided: number; rate: number | null; smallSample: boolean;
+  /** "Thành công" và "Đã thực hiện" (`decided`) — cùng `planOutcomes` với Phân tích › Hiệu quả PA. */
+  success: number; decided: number; dangThucHien: number;
 };
 type Board = {
   category: string; label: string; short: string;
-  rows: Row[]; plans: PlanKind[]; studentCount: number; note: string | null;
+  plans: KePa[];
+  /** Mỗi số là độ dài một tập id (hợp đồng số liệu): danh sách khi bấm số là chính tập đó (`/issue-board/o`). */
+  tong: { hvGapVanDe: number[]; caseTatCa: number[]; dangTheoDoi: number[]; daCoPa: number[]; daXong: number[]; thanhCong: number[] };
   /** Phương án đã kết thúc mà chưa có kết quả xác định — ở NGOÀI bảng hiệu quả (F05). */
   needsEvaluation: { count: number; ids: number[] };
 };
 
-export function IssueTable({ classId, category }: { classId: number; category: string }) {
-  const [detail, setDetail] = useState(false);
-  const { data, loading, error, reload } = useApi<Board>(
-    `/classes/${classId}/issue-board?category=${category}`, [classId, category],
-  );
-
+/**
+ * MỞ MỘT KỸ NĂNG Ở PHÂN TÍCH LỚP (PR-HVL, M5, YC-11.3.3). Nằm ở: Học viên & Lớp → Hồ sơ lớp → tab Phân tích lớp → bấm một hàng kỹ năng/môn.
+ * Hai bảng nhỏ: "Vấn đề ở {kỹ năng}" (HV gặp vấn đề · Case · Đang theo dõi · Đã có PA · Đã xong → Thành công) và "Hiệu quả phương án ở {kỹ năng}"
+ * (loại PA · Đang thực hiện · Đã thực hiện · Thành công · Tỷ lệ). Mọi số bấm được ra danh sách đúng số đó (`SoO nguon=/issue-board/o`).
+ */
+export function VanDeKyNang({ classId, category }: { classId: number; category: string }) {
+  const { data, loading, error, reload } = useApi<Board>(`/classes/${classId}/issue-board?category=${category}`, [classId, category]);
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (loading || !data) return <Skeleton rows={4} />;
-  if (!data.rows.length) {
-    return (
-      <p className="text-xs text-slate-500 m-0 py-2">
-        Lớp này chưa có case nào ở {caseCategoryLabel(category)}.
-      </p>
-    );
-  }
+  const mon = caseCategoryLabel(category);
+  const nguon = (cot: string, kind?: string) => `/classes/${classId}/issue-board/o?category=${category}&cot=${cot}${kind ? `&kind=${kind}` : ''}`;
+  const so = (n: number, cot: string, tieuDe: string, kind?: string) => <SoO giaTri={n} nguon={nguon(cot, kind)} tieuDe={tieuDe} />;
+  const t = data.tong;
 
   return (
-    <div className="space-y-2">
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr>
-              <Th>Phân loại vấn đề</Th>
-              <Th align="right" hint="Học viên ĐANG HỌC và có case chưa xong ở phân loại này (hiện trạng). Em chỉ có case đã đóng, hoặc đã kết thúc khoá, không tính ở bảng này. Một em có hai case cùng loại vẫn là một em.">
-                HV đang gặp
-              </Th>
-              <Th align="right" hint="Số case mang phân loại này; trong ngoặc là số case chưa xong.">
-                Case
-              </Th>
-              <Th align="right" hint="Số phương án đã đề ra cho các case đó. Một case có thể có nhiều phương án.">
-                Phương án
-              </Th>
-              <Th align="right" hint="Phương án chưa khép lại — vẫn đang làm hoặc đang chờ kết quả.">
-                Đang theo dõi
-              </Th>
-              <Th align="right" hint="Phương án đã kết thúc với kết quả khá hơn hoặc đỡ một phần.">
-                Thành công
-              </Th>
-              <Th align="right" hint="Phương án đã kết thúc với kết quả không đổi hoặc tệ hơn.">
-                Không thành công
-              </Th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.rows.map((r) => (
-              <tr key={r.code} className="row-hover">
-                <td className="td">
-                  <span className="text-slate-100">{r.label}</span>
-                  {/* Case đang mở mà chưa ai đề phương án là việc CHẶN, nên nói ngay tại hàng. */}
-                  {r.noPlan > 0 && (
-                    <span className="block text-[10px] text-amber-300">
-                      {r.noPlan} case chưa có phương án
-                    </span>
-                  )}
-                </td>
-                <td className="td text-right tabular-nums text-slate-300">{r.students}</td>
-                <td className="td text-right tabular-nums text-slate-300">
-                  {r.cases}
-                  {r.openCases > 0 && <span className="text-[10px] text-amber-300"> ({r.openCases} mở)</span>}
-                </td>
-                <td className="td text-right tabular-nums text-slate-300">
-                  {r.plans || <span className="text-slate-600">—</span>}
-                </td>
-                <td className="td text-right tabular-nums text-slate-300">
-                  {r.running || <span className="text-slate-600">—</span>}
-                </td>
+    <div className="space-y-3">
+      <section className="overflow-x-auto" aria-label={`Vấn đề ở ${mon}`}>
+        <h4 className="m-0 mb-1 text-xs font-semibold text-slate-200">Vấn đề ở {mon}</h4>
+        {t.caseTatCa.length === 0 ? (
+          <p className="m-0 py-2 text-xs text-slate-500">Lớp này chưa có Case nào ở {mon}.</p>
+        ) : (
+          <table className="w-full min-w-[520px] table-fixed text-sm">
+            <thead>
+              <tr>
+                <Th align="right" hint="Học viên ĐANG HỌC lớp này và có Case chưa xong ở kỹ năng này. Một em có hai Case cùng kỹ năng vẫn là một em.">HV gặp vấn đề</Th>
+                <Th align="right" hint="Mọi Case ở kỹ năng này, kể cả đã xong.">Case</Th>
+                <Th align="right" hint="Case chưa xong.">Đang theo dõi</Th>
+                <Th align="right" hint="Case có ít nhất một phương án (không tính phương án theo quy chế chưa được xác nhận).">Đã có PA</Th>
+                <Th align="right" hint="Case đã xong → trong đó số Case kết luận tiến bộ rõ hoặc tiến bộ một phần.">Đã xong → Thành công</Th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="row-hover">
+                <td className="td text-right tabular-nums">{so(t.hvGapVanDe.length, 'hv', 'Học viên gặp vấn đề')}</td>
+                <td className="td text-right tabular-nums">{so(t.caseTatCa.length, 'case', 'Case')}</td>
+                <td className="td text-right tabular-nums">{so(t.dangTheoDoi.length, 'dang-theo-doi', 'Case đang theo dõi')}</td>
+                <td className="td text-right tabular-nums">{so(t.daCoPa.length, 'da-co-pa', 'Case đã có phương án')}</td>
                 <td className="td text-right tabular-nums">
-                  {r.success ? <span className="text-emerald-300">{r.success}</span> : <span className="text-slate-600">—</span>}
-                </td>
-                <td className="td text-right tabular-nums">
-                  {r.failure ? <span className="text-rose-300">{r.failure}</span> : <span className="text-slate-600">—</span>}
+                  {so(t.daXong.length, 'da-xong', 'Case đã xong')}<span className="text-slate-500"> → </span>{so(t.thanhCong.length, 'thanh-cong', 'Case đã xong và thành công')}
                 </td>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </tbody>
+          </table>
+        )}
+      </section>
 
-      {data.note && <p className="text-[11px] text-slate-500 m-0">{data.note}</p>}
+      <section className="overflow-x-auto" aria-label={`Hiệu quả phương án ở ${mon}`}>
+        <h4 className="m-0 mb-1 text-xs font-semibold text-slate-200">Hiệu quả phương án ở {mon}</h4>
+        {data.plans.length === 0 ? (
+          <p className="m-0 py-2 text-xs text-slate-500">Chưa có phương án nào ở {mon}, nên chưa nói được loại nào hiệu quả.</p>
+        ) : (
+          <table className="w-full min-w-[520px] table-fixed text-sm">
+            <colgroup><col className="w-[32%]" /><col className="w-[17%]" /><col className="w-[17%]" /><col className="w-[16%]" /><col /></colgroup>
+            <thead>
+              <tr>
+                <Th>Loại PA</Th>
+                <Th align="right" hint="Phương án đang làm hoặc chờ kết quả (không tính phương án theo quy chế chưa được xác nhận).">Đang thực hiện</Th>
+                <Th align="right" hint="Phương án đã kết thúc có kết quả xác định — cũng là mẫu số của tỷ lệ.">Đã thực hiện</Th>
+                <Th align="right" hint="Đã kết thúc với kết quả có tiến bộ hoặc tiến bộ một phần.">Thành công</Th>
+                <Th align="right" hint="Thành công trên đã thực hiện. Dưới 5 mẫu chỉ ghi 'mẫu nhỏ'; chưa có mẫu thì 'Chưa có dữ liệu'.">Tỷ lệ</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.plans.map((p) => (
+                <tr key={p.kind} className="row-hover">
+                  <td className="td text-slate-100">{p.label}</td>
+                  <td className="td text-right tabular-nums">{so(p.dangThucHien, 'pa-dang', `PA ${p.label} đang thực hiện`, p.kind)}</td>
+                  <td className="td text-right tabular-nums">{so(p.decided, 'pa-da', `PA ${p.label} đã thực hiện`, p.kind)}</td>
+                  <td className="td text-right tabular-nums">{so(p.success, 'pa-thanh-cong', `PA ${p.label} thành công`, p.kind)}</td>
+                  <td className="td text-right"><TyLe n={p.success} N={p.decided} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
 
-      {/* F05: phương án chưa xác định KHÔNG nằm trong bảng — liên kết riêng, ngoài bảng. */}
+      {/* F05: phương án đã kết thúc mà chưa ai ghi kết quả KHÔNG nằm trong bảng — liên kết riêng, ngoài bảng. */}
       <NeedsEvaluation count={data.needsEvaluation.count}
         url={`/classes/${classId}/issue-board/needs-evaluation?category=${category}`} />
 
-      {/*
-        HIỆU QUẢ THEO LOẠI PHƯƠNG ÁN nằm trong phần mở rộng (mục 13.4): nó là câu hỏi thứ
-        hai — "cách nào đang ăn" — và không đáng chen vào bảng đang trả lời câu thứ nhất.
-      */}
-      <button type="button" onClick={() => setDetail(!detail)}
-        className="btn btn-sm btn-ghost">
-        {detail ? 'Ẩn hiệu quả từng loại phương án' : 'Xem hiệu quả từng loại phương án'}
-      </button>
-
-      {detail && (
-        data.plans.length === 0 ? (
-          <p className="text-xs text-slate-500 m-0">
-            Chưa có phương án nào kết thúc ở {caseCategoryLabel(category)}, nên chưa nói được loại nào hiệu quả.
-          </p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr>
-                  <Th>Loại phương án</Th>
-                  <Th align="right" hint="Phương án đã kết thúc với kết quả có tiến bộ rõ.">Có tiến bộ</Th>
-                  <Th align="right" hint="Phương án đã kết thúc với kết quả tiến bộ một phần.">Tiến bộ một phần</Th>
-                  <Th align="right" hint="Có tiến bộ + tiến bộ một phần, trên số phương án đã kết thúc CÓ kết quả xác định. Chưa đủ dữ liệu không vào mẫu số.">Có cải thiện</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.plans.map((p) => (
-                  <tr key={p.kind} className="row-hover">
-                    <td className="td text-slate-100">{p.label}</td>
-                    <td className="td text-right tabular-nums text-slate-300">{p.improved || <span className="text-slate-600">—</span>}</td>
-                    <td className="td text-right tabular-nums text-slate-300">{p.partial || <span className="text-slate-600">—</span>}</td>
-                    {/* n/N ĐỨNG TRƯỚC phần trăm, và N=0 / mẫu nhỏ do <TyLe> quyết định — không tự vẽ phần trăm. */}
-                    <td className="td text-right"><TyLe n={p.success} N={p.decided} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )
-      )}
-
-      <SectionNote>
-        Năm cột số là <strong>năm đơn vị khác nhau</strong> nên đừng chia chúng cho nhau: một case
-        có thể có nhiều phương án. Tỷ lệ chỉ có ở phần hiệu quả từng loại phương án, và mẫu số ở đó
-        chỉ gồm phương án <strong>đã kết thúc và có kết quả xác định</strong> — phương án chưa đủ dữ
-        liệu để đánh giá không bị tính là thất bại. Cách đếm ở đây dùng chung một bộ với trang
-        Thực trạng, nên hai nơi không ra hai con số khác nhau.
-      </SectionNote>
+      <SectionNote>Một Case chỉ đếm một lần. Mọi số bấm được ra danh sách đúng số đó.</SectionNote>
     </div>
   );
 }

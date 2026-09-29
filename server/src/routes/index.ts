@@ -924,6 +924,15 @@ api.get('/classes/:id/issue-board', requireAuth, wrap((req) => {
   return effectiveness.classIssueBoard(id, category, { fromDate: qStr(req, 'from') ?? null });
 }));
 
+/** Danh sách sau một SỐ ở bảng vấn đề / hiệu quả PA của một kỹ năng (PR-HVL, M5) — tính bằng chính `issueBoard`. */
+api.get('/classes/:id/issue-board/o', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const category = qStr(req, 'category');
+  const cot = qStr(req, 'cot');
+  if (!category || !cot) throw badRequest('Thiếu kỹ năng hoặc cột cần xem.');
+  return phanTichLopSvc.oPhanTichLop(principalOf(req), pInt(req, 'id'), category, cot, qStr(req, 'kind') ?? null);
+}));
+
 api.get('/classes/:id/issue-board/needs-evaluation', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   const p = principalOf(req);

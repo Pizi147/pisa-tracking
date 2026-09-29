@@ -428,6 +428,86 @@ export async function runPrHvlTests(t: YThucTestKit) {
     assert(/tenSos/.test(b) && /export function TenCase/.test(web('modules/cases/SkillBoard.tsx')), 'chip [MT1] dùng TenCase của SkillBoard');
   });
 
+  // ------------------------------------------------------------------ Task 6 · Phân tích lớp mở rộng một kỹ năng
+
+  const effMod: any = await import('../cases/effectiveness.ts');
+  const ptlMod: any = await import('../classes/phanTichLop.ts');
+  const hqpMod: any = await import('../phanTich/hieuQuaPa.ts');
+  const CATS_FT = ['listening', 'reading', 'writing1', 'writing2', 'speaking'];
+
+  check('PR-HVL (6) · issueBoard.tong: mỗi số là độ dài một tập id; tập lồng nhau đúng (Case ⊇ đang theo dõi ∪ đã xong; thành công ⊆ đã xong; đã có PA ⊆ Case)', () => {
+    let coCase = 0;
+    for (const cat of CATS_FT) {
+      const t = effMod.classIssueBoard(LOP_FT, cat).tong;
+      const tatCa = new Set(t.caseTatCa);
+      eq([...t.dangTheoDoi, ...t.daXong].sort((a: number, b: number) => a - b), [...t.caseTatCa].sort((a: number, b: number) => a - b), `${cat}: đang theo dõi ∪ đã xong = mọi Case`);
+      assert(t.thanhCong.every((id: number) => t.daXong.includes(id)) && t.daCoPa.every((id: number) => tatCa.has(id)), `${cat}: tập lồng nhau`);
+      assert(new Set(t.caseTatCa).size === t.caseTatCa.length && new Set(t.hvGapVanDe).size === t.hvGapVanDe.length, `${cat}: một Case / một em chỉ đếm một lần`);
+      coCase += t.caseTatCa.length;
+    }
+    assert(coCase > 0, 'Bộ demo phải có Case ở lớp FT');
+  });
+
+  check('PR-HVL (6) · /issue-board/o: danh sách sau mỗi số = đúng số đó (Case, HV, PA đang/đã/thành công theo loại) — tính bằng chính issueBoard', () => {
+    let soPa = 0;
+    for (const cat of CATS_FT) {
+      const b = effMod.classIssueBoard(LOP_FT, cat);
+      const kiem = (cot: string, n: number, kind: string | null = null) => {
+        const r = ptlMod.oPhanTichLop(P.admin, LOP_FT, cat, cot, kind);
+        eq([r.n, r.rows.length], [n, n], `${cat} ${cot} ${kind ?? ''}`);
+      };
+      kiem('hv', b.tong.hvGapVanDe.length); kiem('case', b.tong.caseTatCa.length); kiem('dang-theo-doi', b.tong.dangTheoDoi.length);
+      kiem('da-co-pa', b.tong.daCoPa.length); kiem('da-xong', b.tong.daXong.length); kiem('thanh-cong', b.tong.thanhCong.length);
+      for (const p of b.plans) {
+        soPa++;
+        eq(p.ids.dangThucHien.length, p.dangThucHien, `${cat} ${p.kind}: đang thực hiện`);
+        eq([p.ids.daThucHien.length, p.ids.thanhCong.length], [p.decided, p.success], `${cat} ${p.kind}: đã thực hiện / thành công = decided / success`);
+        kiem('pa-dang', p.dangThucHien, p.kind); kiem('pa-da', p.decided, p.kind); kiem('pa-thanh-cong', p.success, p.kind);
+      }
+    }
+    assert(soPa > 0, 'Phải có ít nhất một loại PA ở lớp FT');
+    assertThrows(() => ptlMod.oPhanTichLop(P.admin, LOP_FT, 'listening', 'khong-co', null), /không hợp lệ/, 'cột lạ');
+    assertThrows(() => ptlMod.oPhanTichLop(P.cpManager, LOP_FT, 'listening', 'case', null), /ngoài phạm vi/, 'Quản lý chi nhánh khác');
+  });
+
+  check('PR-HVL (6) · cùng `planOutcomes` với Phân tích › Hiệu quả PA: tổng "Đã thực hiện" của lớp = PA có kết quả xác định của lớp; khác Hiệu quả PA chỉ vì khung thời gian và Case chưa phân loại lỗi', () => {
+    const tatCa = effMod.planOutcomes({ classId: LOP_FT }).filter((r: any) => r.group !== 'undetermined');
+    const tong = CATS_FT.reduce((n, cat) => n + effMod.classIssueBoard(LOP_FT, cat).plans.reduce((m: number, p: any) => m + p.decided, 0), 0);
+    eq(tong, tatCa.filter((r: any) => CATS_FT.includes(r.category)).length, 'Σ theo kỹ năng của bảng lớp = planOutcomes của lớp');
+    const success = CATS_FT.reduce((n, cat) => n + effMod.classIssueBoard(LOP_FT, cat).plans.reduce((m: number, p: any) => m + p.success, 0), 0);
+    eq(success, tatCa.filter((r: any) => CATS_FT.includes(r.category) && r.group === 'success').length, 'Σ thành công');
+    /* Hiệu quả PA (52 tuần): cùng tập trừ PA ngoài khung và PA của Case chưa có lỗi chính. */
+    const hq = hqpMod.hieuQuaPa(P.admin, { ct: 'tat-ca', classId: LOP_FT, soTuan: 52 });
+    const trongKhung = effMod.planOutcomes({ classId: LOP_FT, fromDate: d.tuDauKhoang(TODAY, 52) }).filter((r: any) => r.group !== 'undetermined');
+    const coLoiChinh = new Set((conn.prepare(`SELECT DISTINCT case_id FROM case_issues WHERE role = 'primary'`).all() as any[]).map((r) => r.case_id));
+    const kyVong = trongKhung.filter((r: any) => coLoiChinh.has(r.caseId) && r.category !== 'tong_hop').length;
+    eq(hq.tomTat.paCoKetQua, kyVong, 'Hiệu quả PA = PA có kết quả trong khung 52 tuần, Case đã có lỗi chính');
+    assert(tong >= hq.tomTat.paCoKetQua, 'Bảng lớp (mọi thời gian, mọi Case) không thể ít hơn Hiệu quả PA');
+  });
+
+  check('PR-HVL (6) · K2-40: lớp FOU có dòng đầu "Cả bài" (không mở rộng), n/N HV đạt theo % tổng ≥ ngưỡng chung; Pre FOU không có dòng này; lớp FT không có', () => {
+    const fou = ptlMod.phanTichLop(P.admin, LOP_FOU);
+    eq([fou.dong[0].key, fou.dong[0].nhan, fou.dong[0].moRong], ['ca-bai', 'Cả bài', false], 'dòng đầu');
+    assert(/70%/.test(fou.dong[0].tenDayDu), fou.dong[0].tenDayDu);
+    eq(fou.dong.slice(1).map((x: any) => x.nhan), ['L', 'R', 'G+V', 'P'], 'các môn FOU');
+    let coO = false;
+    for (const k of Object.keys(fou.o).filter((x) => x.startsWith('ca-bai|'))) {
+      const o = fou.o[k]; coO = true;
+      assert(o.dat <= o.tong && o.tong > 0, `${k}: ${JSON.stringify(o)}`);
+    }
+    assert(coO, 'Bộ demo phải có em đủ điểm một bài ở MB FOU 12');
+    assert(!ptlMod.phanTichLop(P.admin, LOP_FT).dong.some((x: any) => x.key === 'ca-bai'), 'FT không có Cả bài');
+    const pre = (conn.prepare(`SELECT id FROM classes WHERE code = 'MB Pre FOU 77'`).get() as any)?.id;
+    if (pre) assert(!ptlMod.phanTichLop(P.admin, pre).dong.some((x: any) => x.key === 'ca-bai'), 'Pre FOU không có Cả bài');
+  });
+
+  check('PR-HVL (6) · web Phân tích lớp: hai bảng nhỏ với số bấm được (SoO nguon=/issue-board/o), TyLe n/N, không còn cột "không thành công"', () => {
+    const b = web('modules/classes/ClassIssueBoard.tsx');
+    assert(/export function VanDeKyNang/.test(b) && /Vấn đề ở/.test(b) && /Hiệu quả phương án ở/.test(b) && /issue-board\/o/.test(b), 'thiếu hai bảng / nguồn danh sách');
+    assert(/<TyLe n=\{p\.success\} N=\{p\.decided\}/.test(b) && !/Không thành công/.test(b), 'tỷ lệ / cột không thành công');
+    assert(/VanDeKyNang/.test(web('modules/classes/PhanTichLopTab.tsx')) && /moRong === false/.test(web('modules/classes/PhanTichLopTab.tsx')), 'PhanTichLopTab');
+  });
+
   check('PR-HVL (2) · roster: `history[i].lichSu` là cờ thật của mốc; Standing có `nextWeekStart` (cột Sắp tới)', () => {
     let coMoc = 0;
     for (const lopId of (conn.prepare(`SELECT id FROM classes WHERE status = 'active'`).all() as any[]).map((r) => r.id as number)) {

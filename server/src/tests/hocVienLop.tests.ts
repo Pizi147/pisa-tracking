@@ -418,7 +418,8 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     diemThuong(themLuot({ ...b, cid, no: 1, kind: 'progress', weekStart: '2026-09-07' }), { writing: [15, 20] });
     const r = ptl.phanTichLop(P.admin, cid);
     eq([r.loai, r.dong.map((x: any) => x.nhan).join(' '), r.cot.map((x: any) => x.nhan).join(' ')],
-      ['thuong', 'L R G+V P', 'Giữa khoá Cuối khoá'], 'Khung');   // PR-MON (MH2): lớp FOU
+      ['thuong', 'Cả bài L R G+V P', 'Giữa khoá Cuối khoá'], 'Khung');   // PR-MON (MH2): lớp FOU; PR-HVL (K2-40): dòng đầu "Cả bài"
+    assert(r.o['ca-bai|progress'] === undefined, '"Cả bài" chỉ tính khi bài đủ điểm (em mới có 1–2 môn thì chưa có % tổng)');
     eq(r.o['writing|progress'], { dat: 1, tong: 2 }, 'W Giữa khoá');
     eq(r.o['listening|progress'], { dat: 1, tong: 1 }, 'L Giữa khoá');
     assert(!/MT\d|kỳ vọng|Progress|Final/.test(JSON.stringify(r)), 'Chữ FT lọt vào lớp thường');
