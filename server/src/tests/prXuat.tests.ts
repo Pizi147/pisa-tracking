@@ -267,4 +267,40 @@ async function mayChu(t: YThucTestKit) {
     const e = loi(() => xm.duLieuXuatMt(P.mbManager, f, 3));
     assert(e?.status === 400 && /^Quá 3 lượt/.test(e.message), String(e?.message));
   });
+
+  // ------------------------------------------------------------------ khung Lớp thường (Task 3)
+  const locThuong = (o: Record<string, unknown> = {}) => loc({ khung: 'thuong', dot: 'giua,cuoi', ...o });
+
+  check('PR-XUAT (3) · lớp thường: sheet theo chương trình, tên môn MH3 (G+V, P), ô % là số, không chữ SOS (T58)', () => {
+    const r = xm.duLieuXuatMt(P.normalCoreTeacher, locThuong({ cot: 'day-du' }));
+    const ten = r.sheets.map((s) => s.ten);
+    assert(ten.includes('FOU · Giữa–Cuối khoá') && ten.at(-1) === 'Bộ lọc đã dùng', ten.join('|'));   // GVCN này có thể còn lớp chương trình khác (bộ kiểm thêm lớp)
+    const sheetFou = r.sheets.find((s) => s.ten === 'FOU · Giữa–Cuối khoá')!;
+    const [tieuDe, ...dong] = sheetFou.aoa;
+    for (const cot of ['Grammar + Vocabulary %', 'Pronunciation %', 'Listening %', '% tổng', 'Grammar + Vocabulary điểm', 'Pronunciation tổng', 'Tuần Pronunciation', 'Bài']) {
+      assert(tieuDe.includes(cot), `thiếu cột "${cot}": ${tieuDe.join(' | ')}`);
+    }
+    assert(dong.length > 0 && r.dem.luot === r.sheets.slice(0, -1).reduce((n, sh) => n + sh.aoa.length - 1, 0), `${dong.length} dòng, đếm ${r.dem.luot}`);
+    const iGv = tieuDe.indexOf('Grammar + Vocabulary %'), iD = tieuDe.indexOf('Grammar + Vocabulary điểm'), iT = tieuDe.indexOf('Grammar + Vocabulary tổng');
+    const co = dong.filter((x) => x[iD] !== null);
+    assert(co.length > 0 && co.every((x) => typeof x[iGv] === 'number' && x[iGv] === Math.round(((x[iD] as number) / (x[iT] as number)) * 1000) / 10), 'ô % là số = điểm/tổng làm tròn 1 chữ số');
+    assert(dong.every((x) => x[4] === 'Giữa khoá' || x[4] === 'Cuối khoá'), 'cột Bài');
+    assert(!JSON.stringify(r.sheets).includes('SOS') && !JSON.stringify(r.sheets).includes('Overall'), 'không tiêu đề/ô nào chứa SOS hay Overall');
+    assert(dong.some((x) => typeof x[tieuDe.indexOf('% tổng')] === 'number') && dong.some((x) => x[tieuDe.indexOf('% tổng')] === null), '% tổng: số khi đủ điểm, trống khi thiếu');
+    assert(r.tenTep === 'Pisa-Tracking_Test-lop-thuong_tat-ca_Giua-khoa-Cuoi-khoa.xlsx', r.tenTep);
+  });
+
+  check('PR-XUAT (3) · khung thường + đợt MT → 400 câu tiếng Việt; GVCN lớp FT lọc lớp FT hỏi khung thường → 0 lượt, không lỗi; Pre FOU đúng một cột "Tổng hợp %"', () => {
+    const sai = d.docBoLocXuatMt({ khung: 'thuong', tg: 'dot', dot: 'mt:1' });
+    assert(typeof sai === 'string' && /Giữa khoá và Cuối khoá/.test(sai), String(sai));
+    const rong = xm.duLieuXuatMt(P.coreTeacher, locThuong({ lop: String(mbLop) }));
+    assert(rong.dem.luot === 0 && rong.sheets.map((s) => s.ten).join() === 'Bộ lọc đã dùng', `${rong.dem.luot} lượt, sheet ${rong.sheets.map((s) => s.ten)}`);
+    const pf = xm.duLieuXuatMt(P.admin, locThuong());
+    const sheetPf = pf.sheets.find((s) => s.ten.startsWith('PREFOU'));
+    assert(sheetPf, `Pre FOU cần một sheet: ${pf.sheets.map((s) => s.ten)}`);
+    const mon = sheetPf!.aoa[0].filter((c) => String(c).endsWith(' %') && c !== '% tổng');
+    assert(mon.join() === 'Tổng hợp %', `Pre FOU: ${mon.join()}`);
+    assert(pf.sheets.map((s) => s.ten).join() === [...pf.sheets.map((s) => s.ten)].filter((x) => x !== 'Bộ lọc đã dùng').sort().concat('Bộ lọc đã dùng').join(), 'sheet theo mã chương trình, Bộ lọc cuối');
+    assert(!JSON.stringify(pf.sheets).includes('SOS'), 'không SOS');
+  });
 }
