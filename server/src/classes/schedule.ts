@@ -1,6 +1,6 @@
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
-  CHUONG_TRINH_KHONG_CHIA_MON, boMonLich, CLASS_PHASE_LABEL, CO_DIEM_SQL, PERMISSIONS, kiemSoMtMoi, laLichSu, lichMtMacDinh, tuanHocCuaMt, tuanLich,
+  CHUONG_TRINH_KHONG_CHIA_MON, boMonLich, CLASS_PHASE_LABEL, CO_DIEM_SQL, MOC_KE_TIEP_SQL, PERMISSIONS, kiemSoMtMoi, laLichSu, lichMtMacDinh, tuanHocCuaMt, tuanLich,
   PROGRAMME_TEMPLATES, kyHieuLop, nextStepsAfter, programmeOf, studyWeekOf,
   type ClassPhase, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
@@ -340,6 +340,8 @@ export type ClassProgress = {
   canXepLop: number;
   /** Một dòng đọc được ngay, ví dụ "BE · tuần 5/10 · Progress Test tuần này". */
   label: string | null;
+  /** K2-23: chương trình CÓ mốc Giữa khoá — Pre FOU chỉ Cuối khoá nên ô Giữa khoá ở panel Lịch kiểm tra ẩn. */
+  coGiuaKhoa: boolean;
 };
 
 /**
@@ -520,7 +522,30 @@ function computeProgress(
     phase, phaseLabel: CLASS_PHASE_LABEL[phase],
     weeksLeft, needsPlacement, placementOptions, activeStudents, canXepLop,
     label,
+    coGiuaKhoa: defProgress !== null || c.progress_week_override !== null && c.progress_week_override !== undefined,
   };
+}
+
+/**
+ * TÓM TẮT MT CỦA MỘT LỚP FT (PR-HVL, K2-22) — dòng `8 em · 6 em có MT sắp tới · 2 em đã xong MT cuối` ở panel Tuần khai giảng. MỘT câu SQL:
+ * "MT sắp tới" cùng luật `MOC_KE_TIEP_SQL` (mốc kế tiếp, không lịch sử, từ tuần này); "đã xong MT cuối" = đã có lượt MT có điểm ở số thứ tự
+ * ≥ số MT của lịch mặc định của lộ trình (LT: 3, RF: 2 — `lichMtMacDinh`), tính cả MT lịch sử.
+ */
+export function tomTatMt(classId: number): { soEm: number; coMocSapToi: number; daXongMtCuoi: number } {
+  const r = db().prepare(
+    `SELECT COUNT(*) AS n, SUM(co_moc) AS co_moc, SUM(xong) AS xong FROM (
+       SELECT s.id,
+              MAX(CASE WHEN EXISTS (SELECT 1 FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id
+                                     WHERE a.cycle_id = cy.id AND ${MOC_KE_TIEP_SQL('a', 'rp')}) THEN 1 ELSE 0 END) AS co_moc,
+              MAX(CASE WHEN EXISTS (SELECT 1 FROM assessment_attempts a2 WHERE a2.cycle_id = cy.id AND a2.kind = 'mock'
+                                     AND a2.attempt_no >= (CASE WHEN cy.route = 'RF' THEN ? ELSE ? END) AND ${CO_DIEM_SQL('a2')}) THEN 1 ELSE 0 END) AS xong
+         FROM enrollments e
+         JOIN students s ON s.id = e.student_id
+         LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
+        WHERE e.class_id = ? AND e.status = 'active' AND s.status = 'active' AND s.archived_at IS NULL
+        GROUP BY s.id)`,
+  ).get(mondayOf(demoToday()), lichMtMacDinh('RF').length, lichMtMacDinh('LT1').length, classId) as any;
+  return { soEm: r?.n ?? 0, coMocSapToi: r?.co_moc ?? 0, daXongMtCuoi: r?.xong ?? 0 };
 }
 
 /**

@@ -704,6 +704,12 @@ function classOverviewThat(p: Principal, classId: number) {
       WHERE e.class_id = ? AND e.status = 'active' AND s.archived_at IS NULL`,
   ).all(classId) as any[]).map((r) => r.student_id as number);
   const caseCuaLop = listCases(p, { classId }).rows;
+  /* Đầu hồ sơ lớp thường ở tuần Cuối khoá / đã hết khoá (K2-14): "Cuối khoá: 6/8 em có đủ điểm" — chỉ tính ở hai chặng này (một lần `standingFor`). */
+  const cuoiKhoa = (() => {
+    if (finished || prog?.scoringMode !== 'ratio' || !summary || (summary.phase !== 'final_week' && summary.phase !== 'finished') || !emDangHoc.length) return null;
+    const st = standingFor(emDangHoc);
+    return { du: emDangHoc.filter((id) => { const s = st.get(id); return !!s && s.attemptKind === 'final' && s.required > 0 && s.scored >= s.required; }).length, tong: emDangHoc.length };
+  })();
   const vl = viecHocVienTheoLop(p, {
     emTheoLop: new Map([[classId, emDangHoc]]), cases: caseCuaLop, homNay: demoToday(), chuongTrinhTheoLop: new Map([[classId, prog?.code ?? null]]),
   });
@@ -740,6 +746,8 @@ function classOverviewThat(p: Principal, classId: number) {
     soCaseMo: caseCuaLop.filter((c) => c.status !== 'done' && c.studentId !== null && emDangHoc.includes(c.studentId)).length,
     /** B4: cùng hai số với hộp lớp ở trang Học viên & Lớp (`viecHocVienTheoLop`). */
     soChoDuyet: vl.soChoDuyet.get(classId) ?? 0, soEmQuaHan: vl.soEmQuaHan.get(classId) ?? 0,
+    /** Lớp thường ở Cuối khoá / hết khoá: số em có đủ điểm bài Cuối khoá (null ở chặng khác và với FT). */
+    cuoiKhoa,
     /** Số học viên có vi phạm chưa xử lý quá 5 ngày — dấu ⚠ trên tab Ý thức & Phối hợp (Q15). */
     canhBaoYThuc: soEmCanXuLyYThuc(p, classId),
     /*

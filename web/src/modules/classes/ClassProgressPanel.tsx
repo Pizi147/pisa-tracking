@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
@@ -6,8 +7,8 @@ import { WeekPicker } from '../../ui/Filters.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { Field, SectionNote, Skeleton, Status } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { MOC_KIEM_TRA_FT, MOC_KIEM_TRA_NORMAL } from '../../ui/chu.ts';
-import { kyHieuLop, ngay, tuanLich } from '@shared/domain/index.ts';
+import { MOC_KIEM_TRA_NORMAL } from '../../ui/chu.ts';
+import { kyHieuLop, lichMtMacDinh, ngay, tuanLich } from '@shared/domain/index.ts';
 
 type Progress = {
   programmeCode: string | null; programmeName: string | null;
@@ -21,10 +22,18 @@ type Progress = {
   placementOptions: { code: string; name: string }[];
   activeStudents: number;
   label: string | null;
+  /** K2-23: chương trình có mốc Giữa khoá (Pre FOU không có). */
+  coGiuaKhoa: boolean;
+  /** K2-22: tóm tắt MT của lớp FT (null với lớp thường / người không xem được lớp). */
+  tomTatMt: { soEm: number; coMocSapToi: number; daXongMtCuoi: number } | null;
 };
 
 /**
  * TIẾN ĐỘ CỦA MỘT LỚP — mục 7.6, quyền của Admin CN và Quản lý CN.
+ *
+ * Nằm ở: Học viên & Lớp → Hồ sơ lớp → ⋮ → Tuần khai giảng (lớp FT) / Lịch kiểm tra (lớp thường) (E7, K2-22, K2-23).
+ * FT: chỉ tuần khai giảng — là tuần bắt đầu MẶC ĐỊNH khi thêm học viên; lịch MT do từng em (Test › Kế hoạch Test). Lớp thường: tuần khai giảng +
+ * hai mốc kiểm tra (ô Giữa khoá chỉ khi chương trình có mốc đó).
  *
  * Ba ô: tuần khai giảng, tuần thi Giữa khoá, tuần thi Cuối khoá. Hai ô sau tính sẵn theo
  * chương trình, nên phần lớn lớp không ai phải đụng vào — chỉ lớp nghỉ lễ hoặc học bù mới
@@ -34,8 +43,10 @@ type Progress = {
  * Phần dưới cùng là thứ owner yêu cầu thêm ngày 13/09/2026: khi lớp đã hết chương trình,
  * panel nói thẳng còn bao nhiêu em cần xếp lớp và hai đường đi tiếp của các em.
  */
-export function ClassProgressPanel({ classId, classCode, tieuDe, onClose, onDone }: {
+export function ClassProgressPanel({ classId, classCode, tieuDe, onClose, onDone, onChuyenTiep }: {
   classId: number; classCode: string; tieuDe: string; onClose: () => void; onDone?: () => void;
+  /** Lớp hết khoá: nút "Chuyển tiếp lớp" ngay trong khung (chỉ khi người xem chuyển tiếp được). */
+  onChuyenTiep?: () => void;
 }) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
@@ -85,20 +96,23 @@ export function ClassProgressPanel({ classId, classCode, tieuDe, onClose, onDone
           </div>
 
           <Field as="div" label="Tuần khai giảng" required={laLopThuong}
-            hint={`Tuần này là tuần học thứ 1 của lớp. ${laLopThuong ? MOC_KIEM_TRA_NORMAL : MOC_KIEM_TRA_FT}`}>
+            hint={laLopThuong ? `Tuần này là tuần học thứ 1 của lớp. ${MOC_KIEM_TRA_NORMAL}` : 'Tuần bắt đầu mặc định khi thêm học viên vào lớp.'}>
             <WeekPicker periodId={startPeriodId} label={null} scope="planning"
               onPeriod={(id) => { setTouched(true); setStartPeriodId(id); }} />
           </Field>
 
           {laLopThuong ? (
             <>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="Tuần thi Giữa khoá (tuần học thứ)"
-                  hint={`Mặc định của ${kyHieuLop(data.programmeCode, null) ?? data.programmeCode}: tuần ${data.progressOverridden ? '—' : data.progressWeek ?? '—'}. Để trống là dùng mặc định.`}>
-                  <input type="number" min={1} max={data.totalWeeks ?? undefined} className="field w-full"
-                    value={progressWeek} placeholder={String(data.progressWeek ?? '')}
-                    onChange={(e) => { setTouched(true); setProgressWeek(e.target.value); }} />
-                </Field>
+              <div className={`grid gap-3 ${data.coGiuaKhoa ? 'sm:grid-cols-2' : ''}`}>
+                {/* K2-23: Pre FOU chỉ có Cuối khoá — không vẽ ô Giữa khoá. */}
+                {data.coGiuaKhoa && (
+                  <Field label="Tuần thi Giữa khoá (tuần học thứ)"
+                    hint={`Mặc định của ${kyHieuLop(data.programmeCode, null) ?? data.programmeCode}: tuần ${data.progressOverridden ? '—' : data.progressWeek ?? '—'}. Để trống là dùng mặc định.`}>
+                    <input type="number" min={1} max={data.totalWeeks ?? undefined} className="field w-full"
+                      value={progressWeek} placeholder={String(data.progressWeek ?? '')}
+                      onChange={(e) => { setTouched(true); setProgressWeek(e.target.value); }} />
+                  </Field>
+                )}
                 <Field label="Tuần thi Cuối khoá (tuần học thứ)"
                   hint="Để trống là dùng mốc mặc định của chương trình.">
                   <input type="number" min={1} max={data.totalWeeks ?? undefined} className="field w-full"
@@ -108,7 +122,7 @@ export function ClassProgressPanel({ classId, classCode, tieuDe, onClose, onDone
               </div>
 
               <div className="flex flex-wrap gap-2">
-                {data.progressWeekStart && (
+                {data.coGiuaKhoa && data.progressWeekStart && (
                   <Status kind={data.phase === 'progress_week' ? 'doing' : 'idle'}>
                     Giữa khoá: {tuanLich(data.progressWeekStart, homNay)} (tuần học {data.progressWeek})
                     {data.progressOverridden ? ' · đã xếp lại' : ''}
@@ -127,8 +141,7 @@ export function ClassProgressPanel({ classId, classCode, tieuDe, onClose, onDone
                 Hệ thống KHÔNG tự chuyển ai: nó chỉ nói "đến lúc rồi" và bày sẵn hai đường.
               */}
               {data.needsPlacement && (
-                <div className="rounded-lg border p-3"
-                     style={{ borderColor: 'var(--danger)', background: 'rgba(242, 161, 161, 0.08)' }}>
+                <div className="rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>
                   <p className="text-sm text-slate-100 m-0">
                     Lớp đã học hết {data.totalWeeks} tuần. <strong>{data.activeStudents} học viên</strong> cần
                     được xếp lớp tiếp theo.
@@ -137,19 +150,27 @@ export function ClassProgressPanel({ classId, classCode, tieuDe, onClose, onDone
                     Hai đường đi:
                     {' '}{data.placementOptions.map((o) => `${o.name} (${o.code})`).join(' — hoặc — ')}
                   </p>
-                  <SectionNote>
-                    Hệ thống không tự chuyển em nào. Mở từng em rồi bấm “Chuyển lớp”, hoặc tạo lớp
-                    mới trước rồi chuyển cả nhóm sang.
-                  </SectionNote>
+                  <p className="m-0 mt-1.5 text-xs text-slate-500">Hệ thống không tự chuyển em nào.</p>
+                  {onChuyenTiep && (
+                    <button type="button" className="btn btn-sm btn-primary mt-2 min-h-[44px] sm:min-h-0" onClick={onChuyenTiep}>Chuyển tiếp lớp</button>
+                  )}
                 </div>
               )}
             </>
           ) : (
-            <SectionNote>
-              Đây là lớp Fast Track nên không có mốc thi Giữa khoá/Cuối khoá chung cho cả lớp — lịch MT
-              đi theo <strong>từng em</strong>, tính từ tuần em vào học. Mở hồ sơ một em rồi bấm
-              “Kế hoạch học” để xem và xếp lịch MT của em đó.
-            </SectionNote>
+            <div className="space-y-2">
+              {data.tomTatMt && (
+                <p className="m-0 text-sm tabular-nums text-slate-200">
+                  {data.tomTatMt.soEm} em · {data.tomTatMt.coMocSapToi} em có MT sắp tới · {data.tomTatMt.daXongMtCuoi} em đã xong MT cuối
+                  {' '}<Link to={`/test/ke-hoach?loai=ft&classId=${classId}`} className="link">Xem ở Kế hoạch Test →</Link>
+                </p>
+              )}
+              <SectionNote>
+                Tuần khai giảng là tuần bắt đầu mặc định khi thêm học viên. Lịch MT của từng em tính từ tuần bắt đầu của em
+                (FT: tuần {lichMtMacDinh('LT1').join(' · ')}; RF: {lichMtMacDinh('RF').join(' · ')}) — xem ở Test › Kế hoạch Test.
+                Đổi tuần khai giảng không dời lịch MT của em đã có.
+              </SectionNote>
+            </div>
           )}
         </div>
       )}

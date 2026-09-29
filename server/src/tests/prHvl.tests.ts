@@ -5,7 +5,7 @@
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runPrHvlTests(t: YThucTestKit) {
-  const { check, assert, assertThrows } = t;
+  const { check, checkAsync, assert, assertThrows } = t;
   const d: any = await import('../../../shared/domain/index.ts');
   const eq = (got: unknown, want: unknown, m: string) =>
     assert(JSON.stringify(got) === JSON.stringify(want), `${m}: ${JSON.stringify(got)} ≠ ${JSON.stringify(want)}`);
@@ -170,7 +170,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
 
   // ------------------------------------------------------------------ Task 2 · máy chủ: Case mở theo lô
 
-  const { conn, P, TODAY, classId } = t;
+  const { conn, P, TODAY, classId, addDays } = t;
   const sosState: any = await import('../cases/sosState.ts');
   const caseLop: any = await import('../cases/caseLop.ts');
   const casesMod: any = await import('../cases/cases.ts');
@@ -506,6 +506,46 @@ export async function runPrHvlTests(t: YThucTestKit) {
     assert(/export function VanDeKyNang/.test(b) && /Vấn đề ở/.test(b) && /Hiệu quả phương án ở/.test(b) && /issue-board\/o/.test(b), 'thiếu hai bảng / nguồn danh sách');
     assert(/<TyLe n=\{p\.success\} N=\{p\.decided\}/.test(b) && !/Không thành công/.test(b), 'tỷ lệ / cột không thành công');
     assert(/VanDeKyNang/.test(web('modules/classes/PhanTichLopTab.tsx')) && /moRong === false/.test(web('modules/classes/PhanTichLopTab.tsx')), 'PhanTichLopTab');
+  });
+
+  // ------------------------------------------------------------------ Task 7 · đầu hồ sơ lớp, Tuần khai giảng / Lịch kiểm tra
+
+  const schedMod: any = await import('../classes/schedule.ts');
+  const intakeMod: any = await import('../classes/intake.ts');
+  const MB = (conn.prepare(`SELECT id FROM branches WHERE code = 'MB'`).get() as any).id as number;
+
+  check('PR-HVL (7) · K2-22: tomTatMt của lớp FT khớp roster (em có mốc kế tiếp = standing.nextAttemptNo); route progress có tomTatMt chỉ với lớp FT', () => {
+    const t = schedMod.tomTatMt(LOP_FT);
+    const ro = classesMod.classRoster(P.admin, LOP_FT).filter((r: any) => !r.archived && r.status === 'active');
+    eq(t.soEm, new Set(ro.map((r: any) => r.id)).size, 'số em (đếm mỗi em một lần)');
+    assert(t.coMocSapToi <= t.soEm && t.daXongMtCuoi <= t.soEm, JSON.stringify(t));
+    eq(t.coMocSapToi, new Set(ro.filter((r: any) => r.standing?.nextAttemptNo != null).map((r: any) => r.id)).size, 'em có MT sắp tới = roster');
+    const pr = schedMod.classProgress(LOP_FT);
+    eq([pr.coGiuaKhoa, pr.programmeCode], [false, 'FT'], 'FT không có mốc Giữa khoá chung');
+    const src = fs.readFileSync(path.join(REPO, 'server/src/routes/index.ts'), 'utf8');
+    assert(/tomTatMt = pr\.programmeCode === 'FT' && can\(/.test(src), 'route progress phải kiểm quyền trước khi trả tomTatMt');
+  });
+
+  checkAsync('PR-HVL (7) · K2-23: coGiuaKhoa theo chương trình — FOU có, Pre FOU không; lớp thường cuối khoá có cuoiKhoa {du, tong}, FT không', async () => {
+    eq(schedMod.classProgress(LOP_FOU).coGiuaKhoa, true, 'FOU');
+    const pre = (conn.prepare(`SELECT id FROM classes WHERE code = 'MB Pre FOU 77'`).get() as any)?.id;
+    if (pre) eq(schedMod.classProgress(pre).coGiuaKhoa, false, 'Pre FOU');
+    eq(classesMod.classOverview(P.admin, LOP_FT).cuoiKhoa, null, 'FT không có cuoiKhoa');
+    const weekMod: any = await import('../platform/week.ts');
+    const batDau = addDays(TODAY, -49);
+    const lop = (intakeMod.createClass(P.admin, { code: 'MB FOU HVL7', branchId: MB, kind: 'FOU', isFastTrack: false, startDate: batDau, startPeriodId: weekMod.ensurePeriod(batDau).id }) as any).id as number;
+    for (const ten of ['HVL7 An', 'HVL7 Binh']) intakeMod.commitIntake(P.admin, { classId: lop, rows: [{ fullName: ten, email: 'hv@demo.test' }], idempotencyKey: `hvl7-${ten}` });
+    const ov = classesMod.classOverview(P.admin, lop);
+    assert(['final_week', 'finished'].includes(ov.summary.phase), `Lớp khai giảng 7 tuần trước phải ở tuần Cuối khoá: ${ov.summary.phase}`);
+    eq(ov.cuoiKhoa, { du: 0, tong: 2 }, 'chưa em nào có điểm Cuối khoá');
+  });
+
+  check('PR-HVL (7) · web đầu hồ sơ lớp: một nút chính theo chặng, ⋮ có Tuần khai giảng / Lịch kiểm tra, LT bọc abbr; panel không còn "Lộ trình lớp" / "Mở từng em rồi bấm"; ô Giữa khoá ẩn với Pre FOU', () => {
+    const dau = web('modules/classes/DauTrangLop.tsx'); const pn = web('modules/classes/ClassProgressPanel.tsx'); const pg = web('modules/classes/ClassOverviewPage.tsx');
+    assert(/nutChinhDauTrang\(/.test(dau) && /phu\.slice\(0, 2\)/.test(dau) && /'Tuần khai giảng'/.test(dau) && /ROUTE_NAME\[/.test(dau) && /<MenuDong bieuTuong=\{`\+\$\{b\.an\.length\}`\}/.test(dau), 'DauTrangLop');
+    assert(!/Lộ trình lớp/.test(dau + pn + pg) && !/Mở từng em rồi bấm/.test(pn), 'chữ cũ còn sót');
+    assert(/data\.coGiuaKhoa &&/.test(pn) && /onChuyenTiep/.test(pn) && /tomTatMt/.test(pn) && /Đổi tuần khai giảng không dời lịch MT/.test(pn), 'ClassProgressPanel');
+    assert(!/rgba\(242, 161, 161/.test(pn), 'khung hết khoá không còn tô đỏ');
   });
 
   check('PR-HVL (2) · roster: `history[i].lichSu` là cờ thật của mốc; Standing có `nextWeekStart` (cột Sắp tới)', () => {

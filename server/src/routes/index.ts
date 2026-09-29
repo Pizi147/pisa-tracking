@@ -1359,7 +1359,11 @@ api.post('/cycles/:id/target-revision', requireAuth, wrap((req) => {
 /** Lớp đang ở tuần thứ mấy, sắp thi gì, và đã hết chương trình chưa. */
 api.get('/classes/:id/progress', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return scheduleSvc.classProgress(pInt(req, 'id'));
+  const id = pInt(req, 'id');
+  const pr = scheduleSvc.classProgress(id);
+  /* K2-22: dòng tóm tắt MT của lớp FT (panel Tuần khai giảng) — chỉ người xem được lớp; người khác không có dòng này. */
+  const tomTatMt = pr.programmeCode === 'FT' && can(principalOf(req), PERMISSIONS.ATTEMPT_VIEW, { classId: id }) ? scheduleSvc.tomTatMt(id) : null;
+  return { ...pr, tomTatMt };
 }));
 
 /**
