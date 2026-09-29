@@ -1,7 +1,7 @@
 import { db } from '../db.ts';
 import {
-  MEASURE_KINDS, PERMISSIONS, NHOM_TRANG_THAI_KHOA, khoaNhomTrangThai, violationState,
-  type MeasureKind, type NhomViPhamKhoa, type TrangThaiViPhamKhoa,
+  MEASURE_KINDS_V3, PERMISSIONS, NHOM_TRANG_THAI_KHOA, khoaNhomTrangThai, violationState,
+  type MeasureKindV3, type NhomViPhamKhoa, type TrangThaiViPhamKhoa,
 } from '../../../shared/domain/index.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, forbidden, isIsoDate, notFound } from '../util.ts';
@@ -131,7 +131,7 @@ export function yThucMetric(
     }
     case 'bien-phap-dang-chuan-bi': {
       /* Q18: byKind chín loại — cùng cách `bien-phap-theo-loai`, cho bảng "Phương án xử lý theo loại" cột Đang chuẩn bị. */
-      if (f.kind && !(MEASURE_KINDS as readonly string[]).includes(f.kind)) throw badRequest('Loại phương án xử lý không hợp lệ.');
+      if (f.kind && !(MEASURE_KINDS_V3 as readonly string[]).includes(f.kind)) throw badRequest('Loại phương án xử lý không hợp lệ.');
       const b = branchSql('c.branch_id', scope.branchIds), cl = classSql('m.class_id', f.classId);
       const rows = db()
         .prepare(
@@ -139,14 +139,14 @@ export function yThucMetric(
             WHERE m.status = 'preparing' AND ${b.sql} AND ${cl.sql} ORDER BY m.id`,
         )
         .all(...b.args, ...cl.args) as any[];
-      const byKind = Object.fromEntries(MEASURE_KINDS.map((k) => [k, [] as number[]])) as Record<MeasureKind, number[]>;
-      for (const r of rows) byKind[r.kind as MeasureKind]?.push(r.id);
-      const picked = f.kind ? { [f.kind]: byKind[f.kind as MeasureKind] } : byKind;
+      const byKind = Object.fromEntries(MEASURE_KINDS_V3.map((k) => [k, [] as number[]])) as Record<MeasureKindV3, number[]>;
+      for (const r of rows) byKind[r.kind as MeasureKindV3]?.push(r.id);
+      const picked = f.kind ? { [f.kind]: byKind[f.kind as MeasureKindV3] } : byKind;
       return { none: false, byKind: picked as Record<string, number[]>, ids: Object.values(picked).flat().sort((x, y) => x - y) };
     }
     case 'bien-phap-da-thuc-hien':
     case 'bien-phap-theo-loai': {
-      if (id === 'bien-phap-theo-loai' && f.kind && !(MEASURE_KINDS as readonly string[]).includes(f.kind)) {
+      if (id === 'bien-phap-theo-loai' && f.kind && !(MEASURE_KINDS_V3 as readonly string[]).includes(f.kind)) {
         throw badRequest('Loại phương án xử lý không hợp lệ.');
       }
       const b = branchSql('c.branch_id', scope.branchIds), t = period('m.performed_on'), cl = classSql('m.class_id', f.classId);
@@ -158,9 +158,9 @@ export function yThucMetric(
         .all(...b.args, ...t.args, ...cl.args) as any[];
       if (id === 'bien-phap-da-thuc-hien') return { none: false, ids: rows.map((r) => r.id as number) };
       /* Chín loại, tách riêng ba thư cảnh cáo — không gộp. `ids` là hợp của các phần (hoặc đúng loại được lọc). */
-      const byKind = Object.fromEntries(MEASURE_KINDS.map((k) => [k, [] as number[]])) as Record<MeasureKind, number[]>;
-      for (const r of rows) byKind[r.kind as MeasureKind]?.push(r.id);
-      const picked = f.kind ? { [f.kind]: byKind[f.kind as MeasureKind] } : byKind;
+      const byKind = Object.fromEntries(MEASURE_KINDS_V3.map((k) => [k, [] as number[]])) as Record<MeasureKindV3, number[]>;
+      for (const r of rows) byKind[r.kind as MeasureKindV3]?.push(r.id);
+      const picked = f.kind ? { [f.kind]: byKind[f.kind as MeasureKindV3] } : byKind;
       return { none: false, byKind: picked as Record<string, number[]>, ids: Object.values(picked).flat().sort((x, y) => x - y) };
     }
     case 'vi-pham-theo-nhom': {

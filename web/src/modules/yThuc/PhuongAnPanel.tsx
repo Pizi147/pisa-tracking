@@ -11,12 +11,12 @@ import { BangChung } from '../../ui/BangChung.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
 import {
-  MEASURE_KINDS, MEASURE_KIND_LABEL, chiaThemViPham, kiemGhiRoKhac, ngay, thanPatchPhuongAn, type MeasureKind, type NguoiChon,
+  MEASURE_KINDS_V3, MEASURE_KIND_LABEL_V3, chiaThemViPham, kiemGhiRoKhac, ngay, thanPatchPhuongAn, type MeasureKindV3, type NguoiChon,
   type PatchPhuongAnGoc, type ViolationState,
 } from '@shared/domain/index.ts';
 import { ChiTietViPham } from './ChiTietViPham.tsx';
 
-type KindRow = { kind: MeasureKind; label: string; available: boolean; reason: string | null };
+type KindRow = { kind: MeasureKindV3; label: string; available: boolean; reason: string | null };
 type ViolationRow = { id: number; occurredOn: string; description: string; categoryLabel: string; state: ViolationState; stateLabel: string };
 type MeasureDetail = {
   id: number; studentId: number; studentName: string; kind: string; customName: string | null;
@@ -177,9 +177,9 @@ export function PhuongAnPanel({ measureId, onClose, onDone, onXacNhan, onSuaViPh
           <div>
             <Truong nhan="Loại" batBuoc>
               <select className="field w-full" value={kind} onChange={(e) => setKind(e.target.value)}>
-                {MEASURE_KINDS.map((k) => (
+                {MEASURE_KINDS_V3.map((k) => (
                   <option key={k} value={k} disabled={isLocked(k) && k !== d.kind} title={isLocked(k) && k !== d.kind ? lockReason(k) ?? undefined : undefined}>
-                    {MEASURE_KIND_LABEL[k]}
+                    {MEASURE_KIND_LABEL_V3[k]}
                   </option>
                 ))}
               </select>

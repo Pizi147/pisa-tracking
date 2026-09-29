@@ -8,9 +8,9 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { KHAC_TOI_THIEU, MEASURE_KINDS, MEASURE_KIND_LABEL, dsLoi, kiemGhiRoKhac, ngay, type MeasureKind, type NguoiChon } from '@shared/domain/index.ts';
+import { KHAC_TOI_THIEU, MEASURE_KINDS_V3, MEASURE_KIND_LABEL_V3, dsLoi, kiemGhiRoKhac, ngay, type MeasureKindV3, type NguoiChon } from '@shared/domain/index.ts';
 
-type KindRow = { kind: MeasureKind; label: string; available: boolean; reason: string | null };
+type KindRow = { kind: MeasureKindV3; label: string; available: boolean; reason: string | null };
 
 /**
  * PANEL `TẠO PA XỬ LÝ` (Y_THUC §7.4; PR-UX3 mockup 15 §7). GVCN/QL gom một hay nhiều vi phạm CỦA ĐÚNG MỘT học viên vào một PA.
@@ -96,9 +96,9 @@ export function CreateMeasurePanel({
             <Truong nhan="Loại" batBuoc>
               <select className="field w-full" value={kind} onChange={(e) => setKind(e.target.value)}
                 title={isLocked(kind) ? lockReason(kind) ?? undefined : undefined}>
-                {MEASURE_KINDS.map((k) => (
+                {MEASURE_KINDS_V3.map((k) => (
                   <option key={k} value={k} disabled={isLocked(k)} title={isLocked(k) ? lockReason(k) ?? undefined : undefined}>
-                    {MEASURE_KIND_LABEL[k]}
+                    {MEASURE_KIND_LABEL_V3[k]}
                   </option>
                 ))}
               </select>

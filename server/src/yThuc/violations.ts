@@ -1,9 +1,9 @@
 import { db, tx } from '../db.ts';
 import {
   VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, VIOLATION_DESCRIPTION_MIN, ghepKhac, kiemGhiRoKhac,
-  VIOLATION_SKILLS, VIOLATION_STATE_LABEL, MEASURE_KIND_LABEL, MEASURE_STATUS_LABEL,
+  VIOLATION_SKILLS, VIOLATION_STATE_LABEL, MEASURE_KIND_LABEL_V3, MEASURE_STATUS_LABEL,
   violationAgeDays, violationAgeLabel, violationState, tenMon,
-  type ViolationCategory, type ViolationState, type MeasureKind,
+  type ViolationCategory, type ViolationState, type MeasureKindV3,
 } from '../../../shared/domain/index.ts';
 import type { Principal } from '../permissions.ts';
 import { badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -338,7 +338,7 @@ export function deleteViolation(p: Principal, id: number): { ok: true; removedFr
   if (soleOfPreparing) {
     const label = soleOfPreparing.kind === 'other' && soleOfPreparing.custom_name
       ? soleOfPreparing.custom_name
-      : MEASURE_KIND_LABEL[soleOfPreparing.kind as MeasureKind] ?? soleOfPreparing.kind;
+      : MEASURE_KIND_LABEL_V3[soleOfPreparing.kind as MeasureKindV3] ?? soleOfPreparing.kind;
     throw badRequest(`Đây là vi phạm duy nhất của phương án «${label}» đang chuẩn bị — xoá phương án trước, hoặc thêm vi phạm khác vào phương án.`);
   }
 
@@ -436,7 +436,7 @@ export function violationDetail(p: Principal, id: number): ViolationDetail {
     )
     .all(id) as any[]).map((m) => ({
       id: m.id, kind: m.kind,
-      kindLabel: m.kind === 'other' && m.custom_name ? m.custom_name : MEASURE_KIND_LABEL[m.kind as keyof typeof MEASURE_KIND_LABEL] ?? m.kind,
+      kindLabel: m.kind === 'other' && m.custom_name ? m.custom_name : MEASURE_KIND_LABEL_V3[m.kind as keyof typeof MEASURE_KIND_LABEL_V3] ?? m.kind,
       status: m.status, statusLabel: MEASURE_STATUS_LABEL[m.status as keyof typeof MEASURE_STATUS_LABEL] ?? m.status,
       performedOn: m.performed_on ?? null, createdAt: m.created_at,
     }));

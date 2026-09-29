@@ -13,6 +13,9 @@
 
 import { ENTRY_SKILLS } from './skills.ts';
 import { CHUONG_TRINH_KHONG_CHIA_MON, boMonLich, programmeOf } from './normal.ts';
+import { hanTheoNgay } from './cases.ts';
+import { addDaysIso } from './sos.ts';
+import { mondayOfDate } from './week.ts';
 
 // ---------------------------------------------------------------- lời chốt Y01–Y04
 
@@ -89,6 +92,214 @@ export function monViPham(ct: string | null | undefined): readonly string[] {
   return boMonLich(c);
 }
 
+// ================================================================ LUẬT v4 (PR-YT4, đặc tả 27/09 §5.4) — MỘT HÀM TRẠNG THÁI
+
+/**
+ * THANG BẮT BUỘC (V4-8, Q27-1). Bậc = vị trí + 1 (Q3: không lưu cột bậc — bậc đọc từ `kind`). WL = thư cảnh cáo.
+ * Bậc 4 là MỘT lần xử lý (Report 4 kèm Meeting CX/GĐCN), không cần QL. Bậc 6 (WL 3) cần QL duyệt.
+ */
+export const THANG = ['report_1', 'report_2', 'wl_1', 'report_4_meeting', 'wl_2', 'wl_3'] as const;
+/** Ngoài thang (V4-9): luôn cần QL, KHÔNG đẩy bậc (T28, M-11). */
+export const NGOAI_THANG = ['meeting_cx', 'suspension', 'other'] as const;
+export const MEASURE_KINDS = [...THANG, ...NGOAI_THANG] as const;
+export type MeasureKind = (typeof MEASURE_KINDS)[number];
+export type BacThang = (typeof THANG)[number];
+export const MEASURE_KIND_LABEL: Record<MeasureKind, string> = {
+  report_1: 'Report 1', report_2: 'Report 2', wl_1: 'WL 1', report_4_meeting: 'Report 4 + Meeting CX/GĐCN', wl_2: 'WL 2', wl_3: 'WL 3',
+  meeting_cx: 'Meeting CX/GĐCN', suspension: 'Đình chỉ học tạm thời', other: 'Khác',
+};
+
+/** Tên một lần xử lý. `Khác` có tên riêng thì dùng tên riêng. Loại lạ (dòng cũ còn sót trong DB thử — Q2) → `Xử lý (loại cũ)`. */
+export function nhanLoaiXuLy(kind: string, customName?: string | null): string {
+  if (kind === 'other' && customName?.trim()) return customName.trim();
+  return (MEASURE_KIND_LABEL as Record<string, string>)[kind] ?? 'Xử lý (loại cũ)';
+}
+
+/** Cần QL duyệt: WL 3 và mọi loại ngoài thang (V4-8, V4-9). */
+export function canQl(kind: MeasureKind): boolean {
+  return kind === 'wl_3' || (NGOAI_THANG as readonly string[]).includes(kind);
+}
+
+/** Bậc (1–6) của một loại trong thang; 0 khi ngoài thang hoặc loại lạ. */
+export function bacCuaLoai(kind: string): number {
+  return (THANG as readonly string[]).indexOf(kind) + 1;
+}
+
+/**
+ * Trạng thái một lần xử lý. `done` = đã xong (tự làm, hoặc QL duyệt rồi GVCN bấm Đã thực hiện) · `nhap` = đề xuất đang soạn để tải
+ * bằng chứng (NỘI BỘ, không bao giờ hiện, không vào trạng thái — Q10) · `cho_duyet` · `da_duyet` (chờ Đã thực hiện) · `tu_choi`.
+ */
+export const MEASURE_STATUSES = ['done', 'nhap', 'cho_duyet', 'da_duyet', 'tu_choi'] as const;
+export type MeasureStatus = (typeof MEASURE_STATUSES)[number];
+
+/** Hạn Ý thức: 5 ngày, tính cả ngày bắt đầu (T26, M-16). */
+export const HAN_Y_THUC_NGAY = 5;
+
+export const TRANG_THAI_VP = ['moi', 'da_ghi_nhan', 'can_xu_ly', 'qua_han', 'cho_duyet', 'da_xu_ly'] as const;
+export type TrangThaiVp = (typeof TRANG_THAI_VP)[number];
+export const TRANG_THAI_VP_LABEL: Record<TrangThaiVp, string> = {
+  moi: 'Mới', da_ghi_nhan: 'Đã ghi nhận', can_xu_ly: 'Cần xử lý', qua_han: 'Quá hạn', cho_duyet: 'Chờ QL duyệt', da_xu_ly: 'Đã xử lý',
+};
+
+export type ViPhamVao = {
+  id: number; occurredOn: string; reportedOn: string; ghiNhanLuc: string | null;
+  xuLy: { id: number; kind: string; status: MeasureStatus; performedOn: string | null; quyetLuc: string | null }[];
+};
+/** `mocLop` = max(ngày vào lớp đang học, ngày Quay lại học) — hạn đặt lại từ đây (M-08). `tamDung`: em đang Tạm dừng (T65). */
+export type NguCanhHan = { homNay: string; mocLop: string | null; tamDung: boolean };
+
+const DONG_VP: ReadonlySet<string> = new Set(['done', 'cho_duyet', 'da_duyet']);
+/** Vi phạm "đã đóng bằng xử lý": nằm trong một lần xử lý xong, đang chờ QL, hoặc đã duyệt. Từ chối / nháp không tính. */
+const daDong = (v: Pick<ViPhamVao, 'xuLy'>) => v.xuLy.some((x) => DONG_VP.has(x.status));
+const maxNgay = (...ds: (string | null | undefined)[]) => ds.filter((d): d is string => !!d).map((d) => d.slice(0, 10)).sort().pop() ?? null;
+const ngayCach = (tu: string, den: string) => Math.round((Date.parse(`${den.slice(0, 10)}T00:00:00Z`) - Date.parse(`${tu.slice(0, 10)}T00:00:00Z`)) / 86_400_000);
+
+/**
+ * BẮT BUỘC XỬ LÝ TỪ NGÀY NÀO (T25, V4-2, K5-23, M-10) — Map id vi phạm → ngày; vi phạm không bắt buộc thì không có trong Map.
+ *
+ *   · Chỉ xét vi phạm CHƯA XỬ LÝ (không nằm trong lần xử lý done | cho_duyet | da_duyet). "Đã ghi nhận" VẪN đếm (V4-6).
+ *   · Xét từng v theo `reportedOn` tăng dần: đếm vi phạm chưa xử lý có `occurredOn ∈ [Thứ Hai tuần của v.reportedOn − 7, v.reportedOn]`
+ *     và `reportedOn ≤ v.reportedOn`. Đủ ≥ 3 thì mọi vi phạm đó nhận `min(hiện có, v.reportedOn)` — hạn tính từ NGÀY GHI (Q4).
+ *   · Vi phạm nằm trong lần xử lý bị QL từ chối → `min(…, quyetLuc)` (V4-10: từ chối → về Cần xử lý).
+ *   · Tính từ `reportedOn`, không đọc hôm nay, nên "dính" tự nhiên: tuần sau vẫn bắt buộc. Sửa/xoá vi phạm thì tự tính lại (Q1).
+ */
+export function batBuocTu(ds: readonly ViPhamVao[]): Map<number, string> {
+  const out = new Map<number, string>();
+  const dat = (id: number, ngay: string) => { const cu = out.get(id); if (!cu || ngay < cu) out.set(id, ngay); };
+  const chua = ds.filter((v) => !daDong(v)).sort((a, b) => a.reportedOn.localeCompare(b.reportedOn) || a.id - b.id);
+  for (const v of chua) {
+    const tu = addDaysIso(mondayOfDate(v.reportedOn), -7);
+    const cung = chua.filter((u) => u.reportedOn <= v.reportedOn && u.occurredOn >= tu && u.occurredOn <= v.reportedOn);
+    if (cung.length >= 3) for (const u of cung) dat(u.id, v.reportedOn);
+  }
+  for (const v of chua) {
+    for (const x of v.xuLy) if (x.status === 'tu_choi' && x.quyetLuc) dat(v.id, x.quyetLuc.slice(0, 10));
+  }
+  return out;
+}
+
+export type TrangThaiViPhamKq = {
+  t: TrangThaiVp; nhan: string; han: string | null; quaHanNgay: number | null; lyDoQuaHan: 'xu-ly' | 'xem' | null;
+};
+
+/**
+ * TRẠNG THÁI MỘT VI PHẠM — ĐÚNG MỘT NHÃN (bảng §5.4). Thứ tự (M-10):
+ *   da_xu_ly (trong lần xử lý done) › cho_duyet (cho_duyet: "Chờ QL duyệt"; da_duyet: "Đã duyệt · chờ thực hiện", hạn = ngày quyết + 4)
+ *   › bắt buộc: hạn = hanTheoNgay(max(batBuoc, mocLop), 5) → qua_han ('xu-ly') khi hôm nay > hạn, còn lại can_xu_ly
+ *   › chưa ghi nhận: hạn = hanTheoNgay(max(reportedOn, mocLop), 5) → qua_han ('xem', V4-5) / moi
+ *   › da_ghi_nhan.
+ * Em Tạm dừng (T65): không bao giờ qua_han, không hạn.
+ */
+export function trangThaiViPham(v: ViPhamVao, batBuoc: string | null, n: NguCanhHan): TrangThaiViPhamKq {
+  const xong = v.xuLy.filter((x) => x.status === 'done')
+    .sort((a, b) => (a.performedOn ?? '').localeCompare(b.performedOn ?? '') || a.id - b.id).pop();
+  if (xong) return { t: 'da_xu_ly', nhan: `Đã xử lý · ${nhanLoaiXuLy(xong.kind)}`, han: null, quaHanNgay: null, lyDoQuaHan: null };
+  if (v.xuLy.some((x) => x.status === 'cho_duyet')) return { t: 'cho_duyet', nhan: 'Chờ QL duyệt', han: null, quaHanNgay: null, lyDoQuaHan: null };
+  const duyet = v.xuLy.find((x) => x.status === 'da_duyet');
+  if (duyet) {
+    const han = duyet.quyetLuc && !n.tamDung ? hanTheoNgay(duyet.quyetLuc.slice(0, 10), HAN_Y_THUC_NGAY) : null;
+    return {
+      t: 'cho_duyet', nhan: 'Đã duyệt · chờ thực hiện', han,
+      quaHanNgay: han && n.homNay > han ? ngayCach(han, n.homNay) : null, lyDoQuaHan: null,
+    };
+  }
+  const tinh = (t: 'can_xu_ly' | 'moi', batDau: string, lyDo: 'xu-ly' | 'xem'): TrangThaiViPhamKq => {
+    if (n.tamDung) return { t, nhan: TRANG_THAI_VP_LABEL[t], han: null, quaHanNgay: null, lyDoQuaHan: null };
+    const han = hanTheoNgay(maxNgay(batDau, n.mocLop)!, HAN_Y_THUC_NGAY);
+    if (n.homNay > han) {
+      const q = ngayCach(han, n.homNay);
+      return { t: 'qua_han', nhan: `Quá hạn ${q} ngày`, han, quaHanNgay: q, lyDoQuaHan: lyDo };
+    }
+    return { t, nhan: TRANG_THAI_VP_LABEL[t], han, quaHanNgay: null, lyDoQuaHan: null };
+  };
+  if (batBuoc) return tinh('can_xu_ly', batBuoc, 'xu-ly');
+  if (!v.ghiNhanLuc) return tinh('moi', v.reportedOn, 'xem');
+  return { t: 'da_ghi_nhan', nhan: 'Đã ghi nhận', han: null, quaHanNgay: null, lyDoQuaHan: null };
+}
+
+/**
+ * CHUỖI ĐẾM THANG (T27, Q-C, M-07) — id các lộ trình cùng chuỗi với `hienTai`, theo `seq`.
+ * FT (`route` có) = đúng một lộ trình. Lớp thường (`route` null) đếm LIÊN TỤC qua các lộ trình lớp thường liền nhau; chuỗi gãy
+ * ở lộ trình FT và SAU lộ trình `abandoned` (nghỉ học rồi quay lại là chuỗi mới).
+ */
+export function chuoiThang(cycles: readonly { id: number; seq: number; route: string | null; status: string }[], hienTai: number): number[] {
+  const ds = [...cycles].sort((a, b) => a.seq - b.seq || a.id - b.id);
+  let nhom: number[] = [];
+  for (let i = 0; i < ds.length; i++) {
+    const c = ds[i];
+    const truoc = ds[i - 1];
+    if (!truoc || c.route || truoc.route || truoc.status === 'abandoned') {
+      if (nhom.includes(hienTai)) return nhom;
+      nhom = [];
+    }
+    nhom.push(c.id);
+  }
+  return nhom.includes(hienTai) ? nhom : [hienTai];
+}
+
+/** Bậc hiện tại = max(bậc các lần xử lý đã xong trong chuỗi, bậc khai trước khi dùng web — H5); 0 = chưa bậc nào. Ngoài thang không đẩy. */
+export function bacHienTai(xuLyDone: readonly { kind: string }[], khaiBac: number | null): number {
+  return Math.max(0, khaiBac ?? 0, ...xuLyDone.map((x) => bacCuaLoai(x.kind)));
+}
+
+/** Bậc kế tiếp; `null` = hết thang (đã WL 3 — Q11: chỉ còn đề xuất ngoài thang). */
+export function bacKeTiep(bac: number): { kind: BacThang; bac: number; canQl: boolean } | null {
+  const b = Math.max(0, bac);
+  if (b >= THANG.length) return null;
+  const kind = THANG[b];
+  return { kind, bac: b + 1, canQl: canQl(kind) };
+}
+
+export type NhomEm = 'qua_han' | 'bat_buoc' | 'cho_duyet' | 'moi' | 'da_xu_ly';
+export const NHOM_EM: readonly NhomEm[] = ['qua_han', 'bat_buoc', 'cho_duyet', 'moi', 'da_xu_ly'];
+export const NHOM_EM_LABEL: Record<NhomEm, string> = {
+  qua_han: 'Quá hạn', bat_buoc: 'Bắt buộc xử lý', cho_duyet: 'Chờ QL duyệt', moi: 'Mới, chưa ghi nhận', da_xu_ly: 'Đã xử lý (7 ngày)',
+};
+
+/**
+ * MỖI EM ĐÚNG MỘT NHÓM (K2-38(4)): qua_han › bat_buoc › cho_duyet › moi › da_xu_ly (lần xử lý xong trong 7 ngày gần nhất, tính cả
+ * hôm nay). Không thuộc nhóm nào → null.
+ */
+export function nhomEm(e: { ds: readonly TrangThaiVp[]; coDeXuatCho: boolean; xuLyGanNhat: string | null }, homNay: string): NhomEm | null {
+  if (e.ds.includes('qua_han')) return 'qua_han';
+  if (e.ds.includes('can_xu_ly')) return 'bat_buoc';
+  if (e.coDeXuatCho || e.ds.includes('cho_duyet')) return 'cho_duyet';
+  if (e.ds.includes('moi')) return 'moi';
+  if (e.xuLyGanNhat && ngayCach(e.xuLyGanNhat, homNay) <= 6) return 'da_xu_ly';
+  return null;
+}
+
+/**
+ * TICK MẶC ĐỊNH của panel Xác nhận xử lý (K3-36, M5): vi phạm chưa xử lý xảy ra từ Thứ Hai tuần trước trở đi + mọi vi phạm Mới +
+ * mọi vi phạm bắt buộc (Cần xử lý / Quá hạn — phải xử lý dù cũ). "Đã ghi nhận" cũ hơn vào `cuHon` (không tick, nhóm gập).
+ */
+export function macDinhTick(ds: readonly { id: number; t: TrangThaiVp; occurredOn: string }[], homNay: string): { tick: number[]; cuHon: number[] } {
+  const tu = addDaysIso(mondayOfDate(homNay), -7);
+  const tick: number[] = [];
+  const cuHon: number[] = [];
+  for (const v of ds) {
+    if (v.t === 'da_xu_ly' || v.t === 'cho_duyet') continue;
+    if (v.t !== 'da_ghi_nhan' || v.occurredOn >= tu) tick.push(v.id); else cuHon.push(v.id);
+  }
+  return { tick, cuHon };
+}
+
+/**
+ * MỘT DÒNG THANG: sáu bậc, mỗi bậc một trạng thái — `qua` (đã xử lý trên web) · `khai` (khai trước khi dùng web, H5) · `lan-nay`
+ * (bậc kế tiếp) · `sau`.
+ */
+export function dongThang(bac: number, khai: { bac: number } | null): {
+  kind: BacThang; nhan: string; trangThai: 'qua' | 'khai' | 'lan-nay' | 'sau'; canQl: boolean;
+}[] {
+  return THANG.map((kind, i) => {
+    const b = i + 1;
+    const trangThai = b <= bac ? (khai && b <= khai.bac ? 'khai' : 'qua') : b === bac + 1 ? 'lan-nay' : 'sau';
+    return { kind, nhan: MEASURE_KIND_LABEL[kind], trangThai, canQl: canQl(kind) };
+  });
+}
+
+// ================================================================ v3 (PR-J/YT2) — còn dùng tới khi mã cũ được thay ở Task 4–10 của PR-YT4
+
 /**
  * BA TRẠNG THÁI NGƯỜI DÙNG THẤY của một vi phạm — SUY RA từ bảng nối `measure_violations`, không lưu (đặc tả §4.1).
  *
@@ -119,11 +330,11 @@ export function violationState(v: { inDone: boolean; inPreparing: boolean }): Vi
  * CHÍN LOẠI, xếp nhẹ đến nặng để BÀY RA. Thứ tự KHÔNG phải workflow bắt buộc (nguồn mục 20): đi thẳng tới biện pháp nặng là
  * hợp lệ. Ngoại lệ cứng duy nhất là chuỗi Thư cảnh cáo (`WARNING_CHAIN`).
  */
-export const MEASURE_KINDS = [
+export const MEASURE_KINDS_V3 = [
   'talk_short', 'meeting_student', 'family_report', 'warning_1', 'meeting_cx', 'warning_2', 'suspension', 'warning_3', 'other',
 ] as const;
-export type MeasureKind = (typeof MEASURE_KINDS)[number];
-export const MEASURE_KIND_LABEL: Record<MeasureKind, string> = {
+export type MeasureKindV3 = (typeof MEASURE_KINDS_V3)[number];
+export const MEASURE_KIND_LABEL_V3: Record<MeasureKindV3, string> = {
   talk_short: 'GV trao đổi ngắn với HV',
   meeting_student: 'GV meeting với HV',
   family_report: 'Report cho gia đình',
@@ -136,12 +347,12 @@ export const MEASURE_KIND_LABEL: Record<MeasureKind, string> = {
 };
 
 /** HAI TRẠNG THÁI, KHÔNG BA. Không có `pending_approval`: Y01 chốt GVCN tự làm hết, không có cửa duyệt. */
-export const MEASURE_STATUSES = ['preparing', 'done'] as const;
-export type MeasureStatus = (typeof MEASURE_STATUSES)[number];
-export const MEASURE_STATUS_LABEL: Record<MeasureStatus, string> = { preparing: 'Đang chuẩn bị', done: 'Đã thực hiện' };
+export const MEASURE_STATUSES_V3 = ['preparing', 'done'] as const;
+export type MeasureStatusV3 = (typeof MEASURE_STATUSES_V3)[number];
+export const MEASURE_STATUS_LABEL: Record<MeasureStatusV3, string> = { preparing: 'Đang chuẩn bị', done: 'Đã thực hiện' };
 
 /** Quản lý nhận thông báo khi những loại này được xác nhận (Y01) — để biết chuyện nặng đã xảy ra, không phải để duyệt. */
-export function measureNotifiesManager(kind: MeasureKind): boolean {
+export function measureNotifiesManager(kind: MeasureKindV3): boolean {
   return kind === 'warning_1' || kind === 'warning_2' || kind === 'warning_3' || kind === 'suspension';
 }
 
@@ -153,7 +364,7 @@ export const WARNING_CHAIN = ['warning_1', 'warning_2', 'warning_3'] as const;
 export type WarningKind = (typeof WARNING_CHAIN)[number];
 
 /** Loại thư phải ở trạng thái `done` trước khi loại này được tạo hoặc xác nhận; `null` nghĩa là đi thẳng được. */
-export function warningPrerequisite(kind: MeasureKind): WarningKind | null {
+export function warningPrerequisite(kind: MeasureKindV3): WarningKind | null {
   const i = (WARNING_CHAIN as readonly string[]).indexOf(kind);
   return i > 0 ? WARNING_CHAIN[i - 1] : null;
 }
@@ -173,7 +384,7 @@ export type MeasureFieldSpec = {
   participants?: 'optional';
   customName?: 'required';
 };
-export const MEASURE_REQUIRED_FIELDS: Record<MeasureKind, MeasureFieldSpec> = {
+export const MEASURE_REQUIRED_FIELDS: Record<MeasureKindV3, MeasureFieldSpec> = {
   talk_short: { date: 'required', content: 'required', attachment: 'optional' },
   meeting_student: { date: 'required', content: 'required', attachment: 'optional' },
   family_report: { date: 'required', content: 'required', attachment: 'optional' },
@@ -189,7 +400,7 @@ export const MEASURE_REQUIRED_FIELDS: Record<MeasureKind, MeasureFieldSpec> = {
  * CÂU NÓI THIẾU GÌ khi xác nhận — nút `Xác nhận đã thực hiện` mờ đi kèm đúng câu này, không bao giờ để bấm rồi báo lỗi đỏ.
  * Trả `null` khi đủ. Máy chủ dùng CHÍNH hàm này để từ chối, nên giao diện và máy chủ không thể nói hai điều khác nhau.
  */
-export function measureMissing(kind: MeasureKind, f: {
+export function measureMissing(kind: MeasureKindV3, f: {
   performedOn: string | null | undefined; content: string | null | undefined;
   attachments: number; customName?: string | null;
   /** Đã chọn tài khoản hoặc ghi tên người thực hiện chưa. Bỏ qua (không truyền) thì không kiểm. */

@@ -217,16 +217,16 @@ export async function runYThucTests(t: YThucTestKit) {
   });
 
   check('PR-J · J2 Chín loại biện pháp xếp nhẹ đến nặng, mỗi loại có nhãn (nguồn mục 18)', () => {
-    assert(JSON.stringify(domain.MEASURE_KINDS) === JSON.stringify([
+    assert(JSON.stringify(domain.MEASURE_KINDS_V3) === JSON.stringify([
       'talk_short', 'meeting_student', 'family_report', 'warning_1', 'meeting_cx', 'warning_2', 'suspension', 'warning_3', 'other',
-    ]), `Chín loại sai thứ tự: ${JSON.stringify(domain.MEASURE_KINDS)}`);
-    assert(domain.MEASURE_KIND_LABEL.warning_1 === 'Thư cảnh cáo lần 1' && domain.MEASURE_KIND_LABEL.meeting_cx === 'CX / GĐCN meeting với HV / PH'
-      && domain.MEASURE_KIND_LABEL.suspension === 'Đình chỉ học', 'Nhãn sai');
-    for (const k of domain.MEASURE_KINDS) assert(domain.MEASURE_KIND_LABEL[k], `Loại ${k} thiếu nhãn`);
+    ]), `Chín loại sai thứ tự: ${JSON.stringify(domain.MEASURE_KINDS_V3)}`);
+    assert(domain.MEASURE_KIND_LABEL_V3.warning_1 === 'Thư cảnh cáo lần 1' && domain.MEASURE_KIND_LABEL_V3.meeting_cx === 'CX / GĐCN meeting với HV / PH'
+      && domain.MEASURE_KIND_LABEL_V3.suspension === 'Đình chỉ học', 'Nhãn sai');
+    for (const k of domain.MEASURE_KINDS_V3) assert(domain.MEASURE_KIND_LABEL_V3[k], `Loại ${k} thiếu nhãn`);
   });
 
   check('PR-J · J2 Hai trạng thái biện pháp (không có chờ duyệt) và bốn trạng thái hiển thị của vi phạm', () => {
-    assert(JSON.stringify(domain.MEASURE_STATUSES) === JSON.stringify(['preparing', 'done']), 'Chỉ có preparing và done (Y01: không có cửa duyệt)');
+    assert(JSON.stringify(domain.MEASURE_STATUSES_V3) === JSON.stringify(['preparing', 'done']), 'Chỉ có preparing và done (Y01: không có cửa duyệt)');
     assert(domain.MEASURE_STATUS_LABEL.preparing === 'Đang chuẩn bị' && domain.MEASURE_STATUS_LABEL.done === 'Đã thực hiện', 'Nhãn trạng thái biện pháp');
     assert(JSON.stringify(domain.VIOLATION_STATE_LABEL) === JSON.stringify({
       unhandled: 'Chưa xử lý', preparing: 'Đang chuẩn bị xử lý', handled: 'Đã xử lý',
@@ -267,7 +267,7 @@ export async function runYThucTests(t: YThucTestKit) {
     for (const k of ['talk_short', 'meeting_student', 'family_report', 'meeting_cx', 'suspension', 'other']) {
       assert(domain.warningPrerequisite(k as any) === null, `${k} đi thẳng được — không có thứ tự bắt buộc (B05)`);
     }
-    const notify = domain.MEASURE_KINDS.filter((k) => domain.measureNotifiesManager(k));
+    const notify = domain.MEASURE_KINDS_V3.filter((k) => domain.measureNotifiesManager(k));
     assert(notify.join() === 'warning_1,warning_2,suspension,warning_3', `Chỉ ba thư cảnh cáo và đình chỉ học báo Quản lý (Y01), thực tế: ${notify.join()}`);
   });
 
@@ -1124,7 +1124,7 @@ export async function runYThucTests(t: YThucTestKit) {
     const w2 = mk(gvcn, st.id, 'warning_2', v); link(gvcn, w2.id); confirm(gvcn, w2.id);
     const fr = mk(gvcn, st.id, 'family_report', v); confirm(gvcn, fr.id);
     const all = ms(P.mbManager, 'bien-phap-theo-loai', { branchId: mbId });
-    assert(Object.keys(all.byKind).join() === domain.MEASURE_KINDS.join(), `Phải có đủ chín loại theo thứ tự: ${Object.keys(all.byKind).join()}`);
+    assert(Object.keys(all.byKind).join() === domain.MEASURE_KINDS_V3.join(), `Phải có đủ chín loại theo thứ tự: ${Object.keys(all.byKind).join()}`);
     assert(all.byKind.warning_1.includes(w1.id) && all.byKind.warning_2.includes(w2.id) && !all.byKind.warning_1.includes(w2.id), 'Ba thư cảnh cáo tách riêng, không gộp');
     const sum = (Object.values(all.byKind) as number[][]).reduce((s, x) => s + x.length, 0);
     assert(sum === all.ids.length && all.n === all.ids.length, `Các phần cộng lại (${sum}) phải bằng tập tổng (${all.ids.length})`);

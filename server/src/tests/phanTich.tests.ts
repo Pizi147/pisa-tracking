@@ -845,7 +845,7 @@ export async function runPhanTichTests(t: YThucTestKit) {
     const kq = yThucSvc.yThucPhanTich(P.admin, FY());
     assert(!/phoiHop|phoi-hop|coordination/i.test(JSON.stringify(Object.keys(kq))), `không được có khoá phối hợp: ${Object.keys(kq)}`);
     eq(Object.keys(kq).sort(), ['bienPhapTheoLoai', 'gom', 'hvCanChuY', 'lop', 'scopeEmpty'], 'đúng các khoá đã chốt');
-    for (const k of Object.keys(kq.bienPhapTheoLoai)) assert(d.MEASURE_KINDS.includes(k), `bienPhapTheoLoai chỉ có loại PA xử lý hợp lệ: ${k}`);
+    for (const k of Object.keys(kq.bienPhapTheoLoai)) assert(d.MEASURE_KINDS_V3.includes(k), `bienPhapTheoLoai chỉ có loại PA xử lý hợp lệ: ${k}`);
   });
 
   check('UX4 · Ý thức — quyền: GVCN 403; QL chi nhánh khác 403; classId ngoài phạm vi 403', () => {
@@ -1121,7 +1121,7 @@ export async function runPhanTichTests(t: YThucTestKit) {
     const kq = yThucSvc.yThucPhanTich(P.admin, FY());
     const f = FY();
     const so = metricsUx4.metricSet(P.admin, 'bien-phap-theo-loai', { from: f.from, to: f.to });
-    for (const k of d.MEASURE_KINDS) {
+    for (const k of d.MEASURE_KINDS_V3) {
       eq(kq.bienPhapTheoLoai[k] ?? 0, so.byKind?.[k]?.length ?? 0, `loại ${k}`);
     }
     eq(Object.values(kq.bienPhapTheoLoai).reduce((s: number, x: any) => s + x, 0), so.n, 'tổng các loại = tổng chỉ số');

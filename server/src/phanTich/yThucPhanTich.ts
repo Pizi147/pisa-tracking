@@ -1,7 +1,7 @@
 import { db } from '../db.ts';
 import {
-  MEASURE_KIND_LABEL, VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, WARNING_CHAIN, buocTiepTheo, laHvCanChuY,
-  type ChuongTrinh, type DongHvCanChuY, type DongLopViPham, type MeasureKind, type ViolationCategory, type YThucPhanTichKetQua,
+  MEASURE_KIND_LABEL_V3, VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, WARNING_CHAIN, buocTiepTheo, laHvCanChuY,
+  type ChuongTrinh, type DongHvCanChuY, type DongLopViPham, type MeasureKindV3, type ViolationCategory, type YThucPhanTichKetQua,
 } from '../../../shared/domain/index.ts';
 import { badRequest, forbidden } from '../util.ts';
 import type { Principal } from '../permissions.ts';
@@ -109,7 +109,7 @@ function tinh(p: Principal, f: FilterYThuc) {
          FROM discipline_measures m WHERE m.status = 'done' AND m.student_id IN (${marks(chunk.length)})`,
     ).all(...chunk) as any[]) {
       if (!xuLyCua.has(r.student_id)) xuLyCua.set(r.student_id, []);
-      const ten = r.kind === 'other' && r.custom_name ? r.custom_name : MEASURE_KIND_LABEL[r.kind as MeasureKind] ?? r.kind;
+      const ten = r.kind === 'other' && r.custom_name ? r.custom_name : MEASURE_KIND_LABEL_V3[r.kind as MeasureKindV3] ?? r.kind;
       xuLyCua.get(r.student_id)!.push({ kind: r.kind, ten, ngay: r.performed_on ?? null, cycleId: r.cycle_id ?? null });
     }
   }

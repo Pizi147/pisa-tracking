@@ -9747,6 +9747,9 @@ await runPrTocTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 // ==================================================================== PR-MON (Hệ môn học, Pre FOU một ô Tổng hợp, hai khung FT / Lớp thường)
 const { runPrMonTests } = await import('./prMon.tests.ts');
 await runPrMonTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== PR-YT4 (Ý thức v4: một hàm trạng thái, thang bắt buộc, QL duyệt)
+const { runPrYt4Tests } = await import('./prYt4.tests.ts');
+await runPrYt4Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-KCK (Target "không cam kết" — không SOS, Q29-1)
 const { runPrKckTests } = await import('./prKck.tests.ts');

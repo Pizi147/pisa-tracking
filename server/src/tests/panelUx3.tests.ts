@@ -154,7 +154,7 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     assert(w.message === 'Chưa xử lý 2 vi phạm · cũ nhất 10 ngày', w.message);
     assert(d.violationAgeLabel(9) === '9 ngày' && d.violationAgeLabel(3) === '', 'nhãn tuổi');
     assert(!/⚠/.test(w.message + d.violationAgeLabel(9)), '⚠');
-    assert(/HV/.test(d.MEASURE_KIND_LABEL.talk_short) && !/\bHS\b/.test(Object.values(d.MEASURE_KIND_LABEL).join(' ')), 'HS → HV');
+    assert(/HV/.test(d.MEASURE_KIND_LABEL_V3.talk_short) && !/\bHS\b/.test(Object.values(d.MEASURE_KIND_LABEL_V3).join(' ')), 'HS → HV');
   });
 
   // ==================================================================== 2. Máy chủ: chữ việc, đường dẫn mở ngăn Case, người làm PA

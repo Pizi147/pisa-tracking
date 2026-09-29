@@ -1,8 +1,8 @@
 import { db, tx } from '../db.ts';
 import {
-  MEASURE_KINDS, MEASURE_KIND_LABEL, MEASURE_STATUS_LABEL, MEASURE_REQUIRED_FIELDS,
+  MEASURE_KINDS_V3, MEASURE_KIND_LABEL_V3, MEASURE_STATUS_LABEL, MEASURE_REQUIRED_FIELDS,
   isWarningKind, kiemGhiRoKhac, measureMissing, measureNotifiesManager, warningPrerequisite,
-  type MeasureKind, type MeasureStatus,
+  type MeasureKindV3, type MeasureStatusV3,
 } from '../../../shared/domain/index.ts';
 import type { Principal } from '../permissions.ts';
 import { badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -33,8 +33,8 @@ export type MeasureDetail = {
   id: number;
   studentId: number; studentName: string; studentCode: string;
   classId: number | null; classCode: string | null; cycleId: number | null;
-  kind: MeasureKind; kindLabel: string; customName: string | null;
-  status: MeasureStatus; statusLabel: string;
+  kind: MeasureKindV3; kindLabel: string; customName: string | null;
+  status: MeasureStatusV3; statusLabel: string;
   ownerUserId: number | null; ownerName: string | null;
   note: string | null;
   performedOn: string | null; performedBy: number | null; performedByName: string | null; performerName: string | null;
@@ -72,7 +72,7 @@ function loadRow(id: number): any {
 }
 
 function kindLabelOf(kind: string, customName: string | null): string {
-  return kind === 'other' && customName ? customName : MEASURE_KIND_LABEL[kind as MeasureKind] ?? kind;
+  return kind === 'other' && customName ? customName : MEASURE_KIND_LABEL_V3[kind as MeasureKindV3] ?? kind;
 }
 
 const attachmentCountOf = (measureId: number): number =>
@@ -131,14 +131,14 @@ function buildDetailMany(p: Principal, rows: any[]): MeasureDetail[] {
       .filter((v): v is ViolationView => !!v)
       .sort(sortViolations);
     const attachmentCount = attachmentCountOfMeasure.get(r.id) ?? 0;
-    const spec = MEASURE_REQUIRED_FIELDS[r.kind as MeasureKind];
+    const spec = MEASURE_REQUIRED_FIELDS[r.kind as MeasureKindV3];
     const needsFile = r.status === 'preparing' && spec?.attachment === 'required' && attachmentCount < 1;
     return {
       id: r.id,
       studentId: r.student_id, studentName: r.student_name, studentCode: r.student_code,
       classId: r.class_id ?? null, classCode: r.class_code ?? null, cycleId: r.cycle_id ?? null,
       kind: r.kind, kindLabel: kindLabelOf(r.kind, r.custom_name ?? null), customName: r.custom_name ?? null,
-      status: r.status, statusLabel: MEASURE_STATUS_LABEL[r.status as MeasureStatus] ?? r.status,
+      status: r.status, statusLabel: MEASURE_STATUS_LABEL[r.status as MeasureStatusV3] ?? r.status,
       ownerUserId: r.owner_user_id ?? null, ownerName: r.owner_name ?? null,
       note: r.note ?? null,
       performedOn: r.performed_on ?? null, performedBy: r.performed_by ?? null, performedByName: r.performed_by_name ?? null,
@@ -178,17 +178,17 @@ type ChainProblem = { reason: string; message: string };
  * Sang lộ trình mới thì chuỗi reset (B07) vì phạm vi là `cycle_id`. `mode = 'confirm'` chỉ kiểm điều kiện đứng trước — biện
  * pháp đang được xác nhận chính là "một thư mỗi lần" của lộ trình.
  */
-function chainProblem(studentId: number, cycleId: number | null, kind: MeasureKind, excludeId: number, mode: 'create' | 'confirm'): ChainProblem | null {
+function chainProblem(studentId: number, cycleId: number | null, kind: MeasureKindV3, excludeId: number, mode: 'create' | 'confirm'): ChainProblem | null {
   if (!isWarningKind(kind)) return null;
-  const label = MEASURE_KIND_LABEL[kind];
+  const label = MEASURE_KIND_LABEL_V3[kind];
   const need = warningPrerequisite(kind);
   if (need) {
     const has = db()
       .prepare(`SELECT 1 FROM discipline_measures WHERE student_id = ? AND cycle_id IS ? AND kind = ? AND status = 'done' AND id != ?`)
       .get(studentId, cycleId, need, excludeId);
     if (!has) {
-      const reason = `Chưa gửi ${MEASURE_KIND_LABEL[need]}`;
-      return { reason, message: `Không tạo hoặc xác nhận được ${label}: trong lộ trình này em chưa có ${MEASURE_KIND_LABEL[need]} đã thực hiện.` };
+      const reason = `Chưa gửi ${MEASURE_KIND_LABEL_V3[need]}`;
+      return { reason, message: `Không tạo hoặc xác nhận được ${label}: trong lộ trình này em chưa có ${MEASURE_KIND_LABEL_V3[need]} đã thực hiện.` };
     }
   }
   if (mode === 'create') {
@@ -214,22 +214,22 @@ export function measureKindAvailability(p: Principal, studentId: number, opts: {
   if (!st) throw notFound('Không tìm thấy học viên');
   requireViewStudent(p, studentId);
   const cycleId = currentCycle(studentId)?.id ?? null;
-  return MEASURE_KINDS.map((kind) => {
+  return MEASURE_KINDS_V3.map((kind) => {
     const problem = chainProblem(studentId, cycleId, kind, opts.excludeMeasureId ?? 0, 'create');
-    return { kind, label: MEASURE_KIND_LABEL[kind], available: !problem, reason: problem?.reason ?? null };
+    return { kind, label: MEASURE_KIND_LABEL_V3[kind], available: !problem, reason: problem?.reason ?? null };
   });
 }
 
 // ---------------------------------------------------------------- kiểm dữ liệu vào
 
-function checkKind(kind: unknown): MeasureKind {
-  if (typeof kind !== 'string' || !(MEASURE_KINDS as readonly string[]).includes(kind)) {
+function checkKind(kind: unknown): MeasureKindV3 {
+  if (typeof kind !== 'string' || !(MEASURE_KINDS_V3 as readonly string[]).includes(kind)) {
     throw badRequest('Chọn loại phương án xử lý trong danh sách.');
   }
-  return kind as MeasureKind;
+  return kind as MeasureKindV3;
 }
 
-function checkCustomName(kind: MeasureKind, name: unknown): string | null {
+function checkCustomName(kind: MeasureKindV3, name: unknown): string | null {
   const text = String(name ?? '').trim();
   if (kind !== 'other') return null;
   /* T13: tên phương án của loại "Khác" (GVCN tự đặt) cần ≥ 3 ký tự. */
@@ -393,7 +393,7 @@ export function updateMeasure(p: Principal, id: number, patch: {
     return buildDetail(p, loadRow(id));
   }
 
-  const kind = patch.kind === undefined ? (row.kind as MeasureKind) : checkKind(patch.kind);
+  const kind = patch.kind === undefined ? (row.kind as MeasureKindV3) : checkKind(patch.kind);
   const customName = checkCustomName(kind, patch.customName === undefined ? row.custom_name : patch.customName);
   if (kind !== row.kind) {
     const problem = chainProblem(row.student_id, row.cycle_id ?? null, kind, id, 'create');
@@ -485,7 +485,7 @@ export function confirmMeasure(p: Principal, id: number, input: {
     performedBy = p.userId;
   }
 
-  const missing = measureMissing(row.kind as MeasureKind, {
+  const missing = measureMissing(row.kind as MeasureKindV3, {
     performedOn: input.performedOn || null, content: note, attachments: attachmentCountOf(id),
     customName: row.custom_name, performer: !!(performedBy || performerName),
   });
@@ -549,7 +549,7 @@ function notifyManagers(row: any, actorId: number) {
 
 // ---------------------------------------------------------------- đọc
 
-export type MeasureFilter = { studentId?: number | null; classId?: number | null; status?: MeasureStatus | null };
+export type MeasureFilter = { studentId?: number | null; classId?: number | null; status?: MeasureStatusV3 | null };
 
 export function listMeasures(p: Principal, f: MeasureFilter): { rows: MeasureDetail[] } {
   if (!f.studentId && !f.classId) throw badRequest('Cần chọn học viên hoặc lớp để xem danh sách phương án xử lý.');

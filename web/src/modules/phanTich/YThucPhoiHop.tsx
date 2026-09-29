@@ -8,7 +8,7 @@ import { Nhan } from '../../ui/Nhan.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { DINH_TRAI, MAU_SO_VOI_TRUOC, SoO as SoLieuO, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
 import {
-  BUOC_TIEP_LABEL, KHOANG_LABEL, MEASURE_KINDS, MEASURE_KIND_LABEL, duongHoSoHocVien, nhanSoVoiTruoc, ngay,
+  BUOC_TIEP_LABEL, KHOANG_LABEL, MEASURE_KINDS_V3, MEASURE_KIND_LABEL_V3, duongHoSoHocVien, nhanSoVoiTruoc, ngay,
   type DongHvCanChuY, type DongLopViPham, type YThucPhanTichKetQua,
 } from '@shared/domain/index.ts';
 
@@ -58,7 +58,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
     const pa: (string | number)[][] = [
       [`PA xử lý đã thực hiện trong kỳ · ${moTa}`], [],
       ['Loại PA xử lý', 'Đã thực hiện'],
-      ...MEASURE_KINDS.map((k) => [MEASURE_KIND_LABEL[k], data.bienPhapTheoLoai[k] ?? 0]),
+      ...MEASURE_KINDS_V3.map((k) => [MEASURE_KIND_LABEL_V3[k], data.bienPhapTheoLoai[k] ?? 0]),
     ];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(hv), 'HV can chu y');

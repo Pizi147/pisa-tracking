@@ -8,7 +8,7 @@ import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import {
-  MEASURE_REQUIRED_FIELDS, measureMissing, ngay, nguoiThanhPayloadYThuc, nguoiThieu, type MeasureKind, type NguoiChon,
+  MEASURE_REQUIRED_FIELDS, measureMissing, ngay, nguoiThanhPayloadYThuc, nguoiThieu, type MeasureKindV3, type NguoiChon,
 } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 
@@ -45,8 +45,8 @@ export function ConfirmMeasurePanel({ open, onClose, measureId, onDone }: {
   if (!open) return null;
   if (!data) return <KhungPanel tieuDe="Xác nhận đã thực hiện" onDong={onClose}><p className="mt-3 text-sm text-slate-400">Đang tải…</p></KhungPanel>;
 
-  const spec = MEASURE_REQUIRED_FIELDS[data.kind as MeasureKind];
-  const missing = measureMissing(data.kind as MeasureKind, {
+  const spec = MEASURE_REQUIRED_FIELDS[data.kind as MeasureKindV3];
+  const missing = measureMissing(data.kind as MeasureKindV3, {
     performedOn: performedOn || null, content: note, attachments: data.attachmentCount,
     customName: data.customName, performer: nguoiThieu(nguoi, true) === null,
   });
