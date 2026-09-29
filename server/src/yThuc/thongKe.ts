@@ -6,7 +6,7 @@ import {
 import { scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, forbidden, isIsoDate, notFound } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
-import { warningsFor } from './canhBao.ts';
+import { trangThaiYThuc } from './trangThai.ts';
 
 /**
  * TÁM CHỈ SỐ Ý THỨC — mỗi chỉ số MỘT hàm trả về TẬP ID (thiet-ke/HOP_DONG_SO_LIEU.md §5, đặc tả §8).
@@ -119,15 +119,18 @@ export function yThucMetric(
           WHERE ${b.sql}${t.sql} AND ${cl.sql} ORDER BY v.student_id`, ...b.args, ...t.args, ...cl.args) };
     }
     case 'hv-can-xu-ly': {
-      /* Ứng viên: em đang học trong phạm vi (và, có hỏi lớp, đang học đúng lớp đó) có ít nhất một vi phạm chưa xử lý.
-         Rồi hỏi CHÍNH hàm cảnh báo — không đếm riêng. */
+      /* PR-YT4: em thuộc nhóm Quá hạn hoặc Bắt buộc xử lý (K1-26). SQL chỉ lọc ứng viên (em đang học trong phạm vi có vi phạm chưa
+         đóng hoặc đề xuất đã duyệt); nhóm do CHÍNH cửa trạng thái quyết — không đếm riêng. */
       const b = branchSql(NOW_BRANCH, scope.branchIds), ac = activeInClassSql(f.classId);
       const candidates = all(
         `SELECT DISTINCT v.student_id AS id FROM violations v
           WHERE ${b.sql} AND ${ac.sql}
-            AND NOT EXISTS (SELECT 1 FROM measure_violations mv WHERE mv.violation_id = v.id) ORDER BY v.student_id`, ...b.args, ...ac.args);
-      const warned = warningsFor(candidates, today);
-      return { none: false, ids: candidates.filter((s) => warned.get(s)?.active) };
+            AND NOT EXISTS (SELECT 1 FROM measure_violations mv JOIN discipline_measures m ON m.id = mv.measure_id
+                             WHERE mv.violation_id = v.id AND m.status IN ('done', 'cho_duyet', 'da_duyet'))
+         UNION SELECT DISTINCT v.student_id FROM discipline_measures v WHERE v.status = 'da_duyet' AND ${b.sql} AND ${ac.sql}
+         ORDER BY 1`, ...b.args, ...ac.args, ...b.args, ...ac.args);
+      const trang = trangThaiYThuc(candidates, today);
+      return { none: false, ids: candidates.filter((s) => { const n = trang.get(s)?.nhom; return n === 'qua_han' || n === 'bat_buoc'; }) };
     }
     case 'bien-phap-dang-chuan-bi': {
       /* Q18: byKind chín loại — cùng cách `bien-phap-theo-loai`, cho bảng "Phương án xử lý theo loại" cột Đang chuẩn bị. */

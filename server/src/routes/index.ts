@@ -21,8 +21,7 @@ import * as accessSvc from '../yThuc/access.ts';
 import * as measureSvc from '../yThuc/measures.ts';
 import * as phoiHopSvc from '../yThuc/phoiHop.ts';
 import * as sosAutoSvc from '../cases/sosAuto.ts';
-import * as warningSvc from '../yThuc/canhBao.ts';
-import { classViolationBoard } from '../yThuc/board.ts';
+import { bangYThucLop } from '../yThuc/board.ts';
 import { maybeSimulateReadError, maybeSimulateSaveFailure, pInt, qInt, qStr, wrap } from './helpers.ts';
 
 /**
@@ -969,7 +968,7 @@ api.get('/students/:id/violations', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   const id = pInt(req, 'id');
   const result = violationSvc.listViolations(principalOf(req), {
-    studentId: id, state: (qStr(req, 'state') as any) ?? null, category: qStr(req, 'category') ?? null,
+    studentId: id, trangThai: (qStr(req, 'trangThai') as any) ?? null, category: qStr(req, 'category') ?? null,
     from: qStr(req, 'from') ?? null, to: qStr(req, 'to') ?? null,
   });
   /*
@@ -990,32 +989,19 @@ api.get('/students/:id/measure-kinds', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return { rows: measureSvc.measureKindAvailability(principalOf(req), pInt(req, 'id'), { excludeMeasureId: qInt(req, 'excludeMeasureId') ?? undefined }) };
 }));
-api.get('/students/:id/violation-warning', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  return warningSvc.studentWarning(principalOf(req), pInt(req, 'id'));
-}));
 
-/** Ba khu vực Ý thức của lớp (Y03) — một request cho cả tab. */
+/** Tab Ý thức của lớp — hai khung (M6): em theo nhóm + dòng thời gian cả lớp. Một request cho cả tab. */
 api.get('/classes/:id/y-thuc', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return classViolationBoard(principalOf(req), pInt(req, 'id'));
-}));
-api.get('/classes/:id/violation-warning', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  return warningSvc.classWarning(principalOf(req), pInt(req, 'id'));
+  return bangYThucLop(principalOf(req), pInt(req, 'id'));
 }));
 /** YT-6 "Theo thời gian" — HV ĐANG HỌC ở lớp, MỌI trạng thái (khác ba khu vực của `/classes/:id/y-thuc`, đi theo học viên). */
 api.get('/classes/:id/violations', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return violationSvc.listViolations(principalOf(req), {
-    activeInClassId: pInt(req, 'id'), state: (qStr(req, 'state') as any) ?? null, category: qStr(req, 'category') ?? null,
+    activeInClassId: pInt(req, 'id'), trangThai: (qStr(req, 'trangThai') as any) ?? null, category: qStr(req, 'category') ?? null,
     from: qStr(req, 'from') ?? null, to: qStr(req, 'to') ?? null,
   });
-}));
-/** Một dòng trong Việc cần làm của GVCN (đặc tả 7.10). */
-api.get('/y-thuc/my-warnings', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  return { rows: warningSvc.myWarningLines(principalOf(req)) };
 }));
 /** Một dòng trong Việc cần làm của GVCN: lớp mình chủ nhiệm còn lượt Phối hợp SOS chưa hoàn thành (PR-K). */
 api.get('/y-thuc/my-coordination', requireAuth, wrap((req) => {

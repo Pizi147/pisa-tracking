@@ -35,7 +35,6 @@ export async function runYThucTests(t: YThucTestKit) {
   console.log('\nPR-J · 0. Bộ demo Ý thức — đủ 18 tình huống của đặc tả §10 (soi vào chính dữ liệu demo, không phải luật)');
 
   const { conn, TODAY } = t;
-  const { warningsFor } = await import('../yThuc/canhBao.ts');
   const { yThucMetric } = await import('../yThuc/thongKe.ts');
   const { measureKindAvailability } = await import('../yThuc/measures.ts');
   const { loadPrincipal } = await import('../permissions.ts');
@@ -143,20 +142,6 @@ export async function runYThucTests(t: YThucTestKit) {
       assert(one(`SELECT COUNT(*) n FROM attachments WHERE owner_type = 'discipline_measure' AND owner_id = ?`, m.id).n >= 1, `Thư ${m.kind} thiếu tệp đính kèm (B06)`);
     }
     assert(new Set(w.map((m) => m.cycle_id)).size === 1, 'Ba thư cùng một lộ trình');
-  });
-
-  check('PR-J · DEMO #10 Ít nhất ba em có cảnh báo quá 5 ngày, cái cũ nhất 6–9 ngày; đúng 5 ngày thì chưa cảnh báo; câu cảnh báo đúng số', () => {
-    const w = warningsFor([AN, HA, HUY, NGOC, VAN, YEN, KIEN], TODAY);
-    const active = [AN, VAN, YEN].filter((s) => w.get(s)?.active);
-    assert(active.length === 3, `Nguyễn Minh An, Đặng Thu Vân, Ngô Hải Yến phải đang có cảnh báo; có ${active.length}`);
-    assert(w.get(AN)!.oldestAgeDays === 9 && w.get(AN)!.count === 4 && w.get(AN)!.message === 'Chưa xử lý 4 vi phạm · cũ nhất 9 ngày', `An: ${w.get(AN)!.message}`);
-    assert(w.get(VAN)!.oldestAgeDays === 8, `Vân phải 8 ngày, đang ${w.get(VAN)!.oldestAgeDays}`);
-    assert(w.get(YEN)!.oldestAgeDays === 6, `Yến phải 6 ngày, đang ${w.get(YEN)!.oldestAgeDays}`);
-    for (const s of [HA, KIEN]) assert(w.get(s)!.oldestAgeDays === 5 && !w.get(s)!.active, 'Vi phạm chưa xử lý đúng 5 ngày thì CHƯA cảnh báo (ngưỡng là quá 5 ngày)');
-    for (const s of [HUY, NGOC]) assert(!w.get(s)!.active, 'Em đã xử lý hết thì không cảnh báo');
-    /* Hàm chỉ số hv-can-xu-ly là CÙNG hàm cảnh báo. */
-    const stat = yThucMetric(loadPrincipal(1), 'hv-can-xu-ly').ids;
-    for (const s of [AN, VAN, YEN]) assert(stat.includes(s), `hv-can-xu-ly thiếu em ${s}`);
   });
 
   check('PR-J · DEMO #11 + #12 + #13 + #14 + #15 Case học thuật giữ nguyên: mức Bình thường và mức Gấp; SOS chỉ ghi nhận có LÝ DO; SOS gắn vào case đang mở; GV tạo case trực tiếp không có tín hiệu', () => {
@@ -611,22 +596,6 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(new Set(m.violations.map((v: any) => v.category)).size === 3 && new Set(m.violations.map((v: any) => v.reportedBy)).size === 4, 'Dữ liệu thử phải thật sự khác nhau');
   });
 
-  check('PR-J · B04 Một nhóm vi phạm gắn vào NHIỀU biện pháp cùng lúc, và một vi phạm còn nằm trong biện pháp cũ; mở vi phạm thấy CẢ ba', () => {
-    const st = makeStudent('B04');
-    const six = violations(st.id, 6);
-    const oldOne = mk(gvcn, st.id, 'meeting_student', [six[0]]);
-    confirm(gvcn, oldOne.id, { performedOn: addDays(TODAY, -9), note: 'Đã gặp em từ tháng trước' });
-    const meeting = mk(gvcn, st.id, 'meeting_student', six);
-    const report = mk(gvcn, st.id, 'family_report', six);
-    const letter = mk(gvcn, st.id, 'warning_1', six);
-    assert([meeting, report, letter].every((m) => m.violations.length === 6), 'Cả ba biện pháp phải chứa đủ sáu vi phạm');
-    const d = viol.violationDetail(gvcn, six[0]) as any;
-    assert(d.measures.length === 4, `Vi phạm đầu phải thấy CẢ bốn biện pháp liên quan (một đã làm từ trước), thấy ${d.measures.length}`);
-    assert(d.measures.filter((x: any) => x.status === 'done').length === 1 && d.measures.filter((x: any) => x.status === 'preparing').length === 3, 'Một đã thực hiện, ba đang chuẩn bị');
-    assert(stateOf(six[0]) === 'handled' && stateOf(six[1]) === 'preparing', 'Trạng thái suy từ bảng nối: nằm trong biện pháp đã thực hiện → Đã xử lý; chỉ nằm trong biện pháp đang chuẩn bị → Đang chuẩn bị xử lý');
-    assert(one('SELECT COUNT(*) n FROM measure_violations WHERE violation_id = ?', six[1]) === 3, 'Bảng nối nhiều–nhiều: một vi phạm, ba dòng nối');
-  });
-
   check('PR-J · B05 Không có thứ tự xử lý bắt buộc: đi thẳng tới biện pháp nặng là hợp lệ', () => {
     const st = makeStudent('B05');
     const ids = violations(st.id, 1);
@@ -637,27 +606,6 @@ export async function runYThucTests(t: YThucTestKit) {
     assertThrows(() => mk(gvcn, st.id, 'severe', ids), /loại phương án/i, 'Loại lạ');
     assertThrows(() => mk(gvcn, st.id, 'other', ids), /tên phương án/i, 'Loại Khác mà không có tên');
     assert(mk(gvcn, st.id, 'other', ids, { customName: 'Họp riêng với ban giám hiệu' }).kindLabel === 'Họp riêng với ban giám hiệu', 'Loại Khác hiện tên do GVCN đặt');
-  });
-
-  check('PR-J · B09 Khi Đang chuẩn bị: thêm · bỏ vi phạm, đổi loại, sửa ghi chú, đổi người phụ trách — KHÔNG có hạn nào; bỏ vi phạm để lại lịch sử và vi phạm quay về Chưa xử lý', () => {
-    const st = makeStudent('B09');
-    const ids = violations(st.id, 4);
-    const m = mk(gvcn, st.id, 'family_report', ids.slice(0, 2), { note: 'Ghi chú ban đầu' });
-    assert(!('dueDate' in m) && !('due_date' in m) && !Object.keys(m).some((k) => /due|deadline|overdue/i.test(k)), 'Biện pháp không có hạn nào');
-    assert(stateOf(ids[0]) === 'preparing' && stateOf(ids[3]) === 'unhandled', 'Trước khi thêm');
-    meas.addViolations(gvcn, m.id, [ids[2], ids[3]]);
-    assert(meas.measureDetail(gvcn, m.id).violations.length === 4 && stateOf(ids[3]) === 'preparing', 'Thêm vi phạm mới vào biện pháp đang chuẩn bị (10.7): vi phạm rời Chưa xử lý');
-    meas.removeViolation(gvcn, m.id, ids[3]);
-    assert(meas.measureDetail(gvcn, m.id).violations.length === 3 && stateOf(ids[3]) === 'unhandled', 'Bỏ vi phạm ra: quay về Chưa xử lý');
-    const hist = conn.prepare("SELECT old_value, new_value FROM violation_history WHERE violation_id = ? AND field = 'measure' ORDER BY id").all(ids[3]) as any[];
-    assert(hist.length === 2 && hist[0].new_value === String(m.id) && hist[1].old_value === String(m.id), `Thêm rồi bỏ phải để lại hai dòng lịch sử: ${JSON.stringify(hist)}`);
-    assertThrows(() => meas.removeViolation(gvcn, m.id, ids[3]), /không nằm trong/, 'Bỏ vi phạm không nằm trong biện pháp');
-    const mid = meas.updateMeasure(gvcn, m.id, { kind: 'meeting_student', note: 'Đổi ý: gặp em trước', ownerUserId: P.mbManager.userId }) as any;
-    assert(mid.kind === 'meeting_student' && mid.note === 'Đổi ý: gặp em trước' && mid.ownerUserId === P.mbManager.userId, 'Đổi loại, ghi chú, người phụ trách');
-    meas.removeViolation(gvcn, m.id, ids[1]);
-    meas.removeViolation(gvcn, m.id, ids[2]);
-    assert(meas.measureDetail(gvcn, m.id).violations.length === 1, 'Còn đúng một vi phạm');
-    assertThrows(() => meas.removeViolation(gvcn, m.id, ids[0]), /ít nhất một vi phạm/, 'Bỏ vi phạm cuối cùng thì biện pháp không còn vi phạm nào');
   });
 
   check('PR-J · B10 Khi Đã thực hiện: KHÓA danh sách vi phạm và loại; vẫn sửa ghi chú và bổ sung tệp (có audit) — đó là bổ sung bằng chứng, không viết lại phạm vi', () => {
@@ -686,25 +634,6 @@ export async function runYThucTests(t: YThucTestKit) {
     assert((meas.updateMeasure(gvcn, m.id, { kind: 'warning_1' }) as any).kind === 'warning_1', 'Đổi sang lần 1 thì được');
     assert((meas.updateMeasure(gvcn, m.id, { kind: 'other', customName: 'Thư nhắc nhở nội bộ' }) as any).kindLabel === 'Thư nhắc nhở nội bộ', 'Đổi sang Khác kèm tên');
     assertThrows(() => meas.updateMeasure(gvcn, m.id, { kind: 'other', customName: '' }), /tên phương án/, 'Khác mà xóa tên');
-  });
-
-  check('PR-J · B12 Xóa biện pháp: chỉ khi Đang chuẩn bị, do GVCN · Quản lý · Quản trị; vi phạm quay về Chưa xử lý, tệp đi theo, có audit; Đã thực hiện không xóa được', () => {
-    const st = makeStudent('B12');
-    const ids = violations(st.id, 2);
-    const m = mk(gvcn, st.id, 'family_report', ids);
-    link(gvcn, m.id, 'Bản nháp Report');
-    assert(stateOf(ids[0]) === 'preparing', 'Đang nằm trong biện pháp');
-    meas.deleteMeasure(P.mbManager, m.id);
-    assert(one('SELECT COUNT(*) n FROM discipline_measures WHERE id = ?', m.id) === 0 && one('SELECT COUNT(*) n FROM measure_violations WHERE measure_id = ?', m.id) === 0, 'Biện pháp và dòng nối phải mất');
-    assert(stateOf(ids[0]) === 'unhandled' && stateOf(ids[1]) === 'unhandled', 'Vi phạm quay về Chưa xử lý');
-    assert(one("SELECT COUNT(*) n FROM attachments WHERE owner_type = 'discipline_measure' AND owner_id = ?", m.id) === 0, 'Tệp của biện pháp bị xóa đi theo');
-    assert(one("SELECT COUNT(*) n FROM audit_logs WHERE action = 'measure.delete' AND entity_id = ?", m.id) === 1, 'Xóa phải có audit');
-    assert(one("SELECT COUNT(*) n FROM violation_history WHERE violation_id = ? AND field = 'measure' AND old_value = ?", ids[0], String(m.id)) === 1, 'Vi phạm ghi lại việc rời biện pháp');
-    assertThrows(() => meas.deleteMeasure(gvcn, m.id), /Không tìm thấy/, 'Xóa hai lần');
-    const m2 = mk(gvcn, st.id, 'talk_short', ids);
-    confirm(gvcn, m2.id);
-    assertThrows(() => meas.deleteMeasure(P.admin, m2.id), /đã thực hiện/, 'Xóa biện pháp đã thực hiện (kể cả Quản trị)');
-    assert(one('SELECT COUNT(*) n FROM discipline_measures WHERE id = ?', m2.id) === 1, 'Biện pháp đã thực hiện còn nguyên');
   });
 
   console.log('\nPR-J · 6. Chuỗi Thư cảnh cáo (B06–B08, Y02)');
@@ -883,126 +812,7 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(!notified(susQl.id).includes(P.mbManager.userId) && notified(susQl.id).includes(P.admin.userId), 'Người xác nhận không tự nhận thông báo');
   });
 
-  // ================================================================== Cảnh báo 5 ngày (W01–W06)
-
-  const warn = await import('../yThuc/canhBao.ts');
-
-  /** Một học viên có `n` vi phạm chưa xử lý, cũ nhất cách hôm nay `oldestDays` ngày (các cái còn lại xen kẽ). */
-  const withUnhandled = (name: string, ages: number[]): { id: number; ids: number[] } => {
-    const st = makeStudent(name);
-    const ids = ages.map((age, i) => vid(record(gvbm, st.id, {
-      occurredOn: addDays(TODAY, -age), category: i % 2 ? 'attendance' : 'homework', description: `Vi phạm cách đây ${age} ngày, dùng cho cảnh báo`,
-    })));
-    return { id: st.id, ids };
-  };
-
-  /** Lớp riêng cho phép kiểm W05 để số đếm không lẫn với dữ liệu của lớp khác. GVCN của lớp là `outsider` (giáo viên MB không dạy MB FT 101). */
-  const makeClassForWarnings = (code = 'MB FT PJW05') => {
-    const mbId = (conn.prepare("SELECT id FROM branches WHERE code = 'MB'").get() as any).id as number;
-    const c = intake.createClass(P.admin, { code, branchId: mbId, kind: 'FT', isFastTrack: true, startDate: '2026-08-03' }) as any;
-    conn.prepare(`INSERT INTO teacher_assignments (class_id, user_id, skill, is_core, status, effective_from, created_at) VALUES (?, ?, NULL, 1, 'active', '2026-01-01', ?)`)
-      .run(c.id, outsider.userId, new Date().toISOString());
-    return { id: c.id as number, gvcn: outsider.userId };
-  };
-  const withUnhandledIn = (cls: { id: number; gvcn: number }, name: string, ages: number[]): { id: number; ids: number[] } => {
-    const st = makeStudent(name, cls.id);
-    const who = loadPrincipal(cls.gvcn);
-    const ids = ages.map((age, i) => vid(record(who, st.id, {
-      occurredOn: addDays(TODAY, -age), category: i % 2 ? 'attendance' : 'homework', description: `Vi phạm cách đây ${age} ngày, dùng cho cảnh báo`,
-    })));
-    return { id: st.id, ids };
-  };
-
-  console.log('\nPR-J · 8. Cảnh báo 5 ngày (W01–W06)');
-
-  check('PR-J · W01 Em có 4 vi phạm chưa xử lý, cũ nhất 9 ngày → câu cảnh báo ĐÚNG số 4 và 9; đúng 5 ngày thì chưa cảnh báo', () => {
-    const s = withUnhandled('W01', [9, 7, 6, 1]);
-    const w = warn.studentWarning(gvcn, s.id) as any;
-    assert(w.active && w.count === 4 && w.oldestAgeDays === 9 && w.oldestOn === addDays(TODAY, -9), `Cảnh báo sai: ${JSON.stringify(w)}`);
-    assert(w.message === 'Chưa xử lý 4 vi phạm · cũ nhất 9 ngày', `Câu cảnh báo sai: ${w.message}`);
-    const five = withUnhandled('W01 đúng năm', [5, 2]);
-    assert((warn.studentWarning(gvcn, five.id) as any).active === false, 'Đúng 5 ngày thì chưa cảnh báo (phải QUÁ 5 ngày)');
-    const six = withUnhandled('W01 sáu', [6]);
-    assert((warn.studentWarning(gvcn, six.id) as any).active === true, '6 ngày thì cảnh báo');
-    assert((warn.studentWarning(gvcn, makeStudent('W01 sạch').id) as any).active === false, 'Không có vi phạm nào thì không cảnh báo');
-  });
-
-  check('PR-J · W02 Cảnh báo KHÔNG tự tạo case, biện pháp, việc, hạn hay thông báo — chỉ để nhắc, không tính là quá hạn của ai', () => {
-    const s = withUnhandled('W02', [12, 9, 8]);
-    const count = () => ['sos_cases', 'discipline_measures', 'tasks', 'notifications', 'case_signals'].map((tb) => `${tb}=${one(`SELECT COUNT(*) n FROM ${tb}`)}`).join(' ');
-    const before = count();
-    for (let i = 0; i < 3; i += 1) { warn.studentWarning(gvcn, s.id); warn.classWarning(gvcn, CLASS); warn.myWarningLines(gvcn); }
-    assert(count() === before, `Xem cảnh báo đã sinh dữ liệu:\n  trước: ${before}\n  sau:   ${count()}`);
-    const w = warn.studentWarning(gvcn, s.id) as any;
-    assert(!Object.keys(w).some((k) => /due|deadline|overdue|late/i.test(k)), `Cảnh báo không được có hạn/quá hạn: ${Object.keys(w).join(',')}`);
-    assert(!/quá hạn|trễ hạn/i.test(w.message), 'Câu cảnh báo không nói "quá hạn" — nguồn mục 30');
-  });
-
-  check('PR-J · W03 Vi phạm đã nằm trong biện pháp Đang chuẩn bị RA KHỎI tập cần xử lý — cảnh báo tắt ngay, chưa cần xác nhận (đặc tả nghiệm thu 17)', () => {
-    const s = withUnhandled('W03', [9, 8, 7, 6]);
-    assert((warn.studentWarning(gvcn, s.id) as any).count === 4, 'Trước khi gom: 4');
-    const m = mk(gvcn, s.id, 'family_report', s.ids);
-    const w = warn.studentWarning(gvcn, s.id) as any;
-    assert(w.active === false && w.count === 0, `Gom cả bốn vào biện pháp đang chuẩn bị thì cảnh báo tắt ngay: ${JSON.stringify(w)}`);
-    assert(m.status === 'preparing', 'Biện pháp chưa xác nhận');
-    /* Bỏ một vi phạm ra: nó quay lại tập cần xử lý, và cảnh báo hiện lại nếu nó đã quá 5 ngày. */
-    meas.removeViolation(gvcn, m.id, s.ids[0]);
-    const back = warn.studentWarning(gvcn, s.id) as any;
-    assert(back.active && back.count === 1 && back.oldestAgeDays === 9, `Bỏ vi phạm ra thì cảnh báo hiện lại: ${JSON.stringify(back)}`);
-    /* Gom một phần: chỉ vi phạm còn lại (mới, dưới 5 ngày) thì không cảnh báo. */
-    const s2 = withUnhandled('W03 một phần', [9, 8, 2]);
-    mk(gvcn, s2.id, 'talk_short', s2.ids.slice(0, 2));
-    assert((warn.studentWarning(gvcn, s2.id) as any).active === false, 'Còn lại vi phạm 2 ngày tuổi: không cảnh báo');
-  });
-
-  check('PR-J · W04 (v3) Vi phạm đã xoá không còn trong tập cần xử lý — xoá cái cũ nhất thì cảnh báo đổi theo cái cũ nhất còn lại', () => {
-    const s = withUnhandled('W04', [10, 4, 3]);
-    assert((warn.studentWarning(gvcn, s.id) as any).oldestAgeDays === 10, 'Trước khi hủy');
-    viol.deleteViolation(gvcn, s.ids[0]);
-    const w = warn.studentWarning(gvcn, s.id) as any;
-    assert(w.count === 2 && w.active === false && w.oldestAgeDays === 4, `Xoá vi phạm cũ nhất: còn 2, cũ nhất 4 ngày, hết cảnh báo: ${JSON.stringify(w)}`);
-    const only = withUnhandled('W04 chỉ một', [20]);
-    viol.deleteViolation(gvcn, only.ids[0]);
-    assert((warn.studentWarning(gvcn, only.id) as any).count === 0, 'Chỉ có một vi phạm và nó đã xoá: không còn gì cần xử lý');
-  });
-
-  check('PR-J · W05 Cảnh báo hiện ở BA nơi — đầu tab Ý thức của lớp · dòng học viên trong danh sách lớp · Việc cần làm của GVCN — và cả ba gọi CÙNG MỘT hàm nên khớp nhau', () => {
-    const cls = makeClassForWarnings();
-    const a = withUnhandledIn(cls, 'W05 A', [9, 7, 6, 1]);
-    const b = withUnhandledIn(cls, 'W05 B', [8]);
-    withUnhandledIn(cls, 'W05 C', [3]);
-    const gvcnOfCls = loadPrincipal(cls.gvcn);
-
-    /* (1) Đầu tab Ý thức của lớp. */
-    const board = warn.classWarning(gvcnOfCls, cls.id) as any;
-    assert(board.activeCount === 2 && board.students.length === 2, `Tab Ý thức: 2 học viên quá 5 ngày, thấy ${board.activeCount}`);
-    assert(board.message === '2 học viên có vi phạm chưa xử lý quá 5 ngày', `Câu đầu tab sai: ${board.message}`);
-    const rowA = board.students.find((x: any) => x.studentId === a.id);
-    assert(rowA.count === 4 && rowA.oldestAgeDays === 9, 'Học viên A: 4 vi phạm, cũ nhất 9 ngày');
-    /* (2) Nhãn nhỏ ở dòng học viên: cùng dữ liệu, không tính lại. */
-    const rows = warn.rosterWarnings(gvcnOfCls, cls.id) as Map<number, any>;
-    assert(rows.get(a.id).message === rowA.message && rows.get(b.id).active && !rows.has(-1), 'Dòng danh sách lớp phải mang đúng câu của học viên đó');
-    /* (3) Một dòng trong Việc cần làm của GVCN. */
-    const lines = warn.myWarningLines(gvcnOfCls) as any[];
-    const mine = lines.find((l) => l.classId === cls.id);
-    assert(mine && mine.studentCount === 2 && /2 học viên có vi phạm chưa xử lý quá 5 ngày/.test(mine.text), `Dòng Việc cần làm: ${JSON.stringify(mine)}`);
-    assert(lines.every((l) => !/quá hạn/.test(l.text)), 'Không tô như quá hạn');
-    /* Giáo viên bộ môn không dạy lớp này thì không có dòng nhắc việc của lớp này. */
-    assert(!(warn.myWarningLines(gvbm) as any[]).some((l) => l.classId === cls.id), 'Giáo viên không dạy lớp này không nhận dòng nhắc của lớp');
-    /* (4) Hồ sơ học viên cũng cùng hàm. */
-    assert((warn.studentWarning(gvcnOfCls, a.id) as any).message === rowA.message, 'Hồ sơ học viên khớp tab lớp');
-    assertThrows(() => warn.classWarning(gvbm, cls.id), /phạm vi|quyền/, 'Giáo viên ngoài lớp xem cảnh báo của lớp');
-  });
-
-  check('PR-J · W06 Tuổi `⚠9n` hiện cạnh TỪNG vi phạm chưa xử lý quá 5 ngày — không chỉ ở dòng tổng; vi phạm đã xử lý hoặc còn mới thì không', () => {
-    const s = withUnhandled('W06', [9, 6, 2]);
-    const rows = (viol.listViolations(gvcn, { studentId: s.id }) as any).rows as any[];
-    const by = (id: number) => rows.find((r) => r.id === id);
-    assert(by(s.ids[0]).ageLabel === '9 ngày' && by(s.ids[1]).ageLabel === '6 ngày' && by(s.ids[2]).ageLabel === '', `Nhãn tuổi sai: ${rows.map((r) => r.ageLabel).join(' | ')}`);
-    mk(gvcn, s.id, 'talk_short', [s.ids[0]]);
-    assert(by(s.ids[0]).ageLabel === '9 ngày' && (viol.listViolations(gvcn, { studentId: s.id }) as any).rows.find((r: any) => r.id === s.ids[0]).ageLabel === '',
-      'Vi phạm vào biện pháp rồi thì không còn nhãn tuổi');
-  });
+  // PR-YT4: khối cảnh báo mềm 5 ngày (W01–W06) thay bằng khối 3 của prYt4.tests.ts (một cửa trạng thái, Quá hạn / Bắt buộc).
 
   // ================================================================== Tám chỉ số Ý thức (J6, HOP_DONG_SO_LIEU §5)
 
@@ -1081,20 +891,6 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(JSON.stringify([...r.ids].sort((a: number, b: number) => a - b)) === JSON.stringify(truth), 'Tập ID phải bằng sự thật độc lập');
     const vp = ms(P.mbManager, 'vi-pham-tong', { branchId: mbId });
     assert(vp.n > r.n, 'Số vi phạm và số học viên là hai đơn vị khác nhau, không bằng nhau');
-  });
-
-  check('PR-J · J6 `hv-can-xu-ly` = những em đang có cảnh báo 5 ngày — CÙNG hàm với cảnh báo, không đếm riêng', () => {
-    const late = withUnhandled('J6 cần xử lý', [9, 2]);
-    const young = withUnhandled('J6 còn mới', [3]);
-    const r = ms(P.mbManager, 'hv-can-xu-ly', { branchId: mbId });
-    assert(r.ids.includes(late.id) && !r.ids.includes(young.id), 'Em có vi phạm cũ nhất 9 ngày thì cần xử lý, em chỉ có vi phạm 3 ngày thì chưa');
-    const truth = ids(`SELECT s AS id FROM (SELECT v.student_id AS s, MIN(v.occurred_on) AS oldest FROM violations v
-        WHERE ${NOW_BRANCH} = ? AND NOT EXISTS (SELECT 1 FROM measure_violations mv WHERE mv.violation_id = v.id)
-        GROUP BY v.student_id) WHERE julianday(?) - julianday(oldest) > 5 ORDER BY s`, mbId, TODAY);
-    assert(JSON.stringify([...r.ids].sort((a: number, b: number) => a - b)) === JSON.stringify(truth), 'Tập ID phải bằng sự thật độc lập');
-    for (const id of r.ids) assert((warn.studentWarning(P.mbManager, id) as any).active, `Học viên ${id} trong tập mà cảnh báo lại tắt — hai nơi đếm khác nhau`);
-    mk(gvcn, late.id, 'family_report', late.ids);
-    assert(!ms(P.mbManager, 'hv-can-xu-ly', { branchId: mbId }).ids.includes(late.id), 'Gom hết vào biện pháp thì ra khỏi tập cần xử lý');
   });
 
   check('PR-J · J6 `bien-phap-da-thuc-hien` đếm BIỆN PHÁP theo ngày thực hiện — một Report gom 5 vi phạm là MỘT (B16); `bien-phap-dang-chuan-bi` không có "quá hạn"', () => {
@@ -1197,111 +993,12 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(one("SELECT COUNT(*) n FROM audit_logs WHERE action = 'attachment.delete' AND entity_id = ?", file.id) === 1, 'Gỡ tệp của biện pháp có audit');
   });
 
-  const board = await import('../yThuc/board.ts');
-
-  check('PR-J · J9 Ba khu vực của lớp (Y03): vi phạm chưa xử lý gom theo HỌC VIÊN kèm tuổi, biện pháp đang chuẩn bị đủ, lịch sử chỉ 3 dòng; GVBM đọc được nhưng không có quyền tạo', () => {
-    const cls = makeClassForWarnings('MB FT PJBRD');
-    const who = loadPrincipal(cls.gvcn);
-    const a = withUnhandledIn(cls, 'BRD A', [9, 6, 1]);
-    const b = withUnhandledIn(cls, 'BRD B', [2]);
-    const c = withUnhandledIn(cls, 'BRD C', [8, 7]);
-    const empty = makeStudent('BRD D', cls.id);
-    const { classViolationBoard } = board;
-    const bd = classViolationBoard(who, cls.id) as any;
-    assert(bd.classCode === 'MB FT PJBRD' && bd.canManage === true, 'GVCN của lớp có quyền xử lý');
-    assert(bd.unhandled.total === 6 && bd.unhandled.studentCount === 3, `6 vi phạm của 3 học viên (hai đơn vị khác nhau, không cộng): ${bd.unhandled.total}/${bd.unhandled.studentCount}`);
-    assert(bd.unhandled.students.map((s: any) => s.studentId).join() === [a.id, c.id, b.id].join(), 'Học viên xếp theo vi phạm cũ nhất trước (9 ngày, 8 ngày, 2 ngày)');
-    assert(!bd.unhandled.students.some((s: any) => s.studentId === empty.id), 'Học viên không có vi phạm không xuất hiện');
-    const rowA = bd.unhandled.students[0];
-    assert(rowA.count === 3 && rowA.oldestAgeDays === 9 && rowA.warningActive && rowA.violations.length === 3, 'Học viên A: 3 vi phạm, cũ nhất 9 ngày, có cảnh báo');
-    assert(rowA.violations.map((v: any) => v.ageLabel).join() === '9 ngày,6 ngày,', `Tuổi cạnh từng vi phạm (W06): ${rowA.violations.map((v: any) => v.ageLabel).join()}`);
-    assert(bd.warning.activeCount === 2 && bd.warning.message === '2 học viên có vi phạm chưa xử lý quá 5 ngày', `Đầu tab: ${bd.warning.message}`);
-    assert(JSON.stringify(bd.warning.activeCount) === JSON.stringify((warn.classWarning(who, cls.id) as any).activeCount), 'Khớp cảnh báo 5 ngày (cùng hàm)');
-    /* Tạo biện pháp cho A: các vi phạm ra khỏi khu 1, biện pháp vào khu 2. */
-    const m = mk(who, a.id, 'family_report', a.ids.slice(0, 2));
-    const after = classViolationBoard(who, cls.id) as any;
-    assert(after.unhandled.total === 4 && after.preparing.length === 1 && after.preparing[0].id === m.id, 'Khu 1 giảm, khu 2 có biện pháp');
-    assert(after.preparing[0].violations.length === 2, 'Khu 2 kèm danh sách vi phạm');
-    /* Lịch sử: chỉ ba dòng gần nhất, có tổng. */
-    for (let i = 0; i < 4; i += 1) {
-      const vi = vid(record(who, b.id, { occurredOn: addDays(TODAY, -3 - i), description: `Vi phạm thứ ${i + 1} đã được xử lý bằng trao đổi ngắn` }));
-      confirm(who, mk(who, b.id, 'talk_short', [vi]).id, { performedOn: addDays(TODAY, -i) });
-    }
-    const hist = classViolationBoard(who, cls.id) as any;
-    assert(hist.history.total === 4 && hist.history.latest.length === 3, `Lịch sử: tổng 4, hiện 3 dòng gần nhất — có ${hist.history.total}/${hist.history.latest.length}`);
-    assert(hist.history.latest[0].performedOn >= hist.history.latest[2].performedOn, 'Gần nhất trước');
-    /* GVBM không dạy lớp thì không đọc được; giáo viên dạy lớp đọc được nhưng không có quyền tạo. */
-    assertThrows(() => classViolationBoard(gvbm, cls.id), /phạm vi|quyền/, 'Giáo viên không dạy lớp đọc được bảng');
-    conn.prepare(`INSERT INTO teacher_assignments (class_id, user_id, skill, is_core, status, effective_from, created_at) VALUES (?, ?, 'writing1', 0, 'active', '2026-01-01', ?)`)
-      .run(cls.id, gvbm.userId, new Date().toISOString());
-    const asGvbm = classViolationBoard(loadPrincipal(gvbm.userId), cls.id) as any;
-    assert(asGvbm.canManage === false && asGvbm.unhandled.total === after.unhandled.total && asGvbm.preparing.length === 1,
-      'GVBM dạy lớp thấy đủ ba khu vực nhưng canManage = false (không có nút Tạo biện pháp)');
-    assert((classViolationBoard(P.mbManager, cls.id) as any).canManage === true && (classViolationBoard(P.admin, cls.id) as any).canManage === true, 'Quản lý và Quản trị xử lý được');
-    assertThrows(() => classViolationBoard(P.cpManager, cls.id), /phạm vi|quyền/, 'Quản lý chi nhánh khác đọc được bảng');
-  });
-
-  check('PR-J · W05 (chủ sản phẩm chốt 21/09) Vấn đề Ý thức ĐI THEO HỌC VIÊN sang lớp mới: vi phạm chưa xử lý và biện pháp đang chuẩn bị hiện ở tab lớp mới, cảnh báo giữ nguyên số ngày', () => {
-    const st = makeStudent('mang sang lớp mới');
-    viol.recordViolation(gvbm, { studentId: st.id, category: 'homework', description: 'Không nộp bài Writing Task 2 tuần trước', occurredOn: addDays(TODAY, -8) } as any) as any;
-    const kept = viol.recordViolation(gvbm, { studentId: st.id, category: 'attendance', description: 'Nghỉ một buổi không xin phép', occurredOn: addDays(TODAY, -2) } as any) as any;
-    const prep = meas.createMeasure(gvcn, { studentId: st.id, kind: 'talk_short', violationIds: [kept.violation.id] });
-    /* Em chuyển sang lớp khác cùng chi nhánh: ghi danh cũ đóng, ghi danh mới mở. */
-    const newCls = t.classId('MB FT 102');
-    conn.prepare("UPDATE enrollments SET status = 'transferred', ended_at = ? WHERE student_id = ? AND status = 'active'").run(TODAY, st.id);
-    conn.prepare("INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?, ?, 'active', ?, ?)").run(st.id, newCls, TODAY, TODAY + 'T00:00:00.000Z');
-    const gvcnNew = loadPrincipal((conn.prepare("SELECT user_id AS id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active' LIMIT 1").get(newCls) as any).id);
-    const b = board.classViolationBoard(gvcnNew, newCls) as any;
-    const row = b.unhandled.students.find((s: any) => s.studentId === st.id);
-    assert(row && row.count === 1 && row.oldestAgeDays === 8 && row.warningActive, `Vi phạm cũ chưa xử lý phải hiện ở lớp mới với đủ 8 ngày: ${JSON.stringify(row)}`);
-    assert(b.preparing.some((m: any) => m.id === prep.id), 'Biện pháp đang chuẩn bị tạo ở lớp cũ phải hiện ở lớp mới — GVCN mới xử lý tiếp được');
-    const w = (warn.classWarning(gvcnNew, newCls) as any).students.find((s: any) => s.studentId === st.id);
-    assert(w && w.active && w.count === 1, 'Cảnh báo của lớp mới phải tính cả vi phạm ghi ở lớp cũ');
-    assert((meas.confirmMeasure(gvcnNew, prep.id, { performedOn: TODAY, performerName: 'GVCN mới', note: 'Trao đổi với em sau khi chuyển lớp.' } as any) as any).status === 'done', 'GVCN lớp mới xác nhận được biện pháp còn dở');
-  });
 
   // ================================================================== PR-K3: rà soát sau PR-K2 (§7.1 "Gần đây" theo học viên, canRecord)
 
   console.log('\nPR-K3 · 14. Rà soát PR-K2: "Gần đây" theo từng học viên, canRecord của bảng ba khu vực (K3-1, K3-5)');
 
   const permsMod = await import('../permissions.ts');
-
-  check('PR-K3 · K3-1 (§7.1) Bảng ba khu vực trả recentByStudent: tối đa 3 biện pháp MỚI NHẤT của TỪNG học viên, không phải của cả lớp', () => {
-    const cls = makeClassForWarnings('MB FT PK31');
-    const who = loadPrincipal(cls.gvcn);
-    const a = makeStudent('K31 A', cls.id);
-    const b = makeStudent('K31 B', cls.id);
-    /* A: một biện pháp cũ đã thực hiện. */
-    const va = vid(record(who, a.id, { occurredOn: addDays(TODAY, -20), description: 'Vi phạm cũ của A dùng để tạo biện pháp thử' }));
-    confirm(who, mk(who, a.id, 'talk_short', [va]).id, { performedOn: addDays(TODAY, -19) });
-    /* B: bốn biện pháp, đều MỚI hơn biện pháp của A. */
-    for (let i = 0; i < 4; i += 1) {
-      const vb = vid(record(who, b.id, { occurredOn: addDays(TODAY, -10 - i), description: `Vi phạm thứ ${i + 1} của B dùng để tạo biện pháp thử` }));
-      confirm(who, mk(who, b.id, 'talk_short', [vb]).id, { performedOn: addDays(TODAY, -i) });
-    }
-    const bd = board.classViolationBoard(who, cls.id) as any;
-    assert(Array.isArray(bd.recentByStudent[a.id]) && bd.recentByStudent[a.id].length === 1,
-      `recentByStudent[A] phải có đúng 1 phần tử: ${JSON.stringify(bd.recentByStudent[a.id])}`);
-    assert(Array.isArray(bd.recentByStudent[b.id]) && bd.recentByStudent[b.id].length === 3,
-      `recentByStudent[B] phải có đúng 3 phần tử (giới hạn tối đa), có ${bd.recentByStudent[b.id]?.length}`);
-    assert(bd.recentByStudent[b.id][0].performedOn >= bd.recentByStudent[b.id][2].performedOn, 'Mới nhất đứng trước trong recentByStudent[B]');
-    assert(bd.history.latest.length === 3 && bd.history.total === 5, 'history cũ (của cả lớp) vẫn giữ nguyên hành vi cũ, không bị đụng');
-  });
-
-  check('PR-K3 · K3-5 canRecord của bảng ba khu vực: GVBM dạy lớp trái môn → true; giáo viên không dạy lớp thì máy chủ từ chối cả quyền ghi vi phạm (không riêng gì bảng); Quản lý cùng chi nhánh → true, chi nhánh khác thì không đọc được bảng', () => {
-    const cls = makeClassForWarnings('MB FT PK35');
-    conn.prepare(`INSERT INTO teacher_assignments (class_id, user_id, skill, is_core, status, effective_from, created_at) VALUES (?, ?, 'writing1', 0, 'active', '2026-01-01', ?)`)
-      .run(cls.id, gvbm.userId, new Date().toISOString());
-    const bdGvbm = board.classViolationBoard(loadPrincipal(gvbm.userId), cls.id) as any;
-    assert(bdGvbm.canRecord === true, 'GVBM dạy lớp (trái môn, chỉ Writing 1) vẫn ghi vi phạm được — Ý thức không theo C02');
-    assert(permsMod.can(loadPrincipal(gvbm.userId), domain.PERMISSIONS.VIOLATION_RECORD, { classId: cls.id }) === true, 'Khớp đúng quyền violation.record mà máy chủ dùng để tính canRecord');
-    /* gvbm2 không có phân công nào ở lớp mới này (chỉ dạy lớp CLASS = MB FT 101) — không đọc được bảng, đồng nghĩa không ghi vi phạm được ở lớp này. */
-    assertThrows(() => board.classViolationBoard(gvbm2, cls.id), /phạm vi|quyền/, 'Giáo viên không dạy lớp vẫn đọc được bảng (và do đó vẫn có canRecord)');
-    assert(permsMod.can(gvbm2, domain.PERMISSIONS.VIOLATION_RECORD, { classId: cls.id }) === false, 'Giáo viên không dạy lớp không có quyền violation.record ở lớp đó');
-    const bdMb = board.classViolationBoard(P.mbManager, cls.id) as any;
-    assert(bdMb.canRecord === true, 'Quản lý trong phạm vi ghi vi phạm được (đúng quyền violation.record hiện có)');
-    assertThrows(() => board.classViolationBoard(P.cpManager, cls.id), /phạm vi|quyền/, 'Quản lý chi nhánh khác đọc được bảng');
-  });
 
   // ================================================================== Gọi thẳng đường HTTP (nghiệm thu 5, 22)
 
@@ -1359,8 +1056,8 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(gvbmRead.status === 200 && gvbmRead.json?.id === chain2Ok.json?.id, 'GVBM đọc được biện pháp của lớp mình dạy');
     assert(kinds.status === 200 && (kinds.json?.rows ?? []).length === 9, 'GVBM đọc được danh sách chín loại kèm dòng khóa');
     assert(gvbmBoard.status === 200 && gvbmBoard.json?.canManage === false && gvcnBoard.json?.canManage === true,
-      'Bảng ba khu vực của lớp: GVBM đọc được nhưng canManage = false; GVCN = true');
-    for (const k of ['warning', 'unhandled', 'preparing', 'history']) assert(k in (gvbmBoard.json ?? {}), `Bảng của lớp thiếu khu vực ${k}`);
+      'Tab Ý thức của lớp: GVBM đọc được nhưng canManage = false; GVCN = true');
+    for (const k of ['nhom', 'dongThoiGian']) assert(k in (gvbmBoard.json ?? {}), `Tab Ý thức của lớp thiếu khung ${k} (M6)`);
   });
 
   check('PR-J · #5 + B06 Gọi thẳng HTTP: Thư cảnh cáo lần 2 khi chưa có lần 1 → 400 và nói vì sao; lần 3 khi chưa có lần 2 → 400; xác nhận thư không đính tệp → 400; xong từng bước thì mở khóa', () => {

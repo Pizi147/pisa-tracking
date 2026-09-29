@@ -17,7 +17,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
   const classes: any = await import('../classes/classes.ts');
   const standingMod: any = await import('../students/standing.ts');
   const violations: any = await import('../yThuc/violations.ts');
-  const warn: any = await import('../yThuc/canhBao.ts');
+  const dongHv: any = await import('../classes/dongHocVien.ts');
   const casesMod: any = await import('../cases/cases.ts');
   const fsMod = await import('node:fs');
   const pathMod = await import('node:path');
@@ -347,16 +347,18 @@ export async function runHocVienLopTests(t: YThucTestKit) {
 
   // ------------------------------------------------------------------ Task 6 · dòng học viên, hồ sơ lớp
 
-  check('PR-Qa · YT-8 nhãn cảnh báo 5 ngày ở dòng học viên — cùng dữ liệu với tab Ý thức của lớp', () => {
+  check('PR-Qa · YT-8 (PR-YT4) nhãn Ý thức ở dòng học viên: 3 vi phạm / 2 tuần → Cần xử lý — cùng số với huy hiệu tab Ý thức', () => {
     const ft = classId('MB FT 101');
     const e = taoHocVien({ cid: ft, ft: true, target: 6.5 });
-    violations.recordViolation(P.coreTeacher, {
-      studentId: e.sid, category: 'homework', description: 'Không làm bài tập về nhà (phép kiểm PR-Qa)', occurredOn: addDays(TODAY, -7),
-    });
+    for (const d of [0, 1, 2]) {
+      violations.recordViolation(P.w1Teacher, {
+        studentId: e.sid, category: 'homework', description: 'Không làm bài tập về nhà (phép kiểm PR-Qa)', occurredOn: addDays(TODAY, -d),
+      });
+    }
     const roster = classes.classRoster(P.coreTeacher, ft);
     const row = roster.find((s: any) => s.id === e.sid);
-    assert(row?.canhBaoYThuc?.count === 1 && row.canhBaoYThuc.oldestAgeDays === 7, `Nhãn: ${JSON.stringify(row?.canhBaoYThuc)}`);
-    eq(roster.filter((s: any) => s.canhBaoYThuc).length, warn.classWarning(P.coreTeacher, ft).activeCount, 'Khớp tab Ý thức');
+    assert(row?.canhBaoYThuc?.nhom === 'bat_buoc' && row.canhBaoYThuc.so === 3, `Nhãn: ${JSON.stringify(row?.canhBaoYThuc)}`);
+    eq(roster.filter((s: any) => s.canhBaoYThuc).length, dongHv.soEmCanXuLyYThuc(P.coreTeacher, ft), 'Khớp tab Ý thức');
   });
 
   check('PR-Qa · Q13 Việc tiếp theo ở dòng học viên: nhập điểm quá hạn (đỏ) lên đầu; lớp thường mang tuần thi từng môn', () => {
@@ -380,7 +382,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     assert(s.viewer.canRecordViolation && !s.viewer.canEditProgress && !s.viewer.canAssign, `GV Speaking: ${JSON.stringify(s.viewer)}`);
     const tong = classes.classRoster(P.admin, ft).filter((x: any) => !x.archived).reduce((n: number, x: any) => n + x.openCases, 0);
     eq(classes.classOverview(P.admin, ft).soCaseMo, tong, 'Số Case đang mở = tổng cột Case');
-    eq(g.canhBaoYThuc, warn.classWarning(P.coreTeacher, ft).activeCount, 'Cảnh báo tab Ý thức');
+    eq(g.canhBaoYThuc, dongHv.soEmCanXuLyYThuc(P.coreTeacher, ft), 'Cảnh báo tab Ý thức');
   });
 
   // ------------------------------------------------------------------ Task 7 · Phân tích lớp
@@ -555,8 +557,10 @@ export async function runHocVienLopTests(t: YThucTestKit) {
 
   check('PR-Qa (17, fix planning) · classOverview: số câu lệnh không tăng theo số Case của lớp', () => {
     const cid = taoLop('MB FT QA17C', 'FT');
+    /* PR-YT4: lớp RỖNG thì cửa trạng thái Ý thức không nạp gì (0 câu) — đo từ lớp đã có 1 em để so đúng "theo số Case". */
+    themNhieuCase(cid, 1);
     const truoc = demTruyVan(() => { classes.classOverview(P.admin, cid); });
-    themNhieuCase(cid, 15); // lớp này giờ có 15 Case đang mở.
+    themNhieuCase(cid, 14); // lớp này giờ có 15 Case đang mở.
     const sau = demTruyVan(() => { classes.classOverview(P.admin, cid); });
     assert(sau <= truoc + 3,
       `Thêm 15 Case khiến classOverview tăng từ ${truoc} lên ${sau} câu lệnh — nghi vấn quét theo từng Case (N+1)`);

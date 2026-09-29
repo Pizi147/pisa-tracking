@@ -943,7 +943,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
 
   const violSvc: any = await import('../yThuc/violations.ts');
   const measSvc: any = await import('../yThuc/measures.ts');
-  const warnSvc: any = await import('../yThuc/canhBao.ts');
+  const trangThaiSvc: any = await import('../yThuc/trangThai.ts');
   const thongKeSvc: any = await import('../yThuc/thongKe.ts');
   const auditRows = (action: string, id?: number) => all('SELECT * FROM audit_logs WHERE action = ?' + (id ? ' AND entity_id = ?' : ''), ...(id ? [action, id] : [action]));
   const recordV = (who: any, sid: number, extra: Record<string, unknown> = {}) => (violSvc.recordViolation(who, {
@@ -1041,26 +1041,24 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(measured.includes(report.id), 'Biện pháp đã thực hiện vẫn được thống kê');
   });
 
-  check('PR-T · V13′ Mọi số liệu tự cập nhật sau khi xoá: cảnh báo 5 ngày đổi theo vi phạm cũ nhất còn lại; xoá hết thì hết cảnh báo; bảng ba khu vực của lớp không còn dòng đó', () => {
+  check('PR-T · V13′ (PR-YT4 Q1) Mọi số liệu tự cập nhật sau khi xoá: 3 vi phạm → Bắt buộc; xoá một → hết bắt buộc (không lưu cột); xoá hết → không nhóm', () => {
     const st = makeStudent('V13q');
-    const old = recordV(gvcn, st.id, { occurredOn: addDays(TODAY, -10), description: 'Vi phạm cũ nhất, sẽ bị xoá đầu tiên' });
-    const newer = recordV(gvcn, st.id, { occurredOn: addDays(TODAY, -7), description: 'Vi phạm mới hơn, xoá sau' });
-    assert((warnSvc.studentWarning(gvcn, st.id) as any).oldestAgeDays === 10, 'Trước khi xoá');
-    violSvc.deleteViolation(gvcn, old);
-    const w = warnSvc.studentWarning(gvcn, st.id) as any;
-    assert(w.oldestAgeDays === 7 && w.count === 1 && w.active, `Cảnh báo phải theo vi phạm còn lại: ${JSON.stringify(w)}`);
-    violSvc.deleteViolation(gvcn, newer);
-    assert((warnSvc.studentWarning(gvcn, st.id) as any).count === 0 && !(warnSvc.studentWarning(gvcn, st.id) as any).active, 'Xoá hết thì hết cảnh báo');
+    const ids = [0, 1, 2].map((i) => recordV(gvcn, st.id, { occurredOn: addDays(TODAY, -i), description: `Vi phạm thứ ${i + 1} trong tuần` }));
+    const nhom = () => (trangThaiSvc.trangThaiYThuc([st.id]).get(st.id) as any).nhom;
+    assert(nhom() === 'bat_buoc', `Trước khi xoá: ${nhom()}`);
+    violSvc.deleteViolation(gvcn, ids[0]);
+    assert(nhom() !== 'bat_buoc' && nhom() !== 'qua_han', `Còn 2 vi phạm thì không bắt buộc: ${nhom()}`);
+    violSvc.deleteViolation(gvcn, ids[1]); violSvc.deleteViolation(gvcn, ids[2]);
+    assert(nhom() === null, 'Xoá hết thì không còn nhóm nào');
   });
 
-  check('PR-T · Trạng thái hiển thị của vi phạm còn BA: Chưa xử lý · Đang chuẩn bị xử lý · Đã xử lý; không còn `Không còn hiệu lực`, không còn cột/trường hiệu lực trong dữ liệu trả ra', () => {
-    assert(JSON.stringify(domain.VIOLATION_STATES) === JSON.stringify(['unhandled', 'preparing', 'handled']), `Trạng thái: ${domain.VIOLATION_STATES}`);
-    assert(JSON.stringify(domain.VIOLATION_STATE_LABEL) === JSON.stringify({ unhandled: 'Chưa xử lý', preparing: 'Đang chuẩn bị xử lý', handled: 'Đã xử lý' }), 'Nhãn ba trạng thái');
-    assert(domain.violationState({ inDone: true, inPreparing: true }) === 'handled' && domain.violationState({ inDone: false, inPreparing: true }) === 'preparing' && domain.violationState({ inDone: false, inPreparing: false }) === 'unhandled', 'Thứ tự ưu tiên');
-    const st = makeStudent('V14s'); const v = recordV(gvcn, st.id);
+  check('PR-T · (PR-YT4 §5.4) Trạng thái hiển thị của vi phạm là SÁU nhãn v4 (Mới · Đã ghi nhận · Cần xử lý · Quá hạn · Chờ QL duyệt · Đã xử lý); không còn `Không còn hiệu lực`, không còn trường hiệu lực trong dữ liệu trả ra', () => {
+    assert(JSON.stringify(domain.TRANG_THAI_VP) === JSON.stringify(['moi', 'da_ghi_nhan', 'can_xu_ly', 'qua_han', 'cho_duyet', 'da_xu_ly']), `Trạng thái: ${domain.TRANG_THAI_VP}`);
+    assert(Object.values(domain.TRANG_THAI_VP_LABEL).join() === 'Mới,Đã ghi nhận,Cần xử lý,Quá hạn,Chờ QL duyệt,Đã xử lý', 'Nhãn sáu trạng thái');
+    const st = makeStudent('V14s'); const v = recordV(P.w1Teacher, st.id);
     const view = (violSvc.listViolations(gvcn, { studentId: st.id }) as any).rows[0];
-    for (const k of ['valid', 'invalidReason', 'invalidatedBy', 'invalidatedByName', 'invalidatedAt']) assert(!(k in view), `Vi phạm còn trường "${k}" của mô hình cũ`);
-    assert(view.id === v && view.state === 'unhandled', 'Trạng thái suy ra');
+    for (const k of ['valid', 'invalidReason', 'invalidatedBy', 'invalidatedByName', 'invalidatedAt', 'state']) assert(!(k in view), `Vi phạm còn trường "${k}" của mô hình cũ`);
+    assert(view.id === v && view.trangThai === 'moi' && view.nhanTrangThai === 'Mới', `Trạng thái suy ra: ${view.trangThai}`);
     assert(!(violSvc as any).invalidateViolation, 'Không còn hàm hủy');
   });
 

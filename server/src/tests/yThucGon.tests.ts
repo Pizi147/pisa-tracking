@@ -267,8 +267,9 @@ export async function runYThucGonTests(t: YThucTestKit) {
     const ids = rows.map((r) => r.id);
     assert(ids.includes(vUnhandled) && ids.includes(vPrep) && ids.includes(vDone), `phải đủ ba vi phạm: ${JSON.stringify(ids)}`);
     assert(!ids.includes(vLeft), 'học viên đã rời lớp không được xuất hiện');
-    const states = new Set(rows.filter((r) => [vUnhandled, vPrep, vDone].includes(r.id)).map((r) => r.state));
-    assert(states.has('unhandled') && states.has('preparing') && states.has('handled'), `phải đủ ba trạng thái: ${[...states].join(',')}`);
+    /* PR-YT4: nhãn v4 từ cửa trạng thái — lần xử lý đã xong → Đã xử lý; còn lại chưa đóng. */
+    const tt = new Map(rows.map((r) => [r.id, r.trangThai]));
+    assert(tt.get(vDone) === 'da_xu_ly' && tt.get(vUnhandled) !== 'da_xu_ly' && rows.every((r) => !!r.nhanTrangThai), `nhãn: ${JSON.stringify([...tt])}`);
 
     const fromNew = await call(gvcn, 'GET', `/classes/${CLASS}/violations?from=${addDays(TODAY, -5)}`);
     const idsFrom = ((fromNew.json?.rows as any[]) ?? []).map((r) => r.id);

@@ -86,7 +86,6 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Công việc', vai: MOI_VAI, url: '/yeu-cau/dem' },
   { trang: 'Tổng quan GV', vai: ['QL', 'QT', 'GVCN', 'GVBM', 'GVCN_THUONG'], url: '/tong-quan/hoc-vien-can-ho-tro' },
   { trang: 'Tổng quan GV', vai: ['GVCN', 'GVBM', 'GVCN_THUONG'], url: '/highlights' },
-  { trang: 'Tổng quan GV', vai: ['GVCN'], url: '/y-thuc/my-warnings' },
   { trang: 'Tổng quan GV', vai: ['GVCN'], url: '/y-thuc/my-coordination' },
 
   // ---------------------------------------------------------------- Học viên & Lớp
@@ -133,7 +132,6 @@ export const DUONG_DO: MucDo[] = [
    */
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}' },
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/skill-board' },
-  { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/violation-warning' },
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/cases/{case}' },
   /* PR-Qb (sửa sau rà #75, vấn đề 5) — tab Hành trình, cả giai đoạn mặc định lẫn ?giai-doan=thuong. */
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/hanh-trinh' },
@@ -297,7 +295,6 @@ export const TRAN: Record<string, number> = {
   'GVCN /highlights': 28,
   'GVBM /highlights': 28,
   'GVCN_THUONG /highlights': 28,
-  'GVCN /y-thuc/my-warnings': 30,
   'GVCN /y-thuc/my-coordination': 51,
   'QL /classes': 35,
   'GVCN /classes': 36,
@@ -396,10 +393,6 @@ export const TRAN: Record<string, number> = {
   'QT /students/1/skill-board': 54,
   'GVCN /students/1/skill-board': 56,
   'GVBM /students/1/skill-board': 56,
-  'QL /students/1/violation-warning': 26,
-  'QT /students/1/violation-warning': 24,
-  'GVCN /students/1/violation-warning': 26,
-  'GVBM /students/1/violation-warning': 26,
   'QL /cases/1': 42,
   'QT /cases/1': 40,
   'GVCN /cases/1': 42,

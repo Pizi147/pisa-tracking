@@ -21,8 +21,8 @@ export function Card({ title, action, children, className = '', bodyClass = 'p-4
 }
 
 type Tone = 'ok' | 'warn' | 'danger' | 'info' | 'neutral' | 'muted';
-/** `<Level>` còn nhận màu KẾT QUẢ Test (N-1b): Đạt xanh lá · SOS 1 vàng · SOS 2 cam · SOS 3 đỏ. */
-export type LevelTone = Tone | 'sos1' | 'sos2' | 'sos3';
+/** `<Level>` còn nhận màu KẾT QUẢ Test (N-1b): Đạt xanh lá · SOS 1 vàng · SOS 2 cam · SOS 3 đỏ. `late`: quá hạn (cam, PR-YT4 K1-17). */
+export type LevelTone = Tone | 'sos1' | 'sos2' | 'sos3' | 'late';
 
 /**
  * MÀU ĐIỂM — MỘT BẢNG DUY NHẤT (HE_GIAO_DIEN §2, chốt 17/09; màu đọc từ token N-1 ở `index.css`).
@@ -96,6 +96,7 @@ const LEVEL_CLASS: Record<LevelTone, string> = {
   sos1: 'bg-sos1-bg text-sos1',
   sos2: 'bg-sos2-bg text-sos2',
   sos3: 'bg-sos3-bg text-sos3',
+  late: 'bg-late-bg text-late',
 };
 
 /**

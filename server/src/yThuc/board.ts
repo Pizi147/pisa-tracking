@@ -1,97 +1,148 @@
 import { db } from '../db.ts';
-import { CANH_BAO_NGAY, PERMISSIONS } from '../../../shared/domain/index.ts';
+import {
+  MEASURE_KIND_LABEL, NHOM_EM, PERMISSIONS, THANG, XU_LY_STATUS_LABEL, nhanLoaiXuLy,
+  type NhomEm, type TrangThaiVp,
+} from '../../../shared/domain/index.ts';
 import { can, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notFound } from '../util.ts';
 import { requireViewClass } from './access.ts';
-import { warningsFor } from './canhBao.ts';
-import { listMeasures, type MeasureDetail } from './measures.ts';
-import { violationsByIds, type ViolationView } from './violations.ts';
+import { emCuaLop, trangThaiYThuc, type EmYThuc } from './trangThai.ts';
+import { violationsOfStudents } from './violations.ts';
 
 /**
- * DỮ LIỆU BA KHU VỰC Ý THỨC CỦA MỘT LỚP (đặc tả §7.3, Y03) — viết lại từ bảng "số đợt case từng nhóm" của mô hình cũ.
+ * TAB Ý THỨC CỦA LỚP — HAI KHUNG (mockup M6, K2-38, PR-YT4).
  *
- *   1. VI PHẠM CHƯA XỬ LÝ — gom theo HỌC VIÊN, không theo ngày: đơn vị ra quyết định là *em nào*. Mỗi vi phạm kèm tuổi `9 ngày` (W06).
- *   2. BIỆN PHÁP ĐANG CHUẨN BỊ — luôn đầy đủ, không cắt: đó là việc đang dở của GVCN, giấu nó là cách chắc chắn nhất để nó bị quên.
- *   3. LỊCH SỬ XỬ LÝ — chỉ vài dòng gần nhất; lịch sử cần CÓ, không cần chiếm màn.
+ *   Khung trái "Xử lý": em ĐANG HỌC ở lớp, mỗi em đúng MỘT nhóm (`nhomEm`): Quá hạn › Bắt buộc xử lý › Chờ QL duyệt › Mới, chưa ghi nhận
+ *   › Đã xử lý (7 ngày). Nhóm rỗng thì giao diện không vẽ.
+ *   Khung phải "Vi phạm": dòng thời gian cả lớp (vi phạm + lần xử lý, mới nhất trước, có tên em). Chọn em → giao diện gọi
+ *   `/students/:id/y-thuc` (thang + vi phạm của riêng em).
  *
- * Mọi thứ tính từ dữ liệu thật qua các hàm gốc (`warningsFor`, `listMeasures`, `violationsByIds`) — không có đường đếm riêng, nên bảng
- * này khớp cảnh báo 5 ngày và các chỉ số Ý thức. Bảng tính theo HỌC VIÊN ĐANG HỌC ở lớp: vi phạm chưa xử lý và biện pháp đang chuẩn bị ghi ở lớp cũ đi theo em sang lớp mới (chủ sản phẩm chốt 21/09/2026).
+ * Mọi nhãn, hạn, nhóm đọc từ `trangThaiYThuc()` — không đếm riêng. Vấn đề Ý thức đi theo em sang lớp mới (chủ sản phẩm 21/09).
  */
 
-export type ClassViolationBoard = {
-  classId: number;
-  classCode: string;
-  /** Người xem có tạo và xác nhận được biện pháp không — GVBM đọc được ba khu vực nhưng KHÔNG thấy nút Tạo biện pháp. */
-  canManage: boolean;
-  /** Người xem có ghi vi phạm được ở lớp này không (K2-5b) — cùng quyền `violation.record` mà route ghi vi phạm dùng. */
-  canRecord: boolean;
-  /** Đầu tab: `3 học viên có vi phạm chưa xử lý quá 5 ngày`. */
-  warning: { activeCount: number; message: string };
-  unhandled: {
-    /** Tổng số vi phạm chưa xử lý của cả lớp (đơn vị: vi phạm). */
-    total: number;
-    /** Số học viên có vi phạm chưa xử lý (đơn vị: học viên) — KHÔNG cộng với `total`. */
-    studentCount: number;
-    students: Array<{
-      studentId: number; studentName: string; count: number; oldestAgeDays: number; warningActive: boolean;
-      violations: ViolationView[];
-    }>;
-  };
-  preparing: MeasureDetail[];
-  history: { total: number; latest: MeasureDetail[] };
-  /**
-   * §7.1 "Gần đây": tối đa 3 biện pháp mới nhất CỦA TỪNG HỌC VIÊN (không phải của cả lớp như `history.latest`) — dựng từ
-   * `done` đã tải, không thêm truy vấn. YT-14: chỉ ba trường cần cho một dòng chữ, không phải cả `MeasureDetail`.
-   */
-  recentByStudent: Record<number, Array<{ id: number; kindLabel: string; performedOn: string | null }>>;
+export type DongEm = {
+  studentId: number; ten: string; maHv: string;
+  bac: number; bacNhan: string | null;
+  keTiep: { kind: string; nhan: string; canQl: boolean } | null;
+  /** Vi phạm chưa nằm trong lần xử lý nào (Mới · Đã ghi nhận · Cần xử lý · Quá hạn). */
+  soMo: number; soBatBuoc: number; soMoi: number;
+  han: string | null; hanXem: string | null; quaHanNgay: number | null;
+  /** Nhóm Mới: số ngày từ ngày ghi vi phạm Mới cũ nhất (đổi tone khi ≥ 4 ngày). */
+  moiTuoi: number | null;
+  deXuat: { nhan: string; status: 'cho_duyet' | 'da_duyet'; han: string | null } | null;
+  xuLyGanNhat: { nhan: string; ngay: string } | null;
 };
 
-const HISTORY_LATEST = 3;
+export type DongThoiGianYt =
+  | { loai: 'vi-pham'; id: number; studentId: number; ten: string; ngay: string; nhom: string; category: string; mon: string | null;
+      moTa: string; trangThai: TrangThaiVp; nhanTrangThai: string; han: string | null; nguoiGhi: string | null }
+  | { loai: 'xu-ly'; id: number; studentId: number; ten: string; ngay: string; nhan: string; kind: string; status: string;
+      statusLabel: string; soViPham: number; nguoi: string | null; soTep: number };
 
-export function classViolationBoard(p: Principal, classId: number, today = demoToday()): ClassViolationBoard {
+export type BangYThucLop = {
+  classId: number; classCode: string; homNay: string;
+  canManage: boolean; canRecord: boolean;
+  nhom: Record<NhomEm, DongEm[]>;
+  dongThoiGian: DongThoiGianYt[];
+};
+
+const DONG_THOI_GIAN_TOI_DA = 150;
+const ngayCach = (tu: string, den: string) => Math.round((Date.parse(`${den}T00:00:00Z`) - Date.parse(`${tu.slice(0, 10)}T00:00:00Z`)) / 86_400_000);
+
+export function dongEm(em: EmYThuc, ten: string, maHv: string, homNay: string): DongEm {
+  const viPham = [...em.viPham.entries()];
+  const moiNgay = em.dsViPham.filter((v) => { const t = em.viPham.get(v.id); return t?.t === 'moi' || t?.lyDoQuaHan === 'xem'; })
+    .map((v) => v.reportedOn).sort()[0] ?? null;
+  const xong = em.xuLy.filter((m) => m.status === 'done' && m.performedOn).sort((a, b) => (b.performedOn ?? '').localeCompare(a.performedOn ?? ''))[0];
+  const bacKind = em.bac > 0 ? THANG[em.bac - 1] : null;
+  return {
+    studentId: em.studentId, ten, maHv, bac: em.bac, bacNhan: bacKind ? MEASURE_KIND_LABEL[bacKind] : null,
+    keTiep: em.keTiep ? { kind: em.keTiep.kind, nhan: MEASURE_KIND_LABEL[em.keTiep.kind], canQl: em.keTiep.canQl } : null,
+    soMo: viPham.filter(([, t]) => t.t === 'moi' || t.t === 'da_ghi_nhan' || t.t === 'can_xu_ly' || t.t === 'qua_han').length,
+    soBatBuoc: em.soBatBuoc, soMoi: em.soMoi, han: em.han, hanXem: em.hanXem,
+    quaHanNgay: Math.max(0, ...viPham.map(([, t]) => t.quaHanNgay ?? 0)) || null,
+    moiTuoi: moiNgay ? ngayCach(moiNgay, homNay) : null,
+    deXuat: em.deXuat ? { nhan: nhanLoaiXuLy(em.deXuat.kind, em.deXuat.customName), status: em.deXuat.status, han: em.deXuat.han } : null,
+    xuLyGanNhat: xong ? { nhan: nhanLoaiXuLy(xong.kind, xong.customName), ngay: xong.performedOn! } : null,
+  };
+}
+
+/**
+ * Dòng thời gian trộn (vi phạm + lần xử lý, mới nhất trước) của các em — dùng chung tab lớp (cả lớp) và tab HV (một em).
+ * `chiTrongChuoi`: chỉ vi phạm / lần xử lý thuộc chuỗi thang hiện tại của em (phạm vi mặc định của tab HV).
+ */
+export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThuc>, o: { gioiHan?: number; chiTrongChuoi?: boolean } = {}): DongThoiGianYt[] {
+  if (!emIds.length) return [];
+  const conn = db();
+  const ten = new Map<number, string>();
+  for (let i = 0; i < emIds.length; i += 400) {
+    const lo = emIds.slice(i, i + 400);
+    for (const r of conn.prepare(`SELECT id, full_name FROM students WHERE id IN (${lo.map(() => '?').join(',')})`).all(...lo) as any[]) ten.set(r.id, r.full_name);
+  }
+  const trongChuoi = (sid: number, cycleId: number | null) => {
+    if (!o.chiTrongChuoi) return true;
+    const em = trang.get(sid);
+    return !em || !em.chuoi.length || (cycleId != null && em.chuoi.includes(cycleId));
+  };
+  const out: DongThoiGianYt[] = [];
+  for (const v of violationsOfStudents(emIds)) {
+    if (!trongChuoi(v.studentId, v.cycleId)) continue;
+    out.push({
+      loai: 'vi-pham', id: v.id, studentId: v.studentId, ten: v.studentName, ngay: v.occurredOn, nhom: v.categoryLabel, category: v.category,
+      mon: v.skillLabel, moTa: v.description, trangThai: v.trangThai, nhanTrangThai: v.nhanTrangThai, han: v.han, nguoiGhi: v.reportedByName,
+    });
+  }
+  const xuLy = emIds.flatMap((sid) => (trang.get(sid)?.xuLy ?? []).filter((m) => trongChuoi(sid, m.cycleId)).map((m) => ({ sid, m })));
+  const phu = new Map<number, { nguoi: string | null; soTep: number }>();
+  const mIds = xuLy.map((x) => x.m.id);
+  for (let i = 0; i < mIds.length; i += 400) {
+    const lo = mIds.slice(i, i + 400);
+    for (const r of conn.prepare(
+      `SELECT m.id, COALESCE(m.performer_name, pu.full_name) AS nguoi,
+              (SELECT COUNT(*) FROM attachments a WHERE a.owner_type = 'discipline_measure' AND a.owner_id = m.id) AS so_tep
+         FROM discipline_measures m LEFT JOIN users pu ON pu.id = m.performed_by WHERE m.id IN (${lo.map(() => '?').join(',')})`,
+    ).all(...lo) as any[]) phu.set(r.id, { nguoi: r.nguoi ?? null, soTep: r.so_tep });
+  }
+  for (const { sid, m } of xuLy) {
+    out.push({
+      loai: 'xu-ly', id: m.id, studentId: sid, ten: ten.get(sid) ?? '', ngay: (m.performedOn ?? m.quyetLuc ?? m.createdAt).slice(0, 10),
+      nhan: nhanLoaiXuLy(m.kind, m.customName), kind: m.kind, status: m.status,
+      statusLabel: (XU_LY_STATUS_LABEL as Record<string, string>)[m.status] ?? m.status,
+      soViPham: m.violationIds.length, nguoi: phu.get(m.id)?.nguoi ?? null, soTep: phu.get(m.id)?.soTep ?? 0,
+    });
+  }
+  out.sort((a, b) => b.ngay.localeCompare(a.ngay) || (a.loai === b.loai ? b.id - a.id : a.loai === 'xu-ly' ? -1 : 1));
+  return o.gioiHan ? out.slice(0, o.gioiHan) : out;
+}
+
+export function bangYThucLop(p: Principal, classId: number, homNay = demoToday()): BangYThucLop {
   const cls = db().prepare('SELECT id, code FROM classes WHERE id = ?').get(classId) as any;
   if (!cls) throw notFound('Không tìm thấy lớp');
   requireViewClass(p, classId);
-
-  const active = (db()
-    .prepare(`SELECT DISTINCT student_id AS id FROM enrollments WHERE class_id = ? AND status = 'active' ORDER BY student_id`)
-    .all(classId) as any[]).map((r) => r.id as number);
-  const warnings = warningsFor(active, today);
-  const violations = new Map(violationsByIds([...warnings.values()].flatMap((w) => w.violationIds)).map((v) => [v.id, v]));
-
-  const students = [...warnings.values()]
-    .filter((w) => w.count > 0)
-    .map((w) => ({
-      studentId: w.studentId, studentName: w.studentName, count: w.count, oldestAgeDays: w.oldestAgeDays, warningActive: w.active,
-      violations: w.violationIds.map((id) => violations.get(id)!).filter(Boolean),
-    }))
-    .sort((a, b) => b.oldestAgeDays - a.oldestAgeDays || a.studentName.localeCompare(b.studentName));
-
-  const activeWarnings = students.filter((s) => s.warningActive).length;
-  const preparing = listMeasures(p, { classId, status: 'preparing' }).rows;
-  const done = listMeasures(p, { classId, status: 'done' }).rows;
-
-  /* `done` đã sắp mới nhất trước (ORDER BY performed_on DESC trong listMeasures) — nên với mỗi học viên,
-     3 phần tử đầu tiên gặp trong vòng lặp chính là 3 biện pháp mới nhất của riêng em đó. */
-  const recentByStudent: Record<number, Array<{ id: number; kindLabel: string; performedOn: string | null }>> = {};
-  for (const m of done) {
-    const arr = recentByStudent[m.studentId] ?? (recentByStudent[m.studentId] = []);
-    if (arr.length < HISTORY_LATEST) arr.push({ id: m.id, kindLabel: m.kindLabel, performedOn: m.performedOn });
+  const ids = emCuaLop(classId);
+  const trang = trangThaiYThuc(ids, homNay);
+  const info = new Map<number, { ten: string; ma: string }>();
+  for (let i = 0; i < ids.length; i += 400) {
+    const lo = ids.slice(i, i + 400);
+    for (const r of db().prepare(`SELECT id, full_name, student_code FROM students WHERE id IN (${lo.map(() => '?').join(',')})`).all(...lo) as any[]) {
+      info.set(r.id, { ten: r.full_name, ma: r.student_code });
+    }
   }
-
+  const nhom = Object.fromEntries(NHOM_EM.map((k) => [k, [] as DongEm[]])) as Record<NhomEm, DongEm[]>;
+  for (const id of ids) {
+    const em = trang.get(id)!;
+    if (!em.nhom) continue;
+    nhom[em.nhom].push(dongEm(em, info.get(id)?.ten ?? '', info.get(id)?.ma ?? '', homNay));
+  }
+  const theoHan = (a: DongEm, b: DongEm) => (a.han ?? a.hanXem ?? a.deXuat?.han ?? '9').localeCompare(b.han ?? b.hanXem ?? b.deXuat?.han ?? '9')
+    || a.ten.localeCompare(b.ten, 'vi');
+  for (const k of NHOM_EM) nhom[k].sort(k === 'da_xu_ly' ? (a, b) => (b.xuLyGanNhat?.ngay ?? '').localeCompare(a.xuLyGanNhat?.ngay ?? '') : theoHan);
   return {
-    classId, classCode: cls.code, canManage: can(p, PERMISSIONS.DISCIPLINE_MANAGE, { classId }),
+    classId, classCode: cls.code, homNay,
+    canManage: can(p, PERMISSIONS.DISCIPLINE_MANAGE, { classId }),
     canRecord: can(p, PERMISSIONS.VIOLATION_RECORD, { classId }),
-    warning: {
-      activeCount: activeWarnings,
-      message: activeWarnings > 0 ? `${activeWarnings} học viên có vi phạm chưa xử lý quá ${CANH_BAO_NGAY} ngày` : '',
-    },
-    unhandled: {
-      total: students.reduce((n, s) => n + s.count, 0), studentCount: students.length, students,
-    },
-    preparing,
-    history: { total: done.length, latest: done.slice(0, HISTORY_LATEST) },
-    recentByStudent,
+    nhom,
+    dongThoiGian: dongThoiGian(ids, trang, { gioiHan: DONG_THOI_GIAN_TOI_DA }),
   };
 }

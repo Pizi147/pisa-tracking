@@ -1,10 +1,10 @@
 import { db, tx } from '../db.ts';
 import {
   VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, VIOLATION_DESCRIPTION_MIN, ghepKhac, kiemGhiRoKhac,
-  VIOLATION_SKILLS, VIOLATION_STATE_LABEL, MEASURE_KIND_LABEL_V3, MEASURE_STATUS_LABEL,
-  violationAgeDays, violationAgeLabel, violationState, tenMon,
-  type ViolationCategory, type ViolationState, type MeasureKindV3,
+  VIOLATION_SKILLS, MEASURE_KIND_LABEL_V3, XU_LY_STATUS_LABEL, nhanLoaiXuLy, tenMon,
+  type ViolationCategory, type MeasureKindV3, type TrangThaiVp,
 } from '../../../shared/domain/index.ts';
+import { trangThaiYThuc, type EmYThuc } from './trangThai.ts';
 import type { Principal } from '../permissions.ts';
 import { badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -21,8 +21,8 @@ import {
  * Vi phạm KHÔNG phải case: không đợt, không hạn, không mức độ, không người phụ trách. Ghi một vi phạm không sinh
  * biện pháp, case, tín hiệu, việc hay thông báo (V08) — nó chỉ xuất hiện trong hồ sơ học viên để GVCN theo dõi.
  *
- * TRẠNG THÁI XỬ LÝ KHÔNG ĐƯỢC LƯU Ở ĐÂY. Ba trạng thái người dùng thấy (`Chưa xử lý` · `Đang chuẩn bị xử lý` · `Đã xử lý`) là SUY RA từ bảng nối
- * `measure_violations`. Lưu ở hai nơi là lệch ở hai nơi.
+ * TRẠNG THÁI KHÔNG ĐƯỢC LƯU Ở ĐÂY (PR-YT4): sáu nhãn §5.4 (`Mới · Đã ghi nhận · Cần xử lý · Quá hạn · Chờ QL duyệt · Đã xử lý`) đọc qua
+ * MỘT cửa `trangThaiYThuc()` (trangThai.ts). Cột `ghi_nhan_luc` chỉ ghi việc GVCN đã xem; nhãn vẫn do luật quyết.
  *
  * GHI SAI THÌ SỬA HOẶC XOÁ THẲNG (rulebook v3, V11′–V14′ — thay "đánh dấu không chính xác" của PR-J): không còn trạng thái `Không còn hiệu lực`.
  * Các cột `valid`/`invalid_*` của bảng `violations` NGỪNG DÙNG (giữ trong schema để `migrate` an toàn; mọi dòng cũ `valid = 0` đã được xoá khi nâng cấp).
@@ -37,29 +37,26 @@ export type ViolationView = {
   occurredOn: string; reportedOn: string;
   reportedBy: number; reportedByName: string | null;
   description: string;
-  state: ViolationState; stateLabel: string;
-  /** Số ngày từ ngày xảy ra tới hôm nay — chỉ có nghĩa với vi phạm chưa xử lý (W06). */
-  ageDays: number;
-  /** `9 ngày` khi vi phạm CHƯA XỬ LÝ đã quá 5 ngày, ngược lại rỗng (W06). */
-  ageLabel: string;
+  /** Nhãn §5.4 — từ `trangThaiYThuc()`, không tính riêng. */
+  trangThai: TrangThaiVp; nhanTrangThai: string;
+  /** Hạn (Mới: ghi nhận/xử lý; bắt buộc: xử lý) và số ngày quá hạn — null khi không có. */
+  han: string | null; quaHanNgay: number | null;
+  ghiNhanLuc: string | null; ghiNhanBoiName: string | null;
   createdAt: string; updatedAt: string | null;
 };
 
 const SELECT = `
   SELECT v.*, s.full_name AS student_name, s.student_code, c.code AS class_code, c.programme_code AS class_ct,
-         ru.full_name AS reported_by_name,
-         EXISTS (SELECT 1 FROM measure_violations mv JOIN discipline_measures m ON m.id = mv.measure_id
-                  WHERE mv.violation_id = v.id AND m.status = 'done') AS in_done,
-         EXISTS (SELECT 1 FROM measure_violations mv JOIN discipline_measures m ON m.id = mv.measure_id
-                  WHERE mv.violation_id = v.id AND m.status = 'preparing') AS in_preparing
+         ru.full_name AS reported_by_name, gu.full_name AS ghi_nhan_boi_name
     FROM violations v
     JOIN students s ON s.id = v.student_id
     LEFT JOIN classes c ON c.id = v.class_id
-    LEFT JOIN users ru ON ru.id = v.reported_by`;
+    LEFT JOIN users ru ON ru.id = v.reported_by
+    LEFT JOIN users gu ON gu.id = v.ghi_nhan_boi`;
 
-export function shapeViolation(r: any, today = demoToday()): ViolationView {
-  const state = violationState({ inDone: !!r.in_done, inPreparing: !!r.in_preparing });
-  const ageDays = violationAgeDays(r.occurred_on, today);
+/** `em`: trạng thái Ý thức của học viên đó (nơi gọi theo lô truyền vào); thiếu thì tự hỏi cửa trạng thái cho riêng em. */
+export function shapeViolation(r: any, em?: EmYThuc): ViolationView {
+  const tt = (em ?? trangThaiYThuc([r.student_id]).get(r.student_id)!).viPham.get(r.id);
   return {
     id: r.id,
     studentId: r.student_id, studentName: r.student_name, studentCode: r.student_code,
@@ -70,8 +67,8 @@ export function shapeViolation(r: any, today = demoToday()): ViolationView {
     occurredOn: r.occurred_on, reportedOn: r.reported_on,
     reportedBy: r.reported_by, reportedByName: r.reported_by_name ?? null,
     description: r.description,
-    state, stateLabel: VIOLATION_STATE_LABEL[state],
-    ageDays, ageLabel: state === 'unhandled' ? violationAgeLabel(ageDays) : '',
+    trangThai: tt?.t ?? 'moi', nhanTrangThai: tt?.nhan ?? 'Mới', han: tt?.han ?? null, quaHanNgay: tt?.quaHanNgay ?? null,
+    ghiNhanLuc: r.ghi_nhan_luc ?? null, ghiNhanBoiName: r.ghi_nhan_boi_name ?? null,
     createdAt: r.created_at, updatedAt: r.updated_at ?? null,
   };
 }
@@ -88,15 +85,28 @@ export function loadViolation(id: number): ViolationView {
 
 /** Nhiều vi phạm theo mã, cũ trước mới sau. Mã không tồn tại thì bị bỏ qua — nơi gọi so độ dài để biết. */
 export function violationsByIds(ids: number[]): ViolationView[] {
-  const out: ViolationView[] = [];
-  const today = demoToday();
+  const rows: any[] = [];
   for (let i = 0; i < ids.length; i += 400) {
     const chunk = ids.slice(i, i + 400);
-    out.push(...(db()
-      .prepare(`${SELECT} WHERE v.id IN (${chunk.map(() => '?').join(',')})`)
-      .all(...chunk) as any[]).map((r) => shapeViolation(r, today)));
+    rows.push(...(db().prepare(`${SELECT} WHERE v.id IN (${chunk.map(() => '?').join(',')})`).all(...chunk) as any[]));
   }
-  return out.sort((a, b) => a.occurredOn.localeCompare(b.occurredOn) || a.id - b.id);
+  return shapeMany(rows).sort((a, b) => a.occurredOn.localeCompare(b.occurredOn) || a.id - b.id);
+}
+
+/** Mọi vi phạm của các em (mới nhất trước) — dòng thời gian tab Ý thức lớp / HV. Một câu mỗi lô 400 em + một lần hỏi cửa trạng thái. */
+export function violationsOfStudents(studentIds: readonly number[]): ViolationView[] {
+  const rows: any[] = [];
+  for (let i = 0; i < studentIds.length; i += 400) {
+    const chunk = studentIds.slice(i, i + 400);
+    rows.push(...(db().prepare(`${SELECT} WHERE v.student_id IN (${chunk.map(() => '?').join(',')})`).all(...chunk) as any[]));
+  }
+  return shapeMany(rows).sort((a, b) => b.occurredOn.localeCompare(a.occurredOn) || b.id - a.id);
+}
+
+/** Dựng nhiều dòng: MỘT lần hỏi cửa trạng thái cho mọi em trong lô. */
+export function shapeMany(rows: any[]): ViolationView[] {
+  const em = trangThaiYThuc(rows.map((r) => r.student_id as number));
+  return rows.map((r) => shapeViolation(r, em.get(r.student_id)));
 }
 
 function loadStudent(studentId: number): any {
@@ -374,7 +384,7 @@ export type ViolationFilter = {
   classId?: number | null;
   /** YT-6 "Theo thời gian" — HV ĐANG HỌC ở lớp này, MỌI trạng thái (không phải "ghi ở lớp lúc đó" như `classId`). */
   activeInClassId?: number | null;
-  state?: ViolationState | null;
+  trangThai?: TrangThaiVp | null;
   category?: string | null;
   from?: string | null;
   to?: string | null;
@@ -403,11 +413,10 @@ export function listViolations(p: Principal, f: ViolationFilter): { rows: Violat
   if (f.category) { where.push('v.category = ?'); args.push(f.category); }
   if (f.from) { where.push('v.occurred_on >= ?'); args.push(f.from); }
   if (f.to) { where.push('v.occurred_on <= ?'); args.push(f.to); }
-  const today = demoToday();
-  const rows = (db()
+  const rows = shapeMany(db()
     .prepare(`${SELECT} WHERE ${where.join(' AND ')} ORDER BY v.occurred_on DESC, v.id DESC`)
-    .all(...args) as any[]).map((r) => shapeViolation(r, today));
-  return { rows: f.state ? rows.filter((r) => r.state === f.state) : rows };
+    .all(...args) as any[]);
+  return { rows: f.trangThai ? rows.filter((r) => r.trangThai === f.trangThai) : rows };
 }
 
 export type ViolationDetail = ViolationView & {
@@ -435,9 +444,8 @@ export function violationDetail(p: Principal, id: number): ViolationDetail {
         WHERE mv.violation_id = ? ORDER BY COALESCE(m.performed_on, m.created_at), m.id`,
     )
     .all(id) as any[]).map((m) => ({
-      id: m.id, kind: m.kind,
-      kindLabel: m.kind === 'other' && m.custom_name ? m.custom_name : MEASURE_KIND_LABEL_V3[m.kind as keyof typeof MEASURE_KIND_LABEL_V3] ?? m.kind,
-      status: m.status, statusLabel: MEASURE_STATUS_LABEL[m.status as keyof typeof MEASURE_STATUS_LABEL] ?? m.status,
+      id: m.id, kind: m.kind, kindLabel: nhanLoaiXuLy(m.kind, m.custom_name),
+      status: m.status, statusLabel: (XU_LY_STATUS_LABEL as Record<string, string>)[m.status] ?? m.status,
       performedOn: m.performed_on ?? null, createdAt: m.created_at,
     }));
   const history = (db()

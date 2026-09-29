@@ -1,13 +1,13 @@
 import { db } from '../db.ts';
 import {
-  ASSESSED_SKILLS, ATTEMPT_KIND_SHORT, CAN_XU_LY, PERMISSIONS, type AttemptKind, SOS_LABEL, caseTopicLabel, tenMon, chonDiemDangChuY, sapCanXuLy,
+  ASSESSED_SKILLS, ATTEMPT_KIND_SHORT, shortDate, CAN_XU_LY, PERMISSIONS, type AttemptKind, SOS_LABEL, caseTopicLabel, tenMon, chonDiemDangChuY, sapCanXuLy,
   type ChuongTrinh, type DiemChuY, type DongCanXuLyGoc, type MaCanXuLy, type UngVienChuY,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, forbidden } from '../util.ts';
 import { can, scopeFor, type Principal } from '../permissions.ts';
 import { listCases } from '../cases/cases.ts';
-import { warningsFor } from '../yThuc/canhBao.ts';
+import { nhanNhomEm, trangThaiYThuc } from '../yThuc/trangThai.ts';
 import { latestAttempts, studentsInScope } from './danhGia.ts';
 import { metricSet } from './metrics.ts';
 import { tachTheoLop } from './chuongTrinh.ts';
@@ -58,7 +58,7 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null; ct: 
 
 export type DongHvCanHoTro = {
   studentId: number; ten: string; lop: string | null;
-  huyHieu: { text: string; tone: 'info' | 'warn' | 'danger' } | null;
+  huyHieu: { text: string; tone: 'info' | 'warn' | 'danger' | 'late' } | null;
   phu: string;
 };
 
@@ -94,7 +94,7 @@ export function hocVienCanHoTro(p: Principal): { rows: DongHvCanHoTro[]; tong: n
       if (sid) paQuaHan.set(sid, (paQuaHan.get(sid) ?? 0) + 1);
     }
   }
-  const canhBao = warningsFor(sids, today);
+  const yThuc = trangThaiYThuc(sids, today);
 
   const info = new Map<number, { ten: string; lop: string | null }>();
   for (let i = 0; i < sids.length; i += 400) {
@@ -112,8 +112,8 @@ export function hocVienCanHoTro(p: Principal): { rows: DongHvCanHoTro[]; tong: n
     const ev = latest.get(sid);
     const sos = ev?.sosLevel ?? 0;
     const cs = caseCua.get(sid);
-    const cb = canhBao.get(sid);
-    const coCanhBao = !!cb?.active;
+    const cb = nhanNhomEm(yThuc.get(sid));
+    const coCanhBao = !!cb;
     if (sos <= 0 && !cs && !coCanhBao) continue;
     /* MH7: Pre FOU không chia môn — nhãn là bài + % tổng ("Cuối khoá 55%"), không "SOS 1". */
     const phanTram = ev?.khongChiaMon && ev.tyLeTong != null
@@ -121,11 +121,11 @@ export function hocVienCanHoTro(p: Principal): { rows: DongHvCanHoTro[]; tong: n
     const huyHieu = sos > 0 && phanTram ? { text: phanTram, tone: 'warn' as const }
       : sos > 0
       ? { text: `${SOS_LABEL[sos as 1 | 2 | 3]}${ev?.provisional ? ' · tạm thời' : ''}`, tone: (sos >= 3 ? 'danger' : sos === 2 ? 'warn' : 'info') as 'info' | 'warn' | 'danger' }
-      : coCanhBao ? { text: 'Ý thức', tone: 'info' as const } : null;
+      : cb ? { text: cb.nhom === 'qua_han' ? 'Ý thức · Quá hạn' : 'Ý thức · Cần xử lý', tone: cb.nhom === 'qua_han' ? 'late' as const : 'warn' as const } : null;
     const k = paQuaHan.get(sid) ?? 0;
     const phu = cs
       ? [`${cs.n} Case`, k ? `${k} PA quá hạn` : [...cs.mon].join(', ')].filter(Boolean).join(' · ')
-      : coCanhBao ? `${cb!.count} vi phạm chưa xử lý` : '';
+      : cb ? `${cb.so} vi phạm chưa xử lý${cb.han ? ` · hạn ${shortDate(cb.han, today)}` : ''}` : '';
     rows.push({ studentId: sid, ten: info.get(sid)?.ten ?? 'Học viên', lop: info.get(sid)?.lop ?? null, huyHieu,
       phu: phu.length > 60 ? `${phu.slice(0, 57)}…` : phu, _sos: sos, _case: cs?.n ?? 0 });
   }

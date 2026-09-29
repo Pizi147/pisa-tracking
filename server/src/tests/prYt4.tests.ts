@@ -175,4 +175,182 @@ export async function runPrYt4Tests(t: YThucTestKit) {
       assert(d.nhanHanhDongNhatKy(`discipline.${ma}`) !== 'Thao tác hệ thống', `thiếu nhãn discipline.${ma}`);
     }
   });
+
+  // ------------------------------------------------------------------ Task 3 · một cửa trạng thái máy chủ + quyền lớp đang học
+  const { conn, P, TODAY, addDays } = t;
+  const intake: any = await import('../classes/intake.ts');
+  const { boLichTuTao } = await import('./luotThu.ts');
+  const { loadPrincipal, can } = await import('../permissions.ts');
+  const tt3: any = await import('../yThuc/trangThai.ts');
+  const board: any = await import('../yThuc/board.ts');
+  const viol: any = await import('../yThuc/violations.ts');
+  const classesSvc: any = await import('../classes/classes.ts');
+  const dongHv: any = await import('../classes/dongHocVien.ts');
+  const metricsSvc: any = await import('../worklist/metrics.ts');
+  const tongQuanSvc: any = await import('../worklist/tongQuan.ts');
+  const { soCauSql } = await import('../platform/nguCanhRequest.ts');
+  const mbId = (conn.prepare("SELECT id FROM branches WHERE code = 'MB'").get() as any).id as number;
+  const LOP = t.classId('MB FT 101');
+  const gvbm = P.w1Teacher;
+  let seq = 0;
+  /** Học viên thử riêng từng phép kiểm (không lẫn số). */
+  const hv = (lop = LOP): number => {
+    const ten = `YT4 HV ${++seq}`;
+    intake.commitIntake(P.admin, { classId: lop, rows: [{ fullName: ten, target: 7, email: 'hv@demo.test' }], idempotencyKey: `yt4-${seq}` });
+    const id = (conn.prepare('SELECT id FROM students WHERE full_name = ?').get(ten) as any).id as number;
+    const cy = conn.prepare("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'").get(id) as any;
+    if (cy) boLichTuTao(conn, cy.id);
+    /* Ngày vào lớp cũ hẳn — hạn chỉ phụ thuộc ngày ghi vi phạm trong phép kiểm (mocLop không chen vào). */
+    conn.prepare("UPDATE enrollments SET started_at = '2026-08-03' WHERE student_id = ?").run(id);
+    return id;
+  };
+  /** Vi phạm ghi thẳng bảng (cần ngày ghi quá khứ): `ngay` = ngày xảy ra = ngày ghi, trừ khi truyền `ghi`. */
+  const vpDb = (sid: number, ngay: string, o: { ghi?: string; ghiNhan?: string | null } = {}) => Number(conn.prepare(
+    `INSERT INTO violations (student_id, class_id, category, occurred_on, reported_on, reported_by, description, created_at, ghi_nhan_luc)
+     VALUES (?, (SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1), 'homework', ?, ?, ?,
+             'Vi phạm thử của phép kiểm YT4', ?, ?)`,
+  ).run(sid, sid, ngay, o.ghi ?? ngay, gvbm.userId, new Date().toISOString(), o.ghiNhan ?? null).lastInsertRowid);
+  const em = (sid: number, homNay = TODAY) => tt3.trangThaiYThuc([sid], homNay).get(sid);
+  /** Lớp riêng + GVCN riêng (tài khoản giáo viên MB không dạy lớp MB FT 101). */
+  const lopMoi = (ma: string) => {
+    const gv = (conn.prepare(
+      `SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id
+        WHERE r.key = 'teacher' AND ur.user_id NOT IN (SELECT user_id FROM teacher_assignments WHERE class_id = ? AND status = 'active')
+        ORDER BY ur.user_id LIMIT 1`).get(LOP) as any).id as number;
+    const c = intake.createClass(P.admin, { code: ma, branchId: mbId, kind: 'FT', isFastTrack: true, startDate: '2026-08-03' }) as any;
+    conn.prepare(`INSERT INTO teacher_assignments (class_id, user_id, skill, is_core, status, effective_from, created_at) VALUES (?, ?, NULL, 1, 'active', '2026-01-01', ?)`)
+      .run(c.id, gv, new Date().toISOString());
+    return { id: c.id as number, gvcn: loadPrincipal(gv) };
+  };
+  /** Chuyển lớp bằng SQL (điều khiển được ngày): ghi danh cũ `transferred`, ghi danh mới `active` từ `ngay`. */
+  const chuyen = (sid: number, lop: number, ngay: string) => {
+    conn.prepare(`UPDATE enrollments SET status = 'transferred', ended_at = ? WHERE student_id = ? AND status = 'active'`).run(ngay, sid);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?, ?, 'active', ?, ?)`).run(sid, lop, ngay, new Date().toISOString());
+  };
+  const ba3 = (sid: number, tu = addDays(TODAY, -3)) => [0, 1, 2].map((i) => vpDb(sid, addDays(tu, i)));
+  const REPO3 = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
+
+  check('YT4 (3) · K1-26: vi phạm Đã ghi nhận quá 5 ngày KHÔNG ở số quá hạn nào (nhóm, chỉ số hv-can-xu-ly, nhãn dòng em)', () => {
+    const sid = hv();
+    vpDb(sid, addDays(TODAY, -12), { ghiNhan: addDays(TODAY, -11) });
+    const e = em(sid);
+    assert(e.nhom === null && e.soBatBuoc === 0 && e.soMoi === 0, JSON.stringify({ nhom: e.nhom }));
+    const ids = metricsSvc.metricSet(P.mbManager, 'hv-can-xu-ly', { branchId: mbId }).ids as number[];
+    assert(!ids.includes(sid), 'không ở hv-can-xu-ly');
+    assert(!dongHv.canhBaoTheoHocVien(P.coreTeacher, LOP).has(sid), 'không nhãn dòng em');
+  });
+  check('YT4 (3) · Mới chưa ai xem quá 5 ngày → nhóm Quá hạn (lý do xem); cùng em ở hv-can-xu-ly và nhãn dòng em "Quá hạn"', () => {
+    const sid = hv();
+    const v = vpDb(sid, addDays(TODAY, -7));
+    const e = em(sid);
+    assert(e.nhom === 'qua_han' && e.viPham.get(v).lyDoQuaHan === 'xem' && e.hanXem === addDays(TODAY, -3), JSON.stringify(e.viPham.get(v)));
+    assert((metricsSvc.metricSet(P.mbManager, 'hv-can-xu-ly', { branchId: mbId }).ids as number[]).includes(sid), 'hv-can-xu-ly');
+    assert(dongHv.canhBaoTheoHocVien(P.coreTeacher, LOP).get(sid)?.nhom === 'qua_han', 'nhãn dòng em');
+  });
+  check('YT4 (3) · chuyển lớp (M-08): hạn đặt lại từ ngày vào lớp mới; GVCN cũ mất quyền xử lý, GVCN mới có quyền (K5-34)', () => {
+    const sid = hv();
+    ba3(sid, addDays(TODAY, -12));
+    assert(em(sid).nhom === 'qua_han', 'trước khi chuyển: quá hạn');
+    const moi = lopMoi('MB FT YT4CL');
+    chuyen(sid, moi.id, addDays(TODAY, -1));
+    const e = em(sid);
+    assert(e.nhom === 'bat_buoc' && e.han === addDays(TODAY, 3) && e.lopId === moi.id && e.gvcnId === moi.gvcn.userId, JSON.stringify({ n: e.nhom, h: e.han }));
+    assert(!can(loadPrincipal(P.coreTeacher.userId), 'discipline.manage', { studentId: sid }), 'GVCN cũ không còn quyền');
+    assert(can(moi.gvcn, 'discipline.manage', { studentId: sid }), 'GVCN mới có quyền');
+    assert(!can(loadPrincipal(P.coreTeacher.userId), 'student.edit', { studentId: sid }), 'GVCN cũ không sửa hồ sơ (Q17)');
+  });
+  check('YT4 (3) · Tạm dừng (T65): không Quá hạn, không hạn; Quay lại học → hạn tính từ ngày quay lại', () => {
+    const sid = hv();
+    ba3(sid, addDays(TODAY, -14));
+    conn.prepare(`UPDATE students SET status = 'inactive' WHERE id = ?`).run(sid);
+    conn.prepare(`UPDATE enrollments SET status = 'paused' WHERE student_id = ? AND status = 'active'`).run(sid);
+    const dung = em(sid);
+    assert(dung.tamDung && dung.nhom === 'bat_buoc' && dung.han === null, JSON.stringify({ n: dung.nhom, h: dung.han }));
+    conn.prepare(`UPDATE students SET status = 'active' WHERE id = ?`).run(sid);
+    conn.prepare(`UPDATE enrollments SET status = 'active' WHERE student_id = ? AND status = 'paused'`).run(sid);
+    conn.prepare(`INSERT INTO journey_events (student_id, event_type, event_date, title, created_at) VALUES (?, 'resume', ?, 'Quay lại học', ?)`)
+      .run(sid, addDays(TODAY, -2), new Date().toISOString());
+    const lai = em(sid);
+    assert(!lai.tamDung && lai.nhom === 'bat_buoc' && lai.han === addDays(TODAY, 2), JSON.stringify({ n: lai.nhom, h: lai.han }));
+  });
+  check('YT4 (3) · 30 em → cửa trạng thái nạp ≤ 6 câu SQL (không N+1)', () => {
+    const ids = (conn.prepare(`SELECT id FROM students ORDER BY id LIMIT 30`).all() as any[]).map((r) => r.id as number);
+    const truoc = soCauSql();
+    tt3.trangThaiYThuc(ids, TODAY);   // ngày truyền vào: đọc ngày nghiệp vụ (cấu hình) không tính là nạp
+    const n = soCauSql() - truoc;
+    assert(n <= 6, `${n} câu`);
+  });
+  check('YT4 (3) · Sửa ngày xảy ra ra khỏi cửa sổ 2 tuần → hết bắt buộc (Q1: không lưu cột, tự tính lại)', () => {
+    const sid = hv();
+    const [a] = ba3(sid);
+    assert(em(sid).nhom === 'bat_buoc', 'trước khi sửa');
+    viol.editViolation(P.admin, a, { occurredOn: addDays(TODAY, -20) });
+    assert(em(sid).nhom !== 'bat_buoc', `sau khi sửa: ${em(sid).nhom}`);
+  });
+  check('YT4 (3) · Nhãn vi phạm ở mọi danh sách đọc CÙNG cửa trạng thái (listViolations = trangThaiYThuc)', () => {
+    const sid = hv();
+    ba3(sid);
+    vpDb(sid, addDays(TODAY, -30), { ghiNhan: addDays(TODAY, -29) });
+    const e = em(sid);
+    const rows = viol.listViolations(P.coreTeacher, { studentId: sid }).rows as any[];
+    assert(rows.length === 4 && rows.every((r) => r.trangThai === e.viPham.get(r.id).t && r.nhanTrangThai === e.viPham.get(r.id).nhan), JSON.stringify(rows.map((r) => r.trangThai)));
+    assert(rows.filter((r) => r.trangThai === 'can_xu_ly').length === 3 && rows.some((r) => r.trangThai === 'da_ghi_nhan'), 'ba Cần xử lý + một Đã ghi nhận');
+  });
+  check('YT4 (3) · Bảng lớp (M6): mỗi em đúng MỘT nhóm, đúng thứ tự Quá hạn › Bắt buộc › Chờ QL › Mới › Đã xử lý', () => {
+    const lop = lopMoi('MB FT YT4NH');
+    const a = hv(lop.id); vpDb(a, addDays(TODAY, -8));
+    const b = hv(lop.id); ba3(b);
+    const c = hv(lop.id); vpDb(c, TODAY);
+    hv(lop.id);
+    const bd = board.bangYThucLop(lop.gvcn, lop.id) as any;
+    assert(Object.keys(bd.nhom).join() === 'qua_han,bat_buoc,cho_duyet,moi,da_xu_ly', Object.keys(bd.nhom).join());
+    const tat = Object.values(bd.nhom).flat() as any[];
+    assert(tat.length === 3 && new Set(tat.map((x) => x.studentId)).size === 3, 'mỗi em một nhóm, em sạch không có');
+    assert(bd.nhom.qua_han[0].studentId === a && bd.nhom.bat_buoc[0].studentId === b && bd.nhom.moi[0].studentId === c, 'đúng nhóm');
+    assert(bd.nhom.bat_buoc[0].keTiep.nhan === 'Report 1' && bd.nhom.bat_buoc[0].soBatBuoc === 3 && bd.nhom.bat_buoc[0].han === addDays(TODAY, 3), JSON.stringify(bd.nhom.bat_buoc[0]));
+    assert(bd.nhom.moi[0].moiTuoi === 0, 'tuổi vi phạm Mới');
+  });
+  check('YT4 (3) · Bảng lớp: dòng thời gian CẢ LỚP có tên em, mới nhất trước; không có thang', () => {
+    const lop = lopMoi('MB FT YT4DT');
+    const a = hv(lop.id); vpDb(a, addDays(TODAY, -5));
+    const b = hv(lop.id); vpDb(b, addDays(TODAY, -1));
+    const bd = board.bangYThucLop(lop.gvcn, lop.id) as any;
+    assert(bd.dongThoiGian.length === 2 && bd.dongThoiGian[0].studentId === b && bd.dongThoiGian[0].ten && bd.dongThoiGian[1].studentId === a, JSON.stringify(bd.dongThoiGian.map((x: any) => x.studentId)));
+    assert(!('thang' in bd) && bd.dongThoiGian.every((x: any) => x.loai === 'vi-pham' && x.nhanTrangThai), 'không thang, có nhãn');
+  });
+  check('YT4 (3) · Bảng lớp — quyền: GVBM đọc (không quản lý, ghi được), QL quản lý, QL chi nhánh khác bị chặn', () => {
+    const bdGvbm = board.bangYThucLop(loadPrincipal(gvbm.userId), LOP) as any;
+    assert(bdGvbm.canManage === false && bdGvbm.canRecord === true, 'GVBM');
+    assert(board.bangYThucLop(P.mbManager, LOP).canManage === true, 'QL');
+    let loi = '';
+    try { board.bangYThucLop(P.cpManager, LOP); } catch (e: any) { loi = e.message; }
+    assert(/phạm vi|quyền/.test(loi), `QL CP: ${loi}`);
+  });
+  check('YT4 (3) · Vấn đề đi theo em sang lớp mới: bảng lớp mới có em (Bắt buộc), bảng lớp cũ không còn', () => {
+    const cu = lopMoi('MB FT YT4C1');
+    const moi = lopMoi('MB FT YT4C2');
+    const sid = hv(cu.id); ba3(sid);
+    chuyen(sid, moi.id, TODAY);
+    const tat = (bd: any) => (Object.values(bd.nhom).flat() as any[]).map((x) => x.studentId);
+    assert(tat(board.bangYThucLop(moi.gvcn, moi.id)).includes(sid) && !tat(board.bangYThucLop(cu.gvcn, cu.id)).includes(sid), 'đi theo em');
+  });
+  check('YT4 (3) · Huy hiệu tab Ý thức của lớp = số em Quá hạn + Bắt buộc = số nhãn ở danh sách lớp', () => {
+    const lop = lopMoi('MB FT YT4HH');
+    ba3(hv(lop.id)); vpDb(hv(lop.id), addDays(TODAY, -9)); vpDb(hv(lop.id), TODAY);
+    const ov = classesSvc.classOverview(P.admin, lop.id) as any;
+    const roster = classesSvc.classRoster(P.admin, lop.id) as any[];
+    assert(ov.canhBaoYThuc === 2 && roster.filter((s) => s.canhBaoYThuc).length === 2, `${ov.canhBaoYThuc} · ${roster.filter((s) => s.canhBaoYThuc).length}`);
+  });
+  check('YT4 (3) · Tổng quan › HV cần hỗ trợ (K1-17): "Ý thức · Quá hạn" cam / "Ý thức · Cần xử lý" vàng, dòng phụ có hạn; không còn tone xanh', () => {
+    const q = hv(); vpDb(q, addDays(TODAY, -9));
+    const b = hv(); ba3(b);
+    const rows = tongQuanSvc.hocVienCanHoTro(P.coreTeacher).rows as any[];
+    const rq = rows.find((r) => r.studentId === q); const rb = rows.find((r) => r.studentId === b);
+    assert(rq?.huyHieu?.text === 'Ý thức · Quá hạn' && rq.huyHieu.tone === 'late', JSON.stringify(rq));
+    assert(rb?.huyHieu?.text === 'Ý thức · Cần xử lý' && rb.huyHieu.tone === 'warn' && /3 vi phạm chưa xử lý · hạn \d\d\/\d\d/.test(rb.phu), JSON.stringify(rb));
+    assert(!rows.some((r) => r.huyHieu?.text?.startsWith('Ý thức') && r.huyHieu.tone === 'info'), 'không còn tone xanh');
+  });
+  check('YT4 (3) · Cảnh báo mềm đã gỡ: không còn canhBao.ts', () => {
+    assert(!fs.existsSync(path.join(REPO3, 'server/src/yThuc/canhBao.ts')), 'canhBao.ts còn');
+  });
 }

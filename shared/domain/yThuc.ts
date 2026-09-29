@@ -131,6 +131,9 @@ export function bacCuaLoai(kind: string): number {
  */
 export const MEASURE_STATUSES = ['done', 'nhap', 'cho_duyet', 'da_duyet', 'tu_choi'] as const;
 export type MeasureStatus = (typeof MEASURE_STATUSES)[number];
+export const XU_LY_STATUS_LABEL: Record<MeasureStatus, string> = {
+  done: 'Đã xử lý', nhap: 'Đang soạn', cho_duyet: 'Chờ QL duyệt', da_duyet: 'Đã duyệt · chờ thực hiện', tu_choi: 'QL từ chối',
+};
 
 /** Hạn Ý thức: 5 ngày, tính cả ngày bắt đầu (T26, M-16). */
 export const HAN_Y_THUC_NGAY = 5;
@@ -251,6 +254,8 @@ export function bacKeTiep(bac: number): { kind: BacThang; bac: number; canQl: bo
 }
 
 export type NhomEm = 'qua_han' | 'bat_buoc' | 'cho_duyet' | 'moi' | 'da_xu_ly';
+/** Nhãn Ý thức ở dòng em (danh sách lớp, Tổng quan — K1-17): chỉ hai nhóm cần hành động. */
+export type NhanYThucEm = { nhom: 'qua_han' | 'bat_buoc'; so: number; han: string | null; quaHanNgay: number | null };
 export const NHOM_EM: readonly NhomEm[] = ['qua_han', 'bat_buoc', 'cho_duyet', 'moi', 'da_xu_ly'];
 export const NHOM_EM_LABEL: Record<NhomEm, string> = {
   qua_han: 'Quá hạn', bat_buoc: 'Bắt buộc xử lý', cho_duyet: 'Chờ QL duyệt', moi: 'Mới, chưa ghi nhận', da_xu_ly: 'Đã xử lý (7 ngày)',
