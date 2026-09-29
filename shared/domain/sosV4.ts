@@ -9,6 +9,7 @@ import { hanTheoNgay, PLAN_DECISIONS, type PlanDecision } from './cases.ts';
 import { sosPlanEndDate, type AcademicSupportSpan } from './sos.ts';
 import type { DeadlineKind } from './display.ts';
 import type { TrangThai } from './trangThai.ts';
+import { ngay, tuanLich } from './hienThiNgay.ts';
 
 export const HAN_XAC_NHAN_NGAY = 3;
 /** Hạn Xác nhận nguyên nhân / Xác nhận PA: 3 ngày tính cả ngày đầu ('2026-09-14' → '2026-09-16'). */
@@ -20,6 +21,18 @@ export const GOI_Y_KET_QUA_PA = 'Đã cải thiện ở phần nào, như thế 
 /** Mốc quy chế tính từ NGÀY XÁC NHẬN PA (§3.1d, K3-46): dùng lại `sosPlanEndDate` với createdOn = ngày xác nhận. */
 export function mocQuyChe(span: AcademicSupportSpan, ctx: { ngayXacNhan: string; nextMtSunday?: string | null; examDate?: string | null }): string | null {
   return sosPlanEndDate(span, { createdOn: ctx.ngayXacNhan, nextMtSunday: ctx.nextMtSunday, examDate: ctx.examDate });
+}
+
+/**
+ * CHỮ MỐC của PA quy chế: `đến MT2 · W2 OCT` · `1 tháng · đến 18/10` · `đến lúc thi · chưa có ngày thi`. PA chưa xác nhận: chỉ phần đầu
+ * (mốc tính lúc xác nhận). `mtKe` = số MT kế tiếp của lượt đã sinh PA.
+ */
+export function mocChuPa(x: { span: string | null; followupDue: string | null; mtKe: number | null; daXacNhan: boolean }, homNay: string): string {
+  const dau = x.span === 'one_month' ? '1 tháng' : x.span === 'until_next_mt' ? (x.mtKe ? `đến MT${x.mtKe}` : 'đến MT kế tiếp')
+    : x.span === 'until_exam' ? 'đến lúc thi' : '';
+  if (!dau || !x.daXacNhan) return dau;
+  if (x.followupDue) return `${dau} · ${x.span === 'until_next_mt' ? tuanLich(x.followupDue, homNay) : `đến ${ngay(x.followupDue, homNay)}`}`;
+  return `${dau} · ${x.span === 'until_exam' ? 'chưa có ngày thi' : 'chưa có lịch'}`;
 }
 
 /** Lần ghi này là lần CUỐI của PA bắt buộc (T22, K5-25, M-17): tuần đang ghi chạm/qua mốc, hoặc ghi sau mốc. */

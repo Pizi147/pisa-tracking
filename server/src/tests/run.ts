@@ -953,7 +953,7 @@ console.log('\n10. Xử lý sau Mock và lưu dữ liệu');
  * hạn ba ngày tính từ ngày ghi nhận và KHÔNG bị đặt lại khi lưu lại / nhập thêm môn; không nhân đôi khi chạy lặp; mọi tín hiệu gắn với một môn.
  * (Lớp Normal giữ nguyên "chỉ sinh tín hiệu" — có phép kiểm riêng ở sosV3.tests.ts.)
  */
-check('[6.2→v3] Mock Test FT điểm dưới kỳ vọng: tín hiệu nối NGAY vào case tự tạo (có PA quy chế đang chạy — PR-N1 S4-1); hạn 3 ngày không bị đặt lại', () => {
+check('[6.2→v3] Mock Test FT điểm dưới kỳ vọng: tín hiệu nối NGAY vào case tự tạo (có PA quy chế chờ xác nhận — PR-SOS Q28-3); hạn 3 ngày không bị đặt lại', () => {
   const s = conn
     .prepare(
       `SELECT s.id, cy.id AS cycle_id, cy.target_score FROM students s
@@ -1006,8 +1006,8 @@ check('[6.2→v3] Mock Test FT điểm dưới kỳ vọng: tín hiệu nối NG
   assert(casesOf() === 1, `Mock FT dưới kỳ vọng phải tự tạo đúng 1 case (v3 S01), đang có ${casesOf()}`);
   assert(plansOf() === 1, `Case tự tạo phải có sẵn đúng 1 phương án (v3 S03), đang có ${plansOf()}`);
   const preListening = conn.prepare(`SELECT * FROM case_interventions WHERE id > ?`).get(planIdBefore) as any;
-  assert(preListening.preset === 1 && preListening.status === 'started' && !!preListening.confirmed_at && preListening.confirmed_by === null,
-    'PA tự sinh phải là PA quy chế đang chạy, máy xác nhận (PR-N1 S4-1)');
+  assert(preListening.preset === 1 && preListening.status === 'planned' && preListening.confirmed_at === null && preListening.confirmed_by === null,
+    'PA tự sinh phải là PA quy chế CHỜ XÁC NHẬN (PR-SOS Q28-3)');
 
   const sig = conn
     .prepare(`SELECT * FROM case_signals WHERE attempt_id = ? AND skill = 'listening'`)
@@ -1038,7 +1038,10 @@ check('[6.2→v3] Mock Test FT điểm dưới kỳ vọng: tín hiệu nối NG
   assert(three.result.sosLevel === 3, `Ba kỹ năng dưới kỳ vọng phải lên SOS 3, đang là ${three.result.sosLevel}`);
   const want = newCasesExpected(['listening', 'reading', 'writing1', 'writing2']);
   assert(casesOf() === want, `Bốn kỹ năng dưới kỳ vọng phải có ${want} case MỚI (hạng mục đã mở thì gắn vào), đang có ${casesOf()}`);
-  assert(plansOf() === want, `Mỗi case mới đúng một phương án điền sẵn, đang có ${plansOf()}`);
+  /* PR-SOS Q6: hạng mục đã mở mà ĐÃ có nguyên nhân thì trượt lại thêm một PA quy chế chờ xác nhận — chỉ đếm PA của case MỚI ở đây. */
+  const plansOnNew = (conn.prepare(`SELECT COUNT(*) n FROM case_interventions iv JOIN sos_cases c ON c.id = iv.case_id
+    WHERE c.student_id = ? AND c.id > ?`).get(s.id, caseIdBefore) as any).n;
+  assert(plansOnNew === want, `Mỗi case mới đúng một phương án điền sẵn, đang có ${plansOnNew}`);
   const sigAfter = conn
     .prepare(`SELECT * FROM case_signals WHERE attempt_id = ? AND skill = 'listening'`)
     .get(attempt.id) as any;
@@ -3917,7 +3920,13 @@ check('Case đã đóng mà MT sau trượt lại → MỞ CASE MỚI nối vào
   /* v3: phương án điền sẵn của case tự tạo phải được XÁC NHẬN thì mới ghi "đã làm" được (Q-V3-3). */
   for (const iv of open) {
     const row = conn.prepare('SELECT preset, confirmed_at FROM case_interventions WHERE id = ?').get(iv.id) as any;
-    if (row.preset === 1 && !row.confirmed_at) sosAutoSvc.confirmPresetPlan(mgr, iv.id);
+    if (row.preset === 1 && !row.confirmed_at) {
+      /* PR-SOS (Q28-3): Xác nhận Case (nguyên nhân) rồi Xác nhận PA. */
+      if (!conn.prepare("SELECT 1 FROM case_issues WHERE case_id = ? AND role = 'primary'").get(c.id)) {
+        sosAutoSvc.xacNhanCase(mgr, c.id, { primaryCode: domain.issuesForTopic(c.topic ?? 'reading', null)[0].code, urgency: 'attention', moTa: 'Em đọc chậm, hết giờ ở passage 3.' });
+      }
+      sosAutoSvc.xacNhanPaQuyChe(mgr, iv.id, { description: 'Tutor kèm Reading hai buổi mỗi tuần, cô Hà chữa bài.' });
+    }
     cases.completeIntervention(mgr, iv.id, { doneOn: demoToday() });
   }
   cases.closeCaseOutcome(mgr, c.id, {

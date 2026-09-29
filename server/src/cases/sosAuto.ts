@@ -1,36 +1,38 @@
 import { db, tx } from '../db.ts';
 import {
-  CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, CONFIRM_EDIT_REASON, academicSupportFor, kiemGhiRoKhac, ngay, reasonNeedsText, sosPlanEndDate, weeklyUpdateDue,
-  type AcademicSupportPreset, type CaseDismissReason,
+  CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, CONFIRM_EDIT_REASON, URGENCY_LEVELS, academicSupportFor, caseTopicLabel, issueBranchOf,
+  issuesForTopic, kiemGhiRoKhac, laKhac, mocQuyChe, ngay, reasonNeedsText, tenCaseSos, weeklyUpdateDue,
+  type AcademicSupportPreset, type CaseDismissReason, type MilestoneKind,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { addDays, badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
+import { addDays, badRequest, notFound, nowIso } from '../util.ts';
 import type { Principal } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { suggestCaseOwner } from './owner.ts';
 import { examPlanOf } from '../fasttrack/cycles.ts';
 import { routeCuaLuot } from '../fasttrack/attempts.ts';
-import { caseAccess, caseDetail, recordIntervention } from './cases.ts';
+import { addIssues, caseAccess, caseDetail, caseTitleOf } from './cases.ts';
+import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
+import { followUntilAfter } from './sos.ts';
 import { PA_QUY_CHE_CHUA_GHI, UNCONFIRMED_PRESET, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
 import { ghiBanDieuChinh } from './planRevisions.ts';
 
 export { UNCONFIRMED_PRESET, NOT_UNCONFIRMED_PRESET, PA_QUY_CHE_CHUA_GHI } from './sosState.ts';
 
 /**
- * SOS TỰ TẠO CASE — PHẦN GHI DỮ LIỆU (rulebook v3, PR-T; `thiet-ke/SOS_VA_PHOI_HOP_V3.md` mục 3–4).
+ * SOS TỰ TẠO CASE — PHẦN GHI DỮ LIỆU (SOS v4, PR-SOS; đặc tả 27/09 §3.1d + §5.3 S4-1…S4-7, Q28-3).
  *
  * Chỉ lượt Mock Test FAST TRACK mới đi qua đây (Q-V3-1). Lớp Normal giữ mô hình tín hiệu cũ — không case tự tạo, không phương án điền
  * sẵn, không Phối hợp SOS.
  *
- * `cases/sos.ts` (nơi sở hữu `raiseSignalsForResult`) quyết định KHI NÀO tạo hay gắn case; file này lo phần "PA theo quy chế":
- *   · dựng PA theo bảng MT × mức SOS (`shared/domain/sos.ts`) — PA CHẠY NGAY lúc tạo (PR-N1, S4-1),
- *   · đồng bộ PA quy chế CHƯA có kết quả tuần khi mức SOS của lượt đổi (Q24),
- *   · đóng case "Không cần theo dõi" (S05) — phần dưới.
+ * `cases/sos.ts` (nơi sở hữu `raiseSignalsForResult`, `taoCaseTuDong`) quyết định KHI NÀO tạo hay gắn case; file này lo phần "PA theo quy chế":
+ *   · dựng PA theo bảng MT × mức SOS (`shared/domain/sos.ts`) — PA "CHỜ XÁC NHẬN", KHÔNG tự chạy (Q28-3),
+ *   · đồng bộ PA quy chế chờ xác nhận khi mức SOS của lượt đổi (Q24),
+ *   · Xác nhận Case → Xác nhận PA, Không cần theo dõi (thẻ Chờ duyệt) — phần dưới.
  *
- * PA QUY CHẾ DO MÁY GÁN (PR-N1, Q22): `status = 'started'`, `confirmed_at = lúc tạo`, `confirmed_by = NULL` — nên mọi truy vấn lọc
- * `UNCONFIRMED_PRESET` tính nó như PA thường (vào hiệu quả, có nghĩa vụ ghi kết quả tuần). `confirmed_by IS NULL` là dấu "máy gán";
- * điều kiện "máy gán mà chưa có kết quả tuần" nằm ở MỘT chỗ — `PA_QUY_CHE_CHUA_GHI` trong `sosState.ts`. Hai hàm xác nhận / thay cũ còn
- * giữ cho đường API (PR-SOS gỡ) nhưng PA quy chế luôn trả 400 "đã được xác nhận rồi".
+ * PA QUY CHẾ CHỜ XÁC NHẬN = `preset = 1 AND confirmed_at IS NULL AND status = 'planned'` (`UNCONFIRMED_PRESET`) — biểu diễn có sẵn, mọi
+ * lọc (việc Ghi kết quả, hiệu quả PA, `updateResult`) tự loại nó. Loại mốc lưu `moc_quy_che`; mốc (`followup_due`) tính lúc Xác nhận PA,
+ * từ NGÀY XÁC NHẬN (K3-46). Chỉ Xác nhận PA mới đặt `confirmed_at` + `confirmed_by`.
  */
 
 /**
@@ -45,101 +47,85 @@ export function isFastTrackMock(attempt: { kind?: string | null }, scoringMode: 
  * NGÀY THI DỰ KIẾN của lộ trình, chỉ khi ĐÃ CHỐT TUẦN (`examPlanOf` mức `week`): hết Chủ nhật của tuần thi. Mới biết tháng thì để TRỐNG —
  * bịa một ngày là tạo hạn giả. (Đặc tả §4: "ngày thi dự kiến nếu có".)
  */
-function examDateOf(cycleId: number | null | undefined): string | null {
+export function examDateOf(cycleId: number | null | undefined): string | null {
   if (!cycleId) return null;
   const c = db().prepare('SELECT exam_period_id, exam_month FROM learning_cycles WHERE id = ?').get(cycleId) as any;
   const plan = examPlanOf(c);
   return plan.confidence === 'week' && plan.weekStart ? addDays(plan.weekStart, 6) : null;
 }
 
-/** Loại + mô tả + ngày dự kiến của phương án điền sẵn cho một lượt ở mức SOS đó. `null` khi không có gì để điền. */
-export function presetFor(
-  attempt: { attempt_no: number; cycle_id?: number | null },
-  sosLevel: number | null | undefined,
-  followUntil: string | null,
-  /** Ngày case ra đời (mặc định hôm nay). Đồng bộ lại về sau PHẢI truyền ngày gốc — không thì "1 tháng" trôi theo ngày bấm lưu. */
-  createdOn: string = demoToday(),
-): (AcademicSupportPreset & { followupDue: string | null }) | null {
-  const rule = academicSupportFor(attempt.attempt_no, sosLevel, routeCuaLuot(attempt));   // T4: RF theo hàng "MT3 trở đi"
-  if (!rule) return null;
-  const followupDue = sosPlanEndDate(rule.span, {
-    createdOn, nextMtSunday: followUntil, examDate: examDateOf(attempt.cycle_id),
-  });
-  return { ...rule, followupDue };
+/** Loại + mô tả + loại mốc (span) của PA quy chế cho một lượt ở mức SOS đó. `null` khi không có gì để điền. Mốc tính lúc Xác nhận PA. */
+export function presetFor(attempt: { attempt_no: number; cycle_id?: number | null }, sosLevel: number | null | undefined): AcademicSupportPreset | null {
+  return academicSupportFor(attempt.attempt_no, sosLevel, routeCuaLuot(attempt));   // T4: RF theo hàng "MT3 trở đi"
 }
 
 /**
- * DỰNG PA THEO QUY CHẾ CHO MỘT CASE VỪA TẠO (S03, PR-N1 S4-1). Người thực hiện mặc định là GVBM đúng kỹ năng ở lớp em đang học.
- *
- * PA CHẠY NGAY: `status = 'started'` từ hôm nay, chu kỳ 1, hạn ghi kết quả tuần = hết Thứ Hai sau tuần tạo (`weeklyUpdateDue`).
- * Dấu "máy đã xác nhận" (Q22): `confirmed_at = lúc tạo`, `confirmed_by = NULL`.
+ * DỰNG PA THEO QUY CHẾ CHO MỘT CASE (S03, S4-1). Người thực hiện mặc định là GVBM đúng kỹ năng ở lớp em đang học.
+ * Q28-3: PA "CHỜ XÁC NHẬN" — không ngày bắt đầu, không hạn ghi kết quả, không mốc; chạy khi GVBM bấm Xác nhận PA.
  */
 export function createPresetPlan(input: {
   caseId: number;
   attempt: { attempt_no: number; cycle_id?: number | null; class_id?: number | null };
   category: string; sosLevel: number | null;
-  followUntil: string | null;
 }): number | null {
-  const p = presetFor(input.attempt, input.sosLevel, input.followUntil);
+  const p = presetFor(input.attempt, input.sosLevel);
   if (!p) return null;
   const performer = suggestCaseOwner({ classId: input.attempt.class_id ?? null, category: input.category });
-  const today = demoToday();
+  // Q28-3: PA quy chế KHÔNG tự chạy. Chờ xác nhận = preset=1, planned, confirmed_at NULL (UNCONFIRMED_PRESET). Mốc tính lúc Xác nhận PA.
   const info = db()
     .prepare(
-      `INSERT INTO case_interventions (case_id, kind, description, performer_user_id, recorded_by, status, started_date,
-                                       followup_due, cycle_no, cycle_started_on, action_due, needs_approval, preset,
-                                       confirmed_at, confirmed_by, created_at)
-       VALUES (?,?,?,?, NULL, 'started', ?, ?, 1, ?, ?, 0, 1, ?, NULL, ?)`,
+      `INSERT INTO case_interventions (case_id, kind, description, performer_user_id, recorded_by, status, needs_approval, preset,
+                                       moc_quy_che, created_at)
+       VALUES (?,?,?,?, NULL, 'planned', 0, 1, ?, ?)`,
     )
-    .run(input.caseId, p.kind, p.description, performer, today, p.followupDue, today, weeklyUpdateDue(today), nowIso(), nowIso());
+    .run(input.caseId, p.kind, p.description, performer, p.span, nowIso());
   return Number(info.lastInsertRowid);
 }
 
 /**
- * ĐỒNG BỘ PA QUY CHẾ CHƯA CÓ KẾT QUẢ TUẦN với mức SOS hiện tại của lượt đã MỞ chúng (PR-N1, Q24).
+ * ĐỒNG BỘ PA QUY CHẾ CHỜ XÁC NHẬN với mức SOS hiện tại của lượt (PR-N1 Q24, PR-SOS).
  *
  * Điểm thường được nhập từng kỹ năng, bởi từng GVBM, vào những lúc khác nhau — nên case đầu tiên ra đời khi lượt mới ở SOS1, trước khi
- * SOS3 xuất hiện. Đặc tả §4 nói phương án theo MỨC SOS CỦA CẢ LƯỢT, nên PA máy gán chưa ghi kết quả tuần nào phải theo mức mới nhất. PA
- * đã có kết quả tuần, hay do người xác nhận/thay (`confirmed_by` khác NULL), thì không bao giờ bị đụng.
+ * SOS3 xuất hiện. Đặc tả §4 nói phương án theo MỨC SOS CỦA CẢ LƯỢT, nên PA chờ xác nhận phải theo mức mới nhất. PA đã xác nhận thì
+ * không bao giờ bị đụng.
  *
- * Chỉ áp cho case do CHÍNH lượt này mở (mốc `opened` của lượt) — case cũ được lượt sau "gắn" thêm mốc thì giữ nguyên phương án của nó.
+ * Áp cho case mà lượt này mở (`opened`) hoặc trượt lại (`repeat`): PA chờ xác nhận chưa chạy nên đi theo hàng MT mới nhất.
  */
 export function resyncUnconfirmedPresets(
   attempt: { id: number; attempt_no: number; cycle_id?: number | null },
   sosLevel: number | null,
-  followUntil: string | null,
 ) {
-  if (!presetFor(attempt, sosLevel, followUntil)) return;
+  if (!presetFor(attempt, sosLevel)) return;
+  /* PR-SOS: chỉ PA CHỜ XÁC NHẬN (PA đã xác nhận là việc thật — không đụng); `followup_due` luôn NULL tới lúc xác nhận. */
   const rows = db()
     .prepare(
-      `SELECT iv.id, iv.kind, iv.description, iv.followup_due,
-              (SELECT MIN(g.raised_on) FROM case_signals g WHERE g.case_id = sc.id) AS raised_on
+      `SELECT iv.id, iv.kind, iv.description, iv.moc_quy_che
          FROM case_interventions iv
          JOIN sos_cases sc ON sc.id = iv.case_id
-        WHERE ${PA_QUY_CHE_CHUA_GHI('iv')} AND sc.status != 'done'
-          AND EXISTS (SELECT 1 FROM case_milestones m WHERE m.case_id = sc.id AND m.kind = 'opened' AND m.attempt_id = ?)`,
+        WHERE ${PA_QUY_CHE_CHUA_GHI('iv')} AND ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND sc.status != 'done'
+          AND EXISTS (SELECT 1 FROM case_milestones m WHERE m.case_id = sc.id AND m.kind IN ('opened', 'repeat') AND m.attempt_id = ?)`,
     )
     .all(attempt.id) as any[];
   for (const iv of rows) {
-    /* Ngày gốc = ngày tín hiệu nối case được ghi nhận (= ngày case ra đời), để "1 tháng" đứng yên khi lưu lại điểm sau này. */
-    const p = presetFor(attempt, sosLevel, followUntil, iv.raised_on ?? demoToday())!;
-    if (iv.kind === p.kind && iv.description === p.description && (iv.followup_due ?? null) === p.followupDue) continue;
+    const p = presetFor(attempt, sosLevel)!;
+    if (iv.kind === p.kind && iv.description === p.description && iv.moc_quy_che === p.span) continue;
     db()
-      .prepare('UPDATE case_interventions SET kind = ?, description = ?, followup_due = ?, updated_at = ? WHERE id = ?')
-      .run(p.kind, p.description, p.followupDue, nowIso(), iv.id);
+      .prepare('UPDATE case_interventions SET kind = ?, description = ?, moc_quy_che = ?, updated_at = ? WHERE id = ?')
+      .run(p.kind, p.description, p.span, nowIso(), iv.id);
   }
 }
 
-/** Ghi hành trình + audit + báo GVBM cho một case vừa được SOS tự tạo. */
+/** Ghi hành trình + audit + báo GVBM (người phụ trách) cho một case vừa được SOS tự tạo. `hanXacNhan` = `sos_cases.han_xac_nhan`. */
 export function announceAutoCase(input: {
   caseId: number; studentId: number; cycleId: number | null; skillLabel: string; attemptNo: number;
-  sosLevel: number | null; ownerUserId: number | null; detectedOn: string; verifyDue: string; actorUserId: number | null;
+  sosLevel: number | null; ownerUserId: number | null; detectedOn: string; hanXacNhan: string; actorUserId: number | null;
 }) {
   const st = db().prepare('SELECT full_name FROM students WHERE id = ?').get(input.studentId) as any;
+  const ten = tenCaseSos({ mt: input.attemptNo, giua: `${input.skillLabel} không đạt`, sos: input.sosLevel });
   addJourney({
     studentId: input.studentId, cycleId: input.cycleId, eventType: 'case_opened', eventDate: input.detectedOn,
-    title: `MT${input.attemptNo}: SOS tự tạo case ${input.skillLabel}`,
-    detail: 'PA theo quy chế đã chạy — chờ GVBM xác định nguyên nhân.',
+    title: `SOS tự tạo Case ${ten}`,
+    detail: 'PA theo quy chế chờ GVBM xác nhận.',
     refTable: 'sos_cases', refId: input.caseId, createdBy: input.actorUserId,
     dedupKey: `case_open:${input.caseId}`,
   });
@@ -150,130 +136,145 @@ export function announceAutoCase(input: {
   if (input.ownerUserId) {
     notify({
       userId: input.ownerUserId, kind: 'sos',
-      title: `Case mới từ SOS: ${input.skillLabel} — ${st?.full_name ?? ''}`,
-      body: `Xác định nguyên nhân (PA theo quy chế đã tự chạy). Hạn ${ngay(input.verifyDue, demoToday())}.`,
+      title: `Case mới: ${ten}${st?.full_name ? ` — ${st.full_name}` : ''}`,
+      body: `Xác nhận nguyên nhân trước hết ${ngay(input.hanXacNhan, demoToday())}`,
       entityType: 'sos_case', entityId: input.caseId, dedupKey: `sos-case:${input.caseId}`,
     });
   }
 }
 
-// ---------------------------------------------------------------- xác nhận · thay · đóng (S04–S07)
+// ---------------------------------------------------------------- Xác nhận Case · Xác nhận PA · Không cần theo dõi (S4-2…S4-7)
 
 const EDIT_MESSAGE = 'Bạn chỉ xử lý được case của kỹ năng mình được phân công (hoặc là Quản lý trong phạm vi).';
 
-/** Phương án điền sẵn CHƯA xác nhận và còn xử lý được (chưa huỷ, chưa bị thay). Đã kiểm quyền theo ĐÚNG kỹ năng của case (C02). */
-function loadUnconfirmedPreset(p: Principal, interventionId: number, doing: string) {
-  const iv = db()
-    .prepare(
-      `SELECT iv.*, sc.status AS case_status FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE iv.id = ?`,
-    )
-    .get(interventionId) as any;
-  if (!iv) throw notFound('Không tìm thấy phương án.');
-  caseAccess(iv.case_id).requireEdit(p, EDIT_MESSAGE);
-  if (!iv.preset) throw badRequest(`Phương án này không phải phương án điền sẵn từ SOS — không cần ${doing}.`);
-  if (iv.confirmed_at) throw badRequest('Phương án này đã được xác nhận rồi.');
-  if (iv.status !== 'planned' || iv.case_status === 'done') {
-    throw badRequest('Phương án này đã bị huỷ hoặc case đã đóng — không còn xác nhận / thay được.');
-  }
-  return iv;
+/** Ghi một mốc của Case (khoá chống trùng tuỳ chọn). Viết tại chỗ để không import vòng `sos.ts`. */
+function ghiMoc(caseId: number, kind: MilestoneKind, on: string, note: string | null, actor: number | null, dedupKey: string | null = null) {
+  db().prepare(`INSERT OR IGNORE INTO case_milestones (case_id, kind, occurred_on, note, created_by, created_at, dedup_key) VALUES (?,?,?,?,?,?,?)`)
+    .run(caseId, kind, on, note, actor, nowIso(), dedupKey);
+}
+
+/** Phần giữa của tên Case SOS — người sửa được (lưu `title`), mặc định `{kỹ năng} không đạt`. */
+export function tenGiuaCua(c: { title?: string | null; topic?: string | null; category?: string | null; cycle_id?: number | null }): string {
+  const own = (c.title ?? '').trim();
+  if (own) return own;
+  const ct = c.cycle_id ? (db().prepare('SELECT programme_code ct FROM learning_cycles WHERE id = ?').get(c.cycle_id) as any)?.ct ?? null : null;
+  return `${caseTopicLabel(c.topic ?? c.category ?? '', ct)} không đạt`;
 }
 
 /**
- * XÁC NHẬN PHƯƠNG ÁN ĐIỀN SẴN (S04) — kèm CHỈNH nếu muốn (sửa mô tả, ngày dự kiến kết thúc).
- *
- * Từ đây case đi ĐÚNG workflow học thuật thường (S07): phương án chạy (đang thực hiện), có hạn ghi kết quả tuần hết Thứ Hai tuần sau, có bằng chứng,
- * điều chỉnh, đóng khi xong. Không có lớp "tiến trình SOS" riêng. Phương án ĐÃ xác nhận được coi là căn cứ độc lập khi sửa điểm (S08) —
- * xem `caseHasIndependentBasis`.
- *
- * Quyền: GVBM ĐÚNG kỹ năng của case (C02) + Quản lý trong phạm vi. Người thực hiện giữ nguyên (GVBM đúng kỹ năng); người xác nhận ghi ở `confirmed_by`.
+ * XÁC NHẬN CASE (S4-3, M7, YC-12.3): GVBM đúng kỹ năng (C02) hoặc Quản lý trong phạm vi ghi nguyên nhân + mức gấp + mô tả + phần giữa tên.
+ * Chỉ khi Case từ SOS còn chờ nguyên nhân và KHÔNG có thẻ Không cần theo dõi đang chờ (S4-2 hai lựa chọn loại trừ). Case vẫn `open`
+ * tới khi có PA do người xác nhận (Q28-5) — giao diện chuyển thẳng sang Xác nhận PA.
  */
-export function confirmPresetPlan(p: Principal, interventionId: number, patch: { description?: string | null; followupDue?: string | null; reason?: string | null } = {}) {
-  const iv = loadUnconfirmedPreset(p, interventionId, 'xác nhận');
-  let description = iv.description as string;
-  if (patch.description !== undefined && patch.description !== null) {
-    description = patch.description.trim();
-    if (description.length < 8) throw badRequest('Mô tả ngắn phải nói rõ làm gì cho em — ít nhất 8 ký tự.');
+export function xacNhanCase(p: Principal, caseId: number, input: {
+  primaryCode?: string | null; observation?: string | null; urgency?: string | null; moTa?: string | null; tenGiua?: string | null;
+}) {
+  const conn = db();
+  const c = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(caseId) as any;
+  if (!c) throw notFound('Không tìm thấy case');
+  caseAccess(caseId).requireEdit(p, EDIT_MESSAGE);
+  const st = sosCaseState(caseId);
+  if (!st.fromSos) throw badRequest('Chỉ Case tự tạo từ SOS mới có bước Xác nhận Case.');
+  if (c.status === 'done') throw badRequest('Case này đã đóng rồi.');
+  if (st.hasCause) throw badRequest('Case đã xác nhận nguyên nhân rồi.');
+  if (st.choDuyetKhongTheoDoi) throw badRequest('Case đang chờ Quản lý duyệt "Không cần theo dõi" — chờ trả lời rồi mới xác nhận.');
+  const ct = c.cycle_id ? (conn.prepare('SELECT programme_code ct FROM learning_cycles WHERE id = ?').get(c.cycle_id) as any)?.ct ?? null : null;
+  const primaryCode = String(input.primaryCode ?? '').trim();
+  if (!primaryCode) throw badRequest('Chọn phân loại nguyên nhân.');
+  if (!issueBranchOf(primaryCode) || !issuesForTopic(c.topic, ct).some((i) => i.code === primaryCode)) {
+    throw badRequest(`Phân loại đã chọn không thuộc bộ phân loại của ${caseTopicLabel(c.topic, ct)}.`);
   }
-  let followupDue: string | null = iv.followup_due ?? null;
-  if (patch.followupDue !== undefined) {
-    if (patch.followupDue && !isIsoDate(patch.followupDue)) throw badRequest('Dự kiến kết thúc phương án không hợp lệ.');
-    followupDue = patch.followupDue || null;
+  const observation = String(input.observation ?? '').trim() || null;
+  if (laKhac(primaryCode)) {
+    const loi = kiemGhiRoKhac(observation);
+    if (loi) throw badRequest(`Phân loại "Khác": ${loi}.`);
   }
-  /* `String(…)`: body gửi lý do không phải chữ thì vẫn đi đường 400, không vỡ thành 500. */
-  const reason = String(patch.reason ?? '').trim();
-  if (reason.length > 300) throw badRequest('Lý do tối đa 300 ký tự.');
+  const urgency = String(input.urgency ?? '');
+  if (!(URGENCY_LEVELS as readonly string[]).includes(urgency)) throw badRequest('Chọn mức độ gấp.');
+  const moTa = String(input.moTa ?? '').trim();
+  if (moTa.length < 15) throw badRequest('Mô tả cần ít nhất 15 ký tự — sai ở đâu, bài hay buổi nào.');
+  if (moTa.length > 2000) throw badRequest('Mô tả tối đa 2000 ký tự.');
+  const tenGiua = input.tenGiua === undefined || input.tenGiua === null ? tenGiuaCua(c) : String(input.tenGiua).trim();
+  if (tenGiua.length < 3 || tenGiua.length > 80) throw badRequest('Tên Case (phần giữa) cần từ 3 đến 80 ký tự.');
   const today = demoToday();
   return tx(() => {
-    db()
-      .prepare(
-        `UPDATE case_interventions
-            SET description = ?, followup_due = ?, status = 'started', started_date = ?,
-                cycle_no = 1, cycle_started_on = ?, action_due = ?,
-                confirmed_by = ?, confirmed_at = ?, updated_at = ?
-          WHERE id = ?`,
-      )
-      .run(description, followupDue, today, today, weeklyUpdateDue(today), p.userId, nowIso(), nowIso(), interventionId);
-    /*
-     * PR-S2 (S2, Q7): GỢI Ý TỰ ĐỘNG là "phương án ban đầu" (nguồn §7). Sửa nó lúc xác nhận thì giữ bản gợi ý trong lịch sử.
-     * Xác nhận nguyên văn thì không có gì để ghi.
-     */
-    if (description !== iv.description || followupDue !== (iv.followup_due ?? null)) {
+    addIssues(caseId, p.userId, { primaryCode, observation, topic: c.topic });
+    conn.prepare('UPDATE sos_cases SET urgency = ?, summary = ?, title = ?, updated_at = ? WHERE id = ?').run(urgency, moTa, tenGiua, nowIso(), caseId);
+    ghiMoc(caseId, 'xac_nhan_case', today, moTa, p.userId, `xac_nhan_case:${caseId}`);
+    dongBoTrangThaiCase(caseId);
+    const ten = caseTitleOf({ ...c, title: tenGiua });
+    addJourney({
+      studentId: c.student_id, cycleId: c.cycle_id ?? null, eventType: 'intervention', eventDate: today,
+      title: `Xác nhận Case: ${ten}`, detail: moTa, refTable: 'sos_cases', refId: caseId, createdBy: p.userId, dedupKey: `case-confirm:${caseId}`,
+    });
+    writeAudit({
+      actorUserId: p.userId, action: 'case.confirm', entityType: 'sos_case', entityId: caseId, entityLabel: ten,
+      after: { primaryCode, urgency, tenGiua },
+    });
+    return caseDetail(p, caseId);
+  });
+}
+
+/** Lượt MT đã sinh PA quy chế này: mốc `opened`/`repeat` mới nhất của Case tạo không muộn hơn PA. */
+function luotSinhPa(iv: any): any | null {
+  return db().prepare(`SELECT a.* FROM case_milestones m JOIN assessment_attempts a ON a.id = m.attempt_id
+     WHERE m.case_id = ? AND m.kind IN ('opened', 'repeat') AND m.created_at <= ? ORDER BY m.created_at DESC, m.id DESC LIMIT 1`)
+    .get(iv.case_id, iv.created_at) as any ?? null;
+}
+
+/**
+ * XÁC NHẬN PA THEO QUY CHẾ (Q28-3, §3.1d Planning tự quyết, K3-46): PA chờ xác nhận → đang chạy TỪ HÔM NAY. Mốc quy chế tính từ ngày
+ * xác nhận (`mocQuyChe`); chưa có lịch / ngày thi thì để trống, điền sau (`dienMocQuyChe`). Đổi người thực hiện được; loại PA thì không.
+ * Chỉ hàm này đặt `confirmed_at` + `confirmed_by` (người).
+ */
+export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
+  performerSelf?: boolean; performerUserId?: number | null; performerName?: string | null; description?: string | null;
+}) {
+  const conn = db();
+  const iv = conn.prepare(`SELECT iv.*, sc.status AS case_status, sc.cycle_id AS case_cycle_id FROM case_interventions iv
+      JOIN sos_cases sc ON sc.id = iv.case_id WHERE iv.id = ?`).get(interventionId) as any;
+  if (!iv) throw notFound('Không tìm thấy phương án.');
+  caseAccess(iv.case_id).requireEdit(p, EDIT_MESSAGE);
+  if (!iv.preset) throw badRequest('Phương án này không phải PA theo quy chế — không cần xác nhận.');
+  if (iv.case_status === 'done') throw badRequest('Case đã đóng — không còn xác nhận PA được.');
+  if (iv.confirmed_at || iv.status !== 'planned') throw badRequest('PA này đã được xác nhận rồi.');
+  if (!sosCaseState(iv.case_id).hasCause) throw badRequest('Xác nhận nguyên nhân (Xác nhận Case) trước, rồi mới xác nhận PA.');
+  const description = String(input.description ?? iv.description ?? '').trim();
+  if (description.length < 15) throw badRequest('Mô tả PA cần ít nhất 15 ký tự — nêu hướng dẫn, trọng tâm và ai thực hiện.');
+  if (description.length > 2000) throw badRequest('Mô tả PA tối đa 2000 ký tự.');
+  const nguoi = chuanHoaNguoiThucHien(p, input, { nhom: 'giao_vien', batBuoc: false });
+  const performerUserId = nguoi ? nguoi.userId : iv.performer_user_id ?? null;
+  const performerName = nguoi ? nguoi.name : iv.performer_name ?? null;
+  const today = demoToday();
+  const luot = luotSinhPa(iv);
+  const moc = iv.moc_quy_che
+    ? mocQuyChe(iv.moc_quy_che, { ngayXacNhan: today, nextMtSunday: luot ? followUntilAfter(luot) : null, examDate: examDateOf(iv.case_cycle_id) })
+    : null;
+  return tx(() => {
+    conn.prepare(`UPDATE case_interventions SET description = ?, performer_user_id = ?, performer_name = ?, status = 'started', started_date = ?,
+        cycle_no = 1, cycle_started_on = ?, action_due = ?, followup_due = ?, confirmed_by = ?, confirmed_at = ?, updated_at = ? WHERE id = ?`)
+      .run(description, performerUserId, performerName, today, today, weeklyUpdateDue(today), moc, p.userId, nowIso(), nowIso(), interventionId);
+    /* Sửa bản máy gán lúc xác nhận thì giữ bản gợi ý trong lịch sử (PR-S2 S2, Q7). */
+    if (description !== iv.description || performerUserId !== (iv.performer_user_id ?? null) || performerName !== (iv.performer_name ?? null)) {
       ghiBanDieuChinh({
-        iv, source: 'confirm_edit', on: today, actorUserId: p.userId, followupId: null,
-        reason: reason || CONFIRM_EDIT_REASON,
-        after: { description, performerUserId: iv.performer_user_id ?? null, performerName: iv.performer_name ?? null, followupDue },
+        iv, source: 'confirm_edit', on: today, actorUserId: p.userId, followupId: null, reason: CONFIRM_EDIT_REASON,
+        after: { description, performerUserId, performerName, followupDue: moc },
       });
     }
     dongBoTrangThaiCase(iv.case_id);
-    const c = db().prepare('SELECT student_id, cycle_id FROM sos_cases WHERE id = ?').get(iv.case_id) as any;
+    const c = conn.prepare('SELECT student_id, cycle_id FROM sos_cases WHERE id = ?').get(iv.case_id) as any;
     addJourney({
       studentId: c.student_id, cycleId: c.cycle_id ?? null, eventType: 'intervention', eventDate: today,
-      title: `Xác nhận phương án: ${description.slice(0, 60)}`, detail: null,
+      title: `Xác nhận PA: ${description.slice(0, 60)}`, detail: null,
       refTable: 'case_interventions', refId: interventionId, createdBy: p.userId, dedupKey: `preset-confirm:${interventionId}`,
     });
     writeAudit({
       actorUserId: p.userId, action: 'case.preset.confirm', entityType: 'case_intervention', entityId: interventionId,
-      entityLabel: `Case ${iv.case_id} · ${iv.kind}`, before: { description: iv.description, followupDue: iv.followup_due }, after: { description, followupDue },
+      entityLabel: `Case ${iv.case_id} · ${iv.kind}`, before: { description: iv.description }, after: { description, followupDue: moc, performerUserId },
     });
     return caseDetail(p, iv.case_id);
   });
 }
-
-/**
- * THAY PHƯƠNG ÁN ĐIỀN SẴN bằng một phương án khác (S06): phương án cũ khép lại `superseded` + phương án mới (đã xác nhận, đang thực hiện) ra
- * đời trong MỘT giao dịch. Mới lỗi thì cũ nguyên vẹn — không bao giờ để case 0 phương án đang hoạt động.
- *
- * Phương án cũ CHƯA từng chạy nên khép bằng `cancelled` (không phải `completed`): nó không thành công cũng không thất bại, không vào hiệu quả.
- */
-export function replacePresetPlan(p: Principal, interventionId: number, plan: {
-  kind: string; description?: string | null;
-  performerSelf?: boolean; performerUserId?: number | null; performerName?: string | null;
-  followupDue?: string | null; rescheduleTarget?: string | null;
-  /** Thay bằng PA đề xuất "Khác" (T13): chữ ô Ghi rõ — `recordIntervention` kiểm và ghép vào mô tả. */
-  ghiRoKhac?: string | null;
-}) {
-  const iv = loadUnconfirmedPreset(p, interventionId, 'thay');
-  const today = demoToday();
-  return tx(() => {
-    recordIntervention(p, iv.case_id, {
-      kind: plan.kind, description: plan.description ?? null,
-      performerSelf: plan.performerSelf, performerUserId: plan.performerUserId ?? null, performerName: plan.performerName ?? null,
-      status: 'started', startedDate: today, followupDue: plan.followupDue ?? null, rescheduleTarget: plan.rescheduleTarget ?? null,
-      ghiRoKhac: plan.ghiRoKhac ?? null,
-    });
-    const created = (db().prepare('SELECT id FROM case_interventions WHERE case_id = ? ORDER BY id DESC LIMIT 1').get(iv.case_id) as any).id as number;
-    db().prepare('UPDATE case_interventions SET confirmed_by = ?, confirmed_at = ? WHERE id = ?').run(p.userId, nowIso(), created);
-    db()
-      .prepare(`UPDATE case_interventions SET status = 'cancelled', closed_reason = 'superseded', superseded_by = ?, updated_at = ? WHERE id = ?`)
-      .run(created, nowIso(), interventionId);
-    writeAudit({
-      actorUserId: p.userId, action: 'case.preset.replace', entityType: 'case_intervention', entityId: interventionId,
-      entityLabel: `Case ${iv.case_id}`, before: { kind: iv.kind, description: iv.description }, after: { newInterventionId: created, kind: plan.kind },
-    });
-    return caseDetail(p, iv.case_id);
-  });
-}
-
 /**
  * `KHÔNG CẦN THEO DÕI` (S05, Q-V3-4): GVBM đóng NGAY một case tự tạo từ SOS kèm lý do chọn nhanh. Case đóng, giữ lịch sử; PA theo quy chế
  * chưa có kết quả tuần HUỶ `dismissed` (không tính thất bại, PR-N1 Q24); không có `outcome` nên không vào bất kỳ thống kê hiệu quả nào.

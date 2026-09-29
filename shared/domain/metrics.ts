@@ -80,10 +80,10 @@ export const METRICS: readonly ChiSo[] = [
   },
   /* Ba chỉ số của khối Cần xử lý (PR-Pa, đặc tả §3.2) — mỗi dòng của khối là một chỉ số, để bấm vào ra đúng tập. */
   {
-    id: 'case-xac-dinh-nguyen-nhan-qua-han', ten: 'Case quá hạn xác định nguyên nhân',
-    cauHoi: 'Bao nhiêu Case SOS tự tạo đã quá hạn 3 ngày mà GVBM chưa xác định nguyên nhân hoặc chưa xác nhận PA gợi ý?',
+    id: 'case-xac-dinh-nguyen-nhan-qua-han', ten: 'Case quá hạn xác nhận nguyên nhân',
+    cauHoi: 'Bao nhiêu Case SOS tự tạo đã quá hạn 3 ngày mà GVBM chưa xác nhận nguyên nhân?',
     donVi: 'case',
-    tapDuDieuKien: 'Trong tập "Case chờ xác định nguyên nhân": Case mà hạn 3 ngày của tín hiệu đã nối (sớm nhất) đã qua. Hết ngày hạn mới tính quá hạn.',
+    tapDuDieuKien: 'Trong tập "Case chờ xác nhận nguyên nhân": Case mà hạn xác nhận (3 ngày, tính cả ngày Case ra đời) đã qua. Hết ngày hạn mới tính quá hạn.',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi Case chỉ đếm 1 lần', drilldown: '/metrics/case-xac-dinh-nguyen-nhan-qua-han',
   },
   {
@@ -101,10 +101,10 @@ export const METRICS: readonly ChiSo[] = [
     thoiGian: 'hien-trang', khuTrung: 'Mỗi Case chỉ đếm 1 lần', drilldown: '/metrics/case-chua-co-nguoi-phu-trach',
   },
   {
-    id: 'case-cho-xac-dinh-nguyen-nhan', ten: 'Case chờ xác định nguyên nhân',
-    cauHoi: 'Bao nhiêu case SOS tự tạo đang chờ GVBM xác định nguyên nhân?',
+    id: 'case-cho-xac-dinh-nguyen-nhan', ten: 'Case chờ xác nhận nguyên nhân',
+    cauHoi: 'Bao nhiêu case SOS tự tạo đang chờ GVBM xác nhận nguyên nhân?',
     donVi: 'case',
-    tapDuDieuKien: 'Case HỌC THUẬT do Mock Test Fast Track tự tạo, đang mở, mà chưa có nguyên nhân (phân loại vấn đề chính) (rulebook v3, đặc tả §3.2; PA theo quy chế tự chạy từ lúc tạo — PR-N1 S4-1). Case tạo tay, case lớp Normal và case đã đóng (kể cả `Không cần theo dõi`) không thuộc tập.',
+    tapDuDieuKien: 'Case HỌC THUẬT do Mock Test Fast Track tự tạo, đang mở, mà chưa có nguyên nhân (phân loại vấn đề chính) và không có yêu cầu "Không cần theo dõi" đang chờ Quản lý duyệt (SOS v4, K5-51). Case tạo tay, case lớp Normal và case đã đóng (kể cả `Không cần theo dõi`) không thuộc tập.',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi Case chỉ đếm 1 lần', drilldown: '/metrics/case-cho-xac-dinh-nguyen-nhan',
   },
   {

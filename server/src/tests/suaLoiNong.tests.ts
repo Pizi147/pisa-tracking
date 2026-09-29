@@ -184,16 +184,18 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
   const taoQuyChe = (key: string) => {
     const { caseId } = taoPa(`qc-${key}`);
     t.conn.prepare('DELETE FROM case_interventions WHERE case_id = ?').run(caseId);
-    const ivId = sosAuto.createPresetPlan({ caseId, attempt: { attempt_no: 1, class_id: lop }, category: 'listening', sosLevel: 2, followUntil: null });
+    const ivId = sosAuto.createPresetPlan({ caseId, attempt: { attempt_no: 1, class_id: lop }, category: 'listening', sosLevel: 2 });
     return { caseId, ivId };
   };
-  check('N1 (5b) · S4-1: PA quy chế tạo ra là đang chạy, máy xác nhận, có hạn ghi kết quả Thứ Hai từ tuần tạo', () => {
+  check('N1 (5b) · S4-1 → PR-SOS (Q28-3): PA quy chế tạo ra CHỜ XÁC NHẬN (planned, chưa hạn); Xác nhận PA → chạy từ hôm nay, hạn ghi kết quả Thứ Hai', () => {
     const { ivId } = taoQuyChe('chay');
     const iv = t.conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(ivId) as any;
-    assert(iv.status === 'started' && iv.preset === 1 && !!iv.confirmed_at && iv.confirmed_by === null, JSON.stringify(iv));
-    assert(iv.action_due === d.weeklyUpdateDue(t.TODAY) && iv.cycle_started_on === t.TODAY && iv.cycle_no === 1, `hạn ${iv.action_due}`);
+    assert(iv.status === 'planned' && iv.preset === 1 && iv.confirmed_at === null && iv.confirmed_by === null && iv.action_due === null, JSON.stringify(iv));
     const khop = t.conn.prepare(`SELECT COUNT(*) n FROM case_interventions iv WHERE iv.id = ? AND ${sosState.PA_QUY_CHE_CHUA_GHI('iv')}`).get(ivId) as any;
     assert(khop.n === 1, 'PA quy chế chưa có kết quả tuần phải khớp PA_QUY_CHE_CHUA_GHI');
+    sosAuto.xacNhanPaQuyChe(t.P.coreTeacher, ivId, { description: 'Tự học Listening 1 tháng, nghe chép mỗi ngày.' });
+    const sau = t.conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(ivId) as any;
+    assert(sau.action_due === d.weeklyUpdateDue(t.TODAY) && sau.cycle_started_on === t.TODAY && sau.cycle_no === 1 && sau.confirmed_by === t.P.coreTeacher.userId, `hạn ${sau.action_due}`);
   });
   check('N1 (5b) · hạn 3 ngày của GVBM chỉ còn "xác định nguyên nhân" (không còn vế xác nhận PA)', () => {
     const { caseId } = taoQuyChe('cho');
@@ -215,6 +217,7 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     t.conn.prepare('DELETE FROM case_sources WHERE case_id = ?').run(caseId);
     t.conn.prepare('DELETE FROM case_milestones WHERE case_id = ?').run(caseId);
     assert(sigSvc.caseHasIndependentBasis(caseId, null) === false, 'PA máy gán chưa ghi gì bị coi là căn cứ');
+    sosAuto.xacNhanPaQuyChe(t.P.coreTeacher, ivId, { description: 'Tự học Listening 1 tháng, nghe chép mỗi ngày.' });   // PR-SOS: PA chạy khi xác nhận
     casesSvc.recordFollowUp(t.P.coreTeacher, caseId, { interventionId: ivId, outcome: 'partial', note: 'Tuần đầu em nghe chép đều hơn' });
     assert(sigSvc.caseHasIndependentBasis(caseId, null) === true, 'PA quy chế có kết quả tuần phải là căn cứ');
     const khop = t.conn.prepare(`SELECT COUNT(*) n FROM case_interventions iv WHERE iv.id = ? AND ${sosState.PA_QUY_CHE_CHUA_GHI('iv')}`).get(ivId) as any;

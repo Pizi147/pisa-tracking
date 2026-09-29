@@ -104,4 +104,143 @@ export async function runPrSosTests(t: YThucTestKit) {
     conn.prepare('DELETE FROM case_interventions WHERE id = ?').run(id);
     assert(iv.status === 'planned' && iv.confirmed_at === null, JSON.stringify(iv));
   });
+
+  // ------------------------------------------------------------------ dữ liệu thử dùng chung (dựng qua hàm dịch vụ, như sosV3.tests.ts)
+  const { P, TODAY, addDays, assertThrows } = t;
+  const attemptsSvc: any = await import('../fasttrack/attempts.ts');
+  const weekSvc: any = await import('../platform/week.ts');
+  const scoring: any = await import('../fasttrack/scoring.ts');
+  const intake: any = await import('../classes/intake.ts');
+  const cases: any = await import('../cases/cases.ts');
+  const sosState: any = await import('../cases/sosState.ts');
+  const myworkSvc: any = await import('../worklist/mywork.ts');
+  const { boLichTuTao, luotThu } = await import('./luotThu.ts');
+  const CLASS = t.classId('MB FT 101');
+  const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
+  const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
+  const makeStudent = (name: string): { id: number; cycleId: number; name: string } => {
+    intake.commitIntake(P.admin, { classId: CLASS, rows: [{ fullName: `SOS4 ${name}`, target: 7, email: 'hv@demo.test' }], idempotencyKey: `sos4-${name}` });
+    const st = get('SELECT id FROM students WHERE full_name = ?', `SOS4 ${name}`);
+    const cy = get("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'", st.id);
+    boLichTuTao(conn, cy.id);
+    return { id: st.id, cycleId: cy.id, name: `SOS4 ${name}` };
+  };
+  const PAST_WEEK = weekSvc.mondayOf(addDays(TODAY, -14));
+  const mkAttempt = (st: { id: number; cycleId: number }, no: number): any => luotThu(conn, attemptsSvc.createAttempt, P.admin, {
+    studentId: st.id, cycleId: st.cycleId, classId: CLASS, no, periodId: weekSvc.ensurePeriod(PAST_WEEK).id });
+  const enter = (a: any, skill: string, band: number) => attemptsSvc.saveScore(P.admin, a.id, skill, {
+    ...(skill === 'listening' ? { rawScore: scoring.LISTENING_BY_RAW.indexOf(band) }
+      : skill === 'reading' ? { rawScore: scoring.READING_BY_RAW.indexOf(band) }
+      : { criteria: [band, band, band, band] }),
+    lyDo: 'Phép kiểm: sửa điểm nguồn',
+  });
+  const caseOf = (sid: number, category: string) => get('SELECT * FROM sos_cases WHERE student_id = ? AND category = ? ORDER BY id DESC LIMIT 1', sid, category);
+  const plansOf = (caseId: number) => all('SELECT * FROM case_interventions WHERE case_id = ? ORDER BY id', caseId);
+  /** GVBM đang dạy đúng kỹ năng; chưa phân công ai thì GVCN (đúng luật `suggestCaseOwner`). */
+  const gvKyNang = (skill: string): number => (get("SELECT user_id n FROM teacher_assignments WHERE class_id = ? AND skill = ? AND status = 'active' LIMIT 1", CLASS, skill)
+    ?? get("SELECT user_id n FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active' LIMIT 1", CLASS)).n;
+  const gvcn = () => get("SELECT user_id n FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active' LIMIT 1", CLASS).n as number;
+  /** MT1 SOS3: L, R, S 5.0 — ba Case, PA `Tutor · đến MT2`. */
+  const mt1Sos3 = (name: string) => { const st = makeStudent(name); const a = mkAttempt(st, 1); for (const k of ['listening', 'reading', 'speaking']) enter(a, k, 5); return { st, a }; };
+  /** Ghi nguyên nhân bằng SQL (Task 3 chưa có Xác nhận Case). */
+  const ghiNguyenNhan = (caseId: number) => conn.prepare(`INSERT INTO case_issues (case_id, role, taxonomy_code, created_at) VALUES (?, 'primary', ?, ?)`)
+    .run(caseId, d.issuesForTopic('listening', null)[0].code, new Date().toISOString());
+
+  // ------------------------------------------------------------------ Task 3 · Case tự tạo v4
+  check('SOS (3) · MT1 SOS3: Case + PA quy chế CHỜ XÁC NHẬN (planned, không hạn, không mốc, moc_quy_che), hạn xác nhận 3 ngày; không có việc Ghi kết quả', () => {
+    const { st } = mt1Sos3('T3a');
+    const c = caseOf(st.id, 'listening');
+    const iv = plansOf(c.id)[0];
+    assert(plansOf(c.id).length === 1 && iv.preset === 1 && iv.kind === 'tutor' && iv.description === 'Tutor · đến MT2' && iv.status === 'planned'
+      && iv.confirmed_at === null && iv.confirmed_by === null && iv.action_due === null && iv.followup_due === null && iv.started_date === null
+      && iv.moc_quy_che === 'until_next_mt', JSON.stringify(iv));
+    assert(c.status === 'open' && c.han_xac_nhan === d.hanXacNhan(TODAY), JSON.stringify(c));
+    const s = sosState.sosCaseState(c.id);
+    assert(s.dueOn === c.han_xac_nhan && s.awaitingCause && s.coPaChoXacNhan && s.choDuyetKhongTheoDoi === null, JSON.stringify(s));
+    const keys = (myworkSvc.myWork(P.admin, { nguoi: 'tat-ca' }).items as any[]).map((i: any) => i.key as string);
+    assert(!keys.includes(`action:${iv.id}`) && !keys.includes(`review:${iv.id}`), 'PA chờ xác nhận sinh việc Ghi kết quả');
+  });
+  check('SOS (3) · Thông báo: GVBM một "Case mới: [MT1] Listening không đạt [SOS 3]" + hạn; GVCN "SOS 3 — {tên}"; GV W1 không nhận gì', () => {
+    const { st, a } = mt1Sos3('T3b');
+    const c = caseOf(st.id, 'listening');
+    /* Mức SOS trong tên là mức LÚC Case ra đời (nhập L trước → SOS 1); Speaking nhập sau cùng → SOS 3. */
+    const nL = all(`SELECT * FROM notifications WHERE entity_type = 'sos_case' AND entity_id = ?`, c.id);
+    assert(nL.length === 1 && nL[0].user_id === gvKyNang('listening') && /^Case mới: \[MT1\] Listening không đạt \[SOS \d\] — /.test(nL[0].title)
+      && nL[0].body === `Xác nhận nguyên nhân trước hết ${d.ngay(d.hanXacNhan(TODAY), TODAY)}`, JSON.stringify(nL));
+    const nS = all(`SELECT * FROM notifications WHERE entity_type = 'sos_case' AND entity_id = ?`, caseOf(st.id, 'speaking').id);
+    assert(nS.length === 1 && nS[0].title.startsWith('Case mới: [MT1] Speaking không đạt [SOS 3]'), JSON.stringify(nS));
+    /* GVCN nhận một thông báo mỗi lần mức SOS của lượt lên (khoá theo mức, có sẵn) — chỉ GVCN. */
+    const nA = all(`SELECT * FROM notifications WHERE entity_type = 'assessment_attempt' AND entity_id = ? ORDER BY id`, a.id);
+    assert(nA.length >= 1 && nA.every((n: any) => n.user_id === gvcn()) && nA[nA.length - 1].title === `SOS 3 — ${st.name}`, JSON.stringify(nA));
+    const w1 = P.w1Teacher.userId;
+    const cuaW1 = all(`SELECT n.id FROM notifications n WHERE n.user_id = ? AND ((n.entity_type = 'assessment_attempt' AND n.entity_id = ?)
+      OR (n.entity_type = 'sos_case' AND n.entity_id IN (SELECT id FROM sos_cases WHERE student_id = ?)))`, w1, a.id, st.id);
+    assert(w1 !== gvcn() && cuaW1.length === 0, `GV W1 nhận ${cuaW1.length}`);
+  });
+  check('SOS (3) · MT2 trượt lại, Case ĐÃ có nguyên nhân → mốc repeat + một PA quy chế mới chờ xác nhận theo hàng MT2 + hạn xác nhận đặt lại; PA cũ giữ nguyên', () => {
+    const { st } = mt1Sos3('T3c');
+    const c = caseOf(st.id, 'listening');
+    ghiNguyenNhan(c.id);
+    conn.prepare(`UPDATE case_interventions SET status = 'started', started_date = ?, confirmed_at = ?, confirmed_by = ? WHERE case_id = ?`)
+      .run(TODAY, new Date().toISOString(), gvKyNang('listening'), c.id);
+    conn.prepare('UPDATE sos_cases SET han_xac_nhan = ? WHERE id = ?').run(addDays(TODAY, -10), c.id);
+    const cu = JSON.stringify(plansOf(c.id)[0]);
+    const a2 = mkAttempt(st, 2);
+    for (const k of ['listening', 'reading', 'speaking']) enter(a2, k, 5);
+    const ivs = plansOf(c.id);
+    assert(ivs.length === 2 && JSON.stringify(ivs[0]) === cu, JSON.stringify(ivs));
+    assert(ivs[1].status === 'planned' && ivs[1].confirmed_at === null && ivs[1].description === 'Tutor · đến MT3' && ivs[1].moc_quy_che === 'until_next_mt', JSON.stringify(ivs[1]));
+    assert(get('SELECT han_xac_nhan h FROM sos_cases WHERE id = ?', c.id).h === d.hanXacNhan(TODAY), 'hạn chưa đặt lại');
+    assert(all(`SELECT kind FROM case_milestones WHERE case_id = ? AND attempt_id = ?`, c.id, a2.id).some((m: any) => m.kind === 'repeat'), 'thiếu mốc repeat');
+    /* Lưu lại điểm (chạy lặp) không thêm PA thứ ba. */
+    enter(a2, 'listening', 5);
+    assert(plansOf(c.id).length === 2, 'chạy lặp nhân đôi PA');
+  });
+  check('SOS (3) · + Case cùng kỹ năng đang chờ xác nhận nguyên nhân → 400, không gộp (K3-23)', () => {
+    const { st } = mt1Sos3('T3d');
+    const c = caseOf(st.id, 'listening');
+    assertThrows(() => cases.reportIssue(P.mbManager, { studentId: st.id, cycleId: st.cycleId, topic: 'listening', primaryCode: d.issuesForTopic('listening', null)[0].code,
+      title: 'Báo thêm', summary: 'Em nghe chưa bắt được ý chính ở phần 3, cần xem lại.', mergeIntoExisting: true }),
+      /Listening đang có Case chờ xác nhận nguyên nhân \(MT1 · SOS 3\) — mở Case để xác nhận\./, 'gộp vào Case chờ nguyên nhân');
+    assert(get('SELECT COUNT(*) n FROM case_issues WHERE case_id = ?', c.id).n === 0, 'đã gộp nguyên nhân');
+  });
+
+  // ------------------------------------------------------------------ Task 4 · Xác nhận Case + Xác nhận PA
+  const sosAuto: any = await import('../cases/sosAuto.ts');
+  const L_CODE = d.issuesForTopic('listening', null)[0].code;
+  const XN = { primaryCode: L_CODE, urgency: 'attention', moTa: 'Em nghe sót số và tên riêng ở Part 1–2.' };
+  const MO_TA = 'Tutor Listening hai buổi mỗi tuần, cô Hà chữa bài nghe.';
+  check('SOS (4) · Xác nhận Case: thiếu nguyên nhân / mức gấp / mô tả < 15 → 400; đủ → nguyên nhân, mức gấp, mô tả, tên giữa, mốc xac_nhan_case; Case vẫn open; lần hai → 400', () => {
+    const { st } = mt1Sos3('T4a');
+    const c = caseOf(st.id, 'listening');
+    const gv = P.admin;
+    assertThrows(() => sosAuto.xacNhanCase(gv, c.id, { ...XN, primaryCode: '' }), /Chọn phân loại nguyên nhân/, 'thiếu nguyên nhân');
+    assertThrows(() => sosAuto.xacNhanCase(gv, c.id, { ...XN, urgency: '' }), /mức độ gấp/, 'thiếu mức gấp');
+    assertThrows(() => sosAuto.xacNhanCase(gv, c.id, { ...XN, moTa: 'ngắn quá' }), /ít nhất 15/, 'mô tả ngắn');
+    sosAuto.xacNhanCase(gv, c.id, { ...XN, tenGiua: 'Listening Part 1–2 không đạt' });
+    const sau = get('SELECT * FROM sos_cases WHERE id = ?', c.id);
+    assert(sau.status === 'open' && sau.urgency === 'attention' && sau.summary === XN.moTa && sau.title === 'Listening Part 1–2 không đạt', JSON.stringify(sau));
+    assert(get(`SELECT taxonomy_code t FROM case_issues WHERE case_id = ? AND role = 'primary'`, c.id).t === L_CODE, 'nguyên nhân');
+    assert(get(`SELECT COUNT(*) n FROM case_milestones WHERE case_id = ? AND kind = 'xac_nhan_case'`, c.id).n === 1, 'mốc');
+    assert(cases.caseTitleOf(sau) === '[MT1] Listening Part 1–2 không đạt [SOS 3]', cases.caseTitleOf(sau));
+    assertThrows(() => sosAuto.xacNhanCase(gv, c.id, XN), /đã xác nhận nguyên nhân rồi/, 'lần hai');
+  });
+  check('SOS (4) · Xác nhận PA: chưa nguyên nhân → 400; mô tả < 15 → 400; đủ → started hôm nay, hạn T2, mốc từ ngày xác nhận, người đổi được, Case in_progress; lần hai → 400; GV W1 → 403', () => {
+    const { st } = mt1Sos3('T4b');
+    const c = caseOf(st.id, 'reading');
+    const iv = plansOf(c.id)[0];
+    assertThrows(() => sosAuto.xacNhanPaQuyChe(P.admin, iv.id, { description: MO_TA }), /Xác nhận nguyên nhân/, 'chưa nguyên nhân');
+    sosAuto.xacNhanCase(P.admin, c.id, { ...XN, primaryCode: d.issuesForTopic('reading', null)[0].code });
+    assertThrows(() => sosAuto.xacNhanPaQuyChe(P.admin, iv.id, { description: 'ngắn' }), /ít nhất 15/, 'mô tả ngắn');
+    assertThrows(() => sosAuto.xacNhanPaQuyChe(P.w1Teacher, iv.id, { description: MO_TA }), /phân công/, 'GV W1');
+    sosAuto.xacNhanPaQuyChe(P.admin, iv.id, { description: MO_TA, performerUserId: P.coreTeacher.userId });
+    const sau = get('SELECT * FROM case_interventions WHERE id = ?', iv.id);
+    assert(sau.status === 'started' && sau.started_date === TODAY && sau.cycle_started_on === TODAY && sau.cycle_no === 1
+      && sau.action_due === d.weeklyUpdateDue(TODAY) && sau.followup_due === null /* until_next_mt, chưa có lịch MT2 */
+      && sau.confirmed_by === P.admin.userId && sau.performer_user_id === P.coreTeacher.userId && sau.description === MO_TA, JSON.stringify(sau));
+    assert(get('SELECT status FROM sos_cases WHERE id = ?', c.id).status === 'in_progress', 'Case in_progress');
+    assertThrows(() => sosAuto.xacNhanPaQuyChe(P.admin, iv.id, { description: MO_TA }), /đã được xác nhận rồi/, 'lần hai');
+    const pa = (cases.caseDetail(P.admin, c.id) as any).interventions.find((x: any) => x.id === iv.id);
+    assert(pa.batBuoc && pa.mocChu === 'đến MT2 · chưa có lịch' && pa.lanCuoi === false && !pa.awaitingConfirmation, JSON.stringify(pa));
+  });
 }

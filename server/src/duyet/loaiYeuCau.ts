@@ -21,7 +21,7 @@ import { demoToday } from '../demoConfig.ts';
 import { badRequest } from '../util.ts';
 import { reviseTarget, updateCycle } from '../fasttrack/cycles.ts';
 import { NHAN_TRUONG_DE_XUAT, TRUONG_TU_AP, hienTaiCua, type TruongDeXuat } from './deXuatSua.ts';
-import { awaitingCauseCaseIds } from '../cases/sosState.ts';
+import { CO_THE_KHONG_THEO_DOI, awaitingCauseCaseIds } from '../cases/sosState.ts';
 import { taoYeuCau } from './yeuCau.ts';
 
 export type YeuCauRow = {
@@ -229,15 +229,14 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
   /* ------------------------------------------------------------ PR-DUYET · Báo lên: Case chờ nguyên nhân quá hạn (K1-57, T77) */
   {
     loai: 'bao_len_nguyen_nhan',
-    /* PR-SOS đổi `verify_due` → `han_xac_nhan` trong PHẦN TỬ NÀY (định nghĩa "chờ nguyên nhân" là của `awaitingCauseCaseIds`). */
+    /* PR-SOS: hạn ở `sos_cases.han_xac_nhan`; "chờ nguyên nhân" (đã loại thẻ Không cần theo dõi đang chờ) là của `awaitingCauseCaseIds`. */
     quet: (conn, homNay) => {
       const ung = conn.prepare(
-        `SELECT sc.id, sc.owner_user_id, COALESCE(sc.student_id, a.student_id) AS sid, a.class_id,
-                (SELECT MIN(g.verify_due) FROM case_signals g WHERE g.case_id = sc.id AND g.status = 'linked') AS han
+        `SELECT sc.id, sc.owner_user_id, COALESCE(sc.student_id, a.student_id) AS sid, a.class_id, sc.han_xac_nhan AS han
            FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
            JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
           WHERE sc.status != 'done' AND s.archived_at IS NULL
-            AND (SELECT MIN(g.verify_due) FROM case_signals g WHERE g.case_id = sc.id AND g.status = 'linked') < ?
+            AND sc.han_xac_nhan < ?
             AND NOT EXISTS (SELECT 1 FROM yeu_cau_duyet y WHERE y.loai = 'bao_len_nguyen_nhan' AND y.doi_tuong_loai = 'sos_case'
                              AND y.doi_tuong_id = sc.id AND y.trang_thai = 'cho')`,
       ).all(homNay) as any[];
@@ -252,7 +251,8 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     },
     chet: {
       sql: `NOT EXISTS (SELECT 1 FROM sos_cases sc WHERE sc.id = y.doi_tuong_id AND sc.status != 'done'
-             AND NOT EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary'))`,
+             AND NOT EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary')
+             AND NOT ${CO_THE_KHONG_THEO_DOI('sc')})`,
       lyDo: 'Việc gốc đã xong',
     },
     nap: (conn, ds) => {

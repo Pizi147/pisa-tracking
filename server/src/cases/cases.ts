@@ -16,7 +16,7 @@ import {
   HAN_DUYET_NGAY, hanTheoNgay,
   type NextStep, type RescheduleTarget,
   issueBranchOf, issueLabel, caseTopicLabel, urgencyFromSos,
-  caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac, programmeOf, tenMon, tenMonNgan,
+  caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac, laLanGhiCuoi, mocChuPa, programmeOf, tenCaseSos, tenMon, tenMonNgan,
   type CaseOutcome, type FollowUpOutcome, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -66,7 +66,7 @@ export function caseTitleOf(c: {
    * và không được tự gán "… dưới kỳ vọng" cho một case không sinh từ điểm (mục 7.3).
    */
   const own = (c.title ?? '').trim();
-  if (own) return own;
+  if (own && c.origin_kind !== 'mock') return own;
   const latest = db()
     .prepare(
       `SELECT m.attempt_no, a.kind, cl.programme_code AS ct FROM case_milestones m
@@ -76,6 +76,12 @@ export function caseTitleOf(c: {
         ORDER BY m.attempt_no DESC LIMIT 1`,
     )
     .get(c.id) as any;
+  /* PR-SOS T21: Case SOS Fast Track = `[MT1] {phần giữa} [SOS 3]`; phần giữa người sửa được (`title`), mặc định `{kỹ năng} không đạt`. */
+  if (c.origin_kind === 'mock' && (latest?.kind ?? 'mock') === 'mock') {
+    const cat = c.category ?? categoryOf(c.topic);
+    return tenCaseSos({ mt: latest?.attempt_no ?? null, giua: own || `${cat ? tenMon(latest?.ct ?? null, cat) : caseCategoryLabel(cat)} không đạt`, sos: c.sos_level ?? null });
+  }
+  if (own) return own;
   return caseTitle({
     category: c.category ?? categoryOf(c.topic),
     latestAttemptNo: latest?.attempt_no ?? null,
@@ -486,6 +492,17 @@ export function reportIssue(p: Principal, input: {
     ? (conn.prepare(`SELECT * FROM sos_cases WHERE dedup_key = ? AND status != 'done'`).get(dedupKey) as any)
     : null;
 
+  /* PR-SOS K3-23 (M4): Case SOS cùng kỹ năng đang chờ xác nhận nguyên nhân → không gộp, không mở song song — xác nhận ở Case đó. */
+  if (existing && sosCaseState(existing.id).awaitingCause) {
+    const mt = existing.attempt_id
+      ? (conn.prepare('SELECT attempt_no FROM assessment_attempts WHERE id = ?').get(existing.attempt_id) as any)?.attempt_no ?? null : null;
+    const nhan = [mt ? `MT${mt}` : null, existing.sos_level ? `SOS ${existing.sos_level}` : null].filter(Boolean).join(' · ');
+    throw badRequest(
+      `${caseTopicLabel(existing.topic ?? topic, ctCuaCase)} đang có Case chờ xác nhận nguyên nhân${nhan ? ` (${nhan})` : ''} — mở Case để xác nhận.`,
+      { caseChoNguyenNhan: { id: existing.id } },
+    );
+  }
+
   if (existing && !input.mergeIntoExisting && !input.parallel) {
     /*
      * Kèm đủ dữ liệu để giao diện dựng pop-up hai lựa chọn mà không phải hỏi lại máy chủ
@@ -631,7 +648,7 @@ export function caseTopicsOf(p: Principal, studentId: number, cycleId?: number |
  *
  * "Hoàn cảnh kèm theo" đã bỏ (owner chốt 10/09/2026) — thay bằng ô Ghi chú của vấn đề.
  */
-function addIssues(caseId: number, actor: number | null, input: {
+export function addIssues(caseId: number, actor: number | null, input: {
   primaryCode?: string | null; secondaryCodes?: string[];
   topic?: string | null; observation?: string | null;
 }) {
@@ -1398,6 +1415,13 @@ export function caseDetail(p: Principal, caseId: number) {
   /* PR-DUYET (Task 5, 9): thẻ hộp Chờ duyệt của mọi PA trong Case — một câu cho cả Case. */
   const theCuaPa = theCuaDoiTuong('intervention',
     (conn.prepare('SELECT id FROM case_interventions WHERE case_id = ?').all(caseId) as any[]).map((r) => r.id as number));
+  /* PR-SOS: số MT kế tiếp của lượt đã sinh mỗi PA quy chế (mốc opened/repeat mới nhất không muộn hơn PA) — một câu cho cả Case. */
+  const mocLuot = conn.prepare(`SELECT attempt_no, created_at FROM case_milestones WHERE case_id = ? AND kind IN ('opened', 'repeat')
+      AND attempt_no IS NOT NULL ORDER BY created_at DESC, id DESC`).all(caseId) as any[];
+  const mtKeCua = (iv: any): number | null => {
+    const m = mocLuot.find((x) => x.created_at <= iv.created_at) ?? mocLuot[mocLuot.length - 1];
+    return m ? m.attempt_no + 1 : null;
+  };
   const interventions = (conn
     .prepare(
       `SELECT iv.*, u.full_name AS performer_account, r.full_name AS recorder_name,
@@ -1448,10 +1472,17 @@ export function caseDetail(p: Principal, caseId: number) {
           .get(iv.id, iv.cycle_no ?? 1),
       // NULL = không cần duyệt, khác hẳn 'pending' = đang chờ Quản lý trả lời.
       needsApproval: !!iv.needs_approval,
-      /** PA theo quy chế SOS (rulebook v3). Từ PR-N1 (S4-1) tạo ra đã chạy, nên `awaitingConfirmation` chỉ còn đúng với dữ liệu chưa migrate. */
+      /** PA theo quy chế SOS. `awaitingConfirmation` = "Chờ xác nhận" (Q28-3, Q3): chạy khi GVBM bấm Xác nhận PA. */
       preset: iv.preset === 1,
       confirmedAt: (iv.confirmed_at ?? null) as string | null,
       awaitingConfirmation: iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned',
+      /** PR-SOS (T22, T63): PA bắt buộc — không thay, không kết thúc sớm; `mocChu` chữ mốc; `lanCuoi` = lần ghi tới là "Ghi kết quả cuối". */
+      batBuoc: iv.preset === 1,
+      mocQuyChe: (iv.moc_quy_che ?? null) as string | null,
+      mocChu: iv.preset === 1
+        ? mocChuPa({ span: iv.moc_quy_che ?? null, followupDue: iv.followup_due ?? null, mtKe: mtKeCua(iv), daXacNhan: !!iv.confirmed_at }, demoToday())
+        : null,
+      lanCuoi: iv.status === 'started' && laLanGhiCuoi({ preset: iv.preset === 1, followupDue: iv.followup_due ?? null, actionDue: iv.action_due ?? null }, demoToday()),
       approvalState: iv.approval_state as string | null,
       approvalDue: iv.approval_due as string | null,
       approvalNote: iv.approval_note as string | null,

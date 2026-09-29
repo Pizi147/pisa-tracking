@@ -684,7 +684,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
 
   // ------------------------------------- 3b. case TỰ TẠO TỪ SOS còn chờ xác định nguyên nhân (S04)
   /*
-   * MỘT DÒNG MỖI CASE. Hạn = hạn ba ngày của tín hiệu đã nối case (`verify_due`), hết ngày hạn mới tính quá hạn — cùng luật với mọi hạn khác.
+   * MỘT DÒNG MỖI CASE. Hạn = `sos_cases.han_xac_nhan` (3 ngày tính cả ngày đầu), hết ngày hạn mới tính quá hạn — cùng luật với mọi hạn khác.
    *
    * AI THẤY: người phụ trách case (GVBM đúng kỹ năng) thấy ngay từ đầu; Quản lý trong phạm vi CHỈ thấy khi đã quá hạn (cùng cách với "Cập nhật kết quả"),
    * và người khác — kể cả GVBM kỹ năng khác — không thấy. Mọi trường hợp đều kiểm đúng quyền sửa case theo kỹ năng (C02).
@@ -697,7 +697,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
               COALESCE(ac.branch_id, cc.branch_id) AS eff_branch_id,
               COALESCE(ac.code, cc.code) AS class_code,
               s.full_name, a.attempt_no, a.kind AS attempt_kind,
-              (SELECT MIN(g.verify_due) FROM case_signals g WHERE g.case_id = sc.id AND g.status = 'linked') AS due,
+              sc.han_xac_nhan AS due,
               EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary') AS has_cause
          FROM sos_cases sc
          LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
