@@ -1,6 +1,6 @@
 import { db } from '../db.ts';
 import {
-  PERMISSIONS, ROUTE_NAME, XUAT_TOI_DA_LUOT, bangBoLoc, bangFT, bangThuong, dongXemTruoc, dongXemTruocThuong, moTaBoLoc, nhanDot, phanTram,
+  PERMISSIONS, ROUTE_NAME, XUAT_TOI_DA_LUOT, nhanXetW, tenGvCham, bangBoLoc, bangFT, bangThuong, dongXemTruoc, dongXemTruocThuong, moTaBoLoc, nhanDot, phanTram,
   tenMon, tenSheetThuong, tenTepXuatMt, trangThaiLuotXuat,
   type BoLocXuatMt, type Cell, type DongFT, type DongThuong,
 } from '../../../shared/domain/index.ts';
@@ -89,6 +89,7 @@ const nguoiNhapCua = (scores: ScoreRow[]) => {
   const ten = THU_TU_NHAP.map((k) => scores.find((s) => s.skill === k)?.entered_by_name).filter((x): x is string => !!x);
   return ten.length ? [...new Set(ten)].join(', ') : null;
 };
+const nhanXetCua = (scores: ScoreRow[], k: string) => scores.find((s) => s.skill === k)?.comment ?? null;
 const bandCua = (scores: ScoreRow[], k: string) => scores.find((s) => s.skill === k)?.band ?? null;
 const tieuChiCua = (scores: ScoreRow[], k: string) => {
   const r = scores.find((s) => s.skill === k);
@@ -100,6 +101,7 @@ function dongFT(a: any, b: AttemptBundle): { d: DongFT; du: boolean } {
   const skillRows = b.skillRows.get(a.id) ?? [];
   const r = resultOf(a, scores, b.skips.get(a.id) ?? []);
   const kck = luotKck(a);
+  const gvS = scores.find((s) => s.skill === 'speaking');
   const tuanKn = (k: string) => skillRows.find((x) => x.skill === k)?.period_code ?? null;
   const d: DongFT = {
     ma: a.student_code, ten: a.full_name, chiNhanh: a.branch_name ?? '', lop: a.class_code, loTrinh: ROUTE_NAME[a.route as keyof typeof ROUTE_NAME] ?? a.route ?? '',
@@ -114,6 +116,9 @@ function dongFT(a: any, b: AttemptBundle): { d: DongFT; du: boolean } {
     tieuChi: { writing1: tieuChiCua(scores, 'writing1'), writing2: tieuChiCua(scores, 'writing2'), speaking: tieuChiCua(scores, 'speaking') },
     tuanKn: { listening: tuanKn('listening'), reading: tuanKn('reading'), writing: tuanKn('writing'), speaking: tuanKn('speaking') },
     nguoiNhap: nguoiNhapCua(scores),
+    nhanXetW: nhanXetW(nhanXetCua(scores, 'writing1'), nhanXetCua(scores, 'writing2')),
+    nhanXetS: nhanXetCua(scores, 'speaking'),
+    gvChamS: tenGvCham({ examinerUserName: gvS?.examiner_user_name, examinerName: gvS?.examiner_name }),
   };
   return { d, du: r.complete };
 }

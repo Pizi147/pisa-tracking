@@ -49,7 +49,8 @@ export async function runPrXuatTests(t: YThucTestKit) {
     ma: 'PISA-000001', ten: 'Nguyễn Minh An', chiNhanh: 'Monbay', lop: 'MB FT 101', loTrinh: 'Lộ trình A', mt: 3, tuan: 'W3 SEP 2026', tuanBd: '2026-09-14',
     l: 6, r: 6.5, w: null, s: null, overall: null, target: 7, kyVong: 6.5, sos: 2, trangThai: 'Thiếu điểm 2/4 · SOS tạm thời',
     w1: null, w2: null, tieuChi: { writing1: [null, null, null, null], writing2: [null, null, null, null], speaking: [null, null, null, null] },
-    tuanKn: { listening: 'W3 SEP 2026', reading: 'W3 SEP 2026', writing: null, speaking: null }, nguoiNhap: 'Trần Ngọc Hà', ...o,
+    tuanKn: { listening: 'W3 SEP 2026', reading: 'W3 SEP 2026', writing: null, speaking: null }, nguoiNhap: 'Trần Ngọc Hà',
+    nhanXetW: null, nhanXetS: null, gvChamS: null, ...o,
   });
 
   check('PR-XUAT (1) · bangFT: 16 cột gọn đúng thứ tự T40; đầy đủ = 16 + COT_FT_THEM, 16 cột đầu không đổi', () => {
@@ -59,7 +60,7 @@ export async function runPrXuatTests(t: YThucTestKit) {
     const day = d.bangFT([dong()], 'day-du');
     assert(day[0].length === 16 + d.COT_FT_THEM.length && day[1].length === day[0].length, `đầy đủ ${day[0].length} cột`);
     assert(day[0].slice(0, 16).join() === gon[0].join() && day[1].slice(0, 16).join() === gon[1].join(), '16 cột đầu giữ vị trí');
-    assert(day[0].includes('W2 TR') && day[0].includes('W1 TA') && day[0].includes('S FC') && day[0].at(-1) === 'Người nhập', 'tiêu chí T39');
+    assert(day[0].includes('W2 TR') && day[0].includes('W1 TA') && day[0].includes('S FC') && day[0].at(-4) === 'Người nhập' && day[0].at(-1) === 'GV chấm S', 'tiêu chí T39, cột nhận xét ở cuối');
   });
 
   check('PR-XUAT (1) · ô thiếu là null (không "—", không ""); điểm là number; KCK → Target "KCK", Kỳ vọng/SOS null', () => {
@@ -311,6 +312,42 @@ async function mayChu(t: YThucTestKit) {
     assert(mon.join() === 'Tổng hợp %', `Pre FOU: ${mon.join()}`);
     assert(pf.sheets.map((s) => s.ten).join() === [...pf.sheets.map((s) => s.ten)].filter((x) => x !== 'Bộ lọc đã dùng').sort().concat('Bộ lọc đã dùng').join(), 'sheet theo mã chương trình, Bộ lọc cuối');
     assert(!JSON.stringify(pf.sheets).includes('SOS'), 'không SOS');
+  });
+
+  check('PR-XUAT (8) · cột Nhận xét W (gộp W1 + W2) · Nhận xét S · GV chấm S: đúng chữ, null khi không có, cột gọn không có, không thêm câu SQL (YC-13.5)', () => {
+    const a = conn.prepare(
+      `SELECT a.id, a.attempt_no, st.student_code FROM assessment_attempts a JOIN students st ON st.id = a.student_id
+        WHERE a.class_id = ? AND a.kind = 'mock' AND a.status != 'cancelled' ORDER BY a.id LIMIT 2`,
+    ).all(mbLop) as any[];
+    assert(a.length === 2, 'demo thiếu 2 lượt MB FT 101');
+    /* Ghi thẳng 3 ô (không đi đường nghiệp vụ) và trả lại đúng như cũ khi xong. */
+    const cu = new Map<string, any>();
+    const ghi = (skill: string, comment: string | null, exName: string | null) => {
+      const co = conn.prepare('SELECT id, comment, examiner_name, examiner_user_id FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(a[0].id, skill) as any;
+      cu.set(skill, co ?? null);
+      if (co) conn.prepare('UPDATE assessment_scores SET comment = ?, examiner_name = ?, examiner_user_id = NULL WHERE id = ?').run(comment, exName, co.id);
+      else conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, comment, examiner_name) VALUES (?,?,?,?)').run(a[0].id, skill, comment, exName);
+    };
+    try {
+      ghi('writing1', 'Thiếu ví dụ', null); ghi('writing2', 'Lạc đề một phần', null); ghi('speaking', 'Nói tự nhiên', 'Giám khảo ngoài');
+      const f = (cot: 'gon' | 'day-du') => xm.duLieuXuatMt(P.mbManager, loc({ lop: String(mbLop), cot }));
+      const n0 = nguCanh.soCauSql(); const r = f('day-du'); const nSql = nguCanh.soCauSql() - n0;
+      const [tieuDe, ...dong] = r.sheets[0].aoa;
+      const [iW, iS, iGv] = ['Nhận xét W', 'Nhận xét S', 'GV chấm S'].map((c) => tieuDe.indexOf(c));
+      assert(iW > 0 && iS > iW && iGv > iS, `thiếu cột: ${tieuDe.slice(-5)}`);
+      const co = dong.find((x) => x[0] === a[0].student_code && x[5] === `MT${a[0].attempt_no}`)!;
+      assert(co[iW] === 'Task 1: Thiếu ví dụ\nTask 2: Lạc đề một phần' && co[iS] === 'Nói tự nhiên' && co[iGv] === 'Giám khảo ngoài', JSON.stringify([co[iW], co[iS], co[iGv]]));
+      const khong = dong.find((x) => x[0] === a[1].student_code && x[5] === `MT${a[1].attempt_no}`)!;
+      assert(khong[iW] === null && khong[iS] === null && khong[iGv] === null, 'lượt không nhận xét → ô trống (null)');
+      assert(!f('gon').sheets[0].aoa[0].some((c) => /Nhận xét|GV chấm/.test(String(c))), 'cột gọn không có 3 cột này');
+      const n1 = nguCanh.soCauSql(); f('day-du'); const nSql2 = nguCanh.soCauSql() - n1;
+      assert(nSql === nSql2 && nSql <= 8, `số câu SQL ${nSql} / ${nSql2} (phải ≤ 8, không thêm vì nhận xét)`);
+    } finally {
+      for (const [skill, co] of cu) {
+        if (co) conn.prepare('UPDATE assessment_scores SET comment = ?, examiner_name = ?, examiner_user_id = ? WHERE id = ?').run(co.comment, co.examiner_name, co.examiner_user_id, co.id);
+        else conn.prepare('DELETE FROM assessment_scores WHERE attempt_id = ? AND skill = ?').run(a[0].id, skill);
+      }
+    }
   });
 
   // ------------------------------------------------------------------ khối 3: giao diện (đọc nguồn)

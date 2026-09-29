@@ -1,5 +1,6 @@
 import { mondayOfDate, owningMonthOf } from './week.ts';
 import { tuanLich } from './hienThiNgay.ts';
+import { tieuChiNganCua } from './skills.ts';
 
 /**
  * XUẤT EXCEL KẾT QUẢ TEST (PR-XUAT · YC-13.9 · T40). LUẬT THUẦN: đọc + kiểm bộ lọc, bộ cột, dựng mảng hai chiều, tên tệp.
@@ -129,10 +130,9 @@ export function moTaBoLoc(f: BoLocXuatMt, ten: { chiNhanh: string[]; lop: string
 
 export const COT_FT_GON = ['Mã', 'Tên', 'Chi nhánh', 'Lớp', 'Lộ trình', 'MT', 'Tuần', 'L', 'R', 'W', 'S', 'Overall', 'Target',
   'Kỳ vọng', 'SOS', 'Trạng thái lượt'] as const;                                   // 16 cột — K4-35(c)
-/** T39/K4-25: W1 `TA CC LR GRA`, W2 `TR CC LR GRA`. ponytail: bảng riêng cho xuất — PR-HSM merge thì dùng `tieuChiNganCua` (Task 8). */
-const TIEU_CHI = { writing1: ['TA', 'CC', 'LR', 'GRA'], writing2: ['TR', 'CC', 'LR', 'GRA'], speaking: ['FC', 'LR', 'GRA', 'P'] } as const;   // KHÔNG import CRITERIA_SHORT — PR-HSM xoá nó
-export const COT_FT_THEM = ['W1', 'W2', ...TIEU_CHI.writing1.map((t) => `W1 ${t}`), ...TIEU_CHI.writing2.map((t) => `W2 ${t}`),
-  ...TIEU_CHI.speaking.map((t) => `S ${t}`), 'Tuần L', 'Tuần R', 'Tuần W', 'Tuần S', 'Người nhập'];
+/** T39/K4-25: W1 `TA CC LR GRA`, W2 `TR CC LR GRA` — một nguồn với lưới và hồ sơ Mock (`tieuChiNganCua`, PR-HSM). */
+export const COT_FT_THEM = ['W1', 'W2', ...tieuChiNganCua('writing1')!.map((t) => `W1 ${t}`), ...tieuChiNganCua('writing2')!.map((t) => `W2 ${t}`),
+  ...tieuChiNganCua('speaking')!.map((t) => `S ${t}`), 'Tuần L', 'Tuần R', 'Tuần W', 'Tuần S', 'Người nhập', 'Nhận xét W', 'Nhận xét S', 'GV chấm S'];
 
 export type DongFT = {
   ma: string; ten: string; chiNhanh: string; lop: string; loTrinh: string;
@@ -143,6 +143,8 @@ export type DongFT = {
   tieuChi: Record<'writing1' | 'writing2' | 'speaking', (number | null)[]>;
   tuanKn: Record<'listening' | 'reading' | 'writing' | 'speaking', string | null>;
   nguoiNhap: string | null;
+  /** YC-13.5: W1 + W2 gộp một ô (`nhanXetW`), nhận xét Speaking, GV chấm Speaking (`tenGvCham`) — `null` khi không có. */
+  nhanXetW: string | null; nhanXetS: string | null; gvChamS: string | null;
 };
 
 /** Hàng 1 = tiêu đề; mọi điểm là số hoặc `null`. */
@@ -154,7 +156,7 @@ export function bangFT(dong: DongFT[], cot: 'gon' | 'day-du'): Cell[][] {
       d.kyVong, d.sos, d.trangThai];
     if (day) {
       hang.push(d.w1, d.w2, ...d.tieuChi.writing1, ...d.tieuChi.writing2, ...d.tieuChi.speaking,
-        d.tuanKn.listening, d.tuanKn.reading, d.tuanKn.writing, d.tuanKn.speaking, d.nguoiNhap);
+        d.tuanKn.listening, d.tuanKn.reading, d.tuanKn.writing, d.tuanKn.speaking, d.nguoiNhap, d.nhanXetW, d.nhanXetS, d.gvChamS);
     }
     out.push(hang);
   }
