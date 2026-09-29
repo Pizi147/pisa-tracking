@@ -1,4 +1,4 @@
-import type { MeasureKindV3, ViolationCategory } from '../../../shared/domain/index.ts';
+import type { ViolationCategory } from '../../../shared/domain/index.ts';
 import type { BuildCtx } from './build.ts';
 import { DEMO_DATE } from './journeys.ts';
 
@@ -33,7 +33,7 @@ type VSeed = {
 
 type MSeed = {
   key: string;
-  kind: MeasureKindV3;
+  kind: string;
   customName?: string;
   createdOn: string;
   status: 'preparing' | 'done';

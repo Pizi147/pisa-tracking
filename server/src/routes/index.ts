@@ -975,7 +975,7 @@ api.get('/students/:id/violations', requireAuth, wrap((req) => {
    * Q14: chu kỳ hiện tại của em — FT theo lộ trình (`cycleId`), lớp thường theo khoá đang học (`classId`). MỌI học viên có
    * một dòng `learning_cycles` (intake.ts: "mở lộ trình cho mọi em"), nhưng chỉ FT có `route` (LT1/LT2…) — lớp thường có
    * `programme_code` mà `route = null` (đúng cách `cycleLabel` ở `students/profile.ts:48` phân biệt hai loại), nên `cycleId`
-   * chỉ lấy khi `route` có; không thì `trongChuKyHienTai` phải rơi về so `classId`.
+   * chỉ lấy khi `route` có; không thì so `classId` (lớp thường).
    */
   const cyc = cycleSvc.currentCycle(id);
   return { ...result, chuKy: { cycleId: cyc?.route ? cyc.id : null, classId: accessSvc.activeClassOf(id) } };

@@ -803,4 +803,92 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(d.GOC_NHIN_LABEL['y-thuc'] === 'Ý thức', d.GOC_NHIN_LABEL['y-thuc']);
     assert(!('BUOC_TIEP' in d) && !('buocTiepTheo' in d) && !('laHvCanChuY' in d), 'còn luật v3');
   });
+
+  // ------------------------------------------------------------------ Task 8–10 · web: thang, nhãn, panel, tab lớp M6, tab HV (soi mã nguồn)
+  const docW = (f: string) => fs.readFileSync(path.join(REPO3, f), 'utf8');
+  const boChuThich = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:\\])\/\/.*$/gm, '$1');
+  const YT = 'web/src/modules/yThuc';
+  const tepYt = fs.readdirSync(path.join(REPO3, YT)).filter((f) => /\.tsx?$/.test(f));
+
+  check('YT4 (8) · Không còn chữ v3 trong web/src/modules/yThuc (trừ Phối hợp SOS / Case SOS): Phương án · PA · Đang chuẩn bị · Thư cảnh cáo · Ghi nhận vi phạm', () => {
+    const sai = tepYt.filter((f) => !/PhoiHopSosSection|CaseSosControls/.test(f))
+      .filter((f) => /Phương án|\bPA\b|Đang chuẩn bị|Thư cảnh cáo|Ghi nhận vi phạm/.test(boChuThich(docW(`${YT}/${f}`))));
+    assert(!sai.length, sai.join(', '));
+    assert(!/Ghi nhận vi phạm|Thư cảnh cáo|Đang chuẩn bị/.test(boChuThich(docW('shared/domain/hocVienLop.ts'))), 'hocVienLop.ts');
+  });
+  check('YT4 (8) · Panel v3 đã xoá, không còn import: CreateMeasurePanel · PhuongAnPanel · ConfirmMeasurePanel · XemPhuongAnPanel', () => {
+    for (const f of ['CreateMeasurePanel', 'PhuongAnPanel', 'ConfirmMeasurePanel', 'XemPhuongAnPanel']) {
+      assert(!tepYt.includes(`${f}.tsx`), `${f}.tsx còn`);
+      assert(!tepYt.some((x) => docW(`${YT}/${x}`).includes(`./${f}.tsx`)), `còn import ${f}`);
+    }
+  });
+  check('YT4 (8) · Thang MỘT dòng: flex-nowrap, không flex-wrap; bậc đã qua thu thành dấu tích dưới sm; dấu tích là SVG (không ký tự ✓)', () => {
+    const s = docW(`${YT}/ThangYThuc.tsx`);
+    assert(/flex-nowrap/.test(s) && /whitespace-nowrap/.test(s) && !/flex-wrap(?!\s*:)/.test(s.replace(/flex-nowrap/g, '')), 'một dòng');
+    assert(/hidden sm:inline/.test(s) && /<DauTich/.test(s) && !/✓/.test(boChuThich(s)), 'thu gọn + SVG');
+    assert(/<svg/.test(docW(`${YT}/NhanViPham.tsx`)) && /strokeWidth="1.5"/.test(docW(`${YT}/NhanViPham.tsx`)), 'SVG nét 1.5');
+  });
+  check('YT4 (8) · NhanViPham đủ sáu trạng thái §5.4; "Đã ghi nhận" chữ xám, không nền, kèm "vẫn tính"', () => {
+    const s = docW(`${YT}/NhanViPham.tsx`);
+    for (const t of d.TRANG_THAI_VP) assert(new RegExp(`\\b${t}:`).test(s), `thiếu ${t}`);
+    const dong = /da_ghi_nhan: '([^']*)'/.exec(s)?.[1] ?? '';
+    assert(!/bg-/.test(dong) && /text-slate-400/.test(dong) && /Đã ghi nhận · vẫn tính/.test(s), dong);
+  });
+  check('YT4 (8) · Xác nhận xử lý: client KHÔNG gửi loại (bậc máy chủ quyết), gửi bacDaThay; 409 → mở lại "Bậc vừa đổi"', () => {
+    const s = docW(`${YT}/XacNhanXuLyPanel.tsx`);
+    const payload = /y-thuc\/xu-ly`, \{([\s\S]*?)\}\);/.exec(s)?.[1] ?? '';
+    assert(payload && !/\bkind\b/.test(payload) && /bacDaThay/.test(payload), payload);
+    assert(/status === 409/.test(s) && /Bậc vừa đổi — đã mở lại với bậc mới/.test(s), '409');
+  });
+  check('YT4 (8) · Đề xuất QL duyệt: nháp → bằng chứng bắt buộc → "Gửi QL duyệt · trả lời trong 5 ngày"; đóng giữa chừng xoá nháp', () => {
+    const s = docW(`${YT}/XacNhanXuLyPanel.tsx`);
+    assert(/y-thuc\/de-xuat/.test(s) && /\/gui`/.test(s) && /Gửi QL duyệt · trả lời trong 5 ngày/.test(s), 'luồng');
+    assert(/api\.del\(`\/y-thuc\/xu-ly\/\$\{daLuu\.id\}`\)/.test(s) && /Cần đính kèm tệp hoặc liên kết/.test(s), 'xoá nháp + bằng chứng');
+    assert(/Cần xử lý nặng hơn/.test(s) && /Khai bậc trước/.test(s), 'liên kết Đề xuất + dòng Khai bậc (Q7)');
+  });
+  check('YT4 (8) · Khai bậc: năm bậc (Report 1 … WL 2), tháng tuỳ chọn, ghi chú ≥ 3; QL sửa bằng PUT', () => {
+    const s = docW(`${YT}/KhaiBacPanel.tsx`);
+    assert(/THANG\.slice\(0, 5\)/.test(s) && /GHI_CHU_MIN = 3/.test(s) && /api\.put\(/.test(s) && /kieu="thang"/.test(s), 'khai bậc');
+  });
+  check('YT4 (8) · + Ghi vi phạm (T31): tiêu đề "Ghi vi phạm", KHÔNG chọn sẵn nhóm (K3-35), nhóm bắt buộc chọn', () => {
+    const s = docW(`${YT}/RecordViolationPanel.tsx`);
+    assert(/'Ghi vi phạm'/.test(s) && /useState<string>\(''\)/.test(s) && /khoa: 'nhom', nhan: 'Nhóm', chon: true/.test(s), 'panel ghi');
+    assert(!/Ghi nhận vi phạm/.test(boChuThich(s)), 'chữ cũ');
+  });
+  check('YT4 (8) · DongThoiGian D5: dưới sm ngày + cột 2 một dòng, nội dung và cột cuối chiếm cả dòng dưới', () => {
+    const s = docW('web/src/ui/DongThoiGian.tsx');
+    assert(/khong: 'grid-cols-\[3\.25rem_minmax\(0,1fr\)\] md:/.test(s) && /col-span-2 md:col-span-1/.test(s), 'lưới D5');
+  });
+  check('YT4 (9) · Tab lớp M6: hai khung + tab "Xử lý · Vi phạm" dưới md; không còn bốn chip, hai chế độ, ô tick, khoảng ngày', () => {
+    const s = docW(`${YT}/ClassYThucCard.tsx`);
+    assert(/md:grid-cols-\[minmax\(0,22rem\)_minmax\(0,1fr\)\]/.test(s) && /label: 'Xử lý'/.test(s) && /label: 'Vi phạm'/.test(s), 'hai khung');
+    assert(!/BO_LOC_PHU|hopBoLocPhu|tuNgayTheoKhoang|byTime|type="checkbox"|Theo thời gian/.test(s), 'bộ lọc v3');
+    assert(/NHOM_EM\.filter/.test(s) && /params\.get\('mo'\)/.test(s) && /'Phối hợp'/.test(s), 'nhóm em, ?mo, tab Phối hợp');
+  });
+  check('YT4 (9) · GVBM (canManage = false) không thấy Ghi nhận / Xác nhận xử lý / Khai bậc trên tab lớp; vẫn có + Ghi vi phạm (canRecord)', () => {
+    const s = docW(`${YT}/ClassYThucCard.tsx`);
+    assert(/const coGhiNhan = hv\.canManage &&/.test(s) && /const nut = !hv\.canManage \? null/.test(s) && /onKhai=\{hv\.canManage \?/.test(s), 'ẩn theo quyền');
+    assert(/d\.canRecord \? <button[\s\S]{0,200}?\+ Ghi vi phạm/.test(s), '+ Ghi vi phạm');
+  });
+  check('YT4 (9) · Phối hợp (K3-38): "Meeting CX/GĐCN (sau Mock)" + chữ phụ "không phải xử lý vi phạm, không cần QL duyệt"', () => {
+    const s = docW(`${YT}/PhoiHopSosSection.tsx`);
+    assert(/Meeting CX\/GĐCN \(sau Mock\)/.test(s) && /không phải xử lý vi phạm, không cần QL duyệt/.test(s), 'nhãn');
+  });
+  check('YT4 (10) · Tab HV (K3 §4f): thanh việc, thang, bộ lọc MỘT hàng, dòng thời gian trộn không ô tick, "Xem cả lịch sử", dòng đếm cuối', () => {
+    const s = docW(`${YT}/StudentYThucSection.tsx`);
+    assert(/function ThanhViec/.test(s) && /<ThangYThuc/.test(s) && /Xem cả lịch sử/.test(s) && /demCuoi/.test(s), 'bố cục');
+    assert(/<BoLocDoan/.test(s) && /'Chờ duyệt'/.test(s) && /Cần xử lý/.test(s) && /'Đã xử lý'/.test(s) && !/type="checkbox"|coCotChon/.test(s), 'bộ lọc một hàng + không tick');
+    assert(/vach: true/.test(s) && !/violation-warning/.test(docW('web/src/modules/students/StudentDetailPage.tsx')), 'dòng xử lý vạch trái; hồ sơ không gọi violation-warning');
+  });
+  check('YT4 (10) · Luật v3 đã gỡ khỏi miền chung: không còn chín loại/chuỗi thư/cảnh báo mềm/bốn chip/patch PA', () => {
+    for (const k of ['VIOLATION_STATES', 'violationWarning', 'violationAgeLabel', 'MEASURE_KINDS_V3', 'WARNING_CHAIN', 'measureMissing', 'CANH_BAO_NGAY',
+      'chiaThemViPham', 'thanPatchPhuongAn', 'BO_LOC_PHU', 'hopBoLocPhu', 'tuNgayTheoKhoang', 'trongChuKyHienTai', 'dongViPhamLop']) {
+      assert(!(k in d), `còn ${k}`);
+    }
+    assert(!fs.existsSync(path.join(REPO3, 'shared/domain/viPhamLop.ts')), 'viPhamLop.ts còn');
+  });
+  check('YT4 (10) · Nhãn lịch sử vi phạm nói "lần xử lý"; cảnh báo trùng theo trạng thái v4', () => {
+    assert(d.nhanLichSuViPham({ id: 1, field: 'measure', oldValue: null, newValue: '3', actorUserId: 1, actorName: null, createdAt: '2026-09-01T00:00:00Z' }, TODAY).moi === 'Gắn vào lần xử lý', 'lịch sử');
+    assert(d.cauCanhBaoTrung([{ category: 'homework', occurredOn: TODAY, trangThai: 'cho_duyet' }], TODAY) === `Đã có 1 vi phạm BTVN ngày ${d.ngay(TODAY, TODAY)}`, 'chờ duyệt không "chưa xử lý"');
+  });
 }

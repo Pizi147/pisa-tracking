@@ -149,14 +149,6 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     assert(f([], C).tiep?.text === 'Ghi kết quả PA', 'việc tiếp');
   });
 
-  check('UX3 (1) · Ý thức: cảnh báo và tuổi vi phạm không còn ⚠ (nhắc mềm, không phải quá hạn); HS → HV', () => {
-    const w = d.violationWarning(['2026-09-04', '2026-09-08'], '2026-09-14');
-    assert(w.message === 'Chưa xử lý 2 vi phạm · cũ nhất 10 ngày', w.message);
-    assert(d.violationAgeLabel(9) === '9 ngày' && d.violationAgeLabel(3) === '', 'nhãn tuổi');
-    assert(!/⚠/.test(w.message + d.violationAgeLabel(9)), '⚠');
-    assert(/HV/.test(d.MEASURE_KIND_LABEL_V3.talk_short) && !/\bHS\b/.test(Object.values(d.MEASURE_KIND_LABEL_V3).join(' ')), 'HS → HV');
-  });
-
   // ==================================================================== 2. Máy chủ: chữ việc, đường dẫn mở ngăn Case, người làm PA
 
   const { conn } = t;
@@ -266,7 +258,8 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
   const PANEL_UX3 = [
     'cases/QuickReport', 'cases/CasePanel', 'cases/CapNhatTuan', 'cases/ThaoTacCase', 'cases/SkillBoard',
     'students/NganCase', 'students/ChuyenLopPanel', 'students/LoTrinhTiepPanel', 'students/StudentManagePanel',
-    'yThuc/RecordViolationPanel', 'yThuc/PhuongAnPanel', 'yThuc/CreateMeasurePanel', 'yThuc/ConfirmMeasurePanel', 'yThuc/XemPhuongAnPanel',
+    /* PR-YT4: bốn panel PA v3 → Xác nhận xử lý · Đã thực hiện · Khai bậc · Xem lần xử lý. */
+    'yThuc/RecordViolationPanel', 'yThuc/XacNhanXuLyPanel', 'yThuc/DaThucHienPanel', 'yThuc/KhaiBacPanel', 'yThuc/XemXuLyPanel',
     'classes/TeacherAssignPanel',
   ].map((f) => `web/src/modules/${f}.tsx`);
   const CAM: [string, RegExp][] = [

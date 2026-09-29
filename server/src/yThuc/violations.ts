@@ -42,6 +42,8 @@ export type ViolationView = {
   trangThai: TrangThaiVp; nhanTrangThai: string;
   /** Hạn (Mới: ghi nhận/xử lý; bắt buộc: xử lý) và số ngày quá hạn — null khi không có. */
   han: string | null; quaHanNgay: number | null;
+  /** Quá hạn vì bắt buộc chưa xử lý (`xu-ly`) hay vì chưa ai xem (`xem`) — chỉ `xem` còn Ghi nhận được (V4-2). */
+  lyDoQuaHan: 'xu-ly' | 'xem' | null;
   ghiNhanLuc: string | null; ghiNhanBoiName: string | null;
   createdAt: string; updatedAt: string | null;
 };
@@ -68,7 +70,7 @@ export function shapeViolation(r: any, em?: EmYThuc): ViolationView {
     occurredOn: r.occurred_on, reportedOn: r.reported_on,
     reportedBy: r.reported_by, reportedByName: r.reported_by_name ?? null,
     description: r.description,
-    trangThai: tt?.t ?? 'moi', nhanTrangThai: tt?.nhan ?? 'Mới', han: tt?.han ?? null, quaHanNgay: tt?.quaHanNgay ?? null,
+    trangThai: tt?.t ?? 'moi', nhanTrangThai: tt?.nhan ?? 'Mới', han: tt?.han ?? null, quaHanNgay: tt?.quaHanNgay ?? null, lyDoQuaHan: tt?.lyDoQuaHan ?? null,
     ghiNhanLuc: r.ghi_nhan_luc ?? null, ghiNhanBoiName: r.ghi_nhan_boi_name ?? null,
     createdAt: r.created_at, updatedAt: r.updated_at ?? null,
   };

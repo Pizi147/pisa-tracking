@@ -15,7 +15,8 @@ import {
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 
 /**
- * PANEL `GHI NHẬN VI PHẠM` (PR-UX3, N-4, mockup 15 §6) — GVBM/GVCN/QL ghi một sự việc.
+ * PANEL `GHI VI PHẠM` (PR-UX3, N-4, mockup 15 §6; PR-YT4 T31 — "Ghi nhận" nay chỉ nghĩa "đã xem") — GVBM/GVCN/QL ghi một sự việc.
+ * Nhóm KHÔNG chọn sẵn (K3-35): người ghi phải chọn, tránh mọi vi phạm thành BTVN vì quên đổi.
  *
  * Cũng dùng để SỬA vi phạm (V09): truyền `violation` thì form nạp sẵn bốn trường sửa được và gọi PATCH thay vì POST; chân trái là
  * `Xoá vi phạm` (viền đỏ). Không hỏi mức độ, hạn, ai xử lý, biện pháp (V08) — ghi vi phạm không sinh gì khác.
@@ -28,7 +29,7 @@ export function RecordViolationPanel({
 }: {
   open: boolean; onClose: () => void;
   studentId: number; studentName?: string;
-  /** Mã lớp hiện ở đầu ngăn (`Ghi nhận vi phạm · Tên HV · MB FOU 12`). */
+  /** Mã lớp hiện ở đầu ngăn (`Ghi vi phạm · Tên HV · MB FOU 12`). */
   lop?: string | null;
   onDone?: () => void;
   /** Mở từ trang lớp: chọn học viên ngay ở đầu form (như QuickReport). */
@@ -44,7 +45,7 @@ export function RecordViolationPanel({
   const toast = useToast();
   const { homNay: today } = useNgayNghiepVu();
   const editing = !!violation;
-  const [category, setCategory] = useState<string>('homework');
+  const [category, setCategory] = useState<string>('');
   const [skill, setSkill] = useState<string>('');
   /* YT-4: người dùng đã đụng ô Môn chưa — chưa đụng thì môn tự điền không tính là một lựa chọn. */
   const [daChonMon, setDaChonMon] = useState(false);
@@ -64,7 +65,7 @@ export function RecordViolationPanel({
   );
 
   const reset = () => {
-    setCategory('homework'); setSkill(''); setOccurredOn(today); setDescription(''); setGhiRo(''); setDaChonMon(false);
+    setCategory(''); setSkill(''); setOccurredOn(today); setDescription(''); setGhiRo(''); setDaChonMon(false);
     setDaGhi(null); setXemTrung(false); lf.datLai();
   };
 
@@ -114,9 +115,10 @@ export function RecordViolationPanel({
   /* Ô lỗi (YC-12.5.2): lý do dưới ô khi rời ô; chân "n ô cần sửa ↑" sau khi bấm Lưu. */
   const loi = dsLoi([
     ...(students && !editing ? [{ khoa: 'hoc-vien', nhan: 'Học viên', chon: true }] : []),
+    { khoa: 'nhom', nhan: 'Nhóm', chon: true },
     ...(laNhomKhac && !chuaDung ? [{ khoa: 'ghi-ro', nhan: 'Ghi rõ', toiThieu: KHAC_TOI_THIEU }] : []),
     ...(!chuaDung ? [{ khoa: 'mo-ta', nhan: 'Mô tả', toiThieu: minLen }] : []),
-  ], { 'hoc-vien': studentId, 'ghi-ro': ghiRo, 'mo-ta': description });
+  ], { 'hoc-vien': studentId, nhom: category, 'ghi-ro': ghiRo, 'mo-ta': description });
   const thieu = loi.map((l) => l.nhan);
 
   const hoanTac = async (id: number) => {
@@ -183,7 +185,7 @@ export function RecordViolationPanel({
 
   if (!open) return null;
 
-  const tieuDe = editing ? 'Sửa vi phạm' : 'Ghi nhận vi phạm';
+  const tieuDe = editing ? 'Sửa vi phạm' : 'Ghi vi phạm';
   const tenChon = (students ?? []).find((st) => st.id === studentId)?.name ?? studentName;
 
   if (daGhi) {
@@ -237,8 +239,8 @@ export function RecordViolationPanel({
         </Hang2>
 
         {/* Năm nhóm: danh sách hai hàng (≤ 4 nút/hàng), nút cao 44px ở điện thoại. */}
-        <Truong nhan="Nhóm" batBuoc as="div">
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <Truong nhan="Nhóm" batBuoc as="div" loi={lf.loiCua(loi, 'nhom')}>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" {...lf.o(loi, 'nhom')}>
             {VIOLATION_CATEGORIES.map((c) => (
               <NutChon key={c} chon={category === c} className="justify-center" onClick={() => setCategory(c)}>
                 {VIOLATION_CATEGORY_LABEL[c as ViolationCategory]}
@@ -261,7 +263,7 @@ export function RecordViolationPanel({
             <button type="button" className="link appearance-none border-0 bg-transparent p-0" aria-expanded={xemTrung} onClick={() => setXemTrung((v) => !v)}>Xem</button>
             {xemTrung && (
               <ul className="m-0 mt-1 list-none space-y-0.5 p-0 text-[11px] text-slate-400">
-                {trungRows.map((r) => <li key={r.id}>{r.description} · {r.reportedByName ?? 'một giáo viên'} · {r.stateLabel}</li>)}
+                {trungRows.map((r) => <li key={r.id}>{r.description} · {r.reportedByName ?? 'một giáo viên'} · {r.nhanTrangThai}</li>)}
               </ul>
             )}
           </div>

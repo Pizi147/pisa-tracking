@@ -17,24 +17,14 @@ export type ViolationDetail = {
 };
 
 /**
- * CHI TIẾT MỘT VI PHẠM — vẽ ngay dưới dòng khi mở tại chỗ (YT-1, YT-13; kế hoạch Task 3).
- * Bốn khối: Bằng chứng · Phương án (nút mở đúng PA) · Đã sửa {n} lần · Xem · Sửa/Xoá tại dòng.
+ * CHI TIẾT MỘT VI PHẠM — vẽ ngay dưới dòng khi mở tại chỗ (YT-1, YT-13).
+ * Bốn khối: Bằng chứng · Lần xử lý (nút mở đúng lần xử lý) · Đã sửa {n} lần · Xem · Sửa/Xoá tại dòng. Quyền Sửa/Xoá = `d.canEdit` (máy chủ).
  */
-export function ChiTietViPham({
-  violationId, canManage, boQuaPhuongAnId, choSua, choXoa, onSua, onDaXoa, onMoPhuongAn,
-}: {
+export function ChiTietViPham({ violationId, onSua, onDaXoa, onMoXuLy }: {
   violationId: number;
-  /** Chưa dùng trực tiếp — quyền Sửa/Xoá lấy từ `d.canEdit` do máy chủ tính đúng theo người ghi/GVCN/Quản lý; giữ tham số để nơi gọi truyền cho khớp chữ ký kế hoạch. */
-  canManage: boolean;
-  /** PA đang mở sẵn (không hiện nút mở lại chính nó). */
-  boQuaPhuongAnId?: number | null;
-  /** `false` khi PA cha đang có thay đổi chưa lưu — khoá Sửa (Q3). Mặc định cho sửa. */
-  choSua?: boolean;
-  /** `false` khi PA cha đang có thay đổi chưa lưu, HOẶC đây là vi phạm duy nhất của PA — khoá Xoá (không khoá Sửa). Mặc định cho xoá. */
-  choXoa?: boolean;
   onSua: (v: ViolationDetail) => void;
   onDaXoa: () => void;
-  onMoPhuongAn: (m: { id: number; status: string }) => void;
+  onMoXuLy: (id: number) => void;
 }) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
@@ -47,8 +37,8 @@ export function ChiTietViPham({
   if (!d) return <Skeleton rows={3} />;
 
   const soLanSua = demLanSua(d.history);
-  const suaDuoc = d.canEdit && choSua !== false;
-  const xoaDuoc = d.canEdit && choXoa !== false;
+  const suaDuoc = d.canEdit;
+  const xoaDuoc = d.canEdit;
 
   const xoa = async () => {
     setBusy(true); setErrXoa(null);
@@ -71,11 +61,11 @@ export function ChiTietViPham({
       </div>
 
       <div>
-        <p className="text-[11px] text-slate-500 m-0 mb-1">Phương án</p>
-        {d.measures.filter((m) => m.id !== boQuaPhuongAnId).length === 0 ? <p className="text-slate-400 m-0">—</p> : (
+        <p className="text-[11px] text-slate-500 m-0 mb-1">Lần xử lý</p>
+        {d.measures.length === 0 ? <p className="text-slate-400 m-0">Chưa nằm trong lần xử lý nào</p> : (
           <div className="flex flex-wrap gap-x-3 gap-y-1">
-            {d.measures.filter((m) => m.id !== boQuaPhuongAnId).map((m) => (
-              <button key={m.id} type="button" className="text-sky-300 hover:underline" onClick={() => onMoPhuongAn(m)}>
+            {d.measures.map((m) => (
+              <button key={m.id} type="button" className="link" onClick={() => onMoXuLy(m.id)}>
                 {m.kindLabel} · {m.statusLabel.toLowerCase()}
               </button>
             ))}
@@ -111,13 +101,11 @@ export function ChiTietViPham({
           <button type="button" className="btn btn-sm btn-ghost text-rose-200" onClick={() => setHoiXoa(true)}>Xoá</button>
         ) : (
           <span className="flex flex-wrap items-center gap-2 text-xs text-amber-200/90">
-            Xoá vi phạm này? Nó sẽ bị gỡ khỏi {d.measures.length} phương án.
+            {d.measures.length ? `Xoá vi phạm này? Lần xử lý chứa nó vẫn giữ, bậc không lùi.` : 'Xoá vi phạm này?'}
             <button type="button" className="btn btn-sm btn-ghost" disabled={busy} onClick={() => { setHoiXoa(false); setErrXoa(null); }}>Huỷ</button>
             <button type="button" className="btn btn-sm text-rose-200" disabled={busy} onClick={xoa}>Xoá</button>
           </span>
         ))}
-        {/* Chỉ dirty (chưa lưu) mới nói "lưu phương án trước" — vi phạm duy nhất (chỉ khoá Xoá) không có gì chưa lưu thì im lặng. */}
-        {d.canEdit && choSua === false && <span className="text-[11px] text-amber-200/80" title="Lưu phương án trước">Sửa · Xoá — lưu phương án trước</span>}
       </div>
       {errXoa && <p className="text-xs text-rose-300 m-0">{errXoa}</p>}
     </div>

@@ -207,11 +207,14 @@ export function nhomGiaoVienBoMon(
 
 // ---------------------------------------------------------------- menu ⋯ dòng học viên (§3.7, §4, Q1)
 
-export type MucMenuDong = 'ho-so' | 'vi-pham' | 'case' | 'nhap-diem' | 'lo-trinh-tiep' | 'chuyen-lop';
+/* PR-YT4 (K2-30 phần chữ): bỏ mục `Hồ sơ` (tên em đã là liên kết); "+ Ghi vi phạm" (T31 — "Ghi nhận" chỉ nghĩa đã xem). */
+export type MucMenuDong = 'vi-pham' | 'case' | 'nhap-diem' | 'lo-trinh-tiep' | 'chuyen-lop';
 export const MUC_MENU_DONG_NHAN: Record<MucMenuDong, string> = {
-  'ho-so': 'Hồ sơ', 'vi-pham': '+ Ghi nhận vi phạm', case: '+ Case', 'nhap-diem': 'Nhập điểm',
+  'vi-pham': '+ Ghi vi phạm', case: '+ Case', 'nhap-diem': 'Nhập điểm',
   'lo-trinh-tiep': 'Lộ trình tiếp theo', 'chuyen-lop': 'Chuyển lớp',
 };
+/** Việc HIẾM của dòng (K2-30): kẻ vạch trước mục hiếm đầu tiên — tách khỏi việc hằng ngày (Ghi vi phạm · Case · Nhập điểm). */
+export const MUC_MENU_DONG_HIEM: readonly MucMenuDong[] = ['lo-trinh-tiep', 'chuyen-lop'];
 /**
  * Hai mục thuộc PR-LT (đợt 5). Đã có màn làm việc đúng luật §3.9 (`LoTrinhTiepPanel.tsx`,
  * `ChuyenLopPanel.tsx`) — panel gắn ở `web/src/modules/classes/thaoTacDongHocVien.tsx`.
@@ -222,7 +225,7 @@ export function mucMenuDongHocVien(i: {
   laLopThuong: boolean; dangHoc: boolean; coTheGhiViPham: boolean; coTheBaoCase: boolean;
   coTheNhapDiem: boolean; coTheSuaHocVien: boolean; coTheChuyenLop: boolean;
 }, bat: { loTrinhTiepTheo: boolean; chuyenLop: boolean } = MENU_DONG_CHO_PR_LT): MucMenuDong[] {
-  const out: MucMenuDong[] = ['ho-so'];
+  const out: MucMenuDong[] = [];
   if (!i.dangHoc) return out;
   if (i.coTheGhiViPham) out.push('vi-pham');
   if (i.coTheBaoCase) out.push('case');

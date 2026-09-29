@@ -759,8 +759,9 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
 
   // ==================================================================== Task 7 — AN-9, R8a, R8b, thông báo (quét nguồn)
 
-  check('PR-Qb (7) · StudentYThucSection.tsx nhận prop canhBao (AN-9 — một lần gọi /violation-warning)', () => {
-    assert(doc('web/src/modules/yThuc/StudentYThucSection.tsx').includes('canhBao'), 'Phải có prop canhBao');
+  check('PR-Qb (7) · (PR-YT4) dấu ⚠ tab Ý thức và tab bên trong đọc CÙNG đường /students/:id/y-thuc (một cửa trạng thái, không gọi riêng)', () => {
+    const trang = doc('web/src/modules/students/StudentDetailPage.tsx'), tab = doc('web/src/modules/yThuc/StudentYThucSection.tsx');
+    assert(trang.includes('/students/${id}/y-thuc') && tab.includes('/students/${studentId}/y-thuc') && !/violation-warning/.test(trang + tab), 'một đường');
   });
 
   check('PR-Qb (7) · ClassRoster.tsx: nhãn đợt dùng duongHoSoHocVien, không còn tự dựng /mock-test/ ở đó', () => {

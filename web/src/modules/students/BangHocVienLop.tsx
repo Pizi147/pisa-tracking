@@ -1,3 +1,4 @@
+import type { NhanYThucEm } from '@shared/domain/index.ts';
 import { useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
@@ -24,7 +25,7 @@ export type DongRoster = {
   standing: KetQuaVao | null;
   openCases: number; handoverCases: number;
   missing: { key: string; label: string; who: string }[];
-  canhBaoYThuc: { count: number; oldestAgeDays: number; message: string } | null;
+  canhBaoYThuc: NhanYThucEm | null;
   viecTiepTheo: ViecTiepTheo[];
   timeline: { id: number; kind: string; kindLabel: string; myPending: string[]; overdueSkills: number }[];
   /** PR-LT: cột Khoá "tiếp theo: …" và cờ chưa có lộ trình tiếp theo (chỉ lớp thường). */
