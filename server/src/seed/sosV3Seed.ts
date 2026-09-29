@@ -6,7 +6,8 @@ import { commitIntake } from '../classes/intake.ts';
 import { saveScore } from '../fasttrack/attempts.ts';
 import { tuanHocCuaMt } from '../../../shared/domain/index.ts';
 import { setIssues } from '../cases/cases.ts';
-import { dismissSosCase } from '../cases/sosAuto.ts';
+import { guiKhongTheoDoi } from '../cases/sosAuto.ts';
+import { duyetYeuCau } from '../duyet/yeuCau.ts';
 import { confirmCoordination } from '../yThuc/phoiHop.ts';
 import type { BuildCtx } from './build.ts';
 import { DEMO_DATE } from './journeys.ts';
@@ -88,7 +89,10 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
   const lan = addStudent('Vũ Ngọc Lan', 1, 3);
   const lanA = attempt(lan);
   score(lanA, 'listening', 5); score(lanA, 'reading', 5); score(lanA, 'speaking', 5);            // kỳ vọng MT1 6.0: ba kỹ năng dưới → SOS3
-  dismissSosCase(activeTeacher('speaking'), caseOf(lan.id, 'speaking').id, { reasonCode: 'single_incident' });
+  /* PR-SOS (S4-5): GVBM gửi Không cần theo dõi → Quản lý duyệt → Case + PA quy chế huỷ. */
+  const lanSp = caseOf(lan.id, 'speaking');
+  guiKhongTheoDoi(activeTeacher('speaking'), lanSp.id, { reasonCode: 'single_incident' });
+  duyetYeuCau(admin, (conn.prepare(`SELECT id FROM yeu_cau_duyet WHERE loai = 'khong_theo_doi' AND doi_tuong_id = ? AND trang_thai = 'cho'`).get(lanSp.id) as any).id);
   confirmCoordination(gvcn, actionOf(lanA.id, 'talk_student').id, { performedOn: addDays(DEMO_DATE, -4) });
   confirmCoordination(gvcn, actionOf(lanA.id, 'talk_family').id, { performedOn: addDays(DEMO_DATE, -3), note: 'CS gọi cho mẹ em, gia đình nắm tình hình.', performerName: 'CS Thu Hà' });
 

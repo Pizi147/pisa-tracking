@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, CONFIRM_EDIT_REASON, URGENCY_LEVELS, academicSupportFor, caseTopicLabel, issueBranchOf,
-  issuesForTopic, kiemGhiRoKhac, laKhac, mocQuyChe, ngay, reasonNeedsText, tenCaseSos, weeklyUpdateDue,
+  hanXacNhan, issuesForTopic, kiemGhiRoKhac, laKhac, mocQuyChe, ngay, reasonNeedsText, tenCaseSos, weeklyUpdateDue,
   type AcademicSupportPreset, type CaseDismissReason, type MilestoneKind,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -14,6 +14,7 @@ import { routeCuaLuot } from '../fasttrack/attempts.ts';
 import { addIssues, caseAccess, caseDetail, caseTitleOf } from './cases.ts';
 import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
 import { followUntilAfter } from './sos.ts';
+import { taoYeuCau } from '../duyet/yeuCau.ts';
 import { PA_QUY_CHE_CHUA_GHI, UNCONFIRMED_PRESET, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
 import { ghiBanDieuChinh } from './planRevisions.ts';
 
@@ -276,73 +277,113 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
   });
 }
 /**
- * `KHÔNG CẦN THEO DÕI` (S05, Q-V3-4): GVBM đóng NGAY một case tự tạo từ SOS kèm lý do chọn nhanh. Case đóng, giữ lịch sử; PA theo quy chế
- * chưa có kết quả tuần HUỶ `dismissed` (không tính thất bại, PR-N1 Q24); không có `outcome` nên không vào bất kỳ thống kê hiệu quả nào.
+ * `KHÔNG CẦN THEO DÕI` (S4-5…S4-7, T23, YC-12.4): GVBM đúng kỹ năng (C02) hoặc Quản lý trong phạm vi GỬI Quản lý duyệt một thẻ `khong_theo_doi`
+ * kèm lý do chọn nhanh. Case CHƯA đóng: hàng Case "Chờ Quản lý duyệt · không theo dõi", việc Xác nhận nguyên nhân rời Việc của GVBM và không
+ * sinh Báo lên (`awaitingCauseCaseIds` loại thẻ đang chờ). Duyệt → `apDungKhongTheoDoi`; Từ chối → `tuChoiKhongTheoDoi` (hạn mới 3 ngày).
  *
- * Chỉ áp cho case TỰ TẠO TỪ SOS còn chưa có việc thật: PA máy gán đang chạy mà chưa ghi kết quả tuần KHÔNG tính là việc thật; có PA người
- * thêm/xác nhận/thay hoặc đã ghi kết quả thì việc đã bắt đầu — kết thúc bằng
- * `Chốt kết quả case` như mọi case thường. Không khoá theo ngày: "3 ngày" của S04 là HẠN để làm, không phải cửa sổ hết hạn thì mất quyền.
- * Trượt lại ở MT sau thì SOS mở case mới NỐI vào case này (không mở lại).
+ * Chỉ khi Case còn CHỜ NGUYÊN NHÂN (S4-2: hai lựa chọn loại trừ, Q4) — đã xác nhận nguyên nhân thì kết thúc bằng Hoàn thành Case.
+ * QL kiêm GVBM tự gửi thì tự duyệt được như mọi thẻ (Q-D, Câu hỏi 2 = A: thẻ ghi "tự duyệt", báo Quản trị).
  */
-export function dismissSosCase(p: Principal, caseId: number, input: { reasonCode?: string | null; reasonText?: string | null }) {
+export function guiKhongTheoDoi(p: Principal, caseId: number, input: { reasonCode?: string | null; reasonText?: string | null }) {
   const conn = db();
   const c = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(caseId) as any;
   if (!c) throw notFound('Không tìm thấy case');
   caseAccess(caseId).requireEdit(p, EDIT_MESSAGE);
   if (c.status === 'done') throw badRequest('Case này đã đóng rồi.');
-  if (!sosCaseState(caseId).fromSos) {
-    throw badRequest('Chỉ đóng "Không cần theo dõi" được với case tự tạo từ SOS — case này không phải case tự tạo từ SOS.');
+  const st = sosCaseState(caseId);
+  if (!st.fromSos) {
+    throw badRequest('Chỉ gửi "Không cần theo dõi" được với case tự tạo từ SOS — case này không phải case tự tạo từ SOS.');
   }
+  if (st.choDuyetKhongTheoDoi) throw badRequest('Case đã gửi "Không cần theo dõi" — đang chờ Quản lý duyệt.');
+  if (st.hasCause) throw badRequest('Case đã xác nhận nguyên nhân — kết thúc bằng Hoàn thành Case.');
   const code = String(input.reasonCode ?? '');
   if (!(CASE_DISMISS_REASONS as readonly string[]).includes(code)) {
     throw badRequest(`Chọn một lý do: ${CASE_DISMISS_REASONS.map((r) => CASE_DISMISS_REASON_LABEL[r]).join(' · ')}.`);
   }
-  const text = (input.reasonText ?? '').trim();
+  const text = String(input.reasonText ?? '').trim();
   if (reasonNeedsText(code)) {
     const loi = kiemGhiRoKhac(text);
     if (loi) throw badRequest(`Lý do "Khác": ${loi}.`);
   }
+  if (text.length > 300) throw badRequest('Lý do tối đa 300 ký tự.');
   const started = conn
     .prepare(`SELECT COUNT(*) n FROM case_interventions iv WHERE iv.case_id = ? AND iv.status != 'cancelled'
                 AND NOT ${UNCONFIRMED_PRESET('iv')} AND NOT ${PA_QUY_CHE_CHUA_GHI('iv')}`)
     .get(caseId) as any;
   const followed = conn.prepare('SELECT COUNT(*) n FROM case_followups WHERE case_id = ?').get(caseId) as any;
   if (started.n > 0 || followed.n > 0) {
-    throw badRequest('Case này đã có phương án được xác nhận hoặc đang chạy — dùng "Chốt kết quả case" thay vì "Không cần theo dõi".');
+    throw badRequest('Case này đã có phương án được xác nhận hoặc đang chạy — kết thúc bằng Hoàn thành Case.');
   }
-  const label = CASE_DISMISS_REASON_LABEL[code as CaseDismissReason];
-  const note = `Không cần theo dõi · ${label}${reasonNeedsText(code) ? ` — ${text}` : ''}`;
+  const lyDo = `${CASE_DISMISS_REASON_LABEL[code as CaseDismissReason]}${reasonNeedsText(code) ? ` — ${text}` : ''}`;
   const today = demoToday();
   return tx(() => {
-    const cancelled = conn
-      .prepare(
-        `UPDATE case_interventions SET status = 'cancelled', closed_reason = 'dismissed', updated_at = ?
-          WHERE case_id = ? AND ${PA_QUY_CHE_CHUA_GHI('case_interventions')}`,
-      )
-      .run(nowIso(), caseId).changes;
-    conn
-      .prepare(
-        `UPDATE sos_cases SET status = 'done', closed_at = ?, closed_by = ?, dismiss_reason_code = ?, dismiss_reason_text = ?,
-                disposition = COALESCE(disposition, 'no_action'), outcome_note = ?, updated_at = ? WHERE id = ?`,
-      )
-      .run(today, p.userId, code, reasonNeedsText(code) ? text : null, note, nowIso(), caseId);
-    conn
-      .prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, 'status', ?, 'done', ?, ?)`)
-      .run(caseId, c.status, p.userId, nowIso());
-    conn
-      .prepare(
-        `INSERT INTO case_milestones (case_id, kind, occurred_on, note, created_by, created_at, dedup_key) VALUES (?, 'closed', ?, ?, ?, ?, ?)
-         ON CONFLICT(dedup_key) DO NOTHING`,
-      )
-      .run(caseId, today, note, p.userId, nowIso(), `dismiss:${caseId}`);
-    addJourney({
-      studentId: c.student_id, cycleId: c.cycle_id ?? null, eventType: 'case_closed', eventDate: today,
-      title: 'Không cần theo dõi', detail: note, refTable: 'sos_cases', refId: caseId, createdBy: p.userId, dedupKey: `case_dismiss:${caseId}`,
+    const id = taoYeuCau(conn, {
+      loai: 'khong_theo_doi', doiTuongLoai: 'sos_case', doiTuongId: caseId, hocVienId: c.student_id ?? null,
+      nguoiXin: p.userId, lyDo, duLieu: { reasonCode: code, reasonText: reasonNeedsText(code) ? text : null },
     });
+    if (id === null) throw badRequest('Case đã gửi "Không cần theo dõi" — đang chờ Quản lý duyệt.');
+    ghiMoc(caseId, 'xin_khong_theo_doi', today, lyDo, p.userId);
     writeAudit({
-      actorUserId: p.userId, action: 'case.dismiss', entityType: 'sos_case', entityId: caseId, entityLabel: note,
-      before: { status: c.status }, after: { status: 'done', reason: code, cancelledPlans: cancelled },
+      actorUserId: p.userId, action: 'case.dismiss.request', entityType: 'sos_case', entityId: caseId, entityLabel: `Không cần theo dõi · ${lyDo}`,
+      after: { reason: code, yeuCauId: id },
     });
     return caseDetail(p, caseId);
   });
+}
+
+/**
+ * QUẢN LÝ DUYỆT "Không cần theo dõi" — chạy TRONG giao dịch của hộp (`duyetYeuCau`), người duyệt đã được hộp kiểm quyền. Case đóng
+ * (`dismiss_reason_*`, giữ lịch sử), PA quy chế chưa có kết quả tuần huỷ `khong_theo_doi` (không tính thất bại, không vào hiệu quả — K5-55).
+ * Lỗi thì ném để hộp rollback cả thẻ.
+ */
+export function apDungKhongTheoDoi(conn: any, yc: { doi_tuong_id: number; du_lieu: string | null; ly_do: string | null }, nguoiDuyet: number) {
+  const caseId = yc.doi_tuong_id;
+  const c = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(caseId) as any;
+  if (!c) throw notFound('Không tìm thấy case');
+  if (c.status === 'done') throw badRequest('Case này đã đóng rồi.');
+  let d: { reasonCode?: string; reasonText?: string | null } = {};
+  try { d = JSON.parse(yc.du_lieu ?? '{}'); } catch { d = {}; }
+  const code = String(d.reasonCode ?? 'other');
+  const note = `Không cần theo dõi · ${yc.ly_do ?? CASE_DISMISS_REASON_LABEL[code as CaseDismissReason] ?? ''}`;
+  const today = demoToday();
+  const cancelled = conn
+    .prepare(`UPDATE case_interventions SET status = 'cancelled', closed_reason = 'khong_theo_doi', updated_at = ?
+               WHERE case_id = ? AND ${PA_QUY_CHE_CHUA_GHI('case_interventions')}`)
+    .run(nowIso(), caseId).changes;
+  conn
+    .prepare(`UPDATE sos_cases SET status = 'done', closed_at = ?, closed_by = ?, dismiss_reason_code = ?, dismiss_reason_text = ?,
+                disposition = COALESCE(disposition, 'no_action'), outcome_note = ?, updated_at = ? WHERE id = ?`)
+    .run(today, nguoiDuyet, code, d.reasonText ?? null, note, nowIso(), caseId);
+  conn
+    .prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, 'status', ?, 'done', ?, ?)`)
+    .run(caseId, c.status, nguoiDuyet, nowIso());
+  ghiMoc(caseId, 'ql_duyet_khong_theo_doi', today, null, nguoiDuyet);
+  ghiMoc(caseId, 'closed', today, note, nguoiDuyet, `dismiss:${caseId}`);
+  addJourney({
+    studentId: c.student_id, cycleId: c.cycle_id ?? null, eventType: 'case_closed', eventDate: today,
+    title: 'Không cần theo dõi', detail: note, refTable: 'sos_cases', refId: caseId, createdBy: nguoiDuyet, dedupKey: `case_dismiss:${caseId}`,
+  });
+  writeAudit({
+    actorUserId: nguoiDuyet, action: 'case.dismiss', entityType: 'sos_case', entityId: caseId, entityLabel: note,
+    before: { status: c.status }, after: { status: 'done', reason: code, cancelledPlans: cancelled },
+  });
+}
+
+/** QUẢN LÝ TỪ CHỐI "Không cần theo dõi" (trong tx của hộp): Case về chờ nguyên nhân, hạn mới 3 ngày từ ngày từ chối; báo GVBM phụ trách. */
+export function tuChoiKhongTheoDoi(conn: any, yc: { doi_tuong_id: number; nguoi_xin: number | null }, nguoiDuyet: number, lyDo: string) {
+  const caseId = yc.doi_tuong_id;
+  const c = conn.prepare('SELECT id, owner_user_id FROM sos_cases WHERE id = ?').get(caseId) as any;
+  if (!c) throw notFound('Không tìm thấy case');
+  const today = demoToday();
+  const han = hanXacNhan(today);
+  conn.prepare('UPDATE sos_cases SET han_xac_nhan = ?, updated_at = ? WHERE id = ?').run(han, nowIso(), caseId);
+  ghiMoc(caseId, 'ql_tu_choi_khong_theo_doi', today, lyDo, nguoiDuyet);
+  /* Người xin đã nhận "Quản lý từ chối: …" từ hộp; GVBM phụ trách khác người xin thì báo riêng. */
+  if (c.owner_user_id && c.owner_user_id !== yc.nguoi_xin && c.owner_user_id !== nguoiDuyet) {
+    notify({
+      userId: c.owner_user_id, kind: 'sos', title: `Quản lý từ chối: ${lyDo}`.slice(0, 200),
+      body: `Không cần theo dõi bị từ chối — xác nhận nguyên nhân trước hết ${ngay(han, today)}`,
+      entityType: 'sos_case', entityId: caseId, dedupKey: `tu_choi_ktd:${caseId}:${today}`,
+    });
+  }
 }

@@ -11,7 +11,8 @@ import {
   INTERVENTION_KIND_LABEL, caseTopicLabel, duongHoSoHocVien, nhanDotNgan, outcomeLabelFor, shortDate, tenMonNgan,
   type InterventionKind, type LoaiYeuCau, type TrangThaiYc,
 } from '../../../shared/domain/index.ts';
-import { respondToPlan } from '../cases/cases.ts';
+import { caseTitleOf, respondToPlan } from '../cases/cases.ts';
+import { apDungKhongTheoDoi, tuChoiKhongTheoDoi } from '../cases/sosAuto.ts';
 import { chuTheDoiLan2, decideAbsenceMove } from '../fasttrack/absence.ts';
 import { attemptHref } from '../fasttrack/attempts.ts';
 import { ensurePeriod } from '../platform/week.ts';
@@ -271,6 +272,25 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         dong: ['Không cần duyệt — để QL biết và nhắc.'],
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, { caseId: yc.doi_tuong_id }) : undefined,
         duLieu: { tenGv: x?.ten_gv ?? null, daNhacLuc: x?.da_nhac ?? null, ownerId: x?.owner_user_id ?? null },
+      };
+    },
+  },
+  /* ------------------------------------------------------------ PR-SOS · Không cần theo dõi (S4-5…S4-7, T23, YC-12.4) */
+  {
+    loai: 'khong_theo_doi',
+    khiDuyet: (p, yc) => apDungKhongTheoDoi(db(), yc, p.userId),
+    khiTuChoi: (p, yc, lyDo) => tuChoiKhongTheoDoi(db(), yc, p.userId, lyDo),
+    /* S4-7: Case đóng vì lý do khác (điểm sửa thành đạt, lượt huỷ, đổi chương trình) → thẻ tự đóng. */
+    chet: { sql: `NOT EXISTS (SELECT 1 FROM sos_cases sc WHERE sc.id = y.doi_tuong_id AND sc.status != 'done')`, lyDo: 'Case đã đóng' },
+    nap: (conn, ds) => napTheoDoiTuong(conn, ds,
+      `SELECT sc.id, sc.topic, sc.category, sc.title, sc.origin_kind, sc.sos_level, sc.student_id, sc.cycle_id FROM sos_cases sc WHERE sc.id IN (?)`),
+    moTa: (yc, ngu) => {
+      const x = ngu.them.get(yc.id);
+      return {
+        tieuDe: `Không cần theo dõi${x?.topic ? ` · ${caseTopicLabel(x.topic)}` : ''}`,
+        dong: [...(x ? [caseTitleOf(x)] : []), `${nguoiXin(yc, ngu)} (${ngay(yc.tao_luc, ngu)}) · Lý do: ${yc.ly_do ?? ''}`],
+        neuDuyet: 'Case và PA theo quy chế huỷ — không tính thất bại.',
+        mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, { caseId: yc.doi_tuong_id }) : undefined,
       };
     },
   },

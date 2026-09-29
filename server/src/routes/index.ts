@@ -1533,7 +1533,7 @@ api.post('/interventions/:id/xac-nhan-pa', requireAuth, wrap((req) => {
 }));
 api.post('/cases/:id/dismiss', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return sosAutoSvc.dismissSosCase(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
+  return sosAutoSvc.guiKhongTheoDoi(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
 }));
 
 /**

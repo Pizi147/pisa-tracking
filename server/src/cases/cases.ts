@@ -1608,6 +1608,8 @@ export function caseDetail(p: Principal, caseId: number) {
     issues, interventions, followups,
     /** Trạng thái case từ SOS (rulebook v3): chờ xác định nguyên nhân, hạn 3 ngày, lý do đóng `Không cần theo dõi`. */
     sos: sosCaseState(caseId),
+    /** PR-SOS (S4-5): thẻ ĐANG CHỜ ở mức Case ("Không cần theo dõi") — Ngăn Case nhúng `TheYeuCau gon` cho Quản lý. */
+    yeuCauCase: theCuaDoiTuong('sos_case', [caseId]).find((y) => y.trangThai === 'cho' && y.loai === 'khong_theo_doi') ?? null,
     history: history.map((h) => ({
       id: h.id, field: h.field, oldValue: h.old_value, newValue: h.new_value,
       actorName: h.actor_name, createdAt: h.created_at,

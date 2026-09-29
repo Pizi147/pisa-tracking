@@ -114,6 +114,7 @@ export async function runPrSosTests(t: YThucTestKit) {
   const cases: any = await import('../cases/cases.ts');
   const sosState: any = await import('../cases/sosState.ts');
   const myworkSvc: any = await import('../worklist/mywork.ts');
+  const { loadPrincipal: loadP } = await import('../permissions.ts');
   const { boLichTuTao, luotThu } = await import('./luotThu.ts');
   const CLASS = t.classId('MB FT 101');
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
@@ -242,5 +243,82 @@ export async function runPrSosTests(t: YThucTestKit) {
     assertThrows(() => sosAuto.xacNhanPaQuyChe(P.admin, iv.id, { description: MO_TA }), /đã được xác nhận rồi/, 'lần hai');
     const pa = (cases.caseDetail(P.admin, c.id) as any).interventions.find((x: any) => x.id === iv.id);
     assert(pa.batBuoc && pa.mocChu === 'đến MT2 · chưa có lịch' && pa.lanCuoi === false && !pa.awaitingConfirmation, JSON.stringify(pa));
+  });
+
+  // ------------------------------------------------------------------ Task 5 · Không cần theo dõi = thẻ Chờ duyệt; Báo lên đọc han_xac_nhan
+  const yc: any = await import('../duyet/yeuCau.ts');
+  const effectiveness: any = await import('../cases/effectiveness.ts');
+  const theKtd = (caseId: number) => get(`SELECT * FROM yeu_cau_duyet WHERE loai = 'khong_theo_doi' AND doi_tuong_id = ? ORDER BY id DESC LIMIT 1`, caseId);
+  const coViec = (who: any, key: string, nguoi?: string) => (myworkSvc.myWork(who, nguoi ? { nguoi } : {}).items as any[]).some((i: any) => i.key === key);
+  /** MT2: W1 đạt, W2 + Speaking dưới → Case W2 của GVBM W2 (đúng kỹ năng — C02). */
+  const mt2W2 = (name: string) => { const st = makeStudent(name); const a = mkAttempt(st, 2); enter(a, 'writing1', 7); enter(a, 'writing2', 5.5); enter(a, 'speaking', 5); return { st, a }; };
+  const cvL = (st: any) => caseOf(st.id, 'writing2');
+  check('SOS (5) · GVBM gửi → thẻ khong_theo_doi Học thuật, hạn 5 ngày; Case chưa đóng, trạng thái "Chờ Quản lý duyệt · không theo dõi"; việc cause biến; gửi lần hai / Case có nguyên nhân → 400', () => {
+    const { st } = mt2W2('T5a');
+    const c = cvL(st);
+    const owner = P.w2Teacher;
+    assert(coViec(owner, `cause:${c.id}`), 'trước khi gửi phải có việc cause');
+    sosAuto.guiKhongTheoDoi(owner, c.id, { reasonCode: 'single_incident' });
+    const the = theKtd(c.id);
+    assert(the && the.trang_thai === 'cho' && the.phan_loai === 'hoc-thuat' && the.han_duyet === d.hanTheoNgay(TODAY, 5) && the.nguoi_xin === owner.userId, JSON.stringify(the));
+    const dto = cases.caseDetail(owner, c.id) as any;
+    assert(dto.status !== 'done' && dto.sos.choDuyetKhongTheoDoi && dto.yeuCauCase?.id === the.id, 'Case chưa đóng + thẻ trong caseDetail');
+    const s = d.trangThaiCaseV4({ status: dto.status, fromSos: true, hasCause: false, dismissed: false, systemClosed: false,
+      choDuyetKhongTheoDoi: !!dto.sos.choDuyetKhongTheoDoi, coPaChoXacNhan: dto.sos.coPaChoXacNhan, hanXacNhan: dto.sos.dueOn }, TODAY);
+    assert(s.k === 'cho-duyet-khong-theo-doi', s.k);
+    assert(!coViec(owner, `cause:${c.id}`), 'việc cause còn sau khi gửi');
+    assertThrows(() => sosAuto.guiKhongTheoDoi(owner, c.id, { reasonCode: 'single_incident' }), /đang chờ Quản lý duyệt/, 'gửi lần hai');
+    assertThrows(() => sosAuto.xacNhanCase(owner, c.id, XN), /chờ Quản lý duyệt/, 'xác nhận khi đang chờ thẻ');
+    const c2 = caseOf(st.id, 'speaking');
+    sosAuto.xacNhanCase(P.admin, c2.id, { ...XN, primaryCode: d.issuesForTopic('speaking', null)[0].code });
+    assertThrows(() => sosAuto.guiKhongTheoDoi(P.admin, c2.id, { reasonCode: 'single_incident' }), /Case đã xác nhận nguyên nhân — kết thúc bằng Hoàn thành Case\./, 'có nguyên nhân');
+  });
+  check('SOS (5) · Quản lý Duyệt → Case done + dismiss_reason, PA chờ xác nhận cancelled khong_theo_doi, không vào hiệu quả; 3 mốc lịch sử', () => {
+    const { st } = mt2W2('T5b');
+    const c = cvL(st);
+    sosAuto.guiKhongTheoDoi(P.w2Teacher, c.id, { reasonCode: 'other', reasonText: 'Em ốm cả tuần thi' });
+    yc.duyetYeuCau(P.mbManager, theKtd(c.id).id);
+    const sau = get('SELECT * FROM sos_cases WHERE id = ?', c.id);
+    assert(sau.status === 'done' && sau.dismiss_reason_code === 'other' && sau.dismiss_reason_text === 'Em ốm cả tuần thi' && sau.closed_by === P.mbManager.userId, JSON.stringify(sau));
+    const iv = plansOf(c.id)[0];
+    assert(iv.status === 'cancelled' && iv.closed_reason === 'khong_theo_doi', JSON.stringify(iv));
+    assert(!effectiveness.planOutcomes({ studentIds: [st.id] }).some((r: any) => r.id === iv.id), 'vào hiệu quả');
+    const moc = all('SELECT kind FROM case_milestones WHERE case_id = ? ORDER BY id', c.id).map((m: any) => m.kind);
+    assert(['xin_khong_theo_doi', 'ql_duyet_khong_theo_doi', 'closed'].every((k) => moc.includes(k)), moc.join());
+    assert(theKtd(c.id).trang_thai === 'duyet', 'thẻ chưa chốt');
+  });
+  check('SOS (5) · Quản lý Từ chối (lý do bắt buộc) → Case mở, hạn mới 3 ngày, mốc + lý do, người xin nhận "Quản lý từ chối"', () => {
+    const { st } = mt2W2('T5c');
+    const c = cvL(st);
+    const owner = P.w2Teacher;
+    conn.prepare('UPDATE sos_cases SET han_xac_nhan = ? WHERE id = ?').run(addDays(TODAY, -5), c.id);
+    sosAuto.guiKhongTheoDoi(owner, c.id, { reasonCode: 'single_incident' });
+    const the = theKtd(c.id);
+    assertThrows(() => yc.tuChoiYeuCau(P.mbManager, the.id, ''), /lý do/, 'thiếu lý do');
+    yc.tuChoiYeuCau(P.mbManager, the.id, 'Em trượt hai kỹ năng, cần theo dõi');
+    const sau = get('SELECT * FROM sos_cases WHERE id = ?', c.id);
+    assert(sau.status === 'open' && sau.han_xac_nhan === d.hanXacNhan(TODAY), JSON.stringify(sau));
+    assert(get(`SELECT note FROM case_milestones WHERE case_id = ? AND kind = 'ql_tu_choi_khong_theo_doi'`, c.id)?.note === 'Em trượt hai kỹ năng, cần theo dõi', 'mốc từ chối');
+    assert(all(`SELECT title FROM notifications WHERE user_id = ? AND entity_type = 'yeu_cau_duyet' AND entity_id = ?`, owner.userId, the.id)
+      .some((n: any) => /Quản lý từ chối: Em trượt/.test(n.title)), 'GVBM không nhận thông báo từ chối');
+    assert(sosState.sosCaseState(c.id).awaitingCause, 'về chờ nguyên nhân');
+  });
+  check('SOS (5) · Case đóng vì lý do khác (sửa điểm thành đạt) → thẻ tự đóng (S4-7); Báo lên: quá hạn → thẻ; đang chờ thẻ không theo dõi → không thẻ; có nguyên nhân → tự đóng', () => {
+    const { st, a } = mt1Sos3('T5d');
+    const cS = caseOf(st.id, 'speaking');
+    sosAuto.guiKhongTheoDoi(P.admin, cS.id, { reasonCode: 'single_incident' });
+    enter(a, 'speaking', 7);                                   // sửa điểm Speaking thành đạt → Case tự huỷ
+    yc.quetYeuCau(TODAY);
+    assert(theKtd(cS.id).trang_thai === 'tu_dong', `thẻ: ${theKtd(cS.id).trang_thai} · case ${get('SELECT status FROM sos_cases WHERE id = ?', cS.id).status}`);
+    const cL = caseOf(st.id, 'listening'), cR = caseOf(st.id, 'reading');
+    conn.prepare('UPDATE sos_cases SET han_xac_nhan = ? WHERE id IN (?, ?)').run(addDays(TODAY, -1), cL.id, cR.id);
+    sosAuto.guiKhongTheoDoi(P.admin, cR.id, { reasonCode: 'single_incident' });
+    yc.quetYeuCau(TODAY);
+    const baoLen = (id: number) => get(`SELECT * FROM yeu_cau_duyet WHERE loai = 'bao_len_nguyen_nhan' AND doi_tuong_id = ? ORDER BY id DESC LIMIT 1`, id);
+    assert(baoLen(cL.id)?.trang_thai === 'cho' && baoLen(cL.id).han_duyet === addDays(TODAY, -1), 'Case quá hạn thiếu thẻ Báo lên');
+    assert(!baoLen(cR.id), 'Case đang chờ thẻ không theo dõi vẫn bị Báo lên');
+    ghiNguyenNhan(cL.id);
+    yc.quetYeuCau(TODAY);
+    assert(baoLen(cL.id).trang_thai === 'tu_dong', 'Báo lên chưa tự đóng khi có nguyên nhân');
   });
 }
