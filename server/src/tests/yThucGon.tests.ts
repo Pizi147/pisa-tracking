@@ -114,10 +114,10 @@ export async function runYThucGonTests(t: YThucTestKit) {
     assert(domain.trongChuKyHienTai({ cycleId: null, classId: 21 }, { cycleId: null, classId: 20 }) === false, 'lớp thường khác classId → false');
   });
 
-  check('PR-YT2 · NHOM_TRANG_THAI_KHOA đủ 24 khoá, không trùng', () => {
-    assert(domain.NHOM_TRANG_THAI_KHOA.length === 24, `phải 24, được ${domain.NHOM_TRANG_THAI_KHOA.length}`);
-    assert(new Set(domain.NHOM_TRANG_THAI_KHOA).size === 24, 'không trùng khoá');
-    assert(domain.khoaNhomTrangThai('homework', 'unhandled') === 'homework:unhandled', domain.khoaNhomTrangThai('homework', 'unhandled'));
+  check('PR-YT2 · (PR-YT4) NHOM_TRANG_THAI_KHOA đủ 42 khoá (6 nhóm × sáu trạng thái §5.4 + tat-ca), không trùng', () => {
+    assert(domain.NHOM_TRANG_THAI_KHOA.length === 42, `phải 42, được ${domain.NHOM_TRANG_THAI_KHOA.length}`);
+    assert(new Set(domain.NHOM_TRANG_THAI_KHOA).size === 42, 'không trùng khoá');
+    assert(domain.khoaNhomTrangThai('homework', 'can_xu_ly') === 'homework:can_xu_ly', domain.khoaNhomTrangThai('homework', 'can_xu_ly'));
     assert(domain.NHOM_TRANG_THAI_KHOA.includes('tat-ca:tat-ca'), 'có khoá tat-ca:tat-ca');
   });
 
@@ -233,21 +233,21 @@ export async function runYThucGonTests(t: YThucTestKit) {
     );
   });
 
-  check('PR-YT2 · vi-pham-theo-nhom: mỗi nhóm × ba trạng thái rời nhau, hợp = {nhom}:tat-ca', () => {
+  check('PR-YT2 · (PR-YT4) vi-pham-theo-nhom: mỗi nhóm × sáu trạng thái §5.4 rời nhau, hợp = {nhom}:tat-ca; trạng thái = cửa trạng thái', () => {
     const nhom = thongKeSvc.yThucMetric(P.mbManager, 'vi-pham-theo-nhom', { branchId: mbBranch }).byKind as any;
     for (const cat of domain.VIOLATION_CATEGORIES) {
-      const u = new Set(nhom[`${cat}:unhandled`]), pr = new Set(nhom[`${cat}:preparing`]), don = new Set(nhom[`${cat}:done`]);
-      for (const id of u) assert(!pr.has(id) && !don.has(id), `${cat}: unhandled phải rời preparing/done`);
-      for (const id of pr) assert(!don.has(id), `${cat}: preparing phải rời done`);
-      const hop = [...new Set([...u, ...pr, ...don])].sort((a: any, b: any) => a - b);
-      assert(JSON.stringify(hop) === JSON.stringify([...nhom[`${cat}:tat-ca`]].sort((a: number, b: number) => a - b)), `hợp ba trạng thái phải bằng ${cat}:tat-ca`);
+      const tap = domain.TRANG_THAI_VP.map((tt: string) => new Set<number>(nhom[`${cat}:${tt}`]));
+      const tong = tap.reduce((n: number, x: Set<number>) => n + x.size, 0);
+      const hop = [...new Set(tap.flatMap((x: Set<number>) => [...x]))].sort((a: any, b: any) => a - b);
+      assert(hop.length === tong, `${cat}: sáu trạng thái phải rời nhau`);
+      assert(JSON.stringify(hop) === JSON.stringify([...nhom[`${cat}:tat-ca`]].sort((a: number, b: number) => a - b)), `hợp sáu trạng thái phải bằng ${cat}:tat-ca`);
     }
   });
 
   check('PR-YT2 · vi-pham-theo-nhom: kind lọc xuống đúng một khoá; khoá lạ → 400', () => {
     const full = thongKeSvc.yThucMetric(P.mbManager, 'vi-pham-theo-nhom', { branchId: mbBranch }).byKind as any;
-    const filtered = thongKeSvc.yThucMetric(P.mbManager, 'vi-pham-theo-nhom', { branchId: mbBranch, kind: 'homework:unhandled' }) as any;
-    assert(JSON.stringify([...filtered.ids].sort((a: number, b: number) => a - b)) === JSON.stringify([...full['homework:unhandled']].sort((a: number, b: number) => a - b)),
+    const filtered = thongKeSvc.yThucMetric(P.mbManager, 'vi-pham-theo-nhom', { branchId: mbBranch, kind: 'homework:moi' }) as any;
+    assert(JSON.stringify([...filtered.ids].sort((a: number, b: number) => a - b)) === JSON.stringify([...full['homework:moi']].sort((a: number, b: number) => a - b)),
       'kind phải lọc đúng tập con');
     assert(Object.keys(filtered.byKind).length === 1, 'byKind chỉ còn một khoá');
     assertThrows(() => thongKeSvc.yThucMetric(P.mbManager, 'vi-pham-theo-nhom', { branchId: mbBranch, kind: 'khoa-la' }),
@@ -296,8 +296,8 @@ export async function runYThucGonTests(t: YThucTestKit) {
       /chưa lọc theo lớp/, 'case-mo + classId phải 400');
   });
 
-  check('PR-YT2 · Q18 bien-phap-dang-chuan-bi byKind cộng đúng ids', () => {
-    const r = thongKeSvc.yThucMetric(P.mbManager, 'bien-phap-dang-chuan-bi', { branchId: mbBranch }) as any;
+  check('PR-YT2 · Q18 (PR-YT4) bien-phap-cho-duyet byKind cộng đúng ids', () => {
+    const r = thongKeSvc.yThucMetric(P.mbManager, 'bien-phap-cho-duyet', { branchId: mbBranch }) as any;
     const hopByKind = [...new Set(Object.values(r.byKind).flat() as number[])].sort((a, b) => a - b);
     assert(JSON.stringify(hopByKind) === JSON.stringify([...r.ids].sort((a: number, b: number) => a - b)), 'byKind hợp lại phải đúng ids');
   });

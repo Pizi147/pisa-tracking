@@ -154,7 +154,8 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
     const hienTai = [...cycles].sort((a, b) => Number(b.status === 'active') - Number(a.status === 'active') || b.seq - a.seq)[0] ?? null;
     const chuoi = hienTai ? chuoiThang(cycles, hienTai.id) : [];
     const trongChuoi = new Set(chuoi);
-    const xlChuoi = dsXl.filter((m) => m.cycleId != null && trongChuoi.has(m.cycleId));
+    /* Em chưa có lộ trình nào (dữ liệu dựng tay): mọi lần xử lý tính vào một chuỗi. */
+    const xlChuoi = chuoi.length ? dsXl.filter((m) => m.cycleId != null && trongChuoi.has(m.cycleId)) : dsXl;
     const khaiRow = (kb.get(sid) ?? []).find((k) => k.chuoi_cycle_id === chuoi[0]) ?? null;
     const bac = bacHienTai(xlChuoi.filter((m) => m.status === 'done'), khaiRow?.bac ?? null);
 

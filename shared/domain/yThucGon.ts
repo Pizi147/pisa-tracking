@@ -6,7 +6,7 @@
  * File này chỉ có TỪ VỰNG và LUẬT THUẦN (không đụng database) để máy chủ và giao diện đọc cùng một nơi.
  */
 import { ngay } from './hienThiNgay.ts';
-import { VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, VIOLATION_SKILL_LABEL, type ViolationCategory, type ViolationState } from './yThuc.ts';
+import { TRANG_THAI_VP, VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, VIOLATION_SKILL_LABEL, type ViolationCategory, type ViolationState } from './yThuc.ts';
 
 // ---------------------------------------------------------------- Q8: đếm lần sửa + nhãn lịch sử vi phạm
 
@@ -161,7 +161,8 @@ export function trongChuKyHienTai(v: { cycleId: number | null; classId: number |
 
 export const NHOM_VI_PHAM_KHOA = [...VIOLATION_CATEGORIES, 'tat-ca'] as const;
 export type NhomViPhamKhoa = (typeof NHOM_VI_PHAM_KHOA)[number];
-export const TRANG_THAI_VI_PHAM_KHOA = ['tat-ca', 'unhandled', 'preparing', 'done'] as const;
+/** PR-YT4: sáu trạng thái §5.4 (từ `trangThaiViPham`) + `tat-ca`. */
+export const TRANG_THAI_VI_PHAM_KHOA = ['tat-ca', ...TRANG_THAI_VP] as const;
 export type TrangThaiViPhamKhoa = (typeof TRANG_THAI_VI_PHAM_KHOA)[number];
 
 /** Q17 — khoá `byKind` của chỉ số `vi-pham-theo-nhom`: `{nhom}:{trangThai}`. */
@@ -169,7 +170,7 @@ export function khoaNhomTrangThai(nhom: NhomViPhamKhoa, trangThai: TrangThaiViPh
   return `${nhom}:${trangThai}`;
 }
 
-/** Đủ 6 nhóm (5 nhóm + `tat-ca`) × 4 trạng thái = 24 khoá, dùng chung máy chủ (dựng SQL) và web (đọc `byKind`). */
+/** Đủ 6 nhóm (5 nhóm + `tat-ca`) × 7 trạng thái (6 + `tat-ca`) = 42 khoá, dùng chung máy chủ và web (đọc `byKind`). */
 export const NHOM_TRANG_THAI_KHOA: readonly string[] = NHOM_VI_PHAM_KHOA.flatMap((n) =>
   TRANG_THAI_VI_PHAM_KHOA.map((t) => khoaNhomTrangThai(n, t)),
 );

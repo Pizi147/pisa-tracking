@@ -545,7 +545,8 @@ export async function runYThucTests(t: YThucTestKit) {
       'vi-pham-tong': ['vi-pham', 'phat-sinh-trong-ky'], 'vi-pham-chua-xu-ly': ['vi-pham', 'hien-trang'],
       'hv-co-vi-pham': ['hoc-vien', 'phat-sinh-trong-ky'],
       'hv-can-xu-ly': ['hoc-vien', 'hien-trang'], 'bien-phap-da-thuc-hien': ['bien-phap', 'ket-qua-trong-ky'],
-      'bien-phap-dang-chuan-bi': ['bien-phap', 'hien-trang'], 'bien-phap-theo-loai': ['bien-phap', 'ket-qua-trong-ky'],
+      'bien-phap-cho-duyet': ['bien-phap', 'hien-trang'], 'bien-phap-theo-loai': ['bien-phap', 'ket-qua-trong-ky'],
+      /* PR-YT4 */ 'hv-theo-bac': ['hoc-vien', 'hien-trang'],
     };
     for (const [id, [unit, time]] of Object.entries(want)) {
       const m = domain.metricById(id) as any;
@@ -606,7 +607,7 @@ export async function runYThucTests(t: YThucTestKit) {
     const resp = metricsSvc.metricResponse(ms(P.mbManager, 'vi-pham-tong', { branchId: mbId }), true) as any;
     assert(resp.n === resp.ids.length && resp.rows.length === resp.ids.length && resp.rows.every((r: any) => r.title && r.href.startsWith('/hoc-vien/')),
       'Panel danh sách: số = độ dài tập = số dòng, mỗi dòng có tên và đường dẫn');
-    const mResp = metricsSvc.metricResponse(ms(P.mbManager, 'bien-phap-dang-chuan-bi', { branchId: mbId }), true) as any;
+    const mResp = metricsSvc.metricResponse(ms(P.mbManager, 'bien-phap-da-thuc-hien', { branchId: mbId }), true) as any;
     assert(mResp.rows.length === mResp.ids.length && mResp.rows.every((r: any) => r.title && r.sub), 'Dòng của tập biện pháp cũng đủ tên và học viên');
   });
 

@@ -2,22 +2,24 @@ import { Fragment, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
-import { Card, Empty, ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
+import { Card, Empty, ErrorState, NhanTrangThai, Skeleton, Th } from '../../ui/ui.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { DINH_TRAI, MAU_SO_VOI_TRUOC, SoO as SoLieuO, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
 import {
-  BUOC_TIEP_LABEL, KHOANG_LABEL, MEASURE_KINDS_V3, MEASURE_KIND_LABEL_V3, duongHoSoHocVien, nhanSoVoiTruoc, ngay,
+  KHOA_LOAI_XU_LY, KHOANG_LABEL, NHOM_EM_LABEL, duongHoSoHocVien, nhanLoaiXuLy, nhanSoVoiTruoc, ngay,
   type DongHvCanChuY, type DongLopViPham, type YThucPhanTichKetQua,
 } from '@shared/domain/index.ts';
 
 /**
- * Ý THỨC & PHỐI HỢP (PR-UX4, mockup 16 §5) — còn HAI danh sách: "Học viên cần chú ý" (quyết biện pháp nặng hơn) và "Lớp nhiều vi phạm"
- * (nói chuyện với GVCN). Phối hợp SOS đã ở Việc cần làm của GVCN nên không lặp ở đây. Không có hạn nên không dùng ⚠ (G-4). Mọi số mở đúng
- * danh sách bằng `/phan-tich/y-thuc/o` (G-10). Bảng "phương án xử lý theo loại" chỉ còn trong ⤓ Xuất Excel.
+ * Ý THỨC (PR-UX4, mockup 16 §5; PR-YT4 K1-25) — HAI danh sách: "Học viên cần chú ý" (em Quá hạn · Bắt buộc xử lý · Chờ QL duyệt, kèm bậc
+ * hiện tại và bậc kế trên thang) và "Lớp nhiều vi phạm" (nói chuyện với GVCN). Phối hợp SOS ở Việc cần làm của GVCN nên không lặp ở đây.
+ * Mọi số mở đúng danh sách bằng `/phan-tich/y-thuc/o` (G-10). Bảng "Xử lý theo loại" chỉ có trong ⤓ Xuất Excel.
  */
-const tenNgan = (s: string) => s.replace('Thư cảnh cáo', 'Thư CC');
+const nhanNhom = (x: DongHvCanChuY) => (x.nhom === 'qua_han'
+  ? <NhanTrangThai t="qua-han" />
+  : <Nhan tone={x.nhom === 'bat_buoc' ? 'soon' : 'wait'}>{NHOM_EM_LABEL[x.nhom]}</Nhan>);
 
 export function YThucPhoiHop(props: PhamViPhanTich) {
   const { session } = useSession();
@@ -43,8 +45,9 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
     const moTa = [tenChiNhanh ?? 'Tất cả chi nhánh', KHOANG_LABEL[props.tg], tenLop, `dữ liệu đến ${ngay(demoDate)}`].filter(Boolean).join(' · ');
     const hv: (string | number)[][] = [
       [`Học viên cần chú ý · ${moTa}`], [],
-      ['Học viên', 'Lớp', 'Vi phạm', 'Chưa xử lý', 'PA xử lý gần nhất', 'Ngày', 'Bước tiếp theo'],
-      ...data.hvCanChuY.map((x) => [x.ten, x.lop ?? '', x.viPham, x.chuaXuLy, x.bienPhapGanNhat ?? '', x.ngay ? ngay(x.ngay, demoDate) : '', BUOC_TIEP_LABEL[x.buocTiep]]),
+      ['Học viên', 'Lớp', 'Trạng thái', 'Bậc hiện tại', 'Bậc kế', 'Vi phạm', 'Chưa xử lý', 'Xử lý gần nhất', 'Ngày'],
+      ...data.hvCanChuY.map((x) => [x.ten, x.lop ?? '', NHOM_EM_LABEL[x.nhom], x.bac ?? 'Chưa bậc nào', x.bacKe ?? '', x.viPham, x.chuaXuLy,
+        x.bienPhapGanNhat ?? '', x.ngay ? ngay(x.ngay, demoDate) : '']),
     ];
     const dongLop = (x: DongLopViPham, thut: boolean): (string | number)[] => [
       `${thut ? '  ' : ''}${x.nhan}`, x.viPham, x.chuaXuLy, x.hvCoViPham, x.siSo ?? '', nhanSoVoiTruoc(x.soVoiTruoc).chu, x.gvcn ?? '',
@@ -56,14 +59,14 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
       ...(data.gom?.hang ?? []).flatMap((x) => [dongLop(x, false), ...(x.con ?? []).map((c) => dongLop(c, true))]),
     ];
     const pa: (string | number)[][] = [
-      [`PA xử lý đã thực hiện trong kỳ · ${moTa}`], [],
-      ['Loại PA xử lý', 'Đã thực hiện'],
-      ...MEASURE_KINDS_V3.map((k) => [MEASURE_KIND_LABEL_V3[k], data.bienPhapTheoLoai[k] ?? 0]),
+      [`Xử lý đã xong trong kỳ theo loại · ${moTa}`], [],
+      ['Loại xử lý', 'Đã xong'],
+      ...KHOA_LOAI_XU_LY.filter((k) => k !== 'loai-cu' || data.bienPhapTheoLoai[k]).map((k) => [nhanLoaiXuLy(k), data.bienPhapTheoLoai[k] ?? 0]),
     ];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(hv), 'HV can chu y');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(lop), 'Lop nhieu vi pham');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(pa), 'PA xu ly theo loai');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(pa), 'Xu ly theo loai');
     XLSX.writeFile(wb, `y-thuc-${ngay(demoDate).split('/').join('-')}.xlsx`);
   }
 
@@ -91,13 +94,15 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
 
   const bang1 = (rows: DongHvCanChuY[]) => (
     <div className="table-scroll">
-      <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: 760 }}>
-        <colgroup><col style={{ width: '22%' }} /><col style={{ width: 110 }} /><col style={{ width: 70 }} /><col style={{ width: 90 }} /><col style={{ width: '19%' }} /><col style={{ width: 62 }} /><col style={{ width: '19%' }} /></colgroup>
+      <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: 860 }}>
+        <colgroup><col style={{ width: '20%' }} /><col style={{ width: 100 }} /><col style={{ width: 130 }} /><col style={{ width: 110 }} /><col style={{ width: 150 }} /><col style={{ width: 70 }} /><col style={{ width: 90 }} /><col style={{ width: '16%' }} /></colgroup>
         <thead>
           <tr>
-            <Th className="sticky-col">Học viên</Th><Th>Lớp</Th>
-            <Th align="right" hint="Trong khoảng đang lọc">Vi phạm</Th><Th align="right" hint="Vi phạm chưa gắn PA xử lý nào">Chưa xử lý</Th>
-            <Th hint="PA xử lý đã thực hiện gần nhất">PA xử lý gần nhất</Th><Th align="right">Ngày</Th><Th>Bước tiếp theo</Th>
+            <Th className="sticky-col">Học viên</Th><Th>Lớp</Th><Th>Trạng thái</Th>
+            <Th hint="Bậc cao nhất đã xử lý trên thang (kể cả bậc khai trước khi dùng web)">Bậc hiện tại</Th>
+            <Th hint="Lần xử lý bắt buộc kế tiếp; WL 3 cần QL duyệt">Bậc kế</Th>
+            <Th align="right" hint="Trong khoảng đang lọc">Vi phạm</Th><Th align="right" hint="Mới · Cần xử lý · Quá hạn (Đã ghi nhận không tính)">Chưa xử lý</Th>
+            <Th hint="Lần xử lý đã xong gần nhất">Xử lý gần nhất</Th>
           </tr>
         </thead>
         <tbody>
@@ -105,17 +110,13 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
             <tr key={x.studentId} className="row-hover">
               <td className="td sticky-col"><Link to={duongHoSoHocVien(x.studentId, { tab: 'y-thuc' })} className="link font-semibold">{x.ten}</Link></td>
               <td className="td text-slate-300">{x.lop ?? ''}</td>
+              <td className="td">{nhanNhom(x)}</td>
+              <td className="td text-slate-200">{x.bac ?? <span className="text-faint">Chưa bậc nào</span>}</td>
+              <td className="td text-slate-300">{x.bacKe}</td>
               <td className="td text-right tabular-nums"><SoLieuO giaTri={x.viPham} nguon={nguon(`hv:${x.studentId}`, 'vi-pham')} tieuDe={`${x.ten} · vi phạm`} /></td>
               <td className="td text-right tabular-nums"><SoLieuO giaTri={x.chuaXuLy} nguon={nguon(`hv:${x.studentId}`, 'chua-xu-ly')} tieuDe={`${x.ten} · chưa xử lý`} /></td>
-              <td className="td">
-                {x.bienPhapGanNhat
-                  ? <abbr title={x.bienPhapGanNhat} className="text-slate-200 no-underline">{tenNgan(x.bienPhapGanNhat)}</abbr>
-                  : <span className="text-faint">—</span>}
-              </td>
-              <td className="td text-right tabular-nums text-slate-300">{x.ngay ? ngay(x.ngay, demoDate) : ''}</td>
-              <td className="td">
-                {x.buocTiep === 'theo-doi' ? <span className="text-slate-400">{BUOC_TIEP_LABEL[x.buocTiep]}</span>
-                  : <Nhan tone="soon" title={x.buocTiep === 'da-thu-3' ? 'Đã đủ ba Thư cảnh cáo, lại có vi phạm mới' : 'Đã có Thư cảnh cáo hoặc vi phạm lặp lại, còn vi phạm chưa xử lý'}>{BUOC_TIEP_LABEL[x.buocTiep]}</Nhan>}
+              <td className="td truncate text-slate-300" title={x.bienPhapGanNhat ?? undefined}>
+                {x.bienPhapGanNhat ? `${x.bienPhapGanNhat}${x.ngay ? ` · ${ngay(x.ngay, demoDate)}` : ''}` : <span className="text-faint">—</span>}
               </td>
             </tr>
           ))}
@@ -126,8 +127,8 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
 
   const khungLuat = (
     <NutLuat label="Cách chọn học viên">
-      <p className="m-0">Học viên đang học có từ 3 vi phạm trong khoảng đang lọc, hoặc có vi phạm mới sau Thư cảnh cáo gần nhất (cùng lộ trình).</p>
-      <p className="m-0">Bước tiếp theo: đã có Thư CC lần 1–2 mà còn vi phạm → sắp lần kế; chưa có thư, từ 3 vi phạm và còn chưa xử lý → sắp Thư CC lần 1; đã đủ ba thư mà còn vi phạm → "Đã Thư CC lần 3"; còn lại là "Theo dõi".</p>
+      <p className="m-0">Học viên đang học đang Quá hạn, Bắt buộc xử lý (3 vi phạm trở lên trong tuần này + tuần trước) hoặc có đề xuất Chờ QL duyệt.</p>
+      <p className="m-0">Bậc kế theo thang Report 1 › Report 2 › WL 1 › Report 4 + Meeting CX/GĐCN › WL 2 › WL 3 (cần QL). Đề xuất ngoài thang không đổi bậc.</p>
     </NutLuat>
   );
 
@@ -139,7 +140,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
         : (
           <>
             <Card bodyClass="p-0"
-              title={<span className="inline-flex flex-wrap items-baseline gap-x-2">Học viên cần chú ý <span className="text-xs font-normal text-slate-500">· vi phạm lặp lại, sắp tới Thư cảnh cáo lần tiếp</span> {khungLuat}</span>}
+              title={<span className="inline-flex flex-wrap items-baseline gap-x-2">Học viên cần chú ý <span className="text-xs font-normal text-slate-500">· quá hạn, bắt buộc xử lý hoặc chờ QL duyệt</span> {khungLuat}</span>}
               action={<button type="button" className="btn btn-sm" disabled={!demoDate} onClick={xuatExcel}>⤓ Xuất Excel</button>}>
               {data.hvCanChuY.length === 0
                 ? <div className="p-4"><Empty title={`Không có học viên nào cần chú ý trong ${KHOANG_LABEL[props.tg]}`} /></div>

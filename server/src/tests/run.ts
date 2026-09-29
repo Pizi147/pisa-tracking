@@ -8148,12 +8148,12 @@ const branchIdOf = (code: string) => (conn.prepare('SELECT id FROM branches WHER
 
 check('PR-F · Sổ chỉ số: đúng hai mươi chỉ số (PR-N thêm pa-cho-duyet; PR-J thêm tám chỉ số Ý thức), mỗi chỉ số đủ tám trường (thiếu một trường thì không được lên dashboard)', () => {
   const list = domain.METRICS as readonly any[];
-  assert(list.length === 30, `Phải có ba mươi chỉ số (hai của PR-UX4: hv-can-ho-tro-2-lan-chua-case, hv-bo-qua-van-can-ho-tro + hai mươi tám chỉ số cũ: mười hai của PR-F/PR-N + bảy của PR-J còn lại sau khi PR-T bỏ vi-pham-khong-hieu-luc + bốn của PR-T: case-cho-xac-dinh-nguyen-nhan và ba phoi-hop-* + một của PR-S1: tin-hieu-qua-han + ba của PR-Pa: case-xac-dinh-nguyen-nhan-qua-han, bai-qua-han-nhap-diem, case-chua-co-nguoi-phu-trach + một của PR-YT2: vi-pham-theo-nhom), đang có ${list.length}`);
+  assert(list.length === 31, `Phải có ba mươi mốt chỉ số (PR-YT4: bien-phap-dang-chuan-bi → bien-phap-cho-duyet, thêm hv-theo-bac; hai của PR-UX4: hv-can-ho-tro-2-lan-chua-case, hv-bo-qua-van-can-ho-tro + hai mươi tám chỉ số cũ: mười hai của PR-F/PR-N + bảy của PR-J còn lại sau khi PR-T bỏ vi-pham-khong-hieu-luc + bốn của PR-T: case-cho-xac-dinh-nguyen-nhan và ba phoi-hop-* + một của PR-S1: tin-hieu-qua-han + ba của PR-Pa: case-xac-dinh-nguyen-nhan-qua-han, bai-qua-han-nhap-diem, case-chua-co-nguoi-phu-trach + một của PR-YT2: vi-pham-theo-nhom), đang có ${list.length}`);
   const expected = ['hv-sos-hien-tai', 'hv-duoi-ky-vong-mon', 'hv-co-case-mo', 'case-mo', 'tin-hieu-cho-xac-minh', 'tin-hieu-qua-han',
     'case-xac-dinh-nguyen-nhan-qua-han', 'bai-qua-han-nhap-diem', 'case-chua-co-nguoi-phu-trach', 'case-cho-xac-dinh-nguyen-nhan',
     'case-thieu-pa', 'pa-can-cap-nhat', 'pa-cho-duyet', 'pa-co-ket-qua', 'ty-le-co-cai-thien', 'dung-han-cap-nhat', 'do-phu-danh-gia',
     'vi-pham-tong', 'vi-pham-theo-nhom', 'vi-pham-chua-xu-ly', 'hv-co-vi-pham', 'hv-can-xu-ly',
-    'bien-phap-da-thuc-hien', 'bien-phap-dang-chuan-bi', 'bien-phap-theo-loai',
+    'bien-phap-da-thuc-hien', 'bien-phap-cho-duyet', 'bien-phap-theo-loai', 'hv-theo-bac',
     'phoi-hop-luot-sos', 'phoi-hop-dang-xu-ly', 'phoi-hop-hoan-thanh',
     'hv-can-ho-tro-2-lan-chua-case', 'hv-bo-qua-van-can-ho-tro'];
   for (const id of expected) assert(list.some((m) => m.id === id), `Thiếu chỉ số ${id}`);

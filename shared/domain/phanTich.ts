@@ -21,7 +21,7 @@ export const GOC_NHIN_LABEL: Record<GocNhin, string> = {
   'tong-hop': 'Tổng hợp Test + SOS',
   'van-de': 'Tổng hợp vấn đề HV',
   'hieu-qua-pa': 'Hiệu quả PA',
-  'y-thuc': 'Ý thức & Phối hợp',
+  'y-thuc': 'Ý thức',   // PR-YT4 (K1-25): Phối hợp SOS ở Việc của GVCN, không ở góc nhìn này
   'danh-sach': 'Danh sách Case',
 };
 export const GOC_NHIN_MAC_DINH: GocNhin = 'tong-hop';
@@ -301,27 +301,9 @@ export function tuanTrungBinh(soNgay: readonly number[]): number | null {
   return Math.max(1, Math.round(tb / 7));
 }
 
-// ------------------------------------------------------------------ Ý thức: bước tiếp theo (Q14)
-
-export const BUOC_TIEP = ['sap-thu-1', 'sap-thu-2', 'sap-thu-3', 'da-thu-3', 'theo-doi'] as const;
-export type BuocTiep = (typeof BUOC_TIEP)[number];
-export const BUOC_TIEP_LABEL: Record<BuocTiep, string> = {
-  'sap-thu-1': 'Sắp Thư CC lần 1', 'sap-thu-2': 'Sắp Thư CC lần 2', 'sap-thu-3': 'Sắp Thư CC lần 3',
-  'da-thu-3': 'Đã Thư CC lần 3', 'theo-doi': 'Theo dõi',
-};
-
-/** Vi phạm lặp lại (≥ 3 trong khoảng) hoặc vi phạm SAU lần Thư CC gần nhất — cùng lộ trình. */
-export function laHvCanChuY(x: { viPham: number; viPhamSauThu: number }): boolean {
-  return x.viPham >= 3 || x.viPhamSauThu > 0;
-}
-
-export function buocTiepTheo(
-  x: { thuCaoNhat: 0 | 1 | 2 | 3; viPhamSauThu: number; viPham: number; chuaXuLy: number },
-): BuocTiep {
-  if (x.thuCaoNhat === 3) return x.viPhamSauThu > 0 ? 'da-thu-3' : 'theo-doi';
-  if (x.thuCaoNhat > 0) return x.viPhamSauThu > 0 ? (`sap-thu-${x.thuCaoNhat + 1}` as BuocTiep) : 'theo-doi';
-  return x.viPham >= 3 && x.chuaXuLy > 0 ? 'sap-thu-1' : 'theo-doi';
-}
+// ------------------------------------------------------------------ Ý thức (PR-YT4): bỏ "bước tiếp theo · Sắp Thư CC" (v3)
+/* "Học viên cần chú ý" = nhóm Quá hạn · Bắt buộc xử lý · Chờ QL duyệt của cửa trạng thái (K1-25); cột Bậc hiện tại + Bậc kế đọc từ
+   `EmYThuc`. Luật 8 tuần / Thư CC của v3 đã bỏ. */
 
 /** Chênh lệch "so với lần trước / kỳ trước": nhiều hơn = xấu (đỏ ↑), ít hơn = tốt (xanh ↓), bằng = xám. null → "—". */
 export function nhanSoVoiTruoc(d: number | null): { chu: string; tone: 'bad' | 'ok' | 'muted' } {
@@ -381,10 +363,12 @@ export type HieuQuaPaKetQua = {
   chuaGhiKetQua: number; caseChuaPhanLoai: number; scopeEmpty: boolean;
 };
 
-/** Ý thức & Phối hợp: "Học viên cần chú ý" + "Lớp nhiều vi phạm". */
+/** Ý thức (PR-YT4): "Học viên cần chú ý" + "Lớp nhiều vi phạm". */
 export type DongHvCanChuY = {
   studentId: number; ten: string; lop: string | null; viPham: number; chuaXuLy: number;
-  bienPhapGanNhat: string | null; ngay: string | null; buocTiep: BuocTiep;
+  bienPhapGanNhat: string | null; ngay: string | null;
+  /** PR-YT4 (K1-25): nhóm em (Quá hạn · Bắt buộc xử lý · Chờ QL duyệt), bậc hiện tại và bậc kế trên thang. */
+  nhom: 'qua_han' | 'bat_buoc' | 'cho_duyet'; bac: string | null; bacKe: string | null;
 };
 export type DongLopViPham = {
   khoa: string; classId: number | null; nhan: string; viPham: number; chuaXuLy: number;

@@ -734,4 +734,73 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const src = fs.readFileSync(path.join(REPO3, 'web/src/modules/yThuc/YThucReminders.tsx'), 'utf8');
     assert(!/my-warnings/.test(src), 'còn gọi /y-thuc/my-warnings');
   });
+
+  // ------------------------------------------------------------------ Task 7 · chỉ số và Phân tích Ý thức theo trạng thái v4
+  const tk: any = await import('../yThuc/thongKe.ts');
+  const ptYt: any = await import('../phanTich/yThucPhanTich.ts');
+  const ms7 = (id: string, f: Record<string, unknown> = {}) => tk.yThucMetric(P.mbManager, id, { branchId: mbId, ...f });
+
+  check('YT4 (7) · vi-pham-chua-xu-ly = Mới + Cần xử lý + Quá hạn; Đã ghi nhận, Chờ QL duyệt, Đã xử lý KHÔNG tính (K1-26)', () => {
+    const lop = lopMoi('MB FT YT4M1');
+    const a = hv(lop.id); const moi = vpDb(a, TODAY); const ghi = vpDb(a, addDays(TODAY, -20), { ghiNhan: addDays(TODAY, -19) });
+    const b = hv(lop.id); const bb = ba3(b);
+    const c = hv(lop.id); const cc = vpDb(c, TODAY); deXuatGui(lop.gvcn, c, 'suspension', [cc]);
+    const ids = ms7('vi-pham-chua-xu-ly', { classId: lop.id }).ids as number[];
+    assert(ids.includes(moi) && bb.every((x) => ids.includes(x)) && !ids.includes(ghi) && !ids.includes(cc) && ids.length === 4, JSON.stringify(ids));
+  });
+  check('YT4 (7) · bien-phap-da-thuc-hien: lần xử lý xong (theo ngày thực hiện) — MỘT lần dù gom 3 vi phạm; đề xuất chờ/đã duyệt chưa tính, Đã thực hiện thì tính', () => {
+    const sid = hv(); const m = xl(gvcn, sid, ba3(sid));
+    const s2 = hv(); const d2 = deXuatGui(gvcn, s2, 'suspension', [ghiVp(gvbm, s2)]);
+    const da = () => ms7('bien-phap-da-thuc-hien', { from: TODAY, to: TODAY }).ids as number[];
+    assert(da().filter((x) => x === m.id).length === 1 && !da().includes(d2.id), 'một lần; đề xuất chưa tính');
+    yc.duyetYeuCau(P.mbManager, theCho('y_thuc', d2.id).id);
+    assert(!da().includes(d2.id), 'đã duyệt chưa thực hiện');
+    xuLy.daThucHien(gvcn, d2.id, { performedOn: TODAY });
+    assert(da().includes(d2.id), 'Đã thực hiện thì tính');
+  });
+  check('YT4 (7) · bien-phap-theo-loai: chín loại v4 (+ loai-cu cho dòng cũ, Q2) tách riêng; lọc kind; tổng = bien-phap-da-thuc-hien', () => {
+    const sid = hv(); xl(gvcn, sid, [ghiVp(gvbm, sid)]); const r2 = xl(gvcn, sid, [ghiVp(gvbm, sid)]);
+    const r = ms7('bien-phap-theo-loai');
+    assert(Object.keys(r.byKind).join() === [...d.MEASURE_KINDS, 'loai-cu'].join(), Object.keys(r.byKind).join());
+    assert(r.byKind.report_2.includes(r2.id) && !r.byKind.report_1.includes(r2.id), 'Report 2 riêng');
+    assert(ms7('bien-phap-theo-loai', { kind: 'report_2' }).ids.join() === r.byKind.report_2.join(), 'lọc kind');
+    assert(r.ids.length === ms7('bien-phap-da-thuc-hien').ids.length, 'tổng các loại = tổng chỉ số');
+  });
+  check('YT4 (7) · bien-phap-cho-duyet (thay "đang chuẩn bị"): đề xuất gửi → vào tập; QL duyệt → ra', () => {
+    const sid = hv(); const m = deXuatGui(gvcn, sid, 'meeting_cx', [ghiVp(gvbm, sid)]);
+    assert(ms7('bien-phap-cho-duyet').byKind.meeting_cx.includes(m.id), 'vào');
+    yc.duyetYeuCau(P.mbManager, theCho('y_thuc', m.id).id);
+    assert(!ms7('bien-phap-cho-duyet').ids.includes(m.id), 'ra');
+    assert(d.metricById('bien-phap-dang-chuan-bi') === null && d.metricById('bien-phap-cho-duyet'), 'sổ chỉ số');
+  });
+  check('YT4 (7) · hv-theo-bac: em đang học chia bậc 0–6 theo cửa trạng thái; khai bậc 2 → khoá "2"', () => {
+    const sid = hv(); xuLy.khaiBac(gvcn, sid, { bac: 2, ghiChu: 'Report 2 (giấy)' });
+    const s0 = hv();
+    const r = ms7('hv-theo-bac');
+    assert(Object.keys(r.byKind).join() === '0,1,2,3,4,5,6' && r.byKind['2'].includes(sid) && r.byKind['0'].includes(s0), JSON.stringify(Object.keys(r.byKind)));
+    assert(ms7('hv-theo-bac', { kind: '2' }).ids.includes(sid) && /không hợp lệ/.test(loiCua(() => ms7('hv-theo-bac', { kind: '9' })).msg), 'lọc kind');
+  });
+  check('YT4 (7) · Ý thức nằm NGOÀI bảng hiệu quả hỗ trợ: xử lý / đề xuất không đổi pa-co-ket-qua, ty-le-co-cai-thien', () => {
+    const hq = () => ['pa-co-ket-qua', 'ty-le-co-cai-thien'].map((id) => metricsSvc.metricSet(P.mbManager, id, { branchId: mbId }).ids.length).join();
+    const truoc = hq();
+    const sid = hv(); xl(gvcn, sid, ba3(sid));
+    assert(hq() === truoc, `${truoc} → ${hq()}`);
+  });
+  check('YT4 (7) · Phân tích lọc đúng một lớp = tab Ý thức của lớp: "chưa xử lý" cùng tập, "HV cần chú ý" = em Quá hạn · Bắt buộc · Chờ QL', () => {
+    const lop = lopMoi('MB FT YT4PT');
+    const a = hv(lop.id); vpDb(a, addDays(TODAY, -8));
+    const b = hv(lop.id); ba3(b);
+    const c = hv(lop.id); deXuatGui(lop.gvcn, c, 'suspension', [vpDb(c, TODAY)]);
+    const e = hv(lop.id); vpDb(e, TODAY, { ghiNhan: TODAY });
+    const kq = ptYt.yThucPhanTich(P.mbManager, { branchId: mbId, ct: 'ca-hai', classId: lop.id, from: addDays(TODAY, -30), to: TODAY });
+    const bd = board.bangYThucLop(lop.gvcn, lop.id);
+    const tabCanChuY = [...bd.nhom.qua_han, ...bd.nhom.bat_buoc, ...bd.nhom.cho_duyet].map((x: any) => x.studentId).sort().join();
+    assert(kq.hvCanChuY.map((x: any) => x.studentId).sort().join() === tabCanChuY, `${kq.hvCanChuY.map((x: any) => x.studentId)} ≠ ${tabCanChuY}`);
+    const tabChua = bd.dongThoiGian.filter((x: any) => x.loai === 'vi-pham' && ['moi', 'can_xu_ly', 'qua_han'].includes(x.trangThai)).length;
+    assert(kq.lop[0]?.chuaXuLy === tabChua && tabChua === 4, `${kq.lop[0]?.chuaXuLy} ≠ ${tabChua}`);
+  });
+  check('YT4 (7) · Góc nhìn Phân tích tên "Ý thức"; không còn "bước tiếp theo · Sắp Thư CC" (BUOC_TIEP, buocTiepTheo, laHvCanChuY)', () => {
+    assert(d.GOC_NHIN_LABEL['y-thuc'] === 'Ý thức', d.GOC_NHIN_LABEL['y-thuc']);
+    assert(!('BUOC_TIEP' in d) && !('buocTiepTheo' in d) && !('laHvCanChuY' in d), 'còn luật v3');
+  });
 }
