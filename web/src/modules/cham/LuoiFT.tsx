@@ -60,9 +60,9 @@ export const tenDotFt = (data: FtSheet | null | undefined) =>
  * ĐỘ RỘNG CỘT CỐ ĐỊNH (G-2): `table-layout: fixed` + `colgroup`, nên cột và hàng thẳng dù dòng nào nhiều chữ hơn.
  * Tổng rộng là chiều rộng tối thiểu của bảng — màn hẹp hơn thì cuộn ngang TRONG THẺ (G-11), trang không cuộn ngang.
  */
-const COT_HV = 190, COT_MT = 56, COT_TT = 118, COT_HAN = 200, COT_KN = 104, COT_SO = 72, COT_KQ = 176;
+const COT_HV = 190, COT_MT = 56, COT_TT = 118, COT_HAN = 140, COT_KN = 104, COT_SO = 72, COT_KQ = 150;
 /* PR-HSM: cột W tổng chỉ đọc (K4-26, Q12) · cột S nới cho nút "GV chấm: {tên}" dưới tiêu đề (K4-24). */
-const COT_W = 56, COT_S = 150;
+const COT_W = 56, COT_S = 130;   // PR-HSM: +W, S rộng hơn → Hạn 200→140, Kết quả 176→150 để bảng đủ cột vẫn vừa 1400 px
 const W_HINT = 'Band Writing = (Task 1 + Task 2 × 2) / 3, khi đủ hai task.';
 
 /**
@@ -205,7 +205,7 @@ function DeadlineSummary({ cells }: { cells: Cell[] }) {
     <div className="flex flex-col items-start gap-0.5 min-w-0">
       <DeadlinePill cell={soonest} />
       {dongDau ?? (weeks.size > 1 && (
-        <span className="text-[10px] text-slate-500" title={skillLabel(soonest.skill)}>
+        <span className="max-w-full truncate text-[10px] text-slate-500" title={skillLabel(soonest.skill)}>
           {skillShort(soonest.skill)} · đợt này thi {weeks.size} tuần
         </span>
       ))}
@@ -259,7 +259,7 @@ function SheetRow({ row, rowIndex, active, cot, tuanDangXem, onReload, gvMacDinh
         áp cho cả dòng. Nên: hạn gần nhất trong các môn CÒN NỢ, và gọi tên môn đó.
       */}
       {cot.han && (
-        <td className="td py-1.5 whitespace-nowrap">
+        <td className="td py-1.5 overflow-hidden">{/* cột 140 px: câu hạn dài gói dòng, không tràn sang cột L */}
           <DeadlineSummary cells={row.cells} />
         </td>
       )}

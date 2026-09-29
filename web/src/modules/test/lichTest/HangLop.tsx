@@ -79,7 +79,7 @@ export function HangLop({ lop, moCua, onMo, coChiNhanh, hep, periodId, tuanDangX
 }) {
   const cot = hep
     ? [null]
-    : [...COT_DAU_LICH_TEST, ...(coChiNhanh ? [110] : []), 96, 190, 130, 44];
+    : [...COT_DAU_LICH_TEST, ...(coChiNhanh ? [110] : []), 96, 190, null, 44];   // cột trạng thái tự giãn (như bảng Nợ) — ba cột đầu giữ đúng số
   const soCot = cot.length;
 
   return (

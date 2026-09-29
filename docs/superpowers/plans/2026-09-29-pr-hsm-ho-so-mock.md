@@ -524,3 +524,10 @@ Không có câu bắt buộc — mọi điểm mở đã vào bảng Q theo khuy
   (lượt 5): GV chấm "Cô Lan (giám khảo ngoài)". H3/H4 dùng dữ liệu có sẵn (không thêm vào `hsmSeed.ts`): lượt huỷ = Phạm Khánh Linh MT3
   (159) · MT lịch sử = Đoàn Khánh Chi MT1–3 (180–182) · chờ duyệt = Kiều Thu Trang MT1 (174) · huỷ phần = Mạc Đức Long MT1 (177) ·
   RF = Phan Gia Hân (138) · Lương Bảo Anh MT3 (170). **GV Writing của `MB FT 101`: W1 Lê Minh Khoa id 8 · W2 Cao Khánh Linh id 10.**
+- **Task 9 · bấm thử + audit/polish** — không có commit mới trên `origin/main` (không rebase). Bấm thử API 4157 / Vite 5357 (bản `main`
+  4158 / 5358 ở thư mục tạm để chụp ảnh "trước"), Playwright kênh Chrome: **K1–K7, K9–K15 đạt** (K8 có phép kiểm đọc nguồn). Ghi nhận:
+  lượt H1 (Quân MT3) đã **hoàn tất** → GVBM Trang chỉ xem (đúng R11); K1b dùng Lương Bảo Anh MT3 (Trang chỉ bấm được ô S), K2–K3 dùng
+  Quản lý Vy, K4 dùng GV W1 Khoa trên lượt 170. Sửa sau audit: (1) lưới FT cuộn ngang ở 1440 → Hạn 200→140, S 150→130, Kết quả 176→150
+  (bảng đúng 1400 px), ô Hạn gói dòng thay vì tràn sang cột L; (2) ô chỉ đọc/ô nhập căn phải (`items-end`); (3) "vắng" theo
+  `sitStatus === 'absent'` (đang chờ duyệt dời có `progress = reschedule_pending`); (4) bảng lớp Lịch Test có cột tự giãn → ba cột đầu
+  đúng 190/120/110 như bảng Nợ. Detector impeccable: 0 phát hiện. Ảnh ở `thiet-ke/anh/pr-hsm/` (`*-truoc.png` / `*-sau.png`).

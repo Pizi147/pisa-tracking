@@ -83,7 +83,7 @@ export const KHOA_HOAN_TAT_HINT = 'Đợt này đã hoàn tất. Chỉ Quản l�
 export const VANG_HINT = 'Đã xác nhận vắng — Quản lý xếp lại bài trước khi nhập.';
 
 /** Vì sao ô này chỉ đọc — MỘT câu cho ô số câu và ô tiêu chí. */
-const lyDoChiDoc = (cell: Cell) => (cell.progress === 'absent' ? VANG_HINT
+const lyDoChiDoc = (cell: Cell) => (cell.sitStatus === 'absent' ? VANG_HINT
   : lockedByNoShow(cell) ? 'Đã chốt — cần Quản lý hiệu chỉnh'
   : cell.khoa ? KHOA_HOAN_TAT_HINT : 'Bạn không được phân công kỹ năng này');
 
@@ -363,9 +363,9 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false, 
     /* Điện thoại: dồn phải cả cụm — dòng đếm ngược "Còn 6 ngày để sửa" rộng hơn "-" + chỗ nút, dồn trái thì dòng này
        lệch khỏi cột của các dòng khác. E5: ô chỉ đọc là CHỮ (không viền, không mờ); không có số thì "—", band trong ngoặc
        chỉ khi có số câu; bài đã xác nhận vắng ghi "vắng" (E8). */
-    const vang = cell.progress === 'absent' && cell.rawScore === null;
+    const vang = cell.sitStatus === 'absent' && cell.rawScore === null;   // sitStatus: 'absent' cả khi đang chờ duyệt dời (progress reschedule_pending)
     return (
-      <span className={`inline-flex flex-col ${lon ? 'items-end' : 'items-start'} gap-0.5`}>
+      <span className="inline-flex flex-col items-end gap-0.5">
         <span className="inline-flex items-center gap-1.5">
           <span className={`tabular-nums ${vang ? 'text-slate-500' : 'text-slate-300'}`} title={lyDoChiDoc(cell)}>
             {vang ? 'vắng' : cell.rawScore === null ? (cell.noShow ? '-' : '—') : cell.rawScore}
@@ -380,7 +380,7 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false, 
 
   const moi = draft.trim();
   return (
-    <span className="inline-flex flex-col items-start gap-0.5">
+    <span className="inline-flex flex-col items-end gap-0.5">
       <span className="inline-flex items-center gap-1.5">
         <input
           ref={goLai.gan}
@@ -463,9 +463,9 @@ export function CriteriaButton({ cell, onSave, buttonRef, lon = false, gvMacDinh
   };
   /* E5: ô không sửa được là CHỮ SỐ (không viền nút, không mờ) — cùng câu "vì sao" với ô số câu; vắng ghi "vắng". */
   if (!editable) {
-    const vang = cell.progress === 'absent' && cell.band === null;
+    const vang = cell.sitStatus === 'absent' && cell.band === null;
     return (
-      <span className={`inline-flex flex-col ${lon ? 'items-end' : 'items-start'} gap-0.5`}>
+      <span className="inline-flex flex-col items-end gap-0.5">
         <span className="inline-flex items-center gap-1.5">
           <span className={`tabular-nums ${vang ? 'text-slate-500' : 'text-slate-300'} ${lon ? 'text-base font-semibold' : ''}`} title={lyDoChiDoc(cell)}>
             {vang ? 'vắng' : cell.noShow ? '-' : fmtBand(cell.band)}
@@ -477,7 +477,7 @@ export function CriteriaButton({ cell, onSave, buttonRef, lon = false, gvMacDinh
     );
   }
   return (
-    <span className="inline-flex flex-col items-start gap-0.5">
+    <span className="inline-flex flex-col items-end gap-0.5">
       <span className="inline-flex items-center gap-1.5">
       <button
         ref={buttonRef}
