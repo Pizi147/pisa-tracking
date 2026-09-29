@@ -208,6 +208,8 @@ export function weekStartOf(attempt: any): string | null {
 
 export type SkillCell = {
   skill: EntrySkill;
+  /** PR-XLMT (rà #126): ô này là VIỆC nhập điểm của người xem (khác quyền sửa `canEdit`). */
+  viec: boolean;
   assessedSkill: AssessedSkill;
   required: boolean;
   rawScore: number | null;
@@ -273,6 +275,8 @@ export function skillCells(
   hoanTat: { hoanTat: boolean; chuNhatCuoi: string | null } = { hoanTat: false, chuNhatCuoi: null },
 ): SkillCell[] {
   const editable = attempt.class_id ? editableSkills(p, attempt.class_id, ENTRY_SKILLS, luotQuyen(attempt, rows, today)) : [];
+  /* PR-XLMT (rà #126): "việc nhập điểm" không tính vế Quản lý sửa mọi lúc. */
+  const viecList = attempt.class_id ? editableSkills(p, attempt.class_id, ENTRY_SKILLS, luotQuyen(attempt, rows, today), true) : [];
   const mine = attempt.class_id ? mySkills(p, attempt.class_id, ENTRY_SKILLS) : [];
   const mode = scoringModeOf(attempt);
   const schedule = skillScheduleOf(attempt, skillRows);
@@ -380,6 +384,9 @@ export function skillCells(
       progress,
       canEdit: required && !cancelled && view.sitStatus !== 'cancelled'
         && (hoanTat.hoanTat ? suaSauHoanTat : editable.includes(skill)),
+      /* Việc nhập điểm của người xem (bảng lớp "Nhập điểm …") — như `canEdit` nhưng trước hoàn tất bỏ quyền sửa mọi lúc của Quản lý. */
+      viec: required && !cancelled && view.sitStatus !== 'cancelled'
+        && (hoanTat.hoanTat ? suaSauHoanTat : viecList.includes(skill)),
       /* R11: đánh dấu "đợt đã hoàn tất" cho MỌI người xem — Quản lý vẫn `khoa && canEdit` (sửa qua hộp lý do). */
       khoa: hoanTat.hoanTat,
       /*

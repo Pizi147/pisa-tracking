@@ -597,7 +597,7 @@ export function reportRegularNoShow(
       /* Dời bằng ĐÚNG hàm dời lịch chung — `force` chỉ vượt được cảnh báo, không bao giờ vượt được chặn. */
       setSkillWeek(p, attemptId, skill, moi.id, {
         reason: lyDo !== undefined ? `Báo vắng: ${lyDo.trim()}` : `Báo "-": em không làm bài tuần ${cu.code ?? '?'} — môn này dời sang tuần sau (C08).`,
-        force: true,
+        force: true, today, ghiBuDau: true,
       });
       writeAudit({
         actorUserId: p.userId, action: 'regular.no_show', entityType: 'assessment_attempt', entityId: attemptId,
@@ -613,7 +613,7 @@ export function reportRegularNoShow(
     const ve = tuanCua(existing.no_show_period_id);
     if (existing.no_show_period_id !== row.planned_period_id) {
       setSkillWeek(p, attemptId, skill, existing.no_show_period_id, {
-        reason: 'Gỡ dấu "-": trả lịch về tuần cũ.', force: true,
+        reason: 'Gỡ dấu "-": trả lịch về tuần cũ.', force: true, today, ghiBuDau: true,
       });
     }
     conn.prepare(

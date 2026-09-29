@@ -463,7 +463,9 @@ export function classScopeSql(scope: Scope, alias = 'c'): { sql: string; params:
  * Các kỹ năng người dùng được nhập điểm ở một lớp.
  * Gồm cả đường nhập bù (`score.override`) để văn phòng còn sửa được khi GVBM vắng — xem O05.
  */
-export function editableSkills(p: Principal, classId: number, skills: readonly string[], luot?: LuotQuyen): string[] {
+export function editableSkills(p: Principal, classId: number, skills: readonly string[], luot?: LuotQuyen,
+  /** PR-XLMT (rà #126): dựng "VIỆC nhập điểm" — bỏ vế Quản lý sửa mọi lúc (quyền sửa ô không phải việc của Quản lý). */
+  chiViec = false): string[] {
   const lichSu = !!luot?.lich_su;
   const qlLichSu = lichSu && can(p, PERMISSIONS.PLAN_WEEK, { classId });
   /* `today` từ nơi gọi (danh sách) — không hỏi ngày nghiệp vụ lại cho từng lượt. */
@@ -473,7 +475,7 @@ export function editableSkills(p: Principal, classId: number, skills: readonly s
       || qlLichSu || (gvcnLichSu && !luot!.oCoDiem.includes(skill))
       || can(p, PERMISSIONS.SCORE_OVERRIDE, { classId })
       /* PR-XLMT (chủ sản phẩm chốt 29/09): Quản lý sửa/xoá điểm có lý do (RB-5) ở MỌI lúc, không chỉ sau hoàn tất. */
-      || can(p, PERMISSIONS.PLAN_WEEK, { classId }),
+      || (!chiViec && can(p, PERMISSIONS.PLAN_WEEK, { classId })),
   );
 }
 

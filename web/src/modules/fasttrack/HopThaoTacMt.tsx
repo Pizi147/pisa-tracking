@@ -6,8 +6,9 @@ import { Truong } from '../../ui/KhungPanel.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { TuanNho, type Tuan } from '../test/keHoach/TuanNho.tsx';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
-  CHU_THAO_TAC, LY_DO_TOI_THIEU, canLyDo, kiemLyDoThaoTac, kiemTruong, ngay, tenMon, tuanLich, type LoiTruong, type ThaoTac,
+  CHU_THAO_TAC, LY_DO_TOI_THIEU, canLyDo, kiemLyDoThaoTac, kiemTruong, mondayOfDate, ngay, tenMon, tuanLich, type LoiTruong, type ThaoTac,
 } from '@shared/domain/index.ts';
 
 /** Thao tác một kỹ năng mở bằng hộp này — Nhập/Sửa điểm làm tại chỗ, Xếp lại bài vắng / Trả lời đề nghị có hộp riêng. */
@@ -49,6 +50,7 @@ export type HopThaoTacProps = {
 export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, tuanDaBatDau, row, oCoDiem = [], oMacDinh, onClose, onDone }: HopThaoTacProps) {
   const toast = useToast();
   const lf = useLoiForm();
+  const { homNay } = useNgayNghiepVu();
   const [tuan, setTuan] = useState<Tuan | null>(row.periodId && row.weekStart ? { periodId: row.periodId, weekStart: row.weekStart } : null);
   const [han, setHan] = useState('');
   const [lyDo, setLyDo] = useState('');
@@ -61,11 +63,14 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, tuanDaBa
   const mon = tenMon(ct, skill);
   const batBuoc = canLyDo(t, tuanDaBatDau);
   const coTuan = t === 'dat-lich' || t === 'xep-lai' || t === 'doi-lich' || t === 'khoi-phuc';
+  /* K2-33: dời / xếp lại lượt có sẵn không vào tuần đã qua — tuần sớm nhất là tuần này. */
+  const tuanNay = homNay ? mondayOfDate(homNay) : null;
   const chonW = t === 'huy-diem' && !laThuong && oCoDiem.length > 1;
 
   const loi: LoiTruong[] = [
     ...(batBuoc && kiemLyDoThaoTac(ten, lyDo) ? [{ khoa: 'ly-do', nhan: 'Lý do', lyDo: kiemTruong({ khoa: 'ly-do', nhan: 'Lý do', toiThieu: LY_DO_TOI_THIEU }, lyDo)! }] : []),
-    ...(coTuan && (!tuan || (t === 'doi-lich' && tuan.periodId === row.periodId)) ? [{ khoa: 'tuan', nhan: 'Tuần thi mới', lyDo: 'Chọn tuần khác tuần hiện tại' }] : []),
+    ...(coTuan && (!tuan || (t === 'doi-lich' && tuan.periodId === row.periodId)) ? [{ khoa: 'tuan', nhan: 'Tuần thi mới', lyDo: 'Chọn tuần khác tuần hiện tại' }]
+      : coTuan && tuanNay && tuan!.weekStart < tuanNay ? [{ khoa: 'tuan', nhan: 'Tuần thi mới', lyDo: 'Tuần đã qua — chọn từ tuần này trở đi' }] : []),
     ...(t === 'doi-han' && !han ? [{ khoa: 'han', nhan: 'Hạn chấm mới', lyDo: 'Chưa chọn' }] : []),
     ...(chonW && !o.length ? [{ khoa: 'o', nhan: 'Ô cần huỷ', lyDo: 'Chưa chọn' }] : []),
   ];
@@ -104,9 +109,8 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, tuanDaBa
         if (laThuong) {
           await api.put(`/regular/attempts/${attemptId}/scores/${skill}`, { score: null, total: null, lyDo: lyDoGui });
         } else {
-          for (const e of chonW ? o : oCoDiem.length ? oCoDiem : [skill]) {
-            await api.put(`/attempts/${attemptId}/scores/${e}`, { rawScore: null, criteria: [null, null, null, null], lyDo: lyDoGui });
-          }
+          /* Một yêu cầu, một giao dịch ở máy chủ — W1 + W2 không bao giờ còn nửa điểm (rà #126). */
+          await api.post(`${goc}/huy-diem`, { o: chonW ? o : oCoDiem.length ? oCoDiem : undefined, lyDo: lyDoGui });
         }
         return `Đã huỷ điểm ${mon}`;
       }
@@ -145,7 +149,7 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, tuanDaBa
         {coTuan && (
           <Truong nhan="Tuần thi mới" batBuoc as="div" loi={lf.loiCua(loi, 'tuan')}>
             <div {...lf.o(loi, 'tuan')}>
-              <TuanNho d={{ periodId: tuan?.periodId ?? null, weekStart: tuan?.weekStart ?? null }} goc={row.weekStart}
+              <TuanNho d={{ periodId: tuan?.periodId ?? null, weekStart: tuan?.weekStart ?? null }} goc={row.weekStart} toiThieu={tuanNay}
                 onTuan={(x) => { setTuan(x); setCanhBao(null); }} />
             </div>
             {t === 'doi-lich' && row.weekStart && <span className="mt-1 block text-[11px] text-slate-500">Đang thi {tuanLich(row.weekStart)}</span>}

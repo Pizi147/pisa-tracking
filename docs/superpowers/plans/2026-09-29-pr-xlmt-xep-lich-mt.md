@@ -670,3 +670,21 @@ if (chuaQua.length) luuY('daThiToiMt', `Đã thi tới MT${daThiToiMt} nhưng ${
 - **Câu 1 = A:** Thi lại kỹ năng đã có điểm → xoá điểm cũ khỏi ô, giữ trong Lịch sử, SOS/kỳ vọng tính theo điểm mới. Không migrate.
 - **Câu 2 = A (planning chốt):** ngăn Xếp lịch khung Lớp thường xếp **một lớp mỗi lần**.
 - Planning duyệt bảng Q (Q1–Q14) như agent đề xuất.
+
+### Sửa theo rà #126 (Opus 5.5, rà gọn — 29/09)
+
+- **Tuần đã qua (K2-33):** chặn ở MỘT chỗ — `setSkillWeek` (trừ `khiTao` = tạo MT lịch sử đã qua `kiemTuanDaQua`); thi lại, lưu đợt, dời
+  thẳng, Xếp lại bài vắng đều đi qua đây. Kiểm đặt SAU "đã có điểm / đã thi" (lỗi gốc hơn nói trước). Dấu "-" lớp thường ghi bù tuần đã qua (C08 Q4, luật đã duyệt) được miễn bằng cờ `ghiBuDau` — đó là ghi lại việc đã xảy ra, không phải dời. `reportRegularNoShow` truyền
+  `today` của chính lời gọi. Ô `TuanNho` nhận `toiThieu` (nút ‹ không lùi qua tuần này); hộp chung báo "Tuần đã qua — chọn từ tuần này
+  trở đi". Phép kiểm cũ `[10.6] Xử lý muộn` dựng lịch quá khứ bằng `today` 4 tuần trước (dữ liệu dựng, luật được thử không đổi).
+- **"Việc của tôi":** `editableSkills(…, chiViec = true)` bỏ vế Quản lý sửa mọi lúc; ô FT thêm cờ `viec` (bảng lớp `myPending`/`hanNhap`
+  đọc `viec`, không đọc `canEdit`). Giữ đúng nghĩa của `main`: GV được phân công · Quản trị nhập bù · Quản lý sau hoàn tất (A3). Không
+  dùng `mySkills` thuần vì sẽ làm mất việc nhập bù của Quản trị và việc sau hoàn tất của Quản lý (hai phép kiểm cũ Q13, A3 đỏ).
+  Các nơi khác dùng `editableSkills` (`canCham.duocCham`, `hocVienLop.coTheNhapDiem`, danh sách lượt) là QUYỀN, không phải việc.
+- **Thi lại** chặn kỹ năng chưa có điểm. **Huỷ điểm** FT: route `POST /attempts/:id/skills/:skill/huy-diem` → `huyDiem` (một `tx`,
+  W1 + W2 không còn nửa điểm); hộp chung gọi một lần. **"-" đè ô đã có điểm:** FT `saveScore` và lớp thường `reportRegularNoShow` vốn đã
+  TỪ CHỐI (chặt hơn "cần lý do") — thêm phép kiểm chứng minh, không thêm mã.
+- **Trần xem trước** `POST /ke-hoach-test/hang-loat` (`TRAN_GHI_LO.xemTruocXepLichMt`): đo 78 câu / 63 em → trần 102.
+- **375 px:** ngăn Xếp lịch bỏ cột Lớp + Sẽ xếp trên điện thoại (xuống dưới tên em); dòng xem trước chuyển vào chân ngăn
+  (`KhungPanel chan.dongTren`, ngay trên nút) — không còn dính đè danh sách. **1440:** dòng không có ⋯ giữ chỗ `w-7` → nút chính thẳng cột.
+- **Gộp main** (PR-KCK #125): `intake.ts` lấy import của main + `mtDaThiChuaQua`; `seed.ts` giữ cả `buildXlmtDemo` và `buildKckDemo`.

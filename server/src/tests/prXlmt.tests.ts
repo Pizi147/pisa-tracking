@@ -358,6 +358,67 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
     assert(/Đã thi tới MT6 nhưng MT1, MT2.* rơi vào tuần chưa qua/.test(y?.message ?? ''), JSON.stringify(pv.rows[0].issues));
   });
 
+  // ------------------------------------------------------------------ sửa theo rà #126
+  const classSvc: any = await import('../classes/classes.ts');
+  check('PR-XLMT (rà #126) · Không dời lượt có sẵn vào TUẦN ĐÃ QUA — ba đường: dời thẳng, lưu đợt, thi lại (K2-33)', () => {
+    const s = them('MB FT 101', 'XLMT Rà Tuần Qua');
+    const a = luotCua(s)[0];
+    datTuan(a.id, tuan(0).id);
+    assertThrows(() => skillSch.setSkillWeek(QL, a.id, 'reading', tuan(-2).id, { force: true, reason: 'Lịch học đổi' }), /tuần đã qua/, 'dời thẳng');
+    assertThrows(() => keHoach.luuDot(QL, { attemptId: a.id, force: true, reason: 'Lịch học đổi', kyNang: [{ skill: 'reading', periodId: tuan(-2).id }] }),
+      /tuần đã qua/, 'lưu đợt');
+    attemptsSvc.saveScore(P.lrTeacher, a.id, 'listening', { rawScore: 30 }, TODAY);
+    assertThrows(() => keHoach.thiLai(QL, { attemptId: a.id, skills: ['listening'], periodId: tuan(-2).id, lyDo: 'Đề lỗi, thi lại', force: true }),
+      /tuần đã qua/, 'thi lại');
+    assert(attemptsSvc.scoresOf(a.id).find((x: any) => x.skill === 'listening')?.band != null, 'thi lại bị chặn thì điểm cũ còn nguyên (một tx)');
+    assert(lich(a.id, 'reading').tuan === tuanNay, 'lịch không đổi');
+  });
+
+  check('PR-XLMT (rà #126) · Thi lại chỉ cho kỹ năng ĐÃ CÓ ĐIỂM — vắng/chưa điểm bị chặn', () => {
+    const s = them('MB FT 101', 'XLMT Rà Thi Lại Trống');
+    const a = luotCua(s)[0];
+    datTuan(a.id, tuan(0).id);
+    assertThrows(() => keHoach.thiLai(QL, { attemptId: a.id, skills: ['speaking'], periodId: tuan(1).id, lyDo: 'Đề lỗi, thi lại' }), /chưa có điểm — không thi lại/, 'chưa điểm');
+  });
+
+  check('PR-XLMT (rà #126) · Quản lý không nhận "Nhập điểm" của GV làm việc của mình; GVBM vẫn có (mySkills, không phải editableSkills)', () => {
+    const s = them('MB FT 101', 'XLMT Rà Việc Của Tôi');
+    datTuan(luotCua(s)[0].id, tuan(0).id);
+    const hangQL = classSvc.classRoster(QL, LOP1).find((r: any) => r.studentId === s || r.id === s);
+    const hangGV = classSvc.classRoster(P.lrTeacher, LOP1).find((r: any) => r.studentId === s || r.id === s);
+    assert(hangQL && hangQL.myPending.length === 0 && !hangQL.viecTiepTheo?.some?.((v: any) => /Nhập điểm/.test(JSON.stringify(v))), `QL: ${JSON.stringify(hangQL?.myPending)}`);
+    assert(hangGV && hangGV.myPending.includes('listening'), `GV L phải có việc nhập L: ${JSON.stringify(hangGV?.myPending)}`);
+    const quanLyCo = classSvc.classRoster(QL, LOP1).filter((r: any) => r.myPending.length > 0).length;
+    assert(quanLyCo === 0, `QL không được có việc Nhập điểm ở hàng nào (${quanLyCo} hàng)`);
+  });
+
+  check('PR-XLMT (rà #126) · Huỷ điểm Writing: W1 + W2 một giao dịch — ô sau lỗi quyền thì ô trước cuộn lại, không còn nửa điểm', () => {
+    const s = them('MB FT 101', 'XLMT Rà Huỷ W');
+    const a = luotCua(s)[0];
+    datTuan(a.id, tuan(0).id);
+    attemptsSvc.saveScore(P.w1Teacher, a.id, 'writing1', { criteria: [6, 6, 6, 6] }, TODAY);
+    attemptsSvc.saveScore(P.w2Teacher, a.id, 'writing2', { criteria: [6, 6, 6, 6] }, TODAY);
+    const band = (e: string) => attemptsSvc.scoresOf(a.id).find((x: any) => x.skill === e)?.band ?? null;
+    assertThrows(() => keHoach.huyDiem(P.w1Teacher, { attemptId: a.id, skill: 'writing', lyDo: 'Nhập nhầm bài' }), /./, 'GV W1 không huỷ được W2');
+    assert(band('writing1') !== null && band('writing2') !== null, 'lỗi ở W2 → W1 cuộn lại');
+    assertThrows(() => keHoach.huyDiem(QL, { attemptId: a.id, skill: 'writing', lyDo: 'ab' }), /Huỷ điểm: lý do/, 'lý do ngắn');
+    keHoach.huyDiem(QL, { attemptId: a.id, skill: 'writing', lyDo: 'Nhập nhầm bài của em khác' });
+    assert(band('writing1') === null && band('writing2') === null, 'QL huỷ cả hai ô');
+  });
+
+  check('PR-XLMT (rà #126) · Quản lý ghi "-" đè ô ĐÃ CÓ ĐIỂM bị từ chối (FT và lớp thường) — muốn xoá điểm thì Huỷ điểm có lý do', () => {
+    const s = them('MB FT 101', 'XLMT Rà Dấu Đè');
+    const a = luotCua(s)[0];
+    datTuan(a.id, tuan(0).id);
+    attemptsSvc.saveScore(QL, a.id, 'reading', { rawScore: 30 }, TODAY);
+    assertThrows(() => attemptsSvc.saveScore(QL, a.id, 'reading', { noShow: true, lyDo: 'Em nghỉ ốm có phép' }, TODAY), /không xoá được điểm/, 'FT');
+    const lop = classId('MB FOU 12');
+    const at = (conn.prepare(`SELECT a.id FROM assessment_attempts a JOIN assessment_scores s ON s.attempt_id = a.id AND s.skill = 'listening' AND s.raw_score IS NOT NULL
+      WHERE a.class_id = ? AND a.status != 'cancelled' ORDER BY a.id LIMIT 1`).get(lop) as any)?.id;
+    assert(at, 'Seed: MB FOU 12 cần một bài có điểm L');
+    assertThrows(() => regular.reportRegularNoShow(QL, at, 'listening', true, TODAY, 'Em nghỉ ốm có phép'), /đã có điểm/, 'lớp thường');
+  });
+
   // ------------------------------------------------------------------ khối 4+: web — đọc nguồn (không dựng trình duyệt)
   const { docSach } = await import('./panelUx3.tests.ts');
   check('PR-XLMT (4) · Hộp thao tác chung: không lý do ghi cứng; nhãn nút và tiêu đề qua CHU_THAO_TAC; dòng thời gian dùng SVG', () => {

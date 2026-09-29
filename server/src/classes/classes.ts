@@ -344,7 +344,8 @@ export function classRoster(p: Principal, classId: number, q?: string) {
   const isRatio = prog?.scoringMode === 'ratio';
   /* Chỉ lớp FT mới bị nhắc tháng thi và Target — lớp Normal chưa thi IELTS. */
   const isFt = prog?.code === 'FT';
-  const myRegularSkills = isRatio ? editableSkills(p, classId, prog!.skills) : [];
+  /* PR-XLMT (rà #126): "việc của tôi" giữ nghĩa cũ (`chiViec`) — quyền sửa ô mọi lúc của Quản lý không phải việc nhập điểm. */
+  const myRegularSkills = isRatio ? editableSkills(p, classId, prog!.skills, undefined, true) : [];
   /*
    * R11 (Z2c-c, A3): `myPending` của lớp FT đọc canEdit — đợt đã hoàn tất thì chỉ Quản lý còn sửa được. Một câu hỏi cho cả
    * lớp; lớp thường không dùng (nhánh của nó đọc `editableSkills`, và đợt đủ điểm thì không còn ô trống nào).
@@ -495,11 +496,11 @@ export function classRoster(p: Principal, classId: number, q?: string) {
         passedCount: null, failedCount: result.failedCount,
         sosLevel: result.sosLevel, evaluable: result.evaluable,
         caseStatus: c?.status ?? null,
-        myPending: cells.filter((x) => x.canEdit && x.band === null && x.progress === 'due')
+        myPending: cells.filter((x) => x.viec && x.band === null && x.progress === 'due')
           .map((x) => x.skill),
         overdueSkills: cells.filter((x) => x.overdue).length,
         /* PR-N1 A6: hạn nhập điểm SỚM NHẤT của các ô người xem còn nợ (đến lịch hoặc đã trễ). */
-        hanNhap: cells.filter((x) => x.canEdit && x.band === null && (x.progress === 'due' || x.overdue))
+        hanNhap: cells.filter((x) => x.viec && x.band === null && (x.progress === 'due' || x.overdue))
           .map((x) => x.deadline).filter(Boolean).sort()[0] ?? null,
       };
     });

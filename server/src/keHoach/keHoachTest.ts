@@ -10,7 +10,7 @@
  */
 import { db, tx } from '../db.ts';
 import {
-  KY_NANG_KE_HOACH, MT_TOI_DA, O_KE_HOACH, PERMISSIONS, boMonLich, kiemLyDoThaoTac, kiemSoMtMoi, kiemTuanDaQua, laLichSu, lichMtMacDinh, viecXepMt, laVaoMuon, soMtKeTiep, soSanhLop, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang,
+  KY_NANG_KE_HOACH, MT_TOI_DA, O_KE_HOACH, PERMISSIONS, boMonLich, kiemLyDoThaoTac, kiemSoMtMoi, kiemTuanDaQua, laLichSu, lichMtMacDinh, viecXepMt, laVaoMuon, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang,
   tuanKhoa as tuanKhoaCua,
   type BaiXemTruoc, type DongHangLoat, type KyNangKH, type LuotSo, type LuotXep, type OKyNang,
 } from '../../../shared/domain/index.ts';
@@ -440,6 +440,13 @@ export function thiLai(p: Principal, i: { attemptId: number; skills: string[]; p
   if (loi) throw badRequest(loi);
   if (!i.skills?.length) throw badRequest('Chưa chọn kỹ năng thi lại.');
   const lyDo = `Thi lại: ${i.lyDo.trim()}`;
+  /* Rà #126: thi lại chỉ cho kỹ năng ĐÃ CÓ ĐIỂM — vắng / đã huỷ đi luồng Xếp lại bài vắng / Khôi phục, không qua đây. */
+  const diem = scoresOf(i.attemptId);
+  for (const k of i.skills.map(chonKyNang)) {
+    if (!entrySkillsOf(k as any).some((e) => diem.some((x) => x.skill === e && (x.band != null || x.raw_score != null)))) {
+      throw badRequest(`${tenMon(null, k)} chưa có điểm — không thi lại. Em vắng thì dùng "Xếp lại bài vắng"; phần thi đã huỷ thì "Khôi phục và đặt tuần".`);
+    }
+  }
   return tx(() => {
     for (const k of i.skills.map(chonKyNang)) {
       for (const e of entrySkillsOf(k as any)) {
@@ -452,6 +459,25 @@ export function thiLai(p: Principal, i: { attemptId: number; skills: string[]; p
       setSkillWeek(p, i.attemptId, k, i.periodId, { reason: lyDo, force: !!i.force });
     }
     return { ok: true as const };
+  });
+}
+
+/**
+ * HUỶ ĐIỂM (T38) một kỹ năng FT — mọi ô được chọn (Writing: W1 và/hoặc W2) trong MỘT `tx`: lỗi ở ô sau thì ô trước cuộn lại,
+ * không còn nửa điểm (rà #126). Mỗi ô đi qua `saveScore` (quyền, R11, RB-5 ghi lý do vào Lịch sử).
+ */
+export function huyDiem(p: Principal, i: { attemptId: number; skill: string; o?: string[]; lyDo: string }) {
+  const loi = kiemLyDoThaoTac('Huỷ điểm', i.lyDo);
+  if (loi) throw badRequest(loi);
+  const tatCa = entrySkillsOf(chonKyNang(i.skill) as any) as string[];
+  const o = i.o?.length ? i.o : tatCa;
+  if (o.some((e) => !tatCa.includes(e))) throw badRequest('Ô không thuộc kỹ năng này.');
+  const diem = scoresOf(i.attemptId);
+  const coDiem = o.filter((e) => diem.some((x) => x.skill === e && (x.band != null || x.raw_score != null)));
+  if (!coDiem.length) throw badRequest(`${tenMon(null, i.skill)} chưa có điểm để huỷ.`);
+  return tx(() => {
+    for (const e of coDiem) saveScore(p, i.attemptId, e, { rawScore: null, criteria: [null, null, null, null], lyDo: i.lyDo.trim() });
+    return { ok: true as const, huy: coDiem };
   });
 }
 

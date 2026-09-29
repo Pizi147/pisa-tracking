@@ -460,9 +460,12 @@ function SkillWorkTable({ d, save, onDone, onOpenHistory }: {
           {!chinh && c.required && !c.canEdit && !cancelled && (
             <span className="text-[11px] text-slate-500" title={c.khoa ? KHOA_HOAN_TAT_HINT : 'Bạn không được phân công kỹ năng này'}>Chỉ xem</span>
           )}
-          <MenuDong nhan={`Thao tác khác · ${skillLabel(c.skill)}`} muc={menu.map((x) => ({
-            key: x, nhan: CHU_THAO_TAC[x], onChon: () => chay(x), nguyHiem: x === 'bo-ky-nang' || x === 'huy-diem',
-          }))} />
+          {/* Không có mục thì giữ chỗ cùng rộng nút ⋯ (w-7) — nút chính các dòng thẳng cột (rà #126). */}
+          {menu.length ? (
+            <MenuDong nhan={`Thao tác khác · ${skillLabel(c.skill)}`} muc={menu.map((x) => ({
+              key: x, nhan: CHU_THAO_TAC[x], onChon: () => chay(x), nguyHiem: x === 'bo-ky-nang' || x === 'huy-diem',
+            }))} />
+          ) : <span aria-hidden className="inline-block w-7 flex-none" />}
         </div>
       </div>
     );

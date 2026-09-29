@@ -794,6 +794,15 @@ api.post('/attempts/:id/skills/:skill/bao-vang', requireAuth, wrap((req) => {
   return absenceSvc.baoVang(principalOf(req), pInt(req, 'id'), String(req.params.skill), String(req.body?.lyDo ?? ''));
 }));
 
+/** PR-XLMT (T38, rà #126): Huỷ điểm một kỹ năng FT — mọi ô chọn (W1/W2) trong một giao dịch, lý do bắt buộc. */
+api.post('/attempts/:id/skills/:skill/huy-diem', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return keHoachSvc.huyDiem(principalOf(req), {
+    attemptId: pInt(req, 'id'), skill: String(req.params.skill),
+    o: Array.isArray(req.body?.o) ? req.body.o.map(String) : undefined, lyDo: String(req.body?.lyDo ?? ''),
+  });
+}));
+
 /** PR-XLMT (T37 "ép vào đợt trùng"): Quản lý cho thi lại kỹ năng đã có điểm — xoá ô (lịch sử giữ), đặt tuần mới. */
 api.post('/ke-hoach-test/thi-lai', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();

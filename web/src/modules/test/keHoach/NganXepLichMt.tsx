@@ -116,6 +116,8 @@ export function NganXepLichMt({ lopDs, lopMoSan, coThuong, onDoiKhung, onClose, 
   const [lyDo, setLyDo] = useState('');
   const [force, setForce] = useState(true);
   const [ticked, setTicked] = useState<Set<number>>(new Set());
+  /* Điện thoại: bảng học viên gọn 3 cột (rà #126). Đọc một lần khi mở ngăn — ngăn không đổi cỡ giữa chừng. */
+  const hep = typeof window !== 'undefined' && window.innerWidth < 640;
   const [giuLoi, setGiuLoi] = useState<number[] | null>(null);
 
   /* Xem trước MỌI em của các lớp đã chọn (để cột "Sẽ xếp" có cả em chưa chọn và để tick mặc định) — mỗi lớp một lời gọi. */
@@ -215,6 +217,8 @@ export function NganXepLichMt({ lopDs, lopMoSan, coThuong, onDoiKhung, onClose, 
       chan={{
         huy: { nhan: 'Đóng', onClick: onClose }, chinh: nutChinh, conThieu: lf.conThieu(loiForm),
         phu: <span className="hidden min-w-0 truncate text-[11px] tabular-nums text-slate-400 sm:block" title={chuXemTruoc}>{dangXem ? 'Đang tính…' : chuXemTruoc}</span>,
+        /* Điện thoại: dòng xem trước là một dòng riêng trong chân ngăn, ngay trên nút — không dính đè lên danh sách em (rà #126). */
+        dongTren: <div className="px-4 pt-2 text-[11px] tabular-nums text-slate-300 sm:hidden">{dangXem ? 'Đang tính…' : chuXemTruoc}</div>,
       }}>
       <Khoi tieuDe="Lọc">
         <div className="flex flex-wrap items-end gap-2">
@@ -283,22 +287,23 @@ export function NganXepLichMt({ lopDs, lopMoSan, coThuong, onDoiKhung, onClose, 
       <Khoi tieuDe={`Học viên · ${daChon.length} đã chọn`}>
         {!luoi.size ? <div className="text-xs text-slate-500">Đang tải lớp…</div> : (
           <div className="overflow-x-auto">
-            <table className="w-full text-xs" style={{ tableLayout: 'fixed', minWidth: 560 }}>
+            {/* Điện thoại (rà #126): bỏ cột Lớp và Sẽ xếp — lớp + "Sẽ xếp" xuống dưới tên em, bảng không còn giấu cột cuối ngoài màn. */}
+            <table className="w-full text-xs" style={{ tableLayout: 'fixed', minWidth: hep ? undefined : 560 }}>
               <colgroup>
-                <col style={{ width: 28 }} /><col style={{ width: 150 }} /><col style={{ width: 84 }} />
-                <col style={{ width: cot.length * 40 + 8 }} /><col />
+                <col style={{ width: 28 }} /><col style={{ width: hep ? undefined : 150 }} />{!hep && <col style={{ width: 84 }} />}
+                <col style={{ width: cot.length * 40 + 8 }} />{!hep && <col />}
               </colgroup>
               <thead>
                 <tr className="text-left text-[10px] uppercase tracking-wide text-slate-500">
-                  <th className="py-1" aria-label="Chọn" /><th className="sticky-col py-1 font-bold">Học viên</th><th className="py-1 font-bold">Lớp</th>
-                  <th className="py-1 font-bold">Mock Test</th><th className="py-1 font-bold">Sẽ xếp</th>
+                  <th className="py-1" aria-label="Chọn" /><th className="sticky-col py-1 font-bold">Học viên</th>{!hep && <th className="py-1 font-bold">Lớp</th>}
+                  <th className="py-1 font-bold">Mock Test</th>{!hep && <th className="py-1 font-bold">Sẽ xếp</th>}
                 </tr>
               </thead>
               {[{ ten: `Đã chọn ${daChon.length} — luôn ở trên`, ds: daChon }, { ten: `Chưa chọn · ${chuaChon.length}`, ds: chuaChon }].map((nhom) => (
                 <tbody key={nhom.ten}>
-                  <tr><td colSpan={5} className="pb-1 pt-3 text-[11px] font-bold text-slate-400">{nhom.ten}</td></tr>
+                  <tr><td colSpan={hep ? 3 : 5} className="pb-1 pt-3 text-[11px] font-bold text-slate-400">{nhom.ten}</td></tr>
                   {nhom.ds.map((h) => (
-                    <HangEm key={h.studentId} h={h} cot={cot} dot={dot} d={dong.get(h.studentId)} chon={ticked.has(h.studentId)}
+                    <HangEm key={h.studentId} h={h} hep={hep} cot={cot} dot={dot} d={dong.get(h.studentId)} chon={ticked.has(h.studentId)}
                       rieng={dotTheoEm[h.studentId]} thiLai={thiLai[h.studentId]}
                       onTick={(v) => doiTick(h.studentId, v)}
                       onDot={(n) => setDotTheoEm((s) => { const x = { ...s }; if (x[h.studentId] === n) delete x[h.studentId]; else x[h.studentId] = n; return x; })}
@@ -328,9 +333,6 @@ export function NganXepLichMt({ lopDs, lopMoSan, coThuong, onDoiKhung, onClose, 
           Vẫn xếp bài có cảnh báo (hai đợt cách nhau một tuần)
         </label>
       )}
-      {/* Điện thoại: dòng xem trước dính ngay trên nút (chân ngăn hẹp không đủ chỗ cho cả hai). */}
-      <div className="sticky bottom-0 z-20 -mx-4 mt-3 border-t px-4 py-2 text-[11px] tabular-nums text-slate-300 sm:hidden"
-        style={{ background: 'var(--surface)', borderColor: 'var(--line)' }}>{dangXem ? 'Đang tính…' : chuXemTruoc}</div>
     </KhungPanel>
   );
 }
@@ -339,8 +341,8 @@ const MAU_VIEC: Record<string, string> = {
   tao: 'text-doing', doi: 'text-doing', 'xep-not': 'text-doing', 'thi-lai': 'text-wait', chan: 'text-bad', 'da-du': 'text-slate-300',
 };
 
-function HangEm({ h, cot, dot, d, chon, rieng, thiLai, onTick, onDot, onThiLai, onKhong }: {
-  h: Hang; cot: number[]; dot: number; d: DongHangLoat | undefined; chon: boolean; rieng: number | undefined; thiLai: KyNangKH[] | undefined;
+function HangEm({ h, hep, cot, dot, d, chon, rieng, thiLai, onTick, onDot, onThiLai, onKhong }: {
+  h: Hang; hep: boolean; cot: number[]; dot: number; d: DongHangLoat | undefined; chon: boolean; rieng: number | undefined; thiLai: KyNangKH[] | undefined;
   onTick: (v: boolean) => void; onDot: (n: number) => void; onThiLai: (ks: KyNangKH[]) => void; onKhong: () => void;
 }) {
   const dich = d?.attemptNo ?? rieng ?? dot;
@@ -356,9 +358,10 @@ function HangEm({ h, cot, dot, d, chon, rieng, thiLai, onTick, onDot, onThiLai, 
         </td>
         <td className="sticky-col py-1.5 pr-2">
           <div className="truncate font-bold text-slate-100" title={h.ten}>{h.ten}</div>
-          <div className="text-[10.5px] text-slate-500">{h.ma}</div>
+          <div className="text-[10.5px] text-slate-500">{h.ma}{hep && ` · ${h.classCode}`}</div>
+          {hep && <div className={`mt-0.5 line-clamp-2 ${mau}`} title={d?.loi ?? chu}>{chu}</div>}
         </td>
-        <td className="truncate py-1.5 pr-2 text-slate-300" title={h.classCode}>{h.classCode}</td>
+        {!hep && <td className="truncate py-1.5 pr-2 text-slate-300" title={h.classCode}>{h.classCode}</td>}
         <td className="py-1.5">
           <div className="flex flex-wrap gap-1">
             {cot.map((n) => {
@@ -380,9 +383,11 @@ function HangEm({ h, cot, dot, d, chon, rieng, thiLai, onTick, onDot, onThiLai, 
           </div>
           {Object.values(h.dot).some((o) => o.lichSu) && <div className="mt-0.5"><ChipLichSu /></div>}
         </td>
-        <td className={`py-1.5 ${mau}`}>
-          <span className="line-clamp-2" title={d?.loi ?? chu}>{chu}</span>
-        </td>
+        {!hep && (
+          <td className={`py-1.5 ${mau}`}>
+            <span className="line-clamp-2" title={d?.loi ?? chu}>{chu}</span>
+          </td>
+        )}
       </tr>
       {hoiThiLai && <HopThiLai h={h} d={d!} onThiLai={onThiLai} onKhong={onKhong} />}
     </>

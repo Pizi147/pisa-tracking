@@ -6609,7 +6609,7 @@ check('[10.6] Xử lý muộn: tuần kế tiếp đã qua thì CHUYỂN QUẢN 
   const mgr = loadPrincipal(userByRole('manager', a.branch_code));
   /* Buổi thi nằm ở quá khứ — GVCN xử lý muộn, tuần kế tiếp của nó cũng đã trôi qua. */
   skillSchedule.setSkillWeek(mgr, a.id, 'speaking', periodOf(addDays(demoToday(), -21)),
-    { reason: 'Buổi thi đã qua', force: true });
+    { reason: 'Buổi thi đã qua', force: true, today: addDays(demoToday(), -28) });   // PR-XLMT: lịch đặt từ 4 tuần trước (khi tuần đó chưa qua)
   skillSchedule.setSitStatus(mgr, a.id, 'speaking', 'absent', 'Giờ mới xác minh em vắng');
 
   const out = absence.requestAbsenceMove(mgr, a.id, ['speaking'], { reason: 'Xử lý muộn' });

@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  ASSESSED_SKILLS, CHU_KY_NANG, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, boMonLich, kiemLyDoThaoTac, tenMon, tuanLich,
+  ASSESSED_SKILLS, CHU_KY_NANG, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, boMonLich, kiemLyDoThaoTac, laLichSu, tenMon, tuanLich,
   type AssessedSkill, type SitStatus, type SkillProgress,
 } from '../../../shared/domain/index.ts';
 import { badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -594,6 +594,8 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
   force?: boolean;
   /** Đặt tuần cho kỹ năng của lượt VỪA TẠO trong cùng lần xếp — không phải "dời", không đòi lý do (K4-15). */
   khiTao?: boolean;
+  /** Dấu "-" lớp thường ghi bù (C08 Q4): ghi lại việc em vắng các tuần ĐÃ QUA — không phải quyết định dời, không chặn tuần đã qua. */
+  ghiBuDau?: boolean;
   today?: string;
 } = {}) {
   const { attempt, row } = loadOne(attemptId, skill);
@@ -616,6 +618,10 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
   }
   if (row.sit_status === 'sat') {
     throw badRequest(`${skill} đã được xác nhận là đã thi. Việc còn lại là chấm, không phải dời lịch.`);
+  }
+  /* K2-33 (PR-XLMT, rà #126): tuần đã qua chỉ để TẠO MT lịch sử (`khiTao`, đã qua `kiemTuanDaQua`) — mọi đường dời lượt có sẵn đi qua đây. */
+  if (!opts.khiTao && !opts.ghiBuDau && laLichSu(period.week_end, opts.today ?? demoToday())) {
+    throw badRequest('Không dời vào tuần đã qua — chọn tuần từ tuần này trở đi.');
   }
   /* K4-15 (PR-XLMT): dời bài mà TUẦN THI ĐÃ BẮT ĐẦU phải có lý do; bài vắng giữ lý do mặc định "Quản lý xếp trực tiếp" (K4-12). */
   if (!opts.khiTao && row.sit_status !== 'absent' && row.week_start && row.week_start.slice(0, 10) <= mondayOf(opts.today ?? demoToday())) {
