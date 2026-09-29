@@ -126,7 +126,8 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         tieuDe: `Dời ${kn}${dot ? ` ${dot}` : ''} lần ${x?.move_no ?? 2}`,
         dong: [
           `${nguoiXin(yc, ngu)}: ${yc.ly_do || 'em vắng buổi thi'}${x?.tuan ? ` · đề nghị ${x.tuan}` : ''}`,
-          `Hết ${ngay(yc.han_duyet, ngu)} chưa duyệt thì yêu cầu tự huỷ và phần thi bị huỷ.`,
+          /* Chỉ nói "tự huỷ" khi thẻ còn chờ — thẻ đã quyết thì câu này sai. */
+          ...(yc.trang_thai === 'cho' ? [`Hết ${ngay(yc.han_duyet, ngu)} chưa duyệt thì yêu cầu tự huỷ và phần thi bị huỷ.`] : []),
         ],
         neuDuyet: x?.tuan ? `${kn} thi tuần ${x.tuan}.` : undefined,
         mo: x ? attemptHref({ id: x.attempt_id, kind: x.kind, classId: x.class_id }) : undefined,

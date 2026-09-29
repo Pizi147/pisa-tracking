@@ -33,14 +33,14 @@ const ThanhPhanDemo = import.meta.env.DEV ? lazy(() => import('./modules/dev/Tha
  * Máy tính: thanh ngang trên cùng. Điện thoại: thanh dưới 4 nút (G-11). Khu nào không có quyền thì bỏ hẳn.
  * Mục đang sáng tính theo khu vực của đường dẫn (`khuVucCuaDuong`), nên màn nhập điểm vẫn sáng mục Test.
  */
-/** PR-DUYET (K1-44, Q10): số chờ duyệt cạnh mục Công việc của QL — đỏ khi có thẻ quá hạn, không thì trung tính. */
+/** PR-DUYET (K1-44, Q10): số thẻ trong hộp Chờ duyệt (= chip "Tất cả", `demHop`) cạnh mục Công việc của QL — đỏ khi có thẻ quá hạn. */
 function SoCho({ dem }: { dem?: DemYeuCau | null }) {
   if (!dem?.cho) return null;
   return (
     <>
       <span aria-hidden className={`ml-1.5 inline-flex min-w-[1.25rem] justify-center rounded-full border px-1 text-[10.5px] font-semibold leading-4 tabular-nums ${
         dem.quaHan ? 'border-late-line bg-late-bg text-late' : 'border-transparent bg-white/10 text-slate-300'}`}>{dem.cho}</span>
-      <span className="sr-only">, {dem.cho} yêu cầu chờ duyệt{dem.quaHan ? `, ${dem.quaHan} quá hạn` : ''}</span>
+      <span className="sr-only">, {dem.cho} thẻ trong hộp Chờ duyệt{dem.quaHan ? `, ${dem.quaHan} quá hạn` : ''}</span>
     </>
   );
 }

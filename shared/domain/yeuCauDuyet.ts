@@ -62,6 +62,15 @@ export function demChip(ds: readonly { phanLoai: PhanLoai }[]): Record<KhoaChip,
 }
 
 /**
+ * MỘT HÀM ĐẾM cho mọi con số của hộp (chip, badge Công việc, dải Tổng quan): `tong` = mọi thẻ đang chờ trong hộp (bằng chip
+ * "Tất cả", GỒM Báo lên) · `quaHan` = thẻ đỏ (hạn đã qua, gồm Báo lên) · `baoLen` = trong đó số thẻ Báo lên (không cần duyệt).
+ */
+export function demHop(ds: readonly { phanLoai: PhanLoai; hanDuyet: string | null }[], homNay: string) {
+  const chip = demChip(ds);
+  return { chip, tong: chip['tat-ca'], quaHan: ds.filter((x) => !!x.hanDuyet && x.hanDuyet < homNay).length, baoLen: chip['bao-len'] };
+}
+
+/**
  * Thứ tự thẻ: quá hạn → hạn gần → không hạn; cùng hạn: gửi trước đứng trước.
  * Hạn là ngày ISO nên so chuỗi đã đúng — thẻ quá hạn có hạn sớm nhất, tự đứng đầu.
  */
@@ -133,4 +142,5 @@ export type TheYeuCauDto = {
   duLieu: Record<string, unknown> | null;
 };
 
+/** `cho` = mọi thẻ đang chờ trong hộp (= chip "Tất cả", gồm Báo lên); `quaHan` = thẻ đỏ; `baoLen` = trong đó Báo lên — xem `demHop`. */
 export type DemYeuCau = { cho: number; quaHan: number; baoLen: number; cuaToiCho: number; cuaToiTuChoi: number };

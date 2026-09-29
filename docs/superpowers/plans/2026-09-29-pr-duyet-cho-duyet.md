@@ -574,3 +574,18 @@ PA; GVCN sửa target/lộ trình/lớp qua "Đề xuất sửa".
 ## Chủ sản phẩm chốt 29/09 (thay các chỗ lệch trong kế hoạch)
 
 - **Câu 1 = B:** GVCN **vẫn tự chuyển lớp** (kể cả sang chi nhánh khác — chốt 24/09, PR-LT). Chỉ rút quyền GVCN tự sửa **target** và **lộ trình** (đi thẻ "Đề xuất sửa thông tin HV" trong Chờ duyệt). Cửa 🛑 ở Task 6: theo B, không rút chuyển lớp.
+
+## Sửa sau rà PR #117 (người rà Opus 5.5, 29/09)
+
+1. **Xin hỗ trợ QL lần 2 khi thẻ lần 1 còn chờ** — trước: `taoYeuCau` trả `null`, câu hỏi mới mất, API vẫn 200. Nay `boSungYeuCau` (yeuCau.ts): nối câu hỏi mới vào `ly_do` (`Bổ sung dd/mm: …`), cập nhật `du_lieu.followupId`, báo lại QL (`duyet_moi`, khoá `bo_sung:`). Không ném 400 sau khi đã lưu kết quả tuần. Phép kiểm R1.
+2. **Một hàm đếm** `demHop` (shared): `cho` = mọi thẻ chờ trong hộp = chip "Tất cả" (GỒM Báo lên), `quaHan` = thẻ đỏ (gồm Báo lên), `baoLen` = trong đó Báo lên. Badge, dải Tổng quan (`Hộp Chờ duyệt n · k quá hạn · gồm m Báo lên`) và chip dùng chung. Phép kiểm R2.
+3. Dòng việc "Xác định nguyên nhân" `href` = hồ sơ HV `?case=` (sửa ở nguồn — Nhắc lưu đường này, bấm dòng cũng mở đúng Ngăn Case). Phép kiểm khối 7 thêm vế `case=`.
+4. `duyetNhieu`: kiểm `request.approve` trước (GV → 403); id không tồn tại chỉ lỗi thẻ đó. Phép kiểm R4.
+5. Mốc gửi thẻ migrate: PA = `approval_due − 4 ngày` (ngày gửi theo ngày nghiệp vụ; `created_at` của seed là giờ máy nên vẫn ra 29/09), không có hạn thì `created_at`; đề nghị dời = `requested_on`. `mocNghiepVu` bản demo = ngày demo + giờ thật (giờ VN) → thẻ có thứ tự thật. Phép kiểm R5.
+6. Thẻ QL tự gửi đang chờ: `Bạn tự gửi · tự duyệt được`. Thẻ Lịch thi đã quyết không còn dòng "Hết … tự huỷ". Phép kiểm R6.
+7. `luatLoTrinh.ts`: `mucTieu` chỉ nhận khi sang FT (`canMucTieu`) hoặc người gọi có `cycle.edit`; GVCN FT → FT giữ target cũ. Chuyển tiếp cả lớp kiểm quyền MỘT lần theo lớp nguồn (giữ luật đếm câu PR-LT Q20). Phép kiểm R7 (gọi `transferStudent` thẳng bằng GVCN và QL).
+8. Câu Ghi kết quả cho GV: `Gửi Quản lý · trả lời trong 5 ngày · xem ở Yêu cầu của tôi` (chủ sản phẩm đồng ý).
+
+Phép kiểm **1470 → 1475**. `npm run check` chạy HAI lần: lần 1 đỏ đúng một phép kiểm đếm câu PR-LT (mục 7 kiểm quyền theo từng em) → sửa → lần 2 xanh.
+Chuyển PR-UXF: dải Tổng quan QL chưa theo bộ lọc chi nhánh/chương trình của trang.
+

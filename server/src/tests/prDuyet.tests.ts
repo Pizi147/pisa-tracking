@@ -345,7 +345,7 @@ export async function runPrDuyetTests(t: YThucTestKit) {
     assert(tatCa && tatCa.ownerId === kase.owner_user_id, '"tat-ca" mất dòng cause');
     const r1 = nhacViec(P.admin, { key: `cause:${kase.id}`, ownerId: kase.owner_user_id });
     const tb = conn.prepare(`SELECT * FROM notifications WHERE user_id = ? AND kind = 'nhac_viec' AND dedup_key LIKE ?`).get(kase.owner_user_id, `nhac:cause:${kase.id}:%`) as any;
-    assert(tb && tb.duong === tatCa.href && d.duongThongBao(tb) === tatCa.href, JSON.stringify(tb));
+    assert(tb && tb.duong === tatCa.href && tatCa.href.includes(`case=${kase.id}`) && d.duongThongBao(tb) === tatCa.href, JSON.stringify(tb));
     assert(nhacViec(P.admin, { key: `cause:${kase.id}`, ownerId: kase.owner_user_id }).daNhacLuc === r1.daNhacLuc, 'nhắc lần hai gửi thêm');
     assert(yc.hopChoDuyet(P.admin).the.find((x: any) => x.id === the.id)?.duLieu?.daNhacLuc === r1.daNhacLuc, 'thẻ không hiện Đã nhắc');
     conn.prepare(`INSERT INTO case_issues (case_id, role, taxonomy_code, created_at) VALUES (?, 'primary', 'student.listening.technique', ?)`)
@@ -387,6 +387,61 @@ export async function runPrDuyetTests(t: YThucTestKit) {
     assert((conn.prepare('SELECT assignee_name FROM tasks WHERE id = ?').get(b.id) as any).assignee_name === null, 'có tài khoản mà vẫn lưu tên ngoài');
     mgmtSvc.editMgmtTask(P.mbManager, a.id, { assigneeUserId: P.coreTeacher.userId });
     assert((conn.prepare('SELECT assignee_name FROM tasks WHERE id = ?').get(a.id) as any).assignee_name === null, 'đổi sang tài khoản không xoá tên ngoài');
+  });
+
+  // ---------------------------------------------------------------- khối R: sửa sau rà PR #117
+  const studentsSvcR: any = await import('../students/students.ts');
+  check('DUYET (R1) · Xin hỗ trợ QL lần 2 khi thẻ lần 1 còn chờ → vẫn MỘT thẻ, câu hỏi mới nối vào, followupId mới, QL được báo lại (không 400)', () => {
+    const { ivId } = paChay();
+    const hoi = (cau: string) => casesSvc.updateResult(P.lrTeacher, ivId, { decision: 'ask_manager', outcome: 'unchanged', note: 'Em vẫn nghe sót số',
+      decisionNote: cau, observedOn: TODAY });
+    hoi('Có nên chuyển sang tutor không?');
+    const lan1 = theCua('xin_y_kien', ivId);
+    hoi('Bổ sung: PH muốn học thêm buổi tối, có xếp được không?');
+    const ds = conn.prepare(`SELECT * FROM yeu_cau_duyet WHERE loai = 'xin_y_kien' AND doi_tuong_id = ? AND trang_thai = 'cho'`).all(ivId) as any[];
+    const fu = (conn.prepare('SELECT id FROM case_followups WHERE intervention_id = ? ORDER BY id DESC LIMIT 1').get(ivId) as any).id;
+    assert(ds.length === 1 && ds[0].id === lan1.id && ds[0].ly_do.includes('tutor') && ds[0].ly_do.includes('buổi tối')
+      && JSON.parse(ds[0].du_lieu).followupId === fu, JSON.stringify(ds));
+    assert(!!conn.prepare(`SELECT 1 FROM notifications WHERE user_id = ? AND kind = 'duyet_moi' AND entity_id = ? AND dedup_key LIKE 'bo_sung:%'`)
+      .get(P.mbManager.userId, lan1.id), 'QL không được báo lại');
+  });
+  check('DUYET (R2) · một hàm đếm: số badge/dải = chip "Tất cả" của hộp; quá hạn = số thẻ đỏ (gồm Báo lên)', () => {
+    const hop = yc.hopChoDuyet(P.mbManager);
+    const dem = yc.demYeuCau(P.mbManager);
+    const tq = tongQuanSvc.tongQuanQuanLy(P.mbManager, { branchId: null, ct: 'ca-hai' }).choDuyet;
+    const do_ = hop.the.filter((x: any) => x.hanDuyet && x.hanDuyet < TODAY).length;
+    assert(dem.cho === hop.dem['tat-ca'] && dem.quaHan === do_ && dem.baoLen === hop.dem['bao-len'] && tq.cho === dem.cho && tq.quaHan === dem.quaHan,
+      JSON.stringify({ dem, chip: hop.dem, do_, tq }));
+  });
+  check('DUYET (R4) · duyệt hàng loạt: GV → 403 trước khi đọc thẻ; id không tồn tại chỉ lỗi thẻ đó', () => {
+    const { caseId } = hvMoi();
+    const ivId = deXuat(caseId);
+    const id = theCua('de_xuat_pa', ivId).id;
+    assert(maLoi(() => yc.duyetNhieu(P.coreTeacher, [id])) === 403 && maLoi(() => yc.duyetNhieu(P.coreTeacher, [987654])) === 403, 'GV không bị 403');
+    const r = yc.duyetNhieu(P.mbManager, [id, 987654]);
+    assert(r.ok.length === 1 && r.ok[0] === id && r.loi.length === 1 && r.loi[0].id === 987654, JSON.stringify(r));
+  });
+  check('DUYET (R5, R6) · mốc gửi theo ngày nghiệp vụ; thẻ Lịch thi đã quyết không còn dòng "tự huỷ"', () => {
+    const { caseId } = hvMoi();
+    const the = theCua('de_xuat_pa', deXuat(caseId));
+    assert(d.vietnamDateOf(the.tao_luc) === TODAY, `tao_luc ${the.tao_luc} khác ngày nghiệp vụ ${TODAY}`);
+    const lt = conn.prepare(`SELECT doi_tuong_id FROM yeu_cau_duyet WHERE loai = 'lich_thi' AND trang_thai != 'cho' LIMIT 1`).get() as any;
+    if (lt) {
+      const dto = yc.theCuaDoiTuong('skill_move', [lt.doi_tuong_id])[0];
+      assert(!dto.dong.some((x: string) => x.includes('tự huỷ')), JSON.stringify(dto.dong));
+    }
+  });
+  check('DUYET (R7) · GVCN chuyển lớp FT → FT (mở lộ trình mới) gửi mucTieu qua API → bị bỏ qua, giữ target cũ; QL gửi thì nhận', () => {
+    const chuyen = (who: any, muc: number) => {
+      const { sid } = hvMoi();
+      conn.prepare('UPDATE learning_cycles SET target_score = 6.5 WHERE student_id = ?').run(sid);
+      conn.prepare(`UPDATE sos_cases SET status = 'done' WHERE student_id = ?`).run(sid);   // không còn Case dở → không cần bàn giao
+      studentsSvcR.transferStudent(who, sid, classId('MB FT 102'), TODAY, 'Đổi lịch học', { noNote: true, mucTieu: muc });
+      return (conn.prepare(`SELECT target_score FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(sid) as any).target_score;
+    };
+    const gv = chuyen(P.coreTeacher, 8.5);
+    const ql = chuyen(P.mbManager, 8);
+    assert(gv === 6.5 && ql === 8, `GVCN → ${gv}, QL → ${ql}`);
   });
 }
 

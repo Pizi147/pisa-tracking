@@ -227,7 +227,7 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
           <Truong nhan="Cần Quản lý giúp gì" batBuoc loi={loiCua('ly-do')}>
             <textarea className="field w-full" {...o('ly-do')} rows={2} value={reason} onChange={(e) => setReason(e.target.value)} />
           </Truong>
-          <p className="m-0 text-[11px] text-slate-500">Gửi Quản lý · trả lời trong 5 ngày ở Chờ duyệt</p>
+          <p className="m-0 text-[11px] text-slate-500">Gửi Quản lý · trả lời trong 5 ngày · xem ở Yêu cầu của tôi</p>
         </div>
       );
     }

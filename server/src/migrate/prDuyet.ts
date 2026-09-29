@@ -35,12 +35,18 @@ const XIN_CU = `(SELECT COALESCE(NULLIF(TRIM(fu.decision_note), ''), fu.note) FR
 const XIN_CU_CO = `EXISTS (SELECT 1 FROM case_followups fu WHERE fu.intervention_id = iv.id AND fu.next_step = 'ask_manager')`;
 const TIEN_TO_XIN_CU = 'Xin ý kiến (trước khi có hộp Chờ duyệt): ';
 
+/*
+ * Mốc gửi của thẻ = NGÀY GỬI đề xuất, không phải lần sửa gần nhất (`updated_at`). `approval_due` được tính lúc gửi = ngày gửi + 4
+ * (5 ngày, tính cả hôm gửi) theo NGÀY NGHIỆP VỤ — nên lùi 4 ngày ra đúng ngày gửi, kể cả dữ liệu demo (seed ghi `created_at` = giờ
+ * máy). Không có hạn thì lấy `created_at`. Đề nghị dời có sẵn `requested_on` (ngày nghiệp vụ).
+ */
+const NGAY_GUI_PA = `COALESCE(date(iv.approval_due, '-4 days') || 'T05:00:00.000Z', iv.created_at)`;
 const SELECT_PA = `
   SELECT 'de_xuat_pa', ?, 'intervention', iv.id,
          COALESCE(sc.student_id, a.student_id), COALESCE(a.class_id, cur.class_id), COALESCE(ac.branch_id, cc.branch_id),
          iv.recorded_by,
          CASE WHEN ${XIN_CU_CO} THEN ? || COALESCE(${XIN_CU}, '') ELSE iv.description END,
-         iv.approval_due, 'cho', COALESCE(iv.updated_at, iv.created_at)
+         iv.approval_due, 'cho', ${NGAY_GUI_PA}
     FROM case_interventions iv
     JOIN sos_cases sc ON sc.id = iv.case_id
     LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
@@ -50,7 +56,7 @@ const SELECT_PA = `
    WHERE ${PA_CHO}`;
 const SELECT_DOI = `
   SELECT 'lich_thi', ?, 'skill_move', r.id, a.student_id, a.class_id, cl.branch_id, r.requested_by, r.reason,
-         r.decide_by, 'cho', r.created_at
+         r.decide_by, 'cho', COALESCE(r.requested_on || 'T05:00:00.000Z', r.created_at)
     FROM skill_move_requests r
     JOIN assessment_attempts a ON a.id = r.attempt_id
     LEFT JOIN classes cl ON cl.id = a.class_id

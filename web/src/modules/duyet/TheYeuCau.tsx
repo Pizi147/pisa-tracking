@@ -6,6 +6,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { NhanTrangThai } from '../../ui/ui.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { useSession } from '../../lib/session.tsx';
 import { deadlineView, nhanTrangThaiYc, type TheYeuCauDto } from '@shared/domain/index.ts';
 
 /**
@@ -56,6 +57,9 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   const oNhap = useRef<HTMLTextAreaElement | null>(null);
   const cho = yc.trangThai === 'cho';
   const coNut = cho && !laNguoiXin;
+  /* Q-D: QL tự gửi thì tự duyệt được — nói trước khi bấm (nhật ký ghi "tự duyệt", Quản trị được báo). */
+  const { session } = useSession();
+  const tuDuyetDuoc = coNut && yc.kieuNut === 'duyet-tu-choi' && yc.nguoiXinId != null && yc.nguoiXinId === session?.user?.id;
 
   useEffect(() => { if (o && o.loai !== 'tuan') oNhap.current?.focus(); }, [o]);
 
@@ -169,6 +173,11 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
             </div>
           )}
           {laNguoiXin && cho && <div><NhanTrangThai t="cho-duyet" /></div>}
+          {tuDuyetDuoc && (
+            <span className="text-[12px] text-wait" title="Bạn tự gửi yêu cầu này. Duyệt được — nhật ký ghi 'tự duyệt' và Quản trị được báo.">
+              Bạn tự gửi · tự duyệt được
+            </span>
+          )}
           {(coNut || yc.mo) && (
             <div className="flex flex-wrap gap-1.5 sm:justify-end">
               {coNut && yc.kieuNut === 'duyet-tu-choi' && <>

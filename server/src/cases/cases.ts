@@ -33,7 +33,7 @@ import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, dongBoTrangThaiCase, sosCaseState 
 import { PLAN_DECISIONS, decisionToStep, type PlanDecision } from '../../../shared/domain/index.ts';
 import { apDungDieuChinh, chuanHoaDieuChinh, lichSuDieuChinhCuaCase } from './planRevisions.ts';
 import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
-import { chotYeuCau, taoYeuCau, theCuaDoiTuong } from '../duyet/yeuCau.ts';
+import { boSungYeuCau, chotYeuCau, taoYeuCau, theCuaDoiTuong } from '../duyet/yeuCau.ts';
 
 /**
  * CASE HỌC VỤ — một vòng đời cho cả hai nguồn.
@@ -2927,11 +2927,13 @@ export function updateResult(p: Principal, interventionId: number, input: {
         .run(completedOn ?? observedOn, created, nowIso(), interventionId);
     }
     if (nextStep === 'ask_manager') {
-      taoYeuCau(conn, {
-        loai: 'xin_y_kien', doiTuongLoai: 'intervention', doiTuongId: interventionId,
-        hocVienId: c.eff_student_id, lopId: c.class_id ?? null, nguoiXin: p.userId,
+      const doiTuong = { loai: 'xin_y_kien' as const, doiTuongLoai: 'intervention', doiTuongId: interventionId };
+      /* Lần 1 còn chờ (một thẻ chờ cho mỗi PA): KHÔNG ném lỗi — kết quả tuần đã lưu; câu hỏi mới nối vào thẻ đang chờ + báo lại QL. */
+      const moi = taoYeuCau(conn, {
+        ...doiTuong, hocVienId: c.eff_student_id, lopId: c.class_id ?? null, nguoiXin: p.userId,
         lyDo: decisionNote, duLieu: { followupId },
       });
+      if (moi === null) boSungYeuCau(conn, doiTuong, { lyDo: decisionNote, duLieu: { followupId }, ngay: observedOn });
     }
 
     dongBoTrangThaiCase(iv.case_id);

@@ -78,13 +78,14 @@ export function KhoiCanXuLy({ branchId, ct }: { branchId: number | null; ct: Chu
  * Đề xuất PA / Case quá hạn xác định nguyên nhân không còn là dòng Cần xử lý riêng — chúng là thẻ trong hộp.
  */
 function DaiChoDuyet({ d }: { d: DemYeuCau }) {
-  if (!d.cho && !d.quaHan && !d.baoLen) return null;
+  if (!d.cho) return null;
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b px-4 py-2.5" style={{ borderColor: 'var(--line)' }}>
+      {/* Cùng số với chip "Tất cả" và badge Công việc (`demHop`): Báo lên nằm TRONG tổng, nói rõ là "gồm". */}
       <span className="text-sm tabular-nums text-slate-300">
-        Chờ duyệt <b className="text-base font-bold text-slate-100">{d.cho}</b>
+        Hộp Chờ duyệt <b className="text-base font-bold text-slate-100">{d.cho}</b>
         {d.quaHan > 0 && <> · <b className="text-base font-bold text-late">{d.quaHan}</b> quá hạn</>}
-        {d.baoLen > 0 && <> · Báo lên <b className="text-base font-bold text-slate-100">{d.baoLen}</b></>}
+        {d.baoLen > 0 && <> · gồm <b className="text-base font-bold text-slate-100">{d.baoLen}</b> Báo lên</>}
       </span>
       <Link to="/cong-viec/cho-duyet" className="btn btn-sm ml-auto min-h-[44px] no-underline sm:min-h-0">Mở hộp duyệt</Link>
     </div>

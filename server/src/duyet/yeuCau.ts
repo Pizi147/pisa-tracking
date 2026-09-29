@@ -12,7 +12,7 @@ import { can, napTruocPhamVi, require_, type Principal } from '../permissions.ts
 import { notify, writeAudit } from '../platform/audit.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import {
-  PERMISSIONS, LOAI_YC_META, PHAN_LOAI_LABEL, demChip, duongHoSoHocVien, hanDuyetMacDinh, laPhanLoai, laTuDuyet, sapThe,
+  PERMISSIONS, LOAI_YC_META, PHAN_LOAI_LABEL, demHop, duongHoSoHocVien, hanDuyetMacDinh, laPhanLoai, laTuDuyet, sapThe,
   type DemYeuCau, type LoaiYcMeta, type LoaiYeuCau, type PhanLoai, type TheYeuCauDto,
 } from '../../../shared/domain/index.ts';
 import { DINH_NGHIA_LOAI, dinhNghiaCua, type NguCanhThe, type YeuCauRow } from './loaiYeuCau.ts';
@@ -25,11 +25,14 @@ const DO_DAI_LY_DO = 3;
 
 /**
  * MỐC GỬI / MỐC XỬ LÝ của thẻ theo NGÀY NGHIỆP VỤ. Bản chính (ngày nghiệp vụ = hôm nay) → giờ thật. Bản demo (ngày demo cố định,
- * khác đồng hồ) → trưa ngày demo, để thẻ không ghi "đề xuất 29/09" giữa một ngày demo 14/09 (và lọc 30/60 ngày tính đúng).
+ * khác đồng hồ) → ngày demo + GIỜ THẬT theo giờ Việt Nam: thẻ không ghi "đề xuất 29/09" giữa ngày demo 14/09, lọc 30/60 ngày tính
+ * đúng, và các thẻ vẫn có thứ tự thật trong ngày (Đã xử lý mới trước).
  */
 function mocNghiepVu(): string {
   const ngay = demoToday();
-  return ngay === todayInBusinessTz() ? nowIso() : `${ngay}T05:00:00.000Z`;
+  if (ngay === todayInBusinessTz()) return nowIso();
+  const gioVN = new Date(Date.now() + 7 * 3_600_000).toISOString().slice(11, 23);
+  return new Date(`${ngay}T${gioVN}+07:00`).toISOString();
 }
 
 function metaCua(loai: string): LoaiYcMeta {
@@ -108,6 +111,35 @@ export function taoYeuCau(conn: any, v: TaoYeuCauVao): number | null {
     });
   }
   return id;
+}
+
+/**
+ * BỔ SUNG vào thẻ ĐANG CHỜ của (loại, đối tượng) — khi luồng nguồn gửi lại lúc thẻ cũ chưa được quyết (ví dụ GV bấm "Xin hỗ trợ QL"
+ * lần 2 trên cùng PA). Nối lý do mới vào thẻ (giữ câu cũ), trộn `duLieu`, báo lại người duyệt (thông báo trỏ thẻ). Không có thẻ
+ * chờ → `null` (nơi gọi dùng `taoYeuCau`).
+ */
+export function boSungYeuCau(conn: any, doiTuong: { loai: LoaiYeuCau; doiTuongLoai: string; doiTuongId: number },
+  v: { lyDo: string | null; duLieu?: Record<string, unknown>; ngay: string }): number | null {
+  const r = conn.prepare(
+    `SELECT y.id, y.ly_do, y.du_lieu, y.chi_nhanh_id, y.nguoi_xin, s.full_name AS hv FROM yeu_cau_duyet y
+       LEFT JOIN students s ON s.id = y.hoc_vien_id
+      WHERE y.trang_thai = 'cho' AND y.loai = ? AND y.doi_tuong_loai = ? AND y.doi_tuong_id = ?`,
+  ).get(doiTuong.loai, doiTuong.doiTuongLoai, doiTuong.doiTuongId) as any;
+  if (!r) return null;
+  let cu: Record<string, unknown> = {};
+  try { cu = r.du_lieu ? JSON.parse(r.du_lieu) : {}; } catch { cu = {}; }
+  const them = v.lyDo?.trim();
+  const lyDo = them ? (r.ly_do ? `${r.ly_do}\nBổ sung ${v.ngay.slice(8, 10)}/${v.ngay.slice(5, 7)}: ${them}` : them) : r.ly_do;
+  conn.prepare('UPDATE yeu_cau_duyet SET ly_do = ?, du_lieu = ? WHERE id = ?').run(lyDo, JSON.stringify({ ...cu, ...(v.duLieu ?? {}) }), r.id);
+  const meta = metaCua(doiTuong.loai);
+  for (const uid of nguoiNhanHop(conn, r.chi_nhanh_id, meta.kieuNut === 'nhac')) {
+    if (uid === r.nguoi_xin) continue;
+    notify({
+      userId: uid, kind: 'duyet_moi', title: `Bổ sung: ${meta.nhan}${r.hv ? ` — ${r.hv}` : ''}`, body: them?.slice(0, 120) ?? null,
+      entityType: 'yeu_cau_duyet', entityId: r.id, dedupKey: `bo_sung:${r.id}:${JSON.stringify(v.duLieu ?? {})}`,
+    });
+  }
+  return r.id as number;
 }
 
 /**
@@ -294,7 +326,7 @@ export function hopChoDuyet(p: Principal, f: { phanLoai?: PhanLoai | null; xem?:
     : conn.prepare(`SELECT * FROM yeu_cau_duyet WHERE trang_thai != 'cho' AND xu_ly_luc >= ?`).all(tuNgay(NGAY_DA_XU_LY)) as any[]);
   if (f.studentId) rows = rows.filter((r) => r.hoc_vien_id === f.studentId);
   if (f.branchId) rows = rows.filter((r) => r.chi_nhanh_id === f.branchId);
-  const dem = demChip(rows.map((r) => ({ phanLoai: metaCua(r.loai).phanLoai })));
+  const dem = demHop(rows.map((r) => ({ phanLoai: metaCua(r.loai).phanLoai, hanDuyet: r.han_duyet })), homNay).chip;
   if (f.phanLoai && laPhanLoai(f.phanLoai)) rows = rows.filter((r) => metaCua(r.loai).phanLoai === f.phanLoai);
   const ngu = napNguCanh(conn, rows, homNay);
   const the = rows.map((r) => theRa(r, ngu));
@@ -319,12 +351,11 @@ export function demYeuCau(p: Principal): DemYeuCau {
   const conn = db();
   const kq: DemYeuCau = { cho: 0, quaHan: 0, baoLen: 0, cuaToiCho: 0, cuaToiTuChoi: 0 };
   if (can(p, P_DUYET, { anyScope: true })) {
-    for (const r of trongPhamVi(p, conn.prepare(
-      `SELECT loai, han_duyet, hoc_vien_id, lop_id, chi_nhanh_id FROM yeu_cau_duyet WHERE trang_thai = 'cho'`).all() as any[])) {
-      if (metaCua(r.loai).kieuNut === 'nhac') { kq.baoLen += 1; continue; }
-      kq.cho += 1;
-      if (r.han_duyet && r.han_duyet < homNay) kq.quaHan += 1;
-    }
+    const rows = trongPhamVi(p, conn.prepare(
+      `SELECT loai, han_duyet, hoc_vien_id, lop_id, chi_nhanh_id FROM yeu_cau_duyet WHERE trang_thai = 'cho'`).all() as any[]);
+    /* CÙNG hàm đếm với chip của hộp — badge, dải Tổng quan và chip "Tất cả" luôn một số. */
+    const d = demHop(rows.map((r) => ({ phanLoai: metaCua(r.loai).phanLoai, hanDuyet: r.han_duyet })), homNay);
+    kq.cho = d.tong; kq.quaHan = d.quaHan; kq.baoLen = d.baoLen;
   }
   for (const r of conn.prepare(
     `SELECT trang_thai, COUNT(*) AS n FROM yeu_cau_duyet WHERE nguoi_xin = ? AND (trang_thai = 'cho' OR (trang_thai = 'tu_choi' AND xu_ly_luc >= ?))
@@ -396,12 +427,20 @@ export function duyetNhieu(p: Principal, ids: unknown): { ok: number[]; loi: { i
   if (!Array.isArray(ids) || !ids.length || ids.length > 50 || !ids.every((x) => Number.isInteger(x) && x > 0)) {
     throw badRequest('Chọn từ 1 đến 50 yêu cầu để duyệt.');
   }
+  /* Kiểm quyền TRƯỚC khi đọc thẻ nào (GV → 403). Từng thẻ vẫn kiểm theo phạm vi của nó ở `duyetYeuCau`. */
+  require_(p, P_DUYET, { anyScope: true }, 'Chỉ Quản lý và Quản trị hệ thống duyệt được yêu cầu.');
   const ds = [...new Set(ids as number[])];
-  const loai = new Set(ds.map((id) => docThe(id).loai));
-  if (loai.size !== 1 || !metaCua([...loai][0]).hangLoat) throw badRequest('Chỉ duyệt hàng loạt các yêu cầu cùng một loại.');
   const ok: number[] = [];
   const loi: { id: number; loi: string }[] = [];
+  const conn = db();
+  const theo = new Map((conn.prepare(`SELECT id, loai FROM yeu_cau_duyet WHERE id IN (${ds.map(() => '?').join(',')})`).all(...ds) as any[])
+    .map((r) => [r.id as number, r.loai as string]));
+  /* Thẻ không tồn tại chỉ lỗi riêng thẻ đó — không làm hỏng cả lô. */
+  for (const id of ds) if (!theo.has(id)) loi.push({ id, loi: 'Không tìm thấy yêu cầu này.' });
+  const loai = new Set(theo.values());
+  if (loai.size > 1 || (loai.size === 1 && !metaCua([...loai][0]).hangLoat)) throw badRequest('Chỉ duyệt hàng loạt các yêu cầu cùng một loại.');
   for (const id of ds) {
+    if (!theo.has(id)) continue;
     try { duyetYeuCau(p, id); ok.push(id); } catch (e: any) { loi.push({ id, loi: e?.message ?? 'Không duyệt được.' }); }
   }
   return { ok, loi };

@@ -347,8 +347,8 @@ Chữ mới của PR này — chờ chủ sản phẩm duyệt cùng PR. Không 
 | Trạng thái thẻ | `Chờ duyệt` · `Đã duyệt` · `Đã duyệt · tự duyệt` · `Đã trả lời` · `Bị từ chối` · `Tự đóng: {lý do}` |
 | Rỗng | `Không có yêu cầu nào đang chờ` · `Chưa có yêu cầu nào được xử lý trong 30 ngày` · `Bạn chưa gửi yêu cầu nào cho Quản lý` |
 | Việc học viên (QL) | công tắc `Của tôi` · `Của GV (nhắc)`; `Xem việc của: một GV…`; chip nhóm `Tất cả` · `Chấm điểm` · `Case học thuật` · `Ý thức & Phối hợp` · `Vận hành` |
-| Tổng quan | QL: `Chờ duyệt {n} · {k} quá hạn · Báo lên {m}` + `Mở hộp duyệt`; GV: `{n} yêu cầu đang chờ QL · {m} bị từ chối →` |
-| Xin hỗ trợ QL (Ghi kết quả) | mô tả `Lưu kết quả tuần như Giữ nguyên và gửi câu hỏi cho Quản lý. PA vẫn chạy.` · `Gửi Quản lý · trả lời trong 5 ngày ở Chờ duyệt` · đã lưu `Đã gửi Quản lý — PA vẫn chạy`; Ngăn Case `Đã xin QL hỗ trợ {dd/mm} · chờ trả lời · hạn {dd/mm}` · `Quản lý ({tên}) trả lời {dd/mm}: …` |
+| Tổng quan | QL: `Hộp Chờ duyệt {n} · {k} quá hạn · gồm {m} Báo lên` (cùng số với chip "Tất cả" và badge) + `Mở hộp duyệt`; GV: `{n} yêu cầu đang chờ QL · {m} bị từ chối →` |
+| Xin hỗ trợ QL (Ghi kết quả) | mô tả `Lưu kết quả tuần như Giữ nguyên và gửi câu hỏi cho Quản lý. PA vẫn chạy.` · `Gửi Quản lý · trả lời trong 5 ngày · xem ở Yêu cầu của tôi` (chủ sản phẩm đồng ý 29/09) · đã lưu `Đã gửi Quản lý — PA vẫn chạy`; Ngăn Case `Đã xin QL hỗ trợ {dd/mm} · chờ trả lời · hạn {dd/mm}` · `Quản lý ({tên}) trả lời {dd/mm}: …` |
 | Đề xuất sửa | ⋮ `Đề xuất sửa thông tin…`; panel `Đề xuất sửa thông tin` · `Thông tin cần sửa` (`Target` · `Lộ trình` · `Lớp` · `Lịch MT` · `Khác`) · `Lý do` (≥ 15) · `Gửi Quản lý`; toast `Đã gửi — xem ở Công việc › Yêu cầu của tôi`; lỗi `Target và lộ trình do Quản lý sửa. Bấm "Đề xuất sửa" để gửi Quản lý duyệt.` |
 | Quản trị | `Đăng ký chờ duyệt`; rỗng `Không có đăng ký nào đang chờ. …` |
 | Vận hành | người phụ trách ngoài hệ thống: tên kèm nhãn nhỏ `ngoài hệ thống` |

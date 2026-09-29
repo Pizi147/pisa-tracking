@@ -719,7 +719,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       ].filter(Boolean).join(' — '),
       tieuDe: `Xác định nguyên nhân ${skillLabel}`,
       actionLabel: 'Xác định nguyên nhân',
-      href: c.eff_student_id ? `/hoc-vien/${c.eff_student_id}` : `/hoc-thuat/case/${c.id}`,
+      /* PR-DUYET (K5-12): mở thẳng Ngăn Case — Nhắc lưu đường này vào thông báo, chuông về đúng chỗ. */
+      href: c.eff_student_id ? duongHoSoHocVien(c.eff_student_id, { caseId: c.id }) : `/hoc-thuat/case/${c.id}`,
       ownerId: c.owner_user_id ?? null, owner: null, mine,
       due: c.due ?? null, statusLabel: 'Chờ xác định nguyên nhân',
     });
