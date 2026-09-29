@@ -302,7 +302,9 @@ function TargetAndBaseline({ cycleId, cy, canEditCycle, onDeXuatSua, onDone }: {
             <span className="flex flex-wrap items-center gap-2">
               <input className="field max-w-[8rem]" type="number" step="0.5" min={0} max={9} aria-label="Band mục tiêu mới"
                 value={newTarget} disabled={kck} onChange={(e) => setNewTarget(e.target.value)} />
-              <NutChon nho chon={kck} onClick={() => { setKck(!kck); setNewTarget(''); }}>Không cam kết (KCK)</NutChon>
+              {!cy?.khong_cam_ket && (
+                <NutChon nho chon={kck} onClick={() => { setKck(!kck); setNewTarget(''); }}>Không cam kết (KCK)</NutChon>
+              )}
             </span>
           </Field>
           <Field label="Lý do" required

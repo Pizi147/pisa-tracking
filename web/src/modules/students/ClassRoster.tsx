@@ -9,7 +9,7 @@ import { CanhBaoYThuc } from '../classes/CanhBaoYThuc.tsx';
 import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from '../classes/thaoTacDongHocVien.tsx';
 import { fmtBand, sosTone } from '../../lib/format.ts';
 import {
-  ENTRY_SKILL_LABEL, duongHoSoHocVien, maHocVienNgan, skillShort, type EntrySkill, type ExamPlan,
+  ENTRY_SKILL_LABEL, GIAI_THICH_KCK, duongHoSoHocVien, maHocVienNgan, skillShort, type EntrySkill, type ExamPlan,
 } from '@shared/domain/index.ts';
 
 type Timeline = {
@@ -121,7 +121,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents }: {
           <thead>
             <tr>
               <Th hint="Tên em, và một câu về kết quả mốc gần nhất của em.">Học viên</Th>
-              <Th align="right" hint="Điểm mục tiêu của lộ trình em đang học.">Target</Th>
+              <Th align="right" hint="Điểm mục tiêu của lộ trình em đang học. KCK = không cam kết đầu ra, không tính SOS.">Target</Th>
               <Th hint="Kỳ thi IELTS thật, ở đúng mức chắc chắn đang biết: tuần, hoặc mới có tháng, hoặc chưa xác định.">
                 Dự kiến thi
               </Th>
@@ -225,11 +225,13 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents }: {
 /**
  * KẾT LUẬN DƯỚI TÊN — dựng từ ba trường có sẵn (sosLevel · provisional · status), không gọi thêm máy chủ:
  *   SOS {n} · tạm thời (vàng) · SOS {n} (vàng) · Đạt kỳ vọng (xám; thêm "· tạm thời" khi mới có một phần điểm)
- *   · Chưa có kết quả (xám) · Đã kết thúc (xám).
+ *   · Chưa có kết quả (xám) · Không tính SOS (xám, em Target KCK) · Đã kết thúc (xám).
  */
 function KetLuan({ row }: { row: RosterRow }) {
   const xam = 'inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap bg-slate-300/8 text-slate-400 border-slate-300/20';
   if (row.status !== 'active') return <span className={xam}>{row.ketThucVi ?? 'Đã kết thúc'}</span>;
+  /* Q29-1: em KCK có điểm vẫn không có kỳ vọng — nói rõ "không tính SOS", không để đọc thành "chưa chấm". */
+  if (row.sosLevel === null && row.cycle?.khongCamKet) return <span className={xam} title={GIAI_THICH_KCK}>Không tính SOS</span>;
   if (row.sosLevel === null) return <span className={xam}>Chưa có kết quả</span>;
   const tamThoi = row.provisional ? ' · tạm thời' : '';
   /* PR-N1 A2: màu theo đúng mức SOS (hết vàng cho mọi mức); tạm thời = viền đứt + chữ "tạm thời". */

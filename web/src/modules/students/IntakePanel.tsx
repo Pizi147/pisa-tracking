@@ -330,7 +330,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
             + Thêm dòng
           </button>
           <p className="m-0 text-xs text-slate-400">
-            Ô trống hoặc dấu “-” = chưa có, không phải 0. · Em đã có hồ sơ thì dùng Chuyển lớp, không tạo mới.
+            Ô trống hoặc dấu “-” = chưa có, không phải 0 — riêng cột Target, “-” hay KCK = không cam kết (không tính SOS). · Em đã có hồ sơ thì dùng Chuyển lớp, không tạo mới.
           </p>
         </div>
       </div>
