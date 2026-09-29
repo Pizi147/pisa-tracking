@@ -598,3 +598,9 @@ if (chuaQua.length) luuY('daThiToiMt', `Đã thi tới MT${daThiToiMt} nhưng ${
 ## Nhật ký thực thi
 
 <!-- Session code ghi ở đây: mốc B, dòng mã thật lệch, phép kiểm cũ phải thêm lý do, trước/sau clarify, 🛑 đã hỏi, model thật. -->
+
+## Chủ sản phẩm chốt 29/09 (thay các chỗ lệch trong kế hoạch)
+
+- **Câu 1 = A:** Thi lại kỹ năng đã có điểm → xoá điểm cũ khỏi ô, giữ trong Lịch sử, SOS/kỳ vọng tính theo điểm mới. Không migrate.
+- **Câu 2 = A (planning chốt):** ngăn Xếp lịch khung Lớp thường xếp **một lớp mỗi lần**.
+- Planning duyệt bảng Q (Q1–Q14) như agent đề xuất.
