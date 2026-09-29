@@ -6,7 +6,7 @@ import {
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, forbidden, notFound, nowIso } from '../util.ts';
-import { can, classScopeSql, require_, scopeFor, type Principal } from '../permissions.ts';
+import { can, classScopeSql, napTruocPhamVi, require_, scopeFor, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { suggestCaseOwner } from './owner.ts';
 import { PA_QUY_CHE_CHUA_GHI } from './sosState.ts';
@@ -298,10 +298,12 @@ export function listSignals(p: Principal, f: SignalFilters = {}) {
   if (f.mine) { where.push('sg.owner_user_id = ?'); params.push(p.userId); }
 
   const today = f.today ?? demoToday();
-  let rows = (conn
+  const tho = conn
     .prepare(`${SIGNAL_SELECT} WHERE ${where.join(' AND ')} ORDER BY sg.verify_due, sg.id`)
-    .all(...params) as any[])
-    .map((r) => viewOf(p, r, today));
+    .all(...params) as any[];
+  /* Quyền xử lý từng tín hiệu tra chi nhánh của em — nạp cả lô một lần (không mỗi em hai câu; rà #126, tốc độ màn Công việc). */
+  napTruocPhamVi(tho.map((r) => r.student_id));
+  let rows = tho.map((r) => viewOf(p, r, today));
   if (f.overdueOnly) rows = rows.filter((r) => r.overdue);
 
   return {

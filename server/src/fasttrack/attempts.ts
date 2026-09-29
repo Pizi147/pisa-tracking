@@ -1723,8 +1723,9 @@ export function attemptHref(a: { id: number; kind?: string | null; classId?: num
 function pendingView(attemptId: number, skill: string) {
   const r = pendingMove(attemptId, skill);
   if (!r) return null;
+  /* Nhớ theo request (rà #126, tốc độ): màn Công việc dựng ô của cùng lượt nhiều lần — không tra lại mã tuần mỗi lần. */
   const w = r.to_period_id
-    ? (db().prepare('SELECT code FROM report_periods WHERE id = ?').get(r.to_period_id) as any)
+    ? nho(`ma-tuan:${r.to_period_id}`, () => db().prepare('SELECT code FROM report_periods WHERE id = ?').get(r.to_period_id) as any)
     : null;
   return { id: r.id, decideBy: r.decide_by, toWeek: w?.code ?? null, moveNo: r.move_no };
 }

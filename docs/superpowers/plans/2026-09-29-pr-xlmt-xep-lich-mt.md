@@ -688,3 +688,8 @@ if (chuaQua.length) luuY('daThiToiMt', `Đã thi tới MT${daThiToiMt} nhưng ${
 - **375 px:** ngăn Xếp lịch bỏ cột Lớp + Sẽ xếp trên điện thoại (xuống dưới tên em); dòng xem trước chuyển vào chân ngăn
   (`KhungPanel chan.dongTren`, ngay trên nút) — không còn dính đè danh sách. **1440:** dòng không có ⋯ giữ chỗ `w-7` → nút chính thẳng cột.
 - **Gộp main** (PR-KCK #125): `intake.ts` lấy import của main + `mtDaThiChuaQua`; `seed.ts` giữ cả `buildXlmtDemo` và `buildKckDemo`.
+- **Gộp main lần 2 (PR-SOS #127, PR-YT4 #128):** xung đột chỉ ở chỗ thêm dòng — `run.ts` (giữ cả ba đăng ký, thứ tự theo merge), `suaLoiNong`
+  (danh sách miễn của main + `NganLichSuBai`), `WelcomePage` (mảng của main + dòng PR-XLMT), `DEMO.md` (main bỏ dòng "Giao diện Ý thức").
+  Sau gộp, trần `QL /my-work?nguoi=tat-ca` đo 77 > 75: tìm ra do dữ liệu demo X2 làm lộ hai chỗ tra theo từng dòng. Chủ sản phẩm chọn
+  hướng tốt cho tốc độ lâu dài → **gom câu SQL thay vì nâng trần**: `pendingView` nhớ mã tuần theo request (`nho`); danh sách tín hiệu SOS
+  nạp phạm vi cả lô (`napTruocPhamVi`) trước khi kiểm quyền từng tín hiệu. Đo lại: **68** câu (QL), 70 (QT) — trần 75 giữ nguyên.
