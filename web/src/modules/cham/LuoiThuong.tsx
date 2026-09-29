@@ -227,9 +227,9 @@ export function useLuuThuong(attemptId: number, onReload: () => void, ct: string
     (await gui(skill, p.lyDo ? { score: p.score, total: p.total, lyDo: p.lyDo } : { score: p.score, total: p.total }, opts)) !== null;
 
   /* Dấu "-" gửi RIÊNG (máy chủ không nhận kèm điểm/tổng): ghi dấu là dời môn sang tuần sau, gỡ dấu là trả về tuần cũ. */
-  const dau = async (skill: string, bat: boolean) => {
+  const dau = async (skill: string, bat: boolean, im = false) => {
     const r = await gui(skill, { noShow: bat });
-    if (r && r.moved) {
+    if (r && r.moved && !im) {
       toast.push('ok', bat ? `Đã dời ${tenO(skill)} sang tuần sau.` : `Đã gỡ dấu "-" — ${tenO(skill)} về lại tuần cũ.`);
     }
     return r !== null;
@@ -238,7 +238,10 @@ export function useLuuThuong(attemptId: number, onReload: () => void, ct: string
   /** Gửi lại đúng lệnh đã hỏng của một ô / của mọi ô lỗi trên dòng. */
   const luuLai = (skill: string) => { const b = tt.hong.current.get(skill); if (b) void gui(skill, b); };
   const retry = () => { for (const k of [...tt.hong.current.keys()]) luuLai(k); };
-  return { luu, dau, status: tt.status, lastError: tt.lastError, retry, o: tt.o, loi: tt.loi, luuLai, soLoi: tt.soLoi };
+  return {
+    luu, dau, status: tt.status, lastError: tt.lastError, retry, o: tt.o, loi: tt.loi, luuLai, soLoi: tt.soLoi,
+    loiNhap: tt.loiNhap, coGuiLai: tt.coGuiLai,
+  };
 }
 
 /**
@@ -369,7 +372,7 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
   register: (col: number, el: HTMLInputElement | null) => void;
   onMove: (row: number, col: number, dr: number) => void;
 }) {
-  const { luu, dau, status, lastError, retry, o, loi, luuLai, soLoi } = useLuuThuong(row.attemptId, onReload, sheet.programme.code);
+  const { luu, dau, status, lastError, retry, o, loi, luuLai, soLoi, loiNhap, coGuiLai } = useLuuThuong(row.attemptId, onReload, sheet.programme.code);
   const homNay = sheet.today;
   const ct = sheet.programme.code;
   const [hop, setHop] = useState<{ t: ThaoTac; k: string } | null>(null);
@@ -419,7 +422,7 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
         {/* Trạng thái lưu RIÊNG TỪNG DÒNG — lỗi nói rõ ở dòng nào, có nút Thử lại. */}
         <div className="flex items-center gap-1.5 text-[11px] text-slate-500 min-w-0">
           <span className="shrink-0">{row.studentCode}</span>
-          <DauLuu status={status} error={lastError} onRetry={retry} soLoi={soLoi} />
+          <DauLuu status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />
         </div>
       </td>
       {sheet.programme.skills.map((k, ci) => {
@@ -458,7 +461,8 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
               tenMon={tenMon(sheet.programme.code, k)}
               tenHv={row.studentName}
               onSave={(p, o) => luu(k, p, o)}
-              onDau={(bat) => dau(k, bat)}
+              onDau={(bat, im) => dau(k, bat, im)}
+              onLoiNhap={(c) => loiNhap(k, c)}
               inputRef={(el) => register(ci, el)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === 'ArrowDown') { e.preventDefault(); onMove(rowIndex, ci, 1); }

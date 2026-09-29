@@ -205,7 +205,7 @@ function SheetRow({ row, rowIndex, active, cot, tuanDangXem, onReload, register,
   register: (col: number, el: HTMLInputElement | null) => void;
   onMove: (row: number, col: number, dr: number) => void;
 }) {
-  const { save, status, lastError, retry, o, loi, luuLai, soLoi } = useSaveScore(row.attemptId, onReload);
+  const { save, status, lastError, retry, o, loi, luuLai, soLoi, loiNhap, coGuiLai } = useSaveScore(row.attemptId, onReload);
   const cellOf = (skill: string) => row.cells.find((c) => c.skill === skill);
   const oKhacTuan = (s: string, cell: Cell) => (
     <td key={s} className="td py-1.5 text-slate-500" data-kn={s} title={`${skillLabel(s)}: thi tuần ${tuanLich(cell.weekStart)}`}>
@@ -225,7 +225,7 @@ function SheetRow({ row, rowIndex, active, cot, tuanDangXem, onReload, register,
         {/* Tóm tắt lưu của dòng: "n ô chưa lưu" khi còn ô lỗi (không bao giờ "đã lưu" che ô lỗi) — trạng thái từng ô ở ô. */}
         <div className="flex items-center gap-1.5 text-[11px] text-slate-500 min-w-0">
           <span className="shrink-0">{row.studentCode}</span>
-          <DauLuu status={status} error={lastError} onRetry={retry} soLoi={soLoi} />
+          <DauLuu status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />
         </div>
       </td>
       {cot.mt && <td className="td py-1.5 whitespace-nowrap" title={`Mock Test lượt ${row.attemptNo}`}>MT{row.attemptNo}</td>}
@@ -258,6 +258,7 @@ function SheetRow({ row, rowIndex, active, cot, tuanDangXem, onReload, register,
             <RawScoreInput
               cell={cell}
               onSave={(p, o) => save(s, p, o)}
+              onLoiNhap={(x) => loiNhap(s, x)}
               inputRef={(el) => register(ci, el)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === 'ArrowDown') { e.preventDefault(); onMove(rowIndex, ci, 1); }

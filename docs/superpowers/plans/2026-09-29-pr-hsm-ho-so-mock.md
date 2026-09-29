@@ -503,3 +503,9 @@ Không có câu bắt buộc — mọi điểm mở đã vào bảng Q theo khuy
 - **Task 2** — 1736 đạt. `/students/1` +1 câu (91→92 QL, 93→94 GVCN/GVBM) — dưới trần 100, không nâng. Thêm nhãn nhật ký
   `score.nhan_xet` = "Sửa nhận xét" (`nhatKy.ts`; phép kiểm N1 (11) đòi mọi hành động có nhãn tiếng Việt). Hoàn tất R11 trong
   phép kiểm cần đủ 4 kỹ năng có điểm (`dotDaHoanTat`) — dữ liệu dựng thêm L/R/W1/W2.
+- **Task 3 · clarify** — trước → sau: nút điện thoại "−" (chỉ dấu) → **"Vắng"** (tên đọc màn hình "Vắng — Không có bài — em có lịch mà
+  không làm bài", khớp chữ thấy); toast "Đã ghi vắng {môn} · {em}" + Hoàn tác, lớp thường thêm hệ quả " — dời sang tuần sau"; lỗi nhập
+  chỉ ở tooltip → **một dòng dưới ô** (`role="alert"`, câu đầy đủ, cắt hiển thị có tooltip); ô vắng "—" → **"vắng"** + "Đã xác nhận
+  vắng — Quản lý xếp lại bài trước khi nhập."; hộp tiêu chí thêm "+ Nhận xét" → "Nhận xét (không bắt buộc)", "GV chấm · Đổi"; đầu cột S
+  "GV chấm: {tên} ▾" / "GV chấm: chưa chọn", câu giải thích giữ nguyên kế hoạch. impeccable: không có PRODUCT.md (không init — CLAUDE.md).
+  1737 đạt (lần 1 segfault 139, chạy lại xanh).
