@@ -213,11 +213,12 @@ export function gomBaiXemTruoc(bai: BaiXemTruoc[]): Array<Omit<BaiXemTruoc, 'ski
   return [...nhom.values()];
 }
 
-/** Dòng tóm tắt của một lớp Fast Track (Q12): `MT3 đang thi · MT4 chưa xếp 4 em`, bỏ vế trống. */
-export function tomTatLopFT(i: { dangThi: number | null; chuaXep: { dot: number; soEm: number } | null }): string {
+/** Dòng tóm tắt của một lớp Fast Track (Q12): `MT3 đang thi · MT4 chưa xếp 4 em · 2 em cần xếp lại`, bỏ vế trống. */
+export function tomTatLopFT(i: { dangThi: number | null; chuaXep: { dot: number; soEm: number } | null; canXepLai?: number }): string {
   const ve: string[] = [];
   if (i.dangThi !== null) ve.push(`MT${i.dangThi} đang thi`);
   if (i.chuaXep && i.chuaXep.soEm > 0) ve.push(`MT${i.chuaXep.dot} chưa xếp ${i.chuaXep.soEm} em`);
+  if (i.canXepLai) ve.push(`${i.canXepLai} em cần xếp lại`);
   return ve.join(' · ');
 }
 

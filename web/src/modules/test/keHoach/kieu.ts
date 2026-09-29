@@ -10,10 +10,13 @@ export type KnO = Partial<Record<KyNangKH, OKyNang>>;
 export type LopKH = {
   id: number; code: string; loai: 'ft' | 'thuong'; chiNhanh: string; chuongTrinh: string | null; soHv: number;
   chuaCoLichTiep: number; hvChuaCoLich: number; tomTat: string;
+  /** PR-XLMT (Q7): số em lớp FT cần Quản lý xếp lại (vắng chưa có đề nghị + phần thi đã huỷ). */
+  canXepLai: number;
 };
 export type DanhSachLop = { tieuDe: string; lop: LopKH[] };
 
-export type DotFT = { attemptId: number | null; trangThaiDot: string | null; kn: KnO; lichSu?: boolean };
+/** `do`: có kỹ năng xong và còn kỹ năng phải thi (◐) · `huyPhan`: có phần thi đã huỷ (PR-XLMT). */
+export type DotFT = { attemptId: number | null; trangThaiDot: string | null; kn: KnO; lichSu?: boolean; do?: boolean; huyPhan?: boolean };
 /** `soKeTiep` (PR-MT, K4-08): chỉ ô MT này có "+ xếp" — số MT liền mạch. */
 export type HangFT = { studentId: number; ten: string; ma: string; vaoMuon: boolean; dot: Record<number, DotFT>; soKeTiep: number };
 export type LuoiFTData = { classId: number; classCode: string; cot: number[]; hang: HangFT[] };

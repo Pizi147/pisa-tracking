@@ -614,6 +614,14 @@ if (chuaQua.length) luuY('daThiToiMt', `Đã thi tới MT${daThiToiMt} nhưng ${
   số chuyển sang một đợt chưa tới tuần (K4-13). `run.ts` "Ô điểm nói rõ kỹ năng có bắt buộc" → người xem không sửa được đổi từ Quản lý
   sang GV Writing 1. `chamDiem.tests.ts` PR-Rc1 C08 Quyền → Quản lý nay ghi được "-". `keHoachTest.tests.ts` 3 lời gọi `luuDot` dời
   bài tuần đã bắt đầu → thêm `reason` (K4-15).
+- **Task 3:** `xetMotEm` tách thành `xetMotEmThuong` (lớp thường, như cũ, bỏ dòng chết `existing.status === 'cancelled'`) và
+  `xetMotEmFT` (qua `viecXepMt`); dữ liệu FT đọc theo lô ở `docFtTheoLo` (lộ trình, lượt, lịch, điểm, đề nghị chờ — 5 câu cho cả danh
+  sách). Đo: xem trước 20 em / 2 lớp đạt trần 16 câu/em. Trần tốc độ chỉ nâng cho vai chạy câu mới (QL, QT): `/ke-hoach-test/lop`
+  21 → 22, `/ke-hoach-test/ft/3` 29 → 30. Phép kiểm "5 cột": cột = tới **MT kế tiếp** (em có MT1–MT5 → 6 cột cho ô "+ xếp"), không
+  cứng 8 — kiểm bằng công thức trên chính lưới, em có MT8 → đúng 8.
+- **Phép kiểm cũ đã sửa (Task 3):** `keHoachTest.tests.ts` — 4 lời gọi `luuDot`/`kiemDot` chọn tuần đích quanh lịch seed (trước ngày
+  demo) → chạy trong `truocNgayDemo` (hôm nay lùi về 05/01/2026) để tuần đích là tương lai; Task5 em C "đã xong → giu" → thêm
+  `dotTheoEm` (Quản lý bấm chip MT1 riêng, vì em đủ MT1 nay tự sang MT2); "Rà planning(2)" số MT ảo 91 → 8 (trần MT8).
 
 ## Chủ sản phẩm chốt 29/09 (thay các chỗ lệch trong kế hoạch)
 

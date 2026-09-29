@@ -227,4 +227,134 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
     const ls = JSON.stringify(attemptsSvc.scoreHistoryOf(a.id));
     assert(/Đề lỗi, thi lại/.test(ls), `lịch sử điểm thiếu lý do: ${ls.slice(0, 300)}`);
   });
+
+  // ------------------------------------------------------------------ khối 3: Kế hoạch Test — lưới, việc từng em, tuần đã qua
+  const nguCanh: any = await import('../platform/nguCanhRequest.ts');
+  const dom = await import('../../../shared/domain/index.ts');
+  const LOP1 = classId('MB FT 101'), LOP2 = classId('MB FT 102');
+  const QL = P.mbManager;
+  const hangCua = (lop: number, sid: number) => keHoach.luoiFT(QL, lop, TODAY).hang.find((h: any) => h.studentId === sid);
+  const diemDu = (attemptId: number, ks = ['listening', 'reading', 'writing1', 'writing2', 'speaking']) => { for (const k of ks) diem(attemptId, k, 6.5); };
+  const bonTuan = (n: number) => ({ listening: tuan(n).id, reading: tuan(n).id, writing: tuan(n).id, speaking: tuan(n).id });
+
+  check('PR-XLMT (3) · Lưới FT: cột tới MT kế tiếp (không cứng 8); em có MT8 → 8 cột, không hơn (T37)', () => {
+    const l0 = keHoach.luoiFT(QL, LOP1, TODAY);
+    const maxNo = Math.max(3, ...l0.hang.flatMap((h: any) => [h.soKeTiep, ...Object.entries(h.dot).filter(([, v]: any) => v.attemptId).map(([k]) => Number(k))]));
+    assert(l0.cot.length === Math.min(8, maxNo) && l0.cot.length < 8, `cột ${l0.cot.length}, mong ${maxNo}`);
+    const s8 = them('MB FT 101', 'XLMT Em Tám MT');
+    const cy = (conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(s8) as any).id;
+    for (let n = 4; n <= 8; n++) {
+      conn.prepare(`INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id, status, created_at)
+        VALUES (?,?,?, 'mock', ?, ?, 'planned', ?)`).run(cy, s8, n, LOP1, tuan(20 + n).id, new Date().toISOString());
+    }
+    const l8 = keHoach.luoiFT(QL, LOP1, TODAY);
+    assert(l8.cot.length === 8 && l8.cot[7] === 8, JSON.stringify(l8.cot));
+  });
+
+  check('PR-XLMT (3) · Em chuyển MB FT 101 → MB FT 102 cùng lộ trình vẫn thấy MT1, "+ xếp" đúng số (Q12)', () => {
+    const s = them('MB FT 101', 'XLMT Em Chuyển Lớp');
+    const mt1 = luotCua(s)[0].id;
+    conn.prepare(`UPDATE enrollments SET class_id = ? WHERE student_id = ? AND class_id = ? AND status = 'active'`).run(LOP2, s, LOP1);
+    const h = hangCua(LOP2, s);
+    assert(h?.dot[1]?.attemptId === mt1 && h.soKeTiep === 4, JSON.stringify(h && { mt1: h.dot[1]?.attemptId, ke: h.soKeTiep }));
+  });
+
+  check('PR-XLMT (3) · Chip vắng · chờ Quản lý duyệt · đã huỷ · trễ đúng ô; "cần xếp lại" đếm vắng/huỷ, không đếm chờ duyệt (K4-11, Q7)', () => {
+    const dem = () => keHoach.danhSachLop(QL, {}).lop.find((l: any) => l.id === LOP2).canXepLai as number;
+    const n0 = dem();
+    const sA = them('MB FT 102', 'XLMT Em Chờ Duyệt');
+    const a = luotCua(sA)[0].id;
+    datTuan(a, tuan(0).id);
+    absence.baoVang(P.mbManager, a, 'speaking', 'Em ốm cả tuần', TODAY);
+    absence.baoVang(P.mbManager, a, 'speaking', 'Em vẫn còn ốm', t.addDays(tuanNay, 8));
+    assert(dem() === n0, `chờ duyệt không phải "cần xếp lại": ${dem()} ≠ ${n0}`);
+    const sB = them('MB FT 102', 'XLMT Em Vắng Huỷ');
+    const b = luotCua(sB)[0].id;
+    datTuan(b, tuan(0).id);
+    skillSch.setSitStatus(P.mbManager, b, 'listening', 'absent', 'Em vắng buổi L');
+    conn.prepare(`UPDATE attempt_skills SET sit_status = 'cancelled' WHERE attempt_id = ? AND skill = 'reading'`).run(b);
+    assert(dem() === n0 + 1, `vắng/huỷ phải đếm 1 em: ${dem()} (trước ${n0})`);
+    const sC = them('MB FT 102', 'XLMT Em Trễ');
+    datTuan(luotCua(sC)[0].id, tuan(-1).id);
+    const ttA = hangCua(LOP2, sA).dot[1].kn, ttB = hangCua(LOP2, sB).dot[1], ttC = hangCua(LOP2, sC).dot[1].kn;
+    assert(ttA.speaking.trangThai === 'cho-duyet' && ttA.speaking.choDuyet, `S: ${ttA.speaking.trangThai}`);
+    assert(ttB.kn.listening.trangThai === 'vang' && ttB.kn.reading.trangThai === 'da-huy' && ttB.huyPhan, `B: ${ttB.kn.listening.trangThai}/${ttB.kn.reading.trangThai}`);
+    assert(ttC.listening.trangThai === 'tre', `trễ: ${ttC.listening.trangThai}`);
+    assert(/em cần xếp lại/.test(keHoach.danhSachLop(QL, {}).lop.find((l: any) => l.id === LOP2).tomTat), 'tóm tắt lớp thiếu vế cần xếp lại');
+  });
+
+  /* Ba em cho hàng loạt: MT1–MT3 ở các tuần đã qua / tuần này để MT4 tuần sau không vướng T15. */
+  const emDu = them('MB FT 101', 'XLMT Em Đủ MT3');
+  const emDo = them('MB FT 102', 'XLMT Em Dở MT3');
+  const emThieu = them('MB FT 101', 'XLMT Em Thiếu MT2');
+  for (const [sid, w3] of [[emDu, -1], [emDo, 0]] as const) {
+    const [x1, x2, x3] = luotCua(sid);
+    datTuan(x1.id, tuan(-3).id); datTuan(x2.id, tuan(-2).id); datTuan(x3.id, tuan(w3).id);
+  }
+  diemDu(luotCua(emDu)[2].id);
+  diemDu(luotCua(emDo)[2].id, ['listening', 'reading']);
+  for (const x of luotCua(emThieu).slice(1)) conn.prepare(`UPDATE assessment_attempts SET status = 'cancelled' WHERE id = ?`).run(x.id);
+
+  check('PR-XLMT (3) · Hàng loạt 2 lớp, MT3: đủ → Tạo MT4 · dở → Xếp nốt W S (cần lý do) · thiếu MT2 → chặn đúng câu (K4-17)', () => {
+    const r1 = keHoach.xepHangLoat(QL, { classId: LOP1, attemptNo: 3, studentIds: [emDu, emThieu], tuan: bonTuan(1), xemTruoc: true }, TODAY);
+    const r2 = keHoach.xepHangLoat(QL, { classId: LOP2, attemptNo: 3, studentIds: [emDo], tuan: bonTuan(1), xemTruoc: true }, TODAY);
+    const [du, thieu] = r1.dong, [dd] = r2.dong;
+    assert(du.hanhDong === 'tao' && du.viec === 'tao' && du.attemptNo === 4, JSON.stringify(du));
+    assert(dd.viec === 'xep-not' && dd.bai.filter((b: any) => b.ghiChu !== 'giu').map((b: any) => b.skill).join() === 'writing,speaking' && dd.canLyDo, JSON.stringify(dd));
+    assert(thieu.hanhDong === 'loi' && thieu.loi === 'Chưa có MT2 — xếp MT2 trước rồi mới xếp MT3.', JSON.stringify(thieu));
+    assert(dom.chuSeXep(dd, null) === 'Xếp nốt W S · MT3', dom.chuSeXep(dd, null));
+  });
+
+  check('PR-XLMT (3) · Lưu: dời bài tuần này không lý do → em đó lỗi; có lý do → lưu; em khác vẫn lưu (R9b, K4-15)', () => {
+    const r = keHoach.xepHangLoat(QL, { classId: LOP2, attemptNo: 3, studentIds: [emDo], tuan: bonTuan(1), force: true }, TODAY);
+    assert(r.daLuu === 0 && /Dời lịch thi: cần ghi lý do/.test(r.dong[0].loi ?? ''), JSON.stringify(r.dong[0]));
+    const r2 = keHoach.xepHangLoat(QL, { classId: LOP2, attemptNo: 3, studentIds: [emDo], tuan: bonTuan(1), force: true, lyDo: 'Lịch học đổi' }, TODAY);
+    assert(r2.daLuu === 1 && lich(luotCua(emDo)[2].id, 'writing').tuan === t.addDays(tuanNay, 7), JSON.stringify(r2.dong[0]));
+  });
+
+  check('PR-XLMT (3) · Ép MT3 đã đủ → "da-du" hỏi thi lại; thi lại L + lý do → lưu: L trống, tuần mới (T37, câu 1 = A)', () => {
+    const m3 = luotCua(emDu)[2].id;
+    const hoi = keHoach.xepHangLoat(QL, { classId: LOP1, attemptNo: 4, studentIds: [emDu], tuan: bonTuan(1), dotTheoEm: { [emDu]: 3 }, xemTruoc: true }, TODAY);
+    assert(hoi.dong[0].viec === 'da-du' && hoi.dong[0].hanhDong === 'giu' && hoi.dong[0].coDiem.length === 4, JSON.stringify(hoi.dong[0]));
+    const luu = keHoach.xepHangLoat(QL, {
+      classId: LOP1, attemptNo: 4, studentIds: [emDu], tuan: bonTuan(1), dotTheoEm: { [emDu]: 3 }, thiLai: { [emDu]: ['listening'] },
+      lyDo: 'Đề L lỗi, thi lại', force: true,
+    }, TODAY);
+    assert(luu.daLuu === 1 && luu.dong[0].viec === 'thi-lai', JSON.stringify(luu.dong[0]));
+    const s = attemptsSvc.scoresOf(m3).find((x: any) => x.skill === 'listening');
+    assert(s?.band == null && lich(m3, 'listening').tuan === t.addDays(tuanNay, 7), JSON.stringify({ s, l: lich(m3, 'listening') }));
+  });
+
+  check('PR-XLMT (3) · Tuần đã qua: 4 kỹ năng đã qua + em vào web sau đó → MT lịch sử; trộn qua/tới → chặn; em vào web từ trước → chặn (K2-33, Q8)', () => {
+    const s = them('MB FT 101', 'XLMT Em MT Lịch Sử');
+    const [x1, x2, x3] = luotCua(s);
+    datTuan(x1.id, tuan(-8).id); datTuan(x2.id, tuan(-6).id); datTuan(x3.id, tuan(-4).id);
+    const tron = keHoach.xepHangLoat(QL, { classId: LOP1, attemptNo: 4, studentIds: [s], tuan: { ...bonTuan(1), listening: tuan(-2).id }, xemTruoc: true }, TODAY);
+    assert(/cho mọi kỹ năng/.test(tron.dong[0].loi ?? ''), JSON.stringify(tron.dong[0]));
+    const xt = keHoach.xepHangLoat(QL, { classId: LOP1, attemptNo: 4, studentIds: [s], tuan: bonTuan(-2), xemTruoc: true }, TODAY);
+    assert(xt.dong[0].hanhDong === 'tao' && xt.dong[0].lichSu && /MT lịch sử$/.test(dom.chuSeXep(xt.dong[0], null)), JSON.stringify(xt.dong[0]));
+    const luu = keHoach.xepHangLoat(QL, { classId: LOP1, attemptNo: 4, studentIds: [s], tuan: bonTuan(-2), force: true }, TODAY);
+    assert(luu.daLuu === 1, JSON.stringify(luu.dong[0]));
+    const mt4 = conn.prepare(`SELECT lich_su FROM assessment_attempts WHERE student_id = ? AND attempt_no = 4 AND status != 'cancelled'`).get(s) as any;
+    assert(mt4?.lich_su === 1, JSON.stringify(mt4));
+    conn.prepare(`UPDATE students SET created_at = '2026-07-01' WHERE id = ?`).run(s);
+    const cu = keHoach.xepHangLoat(QL, { classId: LOP1, attemptNo: 5, studentIds: [s], tuan: bonTuan(-1), xemTruoc: true }, TODAY);
+    assert(/đã có trên web/.test(cu.dong[0].loi ?? ''), JSON.stringify(cu.dong[0]));
+  });
+
+  check('PR-XLMT (3) · Xem trước 20 em / 2 lớp ≤ 16 câu SQL mỗi em (không N+1)', () => {
+    const ids = (lop: number) => (conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' ORDER BY student_id LIMIT 10`).all(lop) as any[]).map((r) => r.student_id);
+    const a = ids(LOP1), b = ids(LOP2);
+    const n0 = nguCanh.soCauSql();
+    keHoach.xepHangLoat(QL, { classId: LOP1, attemptNo: 3, studentIds: a, tuan: bonTuan(1), xemTruoc: true }, TODAY);
+    keHoach.xepHangLoat(QL, { classId: LOP2, attemptNo: 3, studentIds: b, tuan: bonTuan(1), xemTruoc: true }, TODAY);
+    const n = nguCanh.soCauSql() - n0;
+    assert(n <= 16 * (a.length + b.length), `${n} câu cho ${a.length + b.length} em`);
+  });
+
+  check('PR-XLMT (3) · Thêm HV: "Đã thi tới MT6" mà tuần bắt đầu = tuần này → lưu ý lùi Tuần bắt đầu (rà #120)', () => {
+    const pv = intake.previewIntake(P.admin, { classId: LOP1, rows: [{ fullName: 'XLMT Nhắc Lùi', email: 'a@b.vn', startWeek: tuanNay, daThiToiMt: '6' }] });
+    const y = pv.rows[0].issues.find((x: any) => x.field === 'daThiToiMt' && x.muc === 'luu_y');
+    assert(/Đã thi tới MT6 nhưng MT1, MT2.* rơi vào tuần chưa qua/.test(y?.message ?? ''), JSON.stringify(pv.rows[0].issues));
+  });
 }

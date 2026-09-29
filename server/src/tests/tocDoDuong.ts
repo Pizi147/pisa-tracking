@@ -436,13 +436,13 @@ export const TRAN: Record<string, number> = {
   'GVBM /notifications': 19,
   'GVCN_THUONG /notifications': 19,
   'QT /notifications': 19,
-  'QL /ke-hoach-test/lop?branchId=1': 21,
+  'QL /ke-hoach-test/lop?branchId=1': 22,   // PR-XLMT: +1 câu đếm "cần xếp lại"
   'GVCN /ke-hoach-test/lop?branchId=1': 21,
   'GVBM /ke-hoach-test/lop?branchId=1': 21,
   'GVCN_THUONG /ke-hoach-test/lop?branchId=1': 21,
-  'QT /ke-hoach-test/lop?branchId=1': 21,
-  'QL /ke-hoach-test/ft/3': 29,
-  'QT /ke-hoach-test/ft/3': 29,
+  'QT /ke-hoach-test/lop?branchId=1': 22,   // PR-XLMT: +1 câu đếm "cần xếp lại"
+  'QL /ke-hoach-test/ft/3': 30,   // PR-XLMT: +1 câu đề nghị dời chờ duyệt (chip chờ Quản lý duyệt)
+  'QT /ke-hoach-test/ft/3': 30,   // PR-XLMT: +1 câu đề nghị dời chờ duyệt (chip chờ Quản lý duyệt)
   // PR-UX2: lưới lớp thường theo HV × kỹ năng — đo 25/24 câu, trần = max(đo+10, ⌈đo×1.3⌉).
   'QL /ke-hoach-test/thuong/5': 35,
   'QT /ke-hoach-test/thuong/5': 34,

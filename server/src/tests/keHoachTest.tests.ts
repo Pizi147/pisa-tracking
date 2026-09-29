@@ -18,7 +18,16 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
   const regularMod: any = await import('../normal/regular.ts');
   const keHoachMod: any = await import('../keHoach/keHoachTest.ts');
   const classesMod: any = await import('../classes/classes.ts');
-  const { demoToday } = await import('../demoConfig.ts');
+  const { demoToday, setConfig } = await import('../demoConfig.ts');
+  /**
+   * PR-XLMT (K2-33): không dời lượt có sẵn vào tuần ĐÃ QUA. Các phép kiểm cũ dưới đây chọn tuần đích quanh lịch seed (trước ngày demo)
+   * chỉ để thử luật khác — chạy chúng với "hôm nay" lùi về đầu năm để tuần đích là tuần tương lai; luật được thử không đổi.
+   */
+  const truocNgayDemo = <T,>(fn: () => T): T => {
+    const cu = demoToday();
+    setConfig('demo_date', '2026-01-05');
+    try { return fn(); } finally { setConfig('demo_date', cu); }
+  };
   const { can } = await import('../permissions.ts');
   console.log('\nPR-Rc2 · Kế hoạch Test');
 
@@ -320,10 +329,10 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     const sBefore = conn.prepare(`SELECT planned_period_id FROM attempt_skills WHERE attempt_id=? AND skill='speaking'`)
       .get(mt2.attemptId) as any;
     /* Hộp chip gửi cả L, R, W (cùng tuần mới) — W đã có điểm nên bị bỏ qua; S không gửi nên không đổi. */
-    const r = keHoachMod.luuDot(P.mbManager, {
+    const r = truocNgayDemo(() => keHoachMod.luuDot(P.mbManager, {
       attemptId: mt2.attemptId, force: true, reason: 'PR-XLMT: tuần thi đã bắt đầu cần lý do',
       kyNang: [{ skill: 'listening', periodId: per.id }, { skill: 'reading', periodId: per.id }, { skill: 'writing', periodId: per.id }],
-    });
+    }));
     assert(r.doi.includes('listening') && r.doi.includes('reading'), `listening, reading phải đổi tuần, đang ra ${JSON.stringify(r)}`);
     assert(!r.doi.includes('writing'), 'writing đã có điểm mà vẫn đổi tuần');
     for (const sk of ['listening', 'reading']) {
@@ -437,8 +446,10 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
 
     const soLuongTruoc = (conn.prepare('SELECT COUNT(*) n FROM assessment_attempts').get() as any).n;
     const capNhatTruoc = (conn.prepare('SELECT MAX(updated_at) t FROM attempt_skills').get() as any).t;
+    /* PR-XLMT (K4-17): em đã đủ MT1 mặc định tự sang MT2 — muốn thử "giu" thì Quản lý bấm chip MT1 riêng cho C (`dotTheoEm`). */
+    const dotTheoEm = { [hvC.id]: attemptNo };
     const xt = keHoachMod.xepHangLoat(P.mbManager, {
-      classId: mbClass, attemptNo, studentIds: [hvA.id, hvB.id, hvC.id], tuan: t4(far1.id), xemTruoc: true,
+      classId: mbClass, attemptNo, studentIds: [hvA.id, hvB.id, hvC.id], tuan: t4(far1.id), xemTruoc: true, dotTheoEm,
     });
     const soLuongSau = (conn.prepare('SELECT COUNT(*) n FROM assessment_attempts').get() as any).n;
     const capNhatSau = (conn.prepare('SELECT MAX(updated_at) t FROM attempt_skills').get() as any).t;
@@ -453,7 +464,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     assert(dongC.hanhDong === 'giu', `C đã xong phải là 'giu', đang là ${dongC.hanhDong}`);
 
     const luu = keHoachMod.xepHangLoat(P.mbManager, {
-      classId: mbClass, attemptNo, studentIds: [hvA.id, hvB.id, hvC.id], tuan: t4(far1.id), force: true, xemTruoc: false,
+      classId: mbClass, attemptNo, studentIds: [hvA.id, hvB.id, hvC.id], tuan: t4(far1.id), force: true, xemTruoc: false, dotTheoEm,
     });
     assert(luu.daLuu === 2, `daLuu phải đếm A (tao) + B (doi), đang là ${luu.daLuu}`);
     const cyA = conn.prepare(`SELECT id FROM learning_cycles WHERE student_id=? AND status='active'`).get(hvA.id) as any;
@@ -608,16 +619,16 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
       /đã có điểm/, 'setSkillWeek phải từ chối dời môn lớp thường đã có raw_score',
     );
 
-    const kiemCoDiem = keHoachMod.kiemDot(P.mbManager, { attemptId: emCoDiem.attemptId, kyNang: [{ skill: 'writing', periodId: target.id }] });
+    const kiemCoDiem = truocNgayDemo(() => keHoachMod.kiemDot(P.mbManager, { attemptId: emCoDiem.attemptId, kyNang: [{ skill: 'writing', periodId: target.id }] }));
     assert(kiemCoDiem.bai[0].ghiChu === 'giu' && kiemCoDiem.bai[0].cau === 'đã có điểm', `Em đã có điểm phải 'giu', đang ra ${JSON.stringify(kiemCoDiem)}`);
-    const luuCoDiem = keHoachMod.luuDot(P.mbManager, { attemptId: emCoDiem.attemptId, kyNang: [{ skill: 'writing', periodId: target.id }], force: true });
+    const luuCoDiem = truocNgayDemo(() => keHoachMod.luuDot(P.mbManager, { attemptId: emCoDiem.attemptId, kyNang: [{ skill: 'writing', periodId: target.id }], force: true }));
     assert(luuCoDiem.doi.length === 0, 'Em đã có điểm mà luuDot vẫn đổi');
     const rowWCoDiem = conn.prepare(`SELECT planned_period_id FROM attempt_skills WHERE attempt_id=? AND skill='writing'`)
       .get(emCoDiem.attemptId) as any;
     assert(rowWCoDiem.planned_period_id !== target.id, 'Em đã có điểm mà W vẫn bị đổi tuần');
 
     const lNow = conn.prepare(`SELECT planned_period_id p FROM attempt_skills WHERE attempt_id=? AND skill='listening'`).get(emMove.attemptId) as any;
-    const ket = keHoachMod.luuDot(P.mbManager, { attemptId: emMove.attemptId, kyNang: [{ skill: 'writing', periodId: target.id }], force: true, reason: 'PR-XLMT: tuần thi đã bắt đầu cần lý do' });
+    const ket = truocNgayDemo(() => keHoachMod.luuDot(P.mbManager, { attemptId: emMove.attemptId, kyNang: [{ skill: 'writing', periodId: target.id }], force: true, reason: 'PR-XLMT: tuần thi đã bắt đầu cần lý do' }));
     assert(ket.doi.join() === 'writing', `Chỉ W của em này được đổi, đang ra ${JSON.stringify(ket)}`);
     const rowW = conn.prepare(`SELECT planned_period_id FROM attempt_skills WHERE attempt_id=? AND skill='writing'`)
       .get(emMove.attemptId) as any;
@@ -735,7 +746,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     ).get(mbClass) as any;
     assert(inside, 'Seed thiếu HV đang học ở MB FT 101 để kiểm lọc studentIds');
 
-    const attemptNo = 91; // số MT ảo, chắc chắn chưa em nào có, tránh đụng lịch thật
+    const attemptNo = 8; // PR-XLMT: trần MT8 (T37) — số cao nhất hợp lệ, không em seed nào có, tránh đụng lịch thật
     const far = week.ensurePeriod('2029-08-06'); // Thứ Hai, xa mọi lịch thật
 
     const xt = keHoachMod.xepHangLoat(P.mbManager, {
@@ -986,7 +997,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     const sA = tuanCua(emA.attemptId, 'speaking').w as string;
     const sB = tuanCua(emB.attemptId, 'speaking').w as string;
     const target = week.ensurePeriod(addDays(sA, -7));
-    keHoachMod.luuDot(P.mbManager, { attemptId: emA.attemptId, force: true, reason: 'PR-XLMT: tuần thi đã bắt đầu cần lý do', kyNang: [{ skill: 'speaking', periodId: target.id }] });
+    truocNgayDemo(() => keHoachMod.luuDot(P.mbManager, { attemptId: emA.attemptId, force: true, reason: 'PR-XLMT: tuần thi đã bắt đầu cần lý do', kyNang: [{ skill: 'speaking', periodId: target.id }] }));
     assert(tuanCua(emA.attemptId, 'speaking').w === target.weekStart, 'S của em A phải đổi');
     assert(tuanCua(emB.attemptId, 'speaking').w === sB, 'S của em B (cùng lớp) phải giữ nguyên');
 

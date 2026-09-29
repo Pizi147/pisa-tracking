@@ -579,6 +579,10 @@ api.post('/ke-hoach-test/hang-loat', requireAuth, wrap((req) => {
     classId, attemptNo: toInt(req.body?.attemptNo) ?? undefined, kind: req.body?.kind || undefined,
     studentIds: Array.isArray(req.body?.studentIds) ? req.body.studentIds.map((x: any) => toInt(x)).filter(Boolean) : [],
     tuan: tuanTheoKyNang(req.body?.tuan), force: !!req.body?.force, xemTruoc: !!req.body?.xemTruoc,
+    /* PR-XLMT (K4-17, T37): đợt riêng từng em (Quản lý bấm chip), kỹ năng cho thi lại, lý do. */
+    dotTheoEm: req.body?.dotTheoEm && typeof req.body.dotTheoEm === 'object' ? req.body.dotTheoEm : undefined,
+    thiLai: req.body?.thiLai && typeof req.body.thiLai === 'object' ? req.body.thiLai : undefined,
+    lyDo: typeof req.body?.lyDo === 'string' ? req.body.lyDo : null,
   });
 }));
 
