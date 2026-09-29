@@ -473,5 +473,16 @@ audit, số đo Turso (Task 7), Task 8 đã/chưa, 🛑 đã hỏi. -->
   Phép (2)(d) đo: **MB một tuần 8 câu / 1 lượt · MB MT1–MT8 8 câu / 525 lượt** (bằng nhau, ≤ 8; 1 câu là `demoToday()` — gọi một lần, không theo dòng).
   **Dữ liệu demo lệch giả định kế hoạch:** GVCN `Trần Ngọc Hà` là GVCN của **cả** `MB FT 101` và `MB FOU 12` → `P.coreTeacher` = `P.normalCoreTeacher`; phép Task 3
   "GVCN lớp FT hỏi khung thường → 0 lượt" đổi thành "…kèm lọc lớp MB FT 101 → 0 lượt". GVBM `P.subjectTeacher`: phép kiểm không giả định người đó không kiêm GVCN lớp khác.
+- **Task 3:** khung thường xong ở Task 1–2 (cùng `duLieuXuatMt`); phép (3) thêm ở Task 3. Demo có sheet `FOU · Giữa–Cuối khoá` và `PREFOU · Giữa–Cuối khoá` (một cột `Tổng hợp %`).
+- **Task 4 — clarify (trước → sau):** "Không chọn = mọi chi nhánh trong phạm vi của bạn" → "Để trống: xuất mọi chi nhánh bạn được xem." (lớp tương tự) · "Điều kiện cộng dồn: chi nhánh × lớp × thời gian." ("cộng dồn" khó hiểu)
+  → "Lượt phải khớp cả chi nhánh, lớp và thời gian đã chọn. Mỗi lượt tính vào tuần thi sớm nhất của nó." · "Không có lượt nào khớp — đổi thời gian hoặc chi nhánh." → "… — mở rộng thời gian hoặc bỏ bớt chi nhánh, lớp."
+  · thêm dòng nói rõ "Mọi lượt"/"Chỉ lượt đủ điểm" và "Cột trong tệp: …" · toast "Đã xuất n lượt — tệp {tên}" · câu lỗi 104 tuần/24 tháng có cách sửa ("rút ngắn khoảng thời gian").
+  **layout** (Playwright kênh Chrome, Quản lý Vy): 1440 px ba khối thẳng cột, xem trước không đè nút; 375 px không cuộn ngang (scrollWidth = 375), dòng đếm nằm ngay trên nút, nút ≥ 44 px. Không cần sửa bố cục.
+  Ngăn dùng `useLoiForm` (phép N1 (7) bắt mọi form `KhungPanel`): lỗi thời gian hiện ngay khi xảy ra. Nhãn "Lớp" của `TimLop` ẩn (`sr-only`) vì trùng nhãn khối.
+- **Task 4/5 — dữ liệu demo lệch giả định:** `USER.GVBM` của bộ đo tốc độ (`subjectOnlyTeacherOf('MB FT 101')`) kiêm GVCN lớp khác nên xem trước cho người đó là **200** (xuất được lớp GVCN của họ), không 403 như kế hoạch dòng 328 ghi
+  `maChuDich: { GVBM: 403 }` → bỏ vai GVBM khỏi `DUONG_DO`; 403 của GVBM thuần (Phạm Thu Trang) kiểm ở `prXuat.tests.ts`. Tên tệp: phạm vi chỉ có một chi nhánh (Quản lý, GVCN) thì tên chi nhánh vào tên tệp (`Pisa-Tracking_MT_Monbay_…`), không "tat-ca".
+- **Task 5 — số đo tốc độ:** xem trước `GET /xuat-mt/xem-truoc` (MT1–MT8): QL/QT/GVCN **16 câu**, khung thường (GVCN_THUONG) **19 câu**, **không đổi sau khi nhân dữ liệu ×3** (bảng "trước → sau" không có dòng nào của đường này) → TRAN 26/26/26/29.
+  `POST /xuat-mt` cả chi nhánh MB, MT1–MT8, cột đầy đủ, sau nhân dữ liệu: **16 câu / 550 lượt / 146 KB** (gồm ~8 câu của lớp HTTP + 1 `writeAudit`) → `TRAN_GHI_LO.xuatMtChiNhanh` = 26. Phép (2)(d) ở mức hàm: 8 câu cho cả 1 lượt và 525 lượt.
+  Số phép: 1722 (mốc B) → **1739** + 25 tốc độ (24 + 1 phép POST xuất).
 
 > **Chủ sản phẩm chốt 30/09:** GVBM **không** xuất Excel — chỉ GVCN, Quản lý, Quản trị. Lượt rải hai tuần: tính theo tuần bắt đầu thi (tự quyết theo khuyến nghị).

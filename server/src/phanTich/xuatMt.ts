@@ -219,7 +219,9 @@ export function duLieuXuatMt(p: Principal, f: BoLocXuatMt, toiDa = XUAT_TOI_DA_L
     for (const ct of [...theoCt.keys()].sort()) sheets.push({ ten: tenSheetThuong(ct), aoa: bangThuong(theoCt.get(ct)!, f.cot) });
   }
 
-  const ten = { chiNhanh: f.chiNhanh.map((id) => phamVi.chiNhanh.find((c) => c.id === id)!.ten), lop: lopChon.map((l) => l!.ma) };
+  /* Không chọn chi nhánh mà phạm vi chỉ có MỘT chi nhánh (Quản lý, GVCN): tên chi nhánh đó vào tên tệp và bộ lọc — "Monbay", không "mọi chi nhánh". */
+  const cnTen = f.chiNhanh.length ? f.chiNhanh.map((id) => phamVi.chiNhanh.find((c) => c.id === id)!.ten) : phamVi.chiNhanh.length === 1 ? [phamVi.chiNhanh[0].ten] : [];
+  const ten = { chiNhanh: cnTen, lop: lopChon.map((l) => l!.ma) };
   const moTa = moTaBoLoc(f, ten);
   sheets.push({ ten: 'Bộ lọc đã dùng', aoa: bangBoLoc({ khung: f.khung, nguoiXuat: p.fullName, luc, moTa, soLuot: soLuot.size }) });
   return {

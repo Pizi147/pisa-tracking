@@ -143,6 +143,7 @@ async function mayChu(t: YThucTestKit) {
   const skillSchedule = await import('../fasttrack/skillSchedule.ts');
   const { ensurePeriod } = await import('../platform/week.ts');
   const { navOf } = await import('../platform/nav.ts');
+  const { loadPrincipal } = await import('../permissions.ts');
   type BoLoc = import('../../../shared/domain/xuatMt.ts').BoLocXuatMt;
 
   const TAT_CA_DOT = ['mt:1', 'mt:2', 'mt:3', 'mt:4', 'mt:5', 'mt:6', 'mt:7', 'mt:8'];
@@ -183,6 +184,14 @@ async function mayChu(t: YThucTestKit) {
       assert(e?.status === 403 && /Quản lý, Quản trị và GVCN/.test(e.message), String(e?.message));
     }
     assert(navOf(P.coreTeacher).xuatMt && navOf(P.mbManager).xuatMt && navOf(P.admin).xuatMt, 'GVCN, QL, Quản trị có nút');
+    /* GVBM thuần (không GVCN lớp nào — bộ demo: Phạm Thu Trang): không nút, mọi lời gọi 403 câu tiếng Việt. */
+    const thuan = conn.prepare(`SELECT DISTINCT user_id AS id FROM teacher_assignments WHERE skill IS NOT NULL AND status = 'active'
+      AND user_id NOT IN (SELECT user_id FROM teacher_assignments WHERE is_core = 1) LIMIT 1`).get() as any;
+    assert(thuan, 'demo thiếu GVBM thuần');
+    const gvbm = loadPrincipal(thuan.id);
+    assert(!navOf(gvbm).xuatMt && !xm.coPhamViXuat(xm.phamViXuatMt(gvbm)), 'GVBM thuần không có phạm vi xuất');
+    const e403 = loi(() => xm.duLieuXuatMt(gvbm, loc()));
+    assert(e403?.status === 403 && /Quản lý, Quản trị và GVCN/.test(e403.message), String(e403?.message));
   });
 
   check('PR-XUAT (2) · tuần của lượt = tuần SỚM NHẤT của kỹ năng phải thi, khác planned_period_id (tuần hoàn tất, muộn nhất) (K4-35b)', () => {
@@ -287,7 +296,7 @@ async function mayChu(t: YThucTestKit) {
     assert(dong.every((x) => x[4] === 'Giữa khoá' || x[4] === 'Cuối khoá'), 'cột Bài');
     assert(!JSON.stringify(r.sheets).includes('SOS') && !JSON.stringify(r.sheets).includes('Overall'), 'không tiêu đề/ô nào chứa SOS hay Overall');
     assert(dong.some((x) => typeof x[tieuDe.indexOf('% tổng')] === 'number') && dong.some((x) => x[tieuDe.indexOf('% tổng')] === null), '% tổng: số khi đủ điểm, trống khi thiếu');
-    assert(r.tenTep === 'Pisa-Tracking_Test-lop-thuong_tat-ca_Giua-khoa-Cuoi-khoa.xlsx', r.tenTep);
+    assert(r.tenTep === 'Pisa-Tracking_Test-lop-thuong_Monbay_Giua-khoa-Cuoi-khoa.xlsx', r.tenTep);
   });
 
   check('PR-XUAT (3) · khung thường + đợt MT → 400 câu tiếng Việt; GVCN lớp FT lọc lớp FT hỏi khung thường → 0 lượt, không lỗi; Pre FOU đúng một cột "Tổng hợp %"', () => {

@@ -778,6 +778,16 @@ await checkAsync(`PR-S3F · Công việc QL (nguoi=tat-ca) với 30 PA "đến l
 console.log('\nBảng đo (vai · url → mã HTTP · số câu SQL):');
 for (const dong of bangDo) console.log(`  ${dong}`);
 
+await checkAsync(`PR-XUAT · Xuất Excel cả chi nhánh MB, MT1–MT8, cột đầy đủ (POST /xuat-mt) ≤ ${TRAN_GHI_LO.xuatMtChiNhanh} câu SQL, phản hồi < 6 MB`, async () => {
+  const mb = (conn.prepare(`SELECT id FROM branches WHERE code = 'MB'`).get() as any).id as number;
+  const r = await doGhi('QL', '/xuat-mt', { chiNhanh: [mb], tg: 'dot', dot: ['mt:1', 'mt:2', 'mt:3', 'mt:4', 'mt:5', 'mt:6', 'mt:7', 'mt:8'], cot: 'day-du' });
+  assert(r.status === 200 && r.json.dem.luot > 0 && r.json.sheets[0].aoa.length === r.json.dem.luot + 1, `Xuất phải trả đủ dòng: ${r.status} ${JSON.stringify(r.json).slice(0, 200)}`);
+  const kb = Math.round(JSON.stringify(r.json).length / 1024);
+  console.log(`      (đo: ${r.json.dem.luot} lượt, ${r.n} câu, ${kb} KB)`);
+  assert(kb < 6 * 1024, `${kb} KB ≥ 6 MB (trần Netlify)`);
+  assert(r.n <= TRAN_GHI_LO.xuatMtChiNhanh, `${r.n} câu > trần ${TRAN_GHI_LO.xuatMtChiNhanh}`);
+});
+
 console.log('');
 console.log('='.repeat(60));
 if (failures.length === 0) {
