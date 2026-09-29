@@ -1,3 +1,4 @@
+import type { NhanYThucEm } from '@shared/domain/index.ts';
 import { Link } from 'react-router-dom';
 import { DauDuoi } from '../../ui/Nhan.tsx';
 import { useApi } from '../../lib/useApi.ts';
@@ -17,7 +18,7 @@ type LuotThuong = {
 type DongThuong = {
   id: number; studentCode: string; fullName: string; status: string; archived: boolean; skills: string[] | null;
   missing: { key: string; label: string; who: string }[];
-  canhBaoYThuc: { count: number; oldestAgeDays: number; message: string } | null;
+  canhBaoYThuc: NhanYThucEm | null;
   timeline: LuotThuong[];
   /** "Kết thúc vì" (Q18/Q22) — chỉ có ở bảng lớp ĐÃ KẾT THÚC. */
   ketThucVi?: string | null;

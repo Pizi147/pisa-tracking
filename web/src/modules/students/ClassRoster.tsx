@@ -1,3 +1,4 @@
+import type { NhanYThucEm } from '@shared/domain/index.ts';
 import { useState } from 'react';
 import { DauDuoi } from '../../ui/Nhan.tsx';
 import { Link } from 'react-router-dom';
@@ -49,7 +50,7 @@ type RosterRow = {
   latest: Timeline | null; next: Timeline | null; timeline: Timeline[];
   history: HistoryRow[];
   myPending: string[];
-  canhBaoYThuc: { count: number; oldestAgeDays: number; message: string } | null;
+  canhBaoYThuc: NhanYThucEm | null;
 };
 
 /** Bộ cột điểm của lớp Fast Track — mục 5.2: Target · Dự kiến thi · Mốc · OVR · L · R · W1 · W2 · W · S (W = Writing tổng, PR-N1 K2-10). */

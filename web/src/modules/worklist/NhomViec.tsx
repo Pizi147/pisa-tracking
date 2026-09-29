@@ -36,17 +36,8 @@ export function NhomViec({ nhom, nhac, soHien, moHet, onOpen, nutPhu }: {
         return (
           <KhoiNhom key={g.key} id={`nhom-${g.key}`} mo={dangMo} onMo={() => setMo((s) => ({ ...s, [g.key]: !dangMo }))}
             nhan={g.label} tieuDe={g.label} dem={g.n} phu={phu}>
-            {g.key === 'y-thuc' ? (
-              <ul className="list-none m-0 p-0 pb-2">
-                {nhac.map((l, i) => (
-                  <li key={`${l.classId}-${i}`} className="py-1.5 pr-3">
-                    <Link to={`/hoc-vien/lop/${l.classId}`} className="block no-underline text-xs text-slate-300 leading-snug hover:text-slate-100">
-                      <Nhan tone="muted">Nhắc</Nhan> {l.text}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            ) : (
+            {/* PR-YT4: nhóm Ý thức có việc thật (`yt_*`, có hạn) như mọi nhóm; dòng nhắc Phối hợp SOS nằm dưới. */}
+            {(
               <>
                 <ul className="list-none m-0 p-0 divide-y" style={{ borderColor: 'var(--line)' }}>
                   {g.items.slice(0, soHienNhom).map((it) => (
@@ -59,6 +50,17 @@ export function NhomViec({ nhom, nhac, soHien, moHet, onOpen, nutPhu }: {
                       Xem thêm {Math.min(soHien, g.items.length - soHienNhom)} việc
                     </button>
                   </div>
+                )}
+                {g.key === 'y-thuc' && nhac.length > 0 && (
+                  <ul className="list-none m-0 p-0 pb-2">
+                    {nhac.map((l, i) => (
+                      <li key={`${l.classId}-${i}`} className="py-1.5 pr-3">
+                        <Link to={`/hoc-vien/lop/${l.classId}`} className="block no-underline text-xs text-slate-300 leading-snug hover:text-slate-100">
+                          <Nhan tone="muted">Nhắc</Nhan> {l.text}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </>
             )}

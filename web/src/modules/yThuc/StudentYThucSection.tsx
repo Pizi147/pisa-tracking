@@ -1,211 +1,208 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { useSession } from '../../lib/session.tsx';
-import { BoLocDoan, Empty, ErrorState, Skeleton, Status } from '../../ui/ui.tsx';
+import { api, invalidate } from '../../lib/api.ts';
+import { BoLocDoan, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
-import { OSoNho } from '../../ui/OSoNho.tsx';
 import { DongThoiGian, type DongThoiGianMuc } from '../../ui/DongThoiGian.tsx';
-import { fmtDate } from '../../lib/format.ts';
-import {
-  VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, demTheoNhomViPham, trongChuKyHienTai, tuNgayTheoKhoang,
-  type ViolationCategory,
-} from '@shared/domain/index.ts';
+import { useToast } from '../../ui/Toast.tsx';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, ngay, type ViolationCategory } from '@shared/domain/index.ts';
 import { usePanelYThuc } from './panelYThuc.tsx';
 import { ChiTietViPham } from './ChiTietViPham.tsx';
 import { PhoiHopSosSection, type CoordTurn } from './PhoiHopSosSection.tsx';
-import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { NhanViPham } from './NhanViPham.tsx';
+import { ThangYThuc } from './ThangYThuc.tsx';
+import { DUONG_LAM_MOI_Y_THUC, type YThucHocVien } from './kieu.ts';
 
-type ViolationView = {
-  id: number; studentId: number; category: string; categoryLabel: string; skill: string | null; skillLabel: string | null;
-  classId: number | null; cycleId: number | null;
-  occurredOn: string; description: string; reportedBy: number; reportedByName: string | null; state: string; stateLabel: string;
-  ageDays: number; ageLabel: string;
-};
-type MeasureDetail = {
-  id: number; kindLabel: string; kind: string; statusLabel: string; status: string;
-  classId: number | null; cycleId: number | null;
-  violationCount: number; performedOn: string | null; createdAt: string;
-  violations: { category: string }[];
-};
-type ChuKy = { cycleId: number | null; classId: number | null };
-
-/** Nhãn "Vi phạm" trơn có màu — không dùng `Status` (có biểu tượng ▶ của "đang làm", chủ sản phẩm bỏ 22/09). */
-const NHAN_VI_PHAM = (
-  <span className="inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-medium whitespace-nowrap bg-sky-300/10 text-sky-200 border-sky-300/30">Vi phạm</span>
-);
-
-const RANGES = [
-  { key: 'all', label: 'Tất cả thời gian' },
-  { key: '7', label: '7 ngày' },
-  { key: '30', label: '30 ngày' },
-] as const;
+type Loc = 'tat-ca' | 'can' | 'cho' | 'xong';
+const MO_VP = new Set(['moi', 'can_xu_ly', 'qua_han']);
 
 /**
- * TAB `Ý THỨC & PHỐI HỢP` CỦA HỒ SƠ HỌC VIÊN — theo prototype v3 `thiet-ke/tham-khao/ho-so-hoc-vien-v3.html`
- * (spec PR-HV §4.3), kế hoạch PR-YT2 Task 7: đầu khối + nút `+ Ghi nhận vi phạm` (A2) · hai tab con (số lượt Phối hợp
- * chưa xong trên nhãn, A5) · ô số nhỏ ĐẾM THEO CHU KỲ HIỆN TẠI (Q14 — FT theo lộ trình, lớp thường theo khoá đang học;
- * dòng thời gian vẫn hiện ĐỦ, không lọc chu kỳ) · dòng thời gian LƯỚI mở TẠI CHỖ (YT-1, như hồ sơ lớp Task 6) · ô tick
- * để gom vi phạm thành phương án (A4). PA đang chuẩn bị `Mở` (sửa tại chỗ, Task 5) · PA đã thực hiện `Xem` (chỉ đọc).
+ * TAB `Ý THỨC & PHỐI HỢP` CỦA HỒ SƠ HỌC VIÊN (PR-YT4, K3 §4f, §7.5 "tầng 1 = thanh việc"). Từ trên xuống:
+ *   1. THANH VIỆC (chỉ khi có): bắt buộc · quá hạn (đã báo QL) · đề xuất chờ QL · đã duyệt chờ "Đã thực hiện" · vi phạm mới chưa xem.
+ *   2. Thang một dòng (+ Khai bậc / Đề xuất QL duyệt).
+ *   3. Bộ lọc MỘT hàng `Tất cả · Cần xử lý n · Chờ duyệt · Đã xử lý` + nhóm vi phạm; phạm vi mặc định = chuỗi thang này, `Xem cả lịch sử`.
+ *   4. Dòng thời gian TRỘN (vi phạm + lần xử lý, mới nhất trước) — lần xử lý là dòng đậm có vạch trái; vi phạm có nhãn + `Ghi nhận`;
+ *      KHÔNG ô tick (B7 cũ bỏ — K3-48).
+ *   5. Một dòng chữ phụ cuối đếm theo nhóm (thay năm ô đếm).
+ * Thông báo / việc mở `?tab=y-thuc&mo=xu-ly` → mở panel Xác nhận xử lý một lần.
  */
-export function StudentYThucSection({ studentId, studentName, canRecordViolation, canManageDiscipline, onGoAcademic, canhBao }: {
-  studentId: number; studentName: string; canRecordViolation: boolean; canManageDiscipline: boolean;
+export function StudentYThucSection({ studentId, onGoAcademic }: {
+  studentId: number;
   /** Đổi sang tab Học thuật của hồ sơ (link trong thẻ Phối hợp SOS). */
   onGoAcademic?: () => void;
-  /**
-   * CẢNH BÁO ĐÃ TẢI SẴN Ở TRANG CHA (AN-9) — trang cha cũng cần con số này cho chấm nhắc trên tab, nên chỉ
-   * MỘT nơi được gọi `/violation-warning`. Có truyền prop này (kể cả `null`) thì component KHÔNG tự gọi lại;
-   * không truyền (`undefined`) thì tự tải như cũ, cho chỗ khác chưa kịp gom lại vẫn chạy đúng.
-   */
-  canhBao?: { message: string } | null;
 }) {
-  const tuTaiCanhBao = canhBao === undefined;
-  const warn = useApi<{ message: string }>(tuTaiCanhBao ? `/students/${studentId}/violation-warning` : null, [studentId, tuTaiCanhBao]);
-  const warnMessage = tuTaiCanhBao ? warn.data?.message : canhBao?.message;
-  const violations = useApi<{ rows: ViolationView[]; chuKy: ChuKy }>(`/students/${studentId}/violations`, [studentId]);
-  const measures = useApi<{ rows: MeasureDetail[] }>(`/students/${studentId}/measures`, [studentId]);
-  const [sub, setSub] = useState<'violations' | 'coordination'>('violations');
-  /* Tải LUÔN (không đợi mở tab con) để nhãn `Phối hợp SOS {n}` có số ngay (A5). */
+  const { homNay } = useNgayNghiepVu();
+  const toast = useToast();
+  const [params, setParams] = useSearchParams();
+  const [phamVi, setPhamVi] = useState<'chuoi' | 'tat-ca'>('chuoi');
+  const { data: d, error, loading, reload } = useApi<YThucHocVien>(`/students/${studentId}/y-thuc${phamVi === 'tat-ca' ? '?pham-vi=tat-ca' : ''}`, [studentId, phamVi]);
+  const [sub, setSub] = useState<'vi-pham' | 'phoi-hop'>('vi-pham');
+  /* Tải luôn để nhãn `Phối hợp {n}` có số ngay (A5). */
   const coord = useApi<{ rows: CoordTurn[]; pendingCount: number }>(`/students/${studentId}/phoi-hop-sos`, [studentId]);
-
-  const [category, setCategory] = useState<string | null>(null);
-  const [range, setRange] = useState<'7' | '30' | 'all'>('all');
-  const [ticked, setTicked] = useState<Set<number>>(new Set());
-  /** YT-1/YT-13: một dòng vi phạm mở tại chỗ tại mọi thời điểm. */
+  const [loc, setLoc] = useState<Loc>('tat-ca');
+  const [nhomVp, setNhomVp] = useState('');
   const [moViPhamId, setMoViPhamId] = useState<number | null>(null);
-  const { homNay: today } = useNgayNghiepVu();
+  const { mo, panels } = usePanelYThuc({ onDone: reload });
 
-  const { mo, moPhuongAn, panels } = usePanelYThuc({
-    canManage: canManageDiscipline,
-    onDone: () => { setTicked(new Set()); reload(); },
+  useEffect(() => {
+    const moGi = params.get('mo');
+    if (!moGi) return;
+    if (moGi === 'xu-ly') mo({ loai: 'xu-ly', studentId });
+    const xl = Number(params.get('xl')) || null;
+    if (moGi === 'da-thuc-hien' && xl) mo({ loai: 'da-thuc-hien', id: xl });
+    const p = new URLSearchParams(params); p.delete('mo'); p.delete('xl');
+    setParams(p, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.get('mo'), studentId]);
+
+  if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
+  if (loading || !d) return <Skeleton rows={5} />;
+
+  const ghiNhan = async (ids: number[]) => {
+    try {
+      await api.post(`/students/${studentId}/y-thuc/ghi-nhan`, { violationIds: ids });
+      DUONG_LAM_MOI_Y_THUC.forEach((x) => invalidate(x));
+      toast.push('ok', `Đã ghi nhận ${ids.length} vi phạm — vẫn tính vào luật 3 vi phạm / 2 tuần.`);
+      reload();
+    } catch (e: any) { toast.push('error', e.message); }
+  };
+
+  const vpTheoId = new Map(d.viPham.map((v) => [v.id, v]));
+  const coGhiNhan = (id: number) => {
+    const v = vpTheoId.get(id);
+    return !!v && d.canManage && (v.trangThai === 'moi' || (v.trangThai === 'qua_han' && v.lyDoQuaHan === 'xem'));
+  };
+  const soCan = d.viPham.filter((v) => MO_VP.has(v.trangThai)).length;
+
+  const hopLoc = (x: (typeof d.dongThoiGian)[number]) => {
+    if (nhomVp && (x.loai !== 'vi-pham' || x.category !== nhomVp)) return false;
+    if (loc === 'tat-ca') return true;
+    if (x.loai === 'xu-ly') return loc === 'xong' ? x.status === 'done' : loc === 'cho' ? x.status === 'cho_duyet' || x.status === 'da_duyet' : false;
+    if (loc === 'can') return MO_VP.has(x.trangThai);
+    if (loc === 'cho') return x.trangThai === 'cho_duyet';
+    return x.trangThai === 'da_xu_ly';
+  };
+
+  const muc: DongThoiGianMuc[] = d.dongThoiGian.filter(hopLoc).map((x) => x.loai === 'xu-ly' ? {
+    key: `x${x.id}`, ngay: x.ngay, vach: true,
+    cot2: <span className="text-[11px] font-bold uppercase tracking-[.04em] text-slate-400">Xử lý</span>,
+    tieuDe: <span className="font-bold">{x.nhan}</span>,
+    dongPhu: [`${x.soViPham} vi phạm`, x.nguoi, x.soTep ? `${x.soTep} tệp` : null, x.status !== 'done' ? x.statusLabel : null].filter(Boolean).join(' · '),
+    cuoi: <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => mo({ loai: 'xem', id: x.id })}>Xem</button>,
+  } : {
+    key: `v${x.id}`, ngay: x.ngay,
+    cot2: <span className="text-[11px] text-slate-400">Vi phạm</span>,
+    tieuDe: x.moTa,
+    dongPhu: [x.nhom, x.mon, x.nguoiGhi ? `${x.nguoiGhi} ghi` : null].filter(Boolean).join(' · '),
+    cuoi: (
+      <span className="flex flex-wrap items-center justify-end gap-1.5">
+        <NhanViPham t={x.trangThai} nhan={x.nhanTrangThai} />
+        {coGhiNhan(x.id) && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => void ghiNhan([x.id])}
+          title="Đã xem, không cần xử lý — vẫn đếm vào luật 3 vi phạm / 2 tuần">Ghi nhận</button>}
+      </span>
+    ),
+    mo: moViPhamId === x.id,
+    onMo: () => setMoViPhamId((c) => (c === x.id ? null : x.id)),
+    chiTiet: <ChiTietViPham violationId={x.id} onSua={(vv) => mo({ loai: 'sua', v: vv })}
+      onDaXoa={() => { setMoViPhamId(null); reload(); }} onMoXuLy={(id) => mo({ loai: 'xem', id })} />,
   });
-
-  const cutoff = tuNgayTheoKhoang(today, range);
-
-  const reload = () => { violations.reload(); measures.reload(); if (tuTaiCanhBao) warn.reload(); coord.reload(); };
-
-  const vRows = violations.data?.rows ?? [];
-  const mRows = measures.data?.rows ?? [];
-  const chuKy: ChuKy = violations.data?.chuKy ?? { cycleId: null, classId: null };
-
-  /* Q14: Ô SỐ đếm theo chu kỳ HIỆN TẠI — FT theo lộ trình (`cycleId`), lớp thường theo khoá đang học (`classId`).
-     `preparing` (việc đang dở) giữ đếm HẾT, không lọc chu kỳ. Dòng thời gian bên dưới vẫn hiện ĐỦ, không lọc theo đây. */
-  const vRowsTrongKy = useMemo(() => vRows.filter((v) => trongChuKyHienTai({ cycleId: v.cycleId, classId: v.classId }, chuKy)), [vRows, chuKy]);
-  const mRowsTrongKy = useMemo(() => mRows.filter((m) => trongChuKyHienTai({ cycleId: m.cycleId, classId: m.classId }, chuKy)), [mRows, chuKy]);
-  const dem = useMemo(() => demTheoNhomViPham(vRowsTrongKy), [vRowsTrongKy]);
-  const preparing = mRows.filter((m) => m.status === 'preparing').length;
-  const lastWarning = ['warning_3', 'warning_2', 'warning_1'].find((k) => mRowsTrongKy.some((m) => m.kind === k && m.status === 'done'));
-  const ghiChuChuKy = chuKy.cycleId !== null ? 'Tính trong lộ trình hiện tại' : 'Tính trong khoá đang học';
-
-  const timeline = useMemo(() => {
-    type Row = { key: string; date: string; kind: 'vp' | 'pa'; v?: ViolationView; m?: MeasureDetail };
-    const rows: Row[] = [
-      ...vRows.map((v): Row => ({ key: `v${v.id}`, date: v.occurredOn, kind: 'vp', v })),
-      ...mRows.map((m): Row => ({ key: `m${m.id}`, date: m.performedOn ?? m.createdAt.slice(0, 10), kind: 'pa', m })),
-    ];
-    return rows
-      /* J7: lọc nhóm — dòng phương án vẫn hiện khi nó chứa ít nhất một vi phạm của nhóm đang lọc. */
-      .filter((r) => !category || (r.v ? r.v.category === category : (r.m?.violations ?? []).some((v) => v.category === category)))
-      .filter((r) => !cutoff || r.date >= cutoff)
-      .sort((a, b) => b.date.localeCompare(a.date));
-  }, [vRows, mRows, category, cutoff]);
-
-  const toggle = (id: number) => setTicked((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
-
-  const muc: DongThoiGianMuc[] = timeline.map((r) => {
-    if (r.v) {
-      const v = r.v;
-      return {
-        key: r.key, ngay: v.occurredOn,
-        chon: canManageDiscipline && v.state === 'unhandled'
-          ? { checked: ticked.has(v.id), onChange: () => toggle(v.id), nhanDoc: `Chọn vi phạm ${fmtDate(v.occurredOn)}` }
-          : null,
-        cot2: NHAN_VI_PHAM,
-        tieuDe: v.description,
-        dongPhu: [v.categoryLabel, v.skillLabel, v.reportedByName, v.state !== 'unhandled' ? v.stateLabel : null,
-          v.ageLabel ? `${v.ageDays} ngày` : null].filter(Boolean).join(' · '),
-        mo: moViPhamId === v.id,
-        onMo: () => setMoViPhamId((cur) => (cur === v.id ? null : v.id)),
-        chiTiet: (
-          <ChiTietViPham violationId={v.id} canManage={canManageDiscipline}
-            onSua={(vv) => mo({ loai: 'sua', v: vv })}
-            onDaXoa={() => { setMoViPhamId(null); reload(); }}
-            onMoPhuongAn={moPhuongAn} />
-        ),
-      };
-    }
-    const m = r.m!;
-    const dangChuanBi = m.status === 'preparing';
-    return {
-      key: r.key, ngay: r.date, chon: null,
-      cot2: dangChuanBi ? <Status kind="waiting">Phương án</Status> : <Status kind="done">Phương án</Status>,
-      tieuDe: m.kindLabel,
-      dongPhu: `${m.statusLabel} · gồm ${m.violationCount} vi phạm`,
-      cuoi: (
-        <button type="button" className={dangChuanBi && canManageDiscipline ? 'btn btn-sm btn-primary' : 'btn btn-sm'} onClick={() => moPhuongAn(m)}>
-          {dangChuanBi && canManageDiscipline ? 'Mở' : 'Xem'}
-        </button>
-      ),
-    };
-  });
-
-  if (violations.error) return <ErrorState message={violations.error.message} onRetry={reload} />;
-  if (violations.loading || measures.loading) return <Skeleton rows={4} />;
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h2 className="text-base font-semibold text-slate-100 m-0">Ý thức & Phối hợp</h2>
-          <p className="text-xs text-slate-500 m-0 mt-0.5">Lịch sử của riêng học viên này.</p>
-        </div>
-        {canRecordViolation && (
-          <button className="btn btn-sm btn-primary" onClick={() => mo({ loai: 'ghi', studentId, studentName })}>+ Ghi nhận vi phạm</button>
-        )}
+      <div className="flex flex-wrap items-center gap-2">
+        <h2 className="m-0 flex-1 text-sm font-semibold text-slate-200">Ý thức & Phối hợp</h2>
+        {d.canRecord && <button type="button" className="btn btn-sm btn-primary" onClick={() => mo({ loai: 'ghi', studentId, studentName: d.ten })}>+ Ghi vi phạm</button>}
       </div>
+      <HangTab cap="con" ariaLabel="Ý thức & Phối hợp của học viên" value={sub} onChange={setSub}
+        tabs={[{ key: 'vi-pham', label: 'Vi phạm & xử lý', so: soCan }, { key: 'phoi-hop', label: 'Phối hợp', so: coord.data?.pendingCount ?? 0 }]} />
 
-      <HangTab cap="con" ariaLabel="Ý thức & Phối hợp" value={sub} onChange={setSub}
-        tabs={[
-          { key: 'violations', label: 'Vi phạm & xử lý' },
-          { key: 'coordination', label: 'Phối hợp SOS', so: coord.data?.pendingCount ?? 0 },
-        ]} />
-
-      {sub === 'violations' ? (
+      {sub === 'vi-pham' && (
         <>
-          {warnMessage && <p className="m-0 text-xs text-soon">{warnMessage}</p>}
-
-          {/* A3 — ô số nhỏ: Vi phạm · từng nhóm có số > 0 · PA đang chuẩn bị (đếm hết) · Thư cảnh cáo gần nhất — bốn ô đầu đếm theo chu kỳ (Q14). */}
-          <div className="flex flex-wrap items-center gap-2">
-            <OSoNho nhan="Vi phạm" so={dem.tong} />
-            {dem.nhom.map((g) => <OSoNho key={g.category} nhan={g.label} so={g.n} />)}
-            {preparing > 0 && <OSoNho nhan="PA đang chuẩn bị" so={preparing} tone="warn" />}
-            {lastWarning && <OSoNho nhan="Thư cảnh cáo" so={`lần ${lastWarning.slice(-1)}`} />}
-            <span className="text-slate-500 text-xs cursor-help" aria-label={ghiChuChuKy} title={ghiChuChuKy}>ⓘ</span>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <BoLocDoan ariaLabel="Nhóm vi phạm" value={category ?? ''} onChange={(k) => setCategory(k || null)}
-              muc={[{ key: '', nhan: 'Tất cả' }, ...VIOLATION_CATEGORIES.map((c) => ({ key: c as string, nhan: VIOLATION_CATEGORY_LABEL[c as ViolationCategory] }))]} />
-            <BoLocDoan ariaLabel="Khoảng thời gian" value={range} onChange={setRange}
-              muc={RANGES.map((r) => ({ key: r.key, nhan: r.label }))} />
-          </div>
-
-          <DongThoiGian coCotChon={canManageDiscipline} muc={muc} rong={<Empty title="Chưa có gì trong khoảng này" />} />
-
-          {canManageDiscipline && ticked.size > 0 && (
-            <button className="btn btn-sm btn-primary" onClick={() => mo({
-              loai: 'tao-pa', studentId, studentName,
-              violations: vRows.filter((v) => ticked.has(v.id)).map((v) => ({ id: v.id, occurredOn: v.occurredOn, categoryLabel: v.categoryLabel, description: v.description })),
-            })}>
-              Tạo phương án từ {ticked.size} vi phạm
-            </button>
+          <ThanhViec d={d} homNay={homNay}
+            onXuLy={() => mo({ loai: 'xu-ly', studentId })}
+            onDaThucHien={(id) => mo({ loai: 'da-thuc-hien', id })}
+            onGhiNhan={() => void ghiNhan(d.viPham.filter((v) => coGhiNhan(v.id)).map((v) => v.id))} />
+          <ThangYThuc d={d} homNay={homNay}
+            onKhai={d.canManage ? () => mo({ loai: 'khai', studentId }) : undefined}
+            onDeXuat={d.canManage ? () => mo({ loai: 'xu-ly', studentId, cheDo: 'de-xuat' }) : undefined} />
+          {d.canSuaKhai && d.khai && (
+            <p className="m-0 text-[11px] text-slate-500">
+              Đã khai {d.khai.bac > 0 ? `bậc ${d.khai.bac}` : ''} ngày {ngay(d.khai.luc, homNay)}.{' '}
+              <button type="button" className="link inline-flex items-center appearance-none border-0 bg-transparent p-0 min-h-[44px] sm:min-h-0" onClick={() => mo({ loai: 'khai', studentId, sua: true })}>Sửa bậc đã khai</button>
+            </p>
           )}
+
+          <div className="flex flex-wrap items-center gap-2">
+            <BoLocDoan ariaLabel="Lọc dòng thời gian" value={loc} onChange={setLoc}
+              muc={[{ key: 'tat-ca', nhan: 'Tất cả' }, { key: 'can', nhan: 'Cần xử lý', so: soCan || null }, { key: 'cho', nhan: 'Chờ duyệt' }, { key: 'xong', nhan: 'Đã xử lý' }]} />
+            <select className="field ml-auto w-auto py-1 text-xs" aria-label="Nhóm vi phạm" value={nhomVp} onChange={(e) => setNhomVp(e.target.value)}>
+              <option value="">Mọi nhóm</option>
+              {VIOLATION_CATEGORIES.map((c) => <option key={c} value={c}>{VIOLATION_CATEGORY_LABEL[c as ViolationCategory]}</option>)}
+            </select>
+          </div>
+
+          <DongThoiGian bien="day-du" muc={muc}
+            rong={<Empty title={loc === 'tat-ca' && !nhomVp ? 'Chưa có vi phạm nào' : 'Không có dòng nào khớp bộ lọc'} />} />
+
+          <p className="m-0 flex flex-wrap items-center gap-x-2 text-[11.5px] text-slate-500">
+            <span>
+              {phamVi === 'chuoi' ? (d.chuoi.nhan === 'lớp thường' ? 'Các khoá lớp thường này' : `Lộ trình ${d.chuoi.nhan}`) : 'Cả lịch sử'}:
+              {' '}{d.demCuoi.tong} vi phạm{d.demCuoi.theoNhom.length ? ` · ${d.demCuoi.theoNhom.map((x) => `${x.so} ${x.nhom}`).join(' · ')}` : ''}
+            </span>
+            <button type="button" className="link inline-flex items-center appearance-none border-0 bg-transparent p-0 min-h-[44px] sm:min-h-0" onClick={() => setPhamVi((v) => (v === 'chuoi' ? 'tat-ca' : 'chuoi'))}>
+              {phamVi === 'chuoi' ? 'Xem cả lịch sử' : 'Chỉ chuỗi hiện tại'}
+            </button>
+          </p>
         </>
-      ) : (
-        <PhoiHopSosSection turns={coord.data?.rows ?? null} loading={coord.loading} cot1="luot"
-          onGoAcademic={onGoAcademic} onChanged={() => coord.reload()} />
+      )}
+
+      {sub === 'phoi-hop' && (
+        <PhoiHopSosSection turns={coord.data?.rows ?? null} loading={coord.loading} cot1="luot" onGoAcademic={onGoAcademic}
+          onChanged={() => { coord.reload(); }} />
       )}
 
       {panels}
+    </div>
+  );
+}
+
+/** THANH VIỆC — tầng 1 của tab HV (§7.5): MỘT câu việc + MỘT nút. Không có việc thì không vẽ. */
+function ThanhViec({ d, homNay, onXuLy, onDaThucHien, onGhiNhan }: {
+  d: YThucHocVien; homNay: string; onXuLy: () => void; onDaThucHien: (id: number) => void; onGhiNhan: () => void;
+}) {
+  const ke = d.keTiep && !d.keTiep.canQl ? `Xác nhận xử lý · ${d.keTiep.nhan}` : 'Đề xuất QL duyệt';
+  const nut = (nhan: string, onClick: () => void) => (d.canManage
+    ? <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={onClick}>{nhan}</button> : null);
+  let tone = '';
+  let cau: ReactNode = null;
+  let hanh: ReactNode = null;
+  if (d.nhom === 'qua_han' && d.soBatBuoc > 0) {
+    tone = 'border-late-line bg-late-bg text-late';
+    cau = <>{d.soBatBuoc} vi phạm bắt buộc xử lý · quá hạn {d.quaHanNgay ?? ''} ngày{d.daBaoQl ? ' · đã báo QL' : ''}</>;
+    hanh = nut(ke, onXuLy);
+  } else if (d.deXuat?.status === 'da_duyet') {
+    tone = d.deXuat.quaHan ? 'border-late-line bg-late-bg text-late' : 'border-wait-line bg-wait-bg text-wait';
+    cau = <>Đã duyệt {d.deXuat.nhan}{d.deXuat.han ? ` · ghi "Đã thực hiện" trước ${ngay(d.deXuat.han, homNay)}` : ''}{d.deXuat.quaHan && d.daBaoQl ? ' · đã báo QL' : ''}</>;
+    hanh = nut('Đánh dấu đã thực hiện', () => onDaThucHien(d.deXuat!.id));
+  } else if (d.soBatBuoc > 0) {
+    tone = 'border-soon-line bg-soon-bg text-soon';
+    cau = <>{d.soBatBuoc} vi phạm trong tuần này + tuần trước → bắt buộc xử lý{d.han ? ` · hạn ${ngay(d.han, homNay)}` : ''}</>;
+    hanh = nut(ke, onXuLy);
+  } else if (d.deXuat?.status === 'cho_duyet') {
+    tone = 'border-wait-line bg-wait-bg text-wait';
+    cau = <>Đề xuất {d.deXuat.nhan} · chờ QL{d.deXuat.han ? ` · hạn ${ngay(d.deXuat.han, homNay)}` : ''}</>;
+  } else if (d.soMoi > 0) {
+    tone = d.nhom === 'qua_han' ? 'border-late-line bg-late-bg text-late' : 'border-[color:var(--line-strong)] text-slate-300';
+    cau = <>{d.soMoi} vi phạm mới chưa xem{d.nhom === 'qua_han' ? ` · quá hạn${d.daBaoQl ? ' · đã báo QL' : ''}` : d.hanXem ? ` · hạn ${ngay(d.hanXem, homNay)}` : ''}</>;
+    hanh = d.canManage ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onGhiNhan}>Ghi nhận {d.soMoi}</button> : null;
+  }
+  if (!cau) return null;
+  return (
+    <div className={`flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2 ${tone}`} role="status">
+      <p className="m-0 min-w-0 flex-1 basis-full text-sm font-semibold sm:basis-0">{cau}</p>
+      {hanh}
     </div>
   );
 }

@@ -1,5 +1,10 @@
 # Ý thức — Vi phạm và Biện pháp xử lý
 
+> **v4 thay bản này (29/09/2026, PR-YT4).** Từ PR-YT4, luật Ý thức theo đặc tả `docs/superpowers/specs/2026-09-27-nang-cap-sau-deploy-design.md`
+> §5.4–§5.8: Ghi nhận / Xác nhận xử lý, thang bắt buộc (Report 1 → … → WL 3), 3 vi phạm / 2 tuần phải xử lý trong 5 ngày, QL duyệt
+> WL 3 · Meeting CX/GĐCN · Đình chỉ · Khác, Khai bậc. Chín loại biện pháp, "Đang chuẩn bị", chuỗi Thư cảnh cáo và cảnh báo quá 5 ngày
+> dưới đây **hết hiệu lực** — giữ làm lịch sử.
+
 > **⚠ BẢN v3 (tối 21/09/2026) THAY MỘT PHẦN FILE NÀY** — đọc `thiet-ke/SOS_VA_PHOI_HOP_V3.md` mục 1 trước.
 > Hết hiệu lực: V11–V14 (đánh dấu không chính xác → **sửa/xoá thẳng**), `violation_count_at_confirm`,
 > trạng thái `Không còn hiệu lực`, bố cục ba khu vực §7.3 (→ **Theo học sinh / Theo thời gian**), tên tab `Ý thức`

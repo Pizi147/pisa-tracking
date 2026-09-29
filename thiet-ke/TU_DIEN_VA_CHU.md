@@ -129,6 +129,25 @@ Không vừa ghi toàn lớp vừa dẫn tới việc riêng (RB 17.4, design pl
 
 ---
 
+## 6.0. Ý thức v4 — từ vựng chốt 29/09/2026 (PR-YT4) — THẮNG mục 6 khi mâu thuẫn
+
+Nguồn: đặc tả `docs/superpowers/specs/2026-09-27-nang-cap-sau-deploy-design.md` §5.4–§5.8. Mục 6 dưới đây là từ vựng v3 (lịch sử):
+"Phương án (PA)", "Đang chuẩn bị", "Thư cảnh cáo", "Đánh dấu không chính xác", cảnh báo "⚠ quá 5 ngày" **không còn** trên web.
+
+| Khái niệm | Chữ dùng trên web | Tuyệt đối không viết |
+|---|---|---|
+| Nút ghi một vi phạm (menu dòng, tab lớp, tab HV) | `+ Ghi vi phạm` · tiêu đề panel `Ghi vi phạm` | "Ghi nhận vi phạm" |
+| GVCN đã xem, không cần xử lý | `Ghi nhận` (nút) · `Đã ghi nhận · vẫn tính` (nhãn) | "bỏ qua", "đã đọc" |
+| GVCN xử lý một nhóm vi phạm theo thang | `Xác nhận xử lý · {bậc}` · một dòng thời gian gọi là `lần xử lý` | "biện pháp", "phương án", "PA" |
+| Thang xử lý | `Report 1 → Report 2 → WL 1 → Report 4 + Meeting CX/GĐCN → WL 2 → WL 3` · dòng thang `Thang (LT1)` / `Thang (lớp thường)` | "Thư cảnh cáo", "Warning" |
+| Loại cần QL duyệt | `Đề xuất QL duyệt` → `Gửi QL duyệt · trả lời trong 5 ngày` · sau duyệt `Đã thực hiện` | "xin phép", "trình" |
+| Em bị xử lý trước khi dùng web | `Khai bậc` (một lần) · QL `Sửa bậc đã khai` | "nhập lịch sử" |
+| Sáu nhãn của một vi phạm | `Mới` · `Đã ghi nhận` · `Cần xử lý` · `Quá hạn {n} ngày` · `Chờ QL duyệt` (hoặc `Đã duyệt · chờ thực hiện`) · `Đã xử lý · {bậc}` | "Chưa xử lý", "Đang chuẩn bị" |
+| 3 vi phạm / 2 tuần | `{n} vi phạm trong tuần này + tuần trước → bắt buộc xử lý · hạn {dd/mm}` | "cảnh báo", "⚠ quá 5 ngày" |
+| Loại hạn ở Việc của tôi | `xu-ly-vi-pham` → `Xử lý vi phạm · hạn {dd/mm}` | — |
+| Thẻ quá hạn ở hộp QL | `Báo lên` · `Ý thức quá hạn` | — |
+| Huy hiệu ở Học viên cần hỗ trợ | `Ý thức · Quá hạn` (cam) · `Ý thức · Cần xử lý` (vàng) | — |
+
 ## 6. Ý thức — từ vựng mới, chốt 21/09/2026
 
 Mô hình Case Ý thức bị bỏ. Nguồn: `NGUON-Rule-Y-thuc-2026-09-21.md`; đặc tả:

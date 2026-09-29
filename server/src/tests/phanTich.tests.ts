@@ -97,21 +97,6 @@ export async function runPhanTichTests(t: YThucTestKit) {
     eq(d.tuanTrungBinh([20, 22]), 3, '21 ngày = 3 tuần');
   });
 
-  check('UX4 · buocTiepTheo: đủ 5 nhánh Q14; laHvCanChuY', () => {
-    const b = (thuCaoNhat: 0 | 1 | 2 | 3, viPhamSauThu: number, viPham: number, chuaXuLy: number) =>
-      d.buocTiepTheo({ thuCaoNhat, viPhamSauThu, viPham, chuaXuLy });
-    eq(b(1, 1, 2, 0), 'sap-thu-2', 'Thư CC 1 + vi phạm sau thư → sắp lần 2');
-    eq(b(2, 2, 4, 0), 'sap-thu-3', 'Thư CC 2 + vi phạm sau thư → sắp lần 3');
-    eq(b(0, 0, 3, 1), 'sap-thu-1', 'chưa thư, ≥ 3 vi phạm, còn chưa xử lý → sắp lần 1');
-    eq(b(3, 1, 5, 0), 'da-thu-3', 'Thư CC 3 + vi phạm sau → đã lần 3');
-    eq(b(0, 0, 3, 0), 'theo-doi', 'chưa thư, ≥ 3 nhưng xử lý hết → theo dõi');
-    eq(b(1, 0, 2, 0), 'theo-doi', 'có thư, không vi phạm sau → theo dõi');
-    eq(d.BUOC_TIEP_LABEL['sap-thu-1'], 'Sắp Thư CC lần 1', 'nhãn');
-    eq(d.BUOC_TIEP_LABEL['theo-doi'], 'Theo dõi', 'nhãn');
-    assert(d.laHvCanChuY({ viPham: 3, viPhamSauThu: 0 }) && d.laHvCanChuY({ viPham: 1, viPhamSauThu: 1 }), 'đủ điều kiện');
-    assert(!d.laHvCanChuY({ viPham: 2, viPhamSauThu: 0 }), '2 vi phạm, không sau thư → không');
-  });
-
   check('UX4 · nhanSoVoiTruoc: +3/-1/0/null', () => {
     eq(d.nhanSoVoiTruoc(3), { chu: '↑3', tone: 'bad' }, '+3');
     eq(d.nhanSoVoiTruoc(-1), { chu: '↓1', tone: 'ok' }, '-1');
@@ -729,10 +714,12 @@ export async function runPhanTichTests(t: YThucTestKit) {
         tao.vp.push(id);
         return id;
       },
-      bp(sid: number, cid: number, kind: string, ngay: string, viIds: number[] = []): number {
+      bp(sid: number, cid: number, kind: string, ngay: string, viIds: number[] = [], status = 'done'): number {
+        /* PR-YT4: lần xử lý gắn lộ trình đang chạy của em — bậc đếm theo chuỗi thang. */
         const id = Number(conn.prepare(
-          `INSERT INTO discipline_measures (student_id, class_id, kind, status, performed_on, created_at, created_by) VALUES (?,?,?, 'done', ?, ?, ?)`,
-        ).run(sid, cid, kind, ngay, now, P.admin.userId).lastInsertRowid);
+          `INSERT INTO discipline_measures (student_id, cycle_id, class_id, kind, status, performed_on, created_at, created_by)
+           VALUES (?, (SELECT id FROM learning_cycles WHERE student_id = ? ORDER BY (status = 'active') DESC, seq DESC LIMIT 1), ?,?,?,?,?,?)`,
+        ).run(sid, sid, cid, kind, status, status === 'done' ? ngay : null, now, P.admin.userId).lastInsertRowid);
         tao.bp.push(id);
         for (const v of viIds) conn.prepare(`INSERT INTO measure_violations (measure_id, violation_id, added_by, added_at) VALUES (?,?,?,?)`).run(id, v, P.admin.userId, now);
         return id;
@@ -746,43 +733,36 @@ export async function runPhanTichTests(t: YThucTestKit) {
   const mocHv = () => {
     const kit = baiTapUx4(); const yt = dungYThuc();
     const a = kit.hv(CID_FT, 'ya'), b = kit.hv(CID_FT, 'yb'), c = kit.hv(CID_FT, 'yc'), dd = kit.hv(CID_FT, 'yd'), e = kit.hv(CID_FT, 'ye');
-    // a: 3 vi phạm, chưa xử lý, chưa thư → "Sắp Thư CC lần 1"
+    // PR-YT4 (K1-25): nhóm em của CỬA TRẠNG THÁI thay "bước tiếp theo · Thư CC".
+    // a: 3 vi phạm trong 2 tuần, chưa xử lý → Bắt buộc xử lý, bậc kế Report 1
     yt.vp(a, CID_FT, cong(TODAY, -3)); yt.vp(a, CID_FT, cong(TODAY, -2)); yt.vp(a, CID_FT, cong(TODAY, -1));
-    // b: đã Thư CC lần 1, rồi vi phạm tiếp → "Sắp Thư CC lần 2"
-    const b1 = yt.vp(b, CID_FT, cong(TODAY, -25)); yt.bp(b, CID_FT, 'warning_1', cong(TODAY, -20), [b1]); yt.vp(b, CID_FT, cong(TODAY, -5));
-    // c: 2 vi phạm → không đủ điều kiện
+    // b: đã Report 1, rồi một vi phạm Mới quá 5 ngày chưa ai xem → Quá hạn, bậc Report 1, bậc kế Report 2
+    const b1 = yt.vp(b, CID_FT, cong(TODAY, -25)); yt.bp(b, CID_FT, 'report_1', cong(TODAY, -20), [b1]); yt.vp(b, CID_FT, cong(TODAY, -10));
+    // c: 2 vi phạm mới → Mới, không vào danh sách
     yt.vp(c, CID_FT, cong(TODAY, -3)); yt.vp(c, CID_FT, cong(TODAY, -2));
-    // d: 3 vi phạm nhưng đã xử lý hết → "Theo dõi"
+    // d: 3 vi phạm đã xử lý hết → Đã xử lý, không vào danh sách
     const d1 = yt.vp(dd, CID_FT, cong(TODAY, -4)), d2 = yt.vp(dd, CID_FT, cong(TODAY, -3)), d3 = yt.vp(dd, CID_FT, cong(TODAY, -2));
-    yt.bp(dd, CID_FT, 'talk_short', cong(TODAY, -1), [d1, d2, d3]);
-    // e: đủ ba thư, rồi vi phạm tiếp → "Đã Thư CC lần 3"
-    const e1 = yt.vp(e, CID_FT, cong(TODAY, -40));
-    yt.bp(e, CID_FT, 'warning_1', cong(TODAY, -38), [e1]); yt.bp(e, CID_FT, 'warning_2', cong(TODAY, -30)); yt.bp(e, CID_FT, 'warning_3', cong(TODAY, -25));
-    yt.vp(e, CID_FT, cong(TODAY, -3));
+    yt.bp(dd, CID_FT, 'report_1', cong(TODAY, -1), [d1, d2, d3]);
+    // e: một đề xuất Đình chỉ đang chờ QL → Chờ QL duyệt
+    const e1 = yt.vp(e, CID_FT, cong(TODAY, -3));
+    yt.bp(e, CID_FT, 'suspension', cong(TODAY, -2), [e1], 'cho_duyet');
     return { kit, yt, a, b, c, dd, e, don: () => { yt.don(); kit.don(); } };
   };
 
-  check('UX4 · Ý thức: mọi HV cần chú ý thoả laHvCanChuY; buocTiep khớp Q14; xếp "Sắp…" trước rồi chưa xử lý', () => {
+  check('UX4 · (PR-YT4 K1-25) Ý thức: HV cần chú ý = Quá hạn · Bắt buộc xử lý · Chờ QL duyệt (cửa trạng thái); cột Bậc hiện tại / Bậc kế; Quá hạn đứng đầu', () => {
     const m = mocHv();
     try {
       const kq = yThucSvc.yThucPhanTich(P.admin, FY());
       const dong = (id: number) => kq.hvCanChuY.find((x: any) => x.studentId === id);
-      eq(dong(m.a)?.buocTiep, 'sap-thu-1', 'a: chưa thư, ≥ 3 vi phạm chưa xử lý');
+      eq([dong(m.a)?.nhom, dong(m.a)?.bac, dong(m.a)?.bacKe], ['bat_buoc', null, 'Report 1'], 'a: bắt buộc, chưa bậc nào');
       eq([dong(m.a)?.viPham, dong(m.a)?.chuaXuLy], [3, 3], 'a: 3 vi phạm, 3 chưa xử lý');
-      eq(dong(m.b)?.buocTiep, 'sap-thu-2', 'b: Thư CC 1 rồi vi phạm tiếp');
-      eq(dong(m.b)?.bienPhapGanNhat, 'Thư cảnh cáo lần 1', 'b: PA xử lý gần nhất');
-      eq(dong(m.b)?.ngay, cong(TODAY, -20), 'b: ngày thực hiện');
-      assert(!dong(m.c), 'c: 2 vi phạm, chưa thư → không vào danh sách');
-      eq(dong(m.dd)?.buocTiep, 'theo-doi', 'd: 3 vi phạm đã xử lý hết');
-      eq(dong(m.dd)?.chuaXuLy, 0, 'd: chưa xử lý 0');
-      eq(dong(m.e)?.buocTiep, 'da-thu-3', 'e: đủ ba thư rồi vi phạm tiếp');
-      for (const r of kq.hvCanChuY) {
-        assert(r.viPham >= 3 || r.buocTiep !== 'theo-doi', `"${r.ten}" phải thoả laHvCanChuY (viPham=${r.viPham}, bước=${r.buocTiep})`);
-        assert(r.lop === null || typeof r.lop === 'string', 'lop là mã lớp');
-      }
+      eq([dong(m.b)?.nhom, dong(m.b)?.bac, dong(m.b)?.bacKe], ['qua_han', 'Report 1', 'Report 2'], 'b: quá hạn (Mới chưa ai xem)');
+      eq([dong(m.b)?.bienPhapGanNhat, dong(m.b)?.ngay], ['Report 1', cong(TODAY, -20)], 'b: xử lý gần nhất');
+      eq(dong(m.e)?.nhom, 'cho_duyet', 'e: đề xuất chờ QL');
+      assert(!dong(m.c) && !dong(m.dd), 'c (Mới) và d (đã xử lý hết) không vào danh sách');
+      for (const r of kq.hvCanChuY) assert(['qua_han', 'bat_buoc', 'cho_duyet'].includes(r.nhom) && !('buocTiep' in r), `"${r.ten}": ${r.nhom}`);
       const vt = (id: number) => kq.hvCanChuY.findIndex((x: any) => x.studentId === id);
-      assert(vt(m.a) < vt(m.dd) && vt(m.b) < vt(m.dd) && vt(m.b) < vt(m.e), 'xếp "Sắp…" trước "Theo dõi"/"Đã Thư CC lần 3"');
-      assert(vt(m.a) < vt(m.b), 'cùng "Sắp…": nhiều vi phạm chưa xử lý (3) trước ít (1)');
+      assert(vt(m.b) < vt(m.a) && vt(m.a) < vt(m.e), 'Quá hạn › Bắt buộc › Chờ QL duyệt');
     } finally { m.don(); }
   });
 
@@ -845,7 +825,7 @@ export async function runPhanTichTests(t: YThucTestKit) {
     const kq = yThucSvc.yThucPhanTich(P.admin, FY());
     assert(!/phoiHop|phoi-hop|coordination/i.test(JSON.stringify(Object.keys(kq))), `không được có khoá phối hợp: ${Object.keys(kq)}`);
     eq(Object.keys(kq).sort(), ['bienPhapTheoLoai', 'gom', 'hvCanChuY', 'lop', 'scopeEmpty'], 'đúng các khoá đã chốt');
-    for (const k of Object.keys(kq.bienPhapTheoLoai)) assert(d.MEASURE_KINDS.includes(k), `bienPhapTheoLoai chỉ có loại PA xử lý hợp lệ: ${k}`);
+    for (const k of Object.keys(kq.bienPhapTheoLoai)) assert(d.KHOA_LOAI_XU_LY.includes(k), `bienPhapTheoLoai chỉ có loại xử lý v4 (+ loai-cu, Q2): ${k}`);
   });
 
   check('UX4 · Ý thức — quyền: GVCN 403; QL chi nhánh khác 403; classId ngoài phạm vi 403', () => {
@@ -1121,7 +1101,7 @@ export async function runPhanTichTests(t: YThucTestKit) {
     const kq = yThucSvc.yThucPhanTich(P.admin, FY());
     const f = FY();
     const so = metricsUx4.metricSet(P.admin, 'bien-phap-theo-loai', { from: f.from, to: f.to });
-    for (const k of d.MEASURE_KINDS) {
+    for (const k of d.KHOA_LOAI_XU_LY) {
       eq(kq.bienPhapTheoLoai[k] ?? 0, so.byKind?.[k]?.length ?? 0, `loại ${k}`);
     }
     eq(Object.values(kq.bienPhapTheoLoai).reduce((s: number, x: any) => s + x, 0), so.n, 'tổng các loại = tổng chỉ số');

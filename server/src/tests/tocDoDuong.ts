@@ -86,7 +86,6 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Công việc', vai: MOI_VAI, url: '/yeu-cau/dem' },
   { trang: 'Tổng quan GV', vai: ['QL', 'QT', 'GVCN', 'GVBM', 'GVCN_THUONG'], url: '/tong-quan/hoc-vien-can-ho-tro' },
   { trang: 'Tổng quan GV', vai: ['GVCN', 'GVBM', 'GVCN_THUONG'], url: '/highlights' },
-  { trang: 'Tổng quan GV', vai: ['GVCN'], url: '/y-thuc/my-warnings' },
   { trang: 'Tổng quan GV', vai: ['GVCN'], url: '/y-thuc/my-coordination' },
 
   // ---------------------------------------------------------------- Học viên & Lớp
@@ -133,12 +132,14 @@ export const DUONG_DO: MucDo[] = [
    */
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}' },
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/skill-board' },
-  { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/violation-warning' },
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/cases/{case}' },
   /* PR-Qb (sửa sau rà #75, vấn đề 5) — tab Hành trình, cả giai đoạn mặc định lẫn ?giai-doan=thuong. */
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/hanh-trinh' },
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/hanh-trinh?giai-doan=thuong' },
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/lich-su-lop' },
+  /* PR-YT4: tab Ý thức của HV (thang, thanh việc, dòng thời gian trộn) — cũng là khung phải của tab lớp khi chọn em. */
+  { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/y-thuc' },
+  { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/y-thuc?pham-vi=tat-ca' },
   /* PR-XOA: ⋮ › Xoá học viên — xem trước "những gì sẽ mất", chỉ Quản trị hệ thống. */
   { trang: 'Hồ sơ HV', vai: ['QT', 'QL', 'GVCN'], url: '/students/{hv}/xoa', maChuDich: { QL: 403, GVCN: 403 } },
   /* PR-LT: {hv} là em lớp FT nên `lop.laLopThuong=false`, nhưng đường vẫn 200 với mọi vai xem được hồ sơ. */
@@ -259,21 +260,21 @@ export const TRAN: Record<string, number> = {
   'QT /metrics/hv-can-ho-tro-2-lan-chua-case': 32,
   'QL /metrics/hv-bo-qua-van-can-ho-tro': 32,
   'QT /metrics/hv-bo-qua-van-can-ho-tro': 32,
-  'GVCN /my-work': 60,
+  'GVCN /my-work': 63,
   'GVBM /my-work': 62,
-  'GVCN_THUONG /my-work': 60,
+  'GVCN_THUONG /my-work': 63,
   /* PR-Ra: trang "Công việc" dùng lại /my-work cho QL·QT, cộng chế độ nguoi=tat-ca/{gv} (Q1–Q2). */
   'QL /my-work': 62,
   'QT /my-work': 68,
   'QL /my-work?nguoi=tat-ca': 75,
   'QT /my-work?nguoi=tat-ca': 75,
   'GVCN /my-work?nguoi=tat-ca': 19,
-  'QL /my-work?nguoi=7': 69,
+  'QL /my-work?nguoi=7': 74,
   /* PR-DUYET: đo khi hộp đã có thẻ thật (Task 4) — trần max(sau+10, ⌈sau×1,3⌉). */
-  'QL /yeu-cau?hop=cho-duyet': 28,
+  'QL /yeu-cau?hop=cho-duyet': 29,   // PR-YT4 sau khi gộp PR-SOS: thẻ khong_theo_doi + bao_len_y_thuc cùng nạp (đo 29, +3,6%)
   'QT /yeu-cau?hop=cho-duyet': 28,
   'GVCN /yeu-cau?hop=cho-duyet': 17,
-  'QL /yeu-cau?hop=cho-duyet&xem=da-xu-ly': 26,   // PR-SOS: loại thẻ khong_theo_doi thêm câu nạp (đo 23)
+  'QL /yeu-cau?hop=cho-duyet&xem=da-xu-ly': 27,   // PR-SOS: loại thẻ khong_theo_doi thêm câu nạp (đo 23); + thẻ Ý thức PR-YT4 (đo 27)
   'QT /yeu-cau?hop=cho-duyet&xem=da-xu-ly': 26,   // PR-SOS: loại thẻ khong_theo_doi thêm câu nạp (đo 22)
   'GVCN /yeu-cau?hop=cua-toi': 25,
   'GVBM /yeu-cau?hop=cua-toi': 21,
@@ -297,7 +298,6 @@ export const TRAN: Record<string, number> = {
   'GVCN /highlights': 28,
   'GVBM /highlights': 28,
   'GVCN_THUONG /highlights': 28,
-  'GVCN /y-thuc/my-warnings': 30,
   'GVCN /y-thuc/my-coordination': 51,
   'QL /classes': 35,
   'GVCN /classes': 36,
@@ -396,10 +396,6 @@ export const TRAN: Record<string, number> = {
   'QT /students/1/skill-board': 54,
   'GVCN /students/1/skill-board': 56,
   'GVBM /students/1/skill-board': 56,
-  'QL /students/1/violation-warning': 26,
-  'QT /students/1/violation-warning': 24,
-  'GVCN /students/1/violation-warning': 26,
-  'GVBM /students/1/violation-warning': 26,
   'QL /cases/1': 42,
   'QT /cases/1': 40,
   'GVCN /cases/1': 42,
@@ -464,6 +460,15 @@ export const TRAN: Record<string, number> = {
   'QT /students/1/lich-su-lop': 30,
   'GVCN /students/1/lich-su-lop': 34,
   'GVBM /students/1/lich-su-lop': 34,
+  /* PR-YT4: tab Ý thức của HV — đo 29/09: QL/GVCN/GVBM 23, QT 20 → trần max(sau+10, ⌈sau×1,3⌉). */
+  'QL /students/1/y-thuc': 33,
+  'QT /students/1/y-thuc': 30,
+  'GVCN /students/1/y-thuc': 33,
+  'GVBM /students/1/y-thuc': 33,
+  'QL /students/1/y-thuc?pham-vi=tat-ca': 33,
+  'QT /students/1/y-thuc?pham-vi=tat-ca': 30,
+  'GVCN /students/1/y-thuc?pham-vi=tat-ca': 33,
+  'GVBM /students/1/y-thuc?pham-vi=tat-ca': 33,
   'QL /students/1/lo-trinh-tiep': 23,
   'QT /students/1/lo-trinh-tiep': 21,
   'GVCN /students/1/lo-trinh-tiep': 25,

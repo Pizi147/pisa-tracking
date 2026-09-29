@@ -5,7 +5,7 @@ import { RecordViolationPanel } from '../yThuc/RecordViolationPanel.tsx';
 import { LoTrinhTiepPanel } from '../students/LoTrinhTiepPanel.tsx';
 import { ChuyenLopPanel } from '../students/ChuyenLopPanel.tsx';
 import type { MucMenu } from '../../ui/MenuDong.tsx';
-import { MUC_MENU_DONG_NHAN, mucMenuDongHocVien } from '@shared/domain/index.ts';
+import { MUC_MENU_DONG_HIEM, MUC_MENU_DONG_NHAN, mucMenuDongHocVien } from '@shared/domain/index.ts';
 
 export type QuyenDong = { coTheSuaHocVien: boolean; coTheBaoCase: boolean; coTheGhiViPham: boolean; coTheNhapDiem: boolean };
 export type DongChoMenu = { id: number; ten: string; dangHoc: boolean; nhapDiem: { nhan: string; den: string } | null };
@@ -40,12 +40,13 @@ export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone, maLop }: {
     coTheGhiViPham: quyen.coTheGhiViPham, coTheBaoCase: quyen.coTheBaoCase,
     coTheNhapDiem: quyen.coTheNhapDiem && d.nhapDiem !== null,
     coTheSuaHocVien: quyen.coTheSuaHocVien, coTheChuyenLop: quyen.coTheSuaHocVien,
-  }).map((k) => ({
+  }).map((k, i, ds) => ({
     key: k,
     nhan: k === 'nhap-diem' && d.nhapDiem ? d.nhapDiem.nhan : MUC_MENU_DONG_NHAN[k],
+    /* K2-30: vạch ngăn trước việc hiếm đầu tiên (khi phía trên còn việc hằng ngày). */
+    keTruoc: MUC_MENU_DONG_HIEM.includes(k) && i > 0 && !MUC_MENU_DONG_HIEM.includes(ds[i - 1]),
     onChon: () => {
-      if (k === 'ho-so') navigate(`/hoc-vien/${d.id}`);
-      else if (k === 'nhap-diem') { if (d.nhapDiem) navigate(d.nhapDiem.den); }
+      if (k === 'nhap-diem') { if (d.nhapDiem) navigate(d.nhapDiem.den); }
       else setMo({ viec: k, id: d.id, ten: d.ten });
     },
   }));

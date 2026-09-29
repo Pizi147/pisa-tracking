@@ -100,6 +100,8 @@ const SEED_MAX: Record<string, number> = {};
     SEED_MAX[t] = ((seedDb().prepare(`SELECT COALESCE(MAX(id),0) m FROM ${t}`).get() as any).m) as number;
   }
 }
+/* PR-YT4 (Task 11): ảnh chụp Ý thức của bộ demo NGAY sau seed — phép kiểm demo (yThuc.tests.ts) soi ảnh này, không soi DB đã bị các mục trên ghi thêm. */
+const DEMO_Y_THUC = await (await import('./yThuc.tests.ts')).chupDemoYThuc((await import('../db.ts')).db(), demoToday());
 
 /* Mã nhóm Ý thức của mô hình Case đã bỏ 21/09/2026 — chỉ để khẳng định nó KHÔNG còn xuất hiện; ghép chuỗi để không còn chữ đó nằm trơ trong mã. */
 const GONE = 'behav' + 'iour';
@@ -7356,15 +7358,15 @@ check('[18.2-12] Phương án bị thay thế VẪN giữ kết quả thất b�
     'Phương án bị thay có kết quả thất bại đã biến mất khỏi báo cáo hiệu quả');
 });
 
-check('[18.2-12b] Có em ĐÃ report cho gia đình mà vi phạm vẫn tái diễn — nhìn được ở dữ liệu Vi phạm và Biện pháp', () => {
+check('[18.2-12b] (PR-YT4) Có em ĐÃ được xử lý bằng Report mà vi phạm vẫn tái diễn — nhìn được ở dữ liệu Vi phạm và lần xử lý', () => {
   const rows = many(
     `SELECT dm.student_id,
             (SELECT COUNT(*) FROM violations v
-              WHERE v.student_id = dm.student_id AND v.valid = 1 AND v.occurred_on > dm.performed_on) AS after
+              WHERE v.student_id = dm.student_id AND v.occurred_on > dm.performed_on) AS after
        FROM discipline_measures dm
-      WHERE dm.kind = 'family_report' AND dm.status = 'done'`,
+      WHERE dm.kind IN ('report_1', 'report_2', 'report_4_meeting') AND dm.status = 'done'`,
   );
-  assert(rows.some((r) => r.after > 0), 'Không có em nào đã được report cho gia đình mà sau đó vẫn có vi phạm mới');
+  assert(rows.some((r) => r.after > 0), 'Không có em nào đã được Report mà sau đó vẫn có vi phạm mới');
 });
 
 check('[18.2-13] Có case bàn giao khi chuyển lớp, và có em chưa xếp lớp tiếp theo', () => {
@@ -8091,11 +8093,12 @@ check('PR-E · <Han>: sáu loại hạn có sáu nhãn khác nhau, đúng bảng
   assert(t('xac-minh-sos') === 'Xác nhận nguyên nhân · hạn 23/09', `xac-minh-sos: "${t('xac-minh-sos')}"`);
   assert(t('lap-pa') === 'Đề ra PA · hạn 23/09', `lap-pa: "${t('lap-pa')}"`);
   assert(t('cap-nhat-pa') === 'Ghi kết quả tuần W3 SEP · hạn hết T2 23/09', `cap-nhat-pa: "${t('cap-nhat-pa')}"`);
-  assert(t('thuc-hien-y-thuc') === 'Thực hiện xong · hạn 23/09', `thuc-hien-y-thuc: "${t('thuc-hien-y-thuc')}"`);
-  assert(t('hoan-thanh-y-thuc') === 'Kết luận đợt · hạn 23/09', `hoan-thanh-y-thuc: "${t('hoan-thanh-y-thuc')}"`);
+  /* PR-YT4 (K5-24): `thuc-hien-y-thuc`, `hoan-thanh-y-thuc` bỏ — Ý thức dùng `xu-ly-vi-pham`. */
+  assert(t('xu-ly-vi-pham') === 'Xử lý vi phạm · hạn 23/09', `xu-ly-vi-pham: "${t('xu-ly-vi-pham')}"`);
+  assert(!(domain.DEADLINE_KINDS as readonly string[]).includes('thuc-hien-y-thuc') && !(domain.DEADLINE_KINDS as readonly string[]).includes('hoan-thanh-y-thuc'), 'hai loại cũ còn');
   assert(t('nhap-diem') === 'Nhập điểm · hạn 23/09', `nhap-diem: "${t('nhap-diem')}"`);
   assert(t('du-kien-ket-thuc') === 'Dự kiến kết thúc 23/09', `du-kien-ket-thuc: "${t('du-kien-ket-thuc')}"`);
-  const all = ['xac-minh-sos', 'lap-pa', 'cap-nhat-pa', 'thuc-hien-y-thuc', 'hoan-thanh-y-thuc', 'nhap-diem', 'du-kien-ket-thuc'].map((k) => t(k));
+  const all = ['xac-minh-sos', 'lap-pa', 'cap-nhat-pa', 'xu-ly-vi-pham', 'duyet', 'nhap-diem', 'du-kien-ket-thuc'].map((k) => t(k));
   assert(new Set(all).size === 7, 'Có hai loại hạn dùng chung một câu — chúng là sáu đồng hồ khác nhau');
 });
 
@@ -8158,12 +8161,12 @@ const branchIdOf = (code: string) => (conn.prepare('SELECT id FROM branches WHER
 
 check('PR-F · Sổ chỉ số: đúng hai mươi chỉ số (PR-N thêm pa-cho-duyet; PR-J thêm tám chỉ số Ý thức), mỗi chỉ số đủ tám trường (thiếu một trường thì không được lên dashboard)', () => {
   const list = domain.METRICS as readonly any[];
-  assert(list.length === 30, `Phải có ba mươi chỉ số (hai của PR-UX4: hv-can-ho-tro-2-lan-chua-case, hv-bo-qua-van-can-ho-tro + hai mươi tám chỉ số cũ: mười hai của PR-F/PR-N + bảy của PR-J còn lại sau khi PR-T bỏ vi-pham-khong-hieu-luc + bốn của PR-T: case-cho-xac-dinh-nguyen-nhan và ba phoi-hop-* + một của PR-S1: tin-hieu-qua-han + ba của PR-Pa: case-xac-dinh-nguyen-nhan-qua-han, bai-qua-han-nhap-diem, case-chua-co-nguoi-phu-trach + một của PR-YT2: vi-pham-theo-nhom), đang có ${list.length}`);
+  assert(list.length === 31, `Phải có ba mươi mốt chỉ số (PR-YT4: bien-phap-dang-chuan-bi → bien-phap-cho-duyet, thêm hv-theo-bac; hai của PR-UX4: hv-can-ho-tro-2-lan-chua-case, hv-bo-qua-van-can-ho-tro + hai mươi tám chỉ số cũ: mười hai của PR-F/PR-N + bảy của PR-J còn lại sau khi PR-T bỏ vi-pham-khong-hieu-luc + bốn của PR-T: case-cho-xac-dinh-nguyen-nhan và ba phoi-hop-* + một của PR-S1: tin-hieu-qua-han + ba của PR-Pa: case-xac-dinh-nguyen-nhan-qua-han, bai-qua-han-nhap-diem, case-chua-co-nguoi-phu-trach + một của PR-YT2: vi-pham-theo-nhom), đang có ${list.length}`);
   const expected = ['hv-sos-hien-tai', 'hv-duoi-ky-vong-mon', 'hv-co-case-mo', 'case-mo', 'tin-hieu-cho-xac-minh', 'tin-hieu-qua-han',
     'case-xac-dinh-nguyen-nhan-qua-han', 'bai-qua-han-nhap-diem', 'case-chua-co-nguoi-phu-trach', 'case-cho-xac-dinh-nguyen-nhan',
     'case-thieu-pa', 'pa-can-cap-nhat', 'pa-cho-duyet', 'pa-co-ket-qua', 'ty-le-co-cai-thien', 'dung-han-cap-nhat', 'do-phu-danh-gia',
     'vi-pham-tong', 'vi-pham-theo-nhom', 'vi-pham-chua-xu-ly', 'hv-co-vi-pham', 'hv-can-xu-ly',
-    'bien-phap-da-thuc-hien', 'bien-phap-dang-chuan-bi', 'bien-phap-theo-loai',
+    'bien-phap-da-thuc-hien', 'bien-phap-cho-duyet', 'bien-phap-theo-loai', 'hv-theo-bac',
     'phoi-hop-luot-sos', 'phoi-hop-dang-xu-ly', 'phoi-hop-hoan-thanh',
     'hv-can-ho-tro-2-lan-chua-case', 'hv-bo-qua-van-can-ho-tro'];
   for (const id of expected) assert(list.some((m) => m.id === id), `Thiếu chỉ số ${id}`);
@@ -9630,7 +9633,7 @@ await runHoSoHocVienTests({ check, checkAsync, assert, assertThrows, conn, TODAY
 
 /* Phép kiểm của module thứ chín ở file riêng — xem đầu `yThuc.tests.ts`. */
 const { runYThucTests } = await import('./yThuc.tests.ts');
-await runYThucTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+await runYThucTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX, demoYThuc: DEMO_Y_THUC });
 
 // ==================================================================== PR-T (rulebook v3: SOS tự tạo Case · Phối hợp SOS · xoá vi phạm)
 
@@ -9761,6 +9764,9 @@ await runPrMonTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 // ==================================================================== PR-SOS (SOS v4 — Xác nhận Case → Xác nhận PA, Không cần theo dõi qua Quản lý)
 const { runPrSosTests } = await import('./prSos.tests.ts');
 await runPrSosTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== PR-YT4 (Ý thức v4: một hàm trạng thái, thang bắt buộc, QL duyệt)
+const { runPrYt4Tests } = await import('./prYt4.tests.ts');
+await runPrYt4Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-KCK (Target "không cam kết" — không SOS, Q29-1)
 const { runPrKckTests } = await import('./prKck.tests.ts');

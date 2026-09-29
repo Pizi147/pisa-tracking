@@ -254,7 +254,7 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
   check('N1 (7) · mọi form KhungPanel (trừ dev/, panel chỉ xem) dùng useLoiForm', () => {
     /* PR-NEN Task 9 đổi Drawer → KhungPanel: panel chỉ xem (NeedsEvaluation, phanTich/dungChung) + panel còn chờ áp useLoiForm;
        TransitionPanel báo lỗi ngay tại từng dòng HV (không phải form ô bắt buộc). */
-    const bo = /modules[\/]dev[\/]|PhuongAnPanel|XemPhuongAnPanel|NeedsEvaluation|phanTich[\/]dungChung|AccountsAdmin|CatalogAdmin|IntakePanel|StudentPlanPanel|ClassProgressPanel|MeetingPage|MgmtTasksPage|XoaKetThucLopPanel|TransitionPanel/;
+    const bo = /modules[\/]dev[\/]|XemXuLyPanel|NeedsEvaluation|phanTich[\/]dungChung|AccountsAdmin|CatalogAdmin|IntakePanel|StudentPlanPanel|ClassProgressPanel|MeetingPage|MgmtTasksPage|XoaKetThucLopPanel|TransitionPanel/;
     const thieu = tepTsx('web/src/modules').filter((f) => !bo.test(f) && /<KhungPanel/.test(docSach(f)) && !/useLoiForm\(/.test(docSach(f)));
     assert(thieu.length === 0, thieu.join(', '));
     const conCu = tepTsx('web/src/modules').filter((f) => !bo.test(f) && /conThieu: daBam/.test(docSach(f)));
@@ -351,15 +351,5 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     assert(d.lopMoSan({ thamSoOpen: null, lopHien: [1, 2, 3], dangLoc: false }).length === 0, 'tự mở lớp');
     assert(d.lopMoSan({ thamSoOpen: null, lopHien: [1, 2, 3, 4, 5, 6, 7], dangLoc: true }).join() === '1,2,3,4,5', 'lọc');
     assert(/overflow-x-auto md:overflow-visible/.test(docSach('web/src/modules/students/StudentsPage.tsx')), 'khung bảng còn chặn tiêu đề dính');
-  });
-  check('N1 (8) · YC-11.3.2: lọc một nhóm → số trên dòng em = số dòng "Vi phạm gần đây", mọi dòng đúng nhóm', () => {
-    const vp = (id: number, category: string, occurredOn: string) => ({ id, category, occurredOn });
-    const r = d.dongViPhamLop({ chuaXuLy: [vp(1, 'chuyen_can', '2026-09-20'), vp(2, 'btvn', '2026-09-21')],
-      dangChuanBi: [{ id: 9, kindLabel: 'Report 1', violations: [vp(3, 'btvn', '2026-09-10'), vp(4, 'chuyen_can', '2026-09-12')] }],
-      nhom: 'chuyen_can', homNay: '2026-09-24' });
-    assert(r.so === 2 && r.dong.every((x: any) => x.v.category === 'chuyen_can') && r.dong[0].v.id === 1, JSON.stringify(r));
-    assert(r.cuNhatNgay === 4, `cũ nhất ${r.cuNhatNgay}`);
-    const src = docSach('web/src/modules/yThuc/ClassYThucCard.tsx');
-    assert(/s\.vp\.so\} vi phạm/.test(src) && /s\.vp\.dong\.map/.test(src) && !/vpGanDay/.test(src), 'thẻ lớp chưa dùng một tập');
   });
 }
