@@ -15,6 +15,7 @@ import { buildJourneys } from './build.ts';
 import { buildYThuc } from './yThucSeed.ts';
 import { buildSosV3Demo } from './sosV3Seed.ts';
 import { buildPrMtDemo } from './prMtSeed.ts';
+import { buildXlmtDemo } from './xlmtSeed.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
 import { dienMocLop } from '../migrate/prLop.ts';
 import { napYeuCauTuNguonCu } from '../migrate/prDuyet.ts';
@@ -234,6 +235,8 @@ export function runSeed() {
     });
     /* BỘ DEMO PR-MT (D1–D6, D16): lớp RF, HS cũ có MT lịch sử, dời do vắng, huỷ lượt — cũng qua hàm nghiệp vụ, sau ngày demo. */
     buildPrMtDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
+    /* BỘ DEMO PR-XLMT (X1–X4): xếp lịch MT nhiều lớp, chờ duyệt, huỷ phần còn lại, MT lịch sử tuần đã qua, ⋯ ô lớp thường. */
+    buildXlmtDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
 
     /*
      * S16 (chốt 21/09 đêm): em đã KẾT THÚC học mà còn Case mở → hệ thống tự đóng "Học viên kết thúc khoá". Bộ demo dựng hành trình

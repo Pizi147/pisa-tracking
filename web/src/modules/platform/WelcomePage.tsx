@@ -325,7 +325,7 @@ function RegisterForm({ info, onDone }: { info: AuthInfo | null; onDone: () => v
 
 /** PR-MT (Task 10): tài khoản xem được kịch bản mới — MT lịch sử, lớp RF, dời do vắng lần 2. */
 const XEM_DUOC: Record<string, string> = {
-  'Nguyễn Khánh Vy': 'Xem được: MT lịch sử, lớp RF, dời lần 2',
+  'Nguyễn Khánh Vy': 'Xem được: MT lịch sử, lớp RF, dời lần 2 · Xếp lịch MT nhiều lớp, Cần xếp lại',
   'Trần Ngọc Hà': 'Xem được: MT lịch sử, lớp RF, dời lần 2',
 };
 

@@ -649,6 +649,10 @@ if (chuaQua.length) luuY('daThiToiMt', `Đã thi tới MT${daThiToiMt} nhưng ${
 - **Task 8:** `regularSheet` thêm `laGvcn` (một lần cho cả bảng, không câu SQL mới — đọc `p.assignments`). Hộp chung nhận thêm
   `xep-lai` (lớp thường: đặt tuần mới cho bài vắng = một lần dời do vắng; hồ sơ Mock vẫn mở `AbsenceMoveModal`). Nhập/Sửa điểm không
   lặp trong ⋯ (làm ngay trong ô). `suaLoiNong.tests.ts` N1 (7): thêm `NganLichSuBai` vào nhóm miễn "panel chỉ xem".
+- **Task 9:** X1 Tạ Minh Quân · Lương Bảo Anh · Hà Gia Bình (MB FT 101) · X2 Kiều Thu Trang (chờ duyệt) · Mạc Đức Long (huỷ phần còn
+  lại) (MB FT 102) · X3 Đoàn Khánh Chi (MT1–MT3 lịch sử **đã nhập bù** — em chỉ có MT lịch sử chưa điểm làm lệch phép kiểm độ phủ
+  PR-N, và kịch bản "đã thi ngoài web" vốn có điểm) · X4 Âu Nhật Nam (MB FOU 12, L tuần trước dời sang tuần này — để ô ở tuần tương
+  lai thì phép kiểm khác nhập điểm đè đúng dòng đó thành "điểm ở tương lai"). Đã kiểm dữ liệu sau `npm run seed`.
 
 ## Chủ sản phẩm chốt 29/09 (thay các chỗ lệch trong kế hoạch)
 
