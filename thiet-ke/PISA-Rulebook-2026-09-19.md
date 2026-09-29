@@ -554,3 +554,33 @@ Nguồn: `thiet-ke/NGUON-Rule-v3-YThuc-PhoiHop-2026-09-21.md`. Đặc tả: `thi
 - **Dời do vắng (Q-A, T42):** dấu "-" chốt cuối Chủ nhật → lần 1 **máy tự dời** sang tuần kế tiếp (nếu còn thi được) và báo GVCN + GVBM
   đúng kỹ năng; lần 2 thành đề nghị chờ Quản lý, **hạn hết Chủ nhật của tuần gửi**, tuần đích mặc định = tuần chưa bắt đầu gần nhất hợp
   luật thứ tự đợt. Quản lý đổi tuần một kỹ năng đang vắng = một lần dời do vắng. Quản lý đổi kết luận khỏi "vắng" → đề nghị đang chờ rút.
+
+## PR-XLMT — xếp lịch MT nhiều lớp, thao tác MT theo trạng thái (29/09/2026)
+
+- **Trần MT8 (T37):** một lộ trình tối đa MT8; đánh số liền mạch giữ nguyên (PR-MT).
+- **Việc từng em khi xếp (K4-17):** chọn đợt MT{n} cho nhiều lớp → mỗi em máy tự chọn: đợt đã đủ điểm → sang MT kế tiếp · đợt dở →
+  **Xếp nốt** kỹ năng còn thiếu · đợt chưa thi → **Dời** · chưa có → **Tạo** · MT lịch sử → bỏ qua (chỉ nhập bù). Quản lý bấm đúng đợt
+  đã đủ cho riêng em = **Thi lại**: hộp nói kỹ năng đã có điểm rồi mới hỏi; đồng ý → **xoá điểm cũ khỏi ô, giữ trong Lịch sử**, kỹ năng về
+  "chờ thi", tuần mới; SOS/kỳ vọng tính theo điểm mới (chủ sản phẩm chốt 29/09, câu 1 = A). Chỉ Quản lý, chỉ lượt Mock đang chạy.
+- **Đợt mới mặc định (K4-14):** bốn kỹ năng CÙNG tuần tới; sửa riêng từng kỹ năng bên dưới.
+- **Tuần đã qua (K2-33, Q8):** chỉ dùng để TẠO MT lịch sử — mọi kỹ năng đều tuần đã qua **và** em vào web sau các tuần đó. Không dời
+  lượt có sẵn vào tuần đã qua; trộn tuần qua/tới bị chặn.
+- **Thao tác theo trạng thái (T38, K4-27):** mỗi kỹ năng ≤ 1 nút chính + ≤ 3 mục menu, bảng ở `thaoTacKyNang`:
+
+  | Trạng thái | Nút chính | Menu |
+  |---|---|---|
+  | chưa tới tuần thi | Nhập điểm | Dời lịch thi (QL) · Bỏ kỹ năng khỏi đợt (QL, FT) |
+  | đang tới tuần thi, chưa điểm | Nhập điểm | Báo vắng (GVCN, QL) · Dời hạn chấm · Dời lịch thi (QL) |
+  | đã có điểm | Sửa điểm | Huỷ điểm (người nhập được; sau hoàn tất chỉ QL) |
+  | vắng | Xếp lại bài vắng (GVCN, QL) | — |
+  | chờ duyệt dời | Trả lời đề nghị dời (QL) | — |
+  | đã huỷ phần thi | Khôi phục và đặt tuần (QL) | — |
+  | MT lịch sử chưa điểm | Nhập điểm | — |
+
+- **Lý do bắt buộc (K4-15):** dời bài khi tuần thi **đã bắt đầu**, dời hạn chấm, bỏ kỹ năng, báo vắng, huỷ điểm, huỷ lượt, thi lại (≥ 5 ký
+  tự, máy chủ kiểm). Xếp / đổi tuần **tương lai** không cần lý do. Bài vắng Quản lý xếp lại vẫn không bắt lý do (K4-12).
+- **Bỏ kỹ năng (K4-13):** bị chặn khi đã có điểm (dùng Huỷ điểm) hoặc đã tới tuần thi (dùng Báo vắng). Lớp thường không có.
+- **Báo vắng (K4-28):** ghi "-" cho mọi ô của kỹ năng (W = W1 + W2) và **chốt ngay** — lần 1 máy tự dời tuần kế tiếp, từ lần 2 thành đề
+  nghị Quản lý duyệt (Q-A). Mở từ thứ Hai tuần thi; không cho MT lịch sử. Lớp thường: Báo vắng có lý do = dấu "-" dời tuần sau, thêm GVCN.
+- **Quản lý sửa / xoá điểm có lý do ở mọi lúc** (chủ sản phẩm chốt 29/09) — không còn chờ đợt hoàn tất (R11 vẫn chặn GVBM sau hoàn tất).
+- **Cần xếp lại (Q7):** kỹ năng vắng chưa có đề nghị chờ + phần thi đã huỷ, lượt còn chạy, không lịch sử. Trễ (chưa chấm) không tính.
