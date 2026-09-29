@@ -61,3 +61,4 @@ export * from './yeuCauDuyet.ts';
 export * from './lichMt.ts';
 export * from './nhapHocVien.ts';
 export * from './thaoTacMt.ts';
+export * from './nhanXet.ts';

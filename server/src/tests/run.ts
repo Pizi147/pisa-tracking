@@ -9803,6 +9803,10 @@ await runPrKckTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 const { runPrS3fTests } = await import('./prS3f.tests.ts');
 await runPrS3fTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
+// ==================================================================== PR-HSM (hồ sơ Mock, nhận xét W/S, GV chấm)
+const { runPrHsmTests } = await import('./prHsm.tests.ts');
+await runPrHsmTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

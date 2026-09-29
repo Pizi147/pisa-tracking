@@ -13,7 +13,7 @@ import { notFound } from '../util.ts';
 import { db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import {
-  activeAt, can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, mySkills, scopeFor, type Principal,
+  activeAt, can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, lopFtChoGvSpeaking, mySkills, scopeFor, type Principal,
 } from '../permissions.ts';
 import {
   ATTEMPT_KIND_SHORT, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, LUOT_TINH_NO_SQL, PERMISSIONS, boMonLich, khungCua, lopTuMo, tenMonNgan, type Khung, nhanLopLichTest, noShowStateOf,
@@ -397,7 +397,10 @@ export function lichTest(
   p: Principal, periodId: number, branchId?: number | null, today: string = demoToday(),
   o: { phamVi?: PhamViLichTest | null; classId?: number | null } = {},
 ): LichTest {
-  const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
+  const scope0 = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
+  /* PR-HSM: GV Speaking thấy thêm lớp FT cùng chi nhánh ở "Tất cả" (chấm S chéo) — chỉ màn này, không mở rộng phạm vi chung. */
+  const lopS = scope0.all ? [] : lopFtChoGvSpeaking(p, today);
+  const scope = lopS.length ? { ...scope0, classIds: [...new Set([...scope0.classIds, ...lopS])] } : scope0;
   const coPhanCong = defaultWorkScope(p) === 'mine';
   /* Không có phân công thì "Lớp tôi dạy" là tập rỗng — luôn xem Tất cả. */
   const phamVi: PhamViLichTest = coPhanCong ? o.phamVi ?? 'cua-toi' : 'tat-ca';
@@ -417,7 +420,7 @@ export function lichTest(
   const chuaToiHan = String(tuan.week_start) > weekInfo(today).weekStart;
 
   const lopCuaToi = new Set(p.assignments.filter((a) => activeAt(a, today)).map((a) => a.classId));
-  const coPhamViRong = coPhanCong && (scope.all || scope.branchIds.length > 0);
+  const coPhamViRong = coPhanCong && (scope.all || scope.branchIds.length > 0 || scope.classIds.some((id) => !lopCuaToi.has(id)));
   /* Chip "Đang lọc: lớp …" chỉ nói tên lớp NGƯỜI XEM ĐƯỢC THẤY — lớp ngoài phạm vi thì null, không lộ mã lớp. */
   const lopDangLoc = o.classId && can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: o.classId })
     ? (conn.prepare('SELECT id, code FROM classes WHERE id = ?').get(o.classId) as any) ?? null

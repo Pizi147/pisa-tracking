@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Card, Empty, ErrorState, ExamPlanText, Info as Tag, Outcome, SectionNote, Skeleton, Status, TargetText } from '../../ui/ui.tsx';
+import { Card, Empty, ErrorState, ExamPlanText, Info as Tag, SectionNote, Skeleton, Status, TargetText } from '../../ui/ui.tsx';
 import { ChipLichSu } from '../../ui/Nhan.tsx';
 import type { ExamPlan } from '../../../../shared/domain/index.ts';
 import { ConfirmDialog, Modal } from '../../ui/Drawer.tsx';
@@ -15,13 +15,16 @@ import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
 import { HopThaoTacMt } from './HopThaoTacMt.tsx';
 import { DongThoiGianLuot } from './DongThoiGianLuot.tsx';
 import {
-  DeadlinePill, InlineScoreEditor, KHOA_HOAN_TAT_HINT, lockedByNoShow, useSaveScore, type Cell, type SavePatch,
+  DeadlinePill, KHOA_HOAN_TAT_HINT, lockedByNoShow, useSaveScore, type Cell, type SavePatch,
 } from './ScoreEntry.tsx';
+import { DaiODiemLon, type KyNangLon, type LichKn } from './ODiemLon.tsx';
+import { ONhanXet } from './NhanXet.tsx';
+import { NutGvCham, gvChamPayload, gvChamThanhChon } from '../cham/GvCham.tsx';
 import {
-  attemptHref, attemptStatusLabel, fmtBand, fmtDate, fmtDateTime, progressLabel, skillLabel,
+  attemptHref, attemptStatusLabel, fmtBand, fmtDate, progressLabel, skillLabel,
 } from '../../lib/format.ts';
 import {
-  ATTEMPT_KIND_SHORT, CHU_THAO_TAC, LY_DO_TOI_THIEU, kiemTruong, mondayOfDate, thaoTacKyNang, trangThaiTT, tuanLich,
+  ATTEMPT_KIND_SHORT, CHU_THAO_TAC, LY_DO_TOI_THIEU, kiemTruong, mondayOfDate, nhanLuot, thaoTacKyNang, trangThaiTT, tuanLich,
   type AttemptKind, type TheYeuCauDto, type ThaoTac,
 } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -46,6 +49,8 @@ type Detail = {
   scoringMode: 'band' | 'ratio';
   deadlineOverride: { date: string; reason: string | null; at: string | null; by: string | null } | null;
   status: string; cancelReason: string | null; note: string | null;
+  /** PR-HSM (K4 §4h): lượt đã huỷ — lý do, ai, khi. */
+  huy: { lyDo: string | null; ai: string | null; khi: string } | null;
   result: any; cells: Cell[]; skips: any[];
   /** Lịch và phạm vi. */
   history: any[];
@@ -85,6 +90,8 @@ type SkillRow = {
   absenceMoveCount: number;
   /** Đề nghị dời do vắng đang chờ Quản lý trả lời (mục 10.6), nếu có. */
   pendingMove: { id: number; decideBy: string; toWeek: string | null; moveNo: number } | null;
+  /** PR-HSM (K4-30): tuần cũ của lần dời do vắng mới nhất ("W3 SEP"), `null` khi chưa dời. */
+  doiTu: string | null;
 };
 
 /** Một đợt của học viên trong `GET /attempts?studentId=` — đủ để dựng nhãn và đường dẫn của bộ chọn đợt (R15). */
@@ -93,8 +100,11 @@ type DotCuaHv = {
   period: { id: number; weekStart: string } | null;
 };
 
-/** Năm cột làm việc — một dòng mỗi bài nhập. Dưới `md` mỗi bài là một thẻ xếp dọc, không có cột. */
-const ROW_GRID = 'md:grid md:grid-cols-[6.5rem_9.5rem_minmax(14rem,1.2fr)_minmax(13rem,1fr)_11rem] md:gap-x-3';
+/**
+ * Bốn cột làm việc — một dòng mỗi bài nhập. Điểm đã lên dải ô lớn (PR-HSM), bảng chỉ còn lịch · tình trạng · thao tác. Dưới
+ * `md` mỗi bài là một thẻ xếp dọc, không có cột.
+ */
+const ROW_GRID = 'md:grid md:grid-cols-[6.5rem_minmax(13rem,1fr)_minmax(14rem,1.2fr)_11rem] md:gap-x-3';
 
 export default function MockDetailPage() {
   const { id } = useParams();
@@ -108,6 +118,8 @@ export default function MockDetailPage() {
   const [weekOpen, setWeekOpen] = useState(false);
   const [deadlineOpen, setDeadlineOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
+  /* PR-HSM: ô lớn đang mở khung sửa — nút chính "Nhập điểm / Sửa điểm" của bảng dưới cũng mở đúng ô này. */
+  const [moO, setMoO] = useState<KyNangLon | null>(null);
 
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (loading || !data) return <Skeleton rows={10} />;
@@ -154,34 +166,54 @@ export default function MockDetailPage() {
       onClick: () => setCancelOpen(true),
       hint: d.viewer.huyLuot.cachDuoc === 'ca-luot' ? `Số MT${d.attemptNo} dùng lại được` : 'Kỹ năng đã có điểm giữ nguyên',
     }] : []),
-    ...(d.viewer.canCancel && cancelled ? [{
-      label: `Mở lại lượt MT${d.attemptNo}`,
-      onClick: async () => {
-        try {
-          await api.post(`/attempts/${d.id}/reopen`);
-          invalidate('/attempts'); reload(); toast.push('ok', 'Đã mở lại lượt MT');
-        } catch (e: any) { toast.push('error', e.message); }
-      },
-    }] : []),
   ];
+  /* Lượt đã huỷ: "Mở lại lượt" nằm ngay ở dải "Đã huỷ" trên cùng (K4 §4h), không giấu trong menu. */
+  const moLai = async () => {
+    try {
+      await api.post(`/attempts/${d.id}/reopen`);
+      invalidate('/attempts'); reload(); toast.push('ok', `Đã mở lại lượt MT${d.attemptNo}`);
+    } catch (e: any) { toast.push('error', e.message); }
+  };
+  const coKhoa = d.cells.some((c) => c.khoa);
+  const laRf = d.cycle.route === 'RF';
+  const dong2 = [
+    d.period ? `${tuanLich(d.period.weekStart, homNay)} · ${d.period.range}` : 'Chưa chốt tuần',
+    d.classCode, d.cycle.route ? `Lộ trình ${d.cycle.route}` : null, d.lichSu ? 'Nhập bù, không có hạn' : null,
+  ].filter(Boolean).join(' · ');
+  const moODiem = (k: KyNangLon) => { setMoO(k); document.getElementById('dai-diem')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
 
   return (
     <div className="page space-y-4">
-      {/* A. ĐẦU TRANG — hiểu đúng đợt trong vài giây. Đây là NƠI DUY NHẤT nói "đã có điểm mấy kỹ năng". */}
+      {/* K4 §4h: lượt đã huỷ — dải mảnh trên cùng nói lý do · ai · ngày, và cách mở lại. Mọi ô lớn khoá (máy chủ `canEdit`). */}
+      {cancelled && (
+        <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border px-3 py-2 text-sm"
+          style={{ borderColor: 'var(--line-strong)' }}>
+          <span className="font-semibold text-slate-100">Đã huỷ</span>
+          <span className="min-w-0 break-words text-slate-400">
+            {[d.huy?.lyDo ?? d.cancelReason, d.huy?.ai, d.huy ? fmtDate(d.huy.khi) : null].filter(Boolean).join(' · ')}
+          </span>
+          {d.viewer.canCancel && (
+            <button type="button" className="btn btn-sm sm:ml-auto" onClick={() => void moLai()}>Mở lại lượt MT{d.attemptNo}</button>
+          )}
+        </div>
+      )}
+
+      {/* A. ĐẦU TRANG — ai · đợt nào · kết luận gì, trong ba dòng. */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <button className="btn btn-sm btn-ghost mb-1" onClick={() => navigate(-1)}>← Quay lại</button>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <h1 className="text-lg font-semibold text-slate-100">
+            <h1 className="text-lg font-semibold text-slate-100 min-w-0 break-words">
               {d.student.name} <span className="text-slate-500 text-sm">· {d.student.code}</span>
               <span className="text-slate-300 text-base font-medium whitespace-nowrap"> · MT{d.attemptNo}{d.lichSu && <> <ChipLichSu /></>}</span>
             </h1>
+            {cancelled && <Tag>Đã huỷ</Tag>}
+            {coKhoa && !cancelled && <Tag title={KHOA_HOAN_TAT_HINT}>Đã hoàn tất</Tag>}
+            {laRf && <span className="text-xs text-slate-400" title="Lộ trình RF — kỳ vọng mọi MT bằng target.">RF</span>}
             <ChonDot hienTai={d.id} ds={dsDot.data?.rows ?? []} homNay={homNay} onChon={(r) => navigate(attemptHref(r))} />
           </div>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Lớp lúc đánh giá: {d.classCode ?? '—'} · {d.branchName ?? '—'}
-            {d.cycle.route && ` · Lộ trình ${d.cycle.route}`}
-            {d.lichSu && ' · Nhập bù, không có hạn'}
+          <p className="text-xs text-slate-500 mt-0.5 m-0" title={d.branchName ? `Lớp lúc đánh giá: ${d.classCode ?? '—'} · ${d.branchName}` : undefined}>
+            {dong2}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -198,16 +230,11 @@ export default function MockDetailPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <span className="text-sm text-slate-200 tabular-nums">
-          Đã có điểm {d.result.scoredRequired}/{d.result.required.length} kỹ năng
-        </span>
+        {/* Rà #119: `sosLevel` (chặn trần 3) — `failedCount` 4 môn từng ra "SOS 4". */}
         <KetQuaDot coDiem={d.result.scoredRequired} yeuCau={d.result.required.length} dat={passed}
-          sos={d.result.failedCount ?? null} />
-        <span className="text-sm text-slate-400">Kỳ vọng {fmtBand(d.result.expectation)}</span>
-        <span className="inline-flex items-center gap-1.5 text-sm text-slate-400">
-          Overall{d.result.overall !== null && <strong className="tabular-nums text-slate-100">{fmtBand(d.result.overall)}</strong>}
-          <KetQuaDot phan="overall" coDiem={d.result.scoredRequired} yeuCau={d.result.required.length} dat={passed}
-            sos={d.result.failedCount ?? null} />
+          sos={d.result.sosLevel ?? null} />
+        <span className="text-sm text-slate-400 tabular-nums">
+          Kỳ vọng {fmtBand(d.result.expectation)}{laRf && d.result.expectation !== null ? ' = target' : ''}
         </span>
         {d.deadlineOverride && (
           <Tag title={d.deadlineOverride.reason ?? undefined}>
@@ -215,14 +242,22 @@ export default function MockDetailPage() {
           </Tag>
         )}
       </div>
-      {d.cancelReason && cancelled && <p className="text-xs text-rose-200 m-0">Đã huỷ: {d.cancelReason}</p>}
+
+      {/* B. NĂM Ô ĐIỂM LỚN — tầng 1 của màn; bấm ô là sửa tại chỗ (YC-13.7, YC-13.8). */}
+      <div id="dai-diem" className="scroll-mt-4">
+        <DaiODiemLon cells={d.cells} lich={d.skillSchedule as LichKn[]} result={d.result} lichSu={d.lichSu} homNay={homNay}
+          mo={moO} onMo={setMoO} save={save} />
+      </div>
+
+      {/* C. NHẬN XÉT W/S (YC-13.5) — không bắt buộc, không phải điểm. */}
+      <KhoiNhanXet cells={d.cells} save={save} />
 
       <details className="rounded-lg border px-3 py-2" style={{ borderColor: 'var(--line)' }}>
         <summary className="cursor-pointer text-sm text-slate-300">Thông tin đợt Mock Test</summary>
         <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-4 m-0 mt-3">
           <Info label="Trạng thái">
             <Status kind={d.status === 'done' ? 'done' : cancelled ? 'idle' : 'doing'}>
-              {attemptStatusLabel(d.status)}
+              {nhanLuot(d.status, d.result.scoredRequired, d.result.required.length)}
             </Status>
           </Info>
           <Info label="Tuần dự kiến hoàn tất"
@@ -243,10 +278,10 @@ export default function MockDetailPage() {
         </dl>
       </details>
 
-      {/* B. ĐIỂM VÀ LỊCH KIỂM TRA — MỘT bảng làm việc; nơi duy nhất của lịch, hạn, điểm và thao tác từng môn. */}
-      <SkillWorkTable d={d} save={save} onDone={reload} onOpenHistory={openHistory} />
+      {/* D. LỊCH KIỂM TRA — MỘT bảng làm việc: lịch, tình trạng, thao tác từng bài (điểm đã ở dải trên). */}
+      <SkillWorkTable d={d} onMoDiem={moODiem} onDone={reload} onOpenHistory={openHistory} />
 
-      {/* D. LỊCH SỬ THAY ĐỔI — thu gọn cuối trang. Hồ sơ Test không còn khối case (rule book §17.5). */}
+      {/* E. LỊCH SỬ THAY ĐỔI — thu gọn cuối trang. Hồ sơ Test không còn khối case (rule book §17.5). */}
       <HistoryCard d={d} />
 
       <WeekModal open={weekOpen} onClose={() => setWeekOpen(false)} attemptId={d.id}
@@ -296,60 +331,78 @@ function Info({ label, title, children }: { label: string; title?: string; child
 
 // ---------------------------------------------------------------- bảng làm việc
 
-/** Cột "Điểm": số câu đúng / band, bốn tiêu chí, hoặc dấu "-". KHÔNG nói "Người nhập" khi ô trống (MT-P09). */
-function ScoreValue({ c }: { c: Cell }) {
-  if (!c.required) return <span className="text-slate-500 text-xs">—</span>;
-  if (c.noShow) return <span className="tabular-nums text-slate-200" title="Không có bài">-</span>;
-  const isRaw = c.skill === 'listening' || c.skill === 'reading';
-  const filled = c.criteria.filter((v) => v !== null).length;
-  if (isRaw) {
-    return c.rawScore === null
-      ? <span className="text-slate-500 text-xs">—</span>
-      : <span className="tabular-nums text-slate-100">
-        {c.rawScore} câu đúng <span className="text-slate-400 text-xs">· Band {fmtBand(c.band)}</span>
-      </span>;
-  }
-  if (c.band !== null) {
+/**
+ * KHỐI NHẬN XÉT W/S (PR-HSM, YC-13.5, Q1). Nằm ở: Test › một lượt MT → ngay dưới dải ô điểm lớn.
+ *
+ * "Nhận xét Writing" có HAI phần Task 1 · Task 2 (hai task có thể hai GV — K4-31), mỗi phần ghi người nhập điểm của bài đó;
+ * "Nhận xét Speaking" kèm GV chấm (đổi là lưu ngay). Người sửa được bài đó (`cell.canEdit`) gõ tại chỗ, lưu khi rời ô; người
+ * khác đọc chữ thường, phần rỗng thì ẩn. Cả khối rỗng mà không ai sửa được → không vẽ.
+ */
+function KhoiNhanXet({ cells, save }: { cells: Cell[]; save: (skill: string, patch: SavePatch) => Promise<boolean> }) {
+  const o = (k: string) => cells.find((c) => c.skill === k);
+  const sua = (c: Cell | undefined): boolean => !!c && c.canEdit && !lockedByNoShow(c);
+  const phu = (c: Cell) => (c.enteredByName ? `nhập điểm: ${c.enteredByName}` : null);
+  const phan = (c: Cell | undefined, nhan: string) => {
+    if (!c) return null;
+    if (sua(c)) return <ONhanXet key={c.skill} nhan={nhan} phu={phu(c)} giaTri={c.nhanXet ?? null} onLuu={(v) => save(c.skill, { nhanXet: v })} />;
+    if (!c.nhanXet) return null;
     return (
-      <span className="tabular-nums text-slate-100">
-        Band {fmtBand(c.band)}
-        <span className="text-slate-500 text-xs"> · {c.criteria.join(' · ')}</span>
-      </span>
+      <div key={c.skill} className="min-w-0">
+        <div className="flex items-baseline gap-2 text-xs text-slate-400">
+          <span className="shrink-0 whitespace-nowrap font-medium text-slate-300">{nhan}</span>{phu(c) && <span className="truncate text-slate-500">{phu(c)}</span>}
+        </div>
+        <p className="m-0 mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-200">{c.nhanXet}</p>
+      </div>
     );
-  }
-  return filled > 0
-    ? <span className="text-amber-200 text-xs">Chưa đủ tiêu chí ({filled}/4)</span>
-    : <span className="text-slate-500 text-xs">—</span>;
-}
-
-function Verdict({ v }: { v: any }) {
-  if (!v || v.band === null) return null;
-  return v.passed === null
-    ? null
-    : v.passed
-      ? <Outcome tone="ok" mark="✓">Đạt kỳ vọng</Outcome>
-      : <Outcome tone="danger" mark="↓">Dưới kỳ vọng</Outcome>;
+  };
+  const w = [phan(o('writing1'), 'Task 1'), phan(o('writing2'), 'Task 2')].filter(Boolean);
+  const s = o('speaking');
+  const nxS = phan(s, 'Nhận xét');
+  const coS = !!s && (sua(s) || !!s.nhanXet || !!s.gvCham);
+  if (!w.length && !coS) return null;
+  return (
+    <Card title="Nhận xét">
+      <div className="grid gap-x-6 gap-y-5 md:grid-cols-2">
+        {w.length > 0 && (
+          <section className="min-w-0 space-y-3">
+            <h3 className="m-0 text-sm font-semibold text-slate-200">Nhận xét Writing</h3>
+            {w}
+          </section>
+        )}
+        {coS && s && (
+          <section className="min-w-0 space-y-3">
+            <div className="flex flex-wrap items-baseline gap-x-2">
+              <h3 className="m-0 text-sm font-semibold text-slate-200">Nhận xét Speaking</h3>
+              {sua(s)
+                ? <NutGvCham value={gvChamThanhChon(s.gvCham)} goiY="Lưu ngay cho bài Speaking này."
+                  onChange={(v) => void save('speaking', { gvCham: gvChamPayload(v) })} />
+                : s.gvCham && <span className="text-xs text-slate-400">GV chấm: {s.gvCham.ten}</span>}
+            </div>
+            {nxS}
+          </section>
+        )}
+      </div>
+    </Card>
+  );
 }
 
 /**
- * MỘT BẢNG THAY HAI (MT-P04): mỗi bài nhập (L · R · W1 · W2 · S) là MỘT dòng, năm cột: Kỹ năng · Lịch kiểm tra · Điểm ·
- * Tình trạng và hạn · Thao tác. Writing tổng là dòng phụ dưới W1/W2, chỉ để đọc.
+ * MỘT BẢNG THAY HAI (MT-P04): mỗi bài nhập (L · R · W1 · W2 · S) là MỘT dòng, bốn cột: Kỹ năng · Lịch kiểm tra · Tình trạng và
+ * hạn · Thao tác. PR-HSM: cột Điểm và dòng Writing tổng đã lên dải ô lớn; nút chính "Nhập điểm / Sửa điểm" mở ô lớn tương ứng.
  *
  * THAO TÁC THEO TRẠNG THÁI (PR-XLMT, T38, K4-27): nút chính và menu ⋯ của mỗi dòng lấy từ MỘT nguồn `thaoTacKyNang` — ≤ 1 nút
  * chính + ≤ 3 mục menu, sáu tên T38. Dòng W2 chỉ có nhập/sửa/huỷ điểm của ô W2 (lịch W đặt ở dòng W1). "Lịch sử" không nằm trong
  * menu dòng: nút ở đầu thẻ cuộn tới dòng thời gian của đợt.
  */
-function SkillWorkTable({ d, save, onDone, onOpenHistory }: {
-  d: Detail; save: (skill: string, patch: SavePatch) => Promise<boolean>; onDone: () => void; onOpenHistory: () => void;
+function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory }: {
+  d: Detail; onMoDiem: (k: KyNangLon) => void; onDone: () => void; onOpenHistory: () => void;
 }) {
-  const [editing, setEditing] = useState<string | null>(null);
   const [moveFor, setMoveFor] = useState<SkillRow | null>(null);
   const [decideFor, setDecideFor] = useState<SkillRow | null>(null);
   const [hop, setHop] = useState<{ t: ThaoTac; r: SkillRow; c: Cell } | null>(null);
   const { homNay } = useNgayNghiepVu();
   const cancelled = d.status === 'cancelled';
 
-  const verdictOf = (skill: string) => d.result.verdicts.find((x: any) => x.skill === skill);
   const order = ['listening', 'reading', 'writing1', 'writing2', 'speaking'];
   const cells = [...d.cells].sort((a, b) => order.indexOf(a.skill) - order.indexOf(b.skill));
   const coDiemO = (c: Cell) => c.band !== null || c.rawScore !== null;
@@ -374,7 +427,7 @@ function SkillWorkTable({ d, save, onDone, onOpenHistory }: {
     const chinh = laDiem(chinh0) && !canScore ? null : chinh0;
     const menu = ownsSchedule ? tat.menu : tat.menu.filter((x) => x === 'huy-diem');
     const chay = (t: ThaoTac) => {
-      if (laDiem(t)) setEditing(c.skill);
+      if (laDiem(t)) onMoDiem(c.assessedSkill as KyNangLon);
       else if (t === 'xep-lai') setMoveFor(r);
       else if (t === 'tra-loi-de-nghi') setDecideFor(r);
       else setHop({ t, r, c });
@@ -382,7 +435,6 @@ function SkillWorkTable({ d, save, onDone, onOpenHistory }: {
     const nhanChinh = chinh === 'nhap-diem' && hasValue ? CHU_THAO_TAC['sua-diem'] : chinh ? CHU_THAO_TAC[chinh] : '';
 
     const prog = c.progress === 'scored' ? 'scored' : r.progress;
-    const isEditing = editing === c.skill && canScore;
 
     return (
       <div key={c.skill}
@@ -401,26 +453,10 @@ function SkillWorkTable({ d, save, onDone, onOpenHistory }: {
             : r.periodCode
               ? <>{tuanLich(r.weekStart, homNay)} <span className="text-slate-500 text-xs block sm:inline">({r.weekRange})</span></>
               : <Tag pending>Chưa xếp tuần</Tag>}
-        </div>
-
-        <div role="cell">
-          <Label>Điểm</Label>
-          {isEditing
-            ? <InlineScoreEditor cell={c} onSave={(p) => save(c.skill, p)} onClose={() => setEditing(null)} />
-            : (
-              <div className="space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <ScoreValue c={c} />
-                  {c.skill !== 'writing1' && c.skill !== 'writing2' && <Verdict v={verdictOf(c.assessedSkill)} />}
-                </div>
-                {/* Người NHẬP điểm — chỉ khi ô có giá trị. Ai cập nhật gì, lúc nào: xem Lịch sử thay đổi. */}
-                {c.enteredByName && (
-                  <div className="text-[11px] text-slate-500">
-                    Nhập bởi {c.enteredByName}{c.enteredAt && ` · ${fmtDateTime(c.enteredAt)}`}
-                  </div>
-                )}
-              </div>
-            )}
+          {/* K4-30: bài dời do vắng nói rõ dời từ tuần nào. */}
+          {r.required && r.doiTu && r.absenceMoveCount > 0 && (
+            <span className="block text-xs text-slate-500">(dời từ {r.doiTu} · vắng lần {r.absenceMoveCount})</span>
+          )}
         </div>
 
         <div role="cell" className="space-y-1">
@@ -451,7 +487,7 @@ function SkillWorkTable({ d, save, onDone, onOpenHistory }: {
         </div>
 
         <div role="cell" className="flex flex-wrap items-start gap-1.5 md:justify-end">
-          {chinh && !isEditing && (
+          {chinh && (
             <button type="button" className="btn btn-sm btn-primary" onClick={() => chay(chinh)}>{nhanChinh}</button>
           )}
           {!chinh && !ownsSchedule && r.required && !canScore && r.sitStatus === 'absent' && (
@@ -471,31 +507,13 @@ function SkillWorkTable({ d, save, onDone, onOpenHistory }: {
     );
   };
 
-  const writing = verdictOf('writing');
-  const writingRow = (
-    <div key="writing-total" role="row"
-      className={`${ROW_GRID} grid gap-y-1 border-t border-dashed px-2 py-2 bg-white/[0.02]`}
-      style={{ borderColor: 'var(--line)' }}>
-      <div role="cell" className="text-xs text-slate-400 md:pl-3">Writing (tổng)</div>
-      <div role="cell" className="hidden md:block" />
-      <div role="cell" className="flex flex-wrap items-center gap-2 text-sm">
-        {writing?.band != null
-          ? <span className="tabular-nums text-slate-100">Band {fmtBand(writing.band)}</span>
-          : <span className="text-slate-500 text-xs">Chưa đủ hai task</span>}
-        <Verdict v={writing} />
-        <span className="text-[11px] text-slate-500">Tính từ hai task: (Task 1 + Task 2 × 2) / 3</span>
-      </div>
-      <div role="cell" className="hidden md:block" /><div role="cell" className="hidden md:block" />
-    </div>
-  );
-
   /* Huỷ điểm Writing: dòng W1 tích sẵn mọi ô W đang có điểm; dòng W2 chỉ ô W2. */
   const oCoDiemCua = (c: Cell): string[] => (c.assessedSkill !== 'writing' ? [c.skill]
     : c.skill === 'writing2' ? ['writing2']
       : d.cells.filter((x) => x.assessedSkill === 'writing' && coDiemO(x)).map((x) => x.skill));
 
   return (
-    <Card title="Điểm và lịch kiểm tra"
+    <Card title="Lịch kiểm tra"
       action={<div className="flex items-center gap-2">
         {d.splitWeeks && <Tag>Đợt này thi ở nhiều tuần</Tag>}
         <button type="button" className="btn btn-sm" onClick={onOpenHistory}>Lịch sử</button>
@@ -509,16 +527,15 @@ function SkillWorkTable({ d, save, onDone, onOpenHistory }: {
       {d.cells.length === 0 ? (
         <Empty title="Lớp này chưa cấu hình kỹ năng nào" />
       ) : (
-        <div role="table" aria-label="Điểm và lịch kiểm tra theo kỹ năng">
+        <div role="table" aria-label="Lịch kiểm tra theo kỹ năng">
           <div role="row"
             className={`${ROW_GRID} hidden px-2 pb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500`}>
             <div role="columnheader">Kỹ năng</div>
             <div role="columnheader">Lịch kiểm tra</div>
-            <div role="columnheader">Điểm</div>
             <div role="columnheader">Tình trạng và hạn</div>
             <div role="columnheader" className="text-right">Thao tác</div>
           </div>
-          {cells.flatMap((c) => (c.skill === 'writing2' ? [renderRow(c), writingRow] : [renderRow(c)]))}
+          {cells.map(renderRow)}
         </div>
       )}
       {d.result.scopeDetail && (

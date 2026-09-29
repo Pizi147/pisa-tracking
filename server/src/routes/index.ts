@@ -848,6 +848,8 @@ api.put('/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
     lyDo: b.lyDo,
     /* Dấu '-' "không có bài" (PR-G) — chỉ nhận đúng true/false, không hiểu chuỗi lạ thành lệnh. */
     noShow: b.noShow === true ? true : b.noShow === false ? false : undefined,
+    /* PR-HSM: nhận xét W/S + GV chấm Speaking — máy chủ kiểm lại mọi luật trong `saveScore`. */
+    nhanXet: b.nhanXet, gvCham: b.gvCham,
   });
 }));
 

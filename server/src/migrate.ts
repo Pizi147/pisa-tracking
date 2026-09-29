@@ -18,6 +18,7 @@ import { migratePrMon } from './migrate/prMon.ts';
 import { migratePrKck } from './migrate/prKck.ts';
 import { migratePrSos } from './migrate/prSos.ts';
 import { migratePrYt4 } from './migrate/prYt4.ts';
+import { migratePrHsm } from './migrate/prHsm.ts';
 
 /**
  * Giá trị cũ của cột `track` cho case Ý thức. Mô hình Case Ý thức đã BỎ 21/09/2026 (rule book mục 18) — hằng số này chỉ để NÂNG CẤP
@@ -473,6 +474,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     /* PR-SOS: hạn xác nhận Case SOS + loại mốc PA quy chế (Q28-3). */ migratePrSos(conn, applied);
     /* PR-YT4: Ý thức v4 — ghi nhận vi phạm, ngày QL quyết, bảng khai bậc (chỉ cấu trúc). */
     migratePrYt4(conn, applied);
+    /* PR-HSM: nhận xét W/S + GV chấm Speaking (T39). */ migratePrHsm(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống

@@ -18,7 +18,7 @@ import { QuickReport } from '../cases/QuickReport.tsx';
 import { StudentYThucSection } from '../yThuc/StudentYThucSection.tsx';
 import {
   attemptHref,
-  attemptStatusLabel, fmtBand, skillLabel, sosLabel, sosTone, studentStatusLabel,
+  attemptStatusLabel, fmtBand, skillLabel, skillShort, sosLabel, sosTone, studentStatusLabel,
 } from '../../lib/format.ts';
 import {
   HO_SO_TAB_LABEL, JOURNEY_EVENT_LABEL, caseCategoriesFor, tenMonNgan, docThamSoHoSo, duongHoSoHocVien,
@@ -312,7 +312,11 @@ export default function StudentDetailPage() {
             {data.attempts.length === 0 ? (
               <div className="p-4"><Empty title="Chưa có lượt đánh giá nào trong lộ trình này" /></div>
             ) : cy.ratio ? <RatioAttempts attempts={data.attempts} dotId={p.dot} homNay={homNay} ct={cy.programmeCode ?? null} onOpen={(a) => navigate(attemptHref(a))} />
-              : <IeltsAttempts attempts={data.attempts} dotId={p.dot} homNay={homNay} onOpen={(a) => navigate(attemptHref(a))} />}
+              : <>
+                {/* RF: kỳ vọng mọi MT bằng target — nói một lần ở đầu khối, không lặp ở từng hàng. */}
+                {cy.route === 'RF' && <p className="m-0 px-3 pt-2 text-xs text-slate-500">Lộ trình RF — kỳ vọng mọi MT bằng target.</p>}
+                <IeltsAttempts attempts={data.attempts} dotId={p.dot} homNay={homNay} onOpen={(a) => navigate(attemptHref(a))} />
+              </>}
             <div className="p-3">
               {cy.targetRevisions.length > 0 && (
                 <p className="text-xs text-slate-500 mt-2 mb-0">
@@ -506,9 +510,25 @@ function Stat({ label, value, sub, tone, nho, onClick, title }: {
   );
 }
 
+/**
+ * BẢNG MOCK TEST của hồ sơ HV (F8, K4-33). Nằm ở: Học viên & Lớp › hồ sơ học viên › tab Học thuật › khối "Mock Test".
+ *
+ * MỘT cột Kết quả (`KetQuaDot` — nói tiến độ lẫn kết luận một lần, không "Đã lên lịch" + "Chờ n kỹ năng" + "mới 2/4"). Số căn
+ * phải. Ô MT{n} là liên kết (Tab vào được); cả hàng vẫn bấm được. Nhãn nhỏ cạnh MT: lịch sử · đã huỷ · huỷ phần · dời S —
+ * tối đa hai, còn lại "+n" có tooltip.
+ */
 function IeltsAttempts({ attempts, dotId, homNay, onOpen }: {
   attempts: any[]; dotId?: number; homNay: string | null; onOpen: (a: any) => void;
 }) {
+  const nhanCua = (a: any): { chu: string; title: string }[] => [
+    ...(a.status === 'cancelled' ? [{ chu: 'đã huỷ', title: 'Lượt này đã huỷ.' }] : []),
+    ...(a.huyPhan ? [{ chu: 'huỷ phần', title: 'Có kỹ năng bị huỷ phần thi.' }] : []),
+    ...(a.doiKyNang?.length ? [{
+      chu: `dời ${a.doiKyNang.map((k: string) => skillShort(k)).join(' ')}`,
+      title: `Dời do vắng: ${a.doiKyNang.map((k: string) => skillLabel(k)).join(', ')}.`,
+    }] : []),
+  ];
+  const so = 'td text-right tabular-nums';
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm min-w-[640px]">
@@ -517,43 +537,51 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen }: {
             <Th hint="Số thứ tự lượt Mock Test trong lộ trình này.">MT</Th>
             <Th hint="Lớp em học VÀO LÚC làm bài này — chuyển lớp không viết lại lịch sử.">Lớp lúc đánh giá</Th>
             <Th hint="Tuần kế hoạch của lượt này. Một lượt chỉ thuộc đúng một tuần — không có ngày thi cụ thể.">Tuần</Th>
-            <Th hint="Lượt đã chấm xong, đang chờ, hay đã huỷ.">Trạng thái</Th>
-            <Th hint="Band Listening">L</Th><Th hint="Band Reading">R</Th><Th hint="Band Writing — gộp từ W1 và W2">W</Th><Th hint="Band Speaking">S</Th>
-            <Th hint="Band tổng của lượt, tính theo quy tắc IELTS. Thiếu một kỹ năng thì chưa có Overall.">Overall</Th>
-            <Th hint="Mức mong đợi của chính đợt Test đó, tính theo mục tiêu tại thời điểm ấy. Đổi mục tiêu không chấm lại quá khứ.">Kỳ vọng</Th>
-            <Th hint="Số kỹ năng dưới kỳ vọng của đợt Test đó — chính là mức SOS. Thiếu điểm thì chưa kết luận.">Kết quả</Th>
+            <Th align="right" hint="Band Listening">L</Th><Th align="right" hint="Band Reading">R</Th>
+            <Th align="right" hint="Band Writing — gộp từ W1 và W2">W</Th><Th align="right" hint="Band Speaking">S</Th>
+            <Th align="right" hint="Band tổng của lượt, tính theo quy tắc IELTS. Thiếu một kỹ năng thì chưa có Overall.">Overall</Th>
+            <Th align="right" hint="Mức mong đợi của chính đợt Test đó, tính theo mục tiêu tại thời điểm ấy. Đổi mục tiêu không chấm lại quá khứ.">Kỳ vọng</Th>
+            <Th hint="Tiến độ chấm và kết luận của đợt: số kỹ năng dưới kỳ vọng — chính là mức SOS. Thiếu điểm thì chưa kết luận.">Kết quả</Th>
           </tr>
         </thead>
         <tbody>
-          {attempts.map((a) => (
-            <tr key={a.id} id={`dot-${a.id}`} className="row-hover cursor-pointer" onClick={() => onOpen(a)}
-              style={a.id === dotId ? { background: 'var(--accent-soft)' } : undefined}>
-              <td className="td tabular-nums whitespace-nowrap">MT{a.attemptNo}{a.lichSu && <> <ChipLichSu /></>}</td>
-              <td className="td text-slate-300">{a.classCode ?? '—'}</td>
-              <td className="td whitespace-nowrap">
-                {a.weekStart ? tuanLich(a.weekStart, homNay) : <Info pending>Chưa có tuần</Info>}
-              </td>
-              <td className="td">
-                <Status kind={a.status === 'done' ? 'done' : a.status === 'cancelled' ? 'idle' : 'doing'}>
-                  {attemptStatusLabel(a.status)}
-                </Status>
-              </td>
-              <td className="td tabular-nums">{fmtBand(a.bands?.listening)}</td>
-              <td className="td tabular-nums">{fmtBand(a.bands?.reading)}</td>
-              <td className="td tabular-nums">{fmtBand(a.bands?.writing)}</td>
-              <td className="td tabular-nums">{fmtBand(a.bands?.speaking)}</td>
-              <td className="td tabular-nums text-slate-100">{fmtBand(a.overall)}</td>
-              <td className="td tabular-nums">{fmtBand(a.expectation)}</td>
-              <td className="td">
-                <Level tone={sosTone(a.sosLevel)}>
-                  {a.sosLevel === null ? `Chờ ${a.required - a.scored} kỹ năng` : sosLabel(a.sosLevel)}
-                </Level>
-                {a.provisional && <div className="text-[10px] text-slate-500">mới {a.scored}/{a.required} kỹ năng</div>}
-                {a.scopeNote && <div className="text-[10px] text-slate-500">{a.scopeNote}</div>}
-                <Link to={attemptHref(a)} className="link text-[10px]" onClick={(e) => e.stopPropagation()}>Hồ sơ đợt ›</Link>
-              </td>
-            </tr>
-          ))}
+          {attempts.map((a) => {
+            const nhan = nhanCua(a);
+            return (
+              <tr key={a.id} id={`dot-${a.id}`} className="row-hover cursor-pointer" onClick={() => onOpen(a)}
+                style={a.id === dotId ? { background: 'var(--accent-soft)' } : undefined}>
+                <td className="td whitespace-nowrap">
+                  <Link to={attemptHref(a)} className="link tabular-nums" onClick={(e) => e.stopPropagation()}>MT{a.attemptNo}</Link>
+                  {a.lichSu && <> <ChipLichSu /></>}
+                  {nhan.slice(0, a.lichSu ? 1 : 2).map((x) => (
+                    <span key={x.chu} title={x.title}
+                      className="ml-1 inline-flex items-center whitespace-nowrap rounded border border-muted-line px-[5px] align-middle text-[11.5px] leading-4 text-muted">
+                      {x.chu}
+                    </span>
+                  ))}
+                  {nhan.length > (a.lichSu ? 1 : 2) && (
+                    <span className="ml-1 text-[11.5px] text-muted" title={nhan.slice(a.lichSu ? 1 : 2).map((x) => x.title).join(' ')}>
+                      +{nhan.length - (a.lichSu ? 1 : 2)}
+                    </span>
+                  )}
+                </td>
+                <td className="td text-slate-300">{a.classCode ?? '—'}</td>
+                <td className="td whitespace-nowrap">
+                  {a.weekStart ? tuanLich(a.weekStart, homNay) : <Info pending>Chưa có tuần</Info>}
+                </td>
+                <td className={so}>{fmtBand(a.bands?.listening)}</td>
+                <td className={so}>{fmtBand(a.bands?.reading)}</td>
+                <td className={so}>{fmtBand(a.bands?.writing)}</td>
+                <td className={so}>{fmtBand(a.bands?.speaking)}</td>
+                <td className={`${so} text-slate-100`}>{fmtBand(a.overall)}</td>
+                <td className={so}>{fmtBand(a.expectation)}</td>
+                <td className="td">
+                  <KetQuaDot coDiem={a.scored} yeuCau={a.required} dat={a.evaluable ? a.sosLevel === 0 : null} sos={a.sosLevel ?? null} />
+                  {a.scopeNote && <div className="text-xs text-slate-500">{a.scopeNote}</div>}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

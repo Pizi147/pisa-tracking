@@ -38,13 +38,25 @@ export function useTrangThaiLuuO<B>(khoaBao: string) {
   const [o, setO] = useState<Record<string, TrangThaiLuuO>>({});
   const [loi, setLoi] = useState<Record<string, string>>({});
   const hong = useRef(new Map<string, B>());
+  /* C9 (PR-HSM): ô gõ sai (chưa gửi được gì) cũng là "ô chưa lưu" của dòng — nhưng không có lệnh để "Lưu lại". */
+  const [loiNhapO, setLoiNhapO] = useState<Record<string, string>>({});
   const boLoi = (k: string) => setLoi((x) => { if (!(k in x)) return x; const n = { ...x }; delete n[k]; return n; });
   const tong = tomTatLuuDong(Object.values(o));
-  useBaoLuu(khoaBao, tong.soLoi);
+  const soLoiNhap = Object.keys(loiNhapO).filter((k) => o[k] !== 'loi').length;
+  const soLoi = tong.soLoi + soLoiNhap;
+  useBaoLuu(khoaBao, soLoi);
   return {
-    o, loi, hong, soLoi: tong.soLoi,
+    o, loi, hong, soLoi,
+    /** Có ô lỗi GỬI (mạng/5xx) — chỉ lúc đó dòng mới có "Lưu lại"; lỗi nhập thì sửa ngay tại ô. */
+    coGuiLai: tong.soLoi > 0,
+    loiNhap: (k: string, cau: string | null) => setLoiNhapO((x) => {
+      if ((x[k] ?? null) === cau) return x;
+      const n = { ...x };
+      if (cau) n[k] = cau; else delete n[k];
+      return n;
+    }),
     status: (tong.tt === 'loi' ? 'error' : tong.tt === 'dang-luu' ? 'saving' : tong.tt === 'da-luu' ? 'saved' : 'idle') as SaveStatus,
-    lastError: Object.values(loi)[0],
+    lastError: Object.values(loi)[0] ?? Object.values(loiNhapO)[0],
     batDau: (k: string) => setO((x) => capNhatLuuO(x, k, 'bat-dau')),
     thanhCong: (k: string) => { hong.current.delete(k); boLoi(k); setO((x) => capNhatLuuO(x, k, 'thanh-cong')); },
     hongO: (k: string, body: B, cau: string) => {

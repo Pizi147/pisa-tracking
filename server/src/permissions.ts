@@ -270,6 +270,28 @@ export function napTruocPhamVi(studentIds: readonly (number | null | undefined)[
   }
 }
 
+/**
+ * GV SPEAKING CHẤM CHÉO (chủ sản phẩm chốt 30/09, PR-HSM): GV đang được phân công **Speaking** ở một lớp Fast Track thì nhập được ô
+ * **S** Mock của MỌI lớp Fast Track **cùng chi nhánh** — vì thế mới cần ghi "GV chấm". Đây chỉ là QUYỀN: `mySkills` (việc / nợ
+ * điểm) không đổi — ô S của lớp khác vẫn là việc của GV được phân công S lớp đó. Lớp thường không áp.
+ * Trả các lớp FT được mở; rỗng khi người này không dạy Speaking FT, hoặc vai giáo viên không còn quyền nhập điểm ở chi nhánh đó.
+ */
+export function lopFtChoGvSpeaking(p: Principal, date = demoToday()): number[] {
+  const dayS = p.assignments.filter((a) => a.skill === 'speaking' && activeAt(a, date));
+  if (!dayS.length) return [];
+  const bang = bangLop();
+  const cn = new Set<number>();
+  for (const a of dayS) {
+    const l = bang.get(a.classId);
+    if (!l?.isFastTrack || l.branchId == null) continue;
+    if (p.grants.some((g) => g.roleKey === 'teacher' && g.permissions.has(PERMISSIONS.SCORE_EDIT) && grantCovers(g, { classId: a.classId }))) {
+      cn.add(l.branchId);
+    }
+  }
+  return [...bang].filter(([, l]) => l.isFastTrack && l.branchId != null && cn.has(l.branchId)).map(([id]) => id);
+}
+const laGvSpeakingLop = (p: Principal, classId: number, date?: string) => lopFtChoGvSpeaking(p, date).includes(classId);
+
 /** Chi nhánh mà ngữ cảnh đang nói tới. */
 function ctxBranches(ctx: Ctx): number[] {
   const set = new Set<number>();
@@ -323,6 +345,8 @@ function teacherAllows(p: Principal, permission: string, ctx: Ctx): boolean {
 
     // Xem: chỉ trong lớp được phân công, bất kỳ môn nào (xem KHÔNG cần đúng môn).
     case PERMISSIONS.ATTEMPT_VIEW:
+      /* PR-HSM: GV Speaking xem được lượt MT của lớp FT cùng chi nhánh (để chấm S chéo) — chỉ khi hỏi theo LỚP. */
+      return ctx.anyScope === true || hasAssignment(p, ctx, 'any') || (!!ctx.classId && laGvSpeakingLop(p, ctx.classId, ctx.date));
     case PERMISSIONS.STUDENT_VIEW:
       return ctx.anyScope === true || hasAssignment(p, ctx, 'any');
 
@@ -495,7 +519,9 @@ export function editableSkills(p: Principal, classId: number, skills: readonly s
       || qlLichSu || (gvcnLichSu && !luot!.oCoDiem.includes(skill))
       || can(p, PERMISSIONS.SCORE_OVERRIDE, { classId })
       /* PR-XLMT (chủ sản phẩm chốt 29/09): Quản lý sửa/xoá điểm có lý do (RB-5) ở MỌI lúc, không chỉ sau hoàn tất. */
-      || (!chiViec && can(p, PERMISSIONS.PLAN_WEEK, { classId })),
+      || (!chiViec && can(p, PERMISSIONS.PLAN_WEEK, { classId }))
+      /* PR-HSM (chủ sản phẩm 30/09): GV Speaking chấm S chéo lớp FT cùng chi nhánh — quyền, không phải việc. */
+      || (!chiViec && skill === 'speaking' && laGvSpeakingLop(p, classId, luot?.today)),
   );
 }
 
@@ -545,6 +571,8 @@ export function defaultWorkScope(p: Principal): WorkScope {
 export function scoreEditPath(p: Principal, classId: number, skill: string,
   attempt?: { lich_su: number; coDiemO: boolean }): 'assigned' | 'lich_su' | 'override' | null {
   if (can(p, PERMISSIONS.SCORE_EDIT, { classId, skill })) return 'assigned';
+  /* PR-HSM: GV Speaking chấm S chéo lớp FT cùng chi nhánh — nhật ký như nhập điểm thường (`score.edit`), tên GV chấm ghi ở ô. */
+  if (skill === 'speaking' && laGvSpeakingLop(p, classId)) return 'assigned';
   if (attempt?.lich_su === 1 && (can(p, PERMISSIONS.PLAN_WEEK, { classId }) || (!attempt.coDiemO && isCoreTeacherOf(p, classId)))) return 'lich_su';
   /* PR-XLMT (chủ sản phẩm chốt 29/09): Quản lý (xếp lịch được lớp đó) sửa điểm qua đường `override` ở mọi lúc — RB-5 vẫn đòi lý do. */
   if (can(p, PERMISSIONS.SCORE_OVERRIDE, { classId }) || can(p, PERMISSIONS.PLAN_WEEK, { classId })) return 'override';

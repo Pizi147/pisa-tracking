@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, ENTRY_SKILLS, ENTRY_SKILL_LABEL, MOCK_FT_STUDY_WEEK, NO_SHOW_OVERRIDDEN_NOTE,
-  PERMISSIONS, awaitingScore, cachHuyLuot, kiemLyDo, kiemLyDoThaoTac, kiemSoMtMoi, laLichSu, ngay, noShowStateOf, noShowText, pendingSkillsOf, soMtKeTiep, tenMon, tuanLich,
+  BAI_CO_NHAN_XET, PERMISSIONS, awaitingScore, cachHuyLuot, kiemLyDo, kiemLyDoThaoTac, kiemNhanXet, kiemSoMtMoi, laLichSu, ngay, noShowStateOf, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanLich,
   type CachHuy,
   type AssessedSkill, type EntrySkill, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
@@ -29,6 +29,7 @@ import { raiseSignalsForResult, stepsFor } from '../cases/sos.ts';
 import { reconcileCorrectedSignals } from '../cases/signals.ts';
 import { currentCycle, cycleById, examPlanOf, luotSoCuaLoTrinh } from './cycles.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
+import { chuanHoaNguoiThucHien } from '../cases/nguoiThucHien.ts';
 import { allProgrammes, evaluateRegular, isRatioClass, regularDeadline } from '../normal/regular.ts';
 
 export type ScoreRow = {
@@ -41,14 +42,16 @@ export type ScoreRow = {
   /** Dấu '-' "không có bài" (PR-G) — tuần lịch lúc báo, người báo, lúc báo, báo muộn (C10), đã chốt chưa. */
   no_show_period_id?: number | null; no_show_by?: number | null; no_show_at?: string | null;
   no_show_late?: number | null; no_show_settled_at?: string | null;
+  /** PR-HSM (T39): nhận xét của bài nhập (W1/W2/S) + GV chấm Speaking (tài khoản hoặc tên ngoài; tên tài khoản join sẵn). */
+  comment?: string | null; examiner_user_id?: number | null; examiner_name?: string | null; examiner_user_name?: string | null;
 };
 
 /** PR-TD: nhớ trong request GET theo attemptId — hồ sơ HV gọi lặp cho mỗi lượt của em (`profile.ts`, `students.ts`). */
 export function scoresOf(attemptId: number): ScoreRow[] {
   return nho(`diem:${attemptId}`, () => db()
     .prepare(
-      `SELECT s.*, u.full_name AS entered_by_name FROM assessment_scores s
-         LEFT JOIN users u ON u.id = s.entered_by WHERE s.attempt_id = ?`,
+      `SELECT s.*, u.full_name AS entered_by_name, g.full_name AS examiner_user_name FROM assessment_scores s
+         LEFT JOIN users u ON u.id = s.entered_by LEFT JOIN users g ON g.id = s.examiner_user_id WHERE s.attempt_id = ?`,
     )
     .all(attemptId) as ScoreRow[]);
 }
@@ -97,8 +100,8 @@ export function loadBundle(attemptIds: number[]): AttemptBundle {
     const ph = chunk.map(() => '?').join(',');
     for (const r of conn
       .prepare(
-        `SELECT s.*, u.full_name AS entered_by_name FROM assessment_scores s
-           LEFT JOIN users u ON u.id = s.entered_by WHERE s.attempt_id IN (${ph})`,
+        `SELECT s.*, u.full_name AS entered_by_name, g.full_name AS examiner_user_name FROM assessment_scores s
+           LEFT JOIN users u ON u.id = s.entered_by LEFT JOIN users g ON g.id = s.examiner_user_id WHERE s.attempt_id IN (${ph})`,
       )
       .all(...chunk) as any[]) {
       if (!bundle.scores.has(r.attempt_id)) bundle.scores.set(r.attempt_id, []);
@@ -246,6 +249,10 @@ export type SkillCell = {
   } | null;
   /** S13: một dòng giải thích khi Quản lý đã đổi kết luận "không dự thi" của chính tuần này. `null` là bình thường. */
   noShowNote: string | null;
+  /** PR-HSM (YC-13.5): nhận xét của bài nhập này — chỉ W1/W2/S, không bắt buộc. */
+  nhanXet: string | null;
+  /** PR-HSM (T39): GV chấm Speaking — tài khoản (`userId`) hoặc người ngoài (`userId: null`). Chỉ ô `speaking`. */
+  gvCham: { userId: number | null; ten: string } | null;
 };
 
 /** Đưa ô điểm về đúng hình dạng mà luật đếm dùng chung cần. */
@@ -382,10 +389,11 @@ export function skillCells(
         /* Đã báo "không có bài" thì không nợ điểm ở ô này — hạn nhập điểm chỉ áp cho bài CÓ thực hiện. */
         && noShow === null,
       progress,
-      canEdit: required && !cancelled && view.sitStatus !== 'cancelled'
+      /* E8 (T53 Q6): bài đã xác nhận vắng không nhập ở đâu cả — nhập bù thì Quản lý "Xếp lại bài vắng" / "Khôi phục" trước. */
+      canEdit: required && !cancelled && view.sitStatus !== 'cancelled' && view.sitStatus !== 'absent'
         && (hoanTat.hoanTat ? suaSauHoanTat : editable.includes(skill)),
       /* Việc nhập điểm của người xem (bảng lớp "Nhập điểm …") — như `canEdit` nhưng trước hoàn tất bỏ quyền sửa mọi lúc của Quản lý. */
-      viec: required && !cancelled && view.sitStatus !== 'cancelled'
+      viec: required && !cancelled && view.sitStatus !== 'cancelled' && view.sitStatus !== 'absent'
         && (hoanTat.hoanTat ? suaSauHoanTat : viecList.includes(skill)),
       /* R11: đánh dấu "đợt đã hoàn tất" cho MỌI người xem — Quản lý vẫn `khoa && canEdit` (sửa qua hộp lý do). */
       khoa: hoanTat.hoanTat,
@@ -401,6 +409,10 @@ export function skillCells(
       sitStatus: view.sitStatus,
       noShow,
       noShowNote,
+      nhanXet: row?.comment ?? null,
+      gvCham: skill === 'speaking' && row && (row.examiner_user_id || row.examiner_name)
+        ? { userId: row.examiner_user_id ?? null, ten: tenGvCham({ examinerUserName: row.examiner_user_name, examinerName: row.examiner_name }) ?? '' }
+        : null,
     };
   });
 }
@@ -913,6 +925,20 @@ export function attemptDetail(p: Principal, attemptId: number) {
          LEFT JOIN users u ON u.id = h.actor_user_id WHERE h.attempt_id = ? ORDER BY h.id DESC`,
     )
     .all(attemptId) as any[];
+  /*
+   * PR-HSM (K4-30): "dời từ" = tuần cũ của lần dời do vắng MỚI NHẤT từng kỹ năng (`history` đã xếp mới trước). Mã tuần → ngày
+   * bằng MỘT câu, chỉ khi có dời.
+   */
+  const doiMa = new Map<string, string>();
+  for (const h of history) if (h.action === 'skill_week_moved_absence' && h.old_value && !doiMa.has(h.field)) doiMa.set(h.field, h.old_value);
+  const doiNgay = new Map<string, string>();
+  if (doiMa.size) {
+    const ma = [...new Set(doiMa.values())];
+    for (const r of conn.prepare(`SELECT code, week_start FROM report_periods WHERE code IN (${ma.map(() => '?').join(',')})`).all(...ma) as any[]) {
+      doiNgay.set(r.code, r.week_start);
+    }
+  }
+  const huyDong = a.status === 'cancelled' ? history.find((h) => h.action === 'cancelled') : null;
 
   return {
     id: a.id,
@@ -940,7 +966,12 @@ export function attemptDetail(p: Principal, attemptId: number) {
       blockingLabels: completion.blocking.map((k: string) => ASSESSED_SKILL_LABEL[k as AssessedSkill] ?? tenMon(null, k)),
     },
     /** Lịch, phạm vi, trạng thái thi và hạn chấm của TỪNG kỹ năng (mục 10.1 · 10.5). */
-    skillSchedule: scheduleRows,
+    skillSchedule: scheduleRows.map((r) => {
+      const ma = doiMa.get(r.skill);
+      return { ...r, doiTu: ma ? (doiNgay.has(ma) ? tuanLich(doiNgay.get(ma)!, today) : ma) : null };
+    }),
+    /** PR-HSM (K4 §4h): lượt đã huỷ — lý do, ai, khi (dòng `cancelled` mới nhất của lịch sử). */
+    huy: huyDong ? { lyDo: huyDong.reason ?? null, ai: huyDong.actor_name ?? null, khi: huyDong.created_at } : null,
     /** Đợt này có tách tuần không — nhiều hơn một tuần trong các kỹ năng bắt buộc. */
     splitWeeks: [...new Set(scheduleRows.filter((r) => r.required && r.periodCode).map((r) => r.periodCode))].length > 1,
     scheduleHeadline: scheduleHeadline({
@@ -1306,7 +1337,53 @@ export type ScorePatch = {
    * Lý do đi vào nhật ký `score.edit`/`score.override` — chỗ `scoreHistoryOf` đang đọc — nên không cần bảng mới.
    */
   lyDo?: string | null;
+  /** PR-HSM (YC-13.5): nhận xét W1/W2/S — `null`/rỗng = xoá. Không phải điểm: không lý do, không đổi "Nhập bởi", không tính lại SOS. */
+  nhanXet?: string | null;
+  /** PR-HSM (T39): GV chấm Speaking, dạng `nguoiThanhPayload` — `null` = xoá. */
+  gvCham?: { performerSelf?: boolean; performerUserId?: number | null; performerName?: string | null } | null;
 };
+
+/** GV chấm hợp lệ: nhân viên đang làm việc, hoặc tên người ngoài 2–100 ký tự (luật `chuanHoaNguoiThucHien`). */
+function gvChamHopLe(p: Principal, g: NonNullable<ScorePatch['gvCham']>) {
+  if (typeof g !== 'object') throw badRequest('GV chấm không hợp lệ.');
+  try {
+    return chuanHoaNguoiThucHien(p, g, { nhom: 'nhan_vien', batBuoc: false });
+  } catch {
+    throw badRequest('GV chấm phải là nhân viên đang làm việc, hoặc gõ tên người ngoài (2–100 ký tự).');
+  }
+}
+
+/**
+ * CHỈ NHẬN XÉT / GV CHẤM (K4 §4f) — không đụng điểm, "Nhập bởi", SOS. `undefined` = giữ cột đó. Chưa có dòng thì tạo dòng
+ * không điểm (GV ghi nhận xét trước khi chấm — Q7). Nhật ký `score.nhan_xet` giữ trước/sau.
+ */
+function luuNhanXet(
+  p: Principal, attemptId: number, skill: string,
+  nhanXet: string | null | undefined, gv: { userId: number | null; name: string | null } | null | undefined,
+) {
+  const conn = db();
+  const cu = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, skill) as ScoreRow | undefined;
+  const comment = nhanXet !== undefined ? nhanXet : cu?.comment ?? null;
+  const exUser = gv !== undefined ? gv?.userId ?? null : cu?.examiner_user_id ?? null;
+  const exName = gv !== undefined ? gv?.name ?? null : cu?.examiner_name ?? null;
+  if (cu) {
+    conn.prepare('UPDATE assessment_scores SET comment = ?, examiner_user_id = ?, examiner_name = ? WHERE id = ?')
+      .run(comment, exUser, exName, cu.id);
+  } else {
+    conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, comment, examiner_user_id, examiner_name) VALUES (?,?,?,?,?)')
+      .run(attemptId, skill, comment, exUser, exName);
+  }
+  writeAudit({
+    actorUserId: p.userId, action: 'score.nhan_xet', entityType: 'assessment_attempt', entityId: attemptId, entityLabel: skill,
+    before: cu ? { comment: cu.comment ?? null, examinerUserId: cu.examiner_user_id ?? null, examinerName: cu.examiner_name ?? null } : null,
+    after: { comment, examinerUserId: exUser, examinerName: exName },
+  });
+  const fresh = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
+  return {
+    score: conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, skill),
+    result: resultOf(fresh), attemptStatus: fresh.status,
+  };
+}
 
 /**
  * Tính lại trạng thái lượt và mức SOS từ dữ liệu hiện có.
@@ -1429,6 +1506,21 @@ export function saveScore(
       + 'sửa trạng thái thi trước rồi mới nhập điểm.',
     );
   }
+
+  /*
+   * PR-HSM — NHẬN XÉT / GV CHẤM đi cùng đường này (một route, một hàm) và đã qua đủ kiểm quyền, hoàn tất, huỷ, vắng ở trên.
+   * Chỉ gửi hai trường đó → nhánh riêng, TRƯỚC nhánh "-" và nhánh điểm (không ghi đè `entered_by`, không `refreshOutcome`).
+   */
+  const coNhanXet = patch.nhanXet !== undefined, coGvCham = patch.gvCham !== undefined;
+  if (coNhanXet && !(BAI_CO_NHAN_XET as readonly string[]).includes(skill)) throw badRequest('Chỉ Writing Task 1, Writing Task 2 và Speaking có nhận xét.');
+  if (coGvCham && skill !== 'speaking') throw badRequest('Chỉ Speaking có GV chấm.');
+  const nx = coNhanXet ? kiemNhanXet(patch.nhanXet) : null;
+  if (nx && 'loi' in nx) throw badRequest(nx.loi);
+  const nxGt = nx && 'gt' in nx ? nx.gt : undefined;
+  const gv = coGvCham ? (patch.gvCham ? gvChamHopLe(p, patch.gvCham) : null) : undefined;
+  const chiNhanXet = (coNhanXet || coGvCham) && patch.rawScore === undefined && patch.rawTotal === undefined
+    && patch.criteria === undefined && patch.noShow === undefined && patch.resultDate === undefined && patch.note === undefined;
+  if (chiNhanXet) return tx(() => luuNhanXet(p, attemptId, skill, nxGt, gv));
 
   return tx(() => {
     const existing = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?')
@@ -1557,23 +1649,32 @@ export function saveScore(
     const hasValue = raw !== null || crit.some((v) => v !== null);
     const enteredBy = hasValue ? p.userId : null;
     const enteredAt = hasValue ? nowIso() : null;
+    /*
+     * PR-HSM (Q6): nhận xét + GV chấm gửi kèm thì ghi luôn; ô VỪA MẤT HẾT điểm (Huỷ điểm, Thi lại, xoá tay — đều qua đây)
+     * thì cả ba về NULL: nhận xét nói về bài đã chấm, thi lại là bài mới. Bản cũ còn trong `before` của nhật ký.
+     */
+    const matHet = !hasValue && daCoDiem;
+    const comment = matHet ? null : nxGt !== undefined ? nxGt : existing?.comment ?? null;
+    const exUser = matHet ? null : gv !== undefined ? gv?.userId ?? null : existing?.examiner_user_id ?? null;
+    const exName = matHet ? null : gv !== undefined ? gv?.name ?? null : existing?.examiner_name ?? null;
     if (existing) {
       conn
         .prepare(
           `UPDATE assessment_scores SET raw_score=?, raw_total=?, c1=?, c2=?, c3=?, c4=?, band=?,
-                                        result_date=?, entered_by=?, entered_at=?, note=? WHERE id=?`,
+                                        result_date=?, entered_by=?, entered_at=?, note=?,
+                                        comment=?, examiner_user_id=?, examiner_name=? WHERE id=?`,
         )
         .run(raw, total, crit[0], crit[1], crit[2], crit[3], band, resultDate, enteredBy, enteredAt,
-             patch.note !== undefined ? patch.note : existing.note ?? null, existing.id);
+             patch.note !== undefined ? patch.note : existing.note ?? null, comment, exUser, exName, existing.id);
     } else {
       conn
         .prepare(
           `INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total, c1, c2, c3, c4, band,
-                                          result_date, entered_by, entered_at, note)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+                                          result_date, entered_by, entered_at, note, comment, examiner_user_id, examiner_name)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         )
         .run(attemptId, skill, raw, total, crit[0], crit[1], crit[2], crit[3], band,
-             resultDate, enteredBy, enteredAt, patch.note ?? null);
+             resultDate, enteredBy, enteredAt, patch.note ?? null, comment, exUser, exName);
     }
 
     /*

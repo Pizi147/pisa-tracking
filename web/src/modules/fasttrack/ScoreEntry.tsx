@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
@@ -8,9 +8,11 @@ import { useTrangThaiLuuO } from '../../ui/SaveState.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
+import { useSession } from '../../lib/session.tsx';
+import { DongGvCham, cungGvCham, gvChamPayload, gvChamThanhChon } from '../cham/GvCham.tsx';
 import {
-  CRITERIA, CRITERIA_SHORT, NO_SHOW_HINT, criteriaSetFor, demNguocSuaDau, kiemLyDo, oLuoiThuong,
-  type EntrySkill,
+  BAI_CO_NHAN_XET, NHAN_XET_TOI_DA, NO_SHOW_HINT, demNguocSuaDau, kiemLyDo, oLuoiThuong, tieuChiCua, tieuChiNganCua,
+  type EntrySkill, type NguoiChon,
 } from '@shared/domain/index.ts';
 
 export type Cell = {
@@ -46,6 +48,10 @@ export type Cell = {
     state: 'khong-co-bai' | 'khong-du-thi' | 'cho-ql-hieu-chinh';
     text: string; effectiveOn: string | null; editableUntil: string | null;
   } | null;
+  /** PR-HSM (YC-13.5): nhận xét của bài nhập (W1/W2/S). */
+  nhanXet?: string | null;
+  /** PR-HSM (T39): GV chấm Speaking — tài khoản (`userId`) hoặc người ngoài (`userId: null`). */
+  gvCham?: { userId: number | null; ten: string } | null;
 };
 
 export type SavePatch = {
@@ -55,6 +61,10 @@ export type SavePatch = {
   noShow?: boolean;
   /** RB-5 — lý do khi sửa một ô ĐÃ CÓ điểm chính thức (máy chủ đòi khi giá trị đổi hoặc bị xoá). */
   lyDo?: string;
+  /** PR-HSM: nhận xét W1/W2/S (`null` = xoá) — không phải điểm: không lý do, không đổi "Nhập bởi". */
+  nhanXet?: string | null;
+  /** PR-HSM: GV chấm Speaking, dạng `nguoiThanhPayload` (`null` = xoá). */
+  gvCham?: ReturnType<typeof gvChamPayload>;
 };
 
 /** Tuỳ chọn của một lần lưu. `nem` = ném lỗi ra cho nơi gọi (hộp lý do hiện câu lỗi ngay tại ô) thay vì chỉ toast. */
@@ -69,6 +79,13 @@ export const lockedByNoShow = (cell: Cell) =>
 
 /** R11 — ô của một đợt đã hoàn tất mà người xem không sửa được: thay cho câu "không được phân công". */
 export const KHOA_HOAN_TAT_HINT = 'Đợt này đã hoàn tất. Chỉ Quản lý sửa được điểm — nhờ Quản lý hiệu chỉnh, kèm lý do.';
+/** E8 (T53 Q6): bài đã xác nhận vắng không nhập điểm ở lưới — nhập bù thì Quản lý xếp lại bài trước. */
+export const VANG_HINT = 'Đã xác nhận vắng — Quản lý xếp lại bài trước khi nhập.';
+
+/** Vì sao ô này chỉ đọc — MỘT câu cho ô số câu và ô tiêu chí. */
+const lyDoChiDoc = (cell: Cell) => (cell.sitStatus === 'absent' ? VANG_HINT
+  : lockedByNoShow(cell) ? 'Đã chốt — cần Quản lý hiệu chỉnh'
+  : cell.khoa ? KHOA_HOAN_TAT_HINT : 'Bạn không được phân công kỹ năng này');
 
 /**
  * Chữ người dùng gõ ở ô SỐ CÂU ĐÚNG → lệnh gửi máy chủ. '-' LÀ MỘT LỆNH, KHÔNG PHẢI MỘT SỐ (rule book §17.1): "học
@@ -167,7 +184,10 @@ export function useSaveScore(attemptId: number, onSaved?: () => void) {
   const luuLai = (skill: string) => { const p = tt.hong.current.get(skill); if (p) void save(skill, p); };
   const retry = () => { for (const k of [...tt.hong.current.keys()]) luuLai(k); };
 
-  return { save, saving, status: tt.status, lastError: tt.lastError, retry, o: tt.o, loi: tt.loi, luuLai, soLoi: tt.soLoi };
+  return {
+    save, saving, status: tt.status, lastError: tt.lastError, retry, o: tt.o, loi: tt.loi, luuLai, soLoi: tt.soLoi,
+    loiNhap: tt.loiNhap, coGuiLai: tt.coGuiLai,
+  };
 }
 
 /**
@@ -187,26 +207,49 @@ function DongDau({ cell }: { cell: Cell }) {
 }
 
 /**
- * NÚT "−" CỦA MÀN ĐIỆN THOẠI (`lon`). Bàn phím số của iPhone (`inputMode="numeric"`/`"decimal"`) không có phím "-",
- * nên trên điện thoại lệnh "-" phải có một nút: bấm nút = gõ "-", đúng cùng một đường lưu. `an` = ô này không nhận "-"
- * lúc này (đã có điểm, đã mang dấu…) — nút vẫn giữ chỗ cho các dòng thẳng cột, chỉ ẩn đi. `onMouseDown` chặn để ô số
- * không mất con trỏ (không kích hoạt lưu-khi-rời-ô). Máy tính không dùng nút này.
+ * NÚT "VẮNG" CỦA MÀN ĐIỆN THOẠI (`lon`, C2). Bàn phím số của iPhone (`inputMode="numeric"`/`"decimal"`) không có phím "-",
+ * nên trên điện thoại lệnh "-" phải có một nút: bấm nút = gõ "-", đúng cùng một đường lưu — ghi ngay, toast có Hoàn tác
+ * (Q11). Nút có chữ (dấu "−" trơ trọi không ai hiểu). `an` = ô này không nhận "-" lúc này (đã có điểm, đã mang dấu…) —
+ * nút vẫn giữ chỗ cho các dòng thẳng cột, chỉ ẩn đi. `onMouseDown` chặn để ô số không mất con trỏ (không kích hoạt
+ * lưu-khi-rời-ô). Máy tính không dùng nút này.
  */
 function NutDau({ title, an, tat, onBam }: { title: string; an: boolean; tat: boolean; onBam: () => void }) {
   return (
     <button type="button" tabIndex={-1}
-      className={`btn btn-ghost shrink-0 h-11 w-11 min-w-[44px] justify-center px-0 text-lg leading-none text-slate-400 ${an ? 'invisible' : ''}`}
-      title={title} aria-label={title} aria-hidden={an || undefined} disabled={an || tat}
+      className={`btn btn-ghost shrink-0 h-11 w-14 min-w-[44px] justify-center px-0 text-sm text-slate-300 ${an ? 'invisible' : ''}`}
+      title={title} aria-label={`Vắng — ${title}`} aria-hidden={an || undefined} disabled={an || tat}
       onMouseDown={(e) => e.preventDefault()} onClick={onBam}>
-      −
+      Vắng
     </button>
   );
 }
 const NUT_DAU_FT = 'Không có bài — em có lịch mà không làm bài';
 
-/** Chỗ trống đúng bằng nút "−" — dòng chỉ đọc / dòng chữ trạng thái của màn điện thoại vẫn thẳng cột với dòng có nút. */
+/** Chỗ trống đúng bằng nút "Vắng" — dòng chỉ đọc / dòng chữ trạng thái của màn điện thoại vẫn thẳng cột với dòng có nút. */
 export function ChoNutDau() {
-  return <span aria-hidden className="inline-block shrink-0 w-11 h-11" />;
+  return <span aria-hidden className="inline-block shrink-0 w-14 h-11" />;
+}
+
+/**
+ * C9 — CÂU LỖI NHẬP NGAY DƯỚI Ô (không chỉ ở tooltip): một dòng, chữ đầy đủ vẫn nằm trong DOM cho trình đọc màn hình
+ * (`role="alert"`, ô trỏ tới bằng `aria-describedby`). Báo lên dòng (`onLoiNhap`) để dòng đếm "n ô chưa lưu".
+ */
+function DongLoiNhap({ id, cau }: { id: string; cau: string | null }) {
+  if (!cau) return null;
+  return <span id={id} role="alert" className="block max-w-[6.5rem] truncate text-xs leading-tight text-bad" title={cau}>{cau}</span>;
+}
+function useBaoLoiNhap(cau: string | null, onLoiNhap?: (cau: string | null) => void) {
+  const bao = useRef(onLoiNhap);
+  bao.current = onLoiNhap;
+  useEffect(() => { bao.current?.(cau); }, [cau]);
+  useEffect(() => () => { bao.current?.(null); }, []);
+}
+/** Toast "Đã ghi vắng … · Hoàn tác" (C2, Q11) — khoá theo ô để bấm hai ô liền không nuốt nhau. */
+function useToastVang() {
+  const toast = useToast();
+  const khoa = useId();
+  return (mon: string, tenHv: string | undefined, hoanTac: () => void, hauQua = '') =>
+    toast.hoanTac(`Đã ghi vắng ${mon}${tenHv ? ` · ${tenHv}` : ''}${hauQua}`, hoanTac, { key: `vang:${khoa}` });
 }
 
 /**
@@ -259,12 +302,16 @@ export const laTuChoi = (e: any) => typeof e?.status === 'number' && e.status >=
  * Ô nhập số câu đúng 0–40. Trống KHÁC 0: xoá ô là xoá điểm, không phải chấm 0.
  * `lon` = cỡ điện thoại (ô rộng 60px, cao 44px — chấm một kỹ năng một lúc); luật lưu, "-" và lý do y hệt.
  */
-export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false }: {
+export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false, onLoiNhap, tenHv }: {
   cell: Cell;
   onSave: (patch: SavePatch, opts?: SaveOpts) => Promise<boolean>;
   inputRef?: (el: HTMLInputElement | null) => void;
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   lon?: boolean;
+  /** C9: báo câu lỗi nhập (hoặc `null`) lên dòng — dòng đếm vào "n ô chưa lưu". */
+  onLoiNhap?: (cau: string | null) => void;
+  /** Tên em cho toast "Đã ghi vắng … · {em}" (điện thoại). */
+  tenHv?: string;
 }) {
   /* Bài đã báo "-" thì ô hiện đúng dấu '-' (không phải ô trống, không phải 0). */
   const shown = () => (cell.rawScore !== null ? String(cell.rawScore) : cell.noShow ? '-' : '');
@@ -274,6 +321,9 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false }
   /* RB-5: ô ĐÃ CÓ điểm mà con số đổi (hoặc bị xoá) thì không lưu thẳng — mở hộp lý do ngay tại ô. */
   const [hoiLyDo, setHoiLyDo] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
+  const idLoi = useId();
+  useBaoLoiNhap(loi, onLoiNhap);
+  const toastVang = useToastVang();
 
   useEffect(() => {
     if (!dirty) setDraft(shown());
@@ -306,20 +356,20 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false }
     setBusy(true);
     const ok = await onSave({ noShow: true });
     setBusy(false);
-    if (ok) setDirty(false);
+    if (ok) { setDirty(false); toastVang(skillLabel(cell.skill), tenHv, () => void onSave({ noShow: false })); }
   };
 
   if (!cell.canEdit || lockedByNoShow(cell)) {
     /* Điện thoại: dồn phải cả cụm — dòng đếm ngược "Còn 6 ngày để sửa" rộng hơn "-" + chỗ nút, dồn trái thì dòng này
-       lệch khỏi cột của các dòng khác. */
+       lệch khỏi cột của các dòng khác. E5: ô chỉ đọc là CHỮ (không viền, không mờ); không có số thì "—", band trong ngoặc
+       chỉ khi có số câu; bài đã xác nhận vắng ghi "vắng" (E8). */
+    const vang = cell.sitStatus === 'absent' && cell.rawScore === null;   // sitStatus: 'absent' cả khi đang chờ duyệt dời (progress reschedule_pending)
     return (
-      <span className={`inline-flex flex-col ${lon ? 'items-end' : 'items-start'} gap-0.5`}>
+      <span className="inline-flex flex-col items-end gap-0.5">
         <span className="inline-flex items-center gap-1.5">
-          <span className="tabular-nums text-slate-300"
-            title={lockedByNoShow(cell) ? 'Đã chốt — cần Quản lý hiệu chỉnh'
-              : cell.khoa ? KHOA_HOAN_TAT_HINT : 'Bạn không được phân công kỹ năng này'}>
-            {cell.rawScore === null ? (cell.noShow ? '-' : '—') : cell.rawScore}
-            {!cell.noShow && <span className="text-slate-500 text-[11px] ml-1">({fmtBand(cell.band)})</span>}
+          <span className={`tabular-nums ${vang ? 'text-slate-500' : 'text-slate-300'}`} title={lyDoChiDoc(cell)}>
+            {vang ? 'vắng' : cell.rawScore === null ? (cell.noShow ? '-' : '—') : cell.rawScore}
+            {cell.rawScore !== null && <span className="text-slate-500 text-[11px] ml-1">({fmtBand(cell.band)})</span>}
           </span>
           {lon && <ChoNutDau />}
         </span>
@@ -330,10 +380,12 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false }
 
   const moi = draft.trim();
   return (
-    <span className="inline-flex flex-col items-start gap-0.5">
+    <span className="inline-flex flex-col items-end gap-0.5">
       <span className="inline-flex items-center gap-1.5">
         <input
           ref={goLai.gan}
+          aria-invalid={loi ? true : undefined}
+          aria-describedby={loi ? idLoi : undefined}
           className={`field ${lon ? 'w-[60px] h-11 text-base font-semibold' : 'w-16'} text-center tabular-nums ${loi ? 'border-rose-400/70' : dirty ? 'border-amber-500/60' : ''}`}
           inputMode="numeric"
           value={draft}
@@ -354,7 +406,8 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false }
         <span className="tabular-nums text-slate-400 text-xs w-8">{cell.noShow || (lon && cell.band === null) ? '' : fmtBand(cell.band)}</span>
         {lon && <NutDau title={NUT_DAU_FT} an={!nhanDau} tat={busy} onBam={() => void bamDau()} />}
       </span>
-      <DongDau cell={cell} />
+      <DongLoiNhap id={idLoi} cau={loi} />
+      {!loi && <DongDau cell={cell} />}
       {hoiLyDo && (
         <SuaDiemCoLyDo
           tieuDe={`Sửa ${skillLabel(cell.skill)}`}
@@ -383,11 +436,15 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false }
 }
 
 /** Bốn tiêu chí mở trong khung riêng — bảng mặc định không bày 16 cột tiêu chí. `lon` = nút cỡ điện thoại (cao 44px). */
-export function CriteriaButton({ cell, onSave, buttonRef, lon = false }: {
+export function CriteriaButton({ cell, onSave, buttonRef, lon = false, gvMacDinh = null, tenHv }: {
   cell: Cell;
   onSave: (patch: SavePatch, opts?: SaveOpts) => Promise<boolean>;
   buttonRef?: (el: HTMLButtonElement | null) => void;
   lon?: boolean;
+  /** GV chấm mặc định của cột S (`useGvChamCot`) — giá trị đầu của hộp tiêu chí khi ô chưa có GV chấm. */
+  gvMacDinh?: NguoiChon | null;
+  /** Tên em cho toast "Đã ghi vắng … · {em}" (điện thoại). */
+  tenHv?: string;
 }) {
   const [open, setOpen] = useState(false);
   const editable = cell.canEdit && !lockedByNoShow(cell);
@@ -396,30 +453,45 @@ export function CriteriaButton({ cell, onSave, buttonRef, lon = false }: {
   /* Nút − (điện thoại): bốn ô tiêu chí dùng bàn phím số thập phân — iPhone không gõ được "-". */
   const [dangBao, setDangBao] = useState(false);
   const nhanDau = editable && !hieuChinh && !cell.noShow;
+  const toastVang = useToastVang();
   const bamDau = async () => {
     if (!nhanDau || dangBao) return;
     setDangBao(true);
-    await onSave({ noShow: true });
+    const ok = await onSave({ noShow: true });
     setDangBao(false);
+    if (ok) toastVang(skillLabel(cell.skill), tenHv, () => void onSave({ noShow: false }));
   };
+  /* E5: ô không sửa được là CHỮ SỐ (không viền nút, không mờ) — cùng câu "vì sao" với ô số câu; vắng ghi "vắng". */
+  if (!editable) {
+    const vang = cell.sitStatus === 'absent' && cell.band === null;
+    return (
+      <span className="inline-flex flex-col items-end gap-0.5">
+        <span className="inline-flex items-center gap-1.5">
+          <span className={`tabular-nums ${vang ? 'text-slate-500' : 'text-slate-300'} ${lon ? 'text-base font-semibold' : ''}`} title={lyDoChiDoc(cell)}>
+            {vang ? 'vắng' : cell.noShow ? '-' : fmtBand(cell.band)}
+          </span>
+          {lon && <ChoNutDau />}
+        </span>
+        <DongDau cell={cell} />
+      </span>
+    );
+  }
   return (
-    <span className="inline-flex flex-col items-start gap-0.5">
+    <span className="inline-flex flex-col items-end gap-0.5">
       <span className="inline-flex items-center gap-1.5">
       <button
         ref={buttonRef}
-        className={`btn ${lon ? 'min-h-[44px] min-w-[60px] justify-center text-base font-semibold' : 'btn-sm'} tabular-nums ${editable ? '' : 'opacity-70 cursor-default'}`}
-        onClick={() => editable && setOpen(true)}
-        title={editable ? (hieuChinh ? 'Sửa bốn tiêu chí — đã có điểm nên phải ghi lý do.' : `Mở bốn tiêu chí. ${NO_SHOW_HINT}`)
-          : lockedByNoShow(cell) ? 'Đã chốt — cần Quản lý hiệu chỉnh'
-          : cell.khoa ? KHOA_HOAN_TAT_HINT : 'Bạn không được phân công kỹ năng này'}
+        className={`btn ${lon ? 'min-h-[44px] min-w-[60px] justify-center text-base font-semibold' : 'btn-sm'} tabular-nums`}
+        onClick={() => setOpen(true)}
+        title={hieuChinh ? 'Sửa bốn tiêu chí — đã có điểm nên phải ghi lý do.' : `Mở bốn tiêu chí. ${NO_SHOW_HINT}`}
       >
         {cell.noShow ? '-' : lon && cell.band === null && nhanDau ? '' : fmtBand(cell.band)}
-        {editable && <span className="text-slate-500 text-[10px]">sửa</span>}
+        <span className="text-slate-500 text-[10px]">sửa</span>
       </button>
       {lon && <NutDau title={NUT_DAU_FT} an={!nhanDau} tat={dangBao} onBam={() => void bamDau()} />}
       </span>
       <DongDau cell={cell} />
-      {open && !hieuChinh && <CriteriaModal cell={cell} onSave={onSave} onClose={() => setOpen(false)} />}
+      {open && !hieuChinh && <CriteriaModal cell={cell} onSave={onSave} onClose={() => setOpen(false)} gvMacDinh={gvMacDinh} />}
       {open && hieuChinh && <SuaTieuChi cell={cell} onSave={onSave} onClose={() => setOpen(false)} />}
     </span>
   );
@@ -429,7 +501,7 @@ export function CriteriaButton({ cell, onSave, buttonRef, lon = false }: {
 function SuaTieuChi({ cell, onSave, onClose }: {
   cell: Cell; onSave: (patch: SavePatch, opts?: SaveOpts) => Promise<boolean>; onClose: () => void;
 }) {
-  const set = criteriaSetFor(cell.skill) ?? 'writing';
+  const tc = tieuChiCua(cell.skill) ?? [], tcNgan = tieuChiNganCua(cell.skill) ?? [];
   const [vals, setVals] = useState<string[]>(cell.criteria.map((v) => (v === null ? '' : String(v))));
   const { dash, preview, patch } = criteriaPatchFrom(vals, cell);
   const doi = vals.some((v, i) => (v.trim() === '' ? null : Number(v)) !== cell.criteria[i]);
@@ -447,9 +519,9 @@ function SuaTieuChi({ cell, onSave, onClose }: {
       }}
     >
       <div className="flex items-end gap-1.5">
-        {CRITERIA[set].map((label, i) => (
+        {tc.map((label, i) => (
           <label key={i} className="block" title={label}>
-            <span className="block text-[10px] text-slate-500">{CRITERIA_SHORT[set][i]}</span>
+            <span className="block text-[10px] text-slate-500">{tcNgan[i]}</span>
             <input className="field w-12 text-center tabular-nums px-1 py-1" inputMode="decimal" value={vals[i] ?? ''}
               aria-label={`${skillLabel(cell.skill)} — ${label}`}
               onChange={(e) => setVals((v) => v.map((x, j) => (j === i ? e.target.value : x)))} />
@@ -461,10 +533,20 @@ function SuaTieuChi({ cell, onSave, onClose }: {
   );
 }
 
-export function CriteriaModal({ cell, onSave, onClose }: {
+export function CriteriaModal({ cell, onSave, onClose, gvMacDinh = null }: {
   cell: Cell; onSave: (patch: SavePatch) => Promise<boolean>; onClose: () => void;
+  /** Speaking: GV chấm của cột (lớp × tuần) khi ô chưa có GV chấm riêng. */
+  gvMacDinh?: NguoiChon | null;
 }) {
-  const set = criteriaSetFor(cell.skill) ?? 'writing';
+  const tc = tieuChiCua(cell.skill) ?? [], tcNgan = tieuChiNganCua(cell.skill) ?? [];
+  const { session } = useSession();
+  /* PR-HSM (T39): "+ Nhận xét" gập sẵn (mở sẵn khi đã có) · Speaking có dòng GV chấm · lưu MỘT lệnh, chỉ trường đã đổi. */
+  const coNhanXet = (BAI_CO_NHAN_XET as readonly string[]).includes(cell.skill);
+  const [moNx, setMoNx] = useState(!!cell.nhanXet);
+  const [nx, setNx] = useState(cell.nhanXet ?? '');
+  const laS = cell.skill === 'speaking';
+  const gvCu = gvChamThanhChon(cell.gvCham);
+  const [gv, setGv] = useState<NguoiChon | null>(gvCu ?? gvMacDinh);
   /* Bài đã báo "-" thì mở ra thấy '-' ở ô đầu — không phải bốn ô trống dễ nhầm với chưa nhập. */
   const [vals, setVals] = useState<string[]>(
     cell.noShow && cell.criteria.every((v) => v === null)
@@ -477,9 +559,15 @@ export function CriteriaModal({ cell, onSave, onClose }: {
   const { dash, preview, patch } = criteriaPatchFrom(vals, cell);
 
   const submit = async () => {
-    if (!patch) return;
+    if (!patch || busy) return;
+    /* Nhận xét / GV chấm đi kèm lệnh điểm; lệnh "-" (không có bài) thì không — máy chủ bỏ qua ở nhánh đó. */
+    const them: SavePatch = {};
+    if ('criteria' in patch) {
+      if (coNhanXet && nx.trim() !== (cell.nhanXet ?? '')) them.nhanXet = nx.trim() || null;
+      if (laS && !cungGvCham(gv, gvCu, session?.user?.id)) them.gvCham = gvChamPayload(gv);
+    }
     setBusy(true);
-    const ok = await onSave(patch);
+    const ok = await onSave({ ...patch, ...them });
     setBusy(false);
     if (ok) onClose();
   };
@@ -493,9 +581,9 @@ export function CriteriaModal({ cell, onSave, onClose }: {
         </button>
       </>}>
       <div className="space-y-3">
-        {CRITERIA[set].map((label, i) => (
+        {tc.map((label, i) => (
           <label key={i} className="flex items-center gap-3">
-            <span className="w-8 text-xs text-slate-500 shrink-0">{CRITERIA_SHORT[set][i]}</span>
+            <span className="w-8 text-xs text-slate-500 shrink-0">{tcNgan[i]}</span>
             <span className="flex-1 text-sm text-slate-300">{label}</span>
             <input
               className="field w-20 text-center tabular-nums"
@@ -503,6 +591,8 @@ export function CriteriaModal({ cell, onSave, onClose }: {
               value={vals[i] ?? ''}
               title={NO_SHOW_HINT}
               onChange={(e) => setVals((v) => v.map((x, j) => (j === i ? e.target.value : x)))}
+              /* T39: Enter ở ô tiêu chí là Lưu (không ở ô nhận xét — ở đó Enter xuống dòng). */
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void submit(); } }}
             />
           </label>
         ))}
@@ -511,6 +601,21 @@ export function CriteriaModal({ cell, onSave, onClose }: {
           <strong className="tabular-nums text-lg">{dash ? '-' : fmtBand(preview)}</strong>
         </div>
         {!patch && <p className="text-xs text-rose-300 m-0">{LOI_TIEU_CHI}</p>}
+        {laS && !dash && <DongGvCham value={gv} onChange={setGv} />}
+        {coNhanXet && !dash && (moNx ? (
+          <label className="block">
+            <span className="flex items-baseline justify-between text-xs text-slate-400">
+              <span>Nhận xét (không bắt buộc)</span>
+              {nx.length > 800 && <span className="tabular-nums">{nx.length}/{NHAN_XET_TOI_DA}</span>}
+            </span>
+            <textarea className="field mt-1 w-full text-sm" rows={3} maxLength={NHAN_XET_TOI_DA} value={nx}
+              onChange={(e) => setNx(e.target.value)} />
+          </label>
+        ) : (
+          <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-sm" onClick={() => setMoNx(true)}>
+            + Nhận xét
+          </button>
+        ))}
         {dash && (
           <p className="text-xs text-slate-300 m-0">
             Sẽ lưu là <strong>Không có bài</strong> cho đúng bài này. Sửa lại được đến hết Chủ nhật của tuần thi;
@@ -536,7 +641,7 @@ export function InlineScoreEditor({ cell, onSave, onClose }: {
   cell: Cell; onSave: (patch: SavePatch) => Promise<boolean>; onClose: () => void;
 }) {
   const isRaw = cell.skill === 'listening' || cell.skill === 'reading';
-  const set = criteriaSetFor(cell.skill) ?? 'writing';
+  const tc = tieuChiCua(cell.skill) ?? [], tcNgan = tieuChiNganCua(cell.skill) ?? [];
   const [vals, setVals] = useState<string[]>(() => (isRaw
     ? [cell.rawScore !== null ? String(cell.rawScore) : cell.noShow ? '-' : '']
     : cell.noShow && cell.criteria.every((v) => v === null)
@@ -579,9 +684,9 @@ export function InlineScoreEditor({ cell, onSave, onClose }: {
               title={NO_SHOW_HINT} aria-label={`${skillLabel(cell.skill)} — số câu đúng. ${NO_SHOW_HINT}`}
               onChange={(e) => setAt(0, e.target.value)} />
           </label>
-        ) : CRITERIA[set].map((label, i) => (
+        ) : tc.map((label, i) => (
           <label key={i} className="block" title={label}>
-            <span className="block text-[11px] text-slate-500">{CRITERIA_SHORT[set][i]}</span>
+            <span className="block text-[11px] text-slate-500">{tcNgan[i]}</span>
             <input autoFocus={i === 0} className="field w-14 text-center tabular-nums" inputMode="decimal"
               value={vals[i] ?? ''} aria-label={`${skillLabel(cell.skill)} — ${label}. ${NO_SHOW_HINT}`}
               onChange={(e) => setAt(i, e.target.value)} />
@@ -824,7 +929,7 @@ const SO_NGUYEN = /^\d+$/;
  */
 export function ODiemThuong({
   cell, tongCot, canEdit, onSave, onDau, inputRef, onKeyDown, dienTong = null, tenMon = 'Môn', tenHv,
-  lon = false, tongLaySan = false, chiChuKetQua = false,
+  lon = false, tongLaySan = false, chiChuKetQua = false, onLoiNhap,
 }: {
   cell: {
     diem: number | null; tong: number | null; tuanDoiTu: string | null; tuanHienTai: string | null;
@@ -835,7 +940,8 @@ export function ODiemThuong({
   tongCot: number | null;
   canEdit: boolean;
   onSave: (patch: { score: number | null; total: number | null; lyDo?: string }, opts?: SaveOpts) => Promise<boolean>;
-  onDau: (bat: boolean) => Promise<boolean>;
+  /** `im` = không toast "Đã dời …" (nút Vắng tự báo bằng toast Hoàn tác). */
+  onDau: (bat: boolean, im?: boolean) => Promise<boolean>;
   inputRef?: (el: HTMLInputElement | null) => void;
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   dienTong?: { gt: number; lan: number } | null;
@@ -845,8 +951,12 @@ export function ODiemThuong({
   tongLaySan?: boolean;
   /** Dưới ô chỉ "Đạt"/"Chưa đạt", không % (Pre FOU: % ở cột Kết quả). */
   chiChuKetQua?: boolean;
+  /** C9: báo câu lỗi nhập (hoặc `null`) lên dòng — dòng đếm vào "n ô chưa lưu". */
+  onLoiNhap?: (cau: string | null) => void;
 }) {
   const toast = useToast();
+  const toastVang = useToastVang();
+  const idLoi = useId();
   const dau = cell.dau ?? cell.tuanDoiTu !== null;
   const coDiem = cell.diem !== null;
   const diemDaLuu = () => (coDiem ? String(cell.diem) : dau ? '-' : '');
@@ -865,6 +975,7 @@ export function ODiemThuong({
   const goDiem = useRef(false);
   const daBaoChuaToi = useRef(false);
   const tongRef = useRef<HTMLInputElement>(null);
+  useBaoLoiNhap(canhBao?.cau ?? null, onLoiNhap);
 
   useEffect(() => {
     if (!dirty) { setDiem(diemDaLuu()); setTong(tongDaLuu()); }
@@ -965,6 +1076,16 @@ export function ODiemThuong({
    * dở của ô chưa có dấu → chỉ chặn "--", "-" đó lưu khi rời ô như thường. Ba lối vào: xem `useGoLaiDau`.
    */
   const goLaiDau = () => { if (dau) ghiDau(); };
+  /* Nút "Vắng" (điện thoại, C2): ghi ngay + toast Hoàn tác (gỡ dấu, lịch về tuần cũ). */
+  const bamVang = () => {
+    if (!nhanDau || dangGui.current) return;
+    setCanhBao(null);
+    void gui(async () => {
+      const ok = await onDau(true, true);
+      if (ok) toastVang(tenMon, tenHv, () => void onDau(false), ' — dời sang tuần sau');
+      return ok;
+    }, true);
+  };
   const goLai = useGoLaiDau(diem, goLaiDau, inputRef);
 
   const phim = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -1000,7 +1121,7 @@ export function ODiemThuong({
     const khongDay = cell.khoa ? KHOA_HOAN_TAT_HINT : 'Bạn không được phân công kỹ năng này.';
     if (coDiem) {
       return (
-        <span className="inline-flex flex-col items-center justify-center tabular-nums text-slate-400"
+        <span className="inline-flex flex-col items-end justify-center tabular-nums text-slate-400"
           title={[khongDay, pt && ketQuaChu ? `${ketQuaChu} · ${pt}.` : '', lamBu].filter(Boolean).join(' ')}>
           <span className="inline-flex items-center gap-1">
             <span className={cell.ketQua === 'fail' ? 'text-rose-300' : ''}>{o.hien || `${cell.diem}/?`}</span>
@@ -1035,8 +1156,8 @@ export function ODiemThuong({
     const title = [pt && ketQuaChu ? `${ketQuaChu} · ${pt}.` : '', 'Đã có điểm — bấm để sửa, phải ghi lý do.', lamBu]
       .filter(Boolean).join(' ');
     return (
-      <span className="inline-flex flex-col items-center justify-center" title={title}>
-        <span className="inline-flex items-center justify-center gap-1">
+      <span className="inline-flex flex-col items-end justify-center" title={title}>
+        <span className="inline-flex items-center justify-end gap-1">
           <input ref={inputRef} readOnly className={`${oSo} cursor-pointer ${cell.ketQua === 'fail' ? 'text-rose-300' : ''}`}
             value={String(cell.diem)} aria-label={`${tenMon} — số câu đúng (đã có điểm, sửa phải ghi lý do)`}
             onClick={() => mo(String(cell.diem))}
@@ -1094,10 +1215,12 @@ export function ODiemThuong({
   const titleTong = canhBao?.o === 'tong' ? canhBao.cau
     : o.vienVang ? `Khác tổng của cột (${tongCot}) — em làm đề khác.` : 'Tổng số câu của đề em làm.';
   return (
-    <span ref={cap} className="inline-flex items-center justify-center gap-1"
+    <span className="inline-flex flex-col items-end gap-0.5">
+    <span ref={cap} className="inline-flex items-center justify-end gap-1"
       onBlur={(e) => { if (!cap.current?.contains(e.relatedTarget as Node)) void commit(); }}>
       <input ref={goLai.gan}
         className={`${oSo} ${canhBao?.o === 'diem' ? 'border-rose-400/70' : ''} ${dangDau ? 'text-slate-400' : ''}`}
+        aria-invalid={canhBao?.o === 'diem' ? true : undefined} aria-describedby={canhBao?.o === 'diem' ? idLoi : undefined}
         inputMode="numeric" value={diem} disabled={busy} title={titleDiem}
         aria-label={`${tenMon} — số câu đúng. Gõ "-" nếu em không làm bài`}
         onChange={(e) => {
@@ -1111,9 +1234,12 @@ export function ODiemThuong({
       <input ref={tongRef} className={`${oSo} ${canhBao?.o === 'tong' ? 'border-rose-400/70' : o.vienVang ? 'border-amber-400/80' : ''}`}
         inputMode="numeric" value={dangDau ? '' : tong} disabled={busy || dangDau} placeholder={dangDau ? '' : 'tổng'}
         title={dangDau ? 'Ô mang dấu "-" chưa cần tổng.' : titleTong}
+        aria-invalid={canhBao?.o === 'tong' ? true : undefined} aria-describedby={canhBao?.o === 'tong' ? idLoi : undefined}
         aria-label={`${tenMon} — tổng số câu`}
         onChange={(e) => { setTong(e.target.value); setDirty(true); }} onKeyDown={phim} />
-      {lon && <NutDau title={nutDauTitle} an={!nhanDau} tat={busy} onBam={ghiDau} />}
+      {lon && <NutDau title={nutDauTitle} an={!nhanDau} tat={busy} onBam={bamVang} />}
+    </span>
+    <DongLoiNhap id={idLoi} cau={canhBao?.cau ?? null} />
     </span>
   );
 }

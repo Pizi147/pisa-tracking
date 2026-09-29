@@ -38,6 +38,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'role.permission.grant': 'Cấp quyền cho vai', 'role.permission.revoke': 'Bỏ quyền của vai', 'role.retired': 'Bỏ vai cũ', 'rule.changed': 'Đổi luật',
   'schedule.autoplan': 'Tự xếp lịch Test',
   'score.edit': 'Nhập điểm', 'score.override': 'Sửa điểm', 'score.no_show': 'Ghi vắng thi', 'score.no_show_cleared': 'Bỏ ghi vắng thi',
+  'score.nhan_xet': 'Sửa nhận xét',
   'signal.assign': 'Giao tín hiệu', 'signal.dismissed': 'Bỏ qua tín hiệu', 'signal.linked': 'Nối tín hiệu vào Case',
   'signal.raised': 'Tạo tín hiệu', 'signal.withdrawn': 'Rút tín hiệu', 'signal.withdrawn_batch': 'Rút tín hiệu hàng loạt',
   'sos_coordination.add': 'Thêm việc phối hợp SOS', 'sos_coordination.confirm': 'Xác nhận việc phối hợp SOS',
