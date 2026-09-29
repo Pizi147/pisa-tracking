@@ -8,6 +8,7 @@ import { demoToday } from '../demoConfig.ts';
 import { activeAt, type Principal } from '../permissions.ts';
 import { badRequest, forbidden, nowIso } from '../util.ts';
 import { writeAudit } from '../platform/audit.ts';
+import { demHienTai } from '../platform/nguCanhRequest.ts';
 import { loadBundle, resultOf, type AttemptBundle, type ScoreRow } from '../fasttrack/attempts.ts';
 import { allProgrammes, evaluateRegular } from '../normal/regular.ts';
 import { luotKck } from '../worklist/danhGia.ts';
@@ -238,10 +239,13 @@ export function xemTruoc(p: Principal, f: BoLocXuatMt) {
 
 /** POST — trả mảng hai chiều đã dựng + MỘT dòng nhật ký (`mt.xuat_excel`). */
 export function xuatExcel(p: Principal, f: BoLocXuatMt) {
+  const t0 = performance.now(), n0 = demHienTai()?.n ?? 0;
   const d = duLieuXuatMt(p, f);
   writeAudit({
     actorUserId: p.userId, action: 'mt.xuat_excel', entityType: 'xuat_mt', after: f,
     entityLabel: `${d.dem.luot} lượt · ${d.moTa[1][1]} · ${d.moTa[3][1]} · ${d.moTa[5][1].toLowerCase()}`,
   });
+  /* Chẩn đoán trên bản chính: chỉ số lượt · số câu · ms — không tên người, không dữ liệu học viên. */
+  console.info(`[xuat-mt] ${d.dem.luot} lượt · ${(demHienTai()?.n ?? 0) - n0} câu SQL · ${Math.round(performance.now() - t0)} ms`);
   return { sheets: d.sheets, tenTep: d.tenTep, dem: d.dem };
 }

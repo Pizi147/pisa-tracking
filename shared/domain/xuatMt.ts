@@ -18,8 +18,8 @@ export type BoLocXuatMt = {
 export type Cell = string | number | null;
 
 export const XUAT_TOI_DA_LUOT = 10_000;
-export const XUAT_TOI_DA_TUAN = 104;
-export const XUAT_TOI_DA_THANG = 24;
+const XUAT_TOI_DA_TUAN = 104;
+const XUAT_TOI_DA_THANG = 24;
 export const DOT_XUAT_FT = ['mt:1', 'mt:2', 'mt:3', 'mt:4', 'mt:5', 'mt:6', 'mt:7', 'mt:8'] as const;
 export const DOT_XUAT_THUONG = ['giua', 'cuoi'] as const;
 

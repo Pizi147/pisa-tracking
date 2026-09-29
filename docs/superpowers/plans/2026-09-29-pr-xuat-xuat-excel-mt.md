@@ -495,5 +495,9 @@ audit, số đo Turso (Task 7), Task 8 đã/chưa, 🛑 đã hỏi. -->
   X7 GVCN lớp thường: tiêu đề "Xuất kết quả Test lớp thường", 15 lượt · 10 học viên · 3 lớp; sheet `FOU · Giữa–Cuối khoá` 11 dòng × 12 cột (Listening %, Reading %, Grammar + Vocabulary %, Pronunciation %, % tổng…), `PREFOU · Giữa–Cuối khoá` 4 dòng × 9 cột; không chữ SOS ✓.
   X8 Quản trị › Phân tích › Tổng hợp Test: hai nút "⤓ Xuất bảng này" · "Xuất kết quả từng lượt"; ngăn mở, 55 lượt · 43 học viên · 7 lớp ✓. X9 375 px: scrollWidth 375/375, không nút < 44 px, dòng đếm ngay trên nút ✓.
   X10 Quản trị › Quyền và nhật ký: "Xuất Excel kết quả Test · 30 lượt · Monbay · Theo đợt: MT3 · cột gọn — Nguyễn Khánh Vy" ✓. Ảnh trước (main) / sau: `truoc-*` / `sau-*` (Lịch Test, hồ sơ lớp ⋮, Tổng hợp Test).
+- **Task 7 — thử trên Turso (30/09, bản nháp Netlify, DB THỬ; tôi chạy `netlify deploy --build`, chủ sản phẩm bấm thử):** nháp `6abc0da9c767a3f6365b5f2b--pisa-tracking` (Private). Chủ sản phẩm xuất **tất cả chi nhánh · tất cả đợt · Cột đầy đủ**:
+  **dưới 1 giây từ bấm tới tải xong** (đạt: máy chủ ≤ 5 s, cả vòng ≤ 8 s), tệp xuất thành công, mở bằng **Excel trên Windows**: dấu tiếng Việt đúng (tên, lớp, chi nhánh "Bãi Cháy", "Cẩm Phả"), điểm/band/Overall/Kỳ vọng/SOS là ô số căn phải,
+  ô thiếu để trống, nút lọc ở hàng tiêu đề hoạt động, cột L R W S… đủ (ảnh `excel-windows.png`). Đợt 3 lần đổi bộ lọc liên tiếp: không báo lỗi. **Chưa ghi được** số câu SQL/ms trên Turso: `netlify logs:function` không đọc lại được log cũ
+  (dòng `[xuat-mt] n lượt · m câu SQL · t ms` đã có trong mã, xem được ở Netlify › Functions › api). Không đo riêng `=AVERAGE(L:L)` (chủ sản phẩm không báo) — ô là số (`t:'n'`, kiểm ở phép (1)(f)).
 
 > **Chủ sản phẩm chốt 30/09:** GVBM **không** xuất Excel — chỉ GVCN, Quản lý, Quản trị. Lượt rải hai tuần: tính theo tuần bắt đầu thi (tự quyết theo khuyến nghị).
