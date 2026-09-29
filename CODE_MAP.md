@@ -257,10 +257,15 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | Bảng phân loại nguyên nhân | `shared/domain/cases.ts` → `ISSUE_TAXONOMY` |
 | Danh sách phương án, nhóm tự làm / cần duyệt | `shared/domain/cases.ts` → `INTERVENTION_KINDS` |
 | Luật sinh case sau mỗi đợt MT | `server/src/cases/sos.ts` |
+| **SOS v4 (PR-SOS)** — luật thuần: hạn xác nhận 3 ngày, mốc PA quy chế, lần ghi cuối, MỘT nhãn trạng thái Case, việc tiếp, chặn Hoàn thành, tên `[MT1] … [SOS 3]` | `shared/domain/sosV4.ts` → `hanXacNhan`, `mocQuyChe`, `laLanGhiCuoi`, `quyetDinhChoPa`, `trangThaiCaseV4`, `viecTiepCuaCase`, `chanHoanThanh`, `tenCaseSos`, `mocChuPa` |
+| Case tự tạo từ SOS (tách hàm cho PR-LT2a gọi lại) | `server/src/cases/sos.ts` → `taoCaseTuDong` |
+| Xác nhận Case → Xác nhận PA · Không cần theo dõi (thẻ `khong_theo_doi`) · điền mốc · bàn giao PA khi chuyển lớp · đặt lại hạn khi Quay lại | `server/src/cases/sosAuto.ts` → `xacNhanCase`, `xacNhanPaQuyChe`, `guiKhongTheoDoi`, `apDungKhongTheoDoi`, `tuChoiKhongTheoDoi`, `dienMocQuyChe`, `banGiaoPaQuyChe`, `datLaiHanCase` · loại thẻ ở `server/src/duyet/loaiYeuCau.ts` |
+| Cột `sos_cases.han_xac_nhan`, `case_interventions.moc_quy_che` | `server/src/migrate/prSos.ts` |
+| Hàng Case / hàng PA ở bảng kỹ năng · panel Xác nhận Case / PA / Không cần theo dõi | `web/src/modules/cases/SkillBoard.tsx` → `HangCase`, `HangPA` · `web/src/modules/yThuc/CaseSosControls.tsx` |
 | Vòng đời case, phương án, phê duyệt, kết quả | `server/src/cases/cases.ts` |
 | Màn một case | `web/src/modules/cases/CasePanel.tsx` |
 | Bảng theo dõi năm hạng mục ở hồ sơ | `web/src/modules/cases/SkillBoard.tsx` |
-| Case của em ở hồ sơ — **nằm ngay dưới hàng kỹ năng**, không còn khối danh sách riêng | `web/src/modules/cases/SkillBoard.tsx` → `TheCase` |
+| Case của em ở hồ sơ — **nằm ngay dưới hàng kỹ năng**, không còn khối danh sách riêng | `web/src/modules/cases/SkillBoard.tsx` → `HangCase` / `HangPA` |
 | Luật hạn chu kỳ hai tuần / một tuần | `shared/domain/cases.ts` → `cycleDeadline` |
 | Năm kết quả và sáu bước tiếp theo (PR-S2 thêm `adjust` = Điều chỉnh, lịch sử ở bảng `case_intervention_revisions`) | `shared/domain/cases.ts` → `FOLLOWUP_OUTCOMES`, `NEXT_STEPS`, `nextStepsFor` |
 | Luật hiển thị thuần của hồ sơ học viên: tab từ `?tab=`, ô Test gần nhất, quá hạn, tiến độ case `k/n PA có kết quả`, việc tiếp của một PA, đếm vi phạm theo nhóm (PR-HV) | `shared/domain/hoSoHocVien.ts` → `parseHoSoTab`, `ketQuaTestGanNhat`, `quaHan`, `tienDoCase`, `viecTiepPhuongAn`, `demTheoNhomViPham` |

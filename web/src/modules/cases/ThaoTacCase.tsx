@@ -4,7 +4,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
-import { ChonNgayGan, ChonTuan } from '../../ui/ChonNgay.tsx';
+import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
 import { NutChon } from '../../ui/ui.tsx';
@@ -12,7 +12,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
   CASE_OUTCOMES, CASE_OUTCOME_LABEL, HAN_DUYET_NGAY, INTERVENTION_KIND_LABEL, RESCHEDULE_TARGETS, RESCHEDULE_TARGET_LABEL,
   componentsAreCounts, componentsFor, interventionKindsFor, isProposalKind,
-  ngay, nguoiThanhPayload, planEndDefault, type NguoiChon, dsLoi, kiemGhiRoKhac, KHAC_TOI_THIEU,
+  GOI_Y_MO_TA_PA, nguoiThanhPayload, type NguoiChon, dsLoi, kiemGhiRoKhac, KHAC_TOI_THIEU,
 } from '@shared/domain/index.ts';
 import { ComponentsField, componentsPayload } from './ChiTietKyNang.tsx';
 
@@ -32,14 +32,15 @@ type ChungPanel = {
 // ==================================================================== Thêm PA
 
 /**
- * THÊM PHƯƠNG ÁN (mục 8.2). Danh mục theo nhóm case; tình trạng chỉ còn Đang theo dõi / Đã xong; người làm chọn từ tài khoản
- * (PR-Form F-2); "Dự kiến kết thúc" là hạn HOÀN THÀNH của PA (bỏ trống thì lấy Chủ nhật tuần tiếp theo), không phải một cái nhắc.
+ * THÊM PHƯƠNG ÁN (mục 8.2). Danh mục theo nhóm case; người làm chọn từ tài khoản (PR-Form F-2). PR-SOS: bỏ ô ngày kết thúc (Q28-4);
+ * Mô tả gợi ý "hướng dẫn, trọng tâm, ai thực hiện" (Q28-1); PA đã làm trước đây là liên kết phụ cuối form (K3-18).
  */
-export function ThemPaPanel({ caseId, studentId, hocVien, lop, quayLai, onClose, onSaved }: ChungPanel & {
+export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quayLai, onClose, onSaved }: ChungPanel & {
   caseId: number; studentId?: number | null;
+  /** Case có PA theo quy chế đang chạy → PA này là hỗ trợ thêm. */
+  coPaBatBuoc?: boolean;
 }) {
   const toast = useToast();
-  const { homNay } = useNgayNghiepVu();
   const catalogue = interventionKindsFor();
   const [kind, setKind] = useState<string>(catalogue.selfServe[0]);
   const [description, setDescription] = useState('');
@@ -51,7 +52,6 @@ export function ThemPaPanel({ caseId, studentId, hocVien, lop, quayLai, onClose,
   const [nguoi, setNguoi] = useState<NguoiChon | null>({ kieu: 'toi' });
   const [completedDate, setCompletedDate] = useState('');
   const [startedDate, setStartedDate] = useState('');
-  const [followupDue, setFollowupDue] = useState('');
   const [rescheduleTarget, setRescheduleTarget] = useState<string>(RESCHEDULE_TARGETS[0]);
   const lf = useLoiForm();
   const [busy, setBusy] = useState(false);
@@ -75,7 +75,6 @@ export function ThemPaPanel({ caseId, studentId, hocVien, lop, quayLai, onClose,
         ...nguoiThanhPayload(nguoi),
         completedDate: status === 'completed' ? completedDate || undefined : undefined,
         startedDate: startedDate || undefined,
-        followupDue: followupDue || undefined,
         rescheduleTarget: kind === 'reschedule_mt' ? rescheduleTarget : undefined,
         needsApproval: deXuat,
         ...(laKhacPa ? { ghiRoKhac: ghiRo.trim() } : {}),
@@ -96,6 +95,7 @@ export function ThemPaPanel({ caseId, studentId, hocVien, lop, quayLai, onClose,
           </button>
         ),
       }}>
+      {coPaBatBuoc && <p className="m-0 pt-3 text-xs text-slate-400">PA theo quy chế vẫn chạy — PA này là hỗ trợ thêm.</p>}
       <Khoi tieuDe="Phương án"
         luat={deXuat
           ? `Đây là một ĐỀ XUẤT nên Quản lý phải trả lời trong ${HAN_DUYET_NGAY} ngày, tính cả hôm gửi. Trong lúc chờ thì chưa ghi kết quả được.`
@@ -110,7 +110,7 @@ export function ThemPaPanel({ caseId, studentId, hocVien, lop, quayLai, onClose,
               </optgroup>
               <optgroup label="Cần Quản lý duyệt">
                 {catalogue.proposals.map((k: string) => (
-                  <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k as keyof typeof INTERVENTION_KIND_LABEL]} · cần QL duyệt</option>
+                  <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k as keyof typeof INTERVENTION_KIND_LABEL]} · cần Quản lý duyệt</option>
                 ))}
               </optgroup>
             </select>
@@ -129,17 +129,9 @@ export function ThemPaPanel({ caseId, studentId, hocVien, lop, quayLai, onClose,
             </div>
           </Truong>
         )}
-        <Truong nhan="Mô tả" batBuoc phu="Một câu đủ để người khác hiểu sẽ làm gì cho em" loi={lf.loiCua(loi, 'mo-ta')}>
-          <input className="field w-full" {...lf.o(loi, 'mo-ta')} value={description} onChange={(e) => setDescription(e.target.value)}
-            placeholder="Ví dụ: 10 phút chữa câu mỗi buổi" />
-        </Truong>
-        <Truong nhan="Tình trạng" batBuoc as="div">
-          <div className="grid grid-cols-2 gap-2">
-            <NutChon chon={status === 'started'} className="justify-center"
-              onClick={() => setStatus('started')}>Đang theo dõi</NutChon>
-            <NutChon chon={status === 'completed'} className="justify-center"
-              onClick={() => setStatus('completed')}>Đã xong</NutChon>
-          </div>
+        <Truong nhan="Mô tả" batBuoc loi={lf.loiCua(loi, 'mo-ta')}>
+          <textarea className="field w-full" rows={2} {...lf.o(loi, 'mo-ta')} value={description} onChange={(e) => setDescription(e.target.value)}
+            placeholder={GOI_Y_MO_TA_PA} />
         </Truong>
       </Khoi>
       <Khoi tieuDe="Người thực hiện và thời gian">
@@ -158,9 +150,11 @@ export function ThemPaPanel({ caseId, studentId, hocVien, lop, quayLai, onClose,
             </Truong>
           )}
         </Hang2>
-        <Truong nhan="Dự kiến kết thúc" phu="Hạn hoàn thành PA, không phải nhắc việc">
-          <ChonTuan moc="cuoi" catHomNay={false} lui={0} toi={12} value={followupDue} onChange={setFollowupDue} chuaChon={`Mặc định: CN ${ngay(planEndDefault(startedDate || homNay), homNay)}`} />
-        </Truong>
+        {/* K3-18: PA đã làm trước đây là trường hợp hiếm — liên kết phụ, không phải công tắc đầu form. */}
+        <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-left text-xs"
+          aria-pressed={status === 'completed'} onClick={() => setStatus(status === 'completed' ? 'started' : 'completed')}>
+          {status === 'completed' ? 'Ghi PA đang theo dõi (bỏ chế độ đã làm trước đây)' : 'Ghi một PA đã làm trước đây'}
+        </button>
       </Khoi>
     </KhungPanel>
   );
@@ -172,12 +166,15 @@ export function ThemPaPanel({ caseId, studentId, hocVien, lop, quayLai, onClose,
  * HOÀN THÀNH CASE — MỘT NÚT, MỘT PANEL (mục 9.3). Sau cả đợt, em tiến bộ đến đâu (bốn mức, bấm một cái) · kết luận (BẮT BUỘC —
  * ba tháng sau chính người viết cũng cần đọc lại) · ngày hoàn thành. Điểm chi tiết theo kỹ năng: tuỳ chọn, đúng kỹ năng của Case.
  */
-export function HoanThanhCasePanel({ caseId, category, categoryLabel, ratio, hocVien, lop, quayLai, onClose, onSaved }: ChungPanel & {
+export function HoanThanhCasePanel({ caseId, category, categoryLabel, ratio, paGanNhat, hocVien, lop, quayLai, onClose, onSaved }: ChungPanel & {
   caseId: number; category: string | null; categoryLabel: string | null; ratio: boolean;
+  /** C6: kết quả cuối của PA gần nhất — gợi ý khi chọn mức. */
+  paGanNhat?: string | null;
 }) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
-  const [outcome, setOutcome] = useState<string>('improved');
+  /* K3-19: không chọn sẵn — người kết luận tự chọn (máy chủ cũng bắt buộc). */
+  const [outcome, setOutcome] = useState<string>('');
   const [note, setNote] = useState('');
   const [closedOn, setClosedOn] = useState(homNay);
   const [metrics, setMetrics] = useState<Record<string, { score: string; total: string }>>({});
@@ -185,7 +182,10 @@ export function HoanThanhCasePanel({ caseId, category, categoryLabel, ratio, hoc
   const [busy, setBusy] = useState(false);
   const components = componentsFor(category, ratio ? 'ratio' : 'band');
   const counts = componentsAreCounts(category);
-  const loi = dsLoi([{ khoa: 'vi-sao', nhan: 'Vì sao kết luận vậy', toiThieu: 10 }], { 'vi-sao': note });
+  const loi = dsLoi([
+    { khoa: 'muc', nhan: 'Em tiến bộ đến đâu', chon: true },
+    { khoa: 'vi-sao', nhan: 'Vì sao kết luận vậy', toiThieu: 10 },
+  ], { muc: outcome, 'vi-sao': note });
   const thieu = loi.map((l) => l.nhan);
 
   const luu = async () => {
@@ -213,8 +213,9 @@ export function HoanThanhCasePanel({ caseId, category, categoryLabel, ratio, hoc
       }}>
       <Khoi tieuDe="Kết quả cuối"
         luat="Hoàn thành KHÔNG phải là xoá: nếu MT sau em trượt lại hạng mục này thì chính Case này mở lại, kèm một mốc tái phát — không sinh Case mới.">
-        <Truong nhan="Sau cả đợt hỗ trợ, em tiến bộ đến đâu?" batBuoc as="div">
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="group">
+        <Truong nhan="Sau cả đợt hỗ trợ, em tiến bộ đến đâu?" batBuoc as="div" loi={lf.loiCua(loi, 'muc')}
+          phu={paGanNhat ? `PA gần nhất: ${paGanNhat}` : undefined}>
+          <div className="grid grid-cols-2 gap-2 outline-none sm:grid-cols-4" role="group" id={lf.oId('muc')} tabIndex={-1}>
             {CASE_OUTCOMES.map((o) => (
               <NutChon key={o} chon={outcome === o} className="justify-center" onClick={() => setOutcome(o)}>
                 {CASE_OUTCOME_LABEL[o]}

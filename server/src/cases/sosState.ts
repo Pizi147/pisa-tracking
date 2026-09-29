@@ -54,37 +54,52 @@ export type SosCaseState = {
   /** Đã có phân loại nguyên nhân (vấn đề chính). */
   hasCause: boolean;
   /**
-   * `Chờ GVBM xác định nguyên nhân` (S04): case từ SOS đang mở mà chưa có nguyên nhân. PA theo quy chế tự chạy từ lúc tạo (PR-N1, S4-1)
-   * nên không còn vế "PA chờ xác nhận". Chỉ số `case-cho-xac-dinh-nguyen-nhan` đếm đúng tập này.
+   * `Chờ xác nhận nguyên nhân` (S04, S4-2): case từ SOS đang mở mà chưa có nguyên nhân. PR-SOS: không tính khi đang có thẻ
+   * "Không cần theo dõi" chờ Quản lý duyệt (T23 — việc đã chuyển sang Quản lý). Chỉ số `case-cho-xac-dinh-nguyen-nhan` đếm đúng tập này.
    */
   awaitingCause: boolean;
-  /** Hạn 3 ngày của S04 — chính là `verify_due` của tín hiệu nối case này. Chỉ có với case từ SOS. */
+  /** Hạn Xác nhận nguyên nhân / Xác nhận PA — `sos_cases.han_xac_nhan` (3 ngày tính cả ngày đầu). Chỉ có với case từ SOS. */
   dueOn: string | null;
   /** Đóng vì `Không cần theo dõi` (S05). */
   dismissed: { code: string; label: string; text: string | null } | null;
+  /** Thẻ "Không cần theo dõi" đang chờ Quản lý duyệt (S4-5) — `hanDuyet` là hạn của thẻ. */
+  choDuyetKhongTheoDoi: { hanDuyet: string | null } | null;
+  /** Còn PA quy chế chờ xác nhận (Q28-3). */
+  coPaChoXacNhan: boolean;
 };
+
+/** Điều kiện SQL "case `sc` đang có thẻ Không cần theo dõi chờ duyệt" — MỘT chỗ cho `awaitingCauseCaseIds` và thẻ Báo lên. */
+export const CO_THE_KHONG_THEO_DOI = (sc = 'sc') => `EXISTS (SELECT 1 FROM yeu_cau_duyet y_k WHERE y_k.loai = 'khong_theo_doi'
+  AND y_k.doi_tuong_loai = 'sos_case' AND y_k.doi_tuong_id = ${sc}.id AND y_k.trang_thai = 'cho')`;
 
 export function sosCaseState(caseId: number): SosCaseState {
   const conn = db();
-  const c = conn.prepare('SELECT status, dismiss_reason_code, dismiss_reason_text FROM sos_cases WHERE id = ?').get(caseId) as any;
-  const empty: SosCaseState = { fromSos: false, hasCause: false, awaitingCause: false, dueOn: null, dismissed: null };
+  const c = conn.prepare(`SELECT sc.status, sc.dismiss_reason_code, sc.dismiss_reason_text, sc.han_xac_nhan,
+      EXISTS (SELECT 1 FROM case_interventions WHERE case_id = sc.id AND preset = 1) AS from_sos,
+      EXISTS (SELECT 1 FROM case_issues WHERE case_id = sc.id AND role = 'primary') AS has_cause,
+      EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sc.id AND ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned') AS pa_cho,
+      (SELECT y.han_duyet FROM yeu_cau_duyet y WHERE y.loai = 'khong_theo_doi' AND y.doi_tuong_loai = 'sos_case' AND y.doi_tuong_id = sc.id
+          AND y.trang_thai = 'cho' ORDER BY y.id DESC LIMIT 1) AS han_the,
+      ${CO_THE_KHONG_THEO_DOI('sc')} AS co_the
+    FROM sos_cases sc WHERE sc.id = ?`).get(caseId) as any;
+  const empty: SosCaseState = { fromSos: false, hasCause: false, awaitingCause: false, dueOn: null, dismissed: null, choDuyetKhongTheoDoi: null, coPaChoXacNhan: false };
   if (!c) return empty;
-  const fromSos = !!conn.prepare('SELECT 1 FROM case_interventions WHERE case_id = ? AND preset = 1 LIMIT 1').get(caseId);
-  const hasCause = !!conn.prepare("SELECT 1 FROM case_issues WHERE case_id = ? AND role = 'primary' LIMIT 1").get(caseId);
-  const due = fromSos
-    ? (conn.prepare(`SELECT MIN(verify_due) d FROM case_signals WHERE case_id = ? AND status = 'linked'`).get(caseId) as any)?.d ?? null
-    : null;
+  const fromSos = !!c.from_sos;
+  const hasCause = !!c.has_cause;
+  const coThe = !!c.co_the && c.status !== 'done';
   return {
     fromSos, hasCause,
-    awaitingCause: fromSos && c.status !== 'done' && !hasCause,
-    dueOn: due,
+    awaitingCause: fromSos && c.status !== 'done' && !hasCause && !coThe,
+    dueOn: fromSos ? c.han_xac_nhan ?? null : null,
     dismissed: c.dismiss_reason_code
       ? { code: c.dismiss_reason_code, label: CASE_DISMISS_REASON_LABEL[c.dismiss_reason_code as CaseDismissReason] ?? c.dismiss_reason_code, text: c.dismiss_reason_text ?? null }
       : null,
+    choDuyetKhongTheoDoi: coThe ? { hanDuyet: c.han_the ?? null } : null,
+    coPaChoXacNhan: !!c.pa_cho && c.status !== 'done',
   };
 }
 
-/** Trong tập case cho trước, những case đang `Chờ GVBM xác định nguyên nhân` (một truy vấn cho cả tập, không hỏi từng case). */
+/** Trong tập case cho trước, những case đang `Chờ xác nhận nguyên nhân` (một truy vấn cho cả tập, không hỏi từng case). MỘT định nghĩa. */
 export function awaitingCauseCaseIds(caseIds: number[]): number[] {
   const out: number[] = [];
   for (let i = 0; i < caseIds.length; i += 400) {
@@ -95,6 +110,7 @@ export function awaitingCauseCaseIds(caseIds: number[]): number[] {
           WHERE sc.id IN (${chunk.map(() => '?').join(',')}) AND sc.status != 'done'
             AND EXISTS (SELECT 1 FROM case_interventions p WHERE p.case_id = sc.id AND p.preset = 1)
             AND NOT EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary')
+            AND NOT ${CO_THE_KHONG_THEO_DOI('sc')}
           ORDER BY sc.id`,
       )
       .all(...chunk) as any[]).map((r) => r.id as number));

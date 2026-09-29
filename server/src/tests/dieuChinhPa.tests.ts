@@ -195,8 +195,9 @@ export async function runDieuChinhPaTests(t: YThucTestKit) {
     assertThrows(() => cases.updateResult(P.lrTeacher, ivId, { ...ADJ_OK, decisionNote: '' }), /Lý do/, 'Điều chỉnh không có lý do');
     assertThrows(() => cases.updateResult(P.lrTeacher, ivId, { ...ADJ_OK, adjust: {} }), /ít nhất một thứ/, 'Điều chỉnh mà không đổi gì');
     assertThrows(() => cases.updateResult(P.lrTeacher, ivId, { ...ADJ_OK, adjust: { description: 'ngắn' } }), /ít nhất 8 ký tự/, 'Mô tả mới quá ngắn');
+    /* PR-SOS (Q28-4): không còn ô ngày — gửi `followupDue` một mình = không đổi gì. */
     assertThrows(() => cases.updateResult(P.lrTeacher, ivId, { ...ADJ_OK, adjust: { followupDue: addDays(TODAY, -1) } }),
-      /sớm hơn ngày cập nhật/, 'Ngày dự kiến kết thúc lùi về trước ngày cập nhật');
+      /ít nhất một thứ/, 'Điều chỉnh chỉ gửi ngày dự kiến kết thúc');
     assert(ivRow(ivId).cycle_no === 1 && !lastFollow(ivId) && revRows(ivId).length === 0, 'Lần bị từ chối không được để lại gì');
   });
 
@@ -214,7 +215,7 @@ export async function runDieuChinhPaTests(t: YThucTestKit) {
     const revs = revRows(ivId);
     assert(iv.kind === 'self_study', `Điều chỉnh không được đổi loại PA: ${iv.kind}`);
     assert(iv.description === 'Tự học Listening — nghe chép 25 phút buổi sáng' && iv.performer_name === 'Trợ giảng Mai'
-      && iv.performer_user_id === null && iv.followup_due === addDays(TODAY, 21), `Bản hiện tại sai: ${JSON.stringify(iv)}`);
+      && iv.performer_user_id === null && iv.followup_due === null /* PR-SOS Q28-4: ngày gửi kèm bị bỏ qua */, `Bản hiện tại sai: ${JSON.stringify(iv)}`);
     assert(revs.length === 2, `Phải có 2 dòng lịch sử, có ${revs.length}`);
     assert(revs[0].old_description === 'Tự học Listening — nghe chép 15 phút mỗi ngày'
       && revs[0].new_description === 'Tự học Listening — nghe chép 15 phút buổi sáng', `Bản 1 sai: ${JSON.stringify(revs[0])}`);
@@ -331,25 +332,25 @@ export async function runDieuChinhPaTests(t: YThucTestKit) {
 
   console.log('\nPR-S2 · 5. Sửa gợi ý lúc xác nhận có lịch sử; "Ghi đã làm" không ghi đè mô tả');
 
-  check('PR-S2 · S2: Sửa gợi ý tự động lúc xác nhận ghi MỘT dòng lịch sử (bản gợi ý → bản đã sửa); xác nhận nguyên văn thì không', () => {
+  check('PR-S2 · S2 → PR-SOS: sửa mô tả / người thực hiện lúc Xác nhận PA ghi MỘT dòng lịch sử (bản máy gán → bản đã sửa); xác nhận nguyên văn thì không; không nhận ngày kết thúc (Q28-4)', () => {
     const goiY = (caseId: number) => Number(conn.prepare(
-      `INSERT INTO case_interventions (case_id, kind, description, status, preset, followup_due, created_at)
-       VALUES (?, 'self_study', 'Tự học 1 tháng', 'planned', 1, ?, ?)`,
-    ).run(caseId, addDays(TODAY, 30), NOW).lastInsertRowid);
+      `INSERT INTO case_interventions (case_id, kind, description, status, preset, moc_quy_che, performer_user_id, created_at)
+       VALUES (?, 'self_study', 'Tự học · 1 tháng', 'planned', 1, 'one_month', ?, ?)`,
+    ).run(caseId, P.lrTeacher.userId, NOW).lastInsertRowid);
     const a = goiY(taoCase().caseId);
     const b = goiY(taoCase().caseId);
     const c = goiY(taoCase().caseId);
-    sosAuto.confirmPresetPlan(P.lrTeacher, a, { description: 'Tự học 1 tháng — nghe chép Section 2 mỗi ngày' });
-    sosAuto.confirmPresetPlan(P.lrTeacher, b);
-    sosAuto.confirmPresetPlan(P.lrTeacher, c, { followupDue: addDays(TODAY, 40), reason: 'Em thi muộn hơn nên kéo dài' });
+    sosAuto.xacNhanPaQuyChe(P.lrTeacher, a, { description: 'Tự học 1 tháng — nghe chép Section 2 mỗi ngày' });
+    sosAuto.xacNhanPaQuyChe(P.lrTeacher, b, {});
+    sosAuto.xacNhanPaQuyChe(P.lrTeacher, c, { performerUserId: P.w1Teacher.userId, followupDue: addDays(TODAY, 40) } as any);
     const ra = revRows(a);
     assert(ra.length === 1 && ra[0].source === 'confirm_edit' && ra[0].followup_id === null
-      && ra[0].old_description === 'Tự học 1 tháng' && ra[0].new_description === 'Tự học 1 tháng — nghe chép Section 2 mỗi ngày'
+      && ra[0].old_description === 'Tự học · 1 tháng' && ra[0].new_description === 'Tự học 1 tháng — nghe chép Section 2 mỗi ngày'
       && ra[0].reason === domain.CONFIRM_EDIT_REASON, `Sửa lúc xác nhận ghi sai: ${JSON.stringify(ra)}`);
     assert(revRows(b).length === 0, 'Xác nhận nguyên văn không được sinh lịch sử');
     const rc = revRows(c);
-    assert(rc.length === 1 && rc[0].old_followup_due === addDays(TODAY, 30) && rc[0].new_followup_due === addDays(TODAY, 40)
-      && rc[0].reason === 'Em thi muộn hơn nên kéo dài', `Đổi ngày lúc xác nhận ghi sai: ${JSON.stringify(rc)}`);
+    assert(rc.length === 1 && rc[0].new_performer_user_id === P.w1Teacher.userId, `Đổi người lúc xác nhận ghi sai: ${JSON.stringify(rc)}`);
+    assert(ivRow(c).followup_due === domain.sosPlanEndDate('one_month', { createdOn: TODAY }), `Mốc phải theo quy chế, không theo ngày gửi kèm: ${ivRow(c).followup_due}`);
   });
 
   check('PR-S2 · S2: "Ghi đã làm" kèm ghi chú không còn ghi đè mô tả phương án (cases.ts completeIntervention)', () => {

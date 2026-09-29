@@ -39,7 +39,7 @@ type Hop = {
   nhanNgan?: string;
   diem: DiemMoc[]; conCho: boolean; dotCho: DotRef | null;
   caseMo: { mo: string; soPa: number }[]; coTungCase: boolean;
-  diemCuoiChuaDat: boolean | null; xongGanNhat: string | null; vanDe: VanDe[];
+  diemCuoiChuaDat: boolean | null; xongGanNhat: string | null; huyGanNhat?: boolean; vanDe: VanDe[];
 };
 type HanhTrinhData = {
   giaiDoan: 'thuong' | 'ft' | null; cacGiaiDoan: GiaiDoan[]; homNay: string;
@@ -301,7 +301,7 @@ function HopKyNang({ hop, vi, vanDe, soAn, truc, boCuc, rongTuan, homNay, onOpen
   const moc = chuoiDiem(hop.diem, hop.cheDo, hop.conCho, { toiDa: boCuc.toiDaMoc, dotCho: hop.dotCho });
   const chuoiDu = chuoiDiem(hop.diem, hop.cheDo, hop.conCho, { toiDa: 99, dotCho: hop.dotCho })
     .map((m) => `${m.lech ? `${m.lech.chu} ` : ''}${m.chu}`).join(' ');
-  const badge = trangThaiHop({ caseMo: hop.caseMo, coTungCase: hop.coTungCase, diemCuoiChuaDat: hop.diemCuoiChuaDat, xongGanNhat: hop.xongGanNhat }, homNay);
+  const badge = trangThaiHop({ caseMo: hop.caseMo, coTungCase: hop.coTungCase, diemCuoiChuaDat: hop.diemCuoiChuaDat, xongGanNhat: hop.xongGanNhat, huyGanNhat: hop.huyGanNhat }, homNay);
   const rongTen = RONG_TEN_KY_NANG[hop.cheDo];
   const cuoiHop = vanDe.length === 0 && soAn === 0;
 

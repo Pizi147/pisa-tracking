@@ -1520,24 +1520,20 @@ api.post('/cases/:id/interventions', requireAuth, wrap((req) => {
 }));
 
 /**
- * CASE TỪ SOS (rulebook v3, PR-T): GVBM đúng kỹ năng hoặc Quản lý XÁC NHẬN · THAY phương án điền sẵn, hoặc đóng ngay `Không cần theo dõi` kèm lý do
- * chọn nhanh. Quyền kiểm ở máy chủ theo ĐÚNG kỹ năng của case (C02).
+ * CASE TỪ SOS (SOS v4, PR-SOS): GVBM đúng kỹ năng hoặc Quản lý Xác nhận Case (nguyên nhân) → Xác nhận PA theo quy chế, hoặc gửi
+ * "Không cần theo dõi" cho Quản lý duyệt. Quyền kiểm ở máy chủ theo ĐÚNG kỹ năng của case (C02). Đường cũ `/confirm`, `/replace` đã gỡ.
  */
-api.post('/interventions/:id/confirm', requireAuth, wrap((req) => {
+api.post('/cases/:id/xac-nhan', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  const b = (req.body ?? {}) as Record<string, any>;
-  return sosAutoSvc.confirmPresetPlan(principalOf(req), pInt(req, 'id'), {
-    description: 'description' in b ? (b.description ?? null) : undefined, followupDue: 'followupDue' in b ? (b.followupDue ?? null) : undefined,
-    reason: typeof b.reason === 'string' ? b.reason : undefined,
-  });
+  return sosAutoSvc.xacNhanCase(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
 }));
-api.post('/interventions/:id/replace', requireAuth, wrap((req) => {
+api.post('/interventions/:id/xac-nhan-pa', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return sosAutoSvc.replacePresetPlan(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
+  return sosAutoSvc.xacNhanPaQuyChe(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
 }));
 api.post('/cases/:id/dismiss', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return sosAutoSvc.dismissSosCase(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
+  return sosAutoSvc.guiKhongTheoDoi(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
 }));
 
 /**

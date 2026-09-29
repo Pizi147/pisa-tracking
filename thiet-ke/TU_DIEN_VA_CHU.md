@@ -223,9 +223,9 @@ hơn** `Gấp`. Câu "bỏ Bình thường" ở rule book mục 4.2 hết hiệu
 | `Không còn hiệu lực` · `Đánh dấu không chính xác` | **Bỏ.** Chỉ còn `Sửa` · `Xoá` |
 | Toggle chế độ xem | `Theo học sinh` · `Theo thời gian` |
 | Xác nhận xoá | `Xoá vi phạm này? Nó sẽ bị gỡ khỏi {n} phương án.` |
-| Case từ SOS chờ | `Chờ GVBM xác định nguyên nhân · hạn {ngày}` |
-| Phương án điền sẵn | `Gợi ý tự động · chờ xác nhận` |
-| Đóng case từ SOS | `Không cần theo dõi` · lý do: `Học sinh có lý do đặc biệt` · `Tình huống đơn lẻ` · `Khác` |
+| Case từ SOS chờ | `Chờ xác nhận nguyên nhân · hạn {ngày}` *(SOS v4 — PR-SOS 29/09)* |
+| Phương án điền sẵn | `PA theo quy chế` + khoá · `Chờ xác nhận` → nút `Xác nhận PA` *(SOS v4)* |
+| Đóng case từ SOS | `Không cần theo dõi…` → `Gửi Quản lý duyệt` · lý do: `Học sinh có lý do đặc biệt` · `Tình huống đơn lẻ` · `Khác` *(SOS v4: không còn đóng ngay)* |
 | Sáu việc phối hợp | `Trao đổi ngắn với HS` · `Trao đổi với gia đình` · `GVCN meeting với HS` · `CX / GĐCN meeting với HS` · `CX / GĐCN meeting với HS / PH` · `Khác` |
 | Trạng thái việc phối hợp | `Cần xử lý` · `Đã xong` · `Đã bỏ · {lý do}` |
 | Lý do bỏ việc | `Không cần trong trường hợp này` · `Đã xử lý theo cách khác` · `Trùng với phương án xử lý khác` · `Khác` · *(hệ thống)* `Không còn phù hợp do sửa điểm` |
@@ -233,6 +233,23 @@ hơn** `Gấp`. Câu "bỏ Bình thường" ở rule book mục 4.2 hết hiệu
 | Mức case `Cần chú ý` | `Bình thường` |
 
 **Không** dùng `Report cho gia đình` cho Phối hợp SOS — chữ đó chỉ thuộc phương án xử lý vi phạm.
+
+**SOS v4 (PR-SOS, 29/09/2026)** — thay các dòng Case/PA ở trên khi lệch:
+
+| Chỗ | Chữ |
+|---|---|
+| Hai lối cho Case chờ nguyên nhân | `Xác nhận nguyên nhân` (nút chính) · `Không cần theo dõi…` (nút phụ) |
+| Form xác nhận | tiêu đề `Xác nhận Case` · nút `Xác nhận Case` → chuyển thẳng `Xác nhận PA theo quy chế` · nút `Xác nhận PA` |
+| Trạng thái Case (một nhãn) | `Chờ xác nhận nguyên nhân` · `Chờ xác nhận PA` · `Chờ Quản lý duyệt · không theo dõi` · `Đang làm` · `Xong` · `Đã huỷ · không cần theo dõi` · `Hệ thống đóng · {lý do}` |
+| PA theo quy chế | `PA theo quy chế — không thay, không kết thúc sớm` · `Kết thúc theo quy chế: đến MT2` · `chưa có lịch` / `chưa có ngày thi` |
+| Lần ghi cuối | `Ghi kết quả cuối` · `Tuần này chạm mốc quy chế (…) — lưu là PA kết thúc.` |
+| Hoàn thành bị chặn | `Hoàn thành được sau khi PA theo quy chế kết thúc ({mốc})` |
+| Gợi ý Mô tả PA | `Nêu hướng dẫn và trọng tâm cụ thể; ai sẽ thực hiện / hỗ trợ / tutor` |
+| Gợi ý Tiến triển | `Đã cải thiện ở phần nào, như thế nào, kết quả cụ thể; ai đã thực hiện / hỗ trợ / tutor` |
+| Tên Case SOS | chip `MT1` + `{kỹ năng} không đạt` (sửa được) + chip `SOS 3` · chỗ chỉ có chữ: `[MT1] Reading không đạt [SOS 3]` |
+| Viết đủ | `Quản lý` — không viết tắt `QL` ở khu Case |
+
+Bỏ: `Gợi ý tự động · chờ xác nhận`, `Chờ GVBM xác định nguyên nhân`, `Xác minh SOS` (ở Case FT), `Dự kiến kết thúc` (PA).
 
 ---
 

@@ -4,9 +4,9 @@ import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { LISTENING_BY_RAW, READING_BY_RAW } from '../fasttrack/scoring.ts';
 import { commitIntake } from '../classes/intake.ts';
 import { saveScore } from '../fasttrack/attempts.ts';
-import { tuanHocCuaMt } from '../../../shared/domain/index.ts';
-import { setIssues } from '../cases/cases.ts';
-import { dismissSosCase } from '../cases/sosAuto.ts';
+import { issuesForTopic, tuanHocCuaMt, weeklyUpdateDue } from '../../../shared/domain/index.ts';
+import { guiKhongTheoDoi, xacNhanCase, xacNhanPaQuyChe } from '../cases/sosAuto.ts';
+import { duyetYeuCau, tuChoiYeuCau } from '../duyet/yeuCau.ts';
 import { confirmCoordination } from '../yThuc/phoiHop.ts';
 import type { BuildCtx } from './build.ts';
 import { DEMO_DATE } from './journeys.ts';
@@ -15,13 +15,19 @@ import { DEMO_DATE } from './journeys.ts';
  * BỘ DEMO RULEBOOK v3 — SOS TỰ TẠO CASE · PHỐI HỢP SOS (PR-T T8, thiet-ke/SOS_VA_PHOI_HOP_V3.md §9). Chỉ cho máy dev: bản chính dùng dữ liệu rỗng.
  *
  * KHÁC các bộ dựng khác (`build.ts`, `yThucSeed.ts` ghi thẳng xuống bảng): bộ này đi qua CHÍNH các hàm nghiệp vụ — nhập điểm Mock Test rồi để
- * engine tự tạo case, PA theo quy chế (chạy ngay — PR-N1 S4-1) và việc phối hợp; sau đó GVBM/GVCN thao tác bằng đúng hàm của họ. Nhờ vậy demo không thể lệch luật: nó
- * là kết quả của luật, không phải bản sao viết tay của luật.
+ * engine tự tạo case, PA theo quy chế (CHỜ XÁC NHẬN — PR-SOS Q28-3) và việc phối hợp; sau đó GVBM/GVCN/Quản lý thao tác bằng đúng hàm của họ.
+ * Nhờ vậy demo không thể lệch luật: nó là kết quả của luật, không phải bản sao viết tay của luật. Chỉ lùi ngày bằng SQL khi cần mốc quá hạn.
  *
- * Ba học viên MỚI ở MB FT 101 (không đụng dữ liệu của kịch bản cũ):
- *   Đỗ Minh Khôi  MT2 · SOS2 (W2 + Speaking) — hai case; một đã có nguyên nhân, một còn CHỜ xác định nguyên nhân; Phối hợp xong 1/3; có 2 vi phạm Ý thức
- *   Vũ Ngọc Lan   MT1 · SOS3 (L + R + S)     — ba case Tutor · đến MT2; Speaking đóng `Không cần theo dõi`; Phối hợp xong 2/3
- *   Bùi Thảo Vy   MT3 · SOS1 (Speaking)      — một lượt Phối hợp HOÀN THÀNH 2/2
+ * D7 (PR-SOS) — Case SOS ở MB FT 101 đủ các trạng thái v4:
+ *   (1) chờ nguyên nhân, còn hạn       Vũ Ngọc Lan · Listening
+ *   (2) chờ nguyên nhân QUÁ HẠN → Báo lên   Đỗ Minh Khôi · Writing Task 2 (hạn lùi ở `duyetSeed.ts`)
+ *   (3) Chờ Quản lý duyệt · không theo dõi   Vũ Ngọc Lan · Reading
+ *   (4) Quản lý TỪ CHỐI → hạn mới 3 ngày    Trịnh Gia Bảo · Listening
+ *   (5) Đã huỷ · không cần theo dõi          Vũ Ngọc Lan · Speaking
+ *   (6) đang chạy, PA quy chế đã xác nhận    Đỗ Minh Khôi · Speaking
+ *   (7) đã xác nhận Case, PA còn chờ xác nhận   Bùi Thảo Vy · Speaking
+ * D8 — hạn PA: Khôi · Speaking hạn hết T2 ĐÚNG ngày demo · Lý Minh Châu · Reading quá hạn 2 ngày · Hoàng Bảo Ngọc · Listening ở TUẦN MỐC
+ * (Ghi kết quả cuối).
  */
 export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number; coordination: number } {
   const { conn } = ctx;
@@ -65,13 +71,32 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
     : { criteria: [band, band, band, band] });
   const caseOf = (sid: number, category: string) => conn.prepare('SELECT * FROM sos_cases WHERE student_id = ? AND category = ? ORDER BY id DESC').get(sid, category) as any;
   const actionOf = (attemptId: number, kind: string) => conn.prepare('SELECT * FROM sos_coordination_actions WHERE attempt_id = ? AND kind = ?').get(attemptId, kind) as any;
+  /* PR-SOS: Quản lý chi nhánh (duyệt / từ chối thẻ) — không có thì Quản trị. */
+  const qlRow = conn.prepare(`SELECT u.id FROM users u JOIN user_roles ur ON ur.user_id = u.id JOIN roles r ON r.id = ur.role_id
+    WHERE r.key = 'manager' AND u.full_name = 'Nguyễn Khánh Vy' LIMIT 1`).get() as any;
+  const quanLy = qlRow ? loadPrincipal(qlRow.id) : admin;
+  const theKtd = (caseId: number) => (conn.prepare(`SELECT id FROM yeu_cau_duyet WHERE loai = 'khong_theo_doi' AND doi_tuong_id = ? AND trang_thai = 'cho'`).get(caseId) as any).id as number;
+  /** Xác nhận Case (nguyên nhân đầu danh mục của kỹ năng, mức Bình thường). */
+  const xacNhan = (who: Principal, caseId: number, topic: string, moTa: string) =>
+    xacNhanCase(who, caseId, { primaryCode: issuesForTopic(topic)[0].code, urgency: 'attention', moTa });
+  /** Xác nhận PA theo quy chế đầu tiên còn chờ của Case. */
+  const xacNhanPa = (who: Principal, caseId: number, moTa: string) => {
+    const iv = conn.prepare(`SELECT id FROM case_interventions WHERE case_id = ? AND preset = 1 AND confirmed_at IS NULL AND status = 'planned' ORDER BY id LIMIT 1`).get(caseId) as any;
+    xacNhanPaQuyChe(who, iv.id, { description: moTa });
+  };
+  /** Lùi ngày PA quy chế đang chạy (chỉ để có mốc quá hạn / tuần mốc đúng ngày demo). */
+  const hanPa = (caseId: number, batDau: string, han: string, moc?: string) =>
+    conn.prepare(`UPDATE case_interventions SET started_date = ?, cycle_started_on = ?, action_due = ?, followup_due = COALESCE(?, followup_due)
+      WHERE case_id = ? AND preset = 1 AND status = 'started'`).run(batDau, batDau, han, moc ?? null, caseId);
 
   // ---------------------------------------------------------------- Đỗ Minh Khôi — MT2 · SOS2
   const khoi = addStudent('Đỗ Minh Khôi', 2, 2);
   const khoiA = attempt(khoi);
   score(khoiA, 'writing1', 7); score(khoiA, 'writing2', 5.5); score(khoiA, 'speaking', 5);        // kỳ vọng MT2 6.5: W2 và Speaking dưới
   const khoiSp = caseOf(khoi.id, 'speaking');
-  setIssues(activeTeacher('speaking'), khoiSp.id, { primaryCode: 'student.speaking.fluency' });   // GVBM chọn nguyên nhân (PA quy chế đã tự chạy)
+  xacNhan(activeTeacher('speaking'), khoiSp.id, 'speaking', 'Em nói ngắn, ngập ngừng ở Part 2, thiếu ý mở rộng.');   // D7 (6)
+  xacNhanPa(activeTeacher('speaking'), khoiSp.id, 'Tự học Speaking: ghi âm Part 2 mỗi ngày, GVBM nghe và chữa thứ Sáu.');
+  hanPa(khoiSp.id, addDays(DEMO_DATE, -7), DEMO_DATE);   // D8: hạn hết T2 ĐÚNG ngày demo
   confirmCoordination(gvcn, actionOf(khoiA.id, 'talk_student').id, { performedOn: addDays(DEMO_DATE, -1), note: 'Đã gặp em sau buổi học, em hứa luyện nói mỗi ngày.' });
   /* Vi phạm Ý thức của cùng em: ghi thẳng xuống bảng với mốc thời gian theo NGÀY DEMO (như `yThucSeed.ts`) — `recordViolation` đóng dấu giờ thật của máy. */
   for (const [on, category, text] of [
@@ -88,7 +113,11 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
   const lan = addStudent('Vũ Ngọc Lan', 1, 3);
   const lanA = attempt(lan);
   score(lanA, 'listening', 5); score(lanA, 'reading', 5); score(lanA, 'speaking', 5);            // kỳ vọng MT1 6.0: ba kỹ năng dưới → SOS3
-  dismissSosCase(activeTeacher('speaking'), caseOf(lan.id, 'speaking').id, { reasonCode: 'single_incident' });
+  /* D7 (5): GVBM gửi "Không cần theo dõi" → Quản lý duyệt → Case + PA quy chế huỷ. (3): Reading gửi, chưa ai duyệt. (1): Listening còn hạn. */
+  const lanSp = caseOf(lan.id, 'speaking');
+  guiKhongTheoDoi(activeTeacher('speaking'), lanSp.id, { reasonCode: 'single_incident' });
+  duyetYeuCau(quanLy, theKtd(lanSp.id));
+  guiKhongTheoDoi(activeTeacher('reading'), caseOf(lan.id, 'reading').id, { reasonCode: 'other', reasonText: 'Em ốm hai ngày trước buổi thi' });
   confirmCoordination(gvcn, actionOf(lanA.id, 'talk_student').id, { performedOn: addDays(DEMO_DATE, -4) });
   confirmCoordination(gvcn, actionOf(lanA.id, 'talk_family').id, { performedOn: addDays(DEMO_DATE, -3), note: 'CS gọi cho mẹ em, gia đình nắm tình hình.', performerName: 'CS Thu Hà' });
 
@@ -97,11 +126,35 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
   const vyA = attempt(vy);
   score(vyA, 'speaking', 5);                                                                       // kỳ vọng MT3 7.0: chỉ Speaking dưới → SOS1
   const vySp = caseOf(vy.id, 'speaking');
-  setIssues(activeTeacher('speaking'), vySp.id, { primaryCode: 'student.speaking.fluency' });
+  xacNhan(activeTeacher('speaking'), vySp.id, 'speaking', 'Em phát âm cuối từ chưa rõ, mất điểm Pronunciation.');   // D7 (7): PA còn chờ xác nhận
   for (const kind of ['talk_student', 'talk_family']) confirmCoordination(gvcn, actionOf(vyA.id, kind).id, { performedOn: addDays(DEMO_DATE, -1) });
 
+  // ---------------------------------------------------------------- D7 (4): Trịnh Gia Bảo — MT1 · Listening, Quản lý từ chối "không theo dõi"
+  const bao = addStudent('Trịnh Gia Bảo', 1, 3);
+  score(attempt(bao), 'listening', 5);
+  const baoL = caseOf(bao.id, 'listening');
+  guiKhongTheoDoi(activeTeacher('listening'), baoL.id, { reasonCode: 'single_incident' });
+  tuChoiYeuCau(quanLy, theKtd(baoL.id), 'Em trượt Listening hai lượt liền — cần theo dõi');
+
+  // ---------------------------------------------------------------- D8: Lý Minh Châu — MT2 · Reading, PA quy chế quá hạn 2 ngày
+  const chau = addStudent('Lý Minh Châu', 2, 2);
+  score(attempt(chau), 'reading', 5.5);
+  const chauR = caseOf(chau.id, 'reading');
+  xacNhan(activeTeacher('reading'), chauR.id, 'reading', 'Em sai dạng Matching Headings ở cả ba passage.');
+  xacNhanPa(activeTeacher('reading'), chauR.id, 'Tự học Reading: hai bài Matching Headings mỗi tuần, cô Hà chữa.');
+  hanPa(chauR.id, addDays(DEMO_DATE, -16), addDays(DEMO_DATE, -2));
+
+  // ---------------------------------------------------------------- D8: Hoàng Bảo Ngọc — MT1 · Listening, PA quy chế ở TUẦN MỐC (Ghi kết quả cuối)
+  const ngoc = addStudent('Hoàng Bảo Ngọc', 1, 5);
+  score(attempt(ngoc), 'listening', 5.5);
+  const ngocL = caseOf(ngoc.id, 'listening');
+  xacNhan(activeTeacher('listening'), ngocL.id, 'listening', 'Em sót số và tên riêng ở Part 1–2.');
+  xacNhanPa(activeTeacher('listening'), ngocL.id, 'Tự học Listening: nghe chép Part 1 mỗi ngày, gửi cô Hà thứ Năm.');
+  /* Mốc quy chế Chủ nhật tuần này (20/09) < hạn hết T2 21/09 → lần ghi này là lần cuối. */
+  hanPa(ngocL.id, addDays(DEMO_DATE, -28), weeklyUpdateDue(DEMO_DATE), addDays(DEMO_DATE, 6));
+
   const n = (sql: string, ...a: unknown[]) => (conn.prepare(sql).get(...a) as any).n as number;
-  const ids = [khoi.id, lan.id, vy.id];
+  const ids = [khoi.id, lan.id, vy.id, bao.id, chau.id, ngoc.id];
   const inIds = ids.map(() => '?').join(',');
   return {
     students: 3,

@@ -6,6 +6,7 @@ import { badRequest, notFound, nowIso } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { chuyenCaseSangLoTrinh, closeCasesOnProgrammeSwitch } from '../cases/systemClose.ts';
+import { banGiaoPaQuyChe } from '../cases/sosAuto.ts';
 import { taoMtMacDinh, taoMtMacDinhLo } from '../fasttrack/mtMacDinh.ts';
 import { classProgressMany } from './schedule.ts';
 import { programmeByCode } from '../normal/regular.ts';
@@ -268,6 +269,8 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
   }
 
   if (luat.dongCase) closeCasesOnProgrammeSwitch(p.userId, d.sid, luat.dongCase, d.ngay);
+  /* PR-SOS (K3-44): FT → FT cùng chương trình — PA theo quy chế chưa khép sang GVBM đúng kỹ năng lớp mới. */
+  else if (tuLop.ft && denLop.ft) banGiaoPaQuyChe(d.sid, d.toClassId, p.userId);
 
   if (d.nguoiNhan) {
     for (const [caseIdStr, userId] of Object.entries(d.nguoiNhan)) {

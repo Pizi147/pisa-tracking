@@ -255,7 +255,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
       assert(/khoa: 'ghi-ro'/.test(s) && /id=\{lf\.oId\('ghi-ro'\)\}/.test(s) && !/loiGhiRo/.test(s), `${f}: Ghi rõ chưa vào luật useLoiForm / còn cơ chế dự phòng`);
     }
     assert(/id=\{lf\.oId\('tu-tuan'\)\}/.test(doc(m + 'cases/QuickReport.tsx')) && /id=\{lf\.oId\('ngay-lam'\)\}/.test(doc(m + 'cases/ThaoTacCase.tsx'))
-      && /id=\{lf\.oId\('han'\)\}/.test(doc(m + 'cases/CapNhatTuan.tsx')), 'ô ngày bắt buộc chưa nhận id của useLoiForm');
+      && !/ChonTuan/.test(doc(m + 'cases/CapNhatTuan.tsx')), 'ô ngày bắt buộc chưa nhận id của useLoiForm (PR-SOS Q28-4: Điều chỉnh không còn ô hạn)');
     const khung = doc('web/src/ui/KhungPanel.tsx') + doc('web/src/ui/ui.tsx');
     assert(!/idO \? 'div'/.test(khung) && (khung.match(/coOTuNhan\(children\)/g) ?? []).length === 2, 'khung Truong/Field còn đổi thẻ theo id ô báo lên');
     assert(!/loi \? <div/.test(doc('web/src/ui/KhungPanel.tsx')), 'Truong còn bọc/bỏ bọc ô theo loi (ô dựng lại, mất focus)');

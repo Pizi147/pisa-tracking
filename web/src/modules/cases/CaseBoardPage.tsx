@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { useSession } from '../../lib/session.tsx';
 import { BoLocDoan, Card, Empty, ErrorState, Info, Level, NhanTrangThai, Skeleton, Th } from '../../ui/ui.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { NganCase } from '../students/NganCase.tsx';
-import { CasePanel } from './CasePanel.tsx';
+import { tenNganCase } from './CasePanel.tsx';
 import { fmtDate, sosLabel, sosTone } from '../../lib/format.ts';
 import {
   CASE_CATEGORY_LABEL, tenMon,
@@ -240,17 +239,25 @@ export function DanhSachCase({ branchId, ct, classId }: { branchId: number | nul
   );
 }
 
-/** Trang riêng của một vấn đề — chia sẻ đường dẫn được, mở từ đâu cũng về đúng bản ghi này. */
+/**
+ * Trang riêng của một vấn đề — chia sẻ đường dẫn được, mở từ đâu cũng về đúng bản ghi này. PR-SOS (K3-22): breadcrumb
+ * `{tên HV} › Case {kỹ năng}` (về hồ sơ) + thân là CHÍNH Ngăn Case — một giao diện Case duy nhất.
+ */
 export function CaseRoutePage() {
   const { id } = useParams();
-  const { session } = useSession();
-  const coPhanTich = !!session?.nav?.analysis;
+  const navigate = useNavigate();
+  const ca = useApi<{ student: { id: number; name: string } | null; categoryLabel: string | null; category: string | null; chuongTrinh?: string | null }>(
+    id ? `/cases/${id}` : null);
+  const hv = ca.data?.student ?? null;
   return (
     <div className="max-w-[900px] space-y-3">
-      <Link className="btn btn-sm btn-ghost" to={coPhanTich ? '/phan-tich' : '/'}>← {coPhanTich ? 'Phân tích' : 'Tổng quan'}</Link>
-      <Card title="Vấn đề - Case">
-        <CasePanel caseId={Number(id)} />
-      </Card>
+      <nav aria-label="Đường dẫn" className="flex flex-wrap items-center gap-1.5 text-sm text-slate-400">
+        {hv ? <Link className="link" to={`/hoc-vien/${hv.id}`}>{hv.name}</Link> : <span>Học viên</span>}
+        <span aria-hidden>›</span>
+        <span className="text-slate-200">Case {ca.data ? tenNganCase(ca.data) : ''}</span>
+      </nav>
+      {ca.error && <ErrorState message={ca.error.message} onRetry={ca.reload} />}
+      <NganCase caseId={Number(id)} onClose={() => navigate(hv ? `/hoc-vien/${hv.id}` : '/')} />
     </div>
   );
 }
