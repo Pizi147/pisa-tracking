@@ -2,19 +2,20 @@ import { db } from '../db.ts';
 import {
   ASSESSED_SKILLS, BASELINE_SOURCE_LABEL, CYCLE_OUTCOME_LABEL, ENTRY_SKILLS,
   ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, JOURNEY_GROUP, PERMISSIONS,
-  caseHeadline, issueLabel, caseCategoryLabel, categoryOf, quaHan, studyWeekOf,
+  caseHeadline, issueLabel, caseCategoryLabel, categoryOf, mocKeTiep, quaHan, studyWeekOf,
   type AssessedSkill, type EntrySkill, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { outcomeGroup } from '../cases/effectiveness.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, diffDays, notFound } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
-import { entryBandsOf, scoresOf, skipsOf } from '../fasttrack/attempts.ts';
+import { entryBandsOf, routeCuaLuot, scoresOf, skipsOf } from '../fasttrack/attempts.ts';
 import { assessedBands, evaluateAttempt } from '../fasttrack/scoring.ts';
 import { evaluateRegular, isRatioCycle, programmeByCode, programmeCodeOfCycle, programmeOfClass } from '../normal/regular.ts';
 import { cycleById, cyclesOf, currentCycle, examPlanOf, targetRevisions } from '../fasttrack/cycles.ts';
 import { parseMetrics, skillSupportBoard } from '../cases/cases.ts';
 import { standingFor, standingLine } from './standing.ts';
+import { luotSinhViecRow } from '../worklist/danhGia.ts';
 import { missingForStudent, suggestedMockWeeks } from '../classes/schedule.ts';
 import { lopHocCua } from '../classes/loTrinhTiep.ts';
 import { listSignals } from '../cases/signals.ts';
@@ -60,16 +61,17 @@ function cycleLabel(c: any): string {
  * lượt của lớp thường qua bộ máy FT thì mọi kỹ năng đều "chưa có band" và hồ sơ hiện ra
  * một bảng trống — sai mà trông như thiếu dữ liệu.
  */
-export function typedResult(attempt: any) {
-  const prog = attempt.class_id ? programmeOfClass(attempt.class_id) : null;
+/** `pre`: danh sách gọi cho NHIỀU lượt nạp sẵn điểm / phạm vi / chương trình bằng vài câu (không hỏi lại theo từng lượt). */
+export function typedResult(attempt: any, pre?: { scores: any[]; skips: AssessedSkill[]; prog: ReturnType<typeof programmeOfClass> }) {
+  const prog = pre ? pre.prog : attempt.class_id ? programmeOfClass(attempt.class_id) : null;
   if (prog?.scoringMode === 'ratio') {
-    const rows = db().prepare('SELECT skill, raw_score, raw_total FROM assessment_scores WHERE attempt_id = ?')
+    const rows = pre?.scores ?? db().prepare('SELECT skill, raw_score, raw_total FROM assessment_scores WHERE attempt_id = ?')
       .all(attempt.id) as any[];
     const r = evaluateRegular(prog.skills, rows);
     return { mode: 'ratio' as const, ratio: r, ft: null };
   }
   const r = evaluateAttempt(attempt.target_at_attempt, attempt.attempt_no,
-    entryBandsOf(scoresOf(attempt.id)), skipsOf(attempt.id));
+    entryBandsOf(pre?.scores ?? scoresOf(attempt.id)), pre?.skips ?? skipsOf(attempt.id), routeCuaLuot(attempt));
   return { mode: 'ielts' as const, ratio: null, ft: r };
 }
 
@@ -533,7 +535,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   const attemptRows = selected
     ? conn
       .prepare(
-        `SELECT a.*, c.code AS class_code, pr.code AS period_code, pr.week_start
+        `SELECT a.*, c.code AS class_code, pr.code AS period_code, pr.week_start, pr.week_end AS period_end, (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route
            FROM assessment_attempts a
            LEFT JOIN classes c ON c.id = a.class_id
            LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
@@ -550,11 +552,14 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       .all(...ids) as any[]) caseByAttempt.set(r.attempt_id, r);
   }
 
+  const homNayHs = demoToday();
   const attempts = attemptRows.map((a) => {
     const t = typedResult(a);
     const c = caseByAttempt.get(a.id) ?? null;
     const base = {
-      id: a.id, attemptNo: a.attempt_no, kind: a.kind, status: a.status,
+      id: a.id, attemptNo: a.attempt_no, kind: a.kind, status: a.status, lichSu: !!a.lich_su,
+      /* M-14: false = MT lịch sử ngoài 4 tuần — không làm "Kết quả Test gần nhất" (ketQuaTestGanNhat). */
+      sinhViec: luotSinhViecRow(a, homNayHs),
       classCode: a.class_code, periodCode: a.period_code, weekStart: a.week_start ?? null,
       mode: t.mode,
       caseId: c?.id ?? null, caseStatus: c?.status ?? null,
@@ -609,9 +614,11 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   const today = demoToday();
   const examPlan = examPlanOf(selected);
 
-  // Mốc tiếp theo: lượt đã lên kế hoạch gần nhất chưa xong.
-  const nextRow = attemptRows.filter((a) => a.status === 'planned')
-    .sort((a, b) => a.attempt_no - b.attempt_no)[0] ?? null;
+  // Mốc tiếp theo. FT (K2-31): lượt planned, không lịch sử, từ tuần này, sớm nhất — cùng `mocKeTiep` với danh sách lớp.
+  // Lớp thường giữ luật cũ: lượt planned số nhỏ nhất.
+  const nextRow = selected?.route
+    ? mocKeTiep(attemptRows.map((a) => ({ ...a, weekStart: a.week_start ?? null })), today)
+    : attemptRows.filter((a) => a.status === 'planned').sort((a, b) => a.attempt_no - b.attempt_no)[0] ?? null;
 
   // --------------------------------------------------------- đường đi từng kỹ năng
   /*
@@ -932,6 +939,9 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       const lopDangHoc = activeClassOf(studentId);
       return {
         canEdit: can(p, PERMISSIONS.STUDENT_EDIT, { studentId }),
+        /* PR-DUYET (T44): target / lộ trình — Quản lý. GV của lớp không có quyền này thì gửi "Đề xuất sửa". */
+        canEditCycle: can(p, PERMISSIONS.CYCLE_EDIT, { studentId }),
+        coTheDeXuatSua: !can(p, PERMISSIONS.CYCLE_EDIT, { studentId }) && can(p, PERMISSIONS.STUDENT_VIEW, { classId: lopDangHoc, studentId }),
         canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { studentId }),
         canReport: can(p, PERMISSIONS.SOS_REPORT, { classId: lopDangHoc, studentId }),
         /* RB-6 (PR-S1): quyền hoàn thành Case tính theo MÔN của từng Case — xem `canClose` trên từng thẻ Case, không có cờ chung ở đây. */

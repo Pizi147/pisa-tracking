@@ -8,7 +8,7 @@ import type { Principal } from '../permissions.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { loadBundle } from '../fasttrack/attempts.ts';
 import { allProgrammes } from '../normal/regular.ts';
-import { attemptsNewestFirst, evaluateAttemptRow, studentsInScope } from '../worklist/danhGia.ts';
+import { attemptsNewestFirst, evaluateAttemptRow, luotSinhViecRow, studentsInScope } from '../worklist/danhGia.ts';
 import { locTheoChuongTrinh } from '../worklist/chuongTrinh.ts';
 import { phamViPhanTich } from './phamVi.ts';
 
@@ -97,7 +97,7 @@ function tinh(p: Principal, branchId: number | null, today: string): Record<Loai
   const dong2 = new Map<number, { ho: HoKyNang[]; ngayBoQua: string | null; sau: any }>();
 
   for (const [sid, list] of luotCua) {
-    const hopLe = list.filter((a) => evOf(a).scored > 0);          // mới nhất trước
+    const hopLe = list.filter((a) => luotSinhViecRow(a, today) && evOf(a).scored > 0);   // mới nhất trước; MT lịch sử ngoài 4 tuần không báo động (K1-04)
     // 1) hai lượt hợp lệ mới nhất cùng dưới kỳ vọng / chưa đạt một họ, không Case mở cùng họ
     if (hopLe.length >= 2 && laLopThuong(hopLe[0]) === laLopThuong(hopLe[1])) {   // hai lượt phải CÙNG chương trình (FT không "trượt liền" với lượt lớp thường cũ)
       const [moi, cu] = hopLe;

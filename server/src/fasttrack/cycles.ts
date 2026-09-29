@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
-  BASELINE_SOURCES, CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, CYCLE_STATUSES, PERMISSIONS, type ExamPlan, type Route,
-  docNgayNhap, mondayOfDate, ngay,
+  BASELINE_SOURCES, CO_DIEM_SQL, CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, CYCLE_STATUSES, PERMISSIONS, soMtKeTiep, tuanLich,
+  docNgayNhap, mondayOfDate, ngay, type ExamPlan, type LuotSo, type Route,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
@@ -9,7 +9,8 @@ import { badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, mondayOf, periodById } from '../platform/week.ts';
-import { applySuggestedMockWeeks } from '../classes/schedule.ts';
+import { apLichMacDinh } from '../classes/schedule.ts';
+import { taoMtMacDinh } from './mtMacDinh.ts';
 
 /**
  * Lộ trình học của một học viên.
@@ -34,12 +35,17 @@ export function cycleById(id: number) {
   return (db().prepare('SELECT * FROM learning_cycles WHERE id = ?').get(id) as any) ?? null;
 }
 
-/** Số MT tiếp theo TRONG lộ trình. Học lại cùng lộ trình thì số này tăng tiếp. */
+/** Lượt của một lộ trình ở dạng luật đánh số (T36, Q-B) — một câu, kể cả lượt đã huỷ (còn điểm hay không). */
+export function luotSoCuaLoTrinh(cycleId: number): LuotSo[] {
+  return (db().prepare(`SELECT a.attempt_no, a.status, ${CO_DIEM_SQL('a')} AS coDiem,
+       EXISTS (SELECT 1 FROM attempt_skills k WHERE k.attempt_id = a.id AND k.sit_status = 'sat') AS daThi
+     FROM assessment_attempts a WHERE a.cycle_id = ?`)
+    .all(cycleId) as any[]).map((r) => ({ attempt_no: r.attempt_no, status: r.status, coDiem: !!r.coDiem, daThi: !!r.daThi }));
+}
+
+/** Số MT tiếp theo TRONG lộ trình. Học lại cùng lộ trình thì số này tăng tiếp; số huỷ không điểm được dùng lại (Q-B). */
 export function nextAttemptNo(cycleId: number): number {
-  const row = db()
-    .prepare('SELECT MAX(attempt_no) AS n FROM assessment_attempts WHERE cycle_id = ?')
-    .get(cycleId) as any;
-  return (row?.n ?? 0) + 1;
+  return soMtKeTiep(luotSoCuaLoTrinh(cycleId));
 }
 
 /**
@@ -91,13 +97,18 @@ export function examPlanOf(cycle: {
   return none;
 }
 
+/** PR-DUYET (T44, Câu 1 = B): GVCN không tự sửa target/lộ trình — gửi Đề xuất sửa. Chuyển lớp vẫn là của GVCN. */
+export const CHI_QL_SUA = 'Target và lộ trình do Quản lý sửa. Bấm "Đề xuất sửa" để gửi Quản lý duyệt.';
+
 export function createCycle(p: Principal, input: {
   studentId: number; route?: Route | null; targetScore?: number | null;
   examPeriodId?: number | null; startedAt?: string; note?: string | null;
 }) {
-  require_(p, PERMISSIONS.STUDENT_EDIT, { studentId: input.studentId },
-    'Bạn không có quyền mở lộ trình mới cho học viên này.');
   const conn = db();
+  /* PR-DUYET (T44): mở lộ trình MỚI cho em đã có lộ trình = đổi lộ trình → Quản lý (`cycle.edit`). Lộ trình đầu tiên lúc thêm HV giữ `student.edit`. */
+  const daCo = !!conn.prepare('SELECT 1 FROM learning_cycles WHERE student_id = ? LIMIT 1').get(input.studentId);
+  if (daCo) require_(p, PERMISSIONS.CYCLE_EDIT, { studentId: input.studentId }, CHI_QL_SUA);
+  else require_(p, PERMISSIONS.STUDENT_EDIT, { studentId: input.studentId }, 'Bạn không có quyền mở lộ trình mới cho học viên này.');
   const student = conn.prepare('SELECT * FROM students WHERE id = ?').get(input.studentId) as any;
   if (!student) throw notFound('Không tìm thấy học viên');
   if (input.examPeriodId && !periodById(Number(input.examPeriodId))) throw badRequest('Tuần dự kiến thi không hợp lệ.');
@@ -112,12 +123,14 @@ export function createCycle(p: Principal, input: {
       .run(startedAt, input.studentId);
     const info = conn
       .prepare(
-        `INSERT INTO learning_cycles (student_id, seq, route, target_score, exam_period_id, started_at, status, note, created_at)
-         VALUES (?,?,?,?,?,?, 'active', ?, ?)`,
+        `INSERT INTO learning_cycles (student_id, seq, route, target_score, exam_period_id, start_period_id, started_at, status, note, created_at)
+         VALUES (?,?,?,?,?,?,?, 'active', ?, ?)`,
       )
+      /* Q5: lộ trình FT ghi tuần bắt đầu = tuần của ngày bắt đầu — không có thì không lập được lịch MT mặc định (M1). */
       .run(input.studentId, seq, input.route ?? null, input.targetScore ?? null,
-           input.examPeriodId ?? null, startedAt, input.note ?? null, nowIso());
+           input.examPeriodId ?? null, input.route ? ensurePeriod(mondayOf(startedAt)).id : null, startedAt, input.note ?? null, nowIso());
     const id = Number(info.lastInsertRowid);
+    if (input.route) taoMtMacDinh(id, { actorUserId: p.userId });
     addJourney({
       studentId: input.studentId, eventType: 'cycle_start', eventDate: startedAt,
       title: `Bắt đầu lộ trình ${input.route ?? `#${seq}`}`,
@@ -146,6 +159,11 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
     patch = { ...patch, examMonth: t.iso ? t.iso.slice(0, 7) : null, examDateGhi: la ? t.iso : null,
       ...(la ? { examPeriodId: ensurePeriod(mondayOf(t.iso!)).id } : {}) };
   }
+  /* PR-DUYET (T44): đổi target / lộ trình cần `cycle.edit` — chỉ khi giá trị THẬT SỰ đổi (panel gửi cả ô không sửa). Thi dự kiến giữ `student.edit` (Q7). */
+  const doiTarget = patch.targetScore !== undefined && Number(patch.targetScore ?? NaN) !== Number(c.target_score ?? NaN)
+    && !(patch.targetScore == null && c.target_score == null);
+  const doiLoTrinh = patch.route !== undefined && (patch.route ?? null) !== (c.route ?? null);
+  if (doiTarget || doiLoTrinh) require_(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id }, CHI_QL_SUA);
   if (patch.status !== undefined && !(CYCLE_STATUSES as readonly string[]).includes(String(patch.status))) {
     throw badRequest('Trạng thái lộ trình không hợp lệ.');
   }
@@ -212,30 +230,22 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
     });
   }
   /*
-   * ĐỔI TUẦN BẮT ĐẦU HỌC LÀ ĐỔI CẢ LỊCH MT — nhưng chỉ những lượt hệ thống từng tự xếp.
+   * ĐỔI TUẦN BẮT ĐẦU HỌC LÀ ĐỔI CẢ LỊCH MT — nhưng chỉ những lượt hệ thống từng tự xếp và CHƯA có điểm (K2-33).
    *
    * Đây là chỗ giữ lời hứa của mục 7.6: "hệ thống không được ghi đè cái Quản lý đã xếp".
-   * Lượt nào `plan_source = 'manual'` hoặc đã làm xong thì đứng yên; phần còn lại chạy theo
-   * mốc mới. Người dùng khai đúng tuần vào học một lần, lịch tự đúng theo.
+   * Lượt nào `plan_source = 'manual'`, đã có điểm hoặc đã làm xong thì đứng yên; phần còn lại chạy theo
+   * mốc mới. Q6: đây là LUẬT hệ thống, không phải thao tác xếp tuần — chạy cả khi người sửa là GVCN (trước đây nuốt lỗi quyền im lặng).
    */
   if (patch.startPeriodId !== undefined && patch.startPeriodId !== c.start_period_id && after?.start_period_id) {
-    try {
-      const r = applySuggestedMockWeeks(p, cycleId);
-      if (r.created || r.moved) {
-        addJourney({
-          studentId: c.student_id, eventType: 'cycle_start',
-          eventDate: nowIso().slice(0, 10),
-          title: 'Đổi tuần bắt đầu học',
-          detail: `Lịch MT đề xuất cập nhật theo: thêm ${r.created}, dời ${r.moved}, giữ nguyên ${r.kept} lượt đã chốt tay`,
-          refTable: 'learning_cycles', refId: cycleId, createdBy: p.userId,
-        });
-      }
-    } catch {
-      /*
-       * Không có quyền xếp tuần MT (ví dụ GVCN sửa tuần bắt đầu) thì KHÔNG chặn việc sửa
-       * thông tin — chỉ là lịch MT chưa được đề xuất lại, và Quản lý áp sau. Ném lỗi ở đây
-       * sẽ biến một ô thông tin đơn giản thành một thao tác cần quyền cao hơn.
-       */
+    const r = apLichMacDinh(cycleId, p.userId);
+    if (r.moved.length) {
+      const homNay = demoToday();
+      addJourney({
+        studentId: c.student_id, cycleId, eventType: 'cycle_start', eventDate: homNay,
+        title: 'Đổi tuần bắt đầu học',
+        detail: `${r.moved.map((x) => `MT${x.attemptNo}`).join(', ')} dời sang ${r.moved.map((x) => tuanLich(x.weekStart, homNay)).join(', ')}`,
+        refTable: 'learning_cycles', refId: cycleId, createdBy: p.userId,
+      });
     }
   }
 
@@ -398,8 +408,7 @@ export function reviseTarget(p: Principal, cycleId: number, input: {
 }) {
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
-  require_(p, PERMISSIONS.STUDENT_EDIT, { studentId: c.student_id },
-    'Bạn không có quyền đổi mục tiêu của lộ trình này.');
+  require_(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id }, CHI_QL_SUA);
   const target = input.newTarget === null || input.newTarget === ('' as any) ? null : Number(input.newTarget);
   if (target !== null && (!Number.isFinite(target) || target < 0 || target > 9)) {
     throw badRequest('Mục tiêu phải nằm trong khoảng 0–9.');

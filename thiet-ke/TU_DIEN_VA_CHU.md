@@ -333,3 +333,41 @@ Luật cách dùng ở `HE_GIAO_DIEN.md` §3, §9, §10.
 | Sáu nhãn trạng thái chung (`NhanTrangThai`) | `Cần làm` · `Đang làm` · `Chờ duyệt` · `Quá hạn` (biết số ngày: `Quá hạn · {n} ngày`) · `Xong` · `Đã huỷ` |
 | Ô tìm học viên, lớp ở đầu trang | không có kết quả: `Không tìm thấy học viên hoặc lớp` |
 | Liên kết đầu trang (chỉ hiện khi bấm Tab) | `Bỏ qua tới nội dung` |
+
+## 12. PR-DUYET — 29/09/2026 · hộp Chờ duyệt
+
+Chữ mới của PR này — chờ chủ sản phẩm duyệt cùng PR. Không mã máy (`de_xuat_pa`, `yeu_cau_duyet`) trên màn hình hay trong câu lỗi.
+
+| Chỗ | Chữ |
+|---|---|
+| Tab Công việc | `Chờ duyệt` (QL, Quản trị — tab đầu) · `Việc học viên` (đổi từ "Hỗ trợ học viên", K1-29) · `Yêu cầu của tôi` (GV) · `Vận hành` · `Báo cáo đơn vị` |
+| Chip phân loại (đủ 6, số 0 vẫn hiện) | `Tất cả` · `Học thuật` · `Ý thức` · `Lịch thi` · `Thông tin HV` · `Báo lên`; trạng thái `Đang chờ` · `Đã xử lý (30 ngày)`; `Xếp: quá hạn trước → hạn gần nhất` |
+| Tiêu đề thẻ | `Đề xuất PA · {kỹ năng}` · `Xin ý kiến · PA {tên PA}` · `Dời {kỹ năng} {MTn} lần {n}` · `Đề xuất sửa {target/lộ trình/lớp/lịch MT} {cũ} → {mới}` · `Đề xuất sửa: {nội dung}` · `Case chờ nguyên nhân quá hạn · {kỹ năng}` |
+| Dòng thẻ | `{người} đề xuất {dd/mm}: "{mô tả}"` · `{người} ({dd/mm}): "{câu hỏi}"` · `Kết quả tuần: {kết quả}` · `Hết {dd/mm} chưa duyệt thì yêu cầu tự huỷ và phần thi bị huỷ.` · `Không cần duyệt — để QL biết và nhắc.` · `Nếu duyệt: …` |
+| Hạn (tầng 1) | `Quá hạn {n} ngày` · `Hạn hôm nay` · `Còn {n} ngày`; dòng phụ `hạn {dd/mm}` |
+| Nút | `Duyệt` · `Duyệt…` (còn một bước: chọn tuần / ghi chú) · `Từ chối…` · `Trả lời…` · `+ Thêm PA` · `Nhắc {GV}` · `✓ Đã nhắc {giờ}` · `Mở` · `Duyệt {n} yêu cầu` · `Mở hộp duyệt` |
+| Ô trong thẻ | `Lý do từ chối (người gửi sẽ đọc)` · `Câu trả lời cho giáo viên` · `Ghi chú việc đã xử lý ở màn gốc` · `Tuần thi mới`; lỗi `Cần ít nhất 3 ký tự` |
+| Trạng thái thẻ | `Chờ duyệt` · `Đã duyệt` · `Đã duyệt · tự duyệt` · `Đã trả lời` · `Bị từ chối` · `Tự đóng: {lý do}` |
+| Rỗng | `Không có yêu cầu nào đang chờ` · `Chưa có yêu cầu nào được xử lý trong 30 ngày` · `Bạn chưa gửi yêu cầu nào cho Quản lý` |
+| Việc học viên (QL) | công tắc `Của tôi` · `Của GV (nhắc)`; `Xem việc của: một GV…`; chip nhóm `Tất cả` · `Chấm điểm` · `Case học thuật` · `Ý thức & Phối hợp` · `Vận hành` |
+| Tổng quan | QL: `Hộp Chờ duyệt {n} · {k} quá hạn · gồm {m} Báo lên` (cùng số với chip "Tất cả" và badge) + `Mở hộp duyệt`; GV: `{n} yêu cầu đang chờ QL · {m} bị từ chối →` |
+| Xin hỗ trợ QL (Ghi kết quả) | mô tả `Lưu kết quả tuần như Giữ nguyên và gửi câu hỏi cho Quản lý. PA vẫn chạy.` · `Gửi Quản lý · trả lời trong 5 ngày · xem ở Yêu cầu của tôi` (chủ sản phẩm đồng ý 29/09) · đã lưu `Đã gửi Quản lý — PA vẫn chạy`; Ngăn Case `Đã xin QL hỗ trợ {dd/mm} · chờ trả lời · hạn {dd/mm}` · `Quản lý ({tên}) trả lời {dd/mm}: …` |
+| Đề xuất sửa | ⋮ `Đề xuất sửa thông tin…`; panel `Đề xuất sửa thông tin` · `Thông tin cần sửa` (`Target` · `Lộ trình` · `Lớp` · `Lịch MT` · `Khác`) · `Lý do` (≥ 15) · `Gửi Quản lý`; toast `Đã gửi — xem ở Công việc › Yêu cầu của tôi`; lỗi `Target và lộ trình do Quản lý sửa. Bấm "Đề xuất sửa" để gửi Quản lý duyệt.` |
+| Quản trị | `Đăng ký chờ duyệt`; rỗng `Không có đăng ký nào đang chờ. …` |
+| Vận hành | người phụ trách ngoài hệ thống: tên kèm nhãn nhỏ `ngoài hệ thống` |
+
+## 13. PR-MT — 29/09/2026 · lịch MT, MT lịch sử, huỷ lượt, dời do vắng
+
+| Chỗ | Chữ | Không dùng |
+|---|---|---|
+| Lượt có tuần thi đã qua trước khi được tạo | `MT lịch sử` · nhãn nhỏ `lịch sử` cạnh "MT2" (viền mảnh, chữ xám, không ⚠) | "MT cũ", "MT bù" |
+| Tình trạng / hạn của ô MT lịch sử | `Nhập bù, không có hạn` | "Quá hạn", "Chưa có hạn" |
+| Dòng nhắc cuối Lịch Test (GVCN, Quản lý) | `MT lịch sử chưa nhập · {n} em · {lớp} → Nhập` | số đỏ |
+| Việc cần làm (nhóm Thiếu dữ liệu) | `Nhập MT lịch sử · {n} em · không tính hạn` · trạng thái `Không tính hạn` |  |
+| Hồ sơ Test — huỷ | `Huỷ cả lượt MT{n}` (chỉ MT cuối cùng chưa có điểm, chưa thi kỹ năng nào; "Số MT{n} sẽ dùng lại được") · `Huỷ phần còn lại` ("MT{n} giữ số; kỹ năng đã có điểm giữ nguyên") | "Huỷ lượt" chung chung |
+| Lỗi đánh số | `Chưa có MT{k} — xếp MT{k} trước rồi mới xếp MT{n}.` · `Lộ trình này đã có MT{n}. Đổi tuần thay vì tạo mới.` |  |
+| Nợ tuần trước — dời do vắng | dòng phụ `dời từ W3 SEP · vắng lần 1` |  |
+| Hàng lớp ở Lịch Test | `vắng · chờ Quản lý duyệt dời` | "chờ QL" (không viết tắt trên màn) |
+| Thông báo máy tự dời | `Đã tự dời {kỹ năng} của {em} · MT{n} sang {W…} (vắng lần 1).` |  |
+| Case đóng vì huỷ lượt | `Lượt đã huỷ` · việc Phối hợp bỏ vì `Lượt Test đã huỷ` |  |
+| Mốc Case khi đổi LT ↔ RF | `Sang lộ trình mới` |  |

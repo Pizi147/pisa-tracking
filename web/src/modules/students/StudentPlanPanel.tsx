@@ -35,8 +35,10 @@ type Suggested = {
  * Phần lịch MT vẫn giữ nguyên tinh thần cũ: hệ thống ĐỀ XUẤT rồi để người bấm áp, và khi áp
  * thì KHÔNG đụng vào lượt Quản lý đã chốt tay hay lượt đã làm xong.
  */
-export function StudentPlanPanel({ cycleId, studentName, ratio, onClose, onDone }: {
+export function StudentPlanPanel({ cycleId, studentName, ratio, canEditCycle = true, onDeXuatSua, onClose, onDone }: {
   cycleId: number; studentName: string; ratio: boolean;
+  /** PR-DUYET (T44): không có `cycle.edit` → target chỉ đọc, cạnh đó liên kết "Đề xuất sửa" (`onDeXuatSua`). */
+  canEditCycle?: boolean; onDeXuatSua?: () => void;
   onClose: () => void; onDone: () => void;
 }) {
   const toast = useToast();
@@ -135,7 +137,8 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onClose, onDone 
           )}
 
           {/* ------------------------------------------ MỤC TIÊU và ĐIỂM ĐẦU VÀO (mục 5.1) */}
-          {!ratio && <TargetAndBaseline cycleId={cycleId} cy={cy} onDone={() => { cycle.reload(); onDone(); }} />}
+          {!ratio && <TargetAndBaseline cycleId={cycleId} cy={cy} canEditCycle={canEditCycle} onDeXuatSua={onDeXuatSua}
+            onDone={() => { cycle.reload(); onDone(); }} />}
 
           {ratio ? (
             <SectionNote>
@@ -233,8 +236,8 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onClose, onDone 
  * Và nó KHÔNG chấm lại quá khứ: các lượt đã chốt giữ nguyên kỳ vọng tính theo mục tiêu lúc
  * đó. Đổi mục tiêu từ hôm nay mà viết lại mức SOS của ba tháng trước là sửa lịch sử.
  */
-function TargetAndBaseline({ cycleId, cy, onDone }: {
-  cycleId: number; cy: any; onDone: () => void;
+function TargetAndBaseline({ cycleId, cy, canEditCycle, onDeXuatSua, onDone }: {
+  cycleId: number; cy: any; canEditCycle: boolean; onDeXuatSua?: () => void; onDone: () => void;
 }) {
   const toast = useToast();
   const [openTarget, setOpenTarget] = useState(false);
@@ -280,11 +283,17 @@ function TargetAndBaseline({ cycleId, cy, onDone }: {
             ? <strong>{cy.target_score}</strong>
             : <span className="text-amber-300">chưa đặt</span>}
         </span>
-        <button className="btn btn-sm" onClick={() => setOpenTarget(!openTarget)}>
-          {openTarget ? 'Thôi' : 'Đổi mục tiêu'}
-        </button>
+        {canEditCycle ? (
+          <button className="btn btn-sm" onClick={() => setOpenTarget(!openTarget)}>
+            {openTarget ? 'Thôi' : 'Đổi mục tiêu'}
+          </button>
+        ) : onDeXuatSua && (
+          <button type="button" className="btn btn-sm btn-ghost" onClick={onDeXuatSua} title="Target do Quản lý sửa — gửi đề xuất để Quản lý duyệt">
+            Đề xuất sửa
+          </button>
+        )}
       </div>
-      {openTarget && (
+      {openTarget && canEditCycle && (
         <div className="space-y-2">
           <Field label="Mục tiêu mới" required>
             <input className="field max-w-[8rem]" type="number" step="0.5" min={0} max={9}

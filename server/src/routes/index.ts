@@ -44,6 +44,8 @@ import * as prefSvc from '../platform/prefs.ts';
 import * as profileSvc from '../students/profile.ts';
 import { hanhTrinhHocVien } from '../students/hanhTrinh.ts';
 import { thongBaoCua } from '../platform/thongBao.ts';
+import * as yeuCauSvc from '../duyet/yeuCau.ts';
+import * as deXuatSuaSvc from '../duyet/deXuatSua.ts';
 import * as classSvc from '../classes/classes.ts';
 import * as scheduleSvc from '../classes/schedule.ts';
 import * as intakeSvc from '../classes/intake.ts';
@@ -783,7 +785,8 @@ api.post('/attempts/:id/deadline', requireAuth, wrap((req) => {
 
 api.post('/attempts/:id/cancel', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return attemptSvc.cancelAttempt(principalOf(req), pInt(req, 'id'), String(req.body?.reason ?? ''));
+  const cach = req.body?.cach === 'ca-luot' || req.body?.cach === 'phan-con-lai' ? req.body.cach : null;
+  return attemptSvc.huyLuot(principalOf(req), pInt(req, 'id'), { lyDo: String(req.body?.reason ?? ''), cach });
 }));
 
 api.post('/attempts/:id/reopen', requireAuth, wrap((req) => {
@@ -1285,6 +1288,12 @@ api.put('/cycles/:id/outcome', requireAuth, wrap((req) => {
   return cycleSvc.setOutcome(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
+/** PR-DUYET (T44): GV của lớp gửi Đề xuất sửa thông tin HV — thành thẻ ở hộp Chờ duyệt. */
+api.post('/students/:id/de-xuat-sua', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return deXuatSuaSvc.guiDeXuatSua(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
 /** Đổi mục tiêu: có hiệu lực từ ngày ghi trở đi, KHÔNG chấm lại các lượt đã chốt. */
 api.post('/cycles/:id/target-revision', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -1558,6 +1567,38 @@ api.post('/phoi-hop-sos/:id/remove', requireAuth, wrap((req) => {
 api.post('/interventions/:id/respond', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return caseSvc.respondToPlan(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
+/*
+ * HỘP CHỜ DUYỆT (PR-DUYET, T41, §7.6): `hop=cho-duyet` (QL, Quản trị — 403 với GV) · `hop=cua-toi` (mọi vai: thẻ mình đã gửi).
+ * Quyết định kiểm quyền theo phạm vi CỦA THẺ; thẻ đã xử lý → 400 "đã được xử lý" để giao diện làm mới danh sách.
+ */
+api.get('/yeu-cau', requireAuth, wrap((req) => {
+  const p = principalOf(req);
+  if (qStr(req, 'hop') === 'cua-toi') return yeuCauSvc.yeuCauCuaToi(p);
+  const xem = qStr(req, 'xem');
+  return yeuCauSvc.hopChoDuyet(p, {
+    phanLoai: (qStr(req, 'phanLoai') as any) ?? null, xem: xem === 'da-xu-ly' ? 'da-xu-ly' : 'cho',
+    studentId: qInt(req, 'studentId') ?? null, branchId: qInt(req, 'branchId') ?? null,
+  });
+}));
+api.get('/yeu-cau/dem', requireAuth, wrap((req) => yeuCauSvc.demYeuCau(principalOf(req))));
+api.post('/yeu-cau/duyet-nhieu', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return yeuCauSvc.duyetNhieu(principalOf(req), (req.body ?? {}).ids);
+}));
+api.post('/yeu-cau/:id/duyet', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = (req.body ?? {}) as Record<string, any>;
+  return yeuCauSvc.duyetYeuCau(principalOf(req), pInt(req, 'id'), { ghiChu: typeof b.ghiChu === 'string' ? b.ghiChu : null, duLieu: b.duLieu });
+}));
+api.post('/yeu-cau/:id/tu-choi', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return yeuCauSvc.tuChoiYeuCau(principalOf(req), pInt(req, 'id'), (req.body ?? {}).lyDo);
+}));
+api.post('/yeu-cau/:id/tra-loi', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return yeuCauSvc.traLoiYeuCau(principalOf(req), pInt(req, 'id'), (req.body ?? {}).traLoi);
 }));
 
 /**
@@ -1886,6 +1927,7 @@ api.post('/mgmt-tasks', requireAuth, wrap((req) => {
     title: String(b.title ?? ''), group: String(b.group ?? ''),
     branchId: b.branchId ? Number(b.branchId) : null,
     assigneeUserId: b.assigneeUserId ? Number(b.assigneeUserId) : null,
+    assigneeName: typeof b.assigneeName === 'string' ? b.assigneeName : null,
     watcherUserId: b.watcherUserId ? Number(b.watcherUserId) : null,
     due: b.due ?? null, note: b.note ?? null,
     parentTaskId: b.parentTaskId ? Number(b.parentTaskId) : null,

@@ -1,10 +1,12 @@
 import { db } from '../db.ts';
+import { demoToday } from '../demoConfig.ts';
 import {
-  ASSESSED_SKILLS, PROGRAMME_TEMPLATES, REGULAR_SKILLS, SOS_LABEL,
+  ASSESSED_SKILLS, PROGRAMME_TEMPLATES, REGULAR_SKILLS, SOS_LABEL, mocKeTiep,
 } from '../../../shared/domain/index.ts';
 import { entryBandsOf, loadBundle } from '../fasttrack/attempts.ts';
 import { evaluateAttempt } from '../fasttrack/scoring.ts';
 import { evaluateRegular } from '../normal/regular.ts';
+import { luotSinhViecRow } from '../worklist/danhGia.ts';
 
 /**
  * TÌNH TRẠNG HỌC THUẬT HIỆN TẠI CỦA MỘT HỌC VIÊN — MỘT định nghĩa cho cả hệ thống.
@@ -162,7 +164,7 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
   const cph = cycleIds.map(() => '?').join(',');
   const attempts = conn
     .prepare(
-      `SELECT a.*, pr.code AS period_code FROM assessment_attempts a
+      `SELECT a.*, pr.code AS period_code, pr.week_start AS weekStart, pr.week_end AS period_end FROM assessment_attempts a
          LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
         WHERE a.cycle_id IN (${cph}) AND a.status != 'cancelled'
         ORDER BY a.attempt_no`,
@@ -189,6 +191,7 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
     if (s.cycleId !== null && r.cycle_id !== null && r.cycle_id !== s.cycleId) s.handoverCases += 1;
   }
 
+  const homNay = demoToday();
   for (const [studentId, cycle] of cycleOf) {
     const s = out.get(studentId)!;
     const ratio = !!cycle.programme_code && PROGRAMME_TEMPLATES[
@@ -196,6 +199,13 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
     ]?.scoringMode === 'ratio';
     s.mode = ratio ? 'ratio' : 'ielts_band';
     const list = byStudent.get(studentId) ?? [];
+    /* K2-31: "lượt sắp tới" = mốc kế tiếp (planned, không lịch sử, từ tuần này, sớm nhất) — không phải lượt planned cuối danh sách. */
+    const moc = mocKeTiep(list, homNay);
+    if (moc) {
+      s.nextAttemptNo = moc.attempt_no;
+      s.nextAttemptLabel = labelOf(moc.kind, moc.attempt_no);
+      s.nextPeriodCode = moc.period_code ?? null;
+    }
 
     /*
      * LƯỢT MỚI NHẤT CÓ ĐIỂM, duyệt từ cuối lên.
@@ -206,16 +216,10 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
      */
     for (let i = list.length - 1; i >= 0; i -= 1) {
       const a = list[i];
+      /* M-14: MT lịch sử có tuần thi NGOÀI 4 tuần trước ngày tạo không phải "hiện trạng" (cùng luật `latestAttempts`, danhGia.ts). */
+      if (!luotSinhViecRow(a, homNay)) continue;
       const scores = bundle.scores.get(a.id) ?? [];
-      if (!scores.length) {
-        /* Chưa có điểm: ghi lại làm "lượt đang chờ" rồi đi tiếp xuống lượt cũ hơn. */
-        if (s.nextAttemptNo === null) {
-          s.nextAttemptNo = a.attempt_no;
-          s.nextAttemptLabel = labelOf(a.kind, a.attempt_no);
-          s.nextPeriodCode = a.period_code ?? null;
-        }
-        continue;
-      }
+      if (!scores.length) continue;   /* chưa có điểm: đi tiếp xuống lượt cũ hơn */
       s.attemptId = a.id;
       s.attemptNo = a.attempt_no;
       s.attemptKind = a.kind ?? 'mock';
@@ -240,7 +244,7 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
            * trình — đúng như `resultOf` ở `attempts.ts:155` đã làm, để SOS/kỳ vọng không đổi ngược khi hồ sơ sửa
            * mục tiêu sau này. */
           a.target_at_attempt ?? cycle.target_score ?? null, a.attempt_no,
-          entryBandsOf(scores as any), skips.map((x: any) => x.skill ?? x),
+          entryBandsOf(scores as any), skips.map((x: any) => x.skill ?? x), a.route ?? cycle.route,
         );
         s.sosLevel = r.sosLevel;
         s.provisional = r.provisional;

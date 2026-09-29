@@ -14,6 +14,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { LoTrinhTiepPanel } from './LoTrinhTiepPanel.tsx';
 import { ChuyenLopPanel } from './ChuyenLopPanel.tsx';
 import { XoaHocVienPanel } from './XoaHocVienPanel.tsx';
+import { DeXuatSuaPanel } from '../duyet/DeXuatSuaPanel.tsx';
 
 /**
  * QUẢN LÝ HỌC VIÊN Ở HỒ SƠ (PR-UX3, Q10) — dấu ⋮ mở MENU THẢ (`Menu`) chứ không còn ngăn "Quản lý học viên" với danh sách việc rồi
@@ -53,6 +54,10 @@ export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempt
     case 'outcome': return <KetLuanLoTrinhPanel {...chung} cycle={cycle} attempts={attempts} />;
     case 'info': return <ThongTinPanel {...chung} student={student} cycle={cycle} />;
     case 'xoa-hoc-vien': return <XoaHocVienPanel studentId={student.id} studentName={student.name} lop={lop} onClose={onClose} />;
+    case 'de-xuat-sua': return (
+      <DeXuatSuaPanel studentId={student.id} studentName={student.name} lop={lop} onClose={onClose}
+        hienTai={{ target: cycle?.target ?? null, route: cycle?.route ?? null }} />
+    );
     default: return null;
   }
 }

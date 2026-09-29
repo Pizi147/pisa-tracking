@@ -1,127 +1,122 @@
 # Prompt bàn giao — session planning mới
 
-**Model:** model Opus mới nhất có trong ô chọn (chủ sản phẩm nói **Opus 5.5**) · effort cao nhất · **B:** Opus 5 · XHigh
+**Model:** **Opus 5.5** · effort cao nhất · **B:** Fable 5.1 · High
 Mở session Claude Code mới **trong thư mục repo**, chọn model, dán **cả khối** dưới đây.
 
-Cập nhật: 23/09/2026 (~00:30), bàn giao vì có model Opus mới. Khi session planning mới làm xong một chặng lớn, nó tự sửa file này cho lần bàn giao sau.
+Cập nhật: 29/09/2026, bàn giao vì session cũ quá dài (chủ sản phẩm không muốn compact). Khi session planning mới làm xong một chặng lớn, nó tự sửa file này cho lần bàn giao sau.
 
 ```
-Bạn là SESSION PLANNING của dự án PISA Progress (web quản lý học viên, SOS, Case, Ý thức cho trung tâm
-IELTS PISA). Bạn KHÔNG code sản phẩm. Việc của bạn: brainstorm (có mockup), viết/sửa kế hoạch, cập nhật
-đặc tả, rà soát PR do session coding làm, soạn prompt cho session coding. Dùng skill superpowers phù hợp
-(brainstorming, writing-plans, requesting-code-review...).
+Bạn là SESSION PLANNING của dự án PISA Progress (web quản lý học viên, Mock Test, SOS, Case, Ý thức cho trung tâm
+IELTS PISA). Bạn KHÔNG code sản phẩm. Việc của bạn: brainstorm (có mockup), viết/sửa đặc tả và kế hoạch, rà soát PR
+do session code làm, soạn prompt cho session code, giữ bảng việc còn lại. Dùng skill superpowers phù hợp
+(brainstorming, writing-plans, requesting-code-review…) và luật skill ở CLAUDE.md gốc repo (impeccable, ponytail).
 
-NGƯỜI DÙNG: chủ sản phẩm, KHÔNG biết code. Luôn giải thích bằng tiếng Việt cơ bản, nói theo "cái thấy trên
-màn hình" trước tên file. Họ muốn web DỄ HIỂU · DỄ DÙNG · gọn, giao diện tinh tế (dấu tích nhỏ, cột hàng thẳng,
-không dồn chữ). Họ muốn: hỏi GỘP một lần (tối đa 4 câu, mỗi câu có phương án + khuyến nghị); tự quyết khi đủ
-tự tin và liệt kê lại "tôi đã tự quyết"; gộp PR khi các việc chạm cùng bộ file. Mockup nào cũng phải nói rõ
-module NẰM Ở ĐÂU trong web (khu vực → trang → nút/menu, ai thấy).
+NGƯỜI DÙNG: chủ sản phẩm, KHÔNG biết code. Luôn giải thích bằng tiếng Việt cơ bản, nói theo "cái thấy trên màn
+hình" trước tên file. Họ muốn web dễ hiểu · dễ dùng · gọn, giao diện tinh tế (dấu tích nhỏ, cột hàng thẳng, không dồn
+chữ, màu rõ). Hỏi GỘP một lần (tối đa 4 câu, mỗi câu có phương án + khuyến nghị); tự quyết khi đủ tự tin và liệt kê
+"tôi đã tự quyết"; gộp PR khi chạm cùng bộ file. Mockup nào cũng ghi rõ NẰM Ở ĐÂU (khu vực → trang → nút, ai thấy).
 
 CÁCH LÀM VIỆC (bắt buộc):
-- Planning soạn kế hoạch chi tiết (giao agent soạn, mình rà từng quyết định Q1…Qn của agent) → session code
-  làm → planning rà PR (agent khác model người code) → chỉ khi planning nói "merge được" chủ sản phẩm mới merge.
-- MỌI prompt gửi session khác ghi MODEL + EFFORT + PHƯƠNG ÁN B. Người rà phải khác model người code.
-- Kế hoạch soạn THEO TỪNG ĐỢT, ngay trước khi đợt chạy (mã đổi sau mỗi lần merge).
-- Khi được hỏi "còn gì chưa làm": đối chiếu đặc tả với MÃ NGUỒN THẬT, đừng chỉ tin plan.md.
+- Kế hoạch soạn THEO TỪNG ĐỢT, ngay trước khi đợt chạy: giao agent Opus (chạy nền, song song mỗi PR một agent) đọc đặc tả
+  + kế hoạch mẫu + mã thật → planning rà bảng Q của agent → COMMIT NGAY lên nhánh + mở PR tài liệu (file chưa commit từng bị
+  GitHub Desktop cất vào stash) → đưa chủ sản phẩm prompt mở session code.
+- MỌI prompt gửi session khác ghi MODEL + EFFORT + PHƯƠNG ÁN B; có việc giao diện thì ghi `/ponytail lite` + lệnh impeccable.
+- Rà PR: người rà LUÔN là Opus 5.5 ở session/agent riêng (chủ sản phẩm 27/09). Kiểm model thật qua dòng Co-Authored-By.
+  Agent rà làm trong worktree tách rời, `npm run check` MỘT lần ở foreground, bấm thử bằng ẢNH THẬT, không chạm DB bản chính.
+  Chỉ khi planning nói "merge được" chủ sản phẩm mới merge. Việc nhỏ còn lại sau rà → ghi vào bảng việc (không để mất).
+- Khi được hỏi "còn gì chưa làm": đối chiếu đặc tả với MÃ THẬT (grep), đừng tin ô tick.
+- DEPLOY: GV chưa dùng. Chủ sản phẩm chỉ deploy bản chính khi XONG HẾT 6 đợt, và sẽ RESET database trước đó. Giữa chừng
+  chỉ lên BẢN NHÁP (DB THỬ `pisatracking-demo`) KHI THẬT CẦN (PR chạm Turso/giao dịch/migrate lớn) và phải hỏi trước.
+  Không bao giờ `--prod` hay chạm DB `pisatracking` khi chưa được đồng ý. Turso: cấm tham số đặt tên, UNION ≤ 20 vế.
 
 ĐỌC NGAY, THEO THỨ TỰ:
 1. PROMPT_BAN_GIAO_PLANNING.md (file này) — phần "Tình trạng" bên dưới khối prompt.
-2. docs/superpowers/specs/2026-09-22-ux-toan-web-truoc-deploy-design.md — ĐẶC TẢ CHÍNH (đọc hết; §7 là
-   danh sách 16 PR + thứ tự đợt).
-3. docs/superpowers/specs/2026-09-22-kiem-ke-truoc-deploy.md — mã việc (O…, Q…, P…, R…, S…, YT-…, F-…,
-   AN-…, RB-…, DOC-…), §5.2 ma trận chồng file.
-4. thiet-ke/mockup/ (mở file HTML khi soạn kế hoạch trang tương ứng) · thiet-ke/THUAT_NGU_DA_CHOT.md (chữ).
-5. Kế hoạch làm mẫu: docs/superpowers/plans/2026-09-22-pr-o-khung-4-khu-vuc.md (giao diện) và
-   docs/superpowers/plans/2026-09-22-pr-s1-luat-may-chu.md (máy chủ). Kế hoạch của 3 PR đang code:
-   …-pr-qa-hoc-vien-lop.md, …-pr-pa-tong-quan.md, …-pr-rc1-cham-diem.md (đọc khi rà PR tương ứng).
-6. plan.md: chỉ banner đầu file + mục 3 (bảng quyết định, các dòng 20–22/09). Đừng đọc hết (>250 KB).
-7. docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md Task 10–11 — deploy (đợt cuối).
-Rồi chạy: git log --oneline -15 và gh pr list --state all --limit 10 để biết PR nào đã có/merge.
+2. CLAUDE.md gốc repo (luật skill).
+3. docs/superpowers/specs/2026-09-27-nang-cap-sau-deploy-design.md — ĐẶC TẢ CHÍNH hiện hành: §1, §3 (mọi quyết định, gồm
+   3.1d Q28 về PA), §5 luật, §7 UX, §8 bảng 6 đợt PR, §10 nghiệm thu. Mã K… tra ở thiet-ke/ra-27-09/K1…K5.md khi cần.
+4. Bốn kế hoạch đợt 2 đang chạy: docs/superpowers/plans/2026-09-29-pr-{duyet-cho-duyet,mt-lich-mt,nhap-them-hoc-vien,mon-he-mon-hoc}.md
+   (đọc mục "chốt 29/09" cuối mỗi file). Kế hoạch mẫu đợt 1: 2026-09-28-pr-{n1-sua-loi-nong,lop-tao-lop,nen-nen-giao-dien}.md.
+5. docs/superpowers/specs/2026-09-23-viec-con-lai-sau-deploy.md nhóm B, C (việc cũ đã ghép vào §9 đặc tả chính).
+Rồi chạy: git log --oneline -12 và gh pr list --state all --limit 12.
 
-SAU KHI ĐỌC: tóm tắt cho chủ sản phẩm trong 10 dòng: đang ở đợt nào, PR nào đang chờ rà, việc tiếp theo
-(kèm model/effort), họ cần làm gì. Rồi chờ yêu cầu.
+SAU KHI ĐỌC: tóm tắt cho chủ sản phẩm trong 10 dòng: đang ở đợt nào, PR nào đang chờ rà, việc tiếp theo (kèm model/effort),
+họ cần làm gì. Rồi chờ yêu cầu.
 ```
 
 ---
 
-## Tình trạng lúc bàn giao (23/09/2026, ~00:30)
+## Tình trạng lúc bàn giao (29/09/2026)
 
-Bàn giao vì có model mới (chủ sản phẩm nói **Opus 5.5**). Session planning cũ chạy Opus 5 · XHigh.
-**Việc đầu tiên của session mới:** chạy `gh pr list --state open` — nếu có PR của Qa/Pa/Rc1 thì rà ngay (xem "Cách rà PR" bên dưới).
+### Đã có trên bản chính (chưa báo GV)
+Bản chính `pisa-tracking.netlify.app` chạy bản 23–24/09 (overhaul UX0–UX5 + PR-XOA). **Chưa deploy đợt 1 nâng cấp** — theo luật mới chỉ deploy khi xong hết 6 đợt, reset DB trước.
 
-### Đã xong: đợt 1 và một phần đợt 2
-
-| PR | Nội dung | Ghi chú rà soát |
-|---|---|---|
-| #56 PR-S1 | Luật máy chủ: tín hiệu SOS lớp thường (Tạo Case / Bỏ qua), S11–S17, RB-3/6/8/9, ngưỡng 70% | Rà bằng Fable 5.1 → merge được |
-| #58 PR-O | Khung 4 khu vực, redirect, hàm ngày/tuần G-6, khu Test/Công việc | Chủ sản phẩm merge trước khi planning rà; rà lại sau merge (Opus 5) → ổn, 3 việc chuyển sang Qa/Ra |
-| #61 PR-AN | Giới hạn lần thử đăng nhập/đăng ký, lỗi không lộ SQL, /api/health, hạn 10 s, hàm định kỳ chốt "-" | Rà bằng Fable 5.1 → merge được |
-| #64 PR-S2 | Điều chỉnh PA học thuật: Giữ / Điều chỉnh / Thay / Kết thúc, lịch sử điều chỉnh, form Ghi kết quả 5 mục | Rà bằng Fable 5.1 → merge được |
-
-`main` @ `236920d` sau #65. Phép kiểm trên main: **779**. Kế hoạch của mọi PR ở `docs/superpowers/plans/`.
-
-### Đang chạy (3 session code song song)
-
-| PR | Model người code (B) | Người rà | Tình trạng lúc bàn giao |
-|---|---|---|---|
-| **PR-Qa** Học viên & Lớp + Hồ sơ lớp | Fable 5.1 · High (B: Sonnet 5 · High) | Opus 5 | đang code, ~11 commit; nhánh `pr-qa-hoc-vien-lop` |
-| **PR-Pa** Tổng quan | Fable 5.1 · High (B: Opus 5 · High) | Opus 5 | đang code, ~20 commit; nhánh `pr-pa-tong-quan` |
-| **PR-Rc1** Cần chấm + Lịch Test + lưới chấm | Opus 5 · XHigh (B: Fable 5.1 · High) | Fable 5.1 | prompt đã đưa chủ sản phẩm, có thể chưa mở session; nhánh `pr-rc1-cham-diem` |
-
-Cổng thử đã chia: Pa 4127/5327 · Qa 4137/5337 · Rc1 4147/5347. Không dùng 4000/5173.
-Qa sở hữu phần sửa `shared/domain/hienThiNgay.ts` (Pa và Rc1 chỉ dùng, không sửa).
-Rc1 **không** có migrate; Qa và Pa không có migrate → merge thứ tự nào cũng được, chỉ cần rebase.
-Xung đột đã biết: Pa ↔ S2 ở `server/src/tests/run.ts` (giữ cả hai khối).
-
-### Lộ trình còn lại — 7 đợt, 3 session song song
-
+### Đợt nâng cấp (đặc tả §8)
 | Đợt | PR | Trạng thái |
 |---|---|---|
-| 1 | O · S1 · AN | ✅ merge xong |
-| 2 | Qa · Pa · S2 | S2 ✅; Qa, Pa đang code |
-| 3 | Qb hồ sơ HV · YT2 Ý thức · **Rc1** (kéo lên chạy sớm) | Rc1 có kế hoạch; **Qb, YT2 chưa soạn kế hoạch** |
-| 4 | Pb Phân tích · Ra Công việc · Rc2 Kế hoạch Test | chưa soạn |
-| 5 | GV hồ sơ GV · Form chọn người + bằng chứng · LT lên lớp/chuyển lớp | chưa soạn |
-| 6 | S3 quét chữ toàn web | chưa soạn |
-| 7 | Z2c deploy | kế hoạch có sẵn (plan 21/09 Task 10–11) |
+| 1 | N1 (#108, #110) · LOP (#109, #112) · NEN (#113) | ✅ merge xong |
+| 2 | **DUYET** (làn A, 4157/5357) · **MT** (B, 4167/5367) · **NHAP** (C, 4177/5377) · **MON** (D, 4187/5387) | Kế hoạch merge (#114, #115); prompt đã đưa chủ sản phẩm (29/09) — **4 session code có thể đang chạy**. Việc tiếp theo: rà từng PR khi họ gửi số |
+| 3 | SOS · YT4 · XLMT | chưa soạn — SOS gồm §3.1d Q28-1…4 (gợi ý mô tả PA, PA quy chế chờ **Xác nhận PA**, bỏ "Dự kiến kết thúc") |
+| 4 | HSM · HVL · XUAT · SANG | chưa soạn |
+| 5 | LT2a · LT2b · GV | chưa soạn |
+| 6 | VAI · UXD · UXF · Pb2 · (sau: S3, Dọn) | chưa soạn |
 
-Model từng PR + lý do xếp đợt: đặc tả §7. **Soạn kế hoạch ngay trước khi đợt chạy**, vì mã đổi sau mỗi lần merge.
-Qb cần Qa merge xong; YT2 cần Qa; Ra cần Pa; Rc2 cần Rc1; Form cần S2+YT2+Ra; LT cần Qa+Qb.
+**Thứ tự merge đợt 2:** MT trước NHAP (NHAP Task 7 là cửa 🛑 chờ MT); MON nên sau MT; cả 4 có migrate → merge từng cái, cái sau rebase + migrate lại. Chồng file đã ghi trong từng kế hoạch (file chỉ thêm khối: giữ cả hai; `attempts.ts regularSkillViews` MT ↔ MON giữ cả hai; `intake.ts` MT ↔ NHAP: NHAP giữ lời gọi `taoMtMacDinh`).
 
-### Cách soạn kế hoạch (đang chạy tốt)
-Giao agent (Opus, chạy nền) với prompt gồm: (1) đọc đặc tả §ứng với PR + kiểm kê + mockup + 2 kế hoạch mẫu + mã thật;
-(2) phạm vi và ranh giới file so với các PR đang chạy song song; (3) đầu kế hoạch ghi model/effort/phương án B/người rà/đợt/nhánh,
-dòng "subagent cùng model, KHÔNG Haiku"; (4) mục KIỂM bấm thử theo vai + 375px, ảnh lưu `thiet-ke/anh/pr-…/`;
-(5) lưu vào `docs/superpowers/plans/`, KHÔNG commit; (6) báo lại: bảng Q tự quyết · mâu thuẫn nguồn ↔ mã · câu cần chủ sản phẩm quyết · có migrate không.
-Rồi planning rà bảng Q, sửa chỗ lệch (gửi lại agent), commit lên nhánh planning, mở PR tài liệu, đưa chủ sản phẩm prompt mở session code.
-
-### Cách rà PR (đang chạy tốt)
-Giao agent **khác model người code** (đọc dòng `Co-Authored-By` của commit để biết model thật), chạy nền, yêu cầu:
-worktree tách rời `git worktree add --detach <tmp> origin/<nhánh>` + `npm ci` + `npm run check`, cổng thử chưa ai dùng,
-không chạm Turso bản chính, gỡ worktree khi xong; đối chiếu kế hoạch + đặc tả + quyết định chủ sản phẩm; báo Critical/Important/Minor
-kèm tình huống cụ thể; kết luận "merge được" hay không. Sau đó planning **ghi mọi việc theo sau vào đặc tả §7** (dòng PR sẽ sửa)
-rồi mở PR tài liệu — không ghi thì việc biến mất.
-
-### Quyết định cần nhớ (đầy đủ ở đặc tả §3, §5)
-- **Lớp thường** (không viết "Normal" trên màn): Giữa khoá · Cuối khoá; điểm **số câu đúng / tổng số câu, cả hai đều điền**;
-  đạt ≥ 70%; SOS là **tín hiệu từng môn** về GV môn đó, nút **Tạo Case / Bỏ qua** (lý do không bắt buộc); "-" = dời sang tuần sau.
-- **Tuần** luôn `W3 SEP`, `W1 OCT`; tuần trong khoá `W8/8`.
-- **Lộ trình tiếp theo** mặc định không hiện; **Chuyển lớp FT → FT giữ nguyên lộ trình**; FT chỉ kết thúc khi Kết luận lộ trình.
-- S16 tự đóng Case chỉ khi em **thật sự dừng học**; PA đã xong có kết quả thật vẫn tính hiệu quả.
-- PA học thuật: **Thay phương án được phép cả khi "Chưa đủ dữ liệu"** (PA cũ không vào thống kê, không vào F05) — planning sửa Q2 của kế hoạch S2.
-- Form Ghi kết quả **giữ** nút "Xin hỗ trợ từ Quản lý" cả khi kết quả tốt (chủ sản phẩm 23/09).
-- Đăng ký tài khoản: giữ `/auth/register`, QTHT duyệt; ngưỡng đăng ký sẽ nâng 10 → **30 lần/giờ/IP** ở Z2c.
+### Chủ sản phẩm chốt 28–29/09 (đã ghi vào đặc tả/kế hoạch)
+- Q28-1…4 (PR-SOS, đặc tả §3.1d): gợi ý mô tả khi tạo PA / ghi kết quả PA; **PA quy chế SOS không huỷ nhưng chờ GV bấm Xác nhận PA** (panel như Thêm PA, khoá phân loại, không Tình trạng, không Ngày bắt đầu); **bỏ ô Dự kiến kết thúc**.
+- **GVCN VẪN tự chuyển lớp** (giữ chốt 24/09); chỉ rút tự sửa target/lộ trình (đi thẻ Chờ duyệt) — PR-DUYET.
+- Dán Excel **không có tiêu đề → từ chối** — PR-NHAP.
+- Tên môn FOU: **G+V = Grammar + Vocabulary · P = Pronunciation** — PR-MON.
+- DB sẽ reset → **bỏ lệnh bổ sung MT dữ liệu cũ**, NHƯNG **giữ tự tạo MT (kể cả MT lịch sử) khi thêm học viên mới** — PR-MT (#115).
+- Deploy bản chính chỉ khi xong hết; bản nháp khi cần (xem khối prompt).
 
 ### Bẫy đã gặp — đừng lặp lại
-1. `plan.md` chép đặc tả không đủ → bỏ sót việc. Luôn đối chiếu với mã thật.
-2. Lệnh bash dài nhiều dấu nháy/heredoc trên Windows hay hỏng — ghi file bằng Write rồi chạy.
-3. Tin chủ sản phẩm gửi lúc session đang chạy dễ bị bỏ qua → dặn họ **bấm Stop rồi mới gửi**.
-4. Chủ sản phẩm có thể merge trước khi planning rà (đã xảy ra với #58) → nhắc "chờ tôi nói merge được"; nếu lỡ merge thì rà sau merge.
-5. Mockup rời rạc → luôn kèm vị trí (mẫu `12-ban-do-vi-tri.html`).
-6. Agent soạn kế hoạch hay tự quyết lệch ý chủ sản phẩm → đọc kỹ bảng Q. Ví dụ thật: agent đặt ngưỡng đăng ký 10 lần/giờ/IP,
-   cả chi nhánh chung wifi sẽ bị chặn ngày mở tài khoản; agent định chặn "Thay phương án" khi chưa đủ dữ liệu.
-7. Session code có thể giao việc cho model nhỏ hơn kế hoạch (PR-O từng chạy Haiku 4.5) → prompt luôn ghi "subagent cùng model, KHÔNG Haiku";
-   kiểm bằng `git log --format=%B main..<nhánh> | grep Co-Authored`.
-8. Không bao giờ chạy lệnh vào DB bản chính; không `--prod` khi chưa được đồng ý; token lấy bằng `netlify env:get`.
-9. Cổng: mỗi session một cặp riêng; agent rà cũng phải kiểm cổng trống trước khi gửi request (một agent từng gửi nhầm vào máy chủ của session khác).
-10. Chủ sản phẩm thích gộp: nhiều kế hoạch + ghi chú rà soát đưa chung một PR tài liệu.
+1. File kế hoạch chưa commit bị GitHub Desktop cất vào stash khi chủ sản phẩm đổi nhánh → **commit + push ngay** sau khi agent soạn xong.
+2. PR tài liệu có thể được merge trước khi planning đẩy thêm commit → commit sau đó nằm lại trên nhánh; kiểm `gh pr view <n> --json state` trước khi đẩy tiếp, đã MERGED thì mở PR mới.
+3. PR xếp chồng (base là nhánh PR khác) merge vào nhánh đó chứ không vào main (#80) → mở PR thẳng vào main.
+4. Session code hay chạy model nhỏ hơn kế hoạch (Sonnet) → kiểm Co-Authored-By; PR giao diện do Sonnet làm từng lọt lỗi hình (kiểm bằng ẢNH).
+5. Lỗi chỉ lộ trên Turso (tham số đặt tên, UNION > 20 vế, ghi đồng thời SQLITE_BUSY) — PR chạm SQL mới nên rà kỹ phần này.
+6. Agent song song nhiều → chạm giới hạn lượt dùng; dặn agent ghi báo cáo dần, dùng SendMessage chạy tiếp agent bị ngắt.
+7. `npm run check` chạy chồng làm run.js treo hàng giờ → mỗi agent/session chỉ một lần một lúc, quét tiến trình trước khi kết thúc.
+8. Chủ sản phẩm có thể merge trước khi planning rà → nhắc "chờ tôi nói merge được"; lỡ merge thì rà sau merge.
+
+---
+
+## Mẫu giao việc cho agent (chép vào scratchpad của session mới, sửa chỗ <…>)
+
+### A. Agent soạn kế hoạch (Opus, chạy nền, mỗi PR một agent)
+```
+Repo: <repo>. `git fetch origin`; đọc origin/main mới nhất. KHÔNG sửa mã, KHÔNG commit, KHÔNG đổi nhánh thư mục chính.
+Chỉ viết ĐÚNG MỘT file docs/superpowers/plans/<ngày>-pr-<mã>-<tên>.md (planning sẽ commit). Đọc CLAUDE.md (luật skill).
+ĐỌC: đặc tả 2026-09-27 §3 (quyết định), §4 ma trận YC của PR, §5 luật, §7 UX (mockup thiet-ke/mockup/19-nang-cap-27-09.html),
+§8 dòng PR + luật chung đợt, §10 nghiệm thu; thiet-ke/ra-27-09/K1…K5.md cho mã K…; kế hoạch mẫu đợt 1–2 (cấu trúc, bảng điều
+hành, khối Quy trình nhanh, cổng rebase, Nhật ký cuối file = thành phần thật đã dựng); MÃ THẬT (file:dòng), không tin ô tick.
+LUẬT ĐỢT: mỗi PR một nhánh, không tự merge; người rà Opus 5.5 session riêng; subagent cùng model, KHÔNG Haiku; `npm run check`
+một lần, foreground, sau mỗi task; bấm thử theo vai + 375 px + ảnh ở thiet-ke/anh/<ma-pr>/; mỗi PR một file migrate chạy lặp được;
+lệnh sửa dữ liệu cũ có chế độ chạy thử in danh sách; đường API mới vào tocDoDuong.ts có trần; Turso: không tham số đặt tên,
+UNION ≤ 20 vế, BEGIN IMMEDIATE. Cổng A 4157/5357 · B 4167/5367 · C 4177/5377 · D 4187/5387.
+ĐẦU KẾ HOẠCH: Goal, Architecture, Spec, Bảng điều hành (mã · đợt · làn · nhánh · worktree · cổng · model + B · người rà ·
+migrate · lệnh impeccable ở task nào + `/ponytail lite` nếu có giao diện · phụ thuộc · không làm), Quy trình nhanh, bảng Q tự
+quyết, "Chuyển cho PR khác", Nhật ký thực thi trống. Model yếu hơn → mã cụ thể chỗ dễ sai, gate 🛑, hướng dẫn riêng. ≤ 600 dòng.
+BÁO LẠI (≤ 40 dòng): đường dẫn, số Task; bảng Q tự quyết; mâu thuẫn nguồn ↔ mã; ≤ 2 câu cần chủ sản phẩm quyết (có khuyến nghị);
+migrate?; file chồng với các PR cùng đợt. Ghi báo cáo DẦN (phòng bị ngắt vì giới hạn lượt dùng).
+```
+
+### B. Agent rà PR (luôn Opus 5.5)
+```
+Bạn là NGƯỜI RÀ ĐỘC LẬP. KHÔNG sửa mã nhánh, KHÔNG push, KHÔNG comment GitHub, KHÔNG merge. Chặn Critical/Important; Minor ghi ngắn.
+1. Worktree tách rời trong scratchpad: git fetch origin; git worktree add --detach "<scratchpad>\<tên>" origin/<nhánh>.
+   Nhánh chưa chứa origin/main mới nhất → `git merge origin/main` trong worktree trước. npm ci; npm run check MỘT lần.
+2. Diff `git diff origin/main...HEAD` đối chiếu kế hoạch PR + đặc tả 2026-09-27. Tìm: sai luật nghiệp vụ, lộ dữ liệu ngoài quyền
+   (gửi API thẳng bằng vai khác), số không khớp danh sách khi bấm, N+1 (Turso 20–50 ms/truy vấn; đường mới phải có trần ở
+   tocDoDuong.ts), SQL hỏng trên Turso (tham số đặt tên, UNION > 20 vế), migrate không chạy lặp được, mất tính năng cũ.
+3. Bấm thử theo vai (QL, GVCN, GVBM) + 375 px bằng ẢNH THẬT: npm run seed → API `PORT=<API> node dist-server/server/src/index.js`
+   (nền) → file Vite tạm (root worktree, alias @shared, port <Vite> strictPort, proxy /api → 127.0.0.1:<API>). Cấm cổng 4000/5173.
+   Playwright `npm i --no-save playwright`, chromium.launch({ channel: 'chrome' }); đăng nhập POST /api/demo/session {userId}
+   (admin=1, QL=2, GVCN=7, GVBM=9, GVBM Writing=10). Git Bash: MSYS_NO_PATHCONV=1. Không chạm Turso/netlify.
+4. Model thật: git log --format=%B origin/main..origin/<nhánh> | grep Co-Authored.
+5. Dọn: tắt tiến trình, xoá file Vite tạm, gỡ worktree (Windows lỗi tên dài: cmd /c "rmdir /s /q \?\<đường dẫn>"; git worktree prune).
+BÁO LẠI (≤ 70 dòng): MERGE ĐƯỢC / MERGE ĐƯỢC SAU KHI SỬA <…> / CHƯA MERGE; số phép kiểm; Critical/Important (file:dòng + tình huống
++ cách sửa); Minor ≤ 8 dòng; việc kế hoạch giao mà chưa làm.
+```
+Sau khi agent báo: planning soạn **tin nhắn sửa** (tiếng Việt, liệt kê file:dòng) để chủ sản phẩm dán vào session code; sửa xong rà lại phần đã sửa rồi mới nói "merge được".

@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, PERMISSIONS,
+  ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, PERMISSIONS, SKILL_SHORT, hanDuyetDoiLan2, ngay, tuanLich,
   type AssessedSkill,
 } from '../../../shared/domain/index.ts';
 import { assessedSkillOf, entrySkillsOf } from './scoring.ts';
@@ -8,7 +8,9 @@ import { addDays, badRequest, notFound, nowIso } from '../util.ts';
 import { can, isCoreTeacherOf, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { writeAudit, notify } from '../platform/audit.ts';
-import { ensurePeriod } from '../platform/week.ts';
+import { nho } from '../platform/nguCanhRequest.ts';
+import { chotYeuCau, taoYeuCau } from '../duyet/yeuCau.ts';
+import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import {
   checkSkillWeekMove, ensureSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf,
 } from './skillSchedule.ts';
@@ -82,42 +84,37 @@ function canDecide(p: Principal, attempt: any): boolean {
 }
 
 /*
- * SỔ TRA ĐỀ NGHỊ ĐANG CHỜ — nạp MỘT LẦN cho cả màn hình.
- *
- * Bảng danh sách lớp vẽ vài trăm ô lịch, mỗi ô là một kỹ năng của một đợt. Hỏi từng ô một
- * câu "có đề nghị nào đang chờ không" là 556 câu lệnh cho 11 lớp — và đó đúng là cái bẫy
- * N+1 mà bộ kiểm tra của dự án canh sẵn.
- *
- * Số đề nghị ĐANG CHỜ luôn nhỏ (nó là việc người ta phải xử lý trong vài ngày), nên nạp cả
- * bảng vào một Map rẻ hơn hẳn. Sổ này chỉ mất hiệu lực khi chính module này ghi vào bảng —
- * không có ai khác viết vào đó.
+ * SỔ TRA ĐỀ NGHỊ ĐANG CHỜ — nạp MỘT LẦN cho cả màn hình (bảng lớp vẽ vài trăm ô lịch; hỏi từng ô là N+1).
+ * PR-DUYET (K5-28): nhớ THEO REQUEST (`nho`), không còn biến sống suốt tiến trình — trên Netlify nhiều tiến trình chạy song song,
+ * sổ của tiến trình này không biết tiến trình kia vừa ghi. `nho` chỉ nhớ trong GET và tự xoá khi request ghi bất cứ gì.
  */
-let pendingIndex: Map<string, MoveRequest> | null = null;
-
-function invalidatePending() { pendingIndex = null; }
-
-/**
- * Chạy một thao tác có ghi vào bảng đề nghị, và DỌN SỔ TRA CẢ TRƯỚC LẪN SAU.
- *
- * Trước, để lần đọc trong chính thao tác này thấy dữ liệu thật. Sau, vì một giao dịch hỏng
- * giữa chừng sẽ được hoàn tác — mà sổ tra nạp lúc đó thì đã giữ mất những dòng không còn
- * tồn tại. Một sổ tra nhớ nhầm ở đây nghĩa là một đề nghị đã bị từ chối vẫn chặn Quản lý
- * đổi lịch.
- */
-function writing<T>(fn: () => T): T {
-  invalidatePending();
-  try { return fn(); } finally { invalidatePending(); }
+function indexOfPending(): Map<string, MoveRequest> {
+  return nho('de-nghi-doi', () => {
+    const rows = db()
+      .prepare(`SELECT * FROM skill_move_requests WHERE status = 'pending' ORDER BY id`)
+      .all() as MoveRequest[];
+    const m = new Map<string, MoveRequest>();
+    for (const r of rows) m.set(`${r.attempt_id}:${r.skill}`, r);
+    return m;
+  });
 }
 
-function indexOfPending(): Map<string, MoveRequest> {
-  if (pendingIndex) return pendingIndex;
-  const rows = db()
-    .prepare(`SELECT * FROM skill_move_requests WHERE status = 'pending' ORDER BY id`)
-    .all() as MoveRequest[];
-  const m = new Map<string, MoveRequest>();
-  for (const r of rows) m.set(`${r.attempt_id}:${r.skill}`, r);
-  pendingIndex = m;
-  return m;
+/**
+ * PR-MT: RÚT đề nghị dời đang chờ — một kỹ năng (Quản lý sửa trạng thái thi KHỎI "vắng") hoặc CẢ LƯỢT (`skill` bỏ trống: huỷ cả lượt,
+ * tạo lại số đã huỷ). Không rút thì đề nghị hết hạn sẽ huỷ phần thi (C09) của một bài không còn vắng / của lượt vừa xếp lại.
+ * Gọi trong tx của nơi gọi.
+ */
+export function rutDeNghiDoi(attemptId: number, skill?: string): number {
+  const conn = db();
+  const ids = (conn.prepare(`SELECT id FROM skill_move_requests WHERE attempt_id = ? AND status = 'pending'${skill ? ' AND skill = ?' : ''}`)
+    .all(attemptId, ...(skill ? [skill] : [])) as any[]).map((r) => r.id as number);
+  for (const id of ids) {
+    conn.prepare(`UPDATE skill_move_requests SET status = 'withdrawn', updated_at = ? WHERE id = ? AND status = 'pending'`).run(nowIso(), id);
+    /* Thẻ Lịch thi của đề nghị này (PR-DUYET) đóng cùng lúc — không để thẻ chờ cho một đề nghị đã rút. */
+    chotYeuCau(conn, { loai: 'lich_thi', doiTuongLoai: 'skill_move', doiTuongId: id }, 'tu_dong',
+      { lyDo: skill ? 'Rút — bài không còn vắng' : 'Rút — lượt đã huỷ' });
+  }
+  return ids.length;
 }
 
 /** Đề nghị đang chờ của một kỹ năng, nếu có. */
@@ -153,6 +150,34 @@ function nextWeekOf(weekStart: string): { id: number; code: string; week_start: 
  */
 export function decideByOf(newWeekStart: string): string {
   return addDays(newWeekStart, -1);
+}
+
+/**
+ * TUẦN ĐÍCH MẶC ĐỊNH của đề nghị dời lần 2 (K4-04): tuần CHƯA BẮT ĐẦU gần nhất mà luật thứ tự đợt (T15) không chặn — thử tối đa 8
+ * tuần; không có → null (Quản lý tự chọn). Xuất cho PR-DUYET (thẻ Lịch thi).
+ */
+export function tuanDichMacDinh(attemptId: number, skill: string, today: string): { id: number; code: string; week_start: string } | null {
+  for (let i = 1; i <= 8; i += 1) {
+    const w = ensurePeriod(addDays(mondayOf(today), 7 * i));   // thứ Hai tuần sau trở đi = tuần CHƯA bắt đầu
+    if (!checkSkillWeekMove({ attemptId, skill: skill as AssessedSkill, newWeekStart: w.weekStart }).blockers.length) {
+      return { id: w.id, code: w.code, week_start: w.weekStart };
+    }
+  }
+  return null;
+}
+
+/** Chữ thẻ "Dời lịch MT lần 2" (tiêu đề thẻ Lịch thi ở hộp Chờ duyệt): `Dời S · MT3 · lần 2 · Duyệt = S thi W2 OCT`. Hàm thuần. */
+export function chuTheDoiLan2(o: { skill: string; attemptNo: number | null; moveNo: number; tuanDich: string | null; homNay: string }): string {
+  const k = SKILL_SHORT[o.skill] ?? o.skill;
+  return `Dời ${k} · MT${o.attemptNo ?? '?'} · lần ${o.moveNo} · Duyệt = ${k} thi ${o.tuanDich ? tuanLich(o.tuanDich, o.homNay) : '—'}`;
+}
+
+/** Như `chuTheDoiLan2`, đọc từ một đề nghị (giao kèo PR-MT → PR-DUYET). */
+export function moTaDoiLan2(req: { attempt_id: number; skill: string; move_no: number; to_period_id: number }): string {
+  const conn = db();
+  const a = conn.prepare('SELECT attempt_no FROM assessment_attempts WHERE id = ?').get(req.attempt_id) as any;
+  const w = conn.prepare('SELECT week_start FROM report_periods WHERE id = ?').get(req.to_period_id) as any;
+  return chuTheDoiLan2({ skill: req.skill, attemptNo: a?.attempt_no ?? null, moveNo: req.move_no, tuanDich: w?.week_start ?? null, homNay: demoToday() });
 }
 
 export type MoveOutcome = {
@@ -193,12 +218,13 @@ export function requestAbsenceMove(p: Principal, attemptId: number, skills: stri
   const today = opts.today ?? demoToday();
   const rows = ensureSkillRows(attemptId);
 
-  return writing(() => tx(() => {
+  return tx(() => {
     const conn = db();
     const outcomes: MoveOutcome[] = [];
 
     for (const skill of list) {
       const row = rows.find((r) => r.skill === skill)!;
+      if (attempt.lich_su) throw badRequest('MT lịch sử không vào luồng vắng — nhập bù điểm, không dời lịch.');
       /*
        * ĐIỂM TRỐNG CHƯA ĐỦ ĐỂ XÁC NHẬN VẮNG (mục 10.6). Phải có người xác nhận trước, và đó
        * là một thao tác riêng có tên và có thời điểm.
@@ -215,82 +241,80 @@ export function requestAbsenceMove(p: Principal, attemptId: number, skills: stri
       if (pendingMove(attemptId, skill)) {
         throw badRequest(`${skillName(skill)} đã có một đề nghị dời đang chờ Quản lý trả lời.`);
       }
-
-      const target = nextWeekOf(row.week_start);
-      const moveNo = row.absence_move_count + 1;
-      const decideBy = decideByOf(target.week_start);
-      const check = checkSkillWeekMove({ attemptId, skill: skill as AssessedSkill, newWeekStart: target.week_start });
-
-      /*
-       * BA ĐƯỜNG RẼ, và thứ tự kiểm chính là thứ tự luật:
-       *
-       *   · tuần đích đã qua, hoặc đụng đợt sau, hoặc hạn duyệt đã trôi → CHUYỂN QUẢN LÝ.
-       *     Không giả một khoảng chờ đã hết, và cũng không tự coi như đã được duyệt.
-       *   · lần đầu và mọi thứ sạch sẽ → GVCN DỜI ĐƯỢC NGAY.
-       *   · từ lần thứ hai → GỬI ĐỀ NGHỊ, lịch giữ nguyên cho tới khi có người duyệt.
-       */
-      /*
-       * BÀI ĐÃ CHỐT "KHÔNG DỰ THI" (rule book §17.1): việc chốt xảy ra NGAY khi hết Chủ nhật, nên lúc GVCN
-       * xử lý thì tuần kế tiếp LUÔN đã bắt đầu. Nếu vẫn đòi tuần đích chưa bắt đầu thì lần dời đầu tiên
-       * của GVCN không bao giờ xảy ra được — mọi bài không dự thi đều nhảy sang Quản lý. Nên với lần dời
-       * ĐẦU của bài đã chốt, chỉ cần tuần đích CHƯA KẾT THÚC (còn thi được). Tuần đích đã qua hẳn thì vẫn
-       * chuyển Quản lý, để xử lý muộn không âm thầm thành thêm tuần. Mọi trường hợp vắng khác giữ nguyên.
-       */
-      const fromNoShow = row.absent_from_no_show === 1;
-      const tooLate = moveNo === 1 && fromNoShow
-        ? addDays(target.week_start, 6) < today
-        : target.week_start <= today || decideBy < today;
-      const escalate = tooLate || check.blockers.length > 0;
-
-      if (escalate) {
-        const why = check.blockers.length
-          ? check.blockers.join(' ')
-          : `Tuần kế tiếp (${target.code}) đã bắt đầu hoặc đã qua hạn duyệt.`;
-        const id = insertRequest(conn, {
-          attemptId, skill, moveNo, from: row.planned_period_id, to: target.id,
-          reason: opts.reason ?? null, by: p.userId, on: today,
-          /* Hạn duyệt không lùi về quá khứ: việc này chuyển thẳng cho Quản lý, hạn là hôm nay. */
-          decideBy: decideBy < today ? today : decideBy,
-          idem: opts.idempotencyKey ? `${opts.idempotencyKey}:${skill}` : null,
-        });
-        notifyPlanners(attempt, `Cần Quản lý xử lý: dời ${skillName(skill)} do vắng. ${why}`, id, p.userId);
-        outcomes.push({
-          skill: skill as AssessedSkill, result: 'escalated', toWeek: target.code,
-          moveNo, requestId: id,
-          message: `${skillName(skill)}: ${why} Việc đã chuyển cho Quản lý xếp lại.`,
-        });
-        continue;
-      }
-
-      if (moveNo === 1) {
-        applyMove(conn, p.userId, attempt, row, target, opts.reason ?? null, moveNo);
-        outcomes.push({
-          skill: skill as AssessedSkill, result: 'moved', toWeek: target.code, moveNo, requestId: null,
-          message: `${skillName(skill)} đã dời sang tuần ${target.code}. Đây là lần dời do vắng thứ nhất.`,
-        });
-        continue;
-      }
-
-      const id = insertRequest(conn, {
-        attemptId, skill, moveNo, from: row.planned_period_id, to: target.id,
-        reason: opts.reason ?? null, by: p.userId, on: today, decideBy,
-        idem: opts.idempotencyKey ? `${opts.idempotencyKey}:${skill}` : null,
-      });
-      notifyPlanners(
-        attempt,
-        `Đề nghị dời ${skillName(skill)} sang tuần ${target.code} (lần thứ ${moveNo} do vắng). `
-        + `Cần trả lời trước ${decideBy}.`,
-        id, p.userId,
-      );
-      outcomes.push({
-        skill: skill as AssessedSkill, result: 'pending', toWeek: target.code, moveNo, requestId: id,
-        message: `${skillName(skill)}: đây là lần dời thứ ${moveNo}, cần Quản lý duyệt trước ${decideBy}. `
-          + 'Lịch giữ nguyên cho tới khi có quyết định.',
-      });
+      outcomes.push(xuLyVangMotKyNang(conn, p.userId, attempt, row, {
+        lyDo: opts.reason ?? null, today, idem: opts.idempotencyKey ? `${opts.idempotencyKey}:${skill}` : null,
+      }));
     }
 
     return { outcomes };
-  }));
+  });
+}
+
+/**
+ * LÕI XỬ LÝ VẮNG MỘT KỸ NĂNG (mục 10.6) — dùng chung GVCN bấm "Xử lý vắng" và MÁY TỰ DỜI lúc chốt "-" (Q-A, K4-03). Nơi gọi đã kiểm
+ * bài đang `absent`, có tuần, chưa có đề nghị chờ. Gọi trong tx của nơi gọi. `actor = null` = máy.
+ */
+function xuLyVangMotKyNang(conn: any, actor: number | null, attempt: any, row: any, o: {
+  lyDo: string | null; today: string; idem: string | null;
+}): MoveOutcome {
+  const skill = row.skill as AssessedSkill;
+  const attemptId = attempt.id as number;
+  const today = o.today;
+  const target = nextWeekOf(row.week_start);
+  const moveNo = row.absence_move_count + 1;
+  const decideBy = decideByOf(target.week_start);
+  /* T42, K4-04: đề nghị (lần 2+ hoặc chuyển Quản lý) hết hạn HẾT CHỦ NHẬT CỦA TUẦN GỬI; tuần đích = tuần chưa bắt đầu gần nhất hợp T15. */
+  const hanDeNghi = hanDuyetDoiLan2(today);
+  const check = checkSkillWeekMove({ attemptId, skill, newWeekStart: target.week_start });
+
+  /*
+   * BA ĐƯỜNG RẼ, và thứ tự kiểm chính là thứ tự luật:
+   *
+   *   · tuần đích đã qua, hoặc đụng đợt sau, hoặc hạn duyệt đã trôi → CHUYỂN QUẢN LÝ.
+   *     Không giả một khoảng chờ đã hết, và cũng không tự coi như đã được duyệt.
+   *   · lần đầu và mọi thứ sạch sẽ → DỜI NGAY (GVCN bấm, hoặc máy tự dời lúc chốt "-").
+   *   · từ lần thứ hai → GỬI ĐỀ NGHỊ, lịch giữ nguyên cho tới khi có người duyệt.
+   *
+   * BÀI ĐÃ CHỐT "KHÔNG DỰ THI" (rule book §17.1): việc chốt xảy ra NGAY khi hết Chủ nhật, nên lúc xử lý thì tuần kế tiếp LUÔN đã
+   * bắt đầu. Với lần dời ĐẦU của bài đã chốt, chỉ cần tuần đích CHƯA KẾT THÚC (còn thi được). Tuần đích đã qua hẳn thì vẫn chuyển
+   * Quản lý, để xử lý muộn không âm thầm thành thêm tuần. Mọi trường hợp vắng khác giữ nguyên.
+   */
+  const fromNoShow = row.absent_from_no_show === 1;
+  const tooLate = moveNo === 1 && fromNoShow
+    ? addDays(target.week_start, 6) < today
+    : target.week_start <= today || decideBy < today;
+
+  if (moveNo === 1 && !tooLate && !check.blockers.length) {
+    applyMove(conn, actor, attempt, row, target, o.lyDo, moveNo, actor === null);
+    return {
+      skill, result: 'moved', toWeek: target.code, moveNo, requestId: null,
+      message: `${skillName(skill)} đã dời sang tuần ${target.code}. Đây là lần dời do vắng thứ nhất.`,
+    };
+  }
+
+  const escalate = tooLate || check.blockers.length > 0;
+  const dich = (moveNo > 1 || escalate ? tuanDichMacDinh(attemptId, skill, today) : null) ?? target;
+  const id = insertRequest(conn, {
+    attemptId, skill, moveNo, from: row.planned_period_id, to: dich.id,
+    /* Máy gửi (lần 2 / chuyển Quản lý) thì lý do là dấu "-", không phải "máy tự dời" — thẻ Lịch thi đọc câu này. */
+    reason: actor === null ? 'Không dự thi — dấu "-" còn nguyên đến hết Chủ nhật' : o.lyDo, by: actor, on: today, decideBy: hanDeNghi, idem: o.idem,
+  });
+  const han = `hết Chủ nhật ${ngay(hanDeNghi, today)}`;
+  /* PR-DUYET: `insertRequest` đã tạo thẻ Lịch thi (hạn = `hanDuyetDoiLan2`, người xin null khi máy gửi) — không báo riêng người xếp lịch. */
+  if (escalate) {
+    const why = check.blockers.length
+      ? check.blockers.join(' ')
+      : `Tuần kế tiếp (${target.code}) đã bắt đầu hoặc đã qua hạn duyệt.`;
+    return {
+      skill, result: 'escalated', toWeek: dich.code, moveNo, requestId: id,
+      message: `${skillName(skill)}: ${why} Việc đã chuyển cho Quản lý xếp lại.`,
+    };
+  }
+  return {
+    skill, result: 'pending', toWeek: dich.code, moveNo, requestId: id,
+    message: `${skillName(skill)}: đây là lần dời thứ ${moveNo}, cần Quản lý duyệt trước ${han}. `
+      + 'Lịch giữ nguyên cho tới khi có quyết định.',
+  };
 }
 
 function insertRequest(conn: any, r: {
@@ -308,7 +332,6 @@ function insertRequest(conn: any, r: {
     const dup = conn.prepare('SELECT id FROM skill_move_requests WHERE idempotency_key = ?').get(r.idem) as any;
     if (dup) return dup.id;
   }
-  invalidatePending();
   const info = conn
     .prepare(
       `INSERT INTO skill_move_requests (attempt_id, skill, move_no, from_period_id, to_period_id,
@@ -317,13 +340,20 @@ function insertRequest(conn: any, r: {
        VALUES (?,?,?,?,?,?,?,?,?, 'pending', ?, ?)`,
     )
     .run(r.attemptId, r.skill, r.moveNo, r.from, r.to, r.reason, r.by, r.on, r.decideBy, r.idem, nowIso());
-  return Number(info.lastInsertRowid);
+  const id = Number(info.lastInsertRowid);
+  /* PR-DUYET (K4-04 phần thẻ): mọi đề nghị chờ QL là MỘT thẻ Lịch thi; hạn thẻ CHÉP `decide_by` (luật hạn thuộc PR-MT). */
+  const a = conn.prepare('SELECT student_id, class_id FROM assessment_attempts WHERE id = ?').get(r.attemptId) as any;
+  taoYeuCau(conn, {
+    loai: 'lich_thi', doiTuongLoai: 'skill_move', doiTuongId: id, hocVienId: a?.student_id ?? null, lopId: a?.class_id ?? null,
+    nguoiXin: r.by, lyDo: r.reason, hanDuyet: r.decideBy,
+  });
+  return id;
 }
 
 /** Đổi tuần và TĂNG bộ đếm — chỉ đường đi qua đây mới được tính là một lần dời do vắng. */
 function applyMove(
   conn: any, actor: number | null, attempt: any, row: any,
-  target: { id: number; code: string }, reason: string | null, moveNo: number,
+  target: { id: number; code: string }, reason: string | null, moveNo: number, mayTuDoi = false,
 ) {
   conn
     .prepare(
@@ -340,7 +370,7 @@ function applyMove(
   });
   recomputeCompletionWeek(attempt.id, actor);
   writeAudit({
-    actorUserId: actor, action: 'attempt.absence_move', entityType: 'assessment_attempt',
+    actorUserId: actor, action: mayTuDoi ? 'attempt.absence_auto_move' : 'attempt.absence_move', entityType: 'assessment_attempt',
     entityId: attempt.id, entityLabel: `${attempt.kind === 'mock' ? `MT${attempt.attempt_no}` : attempt.kind} · ${row.skill}`,
     before: { week: row.period_code, moveCount: row.absence_move_count },
     after: { week: target.code, moveCount: moveNo },
@@ -363,22 +393,27 @@ export function decideAbsenceMove(p: Principal, requestId: number, input: {
   const attempt = loadAttempt(req.attempt_id);
   if (!canDecide(p, attempt)) throw badRequest('Chỉ Quản lý mới trả lời được đề nghị dời lịch.');
   if (req.status !== 'pending') {
-    throw badRequest(`Đề nghị này đã được xử lý (${req.status}) — không trả lời lại được.`);
+    throw badRequest('Đề nghị này đã được xử lý — không trả lời lại được.');
   }
+  if (attempt.status === 'cancelled') throw badRequest('Lượt này đã huỷ — đề nghị dời không còn hiệu lực.');
+  const note = (input.note ?? '').trim() || null;
+  /* PR-DUYET (§5.5, M8/Q11): từ chối = huỷ phần thi của em — bắt buộc lý do để GVCN biết vì sao. */
+  if (!input.approve && (note ?? '').length < 3) throw badRequest('Từ chối thì ghi lý do (ít nhất 3 ký tự) để GVCN biết vì sao.');
 
   const today = demoToday();
   const rows = ensureSkillRows(req.attempt_id);
   const row = rows.find((r) => r.skill === req.skill)!;
 
-  return writing(() => tx(() => {
+  return tx(() => {
     if (!input.approve) {
       conn
         .prepare(
           `UPDATE skill_move_requests SET status = 'declined', decided_by = ?, decided_at = ?,
                   decision_note = ?, updated_at = ? WHERE id = ?`,
         )
-        .run(p.userId, nowIso(), input.note ?? null, nowIso(), requestId);
+        .run(p.userId, nowIso(), note, nowIso(), requestId);
       cancelPart(conn, p.userId, attempt, row, requestId, 'Quản lý từ chối đề nghị dời lịch.');
+      chotYeuCau(conn, { loai: 'lich_thi', doiTuongLoai: 'skill_move', doiTuongId: requestId }, 'tu_choi', { nguoiDuyet: p.userId, lyDo: note });
       return { ok: true, status: 'declined', cancelled: true };
     }
 
@@ -387,9 +422,14 @@ export function decideAbsenceMove(p: Principal, requestId: number, input: {
      * phải chọn tuần khác trong chính thao tác này. Đồng ý một lịch đã trôi qua là ghi vào
      * hệ thống một buổi thi không thể diễn ra.
      */
-    const target = input.periodId
+    let target = input.periodId
       ? (conn.prepare('SELECT * FROM report_periods WHERE id = ?').get(input.periodId) as any)
       : (conn.prepare('SELECT * FROM report_periods WHERE id = ?').get(req.to_period_id) as any);
+    /* K4-04: không chọn tuần mà tuần đề nghị đã bắt đầu → tuần đích mặc định (tuần chưa bắt đầu gần nhất hợp T15). */
+    if (!input.periodId && target && target.week_start <= today) {
+      const dich = tuanDichMacDinh(req.attempt_id, req.skill, today);
+      if (dich) target = conn.prepare('SELECT * FROM report_periods WHERE id = ?').get(dich.id) as any;
+    }
     if (!target) throw notFound('Không tìm thấy tuần.');
     if (target.week_start <= today) {
       throw badRequest(
@@ -407,9 +447,10 @@ export function decideAbsenceMove(p: Principal, requestId: number, input: {
         `UPDATE skill_move_requests SET status = 'approved', decided_by = ?, decided_at = ?,
                 decision_note = ?, to_period_id = ?, updated_at = ? WHERE id = ?`,
       )
-      .run(p.userId, nowIso(), input.note ?? null, target.id, nowIso(), requestId);
+      .run(p.userId, nowIso(), note, target.id, nowIso(), requestId);
+    chotYeuCau(conn, { loai: 'lich_thi', doiTuongLoai: 'skill_move', doiTuongId: requestId }, 'duyet', { nguoiDuyet: p.userId, lyDo: note });
     return { ok: true, status: 'approved', week: target.code, warnings: check.warnings };
-  }));
+  });
 }
 
 /**
@@ -422,11 +463,12 @@ export function sweepExpiredMoves(): number {
   const conn = db();
   const today = demoToday();
   const due = conn
-    .prepare(`SELECT * FROM skill_move_requests WHERE status = 'pending' AND decide_by < ?`)
+    .prepare(`SELECT r.* FROM skill_move_requests r JOIN assessment_attempts a ON a.id = r.attempt_id
+               WHERE r.status = 'pending' AND r.decide_by < ? AND a.status != 'cancelled'`)   /* lượt đã huỷ: không huỷ phần thi của nó */
     .all(today) as MoveRequest[];
   if (!due.length) return 0;
 
-  return writing(() => tx(() => {
+  return tx(() => {
     let n = 0;
     for (const req of due) {
       const attempt = db().prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(req.attempt_id) as any;
@@ -439,10 +481,11 @@ export function sweepExpiredMoves(): number {
         )
         .run(nowIso(), req.id);
       cancelPart(conn, null, attempt, row, req.id, 'Hết hạn duyệt mà chưa có quyết định.');
+      chotYeuCau(conn, { loai: 'lich_thi', doiTuongLoai: 'skill_move', doiTuongId: req.id }, 'tu_dong', { lyDo: 'Hết hạn duyệt — phần thi bị huỷ' });
       n += 1;
     }
     return n;
-  }));
+  });
 }
 
 /**
@@ -528,7 +571,7 @@ export function restoreCancelledSkill(p: Principal, attemptId: number, skill: st
   const check = checkSkillWeekMove({ attemptId, skill: skill as AssessedSkill, newWeekStart: period.week_start });
   if (check.blockers.length) throw badRequest(check.blockers.join(' '));
 
-  return writing(() => tx(() => {
+  return tx(() => {
     const conn = db();
     conn
       .prepare(
@@ -548,7 +591,7 @@ export function restoreCancelledSkill(p: Principal, attemptId: number, skill: st
       before: { sitStatus: row.sit_status }, after: { week: period.code },
     });
     return { ok: true, completionWeek: cw, warnings: check.warnings };
-  }));
+  });
 }
 
 /** Báo cho những người xếp lịch của chi nhánh — không gửi cho cả trường. */
@@ -615,7 +658,7 @@ export function settleNoShows(today: string = demoToday()): number {
       `SELECT s.id AS score_id, s.attempt_id, s.skill AS entry_skill, s.no_show_late,
               k.id AS sched_id, k.skill AS assessed, rp.week_end, rp.code AS period_code
          FROM assessment_scores s
-         JOIN assessment_attempts a ON a.id = s.attempt_id AND a.status != 'cancelled' AND a.kind = 'mock'
+         JOIN assessment_attempts a ON a.id = s.attempt_id AND a.status != 'cancelled' AND a.kind = 'mock' AND a.lich_su = 0
          JOIN attempt_skills k ON k.attempt_id = s.attempt_id
               AND k.skill = CASE WHEN s.skill IN ('writing1', 'writing2') THEN 'writing' ELSE s.skill END
          JOIN report_periods rp ON rp.id = k.planned_period_id
@@ -637,25 +680,31 @@ export function settleNoShows(today: string = demoToday()): number {
     groups.get(r.sched_id)!.push(r);
   }
   let settled = 0;
-  writing(() => tx(() => {
+  tx(() => {
     for (const g of groups.values()) {
       const first = g[0];
       const needed = entrySkillsOf(first.assessed as AssessedSkill);
       /* Đủ mọi ô nhập của buổi đều '-'? Thiếu một ô (chưa nhập hay đã có điểm) thì buổi đó không phải vắng. */
       if (!needed.every((k) => g.some((r) => r.entry_skill === k))) continue;
       if (settleGroup(conn, first.attempt_id, first.sched_id, first.assessed, first.week_end,
-        first.period_code, g.map((r) => r.score_id), null, 'Không dự thi — dấu "-" còn nguyên đến hết Chủ nhật.')) {
+        first.period_code, g.map((r) => r.score_id), null, 'Không dự thi — dấu "-" còn nguyên đến hết Chủ nhật.', today)) {
         settled += 1;
       }
     }
-  }));
+  });
   return settled;
 }
 
-/** Chốt MỘT buổi. Trả false khi buổi đã không còn `scheduled` (đã chốt/đã đổi) — nên chạy lặp là vô hại. */
-function settleGroup(
+/**
+ * Chốt MỘT buổi. Trả false khi buổi đã được chốt hoặc đã đổi — nên chạy lặp là vô hại.
+ *
+ * CHỐNG CHỐT HAI LẦN (rà #119 mục 4): máy tự dời trả bài về `scheduled` ở TUẦN MỚI, nên "còn scheduled" không đủ — tiến trình thứ hai
+ * (Netlify nhiều instance) đọc danh sách trước khi tiến trình đầu ghi sẽ chốt lại và sinh đề nghị "lần 2" giả. Điều kiện thật: dấu "-"
+ * đầu buổi CHƯA chốt và vẫn nằm ĐÚNG tuần đang xếp. Xuất ra để phép kiểm dựng lại cuộc đua bằng danh sách cũ.
+ */
+export function settleGroup(
   conn: any, attemptId: number, schedId: number, assessed: string, weekEnd: string, periodCode: string,
-  scoreIds: number[], actor: number | null, reason: string,
+  scoreIds: number[], actor: number | null, reason: string, today: string = demoToday(),
 ): boolean {
   /* 23:59:59 giờ Việt Nam của Chủ nhật = 16:59:59Z: ngày hiệu lực luôn là cuối Chủ nhật, không phải lúc chạy. */
   const effective = `${weekEnd.slice(0, 10)}T16:59:59.000Z`;
@@ -663,12 +712,14 @@ function settleGroup(
     .prepare(
       `UPDATE attempt_skills
           SET sit_status = 'absent', absent_from_no_show = 1, sit_by = ?, sit_at = ?, sit_note = ?, updated_at = ?
-        WHERE id = ? AND sit_status = 'scheduled'`,
+        WHERE id = ? AND sit_status = 'scheduled'
+          AND EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.id = ? AND sc.no_show_settled_at IS NULL
+                         AND sc.no_show_period_id = attempt_skills.planned_period_id)`,
     )
-    .run(actor, effective, reason, nowIso(), schedId).changes;
+    .run(actor, effective, reason, nowIso(), schedId, scoreIds[0]).changes;
   if (!changed) return false;
   conn
-    .prepare(`UPDATE assessment_scores SET no_show_settled_at = ? WHERE id IN (${scoreIds.map(() => '?').join(',')})`)
+    .prepare(`UPDATE assessment_scores SET no_show_settled_at = ? WHERE id IN (${scoreIds.map(() => '?').join(',')}) AND no_show_settled_at IS NULL`)
     .run(nowIso(), ...scoreIds);
   logSchedule(attemptId, {
     action: 'skill_no_show_settled', field: assessed, oldValue: 'scheduled', newValue: 'absent',
@@ -680,17 +731,31 @@ function settleGroup(
     entityLabel: `${attempt.kind === 'mock' ? `MT${attempt.attempt_no}` : attempt.kind} · ${assessed}`,
     before: { sitStatus: 'scheduled' }, after: { sitStatus: 'absent', week: periodCode },
   });
-  /* Báo GVCN để họ dời lần đầu (quyền của GVCN). Trùng thông báo bị chặn bởi dedupKey. */
-  for (const t of conn
-    .prepare(`SELECT DISTINCT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active'`)
-    .all(attempt.class_id) as any[]) {
-    notify({
-      userId: t.user_id, kind: 'schedule_move', title: 'Có bài không dự thi cần xếp lại',
-      body: `${skillName(assessed)} tuần ${periodCode} đã được chốt "Không dự thi" (dấu "-" còn nguyên đến hết Chủ nhật). `
-        + 'Bạn dời được lần đầu sang tuần kế tiếp; từ lần hai cần Quản lý duyệt.',
-      entityType: 'assessment_attempt', entityId: attemptId,
-      dedupKey: `no_show:${attemptId}:${assessed}:${weekEnd.slice(0, 10)}:${t.user_id}`,
-    });
+  /*
+   * Q-A, K4-03 — MÁY TỰ XỬ LÝ NGAY TRONG CÙNG GIAO DỊCH ("không ai quên"): lần 1 + tuần kế tiếp còn thi được + không chặn T15 → tự dời;
+   * còn lại → đề nghị chờ Quản lý (hạn hết Chủ nhật tuần này). Lớp thường không qua đây (chỉ Mock).
+   */
+  const row = ensureSkillRows(attemptId).find((r) => r.skill === assessed)!;
+  const kq = xuLyVangMotKyNang(conn, null, attempt, row, {
+    lyDo: 'Không dự thi — máy tự dời', today, idem: `auto-vang:${schedId}:${weekEnd.slice(0, 10)}`,
+  });
+  if (kq.result === 'moved') {
+    /* Báo GVCN + GVBM đúng kỹ năng (W1, W2 là hai người). Trùng thông báo bị chặn bởi dedupKey. Câu nêu ĐÚNG em và MT — danh sách thông báo không có ngữ cảnh. */
+    const tuanMoi = tuanLich(ensureSkillRows(attemptId).find((r) => r.skill === assessed)!.week_start, today);
+    const em = (conn.prepare('SELECT full_name FROM students WHERE id = ?').get(attempt.student_id) as any)?.full_name ?? 'học viên';
+    for (const t of conn
+      .prepare(
+        `SELECT DISTINCT user_id FROM teacher_assignments
+          WHERE class_id = ? AND status = 'active' AND (is_core = 1 OR skill IN (${entrySkillsOf(assessed as AssessedSkill).map(() => '?').join(',')}))`,
+      )
+      .all(attempt.class_id, ...entrySkillsOf(assessed as AssessedSkill)) as any[]) {
+      notify({
+        userId: t.user_id, kind: 'schedule_move', title: 'Đã tự dời bài không dự thi',
+        body: `Đã tự dời ${skillName(assessed)} của ${em} · MT${attempt.attempt_no} sang ${tuanMoi} (vắng lần 1).`,
+        entityType: 'assessment_attempt', entityId: attemptId,
+        dedupKey: `no_show:${attemptId}:${assessed}:${weekEnd.slice(0, 10)}:${t.user_id}`,
+      });
+    }
   }
   return true;
 }
@@ -727,7 +792,7 @@ export function resolveLateNoShow(
   const assessed = assessedSkillOf(skill);
   const conn = db();
   void today;
-  return writing(() => tx(() => {
+  return tx(() => {
     const marks = conn
       .prepare(
         `SELECT s.id, s.skill FROM assessment_scores s
@@ -765,7 +830,7 @@ export function resolveLateNoShow(
     const done = settleGroup(conn, attemptId, sched.id, assessed, sched.week_end, sched.code,
       marks.map((m) => m.id), p.userId, 'Không dự thi — Quản lý xác nhận dấu "-" nhập cho tuần đã kết thúc.');
     return { ok: true, result: done ? ('confirmed' as const) : ('unchanged' as const) };
-  }));
+  });
 }
 
 /** Danh sách đề nghị đang chờ, cho hàng việc của Quản lý. */

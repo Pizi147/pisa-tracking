@@ -1,15 +1,15 @@
 import { db, tx } from '../db.ts';
 import {
-  CHUONG_TRINH_KHONG_CHIA_MON, CLASS_PHASE_LABEL, MOCK_FT_DEFAULT_ATTEMPTS, MOCK_FT_STUDY_WEEK, PERMISSIONS,
+  CHUONG_TRINH_KHONG_CHIA_MON, CLASS_PHASE_LABEL, CO_DIEM_SQL, PERMISSIONS, kiemSoMtMoi, laLichSu, lichMtMacDinh, tuanHocCuaMt, tuanLich,
   PROGRAMME_TEMPLATES, kyHieuLop, nextStepsAfter, programmeOf, studyWeekOf,
   type ClassPhase, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { require_, type Principal } from '../permissions.ts';
-import { writeAudit } from '../platform/audit.ts';
+import { addJourney, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, mondayOf, periodById, weekInfo } from '../platform/week.ts';
-import { ensureSkillRows, recomputeCompletionWeek } from '../fasttrack/skillSchedule.ts';
+import { ensureSkillRows, logSchedule, recomputeCompletionWeek } from '../fasttrack/skillSchedule.ts';
 import { allProgrammes, type ProgrammeInfo } from '../normal/regular.ts';
 
 /**
@@ -42,18 +42,15 @@ export type SuggestedMock = {
 };
 
 /**
- * LỊCH MT ĐỀ XUẤT cho một lộ trình FT, tính từ tuần bắt đầu học.
+ * LỊCH MT ĐỀ XUẤT cho một lộ trình FT, tính từ tuần bắt đầu học — theo LỘ TRÌNH (`lichMtMacDinh`: LT 6/12/16, RF 4/8).
  *
- * Chỉ đề xuất ba lượt đầu: đa số em chỉ thi ba lượt, MT4 và MT5 là dự phòng. Đề xuất sẵn
- * cả năm thì lịch của mọi em dài gấp rưỡi sự thật và Quản lý phải đi xoá bớt.
- *
- * Trả về mảng RỖNG khi chưa khai tuần bắt đầu học — không đoán, vì đoán sai thì cả khoá
- * lệch và không ai biết con số ấy từ đâu ra.
+ * Chỉ đề xuất lịch mặc định (T33: không tự tạo MT4+); `daThiToiMt` (PR-NHAP, K2-33) kéo dài tới số đó. Lớp thường (không route)
+ * và lộ trình chưa khai tuần bắt đầu học → mảng RỖNG — không đoán, vì đoán sai thì cả khoá lệch và không ai biết con số ấy từ đâu ra.
  */
-export function suggestedMockWeeks(cycleId: number): SuggestedMock[] {
+export function suggestedMockWeeks(cycleId: number, daThiToiMt?: number): SuggestedMock[] {
   const conn = db();
   const cy = conn.prepare('SELECT * FROM learning_cycles WHERE id = ?').get(cycleId) as any;
-  if (!cy?.start_period_id) return [];
+  if (!cy?.start_period_id || !cy.route) return [];
   const start = periodById(cy.start_period_id);
   if (!start) return [];
 
@@ -62,9 +59,9 @@ export function suggestedMockWeeks(cycleId: number): SuggestedMock[] {
     .all(cycleId, 'cancelled') as any[];
 
   const out: SuggestedMock[] = [];
-  for (let no = 1; no <= MOCK_FT_DEFAULT_ATTEMPTS; no += 1) {
-    const week = MOCK_FT_STUDY_WEEK[no];
-    if (!week) continue;
+  const soLuot = Math.max(lichMtMacDinh(cy.route).length, daThiToiMt ?? 0);
+  for (let no = 1; no <= soLuot; no += 1) {
+    const week = tuanHocCuaMt(cy.route, no);
     /* Tuần học thứ 1 là chính tuần bắt đầu, nên lượt ở tuần thứ N cách đó N−1 tuần. */
     const monday = addDays(start.weekStart, 7 * (week - 1));
     const period = ensurePeriod(monday);
@@ -84,72 +81,122 @@ export function suggestedMockWeeks(cycleId: number): SuggestedMock[] {
   return out;
 }
 
-/**
- * ÁP LỊCH ĐỀ XUẤT vào thực tế — tạo lượt còn thiếu, và dời lượt hệ thống từng tự xếp.
- *
- * KHÔNG ĐỤNG vào lượt `plan_source = 'manual'` và lượt đã làm xong. Đó là toàn bộ ý nghĩa
- * của hàm này: đổi tuần bắt đầu học thì lịch đề xuất chạy theo, còn cái người đã chốt thì
- * đứng yên.
- *
- * Trả về số lượt đã tạo và số lượt đã dời, để giao diện nói đúng việc vừa xảy ra thay vì
- * một câu "đã lưu" chung chung.
- */
-export function applySuggestedMockWeeks(p: Principal, cycleId: number): { created: number; moved: number; kept: number } {
-  const conn = db();
-  const cy = conn.prepare('SELECT * FROM learning_cycles WHERE id = ?').get(cycleId) as any;
-  if (!cy) throw notFound('Không tìm thấy lộ trình');
-  require_(p, PERMISSIONS.PLAN_WEEK, { studentId: cy.student_id },
-    'Bạn không có quyền xếp tuần MT cho học viên này.');
+export type LuotMacDinh = { attemptId: number; attemptNo: number; weekStart: string; lichSu: boolean };
+export type KetQuaLichMacDinh = { created: LuotMacDinh[]; moved: { attemptNo: number; weekStart: string }[]; kept: number };
 
-  const suggestions = suggestedMockWeeks(cycleId);
-  if (!suggestions.length) {
-    throw badRequest('Chưa khai tuần bắt đầu học nên chưa đề xuất được lịch MT.');
-  }
+/**
+ * NGÀY TẠO của lượt theo lịch nghiệp vụ. `created_at` là giờ máy thật; ở demo đồng hồ nghiệp vụ có thể lùi hơn giờ thật, nên lấy
+ * ngày sớm hơn trong hai — bản chính `created_at` luôn ≤ hôm nay nên kết quả đúng bằng `created_at`.
+ */
+export function ngayTaoLuot(createdAt: string, homNay: string = demoToday()): string {
+  const d = createdAt.slice(0, 10); const h = homNay.slice(0, 10);
+  return d < h ? d : h;
+}
+
+/**
+ * LÕI LỊCH MT MẶC ĐỊNH (M1, M5, T33–T35, K2-33) — một chỗ cho "Áp lịch" của Quản lý, đổi tuần bắt đầu học và `taoMtMacDinh`.
+ * KHÔNG kiểm quyền: nơi gọi đã kiểm (hoặc là luật hệ thống, Q6).
+ *
+ *   tạo   số còn thiếu (không có dòng nào, kể cả dòng đã huỷ — số huỷ để người tạo lại); giữ đánh số liền mạch (`kiemSoMtMoi`).
+ *         `lich_su` = tuần thi đã kết thúc trước `ngayTao` (mặc định hôm nay; T34 — lưu lúc tạo).
+ *   dời   (trừ khi `chiTao`) chỉ lượt `planned` + `plan_source='auto'` CHƯA có điểm nào, và chỉ kỹ năng 'auto' + 'scheduled';
+ *         rồi tính lại `lich_su` theo ngày tạo của chính lượt. Lượt người đã chốt / đã có điểm / đã xong đứng yên — đó là toàn bộ
+ *         ý nghĩa của hàm này: đổi tuần bắt đầu học thì lịch đề xuất chạy theo, còn cái người đã chốt thì đứng yên.
+ */
+export function apLichMacDinh(cycleId: number, actorUserId: number | null, o: {
+  ngayTao?: string; daThiToiMt?: number; chiTao?: boolean;
+} = {}): KetQuaLichMacDinh {
+  const conn = db();
+  const kq: KetQuaLichMacDinh = { created: [], moved: [], kept: 0 };
+  const goiY = suggestedMockWeeks(cycleId, o.daThiToiMt);
+  if (!goiY.length) return kq;
+  const cy = conn.prepare('SELECT * FROM learning_cycles WHERE id = ?').get(cycleId) as any;
+  const ngayTao = (o.ngayTao ?? demoToday()).slice(0, 10);
   const classId = (conn
     .prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status='active' ORDER BY id DESC LIMIT 1`)
     .get(cy.student_id) as any)?.class_id ?? null;
 
   return tx(() => {
-    let created = 0; let moved = 0; let kept = 0;
-    for (const s of suggestions) {
-      if (s.locked || s.existingSource === 'manual') { kept += 1; continue; }
-      if (!s.existingAttemptId) {
-        conn
+    const ds = conn.prepare(
+      `SELECT a.id, a.attempt_no, a.status, a.plan_source, a.planned_period_id, a.created_at, ${CO_DIEM_SQL('a')} AS coDiem
+         FROM assessment_attempts a WHERE a.cycle_id = ?`).all(cycleId) as any[];
+    for (const s of goiY) {
+      const had = ds.find((x) => x.attempt_no === s.attemptNo);
+      if (!had) {
+        if (kiemSoMtMoi(ds.map((x) => ({ attempt_no: x.attempt_no, status: x.status, coDiem: !!x.coDiem })), s.attemptNo)) {
+          kq.kept += 1; continue;
+        }
+        const lichSu = laLichSu(addDays(s.weekStart, 6), ngayTao);
+        const id = Number(conn
           .prepare(
             `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id,
                                               planned_period_id, plan_source, status,
-                                              target_at_attempt, created_by, created_at)
-             VALUES (?,?,?, 'mock', ?,?, 'auto', 'planned', ?,?,?)`,
+                                              target_at_attempt, created_by, created_at, lich_su)
+             VALUES (?,?,?, 'mock', ?,?, 'auto', 'planned', ?,?,?,?)`,
           )
           .run(cycleId, cy.student_id, s.attemptNo, classId, s.periodId,
-               cy.target_score ?? null, p.userId, nowIso());
-        ensureSkillRows(Number((conn.prepare('SELECT last_insert_rowid() AS id').get() as any).id));
-        created += 1;
-      } else if (s.existingPeriodId !== s.periodId) {
-        conn
-          .prepare(`UPDATE assessment_attempts SET planned_period_id = ?, plan_source = 'auto', updated_at = ? WHERE id = ?`)
-          .run(s.periodId, nowIso(), s.existingAttemptId);
-        /*
-         * Lịch GỢI Ý chỉ được đụng vào những kỹ năng chưa ai chốt riêng ('auto'). Kỹ năng
-         * nào một người đã xếp tay thì đứng yên — đúng lời hứa "hệ thống không ghi đè cái
-         * Quản lý đã xếp" (mục 10.4).
-         */
-        conn
-          .prepare(`UPDATE attempt_skills SET planned_period_id = ?, updated_at = ?
-                     WHERE attempt_id = ? AND plan_source = 'auto' AND sit_status = 'scheduled'`)
-          .run(s.periodId, nowIso(), s.existingAttemptId);
-        recomputeCompletionWeek(s.existingAttemptId, p.userId);
-        moved += 1;
-      } else {
-        kept += 1;
+               cy.target_score ?? null, actorUserId, nowIso(), lichSu ? 1 : 0).lastInsertRowid);
+        ensureSkillRows(id);
+        logSchedule(id, { action: 'created', field: 'planned_period', newValue: s.code, reason: 'Lịch MT mặc định', actor: actorUserId });
+        ds.push({ id, attempt_no: s.attemptNo, status: 'planned', plan_source: 'auto', planned_period_id: s.periodId, coDiem: 0 });
+        kq.created.push({ attemptId: id, attemptNo: s.attemptNo, weekStart: s.weekStart, lichSu });
+        continue;
       }
+      if (o.chiTao || had.status !== 'planned' || had.plan_source !== 'auto' || had.coDiem || had.planned_period_id === s.periodId) {
+        kq.kept += 1; continue;
+      }
+      conn
+        .prepare(`UPDATE assessment_attempts SET planned_period_id = ?, plan_source = 'auto', updated_at = ? WHERE id = ?`)
+        .run(s.periodId, nowIso(), had.id);
+      /*
+       * Lịch GỢI Ý chỉ được đụng vào những kỹ năng chưa ai chốt riêng ('auto'). Kỹ năng
+       * nào một người đã xếp tay thì đứng yên — đúng lời hứa "hệ thống không ghi đè cái
+       * Quản lý đã xếp" (mục 10.4).
+       */
+      conn
+        .prepare(`UPDATE attempt_skills SET planned_period_id = ?, updated_at = ?
+                   WHERE attempt_id = ? AND plan_source = 'auto' AND sit_status = 'scheduled'`)
+        .run(s.periodId, nowIso(), had.id);
+      recomputeCompletionWeek(had.id, actorUserId);
+      /* Dời theo tuần bắt đầu → tính lại `lich_su` so với ngày tạo CỦA CHÍNH LƯỢT (chỗ duy nhất được tính lại, M-13). */
+      const tuanKt = (conn.prepare(
+        `SELECT MAX(p.week_end) AS kt FROM attempt_skills ask JOIN report_periods p ON p.id = ask.planned_period_id
+          WHERE ask.attempt_id = ? AND ask.required = 1 AND ask.sit_status != 'cancelled'`).get(had.id) as any)?.kt ?? null;
+      conn.prepare('UPDATE assessment_attempts SET lich_su = ? WHERE id = ?')
+        .run(tuanKt && laLichSu(tuanKt, ngayTaoLuot(had.created_at)) ? 1 : 0, had.id);
+      kq.moved.push({ attemptNo: s.attemptNo, weekStart: s.weekStart });
     }
-    if (created || moved) {
-      writeAudit({ actorUserId: p.userId, action: 'schedule.autoplan', entityType: 'learning_cycle',
-        entityId: cycleId, after: { created, moved, kept } });
+    if (kq.created.length) {
+      /* Một dòng hành trình cho cả lộ trình, không một dòng mỗi lượt. */
+      addJourney({
+        studentId: cy.student_id, cycleId, eventType: 'mock_scheduled', eventDate: ngayTao,
+        title: `Lịch MT mặc định · ${kq.created.map((x) => `MT${x.attemptNo} ${tuanLich(x.weekStart, ngayTao)}`).join(' · ')}`,
+        detail: kq.created.some((x) => x.lichSu) ? 'MT có tuần thi đã qua là MT lịch sử — nhập bù, không có hạn' : null,
+        refTable: 'learning_cycles', refId: cycleId, createdBy: actorUserId,
+      });
     }
-    return { created, moved, kept };
+    if (kq.created.length || kq.moved.length) {
+      writeAudit({ actorUserId, action: 'schedule.autoplan', entityType: 'learning_cycle', entityId: cycleId,
+        after: { created: kq.created.length, moved: kq.moved.length, kept: kq.kept } });
+    }
+    return kq;
   });
+}
+
+/**
+ * ÁP LỊCH ĐỀ XUẤT của Quản lý — kiểm quyền xếp tuần rồi gọi lõi. Trả về số lượt đã tạo và số lượt đã dời, để giao diện nói đúng
+ * việc vừa xảy ra thay vì một câu "đã lưu" chung chung.
+ */
+export function applySuggestedMockWeeks(p: Principal, cycleId: number): { created: number; moved: number; kept: number } {
+  const cy = db().prepare('SELECT * FROM learning_cycles WHERE id = ?').get(cycleId) as any;
+  if (!cy) throw notFound('Không tìm thấy lộ trình');
+  require_(p, PERMISSIONS.PLAN_WEEK, { studentId: cy.student_id },
+    'Bạn không có quyền xếp tuần MT cho học viên này.');
+  if (!suggestedMockWeeks(cycleId).length) {
+    throw badRequest('Chưa khai tuần bắt đầu học nên chưa đề xuất được lịch MT.');
+  }
+  const r = apLichMacDinh(cycleId, p.userId);
+  return { created: r.created.length, moved: r.moved.length, kept: r.kept };
 }
 
 // ==================================================================== lớp Normal

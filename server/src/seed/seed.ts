@@ -14,8 +14,11 @@ import { CLASSES, DEMO_DATE, TEACHERS } from './journeys.ts';
 import { buildJourneys } from './build.ts';
 import { buildYThuc } from './yThucSeed.ts';
 import { buildSosV3Demo } from './sosV3Seed.ts';
+import { buildPrMtDemo } from './prMtSeed.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
 import { dienMocLop } from '../migrate/prLop.ts';
+import { napYeuCauTuNguonCu } from '../migrate/prDuyet.ts';
+import { buildDuyetDemo } from './duyetSeed.ts';
 
 const NOW = nowIso();
 
@@ -229,6 +232,8 @@ export function runSeed() {
     const sosV3 = buildSosV3Demo({
       conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode,
     });
+    /* BỘ DEMO PR-MT (D1–D6, D16): lớp RF, HS cũ có MT lịch sử, dời do vắng, huỷ lượt — cũng qua hàm nghiệp vụ, sau ngày demo. */
+    buildPrMtDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
 
     /*
      * S16 (chốt 21/09 đêm): em đã KẾT THÚC học mà còn Case mở → hệ thống tự đóng "Học viên kết thúc khoá". Bộ demo dựng hành trình
@@ -238,9 +243,14 @@ export function runSeed() {
     for (const s of conn.prepare(`SELECT id, finished_at FROM students WHERE status = 'finished'`).all() as any[]) {
       closeCasesBySystem({ actorUserId: null, studentId: s.id, reason: 'course_ended', on: s.finished_at ?? DEMO_DATE });
     }
+    /* PR-DUYET: PA chờ duyệt / đề nghị dời dựng thẳng bằng SQL ở trên cũng có thẻ ở hộp Chờ duyệt (seed không chạy migrate()). */
+    napYeuCauTuNguonCu(conn);
+    /* PR-DUYET (D17): mỗi phân loại có thẻ, có quá hạn, tự duyệt, tự đóng, Báo lên — dựng qua hàm dịch vụ. */
+    const duyet = buildDuyetDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
 
     return {
       'Chi nhánh': BRANCHES.length,
+      'Thẻ Chờ duyệt (demo)': duyet.the,
       'Lớp': CLASSES.length,
       'Người dùng': userSeq,
       'Giáo viên': TEACHERS.length,

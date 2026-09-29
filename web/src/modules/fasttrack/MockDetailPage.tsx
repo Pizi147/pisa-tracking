@@ -4,6 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Card, Empty, ErrorState, ExamPlanText, Info as Tag, Outcome, SectionNote, Skeleton, Status } from '../../ui/ui.tsx';
+import { ChipLichSu } from '../../ui/Nhan.tsx';
 import type { ExamPlan } from '../../../../shared/domain/index.ts';
 import { ConfirmDialog, Modal } from '../../ui/Drawer.tsx';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
@@ -42,12 +43,16 @@ type Detail = {
   history: any[];
   /** Điểm: ai sửa, trước → sau (PR-I). */
   scoreHistory: ScoreHistoryRow[];
+  /** PR-MT (T34): MT lịch sử — nhập bù, không có hạn, không luồng vắng. */
+  lichSu: boolean;
   viewer: {
     canPlanWeek: boolean; canCancel: boolean; canHandleAbsence: boolean;
     canSkipSkill: boolean; canOverrideDeadline: boolean;
     /** Kỹ năng dời lịch/xác nhận thi được — GVCN·GVBM Normal + Quản lý mọi kỹ năng (SCH-01). */
     moveableSkills: string[];
     canEditSos: boolean; editableSkills: string[];
+    /** PR-MT (M-12): cách huỷ được phép + hệ quả thật — `null` khi không huỷ được. */
+    huyLuot: HeQuaHuy | null;
   };
 };
 
@@ -129,13 +134,15 @@ export default function MockDetailPage() {
       label: 'Đổi lịch cả đợt', onClick: () => setWeekOpen(true),
       hint: 'Xếp mọi môn còn dời được vào một tuần',
     }] : []),
-    ...(d.viewer.canOverrideDeadline && !cancelled ? [{
+    ...(d.viewer.canOverrideDeadline && !cancelled && !d.lichSu ? [{
       label: d.deadlineOverride ? 'Sửa hẹp xử lý cả đợt' : 'Hẹn xử lý cả đợt', onClick: () => setDeadlineOpen(true),
       hint: 'Một hạn riêng cho cả đợt',
     }] : []),
-    ...(d.viewer.canCancel && d.status === 'planned' ? [{
-      label: `Huỷ lượt MT${d.attemptNo}`, danger: true, onClick: () => setCancelOpen(true),
-      hint: 'Huỷ phần thi chưa có điểm; phần đã có điểm giữ nguyên',
+    /* PR-MT (M-12, Q-B): MỘT mục theo cách huỷ được phép — "Huỷ cả lượt" chỉ với lượt lớn nhất chưa có điểm. */
+    ...(d.viewer.huyLuot?.cachDuoc && d.status === 'planned' ? [{
+      label: d.viewer.huyLuot.cachDuoc === 'ca-luot' ? `Huỷ cả lượt MT${d.attemptNo}` : 'Huỷ phần còn lại', danger: true,
+      onClick: () => setCancelOpen(true),
+      hint: d.viewer.huyLuot.cachDuoc === 'ca-luot' ? `Số MT${d.attemptNo} dùng lại được` : 'Kỹ năng đã có điểm giữ nguyên',
     }] : []),
     ...(d.viewer.canCancel && cancelled ? [{
       label: `Mở lại lượt MT${d.attemptNo}`,
@@ -157,13 +164,14 @@ export default function MockDetailPage() {
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <h1 className="text-lg font-semibold text-slate-100">
               {d.student.name} <span className="text-slate-500 text-sm">· {d.student.code}</span>
-              <span className="text-slate-300 text-base font-medium"> · MT{d.attemptNo}</span>
+              <span className="text-slate-300 text-base font-medium whitespace-nowrap"> · MT{d.attemptNo}{d.lichSu && <> <ChipLichSu /></>}</span>
             </h1>
             <ChonDot hienTai={d.id} ds={dsDot.data?.rows ?? []} homNay={homNay} onChon={(r) => navigate(attemptHref(r))} />
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
             Lớp lúc đánh giá: {d.classCode ?? '—'} · {d.branchName ?? '—'}
             {d.cycle.route && ` · Lộ trình ${d.cycle.route}`}
+            {d.lichSu && ' · Nhập bù, không có hạn'}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -232,8 +240,10 @@ export default function MockDetailPage() {
       <WeekModal open={weekOpen} onClose={() => setWeekOpen(false)} attemptId={d.id}
         currentPeriodId={d.period?.id ?? null} onDone={reload} />
       <DeadlineModal open={deadlineOpen} onClose={() => setDeadlineOpen(false)} detail={d} onDone={reload} />
-      <CancelDialog open={cancelOpen} onClose={() => setCancelOpen(false)} attemptId={d.id}
-        attemptNo={d.attemptNo} scoredSkills={d.result.scoredRequired} onDone={reload} />
+      {d.viewer.huyLuot?.cachDuoc && (
+        <CancelDialog open={cancelOpen} onClose={() => setCancelOpen(false)} attemptId={d.id}
+          attemptNo={d.attemptNo} heQua={d.viewer.huyLuot} onDone={reload} />
+      )}
     </div>
   );
 }
@@ -371,7 +381,7 @@ function SkillWorkTable({ d, save, onDone, onOpenHistory }: {
     if (ownsSchedule) {
       const unscored = open && !r.scored && r.progress !== 'cancelled';
       if (moveable && unscored) items.push({ label: 'Đổi lịch', hint: 'Đổi tuần thi của riêng môn này', onClick: () => setWeekFor(r) });
-      if (moveable && unscored && r.periodCode && r.sitStatus !== 'absent') {
+      if (moveable && unscored && r.periodCode && r.sitStatus !== 'absent' && !d.lichSu) {
         items.push({
           label: 'Ghi nhận vắng', hint: 'Chỉ khi đã xác minh học viên không đi thi',
           onClick: () => void act(
@@ -389,7 +399,7 @@ function SkillWorkTable({ d, save, onDone, onOpenHistory }: {
           ),
         });
       }
-      if (d.viewer.canOverrideDeadline && open) {
+      if (d.viewer.canOverrideDeadline && open && !d.lichSu) {
         items.push({ label: 'Hẹn xử lý', hint: 'Lùi ngày chấm của riêng môn này', onClick: () => setDeadlineFor(r) });
       }
       if (d.viewer.canSkipSkill && !cancelled && d.scoringMode === 'band') {
@@ -454,13 +464,15 @@ function SkillWorkTable({ d, save, onDone, onOpenHistory }: {
           <Label>Tình trạng và hạn</Label>
           {r.required && (
             <Status kind={prog === 'scored' ? 'done'
-              : prog === 'skipped' || prog === 'cancelled' || prog === 'not_scheduled' ? 'idle'
+              /* MT lịch sử: nhập bù, không hạn — xám như việc "không tính hạn", không màu chờ. */
+              : prog === 'skipped' || prog === 'cancelled' || prog === 'not_scheduled' || prog === 'lich_su' ? 'idle'
               : prog === 'due' || prog === 'sat' ? 'doing' : 'waiting'}>
               {progressLabel(prog)}
             </Status>
           )}
           {/* Đã có điểm thì chip trạng thái đã nói đủ; hạn chỉ còn nghĩa khi bài còn nợ. */}
-          {prog !== 'scored' && <div><DeadlinePill cell={c} /></div>}
+          {/* MT lịch sử không có hạn (T34) — chip tình trạng "Nhập bù, không có hạn" đã nói đủ. */}
+          {prog !== 'scored' && !d.lichSu && <div><DeadlinePill cell={c} /></div>}
           {ownsSchedule && r.absenceMoveCount > 0 && (
             <div className="text-[11px] text-amber-200">Đã dời do vắng {r.absenceMoveCount} lần</div>
           )}
@@ -621,7 +633,8 @@ const historyValue = (v: string) => SIT_LABEL[v] ?? v;
 const actionLabel = (a: string) =>
   ({
     created: 'Tạo kế hoạch', week_set: 'Đổi lịch', lrw_set: 'Chốt buổi chính',
-    speaking_set: 'Chốt buổi Speaking', cancelled: 'Huỷ lượt', reopened: 'Mở lại',
+    speaking_set: 'Chốt buổi Speaking', cancelled: 'Huỷ cả lượt', reopened: 'Mở lại', recreated: 'Tạo lại (số dùng lại)',
+    skill_part_cancelled: 'Huỷ phần còn lại',
     skill_skipped: KY_NANG_KHONG_KIEM_TRA, skill_restored: KIEM_TRA_LAI_KY_NANG,
     deadline_set: 'Hẹn xử lý cả đợt', deadline_cleared: 'Bỏ hẹn xử lý cả đợt',
     skill_week_set: 'Đổi lịch', skill_week_moved_absence: 'Dời do vắng',
@@ -866,33 +879,40 @@ function DeadlineModal({ open, onClose, detail, onDone }: {
   );
 }
 
-function CancelDialog({ open, onClose, attemptId, attemptNo, scoredSkills, onDone }: {
-  open: boolean; onClose: () => void; attemptId: number; attemptNo: number; scoredSkills: number; onDone: () => void;
+type HeQuaHuy = { cachDuoc: 'ca-luot' | 'phan-con-lai' | null; case: number; pa: number; phoiHop: number };
+
+/** HỘP HUỶ LƯỢT (PR-MT, M-12, T67): nói trước đúng hệ quả của cách huỷ được phép — không bấm rồi mới biết. */
+function CancelDialog({ open, onClose, attemptId, attemptNo, heQua, onDone }: {
+  open: boolean; onClose: () => void; attemptId: number; attemptNo: number; heQua: HeQuaHuy; onDone: () => void;
 }) {
   const toast = useToast();
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
+  const caLuot = heQua.cachDuoc === 'ca-luot';
+  const dong = [heQua.case ? `${heQua.case} Case` : null, heQua.phoiHop ? `${heQua.phoiHop} việc Phối hợp` : null].filter(Boolean);
   return (
     <ConfirmDialog
-      open={open} onClose={onClose} danger busy={busy} title={`Huỷ lượt MT${attemptNo}`} confirmLabel="Huỷ lượt"
+      open={open} onClose={onClose} danger busy={busy}
+      title={caLuot ? `Huỷ cả lượt MT${attemptNo}` : `Huỷ phần còn lại của MT${attemptNo}`}
+      confirmLabel={caLuot ? 'Huỷ cả lượt' : 'Huỷ phần còn lại'}
       body={
         <div className="space-y-2">
           <p>
-            Huỷ <strong>mọi phần thi chưa có điểm</strong> của MT{attemptNo}.{' '}
-            {scoredSkills > 0
-              ? `${scoredSkills} kỹ năng đã có điểm vẫn được giữ nguyên trong lịch sử.`
-              : 'Chưa kỹ năng nào có điểm.'}{' '}
-            Không đổi số MT; lượt đã huỷ không tính vào “đã xong” hay “thiếu điểm”.
+            {caLuot
+              ? <>Huỷ <strong>cả lượt</strong> MT{attemptNo}. Số MT{attemptNo} sẽ dùng lại được khi xếp lượt mới.</>
+              : <>Huỷ các kỹ năng <strong>chưa có điểm và chưa thi</strong>. MT{attemptNo} giữ số; kỹ năng đã có điểm giữ nguyên.</>}
           </p>
-          <input className="field" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Lý do huỷ (bắt buộc)" />
+          {dong.length > 0 && <p>Đóng {dong.join(', ')} sinh từ lượt này.</p>}
+          <input className="field" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Lý do huỷ (bắt buộc)"
+            aria-label="Lý do huỷ (bắt buộc)" />
         </div>
       }
       onConfirm={async () => {
         setBusy(true);
         try {
-          await api.post(`/attempts/${attemptId}/cancel`, { reason });
+          await api.post(`/attempts/${attemptId}/cancel`, { reason, cach: heQua.cachDuoc });
           invalidate('/attempts'); invalidate('/overview');
-          onDone(); onClose(); toast.push('ok', 'Đã huỷ lượt MT');
+          onDone(); onClose(); toast.push('ok', caLuot ? `Đã huỷ cả lượt MT${attemptNo}` : 'Đã huỷ phần còn lại');
         } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
       }}
     />

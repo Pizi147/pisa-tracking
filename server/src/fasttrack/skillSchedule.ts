@@ -7,6 +7,7 @@ import { badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, explain, require_, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { writeAudit } from '../platform/audit.ts';
+import { rutDeNghiDoi } from './absence.ts';
 import {
   effectiveSkillDeadline, isOverdue, weekInfo, type ScoringMode,
 } from '../platform/week.ts';
@@ -165,8 +166,8 @@ export function loadSkillRows(attemptIds: number[]): Map<number, SkillRow[]> {
   const out = new Map<number, SkillRow[]>();
   if (!attemptIds.length) return out;
   const conn = db();
-  for (let i = 0; i < attemptIds.length; i += 400) {
-    const chunk = attemptIds.slice(i, i + 400);
+  for (let i = 0; i < attemptIds.length; i += 900) {   // cùng cỡ lô với loadBundle (PR-MT)
+    const chunk = attemptIds.slice(i, i + 900);
     const ph = chunk.map(() => '?').join(',');
     for (const r of conn.prepare(`${SELECT_SKILLS} WHERE ask.attempt_id IN (${ph})`).all(...chunk) as SkillRow[]) {
       if (!out.has(r.attempt_id)) out.set(r.attempt_id, []);
@@ -264,13 +265,16 @@ export function viewSkill(input: {
    * phải hỏi một câu chung thay vì hỏi từng dòng.
    */
   pendingMove?: { id: number; decideBy: string; toWeek: string | null; moveNo: number } | null;
+  /** PR-MT (T34, M3): lượt MT lịch sử — không nợ, không hạn, không quá hạn. Chốt MỘT chỗ; mọi nơi đếm nợ đọc `progress` này. */
+  lichSu?: boolean;
 }): SkillScheduleView {
   const { row, mode, scored } = input;
   const today = input.today ?? demoToday();
   const required = !!row.required;
   const weekStart = row.week_start ?? null;
+  const lichSu = !!input.lichSu;
 
-  const dl = required && !input.attemptCancelled && row.sit_status !== 'cancelled'
+  const dl = required && !lichSu && !input.attemptCancelled && row.sit_status !== 'cancelled'
     ? effectiveSkillDeadline({
         mode, weekStart,
         skillOverride: row.deadline_override,
@@ -282,6 +286,7 @@ export function viewSkill(input: {
   if (!required) progress = 'skipped';
   else if (input.attemptCancelled || row.sit_status === 'cancelled') progress = 'cancelled';
   else if (scored) progress = 'scored';
+  else if (lichSu) progress = 'lich_su';
   /*
    * CHỜ DUYỆT DỜI đứng TRƯỚC "vắng": lịch cũ vẫn nguyên đó, nhưng điều đang thật sự xảy ra
    * là một đề nghị nằm chờ. Hiện "vắng" lúc này là giấu mất việc phải làm của Quản lý.
@@ -318,7 +323,7 @@ export function viewSkill(input: {
     overdue:
       required && !scored && !!dl.date && !!weekStart
       && weekStart <= today && isOverdue(dl.date, today)
-      && progress !== 'absent' && progress !== 'cancelled',
+      && progress !== 'absent' && progress !== 'cancelled' && !lichSu,
     scored,
     progress,
     absenceMoveCount: row.absence_move_count,
@@ -630,28 +635,27 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
     const conn = db();
     const oldCode = row.period_code;
     /*
-     * ĐƯỜNG NÀY KHÔNG BAO GIỜ TĂNG BỘ ĐẾM DỜI DO VẮNG (mục 10.6).
-     *
-     * Đây là dời CHỦ ĐỘNG: Quản lý sắp lại lịch học, đổi phòng thi, tách R/L/W với Speaking.
-     * Bộ đếm kia đếm những lần em KHÔNG CÓ MẶT, và nó chỉ nhích ở `absence.ts`. Trước đây
-     * hàm này có một ô tick "dời vì em vắng" chạy song song — hai cửa vào cùng một bộ đếm là
-     * cách chắc chắn nhất để con số ấy không còn nghĩa gì.
+     * K4-12 (PR-MT, Q10): Quản lý đổi tuần một kỹ năng ĐANG VẮNG = MỘT LẦN DỜI DO VẮNG — bộ đếm +1, để lần vắng sau thành lần 2
+     * (chờ duyệt). Không thành đề nghị: Quản lý chính là người duyệt. Kỹ năng chưa vắng thì vẫn là dời CHỦ ĐỘNG (sắp lại lịch học,
+     * tách R/L/W với Speaking) — không tiêu lượt nào.
      */
+    const vang = row.sit_status === 'absent';
     conn
       .prepare(
         `UPDATE attempt_skills SET planned_period_id = ?, plan_source = 'manual',
                 sit_status = CASE WHEN sit_status = 'absent' THEN 'scheduled' ELSE sit_status END,
-                absent_from_no_show = 0, updated_at = ?
+                absent_from_no_show = 0, absence_move_count = absence_move_count + ?, updated_at = ?
           WHERE id = ?`,
       )
-      .run(periodId, nowIso(), row.id);
+      .run(periodId, vang ? 1 : 0, nowIso(), row.id);
     logSchedule(attemptId, {
-      action: 'skill_week_set',
-      field: skill, oldValue: oldCode, newValue: period.code, reason: opts.reason ?? null, actor: p.userId,
+      action: vang ? 'skill_week_moved_absence' : 'skill_week_set',
+      field: skill, oldValue: oldCode, newValue: period.code,
+      reason: opts.reason ?? (vang ? 'Quản lý xếp trực tiếp' : null), actor: p.userId,
     });
     const cw = recomputeCompletionWeek(attemptId, p.userId);
     writeAudit({
-      actorUserId: p.userId, action: 'attempt.skill_week', entityType: 'assessment_attempt',
+      actorUserId: p.userId, action: vang ? 'attempt.absence_move' : 'attempt.skill_week', entityType: 'assessment_attempt',
       entityId: attemptId, entityLabel: `${attempt.kind === 'mock' ? `MT${attempt.attempt_no}` : attempt.kind} · ${skill}`,
       before: { week: oldCode }, after: { week: period.code },
     });
@@ -750,6 +754,7 @@ export function setSitStatus(p: Principal, attemptId: number, skill: string, sta
     db()
       .prepare('UPDATE attempt_skills SET sit_status = ?, sit_by = ?, sit_at = ?, sit_note = ?, absent_from_no_show = 0, updated_at = ? WHERE id = ?')
       .run(status, p.userId, nowIso(), note ?? null, nowIso(), row.id);
+    if (row.sit_status === 'absent') rutDeNghiDoi(attemptId, row.skill);
     logSchedule(attemptId, {
       action: 'skill_sit_status', field: skill, oldValue: row.sit_status, newValue: status,
       reason: note ?? null, actor: p.userId,

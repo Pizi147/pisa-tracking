@@ -34,6 +34,19 @@ export function Nhan({ tone, dut, title, onClick, children }: {
   return <span title={title} className={cls}>{children}</span>;
 }
 
+/**
+ * NHÃN "lịch sử" cạnh "MT2" (PR-MT, T34): viền mảnh, chữ xám 11.5px, KHÔNG màu nghĩa, KHÔNG ⚠ — MT lịch sử không phải việc trễ.
+ * `whitespace-nowrap` để không tách dòng khỏi "MT2" trên điện thoại.
+ */
+export function ChipLichSu() {
+  return (
+    <span title="MT lịch sử — tuần thi đã qua trước khi lượt này được tạo; nhập bù, không có hạn"
+      className="inline-flex items-center whitespace-nowrap rounded border border-muted-line px-[5px] align-middle text-[11.5px] font-normal leading-4 text-muted">
+      lịch sử
+    </span>
+  );
+}
+
 /** Tone của luật badge hộp lớp (`badgeLop`) → tone `Nhan`: đỏ · vàng · xanh dương · xám. */
 export function toneNhanTuBadge(t: 'danger' | 'warn' | 'info' | 'muted'): ToneNhan {
   return t === 'danger' ? 'bad' : t === 'warn' ? 'soon' : t === 'info' ? 'doing' : 'muted';

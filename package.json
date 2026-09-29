@@ -28,6 +28,8 @@
     "migrate": "node scripts/check-node.mjs && npm run build:server && node dist-server/server/src/migrate/run.js",
     "chay-thu:n1": "npm run build:server && node dist-server/server/src/migrate/chayThuN1.js",
     "chay-thu:lop": "npm run build:server && node dist-server/server/src/migrate/chayThuLop.js",
+    "chay-thu:duyet": "npm run build:server && node dist-server/server/src/migrate/chayThuDuyet.js",
+    "chay-thu:mt": "npm run build:server && node dist-server/server/src/migrate/chayThuMt.js",
     "kiem-lop-mo-coi": "npm run build:server && node dist-server/server/src/ops/kiemLopMoCoi.js"
   },
   "dependencies": {

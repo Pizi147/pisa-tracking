@@ -308,6 +308,8 @@ export type DeadlineView = {
   quaHan: string | null;
   /** "hẹn xử lý 30/09". */
   hen: string | null;
+  /** PR-DUYET (M8): chỉ loại `duyet`, chưa quá hạn — "còn 2 ngày", tính cả hôm nay (hạn hôm nay = "còn 1 ngày"). */
+  con?: string | null;
 };
 
 const congNgay = (iso: string, n: number) => {
@@ -341,7 +343,7 @@ export function deadlineView(i: DeadlineInput): DeadlineView {
   if (!validIso(i.due)) {
     return {
       text: `${viec} · chưa có hạn`, tone: 'neutral', daysOverdue: null, title: null,
-      viec, han: 'chưa có hạn', homNay: false, quaHan: null, hen: null,
+      viec, han: 'chưa có hạn', homNay: false, quaHan: null, hen: null, con: null,
     };
   }
   const han = `${tien} ${shortDate(i.due, i.today)}`;
@@ -361,13 +363,14 @@ export function deadlineView(i: DeadlineInput): DeadlineView {
   }
   const homNay = !duKien && i.today === base.slice(0, 10);
   const hen = validIso(i.reschedule) ? `hẹn xử lý ${shortDate(i.reschedule, i.today)}` : null;
+  const con = i.kind === 'duyet' && !quaHan ? `còn ${daysBetween(i.today, base) + 1} ngày` : null;
   const text = duKien
     ? [han.charAt(0).toUpperCase() + han.slice(1), hen].filter(Boolean).join(' · ')
-    : [viecHien, han, quaHan, homNay ? 'hôm nay' : null, hen].filter(Boolean).join(' · ');
+    : [viecHien, han, quaHan, con, homNay ? 'hôm nay' : null, hen].filter(Boolean).join(' · ');
 
   const moved = validIso(i.originalDue) && i.originalDue.slice(0, 10) !== i.due.slice(0, 10);
   return {
-    text, tone, daysOverdue, quaHan, homNay, hen, viec: viecHien, han,
+    text, tone, daysOverdue, quaHan, homNay, hen, con, viec: viecHien, han,
     title: moved ? `Hạn gốc ${shortDate(i.originalDue, i.today)}` : null,
   };
 }

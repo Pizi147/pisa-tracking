@@ -5,7 +5,8 @@ import {
 import { badRequest, notFound, nowIso } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
-import { closeCasesOnProgrammeSwitch } from '../cases/systemClose.ts';
+import { chuyenCaseSangLoTrinh, closeCasesOnProgrammeSwitch } from '../cases/systemClose.ts';
+import { taoMtMacDinh } from '../fasttrack/mtMacDinh.ts';
 import { classProgressMany } from './schedule.ts';
 import { programmeByCode } from '../normal/regular.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
@@ -237,18 +238,27 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
   conn.prepare('UPDATE students SET branch_id = ? WHERE id = ?').run(toClass.branch_id, d.sid);
 
   const curCycle = conn.prepare(`SELECT * FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(d.sid) as any;
+  /*
+   * PR-DUYET (T44): target mới chỉ nhận khi giao diện hỏi (sang FT — `canMucTieu`) hoặc người gọi có `cycle.edit` (Quản lý).
+   * GVCN gửi `mucTieu` thẳng qua API lúc FT → FT mở lộ trình mới thì BỎ QUA — giữ target cũ như giao diện.
+   */
+  const mucTieu = luat.canMucTieu || can(p, PERMISSIONS.CYCLE_EDIT, { studentId: d.sid }) ? d.mucTieu : undefined;
   if (luat.khoa === 'dong-mo') {
     if (curCycle) conn.prepare(`UPDATE learning_cycles SET status = 'completed', ended_at = ? WHERE id = ?`).run(d.ngay, curCycle.id);
     const seq = ((conn.prepare('SELECT MAX(seq) n FROM learning_cycles WHERE student_id = ?').get(d.sid) as any)?.n ?? 0) + 1;
     const route = denLop.ft ? (toClass.route ?? curCycle?.route ?? 'LT1') : null;   // lộ trình mới = lộ trình lớp đích (M-20)
     const startPeriodId = denLop.ft ? ensurePeriod(mondayOf(d.ngay)).id : (toClass.start_period_id ?? null);
-    conn
+    const moiId = Number(conn
       .prepare(
         `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, exam_month, start_period_id, started_at, status, created_at)
          VALUES (?,?,?,?,?,?,?,?, 'active', ?)`,
       )
-      .run(d.sid, seq, route, denLop.ma, d.mucTieu ?? (tuLop.ft && denLop.ft ? curCycle?.target_score ?? null : null),   // Q7: FT → FT giữ target cũ
-        d.thangThi ?? null, startPeriodId, d.ngay, nowIso());
+      .run(d.sid, seq, route, denLop.ma, mucTieu ?? (tuLop.ft && denLop.ft ? curCycle?.target_score ?? null : null),   // Q7: FT → FT giữ target cũ
+        d.thangThi ?? null, startPeriodId, d.ngay, nowIso()).lastInsertRowid);
+    if (denLop.ft) {
+      taoMtMacDinh(moiId, { actorUserId: p.userId });   // M1: vào lớp FT / đổi LT ↔ RF = lộ trình mới có lịch MT mặc định
+      if (tuLop.ft && curCycle) chuyenCaseSangLoTrinh(p.userId, d.sid, curCycle.id, moiId, route, d.ngay);   // K5-60
+    }
   }
 
   /* Q12: bài chưa làm CHỈ đi theo em khi GIỮ khoá — đóng khoá thì lượt planned ở lại lớp cũ. */
@@ -421,8 +431,12 @@ export function apDungCaLop(p: Principal, o: {
     const ftPeriodId = o.dongs.some((d) => d.toClass.ft) ? ensurePeriod(mondayOf(o.ngay)).id : null;
 
     const rows = o.dongs.map(() => '(?,?,?,?,?,?,?,?,\'active\',?)').join(',');
+    /* PR-DUYET (T44): target chỉ nhận khi sang FT (bắt buộc có) hoặc người gọi có `cycle.edit` — như Chuyển lớp một em. */
+    /* Mọi em cùng MỘT lớp nguồn → kiểm quyền một lần theo lớp (không truy vấn theo từng em, Q20). */
+    const coSuaTarget = can(p, PERMISSIONS.CYCLE_EDIT, { classId: o.fromClass.id });
     const params = o.dongs.flatMap((d) => [
-      d.sid, (seqOf.get(d.sid) ?? 0) + 1, d.toClass.ft ? (d.toClass.route ?? 'LT1') : null, d.toClass.ma, d.mucTieu ?? null, d.thangThi ?? null,
+      d.sid, (seqOf.get(d.sid) ?? 0) + 1, d.toClass.ft ? (d.toClass.route ?? 'LT1') : null, d.toClass.ma,
+      d.toClass.ft || coSuaTarget ? d.mucTieu ?? null : null, d.thangThi ?? null,
       d.toClass.ft ? ftPeriodId : (startPeriodOf.get(d.toClassId) ?? null), o.ngay, now,
     ]);
     conn
@@ -431,6 +445,14 @@ export function apDungCaLop(p: Principal, o: {
          VALUES ${rows}`,
       )
       .run(...params);
+    /* M1: em sang FT có lịch MT mặc định. INSERT nhiều dòng không trả id → đọc lại MỘT câu; tạo lượt thì theo từng lộ trình. */
+    const ftSids = o.dongs.filter((d) => d.toClass.ft).map((d) => d.sid);
+    if (ftSids.length) {
+      const ftCycles = conn.prepare(
+        `SELECT id FROM learning_cycles WHERE student_id IN (${ftSids.map(() => '?').join(',')}) AND status = 'active' AND route IS NOT NULL`,
+      ).all(...ftSids) as any[];
+      for (const c of ftCycles) taoMtMacDinh(c.id, { actorUserId: p.userId });
+    }
   }
 
   // 6) Case: chỉ em sang FT đóng Case lớp thường — ngoại lệ per-em DUY NHẤT được phép (S17).

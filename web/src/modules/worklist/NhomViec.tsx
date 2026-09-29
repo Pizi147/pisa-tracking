@@ -17,7 +17,7 @@ export function NhomViec({ nhom, nhac, soHien, moHet, onOpen, nutPhu }: {
   /** Ép mở hết mọi nhóm — dùng khi đang lọc nhanh/loại việc, kết quả đã ít thì không cần gập nữa. */
   moHet?: boolean;
   onOpen: NavigateFunction | ((href: string) => void);
-  /** Nút phụ đứng cạnh nhãn việc, ví dụ Nhắc/Duyệt (Hỗ trợ học viên). */
+  /** Nút phụ đứng cạnh nhãn việc, ví dụ Nhắc (Hỗ trợ học viên). Duyệt nằm ở hộp Chờ duyệt (PR-DUYET, K1-32). */
   nutPhu?: (it: WorkItem) => ReactNode;
 }) {
   const [mo, setMo] = useState<Record<string, boolean>>({});
@@ -27,13 +27,10 @@ export function NhomViec({ nhom, nhac, soHien, moHet, onOpen, nutPhu }: {
       {nhom.map((g) => {
         const dangMo = moHet || (mo[g.key] ?? g.moSan);
         const soHienNhom = soHien + (them[g.key] ?? 0);
-        /* Nhóm có dòng "chờ bạn duyệt" (Q6) — nói thẳng ngay ở đầu nhóm, không bắt mở ra mới biết. */
-        const choDuyet = g.items.filter((it) => it.duyet).length;
-        const phu = (g.quaHan > 0 || g.homNay > 0 || choDuyet > 0) ? (
+        const phu = (g.quaHan > 0 || g.homNay > 0) ? (
           <span className="flex flex-wrap items-center gap-x-2">
             {g.quaHan > 0 && <span className="font-bold text-late">⚠ {g.quaHan} quá hạn</span>}
             {g.homNay > 0 && <span className="font-semibold text-soon">{g.homNay} hôm nay</span>}
-            {choDuyet > 0 && <span>{choDuyet} chờ bạn duyệt</span>}
           </span>
         ) : null;
         return (

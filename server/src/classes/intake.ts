@@ -13,6 +13,7 @@ import { can, require_, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, mondayOf, periodById } from '../platform/week.ts';
 import { ensureSkillRows } from '../fasttrack/skillSchedule.ts';
+import { taoMtMacDinh } from '../fasttrack/mtMacDinh.ts';
 
 /**
  * Thêm học viên hàng loạt.
@@ -170,7 +171,7 @@ export function previewIntake(
    */
   const classId = input.classId ?? input.defaultClassId ?? null;
   const cls = classId
-    ? (conn.prepare("SELECT id, code, route, start_date, programme_code, branch_id, status FROM classes WHERE id = ?")
+    ? (conn.prepare("SELECT id, code, route, start_date, programme_code, branch_id, status, is_fast_track FROM classes WHERE id = ?")
         .get(classId) as any)
     : null;
   if (!cls) {
@@ -312,8 +313,8 @@ export function previewIntake(
 
   return {
     rows, issues,
-    /* Nhập hàng loạt KHÔNG lập lịch MT (mục 12.1) — đó là việc của Quản lý ở panel Lộ trình. */
-    canPlanWeeks: false,
+    /* M1: lớp FT tự tạo lịch MT mặc định khi thêm (tuần do hệ thống tính theo tuần bắt đầu học). */
+    canPlanWeeks: !!cls.is_fast_track,
     programme: cls.programme_code ?? null,
     ratio,
     classCode: cls.code,
@@ -430,14 +431,8 @@ export function commitIntake(
           detail: r.target ? `Target ${r.target}` : 'Chưa có target',
           refTable: 'learning_cycles', refId: Number(cyc.lastInsertRowid), createdBy: p.userId });
 
-        /*
-         * NHẬP HÀNG LOẠT KHÔNG LẬP LỊCH MT (mục 12.1).
-         *
-         * Trước đây file dán có cột "Tuần MT" thì đường này tạo luôn các lượt thi. Nghe thì
-         * tiện, nhưng nó biến ô nhập danh sách thành một lối vòng quanh quyền xếp lịch: ai
-         * dán được file là xếp được lịch thi cho cả lớp. Lịch MT là việc của Quản lý, ở panel
-         * Lộ trình, nơi có đủ ràng buộc thứ tự đợt và cảnh báo khoảng cách.
-         */
+        /* M1: lịch MT mặc định tạo ngay, MT đã qua là MT lịch sử (T33, T34). Tuần do hệ thống tính, không lấy từ file dán. */
+        if (cls.is_fast_track && route) taoMtMacDinh(Number(cyc.lastInsertRowid), { actorUserId: p.userId });
       }
     }
 
