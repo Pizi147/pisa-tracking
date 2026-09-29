@@ -853,7 +853,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     const truoc = conn.prepare(sql).all() as any[];
     if (truoc.length) {
       dienMocQuyChe({ caseIds: [...new Set(truoc.map((r) => r.case_id as number))] });
-      for (const r of conn.prepare(sql).all() as any[]) {
+      const sau = conn.prepare(sql).all() as any[];
+      napTruocPhamVi(sau.map((r) => r.sid));   // PR-S3F #4: `can()` từng dòng đọc bộ nhớ, không N+1
+      for (const r of sau) {
         if (f.branchId && r.branch_id !== f.branchId) continue;
         if (!can(p, PERMISSIONS.CASE_APPROVE, { classId: r.class_id, studentId: r.sid })) continue;
         const thi = r.moc_quy_che === 'until_exam';
@@ -951,7 +953,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         ownerId: em.gvcnId, owner: null, mine,
       };
       const quaHan = [...em.viPham.values()];
-      if (em.soBatBuoc > 0 && em.deXuat?.status !== 'cho_duyet') {
+      if (em.soBatBuoc > 0 && !em.coChoDuyet) {
         const ke = em.keTiep ? MEASURE_KIND_LABEL[em.keTiep.kind] : 'Đề xuất QL duyệt';
         items.push({ ...chung, key: `yt_xu_ly:${r.id}`, group: 'yt_xu_ly', urgency: urgencyOf(em.han, today),
           reason: `${em.soBatBuoc} vi phạm trong 2 tuần — bắt buộc xử lý`,
@@ -964,11 +966,12 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           reason: `${em.soMoi} vi phạm chưa ai xem`, tieuDe: `Ghi nhận ${em.soMoi} vi phạm mới · ${r.ten}`, actionLabel: 'Ghi nhận',
           href: duongLop(em.lopId, r.id, '&loc=moi'), due: em.hanXem, statusLabel: 'Mới' });
       }
-      if (em.deXuat?.status === 'da_duyet') {
-        const nhan = nhanLoaiXuLy(em.deXuat.kind, em.deXuat.customName);
-        items.push({ ...chung, key: `yt_thuc_hien:${r.id}`, group: 'yt_thuc_hien', urgency: urgencyOf(em.deXuat.han, today),
+      /* PR-S3F #7: MỘT việc cho MỖI lần xử lý đã duyệt (khoá theo id lần xử lý) — hai đề xuất cùng lúc không che nhau. */
+      for (const x of em.daDuyet) {
+        const nhan = nhanLoaiXuLy(x.kind, x.customName);
+        items.push({ ...chung, key: `yt_thuc_hien:${x.id}`, group: 'yt_thuc_hien', urgency: urgencyOf(x.han, today),
           reason: `QL đã duyệt ${nhan}`, tieuDe: `Ghi "Đã thực hiện" ${nhan} · ${r.ten}`, actionLabel: 'Đã thực hiện',
-          href: duongLop(em.lopId, r.id, `&mo=da-thuc-hien&xl=${em.deXuat.id}`), due: em.deXuat.han, statusLabel: 'Đã duyệt · chờ thực hiện' });
+          href: duongLop(em.lopId, r.id, `&mo=da-thuc-hien&xl=${x.id}`), due: x.han, statusLabel: 'Đã duyệt · chờ thực hiện' });
       }
     }
   }

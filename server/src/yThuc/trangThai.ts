@@ -39,8 +39,15 @@ export type EmYThuc = {
   soMoi: number; soBatBuoc: number;
   /** Hạn sớm nhất trong các vi phạm Mới chưa ai Ghi nhận (V4-5). */
   hanXem: string | null;
-  /** Đề xuất đang chờ QL hoặc đã duyệt chờ "Đã thực hiện". `han`: hạn duyệt (chờ) / hạn thực hiện (đã duyệt). */
+  /**
+   * Đề xuất ĐẠI DIỆN (PR-S3F #7): đã duyệt có ngày duyệt SỚM NHẤT (chưa "Đã thực hiện" — không để đề xuất gửi thêm sau che mất nó); không có thì
+   * đề xuất chờ QL mới nhất. `han`: hạn duyệt (chờ) / hạn thực hiện (đã duyệt). `quaHan`: BẤT KỲ đề xuất đã duyệt nào quá 5 ngày chưa thực hiện.
+   */
   deXuat: { id: number; kind: string; customName: string | null; status: 'cho_duyet' | 'da_duyet'; han: string | null; quaHan: boolean } | null;
+  /** MỌI đề xuất đã duyệt chờ "Đã thực hiện", cũ nhất trước — Công việc sinh một việc cho từng lần xử lý (khoá `yt_thuc_hien:{id}`). */
+  daDuyet: { id: number; kind: string; customName: string | null; han: string | null; quaHan: boolean }[];
+  /** Có đề xuất đang chờ QL duyệt (kể cả khi đề xuất đại diện là một đề xuất đã duyệt). */
+  coChoDuyet: boolean;
   /** Ngày lần xử lý xong gần nhất (mọi chuỗi) — nhóm "Đã xử lý (7 ngày)". */
   xuLyGanNhat: string | null;
 };
@@ -159,9 +166,15 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
     const khaiRow = (kb.get(sid) ?? []).find((k) => k.chuoi_cycle_id === chuoi[0]) ?? null;
     const bac = bacHienTai(xlChuoi.filter((m) => m.status === 'done'), khaiRow?.bac ?? null);
 
-    const dx = dsXl.filter((m) => m.status === 'cho_duyet' || m.status === 'da_duyet').sort((a, b) => b.id - a.id)[0] ?? null;
-    const hanDx = dx ? (dx.status === 'cho_duyet' ? dx.hanDuyet : dx.quyetLuc && !g.tamDung ? hanTheoNgay(dx.quyetLuc.slice(0, 10), HAN_Y_THUC_NGAY) : null) : null;
-    const dxQuaHan = !!dx && dx.status === 'da_duyet' && !!hanDx && homNay > hanDx;
+    /* PR-S3F #7: V4-9 cho đề xuất bất cứ lúc nào nên có thể hai đề xuất cùng lúc — đã duyệt (sớm nhất) thắng, rồi mới tới chờ duyệt (mới nhất). */
+    const hanThucHien = (m: XuLyEm) => (m.quyetLuc && !g.tamDung ? hanTheoNgay(m.quyetLuc.slice(0, 10), HAN_Y_THUC_NGAY) : null);
+    const daDuyet = dsXl.filter((m) => m.status === 'da_duyet')
+      .sort((a, b) => (a.quyetLuc ?? '').localeCompare(b.quyetLuc ?? '') || a.id - b.id)
+      .map((m) => { const han = hanThucHien(m); return { id: m.id, kind: m.kind, customName: m.customName, han, quaHan: !!han && homNay > han }; });
+    const choDuyet = dsXl.filter((m) => m.status === 'cho_duyet').sort((a, b) => b.id - a.id)[0] ?? null;
+    const dx = daDuyet[0] ? { ...daDuyet[0], status: 'da_duyet' as const } : choDuyet ? { id: choDuyet.id, kind: choDuyet.kind, customName: choDuyet.customName, status: 'cho_duyet' as const } : null;
+    const hanDx = daDuyet[0] ? daDuyet[0].han : choDuyet ? choDuyet.hanDuyet : null;
+    const dxQuaHan = daDuyet.some((x) => x.quaHan);
 
     const ds: TrangThaiVp[] = [...viPham.values()].map((x) => x.t);
     if (dxQuaHan) ds.push('qua_han');
@@ -184,7 +197,8 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
       viPham, dsViPham: dsVp, xuLy: dsXl,
       nhom: nhomEm({ ds, coDeXuatCho: !!dx, xuLyGanNhat: xong }, homNay),
       han: minHan(batBuoc), soMoi: moi.length, soBatBuoc: batBuoc.length, hanXem: minHan(moi),
-      deXuat: dx ? { id: dx.id, kind: dx.kind, customName: dx.customName, status: dx.status as 'cho_duyet' | 'da_duyet', han: hanDx, quaHan: dxQuaHan } : null,
+      deXuat: dx ? { id: dx.id, kind: dx.kind, customName: dx.customName, status: dx.status, han: hanDx, quaHan: dxQuaHan } : null,
+      daDuyet, coChoDuyet: !!choDuyet,
       xuLyGanNhat: xong,
     });
   }

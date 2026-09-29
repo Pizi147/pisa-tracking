@@ -624,7 +624,7 @@ export function caseHasIndependentBasis(caseId: number, excludeAttemptId: number
  * Phương án bị huỷ ở đây không được tính là thành công hay thất bại — nó không có kết quả,
  * vì nó chưa từng chạy.
  */
-export function retireCaseForCorrectedScore(p: Principal, caseId: number, label: string, passText = 'đạt kỳ vọng') {
+export function retireCaseForCorrectedScore(p: Principal, caseId: number, label: string, passText = 'đạt kỳ vọng', huy = false) {
   const conn = db();
   const c = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(caseId) as any;
   if (!c || c.status === 'done') return { ok: false };
@@ -651,7 +651,7 @@ export function retireCaseForCorrectedScore(p: Principal, caseId: number, label:
                 outcome_note = ?, dedup_key = NULL, updated_at = ? WHERE id = ?`,
       )
       .run(demoToday(), p.userId,
-           `${SIGNAL_WITHDRAW_SCORE_FIXED} — điểm ${label} đã được sửa lại thành ${passText}.`,
+           `${SIGNAL_WITHDRAW_SCORE_FIXED} — ${huy ? `điểm ${label} đã bị huỷ` : `điểm ${label} đã được sửa lại thành ${passText}`}.`,
            nowIso(), caseId);
     conn
       .prepare(
@@ -675,14 +675,20 @@ export function retireCaseForCorrectedScore(p: Principal, caseId: number, label:
  * (giữ lịch sử, huỷ phương án chưa ai làm); Case còn căn cứ độc lập thì GIỮ và nhắc người phụ trách. Không ghi mốc "đã tiến bộ":
  * sửa một con số nhập sai không phải một lần thi thứ hai. `passText`: "đạt kỳ vọng" (FT) · "đạt" (lớp thường).
  */
-export function reconcileCorrectedSignals(p: Principal, input: { attemptId: number; passingSkills: string[]; passText: string }) {
+export function reconcileCorrectedSignals(p: Principal, input: { attemptId: number; passingSkills: string[]; passText: string; clearedSkills?: string[] }) {
+  gomTinHieu(p, input.attemptId, input.passingSkills, input.passText, false);
+  /* PR-S3F #1: ô có tín hiệu mà nay TRỐNG (Huỷ điểm / Thi lại) — cùng luật, lý do "điểm đã huỷ". Thi lại trượt sau đó mở lại tín hiệu → Case mới. */
+  gomTinHieu(p, input.attemptId, input.clearedSkills ?? [], 'điểm đã huỷ', true);
+}
+
+function gomTinHieu(p: Principal, attemptId: number, skills: string[], passText: string, huy: boolean) {
   const conn = db();
-  if (!input.passingSkills.length) return;
+  if (!skills.length) return;
   const { withdrawn, casesToReview } = withdrawSignalsNoLongerValid({
-    actorUserId: p.userId, attemptId: input.attemptId, passingSkills: input.passingSkills,
+    actorUserId: p.userId, attemptId, passingSkills: skills,
   });
   for (const item of casesToReview) {
-    if (caseHasIndependentBasis(item.caseId, input.attemptId)) {
+    if (caseHasIndependentBasis(item.caseId, attemptId)) {
       /* Giữ case, chỉ nhắc xem lại — người phụ trách quyết định có theo tiếp hay không. */
       const c = conn.prepare('SELECT owner_user_id, student_id, status FROM sos_cases WHERE id = ?').get(item.caseId) as any;
       /* Case đã ĐÓNG (không cần theo dõi / chốt kết quả) thì không còn gì để "xem lại" — không nhắc. */
@@ -691,13 +697,13 @@ export function reconcileCorrectedSignals(p: Principal, input: { attemptId: numb
         notify({
           userId: c.owner_user_id, kind: 'sos',
           title: `Xem lại case ${item.label} — ${st?.full_name ?? ''}`,
-          body: `Điểm nguồn đã được sửa thành ${input.passText}. Case vẫn còn căn cứ khác; xem có cần theo tiếp không.`,
+          body: `${huy ? 'Điểm nguồn đã bị huỷ' : `Điểm nguồn đã được sửa thành ${passText}`}. Case vẫn còn căn cứ khác; xem có cần theo tiếp không.`,
           entityType: 'sos_case', entityId: item.caseId,
-          dedupKey: `case_review:${item.caseId}:${input.attemptId}`,
+          dedupKey: `case_review:${item.caseId}:${attemptId}`,
         });
       }
     } else {
-      retireCaseForCorrectedScore(p, item.caseId, item.label, input.passText);
+      retireCaseForCorrectedScore(p, item.caseId, item.label, passText, huy);
       conn.prepare(`UPDATE case_signals SET status = 'withdrawn', withdrawn_reason = ?, updated_at = ? WHERE id = ?`)
         .run(SIGNAL_WITHDRAW_SCORE_FIXED, nowIso(), item.signalId);
     }
@@ -705,7 +711,7 @@ export function reconcileCorrectedSignals(p: Principal, input: { attemptId: numb
   if (withdrawn.length) {
     writeAudit({
       actorUserId: p.userId, action: 'signal.withdrawn_batch', entityType: 'assessment_attempt',
-      entityId: input.attemptId, entityLabel: `${withdrawn.length} tín hiệu`,
+      entityId: attemptId, entityLabel: `${withdrawn.length} tín hiệu`,
       after: { reason: SIGNAL_WITHDRAW_SCORE_FIXED, skills: withdrawn.map((w) => w.skill) },
     });
   }

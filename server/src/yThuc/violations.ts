@@ -241,8 +241,11 @@ export function recordViolation(p: Principal, input: {
       )
       .run(input.studentId, cycle?.id ?? null, classId, category, skill, occurredOn, today, p.userId, description, key, nowIso());
     const newId = Number(info.lastInsertRowid);
-    /* Q5 (Câu 1 = A): GVCN lớp đang học tự ghi → tự "Đã ghi nhận" (vẫn đếm vào luật ≥ 3), trừ khi lần ghi này làm vi phạm bắt buộc. */
-    if (laGvcn && trangThaiYThuc([input.studentId], today).get(input.studentId)!.viPham.get(newId)?.t === 'moi') {
+    /*
+     * Q5 (Câu 1 = A): GVCN lớp đang học tự ghi → tự "Đã ghi nhận" (vẫn đếm vào luật ≥ 3). PR-S3F #6: LUÔN đặt dấu, kể cả khi chính lần ghi này là
+     * vi phạm thứ 3 — `trangThaiViPham` vẫn cho "Cần xử lý" thắng (M-10), nhưng xoá bớt một vi phạm khác thì vi phạm của GVCN không được hiện "Mới".
+     */
+    if (laGvcn) {
       db().prepare('UPDATE violations SET ghi_nhan_luc = ?, ghi_nhan_boi = ? WHERE id = ?').run(today, p.userId, newId);
     }
     writeAudit({
@@ -434,7 +437,7 @@ export function violationDetail(p: Principal, id: number): ViolationDetail {
     .prepare(
       `SELECT m.id, m.kind, m.custom_name, m.status, m.performed_on, m.created_at
          FROM measure_violations mv JOIN discipline_measures m ON m.id = mv.measure_id
-        WHERE mv.violation_id = ? ORDER BY COALESCE(m.performed_on, m.created_at), m.id`,
+        WHERE mv.violation_id = ? AND m.status != 'nhap' ORDER BY COALESCE(m.performed_on, m.created_at), m.id`,   // PR-S3F #12: nháp đề xuất chưa phải lần xử lý
     )
     .all(id) as any[]).map((m) => ({
       id: m.id, kind: m.kind, kindLabel: nhanLoaiXuLy(m.kind, m.custom_name),

@@ -420,10 +420,15 @@ function HeaderStats({ data, rows, homNay, onOpenDot, onOpenKn }: {
 }) {
   const scored = (rows ?? []).filter((r) => r.band !== null);
   const below = scored.filter((r) => r.missed === true);
+  /* PR-S3F #5: môn có điểm mà không có kỳ vọng (em KCK, chưa target) không được tính là "đạt kỳ vọng". */
+  const khongKyVong = scored.filter((r) => r.missed === null).length;
+  const daDatHet = scored.length > 0 && khongKyVong === 0;
   const openCases = (rows ?? []).flatMap((r) => r.cases.map((c) => ({ ...c, category: r.category })))
     .filter((c) => c.status !== 'done');
-  const runningPlans = openCases.flatMap((c) => c.plans)
-    .filter((p) => p.status === 'planned' || p.status === 'started').length;
+  /* PR-S3F #10: PA "Chờ xác nhận" (Q28-3) chưa chạy — không tính vào "đang theo dõi", ghi riêng. */
+  const songPlans = openCases.flatMap((c) => c.plans).filter((p) => p.status === 'planned' || p.status === 'started');
+  const choXacNhan = songPlans.filter((p) => p.choXacNhan).length;
+  const runningPlans = songPlans.length - choXacNhan;
   const next = data.headline?.next ?? null;
   const kq = ketQuaTestGanNhat(data.attempts ?? [], homNay);
   const cheDo = data.cycle?.ratio ? 'ratio' as const : 'ielts' as const;
@@ -442,19 +447,22 @@ function HeaderStats({ data, rows, homNay, onOpenDot, onOpenKn }: {
 
       <Stat label="Kỹ năng cần hỗ trợ"
         value={String(below.length)}
-        tone={below.length ? 'danger' : scored.length ? 'ok' : undefined}
+        tone={below.length ? 'danger' : scored.length > khongKyVong ? 'ok' : undefined}
         onClick={below.length ? () => onOpenKn(below[0].category) : undefined}
         title="Mở bảng kỹ năng ở đúng môn chưa đạt đầu tiên"
         sub={below.length
           ? below.map((r) => r.label).join(' · ')
-          : scored.length ? (cheDo === 'ratio' ? 'mọi môn đạt' : 'mọi môn đạt kỳ vọng') : 'chưa có điểm nào'} />
+          : !scored.length ? 'chưa có điểm nào'
+          : daDatHet ? (cheDo === 'ratio' ? 'mọi môn đạt' : 'mọi môn đạt kỳ vọng')
+          : khongKyVong === scored.length ? (data.cycle?.khongCamKet ? 'KCK · không đặt kỳ vọng' : 'chưa có kỳ vọng')
+          : 'các môn có kỳ vọng đều đạt'} />
 
       <Stat label="Case đang mở"
         value={String(openCases.length)}
         tone={openCases.length ? 'warn' : undefined}
         onClick={openCases.length ? () => onOpenKn(openCases[0].category) : undefined}
         title="Mở bảng kỹ năng ở kỹ năng của Case mở đầu tiên"
-        sub={openCases.length ? `${runningPlans} PA đang theo dõi` : 'không có case nào đang mở'} />
+        sub={openCases.length ? `${runningPlans} PA đang theo dõi${choXacNhan ? ` · ${choXacNhan} chờ xác nhận` : ''}` : 'không có case nào đang mở'} />
 
       <Stat label="Việc cần làm tiếp" nho
         value={next?.text ?? 'Không có'}

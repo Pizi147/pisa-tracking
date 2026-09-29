@@ -1358,7 +1358,9 @@ function reconcileCorrectedScores(p: Principal, attemptId: number, result: Attem
   const failing = new Set(failingEntrySkills(result.expectation, entry, result.skipped));
   /* Ô đã có điểm mà KHÔNG nằm trong danh sách dưới kỳ vọng = ô đang đạt. */
   const passing = ENTRY_SKILLS.filter((k) => (entry[k] ?? null) !== null && !failing.has(k)) as string[];
-  reconcileCorrectedSignals(p, { attemptId, passingSkills: passing, passText: 'đạt kỳ vọng' });
+  /* PR-S3F #1: ô nay TRỐNG và không bị bỏ (Huỷ điểm / Thi lại xoá điểm) — tín hiệu dựng trên điểm đó cũng hết căn cứ. */
+  const cleared = ENTRY_SKILLS.filter((k) => (entry[k] ?? null) === null && !result.skipped.includes(assessedSkillOf(k))) as string[];
+  reconcileCorrectedSignals(p, { attemptId, passingSkills: passing, passText: 'đạt kỳ vọng', clearedSkills: cleared });
 }
 
 export function saveScore(

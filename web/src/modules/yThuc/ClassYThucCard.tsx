@@ -108,7 +108,7 @@ export function ClassYThucCard({ classId }: { classId: number }) {
   const khungPhai = (
     <div className="min-w-0">
       <div className="flex flex-wrap items-center gap-2 border-b px-3 py-2" style={{ borderColor: 'var(--line)' }}>
-        <h3 className="m-0 min-w-0 flex-1 truncate text-sm font-bold text-slate-100">
+        <h3 className="m-0 min-w-full flex-1 truncate text-sm font-bold text-slate-100 sm:min-w-0">
           {chonHv ? <>Vi phạm · {hv?.ten ?? tatCaEm.find((x) => x.studentId === chonHv)?.ten ?? '…'}</> : 'Vi phạm của lớp'}
         </h3>
         {chonHv && (
@@ -135,7 +135,8 @@ export function ClassYThucCard({ classId }: { classId: number }) {
             }))}
             rong={<Empty title={nhomVp ? 'Không có vi phạm nào thuộc nhóm này' : 'Lớp chưa có vi phạm nào'} />} />
         </div>
-      ) : !hv ? <div className="p-3"><Skeleton rows={4} /></div> : (
+      ) : hvY.error ? <div className="p-3"><ErrorState message={hvY.error.message} hint={hvY.error.hint} onRetry={hvY.reload} /></div>   /* PR-S3F #12: lỗi tải hồ sơ Ý thức của em không xoay mãi */
+      : !hv ? <div className="p-3"><Skeleton rows={4} /></div> : (
         <>
           <div className="border-b px-3 py-2.5" style={{ borderColor: 'var(--line)' }}>
             <ThangYThuc d={hv} homNay={homNay}

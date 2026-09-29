@@ -13,7 +13,7 @@ export const PHAN_LOAI_LABEL: Record<PhanLoai, string> = {
   'hoc-thuat': 'Học thuật', 'y-thuc': 'Ý thức', 'lich-thi': 'Lịch thi', 'thong-tin-hv': 'Thông tin HV', 'bao-len': 'Báo lên',
 };
 
-/** Mỗi PR thêm khoá của mình VÀO CUỐI mảng này (SOS: 'khong_theo_doi'; YT4: 'y_thuc'; LT2: 'ke_hoach_bo_tro', 'quyet_dinh_cuoi_khoa', 'bao_len_mini_test'). */
+/** Mỗi PR thêm khoá của mình VÀO CUỐI mảng này (SOS: 'khong_theo_doi'; YT4: 'y_thuc' + 'bao_len_y_thuc' — hai khoá; LT2: 'ke_hoach_bo_tro', 'quyet_dinh_cuoi_khoa', 'bao_len_mini_test'). */
 export const LOAI_YEU_CAU = ['de_xuat_pa', 'xin_y_kien', 'lich_thi', 'sua_thong_tin', 'bao_len_nguyen_nhan', 'khong_theo_doi', 'y_thuc', 'bao_len_y_thuc'] as const;
 export type LoaiYeuCau = (typeof LOAI_YEU_CAU)[number];
 

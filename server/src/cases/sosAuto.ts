@@ -14,6 +14,7 @@ import { routeCuaLuot } from '../fasttrack/attempts.ts';
 import { addIssues, caseAccess, caseDetail, caseTitleOf } from './cases.ts';
 import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
 import { followUntilAfter } from './sos.ts';
+import { mondayOf } from '../platform/week.ts';
 import { taoYeuCau } from '../duyet/yeuCau.ts';
 import { PA_QUY_CHE_CHUA_GHI, UNCONFIRMED_PRESET, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
 import { ghiBanDieuChinh } from './planRevisions.ts';
@@ -50,7 +51,10 @@ export function isFastTrackMock(attempt: { kind?: string | null }, scoringMode: 
  */
 export function examDateOf(cycleId: number | null | undefined): string | null {
   if (!cycleId) return null;
-  const c = db().prepare('SELECT exam_period_id, exam_month, exam_date FROM learning_cycles WHERE id = ?').get(cycleId) as any;
+  return examDateTu(db().prepare('SELECT exam_period_id, exam_month, exam_date FROM learning_cycles WHERE id = ?').get(cycleId) as any);
+}
+/** Như `examDateOf` nhưng từ hàng lộ trình đã có sẵn (PR-S3F #4: dòng được JOIN `exam_week_*` thì không hỏi tuần thi lại). */
+function examDateTu(c: Parameters<typeof examPlanOf>[0]): string | null {
   if (c?.exam_date) return c.exam_date;   // PR-SOS: ngày thi cụ thể (T9) thắng tuần
   const plan = examPlanOf(c);
   return plan.confidence === 'week' && plan.weekStart ? addDays(plan.weekStart, 6) : null;
@@ -225,22 +229,36 @@ export function xacNhanCase(p: Principal, caseId: number, input: {
 export function dienMocQuyChe(theo: { caseIds?: number[]; studentId?: number }) {
   const conn = db();
   const dk = `iv.preset = 1 AND iv.status = 'started' AND iv.followup_due IS NULL AND iv.moc_quy_che IN ('until_next_mt', 'until_exam')`;
+  /*
+   * PR-S3F #4: ngày thi (JOIN lộ trình + tuần thi) và tuần của MT kế tiếp lấy NGAY trong câu chọn chính — trước đây mỗi dòng thêm 3 câu
+   * (`luotSinhPa`, `followUntilAfter`, `examDateOf`) nên Công việc QL với 30 PA "đến lúc thi" chưa có ngày thi tốn 63 → 147 câu. `src` = lượt
+   * sinh PA (cùng luật `luotSinhPa`); `tuan_mt_ke` = tuần của lượt kế tiếp chưa huỷ (cùng luật `followUntilAfter`).
+   */
+  const chon = `SELECT iv.*, sc.cycle_id AS case_cycle_id, cy.exam_period_id, cy.exam_month, cy.exam_date,
+         ep.code AS exam_week_code, ep.week_start AS exam_week_start,
+         (SELECT p.week_start FROM assessment_attempts nx LEFT JOIN report_periods p ON p.id = nx.planned_period_id
+           WHERE nx.cycle_id = src.cycle_id AND nx.attempt_no > src.attempt_no AND nx.status != 'cancelled'
+           ORDER BY nx.attempt_no LIMIT 1) AS tuan_mt_ke
+       FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
+       LEFT JOIN learning_cycles cy ON cy.id = sc.cycle_id
+       LEFT JOIN report_periods ep ON ep.id = cy.exam_period_id
+       LEFT JOIN assessment_attempts src ON src.id = (SELECT m.attempt_id FROM case_milestones m JOIN assessment_attempts a ON a.id = m.attempt_id
+           WHERE m.case_id = iv.case_id AND m.kind IN ('opened', 'repeat') AND m.created_at <= iv.created_at
+           ORDER BY m.created_at DESC, m.id DESC LIMIT 1)`;
   const rows: any[] = [];
   if (theo.studentId != null) {
-    rows.push(...conn.prepare(`SELECT iv.*, sc.cycle_id AS case_cycle_id FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
-      WHERE sc.student_id = ? AND sc.status != 'done' AND ${dk}`).all(theo.studentId) as any[]);
+    rows.push(...conn.prepare(`${chon} WHERE sc.student_id = ? AND sc.status != 'done' AND ${dk}`).all(theo.studentId) as any[]);
   }
   const ids = theo.caseIds ?? [];
   for (let i = 0; i < ids.length; i += 400) {
     const lo = ids.slice(i, i + 400);
-    rows.push(...conn.prepare(`SELECT iv.*, sc.cycle_id AS case_cycle_id FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
-      WHERE iv.case_id IN (${lo.map(() => '?').join(',')}) AND ${dk}`).all(...lo) as any[]);
+    rows.push(...conn.prepare(`${chon} WHERE iv.case_id IN (${lo.map(() => '?').join(',')}) AND ${dk}`).all(...lo) as any[]);
   }
   for (const iv of rows) {
-    const luot = iv.moc_quy_che === 'until_next_mt' ? luotSinhPa(iv) : null;
     const moc = mocQuyChe(iv.moc_quy_che, {
       ngayXacNhan: iv.cycle_started_on ?? iv.started_date ?? demoToday(),
-      nextMtSunday: luot ? followUntilAfter(luot) : null, examDate: examDateOf(iv.case_cycle_id),
+      nextMtSunday: iv.moc_quy_che === 'until_next_mt' && iv.tuan_mt_ke ? addDays(mondayOf(iv.tuan_mt_ke), 6) : null,
+      examDate: examDateTu(iv),
     });
     if (moc) conn.prepare('UPDATE case_interventions SET followup_due = ?, updated_at = ? WHERE id = ? AND followup_due IS NULL').run(moc, nowIso(), iv.id);
   }
@@ -396,7 +414,7 @@ export function guiKhongTheoDoi(p: Principal, caseId: number, input: { reasonCod
 
 /**
  * QUẢN LÝ DUYỆT "Không cần theo dõi" — chạy TRONG giao dịch của hộp (`duyetYeuCau`), người duyệt đã được hộp kiểm quyền. Case đóng
- * (`dismiss_reason_*`, giữ lịch sử), PA quy chế chưa có kết quả tuần huỷ `khong_theo_doi` (không tính thất bại, không vào hiệu quả — K5-55).
+ * (`dismiss_reason_*`, giữ lịch sử), PA quy chế chưa có kết quả tuần huỷ `khong_theo_doi` (không tính thất bại, không vào hiệu quả — K5-55); PR-S3F: huỷ MỌI PA planned/started.
  * Lỗi thì ném để hộp rollback cả thẻ.
  */
 export function apDungKhongTheoDoi(conn: any, yc: { doi_tuong_id: number; du_lieu: string | null; ly_do: string | null }, nguoiDuyet: number) {
@@ -411,7 +429,7 @@ export function apDungKhongTheoDoi(conn: any, yc: { doi_tuong_id: number; du_lie
   const today = demoToday();
   const cancelled = conn
     .prepare(`UPDATE case_interventions SET status = 'cancelled', closed_reason = 'khong_theo_doi', updated_at = ?
-               WHERE case_id = ? AND ${PA_QUY_CHE_CHUA_GHI('case_interventions')}`)
+               WHERE case_id = ? AND status IN ('planned', 'started')`)   // PR-S3F #2: MỌI PA còn sống, kể cả PA GV tự thêm lúc thẻ đang chờ (ngoài hiệu quả PA: chỉ `completed` được đếm)
     .run(nowIso(), caseId).changes;
   conn
     .prepare(`UPDATE sos_cases SET status = 'done', closed_at = ?, closed_by = ?, dismiss_reason_code = ?, dismiss_reason_text = ?,

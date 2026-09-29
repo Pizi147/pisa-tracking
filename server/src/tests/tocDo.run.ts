@@ -751,6 +751,30 @@ await checkAsync(`PR-TOC · Chuyển cả lớp thường sang FT (POST /classes
   assert(r.n <= TRAN_GHI_LO.chuyenCaLopSangFT, `${r.n} câu > trần ${TRAN_GHI_LO.chuyenCaLopSangFT}`);
 });
 
+await checkAsync(`PR-S3F · Công việc QL (nguoi=tat-ca) với 30 PA "đến lúc thi" chưa có ngày thi ≤ ${TRAN_GHI_LO.congViec30PaChuaNgayThi} câu SQL`, async () => {
+  const { demoToday } = await import('../demoConfig.ts');
+  const { addDays } = await import('../util.ts');
+  const url = '/my-work?nguoi=tat-ca';
+  const n0 = (await doSql('QL', 'GET', url)).n;
+  const cs = conn.prepare(
+    `SELECT MIN(sc.id) AS id, sc.cycle_id FROM sos_cases sc JOIN students s ON s.id = sc.student_id
+      WHERE sc.status != 'done' AND s.status = 'active' AND s.archived_at IS NULL AND sc.cycle_id IS NOT NULL
+      GROUP BY sc.student_id ORDER BY sc.student_id LIMIT 30`).all() as any[];
+  assert(cs.length === 30, `Cần 30 Case mở của 30 em khác nhau, có ${cs.length}`);
+  const homNay = demoToday(), bayGio = new Date().toISOString();
+  for (const c of cs) {
+    conn.prepare(`UPDATE learning_cycles SET exam_date = NULL, exam_month = NULL, exam_period_id = NULL WHERE id = ?`).run(c.cycle_id);
+    conn.prepare(`INSERT INTO case_interventions (case_id, kind, description, status, needs_approval, preset, moc_quy_che, started_date, cycle_no,
+        cycle_started_on, action_due, confirmed_by, confirmed_at, created_at) VALUES (?, 'tutor', 'Tutor · đến lúc thi', 'started', 0, 1, 'until_exam', ?, 1, ?, ?, ?, ?, ?)`)
+      .run(c.id, homNay, homNay, addDays(homNay, 7), USER.QT, bayGio, bayGio);
+  }
+  const r = await doSql('QL', 'GET', url);
+  const moc = (conn.prepare(`SELECT COUNT(*) n FROM case_interventions WHERE preset = 1 AND moc_quy_che = 'until_exam' AND followup_due IS NULL AND status = 'started'`).get() as any).n;
+  assert(r.status === 200 && moc >= 30, `Việc "Nhập ngày thi" phải còn (PA chưa mốc ${moc}): ${r.status}`);
+  console.log(`      (đo: ${n0} câu không PA → ${r.n} câu với 30 PA chưa ngày thi)`);
+  assert(r.n <= TRAN_GHI_LO.congViec30PaChuaNgayThi, `${r.n} câu > trần ${TRAN_GHI_LO.congViec30PaChuaNgayThi}`);
+});
+
 console.log('\nBảng đo (vai · url → mã HTTP · số câu SQL):');
 for (const dong of bangDo) console.log(`  ${dong}`);
 
