@@ -11,12 +11,13 @@ import {
 } from '@shared/domain/index.ts';
 
 /** Thao tác một kỹ năng mở bằng hộp này — Nhập/Sửa điểm làm tại chỗ, Xếp lại bài vắng / Trả lời đề nghị có hộp riêng. */
-export const THAO_TAC_CO_HOP: readonly ThaoTac[] = ['dat-lich', 'doi-lich', 'doi-han', 'bo-ky-nang', 'dua-lai', 'bao-vang', 'huy-diem', 'khoi-phuc'];
+export const THAO_TAC_CO_HOP: readonly ThaoTac[] = ['dat-lich', 'xep-lai', 'doi-lich', 'doi-han', 'bo-ky-nang', 'dua-lai', 'bao-vang', 'huy-diem', 'khoi-phuc'];
 
 /** Một câu nói hệ quả của thao tác — người bấm biết trước điều gì xảy ra (T38, clarify). */
 function cauHeQua(t: ThaoTac, mon: string, laThuong: boolean): string {
   switch (t) {
     case 'dat-lich': return `Đặt tuần thi cho ${mon}; các kỹ năng khác giữ nguyên.`;
+    case 'xep-lai': return `Đặt tuần thi mới cho bài vắng ${mon}. Tính là một lần dời do vắng.`;
     case 'doi-lich': return `Chỉ ${mon} đổi tuần thi; các kỹ năng khác giữ nguyên. Không tính là một lần dời do vắng.`;
     case 'doi-han': return `Hạn chấm mới chỉ áp cho ${mon}; hết ngày hạn mới tính quá hạn.`;
     case 'bo-ky-nang': return `${mon} không thi trong đợt này và không tính vào kết quả đợt. Đưa lại được trước khi tới tuần thi.`;
@@ -59,7 +60,7 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, tuanDaBa
   const ten = CHU_THAO_TAC[t];
   const mon = tenMon(ct, skill);
   const batBuoc = canLyDo(t, tuanDaBatDau);
-  const coTuan = t === 'dat-lich' || t === 'doi-lich' || t === 'khoi-phuc';
+  const coTuan = t === 'dat-lich' || t === 'xep-lai' || t === 'doi-lich' || t === 'khoi-phuc';
   const chonW = t === 'huy-diem' && !laThuong && oCoDiem.length > 1;
 
   const loi: LoiTruong[] = [
@@ -74,9 +75,10 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, tuanDaBa
     const goc = `/attempts/${attemptId}/skills/${skill}`;
     switch (t) {
       case 'dat-lich':
+      case 'xep-lai':
       case 'doi-lich':
         await api.post(`${goc}/week`, { periodId: tuan!.periodId, reason: lyDoGui ?? null, force });
-        return `${t === 'dat-lich' ? 'Đã xếp' : 'Đã dời'} lịch thi ${mon} sang ${tuanLich(tuan!.weekStart)}`;
+        return `${t === 'doi-lich' ? 'Đã dời' : 'Đã xếp'} lịch thi ${mon} sang ${tuanLich(tuan!.weekStart)}`;
       case 'khoi-phuc':
         await api.post(`${goc}/restore`, { periodId: tuan!.periodId, reason: lyDoGui ?? null });
         return `Đã khôi phục ${mon} và đặt ${tuanLich(tuan!.weekStart)}`;
@@ -124,7 +126,7 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, tuanDaBa
       onDone(); dong();
     } catch (e: any) {
       /* T15: cảnh báo (hai đợt quá gần) cần người xác nhận lại — lần bấm sau gửi `force`. */
-      if ((t === 'doi-lich' || t === 'dat-lich') && /Xác nhận lại/.test(e.message)) setCanhBao(e.message);
+      if ((t === 'doi-lich' || t === 'dat-lich' || t === 'xep-lai') && /Xác nhận lại/.test(e.message)) setCanhBao(e.message);
       else toast.push('error', e.message);
     } finally { setBusy(false); }
   };

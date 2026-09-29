@@ -7,7 +7,7 @@ import {
   type AssessedSkill, type AttemptKind, type CaseCategory, type RatioOutcome, type SosLevel,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
-import { can, editableSkills, require_, scoreEditPath, type Principal } from '../permissions.ts';
+import { can, editableSkills, isCoreTeacherOf, require_, scoreEditPath, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod } from '../platform/week.ts';
@@ -876,6 +876,8 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
     monNgan: Object.fromEntries(prog.skills.map((k) => [k, tenMonNgan(prog.code, k)])),
     editableSkills: editable,
     canPlan: can(p, PERMISSIONS.PLAN_WEEK, { classId }),
+    /** PR-XLMT (K4-32): GVCN của lớp — menu ⋯ ô lưới (Báo vắng, Xếp lại bài vắng) theo `thaoTacKyNang`. Một lần cho cả bảng. */
+    laGvcn: isCoreTeacherOf(p, classId, today),
     passThreshold: RATIO_PASS_THRESHOLD,
     rows: attempts.map((a) => {
       const rows = byAttempt.get(a.id) ?? [];

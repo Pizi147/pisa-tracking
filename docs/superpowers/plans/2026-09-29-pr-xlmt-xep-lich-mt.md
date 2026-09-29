@@ -646,6 +646,9 @@ if (chuaQua.length) luuY('daThiToiMt', `Đã thi tới MT${daThiToiMt} nhưng ${
 - **Task 7 — layout/clarify:** bảng `table-layout: fixed`, cột Mock Test rộng theo số MT (40 px/MT), chip MT dùng SVG ✓ ○ ◐ 10 px; cột
   tên dính trái khi cuộn ngang ở 375 px. Dòng phụ đợt: "Em đã đủ điểm đợt này tự sang đợt kế tiếp; đợt còn dở thì xếp nốt kỹ năng còn
   thiếu." Detector sạch trên mọi file giao diện của PR.
+- **Task 8:** `regularSheet` thêm `laGvcn` (một lần cho cả bảng, không câu SQL mới — đọc `p.assignments`). Hộp chung nhận thêm
+  `xep-lai` (lớp thường: đặt tuần mới cho bài vắng = một lần dời do vắng; hồ sơ Mock vẫn mở `AbsenceMoveModal`). Nhập/Sửa điểm không
+  lặp trong ⋯ (làm ngay trong ô). `suaLoiNong.tests.ts` N1 (7): thêm `NganLichSuBai` vào nhóm miễn "panel chỉ xem".
 
 ## Chủ sản phẩm chốt 29/09 (thay các chỗ lệch trong kế hoạch)
 
