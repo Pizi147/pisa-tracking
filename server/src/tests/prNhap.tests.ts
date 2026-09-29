@@ -40,19 +40,19 @@ export async function runPrNhapTests(t: YThucTestKit) {
     assert(JSON.stringify(r.boQua) === JSON.stringify(['Ghi chú', 'Họ tên']), JSON.stringify(r.boQua));
   });
 
-  check('NHAP (1) · cotLuoiNhap: lớp thường 4 cột, FT 11 cột', () => {
+  check('NHAP (1) · cotLuoiNhap: lớp thường 4 cột, FT 12 cột (… Thi dự kiến · Đã thi tới MT · Tuần bắt đầu)', () => {
     const thuong = d.cotLuoiNhap(true).map((c) => c.key).join(',');
     assert(thuong === 'fullName,dob,email,startWeek', thuong);
     const ft = d.cotLuoiNhap(false).map((c) => c.key);
-    assert(ft.length === 11 && ft[9] === 'examDate' && ft[10] === 'startWeek', ft.join(','));
+    assert(ft.length === 12 && ft[9] === 'examDate' && ft[10] === 'daThiToiMt' && ft[11] === 'startWeek', ft.join(','));
   });
 
-  check('NHAP (1) · tuanBatDauMacDinh (K2-19)', () => {
+  check('NHAP (1) · tuanBatDauMacDinh: tuần khai giảng (planning chốt 29/09); FT chưa khai giảng → tuần này', () => {
     const h = '2026-09-29';
     const ft = (kg: string | null) => d.tuanBatDauMacDinh({ lopThuong: false, khaiGiang: kg }, h);
     const th = (kg: string | null) => d.tuanBatDauMacDinh({ lopThuong: true, khaiGiang: kg }, h);
     assert(ft('2026-09-21') === '2026-09-21', String(ft('2026-09-21')));
-    assert(ft('2026-09-14') === '2026-09-28', String(ft('2026-09-14')));
+    assert(ft('2026-06-03') === '2026-06-01', 'FT đã học lâu vẫn giữ tuần khai giảng: ' + String(ft('2026-06-03')));
     assert(ft('2026-10-05') === '2026-10-05', String(ft('2026-10-05')));
     assert(ft(null) === '2026-09-28', String(ft(null)));
     assert(th('2026-06-03') === '2026-06-01', String(th('2026-06-03')));
@@ -132,14 +132,15 @@ export async function runPrNhapTests(t: YThucTestKit) {
     assert(!conn.prepare("SELECT id FROM students WHERE full_name = 'Nhập Thiếu Email'").get(), 'dòng thiếu email vẫn được ghi');
   });
 
-  check('NHAP (3) · tuần bắt đầu mặc định K2-19: lớp FT đã học ≥ 3 tuần → tuần này; tuần gửi sai → lỗi cả lô, không lặng lẽ thay', () => {
+  check('NHAP (3) · tuần bắt đầu mặc định = tuần khai giảng kể cả lớp FT đã học ≥ 3 tuần; tuần gửi sai → lỗi cả lô, không lặng lẽ thay', () => {
     const h = demoToday();
     const lop = conn.prepare(`SELECT c.id FROM classes c JOIN programmes pg ON pg.code = c.programme_code
                                WHERE pg.scoring_mode <> 'ratio' AND c.start_date IS NOT NULL AND c.start_date <= ? LIMIT 1`)
       .get(t.addDays(h, -21)) as any;
     assert(lop, 'demo thiếu lớp FT đã khai giảng ≥ 3 tuần');
+    const kg = (conn.prepare('SELECT start_date FROM classes WHERE id = ?').get(lop.id) as any).start_date;
     const pv = intake.previewIntake(P.admin, { classId: lop.id, rows: [{ fullName: 'F', email: 'f@g.vn' }] });
-    assert(pv.defaultStartWeek === d.mondayOfDate(h), `${pv.defaultStartWeek} ≠ tuần này`);
+    assert(pv.defaultStartWeek === d.mondayOfDate(kg), `${pv.defaultStartWeek} ≠ tuần khai giảng ${kg}`);
     const sai = intake.previewIntake(P.admin, { classId: lop.id, defaultStartWeek: '31/02/2026', rows: [{ fullName: 'F', email: 'f@g.vn' }] });
     assert(sai.issues.some((i: any) => i.row === 0 && i.field === 'startWeek' && i.muc === 'loi'), 'tuần cả lô sai không báo');
     assert(sai.rows[0].issues.some((i: any) => i.field === 'startWeek' && i.muc === 'loi'), 'dòng theo tuần cả lô sai vẫn thêm được');
@@ -181,5 +182,56 @@ export async function runPrNhapTests(t: YThucTestKit) {
       student: { dob: '2010-05-12' }, isFastTrack: true,
     } as any);
     assert(thieu.length === 0, JSON.stringify(thieu));
+  });
+
+  const luotCua = (ten: string) => conn.prepare(`SELECT a.attempt_no, a.lich_su FROM assessment_attempts a
+      JOIN students s ON s.id = a.student_id WHERE s.full_name = ? AND a.status <> 'cancelled' ORDER BY a.attempt_no`).all(ten) as any[];
+  check('NHAP (7) · Đã thi tới MT + báo trước MT lịch sử: em cũ học 22 tuần, đã thi tới MT4 → 4 lượt lịch sử; khối kết quả đếm đúng', () => {
+    const h = demoToday();
+    const tuan22 = t.addDays(d.mondayOfDate(h), -7 * 22);
+    const dong = { fullName: 'Nhập Em Cũ MT4', email: 'cu@demo.test', startWeek: tuan22, daThiToiMt: '4' };
+    const pv = intake.previewIntake(P.admin, { classId: ft, rows: [dong] });
+    const ly = pv.rows[0].issues.find((i: any) => i.field === 'startWeek');
+    assert(ly && ly.muc === 'luu_y' && /4 MT sẽ là MT lịch sử \(MT1, MT2, MT3, MT4\)/.test(ly.message), JSON.stringify(pv.rows[0].issues));
+    const r = intake.commitIntake(P.admin, { classId: ft, rows: [dong], idempotencyKey: 'nhap-7-cu' });
+    const ls = luotCua('Nhập Em Cũ MT4');
+    assert(ls.length === 4 && ls.every((a) => a.lich_su === 1), JSON.stringify(ls));
+    assert(r.mt.soEm === 1 && r.mt.soEmCoLichSu === 1 && r.mt.soLuotLichSu === 4 && r.mt.luotLichSuDau, JSON.stringify(r.mt));
+  });
+
+  check('NHAP (7) · em FT bắt đầu tuần này → 3 lượt thường, không lưu ý; "Đã thi tới MT" 9 → lỗi; lớp thường → lưu ý, không lượt', () => {
+    const tuanNay = d.mondayOfDate(demoToday());
+    const moi = { fullName: 'Nhập Em Mới Tuần Này', email: 'moi@demo.test', startWeek: tuanNay };
+    const pv = intake.previewIntake(P.admin, { classId: ft, rows: [moi, { fullName: 'Nhập Sai MT', email: 'x@demo.test', daThiToiMt: '9' }] });
+    assert(!pv.rows[0].issues.some((i: any) => i.field === 'startWeek'), JSON.stringify(pv.rows[0].issues));
+    assert(pv.rows[1].issues.some((i: any) => i.field === 'daThiToiMt' && i.muc === 'loi'), 'Đã thi tới MT 9 phải lỗi');
+    const r = intake.commitIntake(P.admin, { classId: ft, rows: [moi], idempotencyKey: 'nhap-7-moi' });
+    const ls = luotCua('Nhập Em Mới Tuần Này');
+    assert(ls.length === 3 && ls.every((a) => a.lich_su === 0) && r.mt.soLuotLichSu === 0, JSON.stringify(ls));
+    const th = { fullName: 'Nhập Lớp Thường MT', email: 'th@demo.test', daThiToiMt: '3' };
+    const pvt = intake.previewIntake(P.admin, { classId: thuong, rows: [th] });
+    assert(pvt.rows[0].issues.every((i: any) => i.muc === 'luu_y') && pvt.rows[0].issues.some((i: any) => i.field === 'daThiToiMt'),
+      JSON.stringify(pvt.rows[0].issues));
+    intake.commitIntake(P.admin, { classId: thuong, rows: [th], idempotencyKey: 'nhap-7-thuong' });
+    assert(luotCua('Nhập Lớp Thường MT').length === 0, 'lớp thường không có lượt MT');
+  });
+
+  check('NHAP (7) · bỏ trống tuần → tuần khai giảng; lớp đã học lâu thì xem trước báo MT lịch sử (planning chốt 29/09)', () => {
+    const kg = (conn.prepare('SELECT start_date FROM classes WHERE id = ?').get(ft) as any).start_date as string;
+    const pv = intake.previewIntake(P.admin, { classId: ft, rows: [{ fullName: 'Nhập Theo Khai Giảng', email: 'kg@demo.test' }] });
+    const kgT2 = d.mondayOfDate(kg);
+    assert(pv.defaultStartWeek === kgT2, `${pv.defaultStartWeek} ≠ ${kgT2}`);
+    const mt1LichSu = d.laLichSu(t.addDays(kgT2, 5 * 7 + 6), demoToday());
+    const coLuuY = pv.rows[0].issues.some((i: any) => i.field === 'startWeek' && /MT lịch sử/.test(i.message));
+    assert(coLuuY === mt1LichSu, `MT1 lịch sử=${mt1LichSu} nhưng lưu ý=${coLuuY}`);
+  });
+
+  check('NHAP (7) · PR-DUYET: GVCN vẫn đặt target + thi dự kiến lúc THÊM MỚI (cycle.edit chỉ chặn SỬA)', () => {
+    const r = intake.commitIntake(P.coreTeacher, { classId: ft, idempotencyKey: 'nhap-7-gvcn',
+      rows: [{ fullName: 'Nhập GVCN Đặt Target', email: 'gv@demo.test', target: '6.5', examDate: '05/2027' }] });
+    assert(r.added === 1, JSON.stringify(r.failed));
+    const cy = conn.prepare(`SELECT lc.target_score, lc.exam_month, lc.route FROM learning_cycles lc JOIN students s ON s.id = lc.student_id
+                              WHERE s.full_name = 'Nhập GVCN Đặt Target'`).get() as any;
+    assert(cy.target_score === 6.5 && cy.exam_month === '2027-05' && cy.route === 'LT1', JSON.stringify(cy));
   });
 }

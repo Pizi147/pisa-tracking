@@ -8,6 +8,7 @@ import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { fmtBand } from '../../lib/format.ts';
 import {
   CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, NHAN_VIEC_QUAN_LY, mucQuanLyHocVien, type LopHocQuyen, type ViecQuanLy, dsLoi, docEmail,
+  addDaysIso, tuanHocCuaMt, tuanLich,
 } from '@shared/domain/index.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -52,7 +53,7 @@ export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempt
     case 'luu-tru': return <LuuTruPanel {...chung} boLuuTru={false} />;
     case 'bo-luu-tru': return <LuuTruPanel {...chung} boLuuTru />;
     case 'outcome': return <KetLuanLoTrinhPanel {...chung} cycle={cycle} attempts={attempts} />;
-    case 'info': return <ThongTinPanel {...chung} student={student} cycle={cycle} />;
+    case 'info': return <ThongTinPanel {...chung} student={student} cycle={cycle} attempts={attempts} />;
     case 'xoa-hoc-vien': return <XoaHocVienPanel studentId={student.id} studentName={student.name} lop={lop} onClose={onClose} />;
     case 'de-xuat-sua': return (
       <DeXuatSuaPanel studentId={student.id} studentName={student.name} lop={lop} onClose={onClose}
@@ -213,9 +214,9 @@ function KetLuanLoTrinhPanel({ studentName, lop, onClose, onDone, cycle, attempt
  * THÔNG TIN HỌC VIÊN — mục 1 của menu (mục 5.1). Với lớp Fast Track, mục tiêu và kế hoạch thi thật sửa ở mục `Lộ trình`; với lớp thường,
  * giai đoạn đang học đọc ở đây, sửa `Lộ trình tiếp theo` ở mục riêng (PR-LT).
  */
-function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle }: ChungViec & {
+function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, attempts }: ChungViec & {
   student: { id: number; name: string; dob?: string | null; email?: string | null; consultantName?: string | null; note?: string | null };
-  cycle: any | null;
+  cycle: any | null; attempts: any[];
 }) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
@@ -234,6 +235,19 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle }: Ch
   if (loiEmail) loi.push({ khoa: 'email', nhan: 'Email', lyDo: loiEmail });
   if (cycle && !tuan) loi.push({ khoa: 'tuan', nhan: 'Tuần bắt đầu', lyDo: 'Chưa chọn' });
   const thieu = loi.map((l) => l.nhan);
+  /*
+   * M6, K2-33(2): đổi tuần bắt đầu của lộ trình FT thì máy chủ dời các lượt MT hệ thống tự xếp (`auto`), chưa làm, chưa có điểm — nói
+   * trước lượt nào dời sang tuần nào (cùng luật tuần học `tuanHocCuaMt` của PR-MT). Lượt QL chốt tay / đã có điểm đứng yên.
+   */
+  const route: string | null = cycle?.route ?? null;
+  const seDoi = route && tuan && tuan !== tuanCu
+    ? attempts.filter((a) => a.status === 'planned' && a.planSource === 'auto' && !a.scored)
+      .sort((a, b) => a.attemptNo - b.attemptNo)
+    : [];
+  const cauDoi = seDoi.length
+    ? `${seDoi.map((a) => `MT${a.attemptNo}`).join(', ')} sẽ dời sang `
+      + seDoi.map((a) => tuanLich(addDaysIso(tuan, (tuanHocCuaMt(route, a.attemptNo) - 1) * 7), homNay)).join(', ')
+    : undefined;
 
   const luu = async () => {
     lf.bam();
@@ -287,7 +301,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle }: Ch
           luat={cycle.ratio
             ? 'Giai đoạn là chương trình đang học; tuần kết thúc suy ra từ tuần bắt đầu và độ dài chương trình. Ghi dự định sau lớp này ở mục Lộ trình tiếp theo.'
             : 'Sửa mục tiêu, kế hoạch thi thật, điểm đầu vào và lịch MT ở mục Lộ trình. Đổi mục tiêu ở đâu cũng bắt ghi lý do và ngày hiệu lực.'}>
-          <Truong nhan="Tuần bắt đầu" batBuoc loi={lf.loiCua(loi, 'tuan')}>
+          <Truong nhan="Tuần bắt đầu" batBuoc loi={lf.loiCua(loi, 'tuan')} phu={cauDoi}>
             <ONgay kieu="tuan" id={lf.oId('tuan')} onBlur={lf.roi('tuan')} invalid={!!lf.loiCua(loi, 'tuan')}
               value={tuan} onChange={setTuan} />
           </Truong>

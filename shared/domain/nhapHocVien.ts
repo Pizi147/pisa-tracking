@@ -47,7 +47,7 @@ export function docEmail(raw: unknown): { email: string | null; loi: string | nu
 }
 
 export type CotNhap = 'fullName' | 'dob' | 'email' | 'baselineScore' | 'entryListening' | 'entryReading' | 'entryWriting'
-  | 'entrySpeaking' | 'target' | 'examDate' | 'startWeek' | 'classCode' | 'route' | 'consultant';
+  | 'entrySpeaking' | 'target' | 'examDate' | 'daThiToiMt' | 'startWeek' | 'classCode' | 'route' | 'consultant';
 
 /** Tiêu đề cột đã chuẩn hoá (`chuanTieuDe`) → cột. `classCode`, `route` nhận diện để KHÔNG lệch cột rồi bỏ qua (K2-20). */
 const TIEU_DE: Record<CotNhap, string[]> = {
@@ -61,6 +61,7 @@ const TIEU_DE: Record<CotNhap, string[]> = {
   entrySpeaking: ['s', 'speaking', 'noi', 's dau vao'],
   target: ['target', 'muc tieu', 'diem cam ket', 'cam ket'],
   examDate: ['thi du kien', 'ngay thi', 'ngay thi du kien', 'thang thi', 'thang du kien thi', 'du kien thi', 'ngay thi ielts', 'exam', 'exam date'],
+  daThiToiMt: ['da thi toi mt', 'da thi toi', 'mt da thi'],
   startWeek: ['tuan bat dau', 'tuan bat dau hoc', 'tuan hoc dau tien', 'start week', 'ngay bat dau', 'bat dau'],
   classCode: ['lop', 'ma lop', 'class'],
   route: ['lo trinh', 'route'],
@@ -95,24 +96,21 @@ const COT_FT: CotLuoi[] = [
   { key: 'baselineScore', nhan: 'OVR', so: true }, { key: 'entryListening', nhan: 'L', so: true },
   { key: 'entryReading', nhan: 'R', so: true }, { key: 'entryWriting', nhan: 'W', so: true },
   { key: 'entrySpeaking', nhan: 'S', so: true }, { key: 'target', nhan: 'Target', so: true }, { key: 'examDate', nhan: 'Thi dự kiến' },
+  { key: 'daThiToiMt', nhan: 'Đã thi tới MT', so: true },
 ];
 const COT_TUAN: CotLuoi = { key: 'startWeek', nhan: 'Tuần bắt đầu', batBuoc: true };
-/** YC-5.2 thứ tự cột. FT: Họ tên · Ngày sinh · Email · OVR · L · R · W · S · Target · Thi dự kiến · Tuần bắt đầu.
+/** YC-5.2 thứ tự cột. FT: Họ tên · Ngày sinh · Email · OVR · L · R · W · S · Target · Thi dự kiến · Đã thi tới MT (K2-33) · Tuần bắt đầu.
  *  Lớp thường (Pre FOU · FOU · BE · ELE): Họ tên · Ngày sinh · Email · Tuần bắt đầu (K2-41). Cột Tình trạng do giao diện vẽ. */
 export const cotLuoiNhap = (lopThuong: boolean): CotLuoi[] => (lopThuong ? [...COT_DAU, COT_TUAN] : [...COT_DAU, ...COT_FT, COT_TUAN]);
 const NHAN_KHAC: Record<string, string> = { classCode: 'Lớp', route: 'Lộ trình', consultant: 'Tư vấn viên' };
 export const nhanCotNhap = (field: string) => [...COT_DAU, ...COT_FT, COT_TUAN].find((c) => c.key === field)?.nhan ?? NHAN_KHAC[field] ?? field;
 
 /**
- * Tuần bắt đầu mặc định cho cả lô (YC-5.4 + K2-19). Lớp thường: tuần khai giảng. Lớp FT nhận em cuốn chiếu: lớp chưa khai giảng
- * hoặc đang ở tuần học 1–2 → tuần khai giảng; muộn hơn (hoặc lớp chưa khai ngày) → TUẦN NÀY — tránh biến MT1 thành "MT lịch sử"
- * của một bài em chưa từng thi. Trả Thứ Hai ISO; `null` = lớp thường chưa khai tuần khai giảng.
+ * Tuần bắt đầu mặc định cho cả lô (YC-5.4). Planning chốt 29/09 (câu hỏi 1 của PR-MT, thay K2-19): mọi lớp lấy TUẦN KHAI GIẢNG —
+ * em vào muộn thì xem trước báo "n MT sẽ là MT lịch sử" để người nhập đổi tuần nếu cần. Lớp FT chưa có ngày khai giảng → tuần này.
+ * Trả Thứ Hai ISO; `null` = lớp thường chưa có ngày khai giảng.
  */
 export function tuanBatDauMacDinh(lop: { lopThuong: boolean; khaiGiang: string | null }, homNay: string): string | null {
-  const tuanNay = mondayOfDate(homNay);
-  if (!lop.khaiGiang) return lop.lopThuong ? null : tuanNay;
-  const kg = mondayOfDate(lop.khaiGiang);
-  if (lop.lopThuong) return kg;
-  const soTuanDaQua = Math.round((Date.parse(tuanNay) - Date.parse(kg)) / (7 * 86_400_000));
-  return soTuanDaQua <= 1 ? kg : tuanNay;
+  if (lop.khaiGiang) return mondayOfDate(lop.khaiGiang);
+  return lop.lopThuong ? null : mondayOfDate(homNay);
 }

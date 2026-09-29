@@ -6,7 +6,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { Field, Outcome, Th } from '../../ui/ui.tsx';
 import {
-  cotLuoiNhap, mondayOfDate, nhanCotNhap, tuanBatDauMacDinh, tuanLich, type CotNhap, type VanDeNhap,
+  cotLuoiNhap, nhanCotNhap, tuanBatDauMacDinh, type CotNhap, type VanDeNhap,
 } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
@@ -15,7 +15,10 @@ import { ONgay } from '../../ui/ONgay.tsx';
 type Row = Partial<Record<CotNhap, string | number | null>>;
 type PreviewRow = { row: number; issues: VanDeNhap[] };
 type Preview = { rows: PreviewRow[]; issues: VanDeNhap[]; defaultStartWeek?: string | null };
-type KetQua = { added: number; hangDaThem: number[] };
+type KetQua = {
+  added: number; hangDaThem: number[];
+  mt?: { soEm: number; soLuotLichSu: number; soEmCoLichSu: number; luotLichSuDau: number | null };
+};
 
 const ISO_NGAY = /^\d{4}-\d{2}-\d{2}$/;
 const moiKhoa = () => `intake-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -24,13 +27,14 @@ const dongTrong = (r: Row) => Object.values(r).every((v) => !String(v ?? '').tri
 /* Bề rộng cột theo M2 (px). Cột Tình trạng do panel vẽ, không nằm trong `cotLuoiNhap`. */
 const RONG: Partial<Record<CotNhap, number>> = {
   fullName: 170, dob: 104, email: 190, baselineScore: 56, entryListening: 48, entryReading: 48, entryWriting: 48,
-  entrySpeaking: 48, target: 60, examDate: 104, startWeek: 150,
+  entrySpeaking: 48, target: 60, examDate: 104, daThiToiMt: 72, startWeek: 150,
 };
 const GOI_Y_COT: Partial<Record<CotNhap, string>> = {
   dob: 'Gõ dd/mm/yyyy.',
   baselineScore: 'Con số trên phiếu điểm chính thức. Nhập độc lập với bốn môn — không phải trung bình cộng.',
   entryWriting: 'Writing TỔNG trên phiếu điểm — không chia W1/W2.',
   examDate: 'Gõ dd/mm/yyyy nếu đã biết ngày, mm/yyyy nếu mới biết tháng.',
+  daThiToiMt: 'Em cũ đã thi tới MT mấy ngoài web — web tạo sẵn các lượt đó là MT lịch sử để nhập điểm bù. Bỏ trống = em mới.',
   startWeek: 'Theo tuần chọn ở đầu panel; đổi riêng từng dòng được.',
 };
 
@@ -140,9 +144,8 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
     : !macDinh ? 'Lớp chưa có ngày khai giảng — chọn tuần bắt đầu cho cả lô.'
     : startWeek ? 'Đổi ở đây thì mọi dòng chưa sửa tay đổi theo.'
     : !cls.start_date ? 'Lớp chưa có ngày khai giảng nên mặc định tuần này. Đổi ở đây thì mọi dòng chưa sửa tay đổi theo.'
-    : macDinh !== mondayOfDate(cls.start_date)
-      ? `Lớp khai giảng ${tuanLich(cls.start_date)} — em vào muộn nên mặc định tuần này. Đổi ở đây thì mọi dòng chưa sửa tay đổi theo.`
-      : 'Lấy sẵn tuần khai giảng của lớp. Đổi ở đây thì mọi dòng chưa sửa tay đổi theo.';
+    : lopThuong ? 'Lấy sẵn tuần khai giảng của lớp. Đổi ở đây thì mọi dòng chưa sửa tay đổi theo.'
+    : 'Lấy sẵn tuần khai giảng của lớp. Em vào muộn thì đổi tuần — cột Tình trạng báo trước MT nào sẽ là MT lịch sử.';
 
   const hoSoLop = classId ? `/hoc-vien/lop/${classId}` : null;
 
@@ -210,14 +213,25 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
         </div>
 
         {ketQua && ketQua.added > 0 && (
-          <div className="flex flex-wrap items-center gap-2">
-            <Outcome tone="ok" mark="✓">Đã thêm {ketQua.added} học viên vào {cls?.code ?? 'lớp'}.</Outcome>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <Outcome tone="ok" mark="✓">
+              Đã thêm {ketQua.added} học viên vào {cls?.code ?? 'lớp'}
+              {ketQua.mt?.soEm ? ` · đã lên lịch MT cho ${ketQua.mt.soEm} em` : ''}
+            </Outcome>
+            {!!ketQua.mt?.soLuotLichSu && (
+              <span className="text-xs text-soon tabular-nums">
+                {ketQua.mt.soLuotLichSu} MT lịch sử chưa có điểm ({ketQua.mt.soEmCoLichSu} em)
+              </span>
+            )}
+            {ketQua.mt?.luotLichSuDau && (
+              <Link className="link text-xs" to={`/mock-test/${ketQua.mt.luotLichSuDau}`}>Nhập điểm MT lịch sử</Link>
+            )}
             {hoSoLop && pathname !== hoSoLop && <Link className="link text-xs" to={hoSoLop}>Mở hồ sơ lớp</Link>}
           </div>
         )}
 
         <div className="overflow-x-auto">
-          <table className="w-full table-fixed text-sm" style={{ minWidth: lopThuong ? 720 : 1180 }}>
+          <table className="w-full table-fixed text-sm" style={{ minWidth: lopThuong ? 720 : 1250 }}>
             <colgroup>
               <col style={{ width: 32 }} />
               {cols.map((c) => <col key={c.key} style={{ width: RONG[c.key] }} />)}

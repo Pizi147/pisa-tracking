@@ -2,7 +2,7 @@ import { db, tx } from '../db.ts';
 import {
   CHO_TAO_PRE_FOU, ENTRY_SKILLS, MOCK_FT_STUDY_WEEK, PERMISSIONS, PROGRAMME_TEMPLATES, chuanHoaMaLop, ghepMaLop, khoaMaLopSql, kiemSoLop,
   moRongPhanCong, programmeOf, type Route, type SlotPhanCong,
-  docEmail, docNgayNhap, nhanDangCot, tuanBatDauMacDinh, type VanDeNhap,
+  docEmail, docNgayNhap, laLichSu, lichMtMacDinh, nhanDangCot, tuanBatDauMacDinh, tuanHocCuaMt, tuanLich, type VanDeNhap,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { docSlots, ghiPhanCong, kiemTruocPhanCong } from './classes.ts';
@@ -62,6 +62,8 @@ export type IntakeRow = {
   target?: number | string | null;
   /** T9 · Thi dự kiến: `dd/mm/yyyy` (ngày) hoặc `mm/yyyy` (tháng). Xem trước trả ISO `yyyy-mm-dd` / `yyyy-mm`. */
   examDate?: string;
+  /** K2-33(1) · Đã thi tới MT (0–8, lớp FT): em cũ đã thi ngoài web tới MT mấy — web tạo sẵn các lượt đó (MT lịch sử) để nhập điểm bù. */
+  daThiToiMt?: number | string | null;
   /** Thứ Hai của TUẦN BẮT ĐẦU HỌC. Có mặc định cho cả lô, ghi đè được từng dòng. */
   startWeek?: string;
   /** K2-20: lộ trình theo LỚP — cột này trong file chỉ nhận diện để báo "bỏ qua". */
@@ -252,6 +254,14 @@ export function previewIntake(
       else examDate = t.iso ?? undefined;
     }
 
+    let daThiToiMt: number | undefined;
+    if (ratio) { if (coDuLieu(r.daThiToiMt)) luuY('daThiToiMt', 'Bỏ qua — lớp thường không có MT'); }
+    else if (coDuLieu(r.daThiToiMt)) {
+      const s = String(r.daThiToiMt).trim();
+      if (/^\d$/.test(s) && Number(s) <= 8) daThiToiMt = Number(s);
+      else loi('daThiToiMt', 'Gõ số MT đã thi, 0–8');
+    }
+
     /* TUẦN BẮT ĐẦU: ô trống thì dùng mặc định của cả lô. */
     let startWeek: string | null = defaultWeek;
     if (coDuLieu(r.startWeek)) {
@@ -260,6 +270,19 @@ export function previewIntake(
       if (w.loi) loi('startWeek', w.loi);
     }
     if (!startWeek && !rowIssues.some((x) => x.field === 'startWeek')) loi('startWeek', 'Chưa có — chọn tuần bắt đầu ở đầu panel');
+
+    /*
+     * BÁO TRƯỚC MT LỊCH SỬ (K2-19, planning chốt 29/09): cùng luật với `taoMtMacDinh` lúc ghi — MT(n) ở tuần học `tuanHocCuaMt`, là lịch
+     * sử khi Chủ nhật tuần thi đã qua. Em vào muộn mà để tuần khai giảng thì người nhập thấy ngay, trước khi lưu.
+     */
+    if (cls.is_fast_track && cls.route && startWeek) {
+      const soLuot = Math.max(lichMtMacDinh(cls.route).length, daThiToiMt ?? 0);
+      const lichSu = Array.from({ length: soLuot }, (_, k) => k + 1).filter((n) =>
+        laLichSu(addDays(startWeek!, (tuanHocCuaMt(cls.route, n) - 1) * 7 + 6), homNay));
+      if (lichSu.length) {
+        luuY('startWeek', `Học từ ${tuanLich(startWeek)} — ${lichSu.length} MT sẽ là MT lịch sử (${lichSu.map((n) => 'MT' + n).join(', ')})`);
+      }
+    }
 
     /* K2-20: lộ trình theo LỚP, không theo file. */
     if (coDuLieu(r.route) && String(r.route).trim().toUpperCase() !== String(cls.route ?? '').toUpperCase()) {
@@ -304,6 +327,7 @@ export function previewIntake(
       entrySpeaking: band.entrySpeaking,
       target,
       examDate,
+      daThiToiMt,
       startWeek: startWeek ?? undefined,
       consultant: r.consultant,
       duplicates: duplicates.map((d) => ({ id: d.id, studentCode: d.student_code, fullName: d.full_name, dob: d.dob })),
@@ -332,7 +356,14 @@ export function suggestMockWeeks(classStart: string | null, count = 3): string[]
 }
 
 /** `hangDaThem`: số dòng (theo lưới) đã thêm — panel bỏ các dòng đó, giữ dòng còn lỗi (K2-21). */
-export type IntakeResult = { added: number; skipped: number; failed: RowIssue[]; studentIds: number[]; hangDaThem: number[] };
+/**
+ * `mt` (K2-21, K2-32): lượt MT mặc định vừa tạo — số em có lịch, số lượt MT lịch sử chưa có điểm, số em có lượt lịch sử, lượt lịch sử
+ * đầu tiên (panel mở thẳng trang nhập điểm của lượt đó).
+ */
+export type IntakeResult = {
+  added: number; skipped: number; failed: RowIssue[]; studentIds: number[]; hangDaThem: number[];
+  mt: { soEm: number; soLuotLichSu: number; soEmCoLichSu: number; luotLichSuDau: number | null };
+};
 
 export function commitIntake(
   p: Principal,
@@ -355,6 +386,7 @@ export function commitIntake(
   const failed: RowIssue[] = [];
   const studentIds: number[] = [];
   const hangDaThem: number[] = [];
+  const mt: IntakeResult['mt'] = { soEm: 0, soLuotLichSu: 0, soEmCoLichSu: 0, luotLichSuDau: null };
   let skipped = 0;
 
   const result = tx(() => {
@@ -432,11 +464,16 @@ export function commitIntake(
           refTable: 'learning_cycles', refId: Number(cyc.lastInsertRowid), createdBy: p.userId });
 
         /* M1: lịch MT mặc định tạo ngay, MT đã qua là MT lịch sử (T33, T34). Tuần do hệ thống tính, không lấy từ file dán. */
-        if (cls.is_fast_track && route) taoMtMacDinh(Number(cyc.lastInsertRowid), { actorUserId: p.userId });
+        if (cls.is_fast_track && route) {
+          const luot = taoMtMacDinh(Number(cyc.lastInsertRowid), { actorUserId: p.userId, daThiToiMt: r.daThiToiMt == null ? undefined : Number(r.daThiToiMt) });
+          const lichSu = luot.filter((l) => l.lichSu);
+          if (luot.length) mt.soEm += 1;
+          if (lichSu.length) { mt.soEmCoLichSu += 1; mt.soLuotLichSu += lichSu.length; mt.luotLichSuDau ??= lichSu[0].attemptId; }
+        }
       }
     }
 
-    const out: IntakeResult = { added: studentIds.length, skipped, failed, studentIds, hangDaThem };
+    const out: IntakeResult = { added: studentIds.length, skipped, failed, studentIds, hangDaThem, mt };
     writeAudit({ actorUserId: p.userId, action: 'student.bulk_add', entityType: 'student',
       entityLabel: `${out.added} học viên`, after: { added: out.added, skipped: out.skipped } });
     if (key) {

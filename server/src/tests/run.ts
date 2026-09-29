@@ -1429,11 +1429,6 @@ check('Roster chỉ nạp khi mở lớp, và giáo viên ngoài lớp bị từ
 // ==================================================================== 12
 
 console.log('\n12. Thêm học viên hàng loạt');
-/*
- * PR-NHAP K2-19: lớp FT đã học > 2 tuần thì tuần bắt đầu mặc định là TUẦN NÀY. Các em nhập ở khối này còn được phép kiểm PR-F
- * dùng làm "em đã học từ trước 24/08" — nên lô của các em ghi rõ tuần khai giảng của lớp (như mặc định cũ).
- */
-const KG_MB_FT_101 = (conn.prepare('SELECT start_date FROM classes WHERE id = ?').get(classId('MB FT 101')) as any).start_date as string;
 check('Đọc được TSV dán từ bảng tính theo dòng tiêu đề; không có tiêu đề thì từ chối (YC-5.2, chốt 29/09)', () => {
   const withHeader = intake.parsePaste('Họ tên\tLớp\tNgày sinh\nNguyễn Văn A\tMB FT 101\t12/05/2008');
   assert(withHeader.rows.length === 1, 'Không nhận ra dòng tiêu đề');
@@ -1540,7 +1535,7 @@ check('Ghi thật: tạo học viên, enrollment và lộ trình; bỏ qua dòng
       { fullName: '' },
       { fullName: 'Học Viên Nhập Hai', email: 'hv@demo.test' },
     ],
-    defaultStartWeek: KG_MB_FT_101, idempotencyKey: 'test-intake-1',
+    idempotencyKey: 'test-intake-1',
   });
   const after = (conn.prepare('SELECT COUNT(*) n FROM students').get() as any).n;
   assert(r.added === 2 && r.skipped === 1, `Kỳ vọng thêm 2 bỏ 1, thực tế thêm ${r.added} bỏ ${r.skipped}`);
@@ -1585,7 +1580,7 @@ check('Bấm hai lần hoặc thử lại không tạo học viên trùng', () =
       { fullName: '' },
       { fullName: 'Học Viên Nhập Hai', email: 'hv@demo.test' },
     ],
-    defaultStartWeek: KG_MB_FT_101, idempotencyKey: 'test-intake-1',
+    idempotencyKey: 'test-intake-1',
   });
   const after = (conn.prepare('SELECT COUNT(*) n FROM students').get() as any).n;
   assert(after === before, `Gửi lại cùng khoá đã tạo thêm ${after - before} học viên`);
@@ -1600,7 +1595,7 @@ check('[12.1 → PR-MT M1] Nhập hàng loạt tạo lịch MT MẶC ĐỊNH do 
   const r = intake.commitIntake(P.coreTeacher, {
     classId: classId('MB FT 101'),
     rows: [{ fullName: 'Học Viên Không Quyền Tuần', target: 6, email: 'hv@demo.test' }],
-    defaultStartWeek: KG_MB_FT_101, idempotencyKey: 'test-intake-2',
+    idempotencyKey: 'test-intake-2',
   });
   assert(r.added === 1, 'GVCN phải thêm được học viên vào lớp mình phụ trách');
   const s = conn.prepare("SELECT id FROM students WHERE full_name = 'Học Viên Không Quyền Tuần'").get() as any;
@@ -1610,7 +1605,7 @@ check('[12.1 → PR-MT M1] Nhập hàng loạt tạo lịch MT MẶC ĐỊNH do 
   const r2 = intake.commitIntake(P.mbManager, {
     classId: classId('MB FT 101'),
     rows: [{ fullName: 'Học Viên Có Quyền Tuần', target: 6, email: 'hv@demo.test' }],
-    defaultStartWeek: KG_MB_FT_101, idempotencyKey: 'test-intake-3',
+    idempotencyKey: 'test-intake-3',
   });
   assert(r2.added === 1, 'Quản lý phải thêm được học viên');
   const s2 = conn.prepare("SELECT id FROM students WHERE full_name = 'Học Viên Có Quyền Tuần'").get() as any;

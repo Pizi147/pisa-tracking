@@ -599,6 +599,16 @@ bấm K1, K2, K5, K8. 3. Migrate **DB CHÍNH** (`PISA_CHO_PHEP_MIGRATE_TURSO=<t�
 - (Task 6) Ô ngày sinh là `ONgay` (gõ sai thì ô trả '' ): `luu` đọc chữ trong ô — còn chữ mà giá trị rỗng thì chặn lưu, không gửi ''
   xoá ngày sinh cũ. Tuần bắt đầu đặt trong khối "Giai đoạn đang học" (bỏ chữ "vào học/bắt đầu {tuần}" trùng với ô).
 - (Task 7) **Chờ PR-MT** — `git fetch` lúc xong Task 6 (59f1afa): chưa có commit merge PR-MT, `mtMacDinh.ts` chưa có. Dừng sau Task 8.
+- (Gộp main 4e0485a: PR-DUYET #117 + PR-MT #119) Xung đột: `shared/domain/index.ts`, `migrate.ts` (gọi đủ `migratePrDuyet`,
+  `migratePrMt`, `migratePrNhap`), `cycles.ts` (import + khối `startWeek/examDate` của NHAP đặt TRƯỚC khối quyền `cycle.edit` của
+  DUYET), `run.ts` (đăng ký DUYET, MT rồi NHAP), `sosV3Seed.ts`, `TRIEN_KHAI.md` — giữ cả hai phần. `intake.ts` tự gộp, lời gọi
+  `taoMtMacDinh` trong `commitIntake` còn nguyên. Lời gọi `commitIntake` mới của DUYET/MT (`duyetSeed`, `prMtSeed`, `keHoachTest.tests`,
+  `prMt.tests`) thêm email, bỏ `dateFormat`. Tên hàm thật khớp hợp đồng: `taoMtMacDinh`, `lichMtMacDinh`, `tuanHocCuaMt`, `laLichSu`.
+- (Task 7) **Planning chốt 29/09 (câu hỏi 1 của PR-MT) thay K2-19:** bỏ trống Tuần bắt đầu → TUẦN KHAI GIẢNG (cả lớp FT đã học lâu);
+  xem trước báo `Học từ {tuần} — n MT sẽ là MT lịch sử (MT1, …)`. `tuanBatDauMacDinh` sửa theo; bỏ phần ghi rõ tuần cho phép kiểm
+  PR-F ở khối 12 (mặc định đã về như cũ). Kết quả: `IntakeResult.mt = { soEm, soLuotLichSu, soEmCoLichSu, luotLichSuDau }` — nút
+  "Nhập điểm MT lịch sử" mở thẳng `/mock-test/{lượt lịch sử đầu}` (đường nhập điểm của lượt, tốt hơn hồ sơ HV). Câu "MT2, MT3 sẽ
+  dời sang …" đặt ở dòng phụ ngay dưới ô Tuần bắt đầu (không phải chân panel — `KhungPanel` không có khe `luat`; câu nằm cạnh ô gây ra nó).
 
 ## Chủ sản phẩm chốt 29/09
 
