@@ -349,7 +349,7 @@ function KhoiNhanXet({ cells, save }: { cells: Cell[]; save: (skill: string, pat
     return (
       <div key={c.skill} className="min-w-0">
         <div className="flex items-baseline gap-2 text-xs text-slate-400">
-          <span className="font-medium text-slate-300">{nhan}</span>{phu(c) && <span className="truncate text-slate-500">{phu(c)}</span>}
+          <span className="shrink-0 whitespace-nowrap font-medium text-slate-300">{nhan}</span>{phu(c) && <span className="truncate text-slate-500">{phu(c)}</span>}
         </div>
         <p className="m-0 mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-200">{c.nhanXet}</p>
       </div>

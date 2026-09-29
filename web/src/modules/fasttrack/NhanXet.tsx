@@ -93,7 +93,7 @@ export function ONhanXet({ nhan, phu, giaTri, onLuu }: {
   return (
     <label className="block min-w-0">
       <span className="flex items-baseline gap-2 text-xs text-slate-400">
-        <span className="font-medium text-slate-300">{nhan}</span>
+        <span className="shrink-0 whitespace-nowrap font-medium text-slate-300">{nhan}</span>
         {phu && <span className="min-w-0 truncate text-slate-500" title={phu}>{phu}</span>}
         <span className="ml-auto flex items-baseline gap-2">
           <Dem n={nhap.length} />

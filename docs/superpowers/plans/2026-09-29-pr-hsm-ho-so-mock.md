@@ -537,3 +537,10 @@ Không có câu bắt buộc — mọi điểm mở đã vào bảng Q theo khuy
   `chiViec`), `scoreEditPath` (`assigned` → nhật ký `score.edit`), `teacherAllows(ATTEMPT_VIEW)` **chỉ khi hỏi theo lớp**; Lịch Test
   thêm các lớp này vào "Tất cả". **Không** mở rộng `scopeFor(ATTEMPT_VIEW)` chung (sẽ lộ Case/tín hiệu/việc/hồ sơ HV lớp khác) và không
   đổi `mySkills`. Phép kiểm HSM (7). 1741 đạt. Người rà: xem kỹ phần quyền này.
+- **Task 10 (chủ sản phẩm cho 30/09)** — DB THỬ `pisatracking-demo-pizi147`: sao lưu 72 s (63 bảng, 3545 dòng, kiểm toàn vẹn) → migrate
+  lần 1 221 s: **đúng một dòng PR-HSM** (kèm các dòng PR-KCK, PR-SOS, Ý thức v4 của đợt 3 mà DB thử chưa nâng) → lần 2 224 s: không dòng
+  PR-HSM (ba dòng luôn-in của migrate cũ, "0 lộ trình") → `netlify deploy --build` nháp 127 s (không `--prod`). Bấm thử trên nháp (chủ sản
+  phẩm đăng nhập Netlify + tài khoản demo Phạm Thu Trang — session không gõ mật khẩu): hồ sơ Mock lượt 221 (MT1 lịch sử) → bấm ô S, nhập
+  FC 6.5 · LR 6 · GRA 6 · P 7 → band 6.5 "Đạt kỳ vọng"; GV chấm = Tôi (Phạm Thu Trang); nhận xét S; tải lại → cả ba còn. Lưu chỉ-nhận-xét
+  **1,8 s**, tải hồ sơ Mock 0,5–0,7 s (< 3 s). Nhận xét W2 không thử (Trang không dạy W2). Sửa sau thử: nhãn "Nhận xét" bị bẻ dòng ở
+  màn ~350 px → `shrink-0 whitespace-nowrap` (chưa deploy lại nháp — chỉ CSS). Không chạm DB CHÍNH.
