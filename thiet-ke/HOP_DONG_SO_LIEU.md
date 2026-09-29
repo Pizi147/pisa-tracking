@@ -184,3 +184,13 @@ Vì vậy bốn hàm này nằm ở **PR đầu tiên** của lộ trình, trư�
 Bỏ `vi-pham-khong-hieu-luc`. Thêm `phoi-hop-luot-sos` · `phoi-hop-dang-xu-ly` · `phoi-hop-hoan-thanh` ·
 `case-cho-xac-dinh-nguyen-nhan`. Định nghĩa: `SOS_VA_PHOI_HOP_V3.md` §8. Phương án điền sẵn **chưa xác nhận**
 không vào `pa-co-ket-qua`, `ty-le-co-cai-thien`, `dung-han-cap-nhat`.
+
+## PR-MT — MT lịch sử và "mới nhất" (29/09/2026)
+
+| Luật | Áp cho |
+|---|---|
+| Lượt `lich_su = 1` (MT lịch sử) **không** vào: nợ điểm (`scoreDebtCells`), quá hạn, chờ chấm, Lịch Test (dải số + Nợ), Việc nhập điểm, badge lớp, `bai-qua-han-nhap-diem`, Theo giáo viên | mọi nơi đếm nợ/hạn — một chốt `viewSkill` (`progress 'lich_su'`) + điều kiện SQL `LUOT_TINH_NO_SQL` |
+| `do-phu-danh-gia`: lượt lịch sử **chưa đủ điểm** không phải "cần được đánh giá" | độ phủ |
+| "Đợt mới nhất" = **số MT lớn nhất** của lộ trình mới nhất (không theo tuần hay ngày nhập) | `hv-sos-hien-tai`, `hv-duoi-ky-vong-mon`, `do-phu-danh-gia`, Bỏ quên |
+| Lượt lịch sử có tuần thi **ngoài 4 tuần** trước ngày tạo không làm "hiện trạng" (SOS hiện tại, Bỏ quên) và không sinh Case | M4, M-14 |
+| Kỳ vọng tính theo **lộ trình của lượt** (RF: mọi MT = target) | bảng Case, Phân tích lớp, Tổng hợp Test, SOS |

@@ -186,7 +186,17 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | Tuần kế hoạch hoàn tất của một đợt | `server/src/fasttrack/skillSchedule.ts` → `completionWeekOf` · `recomputeCompletionWeek` |
 | Ràng buộc thứ tự đợt khi đổi lịch một kỹ năng (T15: trùng tuần với đợt lân cận thì CHẶN, cách đúng một tuần thì CẢNH BÁO) | `server/src/fasttrack/skillSchedule.ts` → `checkSkillWeekMove` (một kỹ năng, đợt đã có) gọi `checkWeekVsNeighbours` (cycleId + attemptNo, kiểm được cả đợt CHƯA tạo — dùng ở `keHoach/keHoachTest.ts`) |
 | Bảng "Lịch thi theo kỹ năng" trong màn một lượt MT | `web/src/modules/fasttrack/MockDetailPage.tsx` → `SkillScheduleCard` |
-| Lịch MT tự đề xuất | `server/src/classes/schedule.ts` → `suggestedMockWeeks` |
+| Lịch MT tự đề xuất | `server/src/classes/schedule.ts` → `suggestedMockWeeks` (theo lộ trình: LT 6/12/16, RF 4/8) |
+| Luật lịch MT (PR-MT): lịch mặc định theo lộ trình, MT lịch sử, cửa sổ Case 4 tuần, đánh số liền mạch, cách huỷ lượt, hạn duyệt dời lần 2, mốc kế tiếp | `shared/domain/lichMt.ts` (`lichMtMacDinh`, `tuanHocCuaMt`, `laLichSu`, `luotSinhViec`, `soMtKeTiep`, `kiemSoMtMoi`, `cachHuyLuot`, `hanDuyetDoiLan2`, `mocKeTiep`, `coMocTiepTheo`, hằng SQL `LUOT_TINH_NO_SQL` · `CO_DIEM_SQL` · `MOC_KE_TIEP_SQL`) |
+| Tự tạo MT mặc định khi mở lộ trình FT (Thêm HV, vào lớp FT, đổi LT ↔ RF, mở lộ trình tay) | `server/src/fasttrack/mtMacDinh.ts` → `taoMtMacDinh` (giao kèo PR-NHAP) · lõi `server/src/classes/schedule.ts` → `apLichMacDinh` (tạo + dời lượt `auto` chưa điểm khi đổi tuần bắt đầu) |
+| Đánh số MT — MỘT chốt cho mọi đường tạo lượt; hồi sinh số huỷ không điểm | `server/src/fasttrack/attempts.ts` → `createAttempt` (`hoiSinhLuot`) · `server/src/fasttrack/cycles.ts` → `luotSoCuaLoTrinh`, `nextAttemptNo` |
+| Huỷ cả lượt / Huỷ phần còn lại + hệ quả nói trước | `server/src/fasttrack/attempts.ts` → `huyLuot`, `heQuaHuyLuot` (`attemptDetail.viewer.huyLuot`) · `web/src/modules/fasttrack/MockDetailPage.tsx` → `CancelDialog` |
+| MT lịch sử: không nợ / không hạn (chốt `viewSkill({ lichSu })` → `progress 'lich_su'`), GVCN/QL nhập đủ 4 kỹ năng, R11 7 ngày, cửa sổ Case | `server/src/fasttrack/skillSchedule.ts` → `viewSkill` · `server/src/permissions.ts` → `scoreEditPath`/`editableSkills` · `server/src/fasttrack/hoanTat.ts` · `server/src/cases/sos.ts` → `raiseSignalsForResult` |
+| Dòng nhắc "MT lịch sử chưa nhập" (Lịch Test + Việc cần làm) | `server/src/cham/canCham.ts` → `mtLichSuChuaNhap` |
+| Nhãn "lịch sử" | `web/src/ui/Nhan.tsx` → `ChipLichSu` |
+| Dời do vắng: máy tự dời lần 1 lúc chốt "-", đề nghị lần 2 hạn hết CN tuần gửi, tuần đích mặc định, QL đổi kết luận thì rút đề nghị | `server/src/fasttrack/absence.ts` → `xuLyVangMotKyNang`, `tuanDichMacDinh`, `moTaDoiLan2` (chữ thẻ cho PR-DUYET), `rutDeNghiDoi` · `server/src/fasttrack/skillSchedule.ts` → `setSkillWeek` (QL dời bài đang vắng = dời do vắng) |
+| Đổi LT ↔ RF: Case đi theo lộ trình mới | `server/src/cases/systemClose.ts` → `chuyenCaseSangLoTrinh` (mốc `route_changed`) |
+| Lộ trình của lượt (kỳ vọng RF = target) | `server/src/fasttrack/attempts.ts` → `routeCuaLuot` · `shared/domain/fasttrack.ts` → `expectationDelta(n, route)` · `shared/domain/sos.ts` → `academicSupportFor`, `sosCoordinationFor` |
 | Lộ trình học của một em, target, dự kiến thi | `server/src/fasttrack/cycles.ts` |
 
 ### Normal
@@ -380,6 +390,7 @@ Hướng dẫn cho chủ sản phẩm: `TRIEN_KHAI.md`. Kế hoạch: `docs/supe
 | Tab Ý thức lớp: số = dòng | `shared/domain/viPhamLop.ts` (`dongViPhamLop`) → `web/src/modules/yThuc/ClassYThucCard.tsx` |
 | Migrate PR-N1 (dời hạn CN → T2, PA quy chế chạy ngay) + chạy thử chỉ đọc | `server/src/migrate/prN1.ts` · `server/src/migrate/chayThuN1.ts` (`npm run chay-thu:n1`) · phép kiểm `server/src/tests/suaLoiNong.tests.ts` |
 | Migrate PR-LOP (cột `so_tuan`/`tuan_giua_khoa`/`tuan_cuoi_khoa`, dòng RF + Pre FOU, đổi tên lớp cũ, chỉ mục `ux_classes_ma_chuan`) + chạy thử chỉ đọc | `server/src/migrate/prLop.ts` (`migratePrLop`, `keHoachDoiTenLop`, `dienMocLop`) · `server/src/migrate/chayThuLop.ts` (`npm run chay-thu:lop`) · phép kiểm `server/src/tests/prLop.tests.ts` |
+| Migrate PR-MT (cột `assessment_attempts.lich_su`, dữ liệu cũ = lượt thường) + chạy thử chỉ đọc | `server/src/migrate/prMt.ts` (`migratePrMt`, `lotrinhNhaySo`, `luotHuyGiua`) · `server/src/migrate/chayThuMt.ts` (`npm run chay-thu:mt`) · phép kiểm `server/src/tests/prMt.tests.ts` · dữ liệu thử cho phép kiểm cũ `server/src/tests/luotThu.ts` · bộ demo `server/src/seed/prMtSeed.ts` |
 | Tên hiển thị của mọi mã máy | `web/src/lib/format.ts` |
 
 ---
