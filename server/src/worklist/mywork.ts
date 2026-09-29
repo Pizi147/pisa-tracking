@@ -9,7 +9,8 @@ import {
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays } from '../util.ts';
-import { activeAt, can, napTruocPhamVi, scopeFor, teachesClass, type Principal } from '../permissions.ts';
+import { activeAt, bangLop, can, napTruocPhamVi, scopeFor, teachesClass, type Principal } from '../permissions.ts';
+import { allProgrammes } from '../normal/regular.ts';
 import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
 import { classAlerts } from '../classes/schedule.ts';
 import { demChuaLoTrinh } from '../classes/loTrinhTiep.ts';
@@ -236,16 +237,15 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   quetYeuCau(today);   // PR-DUYET (K5-17): thẻ chết tự đóng, Báo lên tự tạo — một lần mỗi request
   const items: WorkItem[] = [];
   /*
-   * Chương trình + cách chấm của MỌI lớp — một câu, nạp lười (MH2 tên môn, MH4 khung). ponytail: đọc cả bảng lớp (vài trăm
-   * dòng); nhiều nghìn lớp thì đổi sang IN (…) theo tập classId của các dòng.
+   * Chương trình + cách chấm của MỌI lớp, nạp lười (MH2 tên môn, MH4 khung) — dùng lại bảng lớp và bảng chương trình
+   * đã nhớ trong request (`bangLop`, `allProgrammes`), không thêm câu SQL. ponytail: cả bảng lớp (vài trăm dòng).
    */
   let lopMap: Map<number, { ct: string | null; mode: string | null }> | null = null;
   const lopCua = (classId: number | null | undefined) => {
     if (!lopMap) {
       lopMap = new Map();
-      for (const r of conn.prepare('SELECT c.id, c.programme_code, pg.scoring_mode FROM classes c LEFT JOIN programmes pg ON pg.code = c.programme_code').all() as any[]) {
-        lopMap.set(r.id, { ct: r.programme_code ?? null, mode: r.scoring_mode ?? null });
-      }
+      const programmes = allProgrammes();
+      for (const [id, l] of bangLop()) lopMap.set(id, { ct: l.ct, mode: l.ct ? programmes.get(l.ct)?.scoringMode ?? null : null });
     }
     return classId ? lopMap.get(classId) ?? null : null;
   };

@@ -149,9 +149,9 @@ export function NganXepHangLoat({ loai, classId, classCode, onClose, onDone }: {
 
   const coKn = ky.some((k) => chonKn[k]);
   const loi = dsLoi([
-    { khoa: 'dot', nhan: 'Đợt', chon: true }, { khoa: 'hoc-vien', nhan: 'Học viên', chon: true }, { khoa: 'ky-nang', nhan: 'Kỹ năng', chon: true },
+    { khoa: 'dot', nhan: 'Đợt', chon: true }, { khoa: 'hoc-vien', nhan: 'Học viên', chon: true }, { khoa: 'ky-nang', nhan: loai === 'ft' ? 'Kỹ năng' : 'Môn', chon: true },
   ], { dot, 'hoc-vien': studentIds.length, 'ky-nang': coKn });
-  if (coKn && ky.some((k) => chonKn[k] && !tuan[k])) loi.push({ khoa: 'tuan', nhan: 'Tuần', lyDo: 'Kỹ năng đã chọn còn thiếu tuần' });
+  if (coKn && ky.some((k) => chonKn[k] && !tuan[k])) loi.push({ khoa: 'tuan', nhan: 'Tuần', lyDo: `${loai === 'ft' ? 'Kỹ năng' : 'Môn'} đã chọn còn thiếu tuần` });
   const thieu = loi.map((l) => l.nhan);
   const loiCua = (khoa: string) => (lf.daBam ? loi.find((l) => l.khoa === khoa)?.lyDo ?? null : null);
   const dongLoi = (khoa: string) => (loiCua(khoa) ? <span className="block text-[11px] text-late">{loiCua(khoa)}</span> : null);
@@ -243,15 +243,18 @@ export function NganXepHangLoat({ loai, classId, classCode, onClose, onDone }: {
           </Khoi>
 
           <Khoi tieuDe={loai === 'ft' ? 'Kỹ năng' : 'Môn'} luat={loai === 'ft' ? <span className="block">W = chấm cả W1 và W2 — một lịch W đặt cho cả hai.</span> : undefined}>
+            {/* Lớp một môn (Pre FOU): ô "Chọn …" trùng với ô môn bên dưới → ẩn. */}
+            {ky.length > 1 && (
             <label className="flex min-h-[44px] items-center gap-2 text-sm text-slate-200 sm:min-h-[32px]">
               <input type="checkbox" id={lf.oId('ky-nang')} className="accent-sky-400" checked={tatCaKn}
                 onChange={(e) => setChonKn((s) => ({ ...s, ...Object.fromEntries(ky.map((k) => [k, e.target.checked])) }))} />
               {chuChonCa}
             </label>
+            )}
             {dongLoi('ky-nang')}
             <div id={lf.oId('tuan')} tabIndex={-1} className="space-y-3 outline-none">
             {ky.map((k) => (
-              <DongKyNang key={k} k={k} ct={ct} laFt={loai === 'ft'} tick={chonKn[k]} onTick={(v) => setChonKn((s) => ({ ...s, [k]: v }))}
+              <DongKyNang key={k} k={k} ct={ct} oId={ky.length === 1 ? lf.oId('ky-nang') : undefined} laFt={loai === 'ft'} tick={chonKn[k]} onTick={(v) => setChonKn((s) => ({ ...s, [k]: v }))}
                 tuan={tuan[k]} goc={homNay} onTuan={(t) => setTuan((s) => ({ ...s, [k]: t }))}
                 nhanKhoa={dot?.loai === 'thuong' && tuan[k]
                   ? nhanTuanKhoa(tuan[k]!.weekStart, th.data?.khaiGiang ?? null, th.data?.tongTuan ?? null) : null} />
@@ -315,15 +318,17 @@ export function NganXepHangLoat({ loai, classId, classCode, onClose, onDone }: {
 }
 
 /** Một dòng kỹ năng: ô tích · chữ · bộ chọn tuần gọn (+ nhãn tuần trong khoá của lớp thường). */
-function DongKyNang({ k, ct, laFt, tick, onTick, tuan, goc, onTuan, nhanKhoa }: {
+function DongKyNang({ k, ct, laFt, oId, tick, onTick, tuan, goc, onTuan, nhanKhoa }: {
   /** Mã chương trình lớp — tên môn theo chương trình (FOU G+V/P, Pre FOU Tổng hợp). FT: null. */
   ct: string | null; laFt: boolean;
+  /** Lớp một môn không có ô "Chọn …" — ô môn nhận id để lỗi "chưa chọn môn" nhảy tới đúng chỗ. */
+  oId?: string;
   k: KyNangKH; tick: boolean; onTick: (v: boolean) => void; tuan: Tuan | null; goc: string | null;
   onTuan: (t: Tuan) => void; nhanKhoa: string | null;
 }) {
   return (
     <div className={`grid grid-cols-[20px_92px_minmax(0,1fr)] items-start gap-2 sm:grid-cols-[20px_108px_minmax(0,1fr)] ${tick ? '' : 'opacity-50'}`}>
-      <input type="checkbox" className="mt-3 accent-sky-400" checked={tick} onChange={(e) => onTick(e.target.checked)}
+      <input type="checkbox" id={oId} className="mt-3 accent-sky-400" checked={tick} onChange={(e) => onTick(e.target.checked)}
         aria-label={`Chọn ${tenMon(ct, k)}`} />
       <div className="mt-2 text-sm text-slate-200">
         <b title={tenMon(ct, k)}>{tenMonNgan(ct, k)}</b>

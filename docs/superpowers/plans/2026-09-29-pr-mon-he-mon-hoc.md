@@ -708,6 +708,19 @@ K5-45 T4 (+LOP) · K5-46 T2 · K5-47 T1/T5 · K5-48 T2 · K5-57 T5 · K5-67 T2.
 - Thẻ Lịch thi trong hộp Chờ duyệt (của DUYET): tên môn qua `tenMonNgan` theo chương trình lớp.
 - Gộp xong `npm run check` một lần, push, báo planning.
 
+**Đã gộp 29/09** (main có DUYET #117 + MT #119 + NHAP #120; 23 file xung đột):
+- `migrate.ts`: DUYET → MT → NHAP → MON cuối. `standing.ts` giữ `boMonCua` + bộ lọc M-14. `regularSkillViews` ở main KHÔNG có cờ
+  `lichSu` (MT đặt cờ ở chỗ khác) → giữ vòng `skills` của MON là đủ.
+- `mywork.ts`: DUYET đã bỏ khối "Duyệt dời"/"Duyệt kế hoạch" (chuyển sang hộp Chờ duyệt) → sửa tên môn ở thẻ Lịch thi
+  (`duyet/loaiYeuCau.ts` + `chuTheDoiLan2`): `tenMonNgan` theo chương trình lớp.
+- `keHoachTest.ts luuDot`: câu chặn nêu môn theo chương trình lớp (trước là `CHU_KY_NANG`).
+- NHAP: cột L/R/W/S ở panel Thêm HV là điểm đầu vào IELTS, không phải môn chương trình → giữ nguyên.
+- Tốc độ: `QL /my-work?nguoi=7` sau gộp 70 câu > trần 69 (câu đọc lớp riêng của MON). Sửa: `lopMap` dùng lại `bangLop()`
+  (permissions.ts, thêm cột `programme_code`) + `allProgrammes()` đã nhớ trong request → 69 câu, không nâng trần.
+- Rà lần 2: xếp hàng loạt lớp một môn (Pre FOU) ẩn ô "Chọn …" (ô môn nhận id lỗi); nút "Luật xếp lịch Test" khung Lớp thường nói
+  theo môn chương trình (FOU L, R, G+V, P · Pre FOU Tổng hợp), không W1/W2. Ảnh `sau-gop-*.png` (1440 + 375).
+- `npm run check`: 1575 kiểm tra + tốc độ 20/20 (lần đầu đỏ vì trần tốc độ, chạy lại sau khi sửa).
+
 ## Chủ sản phẩm chốt 29/09
 
 - Tên đầy đủ môn FOU: **G+V = Grammar + Vocabulary**, **P = Pronunciation**.
