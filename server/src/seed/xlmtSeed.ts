@@ -14,7 +14,7 @@ import { DEMO_DATE } from './journeys.ts';
  * BỘ DEMO PR-XLMT (planning đặt X1–X4, Q14) — đi qua CHÍNH các hàm nghiệp vụ như `prMtSeed.ts`, dựng sau ngày demo.
  *
  *   X1  MB FT 101 · ngăn Xếp lịch MT chọn MT3: Tạ Minh Quân (MT3 đủ 4 điểm → "Tạo MT4") · Lương Bảo Anh (MT3 có L R, còn W S →
- *       "Xếp nốt W S") · Hà Gia Bình (MT3 tuần sau, chưa thi → "Dời")
+ *       "Xếp nốt W S") · Hà Gia Bình (MT3 hai tuần nữa, chưa thi → "Dời")
  *  X2  MB FT 102 · Kiều Thu Trang (S vắng, máy tự dời lần 1, vắng lần 2 → chip "chờ duyệt") · Mạc Đức Long (MT1 "Huỷ phần còn lại" W S
  *       → chip "đã huỷ" + đếm "Cần xếp lại")
  *   X3  MB FT 101 · Đoàn Khánh Chi — thêm hôm nay, MT1–MT3 là MT lịch sử (đã nhập bù); MT4 thi thật 3 tuần trước chưa có lượt → Quản lý xếp MT4
@@ -58,7 +58,7 @@ export function buildXlmtDemo(ctx: BuildCtx): { students: number } {
   const baoAnh = them(ft101, 'Lương Bảo Anh', tuan(-16));
   luotThuong(baoAnh.cycleId);
   nhap(luot(baoAnh.cycleId, 3), ['l', 'r']);
-  const binh = them(ft101, 'Hà Gia Bình', tuan(-14));                   // MT3 (tuần học 16) = tuần sau
+  const binh = them(ft101, 'Hà Gia Bình', tuan(-13));                   // MT3 (tuần học 16) = 2 tuần nữa → ngăn gợi ý dời về tuần tới
   luotThuong(binh.cycleId);
 
   // ---------------------------------------------------------------- X2 · MB FT 102

@@ -139,17 +139,16 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
   const thieuLyDo = canLyDo && lyDo.trim().length < LY_DO_TOI_THIEU;
   /* Menu ⋯ từng dòng theo `thaoTacKyNang` (T38). Dòng đã có ô tuần và ô tích nên bỏ "Dời lịch thi" / "Bỏ kỹ năng khỏi đợt" /
    * "Đưa lại vào đợt" khỏi ⋯; dòng đã huỷ phần thi có "Khôi phục và đặt tuần". Kế hoạch Test là màn của Quản lý. */
-  const menuTick = (k: KyNangKH): boolean => {
+  const tatCua = (k: KyNangKH) => {
     const o = kn[k];
-    if (moi || !o || !ngayNghiepVu) return false;
+    if (moi || !o || !ngayNghiepVu) return null;
     const tt = trangThaiTT({ batBuoc: o.batBuoc, tuanBatDau: o.tuan, coDiem: o.khoa === 'đã có điểm', sit: o.sit, choDuyet: o.choDuyet, lichSu, homNay: ngayNghiepVu });
-    return thaoTacKyNang(tt, { nhapDiem: true, quanLy: true, gvcn: false, laFt: loai === 'ft', dotHoanTat: false }).menu.includes('bo-ky-nang');
+    return thaoTacKyNang(tt, { nhapDiem: true, quanLy: true, gvcn: false, laFt: loai === 'ft', dotHoanTat: false });
   };
+  const menuTick = (k: KyNangKH) => !!tatCua(k)?.menu.includes('bo-ky-nang');
   const menuCua = (k: KyNangKH): ThaoTac[] => {
-    const o = kn[k];
-    if (moi || !o || !ngayNghiepVu) return [];
-    const tt = trangThaiTT({ batBuoc: o.batBuoc, tuanBatDau: o.tuan, coDiem: o.khoa === 'đã có điểm', sit: o.sit, choDuyet: o.choDuyet, lichSu, homNay: ngayNghiepVu });
-    const tat = thaoTacKyNang(tt, { nhapDiem: true, quanLy: true, gvcn: false, laFt: loai === 'ft', dotHoanTat: false });
+    const tat = tatCua(k);
+    if (!tat) return [];
     return [...(tat.chinh === 'khoi-phuc' ? ['khoi-phuc' as ThaoTac] : []),
       ...tat.menu.filter((x) => x !== 'doi-lich' && x !== 'bo-ky-nang' && x !== 'dua-lai')];
   };

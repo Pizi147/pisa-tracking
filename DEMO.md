@@ -412,7 +412,7 @@ Dựng bằng hàm nghiệp vụ (`server/src/seed/xlmtSeed.ts`), sau ngày demo
 |---|---|---|
 | X1 · Tạo MT4 | **Tạ Minh Quân** (MB FT 101) | Kế hoạch Test › **Xếp lịch MT…** › đợt MT3: cột Sẽ xếp `Tạo MT4 · W4 SEP` (MT3 đủ 4 điểm) |
 | X1 · Xếp nốt | **Lương Bảo Anh** (MB FT 101) | MT3 có L R, chưa W S → `Xếp nốt W S · MT3`; dời bài tuần đã bắt đầu → hiện ô Lý do |
-| X1 · Dời | **Hà Gia Bình** (MB FT 101) | MT3 tuần sau chưa thi → `Dời MT3 · … → …` |
+| X1 · Dời | **Hà Gia Bình** (MB FT 101) | MT3 hai tuần nữa, chưa thi → `Dời MT3 · … → …` |
 | X2 · chờ duyệt | **Kiều Thu Trang** (MB FT 102) | S vắng, máy tự dời lần 1, vắng lần 2 → chip tím `S · chờ duyệt`; hồ sơ Mock › Trả lời đề nghị dời = thẻ Lịch thi |
 | X2 · huỷ phần còn lại | **Mạc Đức Long** (MB FT 102) | MT1 W S đã huỷ → chip gạch ngang `· đã huỷ`; chip **Cần xếp lại (n)** đếm em này |
 | X3 · MT lịch sử tuần đã qua | **Đoàn Khánh Chi** (MB FT 101) | MT1–MT3 `lịch sử` (đã nhập bù); chọn MT4 tuần 3 tuần trước cho cả 4 kỹ năng → `Tạo MT4 · … · MT lịch sử`; chỉ L tuần đã qua → chặn |

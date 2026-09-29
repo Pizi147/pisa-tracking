@@ -653,6 +653,17 @@ if (chuaQua.length) luuY('daThiToiMt', `Đã thi tới MT${daThiToiMt} nhưng ${
   lại) (MB FT 102) · X3 Đoàn Khánh Chi (MT1–MT3 lịch sử **đã nhập bù** — em chỉ có MT lịch sử chưa điểm làm lệch phép kiểm độ phủ
   PR-N, và kịch bản "đã thi ngoài web" vốn có điểm) · X4 Âu Nhật Nam (MB FOU 12, L tuần trước dời sang tuần này — để ô ở tuần tương
   lai thì phép kiểm khác nhập điểm đè đúng dòng đó thành "điểm ở tương lai"). Đã kiểm dữ liệu sau `npm run seed`.
+- **Task 11 — rebase:** PR-TOC #121 đã merge; xung đột duy nhất ở dòng import `intake.ts` (giữ import TOC + `mtDaThiChuaQua`). PR-SOS /
+  PR-YT4 chưa merge. Sau rebase **1611** phép kiểm (+22 tốc độ). Hà Gia Bình (X1) dời MT3 sang 2 tuần nữa để ngăn ra đúng "Dời".
+- **Task 11 — bấm thử (Playwright kênh Chrome, API 4177 · Vite 5377):** K1 ✓ (Tạo MT4 / Xếp nốt W S / Dời MT3 / chặn T15 đúng câu) ·
+  K3 ✓ hộp thi lại · K6 ✓ chip Cần xếp lại (3), chờ duyệt / đã huỷ / trễ · K7 ✓ menu từng trạng thái ≤ 3 mục, không "Lịch sử" · K8 ✓
+  GVCN Báo vắng: lỗi độ dài → "Đã tự dời Writing sang W3 SEP (vắng lần 1)", dòng thời gian có Báo vắng · K9 ✓ thẻ Lịch thi trong hộp ·
+  K11 ✓ ⋯ ô L [Báo vắng · Lịch sử] + ngăn Lịch sử một bài · K12 ✓ khung Lớp thường · K13: GVBM Trang không sửa được S của Tạ Minh
+  Quân vì đợt đó **đã hoàn tất** (R11 — đúng luật) · K14 ✓ không cuộn ngang cả trang; sửa dòng xem trước dính bị cột tên đè (z-index).
+  Ảnh "sau" ở `thiet-ke/anh/pr-xlmt/`; **không** chụp ảnh "trước" (chạy song song bản main cần DB/cổng thứ hai — bỏ qua).
+- **Task 11 — audit/polish/ponytail-review:** detector impeccable sạch trên mọi file giao diện; thêm vùng bấm cho chip MT 20 px ở điện
+  thoại. `/ponytail-review`: gộp `menuTick`/`menuCua` (HopKyNang) về một `tatCua`. Chú thích `ponytail:` — PR **không thêm** cái nào;
+  **bỏ** một cái của PR-MT ở `luoiFT` (đã làm lưới theo lộ trình, Q12).
 
 ## Chủ sản phẩm chốt 29/09 (thay các chỗ lệch trong kế hoạch)
 

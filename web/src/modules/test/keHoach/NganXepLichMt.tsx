@@ -329,7 +329,7 @@ export function NganXepLichMt({ lopDs, lopMoSan, coThuong, onDoiKhung, onClose, 
         </label>
       )}
       {/* Điện thoại: dòng xem trước dính ngay trên nút (chân ngăn hẹp không đủ chỗ cho cả hai). */}
-      <div className="sticky bottom-0 -mx-4 mt-3 border-t px-4 py-2 text-[11px] tabular-nums text-slate-300 sm:hidden"
+      <div className="sticky bottom-0 z-20 -mx-4 mt-3 border-t px-4 py-2 text-[11px] tabular-nums text-slate-300 sm:hidden"
         style={{ background: 'var(--surface)', borderColor: 'var(--line)' }}>{dangXem ? 'Đang tính…' : chuXemTruoc}</div>
     </KhungPanel>
   );
@@ -371,7 +371,7 @@ function HangEm({ h, cot, dot, d, chon, rieng, thiLai, onTick, onDot, onThiLai, 
               const mauChip = dac ? 'bg-doing text-ink-950 border-doing' : choDuyet ? 'text-wait border-wait-line' : 'text-slate-300 border-muted-line';
               return (
                 <button key={n} type="button" onClick={() => onDot(n)}
-                  className={`inline-flex h-5 w-9 items-center justify-center gap-0.5 rounded border text-[10px] tabular-nums ${mauChip} ${o?.huyPhan ? 'line-through' : ''} ${rieng === n ? 'ring-1 ring-doing' : ''}`}
+                  className={`relative inline-flex h-5 w-9 items-center justify-center gap-0.5 rounded border text-[10px] tabular-nums after:absolute after:-inset-1.5 after:content-[""] sm:after:hidden ${mauChip} ${o?.huyPhan ? 'line-through' : ''} ${rieng === n ? 'ring-1 ring-doing' : ''}`}
                   title={`MT${n}${o?.lichSu ? ' · lịch sử' : ''}${g?.xong ? ' · xong' : o?.do ? ' · dở' : ''}${choDuyet ? ' · chờ Quản lý duyệt' : ''} — bấm để xếp đợt này cho riêng em`}>
                   {kieu && <DauMt kieu={kieu} />}{n}
                 </button>
