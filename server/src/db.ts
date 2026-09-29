@@ -294,6 +294,30 @@ export function tx<T>(fn: () => T): T {
 }
 
 /**
+ * PR-TOC: GHI/ĐỌC THEO LÔ. Trên Turso mỗi câu là một lượt mạng (20–50 ms), nên đường ghi nhiều em không được lặp câu theo từng
+ * em. Trần 900 tham số một câu (SQLite cũ 999) — cùng cỡ lô với `loadBundle`. Chỉ tham số theo VỊ TRÍ (`?`), xem chỗ vá ở trên.
+ */
+export const THAM_SO_TOI_DA = 900;
+
+/** Chia `ds` thành lô ≤ `co` phần tử, gọi `fn(lo, '?,?,…')` — chuỗi `?` đúng số phần tử của lô, để đặt vào `IN (…)`. */
+export function theoLo<T>(ds: readonly T[], fn: (lo: T[], ph: string) => void, co = THAM_SO_TOI_DA): void {
+  for (let i = 0; i < ds.length; i += co) {
+    const lo = ds.slice(i, i + co);
+    fn(lo, lo.map(() => '?').join(','));
+  }
+}
+
+/** `INSERT INTO t (a, b, …)` + `VALUES (?,?,…),(…)` + `duoi` nhiều dòng một câu, chia lô theo trần tham số. Mọi dòng cùng số cột. */
+export function chenNhieuDong(dau: string, dong: readonly unknown[][], duoi = ''): void {
+  if (!dong.length) return;
+  const cot = dong[0].length;
+  const mot = `(${Array(cot).fill('?').join(',')})`;
+  theoLo(dong, (lo) => {
+    db().prepare(`${dau} VALUES ${lo.map(() => mot).join(',')}${duoi}`).run(...lo.flat());
+  }, Math.max(1, Math.floor(THAM_SO_TOI_DA / cot)));
+}
+
+/**
  * AN-5: đầu mỗi lời gọi API, nếu kết nối còn một giao dịch bỏ dở (lần gọi trước trên cùng bản hàm bị cắt) thì cuộn lại. Không mở
  * kết nối mới nếu chưa có (`instance` rỗng → không có gì để dọn, không tốn lượt mạng). Trả true khi đã dọn.
  */

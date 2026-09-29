@@ -1,4 +1,4 @@
-import { db, tx } from '../db.ts';
+import { THAM_SO_TOI_DA, db, theoLo, tx } from '../db.ts';
 import {
   PERMISSIONS, luatDoiLop, type LoaiLop, type LuatDoiLop, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
@@ -6,7 +6,7 @@ import { badRequest, notFound, nowIso } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { chuyenCaseSangLoTrinh, closeCasesOnProgrammeSwitch } from '../cases/systemClose.ts';
-import { taoMtMacDinh } from '../fasttrack/mtMacDinh.ts';
+import { taoMtMacDinh, taoMtMacDinhLo } from '../fasttrack/mtMacDinh.ts';
 import { classProgressMany } from './schedule.ts';
 import { programmeByCode } from '../normal/regular.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
@@ -445,19 +445,30 @@ export function apDungCaLop(p: Principal, o: {
          VALUES ${rows}`,
       )
       .run(...params);
-    /* M1: em sang FT có lịch MT mặc định. INSERT nhiều dòng không trả id → đọc lại MỘT câu; tạo lượt thì theo từng lộ trình. */
+    /* M1: em sang FT có lịch MT mặc định. INSERT nhiều dòng không trả id → đọc lại MỘT câu; tạo lượt theo lô (PR-TOC). */
     const ftSids = o.dongs.filter((d) => d.toClass.ft).map((d) => d.sid);
     if (ftSids.length) {
       const ftCycles = conn.prepare(
         `SELECT id FROM learning_cycles WHERE student_id IN (${ftSids.map(() => '?').join(',')}) AND status = 'active' AND route IS NOT NULL`,
       ).all(...ftSids) as any[];
-      for (const c of ftCycles) taoMtMacDinh(c.id, { actorUserId: p.userId });
+      taoMtMacDinhLo(ftCycles.map((c) => ({ cycleId: c.id })), { actorUserId: p.userId });
     }
   }
 
   // 6) Case: chỉ em sang FT đóng Case lớp thường — ngoại lệ per-em DUY NHẤT được phép (S17).
-  for (const d of o.dongs) {
-    if (d.huong === 'fast_track') closeCasesOnProgrammeSwitch(p.userId, d.sid, 'ft', o.ngay);
+  /* PR-TOC: lọc trước MỘT câu — chỉ em còn Case mở / tín hiệu chờ mới đi từng em (em không có gì thì hàm đóng vốn không làm gì). */
+  const sangFt = o.dongs.filter((d) => d.huong === 'fast_track').map((d) => d.sid);
+  const coViecMo = new Set<number>();
+  theoLo(sangFt, (lo, ph) => {
+    for (const r of conn.prepare(
+      `SELECT COALESCE(sc.student_id, a.student_id) AS sid FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+        WHERE sc.status != 'done' AND COALESCE(sc.student_id, a.student_id) IN (${ph})
+       UNION SELECT student_id FROM case_signals WHERE status = 'pending' AND student_id IN (${ph})`).all(...lo, ...lo) as any[]) {
+      coViecMo.add(r.sid);
+    }
+  }, THAM_SO_TOI_DA / 2);
+  for (const sid of sangFt) {
+    if (coViecMo.has(sid)) closeCasesOnProgrammeSwitch(p.userId, sid, 'ft', o.ngay);
   }
 
   // 7) Hành trình — MỘT INSERT nhiều dòng.
