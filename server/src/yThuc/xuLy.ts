@@ -431,7 +431,7 @@ export function guiDeXuat(p: Principal, measureId: number) {
     taoYeuCau(db(), {
       loai: 'y_thuc', doiTuongLoai: 'discipline_measure', doiTuongId: measureId, hocVienId: m.student_id, lopId: em.lopId,
       nguoiXin: p.userId, lyDo: m.note, bangChung: tep,
-      duLieu: { kind: m.kind, customName: m.custom_name ?? null, bacKe: ngoaiThang && em.keTiep ? MEASURE_KIND_LABEL[em.keTiep.kind] : null, soViPham: vIds.length },
+      duLieu: { kind: m.kind, customName: m.custom_name ?? null, bacKe: ngoaiThang && em.keTiep ? MEASURE_KIND_LABEL[em.keTiep.kind] : null, soViPham: vIds.length, soTep: tep.length },
     });
     writeAudit({ actorUserId: p.userId, action: 'discipline.propose', entityType: 'discipline_measure', entityId: measureId,
       entityLabel: `${hv.student_code} · gửi QL ${nhanLoaiXuLy(m.kind, m.custom_name)}`, after: { bangChung: tep } });

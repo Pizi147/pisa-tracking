@@ -313,7 +313,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     /* Không `nap`: loại, tên, số vi phạm, bậc kế lưu ở `du_lieu` lúc gửi (guiDeXuat) — thẻ nói đúng điều QL được xin duyệt. */
     moTa: (yc, ngu) => {
       const d = (() => { try { return JSON.parse(yc.du_lieu ?? '{}'); } catch { return {}; } })() as
-        { kind?: string; customName?: string | null; bacKe?: string | null; soViPham?: number };
+        { kind?: string; customName?: string | null; bacKe?: string | null; soViPham?: number; soTep?: number };
       const nhan = nhanLoaiXuLy(d.kind ?? '', d.customName ?? null);
       return {
         tieuDe: `Đề xuất ${nhan}`,
@@ -321,6 +321,8 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         dong: [
           `${nguoiXin(yc, ngu)} đề xuất ${ngay(yc.tao_luc, ngu)}: “${yc.ly_do ?? ''}”`,
           ...(d.bacKe ? [`Bậc thang kế tiếp đang là ${d.bacKe} — duyệt đề xuất này không đổi bậc`] : []),
+          /* Bằng chứng bắt buộc khi gửi (V4-10): đếm lúc gửi, xem ở tab Ý thức của em (nút Mở) — không thêm câu SQL mỗi thẻ. */
+          ...(d.soTep ? [`Kèm ${d.soTep} bằng chứng (tệp / liên kết) — bấm Mở để xem`] : []),
         ],
         neuDuyet: 'GVCN ghi "Đã thực hiện" trong 5 ngày.',
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, { tab: 'y-thuc' }) : undefined,

@@ -130,13 +130,13 @@ export function StudentYThucSection({ studentId, onGoAcademic }: {
           {d.canSuaKhai && d.khai && (
             <p className="m-0 text-[11px] text-slate-500">
               Đã khai {d.khai.bac > 0 ? `bậc ${d.khai.bac}` : ''} ngày {ngay(d.khai.luc, homNay)}.{' '}
-              <button type="button" className="link appearance-none border-0 bg-transparent p-0" onClick={() => mo({ loai: 'khai', studentId, sua: true })}>Sửa bậc đã khai</button>
+              <button type="button" className="link inline-flex items-center appearance-none border-0 bg-transparent p-0 min-h-[44px] sm:min-h-0" onClick={() => mo({ loai: 'khai', studentId, sua: true })}>Sửa bậc đã khai</button>
             </p>
           )}
 
           <div className="flex flex-wrap items-center gap-2">
             <BoLocDoan ariaLabel="Lọc dòng thời gian" value={loc} onChange={setLoc}
-              muc={[{ key: 'tat-ca', nhan: 'Tất cả' }, { key: 'can', nhan: `Cần xử lý${soCan ? ` ${soCan}` : ''}` }, { key: 'cho', nhan: 'Chờ duyệt' }, { key: 'xong', nhan: 'Đã xử lý' }]} />
+              muc={[{ key: 'tat-ca', nhan: 'Tất cả' }, { key: 'can', nhan: 'Cần xử lý', so: soCan || null }, { key: 'cho', nhan: 'Chờ duyệt' }, { key: 'xong', nhan: 'Đã xử lý' }]} />
             <select className="field ml-auto w-auto py-1 text-xs" aria-label="Nhóm vi phạm" value={nhomVp} onChange={(e) => setNhomVp(e.target.value)}>
               <option value="">Mọi nhóm</option>
               {VIOLATION_CATEGORIES.map((c) => <option key={c} value={c}>{VIOLATION_CATEGORY_LABEL[c as ViolationCategory]}</option>)}
@@ -151,7 +151,7 @@ export function StudentYThucSection({ studentId, onGoAcademic }: {
               {phamVi === 'chuoi' ? (d.chuoi.nhan === 'lớp thường' ? 'Các khoá lớp thường này' : `Lộ trình ${d.chuoi.nhan}`) : 'Cả lịch sử'}:
               {' '}{d.demCuoi.tong} vi phạm{d.demCuoi.theoNhom.length ? ` · ${d.demCuoi.theoNhom.map((x) => `${x.so} ${x.nhom}`).join(' · ')}` : ''}
             </span>
-            <button type="button" className="link appearance-none border-0 bg-transparent p-0" onClick={() => setPhamVi((v) => (v === 'chuoi' ? 'tat-ca' : 'chuoi'))}>
+            <button type="button" className="link inline-flex items-center appearance-none border-0 bg-transparent p-0 min-h-[44px] sm:min-h-0" onClick={() => setPhamVi((v) => (v === 'chuoi' ? 'tat-ca' : 'chuoi'))}>
               {phamVi === 'chuoi' ? 'Xem cả lịch sử' : 'Chỉ chuỗi hiện tại'}
             </button>
           </p>
@@ -201,7 +201,7 @@ function ThanhViec({ d, homNay, onXuLy, onDaThucHien, onGhiNhan }: {
   if (!cau) return null;
   return (
     <div className={`flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2 ${tone}`} role="status">
-      <p className="m-0 min-w-0 flex-1 text-sm font-semibold">{cau}</p>
+      <p className="m-0 min-w-0 flex-1 basis-full text-sm font-semibold sm:basis-0">{cau}</p>
       {hanh}
     </div>
   );

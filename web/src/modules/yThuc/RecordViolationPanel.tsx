@@ -260,7 +260,7 @@ export function RecordViolationPanel({
         {cauTrung && (
           <div className="text-xs text-soon">
             <span>{cauTrung}</span>{' · '}
-            <button type="button" className="link appearance-none border-0 bg-transparent p-0" aria-expanded={xemTrung} onClick={() => setXemTrung((v) => !v)}>Xem</button>
+            <button type="button" className="link inline-flex items-center appearance-none border-0 bg-transparent p-0 min-h-[44px] sm:min-h-0" aria-expanded={xemTrung} onClick={() => setXemTrung((v) => !v)}>Xem</button>
             {xemTrung && (
               <ul className="m-0 mt-1 list-none space-y-0.5 p-0 text-[11px] text-slate-400">
                 {trungRows.map((r) => <li key={r.id}>{r.description} · {r.reportedByName ?? 'một giáo viên'} · {r.nhanTrangThai}</li>)}

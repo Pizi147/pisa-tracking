@@ -169,15 +169,18 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', onClose,
   const bacKe = d.keTiep;
   const loaiDuoc = LOAI_DE_XUAT.filter((k) => k !== 'wl_3' || bacKe?.kind === 'wl_3');
   const dongVp = (v: ViPhamV4) => (
-    <li key={v.id} className="flex items-start gap-2 py-1">
-      <input type="checkbox" className="mt-1" checked={chon.has(v.id)} onChange={() => doi(v.id)}
-        aria-label={`${ngay(v.occurredOn, homNay)} ${v.categoryLabel}: ${v.description}`} />
-      <span className="w-11 shrink-0 pt-0.5 text-[11px] tabular-nums text-slate-500">{ngay(v.occurredOn, homNay)}</span>
-      <span className="min-w-0 flex-1 text-sm text-slate-200">
-        {v.description}
-        <span className="block text-[11px] text-slate-500">{v.categoryLabel}{v.reportedByName ? ` · ${v.reportedByName} ghi` : ''}</span>
-      </span>
-      <NhanViPham t={v.trangThai} nhan={v.nhanTrangThai} />
+    <li key={v.id}>
+      {/* Cả dòng là nhãn của ô tick — bấm vào chữ cũng chọn (vùng chạm ≥ 44px trên điện thoại). */}
+      <label className="flex min-h-[44px] cursor-pointer items-start gap-2 py-1 sm:min-h-0">
+        <input type="checkbox" className="mt-1" checked={chon.has(v.id)} onChange={() => doi(v.id)}
+          aria-label={`${ngay(v.occurredOn, homNay)} ${v.categoryLabel}: ${v.description}`} />
+        <span className="w-11 shrink-0 pt-0.5 text-[11px] tabular-nums text-slate-500">{ngay(v.occurredOn, homNay)}</span>
+        <span className="min-w-0 flex-1 text-sm text-slate-200">
+          {v.description}
+          <span className="block text-[11px] text-slate-500">{v.categoryLabel}{v.reportedByName ? ` · ${v.reportedByName} ghi` : ''}</span>
+        </span>
+        <NhanViPham t={v.trangThai} nhan={v.nhanTrangThai} />
+      </label>
     </li>
   );
 
@@ -199,7 +202,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', onClose,
           {d.chuoi.soXuLy === 0 && !d.khai && d.coTheKhai && onKhai && (
             <p className="m-0 text-[11.5px] text-slate-400">
               Em đã bị xử lý trước khi dùng web?{' '}
-              <button type="button" className="link appearance-none border-0 bg-transparent p-0" onClick={() => onKhai(d.studentId)}>Khai bậc trước</button>
+              <button type="button" className="link inline-flex items-center appearance-none border-0 bg-transparent p-0 min-h-[44px] sm:min-h-0" onClick={() => onKhai(d.studentId)}>Khai bậc trước</button>
             </p>
           )}
         </Khoi>
@@ -219,7 +222,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', onClose,
             <p className="m-0 text-[11px] text-slate-500">Duyệt đề xuất ngoài thang không đổi bậc — bậc kế vẫn là {bacKe.nhan}.</p>
           )}
           {!chiDeXuat && (
-            <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-left text-xs" onClick={() => { setCheDo('xu-ly'); lf.datLai(); }}>
+            <button type="button" className="link appearance-none border-0 bg-transparent p-0 min-h-[44px] sm:min-h-0 text-left text-xs" onClick={() => { setCheDo('xu-ly'); lf.datLai(); }}>
               ← Quay lại Xác nhận xử lý{bacKe ? ` · ${bacKe.nhan}` : ''}
             </button>
           )}
@@ -234,7 +237,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', onClose,
             <ul className="m-0 list-none divide-y p-0" style={{ borderColor: 'var(--line)' }}>{tick.map(dongVp)}</ul>
             {cuHon.length > 0 && (
               <>
-                <button type="button" className="mt-1 inline-flex items-center gap-1 appearance-none border-0 bg-transparent p-0 text-xs text-slate-400 hover:text-slate-200"
+                <button type="button" className="mt-1 inline-flex items-center gap-1 appearance-none border-0 bg-transparent p-0 min-h-[44px] sm:min-h-0 text-xs text-slate-400 hover:text-slate-200"
                   aria-expanded={moCu} onClick={() => setMoCu((x) => !x)}>
                   Cũ hơn · Đã ghi nhận ({cuHon.length}) <MuiTenGap mo={moCu} />
                 </button>
@@ -259,7 +262,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', onClose,
         )}
         <Truong nhan="Mô tả" batBuoc loi={lf.loiCua(loi, 'mo-ta')} dem={{ co: moTa.trim().length, can: MO_TA_MIN }}>
           <textarea className="field w-full" {...lf.o(loi, 'mo-ta')} rows={3} value={moTa} onChange={(e) => setMoTa(e.target.value)}
-            placeholder={cheDo === 'xu-ly' ? 'Ví dụ: Đã gửi Report 2 cho PH qua Zalo'
+            placeholder={cheDo === 'xu-ly' ? 'Ví dụ: Đã gửi Report cho PH qua Zalo'
               : 'Ví dụ: Vi phạm lần 4 sau WL 2, đã báo PH'} />
         </Truong>
         {cheDo === 'xu-ly' && <p className="m-0 text-[11px] text-slate-500">Tệp hoặc liên kết (không bắt buộc) đính kèm sau khi lưu.</p>}
@@ -268,7 +271,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', onClose,
       {cheDo === 'xu-ly' && d.canManage && (
         <p className="mt-3 mb-0 text-xs text-slate-400">
           Cần xử lý nặng hơn (Meeting CX/GĐCN, WL 3, Đình chỉ…)?{' '}
-          <button type="button" className="link appearance-none border-0 bg-transparent p-0" onClick={() => { setCheDo('de-xuat'); lf.datLai(); }}>Đề xuất QL duyệt</button>
+          <button type="button" className="link inline-flex items-center appearance-none border-0 bg-transparent p-0 min-h-[44px] sm:min-h-0" onClick={() => { setCheDo('de-xuat'); lf.datLai(); }}>Đề xuất QL duyệt</button>
         </p>
       )}
     </KhungPanel>

@@ -25,7 +25,7 @@ export function ThangYThuc({ d, homNay, onKhai, onDeXuat }: {
       {d.coTheKhai && onKhai && (
         <p className="m-0 text-[11.5px] text-slate-400">
           Đã xử lý trước khi dùng web?{' '}
-          <button type="button" className="link appearance-none border-0 bg-transparent p-0" onClick={onKhai}>Khai bậc</button>
+          <button type="button" className="link inline-flex items-center appearance-none border-0 bg-transparent p-0 min-h-[44px] sm:min-h-0" onClick={onKhai}>Khai bậc</button>
         </p>
       )}
       <div className="flex min-w-0 items-center gap-2">
@@ -40,7 +40,7 @@ export function ThangYThuc({ d, homNay, onKhai, onDeXuat }: {
           ))}
         </ol>
         {onDeXuat && d.canManage && (
-          <button type="button" className="link shrink-0 appearance-none border-0 bg-transparent p-0 text-[11.5px]" onClick={onDeXuat}>
+          <button type="button" className="link inline-flex items-center shrink-0 appearance-none border-0 bg-transparent p-0 min-h-[44px] sm:min-h-0 text-[11.5px]" onClick={onDeXuat}>
             Đề xuất QL duyệt…
           </button>
         )}

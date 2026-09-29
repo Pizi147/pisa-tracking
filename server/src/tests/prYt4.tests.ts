@@ -576,6 +576,11 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(the.trang_thai === 'cho' && the.han_duyet === addDays(TODAY, 4) && JSON.parse(the.bang_chung).join() === tep.join() && the.nguoi_xin === gvcn.userId, JSON.stringify(the));
     assert(ids.every((x) => em(sid).viPham.get(x).nhan === 'Chờ QL duyệt') && em(sid).nhom === 'cho_duyet', 'nhãn + nhóm');
   });
+  check('YT4 (5) · (bấm thử) thẻ Ý thức nói có bao nhiêu bằng chứng — QL biết mà bấm Mở xem trước khi duyệt (V4-10)', () => {
+    const sid = hv(); deXuatGui(gvcn, sid, 'suspension', [ghiVp(gvbm, sid)]);
+    const the = yc.hopChoDuyet(P.mbManager, { studentId: sid }).the.find((x: any) => x.loai === 'y_thuc');
+    assert(the.dong.includes('Kèm 1 bằng chứng (tệp / liên kết) — bấm Mở để xem') && /tab=y-thuc/.test(the.mo ?? ''), JSON.stringify(the.dong));
+  });
   check('YT4 (5) · GVCN không duyệt được (403) — thẻ chỉ QL / Quản trị (T69, K5-32)', () => {
     const sid = hv(); const m = deXuatGui(gvcn, sid, 'suspension', [ghiVp(gvbm, sid)]);
     assert(loiCua(() => yc.duyetYeuCau(gvcn, theCho('y_thuc', m.id).id)).status === 403, 'GVCN duyệt');
