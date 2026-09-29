@@ -137,24 +137,18 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     const lan2: string[] = []; mig.migratePrN1(t.conn, lan2);
     assert(lan2.length === 0 && mig.demPaDoiHanThuHai(t.conn).soPa === 0, 'chạy lại vẫn đổi');
   });
-  check('N1 (3) · S4-1 (Task 5b): PA điền sẵn "chờ xác nhận" ở Case đang mở → PA quy chế đang chạy, hạn Thứ Hai; chạy lại không đổi', () => {
+  check('N1 (3) · S4-1 → PR-SOS (Q28-3): migratePrN1 KHÔNG còn đổi PA quy chế "chờ xác nhận" — PA giữ nguyên planned, confirmed_at NULL', () => {
     const { caseId } = taoPa('mig-qc');
     const cu = Number(t.conn.prepare(`INSERT INTO case_interventions (case_id, kind, description, status, preset, cycle_no, needs_approval, created_at)
       VALUES (?, 'self_study', 'Tự học · 1 tháng', 'planned', 1, 1, 0, ?)`).run(caseId, new Date().toISOString()).lastInsertRowid);
-    assert(mig.demPaQuyCheChoXacNhan(t.conn) >= 1, 'chạy thử không đếm được PA chờ xác nhận');
+    const truoc = JSON.stringify(t.conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(cu));
     const applied: string[] = [];
     mig.migratePrN1(t.conn, applied);
     const iv = t.conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(cu) as any;
-    assert(iv.status === 'started' && iv.confirmed_by === null && !!iv.confirmed_at && iv.cycle_started_on === t.TODAY
-      && iv.action_due === d.weeklyUpdateDue(t.TODAY) && new Date(`${iv.action_due}T00:00:00Z`).getUTCDay() === 1, JSON.stringify(iv));
-    assert(applied.some((x) => /PA quy chế SOS/.test(x)) && mig.demPaQuyCheChoXacNhan(t.conn) === 0, applied.join(' | '));
-    const truoc = JSON.stringify(iv);
-    const lan2: string[] = []; mig.migratePrN1(t.conn, lan2);
-    const sau = t.conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(cu) as any;
-    assert(lan2.length === 0 && JSON.stringify(sau) === truoc, `chạy lại vẫn đổi: ${lan2.join(' | ')}`);
-    assert(/demPaQuyCheChoXacNhan/.test(docSach('server/src/migrate/chayThuN1.ts')), 'chạy thử chưa in số PA quy chế chờ xác nhận');
+    assert(iv.status === 'planned' && iv.confirmed_at === null && JSON.stringify(iv) === truoc, JSON.stringify(iv));
+    assert(!applied.some((x) => /PA quy chế SOS/.test(x)) && typeof mig.migratePaQuyChe === 'undefined', applied.join(' | '));
+    assert(!/demPaQuyCheChoXacNhan/.test(docSach('server/src/migrate/chayThuN1.ts')), 'chạy thử còn mục PA quy chế chờ xác nhận');
   });
-
   // ==================================================================== 4. Web: chữ hạn "hết Thứ Hai" + A5 + A6
   check('N1 (4) · A6: việc Nhập điểm trễ có số ngày; không còn "⚠ n ngày" gọn; chữ hạn PA không còn Chủ nhật', () => {
     const v = d.viecTiepTheoCua({ nhapDiem: { kyNang: ['reading'], dot: 'MT2', quaHan: true, han: '2026-09-20' }, cases: [], homNay: '2026-09-24' })[0];

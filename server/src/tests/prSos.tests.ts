@@ -2,8 +2,9 @@
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runPrSosTests(t: YThucTestKit) {
-  const { check, assert } = t;
+  const { check, assert, conn } = t;
   const d = await import('../../../shared/domain/index.ts');
+  const libsqlMod: any = await import('libsql');
   console.log('\nPR-SOS · SOS v4');
 
   // ------------------------------------------------------------------ Task 1 · luật thuần
@@ -76,5 +77,31 @@ export async function runPrSosTests(t: YThucTestKit) {
   check('SOS (1) · MT5+ = Tutor · đến lúc thi (Câu 1 = A); tên Case SOS ghép chip', () => {
     assert(d.academicSupportFor(5, 2)?.description === 'Tutor · đến lúc thi', 'MT5');
     assert(d.tenCaseSos({ mt: 1, giua: 'Reading không đạt', sos: 3 }) === '[MT1] Reading không đạt [SOS 3]', 'tên');
+  });
+
+  // ------------------------------------------------------------------ Task 2 · migrate
+  const { migratePrSos } = await import('../migrate/prSos.ts');
+  const migN1: any = await import('../migrate/prN1.ts');
+  check('SOS (2) · migratePrSos trên libsql: thêm hai cột, chạy lần 2 không báo gì; schema.sql có cả hai cột', () => {
+    const { default: SqliteDb } = libsqlMod;
+    const mem = new SqliteDb(':memory:');
+    mem.exec('CREATE TABLE sos_cases (id INTEGER PRIMARY KEY); CREATE TABLE case_interventions (id INTEGER PRIMARY KEY)');
+    const a1: string[] = []; migratePrSos(mem, a1);
+    const a2: string[] = []; migratePrSos(mem, a2);
+    const cot = (b: string) => (mem.prepare('SELECT name FROM pragma_table_info(?)').all(b) as any[]).map((c) => c.name);
+    assert(a1.length === 2 && a2.length === 0, `${a1.join()} | ${a2.join()}`);
+    assert(cot('sos_cases').includes('han_xac_nhan') && cot('case_interventions').includes('moc_quy_che'), 'thiếu cột');
+    mem.close();
+    const cotThat = (b: string) => (conn.prepare('SELECT name FROM pragma_table_info(?)').all(b) as any[]).map((c: any) => c.name);
+    assert(cotThat('sos_cases').includes('han_xac_nhan') && cotThat('case_interventions').includes('moc_quy_che'), 'DB mới (schema.sql) thiếu cột');
+  });
+  check('SOS (2) · migratePrN1 không còn đổi PA chờ xác nhận (R6, M1)', () => {
+    const c = conn.prepare(`SELECT id FROM sos_cases WHERE status != 'done' LIMIT 1`).get() as any;
+    const id = Number(conn.prepare(`INSERT INTO case_interventions (case_id, kind, description, status, preset, cycle_no, needs_approval, created_at)
+      VALUES (?, 'tutor', 'Tutor · đến MT2', 'planned', 1, 1, 0, ?)`).run(c.id, new Date().toISOString()).lastInsertRowid);
+    migN1.migratePrN1(conn, []);
+    const iv = conn.prepare('SELECT status, confirmed_at FROM case_interventions WHERE id = ?').get(id) as any;
+    conn.prepare('DELETE FROM case_interventions WHERE id = ?').run(id);
+    assert(iv.status === 'planned' && iv.confirmed_at === null, JSON.stringify(iv));
   });
 }

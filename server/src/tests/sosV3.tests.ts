@@ -473,7 +473,6 @@ export async function runSosV3Tests(t: YThucTestKit) {
   console.log('\nPR-T · 5. Xác nhận · thay · đóng `Không cần theo dõi` case từ SOS (S04–S07) — T4');
 
   const sosAuto: any = await load('../cases/sosAuto.ts');
-  const migN1: any = await load('../migrate/prN1.ts');
   const phoiHop: any = await load('../yThuc/phoiHop.ts');
   const gvcn = P.coreTeacher;      // chủ nhiệm MB FT 101
   const coordOf = (attemptId: number) => all('SELECT * FROM sos_coordination_actions WHERE attempt_id = ? ORDER BY id', attemptId);
@@ -649,7 +648,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assertThrows(() => sosAuto.dismissSosCase(P.mbManager, manual.id, { reasonCode: 'single_incident' }), /case tự tạo từ SOS|không phải/, 'Đóng case tạo tay');
   });
 
-  check('PR-T · Q-V3-3 Phương án điền sẵn CHƯA xác nhận (dữ liệu CŨ): không vào hiệu quả, KHÔNG sinh nghĩa vụ cập nhật tuần / xem lại kết quả, không thể ghi "đã xong" hay kết quả; migrate PR-N1 cho nó chạy thì hiện đúng như phương án thường', () => {
+  check('PR-T · Q-V3-3 Phương án điền sẵn CHƯA xác nhận (dữ liệu CŨ): không vào hiệu quả, KHÔNG sinh nghĩa vụ cập nhật tuần / xem lại kết quả, không thể ghi "đã xong" hay kết quả; xác nhận PA rồi thì hiện đúng như phương án thường (PR-SOS Q28-3)', () => {
     const f = freshSos('Q3');
     const keysOf = (who: any) => mywork(who).map((i: any) => i.key as string);
     /* PR-N1 S4-1: PA quy chế nay tạo ra đã chạy — dựng lại dạng "chờ xác nhận" của dữ liệu cũ. */
@@ -665,10 +664,11 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assertThrows(() => cases.updateResult(w2T, f.w2Plan.id, { outcome: 'improved', note: 'Kết quả thử nghiệm ghi cho phương án chưa xác nhận' }), /xác nhận/, 'Ghi kết quả cho phương án chưa xác nhận');
     const board = effectivenessSvc.issueBoard({ studentIds: [f.st.id] }, 'writing2');
     assert(board.rows.every((r: any) => r.plans === 0 && r.running === 0), `Bảng vấn đề đếm phương án điền sẵn chưa xác nhận: ${JSON.stringify(board.rows)}`);
-    /* Migrate PR-N1 (S4-1) cho nó chạy: nổi lên như phương án thường. */
-    migN1.migratePaQuyChe(conn, [], TODAY);
+    /* PR-SOS (Q28-3): PA chạy khi GVBM xác nhận — dựng trạng thái "đã xác nhận" bằng SQL (Task 4 đổi sang `xacNhanPaQuyChe`). */
+    conn.prepare("UPDATE case_interventions SET status = 'started', started_date = ?, cycle_started_on = ?, confirmed_at = ?, confirmed_by = ? WHERE id = ?")
+      .run(TODAY, TODAY, new Date().toISOString(), w2T.userId, f.w2Plan.id);
     const sauMig = get('SELECT * FROM case_interventions WHERE id = ?', f.w2Plan.id);
-    assert(sauMig.status === 'started' && sauMig.confirmed_at && sauMig.confirmed_by === null, `Sau migrate: ${JSON.stringify(sauMig)}`);
+    assert(sauMig.status === 'started' && sauMig.confirmed_at, `Sau xác nhận: ${JSON.stringify(sauMig)}`);
     conn.prepare('UPDATE case_interventions SET action_due = ? WHERE id = ?').run(addDays(TODAY, -3), f.w2Plan.id);
     assert(keysOf(w2T).includes(`action:${f.w2Plan.id}`) && M('pa-can-cap-nhat').includes(f.w2Plan.id), 'PA quy chế đang chạy thì phải vào việc cần làm và "cần cập nhật"');
     const board2 = effectivenessSvc.issueBoard({ studentIds: [f.st.id] }, 'writing2');
