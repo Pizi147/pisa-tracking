@@ -214,10 +214,10 @@ export async function runTongQuanTests(t: YThucTestKit) {
     assert(ids('case-chua-co-nguoi-phu-trach').every((x) => mo.includes(x)), 'Phải là tập con của Case đang mở');
   });
 
-  check('PR-Pa · Chỉ số case-xac-dinh-nguyen-nhan-qua-han = Case chờ xác định nguyên nhân mà hạn 3 ngày của tín hiệu nối đã qua', () => {
+  check('PR-Pa · Chỉ số case-xac-dinh-nguyen-nhan-qua-han = Case chờ xác nhận nguyên nhân mà hạn xác nhận (PR-SOS: sos_cases.han_xac_nhan) đã qua', () => {
     const cho = ids('case-cho-xac-dinh-nguyen-nhan');
     const quaHan = cho.filter((id) => {
-      const r = conn.prepare(`SELECT MIN(verify_due) AS due FROM case_signals WHERE case_id = ? AND status = 'linked'`).get(id) as any;
+      const r = conn.prepare(`SELECT han_xac_nhan AS due FROM sos_cases WHERE id = ?`).get(id) as any;
       return r?.due && r.due < TODAY;
     }).sort((a, b) => a - b);
     eq(ids('case-xac-dinh-nguyen-nhan-qua-han'), quaHan, 'Lệch tập');

@@ -10,6 +10,7 @@ import { can, classScopeSql, require_, scopeFor, type Principal } from '../permi
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { NOT_UNCONFIRMED_PRESET } from '../cases/sosState.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
+import { datLaiHanCase } from '../cases/sosAuto.ts';
 import { entryBandsOf, scoresOf, skipsOf } from '../fasttrack/attempts.ts';
 import { evaluateAttempt } from '../fasttrack/scoring.ts';
 import { currentCycle, cyclesOf, examPlanOf } from '../fasttrack/cycles.ts';
@@ -279,6 +280,8 @@ export function setStudentStatus(
      * PR-LT: lộ trình ĐANG CHẠY cũng khép lại — `updateCycle`/`setOutcome` chỉ đóng khi nơi gọi truyền cờ, và
      * setStudentStatus trước đây không đóng gì (Nhật ký PR-LT, mục 6 "Mâu thuẫn nguồn ↔ mã thật").
      */
+    /* PR-SOS (K3-41): Quay lại học → hạn Case tính lại từ ngày quay lại. */
+    if (status === 'active' && s.status === 'inactive') datLaiHanCase(studentId, date);
     if (status === 'finished') {
       closeCasesBySystem({ actorUserId: p.userId, studentId, reason: 'course_ended', on: date });
       conn.prepare(`UPDATE learning_cycles SET status = 'abandoned', ended_at = ? WHERE student_id = ? AND status = 'active'`)

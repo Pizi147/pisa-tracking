@@ -29,6 +29,7 @@ export * from './attachments.ts';
 export * from './yThuc.ts';
 export * from './yThucGon.ts';
 export * from './sos.ts';
+export * from './sosV4.ts';
 export * from './hoSoHocVien.ts';
 export * from './hienThiNgay.ts';
 export * from './dieuHuong.ts';

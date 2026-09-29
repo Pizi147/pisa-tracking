@@ -890,7 +890,9 @@ CREATE TABLE sos_cases (
    * `outcome` vì việc đóng không phải kết quả hỗ trợ; PA đã xong trước đó vẫn tính hiệu quả. Nhãn: `SYSTEM_CLOSE_REASON_LABEL`.
    * Chú thích này cố ý KHÔNG có dấu phẩy: SQLite `DROP COLUMN` cột cuối bảng cắt ngược tới dấu phẩy gần nhất.
    */
-  system_close_reason TEXT
+  system_close_reason TEXT,
+  /* PR-SOS (K5-06 · Q28-3): hạn Xác nhận nguyên nhân + Xác nhận PA — 3 ngày tính cả ngày đầu (hanXacNhan). Case tay NULL. Không dấu phẩy (DROP COLUMN) */
+  han_xac_nhan TEXT
 );
 /*
  * MỘT HỌC VIÊN × MỘT HẠNG MỤC = MỘT CASE.
@@ -1067,7 +1069,9 @@ CREATE TABLE case_interventions (
 
   migration_key TEXT UNIQUE,
   created_at TEXT NOT NULL,
-  updated_at TEXT
+  updated_at TEXT,
+  /* PR-SOS (Q2): loại mốc của PA theo quy chế — one_month | until_next_mt | until_exam · NULL với PA thường */
+  moc_quy_che TEXT
 );
 -- Việc đang chờ duyệt là thứ Quản lý phải tìm nhanh, nên có chỉ số riêng.
 CREATE INDEX idx_intervention_approval ON case_interventions(approval_state)

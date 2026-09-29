@@ -14,14 +14,15 @@ import { OKhac } from '../../ui/OKhac.tsx';
 import { NutChon } from '../../ui/ui.tsx';
 import { ComponentsField, componentsPayload } from './ChiTietKyNang.tsx';
 import {
-  URGENCY_LEVELS, URGENCY_LABEL, issuesForTopic, DEFAULT_URGENCY,
+  URGENCY_LEVELS, URGENCY_LABEL, issuesForTopic, DEFAULT_URGENCY, FOLLOWUP_OUTCOMES, GOI_Y_MO_TA_PA, outcomeLabelFor,
   CASE_OUTCOMES, CASE_OUTCOME_LABEL, tenMon, tenMonNgan,
   categoryOf, componentsFor, componentsAreCounts,
   nguoiThanhPayload, nguoiThieu, tuanLich, type NguoiChon, dsLoi, type LuatTruong, laKhac, kiemGhiRoKhac, KHAC_TOI_THIEU,
 } from '@shared/domain/index.ts';
 
-type DaLuu = { id: number; tieuDe: string; gop: boolean; canEdit: boolean };
-type BfAction = { description: string; nguoi: NguoiChon; fromDate: string; toDate: string };
+type DaLuu = { id: number; tieuDe: string; gop: boolean; canEdit: boolean; viecTiep?: { chu: string; han: string | null } | null };
+/** YC-12.5.3: mỗi PA nhập bù có Kết quả PA (bắt buộc). */
+type BfAction = { description: string; nguoi: NguoiChon; fromDate: string; toDate: string; ketQua: string };
 
 /**
  * BÁO NHANH MỘT VẤN ĐỀ.
@@ -41,8 +42,10 @@ type BfAction = { description: string; nguoi: NguoiChon; fromDate: string; toDat
  * độ…) là Vi phạm — có form riêng ở phần Ý thức, không đi qua cửa case.
  */
 export function QuickReport({
-  open, onClose, studentId, studentName, lop, cycleId, onDone, signal, students, onPickStudent,
+  open, onClose, studentId, studentName, lop, cycleId, onDone, signal, students, onPickStudent, onMoCase,
 }: {
+  /** PR-SOS (K3-23, K3-24): mở Ngăn Case của Case có sẵn — Xác nhận Case (kỹ năng đang chờ nguyên nhân) / Thêm PA (Case vừa tạo). */
+  onMoCase?: (caseId: number, viec: 'xac-nhan' | 'them-pa') => void;
   open: boolean; onClose: () => void;
   /** Mã lớp hiện ở đầu ngăn (`Tạo Case · Tên HV · MB FOU 12`); không có thì bỏ phần lớp. */
   lop?: string | null;
@@ -93,7 +96,7 @@ export function QuickReport({
   const [bfFrom, setBfFrom] = useState('');
   const [bfTo, setBfTo] = useState('');
   const [bfActions, setBfActions] = useState<BfAction[]>([
-    { description: '', nguoi: { kieu: 'toi' }, fromDate: '', toDate: '' },
+    { description: '', nguoi: { kieu: 'toi' }, fromDate: '', toDate: '', ketQua: '' },
   ]);
   const [bfErrors, setBfErrors] = useState<Record<number, string>>({});
   const [bfOutcome, setBfOutcome] = useState<string>('');
@@ -127,7 +130,8 @@ export function QuickReport({
    * (Q8) — form không tự đoán chương trình.
    */
   /* Hỏi cả khi mở từ tín hiệu: cần mã chương trình để gọi đúng tên môn và bộ nguyên nhân (FOU G+V / P, Pre FOU Tổng hợp — T57). */
-  const chuDe = useApi<{ ratio: boolean; topics: string[]; chuongTrinh: string | null }>(
+  const chuDe = useApi<{ ratio: boolean; topics: string[]; chuongTrinh: string | null;
+    choNguyenNhan?: Record<string, { caseId: number; mt: number | null; sos: number | null }> }>(
     open && studentId ? `/students/${studentId}/case-topics${cycleId ? `?cycleId=${cycleId}` : ''}` : null,
     [open, studentId, cycleId, signal],
   );
@@ -150,7 +154,7 @@ export function QuickReport({
     setSummary(''); setUrgency(DEFAULT_URGENCY); setTopic('');
     setTitle(''); setPrimaryCode(''); setDetectedAt(''); setDup(null); lf.datLai(); setMoSua([0]);
     setMode('now'); setBfFrom(''); setBfTo('');
-    setBfActions([{ description: '', nguoi: { kieu: 'toi' }, fromDate: '', toDate: '' }]);
+    setBfActions([{ description: '', nguoi: { kieu: 'toi' }, fromDate: '', toDate: '', ketQua: '' }]);
     setBfErrors({}); setBfOutcome(''); setBfNote(''); setBfMetrics({}); setBfDup(null);
     setDaLuu(null);
   };
@@ -196,7 +200,7 @@ export function QuickReport({
       invalidate('/cases'); invalidate('/students'); invalidate('/overview');
       toast.push('ok', extra.mergeIntoExisting ? 'Đã ghi vào case đang có' : 'Đã ghi nhận');
       setDup(null);
-      setDaLuu({ id: res.id, tieuDe: res.title, gop: !!extra.mergeIntoExisting, canEdit: !!res.viewer?.canEdit });
+      setDaLuu({ id: res.id, tieuDe: res.title, gop: !!extra.mergeIntoExisting, canEdit: !!res.viewer?.canEdit, viecTiep: res.viecTiep ?? null });
     } catch (e: any) {
       const d = e?.details?.duplicateCase;
       if (d) { setDup(d); return; }
@@ -224,7 +228,7 @@ export function QuickReport({
         fromDate: bfFrom, toDate: bfTo,
         actions: bfActions.map((a) => ({
           description: a.description.trim(), ...nguoiThanhPayload(a.nguoi),
-          fromDate: a.fromDate || bfFrom, toDate: a.toDate || bfTo,
+          fromDate: a.fromDate || bfFrom, toDate: a.toDate || bfTo, ketQua: a.ketQua,
         })),
         outcome: bfOutcome, note: bfNote,
         /* S5 — điểm giáo viên tự chấm theo kỹ năng, luôn TUỲ CHỌN. */
@@ -256,6 +260,7 @@ export function QuickReport({
       if (a.description.trim().length < 3) { errors[i] = 'Phải nói rõ đã làm gì.'; return; }
       const thieuNguoi = nguoiThieu(a.nguoi, true);
       if (thieuNguoi) { errors[i] = thieuNguoi; return; }
+      if (!a.ketQua) { errors[i] = `Dòng PA ${i + 1}: chọn Kết quả PA.`; return; }
       const tu = a.fromDate || bfFrom;
       const den = a.toDate || bfTo;
       if (tu > den) { errors[i] = 'Từ tuần phải trước Đến tuần.'; return; }
@@ -292,6 +297,7 @@ export function QuickReport({
   const o = (khoa: string) => lf.o(loi, khoa);
 
   if (!open) return null;
+  const cnn = !signal && mode === 'now' && topic ? chuDe.data?.choNguyenNhan?.[topic] ?? null : null;
 
   const tieuDe = signal?.kind === 'normal' ? `Tạo Case ${signal.label}`
     : signal ? `Xác minh SOS ${signal.label}` : 'Tạo Case';
@@ -306,6 +312,15 @@ export function QuickReport({
           <p className="m-0 text-sm text-slate-200">
             {daLuu.gop ? <>✓ Đã ghi vào Case đang có «{daLuu.tieuDe}»</> : <>✓ Đã lưu Case «{daLuu.tieuDe}»</>}
           </p>
+          {/* K3-24: nói luôn việc tiếp của Case vừa tạo + lối tắt Thêm PA. */}
+          {daLuu.viecTiep && (
+            <p className="m-0 flex flex-wrap items-center gap-2 text-xs text-slate-300">
+              Việc tiếp: {daLuu.viecTiep.chu}{daLuu.viecTiep.han ? ` · hạn ${ngan(daLuu.viecTiep.han)}` : ''}
+              {daLuu.canEdit && onMoCase && daLuu.viecTiep.chu === 'Đề ra PA' && (
+                <button type="button" className="btn btn-sm" onClick={() => { const id = daLuu.id; reset(); onClose(); onMoCase(id, 'them-pa'); }}>+ Thêm PA</button>
+              )}
+            </p>
+          )}
         </Khoi>
         <Khoi tieuDe="Bằng chứng">
           {daLuu.canEdit ? (
@@ -330,8 +345,8 @@ export function QuickReport({
           tabs={[{ key: 'now', label: 'Đang gặp vấn đề' }, { key: 'backfill', label: 'Đã xong từ trước' }]} />
       ) : undefined}
       chan={{
-        conThieu: lf.daBam ? oLoi : undefined,
-        chinh: (
+        conThieu: lf.daBam && !cnn ? oLoi : undefined,
+        chinh: cnn ? undefined : (
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={mode === 'now' ? submit : submitBackfill}>
             {mode === 'now' ? 'Tạo Case' : 'Ghi lại Case đã xong'}
           </button>
@@ -367,6 +382,10 @@ export function QuickReport({
                   className="justify-center px-1"
                   onClick={() => { setTopic(k); setPrimaryCode(''); }}>
                   {topicShort(k)}
+                  {!signal && chuDe.data?.choNguyenNhan?.[k] && (
+                    <span className="ml-1 inline-block h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: 'rgb(var(--soon-rgb))' }}
+                      title="Đang có Case chờ xác nhận nguyên nhân" aria-label="đang có Case chờ xác nhận nguyên nhân" />
+                  )}
                 </NutChon>
               ))}
             </div>
@@ -374,6 +393,20 @@ export function QuickReport({
           </div>
         </Truong>
 
+        {/* K3-23: kỹ năng đang có Case chờ xác nhận nguyên nhân — không tạo Case thứ hai; dẫn sang form Xác nhận Case. */}
+        {cnn ? (
+          <div className="space-y-2">
+            <p className="m-0 text-sm text-slate-200">
+              {topicLabel(topic)} đang có Case chờ xác nhận nguyên nhân
+              {cnn.mt || cnn.sos ? ` (${[cnn.mt ? `MT${cnn.mt}` : null, cnn.sos ? `SOS ${cnn.sos}` : null].filter(Boolean).join(' · ')})` : ''}.
+            </p>
+            {onMoCase && (
+              <button type="button" className="btn btn-primary btn-sm min-h-[44px] sm:min-h-0" onClick={() => { onClose(); onMoCase(cnn.caseId, 'xac-nhan'); }}>
+                Mở form Xác nhận Case
+              </button>
+            )}
+          </div>
+        ) : (<>
         {/* Phân loại BẮT BUỘC (máy chủ cần `primaryCode`): select ≥ 5 lựa chọn, gợi ý của lựa chọn nằm ở `title` (Q6). */}
         {/* OKhac là <label> riêng → đặt ngay SAU Truong (không lồng label), cùng một khối để sát ô chọn. */}
         <div>
@@ -412,9 +445,10 @@ export function QuickReport({
           <textarea className="field w-full" {...o('mo-ta')} rows={3} value={summary} onChange={(e) => setSummary(e.target.value)}
             placeholder="Ví dụ: Giữa khoá sai 4/5 câu Not Given" />
         </Truong>
+        </>)}
       </Khoi>
 
-      {mode === 'now' && (
+      {mode === 'now' && !cnn && (
         <Khoi tieuDe="Theo dõi">
           <Truong nhan="Bắt đầu theo dõi"><ONgay kieu="ngay" value={detectedAt || homNay} onChange={setDetectedAt} toiDa={homNay} /></Truong>
         </Khoi>
@@ -446,8 +480,20 @@ export function QuickReport({
                     {dangSua ? (
                       <div className="space-y-2">
                         <input className="field w-full" {...(i === 0 ? o('pa-0') : {})} aria-label="Phương án đã áp dụng"
-                          placeholder="Ví dụ: tutor Listening mỗi tuần" value={a.description}
+                          placeholder={GOI_Y_MO_TA_PA} value={a.description}
                           onChange={(e) => setBfActions(bfActions.map((x, j) => (j === i ? { ...x, description: e.target.value } : x)))} />
+                        {/* YC-12.5.3: kết quả của PA này — hàng PA hiện kết quả thay "Chưa có kết quả". */}
+                        <div role="group" aria-label={`Kết quả PA ${i + 1} (bắt buộc)`}>
+                          <span className="mb-1 block text-[11px] text-slate-400">Kết quả PA <span aria-hidden className="text-bad">*</span></span>
+                          <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+                            {FOLLOWUP_OUTCOMES.filter((k) => k !== 'insufficient').map((k) => (
+                              <NutChon key={k} nho chon={a.ketQua === k} className="justify-center"
+                                onClick={() => setBfActions(bfActions.map((x, j) => (j === i ? { ...x, ketQua: k } : x)))}>
+                                {outcomeLabelFor(k)}
+                              </NutChon>
+                            ))}
+                          </div>
+                        </div>
                         <ChonNguoi nhom="giao_vien" studentId={studentId} value={a.nguoi}
                           onChange={(v) => setBfActions(bfActions.map((x, j) => (j === i ? { ...x, nguoi: v ?? { kieu: 'toi' } } : x)))} />
                         <Hang2>
@@ -471,6 +517,7 @@ export function QuickReport({
                       <p className="m-0 flex flex-wrap items-baseline gap-x-1.5 text-xs text-slate-300">
                         <span className="min-w-0 truncate text-slate-100" title={a.description}>{a.description}</span>
                         <span className="text-slate-500">· {nguoiNhan(a.nguoi)}</span>
+                        {a.ketQua && <span className="text-slate-500">· {outcomeLabelFor(a.ketQua)}</span>}
                         {tu && den && <span className="text-slate-500">· {nhanTuan(tu)} → {nhanTuan(den)}</span>}
                         <button type="button" className="link appearance-none border-0 bg-transparent p-0" onClick={() => setMoSua([...moSua, i])}>Sửa</button>
                       </p>
@@ -480,7 +527,7 @@ export function QuickReport({
                 );
               })}
               <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0"
-                onClick={() => { setMoSua([...moSua, bfActions.length]); setBfActions([...bfActions, { description: '', nguoi: { kieu: 'toi' }, fromDate: '', toDate: '' }]); }}>
+                onClick={() => { setMoSua([...moSua, bfActions.length]); setBfActions([...bfActions, { description: '', nguoi: { kieu: 'toi' }, fromDate: '', toDate: '', ketQua: '' }]); }}>
                 + Thêm PA đã áp dụng
               </button>
             </div>
@@ -510,9 +557,11 @@ export function QuickReport({
       )}
 
       {/* F-1: người dùng biết trước — ảnh/tệp/liên kết KHÔNG có ở đây, mà thêm ngay sau khi lưu. */}
-      <Khoi tieuDe="Bằng chứng">
-        <p className="m-0 text-xs text-slate-500">Ảnh, tệp, liên kết — thêm được ngay sau khi tạo</p>
-      </Khoi>
+      {!cnn && (
+        <Khoi tieuDe="Bằng chứng">
+          <p className="m-0 text-xs text-slate-500">Ảnh, tệp, liên kết — thêm được ngay sau khi tạo</p>
+        </Khoi>
+      )}
 
       {/* CẢNH BÁO CASE TRÙNG (mục 7.13) — MỘT khối vàng, hai nút, ngay trong thân; chữ vừa gõ vẫn còn. */}
       {mode === 'backfill' && bfDup && (

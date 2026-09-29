@@ -199,28 +199,29 @@ export type TrangThaiHop = { chu: string; ngan: string; tone: ToneHop } | null;
 const soTuanTron = (tu: string, den: string): number => Math.max(0, Math.ceil((ngayThu(den) - ngayThu(tu)) / 7));
 
 /**
- * BADGE ĐẦU HỘP KỸ NĂNG — thứ tự ưu tiên CỐ ĐỊNH (Q6): thiếu PA nói trước, đang xấu điểm nói trước
- * "đang theo dõi" chung chung. `null` = chưa từng có Case (giao diện tự vẽ chữ mờ "Không có Case").
- * `ngan` = phần trước " · " của `chu` — chỗ hẹp (Xem gọn, 375px) hiện `ngan`, `chu` đủ để ở tooltip.
+ * BADGE ĐẦU HỘP KỸ NĂNG — nhãn §7.3 (PR-SOS K3-29), thứ tự ưu tiên CỐ ĐỊNH: chờ nguyên nhân → chờ Quản lý duyệt → chưa có PA → đang làm.
+ * `null` = chưa từng có Case (giao diện tự vẽ chữ mờ "Không có Case"). `ngan` = phần trước " · " của `chu` — chỗ hẹp (Xem gọn, 375px)
+ * hiện `ngan`, `chu` đủ để ở tooltip. Tone: đang làm mà điểm cuối chưa đạt → `danger`.
  */
 export function trangThaiHop(
-  i: { caseMo: { mo: string; soPa: number }[]; coTungCase: boolean; diemCuoiChuaDat: boolean | null; xongGanNhat: string | null },
+  i: {
+    caseMo: { mo: string; soPa: number; choNguyenNhan?: boolean; choDuyet?: boolean }[]; coTungCase: boolean;
+    diemCuoiChuaDat: boolean | null; xongGanNhat: string | null; huyGanNhat?: boolean;
+  },
   homNay: string,
 ): TrangThaiHop {
   const dung = (chu: string, tone: ToneHop): NonNullable<TrangThaiHop> => ({ chu, ngan: chu.split(' · ')[0], tone });
   if (i.caseMo.length > 0) {
+    if (i.caseMo.some((c) => c.choNguyenNhan)) return dung('Cần làm · chờ nguyên nhân', 'warn');
+    if (i.caseMo.some((c) => c.choDuyet)) return dung('Chờ duyệt', 'warn');
+    if (i.caseMo.some((c) => c.soPa === 0)) return dung('Cần làm · chưa có PA', 'warn');
     const somNhat = i.caseMo.reduce((a, b) => (b.mo < a ? b.mo : a), i.caseMo[0].mo);
-    const n = soTuanTron(somNhat, homNay);
-    if (i.caseMo.some((c) => c.soPa === 0)) return dung(`Chưa có PA · ${n} tuần`, 'warn');
-    if (i.diemCuoiChuaDat) return dung(`Cần hỗ trợ · ${n} tuần`, 'danger');
-    return dung(`Đang theo dõi · ${n} tuần`, 'warn');
+    return dung(`Đang làm · ${soTuanTron(somNhat, homNay)} tuần`, i.diemCuoiChuaDat ? 'danger' : 'warn');
   }
-  if (i.coTungCase && i.xongGanNhat) {
-    return dung(`Đã ổn · xong ${i.xongGanNhat.slice(8, 10)}/${i.xongGanNhat.slice(5, 7)}`, 'ok');
-  }
+  if (i.coTungCase && i.huyGanNhat) return dung('Đã huỷ', 'ok');
+  if (i.coTungCase && i.xongGanNhat) return dung(`Xong ${i.xongGanNhat.slice(8, 10)}/${i.xongGanNhat.slice(5, 7)}`, 'ok');
   return null;
 }
-
 /** Dòng phụ của một vấn đề (G-3, ≤ 60 ký tự; G-6 ngày `dd/mm`, năm chỉ khi khác năm nay). */
 export function dongPhuVanDe(v: { mo: string; dong: string | null; soPa: number }, homNay: string): string {
   const pa = v.soPa === 0 ? 'chưa có PA' : `${v.soPa} PA`;

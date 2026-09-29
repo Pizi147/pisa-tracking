@@ -214,6 +214,8 @@ export function caseDedupKey(input: {
  */
 export const MILESTONE_KINDS = [
   'opened', 'repeat', 'recurrence', 'passed', 'closed', 'extended', 'route_changed',
+  /* PR-SOS (K3-21): Xác nhận Case + ba mốc của thẻ Không cần theo dõi. */
+  'xac_nhan_case', 'xin_khong_theo_doi', 'ql_duyet_khong_theo_doi', 'ql_tu_choi_khong_theo_doi',
 ] as const;
 export type MilestoneKind = (typeof MILESTONE_KINDS)[number];
 export const MILESTONE_KIND_LABEL: Record<MilestoneKind, string> = {
@@ -224,6 +226,10 @@ export const MILESTONE_KIND_LABEL: Record<MilestoneKind, string> = {
   closed: 'Chốt kết quả',
   extended: 'Kéo dài theo dõi',
   route_changed: 'Sang lộ trình mới',
+  xac_nhan_case: 'Xác nhận Case',
+  xin_khong_theo_doi: 'Xin không theo dõi',
+  ql_duyet_khong_theo_doi: 'Quản lý duyệt không theo dõi',
+  ql_tu_choi_khong_theo_doi: 'Quản lý từ chối không theo dõi',
 };
 
 /**

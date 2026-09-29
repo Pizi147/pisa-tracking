@@ -329,7 +329,7 @@ export async function runPrDuyetTests(t: YThucTestKit) {
     const cho = new Set(awaitingCauseCaseIds(ung.map((r) => r.id)));
     const kase = ung.find((r) => cho.has(r.id));
     assert(kase, 'Bộ demo thiếu Case SOS chờ nguyên nhân (seed SOS v3)');
-    conn.prepare(`UPDATE case_signals SET verify_due = ? WHERE case_id = ? AND status = 'linked'`).run(t.addDays(TODAY, -2), kase.id);
+    conn.prepare(`UPDATE sos_cases SET han_xac_nhan = ? WHERE id = ?`).run(t.addDays(TODAY, -2), kase.id);   // PR-SOS: hạn ở han_xac_nhan
     yc.quetYeuCau(TODAY); yc.quetYeuCau(TODAY);
     const dem = () => (conn.prepare(`SELECT COUNT(*) n FROM yeu_cau_duyet WHERE loai = 'bao_len_nguyen_nhan' AND doi_tuong_id = ? AND trang_thai = 'cho'`)
       .get(kase.id) as any).n;

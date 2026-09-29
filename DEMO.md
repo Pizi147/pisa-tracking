@@ -126,17 +126,27 @@ Thử: bấm **"Đã xem, không mở case"** rồi để trống nhận định
 
 ---
 
-## 9. Rulebook v3 — SOS tự tạo case và Phối hợp SOS (chỉ máy dev)
+## 9. SOS tự tạo case và Phối hợp SOS — SOS v4 (chỉ máy dev)
 
-Ba học viên MỚI ở `MB-FT 101`, dựng bằng chính các hàm nghiệp vụ (`server/src/seed/sosV3Seed.ts`): nhập điểm Mock Test → máy tự tạo case, phương án điền sẵn và việc phối hợp; rồi GVBM/GVCN thao tác.
+Học viên MỚI ở `MB-FT 101`, dựng bằng chính các hàm nghiệp vụ (`server/src/seed/sosV3Seed.ts`): nhập điểm Mock Test → máy tự tạo case,
+**PA theo quy chế chờ xác nhận** và việc phối hợp; rồi GVBM/GVCN/Quản lý thao tác (Xác nhận Case, Xác nhận PA, Không cần theo dõi, duyệt / từ chối).
 
-| Học viên | Lượt | Bạn sẽ thấy |
+**D7 — Case SOS đủ trạng thái v4**
+
+| Trạng thái | Học viên · kỹ năng | Bạn sẽ thấy |
 |---|---|---|
-| **Đỗ Minh Khôi** | MT2 · SOS2 (W2 + Speaking) | Hai case từ SOS. Speaking đã có nguyên nhân + phương án xác nhận; **W2 còn `chờ xác định nguyên nhân`**. Phối hợp SOS xong 1/3 (trao đổi với HS đã làm; gia đình và GVCN meeting còn cần xử lý). Có hai vi phạm Ý thức ở cùng em (GVCN tự ghi → Đã ghi nhận) |
-| **Vũ Ngọc Lan** | MT1 · SOS3 (L + R + S) | Ba case, phương án `Tutor · đến MT2`. **Case Speaking đã đóng `Không cần theo dõi · Tình huống đơn lẻ`**. Phối hợp SOS3 xong 2/3 (còn GVCN meeting) |
-| **Bùi Thảo Vy** | MT3 · SOS1 (Speaking) | Một lượt Phối hợp **đã hoàn thành 2/2** — để thấy trạng thái "xong" |
+| (1) Chờ xác nhận nguyên nhân, còn hạn | **Vũ Ngọc Lan** · Listening | Hai nút `Xác nhận nguyên nhân` / `Không cần theo dõi…` · hạn 16/09 |
+| (2) Chờ nguyên nhân **quá hạn** | **Đỗ Minh Khôi** · Writing Task 2 | Thẻ **Báo lên** ở hộp Chờ duyệt của Quản lý |
+| (3) Chờ Quản lý duyệt · không theo dõi | **Vũ Ngọc Lan** · Reading | Thẻ Học thuật `Không cần theo dõi` chờ Quản lý |
+| (4) Quản lý từ chối → hạn mới 3 ngày | **Trịnh Gia Bảo** · Listening | Lịch sử có `Quản lý từ chối không theo dõi` + lý do |
+| (5) Đã huỷ · không cần theo dõi | **Vũ Ngọc Lan** · Speaking | Case đóng, PA quy chế huỷ (không tính thất bại) |
+| (6) Đang làm, PA quy chế đã xác nhận | **Đỗ Minh Khôi** · Speaking | PA `từ 07/09`, hạn ghi kết quả hết T2 **đúng ngày demo** (D8) |
+| (7) Đã xác nhận Case, PA còn chờ | **Bùi Thảo Vy** · Speaking | Hàng PA `Chờ xác nhận` + nút `Xác nhận PA`; Phối hợp 2/2 hoàn thành |
 
-Ba mức SOS khác nhau (1 · 2 · 3) đều có mặt; có cả lượt đang xử lý lẫn đã hoàn thành. Bộ demo Ý thức (mục 1) dùng *xoá thẳng*: vi phạm đã xoá (Trần Thu Hà) chỉ còn dấu vết ở `audit_logs`.
+**D8 — hạn PA:** Khôi · Speaking hạn hết T2 đúng ngày demo · **Lý Minh Châu** · Reading quá hạn 2 ngày · **Hoàng Bảo Ngọc** · Listening ở
+tuần mốc → `Ghi kết quả cuối` (GVCN Hà). Không còn Case đóng kiểu cũ "GVBM tự đóng không cần theo dõi".
+
+Ba mức SOS khác nhau (1 · 2 · 3) đều có mặt. Bộ demo Ý thức (mục 1) dùng *xoá thẳng*: vi phạm đã xoá (Trần Thu Hà) chỉ còn dấu vết ở `audit_logs`.
 
 ## 9b. PR-KCK — Target "không cam kết" (chỉ máy dev)
 

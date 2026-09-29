@@ -1,5 +1,7 @@
 # SOS tự tạo Case · Phối hợp SOS · Ý thức & Phối hợp — bản v3
 
+> **PR-SOS (29/09/2026):** S04–S06 thay bởi S4-1…S4-7 (đặc tả 27/09 §5.3) + Q28-3 — PA theo quy chế **chờ xác nhận**, Xác nhận Case → Xác nhận PA, "Không cần theo dõi" gửi Quản lý duyệt. §4: MT5+ = `Tutor · đến lúc thi` (chủ sản phẩm chốt 29/09, Câu 1 = A); lộ trình RF dùng hàng "MT3 trở đi" cho mọi MT.
+
 Phiên bản 1.0 · 21/09/2026 (tối) · **Đặc tả để triển khai.**
 
 > **Nguồn:** `thiet-ke/NGUON-Rule-v3-YThuc-PhoiHop-2026-09-21.md` (chủ sản phẩm gửi tối 21/09).
@@ -96,7 +98,7 @@ Theo **số MT** của lượt và **mức SOS của cả lượt**. Áp cho **t
 | **MT1** | `Tự học` · 1 tháng | `Tutor` · đến MT2 |
 | **MT2** | `Tự học` · 1 tháng | `Tutor` · đến MT3 |
 | **MT3, MT4** | `Tutor` · đến lúc thi | `Tutor` · đến lúc thi |
-| **MT5 trở đi** | `Khác` — mô tả: `Hỗ trợ chuyên môn — cần GVBM/P. Học thuật xác nhận` | như cột trái |
+| **MT5 trở đi** | `Tutor · đến lúc thi` *(PR-SOS — thay `Khác — Hỗ trợ chuyên môn`)* | như cột trái |
 
 Cách tính **ngày dự kiến kết thúc** (`followup_due`):
 

@@ -2,7 +2,7 @@ import { suggestCaseOwner } from './owner.ts';
 import { db, tx } from '../db.ts';
 import {
   ENTRY_SKILL_LABEL,
-  SOS_LABEL, caseDedupKey, categoryOf, luotSinhViec,
+  SOS_LABEL, caseDedupKey, categoryOf, hanXacNhan, luotSinhViec,
   type CaseCategory, type EntrySkill, type MilestoneKind, type SosLevel,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -14,6 +14,7 @@ import { failingEntrySkills, type AttemptResult, type EntryBands } from '../fast
 import { weekStartOf } from '../fasttrack/attempts.ts';
 import { scoringModeOf } from '../fasttrack/skillSchedule.ts';
 import { announceAutoCase, createPresetPlan, isFastTrackMock, resyncUnconfirmedPresets } from './sosAuto.ts';
+import { UNCONFIRMED_PRESET, sosCaseState } from './sosState.ts';
 import { syncSosCoordination } from '../yThuc/phoiHop.ts';
 import { mondayOf } from '../platform/week.ts';
 import { ngayTaoLuot } from '../classes/schedule.ts';
@@ -361,39 +362,16 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
     });
 
     /*
-     * CHƯA CÓ CASE ĐANG MỞ → SOS TỰ TẠO (S01), mỗi kỹ năng trượt một case, W1/W2 tách (S02 — `failing` đã là kết quả của luật hai tầng nên
-     * không bao giờ có case "Writing tổng"). Case đã ĐÓNG mà trượt lại thì `upsertCategoryCase` mở case mới NỐI vào case cũ.
-     * Case mới có sẵn PA theo quy chế (bảng MT × mức SOS) chạy ngay từ lúc tạo (S03, PR-N1 S4-1); GVBM còn việc xác định nguyên nhân.
-     */
-    /*
      * TÍN HIỆU ĐÃ NỐI VÀO MỘT CASE rồi (kể cả case đó nay đã ĐÓNG — `Không cần theo dõi`, hay chốt kết quả thường) thì KHÔNG tạo case mới cho chính
      * lượt này: chạy lặp (lưu lại điểm, nhập kỹ năng khác, chấm lại) không được đảo quyết định của GVBM. Case chỉ được tạo lại khi tín hiệu được MỞ LẠI
      * (bị thu hồi rồi trượt lại — `raiseSignal` xoá `case_id`), hoặc ở MỘT LƯỢT SAU (tín hiệu của lượt đó là dòng khác).
      */
     const alreadyLinked = signal.status === 'linked' && signal.case_id != null;
     if (!open && autoCases && !alreadyLinked) {
-      const up = upsertCategoryCase(p, attempt, category, skill, result.sosLevel, detectedAt);
-      open = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(up.id) as any;
+      open = taoCaseTuDong(p, {
+        attempt, category, skill, sosLevel: result.sosLevel, detectedAt, band, expectation: result.expectation, signalId: signal.id,
+      });
       openHere.push(open);
-      addMilestone({
-        caseId: up.id, kind: 'opened', attemptId: attempt.id, attemptNo: attempt.attempt_no,
-        band, expectation: result.expectation, sosLevel: result.sosLevel,
-        occurredOn: detectedAt, note: 'SOS tự tạo case từ kết quả Mock Test', createdBy: p.userId,
-        dedupKey: `mt:${attempt.id}:${up.id}:opened`,
-      });
-      createPresetPlan({ caseId: up.id, attempt, category, sosLevel: result.sosLevel, followUntil });
-      /* Dây nối SOS ↔ Case (Q-V3-2): tín hiệu `linked`, giữ nguyên `verify_due` 3 ngày (S04) — thu hồi khi sửa điểm (S08) dùng lại nguyên vẹn. */
-      conn
-        .prepare(
-          `UPDATE case_signals SET status = 'linked', case_id = ?, resolved_by = NULL, resolved_at = ?,
-                  resolution_note = ?, updated_at = ? WHERE id = ?`,
-        )
-        .run(up.id, nowIso(), 'Mock Test có SOS đã tự tạo Case và PA theo quy chế cho kỹ năng này — chờ GVBM xác định nguyên nhân.', nowIso(), signal.id);
-      announceAutoCase({
-        caseId: up.id, studentId: attempt.student_id, cycleId: attempt.cycle_id ?? null, skillLabel: labelOf({ skill }),
-        attemptNo: attempt.attempt_no, sosLevel: result.sosLevel, ownerUserId: open.owner_user_id ?? null,
-        detectedOn: detectedAt, verifyDue: signal.verify_due, actorUserId: p.userId,
-      });
     } else if (open) {
       /*
        * TÍN HIỆU ĐÃ NỐI VÀO CHÍNH CASE NÀY (chạy lặp: lưu lại điểm, nhập thêm kỹ năng khác, chấm lại) thì KHÔNG ghi thêm mốc "Trượt lại" — lượt
@@ -421,6 +399,17 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
         if (open.sos_level !== result.sosLevel) {
           recordChange(open.id, 'sos_level', String(open.sos_level), String(result.sosLevel), p.userId);
         }
+        /*
+         * PR-SOS Q6 (S4-1, K3-16): Case FT ĐÃ có nguyên nhân mà trượt lại → thêm PA quy chế mới (chờ xác nhận) theo hàng lượt này + đặt lại
+         * hạn xác nhận. Không bắt xác nhận lại nguyên nhân. Chưa có nguyên nhân → PA chờ xác nhận cũ đi theo lượt mới (`resyncUnconfirmedPresets`).
+         * Đã có một PA quy chế còn chờ xác nhận → không thêm cái thứ hai (resync đưa nó theo hàng mới).
+         */
+        if (autoCases && sosCaseState(open.id).hasCause
+            && !conn.prepare(`SELECT 1 FROM case_interventions iv WHERE iv.case_id = ? AND ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned'`).get(open.id)) {
+          if (createPresetPlan({ caseId: open.id, attempt, category, sosLevel: result.sosLevel })) {
+            conn.prepare('UPDATE sos_cases SET han_xac_nhan = ? WHERE id = ?').run(hanXacNhan(demoToday()), open.id);
+          }
+        }
         /* Gắn thẳng, không qua tay người: case này đã có người phụ trách và đang chạy. */
         if (signal.status === 'pending') {
           conn
@@ -438,7 +427,7 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
   }
 
   /* Mức SOS của cả lượt có thể đã đổi: gợi ý điền sẵn CHƯA xác nhận đi theo mức mới nhất (đặc tả §4). Cái đã xác nhận không bị đụng. */
-  if (autoCases) resyncUnconfirmedPresets(attempt, result.sosLevel, followUntil);
+  if (autoCases) resyncUnconfirmedPresets(attempt, result.sosLevel);
 
   if (raised.length) {
     addJourney({
@@ -471,11 +460,52 @@ function recordChange(caseId: number, field: string, oldValue: string | null, ne
     .run(caseId, field, oldValue, newValue, actor, nowIso());
 }
 
-/** Thông báo trong ứng dụng cho GVCN + GVBM của lớp. Không gửi email/Zalo ở bản demo. */
+/**
+ * CASE TỰ TẠO TỪ SOS (S01, S4-1) — mỗi kỹ năng trượt một case, W1/W2 tách (S02 — `failing` đã là kết quả của luật hai tầng nên không bao giờ
+ * có case "Writing tổng"). Case đã ĐÓNG mà trượt lại thì `upsertCategoryCase` mở case mới NỐI vào case cũ. Case mới có PA theo quy chế
+ * CHỜ XÁC NHẬN (Q28-3) + hạn xác nhận 3 ngày tính từ NGÀY CASE RA ĐỜI (không phải tuần thi — K5 §4 #6).
+ * Tách hàm (Q15) để PR-LT2a gọi lại với PA Bổ trợ — không đổi luật FT. Trả dòng `sos_cases`.
+ */
+export function taoCaseTuDong(p: Principal, x: {
+  attempt: any; category: CaseCategory; skill: string; sosLevel: number | null; detectedAt: string;
+  band: number | null; expectation: number | null; signalId: number;
+}): any {
+  const conn = db();
+  const { attempt } = x;
+  const up = upsertCategoryCase(p, attempt, x.category, x.skill, x.sosLevel, x.detectedAt);
+  const han = hanXacNhan(demoToday());
+  conn.prepare('UPDATE sos_cases SET han_xac_nhan = ? WHERE id = ?').run(han, up.id);
+  const open = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(up.id) as any;
+  addMilestone({
+    caseId: up.id, kind: 'opened', attemptId: attempt.id, attemptNo: attempt.attempt_no,
+    band: x.band, expectation: x.expectation, sosLevel: x.sosLevel,
+    occurredOn: x.detectedAt, note: 'SOS tự tạo case từ kết quả Mock Test', createdBy: p.userId,
+    dedupKey: `mt:${attempt.id}:${up.id}:opened`,
+  });
+  createPresetPlan({ caseId: up.id, attempt, category: x.category, sosLevel: x.sosLevel });
+  /* Dây nối SOS ↔ Case (Q-V3-2): tín hiệu `linked` — thu hồi khi sửa điểm (S08) dùng lại nguyên vẹn. Hạn xác nhận ở `sos_cases.han_xac_nhan`. */
+  conn
+    .prepare(
+      `UPDATE case_signals SET status = 'linked', case_id = ?, resolved_by = NULL, resolved_at = ?,
+              resolution_note = ?, updated_at = ? WHERE id = ?`,
+    )
+    .run(up.id, nowIso(), 'Mock Test có SOS đã tự tạo Case và PA theo quy chế cho kỹ năng này — chờ GVBM xác nhận nguyên nhân.', nowIso(), x.signalId);
+  announceAutoCase({
+    caseId: up.id, studentId: attempt.student_id, cycleId: attempt.cycle_id ?? null, skillLabel: labelOf({ skill: x.skill }),
+    attemptNo: attempt.attempt_no, sosLevel: x.sosLevel, ownerUserId: open.owner_user_id ?? null,
+    detectedOn: x.detectedAt, hanXacNhan: han, actorUserId: p.userId,
+  });
+  return open;
+}
+
+/**
+ * Thông báo trong ứng dụng cho GVCN của lớp (PR-SOS K1-38, K5-15: GVBM kỹ năng trượt đã nhận thông báo Case — không gửi kép).
+ * Không gửi email/Zalo ở bản demo.
+ */
 function notifyTeachers(attempt: any, level: SosLevel) {
   if (!attempt.class_id) return;
   const teachers = db()
-    .prepare(`SELECT DISTINCT user_id FROM teacher_assignments WHERE class_id = ? AND status = 'active'`)
+    .prepare(`SELECT DISTINCT user_id FROM teacher_assignments WHERE class_id = ? AND status = 'active' AND is_core = 1`)
     .all(attempt.class_id) as any[];
   const student = db().prepare('SELECT full_name, student_code FROM students WHERE id = ?').get(attempt.student_id) as any;
   for (const t of teachers) {

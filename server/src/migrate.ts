@@ -16,6 +16,7 @@ import { migratePrMt } from './migrate/prMt.ts';
 import { migratePrNhap } from './migrate/prNhap.ts';
 import { migratePrMon } from './migrate/prMon.ts';
 import { migratePrKck } from './migrate/prKck.ts';
+import { migratePrSos } from './migrate/prSos.ts';
 import { migratePrYt4 } from './migrate/prYt4.ts';
 
 /**
@@ -469,6 +470,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     /* PR-MON: kỹ năng phụ trách được chỉ L · R · W1 · W2 · S (MH1). */
     migratePrMon(conn, applied);
     /* PR-KCK: Target "không cam kết" (Q29-1). */ migratePrKck(conn, applied);
+    /* PR-SOS: hạn xác nhận Case SOS + loại mốc PA quy chế (Q28-3). */ migratePrSos(conn, applied);
     /* PR-YT4: Ý thức v4 — ghi nhận vi phạm, ngày QL quyết, bảng khai bậc (chỉ cấu trúc). */
     migratePrYt4(conn, applied);
 

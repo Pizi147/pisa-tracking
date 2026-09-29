@@ -137,24 +137,18 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     const lan2: string[] = []; mig.migratePrN1(t.conn, lan2);
     assert(lan2.length === 0 && mig.demPaDoiHanThuHai(t.conn).soPa === 0, 'chạy lại vẫn đổi');
   });
-  check('N1 (3) · S4-1 (Task 5b): PA điền sẵn "chờ xác nhận" ở Case đang mở → PA quy chế đang chạy, hạn Thứ Hai; chạy lại không đổi', () => {
+  check('N1 (3) · S4-1 → PR-SOS (Q28-3): migratePrN1 KHÔNG còn đổi PA quy chế "chờ xác nhận" — PA giữ nguyên planned, confirmed_at NULL', () => {
     const { caseId } = taoPa('mig-qc');
     const cu = Number(t.conn.prepare(`INSERT INTO case_interventions (case_id, kind, description, status, preset, cycle_no, needs_approval, created_at)
       VALUES (?, 'self_study', 'Tự học · 1 tháng', 'planned', 1, 1, 0, ?)`).run(caseId, new Date().toISOString()).lastInsertRowid);
-    assert(mig.demPaQuyCheChoXacNhan(t.conn) >= 1, 'chạy thử không đếm được PA chờ xác nhận');
+    const truoc = JSON.stringify(t.conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(cu));
     const applied: string[] = [];
     mig.migratePrN1(t.conn, applied);
     const iv = t.conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(cu) as any;
-    assert(iv.status === 'started' && iv.confirmed_by === null && !!iv.confirmed_at && iv.cycle_started_on === t.TODAY
-      && iv.action_due === d.weeklyUpdateDue(t.TODAY) && new Date(`${iv.action_due}T00:00:00Z`).getUTCDay() === 1, JSON.stringify(iv));
-    assert(applied.some((x) => /PA quy chế SOS/.test(x)) && mig.demPaQuyCheChoXacNhan(t.conn) === 0, applied.join(' | '));
-    const truoc = JSON.stringify(iv);
-    const lan2: string[] = []; mig.migratePrN1(t.conn, lan2);
-    const sau = t.conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(cu) as any;
-    assert(lan2.length === 0 && JSON.stringify(sau) === truoc, `chạy lại vẫn đổi: ${lan2.join(' | ')}`);
-    assert(/demPaQuyCheChoXacNhan/.test(docSach('server/src/migrate/chayThuN1.ts')), 'chạy thử chưa in số PA quy chế chờ xác nhận');
+    assert(iv.status === 'planned' && iv.confirmed_at === null && JSON.stringify(iv) === truoc, JSON.stringify(iv));
+    assert(!applied.some((x) => /PA quy chế SOS/.test(x)) && typeof mig.migratePaQuyChe === 'undefined', applied.join(' | '));
+    assert(!/demPaQuyCheChoXacNhan/.test(docSach('server/src/migrate/chayThuN1.ts')), 'chạy thử còn mục PA quy chế chờ xác nhận');
   });
-
   // ==================================================================== 4. Web: chữ hạn "hết Thứ Hai" + A5 + A6
   check('N1 (4) · A6: việc Nhập điểm trễ có số ngày; không còn "⚠ n ngày" gọn; chữ hạn PA không còn Chủ nhật', () => {
     const v = d.viecTiepTheoCua({ nhapDiem: { kyNang: ['reading'], dot: 'MT2', quaHan: true, han: '2026-09-20' }, cases: [], homNay: '2026-09-24' })[0];
@@ -177,7 +171,8 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
   // ==================================================================== 5. Bảng kỹ năng: hai khối SOS loại trừ nhau + cột phải
   check('N1 (5) · YC-12.1: một biến trạng thái cho hai khối SOS; YC-12.5.4: cột phải dùng CotPhai', () => {
     const src = docSach('web/src/modules/cases/SkillBoard.tsx');
-    assert(!/causeOpen|dismissOpen/.test(src) && /khoiSos === 'nguyen-nhan'/.test(src) && /khoiSos === 'khong-theo-doi'/.test(src), 'hai khối còn mở cùng lúc được');
+    /* PR-SOS (Task 8/9): Xác nhận nguyên nhân mở Ngăn Case (`viec: 'xac-nhan'`); "Không cần theo dõi…" mở tại chỗ — nút kia ẩn khi khối mở. */
+    assert(!/causeOpen|dismissOpen/.test(src) && /viec: 'xac-nhan'/.test(src) && /khoiSos === 'khong-theo-doi'/.test(src) && /khoiSos === null \?/.test(src), 'hai khối còn mở cùng lúc được');
     assert((src.match(/<CotPhai\b/g) ?? []).length >= 4, 'cột phải chưa theo khuôn nút trên chữ dưới');
   });
 
@@ -190,16 +185,18 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
   const taoQuyChe = (key: string) => {
     const { caseId } = taoPa(`qc-${key}`);
     t.conn.prepare('DELETE FROM case_interventions WHERE case_id = ?').run(caseId);
-    const ivId = sosAuto.createPresetPlan({ caseId, attempt: { attempt_no: 1, class_id: lop }, category: 'listening', sosLevel: 2, followUntil: null });
+    const ivId = sosAuto.createPresetPlan({ caseId, attempt: { attempt_no: 1, class_id: lop }, category: 'listening', sosLevel: 2 });
     return { caseId, ivId };
   };
-  check('N1 (5b) · S4-1: PA quy chế tạo ra là đang chạy, máy xác nhận, có hạn ghi kết quả Thứ Hai từ tuần tạo', () => {
+  check('N1 (5b) · S4-1 → PR-SOS (Q28-3): PA quy chế tạo ra CHỜ XÁC NHẬN (planned, chưa hạn); Xác nhận PA → chạy từ hôm nay, hạn ghi kết quả Thứ Hai', () => {
     const { ivId } = taoQuyChe('chay');
     const iv = t.conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(ivId) as any;
-    assert(iv.status === 'started' && iv.preset === 1 && !!iv.confirmed_at && iv.confirmed_by === null, JSON.stringify(iv));
-    assert(iv.action_due === d.weeklyUpdateDue(t.TODAY) && iv.cycle_started_on === t.TODAY && iv.cycle_no === 1, `hạn ${iv.action_due}`);
+    assert(iv.status === 'planned' && iv.preset === 1 && iv.confirmed_at === null && iv.confirmed_by === null && iv.action_due === null, JSON.stringify(iv));
     const khop = t.conn.prepare(`SELECT COUNT(*) n FROM case_interventions iv WHERE iv.id = ? AND ${sosState.PA_QUY_CHE_CHUA_GHI('iv')}`).get(ivId) as any;
     assert(khop.n === 1, 'PA quy chế chưa có kết quả tuần phải khớp PA_QUY_CHE_CHUA_GHI');
+    sosAuto.xacNhanPaQuyChe(t.P.coreTeacher, ivId, { description: 'Tự học Listening 1 tháng, nghe chép mỗi ngày.' });
+    const sau = t.conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(ivId) as any;
+    assert(sau.action_due === d.weeklyUpdateDue(t.TODAY) && sau.cycle_started_on === t.TODAY && sau.cycle_no === 1 && sau.confirmed_by === t.P.coreTeacher.userId, `hạn ${sau.action_due}`);
   });
   check('N1 (5b) · hạn 3 ngày của GVBM chỉ còn "xác định nguyên nhân" (không còn vế xác nhận PA)', () => {
     const { caseId } = taoQuyChe('cho');
@@ -221,6 +218,7 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     t.conn.prepare('DELETE FROM case_sources WHERE case_id = ?').run(caseId);
     t.conn.prepare('DELETE FROM case_milestones WHERE case_id = ?').run(caseId);
     assert(sigSvc.caseHasIndependentBasis(caseId, null) === false, 'PA máy gán chưa ghi gì bị coi là căn cứ');
+    sosAuto.xacNhanPaQuyChe(t.P.coreTeacher, ivId, { description: 'Tự học Listening 1 tháng, nghe chép mỗi ngày.' });   // PR-SOS: PA chạy khi xác nhận
     casesSvc.recordFollowUp(t.P.coreTeacher, caseId, { interventionId: ivId, outcome: 'partial', note: 'Tuần đầu em nghe chép đều hơn' });
     assert(sigSvc.caseHasIndependentBasis(caseId, null) === true, 'PA quy chế có kết quả tuần phải là căn cứ');
     const khop = t.conn.prepare(`SELECT COUNT(*) n FROM case_interventions iv WHERE iv.id = ? AND ${sosState.PA_QUY_CHE_CHUA_GHI('iv')}`).get(ivId) as any;
@@ -249,7 +247,7 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
   check('N1 (6) · YC-12.5.1: dòng PA nhập bù chỉ đóng khi bấm Xong', () => {
     const src = docSach('web/src/modules/cases/QuickReport.tsx');
     assert(/const dangSua = moSua\.includes\(i\);/.test(src), 'dòng PA còn tự đóng khi có chữ');
-    assert(/conThieu: lf\.daBam \? oLoi/.test(src), 'chân form chưa dùng danh sách ô lỗi');
+    assert(/conThieu: lf\.daBam( && !cnn)? \? oLoi/.test(src), 'chân form chưa dùng danh sách ô lỗi');   // PR-SOS K3-23: không liệt kê khi đang dẫn sang Xác nhận Case
   });
 
   // ==================================================================== 7. Báo lỗi rõ cho mọi form KhungPanel còn lại

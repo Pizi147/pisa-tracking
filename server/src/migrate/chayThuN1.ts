@@ -1,16 +1,15 @@
 /**
- * `npm run chay-thu:n1` — CHẠY THỬ CHỈ ĐỌC trước bước migrate của PR-N1 (R-PA5, K5-19, K5-58, S4-1).
+ * `npm run chay-thu:n1` — CHẠY THỬ CHỈ ĐỌC trước bước migrate của PR-N1 (R-PA5, K5-19, K5-58). PR-SOS gỡ mục (4) S4-1 (Q28-3).
  *
  * Mở cùng database như `migrate/run.ts` (`db()`: file cục bộ, hoặc Turso khi có TURSO_DATABASE_URL) nhưng KHÔNG gọi
- * `migrate()` và không ghi gì — chỉ SELECT, để người deploy biết trước bước migrate sẽ đổi bao nhiêu dòng. In bốn con số:
+ * `migrate()` và không ghi gì — chỉ SELECT, để người deploy biết trước bước migrate sẽ đổi bao nhiêu dòng. In các con số:
  *   (1) số PA đang chạy sẽ dời hạn ghi kết quả Chủ nhật → Thứ Hai (cùng điều kiện với `migratePrN1`) + tối đa 20 dòng mẫu;
  *   (2) số PA chưa xong/chưa huỷ mà KHÔNG có hạn ghi kết quả (sẽ không có nhắc) — > 0 thì báo planning;
  *   (3) số PA đã huỷ mà vẫn "chờ duyệt" (K5-58, thẻ chết — chỉ để biết, không sửa);
- *   (4) số PA quy chế SOS đang chờ xác nhận sẽ thành đang chạy (S4-1, cùng điều kiện với `migratePaQuyChe`).
  */
 import fs from 'node:fs';
 import { DB_PATH, closeDb, db, isInitialised, laDbTuXa } from '../db.ts';
-import { demCaseSosDoiTrangThai, demPaDoiHanThuHai, demPaQuyCheChoXacNhan } from './prN1.ts';
+import { demCaseSosDoiTrangThai, demPaDoiHanThuHai } from './prN1.ts';
 
 const ddmm = (iso: string | null) => (iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : '—');
 
@@ -37,7 +36,7 @@ if (soPa > 20) console.log(`    … và ${soPa - 20} PA nữa`);
 
 /*
  * (2) PA chưa xong/chưa huỷ mà hạn ghi kết quả trống. Tách theo lý do để đọc nhanh: chờ duyệt thì trống là đúng luật; PA quy chế
- * SOS chờ xác nhận (`preset = 1`) chưa chạy nên chưa có hạn — bước migrate (4) cho chúng chạy và có hạn. Phần còn lại mới là chỗ đáng hỏi.
+ * SOS chờ xác nhận (`preset = 1`) chưa chạy nên chưa có hạn — chạy khi GVBM bấm Xác nhận PA (PR-SOS, Q28-3). Phần còn lại mới là chỗ đáng hỏi.
  */
 const thieu = conn.prepare(
   `SELECT COUNT(*) AS n,
@@ -57,9 +56,6 @@ if (nThieu) console.log('    → > 0: báo planning trước khi migrate.');
 const huyCho = Number((conn.prepare(
   `SELECT COUNT(*) AS n FROM case_interventions WHERE status = 'cancelled' AND approval_state = 'pending'`).get() as any)?.n ?? 0);
 console.log(`\n(3) ${huyCho} PA đã huỷ mà vẫn ở trạng thái chờ duyệt (chỉ để biết)`);
-
-/* (4) S4-1: PA quy chế SOS còn chờ xác nhận → đang chạy, hạn tuần tính từ ngày migrate (Q25). */
-console.log(`\n(4) ${demPaQuyCheChoXacNhan(conn)} PA quy chế đang chờ xác nhận sẽ thành đang chạy`);
 
 /* (5) Q28-5: Case từ SOS còn mở sẽ đổi nhãn trạng thái theo luật mới (chỉ nhãn, không đổi PA/kết quả). */
 const tt = demCaseSosDoiTrangThai(conn);

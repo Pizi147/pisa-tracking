@@ -34,7 +34,7 @@ export async function runPhanTichTests(t: YThucTestKit) {
       eq(d.mauOKetQua(k, 2), 'tam', `${k} có số → tam`);
       eq(d.mauOKetQua(k, 0), 'xam', `${k} bằng 0 → xám`);
     }
-    for (const k of ['luot', 'kn:listening', 'hvCoCase', 'case', 'dangXuLy', 'thieuPa']) eq(d.mauOKetQua(k, 5), null, `${k} không tô`);
+    for (const k of ['luot', 'kn:listening', 'hvCoCase', 'case', 'choNguyenNhan', 'dangLam']) eq(d.mauOKetQua(k, 5), null, `${k} không tô`);
   });
 
   check('PR-Pb · gocNhinTuThamSo: Q16 — hang-doi/tinh-hinh/ky-nang KHÔNG bị xoá khỏi URL', () => {
@@ -1221,9 +1221,11 @@ export async function runPhanTichTests(t: YThucTestKit) {
     try {
       const bo = { branchId: null, ct: 'ca-hai' as const, soTuan: 52, classId: null, theo: 'tuan' as const };
       const oCase = tongHopSvc.oTongHop(P.admin, { ...bo, khoa: 'tong', cot: 'case' });
-      const oDangXuLy = tongHopSvc.oTongHop(P.admin, { ...bo, khoa: 'tong', cot: 'dangXuLy' });
+      /* PR-SOS (K1-20): cột Xử lý theo trạng thái v4 — Case đã đóng vào "Xong/Huỷ", không vào "Đang làm". */
+      const oDangXuLy = tongHopSvc.oTongHop(P.admin, { ...bo, khoa: 'tong', cot: 'dangLam' });
+      const oXong = tongHopSvc.oTongHop(P.admin, { ...bo, khoa: 'tong', cot: 'xongHuy' });
       assert(oCase.rows.some((r: any) => r.id === caseId), 'Case đã đóng vẫn phải có mặt ở cột "Case" (tập lượt sinh ra)');
-      assert(!oDangXuLy.rows.some((r: any) => r.id === caseId), `Case đã status='done' không được tính vào "Đang xử lý": ${JSON.stringify(oDangXuLy.rows.map((r: any) => r.id))}`);
+      assert(!oDangXuLy.rows.some((r: any) => r.id === caseId) && oXong.rows.some((r: any) => r.id === caseId), `Case đã status='done' phải ở "Xong/Huỷ", không ở "Đang làm": ${JSON.stringify(oDangXuLy.rows.map((r: any) => r.id))}`);
     } finally {
       conn.prepare('DELETE FROM case_interventions WHERE id = ?').run(ivId);
       conn.prepare('DELETE FROM sos_cases WHERE id = ?').run(caseId);

@@ -271,11 +271,11 @@ export const TRAN: Record<string, number> = {
   'GVCN /my-work?nguoi=tat-ca': 19,
   'QL /my-work?nguoi=7': 74,
   /* PR-DUYET: đo khi hộp đã có thẻ thật (Task 4) — trần max(sau+10, ⌈sau×1,3⌉). */
-  'QL /yeu-cau?hop=cho-duyet': 28,
+  'QL /yeu-cau?hop=cho-duyet': 29,   // PR-YT4 sau khi gộp PR-SOS: thẻ khong_theo_doi + bao_len_y_thuc cùng nạp (đo 29, +3,6%)
   'QT /yeu-cau?hop=cho-duyet': 28,
   'GVCN /yeu-cau?hop=cho-duyet': 17,
-  'QL /yeu-cau?hop=cho-duyet&xem=da-xu-ly': 25,
-  'QT /yeu-cau?hop=cho-duyet&xem=da-xu-ly': 24,
+  'QL /yeu-cau?hop=cho-duyet&xem=da-xu-ly': 27,   // PR-SOS: loại thẻ khong_theo_doi thêm câu nạp (đo 23); + thẻ Ý thức PR-YT4 (đo 27)
+  'QT /yeu-cau?hop=cho-duyet&xem=da-xu-ly': 26,   // PR-SOS: loại thẻ khong_theo_doi thêm câu nạp (đo 22)
   'GVCN /yeu-cau?hop=cua-toi': 25,
   'GVBM /yeu-cau?hop=cua-toi': 21,
   'QL /yeu-cau/dem': 25,

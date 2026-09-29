@@ -573,8 +573,10 @@ export function caseHasIndependentBasis(caseId: number, excludeAttemptId: number
   const conn = db();
   const otherMilestone = conn
     .prepare(
+      /* PR-SOS: mốc Xác nhận Case / thẻ Không cần theo dõi không phải căn cứ (như nguyên nhân chọn tay trước đây). */
       `SELECT COUNT(*) n FROM case_milestones
-        WHERE case_id = ? AND (attempt_id IS NULL OR attempt_id != ?)`,
+        WHERE case_id = ? AND (attempt_id IS NULL OR attempt_id != ?)
+          AND kind NOT IN ('xac_nhan_case', 'xin_khong_theo_doi', 'ql_duyet_khong_theo_doi', 'ql_tu_choi_khong_theo_doi')`,
     )
     .get(caseId, excludeAttemptId ?? -1) as any;
   if (otherMilestone.n > 0) return true;

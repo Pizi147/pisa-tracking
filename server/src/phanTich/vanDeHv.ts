@@ -303,9 +303,16 @@ export function vanDeHv(p: Principal, f: FilterVanDeHv): VanDeHvKetQua {
   hang.sort((a, b) => thuTuCha(a) - thuTuCha(b) || b.soHv - a.soHv || thuTuHo(a) - thuTuHo(b));
 
   const cpl = r.chuaPhanLoai;
+  /* PR-SOS (K1-22): Case chưa phân loại = Case chờ xác nhận nguyên nhân — đếm số đã quá hạn (lô ≤ 400). */
+  const idCpl = [...cpl.cases];
+  let quaHan = 0;
+  for (let i = 0; i < idCpl.length; i += 400) {
+    const lo = idCpl.slice(i, i + 400);
+    quaHan += (db().prepare(`SELECT COUNT(*) n FROM sos_cases WHERE id IN (${lo.map(() => '?').join(',')}) AND han_xac_nhan < ?`).get(...lo, demoToday()) as any).n;
+  }
   return {
     gop: f.gop, chiChinh: f.chiChinh, tomTat: r.tomTat, hang,
-    chuaPhanLoai: { case: cpl.cases.size, hv: cpl.hv.size, lop: cpl.lop.size },
+    chuaPhanLoai: { case: cpl.cases.size, hv: cpl.hv.size, lop: cpl.lop.size, quaHan },
     scopeEmpty: r.scopeEmpty,
   };
 }

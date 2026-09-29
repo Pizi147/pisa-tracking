@@ -30,7 +30,7 @@ import { Han } from '../../ui/Han.tsx';
 import { QuaHan, ChipLichSu } from '../../ui/Nhan.tsx';
 import { useSession } from '../../lib/session.tsx';
 
-type OpenCase = { caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'them-pa' } | null;
+type OpenCase = { caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'them-pa' | 'xac-nhan' | 'xac-nhan-pa' } | null;
 
 type Profile = any;
 
@@ -373,7 +373,8 @@ export default function StudentDetailPage() {
 
       <QuickReport open={reportOpen} onClose={() => setReportOpen(false)}
         studentId={data.id} studentName={data.fullName} lop={data.currentClass?.code} cycleId={cy?.id ?? null}
-        onDone={(cid) => { reload(); setOpenCase({ caseId: cid }); }} />
+        onDone={(cid) => { reload(); setOpenCase({ caseId: cid }); }}
+        onMoCase={(cid, viec) => { reload(); setOpenCase({ caseId: cid, viec }); }} />
 
       {/* Tạo Case ĐỂ TRẢ LỜI một tín hiệu: đầu mục và kỹ năng điền sẵn, nhận định do người viết. */}
       <QuickReport open={!!verify} onClose={() => setVerify(null)}

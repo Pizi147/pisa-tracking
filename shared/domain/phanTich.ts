@@ -12,6 +12,7 @@ import {
 } from './cases.ts';
 import { mondayOfDate } from './week.ts';
 import { type ChuongTrinh } from './tongQuan.ts';
+import type { TrangThaiCaseV4 } from './sosV4.ts';
 
 // ------------------------------------------------------------------ góc nhìn (Q1, Q16)
 
@@ -193,9 +194,18 @@ const COT_XU_LY: CotTongHop[] = [
   { khoa: 'hvCoCase', nhom: 'xu-ly', donVi: 'hoc-vien', nhan: () => 'HV có Case',
     goiY: 'Học viên có ít nhất một Case sinh từ các lượt trong dòng — một em nhiều Case vẫn tính một lần.' },
   { khoa: 'case', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Case', goiY: 'Case sinh từ các lượt trong dòng — là tình trạng HÔM NAY của case, không phải lúc lượt được chấm.' },
-  { khoa: 'dangXuLy', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Đang xử lý', goiY: 'Case đã có việc hỗ trợ thực sự diễn ra — tình trạng hôm nay.' },
-  { khoa: 'thieuPa', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Thiếu PA học thuật', goiY: 'Case chưa ai ghi sẽ làm gì — tình trạng hôm nay.' },
+  /* PR-SOS (K1-20): bốn cột theo MỘT nhãn trạng thái Case (`trangThaiCaseV4`) — tình trạng hôm nay. */
+  { khoa: 'choNguyenNhan', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Chờ nguyên nhân',
+    goiY: 'Case từ SOS chưa xác nhận nguyên nhân — trong ngoặc là số đã quá hạn 3 ngày.' },
+  { khoa: 'choDuyet', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Chờ Quản lý duyệt', goiY: 'Case đã gửi "Không cần theo dõi", chờ Quản lý duyệt.' },
+  { khoa: 'dangLam', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Đang làm', goiY: 'Case đã có nguyên nhân (kể cả PA theo quy chế còn chờ xác nhận) hoặc Case giáo viên báo, chưa xong.' },
+  { khoa: 'xongHuy', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Xong/Huỷ', goiY: 'Case đã hoàn thành, huỷ vì không cần theo dõi, hoặc hệ thống đóng.' },
 ];
+/** Trạng thái Case v4 → cột nhóm Xử lý của bảng Tổng hợp. `choNguyenNhanQuaHan` là số phụ trong ngoặc của cột Chờ nguyên nhân. */
+export const COT_XU_LY_V4: Record<TrangThaiCaseV4, string> = {
+  'cho-nguyen-nhan': 'choNguyenNhan', 'cho-duyet-khong-theo-doi': 'choDuyet', 'cho-xac-nhan-pa': 'dangLam', 'dang-lam': 'dangLam',
+  xong: 'xongHuy', 'huy-khong-theo-doi': 'xongHuy', 'he-thong-dong': 'xongHuy',
+};
 
 /**
  * Cột kỹ năng "dưới kỳ vọng", sinh từ `kyNangTheoCt` — khoá kỹ thuật `kn:<hạng mục>`, không lộ ra màn (chỉ dùng nội bộ).
@@ -346,7 +356,8 @@ export type VanDeHvKetQua = {
   gop: boolean; chiChinh: boolean;
   tomTat: { hv: number; case: number; lop: number };
   hang: DongVanDeHv[];
-  chuaPhanLoai: { case: number; hv: number; lop: number };
+  /** PR-SOS (K1-22): `quaHan` = số Case chờ xác nhận nguyên nhân đã quá hạn 3 ngày. */
+  chuaPhanLoai: { case: number; hv: number; lop: number; quaHan: number };
   scopeEmpty: boolean;
 };
 

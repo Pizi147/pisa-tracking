@@ -27,7 +27,7 @@ function luuCotHien(s: Set<NhomCot>) {
 }
 
 /** Cột cần chú ý của nhóm Xử lý — chỉ đổi màu chữ (G-4: không badge, không ⚠). */
-const MAU_COT: Partial<Record<string, string>> = { thieuPa: 'text-soon' };
+const MAU_COT: Partial<Record<string, string>> = { choNguyenNhan: 'text-soon' };
 
 /**
  * MÀU Ô KẾT QUẢ TEST (N-1b, Q23): Đạt xanh lá · SOS 1 vàng · SOS 2 cam · SOS 3 đỏ — chữ + nền nhạt; ô 0 xám `text-faint`;
@@ -133,7 +133,9 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
     if (v <= 0) return <span className="tabular-nums text-faint">0</span>;
     const nguon = `/phan-tich/tong-hop/o?${query}&khoa=${encodeURIComponent(row.khoa)}&cot=${encodeURIComponent(col.khoa)}`;
     const so = <SoLieuO giaTri={v} nguon={nguon} tieuDe={`${col.nhan(ct)} · ${row.nhan}`} />;
-    if (!mau) return <span className={MAU_COT[col.khoa] ?? ''}>{so}</span>;
+    /* PR-SOS (K1-20): Chờ nguyên nhân kèm số quá hạn trong ngoặc. */
+    const quaHan = col.khoa === 'choNguyenNhan' ? row.o.choNguyenNhanQuaHan ?? 0 : 0;
+    if (!mau) return <span className={MAU_COT[col.khoa] ?? ''}>{so}{quaHan > 0 && <span className="text-faint"> ({quaHan} quá hạn)</span>}</span>;
     return <span className={`inline-block min-w-[26px] rounded px-1.5 text-center ${MAU_O[mau]}`}>{so}</span>;
   };
 
