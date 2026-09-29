@@ -251,10 +251,12 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
       xoaThuMucTam(dir);
     }
   });
-  const measuresSvc = await import('../yThuc/measures.ts');
-  await checkAsync('PR-Z2 · Xoá biện pháp Đang chuẩn bị: tệp trong kho chỉ bị xoá SAU KHI giao dịch đã chốt (giao dịch lui thì dòng còn mà tệp mất là không hoàn tác được)', async () => {
-    const m = t.conn.prepare("SELECT id FROM discipline_measures WHERE status = 'preparing' ORDER BY id LIMIT 1").get() as { id: number } | undefined;
-    assert(m, 'Bộ demo phải có ít nhất một biện pháp Đang chuẩn bị');
+  const xuLySvc = await import('../yThuc/xuLy.ts');
+  await checkAsync('PR-Z2 · (PR-YT4) Xoá NHÁP đề xuất Ý thức: tệp trong kho chỉ bị xoá SAU KHI giao dịch đã chốt (giao dịch lui thì dòng còn mà tệp mất là không hoàn tác được)', async () => {
+    const sv = t.conn.prepare(`SELECT v.student_id AS sid, v.id FROM violations v JOIN enrollments e ON e.student_id = v.student_id AND e.status = 'active'
+      WHERE NOT EXISTS (SELECT 1 FROM measure_violations mv WHERE mv.violation_id = v.id) ORDER BY v.id LIMIT 1`).get() as { sid: number; id: number } | undefined;
+    assert(sv, 'Bộ demo phải có ít nhất một vi phạm chưa xử lý của em đang học');
+    const m = xuLySvc.deXuat(t.admin, sv!.sid, { kind: 'suspension', violationIds: [sv!.id], note: 'Đề xuất nháp dùng cho phép kiểm xoá tệp' });
     const kho = new Map<string, Buffer>();
     const trongGiaoDichLucXoa: boolean[] = [];
     datKhoTepChoKiemThu({
@@ -265,11 +267,11 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
     try {
       await attachmentsSvc.addFile(t.admin, { ownerType: 'discipline_measure', ownerId: m!.id, fileName: 'z2.pdf', data: Buffer.from('bien phap') });
       assert(kho.size === 1, 'Chuẩn bị: biện pháp phải có một tệp trong kho');
-      measuresSvc.deleteMeasure(t.admin, m!.id);
+      xuLySvc.xoaNhap(t.admin, m.id);
       await khoTepMod.choViecNenKhoTep();
       assert(trongGiaoDichLucXoa.length === 1, `Phải xoá đúng một tệp, đã gọi xoá ${trongGiaoDichLucXoa.length} lần`);
       assert(trongGiaoDichLucXoa[0] === false, 'Tệp bị xoá khi giao dịch CHƯA chốt');
-      assert(kho.size === 0, 'Xoá biện pháp thì tệp của nó cũng phải rời kho');
+      assert(kho.size === 0, 'Xoá nháp thì tệp của nó cũng phải rời kho');
     } finally { datKhoTepChoKiemThu(null); }
   });
   check('PR-Z2 · `npm run thu-turso` (tạo/xoá bảng _thu) TỪ CHỐI database kiểu bản chính và khi BAN_CHINH=1 — dừng trước khi kết nối', () => {

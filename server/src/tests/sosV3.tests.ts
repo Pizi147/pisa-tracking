@@ -942,7 +942,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
   console.log('\nPR-T · 7. Xoá vi phạm thẳng — thay "đánh dấu không chính xác" (V11′–V14′) — T6');
 
   const violSvc: any = await import('../yThuc/violations.ts');
-  const measSvc: any = await import('../yThuc/measures.ts');
+  const xuLySvc: any = await import('../yThuc/xuLy.ts');
   const trangThaiSvc: any = await import('../yThuc/trangThai.ts');
   const thongKeSvc: any = await import('../yThuc/thongKe.ts');
   const auditRows = (action: string, id?: number) => all('SELECT * FROM audit_logs WHERE action = ?' + (id ? ' AND entity_id = ?' : ''), ...(id ? [action, id] : [action]));
@@ -950,11 +950,10 @@ export async function runSosV3Tests(t: YThucTestKit) {
     studentId: sid, category: 'homework', description: 'Không nộp bài Writing Task 2 buổi này', ...extra }) as any).violation.id as number;
   /** Ghi `n` vi phạm khác ngày cho một học viên, trả về danh sách id. */
   const recordMany = (sid: number, n: number) => Array.from({ length: n }, (_, i) => recordV(gvcn, sid, { occurredOn: addDays(TODAY, -(i + 1)), description: `Vi phạm thứ ${i + 1} dùng cho phép kiểm xoá` }));
-  const mkMeasure = (sid: number, kind: string, ids: number[]) => measSvc.createMeasure(gvcn, { studentId: sid, kind, violationIds: ids }) as any;
-  const doneMeasure = (sid: number, ids: number[]) => {
-    const m = mkMeasure(sid, 'family_report', ids);
-    return measSvc.confirmMeasure(gvcn, m.id, { performedOn: addDays(TODAY, 0), performedBy: gvcn.userId, note: 'Đã gửi report cho gia đình' }) as any;
-  };
+  /* PR-YT4: một lần Xác nhận xử lý (bậc tự điền). `kind` của v3 bỏ — máy chủ quyết bậc. */
+  const doneMeasure = (sid: number, ids: number[]) =>
+    xuLySvc.xacNhanXuLy(gvcn, sid, { violationIds: ids, performedOn: addDays(TODAY, 0), note: 'Đã gửi report cho gia đình' }) as any;
+  const mkMeasure = (sid: number, _kind: string, ids: number[]) => doneMeasure(sid, ids);
 
   check('PR-T · V11′ Ghi sai thì XOÁ thẳng: không lý do, không "đánh dấu không chính xác" (không còn hàm/route/trạng thái đó); dòng, dòng nối, lịch sử sửa và tệp gắn với nó biến mất', () => {
     const st = makeStudent('V11p');
@@ -1003,40 +1002,36 @@ export async function runSosV3Tests(t: YThucTestKit) {
     }
   });
 
-  check('PR-T · V12′ Xoá được ở mọi nơi — kể cả vi phạm đang nằm trong biện pháp ĐANG CHUẨN BỊ hay ĐÃ THỰC HIỆN; thao tác đi qua danh sách lớp, hồ sơ học viên (cùng hàm); Q15 chặn xoá vi phạm DUY NHẤT còn lại của PA đang chuẩn bị', () => {
+  check('PR-T · V12′ (PR-YT4 V4-12) Xoá được ở mọi nơi — kể cả vi phạm nằm trong lần xử lý ĐÃ XONG; không còn chặn "vi phạm duy nhất"; lần xử lý còn, bậc KHÔNG lùi', () => {
     const st = makeStudent('V12p'); const ids = recordMany(st.id, 4);
-    const prep = mkMeasure(st.id, 'talk_short', [ids[0], ids[1]]);
-    const done = doneMeasure(st.id, [ids[2], ids[3]]);
+    const r1 = doneMeasure(st.id, [ids[0], ids[1]]);
+    const r2 = doneMeasure(st.id, [ids[2], ids[3]]);
+    assert(r1.kind === 'report_1' && r2.kind === 'report_2', `bậc tự điền: ${r1.kind} → ${r2.kind}`);
     violSvc.deleteViolation(gvcn, ids[0]); violSvc.deleteViolation(gvcn, ids[2]);
-    assert(count('SELECT COUNT(*) n FROM measure_violations WHERE measure_id = ?', prep.id) === 1 && count('SELECT COUNT(*) n FROM measure_violations WHERE measure_id = ?', done.id) === 1, 'Đã gỡ khỏi cả hai biện pháp');
-    assert(get('SELECT status FROM discipline_measures WHERE id = ?', done.id).status === 'done', 'Biện pháp đã thực hiện còn nguyên');
-    /* Q15 (rulebook thay đổi 23/09/2026): PA ĐANG CHUẨN BỊ chỉ còn MỘT vi phạm — xoá nó bị CHẶN (B02: PA phải có ít nhất một vi phạm), không còn để PA nháp mất hết vi phạm ngầm như trước. */
-    assertThrows(
-      () => violSvc.deleteViolation(gvcn, ids[1]),
-      /vi phạm duy nhất của phương án.*đang chuẩn bị/,
-      'Xoá vi phạm duy nhất của PA đang chuẩn bị phải bị chặn (Q15)',
-    );
-    const stillThere = measSvc.measureDetail(gvcn, prep.id) as any;
-    assert(stillThere.status === 'preparing' && stillThere.violationCount === 1, `Dữ liệu không đổi sau khi bị chặn: ${JSON.stringify({ s: stillThere.status, c: stillThere.violationCount })}`);
+    assert(count('SELECT COUNT(*) n FROM measure_violations WHERE measure_id = ?', r1.id) === 1 && count('SELECT COUNT(*) n FROM measure_violations WHERE measure_id = ?', r2.id) === 1, 'Đã gỡ khỏi cả hai lần xử lý');
+    violSvc.deleteViolation(gvcn, ids[1]);
+    const r1Sau = xuLySvc.xemXuLy(gvcn, r1.id) as any;
+    assert(r1Sau.status === 'done' && r1Sau.viPham.length === 0, 'Xoá vi phạm cuối cùng của lần xử lý: lần xử lý còn, 0 vi phạm');
+    assert((trangThaiSvc.trangThaiYThuc([st.id]).get(st.id) as any).bac === 2, 'Bậc không lùi');
   });
 
   check('PR-T · V14′ (§10#9) Xoá vi phạm nằm trong Report gia đình ĐÃ THỰC HIỆN: Report còn (việc đã làm thật), số vi phạm của biện pháp là số ĐANG GẮN (giảm 1, không phải ảnh chụp), thống kê giảm 1, có dòng audit', () => {
     const st = makeStudent('V14p'); const ids = recordMany(st.id, 5);
     const report = doneMeasure(st.id, ids);
-    assert(report.violationCount === 5 && report.violations.length === 5 && !('violationCountAtConfirm' in report) && !('invalidNote' in report) && !('invalidViolationCount' in report),
-      `Trước khi xoá: ${JSON.stringify({ c: report.violationCount, keys: Object.keys(report).filter((k) => /invalid|AtConfirm/.test(k)) })}`);
+    assert(report.viPham.length === 5 && !('violationCountAtConfirm' in report) && !('invalidNote' in report) && !('invalidViolationCount' in report),
+      `Trước khi xoá: ${JSON.stringify({ c: report.viPham.length, keys: Object.keys(report).filter((k) => /invalid|AtConfirm/.test(k)) })}`);
     const total = () => (metricsSvc.metricSet(P.mbManager, 'vi-pham-tong', { branchId: get('SELECT branch_id n FROM classes WHERE id = ?', CLASS).n }).ids as number[]);
     assert(total().includes(ids[1]), 'Tiền đề: vi phạm nằm trong thống kê');
     const before = total().length;
     violSvc.deleteViolation(gvcn, ids[1]);
-    const after = measSvc.measureDetail(gvcn, report.id) as any;
-    assert(after.status === 'done' && after.performedOn === report.performedOn && after.violationCount === 4 && after.violations.length === 4, `Sau khi xoá: ${JSON.stringify({ s: after.status, c: after.violationCount })}`);
+    const after = xuLySvc.xemXuLy(gvcn, report.id) as any;
+    assert(after.status === 'done' && after.performedOn === report.performedOn && after.viPham.length === 4, `Sau khi xoá: ${JSON.stringify({ s: after.status, c: after.viPham.length })}`);
     assert(total().length === before - 1 && !total().includes(ids[1]), 'Thống kê phải giảm đúng 1');
     assert(auditRows('violation.delete', ids[1]).length === 1, 'Phải có dòng audit');
     /* Xoá hết vi phạm của biện pháp đã thực hiện: biện pháp VẪN giữ (việc đã làm thật), hiện 0 vi phạm. */
     for (const id of [ids[0], ids[2], ids[3], ids[4]]) violSvc.deleteViolation(gvcn, id);
-    const empty = measSvc.measureDetail(gvcn, report.id) as any;
-    assert(empty.status === 'done' && empty.violationCount === 0 && empty.violations.length === 0, `Report mất hết vi phạm phải còn với 0 vi phạm: ${JSON.stringify({ s: empty.status, c: empty.violationCount })}`);
+    const empty = xuLySvc.xemXuLy(gvcn, report.id) as any;
+    assert(empty.status === 'done' && empty.viPham.length === 0, `Lần xử lý mất hết vi phạm phải còn với 0 vi phạm: ${JSON.stringify({ s: empty.status, c: empty.viPham.length })}`);
     const measured = metricsSvc.metricSet(P.mbManager, 'bien-phap-da-thuc-hien', { branchId: get('SELECT branch_id n FROM classes WHERE id = ?', CLASS).n }).ids as number[];
     assert(measured.includes(report.id), 'Biện pháp đã thực hiện vẫn được thống kê');
   });

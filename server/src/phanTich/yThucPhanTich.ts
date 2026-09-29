@@ -1,7 +1,7 @@
 import { db } from '../db.ts';
 import {
-  MEASURE_KIND_LABEL_V3, VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, WARNING_CHAIN, buocTiepTheo, laHvCanChuY,
-  type ChuongTrinh, type DongHvCanChuY, type DongLopViPham, type MeasureKindV3, type ViolationCategory, type YThucPhanTichKetQua,
+  khoaLoaiXuLy, nhanLoaiXuLy, VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, WARNING_CHAIN, buocTiepTheo, laHvCanChuY,
+  type ChuongTrinh, type DongHvCanChuY, type DongLopViPham, type ViolationCategory, type YThucPhanTichKetQua,
 } from '../../../shared/domain/index.ts';
 import { badRequest, forbidden } from '../util.ts';
 import type { Principal } from '../permissions.ts';
@@ -109,7 +109,7 @@ function tinh(p: Principal, f: FilterYThuc) {
          FROM discipline_measures m WHERE m.status = 'done' AND m.student_id IN (${marks(chunk.length)})`,
     ).all(...chunk) as any[]) {
       if (!xuLyCua.has(r.student_id)) xuLyCua.set(r.student_id, []);
-      const ten = r.kind === 'other' && r.custom_name ? r.custom_name : MEASURE_KIND_LABEL_V3[r.kind as MeasureKindV3] ?? r.kind;
+      const ten = nhanLoaiXuLy(r.kind, r.custom_name);
       xuLyCua.get(r.student_id)!.push({ kind: r.kind, ten, ngay: r.performed_on ?? null, cycleId: r.cycle_id ?? null });
     }
   }
@@ -121,7 +121,7 @@ function tinh(p: Principal, f: FilterYThuc) {
     `SELECT m.kind, COUNT(*) AS n FROM discipline_measures m LEFT JOIN classes c ON c.id = m.class_id
       WHERE m.status = 'done' AND ${bm.sql} AND m.performed_on >= ? AND m.performed_on <= ? AND ${cm.sql}${ctSql}
       GROUP BY m.kind`,
-  ).all(...bm.args, f.from, f.to, ...cm.args) as any[]) bienPhapTheoLoai[r.kind] = r.n;
+  ).all(...bm.args, f.from, f.to, ...cm.args) as any[]) bienPhapTheoLoai[khoaLoaiXuLy(r.kind)] = (bienPhapTheoLoai[khoaLoaiXuLy(r.kind)] ?? 0) + r.n;
 
   // Học viên cần chú ý (Q14).
   const hvRows: DongHvCanChuY[] = [];

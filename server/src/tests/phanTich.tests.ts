@@ -770,7 +770,7 @@ export async function runPhanTichTests(t: YThucTestKit) {
       eq(dong(m.a)?.buocTiep, 'sap-thu-1', 'a: chưa thư, ≥ 3 vi phạm chưa xử lý');
       eq([dong(m.a)?.viPham, dong(m.a)?.chuaXuLy], [3, 3], 'a: 3 vi phạm, 3 chưa xử lý');
       eq(dong(m.b)?.buocTiep, 'sap-thu-2', 'b: Thư CC 1 rồi vi phạm tiếp');
-      eq(dong(m.b)?.bienPhapGanNhat, 'Thư cảnh cáo lần 1', 'b: PA xử lý gần nhất');
+      eq(dong(m.b)?.bienPhapGanNhat, d.nhanLoaiXuLy('warning_1'), 'b: PA xử lý gần nhất (PR-YT4: loại v3 hiện "loại cũ" — Task 7 viết lại khối này)');
       eq(dong(m.b)?.ngay, cong(TODAY, -20), 'b: ngày thực hiện');
       assert(!dong(m.c), 'c: 2 vi phạm, chưa thư → không vào danh sách');
       eq(dong(m.dd)?.buocTiep, 'theo-doi', 'd: 3 vi phạm đã xử lý hết');
@@ -845,7 +845,7 @@ export async function runPhanTichTests(t: YThucTestKit) {
     const kq = yThucSvc.yThucPhanTich(P.admin, FY());
     assert(!/phoiHop|phoi-hop|coordination/i.test(JSON.stringify(Object.keys(kq))), `không được có khoá phối hợp: ${Object.keys(kq)}`);
     eq(Object.keys(kq).sort(), ['bienPhapTheoLoai', 'gom', 'hvCanChuY', 'lop', 'scopeEmpty'], 'đúng các khoá đã chốt');
-    for (const k of Object.keys(kq.bienPhapTheoLoai)) assert(d.MEASURE_KINDS_V3.includes(k), `bienPhapTheoLoai chỉ có loại PA xử lý hợp lệ: ${k}`);
+    for (const k of Object.keys(kq.bienPhapTheoLoai)) assert(d.KHOA_LOAI_XU_LY.includes(k), `bienPhapTheoLoai chỉ có loại xử lý v4 (+ loai-cu, Q2): ${k}`);
   });
 
   check('UX4 · Ý thức — quyền: GVCN 403; QL chi nhánh khác 403; classId ngoài phạm vi 403', () => {
@@ -1121,7 +1121,7 @@ export async function runPhanTichTests(t: YThucTestKit) {
     const kq = yThucSvc.yThucPhanTich(P.admin, FY());
     const f = FY();
     const so = metricsUx4.metricSet(P.admin, 'bien-phap-theo-loai', { from: f.from, to: f.to });
-    for (const k of d.MEASURE_KINDS_V3) {
+    for (const k of d.KHOA_LOAI_XU_LY) {
       eq(kq.bienPhapTheoLoai[k] ?? 0, so.byKind?.[k]?.length ?? 0, `loại ${k}`);
     }
     eq(Object.values(kq.bienPhapTheoLoai).reduce((s: number, x: any) => s + x, 0), so.n, 'tổng các loại = tổng chỉ số');

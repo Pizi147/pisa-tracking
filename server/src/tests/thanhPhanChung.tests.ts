@@ -105,7 +105,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
   check('NEN (2) · máy chủ: Khác cần ≥ 3 ký tự ghi rõ, bỏ luật 30 ký tự; tìm người không cần gõ 3 ký tự', () => {
     const src = doc('server/src/yThuc/violations.ts') + doc('server/src/cases/cases.ts') + doc('shared/domain/yThuc.ts');
     assert(!/VIOLATION_OTHER_DESCRIPTION_MIN|summary\.length < 30/.test(src), 'còn luật 30 ký tự');
-    for (const f of ['server/src/yThuc/violations.ts', 'server/src/cases/cases.ts', 'server/src/yThuc/measures.ts',
+    for (const f of ['server/src/yThuc/violations.ts', 'server/src/cases/cases.ts', 'server/src/yThuc/xuLy.ts',
       'server/src/yThuc/phoiHop.ts', 'server/src/cases/sosAuto.ts', 'server/src/routes/index.ts'])
       assert(/kiemGhiRoKhac\(/.test(doc(f)), `${f} chưa kiểm bằng kiemGhiRoKhac`);
     assert(!/term\.length < 3/.test(doc('server/src/platform/timNguoi.ts')), 'còn ngưỡng 3 ký tự');

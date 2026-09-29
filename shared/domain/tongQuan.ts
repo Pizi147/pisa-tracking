@@ -90,7 +90,7 @@ export const CAN_XU_LY: readonly {
   { metricId: 'case-thieu-pa', nhan: 'Case thiếu PA học thuật', nut: 'Xem', mau: 'vang' },
   { metricId: 'pa-can-cap-nhat', nhan: 'PA học thuật quá hạn cập nhật', nut: 'Xem', mau: 'do' },
   { metricId: 'bai-qua-han-nhap-diem', nhan: 'bài chưa nhập điểm quá hạn', nut: 'Xem', mau: 'do' },
-  { metricId: 'hv-can-xu-ly', nhan: 'học viên có vi phạm quá 5 ngày chưa xử lý', nut: 'Xem', mau: 'xanh' },
+  /* PR-YT4 (giao kèo #117): "vi phạm quá 5 ngày chưa xử lý" nay là thẻ Báo lên `bao_len_y_thuc` ở hộp Chờ duyệt. Chỉ số `hv-can-xu-ly` vẫn sống. */
 ];
 export const CAN_XU_LY_TOI_DA = 10;
 export type DongCanXuLyGoc = {

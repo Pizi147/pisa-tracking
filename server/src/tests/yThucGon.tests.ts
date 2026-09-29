@@ -127,7 +127,7 @@ export async function runYThucGonTests(t: YThucTestKit) {
   console.log('\nPR-YT2 · 2. Máy chủ Ý thức (PATCH /measures/:id, GET /classes/:id/violations, Q15, chuKy, listMeasures theo lô)');
 
   const violSvc = await import('../yThuc/violations.ts');
-  const measSvc = await import('../yThuc/measures.ts');
+  const xuLySvc = await import('../yThuc/xuLy.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const { createApp } = await import('../app.ts');
   const { createSession } = await import('../auth.ts');
@@ -173,78 +173,6 @@ export async function runYThucGonTests(t: YThucTestKit) {
     return { status: res.status, json };
   };
 
-  await checkAsync('PR-YT2 · Q1/Q2 PATCH /measures/:id violationIds: thêm 1 + bỏ 1 một lần → measure_violations đúng, hai dòng lịch sử measure, một audit', async () => {
-    const s = taoHocVien('MB FT 101', true);
-    const v1 = ghi(s.sid, 'Không nộp bài Writing Task 2 — dùng để kiểm PATCH violationIds');
-    const v2 = ghi(s.sid, 'Nói chuyện riêng nhiều lần trong giờ — dùng để kiểm PATCH violationIds', undefined, 'conduct');
-    const v3 = ghi(s.sid, 'Đi muộn không lý do — dùng để kiểm PATCH violationIds', undefined, 'attendance');
-    const m = measSvc.createMeasure(gvcn, { studentId: s.sid, kind: 'talk_short', violationIds: [v1, v2] }) as any;
-    const auditBefore = countAudit('measure.edit', m.id);
-    const histIdBefore = ((conn.prepare(`SELECT COALESCE(MAX(id), 0) n FROM violation_history`).get() as any).n as number);
-    const res = await call(gvcn, 'PATCH', `/measures/${m.id}`, { violationIds: [v2, v3] });
-    assert(res.status === 200, `PATCH phải 200, được ${res.status}: ${JSON.stringify(res.json)}`);
-    const linked = (conn.prepare('SELECT violation_id FROM measure_violations WHERE measure_id = ? ORDER BY violation_id').all(m.id) as any[]).map((r) => r.violation_id);
-    assert(JSON.stringify(linked) === JSON.stringify([v2, v3].sort((a, b) => a - b)), `phải còn đúng v2,v3: ${JSON.stringify(linked)}`);
-    /* Chỉ đếm dòng lịch sử MỚI (id lớn hơn mốc trước PATCH) — trước đó v1 đã có một dòng "gắn vào" khi tạo PA. */
-    const newHist = conn.prepare(`SELECT violation_id, old_value, new_value FROM violation_history WHERE field = 'measure' AND id > ? ORDER BY id`).all(histIdBefore) as any[];
-    assert(newHist.length === 2, `phải đúng hai dòng lịch sử mới từ PATCH này: ${JSON.stringify(newHist)}`);
-    assert(newHist.some((r) => r.violation_id === v1 && r.old_value === String(m.id) && r.new_value === null), `phải có dòng bỏ v1: ${JSON.stringify(newHist)}`);
-    assert(newHist.some((r) => r.violation_id === v3 && r.old_value === null && r.new_value === String(m.id)), `phải có dòng thêm v3: ${JSON.stringify(newHist)}`);
-    assert(countAudit('measure.edit', m.id) === auditBefore + 1, 'phải đúng một audit cho một lần PATCH');
-  });
-
-  await checkAsync('PR-YT2 · PATCH /measures/:id violationIds: [] → 400', async () => {
-    const s = taoHocVien('MB FT 101', true);
-    const v = ghi(s.sid, 'Vi phạm dùng để tạo PA rồi thử PATCH violationIds rỗng');
-    const m = measSvc.createMeasure(gvcn, { studentId: s.sid, kind: 'talk_short', violationIds: [v] }) as any;
-    const res = await call(gvcn, 'PATCH', `/measures/${m.id}`, { violationIds: [] });
-    assert(res.status === 400, `violationIds rỗng phải 400, được ${res.status}`);
-  });
-
-  await checkAsync('PR-YT2 · PATCH /measures/:id violationIds có vi phạm của học viên khác → 400', async () => {
-    const s = taoHocVien('MB FT 101', true);
-    const v = ghi(s.sid, 'Vi phạm dùng để tạo PA rồi thử trộn vi phạm của học viên khác');
-    const m = measSvc.createMeasure(gvcn, { studentId: s.sid, kind: 'talk_short', violationIds: [v] }) as any;
-    const other = taoHocVien('MB FT 101', true);
-    const vOther = ghi(other.sid, 'Vi phạm của học viên khác — dùng để kiểm 400 khi trộn học viên');
-    const res = await call(gvcn, 'PATCH', `/measures/${m.id}`, { violationIds: [vOther] });
-    assert(res.status === 400, `trộn vi phạm khác học viên phải 400, được ${res.status}`);
-  });
-
-  await checkAsync('PR-YT2 · PATCH violationIds trên PA đã thực hiện → 400 (khoá như requirePreparing)', async () => {
-    const s = taoHocVien('MB FT 101', true);
-    const v = ghi(s.sid, 'Vi phạm dùng để kiểm PA đã thực hiện khoá violationIds');
-    const m = measSvc.createMeasure(gvcn, { studentId: s.sid, kind: 'talk_short', violationIds: [v] }) as any;
-    measSvc.confirmMeasure(gvcn, m.id, { performedOn: TODAY, performedBy: gvcn.userId, note: 'Đã trao đổi với em' });
-    const res = await call(gvcn, 'PATCH', `/measures/${m.id}`, { violationIds: [v] });
-    assert(res.status === 400, `PA đã thực hiện + violationIds phải 400, được ${res.status}: ${JSON.stringify(res.json)}`);
-  });
-
-  await checkAsync('PR-YT2 · gắn vi phạm đang ở PA đã thực hiện vào PA đang chuẩn bị → được (§3.11: checkViolationSet không lọc trạng thái)', async () => {
-    const s = taoHocVien('MB FT 101', true);
-    const va = ghi(s.sid, 'Vi phạm sẽ ở PA đang chuẩn bị');
-    const vb = ghi(s.sid, 'Vi phạm sẽ ở PA đã thực hiện, sau đó gắn thêm vào PA đang chuẩn bị');
-    const done = measSvc.createMeasure(gvcn, { studentId: s.sid, kind: 'talk_short', violationIds: [vb] }) as any;
-    measSvc.confirmMeasure(gvcn, done.id, { performedOn: TODAY, performedBy: gvcn.userId, note: 'Đã trao đổi' });
-    const prep = measSvc.createMeasure(gvcn, { studentId: s.sid, kind: 'meeting_student', violationIds: [va] }) as any;
-    const res = await call(gvcn, 'PATCH', `/measures/${prep.id}`, { violationIds: [va, vb] });
-    assert(res.status === 200, `phải gắn được: ${JSON.stringify(res.json)}`);
-    const linked = (conn.prepare('SELECT COUNT(*) n FROM measure_violations WHERE measure_id = ? AND violation_id = ?').get(prep.id, vb) as any).n;
-    assert(linked === 1, 'vb phải nằm trong cả hai PA');
-  });
-
-  await checkAsync('PR-YT2 · HTTP GET /students/:id/measure-kinds?excludeMeasureId: không truyền → Thư cảnh cáo 1 khoá; có truyền id của chính PA đó → mở', async () => {
-    const s = taoHocVien('MB FT 101', true);
-    const v = ghi(s.sid, 'Vi phạm dùng để tạo Thư cảnh cáo lần 1 (kiểm excludeMeasureId)');
-    const w1 = measSvc.createMeasure(gvcn, { studentId: s.sid, kind: 'warning_1', violationIds: [v] }) as any;
-    const noExclude = await call(gvcn, 'GET', `/students/${s.sid}/measure-kinds`);
-    const rowNo = (noExclude.json?.rows as any[]).find((r) => r.kind === 'warning_1');
-    assert(rowNo && rowNo.available === false, `không exclude phải khoá: ${JSON.stringify(rowNo)}`);
-    const withExclude = await call(gvcn, 'GET', `/students/${s.sid}/measure-kinds?excludeMeasureId=${w1.id}`);
-    const rowYes = (withExclude.json?.rows as any[]).find((r) => r.kind === 'warning_1');
-    assert(rowYes && rowYes.available === true, `exclude chính PA đó phải mở: ${JSON.stringify(rowYes)}`);
-  });
-
   await checkAsync('PR-YT2 · HTTP GET /classes/:id/violations: đủ ba trạng thái, from lọc đúng, GV không dạy lớp → 403, HV đã rời lớp không có', async () => {
     const sA = taoHocVien('MB FT 101', true);
     const sB = taoHocVien('MB FT 101', true);
@@ -253,11 +181,9 @@ export async function runYThucGonTests(t: YThucTestKit) {
     const newOn = addDays(TODAY, -1);
 
     const vUnhandled = ghi(sA.sid, 'Chưa xử lý — dùng để kiểm GET /classes/:id/violations', newOn);
-    const vPrep = ghi(sB.sid, 'Sẽ gắn vào PA đang chuẩn bị — dùng để kiểm trạng thái preparing', oldOn, 'conduct');
-    measSvc.createMeasure(gvcn, { studentId: sB.sid, kind: 'talk_short', violationIds: [vPrep] });
-    const vDone = ghi(sA.sid, 'Sẽ gắn vào PA đã thực hiện — dùng để kiểm trạng thái handled', oldOn, 'attendance');
-    const mDone = measSvc.createMeasure(gvcn, { studentId: sA.sid, kind: 'talk_short', violationIds: [vDone] }) as any;
-    measSvc.confirmMeasure(gvcn, mDone.id, { performedOn: TODAY, performedBy: gvcn.userId, note: 'Đã nhắc nhở em' });
+    const vPrep = ghi(sB.sid, 'Vi phạm thứ ba của lớp — nhóm khác, ngày cũ', oldOn, 'conduct');
+    const vDone = ghi(sA.sid, 'Sẽ nằm trong lần xử lý đã xong — kiểm nhãn Đã xử lý', oldOn, 'attendance');
+    xuLySvc.xacNhanXuLy(gvcn, sA.sid, { violationIds: [vDone], performedOn: TODAY, note: 'Đã nhắc nhở em và báo gia đình' });
     const vLeft = ghi(sLeft.sid, 'Học viên này sẽ rời lớp — không được xuất hiện trong bảng', newOn);
     conn.prepare(`UPDATE enrollments SET status = 'withdrawn', ended_at = ? WHERE student_id = ? AND class_id = ?`).run(TODAY, sLeft.sid, CLASS);
 
@@ -287,39 +213,6 @@ export async function runYThucGonTests(t: YThucTestKit) {
     const normalRes = await call(P.normalCoreTeacher, 'GET', `/students/${normal.sid}/violations`);
     assert(normalRes.status === 200 && normalRes.json?.chuKy?.cycleId === null && normalRes.json?.chuKy?.classId === normal.cid,
       `lớp thường phải cycleId null, classId đúng: ${JSON.stringify(normalRes.json?.chuKy)}`);
-  });
-
-  await checkAsync('PR-YT2 · Q15 xoá vi phạm DUY NHẤT của PA đang chuẩn bị → 400, dữ liệu không đổi; PA đã thực hiện vẫn xoá được (V14′)', async () => {
-    const s9 = taoHocVien('MB FT 101', true);
-    const v9 = ghi(s9.sid, 'Vi phạm duy nhất của PA đang chuẩn bị — dùng để kiểm chặn xoá Q15 qua HTTP');
-    const m9 = measSvc.createMeasure(gvcn, { studentId: s9.sid, kind: 'talk_short', violationIds: [v9] }) as any;
-    const del9 = await call(gvcn, 'DELETE', `/violations/${v9}`);
-    assert(del9.status === 400 && /vi phạm duy nhất/.test(String(del9.json?.error ?? '')), `phải 400 câu Q15: ${JSON.stringify(del9.json)}`);
-    const linkCount = (conn.prepare('SELECT COUNT(*) n FROM measure_violations WHERE measure_id = ?').get(m9.id) as any).n;
-    assert(linkCount === 1, 'dữ liệu không đổi sau khi bị chặn');
-
-    const s10 = taoHocVien('MB FT 101', true);
-    const v10 = ghi(s10.sid, 'Vi phạm duy nhất của PA đã thực hiện — dùng để kiểm V14′ qua HTTP');
-    const m10 = measSvc.createMeasure(gvcn, { studentId: s10.sid, kind: 'talk_short', violationIds: [v10] }) as any;
-    measSvc.confirmMeasure(gvcn, m10.id, { performedOn: TODAY, performedBy: gvcn.userId, note: 'Đã trao đổi' });
-    const del10 = await call(gvcn, 'DELETE', `/violations/${v10}`);
-    assert(del10.status === 200, `PA đã thực hiện phải xoá được: ${JSON.stringify(del10.json)}`);
-    const detail10 = measSvc.measureDetail(gvcn, m10.id) as any;
-    assert(detail10.status === 'done' && detail10.violationCount === 0, `PA đã thực hiện còn 0 vi phạm: ${JSON.stringify(detail10)}`);
-  });
-
-  check('PR-YT2 · Q10 listMeasures({classId}) JSON từng phần tử bằng hệt gọi measureDetail lẻ', () => {
-    const s = taoHocVien('MB FT 101', true);
-    const v1 = ghi(s.sid, 'Vi phạm 1 — dùng để kiểm listMeasures theo lô so với gọi lẻ');
-    const v2 = ghi(s.sid, 'Vi phạm 2 — dùng để kiểm listMeasures theo lô so với gọi lẻ', undefined, 'conduct');
-    measSvc.createMeasure(gvcn, { studentId: s.sid, kind: 'talk_short', violationIds: [v1] });
-    measSvc.createMeasure(gvcn, { studentId: s.sid, kind: 'meeting_student', violationIds: [v2] });
-    const listed = measSvc.listMeasures(gvcn, { classId: CLASS }).rows as any[];
-    assert(listed.length > 0, 'phải có ít nhất một PA để so sánh');
-    for (const row of listed) {
-      const single = measSvc.measureDetail(gvcn, row.id);
-      assert(JSON.stringify(row) === JSON.stringify(single), `PA #${row.id} lệch giữa listMeasures (theo lô) và measureDetail (gọi lẻ)`);
-    }
   });
 
   // ==================================================================== 3. Phân tích Ý thức cho QL (P13, P14, Task 8)

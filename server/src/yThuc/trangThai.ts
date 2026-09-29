@@ -3,7 +3,7 @@
  * thẻ Báo lên, huy hiệu, chỉ số và Phân tích đều đọc `trangThaiYThuc()` ở đây → luật thuần `shared/domain/yThuc.ts`. SQL ở file này
  * CHỈ nạp dữ liệu và lọc ứng viên; không chép luật (cửa sổ 2 tuần, 5 ngày, thứ tự nhãn) vào SQL.
  *
- * Nạp theo lô 400 id, SÁU câu cho cả lô (vi phạm · lần xử lý + liên kết · lộ trình · khai bậc · ghi danh hiện tại · ngày Quay lại),
+ * Nạp theo lô 400 id, BA câu cho cả lô (vi phạm + lần xử lý + liên kết · lộ trình + khai bậc · ghi danh hiện tại + ngày Quay lại),
  * nhớ theo request (`nho`) nên một request hỏi cùng em nhiều lần chỉ nạp một lần.
  */
 import { db } from '../db.ts';
@@ -70,55 +70,67 @@ export function trangThaiYThuc(studentIds: readonly number[], homNay = demoToday
 function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
   const conn = db();
   const ph = cho(lo.length);
+  /*
+   * Vi phạm (`loai` 0) và lần xử lý + liên kết (`loai` 1) chung MỘT câu UNION ALL — mỗi câu trên Turso ~20–50 ms. Cột chung đặt tên
+   * trung tính; ý nghĩa theo `loai` ghi ngay dưới.
+   *   loai 0: a = category · b = occurred_on · c = reported_on · d = ghi_nhan_luc · e = class_id
+   *   loai 1: a = kind · b = status · c = performed_on · d = quyet_luc · e = violation_id · f = custom_name · g = created_at · h = hạn thẻ chờ
+   */
   const vp = new Map<number, ViPhamEm[]>();
-  for (const r of conn.prepare(
-    `SELECT id, student_id, category, occurred_on, reported_on, ghi_nhan_luc, cycle_id, class_id FROM violations
-      WHERE student_id IN (${ph}) ORDER BY occurred_on, id`).all(...lo) as any[]) {
-    const a = vp.get(r.student_id) ?? []; vp.set(r.student_id, a);
-    a.push({ id: r.id, category: r.category, occurredOn: r.occurred_on, reportedOn: r.reported_on, ghiNhanLuc: r.ghi_nhan_luc ?? null,
-      cycleId: r.cycle_id ?? null, classId: r.class_id ?? null });
-  }
   const xl = new Map<number, Map<number, XuLyEm>>();
   for (const r of conn.prepare(
-    `SELECT m.id, m.student_id, m.kind, m.custom_name, m.status, m.performed_on, m.quyet_luc, m.cycle_id, m.created_at, mv.violation_id,
+    `SELECT 0 AS loai, id, student_id, cycle_id, category AS a, occurred_on AS b, reported_on AS c, ghi_nhan_luc AS d, class_id AS e,
+            NULL AS f, NULL AS g, NULL AS h
+       FROM violations WHERE student_id IN (${ph})
+     UNION ALL
+     SELECT 1, m.id, m.student_id, m.cycle_id, m.kind, m.status, m.performed_on, m.quyet_luc, mv.violation_id, m.custom_name, m.created_at,
             (SELECT y.han_duyet FROM yeu_cau_duyet y WHERE y.loai = 'y_thuc' AND y.doi_tuong_loai = 'discipline_measure'
-                AND y.doi_tuong_id = m.id AND y.trang_thai = 'cho') AS han_duyet
+                AND y.doi_tuong_id = m.id AND y.trang_thai = 'cho')
        FROM discipline_measures m LEFT JOIN measure_violations mv ON mv.measure_id = m.id
-      WHERE m.student_id IN (${ph}) AND m.status != 'nhap' ORDER BY m.id`).all(...lo) as any[]) {
+      WHERE m.student_id IN (${ph}) AND m.status != 'nhap'
+     ORDER BY 1, 6, 2`).all(...lo, ...lo) as any[]) {
+    if (r.loai === 0) {
+      const a = vp.get(r.student_id) ?? []; vp.set(r.student_id, a);
+      a.push({ id: r.id, category: r.a, occurredOn: r.b, reportedOn: r.c, ghiNhanLuc: r.d ?? null, cycleId: r.cycle_id ?? null, classId: r.e ?? null });
+      continue;
+    }
     const theoEm = xl.get(r.student_id) ?? new Map<number, XuLyEm>(); xl.set(r.student_id, theoEm);
     let m = theoEm.get(r.id);
     if (!m) {
-      m = { id: r.id, kind: r.kind, customName: r.custom_name ?? null, status: r.status, performedOn: r.performed_on ?? null,
-        quyetLuc: r.quyet_luc ?? null, cycleId: r.cycle_id ?? null, createdAt: r.created_at, violationIds: [], hanDuyet: r.han_duyet ?? null };
+      m = { id: r.id, kind: r.a, customName: r.f ?? null, status: r.b, performedOn: r.c ?? null,
+        quyetLuc: r.d ?? null, cycleId: r.cycle_id ?? null, createdAt: r.g, violationIds: [], hanDuyet: r.h ?? null };
       theoEm.set(r.id, m);
     }
-    if (r.violation_id != null) m.violationIds.push(r.violation_id);
+    if (r.e != null) m.violationIds.push(r.e);
   }
+  /* Lộ trình + dòng khai bậc (nếu có) của lộ trình đó — một câu. Khai trỏ lộ trình ĐẦU chuỗi, luôn là lộ trình của chính em. */
   const lt = new Map<number, { id: number; seq: number; route: string | null; status: string }[]>();
-  for (const r of conn.prepare(`SELECT id, student_id, seq, route, status FROM learning_cycles WHERE student_id IN (${ph})`).all(...lo) as any[]) {
-    const a = lt.get(r.student_id) ?? []; lt.set(r.student_id, a);
-    a.push({ id: r.id, seq: r.seq, route: r.route ?? null, status: r.status });
-  }
   const kb = new Map<number, any[]>();
   for (const r of conn.prepare(
-    `SELECT k.student_id, k.chuoi_cycle_id, k.bac, k.thang, k.ghi_chu, k.khai_luc, u.full_name AS boi
-       FROM y_thuc_khai_bac k LEFT JOIN users u ON u.id = k.khai_boi WHERE k.student_id IN (${ph})`).all(...lo) as any[]) {
-    const a = kb.get(r.student_id) ?? []; kb.set(r.student_id, a); a.push(r);
+    `SELECT lc.id, lc.student_id, lc.seq, lc.route, lc.status, k.bac, k.thang, k.ghi_chu, k.khai_luc, u.full_name AS boi
+       FROM learning_cycles lc LEFT JOIN y_thuc_khai_bac k ON k.chuoi_cycle_id = lc.id AND k.student_id = lc.student_id
+       LEFT JOIN users u ON u.id = k.khai_boi
+      WHERE lc.student_id IN (${ph})`).all(...lo) as any[]) {
+    const a = lt.get(r.student_id) ?? []; lt.set(r.student_id, a);
+    a.push({ id: r.id, seq: r.seq, route: r.route ?? null, status: r.status });
+    if (r.bac != null) {
+      const k = kb.get(r.student_id) ?? []; kb.set(r.student_id, k);
+      k.push({ chuoi_cycle_id: r.id, bac: r.bac, thang: r.thang, ghi_chu: r.ghi_chu, khai_luc: r.khai_luc, boi: r.boi });
+    }
   }
-  /* Ghi danh hiện tại (đang học hoặc tạm dừng) mới nhất + GVCN đang hiệu lực của lớp đó + trạng thái em. */
+  /* Ghi danh hiện tại (đang học hoặc tạm dừng) mới nhất + GVCN đang hiệu lực của lớp đó + trạng thái em + ngày Quay lại gần nhất. */
   const gd = new Map<number, { lopId: number | null; batDau: string | null; gvcn: number | null; tamDung: boolean }>();
+  const quayLai = new Map<number, string>();
   for (const r of conn.prepare(
     `SELECT s.id, s.status AS s_status, e.class_id, e.started_at,
+            (SELECT MAX(j.event_date) FROM journey_events j WHERE j.student_id = s.id AND j.event_type = 'resume') AS quay_lai,
             (SELECT ta.user_id FROM teacher_assignments ta WHERE ta.class_id = e.class_id AND ta.is_core = 1 AND ta.status = 'active'
                 AND ta.effective_from <= ? AND (ta.effective_to IS NULL OR ta.effective_to >= ?) ORDER BY ta.id LIMIT 1) AS gvcn
        FROM students s LEFT JOIN enrollments e ON e.student_id = s.id AND e.status IN ('active', 'paused')
       WHERE s.id IN (${ph}) ORDER BY e.id`).all(homNay, homNay, ...lo) as any[]) {
     gd.set(r.id, { lopId: r.class_id ?? null, batDau: r.started_at ?? null, gvcn: r.gvcn ?? null, tamDung: r.s_status === 'inactive' });
+    if (r.quay_lai) quayLai.set(r.id, r.quay_lai);
   }
-  const quayLai = new Map<number, string>();
-  for (const r of conn.prepare(
-    `SELECT student_id, MAX(event_date) AS d FROM journey_events WHERE event_type = 'resume' AND student_id IN (${ph}) GROUP BY student_id`,
-  ).all(...lo) as any[]) quayLai.set(r.student_id, r.d);
 
   const out = new Map<number, EmYThuc>();
   for (const sid of lo) {
@@ -184,6 +196,13 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
  * ponytail: tập ứng viên gồm cả em chỉ còn vi phạm "Đã ghi nhận" cũ (luật dính không cho lọc theo ngày ở SQL) — lọc thêm khi dữ liệu lớn.
  */
 export function ungVienYThuc(f: { branchId?: number | null; classId?: number | null } = {}): number[] {
+  return ungVienVaThe(f).map((r) => r.id);
+}
+
+/**
+ * Như `ungVienYThuc` + em đang có thẻ Báo lên Ý thức chờ (để quét đóng thẻ khi hết lý do) — MỘT câu, cờ `coThe` cho từng em.
+ */
+export function ungVienVaThe(f: { branchId?: number | null; classId?: number | null; kemThe?: boolean } = {}): { id: number; coThe: boolean }[] {
   const loc: string[] = [];
   const args: unknown[] = [];
   if (f.classId) {
@@ -195,14 +214,16 @@ export function ungVienYThuc(f: { branchId?: number | null; classId?: number | n
                          WHERE e.student_id = s.id AND e.status IN ('active', 'paused') ORDER BY e.id DESC LIMIT 1), s.branch_id) = ?`);
     args.push(f.branchId);
   }
+  const THE = `EXISTS (SELECT 1 FROM yeu_cau_duyet y WHERE y.loai = 'bao_len_y_thuc' AND y.doi_tuong_id = s.id AND y.trang_thai = 'cho')`;
   return (db().prepare(
-    `SELECT s.id FROM students s
-      WHERE s.archived_at IS NULL${loc.map((x) => ` AND ${x}`).join('')}
+    `SELECT s.id, ${f.kemThe ? THE : '0'} AS co_the FROM students s
+      WHERE (s.archived_at IS NULL${loc.map((x) => ` AND ${x}`).join('')}
         AND (EXISTS (SELECT 1 FROM violations v WHERE v.student_id = s.id
                       AND NOT EXISTS (SELECT 1 FROM measure_violations mv JOIN discipline_measures m ON m.id = mv.measure_id
                                        WHERE mv.violation_id = v.id AND m.status IN ('done', 'cho_duyet', 'da_duyet')))
-          OR EXISTS (SELECT 1 FROM discipline_measures m WHERE m.student_id = s.id AND m.status IN ('cho_duyet', 'da_duyet')))
-      ORDER BY s.id`).all(...args) as any[]).map((r) => r.id as number);
+          OR EXISTS (SELECT 1 FROM discipline_measures m WHERE m.student_id = s.id AND m.status IN ('cho_duyet', 'da_duyet'))))
+        ${f.kemThe ? `OR ${THE}` : ''}
+      ORDER BY s.id`).all(...args) as any[]).map((r) => ({ id: r.id as number, coThe: !!r.co_the }));
 }
 
 /** Em ĐANG HỌC (hoặc tạm dừng) ở một lớp. */

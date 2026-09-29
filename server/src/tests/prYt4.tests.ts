@@ -273,12 +273,12 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const lai = em(sid);
     assert(!lai.tamDung && lai.nhom === 'bat_buoc' && lai.han === addDays(TODAY, 2), JSON.stringify({ n: lai.nhom, h: lai.han }));
   });
-  check('YT4 (3) · 30 em → cửa trạng thái nạp ≤ 6 câu SQL (không N+1)', () => {
+  check('YT4 (3) · 30 em → cửa trạng thái nạp ≤ 3 câu SQL (kế hoạch ≤ 6; không N+1)', () => {
     const ids = (conn.prepare(`SELECT id FROM students ORDER BY id LIMIT 30`).all() as any[]).map((r) => r.id as number);
     const truoc = soCauSql();
     tt3.trangThaiYThuc(ids, TODAY);   // ngày truyền vào: đọc ngày nghiệp vụ (cấu hình) không tính là nạp
     const n = soCauSql() - truoc;
-    assert(n <= 6, `${n} câu`);
+    assert(n <= 3, `${n} câu`);
   });
   check('YT4 (3) · Sửa ngày xảy ra ra khỏi cửa sổ 2 tuần → hết bắt buộc (Q1: không lưu cột, tự tính lại)', () => {
     const sid = hv();
@@ -352,5 +352,307 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   });
   check('YT4 (3) · Cảnh báo mềm đã gỡ: không còn canhBao.ts', () => {
     assert(!fs.existsSync(path.join(REPO3, 'server/src/yThuc/canhBao.ts')), 'canhBao.ts còn');
+  });
+
+  // ------------------------------------------------------------------ Task 4 · Ghi nhận · Xác nhận xử lý · Khai bậc · Đã thực hiện · thông báo
+  const xuLy: any = await import('../yThuc/xuLy.ts');
+  const yc: any = await import('../duyet/yeuCau.ts');
+  const gvcn = P.coreTeacher;
+  const ghiVp = (who: any, sid: number, ngay = TODAY, category = 'homework') =>
+    (viol.recordViolation(who, { studentId: sid, category, description: 'Vi phạm ghi qua máy chủ cho khối 4', occurredOn: ngay }) as any).violation.id as number;
+  const xl = (who: any, sid: number, ids: number[], extra: Record<string, unknown> = {}) =>
+    xuLy.xacNhanXuLy(who, sid, { violationIds: ids, performedOn: TODAY, note: 'Đã trao đổi với em và gia đình', ...extra });
+  const loiCua = (fn: () => unknown): { status: number; msg: string } => {
+    try { fn(); return { status: 0, msg: '' }; } catch (e: any) { return { status: e.status ?? 500, msg: String(e.message) }; }
+  };
+  const thongBao = (uid: number, like: string) => conn.prepare(`SELECT * FROM notifications WHERE user_id = ? AND dedup_key LIKE ?`).all(uid, like) as any[];
+  const { createApp } = await import('../app.ts');
+  const { createSession } = await import('../auth.ts');
+
+  await t.checkAsync('YT4 (4) · Ghi nhận qua HTTP: Mới → Đã ghi nhận (ngày + người, có nhật ký); không đẩy bậc; GVBM 403', async () => {
+    const sid = hv();
+    const v = ghiVp(gvbm, sid);
+    const server = createApp().listen(0);
+    const port = (server.address() as any).port as number;
+    const goi = async (who: any, body: unknown) => {
+      const r = await fetch(`http://127.0.0.1:${port}/api/students/${sid}/y-thuc/ghi-nhan`, {
+        method: 'POST', headers: { 'content-type': 'application/json', cookie: `pisa_demo_session=${createSession(who.userId)}` }, body: JSON.stringify(body) });
+      return { status: r.status, json: await r.json().catch(() => null) as any };
+    };
+    const bm = await goi(gvbm, { violationIds: [v] });
+    const ok = await goi(gvcn, { violationIds: [v] });
+    server.close();
+    assert(bm.status === 403, `GVBM: ${bm.status}`);
+    assert(ok.status === 200 && ok.json?.soGhiNhan === 1, `GVCN: ${ok.status} ${JSON.stringify(ok.json)}`);
+    const r = conn.prepare('SELECT ghi_nhan_luc, ghi_nhan_boi FROM violations WHERE id = ?').get(v) as any;
+    assert(r.ghi_nhan_luc === TODAY && r.ghi_nhan_boi === gvcn.userId && em(sid).viPham.get(v).t === 'da_ghi_nhan' && em(sid).bac === 0, JSON.stringify(r));
+    assert((conn.prepare(`SELECT COUNT(*) n FROM audit_logs WHERE action = 'discipline.acknowledge' AND entity_id = ?`).get(sid) as any).n === 1, 'nhật ký');
+  });
+  check('YT4 (4) · Ghi nhận vi phạm đang BẮT BUỘC → 400 "dùng Xác nhận xử lý" (V4-2)', () => {
+    const sid = hv(); const ids = ba3(sid);
+    const l = loiCua(() => xuLy.ghiNhan(gvcn, sid, [ids[0]]));
+    assert(l.status === 400 && /bắt buộc — dùng Xác nhận xử lý/.test(l.msg), l.msg);
+  });
+  check('YT4 (4) · Q5: GVCN lớp đang học tự ghi → Đã ghi nhận; GVBM ghi → Mới; lần ghi làm bắt buộc → Cần xử lý thắng (M-10)', () => {
+    const sid = hv();
+    const a = ghiVp(gvcn, sid, addDays(TODAY, -2));
+    const b = ghiVp(gvbm, sid, addDays(TODAY, -1));
+    assert(em(sid).viPham.get(a).t === 'da_ghi_nhan' && em(sid).viPham.get(b).t === 'moi', 'tự ghi nhận / Mới');
+    const c = ghiVp(gvcn, sid, TODAY);
+    const e = em(sid);
+    assert([a, b, c].every((x) => e.viPham.get(x).t === 'can_xu_ly'), JSON.stringify([...e.viPham.values()].map((x: any) => x.t)));
+  });
+  check('YT4 (4) · Xác nhận xử lý: bậc TỰ ĐIỀN Report 1 → Report 2 (client không gửi loại); vi phạm "Đã xử lý · Report 1"', () => {
+    const sid = hv();
+    const [a, b] = [ghiVp(gvbm, sid), ghiVp(gvbm, sid, addDays(TODAY, -1))];
+    const m1 = xl(gvcn, sid, [a], { kind: 'wl_3' });
+    assert(m1.kind === 'report_1' && m1.status === 'done' && m1.bac === 1, JSON.stringify(m1));
+    assert(em(sid).viPham.get(a).nhan === 'Đã xử lý · Report 1' && em(sid).keTiep.kind === 'report_2', 'nhãn + bậc kế');
+    const m2 = xl(gvcn, sid, [b]);
+    assert(m2.kind === 'report_2' && em(sid).bac === 2, `${m2.kind} · ${em(sid).bac}`);
+  });
+  check('YT4 (4) · Hai GVCN bấm cùng lúc: panel còn bậc cũ (bacDaThay lệch) → 409 "Bậc đã đổi"; không ghi gì', () => {
+    const sid = hv();
+    const [a, b] = [ghiVp(gvbm, sid), ghiVp(gvbm, sid, addDays(TODAY, -1))];
+    xl(gvcn, sid, [a], { bacDaThay: 0 });
+    const truoc = (conn.prepare('SELECT COUNT(*) n FROM discipline_measures WHERE student_id = ?').get(sid) as any).n;
+    const l = loiCua(() => xl(gvcn, sid, [b], { bacDaThay: 0 }));
+    assert(l.status === 409 && /Bậc đã đổi/.test(l.msg), `${l.status} ${l.msg}`);
+    assert((conn.prepare('SELECT COUNT(*) n FROM discipline_measures WHERE student_id = ?').get(sid) as any).n === truoc, 'không ghi');
+  });
+  check('YT4 (4) · Kiểm dữ liệu: mô tả < 10 ký tự, ngày tương lai, không chọn vi phạm, vi phạm em khác, vi phạm đã xử lý → 400', () => {
+    const sid = hv(); const khac = hv();
+    const v = ghiVp(gvbm, sid); const vk = ghiVp(gvbm, khac);
+    for (const [ten, extra, re] of [
+      ['mô tả ngắn', { note: 'ngắn' }, /ít nhất 10 ký tự/], ['ngày tương lai', { performedOn: addDays(TODAY, 1) }, /tương lai/],
+      ['không vi phạm', { violationIds: [] }, /ít nhất một vi phạm/], ['em khác', { violationIds: [vk] }, /không thuộc học viên này/],
+    ] as const) {
+      const l = loiCua(() => xuLy.xacNhanXuLy(gvcn, sid, { ...{ violationIds: [v], performedOn: TODAY, note: 'Đã trao đổi với em và gia đình' }, ...(extra as Record<string, unknown>) }));
+      assert(l.status === 400 && re.test(l.msg), `${ten}: ${l.status} ${l.msg}`);
+    }
+    xl(gvcn, sid, [v]);
+    const l = loiCua(() => xl(gvcn, sid, [v]));
+    assert(l.status === 400 && /đã được xử lý/.test(l.msg), l.msg);
+  });
+  check('YT4 (4) · Người thực hiện: tên ngoài giữ nguyên (NEN Q13 → V4-7); không chọn ai → người bấm; gửi lại cùng khoá → cùng lần xử lý', () => {
+    const sid = hv();
+    const [a, b] = [ghiVp(gvbm, sid), ghiVp(gvbm, sid, addDays(TODAY, -1))];
+    const m1 = xl(gvcn, sid, [a], { performerName: 'Cô Lan (CX)', idempotencyKey: `yt4-k-${sid}` });
+    const lai = xl(gvcn, sid, [a], { performerName: 'Cô Lan (CX)', idempotencyKey: `yt4-k-${sid}` });
+    assert(m1.nguoi === 'Cô Lan (CX)' && lai.id === m1.id, JSON.stringify({ n: m1.nguoi, a: m1.id, b: lai.id }));
+    const m2 = xl(gvcn, sid, [b]);
+    assert((conn.prepare('SELECT performed_by FROM discipline_measures WHERE id = ?').get(m2.id) as any).performed_by === gvcn.userId, 'người bấm');
+  });
+  check('YT4 (4) · Quyền: GVBM không Xác nhận xử lý (403); GVCN cũ sau chuyển lớp 403, GVCN mới làm được (K5-34, M-08)', () => {
+    const sid = hv(); const v = ghiVp(gvbm, sid);
+    assert(loiCua(() => xl(gvbm, sid, [v])).status === 403, 'GVBM');
+    const moi = lopMoi('MB FT YT4Q4');
+    chuyen(sid, moi.id, TODAY);
+    assert(loiCua(() => xl(loadPrincipal(gvcn.userId), sid, [v])).status === 403, 'GVCN cũ');
+    assert(xl(moi.gvcn, sid, [v]).kind === 'report_1', 'GVCN mới');
+  });
+  check('YT4 (4) · Khai bậc 2 (H5) → lần kế WL 1; thang có hai bậc "khai"; khai lần hai 400', () => {
+    const sid = hv();
+    xuLy.khaiBac(gvcn, sid, { bac: 2, thang: '2026-08', ghiChu: 'Report 2 tháng 8 (giấy)' });
+    const e = em(sid);
+    assert(e.bac === 2 && e.keTiep.kind === 'wl_1' && e.khai.bac === 2 && e.khai.boi, JSON.stringify(e.khai));
+    const hs = xuLy.yThucHocVien(gvcn, sid);
+    assert(hs.dongThang.filter((x: any) => x.trangThai === 'khai').length === 2 && hs.dongThang[2].trangThai === 'lan-nay' && !hs.coTheKhai, 'thang');
+    const l = loiCua(() => xuLy.khaiBac(gvcn, sid, { bac: 3, ghiChu: 'khai lần hai' }));
+    assert(l.status === 400 && /đã khai bậc/.test(l.msg), l.msg);
+  });
+  check('YT4 (4) · Sửa khai: GVCN 403, QL sửa được khi chuỗi chưa có lần xử lý; sau lần xử lý đầu → 400 (sửa lẫn khai)', () => {
+    const sid = hv();
+    xuLy.khaiBac(gvcn, sid, { bac: 1, ghiChu: 'Report 1 tháng 8' });
+    assert(loiCua(() => xuLy.suaKhaiBac(gvcn, sid, { bac: 2, ghiChu: 'GVCN tự sửa' })).status === 403, 'GVCN sửa');
+    xuLy.suaKhaiBac(P.mbManager, sid, { bac: 2, ghiChu: 'QL sửa theo hồ sơ giấy' });
+    assert(em(sid).bac === 2, 'QL sửa');
+    xl(gvcn, sid, [ghiVp(gvbm, sid)]);
+    const l = loiCua(() => xuLy.suaKhaiBac(P.mbManager, sid, { bac: 1, ghiChu: 'Sửa sau khi đã xử lý' }));
+    assert(l.status === 400 && /đã có lần xử lý/.test(l.msg), l.msg);
+    const sid2 = hv(); xl(gvcn, sid2, [ghiVp(gvbm, sid2)]);
+    assert(/đã có lần xử lý/.test(loiCua(() => xuLy.khaiBac(gvcn, sid2, { bac: 2, ghiChu: 'Khai sau khi xử lý' })).msg), 'khai sau lần xử lý');
+  });
+  check('YT4 (4) · Khai bậc: bậc ngoài 1–5 hoặc ghi chú < 3 ký tự → 400', () => {
+    const sid = hv();
+    assert(/Report 1 … WL 2/.test(loiCua(() => xuLy.khaiBac(gvcn, sid, { bac: 6, ghiChu: 'WL 3' })).msg), 'bậc 6');
+    assert(/ít nhất 3 ký tự/.test(loiCua(() => xuLy.khaiBac(gvcn, sid, { bac: 2, ghiChu: 'x' })).msg), 'ghi chú');
+  });
+  check('YT4 (4) · Xoá vi phạm trong lần xử lý đã xong (V4-12): lần xử lý còn, bậc KHÔNG lùi', () => {
+    const sid = hv(); const v = ghiVp(gvbm, sid);
+    const m = xl(gvcn, sid, [v]);
+    viol.deleteViolation(gvcn, v);
+    assert(em(sid).bac === 1 && xuLy.xemXuLy(gvcn, m.id).viPham.length === 0, 'bậc giữ');
+  });
+  check('YT4 (4) · Chuỗi thang (Q-C): lớp thường FOU → BE giữ bậc (Report 1 → kế Report 2); sang FT về Report 1', () => {
+    const sid = hv();
+    const cy = (conn.prepare('SELECT id FROM learning_cycles WHERE student_id = ? ORDER BY seq').get(sid) as any).id as number;
+    conn.prepare(`UPDATE learning_cycles SET route = NULL, programme_code = 'FOU', status = 'completed', seq = 1 WHERE id = ?`).run(cy);
+    const be = Number(conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, programme_code, started_at, status, created_at) VALUES (?, 2, NULL, 'BE', '2026-08-03', 'active', ?)`)
+      .run(sid, new Date().toISOString()).lastInsertRowid);
+    conn.prepare(`INSERT INTO discipline_measures (student_id, cycle_id, kind, status, performed_on, note, created_at, created_by) VALUES (?, ?, 'report_1', 'done', ?, 'Report 1 ở khoá FOU', ?, ?)`)
+      .run(sid, cy, addDays(TODAY, -30), new Date().toISOString(), gvcn.userId);
+    const e = em(sid);
+    assert(e.chuoi.join() === `${cy},${be}` && e.bac === 1 && e.keTiep.kind === 'report_2' && e.nhanChuoi === 'lớp thường', JSON.stringify({ c: e.chuoi, b: e.bac }));
+    conn.prepare(`UPDATE learning_cycles SET status = 'completed' WHERE id = ?`).run(be);
+    conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, started_at, status, created_at) VALUES (?, 3, 'LT1', '2026-09-07', 'active', ?)`).run(sid, new Date().toISOString());
+    const f = em(sid);
+    assert(f.bac === 0 && f.keTiep.kind === 'report_1' && f.nhanChuoi === 'LT1', JSON.stringify({ c: f.chuoi, b: f.bac }));
+  });
+  check('YT4 (4) · Hết thang (đã WL 3): Xác nhận xử lý → 400 "chỉ còn Đề xuất" (Q11)', () => {
+    const sid = hv();
+    conn.prepare(`INSERT INTO discipline_measures (student_id, cycle_id, kind, status, performed_on, note, created_at, created_by)
+      VALUES (?, (SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'), 'wl_3', 'done', ?, 'WL 3', ?, ?)`)
+      .run(sid, sid, addDays(TODAY, -5), new Date().toISOString(), gvcn.userId);
+    assert(em(sid).bac === 6 && em(sid).keTiep === null, 'bậc 6');
+    assert(/chỉ còn Đề xuất/.test(loiCua(() => xl(gvcn, sid, [ghiVp(gvbm, sid)])).msg), 'chặn');
+  });
+  check('YT4 (4) · Thông báo GVCN: người khác ghi → "Vi phạm mới … trước dd/mm"; lần ghi thứ 3 → "có 3 vi phạm trong 2 tuần"; không đôi trong ngày; GVCN tự ghi không tự báo', () => {
+    const sid = hv();
+    ghiVp(gvbm, sid, addDays(TODAY, -2)); ghiVp(gvbm, sid, addDays(TODAY, -1));
+    const moi = thongBao(gvcn.userId, `yt-moi:${sid}:%`);
+    assert(moi.length === 1 && /^Vi phạm mới — YT4 HV \d+ \(BTVN\) · ghi nhận hoặc xử lý trước \d\d\/\d\d$/.test(moi[0].title) && /mo=xu-ly/.test(moi[0].duong), JSON.stringify(moi.map((x) => x.title)));
+    ghiVp(gvbm, sid, TODAY);
+    const bb = thongBao(gvcn.userId, `yt-bat-buoc:${sid}:%`);
+    assert(bb.length === 1 && /có 3 vi phạm trong 2 tuần — cần xử lý trước \d\d\/\d\d/.test(bb[0].title), JSON.stringify(bb.map((x) => x.title)));
+    ghiVp(gvbm, sid, TODAY);
+    assert(thongBao(gvcn.userId, `yt-bat-buoc:${sid}:%`).length === 1, 'không đôi');
+    const sid2 = hv(); ghiVp(gvcn, sid2);
+    assert(thongBao(gvcn.userId, `yt-%:${sid2}:%`).length === 0, 'tự ghi không tự báo');
+  });
+  check('YT4 (4) · QL "để biết" khi WL 1 / Report 4 + Meeting / WL 2 (K5-16); Report 1, 2 không báo; không còn câu "không cần duyệt"', () => {
+    const sid = hv();
+    const r1 = xl(gvcn, sid, [ghiVp(gvbm, sid)]);
+    xl(gvcn, sid, [ghiVp(gvbm, sid)]);
+    const w1 = xl(gvcn, sid, [ghiVp(gvbm, sid)]);
+    assert(thongBao(P.mbManager.userId, `yt-xu-ly:${r1.id}`).length === 0, 'Report 1 không báo');
+    const n = thongBao(P.mbManager.userId, `yt-xu-ly:${w1.id}`);
+    assert(n.length === 1 && n[0].title === `Đã xử lý WL 1 — ${xuLy.xemXuLy(gvcn, w1.id).ten} · để biết` && !/không cần duyệt/.test(n[0].body ?? ''), JSON.stringify(n));
+  });
+  check('YT4 (4) · Đã thực hiện chỉ cho lần xử lý QL đã duyệt; lần xử lý đã xong → 400', () => {
+    const sid = hv(); const m = xl(gvcn, sid, [ghiVp(gvbm, sid)]);
+    assert(/QL đã duyệt/.test(loiCua(() => xuLy.daThucHien(gvcn, m.id, { performedOn: TODAY })).msg), 'chặn');
+  });
+  check('YT4 (4) · GET /students/:id/y-thuc: thang một dòng 6 bậc, tick mặc định (K3-36), dòng thời gian trộn, dòng đếm cuối theo nhóm', () => {
+    const sid = hv();
+    const a = ghiVp(gvbm, sid, addDays(TODAY, -1)); ghiVp(gvbm, sid, TODAY, 'attendance');
+    xl(gvcn, sid, [a]);
+    const hs = xuLy.yThucHocVien(gvcn, sid);
+    assert(hs.dongThang.length === 6 && hs.dongThang[0].trangThai === 'qua' && hs.dongThang[1].trangThai === 'lan-nay', 'thang');
+    assert(hs.macDinh.tick.length === 1 && hs.dongThoiGian.some((x: any) => x.loai === 'xu-ly' && x.nhan === 'Report 1'), 'tick + dòng xử lý');
+    assert(hs.demCuoi.tong === 2 && hs.demCuoi.theoNhom.length === 2 && hs.canManage && !hs.coTheKhai, JSON.stringify(hs.demCuoi));
+  });
+
+  // ------------------------------------------------------------------ Task 5 · Đề xuất QL duyệt (thẻ y_thuc) + Báo lên (bao_len_y_thuc)
+  const theCho = (loai: string, doiTuongId: number) => conn.prepare(`SELECT * FROM yeu_cau_duyet WHERE loai = ? AND doi_tuong_id = ? ORDER BY id DESC`).get(loai, doiTuongId) as any;
+  const deXuatGui = (who: any, sid: number, kind: string, ids: number[], extra: Record<string, unknown> = {}) => {
+    const nhap = xuLy.deXuat(who, sid, { kind, violationIds: ids, note: 'Em vi phạm nhiều lần, cần QL quyết', ...extra });
+    attachments.addLink(who, { ownerType: 'discipline_measure', ownerId: nhap.id, url: 'https://example.com/bang-chung', displayName: 'Biên bản' });
+    return xuLy.guiDeXuat(who, nhap.id);
+  };
+  const attachments: any = await import('../platform/attachments.ts');
+
+  check('YT4 (5) · Đề xuất: WL 3 khi chưa là bậc kế → 400; loại lạ → 400; "Khác" thiếu tên → 400', () => {
+    const sid = hv(); const v = ghiVp(gvbm, sid);
+    assert(/chỉ đề xuất được khi là bậc kế tiếp/.test(loiCua(() => xuLy.deXuat(gvcn, sid, { kind: 'wl_3', violationIds: [v], note: 'Đề xuất WL 3 sớm' })).msg), 'WL 3');
+    assert(/Chọn loại cần QL duyệt/.test(loiCua(() => xuLy.deXuat(gvcn, sid, { kind: 'report_2', violationIds: [v], note: 'Loại trong thang' })).msg), 'loại lạ');
+    assert(/Khác/.test(loiCua(() => xuLy.deXuat(gvcn, sid, { kind: 'other', customName: 'x', violationIds: [v], note: 'Loại khác thiếu tên' })).msg), 'Khác');
+  });
+  check('YT4 (5) · Gửi thiếu bằng chứng → 400; nháp chưa gửi không đổi trạng thái vi phạm; xoá được nháp, không xoá được đề xuất đã gửi', () => {
+    const sid = hv(); const v = ghiVp(gvbm, sid);
+    const nhap = xuLy.deXuat(gvcn, sid, { kind: 'suspension', violationIds: [v], note: 'Đình chỉ vì vi phạm nặng' });
+    assert(/đính kèm tệp hoặc liên kết/.test(loiCua(() => xuLy.guiDeXuat(gvcn, nhap.id)).msg), 'thiếu bằng chứng');
+    assert(em(sid).viPham.get(v).t === 'moi' && em(sid).deXuat === null, 'nháp không vào trạng thái');
+    xuLy.xoaNhap(gvcn, nhap.id);
+    assert(!conn.prepare('SELECT 1 FROM discipline_measures WHERE id = ?').get(nhap.id), 'đã xoá nháp');
+    const gui = deXuatGui(gvcn, sid, 'suspension', [v]);
+    assert(/chưa gửi/.test(loiCua(() => xuLy.xoaNhap(gvcn, gui.id)).msg), 'không xoá đề xuất đã gửi');
+  });
+  check('YT4 (5) · Gửi → thẻ y_thuc chờ, hạn hôm nay + 4, bằng chứng có id tệp; vi phạm "Chờ QL duyệt", nhóm em Chờ QL duyệt', () => {
+    const sid = hv(); const ids = ba3(sid);
+    const m = deXuatGui(gvcn, sid, 'meeting_cx', ids);
+    const the = theCho('y_thuc', m.id);
+    const tep = (conn.prepare(`SELECT id FROM attachments WHERE owner_type = 'discipline_measure' AND owner_id = ?`).all(m.id) as any[]).map((r) => r.id);
+    assert(the.trang_thai === 'cho' && the.han_duyet === addDays(TODAY, 4) && JSON.parse(the.bang_chung).join() === tep.join() && the.nguoi_xin === gvcn.userId, JSON.stringify(the));
+    assert(ids.every((x) => em(sid).viPham.get(x).nhan === 'Chờ QL duyệt') && em(sid).nhom === 'cho_duyet', 'nhãn + nhóm');
+  });
+  check('YT4 (5) · GVCN không duyệt được (403) — thẻ chỉ QL / Quản trị (T69, K5-32)', () => {
+    const sid = hv(); const m = deXuatGui(gvcn, sid, 'suspension', [ghiVp(gvbm, sid)]);
+    assert(loiCua(() => yc.duyetYeuCau(gvcn, theCho('y_thuc', m.id).id)).status === 403, 'GVCN duyệt');
+  });
+  check('YT4 (5) · QL duyệt Đình chỉ → Đã duyệt · chờ thực hiện; thẻ nói "Bậc thang kế tiếp đang là Report 1"; Đã thực hiện → "Đã xử lý · Đình chỉ học tạm thời", bậc GIỮ (M-11)', () => {
+    const sid = hv(); const v = ghiVp(gvbm, sid);
+    const m = deXuatGui(gvcn, sid, 'suspension', [v]);
+    const the = yc.hopChoDuyet(P.mbManager, { studentId: sid }).the.find((x: any) => x.loai === 'y_thuc');
+    assert(the.tieuDe === 'Đề xuất Đình chỉ học tạm thời' && the.dong.some((d: string) => d === 'Bậc thang kế tiếp đang là Report 1 — duyệt đề xuất này không đổi bậc'), JSON.stringify(the.dong));
+    yc.duyetYeuCau(P.mbManager, the.id);
+    const r = conn.prepare('SELECT status, quyet_luc FROM discipline_measures WHERE id = ?').get(m.id) as any;
+    assert(r.status === 'da_duyet' && r.quyet_luc === TODAY && em(sid).viPham.get(v).nhan === 'Đã duyệt · chờ thực hiện', JSON.stringify(r));
+    xuLy.daThucHien(gvcn, m.id, { performedOn: TODAY, performerName: 'Phòng CX' });
+    assert(em(sid).viPham.get(v).nhan === 'Đã xử lý · Đình chỉ học tạm thời' && em(sid).bac === 0, 'bậc giữ');
+  });
+  check('YT4 (5) · QL từ chối → vi phạm về Cần xử lý từ ngày quyết, bậc giữ; lý do ở thẻ; người đề xuất nhận thông báo', () => {
+    const sid = hv(); const v = ghiVp(gvbm, sid);
+    const m = deXuatGui(gvcn, sid, 'suspension', [v]);
+    const theId = theCho('y_thuc', m.id).id;
+    yc.tuChoiYeuCau(P.mbManager, theId, 'Chưa đủ căn cứ để đình chỉ');
+    const e = em(sid);
+    assert(e.viPham.get(v).t === 'can_xu_ly' && e.han === addDays(TODAY, 4) && e.bac === 0, JSON.stringify(e.viPham.get(v)));
+    assert(theCho('y_thuc', m.id).ly_do_tu_choi === 'Chưa đủ căn cứ để đình chỉ' && thongBao(gvcn.userId, `duyet_ket_qua:${theId}`).length === 1, 'thẻ + thông báo');
+  });
+  check('YT4 (5) · WL 3 (bậc kế) duyệt + Đã thực hiện → bậc 6, hết thang', () => {
+    const sid = hv();
+    xuLy.khaiBac(gvcn, sid, { bac: 5, ghiChu: 'WL 2 tháng 8 (giấy)' });
+    const m = deXuatGui(gvcn, sid, 'wl_3', [ghiVp(gvbm, sid)]);
+    yc.duyetYeuCau(P.mbManager, theCho('y_thuc', m.id).id);
+    xuLy.daThucHien(gvcn, m.id, { performedOn: TODAY });
+    assert(em(sid).bac === 6 && em(sid).keTiep === null, `bậc ${em(sid).bac}`);
+  });
+  check('YT4 (5) · QL tự gửi đề xuất → tự duyệt được, thẻ ghi "tự duyệt" (Q-D)', () => {
+    const sid = hv();
+    const m = deXuatGui(P.mbManager, sid, 'other', [ghiVp(gvbm, sid)], { customName: 'Gặp phụ huynh tại trung tâm' });
+    const kq = yc.duyetYeuCau(P.mbManager, theCho('y_thuc', m.id).id);
+    assert(kq.tuDuyet === true && theCho('y_thuc', m.id).tu_duyet === 1 && xuLy.xemXuLy(P.mbManager, m.id).nhan === 'Gặp phụ huynh tại trung tâm', JSON.stringify(kq));
+  });
+  check('YT4 (5) · Báo lên: em Quá hạn → MỘT thẻ bao_len_y_thuc (không nút duyệt, GVCN là chủ việc); quét lần hai không thêm', () => {
+    const sid = hv(); ba3(sid, addDays(TODAY, -12));
+    yc.quetYeuCau(TODAY);
+    yc.quetYeuCau(TODAY);
+    const ds = conn.prepare(`SELECT * FROM yeu_cau_duyet WHERE loai = 'bao_len_y_thuc' AND doi_tuong_id = ?`).all(sid) as any[];
+    assert(ds.length === 1 && ds[0].trang_thai === 'cho' && ds[0].han_duyet === null && JSON.parse(ds[0].du_lieu).viecKey === `yt_xu_ly:${sid}`
+      && JSON.parse(ds[0].du_lieu).ownerId === gvcn.userId, JSON.stringify(ds));
+    const the = yc.hopChoDuyet(P.mbManager, { studentId: sid }).the.find((x: any) => x.loai === 'bao_len_y_thuc');
+    assert(the.tieuDe === 'Ý thức quá hạn · 3 vi phạm chưa xử lý' && the.kieuNut === 'nhac' && the.dong[0] === 'Không cần duyệt — để QL biết và nhắc.', JSON.stringify(the));
+  });
+  check('YT4 (5) · Báo lên tự đóng khi hết lý do (xử lý xong) — "Việc gốc đã xong"; em Tạm dừng không Báo lên (T65)', () => {
+    const sid = hv(); const ids = ba3(sid, addDays(TODAY, -12));
+    yc.quetYeuCau(TODAY);
+    xl(gvcn, sid, ids);
+    yc.quetYeuCau(TODAY);
+    const the = theCho('bao_len_y_thuc', sid);
+    assert(the.trang_thai === 'tu_dong' && the.ly_do_dong === 'Việc gốc đã xong', JSON.stringify(the));
+    const sid2 = hv(); ba3(sid2, addDays(TODAY, -12));
+    conn.prepare(`UPDATE students SET status = 'inactive' WHERE id = ?`).run(sid2);
+    yc.quetYeuCau(TODAY);
+    assert(!theCho('bao_len_y_thuc', sid2), 'Tạm dừng không Báo lên');
+  });
+  check('YT4 (5) · Báo lên cả "Mới quá 5 ngày chưa ai xem" (V4-5) và "đã duyệt chưa thực hiện quá 5 ngày" (K3-37)', () => {
+    const sid = hv(); vpDb(sid, addDays(TODAY, -8));
+    const sid2 = hv(); const v2 = ghiVp(gvbm, sid2);
+    const m = deXuatGui(gvcn, sid2, 'suspension', [v2]);
+    yc.duyetYeuCau(P.mbManager, theCho('y_thuc', m.id).id);
+    conn.prepare(`UPDATE discipline_measures SET quyet_luc = ? WHERE id = ?`).run(addDays(TODAY, -6), m.id);
+    yc.quetYeuCau(TODAY);
+    assert(JSON.parse(theCho('bao_len_y_thuc', sid).du_lieu).viecKey === `yt_xem:${sid}`, 'Mới quá hạn');
+    const t2 = theCho('bao_len_y_thuc', sid2);
+    assert(t2 && JSON.parse(t2.du_lieu).viecKey === `yt_thuc_hien:${sid2}` && /đã duyệt chưa thực hiện|QL đã duyệt, quá 5 ngày/.test(t2.ly_do), JSON.stringify(t2));
+  });
+  check('YT4 (5) · Thẻ Ý thức tự đóng khi đề xuất không còn chờ (em lưu trữ) — "Không còn chờ duyệt"', () => {
+    const sid = hv(); const m = deXuatGui(gvcn, sid, 'suspension', [ghiVp(gvbm, sid)]);
+    conn.prepare(`UPDATE students SET archived_at = ? WHERE id = ?`).run(TODAY, sid);
+    yc.quetYeuCau(TODAY);
+    const the = theCho('y_thuc', m.id);
+    conn.prepare(`UPDATE students SET archived_at = NULL WHERE id = ?`).run(sid);
+    assert(the.trang_thai === 'tu_dong' && the.ly_do_dong === 'Không còn chờ duyệt', JSON.stringify(the));
   });
 }

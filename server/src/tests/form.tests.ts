@@ -373,7 +373,7 @@ export async function runFormTests(t: YThucTestKit) {
 
   {
     const cases: any = await import('../cases/cases.ts');
-    const measSvc: any = await import('../yThuc/measures.ts');
+    const xuLySvc: any = await import('../yThuc/xuLy.ts');
     const violSvc: any = await import('../yThuc/violations.ts');
     const week: any = await import('../platform/week.ts');
     const skillSchedule: any = await import('../fasttrack/skillSchedule.ts');
@@ -469,29 +469,25 @@ export async function runFormTests(t: YThucTestKit) {
       assert(kinds.includes('progress') && kinds.includes('final'), `points phải mang attemptKind: ${JSON.stringify(kinds)}`);
     });
 
-    check('PR-Form · K2-6d: confirmMeasure không người → performed_by = người xác nhận; performedBy tài khoản khoá → 400', () => {
+    check('PR-Form · K2-6d (PR-YT4): Xác nhận xử lý không người → performed_by = người xác nhận; người thực hiện là tài khoản khoá → 400', () => {
       const fou = taoHocVien('MB FOU 12');
-      const v = violSvc.recordViolation(P.normalCoreTeacher, {
+      const ghi = (k: string) => (violSvc.recordViolation(P.normalCoreTeacher, {
         studentId: fou.sid, category: 'homework', description: 'Không nộp bài tập về nhà buổi này',
-        idempotencyKey: `pr-form-t4-viol-${soThuTu}`,
+        idempotencyKey: `pr-form-t4-viol-${k}-${soThuTu}`,
+      }) as any).violation.id as number;
+      const done = xuLySvc.xacNhanXuLy(P.normalCoreTeacher, fou.sid, {
+        violationIds: [ghi('a')], performedOn: TODAY, note: 'Đã trao đổi ngắn với em cuối buổi.',
       }) as any;
-      const m = measSvc.createMeasure(P.normalCoreTeacher, {
-        studentId: fou.sid, kind: 'talk_short', violationIds: [v.violation.id],
-      }) as any;
-      const done = measSvc.confirmMeasure(P.normalCoreTeacher, m.id, {
-        performedOn: TODAY, note: 'Đã trao đổi ngắn với em cuối buổi.',
-      }) as any;
-      assert(done.performedBy === P.normalCoreTeacher.userId, `K2-6d: performed_by phải là người xác nhận: ${done.performedBy}`);
+      const by = (conn.prepare('SELECT performed_by FROM discipline_measures WHERE id = ?').get(done.id) as any).performed_by;
+      assert(by === P.normalCoreTeacher.userId, `K2-6d: performed_by phải là người xác nhận: ${by}`);
 
-      const m2 = measSvc.createMeasure(P.normalCoreTeacher, {
-        studentId: fou.sid, kind: 'talk_short', violationIds: [v.violation.id],
-      }) as any;
+      const v2 = ghi('b');
       const lockedId = P.w2Teacher.userId;
       try {
         conn.prepare(`UPDATE users SET status = 'inactive' WHERE id = ?`).run(lockedId);
         assertThrows(
-          () => measSvc.confirmMeasure(P.normalCoreTeacher, m2.id, {
-            performedOn: TODAY, performedBy: lockedId, note: 'Đã trao đổi ngắn với em cuối buổi.',
+          () => xuLySvc.xacNhanXuLy(P.normalCoreTeacher, fou.sid, {
+            violationIds: [v2], performedOn: TODAY, performerUserId: lockedId, note: 'Đã trao đổi ngắn với em cuối buổi.',
           }),
           /nhân viên đang làm việc/,
           'performedBy khoá phải 400',

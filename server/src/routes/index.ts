@@ -18,7 +18,7 @@ import * as attachmentSvc from '../platform/attachments.ts';
 import * as timNguoiSvc from '../platform/timNguoi.ts';
 import * as violationSvc from '../yThuc/violations.ts';
 import * as accessSvc from '../yThuc/access.ts';
-import * as measureSvc from '../yThuc/measures.ts';
+import * as xuLySvc from '../yThuc/xuLy.ts';
 import * as phoiHopSvc from '../yThuc/phoiHop.ts';
 import * as sosAutoSvc from '../cases/sosAuto.ts';
 import { bangYThucLop } from '../yThuc/board.ts';
@@ -980,14 +980,10 @@ api.get('/students/:id/violations', requireAuth, wrap((req) => {
   const cyc = cycleSvc.currentCycle(id);
   return { ...result, chuKy: { cycleId: cyc?.route ? cyc.id : null, classId: accessSvc.activeClassOf(id) } };
 }));
-api.get('/students/:id/measures', requireAuth, wrap((req) => {
+/** Tab Ý thức của học viên (K3 §4f) + khung phải của tab lớp khi chọn em: thang, thanh việc, vi phạm, dòng thời gian trộn. */
+api.get('/students/:id/y-thuc', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return measureSvc.listMeasures(principalOf(req), { studentId: pInt(req, 'id'), status: (qStr(req, 'status') as any) ?? null });
-}));
-/** Chín loại biện pháp kèm dòng nào khóa và VÌ SAO — để form nói lý do ngay tại dòng, không báo lỗi sau khi bấm. */
-api.get('/students/:id/measure-kinds', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  return { rows: measureSvc.measureKindAvailability(principalOf(req), pInt(req, 'id'), { excludeMeasureId: qInt(req, 'excludeMeasureId') ?? undefined }) };
+  return xuLySvc.yThucHocVien(principalOf(req), pInt(req, 'id'), { phamVi: qStr(req, 'pham-vi') === 'tat-ca' ? 'tat-ca' : 'chuoi' });
 }));
 
 /** Tab Ý thức của lớp — hai khung (M6): em theo nhóm + dòng thời gian cả lớp. Một request cho cả tab. */
@@ -1055,49 +1051,54 @@ api.delete('/violations/:id', requireAuth, wrap((req) => {
   return violationSvc.deleteViolation(principalOf(req), pInt(req, 'id'));
 }));
 
-api.post('/measures', requireAuth, wrap((req) => {
+/** V4-1: Ghi nhận — "đã xem, không cần biện pháp". Vi phạm đang bắt buộc thì từ chối (V4-2). */
+api.post('/students/:id/y-thuc/ghi-nhan', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return xuLySvc.ghiNhan(principalOf(req), pInt(req, 'id'), yThucBody(req).violationIds);
+}));
+/** V4-7: Xác nhận xử lý một bước — bậc do máy chủ tính (`bacDaThay` lệch → 409). */
+api.post('/students/:id/y-thuc/xu-ly', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const b = yThucBody(req);
-  return measureSvc.createMeasure(principalOf(req), {
-    studentId: toInt(b.studentId) ?? 0, kind: b.kind, customName: b.customName ?? null,
-    violationIds: Array.isArray(b.violationIds) ? b.violationIds : [], ownerUserId: toInt(b.ownerUserId) ?? null,
-    note: b.note ?? null, idempotencyKey: b.idempotencyKey ?? null,
+  return xuLySvc.xacNhanXuLy(principalOf(req), pInt(req, 'id'), {
+    violationIds: b.violationIds, performedOn: b.performedOn, performerUserId: b.performerUserId, performerName: b.performerName,
+    note: b.note, idempotencyKey: b.idempotencyKey ?? null, bacDaThay: b.bacDaThay,
   });
 }));
-api.get('/measures/:id', requireAuth, wrap((req) => {
+/** H5: khai bậc đã xử lý trước khi dùng web (GVCN, một lần mỗi chuỗi); PUT = QL sửa. */
+api.post('/students/:id/y-thuc/khai-bac', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return xuLySvc.khaiBac(principalOf(req), pInt(req, 'id'), yThucBody(req));
+}));
+api.put('/students/:id/y-thuc/khai-bac', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return xuLySvc.suaKhaiBac(principalOf(req), pInt(req, 'id'), yThucBody(req));
+}));
+api.get('/y-thuc/xu-ly/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return measureSvc.measureDetail(principalOf(req), pInt(req, 'id'));
+  return xuLySvc.xemXuLy(principalOf(req), pInt(req, 'id'));
 }));
-api.patch('/measures/:id', requireAuth, wrap((req) => {
+/** V4-9/V4-10 (Q10): Đề xuất QL duyệt = nháp (để tải bằng chứng) → gửi (thẻ `y_thuc`). Đóng panel giữa chừng → xoá nháp. */
+api.post('/students/:id/y-thuc/de-xuat', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const b = yThucBody(req);
-  return measureSvc.updateMeasure(principalOf(req), pInt(req, 'id'), {
-    kind: b.kind, customName: 'customName' in b ? (b.customName ?? null) : undefined, note: 'note' in b ? (b.note ?? null) : undefined,
-    ownerUserId: 'ownerUserId' in b ? (toInt(b.ownerUserId) ?? null) : undefined,
-    violationIds: Array.isArray(b.violationIds) ? b.violationIds : undefined,
+  return xuLySvc.deXuat(principalOf(req), pInt(req, 'id'), { kind: b.kind, customName: b.customName, violationIds: b.violationIds, note: b.note });
+}));
+api.post('/y-thuc/xu-ly/:id/gui', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return xuLySvc.guiDeXuat(principalOf(req), pInt(req, 'id'));
+}));
+api.delete('/y-thuc/xu-ly/:id', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return xuLySvc.xoaNhap(principalOf(req), pInt(req, 'id'));
+}));
+/** V4-10: QL đã duyệt → GVCN ghi "Đã thực hiện". */
+api.post('/y-thuc/xu-ly/:id/da-thuc-hien', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = yThucBody(req);
+  return xuLySvc.daThucHien(principalOf(req), pInt(req, 'id'), {
+    performedOn: b.performedOn, performerUserId: b.performerUserId, performerName: b.performerName, note: b.note,
   });
-}));
-api.post('/measures/:id/violations', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  const b = yThucBody(req);
-  return measureSvc.addViolations(principalOf(req), pInt(req, 'id'), Array.isArray(b.violationIds) ? b.violationIds : []);
-}));
-api.delete('/measures/:id/violations/:violationId', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return measureSvc.removeViolation(principalOf(req), pInt(req, 'id'), pInt(req, 'violationId'));
-}));
-api.post('/measures/:id/confirm', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  const b = yThucBody(req);
-  return measureSvc.confirmMeasure(principalOf(req), pInt(req, 'id'), {
-    performedOn: b.performedOn ?? null, performedBy: toInt(b.performedBy) ?? null, performerName: b.performerName ?? null,
-    note: 'note' in b ? (b.note ?? '') : undefined, participants: b.participants ?? null,
-  });
-}));
-api.delete('/measures/:id', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  measureSvc.deleteMeasure(principalOf(req), pInt(req, 'id'));
-  return { ok: true };
 }));
 
 /**

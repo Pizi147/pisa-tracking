@@ -115,6 +115,16 @@ export function nhanLoaiXuLy(kind: string, customName?: string | null): string {
   return (MEASURE_KIND_LABEL as Record<string, string>)[kind] ?? 'Xử lý (loại cũ)';
 }
 
+/**
+ * Khoá thống kê "theo loại" (Excel, `bien-phap-theo-loai`): chín loại v4 + `loai-cu` cho dòng lạ của dữ liệu cũ (Q2) — để tổng các loại
+ * luôn bằng tổng chỉ số.
+ */
+export const KHOA_LOAI_XU_LY = [...MEASURE_KINDS, 'loai-cu'] as const;
+export type KhoaLoaiXuLy = (typeof KHOA_LOAI_XU_LY)[number];
+export function khoaLoaiXuLy(kind: string): KhoaLoaiXuLy {
+  return (MEASURE_KINDS as readonly string[]).includes(kind) ? (kind as MeasureKind) : 'loai-cu';
+}
+
 /** Cần QL duyệt: WL 3 và mọi loại ngoài thang (V4-8, V4-9). */
 export function canQl(kind: MeasureKind): boolean {
   return kind === 'wl_3' || (NGOAI_THANG as readonly string[]).includes(kind);

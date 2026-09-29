@@ -1,5 +1,5 @@
 import { db } from '../db.ts';
-import { MEASURE_KIND_LABEL_V3, PERMISSIONS, VIOLATION_CATEGORY_LABEL, metricById, type ChiSo, type ChuongTrinh, type LoaiBoQuen } from '../../../shared/domain/index.ts';
+import { nhanLoaiXuLy, PERMISSIONS, VIOLATION_CATEGORY_LABEL, metricById, type ChiSo, type ChuongTrinh, type LoaiBoQuen } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, forbidden, HttpError, notFound } from '../util.ts';
@@ -143,7 +143,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
         `SELECT m.id, m.student_id, m.kind, m.custom_name, m.status, m.performed_on, s.full_name, s.student_code
            FROM discipline_measures m JOIN students s ON s.id = m.student_id WHERE m.id IN (${ph})`,
       ).all(...chunk) as any[]) {
-        const name = r.kind === 'other' && r.custom_name ? r.custom_name : MEASURE_KIND_LABEL_V3[r.kind as keyof typeof MEASURE_KIND_LABEL_V3] ?? r.kind;
+        const name = nhanLoaiXuLy(r.kind, r.custom_name);
         const state = r.status === 'done' ? `đã thực hiện ${String(r.performed_on ?? '').slice(8, 10)}/${String(r.performed_on ?? '').slice(5, 7)}` : 'đang chuẩn bị';
         byId.set(r.id, { id: r.id, title: name, sub: [r.full_name, r.student_code, state].filter(Boolean).join(' · '), href: `/hoc-vien/${r.student_id}` });
       }

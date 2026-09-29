@@ -1,10 +1,11 @@
 import { db, tx } from '../db.ts';
 import {
   VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, VIOLATION_DESCRIPTION_MIN, ghepKhac, kiemGhiRoKhac,
-  VIOLATION_SKILLS, MEASURE_KIND_LABEL_V3, XU_LY_STATUS_LABEL, nhanLoaiXuLy, tenMon,
-  type ViolationCategory, type MeasureKindV3, type TrangThaiVp,
+  VIOLATION_SKILLS, XU_LY_STATUS_LABEL, nhanLoaiXuLy, tenMon,
+  type ViolationCategory, type TrangThaiVp,
 } from '../../../shared/domain/index.ts';
 import { trangThaiYThuc, type EmYThuc } from './trangThai.ts';
+import { baoKhiGhiViPham, dangBatBuoc, laGvcnDangHoc } from './xuLy.ts';
 import type { Principal } from '../permissions.ts';
 import { badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -226,6 +227,8 @@ export function recordViolation(p: Principal, input: {
 
   /* Tính bản trùng TRƯỚC khi ghi để không tự thấy chính mình. */
   const similar = similarViolations(p, { studentId: input.studentId, category, occurredOn });
+  const truocBatBuoc = dangBatBuoc(input.studentId);
+  const laGvcn = laGvcnDangHoc(p, input.studentId);
 
   const id = tx(() => {
     const info = db()
@@ -236,11 +239,16 @@ export function recordViolation(p: Principal, input: {
       )
       .run(input.studentId, cycle?.id ?? null, classId, category, skill, occurredOn, today, p.userId, description, key, nowIso());
     const newId = Number(info.lastInsertRowid);
+    /* Q5 (Câu 1 = A): GVCN lớp đang học tự ghi → tự "Đã ghi nhận" (vẫn đếm vào luật ≥ 3), trừ khi lần ghi này làm vi phạm bắt buộc. */
+    if (laGvcn && trangThaiYThuc([input.studentId], today).get(input.studentId)!.viPham.get(newId)?.t === 'moi') {
+      db().prepare('UPDATE violations SET ghi_nhan_luc = ?, ghi_nhan_boi = ? WHERE id = ?').run(today, p.userId, newId);
+    }
     writeAudit({
       actorUserId: p.userId, action: 'violation.record', entityType: 'violation', entityId: newId,
       entityLabel: `${student.student_code} · ${VIOLATION_CATEGORY_LABEL[category]}`,
       after: { category, skill, occurredOn, description },
     });
+    baoKhiGhiViPham(p, input.studentId, newId, category, truocBatBuoc);
     return newId;
   });
   return { violation: loadViolation(id), similar };
@@ -333,25 +341,8 @@ export function deleteViolation(p: Principal, id: number): { ok: true; removedFr
   requireViewStudent(p, row.student_id);
   if (!canEditViolation(p, row)) throw forbidden(EDIT_VIOLATION_MESSAGE);
 
-  /*
-   * Q15 — B02 đòi PA phải có ít nhất một vi phạm: PA ĐANG CHUẨN BỊ mà vi phạm này là DUY NHẤT thì chặn xoá (xoá phương án
-   * trước, hoặc thêm vi phạm khác). PA ĐÃ THỰC HIỆN không chặn — V14′ giữ việc đã làm thật, hiện 0 vi phạm nếu xoá hết.
-   */
-  const soleOfPreparing = db()
-    .prepare(
-      `SELECT m.kind, m.custom_name
-         FROM measure_violations mv JOIN discipline_measures m ON m.id = mv.measure_id
-        WHERE mv.violation_id = ? AND m.status = 'preparing'
-          AND (SELECT COUNT(*) FROM measure_violations WHERE measure_id = m.id) = 1`,
-    )
-    .get(id) as any;
-  if (soleOfPreparing) {
-    const label = soleOfPreparing.kind === 'other' && soleOfPreparing.custom_name
-      ? soleOfPreparing.custom_name
-      : MEASURE_KIND_LABEL_V3[soleOfPreparing.kind as MeasureKindV3] ?? soleOfPreparing.kind;
-    throw badRequest(`Đây là vi phạm duy nhất của phương án «${label}» đang chuẩn bị — xoá phương án trước, hoặc thêm vi phạm khác vào phương án.`);
-  }
-
+  /* V4-12 (PR-YT4): không còn "Đang chuẩn bị" nên không chặn gì. Xoá vi phạm trong lần xử lý đã xong: lần xử lý còn, số vi phạm giảm,
+     bậc KHÔNG lùi (bậc đọc từ `kind` của lần xử lý). */
   /* Tệp trong kho chỉ xoá SAU KHI giao dịch chốt — giao dịch lui thì dòng còn mà tệp mất là không hoàn tác được. */
   const khoaTep: string[] = [];
   const result = tx(() => {

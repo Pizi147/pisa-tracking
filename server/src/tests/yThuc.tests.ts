@@ -36,7 +36,6 @@ export async function runYThucTests(t: YThucTestKit) {
 
   const { conn, TODAY } = t;
   const { yThucMetric } = await import('../yThuc/thongKe.ts');
-  const { measureKindAvailability } = await import('../yThuc/measures.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const VMAX = t.seedMax.violations, MMAX = t.seedMax.discipline_measures;
   const rows = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
@@ -173,17 +172,6 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(shared.some((r) => r.n >= 2 && r.days >= 2 && one('SELECT COUNT(DISTINCT measure_id) n FROM measure_violations WHERE violation_id = ?', r.violation_id).n === r.n), 'Liên kết phải đọc được từ phía vi phạm');
   });
 
-  check('PR-J · DEMO #18 Em chuyển lộ trình sau khi đã có Thư cảnh cáo lần 2: chuỗi reset — lần 1 chọn lại được, lần 2 khóa (Trần Hải Kiên)', () => {
-    const ms = seedMeasures(KIEN).filter((m) => /^warning_[123]$/.test(m.kind));
-    assert(ms.map((m) => m.kind).join() === 'warning_1,warning_2', `Kiên phải có thư 1 và 2 ở lộ trình cũ, đang ${ms.map((m) => m.kind).join()}`);
-    const cur = one(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`, KIEN).id;
-    assert(ms.every((m) => m.cycle_id !== cur), 'Hai thư phải thuộc lộ trình CŨ, không phải lộ trình đang học');
-    assert(one('SELECT status FROM learning_cycles WHERE id = ?', ms[0].cycle_id).status === 'completed', 'Lộ trình cũ đã khép');
-    const av = Object.fromEntries(measureKindAvailability(loadPrincipal(1), KIEN).map((k: any) => [k.kind, k]));
-    assert(av.warning_1.available, 'Sang lộ trình mới thì Thư cảnh cáo lần 1 chọn lại được');
-    assert(!av.warning_2.available && av.warning_2.reason, 'Lần 2 vẫn khóa kèm lý do tại dòng');
-    assert(!av.warning_3.available, 'Lần 3 vẫn khóa');
-  });
   }
 
   console.log('\nPR-J · 1. Từ vựng thuần của Ý thức (shared/domain/yThuc.ts)');
@@ -455,14 +443,15 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(vid(record(gvbm, a.id, { idempotencyKey: 'pj-v07-scope' })) === vid(first), 'Người ghi gửi lại đúng khoá cho đúng em vẫn phải nhận lại bản cũ');
   });
 
-  check('PR-J · V08 Ghi vi phạm KHÔNG sinh biện pháp, case, tín hiệu, việc hay thông báo — và không đặt hạn nào', () => {
+  check('PR-J · V08 (PR-YT4) Ghi vi phạm KHÔNG sinh biện pháp, case, tín hiệu, việc — chỉ MỘT thông báo cho GVCN mỗi ngày (V4-5)', () => {
     const st = makeStudent('V08');
-    const count = () => ['discipline_measures', 'measure_violations', 'sos_cases', 'case_signals', 'tasks', 'notifications', 'case_interventions']
+    const count = () => ['discipline_measures', 'measure_violations', 'sos_cases', 'case_signals', 'tasks', 'case_interventions']
       .map((tb) => `${tb}=${one(`SELECT COUNT(*) n FROM ${tb}`)}`).join(' ');
     const before = count();
     record(gvbm, st.id, { occurredOn: addDays(TODAY, -8), description: 'Vi phạm cũ hơn năm ngày, vẫn không sinh gì' });
     record(gvbm, st.id, { category: 'attendance', description: 'Nghỉ không phép ba buổi liên tiếp' });
     assert(count() === before, `Ghi vi phạm đã sinh dữ liệu ở nơi khác:\n  trước: ${before}\n  sau:   ${count()}`);
+    assert(one(`SELECT COUNT(*) n FROM notifications WHERE dedup_key LIKE ?`, `yt-%:${st.id}:%`) === 1, 'Một thông báo "Vi phạm mới" cho GVCN, không đôi');
   });
 
   console.log('\nPR-J · 4. Sửa vi phạm (V09–V10) — phần xoá (V11′–V14′) do PR-T thay, xem sosV3.tests.ts');
@@ -520,297 +509,21 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(one('SELECT COUNT(*) n FROM violations WHERE id IN (?, ?)', other, mine) === 0, 'Cả hai phải đã bị xoá');
   });
 
-  // ================================================================== Biện pháp xử lý (B01–B16)
+  // ================================================================== PR-YT4: khối Biện pháp xử lý v3 (B01–B16, Y01) thay bằng khối 4–5 của prYt4.tests.ts
 
-  const meas = await import('../yThuc/measures.ts');
+  const xuLySvc = await import('../yThuc/xuLy.ts');
   const attachmentsSvc = await import('../platform/attachments.ts');
-  const cyclesSvc = await import('../fasttrack/cycles.ts');
 
   /** Ghi `n` vi phạm cho một học viên (khác ngày để không trùng), trả về danh sách id. */
   const violations = (studentId: number, n: number, extra: Record<string, unknown> = {}): number[] =>
     Array.from({ length: n }, (_, i) => vid(record(gvbm, studentId, {
-      occurredOn: addDays(TODAY, -(i + 1)), description: `Vi phạm thứ ${i + 1} dùng cho phép kiểm biện pháp`, ...extra,
+      occurredOn: addDays(TODAY, -(i + 1)), description: `Vi phạm thứ ${i + 1} dùng cho phép kiểm xử lý`, ...extra,
     })));
-  const mk = (who: Principal, studentId: number, kind: string, ids: number[], extra: Record<string, unknown> = {}) =>
-    meas.createMeasure(who, { studentId, kind, violationIds: ids, ...extra } as any) as any;
-  const link = (who: Principal, measureId: number, name = 'Thư cảnh cáo đã ký') =>
-    attachmentsSvc.addLink(who, { ownerType: 'discipline_measure', ownerId: measureId, url: 'https://example.com/thu-canh-cao', displayName: name });
-  const confirm = (who: Principal, measureId: number, extra: Record<string, unknown> = {}) =>
-    meas.confirmMeasure(who, measureId, { performedOn: addDays(TODAY, -1), performerName: 'Cô Thu (GVCN)', note: 'Đã gọi điện và gửi thư cho gia đình', ...extra } as any) as any;
-  const stateOf = (v: number) => (viol.loadViolation(v) as any).state as string;
-
-  console.log('\nPR-J · 5. Tạo và sửa biện pháp (B01–B05, B09–B12)');
-
-  check('PR-J · B01 Chỉ GVCN của lớp và Quản lý trong phạm vi tạo được biện pháp — GVBM đọc được nhưng KHÔNG tạo (máy chủ từ chối, không chỉ ẩn nút)', () => {
-    const st = makeStudent('B01');
-    const ids = violations(st.id, 2);
-    for (const [name, who] of [['GVBM', gvbm], ['GVBM khác', gvbm2], ['GV ngoài lớp', outsider], ['Quản lý CP', P.cpManager]] as const) {
-      assertThrows(() => mk(who, st.id, 'talk_short', ids), /quyền|chủ nhiệm|phạm vi/, `${name} tạo được biện pháp`);
-    }
-    for (const [name, who] of [['GVCN', gvcn], ['Quản lý MB', P.mbManager], ['Quản trị', P.admin]] as const) {
-      const m = mk(who, st.id, 'talk_short', ids, { idempotencyKey: `pj-b01-${name}` });
-      assert(m.id > 0 && m.status === 'preparing' && m.createdBy === who.userId, `${name} không tạo được biện pháp`);
-    }
-    const m = mk(gvcn, st.id, 'talk_short', ids);
-    assert(meas.measureDetail(gvbm, m.id).id === m.id, 'GVBM dạy lớp phải ĐỌC được biện pháp');
-    assertThrows(() => meas.measureDetail(outsider, m.id), /phạm vi|quyền/, 'Giáo viên ngoài lớp đọc được biện pháp');
-    assertThrows(() => meas.updateMeasure(gvbm, m.id, { note: 'GVBM sửa ghi chú' }), /quyền|chủ nhiệm/, 'GVBM sửa được biện pháp');
-    assertThrows(() => meas.deleteMeasure(gvbm, m.id), /quyền|chủ nhiệm/, 'GVBM xóa được biện pháp');
-    assertThrows(() => meas.confirmMeasure(gvbm, m.id, { performedOn: TODAY, performerName: 'x', note: 'nội dung' } as any), /quyền|chủ nhiệm/, 'GVBM xác nhận được biện pháp');
-    assertThrows(() => meas.addViolations(gvbm, m.id, violations(st.id, 1)), /quyền|chủ nhiệm/, 'GVBM thêm vi phạm vào biện pháp');
-  });
-
-  check('PR-J · B01 (rà soát) Khoá gửi lại của biện pháp cũng chỉ phát lại đúng người, đúng học viên', () => {
-    const a = makeStudent('B01 khóa A'), b = makeStudent('B01 khóa B');
-    const va = record(gvbm, a.id), vb = record(gvbm, b.id);
-    const first = meas.createMeasure(gvcn, { studentId: a.id, kind: 'talk_short', violationIds: [vid(va)], idempotencyKey: 'pj-b01-scope' });
-    assertThrows(() => meas.createMeasure(gvcn, { studentId: b.id, kind: 'talk_short', violationIds: [vid(vb)], idempotencyKey: 'pj-b01-scope' }), /khoá|đã dùng/i, 'Cùng khoá cho học viên khác phải bị từ chối');
-    assertThrows(() => meas.createMeasure(P.mbManager, { studentId: a.id, kind: 'talk_short', violationIds: [vid(va)], idempotencyKey: 'pj-b01-scope' }), /khoá|đã dùng/i, 'Người khác dùng khoá phải bị từ chối');
-    assert(meas.createMeasure(gvcn, { studentId: a.id, kind: 'talk_short', violationIds: [vid(va)], idempotencyKey: 'pj-b01-scope' }).id === first.id, 'Đúng người, đúng em gửi lại thì nhận lại bản cũ');
-  });
-
-  check('PR-J · B02 Một biện pháp có ÍT NHẤT MỘT vi phạm và của ĐÚNG MỘT học viên; vi phạm đã xoá không còn để gom', () => {
-    const a = makeStudent('B02 A'), b = makeStudent('B02 B');
-    const va = violations(a.id, 2), vb = violations(b.id, 1);
-    assertThrows(() => mk(gvcn, a.id, 'talk_short', []), /ít nhất một vi phạm/, 'Biện pháp không có vi phạm nào');
-    assertThrows(() => mk(gvcn, a.id, 'talk_short', [va[0], vb[0]]), /một học viên/, 'Gom vi phạm của hai em');
-    assertThrows(() => mk(gvcn, a.id, 'talk_short', [999999]), /Không tìm thấy/, 'Vi phạm không tồn tại');
-    viol.deleteViolation(gvcn, va[1]);
-    assertThrows(() => mk(gvcn, a.id, 'talk_short', [va[1]]), /Không tìm thấy/, 'Gom vi phạm đã xoá');
-    const m = mk(gvcn, a.id, 'talk_short', [va[0], va[0]]);
-    assert(m.violations.length === 1, 'Trùng id trong danh sách thì chỉ tính một');
-    const extra = violations(b.id, 1);
-    assertThrows(() => meas.addViolations(gvcn, m.id, extra), /một học viên/, 'Thêm vi phạm của em khác vào biện pháp đang chuẩn bị');
-  });
-
-  check('PR-J · B03 Vi phạm gom vào một biện pháp KHÔNG cần cùng nhóm, cùng môn, cùng GV ghi, cùng ngày (nguồn mục 22)', () => {
-    const st = makeStudent('B03');
-    const mixed = [
-      vid(record(gvbm, st.id, { category: 'homework', skill: 'writing1', occurredOn: addDays(TODAY, -6), description: 'Thiếu BTVN Writing Task 1 tuần này' })),
-      vid(record(gvbm2, st.id, { category: 'homework', skill: 'writing2', occurredOn: addDays(TODAY, -5), description: 'Thiếu BTVN Writing Task 2 tuần này' })),
-      vid(record(gvcn, st.id, { category: 'attendance', skill: null, occurredOn: addDays(TODAY, -3), description: 'Đi muộn 20 phút ở buổi Speaking' })),
-      vid(record(P.mbManager, st.id, { category: 'conduct', skill: null, occurredOn: addDays(TODAY, -1), description: 'Nói chuyện riêng trong giờ học' })),
-    ];
-    const m = mk(gvcn, st.id, 'family_report', mixed);
-    assert(m.violations.length === 4, 'Bốn vi phạm khác nhóm, khác môn, khác GV, khác ngày phải vào chung một biện pháp');
-    assert(new Set(m.violations.map((v: any) => v.category)).size === 3 && new Set(m.violations.map((v: any) => v.reportedBy)).size === 4, 'Dữ liệu thử phải thật sự khác nhau');
-  });
-
-  check('PR-J · B05 Không có thứ tự xử lý bắt buộc: đi thẳng tới biện pháp nặng là hợp lệ', () => {
-    const st = makeStudent('B05');
-    const ids = violations(st.id, 1);
-    assert(mk(gvcn, st.id, 'suspension', ids).kind === 'suspension', 'Đình chỉ học ngay, không cần trao đổi hay meeting trước');
-    assert(mk(gvcn, st.id, 'family_report', ids).kind === 'family_report', 'Report gia đình ngay');
-    assert(mk(gvcn, st.id, 'meeting_cx', ids).kind === 'meeting_cx', 'CX/GĐCN meeting ngay');
-    assert(mk(gvcn, st.id, 'talk_short', ids).kind === 'talk_short', 'Trao đổi ngắn cũng được, sau biện pháp nặng');
-    assertThrows(() => mk(gvcn, st.id, 'severe', ids), /loại phương án/i, 'Loại lạ');
-    assertThrows(() => mk(gvcn, st.id, 'other', ids), /tên phương án/i, 'Loại Khác mà không có tên');
-    assert(mk(gvcn, st.id, 'other', ids, { customName: 'Họp riêng với ban giám hiệu' }).kindLabel === 'Họp riêng với ban giám hiệu', 'Loại Khác hiện tên do GVCN đặt');
-  });
-
-  check('PR-J · B10 Khi Đã thực hiện: KHÓA danh sách vi phạm và loại; vẫn sửa ghi chú và bổ sung tệp (có audit) — đó là bổ sung bằng chứng, không viết lại phạm vi', () => {
-    const st = makeStudent('B10');
-    const ids = violations(st.id, 3);
-    const m = mk(gvcn, st.id, 'family_report', ids);
-    const done = confirm(gvcn, m.id);
-    assert(done.status === 'done', 'Đã xác nhận');
-    const extra = violations(st.id, 1)[0];
-    assertThrows(() => meas.addViolations(gvcn, m.id, [extra]), /đã thực hiện|khóa/, 'Thêm vi phạm vào biện pháp đã thực hiện');
-    assertThrows(() => meas.removeViolation(gvcn, m.id, ids[0]), /đã thực hiện|khóa|B14/, 'Gỡ vi phạm khỏi biện pháp đã thực hiện phải bị từ chối ở máy chủ');
-    assertThrows(() => meas.updateMeasure(gvcn, m.id, { kind: 'talk_short' }), /đã thực hiện|khóa/, 'Đổi loại biện pháp đã thực hiện');
-    assert(meas.measureDetail(gvcn, m.id).violations.length === 3, 'Danh sách vi phạm không đổi');
-    const noted = meas.updateMeasure(gvcn, m.id, { note: 'Bổ sung: phụ huynh đã xác nhận qua Zalo' }) as any;
-    assert(noted.note === 'Bổ sung: phụ huynh đã xác nhận qua Zalo', 'Vẫn sửa được ghi chú');
-    assert(one("SELECT COUNT(*) n FROM audit_logs WHERE action = 'measure.note' AND entity_id = ?", m.id) >= 1, 'Sửa ghi chú sau khi đã thực hiện phải có audit');
-    assert(link(gvcn, m.id, 'Ảnh chụp tin nhắn').id > 0, 'Vẫn bổ sung được tệp/liên kết');
-  });
-
-  check('PR-J · B11 Đổi loại biện pháp khi Đang chuẩn bị phải KIỂM LẠI luật chuỗi Thư cảnh cáo với loại mới', () => {
-    const st = makeStudent('B11');
-    const ids = violations(st.id, 2);
-    const m = mk(gvcn, st.id, 'family_report', ids);
-    assertThrows(() => meas.updateMeasure(gvcn, m.id, { kind: 'warning_2' }), /Thư cảnh cáo lần 1/, 'Đổi sang lần 2 khi chưa có lần 1');
-    assertThrows(() => meas.updateMeasure(gvcn, m.id, { kind: 'warning_3' }), /Thư cảnh cáo lần 2/, 'Đổi sang lần 3 khi chưa có lần 2');
-    assert((meas.updateMeasure(gvcn, m.id, { kind: 'warning_1' }) as any).kind === 'warning_1', 'Đổi sang lần 1 thì được');
-    assert((meas.updateMeasure(gvcn, m.id, { kind: 'other', customName: 'Thư nhắc nhở nội bộ' }) as any).kindLabel === 'Thư nhắc nhở nội bộ', 'Đổi sang Khác kèm tên');
-    assertThrows(() => meas.updateMeasure(gvcn, m.id, { kind: 'other', customName: '' }), /tên phương án/, 'Khác mà xóa tên');
-  });
-
-  console.log('\nPR-J · 6. Chuỗi Thư cảnh cáo (B06–B08, Y02)');
-
-  check('PR-J · B06 Chuỗi Thư cảnh cáo kiểm Ở MÁY CHỦ: lần 2 cần lần 1 ĐÃ THỰC HIỆN, lần 3 cần lần 2 — cả lúc tạo lẫn lúc xác nhận; mở khóa từng bước', () => {
-    const st = makeStudent('B06');
-    const ids = violations(st.id, 3);
-    const avail = (k: string) => (meas.measureKindAvailability(gvcn, st.id) as any[]).find((x) => x.kind === k);
-    assert(avail('warning_1').available && !avail('warning_2').available && !avail('warning_3').available, 'Ban đầu: chỉ lần 1 chọn được');
-    assert(/Thư cảnh cáo lần 1/.test(avail('warning_2').reason) && /Thư cảnh cáo lần 2/.test(avail('warning_3').reason), `Khóa phải nói lý do ngay tại dòng: ${avail('warning_2').reason} / ${avail('warning_3').reason}`);
-    assert(['talk_short', 'meeting_student', 'family_report', 'meeting_cx', 'suspension', 'other'].every((k) => avail(k).available), 'Sáu loại còn lại không bị khóa');
-    assertThrows(() => mk(gvcn, st.id, 'warning_2', ids), /Thư cảnh cáo lần 1/, 'Tạo lần 2 khi chưa có lần 1');
-    assertThrows(() => mk(gvcn, st.id, 'warning_3', ids), /Thư cảnh cáo lần 2/, 'Tạo lần 3 khi chưa có lần 2');
-    assertThrows(() => mk(P.admin, st.id, 'warning_2', ids), /Thư cảnh cáo lần 1/, 'Quản trị cũng không được vượt chuỗi');
-    const w1 = mk(gvcn, st.id, 'warning_1', ids);
-    assertThrows(() => mk(gvcn, st.id, 'warning_2', ids), /Thư cảnh cáo lần 1/, 'Lần 1 mới ở trạng thái Đang chuẩn bị thì chưa đủ điều kiện cho lần 2');
-    link(gvcn, w1.id);
-    confirm(gvcn, w1.id);
-    assert(avail('warning_2').available && !avail('warning_3').available, 'Lần 1 đã thực hiện: lần 2 mở khóa, lần 3 vẫn khóa');
-    const w2 = mk(gvcn, st.id, 'warning_2', ids);
-    assertThrows(() => mk(gvcn, st.id, 'warning_3', ids), /Thư cảnh cáo lần 2/, 'Lần 2 mới ở trạng thái Đang chuẩn bị thì chưa đủ điều kiện cho lần 3');
-    link(gvcn, w2.id);
-    confirm(gvcn, w2.id);
-    assert(avail('warning_3').available, 'Lần 2 đã thực hiện: lần 3 mở khóa');
-    assert(mk(gvcn, st.id, 'warning_3', ids).kind === 'warning_3', 'Tạo lần 3');
-  });
-
-  check('PR-J · B06 Chuỗi kiểm cả lúc XÁC NHẬN: lần 1 bị xóa/đổi trước khi lần 2 xác nhận thì lần 2 không xác nhận được (gọi thẳng máy chủ, không qua nút)', () => {
-    const st = makeStudent('B06 xác nhận');
-    const ids = violations(st.id, 2);
-    const w1 = mk(gvcn, st.id, 'warning_1', ids);
-    link(gvcn, w1.id);
-    confirm(gvcn, w1.id);
-    const w2 = mk(gvcn, st.id, 'warning_2', ids);
-    link(gvcn, w2.id);
-    /* Cố ý phá điều kiện ở tầng dữ liệu để chứng minh xác nhận tự kiểm lại chứ không tin lúc tạo. */
-    conn.prepare("UPDATE discipline_measures SET status = 'preparing' WHERE id = ?").run(w1.id);
-    assertThrows(() => confirm(gvcn, w2.id), /Thư cảnh cáo lần 1/, 'Xác nhận lần 2 khi lần 1 không còn ở trạng thái đã thực hiện');
-    conn.prepare("UPDATE discipline_measures SET status = 'done' WHERE id = ?").run(w1.id);
-    assert(confirm(gvcn, w2.id).status === 'done', 'Điều kiện đủ thì xác nhận được');
-  });
-
-  check('PR-J · B07 + Y02 Chuỗi reset khi em sang LỘ TRÌNH MỚI: lần 1 chọn lại được, lần 2 khóa (đặc tả §10 tình huống 18)', () => {
-    const st = makeStudent('B07');
-    const ids = violations(st.id, 2);
-    const w1 = mk(gvcn, st.id, 'warning_1', ids); link(gvcn, w1.id); confirm(gvcn, w1.id);
-    const w2 = mk(gvcn, st.id, 'warning_2', ids); link(gvcn, w2.id); confirm(gvcn, w2.id);
-    const avail = (k: string) => (meas.measureKindAvailability(gvcn, st.id) as any[]).find((x) => x.kind === k);
-    assert(avail('warning_3').available && !avail('warning_1').available, 'Trong lộ trình cũ: lần 1 đã dùng, lần 3 mở');
-    cyclesSvc.createCycle(P.admin, { studentId: st.id, route: 'LT2', targetScore: 7.5, startedAt: TODAY });
-    assert(avail('warning_1').available, 'Lộ trình mới: lần 1 chọn lại được');
-    assert(!avail('warning_2').available && !avail('warning_3').available, 'Lộ trình mới: lần 2 và lần 3 khóa');
-    assertThrows(() => mk(gvcn, st.id, 'warning_2', ids), /Thư cảnh cáo lần 1/, 'Lộ trình mới: lần 2 bị máy chủ từ chối');
-    const again = mk(gvcn, st.id, 'warning_1', violations(st.id, 1));
-    assert(again.kind === 'warning_1' && again.cycleId !== w1.cycleId, 'Lần 1 của lộ trình mới gắn với lộ trình mới');
-    assert(one("SELECT COUNT(*) n FROM discipline_measures WHERE student_id = ? AND kind = 'warning_2' AND status = 'done'", st.id) === 1, 'Thư lần 2 của lộ trình cũ còn nguyên trong lịch sử');
-  });
-
-  check('PR-J · B08 Cùng một lộ trình chỉ có TỐI ĐA một lần 1, một lần 2, một lần 3 — muốn gửi thư thứ tư thì dùng `Khác` kèm tên', () => {
-    const st = makeStudent('B08');
-    const ids = violations(st.id, 2);
-    const w1 = mk(gvcn, st.id, 'warning_1', ids);
-    assertThrows(() => mk(gvcn, st.id, 'warning_1', ids), /Khác/, 'Hai lần 1 khi lần 1 còn đang chuẩn bị');
-    link(gvcn, w1.id); confirm(gvcn, w1.id);
-    assertThrows(() => mk(gvcn, st.id, 'warning_1', ids), /Khác/, 'Hai lần 1 khi lần 1 đã thực hiện');
-    const w2 = mk(gvcn, st.id, 'warning_2', ids); link(gvcn, w2.id); confirm(gvcn, w2.id);
-    const w3 = mk(gvcn, st.id, 'warning_3', ids); link(gvcn, w3.id); confirm(gvcn, w3.id);
-    assertThrows(() => mk(gvcn, st.id, 'warning_3', ids), /Khác/, 'Thư thứ tư bằng lần 3');
-    assert(mk(gvcn, st.id, 'other', ids, { customName: 'Thư cảnh cáo bổ sung lần 4' }).kind === 'other', 'Dùng Khác kèm tên thì được');
-    const avail = (meas.measureKindAvailability(gvcn, st.id) as any[]);
-    assert(avail.filter((x) => /^warning_/.test(x.kind)).every((x) => !x.available && /Khác|đã có/.test(x.reason)), 'Cả ba thư đều khóa và nói vì sao');
-  });
-
-  console.log('\nPR-J · 7. Xác nhận đã thực hiện (B13–B16, Y01, V13)');
-
-  check('PR-J · B13 Xác nhận bắt buộc ngày · người thực hiện · nội dung; tệp hoặc liên kết BẮT BUỘC với ba Thư cảnh cáo và Đình chỉ học; câu thiếu-gì khớp giao diện', () => {
-    const st = makeStudent('B13');
-    const ids = violations(st.id, 2);
-    const talk = mk(gvcn, st.id, 'talk_short', ids);
-    assertThrows(() => meas.confirmMeasure(gvcn, talk.id, { performerName: 'Cô Thu', note: 'Gặp em cuối buổi' } as any), /Cần chọn ngày thực hiện/, 'Thiếu ngày');
-    /*
-     * K2-6d (PR-Form, Q9): thiếu người thực hiện KHÔNG còn báo lỗi — máy chủ tự lấy người đang xác nhận.
-     * Dùng một biện pháp KHÁC (`talk2`) để không tiêu thụ mất `talk`, thứ các dòng dưới còn cần dùng tiếp.
-     */
-    const talk2 = mk(gvcn, st.id, 'talk_short', ids);
-    const noPerformer = meas.confirmMeasure(gvcn, talk2.id, { performedOn: TODAY, note: 'Gặp em cuối buổi' } as any) as any;
-    assert(
-      noPerformer.status === 'done' && noPerformer.performedBy === gvcn.userId,
-      `K2-6d: thiếu người thì performed_by = người xác nhận: ${JSON.stringify(noPerformer)}`,
-    );
-    assertThrows(() => meas.confirmMeasure(gvcn, talk.id, { performedOn: TODAY, performerName: 'Cô Thu' } as any), /Cần ghi nội dung hoặc ghi chú/, 'Thiếu nội dung');
-    const ok = meas.confirmMeasure(gvcn, talk.id, { performedOn: TODAY, performerName: 'Cô Thu', note: 'Gặp em cuối buổi' } as any) as any;
-    assert(ok.status === 'done' && ok.performedOn === TODAY && ok.performerName === 'Cô Thu' && ok.confirmedBy === gvcn.userId && ok.confirmedAt, `Chưa lưu đủ thông tin thực tế: ${JSON.stringify(ok)}`);
-    assert(ok.attachmentCount === 0, 'Trao đổi ngắn: không cần tệp (nguồn mục 28)');
-    /* Người thực hiện là một tài khoản trong hệ thống. */
-    const byUser = mk(gvcn, st.id, 'meeting_student', ids);
-    const doneUser = confirm(gvcn, byUser.id, { performerName: undefined, performedBy: gvbm.userId }) as any;
-    assert(doneUser.performedBy === gvbm.userId && doneUser.performedByName, 'Người thực hiện là một tài khoản');
-    for (const kind of ['warning_1', 'suspension']) {
-      const s2 = makeStudent(`B13 ${kind}`);
-      const v2 = violations(s2.id, 1);
-      const m = mk(gvcn, s2.id, kind, v2);
-      assert(/tệp hoặc liên kết/.test(m.evidenceHint ?? ''), `${kind}: biện pháp còn Đang chuẩn bị phải nói TRƯỚC cần tệp gì (đặc tả 7.3 điểm 6): ${m.evidenceHint}`);
-      assertThrows(() => confirm(gvcn, m.id), /tệp hoặc liên kết/, `${kind} thiếu tệp mà xác nhận được`);
-      link(gvcn, m.id);
-      assert(confirm(gvcn, m.id).status === 'done', `${kind} có liên kết thì xác nhận được`);
-    }
-    const s3 = makeStudent('B13 khác'); const v3 = violations(s3.id, 1);
-    assertThrows(() => confirm(gvcn, mk(gvcn, s3.id, 'other', v3, { customName: 'Gặp riêng cả nhà' }).id, { performedOn: '' }), /ngày thực hiện/, 'Loại Khác vẫn cần ngày');
-    const cx = mk(gvcn, s3.id, 'meeting_cx', v3);
-    assert(confirm(gvcn, cx.id, { participants: 'GĐCN Lan, phụ huynh' }).participants === 'GĐCN Lan, phụ huynh', 'CX/GĐCN meeting lưu người tham gia');
-  });
-
-  check('PR-J · B14 Ngày thực hiện cho chọn quá khứ (việc làm rồi mới vào ghi), KHÔNG cho ngày tương lai', () => {
-    const st = makeStudent('B14');
-    const ids = violations(st.id, 1);
-    const m = mk(gvcn, st.id, 'talk_short', ids);
-    assertThrows(() => confirm(gvcn, m.id, { performedOn: addDays(TODAY, 1) }), /tương lai/, 'Ngày mai');
-    assertThrows(() => confirm(gvcn, m.id, { performedOn: '2026-02-30x' }), /ngày thực hiện/i, 'Ngày sai định dạng');
-    assert(confirm(gvcn, m.id, { performedOn: addDays(TODAY, -20) }).performedOn === addDays(TODAY, -20), 'Ngày quá khứ xa vẫn được');
-    assertThrows(() => confirm(gvcn, m.id), /đã thực hiện/, 'Xác nhận hai lần');
-  });
-
-  check('PR-J · B15 Xác nhận KHÔNG hỏi tiến bộ, không có mức kết quả, không mở vòng theo dõi hành vi — không sinh case, phương án, theo dõi hay việc', () => {
-    const st = makeStudent('B15');
-    const ids = violations(st.id, 3);
-    const m = mk(gvcn, st.id, 'family_report', ids);
-    const cols = (conn.prepare('PRAGMA table_info(discipline_measures)').all() as any[]).map((c) => c.name).join(' ');
-    assert(!/outcome|progress|improv|result|follow/i.test(cols), `Bảng biện pháp không được có cột kết quả/tiến bộ: ${cols}`);
-    const count = () => ['sos_cases', 'case_interventions', 'case_followups', 'case_signals', 'tasks'].map((tb) => `${tb}=${one(`SELECT COUNT(*) n FROM ${tb}`)}`).join(' ');
-    const before = count();
-    const done = confirm(gvcn, m.id) as any;
-    assert(!Object.keys(done).some((k) => /outcome|progress|improv|followUp|result/i.test(k)), `Kết quả trả về không được có ô tiến bộ: ${Object.keys(done).join(',')}`);
-    assert(count() === before, `Xác nhận biện pháp đã mở vòng theo dõi:\n  trước: ${before}\n  sau:   ${count()}`);
-  });
-
-  check('PR-J · B16 (v3) Report gia đình gom 5 vi phạm là MỘT biện pháp; số vi phạm của biện pháp là số ĐANG GẮN — xoá một vi phạm sau đó thì số giảm theo (V14′)', () => {
-    const st = makeStudent('B16');
-    const five = violations(st.id, 5);
-    const m = mk(gvcn, st.id, 'family_report', five);
-    assert(m.violationCount === 5, 'Chưa xác nhận: đã hiện số đang gắn');
-    const done = confirm(gvcn, m.id);
-    assert(one('SELECT COUNT(*) n FROM discipline_measures WHERE student_id = ? AND status = ?', st.id, 'done') === 1, 'Một Report gom 5 vi phạm là MỘT biện pháp');
-    assert(done.violationCount === 5 && done.violations.length === 5, 'Số đang gắn phải là 5');
-    assert((conn.prepare('SELECT violation_count_at_confirm v FROM discipline_measures WHERE id = ?').get(m.id) as any).v === null, 'Cột ảnh chụp cũ không còn được ghi');
-    viol.deleteViolation(gvcn, five[2]);
-    const after = meas.measureDetail(gvcn, m.id) as any;
-    assert(after.violationCount === 4 && after.violations.length === 4 && after.status === 'done', `Số đang gắn phải giảm: ${after.violationCount}`);
-    assert(one("SELECT COUNT(*) n FROM measure_violations WHERE measure_id = ? AND violation_id = ?", m.id, five[2]) === 0, 'Dòng nối đã gỡ');
-  });
-
-  check('PR-J · Y01 GVCN tự xác nhận MỌI loại, kể cả nặng — không có bước Quản lý duyệt; Quản lý nhận THÔNG BÁO khi Thư cảnh cáo hoặc Đình chỉ học được xác nhận', () => {
-    const st = makeStudent('Y01');
-    const ids = violations(st.id, 2);
-    const notified = (measureId: number) => (conn.prepare(
-      `SELECT user_id FROM notifications WHERE entity_type = 'discipline_measure' AND entity_id = ?`).all(measureId) as any[]).map((r) => r.user_id as number);
-    const sus = mk(gvcn, st.id, 'suspension', ids);
-    link(gvcn, sus.id, 'Quyết định đình chỉ');
-    assert(notified(sus.id).length === 0, 'Chưa xác nhận thì chưa báo ai');
-    assert(confirm(gvcn, sus.id).status === 'done', 'GVCN tự xác nhận Đình chỉ học, không cần ai duyệt');
-    const to = notified(sus.id);
-    assert(to.includes(P.mbManager.userId) && to.includes(P.admin.userId) && !to.includes(gvcn.userId) && !to.includes(P.cpManager.userId),
-      `Thông báo phải tới Quản lý MB và Quản trị, không tới người xác nhận và không tới chi nhánh khác: ${to.join()}`);
-    const w1 = mk(gvcn, st.id, 'warning_1', ids); link(gvcn, w1.id); confirm(gvcn, w1.id);
-    assert(notified(w1.id).includes(P.mbManager.userId), 'Thư cảnh cáo lần 1 cũng báo Quản lý');
-    for (const kind of ['talk_short', 'meeting_student', 'family_report', 'meeting_cx']) {
-      const m = mk(gvcn, st.id, kind, ids);
-      confirm(gvcn, m.id);
-      assert(notified(m.id).length === 0, `${kind}: không báo Quản lý`);
-    }
-    assert(!('approvalState' in (meas.measureDetail(gvcn, sus.id) as any)) && !(conn.prepare('PRAGMA table_info(discipline_measures)').all() as any[]).some((c) => /approv/.test(c.name)), 'Không có trạng thái duyệt');
-    /* Quản lý tự xác nhận thì không báo chính mình. */
-    const s2 = makeStudent('Y01 QL'); const v2 = violations(s2.id, 1);
-    const susQl = mk(P.mbManager, s2.id, 'suspension', v2); link(P.mbManager, susQl.id);
-    confirm(P.mbManager, susQl.id);
-    assert(!notified(susQl.id).includes(P.mbManager.userId) && notified(susQl.id).includes(P.admin.userId), 'Người xác nhận không tự nhận thông báo');
-  });
+  /** Một lần Xác nhận xử lý v4 (bậc tự điền — máy chủ quyết). */
+  const xuLy = (who: Principal, studentId: number, ids: number[]) =>
+    xuLySvc.xacNhanXuLy(who, studentId, { violationIds: ids, performedOn: addDays(TODAY, -1), performerName: 'Cô Thu (GVCN)', note: 'Đã gọi điện và gửi report cho gia đình' }) as any;
+  const link = (who: Principal, measureId: number, name = 'Bằng chứng xử lý') =>
+    attachmentsSvc.addLink(who, { ownerType: 'discipline_measure', ownerId: measureId, url: 'https://example.com/bang-chung', displayName: name });
 
   // PR-YT4: khối cảnh báo mềm 5 ngày (W01–W06) thay bằng khối 3 của prYt4.tests.ts (một cửa trạng thái, Quá hạn / Bắt buộc).
 
@@ -860,24 +573,6 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(JSON.stringify([...all.ids].sort((a: number, b: number) => a - b)) === JSON.stringify(truth), 'Tập ID phải bằng sự thật độc lập dựng bằng SQL');
   });
 
-  check('PR-J · J6 `vi-pham-chua-xu-ly`: không nằm trong biện pháp nào (kể cả đang chuẩn bị); vi phạm đã xoá không còn', () => {
-    const st = makeStudent('J6 chưa xử lý');
-    const [a, b, c, d] = violations(st.id, 4);
-    viol.deleteViolation(gvcn, d);
-    const before = ms(P.mbManager, 'vi-pham-chua-xu-ly', { branchId: mbId });
-    assert([a, b, c].every((x) => before.ids.includes(x)) && !before.ids.includes(d), 'Ba vi phạm chưa xử lý, vi phạm đã xoá thì không');
-    const m = mk(gvcn, st.id, 'talk_short', [a, b]);
-    const mid = ms(P.mbManager, 'vi-pham-chua-xu-ly', { branchId: mbId });
-    assert(!mid.ids.includes(a) && !mid.ids.includes(b) && mid.ids.includes(c), 'Vào biện pháp đang chuẩn bị là ra khỏi tập chưa xử lý (W03)');
-    meas.removeViolation(gvcn, m.id, b);
-    assert(ms(P.mbManager, 'vi-pham-chua-xu-ly', { branchId: mbId }).ids.includes(b), 'Bỏ ra khỏi biện pháp thì quay lại');
-    const truth = ids(`SELECT v.id FROM violations v WHERE ${NOW_BRANCH} = ?
-                          AND NOT EXISTS (SELECT 1 FROM measure_violations mv WHERE mv.violation_id = v.id) ORDER BY v.id`, mbId);
-    const now = ms(P.mbManager, 'vi-pham-chua-xu-ly', { branchId: mbId });
-    assert(JSON.stringify([...now.ids].sort((x: number, y: number) => x - y)) === JSON.stringify(truth), 'Tập ID phải bằng sự thật độc lập');
-    assert(now.n === now.ids.length, 'Số = độ dài tập');
-  });
-
   check('PR-J · J6 `hv-co-vi-pham`: đếm DUY NHẤT học viên có vi phạm — em có ba vi phạm vẫn là MỘT học viên; em chỉ có vi phạm đã xoá thì không', () => {
     const many = makeStudent('J6 nhiều'), onlyBad = makeStudent('J6 chỉ xoá');
     violations(many.id, 3);
@@ -891,44 +586,6 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(JSON.stringify([...r.ids].sort((a: number, b: number) => a - b)) === JSON.stringify(truth), 'Tập ID phải bằng sự thật độc lập');
     const vp = ms(P.mbManager, 'vi-pham-tong', { branchId: mbId });
     assert(vp.n > r.n, 'Số vi phạm và số học viên là hai đơn vị khác nhau, không bằng nhau');
-  });
-
-  check('PR-J · J6 `bien-phap-da-thuc-hien` đếm BIỆN PHÁP theo ngày thực hiện — một Report gom 5 vi phạm là MỘT (B16); `bien-phap-dang-chuan-bi` không có "quá hạn"', () => {
-    const st = makeStudent('J6 biện pháp');
-    const five = violations(st.id, 5);
-    const report = mk(gvcn, st.id, 'family_report', five);
-    assert(ms(P.mbManager, 'bien-phap-dang-chuan-bi', { branchId: mbId }).ids.includes(report.id), 'Còn Đang chuẩn bị');
-    assert(!ms(P.mbManager, 'bien-phap-da-thuc-hien', { branchId: mbId }).ids.includes(report.id), 'Chưa thực hiện thì chưa vào tập đã thực hiện');
-    confirm(gvcn, report.id, { performedOn: addDays(TODAY, -3) });
-    const done = ms(P.mbManager, 'bien-phap-da-thuc-hien', { branchId: mbId });
-    assert(done.ids.filter((x: number) => x === report.id).length === 1 && done.unit === 'bien-phap', 'Report gom 5 vi phạm chỉ là MỘT biện pháp trong tập');
-    assert(!ms(P.mbManager, 'bien-phap-dang-chuan-bi', { branchId: mbId }).ids.includes(report.id), 'Đã thực hiện thì rời tập đang chuẩn bị');
-    const inRange = ms(P.mbManager, 'bien-phap-da-thuc-hien', { branchId: mbId, from: addDays(TODAY, -4), to: addDays(TODAY, -2) });
-    const outRange = ms(P.mbManager, 'bien-phap-da-thuc-hien', { branchId: mbId, from: addDays(TODAY, -1), to: TODAY });
-    assert(inRange.ids.includes(report.id) && !outRange.ids.includes(report.id), 'Đếm theo NGÀY THỰC HIỆN (3 ngày trước), không theo ngày bấm xác nhận (hôm nay)');
-    const truth = ids(`SELECT m.id FROM discipline_measures m JOIN classes c ON c.id = m.class_id WHERE c.branch_id = ? AND m.status = 'done' ORDER BY m.id`, mbId);
-    assert(JSON.stringify([...done.ids].sort((a: number, b: number) => a - b)) === JSON.stringify(truth), 'Tập ID phải bằng sự thật độc lập');
-    const prep = ms(P.mbManager, 'bien-phap-dang-chuan-bi', { branchId: mbId });
-    const truthPrep = ids(`SELECT m.id FROM discipline_measures m JOIN classes c ON c.id = m.class_id WHERE c.branch_id = ? AND m.status = 'preparing' ORDER BY m.id`, mbId);
-    assert(JSON.stringify([...prep.ids].sort((a: number, b: number) => a - b)) === JSON.stringify(truthPrep), 'Tập đang chuẩn bị phải bằng sự thật độc lập');
-    assert(/không có hạn/i.test((domain.metricById('bien-phap-dang-chuan-bi') as any).tapDuDieuKien), 'Định nghĩa phải nói rõ biện pháp đang chuẩn bị không có hạn nên không có "quá hạn"');
-  });
-
-  check('PR-J · J6 `bien-phap-theo-loai`: chín loại, tách riêng ba thư cảnh cáo; lọc `kind` ra đúng loại; các phần cộng lại đúng bằng tập tổng', () => {
-    const st = makeStudent('J6 theo loại');
-    const v = violations(st.id, 2);
-    const w1 = mk(gvcn, st.id, 'warning_1', v); link(gvcn, w1.id); confirm(gvcn, w1.id);
-    const w2 = mk(gvcn, st.id, 'warning_2', v); link(gvcn, w2.id); confirm(gvcn, w2.id);
-    const fr = mk(gvcn, st.id, 'family_report', v); confirm(gvcn, fr.id);
-    const all = ms(P.mbManager, 'bien-phap-theo-loai', { branchId: mbId });
-    assert(Object.keys(all.byKind).join() === domain.MEASURE_KINDS_V3.join(), `Phải có đủ chín loại theo thứ tự: ${Object.keys(all.byKind).join()}`);
-    assert(all.byKind.warning_1.includes(w1.id) && all.byKind.warning_2.includes(w2.id) && !all.byKind.warning_1.includes(w2.id), 'Ba thư cảnh cáo tách riêng, không gộp');
-    const sum = (Object.values(all.byKind) as number[][]).reduce((s, x) => s + x.length, 0);
-    assert(sum === all.ids.length && all.n === all.ids.length, `Các phần cộng lại (${sum}) phải bằng tập tổng (${all.ids.length})`);
-    const only = ms(P.mbManager, 'bien-phap-theo-loai', { branchId: mbId, kind: 'warning_2' });
-    assert(only.ids.includes(w2.id) && only.ids.every((id: number) => (conn.prepare('SELECT kind FROM discipline_measures WHERE id = ?').get(id) as any).kind === 'warning_2'), 'Lọc kind=warning_2');
-    assertThrows(() => ms(P.mbManager, 'bien-phap-theo-loai', { kind: 'severe' }), /loại/i, 'Loại lạ');
-    assert(!all.ids.includes(mk(gvcn, st.id, 'talk_short', v).id), 'Biện pháp đang chuẩn bị không vào tập đã thực hiện theo loại');
   });
 
   check('PR-J · J6 Quyền: Quản lý chỉ thấy chi nhánh mình (hỏi chi nhánh khác bị từ chối), Quản trị thấy tất cả, GVBM và GVCN không xem thống kê chi nhánh (số 0, có nhãn) — drill-down cùng quyền với số tổng', () => {
@@ -953,18 +610,6 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(mResp.rows.length === mResp.ids.length && mResp.rows.every((r: any) => r.title && r.sub), 'Dòng của tập biện pháp cũng đủ tên và học viên');
   });
 
-  check('PR-J · J6 Ý thức nằm HOÀN TOÀN NGOÀI mọi bảng hiệu quả hỗ trợ: tạo và xác nhận biện pháp không đổi `pa-co-ket-qua`, `ty-le-co-cai-thien`, `dung-han-cap-nhat` (đặc tả nghiệm thu 19)', () => {
-    const snap = () => ['pa-co-ket-qua', 'ty-le-co-cai-thien', 'dung-han-cap-nhat', 'case-mo', 'hv-co-case-mo', 'pa-can-cap-nhat']
-      .map((id) => { const r = ms(P.admin, id); return `${id}=${JSON.stringify([r.ids, r.numeratorIds ?? null, r.denominatorIds ?? null])}`; }).join('\n');
-    const before = snap();
-    const st = makeStudent('J6 ngoài hiệu quả');
-    const v = violations(st.id, 3);
-    const m = mk(gvcn, st.id, 'family_report', v); confirm(gvcn, m.id);
-    const s = mk(gvcn, st.id, 'suspension', v); link(gvcn, s.id); confirm(gvcn, s.id);
-    assert(snap() === before, 'Biện pháp Ý thức đã chui vào một chỉ số học thuật');
-    assert(!(domain.metricById('ty-le-co-cai-thien') as any).tapDuDieuKien.toLowerCase().includes('biện pháp'), 'Định nghĩa tỷ lệ cải thiện không nhắc biện pháp');
-  });
-
   // ================================================================== Kho tệp cho vi phạm và biện pháp, ba khu vực của lớp
 
   console.log('\nPR-J · 10. Bằng chứng của vi phạm và biện pháp; ba khu vực của lớp (J8)');
@@ -983,11 +628,10 @@ export async function runYThucTests(t: YThucTestKit) {
     assert((viol.violationDetail(gvbm, v) as any).attachmentCount === 2, 'Chi tiết vi phạm đếm đúng tệp');
     await attachmentsSvc.removeAttachment(gvbm, own.id);
     /* Biện pháp: GVBM đọc được, không thêm được; GVCN thêm được kể cả khi đã thực hiện. */
-    const m = mk(gvcn, st.id, 'talk_short', [v]);
+    const m = xuLy(gvcn, st.id, [v]);   // PR-YT4: lần xử lý xong ngay (không còn Đang chuẩn bị)
     assertThrows(() => attachmentsSvc.addLink(gvbm, { ownerType: 'discipline_measure', ownerId: m.id, url: 'https://example.com/y', displayName: 'y' }), /quyền/, 'GVBM thêm được bằng chứng cho biện pháp');
     const file = link(gvcn, m.id, 'Ghi chú cuộc gặp') as any;
     assert((attachmentsSvc.listAttachments(gvbm, 'discipline_measure', m.id) as any[]).length === 1, 'GVBM đọc được bằng chứng của biện pháp');
-    confirm(gvcn, m.id);
     assert(link(gvcn, m.id, 'Bổ sung sau khi thực hiện').id > 0, 'Biện pháp đã thực hiện vẫn bổ sung được bằng chứng');
     await attachmentsSvc.removeAttachment(gvcn, file.id);
     assert(one("SELECT COUNT(*) n FROM audit_logs WHERE action = 'attachment.delete' AND entity_id = ?", file.id) === 1, 'Gỡ tệp của biện pháp có audit');
@@ -1018,23 +662,24 @@ export async function runYThucTests(t: YThucTestKit) {
   const hs = makeStudent('HTTP');
   const hv = violations(hs.id, 3);
   const noAuth = await call(null, 'GET', `/classes/${CLASS}/y-thuc`);
-  const gvbmCreate = await call(gvbm, 'POST', '/measures', { studentId: hs.id, kind: 'talk_short', violationIds: hv });
+  const gvbmXuLy = await call(gvbm, 'POST', `/students/${hs.id}/y-thuc/xu-ly`, { violationIds: hv, performedOn: TODAY, note: 'GVBM thử xác nhận xử lý' });
+  const gvbmGhiNhan = await call(gvbm, 'POST', `/students/${hs.id}/y-thuc/ghi-nhan`, { violationIds: hv });
+  const gvbmKhai = await call(gvbm, 'POST', `/students/${hs.id}/y-thuc/khai-bac`, { bac: 2, ghiChu: 'GVBM khai thử' });
+  const gvbmDeXuat = await call(gvbm, 'POST', `/students/${hs.id}/y-thuc/de-xuat`, { kind: 'suspension', violationIds: hv, note: 'GVBM đề xuất thử đình chỉ' });
   const gvbmBoard = await call(gvbm, 'GET', `/classes/${CLASS}/y-thuc`);
   const gvcnBoard = await call(gvcn, 'GET', `/classes/${CLASS}/y-thuc`);
-  const chain2 = await call(gvcn, 'POST', '/measures', { studentId: hs.id, kind: 'warning_2', violationIds: hv });
-  const chain3 = await call(gvcn, 'POST', '/measures', { studentId: hs.id, kind: 'warning_3', violationIds: hv });
-  const w1 = await call(gvcn, 'POST', '/measures', { studentId: hs.id, kind: 'warning_1', violationIds: hv });
-  const w1NoFile = await call(gvcn, 'POST', `/measures/${w1.json?.id}/confirm`, { performedOn: TODAY, performerName: 'Cô Thu', note: 'Đã gửi thư' });
-  const w1Link = await call(gvcn, 'POST', '/attachments/link', { ownerType: 'discipline_measure', ownerId: w1.json?.id, url: 'https://example.com/thu', displayName: 'Thư lần 1' });
-  const w1Done = await call(gvcn, 'POST', `/measures/${w1.json?.id}/confirm`, { performedOn: TODAY, performerName: 'Cô Thu', note: 'Đã gửi thư' });
-  const chain2Ok = await call(gvcn, 'POST', '/measures', { studentId: hs.id, kind: 'warning_2', violationIds: hv });
-  const chain3Still = await call(gvcn, 'POST', '/measures', { studentId: hs.id, kind: 'warning_3', violationIds: hv });
-  const gvbmDelete = await call(gvbm, 'DELETE', `/measures/${chain2Ok.json?.id}`);
-  const gvbmPatch = await call(gvbm, 'PATCH', `/measures/${chain2Ok.json?.id}`, { note: 'GVBM sửa ghi chú' });
-  const gvbmAdd = await call(gvbm, 'POST', `/measures/${chain2Ok.json?.id}/violations`, { violationIds: hv });
-  const gvbmConfirm = await call(gvbm, 'POST', `/measures/${chain2Ok.json?.id}/confirm`, { performedOn: TODAY, performerName: 'x', note: 'nội dung' });
-  const gvbmRead = await call(gvbm, 'GET', `/measures/${chain2Ok.json?.id}`);
-  const kinds = await call(gvbm, 'GET', `/students/${hs.id}/measure-kinds`);
+  const gvbmHv = await call(gvbm, 'GET', `/students/${hs.id}/y-thuc`);
+  const r1 = await call(gvcn, 'POST', `/students/${hs.id}/y-thuc/xu-ly`, { violationIds: [hv[0]], performedOn: TODAY, performerName: 'Cô Thu', note: 'Đã trao đổi với em và gia đình', bacDaThay: 0 });
+  const r1Cu = await call(gvcn, 'POST', `/students/${hs.id}/y-thuc/xu-ly`, { violationIds: [hv[1]], performedOn: TODAY, note: 'Bấm từ panel cũ còn bậc 0', bacDaThay: 0 });
+  const gvbmRead = await call(gvbm, 'GET', `/y-thuc/xu-ly/${r1.json?.id}`);
+  const hs5 = makeStudent('HTTP WL3');
+  const hv5 = violations(hs5.id, 2);
+  const khai5 = await call(gvcn, 'POST', `/students/${hs5.id}/y-thuc/khai-bac`, { bac: 5, ghiChu: 'Đã WL 2 tháng 8 (giấy)' });
+  const wl3XuLy = await call(gvcn, 'POST', `/students/${hs5.id}/y-thuc/xu-ly`, { violationIds: hv5, performedOn: TODAY, note: 'Thử xử lý WL 3 một bước' });
+  const wl3Nhap = await call(gvcn, 'POST', `/students/${hs5.id}/y-thuc/de-xuat`, { kind: 'wl_3', violationIds: hv5, note: 'Đề xuất WL 3 sau WL 2' });
+  const wl3GuiKhongTep = await call(gvcn, 'POST', `/y-thuc/xu-ly/${wl3Nhap.json?.id}/gui`);
+  const wl3Link = await call(gvcn, 'POST', '/attachments/link', { ownerType: 'discipline_measure', ownerId: wl3Nhap.json?.id, url: 'https://example.com/wl3', displayName: 'Thư WL 3' });
+  const wl3Gui = await call(gvcn, 'POST', `/y-thuc/xu-ly/${wl3Nhap.json?.id}/gui`);
   const vPost = await call(gvbm, 'POST', '/violations', { studentId: hs.id, category: 'attendance', description: 'Đi muộn 15 phút buổi sáng', idempotencyKey: 'pj-http-1' });
   const vPostAgain = await call(gvbm, 'POST', '/violations', { studentId: hs.id, category: 'attendance', description: 'Đi muộn 15 phút buổi sáng', idempotencyKey: 'pj-http-1' });
   const vOutsider = await call(outsider, 'POST', '/violations', { studentId: hs.id, category: 'attendance', description: 'Người ngoài lớp ghi vi phạm' });
@@ -1047,27 +692,25 @@ export async function runYThucTests(t: YThucTestKit) {
 
   console.log('\nPR-J · 11. Gọi thẳng đường HTTP — máy chủ từ chối, không chỉ ẩn nút');
 
-  check('PR-J · #22 GVBM gọi thẳng API tạo · sửa · thêm vi phạm · xác nhận · xóa biện pháp → máy chủ từ chối (403); đọc thì được; chưa đăng nhập → 401', () => {
+  check('PR-J · #22 (PR-YT4) GVBM gọi thẳng API Ghi nhận · Xác nhận xử lý · Khai bậc · Đề xuất → 403; đọc tab lớp, tab HV, một lần xử lý thì được; chưa đăng nhập → 401', () => {
     assert(noAuth.status === 401, `Chưa đăng nhập: ${noAuth.status}`);
-    assert(gvbmCreate.status === 403, `GVBM tạo biện pháp qua HTTP phải bị 403, được ${gvbmCreate.status} ${JSON.stringify(gvbmCreate.json)}`);
-    for (const [name, r] of [['sửa', gvbmPatch], ['thêm vi phạm', gvbmAdd], ['xác nhận', gvbmConfirm], ['xóa', gvbmDelete]] as const) {
-      assert(r.status === 403, `GVBM ${name} biện pháp qua HTTP phải bị 403, được ${r.status}`);
+    for (const [name, r] of [['xác nhận xử lý', gvbmXuLy], ['ghi nhận', gvbmGhiNhan], ['khai bậc', gvbmKhai], ['đề xuất', gvbmDeXuat]] as const) {
+      assert(r.status === 403, `GVBM ${name} qua HTTP phải bị 403, được ${r.status} ${JSON.stringify(r.json)}`);
     }
-    assert(gvbmRead.status === 200 && gvbmRead.json?.id === chain2Ok.json?.id, 'GVBM đọc được biện pháp của lớp mình dạy');
-    assert(kinds.status === 200 && (kinds.json?.rows ?? []).length === 9, 'GVBM đọc được danh sách chín loại kèm dòng khóa');
+    assert(gvbmRead.status === 200 && gvbmRead.json?.id === r1.json?.id && gvbmRead.json?.canManage === false, 'GVBM đọc được lần xử lý của lớp mình dạy');
+    assert(gvbmHv.status === 200 && gvbmHv.json?.canManage === false && gvbmHv.json?.canRecord === true, 'GVBM đọc tab Ý thức của HV');
     assert(gvbmBoard.status === 200 && gvbmBoard.json?.canManage === false && gvcnBoard.json?.canManage === true,
       'Tab Ý thức của lớp: GVBM đọc được nhưng canManage = false; GVCN = true');
     for (const k of ['nhom', 'dongThoiGian']) assert(k in (gvbmBoard.json ?? {}), `Tab Ý thức của lớp thiếu khung ${k} (M6)`);
   });
 
-  check('PR-J · #5 + B06 Gọi thẳng HTTP: Thư cảnh cáo lần 2 khi chưa có lần 1 → 400 và nói vì sao; lần 3 khi chưa có lần 2 → 400; xác nhận thư không đính tệp → 400; xong từng bước thì mở khóa', () => {
-    assert(chain2.status === 400 && /Thư cảnh cáo lần 1/.test(chain2.json?.error ?? ''), `Lần 2 khi chưa có lần 1: ${chain2.status} ${chain2.json?.error}`);
-    assert(chain3.status === 400 && /Thư cảnh cáo lần 2/.test(chain3.json?.error ?? ''), `Lần 3 khi chưa có lần 2: ${chain3.status} ${chain3.json?.error}`);
-    assert(w1.status === 200 && w1.json?.status === 'preparing' && w1.json?.kind === 'warning_1', `Tạo lần 1: ${w1.status}`);
-    assert(w1NoFile.status === 400 && w1NoFile.json?.error === 'Cần đính kèm tệp hoặc liên kết thư cảnh cáo', `Xác nhận thư không tệp: ${w1NoFile.status} ${w1NoFile.json?.error}`);
-    assert(w1Link.status === 200 && w1Done.status === 200 && w1Done.json?.status === 'done', `Có liên kết thì xác nhận được: ${w1Done.status} ${w1Done.json?.error}`);
-    assert(chain2Ok.status === 200 && chain2Ok.json?.kind === 'warning_2', `Lần 1 đã thực hiện → tạo được lần 2: ${chain2Ok.status} ${chain2Ok.json?.error}`);
-    assert(chain3Still.status === 400 && /Thư cảnh cáo lần 2/.test(chain3Still.json?.error ?? ''), 'Lần 2 mới ở Đang chuẩn bị thì lần 3 vẫn khóa');
+  check('PR-J · #5 (PR-YT4) Gọi thẳng HTTP: bậc do máy chủ quyết (Report 1), panel cũ → 409; khai bậc 5 → WL 3 không Xác nhận một bước được (400), đề xuất thiếu bằng chứng → 400, có liên kết → gửi được', () => {
+    assert(r1.status === 200 && r1.json?.kind === 'report_1' && r1.json?.status === 'done', `Lần đầu: ${r1.status} ${JSON.stringify(r1.json)}`);
+    assert(r1Cu.status === 409 && /Bậc đã đổi/.test(r1Cu.json?.error ?? ''), `Panel cũ: ${r1Cu.status} ${r1Cu.json?.error}`);
+    assert(khai5.status === 200, `Khai bậc 5: ${khai5.status} ${khai5.json?.error}`);
+    assert(wl3XuLy.status === 400 && /WL 3 — cần Đề xuất QL duyệt/.test(wl3XuLy.json?.error ?? ''), `WL 3 một bước: ${wl3XuLy.status} ${wl3XuLy.json?.error}`);
+    assert(wl3Nhap.status === 200 && wl3GuiKhongTep.status === 400 && /đính kèm tệp hoặc liên kết/.test(wl3GuiKhongTep.json?.error ?? ''), `Gửi không tệp: ${wl3GuiKhongTep.status} ${wl3GuiKhongTep.json?.error}`);
+    assert(wl3Link.status === 200 && wl3Gui.status === 200 && wl3Gui.json?.status === 'cho_duyet', `Có liên kết thì gửi được: ${wl3Gui.status} ${wl3Gui.json?.error}`);
   });
 
   check('PR-J · J8 Đường HTTP ghi vi phạm: gửi lại cùng khoá không tạo dòng thứ hai (V07); người ngoài lớp 403; đồng nghiệp sửa vi phạm của người khác 403; cảnh báo trùng trả bản đang có', () => {
