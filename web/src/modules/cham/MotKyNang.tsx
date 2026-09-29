@@ -12,12 +12,16 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ATTEMPT_KIND_SHORT, ENTRY_SKILLS, ngay, tenMon, tenMonNgan, type AttemptKind } from '@shared/domain/index.ts';
+import {
+  ATTEMPT_KIND_SHORT, BAI_CO_NHAN_XET, ENTRY_SKILLS, ngay, tenMon, tenMonNgan, type AttemptKind, type NguoiChon,
+} from '@shared/domain/index.ts';
 import { fmtBand } from '../../lib/format.ts';
 import { Info } from '../../ui/ui.tsx';
 import {
-  ChoNutDau, CriteriaButton, KHOA_HOAN_TAT_HINT, ODiemThuong, RawScoreInput, datPhanTram, useSaveScore, type Cell,
+  ChoNutDau, CriteriaButton, KHOA_HOAN_TAT_HINT, ODiemThuong, RawScoreInput, datPhanTram, lockedByNoShow, useSaveScore, type Cell,
 } from '../fasttrack/ScoreEntry.tsx';
+import { HopNhanXet } from '../fasttrack/NhanXet.tsx';
+import { NutGvCham, useGvChamCot } from './GvCham.tsx';
 import { DauLuu, DauO, LuoiFT, VIEN_LOI, khopKn, oTrongFt, type FtSheet } from './LuoiFT.tsx';
 import {
   LuoiThuong, ketQuaCua, lichCua, oThuong, tongPhoBien, useLuuThuong, type ThuongSheet,
@@ -141,6 +145,8 @@ function MotKyNangFt({ data, onReload, kn, hv }: { data: FtSheet; onReload: () =
   const conTrong = (k: string) => data.rows.some((r) => { const c = oCua(r, k); return !!c && oTrongFt(c); });
   const [chon, setChon] = useKyNangChon(dsKn, (k) => minh.has(k), conTrong, kn);
   const { phim, dangKy } = useDiChuyen();
+  /* K4-24: GV chấm chọn một lần cho cả lớp × tuần — cùng ô nhớ với tiêu đề cột S của lưới máy tính. */
+  const [gvCot, setGvCot] = useGvChamCot(data.classId, data.period?.id, minh.has('speaking'));
 
   if (data.rows.length === 0 || !chon) return <LuoiFT data={data} onReload={onReload} kn={kn} hv={hv} />;
 
@@ -153,10 +159,13 @@ function MotKyNangFt({ data, onReload, kn, hv }: { data: FtSheet; onReload: () =
   return (
     <div>
       <HangChip ds={chips} chon={chon} onChon={setChon} />
+      {chon === 'speaking' && minh.has('speaking') && data.period && (
+        <div className="flex justify-end px-3 pb-1"><NutGvCham lon value={gvCot} onChange={setGvCot} /></div>
+      )}
       <ul className="m-0 p-0 list-none">
         {data.rows.map((r, i) => (
           <DongFt key={r.attemptId} row={r} k={chon} nhieuMt={nhieuMt}
-            active={hv !== null && r.studentId === hv} onReload={onReload}
+            active={hv !== null && r.studentId === hv} onReload={onReload} gvMacDinh={gvCot}
             inputRef={dangKy(i)} onKeyDown={phim(i)} />
         ))}
       </ul>
@@ -164,8 +173,9 @@ function MotKyNangFt({ data, onReload, kn, hv }: { data: FtSheet; onReload: () =
   );
 }
 
-function DongFt({ row, k, nhieuMt, active, onReload, inputRef, onKeyDown }: {
+function DongFt({ row, k, nhieuMt, active, onReload, gvMacDinh, inputRef, onKeyDown }: {
   row: FtSheet['rows'][number]; k: string; nhieuMt: boolean; active: boolean; onReload: () => void;
+  gvMacDinh: NguoiChon | null;
   inputRef: (el: HTMLInputElement | null) => void; onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 }) {
   const { save, status, lastError, retry, o, loi, luuLai, soLoi, loiNhap, coGuiLai } = useSaveScore(row.attemptId, onReload);
@@ -186,7 +196,13 @@ function DongFt({ row, k, nhieuMt, active, onReload, inputRef, onKeyDown }: {
           : laSoCau
             ? <RawScoreInput lon cell={c} onSave={(p, o) => save(k, p, o)} inputRef={inputRef} onKeyDown={onKeyDown}
                 tenHv={row.studentName} onLoiNhap={(x) => loiNhap(k, x)} />
-            : <CriteriaButton lon cell={c} onSave={(p, o) => save(k, p, o)} tenHv={row.studentName} />}
+            : <CriteriaButton lon cell={c} onSave={(p, o) => save(k, p, o)} tenHv={row.studentName}
+                gvMacDinh={k === 'speaking' ? gvMacDinh : null} />}
+        {/* Nhận xét W1/W2/S (YC-13.5): ✎ cạnh ô — chỉ khi sửa được ô đó. */}
+        {(BAI_CO_NHAN_XET as readonly string[]).includes(k) && (c && c.canEdit && !lockedByNoShow(c) ? (
+          <HopNhanXet tieuDe={`${tenMon(null, k)} · ${row.studentName}`} giaTri={c.nhanXet ?? null}
+            onLuu={(v) => save(k, { nhanXet: v })} />
+        ) : <span aria-hidden className="inline-block w-11 shrink-0" />)}
       </div>
     </DongHv>
   );

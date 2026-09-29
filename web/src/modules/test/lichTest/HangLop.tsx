@@ -60,6 +60,9 @@ const TienDo = ({ l }: { l: LopLichTest }) => (
  * mở ra là lưới chấm tại chỗ trong `HangCon`. Cột cố định (G-2). Màn hẹp: hàng lớp gập hai dòng
  * `▾ mã · đợt · x/y` + `hạn · trạng thái` (G-3), lưới tự sang một kỹ năng một lúc.
  */
+/** E5 (PR-HSM): độ rộng ba cột đầu (Lớp · Đợt · Kỹ năng) — dùng chung với bảng Nợ (`KhoiNo`) để hai bảng thẳng cột. */
+export const COT_DAU_LICH_TEST = [190, 120, 110] as const;
+
 export function HangLop({ lop, moCua, onMo, coChiNhanh, hep, periodId, tuanDangXem, urlClassId, urlKn, conTro, onDaLuu, chuaLuu, baoChuaLuu }: {
   lop: LopLichTest[];
   moCua: (l: LopLichTest) => boolean;
@@ -76,7 +79,7 @@ export function HangLop({ lop, moCua, onMo, coChiNhanh, hep, periodId, tuanDangX
 }) {
   const cot = hep
     ? [null]
-    : [190, 120, ...(coChiNhanh ? [110] : []), 110, 96, 190, 130, 44];
+    : [...COT_DAU_LICH_TEST, ...(coChiNhanh ? [110] : []), 96, 190, 130, 44];
   const soCot = cot.length;
 
   return (
@@ -88,8 +91,8 @@ export function HangLop({ lop, moCua, onMo, coChiNhanh, hep, periodId, tuanDangX
             <tr>
               <th className="th">Lớp</th>
               <th className="th">Đợt</th>
-              {coChiNhanh && <th className="th">Chi nhánh</th>}
               <th className="th" title="Môn thi tuần này — môn mờ là không thi tuần này">Kỹ năng</th>
+              {coChiNhanh && <th className="th">Chi nhánh</th>}
               <th className="th" title="Số bài đã chấm / số bài của tuần này">Tiến độ</th>
               <th className="th">Hạn chấm</th>
               <th className="th"><span className="sr-only">Trạng thái</span></th>
@@ -116,8 +119,8 @@ export function HangLop({ lop, moCua, onMo, coChiNhanh, hep, periodId, tuanDangX
                 {!hep && (
                   <>
                     <td className="px-3 whitespace-nowrap font-semibold text-slate-200">{l.dotLabel}</td>
-                    {coChiNhanh && <td className="px-3 truncate text-slate-400" style={THUONG} title={l.branchName}>{l.branchName}</td>}
                     <td className="px-3"><KyNang l={l} /></td>
+                    {coChiNhanh && <td className="px-3 truncate text-slate-400" style={THUONG} title={l.branchName}>{l.branchName}</td>}
                     <td className="px-3"><TienDo l={l} /></td>
                     <td className="px-3 whitespace-nowrap" style={THUONG}><Han loai="nhap-diem" han={l.han} /></td>
                     <td className="px-3"><NhanLop l={l} chuaLuu={chuaLuu[l.key]} /></td>

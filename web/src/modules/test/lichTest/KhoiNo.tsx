@@ -5,6 +5,7 @@ import { Han } from '../../../ui/Han.tsx';
 import { chuOChuaLuu, tenMon, tenMonNgan, tuanLich } from '@shared/domain/index.ts';
 import type { DongNo } from './kieu.ts';
 import { LuoiNhung } from './LuoiNhung.tsx';
+import { COT_DAU_LICH_TEST } from './HangLop.tsx';
 
 /**
  * Kỹ năng của dòng Nợ — viết tắt (tooltip tên đủ, G-7). Có lùi lịch thật (Q15) thì thêm "· lùi lịch", tuần cũ/mới và
@@ -94,8 +95,9 @@ export function KhoiNo({ no, mo, onMo, chiQuaHan, onBoQuaHan, dongMo, onMoDong, 
           <colgroup>
             {hep ? (<><col /><col style={{ width: 72 }} /></>) : (
               <>
-                <col style={{ width: 150 }} /><col style={{ width: 110 }} /><col /><col style={{ width: 80 }} />
-                <col style={{ width: 190 }} /><col style={{ width: 130 }} /><col style={{ width: 84 }} />
+                {/* E5: ba cột đầu cùng độ rộng với bảng lớp (`COT_DAU_LICH_TEST`) — hai bảng thẳng cột. */}
+                {COT_DAU_LICH_TEST.map((w, i) => <col key={i} style={{ width: w }} />)}
+                <col style={{ width: 80 }} /><col style={{ width: 190 }} /><col /><col style={{ width: 84 }} />
               </>
             )}
           </colgroup>

@@ -204,4 +204,16 @@ export async function runPrHsmTests(t: YThucTestKit) {
     const gv = docSach('web/src/modules/cham/GvCham.tsx');
     assert(gv.includes('pisa:gv-cham:') && /try \{/.test(gv), 'GvCham thiếu khoá nhớ / try');
   });
+
+  // ------------------------------------------------------------------ khối 4: lưới, điện thoại, Lịch Test
+  check('HSM (4) · lưới FT: GV chấm một lần + cột W tổng; lớp thường "Điền cả cột"; Lịch Test chung độ rộng; ✎ điện thoại; nhanLuot', () => {
+    const ft = docSach('web/src/modules/cham/LuoiFT.tsx');
+    assert(/useGvChamCot\(/.test(ft) && /skill === 'writing'/.test(ft) && /verdicts/.test(ft), 'LuoiFT thiếu GV chấm / cột W');
+    const th = docSach('web/src/modules/cham/LuoiThuong.tsx');
+    assert(th.includes('Điền cả cột') && !/>\s*↓\s*</.test(th) && /tongLaySan=\{/.test(th), 'LuoiThuong');
+    assert(/COT_DAU_LICH_TEST/.test(docSach('web/src/modules/test/lichTest/KhoiNo.tsx')), 'KhoiNo không dùng COT_DAU_LICH_TEST');
+    assert(/<HopNhanXet/.test(docSach('web/src/modules/cham/MotKyNang.tsx')), 'MotKyNang thiếu HopNhanXet');
+    assert(d.nhanLuot('planned', 2, 4) === 'Đang chấm · 2/4' && d.nhanLuot('planned', 0, 4) === 'Đã lên lịch', 'nhanLuot planned');
+    assert(d.nhanLuot('cancelled', 2, 4) === 'Đã huỷ' && d.nhanLuot('done', 4, 4) === 'Đã xong', 'nhanLuot huỷ / xong');
+  });
 }

@@ -236,7 +236,7 @@ export function ChoNutDau() {
  */
 function DongLoiNhap({ id, cau }: { id: string; cau: string | null }) {
   if (!cau) return null;
-  return <span id={id} role="alert" className="block max-w-[11rem] truncate text-xs leading-tight text-bad" title={cau}>{cau}</span>;
+  return <span id={id} role="alert" className="block max-w-[6.5rem] truncate text-xs leading-tight text-bad" title={cau}>{cau}</span>;
 }
 function useBaoLoiNhap(cau: string | null, onLoiNhap?: (cau: string | null) => void) {
   const bao = useRef(onLoiNhap);
@@ -1121,7 +1121,7 @@ export function ODiemThuong({
     const khongDay = cell.khoa ? KHOA_HOAN_TAT_HINT : 'Bạn không được phân công kỹ năng này.';
     if (coDiem) {
       return (
-        <span className="inline-flex flex-col items-center justify-center tabular-nums text-slate-400"
+        <span className="inline-flex flex-col items-end justify-center tabular-nums text-slate-400"
           title={[khongDay, pt && ketQuaChu ? `${ketQuaChu} · ${pt}.` : '', lamBu].filter(Boolean).join(' ')}>
           <span className="inline-flex items-center gap-1">
             <span className={cell.ketQua === 'fail' ? 'text-rose-300' : ''}>{o.hien || `${cell.diem}/?`}</span>
@@ -1156,8 +1156,8 @@ export function ODiemThuong({
     const title = [pt && ketQuaChu ? `${ketQuaChu} · ${pt}.` : '', 'Đã có điểm — bấm để sửa, phải ghi lý do.', lamBu]
       .filter(Boolean).join(' ');
     return (
-      <span className="inline-flex flex-col items-center justify-center" title={title}>
-        <span className="inline-flex items-center justify-center gap-1">
+      <span className="inline-flex flex-col items-end justify-center" title={title}>
+        <span className="inline-flex items-center justify-end gap-1">
           <input ref={inputRef} readOnly className={`${oSo} cursor-pointer ${cell.ketQua === 'fail' ? 'text-rose-300' : ''}`}
             value={String(cell.diem)} aria-label={`${tenMon} — số câu đúng (đã có điểm, sửa phải ghi lý do)`}
             onClick={() => mo(String(cell.diem))}
@@ -1216,7 +1216,7 @@ export function ODiemThuong({
     : o.vienVang ? `Khác tổng của cột (${tongCot}) — em làm đề khác.` : 'Tổng số câu của đề em làm.';
   return (
     <span className="inline-flex flex-col items-end gap-0.5">
-    <span ref={cap} className="inline-flex items-center justify-center gap-1"
+    <span ref={cap} className="inline-flex items-center justify-end gap-1"
       onBlur={(e) => { if (!cap.current?.contains(e.relatedTarget as Node)) void commit(); }}>
       <input ref={goLai.gan}
         className={`${oSo} ${canhBao?.o === 'diem' ? 'border-rose-400/70' : ''} ${dangDau ? 'text-slate-400' : ''}`}

@@ -133,6 +133,17 @@ export const ATTEMPT_STATUS_LABEL: Record<AttemptStatus, string> = {
 };
 
 /**
+ * NHÃN LƯỢT CÓ TIẾN ĐỘ (F8, PR-HSM Q17): lượt đã có ≥ 1 kỹ năng mà còn thiếu thì không phải "Đã lên lịch" nữa —
+ * "Đang chấm · 2/4". Dùng ở lưới FT và hồ sơ Mock (một hàm, một câu).
+ */
+export function nhanLuot(status: string, coDiem: number, yeuCau: number): string {
+  if (status === 'cancelled') return ATTEMPT_STATUS_LABEL.cancelled;
+  if (status === 'done' || (yeuCau > 0 && coDiem >= yeuCau)) return ATTEMPT_STATUS_LABEL.done;
+  if (coDiem > 0) return `Đang chấm · ${coDiem}/${yeuCau}`;
+  return ATTEMPT_STATUS_LABEL[status as AttemptStatus] ?? status;
+}
+
+/**
  * PHẠM VI YÊU CẦU của một kỹ năng trong một đợt (mục 10.1).
  *
  * Mặc định MỌI kỹ năng đều nằm trong phạm vi. Quản lý có thể chốt TRƯỚC là đợt này chỉ

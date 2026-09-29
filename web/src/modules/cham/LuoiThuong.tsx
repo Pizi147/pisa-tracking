@@ -319,22 +319,22 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
               {skills.map((k) => {
                 const n = soTong(k);
                 return (
-                  <th key={k} className={`th text-center ${kn === k ? 'text-[color:var(--accent-strong)]' : ''}`}>
-                    <div className="flex flex-col items-center gap-1">
+                  <th key={k} className={`th text-right ${kn === k ? 'text-[color:var(--accent-strong)]' : ''}`}>
+                    <div className="flex flex-col items-end gap-1">
                       <span title={tenMon(data.programme.code, k)}>{tenMonNgan(data.programme.code, k)}</span>
                       {cotSuaDuoc(k) && (
-                        <span className="flex items-center gap-1 normal-case tracking-normal font-normal">
+                        <span className="flex flex-wrap items-center justify-end gap-1 normal-case tracking-normal font-normal">
                           <span className="text-[10px] text-slate-500">tổng</span>
                           <input className="field w-11 px-1 py-0.5 text-center text-[12px] tabular-nums"
                             inputMode="numeric" value={chuTong(k)} placeholder="—"
-                            title="Tổng số câu của đề cả lớp làm — bấm ↓ để điền vào mọi ô còn trống tổng."
+                            title="Tổng số câu của đề cả lớp làm — ô còn trống tổng lấy sẵn số này; bấm Điền cả cột để điền luôn."
                             aria-label={`Tổng số câu chung của cột ${tenMon(data.programme.code, k)}`}
                             onChange={(e) => setTongGo((t) => ({ ...t, [k]: e.target.value }))} />
-                          <button type="button" className="btn btn-sm btn-ghost px-1.5 py-0" disabled={n === null}
+                          <button type="button" className="btn btn-sm btn-ghost px-1.5 py-0 text-xs" disabled={n === null}
                             title="Điền tổng này vào mọi ô còn trống tổng của cột. Ô đã có tổng giữ nguyên."
                             aria-label={`Điền tổng ${n ?? ''} xuống cột ${tenMon(data.programme.code, k)}`}
                             onClick={() => n !== null && setDien((d) => ({ ...d, [k]: { gt: n, lan: (d[k]?.lan ?? 0) + 1 } }))}>
-                            ↓
+                            Điền cả cột
                           </button>
                         </span>
                       )}
@@ -433,7 +433,7 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
          */
         if (tuanDangXem && s?.weekStart && s.weekStart !== tuanDangXem && cell.diem === null && !s.noShow) {
           return (
-            <td key={k} className="td group relative py-1.5 text-center text-slate-500" data-kn={k}
+            <td key={k} className="td group relative py-1.5 text-right text-slate-500" data-kn={k}
               title={`${tenMon(sheet.programme.code, k)}: thi tuần ${tuanLich(s.weekStart, homNay)}`}>
               {tuanLich(s.weekStart, homNay)}
               {menuO(k)}
@@ -442,19 +442,21 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
         }
         if (dung) {
           return (
-            <td key={k} className="td group relative py-1.5 text-center" data-kn={k}>
+            <td key={k} className="td group relative py-1.5 text-right" data-kn={k}>
               <span className="text-[10px] text-slate-500 leading-tight" title={`${tenMon(sheet.programme.code, k)}: ${chuDung}`}>{chuDung}</span>
               {menuO(k)}
             </td>
           );
         }
         return (
-          <td key={k} className={`td group py-1.5 text-center relative ${o[k] === 'loi' ? VIEN_LOI : ''}`} data-kn={k}
+          <td key={k} className={`td group py-1.5 text-right relative ${o[k] === 'loi' ? VIEN_LOI : ''}`} data-kn={k}
             data-trong={trong ? '1' : undefined} data-luu={o[k]}>
             <DauO tt={o[k]} loi={loi[k]} onLuuLai={() => luuLai(k)} />
             <ODiemThuong
               cell={cell}
               tongCot={tongCot(k)}
+              /* C9: ô tổng trống hiện sẵn tổng chung của cột (chưa là bản nháp) — gõ số câu đúng là lưu kèm tổng đó. */
+              tongLaySan={tongCot(k) !== null}
               canEdit={canEdit}
               dienTong={dien[k] ?? null}
               chiChuKetQua={CHUONG_TRINH_KHONG_CHIA_MON.includes(sheet.programme.code)}

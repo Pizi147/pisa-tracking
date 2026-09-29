@@ -509,3 +509,8 @@ Không có câu bắt buộc — mọi điểm mở đã vào bảng Q theo khuy
   vắng — Quản lý xếp lại bài trước khi nhập."; hộp tiêu chí thêm "+ Nhận xét" → "Nhận xét (không bắt buộc)", "GV chấm · Đổi"; đầu cột S
   "GV chấm: {tên} ▾" / "GV chấm: chưa chọn", câu giải thích giữ nguyên kế hoạch. impeccable: không có PRODUCT.md (không init — CLAUDE.md).
   1737 đạt (lần 1 segfault 139, chạy lại xanh).
+- **Task 4** — 1738 đạt. `layout` (xét trên mã, ảnh ở Task 9): cột S nới **104 → 150 px** để nút "GV chấm: {tên} ▾" nằm dưới "S (band)"
+  không cắt tên ngắn; cột W 56 px sau W2; mọi cột số lưới FT căn phải (tiêu đề + ô); lớp thường ô đúng/tổng căn phải, đầu cột
+  "tổng + Điền cả cột" gói dòng (`flex-wrap`, cột 136 px); câu lỗi dưới ô cắt ở 104 px (tooltip + DOM giữ câu đủ); điện thoại: dòng
+  W/S không sửa được có chỗ trống 44 px thay ✎ để số thẳng cột. `nhanLuot` đặt ở `shared/domain/fasttrack.ts` (bộ kiểm đọc được).
+  Lịch Test: `COT_DAU_LICH_TEST = [190, 120, 110]`; bảng Nợ đổi 150/110/auto → 190/120/110, cột trạng thái thành auto.
