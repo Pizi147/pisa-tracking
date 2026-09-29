@@ -520,3 +520,7 @@ Không có câu bắt buộc — mọi điểm mở đã vào bảng Q theo khuy
   dời từ menu "Chỉnh lịch" ra dải "Đã huỷ" (một chỗ, không lặp). Bảng dưới đổi tên "Lịch kiểm tra" (không còn điểm). `NutGvCham`
   thêm `goiY` (hồ sơ Mock: "Lưu ngay cho bài Speaking này.").
 - **Task 6** — 1740 đạt. Nhãn cạnh MT: khi đã có chip `lịch sử` thì còn 1 chỗ cho nhãn khác (tổng ≤ 2), dư → `+n`.
+- **Task 7** — 1740 đạt. H1 Tạ Minh Quân MT3 (lượt 167): nhận xét W1/W2/S + GV chấm Phạm Thu Trang (id 9). H2 Nguyễn Minh An MT1
+  (lượt 5): GV chấm "Cô Lan (giám khảo ngoài)". H3/H4 dùng dữ liệu có sẵn (không thêm vào `hsmSeed.ts`): lượt huỷ = Phạm Khánh Linh MT3
+  (159) · MT lịch sử = Đoàn Khánh Chi MT1–3 (180–182) · chờ duyệt = Kiều Thu Trang MT1 (174) · huỷ phần = Mạc Đức Long MT1 (177) ·
+  RF = Phan Gia Hân (138) · Lương Bảo Anh MT3 (170). **GV Writing của `MB FT 101`: W1 Lê Minh Khoa id 8 · W2 Cao Khánh Linh id 10.**
