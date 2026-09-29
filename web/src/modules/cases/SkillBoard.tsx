@@ -248,7 +248,8 @@ function CotCase({ row }: { row: Row }) {
         <span className="block truncate text-xs text-slate-200" title={c.title}><TenCase c={c} /></span>
         <span className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10.5px] text-slate-500">
           <NhanTrangThai t={tt.t} />
-          <span>{tt.k === 'huy-khong-theo-doi' ? `Không theo dõi (Quản lý duyệt ${ngan(c.closedOn)})` : tt.chu}</span>
+          <span>{tt.k === 'huy-khong-theo-doi' ? `Không theo dõi (Quản lý duyệt ${ngan(c.closedOn)})`
+            : tt.k === 'dang-lam' ? tienDoCase(c.plans, c).text : tt.k === 'xong' ? (c.outcomeLabel ?? '') : tt.chu}</span>
           {row.parallelCount > 1 && <span>· {row.parallelCount} Case song song</span>}
         </span>
       </span>
@@ -348,7 +349,7 @@ function HangCase({ c, ngan, onChanged, onMoCase }: {
           <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
             <NhanTrangThai t={tt.t} title={tt.chu} />
             <span className="text-[11px] text-slate-300">
-              {tt.k === 'dang-lam' ? td.text : tt.chu}
+              {tt.k === 'dang-lam' ? td.text : tt.k === 'xong' ? null : tt.chu}
             </span>
           </span>
           {tt.han && !daXong && <span className="mt-0.5 block"><Han loai="xac-minh-sos" han={tt.han} /></span>}
@@ -381,7 +382,10 @@ function HangCase({ c, ngan, onChanged, onMoCase }: {
       {khoiSos === 'khong-theo-doi' && (
         <HangCon>
           <td className="td" colSpan={4}>
-            <KhongTheoDoiForm caseId={c.id} onClose={() => setKhoiSos(null)} onDone={() => { setKhoiSos(null); onChanged?.(); }} />
+            {/* Bảng cuộn ngang ở màn hẹp: khung bám mép trái vùng nhìn, rộng tối đa bằng màn — nút Gửi không bị cắt. */}
+            <div className="sticky left-3 max-w-[calc(100vw-4rem)]">
+              <KhongTheoDoiForm caseId={c.id} onClose={() => setKhoiSos(null)} onDone={() => { setKhoiSos(null); onChanged?.(); }} />
+            </div>
           </td>
         </HangCon>
       )}

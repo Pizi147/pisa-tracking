@@ -118,6 +118,7 @@ export async function runPrSosTests(t: YThucTestKit) {
   const intake: any = await import('../classes/intake.ts');
   const cases: any = await import('../cases/cases.ts');
   const sosState: any = await import('../cases/sosState.ts');
+  const hanhTrinhSvc: any = await import('../students/hanhTrinh.ts');
   const myworkSvc: any = await import('../worklist/mywork.ts');
   const { loadPrincipal: loadP } = await import('../permissions.ts');
   const { boLichTuTao, luotThu } = await import('./luotThu.ts');
@@ -475,6 +476,14 @@ export async function runPrSosTests(t: YThucTestKit) {
     const pa = { status: 'planned', lastOutcome: null, preset: true, confirmedAt: null, pendingApproval: false, approvalDue: null, actionDue: null, actionOverdue: false, completedOn: null };
     assert(d.viecTiepPhuongAn({ ...pa, choXacNhan: true }).loai === 'cho-xac-nhan', 'chờ xác nhận');
     assert(d.viecTiepPhuongAn({ ...pa, status: 'started', lanCuoi: true, actionDue: '2026-09-28' }).text === 'Ghi kết quả cuối', 'ghi cuối');
+  });
+  check('SOS (8) · Hành trình: PA quy chế chờ xác nhận (chưa ngày bắt đầu) không thành khối PA có `tu` null (bấm thử: tab trắng); tên Case dạng T21', () => {
+    const { st } = mt1Sos3('T8hj');
+    const r = hanhTrinhSvc.hanhTrinhHocVien(P.admin, st.id, null) as any;
+    const pas = (r.hop as any[]).flatMap((h: any) => (h.vanDe ?? []).flatMap((v: any) => v.pa ?? []));
+    const hopL = (r.hop as any[]).find((h: any) => h.kyNang === 'listening');
+    assert(hopL?.caseMo?.length === 1 && pas.every((p: any) => typeof p.tu === 'string'), JSON.stringify(pas));
+    assert(hopL.vanDe[0]?.ten === '[MT1] Listening không đạt [SOS 3]', `tên Case ở hành trình (T21): ${hopL.vanDe[0]?.ten}`);
   });
 
   // ------------------------------------------------------------------ Task 9 · Ngăn Case (quét nguồn)

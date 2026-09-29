@@ -1,6 +1,6 @@
 import { db } from '../db.ts';
 import {
-  CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS, caseCategoriesFor, caseTitle, tenMon, tenMonNgan, type CaseCategory,
+  CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS, caseCategoriesFor, caseTitle, tenCaseSos, tenMon, tenMonNgan, type CaseCategory,
   type AssessedSkill, type DiemMoc, type DotRef,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -282,7 +282,8 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
       : null;
 
     const vanDe = casesOfSkill.map((c) => {
-      const pa = (ivByCase.get(c.id) ?? []).map((iv) => ({
+      /* PR-SOS: PA quy chế "Chờ xác nhận" chưa có ngày bắt đầu (mốc tính lúc xác nhận) — chưa vẽ khối trên trục tuần. */
+      const pa = (ivByCase.get(c.id) ?? []).filter((iv) => iv.started_date ?? iv.planned_date).map((iv) => ({
         id: iv.id,
         ten: caseInterventionLabel(iv.kind),
         tu: iv.started_date ?? iv.planned_date,
@@ -300,7 +301,10 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
         caseId: c.id,
         // Tên người tạo đặt thắng tên suy ra (như caseTitleOf, server/src/cases/cases.ts:58); lớp
         // thường không mượn "… dưới kỳ vọng" của Fast Track — chấm theo môn đạt/chưa đạt, không có kỳ vọng band.
-        ten: (c.title ?? '').trim() || (ratio
+        /* PR-SOS T21: Case SOS Fast Track = `[MT1] {phần giữa} [SOS 3]` như `caseTitleOf` (không gọi nó — mỗi Case một truy vấn). */
+        ten: c.origin_kind === 'mock' && (c.attempt_kind ?? 'mock') === 'mock'
+          ? tenCaseSos({ mt: c.attempt_no ?? null, giua: (c.title ?? '').trim() || `${tenMon(ct, c.category ?? c.topic ?? '')} không đạt`, sos: c.sos_level ?? null })
+          : (c.title ?? '').trim() || (ratio
           ? `${tenMon(ct, c.category ?? c.topic ?? '')} chưa đạt`
           : caseTitle({ category: c.category ?? c.topic, latestAttemptNo: c.attempt_no, latestAttemptKind: c.attempt_kind })),
         mo: c.detected_at, dong: c.status === 'done' ? (c.closed_at ?? c.outcome_at ?? null) : null,

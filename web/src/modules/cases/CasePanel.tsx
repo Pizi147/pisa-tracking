@@ -230,7 +230,8 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
         {/* PR-N1 S4-1: PA theo quy chế SOS do máy gán — dấu nhỏ cạnh tên (khoảng cách lấy từ `gap-1.5` của hàng, nên không thêm `ml-1.5`). */}
         {iv.preset && <span className="inline-flex items-center gap-1 whitespace-nowrap text-[10.5px] text-slate-400" title="PA theo quy chế SOS — không thay, không kết thúc sớm"><KhoaNho />theo quy chế</span>}
         {/* Trạng thái CÔNG VIỆC, không phải kết quả (mục 2.2): "Đã xong" chỉ nghĩa việc đã làm xong. */}
-        <Nhan tone={toneTrangThaiPa(iv.status)}>{INTERVENTION_STATUS_LABEL[iv.status as keyof typeof INTERVENTION_STATUS_LABEL] ?? iv.status}</Nhan>
+        {/* PR-SOS: PA quy chế chưa xác nhận = "Chờ xác nhận" (cùng chữ với hàng PA ở bảng kỹ năng), không phải "Đã lên kế hoạch". */}
+        <Nhan tone={toneTrangThaiPa(iv.status)}>{iv.awaitingConfirmation ? 'Chờ xác nhận' : INTERVENTION_STATUS_LABEL[iv.status as keyof typeof INTERVENTION_STATUS_LABEL] ?? iv.status}</Nhan>
         {choDuyet && <Nhan tone="wait" title={iv.approvalDue ? `Hạn Quản lý trả lời ${ngan(iv.approvalDue)}` : undefined}>Chờ Quản lý duyệt</Nhan>}
         {iv.approvalState === 'approved' && <Nhan tone="done">Đã duyệt</Nhan>}
         {iv.approvalState === 'declined' && <Nhan tone="muted">Không duyệt</Nhan>}
@@ -275,7 +276,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
         )}
         {data.viewer.canEdit && dangChay && !choDuyet && !iv.awaitingConfirmation && (
           <button type="button" className="btn btn-sm btn-primary" onClick={() => onViec({ loai: 'ghi-ket-qua', paId: iv.id })}
-            title={`${hanGhi?.viec ?? 'Ghi kết quả'}: kết quả, tiến triển, và quyết định Giữ nguyên / Điều chỉnh / Thay / Kết thúc`}>
+            title={`${hanGhi?.viec ?? 'Ghi kết quả'}: kết quả, tiến triển, và quyết định ${iv.preset ? 'Giữ nguyên / Điều chỉnh / Xin ý kiến' : 'Giữ nguyên / Điều chỉnh / Thay / Kết thúc'}`}>
             Ghi kết quả
           </button>
         )}
