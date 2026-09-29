@@ -226,4 +226,12 @@ export async function runPrHsmTests(t: YThucTestKit) {
     const lon = docSach('web/src/modules/fasttrack/ODiemLon.tsx');
     assert(/<InlineScoreEditor/.test(lon) && /tabular-nums/.test(lon) && /text-\[28px\] font-bold/.test(lon), 'ODiemLon');
   });
+
+  // ------------------------------------------------------------------ khối 6: hồ sơ HV › bảng Mock Test (đọc nguồn)
+  check('HSM (6) · hồ sơ HV: bảng Mock Test một cột Kết quả (KetQuaDot), không attemptStatusLabel / "Hồ sơ đợt ›"', () => {
+    const hs = docSach('web/src/modules/students/StudentDetailPage.tsx');
+    const bang = hs.slice(hs.indexOf('function IeltsAttempts'), hs.indexOf('function RatioAttempts'));
+    assert(bang.length > 100 && !/attemptStatusLabel\(/.test(bang) && !bang.includes('Hồ sơ đợt ›') && /<KetQuaDot/.test(bang), 'IeltsAttempts');
+    assert(/doiKyNang/.test(bang) && /huyPhan/.test(bang) && /<Link/.test(bang), 'nhãn dời/huỷ phần, MT là liên kết');
+  });
 }

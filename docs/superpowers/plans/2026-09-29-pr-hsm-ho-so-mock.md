@@ -519,3 +519,4 @@ Không có câu bắt buộc — mọi điểm mở đã vào bảng Q theo khuy
   không quyền → chữ thường, phần rỗng ẩn; 375 px `grid-cols-2`, Overall `col-span-2`, dòng phụ `truncate` + tooltip. "Mở lại lượt"
   dời từ menu "Chỉnh lịch" ra dải "Đã huỷ" (một chỗ, không lặp). Bảng dưới đổi tên "Lịch kiểm tra" (không còn điểm). `NutGvCham`
   thêm `goiY` (hồ sơ Mock: "Lưu ngay cho bài Speaking này.").
+- **Task 6** — 1740 đạt. Nhãn cạnh MT: khi đã có chip `lịch sử` thì còn 1 chỗ cho nhãn khác (tổng ≤ 2), dư → `+n`.
