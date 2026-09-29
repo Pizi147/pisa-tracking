@@ -5,7 +5,7 @@ import { RecordViolationPanel } from '../yThuc/RecordViolationPanel.tsx';
 import { LoTrinhTiepPanel } from '../students/LoTrinhTiepPanel.tsx';
 import { ChuyenLopPanel } from '../students/ChuyenLopPanel.tsx';
 import type { MucMenu } from '../../ui/MenuDong.tsx';
-import { MUC_MENU_DONG_HIEM, MUC_MENU_DONG_NHAN, mucMenuDongHocVien } from '@shared/domain/index.ts';
+import { MUC_MENU_DONG_HIEM, MUC_MENU_DONG_NHAN, duongHoSoHocVien, mucMenuDongHocVien, type ViecTiepTheo } from '@shared/domain/index.ts';
 
 export type QuyenDong = { coTheSuaHocVien: boolean; coTheBaoCase: boolean; coTheGhiViPham: boolean; coTheNhapDiem: boolean };
 export type DongChoMenu = { id: number; ten: string; dangHoc: boolean; nhapDiem: { nhan: string; den: string } | null };
@@ -20,6 +20,20 @@ export function nhapDiemCua(
     nhan: `Nhập điểm ${t.kindLabel}`,
     den: laLopThuong ? `/bang-diem-thuong/${classId}?kind=${t.kind}` : `/nhap-diem/${classId}`,
   };
+}
+
+/**
+ * ĐÍCH BẤM ĐƯỢC của một việc tiếp theo (B8): nhập điểm → lưới nhập điểm của lớp · Case → hồ sơ em mở đúng Ngăn Case (Ghi kết quả mở luôn form) ·
+ * Ý thức → tab Ý thức & Phối hợp của em. Nhập điểm mà em không còn kỹ năng nào người xem phải chấm thì không có link.
+ */
+export function duongViecTiep(v: ViecTiepTheo, o: {
+  studentId: number; classId: number; laLopThuong: boolean; timeline: readonly { kind: string; kindLabel: string; myPending: string[] }[];
+}): string | null {
+  const d = v.dich;
+  if (!d) return null;
+  if (d.loai === 'nhap-diem') return nhapDiemCua(o.classId, o.laLopThuong, o.timeline)?.den ?? null;
+  if (d.loai === 'y-thuc') return duongHoSoHocVien(o.studentId, { tab: 'y-thuc' });
+  return duongHoSoHocVien(o.studentId, { caseId: d.caseId, paId: d.paId, viec: d.ghiKetQua && d.paId != null ? 'ghi-ket-qua' : undefined });
 }
 
 /**

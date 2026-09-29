@@ -498,4 +498,11 @@ Phát hiện: (a) trang đọc Case **theo chi nhánh** (`listCases({branchId})`
 phép kiểm so hai nơi chỉ ở lớp mà hai tập trùng. (b) Bộ demo sau các phép kiểm khác có em còn 2–3 ghi danh `active` → hàm gộp theo em, đếm cho mỗi lớp em đang có mặt.
 Phép kiểm cũ sửa: `hocVienLop.tests.ts` "Q4 số đếm chip" — `dem.sos` = số em **Fast Track** mức SOS > 0 (T58); bỏ so `case_overdue` ≥ hàng đợi `due` (đã có phép kiểm chặt hơn ở `prHvl.tests.ts`).
 
+**Task 4 (30/09) — 1744 phép kiểm.** Web Học viên & Lớp: `CongTacKhung trang="hoc-vien-lop" coTatCa` (URL `?khung=`, nhớ theo máy; khung đã nhớ mà không còn lớp thì về Tất cả), chip đếm bằng `demLoc(data.hocVien, khung)` (ẩn "Đang SOS" khi khung Lớp thường),
+mỗi nhóm khung một `<section>` (FT trước) có khối tiêu đề dính riêng "Mục tiêu"/"Khoá", bỏ tiêu đề "Mục tiêu / Khoá", cột **Sắp tới** (`nextAttemptLabel · tuanLich(nextWeekStart)`, quyết định chủ sản phẩm 30/09), bảy cột `colgroup`.
+Cột Kết quả: chính + `lech` đỏ + ✓ + `Level` SOS (FT) + hai dòng 12 px không cắt. `ViecTiep` có `den` (Link), `duongViecTiep` (`thaoTacDongHocVien.tsx`) dựng đích (nhập điểm / Ngăn Case / tab Ý thức), hàng con "Cả lớp: … · n em →" từ `tachViecChung`.
+Badge lớp theo vai (`session.roles`), "+n" thành `MenuDong` (`bieuTuong` nhận chữ; mục không có đích riêng mở Hồ sơ lớp); `cho-duyet` → `/cong-viec/cho-duyet` (hộp Chờ duyệt **chưa có tham số lớp**, chưa lọc theo lớp), `qua-han` → `/hoc-vien?view=can-lam&classId=`.
+**impeccable `clarify`** (chạy `impeccable context` một lần; project chưa có PRODUCT.md → theo CLAUDE.md không chạy `init`): rà chữ chip/badge/Kết quả/Việc tiếp/"Cả lớp" so với kế hoạch + `TU_DIEN_VA_CHU` — giữ nguyên chữ đã chốt (Q2, Q5 "Đề ra PA"), không sửa thêm.
+Không có phép kiểm cũ nào phải sửa ở task này (không phép nào đọc nguồn các file web đã đổi). Thêm 2 phép kiểm đọc nguồn ở `prHvl.tests.ts`.
+
 > **Chủ sản phẩm chốt 30/09:** **có** cột "Sắp tới" (M3) ở danh sách Học viên & Lớp.

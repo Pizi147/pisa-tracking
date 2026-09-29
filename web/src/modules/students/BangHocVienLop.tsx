@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Empty, Level, Skeleton, TargetText } from '../../ui/ui.tsx';
-import { Nhan } from '../../ui/Nhan.tsx';
+import { QuaHan } from '../../ui/Nhan.tsx';
 import { DanhSachViecTiep } from '../../ui/ViecTiep.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { HangCon } from '../../ui/HangNhom.tsx';
@@ -12,9 +12,9 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { fmtBand, sosTone } from '../../lib/format.ts';
 import { MissingBadge } from './MissingBadge.tsx';
 import { CanhBaoYThuc } from '../classes/CanhBaoYThuc.tsx';
-import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from '../classes/thaoTacDongHocVien.tsx';
+import { duongViecTiep, nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from '../classes/thaoTacDongHocVien.tsx';
 import {
-  ketQuaGanNhat, khoaLopThuong, maHocVienNgan, sapXepHocVien,
+  ketQuaGanNhat, khoaLopThuong, maHocVienNgan, sapXepHocVien, tachViecChung, tuanLich,
   type KetQuaVao, type SapXep, type ViecTiepTheo,
 } from '@shared/domain/index.ts';
 
@@ -22,7 +22,8 @@ import {
 export type DongRoster = {
   id: number; studentCode: string; fullName: string; status: string; archived: boolean;
   cycle: { target: number | null; khongCamKet?: boolean } | null;
-  standing: KetQuaVao | null;
+  /** + mốc kế tiếp cho cột "Sắp tới" (`nextAttemptLabel` · tuần của `nextWeekStart`). */
+  standing: (KetQuaVao & { nextAttemptLabel?: string | null; nextWeekStart?: string | null }) | null;
   openCases: number; handoverCases: number;
   missing: { key: string; label: string; who: string }[];
   canhBaoYThuc: NhanYThucEm | null;
@@ -42,9 +43,11 @@ export type LopChoBang = {
 };
 
 /**
- * CÁC HÀNG CON CỦA MỘT LỚP (đặc tả §3.6, mockup 07b A + 07c A + 10b §1; PR-UX0 N-2). Trả về CÁC `<tr>` — bảng và tiêu đề
- * cột do trang Học viên & Lớp dựng MỘT lần. Sáu cột: Học viên (mã 6 số mờ) · Kết quả gần nhất · Mục tiêu (FT) / Khoá (lớp
- * thường) · Case · Việc tiếp theo · ⋯. `chiHien` = id học viên còn lại sau chip lọc / ô tìm (máy chủ tính); `null` = mọi em đang học.
+ * CÁC HÀNG CON CỦA MỘT LỚP (đặc tả §3.6, mockup 07b A + 07c A + 10b §1; PR-UX0 N-2; PR-HVL M3). Trả về CÁC `<tr>` — bảng và tiêu đề
+ * cột do trang Học viên & Lớp dựng MỘT lần cho mỗi nhóm khung. Bảy cột: Học viên (tên đậm, mã 6 số mờ) · Kết quả gần nhất (chính + tối đa
+ * hai dòng chữ, không "…") · Mục tiêu (FT) / Khoá (lớp thường) · Sắp tới · Case · Việc tiếp theo (bấm được) · ⋯. Việc Nhập điểm trùng
+ * chữ ở ≥ 2 em thành MỘT hàng "Cả lớp" đầu lớp. `chiHien` = id học viên còn lại sau chip lọc / ô tìm (máy chủ tính); `null` = mọi em đang học.
+ * Nằm ở: Học viên & Lớp (menu trái) → mở một lớp.
  */
 export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot }: {
   lop: LopChoBang; chiHien: Set<number> | null; sapXep: SapXep; onDoi: () => void;
@@ -65,6 +68,9 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot }: {
       })),
     sapXep,
   ), [data, chiHien, sapXep]);
+  /* Q6/B8: việc chung của lớp lên hàng "Cả lớp", không lặp ở từng em. */
+  const { chung, conLai } = useMemo(() => tachViecChung(rows.map((s) => ({ id: s.id, viec: s.viecTiepTheo }))), [rows]);
+  const denChung = chung ? nhapDiemCua(lop.id, thuong, rows.find((s) => s.timeline.some((t) => t.myPending.length))?.timeline ?? [])?.den ?? null : null;
   const khoaCua = (s: DongRoster) => thuong
     ? khoaLopThuong({ maChuongTrinh: lop.programmeCode, tuanHienTai: lop.currentWeek, tongTuan: lop.totalWeeks,
         tuanKetThuc: lop.tuanKetThuc, tiepTheo: s.tiepTheo, nhacLoTrinh: !!lop.nhacLoTrinh && s.chuaLoTrinh, homNay })
@@ -88,31 +94,46 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot }: {
 
   return (
     <>
+      {chung && (
+        <HangCon>
+          <td colSpan={soCot} className="td text-xs">
+            <span className="text-slate-500">Cả lớp: </span>
+            <span className="text-slate-200">
+              {denChung ? <Link to={denChung} className="link">{chung.viec.viec}</Link> : chung.viec.viec}
+              {chung.viec.quaHanNgay !== null ? <> <QuaHan ngay={chung.viec.quaHanNgay} /></>
+                : chung.viec.han ? <span className="text-slate-500"> · {chung.viec.han}</span> : null}
+            </span>
+            <span className="text-slate-500"> · {chung.soEm} em{denChung ? ' →' : ''}</span>
+          </td>
+        </HangCon>
+      )}
       {rows.map((s) => {
         const k = ketQuaGanNhat(s.standing);
         const khoa = khoaCua(s);
+        const sapToi = s.standing?.nextAttemptLabel
+          ? `${s.standing.nextAttemptLabel}${s.standing.nextWeekStart ? ` · ${tuanLich(s.standing.nextWeekStart, homNay)}` : ''}` : null;
         return (
           <HangCon key={s.id} className={`row-hover ${s.status !== 'active' ? 'row-muted' : ''}`}>
             <td className="td h-14">
               <span className="flex min-w-0 items-center gap-1.5">
-                <Link className="link truncate font-medium" to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>
+                <Link className="link truncate font-semibold" to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>
                 <span className="shrink-0 text-[10px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
                 <MissingBadge items={s.missing} gon />
                 <CanhBaoYThuc cb={s.canhBaoYThuc} />
               </span>
             </td>
             <td className="td">
-              <span className="flex items-center gap-1.5 whitespace-nowrap">
+              <span className="flex flex-wrap items-center gap-x-1.5">
                 <span className="text-sm font-bold tabular-nums text-slate-100">{k.chinh}</span>
-                {k.lech && <span className="text-[11px] font-semibold text-bad" title="Dưới kỳ vọng">{k.lech}</span>}
+                {k.lech && <span className="text-[11px] font-semibold tabular-nums text-bad" title={`Dưới kỳ vọng ${k.lech.replace('−', '')}`}>{k.lech}</span>}
                 {k.dat && <span className="text-[10px] text-slate-400" title={thuong ? 'Đạt mọi môn' : 'Đạt kỳ vọng'}>✓</span>}
                 {k.sos && (
                   <Level tone={sosTone(s.standing?.sosLevel ?? null)} dut={k.sosTamThoi}
                     title={k.sosTamThoi ? 'Tạm thời: chưa đủ điểm các môn' : undefined}>{k.sos}{k.sosTamThoi ? ' tạm thời' : ''}</Level>
                 )}
               </span>
-              {k.dong1 && <span className="block text-[12px] text-slate-500">{k.dong1}</span>}
-              {k.dong2 && <span className="block text-[12px] text-slate-500">{k.dong2}</span>}
+              {k.dong1 && <span className="block text-[12px] leading-4 text-slate-500">{k.dong1}</span>}
+              {k.dong2 && <span className="block text-[12px] leading-4 text-slate-500">{k.dong2}</span>}
             </td>
             <td className="td">
               {thuong ? (
@@ -122,12 +143,16 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot }: {
                 </>
               ) : <span className="tabular-nums text-slate-200"><TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /></span>}
             </td>
+            <td className="td whitespace-nowrap text-xs tabular-nums text-slate-300" title="Mốc kế tiếp đã xếp lịch">
+              {sapToi ?? <span className="text-slate-600">—</span>}
+            </td>
             <td className="td text-right tabular-nums"
               title={s.handoverCases ? `${s.handoverCases} Case bàn giao từ lớp trước` : undefined}>
               {s.openCases || <span className="text-slate-600">—</span>}
             </td>
             <td className="td">
-              <DanhSachViecTiep viec={s.viecTiepTheo} />
+              <DanhSachViecTiep viec={conLai.get(s.id) ?? []}
+                den={(v) => duongViecTiep(v, { studentId: s.id, classId: lop.id, laLopThuong: thuong, timeline: s.timeline })} />
             </td>
             <td className="td text-center">
               <MenuDong muc={tt.mucCua({

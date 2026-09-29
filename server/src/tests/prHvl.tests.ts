@@ -335,6 +335,30 @@ export async function runPrHvlTests(t: YThucTestKit) {
     assert(tong > 0, 'Bộ demo phải có em quá hạn việc');
   });
 
+  // ------------------------------------------------------------------ Task 4 · web Học viên & Lớp (đọc nguồn — web không có bộ kiểm riêng)
+
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const REPO = path.resolve(fileURLToPath(new URL('../../../../', import.meta.url)));
+  const web = (f: string) => fs.readFileSync(path.join(REPO, 'web/src', f), 'utf8');
+
+  check('PR-HVL (4) · Học viên & Lớp: công tắc khung, mỗi nhóm một <section> tiêu đề dính riêng, cột Sắp tới, không còn cột "Mục tiêu / Khoá"', () => {
+    const s = web('modules/students/StudentsPage.tsx');
+    assert(/<CongTacKhung trang="hoc-vien-lop" coTatCa/.test(s) && /demLoc\(/.test(s), 'thiếu công tắc khung / demLoc');
+    assert(/<section key=\{g\.k\}/.test(s) && /md:sticky md:top-0/.test(s), 'mỗi nhóm khung phải là một <section> chứa khối tiêu đề dính');
+    assert(!/Mục tiêu \/ Khoá/.test(s) && /'Sắp tới'/.test(s), 'cột');
+    assert(/<MenuDong bieuTuong=\{`\+\$\{b\.an\.length\}`\}/.test(s) && !/x\.key === 'case'/.test(s), '"+n" phải là MenuDong, không còn badge Case');
+  });
+
+  check('PR-HVL (4) · Kết quả hai dòng không cắt "…" (không truncate); việc tiếp bấm được; hàng "Cả lớp"; tên em đậm', () => {
+    const b = web('modules/students/BangHocVienLop.tsx');
+    const kq = b.slice(b.indexOf('k.dong1'), b.indexOf('k.dong1') + 400);
+    assert(/k\.dong1/.test(b) && !/truncate/.test(kq), 'dòng Kết quả còn truncate');
+    assert(/tachViecChung/.test(b) && /Cả lớp:/.test(b) && /duongViecTiep/.test(b) && /font-semibold/.test(b), 'thiếu Cả lớp / link việc / tên đậm');
+    assert(/den \? <Link to=\{den\}/.test(web('ui/ViecTiep.tsx')), 'ViecTiep chưa có link');
+  });
+
   check('PR-HVL (2) · roster: `history[i].lichSu` là cờ thật của mốc; Standing có `nextWeekStart` (cột Sắp tới)', () => {
     let coMoc = 0;
     for (const lopId of (conn.prepare(`SELECT id FROM classes WHERE status = 'active'`).all() as any[]).map((r) => r.id as number)) {
