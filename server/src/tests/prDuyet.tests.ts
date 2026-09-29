@@ -452,7 +452,8 @@ export async function runPrDuyetDemoTests(t: YThucTestKit) {
   check('DUYET (11) · Demo: hộp QL MB có thẻ Học thuật · Thông tin HV · Báo lên, ≥ 1 quá hạn, ≥ 1 tự đóng, ≥ 1 tự duyệt được; Hà có thẻ đã duyệt + bị từ chối', () => {
     const hop = yc.hopChoDuyet(P.mbManager);
     for (const k of ['hoc-thuat', 'thong-tin-hv', 'bao-len']) assert(hop.dem[k] >= 1, `thiếu phân loại ${k}: ${JSON.stringify(hop.dem)}`);
-    assert(hop.dem['y-thuc'] === 0, 'Ý thức phải 0 tới PR-YT4');
+    /* PR-YT4 (K1-55): chip Ý thức có đề xuất WL 3 của Lương Gia Bảo; Báo lên có Ý thức quá hạn. */
+    assert(hop.dem['y-thuc'] >= 1 && hop.the.some((x: any) => x.loai === 'bao_len_y_thuc'), `Ý thức / Báo lên Ý thức: ${JSON.stringify(hop.dem)}`);
     assert(hop.the.some((x: any) => x.hanDuyet && x.hanDuyet < t.TODAY && x.kieuNut !== 'nhac'), 'không có thẻ quá hạn');
     assert(hop.the.some((x: any) => x.loai === 'xin_y_kien'), 'không có Xin ý kiến');
     assert(hop.the.some((x: any) => x.nguoiXinId === P.mbManager.userId), 'không có thẻ QL tự gửi');

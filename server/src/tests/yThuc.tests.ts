@@ -23,124 +23,173 @@ export type YThucTestKit = {
   classId: (code: string) => number;
   /** Id lớn nhất của từng bảng ngay sau khi dựng bộ demo — để phép kiểm soi dữ liệu demo không lẫn dữ liệu do chính các phép kiểm tạo ra. */
   seedMax: Record<string, number>;
+  /** Ảnh chụp Ý thức của bộ demo NGAY sau seed (`chupDemoYThuc`) — các phép kiểm chạy trước có thể ghi thêm vi phạm vào cùng lớp. */
+  demoYThuc?: DemoYThuc;
 };
+
+type EmChup = {
+  id: number; lop: string | null; nhom: string | null; bac: number; ke: string | null; canQl: boolean; han: string | null; khai: number | null;
+  deXuat: { kind: string; status: string; han: string | null } | null;
+  vp: { id: number; t: string; nhan: string; han: string | null; lyDo: string | null; lop: string | null; ghiNhan: boolean }[];
+};
+export type DemoYThuc = { em: Record<string, EmChup>; the: { loai: string; trangThai: string; hv: string; han: string | null; bangChung: string | null; lyDoTuChoi: string | null }[] };
+
+/** PR-YT4 (Task 11): chụp trạng thái Ý thức của các em trong bộ demo (một cửa `trangThaiYThuc`) + thẻ Ý thức / Báo lên Ý thức. */
+export async function chupDemoYThuc(conn: any, homNay: string): Promise<DemoYThuc> {
+  const { trangThaiYThuc } = await import('../yThuc/trangThai.ts');
+  const hs = conn.prepare(`SELECT DISTINCT s.id, s.full_name FROM students s JOIN violations v ON v.student_id = s.id`).all() as any[];
+  const trang = trangThaiYThuc(hs.map((h) => h.id), homNay);
+  const lopCode = (id: number | null) => (id ? (conn.prepare('SELECT code FROM classes WHERE id = ?').get(id) as any)?.code ?? null : null);
+  const em: Record<string, EmChup> = {};
+  for (const h of hs) {
+    const e = trang.get(h.id)!;
+    em[h.full_name] = {
+      id: h.id, lop: lopCode(e.lopId), nhom: e.nhom, bac: e.bac, ke: e.keTiep?.kind ?? null, canQl: !!e.keTiep?.canQl, han: e.han, khai: e.khai?.bac ?? null,
+      deXuat: e.deXuat ? { kind: e.deXuat.kind, status: e.deXuat.status, han: e.deXuat.han } : null,
+      vp: e.dsViPham.map((v) => {
+        const k = e.viPham.get(v.id)!;
+        return { id: v.id, t: k.t, nhan: k.nhan, han: k.han, lyDo: k.lyDoQuaHan, lop: lopCode(v.classId), ghiNhan: !!v.ghiNhanLuc };
+      }),
+    };
+  }
+  const the = (conn.prepare(
+    `SELECT y.loai, y.trang_thai AS trangThai, s.full_name AS hv, y.han_duyet AS han, y.bang_chung AS bangChung, y.ly_do_tu_choi AS lyDoTuChoi
+       FROM yeu_cau_duyet y JOIN students s ON s.id = y.hoc_vien_id WHERE y.loai IN ('y_thuc', 'bao_len_y_thuc') ORDER BY y.id`).all() as any[]);
+  return { em, the };
+}
 
 export async function runYThucTests(t: YThucTestKit) {
   const { check, assert } = t;
   const domain = await import('../../../shared/domain/index.ts');
 
   {
-  // ================================================================== J10 — bộ demo: MƯỜI TÁM tình huống của đặc tả §10
+  // ================================================================== bộ demo Ý thức v4 (PR-YT4 Task 11, D14 · D15 · H5) — thay J10 (18 tình huống v3)
 
-  console.log('\nPR-J · 0. Bộ demo Ý thức — đủ 18 tình huống của đặc tả §10 (soi vào chính dữ liệu demo, không phải luật)');
+  console.log('\nPR-J · 0. Bộ demo Ý thức v4 — mười hai tình huống a–m (trừ h) của đặc tả §10 (soi vào chính dữ liệu demo, không phải luật)');
 
   const { conn, TODAY } = t;
-  const { yThucMetric } = await import('../yThuc/thongKe.ts');
-  const { loadPrincipal } = await import('../permissions.ts');
   const VMAX = t.seedMax.violations, MMAX = t.seedMax.discipline_measures;
   const rows = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
   const one = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
-  /** Học viên của bộ demo theo TÊN — phép kiểm hỏng ngay nếu tên trùng hoặc không có, thay vì soi nhầm em khác. */
-  const demoStudent = (name: string): number => {
-    const r = rows('SELECT id FROM students WHERE full_name = ?', name);
-    assert(r.length === 1, `Bộ demo phải có đúng một học viên tên "${name}", đang có ${r.length}`);
-    return r[0].id;
+  const D = t.demoYThuc ?? await chupDemoYThuc(conn, TODAY);
+  /** Em của bộ demo theo TÊN — hỏng ngay nếu không có, thay vì soi nhầm em khác. */
+  const em = (ten: string) => {
+    const e = D.em[ten];
+    assert(e, `Bộ demo phải có em "${ten}" có vi phạm`);
+    return e;
   };
-  const AN = demoStudent('Nguyễn Minh An'), HA = demoStudent('Trần Thu Hà'), HUY = demoStudent('Lê Quang Huy'),
-    NGOC = demoStudent('Phạm Bảo Ngọc'), VAN = demoStudent('Đặng Thu Vân'), YEN = demoStudent('Ngô Hải Yến'),
-    KIEN = demoStudent('Trần Hải Kiên');
-  const seedViolations = (sid: number) => rows('SELECT * FROM violations WHERE student_id = ? AND id <= ? ORDER BY occurred_on, id', sid, VMAX);
-  const seedMeasures = (sid: number) => rows('SELECT * FROM discipline_measures WHERE student_id = ? AND id <= ? ORDER BY created_at, id', sid, MMAX);
-  const linksOf = (measureId: number) => rows('SELECT violation_id FROM measure_violations WHERE measure_id = ?', measureId).map((r) => r.violation_id as number);
+  const the = (loai: string, hv: string) => D.the.filter((x) => x.loai === loai && x.hv === hv);
+  const nhan = (ten: string) => em(ten).vp.map((v) => v.nhan);
 
-  check('PR-J · DEMO Bộ demo không có gì sau ngày demo; biện pháp đã thực hiện không chứa vi phạm xảy ra SAU ngày thực hiện; mọi liên kết trỏ đúng một học viên', () => {
-    assert(VMAX > 0 && MMAX > 0, 'Bộ demo chưa có vi phạm hoặc biện pháp nào');
+  check('YT4 (11) · DEMO ba luật cứng: không gì sau ngày demo; lần xử lý đã xong không chứa vi phạm xảy ra SAU ngày thực hiện; mọi liên kết trỏ đúng một học viên', () => {
+    assert(VMAX > 0 && MMAX > 0, 'Bộ demo chưa có vi phạm hoặc lần xử lý nào');
     const future = one(
-      `SELECT (SELECT COUNT(*) FROM violations WHERE occurred_on > ? OR reported_on > ? OR substr(created_at,1,10) > ?)
-            + (SELECT COUNT(*) FROM discipline_measures WHERE substr(created_at,1,10) > ? OR COALESCE(performed_on,'') > ?) AS n`, TODAY, TODAY, TODAY, TODAY, TODAY).n;
+      `SELECT (SELECT COUNT(*) FROM violations WHERE id <= ? AND (occurred_on > ? OR reported_on > ? OR substr(created_at,1,10) > ? OR COALESCE(ghi_nhan_luc,'') > ?))
+            + (SELECT COUNT(*) FROM discipline_measures WHERE id <= ? AND (substr(created_at,1,10) > ? OR COALESCE(performed_on,'') > ? OR COALESCE(quyet_luc,'') > ?
+                 OR substr(COALESCE(confirmed_at,''),1,10) > ?)) AS n`, VMAX, TODAY, TODAY, TODAY, TODAY, MMAX, TODAY, TODAY, TODAY, TODAY).n;
     assert(future === 0, `${future} dòng Ý thức trong bộ demo nằm sau ngày demo ${TODAY}`);
     const late = rows(
       `SELECT dm.id FROM discipline_measures dm JOIN measure_violations mv ON mv.measure_id = dm.id JOIN violations v ON v.id = mv.violation_id
         WHERE dm.status = 'done' AND v.occurred_on > dm.performed_on AND dm.id <= ?`, MMAX);
-    assert(late.length === 0, `Biện pháp ${late[0]?.id} đã thực hiện mà chứa vi phạm xảy ra sau ngày thực hiện`);
+    assert(late.length === 0, `Lần xử lý ${late[0]?.id} đã xong mà chứa vi phạm xảy ra sau ngày thực hiện`);
     const cross = rows(
       `SELECT dm.id FROM discipline_measures dm JOIN measure_violations mv ON mv.measure_id = dm.id JOIN violations v ON v.id = mv.violation_id
         WHERE v.student_id != dm.student_id AND dm.id <= ?`, MMAX);
-    assert(cross.length === 0, 'Có biện pháp chứa vi phạm của học viên khác (B02)');
+    assert(cross.length === 0, 'Có lần xử lý chứa vi phạm của học viên khác');
+    assert(!rows(`SELECT id FROM discipline_measures WHERE id <= ? AND status IN ('preparing', 'nhap')`, MMAX).length, 'Không còn "Đang chuẩn bị" / nháp trong bộ demo');
   });
 
-  check('PR-J · DEMO #1 + #2 (v3) Vi phạm là mặc định; đúng hai vi phạm đã bị XOÁ và mỗi cái còn đúng MỘT dòng audit giữ nội dung đã xoá; cái của cô Hà mang nội dung "Không nộp bài Reading"', () => {
+  check('YT4 (11) · DEMO vi phạm đã XOÁ: đúng một, còn đúng MỘT dòng audit giữ nội dung (Trần Thu Hà — "Không nộp bài Reading")', () => {
     const del = rows(`SELECT * FROM audit_logs WHERE action = 'violation.delete' AND entity_label LIKE 'Bộ demo · %'`);
-    assert(del.length === 2, `Đúng hai vi phạm đã xoá trong bộ demo, đang có ${del.length}`);
-    for (const a of del) {
-      const b = JSON.parse(a.before_json);
-      assert(a.actor_user_id && b.description && b.studentId && Array.isArray(b.measureIds), `Audit xoá thiếu người/nội dung: ${a.before_json}`);
-      assert(!rows('SELECT id FROM violations WHERE id = ?', a.entity_id).length && !rows('SELECT 1 FROM measure_violations WHERE violation_id = ?', a.entity_id).length, `Vi phạm ${a.entity_id} đã xoá mà còn dòng`);
-    }
-    const g = del.find((a) => JSON.parse(a.before_json).studentId === HA);
-    assert(g && /Không nộp bài Reading/.test(JSON.parse(g.before_json).description), 'Vi phạm đã xoá của Trần Thu Hà phải là "Không nộp bài Reading tuần này"');
-    assert(rows('SELECT id FROM violations WHERE id <= ?', VMAX).length > 20, 'Phần lớn vi phạm còn nguyên');
+    assert(del.length === 1, `Đúng một vi phạm đã xoá trong bộ demo, đang có ${del.length}`);
+    const b = JSON.parse(del[0].before_json);
+    assert(b.studentId === em('Trần Thu Hà').id && /Không nộp bài Reading/.test(b.description) && Array.isArray(b.measureIds), del[0].before_json);
+    /* id có thể được dòng ghi sau dùng lại (SQLite không AUTOINCREMENT) — soi đúng dòng đã xoá: cùng em, cùng nội dung. */
+    assert(!rows('SELECT id FROM violations WHERE id = ? AND student_id = ? AND description = ?', del[0].entity_id, b.studentId, b.description).length, 'Vi phạm đã xoá mà còn dòng');
   });
 
-  check('PR-J · DEMO #3 + #4 Nguyễn Minh An có vi phạm của bốn giáo viên khác nhau và ba nhóm khác nhau (BTVN · Chuyên cần · Thái độ)', () => {
-    const v = seedViolations(AN);
-    assert(new Set(v.map((x) => x.reported_by)).size >= 4, `Cần vi phạm của ít nhất 4 giáo viên, có ${new Set(v.map((x) => x.reported_by)).size}`);
-    const cats = new Set(v.map((x) => x.category));
-    for (const c of ['homework', 'attendance', 'conduct']) assert(cats.has(c), `Thiếu nhóm ${c}`);
-    /* Không có "đợt": bốn giáo viên báo cùng tuần vẫn là bốn dòng độc lập. */
-    assert(v.length >= 7, 'Các vi phạm phải là dòng riêng, không gộp');
+  check('YT4 (11) · DEMO (a) Trần Thu Hà: 2 vi phạm của GVBM, GVCN đã Ghi nhận → "Đã ghi nhận", không việc (không nhóm)', () => {
+    const e = em('Trần Thu Hà');
+    assert(e.vp.length === 2 && e.vp.every((v) => v.t === 'da_ghi_nhan' && v.ghiNhan) && e.nhom === null, JSON.stringify(e));
   });
 
-  check('PR-J · DEMO #5 Một Report gia đình gom ĐÚNG 5 vi phạm khác nhóm, khác môn, khác giáo viên, khác ngày (Lê Quang Huy)', () => {
-    const report = seedMeasures(HUY).find((m) => m.kind === 'family_report' && m.status === 'done');
-    assert(report, 'Lê Quang Huy phải có một Report cho gia đình đã thực hiện');
-    const ids = linksOf(report.id);
-    assert(ids.length === 5, `Report phải gom đúng 5 vi phạm, đang ${ids.length}`);
-    const vs = rows(`SELECT * FROM violations WHERE id IN (${ids.join(',')})`);
-    assert(new Set(vs.map((v) => v.category)).size >= 3, 'Năm vi phạm phải thuộc ít nhất ba nhóm');
-    assert(new Set(vs.map((v) => v.skill ?? '-')).size >= 3, 'Năm vi phạm phải thuộc ít nhất ba môn');
-    assert(new Set(vs.map((v) => v.reported_by)).size >= 3, 'Năm vi phạm phải do ít nhất ba giáo viên ghi');
-    assert(new Set(vs.map((v) => v.occurred_on)).size === 5, 'Năm vi phạm phải ở năm ngày khác nhau');
-    assert(linksOf(report.id).length === 5, `Số vi phạm ĐANG GẮN của Report phải là 5, đang ${linksOf(report.id).length}`);
+  check('YT4 (11) · DEMO (b) Lê Quang Huy: 3 vi phạm 08–10/09 ghi 10/09 → Cần xử lý, hạn hôm nay (còn 1 ngày), bậc kế Report 1', () => {
+    const e = em('Lê Quang Huy');
+    assert(e.nhom === 'bat_buoc' && e.vp.length === 3 && e.vp.every((v) => v.t === 'can_xu_ly' && v.han === TODAY), JSON.stringify(e.vp));
+    assert(e.ke === 'report_1' && !e.canQl && t.addDays(TODAY, 0) === e.han, 'bậc kế / hạn');
   });
 
-  check('PR-J · DEMO #6 Sáu vi phạm của Lê Quang Huy đi vào cả ba biện pháp: Meeting với học viên, Report gia đình và Thư cảnh cáo lần 1', () => {
-    const ms = seedMeasures(HUY);
-    const meet = ms.find((m) => m.kind === 'meeting_student'), fam = ms.find((m) => m.kind === 'family_report'), w1 = ms.find((m) => m.kind === 'warning_1');
-    assert(meet && fam && w1, 'Thiếu một trong ba biện pháp');
-    const sixIds = linksOf(meet.id);
-    assert(sixIds.length === 6, `Meeting phải chứa 6 vi phạm, đang ${sixIds.length}`);
-    assert(sixIds.every((id) => linksOf(w1.id).includes(id)), 'Thư cảnh cáo lần 1 phải chứa cả sáu vi phạm đó');
-    assert(sixIds.filter((id) => linksOf(fam.id).includes(id)).length === 5, 'Report chứa năm trong sáu vi phạm đó');
+  check('YT4 (11) · DEMO (c) Phạm Bảo Ngọc: 3 vi phạm ghi 07–09/09 → "Quá hạn 1 ngày" (vì chưa xử lý), có thẻ Báo lên Ý thức', () => {
+    const e = em('Phạm Bảo Ngọc');
+    const q = e.vp.filter((v) => v.t === 'qua_han');
+    assert(e.nhom === 'qua_han' && q.length === 3 && q.every((v) => v.nhan === 'Quá hạn 1 ngày' && v.lyDo === 'xu-ly'), JSON.stringify(e.vp));
+    assert(the('bao_len_y_thuc', 'Phạm Bảo Ngọc').some((x) => x.trangThai === 'cho'), 'thẻ Báo lên');
   });
 
-  check('PR-J · DEMO #7 Biện pháp Đang chuẩn bị được thêm vi phạm SAU khi tạo: liên kết có ngày muộn hơn ngày tạo và vi phạm mang dòng lịch sử (Nguyễn Minh An)', () => {
-    const m = seedMeasures(AN).find((x) => x.status === 'preparing' && x.kind === 'family_report');
-    assert(m, 'Nguyễn Minh An phải có một Report gia đình đang chuẩn bị');
-    const late = rows('SELECT * FROM measure_violations WHERE measure_id = ? AND substr(added_at,1,10) > substr(?,1,10)', m.id, m.created_at);
-    assert(late.length === 1, `Đúng một vi phạm được thêm sau lúc tạo, đang ${late.length}`);
-    assert(rows(`SELECT * FROM violation_history WHERE violation_id = ? AND field = 'measure' AND new_value = ?`, late[0].violation_id, String(m.id)).length === 1,
-      'Việc thêm vào biện pháp phải có dòng lịch sử ở vi phạm');
-    assert(m.confirmed_at === null && m.performed_on === null, 'Biện pháp đang chuẩn bị chưa được có ngày thực hiện hay người xác nhận');
+  check('YT4 (11) · DEMO (d) Vũ Hải Đăng: 1 vi phạm cô Trang ghi 04/09, chưa ai xem → Quá hạn (lý do "chưa xem"), có thẻ Báo lên', () => {
+    const e = em('Vũ Hải Đăng');
+    assert(e.nhom === 'qua_han' && e.vp.length === 1 && e.vp[0].t === 'qua_han' && e.vp[0].lyDo === 'xem' && !e.vp[0].ghiNhan, JSON.stringify(e.vp));
+    assert(the('bao_len_y_thuc', 'Vũ Hải Đăng').some((x) => x.trangThai === 'cho'), 'thẻ Báo lên');
   });
 
-  check('PR-J · DEMO #8 Vi phạm bị bỏ khỏi biện pháp: có dòng lịch sử thêm rồi bỏ, và nó quay lại Chưa xử lý (Trần Thu Hà)', () => {
-    const back = seedViolations(HA).filter((v) => !rows('SELECT 1 FROM measure_violations WHERE violation_id = ?', v.id).length)
-      .find((v) => rows(`SELECT * FROM violation_history WHERE violation_id = ? AND field = 'measure'`, v.id).length === 2);
-    assert(back, 'Trần Thu Hà phải có một vi phạm đã được thêm rồi bỏ khỏi biện pháp');
-    const h = rows(`SELECT * FROM violation_history WHERE violation_id = ? AND field = 'measure' ORDER BY id`, back.id);
-    assert(h[0].old_value === null && h[0].new_value && h[1].old_value === h[0].new_value && h[1].new_value === null, 'Dòng lịch sử phải là thêm (∅ → biện pháp) rồi bỏ (biện pháp → ∅)');
-    assert(yThucMetric(loadPrincipal(1), 'vi-pham-chua-xu-ly').ids.includes(back.id), 'Vi phạm đã bỏ khỏi biện pháp phải tính lại là Chưa xử lý');
+  check('YT4 (11) · DEMO (e) Nguyễn Minh An: Report 1 → Report 2 → WL 1 (có tệp) → bậc kế "Report 4 + Meeting CX/GĐCN"; một vi phạm Mới', () => {
+    const e = em('Nguyễn Minh An');
+    assert(e.bac === 3 && e.ke === 'report_4_meeting' && e.nhom === 'moi', JSON.stringify({ bac: e.bac, ke: e.ke, nhom: e.nhom }));
+    const wl1 = one(`SELECT id FROM discipline_measures WHERE student_id = ? AND kind = 'wl_1' AND status = 'done' AND id <= ?`, e.id, MMAX);
+    assert(wl1 && one(`SELECT COUNT(*) n FROM attachments WHERE owner_type = 'discipline_measure' AND owner_id = ?`, wl1.id).n === 1, 'WL 1 có tệp');
   });
 
-  check('PR-J · DEMO #9 Thư cảnh cáo 1 → 2 → 3 đúng thứ tự, ba ngày khác nhau, mỗi thư có tệp đính kèm (Phạm Bảo Ngọc)', () => {
-    const w = seedMeasures(NGOC).filter((m) => /^warning_[123]$/.test(m.kind) && m.status === 'done');
-    assert(w.map((m) => m.kind).join() === 'warning_1,warning_2,warning_3', `Ba thư đúng thứ tự, đang ${w.map((m) => m.kind).join()}`);
-    assert(new Set(w.map((m) => m.performed_on)).size === 3 && w[0].performed_on < w[1].performed_on && w[1].performed_on < w[2].performed_on, 'Ba thư phải ở ba ngày tăng dần');
-    for (const m of w) {
-      assert(one(`SELECT COUNT(*) n FROM attachments WHERE owner_type = 'discipline_measure' AND owner_id = ?`, m.id).n >= 1, `Thư ${m.kind} thiếu tệp đính kèm (B06)`);
-    }
-    assert(new Set(w.map((m) => m.cycle_id)).size === 1, 'Ba thư cùng một lộ trình');
+  check('YT4 (11) · DEMO (f) Lương Gia Bảo: khai bậc 5 + 3 vi phạm → đề xuất WL 3 chờ QL, thẻ Ý thức có bằng chứng, hạn duyệt còn 2 ngày', () => {
+    const e = em('Lương Gia Bảo');
+    assert(e.khai === 5 && e.nhom === 'cho_duyet' && e.vp.every((v) => v.t === 'cho_duyet'), JSON.stringify(e));
+    assert(e.deXuat?.kind === 'wl_3' && e.deXuat.status === 'cho_duyet' && e.deXuat.han === t.addDays(TODAY, 1), JSON.stringify(e.deXuat));
+    const c = the('y_thuc', 'Lương Gia Bảo');
+    assert(c.length === 1 && c[0].trangThai === 'cho' && JSON.parse(c[0].bangChung ?? '[]').length === 1 && c[0].han === t.addDays(TODAY, 1), JSON.stringify(c));
+  });
+
+  check('YT4 (11) · DEMO (g) Kiều Minh Đức: đề xuất Đình chỉ bị từ chối (có lý do) → vi phạm về Cần xử lý, hạn tính từ ngày QL từ chối (16/09)', () => {
+    const e = em('Kiều Minh Đức');
+    assert(e.nhom === 'bat_buoc' && e.vp.every((v) => v.t === 'can_xu_ly' && v.han === '2026-09-16'), JSON.stringify(e.vp));
+    const c = the('y_thuc', 'Kiều Minh Đức');
+    assert(c.length === 1 && c[0].trangThai === 'tu_choi' && (c[0].lyDoTuChoi ?? '').length >= 10, JSON.stringify(c));
+  });
+
+  check('YT4 (11) · DEMO (i) Tô Ngọc Hân: HS cũ khai bậc 2 (H5) → bậc kế WL 1, GVCN tự Xác nhận xử lý được (không cần QL)', () => {
+    const e = em('Tô Ngọc Hân');
+    assert(e.khai === 2 && e.bac === 2 && e.ke === 'wl_1' && !e.canQl, JSON.stringify(e));
+  });
+
+  check('YT4 (11) · DEMO (j) Quách Thành Nam (D15): 3 vi phạm ở MB FT 101, chuyển sang MB FT 102 ngày 12/09 → vẫn Cần xử lý (dính), hạn đặt lại 16/09 (M-08)', () => {
+    const e = em('Quách Thành Nam');
+    assert(e.lop === 'MB FT 102' && e.vp.length === 3 && e.vp.every((v) => v.lop === 'MB FT 101'), JSON.stringify(e));
+    assert(e.nhom === 'bat_buoc' && e.han === '2026-09-16' && e.vp.every((v) => v.t === 'can_xu_ly'), JSON.stringify(e.vp));
+  });
+
+  check('YT4 (11) · DEMO (k) Mạc Tuấn Kiệt: khai WL 1 → Report 4 + Meeting → WL 2 → bậc kế "WL 3" cần QL', () => {
+    const e = em('Mạc Tuấn Kiệt');
+    assert(e.khai === 3 && e.bac === 5 && e.ke === 'wl_3' && e.canQl, JSON.stringify(e));
+  });
+
+  check('YT4 (11) · DEMO (l) Nguyễn Bảo Trâm: lớp thường FOU → BE, Report 1 ở khoá trước vẫn cùng chuỗi → bậc kế Report 2 (Q-C)', () => {
+    const e = em('Nguyễn Bảo Trâm');
+    assert(e.lop === 'HD BE 21' && e.bac === 1 && e.ke === 'report_2', JSON.stringify(e));
+    const r1 = one(`SELECT cycle_id FROM discipline_measures WHERE student_id = ? AND kind = 'report_1' AND id <= ?`, e.id, MMAX);
+    const hienTai = one(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`, e.id);
+    assert(r1 && hienTai && r1.cycle_id !== hienTai.id, 'Report 1 nằm ở lộ trình khoá trước');
+  });
+
+  check('YT4 (11) · DEMO (m) Hà Phương Linh: Meeting CX/GĐCN QL duyệt + Đã thực hiện → "Đã xử lý · Meeting CX/GĐCN", bậc giữ Report 1 (M-11)', () => {
+    const e = em('Hà Phương Linh');
+    assert(nhan('Hà Phương Linh').filter((x) => x === 'Đã xử lý · Meeting CX/GĐCN').length === 2, nhan('Hà Phương Linh').join(' ; '));
+    assert(e.bac === 1 && e.ke === 'report_2' && e.nhom === 'da_xu_ly', JSON.stringify(e));
+    assert(the('y_thuc', 'Hà Phương Linh').some((x) => x.trangThai === 'duyet'), 'thẻ đã duyệt');
+  });
+
+  check('YT4 (11) · DEMO Q5 + T27: vi phạm GVCN tự ghi là "Đã ghi nhận" (Đỗ Minh Khôi); sang FT là chuỗi thang mới (Trần Hải Kiên: Report 1, 2 ở lớp BE → bậc 0)', () => {
+    const k = em('Đỗ Minh Khôi');
+    assert(k.vp.length === 2 && k.vp.every((v) => v.t === 'da_ghi_nhan'), JSON.stringify(k.vp));
+    const ki = em('Trần Hải Kiên');
+    assert(ki.bac === 0 && ki.ke === 'report_1' && ki.vp.filter((v) => v.t === 'da_xu_ly').length === 4, JSON.stringify(ki));
   });
 
   check('PR-J · DEMO #11 + #12 + #13 + #14 + #15 Case học thuật giữ nguyên: mức Bình thường và mức Gấp; SOS chỉ ghi nhận có LÝ DO; SOS gắn vào case đang mở; GV tạo case trực tiếp không có tín hiệu', () => {
@@ -152,24 +201,6 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(linked.some((s) => s.status !== 'done'), '#14 Không có tín hiệu nào gắn vào case đang mở');
     const direct = rows(`SELECT sc.id FROM sos_cases sc WHERE sc.origin_kind = 'teacher_report' AND sc.id <= ? AND NOT EXISTS (SELECT 1 FROM case_signals sg WHERE sg.case_id = sc.id)`, t.seedMax.sos_cases);
     assert(direct.length > 0, '#15 Không có case học thuật do GV tạo trực tiếp (không qua tín hiệu)');
-  });
-
-  check('PR-J · DEMO #16 (v3) Vi phạm bị XOÁ sau khi các biện pháp đã thực hiện: biện pháp giữ nguyên với số vi phạm ĐANG GẮN, có một dòng audit ghi các biện pháp bị gỡ (Lê Quang Huy)', () => {
-    const meet = seedMeasures(HUY).find((m) => m.kind === 'meeting_student');
-    const report = seedMeasures(HUY).find((m) => m.kind === 'family_report' && m.status === 'done');
-    const del = rows(`SELECT * FROM audit_logs WHERE action = 'violation.delete' AND before_json LIKE ?`, `%"studentId":${HUY},%`);
-    assert(del.length === 1 && meet.status === 'done', 'Phải có đúng một vi phạm của Huy đã bị xoá, nằm trong biện pháp đã thực hiện');
-    const b = JSON.parse(del[0].before_json);
-    assert(b.measureIds.includes(meet.id) && b.measureIds.includes(report.id) && del[0].created_at.slice(0, 10) > meet.performed_on, 'Vi phạm bị xoá SAU khi biện pháp đã thực hiện, và audit ghi các biện pháp bị gỡ');
-    assert(linksOf(meet.id).length === 6 && linksOf(report.id).length === 5, `Số vi phạm đang gắn: ${linksOf(meet.id).length} / ${linksOf(report.id).length}`);
-  });
-
-  check('PR-J · DEMO #17 Một vi phạm nằm trong HAI biện pháp ở HAI thời điểm khác nhau — nhiều–nhiều thật (Lê Quang Huy)', () => {
-    const shared = rows(
-      `SELECT mv.violation_id, COUNT(DISTINCT dm.id) n, COUNT(DISTINCT dm.performed_on) days FROM measure_violations mv JOIN discipline_measures dm ON dm.id = mv.measure_id
-        WHERE dm.student_id = ? AND dm.id <= ? GROUP BY mv.violation_id HAVING n >= 2 AND days >= 2`, HUY, MMAX);
-    assert(shared.length >= 1, 'Phải có vi phạm nằm trong ít nhất hai biện pháp thực hiện ở hai ngày khác nhau');
-    assert(shared.some((r) => r.n >= 2 && r.days >= 2 && one('SELECT COUNT(DISTINCT measure_id) n FROM measure_violations WHERE violation_id = ?', r.violation_id).n === r.n), 'Liên kết phải đọc được từ phía vi phạm');
   });
 
   }
@@ -941,6 +972,7 @@ export async function runYThucTests(t: YThucTestKit) {
       assert(!/DEMO_SCENARIOS|DEMO_ASSUMPTIONS/.test(txt), `${d} còn nhắc tới tệp demo cũ`);
     }
     const demo = fsMod.readFileSync(pathMod.join(REPO, 'DEMO.md'), 'utf8');
-    for (let i = 1; i <= 18; i++) assert(new RegExp(`(^|\\n)\\s*\\|\\s*${i}\\s*\\|`).test(demo), `DEMO.md thiếu dòng của tình huống ${i}`);
+    /* PR-YT4: mười tám tình huống v3 → a–m (trừ h — Q2) của Ý thức v4. */
+    for (const i of 'abcdefgijklm') assert(new RegExp(`(^|\\n)\\s*\\|\\s*${i}\\s*\\|`).test(demo), `DEMO.md thiếu dòng của tình huống ${i}`);
   });
 }

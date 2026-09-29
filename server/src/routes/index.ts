@@ -11,7 +11,7 @@ import { kiemGhiRoKhac, laKhac, soSanhLop, transferReasonText } from '../../../s
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
 import { HttpError, badRequest, forbidden, isIsoDate, notFound, toInt } from '../util.ts';
 import { SESSION_COOKIE, createSession, destroySession, principalOf, requireAuth } from '../auth.ts';
-import { can, loadPrincipal, permissionSummary, require_, scopeFor } from '../permissions.ts';
+import { can, loadPrincipal, napTruocPhamVi, permissionSummary, require_, scopeFor } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { navOf } from '../platform/nav.ts';
 import * as attachmentSvc from '../platform/attachments.ts';
@@ -398,6 +398,7 @@ api.get('/my-work', requireAuth, wrap((req) => {
     }
     const x = loadPrincipal(nguoi);
     const w = myWork(x, { branchId }) as any;
+    napTruocPhamVi(w.items.map((it: any) => it.studentId));   // `can()` từng dòng bên dưới đọc bộ nhớ, không N+1
     /* Dòng không lớp/không HV là việc Vận hành ("mgmt") — không thuộc Hỗ trợ học viên, bỏ. */
     const items = w.items
       .filter((it: any) => (it.classId !== null || it.studentId !== null)

@@ -100,6 +100,8 @@ const SEED_MAX: Record<string, number> = {};
     SEED_MAX[t] = ((seedDb().prepare(`SELECT COALESCE(MAX(id),0) m FROM ${t}`).get() as any).m) as number;
   }
 }
+/* PR-YT4 (Task 11): ảnh chụp Ý thức của bộ demo NGAY sau seed — phép kiểm demo (yThuc.tests.ts) soi ảnh này, không soi DB đã bị các mục trên ghi thêm. */
+const DEMO_Y_THUC = await (await import('./yThuc.tests.ts')).chupDemoYThuc((await import('../db.ts')).db(), demoToday());
 
 /* Mã nhóm Ý thức của mô hình Case đã bỏ 21/09/2026 — chỉ để khẳng định nó KHÔNG còn xuất hiện; ghép chuỗi để không còn chữ đó nằm trơ trong mã. */
 const GONE = 'behav' + 'iour';
@@ -7345,15 +7347,15 @@ check('[18.2-12] Phương án bị thay thế VẪN giữ kết quả thất b�
     'Phương án bị thay có kết quả thất bại đã biến mất khỏi báo cáo hiệu quả');
 });
 
-check('[18.2-12b] Có em ĐÃ report cho gia đình mà vi phạm vẫn tái diễn — nhìn được ở dữ liệu Vi phạm và Biện pháp', () => {
+check('[18.2-12b] (PR-YT4) Có em ĐÃ được xử lý bằng Report mà vi phạm vẫn tái diễn — nhìn được ở dữ liệu Vi phạm và lần xử lý', () => {
   const rows = many(
     `SELECT dm.student_id,
             (SELECT COUNT(*) FROM violations v
-              WHERE v.student_id = dm.student_id AND v.valid = 1 AND v.occurred_on > dm.performed_on) AS after
+              WHERE v.student_id = dm.student_id AND v.occurred_on > dm.performed_on) AS after
        FROM discipline_measures dm
-      WHERE dm.kind = 'family_report' AND dm.status = 'done'`,
+      WHERE dm.kind IN ('report_1', 'report_2', 'report_4_meeting') AND dm.status = 'done'`,
   );
-  assert(rows.some((r) => r.after > 0), 'Không có em nào đã được report cho gia đình mà sau đó vẫn có vi phạm mới');
+  assert(rows.some((r) => r.after > 0), 'Không có em nào đã được Report mà sau đó vẫn có vi phạm mới');
 });
 
 check('[18.2-13] Có case bàn giao khi chuyển lớp, và có em chưa xếp lớp tiếp theo', () => {
@@ -9620,7 +9622,7 @@ await runHoSoHocVienTests({ check, checkAsync, assert, assertThrows, conn, TODAY
 
 /* Phép kiểm của module thứ chín ở file riêng — xem đầu `yThuc.tests.ts`. */
 const { runYThucTests } = await import('./yThuc.tests.ts');
-await runYThucTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+await runYThucTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX, demoYThuc: DEMO_Y_THUC });
 
 // ==================================================================== PR-T (rulebook v3: SOS tự tạo Case · Phối hợp SOS · xoá vi phạm)
 

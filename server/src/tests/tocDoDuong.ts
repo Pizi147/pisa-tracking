@@ -266,7 +266,7 @@ export const TRAN: Record<string, number> = {
   /* PR-Ra: trang "Công việc" dùng lại /my-work cho QL·QT, cộng chế độ nguoi=tat-ca/{gv} (Q1–Q2). */
   'QL /my-work': 62,
   'QT /my-work': 68,
-  'QL /my-work?nguoi=tat-ca': 76,
+  'QL /my-work?nguoi=tat-ca': 75,
   'QT /my-work?nguoi=tat-ca': 75,
   'GVCN /my-work?nguoi=tat-ca': 19,
   'QL /my-work?nguoi=7': 74,

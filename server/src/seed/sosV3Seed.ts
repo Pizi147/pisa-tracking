@@ -73,15 +73,18 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
   const khoiSp = caseOf(khoi.id, 'speaking');
   setIssues(activeTeacher('speaking'), khoiSp.id, { primaryCode: 'student.speaking.fluency' });   // GVBM chọn nguyên nhân (PA quy chế đã tự chạy)
   confirmCoordination(gvcn, actionOf(khoiA.id, 'talk_student').id, { performedOn: addDays(DEMO_DATE, -1), note: 'Đã gặp em sau buổi học, em hứa luyện nói mỗi ngày.' });
-  /* Vi phạm Ý thức của cùng em: ghi thẳng xuống bảng với mốc thời gian theo NGÀY DEMO (như `yThucSeed.ts`) — `recordViolation` đóng dấu giờ thật của máy. */
+  /*
+   * Vi phạm Ý thức của cùng em: ghi thẳng xuống bảng với mốc thời gian theo NGÀY DEMO (như `yThucSeed.ts`) — `recordViolation` đóng dấu giờ thật của máy.
+   * GVCN tự ghi → tự Đã ghi nhận (PR-YT4 Q5).
+   */
   for (const [on, category, text] of [
     [addDays(DEMO_DATE, -3), 'homework', 'Không nộp bài Writing Task 2 tuần này'],
     [addDays(DEMO_DATE, -2), 'attendance', 'Đi muộn 20 phút buổi Speaking'],
   ] as const) {
     conn.prepare(
-      `INSERT INTO violations (student_id, cycle_id, class_id, category, skill, occurred_on, reported_on, reported_by, description, created_at)
-       VALUES (?,?,?,?,NULL,?,?,?,?,?)`,
-    ).run(khoi.id, khoi.cycleId, classId, category, on, on, gvcn.userId, text, `${on}T08:00:00.000Z`);
+      `INSERT INTO violations (student_id, cycle_id, class_id, category, skill, occurred_on, reported_on, reported_by, description, created_at, ghi_nhan_luc, ghi_nhan_boi)
+       VALUES (?,?,?,?,NULL,?,?,?,?,?,?,?)`,
+    ).run(khoi.id, khoi.cycleId, classId, category, on, on, gvcn.userId, text, `${on}T08:00:00.000Z`, on, gvcn.userId);
   }
 
   // ---------------------------------------------------------------- Vũ Ngọc Lan — MT1 · SOS3

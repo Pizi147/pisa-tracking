@@ -884,6 +884,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   {
     const uv = ungVienVaThe({ branchId: f.branchId ?? null });
     const trang = trangThaiYThuc(uv.map((r) => r.id), today);
+    if (tatCa) napTruocPhamVi(uv.map((r) => r.id));   // `can()` từng em bên dưới đọc bộ nhớ, không N+1
     const duongLop = (lopId: number | null, sid: number, them: string) =>
       lopId ? `/hoc-vien/lop/${lopId}?tab=y-thuc&hv=${sid}${them}` : duongHoSoHocVien(sid, { tab: 'y-thuc' });
     for (const r of uv) {
