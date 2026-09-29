@@ -398,12 +398,14 @@ export function commitIntake(
   const cls = conn.prepare('SELECT * FROM classes WHERE id = ?').get(classId) as any;
   if (!cls) throw notFound('Không tìm thấy lớp');
   require_(p, PERMISSIONS.STUDENT_EDIT, { classId: cls.id }, `Lớp ${cls.code} nằm ngoài phạm vi bạn được cấp quyền.`);
-  const key = input.idempotencyKey?.trim();
-  if (key) {
-    // Bấm hai lần hoặc thử lại sau lỗi mạng không được tạo thêm học viên.
-    const seen = conn.prepare("SELECT value FROM demo_config WHERE key = ?").get(`intake:${key}`) as any;
-    if (seen) return JSON.parse(seen.value) as IntakeResult;
-  }
+  /*
+   * IDEMPOTENCY — bấm hai lần hoặc thử lại sau lỗi mạng không được tạo thêm học viên. Khoá gắn NGƯỜI GỬI + LỚP (PR-TOC): khoá do
+   * trình duyệt sinh, người khác gửi lại đúng chuỗi đó không được đọc kết quả (mã HV, id) của lô người khác.
+   */
+  const key = input.idempotencyKey?.trim() ? `intake:${p.userId}:${cls.id}:${input.idempotencyKey.trim()}` : null;
+  const daGhi = () => (key ? (conn.prepare('SELECT value FROM demo_config WHERE key = ?').get(key) as any) : null);
+  const seen = daGhi();
+  if (seen) return JSON.parse(seen.value) as IntakeResult;
 
   const preview = previewIntake(p, input);
   const failed: RowIssue[] = [];
@@ -412,7 +414,10 @@ export function commitIntake(
   const mt: IntakeResult['mt'] = { soEm: 0, soLuotLichSu: 0, soEmCoLichSu: 0, luotLichSuDau: null };
   let skipped = 0;
 
-  const result = tx(() => {
+  const result = tx((): IntakeResult => {
+    /* Đọc lại khoá TRONG giao dịch (đã giữ khoá ghi): hai lời gọi song song cùng khoá — lời gọi sau thấy kết quả của lời gọi trước. */
+    const vuaGhi = daGhi();
+    if (vuaGhi) return JSON.parse(vuaGhi.value) as IntakeResult;
     const ok: typeof preview.rows = [];
     for (const r of preview.rows) {
       /* Chỉ LỖI chặn dòng; lưu ý (trùng hồ sơ, cột bị bỏ qua, thiếu target) không chặn. */
@@ -512,7 +517,7 @@ export function commitIntake(
       entityLabel: `${out.added} học viên`, after: { added: out.added, skipped: out.skipped } });
     if (key) {
       conn.prepare('INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES (?,?,?)')
-        .run(`intake:${key}`, JSON.stringify(out), nowIso());
+        .run(key, JSON.stringify(out), nowIso());
     }
     return out;
   });

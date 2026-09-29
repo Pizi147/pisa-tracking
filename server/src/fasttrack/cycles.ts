@@ -166,6 +166,22 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
     patch = { ...patch, examMonth: t.iso ? t.iso.slice(0, 7) : null, examDateGhi: la ? t.iso : null,
       ...(la ? { examPeriodId: ensurePeriod(mondayOf(t.iso!)).id } : {}) };
   }
+  /*
+   * Cùng cận năm cho tuần / tháng gửi THẲNG (StudentPlanPanel gửi `startPeriodId`, `examPeriodId`; API cũ gửi `examMonth`) — cũng chỉ
+   * khi đổi. Id tuần không có thật để vòng ghi bên dưới báo như cũ.
+   */
+  for (const [k, cot, nhan] of [['startPeriodId', 'start_period_id', 'Tuần bắt đầu'], ['examPeriodId', 'exam_period_id', 'Tuần dự kiến thi']] as const) {
+    const v = patch[k];
+    if (v == null || v === '' || Number(v) === c[cot]) continue;
+    const tuan = periodById(Number(v))?.weekStart;
+    const loi = tuan ? docNgayNhap(tuan, demoToday(), can).loi : null;
+    if (loi) throw badRequest(`${nhan}: ${loi}`);
+  }
+  const thang = patch.examMonth ? String(patch.examMonth).slice(0, 7) : null;
+  if (thang && thang !== c.exam_month && /^\d{4}-\d{2}$/.test(thang)) {
+    const loi = docNgayNhap(thang, demoToday(), { choThang: true, ...can }).loi;
+    if (loi) throw badRequest(`Thi dự kiến: ${loi}`);
+  }
   /* PR-DUYET (T44): đổi target / lộ trình cần `cycle.edit` — chỉ khi giá trị THẬT SỰ đổi (panel gửi cả ô không sửa). Thi dự kiến giữ `student.edit` (Q7). */
   const doiTarget = patch.targetScore !== undefined && Number(patch.targetScore ?? NaN) !== Number(c.target_score ?? NaN)
     && !(patch.targetScore == null && c.target_score == null);

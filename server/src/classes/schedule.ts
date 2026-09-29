@@ -1,6 +1,6 @@
-import { chenNhieuDong, db, theoLo, tx } from '../db.ts';
+import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
-  ASSESSED_SKILLS, CHUONG_TRINH_KHONG_CHIA_MON, CLASS_PHASE_LABEL, CO_DIEM_SQL, PERMISSIONS, kiemSoMtMoi, laLichSu, lichMtMacDinh, tuanHocCuaMt, tuanLich,
+  CHUONG_TRINH_KHONG_CHIA_MON, boMonLich, CLASS_PHASE_LABEL, CO_DIEM_SQL, PERMISSIONS, kiemSoMtMoi, laLichSu, lichMtMacDinh, tuanHocCuaMt, tuanLich,
   PROGRAMME_TEMPLATES, kyHieuLop, nextStepsAfter, programmeOf, studyWeekOf,
   type ClassPhase, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
@@ -10,7 +10,7 @@ import { require_, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { ensurePeriods, mondayOf, periodById, weekInfo } from '../platform/week.ts';
 import { recomputeCompletionWeek } from '../fasttrack/skillSchedule.ts';
-import { allProgrammes, type ProgrammeInfo } from '../normal/regular.ts';
+import { allProgrammes, programmeByCode, type ProgrammeInfo } from '../normal/regular.ts';
 
 /**
  * TUẦN BẮT ĐẦU HỌC → LỊCH MT MẶC ĐỊNH, VÀ TIẾN ĐỘ LỚP.
@@ -88,7 +88,7 @@ function goiYLo(yc: readonly YeuCauLichMt[]): Map<number, { cy: any; goiY: Sugge
   const periods = ensurePeriods(lich.flatMap((l) => l.luot.map((x) => x.monday)));
   const existing = new Map<number, any[]>();
   theoLo(lich.map((l) => l.cy.id as number), (lo, ph) => {
-    for (const a of conn.prepare(`SELECT * FROM assessment_attempts WHERE cycle_id IN (${ph}) AND status != ?`).all(...lo, 'cancelled') as any[]) {
+    for (const a of conn.prepare(`SELECT * FROM assessment_attempts WHERE cycle_id IN (${ph}) AND status != 'cancelled'`).all(...lo) as any[]) {
       if (!existing.has(a.cycle_id)) existing.set(a.cycle_id, []);
       existing.get(a.cycle_id)!.push(a);
     }
@@ -235,17 +235,34 @@ export function apLichMacDinhLo(yc: readonly YeuCauLichMt[], actorUserId: number
         m.kq.created.push({ attemptId, attemptNo: m.s.attemptNo, weekStart: m.s.weekStart, lichSu: m.lichSu });
         return attemptId;
       });
-      /* = `ensureSkillRows` của lượt mới: đủ bốn kỹ năng, tuần theo lượt; kỹ năng "không mock" của mô hình cũ → không bắt buộc. */
-      const kyNang = ASSESSED_SKILLS.map((k, i) => `SELECT '${k}' AS skill, ${i} AS thu`).join(' UNION ALL ');
-      theoLo(ids, (lo, ph) => {
-        conn.prepare(
-          `INSERT INTO attempt_skills (attempt_id, skill, required, planned_period_id, plan_source, sit_status, created_at)
-           SELECT a.id, k.skill,
-                  CASE WHEN EXISTS (SELECT 1 FROM attempt_skill_skips x WHERE x.attempt_id = a.id AND x.skill = k.skill) THEN 0 ELSE 1 END,
-                  a.planned_period_id, 'auto', 'scheduled', ?
-             FROM assessment_attempts a CROSS JOIN (${kyNang}) k
-            WHERE a.id IN (${ph}) ORDER BY a.id, k.thu`).run(now, ...lo);
+      /*
+       * = `ensureSkillRows` của lượt mới: bộ môn theo chương trình lớp của lượt (`boMonLich` — FT 4 kỹ năng, lớp thường theo môn,
+       * PR-MON), tuần theo lượt; kỹ năng "không mock" của mô hình cũ → không bắt buộc. Một câu cho mỗi chương trình (thường 1).
+       */
+      const ctOf = new Map<number, string | null>();
+      theoLo([...new Set([...lopOf.values()])], (lo, ph) => {
+        for (const c of conn.prepare(`SELECT id, programme_code FROM classes WHERE id IN (${ph})`).all(...lo) as any[]) ctOf.set(c.id, c.programme_code);
       });
+      /* Mỗi chương trình tính bộ môn MỘT lần — `programmeByCode` đọc bảng mỗi lần gọi ngoài request GET. */
+      const theoCt = new Map<string | null, { bo: readonly string[]; ids: number[] }>();
+      moi.forEach((m, i) => {
+        const lop = lopOf.get(m.cy.student_id);
+        const ct = lop == null ? null : ctOf.get(lop) ?? null;
+        if (!theoCt.has(ct)) theoCt.set(ct, { bo: boMonLich(ct, programmeByCode(ct)?.skills), ids: [] });
+        theoCt.get(ct)!.ids.push(ids[i]);
+      });
+      for (const { bo, ids: dsId } of theoCt.values()) {
+        const mon = bo.map((_, i) => `SELECT ? AS skill, ${i} AS thu`).join(' UNION ALL ');
+        theoLo(dsId, (lo, ph) => {
+          conn.prepare(
+            `INSERT INTO attempt_skills (attempt_id, skill, required, planned_period_id, plan_source, sit_status, created_at)
+             SELECT a.id, k.skill,
+                    CASE WHEN EXISTS (SELECT 1 FROM attempt_skill_skips x WHERE x.attempt_id = a.id AND x.skill = k.skill) THEN 0 ELSE 1 END,
+                    a.planned_period_id, 'auto', 'scheduled', ?
+               FROM assessment_attempts a CROSS JOIN (${mon}) k
+              WHERE a.id IN (${ph}) ORDER BY a.id, k.thu`).run(now, ...bo, ...lo);   // thứ tự `?` trong câu: now, tên môn, lô
+        }, THAM_SO_TOI_DA - bo.length - 1);   // tham số cố định: tên môn + `now`
+      }
       chenNhieuDong(
         'INSERT INTO attempt_schedule_history (attempt_id, action, field, old_value, new_value, reason, actor_user_id, created_at)',
         moi.map((m, i) => [ids[i], 'created', 'planned_period', null, m.s.code, 'Lịch MT mặc định', actorUserId, now]));
