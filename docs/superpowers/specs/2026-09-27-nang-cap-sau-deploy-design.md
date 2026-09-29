@@ -107,6 +107,19 @@ Không chặn việc soạn kế hoạch: mọi dòng dưới đây đã đượ
 - **Q28-4, dữ liệu cũ:** PA đang có ngày dự kiến kết thúc giữ nguyên dữ liệu nhưng **không hiện** nhãn "Dự kiến kết thúc" nữa; không có việc nào sinh từ ngày đó (T53 Q1 đã bỏ "Làm PA … hạn"). PA mới lưu ngày này = trống. Form **Điều chỉnh PA** cũng bỏ ô ngày.
 - PR-N1 (#108) đã chạy luật "PA quy chế chạy ngay" trên bản chính: PR-SOS có migrate nhỏ — PA quy chế **chưa có lần ghi kết quả nào** chuyển về "Chờ xác nhận"? **Không** — giữ nguyên PA đang chạy (GV đã làm), chỉ áp luật mới cho PA sinh sau khi PR-SOS lên.
 
+### 3.1e. Chủ sản phẩm chỉnh 29/09 — Target "Không cam kết" (KCK) (giao **PR-KCK**)
+
+| Mã | Nội dung |
+|---|---|
+| Q29-1 | Ô **Target** ghi **`KCK`** hoặc **`-`** (khi thêm học viên, sửa target, Đề xuất sửa) = học viên **không có cam kết** đầu ra → **không có kỳ vọng MT, không có SOS** (không tự tạo Case SOS, PA quy chế, Phối hợp SOS) |
+
+**Planning tự quyết (theo Q29-1):**
+- KCK khác "chưa có target": ô trống = **chưa có** → vẫn có việc "Điền target"; KCK = **đã chọn không cam kết** → không có việc Điền target, không tính "thiếu thông tin". Nhận cả `KCK`, `kck`, `-`, `không cam kết`, `khong cam ket`.
+- Học viên KCK **vẫn** tự có lịch MT và nhập điểm bình thường (MT dùng theo dõi tiến bộ); chỗ nào hiện target/kỳ vọng thì ghi **`KCK`** / `—`, không tô màu SOS.
+- Quyền đặt/bỏ KCK = quyền sửa target (PR-DUYET): lúc thêm mới GVCN đặt được; sau đó QL (`cycle.edit`), GVCN qua "Đề xuất sửa".
+- Đổi có target → KCK: lượt MT **chưa có điểm** bỏ kỳ vọng (như đổi target thường); **Case SOS đang mở giữ nguyên** tới khi GV xử lý xong (không tự đóng — tránh mất việc đang làm); MT đã có điểm giữ lịch sử SOS. Đổi KCK → có target: lượt chưa có điểm lấy target mới.
+- Số liệu SOS / tỷ lệ đạt kỳ vọng: học viên KCK **ngoài mẫu số**; sĩ số vẫn đếm. Lớp thường không có target nên không áp.
+
 ### 3.2. Những gì tôi tự quyết — anh/chị gạch dòng nào không đồng ý
 
 Ký hiệu ⚠ = điểm tôi ít chắc nhất, nên xem trước.
