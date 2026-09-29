@@ -621,6 +621,15 @@ khác ngày với bản thử thì chạy thử lại. 5. Chạy thử lần n�
   loại kỹ năng đã huỷ phần thi (khớp `completionWeekOf`) · oracle PR-N `prnLatestValid` theo K5-54 + M-14. **Hiệu năng:** `loadBundle` /
   `loadSkillRows` chia lô 900 thay 400 (Bỏ quên vượt trần 16 vì mỗi em FT nay có 3 MT); `editableSkills` nhận `today` từ nơi gọi (tránh
   một câu ngày demo mỗi lượt lịch sử — lỗi tôi gây ra ở Task 6, phép kiểm "Danh sách lớp … N+1" bắt được).
+- **Task 12:** rebase `origin/main` 59f1afa (chỉ đổi `PROMPT_BAN_GIAO_PLANNING.md`). Bấm thử bằng Playwright kênh Chrome, ảnh ở
+  `thiet-ke/anh/pr-mt/` (ảnh "trước" chụp trên bản main dựng tạm cùng cổng 4167/5367). K1: Thêm HV **phải chọn** tuần bắt đầu = tuần này
+  (bỏ trống thì panel dùng tuần khai giảng của lớp → MT1/MT2 thành MT lịch sử — đúng luật, ghi thành câu hỏi PR-NHAP). K2 đo riêng: Lịch
+  Test (7 tuần) + Việc cần làm của QL và GVBM **giống hệt** trước/sau. Em cũ chưa có tháng thi hiện "Thiếu: Tháng/năm dự kiến thi, Mốc
+  đánh giá tiếp theo" (luật K2-05 — điền tháng thi thì cả hai tắt). K11 (lần vắng sau thành đề nghị) không bấm được vì cần thời gian
+  trôi — đã có phép kiểm khối 8. **audit/polish (trong phạm vi):** nhãn `lịch sử` ở Kế hoạch Test bị cột flex giãn thành khung trống cả ô
+  → `self-start`; cột hạn lưới nhập điểm của hàng MT lịch sử nói "Đã nhập" khi mới có một ô → ưu tiên ô `lich_su`; trạng thái "Nhập bù,
+  không có hạn" ở hồ sơ Mock bỏ màu chờ (vàng) → xám; ô "Lý do huỷ" có nhãn; link "→ Nhập" cao 44px trên điện thoại. Máy dò impeccable:
+  0 phát hiện.
 
 ## Planning chốt 29/09
 
