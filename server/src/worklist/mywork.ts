@@ -4,7 +4,7 @@ import {
   INTERVENTION_KIND_LABEL, PERMISSIONS,
   SOS_LABEL, URGENCY_LABEL, caseHeadline, caseTopicLabel, cycleDeadline,
   duongHoSoHocVien, duongLichTest, nhanDotNgan, planDueDate, trongHaiTuanCuoi, tuanLich, urgencyFromSos,
-  khungCua, tenMon,
+  khungCua, tenMon, MEASURE_KIND_LABEL, nhanLoaiXuLy,
   type Khung, type AttemptKind, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -20,6 +20,7 @@ import { NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds } from '../cases/sosState.
 import { settleNoShows, sweepExpiredMoves } from '../fasttrack/absence.ts';
 import { demYeuCau, quetYeuCau } from '../duyet/yeuCau.ts';
 import { mtLichSuChuaNhap } from '../cham/canCham.ts';
+import { trangThaiYThuc, ungVienVaThe } from '../yThuc/trangThai.ts';
 
 /**
  * VIỆC CỦA CHÍNH NGƯỜI ĐANG XEM.
@@ -112,7 +113,9 @@ export type WorkItem = {
  */
 export type WorkGroupKey =
   | 'verify' | 'cause' | 'score' | 'no_plan' | 'result'
-  | 'no_owner' | 'placement' | 'next_step' | 'missing_data' | 'mgmt';
+  | 'no_owner' | 'placement' | 'next_step' | 'missing_data' | 'mgmt'
+  /* PR-YT4 (K5 §3 dòng 6–8): việc Ý thức THẬT có hạn — thay nhắc mềm W01–W06. */
+  | 'yt_xu_ly' | 'yt_xem' | 'yt_thuc_hien';
 
 /**
  * Mỗi nhóm có MỘT DÒNG nói rõ nhóm đó nghĩa là gì.
@@ -178,6 +181,19 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   missing_data: {
     label: 'Thiếu dữ liệu cần cho đánh giá',
     hint: 'Thiếu những thông tin mà không có thì không đánh giá hay lên kế hoạch được: bài chưa xếp vào tuần nào, học viên FT chưa có mục tiêu, MT lịch sử chưa nhập (không tính hạn).',
+  },
+  /* ---------------------------------------------------- Ý thức (PR-YT4, V4-2…V4-5, K3-37) — người nhận = GVCN lớp đang học */
+  yt_xu_ly: {
+    label: 'Xử lý vi phạm',
+    hint: 'Em có 3 vi phạm trở lên trong tuần này + tuần trước — phải Xác nhận xử lý trong 5 ngày (tính cả ngày ghi). Quá hạn thì Quản lý được báo.',
+  },
+  yt_xem: {
+    label: 'Ghi nhận vi phạm mới',
+    hint: 'Vi phạm do người khác ghi mà bạn chưa xem. Ghi nhận (đã xem, không cần xử lý) hoặc Xác nhận xử lý trong 5 ngày.',
+  },
+  yt_thuc_hien: {
+    label: 'Ghi "Đã thực hiện"',
+    hint: 'Quản lý đã duyệt đề xuất — ghi ngày đã thực hiện trong 5 ngày kể từ ngày duyệt.',
   },
   mgmt: {
     label: 'Công việc được giao',
@@ -860,6 +876,49 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     });
   }
 
+  // ------------------------------------------------- 5b. Ý thức (PR-YT4) — việc thật có hạn, người nhận = GVCN lớp ĐANG học
+  /*
+   * Một cửa trạng thái (`trangThaiYThuc`): quét Báo lên ở đầu request đã nạp các em này, nên ở đây không tốn thêm câu nào ngoài câu
+   * ứng viên. Em Tạm dừng không sinh việc (T65). Dòng hết khi làm xong ở bất cứ đâu (Ghi nhận / Xác nhận xử lý / Đề xuất / Đã thực hiện).
+   */
+  {
+    const uv = ungVienVaThe({ branchId: f.branchId ?? null });
+    const trang = trangThaiYThuc(uv.map((r) => r.id), today);
+    const duongLop = (lopId: number | null, sid: number, them: string) =>
+      lopId ? `/hoc-vien/lop/${lopId}?tab=y-thuc&hv=${sid}${them}` : duongHoSoHocVien(sid, { tab: 'y-thuc' });
+    for (const r of uv) {
+      const em = trang.get(r.id);
+      if (!em || em.tamDung || !em.gvcnId) continue;
+      const mine = em.gvcnId === p.userId;
+      if (!mine && !(tatCa && can(p, PERMISSIONS.CASE_APPROVE, { classId: em.lopId, studentId: r.id }))) continue;
+      const chung = {
+        studentId: r.id, studentName: r.ten, classId: em.lopId, classCode: r.lop,
+        attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: 'Ý thức', count: null,
+        ownerId: em.gvcnId, owner: null, mine,
+      };
+      const quaHan = [...em.viPham.values()];
+      if (em.soBatBuoc > 0 && em.deXuat?.status !== 'cho_duyet') {
+        const ke = em.keTiep ? MEASURE_KIND_LABEL[em.keTiep.kind] : 'Đề xuất QL duyệt';
+        items.push({ ...chung, key: `yt_xu_ly:${r.id}`, group: 'yt_xu_ly', urgency: urgencyOf(em.han, today),
+          reason: `${em.soBatBuoc} vi phạm trong 2 tuần — bắt buộc xử lý`,
+          tieuDe: `Xử lý vi phạm · ${r.ten} (${em.soBatBuoc}) · bậc kế tiếp: ${ke}`, actionLabel: 'Xác nhận xử lý',
+          href: duongLop(em.lopId, r.id, '&mo=xu-ly'), due: em.han,
+          statusLabel: quaHan.some((x) => x.lyDoQuaHan === 'xu-ly') ? 'Quá hạn' : 'Bắt buộc xử lý' });
+      }
+      if (em.soMoi > 0) {
+        items.push({ ...chung, key: `yt_xem:${r.id}`, group: 'yt_xem', urgency: urgencyOf(em.hanXem, today),
+          reason: `${em.soMoi} vi phạm chưa ai xem`, tieuDe: `Ghi nhận ${em.soMoi} vi phạm mới · ${r.ten}`, actionLabel: 'Ghi nhận',
+          href: duongLop(em.lopId, r.id, '&loc=moi'), due: em.hanXem, statusLabel: 'Mới' });
+      }
+      if (em.deXuat?.status === 'da_duyet') {
+        const nhan = nhanLoaiXuLy(em.deXuat.kind, em.deXuat.customName);
+        items.push({ ...chung, key: `yt_thuc_hien:${r.id}`, group: 'yt_thuc_hien', urgency: urgencyOf(em.deXuat.han, today),
+          reason: `QL đã duyệt ${nhan}`, tieuDe: `Ghi "Đã thực hiện" ${nhan} · ${r.ten}`, actionLabel: 'Đã thực hiện',
+          href: duongLop(em.lopId, r.id, `&mo=da-thuc-hien&xl=${em.deXuat.id}`), due: em.deXuat.han, statusLabel: 'Đã duyệt · chờ thực hiện' });
+      }
+    }
+  }
+
   // ------------------------------------------------- 6. công việc quản lý được giao
   /*
    * VIỆC Ở BẢNG "TIẾN ĐỘ CÔNG VIỆC" CŨNG LÀ VIỆC CỦA NGƯỜI NÀY (mục 3.2).
@@ -898,7 +957,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * còn lại. "Cần xếp lớp tiếp" đứng ngay sau ba nhóm chính vì nó treo cả một lớp.
    */
   const order: WorkGroupKey[] = [
-    'verify', 'cause', 'score', 'no_plan', 'result',
+    'verify', 'cause', 'score', 'no_plan', 'result', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien',
     'placement', 'next_step', 'no_owner', 'mgmt', 'missing_data',
   ];
   const weight = (u: WorkUrgency) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);

@@ -28,26 +28,28 @@ export type NhomViec = (typeof NHOM_VIEC)[number];
 export const NHOM_VIEC_LABEL: Record<NhomViec, string> = {
   'cham-diem': 'Chấm điểm', 'case-hoc-thuat': 'Case học thuật', 'y-thuc': 'Ý thức & Phối hợp', 'van-hanh': 'Vận hành',
 };
-/** 10 loại việc của `mywork.ts` → 4 nhóm (PR-DUYET bỏ `decide`, `decide_move` — thẻ ở hộp Chờ duyệt) (plan PR-Pa Q12). Ý thức & Phối hợp là nhắc mềm, không phải loại việc. */
+/** Loại việc của `mywork.ts` → 4 nhóm (PR-DUYET bỏ `decide`, `decide_move` — thẻ ở hộp Chờ duyệt). PR-YT4: ba loại việc Ý thức có hạn thật; Phối hợp SOS vẫn là nhắc mềm. */
 const NHOM_CUA_LOAI: Record<string, NhomViec> = {
   score: 'cham-diem',
   verify: 'case-hoc-thuat', cause: 'case-hoc-thuat', no_plan: 'case-hoc-thuat', result: 'case-hoc-thuat',
   do_plan: 'case-hoc-thuat', no_owner: 'case-hoc-thuat',
   placement: 'van-hanh', next_step: 'van-hanh', mgmt: 'van-hanh', missing_data: 'van-hanh',
+  yt_xu_ly: 'y-thuc', yt_xem: 'y-thuc', yt_thuc_hien: 'y-thuc',
 };
 export function nhomViecCua(loai: string): NhomViec { return NHOM_CUA_LOAI[loai] ?? 'van-hanh'; }
 
 /** Loại hạn của từng loại việc — để dòng việc hiện hạn qua `<Han>` (G-10). Loại không có ở đây: hạn là ngày trơn. */
 export const LOAI_HAN_CUA_VIEC: Partial<Record<string, DeadlineKind>> = {
   verify: 'xac-minh-sos', cause: 'xac-minh-sos', no_plan: 'lap-pa', result: 'cap-nhat-pa', score: 'nhap-diem',
+  yt_xu_ly: 'xu-ly-vi-pham', yt_xem: 'xu-ly-vi-pham', yt_thuc_hien: 'xu-ly-vi-pham',
 };
 
 export type ViecGom = { group: string; urgency: 'overdue' | 'today' | 'normal'; due: string | null };
 export type NhomViecXem<T> = {
   key: NhomViec; label: string; items: T[];
-  /** Số việc (nhóm Ý thức: số dòng nhắc). */
+  /** Số việc (nhóm Ý thức & Phối hợp: việc Ý thức + số dòng nhắc Phối hợp SOS). */
   n: number; quaHan: number; homNay: number;
-  /** Nhóm có việc quá hạn tự mở (§3.2). Ý thức không có hạn nên không bao giờ tự mở (W02). */
+  /** Nhóm có việc quá hạn tự mở (§3.2). PR-YT4: Ý thức có hạn thật nên cũng tự mở khi quá hạn (bỏ luật W02). */
   moSan: boolean;
 };
 export function gomNhomViec<T extends ViecGom>(items: T[], soNhacYThuc = 0): NhomViecXem<T>[] {

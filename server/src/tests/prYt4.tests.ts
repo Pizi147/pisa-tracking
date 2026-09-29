@@ -655,4 +655,83 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     conn.prepare(`UPDATE students SET archived_at = NULL WHERE id = ?`).run(sid);
     assert(the.trang_thai === 'tu_dong' && the.ly_do_dong === 'Không còn chờ duyệt', JSON.stringify(the));
   });
+
+  // ------------------------------------------------------------------ Task 6 · việc Ý thức thật có hạn + Tổng quan + chuyển lớp
+  const myworkSvc: any = await import('../worklist/mywork.ts');
+  const nhacSvc: any = await import('../worklist/nhacViec.ts');
+  const ltSvc: any = await import('../classes/luatLoTrinh.ts');
+  const viec = (who: any, key: string, o: Record<string, unknown> = {}) => (myworkSvc.myWork(who, o).items as any[]).find((x) => x.key === key);
+
+  check('YT4 (6) · GVCN có việc "Xử lý vi phạm · {HV} (3) · bậc kế tiếp: Report 1", hạn = ngày ghi thứ 3 + 4, mở tab lớp chọn sẵn em + panel', () => {
+    const sid = hv(); ba3(sid);
+    const it = viec(gvcn, `yt_xu_ly:${sid}`);
+    assert(it && it.group === 'yt_xu_ly' && it.due === addDays(TODAY, 3) && it.urgency === 'normal' && it.mine, JSON.stringify(it));
+    assert(/^Xử lý vi phạm · YT4 HV \d+ \(3\) · bậc kế tiếp: Report 1$/.test(it.tieuDe) && it.href === `/hoc-vien/lop/${LOP}?tab=y-thuc&hv=${sid}&mo=xu-ly`, `${it.tieuDe} · ${it.href}`);
+    assert(d.nhomViecCua('yt_xu_ly') === 'y-thuc' && d.LOAI_HAN_CUA_VIEC.yt_xu_ly === 'xu-ly-vi-pham', 'nhóm + loại hạn');
+  });
+  check('YT4 (6) · Quá hạn → urgency overdue; nhóm "Ý thức & Phối hợp" TỰ MỞ (bỏ luật W02)', () => {
+    const sid = hv(); ba3(sid, addDays(TODAY, -12));
+    const it = viec(gvcn, `yt_xu_ly:${sid}`);
+    assert(it?.urgency === 'overdue' && it.statusLabel === 'Quá hạn', JSON.stringify(it));
+    const g = d.gomNhomViec([it]).find((x: any) => x.key === 'y-thuc');
+    assert(g?.moSan === true && g.quaHan === 1, JSON.stringify(g));
+  });
+  check('YT4 (6) · GVBM không có việc Ý thức; em Tạm dừng không sinh việc (T65)', () => {
+    const sid = hv(); ba3(sid);
+    assert(!viec(gvbm, `yt_xu_ly:${sid}`), 'GVBM');
+    conn.prepare(`UPDATE students SET status = 'inactive' WHERE id = ?`).run(sid);
+    assert(!viec(gvcn, `yt_xu_ly:${sid}`), 'Tạm dừng');
+    conn.prepare(`UPDATE students SET status = 'active' WHERE id = ?`).run(sid);
+  });
+  check('YT4 (6) · Xác nhận xử lý xong → dòng biến mất; gửi đề xuất → "Xử lý vi phạm" hết, ra khỏi Công việc', () => {
+    const sid = hv(); const ids = ba3(sid);
+    xl(gvcn, sid, ids);
+    assert(!viec(gvcn, `yt_xu_ly:${sid}`), 'xử lý xong');
+    const s2 = hv(); const ids2 = ba3(s2);
+    deXuatGui(gvcn, s2, 'suspension', ids2);
+    assert(!viec(gvcn, `yt_xu_ly:${s2}`), 'đã gửi đề xuất');
+  });
+  check('YT4 (6) · "Ghi nhận n vi phạm mới" có hạn ngày ghi + 4; Ghi nhận xong dòng biến mất', () => {
+    const sid = hv(); const v = ghiVp(gvbm, sid);
+    const it = viec(gvcn, `yt_xem:${sid}`);
+    assert(it && it.due === addDays(TODAY, 4) && /^Ghi nhận 1 vi phạm mới · /.test(it.tieuDe) && it.actionLabel === 'Ghi nhận', JSON.stringify(it));
+    xuLy.ghiNhan(gvcn, sid, [v]);
+    assert(!viec(gvcn, `yt_xem:${sid}`), 'ghi nhận xong');
+  });
+  check('YT4 (6) · QL duyệt → việc "Ghi \\"Đã thực hiện\\" …" hạn ngày duyệt + 4; Đã thực hiện xong → hết', () => {
+    const sid = hv(); const m = deXuatGui(gvcn, sid, 'suspension', [ghiVp(gvbm, sid)]);
+    yc.duyetYeuCau(P.mbManager, theCho('y_thuc', m.id).id);
+    const it = viec(gvcn, `yt_thuc_hien:${sid}`);
+    assert(it && it.due === addDays(TODAY, 4) && it.tieuDe.startsWith('Ghi "Đã thực hiện" Đình chỉ học tạm thời · '), JSON.stringify(it));
+    xuLy.daThucHien(gvcn, m.id, { performedOn: TODAY });
+    assert(!viec(gvcn, `yt_thuc_hien:${sid}`), 'xong');
+  });
+  check('YT4 (6) · QL "Của GV (nhắc)" (nguoi=tat-ca) thấy dòng của GVCN, có nút Nhắc; "Của tôi" của QL thì không', () => {
+    const sid = hv(); ba3(sid, addDays(TODAY, -12));
+    const it = viec(P.mbManager, `yt_xu_ly:${sid}`, { nguoi: 'tat-ca' });
+    assert(it && !it.mine && it.ownerId === gvcn.userId && it.nhac?.ownerId === gvcn.userId, JSON.stringify(it));
+    assert(!viec(P.mbManager, `yt_xu_ly:${sid}`), 'Của tôi');
+  });
+  check('YT4 (6) · Nhắc từ thẻ Báo lên Ý thức (viecKey) → đúng GVCN; bấm chuông mở tab lớp chọn sẵn em', () => {
+    const sid = hv(); ba3(sid, addDays(TODAY, -12));
+    yc.quetYeuCau(TODAY);
+    const du = JSON.parse(theCho('bao_len_y_thuc', sid).du_lieu);
+    const kq = nhacSvc.nhacViec(P.mbManager, { key: du.viecKey, ownerId: du.ownerId });
+    const tb = thongBao(gvcn.userId, `nhac:${du.viecKey}:%`);
+    assert(kq.daNhacLuc && tb.length === 1 && tb[0].duong === `/hoc-vien/lop/${LOP}?tab=y-thuc&hv=${sid}&mo=xu-ly`, JSON.stringify(tb));
+  });
+  check('YT4 (6) · Chuyển lớp: thông báo cho GVCN lớp mới kèm "· đang có n vi phạm cần xử lý" (K5-18)', () => {
+    const sid = hv(); ba3(sid);
+    const moi = lopMoi('MB FT YT4TB');
+    ltSvc.thongBaoChuyenVao({ sid, tenHocVien: 'HV thử', enrollmentMoiId: 900000 + sid, actorUserId: P.admin.userId, tuMa: 'MB FT 101', tuChiNhanh: 'Monbay',
+      doiChiNhanh: false, lyDo: null, denLop: { id: moi.id, code: 'MB FT YT4TB', branchId: mbId } });
+    const tb = thongBao(moi.gvcn.userId, `transfer:${900000 + sid}`);
+    assert(tb.length === 1 && /· đang có 3 vi phạm cần xử lý$/.test(tb[0].body), JSON.stringify(tb));
+  });
+  check('YT4 (6) · Hai loại hạn Ý thức cũ đã bỏ; "Xử lý vi phạm · hạn dd/mm"; dòng nhắc chỉ còn Phối hợp SOS', () => {
+    assert(!(d.DEADLINE_KINDS as readonly string[]).some((k) => k === 'thuc-hien-y-thuc' || k === 'hoan-thanh-y-thuc'), 'loại cũ');
+    assert(d.deadlineView({ kind: 'xu-ly-vi-pham', due: '2026-09-18', today: TODAY }).text === 'Xử lý vi phạm · hạn 18/09', 'nhãn hạn');
+    const src = fs.readFileSync(path.join(REPO3, 'web/src/modules/yThuc/YThucReminders.tsx'), 'utf8');
+    assert(!/my-warnings/.test(src), 'còn gọi /y-thuc/my-warnings');
+  });
 }

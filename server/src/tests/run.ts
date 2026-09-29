@@ -8080,11 +8080,12 @@ check('PR-E · <Han>: sáu loại hạn có sáu nhãn khác nhau, đúng bảng
   assert(t('xac-minh-sos') === 'Xác nhận nguyên nhân · hạn 23/09', `xac-minh-sos: "${t('xac-minh-sos')}"`);
   assert(t('lap-pa') === 'Đề ra PA · hạn 23/09', `lap-pa: "${t('lap-pa')}"`);
   assert(t('cap-nhat-pa') === 'Ghi kết quả tuần W3 SEP · hạn hết T2 23/09', `cap-nhat-pa: "${t('cap-nhat-pa')}"`);
-  assert(t('thuc-hien-y-thuc') === 'Thực hiện xong · hạn 23/09', `thuc-hien-y-thuc: "${t('thuc-hien-y-thuc')}"`);
-  assert(t('hoan-thanh-y-thuc') === 'Kết luận đợt · hạn 23/09', `hoan-thanh-y-thuc: "${t('hoan-thanh-y-thuc')}"`);
+  /* PR-YT4 (K5-24): `thuc-hien-y-thuc`, `hoan-thanh-y-thuc` bỏ — Ý thức dùng `xu-ly-vi-pham`. */
+  assert(t('xu-ly-vi-pham') === 'Xử lý vi phạm · hạn 23/09', `xu-ly-vi-pham: "${t('xu-ly-vi-pham')}"`);
+  assert(!(domain.DEADLINE_KINDS as readonly string[]).includes('thuc-hien-y-thuc') && !(domain.DEADLINE_KINDS as readonly string[]).includes('hoan-thanh-y-thuc'), 'hai loại cũ còn');
   assert(t('nhap-diem') === 'Nhập điểm · hạn 23/09', `nhap-diem: "${t('nhap-diem')}"`);
   assert(t('du-kien-ket-thuc') === 'Dự kiến kết thúc 23/09', `du-kien-ket-thuc: "${t('du-kien-ket-thuc')}"`);
-  const all = ['xac-minh-sos', 'lap-pa', 'cap-nhat-pa', 'thuc-hien-y-thuc', 'hoan-thanh-y-thuc', 'nhap-diem', 'du-kien-ket-thuc'].map((k) => t(k));
+  const all = ['xac-minh-sos', 'lap-pa', 'cap-nhat-pa', 'xu-ly-vi-pham', 'duyet', 'nhap-diem', 'du-kien-ket-thuc'].map((k) => t(k));
   assert(new Set(all).size === 7, 'Có hai loại hạn dùng chung một câu — chúng là sáu đồng hồ khác nhau');
 });
 

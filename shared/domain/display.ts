@@ -240,7 +240,8 @@ export function attemptProgressView(i: AttemptProgressInput): AttemptProgressVie
  * KIẾN, không ai "trễ" nó: nhầm nó thành hạn là lỗi F11.
  */
 export const DEADLINE_KINDS = [
-  'xac-minh-sos', 'lap-pa', 'cap-nhat-pa', 'thuc-hien-y-thuc', 'hoan-thanh-y-thuc', 'nhap-diem',
+  /* PR-YT4 (K5-24): bỏ `thuc-hien-y-thuc`, `hoan-thanh-y-thuc` (mô hình Case Ý thức cũ) — Ý thức dùng `xu-ly-vi-pham`. */
+  'xac-minh-sos', 'lap-pa', 'cap-nhat-pa', 'nhap-diem',
   'du-kien-ket-thuc', 'viec-van-hanh',
   /* PR-NEN Q16 (K1-56 + T66): bốn loại hạn mới — chưa chỗ nào gắn, PR sau gắn khi có hạn thật. */
   'duyet', 'xu-ly-vi-pham', 'ke-hoach-bo-tro', 'mini-test',
@@ -257,8 +258,6 @@ const DEADLINE_VIEC: Record<DeadlineKind, { viec: string; tien: 'hạn' | 'hạn
   'xac-minh-sos': { viec: 'Xác nhận nguyên nhân', tien: 'hạn' },
   'lap-pa': { viec: 'Đề ra PA', tien: 'hạn' },
   'cap-nhat-pa': { viec: 'Ghi kết quả PA', tien: 'hạn hết T2' },
-  'thuc-hien-y-thuc': { viec: 'Thực hiện xong', tien: 'hạn' },
-  'hoan-thanh-y-thuc': { viec: 'Kết luận đợt', tien: 'hạn' },
   'nhap-diem': { viec: 'Nhập điểm', tien: 'hạn' },
   'du-kien-ket-thuc': { viec: 'Dự kiến kết thúc', tien: 'dự kiến kết thúc' },
   /* PR-Ra Q9: quá hạn tính theo hạn HIỆN TẠI — hạn gốc/lý do dời hiện ở dòng phụ riêng (`dongHanDaDoi`), không qua `originalDue` ở đây. */

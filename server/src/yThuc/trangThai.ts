@@ -202,7 +202,7 @@ export function ungVienYThuc(f: { branchId?: number | null; classId?: number | n
 /**
  * Như `ungVienYThuc` + em đang có thẻ Báo lên Ý thức chờ (để quét đóng thẻ khi hết lý do) — MỘT câu, cờ `coThe` cho từng em.
  */
-export function ungVienVaThe(f: { branchId?: number | null; classId?: number | null; kemThe?: boolean } = {}): { id: number; coThe: boolean }[] {
+export function ungVienVaThe(f: { branchId?: number | null; classId?: number | null; kemThe?: boolean } = {}): { id: number; coThe: boolean; ten: string; lop: string | null }[] {
   const loc: string[] = [];
   const args: unknown[] = [];
   if (f.classId) {
@@ -216,14 +216,17 @@ export function ungVienVaThe(f: { branchId?: number | null; classId?: number | n
   }
   const THE = `EXISTS (SELECT 1 FROM yeu_cau_duyet y WHERE y.loai = 'bao_len_y_thuc' AND y.doi_tuong_id = s.id AND y.trang_thai = 'cho')`;
   return (db().prepare(
-    `SELECT s.id, ${f.kemThe ? THE : '0'} AS co_the FROM students s
+    `SELECT s.id, s.full_name AS ten, ${f.kemThe ? THE : '0'} AS co_the,
+            (SELECT c.code FROM enrollments e JOIN classes c ON c.id = e.class_id
+              WHERE e.student_id = s.id AND e.status IN ('active', 'paused') ORDER BY e.id DESC LIMIT 1) AS lop
+       FROM students s
       WHERE (s.archived_at IS NULL${loc.map((x) => ` AND ${x}`).join('')}
         AND (EXISTS (SELECT 1 FROM violations v WHERE v.student_id = s.id
                       AND NOT EXISTS (SELECT 1 FROM measure_violations mv JOIN discipline_measures m ON m.id = mv.measure_id
                                        WHERE mv.violation_id = v.id AND m.status IN ('done', 'cho_duyet', 'da_duyet')))
           OR EXISTS (SELECT 1 FROM discipline_measures m WHERE m.student_id = s.id AND m.status IN ('cho_duyet', 'da_duyet'))))
         ${f.kemThe ? `OR ${THE}` : ''}
-      ORDER BY s.id`).all(...args) as any[]).map((r) => ({ id: r.id as number, coThe: !!r.co_the }));
+      ORDER BY s.id`).all(...args) as any[]).map((r) => ({ id: r.id as number, coThe: !!r.co_the, ten: r.ten, lop: r.lop ?? null }));
 }
 
 /** Em ĐANG HỌC (hoặc tạm dừng) ở một lớp. */

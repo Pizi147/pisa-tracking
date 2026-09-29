@@ -10,6 +10,7 @@ import { taoMtMacDinh, taoMtMacDinhLo } from '../fasttrack/mtMacDinh.ts';
 import { classProgressMany } from './schedule.ts';
 import { programmeByCode } from '../normal/regular.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
+import { trangThaiYThuc } from '../yThuc/trangThai.ts';
 
 /**
  * LUẬT LỘ TRÌNH — MỘT CHỖ (PR-LT, §3.9) dùng chung cho Chuyển lớp một em (`students.ts`) và
@@ -129,7 +130,10 @@ export function thongBaoChuyenVao(i: {
         WHERE r.key = 'manager' AND ur.status = 'active' AND (ur.branch_id = ? OR ur.branch_id IS NULL)`,
     )
     .all(branchDest?.branch_id ?? i.denLop.branchId) as any[];
-  const body = `Từ ${i.tuMa} (${i.tuChiNhanh})${i.lyDo ? ` · ${i.lyDo}` : ''}`;
+  /* K5-18 (PR-YT4): GVCN mới biết ngay em mang theo việc Ý thức (hạn đặt lại từ ngày chuyển — M-08). */
+  const yt = trangThaiYThuc([i.sid]).get(i.sid);
+  const soYt = (yt?.soBatBuoc ?? 0) + (yt?.soMoi ?? 0);
+  const body = `Từ ${i.tuMa} (${i.tuChiNhanh})${i.lyDo ? ` · ${i.lyDo}` : ''}${soYt > 0 ? ` · đang có ${soYt} vi phạm cần xử lý` : ''}`;
   for (const userId of nguoiNhan.keys()) {
     if (userId === i.actorUserId) continue;
     notify({
