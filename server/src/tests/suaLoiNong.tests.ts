@@ -171,7 +171,8 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
   // ==================================================================== 5. Bảng kỹ năng: hai khối SOS loại trừ nhau + cột phải
   check('N1 (5) · YC-12.1: một biến trạng thái cho hai khối SOS; YC-12.5.4: cột phải dùng CotPhai', () => {
     const src = docSach('web/src/modules/cases/SkillBoard.tsx');
-    assert(!/causeOpen|dismissOpen/.test(src) && /khoiSos === 'nguyen-nhan'/.test(src) && /khoiSos === 'khong-theo-doi'/.test(src), 'hai khối còn mở cùng lúc được');
+    /* PR-SOS (Task 8/9): Xác nhận nguyên nhân mở Ngăn Case (`viec: 'xac-nhan'`); "Không cần theo dõi…" mở tại chỗ — nút kia ẩn khi khối mở. */
+    assert(!/causeOpen|dismissOpen/.test(src) && /viec: 'xac-nhan'/.test(src) && /khoiSos === 'khong-theo-doi'/.test(src) && /khoiSos === null \?/.test(src), 'hai khối còn mở cùng lúc được');
     assert((src.match(/<CotPhai\b/g) ?? []).length >= 4, 'cột phải chưa theo khuôn nút trên chữ dưới');
   });
 

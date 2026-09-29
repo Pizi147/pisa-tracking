@@ -385,7 +385,8 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     const m = /function nextStepOf[\s\S]*?\r?\n}\r?\n/.exec(src);
     assert(m, 'không thấy nextStepOf');
     assert(!/followupDue/.test(m![0]), 'nextStepOf dùng followupDue làm hạn');
-    assert(/actionDue/.test(m![0]), 'nextStepOf phải dùng actionDue');
+    /* PR-SOS (K3-07): việc tiếp + hạn do máy chủ tính (`viecTiepCuaCase` — hạn ghi kết quả từ actionDue). */
+    assert(/viecTiep/.test(m![0]), 'nextStepOf phải dùng việc tiếp v4 (hạn từ actionDue ở máy chủ)');
   });
 
   check('UX3 (4) · Ghi kết quả: không gửi người thực hiện khi không đổi (payload adjust chỉ có trường đã đổi)', () => {

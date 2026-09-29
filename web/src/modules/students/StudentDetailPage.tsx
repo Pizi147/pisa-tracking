@@ -30,7 +30,7 @@ import { Han } from '../../ui/Han.tsx';
 import { QuaHan, ChipLichSu } from '../../ui/Nhan.tsx';
 import { useSession } from '../../lib/session.tsx';
 
-type OpenCase = { caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'them-pa' } | null;
+type OpenCase = { caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'them-pa' | 'xac-nhan' | 'xac-nhan-pa' } | null;
 
 type Profile = any;
 

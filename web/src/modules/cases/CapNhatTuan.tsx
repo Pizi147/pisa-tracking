@@ -192,7 +192,7 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved }: 
                   {kinds.selfServe.map((k) => <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k] ?? k}</option>)}
                 </optgroup>
                 <optgroup label="Cần Quản lý duyệt">
-                  {kinds.proposals.map((k) => <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k] ?? k} · cần QL duyệt</option>)}
+                  {kinds.proposals.map((k) => <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k] ?? k} · cần Quản lý duyệt</option>)}
                 </optgroup>
               </select>
             </Truong>

@@ -453,4 +453,50 @@ export async function runPrSosTests(t: YThucTestKit) {
     const cot = d.cotTongHopFor('ft').filter((x: any) => x.nhom === 'xu-ly').map((x: any) => x.nhan('ft'));
     assert(cot.join('|') === 'HV có Case|Case|Chờ nguyên nhân|Chờ Quản lý duyệt|Đang làm|Xong/Huỷ', cot.join('|'));
   });
+
+  // ------------------------------------------------------------------ Task 8 · HangCase / HangPA (quét nguồn + luật)
+  const doc = (f: string) => fs.readFileSync(path.join(REPO, f), 'utf8');
+  const hamCua = (src: string, ten: string) => /* thân một hàm cấp cao nhất: từ `function ten` tới hàm kế tiếp */
+    (new RegExp(`function ${ten}\\b[\\s\\S]*?(?=\\r?\\n(?:export )?function |$)`).exec(src) ?? [''])[0];
+  check('SOS (8) · SkillBoard: HangCase + HangPA, không HangCaseVaPa / "Xác minh SOS" / "Chờ QL" / du-kien-ket-thuc; SOS chỉ trong chip tên; NhanTrangThai; nextStepOf đọc việc tiếp v4', () => {
+    const sb = doc('web/src/modules/cases/SkillBoard.tsx');
+    assert(/function HangCase\b/.test(sb) && /function HangPA\b/.test(sb) && !/HangCaseVaPa|function HangPa\b/.test(sb), 'thiếu HangCase/HangPA');
+    assert(!/Xác minh SOS|Chờ QL|du-kien-ket-thuc/.test(sb), 'còn chữ cũ');
+    const hangCase = hamCua(sb, 'HangCase');
+    assert(!/<Level/.test(hangCase) && /<NhanTrangThai/.test(hangCase) && /<TenCase/.test(hangCase), 'hàng Case: SOS chỉ trong chip tên, một nhãn trạng thái');
+    assert(!/followupDue/.test(hamCua(sb, 'HangPA')), 'HangPA còn hiện dự kiến kết thúc');
+    assert(/viecTiep/.test(hamCua(sb, 'nextStepOf')), 'nextStepOf chưa dùng việc tiếp v4');
+    assert(/Chưa đạt · không mở Case/.test(sb) && /Không theo dõi \(Quản lý duyệt/.test(sb), 'CotCase thiếu chữ K3-06');
+    assert((sb.match(/<CotPhai/g) ?? []).length >= 4 && /khoiSos/.test(sb), 'cột phải / khoiSos');
+  });
+  check('SOS (8) · Hành trình: trangThaiHop nhãn §7.3 (K3-29); viecTiepPhuongAn có Chờ xác nhận / Ghi kết quả cuối', () => {
+    const h = d.trangThaiHop({ caseMo: [{ mo: '2026-08-01', soPa: 1, choNguyenNhan: true }], coTungCase: true, diemCuoiChuaDat: null, xongGanNhat: null }, '2026-09-22');
+    assert(h?.chu === 'Cần làm · chờ nguyên nhân', JSON.stringify(h));
+    const pa = { status: 'planned', lastOutcome: null, preset: true, confirmedAt: null, pendingApproval: false, approvalDue: null, actionDue: null, actionOverdue: false, completedOn: null };
+    assert(d.viecTiepPhuongAn({ ...pa, choXacNhan: true }).loai === 'cho-xac-nhan', 'chờ xác nhận');
+    assert(d.viecTiepPhuongAn({ ...pa, status: 'started', lanCuoi: true, actionDue: '2026-09-28' }).text === 'Ghi kết quả cuối', 'ghi cuối');
+  });
+
+  // ------------------------------------------------------------------ Task 9 · Ngăn Case (quét nguồn)
+  check('SOS (9) · CaseSosControls: XacNhanCasePanel / XacNhanPaPanel / KhongTheoDoiForm; không PresetPlanActions, /confirm, /replace, Dự kiến kết thúc, Bằng chứng', () => {
+    const f = doc('web/src/modules/yThuc/CaseSosControls.tsx');
+    for (const ten of ['XacNhanCasePanel', 'XacNhanPaPanel', 'KhongTheoDoiForm']) assert(new RegExp(`export function ${ten}\\b`).test(f), ten);
+    assert(!/PresetPlanActions|CauseDeterminationPanel|\/confirm|\/replace|Dự kiến kết thúc|Bằng chứng/.test(f), 'còn thứ cũ');
+    assert(/\/xac-nhan`/.test(f) && /\/xac-nhan-pa`/.test(f) && /useLoiForm\(/.test(f) && /<OKhac/.test(f) && /GOI_Y_MO_TA_PA/.test(f), 'thiếu đường / thành phần');
+  });
+  check('SOS (9) · MILESTONE_TITLE có nhãn cho MỌI kind mốc máy chủ ghi (K3-21); NganCase nút chính theo việc tiếp, ẩn Hoàn thành khi PA quy chế chưa khép', () => {
+    const cp = doc('web/src/modules/cases/CasePanel.tsx');
+    const bang = /const MILESTONE_TITLE[\s\S]*?\n};/.exec(cp)?.[0] ?? '';
+    const kinds = new Set<string>();
+    for (const f of fs.readdirSync(path.join(REPO, 'server/src/cases')).filter((x) => x.endsWith('.ts'))) {
+      for (const m of doc(`server/src/cases/${f}`).matchAll(/kind: '([a-z_]+)'/g)) kinds.add(m[1]);
+      for (const m of doc(`server/src/cases/${f}`).matchAll(/ghiMoc\(caseId, '([a-z_]+)'/g)) kinds.add(m[1]);
+    }
+    const mocs = [...kinds].filter((k) => (d.MILESTONE_KINDS as readonly string[]).includes(k) && k !== 'opened');
+    const thieu = mocs.filter((k) => !new RegExp(`\\b${k}:`).test(bang));
+    assert(mocs.includes('xac_nhan_case') && thieu.length === 0, `thiếu nhãn: ${thieu.join()}`);
+    const nc = doc('web/src/modules/students/NganCase.tsx');
+    assert(/viecTiep/.test(nc) && /ht\?\.an/.test(nc) && /XacNhanCasePanel/.test(nc) && /TheYeuCau gon yc=\{data\.yeuCauCase\}/.test(nc), 'NganCase chưa theo việc tiếp v4');
+    assert(!/<Level/.test(nc), 'Ngăn Case còn nhãn SOS ở ngữ cảnh (SOS đã ở tên)');
+  });
 }

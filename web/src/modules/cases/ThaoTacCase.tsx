@@ -110,7 +110,7 @@ export function ThemPaPanel({ caseId, studentId, hocVien, lop, quayLai, onClose,
               </optgroup>
               <optgroup label="Cần Quản lý duyệt">
                 {catalogue.proposals.map((k: string) => (
-                  <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k as keyof typeof INTERVENTION_KIND_LABEL]} · cần QL duyệt</option>
+                  <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k as keyof typeof INTERVENTION_KIND_LABEL]} · cần Quản lý duyệt</option>
                 ))}
               </optgroup>
             </select>

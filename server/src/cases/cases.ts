@@ -33,7 +33,7 @@ import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, dongBoTrangThaiCase, sosCaseState 
 import { PLAN_DECISIONS, decisionToStep, type PlanDecision } from '../../../shared/domain/index.ts';
 import { apDungDieuChinh, chuanHoaDieuChinh, lichSuDieuChinhCuaCase } from './planRevisions.ts';
 import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
-import { dienMocQuyChe } from './sosAuto.ts';
+import { dienMocQuyChe, tenGiuaCua } from './sosAuto.ts';
 import { boSungYeuCau, chotYeuCau, taoYeuCau, theCuaDoiTuong } from '../duyet/yeuCau.ts';
 
 /**
@@ -1603,6 +1603,25 @@ export function caseDetail(p: Principal, caseId: number) {
     sos: sosCaseState(caseId),
     /** PR-SOS (S4-5): thẻ ĐANG CHỜ ở mức Case ("Không cần theo dõi") — Ngăn Case nhúng `TheYeuCau gon` cho Quản lý. */
     yeuCauCase: theCuaDoiTuong('sos_case', [caseId]).find((y) => y.trangThai === 'cho' && y.loai === 'khong_theo_doi') ?? null,
+    /** PR-SOS (T21, §7.3, K3-07): tên Case SOS ba phần · MỘT nhãn trạng thái · MỘT việc tiếp — Ngăn Case chọn nút chính theo đây. */
+    tenSos: c.origin_kind === 'mock' && (c.attempt_kind ?? 'mock') === 'mock'
+      ? { mt: (conn.prepare('SELECT MAX(attempt_no) n FROM case_milestones WHERE case_id = ?').get(caseId) as any)?.n ?? c.attempt_no ?? null,
+          giua: tenGiuaCua(c), sos: c.sos_level ?? null }
+      : null,
+    ...(() => {
+      const st = sosCaseState(caseId);
+      const v4 = {
+        status: c.status, fromSos: st.fromSos, hasCause: st.hasCause, dismissed: !!st.dismissed, systemClosed: !!c.system_close_reason,
+        choDuyetKhongTheoDoi: !!st.choDuyetKhongTheoDoi, coPaChoXacNhan: st.coPaChoXacNhan, hanXacNhan: st.dueOn,
+        lyDoHeThong: c.system_close_reason ? SYSTEM_CLOSE_REASON_LABEL[c.system_close_reason as keyof typeof SYSTEM_CLOSE_REASON_LABEL] ?? null : null,
+      };
+      const pas = interventions.filter((i) => i.status !== 'cancelled').map((i) => ({
+        id: i.id, ten: (i.description ?? '').trim() || (INTERVENTION_KIND_LABEL[i.kind as InterventionKind] ?? i.kind),
+        batBuoc: i.batBuoc, choXacNhan: i.awaitingConfirmation, xong: i.status === 'completed', actionDue: i.actionDue,
+        followupDue: i.followupDue, choDuyet: i.approvalState === 'pending',
+      }));
+      return { trangThaiV4: trangThaiCaseV4(v4, demoToday()), viecTiep: viecTiepCuaCase(v4, pas, demoToday()) };
+    })(),
     history: history.map((h) => ({
       id: h.id, field: h.field, oldValue: h.old_value, newValue: h.new_value,
       actorName: h.actor_name, createdAt: h.created_at,
@@ -2551,6 +2570,9 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>) {
     summary: c.summary ?? null,
     /* Case tự tạo từ SOS còn chờ GVBM xác định nguyên nhân / xác nhận phương án điền sẵn (§3.2, §7.5 — PR-K). */
     sos,
+    /** PR-SOS (T21): tên Case SOS tách ba phần để giao diện vẽ chip `[MT1]` + phần giữa + chip `[SOS 3]` — null với Case tay / lớp thường. */
+    tenSos: c.origin_kind === 'mock' && attempts.every((x) => (x.attemptKind ?? 'mock') === 'mock')
+      ? { mt: attempts.length ? Math.max(...attempts.map((x) => x.attemptNo)) : null, giua: tenGiuaCua(c), sos: c.sos_level ?? null } : null,
     /** PR-SOS (§7.3, K3-07): MỘT nhãn trạng thái + MỘT việc tiếp của Case — bảng kỹ năng, Ngăn Case, đầu hồ sơ đọc chung. */
     trangThaiV4: trangThaiCaseV4(v4, today),
     viecTiep: viecTiepCuaCase(v4, plans.map((pl) => ({

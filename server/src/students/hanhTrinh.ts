@@ -9,6 +9,7 @@ import { cyclesOf } from '../fasttrack/cycles.ts';
 import { isRatioCycle, programmeByCode, programmeCodeOfCycle, programmeOfClass } from '../normal/regular.ts';
 import { typedResult } from './profile.ts';
 import { addDays } from '../util.ts';
+import { CO_THE_KHONG_THEO_DOI, awaitingCauseCaseIds } from '../cases/sosState.ts';
 
 /**
  * MÁY CHỦ CỦA TAB HÀNH TRÌNH (PR-Qb, spec §3.8, plan Task 2) — trả dữ liệu THÔ theo giai đoạn; mọi
@@ -140,7 +141,8 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
   // -------------------------------------------------------------- (4) case
   const caseRows = conn
     .prepare(
-      `SELECT sc.*, a.attempt_no AS attempt_no, a.kind AS attempt_kind
+      /* PR-SOS (K3-29): cờ "chờ nguyên nhân" (một định nghĩa — `awaitingCauseCaseIds` dưới) + thẻ Không cần theo dõi đang chờ. */
+      `SELECT sc.*, a.attempt_no AS attempt_no, a.kind AS attempt_kind, ${CO_THE_KHONG_THEO_DOI('sc')} AS co_the_ktd
          FROM sos_cases sc
          LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
         WHERE sc.student_id = ?`,
@@ -156,6 +158,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
     return true;
   });
   const caseIds = casesInGiaiDoan.map((c) => c.id);
+  const choNguyenNhan = new Set(awaitingCauseCaseIds(casesInGiaiDoan.filter((c) => c.status !== 'done').map((c) => c.id as number)));
 
   // -------------------------------------------------------------- (5) phương án
   const ivRows = caseIds.length
@@ -266,7 +269,10 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
     const casesOfSkill = casesInGiaiDoan.filter((c) => anhXaHangMuc(c.category ?? c.topic, boHop) === kyNang);
     const openCases = casesOfSkill.filter((c) => c.status !== 'done');
     const doneCases = casesOfSkill.filter((c) => c.status === 'done');
-    const caseMo = openCases.map((c) => ({ mo: c.detected_at, soPa: (ivByCase.get(c.id) ?? []).length }));
+    const caseMo = openCases.map((c) => ({ mo: c.detected_at, soPa: (ivByCase.get(c.id) ?? []).length,
+      choNguyenNhan: choNguyenNhan.has(c.id), choDuyet: !!c.co_the_ktd }));
+    const moiNhat = [...doneCases].sort((x, y) => String(y.closed_at ?? '').localeCompare(String(x.closed_at ?? '')))[0];
+    const huyGanNhat = !openCases.length && !!moiNhat && !!(moiNhat.dismiss_reason_code || moiNhat.system_close_reason);
     const coTungCase = casesOfSkill.length > 0;
     const xongGanNhat = !openCases.length && doneCases.length
       ? doneCases.reduce((mx: string | null, c) => {
@@ -304,7 +310,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
 
     return {
       kyNang, nhan: ratio ? tenMon(ct, kyNang) : CASE_CATEGORY_LABEL[kyNang], nhanNgan: tenMonNgan(ratio ? ct : null, kyNang), cheDo: ratio ? ('ratio' as const) : ('ielts' as const),
-      diem, conCho, dotCho: dotCho as DotRef | null, caseMo, coTungCase, diemCuoiChuaDat, xongGanNhat, vanDe,
+      diem, conCho, dotCho: dotCho as DotRef | null, caseMo, coTungCase, diemCuoiChuaDat, xongGanNhat, huyGanNhat, vanDe,
     };
   });
 

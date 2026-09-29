@@ -11,7 +11,7 @@ import { caseStatusLabel, fmtBand, skillLabel, sosLabel, sosTone } from '../../l
 import {
   INTERVENTION_KIND_LABEL, INTERVENTION_STATUS_LABEL,
   NEXT_STEP_LABEL, OUTCOME_MARK, OUTCOME_TONE,
-  deadlineView, outcomeLabelFor, tenMon,
+  deadlineView, outcomeLabelFor, tenMon, type TrangThai,
 } from '@shared/domain/index.ts';
 import { LichSuDieuChinh, type BanDieuChinh } from './CapNhatTuan.tsx';
 import { NganCase } from '../students/NganCase.tsx';
@@ -30,6 +30,16 @@ export type CaseDetail = {
   id: number; originKind: string;
   /** Còn thiếu gì để hoàn thành case. Rỗng = đủ điều kiện đóng (mục 7.7 [5]). */
   closeBlockers: string[];
+  /** PR-SOS (K3-09): `an` = ẩn nút Hoàn thành (PA theo quy chế chưa khép), `dong` = câu mờ thay nút. */
+  hoanThanh?: { an: boolean; dong: string | null; ly_do: string[] } | null;
+  /** PR-SOS: trạng thái Case SOS, tên ba phần, MỘT nhãn + MỘT việc tiếp, thẻ Không cần theo dõi đang chờ. */
+  sos?: { fromSos: boolean; hasCause: boolean; awaitingCause: boolean; dueOn: string | null;
+    choDuyetKhongTheoDoi: { hanDuyet: string | null } | null; coPaChoXacNhan: boolean } | null;
+  tenSos?: { mt: number | null; giua: string; sos: number | null } | null;
+  trangThaiV4?: { k: string; t: TrangThai; chu: string; han: string | null };
+  viecTiep?: { chu: string; loaiHan: string | null; han: string | null; paId?: number } | null;
+  yeuCauCase?: any;
+  topic?: string | null;
   student: { id: number; code: string; name: string; status: string } | null;
   cycle: { id: number; seq: number; route: string | null; target_score: number | null } | null;
   classId: number | null; attemptId: number | null; attemptNo: number | null;
@@ -65,7 +75,9 @@ export type CaseDetail = {
 };
 
 /** Nội dung của ngăn Case: một `KhungPanel` đổi nội dung theo view, không chồng panel. */
-export type ViewCase = { loai: 'case' } | { loai: 'ghi-ket-qua'; paId: number } | { loai: 'them-pa' } | { loai: 'hoan-thanh' };
+export type ViewCase = { loai: 'case' } | { loai: 'ghi-ket-qua'; paId: number } | { loai: 'them-pa' } | { loai: 'hoan-thanh' }
+  /* PR-SOS (Q28-3): Xác nhận Case → Xác nhận PA theo quy chế. */
+  | { loai: 'xac-nhan' } | { loai: 'xac-nhan-pa'; paId: number };
 
 /** "Case Listening" — tên ngắn của Case cho tiêu đề ngăn và dòng "← Case Listening". */
 export function tenNganCase(d: { categoryLabel: string | null; category: string | null; chuongTrinh?: string | null }): string {
@@ -114,17 +126,6 @@ export function CasePanel({ caseId }: { caseId: number }) {
       {ngan && (
         <NganCase caseId={caseId} viecBanDau={ngan} hocVien={data.student?.name} onClose={() => setNgan(null)} onChanged={reload} />
       )}
-    </div>
-  );
-}
-
-/** Trang riêng cho một vấn đề — chia sẻ được, mở từ mọi nơi về cùng một bản ghi. */
-export function CasePage({ caseId }: { caseId: number }) {
-  return (
-    <div className="max-w-[900px]">
-      <Card title="Vấn đề - Case">
-        <CasePanel caseId={caseId} />
-      </Card>
     </div>
   );
 }
@@ -218,7 +219,8 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
   const thayBang = iv.supersededBy ? all.find((x) => x.id === iv.supersededBy) ?? null : null;
   const thayCho = all.find((x) => x.supersededBy === iv.id) ?? null;
   const batDau = iv.startedDate ?? iv.plannedDate ?? null;
-  const ketThuc = iv.completedDate ?? iv.followupDue ?? null;
+  /* PR-SOS (Q28-4): không còn "dự kiến kết thúc" — khoảng ngày là `từ dd/mm` hoặc ngày xong thật; PA quy chế nói mốc riêng. */
+  const ketThuc = iv.completedDate ?? null;
   const khoang = batDau && ketThuc ? `${ngan(batDau)} → ${ngan(ketThuc)}` : batDau ? `từ ${ngan(batDau)}` : ketThuc ? `đến ${ngan(ketThuc)}` : null;
   const nguoi = iv.performer ? `${iv.performer}${iv.byProxy && iv.recordedBy ? ` (${iv.recordedBy} nhập hộ)` : ''}` : 'Chưa có người làm';
   return (
@@ -226,10 +228,10 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="text-sm font-semibold text-slate-100">{INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? iv.kind}</span>
         {/* PR-N1 S4-1: PA theo quy chế SOS do máy gán — dấu nhỏ cạnh tên (khoảng cách lấy từ `gap-1.5` của hàng, nên không thêm `ml-1.5`). */}
-        {iv.preset && <span className="whitespace-nowrap text-[10.5px] text-slate-400" title="PA theo quy chế SOS — máy gán, không xoá, không thay">🔒 theo quy chế</span>}
+        {iv.preset && <span className="inline-flex items-center gap-1 whitespace-nowrap text-[10.5px] text-slate-400" title="PA theo quy chế SOS — không thay, không kết thúc sớm"><KhoaNho />theo quy chế</span>}
         {/* Trạng thái CÔNG VIỆC, không phải kết quả (mục 2.2): "Đã xong" chỉ nghĩa việc đã làm xong. */}
         <Nhan tone={toneTrangThaiPa(iv.status)}>{INTERVENTION_STATUS_LABEL[iv.status as keyof typeof INTERVENTION_STATUS_LABEL] ?? iv.status}</Nhan>
-        {choDuyet && <Nhan tone="wait" title={iv.approvalDue ? `Hạn Quản lý trả lời ${ngan(iv.approvalDue)}` : undefined}>Chờ QL duyệt</Nhan>}
+        {choDuyet && <Nhan tone="wait" title={iv.approvalDue ? `Hạn Quản lý trả lời ${ngan(iv.approvalDue)}` : undefined}>Chờ Quản lý duyệt</Nhan>}
         {iv.approvalState === 'approved' && <Nhan tone="done">Đã duyệt</Nhan>}
         {iv.approvalState === 'declined' && <Nhan tone="muted">Không duyệt</Nhan>}
         <span className="flex-1" />
@@ -242,7 +244,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
         </p>
       )}
       <p className="m-0 mt-1 text-[11px] text-slate-500">
-        {[nguoi, khoang].filter(Boolean).join(' · ')}
+        {[nguoi, khoang, iv.mocChu ? `kết thúc theo quy chế: ${iv.mocChu}` : null].filter(Boolean).join(' · ')}
         {hanGhi && !choDuyet && <> · hạn ghi kết quả {hanGhi.han.replace(/^hạn /, '')}</>}
       </p>
       {iv.approvalNote && (
@@ -253,7 +255,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
       {/* PR-DUYET (T64): Xin ý kiến không dừng PA — dòng tím khi đang chờ, câu trả lời của QL khi đã có. */}
       {iv.xinYKien?.trangThai === 'cho' && (
         <p className="m-0 mt-1 text-xs text-wait tabular-nums">
-          Đã xin QL hỗ trợ {ngan(iv.xinYKien.taoLuc)} · chờ trả lời{iv.xinYKien.hanDuyet ? ` · hạn ${ngan(iv.xinYKien.hanDuyet)}` : ''}
+          Đã xin Quản lý hỗ trợ {ngan(iv.xinYKien.taoLuc)} · chờ trả lời{iv.xinYKien.hanDuyet ? ` · hạn ${ngan(iv.xinYKien.hanDuyet)}` : ''}
         </p>
       )}
       {iv.xinYKien?.trangThai === 'da_tra_loi' && (
@@ -268,7 +270,10 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
         </details>
       )}
       <div className="mt-1.5 flex flex-wrap gap-2">
-        {data.viewer.canEdit && dangChay && !choDuyet && (
+        {data.viewer.canEdit && iv.awaitingConfirmation && data.sos?.hasCause && (
+          <button type="button" className="btn btn-sm btn-primary" onClick={() => onViec({ loai: 'xac-nhan-pa', paId: iv.id })}>Xác nhận PA</button>
+        )}
+        {data.viewer.canEdit && dangChay && !choDuyet && !iv.awaitingConfirmation && (
           <button type="button" className="btn btn-sm btn-primary" onClick={() => onViec({ loai: 'ghi-ket-qua', paId: iv.id })}
             title={`${hanGhi?.viec ?? 'Ghi kết quả'}: kết quả, tiến triển, và quyết định Giữ nguyên / Điều chỉnh / Thay / Kết thúc`}>
             Ghi kết quả
@@ -288,6 +293,16 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
   );
 }
 
+/** Ổ khoá 12px nét 1.5 — PA theo quy chế (thay emoji: ký tự nhỏ không đồng nét với bộ biểu tượng). */
+function KhoaNho() {
+  return (
+    <svg aria-hidden viewBox="0 0 12 12" width="12" height="12" className="shrink-0">
+      <rect x="2.25" y="5.25" width="7.5" height="5.5" rx="1" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M4 5.25V3.75a2 2 0 0 1 4 0v1.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
 // ==================================================================== lịch sử cập nhật (thu gọn)
 
 type MucLichSu = { key: string; on: string; dot: string | null; tieuDe: ReactNode; badge: ReactNode; than: ReactNode };
@@ -298,6 +313,12 @@ const MILESTONE_TITLE: Record<string, string> = {
   passed: 'Đã đạt kỳ vọng',
   closed: 'Chốt kết thúc',
   extended: 'Chốt đợt này, kéo dài theo dõi',
+  route_changed: 'Sang lộ trình mới',
+  /* PR-SOS (K3-21): Xác nhận Case + ba mốc của thẻ Không cần theo dõi (lý do ở dòng ghi chú). */
+  xac_nhan_case: 'Xác nhận Case',
+  xin_khong_theo_doi: 'Xin không theo dõi',
+  ql_duyet_khong_theo_doi: 'Quản lý duyệt không theo dõi',
+  ql_tu_choi_khong_theo_doi: 'Quản lý từ chối không theo dõi',
 };
 
 /** Điểm cô tự chấm: LUÔN có chữ "cô chấm" — một con số 6.5 đứng trơ sẽ bị đọc nhầm thành điểm mock. */
