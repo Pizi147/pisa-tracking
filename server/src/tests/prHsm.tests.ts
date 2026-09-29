@@ -65,14 +65,15 @@ export async function runPrHsmTests(t: YThucTestKit) {
     try { fn(); return 'không ném'; } catch (e: any) { return e?.status ?? String(e?.message ?? e); }
   };
   /** Em mới ở MB FT 101, MT1 tuần này (chưa hoàn tất) — dựng qua `commitIntake` + `createAttempt`. */
-  const emMoi = (ten: string) => {
-    intake.commitIntake(P.admin, { classId: LOP, rows: [{ fullName: `HSM ${ten}`, target: 6.5, email: 'hv@demo.test' }], idempotencyKey: `hsm-${ten}` });
+  const emMoiLop = (lop: string, ten: string) => {
+    intake.commitIntake(P.admin, { classId: classId(lop), rows: [{ fullName: `HSM ${ten}`, target: 6.5, email: 'hv@demo.test' }], idempotencyKey: `hsm-${ten}` });
     const st = get('SELECT id FROM students WHERE full_name = ?', `HSM ${ten}`);
     const cy = get("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'", st.id);
     boLichTuTao(conn, cy.id);
-    const a = luotThu(conn, svc.createAttempt, P.admin, { studentId: st.id, cycleId: cy.id, classId: LOP, no: 1, periodId: week.ensurePeriod(tuanNay).id });
+    const a = luotThu(conn, svc.createAttempt, P.admin, { studentId: st.id, cycleId: cy.id, classId: classId(lop), no: 1, periodId: week.ensurePeriod(tuanNay).id });
     return { sid: st.id as number, aid: a.id as number };
   };
+  const emMoi = (ten: string) => emMoiLop('MB FT 101', ten);
   const dong = (aid: number, skill: string) => get('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?', aid, skill);
   const oCua = (aid: number, skill: string, p = QL) => svc.attemptDetail(p, aid).cells.find((c: any) => c.skill === skill);
   const S4 = [6, 6.5, 6, 7];
@@ -233,5 +234,35 @@ export async function runPrHsmTests(t: YThucTestKit) {
     const bang = hs.slice(hs.indexOf('function IeltsAttempts'), hs.indexOf('function RatioAttempts'));
     assert(bang.length > 100 && !/attemptStatusLabel\(/.test(bang) && !bang.includes('Hồ sơ đợt ›') && /<KetQuaDot/.test(bang), 'IeltsAttempts');
     assert(/doiKyNang/.test(bang) && /huyPhan/.test(bang) && /<Link/.test(bang), 'nhãn dời/huỷ phần, MT là liên kết');
+  });
+
+  // ------------------------------------------------------------------ khối 7: GV Speaking chấm S chéo lớp FT cùng chi nhánh (chủ sản phẩm 30/09)
+  const perm: any = await import('../permissions.ts');
+  check('HSM (7) · GV Speaking chấm S lớp FT khác cùng chi nhánh: được (quyền, không thành việc); L → 403; chi nhánh khác / GV W1 → 403', () => {
+    const ft102 = classId('MB FT 102');
+    const trangId = P.sTeacher.userId;
+    const pc = get(`SELECT id FROM teacher_assignments WHERE user_id = ? AND class_id = ? AND skill = 'speaking' AND status = 'active'`, trangId, ft102);
+    assert(pc, 'dữ liệu demo: Trang phải dạy S ở MB FT 102');
+    conn.prepare(`UPDATE teacher_assignments SET status = 'ended' WHERE id = ?`).run(pc.id);
+    try {
+      const trang = perm.loadPrincipal(trangId);
+      assert(!perm.mySkills(trang, ft102, ['speaking']).length, 'không còn phân công S lớp 102 — không phải việc');
+      assert(perm.lopFtChoGvSpeaking(trang, TODAY).includes(ft102), 'lớp FT cùng chi nhánh phải mở');
+      const e = emMoiLop('MB FT 102', 'Chấm Chéo');
+      const o = svc.attemptDetail(trang, e.aid).cells;
+      const s = o.find((c: any) => c.skill === 'speaking'), l = o.find((c: any) => c.skill === 'listening');
+      assert(s.canEdit === true && s.viec === false && s.mine === false && l.canEdit === false, JSON.stringify({ s: [s.canEdit, s.viec, s.mine], l: l.canEdit }));
+      svc.saveScore(trang, e.aid, 'speaking', { criteria: S4, gvCham: { performerSelf: true } }, TODAY);
+      assert(dong(e.aid, 'speaking').examiner_user_id === trangId && dong(e.aid, 'speaking').entered_by === trangId, 'lưu S + GV chấm');
+      assert(maLoi(() => svc.saveScore(trang, e.aid, 'listening', { rawScore: 30 }, TODAY)) === 403, 'L phải 403');
+      assert(maLoi(() => svc.saveScore(P.w1Teacher, e.aid, 'speaking', { criteria: S4 }, TODAY)) === 403, 'GV W1 không dạy S phải 403');
+      const cp = classId('CP FT 110');
+      assert(!perm.lopFtChoGvSpeaking(trang, TODAY).includes(cp) && !perm.can(trang, d.PERMISSIONS.ATTEMPT_VIEW, { classId: cp }), 'chi nhánh khác không mở');
+      assert(!perm.lopFtChoGvSpeaking(trang, TODAY).includes(classId('MB FOU 12')), 'lớp thường không áp');
+      const ds = svc.classScoreSheet(trang, ft102, week.ensurePeriod(tuanNay).id, TODAY);
+      assert(ds.editableSkills.includes('speaking') && !ds.editableSkills.includes('listening'), JSON.stringify(ds.editableSkills));
+    } finally {
+      conn.prepare(`UPDATE teacher_assignments SET status = 'active' WHERE id = ?`).run(pc.id);
+    }
   });
 }

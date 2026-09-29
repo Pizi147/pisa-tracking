@@ -531,3 +531,9 @@ Không có câu bắt buộc — mọi điểm mở đã vào bảng Q theo khuy
   (bảng đúng 1400 px), ô Hạn gói dòng thay vì tràn sang cột L; (2) ô chỉ đọc/ô nhập căn phải (`items-end`); (3) "vắng" theo
   `sitStatus === 'absent'` (đang chờ duyệt dời có `progress = reschedule_pending`); (4) bảng lớp Lịch Test có cột tự giãn → ba cột đầu
   đúng 190/120/110 như bảng Nợ. Detector impeccable: 0 phát hiện. Ảnh ở `thiet-ke/anh/pr-hsm/` (`*-truoc.png` / `*-sau.png`).
+- **Task 9b (chủ sản phẩm thêm 30/09, ngoài kế hoạch)** — "GV có dạy Speaking được nhập điểm S Mock". Chủ sản phẩm chọn: **cùng chi
+  nhánh · chỉ là quyền (không thành việc) · làm trong PR-HSM**. Làm: `lopFtChoGvSpeaking` ở `permissions.ts` (GV có phân công S đang hiệu
+  lực ở lớp FT + vai giáo viên còn quyền nhập điểm ở chi nhánh đó → mọi lớp FT cùng chi nhánh), nối vào `editableSkills` (trừ nhánh
+  `chiViec`), `scoreEditPath` (`assigned` → nhật ký `score.edit`), `teacherAllows(ATTEMPT_VIEW)` **chỉ khi hỏi theo lớp**; Lịch Test
+  thêm các lớp này vào "Tất cả". **Không** mở rộng `scopeFor(ATTEMPT_VIEW)` chung (sẽ lộ Case/tín hiệu/việc/hồ sơ HV lớp khác) và không
+  đổi `mySkills`. Phép kiểm HSM (7). 1741 đạt. Người rà: xem kỹ phần quyền này.

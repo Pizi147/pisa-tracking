@@ -593,6 +593,10 @@ Nguồn: `thiet-ke/NGUON-Rule-v3-YThuc-PhoiHop-2026-09-21.md`. Đặc tả: `thi
   chấm cũng xoá — nhật ký giữ bản cũ. Quyền sửa nhận xét = quyền sửa chính ô điểm đó (hoàn tất → chỉ Quản lý; MT lịch sử → thêm GVCN).
 - **GV chấm Speaking (T39):** tài khoản nhân viên **hoặc** tên người ngoài (2–100 ký tự). Chọn **một lần** ở đầu cột S của lưới, nhớ
   trên máy theo lớp × tuần, áp cho các bài S lưu sau đó; sửa riêng một em trong hộp tiêu chí hoặc ở hồ sơ Mock.
+- **GV Speaking chấm chéo (chủ sản phẩm chốt 30/09):** GV đang được phân công **Speaking** ở một lớp Fast Track nhập được ô **S** Mock của
+  **mọi lớp Fast Track cùng chi nhánh** (vì thế cần ghi GV chấm). Chỉ là **quyền**: ô S vẫn là việc / nợ điểm của GV được phân công S
+  lớp đó; GV chấm chéo thấy các lớp này ở Lịch Test › "Tất cả" và mở được lưới / hồ sơ Mock, không thấy thêm hồ sơ HV hay Case. Lớp
+  thường không áp; chi nhánh khác không áp.
 - **Bài đã xác nhận vắng không nhập trong lưới (T53 Q6):** ô hiện "vắng", không ô nhập — nhập bù thì Quản lý "Xếp lại bài vắng" /
   "Khôi phục" trước.
 - **Hồ sơ Mock:** năm ô điểm lớn L · R · W · S · Overall; ai sửa được bài nào (GVBM đúng kỹ năng · Quản lý · GVCN với MT lịch sử) bấm ô
