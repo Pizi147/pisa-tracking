@@ -6,6 +6,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { caseStatusLabel } from '../../lib/format.ts';
+import { outcomeLabelFor } from '@shared/domain/index.ts';
 import { ThanCase, tenNganCase, type CaseDetail, type ViewCase } from '../cases/CasePanel.tsx';
 import { GhiKetQuaPanel } from '../cases/CapNhatTuan.tsx';
 import { HoanThanhCasePanel, ThemPaPanel } from '../cases/ThaoTacCase.tsx';
@@ -82,11 +83,12 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
     const iv = (data.interventions ?? []).find((x: any) => x.id === view.paId);
     if (iv) {
       return (
-        <GhiKetQuaPanel key={iv.id} {...chung} onSaved={xong}
+        <GhiKetQuaPanel key={iv.id} {...chung} onSaved={xong} onThemPa={() => setView({ loai: 'them-pa' })}
           pa={{
             id: iv.id, kind: iv.kind, description: iv.description ?? null, performer: iv.performer ?? null,
             performerUserId: iv.performerUserId ?? null,
-            followupDue: iv.followupDue ?? null, actionDue: iv.actionDue ?? null, cycleNo: iv.cycleNo ?? null,
+            actionDue: iv.actionDue ?? null, cycleNo: iv.cycleNo ?? null,
+            batBuoc: !!iv.batBuoc, lanCuoi: !!iv.lanCuoi, mocChu: iv.mocChu ?? null,
           }} />
       );
     }
@@ -111,11 +113,13 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
     }
   }
   if (view.loai === 'them-pa') {
-    return <ThemPaPanel {...chung} caseId={caseId} studentId={data.student?.id} onSaved={xong} />;
+    return <ThemPaPanel {...chung} caseId={caseId} studentId={data.student?.id} onSaved={xong}
+      coPaBatBuoc={(data.interventions ?? []).some((x: any) => x.batBuoc && (x.status === 'planned' || x.status === 'started'))} />;
   }
   if (view.loai === 'hoan-thanh') {
     return (
       <HoanThanhCasePanel {...chung} caseId={caseId} category={data.category} categoryLabel={data.categoryLabel} ratio={!!data.ratio}
+        paGanNhat={(() => { const f = (data.followups ?? []).find((x: any) => x.outcome); return f ? outcomeLabelFor(f.outcome) : null; })()}
         onSaved={xong} />
     );
   }

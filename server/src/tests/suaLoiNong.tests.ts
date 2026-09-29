@@ -247,7 +247,7 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
   check('N1 (6) · YC-12.5.1: dòng PA nhập bù chỉ đóng khi bấm Xong', () => {
     const src = docSach('web/src/modules/cases/QuickReport.tsx');
     assert(/const dangSua = moSua\.includes\(i\);/.test(src), 'dòng PA còn tự đóng khi có chữ');
-    assert(/conThieu: lf\.daBam \? oLoi/.test(src), 'chân form chưa dùng danh sách ô lỗi');
+    assert(/conThieu: lf\.daBam( && !cnn)? \? oLoi/.test(src), 'chân form chưa dùng danh sách ô lỗi');   // PR-SOS K3-23: không liệt kê khi đang dẫn sang Xác nhận Case
   });
 
   // ==================================================================== 7. Báo lỗi rõ cho mọi form KhungPanel còn lại

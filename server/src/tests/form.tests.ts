@@ -270,9 +270,9 @@ export async function runFormTests(t: YThucTestKit) {
         title: 'Nhập bù thử người thực hiện', summary: 'Case nhập bù dùng cho phép kiểm PR-Form.',
         fromDate: '2026-08-01', toDate: '2026-08-10',
         actions: [
-          { description: 'Buổi 1 — GV bộ môn kèm riêng', performerUserId: P.w1Teacher.userId, fromDate: '2026-08-01', toDate: '2026-08-03' },
-          { description: 'Buổi 2 — chính tôi kèm', performerSelf: true, fromDate: '2026-08-04', toDate: '2026-08-06' },
-          { description: 'Buổi 3 — tutor ngoài', performerName: 'Tutor ngoài Lan', fromDate: '2026-08-07', toDate: '2026-08-10' },
+          { ketQua: 'partial', description: 'Buổi 1 — GV bộ môn kèm riêng', performerUserId: P.w1Teacher.userId, fromDate: '2026-08-01', toDate: '2026-08-03' },
+          { ketQua: 'partial', description: 'Buổi 2 — chính tôi kèm', performerSelf: true, fromDate: '2026-08-04', toDate: '2026-08-06' },
+          { ketQua: 'partial', description: 'Buổi 3 — tutor ngoài', performerName: 'Tutor ngoài Lan', fromDate: '2026-08-07', toDate: '2026-08-10' },
         ],
         outcome: 'improved', note: 'Ba buổi hỗ trợ khác người, ghi lại đủ ba dòng.',
       }) as any;
@@ -287,7 +287,7 @@ export async function runFormTests(t: YThucTestKit) {
           studentId: makeFtStudent(`F3-BF-${++soThuTu}`), topic: 'listening', primaryCode: domain.issuesForTopic('listening')[0].code,
           title: 'Nhập bù thiếu người', summary: 'Một dòng không ghi ai làm.',
           fromDate: '2026-08-01', toDate: '2026-08-05',
-          actions: [{ description: 'Buổi không ai nhận làm', fromDate: '2026-08-01', toDate: '2026-08-05' }],
+          actions: [{ ketQua: 'improved', description: 'Buổi không ai nhận làm', fromDate: '2026-08-01', toDate: '2026-08-05' }],
           outcome: 'improved', note: 'Phải bị từ chối vì thiếu người thực hiện.',
         }),
         /Cần ghi ai là người thực hiện/,
@@ -434,7 +434,7 @@ export async function runFormTests(t: YThucTestKit) {
         studentId: fou.sid, topic: 'writing', primaryCode: domain.issuesForTopic('writing', 'FOU')[0].code,
         title: 'Nhập bù Writing lớp thường (S5)', summary: 'Nhập bù case Writing với điểm chi tiết theo kỹ năng.',
         fromDate: '2026-08-01', toDate: '2026-08-10',
-        actions: [{ description: 'Ôn luyện tổ chức ý bài viết', performerSelf: true, fromDate: '2026-08-01', toDate: '2026-08-10' }],
+        actions: [{ ketQua: 'improved', description: 'Ôn luyện tổ chức ý bài viết', performerSelf: true, fromDate: '2026-08-01', toDate: '2026-08-10' }],
         outcome: 'improved', note: 'Bài viết đã mạch lạc hơn rõ rệt sau đợt ôn.',
         metrics: [{ skill: 'writing', score: 12, total: 20 }],
       }) as any;

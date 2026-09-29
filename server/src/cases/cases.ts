@@ -29,7 +29,7 @@ import { expectationFor } from '../fasttrack/scoring.ts';
 import { isRatioCycle, programmeCodeOfCycle } from '../normal/regular.ts';
 import { suggestCaseOwner } from './owner.ts';
 import { linkSignalToCase, loadSignal } from './signals.ts';
-import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
+import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
 import { PLAN_DECISIONS, decisionToStep, type PlanDecision } from '../../../shared/domain/index.ts';
 import { apDungDieuChinh, chuanHoaDieuChinh, lichSuDieuChinhCuaCase } from './planRevisions.ts';
 import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
@@ -640,7 +640,13 @@ export function caseTopicsOf(p: Principal, studentId: number, cycleId?: number |
     : currentCycle(studentId);
   const ratio = !!(cycle && isRatioCycle(cycle));
   const chuongTrinh: string | null = cycle ? cycle.programme_code ?? programmeCodeOfCycle(cycle.id) : null;
-  return { ratio, topics: caseTopicsFor(ratio, chuongTrinh), chuongTrinh };
+  /* PR-SOS (K3-23): kỹ năng đang có Case chờ xác nhận nguyên nhân — form "+ Case" chấm nhỏ nút đó và dẫn sang Xác nhận Case. */
+  const mo = conn.prepare(`SELECT sc.id, sc.topic, sc.category, sc.sos_level, a.attempt_no FROM sos_cases sc
+      LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE sc.student_id = ? AND sc.status != 'done'`).all(studentId) as any[];
+  const cho = new Set(awaitingCauseCaseIds(mo.map((c) => c.id as number)));
+  const choNguyenNhan: Record<string, { caseId: number; mt: number | null; sos: number | null }> = {};
+  for (const c of mo) if (cho.has(c.id)) choNguyenNhan[c.topic ?? c.category] = { caseId: c.id, mt: c.attempt_no ?? null, sos: c.sos_level ?? null };
+  return { ratio, topics: caseTopicsFor(ratio, chuongTrinh), chuongTrinh, choNguyenNhan };
 }
 
 /**
@@ -1115,6 +1121,8 @@ export function backfillCase(p: Principal, input: {
   actions: {
     description: string; performerSelf?: boolean; performerUserId?: number | null; performerName?: string | null;
     fromDate: string; toDate: string;
+    /** PR-SOS (YC-12.5.3): kết quả của PA nhập bù — bắt buộc, để hàng PA hiện kết quả thay "Chưa có kết quả". */
+    ketQua?: string | null;
   }[];
   outcome: string; note: string;
   metrics?: unknown;
@@ -1132,7 +1140,8 @@ export function backfillCase(p: Principal, input: {
   if (!input.actions?.length) {
     throw badRequest('Ghi ít nhất một dòng "đã làm gì" — nhập bù mà không có việc gì đã làm thì không có gì để ghi.');
   }
-  for (const a of input.actions) {
+  for (const [i, a] of input.actions.entries()) {
+    if (!(FOLLOWUP_OUTCOMES as readonly string[]).includes(String(a.ketQua ?? ''))) throw badRequest(`Dòng PA ${i + 1}: chọn Kết quả PA.`);
     if (!isIsoDate(a.fromDate) || !isIsoDate(a.toDate)) throw badRequest('Một dòng "đã làm gì" có ngày không hợp lệ.');
     if (a.fromDate > a.toDate) throw badRequest('Một dòng "đã làm gì" có ngày bắt đầu sau ngày kết thúc.');
     if (a.toDate > today) throw badRequest('Không ghi được một việc đã xong ở ngày tương lai.');
@@ -1200,6 +1209,10 @@ export function backfillCase(p: Principal, input: {
         status: 'completed', startedDate: a.fromDate, completedDate: a.toDate,
         backfill: true,
       });
+      /* YC-12.5.3: kết quả PA nhập bù = một dòng theo dõi (next_step 'complete') — bảng kỹ năng / Ngăn Case đọc kết quả ở đây. */
+      const ivId = (conn.prepare('SELECT id FROM case_interventions WHERE case_id = ? ORDER BY id DESC LIMIT 1').get(created.id) as any).id;
+      conn.prepare(`INSERT INTO case_followups (case_id, intervention_id, observed_on, observer_user_id, outcome, note, next_step, cycle_no, late, created_at)
+                    VALUES (?,?,?,?,?, 'Nhập bù', 'complete', 1, 0, ?)`).run(created.id, ivId, a.toDate, p.userId, a.ketQua, nowIso());
     }
 
     const closed = closeCaseOutcome(p, created.id, {
@@ -1620,7 +1633,8 @@ export function caseDetail(p: Principal, caseId: number) {
         batBuoc: i.batBuoc, choXacNhan: i.awaitingConfirmation, xong: i.status === 'completed', actionDue: i.actionDue,
         followupDue: i.followupDue, choDuyet: i.approvalState === 'pending',
       }));
-      return { trangThaiV4: trangThaiCaseV4(v4, demoToday()), viecTiep: viecTiepCuaCase(v4, pas, demoToday()) };
+      const hanLapPa = c.origin_kind === 'mock' ? null : planDueDate(String(c.detected_at ?? c.created_at ?? demoToday()).slice(0, 10), c.urgency);
+      return { trangThaiV4: trangThaiCaseV4(v4, demoToday()), viecTiep: viecTiepCuaCase(v4, pas, demoToday(), hanLapPa) };
     })(),
     history: history.map((h) => ({
       id: h.id, field: h.field, oldValue: h.old_value, newValue: h.new_value,

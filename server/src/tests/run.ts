@@ -7535,7 +7535,7 @@ check('Nhập bù (chốt 1) · Không sinh nghĩa vụ cập nhật tuần nào
     primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
     title: `${authSubjectSkill}: nhập bù chốt 1`, summary: 'Case nhập bù để kiểm chốt 1 — không sinh hạn cập nhật tuần.',
     fromDate: '2026-07-01', toDate: '2026-07-20',
-    actions: [{ description: 'Giao bài luyện thêm mỗi tuần', performerName: 'GV bộ môn', fromDate: '2026-07-01', toDate: '2026-07-20' }],
+    actions: [{ ketQua: 'improved', description: 'Giao bài luyện thêm mỗi tuần', performerName: 'GV bộ môn', fromDate: '2026-07-01', toDate: '2026-07-20' }],
     outcome: 'improved', note: 'Case nhập bù, kiểm chốt 1: đã cải thiện rõ sau ba tuần.',
   }) as any;
   const iv = (conn.prepare('SELECT action_due, followup_due FROM case_interventions WHERE case_id = ?').all(done.id) as any[])[0];
@@ -7552,7 +7552,7 @@ check('Nhập bù (chốt 4) · Không tạo tín hiệu, không đổi mức SO
     primaryCode: domain.issuesForTopic(authMismatchSkill)[0].code,
     title: `${authMismatchSkill}: nhập bù chốt 4`, summary: 'Case nhập bù để kiểm chốt 4 — không tự sinh mức SOS.',
     fromDate: '2026-04-01', toDate: '2026-04-15',
-    actions: [{ description: 'Ôn lại kỹ thuật làm bài', performerName: 'GV bộ môn', fromDate: '2026-04-01', toDate: '2026-04-15' }],
+    actions: [{ ketQua: 'improved', description: 'Ôn lại kỹ thuật làm bài', performerName: 'GV bộ môn', fromDate: '2026-04-01', toDate: '2026-04-15' }],
     outcome: 'improved', note: 'Case nhập bù, kiểm chốt 4: là trí nhớ, không phải một bài đánh giá mới.',
   }) as any;
   const row = conn.prepare('SELECT sos_level, origin_kind FROM sos_cases WHERE id = ?').get(done.id) as any;
@@ -7570,7 +7570,7 @@ check('Nhập bù (chốt 5) · Không vào mẫu số hiệu quả hỗ trợ, 
     primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
     title: `${authSubjectSkill}: nhập bù chốt 5`, summary: 'Case nhập bù để kiểm chốt 5 — không vào mẫu số hiệu quả.',
     fromDate: '2026-03-01', toDate: '2026-03-10',
-    actions: [{ description: 'Luyện thêm dạng bài hay sai', performerName: 'GV bộ môn', fromDate: '2026-03-01', toDate: '2026-03-10' }],
+    actions: [{ ketQua: 'improved', description: 'Luyện thêm dạng bài hay sai', performerName: 'GV bộ môn', fromDate: '2026-03-01', toDate: '2026-03-10' }],
     outcome: 'improved', note: 'Case nhập bù, kiểm chốt 5: không được tính vào tỷ lệ thành công hôm nay.',
   }) as any;
   const after = effectiveness.planOutcomes({ studentIds: [enr5.student_id] });
@@ -7591,7 +7591,7 @@ check('Nhập bù (chốt 6) · Cảnh báo khi trùng với MỘT CASE NHẬP B
     primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
     title: `${authSubjectSkill}: nhập bù chốt 6 lần 1`, summary: 'Case nhập bù lần đầu để kiểm chốt 6 — cảnh báo trùng.',
     fromDate: '2026-02-01', toDate: '2026-02-10',
-    actions: [{ description: 'Ôn bài với em', performerName: 'GV bộ môn', fromDate: '2026-02-01', toDate: '2026-02-10' }],
+    actions: [{ ketQua: 'improved', description: 'Ôn bài với em', performerName: 'GV bộ môn', fromDate: '2026-02-01', toDate: '2026-02-10' }],
     outcome: 'improved', note: 'Case nhập bù chốt 6, lần 1.',
   }) as any;
   assertThrows(() => cases.backfillCase(P.mbManager, {
@@ -7600,7 +7600,7 @@ check('Nhập bù (chốt 6) · Cảnh báo khi trùng với MỘT CASE NHẬP B
     primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
     title: `${authSubjectSkill}: nhập bù chốt 6 lần 2 (trùng)`, summary: 'Case nhập bù thứ hai, TRÙNG khoảng ngày với lần 1.',
     fromDate: '2026-02-05', toDate: '2026-02-15',
-    actions: [{ description: 'Ôn bài với em', performerName: 'GV bộ môn', fromDate: '2026-02-05', toDate: '2026-02-15' }],
+    actions: [{ ketQua: 'improved', description: 'Ôn bài với em', performerName: 'GV bộ môn', fromDate: '2026-02-05', toDate: '2026-02-15' }],
     outcome: 'improved', note: 'Case nhập bù chốt 6, lần 2 — phải bị cảnh báo trùng.',
   }), /trùng|nhập bù/, 'Nhập bù trùng khoảng ngày với một case nhập bù khác cùng hạng mục');
   // Xác nhận "đây là lần khác" thì vẫn tạo được.
@@ -7610,7 +7610,7 @@ check('Nhập bù (chốt 6) · Cảnh báo khi trùng với MỘT CASE NHẬP B
     primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
     title: `${authSubjectSkill}: nhập bù chốt 6 lần 2 (xác nhận)`, summary: 'Case nhập bù thứ hai, đã xác nhận là lần khác.',
     fromDate: '2026-02-05', toDate: '2026-02-15',
-    actions: [{ description: 'Ôn bài với em', performerName: 'GV bộ môn', fromDate: '2026-02-05', toDate: '2026-02-15' }],
+    actions: [{ ketQua: 'improved', description: 'Ôn bài với em', performerName: 'GV bộ môn', fromDate: '2026-02-05', toDate: '2026-02-15' }],
     outcome: 'improved', note: 'Case nhập bù chốt 6, lần 2 — đã xác nhận qua cảnh báo.',
     confirmDuplicate: true,
   }) as any;
@@ -7626,7 +7626,7 @@ check('Nhập bù (chốt 2) · Case nhập bù học thuật không có hạn n
     primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
     title: `${authSubjectSkill}: nhập bù chốt 2`, summary: 'Case nhập bù để kiểm chốt 2 — không hạn nào cả.',
     fromDate: '2025-10-01', toDate: '2025-10-10',
-    actions: [{ description: 'Ôn lại kỹ thuật làm bài', performerName: 'GVCN', fromDate: '2025-10-01', toDate: '2025-10-10' }],
+    actions: [{ ketQua: 'improved', description: 'Ôn lại kỹ thuật làm bài', performerName: 'GVCN', fromDate: '2025-10-01', toDate: '2025-10-10' }],
     outcome: 'improved', note: 'Case nhập bù, kiểm chốt 2: em đã làm bài đều trở lại.',
   }) as any;
   const row = conn.prepare('SELECT follow_until FROM sos_cases WHERE id = ?').get(done.id) as any;
@@ -7645,7 +7645,7 @@ check('Nhập bù (chốt 7) · Ghi rõ ai nhập, nhập lúc nào, lưu cùng 
     primaryCode: domain.issuesForTopic(authMismatchSkill)[0].code,
     title: `${authMismatchSkill}: nhập bù chốt 7`, summary: 'Case nhập bù để kiểm chốt 7 — phải ghi rõ ai nhập và lúc nào.',
     fromDate: '2025-09-01', toDate: '2025-09-05',
-    actions: [{ description: 'Trao đổi riêng với em', performerName: 'GVCN', fromDate: '2025-09-01', toDate: '2025-09-05' }],
+    actions: [{ ketQua: 'improved', description: 'Trao đổi riêng với em', performerName: 'GVCN', fromDate: '2025-09-01', toDate: '2025-09-05' }],
     outcome: 'improved', note: 'Case nhập bù, kiểm chốt 7.',
   }) as any;
   const row = conn.prepare('SELECT origin_kind, reported_by, created_at FROM sos_cases WHERE id = ?').get(done.id) as any;
@@ -7663,7 +7663,7 @@ check('Nhập bù (chốt 7, tiếp) · Nhãn "nhập bù" hiện trên thẻ ca
     primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
     title: `${authSubjectSkill}: nhập bù chốt 7 tiếp`, summary: 'Case nhập bù để kiểm nhãn hiện trên thẻ case của hồ sơ.',
     fromDate: '2025-08-01', toDate: '2025-08-08',
-    actions: [{ description: 'Luyện thêm dạng bài hay sai', performerName: 'GVCN', fromDate: '2025-08-01', toDate: '2025-08-08' }],
+    actions: [{ ketQua: 'improved', description: 'Luyện thêm dạng bài hay sai', performerName: 'GVCN', fromDate: '2025-08-01', toDate: '2025-08-08' }],
     outcome: 'improved', note: 'Case nhập bù, kiểm nhãn "nhập bù" trên thẻ case.',
   }) as any;
   const board = cases.skillSupportBoard(P.coreTeacher, enr7b.student_id) as any;
@@ -7682,7 +7682,7 @@ check('Nhập bù · Ghi chú kết luận bắt buộc ngay ở máy chủ, kh�
     primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
     title: `${authSubjectSkill}: kiểm ghi chú bắt buộc`, summary: 'Case nhập bù để kiểm ghi chú kết luận bắt buộc ở tầng máy chủ.',
     fromDate: '2025-07-01', toDate: '2025-07-05',
-    actions: [{ description: 'Trao đổi với em', performerName: 'GVCN', fromDate: '2025-07-01', toDate: '2025-07-05' }],
+    actions: [{ ketQua: 'improved', description: 'Trao đổi với em', performerName: 'GVCN', fromDate: '2025-07-01', toDate: '2025-07-05' }],
     outcome: 'improved', note: 'quá ngắn',
   }), /ghi chú/, 'Gọi thẳng API nhập bù với ghi chú quá ngắn (dưới 10 ký tự)');
   assert((conn.prepare('SELECT COUNT(*) n FROM sos_cases').get() as any).n === before, 'Ghi chú quá ngắn bị từ chối mà vẫn để lại một case');
@@ -7698,7 +7698,7 @@ check('Nhập bù · Chỉ GVCN/Quản lý mới CHỐT được — GVBM sai va
     primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
     title: `${authSubjectSkill}: nhập bù bởi GVBM`, summary: 'GVBM tự nhập bù case kỹ năng mình dạy, nhưng không có quyền chốt.',
     fromDate: '2026-01-20', toDate: '2026-01-25',
-    actions: [{ description: 'Ôn bài với em', performerName: 'GV bộ môn', fromDate: '2026-01-20', toDate: '2026-01-25' }],
+    actions: [{ ketQua: 'improved', description: 'Ôn bài với em', performerName: 'GV bộ môn', fromDate: '2026-01-20', toDate: '2026-01-25' }],
     outcome: 'improved', note: 'GVBM tự nhập, phải bị chặn ở bước chốt kết quả.',
   }), /chủ nhiệm|Quản lý/, 'GVBM (không phải GVCN) tự chốt được case nhập bù');
   const after = (conn.prepare('SELECT COUNT(*) n FROM sos_cases').get() as any).n;

@@ -392,7 +392,8 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
   check('UX3 (4) · Ghi kết quả: không gửi người thực hiện khi không đổi (payload adjust chỉ có trường đã đổi)', () => {
     const src = docSach('web/src/modules/cases/CapNhatTuan.tsx');
     assert(/nguoiDoi \? nguoiThanhPayload\(nguoi\) : \{\}/.test(src), 'adjust phải chỉ gửi người khi đổi');
-    assert(/description: descChanged \? desc : undefined/.test(src) && /followupDue: dueChanged \? due : undefined/.test(src), 'adjust gửi cả trường không đổi');
+    /* PR-SOS (Q28-4): Điều chỉnh không còn ô ngày — chỉ mô tả + người. */
+    assert(/description: descChanged \? desc : undefined/.test(src) && !/followupDue/.test(src), 'adjust gửi cả trường không đổi / còn ngày kết thúc');
   });
 
   check('UX3 (7) · Ý thức: câu nhắc dùng CÙNG MỘT hàm ở ba nơi (không câu viết tay có ⚠ ở web)', () => {

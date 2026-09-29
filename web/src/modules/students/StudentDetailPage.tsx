@@ -377,7 +377,8 @@ export default function StudentDetailPage() {
 
       <QuickReport open={reportOpen} onClose={() => setReportOpen(false)}
         studentId={data.id} studentName={data.fullName} lop={data.currentClass?.code} cycleId={cy?.id ?? null}
-        onDone={(cid) => { reload(); setOpenCase({ caseId: cid }); }} />
+        onDone={(cid) => { reload(); setOpenCase({ caseId: cid }); }}
+        onMoCase={(cid, viec) => { reload(); setOpenCase({ caseId: cid, viec }); }} />
 
       {/* Tạo Case ĐỂ TRẢ LỜI một tín hiệu: đầu mục và kỹ năng điền sẵn, nhận định do người viết. */}
       <QuickReport open={!!verify} onClose={() => setVerify(null)}

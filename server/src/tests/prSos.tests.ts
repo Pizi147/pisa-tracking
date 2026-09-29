@@ -499,4 +499,35 @@ export async function runPrSosTests(t: YThucTestKit) {
     assert(/viecTiep/.test(nc) && /ht\?\.an/.test(nc) && /XacNhanCasePanel/.test(nc) && /TheYeuCau gon yc=\{data\.yeuCauCase\}/.test(nc), 'NganCase chưa theo việc tiếp v4');
     assert(!/<Level/.test(nc), 'Ngăn Case còn nhãn SOS ở ngữ cảnh (SOS đã ở tên)');
   });
+
+  // ------------------------------------------------------------------ Task 10 · form PA
+  check('SOS (10) · 4 form không còn "Dự kiến kết thúc" / followupDue; gợi ý mô tả + kết quả PA; Điều chỉnh không có ChonTuan; Hoàn thành không chọn sẵn', () => {
+    const f4 = ['web/src/modules/cases/ThaoTacCase.tsx', 'web/src/modules/cases/CapNhatTuan.tsx', 'web/src/modules/cases/QuickReport.tsx', 'web/src/modules/yThuc/CaseSosControls.tsx'];
+    for (const f of f4) assert(!/Dự kiến kết thúc|followupDue/.test(doc(f)), `${f} còn dự kiến kết thúc`);
+    const cnt = doc('web/src/modules/cases/CapNhatTuan.tsx');
+    assert(/GOI_Y_MO_TA_PA/.test(doc(f4[0])) && /GOI_Y_MO_TA_PA/.test(cnt) && /GOI_Y_MO_TA_PA/.test(doc(f4[2])), 'thiếu gợi ý mô tả PA');
+    assert(/GOI_Y_KET_QUA_PA/.test(cnt) && /quyetDinhChoPa/.test(cnt) && /Ghi kết quả cuối/.test(cnt) && !/ChonTuan/.test(cnt), 'Ghi kết quả chưa theo v4');
+    assert(!/useState<string>\('improved'\)/.test(doc(f4[0])), 'Hoàn thành còn chọn sẵn');
+    assert(/Ghi một PA đã làm trước đây/.test(doc(f4[0])) && /PA theo quy chế vẫn chạy — PA này là hỗ trợ thêm\./.test(doc(f4[0])), 'Thêm PA thiếu chữ K3-18');
+    const qr = doc(f4[2]);
+    assert(/Mở form Xác nhận Case/.test(qr) && /Việc tiếp:/.test(qr) && /Kết quả PA/.test(qr) && /ketQua/.test(qr), 'QuickReport thiếu K3-23 / K3-24 / YC-12.5.3');
+  });
+  check('SOS (10) · Nhập bù: PA thiếu Kết quả PA → 400 "Dòng PA 2: chọn Kết quả PA."; đủ → PA completed + một dòng theo dõi (bảng kỹ năng hiện kết quả)', () => {
+    const st = makeStudent('T10a');
+    const base = {
+      studentId: st.id, cycleId: st.cycleId, topic: 'reading', primaryCode: d.issuesForTopic('reading', null)[0].code,
+      title: 'Nhập bù Reading', summary: 'Em sai nhiều dạng True/False/Not Given.', fromDate: '2026-07-01', toDate: '2026-07-20',
+      outcome: 'improved', note: 'Em đã tiến bộ rõ sau ba tuần.',
+    };
+    const pa = (ketQua: string | undefined) => ({ description: 'Luyện dạng T/F/NG', performerSelf: true, fromDate: '2026-07-01', toDate: '2026-07-10', ketQua });
+    assertThrows(() => cases.backfillCase(P.admin, { ...base, actions: [pa('partial'), pa(undefined)] }), /Dòng PA 2: chọn Kết quả PA\./, 'thiếu kết quả PA');
+    const c = cases.backfillCase(P.admin, { ...base, actions: [pa('partial')] }) as any;
+    const iv = plansOf(c.id)[0];
+    const fu = all('SELECT * FROM case_followups WHERE intervention_id = ?', iv.id);
+    assert(iv.status === 'completed' && fu.length === 1 && fu[0].outcome === 'partial' && fu[0].observed_on === '2026-07-10' && fu[0].next_step === 'complete' && fu[0].note === 'Nhập bù', JSON.stringify(fu));
+    const bang = cases.skillSupportBoard(P.admin, st.id) as any;
+    const plan = bang.rows.flatMap((r: any) => r.cases).flatMap((x: any) => x.plans).find((p: any) => p.id === iv.id);
+    assert(plan?.lastOutcome === 'partial', `bảng kỹ năng: ${JSON.stringify(plan?.lastOutcome)}`);
+    assert(cases.caseTopicsOf(P.admin, st.id).choNguyenNhan && typeof cases.caseTopicsOf(P.admin, st.id).choNguyenNhan === 'object', 'case-topics thiếu choNguyenNhan');
+  });
 }

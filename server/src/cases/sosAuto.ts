@@ -322,7 +322,7 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
     if (description !== iv.description || performerUserId !== (iv.performer_user_id ?? null) || performerName !== (iv.performer_name ?? null)) {
       ghiBanDieuChinh({
         iv, source: 'confirm_edit', on: today, actorUserId: p.userId, followupId: null, reason: CONFIRM_EDIT_REASON,
-        after: { description, performerUserId, performerName, followupDue: moc },
+        after: { description, performerUserId, performerName, followupDue: iv.followup_due ?? null },   // mốc quy chế không phải "điều chỉnh"
       });
     }
     dongBoTrangThaiCase(iv.case_id);
