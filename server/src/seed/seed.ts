@@ -13,7 +13,7 @@ import { napDuLieuNen } from './duLieuNen.ts';
 import { CLASSES, DEMO_DATE, TEACHERS } from './journeys.ts';
 import { buildJourneys } from './build.ts';
 import { buildYThuc } from './yThucSeed.ts';
-import { buildSosV3Demo } from './sosV3Seed.ts';
+import { buildKckDemo, buildSosV3Demo } from './sosV3Seed.ts';
 import { buildPrMtDemo } from './prMtSeed.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
 import { dienMocLop } from '../migrate/prLop.ts';
@@ -234,6 +234,8 @@ export function runSeed() {
     });
     /* BỘ DEMO PR-MT (D1–D6, D16): lớp RF, HS cũ có MT lịch sử, dời do vắng, huỷ lượt — cũng qua hàm nghiệp vụ, sau ngày demo. */
     buildPrMtDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
+    /* BỘ DEMO PR-KCK (Q29-1): hai em Target KCK — có MT, có điểm dưới band mà không SOS. */
+    buildKckDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
 
     /*
      * S16 (chốt 21/09 đêm): em đã KẾT THÚC học mà còn Case mở → hệ thống tự đóng "Học viên kết thúc khoá". Bộ demo dựng hành trình

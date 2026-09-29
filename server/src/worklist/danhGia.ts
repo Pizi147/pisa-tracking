@@ -82,6 +82,12 @@ export function evaluateAttemptRow(
 }
 
 /**
+ * Q29-1 (PR-KCK): lượt của em Target KCK mà không có kỳ vọng — ngoài mẫu số số liệu SOS / đạt kỳ vọng (sĩ số vẫn đếm). Lượt chấm
+ * khi em còn target giữ `target_at_attempt` nên vẫn tính. Hàng cần cột `kck` (= `learning_cycles.khong_cam_ket` của lượt).
+ */
+export const luotKck = (a: { kck?: number | null; target_at_attempt?: number | null }) => !!a.kck && a.target_at_attempt == null;
+
+/**
  * Học viên ĐANG HỌC trong phạm vi của người xem (và chi nhánh được hỏi). Phạm vi rỗng trả rỗng.
  * PR-TD: nhớ trong request GET theo (người xem, chi nhánh) — gọi lặp lại ở `hvSosHienTai`/`hvDuoiKyVongMon`/
  * `doPhuDanhGia` (mỗi cái một chỉ số của Tổng quan, ~12 lượt gọi `metricSet` mỗi request) với CÙNG `branchId`.

@@ -9748,6 +9748,10 @@ await runPrTocTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 const { runPrMonTests } = await import('./prMon.tests.ts');
 await runPrMonTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
+// ==================================================================== PR-KCK (Target "không cam kết" — không SOS, Q29-1)
+const { runPrKckTests } = await import('./prKck.tests.ts');
+await runPrKckTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

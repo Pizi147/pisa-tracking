@@ -6,7 +6,7 @@ import { addDays, badRequest } from '../util.ts';
 import { mondayOf, weekInfo } from '../platform/week.ts';
 import { loadBundle } from '../fasttrack/attempts.ts';
 import { allProgrammes } from '../normal/regular.ts';
-import { evaluateAttemptRow } from './danhGia.ts';
+import { evaluateAttemptRow, luotKck } from './danhGia.ts';
 import { phanLoaiLuot, trangThaiXuLy, type PhanLoaiLuot } from '../phanTich/tongHop.ts';
 
 /**
@@ -142,6 +142,7 @@ function weeklySets(
     .prepare(
       `SELECT a.id, a.status, a.kind, a.attempt_no, a.class_id, a.planned_period_id, a.target_at_attempt,
               (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route,
+              (SELECT cy.khong_cam_ket FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS kck,
               c.programme_code,
               rp.id AS period_id, rp.code, rp.week_start, rp.week_end
          FROM assessment_attempts a
@@ -195,6 +196,7 @@ function weeklySets(
   for (const a of attempts) {
     const row = rowOf(a);
     if (!scored.has(a.id)) continue;          // chưa chấm gì thì chưa phải một lượt có kết quả
+    if (luotKck(a)) continue;                  // Q29-1: em KCK không có kỳ vọng — ngoài mẫu số Đạt/SOS
     row.sets.attempts.add(a.id);
 
     /*

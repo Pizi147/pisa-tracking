@@ -798,7 +798,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       status: e.status, startedAt: e.started_at, endedAt: e.ended_at, endReason: e.end_reason,
     })),
     cycles: allCycles.map((c) => ({
-      id: c.id, seq: c.seq, route: c.route, label: cycleLabel(c), target: c.target_score,
+      id: c.id, seq: c.seq, route: c.route, label: cycleLabel(c), target: c.target_score, khongCamKet: !!c.khong_cam_ket,
       examPlan: examPlanOf(c), startedAt: c.started_at, endedAt: c.ended_at, status: c.status,
       outcome: c.outcome, ratio: isRatioCycle(c),
     })),
@@ -806,7 +806,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       ? {
         id: selected.id, studentId, seq: selected.seq, route: selected.route, label: cycleLabel(selected),
         programmeCode: selected.programme_code, ratio: isRatioCycle(selected),
-        target, examPlan, startedAt: selected.started_at, endedAt: selected.ended_at,
+        target, khongCamKet: !!selected.khong_cam_ket, examPlan, startedAt: selected.started_at, endedAt: selected.ended_at,
         status: selected.status,
         /*
          * ĐẾM NGƯỢC CHỈ KHI ĐÃ CÓ TUẦN THI. Biết mỗi tháng mà vẫn hiện "còn 134 ngày" là
@@ -857,7 +857,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
           }
           : null,
         targetRevisions: targetRevisions(selected.id).map((r) => ({
-          id: r.id, oldTarget: r.old_target, newTarget: r.new_target,
+          id: r.id, oldTarget: r.old_target, newTarget: r.new_target, oldKck: !!r.old_khong_cam_ket, newKck: !!r.new_khong_cam_ket,
           effectiveFrom: r.effective_from, reason: r.reason, actorName: r.actor_name,
         })),
       }
@@ -888,6 +888,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
           start_period_id: selected.start_period_id,
           exam_month: selected.exam_month,
           target_score: selected.target_score,
+          khong_cam_ket: selected.khong_cam_ket,
           baseline: selected.baseline_attempt_id !== null || selected.baseline_score !== null,
         }
         : null,

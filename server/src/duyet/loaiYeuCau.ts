@@ -196,14 +196,15 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       }
       const cyc = hienTaiCua(db(), yc.hoc_vien_id!).cycle;
       if (!cyc) throw badRequest('Em không còn lộ trình đang chạy — không áp được đề xuất.');
-      if (d.truong === 'target') reviseTarget(p, cyc.id, { newTarget: Number(d.moi), reason: yc.ly_do });
+      if (d.truong === 'target') reviseTarget(p, cyc.id, { newTarget: d.moi, reason: yc.ly_do });   // số hoặc KCK (Q29-1)
       else updateCycle(p, cyc.id, { route: String(d.moi) });
     },
     /* Em thôi học / lưu trữ, hoặc giá trị hiện tại đã bằng giá trị đề xuất (ai đó đã sửa rồi). */
     chet: {
       sql: `EXISTS (SELECT 1 FROM students s WHERE s.id = y.hoc_vien_id AND (s.status != 'active' OR s.archived_at IS NOT NULL))
          OR (y.doi_tuong_loai = 'student:target' AND EXISTS (SELECT 1 FROM learning_cycles lc WHERE lc.student_id = y.hoc_vien_id
-               AND lc.status = 'active' AND lc.target_score = CAST(json_extract(y.du_lieu, '$.moi') AS REAL)))
+               AND lc.status = 'active' AND (json_extract(y.du_lieu, '$.moi') = 'KCK' AND lc.khong_cam_ket = 1
+                 OR json_extract(y.du_lieu, '$.moi') != 'KCK' AND lc.target_score = CAST(json_extract(y.du_lieu, '$.moi') AS REAL))))
          OR (y.doi_tuong_loai = 'student:lo-trinh' AND EXISTS (SELECT 1 FROM learning_cycles lc WHERE lc.student_id = y.hoc_vien_id
                AND lc.status = 'active' AND lc.route = json_extract(y.du_lieu, '$.moi')))`,
       lyDo: 'Học viên không còn học hoặc thông tin đã được sửa',

@@ -292,6 +292,7 @@ CREATE TABLE learning_cycles (
   route TEXT,                         -- LT1 | LT2 với FT; NULL với lớp thường
   programme_code TEXT REFERENCES programmes(code),
   target_score REAL,                  -- điểm cam kết của CHÍNH lộ trình này
+  khong_cam_ket INTEGER NOT NULL DEFAULT 0,  -- Q29-1 (PR-KCK): 1 = Target "KCK" — không cam kết, target_score NULL, không kỳ vọng/SOS
 
   /*
    * TUẦN BẮT ĐẦU HỌC của học viên — TUẦN HỌC THỨ 1 của em.
@@ -372,6 +373,8 @@ CREATE TABLE cycle_target_revisions (
   cycle_id INTEGER NOT NULL REFERENCES learning_cycles(id),
   old_target REAL,
   new_target REAL,
+  old_khong_cam_ket INTEGER NOT NULL DEFAULT 0,   -- PR-KCK: hai đầu của lần đổi có thể là "KCK" (target NULL)
+  new_khong_cam_ket INTEGER NOT NULL DEFAULT 0,
   effective_from TEXT NOT NULL,       -- từ ngày này target mới có hiệu lực
   reason TEXT,
   actor_user_id INTEGER REFERENCES users(id),

@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   BASELINE_SOURCES, CO_DIEM_SQL, CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, CYCLE_STATUSES, PERMISSIONS, soMtKeTiep, tuanLich,
-  canNamGan, docNgayNhap, mondayOfDate, ngay, type ExamPlan, type LuotSo, type Route,
+  KCK, canNamGan, docNgayNhap, laKck, mondayOfDate, ngay, type ExamPlan, type LuotSo, type Route,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
@@ -97,11 +97,30 @@ export function examPlanOf(cycle: {
   return none;
 }
 
+/** Q29-1 (PR-KCK): ô Target → { target, kck }. KCK / '-' / "không cam kết" = không cam kết; trống = chưa có; sai → 400. */
+function docTarget(v: unknown): { target: number | null; kck: boolean } {
+  if (laKck(v)) return { target: null, kck: true };
+  if (v === null || v === undefined || v === '') return { target: null, kck: false };
+  const n = Number(v);
+  if (!Number.isFinite(n) || n < 0 || n > 9) throw badRequest('Mục tiêu phải nằm trong khoảng 0–9, hoặc KCK (không cam kết).');
+  return { target: n, kck: false };
+}
+const hienTarget = (target: number | null, kck: unknown) => (kck ? KCK : target ?? 'chưa có');
+
+/**
+ * Q29-1: đổi target (kể cả ↔ KCK) → lượt CHƯA CÓ ĐIỂM lấy target mới (KCK = bỏ kỳ vọng). Lượt đã có điểm giữ `target_at_attempt`
+ * cũ — lịch sử SOS không viết lại. Case SOS đang mở KHÔNG đụng tới (GV xử lý xong mới đóng).
+ */
+function apTargetLuotChuaDiem(cycleId: number, target: number | null) {
+  db().prepare(`UPDATE assessment_attempts SET target_at_attempt = ? WHERE cycle_id = ? AND NOT ${CO_DIEM_SQL('assessment_attempts')}`)
+    .run(target, cycleId);
+}
+
 /** PR-DUYET (T44, Câu 1 = B): GVCN không tự sửa target/lộ trình — gửi Đề xuất sửa. Chuyển lớp vẫn là của GVCN. */
 export const CHI_QL_SUA = 'Target và lộ trình do Quản lý sửa. Bấm "Đề xuất sửa" để gửi Quản lý duyệt.';
 
 export function createCycle(p: Principal, input: {
-  studentId: number; route?: Route | null; targetScore?: number | null;
+  studentId: number; route?: Route | null; targetScore?: number | string | null;
   examPeriodId?: number | null; startedAt?: string; note?: string | null;
 }) {
   const conn = db();
@@ -114,6 +133,7 @@ export function createCycle(p: Principal, input: {
   if (input.examPeriodId && !periodById(Number(input.examPeriodId))) throw badRequest('Tuần dự kiến thi không hợp lệ.');
   const startedAt = input.startedAt ?? nowIso().slice(0, 10);
   if (!isIsoDate(startedAt)) throw badRequest('Ngày bắt đầu không hợp lệ.');
+  const t = docTarget(input.targetScore);
 
   return tx(() => {
     const seq = ((conn.prepare('SELECT MAX(seq) AS n FROM learning_cycles WHERE student_id = ?')
@@ -123,18 +143,18 @@ export function createCycle(p: Principal, input: {
       .run(startedAt, input.studentId);
     const info = conn
       .prepare(
-        `INSERT INTO learning_cycles (student_id, seq, route, target_score, exam_period_id, start_period_id, started_at, status, note, created_at)
-         VALUES (?,?,?,?,?,?,?, 'active', ?, ?)`,
+        `INSERT INTO learning_cycles (student_id, seq, route, target_score, khong_cam_ket, exam_period_id, start_period_id, started_at, status, note, created_at)
+         VALUES (?,?,?,?,?,?,?,?, 'active', ?, ?)`,
       )
       /* Q5: lộ trình FT ghi tuần bắt đầu = tuần của ngày bắt đầu — không có thì không lập được lịch MT mặc định (M1). */
-      .run(input.studentId, seq, input.route ?? null, input.targetScore ?? null,
+      .run(input.studentId, seq, input.route ?? null, t.target, t.kck ? 1 : 0,
            input.examPeriodId ?? null, input.route ? ensurePeriod(mondayOf(startedAt)).id : null, startedAt, input.note ?? null, nowIso());
     const id = Number(info.lastInsertRowid);
     if (input.route) taoMtMacDinh(id, { actorUserId: p.userId });
     addJourney({
       studentId: input.studentId, eventType: 'cycle_start', eventDate: startedAt,
       title: `Bắt đầu lộ trình ${input.route ?? `#${seq}`}`,
-      detail: input.targetScore ? `Target ${input.targetScore}` : null,
+      detail: t.kck || t.target ? `Target ${hienTarget(t.target, t.kck)}` : null,
       refTable: 'learning_cycles', refId: id, createdBy: p.userId,
     });
     writeAudit({ actorUserId: p.userId, action: 'cycle.create', entityType: 'learning_cycle', entityId: id,
@@ -183,8 +203,14 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
     if (loi) throw badRequest(`Thi dự kiến: ${loi}`);
   }
   /* PR-DUYET (T44): đổi target / lộ trình cần `cycle.edit` — chỉ khi giá trị THẬT SỰ đổi (panel gửi cả ô không sửa). Thi dự kiến giữ `student.edit` (Q7). */
-  const doiTarget = patch.targetScore !== undefined && Number(patch.targetScore ?? NaN) !== Number(c.target_score ?? NaN)
-    && !(patch.targetScore == null && c.target_score == null);
+  /* Q29-1: targetScore nhận cả KCK — ghi kèm `khong_cam_ket` (khoá NỘI BỘ `khongCamKetGhi`, người gọi không gửi thẳng được). */
+  let doiTarget = false;
+  patch = { ...patch, khongCamKetGhi: undefined };
+  if (patch.targetScore !== undefined) {
+    const t = docTarget(patch.targetScore);
+    doiTarget = t.target !== (c.target_score ?? null) || t.kck !== !!c.khong_cam_ket;
+    patch = { ...patch, targetScore: t.target, khongCamKetGhi: t.kck ? 1 : 0 };
+  }
   const doiLoTrinh = patch.route !== undefined && (patch.route ?? null) !== (c.route ?? null);
   if (doiTarget || doiLoTrinh) require_(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id }, CHI_QL_SUA);
   if (patch.status !== undefined && !(CYCLE_STATUSES as readonly string[]).includes(String(patch.status))) {
@@ -205,11 +231,11 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
      */
     startPeriodId: 'start_period_id', examMonth: 'exam_month', examPeriodId: 'exam_period_id',
     /* Khoá NỘI BỘ (T9): người gọi gửi `examDate`, khối trên đổi thành `examDateGhi` đã kiểm. */
-    examDateGhi: 'exam_date',
+    examDateGhi: 'exam_date', khongCamKetGhi: 'khong_cam_ket',
   };
   const sets: string[] = []; const params: unknown[] = [];
   for (const [k, v] of Object.entries(patch)) {
-    if (!map[k]) continue;
+    if (!map[k] || v === undefined) continue;
     if (k === 'examPeriodId' && v && !periodById(Number(v))) throw badRequest('Tuần dự kiến thi không hợp lệ.');
     /*
      * Tháng thi dạng 'YYYY-MM'. Nhận CẢ một ngày đầy đủ rồi cắt lấy tháng — ô chọn tháng
@@ -232,6 +258,7 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
   params.push(cycleId);
   tx(() => {
     db().prepare(`UPDATE learning_cycles SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+    if (doiTarget) apTargetLuotChuaDiem(cycleId, patch.targetScore);
     if (patch.status !== undefined && patch.status !== 'active' && c.status === 'active') {
       db().prepare('UPDATE learning_cycles SET ended_at = COALESCE(ended_at, ?) WHERE id = ?').run(demoToday(), cycleId);
     }
@@ -427,16 +454,14 @@ export function targetRevisions(cycleId: number) {
  * mục tiêu của em này lại khác trong hồ sơ.
  */
 export function reviseTarget(p: Principal, cycleId: number, input: {
-  newTarget: number | null; effectiveFrom?: string; reason?: string | null;
+  /** Số, `null`/'' (chưa có) hoặc KCK / '-' / "không cam kết" (Q29-1). */
+  newTarget: number | string | null; effectiveFrom?: string; reason?: string | null;
 }) {
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
   require_(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id }, CHI_QL_SUA);
-  const target = input.newTarget === null || input.newTarget === ('' as any) ? null : Number(input.newTarget);
-  if (target !== null && (!Number.isFinite(target) || target < 0 || target > 9)) {
-    throw badRequest('Mục tiêu phải nằm trong khoảng 0–9.');
-  }
-  if (target === c.target_score) return { cycle: c, revision: null };
+  const { target, kck } = docTarget(input.newTarget);
+  if (target === (c.target_score ?? null) && kck === !!c.khong_cam_ket) return { cycle: c, revision: null };
   const effectiveFrom = input.effectiveFrom ?? nowIso().slice(0, 10);
   if (!isIsoDate(effectiveFrom)) throw badRequest('Ngày hiệu lực không hợp lệ.');
   const reason = (input.reason ?? '').trim();
@@ -446,19 +471,21 @@ export function reviseTarget(p: Principal, cycleId: number, input: {
     const conn = db();
     const info = conn
       .prepare(
-        `INSERT INTO cycle_target_revisions (cycle_id, old_target, new_target, effective_from, reason, actor_user_id, created_at)
-         VALUES (?,?,?,?,?,?,?)`,
+        `INSERT INTO cycle_target_revisions (cycle_id, old_target, new_target, old_khong_cam_ket, new_khong_cam_ket,
+                                             effective_from, reason, actor_user_id, created_at)
+         VALUES (?,?,?,?,?,?,?,?,?)`,
       )
-      .run(cycleId, c.target_score, target, effectiveFrom, reason, p.userId, nowIso());
-    conn.prepare('UPDATE learning_cycles SET target_score = ? WHERE id = ?').run(target, cycleId);
+      .run(cycleId, c.target_score, target, c.khong_cam_ket ? 1 : 0, kck ? 1 : 0, effectiveFrom, reason, p.userId, nowIso());
+    conn.prepare('UPDATE learning_cycles SET target_score = ?, khong_cam_ket = ? WHERE id = ?').run(target, kck ? 1 : 0, cycleId);
+    apTargetLuotChuaDiem(cycleId, target);
     addJourney({
       studentId: c.student_id, cycleId, eventType: 'target_change', eventDate: effectiveFrom,
-      title: `Đổi mục tiêu ${c.target_score ?? 'chưa có'} → ${target ?? 'chưa có'}`,
+      title: `Đổi mục tiêu ${hienTarget(c.target_score, c.khong_cam_ket)} → ${hienTarget(target, kck)}`,
       detail: reason, refTable: 'cycle_target_revisions', refId: Number(info.lastInsertRowid),
       createdBy: p.userId, dedupKey: `target-rev:${Number(info.lastInsertRowid)}`,
     });
     writeAudit({ actorUserId: p.userId, action: 'cycle.target.revise', entityType: 'learning_cycle',
-      entityId: cycleId, before: { target: c.target_score }, after: { target, effectiveFrom, reason } });
+      entityId: cycleId, before: { target: c.target_score, khongCamKet: !!c.khong_cam_ket }, after: { target, khongCamKet: kck, effectiveFrom, reason } });
     return { cycle: cycleById(cycleId), revision: conn.prepare('SELECT * FROM cycle_target_revisions WHERE id = ?')
       .get(Number(info.lastInsertRowid)) };
   });

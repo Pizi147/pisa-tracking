@@ -5,9 +5,9 @@ import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { WeekPicker } from '../../ui/Filters.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
-import { Empty, Field, SectionNote, Skeleton, Status, Th} from '../../ui/ui.tsx';
+import { Empty, Field, NutChon, SectionNote, Skeleton, Status, TargetText, Th} from '../../ui/ui.tsx';
 import { fmtDate } from '../../lib/format.ts';
-import { BASELINE_SOURCES, BASELINE_SOURCE_LABEL } from '@shared/domain/index.ts';
+import { BASELINE_SOURCES, BASELINE_SOURCE_LABEL, GIAI_THICH_KCK, KCK } from '@shared/domain/index.ts';
 
 type Suggested = {
   attemptNo: number; studyWeek: number; periodId: number; weekStart: string; code: string;
@@ -243,6 +243,7 @@ function TargetAndBaseline({ cycleId, cy, canEditCycle, onDeXuatSua, onDone }: {
   const [openTarget, setOpenTarget] = useState(false);
   const [openBaseline, setOpenBaseline] = useState(false);
   const [newTarget, setNewTarget] = useState('');
+  const [kck, setKck] = useState(false);
   const [reason, setReason] = useState('');
   const [effectiveFrom, setEffectiveFrom] = useState('');
   const [source, setSource] = useState('entrance');
@@ -254,7 +255,7 @@ function TargetAndBaseline({ cycleId, cy, canEditCycle, onDeXuatSua, onDone }: {
     setBusy(true);
     try {
       await api.post(`/cycles/${cycleId}/target-revision`, {
-        newTarget: newTarget === '' ? null : Number(newTarget),
+        newTarget: kck ? KCK : newTarget === '' ? null : Number(newTarget),
         reason, effectiveFrom: effectiveFrom || undefined,
       });
       invalidate('/cycles'); invalidate('/students'); invalidate('/attempts');
@@ -279,7 +280,9 @@ function TargetAndBaseline({ cycleId, cy, canEditCycle, onDeXuatSua, onDone }: {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-sm text-slate-200">
           Mục tiêu:{' '}
-          {cy?.target_score !== null && cy?.target_score !== undefined
+          {cy?.khong_cam_ket
+            ? <strong><TargetText band={null} kck /></strong>
+            : cy?.target_score !== null && cy?.target_score !== undefined
             ? <strong>{cy.target_score}</strong>
             : <span className="text-amber-300">chưa đặt</span>}
         </span>
@@ -295,9 +298,14 @@ function TargetAndBaseline({ cycleId, cy, canEditCycle, onDeXuatSua, onDone }: {
       </div>
       {openTarget && canEditCycle && (
         <div className="space-y-2">
-          <Field label="Mục tiêu mới" required>
-            <input className="field max-w-[8rem]" type="number" step="0.5" min={0} max={9}
-              value={newTarget} onChange={(e) => setNewTarget(e.target.value)} />
+          <Field label="Mục tiêu mới" required as="div" hint={`KCK: ${GIAI_THICH_KCK}.`}>
+            <span className="flex flex-wrap items-center gap-2">
+              <input className="field max-w-[8rem]" type="number" step="0.5" min={0} max={9} aria-label="Band mục tiêu mới"
+                value={newTarget} disabled={kck} onChange={(e) => setNewTarget(e.target.value)} />
+              {!cy?.khong_cam_ket && (
+                <NutChon nho chon={kck} onClick={() => { setKck(!kck); setNewTarget(''); }}>Không cam kết (KCK)</NutChon>
+              )}
+            </span>
           </Field>
           <Field label="Lý do" required
             hint="Vài tháng sau, đây là thứ duy nhất giải thích vì sao mục tiêu đổi.">
@@ -305,17 +313,18 @@ function TargetAndBaseline({ cycleId, cy, canEditCycle, onDeXuatSua, onDone }: {
               placeholder="Gia đình lùi kế hoạch du học sang năm sau" />
           </Field>
           <Field label="Có hiệu lực từ ngày" required
-            hint="Các lượt trước ngày này giữ nguyên kỳ vọng cũ.">
+            hint="Ghi vào lịch sử đổi mục tiêu. MT đã có điểm giữ kỳ vọng cũ; MT chưa có điểm theo mục tiêu mới.">
             <ONgay kieu="ngay" value={effectiveFrom} onChange={setEffectiveFrom} />
           </Field>
-          <button className="btn btn-primary btn-sm" disabled={busy || !reason.trim() || !newTarget}
+          <button className="btn btn-primary btn-sm" disabled={busy || !reason.trim() || (!newTarget && !kck)}
             onClick={saveTarget}>
             {busy ? 'Đang lưu…' : 'Lưu mục tiêu mới'}
           </button>
           <SectionNote>
             Các lượt đã chốt GIỮ NGUYÊN kỳ vọng tính theo mục tiêu lúc đó. Đổi mục tiêu từ hôm
             nay không chấm lại quá khứ — sửa một mục tiêu lịch sử ghi sai là một thao tác hiệu
-            chỉnh riêng, có nhật ký và phải đối soát lại các kết luận đã ra.
+            chỉnh riêng, có nhật ký và phải đối soát lại các kết luận đã ra. Chọn KCK: MT chưa có điểm bỏ kỳ vọng, không
+            sinh SOS; Case đang mở giữ nguyên tới khi xử lý xong.
           </SectionNote>
         </div>
       )}

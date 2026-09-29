@@ -8,7 +8,7 @@ import { db, tx } from '../db.ts';
 import { badRequest, notFound } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
-import { PERMISSIONS } from '../../../shared/domain/index.ts';
+import { KCK, PERMISSIONS, laKck } from '../../../shared/domain/index.ts';
 import { taoYeuCau } from './yeuCau.ts';
 
 export const TRUONG_DE_XUAT = ['target', 'lo-trinh', 'lop', 'lich-mt', 'khac'] as const;
@@ -22,7 +22,7 @@ const LY_DO_TOI_THIEU = 15;
 
 /** Lộ trình đang chạy + lớp đang học của em — giá trị "cũ" ghi vào thẻ. */
 export function hienTaiCua(conn: any, studentId: number) {
-  const cyc = conn.prepare(`SELECT id, target_score, route FROM learning_cycles WHERE student_id = ? AND status = 'active' ORDER BY seq DESC LIMIT 1`)
+  const cyc = conn.prepare(`SELECT id, target_score, khong_cam_ket, route FROM learning_cycles WHERE student_id = ? AND status = 'active' ORDER BY seq DESC LIMIT 1`)
     .get(studentId) as any;
   const lop = conn.prepare(`SELECT c.code FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = ? AND e.status = 'active'
                               ORDER BY e.id DESC LIMIT 1`).get(studentId) as any;
@@ -44,13 +44,15 @@ export function guiDeXuatSua(p: Principal, studentId: number, body: { truong?: u
   let moi: string | number;
   let cu: string | number | null = null;
   if (truong === 'target') {
+    /* Q29-1: KCK (không cam kết) là một giá trị Target hợp lệ — lưu chữ 'KCK' trong thẻ. */
+    const kck = laKck(body.moi);
     const n = Number(body.moi);
-    if (body.moi === '' || body.moi == null || !Number.isFinite(n) || n < 0 || n > 9 || Math.round(n * 2) !== n * 2) {
-      throw badRequest('Target mới là một band từ 0 đến 9, bước 0.5.');
+    if (!kck && (body.moi === '' || body.moi == null || !Number.isFinite(n) || n < 0 || n > 9 || Math.round(n * 2) !== n * 2)) {
+      throw badRequest('Target mới là một band từ 0 đến 9, bước 0.5 — hoặc KCK (không cam kết).');
     }
     if (!ht.cycle) throw badRequest('Em chưa có lộ trình đang chạy để đổi target.');
-    moi = n; cu = ht.cycle.target_score ?? null;
-    if (cu === n) throw badRequest('Target mới trùng target hiện tại.');
+    moi = kck ? KCK : n; cu = ht.cycle.khong_cam_ket ? KCK : ht.cycle.target_score ?? null;
+    if (cu === moi) throw badRequest('Target mới trùng target hiện tại.');
   } else if (truong === 'lo-trinh') {
     const code = String(body.moi ?? '').trim();
     if (!conn.prepare(`SELECT 1 FROM routes WHERE code = ? AND status = 'active'`).get(code)) throw badRequest('Chọn một lộ trình còn dùng.');

@@ -15,6 +15,7 @@ import { migratePrDuyet } from './migrate/prDuyet.ts';
 import { migratePrMt } from './migrate/prMt.ts';
 import { migratePrNhap } from './migrate/prNhap.ts';
 import { migratePrMon } from './migrate/prMon.ts';
+import { migratePrKck } from './migrate/prKck.ts';
 
 /**
  * Giá trị cũ của cột `track` cho case Ý thức. Mô hình Case Ý thức đã BỎ 21/09/2026 (rule book mục 18) — hằng số này chỉ để NÂNG CẤP
@@ -466,6 +467,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     migratePrNhap(conn, applied);
     /* PR-MON: kỹ năng phụ trách được chỉ L · R · W1 · W2 · S (MH1). */
     migratePrMon(conn, applied);
+    /* PR-KCK: Target "không cam kết" (Q29-1). */ migratePrKck(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống
