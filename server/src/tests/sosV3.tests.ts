@@ -678,6 +678,8 @@ export async function runSosV3Tests(t: YThucTestKit) {
     const f = freshSos('CAUSE');
     const key = (id: number) => `cause:${id}`;
     const item = (who: any, id: number) => mywork(who).find((i: any) => i.key === key(id));
+    /* PR-DUYET (K1-57): Quản lý thấy dòng quá hạn của GV ở chế độ "Của GV (nhắc)" (`nguoi=tat-ca`); "Của tôi" không còn — thẻ Báo lên thay. */
+    const itemQl = (who: any, id: number) => (myworkSvc.myWork(who, { nguoi: 'tat-ca' }).items as any[]).find((i: any) => i.key === key(id));
     const due = domain.signalVerifyDue(TODAY);
     const mine = item(w2T, f.w2.id);
     assert(mine && mine.group === 'cause' && mine.urgency === 'normal' && mine.due === due && mine.mine === true && mine.caseId === f.w2.id
@@ -689,18 +691,19 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(groups.some((g: any) => g.key === 'cause' && g.label === 'Xác định nguyên nhân' && g.items.some((i: any) => i.key === key(f.w2.id))), 'Phải có nhóm `cause` trong danh sách nhóm');
     /* Quá hạn: hết ngày hạn mới tính (hạn = hôm qua). */
     conn.prepare('UPDATE case_signals SET verify_due = ? WHERE case_id = ?').run(addDays(TODAY, -1), f.w2.id);
-    const late = item(w2T, f.w2.id), mgr = item(P.mbManager, f.w2.id);
+    const late = item(w2T, f.w2.id), mgr = itemQl(P.mbManager, f.w2.id);
+    assert(!item(P.mbManager, f.w2.id), 'Quản lý "Của tôi" còn dòng cause quá hạn của GV (K1-57: đã là thẻ Báo lên)');
     assert(late.urgency === 'overdue' && !/quá hạn/.test(late.reason) && late.tieuDe.startsWith('Xác định nguyên nhân'), `Quá hạn của GVBM: ${JSON.stringify(late)}`);
     assert(mgr && mgr.urgency === 'overdue' && mgr.mine === false && /chưa/.test(mgr.reason), `Quản lý thấy khi quá hạn: ${JSON.stringify(mgr)}`);
-    assert(!item(P.cpManager, f.w2.id) && !item(w1T, f.w2.id), 'Quản lý chi nhánh khác và GVBM kỹ năng khác không thấy dù quá hạn');
+    assert(!itemQl(P.cpManager, f.w2.id) && !item(w1T, f.w2.id), 'Quản lý chi nhánh khác và GVBM kỹ năng khác không thấy dù quá hạn');
     assert(myworkSvc.myWork(w2T, {}).summary.overdue >= 1, 'Tính vào tổng số việc quá hạn');
     /* PR-N1 S4-1: có nguyên nhân là đủ — PA quy chế đã tự chạy, không còn vế "xác nhận PA". */
     cases.setIssues(w2T, f.w2.id, { primaryCode: 'student.writing.task' });
-    assert(!item(w2T, f.w2.id) && !item(P.mbManager, f.w2.id), 'Có nguyên nhân thì dòng biến mất, cả ở phía Quản lý');
+    assert(!item(w2T, f.w2.id) && !itemQl(P.mbManager, f.w2.id), 'Có nguyên nhân thì dòng biến mất, cả ở phía Quản lý');
     assertThrows(() => sosAuto.confirmPresetPlan(w2T, f.w2Plan.id), /đã được xác nhận rồi/, 'Xác nhận PA quy chế');
     /* Đóng `Không cần theo dõi` cũng làm dòng biến mất; case tạo tay không bao giờ có dòng này. */
     conn.prepare('UPDATE case_signals SET verify_due = ? WHERE case_id = ?').run(addDays(TODAY, -1), f.sp.id);
-    assert(item(P.mbManager, f.sp.id), 'Case Speaking quá hạn thì Quản lý thấy trước khi đóng');
+    assert(itemQl(P.mbManager, f.sp.id), 'Case Speaking quá hạn thì Quản lý thấy trước khi đóng');
     sosAuto.dismissSosCase(P.mbManager, f.sp.id, { reasonCode: 'single_incident' });
     assert(!item(gvcn, f.sp.id) && !item(P.mbManager, f.sp.id), 'Case đã đóng không còn dòng');
     const manual = cases.reportIssue(P.mbManager, { studentId: f.st.id, cycleId: f.st.cycleId, topic: 'reading', primaryCode: 'student.reading.logic',

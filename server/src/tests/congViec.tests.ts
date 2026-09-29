@@ -115,8 +115,10 @@ export async function runCongViecTests(t: YThucTestKit) {
     assert(applied.length === 1 && /PR-Ra/.test(applied[0]), `Phải báo đúng một dòng PR-Ra: ${applied.join(' | ')}`);
     const fresh = new SqliteDb(':memory:');
     fresh.exec(SCHEMA);
+    /* PR-DUYET thêm `tasks.assignee_name` ở bước migrate của mình (sau PR-Ra) — so PR-Ra trên phần schema của đúng bước này. */
+    const sauPrRa = (db: any, tb: string) => colsOf(db, tb).filter((c) => !(tb === 'tasks' && c.startsWith('assignee_name:')));
     for (const tb of ['tasks', 'task_history', 'unit_reports', 'unit_report_history', 'unit_report_task_links']) {
-      assert(JSON.stringify(colsOf(m, tb)) === JSON.stringify(colsOf(fresh, tb)),
+      assert(JSON.stringify(colsOf(m, tb)) === JSON.stringify(sauPrRa(fresh, tb)),
         `${tb} sau nâng cấp khác schema.sql:\n  ${colsOf(m, tb).join(',')}\n  ${colsOf(fresh, tb).join(',')}`);
     }
     assert(JSON.stringify(idxOf(m, 'unit_report_task_links')) === JSON.stringify(idxOf(fresh, 'unit_report_task_links')),
@@ -251,7 +253,7 @@ export async function runCongViecTests(t: YThucTestKit) {
     const items = [
       { group: 'score', urgency: 'overdue', due: '2026-09-10' },
       { group: 'score', urgency: 'normal', due: '2026-09-16' },
-      { group: 'decide', urgency: 'today', due: homNay },
+      { group: 'result', urgency: 'today', due: homNay },
     ];
     const a = domain.demLocNhanh(items, 'score', homNay);
     const b = domain.demLocNhanh(items, 'score', homNay);
@@ -262,13 +264,13 @@ export async function runCongViecTests(t: YThucTestKit) {
   check('PR-Ra · demLoaiViec: số theo Loại việc không đổi khi đổi lọc nhanh khác — mỗi lần gọi chỉ áp đúng MỘT lọc nhanh truyền vào', () => {
     const items = [
       { group: 'score', urgency: 'overdue', due: '2026-09-10' },
-      { group: 'decide', urgency: 'overdue', due: '2026-09-11' },
+      { group: 'result', urgency: 'overdue', due: '2026-09-11' },
       { group: 'score', urgency: 'today', due: homNay },
     ];
     const quaHan = domain.demLoaiViec(items, 'qua-han', homNay);
-    assert(quaHan.score === 1 && quaHan.decide === 1, `Số theo lọc nhanh "qua-han" sai: ${JSON.stringify(quaHan)}`);
+    assert(quaHan.score === 1 && quaHan.result === 1, `Số theo lọc nhanh "qua-han" sai: ${JSON.stringify(quaHan)}`);
     const tatCa = domain.demLoaiViec(items, 'tat-ca', homNay);
-    assert(tatCa.score === 2 && tatCa.decide === 1, `Số theo lọc nhanh "tat-ca" sai: ${JSON.stringify(tatCa)}`);
+    assert(tatCa.score === 2 && tatCa.result === 1, `Số theo lọc nhanh "tat-ca" sai: ${JSON.stringify(tatCa)}`);
   });
 
   check('PR-Ra · thamSoNguoi: "toi"/"tat-ca" giữ nguyên, số hợp lệ → number, chuỗi lạ/rỗng/thiếu → null', () => {
@@ -346,6 +348,7 @@ export async function runCongViecTests(t: YThucTestKit) {
   const nhacSvc: any = await import('../worklist/nhacViec.ts');
   const permMod: any = await import('../permissions.ts');
   const casesSvc: any = await import('../cases/cases.ts');
+  const yeuCauSvc: any = await import('../duyet/yeuCau.ts');
   const { createApp } = await import('../app.ts');
   const { createSession } = await import('../auth.ts');
 
@@ -469,16 +472,14 @@ export async function runCongViecTests(t: YThucTestKit) {
   casesSvc.updateResult(P.lrTeacher, askIvId, {
     outcome: 'unchanged', decision: 'ask_manager', observedOn: TODAY,
     note: 'Đã thử tự học một tuần nhưng em vẫn chưa tiến bộ rõ, cần Quản lý cho ý kiến hướng tiếp theo.',
+    decisionNote: 'Có nên chuyển sang tutor không?',
   });
 
-  check('PR-Ra Q6 · Dòng "decide": đề xuất PA học thuật có duyet.interventionId; xin ý kiến Quản lý thì duyet = null', () => {
-    const items = mywork.myWork(P.mbManager, {}).items.filter((i: any) => i.group === 'decide');
-    const proposeItem = items.find((i: any) => i.duyet && i.duyet.interventionId === proposeIvId);
-    assert(proposeItem, `Không thấy dòng đề xuất PA (ivId=${proposeIvId}) trong "decide" của QL MB`);
-    const askItem = items.find((i: any) => i.caseId === ask.caseId);
-    assert(askItem, `Không thấy dòng "xin ý kiến" (case=${ask.caseId}) trong "decide" của QL MB`);
-    assert(askItem.duyet === null, `Dòng xin ý kiến phải có duyet = null: ${JSON.stringify(askItem.duyet)}`);
-    assert(proposeItem.actionLabel === 'Duyệt PA học thuật' && askItem.actionLabel === 'Trả lời giáo viên', 'Nhãn nút hai loại việc phải khác nhau');
+  check('PR-DUYET (thay PR-Ra Q6) · đề xuất PA học thuật là thẻ Đề xuất PA ở hộp QL MB (Duyệt/Từ chối), không còn dòng việc "decide"', () => {
+    assert(!mywork.myWork(P.mbManager, {}).items.some((i: any) => i.group === 'decide'), 'Còn dòng việc "decide"');
+    const the = yeuCauSvc.hopChoDuyet(P.mbManager).the.find((x: any) => x.loai === 'de_xuat_pa' && x.hocVienId === propose.sid);
+    assert(the && the.kieuNut === 'duyet-tu-choi' && the.lyDo.includes('Học thêm 30 phút'), `Không thấy thẻ Đề xuất PA (ivId=${proposeIvId})`);
+    void ask; void askIvId;
   });
 
   check('PR-Ra · Dòng "mgmt" (việc quản lý được giao) có href /cong-viec?mo-viec=', () => {

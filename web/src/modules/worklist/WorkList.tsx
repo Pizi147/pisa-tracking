@@ -25,8 +25,6 @@ export type WorkItem = {
     id: number; kind: 'normal' | 'ft'; skill: string | null; skillLabel: string;
     score: number | null; total: number | null; deadline: string; actions: ('create_case' | 'dismiss')[];
   } | null;
-  /** PR-Ra Q6: dòng đề xuất PA học thuật chờ duyệt — đủ để mở `ApprovalDialog` ngay trên dòng. */
-  duyet?: { interventionId: number; kind: string; description: string } | null;
   /** PR-Ra Q5: chỉ dòng có người phụ trách là TÀI KHOẢN KHÁC người xem, và người xem là QL/QT. */
   nhac?: { ownerId: number; daNhacLuc: string | null } | null;
 };

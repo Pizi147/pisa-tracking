@@ -552,13 +552,40 @@ PA; GVCN sửa target/lộ trình/lớp qua "Đề xuất sửa".
 
 ## Nhật ký
 
-- Mốc B (Task 0):
-- MT / NHAP / MON đã merge lúc bắt đầu?
-- Câu 1 (chủ sản phẩm):
-- Dòng thật lệch kế hoạch:
-- Trần tốc độ đổi (cũ → mới):
-- `chay-thu:duyet` trên bản sao DB demo:
+- Mốc B (Task 0): **1444** phép kiểm + 20 tốc độ (check 4 phút 50 giây).
+- MT / NHAP / MON đã merge lúc bắt đầu? **Chưa** (origin/main = fb51181, #115 kế hoạch).
+- Câu 1 (chủ sản phẩm): **B** (chốt 29/09) — GVCN vẫn tự chuyển lớp; chỉ rút target + lộ trình.
+- Dòng thật lệch kế hoạch: Task 0 grep 7 mốc — đều khớp (lệch ≤ 1 dòng).
+- Trần tốc độ đổi (cũ → mới): Task 3 — `/my-work` +1 câu (quét), `/tong-quan/quan-ly` 62 → 63: vẫn dưới trần cũ, không đổi. Trần mới: `/yeu-cau?hop=cho-duyet` 10 → 20, `/yeu-cau/dem` 10–11 → 20–21, GVCN 403 7 → 17. Task 4 (hộp có thẻ thật, đo lại): `/yeu-cau?hop=cho-duyet` 18 → trần 28, `da-xu-ly` 11 → 21, `cua-toi` 11–15 → 21–25, `/yeu-cau/dem` 11–15 → 21–25. `/my-work` giảm 2–3 câu (bỏ hai khối việc duyệt), `/tong-quan/quan-ly` 63 → 68 (dưới trần cũ), `/classes` +1.
+- `chay-thu:duyet` trên bản sao DB demo: bản sao DB demo của `origin/main` (trước PR) — (1) sẽ tạo **3 thẻ** (Đề xuất PA 2, trong đó 0 "Xin hỗ trợ QL" kiểu cũ · Dời lịch lần 2 1; mẫu `#18 · Phan Minh Tú · BC FT 205 · hạn 08/09`, `#24 · Đinh Ngọc Quyên · CP FT 110 · hạn 14/09`, `#1 · Trần Thu Hà · MB FT 101 · hạn 20/09`) · (2) thẻ chết **0 · 0** · (3) **7 GVCN** mất quyền tự sửa target/lộ trình. Mã băm bản sao trước/sau chạy thử bằng nhau (`7db1e952…`). Thêm: `migrate` thật trên bản sao khác — lần 1 `Hộp Chờ duyệt: tạo 3 thẻ (Đề xuất PA 2 · Dời lịch 1)`, lần 2 không báo gì, chạy thử sau đó (1) = 0.
+- Task 12: bấm thử theo KIỂM (Playwright kênh Chrome, `thiet-ke/anh/pr-duyet/kiem-sau.log`) đạt hết; sửa trong lúc thử: mốc gửi/xử lý của thẻ theo **ngày nghiệp vụ** (`mocNghiepVu` — bản demo không ghi "đề xuất 29/09" giữa ngày demo 14/09; bản chính giữ giờ thật); Esc đóng ô lý do trả focus về nút (hàng nút giữ trong DOM, mờ khi ô mở); "Xem thêm" chỉ khi chữ thật sự bị cắt (đo); nút "Xem thêm" ≥ 44 px ở 375; tiêu đề Đề xuất sửa không có giá trị cũ (`Đề xuất sửa lịch MT: …`); audit: chữ phụ của thẻ `slate-500` → `slate-400` (≥ 4.5:1), số badge đọc bằng chữ ẩn `sr-only`. Bộ dò impeccable: 0 phát hiện.
+- Task 1: nhãn `cycle.edit` = "Sửa target, lộ trình học viên" (bỏ "chuyển lớp" — Câu 1 = B). `sapThe(ds)` bỏ tham số `homNay`: hạn là ngày ISO, so chuỗi đã xếp quá hạn lên đầu.
+- Task 2: bảng mới vào bao đóng xoá học viên (PR-XOA: 30 bảng, 53 cạnh, thông báo `yeu_cau_duyet`) và cột trỏ tài khoản (`nguoi_xin`, `nguoi_duyet` = dấu vết, 70 cột). Phép kiểm PR-Ra so schema bỏ qua `tasks.assignee_name` (thêm ở bước migrate sau).
+- Task 4: sổ đề nghị dời đang chờ (`absence.ts`) nhớ theo request (`nho`) — `listClassSummaries`, `classOverview` tự mở `trongBoNho` (như `listCases`) để phép kiểm N+1 gọi ngoài request vẫn nạp sổ một lần. `lich_thi` có thêm `chet` (đề nghị không còn `pending` — ví dụ modal cũ ở trang lượt thi đã trả lời). Seed gọi `napYeuCauTuNguonCu` ngay ở Task 4 (không đợi Task 11) để hộp demo có thẻ. Bỏ luôn trường `duyet` + nút Duyệt ở dòng việc web (K1-32) vì kiểu dữ liệu đã bỏ ở máy chủ. Phép kiểm "dời lần 2" đặt ở `run.ts` (cạnh helper `absentSkill`).
+- Task 5: máy chủ bắt câu hỏi "Cần Quản lý giúp gì" ≥ 8 ký tự (web đã bắt; hai phép kiểm cũ thêm `decisionNote`). Phép kiểm PR-S2 "PA chờ duyệt không điều chỉnh được" dựng PA chờ kiểu cũ bằng SQL (Xin hỗ trợ QL không còn dừng PA). `caseDetail` trả `yeuCau` (thẻ chờ, DTO đủ để nhúng `TheYeuCau`) + `xinYKien` cho từng PA qua `theCuaDoiTuong` (một câu cho cả Case). Nút "+ Thêm PA cho em" trên thẻ Xin ý kiến làm ở Task 8 (web).
+- Task 6 (Câu 1 = B): `transferStudent` và `loTrinhTiep.ts` KHÔNG đổi — GVCN vẫn tự chuyển lớp. Câu lỗi: `Target và lộ trình do Quản lý sửa. Bấm "Đề xuất sửa" để gửi Quản lý duyệt.` `updateCycle` chỉ đòi `cycle.edit` khi target/lộ trình THẬT SỰ đổi (panel gửi cả ô không sửa). Panel Lộ trình không có ô lộ trình (chỉ target) → liên kết "Đề xuất sửa" cạnh target. Đường gửi ở `server/src/duyet/deXuatSua.ts`; mục ⋮ chỉ hiện khi em đang học. Duyệt trường lớp/lịch MT/khác bắt ghi chú ≥ 3 ký tự (Q6).
+- Task 7: Báo lên lọc ứng viên bằng một câu (Case mở, hạn tín hiệu đã qua, chưa có thẻ) rồi mới dùng `awaitingCauseCaseIds` (định nghĩa "chờ nguyên nhân" của PR-SOS, chỉ đọc). Thẻ Báo lên mang `duLieu.daNhacLuc` (đã nhắc hôm nay) để nút Nhắc hiện "✓ Đã nhắc". Phép kiểm PR-T S04 đổi kỳ vọng phía QL sang `nguoi=tat-ca` (cùng điều kiện) + thêm vế "Của tôi không còn dòng".
+- Task 8: QL mở Việc học viên không tham số vẫn là "Của GV (nhắc)" như cũ (mặc định PR-Ra giữ nguyên); "Của tôi" ghi `nguoi=toi`. `ChonPhuTrach` thêm `chiChonGv` (chỉ còn chọn một GV). Nút "Duyệt…" có dấu … khi mở thêm bước (Lịch thi chọn tuần; Đề xuất sửa lớp/lịch MT/khác ghi chú). impeccable clarify: tầng 1 "Hạn hôm nay", nhãn ô lý do nói ai đọc, lỗi mạng bằng tiếng Việt giữ chữ đang gõ, rỗng Yêu cầu của tôi chỉ lối gửi; harden: mở `?the=` mà thẻ không còn → dòng báo + "Xem ở Đã xử lý"; duyệt hàng loạt mất mạng → làm mới danh sách. Không có PRODUCT.md (session code không chạy init) — impeccable dùng mã hiện có làm ngữ cảnh.
+- Task 9: thẻ nhúng dưới PA chỉ cho thẻ Đề xuất PA (Xin ý kiến giữ dòng tím, QL trả lời ở hộp). Người không duyệt thấy `Đang chờ Quản lý trả lời · hạn dd/mm`. **Cần chủ sản phẩm xem:** câu kế hoạch ở form Ghi kết quả `Gửi Quản lý · trả lời trong 5 ngày ở Chờ duyệt` hiện cho GV — GV không có tab Chờ duyệt (họ xem ở Yêu cầu của tôi). Giữ đúng câu kế hoạch, đề nghị đổi thành `… · xem ở Yêu cầu của tôi`.
+- Task 10: thông báo đăng ký trỏ `/quan-tri` (tab mặc định đã là Tài khoản — Quản trị không đọc `?tab=`). Badge đếm `cho` (không gồm Báo lên), đọc `/yeu-cau/dem` khi đổi trang và tự làm mới sau mỗi quyết định (invalidate `/yeu-cau`). Tên ngoài: 2–80 ký tự; có tài khoản thì tên ngoài bị bỏ; đổi tên ghi lịch sử việc (`assignee_name`). `CAN_XU_LY` còn 8 dòng (trần 10 giữ).
+- Task 11: demo `server/src/seed/duyetSeed.ts` qua hàm dịch vụ; hai chỉnh ngày bằng SQL (ngày demo cố định): hạn duyệt (a) lùi 1 ngày để có thẻ quá hạn, hạn xác nhận nguyên nhân Case của Đỗ Minh Khôi lùi 2 ngày để có Báo lên. (e) dùng em mới `Ngô Thanh Tùng` (kết thúc học → Case đóng hệ thống → thẻ tự đóng). Phép kiểm khối 11 soi demo ở mục 0 của `run.ts` (ngay sau khi dựng). `reportIssue` của demo không đặt `idempotencyKey` (phép kiểm tốc độ nhân dữ liệu chép `sos_cases` chỉ bỏ `dedup_key`).
+- Task 3: thêm chỉ mục `ix_notifications_dedup` (quét quá hạn tra "đã báo chưa" theo `dedup_key`). Giao kèo thêm `nap?` (nạp phần riêng của loại một câu cho cả lô — `moTa` không SQL). Ghi chú khi Duyệt lưu ở `tra_loi`. Hành trình học viên do hàm nguồn của từng loại ghi (không ghi thêm ở lõi — tránh hai dòng). QL tự duyệt → thông báo kind `duyet_tu_duyet` cho Quản trị (đường về hộp).
 
 ## Chủ sản phẩm chốt 29/09 (thay các chỗ lệch trong kế hoạch)
 
 - **Câu 1 = B:** GVCN **vẫn tự chuyển lớp** (kể cả sang chi nhánh khác — chốt 24/09, PR-LT). Chỉ rút quyền GVCN tự sửa **target** và **lộ trình** (đi thẻ "Đề xuất sửa thông tin HV" trong Chờ duyệt). Cửa 🛑 ở Task 6: theo B, không rút chuyển lớp.
+
+## Sửa sau rà PR #117 (người rà Opus 5.5, 29/09)
+
+1. **Xin hỗ trợ QL lần 2 khi thẻ lần 1 còn chờ** — trước: `taoYeuCau` trả `null`, câu hỏi mới mất, API vẫn 200. Nay `boSungYeuCau` (yeuCau.ts): nối câu hỏi mới vào `ly_do` (`Bổ sung dd/mm: …`), cập nhật `du_lieu.followupId`, báo lại QL (`duyet_moi`, khoá `bo_sung:`). Không ném 400 sau khi đã lưu kết quả tuần. Phép kiểm R1.
+2. **Một hàm đếm** `demHop` (shared): `cho` = mọi thẻ chờ trong hộp = chip "Tất cả" (GỒM Báo lên), `quaHan` = thẻ đỏ (gồm Báo lên), `baoLen` = trong đó Báo lên. Badge, dải Tổng quan (`Hộp Chờ duyệt n · k quá hạn · gồm m Báo lên`) và chip dùng chung. Phép kiểm R2.
+3. Dòng việc "Xác định nguyên nhân" `href` = hồ sơ HV `?case=` (sửa ở nguồn — Nhắc lưu đường này, bấm dòng cũng mở đúng Ngăn Case). Phép kiểm khối 7 thêm vế `case=`.
+4. `duyetNhieu`: kiểm `request.approve` trước (GV → 403); id không tồn tại chỉ lỗi thẻ đó. Phép kiểm R4.
+5. Mốc gửi thẻ migrate: PA = `approval_due − 4 ngày` (ngày gửi theo ngày nghiệp vụ; `created_at` của seed là giờ máy nên vẫn ra 29/09), không có hạn thì `created_at`; đề nghị dời = `requested_on`. `mocNghiepVu` bản demo = ngày demo + giờ thật (giờ VN) → thẻ có thứ tự thật. Phép kiểm R5.
+6. Thẻ QL tự gửi đang chờ: `Bạn tự gửi · tự duyệt được`. Thẻ Lịch thi đã quyết không còn dòng "Hết … tự huỷ". Phép kiểm R6.
+7. `luatLoTrinh.ts`: `mucTieu` chỉ nhận khi sang FT (`canMucTieu`) hoặc người gọi có `cycle.edit`; GVCN FT → FT giữ target cũ. Chuyển tiếp cả lớp kiểm quyền MỘT lần theo lớp nguồn (giữ luật đếm câu PR-LT Q20). Phép kiểm R7 (gọi `transferStudent` thẳng bằng GVCN và QL).
+8. Câu Ghi kết quả cho GV: `Gửi Quản lý · trả lời trong 5 ngày · xem ở Yêu cầu của tôi` (chủ sản phẩm đồng ý).
+
+Phép kiểm **1470 → 1475**. `npm run check` chạy HAI lần: lần 1 đỏ đúng một phép kiểm đếm câu PR-LT (mục 7 kiểm quyền theo từng em) → sửa → lần 2 xanh.
+Chuyển PR-UXF: dải Tổng quan QL chưa theo bộ lọc chi nhánh/chương trình của trang.
+

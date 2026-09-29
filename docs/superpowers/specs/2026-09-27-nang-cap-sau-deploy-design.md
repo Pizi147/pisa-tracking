@@ -443,6 +443,11 @@ hai hàng tiêu chí, trạng thái huỷ / lịch sử / vắng) · M11 (đặt
 | Quyết định Cuối khoá (đổi hướng gợi ý theo chiều có lợi cho em ở dải khác 50–59%) | Học thuật | GVCN | như 50–59% | T71 |
 | **Báo lên** (không có nút Duyệt): vi phạm quá hạn, Case chờ nguyên nhân quá hạn, Mini Test trượt, yêu cầu quá hạn duyệt | Báo lên | hệ thống | — | V4-4, V4-5, T47 |
 
+> **Ghi chú PR-DUYET (29/09):** Xin ý kiến hạn **5 ngày** (T64 thắng K1-31 "3 ngày"). **Duyệt tài khoản** (đăng ký giáo viên) ở
+> ngoài hộp — Quản trị › Tài khoản › Đăng ký chờ duyệt, việc của Quản trị (K5-63). "Yêu cầu quá hạn duyệt" là **trạng thái thẻ**
+> (đỏ) + một thông báo cho QL và Quản trị, **không** phải một thẻ Báo lên riêng (Q13). Bảng có thêm phân loại **Báo lên** và
+> trạng thái `da_tra_loi` (Xin ý kiến). Đề xuất sửa: Câu 1 = B — GVCN vẫn tự chuyển lớp; target, lộ trình qua thẻ.
+
 **Người duyệt:** quyền `request.approve` (QL, Quản trị — T69). QL tự gửi yêu cầu thì **tự duyệt được**, thẻ ghi "tự duyệt", có nhật ký và báo Quản trị (Q-D).
 
 **Thẻ yêu cầu** (mockup **M8**): `[Phân loại] Loại · Học viên · Lớp` / `Người xin · ngày xin · lý do (2 dòng)` /

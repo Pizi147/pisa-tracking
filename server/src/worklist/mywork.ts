@@ -1,7 +1,7 @@
 import { db } from '../db.ts';
 import {
   ASSESSED_SKILL_LABEL, ATTEMPT_KIND_SHORT, ENTRY_SKILL_LABEL,
-  INTERVENTION_KIND_LABEL, LUOT_TINH_NO_SQL, PERMISSIONS,
+  INTERVENTION_KIND_LABEL, PERMISSIONS,
   REGULAR_SKILL_LABEL, SOS_LABEL, URGENCY_LABEL, caseHeadline, caseTopicLabel, cycleDeadline,
   duongHoSoHocVien, duongLichTest, nhanDotNgan, planDueDate, trongHaiTuanCuoi, tuanLich, urgencyFromSos,
   type AssessedSkill, type AttemptKind, type EntrySkill, type InterventionKind,
@@ -16,6 +16,7 @@ import { myMgmtTasks } from './mgmttasks.ts';
 import { listSignals, type SignalAction } from '../cases/signals.ts';
 import { NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds } from '../cases/sosState.ts';
 import { settleNoShows, sweepExpiredMoves } from '../fasttrack/absence.ts';
+import { demYeuCau, quetYeuCau } from '../duyet/yeuCau.ts';
 import { mtLichSuChuaNhap } from '../cham/canCham.ts';
 
 /**
@@ -93,8 +94,6 @@ export type WorkItem = {
     id: number; kind: 'normal' | 'ft'; skill: string | null; skillLabel: string;
     score: number | null; total: number | null; deadline: string; actions: SignalAction[];
   } | null;
-  /** PR-Ra Q6: dòng đề xuất PA học thuật chờ duyệt — đủ để mở `ApprovalDialog` ngay trên dòng. */
-  duyet?: { interventionId: number; kind: string; description: string } | null;
   /** PR-Ra Q5: chỉ dòng có người phụ trách là TÀI KHOẢN KHÁC người xem, và người xem là QL/QT. */
   nhac?: { ownerId: number; daNhacLuc: string | null } | null;
 };
@@ -109,7 +108,6 @@ export type WorkItem = {
  */
 export type WorkGroupKey =
   | 'verify' | 'cause' | 'score' | 'no_plan' | 'result'
-  | 'decide' | 'decide_move'
   | 'no_owner' | 'placement' | 'next_step' | 'missing_data' | 'mgmt';
 
 /**
@@ -146,20 +144,6 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
       + 'hoặc đóng "Không cần theo dõi" nếu em không cần theo dõi. Quản lý chỉ thấy dòng này khi đã quá hạn.',
   },
 
-  /*
-   * DUYỆT DỜI LỊCH DO VẮNG (mục 10.6) — nhóm riêng, không gộp vào "Duyệt phương án".
-   *
-   * Hai việc khác hẳn nhau về hậu quả của việc KHÔNG làm: một đề xuất hỗ trợ nằm chờ thì
-   * chậm, còn một đề nghị dời nằm chờ quá hạn thì PHẦN THI BỊ HUỶ. Trộn chúng vào một nhóm
-   * là để cái thứ hai trôi qua trong đám cái thứ nhất.
-   */
-  decide_move: {
-    label: 'Duyệt dời lịch do vắng',
-    hint: 'Em đã vắng và đã dời một lần rồi, nên lần này cần bạn quyết. Phải trả lời TRƯỚC khi '
-      + 'tuần mới bắt đầu — từ chối hoặc để quá hạn thì phần thi (Fast Track) hoặc lịch hẹn '
-      + '(Normal) bị huỷ, và chỉ Quản lý mới khôi phục được.',
-  },
-
   /* ---------------------------------------------------- ba nhóm học thuật chính (mục 3.2) */
   score: {
     label: 'Nhập điểm Test',
@@ -172,12 +156,6 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   result: {
     label: 'Ghi kết quả PA',
     hint: 'Kết quả tuần Thứ Hai → Chủ nhật ghi xong trước hết Thứ Hai tuần sau. Tuần chạm ngày dự kiến kết thúc thì ghi kết quả và kết luận PA.',
-  },
-
-  /* ------------------------------------------------------- việc chỉ Quản lý làm được */
-  decide: {
-    label: 'Chờ tôi xử lý',
-    hint: 'Đề xuất PA học thuật cần bạn duyệt, và những case giáo viên đã xin ý kiến Quản lý. Chừng nào chưa có câu trả lời thì bên kia không đi tiếp được.',
   },
 
   /* --------------------------------------------- những nghĩa vụ khác, vẫn phải thấy được */
@@ -252,6 +230,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   if (scope.none) return { summary: { total: 0, overdue: 0, today: 0 }, groups: [], scopeEmpty: true, xemNguoiKhac: false };
 
   const conn = db();
+  quetYeuCau(today);   // PR-DUYET (K5-17): thẻ chết tự đóng, Báo lên tự tạo — một lần mỗi request
   const items: WorkItem[] = [];
   const attempts = listAttempts(p, { branchId: f.branchId ?? undefined }).rows
     .filter((a: any) => a.status !== 'cancelled');
@@ -458,129 +437,12 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     items.push(...gomBaiChuaCham(khacDongs));
   }
 
-  // ------------------------------------------------- 2. phương án đang chờ Quản lý duyệt
   /*
-   * Giáo viên là người quyết định phương án của mình có cần Quản lý duyệt hay không.
-   * Khi có, Quản lý nợ một câu trả lời trong 3 ngày (case nặng/gấp) hoặc 7 ngày.
-   * Góp ý KHÔNG xoá nợ đó — vẫn còn nằm ở đây tới khi duyệt hoặc không duyệt.
-   */
-  const pendingPlans = conn
-    .prepare(
-      `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.approval_due,
-              sc.sos_level, sc.urgency, sc.summary, sc.origin_kind, sc.attempt_id, sc.topic,
-              COALESCE(sc.student_id, a.student_id) AS eff_student_id,
-              COALESCE(a.class_id, cur.class_id) AS eff_class_id,
-              COALESCE(ac.branch_id, cc.branch_id) AS eff_branch_id,
-              COALESCE(ac.code, cc.code) AS class_code,
-              s.full_name, a.attempt_no, a.kind AS attempt_kind,
-              pu.full_name AS proposer_name,
-              EXISTS (SELECT 1 FROM case_followups fu
-                       WHERE fu.intervention_id = iv.id AND fu.next_step = 'ask_manager')
-                AS asked_manager
-         FROM case_interventions iv
-         JOIN sos_cases sc ON sc.id = iv.case_id
-         LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
-         LEFT JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
-         LEFT JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active'
-         LEFT JOIN classes ac ON ac.id = a.class_id
-         LEFT JOIN classes cc ON cc.id = cur.class_id
-         LEFT JOIN users pu ON pu.id = iv.recorded_by
-        WHERE iv.approval_state = 'pending' AND iv.status != 'cancelled' AND sc.status != 'done'`,
-    )
-    .all() as any[];
-
-  napTruocPhamVi(pendingPlans.map((r) => r.eff_student_id));
-  for (const iv of pendingPlans) {
-    if (f.branchId && iv.eff_branch_id !== f.branchId) continue;
-    if (!can(p, PERMISSIONS.CASE_APPROVE, { classId: iv.eff_class_id, studentId: iv.eff_student_id })) continue;
-    const u = urgencyOf(iv.approval_due, today);
-    const what = (iv.description ?? '').trim() || INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] || 'PA học thuật';
-    items.push({
-      key: `approval:${iv.id}`, group: 'decide', urgency: u,
-      studentId: iv.eff_student_id, studentName: iv.full_name ?? 'Học viên',
-      classId: iv.eff_class_id ?? null, classCode: iv.class_code ?? null,
-      attemptId: iv.attempt_id ?? null, attemptNo: iv.attempt_no ?? null,
-      caseId: iv.case_id as number, level: levelOf(iv),
-      contextLabel: nhanDot(iv.attempt_kind, iv.attempt_no),
-      count: null,
-      /*
-       * HAI LOẠI VIỆC TRONG CÙNG MỘT NHÓM, và câu lý do phải phân biệt được:
-       *   - giáo viên ĐỀ XUẤT một phương án mới và chờ Quản lý duyệt;
-       *   - giáo viên đã làm rồi nhưng XIN Ý KIẾN Quản lý vì tự mình không quyết được.
-       * Cùng là "bên kia đang chờ tôi", nhưng người đọc cần biết mình đang được hỏi gì.
-       */
-      reason: iv.asked_manager
-        ? `${iv.proposer_name ?? 'Giáo viên'} xin ý kiến: ${what}`
-        : (iv.proposer_name ? `${iv.proposer_name} đề xuất: ${what}` : `Đề xuất: ${what}`),
-      tieuDe: iv.asked_manager ? 'Trả lời giáo viên' : `Duyệt PA học thuật${duoiKyNang(iv.topic)}`,
-      actionLabel: iv.asked_manager ? 'Trả lời giáo viên' : 'Duyệt PA học thuật',
-      href: iv.eff_student_id ? `/hoc-vien/${iv.eff_student_id}` : `/hoc-thuat/case/${iv.case_id}`,
-      /* Việc này là của QUẢN LÝ đang xem, dù người đề xuất là giáo viên khác. */
-      ownerId: p.userId, owner: null, mine: true,
-      due: iv.approval_due ?? null,
-      statusLabel: iv.asked_manager ? 'Chờ Quản lý trả lời' : 'Chờ Quản lý duyệt',
-      /*
-       * PR-Ra Q6: dòng ĐỀ XUẤT (không xin ý kiến) có đủ để mở thẳng `ApprovalDialog` trên dòng,
-       * không cần mở hồ sơ học viên. Dòng "xin ý kiến" giữ hành vi cũ (mở hồ sơ để đọc ngữ cảnh).
-       */
-      duyet: iv.asked_manager ? null : { interventionId: iv.id as number, kind: iv.kind as string, description: what },
-    });
-  }
-
-  // ------------------------------------- 2a-bis. đề nghị dời lịch do vắng chờ Quản lý
-  /*
-   * MỤC 10.6 — và hạn ở đây KHÔNG phải một chu kỳ, mà là NGÀY TRƯỚC KHI TUẦN MỚI BẮT ĐẦU.
-   *
-   * Quá hạn không chỉ là chậm: phần thi (Fast Track) hoặc lịch hẹn (Normal) bị huỷ, và từ
-   * đó chỉ Quản lý mới khôi phục được. Nên việc này phải nổi lên trước khi tuần ấy tới, chứ
-   * không phải sau khi đã muộn.
+   * PR-DUYET: đề xuất PA và đề nghị dời lịch lần 2 KHÔNG còn là dòng việc — chúng là thẻ ở hộp Chờ duyệt (một nơi, K1-01/K1-32).
+   * Hai lời quét ở đường đọc giữ nguyên: hết hạn duyệt → huỷ phần thi (mục 10.6); chốt "không dự thi" cuối Chủ nhật (PR-G).
    */
   sweepExpiredMoves();
-  /* Chốt "không dự thi" cuối Chủ nhật ở đường đọc (PR-G) — cùng khuôn mẫu, không cần tác vụ nền. */
   settleNoShows();
-  const pendingMoves = conn
-    .prepare(
-      `SELECT r.id, r.attempt_id, r.skill, r.move_no, r.decide_by, r.reason,
-              a.attempt_no, a.class_id, a.student_id, a.kind,
-              s.full_name, cl.code AS class_code, cl.branch_id,
-              pr.code AS to_week, ru.full_name AS asker_name
-         FROM skill_move_requests r
-         JOIN assessment_attempts a ON a.id = r.attempt_id
-         JOIN students s ON s.id = a.student_id
-         LEFT JOIN classes cl ON cl.id = a.class_id
-         LEFT JOIN report_periods pr ON pr.id = r.to_period_id
-         LEFT JOIN users ru ON ru.id = r.requested_by
-        WHERE r.status = 'pending' AND a.status != 'cancelled' AND ${LUOT_TINH_NO_SQL('a')}`,
-    )
-    .all() as any[];
-
-  napTruocPhamVi(pendingMoves.map((r) => r.student_id));
-  for (const r of pendingMoves) {
-    if (f.branchId && r.branch_id !== f.branchId) continue;
-    if (!can(p, PERMISSIONS.PLAN_WEEK, { classId: r.class_id, studentId: r.student_id })) continue;
-    const u = urgencyOf(r.decide_by, today);
-    items.push({
-      key: `move:${r.id}`, group: 'decide_move', urgency: u,
-      studentId: r.student_id, studentName: r.full_name ?? 'Học viên',
-      classId: r.class_id ?? null, classCode: r.class_code ?? null,
-      attemptId: r.attempt_id, attemptNo: r.attempt_no ?? null,
-      caseId: null, level: { tone: u === 'overdue' ? 'danger' : 'warn', text: `Lần dời ${r.move_no}` },
-      contextLabel: nhanDot(r.kind, r.attempt_no, 'Lịch thi'),
-      count: null,
-      reason: [
-        `${r.asker_name ?? 'GVCN'} đề nghị dời ${ASSESSED_SKILL_LABEL[r.skill as AssessedSkill] ?? r.skill}`
-        + `${r.to_week ? ` sang tuần ${r.to_week}` : ''} (lần ${r.move_no} do vắng)`,
-        r.reason ? `Lý do: ${r.reason}` : null,
-      ].filter(Boolean).join(' — '),
-      tieuDe: `Duyệt dời ${ASSESSED_SKILL_LABEL[r.skill as AssessedSkill] ?? r.skill}`,
-      actionLabel: 'Trả lời đề nghị',
-      /* Đi thẳng vào bảng lịch kỹ năng của đợt đó — nơi có nút trả lời đề nghị. */
-      href: attemptHref({ id: r.attempt_id, kind: r.kind, classId: r.class_id }),
-      ownerId: p.userId, owner: null, mine: true,
-      due: r.decide_by,
-      statusLabel: 'Chờ Quản lý trả lời trước khi tuần mới bắt đầu',
-    });
-  }
 
   // ------------------------------------------- 2b. GHI KẾT QUẢ PA HẰNG TUẦN (K5-02, T75, §5.6) — một PA một dòng
   /*
@@ -839,7 +701,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     if (!can(p, PERMISSIONS.SOS_EDIT, { classId: c.eff_class_id, studentId: c.eff_student_id, skill: c.topic ?? undefined })) continue;
     const u = urgencyOf(c.due ?? null, today);
     const mine = c.owner_user_id === p.userId;
-    const asManager = u === 'overdue' && can(p, PERMISSIONS.CASE_APPROVE, { classId: c.eff_class_id, studentId: c.eff_student_id });
+    /* PR-DUYET (K1-57): QL không còn dòng này ở "Của tôi" — quá hạn thì nó là thẻ Báo lên ở hộp Chờ duyệt; "Của GV (nhắc)" vẫn có để nhắc. */
+    const asManager = tatCa && u === 'overdue' && can(p, PERMISSIONS.CASE_APPROVE, { classId: c.eff_class_id, studentId: c.eff_student_id });
     if (!mine && !asManager) continue;
     const missing = [c.has_cause ? null : 'chưa chọn nguyên nhân'].filter(Boolean) as string[];
     const skillLabel = c.topic ? caseTopicLabel(c.topic) : 'Kỹ năng';
@@ -857,7 +720,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       ].filter(Boolean).join(' — '),
       tieuDe: `Xác định nguyên nhân ${skillLabel}`,
       actionLabel: 'Xác định nguyên nhân',
-      href: c.eff_student_id ? `/hoc-vien/${c.eff_student_id}` : `/hoc-thuat/case/${c.id}`,
+      /* PR-DUYET (K5-12): mở thẳng Ngăn Case — Nhắc lưu đường này vào thông báo, chuông về đúng chỗ. */
+      href: c.eff_student_id ? duongHoSoHocVien(c.eff_student_id, { caseId: c.id }) : `/hoc-thuat/case/${c.id}`,
       ownerId: c.owner_user_id ?? null, owner: null, mine,
       due: c.due ?? null, statusLabel: 'Chờ xác định nguyên nhân',
     });
@@ -1019,7 +883,6 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    */
   const order: WorkGroupKey[] = [
     'verify', 'cause', 'score', 'no_plan', 'result',
-    'decide', 'decide_move',
     'placement', 'next_step', 'no_owner', 'mgmt', 'missing_data',
   ];
   const weight = (u: WorkUrgency) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
@@ -1102,8 +965,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       total: items.length,
       overdue: items.filter((i) => i.urgency === 'overdue').length,
       today: items.filter((i) => i.urgency === 'today').length,
-      /* Việc đang chờ NGƯỜI KHÁC quyết — đếm riêng vì nó không phải việc mình làm được ngay. */
-      approval: items.filter((i) => i.group === 'decide').length,
+      /* Thẻ đang chờ người xem duyệt ở hộp Chờ duyệt (K5-04) — không còn là dòng việc. */
+      approval: demYeuCau(p).cho,
       mine: items.filter((i) => i.mine).length,
     },
     items: flat,

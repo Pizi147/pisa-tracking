@@ -8,6 +8,8 @@ import { addDays, badRequest, notFound, nowIso } from '../util.ts';
 import { can, isCoreTeacherOf, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { writeAudit, notify } from '../platform/audit.ts';
+import { nho } from '../platform/nguCanhRequest.ts';
+import { chotYeuCau, taoYeuCau } from '../duyet/yeuCau.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import {
   checkSkillWeekMove, ensureSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf,
@@ -82,42 +84,19 @@ function canDecide(p: Principal, attempt: any): boolean {
 }
 
 /*
- * SỔ TRA ĐỀ NGHỊ ĐANG CHỜ — nạp MỘT LẦN cho cả màn hình.
- *
- * Bảng danh sách lớp vẽ vài trăm ô lịch, mỗi ô là một kỹ năng của một đợt. Hỏi từng ô một
- * câu "có đề nghị nào đang chờ không" là 556 câu lệnh cho 11 lớp — và đó đúng là cái bẫy
- * N+1 mà bộ kiểm tra của dự án canh sẵn.
- *
- * Số đề nghị ĐANG CHỜ luôn nhỏ (nó là việc người ta phải xử lý trong vài ngày), nên nạp cả
- * bảng vào một Map rẻ hơn hẳn. Sổ này chỉ mất hiệu lực khi chính module này ghi vào bảng —
- * không có ai khác viết vào đó.
+ * SỔ TRA ĐỀ NGHỊ ĐANG CHỜ — nạp MỘT LẦN cho cả màn hình (bảng lớp vẽ vài trăm ô lịch; hỏi từng ô là N+1).
+ * PR-DUYET (K5-28): nhớ THEO REQUEST (`nho`), không còn biến sống suốt tiến trình — trên Netlify nhiều tiến trình chạy song song,
+ * sổ của tiến trình này không biết tiến trình kia vừa ghi. `nho` chỉ nhớ trong GET và tự xoá khi request ghi bất cứ gì.
  */
-let pendingIndex: Map<string, MoveRequest> | null = null;
-
-function invalidatePending() { pendingIndex = null; }
-
-/**
- * Chạy một thao tác có ghi vào bảng đề nghị, và DỌN SỔ TRA CẢ TRƯỚC LẪN SAU.
- *
- * Trước, để lần đọc trong chính thao tác này thấy dữ liệu thật. Sau, vì một giao dịch hỏng
- * giữa chừng sẽ được hoàn tác — mà sổ tra nạp lúc đó thì đã giữ mất những dòng không còn
- * tồn tại. Một sổ tra nhớ nhầm ở đây nghĩa là một đề nghị đã bị từ chối vẫn chặn Quản lý
- * đổi lịch.
- */
-function writing<T>(fn: () => T): T {
-  invalidatePending();
-  try { return fn(); } finally { invalidatePending(); }
-}
-
 function indexOfPending(): Map<string, MoveRequest> {
-  if (pendingIndex) return pendingIndex;
-  const rows = db()
-    .prepare(`SELECT * FROM skill_move_requests WHERE status = 'pending' ORDER BY id`)
-    .all() as MoveRequest[];
-  const m = new Map<string, MoveRequest>();
-  for (const r of rows) m.set(`${r.attempt_id}:${r.skill}`, r);
-  pendingIndex = m;
-  return m;
+  return nho('de-nghi-doi', () => {
+    const rows = db()
+      .prepare(`SELECT * FROM skill_move_requests WHERE status = 'pending' ORDER BY id`)
+      .all() as MoveRequest[];
+    const m = new Map<string, MoveRequest>();
+    for (const r of rows) m.set(`${r.attempt_id}:${r.skill}`, r);
+    return m;
+  });
 }
 
 /**
@@ -126,10 +105,16 @@ function indexOfPending(): Map<string, MoveRequest> {
  * Gọi trong tx của nơi gọi.
  */
 export function rutDeNghiDoi(attemptId: number, skill?: string): number {
-  return writing(() => db()
-    .prepare(`UPDATE skill_move_requests SET status = 'withdrawn', updated_at = ?
-               WHERE attempt_id = ? AND status = 'pending'${skill ? ' AND skill = ?' : ''}`)
-    .run(nowIso(), attemptId, ...(skill ? [skill] : [])).changes);
+  const conn = db();
+  const ids = (conn.prepare(`SELECT id FROM skill_move_requests WHERE attempt_id = ? AND status = 'pending'${skill ? ' AND skill = ?' : ''}`)
+    .all(attemptId, ...(skill ? [skill] : [])) as any[]).map((r) => r.id as number);
+  for (const id of ids) {
+    conn.prepare(`UPDATE skill_move_requests SET status = 'withdrawn', updated_at = ? WHERE id = ? AND status = 'pending'`).run(nowIso(), id);
+    /* Thẻ Lịch thi của đề nghị này (PR-DUYET) đóng cùng lúc — không để thẻ chờ cho một đề nghị đã rút. */
+    chotYeuCau(conn, { loai: 'lich_thi', doiTuongLoai: 'skill_move', doiTuongId: id }, 'tu_dong',
+      { lyDo: skill ? 'Rút — bài không còn vắng' : 'Rút — lượt đã huỷ' });
+  }
+  return ids.length;
 }
 
 /** Đề nghị đang chờ của một kỹ năng, nếu có. */
@@ -181,13 +166,18 @@ export function tuanDichMacDinh(attemptId: number, skill: string, today: string)
   return null;
 }
 
-/** Chữ thẻ "Dời lịch MT lần 2" cho PR-DUYET: `Dời S · MT3 · lần 2 · Duyệt = S thi W2 OCT`. */
+/** Chữ thẻ "Dời lịch MT lần 2" (tiêu đề thẻ Lịch thi ở hộp Chờ duyệt): `Dời S · MT3 · lần 2 · Duyệt = S thi W2 OCT`. Hàm thuần. */
+export function chuTheDoiLan2(o: { skill: string; attemptNo: number | null; moveNo: number; tuanDich: string | null; homNay: string }): string {
+  const k = SKILL_SHORT[o.skill] ?? o.skill;
+  return `Dời ${k} · MT${o.attemptNo ?? '?'} · lần ${o.moveNo} · Duyệt = ${k} thi ${o.tuanDich ? tuanLich(o.tuanDich, o.homNay) : '—'}`;
+}
+
+/** Như `chuTheDoiLan2`, đọc từ một đề nghị (giao kèo PR-MT → PR-DUYET). */
 export function moTaDoiLan2(req: { attempt_id: number; skill: string; move_no: number; to_period_id: number }): string {
   const conn = db();
   const a = conn.prepare('SELECT attempt_no FROM assessment_attempts WHERE id = ?').get(req.attempt_id) as any;
   const w = conn.prepare('SELECT week_start FROM report_periods WHERE id = ?').get(req.to_period_id) as any;
-  const k = SKILL_SHORT[req.skill] ?? req.skill;
-  return `Dời ${k} · MT${a?.attempt_no ?? '?'} · lần ${req.move_no} · Duyệt = ${k} thi ${w ? tuanLich(w.week_start, demoToday()) : '—'}`;
+  return chuTheDoiLan2({ skill: req.skill, attemptNo: a?.attempt_no ?? null, moveNo: req.move_no, tuanDich: w?.week_start ?? null, homNay: demoToday() });
 }
 
 export type MoveOutcome = {
@@ -228,7 +218,7 @@ export function requestAbsenceMove(p: Principal, attemptId: number, skills: stri
   const today = opts.today ?? demoToday();
   const rows = ensureSkillRows(attemptId);
 
-  return writing(() => tx(() => {
+  return tx(() => {
     const conn = db();
     const outcomes: MoveOutcome[] = [];
 
@@ -257,7 +247,7 @@ export function requestAbsenceMove(p: Principal, attemptId: number, skills: stri
     }
 
     return { outcomes };
-  }));
+  });
 }
 
 /**
@@ -309,21 +299,16 @@ function xuLyVangMotKyNang(conn: any, actor: number | null, attempt: any, row: a
     reason: o.lyDo, by: actor, on: today, decideBy: hanDeNghi, idem: o.idem,
   });
   const han = `hết Chủ nhật ${ngay(hanDeNghi, today)}`;
+  /* PR-DUYET: `insertRequest` đã tạo thẻ Lịch thi (hạn = `hanDuyetDoiLan2`, người xin null khi máy gửi) — không báo riêng người xếp lịch. */
   if (escalate) {
     const why = check.blockers.length
       ? check.blockers.join(' ')
       : `Tuần kế tiếp (${target.code}) đã bắt đầu hoặc đã qua hạn duyệt.`;
-    notifyPlanners(attempt, `Cần Quản lý xử lý: dời ${skillName(skill)} do vắng. ${why}`, id, actor);
     return {
       skill, result: 'escalated', toWeek: dich.code, moveNo, requestId: id,
       message: `${skillName(skill)}: ${why} Việc đã chuyển cho Quản lý xếp lại.`,
     };
   }
-  notifyPlanners(
-    attempt,
-    `Đề nghị dời ${skillName(skill)} sang tuần ${dich.code} (lần thứ ${moveNo} do vắng). Cần trả lời trước ${han}.`,
-    id, actor,
-  );
   return {
     skill, result: 'pending', toWeek: dich.code, moveNo, requestId: id,
     message: `${skillName(skill)}: đây là lần dời thứ ${moveNo}, cần Quản lý duyệt trước ${han}. `
@@ -346,7 +331,6 @@ function insertRequest(conn: any, r: {
     const dup = conn.prepare('SELECT id FROM skill_move_requests WHERE idempotency_key = ?').get(r.idem) as any;
     if (dup) return dup.id;
   }
-  invalidatePending();
   const info = conn
     .prepare(
       `INSERT INTO skill_move_requests (attempt_id, skill, move_no, from_period_id, to_period_id,
@@ -355,7 +339,14 @@ function insertRequest(conn: any, r: {
        VALUES (?,?,?,?,?,?,?,?,?, 'pending', ?, ?)`,
     )
     .run(r.attemptId, r.skill, r.moveNo, r.from, r.to, r.reason, r.by, r.on, r.decideBy, r.idem, nowIso());
-  return Number(info.lastInsertRowid);
+  const id = Number(info.lastInsertRowid);
+  /* PR-DUYET (K4-04 phần thẻ): mọi đề nghị chờ QL là MỘT thẻ Lịch thi; hạn thẻ CHÉP `decide_by` (luật hạn thuộc PR-MT). */
+  const a = conn.prepare('SELECT student_id, class_id FROM assessment_attempts WHERE id = ?').get(r.attemptId) as any;
+  taoYeuCau(conn, {
+    loai: 'lich_thi', doiTuongLoai: 'skill_move', doiTuongId: id, hocVienId: a?.student_id ?? null, lopId: a?.class_id ?? null,
+    nguoiXin: r.by, lyDo: r.reason, hanDuyet: r.decideBy,
+  });
+  return id;
 }
 
 /** Đổi tuần và TĂNG bộ đếm — chỉ đường đi qua đây mới được tính là một lần dời do vắng. */
@@ -401,23 +392,27 @@ export function decideAbsenceMove(p: Principal, requestId: number, input: {
   const attempt = loadAttempt(req.attempt_id);
   if (!canDecide(p, attempt)) throw badRequest('Chỉ Quản lý mới trả lời được đề nghị dời lịch.');
   if (req.status !== 'pending') {
-    throw badRequest(`Đề nghị này đã được xử lý (${req.status}) — không trả lời lại được.`);
+    throw badRequest('Đề nghị này đã được xử lý — không trả lời lại được.');
   }
   if (attempt.status === 'cancelled') throw badRequest('Lượt này đã huỷ — đề nghị dời không còn hiệu lực.');
+  const note = (input.note ?? '').trim() || null;
+  /* PR-DUYET (§5.5, M8/Q11): từ chối = huỷ phần thi của em — bắt buộc lý do để GVCN biết vì sao. */
+  if (!input.approve && (note ?? '').length < 3) throw badRequest('Từ chối thì ghi lý do (ít nhất 3 ký tự) để GVCN biết vì sao.');
 
   const today = demoToday();
   const rows = ensureSkillRows(req.attempt_id);
   const row = rows.find((r) => r.skill === req.skill)!;
 
-  return writing(() => tx(() => {
+  return tx(() => {
     if (!input.approve) {
       conn
         .prepare(
           `UPDATE skill_move_requests SET status = 'declined', decided_by = ?, decided_at = ?,
                   decision_note = ?, updated_at = ? WHERE id = ?`,
         )
-        .run(p.userId, nowIso(), input.note ?? null, nowIso(), requestId);
+        .run(p.userId, nowIso(), note, nowIso(), requestId);
       cancelPart(conn, p.userId, attempt, row, requestId, 'Quản lý từ chối đề nghị dời lịch.');
+      chotYeuCau(conn, { loai: 'lich_thi', doiTuongLoai: 'skill_move', doiTuongId: requestId }, 'tu_choi', { nguoiDuyet: p.userId, lyDo: note });
       return { ok: true, status: 'declined', cancelled: true };
     }
 
@@ -451,9 +446,10 @@ export function decideAbsenceMove(p: Principal, requestId: number, input: {
         `UPDATE skill_move_requests SET status = 'approved', decided_by = ?, decided_at = ?,
                 decision_note = ?, to_period_id = ?, updated_at = ? WHERE id = ?`,
       )
-      .run(p.userId, nowIso(), input.note ?? null, target.id, nowIso(), requestId);
+      .run(p.userId, nowIso(), note, target.id, nowIso(), requestId);
+    chotYeuCau(conn, { loai: 'lich_thi', doiTuongLoai: 'skill_move', doiTuongId: requestId }, 'duyet', { nguoiDuyet: p.userId, lyDo: note });
     return { ok: true, status: 'approved', week: target.code, warnings: check.warnings };
-  }));
+  });
 }
 
 /**
@@ -471,7 +467,7 @@ export function sweepExpiredMoves(): number {
     .all(today) as MoveRequest[];
   if (!due.length) return 0;
 
-  return writing(() => tx(() => {
+  return tx(() => {
     let n = 0;
     for (const req of due) {
       const attempt = db().prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(req.attempt_id) as any;
@@ -484,10 +480,11 @@ export function sweepExpiredMoves(): number {
         )
         .run(nowIso(), req.id);
       cancelPart(conn, null, attempt, row, req.id, 'Hết hạn duyệt mà chưa có quyết định.');
+      chotYeuCau(conn, { loai: 'lich_thi', doiTuongLoai: 'skill_move', doiTuongId: req.id }, 'tu_dong', { lyDo: 'Hết hạn duyệt — phần thi bị huỷ' });
       n += 1;
     }
     return n;
-  }));
+  });
 }
 
 /**
@@ -573,7 +570,7 @@ export function restoreCancelledSkill(p: Principal, attemptId: number, skill: st
   const check = checkSkillWeekMove({ attemptId, skill: skill as AssessedSkill, newWeekStart: period.week_start });
   if (check.blockers.length) throw badRequest(check.blockers.join(' '));
 
-  return writing(() => tx(() => {
+  return tx(() => {
     const conn = db();
     conn
       .prepare(
@@ -593,7 +590,7 @@ export function restoreCancelledSkill(p: Principal, attemptId: number, skill: st
       before: { sitStatus: row.sit_status }, after: { week: period.code },
     });
     return { ok: true, completionWeek: cw, warnings: check.warnings };
-  }));
+  });
 }
 
 /** Báo cho những người xếp lịch của chi nhánh — không gửi cho cả trường. */
@@ -682,7 +679,7 @@ export function settleNoShows(today: string = demoToday()): number {
     groups.get(r.sched_id)!.push(r);
   }
   let settled = 0;
-  writing(() => tx(() => {
+  tx(() => {
     for (const g of groups.values()) {
       const first = g[0];
       const needed = entrySkillsOf(first.assessed as AssessedSkill);
@@ -693,7 +690,7 @@ export function settleNoShows(today: string = demoToday()): number {
         settled += 1;
       }
     }
-  }));
+  });
   return settled;
 }
 
@@ -794,7 +791,7 @@ export function resolveLateNoShow(
   const assessed = assessedSkillOf(skill);
   const conn = db();
   void today;
-  return writing(() => tx(() => {
+  return tx(() => {
     const marks = conn
       .prepare(
         `SELECT s.id, s.skill FROM assessment_scores s
@@ -832,7 +829,7 @@ export function resolveLateNoShow(
     const done = settleGroup(conn, attemptId, sched.id, assessed, sched.week_end, sched.code,
       marks.map((m) => m.id), p.userId, 'Không dự thi — Quản lý xác nhận dấu "-" nhập cho tuần đã kết thúc.');
     return { ok: true, result: done ? ('confirmed' as const) : ('unchanged' as const) };
-  }));
+  });
 }
 
 /** Danh sách đề nghị đang chờ, cho hàng việc của Quản lý. */

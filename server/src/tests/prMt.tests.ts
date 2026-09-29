@@ -494,6 +494,7 @@ export async function runPrMtTests(t: YThucTestKit) {
 
   // ---------------------------------------------------------------- khối 10: sửa theo rà PR #119
   const signalsSvc: any = await import('../worklist/signals.ts');
+  const yeuCau: any = await import('../duyet/yeuCau.ts');
   const { boLichTuTao } = await import('./luotThu.ts');
   const soThieuDiem = () => (signalsSvc.signalsFor(P.admin) as any[]).filter((x) => x.kind === 'missing_scores').reduce((n, x) => n + x.count, 0);
   check('PR-MT (10) · Rà #119 mục 3: "bài Test còn thiếu điểm" và bộ lọc need=missing_scores bỏ MT lịch sử (T34)', () => {
@@ -537,8 +538,9 @@ export async function runPrMtTests(t: YThucTestKit) {
     const tt = (id: number) => (conn.prepare('SELECT status FROM skill_move_requests WHERE id = ?').get(id) as any).status;
     assert(tt(r1) === 'withdrawn', `đề nghị sau huỷ cả lượt: ${tt(r1)}`);
     const r2 = deNghi(3);   // dữ liệu cũ: đề nghị còn treo trên lượt đã huỷ
-    const viecDoi = mywork.myWork(QL).groups.find((g: any) => g.key === 'decide_move')?.items ?? [];
-    assert(!viecDoi.some((x: any) => x.key === `move:${r2}`), 'Việc cần làm có việc dời của lượt đã huỷ');
+    /* Hộp Chờ duyệt (PR-DUYET): thẻ Lịch thi của lượt đã huỷ tự đóng ở lần quét, không hiện. */
+    yeuCau.taoYeuCau(conn, { loai: 'lich_thi', doiTuongLoai: 'skill_move', doiTuongId: r2, hocVienId: sid, lopId: MB101, nguoiXin: null, hanDuyet: TODAY });
+    assert(!yeuCau.hopChoDuyet(QL).the.some((x: any) => x.loai === 'lich_thi' && x.hocVienId === sid), 'hộp Chờ duyệt có thẻ dời của lượt đã huỷ');
     assertThrows(() => absence.decideAbsenceMove(QL, r2, { approve: true }), /Lượt này đã huỷ/, 'duyệt dời của lượt đã huỷ');
     const lai = attemptsSvc.createAttempt(QL, { studentId: sid, periodId: tuanXa(20) });
     assert(lai.id === m3.id && lai.created_at > '2026-06-01' && tt(r2) === 'withdrawn', JSON.stringify({ id: lai.id, c: lai.created_at, r2: tt(r2) }));

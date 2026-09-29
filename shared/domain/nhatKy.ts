@@ -27,6 +27,8 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'measure.remove_violation': 'Bỏ vi phạm khỏi PA',
   'mgmt_task.create': 'Tạo công việc quản lý',
   'regular.no_show': 'Ghi vắng thi môn', 'regular.no_show_cleared': 'Bỏ ghi vắng thi môn', 'regular.plan': 'Xếp lịch bài lớp thường',
+  'request.approve': 'Duyệt yêu cầu', 'request.decline': 'Từ chối yêu cầu', 'request.answer': 'Trả lời Xin ý kiến',
+  'request.create': 'Gửi yêu cầu duyệt',
   'regular.score': 'Nhập điểm lớp thường', 'regular.score.override': 'Sửa điểm lớp thường',
   'score.lich_su': 'Nhập điểm MT lịch sử',
   'report.unlock': 'Mở khoá báo cáo', 'report.relock': 'Khoá lại báo cáo',

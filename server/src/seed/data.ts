@@ -50,7 +50,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'case.close', 'case.approve',
     'violation.record', 'discipline.manage', 'discipline.stats',
     'class.assign', 'class.edit', 'student.view', 'student.edit',
-    'meeting.view', 'meeting.edit', 'admin.config',
+    'meeting.view', 'meeting.edit', 'admin.config', 'request.approve', 'cycle.edit',
   ],
   // Quản lý: chốt TUẦN của mọi lượt MT trong chi nhánh mình.
   manager: [
@@ -59,7 +59,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     // Quản lý đóng được case trong chi nhánh mình; GVCN đóng case lớp mình (kiểm theo phân công).
     'case.view', 'sos.report', 'sos.edit', 'case.close', 'case.approve', 'class.assign', 'class.edit',
     'violation.record', 'discipline.manage', 'discipline.stats',
-    'student.view', 'student.edit', 'meeting.view', 'meeting.edit',
+    'student.view', 'student.edit', 'meeting.view', 'meeting.edit', 'request.approve', 'cycle.edit',
   ],
   /*
    * Giáo viên: nhập điểm và đánh giá ĐÚNG kỹ năng được phân công.
