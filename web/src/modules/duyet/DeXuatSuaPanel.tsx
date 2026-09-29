@@ -4,8 +4,8 @@ import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
-import { NutChon } from '../../ui/ui.tsx';
-import { dsLoi, type LuatTruong } from '@shared/domain/index.ts';
+import { NutChon, TargetText } from '../../ui/ui.tsx';
+import { GIAI_THICH_KCK, KCK, dsLoi, type LuatTruong } from '@shared/domain/index.ts';
 
 /**
  * ĐỀ XUẤT SỬA THÔNG TIN HV (PR-DUYET, T44) — GV của lớp gửi, Quản lý duyệt ở Công việc › Chờ duyệt.
@@ -22,7 +22,7 @@ export function DeXuatSuaPanel({ studentId, studentName, lop, truongDau, hienTai
   studentId: number; studentName: string; lop?: string | null;
   truongDau?: TruongDeXuat;
   /** Giá trị đang có — hiện cạnh ô mới để người gửi thấy mình đổi từ đâu. */
-  hienTai?: { target?: number | null; route?: string | null };
+  hienTai?: { target?: number | null; khongCamKet?: boolean; route?: string | null };
   onClose: () => void; onDone?: () => void;
 }) {
   const toast = useToast();
@@ -40,7 +40,7 @@ export function DeXuatSuaPanel({ studentId, studentName, lop, truongDau, hienTai
   ];
   const loi = [
     ...dsLoi(luat, { truong, moi, 'ly-do': lyDo }),
-    ...(truong === 'target' && moi !== '' && !hopLeTarget(moi) ? [{ khoa: 'moi', nhan: 'Target mới', lyDo: 'Band từ 0 đến 9, bước 0.5' }] : []),
+    ...(truong === 'target' && moi !== '' && moi !== KCK && !hopLeTarget(moi) ? [{ khoa: 'moi', nhan: 'Target mới', lyDo: 'Band từ 0 đến 9, bước 0.5 — hoặc chọn Không cam kết (KCK)' }] : []),
   ];
 
   const gui = async () => {
@@ -48,7 +48,7 @@ export function DeXuatSuaPanel({ studentId, studentName, lop, truongDau, hienTai
     if (loi.length > 0 || busy) return;
     setBusy(true);
     try {
-      await api.post(`/students/${studentId}/de-xuat-sua`, { truong, moi: truong === 'target' ? Number(moi) : moi.trim(), lyDo: lyDo.trim() });
+      await api.post(`/students/${studentId}/de-xuat-sua`, { truong, moi: truong === 'target' && moi !== KCK ? Number(moi) : moi.trim(), lyDo: lyDo.trim() });
       invalidate('/yeu-cau');
       toast.push('ok', 'Đã gửi — xem ở Công việc › Yêu cầu của tôi');
       onDone?.();
@@ -73,12 +73,18 @@ export function DeXuatSuaPanel({ studentId, studentName, lop, truongDau, hienTai
           </div>
         </Truong>
         {truong && (
-          <Truong nhan={truong === 'target' ? 'Target mới' : truong === 'lo-trinh' ? 'Lộ trình mới' : 'Giá trị mới'} batBuoc loi={lf.loiCua(loi, 'moi')}>
+          <Truong nhan={truong === 'target' ? 'Target mới' : truong === 'lo-trinh' ? 'Lộ trình mới' : 'Giá trị mới'} batBuoc loi={lf.loiCua(loi, 'moi')}
+            as={truong === 'target' ? 'div' : undefined} phu={truong === 'target' ? `KCK: ${GIAI_THICH_KCK}.` : undefined}>
             {truong === 'target' ? (
-              <div className="flex items-center gap-2">
-                <input className="field w-24 tabular-nums" type="number" inputMode="decimal" step="0.5" min={0} max={9}
-                  {...lf.o(loi, 'moi')} value={moi} onChange={(e) => setMoi(e.target.value)} />
-                {hienTai?.target != null && <span className="text-xs text-slate-400 tabular-nums">đang là {hienTai.target.toFixed(1)}</span>}
+              <div className="flex flex-wrap items-center gap-2">
+                <input className="field w-24 tabular-nums" aria-label="Band target mới" type="number" inputMode="decimal" step="0.5" min={0} max={9}
+                  {...lf.o(loi, 'moi')} value={moi === KCK ? '' : moi} disabled={moi === KCK} onChange={(e) => setMoi(e.target.value)} />
+                {!hienTai?.khongCamKet && (
+                  <NutChon nho chon={moi === KCK} onClick={() => setMoi(moi === KCK ? '' : KCK)}>Không cam kết (KCK)</NutChon>
+                )}
+                {(hienTai?.target != null || hienTai?.khongCamKet) && (
+                  <span className="text-xs text-slate-400 tabular-nums">đang là <TargetText band={hienTai.target} kck={hienTai.khongCamKet} /></span>
+                )}
               </div>
             ) : truong === 'lo-trinh' ? (
               <div className="flex flex-wrap gap-1.5" {...lf.o(loi, 'moi')}>

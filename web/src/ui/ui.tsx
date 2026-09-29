@@ -1,6 +1,7 @@
 import { useId, useState, type MouseEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { chuTrangThai, type TrangThai } from '@shared/domain/index.ts';
+import { GIAI_THICH_KCK, KCK, chuTrangThai, type TrangThai } from '@shared/domain/index.ts';
+import { fmtBand } from '../lib/format.ts';
 import { BaoOTrongNhan, coOTuNhan } from './ONgay.tsx';
 
 export function Card({ title, action, children, className = '', bodyClass = 'p-4' }: {
@@ -427,6 +428,18 @@ export function BandCell({ cell, target }: {
         </span>
       )}
     </span>
+  );
+}
+
+/**
+ * TARGET của lộ trình (Q29-1, PR-KCK): "KCK" = không cam kết đầu ra (không kỳ vọng MT, không SOS) — gạch chấm mờ báo có giải thích khi rê
+ * chuột; hoặc band "6.5" / "—" (chưa có). Mọi màn hiện target dùng chung, để KCK không bị đọc nhầm thành "chưa có".
+ */
+export function TargetText({ band, kck }: { band: number | null | undefined; kck?: boolean | null }) {
+  if (!kck) return <>{fmtBand(band)}</>;
+  return (
+    <abbr title={GIAI_THICH_KCK} aria-label={`${KCK}: ${GIAI_THICH_KCK}`}
+      className="cursor-help underline decoration-dotted decoration-slate-500 underline-offset-2">{KCK}</abbr>
   );
 }
 

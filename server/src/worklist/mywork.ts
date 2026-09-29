@@ -773,7 +773,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
            JOIN students s ON s.id = cy.student_id AND s.status = 'active' AND s.archived_at IS NULL
            JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
            JOIN classes c ON c.id = e.class_id
-          WHERE cy.status = 'active' AND cy.route IS NOT NULL AND cy.target_score IS NULL
+          WHERE cy.status = 'active' AND cy.route IS NOT NULL AND cy.target_score IS NULL AND cy.khong_cam_ket = 0
             AND e.class_id IN (${lopCn.map(() => '?').join(',')}) AND (? IS NULL OR c.branch_id = ?)
           ORDER BY c.code, s.full_name`,
       ).all(...lopCn, f.branchId ?? null, f.branchId ?? null) as any[]) {

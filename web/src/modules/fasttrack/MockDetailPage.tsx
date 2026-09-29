@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Card, Empty, ErrorState, ExamPlanText, Info as Tag, Outcome, SectionNote, Skeleton, Status } from '../../ui/ui.tsx';
+import { Card, Empty, ErrorState, ExamPlanText, Info as Tag, Outcome, SectionNote, Skeleton, Status, TargetText } from '../../ui/ui.tsx';
 import { ChipLichSu } from '../../ui/Nhan.tsx';
 import type { ExamPlan } from '../../../../shared/domain/index.ts';
 import { ConfirmDialog, Modal } from '../../ui/Drawer.tsx';
@@ -34,7 +34,7 @@ type Detail = {
   /** `mock` với Fast Track; `progress` / `final` là bài của lớp Normal — màn khác hẳn. */
   kind: string;
   student: { id: number; name: string; code: string };
-  cycle: { id: number; seq: number; route: string | null; target: number | null; examPlan: ExamPlan };
+  cycle: { id: number; seq: number; route: string | null; target: number | null; khongCamKet?: boolean; examPlan: ExamPlan };
   classId: number | null; classCode: string | null; branchName: string | null;
   attemptNo: number; targetAtAttempt: number | null; studyWeekHint: number | null;
   period: { id: number; code: string; weekStart: string; weekEnd: string; range: string } | null;
@@ -232,7 +232,9 @@ export default function MockDetailPage() {
               : <Tag pending>Chưa chốt tuần</Tag>}
           </Info>
           <Info label="Thi thật dự kiến"><ExamPlanText plan={d.cycle.examPlan} /></Info>
-          <Info label="Mục tiêu tại thời điểm đánh giá">{fmtBand(d.targetAtAttempt)}</Info>
+          <Info label="Mục tiêu tại thời điểm đánh giá">
+            <TargetText band={d.targetAtAttempt} kck={d.targetAtAttempt === null && d.cycle.khongCamKet} />
+          </Info>
           {d.studyWeekHint && (
             <Info label="Mốc gợi ý" title="Tuần học của chương trình và mã tuần lịch là hai khái niệm khác nhau.">
               Tuần học FT {d.studyWeekHint}

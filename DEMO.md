@@ -137,6 +137,20 @@ Ba học viên MỚI ở `MB-FT 101`, dựng bằng chính các hàm nghiệp v�
 
 Ba mức SOS khác nhau (1 · 2 · 3) đều có mặt; có cả lượt đang xử lý lẫn đã hoàn thành. Bộ demo Ý thức (mục 1) nay dùng *xoá thẳng* thay cho "đánh dấu không chính xác": hai vi phạm đã xoá (Trần Thu Hà, Lê Quang Huy) chỉ còn dấu vết ở `audit_logs`.
 
+## 9b. PR-KCK — Target "không cam kết" (chỉ máy dev)
+
+Hai em mới ở **MB FT 101**, thêm qua chính luồng Thêm học viên (`buildKckDemo` trong `server/src/seed/sosV3Seed.ts`). Ô Target gõ `KCK`,
+`kck`, `-`, `không cam kết` đều hiểu là **KCK**; ô trống vẫn là "chưa có target".
+
+| Học viên | Target | Bạn sẽ thấy |
+|---|---|---|
+| **Hồ Gia Hân** | `KCK` | MT1 (2 tuần trước) L R S = 5.0 — dưới mọi band FT mà **không** Case, **không** PA quy chế, **không** Phối hợp SOS. Cột Target hiện `KCK` (rê chuột: "Không cam kết đầu ra — không tính SOS"), kỳ vọng `—`, điểm không tô màu SOS |
+| **Lê Minh Đức** | `-` | Chưa có điểm. **Không** có việc "Điền target" ở Việc cần làm của GVCN, không nhãn "Thiếu thông tin · target" |
+
+Đổi target ↔ KCK (Quản lý: Lộ trình › Đổi mục tiêu › `Không cam kết (KCK)`; GVCN: Đề xuất sửa › Target › `Không cam kết (KCK)`): MT chưa có
+điểm theo target mới (KCK = bỏ kỳ vọng), MT đã có điểm và Case SOS đang mở giữ nguyên. Bảng Tổng hợp và báo cáo tuần không tính lượt của
+em KCK vào "Lượt MT".
+
 ## 10. PR-MT — lịch MT tự tạo, MT lịch sử, lớp RF, dời do vắng (chỉ máy dev)
 
 Dựng bằng chính các hàm nghiệp vụ (`server/src/seed/prMtSeed.ts`), sau ngày demo 14/09/2026. Tài khoản gợi ý: **Quản lý Nguyễn Khánh Vy**,

@@ -297,7 +297,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
    * MỚI NHẤT mỗi em — chứ không chỉ em còn `active` (lớp finished thì không còn ai active).
    */
   let sql = `SELECT s.*, e.status AS enrollment_status, e.end_kind AS enrollment_end_kind,
-                    cy.id AS cycle_id, cy.seq AS cycle_seq, cy.route, cy.target_score,
+                    cy.id AS cycle_id, cy.seq AS cycle_seq, cy.route, cy.target_score, cy.khong_cam_ket,
                     cy.baseline_attempt_id, cy.baseline_score,
                     cy.start_period_id, cy.exam_month, cy.exam_period_id, cy.exam_date, sp.week_start AS start_week,
                     ep.code AS exam_week_code, ep.week_start AS exam_week_start
@@ -591,7 +591,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
       cycle: s.cycle_id
         ? {
           id: s.cycle_id, seq: s.cycle_seq, route: s.route,
-          target: s.target_score,
+          target: s.target_score, khongCamKet: !!s.khong_cam_ket,
           examMonth: s.exam_month ?? null, examPeriodId: s.exam_period_id ?? null,
           startPeriodId: s.start_period_id ?? null, startWeek: s.start_week ?? null,
         }
@@ -605,7 +605,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
       missing: missingForStudent({
         cycle: s.cycle_id
           ? {
-            start_period_id: s.start_period_id, exam_month: s.exam_month, target_score: s.target_score,
+            start_period_id: s.start_period_id, exam_month: s.exam_month, target_score: s.target_score, khong_cam_ket: s.khong_cam_ket,
             baseline: s.baseline_attempt_id !== null || s.baseline_score !== null,
           }
           : null,

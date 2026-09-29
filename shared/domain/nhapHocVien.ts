@@ -80,6 +80,17 @@ const BO_QUA_IM = new Set(['', 'stt', 'so thu tu', 'tinh trang']);
 export const chuanTieuDe = (h: string) => h.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd')
   .toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 
+/**
+ * Q29-1 (PR-KCK): ô Target ghi `KCK` / `-` / "không cam kết" = học viên KHÔNG CAM KẾT đầu ra → không kỳ vọng MT, không SOS.
+ * KHÁC ô trống (= chưa có target, vẫn có việc "Điền target"). Dùng chung cho nhập học viên, sửa target, Đề xuất sửa.
+ */
+export const KCK = 'KCK';
+export const GIAI_THICH_KCK = 'Không cam kết đầu ra — không tính SOS';
+export const laKck = (v: unknown): boolean => {
+  const s = String(v ?? '').trim();
+  return /^[-–—]$/.test(s) || ['kck', 'khong cam ket'].includes(chuanTieuDe(s));
+};
+
 /** YC-5.2: cột dán nhận THEO TIÊU ĐỀ, không theo thứ tự. Cột lạ/lặp → `boQua` (báo người dán); cột lặp lấy cột đầu. */
 export function nhanDangCot(dongDau: string[]): { cot: (CotNhap | null)[]; boQua: string[] } {
   const bang = new Map<string, CotNhap>();

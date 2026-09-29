@@ -12,7 +12,7 @@ import { mondayOf } from '../platform/week.ts';
 import { entryBandsOf, loadBundle, type AttemptBundle } from '../fasttrack/attempts.ts';
 import { expectationFor, failingEntrySkills } from '../fasttrack/scoring.ts';
 import { allProgrammes, type ProgrammeInfo } from '../normal/regular.ts';
-import { evaluateAttemptRow } from '../worklist/danhGia.ts';
+import { evaluateAttemptRow, luotKck } from '../worklist/danhGia.ts';
 import { rowsFor, type MetricRow } from '../worklist/metrics.ts';
 
 /**
@@ -99,6 +99,7 @@ function tinh(p: Principal, f: FilterTongHop) {
     .prepare(
       `SELECT a.id, a.status, a.kind, a.attempt_no, a.class_id, a.planned_period_id, a.target_at_attempt, a.student_id,
               (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route,
+              (SELECT cy.khong_cam_ket FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS kck,
               c.programme_code, c.code AS class_code, c.branch_id, c.is_fast_track,
               b.name AS branch_name,
               rp.id AS period_id, rp.week_start, rp.week_end
@@ -176,7 +177,7 @@ function tinh(p: Principal, f: FilterTongHop) {
   const tongTap: Tap = new Map();
   for (const a of attempts) {
     const { cha, con } = dongOf(a);
-    if (!scored.has(a.id)) continue;
+    if (!scored.has(a.id) || luotKck(a)) continue;   // Q29-1: em KCK ngoài mẫu số
 
     const ev = evaluateAttemptRow(a, bundle, programmes);
     const loai = phanLoaiLuot(ev);

@@ -630,6 +630,8 @@ const miss = (key: MissingInfo['key']): MissingInfo => ({ key, ...MISSING_LABEL[
 export function missingForStudent(input: {
   cycle: {
     start_period_id?: number | null; exam_month?: string | null; target_score?: number | null;
+    /** Q29-1: Target KCK = đã chọn không cam kết — không phải "thiếu target". */
+    khong_cam_ket?: number | null;
     baseline?: boolean;
   } | null;
   student: { dob?: string | null } | null;
@@ -657,7 +659,7 @@ export function missingForStudent(input: {
   if (!input.cycle?.start_period_id) out.push(miss('start_week'));
   if (input.isFastTrack) {
     if (!input.cycle?.exam_month) out.push(miss('exam_month'));
-    if (input.cycle?.target_score === null || input.cycle?.target_score === undefined) out.push(miss('target'));
+    if ((input.cycle?.target_score === null || input.cycle?.target_score === undefined) && !input.cycle?.khong_cam_ket) out.push(miss('target'));
     if (input.cycle && input.cycle.baseline === false) out.push(miss('baseline'));
   }
   if (input.hasNextMilestone === false) out.push(miss('next_milestone'));

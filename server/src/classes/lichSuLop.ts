@@ -45,7 +45,7 @@ export function lichSuLop(p: Principal, studentId: number) {
     let ketQua: string | null = null;
     if (dangHoc) {
       if (activeCycle && !isRatioCycle(activeCycle)) {
-        const parts = [`Mục tiêu ${activeCycle.target_score != null ? Number(activeCycle.target_score).toFixed(1) : '—'}`];
+        const parts = [`Mục tiêu ${activeCycle.khong_cam_ket ? 'KCK' : activeCycle.target_score != null ? Number(activeCycle.target_score).toFixed(1) : '—'}`];
         if (activeCycle.exam_month) parts.push(`thi ${fmtExamMonth(activeCycle.exam_month)}`);
         ketQua = parts.join(' · ');
       }
