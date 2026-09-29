@@ -2453,9 +2453,8 @@ check('MỌI phương án đều có chu kỳ và hạn — không có phương 
   assert(iv.actionDue, 'Phương án bắt đầu rồi mà không có hạn nào');
   assert(iv.actionDue === domain.weeklyUpdateDue(addDays(TODAY, -20)),
     `Hạn ghi kết quả phải là hết Thứ Hai sau tuần bắt đầu: kỳ vọng ${domain.weeklyUpdateDue(addDays(TODAY, -20))}, đang là ${iv.actionDue}`);
-  assert(iv.followupDue === domain.planEndDefault(addDays(TODAY, -20)),
-    `Dự kiến kết thúc phải là Chủ nhật tuần tiếp theo: kỳ vọng ${domain.planEndDefault(addDays(TODAY, -20))}, đang là ${iv.followupDue}`);
-  assert(iv.actionDue < iv.followupDue, 'Hạn cập nhật và ngày kết thúc bị gộp làm một con số');
+  /* PR-SOS (Q28-4): PA thường không còn "dự kiến kết thúc" — chỉ còn hạn ghi kết quả tuần. */
+  assert(iv.followupDue === null, `PA thường còn ngày dự kiến kết thúc: ${iv.followupDue}`);
   assert(iv.overdue || iv.actionOverdue, 'Bắt đầu 20 ngày trước, chưa cập nhật tuần nào mà không báo quá hạn');
 
   // Phương án CHỜ DUYỆT thì chu kỳ CHƯA chạy — thời gian chờ là của Quản lý.
@@ -3259,15 +3258,15 @@ check('MỖI KỸ NĂNG CHỈ MỘT GIÁO VIÊN — xếp hai người vào mộ
 check('Dữ liệu mẫu có đủ bốn mức độ ưu tiên, không phải một màu đỏ', () => {
   const open = conn
     .prepare(
-      `SELECT followup_due FROM case_interventions
-        WHERE followup_due IS NOT NULL AND status != 'cancelled'
-          AND NOT EXISTS (SELECT 1 FROM case_followups f WHERE f.intervention_id = case_interventions.id)`,
+      /* PR-SOS (Q28-4): không còn "dự kiến kết thúc" cho PA thường — mức ưu tiên đọc theo hạn ghi kết quả tuần (`action_due`). */
+      `SELECT action_due FROM case_interventions
+        WHERE action_due IS NOT NULL AND status IN ('planned', 'started')`,
     )
     .all() as any[];
   const t = demoToday();
-  const late = open.filter((r) => r.followup_due < t).length;
-  const today = open.filter((r) => r.followup_due === t).length;
-  const soon = open.filter((r) => r.followup_due > t).length;
+  const late = open.filter((r) => r.action_due < t).length;
+  const today = open.filter((r) => r.action_due === t).length;
+  const soon = open.filter((r) => r.action_due > t).length;
   assert(late > 0 && today > 0 && soon > 0,
     `Hẹn xem lại phải có cả ba mức (quá hạn ${late}, hôm nay ${today}, còn hạn ${soon}) — `
     + 'neo hết vào ngày thi thì màn việc chỉ toàn một màu đỏ và không nhìn ra khác biệt');
@@ -3900,7 +3899,7 @@ check('Case đã đóng mà MT sau trượt lại → MỞ CASE MỚI nối vào
     () => cases.closeCaseOutcome(mgr, c.id, {
       outcome: 'improved', note: 'Kết luận đủ dài cho phép kiểm này',
     }),
-    /chưa cập nhật kết quả cuối cùng/, 'Chốt được kết quả một case chưa ai làm gì',
+    /chưa cập nhật kết quả cuối cùng|PA theo quy chế kết thúc/, 'Chốt được kết quả một case chưa ai làm gì',
   );
   cases.recordIntervention(rt, c.id, {
     kind: 'teaching_adjust', description: 'Luyện bấm giờ từng passage, 20 phút mỗi passage',
@@ -3915,7 +3914,7 @@ check('Case đã đóng mà MT sau trượt lại → MỞ CASE MỚI nối vào
     () => cases.closeCaseOutcome(mgr, c.id, {
       outcome: 'improved', note: 'Kết luận đủ dài cho phép kiểm này',
     }),
-    /chưa cập nhật kết quả cuối cùng/, 'Chốt được kết quả case khi còn phương án treo',
+    /chưa cập nhật kết quả cuối cùng|PA theo quy chế kết thúc/, 'Chốt được kết quả case khi còn phương án treo',
   );
   /* v3: phương án điền sẵn của case tự tạo phải được XÁC NHẬN thì mới ghi "đã làm" được (Q-V3-3). */
   for (const iv of open) {
@@ -5009,8 +5008,9 @@ check('[8.3] Phương án bắt đầu 14/09/2026: ghi kết quả trước hế
   assert(row, 'Dữ liệu demo không có case nào mở đúng ngày demo để đối chiếu bằng mắt');
   assert(row!.action_due === '2026-09-21',
     `Hạn ghi kết quả trong dữ liệu mẫu là ${row!.action_due}, phải là 2026-09-21 (hết Thứ Hai, R-PA1)`);
-  assert(row!.followup_due === '2026-09-27',
-    `Ngày dự kiến kết thúc trong dữ liệu mẫu là ${row!.followup_due}, phải là 2026-09-27`);
+  /* PR-SOS (Q28-4): PA thường không còn "dự kiến kết thúc" — `planEndDefault` vẫn là hàm thuần, dữ liệu mẫu không ghi. */
+  assert(row!.followup_due === null,
+    `PA thường trong dữ liệu mẫu còn ngày dự kiến kết thúc ${row!.followup_due} (Q28-4: phải NULL)`);
 });
 
 check('Case của lớp trước là việc BÀN GIAO, không phải mức SOS của lớp này', () => {
@@ -5188,8 +5188,7 @@ check('[6] Hạn: chu kỳ đầu, chu kỳ tiếp, chờ duyệt, cập nhật 
     `Chu kỳ bắt đầu ${appr.cycle_started_on} mà duyệt ngày ${appr.approval_at.slice(0, 10)}`);
   assert(appr.action_due === domain.weeklyUpdateDue(appr.cycle_started_on),
     'Hạn cập nhật không tính từ ngày được duyệt');
-  assert(appr.followup_due === domain.planEndDefault(appr.cycle_started_on),
-    'Ngày dự kiến kết thúc không tính từ ngày được duyệt');
+  assert(appr.followup_due === null, 'PR-SOS (Q28-4): PA thường được duyệt không có ngày dự kiến kết thúc');
   /* Cập nhật trễ GIỮ NGUYÊN dấu vết, không reset để che. */
   const late = conn.prepare('SELECT * FROM case_followups WHERE late = 1 LIMIT 1').get() as any;
   assert(late, 'Không có lần cập nhật trễ nào trong dữ liệu mẫu');
@@ -5651,13 +5650,14 @@ check('[12.1] Chỉ một số ít việc quá hạn — không để cả màn 
   const openPlans = (conn
     .prepare(
       `SELECT COUNT(*) n FROM case_interventions iv
-        WHERE iv.followup_due IS NOT NULL AND iv.status NOT IN ('completed','cancelled')`,
+        WHERE iv.action_due IS NOT NULL AND iv.status NOT IN ('completed','cancelled')`,
     )
     .get() as any).n;
+  /* PR-SOS (Q28-4): quá hạn đọc theo hạn ghi kết quả tuần — "dự kiến kết thúc" đã bỏ. */
   const overdue = (conn
     .prepare(
       `SELECT COUNT(*) n FROM case_interventions iv
-        WHERE iv.followup_due IS NOT NULL AND iv.followup_due < ?
+        WHERE iv.action_due IS NOT NULL AND iv.action_due < ?
           AND iv.status NOT IN ('completed','cancelled')
           AND NOT EXISTS (SELECT 1 FROM case_followups f WHERE f.intervention_id = iv.id)`,
     )

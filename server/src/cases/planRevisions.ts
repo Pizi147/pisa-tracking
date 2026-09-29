@@ -1,8 +1,7 @@
 import { db } from '../db.ts';
-import { badRequest, isIsoDate, nowIso } from '../util.ts';
+import { badRequest, nowIso } from '../util.ts';
 import type { Principal } from '../permissions.ts';
 import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
-import { planEndDefault } from '../../../shared/domain/index.ts';
 
 /**
  * LỊCH SỬ ĐIỀU CHỈNH PHƯƠNG ÁN HỌC THUẬT (PR-S2 · S2 · rulebook §18.2 điểm 2, nguồn §7).
@@ -46,25 +45,13 @@ export function chuanHoaDieuChinh(p: Principal, iv: any, input: DieuChinhVao | n
     : null;
   const performerUserId = nguoiMoi ? nguoiMoi.userId : (iv.performer_user_id ?? null);
   const performerName = nguoiMoi ? nguoiMoi.name : (iv.performer_name ?? null);
-  /*
-   * NỢ S2 (Q10): PA có `followup_due = NULL` (chưa từng có ngày) mà Điều chỉnh không đụng tới ngày thì vẫn phải có một
-   * ngày mặc định THẬT — đúng như Giữ nguyên đã làm (`cases.ts` dòng ~2802-2811, `COALESCE(followup_due, planEndDefault)`).
-   * Mặc định này KHÔNG tính là "có đổi" (so `same` bên dưới so với `nenNgay`, không so với `iv.followup_due` thô);
-   * nhưng dòng lịch sử (`ghiBanDieuChinh`, nhận `iv` GỐC) vẫn ghi đúng sự thật `old_followup_due IS NULL → new {ngày}`.
-   */
-  const nenNgay = iv.followup_due ?? planEndDefault(observedOn);
-  let followupDue: string | null = nenNgay;
-  if (a.followupDue) {
-    if (!isIsoDate(a.followupDue)) throw badRequest('Ngày dự kiến kết thúc không hợp lệ.');
-    if (a.followupDue < observedOn) throw badRequest('Ngày dự kiến kết thúc mới không được sớm hơn ngày cập nhật.');
-    followupDue = a.followupDue;
-  }
+  /* PR-SOS (Q28-4): bỏ "Dự kiến kết thúc" — Điều chỉnh không nhận `followupDue`; mốc giữ nguyên (PA quy chế: mốc quy chế; PA thường: NULL). */
+  const followupDue: string | null = iv.followup_due ?? null;
   const same = description === oldDesc
     && performerUserId === (iv.performer_user_id ?? null)
-    && performerName === (iv.performer_name ?? null)
-    && followupDue === nenNgay;
+    && performerName === (iv.performer_name ?? null);
   if (same) {
-    throw badRequest('Điều chỉnh thì phải đổi ít nhất một thứ: mô tả, người thực hiện hoặc ngày dự kiến kết thúc. Không đổi gì thì chọn Giữ nguyên.');
+    throw badRequest('Điều chỉnh thì phải đổi ít nhất một thứ: mô tả hoặc người thực hiện. Không đổi gì thì chọn Giữ nguyên.');
   }
   /* Mô tả rỗng chỉ xảy ra khi KHÔNG đổi mô tả (mô tả mới phải ≥ 8 ký tự): giữ đúng bản cũ, PA chưa có mô tả thì vẫn NULL. */
   return { description: description || (iv.description ?? null), performerUserId, performerName, followupDue };

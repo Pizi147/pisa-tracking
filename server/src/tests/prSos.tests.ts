@@ -1,5 +1,10 @@
 /** PHÉP KIỂM PR-SOS — SOS v4: PA quy chế chờ xác nhận, Xác nhận Case → Xác nhận PA, Không cần theo dõi qua Quản lý. Harness do `run.ts` truyền vào. */
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { YThucTestKit } from './yThuc.tests.ts';
+
+const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 
 export async function runPrSosTests(t: YThucTestKit) {
   const { check, assert, conn } = t;
@@ -320,5 +325,79 @@ export async function runPrSosTests(t: YThucTestKit) {
     ghiNguyenNhan(cL.id);
     yc.quetYeuCau(TODAY);
     assert(baoLen(cL.id).trang_thai === 'tu_dong', 'Báo lên chưa tự đóng khi có nguyên nhân');
+  });
+
+  // ------------------------------------------------------------------ Task 6 · PA bắt buộc: Ghi kết quả cuối, khoá Thay/Kết thúc, mốc, Hoàn thành
+  const W2_CODE = d.issuesForTopic('writing2', null)[0].code;
+  /** Case W2 + PA quy chế `Tự học · 1 tháng` ĐÃ xác nhận (đang chạy). */
+  const w2DangChay = (name: string) => {
+    const { st, a } = mt2W2(name);
+    const c = cvL(st);
+    const iv = plansOf(c.id)[0];
+    sosAuto.xacNhanCase(P.w2Teacher, c.id, { primaryCode: W2_CODE, urgency: 'attention', moTa: 'Em viết lạc đề ở Task 2, lập luận yếu.' });
+    sosAuto.xacNhanPaQuyChe(P.w2Teacher, iv.id, { description: 'Tự học Writing Task 2, viết hai bài mỗi tuần.' });
+    return { st, a, c, iv: get('SELECT * FROM case_interventions WHERE id = ?', iv.id) };
+  };
+  const KQ = { outcome: 'partial', note: 'Em viết đủ ý hơn, còn lỗi mạch lạc.' };
+  check('SOS (6) · PA quy chế chưa tới mốc: Thay / Kết thúc → 400; Điều chỉnh chỉ nhận người + mô tả (gửi ngày bị bỏ qua, mốc giữ)', () => {
+    const { iv } = w2DangChay('T6a');
+    for (const decision of ['replace', 'end']) {
+      assertThrows(() => cases.updateResult(P.w2Teacher, iv.id, { ...KQ, decision, decisionNote: 'Thử đổi phương án khác', newPlan: { kind: 'tutor', description: 'Tutor Writing' } }),
+        /PA theo quy chế — không thay, không kết thúc sớm\./, decision);
+    }
+    assertThrows(() => cases.updateResult(P.w2Teacher, iv.id, { ...KQ, mode: 'end', nextStep: 'complete' }), /không kết thúc sớm/, 'mode end kiểu cũ');
+    cases.updateResult(P.w2Teacher, iv.id, { ...KQ, decision: 'adjust', decisionNote: 'Tăng số bài viết mỗi tuần',
+      adjust: { description: 'Tự học Writing Task 2, ba bài mỗi tuần', followupDue: addDays(TODAY, 60) } });
+    const sau = get('SELECT * FROM case_interventions WHERE id = ?', iv.id);
+    assert(sau.description === 'Tự học Writing Task 2, ba bài mỗi tuần' && sau.followup_due === iv.followup_due && sau.status === 'started', JSON.stringify(sau));
+  });
+  check('SOS (6) · Lần cuối (chạm mốc) → PA completed het_moc, không cần quyết định; "Chưa đủ dữ liệu" cần lý do ≥ 8', () => {
+    const { iv, c } = w2DangChay('T6b');
+    conn.prepare('UPDATE case_interventions SET followup_due = ? WHERE id = ?').run(addDays(iv.action_due, -1), iv.id);   // tuần đang ghi chứa mốc
+    assert((cases.caseDetail(P.w2Teacher, c.id) as any).interventions.find((x: any) => x.id === iv.id).lanCuoi === true, 'DTO lanCuoi');
+    assertThrows(() => cases.updateResult(P.w2Teacher, iv.id, { outcome: 'insufficient', note: 'Em nghỉ ốm cả tuần cuối.' }), /Lý do/, 'insufficient thiếu lý do');
+    cases.updateResult(P.w2Teacher, iv.id, { outcome: 'insufficient', note: 'Em nghỉ ốm cả tuần cuối.', decisionNote: 'Em ốm, không đủ bài để đánh giá' });
+    const sau = get('SELECT * FROM case_interventions WHERE id = ?', iv.id);
+    assert(sau.status === 'completed' && sau.closed_reason === 'het_moc' && sau.completed_date === TODAY, JSON.stringify(sau));
+  });
+  check('SOS (6) · PA thường: followup_due luôn NULL (thêm, duyệt, ghi kết quả); Hoàn thành bị chặn khi PA quy chế chưa khép', () => {
+    const { c } = w2DangChay('T6c');
+    const dto = cases.recordIntervention(P.w2Teacher, c.id, { kind: 'tutor', description: 'Tutor Writing Task 2 hai buổi', status: 'started', performerSelf: true, followupDue: addDays(TODAY, 30) }) as any;
+    const tay = dto.interventions.find((x: any) => !x.preset);
+    assert(tay.followupDue === null, `PA thường có ngày: ${tay.followupDue}`);
+    cases.updateResult(P.w2Teacher, tay.id, { ...KQ, decision: 'keep' });
+    assert(get('SELECT followup_due f FROM case_interventions WHERE id = ?', tay.id).f === null, 'Giữ nguyên đặt ngày mặc định');
+    const ht = (cases.caseDetail(P.mbManager, c.id) as any).hoanThanh;
+    assert(ht.an && /^Hoàn thành được sau khi PA theo quy chế kết thúc \(1 tháng · đến /.test(ht.dong), JSON.stringify(ht));
+    assertThrows(() => cases.closeCaseOutcome(P.mbManager, c.id, { outcome: 'improved', note: 'Em tiến bộ rõ ở Task 2.' }), /PA theo quy chế kết thúc/, 'Hoàn thành sớm');
+    assertThrows(() => cases.closeCaseOutcome(P.mbManager, c.id, { note: 'Em tiến bộ rõ ở Task 2.' }), /Mức độ thành công/, 'thiếu kết quả (K3-19)');
+  });
+  check('SOS (6) · until_exam chưa có ngày thi → PA chạy, mốc NULL, "đến lúc thi · chưa có ngày thi", QL có việc Nhập ngày thi; có ngày thi rồi mở Case → mốc tự điền', () => {
+    const st = makeStudent('T6d'); const a = mkAttempt(st, 3); enter(a, 'writing1', 7); enter(a, 'writing2', 5.5);
+    const c = cvL(st);
+    const iv = plansOf(c.id)[0];
+    assert(iv.moc_quy_che === 'until_exam', iv.moc_quy_che);
+    conn.prepare('UPDATE learning_cycles SET exam_period_id = NULL, exam_month = NULL, exam_date = NULL WHERE id = ?').run(st.cycleId);
+    sosAuto.xacNhanCase(P.w2Teacher, c.id, { primaryCode: W2_CODE, urgency: 'attention', moTa: 'Em viết lạc đề ở Task 2, lập luận yếu.' });
+    sosAuto.xacNhanPaQuyChe(P.w2Teacher, iv.id, { description: 'Tutor Writing Task 2 tới lúc thi, hai buổi mỗi tuần.' });
+    const pa = (cases.caseDetail(P.w2Teacher, c.id) as any).interventions.find((x: any) => x.id === iv.id);
+    assert(pa.status === 'started' && pa.followupDue === null && pa.mocChu === 'đến lúc thi · chưa có ngày thi', JSON.stringify(pa));
+    const viec = (myworkSvc.myWork(P.mbManager, {}).items as any[]).find((x: any) => x.key === `moc:${iv.id}`);
+    assert(viec && viec.tieuDe === `Nhập ngày thi dự kiến · ${st.name}`, JSON.stringify(viec));
+    const tuanThi = weekSvc.mondayOf(addDays(TODAY, 70));
+    conn.prepare('UPDATE learning_cycles SET exam_period_id = ? WHERE id = ?').run(weekSvc.ensurePeriod(tuanThi).id, st.cycleId);
+    cases.caseDetail(P.w2Teacher, c.id);
+    assert(get('SELECT followup_due f FROM case_interventions WHERE id = ?', iv.id).f === addDays(tuanThi, 6), 'mốc chưa tự điền');
+    assert(!(myworkSvc.myWork(P.mbManager, {}).items as any[]).some((x: any) => x.key === `moc:${iv.id}`), 'việc Nhập ngày thi còn');
+  });
+  check('SOS (6) · Chuyển lớp FT → FT: PA quy chế chưa khép đổi người sang GVBM đúng kỹ năng lớp mới, ghi lịch sử (K3-44)', () => {
+    const { st, c, iv } = w2DangChay('T6e');
+    const lopMoi = get(`SELECT c.id, ta.user_id FROM classes c JOIN teacher_assignments ta ON ta.class_id = c.id AND ta.skill = 'writing2' AND ta.status = 'active'
+      WHERE c.is_fast_track = 1 AND c.status = 'active' AND c.id != ? AND ta.user_id != ? LIMIT 1`, CLASS, iv.performer_user_id);
+    assert(lopMoi, 'Bộ thử thiếu lớp FT khác có GV W2 khác');
+    sosAuto.banGiaoPaQuyChe(st.id, lopMoi.id, P.admin.userId);
+    assert(get('SELECT performer_user_id u FROM case_interventions WHERE id = ?', iv.id).u === lopMoi.user_id, 'chưa đổi người');
+    assert(get(`SELECT new_value v FROM sos_case_history WHERE case_id = ? AND field = 'pa_performer'`, c.id)?.v.includes(' → '), 'thiếu lịch sử bàn giao');
+    assert(/banGiaoPaQuyChe\(/.test(fs.readFileSync(path.join(REPO, 'server/src/classes/luatLoTrinh.ts'), 'utf8')), 'Chuyển lớp chưa gọi bàn giao');
   });
 }

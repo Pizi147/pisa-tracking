@@ -4,7 +4,7 @@ import {
   INTERVENTION_KIND_LABEL, PERMISSIONS,
   SOS_LABEL, URGENCY_LABEL, caseHeadline, caseTopicLabel, cycleDeadline,
   duongHoSoHocVien, duongLichTest, nhanDotNgan, planDueDate, trongHaiTuanCuoi, tuanLich, urgencyFromSos,
-  khungCua, tenMon,
+  khungCua, laLanGhiCuoi, tenMon,
   type Khung, type AttemptKind, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -17,6 +17,7 @@ import { demChuaLoTrinh } from '../classes/loTrinhTiep.ts';
 import { myMgmtTasks } from './mgmttasks.ts';
 import { listSignals, type SignalAction } from '../cases/signals.ts';
 import { NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds } from '../cases/sosState.ts';
+import { dienMocQuyChe } from '../cases/sosAuto.ts';
 import { settleNoShows, sweepExpiredMoves } from '../fasttrack/absence.ts';
 import { demYeuCau, quetYeuCau } from '../duyet/yeuCau.ts';
 import { mtLichSuChuaNhap } from '../cham/canCham.ts';
@@ -463,13 +464,13 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   // ------------------------------------------- 2b. GHI KẾT QUẢ PA HẰNG TUẦN (K5-02, T75, §5.6) — một PA một dòng
   /*
    * Một nghĩa vụ: kết quả tuần T2→CN ghi xong trước HẾT THỨ HAI tuần sau (`action_due`). Hiện từ Chủ nhật (tuần sắp hết) tới khi
-   * ghi. Dự kiến kết thúc (`followup_due`) KHÔNG sinh việc (T53 Q1) — tuần chạm nó chỉ thêm chữ "tuần cuối". Khoá dòng giữ
+   * ghi. Mốc PA quy chế (`followup_due`) KHÔNG sinh việc riêng — tuần chạm mốc thành "Ghi kết quả cuối" (PR-SOS). Khoá dòng giữ
    * `action:{id}` để "đã nhắc hôm nay" của nút Nhắc khớp qua các PR (K5-12). QL chỉ thấy dòng của người khác khi đã quá hạn.
    */
   const reviewedCases = new Set<number>();
   const ghiKetQua = conn
     .prepare(
-      `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.action_due, iv.followup_due,
+      `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.action_due, iv.followup_due, iv.preset,
               iv.performer_user_id, iv.performer_name, COALESCE(iv.performer_user_id, iv.recorded_by) AS owner_id,
               sc.topic, sc.sos_level, sc.urgency, sc.summary, sc.origin_kind, sc.attempt_id,
               COALESCE(sc.student_id, a.student_id) AS eff_student_id,
@@ -501,7 +502,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     const qlQuaHan = u === 'overdue' && can(p, PERMISSIONS.CASE_APPROVE, { classId: iv.eff_class_id, studentId: iv.eff_student_id });
     if (!mine && !teachesClass(p, iv.eff_class_id) && !qlQuaHan) continue;
     reviewedCases.add(iv.case_id);
-    const tuanCuoi = !!iv.followup_due && iv.followup_due >= addDays(iv.action_due, -7) && iv.followup_due < iv.action_due;
+    /* PR-SOS (T22, M-17): PA theo quy chế chạm mốc → "Ghi kết quả cuối" (PA thường không có mốc — Q28-4). */
+    const tuanCuoi = laLanGhiCuoi({ preset: iv.preset === 1, followupDue: iv.followup_due ?? null, actionDue: iv.action_due ?? null }, today);
+    const tenPa = (iv.description ?? '').trim() || INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] || 'PA học thuật';
     items.push({
       key: `action:${iv.id}`, group: 'result', urgency: u,
       studentId: iv.eff_student_id, studentName: iv.full_name ?? 'Học viên',
@@ -509,10 +512,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       attemptId: iv.attempt_id ?? null, attemptNo: iv.attempt_no ?? null,
       caseId: iv.case_id as number, level: levelOf(iv),
       contextLabel: nhanDot(iv.attempt_kind, iv.attempt_no), count: null,
-      reason: [(iv.description ?? '').trim() || INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] || 'PA học thuật',
-        tuanCuoi ? 'tuần cuối — ghi kết quả và kết luận PA' : null,
-        mine ? null : 'người thực hiện chưa ghi'].filter(Boolean).join(' — '),
-      tieuDe: `Ghi kết quả PA${duoiKyNang(iv.topic, ctCua(iv.eff_class_id))}`, actionLabel: 'Ghi kết quả',
+      reason: [tenPa, mine ? null : 'người thực hiện chưa ghi'].filter(Boolean).join(' — '),
+      tieuDe: tuanCuoi ? `Ghi kết quả cuối · ${tenPa}` : `Ghi kết quả PA${duoiKyNang(iv.topic, ctCua(iv.eff_class_id))}`,
+      actionLabel: tuanCuoi ? 'Ghi kết quả cuối' : 'Ghi kết quả',
       href: iv.eff_student_id
         ? duongHoSoHocVien(iv.eff_student_id, { caseId: iv.case_id, paId: iv.id, viec: 'ghi-ket-qua' })
         : `/hoc-thuat/case/${iv.case_id}`,
@@ -802,6 +804,42 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       tieuDe: 'Nhập MT lịch sử', actionLabel: 'Nhập điểm', href: l.href,
       ownerId: p.userId, owner: null, mine: true, due: null, statusLabel: 'Không tính hạn',
     });
+  }
+
+  /*
+   * PR-SOS (K3-14, Q8): PA theo quy chế đang chạy mà CHƯA CÓ MỐC (chưa có lịch MT kế / ngày thi) → việc của Quản lý: Nhập ngày thi dự
+   * kiến / Xếp lịch MT. Điền mốc trước (có lịch rồi thì hết việc), rồi đọc lại. Một câu cho cả phạm vi.
+   */
+  if (xemNguoiKhac) {
+    const sql = `SELECT iv.id, iv.case_id, iv.moc_quy_che, COALESCE(sc.student_id, a.student_id) AS sid, s.full_name,
+              COALESCE(a.class_id, cur.class_id) AS class_id, COALESCE(ac.code, cc.code) AS class_code,
+              COALESCE(ac.branch_id, cc.branch_id) AS branch_id, a.attempt_no
+         FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
+         LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+         LEFT JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
+         LEFT JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active'
+         LEFT JOIN classes ac ON ac.id = a.class_id
+         LEFT JOIN classes cc ON cc.id = cur.class_id
+        WHERE iv.preset = 1 AND iv.status = 'started' AND iv.followup_due IS NULL AND iv.moc_quy_che IN ('until_next_mt', 'until_exam')
+          AND sc.status != 'done' AND s.archived_at IS NULL AND s.status = 'active'`;
+    const truoc = conn.prepare(sql).all() as any[];
+    if (truoc.length) {
+      dienMocQuyChe({ caseIds: [...new Set(truoc.map((r) => r.case_id as number))] });
+      for (const r of conn.prepare(sql).all() as any[]) {
+        if (f.branchId && r.branch_id !== f.branchId) continue;
+        if (!can(p, PERMISSIONS.CASE_APPROVE, { classId: r.class_id, studentId: r.sid })) continue;
+        const thi = r.moc_quy_che === 'until_exam';
+        items.push({
+          key: `moc:${r.id}`, group: 'missing_data', urgency: 'normal',
+          studentId: r.sid, studentName: r.full_name ?? 'Học viên', classId: r.class_id ?? null, classCode: r.class_code ?? null,
+          attemptId: null, attemptNo: r.attempt_no ?? null, caseId: r.case_id, level: null, contextLabel: null, count: null,
+          reason: `PA theo quy chế ${thi ? 'đến lúc thi' : `đến MT${(r.attempt_no ?? 0) + 1}`} đang chạy nhưng chưa có ${thi ? 'ngày thi' : 'lịch'}`,
+          tieuDe: thi ? `Nhập ngày thi dự kiến · ${r.full_name ?? 'Học viên'}` : `Xếp lịch MT${(r.attempt_no ?? 0) + 1} cho ${r.full_name ?? 'Học viên'}`,
+          actionLabel: thi ? 'Nhập ngày thi' : 'Xếp lịch', href: r.sid ? `/hoc-vien/${r.sid}` : '/hoc-vien',
+          ownerId: p.userId, owner: null, mine: true, due: null, statusLabel: 'Chưa có lịch',
+        });
+      }
+    }
   }
 
   // ------------------------------------------------- 5. case chưa có người phụ trách

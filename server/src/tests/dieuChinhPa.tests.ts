@@ -195,8 +195,9 @@ export async function runDieuChinhPaTests(t: YThucTestKit) {
     assertThrows(() => cases.updateResult(P.lrTeacher, ivId, { ...ADJ_OK, decisionNote: '' }), /Lý do/, 'Điều chỉnh không có lý do');
     assertThrows(() => cases.updateResult(P.lrTeacher, ivId, { ...ADJ_OK, adjust: {} }), /ít nhất một thứ/, 'Điều chỉnh mà không đổi gì');
     assertThrows(() => cases.updateResult(P.lrTeacher, ivId, { ...ADJ_OK, adjust: { description: 'ngắn' } }), /ít nhất 8 ký tự/, 'Mô tả mới quá ngắn');
+    /* PR-SOS (Q28-4): không còn ô ngày — gửi `followupDue` một mình = không đổi gì. */
     assertThrows(() => cases.updateResult(P.lrTeacher, ivId, { ...ADJ_OK, adjust: { followupDue: addDays(TODAY, -1) } }),
-      /sớm hơn ngày cập nhật/, 'Ngày dự kiến kết thúc lùi về trước ngày cập nhật');
+      /ít nhất một thứ/, 'Điều chỉnh chỉ gửi ngày dự kiến kết thúc');
     assert(ivRow(ivId).cycle_no === 1 && !lastFollow(ivId) && revRows(ivId).length === 0, 'Lần bị từ chối không được để lại gì');
   });
 
@@ -214,7 +215,7 @@ export async function runDieuChinhPaTests(t: YThucTestKit) {
     const revs = revRows(ivId);
     assert(iv.kind === 'self_study', `Điều chỉnh không được đổi loại PA: ${iv.kind}`);
     assert(iv.description === 'Tự học Listening — nghe chép 25 phút buổi sáng' && iv.performer_name === 'Trợ giảng Mai'
-      && iv.performer_user_id === null && iv.followup_due === addDays(TODAY, 21), `Bản hiện tại sai: ${JSON.stringify(iv)}`);
+      && iv.performer_user_id === null && iv.followup_due === null /* PR-SOS Q28-4: ngày gửi kèm bị bỏ qua */, `Bản hiện tại sai: ${JSON.stringify(iv)}`);
     assert(revs.length === 2, `Phải có 2 dòng lịch sử, có ${revs.length}`);
     assert(revs[0].old_description === 'Tự học Listening — nghe chép 15 phút mỗi ngày'
       && revs[0].new_description === 'Tự học Listening — nghe chép 15 phút buổi sáng', `Bản 1 sai: ${JSON.stringify(revs[0])}`);

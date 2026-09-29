@@ -295,7 +295,7 @@ export async function runFormTests(t: YThucTestKit) {
       );
     });
 
-    check('PR-Form · Nợ S2: Điều chỉnh chỉ đổi mô tả trên PA followup_due NULL → nhận planEndDefault, lịch sử NULL → ngày đó', () => {
+    check('PR-Form · Nợ S2 → PR-SOS (Q28-4): Điều chỉnh chỉ đổi mô tả trên PA followup_due NULL → GIỮ NULL (không còn ngày mặc định), lịch sử NULL → NULL', () => {
       const { caseId } = taoCase();
       const d = cases.recordIntervention(P.lrTeacher, caseId, {
         kind: 'self_study', description: 'Tự học Listening mỗi ngày', performerSelf: true,
@@ -305,7 +305,7 @@ export async function runFormTests(t: YThucTestKit) {
       conn.prepare(`UPDATE case_interventions SET followup_due = NULL WHERE id = ?`).run(iv.id);
       assert(ivRow(iv.id).followup_due === null, 'phải đặt NULL được bằng SQL trực tiếp trước khi thử');
 
-      const expected = domain.planEndDefault(TODAY);
+      const expected = null;
       cases.updateResult(P.lrTeacher, iv.id, {
         decision: 'adjust', decisionNote: 'Đổi cách diễn đạt mô tả, không đổi gì khác',
         outcome: 'partial', note: 'Đang có tiến bộ, tiếp tục theo dõi thêm.',

@@ -12,11 +12,11 @@ import {
   type SystemCloseReason,
   NEXT_STEP_LABEL, isProposalKind, outcomeLabelFor,
   RESCHEDULE_TARGETS, RESCHEDULE_TARGET_LABEL, RESULT_MODES, RESULT_MODE_LABEL,
-  canEndWithOutcome, planDueDate, planEndDefault, stepsForMode, weeklyUpdateDue,
+  canEndWithOutcome, planDueDate, stepsForMode, weeklyUpdateDue,
   HAN_DUYET_NGAY, hanTheoNgay,
   type NextStep, type RescheduleTarget,
   issueBranchOf, issueLabel, caseTopicLabel, urgencyFromSos,
-  caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac, laLanGhiCuoi, mocChuPa, programmeOf, tenCaseSos, tenMon, tenMonNgan,
+  caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac, chanHoanThanh, laLanGhiCuoi, mocChuPa, programmeOf, quyetDinhChoPa, tenCaseSos, tenMon, tenMonNgan,
   type CaseOutcome, type FollowUpOutcome, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -33,6 +33,7 @@ import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, dongBoTrangThaiCase, sosCaseState 
 import { PLAN_DECISIONS, decisionToStep, type PlanDecision } from '../../../shared/domain/index.ts';
 import { apDungDieuChinh, chuanHoaDieuChinh, lichSuDieuChinhCuaCase } from './planRevisions.ts';
 import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
+import { dienMocQuyChe } from './sosAuto.ts';
 import { boSungYeuCau, chotYeuCau, taoYeuCau, theCuaDoiTuong } from '../duyet/yeuCau.ts';
 
 /**
@@ -745,7 +746,7 @@ export function recordIntervention(p: Principal, caseId: number, input: {
   const status = input.status && (INTERVENTION_STATUSES as readonly string[]).includes(input.status)
     ? input.status : 'completed';
   for (const [d, label] of [[input.plannedDate, 'Ngày dự kiến'], [input.startedDate, 'Ngày bắt đầu'],
-    [input.completedDate, 'Ngày hoàn thành'], [input.followupDue, 'Dự kiến kết thúc phương án']] as const) {
+    [input.completedDate, 'Ngày hoàn thành']] as const) {   // PR-SOS Q28-4: `followupDue` không còn nhận
     if (d && !isIsoDate(d)) throw badRequest(`${label} không hợp lệ.`);
   }
   /*
@@ -849,8 +850,7 @@ export function recordIntervention(p: Principal, caseId: number, input: {
      * phân biệt được "đã đến lúc báo tiến độ" với "đã đến hạn xong việc".
      *
      *   · HẠN GHI KẾT QUẢ (`action_due`): kết quả tuần T2→CN ghi xong trước hết Thứ Hai tuần sau.
-     *   · NGÀY DỰ KIẾN KẾT THÚC (`followup_due`): người dùng chọn; bỏ trống thì mặc định là
-     *     Chủ nhật của tuần TIẾP THEO.
+     *   · PR-SOS (Q28-4): KHÔNG còn "dự kiến kết thúc" — PA thường `followup_due` luôn NULL (mốc chỉ có ở PA quy chế).
      *
      * CHỐT 1 + 2 (mục 10.4) CHO PHƯƠNG ÁN NHẬP BÙ: không hạn cập nhật, không hạn kết thúc.
      * Phương án bắt đầu từ một ngày quá khứ xa (ví dụ tháng 7) mà vẫn tính hạn kiểu bình
@@ -858,8 +858,6 @@ export function recordIntervention(p: Principal, caseId: number, input: {
      * quá hạn giả" mà chủ sản phẩm cảnh báo. Việc đã xong rồi thì không còn gì để mà tới hạn.
      */
     const updateDue = input.backfill ? null : (!cycleStart ? null : weeklyUpdateDue(cycleStart));
-    const planEnd = input.backfill ? null : (input.followupDue
-      ?? (!cycleStart ? null : planEndDefault(cycleStart)));
     const cycleDue = updateDue;
 
     const info = conn
@@ -874,7 +872,7 @@ export function recordIntervention(p: Principal, caseId: number, input: {
       .run(caseId, input.kind, description,
            performerUserId, performerName, p.userId, effStatus,
            input.plannedDate ?? null, input.startedDate ?? null, input.completedDate ?? null,
-           planEnd, cycleDue, cycleStart,
+           null, cycleDue, cycleStart,
            needsApproval ? 1 : 0, needsApproval ? 'pending' : null, approvalDue,
            rescheduleTarget, nowIso());
     const id = Number(info.lastInsertRowid);
@@ -986,7 +984,6 @@ export function respondToPlan(p: Principal, interventionId: number, input: {
                 cycle_started_on = CASE WHEN ? = 'approved' THEN ? ELSE cycle_started_on END,
                 started_date    = CASE WHEN ? = 'approved' THEN COALESCE(started_date, ?) ELSE started_date END,
                 action_due      = CASE WHEN ? = 'approved' THEN ? ELSE action_due END,
-                followup_due    = CASE WHEN ? = 'approved' THEN ? ELSE followup_due END,
                 updated_at = ?
           WHERE id = ?`,
       )
@@ -995,7 +992,6 @@ export function respondToPlan(p: Principal, interventionId: number, input: {
            input.decision, approvedOn,
            input.decision, approvedOn,
            input.decision, startDue,
-           input.decision, startDue ? planEndDefault(approvedOn) : null,
            nowIso(), interventionId);
 
     addJourney({
@@ -1388,6 +1384,7 @@ export function caseDetail(p: Principal, caseId: number) {
   const c = loadCase(caseId);
   require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId: c.class_id, studentId: c.eff_student_id },
     'Case này nằm ngoài phạm vi bạn được xem.');
+  dienMocQuyChe({ caseIds: [caseId] });   // PR-SOS K3-14: mốc quy chế còn trống — có lịch rồi thì điền
 
   const student = conn
     .prepare('SELECT id, student_code, full_name, status FROM students WHERE id = ?')
@@ -1415,13 +1412,8 @@ export function caseDetail(p: Principal, caseId: number) {
   /* PR-DUYET (Task 5, 9): thẻ hộp Chờ duyệt của mọi PA trong Case — một câu cho cả Case. */
   const theCuaPa = theCuaDoiTuong('intervention',
     (conn.prepare('SELECT id FROM case_interventions WHERE case_id = ?').all(caseId) as any[]).map((r) => r.id as number));
-  /* PR-SOS: số MT kế tiếp của lượt đã sinh mỗi PA quy chế (mốc opened/repeat mới nhất không muộn hơn PA) — một câu cho cả Case. */
-  const mocLuot = conn.prepare(`SELECT attempt_no, created_at FROM case_milestones WHERE case_id = ? AND kind IN ('opened', 'repeat')
-      AND attempt_no IS NOT NULL ORDER BY created_at DESC, id DESC`).all(caseId) as any[];
-  const mtKeCua = (iv: any): number | null => {
-    const m = mocLuot.find((x) => x.created_at <= iv.created_at) ?? mocLuot[mocLuot.length - 1];
-    return m ? m.attempt_no + 1 : null;
-  };
+  const mtKeCua = mtKeTheoPa(caseId);
+
   const interventions = (conn
     .prepare(
       `SELECT iv.*, u.full_name AS performer_account, r.full_name AS recorder_name,
@@ -1516,6 +1508,7 @@ export function caseDetail(p: Principal, caseId: number) {
     }));
 
   const ctCase: string | null = cycle ? cycle.programme_code ?? programmeCodeOfCycle(cycle.id) : null;
+  const hoanThanh = c.status === 'done' ? null : chanHoanThanhCua(caseId);
   const history = conn
     .prepare(
       `SELECT h.*, u.full_name AS actor_name FROM sos_case_history h
@@ -1618,7 +1611,9 @@ export function caseDetail(p: Principal, caseId: number) {
      * CÒN THIẾU GÌ ĐỂ HOÀN THÀNH CASE — nói thẳng, không làm mờ một cái nút rồi để người
      * dùng tự đoán (mục 7.7 [5]). Rỗng nghĩa là đủ điều kiện đóng.
      */
-    closeBlockers: c.status === 'done' ? [] : closeBlockers(caseId),
+    closeBlockers: !hoanThanh ? [] : hoanThanh.an ? [hoanThanh.dong!] : hoanThanh.ly_do,
+    /** PR-SOS (K3-09): `an` = ẩn nút Hoàn thành (PA theo quy chế chưa khép) + dòng mờ `dong`. */
+    hoanThanh,
     viewer: {
       canEdit: can(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c)),
       canClose: canCloseCase(p, c),
@@ -2071,6 +2066,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
     .get(studentId) as any;
   require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId: enr?.class_id ?? null, studentId },
     'Bạn không có quyền xem học viên này.');
+  dienMocQuyChe({ studentId });   // PR-SOS K3-14
 
   /*
    * ĐƯỢC SỬA HAY KHÔNG — trả về sẵn cùng bảng kỹ năng.
@@ -2819,13 +2815,32 @@ export function updateResult(p: Principal, interventionId: number, input: {
   if (observedOn > demoToday()) throw badRequest('Không ghi được ngày cập nhật ở tương lai.');
 
   /*
+   * PR-SOS (T22, T63, K3-12, M-17): PA THEO QUY CHẾ không thay, không kết thúc sớm. Lần ghi chạm/qua mốc (`laLanGhiCuoi`) là "Ghi kết quả
+   * cuối": bỏ qua quyết định, PA khép `het_moc` — không tự đóng im lặng.
+   */
+  const batBuoc = iv.preset === 1;
+  const lanCuoi = laLanGhiCuoi({ preset: batBuoc, followupDue: iv.followup_due ?? null, actionDue: iv.action_due ?? null }, observedOn);
+  if (batBuoc && !lanCuoi) {
+    const cam = input.decision !== undefined
+      ? !quyetDinhChoPa({ preset: true }, false).includes(input.decision as PlanDecision)
+      : mode === 'end';
+    if (cam) throw badRequest('PA theo quy chế — không thay, không kết thúc sớm.');
+  }
+
+  /*
    * TAB THEO DÕI không hỏi bước tiếp theo: ghi xong là lưu, phương án chạy tiếp một chu kỳ
    * mới. Đó là cả điểm của việc tách hai tab.
    */
-  let nextStep = mode === 'end' ? (stepIn ?? '') : (stepIn === 'adjust' ? 'adjust' : 'continue');
+  let nextStep = lanCuoi ? 'complete' : mode === 'end' ? (stepIn ?? '') : (stepIn === 'adjust' ? 'adjust' : 'continue');
   let completedOn: string | null = null;
 
-  if (mode === 'end') {
+  if (lanCuoi) {
+    /* K3-13: "Chưa đủ dữ liệu" ở lần cuối được, kèm lý do — PA khép, không vào hiệu quả. */
+    completedOn = observedOn;
+    if (!canEndWithOutcome(input.outcome) && String(input.decisionNote ?? '').trim().length < 8) {
+      throw badRequest('"Chưa đủ dữ liệu" ở lần ghi cuối thì ghi Lý do, ít nhất 8 ký tự.');
+    }
+  } else if (mode === 'end') {
     /* PR-S2 (Q2): Chưa đủ dữ liệu vẫn không Kết thúc suông, nhưng THAY được (`endStepsFor('insufficient')` = ['propose']). */
     if (!canEndWithOutcome(input.outcome) && nextStep !== 'propose') {
       throw badRequest('"Chưa đủ dữ liệu" thì chưa kết thúc phương án được, chọn Giữ nguyên, Điều chỉnh hoặc Thay phương án.');
@@ -2908,13 +2923,13 @@ export function updateResult(p: Principal, interventionId: number, input: {
       conn
         .prepare(
           `UPDATE case_interventions
-              SET status = 'completed', completed_date = ?, closed_reason = 'done',
+              SET status = 'completed', completed_date = ?, closed_reason = ?,
                   started_date = COALESCE(started_date, cycle_started_on, ?),
                   performer_user_id = ?, performer_name = ?,
                   updated_at = ?
             WHERE id = ?`,
         )
-        .run(completedOn, completedOn, performerUserId ?? null, performerNameToSave ?? null,
+        .run(completedOn, lanCuoi ? 'het_moc' : 'done', completedOn, performerUserId ?? null, performerNameToSave ?? null,
              nowIso(), interventionId);
     } else if (nextStep === 'monitor' || nextStep === 'continue' || nextStep === 'adjust' || nextStep === 'ask_manager') {
       /*
@@ -2925,8 +2940,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
        * hạn thì hạn mới là hết Thứ Hai tuần sau, không phải chính hôm nay — nếu không, vừa lưu
        * xong đã thấy báo quá hạn.
        *
-       * NGÀY DỰ KIẾN KẾT THÚC giữ nguyên: theo dõi thêm một tuần không được âm thầm đẩy lùi
-       * ngày mà cả case đang trông vào.
+       * MỐC giữ nguyên (PR-SOS Q28-4: không còn "dự kiến kết thúc" mặc định — PA thường luôn NULL, PA quy chế giữ mốc quy chế).
        *
        * PR-DUYET (T64, K3-11): "Xin hỗ trợ QL" lưu y như Giữ nguyên — PA KHÔNG dừng, không mất mốc (T22) — rồi gửi câu hỏi
        * thành thẻ Xin ý kiến (ngay dưới). Trước đây PA dừng hẳn chờ Quản lý.
@@ -2936,13 +2950,12 @@ export function updateResult(p: Principal, interventionId: number, input: {
         .prepare(
           `UPDATE case_interventions
               SET status = 'started', cycle_no = ?, cycle_started_on = ?, action_due = ?,
-                  followup_due = COALESCE(followup_due, ?),
                   started_date = COALESCE(started_date, ?),
                   performer_user_id = ?, performer_name = ?,
                   updated_at = ?
             WHERE id = ?`,
         )
-        .run(cycleNo + 1, observedOn, nextDue, planEndDefault(observedOn), observedOn,
+        .run(cycleNo + 1, observedOn, nextDue, observedOn,
              performerUserId ?? null, performerNameToSave ?? null, nowIso(), interventionId);
       /* PR-S2 (S2): Điều chỉnh = cùng PA, đợt mới như Giữ nguyên, rồi đưa bản mới vào và ghi MỘT dòng lịch sử (bản cũ là `iv`). */
       if (nextStep === 'adjust') {
@@ -3023,20 +3036,26 @@ export function updateResult(p: Principal, interventionId: number, input: {
  * để người dùng tự đoán.
  */
 export function closeBlockers(caseId: number): string[] {
-  const conn = db();
-  const rows = conn
-    .prepare(`SELECT * FROM case_interventions WHERE case_id = ? AND status != 'cancelled'`)
-    .all(caseId) as any[];
-  const out: string[] = [];
-  if (!rows.length) {
-    out.push('Case chưa có phương án nào — chưa làm gì cho em thì chưa có gì để kết luận.');
-    return out;
-  }
-  const pending = rows.filter((r) => r.approval_state === 'pending');
-  if (pending.length) out.push(`${pending.length} phương án đang chờ Quản lý duyệt.`);
-  const running = rows.filter((r) => r.status !== 'completed' && r.approval_state !== 'pending');
-  if (running.length) {
-    out.push(`${running.length} phương án chưa cập nhật kết quả cuối cùng.`);
-  }
-  return out;
+  const r = chanHoanThanhCua(caseId);
+  return r.an ? [r.dong!] : r.ly_do;
+}
+
+/** PR-SOS (K3 §4a, K3-09): chặn Hoàn thành — PA theo quy chế chưa khép thì ẨN nút (`an`) + một dòng; còn lại lý do như cũ. */
+export function chanHoanThanhCua(caseId: number) {
+  const rows = db().prepare(`SELECT * FROM case_interventions WHERE case_id = ? AND status != 'cancelled'`).all(caseId) as any[];
+  const mtKe = mtKeTheoPa(caseId);
+  return chanHoanThanh(rows.map((r) => ({
+    batBuoc: r.preset === 1, xong: r.status === 'completed', choDuyet: r.approval_state === 'pending', followupDue: r.followup_due ?? null,
+    mocChu: r.preset === 1 ? mocChuPa({ span: r.moc_quy_che ?? null, followupDue: r.followup_due ?? null, mtKe: mtKe(r), daXacNhan: !!r.confirmed_at }, demoToday()) : '',
+  })));
+}
+
+/** Số MT kế tiếp của lượt đã sinh mỗi PA quy chế: mốc `opened`/`repeat` mới nhất không muộn hơn PA. MỘT câu cho cả Case. */
+export function mtKeTheoPa(caseId: number): (iv: { created_at: string }) => number | null {
+  const moc = db().prepare(`SELECT attempt_no, created_at FROM case_milestones WHERE case_id = ? AND kind IN ('opened', 'repeat')
+      AND attempt_no IS NOT NULL ORDER BY created_at DESC, id DESC`).all(caseId) as any[];
+  return (iv) => {
+    const m = moc.find((x) => x.created_at <= iv.created_at) ?? moc[moc.length - 1];
+    return m ? m.attempt_no + 1 : null;
+  };
 }

@@ -50,7 +50,8 @@ export function isFastTrackMock(attempt: { kind?: string | null }, scoringMode: 
  */
 export function examDateOf(cycleId: number | null | undefined): string | null {
   if (!cycleId) return null;
-  const c = db().prepare('SELECT exam_period_id, exam_month FROM learning_cycles WHERE id = ?').get(cycleId) as any;
+  const c = db().prepare('SELECT exam_period_id, exam_month, exam_date FROM learning_cycles WHERE id = ?').get(cycleId) as any;
+  if (c?.exam_date) return c.exam_date;   // PR-SOS: ngày thi cụ thể (T9) thắng tuần
   const plan = examPlanOf(c);
   return plan.confidence === 'week' && plan.weekStart ? addDays(plan.weekStart, 6) : null;
 }
@@ -216,6 +217,54 @@ export function xacNhanCase(p: Principal, caseId: number, input: {
   });
 }
 
+/**
+ * ĐIỀN MỐC QUY CHẾ CÒN TRỐNG (K3-14, Q2): PA quy chế đang chạy `đến MT{n+1}` / `đến lúc thi` mà lúc xác nhận chưa có lịch / ngày thi thì
+ * `followup_due` NULL — PA vẫn chạy. Gọi ở ĐƯỜNG ĐỌC (`caseDetail`, `skillSupportBoard`), không cron: có lịch rồi thì lần đọc sau tự điền.
+ * Một câu chọn cho cả tập; chỉ dòng tìm được mốc mới ghi (ít dòng). `theo`: tập Case, hoặc mọi Case của một học viên.
+ */
+export function dienMocQuyChe(theo: { caseIds?: number[]; studentId?: number }) {
+  const conn = db();
+  const dk = `iv.preset = 1 AND iv.status = 'started' AND iv.followup_due IS NULL AND iv.moc_quy_che IN ('until_next_mt', 'until_exam')`;
+  const rows: any[] = [];
+  if (theo.studentId != null) {
+    rows.push(...conn.prepare(`SELECT iv.*, sc.cycle_id AS case_cycle_id FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
+      WHERE sc.student_id = ? AND sc.status != 'done' AND ${dk}`).all(theo.studentId) as any[]);
+  }
+  const ids = theo.caseIds ?? [];
+  for (let i = 0; i < ids.length; i += 400) {
+    const lo = ids.slice(i, i + 400);
+    rows.push(...conn.prepare(`SELECT iv.*, sc.cycle_id AS case_cycle_id FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
+      WHERE iv.case_id IN (${lo.map(() => '?').join(',')}) AND ${dk}`).all(...lo) as any[]);
+  }
+  for (const iv of rows) {
+    const luot = iv.moc_quy_che === 'until_next_mt' ? luotSinhPa(iv) : null;
+    const moc = mocQuyChe(iv.moc_quy_che, {
+      ngayXacNhan: iv.cycle_started_on ?? iv.started_date ?? demoToday(),
+      nextMtSunday: luot ? followUntilAfter(luot) : null, examDate: examDateOf(iv.case_cycle_id),
+    });
+    if (moc) conn.prepare('UPDATE case_interventions SET followup_due = ?, updated_at = ? WHERE id = ? AND followup_due IS NULL').run(moc, nowIso(), iv.id);
+  }
+}
+/**
+ * CHUYỂN LỚP FT → FT CÙNG CHƯƠNG TRÌNH (K3-44, Q13): PA theo quy chế chưa khép của Case đang mở đổi người thực hiện sang GVBM đúng kỹ năng
+ * ở lớp mới (`suggestCaseOwner`), ghi bàn giao vào lịch sử Case. Đổi chương trình thì hệ thống đóng như cũ — không qua đây.
+ */
+export function banGiaoPaQuyChe(studentId: number, toClassId: number, actorUserId: number | null) {
+  const conn = db();
+  const lop = (conn.prepare('SELECT code FROM classes WHERE id = ?').get(toClassId) as any)?.code ?? '';
+  const rows = conn.prepare(`SELECT iv.id, iv.case_id, iv.performer_user_id, iv.performer_name, sc.category, sc.topic, u.full_name AS ten_cu
+      FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id LEFT JOIN users u ON u.id = iv.performer_user_id
+     WHERE sc.student_id = ? AND sc.status != 'done' AND iv.preset = 1 AND iv.status IN ('planned', 'started')`).all(studentId) as any[];
+  for (const r of rows) {
+    const moi = suggestCaseOwner({ classId: toClassId, category: r.category });
+    if (!moi || moi === r.performer_user_id) continue;
+    const tenMoi = (conn.prepare('SELECT full_name FROM users WHERE id = ?').get(moi) as any)?.full_name ?? '';
+    conn.prepare('UPDATE case_interventions SET performer_user_id = ?, performer_name = NULL, updated_at = ? WHERE id = ?').run(moi, nowIso(), r.id);
+    conn.prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, 'pa_performer', ?, ?, ?, ?)`)
+      .run(r.case_id, r.ten_cu ?? r.performer_name ?? null,
+        `${r.ten_cu ?? r.performer_name ?? '—'} → ${tenMoi} (GV ${caseTopicLabel(r.topic ?? r.category ?? '')} ${lop})`, actorUserId, nowIso());
+  }
+}
 /** Lượt MT đã sinh PA quy chế này: mốc `opened`/`repeat` mới nhất của Case tạo không muộn hơn PA. */
 function luotSinhPa(iv: any): any | null {
   return db().prepare(`SELECT a.* FROM case_milestones m JOIN assessment_attempts a ON a.id = m.attempt_id
