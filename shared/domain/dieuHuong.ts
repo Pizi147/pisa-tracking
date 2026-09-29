@@ -19,13 +19,15 @@ export type NavQuyen = {
   workApprove: boolean; workRequests: boolean;
   /** Cờ cũ — giữ để mã chưa chuyển vẫn chạy; PR sau bỏ dần. */
   mocks: boolean; meeting: boolean; academic: boolean; mgmtTasks: boolean;
+  /** PR-XUAT: nút Xuất Excel kết quả Test — Quản lý/Quản trị theo phạm vi, GVCN lớp mình (không phải GVBM). */
+  xuatMt: boolean;
 };
 
 export const NAV_RONG: NavQuyen = {
   overview: true, students: false, admin: false, analysis: false,
   test: false, testGrade: false, testSchedule: false, testPlan: false,
   work: false, workSupport: false, workOps: false, workReports: false, workApprove: false, workRequests: false,
-  mocks: false, meeting: false, academic: false, mgmtTasks: false,
+  mocks: false, meeting: false, academic: false, mgmtTasks: false, xuatMt: false,
 };
 
 export type KhuVucMuc = { key: KhuVuc; to: string; label: string; labelNgan: string };

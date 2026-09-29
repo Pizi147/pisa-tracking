@@ -7,6 +7,7 @@
 import { PERMISSIONS, type NavQuyen } from '../../../shared/domain/index.ts';
 import { can, scopeFor, type Principal } from '../permissions.ts';
 import { canSeeBoard } from '../worklist/mgmttasks.ts';
+import { coPhamViXuat, phamViXuatMt } from '../phanTich/xuatMt.ts';
 
 export function navOf(p: Principal): NavQuyen {
   const coPhamVi = (perm: string) => !scopeFor(p, perm).none;
@@ -24,5 +25,6 @@ export function navOf(p: Principal): NavQuyen {
     workSupport: attempt, workOps: board, workReports: meeting,
     workApprove: can(p, PERMISSIONS.REQUEST_APPROVE, { anyScope: true }), workRequests: attempt,
     mocks: attempt, meeting, academic: meeting, mgmtTasks: board,
+    xuatMt: coPhamViXuat(phamViXuatMt(p)),
   };
 }

@@ -469,5 +469,9 @@ audit, số đo Turso (Task 7), Task 8 đã/chưa, 🛑 đã hỏi. -->
   **Mốc B = 1722 phép kiểm** (`npm test`) + 24 phép tốc độ; `npm run check` xanh. Neo mã (loadBundle :88, resultOf :179, evaluateAttemptRow :57,
   luotKck :88, evaluateRegular :171, recomputeCompletionWeek :394, activeAt :139, navOf :11, chuanTieuDe :80, TongHopTestSos xuatExcel :114,
   DauTrangLop MenuDong :115, TRAN_GHI_LO :495, runPrXlmtTests :9795): khớp, không lệch.
+- **Task 1–2:** 1734 phép kiểm sau Task 2 (mốc B 1722 + 12 phép PR-XUAT). `chuanTieuDe` **hạ chữ thường** nên tên tệp dùng hàm bỏ dấu riêng (giữ `MB`).
+  Phép (2)(d) đo: **MB một tuần 8 câu / 1 lượt · MB MT1–MT8 8 câu / 525 lượt** (bằng nhau, ≤ 8; 1 câu là `demoToday()` — gọi một lần, không theo dòng).
+  **Dữ liệu demo lệch giả định kế hoạch:** GVCN `Trần Ngọc Hà` là GVCN của **cả** `MB FT 101` và `MB FOU 12` → `P.coreTeacher` = `P.normalCoreTeacher`; phép Task 3
+  "GVCN lớp FT hỏi khung thường → 0 lượt" đổi thành "…kèm lọc lớp MB FT 101 → 0 lượt". GVBM `P.subjectTeacher`: phép kiểm không giả định người đó không kiêm GVCN lớp khác.
 
 > **Chủ sản phẩm chốt 30/09:** GVBM **không** xuất Excel — chỉ GVCN, Quản lý, Quản trị. Lượt rải hai tuần: tính theo tuần bắt đầu thi (tự quyết theo khuyến nghị).

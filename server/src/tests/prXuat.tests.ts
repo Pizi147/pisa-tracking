@@ -130,4 +130,141 @@ export async function runPrXuatTests(t: YThucTestKit) {
     assert(ws['J2'] === undefined && ws['K2'] === undefined && ws['L2'] === undefined, 'W/S/Overall thiếu → không có ô (không phải chuỗi rỗng)');
     assert(doc.Sheets['Bộ lọc đã dùng']['B2'].v === 'Nguyễn Khánh Vy', 'sheet Bộ lọc giữ dấu');
   });
+
+  await mayChu(t);
+}
+
+// ==================================================================== khối 2: máy chủ
+async function mayChu(t: YThucTestKit) {
+  const { check, assert, conn, P, TODAY, addDays, classId } = t;
+  const d = await import('../../../shared/domain/index.ts');
+  const xm = await import('../phanTich/xuatMt.ts');
+  const nguCanh = await import('../platform/nguCanhRequest.ts');
+  const skillSchedule = await import('../fasttrack/skillSchedule.ts');
+  const { ensurePeriod } = await import('../platform/week.ts');
+  const { navOf } = await import('../platform/nav.ts');
+  type BoLoc = import('../../../shared/domain/xuatMt.ts').BoLocXuatMt;
+
+  const TAT_CA_DOT = ['mt:1', 'mt:2', 'mt:3', 'mt:4', 'mt:5', 'mt:6', 'mt:7', 'mt:8'];
+  const loc = (o: Record<string, unknown> = {}) => {
+    const f = d.docBoLocXuatMt({ tg: 'dot', dot: TAT_CA_DOT.join(','), ...o });
+    assert(typeof f !== 'string', String(f));
+    return f as BoLoc;
+  };
+  const loi = (fn: () => unknown): any => { try { fn(); return null; } catch (e: any) { return e; } };
+  const mb = conn.prepare(`SELECT id, name FROM branches WHERE code = 'MB'`).get() as { id: number; name: string };
+  const bc = conn.prepare(`SELECT id FROM branches WHERE code = 'BC'`).get() as { id: number };
+  const mbLop = classId('MB FT 101');
+  const cpLop = classId('CP FT 110');
+  const hang = (ds: { sheets: { aoa: (string | number | null)[][] }[] }) => ds.sheets[0].aoa.slice(1);
+
+  check('PR-XUAT (2) · phạm vi theo vai: QL chỉ chi nhánh mình, Quản trị mọi chi nhánh, GVCN chỉ lớp mình; GVBM không xuất (K5-35)', () => {
+    const q = xm.duLieuXuatMt(P.mbManager, loc());
+    assert(hang(q).length > 0 && hang(q).every((r) => r[2] === mb.name), `QL MB: ${hang(q).length} dòng, chi nhánh ${[...new Set(hang(q).map((r) => r[2]))]}`);
+    assert(loi(() => xm.duLieuXuatMt(P.mbManager, loc({ chiNhanh: String(bc.id) })))?.status === 403, 'QL MB hỏi BC phải 403');
+    assert(loi(() => xm.duLieuXuatMt(P.mbManager, loc({ lop: String(cpLop) })))?.status === 403, 'QL MB hỏi lớp CP phải 403');
+    const qt = xm.duLieuXuatMt(P.admin, loc());
+    assert(new Set(hang(qt).map((r) => r[2])).size > 1 && qt.phamVi.chiNhanh.length >= 5, 'Quản trị thấy nhiều chi nhánh');
+
+    const core = new Set(P.coreTeacher.assignments.filter((a) => a.isCore).map((a) => a.classId));
+    const maCore = new Set((conn.prepare(`SELECT code FROM classes WHERE id IN (${[...core].map(() => '?').join(',')})`).all(...core) as any[]).map((r) => r.code));
+    const gv = xm.duLieuXuatMt(P.coreTeacher, loc());
+    assert(hang(gv).length > 0 && hang(gv).every((r) => maCore.has(String(r[3]))), `GVCN chỉ thấy lớp mình: ${[...new Set(hang(gv).map((r) => r[3]))]}`);
+    assert(!core.has(cpLop) && loi(() => xm.duLieuXuatMt(P.coreTeacher, loc({ lop: String(cpLop) })))?.status === 403, 'GVCN hỏi lớp khác phải 403');
+    assert(loi(() => xm.duLieuXuatMt(P.coreTeacher, loc({ chiNhanh: String(bc.id) })))?.status === 403, 'GVCN hỏi chi nhánh khác phải 403');
+
+    /* GVBM: không có lớp chỉ dạy trong phạm vi xuất; nếu người đó kiêm GVCN lớp khác thì chỉ xuất được lớp GVCN đó. */
+    const laGvcnKhac = P.subjectTeacher.assignments.some((a) => a.isCore);
+    assert(!xm.phamViXuatMt(P.subjectTeacher).lopGvcn.includes(mbLop), 'GVBM không có MB FT 101 trong phạm vi xuất');
+    assert(loi(() => xm.duLieuXuatMt(P.subjectTeacher, loc({ lop: String(mbLop) })))?.status === 403, 'GVBM hỏi lớp chỉ dạy phải 403');
+    assert(navOf(P.subjectTeacher).xuatMt === laGvcnKhac, `cờ GVBM = ${navOf(P.subjectTeacher).xuatMt}`);
+    if (!laGvcnKhac) {
+      const e = loi(() => xm.duLieuXuatMt(P.subjectTeacher, loc()));
+      assert(e?.status === 403 && /Quản lý, Quản trị và GVCN/.test(e.message), String(e?.message));
+    }
+    assert(navOf(P.coreTeacher).xuatMt && navOf(P.mbManager).xuatMt && navOf(P.admin).xuatMt, 'GVCN, QL, Quản trị có nút');
+  });
+
+  check('PR-XUAT (2) · tuần của lượt = tuần SỚM NHẤT của kỹ năng phải thi, khác planned_period_id (tuần hoàn tất, muộn nhất) (K4-35b)', () => {
+    const a = conn.prepare(
+      `SELECT a.id, a.attempt_no, a.planned_period_id, st.student_code FROM assessment_attempts a JOIN students st ON st.id = a.student_id
+        WHERE a.class_id = ? AND a.kind = 'mock' AND a.status != 'cancelled'
+          AND (SELECT COUNT(*) FROM attempt_skills k WHERE k.attempt_id = a.id AND k.required = 1) = 4 ORDER BY a.id LIMIT 1`,
+    ).get(mbLop) as any;
+    assert(a, 'demo thiếu lượt MB FT 101 đủ 4 kỹ năng bắt buộc');
+    const goc = conn.prepare('SELECT id, planned_period_id FROM attempt_skills WHERE attempt_id = ?').all(a.id) as any[];
+    const tuanX = d.mondayOfDate('2027-03-01'), tuanY = d.mondayOfDate('2027-03-08');
+    try {
+      const px = ensurePeriod(tuanX).id, py = ensurePeriod(tuanY).id;
+      conn.prepare(`UPDATE attempt_skills SET planned_period_id = ? WHERE attempt_id = ? AND skill != 'speaking'`).run(px, a.id);
+      conn.prepare(`UPDATE attempt_skills SET planned_period_id = ? WHERE attempt_id = ? AND skill = 'speaking'`).run(py, a.id);
+      skillSchedule.recomputeCompletionWeek(a.id, null);
+      assert((conn.prepare('SELECT planned_period_id AS p FROM assessment_attempts WHERE id = ?').get(a.id) as any).p === py, 'planned_period_id = tuần muộn nhất');
+      const co = (f: BoLoc) => hang(xm.duLieuXuatMt(P.mbManager, f)).some((r) => r[0] === a.student_code && r[5] === `MT${a.attempt_no}`);
+      const theoTuan = (x: string, y: string) => loc({ tg: 'tuan', tu: x, den: y, lop: String(mbLop) });
+      assert(co(theoTuan(tuanX, tuanX)), 'lọc tuần sớm nhất (X–X) phải CÓ lượt');
+      assert(!co(theoTuan(tuanY, tuanY)), 'lọc tuần muộn nhất (Y–Y) phải KHÔNG có lượt');
+      assert(co(theoTuan(tuanX, tuanY)), 'X–Y có lượt');
+      assert(co(loc({ tg: 'thang', tu: '2027-03', den: '2027-03', lop: String(mbLop) })), 'theo tháng: tháng sở hữu của tuần sớm nhất');
+    } finally {
+      for (const g of goc) conn.prepare('UPDATE attempt_skills SET planned_period_id = ? WHERE id = ?').run(g.planned_period_id, g.id);
+      conn.prepare('UPDATE assessment_attempts SET planned_period_id = ? WHERE id = ?').run(a.planned_period_id, a.id);
+    }
+  });
+
+  check('PR-XUAT (2) · nghiệm thu YC-13.9: xem trước = số dòng tệp; đủ điểm giảm đúng; huỷ cả lượt không có; huỷ phần / lịch sử / KCK có nhãn', () => {
+    const tuNay = d.mondayOfDate(TODAY);
+    const f = loc({ chiNhanh: String(mb.id), tg: 'tuan', tu: addDays(tuNay, -7 * 26), den: addDays(tuNay, 7 * 26) });
+    const xt = xm.xemTruoc(P.mbManager, f);
+    const xuat = xm.xuatExcel(P.mbManager, f);
+    assert(xt.dem.luot > 0 && xt.dem.luot === xuat.sheets[0].aoa.length - 1, `xem trước ${xt.dem.luot} ≠ tệp ${xuat.sheets[0].aoa.length - 1}`);
+    assert(xt.dem.hocVien > 0 && xt.dem.lop > 0 && xt.dauDong.length === 5 && xt.tenTep === xuat.tenTep && xt.tenTep.endsWith('.xlsx'), JSON.stringify(xt));
+    const du = xm.duLieuXuatMt(P.mbManager, { ...f, chiDuDiem: true });
+    const thieu = hang(xuat).filter((r) => !String(r[15]).startsWith('Đủ điểm')).length;
+    assert(thieu > 0 && du.dem.luot === xt.dem.luot - thieu, `đủ điểm ${du.dem.luot} = ${xt.dem.luot} − ${thieu}`);
+    assert(hang(du).every((r) => String(r[15]).startsWith('Đủ điểm')), 'chỉ lượt đủ điểm');
+    assert(xuat.sheets.at(-1)!.ten === 'Bộ lọc đã dùng' && xuat.sheets[0].ten === 'Mock Test', 'tên sheet');
+
+    const tatCa = hang(xm.duLieuXuatMt(P.admin, loc()));
+    const nhan = (s: string) => tatCa.filter((r) => String(r[15]).includes(s)).length;
+    assert(nhan('đã huỷ phần còn lại') >= 1 && nhan(' · lịch sử') >= 1, `huỷ phần ${nhan('đã huỷ phần còn lại')}, lịch sử ${nhan(' · lịch sử')}`);
+    const kck = tatCa.filter((r) => r[12] === 'KCK');
+    assert(kck.length >= 1 && kck.every((r) => r[13] === null && r[14] === null), `KCK ${kck.length}: kỳ vọng/SOS phải trống`);
+    /* Lượt huỷ cả lượt: không dòng nào của (học viên, MT) đó — trừ khi em có lượt MT cùng số được tạo lại (không bị huỷ). */
+    for (const h of conn.prepare(
+      `SELECT a.id, st.student_code, a.attempt_no FROM assessment_attempts a JOIN students st ON st.id = a.student_id WHERE a.status = 'cancelled' AND a.kind = 'mock'`,
+    ).all() as any[]) {
+      const taoLai = (conn.prepare(`SELECT COUNT(*) n FROM assessment_attempts a2 JOIN assessment_attempts a1 ON a1.student_id = a2.student_id AND a1.attempt_no = a2.attempt_no
+        WHERE a1.id = ? AND a2.status != 'cancelled' AND a2.kind = 'mock'`).get(h.id) as any).n;
+      assert(taoLai > 0 || !tatCa.some((r) => r[0] === h.student_code && r[5] === `MT${h.attempt_no}`), `lượt huỷ ${h.student_code} MT${h.attempt_no} không được xuất`);
+    }
+  });
+
+  check('PR-XUAT (2) · không N+1: số câu SQL của MB một tuần = MB mọi đợt và ≤ 8 (đo ghi Nhật ký)', () => {
+    const tuan = (conn.prepare(
+      `SELECT pr.week_start w FROM assessment_attempts a JOIN classes c ON c.id = a.class_id JOIN report_periods pr ON pr.id = a.planned_period_id
+        WHERE c.branch_id = ? AND a.kind = 'mock' AND a.status != 'cancelled' ORDER BY pr.week_start LIMIT 1`,
+    ).get(mb.id) as any).w as string;
+    const dem = (f: BoLoc) => { const n0 = nguCanh.soCauSql(); const r = xm.duLieuXuatMt(P.mbManager, f); return { n: nguCanh.soCauSql() - n0, luot: r.dem.luot }; };
+    const mot = dem(loc({ chiNhanh: String(mb.id), tg: 'tuan', tu: tuan, den: tuan }));
+    const nhieu = dem(loc({ chiNhanh: String(mb.id) }));
+    assert(mot.luot > 0 && nhieu.luot > mot.luot, `một tuần ${mot.luot} lượt, mọi đợt ${nhieu.luot} lượt`);
+    assert(mot.n === nhieu.n && nhieu.n <= 8, `một tuần ${mot.n} câu (${mot.luot} lượt) · mọi đợt ${nhieu.n} câu (${nhieu.luot} lượt)`);
+    console.log(`    (đo) MB một tuần: ${mot.n} câu / ${mot.luot} lượt · MB MT1–MT8: ${nhieu.n} câu / ${nhieu.luot} lượt`);
+  });
+
+  check('PR-XUAT (2) · nhật ký: POST ghi đúng một dòng mt.xuat_excel; xem trước không ghi; nhãn tiếng Việt; chặn trần → 400', () => {
+    const n = () => (conn.prepare(`SELECT COUNT(*) n FROM audit_logs WHERE action = 'mt.xuat_excel'`).get() as any).n as number;
+    const f = loc({ chiNhanh: String(mb.id) });
+    const n0 = n();
+    xm.xemTruoc(P.mbManager, f);
+    assert(n() === n0, 'xem trước không ghi nhật ký');
+    const r = xm.xuatExcel(P.mbManager, f);
+    assert(n() === n0 + 1, 'POST ghi đúng một dòng');
+    const dong = conn.prepare(`SELECT * FROM audit_logs WHERE action = 'mt.xuat_excel' ORDER BY id DESC LIMIT 1`).get() as any;
+    assert(dong.actor_user_id === P.mbManager.userId && dong.entity_label.startsWith(`${r.dem.luot} lượt · `), dong.entity_label);
+    assert(d.nhanHanhDongNhatKy('mt.xuat_excel') === 'Xuất Excel kết quả Test', 'nhãn nhật ký');
+    const e = loi(() => xm.duLieuXuatMt(P.mbManager, f, 3));
+    assert(e?.status === 400 && /^Quá 3 lượt/.test(e.message), String(e?.message));
+  });
 }
