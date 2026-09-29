@@ -12,6 +12,7 @@ import {
 } from './cases.ts';
 import { mondayOfDate } from './week.ts';
 import { type ChuongTrinh } from './tongQuan.ts';
+import type { TrangThaiCaseV4 } from './sosV4.ts';
 
 // ------------------------------------------------------------------ góc nhìn (Q1, Q16)
 
@@ -21,7 +22,7 @@ export const GOC_NHIN_LABEL: Record<GocNhin, string> = {
   'tong-hop': 'Tổng hợp Test + SOS',
   'van-de': 'Tổng hợp vấn đề HV',
   'hieu-qua-pa': 'Hiệu quả PA',
-  'y-thuc': 'Ý thức & Phối hợp',
+  'y-thuc': 'Ý thức',   // PR-YT4 (K1-25): Phối hợp SOS ở Việc của GVCN, không ở góc nhìn này
   'danh-sach': 'Danh sách Case',
 };
 export const GOC_NHIN_MAC_DINH: GocNhin = 'tong-hop';
@@ -196,9 +197,18 @@ const COT_XU_LY: CotTongHop[] = [
   { khoa: 'hvCoCase', nhom: 'xu-ly', donVi: 'hoc-vien', nhan: () => 'HV có Case',
     goiY: 'Học viên có ít nhất một Case sinh từ các lượt trong dòng — một em nhiều Case vẫn tính một lần.' },
   { khoa: 'case', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Case', goiY: 'Case sinh từ các lượt trong dòng — là tình trạng HÔM NAY của case, không phải lúc lượt được chấm.' },
-  { khoa: 'dangXuLy', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Đang xử lý', goiY: 'Case đã có việc hỗ trợ thực sự diễn ra — tình trạng hôm nay.' },
-  { khoa: 'thieuPa', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Thiếu PA học thuật', goiY: 'Case chưa ai ghi sẽ làm gì — tình trạng hôm nay.' },
+  /* PR-SOS (K1-20): bốn cột theo MỘT nhãn trạng thái Case (`trangThaiCaseV4`) — tình trạng hôm nay. */
+  { khoa: 'choNguyenNhan', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Chờ nguyên nhân',
+    goiY: 'Case từ SOS chưa xác nhận nguyên nhân — trong ngoặc là số đã quá hạn 3 ngày.' },
+  { khoa: 'choDuyet', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Chờ Quản lý duyệt', goiY: 'Case đã gửi "Không cần theo dõi", chờ Quản lý duyệt.' },
+  { khoa: 'dangLam', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Đang làm', goiY: 'Case đã có nguyên nhân (kể cả PA theo quy chế còn chờ xác nhận) hoặc Case giáo viên báo, chưa xong.' },
+  { khoa: 'xongHuy', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Xong/Huỷ', goiY: 'Case đã hoàn thành, huỷ vì không cần theo dõi, hoặc hệ thống đóng.' },
 ];
+/** Trạng thái Case v4 → cột nhóm Xử lý của bảng Tổng hợp. `choNguyenNhanQuaHan` là số phụ trong ngoặc của cột Chờ nguyên nhân. */
+export const COT_XU_LY_V4: Record<TrangThaiCaseV4, string> = {
+  'cho-nguyen-nhan': 'choNguyenNhan', 'cho-duyet-khong-theo-doi': 'choDuyet', 'cho-xac-nhan-pa': 'dangLam', 'dang-lam': 'dangLam',
+  xong: 'xongHuy', 'huy-khong-theo-doi': 'xongHuy', 'he-thong-dong': 'xongHuy',
+};
 
 /**
  * Cột kỹ năng "dưới kỳ vọng", sinh từ `kyNangTheoCt` — khoá kỹ thuật `kn:<hạng mục>`, không lộ ra màn (chỉ dùng nội bộ).
@@ -304,27 +314,9 @@ export function tuanTrungBinh(soNgay: readonly number[]): number | null {
   return Math.max(1, Math.round(tb / 7));
 }
 
-// ------------------------------------------------------------------ Ý thức: bước tiếp theo (Q14)
-
-export const BUOC_TIEP = ['sap-thu-1', 'sap-thu-2', 'sap-thu-3', 'da-thu-3', 'theo-doi'] as const;
-export type BuocTiep = (typeof BUOC_TIEP)[number];
-export const BUOC_TIEP_LABEL: Record<BuocTiep, string> = {
-  'sap-thu-1': 'Sắp Thư CC lần 1', 'sap-thu-2': 'Sắp Thư CC lần 2', 'sap-thu-3': 'Sắp Thư CC lần 3',
-  'da-thu-3': 'Đã Thư CC lần 3', 'theo-doi': 'Theo dõi',
-};
-
-/** Vi phạm lặp lại (≥ 3 trong khoảng) hoặc vi phạm SAU lần Thư CC gần nhất — cùng lộ trình. */
-export function laHvCanChuY(x: { viPham: number; viPhamSauThu: number }): boolean {
-  return x.viPham >= 3 || x.viPhamSauThu > 0;
-}
-
-export function buocTiepTheo(
-  x: { thuCaoNhat: 0 | 1 | 2 | 3; viPhamSauThu: number; viPham: number; chuaXuLy: number },
-): BuocTiep {
-  if (x.thuCaoNhat === 3) return x.viPhamSauThu > 0 ? 'da-thu-3' : 'theo-doi';
-  if (x.thuCaoNhat > 0) return x.viPhamSauThu > 0 ? (`sap-thu-${x.thuCaoNhat + 1}` as BuocTiep) : 'theo-doi';
-  return x.viPham >= 3 && x.chuaXuLy > 0 ? 'sap-thu-1' : 'theo-doi';
-}
+// ------------------------------------------------------------------ Ý thức (PR-YT4): bỏ "bước tiếp theo · Sắp Thư CC" (v3)
+/* "Học viên cần chú ý" = nhóm Quá hạn · Bắt buộc xử lý · Chờ QL duyệt của cửa trạng thái (K1-25); cột Bậc hiện tại + Bậc kế đọc từ
+   `EmYThuc`. Luật 8 tuần / Thư CC của v3 đã bỏ. */
 
 /** Chênh lệch "so với lần trước / kỳ trước": nhiều hơn = xấu (đỏ ↑), ít hơn = tốt (xanh ↓), bằng = xám. null → "—". */
 export function nhanSoVoiTruoc(d: number | null): { chu: string; tone: 'bad' | 'ok' | 'muted' } {
@@ -367,7 +359,8 @@ export type VanDeHvKetQua = {
   gop: boolean; chiChinh: boolean;
   tomTat: { hv: number; case: number; lop: number };
   hang: DongVanDeHv[];
-  chuaPhanLoai: { case: number; hv: number; lop: number };
+  /** PR-SOS (K1-22): `quaHan` = số Case chờ xác nhận nguyên nhân đã quá hạn 3 ngày. */
+  chuaPhanLoai: { case: number; hv: number; lop: number; quaHan: number };
   scopeEmpty: boolean;
 };
 
@@ -384,10 +377,12 @@ export type HieuQuaPaKetQua = {
   chuaGhiKetQua: number; caseChuaPhanLoai: number; scopeEmpty: boolean;
 };
 
-/** Ý thức & Phối hợp: "Học viên cần chú ý" + "Lớp nhiều vi phạm". */
+/** Ý thức (PR-YT4): "Học viên cần chú ý" + "Lớp nhiều vi phạm". */
 export type DongHvCanChuY = {
   studentId: number; ten: string; lop: string | null; viPham: number; chuaXuLy: number;
-  bienPhapGanNhat: string | null; ngay: string | null; buocTiep: BuocTiep;
+  bienPhapGanNhat: string | null; ngay: string | null;
+  /** PR-YT4 (K1-25): nhóm em (Quá hạn · Bắt buộc xử lý · Chờ QL duyệt), bậc hiện tại và bậc kế trên thang. */
+  nhom: 'qua_han' | 'bat_buoc' | 'cho_duyet'; bac: string | null; bacKe: string | null;
 };
 export type DongLopViPham = {
   khoa: string; classId: number | null; nhan: string; viPham: number; chuaXuLy: number;

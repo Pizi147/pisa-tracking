@@ -53,7 +53,7 @@ Nếu bạn nghĩ theo "cái tôi thấy trên màn hình" chứ không theo tê
 |---|---|
 | **`plan.md`** | **Kế hoạch đang chạy.** Đọc trước khi code. File sống, có quy tắc bắt buộc cập nhật ở mục 0.2 |
 | `CODE_MAP.md` | File này — muốn sửa chỗ nào thì mở file nào |
-| `DEMO.md` | Mở hồ sơ nào để xem tình huống nào (mười tám tình huống Ý thức + kịch bản học thuật) và những điều đã chốt / còn treo |
+| `DEMO.md` | Mở hồ sơ nào để xem tình huống nào (Ý thức v4 a–m + kịch bản học thuật) và những điều đã chốt / còn treo |
 | `vong7/BRIEF_OVERHAUL_SAU_PR15.md` | Đề bài nghiệp vụ gốc |
 | *(bốn nhóm file bàn giao và tham chiếu cũ)* | **ĐÃ XOÁ 21/09/2026:** BAN\_GIAO (bốn file), PISA\_Design\_Master\_Reference, PRODUCT\_DEMO\_SPEC, thư mục vong4. Đã bị `thiet-ke/` thay hẳn. `plan.md` mục 1.2 đã cảnh báo chúng là "lịch sử, không phải luật" — giữ lại chỉ tạo rủi ro đọc phải luật cũ. Cần tra lại thì dùng `git log` |
 | `thiet-ke/PISA-Rulebook-2026-09-19.md` | **Luật sản phẩm** do chủ sản phẩm chốt. **Mục 18 (21/09) ưu tiên hơn mục 17**; mục 17 ưu tiên hơn mọi mô tả cũ mâu thuẫn |
@@ -63,7 +63,7 @@ Nếu bạn nghĩ theo "cái tôi thấy trên màn hình" chứ không theo tê
 | `PROMPT_BAN_GIAO_PLANNING.md` | Prompt bàn giao cho một session planning mới + tình trạng hiện tại |
 | `docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md` | Kế hoạch chi tiết bản chính, chia PR-Z2a/b/c |
 | `thiet-ke/NGUON-Rule-Y-thuc-2026-09-21.md` | **Nguồn mới nhất** do chủ sản phẩm gửi 21/09/2026: bỏ hẳn mô hình Case Ý thức |
-| `thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` | **Đặc tả phần Ý thức mới** — Vi phạm và Biện pháp xử lý. Đọc trước khi chạm bất kỳ thứ gì có chữ `behaviour` |
+| `thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` | Đặc tả Ý thức **v3 (lịch sử)** — từ PR-YT4 luật theo đặc tả 27/09 §5.4–§5.8 (khối đầu file) |
 | `thiet-ke/BAN_DO_OVERHAUL.md` | **Yêu cầu nào của design plan đã có, cái nào chưa, PR nào làm.** Đọc trước khi tưởng "chỉ còn vài việc dọn" |
 | `thiet-ke/PISA-Design-Plan-after-PR28.md` | **Đặc tả thiết kế** sau PR28; mục 17–22 là bản mới nhất. Đọc kèm `thiet-ke/BAN_DO_OVERHAUL.md` để biết mục nào hết hiệu lực |
 | `thiet-ke/HE_GIAO_DIEN.md` | Trước khi dựng bất kỳ màn nào — token, component dùng chung, bốn trạng thái dữ liệu, mobile, bàn phím |
@@ -91,7 +91,7 @@ ba nơi.
 | **Fast Track** | Tuần Mock Test, điểm band, mức SOS, dự kiến thi | `server/src/fasttrack/` | `web/src/modules/fasttrack/` |
 | **Normal** | FOU/BE/ELE, bốn môn L/R/W/S, điểm đạt/tổng điểm, chuyển tiếp lớp | `server/src/normal/` | `web/src/modules/normal/` |
 | **Case** | Vấn đề **học thuật** của em, phương án, phê duyệt, kết quả | `server/src/cases/` | `web/src/modules/cases/` |
-| **Ý thức** | Em vi phạm gì, đã xử lý bằng phương án xử lý nào, bằng chứng đâu; **Phối hợp SOS** của GVCN sau Mock có SOS (`server/src/yThuc/phoiHop.ts`, PR-T) | `server/src/yThuc/` | `web/src/modules/yThuc/` — tab Ý thức & Phối hợp của hồ sơ học viên (`StudentYThucSection.tsx`) và hồ sơ lớp (`ClassYThucCard.tsx`); thẻ lượt Phối hợp `TheSos` (trong `PhoiHopSosSection.tsx`); hộp chỉ đọc một phương án `XemPhuongAnPanel.tsx` |
+| **Ý thức** | Em vi phạm gì, đã xử lý bằng phương án xử lý nào, bằng chứng đâu; **Phối hợp SOS** của GVCN sau Mock có SOS (`server/src/yThuc/phoiHop.ts`, PR-T) | `server/src/yThuc/` | `web/src/modules/yThuc/` — tab Ý thức & Phối hợp của hồ sơ học viên (`StudentYThucSection.tsx`) và hồ sơ lớp (`ClassYThucCard.tsx`); thẻ lượt Phối hợp `TheSos` (trong `PhoiHopSosSection.tsx`); hộp chỉ đọc một lần xử lý `XemXuLyPanel.tsx` |
 | **Tổng quan và công việc** | Ai phải làm gì, cả chi nhánh đang thế nào | `server/src/worklist/` | `web/src/modules/worklist/` |
 | **Nền tảng** | Tài khoản, quyền, tuần, danh mục, nhật ký thay đổi | `server/src/platform/` | `web/src/modules/platform/` |
 | **Dùng chung** | Badge, nút, panel, bảng, chọn tuần; hàng tab gạch chân `HangTab.tsx`, ô số nhỏ `OSoNho.tsx`, dòng thời gian lưới `DongThoiGian.tsx` (PR-HV) | — | `web/src/ui/` |
@@ -157,7 +157,7 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | Phân công giáo viên, ba luật phân công (mỗi ô **một** người; Pre FOU chỉ ô GVCN, máy tự thêm ô Tổng hợp) | luật `shared/domain/phanCong.ts` (`oPhanCong`, `kiemPhanCong`, `moRongPhanCong`) · `server/src/classes/classes.ts` → `setClassTeachers` (`PUT /classes/:id/teachers`), `ghiPhanCong`, `docSlots`, `teacherCandidatesBranch` · `web/src/modules/classes/TeacherAssignPanel.tsx` |
 | Tuần khai giảng, tuần Progress/Final Test | `web/src/modules/classes/ClassProgressPanel.tsx` · `server/src/classes/schedule.ts` |
 | Lớp đang ở tuần thứ mấy, sắp thi gì | `server/src/classes/schedule.ts` → `classProgress` |
-| Tab **Ý thức** của lớp — ba khu vực (Vi phạm chưa xử lý · Biện pháp đang chuẩn bị · Lịch sử) | dữ liệu `server/src/yThuc/board.ts` → `classViolationBoard` (`GET /classes/:id/y-thuc`); giao diện PR-K |
+| Tab **Ý thức & Phối hợp** của lớp — khung trái nhóm em (Quá hạn · Bắt buộc · Chờ QL duyệt · Mới · Đã xử lý 7 ngày), khung phải dòng thời gian (PR-YT4, M6) | `server/src/yThuc/board.ts` → `bangYThucLop` (`GET /classes/:id/y-thuc`) · `web/src/modules/yThuc/ClassYThucCard.tsx` |
 | **Bảng phân tích vấn đề** của lớp (tab kỹ năng, năm con số mỗi hàng) | `web/src/modules/classes/ClassIssueBoard.tsx` · `server/src/cases/effectiveness.ts` → `classIssueBoard` |
 | Chuyển tiếp cả lớp khi hết chương trình (mỗi em một hướng, hai bước Soạn/Xác nhận) | `server/src/classes/transition.ts` · `web/src/modules/classes/TransitionPanel.tsx` |
 | Lớp đã kết thúc — chế độ chỉ xem (mọi cờ viewer `false`) | `server/src/classes/classes.ts` → `classOverview`, `classRoster` (nhánh `status==='finished'`) |
@@ -260,10 +260,15 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | Bảng phân loại nguyên nhân | `shared/domain/cases.ts` → `ISSUE_TAXONOMY` |
 | Danh sách phương án, nhóm tự làm / cần duyệt | `shared/domain/cases.ts` → `INTERVENTION_KINDS` |
 | Luật sinh case sau mỗi đợt MT | `server/src/cases/sos.ts` |
+| **SOS v4 (PR-SOS)** — luật thuần: hạn xác nhận 3 ngày, mốc PA quy chế, lần ghi cuối, MỘT nhãn trạng thái Case, việc tiếp, chặn Hoàn thành, tên `[MT1] … [SOS 3]` | `shared/domain/sosV4.ts` → `hanXacNhan`, `mocQuyChe`, `laLanGhiCuoi`, `quyetDinhChoPa`, `trangThaiCaseV4`, `viecTiepCuaCase`, `chanHoanThanh`, `tenCaseSos`, `mocChuPa` |
+| Case tự tạo từ SOS (tách hàm cho PR-LT2a gọi lại) | `server/src/cases/sos.ts` → `taoCaseTuDong` |
+| Xác nhận Case → Xác nhận PA · Không cần theo dõi (thẻ `khong_theo_doi`) · điền mốc · bàn giao PA khi chuyển lớp · đặt lại hạn khi Quay lại | `server/src/cases/sosAuto.ts` → `xacNhanCase`, `xacNhanPaQuyChe`, `guiKhongTheoDoi`, `apDungKhongTheoDoi`, `tuChoiKhongTheoDoi`, `dienMocQuyChe`, `banGiaoPaQuyChe`, `datLaiHanCase` · loại thẻ ở `server/src/duyet/loaiYeuCau.ts` |
+| Cột `sos_cases.han_xac_nhan`, `case_interventions.moc_quy_che` | `server/src/migrate/prSos.ts` |
+| Hàng Case / hàng PA ở bảng kỹ năng · panel Xác nhận Case / PA / Không cần theo dõi | `web/src/modules/cases/SkillBoard.tsx` → `HangCase`, `HangPA` · `web/src/modules/yThuc/CaseSosControls.tsx` |
 | Vòng đời case, phương án, phê duyệt, kết quả | `server/src/cases/cases.ts` |
 | Màn một case | `web/src/modules/cases/CasePanel.tsx` |
 | Bảng theo dõi năm hạng mục ở hồ sơ | `web/src/modules/cases/SkillBoard.tsx` |
-| Case của em ở hồ sơ — **nằm ngay dưới hàng kỹ năng**, không còn khối danh sách riêng | `web/src/modules/cases/SkillBoard.tsx` → `TheCase` |
+| Case của em ở hồ sơ — **nằm ngay dưới hàng kỹ năng**, không còn khối danh sách riêng | `web/src/modules/cases/SkillBoard.tsx` → `HangCase` / `HangPA` |
 | Luật hạn chu kỳ hai tuần / một tuần | `shared/domain/cases.ts` → `cycleDeadline` |
 | Năm kết quả và sáu bước tiếp theo (PR-S2 thêm `adjust` = Điều chỉnh, lịch sử ở bảng `case_intervention_revisions`) | `shared/domain/cases.ts` → `FOLLOWUP_OUTCOMES`, `NEXT_STEPS`, `nextStepsFor` |
 | Luật hiển thị thuần của hồ sơ học viên: tab từ `?tab=`, ô Test gần nhất, quá hạn, tiến độ case `k/n PA có kết quả`, việc tiếp của một PA, đếm vi phạm theo nhóm (PR-HV) | `shared/domain/hoSoHocVien.ts` → `parseHoSoTab`, `ketQuaTestGanNhat`, `quaHan`, `tienDoCase`, `viecTiepPhuongAn`, `demTheoNhomViPham` |
@@ -281,18 +286,20 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 
 | Muốn sửa | Mở file |
 |---|---|
-| Từ vựng: năm nhóm vi phạm, chín loại biện pháp, ô bắt buộc, chuỗi Thư cảnh cáo, `CANH_BAO_NGAY` | `shared/domain/yThuc.ts` |
-| Ghi · sửa · đánh dấu không chính xác một vi phạm (V01–V14) | `server/src/yThuc/violations.ts` |
-| Tạo · sửa · xác nhận · xóa biện pháp, chuỗi Thư cảnh cáo ở máy chủ (B01–B16) | `server/src/yThuc/measures.ts` |
-| **Cảnh báo 5 ngày** — MỘT hàm cho tab lớp, dòng học viên và Việc cần làm (W01–W06) | `server/src/yThuc/canhBao.ts` → `warningsFor` |
-| Tám chỉ số Ý thức, mỗi chỉ số một hàm trả tập ID | `server/src/yThuc/thongKe.ts` |
-| Ba khu vực của tab Ý thức trong lớp | `server/src/yThuc/board.ts` |
-| Ai được ghi / xử lý / xem thống kê | `server/src/yThuc/access.ts` · `server/src/permissions.ts` (`violation.record`, `discipline.manage`, `discipline.stats`) |
-| Bốn bảng và DDL | `server/src/schema.sql` (chép nguyên văn từ đặc tả §4) |
+| **Luật Ý thức v4 (PR-YT4)** — thang `THANG`, `batBuocTu` (3 vi phạm / 2 tuần), `trangThaiViPham` (sáu nhãn), `chuoiThang`, `bacKeTiep`, `nhomEm`, `macDinhTick`, `dongThang`, `HAN_Y_THUC_NGAY` | `shared/domain/yThuc.ts` (thuần) |
+| **Một cửa trạng thái** — nhãn, nhóm em, bậc, hạn của mọi em (tab lớp, tab HV, Việc của tôi, Tổng quan, chỉ số, Báo lên) | `server/src/yThuc/trangThai.ts` → `trangThaiYThuc`, `ungVienYThuc`, `ungVienVaThe`, `emCuaLop` |
+| Ghi nhận · Xác nhận xử lý (bậc máy chủ quyết, 409) · Khai bậc · Đề xuất QL duyệt (nháp → gửi) · Đã thực hiện · đọc tab HV | `server/src/yThuc/xuLy.ts` |
+| Ghi · sửa · xoá một vi phạm; GVCN tự ghi → Đã ghi nhận (Q5) | `server/src/yThuc/violations.ts` |
+| Thẻ `y_thuc` (duyệt / từ chối) và `bao_len_y_thuc` (Báo lên quá hạn) ở hộp Chờ duyệt | `server/src/duyet/loaiYeuCau.ts` (hai phần tử cuối `DINH_NGHIA_LOAI`) |
+| Chỉ số Ý thức, mỗi chỉ số một hàm trả tập ID (`bien-phap-cho-duyet`, `hv-theo-bac`) | `server/src/yThuc/thongKe.ts` |
+| Tab Ý thức trong lớp (M6: khung trái nhóm em · khung phải dòng thời gian) | `server/src/yThuc/board.ts` → `web/src/modules/yThuc/ClassYThucCard.tsx` |
+| Panel Ý thức v4 | `web/src/modules/yThuc/{XacNhanXuLyPanel,DaThucHienPanel,KhaiBacPanel,XemXuLyPanel,ThangYThuc,NhanViPham,panelYThuc}.tsx` · kiểu `kieu.ts` |
+| Ai được ghi / xử lý / xem thống kê | `server/src/yThuc/access.ts` · `server/src/permissions.ts` (`violation.record`, `discipline.manage` — GVCN **lớp đang học**, `discipline.stats`) |
+| Bảng và DDL | `server/src/schema.sql` · migrate PR-YT4 (`violations.ghi_nhan_luc/_boi`, `discipline_measures.quyet_luc`, bảng `y_thuc_khai_bac`) `server/src/migrate/prYt4.ts` |
 | Nâng cấp database còn mô hình Case Ý thức | `server/src/migrate.ts` → `migrateLegacyDisciplineCases` |
 | Bằng chứng (tệp / liên kết) của biện pháp và vi phạm | `server/src/platform/attachments.ts` |
-| Dữ liệu demo Ý thức (mười tám tình huống) | `server/src/seed/yThucSeed.ts` |
-| Phép kiểm | `server/src/tests/yThuc.tests.ts` (kể cả phép gọi thẳng HTTP qua `server/src/app.ts`) |
+| Dữ liệu demo Ý thức v4 (tình huống a–m) | `server/src/seed/yThucSeed.ts` |
+| Phép kiểm | `server/src/tests/yThuc.tests.ts` (kể cả phép gọi thẳng HTTP qua `server/src/app.ts`) · `server/src/tests/prYt4.tests.ts` (v4) |
 
 ### Tổng quan và công việc
 
@@ -396,7 +403,6 @@ Hướng dẫn cho chủ sản phẩm: `TRIEN_KHAI.md`. Kế hoạch: `docs/supe
 | Báo lỗi form (PR-N1, YC-12.5.2) | `web/src/ui/loiForm.tsx` (`useLoiForm`: `o(loi, khoa)` gắn lên ô, `loiCua` → `Truong loi`, `conThieu` → chân; `DongCanSua` "n ô cần sửa ↑") · luật thuần `shared/domain/loiForm.ts` (`kiemTruong`, `dsLoi`, `nhanCanSua`) |
 | Hạn "n ngày" và nhãn tuần ghi kết quả PA (PR-N1) | `shared/domain/cases.ts` (`weeklyUpdateDue` = hết Thứ Hai, `hanTheoNgay`, `HAN_DUYET_NGAY`) · `display.ts` (`nhanTuanGhiKetQua`) |
 | Nhãn tiếng Việt của Nhật ký thay đổi | `shared/domain/nhatKy.ts` (`nhanHanhDongNhatKy`) → `web/src/modules/platform/AdminPage.tsx` |
-| Tab Ý thức lớp: số = dòng | `shared/domain/viPhamLop.ts` (`dongViPhamLop`) → `web/src/modules/yThuc/ClassYThucCard.tsx` |
 | Migrate PR-N1 (dời hạn CN → T2, PA quy chế chạy ngay) + chạy thử chỉ đọc | `server/src/migrate/prN1.ts` · `server/src/migrate/chayThuN1.ts` (`npm run chay-thu:n1`) · phép kiểm `server/src/tests/suaLoiNong.tests.ts` |
 | Migrate PR-LOP (cột `so_tuan`/`tuan_giua_khoa`/`tuan_cuoi_khoa`, dòng RF + Pre FOU, đổi tên lớp cũ, chỉ mục `ux_classes_ma_chuan`) + chạy thử chỉ đọc | `server/src/migrate/prLop.ts` (`migratePrLop`, `keHoachDoiTenLop`, `dienMocLop`) · `server/src/migrate/chayThuLop.ts` (`npm run chay-thu:lop`) · phép kiểm `server/src/tests/prLop.tests.ts` |
 | Migrate PR-DUYET (bảng `yeu_cau_duyet` + chỉ mục một phần `ux_ycd_dang_cho`, chỉ mục `ix_notifications_dedup`, cột `tasks.assignee_name`, `notifications.duong`, chép PA chờ duyệt / đề nghị dời đang chờ thành thẻ) + chạy thử chỉ đọc | `server/src/migrate/prDuyet.ts` (`migratePrDuyet`, `napYeuCauTuNguonCu` — seed gọi lại, `keHoachDuyet`) · `server/src/migrate/chayThuDuyet.ts` (`npm run chay-thu:duyet`) · phép kiểm `server/src/tests/prDuyet.tests.ts` |

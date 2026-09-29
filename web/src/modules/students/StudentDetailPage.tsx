@@ -30,7 +30,7 @@ import { Han } from '../../ui/Han.tsx';
 import { QuaHan, ChipLichSu } from '../../ui/Nhan.tsx';
 import { useSession } from '../../lib/session.tsx';
 
-type OpenCase = { caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'them-pa' } | null;
+type OpenCase = { caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'them-pa' | 'xac-nhan' | 'xac-nhan-pa' } | null;
 
 type Profile = any;
 
@@ -109,8 +109,8 @@ export default function StudentDetailPage() {
     if (t === 'hoc-thuat') next.delete('tab'); else next.set('tab', t);
     setParams(next, { replace: true });
   };
-  /* A5: dấu ⚠ trên tab Ý thức. Cùng đường với khối bên trong — useApi tự tải lại khi '/students' bị vô hiệu. */
-  const warn = useApi<{ message: string }>(id ? `/students/${id}/violation-warning` : null, [id]);
+  /* A5 (PR-YT4): dấu ⚠ trên tab Ý thức = em Quá hạn hoặc Bắt buộc xử lý. CÙNG đường với tab bên trong (một cửa trạng thái). */
+  const yThuc = useApi<{ nhom: string | null }>(id ? `/students/${id}/y-thuc` : null, [id]);
 
   /*
    * MỞ ĐÚNG ĐỢT / ĐÚNG KỸ NĂNG (R7, R8c) — cuộn một lần khi dữ liệu vừa có cho ĐÚNG cặp `dot`/`kn`
@@ -272,7 +272,7 @@ export default function StudentDetailPage() {
       <HangTab ariaLabel="Nội dung hồ sơ học viên" value={tab} onChange={setTab}
         tabs={[
           { key: 'hoc-thuat', label: HO_SO_TAB_LABEL['hoc-thuat'] },
-          { key: 'y-thuc', label: HO_SO_TAB_LABEL['y-thuc'], canhBao: !!warn.data?.message },
+          { key: 'y-thuc', label: HO_SO_TAB_LABEL['y-thuc'], canhBao: yThuc.data?.nhom === 'qua_han' || yThuc.data?.nhom === 'bat_buoc' },
           { key: 'hanh-trinh', label: HO_SO_TAB_LABEL['hanh-trinh'] },
         ]} />
 
@@ -339,11 +339,7 @@ export default function StudentDetailPage() {
 
       {tab === 'y-thuc' && (
         <Card bodyClass="p-4">
-          <StudentYThucSection studentId={data.id} studentName={data.fullName}
-            canRecordViolation={!!data.viewer.canRecordViolation}
-            canManageDiscipline={!!data.viewer.canManageDiscipline}
-            canhBao={warn.data ?? null}
-            onGoAcademic={() => setTab('hoc-thuat')} />
+          <StudentYThucSection studentId={data.id} onGoAcademic={() => setTab('hoc-thuat')} />
         </Card>
       )}
 
@@ -377,7 +373,8 @@ export default function StudentDetailPage() {
 
       <QuickReport open={reportOpen} onClose={() => setReportOpen(false)}
         studentId={data.id} studentName={data.fullName} lop={data.currentClass?.code} cycleId={cy?.id ?? null}
-        onDone={(cid) => { reload(); setOpenCase({ caseId: cid }); }} />
+        onDone={(cid) => { reload(); setOpenCase({ caseId: cid }); }}
+        onMoCase={(cid, viec) => { reload(); setOpenCase({ caseId: cid, viec }); }} />
 
       {/* Tạo Case ĐỂ TRẢ LỜI một tín hiệu: đầu mục và kỹ năng điền sẵn, nhận định do người viết. */}
       <QuickReport open={!!verify} onClose={() => setVerify(null)}

@@ -1,11 +1,17 @@
 import { Nhan } from '../../ui/Nhan.tsx';
+import { NhanTrangThai } from '../../ui/ui.tsx';
+import { ngay, type NhanYThucEm } from '@shared/domain/index.ts';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 
 /**
- * YT-8 (Y_THUC W05, nơi thứ 3): em có vi phạm chưa xử lý quá 5 ngày. Nhắc mềm, không phải quá hạn (G-4), nên badge vàng `n vi phạm`
- * KHÔNG có dấu cảnh báo (PR-UX3, Q14). Câu đầy đủ ở tooltip — cùng câu với tab Ý thức & Phối hợp và hồ sơ học viên (một hàm
- * `rosterWarnings` ở máy chủ).
+ * NHÃN Ý THỨC Ở DÒNG HỌC VIÊN (PR-YT4, K1-17): chỉ hai nhóm cần hành động của cửa trạng thái — `Quá hạn` (cam) / `Cần xử lý` (vàng).
+ * Không còn "{n} vi phạm" xanh. Số vi phạm + hạn nằm ở tooltip — cùng số với huy hiệu tab Ý thức của lớp.
  */
-export function CanhBaoYThuc({ cb }: { cb: { count: number; oldestAgeDays: number; message: string } | null }) {
+export function CanhBaoYThuc({ cb }: { cb: NhanYThucEm | null }) {
+  const { homNay } = useNgayNghiepVu();
   if (!cb) return null;
-  return <Nhan tone="soon" title={cb.message}>{cb.count} vi phạm</Nhan>;
+  const title = `${cb.so} vi phạm ${cb.nhom === 'qua_han' ? 'quá hạn' : 'bắt buộc xử lý'}${cb.han ? ` · hạn ${ngay(cb.han, homNay)}` : ''}`;
+  return cb.nhom === 'qua_han'
+    ? <NhanTrangThai t="qua-han" soNgay={cb.quaHanNgay} title={title} />
+    : <Nhan tone="soon" title={title}>Cần xử lý</Nhan>;
 }

@@ -1,10 +1,10 @@
 import { Fragment, useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Card, Empty, ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
-import { DINH_TRAI, DongTomTat, MAU_SO_VOI_TRUOC, NutMoDanhSach, SoO as SoLieuO, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
+import { DINH_TRAI, DongTomTat, MAU_SO_VOI_TRUOC, SoO as SoLieuO, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
 import { KHOANG_LABEL, nhanSoVoiTruoc, type DongVanDeHv, type VanDeHvKetQua } from '@shared/domain/index.ts';
 
 /**
@@ -150,15 +150,15 @@ export function TongHopVanDeHv(props: PhamViPhanTich) {
                   {data.chuaPhanLoai.case > 0 && (
                     <tr className="bg-soon-bg text-soon font-bold" style={{ boxShadow: 'inset 3px 0 0 rgb(var(--soon-rgb))' }}>
                       <td className="px-3 py-2 sticky-col" style={{ background: 'rgb(var(--soon-bg-rgb))' }}
-                        title="Case chưa chọn loại lỗi — không vào được bảng này và Hiệu quả PA">
-                        Chưa phân loại: <SoLieuO giaTri={data.chuaPhanLoai.case} nguon={nguon('chua-phan-loai', 'case')} tieuDe="Chưa phân loại · Case" /> Case
+                        title="Case chờ xác nhận nguyên nhân — chưa vào được bảng này và Hiệu quả PA">
+                        <SoLieuO giaTri={data.chuaPhanLoai.case} nguon={nguon('chua-phan-loai', 'case')} tieuDe="Case chờ xác nhận nguyên nhân" /> Case chờ xác nhận nguyên nhân
+                        {data.chuaPhanLoai.quaHan > 0 && <span className="font-normal"> ({data.chuaPhanLoai.quaHan} quá hạn)</span>}
                       </td>
                       <td className="text-right tabular-nums"><SoLieuO giaTri={data.chuaPhanLoai.hv} nguon={nguon('chua-phan-loai', 'hv')} tieuDe="Chưa phân loại · học viên" /></td>
                       <td className="text-right tabular-nums"><SoLieuO giaTri={data.chuaPhanLoai.lop} nguon={nguon('chua-phan-loai', 'lop')} tieuDe="Chưa phân loại · lớp" /></td>
                       <td colSpan={3} className="pl-6 text-xs font-normal">
-                        <NutMoDanhSach nguon={nguon('chua-phan-loai', 'case')} tieuDe="Chưa phân loại · Case">
-                          Mở danh sách Case cần GV phân loại →
-                        </NutMoDanhSach>
+                        {/* PR-SOS (K1-22): việc của GV nằm ở Công việc — trỏ thẳng nhóm Xác nhận nguyên nhân. */}
+                        <Link to="/cong-viec?loai=cause" className="underline underline-offset-2">Xem trong Công việc →</Link>
                       </td>
                     </tr>
                   )}

@@ -33,9 +33,9 @@ function chuNhatCuaTuan(date: string): string {
  *   one_month     "1 tháng"          → Chủ nhật đầu tiên SAU (ngày tạo + 30 ngày)
  *   until_next_mt "đến MT{n+1}"      → Chủ nhật của tuần kỹ năng muộn nhất của lượt MT kế tiếp, nếu đã có lịch
  *   until_exam    "đến lúc thi"      → ngày thi dự kiến, nếu có
- *   expert        "Hỗ trợ chuyên môn" → không có hạn tự tính (người xác nhận đặt)
+ * PR-SOS: bỏ `expert` (MT5+ "Khác") — chủ sản phẩm chốt 29/09 Câu 1 = A.
  */
-export const ACADEMIC_SUPPORT_SPANS = ['one_month', 'until_next_mt', 'until_exam', 'expert'] as const;
+export const ACADEMIC_SUPPORT_SPANS = ['one_month', 'until_next_mt', 'until_exam'] as const;
 export type AcademicSupportSpan = (typeof ACADEMIC_SUPPORT_SPANS)[number];
 
 export type AcademicSupportRule = { kind: InterventionKind; span: AcademicSupportSpan };
@@ -46,8 +46,6 @@ export type SosLevelKey = 1 | 2 | 3;
 const SELF_1M: AcademicSupportRule = { kind: 'self_study', span: 'one_month' };
 const TUTOR_NEXT: AcademicSupportRule = { kind: 'tutor', span: 'until_next_mt' };
 const TUTOR_EXAM: AcademicSupportRule = { kind: 'tutor', span: 'until_exam' };
-/** MT5 trở đi: `Khác` — chưa có quy định hình thức/thời lượng, nên chỉ là chỗ giữ chờ GVBM / P. Học thuật xác nhận. */
-const EXPERT: AcademicSupportRule = { kind: 'other_proposal', span: 'expert' };
 
 /**
  * BẢNG §4 — theo SỐ MT của lượt (hàng, MT5 trở đi dùng chung hàng 5) và MỨC SOS CỦA CẢ LƯỢT (cột).
@@ -58,10 +56,8 @@ export const DEFAULT_ACADEMIC_SUPPORT: Record<1 | 2 | 3 | 4 | 5, Record<SosLevel
   2: { 1: SELF_1M, 2: SELF_1M, 3: TUTOR_NEXT },
   3: { 1: TUTOR_EXAM, 2: TUTOR_EXAM, 3: TUTOR_EXAM },
   4: { 1: TUTOR_EXAM, 2: TUTOR_EXAM, 3: TUTOR_EXAM },
-  5: { 1: EXPERT, 2: EXPERT, 3: EXPERT },
+  5: { 1: TUTOR_EXAM, 2: TUTOR_EXAM, 3: TUTOR_EXAM },   // PR-SOS Câu 1 = A (29/09): MT5+ như MT3/MT4
 };
-
-export const ACADEMIC_SUPPORT_EXPERT_TEXT = 'Hỗ trợ chuyên môn — cần GVBM/P. Học thuật xác nhận';
 
 export type AcademicSupportPreset = AcademicSupportRule & { description: string };
 
@@ -75,8 +71,7 @@ export function academicSupportFor(attemptNo: number, sosLevel: number | null | 
   const description =
     rule.span === 'one_month' ? 'Tự học · 1 tháng'
     : rule.span === 'until_next_mt' ? `Tutor · đến MT${attemptNo + 1}`
-    : rule.span === 'until_exam' ? 'Tutor · đến lúc thi'
-    : ACADEMIC_SUPPORT_EXPERT_TEXT;
+    : 'Tutor · đến lúc thi';
   return { ...rule, description };
 }
 
@@ -95,7 +90,6 @@ export function sosPlanEndDate(
     case 'one_month': return chuNhatCuaTuan(addDaysIso(ctx.createdOn, 31));
     case 'until_next_mt': return ctx.nextMtSunday ?? null;
     case 'until_exam': return ctx.examDate ?? null;
-    case 'expert': return null;
   }
 }
 

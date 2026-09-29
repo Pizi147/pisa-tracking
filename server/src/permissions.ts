@@ -201,6 +201,13 @@ function classesOfStudent(studentId: number): number[] {
       .map((r) => r.class_id));
 }
 
+/** K5-34 (PR-YT4): lớp em ĐANG HỌC (ghi danh `active`) — quyền xử lý Ý thức và sửa hồ sơ chỉ theo lớp này, không theo lớp em đã rời. */
+function classesOfStudentDangHoc(studentId: number): number[] {
+  return nho('hv-lop-dh:' + studentId, () =>
+    (db().prepare(`SELECT DISTINCT class_id FROM enrollments WHERE student_id = ? AND status = 'active'`).all(studentId) as any[])
+      .map((r) => r.class_id));
+}
+
 /**
  * NẠP TRƯỚC PHẠM VI của một lô HV — chỉ có tác dụng TRONG một request GET (`coNho()` mở); ngoài đó `return` ngay,
  * không tốn một câu SQL nào (phép kiểm gọi thẳng `listCases`/`can` ngoài request vẫn đi từng dòng như trước PR này).
@@ -217,10 +224,11 @@ function classesOfStudent(studentId: number): number[] {
 export function napTruocPhamVi(studentIds: readonly (number | null | undefined)[]): void {
   if (!coNho()) return;
   const idsCanNap = [...new Set(studentIds.filter((id): id is number => id != null))]
-    .filter((id) => !coKhoa('hv-lop:' + id) || !coKhoa('hv-cn:' + id));
+    .filter((id) => !coKhoa('hv-lop:' + id) || !coKhoa('hv-cn:' + id) || !coKhoa('hv-lop-dh:' + id));
   if (!idsCanNap.length) return;
 
   const lopCua = new Map<number, number[]>();
+  const lopDangHoc = new Map<number, number[]>();
   const cnDangHoc = new Map<number, Set<number>>();
   const cnMoiGhiDanh = new Map<number, Set<number>>();
   /* Id nào có ÍT NHẤT MỘT ghi danh `active` — quyết định dùng `cnDangHoc` hay lùi về `cnMoiGhiDanh`,
@@ -228,7 +236,7 @@ export function napTruocPhamVi(studentIds: readonly (number | null | undefined)[
      dùng `.size` của `cnDangHoc` để quyết thì một em CHỈ có `students.branch_id`, không ghi danh
      active nào, sẽ bị tính nhầm là "đang học"). */
   const coActive = new Set<number>();
-  for (const id of idsCanNap) { lopCua.set(id, []); cnDangHoc.set(id, new Set()); cnMoiGhiDanh.set(id, new Set()); }
+  for (const id of idsCanNap) { lopCua.set(id, []); lopDangHoc.set(id, []); cnDangHoc.set(id, new Set()); cnMoiGhiDanh.set(id, new Set()); }
 
   for (let i = 0; i < idsCanNap.length; i += 400) {
     const lo = idsCanNap.slice(i, i + 400);
@@ -241,7 +249,7 @@ export function napTruocPhamVi(studentIds: readonly (number | null | undefined)[
       )
       .all(...lo) as any[]) {
       lopCua.get(r.sid)!.push(r.cid);
-      if (r.trang_thai === 'active') coActive.add(r.sid);
+      if (r.trang_thai === 'active') { coActive.add(r.sid); lopDangHoc.get(r.sid)!.push(r.cid); }
       if (r.bid != null) {
         cnMoiGhiDanh.get(r.sid)!.add(r.bid);
         if (r.trang_thai === 'active') cnDangHoc.get(r.sid)!.add(r.bid);
@@ -257,6 +265,7 @@ export function napTruocPhamVi(studentIds: readonly (number | null | undefined)[
 
   for (const id of idsCanNap) {
     datNho('hv-lop:' + id, lopCua.get(id)!);
+    datNho('hv-lop-dh:' + id, [...new Set(lopDangHoc.get(id)!)]);
     datNho('hv-cn:' + id, [...(coActive.has(id) ? cnDangHoc.get(id)! : cnMoiGhiDanh.get(id)!)]);
   }
 }
@@ -280,6 +289,17 @@ export function hasAssignment(p: Principal, ctx: Ctx, need: 'any' | 'skill' | 'c
   if (need === 'core') return mine.some((a) => a.isCore);
   if (need === 'skill') return ctx.skill ? mine.some((a) => a.skill === ctx.skill) : false;
   return true;
+}
+
+/**
+ * K5-34, M-08 (PR-YT4): GVCN của lớp em ĐANG HỌC. Ngữ cảnh chỉ có `studentId` → chỉ lớp có ghi danh `active` (GVCN lớp cũ mất quyền
+ * ngay khi em chuyển lớp; em Tạm dừng không có GVCN xử lý). Ngữ cảnh có `classId` → như `hasAssignment`.
+ */
+function coreDangHoc(p: Principal, ctx: Ctx): boolean {
+  if (ctx.classId || !ctx.studentId) return hasAssignment(p, ctx, 'core');
+  const lop = classesOfStudentDangHoc(ctx.studentId);
+  const date = ctx.date ?? demoToday();
+  return p.assignments.some((a) => a.isCore && activeAt(a, date) && lop.includes(a.classId));
 }
 
 /** Grant này có phủ ngữ cảnh không? Grant toàn hệ thống phủ mọi thứ. */
@@ -341,7 +361,7 @@ function teacherAllows(p: Principal, permission: string, ctx: Ctx): boolean {
     case PERMISSIONS.VIOLATION_RECORD:
       return ctx.anyScope === true || hasAssignment(p, ctx, 'any');
     case PERMISSIONS.DISCIPLINE_MANAGE:
-      return ctx.anyScope === true || hasAssignment(p, ctx, 'core');
+      return ctx.anyScope === true || coreDangHoc(p, ctx);
 
     /*
      * SỬA HỒ SƠ HỌC VIÊN: CHỈ GVCN, và chỉ học viên của chính lớp mình chủ nhiệm.
@@ -354,7 +374,7 @@ function teacherAllows(p: Principal, permission: string, ctx: Ctx): boolean {
      * riêng và vẫn theo phân công kỹ năng / vai Quản lý như cũ.
      */
     case PERMISSIONS.STUDENT_EDIT:
-      return ctx.anyScope === true || hasAssignment(p, ctx, 'core');
+      return ctx.anyScope === true || coreDangHoc(p, ctx);
 
     /*
      * DỜI LỊCH MỘT KỸ NĂNG (sổ SCH-01) — CHỈ lớp Normal, và CHỈ GVCN (mọi môn của lớp mình

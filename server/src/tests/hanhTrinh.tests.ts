@@ -175,20 +175,24 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     assert(late.tone === 'late' && late.dau === '⚠' && late.day.includes('Quá hạn cập nhật'), `Quá hạn cập nhật: ${JSON.stringify(late)}`);
   });
 
-  check('PR-Qb (1) · trangThaiHop: đủ 5 nhánh Q6, n tuần làm tròn lên', () => {
+  check('PR-Qb (1) → PR-SOS (K3-29) · trangThaiHop: nhãn §7.3 — Cần làm · chờ nguyên nhân / Chờ duyệt / Cần làm · chưa có PA / Đang làm · n tuần / Xong dd/mm / Đã huỷ', () => {
     const homNay = '2026-09-22';
+    const choNn = d.trangThaiHop({ caseMo: [{ mo: '2026-08-01', soPa: 1, choNguyenNhan: true }], coTungCase: true, diemCuoiChuaDat: true, xongGanNhat: null }, homNay);
+    assert(choNn?.tone === 'warn' && choNn.chu === 'Cần làm · chờ nguyên nhân', `Chờ nguyên nhân: ${JSON.stringify(choNn)}`);
+    const choDuyet = d.trangThaiHop({ caseMo: [{ mo: '2026-08-01', soPa: 1, choDuyet: true }], coTungCase: true, diemCuoiChuaDat: null, xongGanNhat: null }, homNay);
+    assert(choDuyet?.chu === 'Chờ duyệt', `Chờ duyệt: ${JSON.stringify(choDuyet)}`);
     const chuaCoPa = d.trangThaiHop({ caseMo: [{ mo: '2026-08-01', soPa: 0 }], coTungCase: true, diemCuoiChuaDat: null, xongGanNhat: null }, homNay);
-    assert(chuaCoPa?.tone === 'warn' && chuaCoPa.chu.startsWith('Chưa có PA · '), `Chưa có PA: ${JSON.stringify(chuaCoPa)}`);
+    assert(chuaCoPa?.tone === 'warn' && chuaCoPa.chu === 'Cần làm · chưa có PA', `Chưa có PA: ${JSON.stringify(chuaCoPa)}`);
     const canHoTro = d.trangThaiHop({ caseMo: [{ mo: '2026-08-01', soPa: 2 }], coTungCase: true, diemCuoiChuaDat: true, xongGanNhat: null }, homNay);
-    assert(canHoTro?.tone === 'danger' && canHoTro.chu.startsWith('Cần hỗ trợ · '), `Cần hỗ trợ: ${JSON.stringify(canHoTro)}`);
+    assert(canHoTro?.tone === 'danger' && canHoTro.chu.startsWith('Đang làm · '), `Đang làm (điểm chưa đạt): ${JSON.stringify(canHoTro)}`);
     const dangTheoDoi = d.trangThaiHop({ caseMo: [{ mo: '2026-08-01', soPa: 2 }], coTungCase: true, diemCuoiChuaDat: false, xongGanNhat: null }, homNay);
-    assert(dangTheoDoi?.tone === 'warn' && dangTheoDoi.chu.startsWith('Đang theo dõi · '), `Đang theo dõi: ${JSON.stringify(dangTheoDoi)}`);
+    assert(dangTheoDoi?.tone === 'warn' && dangTheoDoi.chu.startsWith('Đang làm · '), `Đang làm: ${JSON.stringify(dangTheoDoi)}`);
     const daOn = d.trangThaiHop({ caseMo: [], coTungCase: true, diemCuoiChuaDat: null, xongGanNhat: '2026-08-30' }, homNay);
-    assert(daOn?.tone === 'ok' && daOn.chu === 'Đã ổn · xong 30/08', `Đã ổn: ${JSON.stringify(daOn)}`);
+    assert(daOn?.tone === 'ok' && daOn.chu === 'Xong 30/08', `Xong: ${JSON.stringify(daOn)}`);
+    assert(d.trangThaiHop({ caseMo: [], coTungCase: true, diemCuoiChuaDat: null, xongGanNhat: '2026-08-30', huyGanNhat: true }, homNay)?.chu === 'Đã huỷ', 'Đã huỷ');
     const chuaTungCo = d.trangThaiHop({ caseMo: [], coTungCase: false, diemCuoiChuaDat: null, xongGanNhat: null }, homNay);
-    assert(chuaTungCo === null, 'Chưa từng có Case → null (giao diện tự vẽ chữ mờ)');
-    /* mo 01/08 → 22/09 = 52 ngày = 7.43 tuần → làm tròn lên 8 */
-    assert(chuaCoPa?.chu === 'Chưa có PA · 8 tuần', `n tuần làm tròn lên: ${chuaCoPa?.chu}`);
+    assert(chuaTungCo === null, 'Chưa từng có Case → null (giao diện tự vẽ chữ mờ)');    /* mo 01/08 → 22/09 = 52 ngày = 7.43 tuần → làm tròn lên 8 */
+    assert(dangTheoDoi?.chu === 'Đang làm · 8 tuần', `n tuần làm tròn lên: ${dangTheoDoi?.chu}`);
   });
 
   check('PR-Qb (1) · chuoiDiem: FT band, lớp thường %, tối đa 5 mốc, thêm "?" khi còn chờ', () => {
@@ -347,10 +351,10 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
   check('PR-UX5 (1) · trangThaiHop có `ngan` (phần trước " · ") cho cả 4 trạng thái', () => {
     const h = '2026-09-22';
     const ngan = (i: Parameters<typeof d.trangThaiHop>[0]) => d.trangThaiHop(i, h)?.ngan;
-    assert(ngan({ caseMo: [{ mo: '2026-08-01', soPa: 0 }], coTungCase: true, diemCuoiChuaDat: null, xongGanNhat: null }) === 'Chưa có PA', 'Chưa có PA');
-    assert(ngan({ caseMo: [{ mo: '2026-08-01', soPa: 1 }], coTungCase: true, diemCuoiChuaDat: true, xongGanNhat: null }) === 'Cần hỗ trợ', 'Cần hỗ trợ');
-    assert(ngan({ caseMo: [{ mo: '2026-08-01', soPa: 1 }], coTungCase: true, diemCuoiChuaDat: false, xongGanNhat: null }) === 'Đang theo dõi', 'Đang theo dõi');
-    assert(ngan({ caseMo: [], coTungCase: true, diemCuoiChuaDat: null, xongGanNhat: '2026-08-30' }) === 'Đã ổn', 'Đã ổn');
+    assert(ngan({ caseMo: [{ mo: '2026-08-01', soPa: 0 }], coTungCase: true, diemCuoiChuaDat: null, xongGanNhat: null }) === 'Cần làm', 'Cần làm');
+    assert(ngan({ caseMo: [{ mo: '2026-08-01', soPa: 1 }], coTungCase: true, diemCuoiChuaDat: true, xongGanNhat: null }) === 'Đang làm', 'Đang làm (chưa đạt)');
+    assert(ngan({ caseMo: [{ mo: '2026-08-01', soPa: 1 }], coTungCase: true, diemCuoiChuaDat: false, xongGanNhat: null }) === 'Đang làm', 'Đang làm');
+    assert(ngan({ caseMo: [], coTungCase: true, diemCuoiChuaDat: null, xongGanNhat: '2026-08-30' }) === 'Xong 30/08', 'Xong');
   });
 
   check('PR-UX5 (1) · dongPhuVanDe: 3 dạng, ngày dd/mm không năm khi cùng năm (G-6), ≤ 60 ký tự', () => {
@@ -759,8 +763,9 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
 
   // ==================================================================== Task 7 — AN-9, R8a, R8b, thông báo (quét nguồn)
 
-  check('PR-Qb (7) · StudentYThucSection.tsx nhận prop canhBao (AN-9 — một lần gọi /violation-warning)', () => {
-    assert(doc('web/src/modules/yThuc/StudentYThucSection.tsx').includes('canhBao'), 'Phải có prop canhBao');
+  check('PR-Qb (7) · (PR-YT4) dấu ⚠ tab Ý thức và tab bên trong đọc CÙNG đường /students/:id/y-thuc (một cửa trạng thái, không gọi riêng)', () => {
+    const trang = doc('web/src/modules/students/StudentDetailPage.tsx'), tab = doc('web/src/modules/yThuc/StudentYThucSection.tsx');
+    assert(trang.includes('/students/${id}/y-thuc') && tab.includes('/students/${studentId}/y-thuc') && !/violation-warning/.test(trang + tab), 'một đường');
   });
 
   check('PR-Qb (7) · ClassRoster.tsx: nhãn đợt dùng duongHoSoHocVien, không còn tự dựng /mock-test/ ở đó', () => {

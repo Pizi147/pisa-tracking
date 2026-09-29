@@ -1,6 +1,6 @@
 import {
   ATTEMPT_KIND_SHORT, PROGRAMME_TEMPLATES, boMonLich, categoryOf, cycleDeadline, issuesForTopic,
-  hanDuyetDoiLan2, mondayOfDate, planEndDefault, programmeOf, ratioResult, weeklyUpdateDue,
+  hanDuyetDoiLan2, mondayOfDate, programmeOf, ratioResult, weeklyUpdateDue,
   type AttemptKind,
 } from '../../../shared/domain/index.ts';
 import { addDays, normalizeName, nowIso, padCode } from '../util.ts';
@@ -698,10 +698,9 @@ function insertCase(
     /*
      * HAI MỐC KHÁC NHAU (mục 8.3), không còn gộp làm một con số:
      *   · HẠN CẬP NHẬT — Chủ nhật gần nhất.
-     *   · DỰ KIẾN KẾT THÚC — Chủ nhật tuần tiếp theo.
+     *   · PR-SOS (Q28-4): KHÔNG còn dự kiến kết thúc — PA thường `followup_due` NULL.
      */
     const updateDue = weeklyUpdateDue(effectiveStart);
-    const planEnd = planEndDefault(effectiveStart);
     const due = cycleDeadline(effectiveStart);
     const pinfo = conn
       .prepare(
@@ -721,8 +720,9 @@ function insertCase(
         past(p.completedOn),
         p.cycleNo ?? 1,
         pending || declined ? null : effectiveStart,
-        running ? (p.actionDue ?? updateDue) : null,
-        running ? (p.followupDue ?? planEnd) : null,
+        /* PR-SOS (Q28-4): `followupDue` của kịch bản (ngày cần báo lại) nay là hạn ghi kết quả — giữ nhịp quá hạn / hôm nay / còn hạn của demo. */
+        running ? (p.actionDue ?? p.followupDue ?? updateDue) : null,
+        null,
         p.approval ? 1 : 0,
         p.approval?.state ?? null,
         p.approval?.due ?? null,

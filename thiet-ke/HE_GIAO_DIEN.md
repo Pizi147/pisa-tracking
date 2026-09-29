@@ -139,26 +139,22 @@ Component mới chỉ vào bộ dùng chung khi có **ít nhất hai màn** gọ
 <Han loai="nhap-diem" han="2026-09-23" hen="2026-09-30" />
 ```
 
-`loai` là **bắt buộc**, không có giá trị mặc định. Bảng có mười loại: sáu đồng hồ đã gắn theo rule book, bốn loại PR-NEN
-thêm sẵn tên (Q16) để các PR sau gắn luật. Ngoài bảng còn `viec-van-hanh` (hạn việc Vận hành, PR-Ra) và `du-kien-ket-thuc` (không phải hạn, tả ngay dưới bảng). Danh sách trong mã:
+`loai` là **bắt buộc**, không có giá trị mặc định. Bảng có tám loại: sáu đồng hồ đã gắn, hai loại PR-NEN
+thêm sẵn tên (Q16) để các PR sau gắn luật. PR-YT4 (K5-24) bỏ `thuc-hien-y-thuc`, `hoan-thanh-y-thuc` và gắn luật cho `xu-ly-vi-pham`. Ngoài bảng còn `viec-van-hanh` (hạn việc Vận hành, PR-Ra) và `du-kien-ket-thuc` (không phải hạn, tả ngay dưới bảng). Danh sách trong mã:
 `DEADLINE_KINDS` ở `shared/domain/display.ts`.
 
 | `loai` | Nhãn hiển thị | Luật | Nguồn |
 |---|---|---|---|
-| `xac-minh-sos` | `Xác nhận nguyên nhân · hạn {ngày}` | 3 ngày tính cả ngày đầu | RB 3.4 |
+| `xac-minh-sos` | `Xác nhận nguyên nhân / Xác nhận PA · hạn {ngày}` | 3 ngày tính cả ngày đầu (`sos_cases.han_xac_nhan`) | RB 3.4 · PR-SOS |
 | `lap-pa` | `Cần có phương án · hạn {ngày}` | 5 ngày Cần chú ý / 3 ngày Gấp | RB 4.2 |
 | `cap-nhat-pa` | `Ghi kết quả tuần W4 SEP · hạn hết T2 28/09` | Hằng tuần, hết **Thứ Hai** tuần sau | §5.6 R-PA1 (PR-N1) |
-| `thuc-hien-y-thuc` | `Thực hiện xong · hạn {ngày}` | 3 ngày Gấp / 5 ngày Cần chú ý | RB 6.2 |
-| `hoan-thanh-y-thuc` | `Kết luận đợt · hạn {ngày}` | 7 ngày tính cả ngày mở | RB 6.2 |
 | `nhap-diem` | `Hạn nhập điểm {ngày}` | FT: hết thứ Tư tuần kế tuần thi | RB 9.2 |
 | `duyet` | `Duyệt · hạn {ngày} · còn {n} ngày` (chưa quá hạn; hạn hôm nay = `còn 1 ngày`) | thẻ hộp Chờ duyệt: tầng 1 `Quá hạn n ngày` / `Hạn hôm nay` / `Còn n ngày`, dòng phụ `hạn {ngày}` | K1-56, T66 · PR-DUYET (M8) |
-| `xu-ly-vi-pham` | `Xử lý vi phạm · hạn {ngày}` | chưa gắn — PR sau | K1-56 (PR-NEN Q16) |
+| `xu-ly-vi-pham` | `Xử lý vi phạm · hạn {ngày}` | 5 ngày tính cả ngày ghi lên web (`HAN_Y_THUC_NGAY`): vi phạm bắt buộc chưa xử lý · vi phạm Mới chưa Ghi nhận · đề xuất đã duyệt chưa "Đã thực hiện" (từ ngày duyệt). Chuyển lớp → hạn đặt lại từ ngày vào lớp (M-08); Tạm dừng → không hạn | K1-56 · PR-YT4 (T26, V4-5, M-08) |
 | `ke-hoach-bo-tro` | `Nộp kế hoạch bổ trợ · hạn {ngày}` | chưa gắn — PR sau | K1-56 (PR-NEN Q16) |
 | `mini-test` | `Mini Test · hạn {ngày}` | chưa gắn — PR sau | T66 (PR-NEN Q16) |
 
-Thêm một giá trị **không phải hạn**: `du-kien-ket-thuc` → `Dự kiến kết thúc {ngày}`, luôn tone
-trung tính, **không bao giờ đỏ**, không bao giờ ghi "quá hạn". Đây là chỗ F11 sai: dự kiến kết
-thúc của PA bị trình bày như hạn phải làm.
+PR-SOS (Q28-4): **bỏ** `du-kien-ket-thuc` khỏi giao diện — PA thường không còn ngày dự kiến kết thúc; PA theo quy chế nói **mốc** bằng chữ (`đến MT2 · W2 OCT`), không qua `<Han>`. Khoá còn trong `DEADLINE_KINDS` để phép kiểm F11 cũ vẫn chạy, không nơi nào dùng.
 
 Quy tắc hiển thị:
 

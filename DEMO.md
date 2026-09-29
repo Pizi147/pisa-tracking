@@ -1,12 +1,12 @@
 # Pisa Tracking — bản demo: xem gì, ở đâu, và những điều đã chốt
 
 Một tệp duy nhất thay cho hai tệp demo cũ (kịch bản xem và giả định đã chốt). Viết lại ngày **21/09/2026** khi mô hình
-**Ý thức** đổi từ "Case Ý thức" sang **Vi phạm và Biện pháp xử lý** — bộ demo cũ về Ý thức không còn đúng.
+**Ý thức** đổi từ "Case Ý thức" sang **Vi phạm và Biện pháp xử lý**; mục 1 viết lại **29/09/2026** theo Ý thức v4 (PR-YT4).
 
 Bản demo **không phải dữ liệu ngẫu nhiên**. Mỗi học viên có một câu chuyện riêng, dựng theo chiều của đời thật:
 
 > Ghi danh → Chương trình → Bài kiểm tra → Vấn đề → Phương án → Cập nhật kết quả → Chuyển tiếp
-> và, song song, **Vi phạm → Biện pháp xử lý** cho phần Ý thức.
+> và, song song, **Vi phạm → Ghi nhận / Xác nhận xử lý** cho phần Ý thức.
 
 **Ngày demo: 14/09/2026** (thứ Hai, tuần W3 SEP). Mọi thứ tính theo ngày này, không theo ngày thật của máy. Không dòng dữ
 liệu nào nằm sau ngày đó — bộ dựng từ chối chạy nếu có. Toàn bộ tên người là **tên giả**. Mật khẩu mọi tài khoản demo ghi ở
@@ -20,49 +20,50 @@ màn đăng nhập.
 
 ---
 
-## 1. Ý thức — Vi phạm và Biện pháp xử lý (mười tám tình huống)
+## 1. Ý thức v4 — Ghi nhận / Xác nhận xử lý, thang bắt buộc (PR-YT4, 29/09/2026)
 
-Ý thức **không còn là case**. Một **Vi phạm** là một sự việc do giáo viên ghi, độc lập, không có mức độ, không có hạn, không
-có "đợt". Một **Biện pháp xử lý** là việc GVCN đã làm (hoặc đang chuẩn bị) cho **một học viên** — gom được nhiều vi phạm;
-một vi phạm nằm được trong nhiều biện pháp. Trạng thái của vi phạm **không lưu** mà suy ra: *Chưa xử lý · Đang chuẩn bị ·
-Đã xử lý · Không hiệu lực*. Quá **5 ngày** chưa xử lý thì hiện cảnh báo — chỉ nhắc, không tạo việc, không tính quá hạn.
+Một **Vi phạm** do giáo viên ghi (**+ Ghi vi phạm**). GVCN lớp **đang học** đóng từng vi phạm bằng **Ghi nhận** (đã xem, không
+cần xử lý — vẫn đếm) hoặc **Xác nhận xử lý** (một lần xử lý theo **thang**: Report 1 → Report 2 → WL 1 → Report 4 + Meeting CX/GĐCN
+→ WL 2 → WL 3). **3 vi phạm trong tuần này + tuần trước** → bắt buộc xử lý trong **5 ngày** tính từ ngày ghi lên web (không còn nút
+Ghi nhận). WL 3, Meeting CX/GĐCN, Đình chỉ, Khác → **Đề xuất QL duyệt** (có bằng chứng; QL trả lời trong 5 ngày; duyệt xong GVCN ghi
+**Đã thực hiện** trong 5 ngày). Em bị xử lý trước khi dùng web: **Khai bậc** một lần ở dòng thang. Nhãn của vi phạm suy ra từ một
+hàm (`trangThaiYThuc`): *Mới · Đã ghi nhận · Cần xử lý · Quá hạn n ngày · Chờ QL duyệt · Đã xử lý · {bậc}*. Quá hạn → thẻ
+**Báo lên Ý thức** ở hộp Chờ duyệt của QL.
 
-> **Giao diện Ý thức là PR-K, chưa có ở bản này.** Bản này có đủ **dữ liệu, luật và quyền** ở máy chủ; muốn xem thì đọc qua
-> đường API (`GET /api/students/:id/violations`, `/measures`, `/violation-warning`, `GET /api/classes/:id/y-thuc`,
-> `GET /api/metrics/:id` với tám chỉ số Ý thức) hoặc chạy `npm test` — phần **PR-J · 0** soi từng tình huống dưới đây.
+Bộ demo nằm ở `server/src/seed/yThucSeed.ts` (dựng sau khi đặt ngày demo, đề xuất QL duyệt đi qua chính hàm dịch vụ). Phép kiểm
+**PR-J · 0** trong `server/src/tests/yThuc.tests.ts` soi từng dòng dưới đây. Lớp **MB FT 101** (GVCN cô Hà), trừ khi ghi khác:
 
-Bộ demo Ý thức nằm ở **một tệp**: `server/src/seed/yThucSeed.ts` (bảy học viên). Số liệu: **35 vi phạm** (2 đã đánh dấu không
-chính xác), **14 biện pháp** (12 đã thực hiện, 2 đang chuẩn bị).
-
-| # | Tình huống | Ở đâu trong bộ demo | Cần thấy |
+| # | Học viên | Tình huống | Cần thấy |
 |---|---|---|---|
-| 1 | Vi phạm đúng | mọi vi phạm mặc định | `valid = 1`, có người ghi, ngày xảy ra, ngày ghi nhận |
-| 2 | Vi phạm bị xác nhận sai | **Trần Thu Hà** (MB-FT 101) — vi phạm Reading 10/09 | Không hiệu lực, lý do *"Em đã nộp, tôi bỏ sót"*, một dòng lịch sử |
-| 3 | Nhiều giáo viên cùng ghi cho một em | **Nguyễn Minh An** — cô Hà (Reading) · thầy Khoa (Writing 1) · cô Trang (Speaking) · cô Linh (Writing 2) | Bốn dòng độc lập, không gộp thành "đợt" |
-| 4 | Nhiều vi phạm khác nhóm | **Nguyễn Minh An** | Đủ BTVN · Chuyên cần · Thái độ / hành vi |
-| 5 | Một Report gom nhiều vi phạm | **Lê Quang Huy** — Report gia đình 10/09 | Đúng **5** vi phạm, 3 nhóm, 3 môn, 3 giáo viên, 5 ngày khác nhau |
-| 6 | Một nhóm vi phạm có nhiều biện pháp | **Lê Quang Huy** — 6 vi phạm | Vào Meeting với học viên **và** Report **và** Thư cảnh cáo lần 1 |
-| 7 | Biện pháp đang chuẩn bị được thêm vi phạm sau | **Nguyễn Minh An** — Report gia đình tạo 04/09, thêm vi phạm 11/09 | Còn *Đang chuẩn bị*; liên kết muộn hơn ngày tạo; vi phạm có dòng lịch sử |
-| 8 | Vi phạm bị bỏ khỏi biện pháp | **Trần Thu Hà** — vi phạm 09/09 | Dòng lịch sử thêm rồi bỏ; quay lại *Chưa xử lý* |
-| 9 | Thư cảnh cáo 1 → 2 → 3 đúng thứ tự | **Phạm Bảo Ngọc** — 10/08, 28/08, 10/09 | Ba thư, ba ngày khác nhau, **mỗi thư có tệp** |
-| 10 | Cảnh báo quá 5 ngày | **An** (9 ngày, 4 vi phạm) · **Đặng Thu Vân** (8 ngày) · **Ngô Hải Yến** (6 ngày) | Câu *"⚠ 4 vi phạm chưa được xử lý — vi phạm cũ nhất: 9 ngày trước"*. Trần Thu Hà và Trần Hải Kiên đúng 5 ngày → **chưa** cảnh báo (cố ý, để thấy ngưỡng) |
-| 11 | Case học thuật mức thường | các case học thuật giữ nguyên | Mức mặc định **Cần chú ý** (mức *Bình thường* đã bỏ từ trước, chỉ còn ở dữ liệu cũ) |
-| 12 | Case học thuật Gấp | **Lê Quang Huy** — Speaking tái diễn 07/09 | Mức **Gấp**. Trước đây mức này nằm ở case Ý thức; nay nằm ở đây |
-| 13 | SOS đóng, không tạo case | tín hiệu **"đã xem, không mở case"** | Luôn kèm **lý do** |
-| 14 | SOS gắn vào case đang mở | tín hiệu **"đã gắn"** | Gắn vào một case chưa đóng |
-| 15 | Giáo viên tạo case học thuật trực tiếp | các case nguồn *giáo viên báo* | Không có tín hiệu nào đứng sau |
-| 16 | Vi phạm hết hiệu lực nằm trong biện pháp đã thực hiện | **Lê Quang Huy** — vi phạm 03/09 bị hủy 12/09 | Biện pháp giữ nguyên; ảnh chụp **vẫn là 6**; thống kê loại nó ra khỏi tổng |
-| 17 | Một vi phạm nằm trong hai biện pháp ở hai thời điểm | **Lê Quang Huy** — vi phạm 10/08 | Nằm trong "GV trao đổi ngắn" 14/08 và trong ba biện pháp tháng 9 |
-| 18 | Chuyển lộ trình sau Thư cảnh cáo lần 2 | **Trần Hải Kiên** (HD-BE 21 → HD-FT 302) | Chuỗi reset: lần 1 chọn lại được, lần 2 và lần 3 vẫn khóa |
+| a | **Trần Thu Hà** | 2 vi phạm của GVBM, cô Hà đã Ghi nhận | `✓ Đã ghi nhận · vẫn tính`, không việc |
+| b | **Lê Quang Huy** | 3 vi phạm 08–10/09, cùng ghi 10/09 | `Cần xử lý`, hạn 14/09 (còn 1 ngày), nút `Xác nhận xử lý · Report 1` |
+| c | **Phạm Bảo Ngọc** | Report 1 tháng 8; 3 vi phạm ghi 07–09/09 | `Quá hạn 1 ngày`, thẻ Báo lên |
+| d | **Vũ Hải Đăng** | 1 vi phạm cô Trang ghi 04/09, chưa ai xem | `Quá hạn 6 ngày` (chưa xem), thẻ Báo lên |
+| e | **Nguyễn Minh An** | Report 1 → Report 2 → WL 1 (có tệp) + 1 vi phạm Mới | bậc kế `Report 4 + Meeting CX/GĐCN`; nhóm *Mới* |
+| f | **Lương Gia Bảo** | khai bậc 5 (WL 2) + 3 vi phạm → đề xuất WL 3 | nhóm *Chờ QL duyệt*; thẻ Ý thức có bằng chứng, hạn 15/09 |
+| g | **Kiều Minh Đức** | đề xuất Đình chỉ bị QL từ chối 12/09 | vi phạm về `Cần xử lý`, hạn 16/09; lý do từ chối ở dòng thời gian |
+| i | **Tô Ngọc Hân** | HS cũ khai "bậc 2" (H5) | thang: Report 1, Report 2 `khai`; nút `Xác nhận xử lý · WL 1` |
+| j | **Quách Thành Nam** | 3 vi phạm 31/08–02/09 rồi **chuyển sang MB FT 102** ngày 12/09 (D15) | ở lớp mới vẫn `Cần xử lý` (dính), hạn đặt lại 16/09 (M-08) |
+| k | **Mạc Tuấn Kiệt** | khai WL 1 → Report 4 + Meeting → WL 2 (có tệp) + 1 vi phạm Mới | bậc kế `WL 3 · cần QL` → panel mở thẳng Đề xuất |
+| l | **Nguyễn Bảo Trâm** (HD BE 21) | lớp thường FOU → BE, Report 1 ở khoá FOU | cùng một chuỗi thang → bậc kế `Report 2` |
+| m | **Hà Phương Linh** | Report 1; Meeting CX/GĐCN QL duyệt 04/09, Đã thực hiện 08/09 | `Đã xử lý · Meeting CX/GĐCN`, bậc giữ Report 1 (M-11) |
 
-Người **nhập hộ** khác người **thực hiện**: Report gia đình của **Đặng Thu Vân** do Quản lý Bãi Cháy ghi lại việc thầy Quân đã gọi.
+Thêm: **Đặng Thu Vân** (BC FT 205) — Report 1 do Quản lý Bãi Cháy **nhập hộ** việc thầy Quân đã gọi; một vi phạm Mới của cô Hân quá
+hạn → thẻ Báo lên ở chi nhánh BC. **Ngô Hải Yến** (CP FT 110) — vi phạm thầy Nam (GVCN) tự ghi là *Đã ghi nhận* (Q5). **Trần Hải Kiên**
+(HD BE 21 → HD FT 302) — Report 1, 2 ở lớp BE; sang FT là chuỗi thang mới (bậc kế lại là Report 1). **Đỗ Minh Khôi** (bộ SOS v3) —
+hai vi phạm GVCN tự ghi, *Đã ghi nhận*. Một vi phạm của Trần Thu Hà đã **xoá** — chỉ còn một dòng `audit_logs`.
+
+Tài khoản nên mở: **cô Hà** (GVCN, id 7) — tab Ý thức & Phối hợp của MB FT 101: khung trái *Quá hạn* (Ngọc, Đăng) › *Bắt buộc*
+(Huy, Đức) › *Chờ QL duyệt* (Bảo) › *Mới* (An, Kiệt) › *Đã xử lý 7 ngày* (Linh). **QL Vy** (id 2) — Công việc › Chờ duyệt: chip Ý thức
+(đề xuất WL 3 của Bảo) + Báo lên (Ngọc, Đăng). **Cô Linh** (GVCN MB FT 102) — Quách Thành Nam ở nhóm *Bắt buộc*.
 
 Ba điều dễ nhầm, đã chốt:
 
-- **Ngày trong đặc tả (18–20/09) không dùng được** vì sau ngày demo; bộ demo đặt các mốc tương ứng ở tuần 04–12/09.
-- **Số "6"** của Meeting/Thư cảnh cáo và số **"5"** của Report cùng đúng: Report không chứa vi phạm 08/09 vì nó xảy ra *sau* ngày Report thực hiện.
-- **Vấn đề Ý thức đi theo học viên sang lớp mới** (chủ sản phẩm chốt 21/09/2026): vi phạm chưa xử lý và biện pháp đang chuẩn bị ghi ở lớp cũ vẫn hiện ở tab lớp mới, cảnh báo giữ nguyên số ngày, GVCN lớp mới xử lý tiếp được.
-- **Điểm thấp không sinh vi phạm.** Trước đây điểm dưới kỳ vọng còn sinh một tín hiệu Ý thức/Khác cho GVCN; nay không còn — Ý thức chỉ do giáo viên ghi.
+- **Đã ghi nhận vẫn đếm** vào luật 3 vi phạm / 2 tuần (V4-6); Ghi nhận chỉ tắt việc "xem vi phạm mới".
+- **Hạn tính từ ngày ghi lên web** (Câu 2 = A) — ghi muộn một vi phạm cũ không làm GVCN quá hạn ngay.
+- **Vấn đề Ý thức đi theo học viên sang lớp mới**: vi phạm chưa xử lý vẫn hiện ở lớp mới, hạn đặt lại từ ngày chuyển, chỉ GVCN lớp
+  đang học xử lý được (K5-34).
+- **Điểm thấp không sinh vi phạm** — Ý thức chỉ do giáo viên ghi.
 
 ---
 
@@ -85,17 +86,17 @@ Mã J01–J12 chỉ dùng trong tài liệu này, không hiện ra sản phẩm.
 
 | Mã | Học viên · lớp | Cần thấy gì |
 |---|---|---|
-| **J01** | Nguyễn Minh An · MB-FT 101 | Ba chương trình nối nhau. Case Reading lớp Beginner còn mở → **case bàn giao**, không tính thành SOS lớp Fast Track. Về Ý thức: xem mục 1 (tình huống 3, 4, 7, 10). |
-| **J02** | Trần Thu Hà · MB-FT 101 | MT1 SOS 2 → MT2 SOS 1. Reading hết case; Speaking còn một case chu kỳ hai. Ý thức: tình huống 2, 8. |
-| **J03** | Lê Quang Huy · MB-FT 101 | **Hồ sơ dày nhất** — mục 5. Ý thức: tình huống 5, 6, 12, 16, 17. |
+| **J01** | Nguyễn Minh An · MB-FT 101 | Ba chương trình nối nhau. Case Reading lớp Beginner còn mở → **case bàn giao**, không tính thành SOS lớp Fast Track. Ý thức: mục 1 (e). |
+| **J02** | Trần Thu Hà · MB-FT 101 | MT1 SOS 2 → MT2 SOS 1. Reading hết case; Speaking còn một case chu kỳ hai. Ý thức: mục 1 (a). |
+| **J03** | Lê Quang Huy · MB-FT 101 | **Hồ sơ dày nhất** — mục 5. Ý thức: mục 1 (b). |
 | **J04** | Hồ Thanh Tùng · CP-FT 110 | Hai case Reading: một đã chốt (MT1), một mở (MT3) nối vào cái cũ, có mốc "tái phát". |
 | **J05** | Đinh Ngọc Quyên · CP-FT 110 | **Hai case song song** cùng hạng mục Writing Task 2 (bố cục · vốn từ), mỗi case phương án riêng. |
 | **J06** | Lý Tuấn Bình · CP-FT 110 | Phương án 1 "Được thay thế" sau "Chưa thay đổi"; phương án 2 "Tiến bộ rõ rệt". |
 | **J07** | Phan Minh Tú · BC-FT 205 | Đề xuất **bị từ chối** kèm lý do; **được duyệt** (chu kỳ chạy từ ngày duyệt); **đang chờ**, quá hạn trả lời. Mở bằng Quản lý Bãi Cháy. |
-| **J08** | Phạm Bảo Ngọc · MB-FT 101 | MT3 tuần này mới 2/4 kỹ năng → kết luận **tạm thời**; điểm MT2 không lấp vào ô trống. Cũng là ví dụ **tách tuần** (mục 4). Ý thức: tình huống 9. |
-| **J09** | Trần Hải Kiên · HD-FT 302 | Lộ trình mới, chưa có MT → không có SOS; case Speaking từ Beginner cũ theo em như việc bàn giao. Ý thức: tình huống 18. |
+| **J08** | Phạm Bảo Ngọc · MB-FT 101 | MT3 tuần này mới 2/4 kỹ năng → kết luận **tạm thời**; điểm MT2 không lấp vào ô trống. Cũng là ví dụ **tách tuần** (mục 4). Ý thức: mục 1 (c). |
+| **J09** | Trần Hải Kiên · HD-FT 302 | Lộ trình mới, chưa có MT → không có SOS; case Speaking từ Beginner cũ theo em như việc bàn giao. Ý thức: chuỗi thang mới khi sang FT (mục 1). |
 | **J10** | Phạm Gia Hân · HD-BE 21 | Chuyển lớp giữa chừng khi case còn mở; chu kỳ 1 cô Yến, chu kỳ 2 thầy Dũng. |
-| **J11** | Đặng Thu Vân · BC-FT 205 | Học thuật chưa có case. Ý thức: hai biện pháp đã thực hiện (một do Quản lý nhập hộ) rồi một vi phạm mới → cảnh báo 8 ngày. |
+| **J11** | Đặng Thu Vân · BC-FT 205 | Học thuật chưa có case. Ý thức: Report 1 do Quản lý nhập hộ, rồi một vi phạm Mới quá hạn → thẻ Báo lên. |
 | **J12** | Dương Minh Quân + Lý Thanh Trúc · UB-FT 401 | Cùng thi 15/08/2026: một em **đạt** 7.0, một em **chưa đạt** (6.0 so với 6.5). |
 
 ---
@@ -125,17 +126,27 @@ Thử: bấm **"Đã xem, không mở case"** rồi để trống nhận định
 
 ---
 
-## 9. Rulebook v3 — SOS tự tạo case và Phối hợp SOS (chỉ máy dev)
+## 9. SOS tự tạo case và Phối hợp SOS — SOS v4 (chỉ máy dev)
 
-Ba học viên MỚI ở `MB-FT 101`, dựng bằng chính các hàm nghiệp vụ (`server/src/seed/sosV3Seed.ts`): nhập điểm Mock Test → máy tự tạo case, phương án điền sẵn và việc phối hợp; rồi GVBM/GVCN thao tác.
+Học viên MỚI ở `MB-FT 101`, dựng bằng chính các hàm nghiệp vụ (`server/src/seed/sosV3Seed.ts`): nhập điểm Mock Test → máy tự tạo case,
+**PA theo quy chế chờ xác nhận** và việc phối hợp; rồi GVBM/GVCN/Quản lý thao tác (Xác nhận Case, Xác nhận PA, Không cần theo dõi, duyệt / từ chối).
 
-| Học viên | Lượt | Bạn sẽ thấy |
+**D7 — Case SOS đủ trạng thái v4**
+
+| Trạng thái | Học viên · kỹ năng | Bạn sẽ thấy |
 |---|---|---|
-| **Đỗ Minh Khôi** | MT2 · SOS2 (W2 + Speaking) | Hai case từ SOS. Speaking đã có nguyên nhân + phương án xác nhận; **W2 còn `chờ xác định nguyên nhân`**. Phối hợp SOS xong 1/3 (trao đổi với HS đã làm; gia đình và GVCN meeting còn cần xử lý). Có hai vi phạm Ý thức ở cùng em |
-| **Vũ Ngọc Lan** | MT1 · SOS3 (L + R + S) | Ba case, phương án `Tutor · đến MT2`. **Case Speaking đã đóng `Không cần theo dõi · Tình huống đơn lẻ`**. Phối hợp SOS3 xong 2/3 (còn GVCN meeting) |
-| **Bùi Thảo Vy** | MT3 · SOS1 (Speaking) | Một lượt Phối hợp **đã hoàn thành 2/2** — để thấy trạng thái "xong" |
+| (1) Chờ xác nhận nguyên nhân, còn hạn | **Vũ Ngọc Lan** · Listening | Hai nút `Xác nhận nguyên nhân` / `Không cần theo dõi…` · hạn 16/09 |
+| (2) Chờ nguyên nhân **quá hạn** | **Đỗ Minh Khôi** · Writing Task 2 | Thẻ **Báo lên** ở hộp Chờ duyệt của Quản lý |
+| (3) Chờ Quản lý duyệt · không theo dõi | **Vũ Ngọc Lan** · Reading | Thẻ Học thuật `Không cần theo dõi` chờ Quản lý |
+| (4) Quản lý từ chối → hạn mới 3 ngày | **Trịnh Gia Bảo** · Listening | Lịch sử có `Quản lý từ chối không theo dõi` + lý do |
+| (5) Đã huỷ · không cần theo dõi | **Vũ Ngọc Lan** · Speaking | Case đóng, PA quy chế huỷ (không tính thất bại) |
+| (6) Đang làm, PA quy chế đã xác nhận | **Đỗ Minh Khôi** · Speaking | PA `từ 07/09`, hạn ghi kết quả hết T2 **đúng ngày demo** (D8) |
+| (7) Đã xác nhận Case, PA còn chờ | **Bùi Thảo Vy** · Speaking | Hàng PA `Chờ xác nhận` + nút `Xác nhận PA`; Phối hợp 2/2 hoàn thành |
 
-Ba mức SOS khác nhau (1 · 2 · 3) đều có mặt; có cả lượt đang xử lý lẫn đã hoàn thành. Bộ demo Ý thức (mục 1) nay dùng *xoá thẳng* thay cho "đánh dấu không chính xác": hai vi phạm đã xoá (Trần Thu Hà, Lê Quang Huy) chỉ còn dấu vết ở `audit_logs`.
+**D8 — hạn PA:** Khôi · Speaking hạn hết T2 đúng ngày demo · **Lý Minh Châu** · Reading quá hạn 2 ngày · **Hoàng Bảo Ngọc** · Listening ở
+tuần mốc → `Ghi kết quả cuối` (GVCN Hà). Không còn Case đóng kiểu cũ "GVBM tự đóng không cần theo dõi".
+
+Ba mức SOS khác nhau (1 · 2 · 3) đều có mặt. Bộ demo Ý thức (mục 1) dùng *xoá thẳng*: vi phạm đã xoá (Trần Thu Hà) chỉ còn dấu vết ở `audit_logs`.
 
 ## 9b. PR-KCK — Target "không cam kết" (chỉ máy dev)
 
@@ -199,7 +210,7 @@ Mở `Học viên → MB-FT 101 → Lê Quang Huy`: **một em nhiều case thì
 | **Writing Task 2** | Đang xử lý | Phương án đầu **không ăn thua** rồi bị thay bằng tutor; thanh cũ đỏ mờ, thanh mới xanh sáng. Kết quả thất bại cũ vẫn ở báo cáo hiệu quả. |
 | **Speaking** | Chưa có phương án | Case cũ đóng, rồi **tái diễn** với vấn đề khác; case mới nối vào case cũ. Mức **Gấp**. |
 
-Phần **Ý thức** của em nằm ở mục 1 (tình huống 5, 6, 16, 17): sáu vi phạm, bốn biện pháp, một vi phạm bị hủy sau khi biện pháp đã thực hiện.
+Phần **Ý thức** của em nằm ở mục 1 (b): ba vi phạm bắt buộc xử lý, hạn hôm nay.
 
 ---
 
@@ -236,7 +247,7 @@ Mỗi dòng có phép kiểm tự động canh chừng (mục **42** của `npm 
 | 9 | Trượt thật ở MT trước rồi tiến bộ | Trần Thu Hà · Lê Quang Huy |
 | 11 | "Chưa đủ dữ liệu" rồi mới tiến bộ | Lê Quang Huy → Reading |
 | 12 | Phương án bị thay, kết quả thất bại cũ **vẫn còn** | Lê Quang Huy → Writing Task 2 · Lý Tuấn Bình → Listening |
-| 12b | Đã report gia đình mà vi phạm **vẫn tái diễn** | Đặng Thu Vân — Report 19/08, vi phạm mới 06/09 |
+| 12b | Đã Report 1 mà vi phạm **vẫn tái diễn** | Đặng Thu Vân — Report 1 13/08, vi phạm mới 06/09 |
 | 13 | Case bàn giao khi chuyển lớp · em chưa xếp lớp tiếp | Nguyễn Minh An · lớp đã hết chương trình |
 | 14 | Báo cáo kỳ họp đủ bốn tình trạng | Tiến trình → Tình hình đơn vị (có ô "Chưa báo cáo") |
 
@@ -256,7 +267,7 @@ Mỗi dòng có phép kiểm tự động canh chừng (mục **42** của `npm 
 | Lượt đánh giá | 115 |
 | Tín hiệu từ điểm | 112 (2 chờ xác minh) |
 | Case · Phương án | 33 · 37 |
-| **Vi phạm · Biện pháp xử lý** | **35** (2 không chính xác) · **14** (12 đã thực hiện, 2 đang chuẩn bị) |
+| **Vi phạm · Lần xử lý Ý thức** | **58** (1 đã xoá, có audit) · **14** (11 theo thang, 3 đề xuất QL duyệt) · 3 khai bậc |
 | Công việc quản lý | 14 (gồm 4 việc con) |
 | Lịch sử | Từ 12/2025 |
 
@@ -301,7 +312,7 @@ Chỉ ghi thứ **thực sự thay đổi cách phần mềm chạy**. Thứ t�
 | **Hạn một chu kỳ xử lý case học thuật** | **Chủ nhật của tuần thứ hai**, tính tuần case xuất hiện là tuần thứ nhất (case mở 14/09/2026 → hạn 27/09) |
 | **Phương án cần duyệt** | Chu kỳ bắt đầu **khi được duyệt**, không phải khi gửi |
 | **Chu kỳ tiếp theo** | Hạn cũ và cập nhật trễ **giữ nguyên** trong lịch sử — không reset để che quá hạn |
-| **Ý thức** | **Không có hạn.** Duy nhất một mốc: cảnh báo khi vi phạm chưa xử lý quá **5 ngày** (`CANH_BAO_NGAY`) |
+| **Ý thức** | Hạn **5 ngày** (`HAN_Y_THUC_NGAY`) tính từ ngày ghi lên web: vi phạm Mới chưa Ghi nhận, vi phạm bắt buộc chưa xử lý, đề xuất QL đã duyệt chưa "Đã thực hiện". Quá hạn → thẻ Báo lên (loại hạn `xu-ly-vi-pham`) |
 
 ## B3. Case học thuật
 
@@ -342,26 +353,27 @@ duyệt** (bắt buộc lý do) · **góp ý** (không kết thúc việc chờ)
 
 Đề xuất phương án mới → phương án cũ khép "Được thay thế", không tính thành công.
 
-## B6. Ý thức — luật đã chốt 21/09/2026
+## B6. Ý thức — luật v4 (PR-YT4, chốt 27–29/09/2026)
 
-Nguồn đầy đủ: `thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md`. Mã luật V01–V14 (vi phạm), B01–B16 (biện pháp), W01–W06 (cảnh báo).
+Nguồn đầy đủ: đặc tả `docs/superpowers/specs/2026-09-27-nang-cap-sau-deploy-design.md` §5.4–§5.8 (mã V4-1…V4-12). Luật thuần ở
+`shared/domain/yThuc.ts`, một cửa trạng thái ở `server/src/yThuc/trangThai.ts`. `thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` là bản v3 (lịch sử).
 
 | | |
 |---|---|
-| **Vi phạm** | Năm nhóm: BTVN · Chuyên cần · Thái độ / hành vi · Kỷ luật lớp học · Khác. Mô tả bắt buộc (≥ 10 ký tự; nhóm Khác ≥ 30). Môn tự điền theo phân công của người ghi, sửa được, bỏ trống được |
-| **Ai ghi** | Giáo viên có phân công ở lớp của em (`violation.record`). Ghi hai lần cùng em, cùng nhóm, cùng ngày → **cảnh báo mềm**, vẫn ghi được |
-| **Hủy vi phạm** | "Đánh dấu không chính xác" kèm lý do; không xóa. Đứng ngoài mọi thống kê Ý thức |
-| **Biện pháp** | **Chín loại**: GV trao đổi ngắn · GV meeting với HS · Report cho gia đình · Thư cảnh cáo lần 1 · CX / GĐCN meeting · Thư cảnh cáo lần 2 · Đình chỉ học · Thư cảnh cáo lần 3 · Khác. Hai trạng thái *Đang chuẩn bị → Đã thực hiện*. **Không có bước duyệt** (Y01): GVCN tự xác nhận mọi loại; Quản lý nhận **thông báo** khi Thư cảnh cáo hoặc Đình chỉ được xác nhận |
-| **Một biện pháp một học viên** | Nhưng gom nhiều vi phạm; một vi phạm nằm trong nhiều biện pháp (nhiều–nhiều) |
-| **Chuỗi Thư cảnh cáo** | 1 → 2 → 3 bắt buộc, kiểm ở **máy chủ**, phạm vi **theo lộ trình** (Y02): chuyển lộ trình thì chuỗi reset |
-| **Ảnh chụp** | `violation_count_at_confirm` ghi số vi phạm lúc xác nhận và **không bao giờ đếm lại** |
-| **Quyền** | Xem: như xem học viên. Tạo/xác nhận/xóa biện pháp: **GVCN của lớp** (không phải GVBM), Quản lý và Quản trị theo phạm vi. Thống kê Ý thức: Quản lý và Quản trị |
-| **Tám chỉ số** | vi phạm tổng · chưa xử lý · không hiệu lực · học viên có vi phạm · học viên cần xử lý · biện pháp đã thực hiện · đang chuẩn bị · theo loại. Mỗi chỉ số **một hàm trả tập ID** |
+| **Vi phạm** | Năm nhóm: BTVN · Chuyên cần · Thái độ / hành vi · Kỷ luật lớp học · Khác. Mô tả ≥ 10 ký tự; nhóm Khác cần ô Ghi rõ. Nút **+ Ghi vi phạm**, không chọn sẵn nhóm. Ghi sai thì sửa hoặc xoá thẳng (một dòng audit) |
+| **Ai ghi** | Giáo viên có phân công ở lớp của em. GVCN lớp tự ghi → tự *Đã ghi nhận* (Q5) |
+| **Sáu nhãn** | *Mới · Đã ghi nhận · Cần xử lý · Quá hạn n ngày · Chờ QL duyệt (hoặc Đã duyệt · chờ thực hiện) · Đã xử lý · {bậc}* — một hàm quyết, không lưu |
+| **Bắt buộc** | 3 vi phạm chưa xử lý trong tuần này + tuần trước (Đã ghi nhận vẫn đếm) → Cần xử lý, hạn 5 ngày từ ngày ghi lên web; quá hạn → thẻ Báo lên |
+| **Thang** | Report 1 → Report 2 → WL 1 → Report 4 + Meeting CX/GĐCN → WL 2 → WL 3. Bậc do **máy chủ** quyết (panel cũ → 409). FT: một thang mỗi lộ trình; lớp thường: một thang cho cả chuỗi khoá liền nhau |
+| **Cần QL duyệt** | WL 3 · Meeting CX/GĐCN · Đình chỉ · Khác → Đề xuất có bằng chứng; QL trả lời trong 5 ngày; từ chối → vi phạm về Cần xử lý; duyệt → GVCN ghi *Đã thực hiện* trong 5 ngày |
+| **Khai bậc** | Em bị xử lý trước khi dùng web: GVCN khai một lần (Report 1 … WL 2) khi chuỗi chưa có lần xử lý nào; chỉ QL sửa |
+| **Quyền** | Ghi nhận / Xác nhận xử lý / Đề xuất / Khai bậc: **GVCN lớp đang học** (không phải GVBM), Quản lý và Quản trị theo phạm vi. QL duyệt ở hộp Chờ duyệt |
+| **Chỉ số** | vi phạm tổng · cần xử lý · theo nhóm · học viên có vi phạm · học viên cần xử lý · lần xử lý đã xong · chờ duyệt · theo loại · học viên theo bậc. Mỗi chỉ số **một hàm trả tập ID** |
 
 ## B7. Đơn vị đếm
 
 Sáu đơn vị **không bao giờ** được trộn, và mỗi bảng phải nói rõ mình đếm cái nào: **Học viên** · **Lượt Test/MT** · **Case** ·
-**Phương án** · **Lần cập nhật** · **Nhóm công việc**. Riêng Ý thức thêm ba đơn vị: **Vi phạm** · **Học viên có vi phạm** · **Biện pháp**.
+**Phương án** · **Lần cập nhật** · **Nhóm công việc**. Riêng Ý thức thêm ba đơn vị: **Vi phạm** · **Học viên có vi phạm** · **Lần xử lý**.
 
 - **Quá hạn** là thuộc tính của một việc, không phải một bản ghi việc bổ sung.
 - Bảng theo tuần có **sáu cột kết luận loại trừ nhau** cộng đúng bằng số lượt: *Đạt · SOS 1 · SOS 2 · SOS 3 · Tạm thời · Chưa đủ điểm*.
@@ -384,7 +396,7 @@ là một dòng lịch sử. Gắn case làm căn cứ **không** tự tạo ph�
 | Xem danh sách case | ✓ | ✓ | ✓ |
 | Duyệt phương án | ✓ | ✓ | — |
 | Ghi vi phạm | ✓ | ✓ | ✓ có phân công ở lớp |
-| Tạo / xác nhận biện pháp | ✓ | ✓ | GVCN của lớp |
+| Ghi nhận · Xác nhận xử lý · Khai bậc | ✓ | ✓ | GVCN lớp đang học |
 | Thống kê Ý thức cả chi nhánh | ✓ | ✓ | — |
 | Phân công giáo viên · sửa tiến độ lớp | ✓ | ✓ | — |
 | Tạo tài khoản, cấp vai, sửa danh mục | ✓ | — | — |
@@ -415,7 +427,6 @@ thống. **Bỏ phân công không phải là xoá**: dòng cũ đóng theo ngà
 | **Báo cáo "đúng trạng thái cuối tuần trước"** | Không làm; tuần cũ ghi rõ "tình trạng hiện tại" | Cần lưu lịch sử trạng thái từng ngày |
 | **Cột "Trễ chấm TB"** | Bỏ; hệ thống chỉ biết tuần kế hoạch, không biết ngày làm bài | Muốn có lại phải khai ngày làm bài |
 | **Ngày sinh học viên** | Lưu và sửa được, không còn lên badge "Thiếu thông tin" | — |
-| **Giao diện Ý thức** | **PR-K** — bản này mới có dữ liệu, luật, quyền và API | Chưa có màn ghi vi phạm / tạo biện pháp cho người dùng cuối |
 
 ## 11. PR-XLMT — xếp lịch MT nhiều lớp, thao tác theo trạng thái (chỉ máy dev)
 

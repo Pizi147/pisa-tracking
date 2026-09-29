@@ -180,6 +180,9 @@
   }
   .hang-con > td { background: var(--hang-con-bg); font-size: 11.5px; color: var(--hang-con-chu); height: 32px; }
   .hang-con > td:first-child { padding-left: calc(0.75rem + 32px); }
+  /* PR-SOS (M7, T20): Case và PA khác hẳn — hàng Case sáng hơn một bậc, cao hơn; hàng PA giữ nền hàng con (thụt ở ô). */
+  .hang-con.hang-case > td { background: var(--hang-lon-dong-bg); height: 38px; }
+  .hang-con.hang-case > td:first-child { padding-left: calc(0.75rem + 20px); }
   /* Cùng kiểu cho danh sách (không phải bảng): đầu nhóm + thân nhóm. */
   .khoi-nhom-dau {
     display: flex; align-items: center; gap: 8px; min-height: 38px; padding: 0 12px;

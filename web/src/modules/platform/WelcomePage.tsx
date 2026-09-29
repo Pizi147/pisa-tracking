@@ -323,10 +323,10 @@ function RegisterForm({ info, onDone }: { info: AuthInfo | null; onDone: () => v
   );
 }
 
-/** PR-MT (Task 10): tài khoản xem được kịch bản mới — MT lịch sử, lớp RF, dời do vắng lần 2. */
-const XEM_DUOC: Record<string, string> = {
-  'Nguyễn Khánh Vy': 'Xem được: MT lịch sử, lớp RF, dời lần 2 · Xếp lịch MT nhiều lớp, Cần xếp lại',
-  'Trần Ngọc Hà': 'Xem được: MT lịch sử, lớp RF, dời lần 2',
+/** Tài khoản xem được kịch bản mới — PR-MT (Task 10): MT lịch sử, lớp RF, dời do vắng lần 2 · PR-YT4 (K1-55): Ý thức v4 · PR-XLMT: xếp lịch MT nhiều lớp. */
+const XEM_DUOC: Record<string, string[]> = {
+  'Nguyễn Khánh Vy': ['Xem được: MT lịch sử, lớp RF, dời lần 2', 'Chờ duyệt Ý thức + Báo lên', 'Xếp lịch MT nhiều lớp, Cần xếp lại'],
+  'Trần Ngọc Hà': ['Xem được: MT lịch sử, lớp RF, dời lần 2', 'Ý thức: em quá hạn, em bắt buộc, khai bậc, WL 2'],
 };
 
 function DemoAccounts({ accounts, loading }: { accounts: Account[]; loading: boolean }) {
@@ -364,7 +364,9 @@ function DemoAccounts({ accounts, loading }: { accounts: Account[]; loading: boo
                     {a.grants.map((r, i) => <Info key={i}>{r.roleName} · {r.scope}</Info>)}
                     {a.assignmentCount > 0 && <Info>{a.assignmentCount} phân công</Info>}
                   </div>
-                  {XEM_DUOC[a.fullName] && <div className="mt-2 text-[11px] text-slate-500">{XEM_DUOC[a.fullName]}</div>}
+                  {XEM_DUOC[a.fullName] && (
+                    <div className="mt-2 space-y-0.5 text-[11px] text-slate-500">{XEM_DUOC[a.fullName].map((x) => <div key={x}>{x}</div>)}</div>
+                  )}
                 </button>
               ))}
             </div>

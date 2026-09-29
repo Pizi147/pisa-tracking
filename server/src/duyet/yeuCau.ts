@@ -174,9 +174,9 @@ export function chotYeuCau(
       n += doi;
       const baoNguoiXin = r.nguoi_xin != null && r.nguoi_xin !== nguoiDuyet && !(trangThai === 'tu_dong' && meta.kieuNut === 'nhac');
       if (baoNguoiXin) {
-        const ketQua = trangThai === 'duyet' ? 'QL đã duyệt'
-          : trangThai === 'tu_choi' ? `QL từ chối: ${lyDo ?? ''}`
-          : trangThai === 'da_tra_loi' ? `QL đã trả lời: ${(v.traLoi ?? '').trim()}`
+        const ketQua = trangThai === 'duyet' ? 'Quản lý đã duyệt'
+          : trangThai === 'tu_choi' ? `Quản lý từ chối: ${lyDo ?? ''}`
+          : trangThai === 'da_tra_loi' ? `Quản lý đã trả lời: ${(v.traLoi ?? '').trim()}`
           : `tự đóng: ${lyDo ?? ''}`;
         notify({
           userId: r.nguoi_xin, kind: 'duyet_ket_qua',

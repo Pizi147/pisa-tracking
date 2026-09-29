@@ -8,10 +8,11 @@
  */
 import type { Principal } from '../permissions.ts';
 import {
-  INTERVENTION_KIND_LABEL, caseTopicLabel, duongHoSoHocVien, nhanDotNgan, outcomeLabelFor, shortDate, tenMonNgan,
+  INTERVENTION_KIND_LABEL, caseTopicLabel, duongHoSoHocVien, nhanDotNgan, nhanLoaiXuLy, outcomeLabelFor, shortDate, tenMonNgan,
   type InterventionKind, type LoaiYeuCau, type TrangThaiYc,
 } from '../../../shared/domain/index.ts';
-import { respondToPlan } from '../cases/cases.ts';
+import { caseTitleOf, respondToPlan } from '../cases/cases.ts';
+import { apDungKhongTheoDoi, tuChoiKhongTheoDoi } from '../cases/sosAuto.ts';
 import { chuTheDoiLan2, decideAbsenceMove } from '../fasttrack/absence.ts';
 import { attemptHref } from '../fasttrack/attempts.ts';
 import { ensurePeriod } from '../platform/week.ts';
@@ -21,8 +22,27 @@ import { demoToday } from '../demoConfig.ts';
 import { badRequest } from '../util.ts';
 import { reviseTarget, updateCycle } from '../fasttrack/cycles.ts';
 import { NHAN_TRUONG_DE_XUAT, TRUONG_TU_AP, hienTaiCua, type TruongDeXuat } from './deXuatSua.ts';
-import { awaitingCauseCaseIds } from '../cases/sosState.ts';
-import { taoYeuCau } from './yeuCau.ts';
+import { CO_THE_KHONG_THEO_DOI, awaitingCauseCaseIds } from '../cases/sosState.ts';
+import { chotYeuCau, taoYeuCau } from './yeuCau.ts';
+import { trangThaiYThuc, ungVienVaThe, type EmYThuc } from '../yThuc/trangThai.ts';
+
+/**
+ * PR-YT4 — vì sao em cần Báo lên (null = không): bắt buộc quá hạn · Mới quá 5 ngày chưa ai xem · đã duyệt chưa thực hiện quá 5 ngày
+ * (K3-37). Em Tạm dừng không Báo lên (T65). `viec` = tiền tố khoá việc trong Công việc của GVCN (Nhắc trỏ đúng dòng).
+ */
+export function lyDoBaoLenYThuc(em: EmYThuc | undefined): { viec: 'yt_xu_ly' | 'yt_xem' | 'yt_thuc_hien'; ngan: string; cau: string } | null {
+  if (!em || em.tamDung || !em.gvcnId) return null;
+  const tt = [...em.viPham.values()];
+  const xuLy = tt.filter((x) => x.lyDoQuaHan === 'xu-ly').length;
+  if (xuLy) return { viec: 'yt_xu_ly', ngan: `${em.soBatBuoc} vi phạm chưa xử lý`, cau: `${em.soBatBuoc} vi phạm bắt buộc xử lý đã quá hạn` };
+  const xem = tt.filter((x) => x.lyDoQuaHan === 'xem').length;
+  if (xem) return { viec: 'yt_xem', ngan: `${xem} vi phạm chưa ai xem`, cau: `${xem} vi phạm mới quá 5 ngày chưa ai ghi nhận` };
+  if (em.deXuat?.quaHan) {
+    const nhan = nhanLoaiXuLy(em.deXuat.kind, em.deXuat.customName);
+    return { viec: 'yt_thuc_hien', ngan: `${nhan} đã duyệt chưa thực hiện`, cau: `${nhan} QL đã duyệt, quá 5 ngày chưa thực hiện` };
+  }
+  return null;
+}
 
 export type YeuCauRow = {
   id: number; loai: LoaiYeuCau; doi_tuong_loai: string; doi_tuong_id: number; hoc_vien_id: number | null;
@@ -229,15 +249,14 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
   /* ------------------------------------------------------------ PR-DUYET · Báo lên: Case chờ nguyên nhân quá hạn (K1-57, T77) */
   {
     loai: 'bao_len_nguyen_nhan',
-    /* PR-SOS đổi `verify_due` → `han_xac_nhan` trong PHẦN TỬ NÀY (định nghĩa "chờ nguyên nhân" là của `awaitingCauseCaseIds`). */
+    /* PR-SOS: hạn ở `sos_cases.han_xac_nhan`; "chờ nguyên nhân" (đã loại thẻ Không cần theo dõi đang chờ) là của `awaitingCauseCaseIds`. */
     quet: (conn, homNay) => {
       const ung = conn.prepare(
-        `SELECT sc.id, sc.owner_user_id, COALESCE(sc.student_id, a.student_id) AS sid, a.class_id,
-                (SELECT MIN(g.verify_due) FROM case_signals g WHERE g.case_id = sc.id AND g.status = 'linked') AS han
+        `SELECT sc.id, sc.owner_user_id, COALESCE(sc.student_id, a.student_id) AS sid, a.class_id, sc.han_xac_nhan AS han
            FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
            JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
-          WHERE sc.status != 'done' AND s.archived_at IS NULL
-            AND (SELECT MIN(g.verify_due) FROM case_signals g WHERE g.case_id = sc.id AND g.status = 'linked') < ?
+          WHERE sc.status != 'done' AND s.archived_at IS NULL AND s.status = 'active'   /* K3-41: em Tạm dừng không bị Báo lên */
+            AND sc.han_xac_nhan < ?
             AND NOT EXISTS (SELECT 1 FROM yeu_cau_duyet y WHERE y.loai = 'bao_len_nguyen_nhan' AND y.doi_tuong_loai = 'sos_case'
                              AND y.doi_tuong_id = sc.id AND y.trang_thai = 'cho')`,
       ).all(homNay) as any[];
@@ -252,7 +271,8 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     },
     chet: {
       sql: `NOT EXISTS (SELECT 1 FROM sos_cases sc WHERE sc.id = y.doi_tuong_id AND sc.status != 'done'
-             AND NOT EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary'))`,
+             AND NOT EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary')
+             AND NOT ${CO_THE_KHONG_THEO_DOI('sc')})`,
       lyDo: 'Việc gốc đã xong',
     },
     nap: (conn, ds) => {
@@ -271,6 +291,114 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         dong: ['Không cần duyệt — để QL biết và nhắc.'],
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, { caseId: yc.doi_tuong_id }) : undefined,
         duLieu: { tenGv: x?.ten_gv ?? null, daNhacLuc: x?.da_nhac ?? null, ownerId: x?.owner_user_id ?? null },
+      };
+    },
+  },
+  /* ------------------------------------------------------------ PR-SOS · Không cần theo dõi (S4-5…S4-7, T23, YC-12.4) */
+  {
+    loai: 'khong_theo_doi',
+    khiDuyet: (p, yc) => apDungKhongTheoDoi(db(), yc, p.userId),
+    khiTuChoi: (p, yc, lyDo) => tuChoiKhongTheoDoi(db(), yc, p.userId, lyDo),
+    /* S4-7: Case đóng vì lý do khác (điểm sửa thành đạt, lượt huỷ, đổi chương trình) → thẻ tự đóng. */
+    chet: { sql: `NOT EXISTS (SELECT 1 FROM sos_cases sc WHERE sc.id = y.doi_tuong_id AND sc.status != 'done')`, lyDo: 'Case đã đóng' },
+    nap: (conn, ds) => napTheoDoiTuong(conn, ds,
+      `SELECT sc.id, sc.topic, sc.category, sc.title, sc.origin_kind, sc.sos_level, sc.student_id, sc.cycle_id FROM sos_cases sc WHERE sc.id IN (?)`),
+    moTa: (yc, ngu) => {
+      const x = ngu.them.get(yc.id);
+      return {
+        tieuDe: `Không cần theo dõi${x?.topic ? ` · ${caseTopicLabel(x.topic)}` : ''}`,
+        dong: [...(x ? [caseTitleOf(x)] : []), `${nguoiXin(yc, ngu)} (${ngay(yc.tao_luc, ngu)}) · Lý do: ${yc.ly_do ?? ''}`],
+        neuDuyet: 'Case và PA theo quy chế huỷ — không tính thất bại.',
+        mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, { caseId: yc.doi_tuong_id }) : undefined,
+      };
+    },
+  },
+  /* ------------------------------------------------------------ PR-YT4 · Xử lý Ý thức cần duyệt (V4-9, V4-10, M-11, T29, T30) */
+  {
+    loai: 'y_thuc',
+    khiDuyet: (_p, yc) => {
+      db().prepare(`UPDATE discipline_measures SET status = 'da_duyet', quyet_luc = ?, updated_at = ? WHERE id = ? AND status = 'cho_duyet'`)
+        .run(demoToday(), new Date().toISOString(), yc.doi_tuong_id);
+    },
+    /* Từ chối → vi phạm về Cần xử lý từ ngày quyết (batBuocTu), bậc giữ; lý do nằm ở thẻ (Q13). */
+    khiTuChoi: (_p, yc) => {
+      db().prepare(`UPDATE discipline_measures SET status = 'tu_choi', quyet_luc = ?, updated_at = ? WHERE id = ? AND status = 'cho_duyet'`)
+        .run(demoToday(), new Date().toISOString(), yc.doi_tuong_id);
+    },
+    chet: {
+      sql: `NOT EXISTS (SELECT 1 FROM discipline_measures m WHERE m.id = y.doi_tuong_id AND m.status = 'cho_duyet')
+         OR EXISTS (SELECT 1 FROM students s WHERE s.id = y.hoc_vien_id AND s.archived_at IS NOT NULL)`,
+      lyDo: 'Không còn chờ duyệt',
+    },
+    /* Không `nap`: loại, tên, số vi phạm, bậc kế lưu ở `du_lieu` lúc gửi (guiDeXuat) — thẻ nói đúng điều QL được xin duyệt. */
+    moTa: (yc, ngu) => {
+      const d = (() => { try { return JSON.parse(yc.du_lieu ?? '{}'); } catch { return {}; } })() as
+        { kind?: string; customName?: string | null; bacKe?: string | null; soViPham?: number; soTep?: number };
+      const nhan = nhanLoaiXuLy(d.kind ?? '', d.customName ?? null);
+      return {
+        tieuDe: `Đề xuất ${nhan}`,
+        phu: d.soViPham ? `${d.soViPham} vi phạm` : null,
+        dong: [
+          `${nguoiXin(yc, ngu)} đề xuất ${ngay(yc.tao_luc, ngu)}: “${yc.ly_do ?? ''}”`,
+          ...(d.bacKe ? [`Bậc thang kế tiếp đang là ${d.bacKe} — duyệt đề xuất này không đổi bậc`] : []),
+          /* Bằng chứng bắt buộc khi gửi (V4-10): đếm lúc gửi, xem ở tab Ý thức của em (nút Mở) — không thêm câu SQL mỗi thẻ. */
+          ...(d.soTep ? [`Kèm ${d.soTep} bằng chứng (tệp / liên kết) — bấm Mở để xem`] : []),
+        ],
+        neuDuyet: 'GVCN ghi "Đã thực hiện" trong 5 ngày.',
+        mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, { tab: 'y-thuc' }) : undefined,
+      };
+    },
+  },
+  /* ------------------------------------------------------------ PR-YT4 · Báo lên: Ý thức quá hạn — một thẻ mỗi em (V4-4, V4-5, K3-37, Q9) */
+  {
+    loai: 'bao_len_y_thuc',
+    /* Luật ở JS (một cửa trạng thái) nên không viết được thành `chet` SQL: tạo VÀ đóng đều ở đây. Không có gì để làm → không mở tx. */
+    quet: (conn, homNay) => {
+      const uv = ungVienVaThe({ kemThe: true });
+      if (!uv.length) return 0;
+      const ids = uv.map((r) => r.id);
+      const dangCho = new Map(uv.filter((r) => r.coThe).map((r) => [r.id, true]));
+      const trang = trangThaiYThuc(ids, homNay);
+      const lyDo = (sid: number) => lyDoBaoLenYThuc(trang.get(sid));
+      const tao = ids.filter((sid) => !dangCho.has(sid) && lyDo(sid));
+      const dong = [...dangCho.keys()].filter((sid) => !lyDo(sid));
+      if (!tao.length && !dong.length) return 0;
+      return tx(() => {
+        for (const sid of dong) {
+          chotYeuCau(conn, { loai: 'bao_len_y_thuc', doiTuongLoai: 'hoc_vien_y_thuc', doiTuongId: sid }, 'tu_dong', { lyDo: 'Việc gốc đã xong' });
+        }
+        return tao.filter((sid) => {
+          const em = trang.get(sid)!;
+          const l = lyDo(sid)!;
+          return taoYeuCau(conn, {
+            loai: 'bao_len_y_thuc', doiTuongLoai: 'hoc_vien_y_thuc', doiTuongId: sid, hocVienId: sid, lopId: em.lopId,
+            nguoiXin: null, hanDuyet: null, lyDo: l.cau, duLieu: { viecKey: `${l.viec}:${sid}`, ownerId: em.gvcnId, lyDo: l.cau },
+          }) !== null;
+        }).length;
+      });
+    },
+    nap: (conn, ds) => {
+      const ids = ds.map((y) => y.id);
+      const hom = demoToday();
+      /* Chỉ thẻ đang chờ cần trạng thái sống (thẻ đã đóng đọc lý do đã lưu) — trong request GET, quét vừa nạp nên không tốn thêm câu. */
+      const trang = trangThaiYThuc(ds.filter((y) => y.trang_thai === 'cho').map((y) => y.doi_tuong_id), hom);
+      const rows = conn.prepare(
+        `SELECT y.id, y.doi_tuong_id AS sid, json_extract(y.du_lieu, '$.ownerId') AS owner, u.full_name AS ten_gv, n.created_at AS da_nhac
+           FROM yeu_cau_duyet y LEFT JOIN users u ON u.id = json_extract(y.du_lieu, '$.ownerId')
+           LEFT JOIN notifications n ON n.user_id = json_extract(y.du_lieu, '$.ownerId')
+                 AND n.dedup_key = 'nhac:' || json_extract(y.du_lieu, '$.viecKey') || ':' || ?
+          WHERE y.id IN (${ids.map(() => '?').join(',')})`).all(hom, ...ids) as any[];
+      return new Map(rows.map((r) => [r.id as number, { ...r, em: trang.get(r.sid) }]));
+    },
+    moTa: (yc, ngu) => {
+      const x = ngu.them.get(yc.id);
+      const l = lyDoBaoLenYThuc(x?.em);
+      return {
+        tieuDe: `Ý thức quá hạn · ${l?.ngan ?? (yc.ly_do || 'đã hết quá hạn')}`,
+        phu: x?.ten_gv ? `GVCN ${x.ten_gv}` : null,
+        dong: ['Không cần duyệt — để QL biết và nhắc.'],
+        mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, { tab: 'y-thuc' }) : undefined,
+        duLieu: { tenGv: x?.ten_gv ?? null, daNhacLuc: x?.da_nhac ?? null, ownerId: x?.owner ?? null },
       };
     },
   },

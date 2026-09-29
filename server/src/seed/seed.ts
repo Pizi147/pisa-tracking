@@ -212,10 +212,6 @@ export function runSeed() {
     const counts = buildJourneys({
       conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode,
     });
-    /* Ý thức dựng SAU hành trình: cần học viên, lớp, ghi danh và lộ trình đã có. */
-    const yThuc = buildYThuc({
-      conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode,
-    });
 
     // ---------------------------------------------------------------- công việc quản lý
     const tasks = seedMeeting(conn, {
@@ -239,6 +235,13 @@ export function runSeed() {
     buildXlmtDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
     /* BỘ DEMO PR-KCK (Q29-1): hai em Target KCK — có MT, có điểm dưới band mà không SOS. */
     buildKckDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
+    /*
+     * Ý THỨC v4 (PR-YT4, D14/D15/H5): SAU ngày demo (đề xuất QL duyệt đi qua hàm dịch vụ đọc `demoToday()`), TRƯỚC `buildDuyetDemo`
+     * (lần `quetYeuCau` của nó sinh thẻ Báo lên Ý thức).
+     */
+    const yThuc = buildYThuc({
+      conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode,
+    });
 
     /*
      * S16 (chốt 21/09 đêm): em đã KẾT THÚC học mà còn Case mở → hệ thống tự đóng "Học viên kết thúc khoá". Bộ demo dựng hành trình
@@ -279,9 +282,10 @@ export function runSeed() {
       'Case': (conn.prepare('SELECT COUNT(*) AS n FROM sos_cases').get() as any).n,
       'Vi phạm': yThuc.violations,
       '— trong đó đã xoá (có dòng audit)': yThuc.deleted,
-      'Phương án xử lý': yThuc.measures,
-      '— trong đó đã thực hiện': yThuc.done,
-      '— trong đó đang chuẩn bị': yThuc.preparing,
+      'Lần xử lý Ý thức': yThuc.measures,
+      '— trong đó xử lý theo thang (đã xong)': yThuc.done,
+      '— trong đó đề xuất QL duyệt': yThuc.deXuat,
+      'Khai bậc Ý thức (H5)': yThuc.khai,
       '— trong đó demo rulebook v3 (SOS tự tạo case)': sosV3.cases,
       'Việc Phối hợp SOS': (conn.prepare('SELECT COUNT(*) AS n FROM sos_coordination_actions').get() as any).n,
       'Phương án': (conn.prepare('SELECT COUNT(*) AS n FROM case_interventions').get() as any).n,

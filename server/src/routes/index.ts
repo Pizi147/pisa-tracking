@@ -11,18 +11,17 @@ import { kiemGhiRoKhac, laKhac, soSanhLop, transferReasonText } from '../../../s
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
 import { HttpError, badRequest, forbidden, isIsoDate, notFound, toInt } from '../util.ts';
 import { SESSION_COOKIE, createSession, destroySession, principalOf, requireAuth } from '../auth.ts';
-import { can, loadPrincipal, permissionSummary, require_, scopeFor } from '../permissions.ts';
+import { can, loadPrincipal, napTruocPhamVi, permissionSummary, require_, scopeFor } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { navOf } from '../platform/nav.ts';
 import * as attachmentSvc from '../platform/attachments.ts';
 import * as timNguoiSvc from '../platform/timNguoi.ts';
 import * as violationSvc from '../yThuc/violations.ts';
 import * as accessSvc from '../yThuc/access.ts';
-import * as measureSvc from '../yThuc/measures.ts';
+import * as xuLySvc from '../yThuc/xuLy.ts';
 import * as phoiHopSvc from '../yThuc/phoiHop.ts';
 import * as sosAutoSvc from '../cases/sosAuto.ts';
-import * as warningSvc from '../yThuc/canhBao.ts';
-import { classViolationBoard } from '../yThuc/board.ts';
+import { bangYThucLop } from '../yThuc/board.ts';
 import { maybeSimulateReadError, maybeSimulateSaveFailure, pInt, qInt, qStr, wrap } from './helpers.ts';
 
 /**
@@ -399,6 +398,7 @@ api.get('/my-work', requireAuth, wrap((req) => {
     }
     const x = loadPrincipal(nguoi);
     const w = myWork(x, { branchId }) as any;
+    napTruocPhamVi(w.items.map((it: any) => it.studentId));   // `can()` từng dòng bên dưới đọc bộ nhớ, không N+1
     /* Dòng không lớp/không HV là việc Vận hành ("mgmt") — không thuộc Hỗ trợ học viên, bỏ. */
     const items = w.items
       .filter((it: any) => (it.classId !== null || it.studentId !== null)
@@ -1000,53 +1000,36 @@ api.get('/students/:id/violations', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   const id = pInt(req, 'id');
   const result = violationSvc.listViolations(principalOf(req), {
-    studentId: id, state: (qStr(req, 'state') as any) ?? null, category: qStr(req, 'category') ?? null,
+    studentId: id, trangThai: (qStr(req, 'trangThai') as any) ?? null, category: qStr(req, 'category') ?? null,
     from: qStr(req, 'from') ?? null, to: qStr(req, 'to') ?? null,
   });
   /*
    * Q14: chu kỳ hiện tại của em — FT theo lộ trình (`cycleId`), lớp thường theo khoá đang học (`classId`). MỌI học viên có
    * một dòng `learning_cycles` (intake.ts: "mở lộ trình cho mọi em"), nhưng chỉ FT có `route` (LT1/LT2…) — lớp thường có
    * `programme_code` mà `route = null` (đúng cách `cycleLabel` ở `students/profile.ts:48` phân biệt hai loại), nên `cycleId`
-   * chỉ lấy khi `route` có; không thì `trongChuKyHienTai` phải rơi về so `classId`.
+   * chỉ lấy khi `route` có; không thì so `classId` (lớp thường).
    */
   const cyc = cycleSvc.currentCycle(id);
   return { ...result, chuKy: { cycleId: cyc?.route ? cyc.id : null, classId: accessSvc.activeClassOf(id) } };
 }));
-api.get('/students/:id/measures', requireAuth, wrap((req) => {
+/** Tab Ý thức của học viên (K3 §4f) + khung phải của tab lớp khi chọn em: thang, thanh việc, vi phạm, dòng thời gian trộn. */
+api.get('/students/:id/y-thuc', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return measureSvc.listMeasures(principalOf(req), { studentId: pInt(req, 'id'), status: (qStr(req, 'status') as any) ?? null });
-}));
-/** Chín loại biện pháp kèm dòng nào khóa và VÌ SAO — để form nói lý do ngay tại dòng, không báo lỗi sau khi bấm. */
-api.get('/students/:id/measure-kinds', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  return { rows: measureSvc.measureKindAvailability(principalOf(req), pInt(req, 'id'), { excludeMeasureId: qInt(req, 'excludeMeasureId') ?? undefined }) };
-}));
-api.get('/students/:id/violation-warning', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  return warningSvc.studentWarning(principalOf(req), pInt(req, 'id'));
+  return xuLySvc.yThucHocVien(principalOf(req), pInt(req, 'id'), { phamVi: qStr(req, 'pham-vi') === 'tat-ca' ? 'tat-ca' : 'chuoi' });
 }));
 
-/** Ba khu vực Ý thức của lớp (Y03) — một request cho cả tab. */
+/** Tab Ý thức của lớp — hai khung (M6): em theo nhóm + dòng thời gian cả lớp. Một request cho cả tab. */
 api.get('/classes/:id/y-thuc', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return classViolationBoard(principalOf(req), pInt(req, 'id'));
-}));
-api.get('/classes/:id/violation-warning', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  return warningSvc.classWarning(principalOf(req), pInt(req, 'id'));
+  return bangYThucLop(principalOf(req), pInt(req, 'id'));
 }));
 /** YT-6 "Theo thời gian" — HV ĐANG HỌC ở lớp, MỌI trạng thái (khác ba khu vực của `/classes/:id/y-thuc`, đi theo học viên). */
 api.get('/classes/:id/violations', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return violationSvc.listViolations(principalOf(req), {
-    activeInClassId: pInt(req, 'id'), state: (qStr(req, 'state') as any) ?? null, category: qStr(req, 'category') ?? null,
+    activeInClassId: pInt(req, 'id'), trangThai: (qStr(req, 'trangThai') as any) ?? null, category: qStr(req, 'category') ?? null,
     from: qStr(req, 'from') ?? null, to: qStr(req, 'to') ?? null,
   });
-}));
-/** Một dòng trong Việc cần làm của GVCN (đặc tả 7.10). */
-api.get('/y-thuc/my-warnings', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  return { rows: warningSvc.myWarningLines(principalOf(req)) };
 }));
 /** Một dòng trong Việc cần làm của GVCN: lớp mình chủ nhiệm còn lượt Phối hợp SOS chưa hoàn thành (PR-K). */
 api.get('/y-thuc/my-coordination', requireAuth, wrap((req) => {
@@ -1100,49 +1083,54 @@ api.delete('/violations/:id', requireAuth, wrap((req) => {
   return violationSvc.deleteViolation(principalOf(req), pInt(req, 'id'));
 }));
 
-api.post('/measures', requireAuth, wrap((req) => {
+/** V4-1: Ghi nhận — "đã xem, không cần biện pháp". Vi phạm đang bắt buộc thì từ chối (V4-2). */
+api.post('/students/:id/y-thuc/ghi-nhan', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return xuLySvc.ghiNhan(principalOf(req), pInt(req, 'id'), yThucBody(req).violationIds);
+}));
+/** V4-7: Xác nhận xử lý một bước — bậc do máy chủ tính (`bacDaThay` lệch → 409). */
+api.post('/students/:id/y-thuc/xu-ly', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const b = yThucBody(req);
-  return measureSvc.createMeasure(principalOf(req), {
-    studentId: toInt(b.studentId) ?? 0, kind: b.kind, customName: b.customName ?? null,
-    violationIds: Array.isArray(b.violationIds) ? b.violationIds : [], ownerUserId: toInt(b.ownerUserId) ?? null,
-    note: b.note ?? null, idempotencyKey: b.idempotencyKey ?? null,
+  return xuLySvc.xacNhanXuLy(principalOf(req), pInt(req, 'id'), {
+    violationIds: b.violationIds, performedOn: b.performedOn, performerUserId: b.performerUserId, performerName: b.performerName,
+    note: b.note, idempotencyKey: b.idempotencyKey ?? null, bacDaThay: b.bacDaThay,
   });
 }));
-api.get('/measures/:id', requireAuth, wrap((req) => {
+/** H5: khai bậc đã xử lý trước khi dùng web (GVCN, một lần mỗi chuỗi); PUT = QL sửa. */
+api.post('/students/:id/y-thuc/khai-bac', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return xuLySvc.khaiBac(principalOf(req), pInt(req, 'id'), yThucBody(req));
+}));
+api.put('/students/:id/y-thuc/khai-bac', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return xuLySvc.suaKhaiBac(principalOf(req), pInt(req, 'id'), yThucBody(req));
+}));
+api.get('/y-thuc/xu-ly/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return measureSvc.measureDetail(principalOf(req), pInt(req, 'id'));
+  return xuLySvc.xemXuLy(principalOf(req), pInt(req, 'id'));
 }));
-api.patch('/measures/:id', requireAuth, wrap((req) => {
+/** V4-9/V4-10 (Q10): Đề xuất QL duyệt = nháp (để tải bằng chứng) → gửi (thẻ `y_thuc`). Đóng panel giữa chừng → xoá nháp. */
+api.post('/students/:id/y-thuc/de-xuat', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const b = yThucBody(req);
-  return measureSvc.updateMeasure(principalOf(req), pInt(req, 'id'), {
-    kind: b.kind, customName: 'customName' in b ? (b.customName ?? null) : undefined, note: 'note' in b ? (b.note ?? null) : undefined,
-    ownerUserId: 'ownerUserId' in b ? (toInt(b.ownerUserId) ?? null) : undefined,
-    violationIds: Array.isArray(b.violationIds) ? b.violationIds : undefined,
+  return xuLySvc.deXuat(principalOf(req), pInt(req, 'id'), { kind: b.kind, customName: b.customName, violationIds: b.violationIds, note: b.note });
+}));
+api.post('/y-thuc/xu-ly/:id/gui', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return xuLySvc.guiDeXuat(principalOf(req), pInt(req, 'id'));
+}));
+api.delete('/y-thuc/xu-ly/:id', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return xuLySvc.xoaNhap(principalOf(req), pInt(req, 'id'));
+}));
+/** V4-10: QL đã duyệt → GVCN ghi "Đã thực hiện". */
+api.post('/y-thuc/xu-ly/:id/da-thuc-hien', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = yThucBody(req);
+  return xuLySvc.daThucHien(principalOf(req), pInt(req, 'id'), {
+    performedOn: b.performedOn, performerUserId: b.performerUserId, performerName: b.performerName, note: b.note,
   });
-}));
-api.post('/measures/:id/violations', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  const b = yThucBody(req);
-  return measureSvc.addViolations(principalOf(req), pInt(req, 'id'), Array.isArray(b.violationIds) ? b.violationIds : []);
-}));
-api.delete('/measures/:id/violations/:violationId', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return measureSvc.removeViolation(principalOf(req), pInt(req, 'id'), pInt(req, 'violationId'));
-}));
-api.post('/measures/:id/confirm', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  const b = yThucBody(req);
-  return measureSvc.confirmMeasure(principalOf(req), pInt(req, 'id'), {
-    performedOn: b.performedOn ?? null, performedBy: toInt(b.performedBy) ?? null, performerName: b.performerName ?? null,
-    note: 'note' in b ? (b.note ?? '') : undefined, participants: b.participants ?? null,
-  });
-}));
-api.delete('/measures/:id', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  measureSvc.deleteMeasure(principalOf(req), pInt(req, 'id'));
-  return { ok: true };
 }));
 
 /**
@@ -1551,24 +1539,20 @@ api.post('/cases/:id/interventions', requireAuth, wrap((req) => {
 }));
 
 /**
- * CASE TỪ SOS (rulebook v3, PR-T): GVBM đúng kỹ năng hoặc Quản lý XÁC NHẬN · THAY phương án điền sẵn, hoặc đóng ngay `Không cần theo dõi` kèm lý do
- * chọn nhanh. Quyền kiểm ở máy chủ theo ĐÚNG kỹ năng của case (C02).
+ * CASE TỪ SOS (SOS v4, PR-SOS): GVBM đúng kỹ năng hoặc Quản lý Xác nhận Case (nguyên nhân) → Xác nhận PA theo quy chế, hoặc gửi
+ * "Không cần theo dõi" cho Quản lý duyệt. Quyền kiểm ở máy chủ theo ĐÚNG kỹ năng của case (C02). Đường cũ `/confirm`, `/replace` đã gỡ.
  */
-api.post('/interventions/:id/confirm', requireAuth, wrap((req) => {
+api.post('/cases/:id/xac-nhan', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  const b = (req.body ?? {}) as Record<string, any>;
-  return sosAutoSvc.confirmPresetPlan(principalOf(req), pInt(req, 'id'), {
-    description: 'description' in b ? (b.description ?? null) : undefined, followupDue: 'followupDue' in b ? (b.followupDue ?? null) : undefined,
-    reason: typeof b.reason === 'string' ? b.reason : undefined,
-  });
+  return sosAutoSvc.xacNhanCase(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
 }));
-api.post('/interventions/:id/replace', requireAuth, wrap((req) => {
+api.post('/interventions/:id/xac-nhan-pa', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return sosAutoSvc.replacePresetPlan(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
+  return sosAutoSvc.xacNhanPaQuyChe(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
 }));
 api.post('/cases/:id/dismiss', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return sosAutoSvc.dismissSosCase(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
+  return sosAutoSvc.guiKhongTheoDoi(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
 }));
 
 /**

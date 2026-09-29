@@ -2,203 +2,234 @@ import { useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
-import { ONgay } from '../../ui/ONgay.tsx';
+import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { useLoiForm } from '../../ui/loiForm.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
 import { NutChon } from '../../ui/ui.tsx';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
-  CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, INTERVENTION_KIND_LABEL, issuesForTopic,
-  interventionKindsFor, reasonNeedsText, nguoiThanhPayload, type CaseDismissReason, type NguoiChon, laKhac, kiemGhiRoKhac,
+  CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, GOI_Y_MO_TA_PA, INTERVENTION_KIND_LABEL, URGENCY_LABEL, URGENCY_LEVELS,
+  dsLoi, issuesForTopic, kiemGhiRoKhac, laKhac, ngay, nguoiThanhPayload, reasonNeedsText,
+  type CaseDismissReason, type NguoiChon,
 } from '@shared/domain/index.ts';
 
-const invalidateCases = () => { invalidate('/cases'); invalidate('/students'); invalidate('/overview'); invalidate('/my-work'); };
-
 /**
- * `XÁC ĐỊNH NGUYÊN NHÂN` (§7.5, S04) — mở đúng ô phân loại đang có trong form case (`issuesForTopic`,
- * dùng chung với QuickReport lúc tạo case) nhưng cho case ĐÃ TỒN TẠI, qua `PUT /cases/:id/issues`.
+ * CASE TỰ TẠO TỪ SOS (SOS v4, PR-SOS — M7, YC-12.1, 12.3, 12.4, Q28-3). Hai lối loại trừ cho Case chờ nguyên nhân:
+ *   · `XacNhanCasePanel` → lưu xong CHUYỂN THẲNG sang `XacNhanPaPanel` của PA theo quy chế đầu tiên còn chờ (PA chạy từ hôm đó);
+ *   · `KhongTheoDoiForm` → gửi Quản lý duyệt (thẻ Chờ duyệt, 5 ngày) — Case chưa đóng.
+ * Không còn Xác nhận / Sửa / Thay PA gợi ý, không tệp đính kèm, không ngày kết thúc tự chọn (Q28-4).
  */
-export function CauseDeterminationPanel({ caseId, topic, currentCode, onClose, onDone, ct = null }: {
-  caseId: number; topic: string | null; currentCode: string | null; onClose: () => void; onDone?: () => void;
-  /** Mã chương trình lộ trình Case — FOU ô W chỉ nguyên nhân G+V, ô S nhóm Phát âm (T57). */
-  ct?: string | null;
-}) {
-  const toast = useToast();
-  const [code, setCode] = useState(currentCode ?? '');
-  /* "Khác" (T13): ô Ghi rõ ngay dưới, lưu ở `observation` (Q9). */
-  const [ghiRo, setGhiRo] = useState('');
-  const [busy, setBusy] = useState(false);
-  const causes = topic ? issuesForTopic(topic, ct) : [];
-  /* K2-3 (điện thoại không có hover): câu Ghi rõ hiện ngay dưới ô từ lúc chọn Khác, không đợi rời ô — ba form nhỏ trong file này. */
-  const loiGhiRo = laKhac(code) ? kiemGhiRoKhac(ghiRo) : null;
 
-  const save = async () => {
-    if (!code) { toast.push('error', 'Chọn phân loại vấn đề.'); return; }
-    if (loiGhiRo) return;
-    setBusy(true);
-    try {
-      await api.put(`/cases/${caseId}/issues`, { primaryCode: code, observation: laKhac(code) ? ghiRo.trim() : undefined });
-      invalidateCases();
-      toast.push('ok', 'Đã chọn nguyên nhân');
-      onClose(); onDone?.();
-    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
-  };
+const invalidateCases = () => { invalidate('/cases'); invalidate('/students'); invalidate('/overview'); invalidate('/my-work'); invalidate('/yeu-cau'); };
 
-  return (
-    <div className="rounded-lg mt-1 p-2.5 space-y-2" style={{ background: 'var(--surface-1)' }}>
-      {causes.length === 0 ? (
-        <p className="text-xs text-amber-200/90 m-0">Chủ đề này chưa có danh mục nguyên nhân để chọn.</p>
-      ) : (
-        <div className="flex gap-1 flex-wrap">
-          {causes.map((i) => (
-            <NutChon key={i.code} nho title={i.hint} chon={code === i.code} onClick={() => setCode(i.code)}>
-              {i.label}
-            </NutChon>
-          ))}
-        </div>
-      )}
-      <OKhac hien={laKhac(code)} value={ghiRo} onChange={setGhiRo} goiY="Ví dụ: Chưa quen dạng bài mới" loi={loiGhiRo} />
-      <div className="flex gap-1.5">
-        <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>Huỷ</button>
-        {causes.length > 0 && (
-          <button type="button" className="btn btn-sm btn-primary" disabled={busy || !code || !!loiGhiRo} title={loiGhiRo ?? undefined} onClick={save}>Lưu</button>
-        )}
-      </div>
-    </div>
-  );
+type ChungPanel = {
+  hocVien?: string | null; lop?: string | null;
+  quayLai?: { nhan: string; onClick: () => void };
+  onClose: () => void;
+};
+
+/** PA theo quy chế như `caseDetail` trả — chỉ các trường panel cần. */
+export type PaQuyChe = {
+  id: number; kind: string; description: string | null; performer: string | null; performerUserId: number | null;
+  mocChu: string | null; awaitingConfirmation: boolean;
+};
+
+/** Chip nhỏ trong tên Case (T21): `MT1`, `SOS 3` do hệ thống gắn. */
+function Chip({ children, sos }: { children: string; sos?: number | null }) {
+  const lop = sos ? ({ 1: 'bg-sos1-bg text-sos1', 2: 'bg-sos2-bg text-sos2', 3: 'bg-sos3-bg text-sos3' } as Record<number, string>)[sos] ?? ''
+    : 'border border-[color:var(--line-strong)] text-slate-300';
+  return <span className={`shrink-0 rounded px-1.5 text-[11px] font-semibold leading-5 tabular-nums ${lop}`}>{children}</span>;
 }
 
-type Mode = null | 'confirm' | 'edit' | 'replace';
-
 /**
- * PHƯƠNG ÁN ĐIỀN SẴN CHỜ XÁC NHẬN (§7.5, S04, S06) — ba nút `Xác nhận` · `Sửa` · `Thay`. `Xác nhận` chạy
- * ngay với nội dung điền sẵn; `Sửa` mở ô mô tả để chỉnh rồi xác nhận trong MỘT thao tác (PR-T); `Thay` đổi
- * hẳn loại phương án — kết thúc phương án điền sẵn, tạo phương án mới đã xác nhận.
+ * XÁC NHẬN CASE (M7, YC-12.3). Kỹ năng khoá · Tên Case: chip MT + phần giữa sửa được + chip SOS · Phân loại nguyên nhân * · Mức độ gấp *
+ * · Mô tả * (≥ 15) · Bắt đầu theo dõi: hôm nay (khoá) · khối chỉ đọc PA theo quy chế. Không tab "Đã xong từ trước", không tệp đính kèm,
+ * không "+ Thêm phương án" ở bước này (Q7).
  */
-export function PresetPlanActions({ interventionId, description, followupDue, onDone }: {
-  interventionId: number; description: string; followupDue: string | null; onDone?: () => void;
+export function XacNhanCasePanel({ caseId, topic, kyNang, ct, tenSos, paQuyChe, onXong, ...chung }: ChungPanel & {
+  caseId: number; topic: string | null; kyNang: string; ct?: string | null;
+  tenSos: { mt: number | null; giua: string; sos: number | null } | null;
+  paQuyChe: PaQuyChe[];
+  /** Lưu xong: nơi gọi mở tiếp Xác nhận PA (Planning tự quyết (1)). */
+  onXong: () => void;
 }) {
   const toast = useToast();
-  const [mode, setMode] = useState<Mode>(null);
-  const [busy, setBusy] = useState(false);
-  const [desc, setDesc] = useState(description);
-  const [due, setDue] = useState(followupDue ?? '');
-  const [reason, setReason] = useState('');
-  const catalogue = interventionKindsFor();
-  const [kind, setKind] = useState<string>(catalogue.selfServe[0]);
-  /* PA đề xuất "Khác" (T13): ô Tên đề xuất ngay dưới; máy chủ ghép vào mô tả (Q9). */
+  const { homNay } = useNgayNghiepVu();
+  const [giua, setGiua] = useState(tenSos?.giua ?? `${kyNang} không đạt`);
+  const [code, setCode] = useState('');
   const [ghiRo, setGhiRo] = useState('');
-  const [nguoi, setNguoi] = useState<NguoiChon | null>({ kieu: 'toi' });
+  const [urgency, setUrgency] = useState('');
+  const [moTa, setMoTa] = useState('');
+  const [busy, setBusy] = useState(false);
+  const lf = useLoiForm();
+  const causes = topic ? issuesForTopic(topic, ct ?? null) : [];
 
-  const confirmNow = async (patch: Record<string, unknown> = {}) => {
+  const loi = dsLoi([
+    { khoa: 'ten', nhan: 'Tên Case', toiThieu: 3 },
+    { khoa: 'nguyen-nhan', nhan: 'Phân loại nguyên nhân', chon: true },
+    ...(laKhac(code) ? [{ khoa: 'ghi-ro', nhan: 'Ghi rõ nguyên nhân', toiThieu: 3 }] : []),
+    { khoa: 'muc-do', nhan: 'Mức độ gấp', chon: true },
+    { khoa: 'mo-ta', nhan: 'Mô tả', toiThieu: 15 },
+  ], { ten: giua, 'nguyen-nhan': code, 'ghi-ro': ghiRo, 'muc-do': urgency, 'mo-ta': moTa });
+
+  const luu = async () => {
+    lf.bam();
+    if (loi.length > 0) return;
     setBusy(true);
     try {
-      await api.post(`/interventions/${interventionId}/confirm`, patch);
-      invalidateCases();
-      toast.push('ok', 'Đã xác nhận phương án');
-      setMode(null); onDone?.();
-    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
-  };
-
-  /* K2-3: ràng buộc nói TRƯỚC khi bấm — nút mờ + câu thiếu gì, không báo lỗi đỏ sau khi bấm. */
-  const replaceMissing = desc.trim().length < 8 ? 'Mô tả phương án mới cần ít nhất 8 ký tự.' : null;
-  const loiGhiRo = kind === 'other_proposal' ? kiemGhiRoKhac(ghiRo) : null;
-
-  const replace = async () => {
-    if (replaceMissing || loiGhiRo) return;
-    setBusy(true);
-    try {
-      await api.post(`/interventions/${interventionId}/replace`, {
-        kind, description: desc, ...nguoiThanhPayload(nguoi), followupDue: due || undefined,
-        ...(kind === 'other_proposal' ? { ghiRoKhac: ghiRo.trim() } : {}),
+      await api.post(`/cases/${caseId}/xac-nhan`, {
+        primaryCode: code, observation: laKhac(code) ? ghiRo.trim() : undefined, urgency, moTa: moTa.trim(), tenGiua: giua.trim(),
       });
       invalidateCases();
-      toast.push('ok', 'Đã thay phương án');
-      setMode(null); onDone?.();
+      toast.push('ok', 'Đã xác nhận Case — còn xác nhận PA theo quy chế');
+      onXong();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 
-  if (mode === null) {
-    return (
-      <span className="flex flex-wrap gap-1.5">
-        <button type="button" className="btn btn-sm btn-primary" disabled={busy} onClick={() => confirmNow()}>Xác nhận</button>
-        <button type="button" className="btn btn-sm" onClick={() => setMode('edit')}>Sửa</button>
-        <button type="button" className="btn btn-sm btn-ghost" onClick={() => setMode('replace')}>Thay</button>
-      </span>
-    );
-  }
-
-  if (mode === 'edit') {
-    return (
-      <div className="rounded-lg mt-2 p-2.5 space-y-2 w-full" style={{ background: 'var(--surface-1)' }}>
-        <textarea className="field w-full" rows={2} value={desc} onChange={(e) => setDesc(e.target.value)} />
-        <div className="flex items-baseline gap-1.5 text-[11px] text-slate-400">
-          <span aria-hidden>Dự kiến kết thúc</span>
-          <span className="w-[11.5rem]"><ONgay kieu="ngay" value={due} onChange={setDue} ariaLabel="Dự kiến kết thúc" /></span>
-        </div>
-        <label className="block">
-          <span className="block text-[11px] text-slate-400 mb-1">Lý do sửa (không bắt buộc)</span>
-          <input className="field w-full" maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} />
-        </label>
-        <div className="flex gap-1.5">
-          <button type="button" className="btn btn-sm" onClick={() => setMode(null)} disabled={busy}>Huỷ</button>
-          <button type="button" className="btn btn-sm btn-primary" disabled={busy}
-            onClick={() => confirmNow({ description: desc, followupDue: due || null, reason: reason.trim() || undefined })}>
-            Xác nhận
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="rounded-lg mt-2 p-2.5 space-y-2 w-full" style={{ background: 'var(--surface-1)' }}>
-      <select className="field" value={kind} onChange={(e) => setKind(e.target.value)}>
-        <optgroup label="Bạn tự làm được">
-          {catalogue.selfServe.map((k: string) => <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k as keyof typeof INTERVENTION_KIND_LABEL]}</option>)}
-        </optgroup>
-        <optgroup label="Cần Quản lý duyệt">
-          {catalogue.proposals.map((k: string) => <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k as keyof typeof INTERVENTION_KIND_LABEL]}</option>)}
-        </optgroup>
-      </select>
-      <OKhac hien={kind === 'other_proposal'} value={ghiRo} onChange={setGhiRo} nhan="Tên đề xuất" goiY="Ví dụ: Học kèm 1-1 với trợ giảng" loi={loiGhiRo} />
-      <textarea className="field w-full" rows={2} placeholder="Mô tả phương án mới" value={desc} onChange={(e) => setDesc(e.target.value)} />
-      <ChonNguoi nhom="giao_vien" value={nguoi} onChange={setNguoi} />
-      <div className="flex items-baseline gap-1.5 text-[11px] text-slate-400">
-        <span aria-hidden>Dự kiến kết thúc</span>
-        <span className="w-[11.5rem]"><ONgay kieu="ngay" value={due} onChange={setDue} ariaLabel="Dự kiến kết thúc" /></span>
-      </div>
-      {replaceMissing && <p className="text-xs text-amber-200/90 m-0">{replaceMissing}</p>}
-      <div className="flex gap-1.5">
-        <button type="button" className="btn btn-sm" onClick={() => setMode(null)} disabled={busy}>Huỷ</button>
-        <button type="button" className="btn btn-sm btn-primary" disabled={busy || !!replaceMissing || !!loiGhiRo} title={loiGhiRo ?? replaceMissing ?? undefined} onClick={replace}>Thay phương án</button>
-      </div>
-    </div>
+    <KhungPanel tieuDe="Xác nhận Case" {...chung} onDong={chung.onClose}
+      chan={{
+        conThieu: lf.conThieu(loi),
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>Xác nhận Case</button>,
+      }}>
+      <Khoi tieuDe="Nguyên nhân">
+        <Truong nhan="Kỹ năng" as="div">
+          <span className="field flex items-center text-slate-300" aria-readonly>{kyNang}</span>
+        </Truong>
+        <Truong nhan="Tên Case" batBuoc phu="Chỉ sửa được phần giữa. MT# và SOS do hệ thống gắn." loi={lf.loiCua(loi, 'ten')}>
+          <span className="flex items-center gap-1.5">
+            {tenSos?.mt ? <Chip>{`MT${tenSos.mt}`}</Chip> : null}
+            <input className="field min-w-0 flex-1" maxLength={80} {...lf.o(loi, 'ten')} value={giua} onChange={(e) => setGiua(e.target.value)} />
+            {tenSos?.sos ? <Chip sos={tenSos.sos}>{`SOS ${tenSos.sos}`}</Chip> : null}
+          </span>
+        </Truong>
+        <div>
+          <Truong nhan="Phân loại nguyên nhân" batBuoc loi={lf.loiCua(loi, 'nguyen-nhan')}>
+            <select className="field w-full" {...lf.o(loi, 'nguyen-nhan')} value={code}
+              title={causes.find((i) => i.code === code)?.hint} onChange={(e) => setCode(e.target.value)}>
+              <option value="">Chọn phân loại</option>
+              {causes.map((i) => <option key={i.code} value={i.code} title={i.hint}>{i.label}</option>)}
+            </select>
+          </Truong>
+          <OKhac hien={laKhac(code)} value={ghiRo} onChange={setGhiRo} goiY="Ví dụ: Chưa quen dạng bài mới"
+            id={lf.oId('ghi-ro')} onBlur={lf.roi('ghi-ro')} loi={lf.hien('ghi-ro') ? kiemGhiRoKhac(ghiRo) : null} />
+        </div>
+        <Truong nhan="Mức độ gấp" batBuoc as="div" loi={lf.loiCua(loi, 'muc-do')}>
+          <div className="grid grid-cols-2 gap-2" id={lf.oId('muc-do')} tabIndex={-1}>
+            {URGENCY_LEVELS.map((u) => (
+              <NutChon key={u} chon={urgency === u} className="justify-center" onClick={() => setUrgency(u)}>{URGENCY_LABEL[u]}</NutChon>
+            ))}
+          </div>
+        </Truong>
+        <Truong nhan="Mô tả" batBuoc phu="Sai ở đâu, bài hay buổi nào" loi={lf.loiCua(loi, 'mo-ta')} dem={{ co: moTa.trim().length, can: 15 }}>
+          <textarea className="field w-full" rows={3} {...lf.o(loi, 'mo-ta')} value={moTa} onChange={(e) => setMoTa(e.target.value)}
+            placeholder="Ví dụ: Sai nhiều câu True/False/Not Given ở passage 2" />
+        </Truong>
+        <Truong nhan="Bắt đầu theo dõi" as="div">
+          <span className="field flex items-center text-slate-300" aria-readonly>Hôm nay · {ngay(homNay)}</span>
+        </Truong>
+      </Khoi>
+      {paQuyChe.length > 0 && (
+        <Khoi tieuDe="Phương án theo quy chế SOS — bắt buộc"
+          luat="PA theo quy chế không thay, không kết thúc sớm. Sau khi xác nhận Case, bạn xác nhận PA để PA bắt đầu từ hôm đó.">
+          <ul className="m-0 list-none space-y-1 p-0 text-xs">
+            {paQuyChe.map((p) => (
+              <li key={p.id} className="flex flex-wrap items-baseline gap-x-1.5 text-slate-200">
+                <span className="font-semibold">{p.description || INTERVENTION_KIND_LABEL[p.kind as keyof typeof INTERVENTION_KIND_LABEL] || 'PA theo quy chế'}</span>
+                {p.performer && <span className="text-slate-500">· {p.performer}</span>}
+                {p.mocChu && <span className="text-slate-500">· {p.mocChu}</span>}
+              </li>
+            ))}
+          </ul>
+        </Khoi>
+      )}
+    </KhungPanel>
   );
 }
 
-/** `KHÔNG CẦN THEO DÕI` (S05, Q-V3-4) — ba lý do chọn nhanh tại chỗ; chỉ `Khác` cần ô chữ. */
-export function DismissCaseForm({ caseId, onClose, onDone }: { caseId: number; onClose: () => void; onDone?: () => void }) {
+/**
+ * XÁC NHẬN PA THEO QUY CHẾ (Q28-3, khuôn giống Thêm PA): Phân loại · Bắt đầu hôm nay · Kết thúc theo quy chế (chỉ đọc) · Người thực hiện
+ * (đổi được) · Mô tả * (≥ 15, điền sẵn mô tả máy). Không Tình trạng, không Ngày bắt đầu, không tệp đính kèm. Lưu → PA chạy từ hôm nay.
+ */
+export function XacNhanPaPanel({ pa, studentId, onXong, ...chung }: ChungPanel & {
+  pa: PaQuyChe; studentId?: number | null;
+  onXong: () => void;
+}) {
+  const toast = useToast();
+  const { homNay } = useNgayNghiepVu();
+  const [moTa, setMoTa] = useState(pa.description ?? '');
+  const [nguoi, setNguoi] = useState<NguoiChon | null>(
+    pa.performerUserId ? { kieu: 'tai_khoan', id: pa.performerUserId, ten: pa.performer ?? '' } : pa.performer ? { kieu: 'ngoai', ten: pa.performer } : { kieu: 'toi' },
+  );
+  const [busy, setBusy] = useState(false);
+  const lf = useLoiForm();
+  const loaiPa = INTERVENTION_KIND_LABEL[pa.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? 'PA theo quy chế';
+  const loi = dsLoi([{ khoa: 'mo-ta', nhan: 'Mô tả', toiThieu: 15 }], { 'mo-ta': moTa });
+
+  const luu = async () => {
+    lf.bam();
+    if (loi.length > 0) return;
+    setBusy(true);
+    try {
+      await api.post(`/interventions/${pa.id}/xac-nhan-pa`, { description: moTa.trim(), ...nguoiThanhPayload(nguoi) });
+      invalidateCases();
+      toast.push('ok', 'Đã xác nhận PA — PA bắt đầu từ hôm nay');
+      onXong();
+    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+  };
+
+  return (
+    <KhungPanel tieuDe="Xác nhận PA theo quy chế" {...chung} onDong={chung.onClose}
+      chan={{
+        conThieu: lf.conThieu(loi),
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>Xác nhận PA</button>,
+      }}>
+      <Khoi tieuDe="Phương án">
+        <p className="m-0 text-xs text-slate-300">
+          Phân loại: <b className="text-slate-100">{loaiPa}</b> · Bắt đầu: hôm nay ({ngay(homNay)})
+          {pa.mocChu ? <> · Kết thúc theo quy chế: <b className="text-slate-100">{pa.mocChu}</b></> : null}
+        </p>
+        <Truong nhan="Người thực hiện" as="div">
+          <ChonNguoi nhom="giao_vien" studentId={studentId} value={nguoi} onChange={setNguoi} />
+        </Truong>
+        <Truong nhan="Mô tả" batBuoc loi={lf.loiCua(loi, 'mo-ta')} dem={{ co: moTa.trim().length, can: 15 }}>
+          <textarea className="field w-full" rows={3} {...lf.o(loi, 'mo-ta')} value={moTa} onChange={(e) => setMoTa(e.target.value)}
+            placeholder={GOI_Y_MO_TA_PA} />
+        </Truong>
+      </Khoi>
+    </KhungPanel>
+  );
+}
+
+/**
+ * `KHÔNG CẦN THEO DÕI…` (S4-5, YC-12.4) — lý do chọn nhanh (Khác cần ghi rõ) rồi GỬI QUẢN LÝ DUYỆT. Case chưa đóng: hàng Case thành
+ * "Chờ Quản lý duyệt · không theo dõi"; kết quả xem ở Yêu cầu của tôi.
+ */
+export function KhongTheoDoiForm({ caseId, onClose, onDone }: { caseId: number; onClose: () => void; onDone?: () => void }) {
   const toast = useToast();
   const [reason, setReason] = useState('');
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
+  const [daBam, setDaBam] = useState(false);
 
-  /* K2-3: ràng buộc nói TRƯỚC khi bấm — nút mờ + câu thiếu gì, không báo lỗi đỏ sau khi bấm. */
   const loiGhiRo = reasonNeedsText(reason) ? kiemGhiRoKhac(text) : null;
-  const missing = !reason ? 'Chọn một lý do.' : null;
+  const thieu = !reason ? 'Chọn một lý do.' : null;
 
-  const save = async () => {
-    if (missing || loiGhiRo) return;
+  const gui = async () => {
+    setDaBam(true);
+    if (thieu || loiGhiRo) return;
     setBusy(true);
     try {
       await api.post(`/cases/${caseId}/dismiss`, { reasonCode: reason, reasonText: reasonNeedsText(reason) ? text.trim() : undefined });
       invalidateCases();
-      toast.push('ok', 'Case đã đóng — Không cần theo dõi');
+      toast.push('ok', 'Đã gửi Quản lý duyệt — xem ở Yêu cầu của tôi');
       onClose(); onDone?.();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 
   return (
-    <div className="rounded-lg mt-2 p-2.5 space-y-2" style={{ background: 'var(--surface-1)' }}>
+    <div className="space-y-2 rounded-lg p-2.5" style={{ background: 'var(--surface-1)' }} role="group" aria-label="Không cần theo dõi">
+      <p className="m-0 text-xs text-slate-300">Không cần theo dõi Case này vì:</p>
       <div className="flex flex-wrap gap-1.5">
         {CASE_DISMISS_REASONS.map((r) => (
           <NutChon key={r} nho chon={reason === r} onClick={() => setReason(r)}>
@@ -206,11 +237,12 @@ export function DismissCaseForm({ caseId, onClose, onDone }: { caseId: number; o
           </NutChon>
         ))}
       </div>
-      <OKhac hien={reasonNeedsText(reason)} value={text} onChange={setText} goiY="Ví dụ: Em nghỉ ốm cả tuần thi" loi={loiGhiRo} />
-      {missing && <p className="text-xs text-amber-200/90 m-0">{missing}</p>}
+      <OKhac hien={reasonNeedsText(reason)} value={text} onChange={setText} goiY="Ví dụ: Em nghỉ ốm cả tuần thi" loi={daBam ? loiGhiRo : null} />
+      {daBam && thieu && <p className="m-0 text-xs text-bad" role="alert">{thieu}</p>}
+      <p className="m-0 text-[11px] text-slate-500">Gửi Quản lý duyệt · trả lời trong 5 ngày · xem ở Yêu cầu của tôi</p>
       <div className="flex gap-1.5">
         <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>Huỷ</button>
-        <button type="button" className="btn btn-sm btn-danger" disabled={busy || !!missing || !!loiGhiRo} title={missing ?? loiGhiRo ?? undefined} onClick={save}>Không cần theo dõi</button>
+        <button type="button" className="btn btn-sm btn-primary" disabled={busy} onClick={gui}>Gửi Quản lý duyệt</button>
       </div>
     </div>
   );

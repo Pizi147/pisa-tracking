@@ -114,9 +114,9 @@ export function buildDuyetDemo(ctx: BuildCtx): { the: number } {
     setStudentStatus(admin, st.id, 'finished', DEMO_DATE, 'Gia đình chuyển em sang cơ sở khác');
   }
 
-  // (f) Báo lên: Case chờ xác định nguyên nhân (bộ SOS v3 — Đỗ Minh Khôi) quá hạn 2 ngày
+  // (f) Báo lên: Case chờ xác nhận nguyên nhân (bộ SOS v3 — Đỗ Minh Khôi) quá hạn 2 ngày. PR-SOS: hạn ở `sos_cases.han_xac_nhan`.
   conn.prepare(
-    `UPDATE case_signals SET verify_due = ? WHERE status = 'linked' AND case_id IN (
+    `UPDATE sos_cases SET han_xac_nhan = ? WHERE id IN (
        SELECT sc.id FROM sos_cases sc JOIN students s ON s.id = sc.student_id
         WHERE s.full_name = 'Đỗ Minh Khôi' AND sc.status != 'done'
           AND NOT EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary'))`,

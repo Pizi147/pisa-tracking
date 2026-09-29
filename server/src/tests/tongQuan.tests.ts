@@ -103,8 +103,8 @@ export async function runTongQuanTests(t: YThucTestKit) {
     eq(d.CAN_XU_LY.map((x: any) => x.metricId), [
       'tin-hieu-qua-han', 'case-chua-co-nguoi-phu-trach',
       'hv-can-ho-tro-2-lan-chua-case', 'hv-bo-qua-van-can-ho-tro',
-      'case-thieu-pa', 'pa-can-cap-nhat', 'bai-qua-han-nhap-diem', 'hv-can-xu-ly',
-    ], 'Thứ tự (PR-UX4 chèn hai dòng "bỏ quên" sau Case chưa có người phụ trách)');
+      'case-thieu-pa', 'pa-can-cap-nhat', 'bai-qua-han-nhap-diem',
+    ], 'Thứ tự (PR-UX4 chèn hai dòng "bỏ quên"; PR-YT4 bỏ "vi phạm quá 5 ngày" — thành thẻ Báo lên)');
     eq(d.CAN_XU_LY.filter((x: any) => x.denLoc).map((x: any) => [x.metricId, x.denLoc, x.nut, x.mau]), [
       ['hv-can-ho-tro-2-lan-chua-case', 'can-ho-tro-2-lan', 'Xem', 'vang'],
       ['hv-bo-qua-van-can-ho-tro', 'bo-qua-van-can-ho-tro', 'Xem', 'vang'],
@@ -116,7 +116,7 @@ export async function runTongQuanTests(t: YThucTestKit) {
     eq(co[0].nhan, 'tín hiệu cần xác minh quá hạn', 'Chữ g11-041 + g8-070');
     eq(co[1].nut, 'Xem', 'Nút');
     const all = Object.fromEntries(d.CAN_XU_LY.map((x: any) => [x.metricId, 5]));
-    assert(d.sapCanXuLy(all, true).length === d.CAN_XU_LY.length && d.CAN_XU_LY.length === 8 && d.CAN_XU_LY_TOI_DA === 10, 'Đủ 8 dòng, trần 10');
+    assert(d.sapCanXuLy(all, true).length === d.CAN_XU_LY.length && d.CAN_XU_LY.length === 7 && d.CAN_XU_LY_TOI_DA === 10, 'Đủ 7 dòng, trần 10');
     eq(d.sapCanXuLy({ 'hv-bo-qua-van-can-ho-tro': 2 }, false)[0].denLoc, 'bo-qua-van-can-ho-tro', 'denLoc đi kèm dòng');
     assert(!('denLoc' in d.sapCanXuLy({ 'case-thieu-pa': 1 }, false)[0]), 'Dòng thường không có denLoc');
   });
@@ -214,10 +214,10 @@ export async function runTongQuanTests(t: YThucTestKit) {
     assert(ids('case-chua-co-nguoi-phu-trach').every((x) => mo.includes(x)), 'Phải là tập con của Case đang mở');
   });
 
-  check('PR-Pa · Chỉ số case-xac-dinh-nguyen-nhan-qua-han = Case chờ xác định nguyên nhân mà hạn 3 ngày của tín hiệu nối đã qua', () => {
+  check('PR-Pa · Chỉ số case-xac-dinh-nguyen-nhan-qua-han = Case chờ xác nhận nguyên nhân mà hạn xác nhận (PR-SOS: sos_cases.han_xac_nhan) đã qua', () => {
     const cho = ids('case-cho-xac-dinh-nguyen-nhan');
     const quaHan = cho.filter((id) => {
-      const r = conn.prepare(`SELECT MIN(verify_due) AS due FROM case_signals WHERE case_id = ? AND status = 'linked'`).get(id) as any;
+      const r = conn.prepare(`SELECT han_xac_nhan AS due FROM sos_cases WHERE id = ?`).get(id) as any;
       return r?.due && r.due < TODAY;
     }).sort((a, b) => a - b);
     eq(ids('case-xac-dinh-nguyen-nhan-qua-han'), quaHan, 'Lệch tập');

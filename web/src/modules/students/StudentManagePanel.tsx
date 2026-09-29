@@ -79,6 +79,15 @@ function TrangThaiPanel({ studentId, studentName, lop, onClose, onDone, status }
   const [busy, setBusy] = useState(false);
   const canDoLuon = status === 'active';
   const tieuDe = status === 'active' ? NHAN_VIEC['quay-lai'] : status === 'inactive' ? NHAN_VIEC['tam-dung'] : NHAN_VIEC['ket-thuc'];
+  /* PR-SOS (K3-41): hệ quả Tạm dừng / Quay lại với Case — đếm từ bảng kỹ năng (cùng đường hồ sơ đã nạp). */
+  const bang = useApi<{ rows: { cases: { status: string; trangThaiV4?: { k: string }; plans: { status: string }[] }[] }[] }>(
+    status !== 'finished' ? `/students/${studentId}/skill-board` : null);
+  const caseMo = (bang.data?.rows ?? []).flatMap((r) => r.cases).filter((c) => c.status !== 'done');
+  const soCho = caseMo.filter((c) => c.trangThaiV4?.k === 'cho-nguyen-nhan' || c.trangThaiV4?.k === 'cho-xac-nhan-pa').length;
+  const soPa = caseMo.flatMap((c) => c.plans).filter((pl) => pl.status === 'started').length;
+  const heQuaCase = soCho + soPa > 0
+    ? `${soCho} Case chờ xác nhận · ${soPa} PA đang chạy — ${status === 'inactive' ? 'tạm dừng hạn; Quay lại thì hạn tính lại từ ngày quay lại' : 'hạn tính lại từ ngày quay lại'}.`
+    : null;
   const loi = dsLoi(canDoLuon ? [] : [{ khoa: 'ly-do', nhan: 'Lý do', toiThieu: 1 }], { 'ly-do': lyDo });
 
   const luu = async () => {
@@ -101,7 +110,8 @@ function TrangThaiPanel({ studentId, studentName, lop, onClose, onDone, status }
       }}>
       <Khoi tieuDe={tieuDe}
         luat={status === 'finished' ? 'Case còn mở sẽ được hệ thống đóng “Học viên kết thúc khoá”. Hồ sơ vào khu Lưu trữ (chỉ xem).'
-          : status === 'inactive' ? 'Em nghỉ một thời gian, giữ lớp và lộ trình để quay lại sau.' : undefined}>
+          : status === 'inactive' ? ['Em nghỉ một thời gian, giữ lớp và lộ trình để quay lại sau.', heQuaCase].filter(Boolean).join(' ')
+          : heQuaCase ?? undefined}>
         {!canDoLuon && (
           <Truong nhan="Lý do" batBuoc loi={lf.loiCua(loi, 'ly-do')}>
             <input className="field w-full" {...lf.o(loi, 'ly-do')} value={lyDo} onChange={(e) => setLyDo(e.target.value)} />

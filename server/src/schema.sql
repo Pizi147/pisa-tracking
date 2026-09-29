@@ -890,7 +890,9 @@ CREATE TABLE sos_cases (
    * `outcome` vì việc đóng không phải kết quả hỗ trợ; PA đã xong trước đó vẫn tính hiệu quả. Nhãn: `SYSTEM_CLOSE_REASON_LABEL`.
    * Chú thích này cố ý KHÔNG có dấu phẩy: SQLite `DROP COLUMN` cột cuối bảng cắt ngược tới dấu phẩy gần nhất.
    */
-  system_close_reason TEXT
+  system_close_reason TEXT,
+  /* PR-SOS (K5-06 · Q28-3): hạn Xác nhận nguyên nhân + Xác nhận PA — 3 ngày tính cả ngày đầu (hanXacNhan). Case tay NULL. Không dấu phẩy (DROP COLUMN) */
+  han_xac_nhan TEXT
 );
 /*
  * MỘT HỌC VIÊN × MỘT HẠNG MỤC = MỘT CASE.
@@ -1067,7 +1069,9 @@ CREATE TABLE case_interventions (
 
   migration_key TEXT UNIQUE,
   created_at TEXT NOT NULL,
-  updated_at TEXT
+  updated_at TEXT,
+  /* PR-SOS (Q2): loại mốc của PA theo quy chế — one_month | until_next_mt | until_exam · NULL với PA thường */
+  moc_quy_che TEXT
 );
 -- Việc đang chờ duyệt là thứ Quản lý phải tìm nhanh, nên có chỉ số riêng.
 CREATE INDEX idx_intervention_approval ON case_interventions(approval_state)
@@ -1610,7 +1614,11 @@ CREATE TABLE violations (
 
   idempotency_key TEXT UNIQUE,        -- bấm hai lần hoặc thử lại sau lỗi mạng không tạo hai dòng
   created_at TEXT NOT NULL,
-  updated_at TEXT
+  updated_at TEXT,
+  -- PR-YT4 (§5.4, V4-1): GVCN bấm "Ghi nhận" = đã xem, không cần xử lý. Vi phạm do chính GVCN lớp đang học ghi → tự Ghi nhận (Q5).
+  -- Trạng thái (Mới · Đã ghi nhận · Cần xử lý · Quá hạn · Chờ QL duyệt · Đã xử lý) vẫn SUY RA — trangThaiViPham(), không lưu.
+  ghi_nhan_luc TEXT,
+  ghi_nhan_boi INTEGER REFERENCES users(id)
 );
 CREATE INDEX idx_violation_student ON violations(student_id, occurred_on);
 CREATE INDEX idx_violation_class ON violations(class_id, occurred_on);
@@ -1622,17 +1630,17 @@ CREATE TABLE discipline_measures (
   cycle_id INTEGER REFERENCES learning_cycles(id),
   class_id INTEGER REFERENCES classes(id),
 
-  -- CHÍN LOẠI, xếp nhẹ đến nặng để BÀY RA. Thứ tự KHÔNG phải workflow bắt buộc (nguồn mục 20).
-  --   talk_short | meeting_student | family_report | warning_1 |
-  --   meeting_cx | warning_2 | suspension | warning_3 | other
+  -- PR-YT4 (V4-8, V4-9): THANG report_1 | report_2 | wl_1 | report_4_meeting | wl_2 | wl_3 (bậc = vị trí + 1, không lưu cột bậc)
+  --   · NGOÀI THANG (cần QL, không đẩy bậc) meeting_cx | suspension | other. Loại lạ của dữ liệu cũ hiện "Xử lý (loại cũ)".
   kind TEXT NOT NULL,
   -- Chỉ dùng khi kind = 'other': tên biện pháp do GVCN tự đặt. Bắt buộc lúc đó.
   custom_name TEXT,
 
-  -- HAI TRẠNG THÁI, KHÔNG BA.
-  --   preparing : còn sửa được — thêm hoặc bớt vi phạm, sửa ghi chú, đổi loại
-  --   done      : đã thực hiện — chốt snapshot, không sửa danh sách vi phạm nữa
-  -- KHÔNG có 'pending_approval': Y01 chốt GVCN tự làm hết, không có cửa duyệt.
+  -- PR-YT4 (V4-7, V4-10) — một lần xử lý:
+  --   done      : đã xong (GVCN Xác nhận xử lý một bước, hoặc QL duyệt rồi GVCN bấm "Đã thực hiện")
+  --   nhap      : đề xuất đang soạn để tải bằng chứng (nội bộ, không bao giờ hiện, không vào trạng thái)
+  --   cho_duyet : đang chờ QL (thẻ `y_thuc` trong yeu_cau_duyet) · da_duyet : QL đã duyệt, chờ "Đã thực hiện" · tu_choi
+  -- Mặc định cũ 'preparing' giữ để không dựng lại bảng; mã v4 luôn ghi trạng thái tường minh.
   status TEXT NOT NULL DEFAULT 'preparing',
 
   owner_user_id INTEGER REFERENCES users(id),   -- người phụ trách, mặc định GVCN của lớp
@@ -1655,7 +1663,9 @@ CREATE TABLE discipline_measures (
   idempotency_key TEXT UNIQUE,
   created_at TEXT NOT NULL,
   created_by INTEGER NOT NULL REFERENCES users(id),
-  updated_at TEXT
+  updated_at TEXT,
+  -- PR-YT4: ngày QL duyệt / từ chối (ngày nghiệp vụ). Hạn "Đã thực hiện" = ngày này + 4; từ chối → vi phạm Cần xử lý từ ngày này.
+  quyet_luc TEXT
 );
 CREATE INDEX idx_measure_student ON discipline_measures(student_id, status);
 CREATE INDEX idx_measure_class ON discipline_measures(class_id, status);
@@ -1744,3 +1754,18 @@ CREATE INDEX ix_ycd_doi_tuong ON yeu_cau_duyet (doi_tuong_loai, doi_tuong_id);
 CREATE UNIQUE INDEX ux_ycd_dang_cho ON yeu_cau_duyet (loai, doi_tuong_loai, doi_tuong_id) WHERE trang_thai = 'cho';
 -- quét quá hạn duyệt tra "đã báo chưa" theo dedup_key (không theo người nhận)
 CREATE INDEX ix_notifications_dedup ON notifications (dedup_key);
+
+/*
+ * KHAI BẬC Ý THỨC TRƯỚC KHI DÙNG WEB (PR-YT4, H5, T27): "em đã bị xử lý tới bậc n" — một dòng mỗi (em, chuỗi thang). Bậc hiện tại =
+ * max(bậc các lần xử lý xong trong chuỗi, bậc khai). `chuoi_cycle_id` = lộ trình ĐẦU của chuỗi (chuoiThang). GVCN khai; chỉ QL sửa,
+ * và chỉ khi chuỗi chưa có lần xử lý nào.
+ */
+CREATE TABLE y_thuc_khai_bac (
+  id INTEGER PRIMARY KEY,
+  student_id INTEGER NOT NULL REFERENCES students(id),
+  chuoi_cycle_id INTEGER NOT NULL REFERENCES learning_cycles(id),
+  bac INTEGER NOT NULL, thang TEXT, ghi_chu TEXT NOT NULL,
+  khai_boi INTEGER REFERENCES users(id), khai_luc TEXT NOT NULL,
+  sua_boi INTEGER REFERENCES users(id), sua_luc TEXT,
+  UNIQUE (student_id, chuoi_cycle_id)
+);

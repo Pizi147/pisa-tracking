@@ -1,5 +1,5 @@
 import { db } from '../db.ts';
-import { MEASURE_KIND_LABEL, PERMISSIONS, VIOLATION_CATEGORY_LABEL, metricById, type ChiSo, type ChuongTrinh, type LoaiBoQuen } from '../../../shared/domain/index.ts';
+import { nhanLoaiXuLy, PERMISSIONS, VIOLATION_CATEGORY_LABEL, metricById, type ChiSo, type ChuongTrinh, type LoaiBoQuen } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, forbidden, HttpError, notFound } from '../util.ts';
@@ -143,7 +143,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
         `SELECT m.id, m.student_id, m.kind, m.custom_name, m.status, m.performed_on, s.full_name, s.student_code
            FROM discipline_measures m JOIN students s ON s.id = m.student_id WHERE m.id IN (${ph})`,
       ).all(...chunk) as any[]) {
-        const name = r.kind === 'other' && r.custom_name ? r.custom_name : MEASURE_KIND_LABEL[r.kind as keyof typeof MEASURE_KIND_LABEL] ?? r.kind;
+        const name = nhanLoaiXuLy(r.kind, r.custom_name);
         const state = r.status === 'done' ? `đã thực hiện ${String(r.performed_on ?? '').slice(8, 10)}/${String(r.performed_on ?? '').slice(5, 7)}` : 'đang chuẩn bị';
         byId.set(r.id, { id: r.id, title: name, sub: [r.full_name, r.student_code, state].filter(Boolean).join(' · '), href: `/hoc-vien/${r.student_id}` });
       }
@@ -372,14 +372,13 @@ export function metricSet(
   };
 }
 
-/** Case chờ xác định nguyên nhân mà hạn 3 ngày của tín hiệu đã nối (sớm nhất) đã qua — cùng hạn `mywork.ts` dùng cho dòng `cause`. */
+/** Case chờ xác nhận nguyên nhân mà hạn xác nhận (`sos_cases.han_xac_nhan`) đã qua — cùng hạn `mywork.ts` dùng cho dòng `cause`. */
 function causeOverdue(caseIds: number[], today: string): number[] {
   const out: number[] = [];
   for (let i = 0; i < caseIds.length; i += 400) {
     const chunk = caseIds.slice(i, i + 400);
     out.push(...(db().prepare(
-      `SELECT case_id AS id FROM case_signals WHERE status = 'linked' AND case_id IN (${chunk.map(() => '?').join(',')})
-        GROUP BY case_id HAVING MIN(verify_due) < ? ORDER BY case_id`,
+      `SELECT id FROM sos_cases WHERE id IN (${chunk.map(() => '?').join(',')}) AND han_xac_nhan < ? ORDER BY id`,
     ).all(...chunk, today) as any[]).map((r) => r.id as number));
   }
   return out;
@@ -488,7 +487,7 @@ function metricSetGoc(
     case 'case-chua-co-nguoi-phu-trach':
       return done(openCases().filter((c: any) => !c.ownerUserId).map((c: any) => c.id as number));
     case 'case-cho-xac-dinh-nguyen-nhan':
-      /* Case TỪ SOS (rulebook v3) đang mở mà chưa có nguyên nhân HOẶC còn phương án điền sẵn chưa xác nhận — cùng định nghĩa với `caseDetail().sos`. */
+      /* Case TỪ SOS đang mở mà chưa có nguyên nhân, không có thẻ Không cần theo dõi đang chờ (K5-51) — cùng định nghĩa với `caseDetail().sos`. */
       return done(awaitingCauseCaseIds(openCases().map((c: any) => c.id as number)));
     case 'pa-can-cap-nhat':
       return done(overdueUpdatePlans(openCases().map((c: any) => c.id as number), today));

@@ -86,6 +86,8 @@ export type ThongBaoRow = {
  * chữ giống tên. Tra không ra (loại lạ, thiếu học viên) → `null`, chuông không điều hướng chứ không đoán.
  */
 export function duongThongBao(n: ThongBaoRow): string | null {
+  /* Thông báo mang đường riêng (Nhắc; PR-YT4: Ý thức trỏ tab Ý thức của em `?mo=xu-ly`) — đường đó thắng. */
+  if (n.duong) return n.duong;
   switch (n.entity_type) {
     case 'sos_case':
       return n.student_id != null ? duongHoSoHocVien(n.student_id, { caseId: n.entity_id }) : null;

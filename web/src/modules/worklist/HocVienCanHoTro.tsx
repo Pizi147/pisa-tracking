@@ -5,7 +5,7 @@ import { Card, Level, Skeleton, ErrorState } from '../../ui/ui.tsx';
 import { toneTheoNhan } from '../../lib/format.ts';
 
 /** HỌC VIÊN CẦN HỖ TRỢ — Tổng quan giáo viên (§3.2, mockup 02 bản GV). Số trong tiêu đề = số dòng của chính khối này. */
-type Dong = { studentId: number; ten: string; lop: string | null; huyHieu: { text: string; tone: 'info' | 'warn' | 'danger' } | null; phu: string };
+type Dong = { studentId: number; ten: string; lop: string | null; huyHieu: { text: string; tone: 'info' | 'warn' | 'danger' | 'late' } | null; phu: string };
 const HIEN = 8;
 /** G-7: nhãn ngắn có tooltip. Chữ nhãn do máy chủ tạo (tongQuan.ts): "SOS n[ · tạm thời]" hoặc "Ý thức". */
 const giaiThichNhan = (text: string) => text === 'Ý thức'

@@ -6,7 +6,7 @@ import { ConfirmDialog } from '../../ui/Drawer.tsx';
 
 /**
  * XOÁ VI PHẠM — hộp xác nhận MỘT DÒNG (rulebook v3, V11′–V14′): không lý do, không gõ chữ.
- * `Xoá vi phạm này? Nó sẽ bị gỡ khỏi {n} biện pháp.`
+ * PR-YT4 (V4-12): vi phạm nằm trong lần xử lý đã xong thì lần xử lý vẫn giữ, bậc không lùi.
  */
 export function DeleteViolationConfirm({ violationId, onClose, onDone }: {
   violationId: number | null; onClose: () => void; onDone?: () => void;
@@ -30,6 +30,6 @@ export function DeleteViolationConfirm({ violationId, onClose, onDone }: {
   return (
     <ConfirmDialog open={violationId !== null} onClose={onClose} onConfirm={confirm} busy={busy} danger
       title="Xoá vi phạm này?"
-      body={n > 0 ? `Nó sẽ bị gỡ khỏi ${n} phương án.` : 'Vi phạm này chưa nằm trong phương án nào.'} />
+      body={n > 0 ? `Vi phạm nằm trong ${n} lần xử lý — lần xử lý vẫn giữ, bậc không lùi.` : 'Vi phạm chưa nằm trong lần xử lý nào.'} />
   );
 }

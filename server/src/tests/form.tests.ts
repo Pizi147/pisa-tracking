@@ -270,9 +270,9 @@ export async function runFormTests(t: YThucTestKit) {
         title: 'Nhập bù thử người thực hiện', summary: 'Case nhập bù dùng cho phép kiểm PR-Form.',
         fromDate: '2026-08-01', toDate: '2026-08-10',
         actions: [
-          { description: 'Buổi 1 — GV bộ môn kèm riêng', performerUserId: P.w1Teacher.userId, fromDate: '2026-08-01', toDate: '2026-08-03' },
-          { description: 'Buổi 2 — chính tôi kèm', performerSelf: true, fromDate: '2026-08-04', toDate: '2026-08-06' },
-          { description: 'Buổi 3 — tutor ngoài', performerName: 'Tutor ngoài Lan', fromDate: '2026-08-07', toDate: '2026-08-10' },
+          { ketQua: 'partial', description: 'Buổi 1 — GV bộ môn kèm riêng', performerUserId: P.w1Teacher.userId, fromDate: '2026-08-01', toDate: '2026-08-03' },
+          { ketQua: 'partial', description: 'Buổi 2 — chính tôi kèm', performerSelf: true, fromDate: '2026-08-04', toDate: '2026-08-06' },
+          { ketQua: 'partial', description: 'Buổi 3 — tutor ngoài', performerName: 'Tutor ngoài Lan', fromDate: '2026-08-07', toDate: '2026-08-10' },
         ],
         outcome: 'improved', note: 'Ba buổi hỗ trợ khác người, ghi lại đủ ba dòng.',
       }) as any;
@@ -287,7 +287,7 @@ export async function runFormTests(t: YThucTestKit) {
           studentId: makeFtStudent(`F3-BF-${++soThuTu}`), topic: 'listening', primaryCode: domain.issuesForTopic('listening')[0].code,
           title: 'Nhập bù thiếu người', summary: 'Một dòng không ghi ai làm.',
           fromDate: '2026-08-01', toDate: '2026-08-05',
-          actions: [{ description: 'Buổi không ai nhận làm', fromDate: '2026-08-01', toDate: '2026-08-05' }],
+          actions: [{ ketQua: 'improved', description: 'Buổi không ai nhận làm', fromDate: '2026-08-01', toDate: '2026-08-05' }],
           outcome: 'improved', note: 'Phải bị từ chối vì thiếu người thực hiện.',
         }),
         /Cần ghi ai là người thực hiện/,
@@ -295,7 +295,7 @@ export async function runFormTests(t: YThucTestKit) {
       );
     });
 
-    check('PR-Form · Nợ S2: Điều chỉnh chỉ đổi mô tả trên PA followup_due NULL → nhận planEndDefault, lịch sử NULL → ngày đó', () => {
+    check('PR-Form · Nợ S2 → PR-SOS (Q28-4): Điều chỉnh chỉ đổi mô tả trên PA followup_due NULL → GIỮ NULL (không còn ngày mặc định), lịch sử NULL → NULL', () => {
       const { caseId } = taoCase();
       const d = cases.recordIntervention(P.lrTeacher, caseId, {
         kind: 'self_study', description: 'Tự học Listening mỗi ngày', performerSelf: true,
@@ -305,7 +305,7 @@ export async function runFormTests(t: YThucTestKit) {
       conn.prepare(`UPDATE case_interventions SET followup_due = NULL WHERE id = ?`).run(iv.id);
       assert(ivRow(iv.id).followup_due === null, 'phải đặt NULL được bằng SQL trực tiếp trước khi thử');
 
-      const expected = domain.planEndDefault(TODAY);
+      const expected = null;
       cases.updateResult(P.lrTeacher, iv.id, {
         decision: 'adjust', decisionNote: 'Đổi cách diễn đạt mô tả, không đổi gì khác',
         outcome: 'partial', note: 'Đang có tiến bộ, tiếp tục theo dõi thêm.',
@@ -373,7 +373,7 @@ export async function runFormTests(t: YThucTestKit) {
 
   {
     const cases: any = await import('../cases/cases.ts');
-    const measSvc: any = await import('../yThuc/measures.ts');
+    const xuLySvc: any = await import('../yThuc/xuLy.ts');
     const violSvc: any = await import('../yThuc/violations.ts');
     const week: any = await import('../platform/week.ts');
     const skillSchedule: any = await import('../fasttrack/skillSchedule.ts');
@@ -434,7 +434,7 @@ export async function runFormTests(t: YThucTestKit) {
         studentId: fou.sid, topic: 'writing', primaryCode: domain.issuesForTopic('writing', 'FOU')[0].code,
         title: 'Nhập bù Writing lớp thường (S5)', summary: 'Nhập bù case Writing với điểm chi tiết theo kỹ năng.',
         fromDate: '2026-08-01', toDate: '2026-08-10',
-        actions: [{ description: 'Ôn luyện tổ chức ý bài viết', performerSelf: true, fromDate: '2026-08-01', toDate: '2026-08-10' }],
+        actions: [{ ketQua: 'improved', description: 'Ôn luyện tổ chức ý bài viết', performerSelf: true, fromDate: '2026-08-01', toDate: '2026-08-10' }],
         outcome: 'improved', note: 'Bài viết đã mạch lạc hơn rõ rệt sau đợt ôn.',
         metrics: [{ skill: 'writing', score: 12, total: 20 }],
       }) as any;
@@ -469,29 +469,25 @@ export async function runFormTests(t: YThucTestKit) {
       assert(kinds.includes('progress') && kinds.includes('final'), `points phải mang attemptKind: ${JSON.stringify(kinds)}`);
     });
 
-    check('PR-Form · K2-6d: confirmMeasure không người → performed_by = người xác nhận; performedBy tài khoản khoá → 400', () => {
+    check('PR-Form · K2-6d (PR-YT4): Xác nhận xử lý không người → performed_by = người xác nhận; người thực hiện là tài khoản khoá → 400', () => {
       const fou = taoHocVien('MB FOU 12');
-      const v = violSvc.recordViolation(P.normalCoreTeacher, {
+      const ghi = (k: string) => (violSvc.recordViolation(P.normalCoreTeacher, {
         studentId: fou.sid, category: 'homework', description: 'Không nộp bài tập về nhà buổi này',
-        idempotencyKey: `pr-form-t4-viol-${soThuTu}`,
+        idempotencyKey: `pr-form-t4-viol-${k}-${soThuTu}`,
+      }) as any).violation.id as number;
+      const done = xuLySvc.xacNhanXuLy(P.normalCoreTeacher, fou.sid, {
+        violationIds: [ghi('a')], performedOn: TODAY, note: 'Đã trao đổi ngắn với em cuối buổi.',
       }) as any;
-      const m = measSvc.createMeasure(P.normalCoreTeacher, {
-        studentId: fou.sid, kind: 'talk_short', violationIds: [v.violation.id],
-      }) as any;
-      const done = measSvc.confirmMeasure(P.normalCoreTeacher, m.id, {
-        performedOn: TODAY, note: 'Đã trao đổi ngắn với em cuối buổi.',
-      }) as any;
-      assert(done.performedBy === P.normalCoreTeacher.userId, `K2-6d: performed_by phải là người xác nhận: ${done.performedBy}`);
+      const by = (conn.prepare('SELECT performed_by FROM discipline_measures WHERE id = ?').get(done.id) as any).performed_by;
+      assert(by === P.normalCoreTeacher.userId, `K2-6d: performed_by phải là người xác nhận: ${by}`);
 
-      const m2 = measSvc.createMeasure(P.normalCoreTeacher, {
-        studentId: fou.sid, kind: 'talk_short', violationIds: [v.violation.id],
-      }) as any;
+      const v2 = ghi('b');
       const lockedId = P.w2Teacher.userId;
       try {
         conn.prepare(`UPDATE users SET status = 'inactive' WHERE id = ?`).run(lockedId);
         assertThrows(
-          () => measSvc.confirmMeasure(P.normalCoreTeacher, m2.id, {
-            performedOn: TODAY, performedBy: lockedId, note: 'Đã trao đổi ngắn với em cuối buổi.',
+          () => xuLySvc.xacNhanXuLy(P.normalCoreTeacher, fou.sid, {
+            violationIds: [v2], performedOn: TODAY, performerUserId: lockedId, note: 'Đã trao đổi ngắn với em cuối buổi.',
           }),
           /nhân viên đang làm việc/,
           'performedBy khoá phải 400',

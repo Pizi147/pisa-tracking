@@ -1,6 +1,6 @@
 import { db } from '../db.ts';
 import {
-  CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS, caseCategoriesFor, caseTitle, tenMon, tenMonNgan, type CaseCategory,
+  CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS, caseCategoriesFor, caseTitle, tenCaseSos, tenMon, tenMonNgan, type CaseCategory,
   type AssessedSkill, type DiemMoc, type DotRef,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -9,6 +9,7 @@ import { cyclesOf } from '../fasttrack/cycles.ts';
 import { isRatioCycle, programmeByCode, programmeCodeOfCycle, programmeOfClass } from '../normal/regular.ts';
 import { typedResult } from './profile.ts';
 import { addDays } from '../util.ts';
+import { CO_THE_KHONG_THEO_DOI, awaitingCauseCaseIds } from '../cases/sosState.ts';
 
 /**
  * MÁY CHỦ CỦA TAB HÀNH TRÌNH (PR-Qb, spec §3.8, plan Task 2) — trả dữ liệu THÔ theo giai đoạn; mọi
@@ -140,7 +141,8 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
   // -------------------------------------------------------------- (4) case
   const caseRows = conn
     .prepare(
-      `SELECT sc.*, a.attempt_no AS attempt_no, a.kind AS attempt_kind
+      /* PR-SOS (K3-29): cờ "chờ nguyên nhân" (một định nghĩa — `awaitingCauseCaseIds` dưới) + thẻ Không cần theo dõi đang chờ. */
+      `SELECT sc.*, a.attempt_no AS attempt_no, a.kind AS attempt_kind, ${CO_THE_KHONG_THEO_DOI('sc')} AS co_the_ktd
          FROM sos_cases sc
          LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
         WHERE sc.student_id = ?`,
@@ -156,6 +158,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
     return true;
   });
   const caseIds = casesInGiaiDoan.map((c) => c.id);
+  const choNguyenNhan = new Set(awaitingCauseCaseIds(casesInGiaiDoan.filter((c) => c.status !== 'done').map((c) => c.id as number)));
 
   // -------------------------------------------------------------- (5) phương án
   const ivRows = caseIds.length
@@ -266,7 +269,10 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
     const casesOfSkill = casesInGiaiDoan.filter((c) => anhXaHangMuc(c.category ?? c.topic, boHop) === kyNang);
     const openCases = casesOfSkill.filter((c) => c.status !== 'done');
     const doneCases = casesOfSkill.filter((c) => c.status === 'done');
-    const caseMo = openCases.map((c) => ({ mo: c.detected_at, soPa: (ivByCase.get(c.id) ?? []).length }));
+    const caseMo = openCases.map((c) => ({ mo: c.detected_at, soPa: (ivByCase.get(c.id) ?? []).length,
+      choNguyenNhan: choNguyenNhan.has(c.id), choDuyet: !!c.co_the_ktd }));
+    const moiNhat = [...doneCases].sort((x, y) => String(y.closed_at ?? '').localeCompare(String(x.closed_at ?? '')))[0];
+    const huyGanNhat = !openCases.length && !!moiNhat && !!(moiNhat.dismiss_reason_code || moiNhat.system_close_reason);
     const coTungCase = casesOfSkill.length > 0;
     const xongGanNhat = !openCases.length && doneCases.length
       ? doneCases.reduce((mx: string | null, c) => {
@@ -276,7 +282,8 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
       : null;
 
     const vanDe = casesOfSkill.map((c) => {
-      const pa = (ivByCase.get(c.id) ?? []).map((iv) => ({
+      /* PR-SOS: PA quy chế "Chờ xác nhận" chưa có ngày bắt đầu (mốc tính lúc xác nhận) — chưa vẽ khối trên trục tuần. */
+      const pa = (ivByCase.get(c.id) ?? []).filter((iv) => iv.started_date ?? iv.planned_date).map((iv) => ({
         id: iv.id,
         ten: caseInterventionLabel(iv.kind),
         tu: iv.started_date ?? iv.planned_date,
@@ -294,7 +301,10 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
         caseId: c.id,
         // Tên người tạo đặt thắng tên suy ra (như caseTitleOf, server/src/cases/cases.ts:58); lớp
         // thường không mượn "… dưới kỳ vọng" của Fast Track — chấm theo môn đạt/chưa đạt, không có kỳ vọng band.
-        ten: (c.title ?? '').trim() || (ratio
+        /* PR-SOS T21: Case SOS Fast Track = `[MT1] {phần giữa} [SOS 3]` như `caseTitleOf` (không gọi nó — mỗi Case một truy vấn). */
+        ten: c.origin_kind === 'mock' && (c.attempt_kind ?? 'mock') === 'mock'
+          ? tenCaseSos({ mt: c.attempt_no ?? null, giua: (c.title ?? '').trim() || `${tenMon(ct, c.category ?? c.topic ?? '')} không đạt`, sos: c.sos_level ?? null })
+          : (c.title ?? '').trim() || (ratio
           ? `${tenMon(ct, c.category ?? c.topic ?? '')} chưa đạt`
           : caseTitle({ category: c.category ?? c.topic, latestAttemptNo: c.attempt_no, latestAttemptKind: c.attempt_kind })),
         mo: c.detected_at, dong: c.status === 'done' ? (c.closed_at ?? c.outcome_at ?? null) : null,
@@ -304,7 +314,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
 
     return {
       kyNang, nhan: ratio ? tenMon(ct, kyNang) : CASE_CATEGORY_LABEL[kyNang], nhanNgan: tenMonNgan(ratio ? ct : null, kyNang), cheDo: ratio ? ('ratio' as const) : ('ielts' as const),
-      diem, conCho, dotCho: dotCho as DotRef | null, caseMo, coTungCase, diemCuoiChuaDat, xongGanNhat, vanDe,
+      diem, conCho, dotCho: dotCho as DotRef | null, caseMo, coTungCase, diemCuoiChuaDat, xongGanNhat, huyGanNhat, vanDe,
     };
   });
 

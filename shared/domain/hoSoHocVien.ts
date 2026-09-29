@@ -51,6 +51,8 @@ export type PhuongAnTomTat = {
   status: string; lastOutcome: string | null; preset: boolean; confirmedAt: string | null;
   pendingApproval: boolean; approvalDue: string | null;
   actionDue: string | null; actionOverdue: boolean; completedOn: string | null;
+  /** PR-SOS: PA theo quy chế chờ xác nhận (Q28-3) · lần ghi tới là "Ghi kết quả cuối" (T22). */
+  choXacNhan?: boolean; lanCuoi?: boolean;
 };
 export const dangChay = (p: { status: string }) => p.status === 'planned' || p.status === 'started';
 
@@ -85,9 +87,12 @@ export function tienDoCase(plans: readonly PhuongAnTomTat[], c: { status: string
 
 /** Phần 3 ("Việc tiếp theo") của một khối phương án. */
 export function viecTiepPhuongAn(p: PhuongAnTomTat): {
-  loai: 'cho-duyet' | 'ghi-ket-qua' | 'da-xong'; text: string; due: string | null; overdue: boolean;
+  loai: 'cho-duyet' | 'cho-xac-nhan' | 'ghi-cuoi' | 'ghi-ket-qua' | 'da-xong'; text: string; due: string | null; overdue: boolean;
 } {
   if (p.pendingApproval) return { loai: 'cho-duyet', text: 'Chờ Quản lý trả lời', due: p.approvalDue, overdue: false };
+  /* PR-SOS: PA quy chế chờ xác nhận chưa chạy — việc là Xác nhận PA (hạn ở Case). Tuần chạm mốc → Ghi kết quả cuối. */
+  if (p.choXacNhan) return { loai: 'cho-xac-nhan', text: 'Chờ xác nhận', due: null, overdue: false };
+  if (p.lanCuoi && dangChay(p)) return { loai: 'ghi-cuoi', text: 'Ghi kết quả cuối', due: p.actionDue, overdue: p.actionOverdue };
   if (dangChay(p)) return { loai: 'ghi-ket-qua', text: 'Ghi kết quả', due: p.actionDue, overdue: p.actionOverdue };
   return { loai: 'da-xong', text: 'Đã kết thúc', due: p.completedOn, overdue: false };
 }

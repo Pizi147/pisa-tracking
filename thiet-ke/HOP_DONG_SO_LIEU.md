@@ -134,6 +134,20 @@ Mô hình Case Ý thức bị bỏ. Nguồn: `NGUON-Rule-Y-thuc-2026-09-21.md`; 
 | `bien-phap-dang-chuan-bi` | Biện pháp đang chuẩn bị | biện pháp | hiện trạng | `status = 'preparing'`. Không có hạn nên **không có** khái niệm "quá hạn" |
 | `bien-phap-theo-loai` | Biện pháp theo loại | biện pháp | kết quả trong kỳ | Chín loại, tách riêng `warning_1/2/3`. **Không** gộp ba thư thành một dòng |
 
+### 5.0. Ý thức v4 (PR-YT4, 29/09/2026) — thay định nghĩa trong bảng trên
+
+Mọi nhãn/nhóm đọc từ **một hàm trạng thái** (`trangThaiYThuc` → `trangThaiViPham`, đặc tả 27/09 §5.4). SQL chỉ lọc ứng viên.
+
+| id | Tên | Đơn vị | Thời gian | Định nghĩa bắt buộc (v4) |
+|---|---|---|---|---|
+| `vi-pham-chua-xu-ly` | Vi phạm chưa xử lý | vi phạm | hiện trạng | Trạng thái `Mới · Cần xử lý · Quá hạn`. **Đã ghi nhận không tính** (K1-26); Chờ QL duyệt, Đã xử lý không tính |
+| `vi-pham-theo-nhom` | Vi phạm theo nhóm | vi phạm | phát sinh trong kỳ | Khoá `{nhóm}:{moi \| da_ghi_nhan \| can_xu_ly \| qua_han \| cho_duyet \| da_xu_ly \| tat-ca}` — 42 khoá |
+| `hv-can-xu-ly` | Học viên cần xử lý | học viên | hiện trạng | Em thuộc nhóm `Quá hạn` hoặc `Bắt buộc xử lý` (≥ 3 vi phạm tuần này + tuần trước; Mới quá 5 ngày; đã duyệt quá 5 ngày chưa thực hiện) |
+| `bien-phap-da-thuc-hien` | Lần xử lý đã xong | lần xử lý | kết quả trong kỳ | `status = 'done'` theo `performed_on`; đề xuất chờ / đã duyệt chưa thực hiện **không** tính |
+| `bien-phap-cho-duyet` | Đề xuất Ý thức chờ QL duyệt | lần xử lý | hiện trạng | `status = 'cho_duyet'` (thay `bien-phap-dang-chuan-bi` — không còn "Đang chuẩn bị") |
+| `bien-phap-theo-loai` | Xử lý theo loại | lần xử lý | kết quả trong kỳ | Sáu bậc thang (Report 1 … WL 3) + ba loại ngoài thang + `loai-cu` cho dòng lạ của dữ liệu cũ |
+| `hv-theo-bac` | Học viên theo bậc Ý thức | học viên | hiện trạng | Em đang học, byKind `0`…`6` = bậc hiện tại (max lần xử lý xong trong chuỗi, bậc khai) |
+
 ### 5.1. Ba chỉ số cũ phải sửa định nghĩa
 
 | id | Sửa gì |

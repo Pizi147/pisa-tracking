@@ -149,14 +149,6 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     assert(f([], C).tiep?.text === 'Ghi kết quả PA', 'việc tiếp');
   });
 
-  check('UX3 (1) · Ý thức: cảnh báo và tuổi vi phạm không còn ⚠ (nhắc mềm, không phải quá hạn); HS → HV', () => {
-    const w = d.violationWarning(['2026-09-04', '2026-09-08'], '2026-09-14');
-    assert(w.message === 'Chưa xử lý 2 vi phạm · cũ nhất 10 ngày', w.message);
-    assert(d.violationAgeLabel(9) === '9 ngày' && d.violationAgeLabel(3) === '', 'nhãn tuổi');
-    assert(!/⚠/.test(w.message + d.violationAgeLabel(9)), '⚠');
-    assert(/HV/.test(d.MEASURE_KIND_LABEL.talk_short) && !/\bHS\b/.test(Object.values(d.MEASURE_KIND_LABEL).join(' ')), 'HS → HV');
-  });
-
   // ==================================================================== 2. Máy chủ: chữ việc, đường dẫn mở ngăn Case, người làm PA
 
   const { conn } = t;
@@ -266,7 +258,8 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
   const PANEL_UX3 = [
     'cases/QuickReport', 'cases/CasePanel', 'cases/CapNhatTuan', 'cases/ThaoTacCase', 'cases/SkillBoard',
     'students/NganCase', 'students/ChuyenLopPanel', 'students/LoTrinhTiepPanel', 'students/StudentManagePanel',
-    'yThuc/RecordViolationPanel', 'yThuc/PhuongAnPanel', 'yThuc/CreateMeasurePanel', 'yThuc/ConfirmMeasurePanel', 'yThuc/XemPhuongAnPanel',
+    /* PR-YT4: bốn panel PA v3 → Xác nhận xử lý · Đã thực hiện · Khai bậc · Xem lần xử lý. */
+    'yThuc/RecordViolationPanel', 'yThuc/XacNhanXuLyPanel', 'yThuc/DaThucHienPanel', 'yThuc/KhaiBacPanel', 'yThuc/XemXuLyPanel',
     'classes/TeacherAssignPanel',
   ].map((f) => `web/src/modules/${f}.tsx`);
   const CAM: [string, RegExp][] = [
@@ -385,13 +378,15 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     const m = /function nextStepOf[\s\S]*?\r?\n}\r?\n/.exec(src);
     assert(m, 'không thấy nextStepOf');
     assert(!/followupDue/.test(m![0]), 'nextStepOf dùng followupDue làm hạn');
-    assert(/actionDue/.test(m![0]), 'nextStepOf phải dùng actionDue');
+    /* PR-SOS (K3-07): việc tiếp + hạn do máy chủ tính (`viecTiepCuaCase` — hạn ghi kết quả từ actionDue). */
+    assert(/viecTiep/.test(m![0]), 'nextStepOf phải dùng việc tiếp v4 (hạn từ actionDue ở máy chủ)');
   });
 
   check('UX3 (4) · Ghi kết quả: không gửi người thực hiện khi không đổi (payload adjust chỉ có trường đã đổi)', () => {
     const src = docSach('web/src/modules/cases/CapNhatTuan.tsx');
     assert(/nguoiDoi \? nguoiThanhPayload\(nguoi\) : \{\}/.test(src), 'adjust phải chỉ gửi người khi đổi');
-    assert(/description: descChanged \? desc : undefined/.test(src) && /followupDue: dueChanged \? due : undefined/.test(src), 'adjust gửi cả trường không đổi');
+    /* PR-SOS (Q28-4): Điều chỉnh không còn ô ngày — chỉ mô tả + người. */
+    assert(/description: descChanged \? desc : undefined/.test(src) && !/followupDue/.test(src), 'adjust gửi cả trường không đổi / còn ngày kết thúc');
   });
 
   check('UX3 (7) · Ý thức: câu nhắc dùng CÙNG MỘT hàm ở ba nơi (không câu viết tay có ⚠ ở web)', () => {

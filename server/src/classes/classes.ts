@@ -18,9 +18,8 @@ import { dotHoanTatMany, type HoanTatInfo } from '../fasttrack/hoanTat.ts';
 import { standingFor, standingLine } from '../students/standing.ts';
 import { allProgrammes, evaluateRegular, programmeOfClass } from '../normal/regular.ts';
 import { classProgressMany, missingForClasses, missingForStudent } from './schedule.ts';
-import { canhBaoTheoHocVien, caseMoTheoHocVien } from './dongHocVien.ts';
+import { canhBaoTheoHocVien, caseMoTheoHocVien, soEmCanXuLyYThuc } from './dongHocVien.ts';
 import { demChuaLoTrinh, tiepTheoTheoHocVien } from './loTrinhTiep.ts';
-import { classWarning } from '../yThuc/canhBao.ts';
 import { listCases } from '../cases/cases.ts';
 import { trongBoNho } from '../platform/nguCanhRequest.ts';
 
@@ -736,7 +735,7 @@ function classOverviewThat(p: Principal, classId: number) {
         .filter((c) => c.status !== 'done' && c.studentId !== null && activeIds.has(c.studentId)).length;
     })(),
     /** Số học viên có vi phạm chưa xử lý quá 5 ngày — dấu ⚠ trên tab Ý thức & Phối hợp (Q15). */
-    canhBaoYThuc: can(p, PERMISSIONS.STUDENT_VIEW, { classId }) ? classWarning(p, classId).activeCount : 0,
+    canhBaoYThuc: soEmCanXuLyYThuc(p, classId),
     /*
      * LỚP ĐÃ KẾT THÚC → CHẾ ĐỘ CHỈ XEM (Q22): mọi cờ thao tác `false`, không nút nào hiện,
      * không nhánh nào ở web đoán riêng — kể cả với Quản trị hệ thống (QT). Lớp đã đóng thì

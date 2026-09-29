@@ -100,6 +100,8 @@ const SEED_MAX: Record<string, number> = {};
     SEED_MAX[t] = ((seedDb().prepare(`SELECT COALESCE(MAX(id),0) m FROM ${t}`).get() as any).m) as number;
   }
 }
+/* PR-YT4 (Task 11): ảnh chụp Ý thức của bộ demo NGAY sau seed — phép kiểm demo (yThuc.tests.ts) soi ảnh này, không soi DB đã bị các mục trên ghi thêm. */
+const DEMO_Y_THUC = await (await import('./yThuc.tests.ts')).chupDemoYThuc((await import('../db.ts')).db(), demoToday());
 
 /* Mã nhóm Ý thức của mô hình Case đã bỏ 21/09/2026 — chỉ để khẳng định nó KHÔNG còn xuất hiện; ghép chuỗi để không còn chữ đó nằm trơ trong mã. */
 const GONE = 'behav' + 'iour';
@@ -953,7 +955,7 @@ console.log('\n10. Xử lý sau Mock và lưu dữ liệu');
  * hạn ba ngày tính từ ngày ghi nhận và KHÔNG bị đặt lại khi lưu lại / nhập thêm môn; không nhân đôi khi chạy lặp; mọi tín hiệu gắn với một môn.
  * (Lớp Normal giữ nguyên "chỉ sinh tín hiệu" — có phép kiểm riêng ở sosV3.tests.ts.)
  */
-check('[6.2→v3] Mock Test FT điểm dưới kỳ vọng: tín hiệu nối NGAY vào case tự tạo (có PA quy chế đang chạy — PR-N1 S4-1); hạn 3 ngày không bị đặt lại', () => {
+check('[6.2→v3] Mock Test FT điểm dưới kỳ vọng: tín hiệu nối NGAY vào case tự tạo (có PA quy chế chờ xác nhận — PR-SOS Q28-3); hạn 3 ngày không bị đặt lại', () => {
   const s = conn
     .prepare(
       `SELECT s.id, cy.id AS cycle_id, cy.target_score FROM students s
@@ -1006,8 +1008,8 @@ check('[6.2→v3] Mock Test FT điểm dưới kỳ vọng: tín hiệu nối NG
   assert(casesOf() === 1, `Mock FT dưới kỳ vọng phải tự tạo đúng 1 case (v3 S01), đang có ${casesOf()}`);
   assert(plansOf() === 1, `Case tự tạo phải có sẵn đúng 1 phương án (v3 S03), đang có ${plansOf()}`);
   const preListening = conn.prepare(`SELECT * FROM case_interventions WHERE id > ?`).get(planIdBefore) as any;
-  assert(preListening.preset === 1 && preListening.status === 'started' && !!preListening.confirmed_at && preListening.confirmed_by === null,
-    'PA tự sinh phải là PA quy chế đang chạy, máy xác nhận (PR-N1 S4-1)');
+  assert(preListening.preset === 1 && preListening.status === 'planned' && preListening.confirmed_at === null && preListening.confirmed_by === null,
+    'PA tự sinh phải là PA quy chế CHỜ XÁC NHẬN (PR-SOS Q28-3)');
 
   const sig = conn
     .prepare(`SELECT * FROM case_signals WHERE attempt_id = ? AND skill = 'listening'`)
@@ -1038,7 +1040,10 @@ check('[6.2→v3] Mock Test FT điểm dưới kỳ vọng: tín hiệu nối NG
   assert(three.result.sosLevel === 3, `Ba kỹ năng dưới kỳ vọng phải lên SOS 3, đang là ${three.result.sosLevel}`);
   const want = newCasesExpected(['listening', 'reading', 'writing1', 'writing2']);
   assert(casesOf() === want, `Bốn kỹ năng dưới kỳ vọng phải có ${want} case MỚI (hạng mục đã mở thì gắn vào), đang có ${casesOf()}`);
-  assert(plansOf() === want, `Mỗi case mới đúng một phương án điền sẵn, đang có ${plansOf()}`);
+  /* PR-SOS Q6: hạng mục đã mở mà ĐÃ có nguyên nhân thì trượt lại thêm một PA quy chế chờ xác nhận — chỉ đếm PA của case MỚI ở đây. */
+  const plansOnNew = (conn.prepare(`SELECT COUNT(*) n FROM case_interventions iv JOIN sos_cases c ON c.id = iv.case_id
+    WHERE c.student_id = ? AND c.id > ?`).get(s.id, caseIdBefore) as any).n;
+  assert(plansOnNew === want, `Mỗi case mới đúng một phương án điền sẵn, đang có ${plansOnNew}`);
   const sigAfter = conn
     .prepare(`SELECT * FROM case_signals WHERE attempt_id = ? AND skill = 'listening'`)
     .get(attempt.id) as any;
@@ -2462,9 +2467,8 @@ check('MỌI phương án đều có chu kỳ và hạn — không có phương 
   assert(iv.actionDue, 'Phương án bắt đầu rồi mà không có hạn nào');
   assert(iv.actionDue === domain.weeklyUpdateDue(addDays(TODAY, -20)),
     `Hạn ghi kết quả phải là hết Thứ Hai sau tuần bắt đầu: kỳ vọng ${domain.weeklyUpdateDue(addDays(TODAY, -20))}, đang là ${iv.actionDue}`);
-  assert(iv.followupDue === domain.planEndDefault(addDays(TODAY, -20)),
-    `Dự kiến kết thúc phải là Chủ nhật tuần tiếp theo: kỳ vọng ${domain.planEndDefault(addDays(TODAY, -20))}, đang là ${iv.followupDue}`);
-  assert(iv.actionDue < iv.followupDue, 'Hạn cập nhật và ngày kết thúc bị gộp làm một con số');
+  /* PR-SOS (Q28-4): PA thường không còn "dự kiến kết thúc" — chỉ còn hạn ghi kết quả tuần. */
+  assert(iv.followupDue === null, `PA thường còn ngày dự kiến kết thúc: ${iv.followupDue}`);
   assert(iv.overdue || iv.actionOverdue, 'Bắt đầu 20 ngày trước, chưa cập nhật tuần nào mà không báo quá hạn');
 
   // Phương án CHỜ DUYỆT thì chu kỳ CHƯA chạy — thời gian chờ là của Quản lý.
@@ -2893,7 +2897,9 @@ check('Vấn đề sinh từ điểm có dòng mô tả suy ra từ dữ liệu,
   const stored = conn
     .prepare(
       `SELECT COUNT(*) n FROM sos_cases
-        WHERE origin_kind = 'mock' AND summary IS NOT NULL AND reported_by IS NULL`,
+        WHERE origin_kind = 'mock' AND summary IS NOT NULL AND reported_by IS NULL
+          /* PR-SOS: mô tả ghi lúc Xác nhận Case có người đứng tên ở mốc xac_nhan_case. */
+          AND NOT EXISTS (SELECT 1 FROM case_milestones m WHERE m.case_id = sos_cases.id AND m.kind = 'xac_nhan_case' AND m.created_by IS NOT NULL)`,
     )
     .get() as any;
   assert(stored.n === 0, `${stored.n} vấn đề sinh từ điểm đã bị ghi tóm tắt giả vào database`);
@@ -3268,15 +3274,15 @@ check('MỖI KỸ NĂNG CHỈ MỘT GIÁO VIÊN — xếp hai người vào mộ
 check('Dữ liệu mẫu có đủ bốn mức độ ưu tiên, không phải một màu đỏ', () => {
   const open = conn
     .prepare(
-      `SELECT followup_due FROM case_interventions
-        WHERE followup_due IS NOT NULL AND status != 'cancelled'
-          AND NOT EXISTS (SELECT 1 FROM case_followups f WHERE f.intervention_id = case_interventions.id)`,
+      /* PR-SOS (Q28-4): không còn "dự kiến kết thúc" cho PA thường — mức ưu tiên đọc theo hạn ghi kết quả tuần (`action_due`). */
+      `SELECT action_due FROM case_interventions
+        WHERE action_due IS NOT NULL AND status IN ('planned', 'started')`,
     )
     .all() as any[];
   const t = demoToday();
-  const late = open.filter((r) => r.followup_due < t).length;
-  const today = open.filter((r) => r.followup_due === t).length;
-  const soon = open.filter((r) => r.followup_due > t).length;
+  const late = open.filter((r) => r.action_due < t).length;
+  const today = open.filter((r) => r.action_due === t).length;
+  const soon = open.filter((r) => r.action_due > t).length;
   assert(late > 0 && today > 0 && soon > 0,
     `Hẹn xem lại phải có cả ba mức (quá hạn ${late}, hôm nay ${today}, còn hạn ${soon}) — `
     + 'neo hết vào ngày thi thì màn việc chỉ toàn một màu đỏ và không nhìn ra khác biệt');
@@ -3909,7 +3915,7 @@ check('Case đã đóng mà MT sau trượt lại → MỞ CASE MỚI nối vào
     () => cases.closeCaseOutcome(mgr, c.id, {
       outcome: 'improved', note: 'Kết luận đủ dài cho phép kiểm này',
     }),
-    /chưa cập nhật kết quả cuối cùng/, 'Chốt được kết quả một case chưa ai làm gì',
+    /chưa cập nhật kết quả cuối cùng|PA theo quy chế kết thúc/, 'Chốt được kết quả một case chưa ai làm gì',
   );
   cases.recordIntervention(rt, c.id, {
     kind: 'teaching_adjust', description: 'Luyện bấm giờ từng passage, 20 phút mỗi passage',
@@ -3924,12 +3930,18 @@ check('Case đã đóng mà MT sau trượt lại → MỞ CASE MỚI nối vào
     () => cases.closeCaseOutcome(mgr, c.id, {
       outcome: 'improved', note: 'Kết luận đủ dài cho phép kiểm này',
     }),
-    /chưa cập nhật kết quả cuối cùng/, 'Chốt được kết quả case khi còn phương án treo',
+    /chưa cập nhật kết quả cuối cùng|PA theo quy chế kết thúc/, 'Chốt được kết quả case khi còn phương án treo',
   );
   /* v3: phương án điền sẵn của case tự tạo phải được XÁC NHẬN thì mới ghi "đã làm" được (Q-V3-3). */
   for (const iv of open) {
     const row = conn.prepare('SELECT preset, confirmed_at FROM case_interventions WHERE id = ?').get(iv.id) as any;
-    if (row.preset === 1 && !row.confirmed_at) sosAutoSvc.confirmPresetPlan(mgr, iv.id);
+    if (row.preset === 1 && !row.confirmed_at) {
+      /* PR-SOS (Q28-3): Xác nhận Case (nguyên nhân) rồi Xác nhận PA. */
+      if (!conn.prepare("SELECT 1 FROM case_issues WHERE case_id = ? AND role = 'primary'").get(c.id)) {
+        sosAutoSvc.xacNhanCase(mgr, c.id, { primaryCode: domain.issuesForTopic(c.topic ?? 'reading', null)[0].code, urgency: 'attention', moTa: 'Em đọc chậm, hết giờ ở passage 3.' });
+      }
+      sosAutoSvc.xacNhanPaQuyChe(mgr, iv.id, { description: 'Tutor kèm Reading hai buổi mỗi tuần, cô Hà chữa bài.' });
+    }
     cases.completeIntervention(mgr, iv.id, { doneOn: demoToday() });
   }
   cases.closeCaseOutcome(mgr, c.id, {
@@ -5012,8 +5024,9 @@ check('[8.3] Phương án bắt đầu 14/09/2026: ghi kết quả trước hế
   assert(row, 'Dữ liệu demo không có case nào mở đúng ngày demo để đối chiếu bằng mắt');
   assert(row!.action_due === '2026-09-21',
     `Hạn ghi kết quả trong dữ liệu mẫu là ${row!.action_due}, phải là 2026-09-21 (hết Thứ Hai, R-PA1)`);
-  assert(row!.followup_due === '2026-09-27',
-    `Ngày dự kiến kết thúc trong dữ liệu mẫu là ${row!.followup_due}, phải là 2026-09-27`);
+  /* PR-SOS (Q28-4): PA thường không còn "dự kiến kết thúc" — `planEndDefault` vẫn là hàm thuần, dữ liệu mẫu không ghi. */
+  assert(row!.followup_due === null,
+    `PA thường trong dữ liệu mẫu còn ngày dự kiến kết thúc ${row!.followup_due} (Q28-4: phải NULL)`);
 });
 
 check('Case của lớp trước là việc BÀN GIAO, không phải mức SOS của lớp này', () => {
@@ -5191,8 +5204,7 @@ check('[6] Hạn: chu kỳ đầu, chu kỳ tiếp, chờ duyệt, cập nhật 
     `Chu kỳ bắt đầu ${appr.cycle_started_on} mà duyệt ngày ${appr.approval_at.slice(0, 10)}`);
   assert(appr.action_due === domain.weeklyUpdateDue(appr.cycle_started_on),
     'Hạn cập nhật không tính từ ngày được duyệt');
-  assert(appr.followup_due === domain.planEndDefault(appr.cycle_started_on),
-    'Ngày dự kiến kết thúc không tính từ ngày được duyệt');
+  assert(appr.followup_due === null, 'PR-SOS (Q28-4): PA thường được duyệt không có ngày dự kiến kết thúc');
   /* Cập nhật trễ GIỮ NGUYÊN dấu vết, không reset để che. */
   const late = conn.prepare('SELECT * FROM case_followups WHERE late = 1 LIMIT 1').get() as any;
   assert(late, 'Không có lần cập nhật trễ nào trong dữ liệu mẫu');
@@ -5654,13 +5666,14 @@ check('[12.1] Chỉ một số ít việc quá hạn — không để cả màn 
   const openPlans = (conn
     .prepare(
       `SELECT COUNT(*) n FROM case_interventions iv
-        WHERE iv.followup_due IS NOT NULL AND iv.status NOT IN ('completed','cancelled')`,
+        WHERE iv.action_due IS NOT NULL AND iv.status NOT IN ('completed','cancelled')`,
     )
     .get() as any).n;
+  /* PR-SOS (Q28-4): quá hạn đọc theo hạn ghi kết quả tuần — "dự kiến kết thúc" đã bỏ. */
   const overdue = (conn
     .prepare(
       `SELECT COUNT(*) n FROM case_interventions iv
-        WHERE iv.followup_due IS NOT NULL AND iv.followup_due < ?
+        WHERE iv.action_due IS NOT NULL AND iv.action_due < ?
           AND iv.status NOT IN ('completed','cancelled')
           AND NOT EXISTS (SELECT 1 FROM case_followups f WHERE f.intervention_id = iv.id)`,
     )
@@ -7357,15 +7370,15 @@ check('[18.2-12] Phương án bị thay thế VẪN giữ kết quả thất b�
     'Phương án bị thay có kết quả thất bại đã biến mất khỏi báo cáo hiệu quả');
 });
 
-check('[18.2-12b] Có em ĐÃ report cho gia đình mà vi phạm vẫn tái diễn — nhìn được ở dữ liệu Vi phạm và Biện pháp', () => {
+check('[18.2-12b] (PR-YT4) Có em ĐÃ được xử lý bằng Report mà vi phạm vẫn tái diễn — nhìn được ở dữ liệu Vi phạm và lần xử lý', () => {
   const rows = many(
     `SELECT dm.student_id,
             (SELECT COUNT(*) FROM violations v
-              WHERE v.student_id = dm.student_id AND v.valid = 1 AND v.occurred_on > dm.performed_on) AS after
+              WHERE v.student_id = dm.student_id AND v.occurred_on > dm.performed_on) AS after
        FROM discipline_measures dm
-      WHERE dm.kind = 'family_report' AND dm.status = 'done'`,
+      WHERE dm.kind IN ('report_1', 'report_2', 'report_4_meeting') AND dm.status = 'done'`,
   );
-  assert(rows.some((r) => r.after > 0), 'Không có em nào đã được report cho gia đình mà sau đó vẫn có vi phạm mới');
+  assert(rows.some((r) => r.after > 0), 'Không có em nào đã được Report mà sau đó vẫn có vi phạm mới');
 });
 
 check('[18.2-13] Có case bàn giao khi chuyển lớp, và có em chưa xếp lớp tiếp theo', () => {
@@ -7538,7 +7551,7 @@ check('Nhập bù (chốt 1) · Không sinh nghĩa vụ cập nhật tuần nào
     primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
     title: `${authSubjectSkill}: nhập bù chốt 1`, summary: 'Case nhập bù để kiểm chốt 1 — không sinh hạn cập nhật tuần.',
     fromDate: '2026-07-01', toDate: '2026-07-20',
-    actions: [{ description: 'Giao bài luyện thêm mỗi tuần', performerName: 'GV bộ môn', fromDate: '2026-07-01', toDate: '2026-07-20' }],
+    actions: [{ ketQua: 'improved', description: 'Giao bài luyện thêm mỗi tuần', performerName: 'GV bộ môn', fromDate: '2026-07-01', toDate: '2026-07-20' }],
     outcome: 'improved', note: 'Case nhập bù, kiểm chốt 1: đã cải thiện rõ sau ba tuần.',
   }) as any;
   const iv = (conn.prepare('SELECT action_due, followup_due FROM case_interventions WHERE case_id = ?').all(done.id) as any[])[0];
@@ -7555,7 +7568,7 @@ check('Nhập bù (chốt 4) · Không tạo tín hiệu, không đổi mức SO
     primaryCode: domain.issuesForTopic(authMismatchSkill)[0].code,
     title: `${authMismatchSkill}: nhập bù chốt 4`, summary: 'Case nhập bù để kiểm chốt 4 — không tự sinh mức SOS.',
     fromDate: '2026-04-01', toDate: '2026-04-15',
-    actions: [{ description: 'Ôn lại kỹ thuật làm bài', performerName: 'GV bộ môn', fromDate: '2026-04-01', toDate: '2026-04-15' }],
+    actions: [{ ketQua: 'improved', description: 'Ôn lại kỹ thuật làm bài', performerName: 'GV bộ môn', fromDate: '2026-04-01', toDate: '2026-04-15' }],
     outcome: 'improved', note: 'Case nhập bù, kiểm chốt 4: là trí nhớ, không phải một bài đánh giá mới.',
   }) as any;
   const row = conn.prepare('SELECT sos_level, origin_kind FROM sos_cases WHERE id = ?').get(done.id) as any;
@@ -7573,7 +7586,7 @@ check('Nhập bù (chốt 5) · Không vào mẫu số hiệu quả hỗ trợ, 
     primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
     title: `${authSubjectSkill}: nhập bù chốt 5`, summary: 'Case nhập bù để kiểm chốt 5 — không vào mẫu số hiệu quả.',
     fromDate: '2026-03-01', toDate: '2026-03-10',
-    actions: [{ description: 'Luyện thêm dạng bài hay sai', performerName: 'GV bộ môn', fromDate: '2026-03-01', toDate: '2026-03-10' }],
+    actions: [{ ketQua: 'improved', description: 'Luyện thêm dạng bài hay sai', performerName: 'GV bộ môn', fromDate: '2026-03-01', toDate: '2026-03-10' }],
     outcome: 'improved', note: 'Case nhập bù, kiểm chốt 5: không được tính vào tỷ lệ thành công hôm nay.',
   }) as any;
   const after = effectiveness.planOutcomes({ studentIds: [enr5.student_id] });
@@ -7594,7 +7607,7 @@ check('Nhập bù (chốt 6) · Cảnh báo khi trùng với MỘT CASE NHẬP B
     primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
     title: `${authSubjectSkill}: nhập bù chốt 6 lần 1`, summary: 'Case nhập bù lần đầu để kiểm chốt 6 — cảnh báo trùng.',
     fromDate: '2026-02-01', toDate: '2026-02-10',
-    actions: [{ description: 'Ôn bài với em', performerName: 'GV bộ môn', fromDate: '2026-02-01', toDate: '2026-02-10' }],
+    actions: [{ ketQua: 'improved', description: 'Ôn bài với em', performerName: 'GV bộ môn', fromDate: '2026-02-01', toDate: '2026-02-10' }],
     outcome: 'improved', note: 'Case nhập bù chốt 6, lần 1.',
   }) as any;
   assertThrows(() => cases.backfillCase(P.mbManager, {
@@ -7603,7 +7616,7 @@ check('Nhập bù (chốt 6) · Cảnh báo khi trùng với MỘT CASE NHẬP B
     primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
     title: `${authSubjectSkill}: nhập bù chốt 6 lần 2 (trùng)`, summary: 'Case nhập bù thứ hai, TRÙNG khoảng ngày với lần 1.',
     fromDate: '2026-02-05', toDate: '2026-02-15',
-    actions: [{ description: 'Ôn bài với em', performerName: 'GV bộ môn', fromDate: '2026-02-05', toDate: '2026-02-15' }],
+    actions: [{ ketQua: 'improved', description: 'Ôn bài với em', performerName: 'GV bộ môn', fromDate: '2026-02-05', toDate: '2026-02-15' }],
     outcome: 'improved', note: 'Case nhập bù chốt 6, lần 2 — phải bị cảnh báo trùng.',
   }), /trùng|nhập bù/, 'Nhập bù trùng khoảng ngày với một case nhập bù khác cùng hạng mục');
   // Xác nhận "đây là lần khác" thì vẫn tạo được.
@@ -7613,7 +7626,7 @@ check('Nhập bù (chốt 6) · Cảnh báo khi trùng với MỘT CASE NHẬP B
     primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
     title: `${authSubjectSkill}: nhập bù chốt 6 lần 2 (xác nhận)`, summary: 'Case nhập bù thứ hai, đã xác nhận là lần khác.',
     fromDate: '2026-02-05', toDate: '2026-02-15',
-    actions: [{ description: 'Ôn bài với em', performerName: 'GV bộ môn', fromDate: '2026-02-05', toDate: '2026-02-15' }],
+    actions: [{ ketQua: 'improved', description: 'Ôn bài với em', performerName: 'GV bộ môn', fromDate: '2026-02-05', toDate: '2026-02-15' }],
     outcome: 'improved', note: 'Case nhập bù chốt 6, lần 2 — đã xác nhận qua cảnh báo.',
     confirmDuplicate: true,
   }) as any;
@@ -7629,7 +7642,7 @@ check('Nhập bù (chốt 2) · Case nhập bù học thuật không có hạn n
     primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
     title: `${authSubjectSkill}: nhập bù chốt 2`, summary: 'Case nhập bù để kiểm chốt 2 — không hạn nào cả.',
     fromDate: '2025-10-01', toDate: '2025-10-10',
-    actions: [{ description: 'Ôn lại kỹ thuật làm bài', performerName: 'GVCN', fromDate: '2025-10-01', toDate: '2025-10-10' }],
+    actions: [{ ketQua: 'improved', description: 'Ôn lại kỹ thuật làm bài', performerName: 'GVCN', fromDate: '2025-10-01', toDate: '2025-10-10' }],
     outcome: 'improved', note: 'Case nhập bù, kiểm chốt 2: em đã làm bài đều trở lại.',
   }) as any;
   const row = conn.prepare('SELECT follow_until FROM sos_cases WHERE id = ?').get(done.id) as any;
@@ -7648,7 +7661,7 @@ check('Nhập bù (chốt 7) · Ghi rõ ai nhập, nhập lúc nào, lưu cùng 
     primaryCode: domain.issuesForTopic(authMismatchSkill)[0].code,
     title: `${authMismatchSkill}: nhập bù chốt 7`, summary: 'Case nhập bù để kiểm chốt 7 — phải ghi rõ ai nhập và lúc nào.',
     fromDate: '2025-09-01', toDate: '2025-09-05',
-    actions: [{ description: 'Trao đổi riêng với em', performerName: 'GVCN', fromDate: '2025-09-01', toDate: '2025-09-05' }],
+    actions: [{ ketQua: 'improved', description: 'Trao đổi riêng với em', performerName: 'GVCN', fromDate: '2025-09-01', toDate: '2025-09-05' }],
     outcome: 'improved', note: 'Case nhập bù, kiểm chốt 7.',
   }) as any;
   const row = conn.prepare('SELECT origin_kind, reported_by, created_at FROM sos_cases WHERE id = ?').get(done.id) as any;
@@ -7666,7 +7679,7 @@ check('Nhập bù (chốt 7, tiếp) · Nhãn "nhập bù" hiện trên thẻ ca
     primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
     title: `${authSubjectSkill}: nhập bù chốt 7 tiếp`, summary: 'Case nhập bù để kiểm nhãn hiện trên thẻ case của hồ sơ.',
     fromDate: '2025-08-01', toDate: '2025-08-08',
-    actions: [{ description: 'Luyện thêm dạng bài hay sai', performerName: 'GVCN', fromDate: '2025-08-01', toDate: '2025-08-08' }],
+    actions: [{ ketQua: 'improved', description: 'Luyện thêm dạng bài hay sai', performerName: 'GVCN', fromDate: '2025-08-01', toDate: '2025-08-08' }],
     outcome: 'improved', note: 'Case nhập bù, kiểm nhãn "nhập bù" trên thẻ case.',
   }) as any;
   const board = cases.skillSupportBoard(P.coreTeacher, enr7b.student_id) as any;
@@ -7685,7 +7698,7 @@ check('Nhập bù · Ghi chú kết luận bắt buộc ngay ở máy chủ, kh�
     primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
     title: `${authSubjectSkill}: kiểm ghi chú bắt buộc`, summary: 'Case nhập bù để kiểm ghi chú kết luận bắt buộc ở tầng máy chủ.',
     fromDate: '2025-07-01', toDate: '2025-07-05',
-    actions: [{ description: 'Trao đổi với em', performerName: 'GVCN', fromDate: '2025-07-01', toDate: '2025-07-05' }],
+    actions: [{ ketQua: 'improved', description: 'Trao đổi với em', performerName: 'GVCN', fromDate: '2025-07-01', toDate: '2025-07-05' }],
     outcome: 'improved', note: 'quá ngắn',
   }), /ghi chú/, 'Gọi thẳng API nhập bù với ghi chú quá ngắn (dưới 10 ký tự)');
   assert((conn.prepare('SELECT COUNT(*) n FROM sos_cases').get() as any).n === before, 'Ghi chú quá ngắn bị từ chối mà vẫn để lại một case');
@@ -7701,7 +7714,7 @@ check('Nhập bù · Chỉ GVCN/Quản lý mới CHỐT được — GVBM sai va
     primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
     title: `${authSubjectSkill}: nhập bù bởi GVBM`, summary: 'GVBM tự nhập bù case kỹ năng mình dạy, nhưng không có quyền chốt.',
     fromDate: '2026-01-20', toDate: '2026-01-25',
-    actions: [{ description: 'Ôn bài với em', performerName: 'GV bộ môn', fromDate: '2026-01-20', toDate: '2026-01-25' }],
+    actions: [{ ketQua: 'improved', description: 'Ôn bài với em', performerName: 'GV bộ môn', fromDate: '2026-01-20', toDate: '2026-01-25' }],
     outcome: 'improved', note: 'GVBM tự nhập, phải bị chặn ở bước chốt kết quả.',
   }), /chủ nhiệm|Quản lý/, 'GVBM (không phải GVCN) tự chốt được case nhập bù');
   const after = (conn.prepare('SELECT COUNT(*) n FROM sos_cases').get() as any).n;
@@ -8092,11 +8105,12 @@ check('PR-E · <Han>: sáu loại hạn có sáu nhãn khác nhau, đúng bảng
   assert(t('xac-minh-sos') === 'Xác nhận nguyên nhân · hạn 23/09', `xac-minh-sos: "${t('xac-minh-sos')}"`);
   assert(t('lap-pa') === 'Đề ra PA · hạn 23/09', `lap-pa: "${t('lap-pa')}"`);
   assert(t('cap-nhat-pa') === 'Ghi kết quả tuần W3 SEP · hạn hết T2 23/09', `cap-nhat-pa: "${t('cap-nhat-pa')}"`);
-  assert(t('thuc-hien-y-thuc') === 'Thực hiện xong · hạn 23/09', `thuc-hien-y-thuc: "${t('thuc-hien-y-thuc')}"`);
-  assert(t('hoan-thanh-y-thuc') === 'Kết luận đợt · hạn 23/09', `hoan-thanh-y-thuc: "${t('hoan-thanh-y-thuc')}"`);
+  /* PR-YT4 (K5-24): `thuc-hien-y-thuc`, `hoan-thanh-y-thuc` bỏ — Ý thức dùng `xu-ly-vi-pham`. */
+  assert(t('xu-ly-vi-pham') === 'Xử lý vi phạm · hạn 23/09', `xu-ly-vi-pham: "${t('xu-ly-vi-pham')}"`);
+  assert(!(domain.DEADLINE_KINDS as readonly string[]).includes('thuc-hien-y-thuc') && !(domain.DEADLINE_KINDS as readonly string[]).includes('hoan-thanh-y-thuc'), 'hai loại cũ còn');
   assert(t('nhap-diem') === 'Nhập điểm · hạn 23/09', `nhap-diem: "${t('nhap-diem')}"`);
   assert(t('du-kien-ket-thuc') === 'Dự kiến kết thúc 23/09', `du-kien-ket-thuc: "${t('du-kien-ket-thuc')}"`);
-  const all = ['xac-minh-sos', 'lap-pa', 'cap-nhat-pa', 'thuc-hien-y-thuc', 'hoan-thanh-y-thuc', 'nhap-diem', 'du-kien-ket-thuc'].map((k) => t(k));
+  const all = ['xac-minh-sos', 'lap-pa', 'cap-nhat-pa', 'xu-ly-vi-pham', 'duyet', 'nhap-diem', 'du-kien-ket-thuc'].map((k) => t(k));
   assert(new Set(all).size === 7, 'Có hai loại hạn dùng chung một câu — chúng là sáu đồng hồ khác nhau');
 });
 
@@ -8159,12 +8173,12 @@ const branchIdOf = (code: string) => (conn.prepare('SELECT id FROM branches WHER
 
 check('PR-F · Sổ chỉ số: đúng hai mươi chỉ số (PR-N thêm pa-cho-duyet; PR-J thêm tám chỉ số Ý thức), mỗi chỉ số đủ tám trường (thiếu một trường thì không được lên dashboard)', () => {
   const list = domain.METRICS as readonly any[];
-  assert(list.length === 30, `Phải có ba mươi chỉ số (hai của PR-UX4: hv-can-ho-tro-2-lan-chua-case, hv-bo-qua-van-can-ho-tro + hai mươi tám chỉ số cũ: mười hai của PR-F/PR-N + bảy của PR-J còn lại sau khi PR-T bỏ vi-pham-khong-hieu-luc + bốn của PR-T: case-cho-xac-dinh-nguyen-nhan và ba phoi-hop-* + một của PR-S1: tin-hieu-qua-han + ba của PR-Pa: case-xac-dinh-nguyen-nhan-qua-han, bai-qua-han-nhap-diem, case-chua-co-nguoi-phu-trach + một của PR-YT2: vi-pham-theo-nhom), đang có ${list.length}`);
+  assert(list.length === 31, `Phải có ba mươi mốt chỉ số (PR-YT4: bien-phap-dang-chuan-bi → bien-phap-cho-duyet, thêm hv-theo-bac; hai của PR-UX4: hv-can-ho-tro-2-lan-chua-case, hv-bo-qua-van-can-ho-tro + hai mươi tám chỉ số cũ: mười hai của PR-F/PR-N + bảy của PR-J còn lại sau khi PR-T bỏ vi-pham-khong-hieu-luc + bốn của PR-T: case-cho-xac-dinh-nguyen-nhan và ba phoi-hop-* + một của PR-S1: tin-hieu-qua-han + ba của PR-Pa: case-xac-dinh-nguyen-nhan-qua-han, bai-qua-han-nhap-diem, case-chua-co-nguoi-phu-trach + một của PR-YT2: vi-pham-theo-nhom), đang có ${list.length}`);
   const expected = ['hv-sos-hien-tai', 'hv-duoi-ky-vong-mon', 'hv-co-case-mo', 'case-mo', 'tin-hieu-cho-xac-minh', 'tin-hieu-qua-han',
     'case-xac-dinh-nguyen-nhan-qua-han', 'bai-qua-han-nhap-diem', 'case-chua-co-nguoi-phu-trach', 'case-cho-xac-dinh-nguyen-nhan',
     'case-thieu-pa', 'pa-can-cap-nhat', 'pa-cho-duyet', 'pa-co-ket-qua', 'ty-le-co-cai-thien', 'dung-han-cap-nhat', 'do-phu-danh-gia',
     'vi-pham-tong', 'vi-pham-theo-nhom', 'vi-pham-chua-xu-ly', 'hv-co-vi-pham', 'hv-can-xu-ly',
-    'bien-phap-da-thuc-hien', 'bien-phap-dang-chuan-bi', 'bien-phap-theo-loai',
+    'bien-phap-da-thuc-hien', 'bien-phap-cho-duyet', 'bien-phap-theo-loai', 'hv-theo-bac',
     'phoi-hop-luot-sos', 'phoi-hop-dang-xu-ly', 'phoi-hop-hoan-thanh',
     'hv-can-ho-tro-2-lan-chua-case', 'hv-bo-qua-van-can-ho-tro'];
   for (const id of expected) assert(list.some((m) => m.id === id), `Thiếu chỉ số ${id}`);
@@ -9631,7 +9645,7 @@ await runHoSoHocVienTests({ check, checkAsync, assert, assertThrows, conn, TODAY
 
 /* Phép kiểm của module thứ chín ở file riêng — xem đầu `yThuc.tests.ts`. */
 const { runYThucTests } = await import('./yThuc.tests.ts');
-await runYThucTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+await runYThucTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX, demoYThuc: DEMO_Y_THUC });
 
 // ==================================================================== PR-T (rulebook v3: SOS tự tạo Case · Phối hợp SOS · xoá vi phạm)
 
@@ -9759,6 +9773,12 @@ await runPrTocTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 // ==================================================================== PR-MON (Hệ môn học, Pre FOU một ô Tổng hợp, hai khung FT / Lớp thường)
 const { runPrMonTests } = await import('./prMon.tests.ts');
 await runPrMonTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== PR-SOS (SOS v4 — Xác nhận Case → Xác nhận PA, Không cần theo dõi qua Quản lý)
+const { runPrSosTests } = await import('./prSos.tests.ts');
+await runPrSosTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== PR-YT4 (Ý thức v4: một hàm trạng thái, thang bắt buộc, QL duyệt)
+const { runPrYt4Tests } = await import('./prYt4.tests.ts');
+await runPrYt4Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-XLMT (Xếp lịch MT nhiều lớp, thao tác MT theo trạng thái)
 const { runPrXlmtTests, runPrXlmtMayChu } = await import('./prXlmt.tests.ts');
 await runPrXlmtTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
