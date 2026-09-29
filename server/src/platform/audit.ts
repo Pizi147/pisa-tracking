@@ -48,12 +48,14 @@ export function addJourney(e: {
 export function notify(n: {
   userId: number; kind: string; title: string; body?: string | null;
   entityType?: string | null; entityId?: number | null; dedupKey: string;
+  /** PR-DUYET (K5-12): đường mở riêng — Nhắc trỏ đúng dòng việc. Không có thì chuông suy từ `entityType`. */
+  duong?: string | null;
 }) {
   db()
     .prepare(
-      `INSERT INTO notifications (user_id, kind, title, body, entity_type, entity_id, dedup_key, created_at)
-       VALUES (?,?,?,?,?,?,?,?)
+      `INSERT INTO notifications (user_id, kind, title, body, entity_type, entity_id, dedup_key, created_at, duong)
+       VALUES (?,?,?,?,?,?,?,?,?)
        ON CONFLICT(user_id, dedup_key) DO UPDATE SET title = excluded.title, body = excluded.body`,
     )
-    .run(n.userId, n.kind, n.title, n.body ?? null, n.entityType ?? null, n.entityId ?? null, n.dedupKey, nowIso());
+    .run(n.userId, n.kind, n.title, n.body ?? null, n.entityType ?? null, n.entityId ?? null, n.dedupKey, nowIso(), n.duong ?? null);
 }

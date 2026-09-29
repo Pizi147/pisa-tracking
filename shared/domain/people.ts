@@ -121,6 +121,12 @@ export const PERMISSIONS = {
   MEETING_VIEW: 'meeting.view',
   MEETING_EDIT: 'meeting.edit',
   ADMIN_CONFIG: 'admin.config',
+
+  // --- PR-DUYET ---
+  /** Duyệt thẻ trong hộp Chờ duyệt — Quản lý (chi nhánh mình) và Quản trị. GVCN không bao giờ duyệt (T69). */
+  REQUEST_APPROVE: 'request.approve',
+  /** Sửa target, lộ trình của học viên (T44). GVCN gửi "Đề xuất sửa" thay vì tự sửa. Chuyển lớp vẫn `student.edit` (Câu 1 = B). */
+  CYCLE_EDIT: 'cycle.edit',
 } as const;
 export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
@@ -149,6 +155,8 @@ export const PERMISSION_LABEL: Record<string, string> = {
   'meeting.view': 'Xem tiến trình công việc',
   'meeting.edit': 'Cập nhật báo cáo và ghi chú',
   'admin.config': 'Quản trị hệ thống',
+  'request.approve': 'Duyệt yêu cầu trong hộp Chờ duyệt',
+  'cycle.edit': 'Sửa target, lộ trình học viên',
 };
 
 /** Sự kiện hành trình học viên. Bộ lọc chỉ có 3 lựa chọn, xem JOURNEY_FILTERS. */

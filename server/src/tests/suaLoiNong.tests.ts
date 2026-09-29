@@ -82,6 +82,7 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
       { kind: 'self_study', description: 'Tự học 30 phút mỗi tối', status: 'started', performerSelf: true, ...extra }) as any;
     return { caseId: c.id, ivId: r.interventions[r.interventions.length - 1].id as number };
   };
+  const yeuCauSvc: any = await import('../duyet/yeuCau.ts');
   const nhomCua = (who: any, key: string) => (myworkSvc.myWork(who, {}).groups as any[]).find((g) => g.key === key)?.items ?? [];
 
   check('N1 (2) · K5-02: PA tới hạn → MỘT dòng nhóm result, khoá action:, không còn nhóm do_plan / khoá review:', () => {
@@ -102,7 +103,10 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
   check('N1 (2) · K5-58: PA đã huỷ không còn "Chờ tôi xử lý"; duyệt PA đã huỷ bị từ chối', () => {
     const { ivId } = taoPa('huy', { needsApproval: true, status: 'planned', kind: 'tutor' });
     t.conn.prepare("UPDATE case_interventions SET status = 'cancelled' WHERE id = ?").run(ivId);
-    assert(!nhomCua(t.P.mbManager, 'decide').some((it: any) => it.key === `approval:${ivId}`), 'PA huỷ vẫn chờ duyệt');
+    /* PR-DUYET: thẻ Đề xuất PA của PA đã huỷ tự đóng ở lần mở hộp kế tiếp (quét — Q2). */
+    yeuCauSvc.hopChoDuyet(t.P.mbManager);
+    const the = t.conn.prepare(`SELECT trang_thai, ly_do_dong FROM yeu_cau_duyet WHERE loai = 'de_xuat_pa' AND doi_tuong_id = ?`).get(ivId) as any;
+    assert(the?.trang_thai === 'tu_dong' && /Case đã đóng|không còn chờ/.test(the.ly_do_dong), JSON.stringify(the));
     t.assertThrows(() => casesSvc.respondToPlan(t.P.mbManager, ivId, { decision: 'approved' }), /đã huỷ/, 'duyệt được PA đã huỷ');
   });
   check('N1 (2) · K3-18: đề xuất PA có hạn duyệt 5 ngày tính cả hôm gửi; duyệt xong hạn tuần là Thứ Hai', () => {

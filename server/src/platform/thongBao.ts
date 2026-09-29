@@ -13,7 +13,7 @@ export function thongBaoCua(userId: number) {
   return db()
     .prepare(
       `SELECT n.*,
-              COALESCE(sc.student_id, cs.student_id, aa.student_id, aa2.student_id, dm.student_id) AS student_id,
+              COALESCE(sc.student_id, cs.student_id, aa.student_id, aa2.student_id, dm.student_id, ycd.hoc_vien_id) AS student_id,
               CASE WHEN n.entity_type = 'assessment_attempt' THEN n.entity_id ELSE smr.attempt_id END AS attempt_id
          FROM notifications n
          LEFT JOIN sos_cases sc ON n.entity_type = 'sos_case' AND sc.id = n.entity_id
@@ -22,6 +22,7 @@ export function thongBaoCua(userId: number) {
          LEFT JOIN skill_move_requests smr ON n.entity_type = 'skill_move_requests' AND smr.id = n.entity_id
          LEFT JOIN assessment_attempts aa2 ON aa2.id = smr.attempt_id
          LEFT JOIN discipline_measures dm ON n.entity_type = 'discipline_measure' AND dm.id = n.entity_id
+         LEFT JOIN yeu_cau_duyet ycd ON n.entity_type = 'yeu_cau_duyet' AND ycd.id = n.entity_id
         WHERE n.user_id = ?
         ORDER BY n.id DESC LIMIT 30`,
     )
