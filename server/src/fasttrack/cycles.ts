@@ -98,7 +98,7 @@ export function examPlanOf(cycle: {
 }
 
 /** Q29-1 (PR-KCK): ô Target → { target, kck }. KCK / '-' / "không cam kết" = không cam kết; trống = chưa có; sai → 400. */
-export function docTarget(v: unknown): { target: number | null; kck: boolean } {
+function docTarget(v: unknown): { target: number | null; kck: boolean } {
   if (laKck(v)) return { target: null, kck: true };
   if (v === null || v === undefined || v === '') return { target: null, kck: false };
   const n = Number(v);
