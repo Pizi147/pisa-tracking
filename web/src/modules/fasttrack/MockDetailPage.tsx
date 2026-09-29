@@ -4,6 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Card, Empty, ErrorState, ExamPlanText, Info as Tag, Outcome, SectionNote, Skeleton, Status } from '../../ui/ui.tsx';
+import { ChipLichSu } from '../../ui/Nhan.tsx';
 import type { ExamPlan } from '../../../../shared/domain/index.ts';
 import { ConfirmDialog, Modal } from '../../ui/Drawer.tsx';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
@@ -42,6 +43,8 @@ type Detail = {
   history: any[];
   /** Điểm: ai sửa, trước → sau (PR-I). */
   scoreHistory: ScoreHistoryRow[];
+  /** PR-MT (T34): MT lịch sử — nhập bù, không có hạn, không luồng vắng. */
+  lichSu: boolean;
   viewer: {
     canPlanWeek: boolean; canCancel: boolean; canHandleAbsence: boolean;
     canSkipSkill: boolean; canOverrideDeadline: boolean;
@@ -131,7 +134,7 @@ export default function MockDetailPage() {
       label: 'Đổi lịch cả đợt', onClick: () => setWeekOpen(true),
       hint: 'Xếp mọi môn còn dời được vào một tuần',
     }] : []),
-    ...(d.viewer.canOverrideDeadline && !cancelled ? [{
+    ...(d.viewer.canOverrideDeadline && !cancelled && !d.lichSu ? [{
       label: d.deadlineOverride ? 'Sửa hẹp xử lý cả đợt' : 'Hẹn xử lý cả đợt', onClick: () => setDeadlineOpen(true),
       hint: 'Một hạn riêng cho cả đợt',
     }] : []),
@@ -161,13 +164,14 @@ export default function MockDetailPage() {
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <h1 className="text-lg font-semibold text-slate-100">
               {d.student.name} <span className="text-slate-500 text-sm">· {d.student.code}</span>
-              <span className="text-slate-300 text-base font-medium"> · MT{d.attemptNo}</span>
+              <span className="text-slate-300 text-base font-medium whitespace-nowrap"> · MT{d.attemptNo}{d.lichSu && <> <ChipLichSu /></>}</span>
             </h1>
             <ChonDot hienTai={d.id} ds={dsDot.data?.rows ?? []} homNay={homNay} onChon={(r) => navigate(attemptHref(r))} />
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
             Lớp lúc đánh giá: {d.classCode ?? '—'} · {d.branchName ?? '—'}
             {d.cycle.route && ` · Lộ trình ${d.cycle.route}`}
+            {d.lichSu && ' · Nhập bù, không có hạn'}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -377,7 +381,7 @@ function SkillWorkTable({ d, save, onDone, onOpenHistory }: {
     if (ownsSchedule) {
       const unscored = open && !r.scored && r.progress !== 'cancelled';
       if (moveable && unscored) items.push({ label: 'Đổi lịch', hint: 'Đổi tuần thi của riêng môn này', onClick: () => setWeekFor(r) });
-      if (moveable && unscored && r.periodCode && r.sitStatus !== 'absent') {
+      if (moveable && unscored && r.periodCode && r.sitStatus !== 'absent' && !d.lichSu) {
         items.push({
           label: 'Ghi nhận vắng', hint: 'Chỉ khi đã xác minh học viên không đi thi',
           onClick: () => void act(
@@ -395,7 +399,7 @@ function SkillWorkTable({ d, save, onDone, onOpenHistory }: {
           ),
         });
       }
-      if (d.viewer.canOverrideDeadline && open) {
+      if (d.viewer.canOverrideDeadline && open && !d.lichSu) {
         items.push({ label: 'Hẹn xử lý', hint: 'Lùi ngày chấm của riêng môn này', onClick: () => setDeadlineFor(r) });
       }
       if (d.viewer.canSkipSkill && !cancelled && d.scoringMode === 'band') {
@@ -466,7 +470,8 @@ function SkillWorkTable({ d, save, onDone, onOpenHistory }: {
             </Status>
           )}
           {/* Đã có điểm thì chip trạng thái đã nói đủ; hạn chỉ còn nghĩa khi bài còn nợ. */}
-          {prog !== 'scored' && <div><DeadlinePill cell={c} /></div>}
+          {/* MT lịch sử không có hạn (T34) — chip tình trạng "Nhập bù, không có hạn" đã nói đủ. */}
+          {prog !== 'scored' && !d.lichSu && <div><DeadlinePill cell={c} /></div>}
           {ownsSchedule && r.absenceMoveCount > 0 && (
             <div className="text-[11px] text-amber-200">Đã dời do vắng {r.absenceMoveCount} lần</div>
           )}

@@ -27,7 +27,7 @@ import {
 import { HangTab } from '../../ui/HangTab.tsx';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
 import { Han } from '../../ui/Han.tsx';
-import { QuaHan } from '../../ui/Nhan.tsx';
+import { QuaHan, ChipLichSu } from '../../ui/Nhan.tsx';
 import { useSession } from '../../lib/session.tsx';
 
 type OpenCase = { caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'them-pa' } | null;
@@ -520,7 +520,7 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen }: {
           {attempts.map((a) => (
             <tr key={a.id} id={`dot-${a.id}`} className="row-hover cursor-pointer" onClick={() => onOpen(a)}
               style={a.id === dotId ? { background: 'var(--accent-soft)' } : undefined}>
-              <td className="td tabular-nums">MT{a.attemptNo}</td>
+              <td className="td tabular-nums whitespace-nowrap">MT{a.attemptNo}{a.lichSu && <> <ChipLichSu /></>}</td>
               <td className="td text-slate-300">{a.classCode ?? '—'}</td>
               <td className="td whitespace-nowrap">
                 {a.weekStart ? tuanLich(a.weekStart, homNay) : <Info pending>Chưa có tuần</Info>}

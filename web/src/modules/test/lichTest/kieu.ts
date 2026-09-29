@@ -35,6 +35,8 @@ export type LichTest = {
   tongQuan: { daCham: number; tong: number; conPhaiCham: number; no: { bai: number; lop: number }; quaHan: number };
   no: DongNo[];
   lop: LopLichTest[];
+  /** PR-MT (K2-32): MT lịch sử chưa nhập theo lớp — dòng nhắc mờ cuối trang. */
+  nhacLichSu: { classId: number; classCode: string; soEm: number; href: string }[];
 };
 
 /** Màu badge theo loại nhãn (N-3): chờ mình = vàng · chờ người khác = chờ · xong = đã xong · chưa tới = xám. */

@@ -16,6 +16,7 @@ import { myMgmtTasks } from './mgmttasks.ts';
 import { listSignals, type SignalAction } from '../cases/signals.ts';
 import { NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds } from '../cases/sosState.ts';
 import { settleNoShows, sweepExpiredMoves } from '../fasttrack/absence.ts';
+import { mtLichSuChuaNhap } from '../cham/canCham.ts';
 
 /**
  * VIỆC CỦA CHÍNH NGƯỜI ĐANG XEM.
@@ -194,7 +195,7 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   },
   missing_data: {
     label: 'Thiếu dữ liệu cần cho đánh giá',
-    hint: 'Thiếu những thông tin mà không có thì không đánh giá hay lên kế hoạch được: bài chưa xếp vào tuần nào, học viên FT chưa có mục tiêu.',
+    hint: 'Thiếu những thông tin mà không có thì không đánh giá hay lên kế hoạch được: bài chưa xếp vào tuần nào, học viên FT chưa có mục tiêu, MT lịch sử chưa nhập (không tính hạn).',
   },
   mgmt: {
     label: 'Công việc được giao',
@@ -906,6 +907,18 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         });
       }
     }
+  }
+
+  /* K2-32: MT LỊCH SỬ chưa nhập — một việc XÁM mỗi lớp (GVCN / Quản lý), không hạn, không quá hạn. Cùng hàm với dòng nhắc Lịch Test. */
+  for (const l of mtLichSuChuaNhap(p, { branchId: f.branchId ?? null })) {
+    items.push({
+      key: `lich-su:${l.classId}`, group: 'missing_data', urgency: 'normal',
+      studentId: null, studentName: `Lớp ${l.classCode}`, classId: l.classId, classCode: l.classCode,
+      attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: null, count: l.soEm,
+      reason: `Nhập MT lịch sử · ${l.soEm} em · không tính hạn`,
+      tieuDe: 'Nhập MT lịch sử', actionLabel: 'Nhập điểm', href: l.href,
+      ownerId: p.userId, owner: null, mine: true, due: null, statusLabel: 'Không tính hạn',
+    });
   }
 
   // ------------------------------------------------- 5. case chưa có người phụ trách

@@ -181,7 +181,7 @@ function oKyNangCua(cheDo: CheDo, row: any, scores: any[], daDoi: boolean, doiTu
 
 // ---------------------------------------------------------------- lưới Fast Track
 
-export type DotFT = { attemptId: number | null; trangThaiDot: string | null; kn: Partial<Record<KyNangKH, OKyNang>> };
+export type DotFT = { attemptId: number | null; trangThaiDot: string | null; kn: Partial<Record<KyNangKH, OKyNang>>; lichSu?: boolean };
 
 export function luoiFT(p: Principal, classId: number, _today: string = demoToday()) {
   const conn = db();
@@ -258,7 +258,7 @@ export function luoiFT(p: Principal, classId: number, _today: string = demoToday
       const kn = knCua(a);
       const batBuoc = Object.values(kn).filter((o) => o && o.trangThai !== 'khong-yeu-cau');
       const xongCa = batBuoc.length > 0 && batBuoc.every((o) => o!.trangThai === 'xong');
-      dot[n] = { attemptId: a.id, trangThaiDot: a.status === 'done' || xongCa ? 'xong' : a.status, kn };
+      dot[n] = { attemptId: a.id, trangThaiDot: a.status === 'done' || xongCa ? 'xong' : a.status, kn, lichSu: !!a.lich_su };
     }
     return {
       studentId: s.id as number, ten: s.full_name as string, ma: s.student_code as string,

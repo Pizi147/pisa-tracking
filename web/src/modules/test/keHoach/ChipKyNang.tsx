@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { CHU_KY_NANG, gomChip, nhanTuanKhoa, tuanLich, type ChipKH, type KyNangKH } from '@shared/domain/index.ts';
 import { TEN_KY_NANG, type KnO } from './kieu.ts';
+import { ChipLichSu } from '../../../ui/Nhan.tsx';
 
 /**
  * Ô MỘT ĐỢT của một em (mockup 14 phương án B): gộp chip cùng tuần + cùng trạng thái, khác tuần tách dòng, đợt xong gọn
@@ -8,10 +9,12 @@ import { TEN_KY_NANG, type KnO } from './kieu.ts';
  * Màu chỉ dùng token nghĩa (N-1): xong `--done` · đã xếp `--doing` · đã dời `--soon` · chưa xếp viền đứt `--muted`.
  * `onMo(kỹ năng, phần tử)` mở hộp sửa neo cạnh chip vừa bấm.
  */
-export function ChipKyNang({ kn, attemptId, loai, khaiGiang, tongTuan, deXuat, nhanDeXuat, tenDot, chuaToiLuot, onMo }: {
+export function ChipKyNang({ kn, attemptId, loai, khaiGiang, tongTuan, deXuat, nhanDeXuat, tenDot, chuaToiLuot, lichSu, onMo }: {
   kn: KnO; attemptId: number | null; loai: 'ft' | 'thuong';
   /** PR-MT (K4-08): ô FT trống nhưng chưa tới lượt (số MT liền mạch) — không có "+ xếp". */
   chuaToiLuot?: boolean;
+  /** PR-MT (T34): MT lịch sử — dòng đầu là nhãn "lịch sử", còn một dòng chip (ô vẫn cao 44px). */
+  lichSu?: boolean;
   khaiGiang?: string | null; tongTuan?: number | null;
   /** Lớp thường chưa có bài: tuần đề xuất (thứ Hai) và nhãn tuần khoá của nó. */
   deXuat?: string | null; nhanDeXuat?: string | null;
@@ -59,6 +62,7 @@ export function ChipKyNang({ kn, attemptId, loai, khaiGiang, tongTuan, deXuat, n
     const cls = `${CHIP_CLS} bg-done-bg text-done border-done-line`;
     return (
       <div className={bao}>
+        {lichSu && <ChipLichSu />}
         {loai === 'ft' ? (
           <Link to={`/mock-test/${attemptId}`} className={`${cls} no-underline`} title="Đã thi — mở hồ sơ đợt">{noiDung}</Link>
         ) : (
@@ -72,13 +76,16 @@ export function ChipKyNang({ kn, attemptId, loai, khaiGiang, tongTuan, deXuat, n
     return <div className={bao}><span className="text-center text-[11px] text-slate-600" title="Đợt này không thi kỹ năng nào">—</span></div>;
   }
 
-  const hienThi = g.chip.slice(0, 2);
-  const conLai = g.chip.slice(2);
+  const soDong = lichSu ? 1 : 2;
+  const hienThi = g.chip.slice(0, soDong);
+  const conLai = g.chip.slice(soDong);
+  const them = conLai.length;
   return (
     <div className={bao}>
+      {lichSu && <ChipLichSu />}
       {hienThi.map((c, i) => (
         <Chip key={i} c={c} loai={loai} khaiGiang={khaiGiang} tongTuan={tongTuan}
-          them={i === 1 && g.them > 0 ? { n: g.them, ds: conLai.map((x) => `${x.kyNang.map((k) => CHU_KY_NANG[k]).join(' ')} · ${x.tuan ? tuanLich(x.tuan) : 'chưa xếp'}`).join('\n') } : null}
+          them={i === soDong - 1 && them > 0 ? { n: them, ds: conLai.map((x) => `${x.kyNang.map((k) => CHU_KY_NANG[k]).join(' ')} · ${x.tuan ? tuanLich(x.tuan) : 'chưa xếp'}`).join('\n') } : null}
           title={tooltip(c)} onMo={onMo} />
       ))}
     </div>

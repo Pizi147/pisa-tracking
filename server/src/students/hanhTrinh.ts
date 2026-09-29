@@ -217,7 +217,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
       }
       const r = t.ft!;
       return {
-        attemptId: a.id, tuan: a.week_start,
+        attemptId: a.id, tuan: a.week_start, lichSu: !!a.lich_su,
         cheDo: 'ielts' as const, attemptNo: a.attempt_no, kind: a.kind,
         overall: r.overall, sosLevel: r.sosLevel, soDat: null, soYeuCau: r.required.length, soCoDiem: r.scoredRequired,
         maLop: (a.class_code as string | null) ?? null, kyVong: r.expectation,

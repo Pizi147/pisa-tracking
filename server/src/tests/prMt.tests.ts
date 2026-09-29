@@ -348,7 +348,7 @@ export async function runPrMtTests(t: YThucTestKit) {
   const s7 = them('MB FT 101', 'PRMT Em Đánh Số', tuanNay);
   const [m1, m2, m3] = luotCua(s7);
   check('PR-MT (7) · Huỷ cả lượt chỉ với lượt lớn nhất chưa điểm; MT3 huỷ rồi tạo lại → CÙNG id, số MT3 (Q-B, M-12)', () => {
-    assertThrows(() => attemptsSvc.huyLuot(QL, m2.id, { lyDo: 'Thử huỷ ở giữa', cach: 'ca-luot' }), /Chỉ huỷ cả lượt được với lượt lớn nhất/, 'MT2 khi còn MT3');
+    assertThrows(() => attemptsSvc.huyLuot(QL, m2.id, { lyDo: 'Thử huỷ ở giữa', cach: 'ca-luot' }), /Chỉ huỷ cả lượt được với MT cuối cùng/, 'MT2 khi còn MT3');
     const kq = attemptsSvc.huyLuot(QL, m3.id, { lyDo: 'Em xin hoãn MT3' });
     assert(kq.cach === 'ca-luot', JSON.stringify(kq));
     const lai = attemptsSvc.createAttempt(QL, { studentId: s7, periodId: tuanXa(20) });
@@ -426,7 +426,7 @@ export async function runPrMtTests(t: YThucTestKit) {
       assert(l.sit_status === 'scheduled' && l.lan === 1 && l.tuan === '2026-09-14', `${k}: ${JSON.stringify(l)}`);
     }
     const tb = conn.prepare(`SELECT body FROM notifications WHERE user_id = ? AND entity_id = ? AND body LIKE 'Đã tự dời Writing%'`).get(P.w2Teacher.userId, a8.id) as any;
-    assert(tb?.body === 'Đã tự dời Writing sang W3 SEP (vắng lần 1).', JSON.stringify(tb));
+    assert(tb?.body === 'Đã tự dời Writing của PRMT Em Vắng · MT1 sang W3 SEP (vắng lần 1).', JSON.stringify(tb));
     assert(conn.prepare(`SELECT 1 FROM audit_logs WHERE action = 'attempt.absence_auto_move' AND entity_id = ?`).get(a8.id), 'thiếu nhật ký máy tự dời');
   });
   check('PR-MT (8) · Lần 2 → đề nghị chờ QL: hạn hết CN tuần gửi, tuần đích = tuần chưa bắt đầu gần nhất; chữ thẻ cho PR-DUYET (T42, K4-04)', () => {
@@ -456,5 +456,28 @@ export async function runPrMtTests(t: YThucTestKit) {
     skillSch.setSitStatus(P.mbManager, a8.id, 'speaking', 'absent', 'Em lại vắng');
     const kq = absence.requestAbsenceMove(P.coreTeacher, a8.id, ['speaking']);
     assert(kq.outcomes[0].result === 'pending' && kq.outcomes[0].moveNo === 2, JSON.stringify(kq.outcomes[0]));
+  });
+
+  // ---------------------------------------------------------------- khối 9: web — nhãn lịch sử, dòng nhắc, không hạn (T34, K2-32)
+  const { docSach } = await import('./panelUx3.tests.ts');
+  check('PR-MT (9) · Dòng nhắc "MT lịch sử chưa nhập" ở Lịch Test (GVCN lớp) + việc xám không hạn ở Việc cần làm — cùng một hàm (K2-32)', () => {
+    const lt = cham.lichTest(GVCN, week.ensurePeriod(tuanNay).id, null, TODAY, { phamVi: 'tat-ca' });
+    const n = lt.nhacLichSu.find((x: any) => x.classId === MB101);
+    assert(n && n.soEm >= 1 && n.href.startsWith(`/nhap-diem/${MB101}?periodId=`), JSON.stringify(lt.nhacLichSu));
+    const viec = mywork.myWork(GVCN).groups.find((g: any) => g.key === 'missing_data')?.items.find((x: any) => x.key === `lich-su:${MB101}`);
+    assert(viec && viec.due === null && viec.urgency === 'normal' && viec.count === n.soEm && viec.reason === `Nhập MT lịch sử · ${n.soEm} em · không tính hạn`,
+      JSON.stringify(viec));
+    assert(!cham.lichTest(P.sTeacher, week.ensurePeriod(tuanNay).id, null, TODAY, { phamVi: 'tat-ca' }).nhacLichSu.length, 'GVBM không phải GVCN mà thấy dòng nhắc');
+  });
+  check('PR-MT (9) · Quét mã: hồ sơ Mock không vẽ hạn cho MT lịch sử; ô "lich_su" ra "Nhập bù, không có hạn"; không chữ "lich_su" lọt ra màn', () => {
+    const mock = docSach('web/src/modules/fasttrack/MockDetailPage.tsx');
+    assert(/prog !== 'scored' && !d\.lichSu && <div><DeadlinePill/.test(mock), 'MockDetailPage vẽ DeadlinePill cho MT lịch sử');
+    assert(/d\.lichSu && <> <ChipLichSu \/>/.test(mock), 'đầu trang thiếu nhãn "lịch sử" cạnh MT');
+    assert(/progress === 'lich_su'\) return <Info pending>Nhập bù, không có hạn<\/Info>/.test(docSach('web/src/modules/fasttrack/ScoreEntry.tsx')), 'DeadlinePill thiếu nhánh lịch sử');
+    for (const f of ['web/src/modules/test/lichTest/KhoiNo.tsx', 'web/src/modules/test/LichTestTab.tsx', 'web/src/modules/fasttrack/MockDetailPage.tsx',
+      'web/src/modules/test/keHoach/ChipKyNang.tsx', 'web/src/modules/students/StudentDetailPage.tsx', 'web/src/ui/Nhan.tsx']) {
+      assert(!/>[^<{]*lich_su[^<]*</.test(docSach(f)), `${f}: chữ "lich_su" lọt vào JSX`);
+    }
+    assert(d.SKILL_PROGRESS_LABEL.lich_su === 'Nhập bù, không có hạn' && !d.awaitingScore('lich_su'), 'nhãn / không nợ');
   });
 }

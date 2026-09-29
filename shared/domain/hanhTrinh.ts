@@ -330,28 +330,31 @@ export function nhanGhim(a: {
   overall: number | null; sosLevel: number | null;
   soDat: number | null; soYeuCau: number; soCoDiem: number;
   maLop?: string | null; kyNangChuaDat?: string[]; kyVong?: number | null; tuan?: string; homNay?: string;
+  /** PR-MT (T34): MT lịch sử — nhãn nhỏ "lịch sử" cạnh "MT2". */
+  lichSu?: boolean;
 }): NhanGhim {
   const ghep = (...phan: (string | null | undefined)[]) => phan.filter(Boolean).join(' · ');
   if (a.cheDo === 'ielts') {
-    const mt = `MT${a.attemptNo}`;
+    const so = `MT${a.attemptNo}`;   // bản gọn (điện thoại) không kèm "lịch sử"
+    const mt = a.lichSu ? `${so} lịch sử` : so;
     const tuan = a.tuan ? tuanLich(a.tuan, a.homNay) : null;
-    if (a.soCoDiem === 0) return { chu: mt, gon: mt, day: ghep(mt, tuan, 'chưa có điểm'), mau: 'tam' };
+    if (a.soCoDiem === 0) return { chu: mt, gon: so, day: ghep(mt, tuan, a.lichSu ? 'nhập bù, không có hạn' : 'chưa có điểm'), mau: 'tam' };
     if (a.soCoDiem < a.soYeuCau) {
-      return { chu: `${mt} · đang chấm`, gon: mt, day: ghep(mt, tuan, `đang chấm ${a.soCoDiem}/${a.soYeuCau} kỹ năng`), mau: 'tam' };
+      return { chu: `${mt} · đang chấm`, gon: so, day: ghep(mt, tuan, `đang chấm ${a.soCoDiem}/${a.soYeuCau} kỹ năng`), mau: 'tam' };
     }
     const band = a.overall != null ? a.overall.toFixed(1) : '—';
     const overall = `Overall ${band}`;
     if (a.sosLevel == null) {
-      return { chu: `${mt} · ${band}`, gon: `${mt} ${band}`, day: ghep(mt, tuan, overall, 'chưa có kỳ vọng'), mau: 'tam' };
+      return { chu: `${mt} · ${band}`, gon: `${so} ${band}`, day: ghep(mt, tuan, overall, 'chưa có kỳ vọng'), mau: 'tam' };
     }
     const mau = mauTuSos(a.sosLevel);
     if (a.sosLevel <= 0) {
-      return { chu: `${mt} · ${band} · Đạt`, gon: `${mt} ${band}`, day: ghep(mt, tuan, overall, 'Đạt kỳ vọng'), mau };
+      return { chu: `${mt} · ${band} · Đạt`, gon: `${so} ${band}`, day: ghep(mt, tuan, overall, 'Đạt kỳ vọng'), mau };
     }
     const ky = (a.kyNangChuaDat ?? []).map((k) => (ASSESSED_SKILL_LABEL as Record<string, string>)[k] ?? k);
     const sos = `SOS ${a.sosLevel}`;
     return {
-      chu: `${mt} · ${band} · ${sos}`, gon: `${mt} ${band}`,
+      chu: `${mt} · ${band} · ${sos}`, gon: `${so} ${band}`,
       day: ghep(mt, tuan, overall, ky.length ? `${sos} — ${ky.join(', ')} dưới kỳ vọng` : sos), mau,
     };
   }

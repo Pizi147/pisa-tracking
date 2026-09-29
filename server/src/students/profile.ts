@@ -555,7 +555,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     const t = typedResult(a);
     const c = caseByAttempt.get(a.id) ?? null;
     const base = {
-      id: a.id, attemptNo: a.attempt_no, kind: a.kind, status: a.status,
+      id: a.id, attemptNo: a.attempt_no, kind: a.kind, status: a.status, lichSu: !!a.lich_su,
       classCode: a.class_code, periodCode: a.period_code, weekStart: a.week_start ?? null,
       mode: t.mode,
       caseId: c?.id ?? null, caseStatus: c?.status ?? null,

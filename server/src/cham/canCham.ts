@@ -13,7 +13,7 @@ import { notFound } from '../util.ts';
 import { db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import {
-  activeAt, can, classScopeSql, defaultWorkScope, editableSkills, mySkills, scopeFor, type Principal,
+  activeAt, can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, mySkills, scopeFor, type Principal,
 } from '../permissions.ts';
 import {
   ATTEMPT_KIND_SHORT, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, LUOT_TINH_NO_SQL, PERMISSIONS, SKILL_SHORT, lopTuMo, nhanLopLichTest, noShowStateOf,
@@ -99,6 +99,38 @@ const theoThuTu = (a: string, b: string) =>
 
 const kyNangLabelOf = (mode: CheDo, kyNang: string[]) =>
   (mode === 'ratio' && kyNang.length >= 4 ? `${kyNang.length} môn` : kyNang.map((k) => SKILL_SHORT[k] ?? k).join(', '));
+
+/** Một dòng nhắc "MT lịch sử chưa nhập" của một lớp (K2-32). */
+export type NhacLichSu = { classId: number; classCode: string; soEm: number; href: string };
+
+/**
+ * K2-32 — LƯỢT MT LỊCH SỬ CÒN THIẾU ĐIỂM, gom theo lớp: một dòng nhắc MỜ ở Lịch Test và một việc xám ở Việc cần làm (không số đỏ,
+ * không vào dải số hay Nợ, không hạn). Chỉ lớp người xem là GVCN hoặc Quản lý (xếp tuần được lớp đó). Một câu cho mọi lớp.
+ */
+export function mtLichSuChuaNhap(p: Principal, o: { classIds?: number[] | null; branchId?: number | null } = {}): NhacLichSu[] {
+  if (o.classIds && !o.classIds.length) return [];
+  const where = ['a.lich_su = 1', `a.status = 'planned'`, `c.status = 'active'`];
+  const params: unknown[] = [];
+  if (o.classIds) { where.push(`a.class_id IN (${o.classIds.map(() => '?').join(',')})`); params.push(...o.classIds); }
+  if (o.branchId) { where.push('c.branch_id = ?'); params.push(o.branchId); }
+  const rows = db().prepare(
+    `SELECT a.class_id, a.student_id, a.planned_period_id, c.code FROM assessment_attempts a
+       JOIN classes c ON c.id = a.class_id LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
+      WHERE ${where.join(' AND ')} ORDER BY c.code, rp.week_start`,
+  ).all(...params) as any[];
+  const duoc = new Map<number, boolean>();
+  const theoLop = new Map<number, { classCode: string; em: Set<number>; periodId: number | null }>();
+  for (const r of rows) {
+    if (!duoc.has(r.class_id)) duoc.set(r.class_id, isCoreTeacherOf(p, r.class_id) || can(p, PERMISSIONS.PLAN_WEEK, { classId: r.class_id }));
+    if (!duoc.get(r.class_id)) continue;
+    const l = theoLop.get(r.class_id) ?? { classCode: r.code as string, em: new Set<number>(), periodId: r.planned_period_id ?? null };
+    l.em.add(r.student_id);
+    theoLop.set(r.class_id, l);
+  }
+  return [...theoLop].map(([classId, l]) => ({
+    classId, classCode: l.classCode, soEm: l.em.size, href: `/nhap-diem/${classId}${l.periodId ? `?periodId=${l.periodId}` : ''}`,
+  }));
+}
 
 /** Chia lô cho câu `IN (...)` — SQLite giới hạn số tham số của một câu lệnh. */
 function theoLo<T>(ids: T[], hoi: (lo: T[], ph: string) => void) {
@@ -300,6 +332,8 @@ export type LichTest = {
   tongQuan: { daCham: number; tong: number; conPhaiCham: number; no: { bai: number; lop: number }; quaHan: number };
   no: DongNo[];
   lop: LopLichTest[];
+  /** PR-MT (K2-32): dòng nhắc MỜ cuối trang — MT lịch sử chưa nhập theo lớp. */
+  nhacLichSu: NhacLichSu[];
 };
 
 type OiemLuu = {
@@ -358,7 +392,7 @@ export function lichTest(
   const phamVi: PhamViLichTest = coPhanCong ? o.phamVi ?? 'cua-toi' : 'tat-ca';
   const rong: LichTest = {
     scopeEmpty: scope.none, tuan: null, phamVi, coPhamViRong: false, coPhanCong, lopDangLoc: null,
-    tongQuan: { daCham: 0, tong: 0, conPhaiCham: 0, no: { bai: 0, lop: 0 }, quaHan: 0 }, no: [], lop: [],
+    tongQuan: { daCham: 0, tong: 0, conPhaiCham: 0, no: { bai: 0, lop: 0 }, quaHan: 0 }, no: [], lop: [], nhacLichSu: [],
   };
   if (scope.none) return rong;
   const conn = db();
@@ -530,5 +564,6 @@ export function lichTest(
     },
     no: no.dong,
     lop,
+    nhacLichSu: mtLichSuChuaNhap(p, { classIds: lopNo ? [...lopNo] : null, branchId }),
   };
 }

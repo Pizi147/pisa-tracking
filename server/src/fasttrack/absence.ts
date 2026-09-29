@@ -730,8 +730,9 @@ function settleGroup(
     lyDo: 'Không dự thi — máy tự dời', today, idem: `auto-vang:${schedId}:${weekEnd.slice(0, 10)}`,
   });
   if (kq.result === 'moved') {
-    /* Báo GVCN + GVBM đúng kỹ năng (W1, W2 là hai người). Trùng thông báo bị chặn bởi dedupKey. */
+    /* Báo GVCN + GVBM đúng kỹ năng (W1, W2 là hai người). Trùng thông báo bị chặn bởi dedupKey. Câu nêu ĐÚNG em và MT — danh sách thông báo không có ngữ cảnh. */
     const tuanMoi = tuanLich(ensureSkillRows(attemptId).find((r) => r.skill === assessed)!.week_start, today);
+    const em = (conn.prepare('SELECT full_name FROM students WHERE id = ?').get(attempt.student_id) as any)?.full_name ?? 'học viên';
     for (const t of conn
       .prepare(
         `SELECT DISTINCT user_id FROM teacher_assignments
@@ -739,8 +740,8 @@ function settleGroup(
       )
       .all(attempt.class_id, ...entrySkillsOf(assessed as AssessedSkill)) as any[]) {
       notify({
-        userId: t.user_id, kind: 'schedule_move', title: 'Máy đã tự dời bài không dự thi',
-        body: `Đã tự dời ${skillName(assessed)} sang ${tuanMoi} (vắng lần 1).`,
+        userId: t.user_id, kind: 'schedule_move', title: 'Đã tự dời bài không dự thi',
+        body: `Đã tự dời ${skillName(assessed)} của ${em} · MT${attempt.attempt_no} sang ${tuanMoi} (vắng lần 1).`,
         entityType: 'assessment_attempt', entityId: attemptId,
         dedupKey: `no_show:${attemptId}:${assessed}:${weekEnd.slice(0, 10)}:${t.user_id}`,
       });

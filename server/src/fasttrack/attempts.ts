@@ -911,6 +911,8 @@ export function attemptDetail(p: Principal, attemptId: number) {
     attemptNo: a.attempt_no,
     targetAtAttempt: a.target_at_attempt,
     studyWeekHint: MOCK_FT_STUDY_WEEK[a.attempt_no] ?? null,
+    /** PR-MT (T34): MT lịch sử — nhập bù, không hạn, không luồng vắng. */
+    lichSu: !!a.lich_su,
     /*
      * TUẦN KẾ HOẠCH HOÀN TẤT của cả đợt — tuần muộn nhất trong các kỹ năng bắt buộc.
      * Đây KHÔNG phải ngày thi và cũng không phải ngày hoàn thành thực tế (mục 10.7).
@@ -1215,7 +1217,7 @@ export function huyLuot(p: Principal, attemptId: number, input: { lyDo: string; 
   const cach = input.cach ?? hq.cachDuoc;
   if (cach !== 'ca-luot' && cach !== 'phan-con-lai') throw badRequest('Cách huỷ không hợp lệ.');
   if (cach === 'ca-luot' && hq.cachDuoc !== 'ca-luot') {
-    throw badRequest('Chỉ huỷ cả lượt được với lượt lớn nhất chưa có điểm nào — dùng "Huỷ phần còn lại".');
+    throw badRequest('Chỉ huỷ cả lượt được với MT cuối cùng của lộ trình khi chưa có điểm nào — dùng "Huỷ phần còn lại".');
   }
   const conn = db();
   return tx(() => {

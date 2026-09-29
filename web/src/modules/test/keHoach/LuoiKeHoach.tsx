@@ -54,7 +54,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien }: {
   const khaiGiang = loai === 'thuong' ? (data as LuoiThuongData).khaiGiang : null;
   const tongTuan = loai === 'thuong' ? (data as LuoiThuongData).tongTuan : null;
   const hangs = data.hang as Array<HangFT | HangThuong>;
-  const o = (h: HangFT | HangThuong, c: Cot): { attemptId: number | null; kn: KnO } => dotCuaEm(
+  const o = (h: HangFT | HangThuong, c: Cot): { attemptId: number | null; kn: KnO; lichSu?: boolean } => dotCuaEm(
     loai === 'ft' ? { loai: 'ft', luoi: data as LuoiFTData, hang: h as HangFT } : { loai: 'thuong', luoi: data as LuoiThuongData, hang: h as HangThuong }, c.dot,
   );
 
@@ -91,6 +91,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien }: {
                   <td key={c.key} className="td py-1.5 align-middle">
                     <ChipKyNang kn={dot.kn} attemptId={dot.attemptId} loai={loai} khaiGiang={khaiGiang} tongTuan={tongTuan}
                       chuaToiLuot={loai === 'ft' && c.dot.loai === 'ft' && c.dot.attemptNo !== (h as HangFT).soKeTiep}
+                      lichSu={!!dot.lichSu}
                       deXuat={c.deXuat} nhanDeXuat={c.nhanDeXuat} tenDot={nhanDot(c.dot)}
                       onMo={(skill, el) => setHop({ anchor: el, hang: h, cot: c, kyNangDau: skill })} />
                   </td>

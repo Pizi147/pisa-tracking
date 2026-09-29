@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
@@ -256,6 +256,17 @@ export function LichTestTab() {
             )}
           </div>
         </>
+      )}
+      {/* PR-MT (K2-32): nhắc MỜ — không số đỏ, không vào dải số hay Nợ, không hạn. Chỉ GVCN của lớp / Quản lý thấy. */}
+      {data.nhacLichSu.length > 0 && (
+        <div className="space-y-1 px-1">
+          {data.nhacLichSu.map((n) => (
+            <p key={n.classId} className="m-0 text-[12.5px] text-slate-500 tabular-nums">
+              MT lịch sử chưa nhập · {n.soEm} em · {n.classCode}{' '}
+              <Link to={n.href} className="link" aria-label={`Nhập MT lịch sử lớp ${n.classCode}`}>→ Nhập</Link>
+            </p>
+          ))}
+        </div>
       )}
     </div>
   );

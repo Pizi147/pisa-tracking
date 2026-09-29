@@ -55,8 +55,8 @@ export function kiemSoMtMoi(ds: LuotSo[], n: number): string | null {
   if (!Number.isInteger(n) || n < 1) return 'Số MT không hợp lệ.';
   if (con.some((x) => x.attempt_no === n)) return `Lộ trình này đã có MT${n}. Đổi tuần thay vì tạo mới.`;
   const ke = soMtKeTiep(ds);
-  if (n > ke) return `Chưa có MT${ke} — tạo MT${ke} trước rồi mới tới MT${n}.`;
-  if (ds.some((x) => x.attempt_no === n && x.status === 'cancelled' && x.coDiem)) return `MT${n} đã huỷ và còn điểm — số này không dùng lại.`;
+  if (n > ke) return `Chưa có MT${ke} — xếp MT${ke} trước rồi mới xếp MT${n}.`;
+  if (ds.some((x) => x.attempt_no === n && x.status === 'cancelled' && x.coDiem)) return `MT${n} đã huỷ nhưng còn điểm — không dùng lại số này.`;
   return null;
 }
 

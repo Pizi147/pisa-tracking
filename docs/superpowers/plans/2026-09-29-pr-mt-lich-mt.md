@@ -592,6 +592,21 @@ khác ngày với bản thử thì chạy thử lại. 5. Chạy thử lần n�
   `rutDeNghiDoi` ở absence.ts). Hạn đề nghị (lần 2+ và chuyển QL) = `hanDuyetDoiLan2(hôm nay)`; tuần đích = `tuanDichMacDinh`; duyệt
   không chọn tuần mà tuần lưu đã bắt đầu → tuần đích mặc định. Nhật ký mới `attempt.absence_auto_move`. Lịch Test: `LuiLich.lanVang`,
   `LopLichTest.choDuyetDoi` (một lần tra sổ đề nghị); phần chữ trên web làm ở Task 9. MT lịch sử: `requestAbsenceMove` chặn.
+- **Task 9:** `lichSu` trả ở `listAttempts`, `attemptDetail`, lưới Kế hoạch Test (`DotFT`), hồ sơ HV (`attempts`), Hành trình (`ghim`).
+  `ChipLichSu` (ui/Nhan.tsx) dùng ở đầu hồ sơ Mock, bảng Mock Test hồ sơ HV, ô Kế hoạch Test (dòng 1 là nhãn, còn 1 dòng chip + "+n" —
+  ô vẫn 44px); Hành trình ghi "MT2 lịch sử" (bản gọn điện thoại chỉ "MT2"). `mtLichSuChuaNhap` (canCham.ts) dùng chung dòng nhắc Lịch
+  Test (`nhacLichSu`) và việc xám nhóm Thiếu dữ liệu. Hồ sơ Mock lượt lịch sử: không `DeadlinePill`, không "Ghi nhận vắng", không "Hẹn
+  xử lý" (dòng và cả đợt); nút "Nhập điểm cả lớp" có sẵn mở đúng tuần. Phần web Task 5/8 cũng làm ở đây (DeadlinePill `lich_su`, Nợ
+  "dời từ … · vắng lần n", hàng lớp "vắng · chờ Quản lý duyệt dời").
+  **impeccable clarify (trước → sau):** hàng lớp `vắng · chờ QL duyệt dời` → `vắng · chờ Quản lý duyệt dời` (TU_DIEN_VA_CHU dòng 96: không
+  viết tắt QL trên màn — **chủ sản phẩm xem lại**, kế hoạch ghi "QL") · thông báo `Đã tự dời Writing sang W3 SEP (vắng lần 1).` → `Đã tự
+  dời Writing của {tên em} · MT1 sang W3 SEP (vắng lần 1).` (danh sách thông báo không có ngữ cảnh em nào) · lỗi đánh số `Chưa có MT2 —
+  tạo MT2 trước rồi mới tới MT3.` → `Chưa có MT2 — xếp MT2 trước rồi mới xếp MT3.` (cùng động từ "xếp" với Kế hoạch Test) · `MT2 đã huỷ
+  và còn điểm — số này không dùng lại.` → `MT2 đã huỷ nhưng còn điểm — không dùng lại số này.` · lỗi huỷ `…với lượt lớn nhất chưa có
+  điểm nào…` → `…với MT cuối cùng của lộ trình khi chưa có điểm nào…` (bỏ chữ máy "lượt lớn nhất") · việc xám nút `Nhập` → `Nhập điểm`
+  · tooltip nhãn `lịch sử` nói đúng T34 ("tuần thi đã qua trước khi lượt này được tạo"). Giữ nguyên (chữ kế hoạch đã chốt): nhãn
+  `lịch sử`, dòng nhắc `MT lịch sử chưa nhập · 3 em · MB FT 101 → Nhập` (thêm `aria-label` cho link), `Nhập bù, không có hạn`, `dời từ
+  W3 SEP · vắng lần 1`, hộp huỷ "Số MT3 sẽ dùng lại được…" / "MT2 giữ số; kỹ năng đã có điểm giữ nguyên.".
 
 ## Planning chốt 29/09
 
