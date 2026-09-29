@@ -638,6 +638,14 @@ if (chuaQua.length) luuY('daThiToiMt', `Đã thi tới MT${daThiToiMt} nhưng ${
   Nút đầu trang "Xếp lịch MT…" / "Xếp lịch Test…" (không cần mở lớp trước) làm cùng Task 7 vì cần ngăn mới.
 - **Task 6 — layout:** tầng 1 của màn Kế hoạch Test là **em cần xếp / xếp lại** (chip "Cần xếp lại (n)" cạnh công tắc khung, lọc
   lớp + hàng). Detector `--scope layout` sạch. Cột ⋯ 28 px cố định (kể cả khi rỗng) để 4 dòng kỹ năng thẳng cột.
+- **Task 7:** công tắc khung đầu ngăn là `BoLocDoan` cục bộ (`KhungXepLich`) — KHÔNG dùng `CongTacKhung` vì nó nhớ theo máy và sẽ đổi
+  luôn khung của trang. Tiêu đề: FT "Xếp lịch Mock Test", Lớp thường "Xếp lịch Test" (lớp thường không có Mock Test). Xem trước gửi
+  MỌI em của các lớp đã chọn (để cột "Sẽ xếp" có cả em chưa chọn và để tick mặc định = em có việc), lưu chỉ em đã tick. Hộp thi lại ghi
+  kỹ năng + tuần đã có điểm, **không** ghi số điểm (lưới Kế hoạch Test không trả điểm — thêm là thêm câu SQL, ngoài trần +1). Lọc chi
+  nhánh trong ngăn tải lại danh sách lớp cho "+ lớp" (lớp đã chọn giữ). Điện thoại: dòng xem trước dính cuối thân ngăn, ngay trên nút.
+- **Task 7 — layout/clarify:** bảng `table-layout: fixed`, cột Mock Test rộng theo số MT (40 px/MT), chip MT dùng SVG ✓ ○ ◐ 10 px; cột
+  tên dính trái khi cuộn ngang ở 375 px. Dòng phụ đợt: "Em đã đủ điểm đợt này tự sang đợt kế tiếp; đợt còn dở thì xếp nốt kỹ năng còn
+  thiếu." Detector sạch trên mọi file giao diện của PR.
 
 ## Chủ sản phẩm chốt 29/09 (thay các chỗ lệch trong kế hoạch)
 

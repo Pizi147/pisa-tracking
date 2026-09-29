@@ -378,4 +378,13 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
     assert(mock.includes('thaoTacKyNang(') && mock.includes('<HopThaoTacMt') && mock.includes('<TheYeuCau') && mock.includes('<DongThoiGianLuot'), 'thiếu nguồn chung');
     assert(!/label: 'Lịch sử'/.test(mock), '"Lịch sử" không nằm trong menu dòng');
   });
+
+  check('PR-XLMT (7) · Ngăn Xếp lịch MT vẽ theo máy chủ (`chuSeXep`, `viec`), không tự suy việc; khung Lớp thường không còn lưới FT; mặc định tuần tới', () => {
+    const ngan = docSach('web/src/modules/test/keHoach/NganXepLichMt.tsx');
+    assert(/chuSeXep\(d, null\)/.test(ngan) && /d\.viec/.test(ngan) && /tomTatXepMt\(/.test(ngan), 'ngăn phải dùng chuSeXep / viec / tomTatXepMt');
+    assert(!/viecXepMt\(/.test(ngan), 'web không tự gọi viecXepMt — việc do máy chủ chọn');
+    assert(/tuanMacDinhDotMoi\(/.test(ngan) && /tuanMacDinhDotMoi\(/.test(docSach('web/src/modules/test/keHoach/HopKyNang.tsx')), 'mặc định tuần tới (K4-14)');
+    const thuong = docSach('web/src/modules/test/keHoach/NganXepHangLoat.tsx');
+    assert(!thuong.includes('/ke-hoach-test/ft/'), 'khung Lớp thường còn tải lưới FT');
+  });
 }
