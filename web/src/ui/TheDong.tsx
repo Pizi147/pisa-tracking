@@ -29,7 +29,7 @@ export function TheDong({ dau, hanhDong, dong, className = '' }: {
   className?: string;
 }) {
   return (
-    <article className={`border-t px-3 py-2.5 first:border-t-0 ${className}`} style={{ borderColor: 'var(--line)' }}>
+    <article className={`border-t px-3 py-2.5 first:border-t-0 [&_a.link]:inline-block [&_a.link]:py-3.5 [&_button.link]:py-3.5 ${className}`} style={{ borderColor: 'var(--line)' }}>
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1">{dau}</div>
         {hanhDong && <div className="shrink-0">{hanhDong}</div>}
@@ -39,7 +39,7 @@ export function TheDong({ dau, hanhDong, dong, className = '' }: {
           {dong.map((d) => (
             <Fragment key={d.nhan}>
               <dt className="text-slate-500">{d.nhan}</dt>
-              <dd className="m-0 min-w-0 tabular-nums text-slate-200">{d.noiDung}</dd>
+              <dd className="m-0 min-w-0 tabular-nums text-slate-200 [&_.truncate]:overflow-visible [&_.truncate]:whitespace-normal">{d.noiDung}</dd>
             </Fragment>
           ))}
         </dl>

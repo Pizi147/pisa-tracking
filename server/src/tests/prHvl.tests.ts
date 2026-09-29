@@ -37,6 +37,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
     eq([pre.chinh, pre.dong1, pre.dong2, pre.dat], ['64%', 'Cuối khoá', null, true], 'Pre FOU: không dòng 2');
     const thieu = d.ketQuaGanNhat(thuong({ attemptLabel: 'Cuối khoá', attemptKind: 'final', scored: 2, failed: 0, sosLevel: null, failedSkills: [] }));
     eq([thieu.chinh, thieu.dong1], ['2/2 môn đạt', 'Cuối khoá · 2/4 môn có điểm'], 'Cuối khoá còn thiếu môn thì chưa có %');
+    eq(d.ketQuaGanNhat(thuong({ scored: 0, failed: 0, sosLevel: null, failedSkills: [] })).chinh, '—', 'chưa môn nào có điểm: không "0/0 môn đạt"');
     for (const k of [d.ketQuaGanNhat(thuong()), be, pre, thieu]) assert(!/SOS|…/.test(JSON.stringify(k)), `Có "SOS"/"…": ${JSON.stringify(k)}`);
     eq(d.ketQuaGanNhat(null).dong1, 'Chưa có kết quả', 'Chưa có');
   });

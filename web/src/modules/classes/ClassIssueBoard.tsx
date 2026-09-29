@@ -36,7 +36,7 @@ export function VanDeKyNang({ classId, category }: { classId: number; category: 
   return (
     <div className="space-y-3">
       <section className="overflow-x-auto" aria-label={`Vấn đề ở ${mon}`}>
-        <h4 className="m-0 mb-1 text-xs font-semibold text-slate-200">Vấn đề ở {mon}</h4>
+        <h3 className="m-0 mb-1 text-xs font-semibold text-slate-200">Vấn đề ở {mon}</h3>
         {t.caseTatCa.length === 0 ? (
           <p className="m-0 py-2 text-xs text-slate-500">Lớp này chưa có Case nào ở {mon}.</p>
         ) : (
@@ -66,7 +66,7 @@ export function VanDeKyNang({ classId, category }: { classId: number; category: 
       </section>
 
       <section className="overflow-x-auto" aria-label={`Hiệu quả phương án ở ${mon}`}>
-        <h4 className="m-0 mb-1 text-xs font-semibold text-slate-200">Hiệu quả phương án ở {mon}</h4>
+        <h3 className="m-0 mb-1 text-xs font-semibold text-slate-200">Hiệu quả phương án ở {mon}</h3>
         {data.plans.length === 0 ? (
           <p className="m-0 py-2 text-xs text-slate-500">Chưa có phương án nào ở {mon}, nên chưa nói được loại nào hiệu quả.</p>
         ) : (

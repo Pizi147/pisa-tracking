@@ -7,7 +7,6 @@
  * web ghép `standing` + `cycle` từ đó, giữ trần câu SQL của đường này ≤ `/cases?classId=` + 8 (kế hoạch PR-HVL, Global Constraints).
  */
 import { ENTRY_SKILLS, PERMISSIONS } from '../../../shared/domain/index.ts';
-import { demoToday } from '../demoConfig.ts';
 import { editableSkills, isCoreTeacherOf, can, require_, type Principal } from '../permissions.ts';
 import { programmeOfClass } from '../normal/regular.ts';
 import { listCases } from '../cases/cases.ts';
@@ -29,7 +28,6 @@ export function canHoTroLop(p: Principal, classId: number) {
     theoEm.set(x.studentId, e);
   }
   const em = [...theoEm.values()];
-  const homNay = demoToday();
   const tatCa = em.flatMap((e) => e.cases);
   return {
     ct: (prog?.code ?? null) as string | null,
@@ -38,7 +36,6 @@ export function canHoTroLop(p: Principal, classId: number) {
     kyNangToi: editableSkills(p, classId, boMon),
     /** GVBM thuần: không chủ nhiệm, không Quản lý — công tắc bật sẵn khi dạy 1–2 kỹ năng (Q12). */
     laGvbmThuan: !isCoreTeacherOf(p, classId) && !can(p, PERMISSIONS.PLAN_WEEK, { classId }),
-    homNay,
     tong: {
       soEm: em.length, soCase: tatCa.length,
       /** K2-42: Case "Chờ Quản lý duyệt · không theo dõi" + PA đang chờ Quản lý duyệt. */

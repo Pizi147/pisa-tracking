@@ -95,17 +95,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
   if (the) {
     return (
       <div>
-        {chung && (
-          <p className="m-0 border-t px-3 py-2 text-xs" style={{ borderColor: 'var(--line)' }}>
-            <span className="text-slate-500">Cả lớp: </span>
-            <span className="text-slate-200">
-              {denChung ? <Link to={denChung} className="link">{chung.viec.viec}</Link> : chung.viec.viec}
-              {chung.viec.quaHanNgay !== null ? <> <QuaHan ngay={chung.viec.quaHanNgay} /></>
-                : chung.viec.han ? <span className="text-slate-500"> · {chung.viec.han}</span> : null}
-            </span>
-            <span className="text-slate-500"> · {chung.soEm} em{denChung ? ' →' : ''}</span>
-          </p>
-        )}
+        {chung && <p className="m-0 border-t px-3 py-2 text-xs" style={{ borderColor: 'var(--line)' }}><ViecChungLop chung={chung} den={denChung} /></p>}
         {rows.map((s) => {
           const k = ketQuaGanNhat(s.standing);
           const khoa = khoaCua(s);
@@ -147,15 +137,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
     <>
       {chung && (
         <HangCon>
-          <td colSpan={soCot} className="td text-xs">
-            <span className="text-slate-500">Cả lớp: </span>
-            <span className="text-slate-200">
-              {denChung ? <Link to={denChung} className="link">{chung.viec.viec}</Link> : chung.viec.viec}
-              {chung.viec.quaHanNgay !== null ? <> <QuaHan ngay={chung.viec.quaHanNgay} /></>
-                : chung.viec.han ? <span className="text-slate-500"> · {chung.viec.han}</span> : null}
-            </span>
-            <span className="text-slate-500"> · {chung.soEm} em{denChung ? ' →' : ''}</span>
-          </td>
+          <td colSpan={soCot} className="td text-xs"><ViecChungLop chung={chung} den={denChung} /></td>
         </HangCon>
       )}
       {rows.map((s) => {
@@ -221,6 +203,21 @@ function KetQuaOHocVien({ k, standing, thuong }: { k: ReturnType<typeof ketQuaGa
       </span>
       {k.dong1 && <span className="block text-[12px] leading-4 text-slate-500">{k.dong1}</span>}
       {k.dong2 && <span className="block text-[12px] leading-4 text-slate-500">{k.dong2}</span>}
+    </>
+  );
+}
+
+/** Hàng "Cả lớp" (Q6, B8): việc Nhập điểm chung của cả lớp — chữ + hạn + số em + link tới lưới nhập điểm; dùng cho bảng và thẻ. */
+function ViecChungLop({ chung, den }: { chung: { viec: ViecTiepTheo; soEm: number }; den: string | null }) {
+  const v = chung.viec;
+  return (
+    <>
+      <span className="text-slate-500">Cả lớp: </span>
+      <span className="text-slate-200">
+        {den ? <Link to={den} className="link">{v.viec}</Link> : v.viec}
+        {v.quaHanNgay !== null ? <> <QuaHan ngay={v.quaHanNgay} /></> : v.han ? <span className="text-slate-500"> · {v.han}</span> : null}
+      </span>
+      <span className="text-slate-500"> · {chung.soEm} em{den ? ' →' : ''}</span>
     </>
   );
 }

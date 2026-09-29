@@ -132,7 +132,7 @@ export function ketQuaGanNhat(k: KetQuaVao | null): KetQuaHien {
     /* T58: lớp thường KHÔNG có SOS ở cột này. Cuối khoá (hoặc Pre FOU) đủ điểm → % tổng; còn lại "n/N môn đạt". */
     const thieuDiem = k.scored < k.required;
     const chinh = (k.attemptKind === 'final' || k.khongChiaMon) && k.tyLeTong != null ? `${Math.round(k.tyLeTong * 100)}%`
-      : k.khongChiaMon ? '—' : `${k.scored - (k.failed ?? 0)}/${thieuDiem ? k.scored : k.required} môn đạt`;
+      : k.khongChiaMon || k.scored === 0 ? '—' : `${k.scored - (k.failed ?? 0)}/${thieuDiem ? k.scored : k.required} môn đạt`;
     /* Pre FOU: đạt/không xét trên tỷ lệ chính xác ở máy chủ (`sosLevel === 0`); lớp thường khác: đủ môn và không môn nào trượt. */
     const dat = k.khongChiaMon ? k.sosLevel === 0 : k.sosLevel === 0 && !k.provisional && !thieuDiem;
     return {

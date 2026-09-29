@@ -36,7 +36,7 @@ type DongRoster = {
 type MoNgan = { caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'xac-nhan' | 'xac-nhan-pa'; em: string };
 
 /** Lưới bốn cột thẳng nhau giữa mọi khối: Kỹ năng · Case · Phương án đang làm · Việc tiếp + hạn. */
-const LUOI = 'md:grid md:grid-cols-[2.75rem_minmax(0,1.5fr)_minmax(0,1.2fr)_minmax(0,1fr)] md:gap-x-3';
+const LUOI = 'md:grid md:grid-cols-[3.5rem_minmax(0,1.5fr)_minmax(0,1.2fr)_minmax(0,1fr)] md:gap-x-3';
 const CAO_TRAI = 'md:grid md:grid-cols-[13.5rem_minmax(0,1fr)]';
 
 /**
@@ -149,7 +149,7 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
                         onMo={(viec, paId) => setNgan({ caseId: c.id, viec, paId, em: e.ten })} />
                     ))}
                     {h.them > 0 && (
-                      <div className="px-3 pb-1.5 md:pl-[3.75rem]">
+                      <div className="px-3 pb-1.5 md:pl-[4.5rem]">
                         <button type="button" className="link cursor-pointer border-0 bg-transparent p-0 text-[11.5px]"
                           onClick={() => setMoThem((s) => { const n = new Set(s); if (n.has(khoaMo)) n.delete(khoaMo); else n.add(khoaMo); return n; })}>
                           {hienHet ? 'Thu gọn' : `+${h.them} Case`}
