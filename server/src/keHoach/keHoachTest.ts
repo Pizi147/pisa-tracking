@@ -10,7 +10,7 @@
  */
 import { db, tx } from '../db.ts';
 import {
-  CHU_KY_NANG, KY_NANG_KE_HOACH, PERMISSIONS, laVaoMuon, soSanhLop, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang,
+  CHU_KY_NANG, KY_NANG_KE_HOACH, PERMISSIONS, kiemSoMtMoi, laVaoMuon, soMtKeTiep, soSanhLop, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang,
   tuanKhoa as tuanKhoaCua,
   type BaiXemTruoc, type DongHangLoat, type KyNangKH, type OKyNang,
 } from '../../../shared/domain/index.ts';
@@ -19,7 +19,7 @@ import { can, require_, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { entrySkillsOf } from '../fasttrack/scoring.ts';
 import { createAttempt, loadBundle, setSkillSkip } from '../fasttrack/attempts.ts';
-import { currentCycle } from '../fasttrack/cycles.ts';
+import { currentCycle, luotSoCuaLoTrinh, nextAttemptNo } from '../fasttrack/cycles.ts';
 import { checkWeekVsNeighbours, loadSkillRows, setSkillWeek } from '../fasttrack/skillSchedule.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { classProgress, classProgressMany } from '../classes/schedule.ts';
@@ -181,7 +181,7 @@ function oKyNangCua(cheDo: CheDo, row: any, scores: any[], daDoi: boolean, doiTu
 
 // ---------------------------------------------------------------- lưới Fast Track
 
-export type DotFT = { attemptId: number | null; trangThaiDot: string | null; kn: Partial<Record<KyNangKH, OKyNang>> };
+export type DotFT = { attemptId: number | null; trangThaiDot: string | null; kn: Partial<Record<KyNangKH, OKyNang>>; lichSu?: boolean };
 
 export function luoiFT(p: Principal, classId: number, _today: string = demoToday()) {
   const conn = db();
@@ -204,7 +204,7 @@ export function luoiFT(p: Principal, classId: number, _today: string = demoToday
         .prepare(
           `SELECT a.* FROM assessment_attempts a
              JOIN learning_cycles cy ON cy.id = a.cycle_id AND cy.status = 'active'
-            WHERE a.class_id = ? AND a.status != 'cancelled' AND a.student_id IN (${phOf(studentIds.length)})
+            WHERE a.class_id = ? AND a.student_id IN (${phOf(studentIds.length)})
             ORDER BY a.attempt_no`,
         )
         .all(classId, ...studentIds) as any[])
@@ -225,14 +225,17 @@ export function luoiFT(p: Principal, classId: number, _today: string = demoToday
       .all(...attemptIds) as any[]) dichuyenGanNhat.set(`${r.attempt_id}:${r.field}`, r.old_value ?? null);
   }
 
+  /* Lượt huỷ chỉ để tính "MT kế tiếp" (số huỷ còn điểm giữ số — T36); lưới không vẽ lượt huỷ. */
+  const tatCaCua = new Map<number, any[]>();
+  for (const a of attempts) tatCaCua.set(a.student_id, [...(tatCaCua.get(a.student_id) ?? []), a]);
   const attemptsByStudent = new Map<number, any[]>();
-  for (const a of attempts) {
+  for (const a of attempts.filter((x) => x.status !== 'cancelled')) {
     if (!attemptsByStudent.has(a.student_id)) attemptsByStudent.set(a.student_id, []);
     attemptsByStudent.get(a.student_id)!.push(a);
   }
 
   const soDot = new Set<number>();
-  for (const a of attempts) soDot.add(a.attempt_no);
+  for (const a of attempts) if (a.status !== 'cancelled') soDot.add(a.attempt_no);
   const cot = [1, 2, 3, 4, 5].concat([...soDot].filter((n) => n > 5)).sort((x, y) => x - y);
 
   const knCua = (a: any): Partial<Record<KyNangKH, OKyNang>> => {
@@ -255,11 +258,16 @@ export function luoiFT(p: Principal, classId: number, _today: string = demoToday
       const kn = knCua(a);
       const batBuoc = Object.values(kn).filter((o) => o && o.trangThai !== 'khong-yeu-cau');
       const xongCa = batBuoc.length > 0 && batBuoc.every((o) => o!.trangThai === 'xong');
-      dot[n] = { attemptId: a.id, trangThaiDot: a.status === 'done' || xongCa ? 'xong' : a.status, kn };
+      dot[n] = { attemptId: a.id, trangThaiDot: a.status === 'done' || xongCa ? 'xong' : a.status, kn, lichSu: !!a.lich_su };
     }
     return {
       studentId: s.id as number, ten: s.full_name as string, ma: s.student_code as string,
       vaoMuon: laVaoMuon(s.started_at ?? null, cls.start_date ?? null), dot,
+      /* K4-08: chỉ ô MT kế tiếp có "+ xếp" (Q11). ponytail: chỉ đếm lượt ở lớp này — em giữ khoá từ lớp khác có thể lệch, lưới đầy đủ là PR-XLMT. */
+      soKeTiep: soMtKeTiep((tatCaCua.get(s.id) ?? []).map((a) => ({
+        attempt_no: a.attempt_no, status: a.status,
+        coDiem: (bundle.scores.get(a.id) ?? []).some((x: any) => (x.band ?? null) !== null || (x.raw_score ?? null) !== null),
+      }))),
     };
   });
 
@@ -408,10 +416,7 @@ export function xepMoi(p: Principal, i: {
   /* CÙNG CÁCH CHỌN LỘ TRÌNH VỚI `createAttempt` (ưu tiên `active`, không có thì lộ trình gần nhất). */
   const cycle = currentCycle(i.studentId);
   if (!cycle) throw badRequest('Học viên chưa có lộ trình đang chạy.');
-  const attemptNo = i.attemptNo ?? (
-    (conn.prepare('SELECT MAX(attempt_no) AS n FROM assessment_attempts WHERE cycle_id = ? AND status != \'cancelled\'')
-      .get(cycle.id) as any).n ?? 0
-  ) + 1;
+  const attemptNo = i.attemptNo ?? nextAttemptNo(cycle.id);   // T36: cùng luật đánh số với `createAttempt` (chốt ở đó)
   const dungTuan = KY_NANG_KE_HOACH.filter((k) => tuan[k] !== null);
   if (!dungTuan.length) throw badRequest('Cần ít nhất một kỹ năng thi trong đợt.');
   const periods = docTuan(dungTuan.map((k) => tuan[k]!));
@@ -592,6 +597,11 @@ function xetMotEm(i: {
   if (!existing) {
     /* Em chưa có đợt: đợt mới luôn tạo đủ 4 dòng lịch (Q2) nên cần đủ 4 kỹ năng. */
     if (co.length < KY_NANG_KE_HOACH.length) return loi(`Em chưa có ${nhanDot} — cần chọn tuần cho cả 4 kỹ năng.`);
+    /* K4-08: xem trước báo chặn ĐÚNG câu mà `createAttempt` sẽ ném — không để "tạo" rồi lưu mới hỏng. */
+    if (i.dot.loai === 'ft' && cycle) {
+      const loiSo = kiemSoMtMoi(luotSoCuaLoTrinh(cycle.id), i.dot.attemptNo);
+      if (loiSo) return loi(`Chặn: ${loiSo}`);
+    }
     const attemptNo = i.dot.loai === 'ft' ? i.dot.attemptNo
       : (cycle ? ((conn.prepare('SELECT MAX(attempt_no) m FROM assessment_attempts WHERE cycle_id = ?').get(cycle.id) as any)?.m ?? 0) + 1 : 1);
     const kiem = kiemTuanMoi(cycle?.id ?? null, attemptNo, co.map((k) => i.periods.get(i.tuan[k]!).week_start));

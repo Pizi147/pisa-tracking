@@ -12,7 +12,7 @@ import {
   type AssessedSkill, type InterventionKind, type LoaiYeuCau, type TrangThaiYc,
 } from '../../../shared/domain/index.ts';
 import { respondToPlan } from '../cases/cases.ts';
-import { decideAbsenceMove } from '../fasttrack/absence.ts';
+import { chuTheDoiLan2, decideAbsenceMove } from '../fasttrack/absence.ts';
 import { attemptHref } from '../fasttrack/attempts.ts';
 import { ensurePeriod } from '../platform/week.ts';
 import { addJourney } from '../platform/audit.ts';
@@ -108,9 +108,11 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       decideAbsenceMove(p, yc.doi_tuong_id, { approve: true, note: v.ghiChu, periodId });
     },
     khiTuChoi: (p, yc, lyDo) => { decideAbsenceMove(p, yc.doi_tuong_id, { approve: false, note: lyDo }); },
-    /* Đề nghị đã được trả lời ở trang lượt thi (modal cũ) hoặc hết hạn qua đường khác → thẻ tự đóng. */
+    /* Đề nghị đã được trả lời ở trang lượt thi (modal cũ) hoặc hết hạn qua đường khác → thẻ tự đóng.
+     * PR-MT: lượt đã huỷ hoặc MT lịch sử (không vào luồng vắng) cũng không còn thẻ chờ. */
     chet: {
-      sql: `NOT EXISTS (SELECT 1 FROM skill_move_requests r WHERE r.id = y.doi_tuong_id AND r.status = 'pending')`,
+      sql: `NOT EXISTS (SELECT 1 FROM skill_move_requests r JOIN assessment_attempts a ON a.id = r.attempt_id
+                          WHERE r.id = y.doi_tuong_id AND r.status = 'pending' AND a.status != 'cancelled' AND a.lich_su = 0)`,
       lyDo: 'Đề nghị dời không còn chờ',
     },
     nap: (conn, ds) => napTheoDoiTuong(conn, ds,
@@ -123,7 +125,10 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       const kn = x ? ASSESSED_SKILL_LABEL[x.skill as AssessedSkill] ?? x.skill : 'kỹ năng';
       const dot = x ? nhanDotNgan(x.kind, x.attempt_no) : null;
       return {
-        tieuDe: `Dời ${kn}${dot ? ` ${dot}` : ''} lần ${x?.move_no ?? 2}`,
+        /* PR-MT (K4-04): thẻ Mock nói đủ trong một dòng — `Dời L · MT1 · lần 2 · Duyệt = L thi W1 OCT` (chuTheDoiLan2, chung với moTaDoiLan2). */
+        tieuDe: x?.kind === 'mock'
+          ? chuTheDoiLan2({ skill: x.skill, attemptNo: x.attempt_no, moveNo: x.move_no, tuanDich: x.week_start ?? null, homNay: ngu.homNay })
+          : `Dời ${kn}${dot ? ` ${dot}` : ''} lần ${x?.move_no ?? 2}`,
         dong: [
           `${nguoiXin(yc, ngu)}: ${yc.ly_do || 'em vắng buổi thi'}${x?.tuan ? ` · đề nghị ${x.tuan}` : ''}`,
           /* Chỉ nói "tự huỷ" khi thẻ còn chờ — thẻ đã quyết thì câu này sai. */

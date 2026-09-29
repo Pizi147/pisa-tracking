@@ -353,3 +353,18 @@ Chữ mới của PR này — chờ chủ sản phẩm duyệt cùng PR. Không 
 | Quản trị | `Đăng ký chờ duyệt`; rỗng `Không có đăng ký nào đang chờ. …` |
 | Vận hành | người phụ trách ngoài hệ thống: tên kèm nhãn nhỏ `ngoài hệ thống` |
 
+## 13. PR-MT — 29/09/2026 · lịch MT, MT lịch sử, huỷ lượt, dời do vắng
+
+| Chỗ | Chữ | Không dùng |
+|---|---|---|
+| Lượt có tuần thi đã qua trước khi được tạo | `MT lịch sử` · nhãn nhỏ `lịch sử` cạnh "MT2" (viền mảnh, chữ xám, không ⚠) | "MT cũ", "MT bù" |
+| Tình trạng / hạn của ô MT lịch sử | `Nhập bù, không có hạn` | "Quá hạn", "Chưa có hạn" |
+| Dòng nhắc cuối Lịch Test (GVCN, Quản lý) | `MT lịch sử chưa nhập · {n} em · {lớp} → Nhập` | số đỏ |
+| Việc cần làm (nhóm Thiếu dữ liệu) | `Nhập MT lịch sử · {n} em · không tính hạn` · trạng thái `Không tính hạn` |  |
+| Hồ sơ Test — huỷ | `Huỷ cả lượt MT{n}` (chỉ MT cuối cùng chưa có điểm, chưa thi kỹ năng nào; "Số MT{n} sẽ dùng lại được") · `Huỷ phần còn lại` ("MT{n} giữ số; kỹ năng đã có điểm giữ nguyên") | "Huỷ lượt" chung chung |
+| Lỗi đánh số | `Chưa có MT{k} — xếp MT{k} trước rồi mới xếp MT{n}.` · `Lộ trình này đã có MT{n}. Đổi tuần thay vì tạo mới.` |  |
+| Nợ tuần trước — dời do vắng | dòng phụ `dời từ W3 SEP · vắng lần 1` |  |
+| Hàng lớp ở Lịch Test | `vắng · chờ Quản lý duyệt dời` | "chờ QL" (không viết tắt trên màn) |
+| Thông báo máy tự dời | `Đã tự dời {kỹ năng} của {em} · MT{n} sang {W…} (vắng lần 1).` |  |
+| Case đóng vì huỷ lượt | `Lượt đã huỷ` · việc Phối hợp bỏ vì `Lượt Test đã huỷ` |  |
+| Mốc Case khi đổi LT ↔ RF | `Sang lộ trình mới` |  |

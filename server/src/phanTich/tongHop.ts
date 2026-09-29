@@ -98,6 +98,7 @@ function tinh(p: Principal, f: FilterTongHop) {
   const attempts = conn
     .prepare(
       `SELECT a.id, a.status, a.kind, a.attempt_no, a.class_id, a.planned_period_id, a.target_at_attempt, a.student_id,
+              (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route,
               c.programme_code, c.code AS class_code, c.branch_id, c.is_fast_track,
               b.name AS branch_name,
               rp.id AS period_id, rp.week_start, rp.week_end
@@ -191,7 +192,7 @@ function tinh(p: Principal, f: FilterTongHop) {
     const kyNangDuoi: string[] = prog?.scoringMode === 'ratio'
       ? Object.entries(ev.skills).filter(([, v]) => (v as { under: boolean }).under).map(([k]) => LEGACY_REGULAR_SKILL_MAP[k] ?? k)
       : failingEntrySkills(
-          expectationFor(a.target_at_attempt, a.attempt_no),
+          expectationFor(a.target_at_attempt, a.attempt_no, a.route),
           entryBandsOf(bundle.scores.get(a.id) ?? []),
           bundle.skips.get(a.id) ?? [],
         );

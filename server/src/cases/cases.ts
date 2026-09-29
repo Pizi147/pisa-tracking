@@ -2059,6 +2059,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
   const scoreRows = conn
     .prepare(
       `SELECT a.attempt_no, a.id AS attempt_id, a.kind, rp.code AS period_code, a.target_at_attempt,
+              (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route,
               sc.skill, sc.band, sc.raw_score, sc.raw_total
          FROM assessment_attempts a
          JOIN assessment_scores sc ON sc.attempt_id = a.id
@@ -2093,7 +2094,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
       passed: rr ? rr.outcome === 'pass' : null,
       week: r.period_code ?? null,
       expectation: !ratio && r.target_at_attempt !== null && r.target_at_attempt !== undefined
-        ? expectationFor(r.target_at_attempt, r.attempt_no) : null,
+        ? expectationFor(r.target_at_attempt, r.attempt_no, r.route) : null,
       attemptKind: r.kind ?? null,
     });
     byCategory.set(cat, list);

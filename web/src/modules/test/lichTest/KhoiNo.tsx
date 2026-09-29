@@ -11,15 +11,17 @@ import { LuoiNhung } from './LuoiNhung.tsx';
  * Kỹ năng của dòng Nợ — viết tắt (tooltip tên đủ, G-7). Có lùi lịch thật (Q15) thì thêm "· lùi lịch", tuần cũ/mới và
  * tên em nằm ở tooltip (G-3: một dòng).
  */
-function kyNangCua(d: DongNo, homNay: string): { chu: string; goiY: string } {
+function kyNangCua(d: DongNo, homNay: string): { chu: string; goiY: string; phu: string | null } {
   const tatCa = d.kyNang.map(skillLabel).join(', ');
   const chu = d.kyNang.map(skillShort).join(', ');
   const l = d.luiLich;
-  if (!l) return { chu, goiY: tatCa };
+  if (!l) return { chu, goiY: tatCa, phu: null };
+  /* PR-MT (YC-13.1 (3)): dời do vắng thì nói thẳng ra dòng phụ — "dời từ W3 SEP · vắng lần 1" — không giấu trong tooltip. */
+  const phu = l.lanVang && l.tuTuanStart ? `dời từ ${tuanLich(l.tuTuanStart, homNay)} · vắng lần ${l.lanVang}` : null;
   const tu = l.tuTuanStart ? ` từ ${tuanLich(l.tuTuanStart, homNay)}` : '';
   const sang = l.sangTuanStart ? ` sang ${tuanLich(l.sangTuanStart, homNay)}` : '';
   const ai = l.hv.length === 1 ? ` của ${l.hv[0]}` : ` · ${l.hv.length} HV: ${l.hv.join(', ')}`;
-  return { chu: `${chu} · lùi lịch`, goiY: `${skillLabel(l.kyNang)}: lùi lịch${tu}${sang}${ai}\nCòn nợ: ${tatCa}` };
+  return { chu: phu ? chu : `${chu} · lùi lịch`, goiY: `${skillLabel(l.kyNang)}: lùi lịch${tu}${sang}${ai}\nCòn nợ: ${tatCa}`, phu };
 }
 
 /** Dòng Nợ là của ai: chờ mình · chờ GV khác (mình dạy lớp) · chờ chấm (Quản lý). Dòng đã chấm xong (Q14) → "Đã chấm ✓". */
@@ -128,6 +130,7 @@ export function KhoiNo({ no, mo, onMo, chiQuaHan, onBoQuaHan, dongMo, onMoDong, 
                           <div className="truncate font-semibold text-slate-100">
                             {d.classCode} · {d.dotLabel} · <span title={k.goiY}>{k.chu}</span>
                           </div>
+                          {k.phu && <div className="truncate text-[11px] text-slate-500">{k.phu}</div>}
                           <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-slate-400 tabular-nums">
                             <span className="whitespace-nowrap">còn {xong ? 0 : d.conBai} bài</span>
                             {!xong && <span className="whitespace-nowrap"><Han loai="nhap-diem" han={d.han} /></span>}
@@ -143,7 +146,10 @@ export function KhoiNo({ no, mo, onMo, chiQuaHan, onBoQuaHan, dongMo, onMoDong, 
                           title={d.weekStart ? `${d.dotLabel} · thi ${tuanLich(d.weekStart, homNay)}` : d.dotLabel}>
                           {d.dotLabel}
                         </td>
-                        <td className="td truncate text-slate-300" title={k.goiY}>{k.chu}</td>
+                        <td className="td truncate text-slate-300" title={k.goiY}>
+                          {k.chu}
+                          {k.phu && <span className="block truncate text-[11px] leading-4 text-slate-500">{k.phu}</span>}
+                        </td>
                         <td className="td text-right tabular-nums text-slate-200">{xong ? 0 : d.conBai} <span className="text-[11px] text-slate-500">bài</span></td>
                         <td className="td whitespace-nowrap">{xong ? <span className="text-slate-600">—</span> : <Han loai="nhap-diem" han={d.han} />}</td>
                         <td className="td"><NhanDong d={d} xong={xong} chuaLuu={chuaLuu[`no:${d.key}`]} /></td>

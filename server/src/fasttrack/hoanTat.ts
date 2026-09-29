@@ -8,6 +8,7 @@
 import { db } from '../db.ts';
 import { dotDaHoanTat, PERMISSIONS } from '../../../shared/domain/index.ts';
 import { can, type Principal } from '../permissions.ts';
+import { addDays } from '../util.ts';
 
 export type HoanTatInfo = { hoanTat: boolean; chuNhatCuoi: string | null };
 
@@ -25,15 +26,20 @@ export function dotHoanTatMany(attemptIds: number[], today: string): Map<number,
   const ph = attemptIds.map(() => '?').join(',');
 
   const modeOf = new Map<number, 'ielts_band' | 'ratio'>();
+  /* PR-MT (K5-21, K4-20): MT lịch sử khoá 7 ngày sau LẦN NHẬP CUỐI, không theo Chủ nhật tuần thi (tuần đã qua từ lâu). */
+  const nhapCuoiLichSu = new Map<number, string | null>();
   for (const r of conn
     .prepare(
-      `SELECT a.id, p.scoring_mode AS mode FROM assessment_attempts a
+      `SELECT a.id, p.scoring_mode AS mode, a.lich_su,
+              (SELECT MAX(sx.entered_at) FROM assessment_scores sx WHERE sx.attempt_id = a.id) AS nhap_cuoi
+         FROM assessment_attempts a
          LEFT JOIN classes c ON c.id = a.class_id
          LEFT JOIN programmes p ON p.code = c.programme_code
         WHERE a.id IN (${ph})`,
     )
     .all(...attemptIds) as any[]) {
     modeOf.set(r.id, r.mode === 'ratio' ? 'ratio' : 'ielts_band');
+    if (r.lich_su) nhapCuoiLichSu.set(r.id, r.nhap_cuoi ? addDays(String(r.nhap_cuoi).slice(0, 10), 7) : null);
   }
 
   const skillsOf = new Map<number, Array<{ skill: string; batBuoc: boolean; huy: boolean; sitAbsent: boolean; weekEnd: string | null }>>();
@@ -82,7 +88,7 @@ export function dotHoanTatMany(attemptIds: number[], today: string): Map<number,
       return { batBuoc: s.batBuoc, huy: s.huy, coDiem, coDau, weekEnd: s.weekEnd };
     });
 
-    const chuNhatCuoi = kn
+    const chuNhatCuoi = nhapCuoiLichSu.has(attemptId) ? nhapCuoiLichSu.get(attemptId)! : kn
       .filter((k) => k.batBuoc && !k.huy && k.weekEnd)
       .reduce<string | null>((max, k) => (max === null || k.weekEnd! > max ? k.weekEnd! : max), null);
 

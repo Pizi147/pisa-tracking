@@ -9,6 +9,7 @@ import type { Principal } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { suggestCaseOwner } from './owner.ts';
 import { examPlanOf } from '../fasttrack/cycles.ts';
+import { routeCuaLuot } from '../fasttrack/attempts.ts';
 import { caseAccess, caseDetail, recordIntervention } from './cases.ts';
 import { PA_QUY_CHE_CHUA_GHI, UNCONFIRMED_PRESET, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
 import { ghiBanDieuChinh } from './planRevisions.ts';
@@ -59,7 +60,7 @@ export function presetFor(
   /** Ngày case ra đời (mặc định hôm nay). Đồng bộ lại về sau PHẢI truyền ngày gốc — không thì "1 tháng" trôi theo ngày bấm lưu. */
   createdOn: string = demoToday(),
 ): (AcademicSupportPreset & { followupDue: string | null }) | null {
-  const rule = academicSupportFor(attempt.attempt_no, sosLevel);
+  const rule = academicSupportFor(attempt.attempt_no, sosLevel, routeCuaLuot(attempt));   // T4: RF theo hàng "MT3 trở đi"
   if (!rule) return null;
   const followupDue = sosPlanEndDate(rule.span, {
     createdOn, nextMtSunday: followUntil, examDate: examDateOf(attempt.cycle_id),

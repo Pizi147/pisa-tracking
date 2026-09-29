@@ -1,14 +1,16 @@
 import { db, tx } from '../db.ts';
 import {
-  BASELINE_SOURCES, CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, CYCLE_STATUSES, PERMISSIONS, type ExamPlan, type Route,
+  BASELINE_SOURCES, CO_DIEM_SQL, CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, CYCLE_STATUSES, PERMISSIONS, soMtKeTiep, tuanLich,
+  type ExamPlan, type LuotSo, type Route,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
 import { badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
-import { periodById } from '../platform/week.ts';
-import { applySuggestedMockWeeks } from '../classes/schedule.ts';
+import { ensurePeriod, mondayOf, periodById } from '../platform/week.ts';
+import { apLichMacDinh } from '../classes/schedule.ts';
+import { taoMtMacDinh } from './mtMacDinh.ts';
 
 /**
  * Lộ trình học của một học viên.
@@ -33,12 +35,17 @@ export function cycleById(id: number) {
   return (db().prepare('SELECT * FROM learning_cycles WHERE id = ?').get(id) as any) ?? null;
 }
 
-/** Số MT tiếp theo TRONG lộ trình. Học lại cùng lộ trình thì số này tăng tiếp. */
+/** Lượt của một lộ trình ở dạng luật đánh số (T36, Q-B) — một câu, kể cả lượt đã huỷ (còn điểm hay không). */
+export function luotSoCuaLoTrinh(cycleId: number): LuotSo[] {
+  return (db().prepare(`SELECT a.attempt_no, a.status, ${CO_DIEM_SQL('a')} AS coDiem,
+       EXISTS (SELECT 1 FROM attempt_skills k WHERE k.attempt_id = a.id AND k.sit_status = 'sat') AS daThi
+     FROM assessment_attempts a WHERE a.cycle_id = ?`)
+    .all(cycleId) as any[]).map((r) => ({ attempt_no: r.attempt_no, status: r.status, coDiem: !!r.coDiem, daThi: !!r.daThi }));
+}
+
+/** Số MT tiếp theo TRONG lộ trình. Học lại cùng lộ trình thì số này tăng tiếp; số huỷ không điểm được dùng lại (Q-B). */
 export function nextAttemptNo(cycleId: number): number {
-  const row = db()
-    .prepare('SELECT MAX(attempt_no) AS n FROM assessment_attempts WHERE cycle_id = ?')
-    .get(cycleId) as any;
-  return (row?.n ?? 0) + 1;
+  return soMtKeTiep(luotSoCuaLoTrinh(cycleId));
 }
 
 /**
@@ -110,12 +117,14 @@ export function createCycle(p: Principal, input: {
       .run(startedAt, input.studentId);
     const info = conn
       .prepare(
-        `INSERT INTO learning_cycles (student_id, seq, route, target_score, exam_period_id, started_at, status, note, created_at)
-         VALUES (?,?,?,?,?,?, 'active', ?, ?)`,
+        `INSERT INTO learning_cycles (student_id, seq, route, target_score, exam_period_id, start_period_id, started_at, status, note, created_at)
+         VALUES (?,?,?,?,?,?,?, 'active', ?, ?)`,
       )
+      /* Q5: lộ trình FT ghi tuần bắt đầu = tuần của ngày bắt đầu — không có thì không lập được lịch MT mặc định (M1). */
       .run(input.studentId, seq, input.route ?? null, input.targetScore ?? null,
-           input.examPeriodId ?? null, startedAt, input.note ?? null, nowIso());
+           input.examPeriodId ?? null, input.route ? ensurePeriod(mondayOf(startedAt)).id : null, startedAt, input.note ?? null, nowIso());
     const id = Number(info.lastInsertRowid);
+    if (input.route) taoMtMacDinh(id, { actorUserId: p.userId });
     addJourney({
       studentId: input.studentId, eventType: 'cycle_start', eventDate: startedAt,
       title: `Bắt đầu lộ trình ${input.route ?? `#${seq}`}`,
@@ -201,30 +210,22 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
     });
   }
   /*
-   * ĐỔI TUẦN BẮT ĐẦU HỌC LÀ ĐỔI CẢ LỊCH MT — nhưng chỉ những lượt hệ thống từng tự xếp.
+   * ĐỔI TUẦN BẮT ĐẦU HỌC LÀ ĐỔI CẢ LỊCH MT — nhưng chỉ những lượt hệ thống từng tự xếp và CHƯA có điểm (K2-33).
    *
    * Đây là chỗ giữ lời hứa của mục 7.6: "hệ thống không được ghi đè cái Quản lý đã xếp".
-   * Lượt nào `plan_source = 'manual'` hoặc đã làm xong thì đứng yên; phần còn lại chạy theo
-   * mốc mới. Người dùng khai đúng tuần vào học một lần, lịch tự đúng theo.
+   * Lượt nào `plan_source = 'manual'`, đã có điểm hoặc đã làm xong thì đứng yên; phần còn lại chạy theo
+   * mốc mới. Q6: đây là LUẬT hệ thống, không phải thao tác xếp tuần — chạy cả khi người sửa là GVCN (trước đây nuốt lỗi quyền im lặng).
    */
   if (patch.startPeriodId !== undefined && patch.startPeriodId !== c.start_period_id && after?.start_period_id) {
-    try {
-      const r = applySuggestedMockWeeks(p, cycleId);
-      if (r.created || r.moved) {
-        addJourney({
-          studentId: c.student_id, eventType: 'cycle_start',
-          eventDate: nowIso().slice(0, 10),
-          title: 'Đổi tuần bắt đầu học',
-          detail: `Lịch MT đề xuất cập nhật theo: thêm ${r.created}, dời ${r.moved}, giữ nguyên ${r.kept} lượt đã chốt tay`,
-          refTable: 'learning_cycles', refId: cycleId, createdBy: p.userId,
-        });
-      }
-    } catch {
-      /*
-       * Không có quyền xếp tuần MT (ví dụ GVCN sửa tuần bắt đầu) thì KHÔNG chặn việc sửa
-       * thông tin — chỉ là lịch MT chưa được đề xuất lại, và Quản lý áp sau. Ném lỗi ở đây
-       * sẽ biến một ô thông tin đơn giản thành một thao tác cần quyền cao hơn.
-       */
+    const r = apLichMacDinh(cycleId, p.userId);
+    if (r.moved.length) {
+      const homNay = demoToday();
+      addJourney({
+        studentId: c.student_id, cycleId, eventType: 'cycle_start', eventDate: homNay,
+        title: 'Đổi tuần bắt đầu học',
+        detail: `${r.moved.map((x) => `MT${x.attemptNo}`).join(', ')} dời sang ${r.moved.map((x) => tuanLich(x.weekStart, homNay)).join(', ')}`,
+        refTable: 'learning_cycles', refId: cycleId, createdBy: p.userId,
+      });
     }
   }
 

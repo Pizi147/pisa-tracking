@@ -12,6 +12,7 @@ import { ROLE_PERMISSIONS } from './seed/data.ts';
 import { migratePrN1 } from './migrate/prN1.ts';
 import { migratePrLop } from './migrate/prLop.ts';
 import { migratePrDuyet } from './migrate/prDuyet.ts';
+import { migratePrMt } from './migrate/prMt.ts';
 
 /**
  * Giá trị cũ của cột `track` cho case Ý thức. Mô hình Case Ý thức đã BỎ 21/09/2026 (rule book mục 18) — hằng số này chỉ để NÂNG CẤP
@@ -458,6 +459,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     migratePrLop(conn, applied);
     /* PR-DUYET: hộp Chờ duyệt (bảng yeu_cau_duyet + thẻ từ hai luồng cũ), tasks.assignee_name, notifications.duong. */
     migratePrDuyet(conn, applied);
+    /* PR-MT: cột lich_su (MT lịch sử, T34). */ migratePrMt(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống

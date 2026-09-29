@@ -7,6 +7,7 @@
  * Quy ước TDD của file này: mọi mô-đun mới được nạp bằng `load(...)` — thiếu mô-đun thì phép kiểm ĐỎ với câu nói rõ thiếu gì,
  * không làm sập cả bộ.
  */
+import { boLichTuTao, luotThu } from './luotThu.ts';
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runSosV3Tests(t: YThucTestKit) {
@@ -92,7 +93,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
   check('PR-T · T1 Lý do bỏ việc: bốn lý do chọn nhanh + `system_sos_changed` (chỉ hệ thống dùng); ba lý do đóng case `Không cần theo dõi`', () => {
     assert(JSON.stringify(domain.COORDINATION_USER_REMOVE_REASONS) === JSON.stringify(['not_needed', 'handled_otherwise', 'duplicate_measure', 'other']),
       `Bốn lý do sai: ${domain.COORDINATION_USER_REMOVE_REASONS}`);
-    assert(JSON.stringify(domain.COORDINATION_REMOVE_REASONS) === JSON.stringify(['not_needed', 'handled_otherwise', 'duplicate_measure', 'other', 'system_sos_changed']), 'Năm mã lý do');
+    assert(JSON.stringify(domain.COORDINATION_REMOVE_REASONS) === JSON.stringify(['not_needed', 'handled_otherwise', 'duplicate_measure', 'other', 'system_sos_changed', 'system_luot_huy']), 'Sáu mã lý do (PR-MT thêm system_luot_huy — huỷ cả lượt, T67)');
     assert(domain.COORDINATION_REMOVE_REASON_LABEL.not_needed === 'Không cần trong trường hợp này'
       && domain.COORDINATION_REMOVE_REASON_LABEL.handled_otherwise === 'Đã xử lý theo cách khác'
       && domain.COORDINATION_REMOVE_REASON_LABEL.duplicate_measure === 'Trùng với phương án xử lý khác'
@@ -289,12 +290,13 @@ export async function runSosV3Tests(t: YThucTestKit) {
     const st = get('SELECT id FROM students WHERE full_name = ?', `PT ${name}`);
     const cy = get("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'", st.id);
     assert(st && cy, `Không dựng được học viên thử "${name}"`);
+    boLichTuTao(conn, cy.id);   // PR-MT: em thử tự dựng lượt cần — xem luotThu.ts
     return { id: st.id, cycleId: cy.id };
   };
-  /** Tuần đã qua (không phải tương lai) — điểm nhập được ngay. */
+  /** Tuần đã qua (không phải tương lai) — điểm nhập được ngay. PR-MT (T36): MT trước còn thiếu tạo trước, là MT lịch sử. */
   const PAST_WEEK = weekSvc.mondayOf(addDays(TODAY, -14));
-  const mkAttempt = (st: { id: number; cycleId: number }, no: number, weekStart: string = PAST_WEEK): any => attemptsSvc.createAttempt(P.admin, {
-    studentId: st.id, cycleId: st.cycleId, classId: CLASS, attemptNo: no, periodId: weekSvc.ensurePeriod(weekStart).id });
+  const mkAttempt = (st: { id: number; cycleId: number }, no: number, weekStart: string = PAST_WEEK): any => luotThu(conn, attemptsSvc.createAttempt, P.admin, {
+    studentId: st.id, cycleId: st.cycleId, classId: CLASS, no, periodId: weekSvc.ensurePeriod(weekStart).id });
   /*
    * RB-5 (PR-Rc1): sửa một ô đã có điểm nay phải kèm lý do. Hàm này vừa nhập lần đầu vừa sửa điểm nguồn, nên LUÔN gửi
    * một lý do — lần nhập đầu thì máy chủ bỏ qua nó. Luật "khi nào phải có lý do" có phép kiểm riêng ở chamDiem.tests.ts.
@@ -622,7 +624,8 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assertThrows(() => phoiHop.confirmCoordination(gvcn, rowOf(f.a.id, 'talk_student').id, { performedOn: TODAY, note: 'x'.repeat(1001) }), /quá dài/, 'Ghi chú quá dài');
     assertThrows(() => phoiHop.removeCoordination(gvcn, rowOf(f.a.id, 'talk_family').id, { reasonCode: 'other', reasonText: 'y'.repeat(301) }), /quá dài/, 'Lý do quá dài');
     assertThrows(() => phoiHop.addCoordination(gvcn, f.a.id, { kind: 'other', customName: 'z'.repeat(101) }), /quá dài/, 'Tên việc quá dài');
-    attemptsSvc.cancelAttempt(P.mbManager, f.a.id, 'Huỷ lượt để thử phép kiểm');
+    /* PR-MT (M-12): lượt ĐÃ CÓ ĐIỂM nay không "Huỷ cả lượt" được — dựng đúng dữ liệu CŨ (huỷ trước PR-MT) để thử chỗ đọc. */
+    conn.prepare(`UPDATE assessment_attempts SET status = 'cancelled', cancel_reason = 'Huỷ lượt để thử phép kiểm' WHERE id = ?`).run(f.a.id);
     assertThrows(() => phoiHop.addCoordination(gvcn, f.a.id, { kind: 'cx_meeting_student' }), /huỷ/, 'Thêm việc vào lượt đã huỷ');
     assert(!(phoiHop.coordinationOfStudent(gvcn, f.st.id) as any).rows.some((r: any) => r.attemptId === f.a.id), 'Lượt đã huỷ không hiện theo học viên');
     assert(!(phoiHop.coordinationOfClass(gvcn, CLASS, { includeDone: true }) as any).rows.some((r: any) => r.attemptId === f.a.id), 'Lượt đã huỷ không hiện theo lớp');

@@ -3,6 +3,7 @@ import {
   ENTRY_SKILLS, JOURNEY_GROUP, NO_HANDOVER_NOTE, PERMISSIONS, STUDENT_STATUSES, luatDoiLop,
   type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
+import { luotSinhViecRow } from '../worklist/danhGia.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, isIsoDate, normalizeName, notFound, nowIso, padCode } from '../util.ts';
 import { can, classScopeSql, require_, scopeFor, type Principal } from '../permissions.ts';
@@ -67,9 +68,9 @@ export function listStudents(p: Principal, f: { q?: string; branchId?: number; c
       .prepare(
         `SELECT a.id, a.attempt_no, a.status, pr.code AS period_code, pr.week_start
            FROM assessment_attempts a LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
-          WHERE a.student_id = ? AND a.status = 'planned' ORDER BY pr.week_start, a.attempt_no LIMIT 1`,
+          WHERE a.student_id = ? AND a.status = 'planned' AND a.lich_su = 0 ORDER BY pr.week_start, a.attempt_no LIMIT 1`,
       )
-      .get(s.id) as any;
+      .get(s.id) as any;   /* PR-MT: MT lịch sử (tuần thi đã qua) không phải "MT sắp tới" */
     const openCase = conn
       .prepare(
         `SELECT sc.id, sc.sos_level, sc.status FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id
@@ -102,14 +103,16 @@ export function listStudents(p: Principal, f: { q?: string; branchId?: number; c
 export function latestResult(studentId: number) {
   const attempts = db()
     .prepare(
-      `SELECT a.*, cy.seq AS cycle_seq, cy.route FROM assessment_attempts a
-         JOIN learning_cycles cy ON cy.id = a.cycle_id
+      `SELECT a.*, cy.seq AS cycle_seq, cy.route, pr.week_end AS period_end FROM assessment_attempts a
+         JOIN learning_cycles cy ON cy.id = a.cycle_id LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
         WHERE a.student_id = ? AND a.status != 'cancelled'
         ORDER BY cy.seq DESC, a.attempt_no DESC`,
     )
     .all(studentId) as any[];
+  const homNay = demoToday();
   for (const a of attempts) {
-    const r = evaluateAttempt(a.target_at_attempt, a.attempt_no, entryBandsOf(scoresOf(a.id)), skipsOf(a.id));
+    if (!luotSinhViecRow(a, homNay)) continue;   // M-14: MT lịch sử ngoài 4 tuần không phải "kết quả gần nhất"
+    const r = evaluateAttempt(a.target_at_attempt, a.attempt_no, entryBandsOf(scoresOf(a.id)), skipsOf(a.id), a.route);
     if (r.evaluable) {
       return {
         attemptId: a.id, attemptNo: a.attempt_no, route: a.route, cycleSeq: a.cycle_seq,

@@ -481,13 +481,16 @@ nhãn lượt), `server/src/cham/canCham.ts` (dòng nhắc), `server/src/worklis
 | Việc | PR nhận | Lý do |
 |---|---|---|
 | Thẻ **Lịch thi** "Dời lịch MT lần 2" trong hộp Chờ duyệt, "Yêu cầu của tôi" cho GVCN, chuyển nhóm "Duyệt dời lịch do vắng" khỏi Việc của tôi — dùng giao kèo Task 8 | **PR-DUYET** | T41, T42 phần thẻ, K4-04 phần thẻ |
-| Cột **"Đã thi tới MT"** (0–8) ở panel Thêm HV FT → truyền `daThiToiMt`; câu xác nhận "MT2, MT3 sẽ dời sang …" khi sửa tuần bắt đầu ở Thông tin HV; giữ lời gọi `taoMtMacDinh` trong `commitIntake` khi viết lại; khối kết quả sau Thêm HV "n MT lịch sử chưa có điểm" | **PR-NHAP** | K2-33 (1)(2), K2-21, K2-32 |
+| Cột **"Đã thi tới MT"** (0–8) ở panel Thêm HV FT → truyền `daThiToiMt`; câu xác nhận "MT2, MT3 sẽ dời sang …" khi sửa tuần bắt đầu ở Thông tin HV; giữ lời gọi `taoMtMacDinh` trong `commitIntake` khi viết lại; khối kết quả sau Thêm HV "n MT lịch sử chưa có điểm"; **giữ mặc định tuần khai giảng của lớp** nhưng xem trước phải báo trước "n MT sẽ là MT lịch sử" (planning chốt 29/09, rà #119 mục 10) | **PR-NHAP** | K2-33 (1)(2), K2-21, K2-32 |
 | "Sắp tới" cột M3 dùng hàm mốc kế tiếp của Task 5 | PR-HVL | K2-31 |
 | Lưới Kế hoạch Test đầy đủ (cột tới MT8, chip dở/lịch sử/huỷ/chờ duyệt), Xếp lịch MT chọn tuần đã qua cho MT lịch sử, 6 tên thao tác T38 dùng `huyLuot` | PR-XLMT | K4-17, K4-18, K2-33 (1) phần xếp |
 | Nhập MT lịch sử tại chỗ ở hồ sơ Mock; M10 trạng thái huỷ/lịch sử/vắng-dời/RF | PR-HSM | K4-30 |
 | PA quy chế "đến MT(n+1) · chưa có lịch" + việc QL xếp lịch; chữ thông báo SOS theo S4-2 | PR-SOS | K3-14, K5-15 phần chữ |
 | Bỏ dòng "2 lần Test liền chưa có Case" | PR-UXF | K1-04 |
 | Cột "Trạng thái lượt" (lịch sử / đã huỷ) trong xuất Excel | PR-XUAT | T40 |
+| Hồ sơ Mock ghi "SOS 4" vì đếm `failedCount` (MockDetailPage.tsx:195) trong khi API trả `sosLevel` 3 | PR-HSM | rà #119 |
+| `GET /move-requests` lỗi 500 (`no such column s.code`, không màn nào gọi — có sẵn trên main) | PR-Dọn | rà #119 |
+| Chữ "cần QL duyệt" / "Chờ QL duyệt" ở Case (CapNhatTuan, ThaoTacCase, CasePanel) — viết đủ "Quản lý" (có sẵn trên main, khu Case) | PR-UXF / PR-SOS | TU_DIEN_VA_CHU, rà #119 mục 9 |
 
 ## Lệnh cho buổi deploy (đợt 2 — 🛑 chỉ chủ sản phẩm chạy, theo `TRIEN_KHAI.md`)
 
@@ -536,6 +539,124 @@ khác ngày với bản thử thì chạy thử lại. 5. Chạy thử lần n�
    tới khi anh/chị chọn; đổi sang (A) chỉ là đổi điều kiện chọn em trong `keHoachBoSung`.
 
 ## Nhật ký
+
+- **Task 0 (29/09, Opus 5.5):** nhánh `pr-mt-lich-mt` từ `origin/main` @ fb51181. PR-DUYET / PR-NHAP / PR-MON **chưa** merge. Mốc B =
+  **1444** phép kiểm + 20 tốc độ. Dòng mã kế hoạch dẫn khớp (lệch ≤ 20 dòng), trừ `requestAbsenceMove` ở absence.ts:176 (kế hoạch :143 —
+  thân vòng lặp vẫn :196-290), `scoreEditPath` permissions.ts:509, `updateCycle` cycles.ts:126 (kế hoạch :200 — phần đổi tuần bắt đầu nằm
+  trong hàm này).
+- **Task 2:** theo Planning chốt 29/09, `chayThuMt.ts` **không** in danh sách bổ sung (bỏ `keHoachBoSung`); thay mục (2) bằng "em FT đang
+  học chưa có lượt MT nào" (sau reset + PR-MT danh sách này phải rỗng — dùng để soát). `CO_DIEM_SQL` (lượt có điểm = band hoặc điểm thô)
+  đặt cạnh `LUOT_TINH_NO_SQL` ở `lichMt.ts`. `chay-thu:mt` trên DB demo worktree: (1) đã có cột · (2) 0 em · (3) 1 em thiếu tuần bắt đầu
+  (PISA-000032 HD FT 302) · (4) 3 lộ trình nhảy số — PISA-000040 `MT1, MT2, MT5`, PISA-000042 `MT2`, PISA-000044 `MT3` (seed sosV3, sửa ở
+  Task 10) · (5) 0 lượt huỷ ở giữa.
+- **Task 3:** lõi `apLichMacDinh` + `ngayTaoLuot` đặt ở `classes/schedule.ts` (cạnh `suggestedMockWeeks`, tránh vòng import);
+  `fasttrack/mtMacDinh.ts` chỉ bọc `taoMtMacDinh` (giữ đúng tên + chữ ký cho PR-NHAP; thêm kiểm `daThiToiMt` 0–8). Lõi **không tạo** số
+  đã có dòng huỷ (người huỷ thì người tạo lại) và giữ liền mạch bằng `kiemSoMtMoi`. `ngayTaoLuot` = ngày sớm hơn giữa `created_at` (giờ máy)
+  và `demoToday()` — ở demo đồng hồ nghiệp vụ lùi hơn giờ thật. Bỏ `keHoachBoSung` / lệnh bổ sung (Planning chốt 29/09) nên (f) thay bằng
+  phép kiểm `ngayTao` + `daThiToiMt`. K5-60: `chuyenCaseSangLoTrinh` ở `cases/systemClose.ts`, mốc mới `route_changed` "Sang lộ trình mới"
+  (`MILESTONE_KINDS`). Chuyển tiếp cả lớp: lớp nguồn luôn là lớp thường nên chỉ gọi `taoMtMacDinh`, không có FT → FT.
+  **Dữ liệu phép kiểm cũ đổi theo luật mới** (không xoá, không nới): `tests/luotThu.ts` — `boLichTuTao` (em thử của sosV3 / Ý thức / PR-N tự
+  dựng lượt) + `luotThu` (tạo trước số còn thiếu, đánh dấu MT lịch sử). `[12.1]` đổi thành kiểm M1 (lịch mặc định do hệ thống tính, không
+  lấy tuần từ file). "Mở lộ trình mới…" đọc MT1 tự tạo. "Lên kế hoạch MT hàng loạt" bỏ điều kiện "chưa có kế hoạch". Rc2 Task4(d) lấy ba lượt
+  cuối. Seed `sosV3Seed.ts` chọn tuần bắt đầu để MT{n} rơi đúng tuần demo rồi dùng lại lượt tự tạo (MT trước = MT lịch sử).
+  **Ngoài kế hoạch (bắt buộc để xanh):** trần câu SQL hành trình HV1 (PR-UX5, 31) vỡ vì `createCycle` nay có 3 MT → `typedResult` chạy
+  từng lượt. Sửa gốc: `hanhTrinh.ts` nạp điểm / phạm vi / chương trình theo lô, `typedResult(a, pre?)` nhận dữ liệu nạp sẵn.
+  **Câu hỏi cho planning:** `createAttempt` tạo MỚI ở tuần đã qua vẫn `lich_su = 0` (kế hoạch chỉ ghi tính cờ ở lõi tự tạo, dời theo tuần
+  bắt đầu và hồi sinh) — T34 nói chung "lượt có tuần thi kết thúc trước ngày tạo". Giữ theo kế hoạch; PR-XLMT (xếp MT lịch sử) quyết.
+- **Task 4:** `routeCuaLuot(a)` ở `attempts.ts` — hàng đã có cột `route` thì dùng, không thì một câu nhớ theo `cycle_id` trong request.
+  Mọi danh sách thêm `route` vào SELECT sẵn có (tongHop, danhGia, weekly, phoiHop, phanTichLop, skillSupportBoard, profile, hanhTrinh) —
+  không thêm câu mỗi dòng; trần tốc độ không đổi.
+- **Task 5:** chốt `viewSkill({ lichSu })` → `progress 'lich_su'` (nhãn "Nhập bù, không có hạn"), không hạn, không quá hạn. Lịch Test
+  (`lichTest`) và `scoreDebtCells` lọc bằng `LUOT_TINH_NO_SQL` ngay trong SQL. Mốc kế tiếp: `mocKeTiep` + `MOC_KE_TIEP_SQL` +
+  `coMocTiepTheo` (lichMt.ts) dùng ở `classRoster` (next, Thiếu mốc), `hocVienLop` (một cột đếm thêm, lớp thường giữ cách cũ) và
+  `standing` (lượt sắp tới). Lớp thường giữ luật "Thiếu mốc" cũ (K2-05 nói FT). K5-54: `attemptsNewestFirst` xếp theo lộ trình mới nhất
+  rồi số MT lớn nhất. `luotSinhViecRow(a, homNay)` (danhGia.ts) dùng cho SOS hiện tại + Bỏ quên. K5-09: việc "Điền target" (nhóm Thiếu dữ
+  liệu, GVCN, không hạn); câu gợi ý nhóm bỏ "lớp chưa có tuần bắt đầu" (không có loại việc đó). Phần web của Task 5 (DeadlinePill,
+  LuoiFT…) làm chung ở Task 9.
+- **Task 6 — lệch kế hoạch (sửa theo đặc tả):** vai Quản lý **không** có `score.edit`/`score.override` (seed `ROLE_PERMISSIONS`) — QL chỉ sửa
+  điểm sau "hoàn tất" (R11). T34 ghi "GVCN của lớp **và QL** nhập được cả 4 kỹ năng", nên đường `lich_su` = lượt lịch sử + (QL có
+  `PLAN_WEEK` ở lớp đó — mọi ô, sửa ô đã có điểm vẫn phải có lý do RB-5) **hoặc** (GVCN lớp — chỉ ô trống, Q8). `editableSkills(…, luot?)`
+  theo cùng luật; `mySkills` giữ nguyên (MT lịch sử không phải nợ). R11 lịch sử: vẫn cần đủ điểm như `dotDaHoanTat`, chỉ thay mốc
+  "Chủ nhật tuần muộn nhất" bằng "lần nhập cuối + 7 ngày". Nhật ký `score.lich_su` hiện trong Lịch sử thay đổi của hồ sơ Test như "edit".
+- **Task 7:** `luotSoCuaLoTrinh` + `nextAttemptNo = soMtKeTiep` ở `cycles.ts`; chốt `kiemSoMtMoi` trong `createAttempt`; hồi sinh dòng huỷ
+  không điểm (`hoiSinhLuot`, nhật ký `attempt.recreate`, xoá dấu "-" cũ không phải điểm). `cancelAttempt` **bỏ**, thay bằng `huyLuot`
+  (route `/attempts/:id/cancel` nhận `cach`); hệ quả `heQuaHuyLuot` trả trong `attemptDetail.viewer.huyLuot` (không thêm route).
+  **Hiểu kế hoạch:** "cả hai cách đóng thứ sinh từ lượt" mâu thuẫn phép kiểm (d) → làm theo (d): chỉ **Huỷ cả lượt** đóng Case (mọi mốc từ
+  lượt, chưa có kết quả PA) + Phối hợp mở; Huỷ phần còn lại không đóng gì (phần có điểm là thật). Phối hợp bị huỷ dùng mã hệ thống mới
+  `system_luot_huy` "Lượt Test đã huỷ" (không dùng `system_sos_changed` vì chữ nói sai lý do) — phép kiểm T1 cũ cập nhật danh sách 6 mã.
+  Lưới Kế hoạch Test: `soKeTiep` theo em, ô xa hơn hiện `—` mờ. Dữ liệu phép kiểm cũ: "Huỷ giữ lý do" chọn lượt lớn nhất chưa điểm;
+  sosV3 CANCEL dựng dữ liệu cũ bằng SQL (lượt có điểm nay không huỷ cả lượt được); keHoachTest MT80–95 → em thử mới + MT1/MT2 thật.
+- **Task 8 — 🛑 cửa dừng (d) đã chạm và đã hỏi:** máy tự dời lần 1 trong `settleNoShows` làm đỏ RB-1 cron (`anToan.tests.ts:496`, bài
+  sau chốt không còn "vắng"). **Chủ sản phẩm chọn 29/09: sửa kỳ vọng RB-1** (cron vẫn chốt đúng 1 buổi, lần hai 0; bài đã được dời, vắng
+  = 1). Phép kiểm cũ cập nhật kỳ vọng "lần 1 GVCN bấm" → "máy đã tự dời": run.ts PR-G (Chưa hết CN · W1/W2 · Quyền · Sáng thứ Hai),
+  luatMayChu S11 (nay kiểm máy dời theo cờ cột vào tuần đang chạy), S12 (W1+W2 không còn quá hạn, dời lần 1), S13 (chốt muộn 28/09 để
+  máy chuyển QL rồi QL đổi kết luận). **Lỗi phát hiện kèm, đã sửa gốc:** QL đổi trạng thái thi khỏi "vắng" mà đề nghị dời đang chờ vẫn
+  sống → hết hạn sẽ huỷ phần thi của bài không còn vắng, và badge lệch Lịch Test (rà #92). `setSitStatus` nay rút đề nghị (`withdrawn`,
+  `rutDeNghiDoi` ở absence.ts). Hạn đề nghị (lần 2+ và chuyển QL) = `hanDuyetDoiLan2(hôm nay)`; tuần đích = `tuanDichMacDinh`; duyệt
+  không chọn tuần mà tuần lưu đã bắt đầu → tuần đích mặc định. Nhật ký mới `attempt.absence_auto_move`. Lịch Test: `LuiLich.lanVang`,
+  `LopLichTest.choDuyetDoi` (một lần tra sổ đề nghị); phần chữ trên web làm ở Task 9. MT lịch sử: `requestAbsenceMove` chặn.
+- **Task 9:** `lichSu` trả ở `listAttempts`, `attemptDetail`, lưới Kế hoạch Test (`DotFT`), hồ sơ HV (`attempts`), Hành trình (`ghim`).
+  `ChipLichSu` (ui/Nhan.tsx) dùng ở đầu hồ sơ Mock, bảng Mock Test hồ sơ HV, ô Kế hoạch Test (dòng 1 là nhãn, còn 1 dòng chip + "+n" —
+  ô vẫn 44px); Hành trình ghi "MT2 lịch sử" (bản gọn điện thoại chỉ "MT2"). `mtLichSuChuaNhap` (canCham.ts) dùng chung dòng nhắc Lịch
+  Test (`nhacLichSu`) và việc xám nhóm Thiếu dữ liệu. Hồ sơ Mock lượt lịch sử: không `DeadlinePill`, không "Ghi nhận vắng", không "Hẹn
+  xử lý" (dòng và cả đợt); nút "Nhập điểm cả lớp" có sẵn mở đúng tuần. Phần web Task 5/8 cũng làm ở đây (DeadlinePill `lich_su`, Nợ
+  "dời từ … · vắng lần n", hàng lớp "vắng · chờ Quản lý duyệt dời").
+  **impeccable clarify (trước → sau):** hàng lớp `vắng · chờ QL duyệt dời` → `vắng · chờ Quản lý duyệt dời` (TU_DIEN_VA_CHU dòng 96: không
+  viết tắt QL trên màn — **chủ sản phẩm xem lại**, kế hoạch ghi "QL") · thông báo `Đã tự dời Writing sang W3 SEP (vắng lần 1).` → `Đã tự
+  dời Writing của {tên em} · MT1 sang W3 SEP (vắng lần 1).` (danh sách thông báo không có ngữ cảnh em nào) · lỗi đánh số `Chưa có MT2 —
+  tạo MT2 trước rồi mới tới MT3.` → `Chưa có MT2 — xếp MT2 trước rồi mới xếp MT3.` (cùng động từ "xếp" với Kế hoạch Test) · `MT2 đã huỷ
+  và còn điểm — số này không dùng lại.` → `MT2 đã huỷ nhưng còn điểm — không dùng lại số này.` · lỗi huỷ `…với lượt lớn nhất chưa có
+  điểm nào…` → `…với MT cuối cùng của lộ trình khi chưa có điểm nào…` (bỏ chữ máy "lượt lớn nhất") · việc xám nút `Nhập` → `Nhập điểm`
+  · tooltip nhãn `lịch sử` nói đúng T34 ("tuần thi đã qua trước khi lượt này được tạo"). Giữ nguyên (chữ kế hoạch đã chốt): nhãn
+  `lịch sử`, dòng nhắc `MT lịch sử chưa nhập · 3 em · MB FT 101 → Nhập` (thêm `aria-label` cho link), `Nhập bù, không có hạn`, `dời từ
+  W3 SEP · vắng lần 1`, hộp huỷ "Số MT3 sẽ dùng lại được…" / "MT2 giữ số; kỹ năng đã có điểm giữ nguyên.".
+- **Task 10:** bộ demo ở file riêng `seed/prMtSeed.ts` (đi qua hàm nghiệp vụ như `sosV3Seed.ts`, gọi sau sosV3) thay vì sửa
+  `students.ts`/`journeys.ts`. D1 Phan Gia Hân + Đặng Quốc Bảo (MT1 tuần trước, SOS 2 → PA "Tutor · đến lúc thi", Phối hợp hàng MT4) ·
+  D2/D3 Lê Minh Khang bắt đầu **17** tuần trước (không phải 22) để MT3 rơi 2 tuần trước (H3 trong cửa sổ) còn MT2 −6 tuần có SOS 2 (H2
+  ngoài cửa sổ) — một em đủ cả K3 · D4 Trần Hữu Phúc (không lượt nào) · D5 **bốn** em: Hồ Ngọc Diệp (máy tự dời lần 1, thông báo GVCN +
+  GVBM — cho K10), Ngô Bảo Châu (chờ duyệt lần 2), Lý Thanh Tâm (đã duyệt), Võ Minh Triết (hết hạn → huỷ phần thi); "lần 1 đã dời" của
+  Châu/Tâm/Triết ghi thẳng một dòng lịch sử (không chạy lùi thời gian) · D6 Phạm Khánh Linh (MT3, MT2 huỷ cả lượt → MT2 tạo lại cùng
+  dòng) · D16 Đinh Gia Huy (LT1 Case Listening → MB FT RF 12, Case đi theo). `build.ts`: đề nghị dời mẫu theo luật mới (hạn CN tuần gửi,
+  tuần đích chưa bắt đầu). WelcomePage: dòng "Xem được: MT lịch sử, lớp RF, dời lần 2" cho Nguyễn Khánh Vy, Trần Ngọc Hà.
+  `chay-thu:mt` trên DB demo: (2) 1 em — PISA-000048 Trần Hữu Phúc (D4) · (3) 1 em thiếu tuần bắt đầu (PISA-000032) · (4) 1 lộ trình nhảy
+  số PISA-000040 `MT1, MT2, MT5` (seed build.ts cũ, không phải lỗi PR) · (5) 0.
+  **Phép kiểm cũ đổi theo dữ liệu demo mới:** [18.1] bỏ qua dòng vắng máy chốt (`absent_from_no_show = 1`) · "Tuần kế hoạch hoàn tất"
+  loại kỹ năng đã huỷ phần thi (khớp `completionWeekOf`) · oracle PR-N `prnLatestValid` theo K5-54 + M-14. **Hiệu năng:** `loadBundle` /
+  `loadSkillRows` chia lô 900 thay 400 (Bỏ quên vượt trần 16 vì mỗi em FT nay có 3 MT); `editableSkills` nhận `today` từ nơi gọi (tránh
+  một câu ngày demo mỗi lượt lịch sử — lỗi tôi gây ra ở Task 6, phép kiểm "Danh sách lớp … N+1" bắt được).
+- **Task 12:** rebase `origin/main` 59f1afa (chỉ đổi `PROMPT_BAN_GIAO_PLANNING.md`). Bấm thử bằng Playwright kênh Chrome, ảnh ở
+  `thiet-ke/anh/pr-mt/` (ảnh "trước" chụp trên bản main dựng tạm cùng cổng 4167/5367). K1: Thêm HV **phải chọn** tuần bắt đầu = tuần này
+  (bỏ trống thì panel dùng tuần khai giảng của lớp → MT1/MT2 thành MT lịch sử — đúng luật, ghi thành câu hỏi PR-NHAP). K2 đo riêng: Lịch
+  Test (7 tuần) + Việc cần làm của QL và GVBM **giống hệt** trước/sau. Em cũ chưa có tháng thi hiện "Thiếu: Tháng/năm dự kiến thi, Mốc
+  đánh giá tiếp theo" (luật K2-05 — điền tháng thi thì cả hai tắt). K11 (lần vắng sau thành đề nghị) không bấm được vì cần thời gian
+  trôi — đã có phép kiểm khối 8. **audit/polish (trong phạm vi):** nhãn `lịch sử` ở Kế hoạch Test bị cột flex giãn thành khung trống cả ô
+  → `self-start`; cột hạn lưới nhập điểm của hàng MT lịch sử nói "Đã nhập" khi mới có một ô → ưu tiên ô `lich_su`; trạng thái "Nhập bù,
+  không có hạn" ở hồ sơ Mock bỏ màu chờ (vàng) → xám; ô "Lý do huỷ" có nhãn; link "→ Nhập" cao 44px trên điện thoại. Máy dò impeccable:
+  0 phát hiện.
+- **Sửa theo rà #119 (29/09, Opus 5.5):** (1) M-14 `standingFor` + `latestResult` bỏ lượt `!luotSinhViecRow` (SELECT thêm `week_end`); đầu hồ sơ
+  HV nhận cờ `sinhViec` cho `ketQuaTestGanNhat`; "Mốc tiếp theo" ở hồ sơ FT dùng `mocKeTiep` (lớp thường giữ luật cũ); danh sách `/students`
+  "MT sắp tới" bỏ MT lịch sử. Khu "Kỹ năng cần hỗ trợ" (bảng kỹ năng, band gần nhất từng kỹ năng) **giữ** — là điểm thật, không phải mức SOS.
+  (2) `rutDeNghiDoi(attemptId, skill?)` rút cả lượt; gọi khi Huỷ cả lượt và khi tạo lại số; `sweepExpiredMoves`, `decideAbsenceMove`, việc dời ở
+  Việc cần làm bỏ lượt `cancelled`. (3) tín hiệu "bài Test còn thiếu điểm" + `need=missing_scores` bỏ MT lịch sử. (4) `settleGroup` chỉ chốt khi
+  dấu "-" đầu buổi CHƯA chốt và vẫn nằm đúng tuần đang xếp (xuất hàm để phép kiểm dựng lại cuộc đua bằng danh sách cũ). (5) `createAttempt`
+  tuần đã kết thúc → `lich_su = 1` lúc tạo. (6) `previewIntake` đọc `is_fast_track`. (7) `LuotSo.daThi` — kỹ năng `sat` chặn "Huỷ cả lượt".
+  (8) tạo lại số: `created_at` = lúc xếp lại. (9) lý do "Quản lý xếp trực tiếp" (bỏ "QL"). (10) PR-NHAP: giữ mặc định tuần khai giảng, xem trước
+  báo "n MT sẽ là MT lịch sử". Phép kiểm: khối 6 thêm M-14, khối 10 (mục 2–8).
+- **GỘP VỚI PR-DUYET (làm SAU khi planning báo #117 đã merge — thứ tự merge mới: #117 trước, PR-MT sau):** `git merge origin/main`, 9 file
+  xung đột. Dễ, giữ cả hai: package.json, migrate.ts (gọi cả hai), tests/run.ts, shared/domain/index.ts, CODE_MAP.md, TRIEN_KHAI.md,
+  TU_DIEN_VA_CHU.md. `worklist/mywork.ts`: bỏ khối việc dời lịch theo #117 (đã vào hộp Chờ duyệt); giữ import `mtLichSuChuaNhap` cạnh
+  `demYeuCau`/`quetYeuCau`; hộp Chờ duyệt phải lọc thẻ `skill_move` của lượt lịch sử hoặc đã huỷ. `fasttrack/absence.ts` (khó): giữ
+  `xuLyVangMotKyNang` của MT **và** `taoYeuCau` trong `insertRequest` của #117; thẻ lấy hạn `r.decideBy` = `hanDuyetDoiLan2`, `nguoi_xin` null
+  khi máy gửi, chữ thẻ dùng `moTaDoiLan2`. `rutDeNghiDoi`: bỏ `writing()` (#117 đã xoá), thêm `chotYeuCau(…,'tu_dong',{lyDo:'Rút — bài không
+  còn vắng'})`; sửa mục 2 (rút cả lượt) cũng phải đóng thẻ tương ứng. Phép kiểm K5-28 của #117 phải còn xanh. Gộp xong `npm run check` một
+  lần, bấm lại K9/K10 (dời do vắng → thẻ Lịch thi trong hộp), push, báo planning.
+  **Đã làm (29/09, sau khi #117 merge):** 10 file xung đột (thêm `classes/luatLoTrinh.ts`: `mucTieu` theo quyền của DUYET + tự tạo MT,
+  chuyển Case của MT). `absence.ts`: lõi `xuLyVangMotKyNang` bỏ `notifyPlanners` (thẻ thay, như #117); lý do máy gửi đề nghị lần 2 = "Không dự
+  thi — dấu "-" còn nguyên đến hết Chủ nhật" (không ghi "máy tự dời" cho bài chưa dời). Thẻ Lịch thi: tiêu đề Mock = `chuTheDoiLan2` (hàm
+  thuần, `moTaDoiLan2` gọi lại nó — thẻ nạp theo lô, không N+1); luật "thẻ chết" thêm lượt đã huỷ / MT lịch sử. `TU_DIEN_VA_CHU`: PR-DUYET
+  giữ §12, PR-MT thành §13. `npm run check` **1521** + 20 tốc độ xanh. Bấm lại K9/K10: hộp Chờ duyệt có thẻ "Dời L · MT1 · lần 2 · Duyệt = L
+  thi W4 SEP" (Ngô Bảo Châu, hạn 20/09 = CN tuần gửi); chuông GVBM còn "Đã tự dời …". Còn lại cho PR-DUYET/PR-UXF: dòng thẻ "đề nghị W4 SEP
+  2026" và "Nếu duyệt: … tuần W4 SEP 2026" còn năm trong mã tuần (G-6) — chữ của #117, không sửa ở đây.
 
 ## Planning chốt 29/09
 

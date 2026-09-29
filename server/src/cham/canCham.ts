@@ -13,13 +13,14 @@ import { notFound } from '../util.ts';
 import { db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import {
-  activeAt, can, classScopeSql, defaultWorkScope, editableSkills, mySkills, scopeFor, type Principal,
+  activeAt, can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, mySkills, scopeFor, type Principal,
 } from '../permissions.ts';
 import {
-  ATTEMPT_KIND_SHORT, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, PERMISSIONS, SKILL_SHORT, lopTuMo, nhanLopLichTest, noShowStateOf,
+  ATTEMPT_KIND_SHORT, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, LUOT_TINH_NO_SQL, PERMISSIONS, SKILL_SHORT, lopTuMo, nhanLopLichTest, noShowStateOf,
   trangThaiChamLabel, type AssessedSkill, type AttemptKind, type LoaiNhanLop, type PhamViLichTest,
 } from '../../../shared/domain/index.ts';
 import { classScoreSheet, conBaiCanCham, listAttempts, type MonDoiLich } from '../fasttrack/attempts.ts';
+import { pendingMovesFor } from '../fasttrack/absence.ts';
 import { assessedSkillOf, entrySkillsOf } from '../fasttrack/scoring.ts';
 import { allProgrammes, isRatioClass, regularSheet } from '../normal/regular.ts';
 import { isOverdue, skillScoreDeadline, weekInfo } from '../platform/week.ts';
@@ -61,6 +62,8 @@ export type LuiLich = {
   sangTuan: string | null;
   tuTuanStart: string | null;
   sangTuanStart: string | null;
+  /** PR-MT (YC-13.1 (3)): dời do vắng lần mấy — `null` khi lùi lịch không phải vì vắng. */
+  lanVang: number | null;
 };
 
 /**
@@ -96,6 +99,38 @@ const theoThuTu = (a: string, b: string) =>
 
 const kyNangLabelOf = (mode: CheDo, kyNang: string[]) =>
   (mode === 'ratio' && kyNang.length >= 4 ? `${kyNang.length} môn` : kyNang.map((k) => SKILL_SHORT[k] ?? k).join(', '));
+
+/** Một dòng nhắc "MT lịch sử chưa nhập" của một lớp (K2-32). */
+export type NhacLichSu = { classId: number; classCode: string; soEm: number; href: string };
+
+/**
+ * K2-32 — LƯỢT MT LỊCH SỬ CÒN THIẾU ĐIỂM, gom theo lớp: một dòng nhắc MỜ ở Lịch Test và một việc xám ở Việc cần làm (không số đỏ,
+ * không vào dải số hay Nợ, không hạn). Chỉ lớp người xem là GVCN hoặc Quản lý (xếp tuần được lớp đó). Một câu cho mọi lớp.
+ */
+export function mtLichSuChuaNhap(p: Principal, o: { classIds?: number[] | null; branchId?: number | null } = {}): NhacLichSu[] {
+  if (o.classIds && !o.classIds.length) return [];
+  const where = ['a.lich_su = 1', `a.status = 'planned'`, `c.status = 'active'`];
+  const params: unknown[] = [];
+  if (o.classIds) { where.push(`a.class_id IN (${o.classIds.map(() => '?').join(',')})`); params.push(...o.classIds); }
+  if (o.branchId) { where.push('c.branch_id = ?'); params.push(o.branchId); }
+  const rows = db().prepare(
+    `SELECT a.class_id, a.student_id, a.planned_period_id, c.code FROM assessment_attempts a
+       JOIN classes c ON c.id = a.class_id LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
+      WHERE ${where.join(' AND ')} ORDER BY c.code, rp.week_start`,
+  ).all(...params) as any[];
+  const duoc = new Map<number, boolean>();
+  const theoLop = new Map<number, { classCode: string; em: Set<number>; periodId: number | null }>();
+  for (const r of rows) {
+    if (!duoc.has(r.class_id)) duoc.set(r.class_id, isCoreTeacherOf(p, r.class_id) || can(p, PERMISSIONS.PLAN_WEEK, { classId: r.class_id }));
+    if (!duoc.get(r.class_id)) continue;
+    const l = theoLop.get(r.class_id) ?? { classCode: r.code as string, em: new Set<number>(), periodId: r.planned_period_id ?? null };
+    l.em.add(r.student_id);
+    theoLop.set(r.class_id, l);
+  }
+  return [...theoLop].map(([classId, l]) => ({
+    classId, classCode: l.classCode, soEm: l.em.size, href: `/nhap-diem/${classId}${l.periodId ? `?periodId=${l.periodId}` : ''}`,
+  }));
+}
 
 /** Chia lô cho câu `IN (...)` — SQLite giới hạn số tham số của một câu lệnh. */
 function theoLo<T>(ids: T[], hoi: (lo: T[], ph: string) => void) {
@@ -159,7 +194,7 @@ function dungLuiLich(
       tuTuan = maCu; tuTuanStart = maCu ? theoMa.get(maCu) ?? null : null;
     }
     out.set(x.key, {
-      kyNang: x.skill, hv: [x.hv], tuTuan, sangTuan: x.sangTuan, tuTuanStart, sangTuanStart: x.sangTuanStart,
+      kyNang: x.skill, hv: [x.hv], tuTuan, sangTuan: x.sangTuan, tuTuanStart, sangTuanStart: x.sangTuanStart, lanVang: x.moved.lanVang,
     });
   }
   return out;
@@ -283,6 +318,8 @@ export type LopLichTest = {
   moSan: boolean;
   hrefDayDu: string;
   dong: DongLichTest[];
+  /** PR-MT (YC-13.1, K4 §4e): số bài vắng tuần này đang chờ Quản lý duyệt dời (lần 2+) — dòng tím nhạt trong hàng lớp. */
+  choDuyetDoi: number;
 };
 export type LichTest = {
   scopeEmpty: boolean;
@@ -295,6 +332,8 @@ export type LichTest = {
   tongQuan: { daCham: number; tong: number; conPhaiCham: number; no: { bai: number; lop: number }; quaHan: number };
   no: DongNo[];
   lop: LopLichTest[];
+  /** PR-MT (K2-32): dòng nhắc MỜ cuối trang — MT lịch sử chưa nhập theo lớp. */
+  nhacLichSu: NhacLichSu[];
 };
 
 type OiemLuu = {
@@ -353,7 +392,7 @@ export function lichTest(
   const phamVi: PhamViLichTest = coPhanCong ? o.phamVi ?? 'cua-toi' : 'tat-ca';
   const rong: LichTest = {
     scopeEmpty: scope.none, tuan: null, phamVi, coPhamViRong: false, coPhanCong, lopDangLoc: null,
-    tongQuan: { daCham: 0, tong: 0, conPhaiCham: 0, no: { bai: 0, lop: 0 }, quaHan: 0 }, no: [], lop: [],
+    tongQuan: { daCham: 0, tong: 0, conPhaiCham: 0, no: { bai: 0, lop: 0 }, quaHan: 0 }, no: [], lop: [], nhacLichSu: [],
   };
   if (scope.none) return rong;
   const conn = db();
@@ -373,7 +412,8 @@ export function lichTest(
 
   const cs = classScopeSql(scope);
   const params: unknown[] = [...cs.params, periodId];
-  let where = `${cs.sql} AND a.status != 'cancelled' AND ask.required = 1 AND ask.planned_period_id = ?`;
+  /* PR-MT (M3, K4-01): MT lịch sử không vào tổng / còn bài / quá hạn / tự mở / dải số — nhắc riêng một dòng mờ (`mtLichSuChuaNhap`). */
+  let where = `${cs.sql} AND a.status != 'cancelled' AND ${LUOT_TINH_NO_SQL('a')} AND ask.required = 1 AND ask.planned_period_id = ?`;
   if (branchId) { where += ' AND c.branch_id = ?'; params.push(branchId); }
   const rows = conn
     .prepare(
@@ -409,11 +449,19 @@ export function lichTest(
     return cuaToiNho.get(k)!;
   };
   type DongTam = Omit<DongLichTest, 'trangThai'> & { quaHan: boolean };
-  type LopTam = Omit<LopLichTest, 'dong' | 'nhan' | 'moSan' | 'daCham' | 'dotLabel' | 'kyNangTuan' | 'han'> & {
+  type LopTam = Omit<LopLichTest, 'dong' | 'nhan' | 'moSan' | 'daCham' | 'dotLabel' | 'kyNangTuan' | 'han' | 'choDuyetDoi'> & {
     dong: Map<string, DongTam>; _dot: string[]; _kn: Set<string>; _hanNo: string | null;
   };
   const byLop = new Map<string, LopTam>();
   let quaHanTuan = 0;
+  /* PR-MT: bài vắng tuần này có đề nghị dời chờ Quản lý — MỘT lần tra sổ đề nghị cho cả trang (không hỏi từng dòng). */
+  const deNghi = pendingMovesFor([...new Set(rows.map((r) => r.id as number))]);
+  const choDuyetCua = new Map<number, number>();
+  for (const r of rows) {
+    if (r.sit_status === 'absent' && giuLop(r.class_id) && deNghi.get(`${r.id}:${r.skill}`)?.from_period_id === periodId) {
+      choDuyetCua.set(r.class_id, (choDuyetCua.get(r.class_id) ?? 0) + 1);
+    }
+  }
   for (const r of rows) {
     /* Chỉ đếm lượt còn ngồi thi (chưa vắng, chưa huỷ phần thi): em vắng không làm dòng thành "Đã chấm xong". */
     if (r.sit_status !== 'scheduled' && r.sit_status !== 'sat') continue;
@@ -489,6 +537,7 @@ export function lichTest(
     nhan: nhanLopLichTest({ conBai: l.conBai, conBaiCuaToi: l.conBaiCuaToi, chuaToiHan, coDayLop: lopCuaToi.has(l.classId) }),
     /* Tuần chưa tới thì chưa có gì để chấm — không tự mở. */
     moSan: !chuaToiHan && lopTuMo({ conBai: l.conBai, conBaiCuaToi: l.conBaiCuaToi, coPhanCong }),
+    choDuyetDoi: l.mode === 'ielts_band' ? choDuyetCua.get(l.classId) ?? 0 : 0,
     dong: [...dong.values()].map(({ quaHan, ...d }) => ({
       ...d,
       trangThai: trangThaiChamLabel({ conBai: d.conBai, tong: d.soHv, quaHan, chuaToiHan }),
@@ -515,5 +564,6 @@ export function lichTest(
     },
     no: no.dong,
     lop,
+    nhacLichSu: mtLichSuChuaNhap(p, { classIds: lopNo ? [...lopNo] : null, branchId }),
   };
 }

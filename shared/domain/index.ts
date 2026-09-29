@@ -58,3 +58,4 @@ export * from './nhatKy.ts';
 export * from './tenLop.ts';
 export * from './phanCong.ts';
 export * from './yeuCauDuyet.ts';
+export * from './lichMt.ts';
