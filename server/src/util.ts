@@ -10,6 +10,19 @@ export const forbidden = (m: string, d?: unknown) => new HttpError(403, m, d);
 export const notFound = (m = 'Không tìm thấy dữ liệu') => new HttpError(404, m);
 export const conflict = (m: string, d?: unknown) => new HttpError(409, m, d);
 
+/**
+ * PR-TOC — ô CHỮ từ JSON phải là chuỗi (hoặc trống): object/mảng lọt vào `.trim()` là lỗi 500, vào `String()` thành chữ
+ * "[object Object]" được lưu thật. Ô trong `so` nhận thêm số (band, target… gửi dạng số từ lưới). `ten(k)`: tên ô trong câu báo lỗi.
+ */
+export function kiemKieuO(o: Record<string, unknown>, chu: readonly string[], so: readonly string[] = [],
+  ten: (k: string) => string = (k) => k): void {
+  for (const k of [...chu, ...so]) {
+    const v = o[k];
+    if (v === undefined || v === null || typeof v === 'string' || (typeof v === 'number' && so.includes(k))) continue;
+    throw badRequest(`${ten(k)}: giá trị không hợp lệ — cần ${so.includes(k) ? 'số hoặc chữ' : 'chữ'}.`);
+  }
+}
+
 /** Ngày nghiệp vụ theo Asia/Ho_Chi_Minh, lưu dạng YYYY-MM-DD. */
 export const BUSINESS_TZ = 'Asia/Ho_Chi_Minh';
 

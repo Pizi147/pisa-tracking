@@ -9736,6 +9736,8 @@ await runPrMtTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, ad
 // ==================================================================== PR-NHAP (Thêm học viên: email, ngày thi, cột theo tiêu đề)
 const { runPrNhapTests } = await import('./prNhap.tests.ts');
 await runPrNhapTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+const { runPrTocTests } = await import('./prToc.tests.ts');
+await runPrTocTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

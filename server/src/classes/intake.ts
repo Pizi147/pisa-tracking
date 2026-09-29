@@ -2,13 +2,13 @@ import { chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
   CHO_TAO_PRE_FOU, ENTRY_SKILLS, MOCK_FT_STUDY_WEEK, PERMISSIONS, PROGRAMME_TEMPLATES, chuanHoaMaLop, ghepMaLop, khoaMaLopSql, kiemSoLop,
   moRongPhanCong, programmeOf, type Route, type SlotPhanCong,
-  docEmail, docNgayNhap, laLichSu, lichMtMacDinh, nhanDangCot, tuanBatDauMacDinh, tuanHocCuaMt, tuanLich, type VanDeNhap,
+  NGAY_SINH_TOI_THIEU, canNamGan, docEmail, docNgayNhap, laLichSu, nhanCotNhap, lichMtMacDinh, nhanDangCot, tuanBatDauMacDinh, tuanHocCuaMt, tuanLich, type VanDeNhap,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { docSlots, ghiPhanCong, kiemTruocPhanCong } from './classes.ts';
 import { allProgrammes, mocChupVaoLop, programmeByCode } from '../normal/regular.ts';
 import { activeRouteCodes } from '../platform/sysconfig.ts';
-import { addDays, badRequest, isIsoDate, normalizeName, notFound, nowIso, padCode } from '../util.ts';
+import { addDays, badRequest, isIsoDate, kiemKieuO, normalizeName, notFound, nowIso, padCode } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, ensurePeriods, mondayOf, periodById } from '../platform/week.ts';
@@ -72,6 +72,10 @@ export type IntakeRow = {
 };
 
 export type RowIssue = VanDeNhap;
+
+/** Ô chữ / ô số (nhận cả số từ lưới) của một dòng nhập — cho `kiemKieuO` (PR-TOC). */
+const COT_CHU = ['fullName', 'classCode', 'dob', 'email', 'examDate', 'startWeek', 'route', 'consultant'] as const;
+const COT_SO = ['baselineScore', 'entryListening', 'entryReading', 'entryWriting', 'entrySpeaking', 'target', 'daThiToiMt'] as const;
 
 export type IntakePreview = {
   rows: (IntakeRow & {
@@ -165,6 +169,12 @@ export function previewIntake(
 ): IntakePreview {
   const conn = db();
   const issues: RowIssue[] = [];
+  /* PR-TOC: kiểu dữ liệu ở biên — gửi sai kiểu (object, mảng…) là 400 có lời, không phải 500. */
+  if (!Array.isArray(input.rows) || input.rows.some((r) => !r || typeof r !== 'object' || Array.isArray(r))) {
+    throw badRequest('Dữ liệu nhập không hợp lệ — cần danh sách dòng.');
+  }
+  input.rows.forEach((r, i) => kiemKieuO(r as Record<string, unknown>, COT_CHU, COT_SO, (k) => `Dòng ${i + 1} · ${nhanCotNhap(k)}`));
+  kiemKieuO(input as Record<string, unknown>, ['defaultStartWeek'], [], () => 'Tuần bắt đầu');
 
   /*
    * LỚP LÀ QUYẾT ĐỊNH CỦA CẢ LÔ, không phải một ô lặp lại ở từng dòng (mục 12.1).
@@ -199,7 +209,7 @@ export function previewIntake(
    * Gửi mà sai → báo ở cả lô và KHÔNG lặng lẽ thay bằng mặc định (dòng không tự ghi tuần sẽ báo thiếu).
    */
   const homNay = demoToday();
-  const w0 = input.defaultStartWeek ? docNgayNhap(input.defaultStartWeek, homNay) : null;
+  const w0 = input.defaultStartWeek ? docNgayNhap(input.defaultStartWeek, homNay, canNamGan(homNay)) : null;
   if (w0?.loi) issues.push({ row: 0, field: 'startWeek', message: w0.loi, muc: 'loi' });
   const defaultWeek = w0?.loi ? null
     : w0?.iso ? mondayOf(w0.iso) : tuanBatDauMacDinh({ lopThuong: ratio, khaiGiang: cls.start_date ?? null }, homNay);
@@ -226,7 +236,7 @@ export function previewIntake(
      */
     if (!name || name === '-') loi('fullName', 'Chưa điền');
 
-    const dob = docNgayNhap(r.dob, homNay, { toiDa: homNay });
+    const dob = docNgayNhap(r.dob, homNay, { toiThieu: NGAY_SINH_TOI_THIEU, toiDa: homNay });
     if (dob.loi) loi('dob', dob.loi);
 
     const email = docEmail(r.email);
@@ -259,7 +269,7 @@ export function previewIntake(
     let examDate: string | undefined;
     if (ratio) { if (coDuLieu(r.examDate)) luuY('examDate', 'Bỏ qua — lớp thường chưa thi IELTS'); }
     else {
-      const t = docNgayNhap(r.examDate, homNay, { choThang: true, toiThieu: homNay });
+      const t = docNgayNhap(r.examDate, homNay, { choThang: true, toiThieu: homNay, toiDa: canNamGan(homNay).toiDa });
       if (t.loi) loi('examDate', t.loi);
       else examDate = t.iso ?? undefined;
     }
@@ -275,7 +285,7 @@ export function previewIntake(
     /* TUẦN BẮT ĐẦU: ô trống thì dùng mặc định của cả lô. */
     let startWeek: string | null = defaultWeek;
     if (coDuLieu(r.startWeek)) {
-      const w = docNgayNhap(r.startWeek, homNay);
+      const w = docNgayNhap(r.startWeek, homNay, canNamGan(homNay));
       startWeek = w.iso ? mondayOf(w.iso) : null;
       if (w.loi) loi('startWeek', w.loi);
     }
