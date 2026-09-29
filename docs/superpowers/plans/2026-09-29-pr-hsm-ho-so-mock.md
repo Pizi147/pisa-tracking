@@ -500,3 +500,6 @@ Không có câu bắt buộc — mọi điểm mở đã vào bảng Q theo khuy
 - **Task 1** — 1727 đạt. Phép kiểm cũ sửa dữ liệu (không xoá): `xoaDuLieu.tests.ts` PR-XOA T1 đếm cột FK trỏ `users` 73 → **74**
   (`assessment_scores.examiner_user_id` phân loại **dấu vết** "điểm đã nhập" ở `xoaTaiKhoan.ts` — GV chấm = đã làm việc, xoá mềm).
   `CRITERIA`/`CRITERIA_SHORT`/`criteriaSetFor` đã xoá ở Task 1 (chỉ `ScoreEntry.tsx` dùng) thay vì chờ Task 3.
+- **Task 2** — 1736 đạt. `/students/1` +1 câu (91→92 QL, 93→94 GVCN/GVBM) — dưới trần 100, không nâng. Thêm nhãn nhật ký
+  `score.nhan_xet` = "Sửa nhận xét" (`nhatKy.ts`; phép kiểm N1 (11) đòi mọi hành động có nhãn tiếng Việt). Hoàn tất R11 trong
+  phép kiểm cần đủ 4 kỹ năng có điểm (`dotDaHoanTat`) — dữ liệu dựng thêm L/R/W1/W2.
