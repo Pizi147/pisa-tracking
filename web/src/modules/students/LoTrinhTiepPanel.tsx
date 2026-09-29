@@ -5,14 +5,34 @@ import { useToast } from '../../ui/Toast.tsx';
 import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonThang } from '../../ui/ChonNgay.tsx';
-import { dsLoi, huongTiepKhaDung, nhanHuong, type Huong } from '@shared/domain/index.ts';
+import { Level } from '../../ui/ui.tsx';
+import { sosTone } from '../../lib/format.ts';
+import { dsLoi, huongTiepKhaDung, ketQuaGanNhat, nhanHuong, type Huong, type KetQuaVao } from '@shared/domain/index.ts';
 
 type LoTrinhTiepData = {
   lop: { id: number; code: string; ma: string | null; maKe: string | null; laLopThuong: boolean; dangHoc: boolean } | null;
   banGhi: { huong: Huong; lopDuKienId: number | null; mucTieu: number | null; thangThi: string | null; ghiChu: string | null } | null;
   lopDuKien: { id: number; code: string; ma: string | null; ft: boolean }[];
   coTheGhi: boolean;
+  /** B9: kết quả gần nhất của em (`standingFor`). */
+  ketQua: KetQuaVao | null;
 };
+
+/** Khối "Kết quả gần nhất" của em: số chính + tối đa hai dòng chữ (cùng `ketQuaGanNhat` với cột Kết quả ở Học viên & Lớp). */
+function KetQuaGanNhatEm({ ketQua }: { ketQua: KetQuaVao | null }) {
+  const k = ketQuaGanNhat(ketQua);
+  return (
+    <Khoi tieuDe="Kết quả gần nhất">
+      <div className="flex flex-wrap items-center gap-x-2">
+        <span className="text-sm font-bold tabular-nums text-slate-100">{k.chinh}</span>
+        {k.lech && <span className="text-[11px] font-semibold tabular-nums text-bad" title={`Dưới kỳ vọng ${k.lech.replace('−', '')}`}>{k.lech}</span>}
+        {k.sos && <Level tone={sosTone(ketQua?.sosLevel ?? null)} dut={k.sosTamThoi}>{k.sos}{k.sosTamThoi ? ' tạm thời' : ''}</Level>}
+      </div>
+      {k.dong1 && <span className="block text-[12px] leading-4 text-slate-500">{k.dong1}</span>}
+      {k.dong2 && <span className="block text-[12px] leading-4 text-slate-500">{k.dong2}</span>}
+    </Khoi>
+  );
+}
 
 /** Một dòng nghĩa (≤ 60 ký tự) dưới mỗi hướng — để người chọn khỏi đoán "Học lại" hay "Bảo lưu" là gì. */
 const NGHIA_HUONG: Record<Huong, string> = {
@@ -28,7 +48,8 @@ const NGHIA_HUONG: Record<Huong, string> = {
 /**
  * LỘ TRÌNH TIẾP THEO (mockup 11-1, §3.9.1; PR-UX3 mockup 15 §8) — dự định cho một em SAU lớp đang học, ghi trước khi thật sự chuyển. Chỉ lớp
  * thường. MỘT panel `KhungPanel`: khối **Hướng đi** là danh sách dọc (nhãn đầy đủ + một dòng nghĩa), khối **Chi tiết** (lớp dự kiến ·
- * Fast Track: mục tiêu band + tháng thi 2 ô một hàng · ghi chú). Câu "Chỉ là dự định, chưa đổi lớp" nằm ở ⓘ.
+ * Fast Track: mục tiêu band + tháng thi 2 ô một hàng · ghi chú). PR-HVL (B9): đầu panel có khối **Kết quả gần nhất** của em (chính + hai dòng), và câu
+ * "Chỉ là dự định, chưa đổi lớp…" hiện THẲNG dưới tiêu đề khối Hướng đi (không còn ⓘ). Nằm ở: Học viên & Lớp / hồ sơ lớp → ⋯ dòng em → Lộ trình tiếp theo.
  */
 export function LoTrinhTiepPanel({ open, onClose, studentId, studentName, lop, onDone }: {
   open: boolean; onClose: () => void; studentId: number; studentName?: string; lop?: string | null; onDone?: () => void;
@@ -101,7 +122,9 @@ function NoiDungLoTrinhTiep({ onClose, studentId, studentName, lop, onDone }: {
         conThieu: lf.conThieu(loi),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy}>Lưu</button>,
       }}>
-      <Khoi tieuDe="Hướng đi" luat="Chỉ là dự định, chưa đổi lớp. Ghi trước để người kế nhiệm biết em sẽ đi đâu sau lớp này.">
+      <KetQuaGanNhatEm ketQua={data.ketQua} />
+      <Khoi tieuDe="Hướng đi">
+        <p className="m-0 mb-2 text-xs text-slate-400">Chỉ là dự định, chưa đổi lớp. Ghi trước để người kế nhiệm biết em sẽ đi đâu sau lớp này.</p>
         <div {...lf.o(loi, 'huong')} tabIndex={-1} role="radiogroup" aria-label="Hướng đi" className="space-y-1.5 outline-none">
           {cacHuong.map((h) => {
             const chon = huong === h;

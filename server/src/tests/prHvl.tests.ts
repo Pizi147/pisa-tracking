@@ -548,6 +548,29 @@ export async function runPrHvlTests(t: YThucTestKit) {
     assert(!/rgba\(242, 161, 161/.test(pn), 'khung hết khoá không còn tô đỏ');
   });
 
+  // ------------------------------------------------------------------ Task 8 · bảng điểm FT, Lộ trình tiếp theo, Chuyển tiếp lớp
+
+  const loTrinhMod: any = await import('../classes/loTrinhTiep.ts');
+  const trans: any = await import('../classes/transition.ts');
+  check('PR-HVL (8) · B9: /students/:id/lo-trinh-tiep và /classes/:id/transition trả `ketQua` của em (cùng standingFor)', () => {
+    const sid = (conn.prepare(`SELECT student_id AS id FROM enrollments WHERE class_id = ? AND status = 'active' LIMIT 1`).get(LOP_FOU) as any).id as number;
+    const loTrinh: any = loTrinhMod.layLoTrinhTiep(P.admin, sid);
+    assert('ketQua' in loTrinh && (loTrinh.ketQua === null || typeof loTrinh.ketQua.attemptLabel !== 'undefined'), JSON.stringify(loTrinh.ketQua));
+    eq(loTrinh.ketQua?.studentId ?? null, standingMod.standingFor([sid]).get(sid)?.studentId ?? null, 'cùng standingFor');
+    const plan = trans.transitionPlan(P.admin, LOP_FOU);
+    assert(plan.students.length > 0 && plan.students.every((s: any) => 'ketQua' in s), 'mỗi em phải có khoá ketQua');
+  });
+
+  check('PR-HVL (8) · web: bảng điểm FT bỏ Gọn/Đầy đủ, có nhánh MT lịch sử xám + nhãn, cột Theo dõi là ViecTiep bấm được; Lộ trình tiếp theo có Kết quả gần nhất, câu "Chỉ là dự định" hiện thẳng; Chuyển tiếp báo lỗi sau khi sửa/bấm', () => {
+    const r = web('modules/students/ClassRoster.tsx');
+    assert(!/Gọn|Đầy đủ/.test(r) && /lichSu/.test(r) && /ChipLichSu/.test(r) && /viecTiepTheo\[0\]/.test(r) && /<ViecTiep /.test(r), 'ClassRoster');
+    const lt = web('modules/students/LoTrinhTiepPanel.tsx');
+    assert(/Kết quả gần nhất/.test(lt) && /ketQuaGanNhat\(/.test(lt) && !/luat="Chỉ là dự định/.test(lt) && /Chỉ là dự định, chưa đổi lớp/.test(lt), 'LoTrinhTiepPanel');
+    const tp = web('modules/classes/TransitionPanel.tsx');
+    assert(/useLoiForm\(\)/.test(tp) && /lf\.bam\(\)/.test(tp) && /daSua/.test(tp) && /<Th>Kết quả<\/Th>/.test(tp) && /KetQuaEm/.test(tp), 'TransitionPanel');
+    assert(!/disabled=\{coLoi \|\| !data\?\.canEdit\}/.test(tp), 'nút Tiếp tục không được khoá vì lỗi (phải bấm được để hiện lỗi)');
+  });
+
   check('PR-HVL (2) · roster: `history[i].lichSu` là cờ thật của mốc; Standing có `nextWeekStart` (cột Sắp tới)', () => {
     let coMoc = 0;
     for (const lopId of (conn.prepare(`SELECT id FROM classes WHERE status = 'active'`).all() as any[]).map((r) => r.id as number)) {

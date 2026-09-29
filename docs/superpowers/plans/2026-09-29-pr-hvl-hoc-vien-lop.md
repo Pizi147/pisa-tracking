@@ -532,4 +532,11 @@ LT bọc `<abbr title=ROUTE_NAME>`; dòng chặng `Cuối khoá: 6/8 em có đ�
 "Đổi tuần khai giảng không dời lịch MT của em đã có."; lớp thường: ô Giữa khoá và trạng thái Giữa khoá ẩn khi `!coGiuaKhoa`, khung hết khoá tone `var(--line)` (không đỏ) + nút **Chuyển tiếp lớp** (`onChuyenTiep`), bỏ câu "Mở từng em rồi bấm…". impeccable `layout`: `detect --scope layout` sạch. Không phép kiểm cũ nào phải sửa.
 Phần "n em chờ Quản lý quyết" thuộc PR-LT2b (không làm).
 
+**Task 8 (30/09) — 1759 phép kiểm.** `ClassRoster` (bảng điểm FT): bỏ `Gọn/Đầy đủ` (cố định 2 mốc, Q11); cột **Theo dõi** = `viecTiepTheo[0]` qua `ViecTiep` có link (`duongViecTiep`) hoặc chữ mờ "Đang theo dõi" khi có Case mà không việc + dòng đếm Case giữ nguyên; MT lịch sử: nhãn `lịch sử` (`ChipLichSu`) cạnh tên mốc, ô điểm **xám** (không đạt/chưa đạt, không dấu dưới).
+`LoTrinhTiepPanel`: máy chủ trả `ketQua` (`standingFor([id])`), đầu panel khối **Kết quả gần nhất** (`ketQuaGanNhat`: chính + hai dòng), câu "Chỉ là dự định, chưa đổi lớp…" hiện thẳng dưới tiêu đề Hướng đi (bỏ ⓘ/`luat`).
+`TransitionPanel`: `transition.ts` trả `ketQua` từng em (một lần `standingFor`), cột/dòng thẻ **Kết quả** (chính + dòng 2, dòng 1 ở tooltip); lỗi từng dòng chỉ hiện sau khi sửa dòng đó (`daSua`) hoặc bấm "Tiếp tục" (`useLoiForm.bam()`; nút không còn bị khoá vì lỗi; chân "n ô cần sửa ↑" nhảy tới ô hướng của dòng lỗi).
+**Số câu SQL — lệch nhỏ so với kế hoạch (không phải trần Global Constraints, không 🛑 nhưng cần planning biết):** `/classes/6/transition` 28 → **35** (QT 27 → 34): kế hoạch dự kiến ≤ mốc + 5 = 33, nhưng `standingFor` tự nó tốn 7 câu (cycles, attempts, scores…, Case, programmes) nên không thể +5 mà vẫn đúng "một lần
+`standingFor`". `/students/1/lo-trinh-tiep` 12 → 20 (panel mở hiếm, một em; kế hoạch không đặt trần). Đã ghi trần `TRAN` cho transition = đo + 2 (37; QT 36). Nếu planning muốn giữ +5: web chỉ cần truyền `standing` từ roster sang hai panel (đã có ở `ClassRoster` / bảng lớp) thay vì máy chủ trả — nhưng trái lời kế hoạch "máy chủ trả thêm `ketQua`".
+Không phép kiểm cũ nào phải sửa (không phép nào đọc nguồn ba file này).
+
 > **Chủ sản phẩm chốt 30/09:** **có** cột "Sắp tới" (M3) ở danh sách Học viên & Lớp.
