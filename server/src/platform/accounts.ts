@@ -159,10 +159,14 @@ export function register(input: {
 
 /** MH1: kỹ năng "phụ trách được" chỉ là 5 ô nhập L · R · W1 · W2 · S. Tên môn lớp thường (G+V, P…) là của Ô LỚP, không của người. */
 const ALL_SKILLS = [...ENTRY_SKILLS] as string[];
+const DOI_MA_CU: Record<string, string[]> = {
+  writing: ['writing1', 'writing2'], prep_writing: ['writing1', 'writing2'], pronunciation: ['speaking'],
+};
 
 function setSkills(conn: any, userId: number, skills: string[]) {
-  /* Form cũ còn mở trên máy GV có thể gửi `writing` (Writing lớp thường) → đổi thành W1 + W2 như migrate PR-MON. */
-  const doi = skills.flatMap((s) => (String(s) === 'writing' ? ['writing1', 'writing2'] : [String(s)]));
+  /* Form cũ còn mở trên máy GV có thể gửi mã lớp thường cũ → đổi đúng như migrate PR-MON (không bỏ im lặng):
+     `writing`/`prep_writing` → W1 + W2, `pronunciation` → S. */
+  const doi = skills.flatMap((s) => DOI_MA_CU[String(s)] ?? [String(s)]);
   const wanted = [...new Set(doi)].filter((s) => ALL_SKILLS.includes(s));
   conn.prepare('DELETE FROM user_skills WHERE user_id = ?').run(userId);
   for (const s of wanted) {

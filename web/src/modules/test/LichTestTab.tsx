@@ -8,7 +8,7 @@ import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useManHinhHep } from '../cham/LuoiChamLop.tsx';
-import { chuOChuaLuu, mondayOfDate, tuanLich } from '@shared/domain/index.ts';
+import { chuOChuaLuu, mondayOfDate, tenMon, tuanLich } from '@shared/domain/index.ts';
 import type { DongNo, LichTest, LopLichTest } from './lichTest/kieu.ts';
 import { DaiSo, type OSo } from './lichTest/DaiSo.tsx';
 import { KhoiNo } from './lichTest/KhoiNo.tsx';
@@ -141,6 +141,10 @@ export function LichTestTab() {
   }, [data, dem, loaiParam, urlClassId]);
   const lopTab = (data?.lop ?? []).filter((l) => loaiCua(l) === loai);
   const noTab = (data?.no ?? []).filter((d) => !loai || loaiCua(d) === loai);
+  /* Luật lưới lớp thường nói đúng tên môn chấm theo thang điểm của các lớp đang xem (BE: Writing, Speaking · FOU: Grammar +
+     Vocabulary, Pronunciation) — không viết cứng. */
+  const monThangDiem = [...new Set(lopTab.flatMap((l) => l.boMon
+    .filter((k) => k === 'writing' || k === 'speaking').map((k) => tenMon(l.chuongTrinh, k))))];
 
   const cuon = (id: string) => requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: 'start', behavior: 'smooth' }));
   const bamSo = (o: OSo) => {
@@ -181,8 +185,8 @@ export function LichTestTab() {
           <span className="inline-flex min-h-[44px] items-center sm:min-h-[32px]">
             <NutLuat label="Luật lưới lớp thường">
               <span className="block">
-                Mỗi ô hai số: số câu đúng / tổng số câu (Writing, Speaking chấm theo thang điểm thì điểm đạt / tổng
-                điểm). Ô tổng đầu cột + nút ↓ điền nhanh cả cột; em làm đề khác thì sửa riêng ô đó — viền vàng khi
+                Mỗi ô hai số: số câu đúng / tổng số câu{monThangDiem.length ? ` (${monThangDiem.join(', ')} chấm theo thang điểm thì điểm đạt / tổng
+                điểm)` : ''}. Ô tổng đầu cột + nút ↓ điền nhanh cả cột; em làm đề khác thì sửa riêng ô đó — viền vàng khi
                 khác tổng của cột.
               </span>
               <span className="block">Dưới 70% là chưa đạt (tô đỏ nhẹ). Thiếu điểm khác chưa đạt.</span>

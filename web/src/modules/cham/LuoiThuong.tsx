@@ -412,6 +412,7 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
               tongCot={tongCot(k)}
               canEdit={canEdit}
               dienTong={dien[k] ?? null}
+              chiChuKetQua={CHUONG_TRINH_KHONG_CHIA_MON.includes(sheet.programme.code)}
               tenMon={tenMon(sheet.programme.code, k)}
               tenHv={row.studentName}
               onSave={(p, o) => luu(k, p, o)}

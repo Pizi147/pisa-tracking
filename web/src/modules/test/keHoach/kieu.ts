@@ -1,5 +1,5 @@
 import {
-  CHU_KY_NANG, KY_NANG_KE_HOACH, gomChip, tuanLich,
+  KY_NANG_KE_HOACH, gomChip, tenMonNgan, tuanLich,
   type KyNangKH, type OKyNang,
 } from '@shared/domain/index.ts';
 
@@ -38,12 +38,6 @@ export const khoaDot = (d: DotChon): string => (d.loai === 'ft' ? `mt${d.attempt
 export const thanDot = (d: DotChon) => (d.loai === 'ft' ? { attemptNo: d.attemptNo } : { kind: d.kind });
 
 export const KY = KY_NANG_KE_HOACH;
-/** Bốn kỹ năng L R W S (ngăn Xếp lịch hàng loạt — khung lớp thường theo chương trình là việc PR-XLMT). */
-export type Ky4 = (typeof KY_NANG_KE_HOACH)[number];
-export const chuKyNang = (k: KyNangKH) => CHU_KY_NANG[k];
-export const TEN_KY_NANG: Record<KyNangKH, string> = {
-  listening: 'Listening', reading: 'Reading', writing: 'Writing', speaking: 'Speaking', tong_hop: 'Tổng hợp',
-};
 
 /** Đợt của một em ở một cột. */
 export function dotCuaEm(
@@ -59,8 +53,8 @@ export function dotCuaEm(
 export const emXongDot = (o: { attemptId: number | null; kn: KnO }): boolean => o.attemptId !== null && gomChip(o.kn).xong;
 
 /** Tình trạng hiện có của một em bằng chữ: `L R W S · W4 OCT` (nhiều nhóm thì nối bằng " · "). */
-export function chuTinhTrang(kn: KnO): string {
+export function chuTinhTrang(kn: KnO, ct: string | null = null): string {
   const g = gomChip(kn);
   if (g.xong) return g.tuanXong ? `Xong · ${tuanLich(g.tuanXong)}` : 'Xong';
-  return g.chip.map((c) => `${c.kyNang.map((k) => CHU_KY_NANG[k]).join(' ')} · ${c.tuan ? tuanLich(c.tuan) : 'chưa xếp'}`).join(' · ');
+  return g.chip.map((c) => `${c.kyNang.map((k) => tenMonNgan(ct, k)).join(' ')} · ${c.tuan ? tuanLich(c.tuan) : 'chưa xếp'}`).join(' · ');
 }

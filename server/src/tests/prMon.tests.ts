@@ -114,6 +114,8 @@ export async function runPrMonTests(t: YThucTestKit) {
       assert(accounts.myProfile(P.w1Teacher).allSkills.join() === d.ENTRY_SKILLS.join(), 'allSkills');
       const r = accounts.setUserSkills(P.admin, A, ['writing', 'listening']);
       assert(r.skills.join() === 'listening,writing1,writing2' && kyNangCua(A) === 'listening,writing1,writing2', kyNangCua(A));
+      /* Mã cũ khác cũng đổi như migrate, không bị bỏ im lặng (rà PR #118 mục 5). */
+      assert(accounts.setUserSkills(P.admin, A, ['prep_writing', 'pronunciation']).skills.join() === 'speaking,writing1,writing2', kyNangCua(A));
       const s = await fetch(`http://127.0.0.1:${cong}/api/demo/session`, { method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ userId: P.sTeacher.userId }) });
       const cookie = (s.headers.get('set-cookie') ?? '').split(';')[0];
@@ -412,5 +414,21 @@ export async function runPrMonTests(t: YThucTestKit) {
       const ung = clsMod.classTeachers(P.admin, classId('MB FOU 12')).candidates.find((c: any) => c.id === B);
       assert(ung && Array.isArray(ung.skills) && ung.skills.includes('writing1'), JSON.stringify(ung));
     } finally { traLai(); }
+  });
+  // ------------------------------------------------------------------ Rà PR #118
+  check('MON (rà) · Xếp lịch hàng loạt Pre FOU: một ô Tổng hợp ra đủ bài; ngăn web lặp bộ môn, chữ theo số môn thật', () => {
+    const l = taoLopPreFou(2);
+    const tuan = week.ensurePeriod(addDays(TODAY, 7)).id;
+    const r = keHoachMod.xepHangLoat(P.admin, { classId: l.classId, kind: 'final', studentIds: l.sids, tuan: { tong_hop: tuan }, xemTruoc: true });
+    const bai = r.dong.flatMap((x: any) => x.bai);
+    assert(r.dong.length === 2 && bai.length === 2 && bai.every((b: any) => b.skill === 'tong_hop') && r.dong.every((x: any) => x.hanhDong !== 'loi'),
+      JSON.stringify(r.dong));
+    const src = doc('web/src/modules/test/keHoach/NganXepHangLoat.tsx');
+    assert(/th\.data\?\.boMon/.test(src) && /\{ky\.map\(/.test(src) && !/\{KY\.map\(/.test(src) && !/>\s*Chọn cả 4 kỹ năng\s*</.test(src), 'ngăn còn lặp 4 kỹ năng cố định');
+  });
+  check('MON (rà) · luật lưới lớp thường không viết cứng "Writing, Speaking"; lưới Pre FOU không hiện % dưới ô', () => {
+    assert(!/Writing, Speaking chấm theo thang điểm/.test(doc('web/src/modules/test/LichTestTab.tsx')), 'Lịch Test còn chữ cứng');
+    assert(/chiChuKetQua=\{CHUONG_TRINH_KHONG_CHIA_MON\.includes/.test(doc('web/src/modules/cham/LuoiThuong.tsx')), 'lưới Pre FOU còn % dưới ô');
+    assert(!/ASSESSED_SKILL_LABEL/.test(doc('server/src/worklist/mywork.ts')), 'mywork còn tra ASSESSED_SKILL_LABEL');
   });
 }

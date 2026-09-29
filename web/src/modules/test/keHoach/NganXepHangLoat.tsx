@@ -9,13 +9,13 @@ import { Nhan, type ToneNhan } from '../../../ui/Nhan.tsx';
 import { useToast } from '../../../ui/Toast.tsx';
 import { NutChon } from '../../../ui/ui.tsx';
 import {
-  emGiuLaiSauLuu, gomBaiXemTruoc, gomChip, mondayOfDate, nhanTuanKhoa, tomTatHangLoat, tuanLich,
+  O_KE_HOACH, emGiuLaiSauLuu, gomBaiXemTruoc, gomChip, mondayOfDate, nhanTuanKhoa, tenMon, tenMonNgan, tomTatHangLoat, tuanLich,
   type BaiXemTruoc, type DongHangLoat, type KyNangKH,
   dsLoi,
 } from '@shared/domain/index.ts';
 import {
-  KY, TEN_KY_NANG, chuKyNang, chuTinhTrang, dotCuaEm, emXongDot, khoaDot, nhanDot, thanDot,
-  type DotChon, type Ky4, type LuoiFTData, type LuoiThuongData,
+  KY, chuTinhTrang, dotCuaEm, emXongDot, khoaDot, nhanDot, thanDot,
+  type DotChon, type LuoiFTData, type LuoiThuongData,
 } from './kieu.ts';
 import { TuanNho, resolveTuan, type Tuan } from './TuanNho.tsx';
 
@@ -43,6 +43,9 @@ export function NganXepHangLoat({ loai, classId, classCode, onClose, onDone }: {
   const ft = useApi<LuoiFTData>(loai === 'ft' ? `/ke-hoach-test/ft/${classId}` : null);
   const th = useApi<LuoiThuongData>(loai === 'thuong' ? `/ke-hoach-test/thuong/${classId}` : null);
   const sanSang = loai === 'ft' ? !!ft.data : !!th.data;
+  /* K4-16, PF6: khung lớp thường lặp ĐÚNG bộ môn của chương trình (Pre FOU một dòng Tổng hợp); FT 4 kỹ năng L R W S. */
+  const ky: readonly KyNangKH[] = loai === 'thuong' ? th.data?.boMon ?? [] : KY;
+  const ct = loai === 'thuong' ? th.data?.chuongTrinh ?? null : null;
 
   const dots: DotChon[] = useMemo(() => {
     if (loai === 'ft') return (ft.data?.cot ?? []).map((n) => ({ loai: 'ft' as const, attemptNo: n }));
@@ -83,8 +86,8 @@ export function NganXepHangLoat({ loai, classId, classCode, onClose, onDone }: {
   const dsEm = giuLoi ? emChuaXong.filter((h) => giuLoi.includes(h.studentId)) : emChuaXong;
 
   /* Kỹ năng + tuần. Mặc định theo Q18 (đặt lại mỗi lần đổi đợt). */
-  const [chonKn, setChonKn] = useState<Record<Ky4, boolean>>({ listening: true, reading: true, writing: true, speaking: true });
-  const [tuan, setTuan] = useState<Record<Ky4, Tuan | null>>({ listening: null, reading: null, writing: null, speaking: null });
+  const [chonKn, setChonKn] = useState<Record<KyNangKH, boolean>>(() => Object.fromEntries(O_KE_HOACH.map((k) => [k, true])) as Record<KyNangKH, boolean>);
+  const [tuan, setTuan] = useState<Record<KyNangKH, Tuan | null>>(() => Object.fromEntries(O_KE_HOACH.map((k) => [k, null])) as Record<KyNangKH, Tuan | null>);
   const [ap, setAp] = useState<Tuan | null>(null);
   const homNay = session?.demoDate ? mondayOfDate(session.demoDate) : null;
   useEffect(() => {
@@ -95,7 +98,7 @@ export function NganXepHangLoat({ loai, classId, classCode, onClose, onDone }: {
         const s = sIso ? await resolveTuan(sIso) : null;
         const l = lrwIso ? (lrwIso === sIso ? s : await resolveTuan(lrwIso)) : null;
         if (!huy && l) setAp(l);
-        if (!huy) setTuan({ listening: l, reading: l, writing: l, speaking: s });
+        if (!huy) setTuan(Object.fromEntries(O_KE_HOACH.map((k) => [k, k === 'speaking' ? s : l])) as Record<KyNangKH, Tuan | null>);
       };
       void lam().catch(() => { /* người dùng vẫn chọn tay được */ });
     };
@@ -118,9 +121,9 @@ export function NganXepHangLoat({ loai, classId, classCode, onClose, onDone }: {
   const studentIds = dsEm.filter((h) => ticked.has(h.studentId)).map((h) => h.studentId);
   const tuanGui = useMemo(() => {
     const o: Partial<Record<KyNangKH, number>> = {};
-    for (const k of KY) if (chonKn[k] && tuan[k]) o[k] = tuan[k]!.periodId;
+    for (const k of ky) if (chonKn[k] && tuan[k]) o[k] = tuan[k]!.periodId;
     return o;
-  }, [chonKn, tuan]);
+  }, [chonKn, tuan, ky]);
   const khoaTuan = JSON.stringify(tuanGui);
 
   useEffect(() => {
@@ -144,11 +147,11 @@ export function NganXepHangLoat({ loai, classId, classCode, onClose, onDone }: {
   const tomTat = useMemo(() => tomTatHangLoat(dong ?? []), [dong]);
   const luuDuoc = useMemo(() => tomTatHangLoat(dongLuu), [dongLuu]);
 
-  const coKn = Object.values(chonKn).some(Boolean);
+  const coKn = ky.some((k) => chonKn[k]);
   const loi = dsLoi([
     { khoa: 'dot', nhan: 'Đợt', chon: true }, { khoa: 'hoc-vien', nhan: 'Học viên', chon: true }, { khoa: 'ky-nang', nhan: 'Kỹ năng', chon: true },
   ], { dot, 'hoc-vien': studentIds.length, 'ky-nang': coKn });
-  if (coKn && KY.some((k) => chonKn[k] && !tuan[k])) loi.push({ khoa: 'tuan', nhan: 'Tuần', lyDo: 'Kỹ năng đã chọn còn thiếu tuần' });
+  if (coKn && ky.some((k) => chonKn[k] && !tuan[k])) loi.push({ khoa: 'tuan', nhan: 'Tuần', lyDo: 'Kỹ năng đã chọn còn thiếu tuần' });
   const thieu = loi.map((l) => l.nhan);
   const loiCua = (khoa: string) => (lf.daBam ? loi.find((l) => l.khoa === khoa)?.lyDo ?? null : null);
   const dongLoi = (khoa: string) => (loiCua(khoa) ? <span className="block text-[11px] text-late">{loiCua(khoa)}</span> : null);
@@ -182,7 +185,9 @@ export function NganXepHangLoat({ loai, classId, classCode, onClose, onDone }: {
       {busy ? 'Đang lưu…' : `Lưu lịch cho ${luuDuoc.soEmLuu} em · ${luuDuoc.soBaiLuu} bài`}
     </button>
   );
-  const tatCaKn = Object.values(chonKn).every(Boolean);
+  const tatCaKn = ky.length > 0 && ky.every((k) => chonKn[k]);
+  /* Chữ theo số môn thật: FT "cả 4 kỹ năng"; lớp thường "cả 4 môn"; Pre FOU "Chọn Tổng hợp". */
+  const chuChonCa = loai === 'ft' ? 'Chọn cả 4 kỹ năng' : ky.length === 1 ? `Chọn ${tenMon(ct, ky[0])}` : `Chọn cả ${ky.length} môn`;
 
   return (
     <KhungPanel tieuDe={`Xếp lịch hàng loạt · ${classCode}`} rong="rong" onDong={onClose}
@@ -214,7 +219,7 @@ export function NganXepHangLoat({ loai, classId, classCode, onClose, onDone }: {
             <div id={lf.oId('hoc-vien')} tabIndex={-1} className="surface-2 rounded-lg p-2 outline-none">
               {dsEm.map((h) => {
                 const o = dot ? h.o(dot) : { attemptId: null, kn: {} };
-                const tinhTrang = o.attemptId ? chuTinhTrang(o.kn) : `${dot ? nhanDot(dot) : ''} chưa xếp`;
+                const tinhTrang = o.attemptId ? chuTinhTrang(o.kn, ct) : `${dot ? nhanDot(dot) : ''} chưa xếp`;
                 const loi = loiCuoi.get(h.studentId);
                 return (
                   <div key={h.studentId}>
@@ -237,16 +242,16 @@ export function NganXepHangLoat({ loai, classId, classCode, onClose, onDone }: {
             {dongLoi('hoc-vien')}
           </Khoi>
 
-          <Khoi tieuDe="Kỹ năng" luat={<span className="block">W = chấm cả W1 và W2 — một lịch W đặt cho cả hai.</span>}>
+          <Khoi tieuDe={loai === 'ft' ? 'Kỹ năng' : 'Môn'} luat={loai === 'ft' ? <span className="block">W = chấm cả W1 và W2 — một lịch W đặt cho cả hai.</span> : undefined}>
             <label className="flex min-h-[44px] items-center gap-2 text-sm text-slate-200 sm:min-h-[32px]">
               <input type="checkbox" id={lf.oId('ky-nang')} className="accent-sky-400" checked={tatCaKn}
-                onChange={(e) => setChonKn({ listening: e.target.checked, reading: e.target.checked, writing: e.target.checked, speaking: e.target.checked })} />
-              Chọn cả 4 kỹ năng
+                onChange={(e) => setChonKn((s) => ({ ...s, ...Object.fromEntries(ky.map((k) => [k, e.target.checked])) }))} />
+              {chuChonCa}
             </label>
             {dongLoi('ky-nang')}
             <div id={lf.oId('tuan')} tabIndex={-1} className="space-y-3 outline-none">
-            {KY.map((k) => (
-              <DongKyNang key={k} k={k} tick={chonKn[k]} onTick={(v) => setChonKn((s) => ({ ...s, [k]: v }))}
+            {ky.map((k) => (
+              <DongKyNang key={k} k={k} ct={ct} laFt={loai === 'ft'} tick={chonKn[k]} onTick={(v) => setChonKn((s) => ({ ...s, [k]: v }))}
                 tuan={tuan[k]} goc={homNay} onTuan={(t) => setTuan((s) => ({ ...s, [k]: t }))}
                 nhanKhoa={dot?.loai === 'thuong' && tuan[k]
                   ? nhanTuanKhoa(tuan[k]!.weekStart, th.data?.khaiGiang ?? null, th.data?.tongTuan ?? null) : null} />
@@ -255,13 +260,13 @@ export function NganXepHangLoat({ loai, classId, classCode, onClose, onDone }: {
             {dongLoi('tuan')}
             <div className="grid items-start gap-2" style={{ gridTemplateColumns: 'minmax(0,1fr) auto' }}>
               <div className="min-w-0">
-                <span className="mb-1 block text-[11.5px] font-bold text-slate-200">Áp một tuần cho mọi kỹ năng đã chọn</span>
+                <span className="mb-1 block text-[11.5px] font-bold text-slate-200">Áp một tuần cho mọi {loai === 'ft' ? 'kỹ năng' : 'môn'} đã chọn</span>
                 <TuanNho d={ap ?? { periodId: null, weekStart: null }} goc={homNay} onTuan={setAp} />
               </div>
               <button type="button" className="btn mt-[22px] min-h-[44px] sm:min-h-[32px]" disabled={!ap}
                 onClick={() => setTuan((s) => {
                   const n = { ...s };
-                  for (const k of KY) if (chonKn[k]) n[k] = ap;
+                  for (const k of ky) if (chonKn[k]) n[k] = ap;
                   return n;
                 })}>Áp</button>
             </div>
@@ -282,12 +287,12 @@ export function NganXepHangLoat({ loai, classId, classCode, onClose, onDone }: {
                     <colgroup><col style={{ width: 150 }} /><col style={{ width: 80 }} /><col style={{ width: 140 }} /><col /></colgroup>
                     <thead>
                       <tr className="text-left text-[10px] uppercase tracking-wide text-slate-500">
-                        <th className="py-1 font-bold">Học viên</th><th className="py-1 font-bold">Kỹ năng</th>
+                        <th className="py-1 font-bold">Học viên</th><th className="py-1 font-bold">{loai === 'ft' ? 'Kỹ năng' : 'Môn'}</th>
                         <th className="py-1 font-bold">Tuần cũ → mới</th><th className="py-1 font-bold">Ghi chú</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {dong.map((d) => <DongXemTruoc key={d.studentId} d={d} />)}
+                      {dong.map((d) => <DongXemTruoc key={d.studentId} d={d} ct={ct} />)}
                     </tbody>
                   </table>
                 </div>
@@ -310,17 +315,20 @@ export function NganXepHangLoat({ loai, classId, classCode, onClose, onDone }: {
 }
 
 /** Một dòng kỹ năng: ô tích · chữ · bộ chọn tuần gọn (+ nhãn tuần trong khoá của lớp thường). */
-function DongKyNang({ k, tick, onTick, tuan, goc, onTuan, nhanKhoa }: {
+function DongKyNang({ k, ct, laFt, tick, onTick, tuan, goc, onTuan, nhanKhoa }: {
+  /** Mã chương trình lớp — tên môn theo chương trình (FOU G+V/P, Pre FOU Tổng hợp). FT: null. */
+  ct: string | null; laFt: boolean;
   k: KyNangKH; tick: boolean; onTick: (v: boolean) => void; tuan: Tuan | null; goc: string | null;
   onTuan: (t: Tuan) => void; nhanKhoa: string | null;
 }) {
   return (
     <div className={`grid grid-cols-[20px_92px_minmax(0,1fr)] items-start gap-2 sm:grid-cols-[20px_108px_minmax(0,1fr)] ${tick ? '' : 'opacity-50'}`}>
       <input type="checkbox" className="mt-3 accent-sky-400" checked={tick} onChange={(e) => onTick(e.target.checked)}
-        aria-label={`Chọn ${TEN_KY_NANG[k]}`} />
+        aria-label={`Chọn ${tenMon(ct, k)}`} />
       <div className="mt-2 text-sm text-slate-200">
-        <b title={TEN_KY_NANG[k]}>{chuKyNang(k)}</b> <span className="text-slate-400">{TEN_KY_NANG[k]}</span>
-        {k === 'writing' && <span className="ml-1 cursor-help text-slate-500" title="W = chấm cả W1 và W2">ⓘ</span>}
+        <b title={tenMon(ct, k)}>{tenMonNgan(ct, k)}</b>
+        {tenMonNgan(ct, k) !== tenMon(ct, k) && <> <span className="text-slate-400">{tenMon(ct, k)}</span></>}
+        {laFt && k === 'writing' && <span className="ml-1 cursor-help text-slate-500" title="W = chấm cả W1 và W2">ⓘ</span>}
       </div>
       <div className={`min-w-0 max-w-[320px] ${tick ? '' : 'pointer-events-none'}`}>
         <TuanNho d={tuan ?? { periodId: null, weekStart: null }} goc={goc} onTuan={onTuan} nhanKhoa={nhanKhoa} />
@@ -330,7 +338,7 @@ function DongKyNang({ k, tick, onTick, tuan, goc, onTuan, nhanKhoa }: {
 }
 
 /** Các dòng xem trước của MỘT em: bài cùng tuần/ghi chú gộp một dòng (`L R W — → W1 OCT`). */
-function DongXemTruoc({ d }: { d: DongHangLoat }) {
+function DongXemTruoc({ d, ct }: { d: DongHangLoat; ct: string | null }) {
   const nhom = gomBaiXemTruoc(d.bai);
   if (!nhom.length) {
     return (
@@ -348,7 +356,7 @@ function DongXemTruoc({ d }: { d: DongHangLoat }) {
         return (
           <tr key={i} className={i === 0 ? 'border-t' : ''} style={{ borderColor: 'var(--line)' }}>
             <td className="truncate py-1.5 pr-2 text-slate-200" title={d.ten}>{i === 0 ? d.ten : ''}</td>
-            <td className="py-1.5 font-bold text-slate-300">{g.kyNang.map(chuKyNang).join(' ')}</td>
+            <td className="py-1.5 font-bold text-slate-300">{g.kyNang.map((k) => tenMonNgan(ct, k)).join(' ')}</td>
             <td className="py-1.5 text-slate-300">{g.tu ? tuanLich(g.tu) : '—'} → {g.den ? tuanLich(g.den) : '—'}</td>
             <td className="min-w-0 py-1.5">
               <span className="flex min-w-0 items-center gap-1.5">

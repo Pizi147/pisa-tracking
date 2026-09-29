@@ -1,11 +1,11 @@
 import { db } from '../db.ts';
 import {
-  ASSESSED_SKILL_LABEL, ATTEMPT_KIND_SHORT,
+  ATTEMPT_KIND_SHORT,
   INTERVENTION_KIND_LABEL, PERMISSIONS,
   SOS_LABEL, URGENCY_LABEL, caseHeadline, caseTopicLabel, cycleDeadline,
   duongHoSoHocVien, duongLichTest, nhanDotNgan, planDueDate, trongHaiTuanCuoi, tuanLich, urgencyFromSos,
   khungCua, tenMon,
-  type AssessedSkill, type Khung, type AttemptKind, type InterventionKind,
+  type Khung, type AttemptKind, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays } from '../util.ts';
@@ -583,11 +583,11 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       contextLabel: nhanDot(r.kind, r.attempt_no, 'Lịch thi'),
       count: null,
       reason: [
-        `${r.asker_name ?? 'GVCN'} đề nghị dời ${ASSESSED_SKILL_LABEL[r.skill as AssessedSkill] ?? r.skill}`
+        `${r.asker_name ?? 'GVCN'} đề nghị dời ${tenMon(ctCua(r.class_id), r.skill)}`
         + `${r.to_week ? ` sang tuần ${r.to_week}` : ''} (lần ${r.move_no} do vắng)`,
         r.reason ? `Lý do: ${r.reason}` : null,
       ].filter(Boolean).join(' — '),
-      tieuDe: `Duyệt dời ${ASSESSED_SKILL_LABEL[r.skill as AssessedSkill] ?? r.skill}`,
+      tieuDe: `Duyệt dời ${tenMon(ctCua(r.class_id), r.skill)}`,   // MH2: FOU "Grammar + Vocabulary"
       actionLabel: 'Trả lời đề nghị',
       /* Đi thẳng vào bảng lịch kỹ năng của đợt đó — nơi có nút trả lời đề nghị. */
       href: attemptHref({ id: r.attempt_id, kind: r.kind, classId: r.class_id }),

@@ -683,6 +683,30 @@ K5-45 T4 (+LOP) · K5-46 T2 · K5-47 T1/T5 · K5-48 T2 · K5-57 T5 · K5-67 T2.
   công tắc khung chưa tồn tại trước PR này). DB demo: `migrate` → lượt Pre FOU vẫn 1 dòng `tong_hop`; `chay-thu:mon` (1) 0 · (2) 2 ·
   (3) **1** (lớp demo `MB Pre FOU 03` — bản chính phải 0) · (4) 0/0. `npm run check` 1478 + 20 tốc độ. `/ponytail-review`: net −1
   (không sửa).
+- **Sửa theo rà PR #118 (29/09, Opus 5.5):** 1480 (+2) + 20 tốc độ. (1) Ngăn Xếp lịch hàng loạt lặp `ky` = `data.boMon` (lớp thường) /
+  `KY` (FT), tên qua `tenMon`/`tenMonNgan`, chữ "Chọn cả 4 kỹ năng" → theo số môn thật ("Chọn Tổng hợp", "Chọn cả 4 môn"), tiêu đề
+  khối/cột "Môn" ở khung thường, ⓘ "W = W1 + W2" chỉ FT; `chuTinhTrang(kn, ct)`; bỏ `Ky4`/`chuKyNang`/`TEN_KY_NANG` không còn dùng. Bấm
+  thử QL Vy trên `MB Pre FOU 03`: đổi tuần → "Lưu lịch cho 1 em · 1 bài" (1440 + 375, ảnh `sau-ra-xep-hang-loat-PreFOU-*`); phép kiểm
+  máy chủ `xepHangLoat` Pre FOU ra đủ bài `tong_hop`. (2) `mywork.ts` "Duyệt dời …" → `tenMon(chương trình lớp, r.skill)`. (3) Luật lưới
+  lớp thường ở Lịch Test nêu tên môn thật của các lớp đang xem. (4) Lưới Pre FOU: dưới ô chỉ "Đạt"/"Chưa đạt" (`chiChuKetQua`), % chỉ
+  ở cột Kết quả (ảnh `sau-ra-luoi-PreFOU-mot-cho-phan-tram.png`). (5) `setSkills`: `prep_writing` → W1 + W2, `pronunciation` → S (bảng
+  `DOI_MA_CU`), có phép kiểm.
+
+### GỘP — làm SAU khi planning báo PR-MT #119 đã merge (thứ tự: DUYET #117 → MT #119 → NHAP → MON cuối)
+
+`git merge origin/main` (khi đó main có DUYET + MT, có thể cả NHAP). Với MT: xung đột ~21 file / 29 khúc, phần lớn import → lấy hợp hai bên. Chú ý:
+- `server/src/fasttrack/absence.ts` (~:191, có thể không báo xung đột nhưng làm đỏ phép MON(6)): `moTaDoiLan2` dùng `SKILL_SHORT[` →
+  `tenMonNgan(chương trình lớp, req.skill)`.
+- `web/.../keHoach/ChipKyNang.tsx`: gộp `ct` với `chuaToiLuot`/`lichSu`; dùng `tenMonNgan(ct, k)` thay `CHU_KY_NANG[k]`. `LuoiKeHoach.tsx`
+  truyền cả `ct`, `chuaToiLuot`, `lichSu`.
+- `KhoiNo.tsx`: giữ `tenMon(d.chuongTrinh, …)` + thêm `phu`. `keHoachTest.ts:620`: giữ `i.bo`/`cauThieuMon` + khối `kiemSoMtMoi`.
+- `canCham.ts`: giữ `tongQuanKhung` + `nhacLichSu`, `quaHanTuanKhung` + `deNghi`, bỏ `SKILL_SHORT`. `standing.ts`: giữ `boMonCua` +
+  `homNay`/`mocKeTiep` (và bộ lọc M-14 mới của MT).
+- `attempts.ts` `regularSkillViews`: giữ CẢ cờ `lichSu` (MT) và vòng `skills` (MON).
+- `migrate.ts`: gọi đủ `migratePrDuyet`, `migratePrMt` (, `migratePrNhap`), `migratePrMon` đứng CUỐI.
+- `package.json`, `tests/run.ts`, `CODE_MAP.md`, `TRIEN_KHAI.md`, `TU_DIEN_VA_CHU.md`, `shared/domain/hanhTrinh.ts`: lấy cả hai bên.
+- Thẻ Lịch thi trong hộp Chờ duyệt (của DUYET): tên môn qua `tenMonNgan` theo chương trình lớp.
+- Gộp xong `npm run check` một lần, push, báo planning.
 
 ## Chủ sản phẩm chốt 29/09
 
