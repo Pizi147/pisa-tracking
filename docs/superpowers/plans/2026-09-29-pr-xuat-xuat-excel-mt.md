@@ -464,4 +464,10 @@ hàm `nhanXetW`, `tenGvCham` (`shared/domain/nhanXet.ts`), `tieuChiNganCua` (`sk
 <!-- Session code ghi ở đây: model thật, mốc B, dòng mã thật lệch, số câu SQL đo (trước/sau nhân dữ liệu), trước/sau clarify, kết quả
 audit, số đo Turso (Task 7), Task 8 đã/chưa, 🛑 đã hỏi. -->
 
+- **Task 0 (30/09):** model thật **Sonnet 5.5** (`Co-Authored-By: Claude Sonnet 5.5`). Worktree từ `origin/main` e7d6af94. PR-HSM / PR-HVL **chưa merge**
+  (nhánh còn ở e7d6af94, không commit) → **Task 8 chưa làm**, PR mở không có Task 8. PR-S3F đã merge. Kế hoạch HSM/HVL có trên main.
+  **Mốc B = 1722 phép kiểm** (`npm test`) + 24 phép tốc độ; `npm run check` xanh. Neo mã (loadBundle :88, resultOf :179, evaluateAttemptRow :57,
+  luotKck :88, evaluateRegular :171, recomputeCompletionWeek :394, activeAt :139, navOf :11, chuanTieuDe :80, TongHopTestSos xuatExcel :114,
+  DauTrangLop MenuDong :115, TRAN_GHI_LO :495, runPrXlmtTests :9795): khớp, không lệch.
+
 > **Chủ sản phẩm chốt 30/09:** GVBM **không** xuất Excel — chỉ GVCN, Quản lý, Quản trị. Lượt rải hai tuần: tính theo tuần bắt đầu thi (tự quyết theo khuyến nghị).
