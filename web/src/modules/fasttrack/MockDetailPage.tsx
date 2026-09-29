@@ -15,10 +15,10 @@ import {
 import {
   attemptHref, attemptStatusLabel, fmtBand, fmtDate, fmtDateTime, progressLabel, skillLabel,
 } from '../../lib/format.ts';
-import { ASSESSED_SKILL_LABEL, ATTEMPT_KIND_SHORT, tuanLich, type AttemptKind } from '@shared/domain/index.ts';
+import { ASSESSED_SKILL_LABEL, ATTEMPT_KIND_SHORT, CHU_THAO_TAC, tuanLich, type AttemptKind } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
-import { KIEM_TRA_LAI_KY_NANG, KY_NANG_KHONG_KIEM_TRA, TOOLTIP_TUAN_HOAN_TAT } from '../../ui/chu.ts';
+import { TOOLTIP_TUAN_HOAN_TAT } from '../../ui/chu.ts';
 import { usePeriods } from '../../ui/Filters.tsx';
 
 type Detail = {
@@ -404,7 +404,7 @@ function SkillWorkTable({ d, save, onDone, onOpenHistory }: {
       }
       if (d.viewer.canSkipSkill && !cancelled && d.scoringMode === 'band') {
         items.push({
-          label: r.required ? KY_NANG_KHONG_KIEM_TRA : KIEM_TRA_LAI_KY_NANG, danger: r.required,
+          label: r.required ? CHU_THAO_TAC['bo-ky-nang'] : CHU_THAO_TAC['dua-lai'], danger: r.required,
           hint: r.required ? 'Quyết định chốt TRƯỚC khi thi' : undefined,
           onClick: () => void act(
             () => api.post(`/attempts/${d.id}/skills/${r.skill}/skip`, {
@@ -635,7 +635,7 @@ const actionLabel = (a: string) =>
     created: 'Tạo kế hoạch', week_set: 'Đổi lịch', lrw_set: 'Chốt buổi chính',
     speaking_set: 'Chốt buổi Speaking', cancelled: 'Huỷ cả lượt', reopened: 'Mở lại', recreated: 'Tạo lại (số dùng lại)',
     skill_part_cancelled: 'Huỷ phần còn lại',
-    skill_skipped: KY_NANG_KHONG_KIEM_TRA, skill_restored: KIEM_TRA_LAI_KY_NANG,
+    skill_skipped: CHU_THAO_TAC['bo-ky-nang'], skill_restored: CHU_THAO_TAC['dua-lai'],
     deadline_set: 'Hẹn xử lý cả đợt', deadline_cleared: 'Bỏ hẹn xử lý cả đợt',
     skill_week_set: 'Đổi lịch', skill_week_moved_absence: 'Dời do vắng',
     skill_sit_status: 'Trạng thái thi', completion_week: 'Tuần dự kiến hoàn tất',

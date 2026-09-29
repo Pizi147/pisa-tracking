@@ -357,4 +357,16 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
     const y = pv.rows[0].issues.find((x: any) => x.field === 'daThiToiMt' && x.muc === 'luu_y');
     assert(/Đã thi tới MT6 nhưng MT1, MT2.* rơi vào tuần chưa qua/.test(y?.message ?? ''), JSON.stringify(pv.rows[0].issues));
   });
+
+  // ------------------------------------------------------------------ khối 4+: web — đọc nguồn (không dựng trình duyệt)
+  const { docSach } = await import('./panelUx3.tests.ts');
+  check('PR-XLMT (4) · Hộp thao tác chung: không lý do ghi cứng; nhãn nút và tiêu đề qua CHU_THAO_TAC; dòng thời gian dùng SVG', () => {
+    const hop = docSach('web/src/modules/fasttrack/HopThaoTacMt.tsx');
+    assert(!/GVCN xác minh|Quản lý chốt trước/.test(hop), 'hộp còn lý do ghi cứng');
+    assert(/const ten = CHU_THAO_TAC\[t\]/.test(hop) && /title=\{`\$\{ten\} · \$\{mon\}`\}/.test(hop) && /: ten\}/.test(hop), 'nhãn/tiêu đề phải qua CHU_THAO_TAC');
+    assert(/tenMon\(ct, skill\)/.test(hop), 'tên môn phải qua tenMon');
+    const dtg = docSach('web/src/modules/fasttrack/DongThoiGianLuot.tsx');
+    assert(/<svg/.test(dtg) && !/[✓✕▸◌●○]/.test(dtg), 'biểu tượng dòng thời gian phải là SVG');
+    assert(!/KY_NANG_KHONG_KIEM_TRA|KIEM_TRA_LAI_KY_NANG/.test(docSach('web/src/ui/chu.ts')), 'chu.ts còn chữ cũ');
+  });
 }
