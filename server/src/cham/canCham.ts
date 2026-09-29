@@ -20,6 +20,7 @@ import {
   trangThaiChamLabel, type AssessedSkill, type AttemptKind, type LoaiNhanLop, type PhamViLichTest,
 } from '../../../shared/domain/index.ts';
 import { classScoreSheet, conBaiCanCham, listAttempts, type MonDoiLich } from '../fasttrack/attempts.ts';
+import { pendingMovesFor } from '../fasttrack/absence.ts';
 import { assessedSkillOf, entrySkillsOf } from '../fasttrack/scoring.ts';
 import { allProgrammes, isRatioClass, regularSheet } from '../normal/regular.ts';
 import { isOverdue, skillScoreDeadline, weekInfo } from '../platform/week.ts';
@@ -61,6 +62,8 @@ export type LuiLich = {
   sangTuan: string | null;
   tuTuanStart: string | null;
   sangTuanStart: string | null;
+  /** PR-MT (YC-13.1 (3)): dời do vắng lần mấy — `null` khi lùi lịch không phải vì vắng. */
+  lanVang: number | null;
 };
 
 /**
@@ -159,7 +162,7 @@ function dungLuiLich(
       tuTuan = maCu; tuTuanStart = maCu ? theoMa.get(maCu) ?? null : null;
     }
     out.set(x.key, {
-      kyNang: x.skill, hv: [x.hv], tuTuan, sangTuan: x.sangTuan, tuTuanStart, sangTuanStart: x.sangTuanStart,
+      kyNang: x.skill, hv: [x.hv], tuTuan, sangTuan: x.sangTuan, tuTuanStart, sangTuanStart: x.sangTuanStart, lanVang: x.moved.lanVang,
     });
   }
   return out;
@@ -283,6 +286,8 @@ export type LopLichTest = {
   moSan: boolean;
   hrefDayDu: string;
   dong: DongLichTest[];
+  /** PR-MT (YC-13.1, K4 §4e): số bài vắng tuần này đang chờ Quản lý duyệt dời (lần 2+) — dòng tím nhạt trong hàng lớp. */
+  choDuyetDoi: number;
 };
 export type LichTest = {
   scopeEmpty: boolean;
@@ -410,11 +415,19 @@ export function lichTest(
     return cuaToiNho.get(k)!;
   };
   type DongTam = Omit<DongLichTest, 'trangThai'> & { quaHan: boolean };
-  type LopTam = Omit<LopLichTest, 'dong' | 'nhan' | 'moSan' | 'daCham' | 'dotLabel' | 'kyNangTuan' | 'han'> & {
+  type LopTam = Omit<LopLichTest, 'dong' | 'nhan' | 'moSan' | 'daCham' | 'dotLabel' | 'kyNangTuan' | 'han' | 'choDuyetDoi'> & {
     dong: Map<string, DongTam>; _dot: string[]; _kn: Set<string>; _hanNo: string | null;
   };
   const byLop = new Map<string, LopTam>();
   let quaHanTuan = 0;
+  /* PR-MT: bài vắng tuần này có đề nghị dời chờ Quản lý — MỘT lần tra sổ đề nghị cho cả trang (không hỏi từng dòng). */
+  const deNghi = pendingMovesFor([...new Set(rows.map((r) => r.id as number))]);
+  const choDuyetCua = new Map<number, number>();
+  for (const r of rows) {
+    if (r.sit_status === 'absent' && giuLop(r.class_id) && deNghi.get(`${r.id}:${r.skill}`)?.from_period_id === periodId) {
+      choDuyetCua.set(r.class_id, (choDuyetCua.get(r.class_id) ?? 0) + 1);
+    }
+  }
   for (const r of rows) {
     /* Chỉ đếm lượt còn ngồi thi (chưa vắng, chưa huỷ phần thi): em vắng không làm dòng thành "Đã chấm xong". */
     if (r.sit_status !== 'scheduled' && r.sit_status !== 'sat') continue;
@@ -490,6 +503,7 @@ export function lichTest(
     nhan: nhanLopLichTest({ conBai: l.conBai, conBaiCuaToi: l.conBaiCuaToi, chuaToiHan, coDayLop: lopCuaToi.has(l.classId) }),
     /* Tuần chưa tới thì chưa có gì để chấm — không tự mở. */
     moSan: !chuaToiHan && lopTuMo({ conBai: l.conBai, conBaiCuaToi: l.conBaiCuaToi, coPhanCong }),
+    choDuyetDoi: l.mode === 'ielts_band' ? choDuyetCua.get(l.classId) ?? 0 : 0,
     dong: [...dong.values()].map(({ quaHan, ...d }) => ({
       ...d,
       trangThai: trangThaiChamLabel({ conBai: d.conBai, tong: d.soHv, quaHan, chuaToiHan }),

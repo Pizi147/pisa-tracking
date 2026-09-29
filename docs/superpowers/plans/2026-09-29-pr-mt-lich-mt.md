@@ -583,6 +583,15 @@ khác ngày với bản thử thì chạy thử lại. 5. Chạy thử lần n�
   `system_luot_huy` "Lượt Test đã huỷ" (không dùng `system_sos_changed` vì chữ nói sai lý do) — phép kiểm T1 cũ cập nhật danh sách 6 mã.
   Lưới Kế hoạch Test: `soKeTiep` theo em, ô xa hơn hiện `—` mờ. Dữ liệu phép kiểm cũ: "Huỷ giữ lý do" chọn lượt lớn nhất chưa điểm;
   sosV3 CANCEL dựng dữ liệu cũ bằng SQL (lượt có điểm nay không huỷ cả lượt được); keHoachTest MT80–95 → em thử mới + MT1/MT2 thật.
+- **Task 8 — 🛑 cửa dừng (d) đã chạm và đã hỏi:** máy tự dời lần 1 trong `settleNoShows` làm đỏ RB-1 cron (`anToan.tests.ts:496`, bài
+  sau chốt không còn "vắng"). **Chủ sản phẩm chọn 29/09: sửa kỳ vọng RB-1** (cron vẫn chốt đúng 1 buổi, lần hai 0; bài đã được dời, vắng
+  = 1). Phép kiểm cũ cập nhật kỳ vọng "lần 1 GVCN bấm" → "máy đã tự dời": run.ts PR-G (Chưa hết CN · W1/W2 · Quyền · Sáng thứ Hai),
+  luatMayChu S11 (nay kiểm máy dời theo cờ cột vào tuần đang chạy), S12 (W1+W2 không còn quá hạn, dời lần 1), S13 (chốt muộn 28/09 để
+  máy chuyển QL rồi QL đổi kết luận). **Lỗi phát hiện kèm, đã sửa gốc:** QL đổi trạng thái thi khỏi "vắng" mà đề nghị dời đang chờ vẫn
+  sống → hết hạn sẽ huỷ phần thi của bài không còn vắng, và badge lệch Lịch Test (rà #92). `setSitStatus` nay rút đề nghị (`withdrawn`,
+  `rutDeNghiDoi` ở absence.ts). Hạn đề nghị (lần 2+ và chuyển QL) = `hanDuyetDoiLan2(hôm nay)`; tuần đích = `tuanDichMacDinh`; duyệt
+  không chọn tuần mà tuần lưu đã bắt đầu → tuần đích mặc định. Nhật ký mới `attempt.absence_auto_move`. Lịch Test: `LuiLich.lanVang`,
+  `LopLichTest.choDuyetDoi` (một lần tra sổ đề nghị); phần chữ trên web làm ở Task 9. MT lịch sử: `requestAbsenceMove` chặn.
 
 ## Planning chốt 29/09
 

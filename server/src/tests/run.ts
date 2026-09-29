@@ -8604,15 +8604,19 @@ check('PR-G · Chưa hết Chủ nhật thì chưa chốt; hết Chủ nhật th
   assert(prgSit(id, 'listening').sit_status === 'scheduled', 'Chưa hết Chủ nhật mà đã ghi vắng');
   const first = absence.settleNoShows(PRG_MON);
   assert(first >= 1, `Sáng thứ Hai phải chốt ít nhất một bài, đang ${first}`);
-  assert(prgSit(id, 'listening').sit_status === 'absent', 'Listening phải thành đã vắng sau chốt');
+  /* PR-MT (Q-A, chủ sản phẩm chọn 29/09): chốt xong máy TỰ DỜI lần 1 trong cùng giao dịch — không còn nằm "vắng, chờ GVCN". */
+  const sau = prgSit(id, 'listening');
+  assert(sau.sit_status === 'scheduled' && sau.absence_move_count === 1 && sau.planned_period_id === periodOf('2026-09-21'),
+    `Listening phải được máy tự dời lần 1 sang W4 SEP sau chốt: ${JSON.stringify(sau)}`);
   assert(prgSettled(id, 'listening') === 1, `Bộ đếm vắng phải là 1, đang ${prgSettled(id, 'listening')}`);
   for (const d of [PRG_MON, PRG_MON, '2026-09-23', '2026-09-30', '2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04', '2026-10-05', '2026-11-01']) {
     assert(absence.settleNoShows(d) === 0, `Chạy lại ngày ${d} lại chốt thêm một lần`);
   }
   assert(prgSettled(id, 'listening') === 1, `Sau mười lần chạy bộ đếm vắng vẫn phải là 1, đang ${prgSettled(id, 'listening')}`);
-  const c = prgCell(id, 'listening', PRG_MON);
-  assert(c.noShow.state === 'khong-du-thi' && c.noShow.text === 'Không dự thi · Tuần W3 SEP',
-    `Sau chốt: ${JSON.stringify(c.noShow)}`);
+  const doi = conn.prepare(
+    `SELECT reason, old_value FROM attempt_schedule_history WHERE attempt_id = ? AND action = 'skill_week_moved_absence' AND field = 'listening'`,
+  ).get(id) as any;
+  assert(doi?.reason === 'Không dự thi — máy tự dời' && /^W3 SEP/.test(doi.old_value ?? ''), `Lịch sử phải ghi máy tự dời từ W3 SEP: ${JSON.stringify(doi)}`);
   assert(String(prgSit(id, 'listening').sit_at).slice(0, 10) === PRG_SUN,
     `Ngày hiệu lực phải là cuối Chủ nhật ${PRG_SUN}, đang ${prgSit(id, 'listening').sit_at}`);
 });
@@ -8668,7 +8672,8 @@ check('PR-G · "-" ở W1 KHÔNG xoá W2 và không đếm hai lần: chỉ khi 
   assert(prgSit(id2, 'writing').sit_status !== 'absent', 'Mới W1 báo "-", W2 chưa nhập — chưa đủ để coi buổi Writing là vắng');
   attempts.saveScore(prgWriting2, id2, 'writing2', { noShow: true } as any);
   assert(absence.settleNoShows(PRG_MON) >= 1, 'Cả W1 và W2 đều "-" thì buổi Writing phải được chốt');
-  assert(prgSit(id2, 'writing').sit_status === 'absent', 'Buổi Writing phải thành đã vắng');
+  /* PR-MT (Q-A, chủ sản phẩm chọn 29/09): chốt xong máy TỰ DỜI lần 1 trong cùng giao dịch — không còn nằm "vắng, chờ GVCN". */
+  assert(prgSit(id2, 'writing').sit_status === 'scheduled' && prgSit(id2, 'writing').absence_move_count === 1, 'Buổi Writing phải chốt vắng rồi được máy tự dời lần 1');
   assert(prgSettled(id2, 'writing') === 1, `Hai ô "-" cùng một buổi chỉ được đếm MỘT lần vắng, đang ${prgSettled(id2, 'writing')}`);
   absence.settleNoShows('2026-10-20');
   assert(prgSettled(id2, 'writing') === 1, 'Chạy lại làm bộ đếm vắng tăng');
@@ -8678,14 +8683,12 @@ check('PR-G · Quyền: GV chỉ báo "-" cho bài mình được phân công; c
   const id = prgAttempts[6];
   assertThrows(() => attempts.saveScore(P.sTeacher, id, 'listening', { noShow: true } as any), /phân công|quyền/,
     'GV Speaking báo "-" cho ô Listening');
-  /* Listening của lượt đầu đã được chốt vắng ở phép kiểm trước → GVCN dời lần đầu, GVBM thì không. */
+  /* Listening của lượt đầu đã được chốt ở phép kiểm trước và MÁY đã tự dời lần đầu (PR-MT, Q-A) — GVBM vẫn không có quyền xử lý vắng. */
   const settledId = prgAttempts[0];
   assertThrows(() => absence.requestAbsenceMove(P.sTeacher, settledId, ['listening']), /chủ nhiệm|Quản lý/,
     'GVBM (không phải GVCN) tự dời lịch chỉ vì mình là người báo "-"');
-  const r = absence.requestAbsenceMove(P.lrTeacher, settledId, ['listening']) as any;
-  assert(r.outcomes[0].result === 'moved', `GVCN dời lần đầu phải được ngay, đang ${JSON.stringify(r.outcomes[0])}`);
   const row = prgSit(settledId, 'listening');
-  assert(row.absence_move_count === 1 && row.sit_status === 'scheduled', `Sau dời: ${JSON.stringify(row)}`);
+  assert(row.absence_move_count === 1 && row.sit_status === 'scheduled', `Sau khi máy tự dời: ${JSON.stringify(row)}`);
   /* Dấu "-" của tuần cũ hết nghĩa ở tuần mới; chạy chốt lại không tạo thêm lần vắng nào. */
   absence.settleNoShows('2026-10-25');
   assert(prgSit(settledId, 'listening').sit_status === 'scheduled', 'Dấu "-" của tuần cũ bị tính lại ở tuần mới');
@@ -8746,19 +8749,18 @@ check('PR-G · Chốt xong là SÁNG THỨ HAI: GVCN vẫn dời lần đầu đ
    * thế "lần đầu GVCN dời" không bao giờ xảy ra được với bài không dự thi. Nay: lần đầu của một bài đã
    * chốt "không dự thi" chỉ cần tuần đích CHƯA KẾT THÚC. Luật cho mọi trường hợp vắng khác giữ nguyên.
    */
+  /* PR-MT (Q-A): nay là MÁY tự dời lần đầu ngay lúc chốt sáng thứ Hai — cùng luật "tuần đích chưa kết thúc là được". */
   const settledWriting = prgAttempts[5];            // Writing của E đã chốt ở phép kiểm W1/W2
-  assert(prgSit(settledWriting, 'writing').sit_status === 'absent', 'Tiền đề: Writing của E phải đã chốt vắng');
-  const r = absence.requestAbsenceMove(P.lrTeacher, settledWriting, ['writing'], { today: PRG_MON }) as any;
-  assert(r.outcomes[0].result === 'moved',
-    `Sáng thứ Hai GVCN phải dời được lần đầu, đang ${JSON.stringify(r.outcomes[0])}`);
-  assert(prgSit(settledWriting, 'writing').absence_move_count === 1, 'Bộ đếm dời phải là 1');
+  assert(prgSit(settledWriting, 'writing').sit_status === 'scheduled' && prgSit(settledWriting, 'writing').absence_move_count === 1,
+    `Sáng thứ Hai máy phải dời được lần đầu: ${JSON.stringify(prgSit(settledWriting, 'writing'))}`);
 
-  /* Chốt bằng Quản lý xác nhận (C10) cũng đi tiếp vào luật này; nhưng xử lý quá muộn — tuần đích đã hết — thì chuyển Quản lý. */
-  const settledListening = prgAttempts[6];          // Listening của E, đã được Quản lý xác nhận ở phép kiểm C10
+  /* Chốt muộn (C10, nhập "-" ngày 28/09 khi tuần đích W4 SEP đã hết) → máy KHÔNG tự dời mà chuyển Quản lý; hạn hết Chủ nhật tuần gửi. */
+  const settledListening = prgAttempts[6];          // Listening của E, "-" muộn ở phép kiểm C10
   assert(prgSit(settledListening, 'listening').sit_status === 'absent', 'Tiền đề: Listening của E phải đã chốt vắng');
-  const late = absence.requestAbsenceMove(P.lrTeacher, settledListening, ['listening'], { today: '2026-10-05' }) as any;
-  assert(late.outcomes[0].result === 'escalated',
-    `Tuần đích đã kết thúc thì phải chuyển Quản lý, đang ${JSON.stringify(late.outcomes[0])}`);
+  const req = conn.prepare(`SELECT requested_by, decide_by, status FROM skill_move_requests WHERE attempt_id = ? AND skill = 'listening' ORDER BY id DESC`)
+    .get(settledListening) as any;
+  assert(req?.status === 'pending' && req.requested_by === null && req.decide_by === '2026-10-04',
+    `Tuần đích đã kết thúc thì máy phải chuyển Quản lý (hạn CN 04/10): ${JSON.stringify(req)}`);
   assert(prgSit(settledListening, 'listening').absence_move_count === 0, 'Chuyển Quản lý thì bộ đếm dời chưa tăng');
 });
 

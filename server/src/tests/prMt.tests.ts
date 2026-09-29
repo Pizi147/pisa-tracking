@@ -400,4 +400,61 @@ export async function runPrMtTests(t: YThucTestKit) {
     const c = conn.prepare('SELECT status, system_close_reason FROM sos_cases WHERE id = ?').get(cid) as any;
     assert(c.status === 'done' && c.system_close_reason === 'luot_da_huy' && d.SYSTEM_CLOSE_REASON_LABEL.luot_da_huy === 'Lượt đã huỷ', JSON.stringify(c));
   });
+
+  // ---------------------------------------------------------------- khối 8: dời do vắng — đi từ dấu "-" (K4-04)
+  const absence: any = await import('../fasttrack/absence.ts');
+  const skillSch: any = await import('../fasttrack/skillSchedule.ts');
+  const demoCfg: any = await import('../demoConfig.ts');
+  const s8 = them('MB FT 101', 'PRMT Em Vắng', tuanNay);
+  const a8 = luotCua(s8)[0];
+  {
+    const w = week.ensurePeriod('2026-09-07').id;   // tuần thi đã qua (07–13/09)
+    conn.prepare('UPDATE assessment_attempts SET planned_period_id = ? WHERE id = ?').run(w, a8.id);
+    conn.prepare('UPDATE attempt_skills SET planned_period_id = ? WHERE attempt_id = ?').run(w, a8.id);
+  }
+  const lich = (skill: string) => conn.prepare(
+    `SELECT ask.sit_status, ask.absence_move_count AS lan, p.week_start AS tuan FROM attempt_skills ask
+       JOIN report_periods p ON p.id = ask.planned_period_id WHERE ask.attempt_id = ? AND ask.skill = ?`).get(a8.id, skill) as any;
+  check('PR-MT (8) · GVBM gõ "-" L R W1 W2 tuần 07/09 → chốt thứ Hai → MÁY tự dời sang tuần kế tiếp, vắng lần 1; báo GVCN + GVBM đúng kỹ năng (Q-A, K4-03)', () => {
+    attemptsSvc.saveScore(P.lrTeacher, a8.id, 'listening', { noShow: true }, '2026-09-09');
+    attemptsSvc.saveScore(P.lrTeacher, a8.id, 'reading', { noShow: true }, '2026-09-09');
+    attemptsSvc.saveScore(P.w1Teacher, a8.id, 'writing1', { noShow: true }, '2026-09-09');
+    attemptsSvc.saveScore(P.w2Teacher, a8.id, 'writing2', { noShow: true }, '2026-09-09');
+    absence.settleNoShows(TODAY);
+    for (const k of ['listening', 'reading', 'writing']) {
+      const l = lich(k);
+      assert(l.sit_status === 'scheduled' && l.lan === 1 && l.tuan === '2026-09-14', `${k}: ${JSON.stringify(l)}`);
+    }
+    const tb = conn.prepare(`SELECT body FROM notifications WHERE user_id = ? AND entity_id = ? AND body LIKE 'Đã tự dời Writing%'`).get(P.w2Teacher.userId, a8.id) as any;
+    assert(tb?.body === 'Đã tự dời Writing sang W3 SEP (vắng lần 1).', JSON.stringify(tb));
+    assert(conn.prepare(`SELECT 1 FROM audit_logs WHERE action = 'attempt.absence_auto_move' AND entity_id = ?`).get(a8.id), 'thiếu nhật ký máy tự dời');
+  });
+  check('PR-MT (8) · Lần 2 → đề nghị chờ QL: hạn hết CN tuần gửi, tuần đích = tuần chưa bắt đầu gần nhất; chữ thẻ cho PR-DUYET (T42, K4-04)', () => {
+    attemptsSvc.saveScore(P.lrTeacher, a8.id, 'listening', { noShow: true }, '2026-09-16');
+    absence.settleNoShows('2026-09-21');
+    const r = conn.prepare(`SELECT r.*, p.week_start AS dich FROM skill_move_requests r JOIN report_periods p ON p.id = r.to_period_id
+      WHERE r.attempt_id = ? AND r.skill = 'listening' AND r.status = 'pending'`).get(a8.id) as any;
+    assert(r && r.move_no === 2 && r.requested_by === null && r.decide_by === '2026-09-27' && r.dich === '2026-09-28', JSON.stringify(r));
+    assert(lich('listening').sit_status === 'absent', 'lịch giữ nguyên tới khi QL duyệt');
+    assert(absence.moTaDoiLan2(r) === 'Dời L · MT1 · lần 2 · Duyệt = L thi W1 OCT', absence.moTaDoiLan2(r));
+  });
+  check('PR-MT (8) · Hết Chủ nhật mà QL chưa trả lời → đề nghị hết hạn, huỷ phần thi (C09)', () => {
+    demoCfg.setConfig('demo_date', '2026-09-28');
+    try {
+      assert(absence.sweepExpiredMoves() >= 1, 'không quét được đề nghị hết hạn');
+    } finally { demoCfg.setConfig('demo_date', TODAY); }
+    const r = conn.prepare(`SELECT status FROM skill_move_requests WHERE attempt_id = ? AND skill = 'listening' ORDER BY id DESC`).get(a8.id) as any;
+    assert(r.status === 'expired' && lich('listening').sit_status === 'cancelled', `${r.status} · ${lich('listening').sit_status}`);
+  });
+  check('PR-MT (8) · QL đổi tuần một kỹ năng đang vắng = dời do vắng (+1); lần vắng sau thành lần 2 chờ duyệt (K4-12, Q10)', () => {
+    skillSch.setSitStatus(P.mbManager, a8.id, 'speaking', 'absent', 'Em vắng buổi Speaking');
+    skillSch.setSkillWeek(P.mbManager, a8.id, 'speaking', week.ensurePeriod('2026-10-05').id, { force: true });
+    const l = lich('speaking');
+    assert(l.sit_status === 'scheduled' && l.lan === 1 && l.tuan === '2026-10-05', JSON.stringify(l));
+    const h = conn.prepare(`SELECT reason FROM attempt_schedule_history WHERE attempt_id = ? AND action = 'skill_week_moved_absence' AND field = 'speaking'`).get(a8.id) as any;
+    assert(h?.reason === 'QL xếp trực tiếp', JSON.stringify(h));
+    skillSch.setSitStatus(P.mbManager, a8.id, 'speaking', 'absent', 'Em lại vắng');
+    const kq = absence.requestAbsenceMove(P.coreTeacher, a8.id, ['speaking']);
+    assert(kq.outcomes[0].result === 'pending' && kq.outcomes[0].moveNo === 2, JSON.stringify(kq.outcomes[0]));
+  });
 }

@@ -486,15 +486,16 @@ export const conBaiCanCham = (m: { pendingSkills: string[]; status: string }): b
  *
  * Xếp riêng tuần bằng `setSkillWeek` thì KHÔNG tính: kế hoạch tách tuần cũng đi đường đó.
  */
-export type MonDoiLich = { by: 'no_show' | 'absence'; fromPeriodId: number | null };
+/** `lanVang` (PR-MT, YC-13.1): số lần đã dời do vắng — Lịch Test ghi thẳng "dời từ W3 SEP · vắng lần 1". */
+export type MonDoiLich = { by: 'no_show' | 'absence'; fromPeriodId: number | null; lanVang: number | null };
 
 function monDoiLich(
   score: { no_show_period_id?: number | null } | undefined, currentPeriodId: number | null, absenceMoves: number,
 ): MonDoiLich | null {
   if (score?.no_show_period_id && score.no_show_period_id !== currentPeriodId) {
-    return { by: 'no_show', fromPeriodId: score.no_show_period_id };
+    return { by: 'no_show', fromPeriodId: score.no_show_period_id, lanVang: absenceMoves > 0 ? absenceMoves : null };
   }
-  return absenceMoves > 0 ? { by: 'absence', fromPeriodId: null } : null;
+  return absenceMoves > 0 ? { by: 'absence', fromPeriodId: null, lanVang: absenceMoves } : null;
 }
 
 /** Số ô đã có điểm trong phạm vi đang xem (cùng tiêu chí "được yêu cầu" và "của tôi" với `pendingSkillsOf`). */
