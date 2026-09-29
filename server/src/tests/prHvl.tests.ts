@@ -259,6 +259,82 @@ export async function runPrHvlTests(t: YThucTestKit) {
     }
   });
 
+  // ------------------------------------------------------------------ Task 3 · máy chủ trang Học viên & Lớp
+
+  const hvl: any = await import('../classes/hocVienLop.ts');
+  const standingMod: any = await import('../students/standing.ts');
+  const lopHienTai = (sid: number) => (conn.prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active'`).get(sid) as any)?.class_id as number | undefined;
+
+  check('PR-HVL (3) · chip: "Đang SOS" chỉ em Fast Track (em lớp thường có "SOS n" theo số môn trượt vẫn KHÔNG có cờ sos); dem = demLoc; khung đúng', () => {
+    const r = hvl.danhSachHocVienLop(P.admin, {});
+    eq(r.dem, d.demLoc(r.hocVien, 'tat-ca'), 'dem = demLoc');
+    const laFt = new Map<number, boolean>(r.rows.map((x: any) => [x.id, x.programmeCode === 'FT']));
+    for (const h of r.hocVien) {
+      eq(h.khung, laFt.get(h.classId) ? 'ft' : 'thuong', `khung em ${h.id}`);
+      if (h.khung === 'thuong') assert(!h.loc.includes('sos'), `Em lớp thường ${h.id} còn cờ sos`);
+    }
+    const thuongSos = [...standingMod.standingFor(r.hocVien.filter((h: any) => h.khung === 'thuong').map((h: any) => h.id)).values()].filter((s: any) => (s.sosLevel ?? 0) > 0);
+    assert(thuongSos.length > 0, 'Bộ demo phải có em lớp thường mang mức SOS (để chứng minh không tính vào chip)');
+    assert(r.hocVien.every((h: any) => !h.loc.some((k: string) => k.startsWith('case_'))), 'Còn cờ Case cũ');
+  });
+
+  /**
+   * Trang Học viên & Lớp đọc Case theo CHI NHÁNH (một `listCases` cho cả lô), roster đọc theo LỚP: hai tập bằng nhau trừ Case của em đã chuyển
+   * lớp sang chi nhánh khác (bộ kiểm để lại vài em như vậy). Chỉ so lớp mà hai tập trùng và chỉ em ĐANG HỌC.
+   */
+  const lopCungCase = (r: any) => r.rows.filter((lop: any) => {
+    const em = new Set(r.hocVien.filter((h: any) => h.classId === lop.id).map((h: any) => h.id));
+    const ids = (ds: any[]) => ds.filter((c) => c.status !== 'done' && em.has(c.studentId)).map((c) => c.id).sort();
+    return JSON.stringify(ids(casesMod.listCases(P.admin, { branchId: lop.branchId }).rows)) === JSON.stringify(ids(casesMod.listCases(P.admin, { classId: lop.id }).rows));
+  });
+
+  check('PR-HVL (3) · chip Cần làm = em có việc tone danger/warn ở cột Việc tiếp theo (cùng `viecTiepCuaEm`); link cũ case_overdue → can-lam', () => {
+    const r = hvl.danhSachHocVienLop(P.admin, {});
+    const canLam = new Set(r.hocVien.filter((h: any) => h.loc.includes('can-lam')).map((h: any) => h.id));
+    const trong = new Set(r.hocVien.map((h: any) => h.id));
+    let khop = 0; let soLop = 0;
+    for (const lop of lopCungCase(r)) {
+      soLop++;
+      for (const s of classesMod.classRoster(P.admin, lop.id)) {
+        if (!trong.has(s.id)) continue;
+        const co = s.viecTiepTheo.some((v: any) => v.dich?.loai !== 'nhap-diem' && (v.tone === 'danger' || v.tone === 'warn'));
+        if (co) khop++;
+        eq(canLam.has(s.id), co, `Em ${s.id} (lớp ${lop.code}): chip Cần làm ≠ việc gấp ở roster`);
+      }
+    }
+    assert(soLop > 0 && khop > 0, `Không có lớp/em để so (${soLop} lớp, ${khop} em)`);
+    eq(d.docThamSoLoc('case_overdue'), { loc: 'can-lam' }, 'link cũ');
+  });
+
+  check('PR-HVL (3) · Chờ duyệt: số thẻ chờ theo lớp (QL/Quản trị thấy đúng số thẻ demo, GVBM 0); em có thẻ mang chip cho-duyet', () => {
+    const cho = conn.prepare(`SELECT hoc_vien_id, lop_id FROM yeu_cau_duyet WHERE trang_thai = 'cho'`).all() as any[];
+    assert(cho.length > 0, 'Bộ demo phải có thẻ đang chờ');
+    const mong = new Map<number, number>();
+    for (const y of cho) { const l = y.lop_id ?? (y.hoc_vien_id ? lopHienTai(y.hoc_vien_id) : undefined); if (l) mong.set(l, (mong.get(l) ?? 0) + 1); }
+    const admin = hvl.danhSachHocVienLop(P.admin, { phamVi: 'tat-ca' });
+    for (const lop of admin.rows) eq(lop.soChoDuyet, mong.get(lop.id) ?? 0, `soChoDuyet lớp ${lop.code}`);
+    assert(admin.rows.some((l: any) => l.soChoDuyet > 0), 'Phải có lớp có thẻ chờ');
+    const gv = hvl.danhSachHocVienLop(P.subjectTeacher, {});
+    assert(gv.rows.length > 0 && gv.rows.every((l: any) => l.soChoDuyet === 0), 'GVBM thấy 0');
+    const emCo = new Set(cho.filter((y) => y.hoc_vien_id).map((y) => y.hoc_vien_id));
+    for (const h of admin.hocVien) eq(h.loc.includes('cho-duyet'), emCo.has(h.id), `chip cho-duyet em ${h.id}`);
+    const lopA = lopCungCase(admin).find((l: any) => l.soChoDuyet > 0) ?? lopCungCase(admin)[0];
+    const ov = classesMod.classOverview(P.admin, lopA.id);
+    eq([ov.soChoDuyet, ov.soEmQuaHan], [lopA.soChoDuyet, lopA.soEmQuaHan], 'classOverview cùng hai số với hộp lớp');
+  });
+
+  check('PR-HVL (3) · soEmQuaHan = số em có việc tone danger (Case quá hạn / Ý thức quá hạn) — khớp roster', () => {
+    const admin = hvl.danhSachHocVienLop(P.admin, { phamVi: 'tat-ca' });
+    let tong = 0;
+    const trong = new Set(admin.hocVien.map((h: any) => h.id));
+    for (const lop of lopCungCase(admin)) {
+      const n = new Set(classesMod.classRoster(P.admin, lop.id).filter((s: any) => trong.has(s.id) && s.viecTiepTheo.some((v: any) => v.dich?.loai !== 'nhap-diem' && v.tone === 'danger')).map((s: any) => s.id)).size;
+      eq(lop.soEmQuaHan, n, `soEmQuaHan lớp ${lop.code}`);
+      tong += n;
+    }
+    assert(tong > 0, 'Bộ demo phải có em quá hạn việc');
+  });
+
   check('PR-HVL (2) · roster: `history[i].lichSu` là cờ thật của mốc; Standing có `nextWeekStart` (cột Sắp tới)', () => {
     let coMoc = 0;
     for (const lopId of (conn.prepare(`SELECT id FROM classes WHERE status = 'active'`).all() as any[]).map((r) => r.id as number)) {

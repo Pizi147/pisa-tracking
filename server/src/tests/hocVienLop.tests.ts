@@ -322,11 +322,10 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     const r = hvl.danhSachHocVienLop(P.admin, {});
     eq(r.dem['tat-ca'], r.hocVien.length, 'Tất cả');
     for (const k of d.LOC_HOC_VIEN) eq(r.dem[k], r.hocVien.filter((h: any) => h.loc.includes(k)).length, `Chip ${k}`);
-    const ids = new Set(r.hocVien.map((h: any) => h.id));
-    const quaHan = new Set(casesMod.listCases(P.admin, { queue: 'due' }).rows.filter((c: any) => ids.has(c.studentId)).map((c: any) => c.studentId));
-    assert(r.dem['can-lam'] >= quaHan.size, `Cần làm (${r.dem['can-lam']}) phải gồm mọi em có Case quá hạn (${quaHan.size})`);
-    const sos = [...standingMod.standingFor([...ids]).values()].filter((s: any) => (s.sosLevel ?? 0) > 0).length;
-    eq(r.dem.sos, sos, 'Đang SOS = standing');
+    /* PR-HVL (K2-03): ba chip Case cũ đã gộp thành "Cần làm" (kiểm chi tiết ở prHvl.tests.ts); "Đang SOS" chỉ Fast Track (T58). */
+    const ftIds = r.hocVien.filter((h: any) => h.khung === 'ft').map((h: any) => h.id);
+    const sos = [...standingMod.standingFor(ftIds).values()].filter((s: any) => (s.sosLevel ?? 0) > 0).length;
+    eq(r.dem.sos, sos, 'Đang SOS = standing của em Fast Track');
     assert(r.dem.sos > 0 && r.dem.thieu_tt >= 0, 'Bộ demo có em đang SOS');
   });
 

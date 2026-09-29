@@ -490,4 +490,12 @@ chữ cột FT + FOU (`Không đạt: L`, `Không đạt: G+V`), đếm chip (`c
 **Số câu SQL:** roster lớp 3: 46 → **50** (QT 43 → 47), lớp 6: 42 → 46 · trần `TRAN` hạ về mốc + 6 (52 · QT 49). Thêm 10 Case cho một em: roster chênh ≤ 1 câu; `chiTietCaseMo` 3 Case = mọi Case cùng số câu.
 Phép kiểm cũ sửa: `hocVienLop.tests.ts` "Q13 việc tiếp theo ở dòng học viên" — thêm `dich: { loai: 'nhap-diem' }` vào chuỗi mong đợi (giữ ý kiểm).
 
+**Task 3 (30/09) — 1742 phép kiểm.** `viecHocVienTheoLop` (`dongHocVien.ts`) là MỘT hàm cho trang Học viên & Lớp và `classOverview` (theo em: việc tiếp theo không kể nhập điểm, Ý thức qua `trangThaiYThuc` một lần chỉ lớp có
+`STUDENT_VIEW` và bỏ em Tạm dừng, thẻ `yeu_cau_duyet` chờ một câu/lô 400): sinh cờ `can-lam` (tone danger/warn), `cho-duyet`, `soChoDuyet` (chỉ người có `REQUEST_APPROVE` ở lớp, người khác 0), `soEmQuaHan`.
+`danhSachHocVienLop`: bỏ ba cờ Case cũ, `sos` chỉ em lớp FT, `hocVien[i].khung`, `dem = demLoc(...)`, mỗi lớp có `soChoDuyet`/`soEmQuaHan`; `classOverview` trả cùng hai số (và chỉ đọc `listCases(p,{classId})` một lần, dùng cho cả `soCaseMo`).
+**Số câu SQL:** `/hoc-vien-lop` 51 → **59** (QT 49 → 57) ≤ mốc + 12 · `/classes/3/overview` 48 (không tăng). Trần `TRAN`: 63 (QT chi nhánh 61).
+Phát hiện: (a) trang đọc Case **theo chi nhánh** (`listCases({branchId})`, lọc theo lớp lúc đánh giá) còn roster đọc **theo lớp** — hai tập chỉ lệch với Case của em đã chuyển lớp sang chi nhánh khác (bộ kiểm để lại vài em như vậy);
+phép kiểm so hai nơi chỉ ở lớp mà hai tập trùng. (b) Bộ demo sau các phép kiểm khác có em còn 2–3 ghi danh `active` → hàm gộp theo em, đếm cho mỗi lớp em đang có mặt.
+Phép kiểm cũ sửa: `hocVienLop.tests.ts` "Q4 số đếm chip" — `dem.sos` = số em **Fast Track** mức SOS > 0 (T58); bỏ so `case_overdue` ≥ hàng đợi `due` (đã có phép kiểm chặt hơn ở `prHvl.tests.ts`).
+
 > **Chủ sản phẩm chốt 30/09:** **có** cột "Sắp tới" (M3) ở danh sách Học viên & Lớp.

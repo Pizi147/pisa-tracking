@@ -18,7 +18,7 @@ import { dotHoanTatMany, type HoanTatInfo } from '../fasttrack/hoanTat.ts';
 import { standingFor, standingLine } from '../students/standing.ts';
 import { allProgrammes, evaluateRegular, programmeOfClass } from '../normal/regular.ts';
 import { classProgressMany, missingForClasses, missingForStudent } from './schedule.ts';
-import { canhBaoTheoHocVien, caseViecTheoHocVien, soEmCanXuLyYThuc } from './dongHocVien.ts';
+import { canhBaoTheoHocVien, caseViecTheoHocVien, soEmCanXuLyYThuc, viecHocVienTheoLop } from './dongHocVien.ts';
 import { demChuaLoTrinh, tiepTheoTheoHocVien } from './loTrinhTiep.ts';
 import { listCases } from '../cases/cases.ts';
 import { trongBoNho } from '../platform/nguCanhRequest.ts';
@@ -698,6 +698,16 @@ function classOverviewThat(p: Principal, classId: number) {
   const prog = programmeOfClass(classId);
   const classSkills = prog?.skills ?? [...ENTRY_SKILLS];
 
+  /* Em ĐANG HỌC của lớp + Case của họ (lọc quyền) — dùng cho `soCaseMo` và badge `cho-duyet`/`qua-han` (cùng hàm với trang Học viên & Lớp). */
+  const emDangHoc = (conn.prepare(
+    `SELECT e.student_id FROM enrollments e JOIN students s ON s.id = e.student_id
+      WHERE e.class_id = ? AND e.status = 'active' AND s.archived_at IS NULL`,
+  ).all(classId) as any[]).map((r) => r.student_id as number);
+  const caseCuaLop = listCases(p, { classId }).rows;
+  const vl = viecHocVienTheoLop(p, {
+    emTheoLop: new Map([[classId, emDangHoc]]), cases: caseCuaLop, homNay: demoToday(), chuongTrinhTheoLop: new Map([[classId, prog?.code ?? null]]),
+  });
+
   return {
     id: cls.id, code: cls.code, kind: cls.kind, route: cls.route,
     isFastTrack: cls.is_fast_track === 1, startDate: cls.start_date, note: cls.note,
@@ -727,16 +737,9 @@ function classOverviewThat(p: Principal, classId: number) {
      * hiện học viên có trong ROSTER (đang active, không lưu trữ) nên KHÔNG hiện em đã tạm dừng — lọc thêm
      * theo đúng tập học viên ĐANG HỌC của `classId` để badge khớp lại với danh sách mở ra.
      */
-    soCaseMo: (() => {
-      const activeIds = new Set(
-        conn.prepare(
-          `SELECT e.student_id FROM enrollments e JOIN students s ON s.id = e.student_id
-            WHERE e.class_id = ? AND e.status = 'active' AND s.archived_at IS NULL`,
-        ).all(classId).map((r: any) => r.student_id as number),
-      );
-      return listCases(p, { classId }).rows
-        .filter((c) => c.status !== 'done' && c.studentId !== null && activeIds.has(c.studentId)).length;
-    })(),
+    soCaseMo: caseCuaLop.filter((c) => c.status !== 'done' && c.studentId !== null && emDangHoc.includes(c.studentId)).length,
+    /** B4: cùng hai số với hộp lớp ở trang Học viên & Lớp (`viecHocVienTheoLop`). */
+    soChoDuyet: vl.soChoDuyet.get(classId) ?? 0, soEmQuaHan: vl.soEmQuaHan.get(classId) ?? 0,
     /** Số học viên có vi phạm chưa xử lý quá 5 ngày — dấu ⚠ trên tab Ý thức & Phối hợp (Q15). */
     canhBaoYThuc: soEmCanXuLyYThuc(p, classId),
     /*
