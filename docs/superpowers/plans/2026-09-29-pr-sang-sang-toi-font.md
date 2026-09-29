@@ -411,3 +411,5 @@ Mười trang (Task 0 "trước" và Task 9 "sau" dùng **cùng** danh sách):
 <!-- Session code ghi ở đây: model thật; PR HSM/HVL/XUAT đã merge (mã commit) + bảng file giao diện chúng đổi; mốc B; bảng đếm lại (số màu
 cứng, chữ < 11 px); số đỏ Task 1; đo tnum/glyph/tràn cột Task 6; số chỗ < AA trước/sau (hai chế độ) Task 8; so "bảng màu tính được" tối
 Task 9; chỗ lệch kế hoạch; 🛑 đã hỏi; chú thích ponytail:. -->
+
+> **Chủ sản phẩm chốt 30/09:** phông **Be Vietnam Pro**; chữ phụ **giữ 11 px**, chỉ nâng chữ < 11 px và chữ kết quả/hạn/trạng thái lên 12 px. Task cuối **sửa `CLAUDE.md`** dòng "giữ phông Inter" → "phông Be Vietnam Pro (PR-SANG)".

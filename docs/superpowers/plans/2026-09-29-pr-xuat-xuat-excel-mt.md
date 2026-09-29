@@ -463,3 +463,5 @@ hàm `nhanXetW`, `tenGvCham` (`shared/domain/nhanXet.ts`), `tieuChiNganCua` (`sk
 
 <!-- Session code ghi ở đây: model thật, mốc B, dòng mã thật lệch, số câu SQL đo (trước/sau nhân dữ liệu), trước/sau clarify, kết quả
 audit, số đo Turso (Task 7), Task 8 đã/chưa, 🛑 đã hỏi. -->
+
+> **Chủ sản phẩm chốt 30/09:** GVBM **không** xuất Excel — chỉ GVCN, Quản lý, Quản trị. Lượt rải hai tuần: tính theo tuần bắt đầu thi (tự quyết theo khuyến nghị).

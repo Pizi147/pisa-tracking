@@ -466,3 +466,5 @@ Nằm ở: bốn bảng của **Học viên & Lớp** và **Hồ sơ lớp → t
 <!-- Session code ghi ở đây: mốc B, số câu SQL trước/sau từng route, dòng mã thật lệch, phép kiểm cũ đã sửa chữ mong đợi (từng phép + lý do),
      trước/sau clarify, file chồng với HSM/XUAT phát hiện thêm, 🛑 đã hỏi, model thật. -->
 
+
+> **Chủ sản phẩm chốt 30/09:** **có** cột "Sắp tới" (M3) ở danh sách Học viên & Lớp.
