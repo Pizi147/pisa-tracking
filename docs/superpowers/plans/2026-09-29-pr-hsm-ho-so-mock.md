@@ -497,3 +497,6 @@ Không có câu bắt buộc — mọi điểm mở đã vào bảng Q theo khuy
 
 - **30/09 · Task 0** — model thật **Opus 5.5** (phương án B). Nhánh `pr-hsm-ho-so-mock` từ `origin/main` e7d6af94 (kế hoạch đã có trên main).
   **Mốc B = 1722 phép kiểm** (+ 24 tốc độ). Đối chiếu dòng mã: khớp hết (lệch 0).
+- **Task 1** — 1727 đạt. Phép kiểm cũ sửa dữ liệu (không xoá): `xoaDuLieu.tests.ts` PR-XOA T1 đếm cột FK trỏ `users` 73 → **74**
+  (`assessment_scores.examiner_user_id` phân loại **dấu vết** "điểm đã nhập" ở `xoaTaiKhoan.ts` — GV chấm = đã làm việc, xoá mềm).
+  `CRITERIA`/`CRITERIA_SHORT`/`criteriaSetFor` đã xoá ở Task 1 (chỉ `ScoreEntry.tsx` dùng) thay vì chờ Task 3.

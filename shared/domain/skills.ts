@@ -35,18 +35,14 @@ export const ASSESSED_SKILL_LABEL: Record<AssessedSkill, string> = {
 export const RAW_SCORE_SKILLS: EntrySkill[] = ['listening', 'reading'];
 export const CRITERIA_SKILLS: EntrySkill[] = ['writing1', 'writing2', 'speaking'];
 
-/** Bốn tiêu chí IELTS theo từng kỹ năng. */
-export const CRITERIA: Record<'writing' | 'speaking', [string, string, string, string]> = {
-  writing: ['Task Achievement', 'Coherence & Cohesion', 'Lexical Resource', 'Grammatical Range & Accuracy'],
+/** Bốn tiêu chí IELTS theo từng BÀI NHẬP (một nguồn cho lưới, hộp tiêu chí, hồ sơ Mock, Excel). */
+const TIEU_CHI = {
+  writing1: ['Task Achievement', 'Coherence & Cohesion', 'Lexical Resource', 'Grammatical Range & Accuracy'],
+  writing2: ['Task Response', 'Coherence & Cohesion', 'Lexical Resource', 'Grammatical Range & Accuracy'],
   speaking: ['Fluency & Coherence', 'Lexical Resource', 'Grammatical Range & Accuracy', 'Pronunciation'],
-};
-export const CRITERIA_SHORT: Record<'writing' | 'speaking', [string, string, string, string]> = {
-  writing: ['TA', 'CC', 'LR', 'GRA'],
-  speaking: ['FC', 'LR', 'GRA', 'P'],
-};
-
-export function criteriaSetFor(skill: EntrySkill): 'writing' | 'speaking' | null {
-  if (skill === 'writing1' || skill === 'writing2') return 'writing';
-  if (skill === 'speaking') return 'speaking';
-  return null;
-}
+} as const;
+const TIEU_CHI_NGAN = { writing1: ['TA', 'CC', 'LR', 'GRA'], writing2: ['TR', 'CC', 'LR', 'GRA'], speaking: ['FC', 'LR', 'GRA', 'P'] } as const;
+/** K4-25: Task 2 là Task Response (TR), không phải Task Achievement. `null` với L/R (nhập số câu). */
+export const tieuChiCua = (s: EntrySkill): readonly string[] | null => (s in TIEU_CHI ? TIEU_CHI[s as keyof typeof TIEU_CHI] : null);
+export const tieuChiNganCua = (s: EntrySkill): readonly string[] | null =>
+  (s in TIEU_CHI_NGAN ? TIEU_CHI_NGAN[s as keyof typeof TIEU_CHI_NGAN] : null);

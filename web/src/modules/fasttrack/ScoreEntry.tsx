@@ -9,7 +9,7 @@ import { Han } from '../../ui/Han.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
 import {
-  CRITERIA, CRITERIA_SHORT, NO_SHOW_HINT, criteriaSetFor, demNguocSuaDau, kiemLyDo, oLuoiThuong,
+  NO_SHOW_HINT, demNguocSuaDau, kiemLyDo, oLuoiThuong, tieuChiCua, tieuChiNganCua,
   type EntrySkill,
 } from '@shared/domain/index.ts';
 
@@ -429,7 +429,7 @@ export function CriteriaButton({ cell, onSave, buttonRef, lon = false }: {
 function SuaTieuChi({ cell, onSave, onClose }: {
   cell: Cell; onSave: (patch: SavePatch, opts?: SaveOpts) => Promise<boolean>; onClose: () => void;
 }) {
-  const set = criteriaSetFor(cell.skill) ?? 'writing';
+  const tc = tieuChiCua(cell.skill) ?? [], tcNgan = tieuChiNganCua(cell.skill) ?? [];
   const [vals, setVals] = useState<string[]>(cell.criteria.map((v) => (v === null ? '' : String(v))));
   const { dash, preview, patch } = criteriaPatchFrom(vals, cell);
   const doi = vals.some((v, i) => (v.trim() === '' ? null : Number(v)) !== cell.criteria[i]);
@@ -447,9 +447,9 @@ function SuaTieuChi({ cell, onSave, onClose }: {
       }}
     >
       <div className="flex items-end gap-1.5">
-        {CRITERIA[set].map((label, i) => (
+        {tc.map((label, i) => (
           <label key={i} className="block" title={label}>
-            <span className="block text-[10px] text-slate-500">{CRITERIA_SHORT[set][i]}</span>
+            <span className="block text-[10px] text-slate-500">{tcNgan[i]}</span>
             <input className="field w-12 text-center tabular-nums px-1 py-1" inputMode="decimal" value={vals[i] ?? ''}
               aria-label={`${skillLabel(cell.skill)} — ${label}`}
               onChange={(e) => setVals((v) => v.map((x, j) => (j === i ? e.target.value : x)))} />
@@ -464,7 +464,7 @@ function SuaTieuChi({ cell, onSave, onClose }: {
 export function CriteriaModal({ cell, onSave, onClose }: {
   cell: Cell; onSave: (patch: SavePatch) => Promise<boolean>; onClose: () => void;
 }) {
-  const set = criteriaSetFor(cell.skill) ?? 'writing';
+  const tc = tieuChiCua(cell.skill) ?? [], tcNgan = tieuChiNganCua(cell.skill) ?? [];
   /* Bài đã báo "-" thì mở ra thấy '-' ở ô đầu — không phải bốn ô trống dễ nhầm với chưa nhập. */
   const [vals, setVals] = useState<string[]>(
     cell.noShow && cell.criteria.every((v) => v === null)
@@ -493,9 +493,9 @@ export function CriteriaModal({ cell, onSave, onClose }: {
         </button>
       </>}>
       <div className="space-y-3">
-        {CRITERIA[set].map((label, i) => (
+        {tc.map((label, i) => (
           <label key={i} className="flex items-center gap-3">
-            <span className="w-8 text-xs text-slate-500 shrink-0">{CRITERIA_SHORT[set][i]}</span>
+            <span className="w-8 text-xs text-slate-500 shrink-0">{tcNgan[i]}</span>
             <span className="flex-1 text-sm text-slate-300">{label}</span>
             <input
               className="field w-20 text-center tabular-nums"
@@ -536,7 +536,7 @@ export function InlineScoreEditor({ cell, onSave, onClose }: {
   cell: Cell; onSave: (patch: SavePatch) => Promise<boolean>; onClose: () => void;
 }) {
   const isRaw = cell.skill === 'listening' || cell.skill === 'reading';
-  const set = criteriaSetFor(cell.skill) ?? 'writing';
+  const tc = tieuChiCua(cell.skill) ?? [], tcNgan = tieuChiNganCua(cell.skill) ?? [];
   const [vals, setVals] = useState<string[]>(() => (isRaw
     ? [cell.rawScore !== null ? String(cell.rawScore) : cell.noShow ? '-' : '']
     : cell.noShow && cell.criteria.every((v) => v === null)
@@ -579,9 +579,9 @@ export function InlineScoreEditor({ cell, onSave, onClose }: {
               title={NO_SHOW_HINT} aria-label={`${skillLabel(cell.skill)} — số câu đúng. ${NO_SHOW_HINT}`}
               onChange={(e) => setAt(0, e.target.value)} />
           </label>
-        ) : CRITERIA[set].map((label, i) => (
+        ) : tc.map((label, i) => (
           <label key={i} className="block" title={label}>
-            <span className="block text-[11px] text-slate-500">{CRITERIA_SHORT[set][i]}</span>
+            <span className="block text-[11px] text-slate-500">{tcNgan[i]}</span>
             <input autoFocus={i === 0} className="field w-14 text-center tabular-nums" inputMode="decimal"
               value={vals[i] ?? ''} aria-label={`${skillLabel(cell.skill)} — ${label}. ${NO_SHOW_HINT}`}
               onChange={(e) => setAt(i, e.target.value)} />
