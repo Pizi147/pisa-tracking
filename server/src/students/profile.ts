@@ -557,7 +557,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     const t = typedResult(a);
     const c = caseByAttempt.get(a.id) ?? null;
     const base = {
-      id: a.id, attemptNo: a.attempt_no, kind: a.kind, status: a.status, lichSu: !!a.lich_su,
+      id: a.id, attemptNo: a.attempt_no, kind: a.kind, status: a.status, lichSu: !!a.lich_su, planSource: a.plan_source ?? null,
       /* M-14: false = MT lịch sử ngoài 4 tuần — không làm "Kết quả Test gần nhất" (ketQuaTestGanNhat). */
       sinhViec: luotSinhViecRow(a, homNayHs),
       classCode: a.class_code, periodCode: a.period_code, weekStart: a.week_start ?? null,
@@ -743,7 +743,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   const progHienTai = current ? programmeOfClass(current.class_id) : null;
 
   return {
-    id: s.id, studentCode: s.student_code, fullName: s.full_name, dob: s.dob,
+    id: s.id, studentCode: s.student_code, fullName: s.full_name, dob: s.dob, email: s.email ?? null,
     status: s.status, finishedAt: s.finished_at, archivedAt: s.archived_at,
     consultantName: s.consultant_name, note: s.note,
     pendingSignals: signals,

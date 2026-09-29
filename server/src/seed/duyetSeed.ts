@@ -105,7 +105,7 @@ export function buildDuyetDemo(ctx: BuildCtx): { the: number } {
     .get(classId) as any;
   if (lr) {
     const ten = 'Ngô Thanh Tùng';
-    commitIntake(admin, { classId, rows: [{ fullName: ten, target: 6.5 }], dateFormat: 'iso', idempotencyKey: `duyet-demo-${ten}` } as any);
+    commitIntake(admin, { classId, rows: [{ fullName: ten, target: 6.5, email: 'hv@demo.test' }], idempotencyKey: `duyet-demo-${ten}` } as any);
     const st = conn.prepare('SELECT id FROM students WHERE full_name = ?').get(ten) as any;
     const gv = loadPrincipal(lr.id);
     const c = reportIssue(gv, { studentId: st.id, topic: 'listening', title: 'Nghe sót chi tiết số', summary: 'Em nghe sót số và tên riêng ở Part 1–2.',

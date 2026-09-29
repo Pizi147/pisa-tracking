@@ -101,8 +101,8 @@ export async function runFormTests(t: YThucTestKit) {
 
     const fouClassId = t.classId('MB FOU 12');
     intake.commitIntake(P.admin, {
-      classId: fouClassId, rows: [{ fullName: 'PR-Form Em Fou', target: 7 }],
-      dateFormat: 'iso', idempotencyKey: 'pr-form-ref-nguoi-fou',
+      classId: fouClassId, rows: [{ fullName: 'PR-Form Em Fou', target: 7, email: 'hv@demo.test' }],
+      idempotencyKey: 'pr-form-ref-nguoi-fou',
     });
     const fouStudent = conn.prepare(`SELECT id FROM students WHERE full_name = 'PR-Form Em Fou'`).get() as any;
 

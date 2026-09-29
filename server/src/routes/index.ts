@@ -1200,7 +1200,6 @@ api.post('/intake/preview', requireAuth, wrap((req) => {
     /* Lớp của CẢ LÔ, chọn một lần ở đầu panel (mục 12.1). */
     classId: toInt(b.classId) || toInt(b.defaultClassId) || null,
     defaultStartWeek: b.defaultStartWeek ?? null,
-    dateFormat: b.dateFormat,
   });
 }));
 
@@ -1211,8 +1210,7 @@ api.post('/intake/commit', requireAuth, wrap((req) => {
     rows: b.rows ?? [],
     classId: toInt(b.classId) || toInt(b.defaultClassId) || null,
     defaultStartWeek: b.defaultStartWeek ?? null,
-    dateFormat: b.dateFormat,
-    skipRows: b.skipRows ?? [], idempotencyKey: b.idempotencyKey,
+    idempotencyKey: b.idempotencyKey,
   });
 }));
 

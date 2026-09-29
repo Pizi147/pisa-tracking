@@ -68,6 +68,10 @@ tooltip, aria-label. Không đổi một chỗ rồi coi là xong.
 | Cả lô này vào một lớp… | *(bỏ nếu lớp đích đã rõ trên header)* |
 | Bỏ qua 1 dòng lỗi | *(bỏ nút — thay bằng `Xem {n} dòng cần sửa`)* |
 | Thêm 0 học viên | Nút `Thêm học viên`, trạng thái disabled |
+| Ngày/tháng thi IELTS dự kiến (PR-NHAP) | `Thi dự kiến` — gõ `dd/mm/yyyy` (biết ngày) hoặc `mm/yyyy` (biết tháng) |
+| Cột cuối lưới Thêm học viên (PR-NHAP) | `Tình trạng`: `✓ Sẵn sàng` · `{n} lỗi · {m} lưu ý` (bấm mở dòng chi tiết); chân panel `{a} dòng sẵn sàng · {b} dòng cần sửa` |
+| Cột FT / Lớp / Lộ trình dán vào lớp không nhận | lưu ý `Bỏ qua — …` (không chặn dòng), ví dụ `Bỏ qua — lộ trình theo lớp (LT1)` |
+| Em FT vào muộn (PR-NHAP) | cột `Đã thi tới MT` (0–8) · lưu ý `Học từ {tuần} — {n} MT sẽ là MT lịch sử (MT1, MT2)` · kết quả `{n} MT lịch sử chưa có điểm ({k} em)` + `Nhập điểm MT lịch sử` · Thông tin HV đổi tuần: `MT2, MT3 sẽ dời sang W2 OCT, W2 NOV` |
 | Việc của tôi / Cả phạm vi quản lý | Dropdown `Người phụ trách`: Tôi · Tất cả trong phạm vi · Chọn giáo viên |
 | Hai mốc kiểm tra đếm từ đây *(lớp FT)* | FT: `Lịch Mock Test được xếp riêng cho từng học viên` · Normal: `Các mốc kiểm tra được tính từ tuần khai giảng` |
 | Tiến độ lớp *(menu)* | `Lộ trình` |

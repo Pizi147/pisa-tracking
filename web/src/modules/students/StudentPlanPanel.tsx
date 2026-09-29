@@ -45,7 +45,8 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, canEditCycle = t
   const cycle = useApi<any>(`/cycles/${cycleId}`);
   const sugg = useApi<Suggested[]>(ratio ? null : `/cycles/${cycleId}/suggested-mocks`, [cycleId]);
   const [startPeriodId, setStartPeriodId] = useState<number | null>(null);
-  const [examMonth, setExamMonth] = useState<string>('');
+  /** T9 · Thi dự kiến: ngày ISO (đã biết ngày) hoặc tháng `yyyy-mm` (mới biết tháng). */
+  const [thiDuKien, setThiDuKien] = useState<string>('');
   const [examPeriodId, setExamPeriodId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [touched, setTouched] = useState(false);
@@ -54,16 +55,19 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, canEditCycle = t
   /* Chỉ nạp giá trị hiện tại MỘT LẦN, nếu không thì mỗi lần tải lại sẽ xoá cái người đang gõ. */
   if (cy && !touched) {
     if (startPeriodId === null && cy.start_period_id) setStartPeriodId(cy.start_period_id);
-    if (examMonth === '' && cy.exam_month) setExamMonth(cy.exam_month);
+    if (thiDuKien === '' && (cy.exam_date || cy.exam_month)) setThiDuKien(cy.exam_date ?? cy.exam_month);
     if (examPeriodId === null && cy.exam_period_id) setExamPeriodId(cy.exam_period_id);
   }
+
+  /* Q9: đã có NGÀY thi thì tuần suy từ ngày — ô tuần chỉ hiện khi mới biết tháng (hoặc chưa biết gì). */
+  const hienTuanThi = !/^\d{4}-\d{2}-\d{2}$/.test(thiDuKien);
 
   const save = async () => {
     setBusy(true);
     try {
       await api.patch(`/cycles/${cycleId}`, {
         startPeriodId: startPeriodId ?? null,
-        ...(ratio ? {} : { examMonth: examMonth || null, examPeriodId: examPeriodId ?? null }),
+        ...(ratio ? {} : { examDate: thiDuKien || null, ...(hienTuanThi ? { examPeriodId: examPeriodId ?? null } : {}) }),
       });
       invalidate('/cycles'); invalidate('/students'); invalidate('/classes'); invalidate('/attempts');
       toast.push('ok', 'Đã lưu kế hoạch học');
@@ -117,15 +121,18 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, canEditCycle = t
           */}
           {!ratio && (
             <>
-              <Field label="Tháng dự kiến thi"
-                hint="Biết được ngay lúc tư vấn. Đủ để xếp lịch cả khoá.">
-                <ONgay kieu="thang" value={examMonth} onChange={(v) => { setTouched(true); setExamMonth(v); }} />
+              <Field label="Thi dự kiến"
+                hint="Gõ dd/mm/yyyy nếu đã biết ngày, mm/yyyy nếu mới biết tháng.">
+                <ONgay kieu="ngay-hoac-thang" value={thiDuKien} goiY="dd/mm/yyyy hoặc mm/yyyy"
+                  onChange={(v) => { setTouched(true); setThiDuKien(v); }} />
               </Field>
-              <Field as="div" label="Tuần dự kiến thi"
-                hint="Chốt được thì hệ thống mới đếm ngược. Chưa chốt cứ để trống.">
-                <WeekPicker periodId={examPeriodId} label={null} scope="planning" clearable
-                  onPeriod={(id) => { setTouched(true); setExamPeriodId(id); }} />
-              </Field>
+              {hienTuanThi && (
+                <Field as="div" label="Tuần dự kiến thi"
+                  hint="Chốt được thì hệ thống mới đếm ngược. Chưa chốt cứ để trống.">
+                  <WeekPicker periodId={examPeriodId} label={null} scope="planning" clearable
+                    onPeriod={(id) => { setTouched(true); setExamPeriodId(id); }} />
+                </Field>
+              )}
             </>
           )}
 

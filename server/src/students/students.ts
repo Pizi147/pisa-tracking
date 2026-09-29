@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  ENTRY_SKILLS, JOURNEY_GROUP, NO_HANDOVER_NOTE, PERMISSIONS, STUDENT_STATUSES, luatDoiLop,
+  ENTRY_SKILLS, JOURNEY_GROUP, NO_HANDOVER_NOTE, PERMISSIONS, STUDENT_STATUSES, luatDoiLop, docEmail, docNgayNhap,
   type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { luotSinhViecRow } from '../worklist/danhGia.ts';
@@ -337,8 +337,24 @@ export function updateStudent(p: Principal, studentId: number, patch: any) {
   if (!s) throw notFound();
   // Target và ngày thi IELTS nằm ở LỘ TRÌNH, sửa qua updateCycle chứ không qua hồ sơ.
   const map: Record<string, string> = {
-    fullName: 'full_name', note: 'note', dob: 'dob', consultantName: 'consultant_name',
+    fullName: 'full_name', note: 'note', dob: 'dob', consultantName: 'consultant_name', email: 'email',
   };
+  /* Kiểm ở biên (PR-NHAP): họ tên không rỗng, ngày sinh có thật và không sau hôm nay, email đúng dạng (trống → NULL, T8). */
+  patch = { ...patch };
+  if (patch.fullName !== undefined) {
+    patch.fullName = String(patch.fullName ?? '').trim();
+    if (!patch.fullName) throw badRequest('Họ tên không được trống.');
+  }
+  if (patch.dob !== undefined) {
+    const d = docNgayNhap(patch.dob, demoToday(), { toiDa: demoToday() });
+    if (d.loi) throw badRequest('Ngày sinh: ' + d.loi);
+    patch.dob = d.iso;
+  }
+  if (patch.email !== undefined) {
+    const e = docEmail(patch.email);
+    if (e.loi) throw badRequest('Email: ' + e.loi);
+    patch.email = e.email;
+  }
   const sets: string[] = []; const params: unknown[] = [];
   for (const [k, v] of Object.entries(patch)) {
     if (!map[k]) continue;

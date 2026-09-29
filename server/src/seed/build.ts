@@ -89,11 +89,13 @@ export function buildJourneys(ctx: BuildCtx): BuildCounts {
     const finishedAt = s.status === 'finished' ? (s.finishedAt ?? null) : null;
     const info = conn
       .prepare(
-        `INSERT INTO students (student_code, full_name, normalized_name, dob, branch_id, status,
+        `INSERT INTO students (student_code, full_name, normalized_name, dob, email, branch_id, status,
                                consultant_name, note, finished_at, archived_at, created_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
       )
+      /* PR-NHAP T8/H6: mọi em demo có email; J01 là HS cũ THIẾU email (không bật "Thiếu thông tin"). */
       .run(ctx.nextStudentCode(), s.name, normalizeName(s.name), s.dob ?? null,
+           s.code === 'J01' ? null : `hv.${s.code.toLowerCase()}@demo.pisatracking.vn`,
            ctx.branchId.get(s.branch)!,
            s.status === 'finished' ? 'finished' : 'active',
            null, null, finishedAt, finishedAt, NOW);

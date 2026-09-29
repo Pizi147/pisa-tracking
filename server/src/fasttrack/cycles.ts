@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   BASELINE_SOURCES, CO_DIEM_SQL, CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, CYCLE_STATUSES, PERMISSIONS, soMtKeTiep, tuanLich,
-  type ExamPlan, type LuotSo, type Route,
+  docNgayNhap, mondayOfDate, ngay, type ExamPlan, type LuotSo, type Route,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
@@ -67,12 +67,17 @@ export function nextAttemptNo(cycleId: number): number {
 const MONTH_CODE = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
 export function examPlanOf(cycle: {
-  exam_period_id?: number | null; exam_month?: string | null;
+  exam_period_id?: number | null; exam_month?: string | null; exam_date?: string | null;
   /* Truy vấn nào JOIN sẵn bảng tuần thì truyền hai cột này vào, khỏi hỏi lại từng dòng. */
   exam_week_code?: string | null; exam_week_start?: string | null;
 } | null | undefined): ExamPlan {
   const none: ExamPlan = { confidence: 'none', periodId: null, weekStart: null, month: null, label: 'Chưa xác định' };
   if (!cycle) return none;
+  /* T9: có NGÀY thi cụ thể → nhãn là chính ngày đó (15/01/2027), tuần suy từ ngày. */
+  if (cycle.exam_date && isIsoDate(cycle.exam_date)) {
+    return { confidence: 'week', periodId: cycle.exam_period_id ?? null, weekStart: mondayOfDate(cycle.exam_date),
+             month: cycle.exam_date.slice(0, 7), label: ngay(cycle.exam_date) };
+  }
   if (cycle.exam_period_id) {
     const w = cycle.exam_week_code && cycle.exam_week_start
       ? { code: cycle.exam_week_code, weekStart: cycle.exam_week_start }
@@ -82,7 +87,8 @@ export function examPlanOf(cycle: {
                month: w.weekStart.slice(0, 7), label: w.code };
     }
   }
-  if (cycle.exam_month) {
+  /* Q12: `exam_month` sai dạng (rác từ cột "Ngày thi" cũ, K2-20) coi như chưa có — không vẽ nhãn hỏng. */
+  if (cycle.exam_month && /^\d{4}-\d{2}$/.test(cycle.exam_month)) {
     const mm = Number(cycle.exam_month.slice(5, 7));
     const name = MONTH_CODE[mm - 1] ?? cycle.exam_month.slice(5, 7);
     return { confidence: 'month', periodId: null, weekStart: null, month: cycle.exam_month,
@@ -141,6 +147,18 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
   require_(p, PERMISSIONS.STUDENT_EDIT, { studentId: c.student_id });
+  if (patch.startWeek !== undefined) {           // Thông tin HV gửi Thứ Hai ISO từ ô ngày thống nhất kiểu tuần
+    const w = docNgayNhap(patch.startWeek, demoToday());
+    if (!w.iso) throw badRequest(`Tuần bắt đầu: ${w.loi ?? 'bắt buộc'}`);
+    patch = { ...patch, startPeriodId: ensurePeriod(mondayOf(w.iso)).id };
+  }
+  if (patch.examDate !== undefined) {            // T9: ngày → lưu ngày + suy tháng, tuần; tháng → chỉ tháng; trống → xoá cả hai
+    const t = docNgayNhap(patch.examDate, demoToday(), { choThang: true });
+    if (t.loi) throw badRequest(`Thi dự kiến: ${t.loi}`);
+    const la = t.iso?.length === 10;
+    patch = { ...patch, examMonth: t.iso ? t.iso.slice(0, 7) : null, examDateGhi: la ? t.iso : null,
+      ...(la ? { examPeriodId: ensurePeriod(mondayOf(t.iso!)).id } : {}) };
+  }
   /* PR-DUYET (T44): đổi target / lộ trình cần `cycle.edit` — chỉ khi giá trị THẬT SỰ đổi (panel gửi cả ô không sửa). Thi dự kiến giữ `student.edit` (Q7). */
   const doiTarget = patch.targetScore !== undefined && Number(patch.targetScore ?? NaN) !== Number(c.target_score ?? NaN)
     && !(patch.targetScore == null && c.target_score == null);
@@ -163,6 +181,8 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
      * `student.edit` đã bao đúng ba vai đó, nên không thêm quyền mới.
      */
     startPeriodId: 'start_period_id', examMonth: 'exam_month', examPeriodId: 'exam_period_id',
+    /* Khoá NỘI BỘ (T9): người gọi gửi `examDate`, khối trên đổi thành `examDateGhi` đã kiểm. */
+    examDateGhi: 'exam_date',
   };
   const sets: string[] = []; const params: unknown[] = [];
   for (const [k, v] of Object.entries(patch)) {

@@ -135,7 +135,7 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | Dữ liệu hồ sơ | `server/src/students/profile.ts` |
 | Danh sách lớp, nhóm theo lớp, 6 chip lọc | `web/src/modules/students/StudentsPage.tsx` → `BangHocVienLop.tsx` |
 | Tên và điều kiện của 6 chip lọc | `shared/domain/hocVienLop.ts` → `LOC_HOC_VIEN` · `LOC_HOC_VIEN_NHAN` |
-| Thêm học viên, nhập Excel | `web/src/modules/students/IntakePanel.tsx` · `server/src/classes/intake.ts` |
+| Thêm học viên, nhập Excel (PR-NHAP: cột theo tiêu đề, email bắt buộc, thi dự kiến, cột Tình trạng; lỗi/lưu ý tách `muc`; thêm xong ở lại với dòng lỗi qua `IntakeResult.hangDaThem`; cột "Đã thi tới MT" → `taoMtMacDinh({ daThiToiMt })`, xem trước báo MT lịch sử, `IntakeResult.mt`) | `web/src/modules/students/IntakePanel.tsx` · `server/src/classes/intake.ts` · luật thuần `shared/domain/nhapHocVien.ts` (đọc ngày `dd/mm/yyyy`, email, tiêu đề cột, tuần bắt đầu mặc định) · migrate `server/src/migrate/prNhap.ts` (`students.email`, `learning_cycles.exam_date`) |
 | Badge "Thiếu thông tin" (chỉ thiếu sót CẢN TRỞ chuyên môn) | `web/src/modules/students/MissingBadge.tsx` · `server/src/classes/schedule.ts` → `missingForStudent` |
 | Câu tình trạng đầu hồ sơ ("MT2 đạt kỳ vọng · còn 2 case…") | `server/src/students/standing.ts` |
 | Lịch sử điểm 2–3 mốc trên bảng lớp | `web/src/modules/students/ClassRoster.tsx` · `server/src/classes/classes.ts` → `classRoster` (`history`) |

@@ -44,7 +44,7 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
   const addStudent = (fullName: string, no: number, weeksAgo: number) => {
     const tuanThi = mondayOf(addDays(DEMO_DATE, -7 * weeksAgo));
     const startWeek = addDays(tuanThi, -7 * (tuanHocCuaMt('LT1', no) - 1));
-    commitIntake(admin, { classId, rows: [{ fullName, target: 7, startWeek }], dateFormat: 'iso', idempotencyKey: `sosv3-demo-${fullName}` } as any);
+    commitIntake(admin, { classId, rows: [{ fullName, target: 7, startWeek, email: 'hv@demo.test' }], idempotencyKey: `sosv3-demo-${fullName}` } as any);
     const st = conn.prepare('SELECT id FROM students WHERE full_name = ?').get(fullName) as any;
     const cy = conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(st.id) as any;
     return { id: st.id as number, cycleId: cy.id as number, no, periodId: ensurePeriod(tuanThi).id };

@@ -543,7 +543,7 @@ function ownersByClass(classIds: number[]): Map<number, Record<string, string>> 
 
 const ATTEMPT_SELECT = `
   SELECT a.*, s.full_name, s.student_code,
-         cy.route, cy.target_score, cy.exam_month, cy.exam_period_id, cy.seq AS cycle_seq,
+         cy.route, cy.target_score, cy.exam_month, cy.exam_period_id, cy.exam_date, cy.seq AS cycle_seq,
          c.code AS class_code, c.programme_code, c.branch_id, b.name AS branch_name, b.code AS branch_code,
          pr.code AS period_code, pr.week_start AS period_start, pr.week_end AS period_end
     FROM assessment_attempts a

@@ -560,6 +560,10 @@ npm run chay-thu:mt
 > khoá sửa 7 ngày sau lần nhập cuối. Bài vắng lần 1 (dấu "-") nay máy tự dời sang tuần kế tiếp; lần 2 thành đề nghị chờ Quản lý duyệt,
 > hạn hết Chủ nhật tuần gửi.
 
+**Đợt 2 — PR-NHAP:** migrate chỉ thêm 2 cột (`students.email`, `learning_cycles.exam_date`), không đổi dữ liệu cũ, **không có
+lệnh chạy thử**. Báo GV sau khi lên: thêm học viên mới **bắt buộc email**; bảng dán phải có **dòng tiêu đề**; ngày gõ `dd/mm/yyyy`;
+học viên cũ bổ sung email dần ở Thông tin học viên (không bắt).
+
 **Bước 3 — nâng cấp:**
 
 ```powershell

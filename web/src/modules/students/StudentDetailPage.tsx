@@ -395,7 +395,7 @@ export default function StudentDetailPage() {
         viec={viecQuanLy} onClose={() => setViecQuanLy(null)} lop={data.currentClass?.code}
         student={{
           id: data.id, name: data.fullName, classId: data.currentClass?.id ?? null,
-          dob: data.dob ?? null, consultantName: data.consultantName ?? null, note: data.note ?? null,
+          dob: data.dob ?? null, email: data.email ?? null, consultantName: data.consultantName ?? null, note: data.note ?? null,
           status: data.status,
         }}
         cycle={cy} attempts={data.attempts} onDone={reload}
