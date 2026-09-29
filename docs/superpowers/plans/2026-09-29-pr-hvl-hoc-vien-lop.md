@@ -546,4 +546,12 @@ Dùng ở: Học viên & Lớp (`StudentsPage` → `HopLop the` = thẻ lớp g�
 640–1023 px: `ClassRoster`/`BangDiemLopThuong` giữ bảng cuộn ngang TRONG vùng bảng, cột tên dính bằng lớp `sticky-col` sẵn có (mỗi lớp một bảng nên không bám cả trang). `impeccable adapt`: đọc reference + áp dụng (một cột, ô bấm 44 px, không hover-only); `detect` sạch; kiểm 375 px / 768 px bằng mắt một lần ở Task 11.
 Chuyển cho PR-UXD: `TheDong` là mẫu D1 dùng lại cho các bảng còn lại (D1, D3–D9).
 
+**Task 10 (30/09) — 1762 phép kiểm; `npm run seed` chạy được (chỉ DB demo trong worktree).** `server/src/seed/hvlSeed.ts` (`buildHvlDemo`, gọi ngay sau `buildXlmtDemo` ở `seed.ts`; đi qua `commitIntake`, `saveScore`, `reportIssue`, `guiKhongTheoDoi`, `planRegularTests`, `saveRegularScore`).
+**H1** Trịnh Bảo Ngọc (MB FT 101): MT1 dưới kỳ vọng ở Reading + Writing → Case SOS tự tạo; thêm Case Reading GV tạo tay (`parallel`) → hàng R hai Case; Case Writing gửi "Không cần theo dõi" chờ Quản lý duyệt. **H2** Hồ Diệu Linh (MB FOU 12): Case G+V (`writing`) và P (`speaking`); Nguyễn Thảo Vy: bài Cuối khoá 58/100 → `58%`.
+**H3** (Pre FOU 03 em 52% / 64%) và **H4** (Đoàn Khánh Chi, MT1–3 lịch sử) **đã có** từ PR-MON D12 / PR-XLMT X3 — không dựng trùng, chỉ ghi `DEMO.md` §12 và kiểm bằng phép kiểm.
+**Không dựng được: Case "chung" (không kỹ năng)** ở bộ demo. `reportIssue` bắt buộc `topic`; ép `topic = NULL` bằng SQL làm hai phép kiểm dữ liệu mẫu cũ đỏ ("1 vấn đề trong dữ liệu mẫu không có kỹ năng", "Case thiếu phương án … không nằm ở hạng mục nào"). Hàng Chung chỉ xuất hiện với Case bàn giao / dữ liệu cũ — đã kiểm bằng phép kiểm thuần `hangCanHoTro` (Task 1). Đề nghị planning đổi dòng H1 trong kế hoạch.
+Phép kiểm demo `runPrHvlDemoTests` chạy ở **khối "Bộ demo vừa dựng"** của `run.ts` (thêm 2 dòng cạnh `runPrDuyetDemoTests`), vì các phép kiểm chuyển tiếp lớp về sau đóng Case / chuyển em của MB FOU 12 nên ở cuối bộ kiểm dữ liệu H2 đã đổi.
+**Trần tốc độ nâng vì dữ liệu demo tăng (kèm lý do, theo quy ước TRAN_GHI_LO):** `chuyenCaLopSangFT` 162 → 200 (đo 191: +2 em MB FOU 12, một em có 2 Case đóng theo S17) · `xemTruocXepLichMt` 102 → 108 (đo 105: +1 em MB FT 101, +3 câu/em) · `/yeu-cau?hop=cho-duyet` 29 → 30 (QT 28 → 29: +1 thẻ chờ duyệt của H1).
+Tài liệu: `CODE_MAP.md` (caseLop, canHoTro, viecTiepCuaEm, hangCanHoTro, TheDong, chip mới), `TU_DIEN_VA_CHU.md` §16, Rulebook (mục PR-HVL), `DEMO.md` §12.
+
 > **Chủ sản phẩm chốt 30/09:** **có** cột "Sắp tới" (M3) ở danh sách Học viên & Lớp.

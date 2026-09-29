@@ -254,6 +254,8 @@ console.log('\n0. Bộ demo vừa dựng có nhất quán không');
   await runSosV3DemoTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
   const { runPrDuyetDemoTests } = await import('./prDuyet.tests.ts');
   await runPrDuyetDemoTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+  const { runPrHvlDemoTests } = await import('./prHvl.tests.ts');
+  await runPrHvlDemoTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 }
 
 check('[12.1-16] Bộ demo nhất quán: không có sự kiện "đã xong" nào nằm ở tương lai', () => {

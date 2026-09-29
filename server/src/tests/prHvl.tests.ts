@@ -601,3 +601,54 @@ export async function runPrHvlTests(t: YThucTestKit) {
     assert(coMoc > 0, 'Phải có em có mốc kế tiếp');
   });
 }
+
+/**
+ * BỘ DEMO H1–H4 — chạy NGAY SAU KHI DỰNG (khối "Bộ demo vừa dựng" của `run.ts`), trước mọi phép kiểm khác: các phép kiểm chuyển tiếp lớp / chuyển lớp
+ * về sau đóng Case của em lớp FOU 12, nên ở cuối bộ kiểm dữ liệu H2 đã đổi.
+ */
+export async function runPrHvlDemoTests(t: YThucTestKit) {
+  const { check, assert, conn, P, classId } = t;
+  const d: any = await import('../../../shared/domain/index.ts');
+  const canHoTro: any = await import('../classes/canHoTro.ts');
+  const classesMod: any = await import('../classes/classes.ts');
+  const standingMod: any = await import('../students/standing.ts');
+  const eq = (got: unknown, want: unknown, m: string) =>
+    assert(JSON.stringify(got) === JSON.stringify(want), `${m}: ${JSON.stringify(got)} ≠ ${JSON.stringify(want)}`);
+  const LOP_FT = classId('MB FT 101');
+  const LOP_FOU = classId('MB FOU 12');
+  const nhanHang = (h: any[]) => h.map((x: any) => (x.kind === 'rong' ? `~${x.nhan}` : `${x.nhan}:${x.cases.length}`));
+  console.log('\nPR-HVL · Bộ demo H1–H4');
+  const idHv = (ten: string) => (conn.prepare('SELECT id FROM students WHERE full_name = ?').get(ten) as any)?.id as number | undefined;
+
+  check('PR-HVL (10) · demo H1: Trịnh Bảo Ngọc (MB FT 101) — hàng R có 2 Case cùng kỹ năng, Case Writing chờ Quản lý duyệt "không theo dõi"', () => {
+    const id = idHv('Trịnh Bảo Ngọc');
+    assert(id, 'Thiếu học viên demo H1');
+    const r = canHoTro.canHoTroLop(P.admin, LOP_FT);
+    const em = r.em.find((e: any) => e.id === id);
+    assert(em, 'H1 phải có mặt ở Cần hỗ trợ');
+    const hang = d.hangCanHoTro({ ct: r.ct, cases: em.cases });
+    const R = hang.find((h: any) => h.khoa === 'reading');
+    assert(R && R.cases.length >= 2, `Hàng R phải có 2 Case cùng Reading: ${JSON.stringify(nhanHang(hang))}`);
+    assert(em.cases.some((c: any) => c.trangThai.k === 'cho-duyet-khong-theo-doi'), 'Phải có Case chờ Quản lý duyệt');
+    assert(em.cases.some((c: any) => c.tenSos?.mt === 1), 'Case SOS tự tạo mang chip [MT1]');
+  });
+
+  check('PR-HVL (10) · demo H2: MB FOU 12 — Hồ Diệu Linh có Case G+V và P; Nguyễn Thảo Vy Cuối khoá đủ điểm hiện "58%" không SOS; H3 Pre FOU 03 "64%"; H4 Đoàn Khánh Chi MT lịch sử → "Chưa có kết quả"', () => {
+    const fou = canHoTro.canHoTroLop(P.admin, LOP_FOU);
+    const linh = fou.em.find((e: any) => e.id === idHv('Hồ Diệu Linh'));
+    assert(linh, 'H2: Hồ Diệu Linh phải có mặt ở Cần hỗ trợ lớp FOU (Case G+V và P)');
+    eq(nhanHang(d.hangCanHoTro({ ct: fou.ct, cases: linh.cases })), ['~Không có Case: L · R', 'G+V:1', 'P:1'], 'Hàng G+V và P');
+    const vy = standingMod.standingFor([idHv('Nguyễn Thảo Vy')!]).get(idHv('Nguyễn Thảo Vy')!);
+    const kq = d.ketQuaGanNhat(vy);
+    eq([kq.chinh, kq.sos, kq.dong1], ['58%', null, 'Cuối khoá'], 'H2 Cuối khoá 58/100');
+    const pre = (conn.prepare(`SELECT s.id FROM students s JOIN enrollments e ON e.student_id = s.id JOIN classes c ON c.id = e.class_id
+                                WHERE c.code = 'MB Pre FOU 03' AND e.status = 'active'`).all() as any[]).map((r) => r.id as number);
+    const chinhPre = [...standingMod.standingFor(pre).values()].map((s: any) => d.ketQuaGanNhat(s).chinh);
+    assert(chinhPre.includes('64%') && chinhPre.includes('52%'), `H3 Pre FOU: ${chinhPre}`);
+    const chi = idHv('Đoàn Khánh Chi')!;
+    const rr = classesMod.classRoster(P.admin, LOP_FT).find((x: any) => x.id === chi);
+    assert(rr && rr.history.length >= 2 && rr.history.every((h: any) => h.lichSu), 'H4: MT1–MT3 phải là MT lịch sử có điểm');
+    eq(d.ketQuaGanNhat(standingMod.standingFor([chi]).get(chi)).dong1, 'Chưa có kết quả', 'H4: chưa có lượt thường có điểm');
+  });
+
+}

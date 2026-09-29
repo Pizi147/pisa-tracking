@@ -442,3 +442,17 @@ Dựng bằng hàm nghiệp vụ (`server/src/seed/xlmtSeed.ts`), sau ngày demo
 | X2 · huỷ phần còn lại | **Mạc Đức Long** (MB FT 102) | MT1 W S đã huỷ → chip gạch ngang `· đã huỷ`; chip **Cần xếp lại (n)** đếm em này |
 | X3 · MT lịch sử tuần đã qua | **Đoàn Khánh Chi** (MB FT 101) | MT1–MT3 `lịch sử` (đã nhập bù); chọn MT4 tuần 3 tuần trước cho cả 4 kỹ năng → `Tạo MT4 · … · MT lịch sử`; chỉ L tuần đã qua → chặn |
 | X4 · ⋯ ô lớp thường | **Âu Nhật Nam** (MB FOU 12) | Lưới chấm lớp thường: ô L dời sang tuần này vì Báo vắng; ⋯ ô → thao tác theo trạng thái + **Lịch sử** (ngăn Lịch sử một bài) |
+
+## 12. PR-HVL — Học viên & Lớp, Cần hỗ trợ theo kỹ năng, Phân tích lớp (chỉ máy dev, 30/09/2026)
+
+Dựng bằng hàm nghiệp vụ (`server/src/seed/hvlSeed.ts`), sau ngày demo. Tài khoản gợi ý: **Quản lý Nguyễn Khánh Vy** (thấy cả hai lớp) và **GVCN Trần Ngọc Hà** (MB FT 101). Phép kiểm `PR-HVL (10)` soi từng dòng ngay sau khi dựng.
+
+| Kịch bản | Học viên | Bạn sẽ thấy |
+|---|---|---|
+| H1 · hai Case cùng Reading | **Trịnh Bảo Ngọc** (MB FT 101) | Hồ sơ lớp › Học viên › **Cần hỗ trợ**: hàng R hai Case (SOS tự tạo `[MT1]` + Case GV tạo tay), hàng W một Case đang chờ Quản lý duyệt "không theo dõi"; Học viên & Lớp: em có chip **Cần làm** (Xác nhận nguyên nhân) và lớp có badge **chờ duyệt** cho Quản lý |
+| H2 · lớp FOU | **Hồ Diệu Linh** (MB FOU 12) | Cần hỗ trợ lớp FOU: hàng `G+V` và `P` mỗi hàng một Case, L R gộp `Không có Case: L · R` |
+| H2 · Cuối khoá | **Nguyễn Thảo Vy** (MB FOU 12) | Học viên & Lớp: cột Kết quả `58%`, dòng 1 `Cuối khoá`, không "SOS" |
+| H3 · Pre FOU | em ở **MB Pre FOU 03** (đã có từ PR-MON D12) | `64%` một dòng, không dòng 2; Cần hỗ trợ một hàng `Tổng hợp` |
+| H4 · MT lịch sử | **Đoàn Khánh Chi** (MB FT 101, đã có từ PR-XLMT X3) | Bảng điểm FT: MT1–MT3 nhãn `lịch sử`, ô điểm **xám**; cột Kết quả `Chưa có kết quả`; không ▾ đỏ |
+
+Hàng **"Chung"** (Case không gắn kỹ năng) không có ở bộ demo: mọi Case phải có kỹ năng khi tạo; hàng này chỉ xuất hiện với Case bàn giao / dữ liệu cũ — kiểm bằng phép kiểm thuần `hangCanHoTro`.

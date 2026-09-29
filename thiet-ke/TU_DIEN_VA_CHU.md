@@ -452,3 +452,19 @@ Một nguồn: `CHU_THAO_TAC` (`shared/domain/thaoTacMt.ts`). Menu hồ sơ Mock
 | Chip lưới | `· vắng` · `· chờ duyệt` · `· trễ` · `· đã huỷ` (tooltip câu đủ) | mã `absent`, `cancelled` |
 | Nút đầu Kế hoạch Test | `Xếp lịch MT…` (Fast Track) · `Xếp lịch Test…` (Lớp thường) | "Xếp lịch hàng loạt…" |
 | Lỗi lý do | `{Thao tác}: cần ghi lý do.` · `{Thao tác}: lý do cần ít nhất 5 ký tự.` | "Thiếu lý do" |
+
+## 16. PR-HVL — 30/09/2026 · Học viên & Lớp, Cần hỗ trợ, Phân tích lớp
+
+| Chỗ | Chữ | Không dùng |
+|---|---|---|
+| Chip lọc Học viên & Lớp | `Tất cả` · `Cần làm` · `Chờ duyệt` · `Đang SOS` (chỉ Fast Track) · `Thiếu thông tin`; tooltip `Có việc quá hạn hoặc việc hạn ngắn (xác nhận, xử lý vi phạm)` · `Có yêu cầu đang chờ Quản lý duyệt` | "Có Case đang xử lý", "Case thiếu PA học thuật", "Case quá hạn cập nhật" (ba chip Case đã gộp vào Cần làm) |
+| Công tắc khung Học viên & Lớp | `Tất cả · Fast Track · Lớp thường` | — |
+| Tiêu đề cột theo nhóm | FT `Mục tiêu` · lớp thường `Khoá` · cột mới `Sắp tới` (`MT4 · W3 NOV`, `Cuối khoá · W4 OCT`) | cột "Mục tiêu / Khoá" |
+| Cột Kết quả gần nhất | dòng 1 `MT3 · kỳ vọng 7.0 · 3/4 kỹ năng có điểm` · `Cuối khoá · 2/4 môn có điểm` · `Chưa có kết quả`; dòng 2 `Không đạt: L R W` · `Không đạt: L G+V`; độ lệch FT `−0.5` (tooltip `Dưới kỳ vọng 0.5`); lớp thường `3/4 môn đạt` · `58%` (Cuối khoá / Pre FOU), không "SOS" | "Thiếu 0.5", "chưa đạt W 12/20", dấu "…" cắt chữ |
+| Badge hộp lớp / đầu hồ sơ lớp | `{n} chờ duyệt` · `{n} HV quá hạn việc` · `{n} HV cần xếp lớp tiếp` · `{n} bài chờ chấm` · `Thiếu GV {môn}` · `Thiếu {n} thông tin`; "+n" là menu bấm được | "n Case mở", "n HV chờ xếp lớp", "n HV chưa có lộ trình tiếp theo" (đã gộp) |
+| Cột Việc tiếp theo | `Xác nhận nguyên nhân L` · `Xác nhận PA L` · `Ghi kết quả PA L` · `Ghi kết quả cuối W1` · `Chờ Quản lý duyệt L` · `Xử lý vi phạm` · `Nhập điểm L, R · Cuối khoá`; hạn `hết T2 21/09` / `⚠ quá hạn 3 ngày`; hàng đầu lớp `Cả lớp: Nhập điểm L, R · Cuối khoá · 8 em →` | tên PA dài trong dòng việc; giữ "Đề ra PA" (đổi toàn web ở PR-S3) |
+| Cần hỗ trợ | đầu bảng `7 em · 11 Case · 3 chờ Quản lý duyệt · 1 quá hạn` (bỏ vế 0); công tắc `Chỉ kỹ năng tôi dạy`; cột `Kỹ năng · Case · Phương án đang làm · Việc tiếp · hạn`; hàng rỗng `—`, nhiều hàng rỗng liền nhau `Không có Case: R · W`; Case bàn giao `từ MB FOU 12`; `+n Case` | "Chưa có PA học thuật", "Đang theo dõi" kiểu khung |
+| Phân tích lớp mở một kỹ năng | `Vấn đề ở {kỹ năng}` (`HV gặp vấn đề · Case · Đang theo dõi · Đã có PA · Đã xong → Thành công`) · `Hiệu quả phương án ở {kỹ năng}` (`Loại PA · Đang thực hiện · Đã thực hiện · Thành công · Tỷ lệ`); dòng đầu lớp thường `Cả bài` (tooltip `Cả bài — đạt khi % tổng ≥ 70%`); chú thích `Một Case chỉ đếm một lần. Mọi số bấm được ra danh sách đúng số đó.` | cột "Không thành công" |
+| Đầu hồ sơ lớp | một nút chính theo chặng: `+ Học viên` (lớp rỗng) · `Chuyển tiếp lớp · 6 em` (lớp thường cuối khoá) · `Nhập điểm Test`; dòng chặng `Cuối khoá: 6/8 em có đủ điểm`; ⋮ `Tuần khai giảng` (FT) / `Lịch kiểm tra` (lớp thường) | "Lộ trình lớp" (tên panel), "Mở từng em rồi bấm Chuyển lớp…" |
+| Panel Tuần khai giảng (FT) | `Tuần khai giảng là tuần bắt đầu mặc định khi thêm học viên. Lịch MT của từng em tính từ tuần bắt đầu của em (FT: tuần 6 · 12 · 16; RF: 4 · 8) — xem ở Test › Kế hoạch Test.` · `8 em · 6 em có MT sắp tới · 2 em đã xong MT cuối` · `Đổi tuần khai giảng không dời lịch MT của em đã có.` | "Kế hoạch học" |
+| Bảng điểm FT / Lộ trình tiếp theo / Chuyển tiếp lớp | nhãn mốc `lịch sử` (ô điểm xám); khối `Kết quả gần nhất`; câu `Chỉ là dự định, chưa đổi lớp…` hiện thẳng dưới `Hướng đi` | nút "Gọn / Đầy đủ" |
