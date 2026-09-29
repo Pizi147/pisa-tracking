@@ -609,6 +609,12 @@ bấm K1, K2, K5, K8. 3. Migrate **DB CHÍNH** (`PISA_CHO_PHEP_MIGRATE_TURSO=<t�
   PR-F ở khối 12 (mặc định đã về như cũ). Kết quả: `IntakeResult.mt = { soEm, soLuotLichSu, soEmCoLichSu, luotLichSuDau }` — nút
   "Nhập điểm MT lịch sử" mở thẳng `/mock-test/{lượt lịch sử đầu}` (đường nhập điểm của lượt, tốt hơn hồ sơ HV). Câu "MT2, MT3 sẽ
   dời sang …" đặt ở dòng phụ ngay dưới ô Tuần bắt đầu (không phải chân panel — `KhungPanel` không có khe `luat`; câu nằm cạnh ô gây ra nó).
+- (Task 9) impeccable `audit`: detector 0 phát hiện; bằng mắt: tiêu đề "Đã thi tới MT" bị cắt, ô tuần trong lưới hẹp trên điện
+  thoại, 3 nút chữ < 44 px ở 375 px → `polish` sửa cả ba. Bấm thử K1–K12 + M6 (Playwright kênh Chrome, API 4177 / Vite 5377): đạt
+  hết; hàng lưới cùng 49 px; 375 px không tràn trang, không nút < 44 px. M6 kiểm thêm ở máy chủ: đổi tuần bắt đầu 14/09 → MT1–MT3 dời
+  đúng W4 OCT · W1 DEC · W5 DEC như câu báo trước. K9: hồ sơ HV không hiện ngày thi ở đầu trang (từ trước PR) — nhãn `15/01/2027`
+  hiện ở Thông tin HV / Lộ trình. `/ponytail-review`: không có gì đáng cắt (≈ −6 dòng), không có chú thích `ponytail:`.
+  Ảnh `thiet-ke/anh/pr-nhap/` (01 trước chụp từ `origin/main` 4e0485a cùng cổng).
 
 ## Chủ sản phẩm chốt 29/09
 
