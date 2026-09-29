@@ -57,7 +57,7 @@ export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempt
     case 'xoa-hoc-vien': return <XoaHocVienPanel studentId={student.id} studentName={student.name} lop={lop} onClose={onClose} />;
     case 'de-xuat-sua': return (
       <DeXuatSuaPanel studentId={student.id} studentName={student.name} lop={lop} onClose={onClose}
-        hienTai={{ target: cycle?.target ?? null, route: cycle?.route ?? null }} />
+        hienTai={{ target: cycle?.target ?? null, khongCamKet: !!cycle?.khongCamKet, route: cycle?.route ?? null }} />
     );
     default: return null;
   }

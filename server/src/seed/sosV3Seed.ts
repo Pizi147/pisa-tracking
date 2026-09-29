@@ -109,3 +109,30 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
     coordination: n(`SELECT COUNT(*) n FROM sos_coordination_actions WHERE student_id IN (${inIds})`, ...ids),
   };
 }
+
+/**
+ * BỘ DEMO PR-KCK (Q29-1): hai em Target KCK ở MB FT 101 — vẫn có lịch MT và nhập điểm, nhưng không kỳ vọng, không SOS, không việc
+ * "Điền target". Qua chính `commitIntake` (ô Target gõ `KCK` / `-`) và `saveScore`, như bộ SOS v3 ở trên.
+ *   Hồ Gia Hân   Target KCK · MT1 L R S 5.0 (dưới mọi band FT) → KHÔNG Case, KHÔNG PA quy chế, KHÔNG Phối hợp
+ *   Lê Minh Đức  Target "-"  · chưa có điểm
+ */
+export function buildKckDemo(ctx: BuildCtx): number {
+  const { conn } = ctx;
+  const classId = ctx.classId.get('MB FT 101');
+  if (!classId) return 0;
+  const admin = loadPrincipal(ctx.adminId);
+  const tuanThi = mondayOf(addDays(DEMO_DATE, -7 * 2));
+  const startWeek = addDays(tuanThi, -7 * (tuanHocCuaMt('LT1', 1) - 1));
+  for (const [fullName, target] of [['Hồ Gia Hân', 'KCK'], ['Lê Minh Đức', '-']]) {
+    commitIntake(admin, { classId, rows: [{ fullName, target, startWeek, email: 'hv@demo.test' }], idempotencyKey: `kck-demo-${fullName}` } as any);
+  }
+  /* MT1 của cả hai là lượt thường (lên lịch từ đầu khoá), như bộ SOS v3. */
+  conn.prepare(`UPDATE assessment_attempts SET lich_su = 0 WHERE attempt_no = 1 AND student_id IN
+                  (SELECT id FROM students WHERE full_name IN ('Hồ Gia Hân', 'Lê Minh Đức'))`).run();
+  const han = conn.prepare(`SELECT a.* FROM assessment_attempts a JOIN students s ON s.id = a.student_id
+                             WHERE s.full_name = 'Hồ Gia Hân' AND a.attempt_no = 1`).get() as any;
+  saveScore(admin, han.id, 'listening', { rawScore: LISTENING_BY_RAW.indexOf(5) });
+  saveScore(admin, han.id, 'reading', { rawScore: READING_BY_RAW.indexOf(5) });
+  saveScore(admin, han.id, 'speaking', { criteria: [5, 5, 5, 5] });
+  return 2;
+}

@@ -104,7 +104,7 @@ export function danhSachHocVienLop(
    */
   const hv = conn.prepare(
     `SELECT e.class_id, s.id, s.full_name, s.normalized_name, s.student_code, s.dob, s.status,
-            cy.id AS cycle_id, cy.start_period_id, cy.exam_month, cy.target_score, cy.baseline_attempt_id, cy.baseline_score,
+            cy.id AS cycle_id, cy.start_period_id, cy.exam_month, cy.target_score, cy.khong_cam_ket, cy.baseline_attempt_id, cy.baseline_score,
             cy.route, cy.exam_period_id,
             (SELECT COUNT(*) FROM assessment_attempts a WHERE a.cycle_id = cy.id AND a.status = 'planned') AS so_luot_ke_hoach,
             /* K2-05: FT đếm theo luật mốc kế tiếp (lichMt.ts) — MT lịch sử / tuần đã qua không phải "mốc tiếp theo". */
@@ -207,7 +207,7 @@ export function danhSachHocVienLop(
     if (c?.overdue) loc.push('case_overdue');
     const thieu = missingForStudent({
       cycle: h.cycle_id
-        ? { start_period_id: h.start_period_id, exam_month: h.exam_month, target_score: h.target_score,
+        ? { start_period_id: h.start_period_id, exam_month: h.exam_month, target_score: h.target_score, khong_cam_ket: h.khong_cam_ket,
             baseline: h.baseline_attempt_id !== null || h.baseline_score !== null }
         : null,
       student: { dob: h.dob },

@@ -545,7 +545,7 @@ function ownersByClass(classIds: number[]): Map<number, Record<string, string>> 
 
 const ATTEMPT_SELECT = `
   SELECT a.*, s.full_name, s.student_code,
-         cy.route, cy.target_score, cy.exam_month, cy.exam_period_id, cy.exam_date, cy.seq AS cycle_seq,
+         cy.route, cy.target_score, cy.khong_cam_ket, cy.exam_month, cy.exam_period_id, cy.exam_date, cy.seq AS cycle_seq,
          c.code AS class_code, c.programme_code, c.branch_id, b.name AS branch_name, b.code AS branch_code,
          pr.code AS period_code, pr.week_start AS period_start, pr.week_end AS period_end
     FROM assessment_attempts a
@@ -912,7 +912,7 @@ export function attemptDetail(p: Principal, attemptId: number) {
     /** Loại bài. Màn này CHỈ dựng cho `mock`; loại khác phải chuyển sang màn của lớp Normal. */
     kind: a.kind,
     student: { id: a.student_id, name: a.full_name, code: a.student_code },
-    cycle: { id: a.cycle_id, seq: a.cycle_seq, route: a.route, target: a.target_score, examPlan: examPlanOf(a) },
+    cycle: { id: a.cycle_id, seq: a.cycle_seq, route: a.route, target: a.target_score, khongCamKet: !!a.khong_cam_ket, examPlan: examPlanOf(a) },
     classId: a.class_id, classCode: a.class_code, branchId: a.branch_id, branchName: a.branch_name,
     attemptNo: a.attempt_no,
     targetAtAttempt: a.target_at_attempt,

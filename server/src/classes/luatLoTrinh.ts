@@ -250,10 +250,11 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
     const startPeriodId = denLop.ft ? ensurePeriod(mondayOf(d.ngay)).id : (toClass.start_period_id ?? null);
     const moiId = Number(conn
       .prepare(
-        `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, exam_month, start_period_id, started_at, status, created_at)
-         VALUES (?,?,?,?,?,?,?,?, 'active', ?)`,
+        `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, khong_cam_ket, exam_month, start_period_id, started_at, status, created_at)
+         VALUES (?,?,?,?,?,?,?,?,?, 'active', ?)`,
       )
       .run(d.sid, seq, route, denLop.ma, mucTieu ?? (tuLop.ft && denLop.ft ? curCycle?.target_score ?? null : null),   // Q7: FT → FT giữ target cũ
+        mucTieu == null && tuLop.ft && denLop.ft && curCycle?.khong_cam_ket ? 1 : 0,   // … kể cả KCK (Q29-1)
         d.thangThi ?? null, startPeriodId, d.ngay, nowIso()).lastInsertRowid);
     if (denLop.ft) {
       taoMtMacDinh(moiId, { actorUserId: p.userId });   // M1: vào lớp FT / đổi LT ↔ RF = lộ trình mới có lịch MT mặc định

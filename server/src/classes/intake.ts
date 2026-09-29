@@ -2,7 +2,7 @@ import { chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
   CHO_TAO_PRE_FOU, ENTRY_SKILLS, MOCK_FT_STUDY_WEEK, PERMISSIONS, PROGRAMME_TEMPLATES, chuanHoaMaLop, ghepMaLop, khoaMaLopSql, kiemSoLop,
   moRongPhanCong, programmeOf, type Route, type SlotPhanCong,
-  NGAY_SINH_TOI_THIEU, canNamGan, docEmail, docNgayNhap, laLichSu, nhanCotNhap, lichMtMacDinh, nhanDangCot, tuanBatDauMacDinh, tuanHocCuaMt, tuanLich, type VanDeNhap,
+  KCK, NGAY_SINH_TOI_THIEU, canNamGan, laKck, docEmail, docNgayNhap, laLichSu, nhanCotNhap, lichMtMacDinh, nhanDangCot, tuanBatDauMacDinh, tuanHocCuaMt, tuanLich, type VanDeNhap,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { docSlots, ghiPhanCong, kiemTruocPhanCong } from './classes.ts';
@@ -149,6 +149,7 @@ export function parsePaste(text: string): { rows: IntakeRow[]; cotBoQua: string[
     cot.forEach((k, i) => { const v = cells[i]; if (k && v !== undefined && v !== '') (row as any)[k] = v; });
     /* Ô tuần của lưới là ô ngày thống nhất (giá trị ISO) — đổi sẵn chữ dán đọc được; đọc không được thì giữ chữ để xem trước báo lỗi. */
     if (row.startWeek) { const w = docNgayNhap(row.startWeek, homNay); if (w.iso) row.startWeek = mondayOf(w.iso); }
+    if (laKck(row.target)) row.target = KCK;    // Q29-1: '-' / "không cam kết" hiện thống nhất là KCK trên lưới
     if (Object.keys(row).length) rows.push(row);
   }
   return { rows, cotBoQua: boQua };
@@ -256,12 +257,13 @@ export function previewIntake(
       else band[key] = v;
     }
 
-    let target: number | null = null;
-    if (ratio) { if (coDuLieu(r.target)) luuY('target', 'Bỏ qua — lớp thường không có target'); }
+    let target: number | typeof KCK | null = null;
+    if (ratio) { if (coDuLieu(r.target) || laKck(r.target)) luuY('target', 'Bỏ qua — lớp thường không có target'); }
+    else if (laKck(r.target)) target = KCK;          // Q29-1: KCK / '-' = không cam kết (khác ô trống = chưa có)
     else {
       const t = bandOf(r.target);
       if (t === 'invalid') loi('target', 'Gõ band 0–9, bước 0,5 — ví dụ 6.5');
-      else if (t === null) luuY('target', 'Chưa có — vẫn thêm được, bổ sung sau để tính kỳ vọng');
+      else if (t === null) luuY('target', 'Chưa có — vẫn thêm được, bổ sung sau để tính kỳ vọng. Em không cam kết đầu ra thì gõ KCK');
       else target = t;
     }
 
@@ -470,7 +472,7 @@ export function commitIntake(
       const examDateOf = (r: (typeof ok)[number]) => (r.examDate?.length === 10 ? r.examDate : null);
       const tuan = ensurePeriods([...ok.map(startWeek), ...ok.map(examDateOf).filter((x): x is string => !!x).map(mondayOf)]);
       chenNhieuDong(
-        `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, exam_month, exam_date, exam_period_id,
+        `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, khong_cam_ket, exam_month, exam_date, exam_period_id,
                                       baseline_score, baseline_source,
                                       baseline_listening, baseline_reading, baseline_writing, baseline_speaking,
                                       start_period_id, started_at, status, created_at)`,
@@ -481,7 +483,8 @@ export function commitIntake(
           const thi = r.examDate ?? null;
           const examDate = examDateOf(r);
           /* TUẦN BẮT ĐẦU HỌC lấy từ ô của dòng, hoặc mặc định của cả lô (mục 12.1). */
-          return [sids[i], 1, route, cls.programme_code ?? null, r.target ?? null, thi ? thi.slice(0, 7) : null,
+          return [sids[i], 1, route, cls.programme_code ?? null, r.target === KCK ? null : r.target ?? null, r.target === KCK ? 1 : 0,
+            thi ? thi.slice(0, 7) : null,
             examDate, examDate ? tuan.get(mondayOf(examDate))!.id : null,
             ovr, hasEntry ? 'entrance' : null, ...bands,
             tuan.get(startWeek(r))!.id, startWeek(r), 'active', now];

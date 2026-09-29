@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { DauDuoi } from '../../ui/Nhan.tsx';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { BoLocDoan, Empty, ExamPlanText, Level, Outcome, Skeleton, Status, Task, Th } from '../../ui/ui.tsx';
+import { BoLocDoan, Empty, ExamPlanText, Level, Outcome, Skeleton, Status, TargetText, Task, Th } from '../../ui/ui.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
 import { CanhBaoYThuc } from '../classes/CanhBaoYThuc.tsx';
@@ -42,7 +42,7 @@ type RosterRow = {
   /** "Kết thúc vì" (Q18/Q22) — chỉ có ở bảng lớp ĐÃ KẾT THÚC, thay cho nhãn chung "Đã kết thúc". */
   ketThucVi?: string | null;
   skills: string[] | null;
-  cycle: { id: number; seq: number; route: string | null; target: number | null } | null;
+  cycle: { id: number; seq: number; route: string | null; target: number | null; khongCamKet?: boolean } | null;
   standingLine: string | null;
   sosLevel: number | null; provisional: boolean;
   openCases: number; handoverCases: number; examPlan: ExamPlan;
@@ -162,7 +162,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents }: {
                     <span className="block mt-1"><KetLuan row={s} /></span>
                   </td>
 
-                  <td className="td text-right tabular-nums whitespace-nowrap">{fmtBand(s.cycle?.target ?? null)}</td>
+                  <td className="td text-right tabular-nums whitespace-nowrap"><TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /></td>
                   <td className="td whitespace-nowrap text-xs"><ExamPlanText plan={s.examPlan} /></td>
 
                   {/* ─── các cột điểm: mỗi mốc một hàng con, thẳng cột với nhau ─── */}

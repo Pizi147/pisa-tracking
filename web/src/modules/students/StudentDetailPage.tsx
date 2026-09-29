@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { BoLocDoan, Card, DaiChiXem, Empty, ErrorState, Info, Level, Outcome, Skeleton, Status, Th} from '../../ui/ui.tsx';
+import { BoLocDoan, Card, DaiChiXem, Empty, ErrorState, Info, Level, Outcome, Skeleton, Status, TargetText, Th} from '../../ui/ui.tsx';
 import { Modal } from '../../ui/Drawer.tsx';
 import { api, invalidate } from '../../lib/api.ts';
 import { cuonOnDinh } from '../../lib/cuonOnDinh.ts';
@@ -218,7 +218,7 @@ export default function StudentDetailPage() {
                     ? <>{data.currentClass.code} · {data.currentClass.programme ?? data.currentClass.branchName}
                         {data.currentClass.coreTeacher && <> · GVCN {data.currentClass.coreTeacher}</>}</>
                     : 'Chưa xếp lớp'}
-                {cy && !cy.ratio && cy.target !== null && <> · mục tiêu {fmtBand(cy.target)}</>}
+                {cy && !cy.ratio && (cy.target !== null || cy.khongCamKet) && <> · mục tiêu <TargetText band={cy.target} kck={cy.khongCamKet} /></>}
               </p>
             </div>
 
@@ -317,7 +317,7 @@ export default function StudentDetailPage() {
               {cy.targetRevisions.length > 0 && (
                 <p className="text-xs text-slate-500 mt-2 mb-0">
                   Mục tiêu đã đổi {cy.targetRevisions.length} lần — lần gần nhất {ngay(cy.targetRevisions[0].effectiveFrom, homNay)}:
-                  {' '}{fmtBand(cy.targetRevisions[0].oldTarget)} → {fmtBand(cy.targetRevisions[0].newTarget)}
+                  {' '}<TargetText band={cy.targetRevisions[0].oldTarget} kck={cy.targetRevisions[0].oldKck} /> → <TargetText band={cy.targetRevisions[0].newTarget} kck={cy.targetRevisions[0].newKck} />
                   {cy.targetRevisions[0].reason && ` (${cy.targetRevisions[0].reason})`}.
                   {' '}Các lượt đã chốt vẫn giữ kỳ vọng tính theo mục tiêu lúc đó.
                 </p>

@@ -177,7 +177,7 @@ export type CotTongHop = {
 const COT_LUOT: CotTongHop = {
   khoa: 'luot', nhom: 'ket-qua', donVi: 'dot-test',
   nhan: (ct) => (ct === 'ft' ? 'Lượt MT' : ct === 'thuong' ? 'Bài kiểm tra' : 'Lượt'),
-  goiY: 'Số lượt đã chấm ít nhất một kỹ năng trong khoảng đang xem. Sáu cột Kết quả cộng lại đúng bằng cột này.',
+  goiY: 'Số lượt đã chấm ít nhất một kỹ năng trong khoảng đang xem. Sáu cột Kết quả cộng lại đúng bằng cột này. Không tính học viên KCK (không cam kết đầu ra).',
 };
 const COT_KET_QUA: CotTongHop[] = [
   { khoa: 'dat', nhom: 'ket-qua', donVi: 'dot-test', nhan: () => 'Đạt', goiY: 'Đủ điểm mọi kỹ năng, không kỹ năng nào dưới kỳ vọng.' },

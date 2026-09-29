@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { Empty, Level, Skeleton } from '../../ui/ui.tsx';
+import { Empty, Level, Skeleton, TargetText } from '../../ui/ui.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { DanhSachViecTiep } from '../../ui/ViecTiep.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
@@ -20,7 +20,7 @@ import {
 /** Các trường của một dòng `GET /classes/:id/roster` mà bảng này đọc. */
 export type DongRoster = {
   id: number; studentCode: string; fullName: string; status: string; archived: boolean;
-  cycle: { target: number | null } | null;
+  cycle: { target: number | null; khongCamKet?: boolean } | null;
   standing: KetQuaVao | null;
   openCases: number; handoverCases: number;
   missing: { key: string; label: string; who: string }[];
@@ -118,7 +118,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot }: {
                   <span className="block whitespace-nowrap tabular-nums text-slate-200">{khoa?.chinh}</span>
                   {khoa?.phu && <span className="block truncate text-[11px] text-slate-500">{khoa.phu}</span>}
                 </>
-              ) : <span className="tabular-nums text-slate-200">{fmtBand(s.cycle?.target ?? null)}</span>}
+              ) : <span className="tabular-nums text-slate-200"><TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /></span>}
             </td>
             <td className="td text-right tabular-nums"
               title={s.handoverCases ? `${s.handoverCases} Case bàn giao từ lớp trước` : undefined}>
