@@ -136,21 +136,31 @@ function turnsOf(p: Principal, rows: any[]): CoordinationTurn[] {
   const byAttempt = new Map<number, any[]>();
   for (const r of rows) byAttempt.set(r.attempt_id, [...(byAttempt.get(r.attempt_id) ?? []), r]);
   const out: CoordinationTurn[] = [];
+  /* PR-SOS: đọc theo TẬP (lượt, kỹ năng tín hiệu, điểm) — trước đây mỗi lượt 2 câu + `resultOf` tự hỏi điểm (N+1 theo số SOS Event). */
+  const ids = [...byAttempt.keys()];
+  const luot = new Map<number, any>();
+  const kyNang = new Map<number, string[]>();
+  for (let i = 0; i < ids.length; i += 400) {
+    const lo = ids.slice(i, i + 400); const q = lo.map(() => '?').join(',');
+    for (const a of conn.prepare(`SELECT a.*, s.full_name, s.student_code, c.code AS class_code, c.programme_code,
+        (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route FROM assessment_attempts a
+        JOIN students s ON s.id = a.student_id LEFT JOIN classes c ON c.id = a.class_id WHERE a.id IN (${q})`).all(...lo) as any[]) luot.set(a.id, a);
+    for (const r of conn.prepare(`SELECT attempt_id, skill FROM case_signals WHERE attempt_id IN (${q}) AND status != 'withdrawn' AND skill IS NOT NULL
+        ORDER BY id`).all(...lo) as any[]) {
+      const ds = kyNang.get(r.attempt_id) ?? [];
+      if (!ds.includes(r.skill)) ds.push(r.skill);
+      kyNang.set(r.attempt_id, ds);
+    }
+  }
+  const bundle = loadBundle(ids);
   for (const [attemptId, list] of byAttempt) {
-    const a = conn
-      .prepare(
-        `SELECT a.*, s.full_name, s.student_code, c.code AS class_code, c.programme_code FROM assessment_attempts a
-           JOIN students s ON s.id = a.student_id LEFT JOIN classes c ON c.id = a.class_id WHERE a.id = ?`,
-      )
-      .get(attemptId) as any;
+    const a = luot.get(attemptId);
     if (!a || a.status === 'cancelled') continue;     // lượt đã huỷ không còn là SOS Event (khớp với chỉ số)
-    const skills = (conn
-      .prepare(`SELECT DISTINCT skill FROM case_signals WHERE attempt_id = ? AND status != 'withdrawn' AND skill IS NOT NULL ORDER BY id`)
-      .all(attemptId) as any[]).map((r) => r.skill as string);
+    const skills = kyNang.get(attemptId) ?? [];
     out.push({
       attemptId, attemptNo: a.attempt_no, studentId: a.student_id, studentName: a.full_name, studentCode: a.student_code,
       classId: a.class_id ?? null, classCode: a.class_code ?? null,
-      sosLevel: resultOf(a).sosLevel,
+      sosLevel: resultOf(a, bundle.scores.get(a.id) ?? [], bundle.skips.get(a.id) ?? []).sosLevel,
       skills, skillLabels: skills.map((s) => tenMon(a.programme_code, s)),
       summary: coordinationSummary(list.map((r) => r.status)),
       actions: list.map((r) => shapeAction(r, attachments)),

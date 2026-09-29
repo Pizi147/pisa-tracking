@@ -530,4 +530,26 @@ export async function runPrSosTests(t: YThucTestKit) {
     assert(plan?.lastOutcome === 'partial', `bảng kỹ năng: ${JSON.stringify(plan?.lastOutcome)}`);
     assert(cases.caseTopicsOf(P.admin, st.id).choNguyenNhan && typeof cases.caseTopicsOf(P.admin, st.id).choNguyenNhan === 'object', 'case-topics thiếu choNguyenNhan');
   });
+
+  // ------------------------------------------------------------------ Task 11 · demo D7, D8 (soi bộ demo đã dựng)
+  check('SOS (11) · D7: Case SOS ở MB FT 101 đủ trạng thái v4; D8: PA hạn hết T2 đúng ngày demo, PA quá hạn 2 ngày, PA ở tuần mốc; không còn Case đóng kiểu cũ', () => {
+    const caseCua = (ten: string, kn: string) => get(`SELECT sc.* FROM sos_cases sc JOIN students s ON s.id = sc.student_id
+      WHERE s.full_name = ? AND sc.category = ? ORDER BY sc.id DESC LIMIT 1`, ten, kn);
+    const k = (ten: string, kn: string) => (cases.caseDetail(P.admin, caseCua(ten, kn).id) as any).trangThaiV4.k as string;
+    const ds = all(`SELECT sc.id FROM sos_cases sc JOIN students s ON s.id = sc.student_id WHERE sc.origin_kind = 'mock'
+      AND s.full_name IN ('Đỗ Minh Khôi', 'Vũ Ngọc Lan', 'Bùi Thảo Vy', 'Trịnh Gia Bảo', 'Lý Minh Châu', 'Hoàng Bảo Ngọc')`)
+      .map((r: any) => (cases.caseDetail(P.admin, r.id) as any).trangThaiV4.k as string);
+    for (const tt of ['cho-nguyen-nhan', 'cho-duyet-khong-theo-doi', 'huy-khong-theo-doi', 'dang-lam', 'cho-xac-nhan-pa']) assert(ds.includes(tt), `thiếu ${tt}: ${ds.join()}`);
+    assert(k('Vũ Ngọc Lan', 'reading') === 'cho-duyet-khong-theo-doi' && k('Vũ Ngọc Lan', 'speaking') === 'huy-khong-theo-doi', 'Lan R/S');
+    assert(k('Bùi Thảo Vy', 'speaking') === 'cho-xac-nhan-pa' && k('Đỗ Minh Khôi', 'speaking') === 'dang-lam', 'Vy / Khôi Speaking');
+    const bao = caseCua('Trịnh Gia Bảo', 'listening');
+    assert(k('Trịnh Gia Bảo', 'listening') === 'cho-nguyen-nhan' && bao.han_xac_nhan === d.hanXacNhan(TODAY)
+      && get(`SELECT 1 x FROM case_milestones WHERE case_id = ? AND kind = 'ql_tu_choi_khong_theo_doi'`, bao.id), 'Bảo: Quản lý từ chối, hạn mới');
+    const paCua = (ten: string, kn: string) => get(`SELECT * FROM case_interventions WHERE case_id = ? AND preset = 1 AND status = 'started'`, caseCua(ten, kn).id);
+    assert(paCua('Đỗ Minh Khôi', 'speaking').action_due === TODAY, 'D8: hạn hết T2 đúng ngày demo');
+    assert(paCua('Lý Minh Châu', 'reading').action_due === addDays(TODAY, -2), 'D8: quá hạn 2 ngày');
+    const ngoc = paCua('Hoàng Bảo Ngọc', 'listening');
+    assert(d.laLanGhiCuoi({ preset: true, followupDue: ngoc.followup_due, actionDue: ngoc.action_due }, TODAY), `D8: tuần mốc ${JSON.stringify(ngoc)}`);
+    assert(!get(`SELECT 1 x FROM case_interventions WHERE closed_reason = 'dismissed'`), 'còn PA huỷ kiểu cũ "GVBM tự đóng"');
+  });
 }

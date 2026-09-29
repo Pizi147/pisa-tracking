@@ -274,7 +274,7 @@ export const TRAN: Record<string, number> = {
   'QT /yeu-cau?hop=cho-duyet': 28,
   'GVCN /yeu-cau?hop=cho-duyet': 17,
   'QL /yeu-cau?hop=cho-duyet&xem=da-xu-ly': 32,   // PR-SOS: loại thẻ khong_theo_doi thêm một câu nạp (21 → đo 22)
-  'QT /yeu-cau?hop=cho-duyet&xem=da-xu-ly': 21,
+  'QT /yeu-cau?hop=cho-duyet&xem=da-xu-ly': 32,   // PR-SOS: loại thẻ khong_theo_doi thêm một câu nạp (21 → đo 22)
   'GVCN /yeu-cau?hop=cua-toi': 25,
   'GVBM /yeu-cau?hop=cua-toi': 21,
   'QL /yeu-cau/dem': 25,

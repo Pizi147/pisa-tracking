@@ -145,7 +145,7 @@ thêm sẵn tên (Q16) để các PR sau gắn luật. Ngoài bảng còn `viec-
 
 | `loai` | Nhãn hiển thị | Luật | Nguồn |
 |---|---|---|---|
-| `xac-minh-sos` | `Xác nhận nguyên nhân · hạn {ngày}` | 3 ngày tính cả ngày đầu | RB 3.4 |
+| `xac-minh-sos` | `Xác nhận nguyên nhân / Xác nhận PA · hạn {ngày}` | 3 ngày tính cả ngày đầu (`sos_cases.han_xac_nhan`) | RB 3.4 · PR-SOS |
 | `lap-pa` | `Cần có phương án · hạn {ngày}` | 5 ngày Cần chú ý / 3 ngày Gấp | RB 4.2 |
 | `cap-nhat-pa` | `Ghi kết quả tuần W4 SEP · hạn hết T2 28/09` | Hằng tuần, hết **Thứ Hai** tuần sau | §5.6 R-PA1 (PR-N1) |
 | `thuc-hien-y-thuc` | `Thực hiện xong · hạn {ngày}` | 3 ngày Gấp / 5 ngày Cần chú ý | RB 6.2 |
@@ -156,9 +156,7 @@ thêm sẵn tên (Q16) để các PR sau gắn luật. Ngoài bảng còn `viec-
 | `ke-hoach-bo-tro` | `Nộp kế hoạch bổ trợ · hạn {ngày}` | chưa gắn — PR sau | K1-56 (PR-NEN Q16) |
 | `mini-test` | `Mini Test · hạn {ngày}` | chưa gắn — PR sau | T66 (PR-NEN Q16) |
 
-Thêm một giá trị **không phải hạn**: `du-kien-ket-thuc` → `Dự kiến kết thúc {ngày}`, luôn tone
-trung tính, **không bao giờ đỏ**, không bao giờ ghi "quá hạn". Đây là chỗ F11 sai: dự kiến kết
-thúc của PA bị trình bày như hạn phải làm.
+PR-SOS (Q28-4): **bỏ** `du-kien-ket-thuc` khỏi giao diện — PA thường không còn ngày dự kiến kết thúc; PA theo quy chế nói **mốc** bằng chữ (`đến MT2 · W2 OCT`), không qua `<Han>`. Khoá còn trong `DEADLINE_KINDS` để phép kiểm F11 cũ vẫn chạy, không nơi nào dùng.
 
 Quy tắc hiển thị:
 

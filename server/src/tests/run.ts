@@ -2883,7 +2883,9 @@ check('Vấn đề sinh từ điểm có dòng mô tả suy ra từ dữ liệu,
   const stored = conn
     .prepare(
       `SELECT COUNT(*) n FROM sos_cases
-        WHERE origin_kind = 'mock' AND summary IS NOT NULL AND reported_by IS NULL`,
+        WHERE origin_kind = 'mock' AND summary IS NOT NULL AND reported_by IS NULL
+          /* PR-SOS: mô tả ghi lúc Xác nhận Case có người đứng tên ở mốc xac_nhan_case. */
+          AND NOT EXISTS (SELECT 1 FROM case_milestones m WHERE m.case_id = sos_cases.id AND m.kind = 'xac_nhan_case' AND m.created_by IS NOT NULL)`,
     )
     .get() as any;
   assert(stored.n === 0, `${stored.n} vấn đề sinh từ điểm đã bị ghi tóm tắt giả vào database`);
