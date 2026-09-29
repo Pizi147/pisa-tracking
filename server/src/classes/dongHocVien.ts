@@ -20,6 +20,8 @@ export function canhBaoTheoHocVien(p: Principal, classId: number): Map<number, N
   const out = new Map<number, NhanYThucEm>();
   if (!can(p, PERMISSIONS.STUDENT_VIEW, { classId })) return out;
   for (const [id, em] of trangThaiYThuc(emCuaLop(classId))) {
+    /* PR-S3F #12: em Tạm dừng không tính (T65) — cùng tập với chỉ số `hv-can-xu-ly` (ghi danh `active`), nên huy hiệu lớp và chỉ số không lệch. */
+    if (em.tamDung) continue;
     const n = nhanNhomEm(em);
     if (n) out.set(id, n);
   }

@@ -144,7 +144,9 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
            FROM discipline_measures m JOIN students s ON s.id = m.student_id WHERE m.id IN (${ph})`,
       ).all(...chunk) as any[]) {
         const name = nhanLoaiXuLy(r.kind, r.custom_name);
-        const state = r.status === 'done' ? `đã thực hiện ${String(r.performed_on ?? '').slice(8, 10)}/${String(r.performed_on ?? '').slice(5, 7)}` : 'đang chuẩn bị';
+        /* PR-S3F #12: nói đúng trạng thái thật — không còn "đang chuẩn bị" chung cho cả đề xuất chờ duyệt lẫn đã duyệt. */
+        const state = r.status === 'done' ? `đã thực hiện ${String(r.performed_on ?? '').slice(8, 10)}/${String(r.performed_on ?? '').slice(5, 7)}`
+          : r.status === 'cho_duyet' ? 'Chờ Quản lý duyệt' : r.status === 'da_duyet' ? 'Đã duyệt · chờ thực hiện' : 'nháp';
         byId.set(r.id, { id: r.id, title: name, sub: [r.full_name, r.student_code, state].filter(Boolean).join(' · '), href: `/hoc-vien/${r.student_id}` });
       }
     } else if (unit === 'luot-sos') {

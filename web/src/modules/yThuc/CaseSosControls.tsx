@@ -157,7 +157,8 @@ export function XacNhanPaPanel({ pa, studentId, onXong, ...chung }: ChungPanel &
 }) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
-  const [moTa, setMoTa] = useState(pa.description ?? '');
+  /* PR-S3F #9 (Q28-5): KHÔNG điền sẵn mô tả máy gán ("Tutor · đến lúc thi") — người xác nhận tự viết đủ ≥ 15 ký tự; gợi ý mờ ở placeholder (Q28-1). */
+  const [moTa, setMoTa] = useState('');
   const [nguoi, setNguoi] = useState<NguoiChon | null>(
     pa.performerUserId ? { kieu: 'tai_khoan', id: pa.performerUserId, ten: pa.performer ?? '' } : pa.performer ? { kieu: 'ngoai', ten: pa.performer } : { kieu: 'toi' },
   );

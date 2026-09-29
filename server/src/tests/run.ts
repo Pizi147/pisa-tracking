@@ -145,6 +145,15 @@ async function assertRejects(fn: () => Promise<unknown>, match: RegExp, msg: str
 }
 
 const conn = db();
+/**
+ * PR-S3F #8: `setIssues` chặn Case SOS chưa xác nhận nguyên nhân (đường chính là `xacNhanCase`). Phép kiểm cũ chỉ cần "Case đã có nguyên nhân"
+ * để dựng tình huống của nó → ghi thẳng như dữ liệu cũ, đúng như `setIssues` từng làm (ghi nguyên nhân + đồng bộ trạng thái Case).
+ */
+const { dongBoTrangThaiCase: dongBoCaseThu } = await import('../cases/sosState.ts');
+const datNguyenNhanThu = (who: { userId: number }, caseId: number, primaryCode: string) => {
+  cases.addIssues(caseId, who.userId, { primaryCode, topic: (conn.prepare('SELECT topic FROM sos_cases WHERE id = ?').get(caseId) as any)?.topic ?? null });
+  dongBoCaseThu(caseId);
+};
 const TODAY = demoToday();
 const classId = (code: string) => (conn.prepare('SELECT id FROM classes WHERE code = ?').get(code) as any).id;
 /* Tuần chưa từng dùng tới thì chưa có trong bảng — tạo luôn, đúng như hệ thống vẫn làm. */
@@ -1062,7 +1071,7 @@ check('[6.2→v3] Mock Test FT điểm dưới kỳ vọng: tín hiệu nối NG
 
   /* GVBM xác định NGUYÊN NHÂN cho case Listening SOS đã tự tạo (v3 S04) — không còn "mở case từ tín hiệu". */
   const made = cases.caseDetail(P.cpManager, sig.case_id) as any;
-  cases.setIssues(t('listening'), made.id, { primaryCode: 'student.listening.technique' });
+  datNguyenNhanThu(t('listening'), made.id, 'student.listening.technique');
   const linked = conn.prepare('SELECT * FROM case_signals WHERE id = ?').get(sig.id) as any;
   assert(linked.status === 'linked' && linked.case_id === made.id, 'Tín hiệu Listening phải còn nối với case tự tạo');
 
@@ -3836,7 +3845,7 @@ check('Trượt Listening ở MT1 rồi MT2 → ĐÚNG MỘT case, tên đổi t
     .get(a1.id) as any;
   assert(sig1?.status === 'linked' && sig1.case_id === after1[0].id, 'Tín hiệu phải nối ngay vào case tự tạo');
   const caseId = after1[0].id;
-  cases.setIssues(lr, caseId, { primaryCode: 'student.listening.technique' });
+  datNguyenNhanThu(lr, caseId, 'student.listening.technique');
 
   /* Ghi một phương án và một kết quả để kiểm rằng chúng SỐNG SÓT qua lần trượt thứ hai. */
   cases.recordIntervention(mgr, caseId, {
@@ -3905,7 +3914,7 @@ check('Case đã đóng mà MT sau trượt lại → MỞ CASE MỚI nối vào
   const c = conn.prepare(`SELECT * FROM sos_cases WHERE student_id = ? AND category = 'reading'`)
     .get(s.id) as any;
   assert(c && c.id === sigA.case_id, 'Chưa tự tạo case Reading');
-  cases.setIssues(rt, c.id, { primaryCode: 'student.reading.technique' });
+  datNguyenNhanThu(rt, c.id, 'student.reading.technique');
 
   /*
    * CHƯA LÀM GÌ THÌ CHƯA CHỐT ĐƯỢC. v3: case tự tạo có sẵn một phương án điền sẵn — nó chưa được xác nhận nên vẫn là "phương án chưa cập nhật
@@ -3942,7 +3951,9 @@ check('Case đã đóng mà MT sau trượt lại → MỞ CASE MỚI nối vào
       }
       sosAutoSvc.xacNhanPaQuyChe(mgr, iv.id, { description: 'Tutor kèm Reading hai buổi mỗi tuần, cô Hà chữa bài.' });
     }
-    cases.completeIntervention(mgr, iv.id, { doneOn: demoToday() });
+    /* PR-S3F #8 (T22): PA quy chế không khép sớm qua `completeIntervention` — phép kiểm này chỉ cần "PA đã xong" để chốt Case. */
+    if (row.preset === 1) conn.prepare(`UPDATE case_interventions SET status = 'completed', completed_date = ?, updated_at = ? WHERE id = ?`).run(demoToday(), new Date().toISOString(), iv.id);
+    else cases.completeIntervention(mgr, iv.id, { doneOn: demoToday() });
   }
   cases.closeCaseOutcome(mgr, c.id, {
     outcome: 'much_better', note: 'Em đọc nhanh hơn hẳn', decision: 'end',
@@ -9787,6 +9798,10 @@ await runPrXlmtMayChu({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== PR-KCK (Target "không cam kết" — không SOS, Q29-1)
 const { runPrKckTests } = await import('./prKck.tests.ts');
 await runPrKckTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
+// ==================================================================== PR-S3F (sửa sau rà cuối đợt 3)
+const { runPrS3fTests } = await import('./prS3f.tests.ts');
+await runPrS3fTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

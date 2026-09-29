@@ -248,10 +248,16 @@ export function setStudentStatus(
   require_(p, PERMISSIONS.STUDENT_EDIT, { studentId });
   if (!(STUDENT_STATUSES as readonly string[]).includes(status)) throw badRequest('Trạng thái không hợp lệ.');
   if (!isIsoDate(date)) throw badRequest('Ngày không hợp lệ.');
+  /* PR-S3F #11: ngày hiệu lực không ở tương lai — và ngày Quay lại không trước ngày Tạm dừng, để hạn Case (`datLaiHanCase`) không tính từ ngày quá khứ tuỳ ý. */
+  if (date > demoToday()) throw badRequest('Ngày hiệu lực không được sau hôm nay.');
   const conn = db();
   const s = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
   if (!s) throw notFound('Không tìm thấy học viên');
   if (s.status === status) return s;
+  if (status === 'active' && s.status === 'inactive') {
+    const tamDung = (conn.prepare(`SELECT MAX(event_date) d FROM journey_events WHERE student_id = ? AND event_type = 'pause'`).get(studentId) as any)?.d as string | null;
+    if (tamDung && date < tamDung) throw badRequest(`Ngày quay lại không được trước ngày tạm dừng (${tamDung.split('-').reverse().join('/')}).`);
+  }
 
   const curEnr = conn
     .prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status IN ('active','paused') ORDER BY id DESC LIMIT 1`)

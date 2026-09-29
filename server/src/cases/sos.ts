@@ -267,6 +267,11 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
   if (result.sosLevel === null) return null;
   const conn = db();
   /*
+   * PR-S3F #3 (Q29-1): lộ trình HIỆN TẠI của em là KCK (không cam kết) thì lượt có điểm một phần vẫn giữ `target_at_attempt` cũ
+   * (`apTargetLuotChuaDiem`) — nhưng không sinh tín hiệu / Case / Phối hợp mới. Lịch sử đã có giữ nguyên.
+   */
+  if ((conn.prepare('SELECT khong_cam_ket k FROM learning_cycles WHERE id = ?').get(attempt.cycle_id) as any)?.k) return null;
+  /*
    * PR-MT (M4, M-14, K5-15): MT LỊCH SỬ chỉ sinh Case / PA quy chế / Phối hợp / thông báo khi tuần thi nằm trong 4 tuần trước ngày tạo
    * lượt. Chặn ĐÚNG MỘT CHỖ ở đầu hàm — không để tín hiệu `pending` rơi vào nhánh "silent" bên dưới.
    */

@@ -312,6 +312,13 @@ export async function runSosV3Tests(t: YThucTestKit) {
   const teacherOf = (skill: string): number => (get("SELECT user_id AS n FROM teacher_assignments WHERE class_id = ? AND skill = ? AND status = 'active' LIMIT 1", CLASS, skill)
     ?? get("SELECT user_id AS n FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active' LIMIT 1", CLASS)).n;
   const casesOf = (sid: number) => all('SELECT * FROM sos_cases WHERE student_id = ? ORDER BY id', sid);
+  /* PR-S3F #8: PA quy chế không khép sớm qua `completeIntervention` (T22) và `setIssues` chặn Case SOS chưa xác nhận — dựng "PA đã xong" / "đã có nguyên nhân" thẳng như dữ liệu cũ. */
+  const xongPaThu = (id: number) => conn.prepare(`UPDATE case_interventions SET status = 'completed', completed_date = ?, updated_at = ? WHERE id = ?`).run(TODAY, new Date().toISOString(), id);
+  const { dongBoTrangThaiCase: dongBoCaseThu } = await import('../cases/sosState.ts');
+  const datNguyenNhanThu = (caseId: number, primaryCode: string) => {
+    cases.addIssues(caseId, null, { primaryCode, topic: (conn.prepare('SELECT topic FROM sos_cases WHERE id = ?').get(caseId) as any)?.topic ?? null });
+    dongBoCaseThu(caseId);
+  };
   const caseOf = (sid: number, category: string) => casesOf(sid).find((c) => c.category === category);
   const plansOf = (caseId: number) => all('SELECT * FROM case_interventions WHERE case_id = ? ORDER BY id', caseId);
   const milestonesOf = (caseId: number) => all('SELECT * FROM case_milestones WHERE case_id = ? ORDER BY id', caseId);
@@ -602,7 +609,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     const g = freshSos('S05re2');
     const gp = g.w2Plan;
     xacNhanCaseW2(w2T, g); sosAuto.xacNhanPaQuyChe(w2T, gp.id, { description: MO_TA_PA });   // PR-SOS: PA chạy khi xác nhận
-    cases.completeIntervention(w2T, gp.id, { doneOn: TODAY, performerSelf: true });
+    xongPaThu(gp.id);
     cases.closeCaseOutcome(P.mbManager, g.w2.id, { outcome: 'improved', note: 'Em đã tiến bộ rõ ở Writing Task 2', decision: 'end' });
     const before2 = JSON.stringify(casesOf(g.st.id).map((c) => [c.id, c.status]));
     scoreMt2(g.a); enter(P.admin, g.a, 'reading', 7);
@@ -637,7 +644,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
   check('PR-T · (rà soát) Case đã ĐÓNG rồi sửa điểm nguồn: KHÔNG gửi thông báo "Xem lại case" (không còn gì để xem lại)', () => {
     const f = freshSos('NOTE');
     xacNhanCaseW2(w2T, f); sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, { description: MO_TA_PA });   // PR-SOS: PA chạy khi xác nhận
-    cases.completeIntervention(w2T, f.w2Plan.id, { doneOn: TODAY, performerSelf: true });
+    xongPaThu(f.w2Plan.id);
     cases.closeCaseOutcome(P.mbManager, f.w2.id, { outcome: 'improved', note: 'Em đã tiến bộ rõ ở Writing Task 2', decision: 'end' });
     const reviews = () => count("SELECT COUNT(*) n FROM notifications WHERE dedup_key LIKE ?", `case_review:${f.w2.id}:%`);
     enter(P.admin, f.a, 'writing2', 7);                                  // sửa điểm nguồn thành đạt
@@ -726,7 +733,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(!itemQl(P.cpManager, f.w2.id) && !item(w1T, f.w2.id), 'Quản lý chi nhánh khác và GVBM kỹ năng khác không thấy dù quá hạn');
     assert(myworkSvc.myWork(w2T, {}).summary.overdue >= 1, 'Tính vào tổng số việc quá hạn');
     /* Có nguyên nhân thì dòng "Xác nhận nguyên nhân" biến mất (việc Xác nhận PA là dòng riêng — PR-SOS Task 7). */
-    cases.setIssues(w2T, f.w2.id, { primaryCode: 'student.writing.task' });
+    datNguyenNhanThu(f.w2.id, 'student.writing.task');
     assert(!item(w2T, f.w2.id) && !itemQl(P.mbManager, f.w2.id), 'Có nguyên nhân thì dòng biến mất, cả ở phía Quản lý');
     /* Đóng `Không cần theo dõi` cũng làm dòng biến mất; case tạo tay không bao giờ có dòng này. */
     conn.prepare('UPDATE sos_cases SET han_xac_nhan = ? WHERE id = ?').run(addDays(TODAY, -1), f.sp.id);
@@ -746,7 +753,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(M().includes(f.w2.id) && M().includes(f.sp.id), 'Case mới tự tạo phải nằm trong tập');
     assertThrows(() => sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, { description: MO_TA_PA }), /Xác nhận nguyên nhân/, 'Xác nhận PA trước nguyên nhân');
     assert(M().includes(f.w2.id), 'CHƯA có nguyên nhân → vẫn chờ');
-    cases.setIssues(w2T, f.w2.id, { primaryCode: 'student.writing.task' });
+    datNguyenNhanThu(f.w2.id, 'student.writing.task');
     assert(!M().includes(f.w2.id), 'Có nguyên nhân thì thôi chờ');
     khongTheoDoi(P.mbManager, f.sp.id, { reasonCode: 'single_incident' });
     assert(!M().includes(f.sp.id), 'Case đã đóng không thuộc tập');

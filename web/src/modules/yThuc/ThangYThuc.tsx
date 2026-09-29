@@ -28,8 +28,9 @@ export function ThangYThuc({ d, homNay, onKhai, onDeXuat }: {
           <button type="button" className="link inline-flex items-center appearance-none border-0 bg-transparent p-0 min-h-[44px] sm:min-h-0" onClick={onKhai}>Khai bậc</button>
         </p>
       )}
-      <div className="flex min-w-0 items-center gap-2">
-        <ol className="m-0 flex min-w-0 flex-1 list-none flex-nowrap items-center gap-1 overflow-hidden p-0 text-[12px] whitespace-nowrap"
+      {/* PR-S3F #12 (V4-8): hẹp thì thang chiếm cả dòng (liên kết xuống dòng riêng, không đè lên bậc) và mờ dần ở mép phải thay vì cụt chữ. */}
+      <div className="flex min-w-0 flex-col items-start gap-0.5 sm:flex-row sm:items-center sm:gap-2">
+        <ol className="m-0 flex w-full min-w-0 list-none flex-nowrap items-center gap-1 overflow-hidden p-0 text-[12px] whitespace-nowrap sm:flex-1 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-24px),transparent)] sm:min-w-0"
           aria-label={`Thang xử lý (${nhanChuoi})`}>
           <li className="shrink-0 text-[11.5px] text-slate-500">Thang ({nhanChuoi}):</li>
           {d.dongThang.map((b, i) => (

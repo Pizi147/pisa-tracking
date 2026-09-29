@@ -30,16 +30,19 @@ import { trangThaiYThuc, ungVienVaThe, type EmYThuc } from '../yThuc/trangThai.t
  * PR-YT4 — vì sao em cần Báo lên (null = không): bắt buộc quá hạn · Mới quá 5 ngày chưa ai xem · đã duyệt chưa thực hiện quá 5 ngày
  * (K3-37). Em Tạm dừng không Báo lên (T65). `viec` = tiền tố khoá việc trong Công việc của GVCN (Nhắc trỏ đúng dòng).
  */
-export function lyDoBaoLenYThuc(em: EmYThuc | undefined): { viec: 'yt_xu_ly' | 'yt_xem' | 'yt_thuc_hien'; ngan: string; cau: string } | null {
-  if (!em || em.tamDung || !em.gvcnId) return null;
+export function lyDoBaoLenYThuc(em: EmYThuc | undefined): { viec: 'yt_xu_ly' | 'yt_xem' | 'yt_thuc_hien'; ngan: string; cau: string; viecId: number } | null {
+  /* PR-S3F #12: lớp CHƯA có GVCN vẫn Báo lên (thẻ không có `ownerId`) — đúng là lúc QL cần biết nhất. */
+  if (!em || em.tamDung) return null;
   const tt = [...em.viPham.values()];
   const xuLy = tt.filter((x) => x.lyDoQuaHan === 'xu-ly').length;
-  if (xuLy) return { viec: 'yt_xu_ly', ngan: `${em.soBatBuoc} vi phạm chưa xử lý`, cau: `${em.soBatBuoc} vi phạm bắt buộc xử lý đã quá hạn` };
+  if (xuLy) return { viec: 'yt_xu_ly', viecId: em.studentId, ngan: `${em.soBatBuoc} vi phạm chưa xử lý`, cau: `${em.soBatBuoc} vi phạm bắt buộc xử lý đã quá hạn` };
   const xem = tt.filter((x) => x.lyDoQuaHan === 'xem').length;
-  if (xem) return { viec: 'yt_xem', ngan: `${xem} vi phạm chưa ai xem`, cau: `${xem} vi phạm mới quá 5 ngày chưa ai ghi nhận` };
-  if (em.deXuat?.quaHan) {
-    const nhan = nhanLoaiXuLy(em.deXuat.kind, em.deXuat.customName);
-    return { viec: 'yt_thuc_hien', ngan: `${nhan} đã duyệt chưa thực hiện`, cau: `${nhan} QL đã duyệt, quá 5 ngày chưa thực hiện` };
+  if (xem) return { viec: 'yt_xem', viecId: em.studentId, ngan: `${xem} vi phạm chưa ai xem`, cau: `${xem} vi phạm mới quá 5 ngày chưa ai ghi nhận` };
+  /* PR-S3F #7: quá hạn tính trên MỌI đề xuất đã duyệt — nêu lần xử lý quá hạn sớm nhất; khoá việc theo id lần xử lý (`yt_thuc_hien:{id}`). */
+  const qua = em.daDuyet.find((x) => x.quaHan);
+  if (qua) {
+    const nhan = nhanLoaiXuLy(qua.kind, qua.customName);
+    return { viec: 'yt_thuc_hien', viecId: qua.id, ngan: `${nhan} đã duyệt chưa thực hiện`, cau: `${nhan} QL đã duyệt, quá 5 ngày chưa thực hiện` };
   }
   return null;
 }
@@ -372,7 +375,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
           const l = lyDo(sid)!;
           return taoYeuCau(conn, {
             loai: 'bao_len_y_thuc', doiTuongLoai: 'hoc_vien_y_thuc', doiTuongId: sid, hocVienId: sid, lopId: em.lopId,
-            nguoiXin: null, hanDuyet: null, lyDo: l.cau, duLieu: { viecKey: `${l.viec}:${sid}`, ownerId: em.gvcnId, lyDo: l.cau },
+            nguoiXin: null, hanDuyet: null, lyDo: l.cau, duLieu: { viecKey: `${l.viec}:${l.viecId}`, ownerId: em.gvcnId ?? null, lyDo: l.cau },
           }) !== null;
         }).length;
       });

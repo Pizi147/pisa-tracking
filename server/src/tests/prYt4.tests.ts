@@ -650,7 +650,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     yc.quetYeuCau(TODAY);
     assert(JSON.parse(theCho('bao_len_y_thuc', sid).du_lieu).viecKey === `yt_xem:${sid}`, 'Mới quá hạn');
     const t2 = theCho('bao_len_y_thuc', sid2);
-    assert(t2 && JSON.parse(t2.du_lieu).viecKey === `yt_thuc_hien:${sid2}` && /đã duyệt chưa thực hiện|QL đã duyệt, quá 5 ngày/.test(t2.ly_do), JSON.stringify(t2));
+    assert(t2 && JSON.parse(t2.du_lieu).viecKey === `yt_thuc_hien:${m.id}` && /đã duyệt chưa thực hiện|QL đã duyệt, quá 5 ngày/.test(t2.ly_do), JSON.stringify(t2));
   });
   check('YT4 (5) · Thẻ Ý thức tự đóng khi đề xuất không còn chờ (em lưu trữ) — "Không còn chờ duyệt"', () => {
     const sid = hv(); const m = deXuatGui(gvcn, sid, 'suspension', [ghiVp(gvbm, sid)]);
@@ -706,10 +706,10 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   check('YT4 (6) · QL duyệt → việc "Ghi \\"Đã thực hiện\\" …" hạn ngày duyệt + 4; Đã thực hiện xong → hết', () => {
     const sid = hv(); const m = deXuatGui(gvcn, sid, 'suspension', [ghiVp(gvbm, sid)]);
     yc.duyetYeuCau(P.mbManager, theCho('y_thuc', m.id).id);
-    const it = viec(gvcn, `yt_thuc_hien:${sid}`);
+    const it = viec(gvcn, `yt_thuc_hien:${m.id}`);   // PR-S3F #7: khoá theo lần xử lý
     assert(it && it.due === addDays(TODAY, 4) && it.tieuDe.startsWith('Ghi "Đã thực hiện" Đình chỉ học tạm thời · '), JSON.stringify(it));
     xuLy.daThucHien(gvcn, m.id, { performedOn: TODAY });
-    assert(!viec(gvcn, `yt_thuc_hien:${sid}`), 'xong');
+    assert(!viec(gvcn, `yt_thuc_hien:${m.id}`), 'xong');
   });
   check('YT4 (6) · QL "Của GV (nhắc)" (nguoi=tat-ca) thấy dòng của GVCN, có nút Nhắc; "Của tôi" của QL thì không', () => {
     const sid = hv(); ba3(sid, addDays(TODAY, -12));

@@ -90,6 +90,8 @@ export type Row = {
   chuongTrinh?: string | null;
   band: number | null; bandAttemptNo: number | null; bandWeek: string | null;
   expectation: number | null; missed: boolean | null;
+  /** PR-S3F #5: lộ trình KCK (không cam kết) — `missed` null vì không có kỳ vọng, KHÔNG phải "đạt". */
+  kck?: boolean;
   /** Còn thiếu bao nhiêu để đạt kỳ vọng CỦA CHÍNH ĐỢT ĐÓ — đây là dấu ± hiện mặc định. */
   gap: number | null;
   /** Tăng giảm so với LƯỢT TRƯỚC — hiện bằng chữ trung tính, không phải mũi tên màu. */
@@ -260,8 +262,11 @@ function CotCase({ row }: { row: Row }) {
       {row.band !== null && row.missed
         ? <span className="block text-xs text-slate-400">Chưa đạt · không mở Case</span>
         : <span className="block text-xs text-slate-500">Không có Case mở</span>}
-      {row.band !== null && !row.missed && (
+      {row.band !== null && row.missed === false && (
         <span className="mt-1 inline-flex"><Nhan tone="ok">{row.ratio ? 'Đạt' : 'Đạt kỳ vọng'}</Nhan></span>
+      )}
+      {row.band !== null && row.missed === null && (
+        <span className="mt-1 block text-xs text-slate-500">{row.kck ? 'KCK' : '—'}</span>
       )}
     </span>
   );

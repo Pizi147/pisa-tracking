@@ -682,6 +682,11 @@ export function setIssues(p: Principal, caseId: number, input: {
   const c = loadCase(caseId);
   require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
     'Bạn không có quyền phân loại vấn đề cho case này.');
+  /* PR-S3F #8: Case tự tạo từ SOS chưa có nguyên nhân thì nguyên nhân chỉ đặt qua "Xác nhận Case" (mốc, mô tả, PA đi theo) — không đi đường vòng chỉ-API. */
+  const trangThaiSos = sosCaseState(caseId);
+  if (trangThaiSos.fromSos && !trangThaiSos.hasCause) {
+    throw badRequest('Case tự tạo từ SOS chưa xác nhận nguyên nhân — dùng "Xác nhận Case" để đặt nguyên nhân.');
+  }
   for (const code of [input.primaryCode, ...(input.secondaryCodes ?? [])]) {
     if (code && !issueBranchOf(code)) throw badRequest(`Mã vấn đề không hợp lệ: ${code}`);
   }
@@ -748,6 +753,10 @@ export function recordIntervention(p: Principal, caseId: number, input: {
   const c = loadCase(caseId);
   require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
     'Bạn không có quyền ghi nhận hỗ trợ cho case này.');
+  /* PR-S3F #2: thẻ "Không cần theo dõi" đang chờ Quản lý duyệt → chưa thêm PA (duyệt xong PA mới thêm sẽ bị huỷ oan). */
+  if (sosCaseState(caseId).choDuyetKhongTheoDoi) {
+    throw badRequest('Case đang chờ Quản lý duyệt "Không cần theo dõi" — chưa thêm phương án được. Chờ duyệt xong (hoặc bị từ chối) rồi thêm.');
+  }
   if (!(INTERVENTION_KINDS as readonly string[]).includes(input.kind)) throw badRequest('Loại hỗ trợ không hợp lệ.');
   const status = input.status && (INTERVENTION_STATUSES as readonly string[]).includes(input.status)
     ? input.status : 'completed';
@@ -1053,6 +1062,10 @@ export function completeIntervention(p: Principal, interventionId: number, input
     throw badRequest('Phương án này đang chờ Quản lý duyệt, chưa ghi là đã làm được.');
   }
   const doneOn = input.doneOn ?? demoToday();
+  /* PR-S3F #8 (T22): PA theo quy chế không khép sớm — chỉ khép ở lần ghi cuối (Ghi kết quả cuối), khi đã tới mốc. */
+  if (iv.preset === 1 && !laLanGhiCuoi({ preset: true, followupDue: iv.followup_due ?? null, actionDue: iv.action_due ?? null }, isIsoDate(doneOn) ? doneOn : demoToday())) {
+    throw badRequest('PA theo quy chế chưa tới mốc kết thúc — ghi kết quả từng tuần ở "Ghi kết quả PA"; PA chỉ khép ở lần ghi cuối.');
+  }
   if (!isIsoDate(doneOn)) throw badRequest('Ngày thực hiện không hợp lệ.');
   if (doneOn > demoToday()) throw badRequest('Không ghi được ngày thực hiện ở tương lai.');
 
@@ -2330,6 +2343,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
       score: latest?.score ?? null,
       total: latest?.total ?? null,
       ratio,
+      kck: !!cycle?.khong_cam_ket,
       /*
        * DƯỚI KỲ VỌNG — hai chương trình, hai cách hỏi. Fast Track so band với kỳ vọng của
        * chính lượt đó; lớp Normal so tỷ lệ đạt với ngưỡng của chương trình.
