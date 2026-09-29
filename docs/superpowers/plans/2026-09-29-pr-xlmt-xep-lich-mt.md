@@ -599,6 +599,10 @@ if (chuaQua.length) luuY('daThiToiMt', `Đã thi tới MT${daThiToiMt} nhưng ${
 
 <!-- Session code ghi ở đây: mốc B, dòng mã thật lệch, phép kiểm cũ phải thêm lý do, trước/sau clarify, 🛑 đã hỏi, model thật. -->
 
+- **Model thật:** Opus 5.5 (phương án B của Bảng điều hành).
+- **Task 0 (29/09):** nhánh từ `origin/main` @ c3f38f3. PR-SOS / PR-YT4 / PR-TOC **chưa** merge (chỉ có commit kế hoạch). **Mốc B = 1575**
+  phép kiểm (+20 tốc độ). Dòng mã khớp kế hoạch (lệch ≤ 20 dòng); `schema.sql` nằm ở `server/src/schema.sql`.
+
 ## Chủ sản phẩm chốt 29/09 (thay các chỗ lệch trong kế hoạch)
 
 - **Câu 1 = A:** Thi lại kỹ năng đã có điểm → xoá điểm cũ khỏi ô, giữ trong Lịch sử, SOS/kỳ vọng tính theo điểm mới. Không migrate.
