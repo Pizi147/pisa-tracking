@@ -9747,6 +9747,9 @@ await runPrTocTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 // ==================================================================== PR-MON (Hệ môn học, Pre FOU một ô Tổng hợp, hai khung FT / Lớp thường)
 const { runPrMonTests } = await import('./prMon.tests.ts');
 await runPrMonTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== PR-SOS (SOS v4 — Xác nhận Case → Xác nhận PA, Không cần theo dõi qua Quản lý)
+const { runPrSosTests } = await import('./prSos.tests.ts');
+await runPrSosTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-KCK (Target "không cam kết" — không SOS, Q29-1)
 const { runPrKckTests } = await import('./prKck.tests.ts');

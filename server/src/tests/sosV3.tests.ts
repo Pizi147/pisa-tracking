@@ -31,7 +31,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     }
   });
 
-  check('PR-T · T1 Bảng phương án điền sẵn đúng §4: MT1/MT2 SOS1–2 Tự học 1 tháng · SOS3 Tutor đến MT kế · MT3/MT4 Tutor đến lúc thi · MT5+ Khác cần xác nhận', () => {
+  check('PR-T · T1 Bảng phương án điền sẵn đúng §4: MT1/MT2 SOS1–2 Tự học 1 tháng · SOS3 Tutor đến MT kế · MT3+ Tutor đến lúc thi (PR-SOS: MT5+ như MT3/MT4)', () => {
     const cell = (mt: number, lv: number) => domain.academicSupportFor(mt, lv);
     for (const mt of [1, 2]) {
       for (const lv of [1, 2]) assert(cell(mt, lv).kind === 'self_study' && cell(mt, lv).span === 'one_month' && cell(mt, lv).description === 'Tự học · 1 tháng', `MT${mt} SOS${lv}: ${JSON.stringify(cell(mt, lv))}`);
@@ -40,16 +40,17 @@ export async function runSosV3Tests(t: YThucTestKit) {
     for (const mt of [3, 4]) for (const lv of SOS_LEVELS) {
       assert(cell(mt, lv).kind === 'tutor' && cell(mt, lv).span === 'until_exam' && cell(mt, lv).description === 'Tutor · đến lúc thi', `MT${mt} SOS${lv}: ${JSON.stringify(cell(mt, lv))}`);
     }
+    /* PR-SOS Câu 1 = A (29/09): MT5+ = Tutor · đến lúc thi như MT3/MT4 (bỏ "Khác — cần xác nhận"). */
     for (const mt of [5, 6, 9]) for (const lv of SOS_LEVELS) {
-      assert(cell(mt, lv).kind === 'other_proposal' && cell(mt, lv).span === 'expert'
-        && cell(mt, lv).description === 'Hỗ trợ chuyên môn — cần GVBM/P. Học thuật xác nhận', `MT${mt} SOS${lv}: ${JSON.stringify(cell(mt, lv))}`);
+      assert(cell(mt, lv).kind === 'tutor' && cell(mt, lv).span === 'until_exam'
+        && cell(mt, lv).description === 'Tutor · đến lúc thi', `MT${mt} SOS${lv}: ${JSON.stringify(cell(mt, lv))}`);
     }
   });
 
-  check('PR-T · T1 Nhãn loại phương án điền sẵn trùng nhãn hệ thống đang dùng (Xếp tự học · Học tutor · Khác)', () => {
+  check('PR-T · T1 Nhãn loại phương án điền sẵn trùng nhãn hệ thống đang dùng (Xếp tự học · Học tutor)', () => {
     assert(domain.INTERVENTION_KIND_LABEL[domain.academicSupportFor(1, 1).kind] === 'Xếp tự học', 'self_study');
     assert(domain.INTERVENTION_KIND_LABEL[domain.academicSupportFor(1, 3).kind] === 'Học tutor', 'tutor');
-    assert(domain.INTERVENTION_KIND_LABEL[domain.academicSupportFor(5, 1).kind] === 'Khác', 'Khác');
+    assert(domain.INTERVENTION_KIND_LABEL[domain.academicSupportFor(5, 1).kind] === 'Học tutor', 'MT5+ tutor (PR-SOS Câu 1 = A)');
   });
 
   check('PR-T · T1 Mức SOS 0 hoặc ngoài 1–3 không có phương án điền sẵn; số MT nhỏ hơn 1 bị từ chối', () => {
@@ -114,7 +115,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(domain.sosPlanEndDate('until_next_mt', { createdOn: '2026-09-21', nextMtSunday: null }) === null, 'Chưa có lịch MT kế thì để trống — không bịa');
     assert(domain.sosPlanEndDate('until_exam', { createdOn: '2026-09-21', examDate: '2027-02-14' }) === '2027-02-14', 'Có ngày thi thì lấy');
     assert(domain.sosPlanEndDate('until_exam', { createdOn: '2026-09-21', examDate: null }) === null, 'Chưa có ngày thi thì để trống');
-    assert(domain.sosPlanEndDate('expert', { createdOn: '2026-09-21' }) === null, 'Hỗ trợ chuyên môn không có hạn tự tính');
+    assert(!domain.ACADEMIC_SUPPORT_SPANS.includes('expert'), 'PR-SOS: không còn loại "Hỗ trợ chuyên môn" (MT5+ = Tutor đến lúc thi)');
   });
 
   check('PR-T · T1 Tóm tắt một lượt Phối hợp: `{done}/{chưa bị bỏ}`; Hoàn thành khi mọi việc done hoặc removed (SUY RA, không lưu)', () => {
@@ -367,13 +368,13 @@ export async function runSosV3Tests(t: YThucTestKit) {
     for (const c of casesOf(st.id)) assert(plansOf(c.id)[0].followup_due === addDays(mt2Week, 6), `${c.category}: ${plansOf(c.id)[0].followup_due}`);
   });
 
-  check('PR-T · S03 MT3 → `Tutor · đến lúc thi`; MT5 → `Khác` chờ GVBM/P. Học thuật xác nhận (loại `other_proposal`, không hạn tự tính)', () => {
+  check('PR-T · S03 MT3 → `Tutor · đến lúc thi`; MT5 cũng `Tutor · đến lúc thi` (PR-SOS Câu 1 = A)', () => {
     const s3 = makeStudent('S03c'); enter(P.admin, mkAttempt(s3, 3), 'speaking', 5);
     const iv3 = plansOf(caseOf(s3.id, 'speaking').id)[0];
     assert(iv3.kind === 'tutor' && iv3.description === 'Tutor · đến lúc thi' && iv3.preset === 1, JSON.stringify(iv3));
     const s5 = makeStudent('S03d'); enter(P.admin, mkAttempt(s5, 5), 'speaking', 5);
     const iv5 = plansOf(caseOf(s5.id, 'speaking').id)[0];
-    assert(iv5.kind === 'other_proposal' && iv5.description === 'Hỗ trợ chuyên môn — cần GVBM/P. Học thuật xác nhận' && iv5.followup_due === null && iv5.preset === 1, JSON.stringify(iv5));
+    assert(iv5.kind === 'tutor' && iv5.description === 'Tutor · đến lúc thi' && iv5.preset === 1, JSON.stringify(iv5));
   });
 
   check('PR-T · S02 Luật Writing hai tầng giữ nguyên: cả hai task dưới → hai case W1 + W2; Writing tổng ĐẠT dù W1 dưới → KHÔNG case nào', () => {
