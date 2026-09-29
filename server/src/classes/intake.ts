@@ -1,19 +1,18 @@
-import { db, tx } from '../db.ts';
+import { chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
   CHO_TAO_PRE_FOU, ENTRY_SKILLS, MOCK_FT_STUDY_WEEK, PERMISSIONS, PROGRAMME_TEMPLATES, chuanHoaMaLop, ghepMaLop, khoaMaLopSql, kiemSoLop,
   moRongPhanCong, programmeOf, type Route, type SlotPhanCong,
-  docEmail, docNgayNhap, laLichSu, lichMtMacDinh, nhanDangCot, tuanBatDauMacDinh, tuanHocCuaMt, tuanLich, type VanDeNhap,
+  NGAY_SINH_TOI_THIEU, canNamGan, docEmail, docNgayNhap, laLichSu, nhanCotNhap, lichMtMacDinh, nhanDangCot, tuanBatDauMacDinh, tuanHocCuaMt, tuanLich, type VanDeNhap,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { docSlots, ghiPhanCong, kiemTruocPhanCong } from './classes.ts';
 import { allProgrammes, mocChupVaoLop, programmeByCode } from '../normal/regular.ts';
 import { activeRouteCodes } from '../platform/sysconfig.ts';
-import { addDays, badRequest, isIsoDate, normalizeName, notFound, nowIso, padCode } from '../util.ts';
+import { addDays, badRequest, isIsoDate, kiemKieuO, normalizeName, notFound, nowIso, padCode } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
-import { addJourney, writeAudit } from '../platform/audit.ts';
-import { ensurePeriod, mondayOf, periodById } from '../platform/week.ts';
-import { ensureSkillRows } from '../fasttrack/skillSchedule.ts';
-import { taoMtMacDinh } from '../fasttrack/mtMacDinh.ts';
+import { writeAudit } from '../platform/audit.ts';
+import { ensurePeriods, mondayOf, periodById } from '../platform/week.ts';
+import { taoMtMacDinhLo } from '../fasttrack/mtMacDinh.ts';
 
 /**
  * Thêm học viên hàng loạt.
@@ -72,6 +71,10 @@ export type IntakeRow = {
 };
 
 export type RowIssue = VanDeNhap;
+
+/** Ô chữ / ô số (nhận cả số từ lưới) của một dòng nhập — cho `kiemKieuO` (PR-TOC). */
+const COT_CHU = ['fullName', 'classCode', 'dob', 'email', 'examDate', 'startWeek', 'route', 'consultant'] as const;
+const COT_SO = ['baselineScore', 'entryListening', 'entryReading', 'entryWriting', 'entrySpeaking', 'target', 'daThiToiMt'] as const;
 
 export type IntakePreview = {
   rows: (IntakeRow & {
@@ -165,6 +168,12 @@ export function previewIntake(
 ): IntakePreview {
   const conn = db();
   const issues: RowIssue[] = [];
+  /* PR-TOC: kiểu dữ liệu ở biên — gửi sai kiểu (object, mảng…) là 400 có lời, không phải 500. */
+  if (!Array.isArray(input.rows) || input.rows.some((r) => !r || typeof r !== 'object' || Array.isArray(r))) {
+    throw badRequest('Dữ liệu nhập không hợp lệ — cần danh sách dòng.');
+  }
+  input.rows.forEach((r, i) => kiemKieuO(r as Record<string, unknown>, COT_CHU, COT_SO, (k) => `Dòng ${i + 1} · ${nhanCotNhap(k)}`));
+  kiemKieuO(input as Record<string, unknown>, ['defaultStartWeek'], [], () => 'Tuần bắt đầu');
 
   /*
    * LỚP LÀ QUYẾT ĐỊNH CỦA CẢ LÔ, không phải một ô lặp lại ở từng dòng (mục 12.1).
@@ -199,10 +208,20 @@ export function previewIntake(
    * Gửi mà sai → báo ở cả lô và KHÔNG lặng lẽ thay bằng mặc định (dòng không tự ghi tuần sẽ báo thiếu).
    */
   const homNay = demoToday();
-  const w0 = input.defaultStartWeek ? docNgayNhap(input.defaultStartWeek, homNay) : null;
+  const w0 = input.defaultStartWeek ? docNgayNhap(input.defaultStartWeek, homNay, canNamGan(homNay)) : null;
   if (w0?.loi) issues.push({ row: 0, field: 'startWeek', message: w0.loi, muc: 'loi' });
   const defaultWeek = w0?.loi ? null
     : w0?.iso ? mondayOf(w0.iso) : tuanBatDauMacDinh({ lopThuong: ratio, khaiGiang: cls.start_date ?? null }, homNay);
+
+  /* TRÙNG HỒ SƠ đọc MỘT câu cho cả lô (PR-TOC), lọc theo ngày sinh từng dòng ở dưới. */
+  const cungTen = new Map<string, any[]>();
+  theoLo([...new Set(input.rows.map((r) => normalizeName((r.fullName ?? '').trim())).filter(Boolean))], (lo, ph) => {
+    for (const d of conn.prepare(
+      `SELECT id, student_code, full_name, dob, normalized_name FROM students WHERE normalized_name IN (${ph}) ORDER BY id`).all(...lo) as any[]) {
+      if (!cungTen.has(d.normalized_name)) cungTen.set(d.normalized_name, []);
+      cungTen.get(d.normalized_name)!.push(d);
+    }
+  });
 
   const rows = input.rows.map((r, i) => {
     const rowNo = i + 1;
@@ -216,7 +235,7 @@ export function previewIntake(
      */
     if (!name || name === '-') loi('fullName', 'Chưa điền');
 
-    const dob = docNgayNhap(r.dob, homNay, { toiDa: homNay });
+    const dob = docNgayNhap(r.dob, homNay, { toiThieu: NGAY_SINH_TOI_THIEU, toiDa: homNay });
     if (dob.loi) loi('dob', dob.loi);
 
     const email = docEmail(r.email);
@@ -249,7 +268,7 @@ export function previewIntake(
     let examDate: string | undefined;
     if (ratio) { if (coDuLieu(r.examDate)) luuY('examDate', 'Bỏ qua — lớp thường chưa thi IELTS'); }
     else {
-      const t = docNgayNhap(r.examDate, homNay, { choThang: true, toiThieu: homNay });
+      const t = docNgayNhap(r.examDate, homNay, { choThang: true, toiThieu: homNay, toiDa: canNamGan(homNay).toiDa });
       if (t.loi) loi('examDate', t.loi);
       else examDate = t.iso ?? undefined;
     }
@@ -265,7 +284,7 @@ export function previewIntake(
     /* TUẦN BẮT ĐẦU: ô trống thì dùng mặc định của cả lô. */
     let startWeek: string | null = defaultWeek;
     if (coDuLieu(r.startWeek)) {
-      const w = docNgayNhap(r.startWeek, homNay);
+      const w = docNgayNhap(r.startWeek, homNay, canNamGan(homNay));
       startWeek = w.iso ? mondayOf(w.iso) : null;
       if (w.loi) loi('startWeek', w.loi);
     }
@@ -300,12 +319,7 @@ export function previewIntake(
      * một đứa trẻ thành hai hồ sơ không ai nối lại được.
      */
     const duplicates = name
-      ? (conn
-          .prepare(
-            `SELECT id, student_code, full_name, dob FROM students
-              WHERE normalized_name = ? ${dob.iso ? 'AND dob = ?' : ''} LIMIT 5`,
-          )
-          .all(...(dob.iso ? [normalizeName(name), dob.iso] : [normalizeName(name)])) as any[])
+      ? (cungTen.get(normalizeName(name)) ?? []).filter((d) => !dob.iso || d.dob === dob.iso).slice(0, 5)
       : [];
     if (duplicates.length) {
       luuY('fullName', `Có thể trùng ${duplicates.map((d) => `${d.full_name} (${d.student_code})`).join(', ')}`
@@ -375,12 +389,23 @@ export function commitIntake(
   },
 ): IntakeResult {
   const conn = db();
-  const key = input.idempotencyKey?.trim();
-  if (key) {
-    // Bấm hai lần hoặc thử lại sau lỗi mạng không được tạo thêm học viên.
-    const seen = conn.prepare("SELECT value FROM demo_config WHERE key = ?").get(`intake:${key}`) as any;
-    if (seen) return JSON.parse(seen.value) as IntakeResult;
-  }
+  /*
+   * LỚP VÀ QUYỀN KIỂM TRƯỚC (PR-TOC): lớp ngoài phạm vi → 403, không phải "200 · 0 em · không lỗi" (xem trước báo ở dòng 0 rồi
+   * bị bỏ qua). Kiểm trước cả khoá idempotency để người khác không đọc được kết quả đã lưu của một lô.
+   */
+  const classId = input.classId ?? input.defaultClassId ?? null;
+  if (!classId) throw badRequest('Chưa chọn lớp cho lô này.');
+  const cls = conn.prepare('SELECT * FROM classes WHERE id = ?').get(classId) as any;
+  if (!cls) throw notFound('Không tìm thấy lớp');
+  require_(p, PERMISSIONS.STUDENT_EDIT, { classId: cls.id }, `Lớp ${cls.code} nằm ngoài phạm vi bạn được cấp quyền.`);
+  /*
+   * IDEMPOTENCY — bấm hai lần hoặc thử lại sau lỗi mạng không được tạo thêm học viên. Khoá gắn NGƯỜI GỬI + LỚP (PR-TOC): khoá do
+   * trình duyệt sinh, người khác gửi lại đúng chuỗi đó không được đọc kết quả (mã HV, id) của lô người khác.
+   */
+  const key = input.idempotencyKey?.trim() ? `intake:${p.userId}:${cls.id}:${input.idempotencyKey.trim()}` : null;
+  const daGhi = () => (key ? (conn.prepare('SELECT value FROM demo_config WHERE key = ?').get(key) as any) : null);
+  const seen = daGhi();
+  if (seen) return JSON.parse(seen.value) as IntakeResult;
 
   const preview = previewIntake(p, input);
   const failed: RowIssue[] = [];
@@ -389,83 +414,97 @@ export function commitIntake(
   const mt: IntakeResult['mt'] = { soEm: 0, soLuotLichSu: 0, soEmCoLichSu: 0, luotLichSuDau: null };
   let skipped = 0;
 
-  const result = tx(() => {
+  const result = tx((): IntakeResult => {
+    /* Đọc lại khoá TRONG giao dịch (đã giữ khoá ghi): hai lời gọi song song cùng khoá — lời gọi sau thấy kết quả của lời gọi trước. */
+    const vuaGhi = daGhi();
+    if (vuaGhi) return JSON.parse(vuaGhi.value) as IntakeResult;
+    const ok: typeof preview.rows = [];
     for (const r of preview.rows) {
       /* Chỉ LỖI chặn dòng; lưu ý (trùng hồ sơ, cột bị bỏ qua, thiếu target) không chặn. */
       const blocking = r.issues.filter((i) => i.muc === 'loi');
       if (blocking.length) { failed.push(...blocking); skipped += 1; continue; }
       if (!r.classId || !r.fullName) { skipped += 1; continue; }
+      ok.push(r);
+    }
 
-      require_(p, PERMISSIONS.STUDENT_EDIT, { classId: r.classId },
-        `Lớp ${r.classCode} nằm ngoài phạm vi bạn được cấp quyền.`);
-      const cls = conn.prepare('SELECT * FROM classes WHERE id = ?').get(r.classId) as any;
-      const startWeek = r.startWeek ?? cls.start_date ?? nowIso().slice(0, 10);
-      const startedAt = startWeek;
-
+    /*
+     * GHI THEO LÔ (PR-TOC): mỗi bảng MỘT câu nhiều dòng cho cả lô, không một câu mỗi em — trên Turso mỗi câu là một lượt mạng, lô
+     * 35 em từng tốn ~1900 câu (~1 phút) và bị Netlify cắt giữa chừng. Cả lô chung MỘT lớp (đã kiểm quyền ở đầu hàm).
+     */
+    if (ok.length) {
+      const now = nowIso();
       const seq = (conn.prepare('SELECT next_value FROM student_code_seq WHERE id = 1').get() as any)?.next_value ?? 1;
-      conn.prepare('UPDATE student_code_seq SET next_value = next_value + 1 WHERE id = 1').run();
-      const info = conn
-        .prepare(
-          `INSERT INTO students (student_code, full_name, normalized_name, dob, email, branch_id, status,
-                                 consultant_name, created_at)
-           VALUES (?,?,?,?,?,?, 'active', ?, ?)`,
-        )
-        .run(padCode('PISA', seq), r.fullName, normalizeName(r.fullName), r.dob ?? null, r.email ?? null,
-             cls.branch_id, r.consultant ?? null, nowIso());
-      const sid = Number(info.lastInsertRowid);
-      studentIds.push(sid);
-      hangDaThem.push(r.row);
+      conn.prepare('UPDATE student_code_seq SET next_value = next_value + ? WHERE id = 1').run(ok.length);
+      const ma = ok.map((_, i) => padCode('PISA', seq + i));
+      chenNhieuDong(
+        `INSERT INTO students (student_code, full_name, normalized_name, dob, email, branch_id, status, consultant_name, created_at)`,
+        ok.map((r, i) => [ma[i], r.fullName, normalizeName(r.fullName!), r.dob ?? null, r.email ?? null, cls.branch_id, 'active',
+          r.consultant ?? null, now]));
+      const sidOf = new Map<string, number>();
+      theoLo(ma, (lo, ph) => {
+        for (const x of conn.prepare(`SELECT id, student_code FROM students WHERE student_code IN (${ph})`).all(...lo) as any[]) {
+          sidOf.set(x.student_code, x.id);
+        }
+      });
+      const sids = ma.map((m) => sidOf.get(m)!);
+      studentIds.push(...sids);
+      hangDaThem.push(...ok.map((r) => r.row));
 
-      conn.prepare('INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, ?,?,?)')
-        .run(sid, r.classId, 'active', startedAt, nowIso());
-      addJourney({ studentId: sid, eventType: 'enrollment', eventDate: startedAt,
-        title: `Vào lớp ${cls.code}`, createdBy: p.userId });
+      const startWeek = (r: (typeof ok)[number]) => r.startWeek ?? cls.start_date ?? now.slice(0, 10);
+      chenNhieuDong('INSERT INTO enrollments (student_id, class_id, status, started_at, created_at)',
+        ok.map((r, i) => [sids[i], r.classId, 'active', startWeek(r), now]));
+      chenNhieuDong('INSERT INTO journey_events (student_id, event_type, event_date, title, created_by, created_at)',
+        ok.map((r, i) => [sids[i], 'enrollment', startWeek(r), `Vào lớp ${cls.code}`, p.userId, now]));
 
       /*
        * MỞ LỘ TRÌNH CHO MỌI EM, lộ trình theo LỚP em vào (K2-20) — cột "Lộ trình" trong file bị bỏ qua (có báo ở xem trước).
        * Nhờ vậy em nào cũng có chỗ để gắn target, tuần bắt đầu, lịch MT.
+       *
+       * OVR VÀ BỐN BAND LÀ HAI NGUỒN KHÁC NHAU (mục 12.1). OVR là con số trên phiếu điểm; bốn band là bốn con số cũng trên
+       * phiếu đó. Không suy cái này ra cái kia: thiếu vài môn thì để trống đúng những môn thiếu, và có đủ bốn môn cũng không tính
+       * lại OVR — làm tròn của IELTS không phải trung bình cộng.
+       *
+       * T9: thi dự kiến là NGÀY → lưu ngày + suy tháng, tuần; là THÁNG → chỉ tháng.
        */
       const route = cls.route ?? null;
-      {
-        /*
-         * OVR VÀ BỐN BAND LÀ HAI NGUỒN KHÁC NHAU (mục 12.1).
-         *
-         * OVR là con số trên phiếu điểm; bốn band là bốn con số cũng trên phiếu đó. Không
-         * suy cái này ra cái kia: thiếu vài môn thì để trống đúng những môn thiếu, và có đủ
-         * bốn môn cũng không tính lại OVR — làm tròn của IELTS không phải trung bình cộng.
-         */
-        const ovr = baselineOf(r.baselineScore);
-        const bands = {
-          l: baselineOf(r.entryListening), r: baselineOf(r.entryReading),
-          w: baselineOf(r.entryWriting), s: baselineOf(r.entrySpeaking),
-        };
-        const hasEntry = ovr !== null || bands.l !== null || bands.r !== null
-          || bands.w !== null || bands.s !== null;
-        /* T9: thi dự kiến là NGÀY → lưu ngày + suy tháng, tuần; là THÁNG → chỉ tháng. */
-        const thi = r.examDate ?? null;
-        const examDate = thi?.length === 10 ? thi : null;
-        const cyc = conn
-          .prepare(
-            `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, exam_month, exam_date, exam_period_id,
-                                          baseline_score, baseline_source,
-                                          baseline_listening, baseline_reading, baseline_writing, baseline_speaking,
-                                          start_period_id, started_at, status, created_at)
-             VALUES (?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?)`,
-          )
+      const examDateOf = (r: (typeof ok)[number]) => (r.examDate?.length === 10 ? r.examDate : null);
+      const tuan = ensurePeriods([...ok.map(startWeek), ...ok.map(examDateOf).filter((x): x is string => !!x).map(mondayOf)]);
+      chenNhieuDong(
+        `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, exam_month, exam_date, exam_period_id,
+                                      baseline_score, baseline_source,
+                                      baseline_listening, baseline_reading, baseline_writing, baseline_speaking,
+                                      start_period_id, started_at, status, created_at)`,
+        ok.map((r, i) => {
+          const ovr = baselineOf(r.baselineScore);
+          const bands = [baselineOf(r.entryListening), baselineOf(r.entryReading), baselineOf(r.entryWriting), baselineOf(r.entrySpeaking)];
+          const hasEntry = ovr !== null || bands.some((b) => b !== null);
+          const thi = r.examDate ?? null;
+          const examDate = examDateOf(r);
           /* TUẦN BẮT ĐẦU HỌC lấy từ ô của dòng, hoặc mặc định của cả lô (mục 12.1). */
-          .run(sid, route, cls.programme_code ?? null, r.target ?? null, thi ? thi.slice(0, 7) : null,
-               examDate, examDate ? ensurePeriod(mondayOf(examDate)).id : null,
-               ovr, hasEntry ? 'entrance' : null,
-               bands.l, bands.r, bands.w, bands.s,
-               ensurePeriod(startWeek).id, startedAt, nowIso());
-        addJourney({ studentId: sid, eventType: 'cycle_start', eventDate: startedAt,
-          title: route ? `Bắt đầu lộ trình ${route}` : 'Bắt đầu khoá học',
-          detail: r.target ? `Target ${r.target}` : 'Chưa có target',
-          refTable: 'learning_cycles', refId: Number(cyc.lastInsertRowid), createdBy: p.userId });
+          return [sids[i], 1, route, cls.programme_code ?? null, r.target ?? null, thi ? thi.slice(0, 7) : null,
+            examDate, examDate ? tuan.get(mondayOf(examDate))!.id : null,
+            ovr, hasEntry ? 'entrance' : null, ...bands,
+            tuan.get(startWeek(r))!.id, startWeek(r), 'active', now];
+        }));
+      /* Em mới tạo nên mỗi em đúng một lộ trình. */
+      const cycOf = new Map<number, number>();
+      theoLo(sids, (lo, ph) => {
+        for (const c of conn.prepare(`SELECT id, student_id FROM learning_cycles WHERE student_id IN (${ph})`).all(...lo) as any[]) {
+          cycOf.set(c.student_id, c.id);
+        }
+      });
+      chenNhieuDong(
+        'INSERT INTO journey_events (student_id, event_type, event_date, title, detail, ref_table, ref_id, created_by, created_at)',
+        ok.map((r, i) => [sids[i], 'cycle_start', startWeek(r), route ? `Bắt đầu lộ trình ${route}` : 'Bắt đầu khoá học',
+          r.target ? `Target ${r.target}` : 'Chưa có target', 'learning_cycles', cycOf.get(sids[i]), p.userId, now]));
 
-        /* M1: lịch MT mặc định tạo ngay, MT đã qua là MT lịch sử (T33, T34). Tuần do hệ thống tính, không lấy từ file dán. */
-        if (cls.is_fast_track && route) {
-          const luot = taoMtMacDinh(Number(cyc.lastInsertRowid), { actorUserId: p.userId, daThiToiMt: r.daThiToiMt == null ? undefined : Number(r.daThiToiMt) });
+      /* M1: lịch MT mặc định tạo ngay, MT đã qua là MT lịch sử (T33, T34). Tuần do hệ thống tính, không lấy từ file dán. */
+      if (cls.is_fast_track && route) {
+        const luotOf = taoMtMacDinhLo(ok.map((r, i) => ({
+          cycleId: cycOf.get(sids[i])!, daThiToiMt: r.daThiToiMt == null ? undefined : Number(r.daThiToiMt),
+        })), { actorUserId: p.userId });
+        for (const sid of sids) {
+          const luot = luotOf.get(cycOf.get(sid)!) ?? [];
           const lichSu = luot.filter((l) => l.lichSu);
           if (luot.length) mt.soEm += 1;
           if (lichSu.length) { mt.soEmCoLichSu += 1; mt.soLuotLichSu += lichSu.length; mt.luotLichSuDau ??= lichSu[0].attemptId; }
@@ -478,7 +517,7 @@ export function commitIntake(
       entityLabel: `${out.added} học viên`, after: { added: out.added, skipped: out.skipped } });
     if (key) {
       conn.prepare('INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES (?,?,?)')
-        .run(`intake:${key}`, JSON.stringify(out), nowIso());
+        .run(key, JSON.stringify(out), nowIso());
     }
     return out;
   });

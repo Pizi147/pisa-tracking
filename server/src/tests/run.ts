@@ -1516,12 +1516,16 @@ check('Nhập ngoài phạm vi quyền bị chặn ở server', () => {
    * Cả lô vào MỘT lớp, nên lớp ngoài phạm vi là chặn CẢ LÔ ngay từ đầu — không có chuyện
    * ghi được một phần. Còn một dòng hỏng trong một lô hợp lệ thì chỉ dòng đó bị bỏ.
    */
-  const r = intake.commitIntake(P.mbManager, {
-    classId: classId('CP FT 110'),
-    rows: [{ fullName: 'Ngoài Phạm Vi 2' }],
-    idempotencyKey: 'test-intake-scope',
-  });
-  assert(r.added === 0, `Lớp ngoài phạm vi mà vẫn ghi được ${r.added} học viên`);
+  /* PR-TOC: chặn bằng 403 (trước là 200 · 0 em · không lỗi — giao diện báo "đã thêm 0 em" mà không nói vì sao). */
+  let loi: any = null;
+  try {
+    intake.commitIntake(P.mbManager, {
+      classId: classId('CP FT 110'),
+      rows: [{ fullName: 'Ngoài Phạm Vi 2' }],
+      idempotencyKey: 'test-intake-scope',
+    });
+  } catch (e) { loi = e; }
+  assert(loi?.status === 403 && /phạm vi/.test(loi.message), `Lớp ngoài phạm vi phải 403: ${loi?.status} ${loi?.message}`);
   assert(!conn.prepare("SELECT id FROM students WHERE full_name = 'Ngoài Phạm Vi 2'").get(),
     'Học viên ngoài phạm vi quyền vẫn bị ghi vào database');
 });
@@ -9736,6 +9740,10 @@ await runPrMtTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, ad
 // ==================================================================== PR-NHAP (Thêm học viên: email, ngày thi, cột theo tiêu đề)
 const { runPrNhapTests } = await import('./prNhap.tests.ts');
 await runPrNhapTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== PR-TOC (Thêm học viên theo lô, kiểm dữ liệu nhập)
+const { runPrTocTests } = await import('./prToc.tests.ts');
+await runPrTocTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
 // ==================================================================== PR-MON (Hệ môn học, Pre FOU một ô Tổng hợp, hai khung FT / Lớp thường)
 const { runPrMonTests } = await import('./prMon.tests.ts');
 await runPrMonTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });

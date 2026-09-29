@@ -1,4 +1,4 @@
-import { db } from '../db.ts';
+import { chenNhieuDong, db, theoLo } from '../db.ts';
 import { addDays, nowIso, parseDate } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 
@@ -97,18 +97,34 @@ export function isOverdue(deadline: string, today: string): boolean {
 // ---------------------------------------------------------------- lưu kỳ
 
 export function ensurePeriod(date: string): { id: number } & WeekInfo {
-  const info = weekInfo(date);
+  return ensurePeriods([date]).get(date)!;
+}
+
+/**
+ * `ensurePeriod` cho NHIỀU ngày (PR-TOC): đọc một câu, chèn tuần còn thiếu một câu, đọc lại một câu — không lặp theo từng ngày.
+ * Khoá của Map là đúng chuỗi ngày truyền vào.
+ */
+export function ensurePeriods(dates: readonly string[]): Map<string, { id: number } & WeekInfo> {
+  const info = new Map(dates.map((d) => [d, weekInfo(d)]));
+  const tuan = [...new Set([...info.values()].map((w) => w.weekStart))];
   const conn = db();
-  const found = conn.prepare('SELECT id FROM report_periods WHERE week_start = ?').get(info.weekStart) as any;
-  if (found) return { id: found.id, ...info };
-  conn
-    .prepare(
-      `INSERT INTO report_periods (week_start, week_end, year, month, week_no, code, created_at)
-       VALUES (?,?,?,?,?,?,?) ON CONFLICT(week_start) DO NOTHING`,
-    )
-    .run(info.weekStart, info.weekEnd, info.year, info.month, info.weekNo, info.code, nowIso());
-  const row = conn.prepare('SELECT id FROM report_periods WHERE week_start = ?').get(info.weekStart) as any;
-  return { id: row.id, ...info };
+  const idOf = new Map<string, number>();
+  const doc = (ds: string[]) => theoLo(ds, (lo, ph) => {
+    for (const r of conn.prepare(`SELECT id, week_start FROM report_periods WHERE week_start IN (${ph})`).all(...lo) as any[]) {
+      idOf.set(r.week_start, r.id);
+    }
+  });
+  doc(tuan);
+  const thieu = tuan.filter((w) => !idOf.has(w));
+  if (thieu.length) {
+    const now = nowIso();
+    const ws = new Map([...info.values()].map((w) => [w.weekStart, w]));
+    chenNhieuDong('INSERT INTO report_periods (week_start, week_end, year, month, week_no, code, created_at)',
+      thieu.map((t) => { const w = ws.get(t)!; return [w.weekStart, w.weekEnd, w.year, w.month, w.weekNo, w.code, now]; }),
+      ' ON CONFLICT(week_start) DO NOTHING');
+    doc(thieu);
+  }
+  return new Map([...info].map(([d, w]) => [d, { id: idOf.get(w.weekStart)!, ...w }]));
 }
 
 /** Trả về kèm WeekInfo dạng camelCase — hàng thô trong bảng dùng snake_case. */

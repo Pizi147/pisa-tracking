@@ -37,6 +37,14 @@ export function docNgayNhap(raw: unknown, homNay: string,
   return { iso: r.iso, loi: r.iso ? null : (r.loi ?? mau) };
 }
 
+/** PR-TOC — cận năm của ô ngày nhập, chặn năm gõ nhầm (0208, 2206…). Ngày sinh: từ 1900 tới hôm nay. */
+export const NGAY_SINH_TOI_THIEU = '1900-01-01';
+/** PR-TOC — tuần bắt đầu học, thi dự kiến: trong khoảng năm nay −3 … năm nay +3. */
+export function canNamGan(homNay: string): { toiThieu: string; toiDa: string } {
+  const y = Number(homNay.slice(0, 4));
+  return { toiThieu: `${y - 3}-01-01`, toiDa: `${y + 3}-12-31` };
+}
+
 const MAU_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 /** Email học viên (T8): cắt khoảng trắng, chữ thường. Không bắt duy nhất (anh chị em có thể dùng chung email phụ huynh). */
 export function docEmail(raw: unknown): { email: string | null; loi: string | null } {

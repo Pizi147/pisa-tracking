@@ -31,7 +31,7 @@ const {
 const { loadPrincipal, can, napTruocPhamVi, scopeFor } = await import('../permissions.ts');
 const { PERMISSIONS } = await import('../../../shared/domain/index.ts');
 const { listCases } = await import('../cases/cases.ts');
-const { DUONG_DO, TRAN } = await import('./tocDoDuong.ts');
+const { DUONG_DO, TRAN, TRAN_GHI_LO } = await import('./tocDoDuong.ts');
 
 runSeed();
 
@@ -683,6 +683,53 @@ await checkAsync('PR-TD Task5(3) · sau khi nhân dữ liệu, listCases vẫn r
     }
   }
   assert(sai.length === 0, `Lệch sau khi nhân dữ liệu:\n${sai.join('\n')}`);
+});
+
+// ==================================================================== PR-TOC — trần câu SQL của đường ghi theo lô
+
+/** Đếm câu SQL của MỘT lượt POST qua HTTP (tuần tự, như `doSql`). */
+async function doGhi(vai: Vai, url: string, body: unknown) {
+  const truoc = soCauSql();
+  const r = await callHttp(vai, 'POST', url, body);
+  return { ...r, n: soCauSql() - truoc };
+}
+const dongNhap = (tien: string, n: number, ft: boolean) => Array.from({ length: n }, (_, i) => ({
+  fullName: `${tien} ${i + 1}`, dob: '12/05/2008', email: `toc${i + 1}.${tien.length}@demo.test`,
+  ...(ft ? {
+    baselineScore: '5.5', target: '6.5',
+    daThiToiMt: i % 5 === 0 ? '4' : undefined,            // em cũ đã thi ngoài web → thêm MT4 lịch sử
+    examDate: i % 4 === 0 ? '03/2027' : undefined,
+    startWeek: i % 3 === 0 ? undefined : '2026-09-28',    // lẫn tuần khai giảng (MT lịch sử) và tuần riêng
+  } : {}),
+}));
+
+await checkAsync(`PR-TOC · Thêm 35 em lớp FT (POST /intake/commit) ≤ ${TRAN_GHI_LO.themHocVien35FT} câu SQL, đủ lịch MT mặc định`, async () => {
+  const r = await doGhi('QL', '/intake/commit', { classId: LOP_FT, rows: dongNhap('Tốc Độ FT', 35, true), idempotencyKey: 'pr-toc-35' });
+  assert(r.status === 200 && r.json.added === 35, `Phải thêm đủ 35 em: ${r.status} ${JSON.stringify(r.json)}`);
+  assert(r.json.mt.soEm === 35, `Em nào cũng có lịch MT: ${JSON.stringify(r.json.mt)}`);
+  const luot = (conn.prepare(
+    `SELECT COUNT(*) n FROM assessment_attempts WHERE student_id IN (${r.json.studentIds.join(',')})`).get() as any).n;
+  assert(luot === 35 * 3 + 7, `35 em × MT1–3 + 7 em thêm MT4 = 112 lượt, được ${luot}`);
+  console.log(`      (đo: ${r.n} câu)`);
+  assert(r.n <= TRAN_GHI_LO.themHocVien35FT, `${r.n} câu > trần ${TRAN_GHI_LO.themHocVien35FT}`);
+});
+
+await checkAsync(`PR-TOC · Chuyển cả lớp thường sang FT (POST /classes/:id/transition) ≤ ${TRAN_GHI_LO.chuyenCaLopSangFT} câu SQL`, async () => {
+  const them = await callHttp('QL', 'POST', '/intake/commit', { classId: LOP_THUONG, rows: dongNhap('Tốc Độ Thường', 20, false), idempotencyKey: 'pr-toc-20' });
+  assert(them.status === 200 && them.json.added === 20, `Chuẩn bị lớp thường 20 em: ${them.status} ${JSON.stringify(them.json)}`);
+  const sids = (conn.prepare(
+    `SELECT s.id FROM enrollments e JOIN students s ON s.id = e.student_id
+      WHERE e.class_id = ? AND e.status = 'active' AND s.status = 'active' AND s.archived_at IS NULL`).all(LOP_THUONG) as any[]).map((x) => x.id);
+  const r = await doGhi('QL', `/classes/${LOP_THUONG}/transition`, {
+    effectiveDate: '2026-09-28', dongs: sids.map((studentId) => ({ studentId, huong: 'fast_track', toClassId: LOP_FT, mucTieu: 6.5 })),
+  });
+  assert(r.status === 200 && !r.json.failed?.length, `Chuyển phải thành công: ${r.status} ${JSON.stringify(r.json).slice(0, 300)}`);
+  const coLich = (conn.prepare(
+    `SELECT COUNT(DISTINCT c.student_id) n FROM learning_cycles c JOIN assessment_attempts a ON a.cycle_id = c.id
+      WHERE c.status = 'active' AND c.route IS NOT NULL AND c.student_id IN (${sids.join(',')})`).get() as any).n;
+  assert(coLich === sids.length, `Em nào sang FT cũng có lịch MT: ${coLich}/${sids.length}`);
+  console.log(`      (đo: ${sids.length} em, ${r.n} câu)`);
+  assert(r.n <= TRAN_GHI_LO.chuyenCaLopSangFT, `${r.n} câu > trần ${TRAN_GHI_LO.chuyenCaLopSangFT}`);
 });
 
 console.log('\nBảng đo (vai · url → mã HTTP · số câu SQL):');

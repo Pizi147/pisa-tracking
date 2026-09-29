@@ -1,11 +1,11 @@
 import { db, tx } from '../db.ts';
 import {
-  ENTRY_SKILLS, JOURNEY_GROUP, NO_HANDOVER_NOTE, PERMISSIONS, STUDENT_STATUSES, luatDoiLop, docEmail, docNgayNhap,
+  ENTRY_SKILLS, JOURNEY_GROUP, NO_HANDOVER_NOTE, PERMISSIONS, STUDENT_STATUSES, luatDoiLop, NGAY_SINH_TOI_THIEU, docEmail, docNgayNhap,
   type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { luotSinhViecRow } from '../worklist/danhGia.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, isIsoDate, normalizeName, notFound, nowIso, padCode } from '../util.ts';
+import { badRequest, isIsoDate, kiemKieuO, normalizeName, notFound, nowIso, padCode } from '../util.ts';
 import { can, classScopeSql, require_, scopeFor, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { NOT_UNCONFIRMED_PRESET } from '../cases/sosState.ts';
@@ -341,12 +341,14 @@ export function updateStudent(p: Principal, studentId: number, patch: any) {
   };
   /* Kiểm ở biên (PR-NHAP): họ tên không rỗng, ngày sinh có thật và không sau hôm nay, email đúng dạng (trống → NULL, T8). */
   patch = { ...patch };
+  kiemKieuO(patch, ['fullName', 'dob', 'email', 'consultantName', 'note'], [],
+    (k) => ({ fullName: 'Họ tên', dob: 'Ngày sinh', email: 'Email', consultantName: 'Người tư vấn', note: 'Ghi chú' })[k] ?? k);
   if (patch.fullName !== undefined) {
     patch.fullName = String(patch.fullName ?? '').trim();
     if (!patch.fullName) throw badRequest('Họ tên không được trống.');
   }
   if (patch.dob !== undefined) {
-    const d = docNgayNhap(patch.dob, demoToday(), { toiDa: demoToday() });
+    const d = docNgayNhap(patch.dob, demoToday(), { toiThieu: NGAY_SINH_TOI_THIEU, toiDa: demoToday() });
     if (d.loi) throw badRequest('Ngày sinh: ' + d.loi);
     patch.dob = d.iso;
   }

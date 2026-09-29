@@ -1,11 +1,11 @@
 import { db, tx } from '../db.ts';
 import {
   BASELINE_SOURCES, CO_DIEM_SQL, CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, CYCLE_STATUSES, PERMISSIONS, soMtKeTiep, tuanLich,
-  docNgayNhap, mondayOfDate, ngay, type ExamPlan, type LuotSo, type Route,
+  canNamGan, docNgayNhap, mondayOfDate, ngay, type ExamPlan, type LuotSo, type Route,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
-import { badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
+import { badRequest, isIsoDate, kiemKieuO, notFound, nowIso } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, mondayOf, periodById } from '../platform/week.ts';
@@ -147,17 +147,40 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
   require_(p, PERMISSIONS.STUDENT_EDIT, { studentId: c.student_id });
+  kiemKieuO(patch, ['startWeek', 'examDate', 'note'], [], (k) => ({ startWeek: 'Tuần bắt đầu', examDate: 'Thi dự kiến', note: 'Ghi chú' })[k] ?? k);
+  /* PR-TOC: cận năm (năm nay −3 … +3) chỉ áp khi giá trị ĐỔI — lộ trình cũ gửi lại đúng giá trị đang lưu không bị chặn. */
+  const can = canNamGan(demoToday());
   if (patch.startWeek !== undefined) {           // Thông tin HV gửi Thứ Hai ISO từ ô ngày thống nhất kiểu tuần
     const w = docNgayNhap(patch.startWeek, demoToday());
     if (!w.iso) throw badRequest(`Tuần bắt đầu: ${w.loi ?? 'bắt buộc'}`);
+    const cu = c.start_period_id ? periodById(c.start_period_id)?.weekStart ?? null : null;
+    const ngoai = mondayOf(w.iso) !== cu ? docNgayNhap(w.iso, demoToday(), can).loi : null;
+    if (ngoai) throw badRequest(`Tuần bắt đầu: ${ngoai}`);
     patch = { ...patch, startPeriodId: ensurePeriod(mondayOf(w.iso)).id };
   }
   if (patch.examDate !== undefined) {            // T9: ngày → lưu ngày + suy tháng, tuần; tháng → chỉ tháng; trống → xoá cả hai
     const t = docNgayNhap(patch.examDate, demoToday(), { choThang: true });
-    if (t.loi) throw badRequest(`Thi dự kiến: ${t.loi}`);
+    const ngoai = t.iso && t.iso !== (c.exam_date ?? c.exam_month) ? docNgayNhap(t.iso, demoToday(), { choThang: true, ...can }).loi : null;
+    if (t.loi || ngoai) throw badRequest(`Thi dự kiến: ${t.loi ?? ngoai}`);
     const la = t.iso?.length === 10;
     patch = { ...patch, examMonth: t.iso ? t.iso.slice(0, 7) : null, examDateGhi: la ? t.iso : null,
       ...(la ? { examPeriodId: ensurePeriod(mondayOf(t.iso!)).id } : {}) };
+  }
+  /*
+   * Cùng cận năm cho tuần / tháng gửi THẲNG (StudentPlanPanel gửi `startPeriodId`, `examPeriodId`; API cũ gửi `examMonth`) — cũng chỉ
+   * khi đổi. Id tuần không có thật để vòng ghi bên dưới báo như cũ.
+   */
+  for (const [k, cot, nhan] of [['startPeriodId', 'start_period_id', 'Tuần bắt đầu'], ['examPeriodId', 'exam_period_id', 'Tuần dự kiến thi']] as const) {
+    const v = patch[k];
+    if (v == null || v === '' || Number(v) === c[cot]) continue;
+    const tuan = periodById(Number(v))?.weekStart;
+    const loi = tuan ? docNgayNhap(tuan, demoToday(), can).loi : null;
+    if (loi) throw badRequest(`${nhan}: ${loi}`);
+  }
+  const thang = patch.examMonth ? String(patch.examMonth).slice(0, 7) : null;
+  if (thang && thang !== c.exam_month && /^\d{4}-\d{2}$/.test(thang)) {
+    const loi = docNgayNhap(thang, demoToday(), { choThang: true, ...can }).loi;
+    if (loi) throw badRequest(`Thi dự kiến: ${loi}`);
   }
   /* PR-DUYET (T44): đổi target / lộ trình cần `cycle.edit` — chỉ khi giá trị THẬT SỰ đổi (panel gửi cả ô không sửa). Thi dự kiến giữ `student.edit` (Q7). */
   const doiTarget = patch.targetScore !== undefined && Number(patch.targetScore ?? NaN) !== Number(c.target_score ?? NaN)
