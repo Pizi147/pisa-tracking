@@ -303,4 +303,46 @@ async function mayChu(t: YThucTestKit) {
     assert(pf.sheets.map((s) => s.ten).join() === [...pf.sheets.map((s) => s.ten)].filter((x) => x !== 'Bộ lọc đã dùng').sort().concat('Bộ lọc đã dùng').join(), 'sheet theo mã chương trình, Bộ lọc cuối');
     assert(!JSON.stringify(pf.sheets).includes('SOS'), 'không SOS');
   });
+
+  // ------------------------------------------------------------------ khối 3: giao diện (đọc nguồn)
+  const fs = await import('node:fs');
+  const pathMod = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const REPO = pathMod.resolve(fileURLToPath(new URL('../../../../', import.meta.url)));
+  const web = (f: string) => fs.readFileSync(pathMod.join(REPO, 'web/src', f), 'utf8');
+
+  check('PR-XUAT (4) · tuanDauThangCua: tuần đầu của tháng sở hữu (T40 mặc định Lịch Test)', () => {
+    assert(d.tuanDauThangCua('2026-09-28') === '2026-09-28', 'W1 OCT là tuần đầu của tháng 10');
+    assert(d.tuanDauThangCua('2026-09-21') === '2026-08-31', 'W4 SEP → thứ Hai 31/08 (W1 SEP)');
+    assert(d.tuanDauThangCua('2026-08-31') === '2026-08-31', 'đã là tuần đầu');
+  });
+
+  check('PR-XUAT (4) · thư viện xlsx chỉ nạp động (không `from \'xlsx\'` ở web/src); ngăn gọi hai đường xuất, không chữ < 12 px, không màu cứng', () => {
+    const tep: string[] = [];
+    const duyet = (dir: string) => {
+      for (const e of fs.readdirSync(pathMod.join(REPO, 'web/src', dir), { withFileTypes: true })) {
+        const rel = `${dir}/${e.name}`;
+        if (e.isDirectory()) duyet(rel); else if (/\.tsx?$/.test(e.name)) tep.push(rel);
+      }
+    };
+    duyet('.');
+    const tinh = tep.filter((f) => /from\s+['"]xlsx['"]/.test(web(f)));
+    assert(tinh.length === 0, `import tĩnh xlsx: ${tinh.join(', ')}`);
+    assert(/import\('xlsx'\)/.test(web('modules/test/NganXuatMt.tsx')), 'NganXuatMt nạp động');
+    const ngan = web('modules/test/NganXuatMt.tsx');
+    assert(ngan.includes('/xuat-mt/xem-truoc') && ngan.includes("'/xuat-mt'"), 'gọi xem trước và xuất');
+    assert(!/text-\[(?:9|10|11)(?:\.\d+)?px\]/.test(ngan), 'không chữ < 12 px (PR-SANG quét)');
+    assert(!/#[0-9a-fA-F]{3,8}\b|rgba?\(/.test(ngan), 'không mã màu cứng (chỉ token)');
+  });
+
+  check('PR-XUAT (4) · ba chỗ mở ngăn: Lịch Test (nav.xuatMt), hồ sơ lớp ⋮ (xuat-mt), Phân tích › Tổng hợp Test (hai nút khác chữ)', () => {
+    const lich = web('modules/test/LichTestTab.tsx');
+    assert(lich.includes('nav?.xuatMt') && lich.includes('<NganXuatMt'), 'Lịch Test');
+    const dau = web('modules/classes/DauTrangLop.tsx');
+    assert(dau.includes("'xuat-mt'") && dau.includes('nav?.xuatMt'), 'hồ sơ lớp ⋮');
+    assert(dau.indexOf("key: 'thong-tin'") < dau.indexOf("key: 'xuat-mt'") && dau.indexOf("key: 'xuat-mt'") < dau.indexOf("key: 'xoa-lop'"), 'mục ⋮ sau "Sửa thông tin lớp", trước đường kẻ Xoá');
+    assert(web('modules/classes/ClassOverviewPage.tsx').includes("viec === 'xuat-mt'"), 'trang hồ sơ lớp mở ngăn');
+    const th = web('modules/phanTich/TongHopTestSos.tsx');
+    assert(th.includes('⤓ Xuất bảng này') && th.includes('Xuất kết quả từng lượt') && th.includes('nav?.xuatMt') && !th.includes('⤓ Xuất Excel'), 'Tổng hợp Test (Q9)');
+  });
 }

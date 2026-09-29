@@ -60,14 +60,14 @@ export function docBoLocXuatMt(o: Record<string, unknown>): BoLocXuatMt | string
     const tu = chuoi(o.tu), den = chuoi(o.den);
     if (!laNgayIso(tu) || !laNgayIso(den) || mondayOfDate(tu) !== tu || mondayOfDate(den) !== den) return 'Tuần phải là một ngày thứ Hai (YYYY-MM-DD).';
     if (tu > den) return 'Tuần bắt đầu phải trước hoặc bằng tuần kết thúc.';
-    if ((Date.parse(den) - Date.parse(tu)) / TUAN_MS + 1 > XUAT_TOI_DA_TUAN) return `Khoảng thời gian tối đa ${XUAT_TOI_DA_TUAN} tuần.`;
+    if ((Date.parse(den) - Date.parse(tu)) / TUAN_MS + 1 > XUAT_TOI_DA_TUAN) return `Mỗi lần xuất tối đa ${XUAT_TOI_DA_TUAN} tuần — rút ngắn khoảng thời gian.`;
     thoiGian = { kieu: 'tuan', tu, den };
   } else if (tg === 'thang') {
     const tu = chuoi(o.tu), den = chuoi(o.den);
     if (!laThangIso(tu) || !laThangIso(den)) return 'Tháng phải có dạng YYYY-MM.';
     if (tu > den) return 'Tháng bắt đầu phải trước hoặc bằng tháng kết thúc.';
     const soThang = (Number(den.slice(0, 4)) - Number(tu.slice(0, 4))) * 12 + Number(den.slice(5)) - Number(tu.slice(5)) + 1;
-    if (soThang > XUAT_TOI_DA_THANG) return `Khoảng thời gian tối đa ${XUAT_TOI_DA_THANG} tháng.`;
+    if (soThang > XUAT_TOI_DA_THANG) return `Mỗi lần xuất tối đa ${XUAT_TOI_DA_THANG} tháng — rút ngắn khoảng thời gian.`;
     thoiGian = { kieu: 'thang', tu, den };
   } else if (tg === 'dot') {
     const ds = danhSach(o.dot);
@@ -98,6 +98,17 @@ export function queryXuatMt(f: BoLocXuatMt): string {
 
 export const nhanKhoaDot = (k: string) => (k === 'giua' ? 'Giữa khoá' : k === 'cuoi' ? 'Cuối khoá' : k.startsWith('mt:') ? `MT${k.slice(3)}` : k);
 const maTuanCoNam = (thuHai: string) => `${tuanLich(thuHai)} ${owningMonthOf(thuHai).year}`;
+/** Thứ Hai của tuần ĐẦU của tháng sở hữu tuần `thuHai` (tuần thuộc tháng chứa ngày thứ Năm của nó) — mặc định "từ tuần" của ngăn xuất. */
+export function tuanDauThangCua(thuHai: string): string {
+  const { year, month } = owningMonthOf(thuHai);
+  let t = thuHai;
+  for (;;) {
+    const truoc = new Date(Date.parse(`${t}T00:00:00Z`) - TUAN_MS).toISOString().slice(0, 10);
+    const m = owningMonthOf(truoc);
+    if (m.year !== year || m.month !== month) return t;
+    t = truoc;
+  }
+}
 const nhanThang = (m: string) => `${m.slice(5)}/${m.slice(0, 4)}`;
 
 /** Các dòng `[nhãn, giá trị]` mô tả bộ lọc — dùng cho sheet "Bộ lọc đã dùng" và nhãn nhật ký. `ten` = tên chi nhánh / mã lớp đã chọn. */

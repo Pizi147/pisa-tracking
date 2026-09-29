@@ -52,7 +52,7 @@ function manhPhamVi(v: PhamViXuat): { sql: string; params: number[] } {
 
 export type PhamViDanhSach = {
   chiNhanh: { id: number; ten: string }[];
-  lop: { id: number; ma: string; chiNhanhId: number; ft: boolean; daKetThuc: boolean }[];
+  lop: { id: number; ma: string; chiNhanhId: number; ft: boolean; daKetThuc: boolean; soHv: number }[];
 };
 
 /** Chi nhánh và lớp trong phạm vi — hai câu (để ngăn vẽ nút chọn; cũng là nơi kiểm 403). */
@@ -60,8 +60,10 @@ function danhSachPhamVi(v: PhamViXuat): PhamViDanhSach {
   const conn = db();
   const cs = manhPhamVi(v);
   const lop = (conn.prepare(
-    `SELECT c.id, c.code, c.branch_id, c.is_fast_track, c.status FROM classes c WHERE ${cs.sql} ORDER BY c.code`,
-  ).all(...cs.params) as any[]).map((r) => ({ id: r.id, ma: r.code, chiNhanhId: r.branch_id, ft: !!r.is_fast_track, daKetThuc: r.status === 'finished' }));
+    `SELECT c.id, c.code, c.branch_id, c.is_fast_track, c.status,
+            (SELECT COUNT(*) FROM enrollments e WHERE e.class_id = c.id AND e.status = 'active') AS so_hv
+       FROM classes c WHERE ${cs.sql} ORDER BY c.code`,
+  ).all(...cs.params) as any[]).map((r) => ({ id: r.id, ma: r.code, chiNhanhId: r.branch_id, ft: !!r.is_fast_track, daKetThuc: r.status === 'finished', soHv: r.so_hv }));
   const ids = v.tatCa ? [] : [...new Set([...v.chiNhanh, ...lop.map((l) => l.chiNhanhId)])];
   const chiNhanh = ((v.tatCa || ids.length)
     ? conn.prepare(v.tatCa ? `SELECT id, name FROM branches WHERE status = 'active' ORDER BY name`

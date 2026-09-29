@@ -15,9 +15,10 @@ import { ClassProgressPanel } from './ClassProgressPanel.tsx';
 import { TransitionPanel } from './TransitionPanel.tsx';
 import { DauTrangLop, type HoSoLop, type ViecDauTrang } from './DauTrangLop.tsx';
 import { SuaThongTinLopPanel } from './SuaThongTinLopPanel.tsx';
+import { NganXuatMt } from '../test/NganXuatMt.tsx';
 import { TabHocVienLop } from './TabHocVienLop.tsx';
 import { PhanTichLopTab } from './PhanTichLopTab.tsx';
-import { TAB_HO_SO_LOP, TAB_HO_SO_LOP_NHAN, tabHoSoLop, type TabHoSoLop } from '@shared/domain/index.ts';
+import { DOT_XUAT_FT, DOT_XUAT_THUONG, TAB_HO_SO_LOP, TAB_HO_SO_LOP_NHAN, tabHoSoLop, type TabHoSoLop } from '@shared/domain/index.ts';
 
 /**
  * HỒ SƠ LỚP (đặc tả §3.7; mockup 06 menu dòng A, 06c §1, 10b) — đầu trang có sẵn các nút hành động, ba tab
@@ -98,6 +99,10 @@ export default function ClassOverviewPage() {
         <SuaThongTinLopPanel onClose={dong} onDone={xong}
           lop={{ id: data.id, code: data.code, branchCode: data.branchCode, route: data.route, note: data.note,
             programmeCode: data.programme?.code ?? null, soHocVien: data.summary?.studentCount ?? 0 }} />
+      )}
+      {viec === 'xuat-mt' && (
+        <NganXuatMt khung={thuong ? 'thuong' : 'ft'} lop={{ id: data.id, ma: data.code }} chiNhanh={data.branchId}
+          thoiGianMacDinh={{ kieu: 'dot', dot: [...(thuong ? DOT_XUAT_THUONG : DOT_XUAT_FT)] }} onDong={dong} />
       )}
       {viec === 'xoa-lop' && <XoaLopPanel classId={data.id} classCode={data.code} onClose={dong} />}
       {viec === 'ket-thuc-lop' && <KetThucLopPanel classId={data.id} classCode={data.code} onClose={dong} onDone={xong} />}
