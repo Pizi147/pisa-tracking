@@ -121,4 +121,58 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(t2[5].canQl && t2[3].nhan === 'Report 4 + Meeting CX/GĐCN', 'WL 3');
     assert(d.dongThang(3, { bac: 2 }).map((x) => x.trangThai).join() === 'khai,khai,qua,lan-nay,sau,sau', 'qua sau khai');
   });
+
+  // ------------------------------------------------------------------ Task 2 · migrate cấu trúc
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const { default: SqliteDb } = await import('libsql');
+  const { migratePrYt4 } = await import('../migrate/prYt4.ts');
+  const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
+  const SCHEMA = fs.readFileSync(path.join(REPO, 'server/src/schema.sql'), 'utf8');
+  const cot = (db: any, bang: string) => (db.prepare(`PRAGMA table_info(${bang})`).all() as any[]).map((c) => `${c.name}:${c.type}:${c.notnull}:${c.pk}`);
+  /* DB thời trước YT4: cắt phần YT4 khỏi CHỮ schema.sql (libsql lỗi "incomplete input" khi DROP COLUMN trên bảng có chú thích). */
+  const truocYt4 = () => {
+    const cat = SCHEMA.replace(/\r\n/g, '\n')
+      .replace(/,\n  -- PR-YT4 \(§5\.4[\s\S]*?ghi_nhan_boi INTEGER REFERENCES users\(id\)\n\);/, '\n);')
+      .replace(/,\n  -- PR-YT4: ngày QL duyệt[^\n]*\n  quyet_luc TEXT\n\);/, '\n);')
+      .replace(/CREATE TABLE y_thuc_khai_bac \([\s\S]*?\n\);/, '');
+    if (/ghi_nhan_luc|quyet_luc|y_thuc_khai_bac \(/.test(cat)) throw new Error('schema.sql đổi khuôn — sửa bộ cắt của phép kiểm YT4 (2)');
+    const m = new SqliteDb(':memory:');
+    m.exec(cat);
+    return m;
+  };
+
+  check('YT4 (2) · migrate chạy lặp được: lần một đủ 4 bước, lần hai không báo gì; DB thật (test) không đổi', () => {
+    const m = truocYt4();
+    const a: string[] = []; migratePrYt4(m, a);
+    const b: string[] = []; migratePrYt4(m, b);
+    assert(a.length === 4 && b.length === 0, `${a.join(' | ')} ‖ ${b.join(' | ')}`);
+    const c: string[] = []; migratePrYt4(t.conn, c);
+    assert(c.length === 0, `DB dựng từ schema.sql vẫn bị đổi: ${c.join(' | ')}`);
+  });
+  check('YT4 (2) · DB migrate có cột/bảng GIỐNG HỆT DB dựng từ schema.sql (tên, kiểu, NOT NULL, thứ tự)', () => {
+    const m = truocYt4();
+    migratePrYt4(m, []);
+    const moi = new SqliteDb(':memory:');
+    moi.exec(SCHEMA);
+    for (const b of ['violations', 'discipline_measures', 'y_thuc_khai_bac']) {
+      assert(JSON.stringify(cot(m, b)) === JSON.stringify(cot(moi, b)), `${b}:
+  ${cot(m, b).join(',')}
+  ${cot(moi, b).join(',')}`);
+    }
+  });
+  check('YT4 (2) · UNIQUE (em, chuỗi) chặn khai bậc lần hai; nhãn nhật ký tiếng Việt cho 6 thao tác mới', () => {
+    const m = new SqliteDb(':memory:');
+    m.exec(SCHEMA);
+    m.exec('PRAGMA foreign_keys = OFF');
+    const them = () => m.prepare(`INSERT INTO y_thuc_khai_bac (student_id, chuoi_cycle_id, bac, ghi_chu, khai_luc) VALUES (1, 1, 2, 'x', '2026-09-14')`).run();
+    them();
+    let loi = '';
+    try { them(); } catch (e: any) { loi = String(e?.message ?? e); }
+    assert(/UNIQUE/i.test(loi), `khai lần hai phải bị chặn: ${loi}`);
+    for (const ma of ['acknowledge', 'handle', 'propose', 'performed', 'declare_level', 'declare_level_edit']) {
+      assert(d.nhanHanhDongNhatKy(`discipline.${ma}`) !== 'Thao tác hệ thống', `thiếu nhãn discipline.${ma}`);
+    }
+  });
 }

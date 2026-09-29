@@ -16,6 +16,7 @@ import { migratePrMt } from './migrate/prMt.ts';
 import { migratePrNhap } from './migrate/prNhap.ts';
 import { migratePrMon } from './migrate/prMon.ts';
 import { migratePrKck } from './migrate/prKck.ts';
+import { migratePrYt4 } from './migrate/prYt4.ts';
 
 /**
  * Giá trị cũ của cột `track` cho case Ý thức. Mô hình Case Ý thức đã BỎ 21/09/2026 (rule book mục 18) — hằng số này chỉ để NÂNG CẤP
@@ -468,6 +469,8 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     /* PR-MON: kỹ năng phụ trách được chỉ L · R · W1 · W2 · S (MH1). */
     migratePrMon(conn, applied);
     /* PR-KCK: Target "không cam kết" (Q29-1). */ migratePrKck(conn, applied);
+    /* PR-YT4: Ý thức v4 — ghi nhận vi phạm, ngày QL quyết, bảng khai bậc (chỉ cấu trúc). */
+    migratePrYt4(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống
@@ -2553,7 +2556,9 @@ CREATE TABLE IF NOT EXISTS violations (
 
   idempotency_key TEXT UNIQUE,        -- bấm hai lần hoặc thử lại sau lỗi mạng không tạo hai dòng
   created_at TEXT NOT NULL,
-  updated_at TEXT
+  updated_at TEXT,
+  ghi_nhan_luc TEXT,
+  ghi_nhan_boi INTEGER REFERENCES users(id)
 );
 CREATE INDEX IF NOT EXISTS idx_violation_student ON violations(student_id, occurred_on);
 CREATE INDEX IF NOT EXISTS idx_violation_class ON violations(class_id, occurred_on);
@@ -2598,7 +2603,8 @@ CREATE TABLE IF NOT EXISTS discipline_measures (
   idempotency_key TEXT UNIQUE,
   created_at TEXT NOT NULL,
   created_by INTEGER NOT NULL REFERENCES users(id),
-  updated_at TEXT
+  updated_at TEXT,
+  quyet_luc TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_measure_student ON discipline_measures(student_id, status);
 CREATE INDEX IF NOT EXISTS idx_measure_class ON discipline_measures(class_id, status);

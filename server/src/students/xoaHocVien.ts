@@ -21,14 +21,14 @@ import { conLaiMs } from '../platform/hanGio.ts';
 
 const CHI_ADMIN = 'Chỉ Quản trị hệ thống mới xoá được học viên.';
 
-/** Bao đóng theo FK của `students` (30 bảng) — phép kiểm X1 so bằng đúng với đồ thị dựng từ PRAGMA. */
+/** Bao đóng theo FK của `students` (31 bảng) — phép kiểm X1 so bằng đúng với đồ thị dựng từ PRAGMA. */
 export const BANG_CUA_HOC_VIEN: readonly string[] = [
   'students', 'enrollments', 'learning_cycles', 'lo_trinh_tiep_theo', 'journey_events', 'teacher_estimates', 'cycle_target_revisions',
   'assessment_attempts', 'assessment_scores', 'attempt_skills', 'attempt_skill_skips', 'attempt_schedule_history', 'skill_move_requests',
   'sos_cases', 'case_interventions', 'case_followups', 'case_intervention_revisions', 'case_issues', 'case_sources', 'case_milestones',
   'sos_case_history', 'case_signals', 'task_students', 'task_case_links',
   'violations', 'violation_history', 'discipline_measures', 'measure_violations', 'sos_coordination_actions',
-  'yeu_cau_duyet',
+  'yeu_cau_duyet', 'y_thuc_khai_bac',
 ];
 
 /** Dòng của NGƯỜI KHÁC trỏ vào dữ liệu của em (Q5) — đặt NULL, không xoá. Cả ba cột cho phép NULL. */
@@ -115,6 +115,7 @@ export const CAU_XOA_HOC_VIEN: readonly { bang: string; sql: string }[] = [
   { bang: 'journey_events', sql: `DELETE FROM journey_events WHERE student_id = ?1 OR cycle_id IN (${Y})` },
   { bang: 'assessment_attempts', sql: `DELETE FROM assessment_attempts WHERE id IN (${A})` },
   /* lộ trình, lớp, em */
+  { bang: 'y_thuc_khai_bac', sql: `DELETE FROM y_thuc_khai_bac WHERE student_id = ?1 OR chuoi_cycle_id IN (${Y})` },
   { bang: 'cycle_target_revisions', sql: `DELETE FROM cycle_target_revisions WHERE cycle_id IN (${Y})` },
   { bang: 'lo_trinh_tiep_theo', sql: 'DELETE FROM lo_trinh_tiep_theo WHERE student_id = ?1' },
   { bang: 'enrollments', sql: 'DELETE FROM enrollments WHERE student_id = ?1' },

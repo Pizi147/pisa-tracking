@@ -289,7 +289,8 @@ export async function runYThucTests(t: YThucTestKit) {
   check('PR-J · J1 Bảng violations đúng cột của đặc tả §4.1 — và KHÔNG có severity · status · due_date · episode_no · urgency', () => {
     const cols = colsOf('violations');
     const want = ['id', 'student_id', 'cycle_id', 'class_id', 'category', 'skill', 'occurred_on', 'reported_on', 'reported_by', 'description',
-      'valid', 'invalid_reason', 'invalidated_by', 'invalidated_at', 'idempotency_key', 'created_at', 'updated_at'];
+      'valid', 'invalid_reason', 'invalidated_by', 'invalidated_at', 'idempotency_key', 'created_at', 'updated_at',
+      /* PR-YT4: Ghi nhận (V4-1) — trạng thái vẫn suy ra, không có cột status */ 'ghi_nhan_luc', 'ghi_nhan_boi'];
     assert(JSON.stringify(cols) === JSON.stringify(want), `Cột violations sai: ${cols.join(', ')}`);
     for (const banned of ['severity', 'status', 'due_date', 'episode_no', 'urgency']) {
       assert(!cols.includes(banned), `violations không được có cột ${banned} (quyết định của đặc tả §4.1, không phải thiếu sót)`);
@@ -303,7 +304,7 @@ export async function runYThucTests(t: YThucTestKit) {
     const cols = colsOf('discipline_measures');
     const want = ['id', 'student_id', 'cycle_id', 'class_id', 'kind', 'custom_name', 'status', 'owner_user_id', 'note', 'performed_on',
       'performed_by', 'performer_name', 'participants', 'confirmed_by', 'confirmed_at', 'violation_count_at_confirm', 'idempotency_key',
-      'created_at', 'created_by', 'updated_at'];
+      'created_at', 'created_by', 'updated_at', /* PR-YT4: ngày QL duyệt / từ chối */ 'quyet_luc'];
     assert(JSON.stringify(cols) === JSON.stringify(want), `Cột discipline_measures sai: ${cols.join(', ')}`);
     assert(!cols.some((c) => /approv|pending/.test(c)), 'Y01: không có cột duyệt');
     for (const ix of ['idx_measure_student', 'idx_measure_class', 'idx_measure_preparing']) {
