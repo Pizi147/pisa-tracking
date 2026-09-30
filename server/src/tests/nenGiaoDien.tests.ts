@@ -120,22 +120,22 @@ export async function runNenGiaoDienTests(t: YThucTestKit) {
   });
 
   check('UX0 · N-3: badge hộp lớp là danh từ + số, câu cũ vào tooltip', () => {
-    const goc = { needsPlacement: true, canXepLop: 4, soChuaLoTrinhTiep: 5, missingSkills: ['writing'], soBaiChoCham: 9,
-      needScoresTitle: 'Lớp còn 9 bài chưa nhập điểm', soCaseMo: 3, phase: 'final_week', missingCount: 2 };
+    const goc = { vai: 'gv' as const, needsPlacement: true, canXepLop: 4, soChuaLoTrinhTiep: 5, missingSkills: ['writing'], soBaiChoCham: 9,
+      needScoresTitle: 'Lớp còn 9 bài chưa nhập điểm', phase: 'final_week', missingCount: 2, soChoDuyet: 2, soEmQuaHan: 3 };
     const b = d.badgeLop(goc);
     const tatCa = [...b.hien, ...b.an];
     assert(tatCa.length === 7, `Bộ đủ phải có 7 badge, đang ${tatCa.length}`);
     const cham = tatCa.find((x: any) => x.key === 'cham')!;
     assert(cham.nhan === '9 bài chờ chấm' && cham.title === 'Lớp còn 9 bài chưa nhập điểm', JSON.stringify(cham));
-    // Chữ đã chốt ở PR-LT/PR-Qa: `chua-lo-trinh` ("… chưa có lộ trình tiếp theo") và `chang` (tên chặng thi) dài hơn 3 từ nên được miễn.
+    // Miễn: `chang` (tên chặng thi, chữ chốt ở PR-LT/PR-Qa), `xep-lop` ("n HV cần xếp lớp tiếp") và `qua-han` ("n HV quá hạn việc") — chữ chốt ở PR-HVL (B4), "HV" là viết tắt.
     for (const x of tatCa) {
-      // Miễn: `chua-lo-trinh`, `chang` (chữ đã chốt ở PR-LT/PR-Qa) và `het-khoa` ("n HV chờ xếp lớp": chữ chốt ở mockup 17 #17, "HV" là viết tắt).
-      if (x.key === 'chua-lo-trinh' || x.key === 'chang' || x.key === 'het-khoa') continue;
+      if (x.key === 'chang' || x.key === 'xep-lop' || x.key === 'qua-han') continue;
       const tu = x.nhan.split(/\s+/).filter((w: string) => !/^\d+$/.test(w));
       assert(tu.length <= 3, `${x.key}: "${x.nhan}" quá 3 từ`);
     }
-    assert(tatCa.find((x: any) => x.key === 'case')!.nhan === '3 Case mở', 'Case mở');
-    assert(tatCa.find((x: any) => x.key === 'het-khoa')!.nhan === '4 HV chờ xếp lớp', 'Chờ xếp lớp');
+    assert(!tatCa.some((x: any) => x.key === 'case'), 'Không còn badge "Case mở" (K2-06)');
+    assert(tatCa.find((x: any) => x.key === 'xep-lop')!.nhan === '4 HV cần xếp lớp tiếp', 'Cần xếp lớp tiếp');
+    assert(tatCa.find((x: any) => x.key === 'cho-duyet')!.nhan === '2 chờ duyệt', 'Chờ duyệt');
   });
 
   check('UX0 · N-4: mở panel thứ hai thì panel thứ nhất bị đóng, không bao giờ hai panel', () => {

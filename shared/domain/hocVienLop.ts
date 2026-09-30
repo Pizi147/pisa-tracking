@@ -4,8 +4,10 @@
  * Mọi quyết định "hiện chữ gì, hiện mấy cái, xếp thế nào" của hai màn nằm ở đây để kiểm được bằng harness máy chủ (web không có bộ
  * kiểm thử). Component React chỉ vẽ.
  */
-import { skillShort, tenMon, tenMonNgan } from './normal.ts';
+import { PROGRAMME_TEMPLATES, programmeOf, skillShort, tenMon, tenMonNgan } from './normal.ts';
 import { deadlineView } from './display.ts';
+import type { ViecTiepCase } from './sosV4.ts';
+import type { NhanYThucEm } from './yThuc.ts';
 import { tuanKhoa, tuanLich } from './hienThiNgay.ts';
 import { CLASS_PHASE_LABEL, type ClassPhase } from './fasttrack.ts';
 
@@ -34,24 +36,35 @@ export function laVaiQuanLy(roles: readonly string[] | null | undefined): boolea
 
 // ---------------------------------------------------------------- chip lọc (§3.6, Q4)
 
-export const LOC_HOC_VIEN = ['tat-ca', 'sos', 'case_working', 'case_no_plan', 'case_overdue', 'thieu_tt'] as const;
+export const LOC_HOC_VIEN = ['tat-ca', 'can-lam', 'cho-duyet', 'sos', 'thieu_tt'] as const;
 export type LocHocVien = (typeof LOC_HOC_VIEN)[number];
 export const LOC_HOC_VIEN_NHAN: Record<LocHocVien, { nhan: string; goiY: string; can: string | null }> = {
   'tat-ca': { nhan: 'Tất cả', goiY: 'Mọi học viên đang học trong các lớp đang hiện.', can: null },
-  sos: { nhan: 'Đang SOS', goiY: 'Kết quả Test gần nhất ở mức SOS 1, 2 hoặc 3.', can: 'case.view' },
-  case_working: { nhan: 'Có Case đang xử lý', goiY: 'Có Case đã có PA học thuật và đang theo dõi.', can: 'case.view' },
-  case_no_plan: { nhan: 'Case thiếu PA học thuật', goiY: 'Có Case đang mở mà chưa có PA học thuật.', can: 'case.view' },
-  case_overdue: { nhan: 'Case quá hạn cập nhật', goiY: 'Có Case đã qua hạn cập nhật kết quả mà chưa ai ghi.', can: 'case.view' },
+  'can-lam': { nhan: 'Cần làm', goiY: 'Có việc quá hạn hoặc việc hạn ngắn (xác nhận, xử lý vi phạm).', can: null },
+  'cho-duyet': { nhan: 'Chờ duyệt', goiY: 'Có yêu cầu đang chờ Quản lý duyệt.', can: null },
+  sos: { nhan: 'Đang SOS', goiY: 'Chỉ Fast Track: Mock gần nhất ở mức SOS 1–3.', can: 'case.view' },
   thieu_tt: { nhan: 'Thiếu thông tin', goiY: 'Hồ sơ còn thiếu thông tin cần để xếp lịch và theo dõi.', can: null },
 };
 
 export type DocLoc = { loc: LocHocVien } | { chuyenDen: string };
-/** Khoá `view=` trên URL — giữ khoá cũ để link đã lưu, BranchPulse, WeeklyBoard, signals.ts vẫn mở đúng chip. */
+/** Khoá `view=` trên URL — giữ khoá cũ để link đã lưu, BranchPulse, WeeklyBoard, signals.ts vẫn mở đúng chip (ba chip Case cũ → Cần làm). */
 export function docThamSoLoc(view: string | null | undefined): DocLoc {
   if (view === 'sos' || view === 'sos_open') return { loc: 'sos' };
-  if (view === 'case_working' || view === 'case_no_plan' || view === 'case_overdue' || view === 'thieu_tt') return { loc: view };
+  if (view === 'case_working' || view === 'case_no_plan' || view === 'case_overdue') return { loc: 'can-lam' };
+  if (view === 'can-lam' || view === 'cho-duyet' || view === 'thieu_tt') return { loc: view };
   if (view === 'missing_scores') return { chuyenDen: '/test/lich' };
   return { loc: 'tat-ca' };
+}
+
+/** MỘT hàm đếm chip cho máy chủ (`dem`) và web (đổi công tắc khung): mỗi em mang các cờ `loc`, thuộc khung `ft`/`thuong`. */
+export function demLoc(hocVien: readonly { loc: readonly string[]; khung: 'ft' | 'thuong' }[], khung: 'tat-ca' | 'ft' | 'thuong'): Record<LocHocVien, number> {
+  const dem = Object.fromEntries(LOC_HOC_VIEN.map((k) => [k, 0])) as Record<LocHocVien, number>;
+  for (const h of hocVien) {
+    if (khung !== 'tat-ca' && h.khung !== khung) continue;
+    dem['tat-ca'] += 1;
+    for (const k of LOC_HOC_VIEN) if (k !== 'tat-ca' && h.loc.includes(k)) dem[k] += 1;
+  }
+  return dem;
 }
 
 // ---------------------------------------------------------------- phạm vi (§3.6, Q3)
@@ -82,6 +95,8 @@ export function phamViMacDinh(coThe: readonly PhamVi[], laQuanLy = false): PhamV
 export type KetQuaVao = {
   mode: 'ielts_band' | 'ratio' | null;
   attemptLabel: string | null;
+  /** `mock` · `progress` · `final` (T58: lượt Cuối khoá đủ điểm hiện % tổng). */
+  attemptKind?: string | null;
   sosLevel: number | null; provisional: boolean;
   scored: number; required: number; failed: number | null;
   overall: number | null; expectation: number | null;
@@ -93,39 +108,49 @@ export type KetQuaVao = {
   khongChiaMon?: boolean;
   tyLeTong?: number | null;
 };
+/**
+ * Cột Kết quả gần nhất (T18, K2-01, E7): tầng 1 `chinh` (+ `lech` FT) + tối đa HAI dòng chữ 12 px, không "…" (đủ chữ, không cắt).
+ * `sos` chỉ có ở Fast Track (T58: lớp thường không SOS ở cột này).
+ */
 export type KetQuaHien = {
-  chinh: string; thieu: string | null; dat: boolean; sos: string | null; phu: string | null;
+  chinh: string;                 // "6.0" · "58%" · "3/4 môn đạt" · "—"
+  lech: string | null;           // E7: "−0.5" (tooltip "Dưới kỳ vọng 0.5") — thay "Thiếu 0.5", tránh trùng "Thiếu 2 thông tin"
+  dat: boolean; sos: string | null;
   /** Chỉ có (true) khi SOS mới chấm một phần, còn đổi được khi đủ điểm: vẽ viền nét đứt, không ⚠ (⚠ chỉ nghĩa quá hạn). */
   sosTamThoi?: boolean;
+  dong1: string | null;          // "MT3 · kỳ vọng 7.0 · 3/4 kỹ năng có điểm" · "Cuối khoá · 2/4 môn có điểm" · "Chưa có kết quả"
+  dong2: string | null;          // "Không đạt: L R W" · "Không đạt: L G+V" · null
 };
 
 const band1 = (n: number) => n.toFixed(1);
+const noiDong = (...p: (string | null | false)[]) => p.filter(Boolean).join(' · ');
 
 export function ketQuaGanNhat(k: KetQuaVao | null): KetQuaHien {
-  if (!k || !k.attemptLabel) return { chinh: '—', thieu: null, dat: false, sos: null, phu: 'Chưa có kết quả' };
+  if (!k || !k.attemptLabel) return { chinh: '—', lech: null, dat: false, sos: null, dong1: 'Chưa có kết quả', dong2: null };
+  const ct = k.chuongTrinh ?? null;
+  if (k.mode === 'ratio') {
+    /* T58: lớp thường KHÔNG có SOS ở cột này. Cuối khoá (hoặc Pre FOU) đủ điểm → % tổng; còn lại "n/N môn đạt". */
+    const thieuDiem = k.scored < k.required;
+    const chinh = (k.attemptKind === 'final' || k.khongChiaMon) && k.tyLeTong != null ? `${Math.round(k.tyLeTong * 100)}%`
+      : k.khongChiaMon || k.scored === 0 ? '—' : `${k.scored - (k.failed ?? 0)}/${thieuDiem ? k.scored : k.required} môn đạt`;
+    /* Pre FOU: đạt/không xét trên tỷ lệ chính xác ở máy chủ (`sosLevel === 0`); lớp thường khác: đủ môn và không môn nào trượt. */
+    const dat = k.khongChiaMon ? k.sosLevel === 0 : k.sosLevel === 0 && !k.provisional && !thieuDiem;
+    return {
+      chinh, lech: null, dat, sos: null,
+      dong1: k.khongChiaMon || !thieuDiem ? k.attemptLabel : `${k.attemptLabel} · ${k.scored}/${k.required} môn có điểm`,
+      dong2: k.khongChiaMon || !k.failedSkills.length ? null : `Không đạt: ${k.failedSkills.map((f) => tenMonNgan(ct, f.skill)).join(' ')}`,
+    };
+  }
   const sos = k.sosLevel !== null && k.sosLevel > 0 ? `SOS ${k.sosLevel}` : null;
   const sosTamThoi = sos !== null && k.provisional;
-  const dat = k.sosLevel === 0 && !k.provisional;
-  if (k.mode === 'ratio' && k.khongChiaMon && k.tyLeTong != null) {
-    /* Pre FOU: "52%" (làm tròn chỉ để hiện; đạt/không xét trên tỷ lệ chính xác ở máy chủ) — không SOS. */
-    return { chinh: `${Math.round(k.tyLeTong * 100)}%`, thieu: null, dat: k.sosLevel === 0, sos: null, phu: k.attemptLabel };
-  }
-  if (k.mode === 'ratio') {
-    const soDat = k.scored - (k.failed ?? 0);
-    const chinh = k.scored < k.required ? `${soDat}/${k.scored} môn đạt (đã chấm)` : `${soDat}/${k.required} môn đạt`;
-    const truot = k.failedSkills.map((f) => `${tenMonNgan(k.chuongTrinh, f.skill)} ${f.score}/${f.total}`).join(', ');
-    const phu = [k.attemptLabel, truot ? `chưa đạt ${truot}` : null,
-      k.scored < k.required ? `còn ${k.required - k.scored} môn chưa có điểm` : null].filter(Boolean).join(' · ');
-    return { chinh, thieu: null, dat: dat && k.scored === k.required, sos, phu: catDongPhu(phu), ...(sosTamThoi ? { sosTamThoi } : {}) };
-  }
   const chinh = k.overall !== null ? band1(k.overall) : '—';
-  const thieu = k.overall !== null && k.expectation !== null && k.overall < k.expectation
-    ? `Thiếu ${band1(k.expectation - k.overall)}` : null;
-  const phu: string[] = [k.attemptLabel];
-  if (k.expectation !== null) phu.push(`kỳ vọng ${band1(k.expectation)}`);
-  if (k.scored < k.required) phu.push(`mới có ${k.scored}/${k.required} kỹ năng`);
-  if (k.belowSkills.length) phu.push(`Thiếu ${k.belowSkills.map((b) => `${skillShort(b.skill)} ${band1(b.band)}`).join(', ')}`);
-  return { chinh, thieu, dat, sos, phu: catDongPhu(phu.join(' · ')), ...(sosTamThoi ? { sosTamThoi } : {}) };
+  const lech = k.overall !== null && k.expectation !== null && k.overall < k.expectation ? `−${band1(k.expectation - k.overall)}` : null;
+  return {
+    chinh, lech, dat: k.sosLevel === 0 && !k.provisional, sos,
+    dong1: noiDong(k.attemptLabel, k.expectation !== null && `kỳ vọng ${band1(k.expectation)}`, k.scored < k.required && `${k.scored}/${k.required} kỹ năng có điểm`),
+    dong2: k.belowSkills.length ? `Không đạt: ${k.belowSkills.map((b) => skillShort(b.skill)).join(' ')}` : null,
+    ...(sosTamThoi ? { sosTamThoi } : {}),
+  };
 }
 
 // ---------------------------------------------------------------- cột Khoá lớp thường (§3.6, Q21)
@@ -148,34 +173,47 @@ export function khoaLopThuong(i: {
 // ---------------------------------------------------------------- badge hộp lớp / đầu hồ sơ lớp (Q5, Q7)
 
 export type BadgeLop = {
-  key: 'het-khoa' | 'chua-lo-trinh' | 'thieu-gv' | 'cham' | 'case' | 'chang' | 'thieu-tt'; nhan: string;
+  key: 'xep-lop' | 'thieu-gv' | 'cham' | 'chang' | 'thieu-tt' | 'cho-duyet' | 'qua-han'; nhan: string;
   tone: 'danger' | 'warn' | 'info' | 'muted';
   /** Câu đầy đủ cho tooltip (PR-UX0, B-1: badge là danh từ + số, câu dài nằm ở đây). */
   title?: string;
 };
 const CHANG_THI = ['progress_soon', 'progress_week', 'final_soon', 'final_week'];
+/** B4: thứ tự badge theo vai — GV thấy việc của mình trước, Quản lý thấy việc chờ mình duyệt trước. */
+const THU_TU_BADGE: Record<'gv' | 'ql', readonly BadgeLop['key'][]> = {
+  gv: ['cham', 'qua-han', 'chang', 'thieu-gv', 'thieu-tt', 'xep-lop', 'cho-duyet'],
+  ql: ['cho-duyet', 'xep-lop', 'cham', 'qua-han', 'thieu-gv', 'chang', 'thieu-tt'],
+};
 
 /**
- * PR-UX0 (B-1, mockup 17 #16–#18): mỗi badge một trạng thái ngắn — "{n} HV chờ xếp lớp" (vàng), "{n} bài chờ chấm"
- * (vàng, tooltip giữ câu cũ `needScoresText`), "{n} Case mở" (xám). Chữ đã chốt ở PR-LT/PR-Qa cho `chua-lo-trinh`,
- * `chang`, `thieu-gv`, `thieu-tt` giữ nguyên.
+ * B4, K2-06, T53 Q5 (PR-HVL): badge hộp lớp / đầu hồ sơ lớp THEO VAI. Bỏ "Case mở" (vào Cần hỗ trợ); gộp `het-khoa` +
+ * `chua-lo-trinh` thành `xep-lop`; thêm `cho-duyet` (yêu cầu chờ Quản lý) và `qua-han` (em có việc quá hạn). Hiện 2, còn lại "+n" (MenuDong).
  */
 export function badgeLop(c: {
+  vai: 'gv' | 'ql';
   needsPlacement: boolean; canXepLop: number; missingSkills: readonly string[];
   /** Số bài chờ chấm của lớp (0 = không hiện badge). */
   soBaiChoCham: number; needScoresTitle: string | null;
-  soCaseMo: number; phase: string; missingCount: number; soChuaLoTrinhTiep?: number;
+  phase: string; missingCount: number; soChuaLoTrinhTiep?: number;
+  soChoDuyet?: number; soEmQuaHan?: number;
   /** Mã chương trình lớp — tên ô thiếu GV theo chương trình (FOU "G+V"). */
   chuongTrinh?: string | null;
 }): { hien: BadgeLop[]; an: BadgeLop[] } {
-  const all: BadgeLop[] = [];
-  if (c.needsPlacement) all.push({ key: 'het-khoa', nhan: `${c.canXepLop} HV chờ xếp lớp`, tone: 'warn', title: 'Lớp đã hết khoá: những học viên này chưa được xếp lớp tiếp' });
-  if (c.soChuaLoTrinhTiep) all.push({ key: 'chua-lo-trinh', nhan: `${c.soChuaLoTrinhTiep} HV chưa có lộ trình tiếp theo`, tone: 'warn' });
-  if (c.missingSkills.length) all.push({ key: 'thieu-gv', nhan: `Thiếu GV ${c.missingSkills.map((k) => tenMonNgan(c.chuongTrinh, k)).join(', ')}`, tone: 'warn' });
-  if (c.soBaiChoCham > 0) all.push({ key: 'cham', nhan: `${c.soBaiChoCham} bài chờ chấm`, tone: 'warn', title: c.needScoresTitle ?? undefined });
-  if (c.soCaseMo > 0) all.push({ key: 'case', nhan: `${c.soCaseMo} Case mở`, tone: 'muted' });
-  if (CHANG_THI.includes(c.phase)) all.push({ key: 'chang', nhan: CLASS_PHASE_LABEL[c.phase as ClassPhase], tone: 'info' });
-  if (c.missingCount > 0) all.push({ key: 'thieu-tt', nhan: `Thiếu ${c.missingCount} thông tin`, tone: 'warn' });
+  const nXep = c.needsPlacement ? c.canXepLop : c.soChuaLoTrinhTiep ?? 0;
+  const co: Partial<Record<BadgeLop['key'], BadgeLop>> = {};
+  if (nXep > 0) {
+    co['xep-lop'] = {
+      key: 'xep-lop', nhan: `${nXep} HV cần xếp lớp tiếp`, tone: 'warn',
+      title: c.needsPlacement ? 'Lớp đã hết khoá: những học viên này chưa được xếp lớp tiếp' : 'Những học viên này chưa có lộ trình tiếp theo',
+    };
+  }
+  if (c.missingSkills.length) co['thieu-gv'] = { key: 'thieu-gv', nhan: `Thiếu GV ${c.missingSkills.map((k) => tenMonNgan(c.chuongTrinh, k)).join(', ')}`, tone: 'warn' };
+  if (c.soBaiChoCham > 0) co.cham = { key: 'cham', nhan: `${c.soBaiChoCham} bài chờ chấm`, tone: 'warn', title: c.needScoresTitle ?? undefined };
+  if (CHANG_THI.includes(c.phase)) co.chang = { key: 'chang', nhan: CLASS_PHASE_LABEL[c.phase as ClassPhase], tone: 'info' };
+  if (c.missingCount > 0) co['thieu-tt'] = { key: 'thieu-tt', nhan: `Thiếu ${c.missingCount} thông tin`, tone: 'warn' };
+  if (c.soChoDuyet) co['cho-duyet'] = { key: 'cho-duyet', nhan: `${c.soChoDuyet} chờ duyệt`, tone: 'info', title: 'Yêu cầu đang chờ Quản lý duyệt' };
+  if (c.soEmQuaHan) co['qua-han'] = { key: 'qua-han', nhan: `${c.soEmQuaHan} HV quá hạn việc`, tone: 'danger', title: 'Học viên có việc đã quá hạn (xác nhận, ghi kết quả, xử lý vi phạm)' };
+  const all = THU_TU_BADGE[c.vai].flatMap((k) => (co[k] ? [co[k]!] : []));
   return { hien: all.slice(0, 2), an: all.slice(2) };
 }
 
@@ -255,9 +293,6 @@ export function lopMoSan(i: { thamSoOpen: number[] | null; lopHien: number[]; da
 
 // ---------------------------------------------------------------- việc tiếp theo (Q13)
 
-export type CaseChoViec = {
-  id?: number; topic: string | null; state: string; nextDue: string | null; dueOverdue: boolean; sosLevel?: number | null;
-};
 /**
  * Một việc ở cột "Việc tiếp theo" (PR-UX3, B-2/B-3, mockup 17 #14–#15): `viec` là chữ chính (động từ + đối tượng), hạn là
  * mẩu riêng (`han` = "hết T2 14/09", `quaHanNgay` = số ngày trễ) — giao diện nối "⚠ quá hạn 3 ngày" đỏ hoặc "· hết T2 14/09" mờ
@@ -266,64 +301,176 @@ export type CaseChoViec = {
  */
 export type ViecTiepTheo = {
   viec: string; han: string | null; quaHanNgay: number | null; tone: 'danger' | 'warn' | 'info'; title: string;
+  /** B8: đích để web dựng link. */
+  dich: DichViec;
 };
+/** Việc bấm được đi đâu (B8): lưới nhập điểm · tab Ý thức của em · Ngăn Case (kèm PA / việc Ghi kết quả). */
+export type DichViec = { loai: 'nhap-diem' } | { loai: 'y-thuc' } | { loai: 'case'; caseId: number; paId?: number; ghiKetQua?: boolean };
+/** Một Case mở của em như `viecTiepCuaEm` cần: `viecTiep` là kết quả NGUYÊN của `viecTiepCuaCase` (một nguồn luật SOS). */
+export type CaseViec = { caseId: number; topic: string | null; viecTiep: ViecTiepCase | null };
 
-const nhanKyNang = (topic: string | null, ct: string | null) => (topic ? tenMonNgan(ct, topic) : 'Case');
+/** Bỏ tên PA dài, giữ động từ: "Xác nhận PA Ôn lại bài" → "Xác nhận PA L". */
+const RUT_GON = ['Xác nhận PA', 'Ghi kết quả cuối', 'Ghi kết quả PA'];
+const HANG_TONE = { danger: 0, warn: 1, info: 2 } as const;
+const boTienTo = (han: string) => han.replace(/^hạn /, '');
 
-export function viecTiepTheoCua(i: {
-  /** `han` (PR-N1 A6): hạn nhập điểm sớm nhất người xem còn nợ — có thì việc trễ nói "quá hạn n ngày". */
+/**
+ * MỘT nguồn "việc tiếp theo" của em (K2-04, B8) — cột Việc tiếp theo (Học viên & Lớp), cột Theo dõi (bảng điểm FT), cột Việc tiếp
+ * (Cần hỗ trợ). Việc của một Case lấy NGUYÊN `viecTiepCuaCase` (chỉ rút gọn chữ), không viết luật thứ tư. Xếp danger → warn → info.
+ */
+export function viecTiepCuaEm(i: {
   nhapDiem: { kyNang: string[]; dot: string | null; quaHan: boolean; han?: string | null } | null;
-  cases: readonly CaseChoViec[];
+  cases: readonly CaseViec[];
+  yThuc: NhanYThucEm | null;
   homNay: string;
-  /** Mã chương trình lớp (MH2). */
   chuongTrinh?: string | null;
 }): ViecTiepTheo[] {
   const ct = i.chuongTrinh ?? null;
   const out: ViecTiepTheo[] = [];
   if (i.nhapDiem && i.nhapDiem.kyNang.length) {
-    const viec = `Nhập điểm ${i.nhapDiem.kyNang.map((k) => tenMonNgan(ct, k)).join(', ')}${i.nhapDiem.dot ? ` · ${i.nhapDiem.dot}` : ''}`;
-    if (i.nhapDiem.han) {
+    const n = i.nhapDiem;
+    const viec = `Nhập điểm ${n.kyNang.map((k) => tenMonNgan(ct, k)).join(', ')}${n.dot ? ` · ${n.dot}` : ''}`;
+    const dich: DichViec = { loai: 'nhap-diem' };
+    if (n.han) {
       /* Cùng luật với <Han loai="nhap-diem">: số ngày trễ đếm từ hạn, không chỉ "quá hạn" trơn (A6). */
-      const v = deadlineView({ kind: 'nhap-diem', due: i.nhapDiem.han, today: i.homNay });
-      const tre = i.nhapDiem.quaHan || v.tone === 'overdue';
+      const v = deadlineView({ kind: 'nhap-diem', due: n.han, today: i.homNay });
+      const tre = n.quaHan || v.tone === 'overdue';
       out.push({
-        viec, han: v.han.replace(/^hạn /, ''), quaHanNgay: v.daysOverdue, tone: tre ? 'danger' : 'warn',
+        viec, han: boTienTo(v.han), quaHanNgay: v.daysOverdue, tone: tre ? 'danger' : 'warn', dich,
         title: `${viec} · ${v.han}${v.quaHan ? ` · ${v.quaHan}` : tre ? ' · quá hạn' : ''}`,
       });
     } else {
-      out.push({
-        viec, han: null, quaHanNgay: null, tone: i.nhapDiem.quaHan ? 'danger' : 'warn',
-        title: i.nhapDiem.quaHan ? `${viec} · quá hạn` : viec,
-      });
+      out.push({ viec, han: null, quaHanNgay: null, tone: n.quaHan ? 'danger' : 'warn', dich, title: n.quaHan ? `${viec} · quá hạn` : viec });
     }
   }
   for (const c of i.cases) {
-    if (c.state === 'done') continue;
-    if (c.state === 'no_plan') {
-      /* Danh sách chưa có hạn lập PA (PR-UX3 Q11) nên không kèm số ngày. */
-      const viec = `Đề ra PA ${nhanKyNang(c.topic, ct)}`;
-      out.push({ viec, han: null, quaHanNgay: null, tone: 'warn', title: viec });
-      continue;
+    const v = c.viecTiep;
+    if (!v) continue;
+    const dongTu = RUT_GON.find((x) => v.chu.startsWith(x)) ?? v.chu;
+    const kn = c.topic ? tenMonNgan(ct, c.topic) : 'Case';
+    const viec = kn === 'Case' && dongTu.endsWith('Case') ? dongTu : `${dongTu} ${kn}`;
+    const dich: DichViec = { loai: 'case', caseId: c.caseId, paId: v.paId, ghiKetQua: dongTu.startsWith('Ghi kết quả') };
+    const goc = `${v.chu} · ${c.topic ? tenMon(ct, c.topic) : 'Case'}`;
+    if (v.chu.startsWith('Chờ Quản lý duyệt')) {
+      out.push({ viec: `Chờ Quản lý duyệt ${kn}`, han: null, quaHanNgay: null, tone: 'info', dich, title: goc });
+    } else if (v.loaiHan && v.han) {
+      const d = deadlineView({ kind: v.loaiHan, due: v.han, today: i.homNay });
+      const tone = d.tone === 'overdue' ? 'danger' : v.loaiHan === 'xac-minh-sos' ? 'warn' : 'info';
+      out.push({ viec, han: boTienTo(d.han), quaHanNgay: d.daysOverdue, tone, dich, title: `${goc} · ${d.han}${d.quaHan ? ` · ${d.quaHan}` : ''}` });
+    } else {
+      /* Chưa có hạn: Đề ra PA (Case tay chưa có PA) vẫn là việc phải làm; "Hoàn thành Case" chỉ nhắc. */
+      out.push({ viec, han: null, quaHanNgay: null, tone: v.loaiHan === 'lap-pa' ? 'warn' : 'info', dich, title: goc });
     }
-    if (!c.nextDue) continue;
-    /* Cùng luật với <Han loai="cap-nhat-pa"> (G-10): một hàm `deadlineView` cho mọi chỗ hiện hạn. */
-    const v = deadlineView({ kind: 'cap-nhat-pa', due: c.nextDue, today: i.homNay });
-    const viec = `Ghi kết quả ${nhanKyNang(c.topic, ct)}`;
-    out.push({
-      viec, han: v.han.replace(/^hạn /, ''), quaHanNgay: v.daysOverdue, tone: v.tone === 'overdue' ? 'danger' : 'info',
-      title: `Ghi kết quả PA ${nhanKyNang(c.topic, ct)} · ${v.han}${v.quaHan ? ` · ${v.quaHan}` : ''}`,
-    });
   }
-  const hang = { danger: 0, warn: 1, info: 2 } as const;
-  return out.map((v, idx) => ({ v, idx })).sort((a, b) => hang[a.v.tone] - hang[b.v.tone] || a.idx - b.idx).map((x) => x.v);
+  const y = i.yThuc;
+  if (y) {
+    const dich: DichViec = { loai: 'y-thuc' };
+    const d = y.han ? deadlineView({ kind: 'xu-ly-vi-pham', due: y.han, today: i.homNay }) : null;
+    const han = d ? boTienTo(d.han) : null;
+    if (y.nhom === 'qua_han') {
+      const ngay = y.quaHanNgay ?? d?.daysOverdue ?? null;
+      out.push({ viec: 'Xử lý vi phạm', han, quaHanNgay: ngay, tone: 'danger', dich, title: `Xử lý vi phạm${d ? ` · ${d.han}` : ''}${ngay !== null ? ` · quá hạn ${ngay} ngày` : ' · quá hạn'}` });
+    } else {
+      out.push({ viec: 'Xử lý vi phạm', han, quaHanNgay: null, tone: 'warn', dich, title: `Xử lý vi phạm${d ? ` · ${d.han}` : ''}` });
+    }
+  }
+  return out.map((v, idx) => ({ v, idx })).sort((a, b) => HANG_TONE[a.v.tone] - HANG_TONE[b.v.tone] || a.idx - b.idx).map((x) => x.v);
 }
 
-/** Case nói trước ở chế độ "Cần hỗ trợ": quá hạn cập nhật → chưa có PA học thuật → mức SOS cao. */
-export function chonCaseChinh<T extends CaseChoViec>(ds: readonly T[]): T | null {
-  const mo = ds.filter((c) => c.state !== 'done');
-  if (!mo.length) return null;
-  const hang = (c: T) => (c.dueOverdue ? 0 : c.state === 'no_plan' ? 1 : 2);
-  return [...mo].sort((a, b) => hang(a) - hang(b) || (b.sosLevel ?? 0) - (a.sosLevel ?? 0) || (a.id ?? 0) - (b.id ?? 0))[0];
+/**
+ * Q6, B8: việc `nhap-diem` TRÙNG CHỮ ở ≥ 2 em là việc của cả lớp → một dòng "Cả lớp" đầu lớp, bỏ khỏi dòng từng em.
+ * Nhiều chữ trùng: lấy chữ có nhiều em nhất (hoà → chữ gặp trước); chữ còn lại vẫn ở từng em.
+ */
+export function tachViecChung(dong: readonly { id: number; viec: readonly ViecTiepTheo[] }[]): {
+  chung: { viec: ViecTiepTheo; soEm: number } | null; conLai: Map<number, ViecTiepTheo[]>;
+} {
+  const dem = new Map<string, ViecTiepTheo[]>();
+  for (const r of dong) {
+    for (const v of r.viec) if (v.dich?.loai === 'nhap-diem') dem.set(v.viec, [...(dem.get(v.viec) ?? []), v]);
+  }
+  let chon: ViecTiepTheo[] | null = null;
+  for (const ds of dem.values()) if (ds.length >= 2 && (!chon || ds.length > chon.length)) chon = ds;
+  const chu = chon ? chon[0].viec : null;
+  const conLai = new Map(dong.map((r) => [r.id, chu === null ? [...r.viec] : r.viec.filter((v) => !(v.dich?.loai === 'nhap-diem' && v.viec === chu))]));
+  /* Trong các em trùng chữ, lấy bản nặng nhất (đỏ trước) làm đại diện. */
+  const dai = chon ? [...chon].sort((a, b) => HANG_TONE[a.tone] - HANG_TONE[b.tone])[0] : null;
+  return { chung: dai && chon ? { viec: dai, soEm: chon.length } : null, conLai };
+}
+
+// ---------------------------------------------------------------- Cần hỗ trợ theo kỹ năng (M4, T19, K2-36, K2-42)
+
+/** Một Case như `hangCanHoTro` cần (`CaseChiTiet` của máy chủ thoả). */
+export type CaseCuaHang = { id: number; topic: string | null; quaHan: boolean; sosLevel?: number | null };
+export type HangKyNang<T extends CaseCuaHang> = {
+  kind: 'hang'; khoa: string; nhan: string; tenDu: string; kyNang: readonly string[];
+  cases: T[]; hien: T[]; /** Số Case còn lại sau `hien` — "+n Case" bấm mở tại chỗ. */ them: number;
+};
+/** Từ hai hàng RỖNG liền nhau trở lên: một dòng mờ "Không có Case: R · W". */
+export type HangRong = { kind: 'rong'; nhan: string; khoa: readonly string[] };
+export const SO_CASE_HIEN_MOI_HANG = 2;
+
+/** Hàng theo CHƯƠNG TRÌNH (không cứng 4): FT L·R·W(W1,W2)·S · BE/ELE L·R·W·S · FOU L·R·G+V·P · Pre FOU một hàng "Tổng hợp". */
+function khuonHang(ct: string | null): { khoa: string; kyNang: readonly string[] }[] {
+  const c = programmeOf(ct);
+  if (c === 'PREFOU') return [{ khoa: 'tong_hop', kyNang: ['tong_hop'] }];
+  if (c && c !== 'FT') return PROGRAMME_TEMPLATES[c].skills.map((k) => ({ khoa: k, kyNang: [k] }));
+  return [
+    { khoa: 'listening', kyNang: ['listening'] }, { khoa: 'reading', kyNang: ['reading'] },
+    { khoa: 'writing', kyNang: ['writing', 'writing1', 'writing2'] }, { khoa: 'speaking', kyNang: ['speaking'] },
+  ];
+}
+
+export function hangCanHoTro<T extends CaseCuaHang>(i: {
+  ct: string | null; cases: readonly T[];
+  /** Công tắc "Chỉ kỹ năng tôi dạy": null = đủ hàng. W1/W2 giữ hàng W; hàng "Chung" luôn giữ. */
+  chiKyNang?: readonly string[] | null;
+}): (HangKyNang<T> | HangRong)[] {
+  const c = programmeOf(i.ct);
+  const khuon = khuonHang(i.ct);
+  const thuocHang = (t: string | null, h: { kyNang: readonly string[] }) => t !== null && (c === 'PREFOU' || h.kyNang.includes(t));
+  const xep = (a: T, b: T) => Number(b.quaHan) - Number(a.quaHan) || (b.sosLevel ?? 0) - (a.sosLevel ?? 0) || a.id - b.id;
+  const dungHang = (khoa: string, nhan: string, tenDu: string, kyNang: readonly string[], ds: T[]): HangKyNang<T> => {
+    const cases = [...ds].sort(xep);
+    return { kind: 'hang', khoa, nhan, tenDu, kyNang, cases, hien: cases.slice(0, SO_CASE_HIEN_MOI_HANG), them: Math.max(0, cases.length - SO_CASE_HIEN_MOI_HANG) };
+  };
+  let hang = khuon
+    .filter((h) => !i.chiKyNang || h.kyNang.some((k) => i.chiKyNang!.includes(k)))
+    .map((h) => dungHang(h.khoa, c === 'PREFOU' ? 'Tổng hợp' : tenMonNgan(i.ct, h.khoa === 'writing' ? 'writing' : h.khoa),
+      c === 'PREFOU' ? 'Tổng hợp' : tenMon(i.ct, h.khoa === 'writing' ? 'writing' : h.khoa), h.kyNang, i.cases.filter((x) => thuocHang(x.topic, h))));
+  const chung = i.cases.filter((x) => !khuon.some((h) => thuocHang(x.topic, h)));
+  if (chung.length) hang = [...hang, dungHang('chung', 'Chung', 'Case không gắn kỹ năng', [], chung)];
+  const out: (HangKyNang<T> | HangRong)[] = [];
+  for (const h of hang) {
+    const truoc = out[out.length - 1];
+    if (h.cases.length) { out.push(h); continue; }
+    if (truoc?.kind === 'hang' && !truoc.cases.length) {
+      out[out.length - 1] = { kind: 'rong', nhan: '', khoa: [truoc.khoa, h.khoa] };
+    } else if (truoc?.kind === 'rong') truoc.khoa = [...truoc.khoa, h.khoa];
+    else out.push(h);
+  }
+  const nhanCua = new Map(hang.map((h) => [h.khoa, h.nhan]));
+  return out.map((x) => (x.kind === 'rong' ? { ...x, nhan: `Không có Case: ${x.khoa.map((k) => nhanCua.get(k)).join(' · ')}` } : x));
+}
+
+/** Em có Case QUÁ HẠN lên đầu, rồi theo tên (`localeCompare('vi')`). */
+export function sapEmCanHoTro<T extends { ten: string; cases: readonly { quaHan: boolean }[] }>(em: readonly T[]): T[] {
+  const qua = (e: T) => (e.cases.some((c) => c.quaHan) ? 0 : 1);
+  return [...em].sort((a, b) => qua(a) - qua(b) || a.ten.localeCompare(b.ten, 'vi'));
+}
+
+// ---------------------------------------------------------------- nút chính đầu hồ sơ lớp (K2-14)
+
+export type NutChinh = { loai: 'them-hv' | 'chuyen-tiep' | 'nhap-diem' | null; nhan: string };
+/** MỘT nút chính theo chặng của lớp: lớp rỗng → thêm học viên · lớp thường cuối khoá → chuyển tiếp · còn điểm cần nhập → Nhập điểm Test. */
+export function nutChinhDauTrang(i: {
+  thuong: boolean; phase: string; needsPlacement: boolean; soHocVien: number;
+  coTheThemHv: boolean; coTheNhapDiem: boolean; coTheChuyenTiep: boolean; soEmChuyen: number;
+}): NutChinh {
+  if (i.soHocVien === 0 && i.coTheThemHv) return { loai: 'them-hv', nhan: '+ Học viên' };
+  const cuoiKhoa = i.thuong && (i.phase === 'final_week' || i.phase === 'finished' || i.needsPlacement);
+  if (cuoiKhoa && i.coTheChuyenTiep) return { loai: 'chuyen-tiep', nhan: i.soEmChuyen > 0 ? `Chuyển tiếp lớp · ${i.soEmChuyen} em` : 'Chuyển tiếp lớp' };
+  if (i.coTheNhapDiem) return { loai: 'nhap-diem', nhan: 'Nhập điểm Test' };
+  return { loai: null, nhan: '' };
 }
 
 // ---------------------------------------------------------------- hồ sơ giáo viên (§3.12, Q2)

@@ -240,6 +240,7 @@ function queryPlans(sids: number[], scope: Scope) {
     .all(...params) as any[]);
 }
 
+type PlanRow = ReturnType<typeof shapePlan>;
 function shapePlan(r: any) {
   return {
     id: r.id as number,
@@ -301,12 +302,15 @@ export function planOutcomesUnattributed(scope: Scope) {
  * đây là một việc cần người làm. Hiện thành một liên kết ngoài bảng, có danh sách ID riêng.
  */
 export function plansNeedingEvaluation(scope: Scope & { category?: string | null }) {
+  return canBoSungDanhGiaCua(planOutcomes(scope), scope.category ?? null);
+}
+function canBoSungDanhGiaCua(tatCa: PlanRow[], category: string | null) {
   /*
    * PR-S2 (Q2, planning review 22/09): PA ĐÃ BỊ THAY với kết quả "Chưa đủ dữ liệu" không ai bổ sung đánh giá được nữa — nó đã khép
    * để nhường cho PA mới. Không đưa vào danh sách cần bổ sung; nó vẫn ngoài bảng và ngoài mẫu số như mọi kết quả không xác định (D03).
    */
-  const all = planOutcomes(scope).filter((r) => r.group === 'undetermined' && !r.supersededBy);
-  const rows = scope.category ? all.filter((r) => r.category === scope.category) : all;
+  const all = tatCa.filter((r) => r.group === 'undetermined' && !r.supersededBy);
+  const rows = category ? all.filter((r) => r.category === category) : all;
   return { count: rows.length, ids: rows.map((r) => r.id) };
 }
 
@@ -344,8 +348,10 @@ export function improvementRate(scope: Scope & { category?: string | null }) {
  * `improved` (có tiến bộ) và `partial` (tiến bộ một phần), tổng gọi là "Có cải thiện".
  */
 export function planEffectiveness(scope: Scope & { category?: string | null }) {
-  const all = planOutcomes(scope);
-  const rows = scope.category ? all.filter((r) => r.category === scope.category) : all;
+  return hieuQuaTheoLoaiCua(planOutcomes(scope), scope.category ?? null);
+}
+function hieuQuaTheoLoaiCua(all: PlanRow[], category: string | null) {
+  const rows = category ? all.filter((r) => r.category === category) : all;
   const byKind = new Map<string, { improved: number; partial: number; failure: number }>();
   for (const r of rows) {
     if (r.group === 'undetermined') continue;
@@ -408,6 +414,7 @@ export function issueBoard(scope: Scope, category: string) {
       category, label: caseCategoryLabel(category),
       short: (CASE_CATEGORY_SHORT as Record<string, string>)[category] ?? category,
       rows: [], plans: [], studentCount: 0, note: null,
+      tong: { hvGapVanDe: [] as number[], caseTatCa: [] as number[], dangTheoDoi: [] as number[], daCoPa: [] as number[], daXong: [] as number[], thanhCong: [] as number[] },
       needsEvaluation: { count: 0, ids: [] as number[] },
     };
   }
@@ -415,7 +422,7 @@ export function issueBoard(scope: Scope, category: string) {
 
   const cases = conn
     .prepare(
-      `SELECT sc.id, sc.student_id, sc.status, sc.category, sc.topic, sc.disposition,
+      `SELECT sc.id, sc.student_id, sc.status, sc.category, sc.topic, sc.disposition, sc.outcome,
               (SELECT COUNT(*) FROM case_interventions i WHERE i.case_id = sc.id) AS iv_all
          FROM sos_cases sc
         WHERE sc.student_id IN (${ph})`,
@@ -453,7 +460,9 @@ export function issueBoard(scope: Scope, category: string) {
   const outcomeScope: Scope = att
     ? { attribution: att, fromDate: scope.fromDate, toDate: scope.toDate }
     : { studentIds: sids, fromDate: scope.fromDate, toDate: scope.toDate };
-  const outcomes = new Map(planOutcomes(outcomeScope).map((r) => [r.id, r]));
+  /* MỘT lần `planOutcomes` cho cả bảng: hàng vấn đề, hiệu quả theo loại PA và "cần bổ sung đánh giá" cùng đọc tập này (số câu SQL, và không thể lệch nhau). */
+  const outcomeRows = planOutcomes(outcomeScope);
+  const outcomes = new Map(outcomeRows.map((r) => [r.id, r]));
 
   /*
    * MỘT HÀNG CHO MỖI PHÂN LOẠI ĐANG CÓ MẶT, cộng một hàng riêng cho case CHƯA PHÂN LOẠI.
@@ -493,15 +502,53 @@ export function issueBoard(scope: Scope, category: string) {
 
   const uniqueStudents = new Set(mine.filter((c) => c.status !== 'done').map((c) => c.student_id)).size;
   const rowSum = rows.reduce((n, r) => n + r.students, 0);
+
+  /*
+   * HAI BẢNG NHỎ CỦA PHÂN TÍCH LỚP (PR-HVL, M5, YC-11.3.3). MỖI SỐ LÀ ĐỘ DÀI CỦA MỘT TẬP ID (hợp đồng số liệu luật 1): danh sách khi bấm số
+   * (`GET /classes/:id/issue-board/o`) là chính tập này. Một Case chỉ đếm MỘT lần ở mỗi cột.
+   *   "Vấn đề ở kỹ năng": HV gặp vấn đề · Case · Đang theo dõi · Đã có PA · Đã xong → Thành công.
+   *   "Hiệu quả PA ở kỹ năng": mỗi loại PA — Đang thực hiện · Đã thực hiện (`decided`) · Thành công (`success`) — cùng `planOutcomes` với Phân tích › Hiệu quả PA.
+   */
+  const dangTheoDoi = mine.filter((c) => c.status !== 'done');
+  const daXong = mine.filter((c) => c.status === 'done');
+  const coPa = new Set(ivs.map((i) => i.case_id as number));
+  const tong = {
+    hvGapVanDe: [...new Set(dangTheoDoi.map((c) => c.student_id as number))],
+    caseTatCa: mine.map((c) => c.id as number),
+    dangTheoDoi: dangTheoDoi.map((c) => c.id as number),
+    /* PA quy chế chưa xác nhận không tính (`ivs` đã loại bằng NOT_UNCONFIRMED_PRESET) — Case chỉ có PA đó vẫn là "chưa có PA". */
+    daCoPa: mine.filter((c) => coPa.has(c.id)).map((c) => c.id as number),
+    daXong: daXong.map((c) => c.id as number),
+    thanhCong: daXong.filter((c) => c.outcome === 'much_better' || c.outcome === 'improved').map((c) => c.id as number),
+  };
+  const hieuQua = hieuQuaTheoLoaiCua(outcomeRows, category);
+  const kindIds = (kinds: string[], loc: (r: PlanRow) => boolean) => outcomeRows.filter((r) => r.category === category && kinds.includes(r.kind) && loc(r)).map((r) => r.id);
+  const dangTheoKind = new Map<string, number[]>();
+  for (const i of ivs) if (i.status === 'planned' || i.status === 'started') dangTheoKind.set(i.kind, [...(dangTheoKind.get(i.kind) ?? []), i.id as number]);
+  const plans = [...new Set([...hieuQua.map((p) => p.kind), ...dangTheoKind.keys()])].map((kind) => {
+    const p = hieuQua.find((x) => x.kind === kind);
+    const daIds = kindIds([kind], (r) => r.group !== 'undetermined');
+    const thanhCongIds = kindIds([kind], (r) => r.group === 'success');
+    return {
+      kind, label: p?.label ?? INTERVENTION_KIND_LABEL[kind as InterventionKind] ?? kind,
+      success: p?.success ?? 0, failure: p?.failure ?? 0, improved: p?.improved ?? 0, partial: p?.partial ?? 0,
+      decided: p?.decided ?? 0, rate: p?.rate ?? null, smallSample: p?.smallSample ?? false,
+      /** PA `planned`/`started` của Case đang xét (trừ PA quy chế chưa xác nhận). */
+      dangThucHien: (dangTheoKind.get(kind) ?? []).length,
+      ids: { dangThucHien: dangTheoKind.get(kind) ?? [], daThucHien: daIds, thanhCong: thanhCongIds },
+    };
+  }).sort((a, b) => b.decided - a.decided || b.dangThucHien - a.dangThucHien);
+
   return {
     category,
     label: caseCategoryLabel(category),
     short: (CASE_CATEGORY_SHORT as Record<string, string>)[category] ?? category,
     rows,
-    /* Hiệu quả theo LOẠI phương án của chính kỹ năng này — mở ra khi người dùng cần. */
-    plans: planEffectiveness({ ...outcomeScope, category }),
+    /* Hiệu quả theo LOẠI phương án của chính kỹ năng này. */
+    plans,
+    tong,
     /* F05: phương án chưa xác định KHÔNG nằm trong bảng — chúng là một việc cần bổ sung đánh giá. */
-    needsEvaluation: plansNeedingEvaluation({ ...outcomeScope, category }),
+    needsEvaluation: canBoSungDanhGiaCua(outcomeRows, category),
     studentCount: uniqueStudents,
     /* Nói thẳng vì sao cộng các hàng lại ra số lớn hơn (mục 15.2). */
     note: rowSum > uniqueStudents

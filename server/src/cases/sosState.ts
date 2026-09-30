@@ -72,31 +72,44 @@ export type SosCaseState = {
 export const CO_THE_KHONG_THEO_DOI = (sc = 'sc') => `EXISTS (SELECT 1 FROM yeu_cau_duyet y_k WHERE y_k.loai = 'khong_theo_doi'
   AND y_k.doi_tuong_loai = 'sos_case' AND y_k.doi_tuong_id = ${sc}.id AND y_k.trang_thai = 'cho')`;
 
-export function sosCaseState(caseId: number): SosCaseState {
+const SOS_STATE_RONG: SosCaseState = { fromSos: false, hasCause: false, awaitingCause: false, dueOn: null, dismissed: null, choDuyetKhongTheoDoi: null, coPaChoXacNhan: false };
+
+/** Trạng thái SOS của NHIỀU Case một lượt (PR-HVL): một câu SELECT cho mỗi lô 400, không hỏi từng Case. Case không tồn tại → trạng thái rỗng. */
+export function sosCaseStateMany(caseIds: readonly number[]): Map<number, SosCaseState> {
+  const out = new Map<number, SosCaseState>();
   const conn = db();
-  const c = conn.prepare(`SELECT sc.status, sc.dismiss_reason_code, sc.dismiss_reason_text, sc.han_xac_nhan,
+  for (let i = 0; i < caseIds.length; i += 400) {
+    const chunk = caseIds.slice(i, i + 400);
+    const rows = conn.prepare(`SELECT sc.id, sc.status, sc.dismiss_reason_code, sc.dismiss_reason_text, sc.han_xac_nhan,
       EXISTS (SELECT 1 FROM case_interventions WHERE case_id = sc.id AND preset = 1) AS from_sos,
       EXISTS (SELECT 1 FROM case_issues WHERE case_id = sc.id AND role = 'primary') AS has_cause,
       EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sc.id AND ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned') AS pa_cho,
       (SELECT y.han_duyet FROM yeu_cau_duyet y WHERE y.loai = 'khong_theo_doi' AND y.doi_tuong_loai = 'sos_case' AND y.doi_tuong_id = sc.id
           AND y.trang_thai = 'cho' ORDER BY y.id DESC LIMIT 1) AS han_the,
       ${CO_THE_KHONG_THEO_DOI('sc')} AS co_the
-    FROM sos_cases sc WHERE sc.id = ?`).get(caseId) as any;
-  const empty: SosCaseState = { fromSos: false, hasCause: false, awaitingCause: false, dueOn: null, dismissed: null, choDuyetKhongTheoDoi: null, coPaChoXacNhan: false };
-  if (!c) return empty;
-  const fromSos = !!c.from_sos;
-  const hasCause = !!c.has_cause;
-  const coThe = !!c.co_the && c.status !== 'done';
-  return {
-    fromSos, hasCause,
-    awaitingCause: fromSos && c.status !== 'done' && !hasCause && !coThe,
-    dueOn: fromSos ? c.han_xac_nhan ?? null : null,
-    dismissed: c.dismiss_reason_code
-      ? { code: c.dismiss_reason_code, label: CASE_DISMISS_REASON_LABEL[c.dismiss_reason_code as CaseDismissReason] ?? c.dismiss_reason_code, text: c.dismiss_reason_text ?? null }
-      : null,
-    choDuyetKhongTheoDoi: coThe ? { hanDuyet: c.han_the ?? null } : null,
-    coPaChoXacNhan: !!c.pa_cho && c.status !== 'done',
-  };
+    FROM sos_cases sc WHERE sc.id IN (${chunk.map(() => '?').join(',')})`).all(...chunk) as any[];
+    for (const c of rows) {
+      const fromSos = !!c.from_sos;
+      const hasCause = !!c.has_cause;
+      const coThe = !!c.co_the && c.status !== 'done';
+      out.set(c.id as number, {
+        fromSos, hasCause,
+        awaitingCause: fromSos && c.status !== 'done' && !hasCause && !coThe,
+        dueOn: fromSos ? c.han_xac_nhan ?? null : null,
+        dismissed: c.dismiss_reason_code
+          ? { code: c.dismiss_reason_code, label: CASE_DISMISS_REASON_LABEL[c.dismiss_reason_code as CaseDismissReason] ?? c.dismiss_reason_code, text: c.dismiss_reason_text ?? null }
+          : null,
+        choDuyetKhongTheoDoi: coThe ? { hanDuyet: c.han_the ?? null } : null,
+        coPaChoXacNhan: !!c.pa_cho && c.status !== 'done',
+      });
+    }
+  }
+  return out;
+}
+
+/** Một Case — MỘT định nghĩa với `sosCaseStateMany`. */
+export function sosCaseState(caseId: number): SosCaseState {
+  return sosCaseStateMany([caseId]).get(caseId) ?? { ...SOS_STATE_RONG };
 }
 
 /** Trong tập case cho trước, những case đang `Chờ xác nhận nguyên nhân` (một truy vấn cho cả tập, không hỏi từng case). MỘT định nghĩa. */

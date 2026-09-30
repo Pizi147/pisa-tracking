@@ -101,6 +101,12 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/roster' },
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/issue-board?category=listening' },
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/phan-tich-lop' },
+  /* PR-HVL (7): panel Tuần khai giảng — thêm `coGiuaKhoa` và `tomTatMt` (một câu). */
+  { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/progress' },
+  /* PR-HVL (6): danh sách sau một số ở bảng vấn đề / hiệu quả PA — tính lại bằng chính `issueBoard`. */
+  { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/issue-board/o?category=listening&cot=case' },
+  /* PR-HVL (5): tab Học viên › Cần hỗ trợ — trần = `/cases?classId=` + 8. */
+  { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/can-ho-tro' },
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/y-thuc' },
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/violations' },
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/cham' },
@@ -115,6 +121,7 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/overview' },
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/roster' },
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/phan-tich-lop' },
+  { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/can-ho-tro' },
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/y-thuc' },
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/cham' },
   /* PR-LT, Task 5: GVCN_THUONG đọc được kế hoạch Chuyển tiếp lớp (canEdit=false ở đó), không sửa được (chỉ QL/QT gọi POST). */
@@ -276,8 +283,8 @@ export const TRAN: Record<string, number> = {
   'GVCN /my-work?nguoi=tat-ca': 19,
   'QL /my-work?nguoi=7': 74,
   /* PR-DUYET: đo khi hộp đã có thẻ thật (Task 4) — trần max(sau+10, ⌈sau×1,3⌉). */
-  'QL /yeu-cau?hop=cho-duyet': 29,   // PR-YT4 sau khi gộp PR-SOS: thẻ khong_theo_doi + bao_len_y_thuc cùng nạp (đo 29, +3,6%)
-  'QT /yeu-cau?hop=cho-duyet': 28,
+  'QL /yeu-cau?hop=cho-duyet': 30,   // PR-YT4 sau khi gộp PR-SOS: thẻ khong_theo_doi + bao_len_y_thuc cùng nạp (đo 29, +3,6%); PR-HVL (10): demo H1 thêm một thẻ "không theo dõi" chờ duyệt → đo 30
+  'QT /yeu-cau?hop=cho-duyet': 29,
   'GVCN /yeu-cau?hop=cho-duyet': 17,
   'QL /yeu-cau?hop=cho-duyet&xem=da-xu-ly': 27,   // PR-SOS: loại thẻ khong_theo_doi thêm câu nạp (đo 23); + thẻ Ý thức PR-YT4 (đo 27)
   'QT /yeu-cau?hop=cho-duyet&xem=da-xu-ly': 26,   // PR-SOS: loại thẻ khong_theo_doi thêm câu nạp (đo 22)
@@ -311,28 +318,51 @@ export const TRAN: Record<string, number> = {
   'QT /classes': 39,
   'QL /classes?branchId=1': 35,
   'QT /classes?branchId=1': 35,
-  'QL /hoc-vien-lop': 59,
-  'GVCN /hoc-vien-lop': 59,
-  'GVBM /hoc-vien-lop': 59,
-  'GVCN_THUONG /hoc-vien-lop': 59,
+  /* PR-HVL (3): mốc 51 (QT 49) + việc tiếp theo/Ý thức/thẻ chờ duyệt theo lô đo 59 (QT 57) — trần kế hoạch = mốc + 12. */
+  'QL /hoc-vien-lop': 63,
+  'GVCN /hoc-vien-lop': 63,
+  'GVBM /hoc-vien-lop': 63,
+  'GVCN_THUONG /hoc-vien-lop': 63,
   'QT /hoc-vien-lop': 82,
-  'QL /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 59,
-  'QT /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 56,
+  'QL /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 63,
+  'QT /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 61,
   'QL /classes/3/overview': 55,
   'GVCN /classes/3/overview': 55,
   'GVBM /classes/3/overview': 55,
   'GVCN_THUONG /classes/3/overview': 55,
   'QT /classes/3/overview': 51,
-  'QL /classes/3/roster': 54,
-  'GVCN /classes/3/roster': 54,
-  'GVBM /classes/3/roster': 54,
-  'GVCN_THUONG /classes/3/roster': 54,
-  'QT /classes/3/roster': 50,
-  'QL /classes/3/issue-board?category=listening': 33,
-  'GVCN /classes/3/issue-board?category=listening': 33,
-  'GVBM /classes/3/issue-board?category=listening': 33,
-  'GVCN_THUONG /classes/3/issue-board?category=listening': 33,
-  'QT /classes/3/issue-board?category=listening': 32,
+  /* PR-HVL (2): mốc 46 (QT 43) + Case mở theo lô (`chiTietCaseMo`) đo 50 (QT 47) — trần kế hoạch = mốc + 6. */
+  /* PR-HVL (5): `/classes/:id/can-ho-tro` đo 25 (QT 22) = `/cases?classId=` 17 (QT 14) + 8 — đúng trần kế hoạch. */
+  /* PR-HVL (7): `/classes/:id/progress` đo 17 (QT 16) sau khi thêm `tomTatMt` — trần = đo + 3. */
+  'QL /classes/3/progress': 20,
+  'GVCN /classes/3/progress': 20,
+  'GVBM /classes/3/progress': 20,
+  'GVCN_THUONG /classes/3/progress': 20,
+  'QT /classes/3/progress': 19,
+  'QL /classes/3/can-ho-tro': 25,
+  'GVCN /classes/3/can-ho-tro': 25,
+  'GVBM /classes/3/can-ho-tro': 25,
+  'GVCN_THUONG /classes/3/can-ho-tro': 25,
+  'QT /classes/3/can-ho-tro': 22,
+  'QL /classes/6/can-ho-tro': 25,
+  'GVCN_THUONG /classes/6/can-ho-tro': 25,
+  'QT /classes/6/can-ho-tro': 22,
+  'QL /classes/3/roster': 52,
+  'GVCN /classes/3/roster': 52,
+  'GVBM /classes/3/roster': 52,
+  'GVCN_THUONG /classes/3/roster': 52,
+  'QT /classes/3/roster': 49,
+  /* PR-HVL (6): `issueBoard` chỉ gọi `planOutcomes` MỘT lần — mốc 22 (QT 21) → đo 16 (QT 15); trần = đo + 2 (kế hoạch: ≤ mốc + 2). Đường `/o` (danh sách sau số) đo 17 (QT 16). */
+  'QL /classes/3/issue-board?category=listening': 18,
+  'GVCN /classes/3/issue-board?category=listening': 18,
+  'GVBM /classes/3/issue-board?category=listening': 18,
+  'GVCN_THUONG /classes/3/issue-board?category=listening': 18,
+  'QT /classes/3/issue-board?category=listening': 17,
+  'QL /classes/3/issue-board/o?category=listening&cot=case': 19,
+  'GVCN /classes/3/issue-board/o?category=listening&cot=case': 19,
+  'GVBM /classes/3/issue-board/o?category=listening&cot=case': 19,
+  'GVCN_THUONG /classes/3/issue-board/o?category=listening&cot=case': 19,
+  'QT /classes/3/issue-board/o?category=listening&cot=case': 18,
   'QL /classes/3/phan-tich-lop': 30,
   'GVCN /classes/3/phan-tich-lop': 31,
   'GVBM /classes/3/phan-tich-lop': 31,
@@ -458,6 +488,10 @@ export const TRAN: Record<string, number> = {
   'GVBM /hoc-vien-lop/luu-tru?branchId=1': 22,
   'GVCN_THUONG /hoc-vien-lop/luu-tru?branchId=1': 22,
   'QT /hoc-vien-lop/luu-tru?branchId=1': 22,
+  /* PR-HVL (8): `/classes/:id/transition` thêm `ketQua` từng em (một lần `standingFor`, 7 câu): 28 → 35 (QT 27 → 34). Kế hoạch dự kiến mốc + 5 = 33; `standingFor` tự nó tốn 7 câu nên lệch 2 — ghi Nhật ký. */
+  'QL /classes/6/transition': 37,
+  'QT /classes/6/transition': 36,
+  'GVCN_THUONG /classes/6/transition': 37,
   'QL /classes/5/transition': 36,
   'QT /classes/5/transition': 35,
   'GVCN_THUONG /classes/5/transition': 36,
@@ -506,9 +540,9 @@ export const TRAN_GHI_LO = {
   /** POST /intake/commit — 35 em lớp FT (lịch MT mặc định, có em "Đã thi tới MT", ngày thi, tuần riêng). Trước PR-TOC 1949, sau 44 (49 sau gộp PR-MON + rà #121: đọc chương trình lớp, đọc lại khoá trong giao dịch). */
   themHocVien35FT: 58,
   /** POST /classes/:id/transition — cả lớp thường (≥ 20 em) sang FT, mỗi em có lịch MT mặc định. Trước PR-TOC 1505, sau 124 → 128 sau rà #121 (32 em, gồm đóng Case mở của em có sẵn — S17). */
-  chuyenCaLopSangFT: 162,
+  chuyenCaLopSangFT: 200,   // PR-HVL (10): bộ demo H2 thêm 2 em vào MB FOU 12 (một em có 2 Case đóng theo S17, một em có bài Cuối khoá 4 điểm) → đo 191; trần theo dữ liệu, không phải chậm đi của đường
   /** POST /ke-hoach-test/hang-loat `xemTruoc` — cả lớp MB FT 101 (63 em trong bộ đo), MT3, 4 kỹ năng tuần tới (PR-XLMT, rà #126). Đo 78 câu. */
-  xemTruocXepLichMt: 102,
+  xemTruocXepLichMt: 108,   // PR-HVL (10): bộ demo H1 thêm 1 em vào MB FT 101 (+3 câu/em) → đo 105
   /** GET /my-work?nguoi=tat-ca (QL) khi 30 PA "đến lúc thi" chưa có ngày thi (PR-S3F, rà cuối đợt 3). Trước 63 → 147 câu; ngày thi + tuần MT kế tiếp nay lấy trong câu chính. Đo 70 câu (68 khi không có PA) → trần max(sau+10, ⌈sau×1.3⌉) = 91. */
   congViec30PaChuaNgayThi: 91,
   /** POST /xuat-mt — Quản lý xuất cả chi nhánh MB, MT1–MT8, cột đầy đủ, SAU khi nhân dữ liệu ×3 (PR-XUAT). Phải KHÔNG tăng theo số lượt (một câu lượt + các câu lô của loadBundle). Đo 16 câu / 550 lượt → trần max(sau+10, ⌈sau×1.3⌉) = 26. */

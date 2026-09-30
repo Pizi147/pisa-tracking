@@ -17,6 +17,7 @@ import { buildKckDemo, buildSosV3Demo } from './sosV3Seed.ts';
 import { buildPrMtDemo } from './prMtSeed.ts';
 import { buildXlmtDemo } from './xlmtSeed.ts';
 import { buildHsmDemo } from './hsmSeed.ts';
+import { buildHvlDemo } from './hvlSeed.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
 import { dienMocLop } from '../migrate/prLop.ts';
 import { napYeuCauTuNguonCu } from '../migrate/prDuyet.ts';
@@ -234,6 +235,8 @@ export function runSeed() {
     buildPrMtDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
     /* BỘ DEMO PR-XLMT (X1–X4): xếp lịch MT nhiều lớp, chờ duyệt, huỷ phần còn lại, MT lịch sử tuần đã qua, ⋯ ô lớp thường. */
     buildXlmtDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
+    /* BỘ DEMO PR-HVL (H1–H2): Cần hỗ trợ theo kỹ năng (hai Case cùng Reading, Case chung, chờ duyệt), lớp FOU có Case G+V / P và bài Cuối khoá 58%. */
+    buildHvlDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
     /* BỘ DEMO PR-KCK (Q29-1): hai em Target KCK — có MT, có điểm dưới band mà không SOS. */
     buildKckDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
     /* BỘ DEMO PR-HSM (H1–H2): nhận xét W/S + GV chấm Speaking (tài khoản và người ngoài) — qua `saveScore`. */

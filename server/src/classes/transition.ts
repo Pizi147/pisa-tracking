@@ -13,6 +13,7 @@ import { taoLopVaPhanCong, type TaoLopInput } from './intake.ts';
 import { setStudentStatus } from '../students/students.ts';
 import { apDungBaoLuuCaLop, apDungCaLop, dongLopNeuHet, type DongCaLop } from './luatLoTrinh.ts';
 import { tiepTheoTheoHocVien } from './loTrinhTiep.ts';
+import { standingFor } from '../students/standing.ts';
 
 /**
  * CHUYỂN TIẾP KHI MỘT LỚP HỌC HẾT CHƯƠNG TRÌNH — mục 6.1, đặc tả §3.9.2 (PR-LT thay khung cũ).
@@ -69,6 +70,8 @@ export function transitionPlan(p: Principal, classId: number) {
 
   /* Lộ trình tiếp theo đã ghi (điền sẵn) — một câu cho cả lớp. */
   const loTrinhTiepMap = tiepTheoTheoHocVien([classId]);
+  /* B9: kết quả gần nhất của từng em (cột Kết quả) — MỘT lần `standingFor` cho cả lớp. */
+  const ketQua = sids.length ? standingFor(sids) : new Map();
 
   /* Case đang mở + bài chưa làm — đọc theo lô, không hỏi lại theo từng em. */
   const caseRows = sids.length
@@ -146,6 +149,7 @@ export function transitionPlan(p: Principal, classId: number) {
       id: s.id, studentCode: s.student_code, fullName: s.full_name,
       cycleId: s.cycle_id ?? null, target: s.target_score ?? null,
       loTrinhTiep: loTrinhTiepMap.get(s.id) ?? null,
+      ketQua: ketQua.get(s.id) ?? null,
       caseMo: { tong: caseByStudent.get(s.id) ?? 0, seDongNeuSangFt: caseByStudent.get(s.id) ?? 0 },
       baiChuaLam: s.cycle_id ? (baiChuaLamByCycle.get(s.cycle_id) ?? 0) : 0,
     })),

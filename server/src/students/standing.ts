@@ -77,6 +77,8 @@ export type Standing = {
   nextAttemptNo: number | null;
   nextAttemptLabel: string | null;
   nextPeriodCode: string | null;
+  /** Thứ Hai tuần của mốc kế tiếp — cột "Sắp tới" (`MT4 · W3 NOV`) đọc bằng `tuanLich`. */
+  nextWeekStart: string | null;
 
   /** Case đang theo dõi — ĐẾM CASE, không phải một mức độ. */
   openCases: number;
@@ -119,7 +121,7 @@ const EMPTY = (studentId: number, cycleId: number | null): Standing => ({
   attemptId: null, attemptNo: null, attemptKind: null, attemptLabel: null, periodCode: null,
   sosLevel: null, provisional: false, scored: 0, required: 0, failed: null,
   overall: null, expectation: null, belowSkills: [], failedSkills: [], chuongTrinh: null, khongChiaMon: false, tyLeTong: null,
-  nextAttemptNo: null, nextAttemptLabel: null, nextPeriodCode: null,
+  nextAttemptNo: null, nextAttemptLabel: null, nextPeriodCode: null, nextWeekStart: null,
   openCases: 0, handoverCases: 0,
 });
 
@@ -216,6 +218,7 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
       s.nextAttemptNo = moc.attempt_no;
       s.nextAttemptLabel = labelOf(moc.kind, moc.attempt_no);
       s.nextPeriodCode = moc.period_code ?? null;
+      s.nextWeekStart = moc.weekStart ?? null;
     }
 
     /*

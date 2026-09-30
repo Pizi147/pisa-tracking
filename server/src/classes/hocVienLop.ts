@@ -7,7 +7,7 @@
  */
 import { db } from '../db.ts';
 import {
-  ENTRY_SKILLS, LOC_HOC_VIEN, MOC_KE_TIEP_SQL, PERMISSIONS, chuanHoaMaLop, coMocTiepTheo, mondayOfDate, phamViCoThe, phamViMacDinh,
+  ENTRY_SKILLS, MOC_KE_TIEP_SQL, PERMISSIONS, chuanHoaMaLop, coMocTiepTheo, demLoc, mondayOfDate, phamViCoThe, phamViMacDinh,
   type LocHocVien, type PhamVi,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -19,10 +19,13 @@ import { standingFor } from '../students/standing.ts';
 import { listCases } from '../cases/cases.ts';
 import { allProgrammes } from '../normal/regular.ts';
 import { danhSachLuuTru } from './luuTru.ts';
+import { viecHocVienTheoLop } from './dongHocVien.ts';
 
 export type LopHocVienLop = ClassSummary & {
   gvcn: { id: number; name: string } | null;
   soCaseMo: number;
+  /** B4: yêu cầu đang chờ Quản lý duyệt của lớp (chỉ người duyệt được ở lớp đó, người khác 0) và số em có việc đã quá hạn — badge `cho-duyet` / `qua-han`. */
+  soChoDuyet: number; soEmQuaHan: number;
   /** Thứ Hai của tuần học cuối — lớp thường; FT null. */
   tuanKetThuc: string | null;
   viewer: { coTheSuaHocVien: boolean; coTheBaoCase: boolean; coTheGhiViPham: boolean; coTheNhapDiem: boolean; coTheChuyenTiep: boolean };
@@ -33,15 +36,15 @@ export type TrangHocVienLop = {
   scopeEmpty: boolean;
   phamVi: { coThe: PhamVi[]; dangDung: PhamVi; chiNhanh: number | null };
   dem: Record<LocHocVien, number>;
-  hocVien: { id: number; classId: number; loc: LocHocVien[] }[];
+  /** `khung`: Fast Track hay lớp thường của em — công tắc `Tất cả · Fast Track · Lớp thường` đếm chip bằng `demLoc(hocVien, khung)`. */
+  hocVien: { id: number; classId: number; loc: LocHocVien[]; khung: 'ft' | 'thuong' }[];
   /** Người xem có tạo được lớp MỚI ở chi nhánh nào không — không gắn với lớp đã tồn tại nào (điểm a rà soát cuối). */
   coTheTaoLop: boolean;
   /** Số ở mục ⋯ "Lưu trữ" đầu trang (PR-LT, Q16) — cùng phạm vi, cùng hàm với `/hoc-vien-lop/luu-tru` (khớp G-10 theo cấu tạo). */
   demLuuTru: { lop: number; hv: number };
 };
 
-const demRong = (): Record<LocHocVien, number> =>
-  Object.fromEntries(LOC_HOC_VIEN.map((k) => [k, 0])) as Record<LocHocVien, number>;
+const demRong = (): Record<LocHocVien, number> => demLoc([], 'tat-ca');
 
 export function danhSachHocVienLop(
   p: Principal, f: { branchId?: number | null; q?: string | null; phamVi?: string | null } = {},
@@ -139,6 +142,12 @@ export function danhSachHocVienLop(
   }
 
   const tienDo = classProgressMany(ids);
+  /* Việc tiếp theo của em (chip Cần làm), yêu cầu chờ duyệt, em quá hạn theo lớp — MỘT hàm dùng chung với `classOverview`. */
+  const emTheoLop = new Map<number, number[]>();
+  for (const h of hv) emTheoLop.set(h.class_id, [...(emTheoLop.get(h.class_id) ?? []), h.id as number]);
+  const vl = viecHocVienTheoLop(p, {
+    emTheoLop, cases: allCases, homNay: today, chuongTrinhTheoLop: new Map(lops.map((r) => [r.id, r.programmeCode ?? null])),
+  });
 
   /*
    * KỸ NĂNG SỬA ĐƯỢC của từng lớp, đọc MỘT LẦN cho cả lô — cùng khuôn `classes.ts` dùng để dựng `mySkills`/`editableByClass`
@@ -159,6 +168,7 @@ export function danhSachHocVienLop(
       ...r,
       gvcn: gvcn.get(r.id) ?? null,
       soCaseMo: soCaseByClass.get(r.id) ?? 0,
+      soChoDuyet: vl.soChoDuyet.get(r.id) ?? 0, soEmQuaHan: vl.soEmQuaHan.get(r.id) ?? 0,
       tuanKetThuc: pr?.startWeekStart && pr.totalWeeks ? addDays(pr.startWeekStart, (pr.totalWeeks - 1) * 7) : null,
       viewer: {
         coTheSuaHocVien: can(p, PERMISSIONS.STUDENT_EDIT, { classId: r.id }),
@@ -184,27 +194,16 @@ export function danhSachHocVienLop(
   const hvKhop = hv.filter(khop);
 
   const standing = standingFor(hvKhop.map((h) => h.id));
-  const idSet = new Set(hvKhop.map((h) => h.id as number));
-  /* Cờ lọc từng học viên (case_working/case_no_plan/case_overdue) — CÙNG nguồn `allCases` ở trên, không gọi listCases() lần nữa. */
-  const caseCua = new Map<number, { working: boolean; noPlan: boolean; overdue: boolean }>();
-  for (const c of allCases) {
-    if (c.status === 'done' || c.studentId === null || !idSet.has(c.studentId)) continue;
-    const x = caseCua.get(c.studentId) ?? { working: false, noPlan: false, overdue: false };
-    if (c.state === 'working') x.working = true;
-    if (c.state === 'no_plan') x.noPlan = true;
-    if (c.dueOverdue) x.overdue = true;
-    caseCua.set(c.studentId, x);
-  }
 
   const laFt = new Map(lops.map((r) => [r.id, r.programmeCode === 'FT']));
-  const dem = demRong();
   const hocVien = hvKhop.map((h) => {
     const loc: LocHocVien[] = ['tat-ca'];
-    if ((standing.get(h.id)?.sosLevel ?? 0) > 0) loc.push('sos');
-    const c = caseCua.get(h.id);
-    if (c?.working) loc.push('case_working');
-    if (c?.noPlan) loc.push('case_no_plan');
-    if (c?.overdue) loc.push('case_overdue');
+    const ft = !!laFt.get(h.class_id);
+    /* T58/K2-02: "Đang SOS" chỉ Fast Track — lớp thường có "SOS n" theo số môn trượt nhưng không phải cờ của chip này. */
+    if (ft && (standing.get(h.id)?.sosLevel ?? 0) > 0) loc.push('sos');
+    const v = vl.theoEm.get(h.id);
+    if (v?.viec.some((x) => x.tone === 'danger' || x.tone === 'warn')) loc.push('can-lam');
+    if (v?.choDuyet) loc.push('cho-duyet');
     const thieu = missingForStudent({
       cycle: h.cycle_id
         ? { start_period_id: h.start_period_id, exam_month: h.exam_month, target_score: h.target_score, khong_cam_ket: h.khong_cam_ket,
@@ -218,9 +217,8 @@ export function danhSachHocVienLop(
           : h.so_luot_ke_hoach > 0,
     });
     if (thieu.length) loc.push('thieu_tt');
-    for (const k of loc) dem[k] += 1;
-    return { id: h.id as number, classId: h.class_id as number, loc };
+    return { id: h.id as number, classId: h.class_id as number, loc, khung: ft ? 'ft' as const : 'thuong' as const };
   });
 
-  return { rows, scopeEmpty: false, phamVi, dem, hocVien, coTheTaoLop, demLuuTru };
+  return { rows, scopeEmpty: false, phamVi, dem: demLoc(hocVien, 'tat-ca'), hocVien, coTheTaoLop, demLuuTru };
 }

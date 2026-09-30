@@ -458,3 +458,16 @@ Dựng bằng `saveScore` (`server/src/seed/hsmSeed.ts`) sau PR-KCK. Tài khoả
 | H4 · huỷ phần | **Mạc Đức Long** MT1 (MB FT 102) | Ô W, S `Đã huỷ phần thi`; hồ sơ HV nhãn `huỷ phần` |
 | H4 · RF | **Phan Gia Hân** (MB FT RF 12) | Đầu hồ sơ Mock chữ `RF`, `Kỳ vọng x = target`; hồ sơ HV một dòng "Lộ trình RF — kỳ vọng mọi MT bằng target." |
 | X5 · Xuất Excel kết quả Test (PR-XUAT) | Đăng nhập **Quản lý** (Nguyễn Khánh Vy) hoặc **GVCN** (Trần Ngọc Hà) → Test › Lịch Test › **Xuất Excel** | Ngăn 3 khối + xem trước `n lượt · k học viên · m lớp`; bấm Xuất → tệp `.xlsx` (sheet `Mock Test` + `Bộ lọc đã dùng`). GVBM thuần (Phạm Thu Trang) không có nút. Cũng mở được ở hồ sơ lớp ⋮ và Phân tích › Tổng hợp Test |
+## 13. PR-HVL — Học viên & Lớp, Cần hỗ trợ theo kỹ năng, Phân tích lớp (chỉ máy dev, 30/09/2026)
+
+Dựng bằng hàm nghiệp vụ (`server/src/seed/hvlSeed.ts`), sau ngày demo. Tài khoản gợi ý: **Quản lý Nguyễn Khánh Vy** (thấy cả hai lớp) và **GVCN Trần Ngọc Hà** (MB FT 101). Phép kiểm `PR-HVL (10)` soi từng dòng ngay sau khi dựng.
+
+| Kịch bản | Học viên | Bạn sẽ thấy |
+|---|---|---|
+| H1 · hai Case cùng Reading | **Trịnh Bảo Ngọc** (MB FT 101) | Hồ sơ lớp › Học viên › **Cần hỗ trợ**: hàng R hai Case (SOS tự tạo `[MT1]` + Case GV tạo tay), hàng W một Case đang chờ Quản lý duyệt "không theo dõi"; Học viên & Lớp: em có chip **Cần làm** (Xác nhận nguyên nhân) và lớp có badge **chờ duyệt** cho Quản lý |
+| H2 · lớp FOU | **Hồ Diệu Linh** (MB FOU 12) | Cần hỗ trợ lớp FOU: hàng `G+V` và `P` mỗi hàng một Case, L R gộp `Không có Case: L · R` |
+| H2 · Cuối khoá | **Nguyễn Thảo Vy** (MB FOU 12) | Học viên & Lớp: cột Kết quả `58%`, dòng 1 `Cuối khoá`, không "SOS" |
+| H3 · Pre FOU | em ở **MB Pre FOU 03** (đã có từ PR-MON D12) | `64%` một dòng, không dòng 2; Cần hỗ trợ một hàng `Tổng hợp` |
+| H4 · MT lịch sử | **Đoàn Khánh Chi** (MB FT 101, đã có từ PR-XLMT X3) | Bảng điểm FT: MT1–MT3 nhãn `lịch sử`, ô điểm **xám**; cột Kết quả `Chưa có kết quả`; không ▾ đỏ |
+
+Hàng **"Chung"** (Case không gắn kỹ năng) không có ở bộ demo: mọi Case phải có kỹ năng khi tạo; hàng này chỉ xuất hiện với Case bàn giao / dữ liệu cũ — kiểm bằng phép kiểm thuần `hangCanHoTro`.

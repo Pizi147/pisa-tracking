@@ -5,9 +5,10 @@ import { useToast } from '../../ui/Toast.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
+import { useLoiForm } from '../../ui/loiForm.tsx';
 import {
-  HUONG_CHUYEN_TIEP, kiemDongChuyenTiep, nhanHuong, nhanHuongNgan, tomTatChuyenTiep, tuanLich,
-  type DongTomTat, type Huong,
+  HUONG_CHUYEN_TIEP, kiemDongChuyenTiep, ketQuaGanNhat, nhanHuong, nhanHuongNgan, tomTatChuyenTiep, tuanLich,
+  type DongTomTat, type Huong, type KetQuaVao,
 } from '@shared/domain/index.ts';
 import { ClassCreatePanel } from './ClassCreatePanel.tsx';
 
@@ -21,6 +22,9 @@ type Dong = {
  * HAI BƯỚC (mockup 11-2): Soạn (bảng mỗi em một hướng + lớp đích + phần cần điền thêm, dòng
  * lỗi hiện ngay) rồi Xác nhận (tóm tắt bằng câu, không phải bảng số). Hệ thống KHÔNG tự chuyển
  * ai — mọi hướng đều do người xếp lớp chọn, điền sẵn từ Lộ trình tiếp theo nếu đã có.
+ *
+ * PR-HVL (B9): cột / dòng thẻ **Kết quả** của từng em (`ketQuaGanNhat`: chính + dòng 2); lỗi từng dòng CHỈ hiện sau khi người dùng sửa dòng đó
+ * hoặc bấm "Tiếp tục" (`useLoiForm.bam()`) — hết "4 chữ đỏ khi vừa mở". Nằm ở: Hồ sơ lớp thường → Chuyển tiếp lớp.
  */
 export function TransitionPanel({ classId, open, onClose, onDone }: {
   classId: number; open: boolean; onClose: () => void; onDone: () => void;
@@ -29,6 +33,9 @@ export function TransitionPanel({ classId, open, onClose, onDone }: {
   const { data, loading, error, reload } = useApi<any>(open ? `/classes/${classId}/transition` : null, [classId, open]);
   const [buoc, setBuoc] = useState<1 | 2>(1);
   const [busy, setBusy] = useState(false);
+  const lf = useLoiForm();
+  /** Dòng nào người dùng đã sửa — lỗi dòng đó hiện ngay; dòng chưa đụng tới chỉ hiện sau khi bấm "Tiếp tục". */
+  const [daSua, setDaSua] = useState<ReadonlySet<number>>(new Set());
 
   const [bulkTarget, setBulkTarget] = useState<number | 'new' | ''>('');
   const [dongs, setDongs] = useState<Record<number, Partial<Dong>>>({});
@@ -41,7 +48,7 @@ export function TransitionPanel({ classId, open, onClose, onDone }: {
     setNgay(data.today ?? '');
   }
 
-  const close = () => { onClose(); setBuoc(1); setLoaded(false); setDongs({}); };
+  const close = () => { onClose(); setBuoc(1); setLoaded(false); setDongs({}); setDaSua(new Set()); lf.datLai(); };
 
   /** Hướng/lớp đích MẶC ĐỊNH của một em: dự định đã ghi (Lộ trình tiếp theo), rồi mới tới lớp đích chung (chỉ khi hướng là "Lên …"). */
   const dongCua = (s: any): Dong => {
@@ -70,6 +77,7 @@ export function TransitionPanel({ classId, open, onClose, onDone }: {
   };
   const suaDong = (sid: number, patch: Partial<Dong>) => {
     if (patch.toClassId === 'new') setTaoLop(true);
+    setDaSua((s) => (s.has(sid) ? s : new Set(s).add(sid)));
     setDongs((m) => ({ ...m, [sid]: { ...m[sid], ...patch } }));
   };
   /**
@@ -103,6 +111,8 @@ export function TransitionPanel({ classId, open, onClose, onDone }: {
     return { s, d, loi: kiemTra(s, d) };
   });
   const coLoi = rows.some((r) => r.loi);
+  const hienLoi = (sid: number) => lf.daBam || daSua.has(sid);
+  const dsLoiDong = rows.filter((r) => r.loi).map((r) => ({ khoa: `dong-${r.s.id}`, nhan: r.s.fullName as string, lyDo: r.loi as string }));
 
   const tomTat: ReturnType<typeof tomTatChuyenTiep> = tomTatChuyenTiep(
     rows.filter((r) => r.d.huong).map((r): DongTomTat => ({
@@ -147,11 +157,12 @@ export function TransitionPanel({ classId, open, onClose, onDone }: {
       chan={buoc === 1 ? {
         huy: { nhan: 'Đóng', onClick: close, disabled: busy },
         chinh: (
-          <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => setBuoc(2)} disabled={coLoi || !data?.canEdit}
-            title={coLoi ? `Còn ${rows.filter((r) => r.loi).length} em chưa điền đủ` : undefined}>
+          <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={!data?.canEdit}
+            onClick={() => { if (coLoi) lf.bam(); else setBuoc(2); }}>
             Tiếp tục
           </button>
         ),
+        conThieu: lf.conThieu(dsLoiDong),
       } : {
         huy: { nhan: 'Quay lại', onClick: () => setBuoc(1), disabled: busy },
         chinh: (
@@ -199,15 +210,15 @@ export function TransitionPanel({ classId, open, onClose, onDone }: {
 
           <div className="surface-2 rounded-lg overflow-x-auto sm:overflow-visible">
             <table className="w-full text-sm hidden sm:table">
-              <colgroup><col className="w-1/4" /><col className="w-1/5" /><col className="w-1/4" /><col /></colgroup>
+              <colgroup><col className="w-[22%]" /><col className="w-[15%]" /><col className="w-[17%]" /><col className="w-[20%]" /><col /></colgroup>
               <thead>
                 <tr>
-                  <Th>Học viên</Th><Th>Lộ trình tiếp theo</Th><Th>Lớp đích</Th><Th>Cần điền thêm</Th>
+                  <Th>Học viên</Th><Th>Kết quả</Th><Th>Lộ trình tiếp theo</Th><Th>Lớp đích</Th><Th>Cần điền thêm</Th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map(({ s, d, loi }) => (
-                  <DongBang key={s.id} s={s} d={d} loi={loi} suaDong={(p) => suaDong(s.id, p)} lopHopLe={lopHopLe} fromMa={data.from.programmeCode} />
+                  <DongBang key={s.id} s={s} d={d} loi={hienLoi(s.id) ? loi : null} oId={lf.oId(`dong-${s.id}`)} suaDong={(p) => suaDong(s.id, p)} lopHopLe={lopHopLe} fromMa={data.from.programmeCode} />
                 ))}
               </tbody>
             </table>
@@ -216,7 +227,8 @@ export function TransitionPanel({ classId, open, onClose, onDone }: {
               {rows.map(({ s, d, loi }) => (
                 <div key={s.id} className="p-3 space-y-2">
                   <div className="text-sm text-slate-100">{s.fullName}</div>
-                  <DongThe s={s} d={d} loi={loi} suaDong={(p) => suaDong(s.id, p)} lopHopLe={lopHopLe} fromMa={data.from.programmeCode} />
+                  <KetQuaEm ketQua={s.ketQua} />
+                  <DongThe s={s} d={d} loi={hienLoi(s.id) ? loi : null} oId={lf.oId(`dong-${s.id}`)} suaDong={(p) => suaDong(s.id, p)} lopHopLe={lopHopLe} fromMa={data.from.programmeCode} />
                 </div>
               ))}
             </div>
@@ -290,11 +302,24 @@ function OLopDich({ d, suaDong, lopHopLe }: {
   );
 }
 
-function DongBang({ s, d, loi, suaDong, lopHopLe, fromMa }: {
-  s: any; d: Dong; loi: string | null; suaDong: (p: Partial<Dong>) => void; lopHopLe: (h: Huong | '') => any[];
+/** Kết quả gần nhất của em: số chính (+ độ lệch FT) và dòng 2 "Không đạt: …"; dòng 1 ở tooltip. */
+function KetQuaEm({ ketQua }: { ketQua: KetQuaVao | null }) {
+  const k = ketQuaGanNhat(ketQua);
+  return (
+    <span className="block" title={k.dong1 ?? undefined}>
+      <span className="font-bold tabular-nums text-slate-100">{k.chinh}</span>
+      {k.lech && <span className="ml-1.5 text-[11px] font-semibold tabular-nums text-bad">{k.lech}</span>}
+      {k.dong2 && <span className="block text-[12px] leading-4 text-slate-500">{k.dong2}</span>}
+    </span>
+  );
+}
+
+function DongBang({ s, d, loi, oId, suaDong, lopHopLe, fromMa }: {
+  s: any; d: Dong; loi: string | null; oId: string; suaDong: (p: Partial<Dong>) => void; lopHopLe: (h: Huong | '') => any[];
   fromMa: string | null;
 }) {
-  const trong = !d.huong;
+  /* Ô "chưa chọn hướng" chỉ viền vàng khi lỗi của dòng đã được phép hiện (`loi` khác null). */
+  const trong = !d.huong && !!loi;
   return (
     <tr className="row-hover align-top">
       <td className="td">
@@ -302,8 +327,9 @@ function DongBang({ s, d, loi, suaDong, lopHopLe, fromMa }: {
         <div className="text-[11px] text-slate-500">{s.studentCode}</div>
         {loi && <div className="text-[11px] text-rose-300 mt-1">{loi}</div>}
       </td>
+      <td className="td"><KetQuaEm ketQua={s.ketQua} /></td>
       <td className="td" style={trong ? { boxShadow: 'inset 0 0 0 1px var(--warn, #fbbf24)', borderRadius: 6 } : undefined}>
-        <select className="field w-full" value={d.huong} onChange={(e) => suaDong({ huong: e.target.value as Huong, toClassId: '' })}>
+        <select id={oId} aria-invalid={!!loi} className="field w-full" value={d.huong} onChange={(e) => suaDong({ huong: e.target.value as Huong, toClassId: '' })}>
           <option value="">Chưa chọn</option>
           {HUONG_CHUYEN_TIEP.map((h) => <option key={h} value={h}>{nhanHuongNgan(h, { ma: fromMa as any, maKe: null })}</option>)}
         </select>
@@ -314,13 +340,13 @@ function DongBang({ s, d, loi, suaDong, lopHopLe, fromMa }: {
   );
 }
 
-function DongThe({ s, d, loi, suaDong, lopHopLe, fromMa }: {
-  s: any; d: Dong; loi: string | null; suaDong: (p: Partial<Dong>) => void; lopHopLe: (h: Huong | '') => any[];
+function DongThe({ s, d, loi, oId, suaDong, lopHopLe, fromMa }: {
+  s: any; d: Dong; loi: string | null; oId: string; suaDong: (p: Partial<Dong>) => void; lopHopLe: (h: Huong | '') => any[];
   fromMa: string | null;
 }) {
   return (
     <div className="space-y-1.5">
-      <select className="field w-full" value={d.huong} onChange={(e) => suaDong({ huong: e.target.value as Huong, toClassId: '' })}>
+      <select id={`${oId}-the`} aria-invalid={!!loi} className="field w-full" value={d.huong} onChange={(e) => suaDong({ huong: e.target.value as Huong, toClassId: '' })}>
         <option value="">Chưa chọn hướng</option>
         {HUONG_CHUYEN_TIEP.map((h) => <option key={h} value={h}>{nhanHuong(h, { ma: fromMa as any, maKe: null })}</option>)}
       </select>

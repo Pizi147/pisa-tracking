@@ -601,3 +601,14 @@ Nguồn: `thiet-ke/NGUON-Rule-v3-YThuc-PhoiHop-2026-09-21.md`. Đặc tả: `thi
   "Khôi phục" trước.
 - **Hồ sơ Mock:** năm ô điểm lớn L · R · W · S · Overall; ai sửa được bài nào (GVBM đúng kỹ năng · Quản lý · GVCN với MT lịch sử) bấm ô
   là sửa tại chỗ, sửa điểm đã có vẫn ghi lý do (RB-5). Kết quả đợt dùng mức SOS (chặn trần 3), không đếm số môn trượt.
+## PR-HVL — Học viên & Lớp, Cần hỗ trợ theo kỹ năng, Phân tích lớp (30/09/2026)
+
+- **Chip Học viên & Lớp:** `Tất cả · Cần làm · Chờ duyệt · Đang SOS · Thiếu thông tin`. **Cần làm** = em có việc tiếp theo tone đỏ (quá hạn) hoặc vàng (Xác nhận nguyên nhân / Xác nhận PA, Ý thức bắt buộc, Đề ra PA chưa hạn);
+  không tính Nhập điểm (đã có badge "bài chờ chấm"). **Chờ duyệt** = em có yêu cầu đang chờ Quản lý. **Đang SOS** chỉ Fast Track. Link cũ `case_working / case_no_plan / case_overdue` mở Cần làm.
+- **Lớp thường không SOS ở danh sách** (T58): cột Kết quả ghi `n/4 môn đạt` (Giữa khoá) hoặc `%` tổng (Cuối khoá đủ điểm, Pre FOU) + `Không đạt: …`; SOS lớp thường chỉ còn ở nơi PR-LT2b sẽ sửa.
+- **Một nguồn việc tiếp theo** (`viecTiepCuaEm`): việc của một Case = nguyên `viecTiepCuaCase` (chỉ rút gọn chữ); cùng nguồn cho cột Việc tiếp theo, cột Theo dõi bảng điểm FT và Cần hỗ trợ. Việc Nhập điểm trùng chữ ở ≥ 2 em → một dòng "Cả lớp" đầu lớp.
+- **Badge lớp theo vai:** GV thấy trước bài chờ chấm / HV quá hạn; Quản lý thấy trước chờ duyệt / cần xếp lớp tiếp. Hiện 2 badge, còn lại "+n" bấm được. Không còn badge "Case mở" (Case vào Cần hỗ trợ).
+- **Cần hỗ trợ theo kỹ năng:** chỉ em có Case mở; số hàng theo chương trình (FT L·R·W·S, W nhận cả W1/W2 · BE/ELE L·R·W·S · FOU L·R·G+V·P · Pre FOU một hàng Tổng hợp) + hàng "Chung" cho Case không gắn kỹ năng; mỗi Case một dòng với PA đang làm và việc tiếp + hạn; bấm mở Ngăn Case tại chỗ.
+- **Phân tích lớp:** mỗi số là độ dài một tập id, bấm ra danh sách đúng số đó (`/issue-board/o`). "Thành công" của Case = đã xong và kết luận tiến bộ rõ / một phần. Số "Đã thực hiện / Thành công" theo loại PA dùng chung `planOutcomes` với Phân tích › Hiệu quả PA (khác nhau chỉ vì khung thời gian 52 tuần và Case chưa có lỗi chính).
+  Lớp thường có dòng "Cả bài" (% tổng ≥ ngưỡng đạt chung); Pre FOU không có.
+- **Đầu hồ sơ lớp:** một nút chính theo chặng (`nutChinhDauTrang`); ô Giữa khoá ở Lịch kiểm tra chỉ với chương trình có mốc Giữa khoá; khung hết khoá không tô đỏ.

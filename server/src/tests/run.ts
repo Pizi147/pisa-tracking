@@ -254,6 +254,8 @@ console.log('\n0. Bộ demo vừa dựng có nhất quán không');
   await runSosV3DemoTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
   const { runPrDuyetDemoTests } = await import('./prDuyet.tests.ts');
   await runPrDuyetDemoTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+  const { runPrHvlDemoTests } = await import('./prHvl.tests.ts');
+  await runPrHvlDemoTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 }
 
 check('[12.1-16] Bộ demo nhất quán: không có sự kiện "đã xong" nào nằm ở tương lai', () => {
@@ -9809,6 +9811,9 @@ await runPrHsmTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 // ==================================================================== PR-XUAT (Xuất Excel kết quả Mock Test / Test lớp thường)
 const { runPrXuatTests } = await import('./prXuat.tests.ts');
 await runPrXuatTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== PR-HVL (Học viên & Lớp + hồ sơ lớp)
+const { runPrHvlTests } = await import('./prHvl.tests.ts');
+await runPrHvlTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

@@ -20,7 +20,8 @@ export type MucMenu = {
  * không đóng panel chứa nó (pha bắt + chặn lan, như `LichNho`).
  */
 export function MenuDong({ muc, nhan = 'Thêm thao tác', bieuTuong = '⋯' }: {
-  muc: MucMenu[]; nhan?: string; bieuTuong?: '⋯' | '⋮';
+  /** `bieuTuong`: ⋯ · ⋮, hoặc chữ ngắn như "+2" (badge còn ẩn của hộp lớp — PR-HVL B4). */
+  muc: MucMenu[]; nhan?: string; bieuTuong?: string;
 }) {
   const [mo, setMo] = useState(false);
   const nut = useRef<HTMLButtonElement>(null);
@@ -80,7 +81,7 @@ export function MenuDong({ muc, nhan = 'Thêm thao tác', bieuTuong = '⋯' }: {
     <>
       <button ref={nut} type="button" title={nhan} aria-label={nhan} aria-haspopup="menu" aria-expanded={mo}
         onClick={(e) => { e.stopPropagation(); setMo((v) => !v); }}
-        className="relative inline-grid place-items-center w-7 h-7 rounded-md border bg-transparent text-slate-400 hover:text-slate-100 hover:bg-white/5 cursor-pointer after:absolute after:-inset-2 after:content-[''] sm:after:hidden"
+        className="relative inline-grid place-items-center h-7 min-w-7 px-1 rounded-md border bg-transparent text-[11px] font-semibold tabular-nums text-slate-400 hover:text-slate-100 hover:bg-white/5 cursor-pointer after:absolute after:-inset-2 after:content-[''] sm:after:hidden"
         style={{ borderColor: 'var(--line)' }}>
         {bieuTuong}
       </button>

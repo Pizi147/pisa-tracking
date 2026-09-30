@@ -4,6 +4,7 @@ import { DauDuoi } from '../../ui/Nhan.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { Empty, Skeleton } from '../../ui/ui.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
+import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { MissingBadge } from '../students/MissingBadge.tsx';
 import { CanhBaoYThuc } from './CanhBaoYThuc.tsx';
@@ -41,6 +42,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
   const { homNay } = useNgayNghiepVu();
   const { data, loading, error, reload } = useApi<DongThuong[]>(`/classes/${classId}/roster`, [classId]);
   const tt = useThaoTacDongHocVien({ laLopThuong: true, quyen, maLop, onDone: () => { reload(); onDoi(); } });
+  const dienThoai = useDienThoai();
 
   if (error) return <p className="m-0 text-xs text-rose-200">{error.message}</p>;
   if (loading || !data) return <Skeleton rows={4} />;
@@ -52,6 +54,52 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
   const coPhanTram = CHUONG_TRINH_KHONG_CHIA_MON.includes(chuongTrinh ?? '');
   const soCot = mon.length + (coPhanTram ? 1 : 0);
 
+  /* D2: điện thoại (< 640 px) — mỗi em một thẻ, mỗi MỐC một dòng: "Giữa khoá · L 14/20 · R … · %". */
+  if (dienThoai) {
+    return (
+      <div className="card overflow-hidden">
+        {rows.map((s) => (
+          <TheDong key={s.id} className={s.status !== 'active' ? 'row-muted' : ''}
+            dau={(
+              <>
+                <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                  <Link className="link font-semibold" to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>
+                  <span className="text-[10px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
+                  <MissingBadge items={s.missing} gon />
+                  <CanhBaoYThuc cb={s.canhBaoYThuc} />
+                </span>
+                {s.ketThucVi && <span className="mt-0.5 block text-[10px] text-slate-500">{s.ketThucVi}</span>}
+              </>
+            )}
+            hanhDong={<MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, true, s.timeline) })} />}
+            dong={BAI.map((b) => {
+              const t = s.timeline.find((x) => x.kind === b.kind) ?? null;
+              const o = t?.ratios?.[mon[0]] ?? null;
+              return {
+                nhan: b.nhan,
+                noiDung: (
+                  <span className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+                    {mon.map((k) => (
+                      <span key={k} className="whitespace-nowrap">
+                        <abbr className="text-slate-500 no-underline" title={tenMon(chuongTrinh, k)}>{tenMonNgan(chuongTrinh, k)}</abbr>{' '}
+                        <ODiemThuong o={t?.ratios?.[k] ?? null} tuan={t?.tuanMon?.[k] ?? null} homNay={homNay} />
+                      </span>
+                    ))}
+                    {coPhanTram && (
+                      <span className="whitespace-nowrap"><span className="text-slate-500">%</span>{' '}
+                        {o && o.score !== null && o.total ? `${Math.round((o.score / o.total) * 100)}%` : <span className="text-slate-600">—</span>}
+                      </span>
+                    )}
+                  </span>
+                ),
+              };
+            })} />
+        ))}
+        {tt.panels}
+      </div>
+    );
+  }
+
   return (
     <div className="card overflow-x-auto">
       <table className="w-full min-w-[840px] table-fixed text-sm">
@@ -62,7 +110,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
         </colgroup>
         <thead>
           <tr>
-            <th className="th align-bottom" rowSpan={2}>Học viên</th>
+            <th className="th sticky-col align-bottom" rowSpan={2}>Học viên</th>
             {BAI.map((b) => (
               <th key={b.kind} className="th border-b text-center" colSpan={soCot} style={{ borderColor: 'var(--line)' }}>{b.nhan}</th>
             ))}
@@ -80,9 +128,10 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
         <tbody>
           {rows.map((s) => (
             <tr key={s.id} className={`row-hover ${s.status !== 'active' ? 'row-muted' : ''}`}>
-              <td className="td h-11">
+              {/* 640–1023 px: bảng cuộn ngang TRONG vùng bảng, cột tên dính (mỗi lớp một bảng nên không bám cả trang). */}
+              <td className="td sticky-col h-11">
                 <span className="flex min-w-0 items-center gap-1.5">
-                  <Link className="link truncate" to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>
+                  <Link className="link truncate font-semibold" to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>
                   <span className="shrink-0 text-[10px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
                   <MissingBadge items={s.missing} gon />
                   <CanhBaoYThuc cb={s.canhBaoYThuc} />

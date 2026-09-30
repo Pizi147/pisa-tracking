@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { DaiChiXem } from '../../ui/ui.tsx';
 import { Nhan, toneNhanTuBadge } from '../../ui/Nhan.tsx';
@@ -9,7 +9,7 @@ import { useSession } from '../../lib/session.tsx';
 import { TenGiaoVien } from './TenGiaoVien.tsx';
 import type { TinhTrangXoaKetThuc } from './XoaKetThucLopPanel.tsx';
 import {
-  badgeLop, duongLichTest, needScoresText, ngay, nhomGiaoVienBoMon, tuanKhoa, type BadgeLop, type NhomGiaoVien, type WorkScope,
+  ROUTE_NAME, badgeLop, duongLichTest, laVaiQuanLy, needScoresText, ngay, nhomGiaoVienBoMon, nutChinhDauTrang, tuanKhoa, type BadgeLop, type NhomGiaoVien, type WorkScope,
 } from '@shared/domain/index.ts';
 
 /** `GET /classes/:id/overview` (server/src/classes/classes.ts → classOverview). */
@@ -28,6 +28,10 @@ export type HoSoLop = {
   skillTeachers: { skill: string; id: number; name: string }[];
   programme: { code: string; name: string; weeks: number | null; scoringMode: string; checkpoints?: string[] } | null;
   soCaseMo: number;
+  /** B4: cùng hai số với hộp lớp ở Học viên & Lớp (`viecHocVienTheoLop`) — badge `cho-duyet` / `qua-han`. */
+  soChoDuyet: number; soEmQuaHan: number;
+  /** Lớp thường ở Cuối khoá / hết khoá: số em có đủ điểm bài Cuối khoá (null ở chặng khác). */
+  cuoiKhoa: { du: number; tong: number } | null;
   canhBaoYThuc: number;
   status?: string; finishedAt?: string | null;
   viewer: {
@@ -43,12 +47,14 @@ export type HoSoLop = {
 export type ViecDauTrang = 'tien-do' | 'chuyen-tiep' | 'phan-cong' | 'thong-tin' | 'case' | 'hoc-vien' | 'xoa-lop' | 'ket-thuc-lop' | 'xuat-mt';
 
 /**
- * ĐẦU TRANG HỒ SƠ LỚP (đặc tả §3.7, mockup 06c §1).
- *   dòng 1  "Hồ sơ lớp" · mã · chương trình | Lộ trình lớp (FT) / Lịch kiểm tra (lớp thường) · Chuyển tiếp lớp (lớp thường) · + Case ·
- *           + Học viên · Nhập điểm Test · ⋮ (Sửa phân công, Sửa thông tin lớp)
- *   dòng 2  chi nhánh · LT · n học viên · W{n}/{tổng} · khai giảng — hộp nhỏ "GVCN tên"
+ * ĐẦU TRANG HỒ SƠ LỚP (đặc tả §3.7, mockup 06c §1; PR-HVL K2-14, B4, E7, K2-13). Nằm ở: Học viên & Lớp → Hồ sơ lớp → đầu trang.
+ *   dòng 1  "Hồ sơ lớp" · mã · chương trình | MỘT nút chính theo chặng (`nutChinhDauTrang`: + Học viên khi lớp rỗng · Chuyển tiếp lớp · n em khi lớp thường
+ *           cuối khoá · Nhập điểm Test khi còn bài chờ nhập) · tối đa 2 nút phụ (Nhập điểm Test · + Học viên · + Case; thừa vào ⋮) · ⋮
+ *   ⋮       Tuần khai giảng (FT) / Lịch kiểm tra (lớp thường) · Chuyển tiếp lớp (khi không phải nút chính) · nút phụ thừa · Sửa phân công ·
+ *           Sửa thông tin lớp · (đường kẻ) Xoá / Kết thúc lớp
+ *   dòng 2  chi nhánh · LT (bọc `<abbr>` "Lộ trình 1") · n học viên · W{n}/{tổng} · khai giảng — hộp nhỏ "GVCN tên"; lớp thường cuối khoá: "Cuối khoá: 6/8 em có đủ điểm"
  *   dòng 3  GV bộ môn một dòng không xuống hàng, gom theo người; hẹp thì "+k" (bấm ra đủ danh sách)
- *   dòng 4  tối đa 2 badge
+ *   dòng 4  tối đa 2 badge theo vai, phần còn lại "+n" (menu)
  * Mỗi nút chỉ hiện khi người xem làm được (Q9).
  */
 export function DauTrangLop({ data, periodId, onViec, onCheDoCanHoTro }: {
@@ -62,22 +68,39 @@ export function DauTrangLop({ data, periodId, onViec, onCheDoCanHoTro }: {
   const gvcn = data.coreTeachers[0] ?? null;
   const nhom = nhomGiaoVienBoMon(data.skills.map((x) => x.skill), data.skillTeachers, data.programme?.code ?? null);
   const b = badgeLop({
-    needsPlacement: !!s?.needsPlacement, canXepLop: s?.canXepLop ?? 0, missingSkills: s?.missingSkills ?? [],
+    vai: laVaiQuanLy(session?.roles) ? 'ql' : 'gv', needsPlacement: !!s?.needsPlacement, canXepLop: s?.canXepLop ?? 0, missingSkills: s?.missingSkills ?? [],
     soBaiChoCham: s?.needScores ?? 0,
     needScoresTitle: s && s.needScores > 0 ? needScoresText(s.workScope, s.needScores) : null,
-    soCaseMo: data.soCaseMo, phase: s?.phase ?? 'running',
+    phase: s?.phase ?? 'running', soChoDuyet: data.soChoDuyet, soEmQuaHan: data.soEmQuaHan,
     missingCount: (s?.missing ?? []).filter((m) => m.key !== 'teachers').length,
     soChuaLoTrinhTiep: s?.soChuaLoTrinhTiep ?? 0,
     chuongTrinh: data.programme?.code ?? null,
   });
   const bamBadge = (x: BadgeLop): (() => void) | null =>
-    x.key === 'case' ? onCheDoCanHoTro
+    x.key === 'qua-han' ? onCheDoCanHoTro
       : x.key === 'cham' ? () => navigate(duongLichTest({ classId: data.id }))
-      : x.key === 'het-khoa' && data.viewer.coTheChuyenTiep ? () => onViec('chuyen-tiep')
+      : x.key === 'xep-lop' && data.viewer.coTheChuyenTiep ? () => onViec('chuyen-tiep')
+      : x.key === 'cho-duyet' ? () => navigate('/cong-viec/cho-duyet')
       : null;
   /* Chỉ Quản trị hệ thống mới gọi được đường này (403 với người khác) — nên chỉ hỏi khi có cờ. */
   const xk = useApi<TinhTrangXoaKetThuc>(data.viewer.coTheXoaKetThuc ? `/classes/${data.id}/xoa-ket-thuc` : null, [data.id, data.viewer.coTheXoaKetThuc]);
+  const nhapDiem = thuong ? `/bang-diem-thuong/${data.id}` : `/nhap-diem/${data.id}${periodId ? `?periodId=${periodId}` : ''}`;
+  /* K2-14: MỘT nút chính theo chặng; nút phụ tối đa 2, thừa vào ⋮. "Nhập điểm" là chính khi còn bài chờ nhập của người xem. */
+  const chinh = nutChinhDauTrang({
+    thuong, phase: s?.phase ?? 'running', needsPlacement: !!s?.needsPlacement, soHocVien: s?.studentCount ?? 0,
+    coTheThemHv: data.viewer.canAddStudents, coTheNhapDiem: data.viewer.canEnterScores && (s?.needScores ?? 0) > 0,
+    coTheChuyenTiep: data.viewer.coTheChuyenTiep, soEmChuyen: s?.canXepLop ?? 0,
+  });
+  const phu: { key: string; nhan: string; lam: () => void }[] = [
+    ...(data.viewer.canEnterScores && chinh.loai !== 'nhap-diem' ? [{ key: 'nhap-diem', nhan: 'Nhập điểm Test', lam: () => navigate(nhapDiem) }] : []),
+    ...(data.viewer.canAddStudents && chinh.loai !== 'them-hv' ? [{ key: 'hoc-vien', nhan: '+ Học viên', lam: () => onViec('hoc-vien') }] : []),
+    ...(data.viewer.canReportCase ? [{ key: 'case', nhan: '+ Case', lam: () => onViec('case') }] : []),
+  ];
   const menu: MucMenu[] = [
+    /* E7: panel FT tên "Tuần khai giảng", lớp thường "Lịch kiểm tra". Xuất Excel (PR-XUAT) chép vào mảng này, sau "Sửa thông tin lớp". */
+    ...(data.viewer.canEditProgress ? [{ key: 'tien-do', nhan: thuong ? 'Lịch kiểm tra' : 'Tuần khai giảng', onChon: () => onViec('tien-do') }] : []),
+    ...(thuong && data.viewer.coTheChuyenTiep && chinh.loai !== 'chuyen-tiep' ? [{ key: 'chuyen-tiep', nhan: 'Chuyển tiếp lớp', onChon: () => onViec('chuyen-tiep') }] : []),
+    ...phu.slice(2).map((x) => ({ key: x.key, nhan: x.nhan, onChon: x.lam })),
     ...(data.viewer.canAssign ? [{ key: 'phan-cong', nhan: 'Sửa phân công', onChon: () => onViec('phan-cong') }] : []),
     ...(data.viewer.canEditProgress ? [{ key: 'thong-tin', nhan: 'Sửa thông tin lớp', onChon: () => onViec('thong-tin') }] : []),
     /* PR-XUAT (Q8): GVCN của lớp hoặc người xếp lịch (Quản lý) — máy chủ xuất vẫn kiểm lại phạm vi. */
@@ -87,13 +110,15 @@ export function DauTrangLop({ data, periodId, onViec, onCheDoCanHoTro }: {
     ...(xk.data && xk.data.coDuLieu && !xk.data.daKetThuc
       ? [{ key: 'ket-thuc-lop', nhan: 'Kết thúc lớp', keTruoc: !xk.data.coTheXoa, onChon: () => onViec('ket-thuc-lop') }] : []),
   ];
-  const nhapDiem = thuong ? `/bang-diem-thuong/${data.id}` : `/nhap-diem/${data.id}${periodId ? `?periodId=${periodId}` : ''}`;
   const tuan = thuong && s?.currentWeek && s.totalWeeks && s.currentWeek >= 1
     ? tuanKhoa(Math.min(s.currentWeek, s.totalWeeks), s.totalWeeks) : null;
+  /* K2-13: giữ ký hiệu LT1 · LT2 · RF, tên đủ ở tooltip. */
   const thongTin = [
-    data.branchName, data.route, `${s?.studentCount ?? 0} học viên`, tuan,
+    data.branchName,
+    data.route ? <abbr key="lt" title={ROUTE_NAME[data.route as keyof typeof ROUTE_NAME] ?? data.route} className="no-underline">{data.route}</abbr> : null,
+    `${s?.studentCount ?? 0} học viên`, tuan,
     data.startDate ? `khai giảng ${ngay(data.startDate, homNay)}` : null,
-  ].filter(Boolean).join(' · ');
+  ].filter(Boolean);
 
   return (
     <header className="card space-y-2 p-3 sm:p-4">
@@ -107,21 +132,18 @@ export function DauTrangLop({ data, periodId, onViec, onCheDoCanHoTro }: {
         </div>
         <div className="flex-1" />
         <div className="flex flex-wrap items-center gap-1.5">
-          {data.viewer.canEditProgress && (
-            <button type="button" className="btn btn-sm" onClick={() => onViec('tien-do')}>{thuong ? 'Lịch kiểm tra' : 'Lộ trình lớp'}</button>
-          )}
-          {thuong && data.viewer.coTheChuyenTiep && (
-            <button type="button" className="btn btn-sm" onClick={() => onViec('chuyen-tiep')}>Chuyển tiếp lớp</button>
-          )}
-          {data.viewer.canReportCase && <button type="button" className="btn btn-sm" onClick={() => onViec('case')}>+ Case</button>}
-          {data.viewer.canAddStudents && <button type="button" className="btn btn-sm" onClick={() => onViec('hoc-vien')}>+ Học viên</button>}
-          {data.viewer.canEnterScores && <Link className="btn btn-sm btn-primary no-underline" to={nhapDiem}>Nhập điểm Test</Link>}
+          {phu.slice(0, 2).map((x) => <button key={x.key} type="button" className="btn btn-sm" onClick={x.lam}>{x.nhan}</button>)}
+          {chinh.loai === 'nhap-diem' ? <Link className="btn btn-sm btn-primary no-underline" to={nhapDiem}>{chinh.nhan}</Link>
+            : chinh.loai ? (
+              <button type="button" className="btn btn-sm btn-primary" onClick={() => onViec(chinh.loai === 'them-hv' ? 'hoc-vien' : 'chuyen-tiep')}>{chinh.nhan}</button>
+            ) : null}
           <MenuDong muc={menu} bieuTuong="⋮" nhan="Thêm thao tác" />
         </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
-        <span>{thongTin}</span>
+        <span>{thongTin.map((x, i) => <Fragment key={i}>{i > 0 && ' · '}{x}</Fragment>)}</span>
+        {data.cuoiKhoa && <span className="tabular-nums text-slate-300">Cuối khoá: {data.cuoiKhoa.du}/{data.cuoiKhoa.tong} em có đủ điểm</span>}
         <span className="whitespace-nowrap rounded-md border px-2 py-0.5 text-slate-300" style={{ borderColor: 'var(--line)' }}>
           <abbr title="Giáo viên chủ nhiệm" className="no-underline">GVCN</abbr>{' '}
           {gvcn ? <TenGiaoVien id={gvcn.id} ten={gvcn.name} /> : <span className="text-amber-200">Chưa có GVCN</span>}
@@ -138,7 +160,10 @@ export function DauTrangLop({ data, periodId, onViec, onCheDoCanHoTro }: {
               ? <Nhan key={x.key} tone={toneNhanTuBadge(x.tone)} title={x.title} onClick={bam}>{x.nhan}</Nhan>
               : <Nhan key={x.key} tone={toneNhanTuBadge(x.tone)} title={x.title}>{x.nhan}</Nhan>;
           })}
-          {b.an.length > 0 && <span className="text-[11px] text-slate-500" title={b.an.map((x) => x.nhan).join(' · ')}>+{b.an.length}</span>}
+          {b.an.length > 0 && (
+            <MenuDong bieuTuong={`+${b.an.length}`} nhan={`${b.an.length} việc khác của lớp`}
+              muc={b.an.map((x) => ({ key: x.key, nhan: x.nhan, onChon: () => (bamBadge(x) ?? (() => undefined))() }))} />
+          )}
         </div>
       )}
     </header>

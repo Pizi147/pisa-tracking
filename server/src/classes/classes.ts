@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS, awaitingScore, chuanHoaMaLop, soSanhLop, kiemPhanCong, moRongPhanCong, nhanKetThucVi, nhanTiepTheo,
-  oPhanCong, pendingSkillsOf, tenMonNgan, trongHaiTuanCuoi, viecTiepTheoCua,
+  oPhanCong, pendingSkillsOf, tenMonNgan, trongHaiTuanCuoi, viecTiepCuaEm,
   type AssessedSkill, type SlotPhanCong, type AttemptKind, type PendingCell, type ProgrammeCode, type WorkScope,
   coMocTiepTheo, mocKeTiep,
 } from '../../../shared/domain/index.ts';
@@ -18,7 +18,7 @@ import { dotHoanTatMany, type HoanTatInfo } from '../fasttrack/hoanTat.ts';
 import { standingFor, standingLine } from '../students/standing.ts';
 import { allProgrammes, evaluateRegular, programmeOfClass } from '../normal/regular.ts';
 import { classProgressMany, missingForClasses, missingForStudent } from './schedule.ts';
-import { canhBaoTheoHocVien, caseMoTheoHocVien, soEmCanXuLyYThuc } from './dongHocVien.ts';
+import { canhBaoTheoHocVien, caseViecTheoHocVien, soEmCanXuLyYThuc, viecHocVienTheoLop } from './dongHocVien.ts';
 import { demChuaLoTrinh, tiepTheoTheoHocVien } from './loTrinhTiep.ts';
 import { listCases } from '../cases/cases.ts';
 import { trongBoNho } from '../platform/nguCanhRequest.ts';
@@ -393,7 +393,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
 
   /* PR-Qa: nhãn cảnh báo Ý thức 5 ngày (YT-8) và Case đang mở cho "Việc tiếp theo" — mỗi thứ MỘT lần cho cả lớp. */
   const canhBao = canhBaoTheoHocVien(p, classId);
-  const caseMo = caseMoTheoHocVien(p, classId);
+  const caseViec = caseViecTheoHocVien(p, classId);
   /* PR-LT: Lộ trình tiếp theo của cả lớp — một câu, cột Khoá dùng ngay, không hỏi lại theo từng em. */
   const tiepTheoLop = tiepTheoTheoHocVien([classId]);
   const maChuongTrinhHienTai = (prog?.code ?? null) as ProgrammeCode | null;
@@ -551,6 +551,8 @@ export function classRoster(p: Principal, classId: number, q?: string) {
       .map((t) => ({
         id: t.id, label: t.kindLabel, kind: t.kind, periodCode: t.periodCode,
         sosLevel: t.sosLevel, evaluable: t.evaluable,
+        /* Rà #119: MT lịch sử có điểm thật nhưng không phải hiện trạng — bảng điểm vẽ xám + nhãn "lịch sử". */
+        lichSu: !!t.lichSu,
         scoredRequired: t.scoredRequired, requiredCount: t.requiredCount,
         overall: t.overall,
         expectation: t.expectation, writing: t.writing,
@@ -629,7 +631,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
       myPending: [...new Set(timeline.flatMap((t) => t.myPending))],
       canhBaoYThuc: canhBao.get(s.id) ?? null,
       /* Cột "Việc tiếp theo" (Q13): nhập điểm của CHÍNH người xem ở đợt đang chờ + việc của từng Case chưa xong. */
-      viecTiepTheo: viecTiepTheoCua({
+      viecTiepTheo: viecTiepCuaEm({
         nhapDiem: (() => {
           const cho = [...new Set(timeline.flatMap((t) => t.myPending))];
           if (!cho.length) return null;
@@ -639,7 +641,8 @@ export function classRoster(p: Principal, classId: number, q?: string) {
             han: timeline.map((t) => t.hanNhap).filter(Boolean).sort()[0] ?? null,
           };
         })(),
-        cases: caseMo.get(s.id) ?? [],
+        cases: caseViec.get(s.id) ?? [],
+        yThuc: canhBao.get(s.id) ?? null,
         homNay: today,
         chuongTrinh: prog?.code ?? null,
       }),
@@ -695,6 +698,22 @@ function classOverviewThat(p: Principal, classId: number) {
   const prog = programmeOfClass(classId);
   const classSkills = prog?.skills ?? [...ENTRY_SKILLS];
 
+  /* Em ĐANG HỌC của lớp + Case của họ (lọc quyền) — dùng cho `soCaseMo` và badge `cho-duyet`/`qua-han` (cùng hàm với trang Học viên & Lớp). */
+  const emDangHoc = (conn.prepare(
+    `SELECT e.student_id FROM enrollments e JOIN students s ON s.id = e.student_id
+      WHERE e.class_id = ? AND e.status = 'active' AND s.archived_at IS NULL`,
+  ).all(classId) as any[]).map((r) => r.student_id as number);
+  const caseCuaLop = listCases(p, { classId }).rows;
+  /* Đầu hồ sơ lớp thường ở tuần Cuối khoá / đã hết khoá (K2-14): "Cuối khoá: 6/8 em có đủ điểm" — chỉ tính ở hai chặng này (một lần `standingFor`). */
+  const cuoiKhoa = (() => {
+    if (finished || prog?.scoringMode !== 'ratio' || !summary || (summary.phase !== 'final_week' && summary.phase !== 'finished') || !emDangHoc.length) return null;
+    const st = standingFor(emDangHoc);
+    return { du: emDangHoc.filter((id) => { const s = st.get(id); return !!s && s.attemptKind === 'final' && s.required > 0 && s.scored >= s.required; }).length, tong: emDangHoc.length };
+  })();
+  const vl = viecHocVienTheoLop(p, {
+    emTheoLop: new Map([[classId, emDangHoc]]), cases: caseCuaLop, homNay: demoToday(), chuongTrinhTheoLop: new Map([[classId, prog?.code ?? null]]),
+  });
+
   return {
     id: cls.id, code: cls.code, kind: cls.kind, route: cls.route,
     isFastTrack: cls.is_fast_track === 1, startDate: cls.start_date, note: cls.note,
@@ -724,16 +743,11 @@ function classOverviewThat(p: Principal, classId: number) {
      * hiện học viên có trong ROSTER (đang active, không lưu trữ) nên KHÔNG hiện em đã tạm dừng — lọc thêm
      * theo đúng tập học viên ĐANG HỌC của `classId` để badge khớp lại với danh sách mở ra.
      */
-    soCaseMo: (() => {
-      const activeIds = new Set(
-        conn.prepare(
-          `SELECT e.student_id FROM enrollments e JOIN students s ON s.id = e.student_id
-            WHERE e.class_id = ? AND e.status = 'active' AND s.archived_at IS NULL`,
-        ).all(classId).map((r: any) => r.student_id as number),
-      );
-      return listCases(p, { classId }).rows
-        .filter((c) => c.status !== 'done' && c.studentId !== null && activeIds.has(c.studentId)).length;
-    })(),
+    soCaseMo: caseCuaLop.filter((c) => c.status !== 'done' && c.studentId !== null && emDangHoc.includes(c.studentId)).length,
+    /** B4: cùng hai số với hộp lớp ở trang Học viên & Lớp (`viecHocVienTheoLop`). */
+    soChoDuyet: vl.soChoDuyet.get(classId) ?? 0, soEmQuaHan: vl.soEmQuaHan.get(classId) ?? 0,
+    /** Lớp thường ở Cuối khoá / hết khoá: số em có đủ điểm bài Cuối khoá (null ở chặng khác và với FT). */
+    cuoiKhoa,
     /** Số học viên có vi phạm chưa xử lý quá 5 ngày — dấu ⚠ trên tab Ý thức & Phối hợp (Q15). */
     canhBaoYThuc: soEmCanXuLyYThuc(p, classId),
     /*

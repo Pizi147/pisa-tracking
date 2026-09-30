@@ -55,6 +55,7 @@ import * as lichSuLopSvc from '../classes/lichSuLop.ts';
 import * as hocVienLopSvc from '../classes/hocVienLop.ts';
 import * as luuTruSvc from '../classes/luuTru.ts';
 import * as phanTichLopSvc from '../classes/phanTichLop.ts';
+import { canHoTroLop } from '../classes/canHoTro.ts';
 import * as thongTinLopSvc from '../classes/thongTinLop.ts';
 import * as xoaKetThucLopSvc from '../classes/xoaKetThucLop.ts';
 import * as xoaHocVienSvc from '../students/xoaHocVien.ts';
@@ -938,6 +939,15 @@ api.get('/classes/:id/issue-board', requireAuth, wrap((req) => {
   return effectiveness.classIssueBoard(id, category, { fromDate: qStr(req, 'from') ?? null });
 }));
 
+/** Danh sách sau một SỐ ở bảng vấn đề / hiệu quả PA của một kỹ năng (PR-HVL, M5) — tính bằng chính `issueBoard`. */
+api.get('/classes/:id/issue-board/o', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const category = qStr(req, 'category');
+  const cot = qStr(req, 'cot');
+  if (!category || !cot) throw badRequest('Thiếu kỹ năng hoặc cột cần xem.');
+  return phanTichLopSvc.oPhanTichLop(principalOf(req), pInt(req, 'id'), category, cot, qStr(req, 'kind') ?? null);
+}));
+
 api.get('/classes/:id/issue-board/needs-evaluation', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   const p = principalOf(req);
@@ -1210,6 +1220,12 @@ api.get('/classes/:id/phan-tich-lop', requireAuth, wrap((req) => {
   return phanTichLopSvc.phanTichLop(principalOf(req), pInt(req, 'id'));
 }));
 
+/** Tab Học viên › Cần hỗ trợ (PR-HVL, M4): mỗi em có Case mở một khối — Case + PA + việc tiếp, theo lô (không N+1). */
+api.get('/classes/:id/can-ho-tro', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return canHoTroLop(principalOf(req), pInt(req, 'id'));
+}));
+
 /** ⋮ Sửa thông tin lớp: mã lớp, LT (FT), ghi chú; chương trình chỉ khi lớp chưa có học viên và bài Test. */
 api.patch('/classes/:id/thong-tin', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -1358,7 +1374,11 @@ api.post('/cycles/:id/target-revision', requireAuth, wrap((req) => {
 /** Lớp đang ở tuần thứ mấy, sắp thi gì, và đã hết chương trình chưa. */
 api.get('/classes/:id/progress', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return scheduleSvc.classProgress(pInt(req, 'id'));
+  const id = pInt(req, 'id');
+  const pr = scheduleSvc.classProgress(id);
+  /* K2-22: dòng tóm tắt MT của lớp FT (panel Tuần khai giảng) — chỉ người xem được lớp; người khác không có dòng này. */
+  const tomTatMt = pr.programmeCode === 'FT' && can(principalOf(req), PERMISSIONS.ATTEMPT_VIEW, { classId: id }) ? scheduleSvc.tomTatMt(id) : null;
+  return { ...pr, tomTatMt };
 }));
 
 /**

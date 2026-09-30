@@ -2,11 +2,11 @@ import { Fragment, useState } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
 import { HangNhom } from '../../ui/HangNhom.tsx';
-import { IssueTable } from './ClassIssueBoard.tsx';
+import { VanDeKyNang } from './ClassIssueBoard.tsx';
 
 type PhanTich = {
   loai: 'ft' | 'thuong';
-  dong: { key: string; nhan: string; tenDayDu: string; category: string }[];
+  dong: { key: string; nhan: string; tenDayDu: string; category: string; moRong?: boolean }[];
   cot: { key: string; nhan: string }[];
   o: Record<string, { dat: number; tong: number }>;
   soHocVien: number;
@@ -14,7 +14,8 @@ type PhanTich = {
 
 /**
  * TAB PHÂN TÍCH LỚP (đặc tả §3.7, mockup 06; Q14). FT: 5 kỹ năng × MT1…MT5 — lớp tiến bộ hay đi lùi ở kỹ năng nào. Lớp thường:
- * 4 môn × Giữa khoá / Cuối khoá, ô "n/N HV đạt". Bấm một dòng mở bảng vấn đề hay gặp của kỹ năng đó ("mở dòng ra từng loại lỗi").
+ * 4 môn × Giữa khoá / Cuối khoá, ô "n/N HV đạt"; dòng đầu "Cả bài" (% tổng ≥ ngưỡng đạt; không mở ra; Pre FOU không có). Bấm một dòng kỹ năng mở
+ * HAI BẢNG NHỎ: Vấn đề ở kỹ năng đó + Hiệu quả phương án ở kỹ năng đó, mọi số bấm được (PR-HVL, M5).
  * Ô dưới một nửa đạt tô đỏ nhạt; ô chưa ai có điểm là "—" (chưa có điểm KHÁC chưa đạt).
  */
 export function PhanTichLopTab({ classId }: { classId: number }) {
@@ -38,29 +39,42 @@ export function PhanTichLopTab({ classId }: { classId: number }) {
           </tr>
         </thead>
         <tbody>
-          {data.dong.map((d) => (
-            <Fragment key={d.key}>
-              {/* PR-UX4 (Q22, N-2): hàng kỹ năng là hàng lớn — mũi tên do `HangNhom` vẽ, không còn ▸ tự vẽ. */}
-              <HangNhom mo={mo === d.key} onMo={() => setMo(mo === d.key ? null : d.key)} nhan={d.tenDayDu}
-                tieuDe={<abbr className="text-slate-100 no-underline" title={d.tenDayDu}>{d.nhan}</abbr>}>
-                {data.cot.map((c) => {
-                  const o = data.o[`${d.key}|${c.key}`];
-                  return (
-                    <td key={c.key} className="text-center tabular-nums">
-                      {!o || o.tong === 0
-                        ? <span className="text-slate-600">—</span>
-                        : <span className={o.dat * 2 < o.tong ? 'text-rose-200' : 'text-slate-200'} title={`${o.dat}/${o.tong} HV đạt`}>
-                            {ft ? `${o.dat}/${o.tong}` : `${o.dat}/${o.tong} HV đạt`}
-                          </span>}
-                    </td>
-                  );
-                })}
-              </HangNhom>
-              {mo === d.key && (
-                <tr><td className="td" colSpan={data.cot.length + 1}><IssueTable classId={classId} category={d.category} /></td></tr>
-              )}
-            </Fragment>
-          ))}
+          {data.dong.map((d) => {
+            const oCac = data.cot.map((c) => {
+              const o = data.o[`${d.key}|${c.key}`];
+              return (
+                <td key={c.key} className="text-center tabular-nums">
+                  {!o || o.tong === 0
+                    ? <span className="text-slate-600">—</span>
+                    : <span className={o.dat * 2 < o.tong ? 'text-rose-200' : 'text-slate-200'} title={`${o.dat}/${o.tong} HV đạt`}>
+                        {ft ? `${o.dat}/${o.tong}` : `${o.dat}/${o.tong} HV đạt`}
+                      </span>}
+                </td>
+              );
+            });
+            /* K2-40: dòng "Cả bài" không có vấn đề để mở — hàng lớn không mũi tên, cùng cột thẳng với các dòng khác. */
+            if (d.moRong === false) {
+              return (
+                <tr key={d.key} className="hang-lon dong">
+                  <td className="px-3"><span className="flex items-center gap-2"><span className="inline-block h-4 w-4 shrink-0" aria-hidden />
+                    <abbr className="text-slate-100 no-underline" title={d.tenDayDu}>{d.nhan}</abbr></span></td>
+                  {oCac}
+                </tr>
+              );
+            }
+            return (
+              <Fragment key={d.key}>
+                {/* PR-UX4 (Q22, N-2): hàng kỹ năng là hàng lớn — mũi tên do `HangNhom` vẽ, không còn ▸ tự vẽ. */}
+                <HangNhom mo={mo === d.key} onMo={() => setMo(mo === d.key ? null : d.key)} nhan={d.tenDayDu}
+                  tieuDe={<abbr className="text-slate-100 no-underline" title={d.tenDayDu}>{d.nhan}</abbr>}>
+                  {oCac}
+                </HangNhom>
+                {mo === d.key && (
+                  <tr><td className="td" colSpan={data.cot.length + 1}><VanDeKyNang classId={classId} category={d.category} /></td></tr>
+                )}
+              </Fragment>
+            );
+          })}
         </tbody>
       </table>
     </div>

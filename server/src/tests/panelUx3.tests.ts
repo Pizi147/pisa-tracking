@@ -92,13 +92,14 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     assert(d.PLAN_DECISION_NGAN.ask_manager === 'Xin hỗ trợ QL' && d.NUT_LUU_KET_QUA.keep === 'Lưu kết quả', 'chữ chốt');
   });
 
-  check('UX3 (1) · viecTiepTheoCua: động từ + đối tượng, hạn tách riêng; không còn "Cập nhật"/"Xác định nguyên nhân"', () => {
-    const v = d.viecTiepTheoCua({
+  check('UX3 (1) · viecTiepCuaEm: động từ + đối tượng, hạn tách riêng; không còn "Cập nhật"/"Xác định nguyên nhân"', () => {
+    const v = d.viecTiepCuaEm({
       nhapDiem: { kyNang: ['listening', 'reading'], dot: 'Giữa khoá', quaHan: false },
       cases: [
-        { id: 1, topic: 'writing2', state: 'no_plan', nextDue: null, dueOverdue: false },
-        { id: 2, topic: 'listening', state: 'working', nextDue: '2026-09-13', dueOverdue: true },
+        { caseId: 1, topic: 'writing2', viecTiep: { chu: 'Đề ra PA', loaiHan: 'lap-pa', han: null } },
+        { caseId: 2, topic: 'listening', viecTiep: { chu: 'Ghi kết quả PA Nghe podcast', loaiHan: 'cap-nhat-pa', han: '2026-09-13', paId: 9 } },
       ],
+      yThuc: null,
       homNay: '2026-09-16',
     });
     const nd = v.find((x: any) => /^Nhập điểm/.test(x.viec));
@@ -106,19 +107,19 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     const dp = v.find((x: any) => /^Đề ra PA/.test(x.viec));
     assert(dp && dp.viec === 'Đề ra PA W2' && dp.quaHanNgay === null, JSON.stringify(dp));
     const gk = v.find((x: any) => /^Ghi kết quả/.test(x.viec));
-    assert(gk && gk.viec === 'Ghi kết quả L' && gk.han === 'hết T2 13/09' && gk.quaHanNgay === 3 && gk.tone === 'danger'
-      && gk.title === 'Ghi kết quả PA L · hạn hết T2 13/09 · quá hạn 3 ngày', JSON.stringify(gk));
+    assert(gk && gk.viec === 'Ghi kết quả PA L' && gk.han === 'hết T2 13/09' && gk.quaHanNgay === 3 && gk.tone === 'danger'
+      && gk.title === 'Ghi kết quả PA Nghe podcast · Listening · hạn hết T2 13/09 · quá hạn 3 ngày', JSON.stringify(gk));
     assert(!/Cập nhật|Xác định nguyên nhân/.test(JSON.stringify(v)), JSON.stringify(v));
   });
 
-  check('UX3 (1) · badgeLop: "{n} bài chờ chấm" (tooltip giữ câu cũ), "{n} HV chờ xếp lớp", "{n} Case mở"', () => {
-    const b = d.badgeLop({ needsPlacement: true, canXepLop: 4, missingSkills: [], soBaiChoCham: 9, needScoresTitle: 'Bạn cần chấm: 9 bài',
-      soCaseMo: 3, phase: 'running', missingCount: 0 });
+  check('UX3 (1) · badgeLop: "{n} bài chờ chấm" (tooltip giữ câu cũ), "{n} HV cần xếp lớp tiếp" (PR-HVL B4: gộp hết khoá + chưa lộ trình)', () => {
+    const b = d.badgeLop({ vai: 'gv', needsPlacement: true, canXepLop: 4, missingSkills: [], soBaiChoCham: 9, needScoresTitle: 'Bạn cần chấm: 9 bài',
+      phase: 'running', missingCount: 1, soEmQuaHan: 2 });
     const tatCa = [...b.hien, ...b.an];
-    assert(tatCa.find((x: any) => x.key === 'het-khoa')?.nhan === '4 HV chờ xếp lớp', 'het-khoa');
+    assert(tatCa.find((x: any) => x.key === 'xep-lop')?.nhan === '4 HV cần xếp lớp tiếp', 'xep-lop');
     const cham = tatCa.find((x: any) => x.key === 'cham');
     assert(cham?.nhan === '9 bài chờ chấm' && cham?.title === 'Bạn cần chấm: 9 bài', JSON.stringify(cham));
-    assert(tatCa.find((x: any) => x.key === 'case')?.nhan === '3 Case mở', 'case');
+    assert(!tatCa.some((x: any) => x.key === 'case'), 'badge "Case mở" đã bỏ');
     assert(b.hien.length === 2, 'tối đa 2 badge');
   });
 
@@ -313,20 +314,21 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     assert(d.nhanDotNgan('mock', null) === null, 'mock không số');
   });
 
-  check('UX3 (1) · viecTiepTheoCua: Case đã xong và Case không hạn không sinh dòng; danh sách xếp đỏ → vàng → xanh', () => {
-    const v = d.viecTiepTheoCua({
+  check('UX3 (1) · viecTiepCuaEm: Case xong / không việc không sinh dòng; danh sách xếp đỏ → vàng → xanh', () => {
+    const v = d.viecTiepCuaEm({
       nhapDiem: null,
       cases: [
-        { id: 1, topic: 'reading', state: 'done', nextDue: '2026-09-01', dueOverdue: true },
-        { id: 2, topic: 'speaking', state: 'working', nextDue: null, dueOverdue: false },
-        { id: 3, topic: 'listening', state: 'working', nextDue: '2026-09-20', dueOverdue: false },
-        { id: 4, topic: 'writing2', state: 'no_plan', nextDue: null, dueOverdue: false },
-        { id: 5, topic: 'reading', state: 'working', nextDue: '2026-09-10', dueOverdue: true },
+        { caseId: 1, topic: 'reading', viecTiep: null },
+        { caseId: 2, topic: 'speaking', viecTiep: null },
+        { caseId: 3, topic: 'listening', viecTiep: { chu: 'Ghi kết quả PA A', loaiHan: 'cap-nhat-pa', han: '2026-09-20', paId: 1 } },
+        { caseId: 4, topic: 'writing2', viecTiep: { chu: 'Đề ra PA', loaiHan: 'lap-pa', han: null } },
+        { caseId: 5, topic: 'reading', viecTiep: { chu: 'Ghi kết quả PA B', loaiHan: 'cap-nhat-pa', han: '2026-09-10', paId: 2 } },
       ],
+      yThuc: null,
       homNay: '2026-09-16',
     });
     assert(v.map((x: any) => x.tone).join() === 'danger,warn,info', v.map((x: any) => x.tone).join());
-    assert(v.length === 3 && v[0].viec === 'Ghi kết quả R' && v[0].quaHanNgay === 6, JSON.stringify(v));
+    assert(v.length === 3 && v[0].viec === 'Ghi kết quả PA R' && v[0].quaHanNgay === 6, JSON.stringify(v));
   });
 
   check('UX3 (1) · tienDoCase: PA đã xong không tính là việc tiếp; Case đã xong không có việc tiếp', () => {

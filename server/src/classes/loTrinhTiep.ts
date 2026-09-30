@@ -8,6 +8,7 @@ import { demoToday } from '../demoConfig.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { classProgress } from './schedule.ts';
+import { standingFor } from '../students/standing.ts';
 
 /**
  * LỘ TRÌNH TIẾP THEO (PR-LT, Q1, §3.9.1) — dự định của một em SAU lớp đang học, ghi trước khi
@@ -45,7 +46,7 @@ export function layLoTrinhTiep(p: Principal, studentId: number) {
   require_(p, PERMISSIONS.STUDENT_VIEW, { studentId }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
 
   const enr = enrollmentDangHoc(studentId);
-  if (!enr) return { lop: null, banGhi: null, lopDuKien: [] as LopDuKien[], coTheGhi: false };
+  if (!enr) return { lop: null, banGhi: null, lopDuKien: [] as LopDuKien[], coTheGhi: false, ketQua: null };
 
   const ma = (enr.programme_code ?? null) as ProgrammeCode | null;
   const laLopThuong = !enr.is_fast_track;
@@ -71,6 +72,8 @@ export function layLoTrinhTiep(p: Principal, studentId: number) {
   return {
     lop: { id: enr.class_id, code: enr.code, ma, maKe, laLopThuong, dangHoc: true },
     banGhi, lopDuKien, coTheGhi,
+    /** B9: kết quả gần nhất của em — đầu panel Lộ trình tiếp theo hiện chính + hai dòng (`ketQuaGanNhat`). */
+    ketQua: standingFor([studentId]).get(studentId) ?? null,
   };
 }
 

@@ -152,14 +152,14 @@ export async function runLenLopTests(t: YThucTestKit) {
 
   // ==================================================================== badgeLop — thứ tự và cắt 2 badge
 
-  check('PR-LT (1) · badgeLop: "chua-lo-trinh" đứng ngay sau "het-khoa", vẫn cắt tối đa 2 badge hiện', () => {
-    const b = d.badgeLop({
-      needsPlacement: true, canXepLop: 3, soChuaLoTrinhTiep: 5, missingSkills: ['writing'],
-      soBaiChoCham: 0, needScoresTitle: null, soCaseMo: 0, phase: 'finished', missingCount: 0,
-    });
-    assert(b.hien.map((x: any) => x.key).join(',') === 'het-khoa,chua-lo-trinh', `Hai badge đầu: ${JSON.stringify(b.hien)}`);
-    assert(b.an.map((x: any) => x.key).join(',') === 'thieu-gv', `Phần gom: ${JSON.stringify(b.an)}`);
-    assert(b.hien[1].nhan === '5 HV chưa có lộ trình tiếp theo' && b.hien[1].tone === 'warn', JSON.stringify(b.hien[1]));
+  check('PR-LT (1) · badgeLop (PR-HVL B4): hết khoá và chưa có lộ trình gộp một badge "xep-lop"; vẫn cắt tối đa 2 badge hiện', () => {
+    const goc = { vai: 'gv' as const, soChuaLoTrinhTiep: 5, missingSkills: ['writing'], soBaiChoCham: 2, needScoresTitle: null, phase: 'finished', missingCount: 0 };
+    const het = d.badgeLop({ ...goc, needsPlacement: true, canXepLop: 3 });
+    assert(het.hien.map((x: any) => x.key).join(',') === 'cham,thieu-gv', `Hai badge đầu: ${JSON.stringify(het.hien)}`);
+    assert(het.an.map((x: any) => x.key).join(',') === 'xep-lop', `Phần gom: ${JSON.stringify(het.an)}`);
+    assert(het.an[0].nhan === '3 HV cần xếp lớp tiếp' && /hết khoá/.test(het.an[0].title ?? ''), 'Hết khoá: số em cần xếp lớp');
+    const chua = d.badgeLop({ ...goc, needsPlacement: false, canXepLop: 0 });
+    assert(chua.an[0].nhan === '5 HV cần xếp lớp tiếp' && /chưa có lộ trình/.test(chua.an[0].title ?? '') && chua.an[0].tone === 'warn', JSON.stringify(chua.an[0]));
   });
 
   // ==================================================================== trongHaiTuanCuoi
