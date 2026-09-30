@@ -449,6 +449,7 @@ const rows = o.map((d, i) => ({ ...goc.get(d.attemptId)!, id: d.attemptId * 10 +
 | 30/09 | 1 | `hoSoGiaoVien.ts` + `prGv.tests.ts` (3 phép kiểm); check 1824 + 25 |
 | 30/09 | 2 | `giaoVien/phamVi.ts` (tệp riêng, hết vòng import) + `viecCuaNguoi` cuối `mywork.ts` + route 1 dòng; 4 phép kiểm. Ghi chú dữ liệu: ở seed sạch GVCN id 7 chỉ dạy **MB** (6 lớp) — lớp CP thấy trong `run.js` là do phép kiểm cũ tạo giữa chừng; phép kiểm 403 QL CP và phạm vi 2 chi nhánh dùng GV **tạm** dựng trong phép kiểm. Task 7 "QL CP gõ `/giao-vien/7` → 403" **đúng** ở seed sạch |
 | 30/09 | 3 | **Lệch:** hồ sơ GV tách **3 lời gọi** (`/giao-vien/:id` · `/:id/viec` · `/:id/ket-qua`) thay vì một — planning ước `phanTichLop` ≤ 3 câu/lớp, đo thật **7 câu/lớp** và `myWork` 45–55: gộp một lời gọi = 113–126 câu > trần cứng 100 của `tocDoDuong`. Sau tách: hồ sơ 60–65, việc 61–72, kết quả 44–45, ô 20–27 câu. Web gọi song song. `oHoSoGv` id ô nợ = `attemptId*10 + thứ tự trong lượt` (mẫu kế hoạch `+ i` toàn cục trùng id giữa hai lượt). Khối Kết quả bỏ lớp mà người xem không có `attempt.view` (không 403 cả hồ sơ). `phanTichLop` thêm `ds` |
+| 30/09 | 4 | `bangGvChiNhanh` + route `GET /giao-vien?cn=&ct=`: 36 (QL) / 34 (QT) câu, không tăng khi thêm 3 GV + 2 lớp + 3 Case (phép kiểm). **Lệch nhỏ:** người phụ trách Case chỉ hiện ở bảng khi có phân công hoặc VAI ở chi nhánh (`phamViHoSoGv` mở được hồ sơ) — tránh tên bấm ra 403; hàng của người không `active` bị bỏ. Case lọc bằng chung `caseGvTuRows` với hồ sơ |
 
 ## Chủ sản phẩm / planning chốt 30/09 (thắng các chỗ lệch trong kế hoạch)
 

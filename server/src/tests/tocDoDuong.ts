@@ -201,6 +201,9 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ GV', vai: MOI_VAI, url: '/giao-vien/{gv}/ket-qua', maChuDich: { GVBM: 403 } },
   { trang: 'Hồ sơ GV', vai: MOI_VAI, url: '/giao-vien/{gv}/o?cot=chua-nhap', maChuDich: { GVBM: 403 } },
   { trang: 'Hồ sơ GV', vai: MOI_VAI, url: '/giao-vien/{gv}/o?cot=case-mo', maChuDich: { GVBM: 403 } },
+  /* Bảng giáo viên của chi nhánh (Tổng quan › Theo lớp › Theo giáo viên): chỉ Quản lý / Quản trị; GVCN → 403. */
+  { trang: 'Tổng quan QL', vai: ['QL', 'QT', 'GVCN'], url: '/giao-vien?cn={cn}&ct=ft', maChuDich: { GVCN: 403 } },
+  { trang: 'Tổng quan QL', vai: ['QL', 'QT', 'GVCN'], url: '/giao-vien?cn={cn}&ct=thuong', maChuDich: { GVCN: 403 } },
 ];
 
 /**
@@ -563,6 +566,13 @@ export const TRAN: Record<string, number> = {
   'GVBM /giao-vien/7/o?cot=case-mo': 20,
   'GVCN_THUONG /giao-vien/7/o?cot=case-mo': 33,
   'QT /giao-vien/7/o?cot=case-mo': 30,
+  // PR-GV (4), 30/09/2026 — bảng GV chi nhánh: 36 (QL) / 34 (QT) câu, 403 = 9 câu; KHÔNG tăng theo số GV / lớp / Case (phép kiểm prGv.tests.ts).
+  'QL /giao-vien?cn=1&ct=ft': 47,
+  'QT /giao-vien?cn=1&ct=ft': 45,
+  'GVCN /giao-vien?cn=1&ct=ft': 19,
+  'QL /giao-vien?cn=1&ct=thuong': 47,
+  'QT /giao-vien?cn=1&ct=thuong': 45,
+  'GVCN /giao-vien?cn=1&ct=thuong': 19,
 };
 
 /**

@@ -10,10 +10,10 @@ import {
 } from '../../../shared/domain/index.ts';
 import { db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
-import { bangLop, can, loadPrincipal, type Principal } from '../permissions.ts';
-import { badRequest, forbidden } from '../util.ts';
+import { bangLop, can, loadPrincipal, scopeFor, type Principal } from '../permissions.ts';
+import { badRequest, forbidden, notFound } from '../util.ts';
 import { phanTichLop } from '../classes/phanTichLop.ts';
-import { listCases } from '../cases/cases.ts';
+import { listCases, type MappedCase } from '../cases/cases.ts';
 import { chiTietCaseMo, type CaseChiTiet } from '../cases/caseLop.ts';
 import { trongPhamVi, yeuCauCuaToi } from '../duyet/yeuCau.ts';
 import { rowsFor, type MetricRow } from '../worklist/metrics.ts';
@@ -90,14 +90,18 @@ export function noDiemCuaGv(p: Principal, gvId: number, homNay: string, lop: rea
 export type CaseGv = CaseChiTiet & { hocVien: string; maLop: string | null };
 /** Case đang mở GV làm người phụ trách chính, trong `branchIds`, khung `ct`; quá hạn trước, rồi hạn gần (Q8, Q17). */
 export function caseMoCuaGv(p: Principal, gvId: number, branchIds: number[] | null, ct: ChuongTrinh = 'ca-hai'): CaseGv[] {
-  const rows = listCases(p, { ownerUserId: gvId }).rows.filter((c) => c.state !== 'done'
+  return caseGvTuRows(listCases(p, { ownerUserId: gvId }).rows, branchIds, ct).map(({ chu, ...c }) => c);
+}
+/** Cùng luật lọc cho hồ sơ một GV và bảng chi nhánh (số ở bảng = số ở hồ sơ): Case chưa xong, chi nhánh gốc ∈ `branchIds`, khung `ct`. */
+function caseGvTuRows(mapped: readonly MappedCase[], branchIds: number[] | null, ct: ChuongTrinh): (CaseGv & { chu: number })[] {
+  const rows = mapped.filter((c) => c.state !== 'done'
     && (branchIds === null || branchIds.includes((c.homeBranchId ?? c.branchId) as number))
     && (ct === 'ca-hai' || (ct === 'ft') === (c.classKind === 'ft')));
   const chiTiet = chiTietCaseMo(rows);
-  const out: CaseGv[] = [];
+  const out: (CaseGv & { chu: number })[] = [];
   for (const c of rows) {
     const t = chiTiet.get(c.id);
-    if (t) out.push({ ...t, hocVien: c.studentName ?? '', maLop: c.classCode });
+    if (t) out.push({ ...t, hocVien: c.studentName ?? '', maLop: c.classCode, chu: c.ownerUserId as number });
   }
   return out.sort((a, b) => Number(b.quaHan) - Number(a.quaHan) || (a.viecTiep?.han ?? '9999').localeCompare(b.viecTiep?.han ?? '9999') || a.id - b.id);
 }
@@ -271,4 +275,75 @@ export function oHoSoGv(p: Principal, gvId: number, q: ThamSoO): { n: number; ti
   const dong = pt.dong.find((d) => d.key === q.dong)!;
   const gan = (ids: number[], nhan: string) => rowsFor('hoc-vien', ids).map((r) => ({ ...r, sub: [r.sub, nhan].filter(Boolean).join(' · ') }));
   return ket([...gan(x.dat, chu[0]), ...gan(x.chua, chu[1])], (n) => `${n} học viên · ${l.ma} · ${dong.nhan}`);
+}
+
+// ------------------------------------------------------------------ bảng giáo viên của một chi nhánh (Q11, K1-28) — không xếp hạng, không hàng tổng
+
+export type HangGv = { id: number; ten: string; lop: number; hocVien: number; chuaNhap: number; quaHan: number; caseMo: number; caseQuaHan: number };
+export type BangGv = { cn: number; tenChiNhanh: string; ct: ChuongTrinh; hang: HangGv[] };
+
+/**
+ * Mỗi hàng = MỘT người, chỉ số của chính người đó trong chi nhánh `cn` và khung `ct`; sắp theo TÊN. Số câu SQL không tăng theo số GV / lớp / Case:
+ * một câu phân công, một câu ghi danh (lô 400), một lần `scoreDebtCells`, một lần `listCases` + `chiTietCaseMo`, một câu tên người. Mỗi số là số
+ * của hồ sơ người đó (`/giao-vien/:id/o?cot=…&cn=&ct=` cho ra đúng danh sách) — cùng `caseGvTuRows`, cùng khung lớp.
+ */
+export function bangGvChiNhanh(p: Principal, q: { cn?: number | null; ct?: string | null }): BangGv {
+  const scope = scopeFor(p, PERMISSIONS.MEETING_VIEW);
+  if (scope.none) throw forbidden('Chỉ Quản lý và Quản trị hệ thống xem được bảng này.');
+  const cn = q.cn ?? (!scope.all && scope.branchIds.length === 1 ? scope.branchIds[0] : null);
+  if (cn === null) throw badRequest('Chọn một chi nhánh.');
+  if (!scope.all && !scope.branchIds.includes(cn)) throw forbidden('Chi nhánh này nằm ngoài phạm vi bạn được xem.');
+  const conn = db();
+  const cb = conn.prepare(`SELECT name FROM branches WHERE id = ?`).get(cn) as any;
+  if (!cb) throw notFound('Không tìm thấy chi nhánh này.');
+  const homNay = demoToday();
+  const ct = chuongTrinhTuThamSo(q.ct);
+  const bang = bangLop();
+
+  const lopCua = new Map<number, Set<number>>();                 // người → lớp (trong khung)
+  const ten = new Map<number, string>();
+  for (const r of conn.prepare(
+    `SELECT ta.user_id, ta.class_id, u.full_name FROM teacher_assignments ta JOIN users u ON u.id = ta.user_id JOIN classes c ON c.id = ta.class_id
+      WHERE ta.status = 'active' AND ta.effective_from <= ? AND (ta.effective_to IS NULL OR ta.effective_to >= ?)
+        AND u.status = 'active' AND c.status = 'active' AND c.branch_id = ?`).all(homNay, homNay, cn) as any[]) {
+    ten.set(r.user_id, r.full_name);                              // có phân công ở chi nhánh (mọi khung) → hồ sơ mở được cho QL
+    if (!locKhung(ct, bang.get(r.class_id)?.isFastTrack ? 'ft' : 'thuong')) continue;
+    (lopCua.get(r.user_id) ?? lopCua.set(r.user_id, new Set()).get(r.user_id)!).add(r.class_id);
+  }
+
+  const hvCuaLop = new Map<number, Set<number>>();
+  for (const lo of theoLo([...new Set([...lopCua.values()].flatMap((s) => [...s]))])) {
+    for (const r of conn.prepare(
+      `SELECT e.class_id, e.student_id FROM enrollments e JOIN students s ON s.id = e.student_id
+        WHERE e.class_id IN (${cho(lo.length)}) AND e.status = 'active' AND s.archived_at IS NULL`).all(...lo) as any[]) {
+      (hvCuaLop.get(r.class_id) ?? hvCuaLop.set(r.class_id, new Set()).get(r.class_id)!).add(r.student_id);
+    }
+  }
+  const no = scoreDebtCells(p, homNay, [cn]);
+
+  const caseTheoNguoi = new Map<number, CaseGv[]>();
+  const rowsCase = listCases(p, { branchId: cn }).rows.filter((c) => c.ownerUserId !== null);
+  for (const c of caseGvTuRows(rowsCase, [cn], ct)) {
+    (caseTheoNguoi.get(c.chu) ?? caseTheoNguoi.set(c.chu, []).get(c.chu)!).push(c);
+  }
+  /* Người phụ trách Case chưa có phân công ở chi nhánh: chỉ hiện khi có VAI ở chi nhánh — đúng luật mở hồ sơ (`phamViHoSoGv`), để tên bấm được không 403. */
+  const thieuTen = [...caseTheoNguoi.keys()].filter((id) => !ten.has(id));
+  for (const lo of theoLo(thieuTen)) {
+    for (const r of conn.prepare(
+      `SELECT u.id, u.full_name FROM users u WHERE u.status = 'active' AND u.id IN (${cho(lo.length)})
+          AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.status = 'active' AND ur.branch_id = ?)`).all(...lo, cn) as any[]) ten.set(r.id, r.full_name);
+  }
+
+  const hang: HangGv[] = [];
+  for (const [id, hoTen] of ten) {
+    const lop = lopCua.get(id) ?? new Set<number>();
+    const mine = no.filter((d) => d.userId === id && lop.has(d.classId));
+    const cases = caseTheoNguoi.get(id) ?? [];
+    const hv = new Set([...lop].flatMap((l) => [...(hvCuaLop.get(l) ?? [])]));
+    const h = { id, ten: hoTen, lop: lop.size, hocVien: hv.size, chuaNhap: mine.length, quaHan: mine.filter((d) => d.overdue).length,
+      caseMo: cases.length, caseQuaHan: cases.filter((c) => c.quaHan).length };
+    if (h.lop || h.chuaNhap || h.caseMo) hang.push(h);                      // bỏ hàng toàn 0
+  }
+  hang.sort((a, b) => a.ten.localeCompare(b.ten, 'vi') || a.id - b.id);
+  return { cn, tenChiNhanh: cb.name, ct, hang };
 }

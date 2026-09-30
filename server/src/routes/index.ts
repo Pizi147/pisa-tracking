@@ -86,7 +86,7 @@ import * as yThucPhanTichSvc from '../phanTich/yThucPhanTich.ts';
 import * as boQuenSvc from '../phanTich/boQuen.ts';
 import { metricResponse, metricSet, rowsFor } from '../worklist/metrics.ts';
 import { myWork, viecCuaNguoi } from '../worklist/mywork.ts';
-import { hoSoGiaoVien, ketQuaHoSoGv, oHoSoGv, viecHoSoGv } from '../giaoVien/hoSo.ts';
+import { bangGvChiNhanh, hoSoGiaoVien, ketQuaHoSoGv, oHoSoGv, viecHoSoGv } from '../giaoVien/hoSo.ts';
 import { nhacViec } from '../worklist/nhacViec.ts';
 import * as caseSvc from '../cases/cases.ts';
 import * as caseSignalSvc from '../cases/signals.ts';
@@ -1460,6 +1460,11 @@ const soDuong = (v: unknown, ten: string): number | null => {
   if (typeof v !== 'string' || !/^\d+$/.test(v) || !Number.isSafeInteger(n) || n < 1) throw badRequest(`Tham số "${ten}" không hợp lệ.`);
   return n;
 };
+/** Bảng giáo viên của một chi nhánh (đặt TRƯỚC `/giao-vien/:id`). Không xếp hạng: sắp theo tên. */
+api.get('/giao-vien', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return bangGvChiNhanh(principalOf(req), { cn: soDuong(req.query.cn, 'cn'), ct: qStr(req, 'ct') ?? null });
+}));
 api.get('/giao-vien/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return hoSoGiaoVien(principalOf(req), soDuong(req.params.id, 'id') ?? pInt(req, 'id'));
