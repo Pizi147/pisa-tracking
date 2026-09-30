@@ -84,6 +84,8 @@ export function trangThaiCaseV4(c: CaseV4Input, homNay: string): { k: TrangThaiC
 export type PaViecTiep = {
   id: number; ten: string; batBuoc: boolean; choXacNhan: boolean; xong: boolean;
   actionDue: string | null; followupDue: string | null; choDuyet?: boolean;
+  /** PR-S5F-a: PA bổ trợ Giữa khoá của lớp CŨ (Case đã đi theo em sang lớp mới) — người dạy cũ ghi tiếp; việc tiếp ưu tiên PA ở lớp mới. */
+  lopCu?: boolean;
 };
 export type ViecTiepCase = { chu: string; loaiHan: DeadlineKind | null; han: string | null; paId?: number };
 
@@ -100,11 +102,14 @@ export function viecTiepCuaCase(c: CaseV4Input, pas: PaViecTiep[], homNay: strin
   if (s.k === 'cho-duyet-ke-hoach') return { chu: 'Chờ Quản lý duyệt kế hoạch', loaiHan: null, han: null };
   const choXn = pas.find((p) => p.choXacNhan && !p.xong);
   if (choXn) return { chu: `Xác nhận PA ${choXn.ten}`, loaiHan: 'xac-minh-sos', han: c.hanXacNhan, paId: choXn.id };
-  const chay = pas.filter((p) => !p.xong && !p.choXacNhan && !p.choDuyet);
+  const chayTatCa = pas.filter((p) => !p.xong && !p.choXacNhan && !p.choDuyet);
+  /* PR-S5F-a: có PA ở lớp mới (bổ trợ miễn phí) thì việc tiếp là của PA đó; PA lớp cũ chỉ thành việc tiếp khi không còn PA nào khác, ghi rõ "(lớp cũ)". */
+  const chay = chayTatCa.some((p) => !p.lopCu) ? chayTatCa.filter((p) => !p.lopCu) : chayTatCa;
+  const cu = (p: PaViecTiep) => (p.lopCu ? ' (lớp cũ)' : '');
   const cuoi = chay.find((p) => laLanGhiCuoi({ preset: p.batBuoc, followupDue: p.followupDue, actionDue: p.actionDue }, homNay));
-  if (cuoi) return { chu: `Ghi kết quả cuối ${cuoi.ten}`, loaiHan: 'cap-nhat-pa', han: cuoi.actionDue, paId: cuoi.id };
+  if (cuoi) return { chu: `Ghi kết quả cuối ${cuoi.ten}${cu(cuoi)}`, loaiHan: 'cap-nhat-pa', han: cuoi.actionDue, paId: cuoi.id };
   const ganNhat = [...chay].sort((a, b) => (a.actionDue ?? '9999').localeCompare(b.actionDue ?? '9999'))[0];
-  if (ganNhat) return { chu: `Ghi kết quả PA ${ganNhat.ten}`, loaiHan: 'cap-nhat-pa', han: ganNhat.actionDue, paId: ganNhat.id };
+  if (ganNhat) return { chu: `Ghi kết quả PA ${ganNhat.ten}${cu(ganNhat)}`, loaiHan: 'cap-nhat-pa', han: ganNhat.actionDue, paId: ganNhat.id };
   if (!pas.length) return { chu: 'Đề ra PA', loaiHan: 'lap-pa', han: hanLapPa };
   if (pas.every((p) => p.xong)) return { chu: 'Hoàn thành Case', loaiHan: null, han: null };
   return null;   // chỉ còn PA chờ Quản lý duyệt — việc của Quản lý

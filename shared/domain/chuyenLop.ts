@@ -118,6 +118,8 @@ export type DaiLop = {
   banGiaoMon: { mon: string; monNgan: string; daGhi: number; tong: number; han: string | null }[];
   /** Phía lớp ĐÍCH (H). */
   sapNhan: { n: number; tuLop: { id: number; code: string }[]; tuan: string; daXacNhan: number } | null;
+  /** PR-S5F-a: lệnh của lớp (nguồn) đã tới tuần mà CHƯA chuyển được — chỉ Quản lý thấy, để sửa tuần/lớp đích hoặc huỷ. */
+  chuaChuyenDuoc: { n: number; loi: string } | null;
   viewer: { coTheRaLenh: boolean; coTheChuyenNhieuEm: boolean; laGvcn: boolean; xacNhanDuoc: boolean };
 };
 
@@ -127,7 +129,7 @@ export type DaiHocVien = {
   nguoiRaLenh: string | null; ngayRaLenh: string;
   banGiao: { soMon: number; daGhi: number; hanGvcn: string | null; daXacNhan: boolean; nguoiXacNhan: string | null; ngayXacNhan: string | null; thay: boolean } | null;
   loi: string | null;
-  /** Nút theo vai: bàn giao (GVCN / Quản lý thay) · bàn giao môn (GVBM) · huỷ lệnh (Quản lý, trước tuần bắt đầu) · đọc bàn giao (đã xác nhận / đã chuyển). */
+  /** Nút theo vai: bàn giao (GVCN / Quản lý thay) · bàn giao môn (GVBM) · huỷ lệnh (Quản lý, lệnh còn chờ — kể cả chưa chuyển được) · đọc bàn giao (đã xác nhận / đã chuyển). */
   nut: ('ban-giao' | 'ban-giao-mon' | 'huy-lenh' | 'doc-ban-giao')[];
   mon: { ma: string; ngan: string } | null;
 };

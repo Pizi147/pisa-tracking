@@ -595,6 +595,14 @@ export const INTERVENTION_KIND_LABEL: Record<InterventionKind, string> = {
   /** PR-LT2b (T47, M-05): sau Cuối khoá — miễn phí học viên, không tính lương GV; kết quả cuối là Mini Test. */
   bo_tro_mien_phi: 'Bổ trợ miễn phí',
 };
+/**
+ * Tên PA trong câu VIỆC TIẾP (`Ghi kết quả PA …`): PA do hệ thống tạo nói tên loại ("Bổ trợ", "Bổ trợ miễn phí") — mô tả dài của nó
+ * (`1 buổi miễn phí (P) · 1 tuần · Mini Test sau buổi cuối · …`) nằm ở hàng PA, không nhồi vào cột Việc tiếp (PR-S5F-a). PA khác: câu người dạy viết.
+ */
+export function tenPaViecTiep(kind: string, moTa: string | null | undefined): string {
+  const nhan = INTERVENTION_KIND_LABEL[kind as InterventionKind] ?? kind;
+  return (SYSTEM_KINDS as readonly string[]).includes(kind) ? nhan : (moTa ?? '').trim() || nhan;
+}
 
 /**
  * DANH MỤC PHƯƠNG ÁN CỦA CASE HỌC THUẬT (mục 8.1).

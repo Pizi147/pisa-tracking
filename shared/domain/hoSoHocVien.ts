@@ -112,6 +112,8 @@ export type LuotTomTat = {
   overall: number | null; expectation: number | null; sosLevel: number | null;
   /** Chỉ lớp thường — dùng để đếm số môn chưa đạt THẬT (`sosLevel` bị chặn trần ở 3, không dùng được khi trượt cả 4). */
   skills?: { outcome: string }[] | null;
+  /** Chỉ lớp thường: % tổng (chưa làm tròn) — Cuối khoá đủ điểm thì ô ghi `66%` như hộp Kết luận khoá (PR-S5F-a). */
+  tyLeTong?: number | null;
   /** M-14: `false` = MT lịch sử có tuần thi ngoài 4 tuần trước ngày tạo — không phải "hiện trạng". Thiếu = tính. */
   sinhViec?: boolean;
 };
@@ -122,6 +124,8 @@ export type KetQuaTestGanNhat = {
   soMonChuaDat: number | null;
   /** `<KetQuaDot>` chỉ nhận 1–4 kỹ năng (ATTEMPT_SKILL_UNITS); ngoài khoảng đó giao diện ghi `{có}/{cần} phần có điểm`. */
   dungKetQuaDot: boolean;
+  /** PR-S5F-a (T58): Cuối khoá lớp thường đủ điểm → `66%` — CÙNG số với hộp Kết luận khoá (không "2/4 môn đạt"). */
+  phanTram: number | null;
 };
 
 /**
@@ -146,5 +150,6 @@ export function ketQuaTestGanNhat(attempts: readonly LuotTomTat[], homNay?: stri
   return {
     attemptId: a.id, nhan, coDiem: a.scored, yeuCau: a.required, dat, sos: a.sosLevel, soMonChuaDat,
     dungKetQuaDot: a.required >= 1 && a.required <= ATTEMPT_SKILL_UNITS,
+    phanTram: ratio && a.kind === 'final' && a.complete && a.tyLeTong != null ? Math.round(a.tyLeTong * 100) : null,
   };
 }

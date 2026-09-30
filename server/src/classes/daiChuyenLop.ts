@@ -1,10 +1,10 @@
 import { db } from '../db.ts';
-import { boMonLich, kyNangGoiY, tenMonNgan, tuanChonDuoc } from '../../../shared/domain/index.ts';
+import { boMonLich, kyNangPhuTrach, tenMonNgan, tuanChonDuoc } from '../../../shared/domain/index.ts';
 import { addDays } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import type { Principal } from '../permissions.ts';
 import type { DaiHocVien, DaiLop } from '../../../shared/domain/index.ts';
-import { classProgressMany } from './schedule.ts';
+import { mocKetKhoa, type TienDoMoc } from './schedule.ts';
 import { demChuaCoLenh } from './lenhChuyen.ts';
 import { coTheRaLenh, phanCongO } from './quyenChuyenLop.ts';
 
@@ -14,19 +14,19 @@ import { coTheRaLenh, phanCongO } from './quyenChuyenLop.ts';
  */
 
 /** Hồ sơ lớp: tối đa 3 câu (phân công · lệnh nguồn/đích/dòng môn/GVCN gộp một UNION · đếm chưa lệnh khi tới Cuối khoá). */
-export function daiLop(p: Principal, classId: number, o: { phase: string | null; ft: boolean; ct: string | null }): DaiLop {
+export function daiLop(p: Principal, classId: number, o: { pr: TienDoMoc; ft: boolean; ct: string | null }): DaiLop {
   const conn = db();
   const homNay = demoToday();
   const pc = phanCongO(conn, p.userId, classId);
   const ra = coTheRaLenh(p, classId);
   const rows = conn.prepare(
-    `SELECT 'nguon' AS k, l.id AS a, l.huong AS b, l.trang_thai AS c, l.tuan_bat_dau AS d, l.xac_nhan_luc AS e, l.han_gvcn AS f, l.han_gvbm AS g
+    `SELECT 'nguon' AS k, l.id AS a, l.huong AS b, l.trang_thai AS c, l.tuan_bat_dau AS d, l.xac_nhan_luc AS e, l.han_gvcn AS f, l.han_gvbm AS g, l.loi AS h
        FROM lenh_chuyen_lop l WHERE l.lop_nguon_id = ? AND l.trang_thai != 'huy'
-     UNION ALL SELECT 'dich', l.lop_nguon_id, n.code, l.trang_thai, l.tuan_bat_dau, l.xac_nhan_luc, NULL, NULL
+     UNION ALL SELECT 'dich', l.lop_nguon_id, n.code, l.trang_thai, l.tuan_bat_dau, l.xac_nhan_luc, NULL, NULL, NULL
        FROM lenh_chuyen_lop l JOIN classes n ON n.id = l.lop_nguon_id WHERE l.lop_dich_id = ? AND l.trang_thai = 'cho'
-     UNION ALL SELECT 'mon', b.lenh_id, b.mon, NULL, NULL, NULL, NULL, NULL
+     UNION ALL SELECT 'mon', b.lenh_id, b.mon, NULL, NULL, NULL, NULL, NULL, NULL
        FROM ban_giao_mon b WHERE b.lenh_id IN (SELECT id FROM lenh_chuyen_lop WHERE lop_nguon_id = ?)
-     UNION ALL SELECT 'gvcn', COUNT(*), NULL, NULL, NULL, NULL, NULL, NULL
+     UNION ALL SELECT 'gvcn', COUNT(*), NULL, NULL, NULL, NULL, NULL, NULL, NULL
        FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active'`,
   ).all(classId, classId, classId, classId) as any[];
   const min = (xs: (string | null)[]) => xs.filter((x): x is string => !!x).sort()[0] ?? null;
@@ -45,7 +45,7 @@ export function daiLop(p: Principal, classId: number, o: { phase: string | null;
     daGhi.get(r.b)!.add(r.a);
   }
   const banGiaoMon = chuaXn.length
-    ? boMonLich(o.ct).filter((m) => kyNangGoiY(o.ct, m).some((k) => pc.kyNang.has(k))).map((m) => ({
+    ? boMonLich(o.ct).filter((m) => kyNangPhuTrach(o.ct, m).some((k) => pc.kyNang.has(k))).map((m) => ({
       mon: m, monNgan: tenMonNgan(o.ct, m), daGhi: nguon.filter((r) => daGhi.get(m)?.has(r.a)).length, tong: nguon.length,
       han: min(chuaXn.filter((r) => !daGhi.get(m)?.has(r.a)).map((r) => r.g)),
     }))
@@ -59,15 +59,17 @@ export function daiLop(p: Principal, classId: number, o: { phase: string | null;
     } : null;
 
   let ketThucKhoa: DaiLop['ketThucKhoa'] = null;
-  if (!o.ft && (o.phase === 'final_week' || o.phase === 'finished')) {
+  const moc = o.ft ? null : mocKetKhoa(o.pr, homNay);   // PR-S5F-a: từ tuần Cuối khoá (kể cả khi dời sớm), không theo chặng
+  if (moc?.tuCuoiKhoa) {
     const so = demChuaCoLenh([classId]).get(classId) ?? 0;
     if (so > 0) {
-      const pr = classProgressMany([classId]).get(classId);
-      const tuanKetThuc = pr?.startWeekStart && pr.totalWeeks ? addDays(pr.startWeekStart, (pr.totalWeeks - 1) * 7) : null;
-      ketThucKhoa = { tuanCuoiKhoa: pr?.finalWeekStart ?? null, tuanKetThuc, soChuaLenh: so, do: !!tuanKetThuc && homNay >= tuanKetThuc, tuanGoiY: tuanChonDuoc(homNay)[0] };
+      ketThucKhoa = { tuanCuoiKhoa: moc.tuanCuoiKhoa, tuanKetThuc: moc.tuanKetThuc, soChuaLenh: so, do: !!moc.tuanKetThuc && homNay >= moc.tuanKetThuc, tuanGoiY: tuanChonDuoc(homNay)[0] };
     }
   }
-  return { ketThucKhoa, banGiao, banGiaoMon, sapNhan, viewer: { coTheRaLenh: ra, coTheChuyenNhieuEm: ra && o.ft, laGvcn: pc.gvcn, xacNhanDuoc: pc.gvcn || qlThay } };
+  /* PR-S5F-a: lệnh lỗi (kể cả Dừng học) — Quản lý thấy ngay ở hồ sơ lớp để sửa, không phải mở từng hồ sơ em. */
+  const loi = ra ? rows.filter((r) => r.k === 'nguon' && r.c === 'cho' && r.h) : [];
+  const chuaChuyenDuoc = loi.length ? { n: loi.length, loi: loi[0].h as string } : null;
+  return { ketThucKhoa, banGiao, banGiaoMon, sapNhan, chuaChuyenDuoc, viewer: { coTheRaLenh: ra, coTheChuyenNhieuEm: ra && o.ft, laGvcn: pc.gvcn, xacNhanDuoc: pc.gvcn || qlThay } };
 }
 
 /** Hồ sơ HV (E): lệnh đang chờ hoặc đã chuyển ≤ 14 ngày (Q17) — 2 câu. */
@@ -90,12 +92,12 @@ export function daiHocVien(p: Principal, studentId: number): DaiHocVien | null {
   const phieu = l.huong !== 'dung_hoc';
   const qlThay = ra && (!!l.han_gvcn && homNay > l.han_gvcn);   // lớp không GVCN được `daiLop` xử lý ở phía lớp; ở đây chỉ quá hạn
   const nut: DaiHocVien['nut'] = [];
-  const monToi = mons.find((m) => !daGhi.has(m) && kyNangGoiY(l.ct, m).some((k) => pc.kyNang.has(k))) ?? null;
+  const monToi = mons.find((m) => !daGhi.has(m) && kyNangPhuTrach(l.ct, m).some((k) => pc.kyNang.has(k))) ?? null;
   if (phieu && !l.xac_nhan_luc && l.trang_thai !== 'huy') {
     if (pc.gvcn || qlThay) nut.push('ban-giao');
     if (monToi) nut.push('ban-giao-mon');
   }
-  if (ra && l.trang_thai === 'cho' && homNay < l.tuan_bat_dau) nut.push('huy-lenh');
+  if (ra && l.trang_thai === 'cho') nut.push('huy-lenh');   // PR-S5F-a: cả lệnh đã tới tuần mà chưa chuyển được
   if (phieu && (l.xac_nhan_luc || l.trang_thai === 'da_chuyen')) nut.push('doc-ban-giao');   // ai xem được hồ sơ thì đọc được phiếu đã xác nhận / đã chuyển (Q15)
   return {
     loai: l.trang_thai === 'cho' ? 'sap' : 'da', lenhId: l.id, lopNguon: { id: l.lop_nguon_id, code: l.nguon },

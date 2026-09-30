@@ -74,11 +74,11 @@ export function buildCtDemo(ctx: BuildCtx): { lenh: number; lop: number } {
   };
 
   // ---------------------------------------------------------------- lớp đích dùng chung
-  const be09 = lop('MB BE 09', 'BE', null, false, addDays(mondayOf(DEMO_DATE), -7), { listening: 'T_KHOA', reading: 'T_KHOA', writing1: 'T_KHOA', speaking: 'T_TRANG' }, 'T_TRANG');
+  const be09 = lop('MB BE 09', 'BE', null, false, addDays(mondayOf(DEMO_DATE), -7), { listening: 'T_KHOA', reading: 'T_KHOA', writing: 'T_KHOA', speaking: 'T_TRANG' }, 'T_TRANG');
   soLop += 1;
 
   // ---------------------------------------------------------------- 1 · MB FOU 21 — hết tuần kết thúc, chưa lệnh nào
-  const fou21 = lop('MB FOU 21', 'FOU', null, false, '2026-07-13', { listening: 'T_KHOA', reading: 'T_KHOA', writing1: 'T_KHOA', speaking: 'T_TRANG' }, 'T_KHOA');
+  const fou21 = lop('MB FOU 21', 'FOU', null, false, '2026-07-13', { listening: 'T_KHOA', reading: 'T_KHOA', writing: 'T_KHOA', speaking: 'T_TRANG' }, 'T_KHOA');
   soLop += 1;
   const diem21: [string, (number | null)[]][] = [
     ['Vũ Gia An CT', [21, 20, 21, 20]], ['Đỗ Bảo Linh CT', [19, 18, 19, 18]], ['Ngô Minh Huy CT', [17, 16, 17, 16]],
@@ -87,7 +87,7 @@ export function buildCtDemo(ctx: BuildCtx): { lenh: number; lop: number } {
   for (const [ten, d] of diem21) cuoiKhoa(fou21, hv(fou21, ten, '-').id, d);
 
   // ---------------------------------------------------------------- 2 · MB FOU 22 — lệnh đang chờ bàn giao, GVBM 3/4 môn
-  const fou22 = lop('MB FOU 22', 'FOU', null, false, '2026-07-27', { listening: 'T_HA', reading: 'T_KHOA', writing1: 'T_KHOA', speaking: 'T_TRANG' }, 'T_HA');
+  const fou22 = lop('MB FOU 22', 'FOU', null, false, '2026-07-27', { listening: 'T_HA', reading: 'T_KHOA', writing: 'T_KHOA', speaking: 'T_TRANG' }, 'T_HA');
   soLop += 1;
   const em22 = ['Lê Hải Mai CT', 'Trịnh Đức Long CT', 'Lâm Gia Bảo CT', 'Mai Thùy Dương CT'].map((ten) => hv(fou22, ten, '-'));
   cuoiKhoa(fou22, em22[0].id, [20, 20, 20, 20]);
@@ -126,7 +126,7 @@ export function buildCtDemo(ctx: BuildCtx): { lenh: number; lop: number } {
   doiNgayRa([ftEm[0].id, ftEm[1].id], DEMO_DATE);
 
   // ---------------------------------------------------------------- 6 · MB FOU 23 — bàn giao quá hạn 3 ngày
-  const fou23 = lop('MB FOU 23', 'FOU', null, false, '2026-07-27', { listening: 'T_KHOA', reading: 'T_KHOA', writing1: 'T_KHOA', speaking: 'T_TRANG' }, 'T_KHOA');
+  const fou23 = lop('MB FOU 23', 'FOU', null, false, '2026-07-27', { listening: 'T_KHOA', reading: 'T_KHOA', writing: 'T_KHOA', speaking: 'T_TRANG' }, 'T_KHOA');
   soLop += 1;
   const em23 = ['Hồ Diệu Anh CT', 'Vương Thu Hà CT'].map((ten) => hv(fou23, ten, '-'));
   for (const e of em23) cuoiKhoa(fou23, e.id, [18, 17, 18, 17]);
@@ -134,7 +134,7 @@ export function buildCtDemo(ctx: BuildCtx): { lenh: number; lop: number } {
   doiNgayRa(em23.map((e) => e.id), addDays(DEMO_DATE, -4));
 
   // ---------------------------------------------------------------- 7 · MB FOU 24 — đã chuyển Thứ Hai tuần này, bàn giao đã xác nhận
-  const fou24 = lop('MB FOU 24', 'FOU', null, false, '2026-07-06', { listening: 'T_KHOA', reading: 'T_KHOA', writing1: 'T_KHOA', speaking: 'T_TRANG' }, 'T_KHOA');
+  const fou24 = lop('MB FOU 24', 'FOU', null, false, '2026-07-06', { listening: 'T_KHOA', reading: 'T_KHOA', writing: 'T_KHOA', speaking: 'T_TRANG' }, 'T_KHOA');
   soLop += 1;
   const daChuyen = hv(fou24, 'Nguyễn Phương Thảo CT', '-');
   hv(fou24, 'Cao Bảo Ngọc CT', '-');   // còn ở lại để lớp chưa tự kết thúc

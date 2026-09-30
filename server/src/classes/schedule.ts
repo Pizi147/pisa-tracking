@@ -385,6 +385,20 @@ const CLASS_ACTIVE_COUNT_SQL = `
  * biến một trang mười lớp thành tám mươi câu truy vấn; bài kiểm N+1 của vòng trước bắt
  * đúng chỗ đó. Ở quy mô demo thì không ai thấy chậm — ở quy mô thật thì thấy ngay.
  */
+/** Phần tiến độ lớp mà `mocKetKhoa` cần (ClassProgress hoặc dòng tóm tắt lớp — cùng tên trường). */
+export type TienDoMoc = { phase?: string | null; finalWeekStart?: string | null; startWeekStart?: string | null; totalWeeks?: number | null } | null | undefined;
+
+/**
+ * PR-S5F-a: lớp thường đã tới Cuối khoá chưa / đã hết khoá chưa — so HÔM NAY với tuần Cuối khoá và tuần kết thúc, KHÔNG theo chặng (Quản lý dời
+ * Cuối khoá sớm thì các tuần giữa Cuối khoá và tuần kết thúc là chặng `running`, nhưng vẫn là lúc ra lệnh chuyển lớp). Dải, việc, đề xuất đọc chung.
+ */
+export function mocKetKhoa(pr: TienDoMoc, homNay: string) {
+  const tuanKetThuc = pr?.startWeekStart && pr.totalWeeks ? addDays(pr.startWeekStart, (pr.totalWeeks - 1) * 7) : null;
+  const thu2 = mondayOf(homNay);
+  const hetKhoa = pr?.phase === 'finished' || (!!tuanKetThuc && thu2 >= tuanKetThuc);
+  return { tuanCuoiKhoa: pr?.finalWeekStart ?? null, tuanKetThuc, hetKhoa, tuCuoiKhoa: hetKhoa || (!!pr?.finalWeekStart && thu2 >= pr.finalWeekStart) };
+}
+
 export function classProgressMany(classIds: number[], programmes?: Map<string, ProgrammeInfo>): Map<number, ClassProgress> {
   const out = new Map<number, ClassProgress>();
   if (!classIds.length) return out;

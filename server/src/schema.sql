@@ -1809,7 +1809,8 @@ CREATE TABLE lenh_chuyen_lop (
   han_gvbm TEXT, han_gvcn TEXT,
   nhan_xet_chung TEXT, tu_dien TEXT,
   xac_nhan_boi INTEGER REFERENCES users(id), xac_nhan_luc TEXT, xac_nhan_thay INTEGER NOT NULL DEFAULT 0,
-  tao_luc TEXT NOT NULL, sua_luc TEXT
+  tao_luc TEXT NOT NULL, sua_luc TEXT,
+  thu_ngay TEXT   -- PR-S5F-a: ngày thử thi hành gần nhất bị lỗi — lượt quét cùng ngày bỏ qua; Quản lý sửa lệnh thì xoá
 );
 CREATE UNIQUE INDEX ux_lenh_cho_hv ON lenh_chuyen_lop (student_id) WHERE trang_thai = 'cho';
 CREATE INDEX ix_lenh_den_han ON lenh_chuyen_lop (trang_thai, tuan_bat_dau);

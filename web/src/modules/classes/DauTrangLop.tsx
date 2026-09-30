@@ -10,7 +10,7 @@ import { TenGiaoVien } from './TenGiaoVien.tsx';
 import { DaiLopChuyen } from './DaiChuyenLop.tsx';
 import type { TinhTrangXoaKetThuc } from './XoaKetThucLopPanel.tsx';
 import {
-  ROUTE_NAME, badgeLop, duongLichTest, laVaiQuanLy, needScoresText, ngay, nhomGiaoVienBoMon, nutChinhDauTrang, tuanKhoa, type BadgeLop, type DaiLop, type NhomGiaoVien, type WorkScope,
+  ROUTE_NAME, badgeLop, duongLichTest, laVaiQuanLy, needScoresText, ngay, nhomGiaoVienBoMon, nutChinhDauTrang, tuanKhoa, tuanLich, type BadgeLop, type DaiLop, type NhomGiaoVien, type WorkScope,
 } from '@shared/domain/index.ts';
 
 /** `GET /classes/:id/overview` (server/src/classes/classes.ts → classOverview). */
@@ -72,7 +72,7 @@ export function DauTrangLop({ data, periodId, onViec, onBanGiao }: {
   const s = data.summary;
   const gvcn = data.coreTeachers[0] ?? null;
   const nhom = nhomGiaoVienBoMon(data.skills.map((x) => x.skill), data.skillTeachers, data.programme?.code ?? null);
-  const b = badgeLop({
+  const bGoc = badgeLop({
     vai: laVaiQuanLy(session?.roles) ? 'ql' : 'gv', needsPlacement: !!s?.needsPlacement, canXepLop: s?.canXepLop ?? 0, missingSkills: s?.missingSkills ?? [],
     soBaiChoCham: s?.needScores ?? 0,
     needScoresTitle: s && s.needScores > 0 ? needScoresText(s.workScope, s.needScores) : null,
@@ -81,6 +81,9 @@ export function DauTrangLop({ data, periodId, onViec, onBanGiao }: {
     soChuaLoTrinhTiep: s?.soChuaLoTrinhTiep ?? 0,
     chuongTrinh: data.programme?.code ?? null,
   });
+  /* PR-S5F-a (mockup 20): lớp đã có dải "Kết thúc khoá" thì bỏ chip "n HV cần xếp lớp tiếp" — hai chỗ nói cùng một việc. */
+  const boXep = (ds: BadgeLop[]) => (data.dai?.ketThucKhoa ? ds.filter((x) => x.key !== 'xep-lop') : ds);
+  const b = { hien: boXep(bGoc.hien), an: boXep(bGoc.an) };
   const bamBadge = (x: BadgeLop): (() => void) | null =>
     /* PR-S4F #4: cùng đích với hộp lớp ở Học viên & Lớp — số trên badge = số dòng. */
     x.key === 'qua-han' ? () => navigate(`/hoc-vien?view=qua-han&classId=${data.id}`)
@@ -125,7 +128,7 @@ export function DauTrangLop({ data, periodId, onViec, onBanGiao }: {
     data.branchName,
     data.route ? <abbr key="lt" title={ROUTE_NAME[data.route as keyof typeof ROUTE_NAME] ?? data.route} className="no-underline">{data.route}</abbr> : null,
     `${s?.studentCount ?? 0} học viên`, tuan,
-    data.startDate ? `khai giảng ${ngay(data.startDate, homNay)}` : null,
+    data.startDate ? `khai giảng ${tuanLich(data.startDate, homNay)}` : null,   // mã tuần (CLAUDE.md 30/09, mockup 20)
   ].filter(Boolean);
 
   return (

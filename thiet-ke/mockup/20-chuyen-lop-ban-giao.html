@@ -77,7 +77,10 @@ p{margin:0}
 .strip{display:flex;gap:12px;align-items:center;flex-wrap:wrap;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface)}
 .strip.warn{background:var(--warn-bg);border-color:transparent}
 .strip.acc{background:var(--accent-bg);border-color:transparent}
+.strip.bad{background:var(--bad-bg);border-color:transparent}
 .strip .grow{flex:1;min-width:0}
+/* dưới 640px: chip / chữ / nút xếp dọc, chữ chiếm trọn một dòng, không dồn 3 cột */
+@media (max-width:639px){.strip .grow{flex-basis:100%}}
 .kbd{font-size:11.5px;color:var(--muted)}
 
 /* hồ sơ lớp giả */
@@ -180,7 +183,7 @@ textarea::placeholder{color:var(--muted)}
     <div class="frame-bar"><span class="crumb">Học viên &amp; Lớp › MB FOU 12</span></div>
     <div class="frame-body">
       <div class="classhead">
-        <div class="t"><h2>MB FOU 12</h2><span class="sub">FOU · GVCN Nguyễn Ngọc Hà · 8 học viên · tuần 10/10</span></div>
+        <div class="t"><h2>MB FOU 12</h2><span class="sub">FOU · GVCN Nguyễn Ngọc Hà · 8 học viên · tuần học 10/10</span></div>
         <div class="row"><button class="btn ghost" type="button">⋮</button></div>
       </div>
       <div class="strip warn">
@@ -190,6 +193,12 @@ textarea::placeholder{color:var(--muted)}
       </div>
       <div class="tabs"><span class="on">Học viên</span><span>Bảng điểm</span><span>Cần hỗ trợ</span><span>Ý thức &amp; Phối hợp</span><span>Phân tích lớp</span></div>
       <p class="why"><b>GVCN nhìn thấy dải này nhưng không có nút.</b> Thay vào đó GVCN thấy "Chờ Quản lý quyết định chuyển lớp · 8 em", để biết mình chưa phải làm gì. Sau khi có lệnh, dải này đổi thành "Bàn giao · 2/7 em" (GVCN) và "Bàn giao môn P · 2/7 em" (GVBM môn P); bấm là mở thẳng panel. <b>Lớp đã tới tuần kết thúc mà còn em chưa có lệnh</b> thì dải chuyển đỏ và Quản lý nhận thẻ Báo lên. Lớp FT cũng có dải giống vậy khi Quản lý cần gộp hoặc tách lớp (nút "Chuyển nhiều em…" trong ⋮).</p>
+      <span class="small muted"><b>Cùng chỗ, trạng thái khác</b> · dải dưới tên lớp · <b>chỉ Quản lý, Quản trị</b> · hiện khi tới Thứ Hai tuần bắt đầu mà web không chuyển được em (ví dụ lớp đích đã đóng):</span>
+      <div class="strip bad">
+        <span class="chip c-bad">Chưa chuyển được</span>
+        <span class="grow"><b class="num">1</b> em · Lớp đích không hợp lệ. · chọn tuần hoặc lớp đích mới, hoặc huỷ lệnh</span>
+        <button class="btn pri" type="button" onclick="document.getElementById('h-b').scrollIntoView({behavior:'smooth'})">Sửa lệnh…</button>
+      </div>
     </div>
   </div>
 </section>
@@ -248,7 +257,7 @@ textarea::placeholder{color:var(--muted)}
               <tr class="sel"><td><input class="cb" type="checkbox" checked aria-label="Chọn Ngô Minh Huy"></td>
                 <td><div class="name">Ngô Minh Huy</div><div class="sub">PISA-000121</div></td>
                 <td><span class="pct">66%</span><div class="sub">Không đạt: P</div></td>
-                <td><span class="chip c-ok">Lên BE</span> <span class="chip c-acc">+ bổ trợ P · 2 buổi</span></td>
+                <td><span class="chip c-acc">Lên BE + bổ trợ</span><div class="sub">bổ trợ P · 2 buổi</div></td>
                 <td><span class="seg"><button type="button" class="on">Lên BE</button><button type="button">Lên FT</button><button type="button">Học lại</button><button type="button">Khác ▾</button></span>
                   <div class="extra"><span class="sub">Web tự tạo PA bổ trợ miễn phí P + Mini Test ở lớp mới</span></div></td>
                 <td><span class="fake caret">MB BE 04</span></td><td class="num sub">W2 OCT (chung)</td></tr>
@@ -473,6 +482,7 @@ textarea::placeholder{color:var(--muted)}
     <div style="display:flex;flex-direction:column;gap:8px">
       <div class="where"><span class="tag">Nằm ở</span><span class="path">Công việc › Việc của tôi · nhóm <b>Lớp &amp; vận hành</b></span></div>
       <div class="frame"><div class="tasks">
+        <div class="task"><div><b>Chuyển lớp cả lớp · MB FOU 12 · 1 HV</b><div class="sub">Quản lý · em chưa có lệnh: Bùi Thu Trang · lớp kết thúc W1 OCT</div></div><span class="chip c-warn num">trước W2 OCT</span></div>
         <div class="task"><div><b>Bàn giao 7 em · MB FOU 12</b><div class="sub">GVCN · 2/7 đã xác nhận · chờ môn P</div></div><span class="chip c-warn num">hạn hết 02/10</span></div>
         <div class="task"><div><b>Bàn giao môn P · MB FOU 12</b><div class="sub">GVBM · 2/7 em</div></div><span class="chip c-warn num">hạn hết 01/10</span></div>
         <div class="task"><div><b>Bàn giao Trần Minh Khoa → MB FT 103</b><div class="sub">GVCN MB FT 101 · chuyển giữa lộ trình</div></div><span class="chip c-mute num">hạn hết 02/10</span></div>
