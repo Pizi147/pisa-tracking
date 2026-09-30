@@ -192,6 +192,41 @@ export function chayNeuKeHoachDaDuyet(conn: any, caseId: number, homNay: string,
   return the?.trang_thai === 'duyet' ? chayPaBoTro(conn, pa.nhom_bo_tro, the.nguoi_xin ?? nguoiLam, homNay) : 0;
 }
 
+/**
+ * GHI KẾT QUẢ CHÉP CẢ NHÓM (M-03, Q10): PA chung (FOU) ghi MỘT lần — các dòng KHÁC cùng nhóm đang chạy, Case chưa đóng, nhận một bản
+ * `case_followups` GIỐNG HỆT (đổi case_id / intervention_id) rồi áp CÙNG cập nhật trạng thái đã áp cho dòng chính (chu kỳ mới + hạn mới, hoặc
+ * khép `het_moc`; Điều chỉnh đổi người dạy cho cả nhóm). Xin ý kiến chỉ tạo MỘT thẻ (dòng chính). Trả số dòng đã chép. Chạy trong tx của `updateResult`.
+ */
+export function chepKetQuaNhom(conn: any, iv: any, followupId: number, x: {
+  nextStep: string; observedOn: string; completedOn: string | null; lanCuoi: boolean; nextDue: string;
+  apDungDieuChinh?: (sib: any, followupId: number) => void;
+}): number {
+  if (!iv.nhom_bo_tro) return 0;
+  const f = conn.prepare('SELECT * FROM case_followups WHERE id = ?').get(followupId) as any;
+  const anhEm = conn.prepare(
+    `SELECT iv.* FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
+      WHERE iv.nhom_bo_tro = ? AND iv.kind = 'bo_tro' AND iv.id != ? AND iv.status = 'started' AND sc.status != 'done' ORDER BY iv.id`,
+  ).all(iv.nhom_bo_tro, iv.id) as any[];
+  for (const s of anhEm) {
+    const info = conn.prepare(
+      `INSERT INTO case_followups (case_id, intervention_id, observed_on, observer_user_id, outcome, note, evidence_attempt_id, next_step, cycle_no, cycle_due,
+                                   late, metrics, remaining_issue, decision_note, created_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    ).run(s.case_id, s.id, f.observed_on, f.observer_user_id, f.outcome, f.note, f.evidence_attempt_id, f.next_step, f.cycle_no, f.cycle_due,
+          f.late, f.metrics, f.remaining_issue, f.decision_note, nowIso());
+    if (x.nextStep === 'complete') {
+      conn.prepare(`UPDATE case_interventions SET status = 'completed', completed_date = ?, closed_reason = ?, started_date = COALESCE(started_date, cycle_started_on, ?), updated_at = ? WHERE id = ?`)
+        .run(x.completedOn, x.lanCuoi ? 'het_moc' : 'done', x.completedOn, nowIso(), s.id);
+    } else {
+      conn.prepare(`UPDATE case_interventions SET status = 'started', cycle_no = ?, cycle_started_on = ?, action_due = ?, started_date = COALESCE(started_date, ?), updated_at = ? WHERE id = ?`)
+        .run((s.cycle_no ?? 1) + 1, x.observedOn, x.nextDue, x.observedOn, nowIso(), s.id);
+      if (x.nextStep === 'adjust') x.apDungDieuChinh?.(s, Number(info.lastInsertRowid));
+    }
+    dongBoTrangThaiCase(s.case_id);
+  }
+  return anhEm.length;
+}
+
 /** Quản lý DUYỆT thẻ kế hoạch — chạy TRONG tx của hộp (không mở tx riêng, không nuốt lỗi — K5). */
 export function khiDuyetKeHoach(p: Principal, yc: { du_lieu: string | null; nguoi_xin: number | null }) {
   const conn = db();

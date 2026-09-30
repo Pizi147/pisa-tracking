@@ -1,5 +1,5 @@
 import { db, tx } from '../db.ts';
-import { boTroCuaCase, type BoTroDto } from './boTro.ts';
+import { boTroCuaCase, chepKetQuaNhom, quyenBoTro, type BoTroDto } from './boTro.ts';
 import {
   DISPOSITIONS, INTERVENTION_KINDS, SYSTEM_KINDS, INTERVENTION_KIND_LABEL, INTERVENTION_STATUSES,
   INTERVENTION_STATUS_LABEL,
@@ -20,7 +20,7 @@ import {
   caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac, chanHoanThanh, laLanGhiCuoi, mocChuPa, programmeOf, quyetDinhChoPa, trangThaiCaseV4, viecTiepCuaCase, tenCaseSos, tenCaseThuong, tenMon, tenMonNgan,
   type CaseOutcome, type FollowUpOutcome, type InterventionKind,
 } from '../../../shared/domain/index.ts';
-import { addDays, badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
+import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, isCoreTeacherOf, napTruocPhamVi, require_, scopeFor, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { nho, trongBoNho } from '../platform/nguCanhRequest.ts';
@@ -2796,8 +2796,13 @@ export function updateResult(p: Principal, interventionId: number, input: {
   const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(interventionId) as any;
   if (!iv) throw notFound('Không tìm thấy phương án.');
   const c = loadCase(iv.case_id);
-  require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
-    'Bạn không có quyền cập nhật kết quả của case này.');
+  /* PR-LT2a (Q9): PA Bổ trợ do người dạy (mặc định GVCN cho FOU) ghi — `quyenBoTro`; PA khác vẫn theo kỹ năng (C02). */
+  if (iv.kind === 'bo_tro') {
+    if (!quyenBoTro(p, iv)) throw forbidden('Bạn không có quyền cập nhật kết quả của case này.');
+  } else {
+    require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
+      'Bạn không có quyền cập nhật kết quả của case này.');
+  }
 
   if (iv.preset === 1 && !iv.confirmed_at) {
     throw badRequest('Phương án điền sẵn này chưa được xác nhận — xác nhận (hoặc sửa / thay) trước khi ghi kết quả.');
@@ -3023,6 +3028,11 @@ export function updateResult(p: Principal, interventionId: number, input: {
     }
 
     dongBoTrangThaiCase(iv.case_id);
+    /* PR-LT2a (M-03): PA bổ trợ chung — chép kết quả sang các dòng khác của nhóm. */
+    chepKetQuaNhom(conn, iv, followupId, {
+      nextStep, observedOn, completedOn, lanCuoi, nextDue: weeklyUpdateDue(addDays(observedOn, 1)),
+      apDungDieuChinh: (sib, fid) => apDungDieuChinh(sib, adjustPatch!, { followupId: fid, actorUserId: p.userId, reason: decisionNote!, on: observedOn }),
+    });
 
     addJourney({
       studentId: c.eff_student_id, cycleId: c.eff_cycle_id,

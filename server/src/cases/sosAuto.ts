@@ -18,7 +18,7 @@ import { mondayOf } from '../platform/week.ts';
 import { taoYeuCau } from '../duyet/yeuCau.ts';
 import { PA_QUY_CHE_CHUA_GHI, UNCONFIRMED_PRESET, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
 import { ghiBanDieuChinh } from './planRevisions.ts';
-import { chayNeuKeHoachDaDuyet, kiemKeHoach, nopKeHoachBoTro, phaiGuiKemKeHoach } from './boTro.ts';
+import { chayNeuKeHoachDaDuyet, kiemKeHoach, mocCuoiKhoa, nopKeHoachBoTro, phaiGuiKemKeHoach } from './boTro.ts';
 
 export { UNCONFIRMED_PRESET, NOT_UNCONFIRMED_PRESET, PA_QUY_CHE_CHUA_GHI } from './sosState.ts';
 
@@ -185,7 +185,7 @@ export function xacNhanCase(p: Principal, caseId: number, input: {
   if (!c) throw notFound('Không tìm thấy case');
   caseAccess(caseId).requireEdit(p, EDIT_MESSAGE);
   const st = sosCaseState(caseId);
-  if (!st.fromSos) throw badRequest('Chỉ Case tự tạo từ SOS mới có bước Xác nhận Case.');
+  if (!st.fromSos) throw badRequest('Chỉ Case tự tạo từ kết quả Test mới có bước Xác nhận Case.');
   if (c.status === 'done') throw badRequest('Case này đã đóng rồi.');
   if (st.hasCause) throw badRequest('Case đã xác nhận nguyên nhân rồi.');
   if (st.choDuyetKhongTheoDoi) throw badRequest('Case đang chờ Quản lý duyệt "Không cần theo dõi" — chờ trả lời rồi mới xác nhận.');
@@ -273,6 +273,19 @@ export function dienMocQuyChe(theo: { caseIds?: number[]; studentId?: number }) 
     });
     if (moc) conn.prepare('UPDATE case_interventions SET followup_due = ?, updated_at = ? WHERE id = ? AND followup_due IS NULL').run(moc, nowIso(), iv.id);
   }
+  /* PR-LT2a: PA Bổ trợ đang chạy mà lúc chạy chưa có lịch Cuối khoá — có lịch rồi thì lần đọc sau tự điền (mốc = hết CN tuần Cuối khoá). */
+  const dkBt = `iv.kind = 'bo_tro' AND iv.status = 'started' AND iv.followup_due IS NULL AND iv.moc_quy_che = 'den_cuoi_khoa' AND sc.status != 'done'`;
+  const chonBt = `SELECT iv.id, sc.cycle_id, (SELECT a.class_id FROM assessment_attempts a WHERE a.id = sc.attempt_id) AS class_id FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id`;
+  const bt: any[] = [];
+  if (theo.studentId != null) bt.push(...conn.prepare(`${chonBt} WHERE sc.student_id = ? AND ${dkBt}`).all(theo.studentId) as any[]);
+  for (let i = 0; i < ids.length; i += 400) {
+    const lo = ids.slice(i, i + 400);
+    bt.push(...conn.prepare(`${chonBt} WHERE iv.case_id IN (${lo.map(() => '?').join(',')}) AND ${dkBt}`).all(...lo) as any[]);
+  }
+  for (const r of bt) {
+    const moc = mocCuoiKhoa(r.cycle_id ?? null, r.class_id ?? null);
+    if (moc) conn.prepare('UPDATE case_interventions SET followup_due = ?, updated_at = ? WHERE id = ? AND followup_due IS NULL').run(moc, nowIso(), r.id);
+  }
 }
 /**
  * CHUYỂN LỚP FT → FT CÙNG CHƯƠNG TRÌNH (K3-44, Q13): PA theo quy chế chưa khép của Case đang mở đổi người thực hiện sang GVBM đúng kỹ năng
@@ -302,7 +315,11 @@ export function datLaiHanCase(studentId: number, homNay: string) {
   const conn = db();
   conn.prepare(`UPDATE sos_cases SET han_xac_nhan = ?, updated_at = ? WHERE student_id = ? AND status != 'done' AND han_xac_nhan IS NOT NULL
       AND (NOT EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sos_cases.id AND ci.role = 'primary')
-           OR EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sos_cases.id AND ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned'))`)
+           OR EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sos_cases.id AND ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND iv.kind != 'bo_tro'))`)
+    .run(hanXacNhan(homNay), nowIso(), studentId);
+  /* PR-LT2a: kế hoạch bổ trợ đang chờ nộp cũng nhận hạn mới từ ngày quay lại. */
+  conn.prepare(`UPDATE case_interventions SET han_ke_hoach = ?, updated_at = ? WHERE kind = 'bo_tro' AND status = 'planned' AND han_ke_hoach IS NOT NULL
+      AND case_id IN (SELECT id FROM sos_cases WHERE student_id = ? AND status != 'done')`)
     .run(hanXacNhan(homNay), nowIso(), studentId);
   conn.prepare(`UPDATE case_interventions SET action_due = ?, updated_at = ? WHERE status = 'started' AND action_due IS NOT NULL
       AND COALESCE(approval_state, '') != 'pending' AND case_id IN (SELECT id FROM sos_cases WHERE student_id = ? AND status != 'done')`)
@@ -389,7 +406,7 @@ export function guiKhongTheoDoi(p: Principal, caseId: number, input: { reasonCod
   if (c.status === 'done') throw badRequest('Case này đã đóng rồi.');
   const st = sosCaseState(caseId);
   if (!st.fromSos) {
-    throw badRequest('Chỉ gửi "Không cần theo dõi" được với case tự tạo từ SOS — case này không phải case tự tạo từ SOS.');
+    throw badRequest('Chỉ Case tự tạo từ kết quả Test mới gửi "Không cần theo dõi" được — Case này không phải Case tự tạo.');
   }
   if (st.choDuyetKhongTheoDoi) throw badRequest('Case đã gửi "Không cần theo dõi" — đang chờ Quản lý duyệt.');
   if (st.hasCause) throw badRequest('Case đã xác nhận nguyên nhân — kết thúc bằng Hoàn thành Case.');

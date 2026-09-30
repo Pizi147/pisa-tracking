@@ -15,6 +15,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
   const sosAuto: any = await import('../cases/sosAuto.ts');
   const boTro: any = await import('../cases/boTro.ts');
   const yc: any = await import('../duyet/yeuCau.ts');
+  const effectiveness: any = await import('../cases/effectiveness.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const { createApp } = await import('../app.ts');
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
@@ -272,5 +273,75 @@ export async function runPrLt2aTests(t: YThucTestKit) {
       const r4 = await goi(trang.userId, `/cases/${cS.id}/xac-nhan`, { ...XN('speaking', 'BE'), keHoach: KH });
       assert(r4.status === 200, `GVBM S BE gửi kèm: ${r4.status}`);
     } finally { may.close(); }
+  });
+
+  // ------------------------------------------------------------------ khối 5 · PA Bổ trợ đang chạy: ghi kết quả chép cả nhóm, kết quả cuối, Không cần theo dõi (Task 5)
+  /** FOU trượt G+V và P; cả hai đã xác nhận nguyên nhân, GVCN nộp kế hoạch, Quản lý duyệt → hai PA chạy cùng nhóm. */
+  const dungFouChay = (ten: string) => {
+    const em = taoEm(ten, 'MB FOU 12');
+    nhap(em.pt!, { listening: 18, reading: 18, writing: 11, speaking: 12 });
+    const cGv = caseTheoMon(em.id, 'writing'), cP = caseTheoMon(em.id, 'speaking');
+    const khoa = gvOf('MB FOU 12', 'writing'), trang = gvOf('MB FOU 12', 'speaking'), ha = P.normalCoreTeacher;
+    sosAuto.xacNhanCase(khoa, cGv.id, XN('writing', 'FOU'));
+    sosAuto.xacNhanCase(trang, cP.id, XN('speaking', 'FOU'));
+    boTro.nopKeHoachBoTro(ha, paBt(cGv.id).id, KH);
+    yc.duyetYeuCau(P.mbManager, theKh(cGv.id).id);
+    return { em, cGv, cP, khoa, trang, ha };
+  };
+  const KQ = { outcome: 'improved', note: 'Em viết đúng thì ở phần đặt câu, còn nhầm thì quá khứ.', decision: 'keep' };
+  const folCua = (ivId: number) => all('SELECT * FROM case_followups WHERE intervention_id = ? ORDER BY id', ivId);
+
+  check('LT2a (5) · FOU nhóm 2 PA chạy: GVCN ghi kết quả dòng G+V → dòng P có followup GIỐNG HỆT + cùng hạn; GV không liên quan → 403; quyết định chỉ Giữ nguyên · Điều chỉnh · Xin hỗ trợ QL', () => {
+    const { cGv, cP, ha } = dungFouChay('LT2a FOU KQ');
+    /* MB FOU 12 đang ở tuần Cuối khoá (mốc < hạn T2 kế) — đẩy mốc xa để lần ghi này là kết quả tuần, không phải "kết quả cuối". */
+    conn.prepare('UPDATE case_interventions SET followup_due = ? WHERE nhom_bo_tro = ?').run(d.addDaysIso(TODAY, 28), paBt(cGv.id).nhom_bo_tro);
+    const ivGv = paBt(cGv.id), ivP = paBt(cP.id);
+    assert(ivGv.status === 'started' && ivP.status === 'started' && ivGv.action_due === ivP.action_due, 'hai PA chạy cùng hạn');
+    assert(maLoi(() => cases.updateResult(P.w2Teacher, ivGv.id, KQ)) === 403, 'GV không liên quan ghi kết quả → 403');
+    assert(maLoi(() => cases.updateResult(ha, ivGv.id, { ...KQ, decision: 'complete' })) === 400, 'PA theo quy chế không kết thúc sớm');
+    assert(d.quyetDinhChoPa({ preset: true }, false).join() === 'keep,adjust,ask_manager', 'quyết định cho PA bắt buộc');
+    cases.updateResult(ha, ivGv.id, KQ);
+    const fg = folCua(ivGv.id), fp = folCua(ivP.id);
+    assert(fg.length === 1 && fp.length === 1, `mỗi dòng đúng một followup: ${fg.length}/${fp.length}`);
+    for (const k of ['observed_on', 'outcome', 'note', 'next_step', 'cycle_no', 'late', 'remaining_issue', 'decision_note']) assert(fg[0][k] === fp[0][k], `followup khác ở ${k}`);
+    assert(paBt(cGv.id).action_due === paBt(cP.id).action_due && paBt(cP.id).cycle_no === 2 && paBt(cP.id).status === 'started', `PA P cũng sang chu kỳ mới, cùng hạn: ${JSON.stringify([paBt(cGv.id).action_due, paBt(cGv.id).cycle_no, paBt(cP.id).action_due, paBt(cP.id).cycle_no, paBt(cP.id).status])}`);
+    /* Xin hỗ trợ QL chỉ MỘT thẻ (dòng chính) */
+    cases.updateResult(ha, ivGv.id, { ...KQ, decision: 'ask_manager', decisionNote: 'Cần Quản lý gợi ý thêm giáo trình luyện thì.' });
+    const the = all(`SELECT * FROM yeu_cau_duyet WHERE loai = 'xin_y_kien' AND doi_tuong_id IN (?, ?)`, ivGv.id, ivP.id);
+    assert(the.length === 1 && the[0].doi_tuong_id === ivGv.id, 'chỉ một thẻ Xin ý kiến');
+  });
+
+  check('LT2a (5) · Tuần Cuối khoá: Hoàn thành ẩn tới khi PA khép (dòng "Hoàn thành được sau khi PA theo quy chế kết thúc (đến Cuối khoá · …)"); ghi kết quả cuối → CẢ HAI PA completed het_moc; rồi việc tiếp "Hoàn thành Case"', () => {
+    const { cGv, cP, ha } = dungFouChay('LT2a FOU CUOI');
+    const dt0 = chiTiet(ha, cGv.id);
+    assert(dt0.hoanThanh?.an === true && /Hoàn thành được sau khi PA theo quy chế kết thúc \(đến Cuối khoá/.test(dt0.hoanThanh.dong), JSON.stringify(dt0.hoanThanh));
+    conn.prepare(`UPDATE case_interventions SET followup_due = ? WHERE nhom_bo_tro = ?`).run(d.addDaysIso(TODAY, -1), paBt(cGv.id).nhom_bo_tro);
+    assert(/^Ghi kết quả cuối/.test(chiTiet(ha, cGv.id).viecTiep.chu), `việc tiếp: ${chiTiet(ha, cGv.id).viecTiep.chu}`);
+    cases.updateResult(ha, paBt(cGv.id).id, { outcome: 'improved', note: 'Đã đạt yêu cầu về thì và cách đặt câu cơ bản.' });
+    for (const c of [cGv, cP]) {
+      const pa = paBt(c.id);
+      assert(pa.status === 'completed' && pa.closed_reason === 'het_moc', `PA ${c.topic}: ${pa.status}/${pa.closed_reason}`);
+    }
+    assert(chiTiet(ha, cGv.id).viecTiep.chu === 'Hoàn thành Case' && chiTiet(ha, cGv.id).hoanThanh.an === false, 'khép xong → Hoàn thành Case');
+    /* Hiệu quả PA: PA bổ trợ completed được đếm */
+    const dem = effectiveness.planOutcomes({ studentIds: [cGv.student_id] }) as any[];
+    assert(dem.some((r) => r.id === paBt(cGv.id).id) && dem.some((r) => r.id === paBt(cP.id).id), 'PA bổ trợ đã khép phải vào thống kê hiệu quả');
+  });
+
+  check('LT2a (5) · Không cần theo dõi Case P (chưa nguyên nhân) đã duyệt → PA P cancelled khong_theo_doi (không vào hiệu quả), PA G+V vẫn giữ; Tạm dừng → Quay lại → han_ke_hoach = hôm nay + 2', () => {
+    const em = taoEm('LT2a FOU KTD', 'MB FOU 12');
+    nhap(em.pt!, { listening: 18, reading: 18, writing: 11, speaking: 12 });
+    const cGv = caseTheoMon(em.id, 'writing'), cP = caseTheoMon(em.id, 'speaking');
+    const khoa = gvOf('MB FOU 12', 'writing'), trang = gvOf('MB FOU 12', 'speaking');
+    sosAuto.xacNhanCase(khoa, cGv.id, XN('writing', 'FOU'));
+    sosAuto.guiKhongTheoDoi(trang, cP.id, { reasonCode: 'single_incident' });
+    yc.duyetYeuCau(P.mbManager, get(`SELECT id FROM yeu_cau_duyet WHERE loai = 'khong_theo_doi' AND doi_tuong_id = ? ORDER BY id DESC LIMIT 1`, cP.id).id);
+    const pP = get(`SELECT * FROM case_interventions WHERE case_id = ? AND kind = 'bo_tro'`, cP.id);
+    assert(pP.status === 'cancelled' && pP.closed_reason === 'khong_theo_doi', `PA P: ${pP.status}/${pP.closed_reason}`);
+    assert(paBt(cGv.id).status === 'planned', 'PA G+V vẫn chờ');
+    assert(!(effectiveness.planOutcomes({ studentIds: [em.id] }) as any[]).some((r) => r.id === pP.id), 'PA không theo dõi không vào hiệu quả');
+    conn.prepare('UPDATE case_interventions SET han_ke_hoach = ? WHERE id = ?').run(d.addDaysIso(TODAY, -5), paBt(cGv.id).id);
+    sosAuto.datLaiHanCase(em.id, TODAY);
+    assert(paBt(cGv.id).han_ke_hoach === d.hanXacNhan(TODAY), `Quay lại học: han_ke_hoach = ${paBt(cGv.id).han_ke_hoach}`);
   });
 }
