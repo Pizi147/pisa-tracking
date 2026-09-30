@@ -8,7 +8,7 @@
  */
 import { db } from '../db.ts';
 import {
-  INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, URGENCY_LABEL, mocChuPa, ngay, planDueDate, tenCaseSos, trangThaiCaseV4, viecTiepCuaCase,
+  INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, URGENCY_LABEL, mocChuPa, ngay, planDueDate, tenCaseSos, tenPaViecTiep, trangThaiCaseV4, viecTiepCuaCase,
   type InterventionKind, type ViecTiepCase,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -95,7 +95,7 @@ export function chiTietCaseMo(cases: readonly MappedCase[]): Map<number, CaseChi
     };
     const hanLapPa = c.originKind === 'mock' ? null : planDueDate(String(c.detectedAt ?? homNay).slice(0, 10), c.urgency);
     const viecTiep = viecTiepCuaCase(v4, cua(paTheoCase, c.id).map((iv, i) => ({
-      id: pas[i].id, ten: pas[i].ten, batBuoc: pas[i].batBuoc, choXacNhan: pas[i].choXacNhan, xong: pas[i].xong,
+      id: pas[i].id, ten: tenPaViecTiep(iv.kind, iv.description), batBuoc: pas[i].batBuoc, choXacNhan: pas[i].choXacNhan, xong: pas[i].xong,
       actionDue: iv.action_due ?? null, followupDue: iv.followup_due ?? null, choDuyet: pas[i].choDuyet,
     })), homNay, hanLapPa);
     const laSosFt = c.originKind === 'mock' && c.classKind === 'ft';

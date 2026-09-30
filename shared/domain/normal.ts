@@ -132,6 +132,14 @@ export function kyNangGoiY(_ct: string | null | undefined, o: string): readonly 
   if (o === 'writing') return ['writing1', 'writing2'];               // BE/ELE W, FOU G+V (T55, MH6)
   return (ENTRY_SKILLS as readonly string[]).includes(o) ? [o] : [];   // tong_hop: GVCN dạy luôn — không gợi ý
 }
+/**
+ * PR-S5F-a: ô môn của lớp → kỹ năng PHÂN CÔNG (`teacher_assignments.skill`) phụ trách ô đó — khác `kyNangGoiY` (gợi ý khi phân công).
+ * Lớp thường phân công đúng ô (`writing` = W / G+V); chỉ lớp FT tách ô W thành W1 + W2.
+ */
+export function kyNangPhuTrach(ct: string | null | undefined, o: string): readonly string[] {
+  const c = programmeOf(ct);
+  return (!c || c === 'FT') && o === 'writing' ? ['writing1', 'writing2'] : [o];
+}
 /** Hai khung: Fast Track (band) và Lớp thường (tỷ lệ). */
 export type Khung = 'ft' | 'thuong';
 export const khungCua = (scoringMode: string | null | undefined): Khung => (scoringMode === 'ratio' ? 'thuong' : 'ft');

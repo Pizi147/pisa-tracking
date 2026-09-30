@@ -1,6 +1,6 @@
 import { db, theoLo, tx } from '../db.ts';
 import {
-  MEASURE_KIND_LABEL, NHAN_XET_TOI_THIEU, PERMISSIONS, THANG, boMonLich, coPhieu, kyNangGoiY, tenMon, tenMonNgan, trangThaiPhieu,
+  MEASURE_KIND_LABEL, NHAN_XET_TOI_THIEU, PERMISSIONS, THANG, boMonLich, programmeOf, coPhieu, kyNangPhuTrach, tenMon, tenMonNgan, trangThaiPhieu,
 } from '../../../shared/domain/index.ts';
 import { badRequest, conflict, forbidden, notFound, nowIso } from '../util.ts';
 import { can, type Principal } from '../permissions.ts';
@@ -8,6 +8,7 @@ import { demoToday } from '../demoConfig.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import type { PhieuBanGiaoDto, PhieuEm, PhieuMon, TuDien } from '../../../shared/domain/index.ts';
 import { standingFor, standingLine } from '../students/standing.ts';
+import { chuCuoiKhoaLo } from '../normal/cuoiKhoa.ts';
 import { trangThaiYThuc } from '../yThuc/trangThai.ts';
 import { nguoiNhanGoiY } from './luatLoTrinh.ts';
 import { nguoiNhanCuaLop } from './lenhChuyen.ts';
@@ -35,7 +36,7 @@ export function quyenBanGiao(p: Principal, l: { lop_nguon_id: number; han_gvcn: 
   const pc = phanCongO(db(), p.userId, l.lop_nguon_id);
   const ql = coTheRaLenh(p, l.lop_nguon_id);
   const qlThay = ql && (!(o.coGvcn ?? coGvcn(l.lop_nguon_id)) || (!!l.han_gvcn && demoToday() > l.han_gvcn));
-  const dungMon = !!mon && kyNangGoiY(o.ct ?? null, mon).some((k) => pc.kyNang.has(k));
+  const dungMon = !!mon && kyNangPhuTrach(o.ct ?? null, mon).some((k) => pc.kyNang.has(k));
   return {
     ghiMon: !!mon && (pc.gvcn || dungMon || qlThay), gvbmDungMon: dungMon,
     xacNhan: pc.gvcn || qlThay, xacNhanThay: !pc.gvcn && qlThay,
@@ -46,13 +47,30 @@ export function quyenBanGiao(p: Principal, l: { lop_nguon_id: number; han_gvcn: 
 
 // ==================================================================== phần TỰ ĐIỀN (chỉ đọc) — theo lô
 
-/** Kết quả gần nhất · Case đang mở + người nhận gợi ý · Ý thức · việc còn dở của MỌI em một lần (không hỏi lại theo em). */
-function tuDienTheoLo(ds: { id: number; student_id: number; lop_dich_id: number | null }[]): Map<number, TuDien> {
+/**
+ * PR-S5F-a (T58): dòng "Kết quả" của phiếu. Lớp thường: % Cuối khoá (`chuCuoiKhoaLo` — đọc được cả sau khi em đã chuyển đi); chưa có bài Cuối khoá
+ * thì dòng kết quả gần nhất KHÔNG kèm nhãn SOS (lớp thường không dùng mức SOS). FT: dòng kết quả như cũ.
+ */
+function ketQuaTheoLo(nguon: { id: number; ct: string | null }, sids: readonly number[]): Map<number, string> {
+  const out = new Map<number, string>();
+  const thuong = !!programmeOf(nguon.ct) && programmeOf(nguon.ct) !== 'FT';
+  const ck = thuong ? chuCuoiKhoaLo(nguon.id, sids) : new Map<number, string>();
+  const con = sids.filter((s) => !ck.has(s));
+  const standing = con.length ? standingFor([...con]) : new Map();
+  for (const sid of sids) {
+    const st = standing.get(sid);
+    out.set(sid, ck.get(sid) ?? (st ? standingLine(thuong && st.sosLevel ? { ...st, sosLevel: 0 } : st) : 'Chưa có kết quả'));
+  }
+  return out;
+}
+
+/** Kết quả gần nhất · Case đang mở + người nhận gợi ý · Ý thức · việc còn dở của MỌI em một lần (không hỏi lại theo em). Mọi lệnh cùng MỘT lớp nguồn. */
+function tuDienTheoLo(nguon: { id: number; ct: string | null }, ds: { id: number; student_id: number; lop_dich_id: number | null }[]): Map<number, TuDien> {
   const out = new Map<number, TuDien>();
   if (!ds.length) return out;
   const conn = db();
   const sids = [...new Set(ds.map((l) => l.student_id))];
-  const standing = standingFor(sids);
+  const ketQua = ketQuaTheoLo(nguon, sids);
   const yt = trangThaiYThuc(sids);
   const cases: { id: number; student_id: number; title: string | null; category: string | null; owner: string | null }[] = [];
   theoLo(sids, (lo, ph) => {
@@ -67,25 +85,35 @@ function tuDienTheoLo(ds: { id: number; student_id: number; lop_dich_id: number 
       `SELECT student_id, COUNT(*) AS n FROM assessment_attempts WHERE status = 'planned' AND student_id IN (${ph}) GROUP BY student_id`,
     ).all(...lo) as any[]) baiChuaLam.set(r.student_id, r.n);
   });
+  /* PR-S5F-a (planning chốt): PA bổ trợ Giữa khoá CHƯA ghi kết quả cuối không tự khép khi chuyển — người dạy cũ ghi tiếp; phiếu nói rõ. */
+  const paDo = new Map<number, string[]>();
+  theoLo(sids, (lo, ph) => {
+    for (const r of conn.prepare(
+      `SELECT sc.student_id, sc.category, COALESCE(u.full_name, iv.performer_name) AS gv FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
+         LEFT JOIN users u ON u.id = iv.performer_user_id
+        WHERE iv.kind = 'bo_tro' AND iv.status IN ('planned', 'started') AND sc.status != 'done' AND sc.student_id IN (${ph}) ORDER BY iv.id`,
+    ).all(...lo) as any[]) {
+      paDo.set(r.student_id, [...(paDo.get(r.student_id) ?? []), `PA bổ trợ Giữa khoá ${tenMonNgan(nguon.ct, r.category)} chờ ghi kết quả cuối${r.gv ? ` (${r.gv})` : ''}`]);
+    }
+  });
   /* Người nhận gợi ý: MỘT lần mỗi lớp đích (không mỗi em). */
   const goiYTheoDich = new Map<number, Map<number, { id: number; ten: string } | null>>();
   for (const dich of new Set(ds.map((l) => l.lop_dich_id).filter((x): x is number => !!x))) {
     goiYTheoDich.set(dich, nguoiNhanGoiY(cases.map((c) => ({ id: c.id, category: c.category })), dich));
   }
   for (const l of ds) {
-    const st = standing.get(l.student_id);
     const em = yt.get(l.student_id);
     const goiY = l.lop_dich_id ? goiYTheoDich.get(l.lop_dich_id) : undefined;
     const bacTen = em && em.bac > 0 ? `Đã qua ${MEASURE_KIND_LABEL[THANG[em.bac - 1]] ?? `bậc ${em.bac}`}` : 'Chưa có xử lý';
     const cho = em ? em.soBatBuoc + em.soMoi : 0;
     const n = baiChuaLam.get(l.student_id) ?? 0;
     out.set(l.id, {
-      ketQua: st ? standingLine(st) : 'Chưa có kết quả',
+      ketQua: ketQua.get(l.student_id) ?? 'Chưa có kết quả',
       caseMo: cases.filter((c) => c.student_id === l.student_id).map((c) => ({
         id: c.id, ten: c.title ?? 'Case', nguoiNhan: goiY?.get(c.id)?.ten ?? c.owner ?? null,
       })),
       yThuc: `${bacTen} · ${cho > 0 ? `${cho} vi phạm chờ xử lý` : 'không có vi phạm chờ xử lý'}`,
-      viecConDo: n > 0 ? `${n} bài chưa làm` : 'Không có',
+      viecConDo: [...(n > 0 ? [`${n} bài chưa làm`] : []), ...(paDo.get(l.student_id) ?? [])].join(' · ') || 'Không có',
     });
   }
   return out;
@@ -125,7 +153,8 @@ export function phieuBanGiao(p: Principal, f: { lopNguonId?: number; lenhId?: nu
   const coGvcnLop = gv.some((r) => !!r.is_core);
 
   /* Quyền đọc: phía nguồn xem hết; phía đích chỉ dòng đã xác nhận/đã chuyển của lớp đích mình có quyền. */
-  const q = quyenBanGiao(p, { lop_nguon_id: lopId, han_gvcn: rows.map((r) => r.han_gvcn).filter(Boolean).sort()[0] ?? null }, undefined, { coGvcn: coGvcnLop, ct });
+  /* Quản lý xác nhận thay theo hạn của dòng CHƯA xác nhận (PR-S5F-a) — dòng đã xác nhận quá hạn cũ không mở quyền thay cho dòng mới. */
+  const q = quyenBanGiao(p, { lop_nguon_id: lopId, han_gvcn: rows.filter((r) => !r.xac_nhan_luc).map((r) => r.han_gvcn).filter(Boolean).sort()[0] ?? null }, undefined, { coGvcn: coGvcnLop, ct });
   let thay = rows;
   if (!q.doNguon) {
     const dich = [...new Set(rows.map((r) => r.lop_dich_id).filter((x): x is number => !!x))];
@@ -153,9 +182,12 @@ export function phieuBanGiao(p: Principal, f: { lopNguonId?: number; lenhId?: nu
     });
   }
   const chuaXacNhan = thay.filter((r) => !r.xac_nhan_luc);
-  const tuDien = tuDienTheoLo(chuaXacNhan);
+  const tuDien = tuDienTheoLo({ id: lopId, ct }, chuaXacNhan);
+  /* PR-S5F-a: phiếu đã chụp vẫn đọc dòng Kết quả MỚI của lớp thường (sửa điểm Cuối khoá sau khi xác nhận) — không giữ chữ cũ. */
+  const ketQuaMoi = programmeOf(ct) && programmeOf(ct) !== 'FT' && thay.length > chuaXacNhan.length
+    ? ketQuaTheoLo({ id: lopId, ct }, thay.filter((r) => r.xac_nhan_luc).map((r) => r.student_id as number)) : new Map<number, string>();
   const bang = boMonLich(ct);
-  const gvbmCua = (ma: string) => gv.filter((r) => r.skill && kyNangGoiY(ct, ma).includes(r.skill)).map((r) => r.full_name as string);
+  const gvbmCua = (ma: string) => gv.filter((r) => r.skill && kyNangPhuTrach(ct, ma).includes(r.skill)).map((r) => r.full_name as string);
   const monDs = bang.map((ma) => ({ ma, ten: tenMon(ct, ma), ngan: tenMonNgan(ct, ma) }));
 
   const ds: PhieuEm[] = thay.map((r) => {
@@ -171,14 +203,14 @@ export function phieuBanGiao(p: Principal, f: { lopNguonId?: number; lenhId?: nu
       lopDich: r.lop_dich_id ? { id: r.lop_dich_id, code: r.dich_code } : null, tuan: r.tuan_bat_dau, ngayXemLai: r.ngay_xem_lai ?? null,
       hanGvbm: r.han_gvbm, hanGvcn: r.han_gvcn,
       phieu: trangThaiPhieu({ soMonDaGhi: daGhi, soMon: mon.length, daXacNhan: !!r.xac_nhan_luc }), soMonDaGhi: daGhi, soMon: mon.length,
-      tuDien: chup?.tuDien ?? tuDien.get(r.id) ?? null, tuDienDaChup: !!chup,
+      tuDien: chup ? { ...chup.tuDien, ketQua: ketQuaMoi.get(r.student_id) ?? chup.tuDien.ketQua } : tuDien.get(r.id) ?? null, tuDienDaChup: !!chup,
       mon, nhanXetChung: r.nhan_xet_chung ?? null,
       xacNhan: r.xac_nhan_luc ? { boi: r.xn_ten ?? null, luc: r.xac_nhan_luc, thay: !!r.xac_nhan_thay } : null,
       gvbmChuaBanGiao: chup?.gvbmChuaBanGiao ?? mon.filter((m) => !m.noiDung).map((m) => m.ngan),
     };
   });
 
-  const monGhi = q.doNguon ? monDs.filter((m) => q.laGvcn || q.qlThay || kyNangGoiY(ct, m.ma).some((k) => q.kyNang.has(k))).map((m) => m.ma) : [];
+  const monGhi = q.doNguon ? monDs.filter((m) => q.laGvcn || q.qlThay || kyNangPhuTrach(ct, m.ma).some((k) => q.kyNang.has(k))).map((m) => m.ma) : [];
   return {
     lop: { id: nguon.id, code: nguon.code, ct, ft: !!nguon.is_fast_track, mon: monDs },
     homNay,
@@ -237,7 +269,7 @@ export function xacNhanBanGiao(p: Principal, lenhId: number, nhanXetChung: strin
   if (nx.length < NHAN_XET_TOI_THIEU) throw badRequest(`Nhận xét chung cần ít nhất ${NHAN_XET_TOI_THIEU} ký tự.`);
   tx(() => {
     const conn = db();
-    const tuDien = tuDienTheoLo([l]).get(l.id)!;
+    const tuDien = tuDienTheoLo({ id: l.lop_nguon_id, ct: l.ct }, [l]).get(l.id)!;
     const da = new Set((conn.prepare('SELECT mon FROM ban_giao_mon WHERE lenh_id = ?').all(lenhId) as any[]).map((r) => r.mon as string));
     const chuaBanGiao = boMonLich(l.ct).filter((m) => !da.has(m)).map((m) => tenMonNgan(l.ct, m));
     const luc = mocNghiepVu();
@@ -273,7 +305,7 @@ export function nhacGvbm(p: Principal, lenhId: number, mon: string): { soNguoi: 
   const nguoi = db().prepare(
     `SELECT DISTINCT user_id, skill FROM teacher_assignments WHERE class_id = ? AND status = 'active' AND skill IS NOT NULL`,
   ).all(l.lop_nguon_id) as any[];
-  const dich = nguoi.filter((r) => kyNangGoiY(l.ct, mon).includes(r.skill));
+  const dich = nguoi.filter((r) => kyNangPhuTrach(l.ct, mon).includes(r.skill));
   const homNay = demoToday();
   for (const r of dich) {
     notify({
@@ -338,7 +370,7 @@ export function viecBanGiao(userId: number, branchId?: number | null): ViecBanGi
       });
     }
     for (const m of mons) {
-      if (!kyNangGoiY(x.ct, m).some((k) => x.kyNang.has(k))) continue;
+      if (!kyNangPhuTrach(x.ct, m).some((k) => x.kyNang.has(k))) continue;
       const chua = chuaXn.filter((l) => !daGhi.has(`${l.id}:${m}`));
       if (!chua.length) continue;
       out.push({

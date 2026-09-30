@@ -40,6 +40,8 @@ export type GoiYCuoiKhoa = {
   nhanNgan: string;
   /** Chữ ô "Hướng gợi ý" ở Excel: `Học lại FOU` · `QL cân nhắc` · `Lên BE + bổ trợ` · `Pass`. */
   nhanExcel: string;
+  /** PR-S5F-a (mockup 20, cột "Web gợi ý" của màn Chuyển lớp): HƯỚNG — `Lên BE` · `Lên BE + bổ trợ` · `Học lại FOU` · `Quản lý cân nhắc`. */
+  nhanHuong: string;
 };
 
 /** Tên hiện của chương trình đích: lớp kế theo bậc, ELE → FT. */
@@ -69,8 +71,10 @@ export function goiYCuoiKhoa(x: { ct: string | null; tyLe: number | null; monTru
   const dai = daiCuoiKhoa(x.tyLe);
   const ke = tenBacKe(ct);
   const chung = { dai, tyLe: x.tyLe };
-  const dong = (huong: HuongGoiY, canQuanLy: boolean, bo: BoTroMienPhi | null, baoPhTvv: boolean, nhan: string, nhanNgan: string, nhanExcel: string): GoiYCuoiKhoa =>
-    ({ ...chung, huong, canQuanLy, canQl: canQuanLy, boTroNeuLen: bo, baoPhTvv, nhan, nhanNgan, nhanExcel });
+  const dong = (huong: HuongGoiY, canQuanLy: boolean, bo: BoTroMienPhi | null, baoPhTvv: boolean, nhan: string, nhanNgan: string, nhanExcel: string): GoiYCuoiKhoa => ({
+    ...chung, huong, canQuanLy, canQl: canQuanLy, boTroNeuLen: bo, baoPhTvv, nhan, nhanNgan, nhanExcel,
+    nhanHuong: canQuanLy ? 'Quản lý cân nhắc' : huong === 'hoc_lai' ? `Học lại ${tenBac(ct)}` : `Lên ${ke}${dai === '60_69' && bo ? ' + bổ trợ' : ''}`,
+  });
   if (dai === 'dat') return dong('len', false, null, false, 'Pass', '→ Pass', 'Pass');
   if (dai === 'duoi_50') return dong('hoc_lai', false, null, true, `Học lại ${tenBac(ct)}`, '→ học lại', `Học lại ${tenBac(ct)}`);
   const bo = boTro(ct, dai, x.monTruot);

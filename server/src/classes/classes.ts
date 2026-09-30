@@ -19,7 +19,7 @@ import { dotHoanTatMany, type HoanTatInfo } from '../fasttrack/hoanTat.ts';
 import { standingFor, standingLine } from '../students/standing.ts';
 import { allProgrammes, evaluateRegular, programmeOfClass } from '../normal/regular.ts';
 import { cuoiKhoaTheoHocVien, emConMiniTest, nguoiGhiMiniTest } from '../normal/cuoiKhoa.ts';
-import { classProgressMany, missingForClasses, missingForStudent } from './schedule.ts';
+import { classProgressMany, missingForClasses, missingForStudent, mocKetKhoa, type TienDoMoc } from './schedule.ts';
 import { canhBaoTheoHocVien, caseViecTheoHocVien, soEmCanXuLyYThuc, viecHocVienTheoLop } from './dongHocVien.ts';
 import { demChuaLoTrinh, tiepTheoTheoHocVien } from './loTrinhTiep.ts';
 import { daiLop } from './daiChuyenLop.ts';
@@ -92,6 +92,8 @@ function progressMapOf(classIds: number[], programmes: ReturnType<typeof allProg
   const out = new Map<number, {
     progressLabel: string | null; phase: string; phaseLabel: string;
     currentWeek: number | null; totalWeeks: number | null;
+    /** PR-S5F-a: mốc để `mocKetKhoa` so HÔM NAY với tuần Cuối khoá / tuần kết thúc (dải, số đủ điểm Cuối khoá). */
+    startWeekStart: string | null; finalWeekStart: string | null;
     needsPlacement: boolean; placementOptions: { code: string; name: string }[];
     missing: { key: string; label: string; who: string }[]; missingSkills: string[];
     canXepLop: number; soChuaLoTrinhTiep: number; nhacLoTrinh: boolean;
@@ -108,6 +110,7 @@ function progressMapOf(classIds: number[], programmes: ReturnType<typeof allProg
       phaseLabel: pr?.phaseLabel ?? '',
       currentWeek: pr?.currentWeek ?? null,
       totalWeeks: pr?.totalWeeks ?? null,
+      startWeekStart: pr?.startWeekStart ?? null, finalWeekStart: pr?.finalWeekStart ?? null,
       needsPlacement: pr?.needsPlacement ?? false,
       placementOptions: (pr?.placementOptions ?? []) as { code: string; name: string }[],
       missing: m?.items ?? [],
@@ -717,7 +720,7 @@ function classOverviewThat(p: Principal, classId: number) {
   const caseCuaLop = listCases(p, { classId }).rows;
   /* Đầu hồ sơ lớp thường ở tuần Cuối khoá / đã hết khoá (K2-14): "Cuối khoá: 6/8 em có đủ điểm" — chỉ tính ở hai chặng này (một lần `standingFor`). */
   const cuoiKhoa = (() => {
-    if (finished || prog?.scoringMode !== 'ratio' || !summary || (summary.phase !== 'final_week' && summary.phase !== 'finished') || !emDangHoc.length) return null;
+    if (finished || prog?.scoringMode !== 'ratio' || !summary || !mocKetKhoa(summary as TienDoMoc, demoToday()).tuCuoiKhoa || !emDangHoc.length) return null;
     const st = standingFor(emDangHoc);
     /* PR-LT2b: em Cuối khoá 50–59% — Quản lý cân nhắc trước khi chuyển (không còn thẻ, Q30-3). */
     const canQl = [...cuoiKhoaTheoHocVien(classId, emDangHoc).values()].filter((e) => e.goiY?.canQuanLy).length;
@@ -762,7 +765,7 @@ function classOverviewThat(p: Principal, classId: number) {
     /** Lớp thường ở Cuối khoá / hết khoá: số em có đủ điểm bài Cuối khoá (null ở chặng khác và với FT). */
     cuoiKhoa,
     /** PR-CT: dải Kết thúc khoá / Bàn giao / Sắp nhận (mockup 20 — A, H). Lớp đã kết thúc: không dải. */
-    dai: finished ? null : daiLop(p, classId, { phase: summary?.phase ?? null, ft: cls.is_fast_track === 1, ct: cls.programme_code ?? null }),
+    dai: finished ? null : daiLop(p, classId, { pr: summary as TienDoMoc, ft: cls.is_fast_track === 1, ct: cls.programme_code ?? null }),
     /** Số học viên có vi phạm chưa xử lý quá 5 ngày — dấu ⚠ trên tab Ý thức & Phối hợp (Q15). */
     canhBaoYThuc: soEmCanXuLyYThuc(p, classId),
     /*

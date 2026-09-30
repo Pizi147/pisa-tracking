@@ -812,7 +812,7 @@ export async function runPrCtTests(t: YThucTestKit) {
     ganGv(cuoi, GV[3].userId, null, true);
     const ds = [hocVien(cuoi, 'FOU', false).sid, hocVien(cuoi, 'FOU', false).sid, hocVien(cuoi, 'FOU', false).sid];
     const pl = () => (myWork(P.mbManager) as any).items.find((i: any) => i.group === 'placement' && i.classId === cuoi);
-    assert(pl().reason === '3 em chưa có lệnh chuyển' && pl().tieuDe === 'Chuyển lớp cả lớp' && pl().href === `/hoc-vien/lop/${cuoi}?viec=chuyen-tiep`, JSON.stringify(pl()));
+    assert(pl().reason === '3 em chưa có lệnh chuyển' && /^Chuyển lớp cả lớp · \S.* · 3 HV$/.test(pl().tieuDe) && pl().href === `/hoc-vien/lop/${cuoi}?viec=chuyen-tiep`, JSON.stringify(pl()));
     ra(P.mbManager, cuoi, 'cuoi-khoa', [dongCua(ds[0], 'len_lop', d6)]);
     assert(pl().reason === '2 em chưa có lệnh chuyển', pl().reason);
     const ns = (myWork(loadPrincipal(GV[3].userId)) as any).items.find((i: any) => i.group === 'next_step' && i.classId === cuoi);
@@ -974,7 +974,7 @@ export async function runPrCtTests(t: YThucTestKit) {
     ra(P.mbManager, n7, 'cuoi-khoa', [dongCua(e, 'len_lop', d7)]);
     const a = demTruyVan(() => { dai.daiHocVien(P.mbManager, e); });
     const giua = lopMoi({ kind: 'FOU', tuanHienTai: 3 });
-    const b = demTruyVan(() => { dai.daiLop(P.mbManager, giua, { phase: 'in_progress', ft: false, ct: 'FOU' }); });
+    const b = demTruyVan(() => { dai.daiLop(P.mbManager, giua, { pr: { phase: 'running', finalWeekStart: t.addDays(TODAY, 14), startWeekStart: TODAY, totalWeeks: 8 }, ft: false, ct: 'FOU' }); });
     assert(a <= 4 && b <= 4, `daiHocVien ${a} câu, daiLop ${b} câu`);
   });
 

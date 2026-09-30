@@ -123,6 +123,11 @@ export async function runPrS5fATests(t: YThucTestKit) {
     ['listening', 'reading', 'writing', 'speaking'].forEach((k, i) => { if (d[i] !== null) reg.saveRegularScore(P.admin, a.id, k, { score: d[i], total: 25 }); });
     return a;
   };
+  /** Thi hành tới `ngay` rồi khẳng định lệnh CỦA EM này đã chuyển (không đếm toàn cục — khối khác có thể còn lệnh cùng Thứ Hai). */
+  const daChuyen = (sid: number, ngay: string) => {
+    const kq = chay(ngay);
+    assert(lenhCua(sid).trang_thai === 'da_chuyen', `chưa chuyển: ${JSON.stringify(kq)} ${JSON.stringify(lenhCua(sid))}`);
+  };
   const moCase = (sid: number, cyc: number, category: string, owner: number | null) => Number(conn.prepare(
     `INSERT INTO sos_cases (student_id, cycle_id, category, topic, origin_kind, status, sos_level, owner_user_id, detected_at, created_at)
      VALUES (?,?,?,?, 'teacher_report', 'in_progress', NULL, ?, ?, ?)`,
@@ -136,8 +141,10 @@ export async function runPrS5fATests(t: YThucTestKit) {
     const e = hocVien(nguon, 'FOU', false).sid;
     lenh.raLenh(P.mbManager, { lopNguonId: nguon, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: [dongCua(e, 'len_lop', dich)] });
     const gv = loadPrincipal(GV[1]);
+    const viecLop = () => bg.viecBanGiao(GV[1]).filter((v: any) => v.lopId === nguon && v.loai === 'gvbm');
+    assert(viecLop().length === 1 && viecLop()[0].mon === 'writing', `GVBM G+V có việc: ${JSON.stringify(viecLop())}`);
     assert(maLoi(() => bg.ghiMon(gv, lenhCua(e).id, 'writing', 'Còn sai thì hiện tại hoàn thành.')) === 'không ném', 'GVBM G+V ghi môn writing');
-    assert(bg.viecBanGiao(GV[1]).length === 0, 'đã ghi hết → hết việc');
+    assert(viecLop().length === 0, 'đã ghi hết → hết việc');
     const phieu = bg.phieuBanGiao(P.mbManager, { lopNguonId: nguon });
     assert(phieu.ds[0].mon.find((m: any) => m.ma === 'writing').gvbm.length === 1, JSON.stringify(phieu.ds[0].mon));
     assert(d.kyNangPhuTrach('FOU', 'writing').join() === 'writing' && d.kyNangPhuTrach('FT', 'writing').join() === 'writing1,writing2', 'lớp FT vẫn tách W1/W2');
@@ -162,7 +169,7 @@ export async function runPrS5fATests(t: YThucTestKit) {
     const td = bg.phieuBanGiao(P.mbManager, { lopNguonId: nguon }).ds[0].tuDien;
     assert(/^Cuối khoá 63%/.test(td.ketQua) && !/SOS/.test(td.ketQua), td.ketQua);
     assert(/PA bổ trợ Giữa khoá .* chờ ghi kết quả cuối/.test(td.viecConDo), td.viecConDo);
-    assert(chay(THU_HAI).daChuyen === 1, 'chuyển');
+    daChuyen(e, THU_HAI);
     const c = get('SELECT owner_user_id, cycle_id FROM sos_cases WHERE id = ?', caseId);
     assert(c.owner_user_id === GV[2] && c.cycle_id !== cyc, `chủ Case: ${JSON.stringify(c)}`);
     assert(get(`SELECT 1 FROM sos_case_history WHERE case_id = ? AND field = 'owner' AND new_value = 'bàn giao khi chuyển lớp'`, caseId), 'lịch sử đổi chủ');
@@ -182,7 +189,7 @@ export async function runPrS5fATests(t: YThucTestKit) {
     const e = hocVien(nguon, 'FOU', false).sid;
     const a = cuoiKhoa(nguon, e, [16, 16, 16, null]);   // thiếu P lúc chuyển
     lenh.raLenh(P.mbManager, { lopNguonId: nguon, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: [dongCua(e, 'len_lop', dich)] });
-    assert(chay(THU_HAI).daChuyen === 1, 'chuyển');
+    daChuyen(e, THU_HAI);
     const MUON = t.addDays(THU_HAI, 21);
     vaoNgay(MUON, () => reg.saveRegularScore(P.admin, a.id, 'speaking', { score: 16, total: 25 }));
     const mt = get('SELECT * FROM mini_test WHERE student_id = ?', e);
@@ -195,7 +202,7 @@ export async function runPrS5fATests(t: YThucTestKit) {
     const af = cuoiKhoa(be, f, [20, 20, 20, 20]);
     ck.ghiKetLuanFt(P.mbManager, f, { dat: false, nguyenNhan: 'trung_tam', mon: ['reading'] });
     lenh.raLenh(P.mbManager, { lopNguonId: be, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: [dongCua(f, 'fast_track', ft, { mucTieu: 6 })] });
-    assert(chay(THU_HAI).daChuyen === 1, 'sang FT');
+    daChuyen(f, THU_HAI);
     const dem = () => get(`SELECT COUNT(*) n FROM sos_cases WHERE student_id = ? AND title LIKE 'Kỳ vọng đầu ra%'`, f).n as number;
     assert(dem() === 1, `Case Tutor: ${dem()}`);
     conn.prepare(`UPDATE sos_cases SET status = 'done' WHERE student_id = ? AND title LIKE 'Kỳ vọng đầu ra%'`).run(f);
@@ -238,5 +245,96 @@ export async function runPrS5fATests(t: YThucTestKit) {
     lenh.apDungDeXuatChuyenLop(P.mbManager, { id: yc.id, hoc_vien_id: e, ly_do: 'Phụ huynh xin lên lớp buổi tối' }, { lopDichId: dich, tuan: THU_HAI });
     const l = lenhCua(e);
     assert(l.huong === 'len_lop' && l.boi_canh === 'cuoi-khoa' && l.lop_dich_id === dich, JSON.stringify(l));
+    conn.prepare(`UPDATE lenh_chuyen_lop SET trang_thai = 'huy' WHERE id = ?`).run(l.id);   // không lẫn vào số đếm thi hành của khối sau
+  });
+
+  // ------------------------------------------------------------------ (11)–(13) sửa nhỏ
+  const src = (duong: string) => fs.readFileSync(new URL(`../../../../${duong}`, import.meta.url), 'utf8');
+  const { default: SqliteDb } = await import('libsql');
+  const { migratePrCt } = await import('../migrate/prCt.ts');
+  const { studentProfile } = await import('../students/profile.ts');
+
+  check('S5F-a (11) · cột "Web gợi ý" ghi HƯỚNG (Lên BE · Lên BE + bổ trợ · Quản lý cân nhắc · Học lại FOU), không "→ Pass"; hồ sơ lớp có dải Kết thúc khoá thì bỏ chip "cần xếp lớp tiếp"', () => {
+    const h = (tyLe: number, truot: string[] = []) => d.goiYCuoiKhoa({ ct: 'FOU', tyLe, monTruot: truot }).nhanHuong;
+    assert(h(0.8) === 'Lên BE' && h(0.65, ['reading']) === 'Lên BE + bổ trợ' && h(0.55, ['reading']) === 'Quản lý cân nhắc' && h(0.4) === 'Học lại FOU',
+      [h(0.8), h(0.65, ['reading']), h(0.55, ['reading']), h(0.4)].join(' | '));
+    assert(!/goiY\.nhanNgan/.test(src('web/src/modules/classes/TransitionPanel.tsx')), 'TransitionPanel không còn nhanNgan (→ Pass)');
+    assert(/ketThucKhoa \? ds\.filter\(\(x\) => x\.key !== 'xep-lop'\)/.test(src('web/src/modules/classes/DauTrangLop.tsx')), 'DauTrangLop bỏ chip xep-lop khi có dải');
+  });
+
+  check('S5F-a (12) · migrate tạo bù chỉ mục thiếu · nguoiNhanCuaLop ≤ 3 câu cho cả lô · QL xác nhận thay theo hạn dòng CHƯA xác nhận · nút Xác nhận tắt khi nhận xét trống', () => {
+    const m = new SqliteDb(':memory:');
+    m.exec(src('server/src/schema.sql').replace(/\r\n/g, '\n'));
+    m.exec('DROP INDEX ux_lenh_cho_hv');
+    const a: string[] = []; migratePrCt(m, a);
+    assert(a.some((x) => /tạo bù 1 chỉ mục/.test(x)) && m.prepare(`SELECT 1 FROM sqlite_master WHERE name = 'ux_lenh_cho_hv'`).get(), a.join(' | '));
+    const lops = [lopMoi({ kind: 'BE' }), lopMoi({ kind: 'BE' }), lopMoi({ kind: 'BE' })];
+    const n = demTruyVan(() => { lenh.nguoiNhanCuaLop(lops, [MB]); });
+    assert(n <= 3, `${n} câu`);
+    /* Lớp có GVCN: dòng A đã xác nhận (hạn cũ đã qua) + dòng B chưa xác nhận (còn hạn) → QL KHÔNG xác nhận thay. */
+    const nguon = lopMoi({ kind: 'FOU', tuanHienTai: 8 });
+    const dich = lopMoi({ kind: 'BE' });
+    ganGv(nguon, GV[0], null, true);
+    const [x, y] = [hocVien(nguon, 'FOU', false).sid, hocVien(nguon, 'FOU', false).sid];
+    lenh.raLenh(P.mbManager, { lopNguonId: nguon, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: [dongCua(x, 'len_lop', dich), dongCua(y, 'len_lop', dich)] });
+    conn.prepare(`UPDATE lenh_chuyen_lop SET han_gvcn = ?, xac_nhan_luc = ?, xac_nhan_boi = ? WHERE id = ?`).run(t.addDays(TODAY, -5), TODAY, GV[0], lenhCua(x).id);
+    assert(bg.phieuBanGiao(P.mbManager, { lopNguonId: nguon }).nguoiXem.xacNhan === false, 'QL không được xác nhận thay khi dòng chưa xác nhận còn hạn');
+    assert(/disabled=\{busy \|\| !nhap\.trim\(\)\}/.test(src('web/src/modules/classes/BanGiaoPanel.tsx')), 'nút Xác nhận bàn giao');
+    conn.prepare(`UPDATE lenh_chuyen_lop SET trang_thai = 'huy' WHERE lop_nguon_id = ?`).run(nguon);
+  });
+
+  check('S5F-a (13) · Cuối khoá sau chuyển: hồ sơ vẫn thấy %, thẻ Test gần nhất ghi %, tên Case giữ môn gốc, việc tiếp không nhồi mô tả PA, kết luận FT cần bài Cuối khoá, Trung tâm thiếu điểm → Case Tutor khi điểm về, Báo PH có GVCN', () => {
+    /* Hồ sơ HV sau chuyển FOU → BE: vẫn thấy % Cuối khoá của lớp vừa rời. */
+    const fou = lopMoi({ kind: 'FOU', tuanHienTai: 9 });
+    const be = lopMoi({ kind: 'BE', tuanHienTai: 1 });
+    ganGv(be, GV[3], null, true);
+    const { sid: e } = hocVien(fou, 'FOU', false);
+    const aFou = cuoiKhoa(fou, e, [17, 16, 17, 16]);   // 66%
+    lenh.raLenh(P.mbManager, { lopNguonId: fou, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: [dongCua(e, 'len_lop', be)] });
+    daChuyen(e, THU_HAI);
+    const hs = studentProfile(P.admin, e);
+    assert(hs.cuoiKhoa?.daChuyen === true && Math.round((hs.cuoiKhoa.tyLe ?? 0) * 100) === 66, JSON.stringify(hs.cuoiKhoa));
+    /* Thẻ "Kết quả Test gần nhất": Cuối khoá đủ điểm → %, không "n/4 môn đạt". */
+    const kq = d.ketQuaTestGanNhat([{ id: 1, attemptNo: 2, kind: 'final', status: 'done', periodCode: null, weekStart: null, mode: 'ratio', scored: 4, required: 4, complete: true, overall: null, expectation: null, sosLevel: 2, tyLeTong: 0.66 }]);
+    assert(kq?.phanTram === 66, JSON.stringify(kq));
+    /* Tên Case giữ môn gốc: mốc đầu ở bài FOU (G+V), mốc sau ở bài Giữa khoá BE → vẫn "G+V". */
+    const cyBe = get(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`, e).id;
+    const aBe = get(`SELECT id FROM assessment_attempts WHERE cycle_id = ? AND kind = 'progress'`, cyBe);
+    assert(aBe, 'lộ trình BE có bài Giữa khoá mặc định');
+    const cId = Number(conn.prepare(`INSERT INTO sos_cases (student_id, cycle_id, category, topic, origin_kind, status, detected_at, created_at) VALUES (?,?, 'writing', 'writing', 'mock', 'in_progress', ?, ?)`)
+      .run(e, cyBe, TODAY, new Date().toISOString()).lastInsertRowid);
+    const moc = conn.prepare(`INSERT INTO case_milestones (case_id, kind, attempt_id, attempt_no, occurred_on, created_at) VALUES (?, ?, ?, ?, ?, ?)`);
+    moc.run(cId, 'opened', aFou.id, 1, TODAY, new Date().toISOString());
+    moc.run(cId, 'repeat', aBe.id, 99, TODAY, new Date().toISOString());
+    const ten = casesSvc.caseTitleOf({ id: cId, category: 'writing', topic: 'writing', origin_kind: 'mock', title: null });
+    assert(/G\+V/.test(ten) && !/Writing/.test(ten), ten);
+    /* Việc tiếp không nhồi mô tả dài của PA hệ thống. */
+    assert(d.tenPaViecTiep('bo_tro_mien_phi', '1 buổi miễn phí (P) · 1 tuần · Mini Test sau buổi cuối · không tính phí học sinh') === 'Bổ trợ miễn phí'
+      && d.tenPaViecTiep('tutor', 'Kèm 1-1 Reading') === 'Kèm 1-1 Reading', 'tenPaViecTiep');
+    assert(/homNay >= mt\.ngayDuKien/.test(src('web/src/modules/students/KetLuanKhoa.tsx')), 'nút Ghi Mini Test chỉ từ ngày buổi cuối');
+
+    /* ket-luan-ft: em BE chưa có bài Cuối khoá → 400, không chèn dòng Lộ trình tiếp theo. */
+    const be2 = lopMoi({ kind: 'BE', tuanHienTai: 11 });
+    const chua = hocVien(be2, 'BE', false).sid;
+    assert(maLoi(() => ck.ghiKetLuanFt(P.mbManager, chua, { dat: true })) === 400 && !get('SELECT 1 FROM lo_trinh_tiep_theo WHERE student_id = ?', chua), 'chưa có bài Cuối khoá');
+    /* Trung tâm + thiếu điểm lúc chuyển → Case Tutor tạo khi điểm về. */
+    const ft = lopMoi({ kind: 'FT', ft: true, route: 'LT1', tuanHienTai: 1 });
+    const f = hocVien(be2, 'BE', false).sid;
+    const af = cuoiKhoa(be2, f, [20, 12, 20, null]);
+    ck.ghiKetLuanFt(P.mbManager, f, { dat: false, nguyenNhan: 'trung_tam', mon: ['reading'] });
+    lenh.raLenh(P.mbManager, { lopNguonId: be2, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: [dongCua(f, 'fast_track', ft, { mucTieu: 6, khacGoiY: true, lyDo: 'Phụ huynh xin lên FT' })] });
+    daChuyen(f, THU_HAI);
+    const tutor = () => get(`SELECT COUNT(*) n FROM sos_cases WHERE student_id = ? AND title LIKE 'Kỳ vọng đầu ra%'`, f).n as number;
+    assert(tutor() === 0, 'chưa đủ điểm: chưa có Case Tutor');
+    vaoNgay(t.addDays(THU_HAI, 7), () => reg.saveRegularScore(P.admin, af.id, 'speaking', { score: 20, total: 25 }));
+    assert(tutor() === 1, `điểm về → Case Tutor: ${tutor()}`);
+
+    /* Báo PH Giữa khoá: Quản lý xem "Tất cả" thấy GVCN lớp em đang học, không "chưa ai phụ trách". */
+    reg.planRegularTests(P.admin, be, { studentIds: [e], kinds: ['progress'] });
+    const aGk = get(`SELECT id FROM assessment_attempts WHERE student_id = ? AND class_id = ? AND kind = 'progress' ORDER BY id DESC LIMIT 1`, e, be) ?? aBe;
+    const bp = Number(conn.prepare(`INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, preset, status, created_at) VALUES (?,?, 'bao_ph_tvv', 1, 'pending', ?)`)
+      .run(aGk.id, e, new Date().toISOString()).lastInsertRowid);
+    const viec = (myWork(P.mbManager, { nguoi: 'tat-ca' }) as any).items.find((i: any) => i.key === `baoph:${bp}`);
+    assert(viec && viec.ownerId === GV[3] && viec.owner, `Báo PH: ${JSON.stringify(viec ?? null)}`);
   });
 }

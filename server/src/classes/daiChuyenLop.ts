@@ -1,10 +1,10 @@
 import { db } from '../db.ts';
-import { boMonLich, kyNangGoiY, tenMonNgan, tuanChonDuoc } from '../../../shared/domain/index.ts';
+import { boMonLich, kyNangPhuTrach, tenMonNgan, tuanChonDuoc } from '../../../shared/domain/index.ts';
 import { addDays } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import type { Principal } from '../permissions.ts';
 import type { DaiHocVien, DaiLop } from '../../../shared/domain/index.ts';
-import { classProgressMany } from './schedule.ts';
+import { mocKetKhoa, type TienDoMoc } from './schedule.ts';
 import { demChuaCoLenh } from './lenhChuyen.ts';
 import { coTheRaLenh, phanCongO } from './quyenChuyenLop.ts';
 
@@ -14,7 +14,7 @@ import { coTheRaLenh, phanCongO } from './quyenChuyenLop.ts';
  */
 
 /** Hồ sơ lớp: tối đa 3 câu (phân công · lệnh nguồn/đích/dòng môn/GVCN gộp một UNION · đếm chưa lệnh khi tới Cuối khoá). */
-export function daiLop(p: Principal, classId: number, o: { phase: string | null; ft: boolean; ct: string | null }): DaiLop {
+export function daiLop(p: Principal, classId: number, o: { pr: TienDoMoc; ft: boolean; ct: string | null }): DaiLop {
   const conn = db();
   const homNay = demoToday();
   const pc = phanCongO(conn, p.userId, classId);
@@ -45,7 +45,7 @@ export function daiLop(p: Principal, classId: number, o: { phase: string | null;
     daGhi.get(r.b)!.add(r.a);
   }
   const banGiaoMon = chuaXn.length
-    ? boMonLich(o.ct).filter((m) => kyNangGoiY(o.ct, m).some((k) => pc.kyNang.has(k))).map((m) => ({
+    ? boMonLich(o.ct).filter((m) => kyNangPhuTrach(o.ct, m).some((k) => pc.kyNang.has(k))).map((m) => ({
       mon: m, monNgan: tenMonNgan(o.ct, m), daGhi: nguon.filter((r) => daGhi.get(m)?.has(r.a)).length, tong: nguon.length,
       han: min(chuaXn.filter((r) => !daGhi.get(m)?.has(r.a)).map((r) => r.g)),
     }))
@@ -59,12 +59,11 @@ export function daiLop(p: Principal, classId: number, o: { phase: string | null;
     } : null;
 
   let ketThucKhoa: DaiLop['ketThucKhoa'] = null;
-  if (!o.ft && (o.phase === 'final_week' || o.phase === 'finished')) {
+  const moc = o.ft ? null : mocKetKhoa(o.pr, homNay);   // PR-S5F-a: từ tuần Cuối khoá (kể cả khi dời sớm), không theo chặng
+  if (moc?.tuCuoiKhoa) {
     const so = demChuaCoLenh([classId]).get(classId) ?? 0;
     if (so > 0) {
-      const pr = classProgressMany([classId]).get(classId);
-      const tuanKetThuc = pr?.startWeekStart && pr.totalWeeks ? addDays(pr.startWeekStart, (pr.totalWeeks - 1) * 7) : null;
-      ketThucKhoa = { tuanCuoiKhoa: pr?.finalWeekStart ?? null, tuanKetThuc, soChuaLenh: so, do: !!tuanKetThuc && homNay >= tuanKetThuc, tuanGoiY: tuanChonDuoc(homNay)[0] };
+      ketThucKhoa = { tuanCuoiKhoa: moc.tuanCuoiKhoa, tuanKetThuc: moc.tuanKetThuc, soChuaLenh: so, do: !!moc.tuanKetThuc && homNay >= moc.tuanKetThuc, tuanGoiY: tuanChonDuoc(homNay)[0] };
     }
   }
   /* PR-S5F-a: lệnh lỗi (kể cả Dừng học) — Quản lý thấy ngay ở hồ sơ lớp để sửa, không phải mở từng hồ sơ em. */
@@ -93,7 +92,7 @@ export function daiHocVien(p: Principal, studentId: number): DaiHocVien | null {
   const phieu = l.huong !== 'dung_hoc';
   const qlThay = ra && (!!l.han_gvcn && homNay > l.han_gvcn);   // lớp không GVCN được `daiLop` xử lý ở phía lớp; ở đây chỉ quá hạn
   const nut: DaiHocVien['nut'] = [];
-  const monToi = mons.find((m) => !daGhi.has(m) && kyNangGoiY(l.ct, m).some((k) => pc.kyNang.has(k))) ?? null;
+  const monToi = mons.find((m) => !daGhi.has(m) && kyNangPhuTrach(l.ct, m).some((k) => pc.kyNang.has(k))) ?? null;
   if (phieu && !l.xac_nhan_luc && l.trang_thai !== 'huy') {
     if (pc.gvcn || qlThay) nut.push('ban-giao');
     if (monToi) nut.push('ban-giao-mon');

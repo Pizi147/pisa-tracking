@@ -13,6 +13,7 @@ import { taoYeuCau } from '../duyet/yeuCau.ts';
 import { applyTransition } from './transition.ts';
 import { apDungMotDong, dongLopNeuHet, lopDichHopLe, nguoiNhanGoiY } from './luatLoTrinh.ts';
 import { coTheRaLenh } from './quyenChuyenLop.ts';
+import { classProgressMany, mocKetKhoa } from './schedule.ts';
 
 /**
  * LỆNH CHUYỂN LỚP do QUẢN LÝ quyết (PR-CT, §3.1f Q30-1): em nào · lớp đích nào · tuần bắt đầu (Thứ Hai, từ tuần sau trở đi).
@@ -33,7 +34,7 @@ const HUONG_THEO_BOI_CANH: Record<BoiCanhLenh, readonly HuongLenh[]> = {
 
 const CUNG_LOP_CHI_NHANH = 'Chỉ Quản lý chi nhánh của lớp này mới ra lệnh chuyển lớp.';
 
-/** GVCN đang hiệu lực + (khi `ql`) mọi Quản lý của các chi nhánh — cho thông báo. Hai câu cho cả lô lớp. */
+/** GVCN đang hiệu lực + (khi `ql`) mọi Quản lý của các chi nhánh — cho thông báo. Tối đa ba câu cho cả lô lớp (không hỏi lại theo lớp). */
 export function nguoiNhanCuaLop(lopIds: readonly number[], chiNhanhQl: readonly number[] = []): Map<number, Set<number>> {
   const conn = db();
   const out = new Map<number, Set<number>>();
@@ -45,9 +46,13 @@ export function nguoiNhanCuaLop(lopIds: readonly number[], chiNhanhQl: readonly 
   });
   if (chiNhanhQl.length) {
     const ql = conn.prepare(`SELECT DISTINCT ur.user_id, ur.branch_id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'manager' AND ur.status = 'active'`).all() as any[];
+    const cnCua = new Map<number, number>();
+    theoLo([...new Set(lopIds)], (lo, ph) => {
+      for (const r of conn.prepare(`SELECT id, branch_id FROM classes WHERE id IN (${ph})`).all(...lo) as any[]) cnCua.set(r.id, r.branch_id);
+    });
     for (const lop of lopIds) {
-      const cn = (conn.prepare('SELECT branch_id FROM classes WHERE id = ?').get(lop) as any)?.branch_id;
-      if (!chiNhanhQl.includes(cn)) continue;
+      const cn = cnCua.get(lop);
+      if (cn === undefined || !chiNhanhQl.includes(cn)) continue;
       for (const q of ql) if (q.branch_id === null || q.branch_id === cn) them(lop, q.user_id);
     }
   }
@@ -514,17 +519,21 @@ export function apDungDeXuatChuyenLop(p: Principal, yc: { id: number; hoc_vien_i
   if (!yc.hoc_vien_id) throw badRequest('Thẻ không có học viên.');
   const conn = db();
   const enr = conn.prepare(
-    `SELECT e.class_id, c.is_fast_track FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = ? AND e.status = 'active' LIMIT 1`,
+    `SELECT e.class_id, c.is_fast_track, c.programme_code FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = ? AND e.status = 'active' LIMIT 1`,
   ).get(yc.hoc_vien_id) as any;
   if (!enr) throw badRequest('Em không còn học lớp nào.');
   const lopDich = Number(d.lopDichId);
   if (!lopDich) throw badRequest('Chọn lớp đích trước khi duyệt.');
   const dich = lopDichHopLe(lopDich, enr.class_id);
   if (!dich) throw badRequest('Lớp đích không hợp lệ.');
+  /* PR-S5F-a (planning chốt): lớp thường đã hết khoá / đang tuần kết thúc → hướng CUỐI KHOÁ (lên lớp / học lại / FT) như panel cả lớp, cùng luật lớp đích. */
+  const hetKhoa = !enr.is_fast_track && mocKetKhoa(classProgressMany([enr.class_id]).get(enr.class_id), demoToday()).hetKhoa;
+  const huong: HuongLenh = dich.is_fast_track && !enr.is_fast_track ? 'fast_track'
+    : !hetKhoa ? 'chuyen_lop' : dich.programme_code === enr.programme_code ? 'hoc_lai' : 'len_lop';
   const r = raLenh(p, {
-    lopNguonId: enr.class_id, boiCanh: 'giua-khoa', tuanChung: null, tuYeuCauId: yc.id,
+    lopNguonId: enr.class_id, boiCanh: hetKhoa ? 'cuoi-khoa' : 'giua-khoa', tuanChung: null, tuYeuCauId: yc.id,
     dongs: [{
-      studentId: yc.hoc_vien_id, huong: dich.is_fast_track && !enr.is_fast_track ? 'fast_track' : 'chuyen_lop', toClassId: lopDich,
+      studentId: yc.hoc_vien_id, huong, toClassId: lopDich,
       tuan: typeof d.tuan === 'string' ? d.tuan : null, mucTieu: soHoacKck(d.mucTieu), ngayThi: typeof d.ngayThi === 'string' ? d.ngayThi : null,
       lyDo: typeof d.lyDo === 'string' && d.lyDo.trim() ? d.lyDo : yc.ly_do,
     }],
