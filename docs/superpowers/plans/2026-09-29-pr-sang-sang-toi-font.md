@@ -412,4 +412,19 @@ Mười trang (Task 0 "trước" và Task 9 "sau" dùng **cùng** danh sách):
 cứng, chữ < 11 px); số đỏ Task 1; đo tnum/glyph/tràn cột Task 6; số chỗ < AA trước/sau (hai chế độ) Task 8; so "bảng màu tính được" tối
 Task 9; chỗ lệch kế hoạch; 🛑 đã hỏi; chú thích ponytail:. -->
 
+**Task 0 (30/09).** Model thật: **Sonnet 5.5**. Nhánh `pr-sang-sang-toi-font` từ `origin/main` `e7832cde`. Đã merge: PR-HSM #131 (`ada8f6c4`),
+PR-XUAT #132 (`ce768d1c`), PR-HVL #133 (`e7832cde`). Ba PR đổi 33 file giao diện (`git diff --stat 507abc2a e7832cde -- web/src`): mới
+`cham/GvCham.tsx`, `fasttrack/NhanXet.tsx`, `fasttrack/ODiemLon.tsx`, `test/NganXuatMt.tsx`, `ui/TheDong.tsx`; sửa nhiều ở `MockDetailPage`,
+`ScoreEntry`, `LuoiFT`, `LuoiThuong`, `MotKyNang`, `BangCanHoTro`, `ClassIssueBoard`, `ClassProgressPanel`, `DauTrangLop`, `PhanTichLopTab`,
+`TransitionPanel`, `BangHocVienLop`, `ClassRoster`, `StudentsPage`, `StudentDetailPage`, `LoTrinhTiepPanel`, `LichTestTab`, `HangLop`, `KhoiNo`,
+`ViecTiep`, `MenuDong`, `SaveState`, `CongTacKhung`, `SkillBoard`, `TongHopTestSos`.
+**Mốc B** = `npm run check` xanh, 1824 dòng ✓ ở `run.js` + 25 phép kiểm tốc độ, ~5 phút 8 giây.
+**Đếm lại** (`web/src`): `text-[10px]` **71** + `text-[10.5px]` **30** ở **36 file** (kế hoạch 72 + 30 / 37). Màu cứng trong `.tsx` còn **4**:
+`TransitionPanel.tsx:331` `var(--warn, #fbbf24)` · `DemoBar.tsx:55` `bg-[#0b141d]` · `HanhTrinh.tsx:160` `#dbe9ff` · `MeetingPage.tsx:138`
+`var(--text-muted, #94a3b8)` + `rgb(252 165 165)`. **`ClassProgressPanel.tsx` không còn** `rgba(242,161,161,.08)` (PR-SOS/HSM đã bỏ). Ba PR **không**
+thêm màu cứng mới. Cấp màu chưa ánh xạ (số lần dùng, không đếm biến thể `/nn`): `slate-100` 154 · `200` 141 · `300` 121 · `600` 52 · `700` 5 ·
+`bg-white` 36 · `text-white` 4 · `ink-800` 5 · `ink-950` 1 · `teal-300/500/600` … như Hiện trạng.
+Ảnh "trước" 10 trang (tối, 1440 px) ở `thiet-ke/anh/pr-sang/truoc-toi-NN-*.png`; JSON "bảng màu tính được" trước ở scratchpad (không commit).
+Trang 03 chụp ở `/hoc-vien` (danh sách lớp, các lớp thu gọn); trang 04 mở tab "Cần hỗ trợ"; trang 08 là lượt Mock id 123.
+
 > **Chủ sản phẩm chốt 30/09:** phông **Be Vietnam Pro**; chữ phụ **giữ 11 px**, chỉ nâng chữ < 11 px và chữ kết quả/hạn/trạng thái lên 12 px. Task cuối **sửa `CLAUDE.md`** dòng "giữ phông Inter" → "phông Be Vietnam Pro (PR-SANG)".
