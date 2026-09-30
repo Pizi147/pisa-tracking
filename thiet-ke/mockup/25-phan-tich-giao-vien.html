@@ -219,7 +219,19 @@ td.mine .lbl{color:var(--accent)}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
 
 /* ---------------- riêng mockup 25 — Phân tích giáo viên (cùng token, cùng lớp dùng chung với mockup 20/21) ---------------- */
-table.ga{min-width:1080px;table-layout:fixed}
+table.ga{min-width:1000px;table-layout:fixed}
+.ga th .hh{white-space:nowrap}
+/* tên cột ngắn; cách tính hiện khi rê chuột HOẶC Tab tới (không chỉ dựa vào title) */
+.hh{position:relative;display:inline-block;border-bottom:1px dotted var(--muted);cursor:help}
+.hh:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+.hh .tip{display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:5;width:264px;padding:8px 10px;border-radius:8px;background:var(--surface);border:1px solid var(--line2);box-shadow:0 10px 24px rgba(0,0,0,.28);color:var(--fg);font:400 12px/1.5 var(--f-body);letter-spacing:0;text-align:left;white-space:normal}
+.hh.l .tip{right:auto;left:0}
+.hh:hover .tip,.hh:focus .tip{display:block}
+/* chỉ ô kết quả có màu (chủ sản phẩm 01/10): thanh mảnh dưới số, màu nhạt theo mức đạt; số luôn hiện */
+.kq{display:block;width:44px;height:3px;margin:4px 0 0 auto;border-radius:2px;background:var(--line);overflow:hidden}
+.kq i{display:block;height:100%;border-radius:2px;opacity:.7}
+.kq.thap i{background:var(--bad)} .kq.vua i{background:var(--warn)} .kq.cao i{background:var(--ok)} .kq.it i{background:var(--muted)}
+.kq.sw{display:inline-block;width:16px;margin:0;vertical-align:middle}
 .ga th{white-space:normal;vertical-align:bottom;line-height:1.3}
 .ga th.grp{text-align:center;vertical-align:middle;color:var(--fg);font-weight:600}
 .ga td{vertical-align:top}
@@ -255,7 +267,7 @@ table.def{min-width:900px;table-layout:fixed}
 <header style="display:flex;flex-direction:column;gap:8px">
   <span class="small muted">PISA Tracking · mockup 25 · 01/10/2026 · dữ liệu ví dụ · PR-Pb2</span>
   <h1>Phân tích giáo viên</h1>
-  <p class="lead">Một bảng cho Quản lý: mỗi giáo viên một hàng, trong một khoảng tuần hoặc một tháng, cho biết việc nào làm đúng hạn và kết quả môn mình dạy ra sao. <b>Không có KPI, không xếp hạng, không tô tốt/xấu, không hàng tổng</b> (Q30-5, Q31-2): mọi số cùng một màu, sắp theo tên, Quản lý đọc số cụ thể rồi tự đánh giá. Mọi số gạch chấm đều bấm được và mở đúng danh sách tạo nên nó. Chỗ có nhãn <span class="de">đề xuất</span> là planning thêm, chờ chủ sản phẩm duyệt.</p>
+  <p class="lead">Một bảng cho Quản lý: mỗi giáo viên một hàng, trong một khoảng tuần hoặc một tháng, cho biết việc nào làm đúng hạn và kết quả môn mình dạy ra sao. <b>Không có KPI, không xếp hạng, không hàng tổng</b> (Q30-5, Q31-2): sắp theo tên, Quản lý đọc số cụ thể rồi tự đánh giá. Cột việc giữ một màu; <b>riêng ô kết quả</b> có thanh màu nhạt để đọc nhanh (chủ sản phẩm 01/10). Mọi số gạch chấm đều bấm được: ô Chấm điểm mở danh sách ô điểm, các ô khác mở trang liên quan đã lọc sẵn. Chỗ có nhãn <span class="de">đề xuất</span> là planning thêm, chờ chủ sản phẩm duyệt.</p>
 </header>
 
 <!-- ====================================================== AI THẤY GÌ -->
@@ -288,28 +300,26 @@ table.def{min-width:900px;table-layout:fixed}
         <div class="field">Khoảng<span class="row" style="gap:6px"><span class="seg"><button type="button" class="on">Theo tuần</button><button type="button">Theo tháng</button></span><span class="fake caret num">W1 SEP</span><span class="muted">–</span><span class="fake caret num">W4 SEP</span></span></div>
       </div>
       <div class="spread">
-        <span class="small muted"><span class="num">7</span> giáo viên có lớp Fast Track ở Monbay trong <b class="num" style="color:var(--fg)">W1 SEP – W4 SEP</b> · sắp theo tên</span>
-        <div class="legend"><span><b>18/20</b> đúng hạn / có hạn trong khoảng</span><span><b>—</b> không áp dụng</span><span>không có = áp dụng, chưa có mục</span><span>mẫu nhỏ = dưới 5 mục</span></div>
+        <span class="small muted"><span class="num">7</span> giáo viên có lớp Fast Track ở Monbay trong <b class="num" style="color:var(--fg)">W1 SEP – W4 SEP</b> · sắp theo tên · rê chuột hoặc Tab vào tên cột gạch chấm để xem cách tính</span>
+        <div class="legend"><span><b>18/20</b> đúng hạn / có hạn trong khoảng</span><span><b>—</b> không áp dụng</span><span>không có = áp dụng, chưa có mục</span><span>mẫu nhỏ = dưới 5 mục</span><span class="row" style="gap:4px">ô kết quả<span class="kq thap sw" aria-hidden="true"><i style="width:100%"></i></span>dưới 50%<span class="kq vua sw" aria-hidden="true"><i style="width:100%"></i></span>50–69%<span class="kq cao sw" aria-hidden="true"><i style="width:100%"></i></span>từ 70%</span></div>
       </div>
 
       <div class="tbl-wrap" role="region" aria-label="Bảng Phân tích giáo viên, cuộn ngang" tabindex="0"><table class="ga">
-        <colgroup><col style="width:158px"><col style="width:74px"><col style="width:90px"><col style="width:92px"><col style="width:92px"><col style="width:92px"><col style="width:62px"><col style="width:62px"><col style="width:62px"><col style="width:62px"><col style="width:62px"><col style="width:92px"><col style="width:92px"></colgroup>
+        <colgroup><col style="width:158px"><col style="width:74px"><col style="width:84px"><col style="width:112px"><col style="width:104px"><col style="width:84px"><col style="width:60px"><col style="width:60px"><col style="width:60px"><col style="width:60px"><col style="width:60px"><col style="width:84px"></colgroup>
         <thead>
           <tr>
             <th rowspan="2" class="sticky">Giáo viên</th>
-            <th rowspan="2" class="r">Đang dạy<span class="i" title="Đề xuất — ngữ cảnh, không phải chỉ số. Số lớp thuộc khung đang chọn mà giáo viên có phân công (GVCN hoặc một môn) ở chi nhánh này, và số học viên của các lớp đó, tính ở cuối khoảng.">i</span></th>
-            <th rowspan="2" class="r bl">Chấm điểm đúng hạn<span class="i" title="Một mục = một ô điểm: một học viên × một bài × một kỹ năng mà giáo viên được phân công lúc tới hạn. Tính các ô có TUẦN THI trong khoảng. Đúng hạn = LẦN NHẬP ĐẦU ≤ hạn nhập của ô (hạn sau khi dời, nếu có). Sửa điểm sau đó không tính. Ô đã quá hạn mà chưa nhập = trễ. Không tính: ô chưa tới hạn và chưa nhập, vắng đã xác nhận, huỷ, &quot;không có bài&quot;.">i</span></th>
-            <th colspan="2" class="grp bl">Case phụ trách</th>
-            <th rowspan="2" class="r bl">PA do GV thêm có tiến bộ<span class="i" title="Một mục = một PA giáo viên tự thêm vào Case (không tính PA hệ thống điền sẵn theo quy chế, không tính PA bổ trợ) đã có kết quả cuối, ngày ghi kết quả cuối trong khoảng. Tiến bộ = kết quả cuối thuộc nhóm &quot;cải thiện&quot;, cùng luật với góc nhìn Hiệu quả PA. PA chưa có kết quả cuối không tính.">i</span></th>
-            <th colspan="5" class="grp bl">Kết quả môn mình dạy · đạt kỳ vọng / có điểm<span class="i" title="Một mục = một học viên × một bài có TUẦN THI trong khoảng, ở lớp giáo viên dạy môn đó lúc thi. Tử số: đạt kỳ vọng của đợt đó (W1, W2 so từng bài). Mẫu số: học viên đã có điểm môn đó. Em đã chuyển lớp vẫn tính cho giáo viên dạy em lúc thi.">i</span></th>
-            <th colspan="2" class="grp bl">Chỉ GVCN</th>
+            <th rowspan="2" class="r"><span class="hh l" tabindex="0">Đang dạy<span class="tip" role="tooltip">Ngữ cảnh, không phải chỉ số. Số lớp Fast Track giáo viên có phân công (GVCN hoặc một kỹ năng) ở chi nhánh này, và số học viên các lớp đó, tính ở cuối khoảng.</span></span></th>
+            <th colspan="3" class="grp bl">Đúng hạn</th>
+            <th rowspan="2" class="r bl"><span class="hh" tabindex="0">PA hiệu quả<span class="tip" role="tooltip">PA giáo viên tự thêm vào Case (không tính PA điền sẵn theo quy chế, PA bổ trợ) đã có kết quả cuối trong khoảng. Số trên: PA có tiến bộ (nhóm "cải thiện", cùng luật với góc nhìn Hiệu quả PA) / PA đã có kết quả cuối.</span></span></th>
+            <th colspan="5" class="grp bl"><span class="hh" tabindex="0">Kết quả môn mình dạy<span class="tip" role="tooltip">Một mục là một học viên × một bài có tuần thi trong khoảng, ở lớp giáo viên dạy kỹ năng đó lúc thi. Số trên: đạt kỳ vọng của đợt đó / đã có điểm (W1, W2 so từng bài). Em đã chuyển lớp vẫn tính cho người dạy em lúc thi. Thanh nhỏ dưới số: đỏ nhạt dưới 50%, vàng 50–69%, xanh từ 70%.</span></span></th>
+            <th rowspan="2" class="r bl"><span class="hh" tabindex="0">HV tiến bộ<span class="tip" role="tooltip">Đề xuất. Một mục là một học viên × một kỹ năng giáo viên dạy, ở bài có tuần thi trong khoảng, mà em đã có điểm kỹ năng đó ở bài trước. Tiến bộ khi điểm cao hơn bài trước; bằng hoặc thấp hơn thì không.</span></span><span class="de" style="margin-top:3px">đề xuất</span></th>
           </tr>
           <tr>
-            <th class="r bl">Xác nhận nguyên nhân đúng hạn<span class="i" title="Một mục = một Case tự tạo từ kết quả test mà giáo viên phụ trách, có hạn xác nhận (3 ngày tính cả ngày đầu) rơi vào khoảng. Đúng hạn = lần xác nhận nguyên nhân ĐẦU TIÊN ≤ hạn. Quá hạn mà chưa xác nhận = trễ. Case tay (không có hạn) không tính.">i</span></th>
-            <th class="r">Ghi kết quả PA đúng hạn<span class="i" title="Một mục = một lần phải ghi kết quả PA (mỗi chu kỳ theo dõi) ở Case giáo viên phụ trách, có hạn ghi rơi vào khoảng. Đúng hạn = ngày ghi ≤ hạn của chu kỳ đó. Quá hạn mà chưa ghi = trễ.">i</span></th>
+            <th class="r bl"><span class="hh l" tabindex="0">Chấm điểm<span class="tip" role="tooltip">Một mục là một ô điểm: một học viên × một bài × một kỹ năng giáo viên được phân công, tuần thi trong khoảng. Đúng hạn khi lần nhập đầu không muộn hơn hạn nhập (hạn sau khi dời, nếu có); sửa điểm sau đó không tính. Quá hạn mà chưa nhập là trễ. Không tính: vắng đã xác nhận, huỷ, "không có bài", ô chưa tới hạn.</span></span></th>
+            <th class="r"><span class="hh" tabindex="0">Ghi kết quả PA<span class="tip" role="tooltip">Một mục là một lần phải ghi kết quả PA (mỗi tuần theo dõi) ở Case giáo viên phụ trách, hạn ghi trong khoảng. Đúng hạn khi ghi trước hạn. Quá hạn mà chưa ghi là trễ.</span></span></th>
+            <th class="r"><span class="hh" tabindex="0">Xử lý vi phạm<span class="tip" role="tooltip">Chỉ lớp giáo viên làm GVCN. Một mục là một vi phạm thành "Cần xử lý", hạn xử lý trong khoảng. Đúng hạn khi GVCN xác nhận xử lý, hoặc gửi đề xuất cho Quản lý, trước hạn. Thời gian chờ Quản lý duyệt không tính cho GVCN.</span></span><span class="nho" style="font-size:11px">GVCN</span></th>
             <th class="r bl">L</th><th class="r">R</th><th class="r">W1</th><th class="r">W2</th><th class="r">S</th>
-            <th class="r bl">Vi phạm xử lý đúng hạn<span class="i" title="Chỉ lớp giáo viên làm GVCN. Một mục = một vi phạm chuyển sang &quot;Cần xử lý&quot; có hạn xử lý rơi vào khoảng. Đúng hạn = GVCN Xác nhận xử lý, hoặc gửi đề xuất cho Quản lý duyệt, trước hạn. Thời gian chờ Quản lý duyệt không tính cho GVCN. Quá hạn mà chưa xử lý = trễ.">i</span></th>
-            <th class="r">Bàn giao đúng hạn<span class="i" title="Chỉ lớp nguồn giáo viên làm GVCN. Một mục = một học viên có lệnh chuyển lớp (chuyển, học lại, bảo lưu) mà hạn Xác nhận bàn giao của GVCN (3 ngày tính cả ngày ra lệnh) rơi vào khoảng. Đúng hạn = ngày GVCN Xác nhận bàn giao ≤ hạn. Quản lý xác nhận thay = không đúng hạn.">i</span></th>
           </tr>
         </thead>
         <tbody>
@@ -317,98 +327,106 @@ table.def{min-width:900px;table-layout:fixed}
             <td class="sticky"><a class="lnk" href="#">Đinh Thu Hương</a><div class="sub">R · W1 · W2</div></td>
             <td class="r"><button class="so" type="button">2</button> <span class="kc">lớp</span><span class="nho"><span class="num">21</span> HV</span></td>
             <td class="r bl"><button class="so" type="button">60/63</button><span class="pc">95%</span></td>
-            <td class="r bl"><button class="so" type="button">3/3</button><span class="nho">mẫu nhỏ</span></td>
             <td class="r"><button class="so" type="button">6/6</button><span class="pc">100%</span></td>
+            <td class="r"><span class="na" title="Không làm GVCN lớp Fast Track nào ở Monbay trong khoảng">—</span></td>
             <td class="r bl"><button class="so" type="button">2/3</button><span class="nho">mẫu nhỏ</span></td>
             <td class="r bl"><span class="na">—</span></td>
-            <td class="r"><button class="so" type="button">12/21</button><span class="pc">57%</span></td>
-            <td class="r"><button class="so" type="button">8/21</button><span class="pc">38%</span></td>
-            <td class="r"><button class="so" type="button">9/21</button><span class="pc">43%</span></td>
+            <td class="r"><button class="so" type="button">12/21</button><span class="pc">57%</span><span class="kq vua" aria-hidden="true"><i style="width:57%"></i></span></td>
+            <td class="r"><button class="so" type="button">8/21</button><span class="pc">38%</span><span class="kq thap" aria-hidden="true"><i style="width:38%"></i></span></td>
+            <td class="r"><button class="so" type="button">9/21</button><span class="pc">43%</span><span class="kq thap" aria-hidden="true"><i style="width:43%"></i></span></td>
             <td class="r"><span class="na">—</span></td>
-            <td class="r bl"><span class="na" title="Không làm GVCN lớp Fast Track nào ở Monbay trong khoảng">—</span></td>
-            <td class="r"><span class="na" title="Không làm GVCN lớp Fast Track nào ở Monbay trong khoảng">—</span></td>
+            <td class="r bl"><button class="so" type="button">34/50</button><span class="pc">68%</span></td>
           </tr>
           <tr>
             <td class="sticky"><a class="lnk" href="#">Lâm Quang Vinh</a><div class="sub">S · <span style="white-space:nowrap">GVCN MB FT 103</span></div></td>
             <td class="r"><button class="so" type="button">2</button> <span class="kc">lớp</span><span class="nho"><span class="num">19</span> HV</span></td>
             <td class="r bl"><button class="so" type="button">17/19</button><span class="pc">89%</span></td>
-            <td class="r bl"><button class="so" type="button">2/2</button><span class="nho">mẫu nhỏ</span></td>
             <td class="r"><button class="so" type="button">4/5</button><span class="pc">80%</span></td>
+            <td class="r"><button class="so" type="button">6/7</button><span class="pc">86%</span></td>
             <td class="r bl"><span class="nho solo">không có</span></td>
-            <td class="r bl"><span class="na">—</span></td><td class="r"><span class="na">—</span></td><td class="r"><span class="na">—</span></td><td class="r"><span class="na">—</span></td>
-            <td class="r"><button class="so" type="button">11/18</button><span class="pc">61%</span></td>
-            <td class="r bl"><button class="so" type="button">6/7</button><span class="pc">86%</span></td>
-            <td class="r"><button class="so" type="button">1/1</button><span class="nho">mẫu nhỏ</span></td>
+            <td class="r bl"><span class="na">—</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><button class="so" type="button">11/18</button><span class="pc">61%</span><span class="kq vua" aria-hidden="true"><i style="width:61%"></i></span></td>
+            <td class="r bl"><button class="so" type="button">9/16</button><span class="pc">56%</span></td>
           </tr>
           <tr>
             <td class="sticky"><a class="lnk" href="#">Ngô Bích Ngọc</a><div class="sub">L · R</div></td>
             <td class="r"><button class="so" type="button">1</button> <span class="kc">lớp</span><span class="nho"><span class="num">9</span> HV</span></td>
             <td class="r bl"><button class="so" type="button">18/18</button><span class="pc">100%</span></td>
-            <td class="r bl"><button class="so" type="button">2/3</button><span class="nho">mẫu nhỏ</span></td>
             <td class="r"><button class="so" type="button">3/3</button><span class="nho">mẫu nhỏ</span></td>
+            <td class="r"><span class="na" title="Không làm GVCN lớp Fast Track nào ở Monbay trong khoảng">—</span></td>
             <td class="r bl"><button class="so" type="button">1/2</button><span class="nho">mẫu nhỏ</span></td>
-            <td class="r bl"><button class="so" type="button">5/9</button><span class="pc">56%</span></td>
-            <td class="r"><button class="so" type="button">6/9</button><span class="pc">67%</span></td>
-            <td class="r"><span class="na">—</span></td><td class="r"><span class="na">—</span></td><td class="r"><span class="na">—</span></td>
-            <td class="r bl"><span class="na">—</span></td><td class="r"><span class="na">—</span></td>
+            <td class="r bl"><button class="so" type="button">5/9</button><span class="pc">56%</span><span class="kq vua" aria-hidden="true"><i style="width:56%"></i></span></td>
+            <td class="r"><button class="so" type="button">6/9</button><span class="pc">67%</span><span class="kq vua" aria-hidden="true"><i style="width:67%"></i></span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r bl"><button class="so" type="button">11/18</button><span class="pc">61%</span></td>
           </tr>
           <tr>
             <td class="sticky"><a class="lnk" href="#">Nguyễn Văn Khải</a><div class="sub">W1 · W2 · <span style="white-space:nowrap">GVCN MB FT 105</span></div></td>
             <td class="r"><button class="so" type="button">2</button> <span class="kc">lớp</span><span class="nho"><span class="num">20</span> HV</span></td>
             <td class="r bl"><button class="so" type="button">31/38</button><span class="pc">82%</span></td>
-            <td class="r bl"><button class="so" type="button">4/6</button><span class="pc">67%</span></td>
             <td class="r"><button class="so" type="button">5/7</button><span class="pc">71%</span></td>
+            <td class="r"><button class="so" type="button">3/5</button><span class="pc">60%</span></td>
             <td class="r bl"><button class="so" type="button">3/5</button><span class="pc">60%</span></td>
-            <td class="r bl"><span class="na">—</span></td><td class="r"><span class="na">—</span></td>
-            <td class="r"><button class="so" type="button">9/19</button><span class="pc">47%</span></td>
-            <td class="r"><button class="so" type="button">10/19</button><span class="pc">53%</span></td>
+            <td class="r bl"><span class="na">—</span></td>
             <td class="r"><span class="na">—</span></td>
-            <td class="r bl"><button class="so" type="button">3/5</button><span class="pc">60%</span></td>
-            <td class="r"><button class="so" type="button">0/2</button><span class="nho">mẫu nhỏ</span></td>
+            <td class="r"><button class="so" type="button">9/19</button><span class="pc">47%</span><span class="kq thap" aria-hidden="true"><i style="width:47%"></i></span></td>
+            <td class="r"><button class="so" type="button">10/19</button><span class="pc">53%</span><span class="kq vua" aria-hidden="true"><i style="width:53%"></i></span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r bl"><button class="so" type="button">14/30</button><span class="pc">47%</span></td>
           </tr>
           <tr>
             <td class="sticky"><a class="lnk" href="#">Phạm Thu Trang</a><div class="sub">L · S</div></td>
             <td class="r"><button class="so" type="button">3</button> <span class="kc">lớp</span><span class="nho"><span class="num">30</span> HV</span></td>
             <td class="r bl"><button class="so" type="button">49/56</button><span class="pc">88%</span></td>
-            <td class="r bl"><button class="so" type="button">5/5</button><span class="pc">100%</span></td>
             <td class="r"><button class="so" type="button">9/10</button><span class="pc">90%</span></td>
+            <td class="r"><span class="na" title="Không làm GVCN lớp Fast Track nào ở Monbay trong khoảng">—</span></td>
             <td class="r bl"><button class="so" type="button">4/6</button><span class="pc">67%</span></td>
-            <td class="r bl"><button class="so" type="button">16/29</button><span class="pc">55%</span></td>
-            <td class="r"><span class="na">—</span></td><td class="r"><span class="na">—</span></td><td class="r"><span class="na">—</span></td>
-            <td class="r"><button class="so" type="button">17/27</button><span class="pc">63%</span></td>
-            <td class="r bl"><span class="na">—</span></td><td class="r"><span class="na">—</span></td>
+            <td class="r bl"><button class="so" type="button">16/29</button><span class="pc">55%</span><span class="kq vua" aria-hidden="true"><i style="width:55%"></i></span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><button class="so" type="button">17/27</button><span class="pc">63%</span><span class="kq vua" aria-hidden="true"><i style="width:63%"></i></span></td>
+            <td class="r bl"><button class="so" type="button">27/44</button><span class="pc">61%</span></td>
           </tr>
           <tr class="sel">
             <td class="sticky"><a class="lnk" href="#">Trần Ngọc Hà</a><div class="sub">L · <span style="white-space:nowrap">GVCN MB FT 101</span></div></td>
             <td class="r"><button class="so" type="button">2</button> <span class="kc">lớp</span><span class="nho"><span class="num">22</span> HV</span></td>
             <td class="r bl mine"><button class="so" type="button">18/20</button><span class="pc">90%</span></td>
-            <td class="r bl"><button class="so" type="button">5/6</button><span class="pc">83%</span></td>
             <td class="r"><button class="so" type="button">7/8</button><span class="pc">88%</span></td>
+            <td class="r"><button class="so" type="button">4/5</button><span class="pc">80%</span></td>
             <td class="r bl"><button class="so" type="button">3/4</button><span class="nho">mẫu nhỏ</span></td>
-            <td class="r bl"><button class="so" type="button">12/19</button><span class="pc">63%</span></td>
-            <td class="r"><span class="na">—</span></td><td class="r"><span class="na">—</span></td><td class="r"><span class="na">—</span></td><td class="r"><span class="na">—</span></td>
-            <td class="r bl"><button class="so" type="button">4/5</button><span class="pc">80%</span></td>
-            <td class="r"><button class="so" type="button">2/2</button><span class="nho">mẫu nhỏ</span></td>
+            <td class="r bl"><button class="so" type="button">12/19</button><span class="pc">63%</span><span class="kq vua" aria-hidden="true"><i style="width:63%"></i></span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r bl"><button class="so" type="button">10/15</button><span class="pc">67%</span></td>
           </tr>
           <tr>
             <td class="sticky"><a class="lnk" href="#">Võ Mỹ Duyên</a><div class="sub">W1 · W2</div></td>
             <td class="r"><button class="so" type="button">1</button> <span class="kc">lớp</span><span class="nho"><span class="num">8</span> HV</span></td>
             <td class="r bl"><button class="so" type="button">14/16</button><span class="pc">88%</span></td>
-            <td class="r bl"><span class="nho solo">không có</span></td>
             <td class="r"><button class="so" type="button">2/2</button><span class="nho">mẫu nhỏ</span></td>
+            <td class="r"><span class="na" title="Không làm GVCN lớp Fast Track nào ở Monbay trong khoảng">—</span></td>
             <td class="r bl"><span class="nho solo">không có</span></td>
-            <td class="r bl"><span class="na">—</span></td><td class="r"><span class="na">—</span></td>
-            <td class="r"><button class="so" type="button">3/8</button><span class="pc">38%</span></td>
-            <td class="r"><button class="so" type="button">4/8</button><span class="pc">50%</span></td>
+            <td class="r bl"><span class="na">—</span></td>
             <td class="r"><span class="na">—</span></td>
-            <td class="r bl"><span class="na">—</span></td><td class="r"><span class="na">—</span></td>
+            <td class="r"><button class="so" type="button">3/8</button><span class="pc">38%</span><span class="kq thap" aria-hidden="true"><i style="width:38%"></i></span></td>
+            <td class="r"><button class="so" type="button">4/8</button><span class="pc">50%</span><span class="kq vua" aria-hidden="true"><i style="width:50%"></i></span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r bl"><button class="so" type="button">7/12</button><span class="pc">58%</span></td>
           </tr>
         </tbody>
       </table></div>
-      <p class="small muted">Hàng Trần Ngọc Hà đang chọn vì vừa bấm ô "Chấm điểm đúng hạn 18/20" (màn C). Bấm tên mở hồ sơ giáo viên (mockup 21, màn B).</p>
+      <p class="small muted">Hàng Trần Ngọc Hà đang chọn vì vừa bấm ô "Chấm điểm 18/20" (màn C). Bấm tên mở hồ sơ giáo viên (mockup 21, màn B).</p>
     </div>
   </div>
-  <p class="why"><b>Mỗi ô ghi số đếm trước, phần trăm nhỏ bên dưới</b>: "18/20" cho Quản lý biết cả mức độ lẫn cỡ mẫu, còn "90%" một mình thì "1/1" và "45/50" trông như nhau. Dưới 5 mục, phần trăm được thay bằng chữ <b>mẫu nhỏ</b> (cùng ngưỡng 5 với "Ít dữ liệu" ở Hiệu quả PA) <span class="de">đề xuất</span>. <b>"—"</b> là không áp dụng (không dạy môn đó, không làm GVCN); <b>"không có"</b> là có áp dụng nhưng khoảng này chưa có mục nào: hai điều khác nhau nên viết khác nhau. Cột "Đang dạy" <span class="de">đề xuất</span> chỉ là ngữ cảnh: 60/63 của người dạy ba kỹ năng và 18/20 của người dạy một kỹ năng nói về khối lượng khác nhau. Không nút sắp theo số, không hàng tổng, không màu tốt/xấu (Q31-2). Công tắc khung lọc cả hàng: mọi cột chỉ tính lớp Fast Track, kể cả Case, vi phạm, bàn giao (Q31-1: chỉ <b>Fast Track · Lớp thường</b>, không "Cả hai"; Quản lý mặc định Fast Track).</p>
+  <p class="why"><b>Mỗi ô ghi số đếm trước, phần trăm nhỏ bên dưới</b>: "18/20" cho Quản lý biết cả mức độ lẫn cỡ mẫu, còn "90%" một mình thì "1/1" và "45/50" trông như nhau. Dưới 5 mục, phần trăm được thay bằng chữ <b>mẫu nhỏ</b> (cùng ngưỡng 5 với "Ít dữ liệu" ở Hiệu quả PA). <b>"—"</b> là không áp dụng (không dạy môn đó, không làm GVCN); <b>"không có"</b> là có áp dụng nhưng khoảng này chưa có mục nào. <b>Tên cột ngắn</b> (2–3 chữ); cách tính nằm trong chú thích nổi, hiện khi rê chuột hoặc Tab tới tên cột. Ba cột "đúng hạn" gom dưới một nhóm nên tên cột không lặp chữ "đúng hạn". <b>Thanh màu chỉ có ở ô kết quả</b>, mảnh và nhạt, số vẫn là thứ đọc trước; cột việc không tô. Không nút sắp theo số, không hàng tổng. Công tắc khung lọc cả hàng: mọi cột chỉ tính lớp Fast Track, kể cả Case và vi phạm (Q31-1: chỉ hai khung <b>Fast Track · Lớp thường</b>; Quản lý mặc định Fast Track).</p>
 </section>
 
 <!-- ====================================================== B. BẢNG LỚP THƯỜNG -->
@@ -425,24 +443,20 @@ table.def{min-width:900px;table-layout:fixed}
       </div>
       <span class="small muted"><span class="num">6</span> giáo viên có lớp thường ở Monbay trong <b class="num" style="color:var(--fg)">09/2026</b> · sắp theo tên</span>
 
-      <div class="tbl-wrap" role="region" aria-label="Bảng Phân tích giáo viên lớp thường, cuộn ngang" tabindex="0"><table class="ga">
-        <colgroup><col style="width:158px"><col style="width:74px"><col style="width:90px"><col style="width:92px"><col style="width:92px"><col style="width:92px"><col style="width:54px"><col style="width:54px"><col style="width:54px"><col style="width:54px"><col style="width:54px"><col style="width:54px"><col style="width:92px"><col style="width:92px"></colgroup>
+      <div class="tbl-wrap" role="region" aria-label="Bảng Phân tích giáo viên lớp thường, cuộn ngang" tabindex="0"><table class="ga" style="min-width:780px">
+        <colgroup><col style="width:190px"><col style="width:76px"><col style="width:88px"><col style="width:112px"><col style="width:104px"><col style="width:66px"><col style="width:66px"><col style="width:76px"><col style="width:66px"></colgroup>
         <thead>
           <tr>
             <th rowspan="2" class="sticky">Giáo viên</th>
-            <th rowspan="2" class="r">Đang dạy<span class="i" title="Đề xuất — ngữ cảnh. Số lớp thường có phân công ở chi nhánh này và số học viên, tính ở cuối khoảng.">i</span></th>
-            <th rowspan="2" class="r bl">Chấm điểm đúng hạn<span class="i" title="Như Fast Track: một ô = một học viên × một bài × một môn. Hạn nhập = hạn của chính môn đó trong tuần thi. Đúng hạn = lần nhập đầu ≤ hạn.">i</span></th>
-            <th colspan="2" class="grp bl">Case phụ trách</th>
-            <th rowspan="2" class="r bl">PA do GV thêm có tiến bộ<span class="i" title="Như Fast Track. PA bổ trợ (Giữa khoá, Cuối khoá) là PA theo quy chế, không tính ở đây.">i</span></th>
-            <th colspan="6" class="grp bl">Kết quả môn mình dạy · đạt / có điểm<span class="i" title="Đạt = từ 70%. Một mục = một học viên × một bài (Giữa khoá, Cuối khoá) có tuần thi trong khoảng. Tên môn theo chương trình: FOU L · R · G+V · P; BE, ELE L · R · W · S. Môn giáo viên không dạy ghi —.">i</span></th>
-            <th colspan="2" class="grp bl">Chỉ GVCN</th>
+            <th rowspan="2" class="r"><span class="hh l" tabindex="0">Đang dạy<span class="tip" role="tooltip">Ngữ cảnh. Số lớp thường giáo viên có phân công ở chi nhánh này và số học viên, tính ở cuối khoảng.</span></span></th>
+            <th colspan="3" class="grp bl">Đúng hạn</th>
+            <th colspan="4" class="grp bl"><span class="hh" tabindex="0">Kết quả môn mình dạy<span class="tip" role="tooltip">Đạt từ 70%. Một mục là một học viên × một bài (Giữa khoá, Cuối khoá) có tuần thi trong khoảng. Bốn cột cố định; môn giáo viên không dạy ghi —. Thanh nhỏ dưới số: đỏ nhạt dưới 50%, vàng 50–69%, xanh từ 70%.</span></span></th>
           </tr>
           <tr>
-            <th class="r bl">Xác nhận nguyên nhân đúng hạn</th>
-            <th class="r">Ghi kết quả PA đúng hạn</th>
-            <th class="r bl">L</th><th class="r">R</th><th class="r">W</th><th class="r">S</th><th class="r">G+V</th><th class="r">P</th>
-            <th class="r bl">Vi phạm xử lý đúng hạn</th>
-            <th class="r">Bàn giao đúng hạn</th>
+            <th class="r bl"><span class="hh l" tabindex="0">Chấm điểm<span class="tip" role="tooltip">Như Fast Track: một ô là một học viên × một bài × một môn. Hạn nhập là hạn của chính môn đó trong tuần thi. Đúng hạn khi lần nhập đầu không muộn hơn hạn.</span></span></th>
+            <th class="r" style="font-weight:500"><span class="hh" tabindex="0">Ghi kết quả PA<span class="tip" role="tooltip">Lớp thường ngắn nên Case, PA ít; cột để mờ. Như Fast Track: mỗi lần phải ghi kết quả PA (gồm PA Bổ trợ) ở Case giáo viên phụ trách, hạn ghi trong khoảng.</span></span></th>
+            <th class="r"><span class="hh" tabindex="0">Xử lý vi phạm<span class="tip" role="tooltip">Chỉ lớp giáo viên làm GVCN. Một mục là một vi phạm thành "Cần xử lý", hạn xử lý trong khoảng. Đúng hạn khi GVCN xác nhận xử lý, hoặc gửi đề xuất cho Quản lý, trước hạn. Thời gian chờ Quản lý duyệt không tính cho GVCN.</span></span><span class="nho" style="font-size:11px">GVCN</span></th>
+            <th class="r bl">L</th><th class="r">R</th><th class="r"><span class="hh" tabindex="0">W <span style="font-weight:500">(G+V)</span><span class="tip" role="tooltip">BE, ELE: Writing. FOU: Grammar + Vocabulary (G+V).</span></span></th><th class="r"><span class="hh" tabindex="0">S <span style="font-weight:500">(P)</span><span class="tip" role="tooltip">BE, ELE: Speaking. FOU: Pronunciation (P).</span></span></th>
           </tr>
         </thead>
         <tbody>
@@ -450,85 +464,79 @@ table.def{min-width:900px;table-layout:fixed}
             <td class="sticky"><a class="lnk" href="#">Đinh Thu Hương</a><div class="sub">R</div></td>
             <td class="r"><button class="so" type="button">1</button> <span class="kc">lớp</span><span class="nho"><span class="num">9</span> HV</span></td>
             <td class="r bl"><button class="so" type="button">9/9</button><span class="pc">100%</span></td>
-            <td class="r bl"><button class="so" type="button">1/1</button><span class="nho">mẫu nhỏ</span></td>
-            <td class="r"><button class="so" type="button">2/2</button><span class="nho">mẫu nhỏ</span></td>
-            <td class="r bl"><span class="nho solo">không có</span></td>
+            <td class="r dimc"><button class="so" type="button">2/2</button><span class="nho">mẫu nhỏ</span></td>
+            <td class="r"><span class="na">—</span></td>
             <td class="r bl"><span class="na">—</span></td>
-            <td class="r"><button class="so" type="button">8/9</button><span class="pc">89%</span></td>
-            <td class="r"><span class="na">—</span></td><td class="r"><span class="na">—</span></td><td class="r"><span class="na">—</span></td><td class="r"><span class="na">—</span></td>
-            <td class="r bl"><span class="na">—</span></td><td class="r"><span class="na">—</span></td>
+            <td class="r"><button class="so" type="button">8/9</button><span class="pc">89%</span><span class="kq cao" aria-hidden="true"><i style="width:89%"></i></span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><span class="na">—</span></td>
           </tr>
           <tr>
-            <td class="sticky"><a class="lnk" href="#">Lê Thanh Bình</a><div class="sub">G+V · <span style="white-space:nowrap">GVCN MB FOU 14</span></div></td>
-            <td class="r"><button class="so" type="button">2</button> <span class="kc">lớp</span><span class="nho"><span class="num">17</span> HV</span></td>
-            <td class="r bl"><button class="so" type="button">15/17</button><span class="pc">88%</span></td>
-            <td class="r bl"><button class="so" type="button">2/3</button><span class="nho">mẫu nhỏ</span></td>
-            <td class="r"><button class="so" type="button">3/4</button><span class="nho">mẫu nhỏ</span></td>
-            <td class="r bl"><button class="so" type="button">1/1</button><span class="nho">mẫu nhỏ</span></td>
-            <td class="r bl"><span class="na">—</span></td><td class="r"><span class="na">—</span></td><td class="r"><span class="na">—</span></td><td class="r"><span class="na">—</span></td>
-            <td class="r"><button class="so" type="button">9/17</button><span class="pc">53%</span></td>
+            <td class="sticky"><a class="lnk" href="#">Lê Thanh Bình</a><div class="sub">L · R · G+V · <span style="white-space:nowrap">GVCN MB FOU 14</span></div></td>
+            <td class="r"><button class="so" type="button">1</button> <span class="kc">lớp</span><span class="nho"><span class="num">8</span> HV</span></td>
+            <td class="r bl"><button class="so" type="button">22/24</button><span class="pc">92%</span></td>
+            <td class="r dimc"><button class="so" type="button">3/4</button><span class="nho">mẫu nhỏ</span></td>
+            <td class="r"><button class="so" type="button">5/6</button><span class="pc">83%</span></td>
+            <td class="r bl"><button class="so" type="button">6/8</button><span class="pc">75%</span><span class="kq cao" aria-hidden="true"><i style="width:75%"></i></span></td>
+            <td class="r"><button class="so" type="button">5/8</button><span class="pc">62%</span><span class="kq vua" aria-hidden="true"><i style="width:62%"></i></span></td>
+            <td class="r"><button class="so" type="button">4/8</button><span class="pc">50%</span><span class="kq vua" aria-hidden="true"><i style="width:50%"></i></span></td>
             <td class="r"><span class="na">—</span></td>
-            <td class="r bl"><button class="so" type="button">5/6</button><span class="pc">83%</span></td>
-            <td class="r"><button class="so" type="button">7/8</button><span class="pc">88%</span></td>
           </tr>
           <tr>
             <td class="sticky"><a class="lnk" href="#">Ngô Bích Ngọc</a><div class="sub">P</div></td>
             <td class="r"><button class="so" type="button">2</button> <span class="kc">lớp</span><span class="nho"><span class="num">16</span> HV</span></td>
             <td class="r bl"><button class="so" type="button">16/16</button><span class="pc">100%</span></td>
-            <td class="r bl"><span class="nho solo">không có</span></td>
-            <td class="r"><span class="nho solo">không có</span></td>
-            <td class="r bl"><span class="nho solo">không có</span></td>
-            <td class="r bl"><span class="na">—</span></td><td class="r"><span class="na">—</span></td><td class="r"><span class="na">—</span></td><td class="r"><span class="na">—</span></td><td class="r"><span class="na">—</span></td>
-            <td class="r"><button class="so" type="button">12/16</button><span class="pc">75%</span></td>
-            <td class="r bl"><span class="na">—</span></td><td class="r"><span class="na">—</span></td>
+            <td class="r dimc"><span class="nho solo">không có</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r bl"><span class="na">—</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><button class="so" type="button">12/16</button><span class="pc">75%</span><span class="kq cao" aria-hidden="true"><i style="width:75%"></i></span></td>
           </tr>
           <tr>
-            <td class="sticky"><a class="lnk" href="#">Phan Hải Đăng</a><div class="sub">S</div></td>
+            <td class="sticky"><a class="lnk" href="#">Phan Hải Đăng</a><div class="sub">S · <span style="white-space:nowrap">GVCN MB BE 04</span></div></td>
             <td class="r"><button class="so" type="button">1</button> <span class="kc">lớp</span><span class="nho"><span class="num">9</span> HV</span></td>
             <td class="r bl"><button class="so" type="button">7/9</button><span class="pc">78%</span></td>
-            <td class="r bl"><button class="so" type="button">1/2</button><span class="nho">mẫu nhỏ</span></td>
-            <td class="r"><button class="so" type="button">1/1</button><span class="nho">mẫu nhỏ</span></td>
-            <td class="r bl"><span class="nho solo">không có</span></td>
-            <td class="r bl"><span class="na">—</span></td><td class="r"><span class="na">—</span></td><td class="r"><span class="na">—</span></td>
-            <td class="r"><button class="so" type="button">6/9</button><span class="pc">67%</span></td>
-            <td class="r"><span class="na">—</span></td><td class="r"><span class="na">—</span></td>
-            <td class="r bl"><span class="na">—</span></td><td class="r"><span class="na">—</span></td>
+            <td class="r dimc"><button class="so" type="button">1/1</button><span class="nho">mẫu nhỏ</span></td>
+            <td class="r"><button class="so" type="button">3/4</button><span class="nho">mẫu nhỏ</span></td>
+            <td class="r bl"><span class="na">—</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><button class="so" type="button">6/9</button><span class="pc">67%</span><span class="kq vua" aria-hidden="true"><i style="width:67%"></i></span></td>
           </tr>
           <tr>
-            <td class="sticky"><a class="lnk" href="#">Trần Ngọc Hà</a><div class="sub">L · <span style="white-space:nowrap">GVCN MB FOU 12</span></div></td>
+            <td class="sticky"><a class="lnk" href="#">Trần Ngọc Hà</a><div class="sub">L · R · G+V · <span style="white-space:nowrap">GVCN MB FOU 12</span></div></td>
             <td class="r"><button class="so" type="button">2</button> <span class="kc">lớp</span><span class="nho"><span class="num">17</span> HV</span></td>
-            <td class="r bl"><button class="so" type="button">15/17</button><span class="pc">88%</span></td>
-            <td class="r bl"><button class="so" type="button">2/2</button><span class="nho">mẫu nhỏ</span></td>
-            <td class="r"><button class="so" type="button">4/4</button><span class="nho">mẫu nhỏ</span></td>
-            <td class="r bl"><button class="so" type="button">2/3</button><span class="nho">mẫu nhỏ</span></td>
-            <td class="r bl"><button class="so" type="button">13/17</button><span class="pc">76%</span></td>
-            <td class="r"><span class="na">—</span></td><td class="r"><span class="na">—</span></td><td class="r"><span class="na">—</span></td><td class="r"><span class="na">—</span></td><td class="r"><span class="na">—</span></td>
-            <td class="r bl"><button class="so" type="button">3/3</button><span class="nho">mẫu nhỏ</span></td>
-            <td class="r"><button class="so" type="button">8/8</button><span class="pc">100%</span></td>
+            <td class="r bl"><button class="so" type="button">31/33</button><span class="pc">94%</span></td>
+            <td class="r dimc"><button class="so" type="button">4/4</button><span class="nho">mẫu nhỏ</span></td>
+            <td class="r"><button class="so" type="button">3/3</button><span class="nho">mẫu nhỏ</span></td>
+            <td class="r bl"><button class="so" type="button">13/17</button><span class="pc">76%</span><span class="kq cao" aria-hidden="true"><i style="width:76%"></i></span></td>
+            <td class="r"><button class="so" type="button">7/8</button><span class="pc">88%</span><span class="kq cao" aria-hidden="true"><i style="width:88%"></i></span></td>
+            <td class="r"><button class="so" type="button">3/8</button><span class="pc">38%</span><span class="kq thap" aria-hidden="true"><i style="width:38%"></i></span></td>
+            <td class="r"><span class="na">—</span></td>
           </tr>
           <tr>
             <td class="sticky"><a class="lnk" href="#">Võ Mỹ Duyên</a><div class="sub">W</div></td>
             <td class="r"><button class="so" type="button">1</button> <span class="kc">lớp</span><span class="nho"><span class="num">9</span> HV</span></td>
             <td class="r bl"><button class="so" type="button">8/9</button><span class="pc">89%</span></td>
-            <td class="r bl"><button class="so" type="button">1/1</button><span class="nho">mẫu nhỏ</span></td>
-            <td class="r"><button class="so" type="button">1/2</button><span class="nho">mẫu nhỏ</span></td>
-            <td class="r bl"><button class="so" type="button">0/1</button><span class="nho">mẫu nhỏ</span></td>
-            <td class="r bl"><span class="na">—</span></td><td class="r"><span class="na">—</span></td>
-            <td class="r"><button class="so" type="button">3/9</button><span class="pc">33%</span></td>
-            <td class="r"><span class="na">—</span></td><td class="r"><span class="na">—</span></td><td class="r"><span class="na">—</span></td>
-            <td class="r bl"><span class="na">—</span></td><td class="r"><span class="na">—</span></td>
+            <td class="r dimc"><button class="so" type="button">1/2</button><span class="nho">mẫu nhỏ</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r bl"><span class="na">—</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><button class="so" type="button">3/9</button><span class="pc">33%</span><span class="kq thap" aria-hidden="true"><i style="width:33%"></i></span></td>
+            <td class="r"><span class="na">—</span></td>
           </tr>
         </tbody>
       </table></div>
     </div>
   </div>
-  <p class="why"><b>Cột kết quả đổi theo khung:</b> lớp thường có sáu môn khả dĩ (L · R · W · S của BE, ELE và G+V · P của FOU), đạt từ 70%, thang khác Fast Track (so kỳ vọng), nên hai khung không bao giờ nằm chung một bảng. Tháng <b class="num">09/2026</b> đúng bằng bốn tuần <span class="num">W1 SEP – W4 SEP</span> (tuần thuộc tháng chứa ngày Thứ Năm), nên chọn theo tháng hay theo tuần đều ra cùng khoảng. Lớp thường không có SOS: Case ở đây là Case từ Giữa khoá, Cuối khoá.</p>
+  <p class="why"><b>Bốn cột kết quả cố định L · R · W (G+V) · S (P):</b> FOU dùng G+V ở chỗ W và P ở chỗ S (BE, ELE dùng W, S), nên mọi lớp thường chung một bảng, ô chỉ có số. Lớp FOU thường có hai giáo viên: một người dạy L, R, G+V (Trần Ngọc Hà ở MB FOU 12, Lê Thanh Bình ở MB FOU 14, cũng là GVCN), một người dạy P (Ngô Bích Ngọc, cả hai lớp). Lớp thường ngắn nên Case, PA ít: chỉ giữ một cột mờ "Ghi kết quả PA", bỏ cột PA hiệu quả. Lớp thường không có SOS; Case ở đây là Case Giữa khoá, Cuối khoá (vd "[Giữa khoá] G+V không đạt"). Tháng <b class="num">09/2026</b> đúng bằng bốn tuần <span class="num">W1 SEP – W4 SEP</span> (tuần thuộc tháng chứa ngày Thứ Năm), nên chọn theo tháng hay theo tuần đều ra cùng khoảng.</p>
 </section>
 
 <!-- ====================================================== C. BẤM MỘT Ô -->
 <section class="screen" aria-labelledby="h-c">
-  <div class="where"><span class="tag">Màn C</span><h2 id="h-c">Bấm "Chấm điểm đúng hạn 18/20" → 20 ô điểm tạo nên nó</h2></div>
-  <div class="where"><span class="tag">Nằm ở</span><span class="path">Màn A › hàng <b>Trần Ngọc Hà</b> › ô <b>Chấm điểm đúng hạn 18/20</b> · panel bên phải (cùng khung panel các góc nhìn Phân tích khác) · <b>Quản lý, Quản trị</b></span></div>
+  <div class="where"><span class="tag">Màn C</span><h2 id="h-c">Bấm "Chấm điểm 18/20" → 20 ô điểm tạo nên nó</h2></div>
+  <div class="where"><span class="tag">Nằm ở</span><span class="path">Màn A › hàng <b>Trần Ngọc Hà</b> › nhóm Đúng hạn › ô <b>Chấm điểm 18/20</b> · panel bên phải (cùng khung panel các góc nhìn Phân tích khác) · <b>Quản lý, Quản trị</b></span></div>
   <div class="panel" style="max-width:780px">
     <div class="panel-h">
       <div><h3>Chấm điểm đúng hạn · Trần Ngọc Hà</h3><span class="sub">Fast Track · Monbay · tuần thi <span class="num">W1 SEP – W4 SEP</span> · <b class="num" style="color:var(--fg)">18</b> đúng hạn · <b class="num" style="color:var(--fg)">2</b> trễ · <span class="num">20</span> ô</span></div>
@@ -564,7 +572,7 @@ table.def{min-width:900px;table-layout:fixed}
     </div>
     <div class="panel-f"><span class="small muted">Không tính: 2 em MB FT 103 vắng đã xác nhận · ô chưa tới hạn và chưa nhập.</span><a class="lnk small" href="#">Mở Lịch Test ›</a></div>
   </div>
-  <p class="why"><b>Hai dòng trễ đứng đầu, còn lại theo lớp rồi tên.</b> Mỗi dòng là một ô điểm: một học viên × một bài × một kỹ năng Hà được phân công. "Lần nhập đầu" là cột mới của ô điểm: lần sửa sau (Lê Minh Anh sửa 26/09) không làm ô thành trễ, nên giáo viên không ngại sửa điểm sai. Ô đã quá hạn mà vẫn chưa nhập (Tô Minh Châu) tính là trễ, số ngày đếm tới hôm nay (câu 1 bên dưới). Dấu tích 12 px vẽ bằng SVG; đỏ chỉ đánh dấu từng ô trễ, không tô cả giáo viên. Tuần viết mã, chỉ hạn và ngày nhập mới viết ngày. Mọi ô khác mở panel cùng khuôn: Case → danh sách Case (hạn · ngày xác nhận / ngày ghi), kết quả môn → danh sách học viên (đạt / chưa đạt), vi phạm → danh sách vi phạm (hạn · ngày xử lý), bàn giao → danh sách lệnh chuyển (hạn · ngày xác nhận), "2 lớp" → danh sách lớp.</p>
+  <p class="why"><b>Hai dòng trễ đứng đầu, còn lại theo lớp rồi tên.</b> Mỗi dòng là một ô điểm: một học viên × một bài × một kỹ năng Hà được phân công. "Lần nhập đầu" là cột mới của ô điểm: lần sửa sau (Lê Minh Anh sửa 26/09) không làm ô thành trễ, nên giáo viên không ngại sửa điểm sai. Ô đã quá hạn mà vẫn chưa nhập (Tô Minh Châu) tính là trễ, số ngày đếm tới hôm nay (đã chốt). Dấu tích 12 px vẽ bằng SVG; đỏ chỉ đánh dấu từng ô trễ, không tô cả giáo viên. Tuần viết mã, chỉ hạn và ngày nhập mới viết ngày. <b>Chỉ ô Chấm điểm mở panel này</b>, vì không trang nào có sẵn danh sách "lần nhập đầu so với hạn". Các ô khác mở trang liên quan đã lọc sẵn (cột "Bấm số mở" ở bảng định nghĩa), nơi Quản lý làm tiếp được ngay.</p>
 </section>
 
 <!-- ====================================================== D. ĐIỆN THOẠI -->
@@ -581,12 +589,11 @@ table.def{min-width:900px;table-layout:fixed}
         <span class="sub">2 lớp · 22 HV</span>
         <div class="dl">
           <div class="dl-row"><span>Chấm điểm đúng hạn</span><span class="v"><button class="so" type="button">18/20</button><small>90%</small></span></div>
-          <div class="dl-row"><span>Xác nhận nguyên nhân đúng hạn</span><span class="v"><button class="so" type="button">5/6</button><small>83%</small></span></div>
           <div class="dl-row"><span>Ghi kết quả PA đúng hạn</span><span class="v"><button class="so" type="button">7/8</button><small>88%</small></span></div>
-          <div class="dl-row"><span>PA do GV thêm có tiến bộ</span><span class="v"><button class="so" type="button">3/4</button><small>mẫu nhỏ</small></span></div>
-          <div class="dl-row"><span>Kết quả L · đạt kỳ vọng</span><span class="v"><button class="so" type="button">12/19</button><small>63%</small></span></div>
-          <div class="dl-row"><span>Vi phạm xử lý đúng hạn</span><span class="v"><button class="so" type="button">4/5</button><small>80%</small></span></div>
-          <div class="dl-row"><span>Bàn giao đúng hạn</span><span class="v"><button class="so" type="button">2/2</button><small>mẫu nhỏ</small></span></div>
+          <div class="dl-row"><span>Xử lý vi phạm đúng hạn</span><span class="v"><button class="so" type="button">4/5</button><small>80%</small></span></div>
+          <div class="dl-row"><span>PA hiệu quả</span><span class="v"><button class="so" type="button">3/4</button><small>mẫu nhỏ</small></span></div>
+          <div class="dl-row"><span>Kết quả L · đạt kỳ vọng</span><span class="v"><button class="so" type="button">12/19</button><small>63%</small><span class="kq vua" aria-hidden="true"><i style="width:63%"></i></span></span></div>
+          <div class="dl-row"><span>HV tiến bộ <span class="de">đề xuất</span></span><span class="v"><button class="so" type="button">10/15</button><small>67%</small></span></div>
         </div>
       </div>
       <span class="small muted">+ 6 giáo viên nữa</span>
@@ -598,42 +605,48 @@ table.def{min-width:900px;table-layout:fixed}
 <!-- ====================================================== ĐỊNH NGHĨA -->
 <section class="screen" aria-labelledby="h-def">
   <h2 id="h-def">Định nghĩa từng cột</h2>
-  <p class="lead">Cùng nội dung với ⓘ trên đầu cột. Khoảng thời gian tính theo <b>hạn</b> của mục (hoặc tuần thi, với điểm và kết quả), không theo ngày làm, để mỗi mục chỉ rơi vào đúng một khoảng. Cột cuối cho biết web đã có dữ liệu hay cần ghi thêm từ nay (DB reset trước khi dùng thật nên tính chuẩn từ đầu).</p>
+  <p class="lead">Cùng nội dung với chú thích nổi trên tên cột. Khoảng thời gian tính theo <b>hạn</b> của mục (hoặc tuần thi, với điểm và kết quả), không theo ngày làm, để mỗi mục chỉ rơi vào đúng một khoảng. Cột "Dữ liệu" cho biết web đã có hay cần ghi thêm từ nay (DB reset trước khi dùng thật nên tính chuẩn từ đầu). Cột cuối là nơi bấm số dẫn tới: trang › tab · bộ lọc.</p>
   <div class="tbl-wrap" role="region" aria-label="Định nghĩa cột" tabindex="0"><table class="def">
-    <colgroup><col style="width:17%"><col style="width:25%"><col style="width:23%"><col style="width:14%"><col style="width:21%"></colgroup>
-    <thead><tr><th>Cột</th><th>Một mục là (mẫu số)</th><th>Tử số: đúng / đạt khi</th><th>Vào khoảng theo</th><th>Dữ liệu</th></tr></thead>
+    <colgroup><col style="width:13%"><col style="width:21%"><col style="width:16%"><col style="width:10%"><col style="width:17%"><col style="width:23%"></colgroup>
+    <thead><tr><th>Cột</th><th>Một mục là (mẫu số)</th><th>Tử số: đúng / đạt khi</th><th>Vào khoảng theo</th><th>Dữ liệu</th><th>Bấm số mở</th></tr></thead>
     <tbody>
-      <tr><td>Chấm điểm đúng hạn</td><td>Ô điểm (HV × bài × kỹ năng) GV được phân công lúc tới hạn; bỏ vắng, huỷ, "không có bài", ô chưa tới hạn chưa nhập</td><td>Lần nhập đầu ≤ hạn nhập của ô</td><td>Tuần thi của ô</td><td><span class="moi">Cần thêm</span>: thời điểm <b>nhập lần đầu</b> (hiện chỉ lưu lần sửa cuối)</td></tr>
-      <tr><td>Xác nhận nguyên nhân đúng hạn</td><td>Case tự tạo GV phụ trách, có hạn xác nhận</td><td>Lần xác nhận nguyên nhân đầu tiên ≤ hạn</td><td>Hạn xác nhận</td><td><span class="moi">Cần thêm</span>: thời điểm <b>xác nhận nguyên nhân lần đầu</b> (sửa nguyên nhân hiện xoá dòng cũ, mất ngày)</td></tr>
-      <tr><td>Ghi kết quả PA đúng hạn</td><td>Mỗi lần phải ghi kết quả PA (chu kỳ theo dõi) ở Case GV phụ trách</td><td>Ngày ghi ≤ hạn chu kỳ</td><td>Hạn chu kỳ</td><td>Có sẵn (hạn chu kỳ, ngày ghi)</td></tr>
-      <tr><td>PA do GV thêm có tiến bộ</td><td>PA GV tự thêm (không phải PA điền sẵn theo quy chế, không PA bổ trợ) đã có kết quả cuối</td><td>Kết quả cuối nhóm "cải thiện", như Hiệu quả PA</td><td>Ngày ghi kết quả cuối</td><td>Có sẵn</td></tr>
-      <tr><td>Kết quả môn mình dạy</td><td>HV × bài có điểm môn đó, ở lớp GV dạy môn đó lúc thi</td><td>FT: đạt kỳ vọng · Lớp thường: từ 70%</td><td>Tuần thi</td><td>Có sẵn (phân công có ngày bắt đầu, kết thúc)</td></tr>
-      <tr><td>Vi phạm xử lý đúng hạn</td><td>Vi phạm thành "Cần xử lý" ở lớp GV làm GVCN</td><td>Xác nhận xử lý hoặc gửi QL duyệt ≤ hạn xử lý</td><td>Hạn xử lý</td><td><span class="moi">Cần thêm</span>: <b>hạn xử lý chốt</b> lúc xử lý (hạn hiện chỉ suy ra lúc xem)</td></tr>
-      <tr><td>Bàn giao đúng hạn</td><td>HV có lệnh chuyển ở lớp nguồn GV làm GVCN</td><td>GVCN xác nhận bàn giao ≤ hạn (3 ngày); QL xác nhận thay = không</td><td>Hạn của GVCN</td><td>Có sẵn</td></tr>
-      <tr><td>Đang dạy <span class="de">đề xuất</span></td><td>Lớp thuộc khung có phân công GV · HV các lớp đó</td><td>—</td><td>Cuối khoảng</td><td>Có sẵn</td></tr>
+      <tr><td>Đang dạy <span class="de">đề xuất</span></td><td>Lớp thuộc khung có phân công GV · HV các lớp đó</td><td>—</td><td>Cuối khoảng</td><td>Có sẵn</td><td>Hồ sơ giáo viên › khối <b>Lớp đang dạy</b></td></tr>
+      <tr><td>Chấm điểm</td><td>Ô điểm (HV × bài × kỹ năng) GV được phân công lúc tới hạn; bỏ vắng, huỷ, "không có bài", ô chưa tới hạn chưa nhập</td><td>Lần nhập đầu ≤ hạn nhập của ô</td><td>Tuần thi của ô</td><td><span class="moi">Cần thêm</span>: thời điểm <b>nhập lần đầu</b> (hiện chỉ lưu lần sửa cuối)</td><td><b>Panel danh sách ô điểm</b> (màn C) · chân panel có "Mở Lịch Test ›"</td></tr>
+      <tr><td>Ghi kết quả PA</td><td>Mỗi lần phải ghi kết quả PA (tuần theo dõi) ở Case GV phụ trách</td><td>Ngày ghi ≤ hạn tuần đó</td><td>Hạn ghi</td><td>Có sẵn (hạn, ngày ghi)</td><td>Công việc › <b>Việc học viên</b> · Việc của ai = GV đó · nhóm Case học thuật</td></tr>
+      <tr><td>Xử lý vi phạm <span class="muted" style="font-weight:400">(GVCN)</span></td><td>Vi phạm thành "Cần xử lý" ở lớp GV làm GVCN</td><td>Xác nhận xử lý hoặc gửi QL duyệt ≤ hạn xử lý</td><td>Hạn xử lý</td><td><span class="moi">Cần thêm</span>: <b>hạn xử lý chốt</b> lúc xử lý (hạn hiện chỉ suy ra lúc xem)</td><td>Hồ sơ lớp GV làm GVCN › tab <b>Ý thức &amp; Phối hợp</b> · GVCN nhiều lớp: Tổng quan › Phân tích › Ý thức · lọc lớp</td></tr>
+      <tr><td>PA hiệu quả</td><td>PA GV tự thêm (không PA điền sẵn theo quy chế, không PA bổ trợ) đã có kết quả cuối</td><td>Kết quả cuối nhóm "cải thiện", như Hiệu quả PA</td><td>Ngày ghi kết quả cuối</td><td>Có sẵn</td><td>Tổng quan › Phân tích › <b>Hiệu quả PA</b> · cùng khung, khoảng · <span class="moi">cần thêm</span> lọc giáo viên</td></tr>
+      <tr><td>Kết quả môn mình dạy</td><td>HV × bài có điểm môn đó, ở lớp GV dạy môn đó lúc thi</td><td>FT: đạt kỳ vọng · Lớp thường: từ 70%</td><td>Tuần thi</td><td>Có sẵn (phân công có ngày bắt đầu, kết thúc)</td><td>Hồ sơ lớp › tab <b>Phân tích lớp</b>, dòng kỹ năng đó · dạy môn đó ở nhiều lớp: hồ sơ giáo viên › khối Kết quả gần nhất · <span class="moi">cần thêm</span> tham số mở sẵn dòng kỹ năng</td></tr>
+      <tr><td>HV tiến bộ <span class="de">đề xuất</span></td><td>HV × kỹ năng GV dạy, bài có tuần thi trong khoảng, em đã có điểm kỹ năng đó ở bài trước (chỉ Fast Track)</td><td>Điểm cao hơn bài trước</td><td>Tuần thi</td><td>Có sẵn (điểm từng bài; Hành trình đã so "so với lần trước")</td><td>Hồ sơ lớp › tab <b>Phân tích lớp</b> (kỹ năng × MT1…MT5, thấy lên hay xuống)</td></tr>
     </tbody>
   </table></div>
+  <p class="small muted">Không dẫn tới "Danh sách Case": góc nhìn đó đang bỏ trong đợt này.</p>
 </section>
 
 <!-- ====================================================== ĐỀ XUẤT + CÂU HỎI -->
 <section class="screen" aria-labelledby="h-q">
-  <h2 id="h-q">Đề xuất và câu cần chủ sản phẩm quyết</h2>
+  <h2 id="h-q">Đề xuất và đã chốt</h2>
   <div class="grid2">
     <div class="sticky-note">
-      <b>Đề xuất thêm (gạch dòng nào không đồng ý)</b>
+      <b>Đề xuất (gạch dòng nào không đồng ý)</b>
       <ol class="dq">
+        <li>Cột <b>HV tiến bộ</b> <span class="de">đề xuất</span> (Fast Track): bao nhiêu em có điểm kỹ năng giáo viên dạy cao hơn bài trước; "đạt kỳ vọng" nói em đang ở đâu, cột này nói em có đi lên không. Tính từ điểm đã có.</li>
+        <li>Đã cân nhắc, <b>không thêm</b> cột "Case quá hạn": đó là số của hôm nay, không theo khoảng, và đã có ở bảng giáo viên chi nhánh (mockup 21, màn D). Lớp thường cũng không thêm HV tiến bộ: chỉ có Giữa khoá → Cuối khoá.</li>
         <li>Cột <b>Đang dạy</b> (lớp · HV) làm ngữ cảnh khối lượng.</li>
         <li>Ô ghi <b>n/m</b> trước, % nhỏ bên dưới; dưới 5 mục thay % bằng <b>mẫu nhỏ</b>.</li>
         <li><b>"—"</b> = không áp dụng; <b>"không có"</b> = áp dụng nhưng chưa có mục.</li>
-        <li>Panel danh sách có công tắc <b>Tất cả · Trễ</b>, dòng trễ đứng đầu.</li>
+        <li>Panel Chấm điểm có công tắc <b>Tất cả · Trễ</b>, dòng trễ đứng đầu.</li>
         <li>Khoảng tối đa 13 tuần (một quý) để bảng mở nhanh; "theo tháng" chỉ là lối tắt của 4–5 tuần.</li>
       </ol>
     </div>
     <div class="sticky-note">
-      <b>Cần chủ sản phẩm quyết</b>
+      <b>Đã chốt</b>
       <ol class="dq">
-        <li><b>Việc đã quá hạn mà chưa làm</b> (chưa nhập điểm, chưa xác nhận…) có tính <b>trễ</b> ngay không? A. Có, đếm ngày tới hôm nay · B. Chỉ tính khi đã làm. <b>Khuyên A</b>: chọn B thì người để trễ lâu lại trông tốt hơn.</li>
-        <li><b>Bàn giao đúng hạn</b> có tính cả phần GVBM (ghi môn mình trong 2 ngày) không? A. Chỉ GVCN (như Q31-2) · B. Thêm phần GVBM vào cùng cột, cột rời nhóm "Chỉ GVCN". <b>Khuyên B</b>: GVBM trễ thường là lý do GVCN trễ.</li>
+        <li><b>Việc đã quá hạn mà chưa làm tính trễ</b>, đếm ngày tới hôm nay (phương án A).</li>
+        <li><b>Bỏ cột</b> "Xác nhận nguyên nhân đúng hạn" và "Bàn giao đúng hạn" (chủ sản phẩm 01/10).</li>
+        <li>Tên cột 2–3 chữ; cách tính trong chú thích nổi khi rê chuột hoặc Tab tới.</li>
+        <li>Chỉ ô kết quả có thanh màu nhạt (đỏ · vàng · xanh), số luôn hiện; cột việc giữ một màu (chủ sản phẩm 01/10).</li>
+        <li>Lớp thường: bốn cột kết quả cố định <b>L · R · W (G+V) · S (P)</b>; Case, PA gọn thành một cột mờ.</li>
+        <li>Bấm số mở trang liên quan đã lọc; riêng Chấm điểm mở panel (màn C).</li>
       </ol>
     </div>
   </div>
