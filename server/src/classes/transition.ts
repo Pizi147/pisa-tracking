@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  PERMISSIONS, PROGRAMME_TEMPLATES, kiemDongChuyenTiep, kyHieuLop, soSanhLop, tachSoLop, luatDoiLop, nextStepsAfter, programmeOf, tuanKhoa,
+  PERMISSIONS, PROGRAMME_TEMPLATES, kiemDongChuyenTiep, tuanChonDuoc, kyHieuLop, soSanhLop, tachSoLop, luatDoiLop, nextStepsAfter, programmeOf, tuanKhoa,
   type DongChuyenTiep, type Huong, type LoaiLop, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, isIsoDate, notFound } from '../util.ts';
@@ -52,7 +52,9 @@ export function transitionPlan(p: Principal, classId: number) {
     ...(from ? [{ code: from, name: PROGRAMME_TEMPLATES[from].name, huong: 'hoc_lai' as Huong }] : []),
     ...steps.map((c) => ({ code: c, name: PROGRAMME_TEMPLATES[c].name, huong: (c === 'FT' ? 'fast_track' : 'len_lop') as Huong })),
   ];
-  const optionCodes = [...new Set(options.map((o) => o.code))];
+  /* PR-CT (màn I): lớp FT chuyển giữa lộ trình — lớp đích là mọi lớp FT còn chạy (mọi lộ trình), không lọc "quá nửa". */
+  const ft = !!cls.is_fast_track;
+  const optionCodes = ft ? ['FT'] : [...new Set(options.map((o) => o.code))];
 
   const students = conn
     .prepare(
@@ -72,6 +74,17 @@ export function transitionPlan(p: Principal, classId: number) {
   const loTrinhTiepMap = tiepTheoTheoHocVien([classId]);
   /* B9: kết quả gần nhất của từng em (cột Kết quả) — MỘT lần `standingFor` cho cả lớp. */
   const ketQua = sids.length ? standingFor(sids) : new Map();
+
+  /* PR-CT: lệnh chuyển lớp đang chờ của cả lớp — MỘT câu (chỉ mục duy nhất một phần: mỗi em tối đa một lệnh `cho`). */
+  const lenhCho = new Map((conn.prepare(
+    `SELECT id, student_id, huong, lop_dich_id, tuan_bat_dau, muc_tieu, khong_cam_ket, ngay_thi, ngay_xem_lai, ly_do, khac_goi_y, loi
+       FROM lenh_chuyen_lop WHERE lop_nguon_id = ? AND trang_thai = 'cho'`,
+  ).all(classId) as any[]).map((l) => [l.student_id as number, {
+    id: l.id as number, huong: l.huong as string, lopDichId: (l.lop_dich_id ?? null) as number | null, tuan: l.tuan_bat_dau as string,
+    mucTieu: l.khong_cam_ket ? 'KCK' : (l.muc_tieu ?? null) as number | 'KCK' | null, ngayThi: (l.ngay_thi ?? null) as string | null,
+    ngayXemLai: (l.ngay_xem_lai ?? null) as string | null, lyDo: (l.ly_do ?? null) as string | null, khacGoiY: !!l.khac_goi_y,
+    loi: (l.loi ?? null) as string | null,
+  }]));
 
   /* Case đang mở + bài chưa làm — đọc theo lô, không hỏi lại theo từng em. */
   const caseRows = sids.length
@@ -97,7 +110,7 @@ export function transitionPlan(p: Principal, classId: number) {
   const candidateRows = optionCodes.length
     ? (conn
       .prepare(
-        `SELECT c.id, c.code, c.programme_code, c.is_fast_track,
+        `SELECT c.id, c.code, c.programme_code, c.is_fast_track, c.route,
                 (SELECT COUNT(*) FROM enrollments e WHERE e.class_id = c.id AND e.status='active') AS n
            FROM classes c
           WHERE c.branch_id = ? AND c.status = 'active' AND c.id != ?
@@ -111,14 +124,14 @@ export function transitionPlan(p: Principal, classId: number) {
   const candidates = candidateRows
     .filter((c) => {
       const pr = candidateProgress.get(c.id);
-      return !pr || pr.totalWeeks === null || pr.currentWeek === null || pr.currentWeek <= Math.ceil(pr.totalWeeks / 2);
+      return ft || !pr || pr.totalWeeks === null || pr.currentWeek === null || pr.currentWeek <= Math.ceil(pr.totalWeeks / 2);
     })
     .map((c) => {
       const pr = candidateProgress.get(c.id);
       return {
         id: c.id, code: c.code, programmeCode: c.programme_code as ProgrammeCode | null,
         programmeName: c.programme_code ? PROGRAMME_TEMPLATES[c.programme_code as ProgrammeCode]?.name ?? null : null,
-        ft: !!c.is_fast_track,
+        ft: !!c.is_fast_track, route: (c.route ?? null) as string | null,
         tuan: pr?.currentWeek && pr.totalWeeks && pr.currentWeek >= 1 ? tuanKhoa(pr.currentWeek, pr.totalWeeks) : null,
         studentCount: c.n as number,
       };
@@ -144,7 +157,11 @@ export function transitionPlan(p: Principal, classId: number) {
     options,
     goiYLopMoi,
     candidates,
-    tuanKetThuc: progress.finalWeekStart,
+    /** Tuần Cuối khoá (đổi tên từ `tuanKetThuc` cũ) và tuần kết thúc = tuần học cuối (Q13): lớp thường tới hết tuần này mà còn em chưa có lệnh thì Báo lên. */
+    tuanCuoiKhoa: progress.finalWeekStart,
+    tuanKetThuc: progress.startWeekStart && progress.totalWeeks ? addDays(progress.startWeekStart, (progress.totalWeeks - 1) * 7) : null,
+    cheDo: (ft ? 'ft' : 'thuong') as 'ft' | 'thuong',
+    tuanChon: tuanChonDuoc(demoToday()),
     students: students.map((s) => ({
       id: s.id, studentCode: s.student_code, fullName: s.full_name,
       cycleId: s.cycle_id ?? null, target: s.target_score ?? null,
@@ -152,6 +169,7 @@ export function transitionPlan(p: Principal, classId: number) {
       ketQua: ketQua.get(s.id) ?? null,
       caseMo: { tong: caseByStudent.get(s.id) ?? 0, seDongNeuSangFt: caseByStudent.get(s.id) ?? 0 },
       baiChuaLam: s.cycle_id ? (baiChuaLamByCycle.get(s.cycle_id) ?? 0) : 0,
+      lenh: lenhCho.get(s.id) ?? null,
     })),
     /** Lớp này đã từng chuyển tiếp sang đâu chưa — để không mở hai lớp kế tiếp cho một lớp. */
     alreadyLinked: (conn
@@ -189,11 +207,12 @@ export type TransitionInput = {
  * `apDungBaoLuuCaLop`; `dung_hoc` → Kết thúc học (ngoại lệ đi từng em, hiếm gặp); `xep_sau` →
  * chỉ ghi dự định.
  */
-export function applyTransition(p: Principal, input: TransitionInput) {
+export function applyTransition(p: Principal, input: TransitionInput, o?: { daDuyet?: true }) {
   const conn = db();
   const from = conn.prepare('SELECT * FROM classes WHERE id = ?').get(input.fromClassId) as any;
   if (!from) throw notFound('Không tìm thấy lớp');
-  require_(p, PERMISSIONS.CLASS_EDIT, { classId: input.fromClassId }, 'Bạn không có quyền chuyển tiếp lớp này.');
+  /* PR-CT: `daDuyet` chỉ do `thiHanhLenhDenHan` truyền — lệnh đã được kiểm quyền lúc ra; đường web cũ không tới đây nữa. */
+  if (!o?.daDuyet) require_(p, PERMISSIONS.CLASS_EDIT, { classId: input.fromClassId }, 'Bạn không có quyền chuyển tiếp lớp này.');
   if (!isIsoDate(input.effectiveDate)) throw badRequest('Ngày chuyển không hợp lệ.');
 
   const maTu = (from.programme_code ?? null) as ProgrammeCode | null;

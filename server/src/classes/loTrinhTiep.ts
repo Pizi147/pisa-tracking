@@ -9,6 +9,7 @@ import { can, require_, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { classProgress } from './schedule.ts';
 import { standingFor } from '../students/standing.ts';
+import { coTheRaLenh } from './quyenChuyenLop.ts';
 
 /**
  * LỘ TRÌNH TIẾP THEO (PR-LT, Q1, §3.9.1) — dự định của một em SAU lớp đang học, ghi trước khi
@@ -183,7 +184,7 @@ export function demChuaLoTrinh(classIds: number[]): Map<number, number> {
 export function lopHocCua(p: Principal, studentId: number, current: any): {
   tiepTheo: string | null; nhacLoTrinh: boolean; chiXem: boolean;
   quyen: {
-    ghiLoTrinhTiep: boolean; chuyenLop: boolean; tamDung: boolean; quayLai: boolean;
+    ghiLoTrinhTiep: boolean; chuyenLop: boolean; deXuatChuyenLop: boolean; tamDung: boolean; quayLai: boolean;
     ketThuc: boolean; luuTru: boolean; boLuuTru: boolean;
   };
 } {
@@ -194,7 +195,7 @@ export function lopHocCua(p: Principal, studentId: number, current: any): {
     return {
       tiepTheo: null, nhacLoTrinh: false, chiXem: true,
       quyen: {
-        ghiLoTrinhTiep: false, chuyenLop: false, tamDung: false, quayLai: false, ketThuc: false, luuTru: false,
+        ghiLoTrinhTiep: false, chuyenLop: false, deXuatChuyenLop: false, tamDung: false, quayLai: false, ketThuc: false, luuTru: false,
         boLuuTru: can(p, PERMISSIONS.PLAN_WEEK, { studentId }),
       },
     };
@@ -221,7 +222,9 @@ export function lopHocCua(p: Principal, studentId: number, current: any): {
     tiepTheo, nhacLoTrinh, chiXem: false,
     quyen: {
       ghiLoTrinhTiep: laLopThuong && coTheChuyenLop,
-      chuyenLop: coTheChuyenLop,
+      /* PR-CT: Quản lý ra lệnh (`Chuyển lớp…`); GVCN đề xuất (`Đề xuất chuyển lớp…`). */
+      chuyenLop: !!current && coTheRaLenh(p, current.class_id),
+      deXuatChuyenLop: coTheChuyenLop && !coTheRaLenh(p, current.class_id),
       tamDung: can(p, PERMISSIONS.STUDENT_EDIT, { studentId }),
       quayLai: can(p, PERMISSIONS.STUDENT_EDIT, { studentId }),
       ketThuc: can(p, PERMISSIONS.STUDENT_EDIT, { studentId }),

@@ -1,0 +1,260 @@
+import { chenNhieuDong, db, theoLo, tx } from '../db.ts';
+import {
+  NORMAL_LADDER, PERMISSIONS, coPhieu, canLopDich, hanBanGiao, kiemDongChuyenTiep, kiemDongLenh, tuanLich,
+  type HuongLenh, type MucTieuLenh, type ProgrammeCode,
+} from '../../../shared/domain/index.ts';
+import { badRequest, conflict, notFound, nowIso } from '../util.ts';
+import { require_, type Principal } from '../permissions.ts';
+import { demoToday } from '../demoConfig.ts';
+import { notify, writeAudit } from '../platform/audit.ts';
+import { coTheRaLenh } from './quyenChuyenLop.ts';
+
+/**
+ * LỆNH CHUYỂN LỚP do QUẢN LÝ quyết (PR-CT, §3.1f Q30-1): em nào · lớp đích nào · tuần bắt đầu (Thứ Hai, từ tuần sau trở đi).
+ * Task 3: ra / sửa / huỷ lệnh. Tới Thứ Hai tuần bắt đầu mới thi hành (Task 4), bằng đúng luật lộ trình đang có.
+ */
+
+export type DongLenhVao = {
+  studentId: number; huong: HuongLenh; toClassId?: number | null; tuan?: string | null;
+  mucTieu?: MucTieuLenh | null; ngayThi?: string | null; lyDo?: string | null; khacGoiY?: boolean; ngayXemLai?: string | null;
+};
+export type BoiCanhLenh = 'cuoi-khoa' | 'giua-khoa';
+
+/** Hướng nào dùng được ở bối cảnh nào (Q3, Q4): hết khoá lớp thường dùng len_lop/hoc_lai; giữa khoá (một em, FT) dùng chuyen_lop. */
+const HUONG_THEO_BOI_CANH: Record<BoiCanhLenh, readonly HuongLenh[]> = {
+  'cuoi-khoa': ['len_lop', 'hoc_lai', 'fast_track', 'bao_luu', 'dung_hoc'],
+  'giua-khoa': ['chuyen_lop', 'fast_track', 'bao_luu', 'dung_hoc'],
+};
+
+const CUNG_LOP_CHI_NHANH = 'Chỉ Quản lý chi nhánh của lớp này mới ra lệnh chuyển lớp.';
+
+/** GVCN đang hiệu lực + (khi `ql`) mọi Quản lý của các chi nhánh — cho thông báo. Hai câu cho cả lô lớp. */
+export function nguoiNhanCuaLop(lopIds: readonly number[], chiNhanhQl: readonly number[] = []): Map<number, Set<number>> {
+  const conn = db();
+  const out = new Map<number, Set<number>>();
+  const them = (k: number, u: number) => { if (!out.has(k)) out.set(k, new Set()); out.get(k)!.add(u); };
+  theoLo([...new Set(lopIds)], (lo, ph) => {
+    for (const r of conn.prepare(`SELECT class_id, user_id FROM teacher_assignments WHERE class_id IN (${ph}) AND is_core = 1 AND status = 'active'`).all(...lo) as any[]) {
+      them(r.class_id, r.user_id);
+    }
+  });
+  if (chiNhanhQl.length) {
+    const ql = conn.prepare(`SELECT DISTINCT ur.user_id, ur.branch_id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'manager' AND ur.status = 'active'`).all() as any[];
+    for (const lop of lopIds) {
+      const cn = (conn.prepare('SELECT branch_id FROM classes WHERE id = ?').get(lop) as any)?.branch_id;
+      if (!chiNhanhQl.includes(cn)) continue;
+      for (const q of ql) if (q.branch_id === null || q.branch_id === cn) them(lop, q.user_id);
+    }
+  }
+  return out;
+}
+
+/**
+ * RA LỆNH cho nhiều em một lượt (panel cả lớp B/I và panel một em D đều gọi). Một tx: dòng lỗi vào `failed`, dòng đúng ghi THEO LÔ bằng một
+ * câu upsert — em đã có lệnh `cho` thì SỬA lệnh đó, không lệnh thứ hai (Q7, chỉ mục duy nhất một phần).
+ */
+export function raLenh(p: Principal, v: {
+  lopNguonId: number; boiCanh: BoiCanhLenh; tuanChung: string | null; dongs: DongLenhVao[]; tuYeuCauId?: number | null;
+}): { ok: number[]; failed: { studentId: number; message: string }[] } {
+  const conn = db();
+  const nguon = conn.prepare('SELECT * FROM classes WHERE id = ?').get(v.lopNguonId) as any;
+  if (!nguon) throw notFound('Không tìm thấy lớp');
+  require_(p, PERMISSIONS.CLASS_EDIT, { classId: v.lopNguonId }, CUNG_LOP_CHI_NHANH);
+  if (!v.dongs?.length) throw badRequest('Chưa chọn học viên nào để chuyển.');
+
+  return tx(() => {
+    const homNay = demoToday();
+    const nguonFt = !!nguon.is_fast_track;
+    const maTu = (nguon.programme_code ?? null) as ProgrammeCode | null;
+    /* Tập em hợp lệ = đúng em còn ghi danh `active` ở lớp NGUỒN (như `applyTransition`). */
+    const hopLe = new Set((conn.prepare(
+      `SELECT s.id FROM enrollments e JOIN students s ON s.id = e.student_id
+        WHERE e.class_id = ? AND e.status = 'active' AND s.status = 'active' AND s.archived_at IS NULL`,
+    ).all(v.lopNguonId) as any[]).map((r) => r.id as number));
+    const dongs = [...new Map(v.dongs.map((d) => [d.studentId, d])).values()];
+    const daCo = new Map<number, any>();
+    theoLo(dongs.map((d) => d.studentId), (lo, ph) => {
+      for (const r of conn.prepare(
+        `SELECT student_id, lop_nguon_id, tuan_bat_dau FROM lenh_chuyen_lop WHERE trang_thai = 'cho' AND student_id IN (${ph})`,
+      ).all(...lo) as any[]) daCo.set(r.student_id, r);
+    });
+    /* Lớp đích đọc THEO LÔ: đang hoạt động, khác lớp nguồn. */
+    const dich = new Map<number, any>();
+    theoLo([...new Set(dongs.map((d) => d.toClassId).filter((x): x is number => !!x))], (lo, ph) => {
+      for (const c of conn.prepare(
+        `SELECT id, code, programme_code, is_fast_track, branch_id FROM classes WHERE id IN (${ph}) AND status = 'active' AND id != ?`,
+      ).all(...lo, v.lopNguonId) as any[]) dich.set(c.id, c);
+    });
+
+    const failed: { studentId: number; message: string }[] = [];
+    const hang: any[] = [];
+    const daSua = new Set<number>();
+    for (const d of dongs) {
+      const loi = (message: string) => { failed.push({ studentId: d.studentId, message }); };
+      if (!hopLe.has(d.studentId)) { loi('Học viên không thuộc lớp này.'); continue; }
+      if (!HUONG_THEO_BOI_CANH[v.boiCanh].includes(d.huong)) { loi('Hướng này không dùng được ở bối cảnh chuyển lớp này.'); continue; }
+      const canDich = canLopDich(d.huong);
+      const lopDich = canDich && d.toClassId ? dich.get(d.toClassId) ?? null : null;
+      if (canDich && d.toClassId && !lopDich) { loi('Lớp đích không hợp lệ.'); continue; }
+      const tuan = d.tuan ?? v.tuanChung;
+      const cu = daCo.get(d.studentId);
+      if (cu) {
+        if (cu.lop_nguon_id !== v.lopNguonId) { loi('Em đã có lệnh chuyển ở lớp khác.'); continue; }
+        if (homNay >= cu.tuan_bat_dau) { loi('Lệnh đã tới tuần bắt đầu — không sửa được.'); continue; }
+      }
+      const sai = kiemDongLenh({
+        huong: d.huong, lopDichId: lopDich?.id ?? null, lopDichFt: !!lopDich?.is_fast_track, nguonFt, tuan: tuan ?? null, homNay,
+        lyDo: d.lyDo ?? null, khacGoiY: !!d.khacGoiY, mucTieu: d.mucTieu ?? null, ngayXemLai: d.ngayXemLai ?? null,
+      });
+      if (sai) { loi(sai); continue; }
+      if (v.boiCanh === 'cuoi-khoa' && (d.huong === 'len_lop' || d.huong === 'hoc_lai' || d.huong === 'fast_track')) {
+        /* Hướng ↔ lớp đích: dùng lại luật cũ; Target/lý do đã kiểm ở trên nên đưa giá trị đã hợp lệ. */
+        const lech = kiemDongChuyenTiep({
+          huong: d.huong, toClassId: lopDich.id, toClass: { ma: (lopDich.programme_code ?? null) as ProgrammeCode | null, ft: !!lopDich.is_fast_track },
+          mucTieu: 5,
+        }, { maTu });
+        if (lech) { loi(lech); continue; }
+      } else if (d.huong === 'fast_track' && !lopDich.is_fast_track) { loi('Lớp đích phải là Fast Track'); continue; }
+      const han = coPhieu(d.huong) ? hanBanGiao(homNay) : null;
+      const kck = d.mucTieu === 'KCK';
+      if (cu) daSua.add(d.studentId);
+      hang.push([
+        d.studentId, v.lopNguonId, lopDich?.id ?? null, d.huong, v.boiCanh, tuan, kck || d.mucTieu == null ? null : d.mucTieu, kck ? 1 : 0,
+        d.ngayThi ?? null, d.huong === 'bao_luu' ? d.ngayXemLai ?? null : null, (d.lyDo ?? '').trim() || null, d.khacGoiY ? 1 : 0,
+        p.userId, homNay, v.tuYeuCauId ?? null, 'cho', han?.gvbm ?? null, han?.gvcn ?? null, nowIso(), nowIso(),
+      ]);
+    }
+
+    if (hang.length) {
+      chenNhieuDong(
+        `INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, lop_dich_id, huong, boi_canh, tuan_bat_dau, muc_tieu, khong_cam_ket, ngay_thi,
+           ngay_xem_lai, ly_do, khac_goi_y, nguoi_ra_lenh, ngay_ra_lenh, tu_yeu_cau_id, trang_thai, han_gvbm, han_gvcn, tao_luc, sua_luc)`,
+        hang,
+        ` ON CONFLICT (student_id) WHERE trang_thai = 'cho' DO UPDATE SET
+           lop_dich_id = excluded.lop_dich_id, huong = excluded.huong, boi_canh = excluded.boi_canh, tuan_bat_dau = excluded.tuan_bat_dau,
+           muc_tieu = excluded.muc_tieu, khong_cam_ket = excluded.khong_cam_ket, ngay_thi = excluded.ngay_thi,
+           ngay_xem_lai = excluded.ngay_xem_lai, ly_do = excluded.ly_do, khac_goi_y = excluded.khac_goi_y,
+           nguoi_ra_lenh = excluded.nguoi_ra_lenh, tu_yeu_cau_id = COALESCE(excluded.tu_yeu_cau_id, lenh_chuyen_lop.tu_yeu_cau_id),
+           han_gvbm = CASE WHEN excluded.han_gvbm IS NULL THEN NULL ELSE COALESCE(lenh_chuyen_lop.han_gvbm, excluded.han_gvbm) END,
+           han_gvcn = CASE WHEN excluded.han_gvcn IS NULL THEN NULL ELSE COALESCE(lenh_chuyen_lop.han_gvcn, excluded.han_gvcn) END,
+           loi = NULL, sua_luc = excluded.sua_luc`,
+      );
+      const moi = hang.length - daSua.size;
+      const theoHuong: Record<string, number> = {};
+      for (const h of hang) theoHuong[h[3]] = (theoHuong[h[3]] ?? 0) + 1;
+      if (moi) writeAudit({ actorUserId: p.userId, action: 'lenh_chuyen.tao', entityType: 'class', entityId: nguon.id, entityLabel: nguon.code, after: { soEm: moi, theoHuong, boiCanh: v.boiCanh } });
+      if (daSua.size) writeAudit({ actorUserId: p.userId, action: 'lenh_chuyen.sua', entityType: 'class', entityId: nguon.id, entityLabel: nguon.code, after: { soEm: daSua.size } });
+      thongBaoSapNhan(p, nguon, [...new Set(hang.map((h) => h[2]).filter(Boolean))] as number[], dich, homNay);
+    }
+    return { ok: hang.map((h) => h[0] as number), failed };
+  });
+}
+
+/** Q18: MỘT thông báo "Sắp nhận" mỗi lớp đích — GVCN lớp đích + Quản lý chi nhánh đích nếu khác chi nhánh. Đếm lại từ bảng nên ra lệnh thêm cùng ngày chỉ cập nhật số. */
+function thongBaoSapNhan(p: Principal, nguon: any, lopDichIds: number[], dich: Map<number, any>, homNay: string) {
+  if (!lopDichIds.length) return;
+  const conn = db();
+  const dem = new Map<number, { n: number; tuan: string }>();
+  theoLo(lopDichIds, (lo, ph) => {
+    for (const r of conn.prepare(
+      `SELECT lop_dich_id, COUNT(*) AS n, MIN(tuan_bat_dau) AS tuan FROM lenh_chuyen_lop
+        WHERE lop_nguon_id = ? AND trang_thai = 'cho' AND lop_dich_id IN (${ph}) GROUP BY lop_dich_id`,
+    ).all(nguon.id, ...lo) as any[]) dem.set(r.lop_dich_id, { n: r.n, tuan: r.tuan });
+  });
+  const khacChiNhanh = lopDichIds.filter((id) => dich.get(id)?.branch_id !== nguon.branch_id);
+  const nhan = nguoiNhanCuaLop(lopDichIds, [...new Set(khacChiNhanh.map((id) => dich.get(id).branch_id as number))]);
+  for (const id of lopDichIds) {
+    const x = dem.get(id);
+    if (!x) continue;
+    for (const userId of nhan.get(id) ?? []) {
+      if (userId === p.userId) continue;
+      notify({
+        userId, kind: 'sap_nhan', title: `Sắp nhận ${x.n} em vào lớp ${dich.get(id).code}`,
+        body: `Từ ${nguon.code} · vào lớp từ ${tuanLich(x.tuan, homNay)}`,
+        entityType: 'class', entityId: id, dedupKey: `sap_nhan:${id}:${nguon.id}:${homNay}`, duong: `/hoc-vien/lop/${id}`,
+      });
+    }
+  }
+}
+
+function docLenh(id: number): any {
+  const l = db().prepare('SELECT * FROM lenh_chuyen_lop WHERE id = ?').get(id) as any;
+  if (!l) throw notFound('Không tìm thấy lệnh chuyển lớp');
+  return l;
+}
+
+/** Q6: sửa / huỷ chỉ khi lệnh còn `cho` VÀ hôm nay < tuần bắt đầu. Lệnh không còn `cho` → 409 (vừa thi hành / đã huỷ). */
+function kiemConSuaDuoc(l: any) {
+  if (l.trang_thai !== 'cho') throw conflict(l.trang_thai === 'huy' ? 'Lệnh đã được huỷ.' : 'Lệnh vừa được thi hành.');
+  if (demoToday() >= l.tuan_bat_dau) throw badRequest('Lệnh đã tới tuần bắt đầu — không sửa được.');
+}
+
+export function suaLenh(p: Principal, id: number, v: Partial<DongLenhVao>): void {
+  const l = docLenh(id);
+  require_(p, PERMISSIONS.CLASS_EDIT, { classId: l.lop_nguon_id }, CUNG_LOP_CHI_NHANH);
+  kiemConSuaDuoc(l);
+  const gop: DongLenhVao = {
+    studentId: l.student_id, huong: (v.huong ?? l.huong) as HuongLenh, toClassId: v.toClassId !== undefined ? v.toClassId : l.lop_dich_id,
+    tuan: v.tuan ?? l.tuan_bat_dau, mucTieu: v.mucTieu !== undefined ? v.mucTieu : l.khong_cam_ket ? 'KCK' : l.muc_tieu,
+    ngayThi: v.ngayThi !== undefined ? v.ngayThi : l.ngay_thi, lyDo: v.lyDo !== undefined ? v.lyDo : l.ly_do,
+    khacGoiY: v.khacGoiY ?? !!l.khac_goi_y, ngayXemLai: v.ngayXemLai !== undefined ? v.ngayXemLai : l.ngay_xem_lai,
+  };
+  const r = raLenh(p, { lopNguonId: l.lop_nguon_id, boiCanh: l.boi_canh, tuanChung: null, dongs: [gop] });
+  if (r.failed.length) throw badRequest(r.failed[0].message);
+}
+
+export function huyLenh(p: Principal, id: number, lyDo: string): void {
+  const l = docLenh(id);
+  require_(p, PERMISSIONS.CLASS_EDIT, { classId: l.lop_nguon_id }, CUNG_LOP_CHI_NHANH);
+  const why = String(lyDo ?? '').trim();
+  if (why.length < 3) throw badRequest('Ghi lý do huỷ lệnh.');
+  kiemConSuaDuoc(l);
+  tx(() => {
+    const conn = db();
+    const r = conn.prepare(
+      `UPDATE lenh_chuyen_lop SET trang_thai = 'huy', huy_boi = ?, huy_luc = ?, ly_do_huy = ?, sua_luc = ? WHERE id = ? AND trang_thai = 'cho'`,
+    ).run(p.userId, nowIso(), why, nowIso(), id);
+    if (!r.changes) throw conflict('Lệnh vừa được thi hành hoặc đã huỷ.');
+    const hv = conn.prepare('SELECT full_name FROM students WHERE id = ?').get(l.student_id) as any;
+    const ma = new Map((conn.prepare('SELECT id, code FROM classes WHERE id IN (?, ?)').all(l.lop_nguon_id, l.lop_dich_id ?? l.lop_nguon_id) as any[]).map((r) => [r.id as number, r.code as string]));
+    writeAudit({ actorUserId: p.userId, action: 'lenh_chuyen.huy', entityType: 'student', entityId: l.student_id, entityLabel: hv?.full_name ?? null, before: { huong: l.huong, tuan: l.tuan_bat_dau }, after: { lyDo: why } });
+    const nhan = nguoiNhanCuaLop([l.lop_nguon_id, ...(l.lop_dich_id ? [l.lop_dich_id] : [])]);
+    const tatCa = new Set([...(nhan.get(l.lop_nguon_id) ?? []), ...(l.lop_dich_id ? nhan.get(l.lop_dich_id) ?? [] : [])]);
+    for (const userId of tatCa) {
+      if (userId === p.userId) continue;
+      notify({
+        userId, kind: 'huy_lenh', title: `Huỷ lệnh chuyển lớp · ${hv?.full_name ?? 'học viên'}`,
+        body: `${ma.get(l.lop_nguon_id)}${l.lop_dich_id ? ` → ${ma.get(l.lop_dich_id)}` : ''} · ${why}`,
+        entityType: 'student', entityId: l.student_id, dedupKey: `huy_lenh:${id}`,
+      });
+    }
+  });
+}
+
+// ---------------------------------------------------------------- ranh giới API
+
+const soHoacKck = (v: unknown): MucTieuLenh | null => (v === 'KCK' ? 'KCK' : v === null || v === undefined || v === '' ? null : Number.isFinite(Number(v)) ? Number(v) : null);
+
+/** Dòng từ web/API (kiểu lỏng) → `DongLenhVao`. Web cũ còn gửi `thangThi` → `ngayThi`. */
+export function dongTuBody(x: any): DongLenhVao {
+  return {
+    studentId: Number(x?.studentId), huong: String(x?.huong ?? '') as HuongLenh, toClassId: x?.toClassId ? Number(x.toClassId) : null,
+    tuan: x?.tuan ?? null, mucTieu: soHoacKck(x?.mucTieu), ngayThi: x?.ngayThi ?? x?.thangThi ?? null,
+    lyDo: x?.lyDo ?? null, khacGoiY: x?.khacGoiY === true, ngayXemLai: x?.ngayXemLai ?? null,
+  };
+}
+
+/** Q4: panel cả lớp — lớp thường hết khoá (`cuoi-khoa`, thi hành theo lô), lớp FT giữa khoá (thi hành từng em). */
+export function boiCanhTheoLop(lopId: number): BoiCanhLenh {
+  const c = db().prepare('SELECT is_fast_track FROM classes WHERE id = ?').get(lopId) as any;
+  if (!c) throw notFound('Không tìm thấy lớp');
+  return c.is_fast_track ? 'giua-khoa' : 'cuoi-khoa';
+}
+
+/** PATCH: chỉ những khoá có trong thân yêu cầu mới ghi đè (khoá vắng = giữ giá trị cũ của lệnh). */
+export function suaTuBody(b: any): Partial<DongLenhVao> {
+  const d = dongTuBody(b ?? {});
+  const v: Record<string, unknown> = {};
+  for (const k of ['huong', 'toClassId', 'tuan', 'mucTieu', 'ngayThi', 'lyDo', 'khacGoiY', 'ngayXemLai'] as const) if (b && k in b) v[k] = d[k];
+  return v as Partial<DongLenhVao>;
+}

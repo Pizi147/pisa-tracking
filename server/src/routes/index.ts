@@ -49,6 +49,7 @@ import * as classSvc from '../classes/classes.ts';
 import * as scheduleSvc from '../classes/schedule.ts';
 import * as intakeSvc from '../classes/intake.ts';
 import * as transitionSvc from '../classes/transition.ts';
+import * as lenhSvc from '../classes/lenhChuyen.ts';
 import * as loTrinhTiepSvc from '../classes/loTrinhTiep.ts';
 import * as luatLoTrinhSvc from '../classes/luatLoTrinh.ts';
 import * as lichSuLopSvc from '../classes/lichSuLop.ts';
@@ -1390,12 +1391,30 @@ api.get('/classes/:id/transition', requireAuth, wrap((req) => {
   return transitionSvc.transitionPlan(principalOf(req), pInt(req, 'id'));
 }));
 
-/** Xác nhận chuyển tiếp: mở lớp mới (nếu có) rồi chuyển từng em sang lớp đích của em. */
+/**
+ * PR-CT (Q30-1): RA LỆNH chuyển lớp (không chuyển ngay) — Quản lý lớp nguồn quyết em nào · lớp đích · tuần bắt đầu; tới Thứ Hai đó web tự thi hành
+ * (`thiHanhLenhDenHan`). GVCN, GVBM → 403.
+ */
 api.post('/classes/:id/transition', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return transitionSvc.applyTransition(principalOf(req), {
-    ...(req.body ?? {}), fromClassId: pInt(req, 'id'),
+  const id = pInt(req, 'id');
+  const b = req.body ?? {};
+  return lenhSvc.raLenh(principalOf(req), {
+    lopNguonId: id, boiCanh: lenhSvc.boiCanhTheoLop(id), tuanChung: b.tuanChung ?? null,
+    dongs: Array.isArray(b.dongs) ? b.dongs.map(lenhSvc.dongTuBody) : [],
   });
+}));
+
+api.patch('/lenh-chuyen/:id', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  lenhSvc.suaLenh(principalOf(req), pInt(req, 'id'), lenhSvc.suaTuBody(req.body));
+  return { ok: true };
+}));
+
+api.post('/lenh-chuyen/:id/huy', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  lenhSvc.huyLenh(principalOf(req), pInt(req, 'id'), req.body?.lyDo);
+  return { ok: true };
 }));
 
 /**
@@ -1807,7 +1826,22 @@ api.post('/students/:id/transfer', requireAuth, wrap((req) => {
   }
   const reason = transferReasonText(reasonCode, reasonNote);
   if (!reason) throw badRequest('Chọn lý do chuyển lớp (chọn "Khác" thì ghi rõ).');
-  return studentSvc.transferStudent(principalOf(req), pInt(req, 'id'), Number(toClassId),
+  /* PR-CT: em đang học một lớp → RA LỆNH (Quản lý); chỉ em CHƯA TỪNG xếp lớp (xếp lần đầu) mới đi đường cũ. */
+  const sid = pInt(req, 'id');
+  const enr = luatLoTrinhSvc.lopHienTaiCua(sid);
+  if (enr) {
+    const dich = luatLoTrinhSvc.lopDichHopLe(Number(toClassId), enr.class_id);
+    const r = lenhSvc.raLenh(principalOf(req), {
+      lopNguonId: enr.class_id, boiCanh: 'giua-khoa', tuanChung: req.body?.tuan ?? effectiveDate ?? null,
+      dongs: [lenhSvc.dongTuBody({
+        studentId: sid, huong: dich?.is_fast_track && !enr.is_fast_track ? 'fast_track' : 'chuyen_lop', toClassId, lyDo: reason,
+        mucTieu, ngayThi: req.body?.ngayThi ?? thangThi,
+      })],
+    });
+    if (r.failed.length) throw badRequest(r.failed[0].message);
+    return r;
+  }
+  return studentSvc.transferStudent(principalOf(req), sid, Number(toClassId),
     effectiveDate ?? demoToday(), reason, {
       note: handoverNote ?? null,
       noNote: noHandoverNote === true,

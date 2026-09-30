@@ -164,4 +164,211 @@ export async function runPrCtTests(t: YThucTestKit) {
       assert(d.nhanHanhDongNhatKy(ma) !== 'Thao tác hệ thống', `thiếu nhãn ${ma}`);
     }
   });
+
+  // ------------------------------------------------------------------ dựng dữ liệu dùng chung cho các khối máy chủ
+  const { TODAY, P, conn, checkAsync } = t;
+  const luatLoTrinh: any = await import('../classes/luatLoTrinh.ts');
+  const intake: any = await import('../classes/intake.ts');
+  const lenh: any = await import('../classes/lenhChuyen.ts');
+  const transitionSvc: any = await import('../classes/transition.ts');
+  const studentsSvc: any = await import('../students/students.ts');
+  const { loadPrincipal } = await import('../permissions.ts');
+  const { createApp } = await import('../app.ts');
+  const MB = (conn.prepare(`SELECT id FROM branches WHERE code = 'MB'`).get() as any).id as number;
+  const CP = (conn.prepare(`SELECT id FROM branches WHERE code = 'CP'`).get() as any).id as number;
+  const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
+  const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
+  const TUAN = d.tuanChonDuoc(TODAY) as string[];   // các Thứ Hai hợp lệ: TUAN[0] = tuần sau
+  const mondayNow = d.mondayOfDate(TODAY) as string;
+  let seq = 0;
+  const week: any = await import('../platform/week.ts');
+  const lopMoi = (o: { branchId?: number; kind: string; ft?: boolean; route?: string | null; tuanHienTai?: number }) => {
+    seq += 1;
+    const cn = (get('SELECT code FROM branches WHERE id = ?', o.branchId ?? MB)).code as string;
+    const bat = o.tuanHienTai !== undefined ? d.mondayOfDate(t.addDays(TODAY, -7 * (o.tuanHienTai - 1))) : TODAY;
+    return (intake.createClass(P.admin, {
+      code: `${cn}-CT${seq}`, branchId: o.branchId ?? MB, kind: o.kind, isFastTrack: !!o.ft, route: o.route ?? null,
+      startDate: bat, startPeriodId: o.tuanHienTai !== undefined ? week.ensurePeriod(bat).id : undefined,
+    }) as any).id as number;
+  };
+  const ganGv = (lop: number, userId: number, skill: string | null, core: boolean) => conn.prepare(
+    `INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at) VALUES (?,?,?,?, '2026-01-01', 'active', ?)`,
+  ).run(userId, lop, skill, core ? 1 : 0, new Date().toISOString());
+  const hocVien = (lop: number, ma: string | null, ft: boolean, target: number | null = null) => {
+    seq += 1;
+    const now = new Date().toISOString();
+    const cn = get('SELECT branch_id FROM classes WHERE id = ?', lop).branch_id;
+    const sid = Number(conn.prepare(`INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`)
+      .run(`PISA-CT${seq}`, `Hoc vien CT${seq}`, `hoc vien ct${seq}`, cn, now).lastInsertRowid);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`).run(sid, lop, TODAY, now);
+    const cyc = Number(conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, started_at, status, created_at) VALUES (?, 1, ?, ?, ?, ?, 'active', ?)`)
+      .run(sid, ft ? 'LT1' : null, ma, target, TODAY, now).lastInsertRowid);
+    return { sid, cyc };
+  };
+  const dongCua = (sid: number, huong: string, toClassId: number | null, o: Record<string, unknown> = {}) => ({ studentId: sid, huong, toClassId, tuan: TUAN[0], ...o });
+  const lenhCua = (sid: number) => get(`SELECT * FROM lenh_chuyen_lop WHERE student_id = ? ORDER BY id DESC LIMIT 1`, sid);
+  const maLoi = (fn: () => unknown): number | string => { try { fn(); return 'không ném'; } catch (e: any) { return e?.status ?? String(e?.message ?? e); } };
+
+  /** Máy chủ thật + phiên demo theo người dùng — phép kiểm quyền đi qua đúng route như trình duyệt. */
+  async function voiMayChu(fn: (goi: (userId: number, url: string, init?: RequestInit) => Promise<Response>) => Promise<void>) {
+    const may = createApp().listen(0);
+    const cong = (may.address() as any).port as number;
+    const phien = new Map<number, string>();
+    const goi = async (userId: number, url: string, init: RequestInit = {}) => {
+      if (!phien.has(userId)) {
+        const s = await fetch(`http://127.0.0.1:${cong}/api/demo/session`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ userId }) });
+        phien.set(userId, (s.headers.get('set-cookie') ?? '').split(';')[0]);
+      }
+      return fetch(`http://127.0.0.1:${cong}/api${url}`, { ...init, headers: { 'content-type': 'application/json', cookie: phien.get(userId)!, ...(init.headers ?? {}) } });
+    };
+    try { await fn(goi); } finally { may.close(); }
+  }
+
+  // ------------------------------------------------------------------ khối 3 · ra / sửa / huỷ lệnh + đổi quyền (Task 3)
+  console.log('\nPR-CT · Ra / sửa / huỷ lệnh chuyển lớp (chỉ Quản lý lớp nguồn)');
+  const nguon = lopMoi({ kind: 'FOU', tuanHienTai: 8 });
+  const beDich = lopMoi({ kind: 'BE', tuanHienTai: 1 });
+  const fouLai = lopMoi({ kind: 'FOU', tuanHienTai: 1 });
+  const ftDich = lopMoi({ kind: 'FT', ft: true, route: 'LT1', tuanHienTai: 3 });
+  const gvcnNguon = ganGv(nguon, P.normalCoreTeacher.userId, null, true) && loadPrincipal(P.normalCoreTeacher.userId);
+  ganGv(beDich, P.normalSubjectTeacher.userId, null, true);
+  const em = Array.from({ length: 8 }, () => hocVien(nguon, 'FOU', false).sid);
+  const dongsMau = [
+    ...em.slice(0, 4).map((s) => dongCua(s, 'len_lop', beDich)),
+    dongCua(em[4], 'fast_track', ftDich, { mucTieu: 'KCK', ngayThi: '2027-06' }),
+    dongCua(em[5], 'hoc_lai', fouLai, { tuan: TUAN[1] }),
+    dongCua(em[6], 'bao_luu', null, { lyDo: 'đi xa', ngayXemLai: TUAN[3] }),
+  ];   // em[7] "Chưa chọn": không gửi
+
+  check('CT (3a) · QL ra lệnh cho 8 em → 7 dòng, đủ hướng; em chưa chọn không có lệnh; hạn bàn giao đúng; KCK ghi khong_cam_ket', () => {
+    const r = lenh.raLenh(P.mbManager, { lopNguonId: nguon, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: dongsMau });
+    assert(r.ok.length === 7 && r.failed.length === 0, JSON.stringify(r));
+    assert(!lenhCua(em[7]), 'em chưa chọn không có lệnh');
+    const l = lenhCua(em[0]);
+    const h = d.hanBanGiao(TODAY);
+    assert(l.trang_thai === 'cho' && l.tuan_bat_dau === TUAN[0] && l.han_gvbm === h.gvbm && l.han_gvcn === h.gvcn && l.nguoi_ra_lenh === P.mbManager.userId, JSON.stringify(l));
+    const kck = lenhCua(em[4]);
+    assert(kck.khong_cam_ket === 1 && kck.muc_tieu === null && kck.ngay_thi === '2027-06', JSON.stringify(kck));
+    const bl = lenhCua(em[6]);
+    assert(bl.lop_dich_id === null && bl.ngay_xem_lai === TUAN[3] && bl.han_gvcn, JSON.stringify(bl));
+    assert(get(`SELECT COUNT(*) n FROM audit_logs WHERE action = 'lenh_chuyen.tao' AND entity_id = ?`, nguon).n === 1, 'một dòng nhật ký cho cả lô');
+  });
+  check('CT (3b) · Q30-4: em thiếu điểm Cuối khoá vẫn có lệnh (không dòng nào bị khoá vì điểm) — cả 7 em đều chưa có điểm nào', () => {
+    assert(get(`SELECT COUNT(*) n FROM assessment_scores s JOIN assessment_attempts a ON a.id = s.attempt_id WHERE a.student_id IN (${em.join(',')})`).n === 0, 'dữ liệu: chưa em nào có điểm');
+    assert(get(`SELECT COUNT(*) n FROM lenh_chuyen_lop WHERE lop_nguon_id = ?`, nguon).n === 7, 'đủ 7 lệnh');
+  });
+  check('CT (3c) · ra lại cho em có lệnh → SỬA lệnh cũ (không dòng thứ hai, giữ hạn bàn giao cũ), nhật ký "sửa"', () => {
+    const truoc = lenhCua(em[0]);
+    const r = lenh.raLenh(P.mbManager, { lopNguonId: nguon, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: [dongCua(em[0], 'hoc_lai', fouLai, { tuan: TUAN[2] })] });
+    assert(r.ok.length === 1, JSON.stringify(r));
+    assert(get(`SELECT COUNT(*) n FROM lenh_chuyen_lop WHERE student_id = ?`, em[0]).n === 1, 'vẫn một lệnh');
+    const sau = lenhCua(em[0]);
+    assert(sau.id === truoc.id && sau.huong === 'hoc_lai' && sau.lop_dich_id === fouLai && sau.tuan_bat_dau === TUAN[2] && sau.han_gvcn === truoc.han_gvcn && sau.sua_luc, JSON.stringify(sau));
+    assert(get(`SELECT COUNT(*) n FROM audit_logs WHERE action = 'lenh_chuyen.sua' AND entity_id = ?`, nguon).n === 1, 'nhật ký sửa');
+  });
+  check('CT (3d) · dòng sai vào failed, dòng đúng vẫn ghi: tuần hiện tại · thiếu lớp đích · lớp đích sai chương trình · lên FT thiếu Target · em không thuộc lớp', () => {
+    const lo = hocVien(nguon, 'FOU', false).sid;
+    const ngoai = hocVien(fouLai, 'FOU', false).sid;
+    const r = lenh.raLenh(P.mbManager, { lopNguonId: nguon, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: [
+      dongCua(em[1], 'len_lop', beDich, { tuan: mondayNow }),
+      dongCua(em[2], 'len_lop', null),
+      dongCua(em[3], 'len_lop', fouLai),
+      dongCua(em[5], 'fast_track', ftDich),
+      dongCua(ngoai, 'len_lop', beDich),
+      dongCua(lo, 'len_lop', beDich),
+    ] });
+    const msg = (s: number) => r.failed.find((x: any) => x.studentId === s)?.message ?? '';
+    assert(r.ok.length === 1 && r.ok[0] === lo, JSON.stringify(r));
+    assert(/từ tuần sau trở đi/.test(msg(em[1])) && msg(em[2]) === 'Chọn lớp đích' && /chương trình kế tiếp/.test(msg(em[3]))
+      && /Target/.test(msg(em[5])) && /không thuộc lớp/.test(msg(ngoai)), JSON.stringify(r.failed));
+    assert(lenhCua(em[1]).tuan_bat_dau === TUAN[0], 'lệnh cũ của dòng sai giữ nguyên');
+  });
+  check('CT (3e) · 403: GVCN lớp nguồn · GVBM · QL chi nhánh khác · QL chi nhánh ĐÍCH đều không ra / sửa / huỷ được lệnh', () => {
+    const gvbm = loadPrincipal(P.subjectTeacher.userId);
+    ganGv(nguon, gvbm.userId, 'listening', false);
+    const gvbm2 = loadPrincipal(P.subjectTeacher.userId);
+    const cpDich = lopMoi({ branchId: CP, kind: 'BE', tuanHienTai: 1 });
+    const l = lenhCua(em[1]);
+    for (const [ten, who] of [['GVCN', gvcnNguon], ['GVBM', gvbm2], ['QL chi nhánh khác/đích', P.cpManager]] as const) {
+      assert(maLoi(() => lenh.raLenh(who, { lopNguonId: nguon, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: [dongCua(em[1], 'len_lop', beDich)] })) === 403, `${ten} ra lệnh phải 403`);
+      assert(maLoi(() => lenh.suaLenh(who, l.id, { tuan: TUAN[2] })) === 403, `${ten} sửa lệnh phải 403`);
+      assert(maLoi(() => lenh.huyLenh(who, l.id, 'thử huỷ')) === 403, `${ten} huỷ lệnh phải 403`);
+    }
+    /* QL chi nhánh đích (CP) ra lệnh từ lớp nguồn MB cho lớp đích CP: vẫn 403 — quyền theo lớp NGUỒN. */
+    assert(maLoi(() => lenh.raLenh(P.cpManager, { lopNguonId: nguon, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: [dongCua(em[1], 'len_lop', cpDich)] })) === 403, 'QL chi nhánh đích phải 403');
+    assert(maLoi(() => studentsSvc.transferStudent(gvcnNguon, em[1], beDich, TODAY, 'Đổi lịch học', { noNote: true })) === 403, 'transferStudent bởi GVCN phải 403');
+    assert(maLoi(() => transitionSvc.applyTransition(gvcnNguon, { fromClassId: nguon, effectiveDate: TODAY, dongs: [] })) === 403, 'applyTransition bởi GVCN phải 403');
+    assert(maLoi(() => luatLoTrinh.lopDichChoChuyen(gvcnNguon, em[1])) === 403 && maLoi(() => luatLoTrinh.xemChuyenLop(gvcnNguon, em[1])) === 403, 'GVCN mở panel chuyển lớp một em phải 403');
+    assert(!luatLoTrinh.coTheChuyenLop(gvcnNguon, em[1]) && !!luatLoTrinh.coTheChuyenLop(P.mbManager, em[1]), 'coTheChuyenLop: QL có, GVCN không');
+  });
+  check('CT (3f) · sửa / huỷ đúng luật: huỷ cần lý do ≥ 3 ký tự; huỷ xong → em có thể có lệnh mới; huỷ hai lần → 409; sau tuần bắt đầu → 400', () => {
+    const l = lenhCua(em[2]);
+    assert(maLoi(() => lenh.huyLenh(P.mbManager, l.id, 'ab')) === 400, 'lý do ngắn');
+    lenh.huyLenh(P.mbManager, l.id, 'Phụ huynh xin ở lại');
+    const sau = lenhCua(em[2]);
+    assert(sau.trang_thai === 'huy' && sau.huy_boi === P.mbManager.userId && sau.ly_do_huy === 'Phụ huynh xin ở lại', JSON.stringify(sau));
+    assert(maLoi(() => lenh.huyLenh(P.mbManager, l.id, 'huỷ lần hai')) === 409, 'huỷ hai lần phải 409');
+    assert(maLoi(() => lenh.suaLenh(P.mbManager, l.id, { tuan: TUAN[2] })) === 409, 'sửa lệnh đã huỷ phải 409');
+    const r = lenh.raLenh(P.mbManager, { lopNguonId: nguon, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: [dongCua(em[2], 'len_lop', beDich)] });
+    assert(r.ok.length === 1 && lenhCua(em[2]).trang_thai === 'cho', 'sau huỷ ra lệnh mới được (chỉ mục chỉ chặn lệnh "cho")');
+    /* tuần bắt đầu đã tới (đặt lại bằng SQL) → không sửa / huỷ được, ra lại cũng bị chặn */
+    const den = lenhCua(em[3]);
+    conn.prepare('UPDATE lenh_chuyen_lop SET tuan_bat_dau = ? WHERE id = ?').run(mondayNow, den.id);
+    assert(maLoi(() => lenh.suaLenh(P.mbManager, den.id, { lyDo: 'đổi ý' })) === 400, 'sửa sau tuần bắt đầu phải 400');
+    assert(maLoi(() => lenh.huyLenh(P.mbManager, den.id, 'muộn rồi')) === 400, 'huỷ sau tuần bắt đầu phải 400');
+    conn.prepare('UPDATE lenh_chuyen_lop SET tuan_bat_dau = ? WHERE id = ?').run(TUAN[0], den.id);
+  });
+  check('CT (3g) · suaLenh đổi được tuần / lớp đích / lý do và giữ phần còn lại; sai thì báo lỗi rõ', () => {
+    const l = lenhCua(em[3]);
+    lenh.suaLenh(P.mbManager, l.id, { tuan: TUAN[2], huong: 'len_lop', toClassId: beDich });
+    const sau = lenhCua(em[3]);
+    assert(sau.tuan_bat_dau === TUAN[2] && sau.lop_dich_id === beDich && sau.huong === 'len_lop', JSON.stringify(sau));
+    assert(maLoi(() => lenh.suaLenh(P.mbManager, l.id, { tuan: mondayNow })) === 400, 'sửa sang tuần hiện tại phải 400');
+    assert(lenhCua(em[3]).tuan_bat_dau === TUAN[2], 'lỗi thì không đổi gì');
+  });
+  check('CT (3h) · thông báo "Sắp nhận": MỘT thông báo mỗi lớp đích cho GVCN lớp đích; ra lệnh thêm cùng ngày chỉ cập nhật số, không nhân đôi', () => {
+    const gvcnDich = P.normalSubjectTeacher.userId;
+    const dem = () => get(`SELECT COUNT(*) n FROM notifications WHERE user_id = ? AND kind = 'sap_nhan' AND entity_id = ?`, gvcnDich, beDich).n;
+    assert(dem() === 1, `GVCN lớp đích phải có đúng 1 thông báo: ${dem()}`);
+    const them = hocVien(nguon, 'FOU', false).sid;
+    lenh.raLenh(P.mbManager, { lopNguonId: nguon, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: [dongCua(them, 'len_lop', beDich)] });
+    assert(dem() === 1, `vẫn 1 thông báo sau khi thêm em: ${dem()}`);
+    const tb = get(`SELECT title, duong FROM notifications WHERE user_id = ? AND kind = 'sap_nhan' AND entity_id = ?`, gvcnDich, beDich);
+    assert(/Sắp nhận \d+ em/.test(tb.title) && tb.duong === `/hoc-vien/lop/${beDich}`, JSON.stringify(tb));
+  });
+  check('CT (3i) · transitionPlan trả thêm lenh, cheDo, tuanChon, tuanCuoiKhoa, tuanKetThuc; canEdit theo lớp nguồn; lớp FT: cheDo "ft" + lớp đích FT mọi lộ trình', () => {
+    const plan = transitionSvc.transitionPlan(P.mbManager, nguon);
+    const s0 = plan.students.find((x: any) => x.id === em[0]);
+    assert(plan.cheDo === 'thuong' && plan.canEdit === true && plan.tuanChon[0] === TUAN[0] && plan.tuanChon.length === 6, JSON.stringify({ c: plan.cheDo, e: plan.canEdit, t: plan.tuanChon }));
+    assert(s0.lenh?.huong === 'hoc_lai' && s0.lenh.tuan === TUAN[2] && s0.lenh.lopDichId === fouLai, JSON.stringify(s0.lenh));
+    assert(plan.students.find((x: any) => x.id === em[7]).lenh === null, 'em chưa quyết: lenh null');
+    assert(plan.tuanKetThuc && plan.tuanCuoiKhoa && plan.tuanKetThuc >= plan.tuanCuoiKhoa, `${plan.tuanKetThuc} / ${plan.tuanCuoiKhoa}`);
+    const kck = plan.students.find((x: any) => x.id === em[4]).lenh;
+    assert(kck.mucTieu === 'KCK', JSON.stringify(kck));
+    const ft2 = lopMoi({ kind: 'FT', ft: true, route: 'LT2', tuanHienTai: 5 });
+    const planFt = transitionSvc.transitionPlan(P.mbManager, ftDich);
+    assert(planFt.cheDo === 'ft' && planFt.candidates.some((c: any) => c.id === ft2 && c.route === 'LT2'), 'lớp FT: lớp đích gồm cả lộ trình khác');
+    assert(transitionSvc.transitionPlan(gvcnNguon, nguon).canEdit === false, 'GVCN: canEdit false');
+  });
+  await checkAsync('CT (3j) · qua HTTP: GVCN / GVBM gọi POST /classes/:id/transition · POST /students/:id/transfer · PATCH /lenh-chuyen/:id · huỷ → 403; QL ra lệnh 200 và POST transfer một em thành lệnh (chưa chuyển)', async () => {
+    const l = lenhCua(em[3]);
+    const gvbm = P.subjectTeacher.userId;
+    await voiMayChu(async (goi) => {
+      for (const uid of [P.normalCoreTeacher.userId, gvbm]) {
+        const a = await goi(uid, `/classes/${nguon}/transition`, { method: 'POST', body: JSON.stringify({ dongs: [dongCua(em[3], 'len_lop', beDich)] }) });
+        const b = await goi(uid, `/students/${em[3]}/transfer`, { method: 'POST', body: JSON.stringify({ toClassId: beDich, reasonCode: 'khac', reasonNote: 'thử nghiệm' }) });
+        const c = await goi(uid, `/lenh-chuyen/${l.id}`, { method: 'PATCH', body: JSON.stringify({ tuan: TUAN[2] }) });
+        const h = await goi(uid, `/lenh-chuyen/${l.id}/huy`, { method: 'POST', body: JSON.stringify({ lyDo: 'thử huỷ' }) });
+        assert([a, b, c, h].every((r) => r.status === 403), `user ${uid}: ${[a, b, c, h].map((r) => r.status).join('/')}`);
+      }
+      const tuoi = hocVien(nguon, 'FOU', false).sid;
+      const ok = await goi(P.mbManager.userId, `/classes/${nguon}/transition`, { method: 'POST', body: JSON.stringify({ tuanChung: TUAN[1], dongs: [{ studentId: tuoi, huong: 'len_lop', toClassId: beDich }] }) });
+      const j: any = await ok.json();
+      assert(ok.status === 200 && j.ok?.[0] === tuoi && lenhCua(tuoi).tuan_bat_dau === TUAN[1], `${ok.status} ${JSON.stringify(j)}`);
+      const mot = hocVien(nguon, 'FOU', false).sid;
+      const tf = await goi(P.mbManager.userId, `/students/${mot}/transfer`, { method: 'POST', body: JSON.stringify({ toClassId: fouLai, tuan: TUAN[0], reasonCode: 'khac', reasonNote: 'đổi lịch học' }) });
+      assert(tf.status === 200 && lenhCua(mot).trang_thai === 'cho', `transfer QL: ${tf.status}`);
+      assert(get('SELECT class_id FROM enrollments WHERE student_id = ? AND status = ?', mot, 'active').class_id === nguon, 'transfer chỉ RA LỆNH, em vẫn ở lớp nguồn');
+    });
+  });
 }

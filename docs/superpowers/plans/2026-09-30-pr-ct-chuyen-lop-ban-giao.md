@@ -540,6 +540,8 @@ cần chữ phụ hai dòng) · Hành trình (mục `ref_table='lenh_chuyen_lop'
 | Ngày | Task | Ghi chú (mốc B, trần tốc độ, lệch kế hoạch, cổng gộp) |
 |---|---|---|
 | 30/09 | 0 | **Mốc B: 1821 phép kiểm chính + 25 phép tốc độ**, xanh (main @ 80cb0ffb). LT2a, LT2b, PR-GV **chưa merge** → cột Web gợi ý chờ LT2b. Model thật: Sonnet 5.5 (kế hoạch ghi Opus 5.5 / phương án B Fable 5.1 — session chạy theo lệnh của chủ sản phẩm). |
+| 30/09 | 1–2 | Task 1: +13 phép kiểm (1834). Task 2: migrate + schema xong; cập nhật 3 phép kiểm XOA (bao đóng 31→33 bảng, 55→58 cạnh, 74→78 cột tài khoản, trần câu xoá HV 42→44) vì hai bảng mới. |
+| 30/09 | 3 | 1848 phép kiểm xanh. Đường web cũ `POST /classes/:id/transition`, `POST /students/:id/transfer` nay RA LỆNH (em chưa từng xếp lớp vẫn đi đường cũ). Sửa kỳ vọng: 10 phép kiểm `lenLop.tests` + `prDuyet R7` (actor GVCN → admin/QL; Q3 và R7 thêm 403 cho GVCN), `tocDoDuong` (`/chuyen-lop/lop-dich`, `/students/:id/chuyen-lop` GVCN → 403). `tocDo` PR-TOC: đường ra lệnh 41 em = 20 câu → trần `raLenhCaLop` 30; phần thi hành cả lớp (trần `chuyenCaLopSangFT` 200) đo lại ở Task 4. `xoaKetThucLop.tinhTrangLop` tính lệnh là "lớp đã có dữ liệu". |
 
 ## Planning chốt 30/09 (thắng các chỗ lệch trong kế hoạch)
 

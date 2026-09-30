@@ -37,7 +37,7 @@ export function lopHienTaiCua(studentId: number): any {
 export function coTheChuyenLop(p: Principal, sid: number): { enr: any } | null {
   const enr = lopHienTaiCua(sid);
   if (!enr) return null;
-  if (!can(p, PERMISSIONS.STUDENT_EDIT, { classId: enr.class_id })) return null;
+  if (!can(p, PERMISSIONS.CLASS_EDIT, { classId: enr.class_id })) return null;   // PR-CT (Q30-1): chỉ Quản lý ra lệnh, GVCN chỉ đề xuất
   return { enr };
 }
 
@@ -54,7 +54,7 @@ export function lopDichHopLe(toClassId: number, lopNguonId: number): any | null 
 export function lopDichChoChuyen(p: Principal, sid: number) {
   const enr = lopHienTaiCua(sid);
   if (!enr) throw badRequest('Học viên không đang học lớp nào.');
-  require_(p, PERMISSIONS.STUDENT_EDIT, { classId: enr.class_id }, 'Bạn không có quyền chuyển lớp học viên này.');
+  require_(p, PERMISSIONS.CLASS_EDIT, { classId: enr.class_id }, 'Bạn không có quyền chuyển lớp học viên này.');   // PR-CT (Q30-1)
   const conn = db();
   const branches = conn.prepare(`SELECT id, name FROM branches WHERE status = 'active' ORDER BY name`).all() as any[];
   const lopRows = conn
@@ -317,7 +317,7 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
 export function xemChuyenLop(p: Principal, sid: number, toClassId?: number | null) {
   const enr = lopHienTaiCua(sid);
   if (!enr) throw badRequest('Học viên không đang học lớp nào.');
-  require_(p, PERMISSIONS.STUDENT_EDIT, { classId: enr.class_id }, 'Bạn không có quyền chuyển lớp học viên này.');
+  require_(p, PERMISSIONS.CLASS_EDIT, { classId: enr.class_id }, 'Bạn không có quyền chuyển lớp học viên này.');   // PR-CT (Q30-1)
   const conn = db();
   const openCases = conn
     .prepare(
