@@ -50,6 +50,7 @@ import * as scheduleSvc from '../classes/schedule.ts';
 import * as intakeSvc from '../classes/intake.ts';
 import * as transitionSvc from '../classes/transition.ts';
 import * as lenhSvc from '../classes/lenhChuyen.ts';
+import * as banGiaoSvc from '../classes/banGiao.ts';
 import * as loTrinhTiepSvc from '../classes/loTrinhTiep.ts';
 import * as luatLoTrinhSvc from '../classes/luatLoTrinh.ts';
 import * as lichSuLopSvc from '../classes/lichSuLop.ts';
@@ -1418,6 +1419,32 @@ api.post('/lenh-chuyen/:id/huy', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   lenhSvc.huyLenh(principalOf(req), pInt(req, 'id'), req.body?.lyDo);
   return { ok: true };
+}));
+
+/** Bàn giao (Q30-2): phiếu cả lớp nguồn (một lần đọc), một phiếu, GVBM ghi môn mình, GVCN xác nhận / nhắc. */
+api.get('/lenh-chuyen/ban-giao', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const lop = qInt(req, 'lop');
+  if (!lop) throw badRequest('Cần lớp (lop).');
+  return banGiaoSvc.phieuBanGiao(principalOf(req), { lopNguonId: lop, mon: qStr(req, 'mon') ?? undefined });
+}));
+api.get('/lenh-chuyen/:id/ban-giao', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return banGiaoSvc.phieuBanGiao(principalOf(req), { lenhId: pInt(req, 'id') });
+}));
+api.put('/lenh-chuyen/:id/ban-giao-mon', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  banGiaoSvc.ghiMon(principalOf(req), pInt(req, 'id'), String(req.body?.mon ?? ''), String(req.body?.noiDung ?? ''));
+  return { ok: true };
+}));
+api.post('/lenh-chuyen/:id/xac-nhan', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  banGiaoSvc.xacNhanBanGiao(principalOf(req), pInt(req, 'id'), String(req.body?.nhanXetChung ?? ''));
+  return { ok: true };
+}));
+api.post('/lenh-chuyen/:id/nhac', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return banGiaoSvc.nhacGvbm(principalOf(req), pInt(req, 'id'), String(req.body?.mon ?? ''));
 }));
 
 /**

@@ -57,6 +57,7 @@ export const JOURNEY_FILTERS = [
 export const JOURNEY_EVENT_LABEL: Record<string, string> = {
   enrollment: 'Vào lớp',
   transfer: 'Chuyển lớp',
+  handover: 'Bàn giao',   // PR-CT: GVCN xác nhận bàn giao (mở lại phiếu từ Hành trình)
   pause: 'Tạm dừng học',
   resume: 'Quay lại học',
   finish: 'Kết thúc học',

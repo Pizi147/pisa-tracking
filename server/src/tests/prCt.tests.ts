@@ -551,4 +551,167 @@ export async function runPrCtTests(t: YThucTestKit) {
     assert(get(`SELECT COUNT(*) n FROM lenh_chuyen_lop WHERE lop_nguon_id = ? AND trang_thai = 'da_chuyen'`, nG).n === 41, 'đủ 41');
   });
 
+  // ------------------------------------------------------------------ khối 5 · bàn giao: phiếu, dòng môn GVBM, GVCN xác nhận (Task 5)
+  console.log('\nPR-CT · Bàn giao — phiếu tự điền, dòng môn GVBM, GVCN xác nhận');
+  const bg: any = await import('../classes/banGiao.ts');
+  /* Năm giáo viên KHÁC NHAU (vai Giáo viên) — bộ demo dùng chung một người cho nhiều vai P.* nên không dùng P.* ở khối này. */
+  const GV = (all(`SELECT DISTINCT ur.user_id FROM user_roles ur JOIN roles r ON r.id = ur.role_id
+     WHERE r.key = 'teacher' AND ur.status = 'active' AND ur.branch_id = ? ORDER BY ur.user_id LIMIT 5`, MB) as any[]).map((r) => ({ userId: r.user_id as number }));
+  assert(GV.length === 5, `Cần 5 giáo viên chi nhánh MB, có ${GV.length}`);
+  const n5 = lopMoi({ kind: 'FOU', tuanHienTai: 8 });
+  const d5 = lopMoi({ kind: 'BE', tuanHienTai: 1 });
+  ganGv(n5, GV[0].userId, null, true);
+  ganGv(n5, GV[1].userId, 'listening', false);
+  ganGv(n5, GV[2].userId, 'speaking', false);
+  ganGv(d5, GV[3].userId, null, true);
+  const gvcn5 = loadPrincipal(GV[0].userId);
+  const gvbmL = loadPrincipal(GV[1].userId);
+  const gvbmS = loadPrincipal(GV[2].userId);
+  const gvDich = loadPrincipal(GV[3].userId);
+  const em5 = Array.from({ length: 4 }, () => hocVien(n5, 'FOU', false).sid);
+  ra(P.mbManager, n5, 'cuoi-khoa', [
+    dongCua(em5[0], 'len_lop', d5), dongCua(em5[1], 'len_lop', d5), dongCua(em5[2], 'len_lop', d5),
+    dongCua(em5[3], 'dung_hoc', null, { lyDo: 'chuyển nhà' }),
+  ]);
+  const monL = 'listening', monR = 'reading';
+  check('CT (5a) · GVBM ghi đúng môn mình (UPSERT, sửa được); môn khác → 403; GVCN điền thay → dien_thay 1; rỗng / > 300 ký tự → 400', () => {
+    const l = lenhCua(em5[0]);
+    bg.ghiMon(gvbmL, l.id, monL, 'Nghe ý chính tốt, còn yếu dạng điền bản đồ.');
+    bg.ghiMon(gvbmL, l.id, monL, 'Nghe tốt, cần luyện dạng điền bản đồ.');
+    const m = get(`SELECT * FROM ban_giao_mon WHERE lenh_id = ? AND mon = ?`, l.id, monL);
+    assert(m.noi_dung.startsWith('Nghe tốt') && m.dien_thay === 0 && m.nguoi_ghi === gvbmL.userId && all('SELECT id FROM ban_giao_mon WHERE lenh_id = ?', l.id).length === 1, JSON.stringify(m));
+    assert(maLoi(() => bg.ghiMon(gvbmL, l.id, monR, 'Đọc chậm.')) === 403, 'GVBM môn khác phải 403');
+    bg.ghiMon(gvcn5, l.id, monR, 'Đọc chậm với bài dài.');
+    assert(get(`SELECT dien_thay FROM ban_giao_mon WHERE lenh_id = ? AND mon = ?`, l.id, monR).dien_thay === 1, 'GVCN điền thay');
+    assert(maLoi(() => bg.ghiMon(gvbmL, l.id, monL, '   ')) === 400 && maLoi(() => bg.ghiMon(gvbmL, l.id, monL, 'x'.repeat(301))) === 400, 'rỗng / quá dài');
+    assert(maLoi(() => bg.ghiMon(gvcn5, l.id, 'khong_co_mon', 'x')) === 400, 'môn không có ở lớp nguồn');
+    assert(maLoi(() => bg.ghiMon(gvDich, l.id, monL, 'GV lớp đích ghi')) === 403 && maLoi(() => bg.ghiMon(P.mbManager, l.id, monL, 'QL ghi')) === 403, 'GV lớp đích, QL (chưa quá hạn) → 403');
+    assert(maLoi(() => bg.ghiMon(gvcn5, lenhCua(em5[3]).id, monL, 'dừng học')) === 400, 'lệnh Dừng học không có phiếu');
+  });
+  check('CT (5b) · đọc phiếu: GV lớp đích trước xác nhận → 403; QL đọc 200; QL chi nhánh khác / GV không dạy → 403; phiếu cả lớp trả 3 em (Dừng học không có phiếu)', () => {
+    const lop = bg.phieuBanGiao(gvcn5, { lopNguonId: n5 });
+    assert(lop.tong === 3 && lop.ds.length === 3 && lop.daXacNhan === 0 && lop.lop.mon.length === 4, JSON.stringify({ t: lop.tong, m: lop.lop.mon.length }));
+    const e0 = lop.ds.find((x: any) => x.studentId === em5[0]);
+    assert(e0.soMonDaGhi === 2 && e0.phieu.nhan === 'Môn 2/4' && e0.tuDien && !e0.tuDienDaChup && e0.mon.find((m: any) => m.ma === monR).dienThay, JSON.stringify(e0.phieu));
+    assert(lop.nguoiXem.gvcn && lop.nguoiXem.xacNhan && lop.nguoiXem.monGhi.length === 4, JSON.stringify(lop.nguoiXem));
+    assert(bg.phieuBanGiao(gvbmL, { lopNguonId: n5 }).nguoiXem.monGhi.join() === monL, 'GVBM L chỉ ghi được môn L');
+    assert(bg.phieuBanGiao(P.mbManager, { lopNguonId: n5 }).nguoiXem.xacNhan === false, 'QL chưa quá hạn: không xác nhận');
+    assert(maLoi(() => bg.phieuBanGiao(gvDich, { lopNguonId: n5 })) === 403, 'GV lớp đích trước xác nhận → 403');
+    assert(maLoi(() => bg.phieuBanGiao(gvDich, { lenhId: lenhCua(em5[0]).id })) === 403, 'GV lớp đích (một phiếu) → 403');
+    assert(maLoi(() => bg.phieuBanGiao(P.cpManager, { lopNguonId: n5 })) === 403, 'QL chi nhánh khác → 403');
+    assert(maLoi(() => bg.phieuBanGiao(loadPrincipal(GV[4].userId), { lopNguonId: n5 })) === 403, 'GV không dạy lớp → 403');
+  });
+  check('CT (5c) · xác nhận: nhận xét 14 ký tự → 400; đủ → chụp phần tự điền, "GVBM chưa bàn giao", Hành trình; xác nhận hai lần → 409; GVBM / GV lớp đích → 403', () => {
+    const l = lenhCua(em5[0]);
+    assert(maLoi(() => bg.xacNhanBanGiao(gvcn5, l.id, 'a'.repeat(14))) === 400, '14 ký tự');
+    assert(maLoi(() => bg.xacNhanBanGiao(gvbmL, l.id, 'Em chăm, ngại nói trước lớp.')) === 403 && maLoi(() => bg.xacNhanBanGiao(gvDich, l.id, 'Em chăm, ngại nói trước lớp.')) === 403, 'GVBM / GV đích 403');
+    bg.xacNhanBanGiao(gvcn5, l.id, 'Em chăm, ngại nói trước lớp. Mẹ theo sát.');
+    const sau = lenhCua(em5[0]);
+    const chup = JSON.parse(sau.tu_dien);
+    assert(sau.xac_nhan_boi === gvcn5.userId && sau.xac_nhan_thay === 0 && sau.nhan_xet_chung.startsWith('Em chăm'), JSON.stringify(sau));
+    assert(chup.tuDien.ketQua && chup.gvbmChuaBanGiao.length === 2, `chưa bàn giao: ${chup.gvbmChuaBanGiao}`);
+    assert(get(`SELECT COUNT(*) n FROM journey_events WHERE student_id = ? AND ref_table = 'lenh_chuyen_lop' AND ref_id = ?`, em5[0], l.id).n === 1, 'một sự kiện Hành trình');
+    assert(maLoi(() => bg.xacNhanBanGiao(gvcn5, l.id, 'Xác nhận lần hai của GVCN.')) === 409, 'xác nhận hai lần → 409');
+    assert(maLoi(() => bg.ghiMon(gvbmL, l.id, monL, 'Ghi sau khi xác nhận')) === 400, 'phiếu đã xác nhận không ghi thêm');
+    assert(get(`SELECT COUNT(*) n FROM notifications WHERE user_id = ? AND dedup_key = ?`, gvDich.userId, `ban_giao:${l.id}`).n === 1, 'báo GVCN lớp đích');
+    /* Sau xác nhận GV lớp đích đọc được (chỉ đọc) */
+    const doc = bg.phieuBanGiao(gvDich, { lenhId: l.id });
+    assert(doc.ds.length === 1 && doc.ds[0].tuDienDaChup && doc.ds[0].xacNhan && doc.nguoiXem.xemTuNguon === false && doc.nguoiXem.monGhi.length === 0, 'đọc phiếu đã xác nhận, không ghi được');
+    assert(maLoi(() => bg.ghiMon(gvDich, l.id, monL, 'x')) === 403, 'GV lớp đích ghi → 403');
+    const ca = bg.phieuBanGiao(gvDich, { lopNguonId: n5 });
+    assert(ca.ds.length === 1, `GV lớp đích chỉ thấy phiếu đã xác nhận: ${ca.ds.length}`);
+  });
+  check('CT (5d) · xác nhận SAU khi lệnh đã chuyển vẫn được (lệnh chạy đúng tuần, bàn giao theo sau)', () => {
+    const l = lenhCua(em5[1]);
+    assert(chay(THU_HAI).daChuyen >= 3, 'thi hành cả nhóm');
+    assert(lenhCua(em5[1]).trang_thai === 'da_chuyen', 'đã chuyển');
+    bg.xacNhanBanGiao(gvcn5, l.id, 'Em học đều, cần nhắc nộp bài đúng hạn.');
+    assert(lenhCua(em5[1]).xac_nhan_luc, 'xác nhận sau chuyển');
+    assert(bg.phieuBanGiao(gvDich, { lenhId: l.id }).ds[0].trangThaiLenh === 'da_chuyen', 'GV lớp đích đọc phiếu của em đã chuyển');
+    const daChuyenChuaXacNhan = lenhCua(em5[2]);
+    assert(bg.phieuBanGiao(gvDich, { lenhId: daChuyenChuaXacNhan.id }).ds.length === 1, 'em đã chuyển mà chưa xác nhận: GV lớp đích đọc được');
+  });
+  check('CT (5e) · Pre FOU: chỉ một ô "Tổng hợp" — GVBM (kỹ năng) không ghi được, GVCN ghi được', () => {
+    const pre = lopMoi({ kind: 'PREFOU', tuanHienTai: 5 });
+    const fou = lopMoi({ kind: 'FOU', tuanHienTai: 1 });
+    ganGv(pre, GV[0].userId, null, true);
+    ganGv(pre, GV[1].userId, 'listening', false);
+    const gCn = loadPrincipal(GV[0].userId), gBm = loadPrincipal(GV[1].userId);
+    const e = hocVien(pre, 'PREFOU', false).sid;
+    ra(P.mbManager, pre, 'cuoi-khoa', [dongCua(e, 'len_lop', fou)]);
+    const l = lenhCua(e);
+    const dto = bg.phieuBanGiao(gCn, { lopNguonId: pre });
+    assert(dto.lop.mon.length === 1 && dto.lop.mon[0].ma === 'tong_hop' && dto.lop.mon[0].ten === 'Tổng hợp', JSON.stringify(dto.lop.mon));
+    assert(maLoi(() => bg.ghiMon(gBm, l.id, 'tong_hop', 'GVBM ghi Tổng hợp')) === 403, 'GVBM không ghi được ô Tổng hợp');
+    bg.ghiMon(gCn, l.id, 'tong_hop', 'Học ổn, cần theo sát bài tập về nhà.');
+    assert(bg.phieuBanGiao(gCn, { lopNguonId: pre }).ds[0].phieu.nhan === 'Môn 1/1', 'GVCN ghi ô Tổng hợp');
+  });
+  check('CT (5f) · Câu 1 = A: lớp KHÔNG có GVCN, hoặc quá hạn 3 ngày → Quản lý điền thay và xác nhận thay ("Quản lý xác nhận thay"); chưa quá hạn mà có GVCN → 403', () => {
+    const kg = lopMoi({ kind: 'FOU', tuanHienTai: 8 });
+    const kgDich = lopMoi({ kind: 'BE', tuanHienTai: 1 });
+    const e = hocVien(kg, 'FOU', false).sid;
+    ra(P.mbManager, kg, 'cuoi-khoa', [dongCua(e, 'len_lop', kgDich)]);
+    const l = lenhCua(e);
+    bg.ghiMon(P.mbManager, l.id, monL, 'QL điền thay khi lớp chưa có GVCN.');
+    assert(get(`SELECT dien_thay FROM ban_giao_mon WHERE lenh_id = ?`, l.id).dien_thay === 1, 'QL điền thay');
+    bg.xacNhanBanGiao(P.mbManager, l.id, 'Quản lý xác nhận thay: lớp chưa có GVCN.');
+    assert(lenhCua(e).xac_nhan_thay === 1 && bg.phieuBanGiao(P.mbManager, { lenhId: l.id }).ds[0].xacNhan.thay, 'ghi "xác nhận thay"');
+    /* Lớp có GVCN: QL chỉ thay được khi quá hạn 3 ngày */
+    const e2 = hocVien(n5, 'FOU', false).sid;
+    ra(P.mbManager, n5, 'cuoi-khoa', [dongCua(e2, 'len_lop', d5)]);
+    const l2 = lenhCua(e2);
+    assert(maLoi(() => bg.xacNhanBanGiao(P.mbManager, l2.id, 'QL xác nhận sớm không được phép.')) === 403, 'chưa quá hạn → 403');
+    conn.prepare('UPDATE lenh_chuyen_lop SET han_gvcn = ? WHERE id = ?').run(t.addDays(TODAY, -1), l2.id);
+    bg.xacNhanBanGiao(P.mbManager, l2.id, 'Quá hạn 3 ngày, Quản lý xác nhận thay.');
+    assert(lenhCua(e2).xac_nhan_thay === 1, 'quá hạn → QL thay được');
+    assert(maLoi(() => bg.xacNhanBanGiao(P.cpManager, lenhCua(e).id, 'QL chi nhánh khác không được xác nhận.')) === 403, 'QL chi nhánh khác 403');
+  });
+  check('CT (5g) · Nhắc: GVCN nhắc GVBM môn còn thiếu → thông báo đúng người, dedup mỗi ngày; GVBM / QL chưa quá hạn nhắc → 403', () => {
+    const l = lenhCua(em5[2]);
+    const r = bg.nhacGvbm(gvcn5, l.id, monL);
+    assert(r.soNguoi === 1, JSON.stringify(r));
+    bg.nhacGvbm(gvcn5, l.id, monL);
+    assert(get(`SELECT COUNT(*) n FROM notifications WHERE user_id = ? AND kind = 'nhac_ban_giao'`, gvbmL.userId).n === 1, 'một thông báo mỗi ngày');
+    assert(maLoi(() => bg.nhacGvbm(gvbmL, l.id, monL)) === 403 && maLoi(() => bg.nhacGvbm(gvDich, l.id, monL)) === 403, 'GVBM / GV lớp đích nhắc → 403');
+  });
+  check('CT (5h) · số câu SQL của phiếu cả lớp KHÔNG tăng theo số em (3 em vs 30 em)', () => {
+    const lop = lopMoi({ kind: 'FOU', tuanHienTai: 8 });
+    const dich = lopMoi({ kind: 'BE', tuanHienTai: 1 });
+    ganGv(lop, GV[0].userId, null, true);
+    const g = loadPrincipal(GV[0].userId);
+    const them = (k: number) => {
+      const ss = Array.from({ length: k }, () => hocVien(lop, 'FOU', false).sid);
+      ra(P.mbManager, lop, 'cuoi-khoa', ss.map((s) => dongCua(s, 'len_lop', dich)));
+    };
+    them(3);
+    const it = demTruyVan(() => { bg.phieuBanGiao(g, { lopNguonId: lop }); });
+    them(27);
+    const nhieu = demTruyVan(() => { bg.phieuBanGiao(g, { lopNguonId: lop }); });
+    assert(bg.phieuBanGiao(g, { lopNguonId: lop }).ds.length === 30, 'đủ 30 em');
+    assert(it === nhieu, `số câu đổi theo số em: ${it} → ${nhieu}`);
+    console.log(`      (phiếu cả lớp: ${it} câu cho 3 em, ${nhieu} câu cho 30 em)`);
+  });
+  await checkAsync('CT (5i) · qua HTTP: GET ban-giao (GVCN 200, GVBM 200, GV không dạy 403) · PUT ban-giao-mon · POST xac-nhan · POST nhac', async () => {
+    const lop = lopMoi({ kind: 'FOU', tuanHienTai: 8 });
+    const dich = lopMoi({ kind: 'BE', tuanHienTai: 1 });
+    ganGv(lop, GV[0].userId, null, true);
+    ganGv(lop, GV[1].userId, 'listening', false);
+    const e = hocVien(lop, 'FOU', false).sid;
+    ra(P.mbManager, lop, 'cuoi-khoa', [dongCua(e, 'len_lop', dich)]);
+    const l = lenhCua(e);
+    await voiMayChu(async (goi) => {
+      const cn = GV[0].userId, bm = GV[1].userId, la = GV[4].userId;
+      assert((await goi(cn, `/lenh-chuyen/ban-giao?lop=${lop}`)).status === 200 && (await goi(bm, `/lenh-chuyen/ban-giao?lop=${lop}&mon=listening`)).status === 200, 'GVCN / GVBM đọc');
+      assert((await goi(la, `/lenh-chuyen/ban-giao?lop=${lop}`)).status === 403 && (await goi(la, `/lenh-chuyen/${l.id}/ban-giao`)).status === 403, 'GV không dạy → 403');
+      const put = await goi(bm, `/lenh-chuyen/${l.id}/ban-giao-mon`, { method: 'PUT', body: JSON.stringify({ mon: 'listening', noiDung: 'Nghe tốt.' }) });
+      const sai = await goi(bm, `/lenh-chuyen/${l.id}/ban-giao-mon`, { method: 'PUT', body: JSON.stringify({ mon: 'reading', noiDung: 'Đọc tốt.' }) });
+      assert(put.status === 200 && sai.status === 403, `PUT ${put.status}/${sai.status}`);
+      const ngan = await goi(cn, `/lenh-chuyen/${l.id}/xac-nhan`, { method: 'POST', body: JSON.stringify({ nhanXetChung: 'ngắn' }) });
+      const gvbmXn = await goi(bm, `/lenh-chuyen/${l.id}/xac-nhan`, { method: 'POST', body: JSON.stringify({ nhanXetChung: 'Em chăm chỉ và cẩn thận.' }) });
+      const nhac = await goi(cn, `/lenh-chuyen/${l.id}/nhac`, { method: 'POST', body: JSON.stringify({ mon: 'reading' }) });
+      const ok = await goi(cn, `/lenh-chuyen/${l.id}/xac-nhan`, { method: 'POST', body: JSON.stringify({ nhanXetChung: 'Em chăm chỉ và cẩn thận.' }) });
+      assert(ngan.status === 400 && gvbmXn.status === 403 && nhac.status === 200 && ok.status === 200, `${ngan.status}/${gvbmXn.status}/${nhac.status}/${ok.status}`);
+    });
+  });
+
 }
