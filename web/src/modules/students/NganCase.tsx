@@ -26,7 +26,7 @@ export type { ViewCase };
 export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose, onChanged }: {
   caseId: number; paId?: number | null;
   /** `tra-loi` cũ trên URL (trước PR-DUYET) → mở Ngăn Case thường: trả lời đề xuất nay là thẻ ngay dưới PA. */
-  viec?: 'ghi-ket-qua' | 'them-pa' | 'hoan-thanh' | 'tra-loi' | 'xac-nhan' | 'xac-nhan-pa';
+  viec?: 'ghi-ket-qua' | 'them-pa' | 'hoan-thanh' | 'tra-loi' | 'xac-nhan' | 'xac-nhan-pa' | 'ke-hoach';
   viecBanDau?: ViewCase;
   hocVien?: string | null; lop?: string | null;
   onClose: () => void; onChanged?: () => void;

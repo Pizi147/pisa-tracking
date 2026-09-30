@@ -3,14 +3,14 @@ import { addMilestone, followUntilAfter, taoCaseTuDong } from '../cases/sos.ts';
 import { dongBoBaoPh } from '../yThuc/phoiHop.ts';
 import { raiseSignal, reconcileCorrectedSignals } from '../cases/signals.ts';
 import {
-  ATTEMPT_KIND_LABEL, PERMISSIONS, RATIO_PASS_THRESHOLD, boTroGiuaKhoa,
+  ATTEMPT_KIND_LABEL, ATTEMPT_KIND_SHORT, PERMISSIONS, RATIO_PASS_THRESHOLD, boTroGiuaKhoa,
   caseCategoriesFor, categoryOf, kiemLyDo, kiemLyDoThaoTac, ngay, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanKeTiep, tuanLich,
   type AssessedSkill, type AttemptKind, type CaseCategory, type RatioOutcome, type SosLevel,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, editableSkills, isCoreTeacherOf, require_, scoreEditPath, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
-import { addJourney, writeAudit } from '../platform/audit.ts';
+import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod } from '../platform/week.ts';
 import { regularSkillViews, weekStartOf } from '../fasttrack/attempts.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
@@ -604,6 +604,19 @@ export function reportRegularNoShow(
         actorUserId: p.userId, action: 'regular.no_show', entityType: 'assessment_attempt', entityId: attemptId,
         entityLabel: skill, before: { week: cu.code }, after: { week: moi.code, noShow: true },
       });
+      /* PR-LT2a (K4-23): vắng cùng môn, cùng bài từ LẦN 2 trở đi → thông báo GVCN (lần 1 thì không). Dedup theo lần. */
+      const lan = (conn.prepare(`SELECT COUNT(*) n FROM audit_logs WHERE action = 'regular.no_show' AND entity_type = 'assessment_attempt' AND entity_id = ? AND entity_label = ?`)
+        .get(attemptId, skill) as any).n as number;
+      if (lan >= 2 && a.class_id) {
+        const hv = conn.prepare('SELECT full_name FROM students WHERE id = ?').get(a.student_id) as any;
+        for (const g of conn.prepare(`SELECT DISTINCT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active'`).all(a.class_id) as any[]) {
+          notify({
+            userId: g.user_id, kind: 'sos', entityType: 'assessment_attempt', entityId: attemptId, dedupKey: `vang-thuong:${attemptId}:${skill}:${lan}`,
+            title: `${hv?.full_name ?? 'Học viên'} vắng ${tenMonNgan(prog.code, skill)} ${ATTEMPT_KIND_SHORT[a.kind as AttemptKind] ?? 'bài kiểm tra'} lần ${lan} — đã dời sang ${tuanLich(moi.weekStart, today)}`,
+            body: 'Vắng từ lần hai trở đi — GVCN xem có cần trao đổi với em / phụ huynh.',
+          });
+        }
+      }
       return { moved: true, tuanCu: cu.code ?? null, tuanMoi: moi.code, result: regularResultOf(attemptId) };
     }
 

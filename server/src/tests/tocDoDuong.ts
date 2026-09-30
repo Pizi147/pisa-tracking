@@ -321,17 +321,18 @@ export const TRAN: Record<string, number> = {
   'QT /classes?branchId=1': 35,
   /* PR-HVL (3): mốc 51 (QT 49) + việc tiếp theo/Ý thức/thẻ chờ duyệt theo lô đo 59 (QT 57) — trần kế hoạch = mốc + 12. */
   /* PR-S4F #5: +3 câu — `quetYeuCau` trước khi đếm thẻ chờ duyệt (badge = hộp); nhớ theo request nên chỉ một lần. */
-  'QL /hoc-vien-lop': 66,
-  'GVCN /hoc-vien-lop': 66,
-  'GVBM /hoc-vien-lop': 66,
-  'GVCN_THUONG /hoc-vien-lop': 66,
+  /* PR-LT2a (Task 7): +1 câu `emCoBaoPhChuaLam` (việc Báo phụ huynh qua TVV của GVCN, MỘT câu theo lô) — đo 67; trần 66 → 72 (+9%, < 30%). */
+  'QL /hoc-vien-lop': 72,
+  'GVCN /hoc-vien-lop': 72,
+  'GVBM /hoc-vien-lop': 72,
+  'GVCN_THUONG /hoc-vien-lop': 72,
   'QT /hoc-vien-lop': 85,
-  'QL /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 66,
-  'QT /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 64,
-  'QL /classes/3/overview': 55,
-  'GVCN /classes/3/overview': 55,
-  'GVBM /classes/3/overview': 55,
-  'GVCN_THUONG /classes/3/overview': 55,
+  'QL /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 72,
+  'QT /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 70,
+  'QL /classes/3/overview': 61,
+  'GVCN /classes/3/overview': 61,
+  'GVBM /classes/3/overview': 61,
+  'GVCN_THUONG /classes/3/overview': 61,
   'QT /classes/3/overview': 54,   // PR-S4F #5: +3 câu quét thẻ chờ duyệt
   /* PR-HVL (2): mốc 46 (QT 43) + Case mở theo lô (`chiTietCaseMo`) đo 50 (QT 47) — trần kế hoạch = mốc + 6. */
   /* PR-HVL (5): `/classes/:id/can-ho-tro` đo 25 (QT 22) = `/cases?classId=` 17 (QT 14) + 8 — đúng trần kế hoạch. */

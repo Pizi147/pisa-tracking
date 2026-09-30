@@ -948,7 +948,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     const live = () => (phoiHop.coordinationOfClass(gvcn, CLASS) as any).pendingCount as number;
     const mine = () => (phoiHop.myCoordinationLines(gvcn) as any[]).find((l: any) => l.classId === CLASS);
     const before = live();
-    assert(mine()?.pendingCount === before && mine()?.text === `Lớp ${code} — ${before} lượt Phối hợp SOS cần xử lý`,
+    assert(mine()?.pendingCount === before && mine()?.text === `Lớp ${code} — ${before} lượt Phối hợp cần xử lý`,
       `Dòng trước khi xử lý: ${JSON.stringify(mine())} vs live ${before}`);
     for (const r of coordOf(f.a.id)) phoiHop.confirmCoordination(gvcn, r.id, { performedOn: TODAY });
     const after = live();

@@ -16,6 +16,8 @@ export async function runPrLt2aTests(t: YThucTestKit) {
   const boTro: any = await import('../cases/boTro.ts');
   const yc: any = await import('../duyet/yeuCau.ts');
   const effectiveness: any = await import('../cases/effectiveness.ts');
+  const mywork: any = await import('../worklist/mywork.ts');
+  const phoiHop: any = await import('../yThuc/phoiHop.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const { createApp } = await import('../app.ts');
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
@@ -343,5 +345,68 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     conn.prepare('UPDATE case_interventions SET han_ke_hoach = ? WHERE id = ?').run(d.addDaysIso(TODAY, -5), paBt(cGv.id).id);
     sosAuto.datLaiHanCase(em.id, TODAY);
     assert(paBt(cGv.id).han_ke_hoach === d.hanXacNhan(TODAY), `Quay lại học: han_ke_hoach = ${paBt(cGv.id).han_ke_hoach}`);
+  });
+
+  // ------------------------------------------------------------------ khối 7 · Việc cần làm + Phối hợp + thông báo (Task 7)
+  const dongViec = (who: any, tienTo: string, hv?: number) => ((mywork.myWork(who) as any).items as any[]).filter((x) => x.key.startsWith(tienTo) && (hv === undefined || x.studentId === hv));
+
+  check('LT2a (7) · GVCN FOU /my-work: "Nộp kế hoạch bổ trợ" (hạn đúng, một dòng mỗi nhóm) + "Báo phụ huynh qua TVV" (không hạn); nộp xong → dòng kế hoạch biến mất; GVBM không phải người dạy không thấy; không có "Xác nhận PA" cho PA bổ trợ', () => {
+    const em = taoEm('LT2a VIEC', 'MB FOU 12');
+    nhap(em.pt!, { listening: 18, reading: 18, writing: 11, speaking: 12 });
+    const cGv = caseTheoMon(em.id, 'writing'), cP = caseTheoMon(em.id, 'speaking');
+    const khoa = gvOf('MB FOU 12', 'writing'), trang = gvOf('MB FOU 12', 'speaking'), ha = P.normalCoreTeacher;
+    assert(!dongViec(ha, 'kehoach:', em.id).length, 'chưa ai xác nhận nguyên nhân → chưa có việc nộp kế hoạch');
+    sosAuto.xacNhanCase(khoa, cGv.id, XN('writing', 'FOU'));
+    const kh = dongViec(ha, 'kehoach:', em.id);
+    assert(kh.length === 1 && kh[0].group === 'ke_hoach_bo_tro' && kh[0].due === d.hanXacNhan(TODAY), `dòng kế hoạch: ${JSON.stringify(kh.map((x) => [x.group, x.due]))}`);
+    assert(kh[0].tieuDe === `Nộp kế hoạch bổ trợ · Giữa khoá · G+V, P · Học viên LT2a VIEC` || /^Nộp kế hoạch bổ trợ · Giữa khoá · G\+V, P · /.test(kh[0].tieuDe), kh[0].tieuDe);
+    assert(d.LOAI_HAN_CUA_VIEC.ke_hoach_bo_tro === 'ke-hoach-bo-tro' && d.nhomViecCua('ke_hoach_bo_tro') === 'case-hoc-thuat' && d.nhomViecCua('phoi_hop') === 'case-hoc-thuat', 'nhóm + loại hạn');
+    const bp = dongViec(ha, 'baoph:', em.id);
+    assert(bp.length === 1 && bp[0].group === 'phoi_hop' && bp[0].due === null && bp[0].tieuDe === 'Báo phụ huynh qua TVV · LT2a VIEC · Giữa khoá', `Báo PH: ${JSON.stringify(bp.map((x) => [x.group, x.due, x.tieuDe]))}`);
+    assert(!dongViec(khoa, 'kehoach:', em.id).length && !dongViec(khoa, 'baoph:', em.id).length, 'GVBM G+V không phải người dạy — không thấy việc nộp kế hoạch / Báo PH');
+    assert(!dongViec(khoa, 'xnpa:', em.id).length && !dongViec(ha, 'xnpa:', em.id).length, 'không có dòng "Xác nhận PA" cho PA bổ trợ');
+    boTro.nopKeHoachBoTro(ha, paBt(cGv.id).id, KH);
+    assert(!dongViec(ha, 'kehoach:', em.id).length, 'nộp xong → dòng biến mất');
+    /* QL thấy dòng của GV ở "Tất cả trong phạm vi" khi chưa nộp: dựng nhóm mới */
+    void cP; void trang;
+  });
+
+  check('LT2a (7) · Nhóm 2 PA đang chạy → MỘT dòng "Ghi kết quả" (id nhỏ nhất) nói "PA chung · G+V, P"; GVCN ghi được, GV không liên quan không thấy', () => {
+    const { cGv, cP, ha, em } = dungFouChay('LT2a FOU VIEC');
+    conn.prepare('UPDATE case_interventions SET action_due = ? WHERE nhom_bo_tro = ?').run(TODAY, paBt(cGv.id).nhom_bo_tro);
+    const rows = dongViec(ha, 'action:', em.id);
+    assert(rows.length === 1 && rows[0].key === `action:${paBt(cGv.id).id}` && /PA chung · G\+V, P/.test(rows[0].reason), `dòng: ${JSON.stringify(rows.map((x) => [x.key, x.reason]))}`);
+    assert(!dongViec(P.w2Teacher, 'action:', em.id).length, 'GV không liên quan không thấy');
+    void cP;
+  });
+
+  check('LT2a (7) · Phối hợp: thẻ "Giữa khoá · 2/4 môn đạt" + 4 nội dung Báo PH; GVCN đánh dấu đã làm → xong; GVBM không phải GVCN → 403', () => {
+    const em = taoEm('LT2a PHOIHOP', 'MB FOU 12');
+    nhap(em.pt!, { listening: 18, reading: 18, writing: 11, speaking: 12 });
+    const cGv = caseTheoMon(em.id, 'writing');
+    sosAuto.xacNhanCase(gvOf('MB FOU 12', 'writing'), cGv.id, XN('writing', 'FOU'));
+    const ha = P.normalCoreTeacher, khoa = gvOf('MB FOU 12', 'writing');
+    const luot = (phoiHop.coordinationOfStudent(ha, em.id) as any).rows.find((r: any) => r.attemptId === em.pt);
+    assert(luot && luot.nhanDot === 'Giữa khoá' && luot.sosLevel === null && luot.ketQua.chinh === '2/4 môn đạt' && luot.ketQua.phu === 'Không đạt: G+V P', JSON.stringify(luot && { n: luot.nhanDot, s: luot.sosLevel, k: luot.ketQua }));
+    const act = luot.actions.find((x: any) => x.kind === 'bao_ph_tvv');
+    assert(act && act.kindLabel === 'Báo phụ huynh qua TVV' && act.noiDung?.length === 4, JSON.stringify(act && act.noiDung));
+    assert(act.noiDung[0].includes('2/4 môn đạt') && act.noiDung[1].includes('G+V, P') && act.noiDung[2].includes('Em mất điểm ở phần này') && act.noiDung[3].includes('học lại'), act.noiDung.join(' | '));
+    assert(maLoi(() => phoiHop.confirmCoordination(khoa, act.id, { performedOn: TODAY })) === 403, 'GVBM không phải GVCN đánh dấu → 403');
+    phoiHop.confirmCoordination(ha, act.id, { performedOn: TODAY, note: 'Đã gửi task cho TVV trên Base.' });
+    assert(get('SELECT status FROM sos_coordination_actions WHERE id = ?', act.id).status === 'done', 'xong');
+    assert(!dongViec(ha, 'baoph:', em.id).length, 'đã làm → hết việc');
+    assert(!(d.COORDINATION_KINDS as readonly string[]).slice(0, 6).includes('bao_ph_tvv'), 'bao_ph_tvv chỉ máy tạo (ngoài sáu loại người dùng chọn)');
+  });
+
+  check('LT2a (7) · Vắng cùng môn lần 2 → GVCN nhận thông báo (dời sang tuần …); lần 1 thì không', () => {
+    const em = taoEm('LT2a VANG', 'MB FOU 12');
+    const ha = P.normalCoreTeacher;
+    const co = (lan: number) => all('SELECT 1 FROM notifications WHERE user_id = ? AND dedup_key = ?', ha.userId, `vang-thuong:${em.pt}:reading:${lan}`).length;
+    regular.saveRegularScore(P.admin, em.pt!, 'reading', { noShow: true });
+    assert(co(1) === 0 && co(2) === 0, 'lần 1 không thông báo');
+    regular.saveRegularScore(P.admin, em.pt!, 'reading', { noShow: true });
+    assert(co(2) === 1, 'lần 2 phải có thông báo');
+    const tb = get('SELECT title FROM notifications WHERE user_id = ? AND dedup_key = ?', ha.userId, `vang-thuong:${em.pt}:reading:2`);
+    assert(/vắng R Giữa khoá lần 2 — đã dời sang W\d/.test(tb.title) && !/SOS/.test(tb.title), tb.title);
   });
 }
