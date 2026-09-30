@@ -36,11 +36,13 @@ export function laVaiQuanLy(roles: readonly string[] | null | undefined): boolea
 
 // ---------------------------------------------------------------- chip lọc (§3.6, Q4)
 
-export const LOC_HOC_VIEN = ['tat-ca', 'can-lam', 'cho-duyet', 'sos', 'thieu_tt'] as const;
+/** PR-S4F #4: `qua-han` — đích của badge "n HV quá hạn việc" (hộp lớp + đầu hồ sơ lớp); chip chỉ hiện khi đang lọc bằng nó (`chipHienLoc`). */
+export const LOC_HOC_VIEN = ['tat-ca', 'can-lam', 'qua-han', 'cho-duyet', 'sos', 'thieu_tt'] as const;
 export type LocHocVien = (typeof LOC_HOC_VIEN)[number];
 export const LOC_HOC_VIEN_NHAN: Record<LocHocVien, { nhan: string; goiY: string; can: string | null }> = {
   'tat-ca': { nhan: 'Tất cả', goiY: 'Mọi học viên đang học trong các lớp đang hiện.', can: null },
   'can-lam': { nhan: 'Cần làm', goiY: 'Có việc quá hạn hoặc việc hạn ngắn (xác nhận, xử lý vi phạm).', can: null },
+  'qua-han': { nhan: 'Quá hạn', goiY: 'Có việc đã quá hạn (xác nhận, ghi kết quả, xử lý vi phạm) — cùng số với badge "HV quá hạn việc".', can: null },
   'cho-duyet': { nhan: 'Chờ duyệt', goiY: 'Có yêu cầu đang chờ Quản lý duyệt.', can: null },
   sos: { nhan: 'Đang SOS', goiY: 'Chỉ Fast Track: Mock gần nhất ở mức SOS 1–3.', can: 'case.view' },
   thieu_tt: { nhan: 'Thiếu thông tin', goiY: 'Hồ sơ còn thiếu thông tin cần để xếp lịch và theo dõi.', can: null },
@@ -51,9 +53,14 @@ export type DocLoc = { loc: LocHocVien } | { chuyenDen: string };
 export function docThamSoLoc(view: string | null | undefined): DocLoc {
   if (view === 'sos' || view === 'sos_open') return { loc: 'sos' };
   if (view === 'case_working' || view === 'case_no_plan' || view === 'case_overdue') return { loc: 'can-lam' };
-  if (view === 'can-lam' || view === 'cho-duyet' || view === 'thieu_tt') return { loc: view };
+  if (view === 'can-lam' || view === 'qua-han' || view === 'cho-duyet' || view === 'thieu_tt') return { loc: view };
   if (view === 'missing_scores') return { chuyenDen: '/test/lich' };
   return { loc: 'tat-ca' };
+}
+
+/** Chip `qua-han` không nằm thường trực trên hàng chip — chỉ hiện (đang bấm) khi người dùng tới từ badge. */
+export function chipHienLoc(k: LocHocVien, dangLoc: LocHocVien | null): boolean {
+  return k !== 'qua-han' || dangLoc === 'qua-han';
 }
 
 /** MỘT hàm đếm chip cho máy chủ (`dem`) và web (đổi công tắc khung): mỗi em mang các cờ `loc`, thuộc khung `ft`/`thuong`. */
@@ -450,6 +457,25 @@ export function hangCanHoTro<T extends CaseCuaHang>(i: {
   }
   const nhanCua = new Map(hang.map((h) => [h.khoa, h.nhan]));
   return out.map((x) => (x.kind === 'rong' ? { ...x, nhan: `Không có Case: ${x.khoa.map((k) => nhanCua.get(k)).join(' · ')}` } : x));
+}
+
+/**
+ * PR-S4F #5: Cần hỗ trợ sau công tắc "Chỉ kỹ năng tôi dạy" — lọc em và đếm SAU `hangCanHoTro`: em không còn Case ở kỹ năng đang xem thì bỏ
+ * cả khối; `cases` của em = Case đang hiện (cột trái "n Case · k việc quá hạn"); `tong` cùng công thức `tong` của máy chủ (canHoTro.ts).
+ */
+type CaseCanHoTro = CaseCuaHang & { trangThai?: { k: string }; pas?: readonly { choDuyet: boolean; xong: boolean }[] };
+export function locCanHoTro<E extends { ten: string; cases: readonly CaseCanHoTro[] }>(i: { ct: string | null; em: readonly E[]; chiKyNang?: readonly string[] | null }) {
+  const em = sapEmCanHoTro(i.em.map((e) => {
+    const hang = hangCanHoTro<E['cases'][number]>({ ct: i.ct, cases: e.cases, chiKyNang: i.chiKyNang ?? null });
+    return { ...e, hang, cases: hang.flatMap((h) => (h.kind === 'hang' ? h.cases : [])) };
+  }).filter((e) => e.cases.length > 0));
+  const cs = em.flatMap((e) => e.cases);
+  const tong = {
+    soEm: em.length, soCase: cs.length, quaHan: cs.filter((c) => c.quaHan).length,
+    choDuyet: cs.filter((c) => c.trangThai?.k === 'cho-duyet-khong-theo-doi').length
+      + cs.reduce((n, c) => n + (c.pas ?? []).filter((x) => x.choDuyet && !x.xong).length, 0),
+  };
+  return { em, tong };
 }
 
 /** Em có Case QUÁ HẠN lên đầu, rồi theo tên (`localeCompare('vi')`). */

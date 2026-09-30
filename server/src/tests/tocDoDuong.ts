@@ -319,18 +319,19 @@ export const TRAN: Record<string, number> = {
   'QL /classes?branchId=1': 35,
   'QT /classes?branchId=1': 35,
   /* PR-HVL (3): mốc 51 (QT 49) + việc tiếp theo/Ý thức/thẻ chờ duyệt theo lô đo 59 (QT 57) — trần kế hoạch = mốc + 12. */
-  'QL /hoc-vien-lop': 63,
-  'GVCN /hoc-vien-lop': 63,
-  'GVBM /hoc-vien-lop': 63,
-  'GVCN_THUONG /hoc-vien-lop': 63,
-  'QT /hoc-vien-lop': 82,
-  'QL /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 63,
-  'QT /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 61,
+  /* PR-S4F #5: +3 câu — `quetYeuCau` trước khi đếm thẻ chờ duyệt (badge = hộp); nhớ theo request nên chỉ một lần. */
+  'QL /hoc-vien-lop': 66,
+  'GVCN /hoc-vien-lop': 66,
+  'GVBM /hoc-vien-lop': 66,
+  'GVCN_THUONG /hoc-vien-lop': 66,
+  'QT /hoc-vien-lop': 85,
+  'QL /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 66,
+  'QT /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 64,
   'QL /classes/3/overview': 55,
   'GVCN /classes/3/overview': 55,
   'GVBM /classes/3/overview': 55,
   'GVCN_THUONG /classes/3/overview': 55,
-  'QT /classes/3/overview': 51,
+  'QT /classes/3/overview': 54,   // PR-S4F #5: +3 câu quét thẻ chờ duyệt
   /* PR-HVL (2): mốc 46 (QT 43) + Case mở theo lô (`chiTietCaseMo`) đo 50 (QT 47) — trần kế hoạch = mốc + 6. */
   /* PR-HVL (5): `/classes/:id/can-ho-tro` đo 25 (QT 22) = `/cases?classId=` 17 (QT 14) + 8 — đúng trần kế hoạch. */
   /* PR-HVL (7): `/classes/:id/progress` đo 17 (QT 16) sau khi thêm `tomTatMt` — trần = đo + 3. */

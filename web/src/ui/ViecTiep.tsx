@@ -9,12 +9,18 @@ import { QuaHan } from './Nhan.tsx';
  * `onBam`: thay cho `den` khi việc mở ngay tại chỗ (Cần hỗ trợ mở Ngăn Case không rời trang lớp).
  */
 export function ViecTiep({ v, den, onBam }: { v: ViecTiepTheo; den?: string | null; onBam?: () => void }) {
+  /*
+   * PR-S4F #13: max-w-full — trong cột flex `items-start` (Theo dõi, Việc tiếp theo) phần tử rộng theo chữ nên chữ lấn lề ô. Chật thì chỉ CHỮ VIỆC
+   * bị cắt (…, câu đủ ở title); "⚠ quá hạn n ngày" / "· hạn" luôn hiện đủ.
+   */
   return (
-    <span className="block truncate text-xs text-slate-200" title={v.title}>
-      {onBam ? <button type="button" className="link cursor-pointer border-0 bg-transparent p-0 text-left text-xs" onClick={onBam}>{v.viec}</button>
-        : den ? <Link to={den} className="link">{v.viec}</Link> : v.viec}
-      {v.quaHanNgay !== null ? <> <QuaHan ngay={v.quaHanNgay} /></>
-        : v.han ? <span className="text-slate-500"> · {v.han}</span> : null}
+    <span className="flex max-w-full items-baseline text-xs text-slate-200" title={v.title}>
+      <span className="min-w-0 truncate">
+        {onBam ? <button type="button" className="link cursor-pointer border-0 bg-transparent p-0 text-left text-xs" onClick={onBam}>{v.viec}</button>
+          : den ? <Link to={den} className="link">{v.viec}</Link> : v.viec}
+      </span>
+      {v.quaHanNgay !== null ? <span className="shrink-0 whitespace-nowrap">&nbsp;<QuaHan ngay={v.quaHanNgay} /></span>
+        : v.han ? <span className="shrink-0 whitespace-nowrap text-slate-500">&nbsp;· {v.han}</span> : null}
     </span>
   );
 }

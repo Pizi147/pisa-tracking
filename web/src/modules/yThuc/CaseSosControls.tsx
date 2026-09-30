@@ -229,7 +229,7 @@ export function KhongTheoDoiForm({ caseId, onClose, onDone }: { caseId: number; 
   };
 
   return (
-    <div className="space-y-2 rounded-lg p-2.5" style={{ background: 'var(--surface-1)' }} role="group" aria-label="Không cần theo dõi">
+    <div className="space-y-2 rounded-lg p-2.5" style={{ background: 'var(--surface-2)' }} role="group" aria-label="Không cần theo dõi">
       <p className="m-0 text-xs text-slate-300">Không cần theo dõi Case này vì:</p>
       <div className="flex flex-wrap gap-1.5">
         {CASE_DISMISS_REASONS.map((r) => (

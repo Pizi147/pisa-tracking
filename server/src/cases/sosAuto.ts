@@ -321,7 +321,11 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
   if (iv.case_status === 'done') throw badRequest('Case đã đóng — không còn xác nhận PA được.');
   if (iv.confirmed_at || iv.status !== 'planned') throw badRequest('PA này đã được xác nhận rồi.');
   if (!sosCaseState(iv.case_id).hasCause) throw badRequest('Xác nhận nguyên nhân (Xác nhận Case) trước, rồi mới xác nhận PA.');
-  const description = String(input.description ?? iv.description ?? '').trim();
+  /* PR-S4F #9 (Q28-5): mô tả phải do người xác nhận gửi lên — không lấy mô tả máy gán thay (xác nhận "nguyên văn" thì gửi lại đúng chữ đó). */
+  if (typeof input.description !== 'string' || !input.description.trim()) {
+    throw badRequest('Thiếu mô tả PA — ghi hướng dẫn, trọng tâm và ai thực hiện rồi mới xác nhận.');
+  }
+  const description = input.description.trim();
   if (description.length < 15) throw badRequest('Mô tả PA cần ít nhất 15 ký tự — nêu hướng dẫn, trọng tâm và ai thực hiện.');
   if (description.length > 2000) throw badRequest('Mô tả PA tối đa 2000 ký tự.');
   const nguoi = chuanHoaNguoiThucHien(p, input, { nhom: 'giao_vien', batBuoc: false });

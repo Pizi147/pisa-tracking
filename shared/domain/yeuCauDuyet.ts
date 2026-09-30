@@ -152,3 +152,7 @@ export type TheYeuCauDto = {
 
 /** `cho` = mọi thẻ đang chờ trong hộp (= chip "Tất cả", gồm Báo lên); `quaHan` = thẻ đỏ; `baoLen` = trong đó Báo lên — xem `demHop`. */
 export type DemYeuCau = { cho: number; quaHan: number; baoLen: number; cuaToiCho: number; cuaToiTuChoi: number };
+
+/** PR-S4F #14: thẻ Báo lên không có người để Nhắc (`duLieu.ownerId` rỗng) — ghi rõ vì sao thay cho nút Nhắc. */
+export const nhanKhongNguoiNhac = (loai: string): string =>
+  loai === 'bao_len_nguyen_nhan' ? 'Case chưa có người phụ trách' : 'Lớp chưa có GVCN';

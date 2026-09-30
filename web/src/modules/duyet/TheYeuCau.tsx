@@ -7,7 +7,7 @@ import { NhanTrangThai } from '../../ui/ui.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useSession } from '../../lib/session.tsx';
-import { deadlineView, nhanTrangThaiYc, type TheYeuCauDto } from '@shared/domain/index.ts';
+import { deadlineView, nhanKhongNguoiNhac, nhanTrangThaiYc, type TheYeuCauDto } from '@shared/domain/index.ts';
 
 /**
  * MỘT THẺ YÊU CẦU (PR-DUYET, mockup M8, đặc tả §7.6) — MỘT khuôn cho hộp Chờ duyệt, Yêu cầu của tôi, Ngăn Case (`gon`) và hồ sơ HV
@@ -196,7 +196,11 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
                   </button>
                 )}
               </>}
-              {coNut && yc.kieuNut === 'nhac' && (
+              {/* PR-S4F #14: không có người nhận (lớp chưa có GVCN / Case chưa có người phụ trách) — không vẽ nút Nhắc bấm không ra gì. */}
+              {coNut && yc.kieuNut === 'nhac' && typeof yc.duLieu?.ownerId !== 'number' && (
+                <span className="self-center whitespace-nowrap text-[12px] text-late">{nhanKhongNguoiNhac(yc.loai)}</span>
+              )}
+              {coNut && yc.kieuNut === 'nhac' && typeof yc.duLieu?.ownerId === 'number' && (
                 daNhac
                   ? <span className="self-center whitespace-nowrap text-[12px] text-slate-400">✓ Đã nhắc {fmtTime(daNhac)}</span>
                   : <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={nhac}>

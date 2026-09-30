@@ -75,8 +75,7 @@ export default function ClassOverviewPage() {
 
   return (
     <div className="page space-y-4">
-      <DauTrangLop data={data} periodId={periodId} onViec={setViec}
-        onCheDoCanHoTro={() => doiThamSo({ tab: null, 'che-do': 'can-ho-tro' })} />
+      <DauTrangLop data={data} periodId={periodId} onViec={setViec} />
 
       <HangTab ariaLabel="Hồ sơ lớp" value={tab}
         onChange={(k: TabHoSoLop) => doiThamSo({ tab: k === 'hoc-vien' ? null : k })}

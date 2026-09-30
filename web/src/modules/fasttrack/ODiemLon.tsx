@@ -10,7 +10,7 @@
  * LR GRA), mỗi hàng lưu riêng — hai task có thể hai GV (K4-31).
  */
 import { useEffect, useRef, useState } from 'react';
-import { ngay, tuanLich } from '@shared/domain/index.ts';
+import { ngay, skillShort, tuanLich } from '@shared/domain/index.ts';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
 import { Han } from '../../ui/Han.tsx';
@@ -98,7 +98,8 @@ export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo, sav
     } else if ((k === 'listening' || k === 'reading') && bai[0]?.rawScore != null) {
       phu = { chu: `${bai[0].rawScore} câu` };
     } else if (k === 'speaking' && bai[0]?.gvCham) {
-      phu = { chu: `GV chấm: ${bai[0].gvCham.ten}` };
+      /* PR-S4F #10: tên dài bị cắt (truncate) — title cho đủ tên. */
+      phu = { chu: `GV chấm: ${bai[0].gvCham.ten}`, title: `GV chấm: ${bai[0].gvCham.ten}` };
     } else if (band !== null) {
       phu = { chu: '' };
     } else {
@@ -121,7 +122,8 @@ export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo, sav
         <span className={`mt-1 block min-h-[1rem] truncate text-xs ${phu.mau ?? 'text-slate-500'}`} title={phu.title}>{phu.chu}</span>
       </>
     );
-    const vo = `min-w-0 rounded-lg border px-3 py-2.5 text-left ${mo === k ? 'border-[color:var(--accent-strong)] bg-white/[0.04]' : ''}`;
+    /* PR-S4F #10: flex-col cho cả nút và ô chỉ đọc — nút căn giữa nội dung theo chiều dọc nên lệch ~3 px so với ô bên cạnh. */
+    const vo = `flex min-w-0 flex-col rounded-lg border px-3 py-2.5 text-left ${mo === k ? 'border-[color:var(--accent-strong)] bg-white/[0.04]' : ''}`;
     return sua ? (
       <button key={k} type="button" aria-expanded={mo === k} aria-controls="khung-sua-diem"
         title={[nhapBoi, 'Bấm để nhập / sửa điểm tại chỗ.'].filter(Boolean).join('\n')}
@@ -140,14 +142,15 @@ export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo, sav
     <div ref={dai} className="space-y-2">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
         {KY_NANG_LON.map(oKyNang)}
-        <div className="col-span-2 min-w-0 rounded-lg border px-3 py-2.5 sm:col-span-1" style={{ borderColor: 'var(--line)' }}>
+        <div className="col-span-2 flex min-w-0 flex-col rounded-lg border px-3 py-2.5 sm:col-span-1" style={{ borderColor: 'var(--line)' }}>
           <span className="block text-xs font-medium text-slate-400">Overall</span>
           <span className={`mt-0.5 block text-[28px] font-bold leading-none tabular-nums ${result.overall === null ? 'text-slate-600' : 'text-slate-100'}`}>
             {result.overall === null ? '—' : fmtBand(result.overall)}
           </span>
           <span className="mt-1 block min-h-[1rem] truncate">
             <KetQuaDot phan="overall" coDiem={result.scoredRequired} yeuCau={result.required.length} dat={ketLuan}
-              sos={result.sosLevel ?? null} />
+              sos={result.sosLevel ?? null}
+              duoiKyVong={(result.verdicts ?? []).filter((x: any) => x.passed === false).map((x: any) => skillShort(x.skill))} />
           </span>
         </div>
       </div>

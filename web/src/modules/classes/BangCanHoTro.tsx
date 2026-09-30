@@ -11,7 +11,7 @@ import { KhoaQuyChe, TenCase } from '../cases/SkillBoard.tsx';
 import { NganCase } from '../students/NganCase.tsx';
 import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from './thaoTacDongHocVien.tsx';
 import {
-  ROUTE_NAME, hangCanHoTro, ketQuaGanNhat, maHocVienNgan, sapEmCanHoTro, viecTiepCuaEm,
+  ROUTE_NAME, ketQuaGanNhat, locCanHoTro, maHocVienNgan, viecTiepCuaEm,
   type HangKyNang, type KetQuaVao, type ViecTiepCase,
 } from '@shared/domain/index.ts';
 
@@ -61,7 +61,12 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
   const dienThoai = useDienThoai();
   const rosterTheoEm = useMemo(() => new Map((roster.data ?? []).map((s) => [s.id, s])), [roster.data]);
   const d = trang.data;
-  const em = useMemo(() => sapEmCanHoTro(d?.em ?? []), [d]);
+  const ct = d ? d.ct ?? chuongTrinh : chuongTrinh;
+  /* Q12: bật sẵn khi người xem CHỈ là GVBM và dạy 1–2 kỹ năng; không nhớ qua lần mở. */
+  const coCongTac = !!d && d.kyNangToi.length > 0 && d.kyNangToi.length < d.boMon.length;
+  const bat = coCongTac && (chiToi ?? (!!d?.laGvbmThuan && d.kyNangToi.length <= 2));
+  /* PR-S4F #5: lọc em + đếm SAU `hangCanHoTro` — số ở dòng tổng và cột trái theo Case đang hiện. */
+  const { em, tong } = useMemo(() => locCanHoTro({ ct, em: d?.em ?? [], chiKyNang: bat ? d!.kyNangToi : null }), [d, ct, bat]);
 
   if (trang.error || roster.error) {
     const e = (trang.error ?? roster.error)!;
@@ -69,13 +74,8 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
   }
   if (!d || !roster.data) return <Skeleton rows={4} />;
   if (!d.em.length) return <Empty title="Không có học viên nào đang có Case mở" />;
-  const ct = d.ct ?? chuongTrinh;
-  /* Q12: bật sẵn khi người xem CHỈ là GVBM và dạy 1–2 kỹ năng; không nhớ qua lần mở. */
-  const coCongTac = d.kyNangToi.length > 0 && d.kyNangToi.length < d.boMon.length;
-  const bat = coCongTac && (chiToi ?? (d.laGvbmThuan && d.kyNangToi.length <= 2));
-  const chiKyNang = bat ? d.kyNangToi : null;
-  const dong = [`${d.tong.soEm} em`, `${d.tong.soCase} Case`,
-    d.tong.choDuyet > 0 ? `${d.tong.choDuyet} chờ Quản lý duyệt` : null, d.tong.quaHan > 0 ? `${d.tong.quaHan} quá hạn` : null].filter(Boolean).join(' · ');
+  const dong = [`${tong.soEm} em`, `${tong.soCase} Case`,
+    tong.choDuyet > 0 ? `${tong.choDuyet} Case chờ Quản lý duyệt` : null, tong.quaHan > 0 ? `${tong.quaHan} quá hạn` : null].filter(Boolean).join(' · ');
   const soEmHoc = roster.data.filter((s) => !s.archived).length;
 
   return (
@@ -97,7 +97,7 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
       {em.map((e) => {
         const r = rosterTheoEm.get(e.id);
         const k = ketQuaGanNhat(r?.standing ?? null);
-        const hang = hangCanHoTro({ ct, cases: e.cases, chiKyNang });
+        const hang = e.hang;
         const nQuaHan = e.cases.filter((c) => c.quaHan).length;
         return (
           <article key={e.id} className={`card overflow-hidden ${CAO_TRAI}`} aria-label={`Cần hỗ trợ: ${e.ten}`}>
@@ -163,7 +163,7 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
           </article>
         );
       })}
-      {soEmHoc > em.length && <p className="m-0 text-[11px] text-slate-500">{soEmHoc - em.length} học viên không có Case đang mở.</p>}
+      {soEmHoc > em.length && <p className="m-0 text-[11px] text-slate-500">{soEmHoc - em.length} học viên không có Case đang mở{bat ? ' ở kỹ năng bạn dạy' : ''}.</p>}
       {tt.panels}
       {ngan && (
         <NganCase caseId={ngan.caseId} paId={ngan.paId} viec={ngan.viec} hocVien={ngan.em} lop={maLop}

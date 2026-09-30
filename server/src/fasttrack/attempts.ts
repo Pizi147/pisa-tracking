@@ -9,7 +9,7 @@ import { demoToday } from '../demoConfig.ts';
 import { badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { dotHoanTat, dotHoanTatMany, quyenSuaSauHoanTat } from './hoanTat.ts';
 import {
-  can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, moveableSkills, mySkills, require_, scopeFor, scoreEditPath, type LuotQuyen,
+  can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, moveableSkills, mySkills, require_, requireXemLuotCham, scopeFor, scoreEditPath, type LuotQuyen,
   type Principal,
 } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
@@ -890,8 +890,7 @@ export function attemptDetail(p: Principal, attemptId: number) {
   const conn = db();
   const a = conn.prepare(`${ATTEMPT_SELECT} WHERE a.id = ?`).get(attemptId) as any;
   if (!a) throw notFound('Không tìm thấy lượt Mock Test');
-  require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId: a.class_id, studentId: a.student_id },
-    'Lượt Mock này nằm ngoài phạm vi bạn được xem.');
+  requireXemLuotCham(p, { classId: a.class_id, studentId: a.student_id }, 'Lượt Mock này nằm ngoài phạm vi bạn được xem.');
 
   const scores = scoresOf(attemptId);
   /*
@@ -1517,6 +1516,10 @@ export function saveScore(
   const nx = coNhanXet ? kiemNhanXet(patch.nhanXet) : null;
   if (nx && 'loi' in nx) throw badRequest(nx.loi);
   const nxGt = nx && 'gt' in nx ? nx.gt : undefined;
+  /* PR-S4F #10: xoá GV chấm phải gửi `null` rõ — false / 0 / "" là dữ liệu hỏng, không hiểu thành "xoá". */
+  if (coGvCham && patch.gvCham !== null && (typeof patch.gvCham !== 'object' || Array.isArray(patch.gvCham))) {
+    throw badRequest('GV chấm không hợp lệ — gửi người chấm, hoặc null để xoá.');
+  }
   const gv = coGvCham ? (patch.gvCham ? gvChamHopLe(p, patch.gvCham) : null) : undefined;
   const chiNhanXet = (coNhanXet || coGvCham) && patch.rawScore === undefined && patch.rawTotal === undefined
     && patch.criteria === undefined && patch.noShow === undefined && patch.resultDate === undefined && patch.note === undefined;
@@ -1613,6 +1616,10 @@ export function saveScore(
         if (patch.criteria !== undefined) {
           if (!Array.isArray(patch.criteria) || patch.criteria.length !== 4) throw badRequest('Cần đủ bốn ô tiêu chí.');
           crit = patch.criteria.map((v) => (v === null || v === undefined || v === ('' as any) ? null : Number(v)));
+          /* PR-S4F #10: "abc" (NaN) hay 6.3 không được thành band — tiêu chí chỉ nhận 0–9, bậc 0.5. */
+          if (crit.some((v) => v !== null && (!Number.isFinite(v) || v < 0 || v > 9 || !Number.isInteger(v * 2)))) {
+            throw badRequest('Điểm tiêu chí phải là số từ 0 đến 9, bậc 0.5 (ví dụ 6 hoặc 6.5).');
+          }
         }
         band = bandFromCriteria(crit);
         raw = null;
@@ -1737,7 +1744,7 @@ export function classScoreSheet(
   const cls = conn.prepare('SELECT c.*, b.name AS branch_name FROM classes c JOIN branches b ON b.id=c.branch_id WHERE c.id=?')
     .get(classId) as any;
   if (!cls) throw notFound('Không tìm thấy lớp');
-  require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
+  requireXemLuotCham(p, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
   /*
    * BẢNG NÀY LÀ BẢNG MOCK TEST. Lớp thường có bảng riêng (`regularSheet`): chấm theo số câu đúng/tổng số câu, bài tên
    * "Giữa khoá"/"Cuối khoá". Mở nhầm bảng là đọc sai cả kết quả — bảng này gọi mọi lượt là "MT{n}" và chấm theo band.

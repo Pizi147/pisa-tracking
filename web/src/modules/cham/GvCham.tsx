@@ -12,6 +12,7 @@ import { nguoiThanhPayload, type NguoiChon } from '@shared/domain/index.ts';
 import { Modal } from '../../ui/Drawer.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { MuiTenGap } from '../yThuc/NhanViPham.tsx';
+import { useSession } from '../../lib/session.tsx';
 
 /** GV chấm đã lưu của một ô (máy chủ) → giá trị của ô chọn người. */
 export const gvChamThanhChon = (g: { userId: number | null; ten: string } | null | undefined): NguoiChon | null =>
@@ -26,9 +27,14 @@ export function cungGvCham(a: NguoiChon | null, b: NguoiChon | null, toiId: numb
   return khoa(a) === khoa(b);
 }
 
+/** Ô nhớ trên máy: người dùng × lớp × tuần (PR-S4F #10 — máy dùng chung: đổi tài khoản không kế thừa lựa chọn của người trước). */
+export const khoaGvChamCot = (userId: number | null | undefined, classId: number | null | undefined, periodId: number | null | undefined) =>
+  userId && classId && periodId ? `pisa:gv-cham:${userId}:${classId}:${periodId}` : null;
+
 /** GV chấm mặc định của cột S — lớp × tuần, nhớ trên máy. Không có/hỏng → "Tôi" nếu người xem được phân công S. */
 export function useGvChamCot(classId: number | null | undefined, periodId: number | null | undefined, laCuaToi: boolean) {
-  const khoa = classId && periodId ? `pisa:gv-cham:${classId}:${periodId}` : null;
+  const { session } = useSession();
+  const khoa = khoaGvChamCot(session?.user?.id, classId, periodId);
   const doc = (): NguoiChon | null => {
     const macDinh: NguoiChon | null = laCuaToi ? { kieu: 'toi' } : null;
     if (!khoa) return macDinh;

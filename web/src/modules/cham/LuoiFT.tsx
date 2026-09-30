@@ -60,7 +60,8 @@ export const tenDotFt = (data: FtSheet | null | undefined) =>
  * ĐỘ RỘNG CỘT CỐ ĐỊNH (G-2): `table-layout: fixed` + `colgroup`, nên cột và hàng thẳng dù dòng nào nhiều chữ hơn.
  * Tổng rộng là chiều rộng tối thiểu của bảng — màn hẹp hơn thì cuộn ngang TRONG THẺ (G-11), trang không cuộn ngang.
  */
-const COT_HV = 190, COT_MT = 56, COT_TT = 118, COT_HAN = 140, COT_KN = 104, COT_SO = 72, COT_KQ = 150;
+/* PR-S4F #8: chip "▶ Đang chấm · 2/4" (Be Vietnam Pro) cần ~146 px — TT 118→146, bù HV 190→176, Kết quả 150→136: tổng vẫn 1400 px. */
+const COT_HV = 176, COT_MT = 56, COT_TT = 146, COT_HAN = 140, COT_KN = 104, COT_SO = 72, COT_KQ = 136;
 /* PR-HSM: cột W tổng chỉ đọc (K4-26, Q12) · cột S nới cho nút "GV chấm: {tên}" dưới tiêu đề (K4-24). */
 const COT_W = 56, COT_S = 130;   // PR-HSM: +W, S rộng hơn → Hạn 200→140, Kết quả 176→150 để bảng đủ cột vẫn vừa 1400 px
 const W_HINT = 'Band Writing = (Task 1 + Task 2 × 2) / 3, khi đủ hai task.';
