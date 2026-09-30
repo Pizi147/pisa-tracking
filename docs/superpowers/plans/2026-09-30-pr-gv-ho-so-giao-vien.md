@@ -452,3 +452,6 @@ const rows = o.map((d, i) => ({ ...goc.get(d.attemptId)!, id: d.attemptId * 10 +
 - **C1 = A (planning chốt):** không làm "chấm đúng hạn" lịch sử; chỉ nợ hiện tại.
 - **C2 = A (planning chốt):** bảng giáo viên chi nhánh không có cột "Việc quá hạn" tổng; xem trong hồ sơ từng người.
 - Việc Bàn giao (PR-CT) tự vào khối "Việc đang có" qua nhóm Vận hành; cổng 🛑 G4 giữ nguyên.
+- **Kết quả gần nhất (chủ sản phẩm 30/09, thắng Q7 và Task tương ứng):** BỎ cột "Cả bài". Ô môn GV **dạy** có **viền xanh** (token accent, nền accent nhạt), không nhãn chữ; môn khác hiện **bình thường** (không mờ). GVCN **không** làm cả hàng đậm — chỉ môn mình dạy có viền. Lớp thường: tên môn theo chương trình trong từng ô (FOU L · R · G+V · P; BE/ELE L · R · W · S) qua `tenMonNgan`. Một chú thích nhỏ "môn bạn dạy" ở đầu khối. Mockup 21 đã sửa theo.
+- Dữ liệu demo / mockup: GVCN luôn dạy ≥ 1 môn của lớp (luật L3) — lớp FOU có môn.
+- **Chuyển cho PR-Pb2 (đợt 6):** bảng **Phân tích giáo viên** (Tổng quan › Phân tích) — chủ sản phẩm muốn một bảng phân tích GV "hẳn hoi" như màn D nhưng thông tin khác; planning soạn đề xuất + mockup khi soạn đợt 6.
