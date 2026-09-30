@@ -149,7 +149,7 @@ export function transitionPlan(p: Principal, classId: number) {
     from: {
       id: cls.id, code: cls.code, branchId: cls.branch_id, branchCode: cls.branch_code,
       branchName: cls.branch_name,
-      programmeCode: cls.programme_code, programmeName: progress.programmeName,
+      programmeCode: cls.programme_code, programmeName: progress.programmeName, route: (cls.route ?? null) as string | null,
       phase: progress.phase, phaseLabel: progress.phaseLabel,
       totalWeeks: progress.totalWeeks, currentWeek: progress.currentWeek,
     },
@@ -161,6 +161,8 @@ export function transitionPlan(p: Principal, classId: number) {
     tuanCuoiKhoa: progress.finalWeekStart,
     tuanKetThuc: progress.startWeekStart && progress.totalWeeks ? addDays(progress.startWeekStart, (progress.totalWeeks - 1) * 7) : null,
     cheDo: (ft ? 'ft' : 'thuong') as 'ft' | 'thuong',
+    /** GVCN của lớp nguồn — câu "Sau khi gửi: GVCN … có việc Bàn giao" ở bước Xác nhận. */
+    gvcn: ((conn.prepare(`SELECT u.full_name FROM teacher_assignments ta JOIN users u ON u.id = ta.user_id WHERE ta.class_id = ? AND ta.is_core = 1 AND ta.status = 'active' LIMIT 1`).get(classId) as any)?.full_name ?? null) as string | null,
     tuanChon: tuanChonDuoc(demoToday()),
     students: students.map((s) => ({
       id: s.id, studentCode: s.student_code, fullName: s.full_name,

@@ -9,7 +9,7 @@ import { useSession } from '../../lib/session.tsx';
 import { TenGiaoVien } from './TenGiaoVien.tsx';
 import type { TinhTrangXoaKetThuc } from './XoaKetThucLopPanel.tsx';
 import {
-  ROUTE_NAME, badgeLop, duongLichTest, laVaiQuanLy, needScoresText, ngay, nhomGiaoVienBoMon, nutChinhDauTrang, tuanKhoa, type BadgeLop, type NhomGiaoVien, type WorkScope,
+  ROUTE_NAME, badgeLop, duongLichTest, laVaiQuanLy, needScoresText, ngay, nhomGiaoVienBoMon, nutChinhDauTrang, tuanKhoa, type BadgeLop, type DaiLop, type NhomGiaoVien, type WorkScope,
 } from '@shared/domain/index.ts';
 
 /** `GET /classes/:id/overview` (server/src/classes/classes.ts → classOverview). */
@@ -33,6 +33,8 @@ export type HoSoLop = {
   /** Lớp thường ở Cuối khoá / hết khoá: số em có đủ điểm bài Cuối khoá (null ở chặng khác). */
   cuoiKhoa: { du: number; tong: number } | null;
   canhBaoYThuc: number;
+  /** PR-CT: dữ liệu dải Kết thúc khoá / Bàn giao / Sắp nhận (mockup 20 — A, H); null khi lớp đã kết thúc. */
+  dai: DaiLop | null;
   status?: string; finishedAt?: string | null;
   viewer: {
     canPlanWeek: boolean; canAddStudents: boolean; canAssign: boolean; canEditProgress: boolean;
@@ -44,7 +46,7 @@ export type HoSoLop = {
     coTheXoaKetThuc?: boolean;
   };
 };
-export type ViecDauTrang = 'tien-do' | 'chuyen-tiep' | 'phan-cong' | 'thong-tin' | 'case' | 'hoc-vien' | 'xoa-lop' | 'ket-thuc-lop' | 'xuat-mt';
+export type ViecDauTrang = 'tien-do' | 'chuyen-tiep' | 'ban-giao' | 'phan-cong' | 'thong-tin' | 'case' | 'hoc-vien' | 'xoa-lop' | 'ket-thuc-lop' | 'xuat-mt';
 
 /**
  * ĐẦU TRANG HỒ SƠ LỚP (đặc tả §3.7, mockup 06c §1; PR-HVL K2-14, B4, E7, K2-13). Nằm ở: Học viên & Lớp → Hồ sơ lớp → đầu trang.
@@ -100,7 +102,9 @@ export function DauTrangLop({ data, periodId, onViec }: {
   const menu: MucMenu[] = [
     /* E7: panel FT tên "Tuần khai giảng", lớp thường "Lịch kiểm tra". Xuất Excel (PR-XUAT) chép vào mảng này, sau "Sửa thông tin lớp". */
     ...(data.viewer.canEditProgress ? [{ key: 'tien-do', nhan: thuong ? 'Lịch kiểm tra' : 'Tuần khai giảng', onChon: () => onViec('tien-do') }] : []),
-    ...(thuong && data.viewer.coTheChuyenTiep && chinh.loai !== 'chuyen-tiep' ? [{ key: 'chuyen-tiep', nhan: 'Chuyển tiếp lớp', onChon: () => onViec('chuyen-tiep') }] : []),
+    /* PR-CT (Q30-1): Quản lý RA LỆNH — lớp thường "Chuyển lớp cả lớp…", lớp FT (gộp / tách lớp, đổi lộ trình) "Chuyển nhiều em…". GVCN không thấy. */
+    ...(thuong && data.viewer.coTheChuyenTiep ? [{ key: 'chuyen-tiep', nhan: 'Chuyển lớp cả lớp…', onChon: () => onViec('chuyen-tiep') }] : []),
+    ...(!thuong && data.dai?.viewer.coTheChuyenNhieuEm ? [{ key: 'chuyen-tiep', nhan: 'Chuyển nhiều em…', onChon: () => onViec('chuyen-tiep') }] : []),
     ...phu.slice(2).map((x) => ({ key: x.key, nhan: x.nhan, onChon: x.lam })),
     ...(data.viewer.canAssign ? [{ key: 'phan-cong', nhan: 'Sửa phân công', onChon: () => onViec('phan-cong') }] : []),
     ...(data.viewer.canEditProgress ? [{ key: 'thong-tin', nhan: 'Sửa thông tin lớp', onChon: () => onViec('thong-tin') }] : []),

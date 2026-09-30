@@ -3,6 +3,7 @@ import { boMonLich, kyNangGoiY, tenMonNgan, tuanChonDuoc } from '../../../shared
 import { addDays } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import type { Principal } from '../permissions.ts';
+import type { DaiHocVien, DaiLop } from '../../../shared/domain/index.ts';
 import { classProgressMany } from './schedule.ts';
 import { demChuaCoLenh } from './lenhChuyen.ts';
 import { coTheRaLenh, phanCongO } from './quyenChuyenLop.ts';
@@ -11,16 +12,6 @@ import { coTheRaLenh, phanCongO } from './quyenChuyenLop.ts';
  * DỮ LIỆU CÁC DẢI của mockup 20 — chỉ ĐỌC, cho hồ sơ lớp (A · H) và hồ sơ học viên (E). Chữ do web dựng từ các trường này (mã tuần qua `tuanLich`).
  * Nút theo QUYỀN ở `viewer`/`nut`: web không tự đoán vai (máy chủ vẫn kiểm lại ở từng đường).
  */
-
-export type DaiLop = {
-  /** Phía lớp NGUỒN (A). `ketThucKhoa`: lớp thường tới tuần Cuối khoá còn em chưa có lệnh. */
-  ketThucKhoa: { tuanCuoiKhoa: string | null; tuanKetThuc: string | null; soChuaLenh: number; do: boolean; tuanGoiY: string } | null;
-  banGiao: { daXacNhan: number; tong: number; hanGvcn: string | null } | null;
-  banGiaoMon: { mon: string; monNgan: string; daGhi: number; tong: number; han: string | null }[];
-  /** Phía lớp ĐÍCH (H). */
-  sapNhan: { n: number; tuLop: string[]; tuan: string; daXacNhan: number } | null;
-  viewer: { coTheRaLenh: boolean; coTheChuyenNhieuEm: boolean; laGvcn: boolean; xacNhanDuoc: boolean };
-};
 
 /** Hồ sơ lớp: tối đa 3 câu (phân công · lệnh nguồn/đích/dòng môn/GVCN gộp một UNION · đếm chưa lệnh khi tới Cuối khoá). */
 export function daiLop(p: Principal, classId: number, o: { phase: string | null; ft: boolean; ct: string | null }): DaiLop {
@@ -75,17 +66,6 @@ export function daiLop(p: Principal, classId: number, o: { phase: string | null;
   }
   return { ketThucKhoa, banGiao, banGiaoMon, sapNhan, viewer: { coTheRaLenh: ra, coTheChuyenNhieuEm: ra && o.ft, laGvcn: pc.gvcn, xacNhanDuoc: pc.gvcn || qlThay } };
 }
-
-export type DaiHocVien = {
-  loai: 'sap' | 'da';
-  lenhId: number; lopNguon: { id: number; code: string }; lopDich: { id: number; code: string } | null; huong: string; tuan: string;
-  nguoiRaLenh: string | null; ngayRaLenh: string;
-  banGiao: { soMon: number; daGhi: number; hanGvcn: string | null; daXacNhan: boolean; nguoiXacNhan: string | null; ngayXacNhan: string | null; thay: boolean } | null;
-  loi: string | null;
-  /** Nút theo vai: bàn giao (GVCN / Quản lý thay) · bàn giao môn (GVBM) · huỷ lệnh (Quản lý, trước tuần bắt đầu) · đọc bàn giao (đã xác nhận / đã chuyển). */
-  nut: ('ban-giao' | 'ban-giao-mon' | 'huy-lenh' | 'doc-ban-giao')[];
-  mon: { ma: string; ngan: string } | null;
-};
 
 /** Hồ sơ HV (E): lệnh đang chờ hoặc đã chuyển ≤ 14 ngày (Q17) — 2 câu. */
 export function daiHocVien(p: Principal, studentId: number): DaiHocVien | null {

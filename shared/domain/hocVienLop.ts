@@ -493,8 +493,7 @@ export function nutChinhDauTrang(i: {
   coTheThemHv: boolean; coTheNhapDiem: boolean; coTheChuyenTiep: boolean; soEmChuyen: number;
 }): NutChinh {
   if (i.soHocVien === 0 && i.coTheThemHv) return { loai: 'them-hv', nhan: '+ Học viên' };
-  const cuoiKhoa = i.thuong && (i.phase === 'final_week' || i.phase === 'finished' || i.needsPlacement);
-  if (cuoiKhoa && i.coTheChuyenTiep) return { loai: 'chuyen-tiep', nhan: i.soEmChuyen > 0 ? `Chuyển tiếp lớp · ${i.soEmChuyen} em` : 'Chuyển tiếp lớp' };
+  /* PR-CT: "Chuyển lớp cả lớp…" nằm ở dải Kết thúc khoá ngay dưới tên lớp (mockup 20 — A), không còn là nút chính đầu trang. */
   if (i.coTheNhapDiem) return { loai: 'nhap-diem', nhan: 'Nhập điểm Test' };
   return { loai: null, nhan: '' };
 }

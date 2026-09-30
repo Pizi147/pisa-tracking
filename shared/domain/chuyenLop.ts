@@ -108,3 +108,27 @@ export function trangThaiPhieu(x: { soMonDaGhi: number; soMon: number; daXacNhan
   if (x.soMonDaGhi > 0) return { khoa: 'mon', nhan: `Môn ${x.soMonDaGhi}/${x.soMon}` };
   return { khoa: 'chua-lam', nhan: 'Chưa làm' };
 }
+
+// ---------------------------------------------------------------- dữ liệu các dải (máy chủ trả, web vẽ — mockup 20: A, E, H)
+
+export type DaiLop = {
+  /** Phía lớp NGUỒN (A). `ketThucKhoa`: lớp thường tới tuần Cuối khoá còn em chưa có lệnh. */
+  ketThucKhoa: { tuanCuoiKhoa: string | null; tuanKetThuc: string | null; soChuaLenh: number; do: boolean; tuanGoiY: string } | null;
+  banGiao: { daXacNhan: number; tong: number; hanGvcn: string | null } | null;
+  banGiaoMon: { mon: string; monNgan: string; daGhi: number; tong: number; han: string | null }[];
+  /** Phía lớp ĐÍCH (H). */
+  sapNhan: { n: number; tuLop: string[]; tuan: string; daXacNhan: number } | null;
+  viewer: { coTheRaLenh: boolean; coTheChuyenNhieuEm: boolean; laGvcn: boolean; xacNhanDuoc: boolean };
+};
+
+export type DaiHocVien = {
+  loai: 'sap' | 'da';
+  lenhId: number; lopNguon: { id: number; code: string }; lopDich: { id: number; code: string } | null; huong: string; tuan: string;
+  nguoiRaLenh: string | null; ngayRaLenh: string;
+  banGiao: { soMon: number; daGhi: number; hanGvcn: string | null; daXacNhan: boolean; nguoiXacNhan: string | null; ngayXacNhan: string | null; thay: boolean } | null;
+  loi: string | null;
+  /** Nút theo vai: bàn giao (GVCN / Quản lý thay) · bàn giao môn (GVBM) · huỷ lệnh (Quản lý, trước tuần bắt đầu) · đọc bàn giao (đã xác nhận / đã chuyển). */
+  nut: ('ban-giao' | 'ban-giao-mon' | 'huy-lenh' | 'doc-ban-giao')[];
+  mon: { ma: string; ngan: string } | null;
+};
+
