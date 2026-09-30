@@ -783,4 +783,4 @@ VAI-a đã chốt:
 
 | Ngày | Task | Ghi chú (mốc B, model thật, trần tốc độ, lệch kế hoạch, cổng gộp, trạng thái cột PA hiệu quả, `baiId`) |
 |---|---|---|
-| | | |
+| 01/10 | 0 | Model thật **Opus 5.5** (`claude-opus-5-5`). Worktree từ `origin/main` @ `4379cc63`. **Mốc B = 2000 + 28 tốc độ**. |
