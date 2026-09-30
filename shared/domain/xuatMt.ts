@@ -1,6 +1,7 @@
 import { mondayOfDate, owningMonthOf } from './week.ts';
 import { tuanLich } from './hienThiNgay.ts';
 import { tieuChiNganCua } from './skills.ts';
+import { kyHieuLop } from './tenLop.ts';
 
 /**
  * XUẤT EXCEL KẾT QUẢ TEST (PR-XUAT · YC-13.9 · T40). LUẬT THUẦN: đọc + kiểm bộ lọc, bộ cột, dựng mảng hai chiều, tên tệp.
@@ -190,8 +191,18 @@ export function bangThuong(dong: DongThuong[], cot: 'gon' | 'day-du'): Cell[][] 
 /** `ratio` (0–1, chưa làm tròn) → phần trăm một chữ số thập phân (68.5); thiếu → `null`. */
 export const phanTram = (ratio: number | null) => (ratio === null ? null : Math.round(ratio * 1000) / 10);
 
-/** Tên sheet lớp thường: `FOU · Giữa–Cuối khoá` — ≤ 31 ký tự, không `: \ / ? * [ ]`. */
-export const tenSheetThuong = (ct: string) => `${ct.replace(/[:\\/?*[\]]/g, ' ').trim()} · Giữa–Cuối khoá`.slice(0, 31);
+/** Tên sheet lớp thường: `FOU · Giữa–Cuối khoá` — tên HIỂN THỊ của chương trình ("Pre FOU", không "PREFOU"; PR-S4F #12), ≤ 31 ký tự, không `: \ / ? * [ ]`. */
+export const tenSheetThuong = (ct: string) => `${(kyHieuLop(ct, null) ?? ct).replace(/[:\\/?*[\]]/g, ' ').trim()} · Giữa–Cuối khoá`.slice(0, 31);
+
+/** PR-S4F #12: xếp người theo TÊN (chữ cuối) rồi họ đệm, `localeCompare('vi')` — "An" trước "Bình" dù họ là "Vũ". */
+export function soTenVi(a: string, b: string): number {
+  const tach = (s: string) => { const w = s.trim().split(/\s+/); return [w[w.length - 1] ?? '', w.slice(0, -1).join(' ')]; };
+  const [ra, ha] = tach(a), [rb, hb] = tach(b);
+  return ra.localeCompare(rb, 'vi') || ha.localeCompare(hb, 'vi');
+}
+
+/** PR-S4F #12: trần cỡ phản hồi xuất (Netlify Function trần 6 MB) — quá thì báo thu hẹp phạm vi, không để máy chủ lỗi. */
+export const XUAT_TOI_DA_BYTE = 5_000_000;
 
 // ------------------------------------------------------------------ trạng thái lượt (T34)
 

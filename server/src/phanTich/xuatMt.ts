@@ -1,6 +1,6 @@
 import { db } from '../db.ts';
 import {
-  PERMISSIONS, ROUTE_NAME, XUAT_TOI_DA_LUOT, nhanXetW, tenGvCham, bangBoLoc, bangFT, bangThuong, dongXemTruoc, dongXemTruocThuong, moTaBoLoc, nhanDot, phanTram,
+  PERMISSIONS, ROUTE_NAME, XUAT_TOI_DA_BYTE, XUAT_TOI_DA_LUOT, soTenVi, nhanXetW, tenGvCham, bangBoLoc, bangFT, bangThuong, dongXemTruoc, dongXemTruocThuong, moTaBoLoc, nhanDot, phanTram,
   tenMon, tenSheetThuong, tenTepXuatMt, trangThaiLuotXuat,
   type BoLocXuatMt, type Cell, type DongFT, type DongThuong,
 } from '../../../shared/domain/index.ts';
@@ -194,6 +194,10 @@ export function duLieuXuatMt(p: Principal, f: BoLocXuatMt, toiDa = XUAT_TOI_DA_L
       LIMIT ?`,
   ).all(...params, toiDa + 1) as any[];
   if (luot.length > toiDa) throw badRequest(`Quá ${String(toiDa).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} lượt — thu hẹp chi nhánh hoặc thời gian.`);
+  /* PR-S4F #12: trong mỗi chi nhánh × lớp, xếp theo TÊN rồi họ (SQL chỉ xếp được theo chuỗi họ tên đầy đủ). */
+  const thuTuKind = (k: string) => (k === 'progress' ? 0 : k === 'final' ? 1 : 2);
+  luot.sort((a, b) => String(a.branch_name ?? '').localeCompare(String(b.branch_name ?? ''), 'vi') || String(a.class_code).localeCompare(String(b.class_code), 'vi')
+    || soTenVi(a.full_name, b.full_name) || a.student_id - b.student_id || thuTuKind(a.kind) - thuTuKind(b.kind) || a.attempt_no - b.attempt_no);
 
   const bundle = loadBundle(luot.map((a) => a.id));
   const soLuot = new Set<number>(), hv = new Set<number>(), lop = new Set<number>();
@@ -243,9 +247,14 @@ export function xemTruoc(p: Principal, f: BoLocXuatMt) {
 }
 
 /** POST — trả mảng hai chiều đã dựng + MỘT dòng nhật ký (`mt.xuat_excel`). */
-export function xuatExcel(p: Principal, f: BoLocXuatMt) {
+export function xuatExcel(p: Principal, f: BoLocXuatMt, tranByte = XUAT_TOI_DA_BYTE) {
   const t0 = performance.now(), n0 = demHienTai()?.n ?? 0;
   const d = duLieuXuatMt(p, f);
+  /* PR-S4F #12: cột Đầy đủ (có nhận xét) dễ vượt trần phản hồi 6 MB của Netlify — đo trước, báo rõ cách thu hẹp. */
+  const co = Buffer.byteLength(JSON.stringify(d.sheets));
+  if (co > tranByte) {
+    throw badRequest(`Tệp quá lớn (~${(co / 1e6).toFixed(1)} MB) — Thu hẹp phạm vi: chọn ít chi nhánh/lớp, khoảng thời gian ngắn hơn${f.cot === 'day-du' ? ', hoặc chọn cột Gọn' : ''}.`);
+  }
   writeAudit({
     actorUserId: p.userId, action: 'mt.xuat_excel', entityType: 'xuat_mt', after: f,
     entityLabel: `${d.dem.luot} lượt · ${d.moTa[1][1]} · ${d.moTa[3][1]} · ${d.moTa[5][1].toLowerCase()}`,

@@ -565,7 +565,7 @@ export function QuickReport({
 
       {/* CẢNH BÁO CASE TRÙNG (mục 7.13) — MỘT khối vàng, hai nút, ngay trong thân; chữ vừa gõ vẫn còn. */}
       {mode === 'backfill' && bfDup && (
-        <div className="mt-3.5 rounded-lg border p-3" style={{ borderColor: 'var(--soon-line)', background: 'var(--soon-bg)' }}>
+        <div className="mt-3.5 rounded-lg border p-3" style={{ borderColor: 'rgb(var(--soon-line-rgb))', background: 'rgb(var(--soon-bg-rgb))' }}>
           <p className="m-0 text-sm text-slate-100">
             Đã có Case nhập bù <strong>“{bfDup.title}”</strong> trùng khoảng {ngan(bfDup.from)} → {ngan(bfDup.to)}. Cùng một lần?
           </p>
@@ -575,7 +575,7 @@ export function QuickReport({
         </div>
       )}
       {mode === 'now' && dup && (
-        <div className="mt-3.5 rounded-lg border p-3" style={{ borderColor: 'var(--soon-line)', background: 'var(--soon-bg)' }}>
+        <div className="mt-3.5 rounded-lg border p-3" style={{ borderColor: 'rgb(var(--soon-line-rgb))', background: 'rgb(var(--soon-bg-rgb))' }}>
           <p className="m-0 text-sm text-slate-100">
             Đã có Case <strong>“{dup.title}”</strong> chưa xử lý xong ở {dup.categoryLabel}.
             <span className="text-slate-400"> Mở {ngan(dup.detectedAt)}{dup.interventionCount > 0 ? ` · ${dup.interventionCount} PA` : ' · chưa có PA'}.</span>

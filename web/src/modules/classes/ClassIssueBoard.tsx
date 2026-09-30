@@ -88,7 +88,7 @@ export function VanDeKyNang({ classId, category }: { classId: number; category: 
                   <td className="td text-right tabular-nums">{so(p.dangThucHien, 'pa-dang', `PA ${p.label} đang thực hiện`, p.kind)}</td>
                   <td className="td text-right tabular-nums">{so(p.decided, 'pa-da', `PA ${p.label} đã thực hiện`, p.kind)}</td>
                   <td className="td text-right tabular-nums">{so(p.success, 'pa-thanh-cong', `PA ${p.label} thành công`, p.kind)}</td>
-                  <td className="td text-right"><TyLe n={p.success} N={p.decided} /></td>
+                  <td className="td text-right tabular-nums"><TyLe n={p.success} N={p.decided} /></td>
                 </tr>
               ))}
             </tbody>

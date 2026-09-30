@@ -203,4 +203,126 @@ export async function runPrS4fTests(t: YThucTestKit) {
       assert(/cho-duyet\?lop=\$\{/.test(docWeb(f)), `${f}: badge chờ duyệt phải kèm ?lop=`);
     }
   });
+
+  // ------------------------------------------------------------------ 9–14 · dữ liệu nhập, chữ, hình
+  const attemptsSvc: any = await import('../fasttrack/attempts.ts');
+  const weekSvc: any = await import('../platform/week.ts');
+  const scoring: any = await import('../fasttrack/scoring.ts');
+  const sosAuto: any = await import('../cases/sosAuto.ts');
+  const standing: any = await import('../students/standing.ts');
+  const xm: any = await import('../phanTich/xuatMt.ts');
+  const { boLichTuTao, luotThu } = await import('./luotThu.ts');
+  const maLoi = (fn: () => unknown): number | string => { try { fn(); return 'không ném'; } catch (e: any) { return e?.status ?? String(e?.message ?? e); } };
+  const FT = classId('MB FT 101');
+  const emFt = (ten: string) => {
+    intake.commitIntake(P.admin, { classId: FT, rows: [{ fullName: `S4F ${ten}`, target: 7, email: 'hv@demo.test' }], idempotencyKey: `s4f-ft-${ten}` });
+    const st = get('SELECT id FROM students WHERE full_name = ?', `S4F ${ten}`);
+    const cy = get(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`, st.id);
+    boLichTuTao(conn, cy.id);
+    const a = luotThu(conn, attemptsSvc.createAttempt, P.admin, { studentId: st.id, cycleId: cy.id, classId: FT, no: 1, periodId: weekSvc.ensurePeriod(weekSvc.mondayOf(t.TODAY)).id });
+    return { sid: st.id as number, aid: a.id as number };
+  };
+  const nhapBand = (aid: number, skill: string, band: number) => attemptsSvc.saveScore(P.admin, aid, skill, {
+    ...(skill === 'listening' ? { rawScore: scoring.LISTENING_BY_RAW.indexOf(band) } : skill === 'reading' ? { rawScore: scoring.READING_BY_RAW.indexOf(band) }
+      : { criteria: [band, band, band, band] }), lyDo: 'Phép kiểm S4F' });
+
+  await checkAsync('S4F (9) · Xác nhận PA quy chế: body thiếu description (API) → 400, không lấy mô tả máy gán; gửi mô tả → 200', async () => {
+    const e = emFt('Xác nhận PA');
+    for (const k of ['listening', 'reading', 'speaking']) nhapBand(e.aid, k, 5);
+    const c = get(`SELECT id FROM sos_cases WHERE student_id = ? AND category = 'listening'`, e.sid);
+    assert(c, 'chưa có Case L tự tạo');
+    sosAuto.xacNhanCase(P.admin, c.id, { primaryCode: d.issuesForTopic('listening', null)[0].code, urgency: 'attention', moTa: 'Em nghe sót số và tên riêng ở Part 1–2.' });
+    const iv = get('SELECT id FROM case_interventions WHERE case_id = ? AND preset = 1', c.id);
+    await voiMayChu(async (goi) => {
+      for (const body of [{}, { description: '' }, { description: '   ' }, { description: null }]) {
+        const r = await goi(P.admin.userId, `/interventions/${iv.id}/xac-nhan-pa`, { method: 'POST', body: JSON.stringify(body) });
+        assert(r.status === 400, `${JSON.stringify(body)}: ${r.status}`);
+      }
+      assert(get('SELECT confirmed_at FROM case_interventions WHERE id = ?', iv.id).confirmed_at === null, 'PA không được xác nhận khi thiếu mô tả');
+      const ok = await goi(P.admin.userId, `/interventions/${iv.id}/xac-nhan-pa`, { method: 'POST', body: JSON.stringify({ description: 'Tutor Listening hai buổi mỗi tuần, cô Hà chữa bài nghe.' }) });
+      assert(ok.status === 200, `có mô tả: ${ok.status}`);
+    });
+  });
+
+  check('S4F (10) · gvCham false/0/"" → 400 (xoá phải null); tiêu chí "abc" / 6.3 / 9.5 → 400, 6.5 → lưu; web: khoá nhớ GV chấm có userId, ô điểm cùng chiều cao, chip "Dưới kỳ vọng: …"', () => {
+    const e = emFt('HSM nhập');
+    for (const g of [false, 0, '', 'Trang', [1]]) {
+      assert(maLoi(() => attemptsSvc.saveScore(P.admin, e.aid, 'speaking', { gvCham: g }, t.TODAY)) === 400, `gvCham ${JSON.stringify(g)}`);
+    }
+    for (const c of [['abc', 6, 6, 6], [6.3, 6, 6, 6], [9.5, 6, 6, 6], [-0.5, 6, 6, 6]]) {
+      assert(maLoi(() => attemptsSvc.saveScore(P.admin, e.aid, 'speaking', { criteria: c }, t.TODAY)) === 400, `tiêu chí ${JSON.stringify(c)}`);
+    }
+    assert(get(`SELECT band FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`, e.aid)?.band == null, 'không được lưu band từ tiêu chí hỏng');
+    attemptsSvc.saveScore(P.admin, e.aid, 'speaking', { criteria: [6.5, 6, 6, 7], gvCham: { performerSelf: true } }, t.TODAY);
+    assert(get(`SELECT band FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`, e.aid).band === 6.5, 'tiêu chí hợp lệ phải lưu');
+    attemptsSvc.saveScore(P.admin, e.aid, 'speaking', { gvCham: null }, t.TODAY);
+    assert(get(`SELECT examiner_user_id u FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`, e.aid).u === null, 'null = xoá GV chấm');
+    const gc = docWeb('modules/cham/GvCham.tsx'), od = docWeb('modules/fasttrack/ODiemLon.tsx');
+    assert(gc.includes('`pisa:gv-cham:${userId}:${classId}:${periodId}`') && gc.includes('khoaGvChamCot(session?.user?.id'), 'khoá localStorage GV chấm phải gắn userId');
+    assert(od.includes('const vo = `flex min-w-0 flex-col') && od.includes('col-span-2 flex min-w-0 flex-col'), 'ô nút và ô chỉ đọc/Overall cùng flex-col');
+    assert(od.includes('title: `GV chấm: ${bai[0].gvCham.ten}`') && od.includes('duoiKyVong='), 'title GV chấm + chip Dưới kỳ vọng');
+    assert(docWeb('ui/KetQuaDot.tsx').includes('`Dưới kỳ vọng: ${duoiKyVong.join'), 'KetQuaDot liệt kê kỹ năng dưới kỳ vọng');
+    assert(docWeb('modules/fasttrack/MockDetailPage.tsx').includes('`Người nhập điểm: ${c.enteredByName}`'), '"Người nhập điểm: X"');
+  });
+
+  check('S4F (11) · Kết quả gần nhất bỏ lượt chỉ có W1 lẻ; web: tên có title + ưu tiên chỗ, dòng Kết quả chỉ xuống dòng ở "·", nhãn thẻ theo baseline, Tỷ lệ tabular', () => {
+    const e = emFt('W1 lẻ');
+    nhapBand(e.aid, 'writing1', 6);
+    const s = standing.standingFor([e.sid]).get(e.sid);
+    assert(s.attemptId === null, `lượt chỉ có W1 không phải kết quả gần nhất: ${JSON.stringify({ a: s.attemptId, sc: s.scored })}`);
+    nhapBand(e.aid, 'listening', 6);
+    assert(standing.standingFor([e.sid]).get(e.sid).attemptId === e.aid, 'đủ một kỹ năng (L) thì là kết quả gần nhất');
+    const b = docWeb('modules/students/BangHocVienLop.tsx');
+    assert(b.includes('link max-w-full truncate font-semibold" title={s.fullName}') && b.includes('flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5'), 'tên: title + badge xuống dòng');
+    assert(b.includes('<DongCham chu={k.dong1} />') && b.slice(b.indexOf('function DongCham')).includes('whitespace-nowrap'), 'DongCham');
+    assert(docWeb('ui/TheDong.tsx').includes('grid-cols-[5.5rem_minmax(0,1fr)] items-baseline'), 'TheDong items-baseline');
+    assert(docWeb('modules/classes/ClassIssueBoard.tsx').includes('td text-right tabular-nums"><TyLe'), 'Tỷ lệ tabular-nums');
+    assert(docWeb('modules/classes/BangCanHoTro.tsx').includes('Case chờ Quản lý duyệt'), '"n Case chờ Quản lý duyệt"');
+  });
+
+  check('S4F (12) · Xuất: sheet "Pre FOU · …"; dòng xếp theo TÊN rồi họ; vượt trần cỡ → 400 "Thu hẹp phạm vi"; xem trước không cắt chữ', () => {
+    assert(d.tenSheetThuong('PREFOU') === 'Pre FOU · Giữa–Cuối khoá' && d.tenSheetThuong('FOU') === 'FOU · Giữa–Cuối khoá', d.tenSheetThuong('PREFOU'));
+    const ds = ['Vũ Thị An', 'Nguyễn Văn Bình', 'Trần Minh An', 'Đỗ Hà'].sort(d.soTenVi);
+    assert(ds.join('|') === 'Trần Minh An|Vũ Thị An|Nguyễn Văn Bình|Đỗ Hà', ds.join('|'));
+    const f = d.docBoLocXuatMt({ tg: 'dot', dot: 'mt:1,mt:2,mt:3,mt:4,mt:5,mt:6,mt:7,mt:8', lop: String(FT), cot: 'day-du' });
+    assert(typeof f !== 'string', String(f));
+    const r = xm.duLieuXuatMt(P.mbManager, f);
+    const ten = r.sheets[0].aoa.slice(1).map((h: any[]) => String(h[1]));
+    assert(ten.length > 3, `ít dòng: ${ten.length}`);
+    for (let i = 1; i < ten.length; i++) assert(d.soTenVi(ten[i - 1], ten[i]) <= 0, `sai thứ tự: ${ten[i - 1]} → ${ten[i]}`);
+    assert(maLoi(() => xm.xuatExcel(P.mbManager, f, 1000)) === 400, 'vượt trần cỡ phải 400');
+    let cau = ''; try { xm.xuatExcel(P.mbManager, f, 1000); } catch (e: any) { cau = e.message; }
+    assert(/Thu hẹp phạm vi/.test(cau) && /cột Gọn/.test(cau), cau);
+    assert(xm.xuatExcel(P.mbManager, f).sheets.length >= 2, 'dưới trần vẫn xuất');
+    assert(docWeb('modules/test/NganXuatMt.tsx').includes('break-words text-[12.5px]'), 'dòng xem trước xuống dòng');
+  });
+
+  check('S4F (13) · web/src không dùng biến CSS không tồn tại (--card, --surface-1, --soon-bg…); mũi tên hàng lớn là SVG; việc tiếp không lấn lề ô', () => {
+    const goc = new URL('../../../../web/src/', import.meta.url);
+    const tep: { ten: string; s: string }[] = [];
+    const duyet = (dir: URL) => {
+      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+        const u = new URL(e.name + (e.isDirectory() ? '/' : ''), dir);
+        if (e.isDirectory()) duyet(u);
+        else if (/\.(tsx?|css)$/.test(e.name)) tep.push({ ten: e.name, s: fs.readFileSync(u, 'utf8') });
+      }
+    };
+    duyet(goc);
+    const co = new Set<string>();
+    for (const { s } of tep) for (const m of s.matchAll(/['"]?(--[\w-]+)['"]?\s*:/g)) co.add(m[1]);
+    const hong = new Set<string>();
+    for (const { ten, s } of tep) for (const m of s.matchAll(/var\((--[\w-]+)\)/g)) if (!co.has(m[1])) hong.add(`${ten}: ${m[1]}`);
+    assert(hong.size === 0, [...hong].join(' · '));
+    const hn = docWeb('ui/HangNhom.tsx');
+    const mt = hn.slice(hn.indexOf('export function MuiTenMo'), hn.indexOf('function boQuaNutCon'));
+    assert(mt.includes('<svg') && !/[▸▾]/.test(mt.replace(/\/\*[\s\S]*?\*\//g, '')), 'MuiTenMo phải vẽ SVG');
+    assert(docWeb('ui/ViecTiep.tsx').includes('block max-w-full truncate'), 'ViecTiep max-w-full');
+  });
+
+  check('S4F (14) · thẻ Báo lên không có người nhận: ẩn Nhắc, ghi "Lớp chưa có GVCN" / "Case chưa có người phụ trách"', () => {
+    assert(d.nhanKhongNguoiNhac('bao_len_y_thuc') === 'Lớp chưa có GVCN' && d.nhanKhongNguoiNhac('bao_len_nguyen_nhan') === 'Case chưa có người phụ trách', 'nhãn');
+    const tyc = docWeb('modules/duyet/TheYeuCau.tsx');
+    assert(tyc.includes("typeof yc.duLieu?.ownerId !== 'number'") && tyc.includes('{nhanKhongNguoiNhac(yc.loai)}'), 'nhãn thay nút');
+    assert(tyc.includes("yc.kieuNut === 'nhac' && typeof yc.duLieu?.ownerId === 'number' && ("), 'nút Nhắc chỉ khi có ownerId');
+  });
 }

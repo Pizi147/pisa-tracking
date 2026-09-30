@@ -183,7 +183,7 @@ function ConfirmCoordinationForm({ actionId, onClose, onChanged }: {
   };
 
   return (
-    <div className="mt-2 rounded-lg p-2.5 space-y-2" style={{ background: 'var(--surface-1)' }}>
+    <div className="mt-2 rounded-lg p-2.5 space-y-2" style={{ background: 'var(--surface-2)' }}>
       <Hang2>
         <Truong nhan="Ngày thực hiện" batBuoc>
           <span className="block w-[11.5rem]"><ONgay kieu="ngay" value={performedOn} onChange={setPerformedOn} toiDa={today} /></span>
@@ -227,7 +227,7 @@ function RemoveCoordinationForm({ actionId, onClose, onChanged }: {
   };
 
   return (
-    <div className="mt-2 rounded-lg p-2.5 space-y-2" style={{ background: 'var(--surface-1)' }}>
+    <div className="mt-2 rounded-lg p-2.5 space-y-2" style={{ background: 'var(--surface-2)' }}>
       <div className="flex flex-wrap gap-1.5">
         {COORDINATION_USER_REMOVE_REASONS.map((r) => (
           <NutChon key={r} nho chon={reason === r} onClick={() => setReason(r)}>
@@ -269,7 +269,7 @@ function AddCoordinationForm({ attemptId, existing, onClose, onChanged }: {
   };
 
   return (
-    <div className="rounded-lg p-2.5 space-y-2" style={{ background: 'var(--surface-1)' }}>
+    <div className="rounded-lg p-2.5 space-y-2" style={{ background: 'var(--surface-2)' }}>
       <div className="flex flex-wrap gap-1.5">
         {COORDINATION_KINDS.map((k) => (
           <NutChon key={k} nho chon={kind === k} disabled={k !== 'other' && existing.includes(k)} onClick={() => setKind(k)}>

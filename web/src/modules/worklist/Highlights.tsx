@@ -90,7 +90,7 @@ export function LichSapToi({ branchId, ct }: { branchId: number | null; ct: Chuo
           <div className={`grid gap-px ${hienThuong && hienFt ? 'sm:grid-cols-2' : ''}`} style={{ background: 'var(--line)' }}>
             {/* ───────────────────────────────────── Lớp thường */}
             {hienThuong && (
-              <div className="p-4" style={{ background: 'var(--card)' }}>
+              <div className="p-4" style={{ background: 'var(--surface)' }}>
                 <h3 className="text-xs uppercase tracking-wide text-slate-500 m-0 mb-2">Lớp thường</h3>
                 <ul className="list-none p-0 m-0 space-y-1.5">
                   <EventRow label="Giữa khoá" rows={week.normal.progressClasses}
@@ -105,7 +105,7 @@ export function LichSapToi({ branchId, ct }: { branchId: number | null; ct: Chuo
 
             {/* ───────────────────────────────────── FT */}
             {hienFt && (
-              <div className="p-4" style={{ background: 'var(--card)' }}>
+              <div className="p-4" style={{ background: 'var(--surface)' }}>
                 <h3 className="text-xs uppercase tracking-wide text-slate-500 m-0 mb-2">Lớp Fast Track</h3>
                 <ul className="list-none p-0 m-0 space-y-1.5">
                   {week.ft.mockClasses.length === 0 ? (

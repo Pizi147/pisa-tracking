@@ -148,8 +148,9 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
         return (
           <HangCon key={s.id} className={`row-hover ${s.status !== 'active' ? 'row-muted' : ''}`}>
             <td className="td h-14">
-              <span className="flex min-w-0 items-center gap-1.5">
-                <Link className="link truncate font-semibold" to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>
+              {/* PR-S4F #11: tên được ưu tiên chỗ — badge xuống dòng khi chật; tên quá dài vẫn cắt nhưng có title. */}
+              <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                <Link className="link max-w-full truncate font-semibold" title={s.fullName} to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>
                 <span className="shrink-0 text-[11px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
                 <MissingBadge items={s.missing} gon />
                 <CanhBaoYThuc cb={s.canhBaoYThuc} />
@@ -201,10 +202,15 @@ function KetQuaOHocVien({ k, standing, thuong }: { k: ReturnType<typeof ketQuaGa
             title={k.sosTamThoi ? 'Tạm thời: chưa đủ điểm các môn' : undefined}>{k.sos}{k.sosTamThoi ? ' tạm thời' : ''}</Level>
         )}
       </span>
-      {k.dong1 && <span className="block text-[12px] leading-4 text-slate-500">{k.dong1}</span>}
-      {k.dong2 && <span className="block text-[12px] leading-4 text-slate-500">{k.dong2}</span>}
+      {k.dong1 && <span className="block text-[12px] leading-4 text-slate-500"><DongCham chu={k.dong1} /></span>}
+      {k.dong2 && <span className="block text-[12px] leading-4 text-slate-500"><DongCham chu={k.dong2} /></span>}
     </>
   );
+}
+
+/** PR-S4F #11: dòng "a · b · c" chỉ xuống dòng Ở DẤU "·" (không bẻ "…có / điểm", không để "W ·" đứng riêng ở 375 px). */
+function DongCham({ chu }: { chu: string }) {
+  return <>{chu.split(' · ').map((x, i) => <span key={i} className="whitespace-nowrap">{i ? '· ' : ''}{x}</span>).reduce<ReactNode[]>((a, x, i) => (i ? [...a, ' ', x] : [x]), [])}</>;
 }
 
 /** Hàng "Cả lớp" (Q6, B8): việc Nhập điểm chung của cả lớp — chữ + hạn + số em + link tới lưới nhập điểm; dùng cho bảng và thẻ. */
