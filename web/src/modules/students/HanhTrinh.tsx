@@ -26,6 +26,7 @@ type Ghim = {
   overall: number | null; sosLevel: number | null; soDat: number | null; soYeuCau: number; soCoDiem: number;
   maLop: string | null; kyVong: number | null; kyNangChuaDat: string[];
   khongChiaMon?: boolean; tyLe?: number | null;
+  goiY?: { dai: string; nhan: string; nhanNgan: string } | null;
 };
 type Pa = {
   id: number; ten: string; tu: string; den: string | null; status: string;

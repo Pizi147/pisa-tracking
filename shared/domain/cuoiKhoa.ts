@@ -37,6 +37,8 @@ export type GoiYCuoiKhoa = {
   baoPhTvv: boolean;                    // < 50 (50–59 mà Quản lý chọn học lại thì máy chủ tự thêm — Q6)
   nhan: string;
   nhanNgan: string;
+  /** Chữ ô "Hướng gợi ý" ở Excel: `Học lại FOU` · `QL cân nhắc` · `Lên BE + bổ trợ` · `Pass`. */
+  nhanExcel: string;
 };
 
 /** Tên hiện của chương trình đích: lớp kế theo bậc, ELE → FT. */
@@ -66,16 +68,16 @@ export function goiYCuoiKhoa(x: { ct: string | null; tyLe: number | null; monTru
   const dai = daiCuoiKhoa(x.tyLe);
   const ke = tenBacKe(ct);
   const chung = { dai, tyLe: x.tyLe };
-  const dong = (huong: HuongGoiY, canQuanLy: boolean, bo: BoTroMienPhi | null, baoPhTvv: boolean, nhan: string, nhanNgan: string): GoiYCuoiKhoa =>
-    ({ ...chung, huong, canQuanLy, canQl: canQuanLy, boTroNeuLen: bo, baoPhTvv, nhan, nhanNgan });
-  if (dai === 'dat') return dong('len', false, null, false, 'Pass', '→ Pass');
-  if (dai === 'duoi_50') return dong('hoc_lai', false, null, true, `Học lại ${tenBac(ct)}`, '→ học lại');
+  const dong = (huong: HuongGoiY, canQuanLy: boolean, bo: BoTroMienPhi | null, baoPhTvv: boolean, nhan: string, nhanNgan: string, nhanExcel: string): GoiYCuoiKhoa =>
+    ({ ...chung, huong, canQuanLy, canQl: canQuanLy, boTroNeuLen: bo, baoPhTvv, nhan, nhanNgan, nhanExcel });
+  if (dai === 'dat') return dong('len', false, null, false, 'Pass', '→ Pass', 'Pass');
+  if (dai === 'duoi_50') return dong('hoc_lai', false, null, true, `Học lại ${tenBac(ct)}`, '→ học lại', `Học lại ${tenBac(ct)}`);
   const bo = boTro(ct, dai, x.monTruot);
   const chuBo = bo ? ` + bổ trợ miễn phí ${bo.soBuoi} buổi${bo.theoMon ? ` (${chuMonTruot(ct, bo.mon)})` : ''} · ${bo.soTuan} tuần · Mini Test sau buổi cuối` : '';
   if (dai === '50_59') {
-    return dong(null, true, bo, false, `Quản lý cân nhắc: học lại ${tenBac(ct)} hoặc lên ${ke}${chuBo}`, '→ QL cân nhắc');
+    return dong(null, true, bo, false, `Quản lý cân nhắc: học lại ${tenBac(ct)} hoặc lên ${ke}${chuBo}`, '→ QL cân nhắc', 'QL cân nhắc');
   }
-  return dong('len', false, bo, false, `Lên ${ke}${chuBo}`, bo ? '→ lên + bổ trợ' : '→ lên');
+  return dong('len', false, bo, false, `Lên ${ke}${chuBo}`, bo ? '→ lên + bổ trợ' : '→ lên', bo ? `Lên ${ke} + bổ trợ` : `Lên ${ke}`);
 }
 
 /** M-05, Q4: buổi cuối = Chủ nhật của tuần cuối PA (`batDau` là thứ Hai); Mini Test hạn +2 ngày LỊCH (không phải `hanTheoNgay`). */

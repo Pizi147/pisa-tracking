@@ -44,6 +44,8 @@ type Row = {
   /** R11: đợt đã đủ điểm và qua Chủ nhật của tuần bắt buộc muộn nhất — chỉ Quản lý sửa được điểm nữa. */
   hoanTat?: boolean; chuNhatCuoi?: string | null;
   skillSchedule: SkillSchedule[];
+  /** PR-LT2b: hướng gợi ý Cuối khoá (chỉ dòng Cuối khoá đủ điểm). */
+  goiY?: { dai: string; nhan: string; nhanNgan: string } | null;
   result: {
     skills: SkillResult[]; scored: number; required: number; complete: boolean;
     failedCount: number | null; sosLevel: number | null; passThreshold: number;
@@ -520,6 +522,8 @@ function KetQua({ row, sheet }: { row: Row; sheet: ThuongSheet }) {
       chu: `${doiDau[1].map(ngan).join(', ')} dời sang ${doiDau[0]}`, tone: 'text-slate-400',
       title: `${doiDau[1].map(du).join(', ')}: em không làm bài, môn đã dời sang ${doiDau[0]}.`,
     }
+    : row.goiY
+      ? { chu: row.goiY.nhanNgan, tone: 'text-slate-500', title: `${row.goiY.nhan}${kq.phu ? ` — ${kq.phu}` : ''}` }
     : kq.phu
       ? {
         chu: `${kq.phu}${row.overdue ? ' · quá hạn' : ''}`, tone: row.overdue ? 'text-rose-300' : 'text-slate-500',

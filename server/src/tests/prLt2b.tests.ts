@@ -370,4 +370,27 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     regularMod.saveRegularScore(P.admin, l.luot.get(s)!, S, { score: 35, total: 40, lyDo: 'Chấm lại bài Speaking' }, TODAY);   // sửa điểm: không sinh thêm
     assert(caseCuaEm(s, cycleMoi(s)).length === 2 && (conn.prepare('SELECT COUNT(*) n FROM case_interventions WHERE nhom_bo_tro = ?').get(`mt:${l.luot.get(s)}`) as any).n === 2, 'chạy lại không sinh trùng');
   });
+
+  // ------------------------------------------------------------------ Task 8 · % Cuối khoá + hướng ở lưới, Hành trình, Excel
+  check('LT2b (8) · nhanGhim Cuối khoá đủ điểm có hướng, không chữ SOS; màu Pass = dat; Pre FOU giữ % + hướng', () => {
+    const g = d.goiYCuoiKhoa({ ct: 'BE', tyLe: 0.64, monTruot: ['reading'] })!;
+    const gh = d.nhanGhim({ cheDo: 'ratio', attemptNo: 2, kind: 'final', overall: null, sosLevel: 1, soDat: 3, soYeuCau: 4, soCoDiem: 4, tyLe: 0.64, goiY: g, kyNangChuaDat: ['reading'], maLop: 'MB BE 08' });
+    assert(gh.chu === 'Cuối · 64% → lên + bổ trợ' && !/SOS/.test(`${gh.chu} ${gh.day}`) && gh.day.includes('Lên ELE'), JSON.stringify(gh));
+    const pass = d.nhanGhim({ cheDo: 'ratio', attemptNo: 2, kind: 'final', overall: null, sosLevel: 0, soDat: 4, soYeuCau: 4, soCoDiem: 4, tyLe: 0.78, goiY: d.goiYCuoiKhoa({ ct: 'BE', tyLe: 0.78, monTruot: [] })! });
+    assert(pass.mau === 'dat' && pass.chu === 'Cuối · 78% → Pass', JSON.stringify(pass));
+    const pf = d.nhanGhim({ cheDo: 'ratio', attemptNo: 1, kind: 'final', overall: null, sosLevel: 1, soDat: null, soYeuCau: 1, soCoDiem: 1, khongChiaMon: true, tyLe: 0.52, goiY: d.goiYCuoiKhoa({ ct: 'PREFOU', tyLe: 0.52, monTruot: [] })! });
+    assert(pf.chu === 'Cuối · 52% → QL cân nhắc', pf.chu);
+    assert(d.nhanGhim({ cheDo: 'ratio', attemptNo: 1, kind: 'progress', overall: null, sosLevel: 1, soDat: 2, soYeuCau: 4, soCoDiem: 4, goiY: null }).chu === 'Giữa · 2/4 môn đạt', 'Giữa khoá không có hướng');
+  });
+  check('LT2b (8) · Excel lớp thường: cột "Hướng gợi ý" sau "% tổng", số cột khớp tiêu đề, Giữa khoá để trống', () => {
+    const mon = ['Listening', 'Reading', 'Writing', 'Speaking'].map((ten) => ({ ten, pct: 70, diem: 28, tong: 40, tuan: 'W1 OCT' }));
+    const dong = (bai: string, huong: string | null) => ({ ma: 'PISA-1', ten: 'A', chiNhanh: 'MB', lop: 'MB BE 08', bai, tuan: 'W1 OCT', tuanBd: '2026-10-05', mon, tyLeTong: 64, trangThai: 'Đủ điểm', nguoiNhap: null, huong });
+    for (const cot of ['gon', 'day-du'] as const) {
+      const b = d.bangThuong([dong('Cuối khoá', 'Lên ELE + bổ trợ'), dong('Giữa khoá', null)], cot);
+      const i = b[0].indexOf('Hướng gợi ý');
+      assert(i === b[0].indexOf('% tổng') + 1 && b.every((h) => h.length === b[0].length), `${cot}: cột ${i}`);
+      assert(b[1][i] === 'Lên ELE + bổ trợ' && b[2][i] === null, `${cot}: ô hướng`);
+    }
+    assert(d.goiYCuoiKhoa({ ct: 'FOU', tyLe: 0.45, monTruot: [] })!.nhanExcel === 'Học lại FOU' && d.goiYCuoiKhoa({ ct: 'FOU', tyLe: 0.55, monTruot: ['reading'] })!.nhanExcel === 'QL cân nhắc', 'nhãn Excel');
+  });
 }
