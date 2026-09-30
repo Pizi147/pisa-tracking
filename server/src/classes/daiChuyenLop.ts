@@ -22,7 +22,7 @@ export function daiLop(p: Principal, classId: number, o: { phase: string | null;
   const rows = conn.prepare(
     `SELECT 'nguon' AS k, l.id AS a, l.huong AS b, l.trang_thai AS c, l.tuan_bat_dau AS d, l.xac_nhan_luc AS e, l.han_gvcn AS f, l.han_gvbm AS g
        FROM lenh_chuyen_lop l WHERE l.lop_nguon_id = ? AND l.trang_thai != 'huy'
-     UNION ALL SELECT 'dich', l.id, n.code, l.trang_thai, l.tuan_bat_dau, l.xac_nhan_luc, NULL, NULL
+     UNION ALL SELECT 'dich', l.lop_nguon_id, n.code, l.trang_thai, l.tuan_bat_dau, l.xac_nhan_luc, NULL, NULL
        FROM lenh_chuyen_lop l JOIN classes n ON n.id = l.lop_nguon_id WHERE l.lop_dich_id = ? AND l.trang_thai = 'cho'
      UNION ALL SELECT 'mon', b.lenh_id, b.mon, NULL, NULL, NULL, NULL, NULL
        FROM ban_giao_mon b WHERE b.lenh_id IN (SELECT id FROM lenh_chuyen_lop WHERE lop_nguon_id = ?)
@@ -53,7 +53,10 @@ export function daiLop(p: Principal, classId: number, o: { phase: string | null;
 
   const dich = rows.filter((r) => r.k === 'dich');
   const sapNhan = dich.length
-    ? { n: dich.length, tuLop: [...new Set(dich.map((r) => r.b as string))], tuan: min(dich.map((r) => r.d))!, daXacNhan: dich.filter((r) => !!r.e).length } : null;
+    ? {
+      n: dich.length, tuLop: [...new Map(dich.map((r) => [r.a as number, { id: r.a as number, code: r.b as string }])).values()],
+      tuan: min(dich.map((r) => r.d))!, daXacNhan: dich.filter((r) => !!r.e).length,
+    } : null;
 
   let ketThucKhoa: DaiLop['ketThucKhoa'] = null;
   if (!o.ft && (o.phase === 'final_week' || o.phase === 'finished')) {

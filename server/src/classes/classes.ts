@@ -6,6 +6,7 @@ import {
   coMocTiepTheo, mocKeTiep,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
+import { mondayOf } from '../platform/week.ts';
 import { badRequest, notFound, nowIso } from '../util.ts';
 import {
   can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, mySkills, require_, scopeFor,
@@ -296,7 +297,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
    * LỚP ĐÃ KẾT THÚC (Q22): bảng học viên đọc MỌI em từng học (mọi trạng thái enrollment), dòng
    * MỚI NHẤT mỗi em — chứ không chỉ em còn `active` (lớp finished thì không còn ai active).
    */
-  let sql = `SELECT s.*, e.status AS enrollment_status, e.end_kind AS enrollment_end_kind,
+  let sql = `SELECT s.*, e.status AS enrollment_status, e.end_kind AS enrollment_end_kind, e.started_at AS enrollment_started_at,
                     cy.id AS cycle_id, cy.seq AS cycle_seq, cy.route, cy.target_score, cy.khong_cam_ket,
                     cy.baseline_attempt_id, cy.baseline_score,
                     cy.start_period_id, cy.exam_month, cy.exam_period_id, cy.exam_date, sp.week_start AS start_week,
@@ -399,6 +400,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
   const tiepTheoLop = tiepTheoTheoHocVien([classId]);
   const maChuongTrinhHienTai = (prog?.code ?? null) as ProgrammeCode | null;
 
+  const dauTuanNay = mondayOf(demoToday());   // MỘT lần — không tính lại theo từng em (N+1)
   return students.map((s) => {
     /*
      * CHỈ CÁC BÀI CỦA LỘ TRÌNH ĐANG CHẠY.
@@ -589,6 +591,8 @@ export function classRoster(p: Principal, classId: number, q?: string) {
       /** DỰ KIẾN THI ở đúng mức chắc chắn đang có: tuần, hoặc tháng, hoặc chưa biết. */
       examPlan: examPlanOf(s),
       archived: !!s.archived_at,
+      /** PR-CT (mockup 20 — H): tuần đầu ở lớp mới → nhãn nhỏ "mới vào" cạnh tên (vào lớp từ Thứ Hai của tuần này). */
+      moiVao: !!s.enrollment_started_at && s.enrollment_status === 'active' && s.enrollment_started_at >= dauTuanNay,
       /** "Kết thúc vì" (Q18/Q22) — chỉ có nghĩa ở bảng lớp ĐÃ KẾT THÚC, nơi dòng không còn `active`. */
       ketThucVi: finished ? nhanKetThucVi(s.enrollment_end_kind ?? null, s.enrollment_status) : null,
       cycle: s.cycle_id

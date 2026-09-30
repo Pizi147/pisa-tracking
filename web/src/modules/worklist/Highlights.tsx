@@ -97,8 +97,8 @@ export function LichSapToi({ branchId, ct }: { branchId: number | null; ct: Chuo
                     onOpen={(id) => navigate(`/hoc-vien/lop/${id}`)} unit="lớp" />
                   <EventRow label="Cuối khoá" rows={week.normal.finalClasses}
                     onOpen={(id) => navigate(`/hoc-vien/lop/${id}`)} unit="lớp" />
-                  <EventRow label="Hết chương trình — chuẩn bị chuyển tiếp" rows={week.normal.endingClasses}
-                    onOpen={(id) => navigate(`/hoc-vien/lop/${id}`)} unit="lớp" />
+                  <EventRow label="Hết chương trình — chuẩn bị chuyển lớp" rows={week.normal.endingClasses}
+                    onOpen={(id) => navigate(`/hoc-vien/lop/${id}?viec=chuyen-tiep`)} unit="lớp" />
                 </ul>
               </div>
             )}

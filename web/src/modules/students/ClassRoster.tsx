@@ -9,6 +9,7 @@ import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
 import { CanhBaoYThuc } from '../classes/CanhBaoYThuc.tsx';
 import { duongViecTiep, nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from '../classes/thaoTacDongHocVien.tsx';
+import { MoiVao } from '../classes/DaiChuyenLop.tsx';
 import { fmtBand, sosTone } from '../../lib/format.ts';
 import {
   ENTRY_SKILL_LABEL, GIAI_THICH_KCK, duongHoSoHocVien, maHocVienNgan, skillShort, type EntrySkill, type ExamPlan, type ViecTiepTheo,
@@ -42,7 +43,7 @@ type HistoryRow = {
 
 type RosterRow = {
   missing: { key: string; label: string; who: string }[];
-  id: number; studentCode: string; fullName: string; status: string; archived: boolean;
+  id: number; studentCode: string; fullName: string; status: string; archived: boolean; moiVao?: boolean;
   /** "Kết thúc vì" (Q18/Q22) — chỉ có ở bảng lớp ĐÃ KẾT THÚC, thay cho nhãn chung "Đã kết thúc". */
   ketThucVi?: string | null;
   skills: string[] | null;
@@ -117,7 +118,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents }: {
               dau={(
                 <>
                   <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                    <Link className="link font-semibold" to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>
+                    <Link className="link font-semibold" to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>{s.moiVao && <MoiVao />}
                     <span className="text-[11px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
                     <MissingBadge items={s.missing} gon />
                     <CanhBaoYThuc cb={s.canhBaoYThuc} />
@@ -203,7 +204,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents }: {
                   {/* 640–1023 px: bảng cuộn ngang TRONG vùng bảng, cột tên dính (mỗi lớp một bảng nên không bám cả trang). */}
                   <td className="td sticky-col [background:var(--surface-2)]">
                     <span className="flex min-w-0 flex-wrap items-center gap-1.5">
-                      <Link className="link" to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>
+                      <Link className="link" to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>{s.moiVao && <MoiVao />}
                       <span className="text-[11px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
                       <MissingBadge items={s.missing} gon />
                       <CanhBaoYThuc cb={s.canhBaoYThuc} />

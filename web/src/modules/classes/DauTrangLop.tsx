@@ -7,6 +7,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { TenGiaoVien } from './TenGiaoVien.tsx';
+import { DaiLopChuyen } from './DaiChuyenLop.tsx';
 import type { TinhTrangXoaKetThuc } from './XoaKetThucLopPanel.tsx';
 import {
   ROUTE_NAME, badgeLop, duongLichTest, laVaiQuanLy, needScoresText, ngay, nhomGiaoVienBoMon, nutChinhDauTrang, tuanKhoa, type BadgeLop, type DaiLop, type NhomGiaoVien, type WorkScope,
@@ -59,8 +60,10 @@ export type ViecDauTrang = 'tien-do' | 'chuyen-tiep' | 'ban-giao' | 'phan-cong' 
  *   dòng 4  tối đa 2 badge theo vai, phần còn lại "+n" (menu)
  * Mỗi nút chỉ hiện khi người xem làm được (Q9).
  */
-export function DauTrangLop({ data, periodId, onViec }: {
+export function DauTrangLop({ data, periodId, onViec, onBanGiao }: {
   data: HoSoLop; periodId: number | null; onViec: (v: ViecDauTrang) => void;
+  /** PR-CT: mở panel Bàn giao từ dải (lớp NGUỒN mặc định là lớp đang xem; `mon` = bảng GVBM). */
+  onBanGiao: (o: { lop?: number; mon?: string }) => void;
 }) {
   const navigate = useNavigate();
   const { session } = useSession();
@@ -171,6 +174,8 @@ export function DauTrangLop({ data, periodId, onViec }: {
           )}
         </div>
       )}
+
+      <DaiLopChuyen dai={data.dai} homNay={homNay} onChuyenTiep={() => onViec('chuyen-tiep')} onBanGiao={onBanGiao} />
     </header>
   );
 }

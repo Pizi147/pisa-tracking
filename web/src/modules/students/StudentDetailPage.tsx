@@ -29,6 +29,7 @@ import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { QuaHan, ChipLichSu } from '../../ui/Nhan.tsx';
 import { useSession } from '../../lib/session.tsx';
+import { DaiHocVienChuyen } from '../classes/DaiChuyenLop.tsx';
 
 type OpenCase = { caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'them-pa' | 'xac-nhan' | 'xac-nhan-pa' } | null;
 
@@ -255,6 +256,14 @@ export default function StudentDetailPage() {
           )}
         </div>
       </div>
+
+      {/* PR-CT (mockup 20 — E): dải Sắp chuyển / Đã chuyển ngay dưới dòng thông tin đầu trang; nút theo vai do máy chủ quyết. */}
+      <DaiHocVienChuyen dai={data.dai ?? null} homNay={homNay}
+        onLam={(k) => {
+          if (k === 'huy-lenh') { setViecQuanLy('chuyen-lop'); return; }
+          const d = data.dai;
+          navigate(`/hoc-vien/lop/${d.lopNguon.id}?viec=ban-giao&lenh=${d.lenhId}${k === 'ban-giao-mon' && d.mon ? `&mon=${d.mon.ma}` : ''}`);
+        }} />
 
       {/* BỐN Ô SỐ (Q7, R8c/Q11) — bốn câu hỏi, không phải một phép chia. LUÔN hiện phía trên hàng tab, kể cả khi chưa có lộ trình (spec §4.1; chủ sản phẩm chốt 22/09 sau rà soát). */}
       <HeaderStats data={data} rows={skillRows} homNay={homNay}
@@ -651,6 +660,9 @@ function RatioAttempts({ attempts, dotId, homNay, onOpen, ct = null }: {
  */
 export function Episode({ ep, onOpenCase }: { ep: any; onOpenCase: (id: number) => void }) {
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
+  /* PR-CT (Q17): chương có sự kiện Xác nhận bàn giao → nút mở lại phiếu (chỉ đọc nếu người xem không phải GVCN lớp cũ). */
+  const banGiao = ep.events.find((e: any) => e.banGiao?.lopNguonId)?.banGiao ?? null;
   const many = ep.events.length > 1;
   const caseId = ep.kind === 'case' ? Number(String(ep.link).split('/').pop()) : null;
 
@@ -698,6 +710,9 @@ export function Episode({ ep, onOpenCase }: { ep: any; onOpenCase: (id: number) 
         )}
         {caseId && (
           <button className="btn btn-sm btn-ghost" onClick={() => onOpenCase(caseId)}>Mở vấn đề</button>
+        )}
+        {banGiao && (
+          <button className="btn btn-sm btn-ghost" onClick={() => navigate(`/hoc-vien/lop/${banGiao.lopNguonId}?viec=ban-giao&lenh=${banGiao.lenhId}`)}>Đọc bàn giao</button>
         )}
       </div>
     </li>

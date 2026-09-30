@@ -117,7 +117,7 @@ export type DaiLop = {
   banGiao: { daXacNhan: number; tong: number; hanGvcn: string | null } | null;
   banGiaoMon: { mon: string; monNgan: string; daGhi: number; tong: number; han: string | null }[];
   /** Phía lớp ĐÍCH (H). */
-  sapNhan: { n: number; tuLop: string[]; tuan: string; daXacNhan: number } | null;
+  sapNhan: { n: number; tuLop: { id: number; code: string }[]; tuan: string; daXacNhan: number } | null;
   viewer: { coTheRaLenh: boolean; coTheChuyenNhieuEm: boolean; laGvcn: boolean; xacNhanDuoc: boolean };
 };
 

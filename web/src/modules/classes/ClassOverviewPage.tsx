@@ -36,7 +36,7 @@ export default function ClassOverviewPage() {
   const [periodId, setPeriodId] = useState<number | null>(null);
   const [viec, setViec] = useState<ViecDauTrang | null>(null);
   /** PR-CT: panel Bàn giao mở kèm môn (GVBM) và/hoặc đúng một lệnh (từ hồ sơ HV). */
-  const [bg, setBg] = useState<{ mon: string | null; lenhId: number | null }>({ mon: null, lenhId: null });
+  const [bg, setBg] = useState<{ mon: string | null; lenhId: number | null; lop: number | null }>({ mon: null, lenhId: null, lop: null });
   const [caseFor, setCaseFor] = useState(0);
   const { data, loading, error, reload } = useApi<HoSoLop>(classId ? `/classes/${classId}/overview` : null);
   /* Danh sách em cho ô chọn học viên của "+ Case" — chỉ nạp khi mở. */
@@ -61,7 +61,7 @@ export default function ClassOverviewPage() {
       doiThamSo({ viec: null });
     } else if (data && v === 'ban-giao') {
       /* PR-CT: việc Bàn giao (Công việc) và nút ở hồ sơ HV — `?viec=ban-giao[&mon=][&lenh=]`. Máy chủ chặn người không có quyền đọc phiếu. */
-      setBg({ mon: params.get('mon'), lenhId: Number(params.get('lenh')) || null });
+      setBg({ mon: params.get('mon'), lenhId: Number(params.get('lenh')) || null, lop: null });
       setViec('ban-giao');
       doiThamSo({ viec: null, mon: null, lenh: null });
     }
@@ -83,7 +83,8 @@ export default function ClassOverviewPage() {
 
   return (
     <div className="page space-y-4">
-      <DauTrangLop data={data} periodId={periodId} onViec={setViec} />
+      <DauTrangLop data={data} periodId={periodId} onViec={setViec}
+        onBanGiao={(o) => { setBg({ mon: o.mon ?? null, lenhId: null, lop: o.lop ?? null }); setViec('ban-giao'); }} />
 
       <HangTab ariaLabel="Hồ sơ lớp" value={tab}
         onChange={(k: TabHoSoLop) => doiThamSo({ tab: k === 'hoc-vien' ? null : k })}
@@ -101,7 +102,7 @@ export default function ClassOverviewPage() {
           onClose={dong} onDone={xong} onChuyenTiep={data.viewer.coTheChuyenTiep ? () => setViec('chuyen-tiep') : undefined} />
       )}
       <TransitionPanel classId={data.id} open={viec === 'chuyen-tiep'} onClose={dong} onDone={xong} />
-      {viec === 'ban-giao' && <BanGiaoPanel classId={data.id} mon={bg.mon} lenhId={bg.lenhId} onClose={dong} onDone={xong} />}
+      {viec === 'ban-giao' && <BanGiaoPanel classId={bg.lop ?? data.id} mon={bg.mon} lenhId={bg.lenhId} onClose={dong} onDone={xong} />}
       <TeacherAssignPanel open={viec === 'phan-cong'} onClose={dong} classId={data.id} classCode={data.code} onDone={xong} />
       {viec === 'thong-tin' && (
         <SuaThongTinLopPanel onClose={dong} onDone={xong}

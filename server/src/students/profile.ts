@@ -212,6 +212,8 @@ function episodesOf(rows: any[]) {
       id: e.id, eventType: e.event_type, eventDate: e.event_date, title: e.title,
       detail: e.detail, actorName: e.actor_name ?? null,
       group: JOURNEY_GROUP[e.event_type] ?? 'other',
+      /* PR-CT (Q17): sự kiện Xác nhận bàn giao mở lại được phiếu — cần lớp NGUỒN của lệnh. */
+      ...(e.ref_table === 'lenh_chuyen_lop' ? { banGiao: { lenhId: e.ref_id as number, lopNguonId: (e.lenh_lop_nguon ?? null) as number | null } } : {}),
     };
     const ex = byKey.get(key);
     if (ex) {
@@ -722,10 +724,11 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
    */
   const journeyRows = conn
     .prepare(
-      `SELECT j.*, u.full_name AS actor_name, lc.seq AS cycle_seq, lc.programme_code
+      `SELECT j.*, u.full_name AS actor_name, lc.seq AS cycle_seq, lc.programme_code, lp.lop_nguon_id AS lenh_lop_nguon
          FROM journey_events j
          LEFT JOIN users u ON u.id = j.created_by
          LEFT JOIN learning_cycles lc ON lc.id = j.cycle_id
+         LEFT JOIN lenh_chuyen_lop lp ON j.ref_table = 'lenh_chuyen_lop' AND lp.id = j.ref_id
         WHERE j.student_id = ?
         ORDER BY j.event_date DESC, j.id DESC`,
     )
@@ -742,7 +745,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   const JOURNEY_MILESTONES = new Set([
     'enrollment', 'transfer', 'pause', 'resume', 'finish',
     'cycle_start', 'repeat', 'exam_date_changed', 'exam_result',
-    'case_handover', 'cycle_outcome',
+    'case_handover', 'cycle_outcome', 'handover',
   ]);
   const Y_THUC_EVENTS = new Set(['warning', 'wl']);
   const journeyRowsKhongYThuc = journeyRows.filter((r) => !Y_THUC_EVENTS.has(r.event_type));

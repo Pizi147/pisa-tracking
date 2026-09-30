@@ -927,7 +927,7 @@ export async function runPrCtTests(t: YThucTestKit) {
   });
   check('CT (7c) · dải lớp đích "Sắp nhận 4 em từ lớp X vào lớp từ W2" — GVCN lớp đích + QL thấy; lớp không liên quan không có', () => {
     const dd = daiCua(gd7, d7);
-    assert(dd.sapNhan && dd.sapNhan.n === 7 && dd.sapNhan.tuLop.length === 1 && dd.sapNhan.tuan === TUAN[0] && dd.sapNhan.daXacNhan === 2, JSON.stringify(dd.sapNhan));
+    assert(dd.sapNhan && dd.sapNhan.n === 7 && dd.sapNhan.tuLop.length === 1 && dd.sapNhan.tuLop[0].id === n7 && dd.sapNhan.tuan === TUAN[0] && dd.sapNhan.daXacNhan === 2, JSON.stringify(dd.sapNhan));
     assert(daiCua(P.mbManager, d7).sapNhan?.n === 7, 'QL cũng thấy');
     assert(daiCua(g7, n7).sapNhan === null, 'lớp nguồn không có "sắp nhận"');
   });

@@ -9,6 +9,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { MissingBadge } from '../students/MissingBadge.tsx';
 import { CanhBaoYThuc } from './CanhBaoYThuc.tsx';
 import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from './thaoTacDongHocVien.tsx';
+import { MoiVao } from './DaiChuyenLop.tsx';
 import { ATTEMPT_KIND_SHORT, CHUONG_TRINH_KHONG_CHIA_MON, maHocVienNgan, mondayOfDate, tenMon, tenMonNgan, tuanLich, type AttemptKind } from '@shared/domain/index.ts';
 
 type ODiem = { score: number | null; total: number | null; outcome: string };
@@ -17,7 +18,7 @@ type LuotThuong = {
   ratios: Record<string, ODiem> | null; tuanMon: Record<string, string | null> | null;
 };
 type DongThuong = {
-  id: number; studentCode: string; fullName: string; status: string; archived: boolean; skills: string[] | null;
+  id: number; studentCode: string; fullName: string; status: string; archived: boolean; moiVao?: boolean; skills: string[] | null;
   missing: { key: string; label: string; who: string }[];
   canhBaoYThuc: NhanYThucEm | null;
   timeline: LuotThuong[];
@@ -63,7 +64,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
             dau={(
               <>
                 <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                  <Link className="link font-semibold" to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>
+                  <Link className="link font-semibold" to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>{s.moiVao && <MoiVao />}
                   <span className="text-[11px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
                   <MissingBadge items={s.missing} gon />
                   <CanhBaoYThuc cb={s.canhBaoYThuc} />
