@@ -252,6 +252,11 @@ export function Header() {
               {/* Hồ sơ cá nhân (mục 7.2) — ai cũng có, nên đứng trước lối vào quản trị. */}
               <Link to="/ho-so-ca-nhan" className="btn btn-sm w-full justify-center no-underline"
                 onClick={() => setOpenMenu(null)}>Hồ sơ cá nhân</Link>
+              {/* Hồ sơ giáo viên (PR-GV, G-12) — chỉ người có vai Giáo viên; không thuộc bốn khu vực. */}
+              {session?.user && session.roles?.includes('teacher') && (
+                <Link to={`/giao-vien/${session.user.id}`} className="btn btn-sm w-full justify-center no-underline"
+                  onClick={() => setOpenMenu(null)}>Hồ sơ giáo viên</Link>
+              )}
               {session?.nav?.admin && (
                 <Link to="/quan-tri" className="btn btn-sm w-full justify-center no-underline"
                   onClick={() => setOpenMenu(null)}>Quản trị hệ thống</Link>

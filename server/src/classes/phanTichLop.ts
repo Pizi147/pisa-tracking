@@ -27,6 +27,8 @@ export type PhanTichLop = {
   dong: { key: string; nhan: string; tenDayDu: string; category: string; moRong?: boolean }[];
   cot: { key: string; nhan: string }[];
   o: Record<string, OPhanTich>;
+  /** Học viên tạo nên từng ô `o` (đạt / chưa đạt) — cho danh sách khi bấm số ở hồ sơ giáo viên (PR-GV). Độ dài `dat + chua` = `tong`. */
+  ds: Record<string, { dat: number[]; chua: number[] }>;
   soHocVien: number;
 };
 
@@ -51,10 +53,12 @@ export function phanTichLop(p: Principal, classId: number): PhanTichLop {
     : [];
   const bundle = loadBundle(attempts.map((a) => a.id));
   const o: Record<string, OPhanTich> = {};
-  const cong = (k: string, dat: boolean) => {
+  const ds: PhanTichLop['ds'] = {};
+  const cong = (k: string, dat: boolean, hvId: number) => {
     const x = o[k] ?? (o[k] = { dat: 0, tong: 0 });
     x.tong += 1;
     if (dat) x.dat += 1;
+    (ds[k] ?? (ds[k] = { dat: [], chua: [] }))[dat ? 'dat' : 'chua'].push(hvId);
   };
 
   if (thuong) {
@@ -63,9 +67,9 @@ export function phanTichLop(p: Principal, classId: number): PhanTichLop {
     for (const a of attempts) {
       if (a.kind !== 'progress' && a.kind !== 'final') continue;
       const r = evaluateRegular(mon, (bundle.scores.get(a.id) ?? []) as any, prog?.code);
-      for (const x of r.skills) if (x.outcome === 'pass' || x.outcome === 'fail') cong(`${x.skill}|${a.kind}`, x.outcome === 'pass');
+      for (const x of r.skills) if (x.outcome === 'pass' || x.outcome === 'fail') cong(`${x.skill}|${a.kind}`, x.outcome === 'pass', a.student_id);
       /* K2-40: "Cả bài" = % tổng của bài (đủ điểm mới có) so với ngưỡng đạt chung — không viết số 0.7 thứ hai. */
-      if (!khongChiaMon && r.tyLeTong != null) cong(`ca-bai|${a.kind}`, r.tyLeTong >= RATIO_PASS_THRESHOLD);
+      if (!khongChiaMon && r.tyLeTong != null) cong(`ca-bai|${a.kind}`, r.tyLeTong >= RATIO_PASS_THRESHOLD, a.student_id);
     }
     return {
       loai: 'thuong',
@@ -77,7 +81,7 @@ export function phanTichLop(p: Principal, classId: number): PhanTichLop {
       /* K2-40, PF6: cột theo mốc của chương trình — Pre FOU chỉ Cuối khoá, một dòng Tổng hợp. */
       cot: (prog?.checkpoints.length ? prog.checkpoints.map((c) => c.kind) : ['progress', 'final'] as const)
         .map((k) => ({ key: k as string, nhan: ATTEMPT_KIND_SHORT[k as AttemptKind] ?? k })),
-      o, soHocVien: hv.length,
+      o, ds, soHocVien: hv.length,
     };
   }
 
@@ -89,14 +93,14 @@ export function phanTichLop(p: Principal, classId: number): PhanTichLop {
     if (kyVong === null) continue;
     for (const s of (bundle.scores.get(a.id) ?? []) as any[]) {
       if (s.band === null || s.band === undefined) continue;
-      cong(`${s.skill}|mt${a.attempt_no}`, s.band >= kyVong);
+      cong(`${s.skill}|mt${a.attempt_no}`, s.band >= kyVong, a.student_id);
     }
   }
   return {
     loai: 'ft',
     dong: ENTRY_SKILLS.map((k) => ({ key: k, nhan: ENTRY_SKILL_SHORT[k], tenDayDu: tenKyNang(k), category: k })),
     cot: Array.from({ length: soDot }, (_, i) => ({ key: `mt${i + 1}`, nhan: `MT${i + 1}` })),
-    o, soHocVien: hv.length,
+    o, ds, soHocVien: hv.length,
   };
 }
 

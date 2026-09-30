@@ -18,6 +18,7 @@ import TestPage from './modules/test/TestPage.tsx';
 import CongViecPage from './modules/congViec/CongViecPage.tsx';
 import AdminPage from './modules/platform/AdminPage.tsx';
 import ProfilePage from './modules/platform/ProfilePage.tsx';
+import { HoSoGiaoVienPage } from './modules/giaoVien/HoSoGiaoVienPage.tsx';
 import WelcomePage from './modules/platform/WelcomePage.tsx';
 import { NAV_RONG, duongMoi, khuVucCuaDuong, khuVucHienThi, type DemYeuCau, type KhuVucMuc } from '@shared/domain/index.ts';
 
@@ -133,6 +134,7 @@ export default function App() {
           */}
           <Route path="/quan-tri" element={nav.admin ? <AdminPage /> : <Navigate to="/" replace />} />
           <Route path="/ho-so-ca-nhan" element={<ProfilePage />} />
+          <Route path="/giao-vien/:id" element={<HoSoGiaoVienPage />} />
           {ThanhPhanDemo && (
             <Route path="/dev/thanh-phan"
               element={<Suspense fallback={<Skeleton rows={6} />}><ThanhPhanDemo /></Suspense>} />

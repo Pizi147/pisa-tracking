@@ -506,8 +506,8 @@ export function nutChinhDauTrang(i: {
 
 // ---------------------------------------------------------------- hồ sơ giáo viên (§3.12, Q2)
 
-/** PR-GV (đợt 5) dựng trang `/giao-vien/:id` rồi đổi hằng này thành `true`. Trước đó tên GV là chữ thường — không link chết. */
-export const CO_TRANG_HO_SO_GIAO_VIEN = false;
+/** PR-GV (đợt 5) đã dựng trang `/giao-vien/:id` nên bật: tên GV là link cho người xem được hồ sơ (QL trong phạm vi · GV chỉ chính mình). */
+export const CO_TRANG_HO_SO_GIAO_VIEN = true;
 export function duongHoSoGiaoVien(
   gvId: number | null, nguoiXem: { userId: number; laQuanLy: boolean }, coTrang: boolean = CO_TRANG_HO_SO_GIAO_VIEN,
 ): string | null {
