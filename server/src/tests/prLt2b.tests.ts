@@ -208,4 +208,24 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     const ft = profileMod.studentProfile(P.admin, (conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' AND student_id IN (SELECT student_id FROM enrollments WHERE status = 'active' GROUP BY student_id HAVING COUNT(*) = 1) LIMIT 1`).get(classId('MB FT 101')) as any).student_id);
     assert(ft.cuoiKhoa === null, `em FT không có cuoiKhoa: ${JSON.stringify(ft.cuoiKhoa)} · ${typeof ft.cuoiKhoa}`);
   });
+
+  // ------------------------------------------------------------------ Task 4 · Quản lý quyết khi chuyển (không còn thẻ — Q30-3, Q30-4)
+  check('LT2b (4) · Quản lý chuyển em 50–59% → ghi quyet_boi/quyet_luc + nhật ký; em 78% không ghi; không có thẻ Quyết định Cuối khoá', () => {
+    const l = taoLop('BE', 2);
+    ghiDiem(l.luot.get(l.sids[0])!, { [L]: 22, [R]: 22, [W]: 22, [S]: 22 });   // 55%
+    ghiDiem(l.luot.get(l.sids[1])!, { [L]: 32, [R]: 32, [W]: 30, [S]: 31 });   // 78%
+    soLop += 1;
+    const tuanMoi = week.ensurePeriod(TODAY);
+    const ele = intakeMod.createClass(P.admin, { code: `MB ELE 9${soLop}`, branchId: MB, kind: 'ELE', startPeriodId: tuanMoi.id, startDate: tuanMoi.weekStart });
+    const r = transitionMod.applyTransition(P.mbManager, {
+      fromClassId: l.classId, effectiveDate: TODAY,
+      dongs: l.sids.map((studentId) => ({ studentId, huong: 'len_lop', toClassId: ele.id })),
+    });
+    assert(r.failed.length === 0 && r.done.length === 2, JSON.stringify(r));
+    const q = (i: number) => conn.prepare('SELECT quyet_boi, quyet_luc FROM lo_trinh_tiep_theo WHERE student_id = ? AND class_id = ?').get(l.sids[i], l.classId) as any;
+    assert(q(0).quyet_boi === P.mbManager.userId && !!q(0).quyet_luc, JSON.stringify(q(0)));
+    assert(q(1).quyet_boi === null && q(1).quyet_luc === null, '78% không phải Quản lý quyết');
+    assert(!!conn.prepare(`SELECT 1 FROM audit_logs WHERE action = 'cuoi_khoa.quyet' AND entity_id = ?`).get(l.classId), 'thiếu nhật ký cuoi_khoa.quyet');
+    assert(!conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'quyet_dinh_cuoi_khoa'`).get(), 'không được có thẻ Quyết định Cuối khoá (Q30-3)');
+  });
 }

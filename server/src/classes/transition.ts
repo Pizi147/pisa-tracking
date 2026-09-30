@@ -297,6 +297,9 @@ export function applyTransition(p: Principal, input: TransitionInput) {
       }
     }
 
+    /* PR-LT2b (Q30-3): 50–59% không còn thẻ — Quản lý chuyển em là Quản lý ĐÃ QUYẾT. Đọc TRƯỚC `apDungCaLop` (đóng ghi danh). */
+    const quyetCk = okChuyenLop.length && can(p, PERMISSIONS.REQUEST_APPROVE, { classId: from.id })
+      ? cuoiKhoaTheoHocVien(from.id, okChuyenLop.map((d) => d.sid)) : null;
     if (okChuyenLop.length) apDungCaLop(p, { fromClass: { id: from.id, code: from.code }, ngay: input.effectiveDate, dongs: okChuyenLop });
     if (okBaoLuu.length) apDungBaoLuuCaLop(p, { fromClassId: from.id, ngay: input.effectiveDate, dongs: okBaoLuu });
     /* Dừng học = Kết thúc học — ngoại lệ đi từng em (hiếm, thường 0-1 em mỗi đợt), tái dùng đúng một luật S16. */
@@ -329,6 +332,17 @@ export function applyTransition(p: Principal, input: TransitionInput) {
              da_ap_dung_luc = excluded.da_ap_dung_luc, updated_at = excluded.updated_at`,
         )
         .run(...params);
+    }
+
+    const sidsQuyet = quyetCk ? okChuyenLop.filter((d) => quyetCk.get(d.sid)?.goiY?.canQuanLy).map((d) => d.sid) : [];
+    if (sidsQuyet.length) {
+      const luc = new Date().toISOString();
+      conn.prepare(`UPDATE lo_trinh_tiep_theo SET quyet_boi = ?, quyet_luc = ? WHERE class_id = ? AND student_id IN (${sidsQuyet.map(() => '?').join(',')})`)
+        .run(p.userId, luc, from.id, ...sidsQuyet);
+      writeAudit({
+        actorUserId: p.userId, action: 'cuoi_khoa.quyet', entityType: 'class', entityId: from.id, entityLabel: from.code,
+        after: { hocVien: sidsQuyet, huong: Object.fromEntries(okChuyenLop.filter((d) => sidsQuyet.includes(d.sid)).map((d) => [d.sid, d.huong])) },
+      });
     }
 
     dongLopNeuHet([from.id], input.effectiveDate);
