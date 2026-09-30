@@ -82,7 +82,7 @@ export function chiTietCaseMo(cases: readonly MappedCase[]): Map<number, CaseChi
     };
     const pas: PaCase[] = cua(paTheoCase, c.id).map((iv) => ({
       id: iv.id, ten: (iv.description ?? '').trim() || (INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] ?? iv.kind), loai: iv.kind,
-      batBuoc: iv.preset === 1, choXacNhan: iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned',
+      batBuoc: iv.preset === 1, choXacNhan: iv.kind !== 'bo_tro' && iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned',
       choDuyet: iv.approval_state === 'pending', xong: iv.status === 'completed',
       nguoi: iv.performer_account ?? iv.performer_name ?? null,
       mocChu: iv.preset === 1

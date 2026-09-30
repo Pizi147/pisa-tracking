@@ -1472,7 +1472,9 @@ export function caseDetail(p: Principal, caseId: number) {
       /** PA theo quy chế SOS. `awaitingConfirmation` = "Chờ xác nhận" (Q28-3, Q3): chạy khi GVBM bấm Xác nhận PA. */
       preset: iv.preset === 1,
       confirmedAt: (iv.confirmed_at ?? null) as string | null,
-      awaitingConfirmation: iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned',
+      /* PR-LT2a: PA Bổ trợ KHÔNG có bước Xác nhận PA — chờ kế hoạch được duyệt (`chuaChay`), không phải "Chờ xác nhận". */
+      awaitingConfirmation: iv.kind !== 'bo_tro' && iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned',
+      chuaChay: iv.kind === 'bo_tro' && iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned',
       /** PR-SOS (T22, T63): PA bắt buộc — không thay, không kết thúc sớm; `mocChu` chữ mốc; `lanCuoi` = lần ghi tới là "Ghi kết quả cuối". */
       batBuoc: iv.preset === 1,
       mocQuyChe: (iv.moc_quy_che ?? null) as string | null,
@@ -2468,7 +2470,8 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>, bo
       confirmedAt: iv.confirmed_at ?? null,
       /* PR-SOS: PA bắt buộc · Chờ xác nhận · chữ mốc · lần ghi tới là "Ghi kết quả cuối" (HangPA, T22, K3-14). */
       batBuoc: iv.preset === 1,
-      choXacNhan: iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned',
+      choXacNhan: iv.kind !== 'bo_tro' && iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned',
+      chuaChay: iv.kind === 'bo_tro' && iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned',
       mocChu: iv.preset === 1 ? mocChuPa({ span: iv.moc_quy_che ?? null, followupDue: iv.followup_due ?? null, mtKe: mtKe(iv), daXacNhan: !!iv.confirmed_at }, today) : null,
       lanCuoi: iv.status === 'started' && laLanGhiCuoi({ preset: iv.preset === 1, followupDue: iv.followup_due ?? null, actionDue: iv.action_due ?? null }, today),
       performer: iv.performer_user_name ?? iv.performer_name ?? null,

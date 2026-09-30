@@ -261,6 +261,10 @@ export type BoTroDto = {
   nguoiDay: { userId: number | null; ten: string | null } | null;
   keHoach: { trangThai: 'cho' | 'duyet' | 'tu_choi'; noiDungYeu: string; keHoach: string; lyDoTuChoi: string | null; hanDuyet: string | null } | null;
   hanKeHoach: string | null; coTheNop: boolean;
+  /** Người xem PHẢI gửi kèm kế hoạch khi Xác nhận Case này (như `phaiGuiKemKeHoach`) — form Xác nhận Case hiện khối Kế hoạch. */
+  phaiGuiKem: boolean;
+  /** Ngày mốc Cuối khoá của PA (`followup_due`) — web dựng chữ `đến Cuối khoá · W4 OCT` qua `mocChuBoTro`. */
+  denKhi: string | null;
 };
 
 /** Khối `boTro` cho Ngăn Case và thẻ Case — đọc THEO TẬP (một câu mỗi bảng), không hỏi từng Case. Case không có PA bổ trợ → không có khoá. */
@@ -270,7 +274,7 @@ export function boTroCuaCase(p: Principal, caseIds: number[]): Map<number, BoTro
   const conn = db();
   const ph = caseIds.map(() => '?').join(',');
   const dong = conn.prepare(
-    `SELECT iv.id, iv.case_id, iv.nhom_bo_tro, iv.status, iv.performer_user_id, iv.performer_name, iv.han_ke_hoach, u.full_name AS ten_gv,
+    `SELECT iv.id, iv.case_id, iv.nhom_bo_tro, iv.status, iv.performer_user_id, iv.performer_name, iv.han_ke_hoach, iv.followup_due, u.full_name AS ten_gv,
             sc.topic, sc.summary, sc.status AS case_status, sc.student_id, cy.programme_code AS ct, ${CO_NGUYEN_NHAN} AS co_nn,
             (SELECT MIN(i2.id) FROM case_interventions i2 WHERE i2.nhom_bo_tro = iv.nhom_bo_tro) AS min_id
        FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id LEFT JOIN users u ON u.id = iv.performer_user_id
@@ -287,11 +291,14 @@ export function boTroCuaCase(p: Principal, caseIds: number[]): Map<number, BoTro
   for (const y of conn.prepare(
     `SELECT * FROM yeu_cau_duyet WHERE loai = 'ke_hoach_bo_tro' AND doi_tuong_loai = 'nhom_bo_tro' AND doi_tuong_id IN (${minIds.map(() => '?').join(',')}) ORDER BY id`,
   ).all(...minIds) as any[]) the.set(y.doi_tuong_id, y);   // thẻ mới nhất ghi đè
-  const nopDuoc = new Map<string, boolean>();
+  const nopDuoc = new Map<string, boolean>(), guiKem = new Map<string, boolean>();
   for (const [nhom, rows] of theoNhom) {
     const y = the.get(rows[0].min_id);
     const mo = rows.filter((r) => r.case_status !== 'done');
-    nopDuoc.set(nhom, !(y?.trang_thai === 'cho' || y?.trang_thai === 'duyet') && mo.some((r) => r.co_nn) && coQuyenNop(p, mo));
+    const khongThe = !(y?.trang_thai === 'cho' || y?.trang_thai === 'duyet');
+    const quyen = khongThe && mo.length > 0 && coQuyenNop(p, mo);
+    guiKem.set(nhom, quyen);
+    nopDuoc.set(nhom, quyen && mo.some((r) => r.co_nn));
   }
   for (const cid of caseIds) {
     const r0 = dong.find((r) => r.case_id === cid);
@@ -309,6 +316,8 @@ export function boTroCuaCase(p: Principal, caseIds: number[]): Map<number, BoTro
         ? { trangThai: y.trang_thai, noiDungYeu: d?.noiDungYeu ?? '', keHoach: d?.keHoach ?? '', lyDoTuChoi: y.ly_do_tu_choi ?? null, hanDuyet: y.han_duyet ?? null } : null,
       hanKeHoach: rows.map((r) => r.han_ke_hoach as string | null).filter(Boolean).sort()[0] ?? null,
       coTheNop: nopDuoc.get(r0.nhom_bo_tro) ?? false,
+      phaiGuiKem: (guiKem.get(r0.nhom_bo_tro) ?? false) && r0.status === 'planned',
+      denKhi: rows.map((r) => r.followup_due as string | null).filter(Boolean).sort()[0] ?? null,
     });
   }
   return out;

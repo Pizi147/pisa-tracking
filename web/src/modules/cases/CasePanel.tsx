@@ -16,6 +16,7 @@ import {
 import { LichSuDieuChinh, type BanDieuChinh } from './CapNhatTuan.tsx';
 import { NganCase } from '../students/NganCase.tsx';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
+import type { BoTro } from './NopKeHoachPanel.tsx';
 
 /**
  * MỘT VẤN ĐỀ HỌC VỤ (PR-UX3, N-4, mockup 15 §3) — kể theo hai câu người đọc cần: VẤN ĐỀ gì, và ĐÃ LÀM GÌ (các PA, mỗi PA một
@@ -36,6 +37,8 @@ export type CaseDetail = {
   sos?: { fromSos: boolean; hasCause: boolean; awaitingCause: boolean; dueOn: string | null;
     choDuyetKhongTheoDoi: { hanDuyet: string | null } | null; coPaChoXacNhan: boolean } | null;
   tenSos?: { mt: number | null; giua: string; sos: number | null } | null;
+  /** PR-LT2a: khối PA Bổ trợ Giữa khoá (nhóm, môn, người dạy, kế hoạch) — null nếu Case không có PA bổ trợ. */
+  boTro?: BoTro | null;
   trangThaiV4?: { k: string; t: TrangThai; chu: string; han: string | null };
   viecTiep?: { chu: string; loaiHan: string | null; han: string | null; paId?: number } | null;
   yeuCauCase?: any;
@@ -77,7 +80,9 @@ export type CaseDetail = {
 /** Nội dung của ngăn Case: một `KhungPanel` đổi nội dung theo view, không chồng panel. */
 export type ViewCase = { loai: 'case' } | { loai: 'ghi-ket-qua'; paId: number } | { loai: 'them-pa' } | { loai: 'hoan-thanh' }
   /* PR-SOS (Q28-3): Xác nhận Case → Xác nhận PA theo quy chế. */
-  | { loai: 'xac-nhan' } | { loai: 'xac-nhan-pa'; paId: number };
+  | { loai: 'xac-nhan' } | { loai: 'xac-nhan-pa'; paId: number }
+  /* PR-LT2a: nộp kế hoạch bài giảng bổ trợ cho cả nhóm (paId = một PA bổ trợ của nhóm). */
+  | { loai: 'ke-hoach'; paId?: number };
 
 /** "Case Listening" — tên ngắn của Case cho tiêu đề ngăn và dòng "← Case Listening". */
 export function tenNganCase(d: { categoryLabel: string | null; category: string | null; chuongTrinh?: string | null }): string {
@@ -212,6 +217,10 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
 }) {
   const dangChay = daBatDau(iv);
   const choDuyet = iv.approvalState === 'pending';
+  /* PR-LT2a: PA Bổ trợ chưa chạy — chờ kế hoạch được Quản lý duyệt (không có "Xác nhận PA", không có "Ghi kết quả"). */
+  const bt = data.boTro ?? null;
+  const chuaChay = !!iv.chuaChay;
+  const choKeHoachDuyet = chuaChay && bt?.keHoach?.trangThai === 'cho';
   const hanGhi = iv.actionDue && dangChay ? deadlineView({ kind: 'cap-nhat-pa', due: iv.actionDue, today: homNay }) : null;
   const revisions: BanDieuChinh[] = iv.revisions ?? [];
   const all: any[] = data.interventions ?? [];
@@ -228,10 +237,10 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="text-sm font-semibold text-slate-100">{INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? iv.kind}</span>
         {/* PR-N1 S4-1: PA theo quy chế SOS do máy gán — dấu nhỏ cạnh tên (khoảng cách lấy từ `gap-1.5` của hàng, nên không thêm `ml-1.5`). */}
-        {iv.preset && <span className="inline-flex items-center gap-1 whitespace-nowrap text-[11px] text-slate-400" title="PA theo quy chế SOS — không thay, không kết thúc sớm"><KhoaNho />theo quy chế</span>}
+        {iv.preset && <span className="inline-flex items-center gap-1 whitespace-nowrap text-[11px] text-slate-400" title={iv.kind === 'bo_tro' ? 'PA Bổ trợ bắt buộc đến Cuối khoá — không thay, không kết thúc sớm' : 'PA theo quy chế SOS — không thay, không kết thúc sớm'}><KhoaNho />theo quy chế</span>}
         {/* Trạng thái CÔNG VIỆC, không phải kết quả (mục 2.2): "Đã xong" chỉ nghĩa việc đã làm xong. */}
         {/* PR-SOS: PA quy chế chưa xác nhận = "Chờ xác nhận" (cùng chữ với hàng PA ở bảng kỹ năng), không phải "Đã lên kế hoạch". */}
-        <Nhan tone={toneTrangThaiPa(iv.status)}>{iv.awaitingConfirmation ? 'Chờ xác nhận' : INTERVENTION_STATUS_LABEL[iv.status as keyof typeof INTERVENTION_STATUS_LABEL] ?? iv.status}</Nhan>
+        <Nhan tone={toneTrangThaiPa(iv.status)}>{chuaChay ? (choKeHoachDuyet ? 'Chờ Quản lý duyệt' : 'Chờ kế hoạch') : iv.awaitingConfirmation ? 'Chờ xác nhận' : INTERVENTION_STATUS_LABEL[iv.status as keyof typeof INTERVENTION_STATUS_LABEL] ?? iv.status}</Nhan>
         {choDuyet && <Nhan tone="wait" title={iv.approvalDue ? `Hạn Quản lý trả lời ${ngan(iv.approvalDue)}` : undefined}>Chờ Quản lý duyệt</Nhan>}
         {iv.approvalState === 'approved' && <Nhan tone="done">Đã duyệt</Nhan>}
         {iv.approvalState === 'declined' && <Nhan tone="muted">Không duyệt</Nhan>}
@@ -239,6 +248,9 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
         {hanGhi && hanGhi.tone === 'overdue' && !choDuyet && <QuaHan ngay={hanGhi.daysOverdue} />}
       </div>
       {iv.description && <p className="m-0 mt-1 text-sm text-slate-300">{iv.description}</p>}
+      {iv.kind === 'bo_tro' && bt?.chung && bt.mon.length > 1 && (
+        <p className="m-0 mt-0.5 text-[11px] text-slate-400">PA chung · {bt.mon.map((m) => m.tenMon).join(', ')}</p>
+      )}
       {(thayCho || thayBang) && (
         <p className="m-0 mt-0.5 truncate text-[11px] text-slate-500">
           {[thayCho && `Thay cho: ${tenPA(thayCho)}`, thayBang && `Được thay bằng: ${tenPA(thayBang)}`].filter(Boolean).join(' · ')}
@@ -274,7 +286,10 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
         {data.viewer.canEdit && iv.awaitingConfirmation && data.sos?.hasCause && (
           <button type="button" className="btn btn-sm btn-primary" onClick={() => onViec({ loai: 'xac-nhan-pa', paId: iv.id })}>Xác nhận PA</button>
         )}
-        {data.viewer.canEdit && dangChay && !choDuyet && !iv.awaitingConfirmation && (
+        {bt?.coTheNop && chuaChay && !choKeHoachDuyet && (
+          <button type="button" className="btn btn-sm btn-primary" onClick={() => onViec({ loai: 'ke-hoach', paId: iv.id })}>Nộp kế hoạch</button>
+        )}
+        {data.viewer.canEdit && dangChay && !choDuyet && !iv.awaitingConfirmation && !chuaChay && (
           <button type="button" className="btn btn-sm btn-primary" onClick={() => onViec({ loai: 'ghi-ket-qua', paId: iv.id })}
             title={`${hanGhi?.viec ?? 'Ghi kết quả'}: kết quả, tiến triển, và quyết định ${iv.preset ? 'Giữ nguyên / Điều chỉnh / Xin ý kiến' : 'Giữ nguyên / Điều chỉnh / Thay / Kết thúc'}`}>
             Ghi kết quả

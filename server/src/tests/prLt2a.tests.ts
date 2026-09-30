@@ -522,4 +522,36 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     const ms: any[] = (cases as any).milestonesOf(c.id);
     assert(ms.length > 0 && ms.filter((m) => m.attemptNo).every((m) => m.dot === 'Giữa khoá'), JSON.stringify(ms.map((m) => [m.kind, m.dot])));
   });
+
+  // ------------------------------------------------------------------ khối 10 · giao diện Case Giữa khoá, kế hoạch bổ trợ (Task 10)
+  await checkAsync('LT2a (10) · Case FOU chi tiết: PA bổ trợ chuaChay (không "Chờ xác nhận"); boTro.phaiGuiKem đúng người (GVCN có, GVBM G+V không); sau khi nộp → phaiGuiKem false, keHoach.cho', async () => {
+    const em = taoEm('LT2a UI FOU', 'MB FOU 12');
+    nhap(em.pt!, { listening: 18, reading: 18, writing: 11, speaking: 12 });
+    const cGv = caseTheoMon(em.id, 'writing');
+    const ha = P.normalCoreTeacher, khoa = gvOf('MB FOU 12', 'writing');
+    const dtHa = chiTiet(ha, cGv.id), dtKhoa = chiTiet(khoa, cGv.id);
+    const pa = dtHa.interventions.find((x: any) => x.kind === 'bo_tro');
+    assert(pa && pa.chuaChay === true && pa.awaitingConfirmation === false, JSON.stringify(pa && [pa.chuaChay, pa.awaitingConfirmation]));
+    assert(dtHa.boTro.phaiGuiKem === true && dtKhoa.boTro.phaiGuiKem === false && dtHa.boTro.denKhi, JSON.stringify([dtHa.boTro.phaiGuiKem, dtKhoa.boTro.phaiGuiKem, dtHa.boTro.denKhi]));
+    assert(dtHa.boTro.nguoiDay?.userId === ha.userId && dtHa.boTro.chung === true && dtHa.boTro.mon.length === 2, JSON.stringify(dtHa.boTro));
+    assert(!dtHa.sos.coPaChoXacNhan, 'PA bổ trợ không tính là PA chờ xác nhận');
+    sosAuto.xacNhanCase(khoa, cGv.id, XN('writing', 'FOU'));
+    boTro.nopKeHoachBoTro(ha, paBt(cGv.id).id, KH);
+    const sau = chiTiet(ha, cGv.id);
+    assert(sau.boTro.phaiGuiKem === false && sau.boTro.coTheNop === false && sau.boTro.keHoach.trangThai === 'cho', JSON.stringify(sau.boTro));
+  });
+
+  await checkAsync('LT2a (10) · Quét nguồn: NopKeHoachPanel dùng KhungPanel + useLoiForm, không Modal, không type="date", không màu hex; Xác nhận Case có "Xác nhận Case và gửi kế hoạch"; Ngăn Case không mở Xác nhận PA cho PA bổ trợ', async () => {
+    const fs = await import('node:fs'), path = await import('node:path');
+    const doc = (f: string) => fs.readFileSync(path.join(process.cwd(), 'web/src/modules', f), 'utf8');
+    const nop = doc('cases/NopKeHoachPanel.tsx');
+    assert(/KhungPanel/.test(nop) && /useLoiForm/.test(nop), 'KhungPanel + useLoiForm');
+    assert(!/<Modal/.test(nop) && !/type="date"/.test(nop), 'không Modal, không type="date"');
+    assert(!/#[0-9a-fA-F]{3,6}/.test(nop), 'không màu hex');
+    assert(/Gửi Quản lý duyệt/.test(nop) && /Đã gửi Quản lý duyệt — xem ở Yêu cầu của tôi/.test(nop), 'chữ nút + toast');
+    assert(/Xác nhận Case và gửi kế hoạch/.test(doc('yThuc/CaseSosControls.tsx')), 'nút chính Xác nhận Case và gửi kế hoạch');
+    assert(/Kế hoạch chung do/.test(doc('yThuc/CaseSosControls.tsx')), 'FOU GVBM: kế hoạch chung do GVCN nộp');
+    assert(/Đánh dấu đã làm/.test(doc('yThuc/PhoiHopSosSection.tsx')) && /Nội dung gửi TVV/.test(doc('yThuc/PhoiHopSosSection.tsx')), 'Phối hợp: Đánh dấu đã làm + 4 nội dung');
+    assert(/chuaChay/.test(doc('cases/SkillBoard.tsx')) && /chuaChay/.test(doc('cases/CasePanel.tsx')), 'HangPA / TheKhoiPa biết PA chưa chạy');
+  });
 }
