@@ -518,4 +518,4 @@ export type Chuong = {
 
 | Ngày | Task | Ghi chú (mốc B, model thật, trần tốc độ, lệch kế hoạch, cổng gộp) |
 |---|---|---|
-| | | |
+| 01/10 | 0 | Model thật **Opus 5.5** (claude-opus-5-5). Worktree từ `origin/main` @ `4379cc63`. UXF-a **chưa merge** → Task 1 tự viết `chuTuanHoc`/`tuanHocFt`/`khoangTamDung` theo giao kèo. **Mốc B: 2000 phép kiểm + 28 tốc độ, xanh.** Trần hiện: `/students/1` 96/93/98/98 · `skill-board` 45/42/45/45 · `/cases/1` 37/34/37/37 · `hanh-trinh` 22/20/23/23, `?giai-doan=thuong` 24/22/25/25 · `lich-su-lop` 21/19/23/23 (QL/QT/GVCN/GVBM). Hai lượt check đầu sập giữa khối PR-GV (3) — máy còn ~600 MB RAM do 4 session chạy check cùng lúc (Node hết bộ nhớ, không phải phép kiểm đỏ); chờ RAM trống rồi chạy lại thẳng các bước (không qua `npm.ps1`) thì xanh |
