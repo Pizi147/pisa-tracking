@@ -2,8 +2,10 @@
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runPrLt2bTests(t: YThucTestKit) {
-  const { check, assert } = t;
+  const { check, assert, assertThrows, conn } = t;
   const d = await import('../../../shared/domain/index.ts');
+  const { migratePrLt2b } = await import('../migrate/prLt2b.ts');
+  const { default: SqliteDb } = await import('libsql');
   console.log('\nPR-LT2b · Cuối khoá lớp thường');
 
   // ------------------------------------------------------------------ Task 1 · luật thuần
@@ -56,5 +58,40 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     assert(d.kyNangLopDich('writing', true) === 'writing2', 'writing → writing2');
     assert(d.kyNangLopDich('writing', false) === 'writing', 'không sang FT');
     assert(d.kyNangLopDich('reading', true) === 'reading' && d.kyNangLopDich('tong_hop', true) === 'tong_hop', 'giữ');
+  });
+
+  // ------------------------------------------------------------------ Task 2 · migrate cấu trúc
+  const cotCua = (c: any, bang: string) => (c.prepare('SELECT name FROM pragma_table_info(?)').all(bang) as any[]).map((x) => x.name as string).sort();
+  const COT_MOI = ['quyet_boi', 'quyet_luc', 'ky_vong_dat', 'ky_vong_nguyen_nhan', 'ky_vong_mon', 'ky_vong_ghi_chu'];
+  const dbCu = () => {
+    const tam = new SqliteDb(':memory:');
+    tam.exec('CREATE TABLE users (id INTEGER PRIMARY KEY); CREATE TABLE students (id INTEGER PRIMARY KEY); CREATE TABLE learning_cycles (id INTEGER PRIMARY KEY); '
+      + 'CREATE TABLE assessment_attempts (id INTEGER PRIMARY KEY); CREATE TABLE lo_trinh_tiep_theo (id INTEGER PRIMARY KEY, student_id INTEGER, class_id INTEGER)');
+    return tam;
+  };
+  check('LT2b (2) · migrate thêm cột + bảng mini_test trên DB cũ; chạy lại không làm gì; DB mới (schema.sql) cùng cột', () => {
+    const tam = dbCu();
+    const a: string[] = []; migratePrLt2b(tam, a);
+    assert(a.length === 1 && COT_MOI.every((c) => cotCua(tam, 'lo_trinh_tiep_theo').includes(c)), a.join('; '));
+    const b: string[] = []; migratePrLt2b(tam, b);
+    assert(b.length === 0, `lần 2 vẫn đổi: ${b.join('; ')}`);
+    assert(JSON.stringify(cotCua(tam, 'mini_test')) === JSON.stringify(cotCua(conn, 'mini_test')), 'mini_test: migrate ≠ schema.sql');
+    tam.close();
+    const c: string[] = []; migratePrLt2b(conn, c);
+    assert(c.length === 0 && COT_MOI.every((x) => cotCua(conn, 'lo_trinh_tiep_theo').includes(x)), 'schema.sql thiếu cột PR-LT2b');
+  });
+  check('LT2b (2) · mini_test: UNIQUE (em, bài Cuối khoá) chặn Mini Test thứ hai', () => {
+    const tam = dbCu();
+    migratePrLt2b(tam, []);
+    tam.exec('INSERT INTO students (id) VALUES (1); INSERT INTO learning_cycles (id) VALUES (1); INSERT INTO assessment_attempts (id) VALUES (1)');
+    const them = () => tam.prepare(`INSERT INTO mini_test (student_id, cycle_id, tu_attempt_id, nhom_bo_tro, so_buoi, ngay_du_kien, han) VALUES (1, 1, 1, 'mt:1', 2, '2026-10-11', '2026-10-13')`).run();
+    them();
+    assertThrows(them, /UNIQUE/i, 'Mini Test thứ hai của cùng em × bài phải bị chặn');
+    tam.close();
+  });
+  check('LT2b (2) · nhật ký: mọi mã cuoi_khoa.* có nhãn tiếng Việt', () => {
+    for (const ma of ['cuoi_khoa.quyet', 'cuoi_khoa.bo_tro_tao', 'cuoi_khoa.mini_test', 'cuoi_khoa.ket_luan_ft']) {
+      assert(d.nhanHanhDongNhatKy(ma) !== 'Thao tác hệ thống', `${ma} chưa có nhãn`);
+    }
   });
 }

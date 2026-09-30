@@ -137,7 +137,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
       .replace(/,\n  -- PR-YT4 \(§5\.4[\s\S]*?ghi_nhan_boi INTEGER REFERENCES users\(id\)\n\);/, '\n);')
       .replace(/,\n  -- PR-YT4: ngày QL duyệt[^\n]*\n  quyet_luc TEXT\n\);/, '\n);')
       .replace(/CREATE TABLE y_thuc_khai_bac \([\s\S]*?\n\);/, '');
-    if (/ghi_nhan_luc|quyet_luc|y_thuc_khai_bac \(/.test(cat)) throw new Error('schema.sql đổi khuôn — sửa bộ cắt của phép kiểm YT4 (2)');
+    if (/ghi_nhan_luc|\n  quyet_luc TEXT\n\)|y_thuc_khai_bac \(/.test(cat)) throw new Error('schema.sql đổi khuôn — sửa bộ cắt của phép kiểm YT4 (2)');
     const m = new SqliteDb(':memory:');
     m.exec(cat);
     return m;
