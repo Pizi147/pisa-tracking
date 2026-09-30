@@ -2742,10 +2742,11 @@ check('Ba nguồn case dùng CHUNG một vòng đời', () => {
   const fromMock = cases.listCases(P.admin, { origin: 'mock' }).rows;
   const fromTeacher = cases.listCases(P.admin, { origin: 'teacher_report' }).rows;
   const fromTask = cases.listCases(P.admin, { origin: 'manager_task' }).rows;
+  const fromChuyenCap = cases.listCases(P.admin, { origin: 'chuyen_cap' }).rows;   // PR-LT2b: Case Cuối khoá / Kỳ vọng đầu ra sinh khi chuyển lớp
   assert(fromMock.length > 0 && fromTeacher.length > 0, 'Thiếu một trong hai nguồn case chính');
   const total = cases.listCases(P.admin, {}).rows.length;
-  assert(total === fromMock.length + fromTeacher.length + fromTask.length,
-    `Ba nguồn cộng lại ${fromMock.length + fromTeacher.length + fromTask.length} khác tổng ${total}`);
+  assert(total === fromMock.length + fromTeacher.length + fromTask.length + fromChuyenCap.length,
+    `Các nguồn cộng lại ${fromMock.length + fromTeacher.length + fromTask.length + fromChuyenCap.length} khác tổng ${total}`);
   /*
    * `origin_kind` nói AI MỞ case, không phải case đó thuộc về thế giới nào.
    *
@@ -5030,7 +5031,7 @@ check('[8.3] Phương án bắt đầu 14/09/2026: ghi kết quả trước hế
     .prepare(
       `SELECT iv.action_due, iv.followup_due FROM case_interventions iv
          JOIN sos_cases sc ON sc.id = iv.case_id
-        WHERE sc.detected_at = '2026-09-14' AND iv.cycle_started_on = '2026-09-14'
+        WHERE sc.detected_at = '2026-09-14' AND iv.cycle_started_on = '2026-09-14' AND iv.moc_quy_che IS NULL   /* PA thường: không có mốc quy chế (PR-LT2b: PA bổ trợ miễn phí có mốc Mini Test) */
           /* CHỈ CASE HỌC THUẬT: Ý thức/Khác dùng hạn 3/5 ngày theo mức, không theo tuần. */
 
         ORDER BY iv.id LIMIT 1`,
@@ -8398,7 +8399,8 @@ check('PR-F · Đối soát F10: "HV có case đang mở" ở Tổng quan và �
   const analysis = new Set<number>();
   const analysisCases = new Set<number>();
   for (const ratio of [false, true]) {
-    for (const cat of [...domain.caseCategoriesFor(ratio ? 'ratio' : 'ielts_band')]) {
+    /* PR-LT2b: Case `tong_hop` (Pre FOU → FOU, Cuối khoá) thuộc bộ hạng mục của Pre FOU — quét cả bộ đó ở khung Lớp thường. */
+    for (const cat of new Set([...domain.caseCategoriesFor(ratio ? 'ratio' : 'ielts_band'), ...(ratio ? domain.caseCategoriesFor('ratio', 'PREFOU') : [])])) {
       const rows = (effectiveness.issueBoardCases({ ratio } as any, cat, null) as any).rows as any[];
       for (const r of rows) if (r.status !== 'done') { analysis.add(r.studentId); analysisCases.add(r.caseId); }
     }

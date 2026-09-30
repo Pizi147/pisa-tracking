@@ -486,3 +486,18 @@ Dựng bằng hàm nghiệp vụ (`server/src/seed/lt2aSeed.ts`), sau ngày demo
 | G5 · Báo lên / Không cần theo dõi | **Phan Khánh Linh**, **Ngô Gia Hân** (MB FOU 15) | Case L chờ nguyên nhân quá hạn → thẻ Báo lên; Case P `Không cần theo dõi` chờ Quản lý duyệt |
 
 Bài Giữa khoá đã qua tuần nên `commitIntake` không tự dựng (M1b bỏ mốc đã qua) — seed xếp bằng `planRegularTests` (Quản lý được xếp tuần đã qua).
+
+## 15. PR-LT2b — Lớp thường · Cuối khoá (chỉ máy dev, 30/09/2026)
+
+Dựng bằng hàm nghiệp vụ (`server/src/seed/lt2bSeed.ts`), sau bộ LT2a, ở hai lớp mới **MB BE 04** (Cuối khoá W1 SEP) và **MB ELE 02** (lớp đích). Tài khoản gợi ý: **Quản lý Nguyễn Khánh Vy**, **GVCN Trần Ngọc Hà** (ELE 02). Phép kiểm `LT2b (10)` soi từng dòng ngay sau khi dựng. Không còn thẻ "Quyết định Cuối khoá": 50–59% chỉ hiện chip **Quản lý cân nhắc** (Quản lý chọn khi chuyển lớp).
+
+| Kịch bản | Học viên | Bạn sẽ thấy |
+|---|---|---|
+| D10 · 45% Học lại | **Hồ Thu Trang** (đã sang MB BE 03) | Vy có việc **Báo phụ huynh qua TVV · Hồ Thu Trang · Cuối khoá 45%** (Công việc › Phối hợp); GVCN không có |
+| D10 · 55% | **Đặng Minh Khôi** (MB BE 04) | Hồ sơ › Học thuật: hộp Kết luận khoá `Cuối khoá 55%` + `Quản lý cân nhắc…`; đầu hồ sơ lớp BE 04: `1 em Quản lý cân nhắc` |
+| D10 · 64% đã lên ELE | **Vương Bảo Ngọc** (MB ELE 02) | Hai Case `Cuối khoá BE · W không đạt` / `S` **Đang làm** (không chờ nguyên nhân), PA `Bổ trợ miễn phí` chạy; ô **Mini Test · — · hạn 15/09** + nút `Ghi Mini Test`; việc của Hà `Ghi Mini Test` |
+| D10 · 78% Pass | **Tạ Đức Huy** (MB BE 04) | Hộp Kết luận khoá `Pass`; không Case |
+| D11 · Mini Test 58% | **Lâm Khánh Vy** (MB ELE 02) | Ô `Mini Test 58% · Chưa đạt — đã báo QL`; Case còn mở; Chờ duyệt › Báo lên: thẻ **Mini Test chưa đạt** |
+| D12 · Pre FOU 52% lên FOU | **Ninh Gia Bảo** (MB FOU 15) | Case `Cuối khoá Pre FOU · Tổng hợp không đạt`, PA `4 buổi miễn phí · 2 tuần`, Mini Test hạn W1 OCT — GVCN FOU ghi được, GVBM L không |
+| D13 · Trung tâm | **Chu Nhật Minh** (MB FT 101) | Case FT `Kỳ vọng đầu ra chưa đạt · Reading` + PA `Tutor 10 buổi` |
+| D13 · Học sinh | **Kiều Thảo Nhi** (MB FT 101) | Không Case; hộp Kết luận khoá (trước khi chuyển) ghi phương án case-by-case |

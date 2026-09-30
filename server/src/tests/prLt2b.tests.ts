@@ -544,4 +544,47 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     assert(/<KetLuanKhoa/.test(hs) && /<MiniTestO/.test(hs), 'hồ sơ HV');
     assert(!/SOS/.test(kl.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')), 'không chữ SOS ở hộp Kết luận khoá');
   });
+
+  // ------------------------------------------------------------------ Task 10 · demo D10–D13 (soi dữ liệu bộ demo, không phải dữ liệu do phép kiểm tạo)
+  const hv = (ten: string) => (conn.prepare('SELECT id FROM students WHERE full_name = ?').get(ten) as any).id as number;
+  const lopHienTai = (sid: number) => conn.prepare(`SELECT c.code FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = ? AND e.status = 'active'`).get(sid) as any;
+  const caseChuyenCap = (sid: number) => conn.prepare(`SELECT sc.* FROM sos_cases sc WHERE sc.student_id = ? AND sc.origin_kind = 'chuyen_cap' ORDER BY sc.id`).all(sid) as any[];
+  check('LT2b (10) · demo D10–D11: bốn dải ở MB BE 04; 64% lên ELE 02 có Case + PA + Mini Test chưa ghi; Mini Test 58% có thẻ Báo lên', () => {
+    const trang = hv('Hồ Thu Trang'), khoi = hv('Đặng Minh Khôi'), ngoc = hv('Vương Bảo Ngọc'), huy = hv('Tạ Đức Huy'), vy = hv('Lâm Khánh Vy');
+    assert(lopHienTai(trang).code === 'MB BE 03' && lopHienTai(khoi).code === 'MB BE 04' && lopHienTai(ngoc).code === 'MB ELE 02' && lopHienTai(huy).code === 'MB BE 04', 'lớp hiện tại');
+    const bao = conn.prepare(`SELECT status, preset FROM sos_coordination_actions WHERE student_id = ? AND kind = 'bao_ph_tvv'`).all(trang) as any[];
+    assert(bao.length === 1 && bao[0].status === 'pending', '45% học lại: một việc Báo PH');
+    const ql = permMod.loadPrincipal((conn.prepare(`SELECT id FROM users WHERE full_name = 'Nguyễn Khánh Vy'`).get() as any).id);
+    assert(((myWorkMod.myWork(ql, { nguoi: 'tat-ca' }) as any).items as any[]).some((i) => i.key.startsWith('baoph:') && i.studentId === trang), 'Quản lý thấy việc Báo PH');
+    const be04 = classId('MB BE 04');
+    const e = cuoiKhoaMod.cuoiKhoaTheoHocVien(be04);
+    assert(e.get(khoi).goiY.canQuanLy && e.get(huy).goiY.dai === 'dat' && !e.get(huy).goiY.boTroNeuLen, '55% cân nhắc · 78% Pass');
+    assert(caseChuyenCap(khoi).length === 0 && caseChuyenCap(huy).length === 0, 'chưa chuyển thì chưa Case');
+    const cn = caseChuyenCap(ngoc), mtNgoc = conn.prepare('SELECT * FROM mini_test WHERE student_id = ?').get(ngoc) as any;
+    assert(cn.length === 2 && cn.every((c) => c.status === 'in_progress') && mtNgoc.ty_le === null, JSON.stringify({ n: cn.length, mt: mtNgoc }));
+    const mtVy = conn.prepare('SELECT * FROM mini_test WHERE student_id = ?').get(vy) as any;
+    assert(mtVy.ty_le === 0.58 && caseChuyenCap(vy).every((c) => c.status !== 'done'), 'Mini Test 58%: Case còn mở');
+    assert(conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_mini_test' AND doi_tuong_id = ? AND trang_thai = 'cho'`).get(mtVy.id), 'thẻ Báo lên Mini Test');
+    assert(JSON.stringify(duyetMod.hopChoDuyet(ql, {})).includes('Mini Test chưa đạt'), 'hộp Chờ duyệt của QL có thẻ Mini Test');
+  });
+  check('LT2b (10) · demo D12–D13: Pre FOU 52% lên FOU; Trung tâm → Case FT + Tutor; Học sinh → không Case, có ghi chú', () => {
+    const bao = hv('Ninh Gia Bảo');
+    const c = caseChuyenCap(bao);
+    assert(lopHienTai(bao).code === 'MB FOU 15' && c.length === 1 && c[0].title === 'Cuối khoá Pre FOU · Tổng hợp không đạt', JSON.stringify(c.map((x) => x.title)));
+    assert(/4 buổi miễn phí · 2 tuần/.test(paCuaCase(c[0].id)[0].description), 'Pre FOU 4 buổi · 2 tuần');
+    const minh = hv('Chu Nhật Minh'), nhi = hv('Kiều Thảo Nhi');
+    const cm = caseChuyenCap(minh);
+    assert(lopHienTai(minh).code === 'MB FT 101' && cm.length === 1 && cm[0].title === 'Kỳ vọng đầu ra chưa đạt · Reading', JSON.stringify(cm.map((x) => x.title)));
+    assert((conn.prepare(`SELECT kind, preset FROM case_interventions WHERE case_id = ?`).get(cm[0].id) as any).kind === 'tutor', 'PA Tutor');
+    assert(caseChuyenCap(nhi).length === 0, 'Học sinh: không Case');
+    const lt = conn.prepare(`SELECT ky_vong_nguyen_nhan, ky_vong_ghi_chu FROM lo_trinh_tiep_theo WHERE student_id = ? AND ky_vong_dat = 0`).get(nhi) as any;
+    assert(lt.ky_vong_nguyen_nhan === 'hoc_sinh' && lt.ky_vong_ghi_chu.length >= 15, 'ghi chú case-by-case');
+  });
+  check('LT2b (10) · DEMO.md có mục PR-LT2b với D10–D13 và tên học viên khớp bộ demo', () => {
+    const dm = doc('DEMO.md');
+    assert(/## 15\. PR-LT2b/.test(dm) && ['D10', 'D11', 'D12', 'D13'].every((k) => dm.includes(k)), 'thiếu mục');
+    for (const ten of ['Hồ Thu Trang', 'Đặng Minh Khôi', 'Vương Bảo Ngọc', 'Tạ Đức Huy', 'Lâm Khánh Vy', 'Ninh Gia Bảo', 'Chu Nhật Minh', 'Kiều Thảo Nhi']) {
+      assert(dm.includes(ten) && !!conn.prepare('SELECT 1 FROM students WHERE full_name = ?').get(ten), `${ten} không khớp bộ demo`);
+    }
+  });
 }

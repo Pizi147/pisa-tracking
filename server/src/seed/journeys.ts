@@ -384,4 +384,18 @@ export const CLASSES: ClassSeed[] = [
     teachers: { listening: 'T_HA', reading: 'T_HA', writing: 'T_KHOA', speaking: 'T_TRANG' },
     core: 'T_HA', note: 'Tuần 6/10 — Giữa khoá tuần trước.',
   },
+
+  /* ------------------------------------------------------------------ PR-LT2b — Cuối khoá lớp thường (demo D10–D13, thêm CUỐI mảng) */
+  {
+    code: 'MB BE 04', branch: 'MB', kind: 'BE', route: null, isFastTrack: false,
+    startDate: '2026-06-29', status: 'active',
+    teachers: { listening: 'T_HA', reading: 'T_HA', writing: 'T_KHOA', speaking: 'T_TRANG' },
+    core: 'T_KHOA', note: 'Tuần 11/10 — Cuối khoá tuần trước; một số em đã chuyển.',
+  },
+  {
+    code: 'MB ELE 02', branch: 'MB', kind: 'ELE', route: null, isFastTrack: false,
+    startDate: '2026-09-07', status: 'active',
+    teachers: { listening: 'T_HA', reading: 'T_KHOA', writing: 'T_KHOA', speaking: 'T_TRANG' },
+    core: 'T_HA', note: 'Tuần 2/10 — nhận em lên từ BE có bổ trợ miễn phí.',
+  },
 ];

@@ -19,6 +19,7 @@ import { buildXlmtDemo } from './xlmtSeed.ts';
 import { buildHsmDemo } from './hsmSeed.ts';
 import { buildHvlDemo } from './hvlSeed.ts';
 import { buildLt2aDemo } from './lt2aSeed.ts';
+import { buildLt2bDemo } from './lt2bSeed.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
 import { dienMocLop } from '../migrate/prLop.ts';
 import { napYeuCauTuNguonCu } from '../migrate/prDuyet.ts';
@@ -244,6 +245,8 @@ export function runSeed() {
     buildHsmDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
     /* BỘ DEMO PR-LT2a (G1–G5): Giữa khoá lớp thường — Case tự tạo, kế hoạch bổ trợ chờ / từ chối / đã duyệt, Báo PH qua TVV. TRƯỚC `buildDuyetDemo` (quét Báo lên). */
     buildLt2aDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
+    /* BỘ DEMO PR-LT2b (D10–D13): Cuối khoá lớp thường — bốn dải, Mini Test, Pre FOU → FOU, kỳ vọng đầu ra lên FT. SAU bộ LT2a, TRƯỚC `buildDuyetDemo` (quét Báo lên). */
+    buildLt2bDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
     /*
      * Ý THỨC v4 (PR-YT4, D14/D15/H5): SAU ngày demo (đề xuất QL duyệt đi qua hàm dịch vụ đọc `demoToday()`), TRƯỚC `buildDuyetDemo`
      * (lần `quetYeuCau` của nó sinh thẻ Báo lên Ý thức).
