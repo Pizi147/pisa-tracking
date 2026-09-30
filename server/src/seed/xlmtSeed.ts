@@ -79,6 +79,12 @@ export function buildXlmtDemo(ctx: BuildCtx): { students: number } {
 
   // ---------------------------------------------------------------- X4 · MB FOU 12, L đã dời vì Báo vắng
   const nam = them(fou12, 'Âu Nhật Nam', tuan(-6));
+  /* PR-LT2a M1b: vào lớp thường tự có bài Cuối khoá — kịch bản X4 chỉ cần MỘT bài Giữa khoá đã qua, bỏ bài Cuối khoá tự tạo để L dời tuần được. */
+  for (const a of conn.prepare(`SELECT id FROM assessment_attempts WHERE cycle_id = ? AND kind = 'final'`).all(nam.cycleId) as any[]) {
+    conn.prepare('DELETE FROM attempt_skills WHERE attempt_id = ?').run(a.id);
+    conn.prepare(`DELETE FROM journey_events WHERE ref_table = 'assessment_attempts' AND ref_id = ?`).run(a.id);
+    conn.prepare('DELETE FROM assessment_attempts WHERE id = ?').run(a.id);
+  }
   planRegularTests(ql, fou12, { studentIds: [nam.id], kinds: ['progress'] });
   const namA = conn.prepare(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'progress' ORDER BY id DESC LIMIT 1`).get(nam.id) as any;
   if (namA) {

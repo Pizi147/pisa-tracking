@@ -83,9 +83,10 @@ export async function runSosV3Tests(t: YThucTestKit) {
   });
 
   check('PR-T · T1 Sáu loại việc phối hợp đúng thứ tự + nhãn §5.2; không có `Report cho gia đình` (đó là biện pháp Ý thức)', () => {
+    /* PR-LT2a: thêm `bao_ph_tvv` (chỉ máy tạo) CUỐI mảng — sáu loại người dùng chọn giữ nguyên. */
     assert(JSON.stringify(domain.COORDINATION_KINDS) === JSON.stringify(
-      ['talk_student', 'talk_family', 'gvcn_meeting', 'cx_meeting_student', 'cx_meeting_family', 'other']), `Sáu loại sai: ${domain.COORDINATION_KINDS}`);
-    assert(JSON.stringify(domain.COORDINATION_KINDS.map((k: string) => domain.COORDINATION_KIND_LABEL[k])) === JSON.stringify([
+      ['talk_student', 'talk_family', 'gvcn_meeting', 'cx_meeting_student', 'cx_meeting_family', 'other', 'bao_ph_tvv']), `Loại sai: ${domain.COORDINATION_KINDS}`);
+    assert(JSON.stringify(domain.COORDINATION_KINDS.slice(0, 6).map((k: string) => domain.COORDINATION_KIND_LABEL[k])) === JSON.stringify([
       'Trao đổi ngắn với HS', 'Trao đổi với gia đình', 'GVCN meeting với HS', 'CX / GĐCN meeting với HS', 'CX / GĐCN meeting với HS / PH', 'Khác']),
     'Nhãn sáu loại sai');
     assert(!domain.COORDINATION_KINDS.some((k: string) => /report|family_report/.test(k)), 'Không dùng Report cho gia đình');
@@ -427,7 +428,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(get('SELECT attempt_id FROM sos_cases WHERE id = ?', old.id).attempt_id === a3.id, 'Case trỏ tới lượt mới nhất');
   });
 
-  check('PR-T · Q-V3-1 (§10#8) Lớp NORMAL trượt hai môn ở Progress Test: KHÔNG tự tạo case, KHÔNG phương án điền sẵn, KHÔNG Phối hợp SOS — vẫn chỉ là tín hiệu chờ xác minh', () => {
+  check('PR-T · Q-V3-1 (§10#8) → PR-LT2a (N1, N4) Lớp NORMAL trượt hai môn ở Progress Test: TỰ TẠO hai Case + PA Bổ trợ (không PA quy chế điền sẵn), KHÔNG Phối hợp SOS (chỉ việc Báo phụ huynh qua TVV), tín hiệu chỉ là dây nối', () => {
     const regular: any = regularSvc;
     const fou = get("SELECT id FROM classes WHERE code = 'MB FOU 12'");
     intake.commitIntake(P.admin, { classId: fou.id, rows: [{ fullName: 'PT Normal', email: 'hv@demo.test' }], idempotencyKey: 'pt-normal' });
@@ -436,13 +437,14 @@ export async function runSosV3Tests(t: YThucTestKit) {
     const attempt = get("SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'progress'", stu.id);
     assert(stu && attempt, 'Không dựng được học viên Normal + Progress Test để thử');
     const skills = regular.programmeOfClass(fou.id).skills as string[];
-    const before = { cases: count('SELECT COUNT(*) n FROM sos_cases'), plans: count('SELECT COUNT(*) n FROM case_interventions'), coord: count('SELECT COUNT(*) n FROM sos_coordination_actions') };
     skills.forEach((skill, i) => regular.saveRegularScore(P.admin, attempt.id, skill, { score: i < 2 ? 4 : 36, total: 40 }));   // hai môn trượt, hai môn đạt
-    assert(count('SELECT COUNT(*) n FROM sos_cases WHERE student_id = ?', stu.id) === 0, 'Lớp Normal đã tự tạo case');
-    assert(count('SELECT COUNT(*) n FROM sos_cases') === before.cases && count('SELECT COUNT(*) n FROM case_interventions') === before.plans, 'Lớp Normal đã sinh case hoặc phương án');
-    assert(count('SELECT COUNT(*) n FROM sos_coordination_actions') === before.coord && !count('SELECT COUNT(*) n FROM sos_coordination_actions WHERE attempt_id = ?', attempt.id), 'Lớp Normal đã có Phối hợp SOS');
+    assert(count('SELECT COUNT(*) n FROM sos_cases WHERE student_id = ?', stu.id) === 2, 'Giữa khoá trượt hai môn phải tự tạo hai Case');
+    const pas = all('SELECT iv.* FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE sc.student_id = ?', stu.id);
+    assert(pas.length === 2 && pas.every((x) => x.kind === 'bo_tro' && x.preset === 1 && x.status === 'planned'), `Mỗi Case một PA Bổ trợ chờ: ${JSON.stringify(pas.map((x) => [x.kind, x.status]))}`);
+    const phoiHop = all('SELECT kind FROM sos_coordination_actions WHERE attempt_id = ?', attempt.id).map((x) => x.kind);
+    assert(phoiHop.length === 1 && phoiHop[0] === 'bao_ph_tvv', `Lớp Normal không có Phối hợp SOS, chỉ Báo PH qua TVV: ${phoiHop.join()}`);
     const sg = all('SELECT * FROM case_signals WHERE attempt_id = ?', attempt.id);
-    assert(sg.length === 2 && sg.every((s) => s.status === 'pending' && s.case_id === null), `Mô hình tín hiệu cũ phải còn nguyên: ${JSON.stringify(sg.map((s) => [s.skill, s.status]))}`);
+    assert(sg.length === 2 && sg.every((s) => s.status === 'linked' && s.case_id !== null), `Tín hiệu là dây nối tới Case: ${JSON.stringify(sg.map((s) => [s.skill, s.status]))}`);
   });
 
   check('PR-T · S09 Case TẠO TAY giữ luật cũ: không có phương án điền sẵn, không preset; hạn có phương án `Bình thường` 5 ngày · `Gấp` 3 ngày tính cả ngày đầu, từ ngày tạo', () => {
@@ -946,7 +948,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     const live = () => (phoiHop.coordinationOfClass(gvcn, CLASS) as any).pendingCount as number;
     const mine = () => (phoiHop.myCoordinationLines(gvcn) as any[]).find((l: any) => l.classId === CLASS);
     const before = live();
-    assert(mine()?.pendingCount === before && mine()?.text === `Lớp ${code} — ${before} lượt Phối hợp SOS cần xử lý`,
+    assert(mine()?.pendingCount === before && mine()?.text === `Lớp ${code} — ${before} lượt Phối hợp cần xử lý`,
       `Dòng trước khi xử lý: ${JSON.stringify(mine())} vs live ${before}`);
     for (const r of coordOf(f.a.id)) phoiHop.confirmCoordination(gvcn, r.id, { performedOn: TODAY });
     const after = live();

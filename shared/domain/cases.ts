@@ -216,6 +216,8 @@ export const MILESTONE_KINDS = [
   'opened', 'repeat', 'recurrence', 'passed', 'closed', 'extended', 'route_changed',
   /* PR-SOS (K3-21): Xác nhận Case + ba mốc của thẻ Không cần theo dõi. */
   'xac_nhan_case', 'xin_khong_theo_doi', 'ql_duyet_khong_theo_doi', 'ql_tu_choi_khong_theo_doi',
+  /* PR-LT2a (T54, M-05): kế hoạch bổ trợ lớp thường — nộp · Quản lý duyệt · Quản lý từ chối. */
+  'nop_ke_hoach', 'ke_hoach_duyet', 'ke_hoach_tu_choi',
 ] as const;
 export type MilestoneKind = (typeof MILESTONE_KINDS)[number];
 export const MILESTONE_KIND_LABEL: Record<MilestoneKind, string> = {
@@ -230,6 +232,9 @@ export const MILESTONE_KIND_LABEL: Record<MilestoneKind, string> = {
   xin_khong_theo_doi: 'Xin không theo dõi',
   ql_duyet_khong_theo_doi: 'Quản lý duyệt không theo dõi',
   ql_tu_choi_khong_theo_doi: 'Quản lý từ chối không theo dõi',
+  nop_ke_hoach: 'Nộp kế hoạch bổ trợ',
+  ke_hoach_duyet: 'Quản lý duyệt kế hoạch',
+  ke_hoach_tu_choi: 'Quản lý từ chối kế hoạch',
 };
 
 /**
@@ -569,7 +574,9 @@ export const SYSTEM_CLOSE_REASON_LABEL: Record<SystemCloseReason, string> = {
  */
 export const SUPPORT_KINDS = ['self_study', 'tutor', 'teaching_adjust', 'extra_homework', 'other'] as const;
 export const PROPOSAL_KINDS = ['reschedule_mt', 'extra_support', 'meeting_cx', 'other_proposal'] as const;
-export const INTERVENTION_KINDS = [...SUPPORT_KINDS, ...PROPOSAL_KINDS] as const;
+/** PR-LT2a: PA do HỆ THỐNG tạo (Bổ trợ Giữa khoá) — không nằm trong danh sách chọn Thêm PA / Thay PA, người dùng không tự tạo. */
+export const SYSTEM_KINDS = ['bo_tro'] as const;
+export const INTERVENTION_KINDS = [...SUPPORT_KINDS, ...PROPOSAL_KINDS, ...SYSTEM_KINDS] as const;
 export type InterventionKind = (typeof INTERVENTION_KINDS)[number];
 export const INTERVENTION_KIND_LABEL: Record<InterventionKind, string> = {
   self_study: 'Xếp tự học',
@@ -583,6 +590,7 @@ export const INTERVENTION_KIND_LABEL: Record<InterventionKind, string> = {
   /* Giữ ĐÚNG chức danh của trung tâm, không tự đổi thành "Ban giám đốc" hay tên khác. */
   meeting_cx: 'Meeting CX / GĐCN',
   other_proposal: 'Khác',
+  bo_tro: 'Bổ trợ',
 };
 
 /**

@@ -21,6 +21,7 @@ import * as accessSvc from '../yThuc/access.ts';
 import * as xuLySvc from '../yThuc/xuLy.ts';
 import * as phoiHopSvc from '../yThuc/phoiHop.ts';
 import * as sosAutoSvc from '../cases/sosAuto.ts';
+import * as boTroSvc from '../cases/boTro.ts';
 import { bangYThucLop } from '../yThuc/board.ts';
 import { maybeSimulateReadError, maybeSimulateSaveFailure, pInt, qInt, qStr, wrap } from './helpers.ts';
 
@@ -88,7 +89,6 @@ import { metricResponse, metricSet, rowsFor } from '../worklist/metrics.ts';
 import { myWork } from '../worklist/mywork.ts';
 import { nhacViec } from '../worklist/nhacViec.ts';
 import * as caseSvc from '../cases/cases.ts';
-import * as caseSignalSvc from '../cases/signals.ts';
 import * as regularSvc from '../normal/regular.ts';
 import * as chamSvc from '../cham/canCham.ts';
 
@@ -1441,35 +1441,7 @@ api.post('/cases/backfill', requireAuth, wrap((req) => {
   return caseSvc.backfillCase(principalOf(req), req.body ?? {});
 }));
 
-/*
- * TÍN HIỆU TỪ ĐIỂM (mục 6.2) — hàng riêng, KHÔNG trộn vào danh sách case.
- *
- * Một tín hiệu chưa ai xác minh không phải một vấn đề đã được xác định. Trộn hai thứ lại là
- * cách chắc chắn nhất để con số "đang có bao nhiêu vấn đề" nói quá sự thật.
- */
-api.get('/signals/pending', requireAuth, wrap((req) => caseSignalSvc.listSignals(principalOf(req), {
-  status: (qStr(req, 'status') as any) ?? 'open',
-  branchId: qInt(req, 'branchId'),
-  classId: qInt(req, 'classId'),
-  studentId: qInt(req, 'studentId'),
-  mine: req.query?.mine === '1',
-  overdueOnly: req.query?.overdue === '1',
-})));
-
-api.get('/signals/pending/:id', requireAuth, wrap((req) =>
-  caseSignalSvc.signalDetail(principalOf(req), pInt(req, 'id'))));
-
-/** Quản lý giao tín hiệu cho người khác xác minh, khi chưa ai được phân công đúng môn. */
-api.post('/signals/pending/:id/assign', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return caseSignalSvc.assignSignal(principalOf(req), pInt(req, 'id'), toInt(req.body?.userId));
-}));
-
-/** Bỏ qua một tín hiệu lớp thường — không tạo Case, lý do không bắt buộc (S1, đặc tả §3.10). */
-api.post('/signals/pending/:id/dismiss', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return caseSignalSvc.dismissSignal(principalOf(req), pInt(req, 'id'), { reason: req.body?.reason ?? null });
-}));
+/* PR-LT2a (N4, Q14): bốn đường `/signals/pending…` đã bỏ — lớp thường không còn "Tạo Case / Bỏ qua"; Giữa khoá tự tạo Case. */
 
 api.get('/cases', requireAuth, wrap((req) => {
   maybeSimulateReadError();
@@ -1580,6 +1552,11 @@ api.post('/cases/:id/interventions', requireAuth, wrap((req) => {
 api.post('/cases/:id/xac-nhan', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return sosAutoSvc.xacNhanCase(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
+}));
+/** PR-LT2a (N2, T54): nộp kế hoạch bổ trợ cho CẢ NHÓM của PA — người dạy bổ trợ / GVCN / Quản lý (BE/ELE: GVBM). Tạo thẻ Chờ duyệt · Học thuật. */
+api.post('/bo-tro/:ivId/ke-hoach', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return boTroSvc.nopKeHoachBoTro(principalOf(req), pInt(req, 'ivId'), (req.body ?? {}) as any);
 }));
 api.post('/interventions/:id/xac-nhan-pa', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();

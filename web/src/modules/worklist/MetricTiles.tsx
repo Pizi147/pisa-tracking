@@ -35,7 +35,7 @@ export function MetricTiles({ branchId, ct }: { branchId: number | null; ct: Chu
       <O id="hv-duoi-ky-vong-mon" branchId={branchId} ct={ct} nhan={ct === 'thuong' ? 'Học viên chưa đạt' : 'Học viên dưới kỳ vọng'}
         phu={(d) => (d.denominator !== null ? `/ ${d.denominator} đánh giá được` : null)} />
       <O id="hv-co-case-mo" branchId={branchId} ct={ct} nhan="Học viên có Case đang mở" phu={() => <CaseMo branchId={branchId} ct={ct} />} />
-      <O id="tin-hieu-qua-han" branchId={branchId} ct={ct} nhan="Chờ xác minh quá hạn" tone="danger" phu={(d) => (d.n > 0 ? 'tín hiệu SOS lớp thường' : null)} />
+      <O id="case-xac-dinh-nguyen-nhan-qua-han" branchId={branchId} ct={ct} nhan="Case chờ nguyên nhân quá hạn" tone="danger" phu={(d) => (d.n > 0 ? 'GVBM chưa xác nhận nguyên nhân' : null)} />
       <O id="pa-can-cap-nhat" branchId={branchId} ct={ct} nhan="PA học thuật cần cập nhật" tone="warn" />
     </div>
   );

@@ -167,7 +167,7 @@ thêm sẵn tên (Q16) để các PR sau gắn luật. PR-YT4 (K5-24) bỏ `thuc
 | `nhap-diem` | `Hạn nhập điểm {ngày}` | FT: hết thứ Tư tuần kế tuần thi | RB 9.2 |
 | `duyet` | `Duyệt · hạn {ngày} · còn {n} ngày` (chưa quá hạn; hạn hôm nay = `còn 1 ngày`) | thẻ hộp Chờ duyệt: tầng 1 `Quá hạn n ngày` / `Hạn hôm nay` / `Còn n ngày`, dòng phụ `hạn {ngày}` | K1-56, T66 · PR-DUYET (M8) |
 | `xu-ly-vi-pham` | `Xử lý vi phạm · hạn {ngày}` | 5 ngày tính cả ngày ghi lên web (`HAN_Y_THUC_NGAY`): vi phạm bắt buộc chưa xử lý · vi phạm Mới chưa Ghi nhận · đề xuất đã duyệt chưa "Đã thực hiện" (từ ngày duyệt). Chuyển lớp → hạn đặt lại từ ngày vào lớp (M-08); Tạm dừng → không hạn | K1-56 · PR-YT4 (T26, V4-5, M-08) |
-| `ke-hoach-bo-tro` | `Nộp kế hoạch bổ trợ · hạn {ngày}` | chưa gắn — PR sau | K1-56 (PR-NEN Q16) |
+| `ke-hoach-bo-tro` | `Nộp kế hoạch bổ trợ · hạn {ngày}` | 3 ngày tính cả ngày đầu (`han_ke_hoach`, như `hanXacNhan`); nộp lại sau khi Quản lý từ chối = hôm nay + 2 | K1-56 · PR-LT2a |
 | `mini-test` | `Mini Test · hạn {ngày}` | chưa gắn — PR sau | T66 (PR-NEN Q16) |
 
 PR-SOS (Q28-4): **bỏ** `du-kien-ket-thuc` khỏi giao diện — PA thường không còn ngày dự kiến kết thúc; PA theo quy chế nói **mốc** bằng chữ (`đến MT2 · W2 OCT`), không qua `<Han>`. Khoá còn trong `DEADLINE_KINDS` để phép kiểm F11 cũ vẫn chạy, không nơi nào dùng.

@@ -9,7 +9,8 @@
  */
 import { PERMISSIONS, viecTiepCuaEm, type CaseViec, type NhanYThucEm, type ViecTiepTheo } from '../../../shared/domain/index.ts';
 import { db } from '../db.ts';
-import { can, type Principal } from '../permissions.ts';
+import { can, isCoreTeacherOf, type Principal } from '../permissions.ts';
+import { emCoBaoPhChuaLam } from '../yThuc/phoiHop.ts';
 import { emCuaLop, nhanNhomEm, trangThaiYThuc } from '../yThuc/trangThai.ts';
 import { listCases, type MappedCase } from '../cases/cases.ts';
 import { chiTietCaseMo } from '../cases/caseLop.ts';
@@ -103,10 +104,14 @@ export function viecHocVienTheoLop(p: Principal, o: {
     const lop = y.lop ?? (y.hv !== null ? lopCua.get(y.hv)?.[0] : undefined);
     if (lop !== undefined && o.emTheoLop.has(lop) && can(p, PERMISSIONS.REQUEST_APPROVE, { classId: lop })) soChoDuyet.set(lop, (soChoDuyet.get(lop) ?? 0) + 1);
   }
+  const baoPhEm = emCoBaoPhChuaLam(emIds);   // PR-LT2a: việc Báo phụ huynh qua TVV (GVCN) — MỘT câu
   const theoEm = new Map<number, ViecEm>();
   const soEmQuaHan = new Map<number, number>();
   for (const [id, lops] of lopCua) {
-    const viec = viecTiepCuaEm({ nhapDiem: null, cases: caseCua.get(id) ?? [], yThuc: yThuc.get(id) ?? null, homNay: o.homNay, chuongTrinh: o.chuongTrinhTheoLop?.get(lops[0]) ?? null });
+    const viec = viecTiepCuaEm({
+      nhapDiem: null, cases: caseCua.get(id) ?? [], yThuc: yThuc.get(id) ?? null, homNay: o.homNay, chuongTrinh: o.chuongTrinhTheoLop?.get(lops[0]) ?? null,
+      baoPh: baoPhEm.has(id) && lops.some((l) => isCoreTeacherOf(p, l, o.homNay)),
+    });
     theoEm.set(id, { viec, choDuyet: emChoDuyet.has(id) });
     if (viec.some((v) => v.tone === 'danger')) for (const lop of lops) soEmQuaHan.set(lop, (soEmQuaHan.get(lop) ?? 0) + 1);
   }
