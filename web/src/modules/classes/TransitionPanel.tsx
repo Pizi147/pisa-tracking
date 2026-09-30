@@ -7,8 +7,8 @@ import { ONgay } from '../../ui/ONgay.tsx';
 import { ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import {
-  NORMAL_LADDER, hanBanGiao, kiemDongLenh, ketQuaGanNhat, ngay, tomTatLenh, tuanLich,
-  type DongTomTatLenh, type HuongLenh, type KetQuaVao, type MucTieuLenh, type ProgrammeCode,
+  NORMAL_LADDER, chuHopKetLuan, hanBanGiao, kiemDongLenh, ketQuaGanNhat, ngay, tomTatLenh, tuanLich,
+  type DongTomTatLenh, type GoiYCuoiKhoa, type HopKetLuanVao, type HuongLenh, type KetQuaVao, type MucTieuLenh, type ProgrammeCode,
 } from '@shared/domain/index.ts';
 import { ClassCreatePanel } from './ClassCreatePanel.tsx';
 
@@ -18,6 +18,8 @@ type Dong = { kieu: Kieu | ''; toClassId: number | 'new' | ''; tuan: string; muc
 const DONG_TRONG: Dong = { kieu: '', toClassId: '', tuan: '', mucTieu: '', ngayThi: '', lyDo: '', ngayXemLai: '' };
 const HUONG_CUA: Record<Kieu, HuongLenh> = { len: 'len_lop', ft: 'fast_track', lai: 'hoc_lai', 'bao-luu': 'bao_luu', dung: 'dung_hoc', chuyen: 'chuyen_lop', doi: 'chuyen_lop' };
 const canLop = (k: Kieu | '') => k !== '' && k !== 'bao-luu' && k !== 'dung';
+/** Phần Cuối khoá của một em máy chủ trả (`cuoiKhoaTheoHocVien`) — khai chặt để typecheck bắt tên trường sai (PR-S5F-a). */
+type CuoiKhoaEm = { goiY: GoiYCuoiKhoa | null; ketLuanFt: HopKetLuanVao['ketLuanFt'] };
 
 /** Cột lưới: thường 7 cột (có Web gợi ý), FT 6 cột. Dưới sm mỗi em là một khối xếp dọc (375 px, không cuộn ngang). */
 const LUOI_THUONG = 'lg:grid-cols-[28px_minmax(140px,1.15fr)_minmax(120px,.9fr)_minmax(90px,.7fr)_minmax(330px,2.1fr)_minmax(170px,1.1fr)_minmax(140px,.8fr)]';
@@ -75,7 +77,8 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
     const l = s.lenh;
     if (!l) return DONG_TRONG;
     return {
-      kieu: kieuTuLenh(l), toClassId: l.lopDichId ?? '', tuan: l.tuan === tuanCh ? '' : l.tuan, mucTieu: l.mucTieu == null ? '' : String(l.mucTieu),
+      /* Tuần đã qua (lệnh chưa chuyển được, PR-S5F-a) → về tuần chung để Quản lý chọn tuần mới. */
+      kieu: kieuTuLenh(l), toClassId: l.lopDichId ?? '', tuan: l.tuan === tuanCh || (!!homNay && l.tuan <= homNay) ? '' : l.tuan, mucTieu: l.mucTieu == null ? '' : String(l.mucTieu),
       ngayThi: l.ngayThi ?? '', lyDo: l.lyDo ?? '', ngayXemLai: l.ngayXemLai ?? '',
     };
   };
@@ -113,8 +116,8 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
   const quyet = rows.filter((r) => r.d.kieu);
   const chua = rows.length - quyet.length;
   const coLoi = quyet.some((r) => r.loi);
-  /** Chỉ gửi em MỚI quyết hoặc lệnh cũ đã sửa — lệnh đã có mà không đụng tới thì đứng yên. */
-  const canGui = quyet.filter((r) => !r.coLenh || daSua.has(r.s.id));
+  /** Chỉ gửi em MỚI quyết hoặc lệnh cũ đã sửa — lệnh đã có mà không đụng tới thì đứng yên. Lệnh chưa chuyển được gửi lại theo tuần mới (PR-S5F-a). */
+  const canGui = quyet.filter((r) => !r.coLenh || daSua.has(r.s.id) || !!r.s.lenh?.loi);
   const hienLoi = (sid: number) => lf.daBam || daSua.has(sid);
   const dsLoi = quyet.filter((r) => r.loi).map((r) => ({ khoa: `dong-${r.s.id}`, nhan: r.s.fullName as string, lyDo: r.loi as string }));
 
@@ -229,9 +232,12 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
         {data && buoc === 1 && (
           <div className="space-y-3 pt-3">
             <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
-              <div className="w-44">
-                <span className="mb-1 block text-[11.5px] font-bold text-slate-200">Tuần bắt đầu chung</span>
-                <OTuan tuanChon={data.tuanChon} value={tuanCh} onChange={setTuanChung} ariaLabel="Tuần bắt đầu chung" />
+              {/* PR-S5F-a (mockup 20): ô MÃ TUẦN — chọn một trong các Thứ Hai hợp lệ (`W2 OCT`), không ô ngày. */}
+              <div>
+                <span id="tuan-chung" className="mb-1 block text-[11.5px] font-bold text-slate-200">Tuần bắt đầu chung</span>
+                <div role="group" aria-labelledby="tuan-chung" className="flex flex-wrap gap-1.5">
+                  {(data.tuanChon as string[]).map((t) => <NutChon key={t} chon={tuanCh === t} onClick={() => setTuanChung(t)}>{tuanLich(t, homNay)}</NutChon>)}
+                </div>
               </div>
               <p className="m-0 min-w-0 flex-1 text-xs text-slate-400">
                 Chỉ chọn từ tuần sau trở đi; web chuyển em vào Thứ Hai của tuần đó. Em có thể có tuần riêng.
@@ -321,10 +327,13 @@ function HangEm({ s, d, ft, luoi, maKe, routeTu, tuanCh, homNay, loi, loiMayChu,
   huy: { sid: number; lyDo: string } | null; moHuy: () => void; doiLyDoHuy: (v: string) => void; dongHuy: () => void; xacNhanHuy: () => void;
 }) {
   const k = ketQuaGanNhat(s.ketQua as KetQuaVao | null);
+  const ck = (s.cuoiKhoa ?? null) as CuoiKhoaEm | null;
+  /* Kỳ vọng đầu ra BE/ELE: CÙNG hàm chữ với hộp Kết luận khoá ở hồ sơ HV. */
+  const kyVong = ck?.ketLuanFt ? chuHopKetLuan({ ct: data?.from?.programmeCode ?? null, tyLe: null, scored: 0, required: 0, mon: [], goiY: null, quyetDinh: null, ketLuanFt: ck.ketLuanFt }).kyVong : null;
   const ketQua = s.ketQua as KetQuaVao | null;
   const thieuDiem = !ft && !!ketQua && ketQua.mode === 'ratio' && ketQua.scored < ketQua.required;
   const lenh = s.lenh;
-  const loiHang = loi ?? loiMayChu ?? (lenh?.loi ? `Chưa chuyển được: ${lenh.loi}` : null);
+  const loiHang = loi ?? loiMayChu ?? (lenh?.loi ? `Chưa chuyển được: ${String(lenh.loi).replace(/\.$/, '')} — chọn tuần/lớp đích mới rồi gửi, hoặc huỷ lệnh.` : null);
   const chonKieu = (kieu: Kieu | '') => sua({ kieu, toClassId: kieu === d.kieu ? d.toClassId : '' });
   const nutKieu: [Kieu, string][] = ft
     ? [['chuyen', 'Chuyển lớp FT'], ['doi', 'Đổi lộ trình']]
@@ -357,8 +366,10 @@ function HangEm({ s, d, ft, luoi, maKe, routeTu, tuanCh, homNay, loi, loiMayChu,
       {!ft && (
         <span role="cell" className="min-w-0">
           <span className={nhan}>Web gợi ý</span>
-          {s.cuoiKhoa?.goiY ? <span className="block text-xs text-slate-300">{s.cuoiKhoa.goiY.nhanNgan ?? s.cuoiKhoa.goiY.nhan}</span> : <span className="text-slate-500" title="Gợi ý theo luật Cuối khoá sẽ hiện khi có điểm">—</span>}
-          {s.cuoiKhoa?.goiY?.canQl && <span className="mt-0.5 inline-flex rounded-full bg-soon-bg px-[7px] text-[11.5px] font-bold leading-[18px] text-soon">Quản lý cân nhắc</span>}
+          {/* PR-S5F-a (mockup 20): ghi HƯỚNG ("Lên BE", "Học lại FOU"); 50–59% chỉ chip "Quản lý cân nhắc" — không "→ Pass". */}
+          {!ck?.goiY ? <span className="text-slate-500" title="Gợi ý theo luật Cuối khoá sẽ hiện khi có điểm">—</span>
+            : ck.goiY.canQuanLy ? <span className="inline-flex rounded-full bg-soon-bg px-[7px] text-[11.5px] font-bold leading-[18px] text-soon" title={ck.goiY.nhan}>Quản lý cân nhắc</span>
+            : <span className="block text-xs text-slate-300" title={ck.goiY.nhan}>{ck.goiY.nhanHuong}</span>}
         </span>
       )}
       <span role="cell" className="min-w-0">
@@ -436,9 +447,9 @@ function HangEm({ s, d, ft, luoi, maKe, routeTu, tuanCh, homNay, loi, loiMayChu,
       {thieuDiem && d.kieu && (
         <p className="m-0 text-[12px] text-slate-400 lg:col-start-2 lg:col-end-[-1]">Vẫn chuyển đúng tuần. Khi có điểm, web áp luật Cuối khoá ở lớp mới (bổ trợ, Mini Test nếu cần).</p>
       )}
-      {!ft && d.kieu === 'ft' && s.cuoiKhoa?.ketLuanFt && (
+      {!ft && d.kieu === 'ft' && kyVong && (
         <p className="m-0 text-[12px] text-slate-400 lg:col-start-2 lg:col-end-[-1]">
-          Kỳ vọng đầu ra: {s.cuoiKhoa.ketLuanFt.nhan ?? 'chưa đánh dấu'} · <a className="link" href={`/hoc-vien/${s.id}`}>Mở hồ sơ</a>
+          Kỳ vọng đầu ra: {kyVong.trangThai} · <a className="link" href={`/hoc-vien/${s.id}`}>Mở hồ sơ</a>
         </p>
       )}
       {loiHang && <p role="alert" className="m-0 text-[12px] text-late lg:col-start-2 lg:col-end-[-1]">{loiHang}</p>}

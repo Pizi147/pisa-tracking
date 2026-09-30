@@ -13,7 +13,7 @@ import { activeAt, bangLop, can, isCoreTeacherOf, loadPrincipal, napTruocPhamVi,
 import { phamViHoSoGv } from '../giaoVien/phamVi.ts';
 import { allProgrammes } from '../normal/regular.ts';
 import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
-import { classAlerts } from '../classes/schedule.ts';
+import { classAlerts, classProgressMany, mocKetKhoa } from '../classes/schedule.ts';
 import { demChuaLoTrinh } from '../classes/loTrinhTiep.ts';
 import { viecBanGiao } from '../classes/banGiao.ts';
 import { demChuaCoLenh } from '../classes/lenhChuyen.ts';
@@ -527,14 +527,16 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * và việc đó không tự xảy ra.
    */
   /* PR-CT (Q30-4, Q13): từ tuần Cuối khoá, mỗi lớp thường còn em CHƯA CÓ LỆNH chuyển → một việc của Quản lý (chưa quyết = chưa có lệnh). */
-  const tienDoQl = classAlerts(
+  const tienDoQl = classProgressMany(
     (conn
       .prepare(
         `SELECT c.id FROM classes c WHERE c.status = 'active'${f.branchId ? ' AND c.branch_id = ?' : ''}`,
       )
       .all(...(f.branchId ? [f.branchId] : [])) as any[]).map((r) => r.id),
   );
-  const chuaCoLenh = demChuaCoLenh([...tienDoQl].filter(([, pr]) => (pr.phase === 'finished' || pr.phase === 'final_week') && pr.programmeCode !== 'FT').map(([id]) => id));
+  /* PR-S5F-a: từ tuần Cuối khoá theo HÔM NAY (Quản lý dời Cuối khoá sớm thì các tuần sau đó vẫn cần lệnh), không theo chặng lớp. */
+  const moc = new Map([...tienDoQl].map(([id, pr]) => [id, mocKetKhoa(pr, today)] as const));
+  const chuaCoLenh = demChuaCoLenh([...tienDoQl].filter(([id, pr]) => moc.get(id)!.tuCuoiKhoa && pr.programmeCode !== 'FT').map(([id]) => id));
   for (const [classId, pr] of tienDoQl) {
     const nChua = chuaCoLenh.get(classId) ?? 0;
     if (nChua === 0) continue;
@@ -547,7 +549,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       attemptId: null, attemptNo: null, caseId: null, level: null,
       contextLabel: pr.phase === 'finished' ? `Hết ${pr.totalWeeks} tuần` : `Tuần Cuối khoá`, count: nChua,
       reason: `${nChua} em chưa có lệnh chuyển`,
-      tieuDe: 'Chuyển lớp cả lớp',
+      tieuDe: `Chuyển lớp cả lớp · ${cls.code} · ${nChua} HV`,   // mockup 20 (PR-S5F-a): lớp · số em chưa có lệnh
       actionLabel: 'Chuyển lớp cả lớp',
       href: `/hoc-vien/lop/${classId}?viec=chuyen-tiep`,
       /* Việc của cả lớp, không của riêng ai — nên không gán người phụ trách. */
@@ -826,7 +828,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   /* Báo phụ huynh qua TVV: GVCN lớp em ĐANG học (và Quản lý ở "Tất cả trong phạm vi"); KHÔNG hạn (M-05), không tính quá hạn. */
   const baoPh = conn
     .prepare(
-      `SELECT x.id, x.attempt_id, x.student_id, s.full_name, a.attempt_no, a.kind AS attempt_kind, cur.class_id AS cur_class_id, c.code AS class_code, c.branch_id
+      `SELECT x.id, x.attempt_id, x.student_id, s.full_name, a.attempt_no, a.kind AS attempt_kind, cur.class_id AS cur_class_id, c.code AS class_code, c.branch_id,
+              (SELECT ta.user_id FROM teacher_assignments ta WHERE ta.class_id = cur.class_id AND ta.is_core = 1 AND ta.status = 'active' ORDER BY ta.id LIMIT 1) AS gvcn_id
          FROM sos_coordination_actions x JOIN students s ON s.id = x.student_id AND s.archived_at IS NULL AND s.status = 'active'
          JOIN assessment_attempts a ON a.id = x.attempt_id
          JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active' JOIN classes c ON c.id = cur.class_id
@@ -834,6 +837,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     )
     .all() as any[];
   napTruocPhamVi(baoPh.map((r) => r.student_id));
+  /* PR-S5F-a: Báo PH Giữa khoá là việc của GVCN lớp em ĐANG học (`gvcn_id` đọc cùng câu) — Quản lý xem "Tất cả" thấy người đó, không "chưa ai phụ trách". */
   const phanTramCuoi = new Map<number, string>();
   for (const [id, t] of tyLeTongLo(baoPh.filter((r) => r.attempt_kind === 'final').map((r) => r.attempt_id))) if (t.tyLe !== null) phanTramCuoi.set(id, ` ${Math.round(t.tyLe * 100)}%`);
   for (const r of baoPh) {
@@ -852,7 +856,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       tieuDe: `Báo phụ huynh qua TVV · ${r.full_name ?? 'Học viên'} · ${laCuoiKhoa ? `Cuối khoá${phanTramCuoi.get(r.attempt_id) ?? ''}` : 'Giữa khoá'}`,
       actionLabel: 'Mở Phối hợp',
       href: duongHoSoHocVien(r.student_id, { tab: 'y-thuc', sub: 'phoi-hop' }),
-      ownerId: gvcn || (laCuoiKhoa && cuaGv) ? p.userId : null, owner: null, mine: gvcn || (laCuoiKhoa && cuaGv),
+      ownerId: gvcn || (laCuoiKhoa && cuaGv) ? p.userId : laCuoiKhoa ? null : r.gvcn_id ?? null, owner: null, mine: gvcn || (laCuoiKhoa && cuaGv),
       due: null, statusLabel: 'Chưa làm',
     });
   }

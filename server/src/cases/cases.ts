@@ -2,7 +2,7 @@ import { db, tx } from '../db.ts';
 import { boTroCuaCase, chepKetQuaNhom, quyenBoTro, type BoTroDto } from './boTro.ts';
 import { ghiMiniTestTrongTx, kiemMiniTest } from '../normal/cuoiKhoa.ts';
 import {
-  DISPOSITIONS, INTERVENTION_KINDS, SYSTEM_KINDS, INTERVENTION_KIND_LABEL, INTERVENTION_STATUSES,
+  DISPOSITIONS, INTERVENTION_KINDS, SYSTEM_KINDS, INTERVENTION_KIND_LABEL, INTERVENTION_STATUSES, tenPaViecTiep,
   INTERVENTION_STATUS_LABEL,
   FOLLOWUP_OUTCOMES, CASE_DECISIONS, CASE_OUTCOMES, ENTRY_SKILLS,
   ISSUE_ROLES, PERMISSIONS, URGENCY_LEVELS, DEFAULT_URGENCY,
@@ -71,29 +71,34 @@ export function caseTitleOf(c: {
   if (own && c.origin_kind !== 'mock') return own;
   const latest = db()
     .prepare(
-      `SELECT m.attempt_no, a.kind, cl.programme_code AS ct FROM case_milestones m
+      `SELECT m.attempt_no, a.kind, cl.programme_code AS ct,
+              (SELECT cl2.programme_code FROM case_milestones m2 JOIN assessment_attempts a2 ON a2.id = m2.attempt_id JOIN classes cl2 ON cl2.id = a2.class_id
+                WHERE m2.case_id = m.case_id ORDER BY m2.id LIMIT 1) AS ct_goc
+         FROM case_milestones m
          LEFT JOIN assessment_attempts a ON a.id = m.attempt_id
          LEFT JOIN classes cl ON cl.id = a.class_id
         WHERE m.case_id = ? AND m.attempt_no IS NOT NULL
         ORDER BY m.attempt_no DESC LIMIT 1`,
     )
     .get(c.id) as any;
+  /* PR-S5F-a: tên môn theo chương trình LÚC MỞ Case (FOU "G+V") — Case đi theo em sang BE vẫn một tên, không lúc "G+V" lúc "Writing". */
+  const ctTen = latest?.ct_goc ?? latest?.ct ?? null;
   /* PR-SOS T21: Case SOS Fast Track = `[MT1] {phần giữa} [SOS 3]`; phần giữa người sửa được (`title`), mặc định `{kỹ năng} không đạt`. */
   if (c.origin_kind === 'mock' && (latest?.kind ?? 'mock') === 'mock') {
     const cat = c.category ?? categoryOf(c.topic);
-    return tenCaseSos({ mt: latest?.attempt_no ?? null, giua: own || `${cat ? tenMon(latest?.ct ?? null, cat) : caseCategoryLabel(cat)} không đạt`, sos: c.sos_level ?? null });
+    return tenCaseSos({ mt: latest?.attempt_no ?? null, giua: own || `${cat ? tenMon(ctTen, cat) : caseCategoryLabel(cat)} không đạt`, sos: c.sos_level ?? null });
   }
   /* PR-LT2a T58: Case tự tạo từ Giữa khoá lớp thường = `[Giữa khoá] G+V không đạt` — không MT, không SOS. */
   if (c.origin_kind === 'mock' && (latest?.kind === 'progress' || latest?.kind === 'final')) {
     const cat = c.category ?? categoryOf(c.topic);
-    return tenCaseThuong({ dot: latest.kind, giua: own || `${cat ? tenMonNgan(latest?.ct ?? null, cat) : caseCategoryLabel(cat)} không đạt` });
+    return tenCaseThuong({ dot: latest.kind, giua: own || `${cat ? tenMonNgan(ctTen, cat) : caseCategoryLabel(cat)} không đạt` });
   }
   if (own) return own;
   return caseTitle({
     category: c.category ?? categoryOf(c.topic),
     latestAttemptNo: latest?.attempt_no ?? null,
     latestAttemptKind: latest?.kind ?? null,
-    chuongTrinh: latest?.ct ?? null,
+    chuongTrinh: ctTen,
   });
 }
 
@@ -1634,7 +1639,7 @@ export function caseDetail(p: Principal, caseId: number) {
       };
       const pas = interventions.filter((i) => i.status !== 'cancelled').map((i) => ({
         /* PR-LT2a: PA Bổ trợ nói "Bổ trợ" (mô tả dài `Bổ trợ 2 buổi/tuần · …` nằm ở hàng PA) — việc tiếp đọc `Ghi kết quả PA Bổ trợ`. */
-        id: i.id, ten: i.kind === 'bo_tro' ? INTERVENTION_KIND_LABEL.bo_tro : (i.description ?? '').trim() || (INTERVENTION_KIND_LABEL[i.kind as InterventionKind] ?? i.kind),
+        id: i.id, ten: tenPaViecTiep(i.kind, i.description),
         batBuoc: i.batBuoc, choXacNhan: i.awaitingConfirmation, xong: i.status === 'completed', actionDue: i.actionDue,
         followupDue: i.followupDue, choDuyet: i.approvalState === 'pending',
       }));
@@ -2192,7 +2197,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
    */
   const caseRows = conn
     .prepare(
-      `SELECT *, (COALESCE(cycle_id, 0) != ?) AS carried_over FROM sos_cases
+      `SELECT *, (COALESCE(cycle_id, 0) != ?) AS carried_over, (SELECT cy.started_at FROM learning_cycles cy WHERE cy.id = sos_cases.cycle_id) AS lo_trinh_bat_dau FROM sos_cases
         WHERE student_id = ?
           AND (COALESCE(cycle_id, 0) = ? OR status != 'done')
         ORDER BY carried_over, (status = 'done'), parallel, id DESC`,
@@ -2231,7 +2236,14 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
 
   /* MH2 + PF6: bảng kỹ năng theo chương trình lộ trình — FOU G+V/P, Pre FOU một hàng "Tổng hợp". */
   const ctBang: string | null = cycle ? cycle.programme_code ?? programmeCodeOfCycle(cycle.id) : null;
-  const rows = caseCategoriesFor(isRatioCycle(cycle) ? 'ratio' : 'ielts_band', ctBang).map((category) => {
+  /*
+   * PR-S5F-a: Case có hạng mục NGOÀI ô chuẩn của chương trình đang học (vd. Case "Cuối khoá Pre FOU · Tổng hợp không đạt" đi theo em lên FOU) vẫn
+   * phải có dòng — không thì bảng và thẻ tóm tắt nói "không có case" trong khi Case còn mở. Dòng thêm xếp sau các ô chuẩn.
+   */
+  const oChuan: readonly string[] = caseCategoriesFor(isRatioCycle(cycle) ? 'ratio' : 'ielts_band', ctBang);
+  const oNgoai = [...new Set(caseRows.filter((c) => c.status !== 'done' || !c.carried_over).map((c) => (c.category ?? categoryOf(c.topic)) as string | null)
+    .filter((k): k is string => !!k && !oChuan.includes(k)))];
+  const rows = [...oChuan, ...oNgoai].map((category) => {
     const points = byCategory.get(category) ?? [];
     const latest = points[points.length - 1] ?? null;
     const prev = points.length > 1 ? points[points.length - 2] : null;
@@ -2463,6 +2475,10 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>, bo
   /* PR-S2 (S2): lịch sử điều chỉnh, một truy vấn cho cả Case (gộp nhiều Case: xem plan PR-S2 Q18). */
   const revs = lichSuDieuChinhCuaCase(caseId);
   const mtKe = mtKeTheoPa(caseId);
+  /* PR-S5F-a: Case đã đi theo em sang lộ trình mới — PA bổ trợ bắt đầu TRƯỚC lộ trình này là PA của lớp cũ (người dạy cũ ghi tiếp). */
+  const batDauLoTrinh: string | null = c.lo_trinh_bat_dau ?? null;   // đọc sẵn trong câu Case của bảng kỹ năng — không thêm câu mỗi thẻ
+  const laPaLopCu = (iv: any) => iv.kind === 'bo_tro' && !!batDauLoTrinh
+    && String(iv.cycle_started_on ?? iv.started_date ?? iv.planned_date ?? iv.created_at ?? '').slice(0, 10) < batDauLoTrinh;
 
   const plans = ivs.map((iv) => {
     const last = follows.find((f) => f.intervention_id === iv.id && f.outcome) ?? null;
@@ -2570,7 +2586,8 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>, bo
     /** PR-SOS (§7.3, K3-07): MỘT nhãn trạng thái + MỘT việc tiếp của Case — bảng kỹ năng, Ngăn Case, đầu hồ sơ đọc chung. */
     trangThaiV4: trangThaiCaseV4(v4, today),
     viecTiep: viecTiepCuaCase(v4, plans.map((pl) => ({
-      id: pl.id, ten: pl.kind === 'bo_tro' ? INTERVENTION_KIND_LABEL.bo_tro : pl.name, batBuoc: pl.batBuoc, choXacNhan: pl.choXacNhan, xong: pl.status === 'completed',
+      lopCu: laPaLopCu(ivs.find((iv) => iv.id === pl.id)),
+      id: pl.id, ten: tenPaViecTiep(pl.kind, pl.name), batBuoc: pl.batBuoc, choXacNhan: pl.choXacNhan, xong: pl.status === 'completed',
       actionDue: pl.actionDue, followupDue: pl.followupDue, choDuyet: pl.pendingApproval,
     })), today, c.origin_kind === 'mock' ? null : planDueDate(String(c.detected_at ?? c.created_at ?? today).slice(0, 10), c.urgency)),
     plans,

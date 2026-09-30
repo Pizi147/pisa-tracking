@@ -19,7 +19,7 @@ import { luotSinhViecRow } from '../worklist/danhGia.ts';
 import { missingForStudent, suggestedMockWeeks } from '../classes/schedule.ts';
 import { lopHocCua } from '../classes/loTrinhTiep.ts';
 import { daiHocVien } from '../classes/daiChuyenLop.ts';
-import { cuoiKhoaTheoHocVien, miniTestCuaHocVien } from '../normal/cuoiKhoa.ts';
+import { cuoiKhoaTheoHocVien, miniTestCuaHocVien, type EmCuoiKhoa } from '../normal/cuoiKhoa.ts';
 import { quyenBoTro } from '../cases/boTro.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { activeClassOf, canManageDiscipline } from '../yThuc/access.ts';
@@ -480,7 +480,7 @@ function headlineOf(p: Principal, studentId: number, cycleId: number | null) {
       else if (v.chu === 'Nộp kế hoạch bổ trợ') xacDinh.push({ text: `Nộp kế hoạch bổ trợ ${sk(r)}`, due: v.han, rank: 1, category: r.category });
       /* PR-S5F-b: hạn = hạn duyệt THẬT của thẻ kế hoạch (không "chưa đặt hạn"). */
       else if (v.chu === 'Chờ Quản lý duyệt kế hoạch') cands.push({ text: `Chờ Quản lý duyệt kế hoạch ${sk(r)}`, due: c.boTro?.keHoach?.hanDuyet ?? null, rank: 2, category: r.category });
-      else if (v.chu.startsWith('Ghi kết quả cuối')) cands.push({ text: `Ghi kết quả cuối ${sk(r)}`, due: v.han, rank: 1, category: r.category, loai: 'cap-nhat-pa' });
+      else if (v.chu.startsWith('Ghi kết quả cuối')) cands.push({ text: `Ghi kết quả cuối ${sk(r)}${v.chu.endsWith('(lớp cũ)') ? ' (lớp cũ)' : ''}`, due: v.han, rank: v.chu.endsWith('(lớp cũ)') ? 2 : 1, category: r.category, loai: 'cap-nhat-pa' });
       else if (v.chu === 'Hoàn thành Case') cands.push({ text: `Hoàn thành Case ${sk(r)}`, due: null, rank: 2, category: r.category });
     }
     if (r.state === 'no_plan') cands.push({ text: `Đề ra PA ${sk(r)}`, due: null, rank: 1, category: r.category });
@@ -981,13 +981,30 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     miniTest: (() => {
       const mt = miniTestCuaHocVien([studentId]).get(studentId);
       if (!mt) return null;
-      const iv = db().prepare(`SELECT MIN(case_id) AS case_id, MIN(CASE WHEN status IN ('planned', 'started') THEN id END) AS pa_id FROM case_interventions WHERE nhom_bo_tro = ?`).get(mt.nhom) as any;
+      /* PA còn mở + CHÍNH Case của nó (không lấy MIN hai cột riêng — lệch Case thì form mở sai chỗ, không có ô Mini Test). */
+      const iv = db().prepare(
+        `SELECT case_id, CASE WHEN status IN ('planned', 'started') THEN id END AS pa_id FROM case_interventions WHERE nhom_bo_tro = ?
+          ORDER BY status NOT IN ('planned', 'started'), id LIMIT 1`,
+      ).get(mt.nhom) as any;
       const pa = iv?.pa_id ? db().prepare('SELECT * FROM case_interventions WHERE id = ?').get(iv.pa_id) as any : null;
       return { ...mt, caseId: iv?.case_id ?? null, paId: iv?.pa_id ?? null, coTheGhi: mt.tyLe === null && !!pa && quyenBoTro(p, pa) };
     })(),
     cuoiKhoa: (() => {
-      const lop = activeClassOf(studentId);
-      return lop && isRatioClass(lop) ? cuoiKhoaTheoHocVien(lop, [studentId]).get(studentId) ?? null : null;
+      /* MỘT câu: lớp đang học + lớp thường vừa rời (nếu có). PR-S5F-a: vừa chuyển (lên lớp / học lại / sang FT) mà lớp đang học chưa có điểm Cuối khoá
+         → vẫn thấy % Cuối khoá của lớp thường vừa rời (hộp Kết luận khoá; kỳ vọng đầu ra BE/ELE — Quản lý đánh dấu được cả sau khi em đã sang FT). */
+      const ds = db().prepare(
+        `SELECT e.class_id, e.status, c.code, c.programme_code, c.is_fast_track FROM enrollments e JOIN classes c ON c.id = e.class_id
+          WHERE e.student_id = ? AND (e.status = 'active' OR (e.status = 'transferred' AND c.is_fast_track = 0))
+          ORDER BY e.status = 'active' DESC, e.ended_at DESC, e.id DESC LIMIT 2`,
+      ).all(studentId) as any[];
+      const dangHoc = ds.find((r) => r.status === 'active');
+      if (!dangHoc) return null;
+      const kem = (r: any, x: EmCuoiKhoa | null, daChuyen: boolean) => (x ? { ...x, ct: r.programme_code ?? null, lop: r.code ?? null, daChuyen } : null);
+      const dang = !dangHoc.is_fast_track && isRatioClass(dangHoc.class_id) ? cuoiKhoaTheoHocVien(dangHoc.class_id, [studentId]).get(studentId) ?? null : null;
+      if (dang && dang.scored > 0) return kem(dangHoc, dang, false);   // bài Cuối khoá của lớp đang học đã có điểm
+      const cu = ds.find((r) => r.status === 'transferred');
+      const x = cu && isRatioClass(cu.class_id) ? cuoiKhoaTheoHocVien(cu.class_id, [studentId], { daRoi: true }).get(studentId) ?? null : null;
+      return x && x.scored > 0 ? kem(cu, x, true) : kem(dangHoc, dang, false);
     })(),
   };
 }

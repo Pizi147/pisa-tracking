@@ -11,7 +11,8 @@ function Dai({ nhan, do: doHan, children, nut }: { nhan: string; do?: boolean; c
     <div role="status" className={`flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border px-3 py-2 text-sm ${
       doHan ? 'border-late-line bg-late-bg' : ''}`} style={doHan ? undefined : { borderColor: 'var(--line)', background: 'var(--surface-2, transparent)' }}>
       <span className={`shrink-0 font-bold ${doHan ? 'text-late' : 'text-slate-100'}`}>{nhan}</span>
-      <span className="min-w-0 flex-1 text-slate-300">{children}</span>
+      {/* Dưới sm (375 px): chữ một dòng riêng, nút xuống dưới — không ép ba cột dồn chữ (PR-S5F-a, mockup 20). */}
+      <span className="min-w-0 basis-full text-slate-300 sm:basis-0 sm:flex-1">{children}</span>
       {nut && <span className="flex shrink-0 flex-wrap items-center gap-1.5">{nut}</span>}
     </div>
   );
@@ -30,6 +31,12 @@ export function DaiLopChuyen({ dai, homNay, onChuyenTiep, onBanGiao }: {
   const h = homNay ?? '';
   return (
     <div className="space-y-2">
+      {dai.chuaChuyenDuoc && (
+        <Dai nhan="Chưa chuyển được" do
+          nut={<button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onChuyenTiep}>Sửa lệnh…</button>}>
+          <b className="tabular-nums text-slate-100">{dai.chuaChuyenDuoc.n} em</b> · {dai.chuaChuyenDuoc.loi.replace(/\.$/, '')} · chọn tuần hoặc lớp đích mới, hoặc huỷ lệnh
+        </Dai>
+      )}
       {kt && (
         <Dai nhan="Kết thúc khoá" do={kt.do}
           nut={v.coTheRaLenh ? <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={onChuyenTiep}>Chuyển lớp cả lớp…</button> : undefined}>
@@ -99,7 +106,7 @@ export function DaiHocVienChuyen({ dai, homNay, onLam }: {
           </>
         )}
       </Dai>
-      {dai.loi && <p role="alert" className="m-0 text-[12px] text-late">Chưa chuyển được: {dai.loi}</p>}
+      {dai.loi && <p role="alert" className="m-0 text-[12px] text-late">Chưa chuyển được: {dai.loi.replace(/\.$/, '')} — sửa lệnh sang tuần mới hoặc huỷ lệnh.</p>}
     </div>
   );
 }

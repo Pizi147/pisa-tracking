@@ -415,7 +415,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     /* Em không còn học, hoặc đã có lệnh chuyển lớp từ đường khác → thẻ không còn ý nghĩa. */
     chet: {
       sql: `NOT EXISTS (SELECT 1 FROM enrollments e WHERE e.student_id = y.hoc_vien_id AND e.status = 'active')
-         OR EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.student_id = y.hoc_vien_id AND l.trang_thai = 'cho' AND l.tu_yeu_cau_id IS NOT y.id)`,
+         OR EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.student_id = y.hoc_vien_id AND l.trang_thai = 'cho' AND l.loi IS NULL AND l.tu_yeu_cau_id IS NOT y.id)`,
       lyDo: 'Học viên không còn học hoặc đã có lệnh chuyển lớp',
     },
     nap: (conn, ds) => {

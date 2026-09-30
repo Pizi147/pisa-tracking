@@ -108,7 +108,7 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload }: Chung) {
           <p className="m-0 px-4 pt-2 text-right text-[11px] text-slate-400">Xác nhận được khi đủ nhận xét chung. Môn chưa có thông tin sẽ ghi “GVBM chưa bàn giao”.</p>
         ) : undefined,
         chinh: ghi && em && !em.xacNhan ? (
-          <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={xacNhan} disabled={busy}>Xác nhận bàn giao</button>
+          <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={xacNhan} disabled={busy || !nhap.trim()} title={!nhap.trim() ? 'Viết nhận xét chung trước khi xác nhận' : undefined}>Xác nhận bàn giao</button>
         ) : undefined,
         conThieu: daBam && thieu && em && ghi ? [{ nhan: 'Nhận xét chung', oId: 'o-nhan-xet' }] : undefined,
       }}>

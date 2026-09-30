@@ -294,7 +294,7 @@ export default function StudentDetailPage() {
           {/* PR-LT2b (M-05): ô Mini Test ở đầu tab (lộ trình mới có bổ trợ miễn phí) · hộp Kết luận khoá (lớp thường đã có điểm Cuối khoá). */}
           {data.miniTest && <MiniTestO mt={data.miniTest} onGhi={(caseId, paId) => setOpenCase({ caseId, paId, viec: 'ghi-ket-qua' })} />}
           {data.cuoiKhoa && data.cuoiKhoa.scored > 0 && (
-            <KetLuanKhoa studentId={data.id} studentName={data.fullName} lop={data.currentClass?.code ?? null} ct={cy.programmeCode ?? null}
+            <KetLuanKhoa studentId={data.id} studentName={data.fullName} lop={data.cuoiKhoa.lop ?? data.currentClass?.code ?? null} ct={data.cuoiKhoa.ct ?? cy.programmeCode ?? null}
               cuoiKhoa={data.cuoiKhoa} coTheKetLuan={!!data.viewer?.coTheKetLuan} onDoi={reload} />
           )}
           {/* id để R8c/kn cuộn tới đúng khung này (Task 5) — không sửa SkillBoard. */}
@@ -452,7 +452,7 @@ function HeaderStats({ data, rows, homNay, onOpenDot, onOpenKn }: {
         onClick={kq ? () => onOpenDot(kq.attemptId) : undefined}
         title="Mở đợt Test này ở bảng Học thuật"
         sub={kq
-          ? (kq.dungKetQuaDot
+          ? (kq.phanTram !== null ? `${kq.phanTram}% tổng` : kq.dungKetQuaDot
             ? <KetQuaDot coDiem={kq.coDiem} yeuCau={kq.yeuCau} dat={kq.dat} sos={kq.sos} cheDo={cheDo} soMonChuaDat={kq.soMonChuaDat} />
             : `${kq.coDiem}/${kq.yeuCau} phần có điểm`)
           : 'chưa có điểm nào'} />

@@ -41,11 +41,13 @@ export function DongViec({ it, onOpen, nutPhu }: {
 }) {
   const loaiHan = LOAI_HAN_CUA_VIEC[it.group];
   /* Lớp chỉ hiện khi dòng đang nói về MỘT EM — dòng gom đã lấy chính tên lớp làm tiêu đề phụ. */
+  /* "Chuyển lớp cả lớp · lớp · n HV" (PR-S5F-a, mockup 20): tiêu đề đã có lớp và số em — dòng phụ không nhắc lại. */
+  const gomLop = it.group === 'placement';
   const dongPhu = [
-    it.studentName,
+    gomLop ? null : it.studentName,
     it.classCode && it.studentName !== `Lớp ${it.classCode}` ? it.classCode : null,
     it.contextLabel,
-    it.count !== null && it.count > 1 ? `${it.count} HV` : null,
+    !gomLop && it.count !== null && it.count > 1 ? `${it.count} HV` : null,
     it.owner ?? (it.ownerId === null && !it.mine && it.group !== 'placement' && it.group !== 'next_step' ? 'chưa ai phụ trách' : null),
   ].filter(Boolean).join(' · ');
   return (

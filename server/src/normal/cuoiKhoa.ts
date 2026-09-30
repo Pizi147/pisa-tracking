@@ -1,6 +1,6 @@
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
-  PERMISSIONS, REGULAR_SKILLS, caseDedupKey, categoryOf, chuMonTruot, daiCuoiKhoa, goiYCuoiKhoa, kyHieuLop, kyNangLopDich, lichBoTro, ngay, tenMon, weeklyUpdateDue,
+  PERMISSIONS, REGULAR_SKILLS, caseDedupKey, categoryOf, chuHopKetLuan, chuMonTruot, daiCuoiKhoa, goiYCuoiKhoa, kyHieuLop, kyNangLopDich, lichBoTro, ngay, tenMon, weeklyUpdateDue,
   type BoTroMienPhi, type GoiYCuoiKhoa,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -58,6 +58,31 @@ export function tyLeTongLo(attemptIds: readonly number[]): Map<number, TyLeLuot>
   return out;
 }
 
+/**
+ * PR-S5F-a (T58): chữ kết quả Cuối khoá — `Cuối khoá 66% (L 70 · R 58 · G+V 66 · P 62)` — của nhiều em ở MỘT lớp thường, KỂ CẢ em đã chuyển đi
+ * (phiếu bàn giao đọc sau khi chuyển, thẻ kết quả ở hồ sơ). Cùng hàm chữ với hộp Kết luận khoá. Em chưa có bài Cuối khoá → không có trong kết quả.
+ */
+export function chuCuoiKhoaLo(classId: number, sids: readonly number[]): Map<number, string> {
+  const out = new Map<number, string>();
+  const luot = new Map<number, number>();
+  theoLo([...new Set(sids)], (lo, ph) => {
+    for (const r of db().prepare(
+      `SELECT id, student_id FROM assessment_attempts WHERE class_id = ? AND kind = 'final' AND status != 'cancelled' AND student_id IN (${ph}) ORDER BY id`,
+    ).all(classId, ...lo) as any[]) luot.set(r.student_id, r.id);
+  });
+  const t = tyLeTongLo([...luot.values()]);
+  for (const [sid, id] of luot) {
+    const x = t.get(id);
+    if (!x) continue;
+    const h = chuHopKetLuan({
+      ct: x.ct, tyLe: x.tyLe, scored: x.scored, required: x.required, mon: x.mon,
+      goiY: goiYCuoiKhoa({ ct: x.ct, tyLe: x.tyLe, monTruot: x.monTruot }), quyetDinh: null, ketLuanFt: null,
+    });
+    out.set(sid, h.phu ? `${h.chinh} (${h.phu})` : h.chinh);
+  }
+  return out;
+}
+
 export type EmCuoiKhoa = {
   attemptId: number | null; tyLe: number | null; scored: number; required: number; monTruot: string[];
   mon: { skill: string; ratio: number | null }[];
@@ -84,15 +109,16 @@ function ketLuanCuaDong(r: any): Pick<EmCuoiKhoa, 'quyetDinh' | 'ketLuanFt'> {
  * Mọi em ĐANG học lớp thường `classId` (hoặc chỉ `sids`): bài Cuối khoá mới nhất, % tổng, gợi ý hướng, quyết định, kỳ vọng đầu ra.
  * 4 câu cho cả lớp (em × bài · lượt · điểm · lộ trình tiếp theo). Hướng gợi ý KHÔNG lưu — tính lại mỗi lần đọc nên sửa điểm là đổi theo.
  */
-export function cuoiKhoaTheoHocVien(classId: number, sids?: readonly number[]): Map<number, EmCuoiKhoa> {
+export function cuoiKhoaTheoHocVien(classId: number, sids?: readonly number[], o: { daRoi?: boolean } = {}): Map<number, EmCuoiKhoa> {
   const out = new Map<number, EmCuoiKhoa>();
   if (sids && !sids.length) return out;
   const conn = db();
   const loc = sids ? ` AND e.student_id IN (${sids.map(() => '?').join(',')})` : '';
+  /* `daRoi` (PR-S5F-a): cả em đã chuyển khỏi lớp — hồ sơ HV sau chuyển vẫn thấy % Cuối khoá của lớp cũ. */
   const dong = conn.prepare(
     `SELECT e.student_id, a.id AS attempt_id FROM enrollments e
        LEFT JOIN assessment_attempts a ON a.student_id = e.student_id AND a.class_id = e.class_id AND a.kind = 'final' AND a.status != 'cancelled'
-      WHERE e.class_id = ? AND e.status = 'active'${loc} ORDER BY a.id`,
+      WHERE e.class_id = ? AND e.status ${o.daRoi ? "IN ('active', 'transferred')" : "= 'active'"}${loc} ORDER BY a.id`,
   ).all(classId, ...(sids ?? [])) as any[];
   const luotCuaEm = new Map<number, number | null>();
   for (const r of dong) luotCuaEm.set(r.student_id, r.attempt_id ?? luotCuaEm.get(r.student_id) ?? null);   // nhiều bài Cuối khoá → bài id lớn nhất
@@ -139,12 +165,20 @@ function moCaseChuyenCap(conn: any, x: {
   return { id: Number(info.lastInsertRowid), moi: true };
 }
 
-/** T49: Case FT "Kỳ vọng đầu ra chưa đạt · {kỹ năng}" + PA Tutor 10 buổi (`preset 0` — GV kết thúc khi xong, Q8). Idempotent theo khoá chống trùng. Trả số Case mới. */
+/**
+ * T49: Case FT "Kỳ vọng đầu ra chưa đạt · {kỹ năng}" + PA Tutor 10 buổi (`preset 0` — GV kết thúc khi xong, Q8). Trả số Case mới.
+ * PR-S5F-a: MỘT lần cho mỗi (lộ trình, kỹ năng) — đã có Case "Kỳ vọng đầu ra…" ở BẤT KỲ trạng thái (kể cả đã Hoàn thành) thì không tạo lại
+ * (sửa điểm Cuối khoá sau khi em đã sang FT chạy lại bước này).
+ */
 function taoCaseTutorFt(conn: any, p: Principal, x: { sid: number; ftCycleId: number; ftClassId: number; mon: readonly string[]; ngay: string }): number {
   let moi = 0;
+  const daCo = new Set((conn.prepare(
+    `SELECT DISTINCT category FROM sos_cases WHERE student_id = ? AND cycle_id = ? AND origin_kind = 'chuyen_cap' AND title LIKE 'Kỳ vọng đầu ra%'`,
+  ).all(x.sid, x.ftCycleId) as any[]).map((r) => r.category as string));
   for (const m of x.mon) {
     const skill = kyNangLopDich(m, true);
     const category = categoryOf(skill) ?? skill;
+    if (daCo.has(category)) continue;
     const ownerId = suggestCaseOwner({ classId: x.ftClassId, category });
     const c = moCaseChuyenCap(conn, {
       sid: x.sid, cycleId: x.ftCycleId, category, topic: skill, attemptId: null, ngay: x.ngay,
@@ -182,11 +216,36 @@ export function sauChuyenCuoiKhoa(p: Principal, dongs: readonly DongSauChuyen[])
       else if (!moi.has(r.student_id)) cu.set(r.student_id, r.id);
     }
   });
-  /* (1) Case đang mở đi theo em sang lộ trình lớp thường mới. */
+  const chuCase = new Map<string, number | null>();
+  const nguoiPhuTrach = (classId: number, category: string) => {
+    const k = `${classId}:${category}`;
+    if (!chuCase.has(k)) chuCase.set(k, suggestCaseOwner({ classId, category }));
+    return chuCase.get(k)!;
+  };
+  /*
+   * (1) Case đang mở đi theo em sang lộ trình lớp thường mới, chủ Case = GV đúng môn lớp MỚI (như Giữa khoá, M-04 — PR-S5F-a). Lọc trước MỘT câu: chỉ em
+   * còn Case mở ở lộ trình cũ mới đi từng em. PA đang chạy (kể cả PA bổ trợ Giữa khoá chưa ghi kết quả cuối) GIỮ người dạy cũ — người đó ghi tiếp.
+   */
+  const caseMoCu = new Map<number, { id: number; category: string; owner: number | null }[]>();
+  theoLo(dongs.filter((d) => !d.toFt && moi.has(d.sid) && cu.has(d.sid)).map((d) => d.sid), (lo, ph) => {
+    for (const r of conn.prepare(`SELECT id, student_id, cycle_id, category, topic, owner_user_id FROM sos_cases WHERE status != 'done' AND student_id IN (${ph})`).all(...lo) as any[]) {
+      if (r.cycle_id !== cu.get(r.student_id)) continue;
+      caseMoCu.set(r.student_id, [...(caseMoCu.get(r.student_id) ?? []), { id: r.id, category: r.category ?? categoryOf(r.topic) ?? '', owner: r.owner_user_id ?? null }]);
+    }
+  });
+  const lichSuChu: unknown[][] = [];
   for (const d of dongs) {
-    if (d.toFt || !moi.has(d.sid) || !cu.has(d.sid)) continue;
+    const ds = caseMoCu.get(d.sid);
+    if (!ds) continue;
     chuyenCaseSangLoTrinh(p.userId, d.sid, cu.get(d.sid)!, moi.get(d.sid)!, null, d.ngay);
+    for (const c of ds) {
+      const u = nguoiPhuTrach(d.toClassId, c.category);
+      if (!u || u === c.owner) continue;
+      conn.prepare('UPDATE sos_cases SET owner_user_id = ?, updated_at = ? WHERE id = ?').run(u, nowIso(), c.id);
+      lichSuChu.push([c.id, 'owner', c.owner, 'bàn giao khi chuyển lớp', p.userId, nowIso()]);
+    }
   }
+  chenNhieuDong('INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at)', lichSuChu);
 
   /* Bài Cuối khoá của từng em ở lớp nguồn + % (2 câu cho cả lô). */
   const theoLop = new Map<number, number[]>();
@@ -219,12 +278,6 @@ export function sauChuyenCuoiKhoa(p: Principal, dongs: readonly DongSauChuyen[])
       chuNhiem.set(r.class_id, [...(chuNhiem.get(r.class_id) ?? []), r.user_id]);
     }
   });
-  const chuCase = new Map<string, number | null>();
-  const nguoiPhuTrach = (classId: number, category: string) => {
-    const k = `${classId}:${category}`;
-    if (!chuCase.has(k)) chuCase.set(k, suggestCaseOwner({ classId, category }));
-    return chuCase.get(k)!;
-  };
   type O = { d: DongSauChuyen; toCycle: number; luot: { id: number; attemptNo: number }; ct: string; mon: string; skill: string; category: string; b: BoTroMienPhi; batDau: string; lich: { ngayMiniTest: string; hanMiniTest: string }; phanTram: number };
   const o: O[] = [];
   const mtRows: unknown[][] = [], nhatKy: unknown[][] = [], thongBao: unknown[][] = [], baoPh = new Map<number, number>();
@@ -291,8 +344,12 @@ export function sauChuyenCuoiKhoa(p: Principal, dongs: readonly DongSauChuyen[])
     const co = coSan.get(khoa)!;
     const caseId = co.id;
     const laMoi = caseMoi.includes(x);
-    if (laMoi) mocRows.push([caseId, 'opened', x.luot.id, x.luot.attemptNo, x.d.ngay, `Cuối khoá ${x.phanTram}% — bổ trợ miễn phí`, p.userId, nowIso(), `cuoi-khoa:${x.luot.id}:${caseId}`]);
-    else if (!daMo.has(khoa)) { canDongBo.push(caseId); daMo.add(khoa); }
+    /* Case Giữa khoá đi theo em nhận PA mới: lịch sử Case vẫn có mốc Cuối khoá (PR-S5F-a) — `repeat` = trượt lại ở bài sau. */
+    if (!daMo.has(khoa)) {
+      mocRows.push([caseId, laMoi ? 'opened' : 'repeat', x.luot.id, x.luot.attemptNo, x.d.ngay, `Cuối khoá ${x.phanTram}% — bổ trợ miễn phí`, p.userId, nowIso(), `cuoi-khoa:${x.luot.id}:${caseId}`]);
+      if (!laMoi) canDongBo.push(caseId);
+      daMo.add(khoa);
+    }
     const ownerId = nguoiPhuTrach(x.d.toClassId, x.category);
     paRows.push([caseId, 'bo_tro_mien_phi', CHU_BO_TRO(x.b.soBuoi, x.b.soTuan, x.b.theoMon ? chuMonTruot(x.ct, x.b.mon) : null), ownerId, p.userId, 'started', x.batDau, 0, 1, p.userId, nowIso(),
       1, x.batDau, weeklyUpdateDue(x.batDau), x.lich.ngayMiniTest, 'mini_test', `mt:${x.luot.id}`, nowIso()]);
@@ -316,7 +373,7 @@ export function sauChuyenCuoiKhoa(p: Principal, dongs: readonly DongSauChuyen[])
       [...baoPh].filter(([attemptId]) => !co.has(attemptId)).map(([attemptId, sid]) => [attemptId, sid, 'bao_ph_tvv', null, 1, 'pending', nowIso()]));
   }
   if (emCoBoTro.length) {
-    writeAudit({ actorUserId: p.userId, action: 'cuoi_khoa.bo_tro_tao', entityType: 'class', entityId: dongs[0].fromClassId, after: { hocVien: emCoBoTro, soPa: paRows.length, soCaseMoi: mocRows.length } });
+    writeAudit({ actorUserId: p.userId, action: 'cuoi_khoa.bo_tro_tao', entityType: 'class', entityId: dongs[0].fromClassId, after: { hocVien: emCoBoTro, soPa: paRows.length, soCaseMoi: caseMoi.length } });
   }
 }
 
@@ -336,7 +393,10 @@ export function capNhatCuoiKhoaSauChuyen(p: Principal, a: { id: number; student_
   const tu = conn.prepare('SELECT programme_code FROM classes WHERE id = ?').get(a.class_id) as any;
   if (!dang) return;
   const huong = dang.is_fast_track ? 'fast_track' : dang.programme_code === tu?.programme_code ? 'hoc_lai' : 'len_lop';
-  sauChuyenCuoiKhoa(p, [{ sid: a.student_id, fromClassId: a.class_id, toClassId: dang.class_id, toFt: !!dang.is_fast_track, huong, ngay: dang.started_at ?? demoToday() }]);
+  /* PR-S5F-a: điểm nhập muộn → PA bổ trợ + Mini Test tính từ HÔM NAY (không từ ngày chuyển — nếu không thì quá hạn ngay khi vừa tạo). */
+  const homNay = demoToday();
+  const ngay = dang.started_at && dang.started_at > homNay ? dang.started_at : homNay;
+  sauChuyenCuoiKhoa(p, [{ sid: a.student_id, fromClassId: a.class_id, toClassId: dang.class_id, toFt: !!dang.is_fast_track, huong, ngay }]);
 }
 
 // ==================================================================== Mini Test (§6.3, T47, T61, M-05, K1-41)
@@ -463,6 +523,10 @@ export function ghiKetLuanFt(p: Principal, sid: number, input: { dat?: unknown; 
     }
   }
   if (!lopBeEle) throw badRequest('Chỉ lớp BE/ELE (hoặc em vừa lên Fast Track từ BE/ELE) mới có kỳ vọng đầu ra.');
+  /* PR-S5F-a: kết luận kỳ vọng đầu ra dựa trên bài Cuối khoá — chưa có bài thì không ghi (không chèn dòng "chưa rõ" vào Lộ trình tiếp theo). */
+  if (!conn.prepare(`SELECT 1 FROM assessment_attempts WHERE student_id = ? AND class_id = ? AND kind = 'final' AND status != 'cancelled' LIMIT 1`).get(sid, lopBeEle)) {
+    throw badRequest('Em chưa có bài Cuối khoá ở lớp này — chưa đánh dấu kỳ vọng đầu ra được.');
+  }
   if (typeof input.dat !== 'boolean') throw badRequest('Chọn Đạt hoặc Không đạt kỳ vọng đầu ra.');
   const dat = input.dat;
   let nguyenNhan: string | null = null, mon: string[] = [], ghiChu: string | null = null;
