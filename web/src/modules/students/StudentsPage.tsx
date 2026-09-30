@@ -16,7 +16,7 @@ import { ClassCreatePanel } from '../classes/ClassCreatePanel.tsx';
 import { TenGiaoVien } from '../classes/TenGiaoVien.tsx';
 import { BangHocVienLop } from './BangHocVienLop.tsx';
 import {
-  LOC_HOC_VIEN, LOC_HOC_VIEN_NHAN, PHAM_VI_NHAN, badgeLop, demLoc, docThamSoLoc, duongLichTest, khungCua, laVaiQuanLy, lopMoSan, needScoresText, tenMonNgan, trangThaiCaseDong,
+  LOC_HOC_VIEN, LOC_HOC_VIEN_NHAN, PHAM_VI_NHAN, badgeLop, chipHienLoc, demLoc, docThamSoLoc, duongLichTest, khungCua, laVaiQuanLy, lopMoSan, needScoresText, tenMonNgan, trangThaiCaseDong,
   type BadgeLop, type LocHocVien, type PhamVi, type SapXep, type WorkScope,
 } from '@shared/domain/index.ts';
 
@@ -104,7 +104,8 @@ export default function StudentsPage() {
   const khung: KhungLoc = coHaiKhung ? khungMuon : 'tat-ca';
   const dem = useMemo(() => demLoc(data?.hocVien ?? [], khung), [data, khung]);
   /* "Đang SOS" chỉ Fast Track (T58): chọn khung Lớp thường thì chip không còn nghĩa. */
-  const chips = LOC_HOC_VIEN.filter((k) => { const c = LOC_HOC_VIEN_NHAN[k].can; return (!c || can(c)) && !(k === 'sos' && khung === 'thuong'); });
+  const chips = LOC_HOC_VIEN.filter((k) => { const c = LOC_HOC_VIEN_NHAN[k].can; return (!c || can(c)) && !(k === 'sos' && khung === 'thuong')
+    && chipHienLoc(k, 'loc' in doc ? doc.loc : null); });
   const loc: LocHocVien = 'loc' in doc && chips.includes(doc.loc) ? doc.loc : 'tat-ca';
   const dangLoc = loc !== 'tat-ca' || !!q.trim();
   const idsTheoLop = useMemo(() => {
@@ -305,8 +306,8 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, the =
     /* PR-UX1: badge "n bài chờ chấm" mở Lịch Test lọc đúng lớp (Lịch Test tự mở "Lớp tôi dạy" cho GV). */
     x.key === 'cham' ? duongLichTest({ classId: lop.id })
       : x.key === 'xep-lop' ? (lop.viewer.coTheChuyenTiep ? `/hoc-vien/lop/${lop.id}?viec=chuyen-tiep` : `/hoc-vien/lop/${lop.id}`)
-      : x.key === 'cho-duyet' ? '/cong-viec/cho-duyet'
-      : x.key === 'qua-han' ? `/hoc-vien?view=can-lam&classId=${lop.id}`
+      : x.key === 'cho-duyet' ? `/cong-viec/cho-duyet?lop=${lop.id}`
+      : x.key === 'qua-han' ? `/hoc-vien?view=qua-han&classId=${lop.id}`
       : null;
   const mucLop: MucMenu[] = [
     { key: 'ho-so', nhan: 'Hồ sơ lớp', onChon: () => navigate(`/hoc-vien/lop/${lop.id}`) },

@@ -9,7 +9,7 @@ import { NganCase } from '../students/NganCase.tsx';
 import { TheYeuCau } from './TheYeuCau.tsx';
 import { PHAN_LOAI, PHAN_LOAI_LABEL, laPhanLoai, type KhoaChip, type TheYeuCauDto } from '@shared/domain/index.ts';
 
-type Hop = { the: TheYeuCauDto[]; dem: Record<KhoaChip, number>; homNay: string };
+type Hop = { the: TheYeuCauDto[]; dem: Record<KhoaChip, number>; homNay: string; lopDangLoc?: { id: number; code: string } | null };
 
 /** `?the=12` → cuộn tới thẻ, viền nhấn 2 giây. Dùng chung hộp và Yêu cầu của tôi. */
 export function useTheNhanManh(ds: TheYeuCauDto[] | undefined): number | null {
@@ -37,6 +37,8 @@ export function HopChoDuyet() {
   const phan = laPhanLoai(params.get('phan')) ? (params.get('phan') as KhoaChip) : 'tat-ca';
   const xem = params.get('xem') === 'da-xu-ly' ? 'da-xu-ly' : 'cho';
   const branchId = params.get('cn') ? Number(params.get('cn')) : null;
+  /* PR-S4F #5: `?lop=` — từ badge "n chờ duyệt" của một lớp. */
+  const lopId = Number(params.get('lop')) || null;
   const setParam = (k: string, v: string | null) => {
     const next = new URLSearchParams(params);
     if (v) next.set(k, v); else next.delete(k);
@@ -48,6 +50,7 @@ export function HopChoDuyet() {
   if (phan !== 'tat-ca') qs.set('phanLoai', phan);
   if (xem === 'da-xu-ly') qs.set('xem', xem);
   if (branchId) qs.set('branchId', String(branchId));
+  if (lopId) qs.set('lop', String(lopId));
   const url = `/yeu-cau?${qs}`;
   const { data, loading, error, reload } = useApi<Hop>(url, [url]);
   const nhan = useTheNhanManh(data?.the);
@@ -92,6 +95,11 @@ export function HopChoDuyet() {
         <BoLocDoan ariaLabel="Trạng thái" value={xem} onChange={(k) => setParam('xem', k === 'cho' ? null : k)}
           muc={[{ key: 'cho', nhan: 'Đang chờ' }, { key: 'da-xu-ly', nhan: 'Đã xử lý (30 ngày)' }]} />
         <BranchFilter branchId={branchId} onBranch={(id) => setParam('cn', id ? String(id) : null)} />
+        {lopId && (
+          <button type="button" className="btn btn-sm" title="Bỏ lọc lớp" onClick={() => setParam('lop', null)}>
+            Lớp {data?.lopDangLoc?.code ?? lopId} ✕
+          </button>
+        )}
       </div>
       {xem === 'cho' && ds.length > 1 && <p className="m-0 text-[12px] text-slate-400">Xếp: quá hạn trước → hạn gần nhất</p>}
 

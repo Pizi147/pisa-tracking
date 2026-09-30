@@ -1639,7 +1639,7 @@ api.get('/yeu-cau', requireAuth, wrap((req) => {
   const xem = qStr(req, 'xem');
   return yeuCauSvc.hopChoDuyet(p, {
     phanLoai: (qStr(req, 'phanLoai') as any) ?? null, xem: xem === 'da-xu-ly' ? 'da-xu-ly' : 'cho',
-    studentId: qInt(req, 'studentId') ?? null, branchId: qInt(req, 'branchId') ?? null,
+    studentId: qInt(req, 'studentId') ?? null, branchId: qInt(req, 'branchId') ?? null, classId: qInt(req, 'lop') ?? null,
   });
 }));
 api.get('/yeu-cau/dem', requireAuth, wrap((req) => yeuCauSvc.demYeuCau(principalOf(req))));

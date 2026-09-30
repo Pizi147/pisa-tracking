@@ -140,5 +140,67 @@ export async function runPrS4fTests(t: YThucTestKit) {
       assert(false, 'dữ liệu: em mới không có bài Cuối khoá');
     }
   });
-  void check;
+
+  // ------------------------------------------------------------------ 4 · badge "n HV quá hạn việc" = số dòng của bộ lọc qua-han
+  const d = await import('../../../shared/domain/index.ts');
+  const hvl: any = await import('../classes/hocVienLop.ts');
+  const fs = await import('node:fs');
+  const docWeb = (f: string) => fs.readFileSync(new URL(`../../../../web/src/${f}`, import.meta.url), 'utf8');
+  check('S4F (4) · soEmQuaHan của mỗi lớp = số em có cờ qua-han (cùng viecHocVienTheoLop); hai badge trỏ view=qua-han&classId=', () => {
+    let coSo = 0;
+    for (const p of [P.coreTeacher, P.mbManager, P.admin]) {
+      const r = hvl.danhSachHocVienLop(p, { phamVi: 'tat-ca' });
+      for (const lop of r.rows) {
+        /* Màn hình lọc bằng Set id (StudentsPage `idsTheoLop`) — đếm em, không đếm bản ghi. */
+        const dong = new Set(r.hocVien.filter((h: any) => h.classId === lop.id && h.loc.includes('qua-han')).map((h: any) => h.id)).size;
+        assert(lop.soEmQuaHan === dong, `${lop.code}: badge ${lop.soEmQuaHan} ≠ ${dong} dòng`);
+        if (dong) coSo += 1;
+        assert(r.hocVien.every((h: any) => !h.loc.includes('qua-han') || h.loc.includes('can-lam')), `${lop.code}: qua-han phải ⊂ can-lam`);
+      }
+    }
+    assert(coSo > 0, 'dữ liệu demo: phải có lớp có em quá hạn việc');
+    assert(d.docThamSoLoc('qua-han').hasOwnProperty('loc') && (d.docThamSoLoc('qua-han') as any).loc === 'qua-han', 'view=qua-han');
+    assert(!d.chipHienLoc('qua-han', 'tat-ca') && d.chipHienLoc('qua-han', 'qua-han') && d.chipHienLoc('can-lam', null), 'chip qua-han chỉ hiện khi đang lọc');
+    assert(docWeb('modules/students/StudentsPage.tsx').includes("x.key === 'qua-han' ? `/hoc-vien?view=qua-han&classId=${lop.id}`"), 'badge hộp lớp');
+    assert(docWeb('modules/classes/DauTrangLop.tsx').includes("x.key === 'qua-han' ? () => navigate(`/hoc-vien?view=qua-han&classId=${data.id}`)"), 'badge đầu hồ sơ lớp');
+  });
+
+  // ------------------------------------------------------------------ 5 · Cần hỗ trợ "Chỉ kỹ năng tôi dạy" + badge chờ duyệt lọc đúng lớp
+  const canHoTro: any = await import('../classes/canHoTro.ts');
+  check('S4F (5) · Cần hỗ trợ bật "Chỉ kỹ năng tôi dạy": em không Case kỹ năng đó bị bỏ; dòng tổng + cột trái đếm SAU lọc', () => {
+    const cs = (id: number, topic: string | null, quaHan = false) => ({ id, topic, quaHan, trangThai: { k: 'x' }, pas: [] });
+    const r0 = d.locCanHoTro({ ct: 'FT', chiKyNang: ['speaking'], em: [
+      { ten: 'An', cases: [cs(1, 'listening', true), cs(2, 'reading')] },
+      { ten: 'Bình', cases: [cs(3, 'speaking'), cs(4, 'listening', true)] },
+    ] });
+    assert(r0.em.length === 1 && r0.em[0].ten === 'Bình' && r0.em[0].cases.map((c: any) => c.id).join() === '3', JSON.stringify(r0.em.map((e: any) => [e.ten, e.cases.map((c: any) => c.id)])));
+    assert(r0.tong.soEm === 1 && r0.tong.soCase === 1 && r0.tong.quaHan === 0, `tổng sau lọc: ${JSON.stringify(r0.tong)}`);
+    assert(!r0.em[0].hang.some((h: any) => h.kind === 'hang' && !h.cases.length && h.khoa === 'speaking'), 'khối S rỗng');
+    /* Dữ liệu thật: GVBM 9 ở MB FT 101 — mọi em còn lại có ≥ 1 Case hiện, tổng = máy chủ khi tắt công tắc. */
+    const gv = P.sTeacher;
+    const r = canHoTro.canHoTroLop(gv, classId('MB FT 101'));
+    const tat = d.locCanHoTro({ ct: r.ct, em: r.em, chiKyNang: null });
+    assert(tat.tong.soEm === r.tong.soEm && tat.tong.soCase === r.tong.soCase && tat.tong.quaHan === r.tong.quaHan && tat.tong.choDuyet === r.tong.choDuyet,
+      `tắt công tắc phải khớp máy chủ: ${JSON.stringify([tat.tong, r.tong])}`);
+    const bat = d.locCanHoTro({ ct: r.ct, em: r.em, chiKyNang: r.kyNangToi });
+    assert(bat.em.every((e: any) => e.cases.length > 0 && e.cases.every((c: any) => c.topic === null || r.kyNangToi.includes(c.topic)
+      || (c.topic === 'writing' && r.kyNangToi.some((k: string) => k.startsWith('writing'))))), 'còn em/Case ngoài kỹ năng');
+    assert(bat.tong.soCase === bat.em.reduce((n: number, e: any) => n + e.cases.length, 0), 'soCase');
+  });
+  await checkAsync('S4F (5) · badge "n chờ duyệt" của lớp: /yeu-cau?hop=cho-duyet&lop= ra đúng n thẻ; GV gọi hộp → 403', async () => {
+    const r = hvl.danhSachHocVienLop(P.mbManager, { phamVi: 'tat-ca' });
+    const coThe = r.rows.filter((l: any) => l.soChoDuyet > 0);
+    assert(coThe.length > 0, 'dữ liệu demo: phải có lớp có thẻ chờ duyệt');
+    await voiMayChu(async (goi) => {
+      for (const lop of coThe) {
+        const h = await (await goi(P.mbManager.userId, `/yeu-cau?hop=cho-duyet&lop=${lop.id}`)).json() as any;
+        assert(h.the.length === lop.soChoDuyet && h.lopDangLoc?.id === lop.id, `${lop.code}: badge ${lop.soChoDuyet} ≠ hộp ${h.the.length}`);
+      }
+      const gv = await goi(P.coreTeacher.userId, `/yeu-cau?hop=cho-duyet&lop=${coThe[0].id}`);
+      assert(gv.status === 403, `GV mở hộp chờ duyệt: ${gv.status}`);
+    });
+    for (const f of ['modules/students/StudentsPage.tsx', 'modules/classes/DauTrangLop.tsx']) {
+      assert(/cho-duyet\?lop=\$\{/.test(docWeb(f)), `${f}: badge chờ duyệt phải kèm ?lop=`);
+    }
+  });
 }

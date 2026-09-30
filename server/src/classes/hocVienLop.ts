@@ -203,6 +203,8 @@ export function danhSachHocVienLop(
     if (ft && (standing.get(h.id)?.sosLevel ?? 0) > 0) loc.push('sos');
     const v = vl.theoEm.get(h.id);
     if (v?.viec.some((x) => x.tone === 'danger' || x.tone === 'warn')) loc.push('can-lam');
+    /* PR-S4F #4: cùng điều kiện với `soEmQuaHan` (viecHocVienTheoLop) — badge "n HV quá hạn việc" = số dòng khi bấm. */
+    if (v?.viec.some((x) => x.tone === 'danger')) loc.push('qua-han');
     if (v?.choDuyet) loc.push('cho-duyet');
     const thieu = missingForStudent({
       cycle: h.cycle_id

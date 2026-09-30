@@ -315,7 +315,7 @@ function trongPhamVi(p: Principal, rows: any[]): any[] {
 const tuNgay = (n: number) => `${addDays(demoToday(), -n)}T00:00:00.000Z`;
 const xepDaXuLy = (a: TheYeuCauDto, b: TheYeuCauDto) => ((b.xuLyLuc ?? '') < (a.xuLyLuc ?? '') ? -1 : 1);
 
-export function hopChoDuyet(p: Principal, f: { phanLoai?: PhanLoai | null; xem?: 'cho' | 'da-xu-ly'; studentId?: number | null; branchId?: number | null } = {}) {
+export function hopChoDuyet(p: Principal, f: { phanLoai?: PhanLoai | null; xem?: 'cho' | 'da-xu-ly'; studentId?: number | null; branchId?: number | null; classId?: number | null } = {}) {
   require_(p, P_DUYET, { anyScope: true }, 'Chỉ Quản lý và Quản trị hệ thống mở được hộp Chờ duyệt.');
   const homNay = demoToday();
   quetYeuCau(homNay);
@@ -326,11 +326,18 @@ export function hopChoDuyet(p: Principal, f: { phanLoai?: PhanLoai | null; xem?:
     : conn.prepare(`SELECT * FROM yeu_cau_duyet WHERE trang_thai != 'cho' AND xu_ly_luc >= ?`).all(tuNgay(NGAY_DA_XU_LY)) as any[]);
   if (f.studentId) rows = rows.filter((r) => r.hoc_vien_id === f.studentId);
   if (f.branchId) rows = rows.filter((r) => r.chi_nhanh_id === f.branchId);
+  /* PR-S4F #5: badge "n chờ duyệt" của một lớp mở hộp lọc ĐÚNG lớp đó — cùng luật đếm `viecHocVienTheoLop` (thẻ theo lớp, thẻ không lớp thì lớp em đang học). */
+  let lopDangLoc: { id: number; code: string } | null = null;
+  if (f.classId) {
+    lopDangLoc = (conn.prepare('SELECT id, code FROM classes WHERE id = ?').get(f.classId) as any) ?? null;
+    const emLop = new Set((conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active'`).all(f.classId) as any[]).map((r) => r.student_id));
+    rows = rows.filter((r) => (r.lop_id ?? null) === f.classId || (r.lop_id == null && emLop.has(r.hoc_vien_id)));
+  }
   const dem = demHop(rows.map((r) => ({ phanLoai: metaCua(r.loai).phanLoai, hanDuyet: r.han_duyet })), homNay).chip;
   if (f.phanLoai && laPhanLoai(f.phanLoai)) rows = rows.filter((r) => metaCua(r.loai).phanLoai === f.phanLoai);
   const ngu = napNguCanh(conn, rows, homNay);
   const the = rows.map((r) => theRa(r, ngu));
-  return { the: xem === 'cho' ? sapThe(the) : the.sort(xepDaXuLy), dem, homNay };
+  return { the: xem === 'cho' ? sapThe(the) : the.sort(xepDaXuLy), dem, homNay, lopDangLoc };
 }
 
 /** Yêu cầu của tôi: mọi thẻ đang chờ + thẻ đã xử lý trong 60 ngày gần nhất. */
