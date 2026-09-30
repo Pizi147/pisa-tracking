@@ -5,8 +5,10 @@
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runPrLt2aTests(t: YThucTestKit) {
-  const { check, assert } = t;
+  const { check, assert, conn } = t;
   const d = await import('../../../shared/domain/index.ts');
+  const { migratePrLt2a } = await import('../migrate/prLt2a.ts');
+  const { default: SqliteDb } = await import('libsql');
   console.log('\nPR-LT2a · Lớp thường Giữa khoá');
 
   // ------------------------------------------------------------------ khối 1 · luật thuần (Task 1)
@@ -72,5 +74,20 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     assert(n.length === 4 && n[2].includes('GVBM chưa xác nhận') && n[1].includes('G+V, P'), JSON.stringify(n));
     assert(d.LOAI_YC_META.ke_hoach_bo_tro.hanNgay === 3 && d.LOAI_YC_META.ke_hoach_bo_tro.phanLoai === 'hoc-thuat', 'thẻ kế hoạch');
     assert((d.INTERVENTION_KINDS as readonly string[]).includes('bo_tro') && !(d.SUPPORT_KINDS as readonly string[]).includes('bo_tro'), 'bo_tro là PA hệ thống');
+  });
+
+  // ------------------------------------------------------------------ khối 2 · migrate (Task 2)
+  check('LT2a (2) · migrate thêm 2 cột + chỉ mục trên DB cũ, chạy lại không làm gì; DB mới từ schema.sql đã có đủ', () => {
+    const coCot = (c: any, cot: string) => (c.prepare('SELECT name FROM pragma_table_info(?)').all('case_interventions') as any[]).some((x) => x.name === cot);
+    const coChiMuc = (c: any) => !!c.prepare("SELECT 1 FROM pragma_index_list('case_interventions') WHERE name = 'idx_ci_nhom_bo_tro'").get();
+    const tam = new SqliteDb(':memory:');
+    tam.exec('CREATE TABLE case_interventions (id INTEGER PRIMARY KEY, case_id INTEGER)');
+    const a: string[] = []; migratePrLt2a(tam, a);
+    assert(a.length === 2 && coCot(tam, 'nhom_bo_tro') && coCot(tam, 'han_ke_hoach') && coChiMuc(tam), a.join('; '));
+    const b: string[] = []; migratePrLt2a(tam, b);
+    assert(b.length === 0, `lần 2 vẫn thêm: ${b.join('; ')}`);
+    tam.close();
+    const c: string[] = []; migratePrLt2a(conn, c);
+    assert(c.length === 0 && coCot(conn, 'nhom_bo_tro') && coCot(conn, 'han_ke_hoach') && coChiMuc(conn), 'schema.sql thiếu cột/chỉ mục PR-LT2a');
   });
 }
