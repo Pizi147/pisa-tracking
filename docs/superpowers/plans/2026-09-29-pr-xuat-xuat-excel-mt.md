@@ -464,4 +464,42 @@ hàm `nhanXetW`, `tenGvCham` (`shared/domain/nhanXet.ts`), `tieuChiNganCua` (`sk
 <!-- Session code ghi ở đây: model thật, mốc B, dòng mã thật lệch, số câu SQL đo (trước/sau nhân dữ liệu), trước/sau clarify, kết quả
 audit, số đo Turso (Task 7), Task 8 đã/chưa, 🛑 đã hỏi. -->
 
+- **Task 0 (30/09):** model thật **Sonnet 5.5** (`Co-Authored-By: Claude Sonnet 5.5`). Worktree từ `origin/main` e7d6af94. PR-HSM / PR-HVL **chưa merge**
+  (nhánh còn ở e7d6af94, không commit) → **Task 8 chưa làm**, PR mở không có Task 8. PR-S3F đã merge. Kế hoạch HSM/HVL có trên main.
+  **Mốc B = 1722 phép kiểm** (`npm test`) + 24 phép tốc độ; `npm run check` xanh. Neo mã (loadBundle :88, resultOf :179, evaluateAttemptRow :57,
+  luotKck :88, evaluateRegular :171, recomputeCompletionWeek :394, activeAt :139, navOf :11, chuanTieuDe :80, TongHopTestSos xuatExcel :114,
+  DauTrangLop MenuDong :115, TRAN_GHI_LO :495, runPrXlmtTests :9795): khớp, không lệch.
+- **Task 1–2:** 1734 phép kiểm sau Task 2 (mốc B 1722 + 12 phép PR-XUAT). `chuanTieuDe` **hạ chữ thường** nên tên tệp dùng hàm bỏ dấu riêng (giữ `MB`).
+  Phép (2)(d) đo: **MB một tuần 8 câu / 1 lượt · MB MT1–MT8 8 câu / 525 lượt** (bằng nhau, ≤ 8; 1 câu là `demoToday()` — gọi một lần, không theo dòng).
+  **Dữ liệu demo lệch giả định kế hoạch:** GVCN `Trần Ngọc Hà` là GVCN của **cả** `MB FT 101` và `MB FOU 12` → `P.coreTeacher` = `P.normalCoreTeacher`; phép Task 3
+  "GVCN lớp FT hỏi khung thường → 0 lượt" đổi thành "…kèm lọc lớp MB FT 101 → 0 lượt". GVBM `P.subjectTeacher`: phép kiểm không giả định người đó không kiêm GVCN lớp khác.
+- **Task 3:** khung thường xong ở Task 1–2 (cùng `duLieuXuatMt`); phép (3) thêm ở Task 3. Demo có sheet `FOU · Giữa–Cuối khoá` và `PREFOU · Giữa–Cuối khoá` (một cột `Tổng hợp %`).
+- **Task 4 — clarify (trước → sau):** "Không chọn = mọi chi nhánh trong phạm vi của bạn" → "Để trống: xuất mọi chi nhánh bạn được xem." (lớp tương tự) · "Điều kiện cộng dồn: chi nhánh × lớp × thời gian." ("cộng dồn" khó hiểu)
+  → "Lượt phải khớp cả chi nhánh, lớp và thời gian đã chọn. Mỗi lượt tính vào tuần thi sớm nhất của nó." · "Không có lượt nào khớp — đổi thời gian hoặc chi nhánh." → "… — mở rộng thời gian hoặc bỏ bớt chi nhánh, lớp."
+  · thêm dòng nói rõ "Mọi lượt"/"Chỉ lượt đủ điểm" và "Cột trong tệp: …" · toast "Đã xuất n lượt — tệp {tên}" · câu lỗi 104 tuần/24 tháng có cách sửa ("rút ngắn khoảng thời gian").
+  **layout** (Playwright kênh Chrome, Quản lý Vy): 1440 px ba khối thẳng cột, xem trước không đè nút; 375 px không cuộn ngang (scrollWidth = 375), dòng đếm nằm ngay trên nút, nút ≥ 44 px. Không cần sửa bố cục.
+  Ngăn dùng `useLoiForm` (phép N1 (7) bắt mọi form `KhungPanel`): lỗi thời gian hiện ngay khi xảy ra. Nhãn "Lớp" của `TimLop` ẩn (`sr-only`) vì trùng nhãn khối.
+- **Task 4/5 — dữ liệu demo lệch giả định:** `USER.GVBM` của bộ đo tốc độ (`subjectOnlyTeacherOf('MB FT 101')`) kiêm GVCN lớp khác nên xem trước cho người đó là **200** (xuất được lớp GVCN của họ), không 403 như kế hoạch dòng 328 ghi
+  `maChuDich: { GVBM: 403 }` → bỏ vai GVBM khỏi `DUONG_DO`; 403 của GVBM thuần (Phạm Thu Trang) kiểm ở `prXuat.tests.ts`. Tên tệp: phạm vi chỉ có một chi nhánh (Quản lý, GVCN) thì tên chi nhánh vào tên tệp (`Pisa-Tracking_MT_Monbay_…`), không "tat-ca".
+- **Task 5 — số đo tốc độ:** xem trước `GET /xuat-mt/xem-truoc` (MT1–MT8): QL/QT/GVCN **16 câu**, khung thường (GVCN_THUONG) **19 câu**, **không đổi sau khi nhân dữ liệu ×3** (bảng "trước → sau" không có dòng nào của đường này) → TRAN 26/26/26/29.
+  `POST /xuat-mt` cả chi nhánh MB, MT1–MT8, cột đầy đủ, sau nhân dữ liệu: **16 câu / 550 lượt / 146 KB** (gồm ~8 câu của lớp HTTP + 1 `writeAudit`) → `TRAN_GHI_LO.xuatMtChiNhanh` = 26. Phép (2)(d) ở mức hàm: 8 câu cho cả 1 lượt và 525 lượt.
+  Số phép: 1722 (mốc B) → **1739** + 25 tốc độ (24 + 1 phép POST xuất).
+- **Task 6 — impeccable `audit` (bộ dò `impeccable detect` trên 5 tệp giao diện: 0 phát hiện; đọc tay thêm):** Trợ năng 3/4 (nhóm nút có `aria-label`, lỗi `role=alert`, xem trước `aria-live`; chip lớp có chữ ẩn "bỏ lớp") ·
+  Hiệu năng 4/4 (xlsx nạp động, xem trước hẹn 400 ms, huỷ hẹn cũ) · Responsive 4/4 (375 px không cuộn ngang, mọi nút trong ngăn ≥ 44 px) · Theo token 4/4 (không mã màu, không chữ < 12 px) · Toàn vẹn 4/4. Không có P0–P2.
+  P3 (không sửa, ngoài phạm vi): hai nút `btn-sm` cạnh "Cột hiện ▾" ở Tổng hợp Test cao 32 px trên điện thoại (giống nút cũ cạnh đó). **polish:** không cần đổi khoảng cách/thẳng cột sau ảnh 1440/375; trạng thái tải ("Đang tính…"), rỗng, lỗi máy chủ và lỗi thời gian đều có.
+- **Task 6 — bấm thử (Playwright kênh Chrome, đăng nhập demo, ảnh ở `thiet-ke/anh/pr-xuat/`, tệp mở lại bằng `xlsx` ở Node):**
+  X1 QL Vy Lịch Test, W1–W4 SEP → xem trước 32 lượt · 32 học viên · 3 lớp; tệp `Pisa-Tracking_MT_Monbay_W1SEP-W4SEP.xlsx`: sheet `Mock Test` **32 dòng × 16 cột** + `Bộ lọc đã dùng` 13 dòng = số xem trước ✓.
+  X2 Chỉ lượt đủ điểm + Cột đầy đủ → 4 lượt; 35 cột (16 + 19), có W1, W2, 12 tiêu chí, Tuần L, Người nhập ✓. X3 MT3 + lớp MB FT 101 → 30 lượt, chỉ MT3, chỉ lớp đó; KCK 2 em (Target `KCK`, Kỳ vọng/SOS trống); MT lịch sử `Chưa có điểm · lịch sử` ✓.
+  X4 Từ tuần sau Đến tuần → "Tuần bắt đầu phải trước hoặc bằng tuần kết thúc." dưới Thời gian, nút Xuất tắt ✓. X5 GVCN Hà, hồ sơ lớp MB FT 101 ⋮ → ngăn có lớp chọn sẵn, Theo đợt, 92 lượt · 31 học viên · 1 lớp ✓
+  (Hà cũng là GVCN MB FOU 12 nên khung Lớp thường có thêm lớp của mình — đúng luật "lớp mình"). X6 GVBM Trang: không nút ở Lịch Test, hồ sơ lớp không có ⋮ , gọi thẳng POST → **403** "Bạn chưa có phạm vi xuất kết quả Test — chỉ Quản lý, Quản trị và GVCN (lớp mình)." ✓
+  X7 GVCN lớp thường: tiêu đề "Xuất kết quả Test lớp thường", 15 lượt · 10 học viên · 3 lớp; sheet `FOU · Giữa–Cuối khoá` 11 dòng × 12 cột (Listening %, Reading %, Grammar + Vocabulary %, Pronunciation %, % tổng…), `PREFOU · Giữa–Cuối khoá` 4 dòng × 9 cột; không chữ SOS ✓.
+  X8 Quản trị › Phân tích › Tổng hợp Test: hai nút "⤓ Xuất bảng này" · "Xuất kết quả từng lượt"; ngăn mở, 55 lượt · 43 học viên · 7 lớp ✓. X9 375 px: scrollWidth 375/375, không nút < 44 px, dòng đếm ngay trên nút ✓.
+  X10 Quản trị › Quyền và nhật ký: "Xuất Excel kết quả Test · 30 lượt · Monbay · Theo đợt: MT3 · cột gọn — Nguyễn Khánh Vy" ✓. Ảnh trước (main) / sau: `truoc-*` / `sau-*` (Lịch Test, hồ sơ lớp ⋮, Tổng hợp Test).
+- **Task 8 (30/09, sau khi PR-HSM merge — rebase lên `ada8f6c4`):** rebase gặp xung đột chỉ ở các dòng "chỉ thêm" (`shared/domain/index.ts`, `server/src/tests/run.ts`, `DEMO.md`, `TU_DIEN_VA_CHU.md`, `plan.md`, `CODE_MAP.md`) — giữ cả hai. HSM không sửa dòng "chỉ XUAT" nào (🛑 (e) không xảy ra); tên cột đúng "Đối chiếu kế hoạch PR-HSM" (🛑 (f) không xảy ra).
+  Bỏ bảng `TIEU_CHI` riêng và chú thích `ponytail:` → `tieuChiNganCua`; thêm `Nhận xét W` (`nhanXetW(W1.comment, W2.comment)`), `Nhận xét S`, `GV chấm S` (`tenGvCham`) cuối `COT_FT_THEM`. `loadBundle` của HSM đã join sẵn tên GV → **không thêm câu SQL** (phép (8): 8 câu, bằng lần đo trước). Số phép sau rebase + Task 8: **1759** + 25 tốc độ.
+- **Task 7 — thử trên Turso (30/09, bản nháp Netlify, DB THỬ; tôi chạy `netlify deploy --build`, chủ sản phẩm bấm thử):** nháp `6abc0da9c767a3f6365b5f2b--pisa-tracking` (Private). Chủ sản phẩm xuất **tất cả chi nhánh · tất cả đợt · Cột đầy đủ**:
+  **dưới 1 giây từ bấm tới tải xong** (đạt: máy chủ ≤ 5 s, cả vòng ≤ 8 s), tệp xuất thành công, mở bằng **Excel trên Windows**: dấu tiếng Việt đúng (tên, lớp, chi nhánh "Bãi Cháy", "Cẩm Phả"), điểm/band/Overall/Kỳ vọng/SOS là ô số căn phải,
+  ô thiếu để trống, nút lọc ở hàng tiêu đề hoạt động, cột L R W S… đủ (ảnh `excel-windows.png`). Đợt 3 lần đổi bộ lọc liên tiếp: không báo lỗi. **Chưa ghi được** số câu SQL/ms trên Turso: `netlify logs:function` không đọc lại được log cũ
+  (dòng `[xuat-mt] n lượt · m câu SQL · t ms` đã có trong mã, xem được ở Netlify › Functions › api). Không đo riêng `=AVERAGE(L:L)` (chủ sản phẩm không báo) — ô là số (`t:'n'`, kiểm ở phép (1)(f)).
+
 > **Chủ sản phẩm chốt 30/09:** GVBM **không** xuất Excel — chỉ GVCN, Quản lý, Quản trị. Lượt rải hai tuần: tính theo tuần bắt đầu thi (tự quyết theo khuyến nghị).

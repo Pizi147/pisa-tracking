@@ -5,6 +5,7 @@ import { Nhan, toneNhanTuBadge } from '../../ui/Nhan.tsx';
 import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useApi } from '../../lib/useApi.ts';
+import { useSession } from '../../lib/session.tsx';
 import { TenGiaoVien } from './TenGiaoVien.tsx';
 import type { TinhTrangXoaKetThuc } from './XoaKetThucLopPanel.tsx';
 import {
@@ -39,7 +40,7 @@ export type HoSoLop = {
     coTheXoaKetThuc?: boolean;
   };
 };
-export type ViecDauTrang = 'tien-do' | 'chuyen-tiep' | 'phan-cong' | 'thong-tin' | 'case' | 'hoc-vien' | 'xoa-lop' | 'ket-thuc-lop';
+export type ViecDauTrang = 'tien-do' | 'chuyen-tiep' | 'phan-cong' | 'thong-tin' | 'case' | 'hoc-vien' | 'xoa-lop' | 'ket-thuc-lop' | 'xuat-mt';
 
 /**
  * ĐẦU TRANG HỒ SƠ LỚP (đặc tả §3.7, mockup 06c §1).
@@ -54,6 +55,7 @@ export function DauTrangLop({ data, periodId, onViec, onCheDoCanHoTro }: {
   data: HoSoLop; periodId: number | null; onViec: (v: ViecDauTrang) => void; onCheDoCanHoTro: () => void;
 }) {
   const navigate = useNavigate();
+  const { session } = useSession();
   const { homNay } = useNgayNghiepVu();
   const thuong = data.programme?.scoringMode === 'ratio';
   const s = data.summary;
@@ -78,6 +80,8 @@ export function DauTrangLop({ data, periodId, onViec, onCheDoCanHoTro }: {
   const menu: MucMenu[] = [
     ...(data.viewer.canAssign ? [{ key: 'phan-cong', nhan: 'Sửa phân công', onChon: () => onViec('phan-cong') }] : []),
     ...(data.viewer.canEditProgress ? [{ key: 'thong-tin', nhan: 'Sửa thông tin lớp', onChon: () => onViec('thong-tin') }] : []),
+    /* PR-XUAT (Q8): GVCN của lớp hoặc người xếp lịch (Quản lý) — máy chủ xuất vẫn kiểm lại phạm vi. */
+    ...(session?.nav?.xuatMt && (data.viewer.isCoreTeacher || data.viewer.canPlanWeek) ? [{ key: 'xuat-mt', nhan: 'Xuất Excel', onChon: () => onViec('xuat-mt') }] : []),
     /* Cuối menu, sau đường kẻ: Xoá lớp (lớp còn trống) · Kết thúc lớp (lớp đã có dữ liệu, còn hoạt động). */
     ...(xk.data?.coTheXoa ? [{ key: 'xoa-lop', nhan: 'Xoá lớp', keTruoc: true, onChon: () => onViec('xoa-lop') }] : []),
     ...(xk.data && xk.data.coDuLieu && !xk.data.daKetThuc
