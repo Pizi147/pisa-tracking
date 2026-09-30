@@ -132,3 +132,36 @@ export type DaiHocVien = {
   mon: { ma: string; ngan: string } | null;
 };
 
+
+// ---------------------------------------------------------------- phiếu bàn giao (máy chủ trả, web vẽ — mockup 20: F, G, Đọc bàn giao)
+
+export type TuDien = {
+  ketQua: string;
+  caseMo: { id: number; ten: string; nguoiNhan: string | null }[];
+  yThuc: string; viecConDo: string;
+};
+
+export type PhieuMon = {
+  ma: string; ten: string; ngan: string; noiDung: string | null; nguoiGhi: string | null; ghiLuc: string | null; dienThay: boolean;
+  gvbm: string[];
+};
+export type PhieuEm = {
+  lenhId: number; studentId: number; ten: string; maHv: string; huong: string; trangThaiLenh: string;
+  lopDich: { id: number; code: string } | null; tuan: string; ngayXemLai: string | null;
+  hanGvbm: string | null; hanGvcn: string | null;
+  phieu: { khoa: string; nhan: string }; soMonDaGhi: number; soMon: number;
+  tuDien: TuDien | null; tuDienDaChup: boolean;
+  mon: PhieuMon[];
+  nhanXetChung: string | null;
+  xacNhan: { boi: string | null; luc: string; thay: boolean } | null;
+  gvbmChuaBanGiao: string[];
+};
+export type PhieuBanGiaoDto = {
+  lop: { id: number; code: string; ct: string | null; ft: boolean; mon: { ma: string; ten: string; ngan: string }[] };
+  homNay: string;
+  nguoiXem: { gvcn: boolean; qlThay: boolean; monGhi: string[]; xacNhan: boolean; xemTuNguon: boolean };
+  tong: number; daXacNhan: number; hanGvcn: string | null;
+  theoMon: { ma: string; daGhi: number; tong: number; han: string | null }[];
+  ds: PhieuEm[];
+};
+

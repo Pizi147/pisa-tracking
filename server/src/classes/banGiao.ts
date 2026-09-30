@@ -6,6 +6,7 @@ import { badRequest, conflict, forbidden, notFound, nowIso } from '../util.ts';
 import { can, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
+import type { PhieuBanGiaoDto, PhieuEm, PhieuMon, TuDien } from '../../../shared/domain/index.ts';
 import { standingFor, standingLine } from '../students/standing.ts';
 import { trangThaiYThuc } from '../yThuc/trangThai.ts';
 import { nguoiNhanGoiY } from './luatLoTrinh.ts';
@@ -43,12 +44,6 @@ export function quyenBanGiao(p: Principal, l: { lop_nguon_id: number; han_gvcn: 
 }
 
 // ==================================================================== phần TỰ ĐIỀN (chỉ đọc) — theo lô
-
-export type TuDien = {
-  ketQua: string;
-  caseMo: { id: number; ten: string; nguoiNhan: string | null }[];
-  yThuc: string; viecConDo: string;
-};
 
 /** Kết quả gần nhất · Case đang mở + người nhận gợi ý · Ý thức · việc còn dở của MỌI em một lần (không hỏi lại theo em). */
 function tuDienTheoLo(ds: { id: number; student_id: number; lop_dich_id: number | null }[]): Map<number, TuDien> {
@@ -96,30 +91,6 @@ function tuDienTheoLo(ds: { id: number; student_id: number; lop_dich_id: number 
 }
 
 // ==================================================================== đọc phiếu
-
-export type PhieuMon = {
-  ma: string; ten: string; ngan: string; noiDung: string | null; nguoiGhi: string | null; ghiLuc: string | null; dienThay: boolean;
-  gvbm: string[];
-};
-export type PhieuEm = {
-  lenhId: number; studentId: number; ten: string; maHv: string; huong: string; trangThaiLenh: string;
-  lopDich: { id: number; code: string } | null; tuan: string; ngayXemLai: string | null;
-  hanGvbm: string | null; hanGvcn: string | null;
-  phieu: { khoa: string; nhan: string }; soMonDaGhi: number; soMon: number;
-  tuDien: TuDien | null; tuDienDaChup: boolean;
-  mon: PhieuMon[];
-  nhanXetChung: string | null;
-  xacNhan: { boi: string | null; luc: string; thay: boolean } | null;
-  gvbmChuaBanGiao: string[];
-};
-export type PhieuBanGiaoDto = {
-  lop: { id: number; code: string; ct: string | null; ft: boolean; mon: { ma: string; ten: string; ngan: string }[] };
-  homNay: string;
-  nguoiXem: { gvcn: boolean; qlThay: boolean; monGhi: string[]; xacNhan: boolean; xemTuNguon: boolean };
-  tong: number; daXacNhan: number; hanGvcn: string | null;
-  theoMon: { ma: string; daGhi: number; tong: number; han: string | null }[];
-  ds: PhieuEm[];
-};
 
 /**
  * Màn F/G và "Đọc bàn giao": mọi lệnh có phiếu của MỘT lớp nguồn (hoặc một lệnh). Số câu SQL KHÔNG tăng theo số em.
