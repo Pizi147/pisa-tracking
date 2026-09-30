@@ -114,6 +114,10 @@ function ConfigTab({ data, onDone }: { data: AdminData; onDone: () => void }) {
             là việc phải tra lại được. Hai quyền <strong>Cấu hình hệ thống</strong> và
             <strong> Xem học viên</strong> của vai Quản trị hệ thống KHÔNG gỡ được: gỡ xong thì không
             còn ai vào lại được màn này.
+            <br />
+            <strong>Quyền dẫn xuất (không có ô bật/tắt):</strong> <em>Xem hồ sơ giáo viên</em> — chính mình; Quản lý: giáo viên
+            thuộc chi nhánh mình (có vai hoặc đang dạy lớp ở đó); Quản trị hệ thống: tất cả. <em>Xuất Excel kết quả Test</em> —
+            Quản lý và Quản trị hệ thống (trong phạm vi của mình), Giáo viên chủ nhiệm (lớp mình chủ nhiệm).
           </SectionNote>
         </div>
       </Card>

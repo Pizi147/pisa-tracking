@@ -87,14 +87,8 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   const pGvcnFou = P.normalCoreTeacher;                               // T_HA — GVCN MB FOU 12, dạy L và R
   const pSpeakingFou = loadPrincipal(teacherOf('MB FOU 12', 'speaking'));
   const pWritingFou = loadPrincipal(teacherOf('MB FOU 12', 'writing'));
-  /** "Tạo Case" từ một tín hiệu, đúng như form sẽ gửi. `topic` để thử gửi sai môn. */
-  const caseTuTinHieu = (p: any, sg: any, topic?: string) => cases.reportIssue(p, {
-    studentId: sg.student_id, topic: topic ?? sg.skill, fromSignalId: sg.id,
-    title: `Case từ tín hiệu ${sg.skill} (PR-S1)`, summary: 'Đã xem lại bài, em vướng đúng phần này của môn.',
-    /* PR-MON (T57): bộ nguyên nhân theo chương trình lớp của tín hiệu (FOU W → G+V). */
-    primaryCode: domain.issuesForTopic(topic ?? sg.skill,
-      (conn.prepare('SELECT programme_code FROM classes WHERE id = ?').get(sg.class_id) as any)?.programme_code)[0].code,
-  }) as any;
+  /** PR-LT2a: Giữa khoá trượt TỰ TẠO Case — trả Case nối với tín hiệu `sg` (dây nối), không còn form "Tạo Case từ tín hiệu". */
+  const caseTuTinHieu = (_p: any, sg: any) => conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(sg.case_id) as any;
   void load; void assertThrows; void TODAY; void pSpeakingFou; void pWritingFou; void caseTuTinHieu; void diem; void tinHieu;
 
   // ================================================================== 1. Nâng cấp database
@@ -306,130 +300,131 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     assert(countOf('missing_scores') === base, `Đủ bốn môn mà vẫn "thiếu điểm": ${base} → ${countOf('missing_scores')}`);
   });
 
-  // ================================================================== 6. S1 (a) tín hiệu từng môn
+  // ================================================================== 6. PR-LT2a — Giữa khoá tự tạo Case (thay S1 "tín hiệu Tạo Case / Bỏ qua")
 
-  console.log('\nPR-S1 · 6. S1 — tín hiệu lớp thường: mỗi môn chưa đạt MỘT tín hiệu, về GV môn đó (không ai dạy thì GVCN)');
+  console.log('\nPR-LT2a · 6. Lớp thường Giữa khoá: mỗi môn trượt TỰ TẠO Case về GV môn đó (không ai dạy thì GVCN); tín hiệu chỉ còn là dây nối');
   const signals: any = await import('../cases/signals.ts');
+  const mywork: any = await import('../worklist/mywork.ts');
+  const metricsSvc: any = await import('../worklist/metrics.ts');
+  const sosAutoSvc: any = await import('../cases/sosAuto.ts');
+  const yeuCauSvc: any = await import('../duyet/yeuCau.ts');
+  const caseCua = (sid: number, topic: string) => conn.prepare('SELECT * FROM sos_cases WHERE student_id = ? AND topic = ? ORDER BY id DESC').get(sid, topic) as any;
+  const auditN = (action: string, id: number) =>
+    (conn.prepare('SELECT COUNT(*) n FROM audit_logs WHERE action = ? AND entity_id = ?').get(action, id) as any).n as number;
 
-  check('S1 · Hai môn chưa đạt → hai tín hiệu riêng, mỗi cái về đúng GV dạy môn đó; không tự tạo Case', () => {
+  check('S1→LT2a · Hai môn chưa đạt → hai Case tự tạo, mỗi Case về đúng GV dạy môn đó; tín hiệu là dây nối "linked" (không còn "chờ xác minh"), Case không nhãn SOS', () => {
     const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'listening', 10, 40);
     diem(hv.attemptId, 'speaking', 5, 25);
-    const l = tinHieu(hv.attemptId, 'listening'), s = tinHieu(hv.attemptId, 'speaking');
-    assert(l && s && l.id !== s.id, 'Phải có hai tín hiệu riêng');
-    assert(l.owner_user_id === teacherOf('MB FOU 12', 'listening') && s.owner_user_id === teacherOf('MB FOU 12', 'speaking'),
-      `Sai người: L→${l.owner_user_id}, S→${s.owner_user_id}`);
-    assert(l.status === 'pending' && s.status === 'pending', 'Lớp thường không tự tạo Case (Q-V3-1)');
-    const n = (conn.prepare('SELECT COUNT(*) n FROM sos_cases WHERE student_id = ?').get(hv.sid) as any).n;
-    assert(n === 0, `Lớp thường không được tự tạo Case, đang có ${n}`);
+    const cl = caseCua(hv.sid, 'listening'), cs = caseCua(hv.sid, 'speaking');
+    assert(cl && cs && cl.id !== cs.id, 'Phải có hai Case riêng');
+    assert(cl.owner_user_id === teacherOf('MB FOU 12', 'listening') && cs.owner_user_id === teacherOf('MB FOU 12', 'speaking'),
+      `Sai người: L→${cl.owner_user_id}, S→${cs.owner_user_id}`);
+    const l = tinHieu(hv.attemptId, 'listening'), sp = tinHieu(hv.attemptId, 'speaking');
+    assert(l.status === 'linked' && l.case_id === cl.id && sp.status === 'linked' && sp.case_id === cs.id, 'Tín hiệu phải là dây nối tới Case');
+    assert(cl.sos_level === null && cs.sos_level === null, 'Lớp thường không nhãn SOS (T58)');
   });
 
-  check('S1 · Tín hiệu lớp thường mang đủ dữ liệu cho dòng việc: loại, môn, số câu đúng/tổng, hạn, hai nút cho đúng người', () => {
+  check('S1→LT2a · Case Giữa khoá mang đủ dữ liệu cho dòng việc: nhóm "Xác nhận nguyên nhân", đúng Case, hạn 3 ngày tính cả hôm nay, đúng người; GV môn khác không thấy', () => {
     const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'listening', 20, 40);
-    const sg = tinHieu(hv.attemptId, 'listening');
-    const v = signals.signalDetail(pGvcnFou, sg.id) as any;
-    assert(v.kind === 'normal' && v.skill === 'listening' && v.score === 20 && v.total === 40 && v.verifyDue === sg.verify_due,
-      `Thiếu dữ liệu: ${JSON.stringify({ kind: v.kind, skill: v.skill, score: v.score, total: v.total, due: v.verifyDue })}`);
-    assert(JSON.stringify(v.actions) === JSON.stringify(['create_case', 'dismiss']), `GV môn đó phải có hai nút: ${JSON.stringify(v.actions)}`);
-    assert(v.caseDraft && v.caseDraft.topic === 'listening' && v.caseDraft.cycleId === hv.cycleId && v.caseDraft.scoreText === '20/40',
-      `Điền sẵn form Case sai: ${JSON.stringify(v.caseDraft)}`);
-    const other = signals.signalDetail(pSpeakingFou, sg.id) as any;
-    assert(other.actions.length === 0 && other.canResolve === false, 'GV môn khác không được có nút xử lý');
+    const c = caseCua(hv.sid, 'listening');
+    const dong = (who: any) => ((mywork.myWork(who) as any).items as any[]).find((i) => i.key === `cause:${c.id}`);
+    const mine = dong(pGvcnFou);
+    assert(mine && mine.group === 'cause' && mine.caseId === c.id && mine.due === domain.hanXacNhan(TODAY), `Dòng: ${JSON.stringify(mine && { g: mine.group, c: mine.caseId, due: mine.due })}`);
+    assert(!((mywork.myWork(pGvcnFou) as any).items as any[]).some((i) => i.group === 'verify'), 'Không còn nhóm "verify"');
+    assert(!dong(pSpeakingFou), 'GV môn khác thấy việc của người khác');
   });
 
-  check('S1 · Không ai dạy môn đó → tín hiệu về GVCN, và GVCN xử lý được tín hiệu đó dù không dạy môn đó (Q1)', () => {
+  check('S1→LT2a · Không ai dạy môn đó → Case về GVCN, và PA bổ trợ FOU do GVCN dạy (Q-F)', () => {
     const cid = classId('MB FOU 12');
     const ids = (conn.prepare(`SELECT id FROM teacher_assignments WHERE class_id = ? AND skill = 'speaking' AND status = 'active'`).all(cid) as any[]).map((r) => r.id);
     conn.prepare(`UPDATE teacher_assignments SET status = 'inactive' WHERE id IN (${ids.join(',')})`).run();
     try {
       const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
       diem(hv.attemptId, 'speaking', 5, 25);
-      const sg = tinHieu(hv.attemptId, 'speaking');
+      const c = caseCua(hv.sid, 'speaking');
       const core = (conn.prepare(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active' LIMIT 1`).get(cid) as any).user_id;
-      assert(sg.owner_user_id === core, `Phải về GVCN (${core}), đang về ${sg.owner_user_id}`);
-      const v = signals.signalDetail(pGvcnFou, sg.id) as any;
-      assert(v.canResolve === true && v.actions.includes('create_case'), 'GVCN được giao mà không xử lý được');
+      assert(c.owner_user_id === core, `Phải về GVCN (${core}), đang về ${c.owner_user_id}`);
+      const pa = conn.prepare(`SELECT performer_user_id FROM case_interventions WHERE case_id = ? AND kind = 'bo_tro'`).get(c.id) as any;
+      assert(pa.performer_user_id === core, 'Người dạy bổ trợ FOU = GVCN');
     } finally {
       conn.prepare(`UPDATE teacher_assignments SET status = 'active' WHERE id IN (${ids.join(',')})`).run();
     }
   });
 
-  // ================================================================== 7. S1 (b) Bỏ qua
+  // ================================================================== 7. PR-LT2a — không còn "Bỏ qua"; không xác nhận được thì "Không cần theo dõi" qua Quản lý
 
-  console.log('\nPR-S1 · 7. S1 — Bỏ qua tín hiệu lớp thường: một bấm, lý do không bắt buộc, có audit');
-  const auditN = (action: string, id: number) =>
-    (conn.prepare('SELECT COUNT(*) n FROM audit_logs WHERE action = ? AND entity_id = ?').get(action, id) as any).n as number;
+  console.log('\nPR-LT2a · 7. Không còn "Bỏ qua" tín hiệu lớp thường: lối ra duy nhất là Không cần theo dõi (thẻ Chờ duyệt Quản lý), có audit');
 
-  check('S1 · Bỏ qua không lý do: tín hiệu thành "Đã bỏ qua", không có Case, có audit; bấm lần hai không đổi gì', () => {
+  check('S1→LT2a · Không còn "Bỏ qua": lớp thường trượt → không tín hiệu "noted"; lưu lại điểm vẫn trượt không tạo thêm Case hay tín hiệu; hàm Bỏ qua đã bỏ khỏi mã', () => {
     const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'listening', 10, 40);
     const sg = tinHieu(hv.attemptId, 'listening');
-    signals.dismissSignal(pGvcnFou, sg.id, {});
-    const after = conn.prepare('SELECT * FROM case_signals WHERE id = ?').get(sg.id) as any;
-    assert(after.status === 'noted' && after.resolution_note === domain.SIGNAL_DISMISS_NOTE && after.case_id === null && after.resolved_by === pGvcnFou.userId,
-      `Sai: ${JSON.stringify(after)}`);
-    assert(domain.SIGNAL_STATUS_LABEL.noted === 'Đã bỏ qua', `Nhãn: ${domain.SIGNAL_STATUS_LABEL.noted}`);
-    assert(auditN('signal.dismissed', sg.id) === 1, 'Thiếu audit');
-    const again = signals.dismissSignal(pGvcnFou, sg.id, {}) as any;
-    assert(again.unchanged === true && auditN('signal.dismissed', sg.id) === 1, 'Bấm lần hai không được ghi thêm');
-    diem(hv.attemptId, 'listening', 11, 40);                            // lưu lại điểm vẫn trượt
-    assert((conn.prepare('SELECT status FROM case_signals WHERE id = ?').get(sg.id) as any).status === 'noted', 'Lưu lại điểm làm sống lại tín hiệu đã bỏ qua');
+    assert(sg.status === 'linked' && sg.status !== 'noted', `Tín hiệu: ${sg.status}`);
+    diem(hv.attemptId, 'listening', 11, 40);
+    const n = (conn.prepare('SELECT COUNT(*) n FROM sos_cases WHERE student_id = ?').get(hv.sid) as any).n;
+    const ns = (conn.prepare('SELECT COUNT(*) n FROM case_signals WHERE student_id = ?').get(hv.sid) as any).n;
+    assert(n === 1 && ns === 1, `Lưu lại điểm không được sinh thêm: ${n} Case, ${ns} tín hiệu`);
+    assert(!('dismissSignal' in signals) && !('assignSignal' in signals) && domain.SIGNAL_STATUS_LABEL.noted === 'Đã bỏ qua', 'Chỉ còn nhãn "noted" để đọc dữ liệu cũ');
   });
 
-  check('S1 · Bỏ qua có lý do: lý do được giữ; GV môn khác không bỏ qua được; tín hiệu đã thành Case thì không bỏ qua được', () => {
+  check('S1→LT2a · "Không cần theo dõi": GVBM gửi → thẻ chờ Quản lý; Quản lý duyệt → Case đóng, PA bổ trợ huỷ (không tính hiệu quả), có audit; lưu lại điểm KHÔNG mở lại Case', () => {
     const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'listening', 10, 40);
     diem(hv.attemptId, 'reading', 10, 40);
-    const l = tinHieu(hv.attemptId, 'listening'), r = tinHieu(hv.attemptId, 'reading');
-    assertThrows(() => signals.dismissSignal(pSpeakingFou, l.id, {}), /giao cho mình|môn mình dạy/, 'GV Speaking bỏ qua tín hiệu Listening');
-    signals.dismissSignal(pGvcnFou, l.id, { reason: '  Em ốm hôm thi  ' });
-    assert((conn.prepare('SELECT resolution_note FROM case_signals WHERE id = ?').get(l.id) as any).resolution_note === 'Bỏ qua — Em ốm hôm thi',
-      'Lý do phải được giữ (đã cắt khoảng trắng)');
-    caseTuTinHieu(pGvcnFou, r);
-    assertThrows(() => signals.dismissSignal(pGvcnFou, r.id, {}), /đã thành Case/, 'Bỏ qua một tín hiệu đã thành Case');
+    const l = caseCua(hv.sid, 'listening');
+    assertThrows(() => sosAutoSvc.guiKhongTheoDoi(pSpeakingFou, l.id, { reasonCode: 'single_incident' }), /kỹ năng mình được phân công/, 'GV Speaking gửi cho Case Listening');
+    sosAutoSvc.guiKhongTheoDoi(pGvcnFou, l.id, { reasonCode: 'single_incident' });
+    const the = conn.prepare(`SELECT * FROM yeu_cau_duyet WHERE loai = 'khong_theo_doi' AND doi_tuong_id = ? ORDER BY id DESC LIMIT 1`).get(l.id) as any;
+    assert(the && the.trang_thai === 'cho', 'Thẻ Không cần theo dõi phải đang chờ');
+    yeuCauSvc.duyetYeuCau(P.mbManager, the.id);
+    const sau = conn.prepare('SELECT status, dismiss_reason_code AS r FROM sos_cases WHERE id = ?').get(l.id) as any;
+    assert(sau.status === 'done' && sau.r === 'single_incident', `Case: ${JSON.stringify(sau)}`);
+    const pa = conn.prepare(`SELECT status, closed_reason FROM case_interventions WHERE case_id = ? AND kind = 'bo_tro'`).get(l.id) as any;
+    assert(pa.status === 'cancelled' && pa.closed_reason === 'khong_theo_doi', `PA bổ trợ: ${JSON.stringify(pa)}`);
+    diem(hv.attemptId, 'listening', 11, 40);                            // lưu lại điểm vẫn trượt
+    assert((conn.prepare('SELECT COUNT(*) n FROM sos_cases WHERE student_id = ? AND topic = ?').get(hv.sid, 'listening') as any).n === 1, 'Lưu lại điểm mở lại Case đã đóng');
+    assert(caseCua(hv.sid, 'reading').status !== 'done', 'Case môn khác không bị đụng');
   });
 
-  check('S1 · Tín hiệu Fast Track không có nút Bỏ qua (FT tự tạo Case — đóng bằng "Không cần theo dõi")', () => {
+  check('S1→LT2a · Tín hiệu Fast Track vẫn là dây nối tới Case; hàm Bỏ qua tín hiệu không còn cho FT lẫn lớp thường', () => {
     const hv = taoHocVien({ classCode: 'MB FT 101', weekStart: '2026-09-07' });
     const sg = signals.raiseSignal({
       actorUserId: P.admin.userId, studentId: hv.sid, cycleId: hv.cycleId, attemptId: hv.attemptId, classId: hv.cid,
       skill: 'reading', category: 'reading', detectedOn: '2026-09-07', silent: true,
     }) as any;
-    assertThrows(() => signals.dismissSignal(P.mbManager, sg.id, {}), /Fast Track/, 'Bỏ qua tín hiệu FT');
-    assert(!(signals.signalDetail(P.mbManager, sg.id) as any).actions.includes('dismiss'), 'Tín hiệu FT không được có nút Bỏ qua');
+    assert(sg.status === 'pending' && sg.id, 'raiseSignal vẫn tạo được dây nối');
+    assert(!('dismissSignal' in signals) && !('signalDetail' in signals) && !('listSignals' in signals), 'Không còn đường Bỏ qua / xem tín hiệu');
   });
 
-  // ================================================================== 8. S1 (c) Tạo Case
+  // ================================================================== 8. PR-LT2a — Case Giữa khoá đúng môn, đúng khoá
 
-  console.log('\nPR-S1 · 8. S1 — Tạo Case từ tín hiệu: đúng môn, đúng khoá, mốc mở mang điểm; Writing lớp thường');
+  console.log('\nPR-LT2a · 8. Case Giữa khoá tự tạo: đúng môn, đúng khoá, mốc mở; Writing lớp thường (một môn W)');
 
-  check('S1 · Tạo Case từ tín hiệu Listening: Case môn Listening của đúng khoá đó, tín hiệu "Đã thành Case", mốc mở ghi 10/40', () => {
+  check('S1→LT2a · Giữa khoá Listening trượt → Case môn Listening của đúng khoá, tín hiệu "linked", mốc mở "Giữa khoá tự tạo Case"', () => {
     const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'listening', 10, 40);
     const sg = tinHieu(hv.attemptId, 'listening');
     const c = caseTuTinHieu(pGvcnFou, sg);
-    const row = conn.prepare('SELECT category, cycle_id FROM sos_cases WHERE id = ?').get(c.id) as any;
-    assert(row.category === 'listening' && row.cycle_id === hv.cycleId, `Case sai môn/khoá: ${JSON.stringify(row)}`);
-    const after = conn.prepare('SELECT status, case_id FROM case_signals WHERE id = ?').get(sg.id) as any;
-    assert(after.status === 'linked' && after.case_id === c.id, `Tín hiệu chưa gắn: ${JSON.stringify(after)}`);
+    assert(c.category === 'listening' && c.cycle_id === hv.cycleId, `Case sai môn/khoá: ${JSON.stringify({ category: c.category, cycle: c.cycle_id })}`);
+    assert(sg.status === 'linked' && sg.case_id === c.id, `Tín hiệu chưa gắn: ${JSON.stringify(sg)}`);
     const m = conn.prepare(`SELECT note FROM case_milestones WHERE case_id = ? AND kind = 'opened'`).get(c.id) as any;
-    assert(m && String(m.note).includes('10/40'), `Mốc mở phải mang điểm: ${m?.note}`);
+    assert(m && String(m.note) === 'Giữa khoá tự tạo Case', `Mốc mở: ${m?.note}`);
   });
 
-  check('S1 · Tạo Case sai môn với tín hiệu bị từ chối (tín hiệu Listening không mở Case Reading)', () => {
+  check('S1→LT2a · Một môn trượt chỉ sinh Case đúng môn đó (Listening trượt không sinh Case Reading)', () => {
     const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'listening', 10, 40);
-    assertThrows(() => caseTuTinHieu(pGvcnFou, tinHieu(hv.attemptId, 'listening'), 'reading'), /đúng môn/, 'Case Reading từ tín hiệu Listening');
+    diem(hv.attemptId, 'reading', 35, 40);
+    assert(caseCua(hv.sid, 'listening') && !caseCua(hv.sid, 'reading'), 'Chỉ Listening có Case');
   });
 
-  check('S1 · Tín hiệu Writing lớp thường tạo được Case Writing (một môn W); học viên FT không có Case "writing"', () => {
+  check('S1→LT2a · Writing lớp thường tự tạo Case Writing (một môn W) về GV Writing; học viên FT không có Case "writing"', () => {
     const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'writing', 5, 20);
-    const sg = tinHieu(hv.attemptId, 'writing');
-    assert(sg.owner_user_id === pWritingFou.userId, 'Tín hiệu Writing phải về GV Writing');
-    const c = caseTuTinHieu(pWritingFou, sg);
-    assert((conn.prepare('SELECT category FROM sos_cases WHERE id = ?').get(c.id) as any).category === 'writing', 'Case phải là môn W');
+    const c = caseCua(hv.sid, 'writing');
+    assert(c && c.owner_user_id === pWritingFou.userId && c.category === 'writing', 'Case Writing phải về GV Writing, môn W');
     const ft = taoHocVien({ classCode: 'MB FT 101', weekStart: '2026-09-07' });
     assertThrows(() => cases.reportIssue(P.mbManager, {
       studentId: ft.sid, topic: 'writing', title: 'Writing chung của FT', summary: 'FT phải tách W1 và W2, không có Writing chung.',
@@ -437,68 +432,53 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     }), /Chủ đề không hợp lệ/, 'Học viên FT tạo Case Writing chung');
   });
 
-  check('S1 · Tạo Case từ tín hiệu mà gửi kèm khoá KHÁC khoá của tín hiệu → từ chối (Case phải nằm đúng khoá của tín hiệu)', () => {
+  check('S1→LT2a · Case Giữa khoá nằm đúng lộ trình của lượt (không phải khoá cũ đã hoàn tất của cùng em)', () => {
     const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
-    diem(hv.attemptId, 'listening', 10, 40);
-    const sg = tinHieu(hv.attemptId, 'listening');
     const other = Number(conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, programme_code, started_at, status, created_at)
       VALUES (?, 2, NULL, 'FOU', ?, 'completed', ?)`).run(hv.sid, '2026-05-04', NOW).lastInsertRowid);
-    assertThrows(() => cases.reportIssue(pGvcnFou, {
-      studentId: hv.sid, cycleId: other, topic: 'listening', fromSignalId: sg.id,
-      title: 'Case gửi sai khoá (PR-S1)', summary: 'Đã xem lại bài, em vướng đúng phần này của môn.',
-      primaryCode: domain.issuesForTopic('listening')[0].code,
-    }), /đúng khoá/, 'Case từ tín hiệu mà nằm ở khoá khác');
-    assert((conn.prepare('SELECT status FROM case_signals WHERE id = ?').get(sg.id) as any).status === 'pending', 'Tín hiệu phải còn chờ');
-    const ok = cases.reportIssue(pGvcnFou, {
-      studentId: hv.sid, cycleId: hv.cycleId, topic: 'listening', fromSignalId: sg.id,
-      title: 'Case gửi đúng khoá (PR-S1)', summary: 'Đã xem lại bài, em vướng đúng phần này của môn.',
-      primaryCode: domain.issuesForTopic('listening')[0].code,
-    }) as any;
-    assert((conn.prepare('SELECT cycle_id FROM sos_cases WHERE id = ?').get(ok.id) as any).cycle_id === hv.cycleId, 'Gửi đúng khoá thì vẫn tạo được');
+    diem(hv.attemptId, 'listening', 10, 40);
+    const c = caseCua(hv.sid, 'listening');
+    assert(c.cycle_id === hv.cycleId && c.cycle_id !== other, 'Case phải nằm đúng khoá của lượt');
   });
 
-  check('S1 · Tín hiệu đã Bỏ qua không mở Case được nữa', () => {
+  check('S1→LT2a · Case Giữa khoá đã đóng (Không cần theo dõi) thì chấm lại điểm KHÔNG mở lại — chạy lặp không đảo quyết định của GVBM', () => {
     const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'reading', 10, 40);
-    const sg = tinHieu(hv.attemptId, 'reading');
-    signals.dismissSignal(pGvcnFou, sg.id, {});
-    assertThrows(() => caseTuTinHieu(pGvcnFou, sg), /đã được xử lý/, 'Mở Case từ tín hiệu đã bỏ qua');
+    const c = caseCua(hv.sid, 'reading');
+    conn.prepare(`UPDATE sos_cases SET status = 'done', closed_at = ? WHERE id = ?`).run(TODAY, c.id);
+    diem(hv.attemptId, 'reading', 12, 40);
+    assert((conn.prepare(`SELECT COUNT(*) n FROM sos_cases WHERE student_id = ? AND topic = 'reading'`).get(hv.sid) as any).n === 1, 'Chấm lại mở thêm Case');
   });
 
-  // ================================================================== 9. S1 (d) dòng việc + chỉ số
+  // ================================================================== 9. PR-LT2a — việc cần làm + chỉ số
 
-  console.log('\nPR-S1 · 9. S1 — dòng việc tín hiệu có đủ dữ liệu; ô "Chờ xác minh quá hạn" = tín hiệu lớp thường quá 3 ngày');
-  const mywork: any = await import('../worklist/mywork.ts');
-  const metricsSvc: any = await import('../worklist/metrics.ts');
+  console.log('\nPR-LT2a · 9. Một dòng "Xác nhận nguyên nhân" mỗi Case Giữa khoá; ô "Case chờ nguyên nhân quá hạn" đếm cả lớp thường');
 
-  check('S1 · Việc cần làm của GV môn đó có MỘT dòng cho mỗi tín hiệu, kèm loại, môn, điểm, hạn, hai nút; GV khác không thấy', () => {
+  check('S1→LT2a · Việc cần làm của GV môn đó có MỘT dòng cho mỗi Case (không mỗi tín hiệu), kèm môn, hạn; GV khác không thấy', () => {
     const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'listening', 12, 40);
     diem(hv.attemptId, 'speaking', 6, 25);
-    const l = tinHieu(hv.attemptId, 'listening'), s = tinHieu(hv.attemptId, 'speaking');
-    const mine = (mywork.myWork(pGvcnFou) as any).items.find((i: any) => i.key === `verify:${l.id}`);
-    assert(mine && mine.signal, 'Thiếu dòng tín hiệu Listening ở Việc cần làm của GV Listening');
-    assert(mine.signal.kind === 'normal' && mine.signal.skill === 'listening' && mine.signal.score === 12 && mine.signal.total === 40
-      && mine.signal.deadline === l.verify_due && JSON.stringify(mine.signal.actions) === JSON.stringify(['create_case', 'dismiss']),
-      `Dữ liệu dòng: ${JSON.stringify(mine.signal)}`);
-    assert(/chưa đạt/.test(mine.reason) && !/kỳ vọng/.test(mine.reason) && mine.actionLabel === 'Tạo Case', `Chữ dòng: ${mine.reason} · ${mine.actionLabel}`);
-    assert(!(mywork.myWork(pGvcnFou) as any).items.some((i: any) => i.key === `verify:${s.id}`), 'GV Listening thấy tín hiệu Speaking');
-    assert((mywork.myWork(pSpeakingFou) as any).items.some((i: any) => i.key === `verify:${s.id}`), 'GV Speaking không thấy tín hiệu của mình');
+    const cl = caseCua(hv.sid, 'listening'), cs = caseCua(hv.sid, 'speaking');
+    const items = (who: any) => (mywork.myWork(who) as any).items as any[];
+    const mine = items(pGvcnFou).filter((i) => i.key === `cause:${cl.id}`);
+    assert(mine.length === 1 && mine[0].group === 'cause' && mine[0].actionLabel === 'Xác nhận nguyên nhân', `Dòng: ${JSON.stringify(mine)}`);
+    assert(!items(pGvcnFou).some((i) => i.key === `cause:${cs.id}`), 'GV Listening thấy Case Speaking');
+    assert(items(pSpeakingFou).some((i) => i.key === `cause:${cs.id}`), 'GV Speaking không thấy Case của mình');
   });
 
-  check('S1 · Chỉ số tin-hieu-qua-han: tín hiệu lớp thường chờ quá 3 ngày có; chưa quá hạn thì không; đã bỏ qua thì không', () => {
+  check('S1→LT2a · Chỉ số case-xac-dinh-nguyen-nhan-qua-han: Case Giữa khoá quá hạn 3 ngày có; còn trong hạn không; đã đóng không', () => {
     const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'listening', 10, 40);
     diem(hv.attemptId, 'reading', 10, 40);
     diem(hv.attemptId, 'speaking', 5, 25);
-    const oldL = tinHieu(hv.attemptId, 'listening'), fresh = tinHieu(hv.attemptId, 'reading'), gone = tinHieu(hv.attemptId, 'speaking');
-    conn.prepare(`UPDATE case_signals SET raised_on = '2026-09-09', verify_due = '2026-09-11' WHERE id IN (?, ?)`).run(oldL.id, gone.id);
-    signals.dismissSignal(pSpeakingFou, gone.id, {});
-    const ids = (metricsSvc.metricSet(P.admin, 'tin-hieu-qua-han', {}) as any).ids as number[];
-    assert(ids.includes(oldL.id), 'Tín hiệu quá hạn phải có trong ô');
-    assert(!ids.includes(fresh.id), 'Tín hiệu còn trong hạn không được đếm');
-    assert(!ids.includes(gone.id), 'Tín hiệu đã bỏ qua không được đếm');
-    assert(domain.metricById('tin-hieu-qua-han')?.ten === 'Chờ xác minh quá hạn', 'Tên chỉ số phải đúng chữ ô Tổng quan (§3.2)');
+    const oldL = caseCua(hv.sid, 'listening'), fresh = caseCua(hv.sid, 'reading'), gone = caseCua(hv.sid, 'speaking');
+    conn.prepare(`UPDATE sos_cases SET han_xac_nhan = '2026-09-11' WHERE id IN (?, ?)`).run(oldL.id, gone.id);
+    conn.prepare(`UPDATE sos_cases SET status = 'done', closed_at = ? WHERE id = ?`).run(TODAY, gone.id);
+    const ids = (metricsSvc.metricSet(P.admin, 'case-xac-dinh-nguyen-nhan-qua-han', {}) as any).ids as number[];
+    assert(ids.includes(oldL.id), 'Case quá hạn phải có trong ô');
+    assert(!ids.includes(fresh.id), 'Case còn trong hạn không được đếm');
+    assert(!ids.includes(gone.id), 'Case đã đóng không được đếm');
+    assert(domain.metricById('tin-hieu-qua-han') === null && domain.metricById('case-xac-dinh-nguyen-nhan-qua-han')?.ten === 'Case quá hạn xác nhận nguyên nhân', 'Chỉ số tín hiệu đã bỏ, chỉ số Case còn');
   });
 
   // ================================================================== 10. RB-8
@@ -538,7 +518,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     assert(n === 1, 'Người phụ trách phải được nhắc xem lại đúng một lần');
   });
 
-  check('RB-8 · Không đóng Case vô cớ: Giữa khoá trượt → Case có việc; Cuối khoá đạt cả bốn môn → Case vẫn mở, hạ mức về 0, có mốc "đã đạt"', () => {
+  check('RB-8 · Không đóng Case vô cớ: Giữa khoá trượt → Case có việc; Cuối khoá đạt cả bốn môn → Case vẫn mở, không nhãn SOS (mức NULL), có mốc "đã đạt"', () => {
     const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-08-24' });
     diem(hv.attemptId, 'listening', 10, 40);
     const c = caseTuTinHieu(pGvcnFou, tinHieu(hv.attemptId, 'listening'));
@@ -548,7 +528,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     const fin = themLuot({ sid: hv.sid, cid: hv.cid, cycleId: hv.cycleId, weekStart: '2026-09-07', kind: 'final', no: 2 });
     for (const k of ['listening', 'reading', 'writing', 'speaking']) diem(fin, k, 35, 40);
     const row = conn.prepare('SELECT status, sos_level FROM sos_cases WHERE id = ?').get(c.id) as any;
-    assert(row.status !== 'done' && row.sos_level === 0, `Case phải còn mở, mức 0: ${JSON.stringify(row)}`);
+    assert(row.status !== 'done' && row.sos_level === null, `Case phải còn mở, không nhãn SOS: ${JSON.stringify(row)}`);
     const passed = (conn.prepare(`SELECT COUNT(*) n FROM case_milestones WHERE case_id = ? AND kind = 'passed' AND attempt_id = ?`).get(c.id, fin) as any).n;
     assert(passed === 1, 'Thiếu mốc "đã đạt" của Cuối khoá');
   });
@@ -609,7 +589,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   check('S16 · Kết thúc học (cờ dongCaseKhiKetThuc) còn Case mở → Case đóng "Học viên kết thúc khoá": không có kết quả, PA chưa làm huỷ và KHÔNG tính, PA đã xong giữ và VẪN tính hiệu quả, audit + mốc + hành trình, tín hiệu chờ thu hồi', () => {
     const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     const x = caseCoViec(hv);
-    diem(hv.attemptId, 'reading', 10, 40);                              // tín hiệu Reading còn chờ
+    diem(hv.attemptId, 'reading', 10, 40);                              // Reading trượt: Case tự tạo thứ hai
     assert(effectiveness.planOutcomes({ studentIds: [hv.sid] }).some((r: any) => r.id === x.done), 'Tiền đề: PA đã xong phải vào thống kê trước');
     cycles.updateCycle(P.mbManager, hv.cycleId, { status: 'completed', dongCaseKhiKetThuc: true });
     const c = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(x.caseId) as any;
@@ -626,8 +606,9 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     assert(auditSys(x.caseId) === 1, 'Thiếu audit case.system_close');
     assert((conn.prepare(`SELECT COUNT(*) n FROM case_milestones WHERE case_id = ? AND kind = 'closed'`).get(x.caseId) as any).n === 1, 'Thiếu mốc đóng');
     assert((conn.prepare(`SELECT COUNT(*) n FROM journey_events WHERE ref_table = 'sos_cases' AND ref_id = ? AND event_type = 'case_closed'`).get(x.caseId) as any).n === 1, 'Thiếu mốc hành trình');
-    const r = tinHieu(hv.attemptId, 'reading');
-    assert(r.status === 'withdrawn' && r.withdrawn_reason === 'Học viên kết thúc khoá', `Tín hiệu chờ: ${JSON.stringify(r)}`);
+    /* PR-LT2a: Reading trượt cũng có Case tự tạo (không còn tín hiệu chờ) — hệ thống đóng luôn Case đó. */
+    const rc = caseCua(hv.sid, 'reading');
+    assert(rc.status === 'done' && rc.system_close_reason === 'course_ended', `Case Reading: ${JSON.stringify({ s: rc.status, r: rc.system_close_reason })}`);
     const d = cases.caseDetail(P.mbManager, x.caseId) as any;
     assert(d.status === 'done' && d.systemCloseReason === 'course_ended', 'Case đóng bởi hệ thống vẫn phải mở xem lại được, nói rõ lý do');
     const again = systemClose.closeCasesBySystem({ actorUserId: P.admin.userId, studentId: hv.sid, reason: 'course_ended', on: TODAY, cycleIds: [hv.cycleId] });

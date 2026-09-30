@@ -11,7 +11,7 @@ import { docBoLocXuatMt, kiemGhiRoKhac, laKhac, soSanhLop, transferReasonText } 
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
 import { HttpError, badRequest, forbidden, isIsoDate, notFound, toInt } from '../util.ts';
 import { SESSION_COOKIE, createSession, destroySession, principalOf, requireAuth } from '../auth.ts';
-import { can, loadPrincipal, napTruocPhamVi, permissionSummary, require_, scopeFor } from '../permissions.ts';
+import { can, loadPrincipal, permissionSummary, require_, scopeFor } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { navOf } from '../platform/nav.ts';
 import * as attachmentSvc from '../platform/attachments.ts';
@@ -21,6 +21,7 @@ import * as accessSvc from '../yThuc/access.ts';
 import * as xuLySvc from '../yThuc/xuLy.ts';
 import * as phoiHopSvc from '../yThuc/phoiHop.ts';
 import * as sosAutoSvc from '../cases/sosAuto.ts';
+import * as boTroSvc from '../cases/boTro.ts';
 import { bangYThucLop } from '../yThuc/board.ts';
 import { maybeSimulateReadError, maybeSimulateSaveFailure, pInt, qInt, qStr, wrap } from './helpers.ts';
 
@@ -87,10 +88,10 @@ import * as hieuQuaPaSvc from '../phanTich/hieuQuaPa.ts';
 import * as yThucPhanTichSvc from '../phanTich/yThucPhanTich.ts';
 import * as boQuenSvc from '../phanTich/boQuen.ts';
 import { metricResponse, metricSet, rowsFor } from '../worklist/metrics.ts';
-import { myWork } from '../worklist/mywork.ts';
+import { myWork, viecCuaNguoi } from '../worklist/mywork.ts';
+import { bangGvChiNhanh, hoSoGiaoVien, ketQuaHoSoGv, oHoSoGv, viecHoSoGv } from '../giaoVien/hoSo.ts';
 import { nhacViec } from '../worklist/nhacViec.ts';
 import * as caseSvc from '../cases/cases.ts';
-import * as caseSignalSvc from '../cases/signals.ts';
 import * as regularSvc from '../normal/regular.ts';
 import * as chamSvc from '../cham/canCham.ts';
 
@@ -390,64 +391,7 @@ api.get('/my-work', requireAuth, wrap((req) => {
     if (!can(p, PERMISSIONS.CASE_APPROVE, { anyScope: true })) throw forbidden('Bạn chỉ xem được việc của mình.');
     return myWork(p, { branchId, nguoi: 'tat-ca' });
   }
-  if (typeof nguoi === 'number') {
-    if (!can(p, PERMISSIONS.CASE_APPROVE, { anyScope: true })) throw forbidden('Bạn chỉ xem được việc của mình.');
-    const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
-    if (!scope.all) {
-      const branches = db()
-        .prepare(`SELECT DISTINCT branch_id FROM user_roles WHERE user_id = ? AND status = 'active' AND branch_id IS NOT NULL`)
-        .all(nguoi) as any[];
-      if (!branches.some((b) => scope.branchIds.includes(b.branch_id))) {
-        throw forbidden('Giáo viên này không thuộc chi nhánh bạn quản lý.');
-      }
-    }
-    const x = loadPrincipal(nguoi);
-    const w = myWork(x, { branchId }) as any;
-    napTruocPhamVi(w.items.map((it: any) => it.studentId));   // `can()` từng dòng bên dưới đọc bộ nhớ, không N+1
-    /* Dòng không lớp/không HV là việc Vận hành ("mgmt") — không thuộc Hỗ trợ học viên, bỏ. */
-    const items = w.items
-      .filter((it: any) => (it.classId !== null || it.studentId !== null)
-        && can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: it.classId, studentId: it.studentId }))
-      .map((it: any) => ({
-        ...it,
-        owner: it.ownerId === x.userId ? x.fullName : it.owner,
-        mine: false,
-      }));
-    if (items.length) {
-      const today = demoToday();
-      const nhacToday = new Map<string, string>();
-      for (const r of db()
-        .prepare(`SELECT dedup_key, created_at FROM notifications WHERE kind = 'nhac_viec' AND dedup_key LIKE ?`)
-        .all(`nhac:%:${today}`) as any[]) {
-        const m = /^nhac:(.+):[^:]+$/.exec(r.dedup_key);
-        if (m) nhacToday.set(m[1], r.created_at);
-      }
-      for (const it of items) {
-        if (it.ownerId === null) continue;
-        it.nhac = { ownerId: it.ownerId, daNhacLuc: nhacToday.get(it.key) ?? null };
-      }
-    }
-    const groupsByKey = new Map<string, any[]>();
-    for (const it of items) (groupsByKey.get(it.group) ?? groupsByKey.set(it.group, []).get(it.group)!).push(it);
-    const groups = w.groups
-      .map((g: any) => ({ ...g, items: groupsByKey.get(g.key) ?? [] }))
-      .filter((g: any) => g.items.length > 0)
-      .map((g: any) => ({
-        ...g,
-        overdue: g.items.filter((i: any) => i.urgency === 'overdue').length,
-        today: g.items.filter((i: any) => i.urgency === 'today').length,
-      }));
-    return {
-      summary: {
-        total: items.length,
-        overdue: items.filter((i: any) => i.urgency === 'overdue').length,
-        today: items.filter((i: any) => i.urgency === 'today').length,
-        approval: items.filter((i: any) => i.group === 'decide').length,
-        mine: 0,
-      },
-      items, groups, scopeEmpty: false, xemNguoiKhac: true,
-    };
-  }
+  if (typeof nguoi === 'number') return viecCuaNguoi(p, nguoi, branchId);
 
   return myWork(p, { branchId });
 }));
@@ -1497,35 +1441,7 @@ api.post('/cases/backfill', requireAuth, wrap((req) => {
   return caseSvc.backfillCase(principalOf(req), req.body ?? {});
 }));
 
-/*
- * TÍN HIỆU TỪ ĐIỂM (mục 6.2) — hàng riêng, KHÔNG trộn vào danh sách case.
- *
- * Một tín hiệu chưa ai xác minh không phải một vấn đề đã được xác định. Trộn hai thứ lại là
- * cách chắc chắn nhất để con số "đang có bao nhiêu vấn đề" nói quá sự thật.
- */
-api.get('/signals/pending', requireAuth, wrap((req) => caseSignalSvc.listSignals(principalOf(req), {
-  status: (qStr(req, 'status') as any) ?? 'open',
-  branchId: qInt(req, 'branchId'),
-  classId: qInt(req, 'classId'),
-  studentId: qInt(req, 'studentId'),
-  mine: req.query?.mine === '1',
-  overdueOnly: req.query?.overdue === '1',
-})));
-
-api.get('/signals/pending/:id', requireAuth, wrap((req) =>
-  caseSignalSvc.signalDetail(principalOf(req), pInt(req, 'id'))));
-
-/** Quản lý giao tín hiệu cho người khác xác minh, khi chưa ai được phân công đúng môn. */
-api.post('/signals/pending/:id/assign', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return caseSignalSvc.assignSignal(principalOf(req), pInt(req, 'id'), toInt(req.body?.userId));
-}));
-
-/** Bỏ qua một tín hiệu lớp thường — không tạo Case, lý do không bắt buộc (S1, đặc tả §3.10). */
-api.post('/signals/pending/:id/dismiss', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return caseSignalSvc.dismissSignal(principalOf(req), pInt(req, 'id'), { reason: req.body?.reason ?? null });
-}));
+/* PR-LT2a (N4, Q14): bốn đường `/signals/pending…` đã bỏ — lớp thường không còn "Tạo Case / Bỏ qua"; Giữa khoá tự tạo Case. */
 
 api.get('/cases', requireAuth, wrap((req) => {
   maybeSimulateReadError();
@@ -1563,6 +1479,38 @@ api.get('/summary', requireAuth, wrap((req) => {
 api.get('/branch-pulse', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return pulseSvc.branchPulse(principalOf(req), { branchId: qInt(req, 'branchId') });
+}));
+
+/* PR-GV: hồ sơ giáo viên + danh sách sau một số. `:id`/`lop`/`cn` là số nguyên dương (sai → 400); quyền kiểm ở `phamViHoSoGv`. */
+const soDuong = (v: unknown, ten: string): number | null => {
+  if (v === undefined || v === '') return null;
+  const n = Number(v);
+  if (typeof v !== 'string' || !/^\d+$/.test(v) || !Number.isSafeInteger(n) || n < 1) throw badRequest(`Tham số "${ten}" không hợp lệ.`);
+  return n;
+};
+/** Bảng giáo viên của một chi nhánh (đặt TRƯỚC `/giao-vien/:id`). Không xếp hạng: sắp theo tên. */
+api.get('/giao-vien', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return bangGvChiNhanh(principalOf(req), { cn: soDuong(req.query.cn, 'cn'), ct: qStr(req, 'ct') ?? null });
+}));
+api.get('/giao-vien/:id', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return hoSoGiaoVien(principalOf(req), soDuong(req.params.id, 'id') ?? pInt(req, 'id'));
+}));
+api.get('/giao-vien/:id/viec', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return viecHoSoGv(principalOf(req), soDuong(req.params.id, 'id') ?? pInt(req, 'id'));
+}));
+api.get('/giao-vien/:id/ket-qua', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return ketQuaHoSoGv(principalOf(req), soDuong(req.params.id, 'id') ?? pInt(req, 'id'));
+}));
+api.get('/giao-vien/:id/o', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return oHoSoGv(principalOf(req), soDuong(req.params.id, 'id') ?? pInt(req, 'id'), {
+    cot: qStr(req, 'cot') ?? '', lop: soDuong(req.query.lop, 'lop'), dong: qStr(req, 'dong') ?? null, moc: qStr(req, 'moc') ?? null,
+    cn: soDuong(req.query.cn, 'cn'), ct: qStr(req, 'ct') ?? null,
+  });
 }));
 
 /**
@@ -1637,6 +1585,11 @@ api.post('/cases/:id/interventions', requireAuth, wrap((req) => {
 api.post('/cases/:id/xac-nhan', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return sosAutoSvc.xacNhanCase(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
+}));
+/** PR-LT2a (N2, T54): nộp kế hoạch bổ trợ cho CẢ NHÓM của PA — người dạy bổ trợ / GVCN / Quản lý (BE/ELE: GVBM). Tạo thẻ Chờ duyệt · Học thuật. */
+api.post('/bo-tro/:ivId/ke-hoach', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return boTroSvc.nopKeHoachBoTro(principalOf(req), pInt(req, 'ivId'), (req.body ?? {}) as any);
 }));
 api.post('/interventions/:id/xac-nhan-pa', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();

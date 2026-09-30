@@ -18,8 +18,10 @@ export type ThamSoHoSo = {
   paId?: number;
   giaiDoan?: 'thuong' | 'ft';
   loTrinh?: number;
-  /** Việc mở sẵn trong ngăn Case: `ghi-ket-qua` (cần `caseId` + `paId`). */
-  viec?: 'ghi-ket-qua';
+  /** Việc mở sẵn trong ngăn Case: `ghi-ket-qua` (cần `caseId` + `paId`) · `ke-hoach` (Nộp kế hoạch bổ trợ — cần `caseId`, PR-LT2a). */
+  viec?: 'ghi-ket-qua' | 'ke-hoach';
+  /** Tab con của Ý thức & Phối hợp (PR-LT2a): `phoi-hop` — Việc Báo phụ huynh qua TVV mở thẳng thẻ Phối hợp. */
+  sub?: 'phoi-hop';
 };
 
 const KY_NANG_HOP_LE = ['listening', 'reading', 'writing', 'writing1', 'writing2', 'speaking'];
@@ -41,6 +43,7 @@ export function duongHoSoHocVien(studentId: number, o: ThamSoHoSo = {}): string 
   if (o.paId != null) q.set('pa', String(o.paId));
   if (o.giaiDoan) q.set('giai-doan', o.giaiDoan);
   if (o.viec) q.set('viec', o.viec);
+  if (o.sub) q.set('sub', o.sub);
   const s = q.toString();
   return `/hoc-vien/${studentId}${s ? `?${s}` : ''}`;
 }
@@ -67,7 +70,9 @@ export function docThamSoHoSo(get: (k: string) => string | null): ThamSoHoSo {
   if (gd === 'thuong' || gd === 'ft') o.giaiDoan = gd;
   const loTrinh = soNguyenDuong(get('lo-trinh'));
   if (loTrinh !== undefined) o.loTrinh = loTrinh;
-  if (get('viec') === 'ghi-ket-qua') o.viec = 'ghi-ket-qua';
+  const viec = get('viec');
+  if (viec === 'ghi-ket-qua' || viec === 'ke-hoach') o.viec = viec;
+  if (get('sub') === 'phoi-hop') o.sub = 'phoi-hop';
   return o;
 }
 

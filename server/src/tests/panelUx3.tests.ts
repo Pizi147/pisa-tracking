@@ -232,14 +232,15 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
 
   // ==================================================================== 6-8. Tạo Case, Ý thức, Học viên & Lớp
 
-  check('UX3 (6) · QuickReport: chữ ký props giữ đủ khoá cũ (DongTinHieu dùng) + thêm `lop`', () => {
+  check('UX3 (6) · QuickReport: chữ ký props giữ đủ khoá cũ + `lop` (PR-LT2a: `signal` đã bỏ cùng mô hình tín hiệu)', () => {
     const src = doc('web/src/modules/cases/QuickReport.tsx');
     const m = /export function QuickReport\(\{([\s\S]*?)\}: \{/.exec(src);
     assert(m, 'không đọc được chữ ký QuickReport');
     const khoa = m![1].split(',').map((x) => x.trim()).filter(Boolean);
-    for (const k of ['open', 'onClose', 'studentId', 'studentName', 'cycleId', 'onDone', 'signal', 'students', 'onPickStudent', 'lop']) {
+    for (const k of ['open', 'onClose', 'studentId', 'studentName', 'cycleId', 'onDone', 'students', 'onPickStudent', 'lop']) {
       assert(khoa.includes(k), `QuickReport mất prop "${k}"`);
     }
+    assert(!khoa.includes('signal'), 'QuickReport không còn prop `signal` (Tạo Case từ tín hiệu đã bỏ)');
   });
 
   check('UX3 (6) · mucQuanLyHocVien: HV lớp thường (GVCN) có Lộ trình tiếp theo + Chuyển lớp, KHÔNG Kết luận lộ trình; FT (QL) có; GVBM không có mục nào', () => {

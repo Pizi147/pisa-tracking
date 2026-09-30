@@ -1,15 +1,16 @@
 import { db, tx } from '../db.ts';
 import {
   COORDINATION_KINDS, COORDINATION_KIND_LABEL, COORDINATION_REMOVE_REASON_LABEL, COORDINATION_STATUS_LABEL,
-  COORDINATION_USER_REMOVE_REASONS, coordinationSummary, tenMon, kiemGhiRoKhac, reasonNeedsText, sosCoordinationFor,
+  CHUONG_TRINH_KHONG_CHIA_MON, COORDINATION_USER_REMOVE_REASONS, coordinationSummary, moTaBoTro, nhanDot, nhanKetQuaThuong, noiDungBaoPh, tenMon, tenMonNgan, kiemGhiRoKhac, reasonNeedsText, sosCoordinationFor,
   type CoordinationKind, type CoordinationRemoveReason, type CoordinationStatus,
 } from '../../../shared/domain/index.ts';
-import type { Principal } from '../permissions.ts';
+import { napTruocPhamVi, type Principal } from '../permissions.ts';
 import { badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
-import { writeAudit } from '../platform/audit.ts';
+import { notify, writeAudit } from '../platform/audit.ts';
 import { countAttachments } from '../platform/attachments.ts';
 import { loadBundle, resultOf, routeCuaLuot } from '../fasttrack/attempts.ts';
+import { allProgrammes, evaluateRegular } from '../normal/regular.ts';
 import { branchSql, checkClassInScope, classSql, statScope } from './thongKe.ts';
 import { canManageDiscipline, requireManageDiscipline, requireViewClass, requireViewStudent } from './access.ts';
 
@@ -92,6 +93,55 @@ export function syncSosCoordination(attempt: { id: number; student_id: number; a
   }
 }
 
+/**
+ * BÁO PHỤ HUYNH QUA TVV (PR-LT2a N3, T45, K5-10, Q13) — MỘT việc mỗi bài Giữa khoá lớp thường, KHÔNG theo môn, không hạn (M-05), việc của GVCN.
+ * Bài có ≥ 1 môn trượt → dòng `bao_ph_tvv` (`preset = 1`, `pending`) + thông báo GVCN MỘT lần. Điểm sửa cho hết môn trượt → dòng chưa làm tự
+ * `removed · system_sos_changed` (như P03); trượt lại → hồi. Việc đã `done` không bao giờ bị đụng. Chạy lặp không sinh dòng thứ hai.
+ * `monTruot`: mã kỹ năng đang trượt của bài (từ `regularResultOf`).
+ */
+export function dongBoBaoPh(attempt: { id: number; student_id: number; class_id?: number | null }, monTruot: string[]) {
+  const conn = db();
+  const now = nowIso();
+  const row = conn.prepare(`SELECT * FROM sos_coordination_actions WHERE attempt_id = ? AND kind = 'bao_ph_tvv'`).get(attempt.id) as any;
+  if (!monTruot.length) {
+    if (row?.preset === 1 && row.status === 'pending') {
+      conn.prepare(`UPDATE sos_coordination_actions SET status = 'removed', remove_reason_code = 'system_sos_changed', removed_by = NULL, removed_at = ?, updated_at = ? WHERE id = ?`)
+        .run(now, now, row.id);
+    }
+    return;
+  }
+  if (row) {
+    if (row.status === 'removed' && row.remove_reason_code === 'system_sos_changed') {
+      conn.prepare(`UPDATE sos_coordination_actions SET status = 'pending', remove_reason_code = NULL, remove_reason_text = NULL, removed_by = NULL, removed_at = NULL, updated_at = ? WHERE id = ?`)
+        .run(now, row.id);
+    }
+    return;
+  }
+  conn.prepare(`INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, custom_name, preset, status, created_at) VALUES (?,?,'bao_ph_tvv', NULL, 1, 'pending', ?)`)
+    .run(attempt.id, attempt.student_id, now);
+  if (!attempt.class_id) return;
+  const ct = (conn.prepare('SELECT programme_code FROM classes WHERE id = ?').get(attempt.class_id) as any)?.programme_code ?? null;
+  const hv = conn.prepare('SELECT full_name FROM students WHERE id = ?').get(attempt.student_id) as any;
+  const mon = monTruot.map((s) => tenMonNgan(ct, s)).join(', ');
+  for (const g of conn.prepare(`SELECT DISTINCT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active'`).all(attempt.class_id) as any[]) {
+    notify({
+      userId: g.user_id, kind: 'phoi_hop', title: `Giữa khoá: ${hv?.full_name ?? ''} không đạt ${mon} — Báo phụ huynh qua TVV`,
+      body: 'Tạo task cho TVV trên Base với 4 nội dung, rồi đánh dấu đã làm.',
+      entityType: 'assessment_attempt', entityId: attempt.id, dedupKey: `bao-ph:${attempt.id}`,
+    });
+  }
+}
+
+/** Những em (trong `studentIds`) còn việc Báo phụ huynh qua TVV CHƯA làm — MỘT câu theo lô 400 (cột Việc tiếp theo của GVCN, PR-LT2a). */
+export function emCoBaoPhChuaLam(studentIds: readonly number[]): Set<number> {
+  const out = new Set<number>();
+  for (let i = 0; i < studentIds.length; i += 400) {
+    const lo = studentIds.slice(i, i + 400);
+    for (const r of db().prepare(`SELECT DISTINCT student_id FROM sos_coordination_actions WHERE kind = 'bao_ph_tvv' AND status = 'pending' AND student_id IN (${lo.map(() => '?').join(',')})`).all(...lo) as any[]) out.add(r.student_id as number);
+  }
+  return out;
+}
+
 // ---------------------------------------------------------------- đọc
 
 export type CoordinationAction = {
@@ -100,13 +150,19 @@ export type CoordinationAction = {
   performedOn: string | null; performedBy: number | null; performerName: string | null; note: string | null;
   removeReasonCode: string | null; removeReasonLabel: string | null; removeReasonText: string | null; removedAt: string | null;
   attachmentCount: number;
+  /** PR-LT2a (N3): 4 nội dung Báo phụ huynh qua TVV (chỉ việc `bao_ph_tvv`) — kết quả · môn khó khăn · nguyên nhân · phương án + khả năng học lại. */
+  noiDung: string[] | null;
 };
 
 export type CoordinationTurn = {
   attemptId: number; attemptNo: number; studentId: number; studentName: string; studentCode: string;
   classId: number | null; classCode: string | null;
-  /** Mức SOS hiện tại của lượt (tính lại từ điểm). */
+  /** Mức SOS hiện tại của lượt (tính lại từ điểm). Lớp thường KHÔNG có SOS (T58) → null. */
   sosLevel: number | null;
+  /** PR-LT2a: lượt lớp thường — `Giữa khoá` / `Cuối khoá` (thay `MT{n}`), null với lượt Mock FT. */
+  nhanDot: string | null;
+  /** PR-LT2a (T58): chữ kết quả lớp thường qua MỘT hàm `nhanKetQuaThuong` (`2/4 môn đạt` + `Không đạt: G+V P`), null với FT. */
+  ketQua: { chinh: string; phu: string | null; pct: string | null; dat: boolean | null } | null;
   /** Kỹ năng đang trượt ở lượt này (từ tín hiệu còn hiệu lực). */
   skills: string[]; skillLabels: string[];
   summary: ReturnType<typeof coordinationSummary>;
@@ -125,6 +181,7 @@ function shapeAction(r: any, attachments: Map<number, number>): CoordinationActi
     removeReasonLabel: r.remove_reason_code ? COORDINATION_REMOVE_REASON_LABEL[r.remove_reason_code as CoordinationRemoveReason] ?? r.remove_reason_code : null,
     removeReasonText: r.remove_reason_text ?? null, removedAt: r.removed_at ?? null,
     attachmentCount: attachments.get(r.id) ?? 0,
+    noiDung: null,
   };
 }
 
@@ -133,6 +190,7 @@ function turnsOf(p: Principal, rows: any[]): CoordinationTurn[] {
   if (!rows.length) return [];
   const conn = db();
   const attachments = countAttachments('sos_coordination_action', rows.map((r) => r.id));
+  napTruocPhamVi([...new Set(rows.map((r) => r.student_id as number))]);   // `canManageDiscipline` từng em đọc bộ nhớ, không N+1
   const byAttempt = new Map<number, any[]>();
   for (const r of rows) byAttempt.set(r.attempt_id, [...(byAttempt.get(r.attempt_id) ?? []), r]);
   const out: CoordinationTurn[] = [];
@@ -153,17 +211,47 @@ function turnsOf(p: Principal, rows: any[]): CoordinationTurn[] {
     }
   }
   const bundle = loadBundle(ids);
+  /* PR-LT2a (N3): nguyên nhân (Mô tả Xác nhận Case) của các em lớp thường — MỘT câu cho cả tập, khớp (học viên, môn). */
+  const emThuong = [...new Set([...luot.values()].filter((a) => (a.kind ?? 'mock') !== 'mock').map((a) => a.student_id as number))];
+  const nguyenNhan = new Map<string, string>();
+  for (let i = 0; i < emThuong.length; i += 400) {
+    const lo = emThuong.slice(i, i + 400);
+    for (const r of conn.prepare(`SELECT sc.student_id, sc.topic, sc.summary FROM sos_cases sc
+        WHERE sc.student_id IN (${lo.map(() => '?').join(',')}) AND sc.origin_kind = 'mock' AND sc.summary IS NOT NULL
+          AND EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary') ORDER BY sc.id`).all(...lo) as any[]) {
+      nguyenNhan.set(`${r.student_id}:${r.topic}`, r.summary);
+    }
+  }
+  const chuongTrinh = allProgrammes();
   for (const [attemptId, list] of byAttempt) {
     const a = luot.get(attemptId);
     if (!a || a.status === 'cancelled') continue;     // lượt đã huỷ không còn là SOS Event (khớp với chỉ số)
-    const skills = kyNang.get(attemptId) ?? [];
+    const laMock = (a.kind ?? 'mock') === 'mock';
+    let skills = kyNang.get(attemptId) ?? [];
+    let sosLevel: number | null = null, ketQua: CoordinationTurn['ketQua'] = null, noiDung: string[] | null = null;
+    if (laMock) sosLevel = resultOf(a, bundle.scores.get(a.id) ?? [], bundle.skips.get(a.id) ?? []).sosLevel;
+    else {
+      /* Lớp thường: KHÔNG có mức SOS — chữ kết quả qua `nhanKetQuaThuong`, đọc từ điểm đã nạp (không SQL, không `resultOf` FT). */
+      const r = evaluateRegular(chuongTrinh.get(a.programme_code)?.skills ?? [], bundle.scores.get(a.id) ?? [], a.programme_code);
+      skills = r.skills.filter((x) => x.outcome === 'fail').map((x) => x.skill);
+      ketQua = nhanKetQuaThuong({
+        kind: a.kind, ct: a.programme_code ?? null, scored: r.scored, required: r.required, failedSkills: skills, tyLeTong: r.tyLeTong,
+        khongChiaMon: CHUONG_TRINH_KHONG_CHIA_MON.includes(a.programme_code),
+      });
+      noiDung = noiDungBaoPh({
+        ketQua: [ketQua.chinh, ketQua.phu].filter(Boolean).join(' · '),
+        monTruot: skills.map((s) => tenMonNgan(a.programme_code, s)),
+        nguyenNhan: skills.map((s) => nguyenNhan.get(`${a.student_id}:${s}`) ?? '').filter(Boolean),
+        boTro: skills[0] ? moTaBoTro(a.programme_code, skills[0]) : 'chưa có PA bổ trợ',
+      }) as string[];
+    }
     out.push({
       attemptId, attemptNo: a.attempt_no, studentId: a.student_id, studentName: a.full_name, studentCode: a.student_code,
       classId: a.class_id ?? null, classCode: a.class_code ?? null,
-      sosLevel: resultOf(a, bundle.scores.get(a.id) ?? [], bundle.skips.get(a.id) ?? []).sosLevel,
+      sosLevel, nhanDot: laMock ? null : nhanDot(a.kind, a.attempt_no), ketQua,
       skills, skillLabels: skills.map((s) => tenMon(a.programme_code, s)),
       summary: coordinationSummary(list.map((r) => r.status)),
-      actions: list.map((r) => shapeAction(r, attachments)),
+      actions: list.map((r) => ({ ...shapeAction(r, attachments), noiDung: r.kind === 'bao_ph_tvv' ? noiDung : null })),
       canAct: canManageDiscipline(p, a.student_id),
     });
   }
@@ -201,12 +289,26 @@ export function myCoordinationLines(p: Principal) {
     .filter((a) => a.isCore && a.effectiveFrom <= today && (!a.effectiveTo || a.effectiveTo >= today))
     .map((a) => a.classId))];
   const lines: Array<{ classId: number; className: string; pendingCount: number; text: string }> = [];
+  if (!classIds.length) return lines;
+  /* MỘT lượt đọc cho MỌI lớp mình chủ nhiệm (số câu không tăng theo số lớp — PR-LT2a thêm hai lớp demo làm lộ N+1 theo lớp), rồi chia lại theo lớp em đang học.
+     Cùng luật đếm với `coordinationOfClass`: lượt chưa hoàn thành. Lớp mình chủ nhiệm nên không cần `requireViewClass`. */
+  const conn = db();
+  const ph = classIds.map(() => '?').join(',');
+  const rows = conn.prepare(
+    `SELECT x.*, e.class_id AS lop_dang_hoc FROM sos_coordination_actions x
+       JOIN enrollments e ON e.student_id = x.student_id AND e.class_id IN (${ph}) AND e.status = 'active'
+      ORDER BY x.attempt_id, x.id`,
+  ).all(...classIds) as any[];
+  const lopCua = new Map<number, number>();
+  for (const r of rows) lopCua.set(r.student_id, r.lop_dang_hoc);
+  const dem = new Map<number, number>();
+  for (const t of turnsOf(p, rows)) if (!t.summary.complete) dem.set(lopCua.get(t.studentId)!, (dem.get(lopCua.get(t.studentId)!) ?? 0) + 1);
+  const ma = new Map((conn.prepare(`SELECT id, code FROM classes WHERE id IN (${ph})`).all(...classIds) as any[]).map((c) => [c.id as number, c.code as string]));
   for (const classId of classIds) {
-    const c = db().prepare('SELECT code FROM classes WHERE id = ?').get(classId) as any;
-    if (!c) continue;
-    const { pendingCount } = coordinationOfClass(p, classId);
-    if (pendingCount > 0) {
-      lines.push({ classId, className: c.code, pendingCount, text: `Lớp ${c.code} — ${pendingCount} lượt Phối hợp SOS cần xử lý` });
+    const pendingCount = dem.get(classId) ?? 0;
+    if (pendingCount > 0 && ma.has(classId)) {
+      const code = ma.get(classId)!;
+      lines.push({ classId, className: code, pendingCount, text: `Lớp ${code} — ${pendingCount} lượt Phối hợp cần xử lý` });
     }
   }
   return lines;

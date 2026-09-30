@@ -352,21 +352,10 @@ export async function runChamDiemTests(t: YThucTestKit) {
   check('PR-Rc1 · §6 Trạng thái Case không biến mất ở dòng bài cũ khi bài sau chạm vào cùng Case', () => {
     const { sid, cycleId, attemptId } = taoBaiThuong('2026-09-14');
     const a: any = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId);
-    /* Giữa khoá: trượt Listening → sinh tín hiệu cho môn đó. Quản lý không nhập điểm — dùng đường nhập bù của Quản trị. */
+    /* Giữa khoá: trượt Listening → TỰ TẠO Case Listening (PR-LT2a). Quản lý không nhập điểm — dùng đường nhập bù của Quản trị. */
     for (const [k, s] of [['listening', 10], ['reading', 35], ['writing', 16], ['speaking', 8]] as const) {
       regular.saveRegularScore(P.admin, attemptId, k, { score: s, total: k === 'writing' ? 20 : k === 'speaking' ? 10 : 40 });
     }
-    /*
-     * Môn trượt chỉ sinh TÍN HIỆU, không tự sinh Case (mục 6.2). Case ra đời khi giáo viên bấm "Tạo Case" từ tín hiệu —
-     * đi đúng đường đó (GVCN của lớp), để Case là Case Listening thật của chính dòng này.
-     */
-    const sg: any = conn.prepare(`SELECT * FROM case_signals WHERE attempt_id = ? AND skill = 'listening'`).get(attemptId);
-    assert(sg && sg.status === 'pending', 'Môn trượt phải sinh tín hiệu đang chờ');
-    casesSvc.reportIssue(P.normalCoreTeacher, {
-      studentId: a.student_id, topic: 'listening', fromSignalId: sg.id,
-      title: 'Listening dưới ngưỡng (PR-Rc1)', summary: 'Đã xem lại bài, em vướng đúng phần nghe này của môn.',
-      primaryCode: d.issuesForTopic('listening')[0].code,
-    });
     const caseRow: any = conn.prepare(
       `SELECT id, category, topic FROM sos_cases WHERE student_id = ? AND status != 'done' ORDER BY id DESC LIMIT 1`,
     ).get(a.student_id);
@@ -394,15 +383,14 @@ export async function runChamDiemTests(t: YThucTestKit) {
     for (const [k, s] of [['listening', 10], ['reading', 35], ['writing', 16], ['speaking', 8]] as const) {
       regular.saveRegularScore(P.admin, attemptId, k, { score: s, total: k === 'writing' ? 20 : k === 'speaking' ? 10 : 40 });
     }
-    const sg: any = conn.prepare(`SELECT * FROM case_signals WHERE attempt_id = ? AND skill = 'listening'`).get(attemptId);
-    assert(sg && sg.status === 'pending', 'Môn trượt phải sinh tín hiệu đang chờ');
     const baoCase = (extra: Record<string, unknown>) => casesSvc.reportIssue(P.normalCoreTeacher, {
       studentId: a.student_id, topic: 'listening', title: 'Listening dưới ngưỡng (PR-Rc1)',
       summary: 'Đã xem lại bài, em vướng đúng phần nghe này của môn.',
       primaryCode: d.issuesForTopic('listening')[0].code, ...extra,
     }) as any;
     /* Case CŨ của môn này đã xong (như Case nhập bù — đóng ngay lúc tạo), rồi một Case MỚI đang mở cùng môn, cùng khoá. */
-    const cu = baoCase({ fromSignalId: sg.id });
+    const cu = conn.prepare(`SELECT id FROM sos_cases WHERE student_id = ? AND topic = 'listening' AND status != 'done' ORDER BY id DESC LIMIT 1`).get(a.student_id) as any;   // Case Giữa khoá tự tạo
+    assert(cu, 'Giữa khoá trượt Listening phải tự tạo Case');
     conn.prepare(`UPDATE sos_cases SET status = 'done' WHERE id = ?`).run(cu.id);
     const moi = baoCase({ cycleId });
     assert(moi.id > cu.id, 'Case mới có id lớn hơn');

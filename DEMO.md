@@ -472,9 +472,26 @@ Dựng bằng hàm nghiệp vụ (`server/src/seed/hvlSeed.ts`), sau ngày demo.
 
 Hàng **"Chung"** (Case không gắn kỹ năng) không có ở bộ demo: mọi Case phải có kỹ năng khi tạo; hàng này chỉ xuất hiện với Case bàn giao / dữ liệu cũ — kiểm bằng phép kiểm thuần `hangCanHoTro`.
 
+## 14. PR-LT2a — Lớp thường · Giữa khoá (chỉ máy dev, 30/09/2026)
+
+Dựng bằng hàm nghiệp vụ (`server/src/seed/lt2aSeed.ts`), sau ngày demo, ở hai lớp mới **MB FOU 15** (Giữa khoá W2 SEP) và **MB BE 03**. Tài khoản gợi ý: **Quản lý Nguyễn Khánh Vy**, **GVCN Trần Ngọc Hà**, GVBM **Lê Minh Khoa** (G+V, W) và **Phạm Thu Trang** (P, S). Phép kiểm `LT2a (11)` soi từng dòng ngay sau khi dựng. Lớp thường **không có chữ SOS** ở đâu cả.
+
+| Kịch bản | Học viên | Bạn sẽ thấy |
+|---|---|---|
+| G1 (D9) · trượt G+V, P | **Lê Hoàng Anh** (MB FOU 15) | Hồ sơ › Học thuật: hai hàng `[Giữa khoá] G+V không đạt` (Chờ Quản lý duyệt · kế hoạch bổ trợ, viền tím) và `[Giữa khoá] P không đạt` (Cần làm · Xác nhận nguyên nhân); PA thụt vào `Bổ trợ 2 buổi/tuần · chung các môn trượt…` + `PA chung · G+V, P`. Vy có thẻ **Kế hoạch bổ trợ** ở Chờ duyệt; Phối hợp: `Báo phụ huynh qua TVV` chưa làm |
+| G2 · trượt R | **Bùi Minh Châu** (MB FOU 15) | Case Đang làm, PA bổ trợ chạy, một lần ghi kết quả; Báo PH `Đã làm` |
+| G3 (D10) · trượt W | **Hoàng Quốc Bình** (MB BE 03) | PA `Bổ trợ 1 buổi/tuần · W` đang chạy sau khi Vy duyệt |
+| G4 · trượt S | **Mai Hải Long** (MB BE 03) | Kế hoạch bị từ chối (lý do trong khung vàng); Việc cần làm của Trang: `Nộp kế hoạch bổ trợ` hạn 3 ngày |
+| G6 · Hà chưa nộp kế hoạch | **Trương Gia Bảo** (MB FOU 15) | Việc cần làm của Hà: `Nộp kế hoạch bổ trợ · Giữa khoá · G+V · Trương Gia Bảo` hạn 3 ngày (Khoa đã xác nhận nguyên nhân) |
+| G5 · Báo lên / Không cần theo dõi | **Phan Khánh Linh**, **Ngô Gia Hân** (MB FOU 15) | Case L chờ nguyên nhân quá hạn → thẻ Báo lên; Case P `Không cần theo dõi` chờ Quản lý duyệt |
+
+Bài Giữa khoá đã qua tuần nên `commitIntake` không tự dựng (M1b bỏ mốc đã qua) — seed xếp bằng `planRegularTests` (Quản lý được xếp tuần đã qua).
+
+- **Hồ sơ giáo viên (PR-GV):** menu tài khoản › Hồ sơ giáo viên (**Trần Ngọc Hà**, id 7). QL MB (Nguyễn Khánh Vy): Tổng quan › Theo lớp › Theo giáo viên › bấm tên. GVBM (Phạm Thu Trang) mở `/giao-vien/7` → 403.
+
 ---
 
-## 14. PR-CT — chuyển lớp do Quản lý quyết + bàn giao (chỉ máy dev, 30/09/2026)
+## 15. PR-CT — chuyển lớp do Quản lý quyết + bàn giao (chỉ máy dev, 30/09/2026)
 
 Dựng bằng hàm nghiệp vụ (`server/src/seed/ctSeed.ts`), sau ngày demo **14/09/2026** (Thứ Hai; tuần bắt đầu của mọi lệnh là **W3 SEP**). Tài khoản gợi ý: **Quản lý Nguyễn Khánh Vy** (ra lệnh, thấy thẻ Chờ duyệt), **GVCN Trần Ngọc Hà** (MB FOU 21/22, có việc Bàn giao), **GVBM Phạm Thu Trang** (môn Speaking — thiếu `P`), **GVCN Lê Minh Khoa** (MB FOU 23/24).
 

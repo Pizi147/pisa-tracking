@@ -130,7 +130,7 @@ export async function runHoSoHocVienTests(t: YThucTestKit) {
       coNext++;
       assert(typeof next.overdue === 'boolean', `HV ${student_id}: next.overdue phải là boolean: ${JSON.stringify(next)}`);
       assert(next.overdue === (next.due !== null && next.due < t.TODAY), `HV ${student_id}: overdue phải = (due < hôm nay ${t.TODAY}): ${JSON.stringify(next)}`);
-      assert(/^(Xác nhận nguyên nhân|Xác nhận PA|Xác minh SOS|Đề ra PA|Ghi kết quả PA|Ghi kết quả cuối|Hoàn thành Case|Chờ Quản lý duyệt PA) /.test(next.text), `HV ${student_id}: câu phải bắt đầu bằng động từ: "${next.text}"`);
+      assert(/^(Xác nhận nguyên nhân|Xác nhận PA|Xác minh SOS|Đề ra PA|Ghi kết quả PA|Ghi kết quả cuối|Hoàn thành Case|Chờ Quản lý duyệt PA|Nộp kế hoạch bổ trợ|Chờ Quản lý duyệt kế hoạch) /.test(next.text), `HV ${student_id}: câu phải bắt đầu bằng động từ: "${next.text}"`);
       /* Mục 3 (chủ sản phẩm 22/09): tên kỹ năng ĐẦY ĐỦ, không viết tắt L / R / W1 / W2 / S. */
       assert(!/ (L|R|W|W1|W2|S)$/.test(next.text), `HV ${student_id}: câu phải dùng tên đầy đủ của kỹ năng: "${next.text}"`);
       /* Rà soát 22/09: "Ghi kết quả PA" CHƯA quá hạn (trước đây "Cập nhật PA") chỉ là dự phòng — không được chen trước việc khác (thứ tự ưu tiên cũ giữ nguyên). */

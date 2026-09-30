@@ -8,7 +8,7 @@ import { NganCase } from '../students/NganCase.tsx';
 import { tenNganCase } from './CasePanel.tsx';
 import { fmtDate, sosLabel, sosTone } from '../../lib/format.ts';
 import {
-  CASE_CATEGORY_LABEL, tenMon,
+  CASE_CATEGORY_LABEL, nhanDot, tenMon,
   FT_CASE_CATEGORIES, NORMAL_CASE_CATEGORIES, URGENCY_LABEL, trangThaiCaseDong,
   type ChuongTrinh,
 } from '@shared/domain/index.ts';
@@ -201,7 +201,7 @@ export function DanhSachCase({ branchId, ct, classId }: { branchId: number | nul
                           : <div className="text-xs text-slate-400 mt-0.5">chưa rõ nguyên nhân</div>}
                       </td>
                       <td className="td text-xs text-slate-400 whitespace-nowrap">
-                        {r.originKind === 'teacher_report' ? 'Giáo viên báo' : `Điểm · MT${r.attemptNo ?? '?'}`}
+                        {r.originKind === 'teacher_report' ? 'Giáo viên báo' : `Điểm · ${nhanDot(r.attemptKind ?? '', r.attemptNo ?? null)}`}
                       </td>
                       <td className="td text-xs text-slate-300">
                         {r.interventionCount > 0 ? `${r.interventionCount} việc` : '—'}

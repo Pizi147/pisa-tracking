@@ -11,7 +11,7 @@ import { DanhSachSoLieu, DongDanhSach, type DongSoLieu, type PhamViSoLieu } from
  *   · `nguon` — một đường máy chủ trả `{ n, tieuDe, rows }` tính bằng CHÍNH hàm sinh ra số (ví dụ ô bảng chi nhánh).
  * Số 0 không bấm được, chữ mờ.
  */
-type Props = { giaTri: number; className?: string } & (
+type Props = { giaTri: number; className?: string; /** Chữ hiện trên nút thay cho `giaTri` (vd "5/8": số bấm được là 8 học viên). */ nhan?: string } & (
   | { id: string; phamVi?: PhamViSoLieu; extra?: Record<string, string>; nguon?: undefined; tieuDe?: undefined }
   | { nguon: string; tieuDe: string; id?: undefined; phamVi?: undefined; extra?: undefined }
 );
@@ -27,7 +27,7 @@ export function SoLieuO(props: Props) {
     <>
       <button type="button" onClick={() => setOpen(true)}
         className={`appearance-none bg-transparent border-0 p-0 cursor-pointer tabular-nums underline decoration-dotted underline-offset-4 hover:text-white ${className}`}
-        aria-label={`${giaTri} — ${ten}. Bấm để xem danh sách`}>{giaTri}</button>
+        aria-label={`${props.nhan ?? giaTri} — ${ten}. Bấm để xem danh sách`}>{props.nhan ?? giaTri}</button>
       {props.id !== undefined
         ? <DanhSachSoLieu id={props.id} giaTri={giaTri} phamVi={props.phamVi} extra={props.extra} open={open} onClose={() => setOpen(false)} />
         : <DanhSachNguon nguon={props.nguon} tieuDe={props.tieuDe} open={open} onClose={() => setOpen(false)} />}

@@ -8,7 +8,7 @@
  */
 import type { Principal } from '../permissions.ts';
 import {
-  INTERVENTION_KIND_LABEL, caseTopicLabel, duongHoSoHocVien, nhanDotNgan, nhanLoaiXuLy, outcomeLabelFor, shortDate, tenMonNgan, tuanLich,
+  INTERVENTION_KIND_LABEL, REGULAR_SKILLS, caseTopicLabel, duongHoSoHocVien, moTaBoTro, nhanDotNgan, nhanLoaiXuLy, outcomeLabelFor, shortDate, tenMonNgan, tuanLich,
   type InterventionKind, type LoaiYeuCau, type TrangThaiYc,
 } from '../../../shared/domain/index.ts';
 import { caseTitleOf, respondToPlan } from '../cases/cases.ts';
@@ -23,6 +23,7 @@ import { badRequest } from '../util.ts';
 import { reviseTarget, updateCycle } from '../fasttrack/cycles.ts';
 import { NHAN_TRUONG_DE_XUAT, TRUONG_TU_AP, hienTaiCua, type TruongDeXuat } from './deXuatSua.ts';
 import { CO_THE_KHONG_THEO_DOI, awaitingCauseCaseIds } from '../cases/sosState.ts';
+import { khiDuyetKeHoach, khiTuChoiKeHoach } from '../cases/boTro.ts';
 import { chotYeuCau, taoYeuCau } from './yeuCau.ts';
 import { trangThaiYThuc, ungVienVaThe, type EmYThuc } from '../yThuc/trangThai.ts';
 import { classProgressMany } from '../classes/schedule.ts';
@@ -524,6 +525,45 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         tieuDe: `Lớp hết khoá còn em chưa có lệnh${x?.lop ? ` · ${x.lop}` : ''}`,
         dong: [`${x?.n ?? 0} em chưa có lệnh chuyển. Không cần duyệt — Quản lý ra lệnh ở hồ sơ lớp.`],
         mo: `/hoc-vien/lop/${yc.doi_tuong_id}?viec=chuyen-tiep`,
+      };
+    },
+  },
+  /* ------------------------------------------------------------ PR-LT2a · Kế hoạch bổ trợ lớp thường Giữa khoá (T54, M-05, M-03) — một thẻ mỗi NHÓM PA */
+  {
+    loai: 'ke_hoach_bo_tro',
+    /* Duyệt → PA của các Case ĐÃ có nguyên nhân chạy từ hôm nay; Từ chối → giữ nguyên nhân, nộp lại (hạn mới 3 ngày). Cả hai TRONG tx của hộp. */
+    khiDuyet: (p, yc) => khiDuyetKeHoach(p, yc),
+    khiTuChoi: (p, yc, lyDo) => khiTuChoiKeHoach(p, yc, lyDo),
+    chet: {
+      sql: `NOT EXISTS (SELECT 1 FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
+             WHERE iv.nhom_bo_tro = (SELECT nhom_bo_tro FROM case_interventions WHERE id = y.doi_tuong_id)
+               AND iv.status = 'planned' AND sc.status != 'done')`,
+      lyDo: 'Các Case của nhóm đã đóng hoặc PA đã huỷ',
+    },
+    /* MỘT câu cho cả lô thẻ: môn các Case của nhóm, người dạy, chương trình, Case đầu (để mở Ngăn Case). */
+    nap: (conn, ds) => {
+      const ids = ds.map((y) => y.id);
+      return new Map((conn.prepare(
+        `SELECT y.id, GROUP_CONCAT(sc.topic) AS mon, MIN(sc.id) AS case_id, MIN(COALESCE(u.full_name, iv.performer_name)) AS nguoi_day, MIN(cy.programme_code) AS ct
+           FROM yeu_cau_duyet y JOIN case_interventions iv ON iv.nhom_bo_tro = json_extract(y.du_lieu, '$.nhom') AND iv.kind = 'bo_tro' AND iv.status != 'cancelled'
+           JOIN sos_cases sc ON sc.id = iv.case_id LEFT JOIN users u ON u.id = iv.performer_user_id LEFT JOIN learning_cycles cy ON cy.id = sc.cycle_id
+          WHERE y.id IN (${ids.map(() => '?').join(',')}) GROUP BY y.id`).all(...ids) as any[]).map((r) => [r.id as number, r]));
+    },
+    moTa: (yc, ngu) => {
+      const x = ngu.them.get(yc.id);
+      const d = (() => { try { return JSON.parse(yc.du_lieu ?? '{}'); } catch { return {}; } })() as { noiDungYeu?: string; keHoach?: string };
+      const mon = ((x?.mon ?? '') as string).split(',').filter(Boolean).sort((a, b) => REGULAR_SKILLS.indexOf(a as any) - REGULAR_SKILLS.indexOf(b as any));
+      const ten = mon.map((m) => tenMonNgan(x?.ct ?? null, m)).join(', ');
+      return {
+        tieuDe: `Kế hoạch bổ trợ${ten ? ` · ${ten}` : ''}`,
+        phu: 'Giữa khoá',
+        dong: [
+          `Người dạy bổ trợ: ${x?.nguoi_day ?? 'chưa chọn'}${mon[0] ? ` · ${moTaBoTro(x?.ct ?? null, mon[0])}` : ''}`,
+          `Nội dung yếu: ${d.noiDungYeu ?? ''}`,
+          `Kế hoạch: ${d.keHoach ?? ''}`,
+        ],
+        neuDuyet: 'PA bổ trợ bắt đầu hôm nay, ghi kết quả hằng tuần hạn hết T2.',
+        mo: yc.hoc_vien_id && x ? duongHoSoHocVien(yc.hoc_vien_id, { caseId: x.case_id }) : undefined,
       };
     },
   },

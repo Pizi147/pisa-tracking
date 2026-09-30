@@ -1,11 +1,12 @@
 import { Fragment, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { BoLocDoan, Card, Empty, ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
+import { BoLocDoan, Card, ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { SoLieuO } from '../../ui/SoLieuO.tsx';
 import { DINH_TRAI } from '../phanTich/dungChung.tsx';
 import { thamSoCt, type ChuongTrinh, type CotBang } from '@shared/domain/index.ts';
+import { BangGiaoVienChiNhanh } from '../giaoVien/BangGiaoVienChiNhanh.tsx';
 
 /**
  * BẢNG "THEO CHI NHÁNH" (PR-Pa §3.2, mockup 02 phương án A).
@@ -15,17 +16,16 @@ import { thamSoCt, type ChuongTrinh, type CotBang } from '@shared/domain/index.t
  * cũng bấm được và mở đúng danh sách tạo ra nó (`/tong-quan/chi-nhanh/o`, G-10). Các cột cũ "PA học thuật cần cập
  * nhật / Đề xuất chờ duyệt" nay nằm ở ô số đầu trang và khối Cần xử lý, không lặp lại ở đây.
  *
- * Bảng THEO GIÁO VIÊN (`BangTheoGiaoVien`) giữ nguyên từ bản trước, chỉ hiện khi bảng đang ở chế độ LỚP — tức đã chọn
- * một chi nhánh, hoặc QL chỉ có một chi nhánh nên server tự khoanh (Q10 — giữ tạm tới PR-GV). Nó KHÔNG tô màu tốt/xấu
- * và KHÔNG xếp hạng. Một bảng "giáo viên nào chậm nhất" là thứ ai cũng hiểu ngay và không ai muốn bị đưa vào — nó biến
- * công cụ điều phối thành công cụ đánh giá, và người ta sẽ học cách làm đẹp số thay vì làm việc.
+ * Bảng THEO GIÁO VIÊN: `BangGiaoVienChiNhanh` (PR-GV) — chỉ hiện khi bảng đang ở chế độ LỚP (đã chọn một chi nhánh, hoặc QL chỉ có một
+ * chi nhánh nên server tự khoanh). KHÔNG tô màu tốt/xấu, KHÔNG xếp hạng, KHÔNG nút sắp xếp: bảng "giáo viên nào chậm nhất" biến công cụ
+ * điều phối thành công cụ đánh giá, và người ta sẽ học cách làm đẹp số thay vì làm việc.
  */
 
 type OBang = { n: number; mau?: number };
 type Hang = { khoa: string; id: number; loai: 'chi-nhanh' | 'lop'; nhan: string; laFt: boolean | null; o: Record<CotBang, OBang>; lop?: Hang[] };
 type Bang = { cheDo: 'chi-nhanh' | 'lop'; hang: Hang[]; tong: Record<CotBang, OBang>; tenChiNhanh: string | null; branchId: number | null };
 
-const COT: { key: CotBang; nhan: (ct: ChuongTrinh) => string; goiY: string }[] = [
+const COT_DAY_DU: { key: CotBang; nhan: (ct: ChuongTrinh) => string; goiY: string }[] = [
   { key: 'hocVien', nhan: () => 'Học viên', goiY: 'Học viên đang học, không tính em đã kết thúc.' },
   { key: 'duoiKyVong', nhan: (ct) => (ct === 'thuong' ? 'Chưa đạt' : 'Dưới kỳ vọng'),
     goiY: 'Học viên dưới kỳ vọng ít nhất một kỹ năng ở đợt Test mới nhất hợp lệ (lớp thường: chưa đạt ít nhất một môn).' },
@@ -34,6 +34,8 @@ const COT: { key: CotBang; nhan: (ct: ChuongTrinh) => string; goiY: string }[] =
   { key: 'thieuPa', nhan: () => 'Thiếu PA học thuật', goiY: 'Case đã mở nhưng chưa ai ghi sẽ làm gì cho em.' },
   { key: 'duDuLieu', nhan: () => 'Đủ dữ liệu đánh giá', goiY: 'Em đã chấm đủ mọi kỹ năng ở đợt đã đến lịch mới nhất / em cần được đánh giá.' },
 ];
+/** PR-LT2a (T58): khung Lớp thường không có cột SOS — số SOS chỉ của Fast Track. */
+const cotCua = (ct: ChuongTrinh) => (ct === 'thuong' ? COT_DAY_DU.filter((c) => c.key !== 'sos') : COT_DAY_DU);
 /** Mọi hàng thân bảng cao bằng nhau (G-2): nhãn FT / Lớp thường 11px không được nâng hàng lớp cao hơn hàng tổng. */
 const HANG = '2.5rem';
 
@@ -43,11 +45,12 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
   const { data, loading, error, reload } = useApi<Bang>(q ? `/tong-quan/chi-nhanh?${q}` : '/tong-quan/chi-nhanh', [branchId, ct]);
   const [mo, setMo] = useState<Set<string>>(new Set());
   const [view, setView] = useState<'lop' | 'gv'>('lop');
+  const COT = cotCua(ct);
   const tieuDeTam = branchId ? 'Theo lớp' : 'Theo chi nhánh';   // tiêu đề trung tính khi chưa có dữ liệu, tránh nhấp nháy
   if (error) return <Card title={tieuDeTam}><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></Card>;
   if (loading) return <Card title={tieuDeTam}><Skeleton rows={3} /></Card>;
   if (!data) return null;
-  const coGv = data.cheDo === 'lop';                            // Q10 — giữ tạm tới PR-GV; QL một chi nhánh không có `cn` trên URL, server tự khoanh phạm vi
+  const coGv = data.cheDo === 'lop';                            // QL một chi nhánh không có `cn` trên URL, server tự khoanh phạm vi
   const o = (h: { khoa: string; nhan: string }, c: CotBang, x: OBang) => (
     <td key={c} className="td text-right tabular-nums">
       <SoLieuO giaTri={x.n} tieuDe={`${COT.find((k) => k.key === c)!.nhan(ct)} · ${h.nhan}`}
@@ -76,7 +79,7 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
           muc={[{ key: 'lop', nhan: 'Theo lớp' }, { key: 'gv', nhan: 'Theo giáo viên' }]} />
       ) : undefined}
       bodyClass="p-0">
-      {coGv && view === 'gv' ? <BangTheoGiaoVien branchId={data.branchId ?? branchId} /> : (
+      {coGv && view === 'gv' ? <BangGiaoVienChiNhanh branchId={data.branchId ?? branchId} ct={ct} /> : (
         <>
         <div className="table-scroll">
           <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: '44rem' }}>
@@ -123,89 +126,5 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
         </>
       )}
     </Card>
-  );
-}
-
-// ------------------------------------------------------------------ Theo giáo viên (giữ nguyên từ bản trước)
-
-type PersonRow = {
-  id: number; name: string; classCount: number;
-  mtPending: number; mtOverdue: number;
-  cases: number; noPlan: number; overdueUpdate: number; pendingApproval: number;
-};
-type Pulse = { people: PersonRow[] };
-
-const PEOPLE_COLS: { key: keyof PersonRow; label: string; hint: string }[] = [
-  { key: 'mtPending', label: 'MT chưa nhập', hint: 'Ô điểm còn trống ở các lượt MT đã thi.' },
-  { key: 'mtOverdue', label: 'MT quá hạn nhập', hint: 'Trong số trên, phần đã qua hạn nhập điểm.' },
-  { key: 'cases', label: 'Case phụ trách', hint: 'Case mà người này là NGƯỜI PHỤ TRÁCH chính — không phải mọi case của lớp họ dạy.' },
-  { key: 'noPlan', label: 'Thiếu PA học thuật', hint: 'Case chưa ai ghi sẽ làm gì.' },
-  { key: 'overdueUpdate', label: 'PA học thuật cần cập nhật', hint: 'Phương án của case người này phụ trách đã qua hạn cập nhật kết quả tuần.' },
-  { key: 'pendingApproval', label: 'Đề xuất chờ duyệt', hint: 'Đề xuất của người này đang chờ trả lời.' },
-];
-
-/** Bảng theo giáo viên: tự gọi `/branch-pulse`, chỉ dùng `people`. Số ở đây không bấm (giữ nguyên tới PR-GV). */
-function BangTheoGiaoVien({ branchId }: { branchId: number | null }) {
-  const { data, loading, error, reload } = useApi<Pulse | null>(
-    `/branch-pulse${branchId ? `?branchId=${branchId}` : ''}`, [branchId],
-  );
-  const [pSort, setPSort] = useState<{ col: keyof PersonRow; dir: 'asc' | 'desc' } | null>(null);
-
-  if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
-  if (loading) return <div className="p-4"><Skeleton rows={3} /></div>;
-  if (!data) return null;
-  if (data.people.length === 0) return <Empty title="Chưa có giáo viên nào trong chi nhánh này" />;
-
-  const num = (n: number) => (
-    <span className={`tabular-nums ${n === 0 ? 'text-slate-500' : 'text-slate-100'}`}>{n}</span>
-  );
-  const pSortOf = (key: keyof PersonRow) => ({
-    active: pSort?.col === key,
-    dir: (pSort?.col === key ? pSort.dir : 'desc') as 'asc' | 'desc',
-    onSort: () => setPSort((x) => (x?.col === key
-      ? { col: key, dir: x.dir === 'desc' ? 'asc' : 'desc' }
-      : { col: key, dir: 'desc' })),
-  });
-  const sortedPeople = pSort
-    ? [...data.people].sort((a, b) => (pSort.dir === 'desc'
-        ? (b[pSort.col] as number) - (a[pSort.col] as number)
-        : (a[pSort.col] as number) - (b[pSort.col] as number)))
-    : data.people;
-
-  return (
-    <>
-      <div className="table-scroll">
-        <table className="w-full text-sm">
-          <thead>
-            <tr>
-              <Th className="sticky-col">Giáo viên</Th>
-              <Th align="right" hint="Số lớp người này dạy trong chi nhánh đang xem."
-                sort={pSortOf('classCount')}>Lớp</Th>
-              {PEOPLE_COLS.map((c) => (
-                <Th key={c.key} align="right" hint={c.hint} sort={pSortOf(c.key)}>{c.label}</Th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {sortedPeople.map((x) => (
-              <tr key={x.id}>
-                <td className="td sticky-col whitespace-nowrap text-slate-100">{x.name}</td>
-                <td className="td text-right">{num(x.classCount)}</td>
-                {PEOPLE_COLS.map((c) => (
-                  <td key={c.key} className="td text-right">{num(x[c.key] as number)}</td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <p className="px-4 py-2.5 text-[11px] text-slate-500 m-0 border-t" style={{ borderColor: 'var(--line)' }}>
-        Bảng này để biết <strong>cần nói chuyện với ai</strong>, không phải để xếp hạng — nên
-        không có màu tốt/xấu. Số ở đây là việc đang tồn, và tồn vì nhiều lý do khác nhau. Số
-        case là case người này <strong>phụ trách</strong>, còn đề xuất chờ duyệt là đề xuất
-        <strong> chính họ gửi</strong> — không đếm sang đầu người nhập hộ. Tất cả chỉ tính
-        trong chi nhánh đang xem.
-      </p>
-    </>
   );
 }

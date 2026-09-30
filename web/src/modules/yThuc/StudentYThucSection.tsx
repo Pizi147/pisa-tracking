@@ -38,7 +38,7 @@ export function StudentYThucSection({ studentId, onGoAcademic }: {
   const [params, setParams] = useSearchParams();
   const [phamVi, setPhamVi] = useState<'chuoi' | 'tat-ca'>('chuoi');
   const { data: d, error, loading, reload } = useApi<YThucHocVien>(`/students/${studentId}/y-thuc${phamVi === 'tat-ca' ? '?pham-vi=tat-ca' : ''}`, [studentId, phamVi]);
-  const [sub, setSub] = useState<'vi-pham' | 'phoi-hop'>('vi-pham');
+  const [sub, setSub] = useState<'vi-pham' | 'phoi-hop'>(params.get('sub') === 'phoi-hop' ? 'phoi-hop' : 'vi-pham');   // PR-LT2a: việc "Báo phụ huynh qua TVV" mở thẳng tab Phối hợp
   /* Tải luôn để nhãn `Phối hợp {n}` có số ngay (A5). */
   const coord = useApi<{ rows: CoordTurn[]; pendingCount: number }>(`/students/${studentId}/phoi-hop-sos`, [studentId]);
   const [loc, setLoc] = useState<Loc>('tat-ca');

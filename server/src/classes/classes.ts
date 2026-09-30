@@ -23,6 +23,7 @@ import { canhBaoTheoHocVien, caseViecTheoHocVien, soEmCanXuLyYThuc, viecHocVienT
 import { demChuaLoTrinh, tiepTheoTheoHocVien } from './loTrinhTiep.ts';
 import { daiLop } from './daiChuyenLop.ts';
 import { listCases } from '../cases/cases.ts';
+import { emCoBaoPhChuaLam } from '../yThuc/phoiHop.ts';
 import { trongBoNho } from '../platform/nguCanhRequest.ts';
 
 /**
@@ -396,6 +397,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
   /* PR-Qa: nhãn cảnh báo Ý thức 5 ngày (YT-8) và Case đang mở cho "Việc tiếp theo" — mỗi thứ MỘT lần cho cả lớp. */
   const canhBao = canhBaoTheoHocVien(p, classId);
   const caseViec = caseViecTheoHocVien(p, classId);
+  const baoPhEm = emCoBaoPhChuaLam(sids);   // PR-LT2a: Báo phụ huynh qua TVV (GVCN) — MỘT câu cho cả lớp
   /* PR-LT: Lộ trình tiếp theo của cả lớp — một câu, cột Khoá dùng ngay, không hỏi lại theo từng em. */
   const tiepTheoLop = tiepTheoTheoHocVien([classId]);
   const maChuongTrinhHienTai = (prog?.code ?? null) as ProgrammeCode | null;
@@ -650,6 +652,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
         yThuc: canhBao.get(s.id) ?? null,
         homNay: today,
         chuongTrinh: prog?.code ?? null,
+        baoPh: baoPhEm.has(s.id) && isCoreTeacherOf(p, classId),
       }),
       /* Cột Khoá "tiếp theo: …" (PR-LT, Q1/Q4) — chỉ có nghĩa cho lớp thường còn đang học. */
       tiepTheo: isRatio ? nhanTiepTheo(tiepTheoLop.get(s.id) ?? null, maChuongTrinhHienTai) : null,

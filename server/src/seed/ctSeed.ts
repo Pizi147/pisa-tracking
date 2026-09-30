@@ -74,7 +74,7 @@ export function buildCtDemo(ctx: BuildCtx): { lenh: number; lop: number } {
   };
 
   // ---------------------------------------------------------------- lớp đích dùng chung
-  const be09 = lop('MB BE 09', 'BE', null, false, addDays(mondayOf(DEMO_DATE), -7), { listening: 'T_HA', reading: 'T_KHOA', writing1: 'T_KHOA', speaking: 'T_TRANG' }, 'T_TRANG');
+  const be09 = lop('MB BE 09', 'BE', null, false, addDays(mondayOf(DEMO_DATE), -7), { listening: 'T_KHOA', reading: 'T_KHOA', writing1: 'T_KHOA', speaking: 'T_TRANG' }, 'T_TRANG');
   soLop += 1;
 
   // ---------------------------------------------------------------- 1 · MB FOU 21 — hết tuần kết thúc, chưa lệnh nào
@@ -109,13 +109,13 @@ export function buildCtDemo(ctx: BuildCtx): { lenh: number; lop: number } {
   guiDeXuatChuyenLop(nguoi('T_HA'), deXuat.id, { toClassId: be09, tuan: TUAN[1], lyDo: 'Phụ huynh xin chuyển em sang lớp học buổi tối.' });
 
   // ---------------------------------------------------------------- 4 · MB FT 103 → MB FT 104 (tách lớp, cùng lộ trình LT1)
-  const ft103 = lop('MB FT 103', 'FT', 'LT1', true, '2026-06-01', { listening: 'T_HA', reading: 'T_HA', writing1: 'T_KHOA', writing2: 'T_LINH', speaking: 'T_TRANG' }, 'T_HA');
+  const ft103 = lop('MB FT 103', 'FT', 'LT1', true, '2026-06-01', { listening: 'T_LINH', reading: 'T_LINH', writing1: 'T_KHOA', writing2: 'T_LINH', speaking: 'T_TRANG' }, 'T_LINH');
   const ft104 = lop('MB FT 104', 'FT', 'LT1', true, '2026-06-01', { listening: 'T_LINH', reading: 'T_LINH', writing1: 'T_KHOA', writing2: 'T_KHOA', speaking: 'T_TRANG' }, 'T_LINH');
   soLop += 2;
   const batDauFt = mondayOf(addDays(DEMO_DATE, -7 * 3));   // MT1 (tuần học 6) còn ở tương lai → không sinh MT lịch sử
   const ftEm = ['Trần Minh Khoa CT', 'Phạm Gia Hân CT', 'Đặng Quang Huy CT'].map((ten) => hv(ft103, ten, 6.5, batDauFt));
   const doc = (ftEm[0].cycleId);
-  reportIssue(nguoi('T_HA'), {
+  reportIssue(nguoi('T_LINH'), {
     studentId: ftEm[0].id, cycleId: doc, topic: 'reading', title: 'Đọc chậm, hết giờ ở Part 3',
     summary: 'Em làm Reading chậm, thường không kịp Part 3 dù hiểu bài.', primaryCode: issuesForTopic('reading')[0].code, parallel: true,
   } as any);
@@ -134,7 +134,7 @@ export function buildCtDemo(ctx: BuildCtx): { lenh: number; lop: number } {
   doiNgayRa(em23.map((e) => e.id), addDays(DEMO_DATE, -4));
 
   // ---------------------------------------------------------------- 7 · MB FOU 24 — đã chuyển Thứ Hai tuần này, bàn giao đã xác nhận
-  const fou24 = lop('MB FOU 24', 'FOU', null, false, '2026-07-06', { listening: 'T_HA', reading: 'T_KHOA', writing1: 'T_KHOA', speaking: 'T_TRANG' }, 'T_KHOA');
+  const fou24 = lop('MB FOU 24', 'FOU', null, false, '2026-07-06', { listening: 'T_KHOA', reading: 'T_KHOA', writing1: 'T_KHOA', speaking: 'T_TRANG' }, 'T_KHOA');
   soLop += 1;
   const daChuyen = hv(fou24, 'Nguyễn Phương Thảo CT', '-');
   hv(fou24, 'Cao Bảo Ngọc CT', '-');   // còn ở lại để lớp chưa tự kết thúc
@@ -143,7 +143,7 @@ export function buildCtDemo(ctx: BuildCtx): { lenh: number; lop: number } {
   doiNgayRa([daChuyen.id], addDays(DEMO_DATE, -6));
   conn.prepare(`UPDATE lenh_chuyen_lop SET tuan_bat_dau = ? WHERE student_id = ? AND trang_thai = 'cho'`).run(DEMO_DATE, daChuyen.id);
   const lDaChuyen = lenh22(daChuyen.id);
-  for (const [ma, mon, chu] of [['T_HA', 'listening', 'Nghe tốt, nắm ý chính.'], ['T_KHOA', 'reading', 'Đọc nhanh, cần chú ý câu Not Given.'], ['T_KHOA', 'writing', 'Bố cục rõ, còn sai mạo từ.'], ['T_TRANG', 'speaking', 'Phát âm rõ, ngữ điệu tự nhiên.']] as const) {
+  for (const [ma, mon, chu] of [['T_KHOA', 'listening', 'Nghe tốt, nắm ý chính.'], ['T_KHOA', 'reading', 'Đọc nhanh, cần chú ý câu Not Given.'], ['T_KHOA', 'writing', 'Bố cục rõ, còn sai mạo từ.'], ['T_TRANG', 'speaking', 'Phát âm rõ, ngữ điệu tự nhiên.']] as const) {
     ghiMon(nguoi(ma), lDaChuyen, mon, chu);
   }
   xacNhanBanGiao(nguoi('T_KHOA'), lDaChuyen, 'Em chăm, ngại nói trước lớp. Mẹ theo sát, liên hệ qua Zalo. Cần khích lệ phần Pronunciation.');

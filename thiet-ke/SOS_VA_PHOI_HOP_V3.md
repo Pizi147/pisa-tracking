@@ -1,5 +1,7 @@
 # SOS tự tạo Case · Phối hợp SOS · Ý thức & Phối hợp — bản v3
 
+> **PR-LT2a (30/09/2026):** Q-V3-1 (lớp Normal giữ tín hiệu) **thay bởi §6.2 N1–N5 (PR-LT2a)** — lớp thường Giữa khoá tự tạo Case + PA Bổ trợ, không còn tín hiệu, không nhãn SOS.
+
 > **PR-SOS (29/09/2026):** S04–S06 thay bởi S4-1…S4-7 (đặc tả 27/09 §5.3) + Q28-3 — PA theo quy chế **chờ xác nhận**, Xác nhận Case → Xác nhận PA, "Không cần theo dõi" gửi Quản lý duyệt. §4: MT5+ = `Tutor · đến lúc thi` (chủ sản phẩm chốt 29/09, Câu 1 = A); lộ trình RF dùng hàng "MT3 trở đi" cho mọi MT.
 
 Phiên bản 1.0 · 21/09/2026 (tối) · **Đặc tả để triển khai.**

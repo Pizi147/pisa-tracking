@@ -6,7 +6,7 @@ import {
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { docSlots, ghiPhanCong, kiemTruocPhanCong } from './classes.ts';
-import { allProgrammes, mocChupVaoLop, programmeByCode } from '../normal/regular.ts';
+import { allProgrammes, mocChupVaoLop, programmeByCode, taoBaiThuongMacDinh } from '../normal/regular.ts';
 import { activeRouteCodes } from '../platform/sysconfig.ts';
 import { addDays, badRequest, isIsoDate, kiemKieuO, normalizeName, notFound, nowIso, padCode } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
@@ -518,6 +518,8 @@ export function commitIntake(
           if (lichSu.length) { mt.soEmCoLichSu += 1; mt.soLuotLichSu += lichSu.length; mt.luotLichSuDau ??= lichSu[0].attemptId; }
         }
       }
+      /* PR-LT2a M1b (K2-23): vào LỚP THƯỜNG = tự có bài Giữa khoá + Cuối khoá theo mốc của lớp (bỏ mốc đã qua). */
+      if (!cls.is_fast_track && !route) taoBaiThuongMacDinh(sids.map((s) => cycOf.get(s)!), p.userId);
     }
 
     const out: IntakeResult = { added: studentIds.length, skipped, failed, studentIds, hangDaThem, mt };

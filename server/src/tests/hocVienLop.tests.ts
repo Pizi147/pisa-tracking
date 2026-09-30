@@ -210,8 +210,8 @@ export async function runHocVienLopTests(t: YThucTestKit) {
   });
 
   check('PR-Qa · Q2 tên GV chưa là link khi chưa có trang hồ sơ GV; GV chỉ xem được hồ sơ của chính mình', () => {
-    eq(d.CO_TRANG_HO_SO_GIAO_VIEN, false, 'PR-GV bật');
-    eq(d.duongHoSoGiaoVien(7, { userId: 1, laQuanLy: true }), null, 'Chưa có trang → không link');
+    eq(d.CO_TRANG_HO_SO_GIAO_VIEN, true, 'PR-GV bật');
+    eq(d.duongHoSoGiaoVien(7, { userId: 1, laQuanLy: true }, false), null, 'Chưa có trang → không link');
     eq(d.duongHoSoGiaoVien(7, { userId: 1, laQuanLy: true }, true), '/giao-vien/7', 'QL');
     eq(d.duongHoSoGiaoVien(7, { userId: 9, laQuanLy: false }, true), null, 'GV xem đồng nghiệp');
     eq(d.duongHoSoGiaoVien(9, { userId: 9, laQuanLy: false }, true), '/giao-vien/9', 'GV xem chính mình');

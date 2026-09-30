@@ -334,6 +334,8 @@ export function viecTiepCuaEm(i: {
   yThuc: NhanYThucEm | null;
   homNay: string;
   chuongTrinh?: string | null;
+  /** PR-LT2a (#133): người xem là GVCN của em và còn việc Báo phụ huynh qua TVV chưa làm — xếp SAU các việc có hạn. */
+  baoPh?: boolean;
 }): ViecTiepTheo[] {
   const ct = i.chuongTrinh ?? null;
   const out: ViecTiepTheo[] = [];
@@ -365,7 +367,7 @@ export function viecTiepCuaEm(i: {
       out.push({ viec: `Chờ Quản lý duyệt ${kn}`, han: null, quaHanNgay: null, tone: 'info', dich, title: goc });
     } else if (v.loaiHan && v.han) {
       const d = deadlineView({ kind: v.loaiHan, due: v.han, today: i.homNay });
-      const tone = d.tone === 'overdue' ? 'danger' : v.loaiHan === 'xac-minh-sos' ? 'warn' : 'info';
+      const tone = d.tone === 'overdue' ? 'danger' : v.loaiHan === 'xac-minh-sos' || v.loaiHan === 'ke-hoach-bo-tro' ? 'warn' : 'info';
       out.push({ viec, han: boTienTo(d.han), quaHanNgay: d.daysOverdue, tone, dich, title: `${goc} · ${d.han}${d.quaHan ? ` · ${d.quaHan}` : ''}` });
     } else {
       /* Chưa có hạn: Đề ra PA (Case tay chưa có PA) vẫn là việc phải làm; "Hoàn thành Case" chỉ nhắc. */
@@ -384,7 +386,10 @@ export function viecTiepCuaEm(i: {
       out.push({ viec: 'Xử lý vi phạm', han, quaHanNgay: null, tone: 'warn', dich, title: `Xử lý vi phạm${d ? ` · ${d.han}` : ''}` });
     }
   }
-  return out.map((v, idx) => ({ v, idx })).sort((a, b) => HANG_TONE[a.v.tone] - HANG_TONE[b.v.tone] || a.idx - b.idx).map((x) => x.v);
+  const xep = out.map((v, idx) => ({ v, idx })).sort((a, b) => HANG_TONE[a.v.tone] - HANG_TONE[b.v.tone] || a.idx - b.idx).map((x) => x.v);
+  /* Báo phụ huynh qua TVV: không hạn → luôn SAU việc có hạn (mở tab Ý thức & Phối hợp). */
+  if (i.baoPh) xep.push({ viec: 'Báo phụ huynh qua TVV', han: null, quaHanNgay: null, tone: 'info', dich: { loai: 'y-thuc' }, title: 'Báo phụ huynh qua TVV · Giữa khoá' });
+  return xep;
 }
 
 /**
@@ -503,8 +508,8 @@ export function nutChinhDauTrang(i: {
 
 // ---------------------------------------------------------------- hồ sơ giáo viên (§3.12, Q2)
 
-/** PR-GV (đợt 5) dựng trang `/giao-vien/:id` rồi đổi hằng này thành `true`. Trước đó tên GV là chữ thường — không link chết. */
-export const CO_TRANG_HO_SO_GIAO_VIEN = false;
+/** PR-GV (đợt 5) đã dựng trang `/giao-vien/:id` nên bật: tên GV là link cho người xem được hồ sơ (QL trong phạm vi · GV chỉ chính mình). */
+export const CO_TRANG_HO_SO_GIAO_VIEN = true;
 export function duongHoSoGiaoVien(
   gvId: number | null, nguoiXem: { userId: number; laQuanLy: boolean }, coTrang: boolean = CO_TRANG_HO_SO_GIAO_VIEN,
 ): string | null {

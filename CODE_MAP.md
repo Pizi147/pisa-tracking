@@ -259,7 +259,13 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 
 | Muốn sửa | Mở file |
 |---|---|
-| **Tín hiệu từ điểm** (điểm dưới kỳ vọng sinh gì) | `server/src/cases/signals.ts` |
+| **Tín hiệu từ điểm** (điểm dưới kỳ vọng sinh gì) — từ PR-LT2a chỉ còn FT; lớp thường không có tín hiệu | `server/src/cases/signals.ts` |
+| **Lớp thường Giữa khoá** (PR-LT2a): luật thuần (`boTroGiuaKhoa`, `nhomBoTro`, `moTaBoTro`, `tenCaseThuong`, `nhanKetQuaThuong`, `noiDungBaoPh`) | `shared/domain/lopThuong.ts` |
+| PA Bổ trợ: tạo (`taoCaseTuDong({ pa: 'bo_tro' })`), nộp kế hoạch (`nopKeHoachBoTro`), chạy khi duyệt (`chayPaBoTro`, `khiDuyetKeHoach`), quyền (`quyenBoTro`, `coQuyenNop`), khối `boTro` cho Ngăn Case (`boTroCuaCase`) | `server/src/cases/boTro.ts` |
+| Điểm lớp thường → Case Giữa khoá + PA + Báo PH (`refreshRegularOutcome` → `taoCaseGiuaKhoa`); em vào lớp thường tự có bài Giữa/Cuối khoá (`taoBaiThuongMacDinh`, M1b) | `server/src/normal/regular.ts` |
+| Thẻ Chờ duyệt `ke_hoach_bo_tro` (`doi_tuong_loai = 'nhom_bo_tro'`); trạng thái kế hoạch đọc từ thẻ (`YC_KE_HOACH`) | `server/src/duyet/loaiYeuCau.ts` · `server/src/cases/sosState.ts` |
+| Cột `nhom_bo_tro`, `han_ke_hoach` (migrate một lần) | `server/src/migrate/prLt2a.ts` |
+| Panel Nộp kế hoạch + khối Kế hoạch dùng chung với Xác nhận Case | `web/src/modules/cases/NopKeHoachPanel.tsx` · `web/src/modules/yThuc/CaseSosControls.tsx` |
 | Hạn xác minh tín hiệu (3 ngày, tính cả ngày đầu) | `shared/domain/cases.ts` → `signalVerifyDue` |
 | Thu hồi tín hiệu và case khi sửa điểm (mục 9.4) | `server/src/cases/signals.ts` → `withdrawSignalsNoLongerValid` · `caseHasIndependentBasis` |
 | Đối soát sau sửa điểm — MỘT hàm cho FT và lớp thường (RB-8) | `server/src/cases/signals.ts` → `reconcileCorrectedSignals` |
@@ -289,6 +295,7 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | **Cách đếm hiệu quả phương án** — thành công/thất bại/chưa xác định, n/N, mẫu nhỏ | `server/src/cases/effectiveness.ts` (nơi sở hữu duy nhất; bảng của lớp và góc nhìn Kết quả hỗ trợ đều gọi vào đây) |
 | **Hiệu quả PA** (vấn đề → loại PA, cỡ mẫu, "Ít dữ liệu", "Nên dùng", Thời gian trung bình; thay "Kết quả hỗ trợ") — bấm số ra PA | `web/src/modules/phanTich/HieuQuaPa.tsx` · `server/src/phanTich/hieuQuaPa.ts` (dùng `cases/effectiveness.ts` → `planOutcomes`) |
 | **Xuất Excel kết quả Test** (PR-XUAT · bộ lọc chi nhánh × lớp × thời gian, Cột gọn/đầy đủ, sheet "Bộ lọc đã dùng", nhật ký `mt.xuat_excel`; nút ở Lịch Test, hồ sơ lớp ⋮, Phân tích › Tổng hợp Test) | `web/src/modules/test/NganXuatMt.tsx` · `server/src/phanTich/xuatMt.ts` (`phamViXuatMt`, `duLieuXuatMt`) · `shared/domain/xuatMt.ts` (bộ lọc, bộ cột T40, `bangFT`/`bangThuong`) · route `GET /xuat-mt/xem-truoc`, `POST /xuat-mt` |
+| **Hồ sơ giáo viên + bảng GV chi nhánh** (PR-GV · trang `/giao-vien/:id` 5 khối: Việc đang có, Lớp đang dạy, Kết quả gần nhất, Case đang phụ trách, Yêu cầu đã gửi; bảng Tổng quan › Theo lớp › Theo giáo viên, sắp theo tên, **không KPI, không xếp hạng**; quyền xem dẫn xuất, không quyền mới) | `server/src/giaoVien/phamVi.ts` (`phamViHoSoGv`) · `server/src/giaoVien/hoSo.ts` (`hoSoGiaoVien`, `viecHoSoGv`, `ketQuaHoSoGv`, `oHoSoGv`, `bangGvChiNhanh`) · `server/src/worklist/mywork.ts` (`viecCuaNguoi`, cuối file) · `shared/domain/hoSoGiaoVien.ts` (`COT_O_GV`, `demViecTheoNhom`, `duongViecCuaGv`) · `web/src/modules/giaoVien/HoSoGiaoVienPage.tsx` · `web/src/modules/giaoVien/BangGiaoVienChiNhanh.tsx` · route `GET /giao-vien?cn=&ct=` · `/giao-vien/:id` · `/:id/viec` · `/:id/ket-qua` · `/:id/o?cot=…` |
 | **Tổng hợp vấn đề HV** (đếm HV theo loại lỗi `ISSUE_TAXONOMY`, công tắc gộp loại lỗi chung `LOI_CHUNG`) | `web/src/modules/phanTich/TongHopVanDeHv.tsx` · `server/src/phanTich/vanDeHv.ts` |
 | **2 dòng Cần xử lý "bỏ quên"** (HV cần hỗ trợ 2 lần Test liền chưa có Case mở · HV bị Bỏ qua tín hiệu mà lần Test sau vẫn chưa đạt) + bộ lọc "Học viên cần chú ý" ở Danh sách Case | `server/src/phanTich/boQuen.ts` + hai chỉ số `hv-can-ho-tro-2-lan-chua-case`, `hv-bo-qua-van-can-ho-tro` (sổ `shared/domain/metrics.ts`, `worklist/metrics.ts`) · `web/src/modules/worklist/KhoiCanXuLy.tsx` · `web/src/modules/phanTich/DanhSachBoQuen.tsx` |
 | **Khối phương án theo tầng** ở tab Hành trình (một lưới, dấu + màu theo kết quả, hẹp chỉ hiện dấu) | `web/src/modules/students/HanhTrinh.tsx` → `KhoiPa` · luật xếp tầng `shared/domain/hanhTrinh.ts` → `xepTang` |

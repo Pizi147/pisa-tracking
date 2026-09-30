@@ -307,7 +307,7 @@ export function theCuaDoiTuong(doiTuongLoai: string, ids: readonly number[]): (T
 }
 
 /** Thẻ trong phạm vi duyệt của người xem (quyền theo TỪNG thẻ, không anyScope). */
-function trongPhamVi(p: Principal, rows: any[]): any[] {
+export function trongPhamVi(p: Principal, rows: any[]): any[] {
   napTruocPhamVi(rows.map((r) => r.hoc_vien_id));
   return rows.filter((r) => can(p, P_DUYET, ctxThe(r)));
 }
