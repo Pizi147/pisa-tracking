@@ -109,7 +109,7 @@ export function LichSapToi({ branchId, ct }: { branchId: number | null; ct: Chuo
                 <h3 className="text-xs uppercase tracking-wide text-slate-500 m-0 mb-2">Lớp Fast Track</h3>
                 <ul className="list-none p-0 m-0 space-y-1.5">
                   {week.ft.mockClasses.length === 0 ? (
-                    <li className="text-xs text-slate-600">Không có MT nào trong tuần.</li>
+                    <li className="text-xs text-slate-500">Không có MT nào trong tuần.</li>
                   ) : (
                     <li>
                       <div className="text-xs text-slate-400">
@@ -129,7 +129,7 @@ export function LichSapToi({ branchId, ct }: { branchId: number | null; ct: Chuo
                   )}
                   <li className="text-xs text-slate-400">
                     Dự kiến thi IELTS trong tuần ·{' '}
-                    <strong className={week.ft.examStudents ? 'text-slate-100 tabular-nums' : 'text-slate-600 tabular-nums'}>
+                    <strong className={week.ft.examStudents ? 'text-slate-100 tabular-nums' : 'text-slate-500 tabular-nums'}>
                       {week.ft.examStudents}
                     </strong> học viên
                   </li>
@@ -164,7 +164,7 @@ function EventRow({ label, rows, onOpen, unit }: {
     <li>
       <div className="text-xs text-slate-400">
         {label} ·{' '}
-        <strong className={rows.length ? 'text-slate-100 tabular-nums' : 'text-slate-600 tabular-nums'}>
+        <strong className={rows.length ? 'text-slate-100 tabular-nums' : 'text-slate-500 tabular-nums'}>
           {rows.length}
         </strong> {unit}
       </div>

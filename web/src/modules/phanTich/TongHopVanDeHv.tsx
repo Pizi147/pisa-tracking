@@ -71,7 +71,7 @@ export function TongHopVanDeHv(props: PhamViPhanTich) {
     <span className="block min-w-0 truncate">
       {d.nhan}
       {d.loai === 'ky-nang' && d.khoa === 'kn:writing' && (
-        <abbr title="Writing Task 1 + Writing Task 2" className="ml-1.5 text-[10.5px] font-normal text-slate-400 no-underline">W1 + W2</abbr>
+        <abbr title="Writing Task 1 + Writing Task 2" className="ml-1.5 text-[11px] font-normal text-slate-400 no-underline">W1 + W2</abbr>
       )}
       {d.loai === 'chung' && d.goiY && <span className="ml-1 cursor-help font-normal text-slate-500" title={d.goiY}>ⓘ</span>}
     </span>

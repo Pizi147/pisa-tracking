@@ -355,7 +355,7 @@ export function DaiChiXem({ children }: { children: ReactNode }) {
 }
 
 export function DataCell({ value, state, suffix }: { value: ReactNode; state?: string; suffix?: string }) {
-  if (state === 'not_applicable') return <span className="text-slate-600 text-xs italic">Không áp dụng</span>;
+  if (state === 'not_applicable') return <span className="text-slate-500 text-xs italic">Không áp dụng</span>;
   if (value === null || value === undefined) return <span className="text-slate-500 text-xs">Chưa có dữ liệu</span>;
   return <span className="tabular-nums">{value}{suffix}</span>;
 }
@@ -424,7 +424,7 @@ export function BandCell({ cell, target }: {
         : `Lượt trước ${cell.prev} → lượt này ${cell.now}`}>
       <span className={`tabular-nums ${tone}`}>{cell.now}</span>
       {delta !== null && delta !== 0 && (
-        <span className={`text-[10px] ${cell.dir > 0 ? 'text-ok/70' : 'text-bad/70'}`}>
+        <span className={`text-[11px] ${cell.dir > 0 ? 'text-ok/70' : 'text-bad/70'}`}>
           {cell.dir > 0 ? '▲' : '▼'}{Math.abs(delta)}
         </span>
       )}
@@ -480,7 +480,7 @@ export function NutChon({ chon, onClick, children, nho, className = '', disabled
   return (
     <button type="button" aria-pressed={chon} onClick={onClick} disabled={disabled} title={title}
       className={`btn ${nho ? 'btn-sm' : ''} min-h-[44px] gap-1 sm:min-h-0 ${chon ? CHON : ''} ${className}`}>
-      <span aria-hidden className={`text-[10px] leading-none text-teal-300 ${chon ? '' : 'invisible'}`}>✓</span>{children}
+      <span aria-hidden className={`text-[11px] leading-none text-teal-300 ${chon ? '' : 'invisible'}`}>✓</span>{children}
     </button>
   );
 }
@@ -498,7 +498,7 @@ export function BoLocDoan<K extends string>({ muc, value, onChange, ariaLabel }:
           <button key={m.key} type="button" aria-pressed={chon} title={m.title} onClick={() => onChange(m.key)} style={{ borderColor: 'var(--line)' }}
             className={`inline-flex min-h-[44px] items-center gap-1 whitespace-nowrap px-3 text-xs font-semibold sm:min-h-[32px] ${i ? 'border-l' : ''} ${
               chon ? 'bg-ink-800 text-slate-100 shadow-[inset_0_0_0_1px_theme(colors.teal.600)]' : 'bg-transparent text-slate-400 hover:text-slate-200'}`}>
-            <span aria-hidden className={`text-[10px] text-teal-300 ${chon ? '' : 'invisible'}`}>✓</span>{m.nhan}
+            <span aria-hidden className={`text-[11px] text-teal-300 ${chon ? '' : 'invisible'}`}>✓</span>{m.nhan}
             {m.so != null && <span className="tabular-nums text-slate-500">{m.so}</span>}
           </button>
         );

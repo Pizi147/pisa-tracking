@@ -200,7 +200,7 @@ function DongDau({ cell }: { cell: Cell }) {
   if (!cell.noShow) return null;
   const dem = cell.noShow.state === 'khong-co-bai' ? demNguocSuaDau(cell.noShow.editableUntil ?? null, homNay) : null;
   return (
-    <span className="block max-w-[6rem] truncate text-[10px] text-slate-400 leading-tight" title={cell.noShow.text}>
+    <span className="block max-w-[6rem] truncate text-xs text-slate-400 leading-tight" title={cell.noShow.text}>
       {dem ?? cell.noShow.text}
     </span>
   );
@@ -486,7 +486,7 @@ export function CriteriaButton({ cell, onSave, buttonRef, lon = false, gvMacDinh
         title={hieuChinh ? 'Sửa bốn tiêu chí — đã có điểm nên phải ghi lý do.' : `Mở bốn tiêu chí. ${NO_SHOW_HINT}`}
       >
         {cell.noShow ? '-' : lon && cell.band === null && nhanDau ? '' : fmtBand(cell.band)}
-        <span className="text-slate-500 text-[10px]">sửa</span>
+        <span className="text-slate-500 text-[11px]">sửa</span>
       </button>
       {lon && <NutDau title={NUT_DAU_FT} an={!nhanDau} tat={dangBao} onBam={() => void bamDau()} />}
       </span>
@@ -521,7 +521,7 @@ function SuaTieuChi({ cell, onSave, onClose }: {
       <div className="flex items-end gap-1.5">
         {tc.map((label, i) => (
           <label key={i} className="block" title={label}>
-            <span className="block text-[10px] text-slate-500">{tcNgan[i]}</span>
+            <span className="block text-[11px] text-slate-500">{tcNgan[i]}</span>
             <input className="field w-12 text-center tabular-nums px-1 py-1" inputMode="decimal" value={vals[i] ?? ''}
               aria-label={`${skillLabel(cell.skill)} — ${label}`}
               onChange={(e) => setVals((v) => v.map((x, j) => (j === i ? e.target.value : x)))} />
@@ -898,7 +898,7 @@ function DongDatPhanTram({ ketQua, tiLe, chiChu = false }: { ketQua?: 'pass' | '
   const chu = chiChu ? datPhanTram(ketQua, tiLe)?.split(' · ')[0] ?? null : datPhanTram(ketQua, tiLe);
   if (!chu) return null;
   return (
-    <span className={`block text-[10px] leading-none mt-0.5 whitespace-nowrap tabular-nums ${ketQua === 'fail' ? 'text-rose-300/80' : 'text-slate-500'}`}>
+    <span className={`block text-xs leading-none mt-0.5 whitespace-nowrap tabular-nums ${ketQua === 'fail' ? 'text-rose-300/80' : 'text-slate-400'}`}>
       {chu}
     </span>
   );

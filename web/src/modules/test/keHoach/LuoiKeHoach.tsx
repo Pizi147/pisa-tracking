@@ -75,7 +75,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
             {cots.map((c) => (
               <Th key={c.key} align="center">
                 <span className="block">{c.tieu}</span>
-                {c.phu && <span className="block text-[10px] font-normal normal-case tracking-normal text-slate-500">{c.phu}</span>}
+                {c.phu && <span className="block text-[11px] font-normal normal-case tracking-normal text-slate-500">{c.phu}</span>}
               </Th>
             ))}
           </tr>

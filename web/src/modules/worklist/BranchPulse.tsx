@@ -157,7 +157,7 @@ function BangTheoGiaoVien({ branchId }: { branchId: number | null }) {
   if (data.people.length === 0) return <Empty title="Chưa có giáo viên nào trong chi nhánh này" />;
 
   const num = (n: number) => (
-    <span className={`tabular-nums ${n === 0 ? 'text-slate-600' : 'text-slate-100'}`}>{n}</span>
+    <span className={`tabular-nums ${n === 0 ? 'text-slate-500' : 'text-slate-100'}`}>{n}</span>
   );
   const pSortOf = (key: keyof PersonRow) => ({
     active: pSort?.col === key,

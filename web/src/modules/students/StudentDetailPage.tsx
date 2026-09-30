@@ -225,7 +225,7 @@ export default function StudentDetailPage() {
             <div className="flex flex-wrap gap-2 items-start">
               {data.journeyStrip?.length > 1 && (
                 <button type="button" className="btn" aria-expanded={cycleOpen}
-                  onClick={() => setCycleOpen(!cycleOpen)}>Lộ trình <span aria-hidden className="text-[10px] text-slate-400">{cycleOpen ? '▾' : '▸'}</span></button>
+                  onClick={() => setCycleOpen(!cycleOpen)}>Lộ trình <span aria-hidden className="text-[11px] text-slate-400">{cycleOpen ? '▾' : '▸'}</span></button>
               )}
               {data.viewer.canReport && !data.lopHoc?.chiXem && (
                 <button className="btn btn-primary" onClick={() => setReportOpen(true)}>+ Case</button>
@@ -632,8 +632,8 @@ function RatioAttempts({ attempts, dotId, homNay, onOpen, ct = null }: {
                 <Level tone={sosTone(a.sosLevel)}>
                   {a.sosLevel === null ? `Chờ ${a.required - a.scored} môn` : sosLabel(a.sosLevel)}
                 </Level>
-                {a.provisional && <div className="text-[10px] text-slate-500">mới {a.scored}/{a.required} môn</div>}
-                <Link to={attemptHref(a)} className="link text-[10px]" onClick={(e) => e.stopPropagation()}>Hồ sơ đợt ›</Link>
+                {a.provisional && <div className="text-xs text-slate-400">mới {a.scored}/{a.required} môn</div>}
+                <Link to={attemptHref(a)} className="link text-[11px]" onClick={(e) => e.stopPropagation()}>Hồ sơ đợt ›</Link>
               </td>
             </tr>
           ))}

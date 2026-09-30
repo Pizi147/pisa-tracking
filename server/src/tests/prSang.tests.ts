@@ -150,7 +150,7 @@ export async function runPrSangTests(t: YThucTestKit) {
       for (const [n, s] of dongNguon(text)) if (/text-\[(?:9(?:\.5)?|10|10\.5)px\]/.test(s)) hong.push(`${f}:${n} chữ nhỏ`);
       for (const m of text.matchAll(/className="[^"]*text-slate-[67]00[^"]*">\s*([^<]*?)\s*</g)) {
         const nd = m[1];
-        if (nd === '' || /^[—–\-/→·|•,.]+$/.test(nd) || nd.startsWith('{')) continue;
+        if (nd === '' || /^[—–\-/→›·|•,.]+$/.test(nd) || nd.startsWith('{')) continue;
         hong.push(`${f}: slate-600/700 bọc chữ "${nd.slice(0, 30)}"`);
       }
     }

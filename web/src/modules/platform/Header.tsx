@@ -166,7 +166,7 @@ export function Header() {
           {/* Chuông nét mảnh 14 px thay emoji (luật "dấu nhỏ gọn"). */}
           <svg className="sm:hidden" aria-hidden width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M4 11V7a4 4 0 0 1 8 0v4l1.5 1.5h-11L4 11ZM6.5 14a1.5 1.5 0 0 0 3 0" strokeLinejoin="round" /></svg>
-          {unread > 0 && <span className="ml-1 rounded bg-sky-300/25 text-sky-200 px-1.5 text-[10px] tabular-nums">{unread}</span>}
+          {unread > 0 && <span className="ml-1 rounded bg-sky-300/25 text-sky-200 px-1.5 text-[11.5px] tabular-nums">{unread}</span>}
         </button>
         {openMenu === 'notif' && (
           <div className="absolute right-0 mt-1 w-[min(24rem,calc(100vw-2rem))] card z-40 shadow-2xl max-h-96 overflow-y-auto">

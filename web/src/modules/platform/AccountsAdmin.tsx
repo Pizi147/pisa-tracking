@@ -116,7 +116,7 @@ export function AccountsAdmin() {
                   <td className="td text-xs text-slate-300">{u.email ?? <span className="text-rose-200">chưa có</span>}</td>
                   <td className="td">
                     <span className="flex flex-wrap gap-1">
-                      {u.roles.length === 0 && <span className="text-xs text-slate-600">chưa có vai</span>}
+                      {u.roles.length === 0 && <span className="text-xs text-slate-500">chưa có vai</span>}
                       {u.roles.map((g, i) => (
                         <Info key={i}>
                           {roleLabel(g.role) || g.roleName} · {g.branchName ?? 'Toàn hệ thống'}

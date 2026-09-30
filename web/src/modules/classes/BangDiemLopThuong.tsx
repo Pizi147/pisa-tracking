@@ -64,11 +64,11 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
               <>
                 <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
                   <Link className="link font-semibold" to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>
-                  <span className="text-[10px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
+                  <span className="text-[11px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
                   <MissingBadge items={s.missing} gon />
                   <CanhBaoYThuc cb={s.canhBaoYThuc} />
                 </span>
-                {s.ketThucVi && <span className="mt-0.5 block text-[10px] text-slate-500">{s.ketThucVi}</span>}
+                {s.ketThucVi && <span className="mt-0.5 block text-xs text-slate-400">{s.ketThucVi}</span>}
               </>
             )}
             hanhDong={<MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, true, s.timeline) })} />}
@@ -132,11 +132,11 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
               <td className="td sticky-col h-11">
                 <span className="flex min-w-0 items-center gap-1.5">
                   <Link className="link truncate font-semibold" to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>
-                  <span className="shrink-0 text-[10px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
+                  <span className="shrink-0 text-[11px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
                   <MissingBadge items={s.missing} gon />
                   <CanhBaoYThuc cb={s.canhBaoYThuc} />
                 </span>
-                {s.ketThucVi && <span className="block mt-0.5 text-[10px] text-slate-500">{s.ketThucVi}</span>}
+                {s.ketThucVi && <span className="block mt-0.5 text-xs text-slate-400">{s.ketThucVi}</span>}
               </td>
               {BAI.flatMap((b) => {
                 const t = s.timeline.find((x) => x.kind === b.kind) ?? null;

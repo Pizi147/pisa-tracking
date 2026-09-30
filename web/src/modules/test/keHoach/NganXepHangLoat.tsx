@@ -309,7 +309,7 @@ export function NganXepHangLoat({ lopThuong, classIdBanDau, coFt, onDoiKhung, on
                   <table className="w-full text-xs" style={{ tableLayout: 'fixed', minWidth: 520 }}>
                     <colgroup><col style={{ width: 150 }} /><col style={{ width: 80 }} /><col style={{ width: 140 }} /><col /></colgroup>
                     <thead>
-                      <tr className="text-left text-[10px] uppercase tracking-wide text-slate-500">
+                      <tr className="text-left text-[11px] uppercase tracking-wide text-slate-500">
                         <th className="py-1 font-bold">Học viên</th><th className="py-1 font-bold">{'Môn'}</th>
                         <th className="py-1 font-bold">Tuần cũ → mới</th><th className="py-1 font-bold">Ghi chú</th>
                       </tr>

@@ -248,7 +248,7 @@ function CotCase({ row }: { row: Row }) {
     return (
       <span className="block min-w-0 font-normal">
         <span className="block truncate text-xs text-slate-200" title={c.title}><TenCase c={c} /></span>
-        <span className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10.5px] text-slate-500">
+        <span className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-slate-400">
           <NhanTrangThai t={tt.t} />
           <span>{tt.k === 'huy-khong-theo-doi' ? `Không theo dõi (Quản lý duyệt ${ngan(c.closedOn)})`
             : tt.k === 'dang-lam' ? tienDoCase(c.plans, c).text : tt.k === 'xong' ? (c.outcomeLabel ?? '') : tt.chu}</span>
@@ -279,9 +279,9 @@ export function TenCase({ c }: { c: Pick<CaseCard, 'title' | 'tenSos'> }) {
   const { mt, giua, sos } = c.tenSos;
   return (
     <span className="inline-flex min-w-0 max-w-full items-center gap-1.5">
-      {mt && <span className="shrink-0 rounded border border-[color:var(--line-strong)] px-1 text-[10.5px] font-semibold leading-4 text-slate-300 tabular-nums">MT{mt}</span>}
+      {mt && <span className="shrink-0 rounded border border-[color:var(--line-strong)] px-1 text-[11px] font-semibold leading-4 text-slate-300 tabular-nums">MT{mt}</span>}
       <span className="min-w-0 truncate">{giua}</span>
-      {sos ? <span className={`shrink-0 rounded px-1 text-[10.5px] font-bold leading-4 tabular-nums ${CHIP_SOS[sos] ?? ''}`}>SOS {sos}</span> : null}
+      {sos ? <span className={`shrink-0 rounded px-1 text-xs font-bold leading-4 tabular-nums ${CHIP_SOS[sos] ?? ''}`}>SOS {sos}</span> : null}
     </span>
   );
 }
@@ -431,13 +431,13 @@ function HangPA({ p, c, ngan, onMoCase }: {
     <HangCon className="hang-pa">
       <td className="td" colSpan={2}>
         <div className="flex min-w-0 items-center gap-1.5 pl-5">
-          <span className="shrink-0 rounded border border-[color:var(--line-strong)] px-1 text-[10px] font-semibold leading-4 text-slate-400">PA</span>
+          <span className="shrink-0 rounded border border-[color:var(--line-strong)] px-1 text-[11px] font-semibold leading-4 text-slate-400">PA</span>
           <button type="button" onClick={() => onMoCase(c.id, { paId: p.id })} title="Mở PA trong ngăn Case"
             className="min-w-0 appearance-none truncate border-0 bg-transparent p-0 text-left text-xs text-slate-100 hover:underline">
             {p.name}
           </button>
           {p.batBuoc && (
-            <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[10.5px] text-slate-400" title="PA theo quy chế SOS — không thay, không kết thúc sớm">
+            <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[11px] text-slate-400" title="PA theo quy chế SOS — không thay, không kết thúc sớm">
               <KhoaQuyChe />theo quy chế
             </span>
           )}
@@ -503,7 +503,7 @@ function ScoreCell({ row }: { row: Row }) {
     return (
       <div className="whitespace-nowrap">
         <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-base font-bold ${chip}`}>—</span>
-        <span className="block text-[10px] text-slate-600 mt-0.5">chưa có dữ liệu</span>
+        <span className="block text-xs text-slate-400 mt-0.5">chưa có dữ liệu</span>
       </div>
     );
   }
@@ -518,14 +518,14 @@ function ScoreCell({ row }: { row: Row }) {
       {!row.ratio && g !== null && (
         <span className={`text-[11px] ml-1.5 font-medium ${scoreToneText(row)}`}>{gapText(g)}</span>
       )}
-      <span className="block text-[10px] text-slate-500 mt-0.5">
+      <span className="block text-xs text-slate-400 mt-0.5">
         {row.bandAttemptNo ? (row.ratio ? boNamCungNam(row.bandWeek, homNay) : `MT${row.bandAttemptNo}`) : ''}
         {row.ratio
           ? (row.missed === false ? ' · đạt' : row.missed === true ? ' · chưa đạt' : '')
           : row.expectation !== null ? ` · kỳ vọng ${fmtBand(row.expectation)}` : ''}
       </span>
       {!row.ratio && t !== null && row.trendFrom !== null && (
-        <span className="block text-[10px] text-slate-500">
+        <span className="block text-xs text-slate-400">
           {t > 0 ? `Tăng ${t}` : t < 0 ? `Giảm ${Math.abs(t)}` : 'Không đổi'} so với MT{row.trendFrom}
         </span>
       )}
@@ -606,21 +606,21 @@ function Trend({ row }: { row: Row }) {
   const pts = row.points ?? [];
   if (!pts.length) {
     return (
-      <span className="block text-[10px] text-slate-600">
+      <span className="block text-xs text-slate-400">
         chưa có điểm
       </span>
     );
   }
   if (pts.length === 1) {
     return (
-      <span className="block text-[10px] text-slate-500">
+      <span className="block text-xs text-slate-400">
         {row.ratio ? 'mới có một bài' : `mới có MT${pts[0].attemptNo}`}
         {row.bandWeek ? ` · ${boNamCungNam(row.bandWeek, homNay)}` : ''}
       </span>
     );
   }
   return (
-    <span className="flex flex-wrap items-center gap-x-1 text-[10px] text-slate-500 leading-tight">
+    <span className="flex flex-wrap items-center gap-x-1 text-xs text-slate-400 leading-tight">
       {pts.map((pt, i) => (
         <span key={pt.attemptNo} className="inline-flex items-center gap-1">
           {i > 0 && <span className="text-slate-700">→</span>}

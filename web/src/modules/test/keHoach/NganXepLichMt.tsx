@@ -294,7 +294,7 @@ export function NganXepLichMt({ lopDs, lopMoSan, coThuong, onDoiKhung, onClose, 
                 <col style={{ width: cot.length * 40 + 8 }} />{!hep && <col />}
               </colgroup>
               <thead>
-                <tr className="text-left text-[10px] uppercase tracking-wide text-slate-500">
+                <tr className="text-left text-[11px] uppercase tracking-wide text-slate-500">
                   <th className="py-1" aria-label="Chọn" /><th className="sticky-col py-1 font-bold">Học viên</th>{!hep && <th className="py-1 font-bold">Lớp</th>}
                   <th className="py-1 font-bold">Mock Test</th>{!hep && <th className="py-1 font-bold">Sẽ xếp</th>}
                 </tr>
@@ -358,7 +358,7 @@ function HangEm({ h, hep, cot, dot, d, chon, rieng, thiLai, onTick, onDot, onThi
         </td>
         <td className="sticky-col py-1.5 pr-2">
           <div className="truncate font-bold text-slate-100" title={h.ten}>{h.ten}</div>
-          <div className="text-[10.5px] text-slate-500">{h.ma}{hep && ` · ${h.classCode}`}</div>
+          <div className="text-[11px] text-slate-500">{h.ma}{hep && ` · ${h.classCode}`}</div>
           {hep && <div className={`mt-0.5 line-clamp-2 ${mau}`} title={d?.loi ?? chu}>{chu}</div>}
         </td>
         {!hep && <td className="truncate py-1.5 pr-2 text-slate-300" title={h.classCode}>{h.classCode}</td>}
@@ -374,7 +374,7 @@ function HangEm({ h, hep, cot, dot, d, chon, rieng, thiLai, onTick, onDot, onThi
               const mauChip = dac ? 'bg-doing text-ink-950 border-doing' : choDuyet ? 'text-wait border-wait-line' : 'text-slate-300 border-muted-line';
               return (
                 <button key={n} type="button" onClick={() => onDot(n)}
-                  className={`relative inline-flex h-5 w-9 items-center justify-center gap-0.5 rounded border text-[10px] tabular-nums after:absolute after:-inset-1.5 after:content-[""] sm:after:hidden ${mauChip} ${o?.huyPhan ? 'line-through' : ''} ${rieng === n ? 'ring-1 ring-doing' : ''}`}
+                  className={`relative inline-flex h-5 w-9 items-center justify-center gap-0.5 rounded border text-[11px] tabular-nums after:absolute after:-inset-1.5 after:content-[""] sm:after:hidden ${mauChip} ${o?.huyPhan ? 'line-through' : ''} ${rieng === n ? 'ring-1 ring-doing' : ''}`}
                   title={`MT${n}${o?.lichSu ? ' · lịch sử' : ''}${g?.xong ? ' · xong' : o?.do ? ' · dở' : ''}${choDuyet ? ' · chờ Quản lý duyệt' : ''} — bấm để xếp đợt này cho riêng em`}>
                   {kieu && <DauMt kieu={kieu} />}{n}
                 </button>

@@ -235,7 +235,7 @@ export function TasksBoard() {
                         </span>
                       </td>
                       <td className="td text-slate-300">
-                        {r.assigneeName ?? <span className="text-slate-600">chưa giao</span>}
+                        {r.assigneeName ?? <span className="text-slate-500">chưa giao</span>}
                         {r.assigneeNgoai && <span className="ml-1 whitespace-nowrap text-[11px] text-slate-500">ngoài hệ thống</span>}
                       </td>
                       <td className="td whitespace-nowrap">

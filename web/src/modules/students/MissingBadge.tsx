@@ -29,7 +29,7 @@ export function MissingBadge({ items, className = '', gon = false }: {
         onClick={(e) => { e.stopPropagation(); e.preventDefault(); setOpen((v) => !v); }}
       >
         {/* G-4: ⚠ chỉ nghĩa là quá hạn — thiếu thông tin là badge chữ (Q12). */}
-        <span className="inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap bg-amber-300/10 text-amber-200 border-amber-300/30">
+        <span className="inline-flex items-center rounded-md border px-1.5 py-0.5 text-[11.5px] font-medium whitespace-nowrap bg-amber-300/10 text-amber-200 border-amber-300/30">
           {gon ? `Thiếu ${items.length}` : `Thiếu ${items.length} thông tin`}
         </span>
       </button>
@@ -46,7 +46,7 @@ export function MissingBadge({ items, className = '', gon = false }: {
               <span key={i.key} className="block">
                 <span className="text-xs text-slate-200">{i.label}</span>
                 {/* Nói rõ AI điền được, để badge không thành lời trách chung chung. */}
-                <span className="block text-[10px] text-slate-500">{i.who}</span>
+                <span className="block text-xs text-slate-400">{i.who}</span>
               </span>
             ))}
           </span>

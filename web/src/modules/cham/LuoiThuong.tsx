@@ -324,7 +324,7 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
                       <span title={tenMon(data.programme.code, k)}>{tenMonNgan(data.programme.code, k)}</span>
                       {cotSuaDuoc(k) && (
                         <span className="flex flex-wrap items-center justify-end gap-1 normal-case tracking-normal font-normal">
-                          <span className="text-[10px] text-slate-500">tổng</span>
+                          <span className="text-[11px] text-slate-500">tổng</span>
                           <input className="field w-11 px-1 py-0.5 text-center text-[12px] tabular-nums"
                             inputMode="numeric" value={chuTong(k)} placeholder="—"
                             title="Tổng số câu của đề cả lớp làm — ô còn trống tổng lấy sẵn số này; bấm Điền cả cột để điền luôn."
@@ -443,7 +443,7 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
         if (dung) {
           return (
             <td key={k} className="td group relative py-1.5 text-right" data-kn={k}>
-              <span className="text-[10px] text-slate-500 leading-tight" title={`${tenMon(sheet.programme.code, k)}: ${chuDung}`}>{chuDung}</span>
+              <span className="text-[11px] text-slate-500 leading-tight" title={`${tenMon(sheet.programme.code, k)}: ${chuDung}`}>{chuDung}</span>
               {menuO(k)}
             </td>
           );
@@ -472,7 +472,7 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
               }}
             />
             {quaHan && (
-              <div className="text-[10px] text-slate-500 leading-none mt-0.5"
+              <div className="text-xs text-slate-400 leading-none mt-0.5"
                 title={`${tenMon(sheet.programme.code, k)}: hạn chấm ${ngay(s!.deadline, homNay)} đã qua`}>{quaHan}</div>
             )}
             {menuO(k)}
@@ -561,7 +561,7 @@ function KetQua({ row, sheet }: { row: Row; sheet: ThuongSheet }) {
         {chinh}
         {nhanCase}
       </div>
-      {phu && <span className={`text-[10px] leading-tight truncate max-w-full ${phu.tone}`} title={phu.title}>{phu.chu}</span>}
+      {phu && <span className={`text-xs leading-tight truncate max-w-full ${phu.tone}`} title={phu.title}>{phu.chu}</span>}
     </div>
   );
 }

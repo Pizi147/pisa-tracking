@@ -38,7 +38,7 @@ export function TuanNho({ d, goc, onTuan, nhanKhoa = null, toiThieu = null }: {
           aria-expanded={rong} onClick={() => setRong((v) => !v)}
           title={d.weekStart ? `${dm(d.weekStart)} – ${dm(addDaysStr(d.weekStart, 6))} · bấm để chọn tuần khác` : 'Chọn tuần khác'}>
           <span className="truncate text-slate-100">{d.weekStart ? tuanLich(d.weekStart) : 'Chọn tuần'}</span>
-          <span className="shrink-0 text-[10.5px] text-slate-500 max-[430px]:hidden">{d.weekStart ? `${dm(d.weekStart)}–${dm(addDaysStr(d.weekStart, 6))}` : ''}</span>
+          <span className="shrink-0 text-[11px] text-slate-500 max-[430px]:hidden">{d.weekStart ? `${dm(d.weekStart)}–${dm(addDaysStr(d.weekStart, 6))}` : ''}</span>
         </button>
         <button type="button" className={nut} disabled={busy || !co} onClick={() => buoc(1)} aria-label="Tuần sau">›</button>
       </div>

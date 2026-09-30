@@ -118,7 +118,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents }: {
                 <>
                   <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
                     <Link className="link font-semibold" to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>
-                    <span className="text-[10px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
+                    <span className="text-[11px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
                     <MissingBadge items={s.missing} gon />
                     <CanhBaoYThuc cb={s.canhBaoYThuc} />
                   </span>
@@ -129,7 +129,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents }: {
               dong={[
                 { nhan: 'Target', noiDung: <TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /> },
                 { nhan: 'Dự kiến thi', noiDung: <ExamPlanText plan={s.examPlan} /> },
-                { nhan: 'Mốc', noiDung: !h ? <span className="text-slate-600">chưa có điểm</span> : (
+                { nhan: 'Mốc', noiDung: !h ? <span className="text-slate-500">chưa có điểm</span> : (
                   <>
                     <Link className="no-underline" to={duongHoSoHocVien(s.id, { dot: h.id })} title={`Mở hồ sơ ${s.fullName} ở ${h.label}`}>
                       <span className="text-slate-200">{h.label}</span>
@@ -204,7 +204,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents }: {
                   <td className="td sticky-col [background:var(--surface-2)]">
                     <span className="flex min-w-0 flex-wrap items-center gap-1.5">
                       <Link className="link" to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>
-                      <span className="text-[10px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
+                      <span className="text-[11px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
                       <MissingBadge items={s.missing} gon />
                       <CanhBaoYThuc cb={s.canhBaoYThuc} />
                     </span>
@@ -222,14 +222,14 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents }: {
                   <td className="td p-0">
                     <Stack n={span}>
                       {rows.length === 0
-                        ? [<span key="none" className="text-[11px] text-slate-600">chưa có điểm</span>]
+                        ? [<span key="none" className="text-[11px] text-slate-500">chưa có điểm</span>]
                         : rows.map((h, i) => (
                           <Link key={h.id} className="no-underline"
                             to={duongHoSoHocVien(s.id, { dot: h.id })} title={`Mở hồ sơ ${s.fullName} ở ${h.label}`}>
                             <span className={`text-xs whitespace-nowrap ${i === 0 ? 'text-slate-200' : 'text-slate-500'}`}>
                               {h.label}{h.lichSu && <> <ChipLichSu /></>}
                               {h.scoredRequired < h.requiredCount && (
-                                <span className="text-[10px] text-amber-200/70 ml-1">
+                                <span className="text-[11px] text-amber-200/70 ml-1">
                                   {h.scoredRequired}/{h.requiredCount}
                                 </span>
                               )}
@@ -281,7 +281,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents }: {
  *   · Chưa có kết quả (xám) · Không tính SOS (xám, em Target KCK) · Đã kết thúc (xám).
  */
 function KetLuan({ row }: { row: RosterRow }) {
-  const xam = 'inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap bg-slate-300/8 text-slate-400 border-slate-300/20';
+  const xam = 'inline-flex items-center rounded-md border px-1.5 py-0.5 text-[11.5px] font-medium whitespace-nowrap bg-slate-300/8 text-slate-400 border-slate-300/20';
   if (row.status !== 'active') return <span className={xam}>{row.ketThucVi ?? 'Đã kết thúc'}</span>;
   /* Q29-1: em KCK có điểm vẫn không có kỳ vọng — nói rõ "không tính SOS", không để đọc thành "chưa chấm". */
   if (row.sosLevel === null && row.cycle?.khongCamKet) return <span className={xam} title={GIAI_THICH_KCK}>Không tính SOS</span>;

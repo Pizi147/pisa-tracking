@@ -92,7 +92,7 @@ export function ClassYThucCard({ classId }: { classId: number }) {
         <div className="p-4"><Empty title="Không em nào cần xử lý Ý thức" hint="Vi phạm mới, việc bắt buộc và đề xuất chờ QL sẽ hiện ở đây." /></div>
       ) : NHOM_EM.filter((k) => d.nhom[k].length > 0).map((k) => (
         <section key={k} aria-label={NHOM_EM_LABEL[k]}>
-          <h3 className="m-0 border-b px-3 pb-1.5 pt-3 text-[10.5px] font-extrabold uppercase tracking-[.06em] text-slate-500" style={{ borderColor: 'var(--line)' }}>
+          <h3 className="m-0 border-b px-3 pb-1.5 pt-3 text-[11px] font-extrabold uppercase tracking-[.06em] text-slate-500" style={{ borderColor: 'var(--line)' }}>
             {NHOM_EM_LABEL[k]} · <span className="tabular-nums">{d.nhom[k].length}</span>
           </h3>
           <ul className="m-0 list-none p-0">

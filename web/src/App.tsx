@@ -38,7 +38,7 @@ function SoCho({ dem }: { dem?: DemYeuCau | null }) {
   if (!dem?.cho) return null;
   return (
     <>
-      <span aria-hidden className={`ml-1.5 inline-flex min-w-[1.25rem] justify-center rounded-full border px-1 text-[10.5px] font-semibold leading-4 tabular-nums ${
+      <span aria-hidden className={`ml-1.5 inline-flex min-w-[1.25rem] justify-center rounded-full border px-1 text-[11.5px] font-semibold leading-4 tabular-nums ${
         dem.quaHan ? 'border-late-line bg-late-bg text-late' : 'border-transparent bg-white/10 text-slate-300'}`}>{dem.cho}</span>
       <span className="sr-only">, {dem.cho} thẻ trong hộp Chờ duyệt{dem.quaHan ? `, ${dem.quaHan} quá hạn` : ''}</span>
     </>
@@ -99,7 +99,7 @@ export default function App() {
               style={{ background: 'var(--accent-soft)', borderColor: 'var(--accent-line)', color: 'var(--accent)' }}>P</div>
             <div className="leading-tight hidden sm:block">
               <div className="text-sm font-semibold text-slate-100">Pisa Tracking</div>
-              {!banChinh && <div className="text-[10px] text-slate-500">Bản demo nội bộ</div>}
+              {!banChinh && <div className="text-[11px] text-slate-500">Bản demo nội bộ</div>}
             </div>
           </div>
           <nav aria-label="Điều hướng chính" className="hidden md:flex items-center gap-1 min-w-0 overflow-x-auto">

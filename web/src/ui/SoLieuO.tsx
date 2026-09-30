@@ -21,7 +21,7 @@ export function SoLieuO(props: Props) {
   const { giaTri, className = '' } = props;
   // Mã không có trong sổ thì KHÔNG vẽ số (cùng luật với <SoLieu>).
   if (props.id !== undefined && !metricById(props.id)) return <span className="text-xs text-bad">Chỉ số không có trong sổ: {props.id}</span>;
-  if (giaTri <= 0) return <span className={`tabular-nums text-slate-600 ${className}`}>{giaTri}</span>;
+  if (giaTri <= 0) return <span className={`tabular-nums text-slate-500 ${className}`}>{giaTri}</span>;
   const ten = props.id !== undefined ? (metricById(props.id)?.ten ?? props.id) : props.tieuDe;
   return (
     <>

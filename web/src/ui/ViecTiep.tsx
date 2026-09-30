@@ -26,7 +26,7 @@ export function DanhSachViecTiep({ viec, den }: { viec: readonly ViecTiepTheo[];
     <span className="flex flex-col items-start gap-0.5">
       {viec.slice(0, 2).map((v) => <ViecTiep key={v.viec} v={v} den={den?.(v)} />)}
       {viec.length > 2 && (
-        <span className="text-[10px] text-slate-500" title={viec.slice(2).map((v) => v.title).join(' · ')}>+{viec.length - 2} việc</span>
+        <span className="text-xs text-slate-400" title={viec.slice(2).map((v) => v.title).join(' · ')}>+{viec.length - 2} việc</span>
       )}
     </span>
   );
