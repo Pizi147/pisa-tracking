@@ -1516,6 +1516,10 @@ export function saveScore(
   const nx = coNhanXet ? kiemNhanXet(patch.nhanXet) : null;
   if (nx && 'loi' in nx) throw badRequest(nx.loi);
   const nxGt = nx && 'gt' in nx ? nx.gt : undefined;
+  /* PR-S4F #10: xoá GV chấm phải gửi `null` rõ — false / 0 / "" là dữ liệu hỏng, không hiểu thành "xoá". */
+  if (coGvCham && patch.gvCham !== null && (typeof patch.gvCham !== 'object' || Array.isArray(patch.gvCham))) {
+    throw badRequest('GV chấm không hợp lệ — gửi người chấm, hoặc null để xoá.');
+  }
   const gv = coGvCham ? (patch.gvCham ? gvChamHopLe(p, patch.gvCham) : null) : undefined;
   const chiNhanXet = (coNhanXet || coGvCham) && patch.rawScore === undefined && patch.rawTotal === undefined
     && patch.criteria === undefined && patch.noShow === undefined && patch.resultDate === undefined && patch.note === undefined;
@@ -1612,6 +1616,10 @@ export function saveScore(
         if (patch.criteria !== undefined) {
           if (!Array.isArray(patch.criteria) || patch.criteria.length !== 4) throw badRequest('Cần đủ bốn ô tiêu chí.');
           crit = patch.criteria.map((v) => (v === null || v === undefined || v === ('' as any) ? null : Number(v)));
+          /* PR-S4F #10: "abc" (NaN) hay 6.3 không được thành band — tiêu chí chỉ nhận 0–9, bậc 0.5. */
+          if (crit.some((v) => v !== null && (!Number.isFinite(v) || v < 0 || v > 9 || !Number.isInteger(v * 2)))) {
+            throw badRequest('Điểm tiêu chí phải là số từ 0 đến 9, bậc 0.5 (ví dụ 6 hoặc 6.5).');
+          }
         }
         band = bandFromCriteria(crit);
         raw = null;

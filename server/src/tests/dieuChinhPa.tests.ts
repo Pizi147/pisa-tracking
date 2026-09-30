@@ -341,8 +341,8 @@ export async function runDieuChinhPaTests(t: YThucTestKit) {
     const b = goiY(taoCase().caseId);
     const c = goiY(taoCase().caseId);
     sosAuto.xacNhanPaQuyChe(P.lrTeacher, a, { description: 'Tự học 1 tháng — nghe chép Section 2 mỗi ngày' });
-    sosAuto.xacNhanPaQuyChe(P.lrTeacher, b, {});
-    sosAuto.xacNhanPaQuyChe(P.lrTeacher, c, { performerUserId: P.w1Teacher.userId, followupDue: addDays(TODAY, 40) } as any);
+    sosAuto.xacNhanPaQuyChe(P.lrTeacher, b, { description: 'Tự học · 1 tháng' });   // PR-S4F #9: nguyên văn = gửi lại đúng chữ máy gán
+    sosAuto.xacNhanPaQuyChe(P.lrTeacher, c, { description: 'Tự học · 1 tháng', performerUserId: P.w1Teacher.userId, followupDue: addDays(TODAY, 40) } as any);
     const ra = revRows(a);
     assert(ra.length === 1 && ra[0].source === 'confirm_edit' && ra[0].followup_id === null
       && ra[0].old_description === 'Tự học · 1 tháng' && ra[0].new_description === 'Tự học 1 tháng — nghe chép Section 2 mỗi ngày'
