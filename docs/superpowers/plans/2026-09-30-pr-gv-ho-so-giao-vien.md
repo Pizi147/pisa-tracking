@@ -447,6 +447,7 @@ const rows = o.map((d, i) => ({ ...goc.get(d.attemptId)!, id: d.attemptId * 10 +
 | 30/09 | planning | Viết lại theo Q30-5/Q30-6: bỏ KPI tháng (Task 1–3 cũ, góc Phân tích › Giáo viên, sổ chỉ số); hồ sơ 5 khối từ dữ liệu có sẵn; bảng GV chi nhánh thay bảng cũ. Dòng mã đối chiếu `origin/main` 36be838e (S4F #135 đã merge) |
 | 30/09 | 0 | Session code (Sonnet 5.5 — không phải Fable 5.1/Opus 5.5 như bảng điều hành; commit ghi đúng model thật). Dòng mã đối chiếu khớp kế hoạch (lệch 0). LT2a/LT2b/PR-CT **chưa merge** khi bắt đầu. Mốc B = **1821 + 25** phép kiểm (main c1e24a31) |
 | 30/09 | 1 | `hoSoGiaoVien.ts` + `prGv.tests.ts` (3 phép kiểm); check 1824 + 25 |
+| 30/09 | 2 | `giaoVien/phamVi.ts` (tệp riêng, hết vòng import) + `viecCuaNguoi` cuối `mywork.ts` + route 1 dòng; 4 phép kiểm; check 1828 + 25. **Lệch dữ liệu:** GVCN id 7 (Trần Ngọc Hà) ở seed còn dạy **1 lớp CP** nên QL CP **xem được** (200, chỉ số CP) — phép kiểm 403 dùng GV tạm chỉ ở MB. Task 7 bấm thử: "QL CP gõ /giao-vien/7 → 403" sẽ **không** đúng, thay bằng GV chỉ dạy MB (vd id 9 nếu chỉ MB) |
 
 ## Chủ sản phẩm / planning chốt 30/09 (thắng các chỗ lệch trong kế hoạch)
 
