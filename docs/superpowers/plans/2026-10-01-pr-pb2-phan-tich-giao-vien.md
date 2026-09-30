@@ -777,6 +777,7 @@ VAI-a đã chốt:
 
 | Ngày | Task | Ghi chú (mốc B, model thật, trần tốc độ, lệch kế hoạch, cổng gộp) |
 |---|---|---|
+| 01/10 | 0 | Model thật Opus 5.5 (`claude-opus-5-5`). Từ `origin/main` @ `4379cc63`. `npm run check` lần 1 sập Node (0xC0000409, giữa PR-GV, máy đang chạy 3 check của session khác) → chạy thẳng không qua npm: **mốc B = 1986 ✓, 0 ✗**; tốc độ 28/28 |
 | | | |
 
 ## Nhật ký B (Pb2-b)
