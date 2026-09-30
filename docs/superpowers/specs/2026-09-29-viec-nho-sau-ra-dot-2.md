@@ -38,3 +38,4 @@ Mọi phát hiện Minor của người rà PR #117–#143 chưa PR nào làm, k
 | Rà cuối đợt 4 SANG | Hạn (ui/Han.tsx) + "Chờ 4 kỹ năng" + "SOS 1 tạm thời" 11 px, E4 muốn 12 px — kế hoạch SANG chọn A (giữ 11 px) | chủ sản phẩm nếu muốn đổi |
 | Rà cuối đợt 4 SANG | 375 px: ô tìm bị ép "Tìm học", tên tài khoản cắt "Nguyễn K…" | PR-UXD |
 | Kế hoạch VAI-a 01/10 | VAI-a bỏ việc GVCN "Ghi lộ trình tiếp theo" (Q30-1). Badge "chưa có lộ trình tiếp theo" ở hồ sơ lớp (`classes.ts:91-106`, `loTrinhTiep.ts:220`) còn đúng không, hay cũng bỏ / đổi chữ theo lệnh chuyển lớp của QL | PR-Dọn |
+| Kế hoạch VAI-b 01/10 | VAI-b làm luôn phần Hành trình của B5 (mã tuần), R5-2, mã tuần ở hàng PA bảng kỹ năng, menu ⋮ K3-48 — kế hoạch UXF-b phải gạch các mục này; đường dẫn sâu G5 ở màn ngoài hồ sơ HV giao UXF-b | PR-UXF-b |
