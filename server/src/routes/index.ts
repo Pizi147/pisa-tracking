@@ -4,7 +4,7 @@ import { db, isInitialised } from '../db.ts';
 import { laBanChinh } from '../moiTruong.ts';
 import {
   ENTRY_SKILLS, ENTRY_SKILL_LABEL, ISSUE_TAXONOMY, THEO_DONG, tenMonNgan,
-  PERMISSIONS, ROLE_LABEL, WORK_SCOPES, chuongTrinhTuThamSo, khoangTuThamSo, laLoaiBoQuen, thamSoNguoi, tuDauKhoang,
+  PERMISSIONS, ROLE_LABEL, WORK_SCOPES, chuongTrinhTuThamSo, ctTuyChon, khoangTuThamSo, laLoaiBoQuen, thamSoNguoi, tuDauKhoang,
   type Role, type TheoDong, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { docBoLocXuatMt, kiemGhiRoKhac, laKhac, soSanhLop, transferReasonText } from '../../../shared/domain/index.ts';
@@ -629,7 +629,7 @@ api.get('/phan-tich/hieu-qua-pa/o', requireAuth, wrap((req) => {
 }));
 /* Ý thức & Phối hợp (PR-UX4): Học viên cần chú ý + Lớp nhiều vi phạm. Kỳ = từ đầu khoảng `tg` đến hôm nay. */
 const filterYThucPhanTichOf = (req: Request) => ({
-  branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')), classId: qInt(req, 'lop') ?? null,
+  branchId: qInt(req, 'branchId') ?? null, ct: null, classId: qInt(req, 'lop') ?? null,   // PR-Pb2-a (Q2): Ý thức luôn gộp hai khung — bỏ qua `ct`
   from: tuDauKhoang(demoToday(), khoangTuThamSo(qStr(req, 'tg'))), to: demoToday(),
 });
 api.get('/phan-tich/y-thuc', requireAuth, wrap((req) => {
@@ -1118,7 +1118,7 @@ api.get('/metrics/:id', requireAuth, wrap((req) => {
   const r = metricSet(principalOf(req), String(req.params.id), {
     branchId: qInt(req, 'branchId'), skill: qStr(req, 'skill') ?? null,
     from: qStr(req, 'from') ?? null, to: qStr(req, 'to') ?? null, kind: qStr(req, 'kind') ?? null,
-    program: chuongTrinhTuThamSo(qStr(req, 'ct')),
+    program: ctTuyChon(qStr(req, 'ct')),   // PR-Pb2-a: vắng = gộp; chỉ số Ý thức / Phối hợp bỏ qua khung trong metricSet
     classId: qInt(req, 'classId'),
   });
   return metricResponse(r, qStr(req, 'rows') === '1');
@@ -1521,7 +1521,7 @@ api.get('/giao-vien/:id/o', requireAuth, wrap((req) => {
  */
 api.get('/highlights', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return highlightSvc.highlights(principalOf(req), { branchId: qInt(req, 'branchId'), program: chuongTrinhTuThamSo(qStr(req, 'ct')) });
+  return highlightSvc.highlights(principalOf(req), { branchId: qInt(req, 'branchId'), program: ctTuyChon(qStr(req, 'ct')) });   // GV: Lịch sắp tới gộp hai khung
 }));
 
 // ============================================================ Tổng quan (PR-Pa, đặc tả §3.2)

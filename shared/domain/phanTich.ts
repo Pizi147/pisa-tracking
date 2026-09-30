@@ -7,7 +7,7 @@
  * loại lỗi chung, "Nên dùng", bước tiếp theo của Ý thức, và cách xuất Excel từ đúng dữ liệu đang hiện.
  */
 import {
-  CASE_CATEGORIES, CASE_CATEGORY_LABEL, CASE_CATEGORY_SHORT, FT_CASE_CATEGORIES, NORMAL_CASE_CATEGORIES,
+  CASE_CATEGORY_LABEL, CASE_CATEGORY_SHORT, FT_CASE_CATEGORIES, NORMAL_CASE_CATEGORIES,
   type CaseCategory,
 } from './cases.ts';
 import { mondayOfDate } from './week.ts';
@@ -99,14 +99,12 @@ export function tuDauKhoang(homNay: string, soTuan: number): string {
 
 // ------------------------------------------------------------------ kỹ năng theo chương trình (Q7)
 
-/** Fast Track L·R·W1·W2·S; lớp thường L·R·W·S; Cả hai là HỢP hai bộ (không gộp W1/W2 vào W — Q7). */
+/** Fast Track L·R·W1·W2·S; lớp thường L·R·W·S (PR-Pb2-a: khung gộp đã bỏ). */
 export function kyNangTheoCt(ct: ChuongTrinh): readonly CaseCategory[] {
-  if (ct === 'ft') return FT_CASE_CATEGORIES;
-  if (ct === 'thuong') return NORMAL_CASE_CATEGORIES;
-  return CASE_CATEGORIES.filter((c) => c !== 'tong_hop');   // Pre FOU không có cột môn (MH3)
+  return ct === 'ft' ? FT_CASE_CATEGORIES : NORMAL_CASE_CATEGORIES;
 }
 
-/** Tooltip đầy đủ của một kỹ năng — ở "Cả hai", W cần nói rõ là Writing của lớp thường (Q7) để không lẫn với W1/W2. */
+/** Tooltip đầy đủ của một kỹ năng. */
 export function kyNangTooltip(cat: CaseCategory, _ct: ChuongTrinh): string {
   return CASE_CATEGORY_LABEL[cat];
 }
@@ -152,7 +150,6 @@ export const NHOM_COT: readonly NhomCot[] = ['ket-qua', 'ky-nang', 'xu-ly'];
 const NHAN_NHOM_KY_NANG: Record<ChuongTrinh, string> = {
   ft: 'Dưới kỳ vọng theo kỹ năng (đếm HV)',
   thuong: 'Chưa đạt theo môn (đếm HV)',
-  'ca-hai': 'Dưới kỳ vọng · chưa đạt (đếm HV)',
 };
 export function nhomCotLabel(nhom: NhomCot, ct: ChuongTrinh): string {
   if (nhom === 'ket-qua') return 'Kết quả Test (đếm lượt)';
@@ -162,13 +159,13 @@ export function nhomCotLabel(nhom: NhomCot, ct: ChuongTrinh): string {
 
 /** Động từ của nhóm "dưới kỳ vọng"/"chưa đạt" theo chương trình — dùng cho tooltip cột kỹ năng và các nhãn ngắn. */
 const DONG_TU_KY_NANG: Record<ChuongTrinh, string> = {
-  ft: 'dưới kỳ vọng', thuong: 'chưa đạt', 'ca-hai': 'dưới kỳ vọng / chưa đạt',
+  ft: 'dưới kỳ vọng', thuong: 'chưa đạt',
 };
 /** Nhãn NGẮN của nhóm cột (đầu đề bảng, menu "Cột hiện") — cùng luật ct với `nhomCotLabel`, chỉ ngắn hơn. */
 export function nhomCotNhanNgan(nhom: NhomCot, ct: ChuongTrinh): string {
   if (nhom === 'ket-qua') return 'Kết quả';
   if (nhom === 'xu-ly') return 'Xử lý';
-  return ct === 'ft' ? 'Dưới kỳ vọng' : ct === 'thuong' ? 'Chưa đạt' : 'Dưới kỳ vọng / chưa đạt';
+  return ct === 'ft' ? 'Dưới kỳ vọng' : 'Chưa đạt';
 }
 
 export type CotTongHop = {
@@ -180,7 +177,7 @@ export type CotTongHop = {
 /** Cột lượt — nhãn đổi theo chương trình (Q18); đứng đầu bảng, cùng nhóm "Kết quả" (sáu cột sau cộng lại đúng bằng nó). */
 const COT_LUOT: CotTongHop = {
   khoa: 'luot', nhom: 'ket-qua', donVi: 'dot-test',
-  nhan: (ct) => (ct === 'ft' ? 'Lượt MT' : ct === 'thuong' ? 'Bài kiểm tra' : 'Lượt'),
+  nhan: (ct) => (ct === 'ft' ? 'Lượt MT' : 'Bài kiểm tra'),
   goiY: 'Số lượt đã chấm ít nhất một kỹ năng trong khoảng đang xem. Sáu cột Kết quả cộng lại đúng bằng cột này. Không tính học viên KCK (không cam kết đầu ra).',
 };
 const COT_KET_QUA: CotTongHop[] = [
@@ -223,7 +220,7 @@ export const COT_XU_LY_V4: Record<TrangThaiCaseV4, string> = {
 
 /**
  * Cột kỹ năng "dưới kỳ vọng", sinh từ `kyNangTheoCt` — khoá kỹ thuật `kn:<hạng mục>`, không lộ ra màn (chỉ dùng nội bộ).
- * MH3/MH5 (PR-MON): CHỈ khung Fast Track có cột môn — Lớp thường không lọc/cột theo môn, "Cả hai" không trộn môn hai khung.
+ * MH3/MH5 (PR-MON): CHỈ khung Fast Track có cột môn — Lớp thường không lọc/cột theo môn.
  */
 export function cotKyNangFor(ct: ChuongTrinh): CotTongHop[] {
   if (ct !== 'ft') return [];

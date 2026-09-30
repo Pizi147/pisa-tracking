@@ -79,7 +79,7 @@ export function PhanTich() {
   };
   const setCt = (v: ChuongTrinh) => {
     const next = new URLSearchParams(params);
-    if (v === 'ca-hai') next.delete('ct'); else next.set('ct', v);
+    next.set('ct', v);
     /* Đổi chương trình thì lớp đang chọn có thể không còn hợp lệ — bỏ ngay, đừng để ra danh sách rỗng khó hiểu (mục 4.4). */
     next.delete('lop');
     setParams(next, { replace: false });
@@ -103,11 +103,13 @@ export function PhanTich() {
 
   /* Ô lớp (Q6) — P14 (PR-YT2): máy chủ Ý thức nay đã nhận tham số lớp, nên bật lại ở góc nhìn Ý thức. */
   const classesApi = useApi<any[]>(`/ref/classes${branchId ? `?branchId=${branchId}` : ''}`, [branchId]);
-  const classes = (classesApi.data ?? []).filter((c) => ct === 'ca-hai' || (c.scoring_mode === 'ratio') === (ct === 'thuong'));
+  /* Ý thức gộp hai khung (Q2) → ô Lớp liệt kê mọi lớp; góc nhìn khác chỉ lớp của khung đang chọn. */
+  const laYThuc = goc === 'y-thuc';
+  const classes = (classesApi.data ?? []).filter((c) => laYThuc || (c.scoring_mode === 'ratio') === (ct === 'thuong'));
   useEffect(() => {
     if (classId && classesApi.data && !classes.some((c) => c.id === classId)) setClassId('');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [classId, classesApi.data, ct]);
+  }, [classId, classesApi.data, ct, laYThuc]);
 
   const demoDate = session?.demoDate ?? null;
   /* DANH SÁCH CASE LÀ HIỆN TRẠNG (Q5) — luật 5 của Hợp đồng số liệu: không trộn "hiện trạng" với một khoảng thời gian. */
@@ -130,7 +132,7 @@ export function PhanTich() {
           ))}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <ChonChuongTrinh value={ct} onChange={setCt} />
+          {!laYThuc && <ChonChuongTrinh value={ct} onChange={setCt} />}
           {laHienTrang
             ? (demoDate && <span className="text-xs text-slate-500">Hiện trạng · đến {ngay(demoDate)}</span>)
             : (
@@ -151,7 +153,7 @@ export function PhanTich() {
       {goc === 'tong-hop' && <TongHopTestSos branchId={branchId} ct={ct} tg={tg} classId={classId} />}
       {goc === 'van-de' && <TongHopVanDeHv branchId={branchId} ct={ct} tg={tg} classId={classId} />}
       {goc === 'hieu-qua-pa' && <HieuQuaPa branchId={branchId} ct={ct} tg={tg} classId={classId} />}
-      {goc === 'y-thuc' && <YThucPhoiHop branchId={branchId} ct={ct} tg={tg} classId={classId} />}
+      {goc === 'y-thuc' && <YThucPhoiHop branchId={branchId} ct={null} tg={tg} classId={classId} />}
       {goc === 'danh-sach' && (
         <>
           <div className="flex flex-wrap items-center gap-2 text-xs" role="group" aria-label="Học viên cần chú ý">

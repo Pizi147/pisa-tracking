@@ -75,7 +75,7 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
 
   const qs = new URLSearchParams();
   if (branchId) qs.set('branchId', String(branchId));
-  if (ct !== 'ca-hai') qs.set('ct', ct);
+  qs.set('ct', ct);
   if (tg !== KHOANG_MAC_DINH) qs.set('tg', String(tg));
   if (classId) qs.set('lop', String(classId));
   qs.set('theo', theo);

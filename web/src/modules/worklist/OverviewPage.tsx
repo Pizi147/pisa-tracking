@@ -61,11 +61,11 @@ export default function OverviewPage({ tab: tabProp = 'tong-quan' }: { tab?: Tab
     if (id) next.set('cn', String(id)); else next.delete('cn');
     setParams(next);
   };
-  /* CHƯƠNG TRÌNH ĐANG CHỌN (`ct`) cũng nằm trên địa chỉ, cùng chỗ với `cn`; Cả hai = không có tham số. */
+  /* CHƯƠNG TRÌNH ĐANG CHỌN (`ct`) cũng nằm trên địa chỉ, cùng chỗ với `cn`; vắng = Fast Track (Q31-1). */
   const ct = chuongTrinhTuThamSo(params.get('ct'));
   const setCt = (v: ChuongTrinh) => {
     const next = new URLSearchParams(params);
-    if (v === 'ca-hai') next.delete('ct'); else next.set('ct', v);
+    next.set('ct', v);
     setParams(next, { replace: true });
   };
   // Chỉ hiện khi có mốc dữ liệu; không truyền "hôm nay" → dd/mm/yyyy (mockup)
@@ -84,7 +84,7 @@ export default function OverviewPage({ tab: tabProp = 'tong-quan' }: { tab?: Tab
           <ViecCuaToi />
           <HocVienCanHoTro />
         </div>
-        <LichSapToi branchId={null} ct="ca-hai" />
+        <LichSapToi branchId={null} ct={null} />
       </div>
     );
   }

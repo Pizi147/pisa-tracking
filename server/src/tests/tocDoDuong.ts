@@ -235,8 +235,8 @@ export const TRAN: Record<string, number> = {
   'GVBM /prefs': 19,
   'GVCN_THUONG /prefs': 19,
   'QT /prefs': 19,
-  'QL /tong-quan/quan-ly': 75,
-  'QT /tong-quan/quan-ly': 71,
+  'QL /tong-quan/quan-ly': 87,   // PR-Pb2-a: vắng ct = FT (lọc khung), đo 81–83
+  'QT /tong-quan/quan-ly': 87,   // PR-Pb2-a: như trên
   'GVCN /tong-quan/quan-ly': 20,
   'GVBM /tong-quan/quan-ly': 20,
   'QL /highlights': 28,

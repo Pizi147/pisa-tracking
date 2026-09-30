@@ -196,6 +196,9 @@ export const LISTED_METRICS: readonly string[] = [
   ...PHOI_HOP_METRIC_IDS,
 ];
 
+/** Chỉ số không theo kỹ năng / khung (Q2): `metricSet` không lọc `program` cho chúng. */
+export const CHI_SO_GOP = new Set<string>([...YTHUC_METRIC_IDS, ...PHOI_HOP_METRIC_IDS]);
+
 /** Kỹ năng ĐÁNH GIÁ mà `hv-duoi-ky-vong-mon` nhận — chỉ số của khung Fast Track (MH5), không có môn lớp thường. */
 const SKILLS_FOR_METRIC = ['listening', 'reading', 'writing', 'speaking'] as const;
 
@@ -354,8 +357,9 @@ export function metricSet(
   } = {},
 ): MetricResult {
   const r = metricSetGoc(p, id, f);
-  const ct = f.program ?? 'ca-hai';
-  if (ct === 'ca-hai') return r;
+  /* PR-Pb2-a (Q2, K1-18): Ý thức + Phối hợp SOS là khối GỘP — bỏ qua khung ở đúng một chỗ này. */
+  const ct = CHI_SO_GOP.has(id) ? null : f.program ?? null;
+  if (!ct) return r;
   const moi = [...new Set([...r.ids, ...(r.numeratorIds ?? []), ...(r.denominatorIds ?? [])])];
   const giu = new Set(locTheoChuongTrinh(r.unit, moi, ct));
   const loc = (xs?: number[]) => xs?.filter((x) => giu.has(x));

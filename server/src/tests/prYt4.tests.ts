@@ -797,7 +797,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const b = hv(lop.id); ba3(b);
     const c = hv(lop.id); deXuatGui(lop.gvcn, c, 'suspension', [vpDb(c, TODAY)]);
     const e = hv(lop.id); vpDb(e, TODAY, { ghiNhan: TODAY });
-    const kq = ptYt.yThucPhanTich(P.mbManager, { branchId: mbId, ct: 'ca-hai', classId: lop.id, from: addDays(TODAY, -30), to: TODAY });
+    const kq = ptYt.yThucPhanTich(P.mbManager, { branchId: mbId, ct: null, classId: lop.id, from: addDays(TODAY, -30), to: TODAY });
     const bd = board.bangYThucLop(lop.gvcn, lop.id);
     const tabCanChuY = [...bd.nhom.qua_han, ...bd.nhom.bat_buoc, ...bd.nhom.cho_duyet].map((x: any) => x.studentId).sort().join();
     assert(kq.hvCanChuY.map((x: any) => x.studentId).sort().join() === tabCanChuY, `${kq.hvCanChuY.map((x: any) => x.studentId)} ≠ ${tabCanChuY}`);

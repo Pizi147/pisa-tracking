@@ -61,7 +61,7 @@ function tinh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh }) {
     args.push(...scope.branchIds);
   }
   if (branchId) { where.push('c.branch_id = ?'); args.push(branchId); }
-  if (f.ct !== 'ca-hai') { where.push('c.is_fast_track = ?'); args.push(f.ct === 'ft' ? 1 : 0); }
+  where.push('c.is_fast_track = ?'); args.push(f.ct === 'ft' ? 1 : 0);
   const lop = conn.prepare(
     `SELECT c.id, c.code, c.branch_id, c.is_fast_track, b.name AS branch_name FROM classes c
        JOIN branches b ON b.id = c.branch_id WHERE ${where.join(' AND ')} ORDER BY b.id, c.code`,

@@ -778,6 +778,7 @@ VAI-a đã chốt:
 | Ngày | Task | Ghi chú (mốc B, model thật, trần tốc độ, lệch kế hoạch, cổng gộp) |
 |---|---|---|
 | 01/10 | 0 | Model thật Opus 5.5 (`claude-opus-5-5`). Từ `origin/main` @ `4379cc63`. `npm run check` lần 1 sập Node (0xC0000409, giữa PR-GV, máy đang chạy 3 check của session khác) → chạy thẳng không qua npm: **mốc B = 1986 ✓, 0 ✗**; tốc độ 28/28 |
+| 01/10 | 1 | **Lệch kế hoạch (nhỏ):** Task 1 ghi `/phan-tich/y-thuc` dùng `ctTuyChon` (hợp lệ → lọc) nhưng phép kiểm đòi "`ct=ft` và không `ct` → cùng số". Theo Q2 (Ý thức là khối gộp, công tắc khung ẩn) route Ý thức **bỏ qua `ct`** (`ct: null`); `/metrics/:id` vẫn `ctTuyChon` (chỉ số Ý thức tự bỏ khung qua `CHI_SO_GOP`). `/highlights` cũng `ctTuyChon` (GV gửi không `ct` = gộp). `bangGvChiNhanh` vẫn `chuongTrinhTuThamSo` (mặc định FT). Check lần 1: 2008 ✓ + 2 ✗ (hai phép kiểm mới) → sửa. Lần 2: **2010 ✓**; tốc độ 27/28: `/tong-quan/quan-ly` 81–83 câu (vắng `ct` nay = FT nên có lọc khung; trước đây vắng = không lọc) → trần QL 75→87 (+16 %), QT 71→87 (+22,5 %), dưới 30 %. `/highlights` 28→20, `/tong-quan/chi-nhanh` 45→40 (giảm, giữ trần) |
 | | | |
 
 ## Nhật ký B (Pb2-b)

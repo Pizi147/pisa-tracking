@@ -117,7 +117,7 @@ export function DanhSachCase({ branchId, ct, classId }: { branchId: number | nul
         <div className="space-y-3">
           {/*
             BỘ KỸ NĂNG KHÁC NHAU GIỮA HAI CHƯƠNG TRÌNH (mục 4.3): chỉ hiện khi chương trình chung đã xác định
-            một phía cụ thể — "Cả hai" thì hai bộ kỹ năng chồng chéo (W1/W2 và W), không bày ra được.
+            một phía cụ thể — xem gộp thì hai bộ kỹ năng chồng chéo (W1/W2 và W), không bày ra được.
           */}
           {classKind && (
             <FilterRow label="Kỹ năng">

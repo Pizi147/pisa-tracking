@@ -94,7 +94,7 @@ function tinh(p: Principal, f: FilterTongHop) {
   const args: unknown[] = [...cs.params, tu, den];
   if (f.branchId) { where.push('c.branch_id = ?'); args.push(f.branchId); }
   if (f.classId) { where.push('c.id = ?'); args.push(f.classId); }
-  if (f.ct !== 'ca-hai') { where.push('c.is_fast_track = ?'); args.push(f.ct === 'ft' ? 1 : 0); }
+  where.push('c.is_fast_track = ?'); args.push(f.ct === 'ft' ? 1 : 0);
 
   const attempts = conn
     .prepare(
