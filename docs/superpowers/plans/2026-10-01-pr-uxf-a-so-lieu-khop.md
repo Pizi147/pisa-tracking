@@ -91,7 +91,7 @@ Luật thuần mới nằm ở `shared/domain` (`khacGoiY`, `baiId`, `chuTuanHoc
 | Q3 | Hậu tố hướng (K2-01) nằm ở **dòng 1** ("Cuối khoá → học lại"), không dính vào số `58%` | cột số thẳng, `tabular-nums` |
 | Q4 | K2-12: sau nhóm **Cuối khoá** thêm cột `%` (FOU/BE/ELE) và cột **Hướng gợi ý** (mọi lớp thường kể cả Pre FOU). Chữ = `goiY.nhanHuong`, 50–59 % = chip "Quản lý cân nhắc" — cùng hàm, cùng chữ với panel Chuyển lớp | một nguồn chữ |
 | Q5 | K2-05: em lớp thường có bài **Cuối khoá** (không huỷ) thì **không** bị "thiếu mốc tiếp theo". Việc tiếp theo là lệnh chuyển lớp, không phải mốc | hết khoá không còn mốc |
-| Q6 | FT: "tuần học thứ n" tính từ **tuần bắt đầu lộ trình của em** (`learning_cycles.start_period_id`), không từ lớp. Lớp đích FT không hiện tuần. Lớp thường giữ "tuần x/y" của lớp | khớp lịch MT tuần 6/12/16 (`lichMt.ts:24`); mockup 20 màn D, I |
+| Q6 | **Chủ sản phẩm chốt 01/10 (Q31-11):** FT "tuần học thứ n" tính từ **tuần bắt đầu lộ trình của em** (`learning_cycles.start_period_id`), không từ lớp, **bỏ các tuần em Tạm dừng** (lấy từ nhật ký Tạm dừng / Quay lại học, `students/students.ts:~300`; tuần có ngày Tạm dừng tới trước tuần Quay lại). Lớp FT có số tuần riêng của lớp — không dùng lẫn với số của em. Lớp đích FT không hiện tuần. Lớp thường giữ "tuần x/y" của lớp | khớp lịch MT tuần 6/12/16 (`lichMt.ts:24`); mockup 20 màn D, I |
 | Q7 | **Bài = ô nhập** (T53 Q2): FT W1 và W2 là hai bài. `baiId(attemptId, skill) = attemptId × 10 + chỉ số kỹ năng` trong `CASE_CATEGORIES` (7 mục, < 10) | một id ổn định cho ô số, bảng GV, hồ sơ GV |
 | Q8 | Bài quá hạn của môn **chưa phân công GV** vẫn tính ở Tổng quan. Bảng "Theo giáo viên" thêm hàng **"Chưa phân công"** (khi > 0) → Σ hàng = ô | số khớp; không giấu nợ (xem Câu 2) |
 | Q9 | Em **Tạm dừng** (`students.status != 'active'`) không sinh nợ điểm ở: `scoreDebtCells`, Việc, dòng Nợ Lịch Test, badge. Hồ sơ HV vẫn hiện ô điểm | T65 "mọi hạn dừng" |
@@ -263,8 +263,9 @@ export const chuTuanHoc = (tuan: number, tong: number | null): string => (tong ?
   - Em lớp thường → `tong` = số tuần lớp.
   - `transitionPlan` lớp FT: mọi em có `tuanHoc.tong === null`.
   - Quét chữ: không payload FT nào có `tong: 16`.
+  - Em FT bắt đầu 10 tuần trước, Tạm dừng 2 tuần rồi Quay lại → `tuan = 9` (không phải 11).
 - [ ] Máy chủ:
-  - FT: `tuan = studyWeekOf(tuần bắt đầu lộ trình của em, mondayOf(homNay))`, `tong: null` (Q6);
+  - FT: `tuan = studyWeekOf(tuần bắt đầu lộ trình của em, mondayOf(homNay))` **trừ số tuần Tạm dừng** trong khoảng đó, `tong: null` (Q6);
   - `xemChuyenLop`: một câu (một em);
   - `transitionPlan`: một câu cho cả lớp (JOIN `learning_cycles` + `report_periods` sẵn có).
 - [ ] Web: `ChuyenLopPanel.tsx:162` và dòng phụ em ở panel FT dùng `chuTuanHoc`.
@@ -428,7 +429,7 @@ U1: `fasttrack/planning.ts:164`, `worklist/branchpulse.ts:137`, `worklist/summar
   - "Chuyển cho PR khác";
   - `ponytail:`.
 
-## Câu hỏi cho chủ sản phẩm (đang theo khuyến nghị — đổi thì báo planning)
+## Câu hỏi cho chủ sản phẩm — ĐÃ CHỐT 01/10 (Câu 1 = A + bỏ tuần Tạm dừng; Câu 2 = A)
 
 - **Câu 1 — FT "tuần học thứ n" tính từ đâu?**
   - A. Từ **tuần em bắt đầu lộ trình FT** (khớp lịch MT tuần 6/12/16; chuyển lớp FT vẫn đếm tiếp);

@@ -151,6 +151,19 @@ Mockup: `thiet-ke/mockup/20-chuyen-lop-ban-giao.html` (màn A–I, mỗi màn gh
 | Q31-3 | **Điện thoại:** làm các màn GV dùng hằng ngày — Tổng quan, Công việc, hồ sơ HV (bảng kỹ năng → thẻ), lưới chấm, Lịch Test (bộ lọc gọn), thông báo, thanh dưới có biểu tượng. **Hoãn** bảng quản trị / Vận hành / Báo cáo đơn vị (UX-D D7) | — |
 | Q31-4 | **Cỡ chữ:** kết quả, hạn, người phụ trách **12 px**; nhãn nhỏ khác giữ 11–11,5 px (`Nhan`) | kế hoạch PR-SANG câu 2 (giữ 11 px) |
 
+### 3.1h. Chủ sản phẩm chốt 01/10 (lượt 2) — góp ý mockup 23–26
+
+| Mã | Nội dung | Thay |
+|---|---|---|
+| Q31-5 | **Lớp FOU thường 2 GV**: một người L · R · G+V, một người P. Màn phân công FOU mặc định **2 ô** "L · R · G+V" và "P", nút nhỏ **"Tách từng môn"** cho lớp hiếm có 3 GV. Dữ liệu không đổi (vẫn 4 dòng `teacher_assignments`, một người nhận nhiều ô đã được phép). Hồ sơ GV ghi vai "GVCN · L R G+V" | mockup 21, 25 vẽ mỗi GV FOU một môn |
+| Q31-6 | **Bảng trộn nhiều chương trình lớp thường** (hồ sơ GV, Phân tích GV): đúng **4 cột cố định L · R · W (G+V) · S (P)**, ô chỉ có số | cột 6 môn / nhãn từng ô |
+| Q31-7 | **KCK chỉ miễn kỳ vọng MT và SOS tự động.** GV vẫn mở Case tay, thêm PA, ghi kết quả; Ý thức tính vi phạm và hạn như mọi em (mã hiện đã vậy — chỉ sửa chữ) | mockup 24 D2 cũ đọc thành "KCK = không theo dõi" |
+| Q31-8 | Câu tóm tắt hồ sơ HV nêu cả **việc quá hạn của người khác**, **mọi GV của em** đều thấy. Người xem không có việc với em → không vẽ thanh việc (T72, planning tự quyết) | K3-01 |
+| Q31-9 | **Bảng Phân tích GV** (thay phần cột của Q31-2). FT: Đang dạy · Đúng hạn (Chấm điểm · Ghi kết quả PA · Xử lý vi phạm — chỉ lớp làm GVCN, giải thích ở chú thích nổi, không ghi chữ "GVCN" dưới tên cột) · PA hiệu quả · Kết quả môn mình dạy (L R W1 W2 S) · **HV tiến bộ** (điểm kỹ năng GV dạy cao hơn bài trước). Lớp thường: Đang dạy · Đúng hạn (Chấm điểm · Ghi kết quả PA, cột mờ · Xử lý vi phạm) · Kết quả 4 cột (Q31-6). **Bỏ** xác nhận nguyên nhân, bàn giao. Tên cột 2–3 chữ, cách tính ở chú thích nổi (rê chuột + Tab). **Phần trăm ở ô kết quả tô màu** (đỏ < 50 %, vàng 50–69 %, xanh ≥ 70 %), không thêm thanh; cột việc một màu. Quá hạn chưa làm = trễ, đếm tới hôm nay. Bấm số: Chấm điểm → panel danh sách ô; số khác → **trang liên quan đã lọc** (bảng "Bấm số mở" mockup 25) | Q31-2 phần cột; "không tô" chỉ còn cho cột việc |
+| Q31-10 | **Tab Hành trình** = mockup 26 **bản 2 + bản 1**: đầu tab là các thẻ **chương theo lớp** (thay bảng Lịch sử lớp; chỉ hành trình của em: lớp, tuần, GVCN, kết quả Test, Case + PA với kết quả, Tạm dừng, vì sao sang lớp sau — **không** trạng thái việc, hạn, quá hạn, người giữ việc). Dưới là **trục tuần nâng cấp**: tên tháng căn giữa có viền kéo hết các tuần của tháng; đợt Test gọn "MT1 / 5.5" nằm đúng một cột tuần; Case = khung rỗng, PA = khối đặc (luật dùng chung cả hồ sơ HV); hàng Lớp; dải Tạm dừng; hàng Tuần học; cột tuần tới | bảng Lịch sử lớp + trục tuần cũ |
+| Q31-11 | **FT "tuần học thứ n"** của em đếm từ **tuần em bắt đầu FT**, **bỏ các tuần Tạm dừng**, chuyển lớp FT không đếm lại. **Lớp FT có số tuần riêng của lớp** — hai số khác nhau, không dùng lẫn | UXF-a Q6 |
+| Q31-12 | Bài quá hạn của môn **chưa phân công GV** vẫn tính; bảng GV chi nhánh có hàng **"Chưa phân công"** | UXF-a Q8 |
+
 ### 3.2. Những gì tôi tự quyết — anh/chị gạch dòng nào không đồng ý
 
 Ký hiệu ⚠ = điểm tôi ít chắc nhất, nên xem trước.
