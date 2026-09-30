@@ -1,5 +1,6 @@
 import { db, tx } from '../db.ts';
 import { boTroCuaCase, chepKetQuaNhom, quyenBoTro, type BoTroDto } from './boTro.ts';
+import { ghiMiniTestTrongTx, kiemMiniTest } from '../normal/cuoiKhoa.ts';
 import {
   DISPOSITIONS, INTERVENTION_KINDS, SYSTEM_KINDS, INTERVENTION_KIND_LABEL, INTERVENTION_STATUSES,
   INTERVENTION_STATUS_LABEL,
@@ -296,7 +297,8 @@ function loadCase(caseId: number) {
 function sosEditCtx(c: { class_id?: number | null; eff_student_id?: number | null; topic?: string | null }) {
   return {
     classId: c.class_id, studentId: c.eff_student_id,
-    skill: c.topic ?? undefined,
+    /* PR-LT2b (Q14): `tong_hop` không có ô phân công ở lớp FOU/BE/ELE — không kèm kỹ năng thì quyền rơi về GVCN lớp. */
+    skill: c.topic === 'tong_hop' ? undefined : c.topic ?? undefined,
   };
 }
 
@@ -2777,6 +2779,8 @@ export function updateResult(p: Principal, interventionId: number, input: {
    * (dịch bằng `decisionToStep`). Payload cũ không có `decision` giữ nguyên ý nghĩa.
    */
   decision?: string;
+  /** PR-LT2b (M-05): PA Bổ trợ miễn phí — lần ghi CUỐI bắt buộc kèm Mini Test (% · ngày làm). */
+  miniTest?: { tyLe?: unknown; ngay?: unknown } | null;
   /** PR-S2 (S4): vấn đề còn tồn. Tuỳ chọn, tối đa 300 ký tự. */
   remainingIssue?: string | null;
   /** PR-S2: lý do (bắt buộc khi Điều chỉnh hoặc Thay) hoặc ghi chú (tuỳ chọn). */
@@ -2801,7 +2805,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
   if (!iv) throw notFound('Không tìm thấy phương án.');
   const c = loadCase(iv.case_id);
   /* PR-LT2a (Q9): PA Bổ trợ do người dạy (mặc định GVCN cho FOU) ghi — `quyenBoTro`; PA khác vẫn theo kỹ năng (C02). */
-  if (iv.kind === 'bo_tro') {
+  if (iv.kind === 'bo_tro' || iv.kind === 'bo_tro_mien_phi') {
     if (!quyenBoTro(p, iv)) throw forbidden('Bạn không có quyền cập nhật kết quả của case này.');
   } else {
     require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
@@ -2908,6 +2912,11 @@ export function updateResult(p: Principal, interventionId: number, input: {
     const loi = kiemGhiRoKhac(input.newPlan.ghiRoKhac ?? input.ghiRoKhac);
     if (loi) throw badRequest(`PA đề xuất "Khác": ${loi}.`);
   }
+  /* PR-LT2b: lần ghi cuối của PA Bổ trợ miễn phí = ghi Mini Test (một lần cho cả nhóm). Kiểm TRƯỚC khi ghi gì. */
+  const mtDong = iv.kind === 'bo_tro_mien_phi' && lanCuoi
+    ? conn.prepare('SELECT * FROM mini_test WHERE nhom_bo_tro = ? AND ty_le IS NULL').get(iv.nhom_bo_tro) as any : null;
+  if (mtDong && !input.miniTest) throw badRequest('Ghi kết quả cuối của bổ trợ miễn phí thì nhập Mini Test (% và ngày làm).');
+  const mtGhi = mtDong ? kiemMiniTest(mtDong, input.miniTest!) : null;
   const remainingIssue = String(input.remainingIssue ?? '').trim() || null;
   if (remainingIssue && remainingIssue.length > 300) throw badRequest('Vấn đề còn tồn tối đa 300 ký tự.');
   /* Điều chỉnh: chuẩn hoá TRƯỚC giao dịch; sai thì không ghi gì. */
@@ -3037,6 +3046,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
       nextStep, observedOn, completedOn, lanCuoi, nextDue: weeklyUpdateDue(addDays(observedOn, 1)),
       apDungDieuChinh: (sib, fid) => apDungDieuChinh(sib, adjustPatch!, { followupId: fid, actorUserId: p.userId, reason: decisionNote!, on: observedOn }),
     });
+    if (mtDong && mtGhi) ghiMiniTestTrongTx(conn, p, mtDong, mtGhi);   // PR-LT2b: sau khi cả nhóm đã khép
 
     addJourney({
       studentId: c.eff_student_id, cycleId: c.eff_cycle_id,

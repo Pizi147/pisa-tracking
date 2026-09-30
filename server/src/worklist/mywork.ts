@@ -15,8 +15,9 @@ import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
 import { classAlerts } from '../classes/schedule.ts';
 import { demChuaLoTrinh } from '../classes/loTrinhTiep.ts';
 import { myMgmtTasks } from './mgmttasks.ts';
-import { NOT_UNCONFIRMED_PRESET, UNCONFIRMED_PRESET, YC_KE_HOACH, awaitingCauseCaseIds } from '../cases/sosState.ts';
+import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, UNCONFIRMED_PRESET, YC_KE_HOACH, awaitingCauseCaseIds } from '../cases/sosState.ts';
 import { quyenBoTro } from '../cases/boTro.ts';
+import { demCanQuanLyTheoLop, tyLeTongLo } from '../normal/cuoiKhoa.ts';
 import { dienMocQuyChe } from '../cases/sosAuto.ts';
 import { settleNoShows, sweepExpiredMoves } from '../fasttrack/absence.ts';
 import { demYeuCau, quetYeuCau } from '../duyet/yeuCau.ts';
@@ -106,7 +107,7 @@ export type WorkItem = {
  * chắn nhất để nó không bao giờ được làm.
  */
 export type WorkGroupKey =
-  | 'cause' | 'xac_nhan_pa' | 'ke_hoach_bo_tro' | 'phoi_hop' | 'score' | 'no_plan' | 'result'
+  | 'cause' | 'xac_nhan_pa' | 'ke_hoach_bo_tro' | 'phoi_hop' | 'mini_test' | 'score' | 'no_plan' | 'result'
   | 'no_owner' | 'placement' | 'next_step' | 'missing_data' | 'mgmt'
   /* PR-YT4 (K5 §3 dòng 6–8): việc Ý thức THẬT có hạn — thay nhắc mềm W01–W06. */
   | 'yt_xu_ly' | 'yt_xem' | 'yt_thuc_hien';
@@ -144,6 +145,12 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   phoi_hop: {
     label: 'Báo phụ huynh qua TVV',
     hint: 'Tạo task cho TVV trên Base với 4 nội dung, rồi đánh dấu đã làm.',
+  },
+
+  /* PR-LT2b (M-05, T47): Mini Test sau bổ trợ miễn phí — hạn = ngày buổi cuối + 2. */
+  mini_test: {
+    label: 'Ghi Mini Test',
+    hint: 'Em đã học bổ trợ miễn phí xong — ghi % và ngày làm Mini Test. Từ 70% thì Case tự hoàn thành, dưới 70% Quản lý được báo.',
   },
 
   /* ---------------------------------------------------- ba nhóm học thuật chính (mục 3.2) */
@@ -552,6 +559,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     if (lopGvcnDay.length) {
       const tienDo = classAlerts(lopGvcnDay);
       const soChua = demChuaLoTrinh(lopGvcnDay);
+      const canQl = demCanQuanLyTheoLop(lopGvcnDay);   // PR-LT2b: em Cuối khoá 50–59%
       for (const classId of lopGvcnDay) {
         const pr = tienDo.get(classId);
         if (!pr || pr.programmeCode === 'FT') continue;
@@ -567,7 +575,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           attemptId: null, attemptNo: null, caseId: null, level: null,
           contextLabel: pr.finalWeekStart ? `hết khoá ${tuanLich(pr.finalWeekStart, today)}` : null,
           count: n,
-          reason: `${n} HV chưa có lộ trình tiếp theo`,
+          reason: `${n} HV chưa có lộ trình tiếp theo${canQl.get(classId) ? ` · ${canQl.get(classId)} em Cuối khoá 50–59% (Quản lý cân nhắc)` : ''}`,
           tieuDe: 'Ghi lộ trình tiếp theo',
           actionLabel: 'Ghi lộ trình tiếp theo',
           href: `/hoc-vien?open=${classId}`,
@@ -678,7 +686,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     .prepare(
       `SELECT ${cotCase} FROM sos_cases sc ${noiCase}
         WHERE sc.status != 'done' AND s.archived_at IS NULL AND s.status = 'active'
-          AND EXISTS (SELECT 1 FROM case_interventions pv WHERE pv.case_id = sc.id AND pv.preset = 1)`,
+          AND ${LA_CASE_SOS('sc')}`,
     )
     .all() as any[];
   const waiting = new Set(awaitingCauseCaseIds(causeCandidates.map((c) => c.id as number)));
@@ -786,10 +794,13 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     )
     .all() as any[];
   napTruocPhamVi(baoPh.map((r) => r.student_id));
+  const phanTramCuoi = new Map<number, string>();
+  for (const [id, t] of tyLeTongLo(baoPh.filter((r) => r.attempt_kind === 'final').map((r) => r.attempt_id))) if (t.tyLe !== null) phanTramCuoi.set(id, ` ${Math.round(t.tyLe * 100)}%`);
   for (const r of baoPh) {
     if (f.branchId && r.branch_id !== f.branchId) continue;
-    const gvcn = isCoreTeacherOf(p, r.cur_class_id, today);
-    const cuaGv = tatCa && can(p, PERMISSIONS.CASE_APPROVE, { classId: r.cur_class_id, studentId: r.student_id });
+    const laCuoiKhoa = r.attempt_kind === 'final';   // PR-LT2b: Cuối khoá < 50% → việc của Quản lý (`request.approve`), không của GVCN
+    const gvcn = !laCuoiKhoa && isCoreTeacherOf(p, r.cur_class_id, today);
+    const cuaGv = (tatCa || laCuoiKhoa) && can(p, laCuoiKhoa ? PERMISSIONS.REQUEST_APPROVE : PERMISSIONS.CASE_APPROVE, { classId: r.cur_class_id, studentId: r.student_id });
     if (!gvcn && !cuaGv) continue;
     items.push({
       key: `baoph:${r.id}`, group: 'phoi_hop', urgency: 'normal',
@@ -798,11 +809,43 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       attemptId: r.attempt_id, attemptNo: r.attempt_no ?? null, caseId: null, level: null,
       contextLabel: nhanDot(r.attempt_kind, r.attempt_no), count: null,
       reason: 'Tạo task cho TVV trên Base: kết quả, môn khó khăn, nguyên nhân, phương án hỗ trợ và khả năng học lại.',
-      tieuDe: `Báo phụ huynh qua TVV · ${r.full_name ?? 'Học viên'} · Giữa khoá`,
+      tieuDe: `Báo phụ huynh qua TVV · ${r.full_name ?? 'Học viên'} · ${laCuoiKhoa ? `Cuối khoá${phanTramCuoi.get(r.attempt_id) ?? ''}` : 'Giữa khoá'}`,
       actionLabel: 'Mở Phối hợp',
       href: duongHoSoHocVien(r.student_id, { tab: 'y-thuc', sub: 'phoi-hop' }),
-      ownerId: gvcn ? p.userId : null, owner: null, mine: gvcn,
+      ownerId: gvcn || (laCuoiKhoa && cuaGv) ? p.userId : null, owner: null, mine: gvcn || (laCuoiKhoa && cuaGv),
       due: null, statusLabel: 'Chưa làm',
+    });
+  }
+  /* PR-LT2b (K5 §3 #10): Ghi Mini Test — người làm = người dạy bổ trợ (có tài khoản), không có thì GVCN lớp em ĐANG học. Hết khi đã ghi; em Tạm dừng ẩn (T65). */
+  const miniTest = conn
+    .prepare(
+      `SELECT m.id, m.student_id, m.han, s.full_name, cur.class_id AS cur_class_id, c.code AS class_code, c.branch_id,
+              (SELECT iv.performer_user_id FROM case_interventions iv WHERE iv.nhom_bo_tro = m.nhom_bo_tro AND iv.performer_user_id IS NOT NULL ORDER BY iv.id LIMIT 1) AS gv,
+              (SELECT MIN(iv.case_id) FROM case_interventions iv WHERE iv.nhom_bo_tro = m.nhom_bo_tro) AS case_id,
+              (SELECT MIN(iv.id) FROM case_interventions iv WHERE iv.nhom_bo_tro = m.nhom_bo_tro AND iv.status IN ('planned', 'started')) AS pa_id
+         FROM mini_test m JOIN students s ON s.id = m.student_id AND s.archived_at IS NULL AND s.status = 'active'
+         JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active' JOIN classes c ON c.id = cur.class_id
+        WHERE m.ty_le IS NULL ORDER BY m.han, m.id`,
+    )
+    .all() as any[];
+  napTruocPhamVi(miniTest.map((r) => r.student_id));
+  for (const m of miniTest) {
+    if (f.branchId && m.branch_id !== f.branchId) continue;
+    const mine = m.gv ? m.gv === p.userId : isCoreTeacherOf(p, m.cur_class_id, today);
+    const cuaGv = tatCa && can(p, PERMISSIONS.CASE_APPROVE, { classId: m.cur_class_id, studentId: m.student_id });
+    if (!mine && !cuaGv) continue;
+    items.push({
+      key: `minitest:${m.id}`, group: 'mini_test', urgency: urgencyOf(m.han, today),
+      studentId: m.student_id, studentName: m.full_name ?? 'Học viên',
+      classId: m.cur_class_id, classCode: m.class_code ?? null,
+      attemptId: null, attemptNo: null, caseId: m.case_id ?? null, level: null,
+      contextLabel: 'Bổ trợ miễn phí', count: null,
+      reason: 'Em đã học bổ trợ miễn phí — ghi Mini Test (% và ngày làm). Từ 70% thì Case tự hoàn thành.',
+      tieuDe: `Ghi Mini Test · ${m.full_name ?? 'Học viên'}`,
+      actionLabel: 'Ghi Mini Test',
+      href: duongHoSoHocVien(m.student_id, { caseId: m.case_id ?? undefined, paId: m.pa_id ?? undefined, viec: 'ghi-ket-qua' }),
+      ownerId: m.gv ?? null, owner: null, mine,
+      due: m.han, statusLabel: 'Chờ ghi Mini Test',
     });
   }
   // ---------------------------------------------------------------- 4. chốt tuần MT
@@ -1043,7 +1086,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * còn lại. "Cần xếp lớp tiếp" đứng ngay sau ba nhóm chính vì nó treo cả một lớp.
    */
   const order: WorkGroupKey[] = [
-    'cause', 'xac_nhan_pa', 'ke_hoach_bo_tro', 'phoi_hop', 'score', 'no_plan', 'result', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien',
+    'cause', 'xac_nhan_pa', 'ke_hoach_bo_tro', 'phoi_hop', 'mini_test', 'score', 'no_plan', 'result', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien',
     'placement', 'next_step', 'no_owner', 'mgmt', 'missing_data',
   ];
   const weight = (u: WorkUrgency) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);

@@ -29,6 +29,7 @@ export function mocQuyChe(span: AcademicSupportSpan, ctx: { ngayXacNhan: string;
  * (mốc tính lúc xác nhận). `mtKe` = số MT kế tiếp của lượt đã sinh PA.
  */
 export function mocChuPa(x: { span: string | null; followupDue: string | null; mtKe: number | null; daXacNhan: boolean }, homNay: string): string {
+  if (x.span === 'mini_test') return x.daXacNhan && x.followupDue ? `đến Mini Test · ${ngay(x.followupDue, homNay)}` : 'đến Mini Test';   // PR-LT2b
   if (x.span === 'den_cuoi_khoa') return x.daXacNhan ? mocChuBoTro(x.followupDue, homNay) : 'đến Cuối khoá';   // PR-LT2a: PA bổ trợ
   const dau = x.span === 'one_month' ? '1 tháng' : x.span === 'until_next_mt' ? (x.mtKe ? `đến MT${x.mtKe}` : 'đến MT kế tiếp')
     : x.span === 'until_exam' ? 'đến lúc thi' : '';

@@ -18,6 +18,7 @@ import { checkSkillWeekMove, ensureSkillRows, loadSkillRows, setSkillWeek } from
 import { dotHoanTat, dotHoanTatMany, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
 import { canRequest } from '../fasttrack/absence.ts';
 import { classProgress, classProgressMany } from '../classes/schedule.ts';
+import { baoLenCuoiKhoaDoiQuaHan, capNhatCuoiKhoaSauChuyen } from './cuoiKhoa.ts';
 
 /**
  * LỚP THƯỜNG (Foundation / Beginner / Elementary).
@@ -701,6 +702,11 @@ export function reportRegularNoShow(
           });
         }
       }
+      /* PR-LT2b (K4-23 vế 2): Cuối khoá dời quá tuần cuối khoá của lớp → thẻ Báo lên cho Quản lý (Giữa khoá không có thẻ). */
+      if (a.kind === 'final' && a.class_id) {
+        const cuoi = classProgress(a.class_id).finalWeekStart;
+        if (cuoi && moi.weekStart > cuoi) baoLenCuoiKhoaDoiQuaHan(conn, a);
+      }
       return { moved: true, tuanCu: cu.code ?? null, tuanMoi: moi.code, result: regularResultOf(attemptId) };
     }
 
@@ -758,6 +764,8 @@ export function refreshRegularOutcome(p: Principal, attemptId: number) {
   // Case mở ngay khi kết luận được, không chờ đủ điểm.
   if (r.sosLevel !== null) taoCaseGiuaKhoa(p, a, r);
   if (a.kind === 'progress') dongBoBaoPh(a, r.skills.filter((x) => x.outcome === 'fail').map((x) => x.skill));
+  /* PR-LT2b (Q30-4): Cuối khoá ĐỦ điểm mà em đã chuyển đi → luật Cuối khoá áp ở lộ trình mới. Không sinh tín hiệu / Case ở lớp cũ (T70). */
+  if (a.kind === 'final' && r.complete) capNhatCuoiKhoaSauChuyen(p, a);
   return r;
 }
 

@@ -51,6 +51,7 @@ import * as scheduleSvc from '../classes/schedule.ts';
 import * as intakeSvc from '../classes/intake.ts';
 import * as transitionSvc from '../classes/transition.ts';
 import * as loTrinhTiepSvc from '../classes/loTrinhTiep.ts';
+import * as cuoiKhoaSvc from '../normal/cuoiKhoa.ts';
 import * as luatLoTrinhSvc from '../classes/luatLoTrinh.ts';
 import * as lichSuLopSvc from '../classes/lichSuLop.ts';
 import * as hocVienLopSvc from '../classes/hocVienLop.ts';
@@ -1816,6 +1817,18 @@ api.get('/students/:id/lo-trinh-tiep', requireAuth, wrap((req) => {
 api.put('/students/:id/lo-trinh-tiep', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return loTrinhTiepSvc.ghiLoTrinhTiep(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
+/** PR-LT2b (T49): Quản lý đánh dấu Đạt / Không đạt kỳ vọng đầu ra của em BE/ELE lên FT. Chỉ `request.approve` (máy chủ kiểm lại). */
+api.put('/students/:id/ket-luan-ft', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return cuoiKhoaSvc.ghiKetLuanFt(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
+/** PR-LT2b (M-05): ghi / sửa Mini Test ngoài form Ghi kết quả cuối (sửa: chỉ Quản lý, có lý do). */
+api.put('/mini-test/:id', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return cuoiKhoaSvc.ghiMiniTest(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
 /** Những thứ còn dở của một em — để màn chuyển lớp bày sẵn, người chuyển không phải chép tay. */

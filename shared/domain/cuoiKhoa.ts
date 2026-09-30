@@ -47,7 +47,7 @@ const tenBacKe = (ct: ProgrammeCode): string => {
 const tenBac = (ct: ProgrammeCode): string => kyHieuLop(ct, null) ?? ct;
 
 /** "L, G+V": tên ngắn các môn trượt theo chương trình cũ. */
-const chuMonTruot = (ct: string, mon: readonly string[]): string => mon.map((m) => tenMonNgan(ct, m)).join(', ');
+export const chuMonTruot = (ct: string, mon: readonly string[]): string => mon.map((m) => tenMonNgan(ct, m)).join(', ');
 
 /**
  * PF3 / §6.3 / V: Pre FOU không chia môn — 4 buổi (50–59) hoặc 2 buổi (60–69) một ô Tổng hợp.

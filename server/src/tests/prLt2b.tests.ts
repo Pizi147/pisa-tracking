@@ -228,4 +228,146 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     assert(!!conn.prepare(`SELECT 1 FROM audit_logs WHERE action = 'cuoi_khoa.quyet' AND entity_id = ?`).get(l.classId), 'thiếu nhật ký cuoi_khoa.quyet');
     assert(!conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'quyet_dinh_cuoi_khoa'`).get(), 'không được có thẻ Quyết định Cuối khoá (Q30-3)');
   });
+
+  // ------------------------------------------------------------------ Task 5 · sau khi chuyển (Case Cuối khoá + PA Bổ trợ miễn phí, Báo PH, Tutor FT)
+  const permMod: any = await import('../permissions.ts');
+  const casesMod: any = await import('../cases/cases.ts');
+  const sosState: any = await import('../cases/sosState.ts');
+  const myWorkMod: any = await import('../worklist/mywork.ts');
+  const duyetMod: any = await import('../duyet/yeuCau.ts');
+  const luatMod: any = await import('../classes/luatLoTrinh.ts');
+  const cuoiSvc: any = cuoiKhoaMod;
+  const NGAY_CHUYEN = week.mondayOf(addDays(TODAY, -28));   // Thứ Hai 4 tuần trước — PA bổ trợ đã tới hạn ghi kết quả cuối
+  const ganGv = (classId: number, userId: number, skill: string | null) => {
+    conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at) VALUES (?,?,?,?, '2026-01-01', 'active', ?)`)
+      .run(userId, classId, skill, skill === null ? 1 : 0, new Date().toISOString());
+  };
+  /** Lớp đích thử (khai giảng tuần chuyển), GVCN = `P.normalCoreTeacher`, tuỳ chọn GVBM Listening = `P.lrTeacher`. */
+  /** Một GV bộ môn KHÁC GVCN (`P.lrTeacher` trùng người với `P.normalCoreTeacher` ở bộ demo). */
+  const gvbmKhac = (conn.prepare(`SELECT user_id FROM teacher_assignments WHERE user_id != ? AND skill IS NOT NULL AND is_core = 0 LIMIT 1`).get(P.normalCoreTeacher.userId) as any).user_id as number;
+  const taoLopDich = (kind: 'FOU' | 'BE' | 'ELE', gvbmL = false) => {
+    soLop += 1;
+    const tuan = week.ensurePeriod(NGAY_CHUYEN);
+    const lop = intakeMod.createClass(P.admin, { code: `MB ${kind} 8${soLop}`, branchId: MB, kind, startPeriodId: tuan.id, startDate: tuan.weekStart });
+    ganGv(lop.id, P.normalCoreTeacher.userId, null);
+    if (gvbmL) ganGv(lop.id, gvbmKhac, 'listening');
+    return lop.id as number;
+  };
+  const cycleMoi = (sid: number) => (conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(sid) as any).id as number;
+  const chuyen = (fromClassId: number, dongs: any[]) => {
+    const r = transitionMod.applyTransition(P.mbManager, { fromClassId, effectiveDate: NGAY_CHUYEN, dongs });
+    assert(r.failed.length === 0, `dòng lỗi: ${JSON.stringify(r.failed)}`);
+    return r;
+  };
+  const caseCuaEm = (sid: number, cycleId: number) => conn.prepare('SELECT * FROM sos_cases WHERE student_id = ? AND cycle_id = ? ORDER BY id').all(sid, cycleId) as any[];
+  const paCuaCase = (caseId: number) => conn.prepare(`SELECT * FROM case_interventions WHERE case_id = ? AND kind = 'bo_tro_mien_phi' ORDER BY id`).all(caseId) as any[];
+
+  check('LT2b (5) · FOU 65% trượt L, G+V → BE: 2 Case chuyen_cap + 2 PA cùng nhóm + 1 Mini Test; Case Giữa khoá cùng môn được dùng lại (M-01); KHÔNG phải Case SOS', () => {
+    const l = taoLop('FOU', 3);
+    const [s0, s1, s2] = l.sids;
+    ghiDiem(l.luot.get(s0)!, { [L]: 20, [R]: 30, [W]: 20, [S]: 34 });   // 65%: trượt L, W
+    ghiDiem(l.luot.get(s1)!, { [L]: 18, [R]: 18, [W]: 18, [S]: 18 });   // 45%
+    ghiDiem(l.luot.get(s2)!, { [L]: 32, [R]: 32, [W]: 30, [S]: 31 });   // 78%
+    /* Case Giữa khoá L đang mở ở lộ trình FOU cũ. */
+    const cuCycle = cycleMoi(s0);
+    conn.prepare(`INSERT INTO sos_cases (student_id, cycle_id, topic, category, origin_kind, status, dedup_key, created_at) VALUES (?,?, 'listening', 'listening', 'mock', 'open', ?, ?)`)
+      .run(s0, cuCycle, `a:${s0}:${cuCycle}:listening`, new Date().toISOString());
+    const be = taoLopDich('BE'), fou2 = taoLopDich('FOU');
+    chuyen(l.classId, [
+      { studentId: s0, huong: 'len_lop', toClassId: be }, { studentId: s1, huong: 'hoc_lai', toClassId: fou2 }, { studentId: s2, huong: 'len_lop', toClassId: be },
+    ]);
+    const moi0 = cycleMoi(s0);
+    const cases = caseCuaEm(s0, moi0);
+    assert(cases.length === 2 && cases.map((c) => c.category).sort().join() === 'listening,writing', `Case ở lộ trình mới: ${cases.map((c) => c.category)}`);
+    const gv = cases.find((c) => c.category === 'listening');
+    assert(gv.origin_kind === 'mock', 'Case Giữa khoá cùng môn phải được dùng lại (không tạo Case thứ hai)');
+    const cc = cases.find((c) => c.category === 'writing');
+    assert(cc.origin_kind === 'chuyen_cap' && cc.sos_level === null && cc.han_xac_nhan === null && cc.status === 'in_progress', JSON.stringify(cc));
+    assert(cc.title === 'Cuối khoá FOU · Grammar + Vocabulary không đạt', cc.title);
+    const pa = [...paCuaCase(gv.id), ...paCuaCase(cc.id)];
+    assert(pa.length === 2 && new Set(pa.map((x) => x.nhom_bo_tro)).size === 1 && pa[0].nhom_bo_tro === `mt:${l.luot.get(s0)}`, JSON.stringify(pa.map((x) => x.nhom_bo_tro)));
+    assert(pa.every((x) => x.preset === 1 && !!x.confirmed_at && x.status === 'started' && x.moc_quy_che === 'mini_test'), 'PA phải chạy ngay, có mốc Mini Test');
+    const mt = conn.prepare('SELECT * FROM mini_test WHERE student_id = ?').all(s0) as any[];
+    const lich = d.lichBoTro({ batDau: NGAY_CHUYEN, soTuan: 1 });
+    assert(mt.length === 1 && mt[0].han === lich.hanMiniTest && mt[0].ngay_du_kien === lich.ngayMiniTest && mt[0].so_buoi === 2 && mt[0].ty_le === null, JSON.stringify(mt));
+    /* Không phải Case SOS: không chờ nguyên nhân, không ở việc `cause`, không Báo lên nguyên nhân. */
+    const st = sosState.sosCaseState(cc.id);
+    assert(!st.fromSos && !st.awaitingCause, JSON.stringify(st));
+    assert(!(sosState.awaitingCauseCaseIds([cc.id]) as number[]).includes(cc.id), 'Case Cuối khoá không được chờ nguyên nhân');
+    /* 78% Pass: không Case, không PA. */
+    assert(caseCuaEm(s2, cycleMoi(s2)).length === 0, '78% không có Case');
+    /* 45% học lại: đúng một việc Báo PH qua TVV làm bởi Quản lý (không phải GVCN). */
+    const baoPh = conn.prepare(`SELECT * FROM sos_coordination_actions WHERE student_id = ? AND kind = 'bao_ph_tvv'`).all(s1) as any[];
+    assert(baoPh.length === 1 && baoPh[0].attempt_id === l.luot.get(s1) && baoPh[0].preset === 1 && baoPh[0].status === 'pending', JSON.stringify(baoPh));
+    const viec = (who: any) => (myWorkMod.myWork(who, { nguoi: 'tat-ca' }) as any).items.filter((x: any) => x.key === `baoph:${baoPh[0].id}`);
+    assert(viec(P.mbManager).length === 1 && viec(P.mbManager)[0].tieuDe.includes('Cuối khoá 45%'), 'Quản lý phải thấy việc Báo PH: ' + JSON.stringify(viec(P.mbManager).map((x: any) => x.tieuDe)));
+    assert(viec(permMod.loadPrincipal(P.normalCoreTeacher.userId)).length === 0, 'GVCN không có việc Báo PH của Cuối khoá');
+    assert(caseCuaEm(s1, cycleMoi(s1)).length === 0, '45% học lại không có Case bổ trợ');
+  });
+  check('LT2b (5) · Cuối khoá không sinh tín hiệu / Case ở lớp cũ khi nhập điểm trượt (T70)', () => {
+    const l = taoLop('BE', 1);
+    const truocCase = (conn.prepare('SELECT COUNT(*) n FROM sos_cases').get() as any).n, truocTin = (conn.prepare('SELECT COUNT(*) n FROM case_signals').get() as any).n;
+    for (const [k, s] of [[L, 10], [R, 10], [W, 10], [S, 10]] as const) regularMod.saveRegularScore(P.admin, l.luot.get(l.sids[0])!, k, { score: s, total: 40 }, TODAY);
+    assert((conn.prepare('SELECT COUNT(*) n FROM sos_cases').get() as any).n === truocCase, 'Cuối khoá trượt không được sinh Case');
+    assert((conn.prepare('SELECT COUNT(*) n FROM case_signals').get() as any).n === truocTin, 'Cuối khoá trượt không được sinh tín hiệu');
+  });
+  check('LT2b (5) · Pre FOU 52% QL cho lên FOU: Case tong_hop, 4 buổi · 2 tuần; GVCN FOU ghi được, GVBM L của lớp FOU → 403', () => {
+    const l = taoLop('PREFOU', 1);
+    ghiDiem(l.luot.get(l.sids[0])!, { tong_hop: 21 });   // 52,5%
+    const fou = taoLopDich('FOU', true);
+    chuyen(l.classId, [{ studentId: l.sids[0], huong: 'len_lop', toClassId: fou }]);
+    const c = caseCuaEm(l.sids[0], cycleMoi(l.sids[0]));
+    assert(c.length === 1 && c[0].category === 'tong_hop' && c[0].title === 'Cuối khoá Pre FOU · Tổng hợp không đạt', JSON.stringify(c.map((x) => x.title)));
+    const pa = paCuaCase(c[0].id);
+    assert(pa.length === 1 && /4 buổi miễn phí · 2 tuần/.test(pa[0].description), pa[0]?.description);
+    const mt = conn.prepare('SELECT * FROM mini_test WHERE student_id = ?').get(l.sids[0]) as any;
+    assert(mt.so_buoi === 4 && mt.ngay_du_kien === d.lichBoTro({ batDau: NGAY_CHUYEN, soTuan: 2 }).ngayMiniTest, JSON.stringify(mt));
+    const ghi = (who: any) => casesMod.updateResult(who, pa[0].id, { outcome: 'improved', note: 'Em làm bài tốt hơn hẳn', observedOn: TODAY, miniTest: { tyLe: 80, ngay: TODAY } });
+    assertThrows(() => ghi(permMod.loadPrincipal(gvbmKhac)), /quyền|phạm vi/, 'GVBM Listening của lớp FOU không được ghi Case Tổng hợp');
+    ghi(permMod.loadPrincipal(P.normalCoreTeacher.userId));
+    assert((conn.prepare('SELECT ty_le FROM mini_test WHERE id = ?').get(mt.id) as any).ty_le === 0.8, 'GVCN phải ghi được Mini Test');
+  });
+  check('LT2b (5) · lớp thường → lớp thường: Case Giữa khoá đi theo em; BE 55% chuyển bởi QL → soTuan 2; đường chuyển một em (apDungMotDong) cũng tạo bổ trợ', () => {
+    const l = taoLop('BE', 1);
+    const s = l.sids[0];
+    ghiDiem(l.luot.get(s)!, { [L]: 22, [R]: 22, [W]: 22, [S]: 22 });   // 55%
+    const ele = taoLopDich('ELE');
+    luatMod.apDungMotDong(P.admin, { sid: s, toClassId: ele, ngay: NGAY_CHUYEN, boiCanh: 'cuoi-khoa' });
+    const cs = caseCuaEm(s, cycleMoi(s));
+    assert(cs.length === 4 && cs.every((c) => c.origin_kind === 'chuyen_cap'), `4 Case (mỗi môn trượt): ${cs.length}`);
+    const mt = conn.prepare('SELECT * FROM mini_test WHERE student_id = ?').get(s) as any;
+    assert(mt.so_buoi === 4 && mt.ngay_du_kien === d.lichBoTro({ batDau: NGAY_CHUYEN, soTuan: 2 }).ngayMiniTest, JSON.stringify(mt));
+  });
+  check('LT2b (5) · BE 72% sang FT + kết luận Trung tâm {R, W} → 2 Case FT (Reading, Writing 2) + PA tutor preset 0; Học sinh → không Case; đánh dấu sau khi đã sang FT tạo ngay', () => {
+    const l = taoLop('BE', 3);
+    const [a, b, c2] = l.sids;
+    for (const s of l.sids) ghiDiem(l.luot.get(s)!, { [L]: 30, [R]: 30, [W]: 30, [S]: 30 });   // 75%
+    cuoiSvc.ghiKetLuanFt(P.mbManager, a, { dat: false, nguyenNhan: 'trung_tam', mon: ['reading', 'writing'] });
+    cuoiSvc.ghiKetLuanFt(P.mbManager, b, { dat: false, nguyenNhan: 'hoc_sinh', ghiChu: 'Em nghỉ nhiều — phương án case-by-case với phụ huynh' });
+    const ft = classId('MB FT 101');
+    chuyen(l.classId, [a, b, c2].map((studentId) => ({ studentId, huong: 'fast_track', toClassId: ft, mucTieu: 6.5 })));
+    const cs = caseCuaEm(a, cycleMoi(a));
+    assert(cs.map((c) => c.category).sort().join() === 'reading,writing2', `Case FT: ${cs.map((c) => c.category)}`);
+    assert(cs.every((c) => c.origin_kind === 'chuyen_cap' && /^Kỳ vọng đầu ra chưa đạt · /.test(c.title)), JSON.stringify(cs.map((c) => c.title)));
+    const tutor = conn.prepare(`SELECT * FROM case_interventions WHERE case_id = ?`).all(cs[0].id) as any[];
+    assert(tutor.length === 1 && tutor[0].kind === 'tutor' && tutor[0].preset === 0 && /Tutor 10 buổi/.test(tutor[0].description), JSON.stringify(tutor));
+    assert(caseCuaEm(b, cycleMoi(b)).length === 0, 'Học sinh → không Case');
+    assert(caseCuaEm(c2, cycleMoi(c2)).length === 0, 'chưa đánh dấu → không Case');
+    const r = cuoiSvc.ghiKetLuanFt(P.mbManager, c2, { dat: false, nguyenNhan: 'trung_tam', mon: ['listening'] });   // sau khi đã sang FT
+    assert(r.taoCaseTutor === 1 && caseCuaEm(c2, cycleMoi(c2)).length === 1, 'đánh dấu sau khi sang FT phải tạo Case ngay');
+    const r2 = cuoiSvc.ghiKetLuanFt(P.mbManager, c2, { dat: true });
+    assert(caseCuaEm(c2, cycleMoi(c2)).length === 1 && /giữ nguyên/.test(r2.luuY), 'đổi sang Đạt không xoá Case, có ghi chú');
+  });
+  check('LT2b (5) · điểm Cuối khoá nhập ĐỦ sau khi em đã chuyển (Q30-4): dòng vẫn chuyển; luật áp ở lộ trình mới, chạy lại không sinh trùng', () => {
+    const l = taoLop('FOU', 1);
+    const s = l.sids[0];
+    ghiDiem(l.luot.get(s)!, { [L]: 20, [R]: 30, [W]: 20 });   // thiếu Speaking
+    const be = taoLopDich('BE');
+    chuyen(l.classId, [{ studentId: s, huong: 'len_lop', toClassId: be }]);
+    assert(caseCuaEm(s, cycleMoi(s)).length === 0 && !conn.prepare('SELECT 1 FROM mini_test WHERE student_id = ?').get(s), 'thiếu điểm: chưa Case / Mini Test');
+    regularMod.saveRegularScore(P.admin, l.luot.get(s)!, S, { score: 34, total: 40 }, TODAY);   // đủ điểm: 104/160 = 65%
+    assert(caseCuaEm(s, cycleMoi(s)).length === 2 && (conn.prepare('SELECT COUNT(*) n FROM mini_test WHERE student_id = ?').get(s) as any).n === 1, 'điểm nhập sau phải áp ở lộ trình mới');
+    regularMod.saveRegularScore(P.admin, l.luot.get(s)!, S, { score: 35, total: 40, lyDo: 'Chấm lại bài Speaking' }, TODAY);   // sửa điểm: không sinh thêm
+    assert(caseCuaEm(s, cycleMoi(s)).length === 2 && (conn.prepare('SELECT COUNT(*) n FROM case_interventions WHERE nhom_bo_tro = ?').get(`mt:${l.luot.get(s)}`) as any).n === 2, 'chạy lại không sinh trùng');
+  });
 }
