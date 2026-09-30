@@ -7,8 +7,8 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { Empty, Skeleton } from '../../ui/ui.tsx';
-import { kiemPhanCong, ngay, oPhanCong, tenMon } from '@shared/domain/index.ts';
-import { LuoiPhanCong } from './ClassCreatePanel.tsx';
+import { chonKhiDoiTach, kiemPhanCong, nenTachFou, ngay, slotsTuO, tenMon } from '@shared/domain/index.ts';
+import { LuoiPhanCong, NutTachFou, loiTaiO, useTachFou } from './ClassCreatePanel.tsx';
 
 /**
  * SỬA PHÂN CÔNG GIÁO VIÊN CỦA LỚP (PR-LOP, YC-4, mockup 21 mục 4) — MỘT panel `KhungPanel`, mỗi ô MỘT người.
@@ -42,6 +42,7 @@ export function TeacherAssignPanel({ open, onClose, classId, classCode, onDone }
   const [busy, setBusy] = useState(false);
   const [moDaDay, setMoDaDay] = useState(false);
   const lf = useLoiForm();
+  const fou = useTachFou(data?.programmeCode ?? null, data?.skills ?? [], chon, setChon);
 
   // Nạp bức tranh hiện tại một lần khi mở; sửa xong mới gửi lên.
   useEffect(() => {
@@ -51,18 +52,22 @@ export function TeacherAssignPanel({ open, onClose, classId, classCode, onDone }
       theoO.set(khoa, [...(theoO.get(khoa) ?? []), a]);
     }
     const ds = [...theoO];
-    setChon(Object.fromEntries(ds.filter(([, a]) => a.length === 1).map(([k, a]) => [k, a[0].userId])));
+    const c: Record<string, number | ''> = Object.fromEntries(ds.filter(([, a]) => a.length === 1).map(([k, a]) => [k, a[0].userId]));
+    /* Q31-5: FOU mà L, R, G+V cùng người (hoặc trống) → 2 ô; khác người → mở sẵn tách. */
+    const tach = nenTachFou(data.programmeCode, data.bySkill);
+    fou.setTach(tach);
+    setChon(fou.gop && !tach ? chonKhiDoiTach(c, fou.gop, false) : c);
     setNhieuNguoi(Object.fromEntries(ds.filter(([, a]) => a.length > 1).map(([k, a]) => [k, a.map((x) => x.name)])));
-  }, [data]);
+  }, [data]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!open) return null;
 
-  const oList = data ? oPhanCong(data.programmeCode, data.skills) : [];
-  const slots = oList.flatMap((o) => (chon[o.khoa] ? [{ userId: Number(chon[o.khoa]), skill: o.skill, isCore: o.laGvcn }] : []));
+  const oList = data ? fou.oList : [];
+  const slots = slotsTuO(oList, chon);
   const loiPc = data ? kiemPhanCong(data.programmeCode, data.skills, slots) : [];
   const loiO = (khoa: string) => (nhieuNguoi[khoa] && !chon[khoa]
     ? `Ô này đang có ${nhieuNguoi[khoa].length} người — chọn lại một người`
-    : loiPc.find((l) => l.khoa === khoa)?.lyDo ?? null);
+    : loiTaiO(loiPc, oList, khoa));
   const oLoi = oList.filter((o) => loiO(o.khoa));
 
   /* Người đang được phân công mà không còn trong danh sách ứng viên (khoá tài khoản, đổi chi nhánh) vẫn phải hiện tên. */
@@ -104,6 +109,7 @@ export function TeacherAssignPanel({ open, onClose, classId, classCode, onDone }
             <LuoiPhanCong oList={oList} chon={chon} nguoi={nguoi} loi={loiO} oId={lf.oId} chiXem={!data.viewer.canAssign} chuongTrinh={data.programmeCode}
               nhanTrong={(k) => nhieuNguoi[k]?.join(' · ')}
               onChon={(khoa, v) => setChon((c) => ({ ...c, [khoa]: v }))} />
+            <NutTachFou fou={fou} chiXem={!data.viewer.canAssign} />
             <p className="m-0 text-[11px] text-slate-500">
               {oList.length === 1 ? 'Lớp Pre FOU không chia môn — GVCN dạy luôn.' : 'Mỗi ô một người. Một người nhận nhiều ô được.'}
             </p>

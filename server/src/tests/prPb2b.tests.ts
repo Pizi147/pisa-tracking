@@ -178,5 +178,73 @@ export async function runPrPb2bTests(t: YThucTestKit) {
     const coHan = get(`SELECT COUNT(*) n FROM violations WHERE id <= ? AND han_xu_ly IS NOT NULL AND phan_hoi_ngay IS NOT NULL`, t.seedMax.violations ?? 0).n;
     assert(coHan > 0, 'seed không có vi phạm đã phản hồi có hạn chốt');
   });
-  void all; void maLoi;
+
+  // ------------------------------------------------------------------ khối 2 · lớp FOU hai giáo viên (Task 2, Q31-5)
+  console.log('\nPR-Pb2-b · Lớp FOU hai giáo viên: phân công 2 ô + Tách từng môn');
+  const FOU = [...d.PROGRAMME_TEMPLATES.FOU.skills] as string[];
+  const { createApp } = await import('../app.ts');
+  /** Máy chủ thật + phiên demo theo người dùng — phép kiểm quyền đi qua đúng route như trình duyệt. */
+  async function voiMayChu(fn: (goi: (userId: number, url: string, init?: RequestInit) => Promise<Response>) => Promise<void>) {
+    const may = createApp().listen(0);
+    const cong = (may.address() as any).port as number;
+    const phien = new Map<number, string>();
+    const goi = async (userId: number, url: string, init: RequestInit = {}) => {
+      if (!phien.has(userId)) {
+        const s = await fetch(`http://127.0.0.1:${cong}/api/demo/session`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ userId }) });
+        phien.set(userId, (s.headers.get('set-cookie') ?? '').split(';')[0]);
+      }
+      return fetch(`http://127.0.0.1:${cong}/api${url}`, { ...init, headers: { 'content-type': 'application/json', cookie: phien.get(userId)!, ...(init.headers ?? {}) } });
+    };
+    try { await fn(goi); } finally { may.close(); }
+  }
+
+  check('Pb2b (2a) · oPhanCong FOU { tach: false } → 3 ô: GVCN · "L · R · G+V" (gộp L, R, W) · P; mặc định → 5 ô như cũ', () => {
+    const gop = d.oPhanCong('FOU', FOU, { tach: false });
+    assert(gop.map((o: any) => o.nhan).join('|') === 'GVCN|L · R · G+V|P', gop.map((o: any) => o.nhan).join('|'));
+    assert(gop[1].gop.join() === 'listening,reading,writing' && gop[1].skill === null, JSON.stringify(gop[1]));
+    assert(d.oPhanCong('FOU', FOU).length === 5 && d.oPhanCong('FOU', FOU, {}).length === 5, 'mặc định 5 ô');
+  });
+  check('Pb2b (2b) · BE, ELE, FT với { tach: false } không đổi; Pre FOU một ô GVCN', () => {
+    for (const ct of ['BE', 'ELE']) {
+      const sk = [...d.PROGRAMME_TEMPLATES[ct].skills];
+      assert(JSON.stringify(d.oPhanCong(ct, sk, { tach: false })) === JSON.stringify(d.oPhanCong(ct, sk)), ct);
+    }
+    assert(JSON.stringify(d.oPhanCong('FT', d.ENTRY_SKILLS, { tach: false })) === JSON.stringify(d.oPhanCong('FT', d.ENTRY_SKILLS)), 'FT');
+    assert(d.oPhanCong('PREFOU', ['tong_hop'], { tach: false }).length === 1, 'Pre FOU');
+  });
+  check('Pb2b (2c) · slotsTuO: ô gộp chọn người 7 → 3 dòng người 7; kiemPhanCong không lỗi; GVCN = người 7 đủ luật "GVCN dạy ≥ 1 môn"', () => {
+    const oList = d.oPhanCong('FOU', FOU, { tach: false });
+    const slots = d.slotsTuO(oList, { gvcn: 7, 'gop-fou': 7, speaking: 9 });
+    assert(slots.filter((s: any) => s.userId === 7 && !s.isCore).map((s: any) => s.skill).join() === 'listening,reading,writing', JSON.stringify(slots));
+    assert(slots.some((s: any) => s.isCore && s.userId === 7 && s.skill === null) && slots.some((s: any) => s.skill === 'speaking' && s.userId === 9), JSON.stringify(slots));
+    assert(d.kiemPhanCong('FOU', FOU, slots).length === 0, JSON.stringify(d.kiemPhanCong('FOU', FOU, slots)));
+    const khongDay = d.slotsTuO(oList, { gvcn: 5, 'gop-fou': 7, speaking: 9 });
+    assert(d.kiemPhanCong('FOU', FOU, khongDay)[0]?.khoa === 'gvcn', 'GVCN không dạy môn nào phải lỗi');
+  });
+  check('Pb2b (2d) · nenTachFou: L = R = 7, G+V trống → false; L = 7, R = 9 → true; lớp BE → false · chonKhiDoiTach giữ người', () => {
+    assert(!d.nenTachFou('FOU', [{ skill: 'listening', userId: 7 }, { skill: 'reading', userId: 7 }, { skill: 'speaking', userId: 9 }]), 'cùng người');
+    assert(d.nenTachFou('FOU', [{ skill: 'listening', userId: 7 }, { skill: 'reading', userId: 9 }]), 'khác người');
+    assert(!d.nenTachFou('BE', [{ skill: 'listening', userId: 7 }, { skill: 'reading', userId: 9 }]), 'BE');
+    const gop = ['listening', 'reading', 'writing'];
+    assert(JSON.stringify(d.chonKhiDoiTach({ gvcn: 7, 'gop-fou': 7, speaking: 9 }, gop, true)) === JSON.stringify({ gvcn: 7, speaking: 9, listening: 7, reading: 7, writing: 7 }), 'tách');
+    assert(JSON.stringify(d.chonKhiDoiTach({ gvcn: 7, listening: '', reading: 8, speaking: 9 }, gop, false)) === JSON.stringify({ gvcn: 7, speaking: 9, 'gop-fou': 8 }), 'gộp');
+  });
+  const intake2: any = await import('../classes/intake.ts');
+  const MB = get(`SELECT id FROM branches WHERE code = 'MB'`).id as number;
+  const lopFouMoi = (() => {
+    const bat = d.mondayOfDate(D);
+    return (intake2.createClass(P.admin, { code: 'MB FOU PB2B', branchId: MB, kind: 'FOU', isFastTrack: false, route: null, startDate: bat, startPeriodId: week.ensurePeriod(bat).id }) as any).id as number;
+  })();
+  await t.checkAsync('Pb2b (2e) · PUT /classes/{FOU}/teachers với slots đã trải → đúng 1 GVCN + 4 dòng môn (máy chủ nhận dạng cũ)', async () => {
+    const a = P.normalCoreTeacher.userId; const b = P.normalSubjectTeacher.userId;
+    const slots = d.slotsTuO(d.oPhanCong('FOU', FOU, { tach: false }), { gvcn: a, 'gop-fou': a, speaking: b });
+    await voiMayChu(async (goi) => {
+      const r = await goi(P.mbManager.userId, `/classes/${lopFouMoi}/teachers`, { method: 'PUT', body: JSON.stringify({ slots }) });
+      assert(r.ok, `PUT ${r.status}: ${await r.text()}`);
+    });
+    const ds = all(`SELECT user_id, skill, is_core FROM teacher_assignments WHERE class_id = ? AND status = 'active' AND effective_to IS NULL ORDER BY is_core DESC, skill`, lopFouMoi);
+    assert(ds.length === 5 && ds[0].is_core === 1 && ds[0].skill === null && ds[0].user_id === a, JSON.stringify(ds));
+    assert(ds.slice(1).map((x) => `${x.skill}:${x.user_id === a ? 'a' : 'b'}`).join() === 'listening:a,reading:a,speaking:b,writing:a', JSON.stringify(ds));
+  });
+  void maLoi;
 }

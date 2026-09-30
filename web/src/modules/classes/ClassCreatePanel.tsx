@@ -9,7 +9,8 @@ import { useToast } from '../../ui/Toast.tsx';
 import { NutChon } from '../../ui/ui.tsx';
 import {
   CHO_TAO_PRE_FOU, ENTRY_SKILLS, PROGRAMME_TEMPLATES,
-  chuanHoaMaLop, dsLoi, ghepMaLop, kiemPhanCong, kiemSoLop, kyHieuLop, kyNangGoiY, locSoLop, oPhanCong, skillShort, type LoiTruong, type OPhanCong,
+  chonKhiDoiTach, chuanHoaMaLop, dsLoi, ghepMaLop, kiemPhanCong, kiemSoLop, kyHieuLop, kyNangGoiY, locSoLop, oPhanCong, skillShort, slotsTuO,
+  type LoiPhanCong, type LoiTruong, type OPhanCong,
 } from '@shared/domain/index.ts';
 
 type Branch = { id: number; code: string; name: string };
@@ -60,18 +61,19 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
   const prog = (programmes.data ?? []).find((p) => p.code === ct);
   const mau = prog ?? (PROGRAMME_TEMPLATES as Record<string, Programme | undefined>)[ct];
   const kyNang: string[] = ct === 'FT' ? [...ENTRY_SKILLS] : [...(mau?.skills ?? [])];
-  const oList = oPhanCong(ct, kyNang);
+  const fou = useTachFou(ct, kyNang, chon, setChon);
+  const oList = fou.oList;
   const khoaO = oList.map((o) => o.khoa).join('|');
   /* Đổi kiểu lớp/chương trình → bỏ chọn của ô không còn. */
   useEffect(() => {
     setChon((c) => Object.fromEntries(Object.entries(c).filter(([k]) => khoaO.split('|').includes(k))));
   }, [khoaO]);
-  const slots = oList.flatMap((o) => (chon[o.khoa] ? [{ userId: Number(chon[o.khoa]), skill: o.skill, isCore: o.laGvcn }] : []));
+  const slots = slotsTuO(oList, chon);
 
   const ma = branch && !kiemSoLop(so) ? ghepMaLop(branch.code, ct, lt, so) : null;
   const trung = !!ma && (lopDaCo.data ?? []).some((l) => chuanHoaMaLop(l.code) === chuanHoaMaLop(ma));
   const loiPc = kiemPhanCong(ct, kyNang, slots);
-  const loiPcO = (khoa: string) => loiPc.find((l) => l.khoa === khoa)?.lyDo ?? null;
+  const loiPcO = (khoa: string) => loiTaiO(loiPc, oList, khoa);
 
   /* Lỗi ô thường: hiện khi rời ô / sau khi bấm Tạo lớp; riêng số sai mẫu / trùng tên hiện ngay khi đã gõ. */
   const loiSo = kiemSoLop(so) ?? (trung ? `Đã có lớp ${ma}` : null);
@@ -108,7 +110,7 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 
-  const loiPcDau = loiPc[0] ? `${oList.find((o) => o.khoa === loiPc[0].khoa)?.nhan ?? ''}: ${loiPc[0].lyDo}` : undefined;
+  const loiPcDau = loiPc[0] ? `${oList.find((o) => o.khoa === loiPc[0].khoa || o.gop?.includes(loiPc[0].khoa))?.nhan ?? ''}: ${loiPc[0].lyDo}` : undefined;
 
   return (
     <KhungPanel tieuDe="Tạo lớp mới" onDong={onClose}
@@ -169,6 +171,7 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
       <Khoi tieuDe="Phân công">
         <LuoiPhanCong oList={oList} chon={chon} nguoi={teachers.data ?? []} loi={loiPcO} oId={lf.oId} chuongTrinh={ct}
           onChon={(khoa, v) => setChon((c) => ({ ...c, [khoa]: v }))} />
+        <NutTachFou fou={fou} />
         <p className="m-0 text-[11px] text-slate-500">
           {oList.length === 1
             ? 'Lớp Pre FOU không chia môn — GVCN dạy luôn.'
@@ -176,6 +179,44 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
         </p>
       </Khoi>
     </KhungPanel>
+  );
+}
+
+/** Lỗi luật phân công của một ô; ô gộp (FOU "L · R · G+V") nhận lỗi của môn nó chứa. */
+export function loiTaiO(loiPc: readonly LoiPhanCong[], oList: readonly OPhanCong[], khoa: string): string | null {
+  const gop = oList.find((o) => o.khoa === khoa)?.gop ?? [];
+  return loiPc.find((l) => l.khoa === khoa || gop.includes(l.khoa))?.lyDo ?? null;
+}
+
+/**
+ * Q31-5 — lớp FOU mặc định 2 ô môn "L · R · G+V" và "P"; "Tách từng môn" ra 4 ô (người đã chọn đi theo). Gộp lại chỉ được khi L, R, G+V
+ * cùng một người (hoặc trống). `gop` null = chương trình không có ô gộp (không hiện nút).
+ */
+export function useTachFou(ct: string | null, kyNang: readonly string[], chon: Record<string, number | ''>,
+  setChon: (f: (c: Record<string, number | ''>) => Record<string, number | ''>) => void) {
+  const [tach, setTach] = useState(false);
+  const gop = oPhanCong(ct, kyNang, { tach: false }).find((o) => o.gop)?.gop ?? null;
+  const coTheGop = !!gop && new Set(gop.map((k) => chon[k]).filter(Boolean)).size <= 1;
+  return {
+    oList: oPhanCong(ct, kyNang, { tach }), tach, gop, coTheGop, setTach,
+    doi: () => { if (gop) setChon((c) => chonKhiDoiTach(c, gop, !tach)); setTach(!tach); },
+  };
+}
+
+/** Link nhỏ dưới lưới phân công lớp FOU: "Tách từng môn" / "Gộp L · R · G+V" + câu dẫn hai giáo viên (Q31-5). */
+export function NutTachFou({ fou, chiXem }: { fou: ReturnType<typeof useTachFou>; chiXem?: boolean }) {
+  if (!fou.gop) return null;
+  const tat = fou.tach && !fou.coTheGop;
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 text-xs text-slate-400">
+      <span>Lớp FOU thường có hai giáo viên: một người L · R · G+V, một người P.</span>
+      {!chiXem && (
+        <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-xs disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-0"
+          disabled={tat} title={tat ? 'L, R, G+V đang do nhiều người dạy' : undefined} onClick={fou.doi}>
+          {fou.tach ? 'Gộp L · R · G+V' : 'Tách từng môn'}
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -192,7 +233,8 @@ export function LuoiPhanCong({ oList, chon, onChon, nguoi, loi, oId, nhanTrong, 
 }) {
   /* MH6, T55, Q7: GỢI Ý = người khai kỹ năng hợp ô đứng trước + dòng phụ "dạy được …"; KHÔNG tự điền. Ô GVCN không gợi ý. */
   const hop = (o: OPhanCong, t: { skills?: string[] }) => {
-    const can = o.skill ? kyNangGoiY(chuongTrinh, o.skill) : [];
+    /* Ô gộp FOU: người khai MỘT trong L / R / W1 / W2 là gợi ý (Q31-5). */
+    const can = (o.gop ?? (o.skill ? [o.skill] : [])).flatMap((k) => kyNangGoiY(chuongTrinh, k));
     return (t.skills ?? []).filter((k) => can.includes(k));
   };
   const xep = (o: OPhanCong) => [...nguoi].sort((a, b) => Number(hop(o, b).length > 0) - Number(hop(o, a).length > 0));
