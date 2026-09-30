@@ -132,7 +132,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
               {/* 640–1023 px: bảng cuộn ngang TRONG vùng bảng, cột tên dính (mỗi lớp một bảng nên không bám cả trang). */}
               <td className="td sticky-col h-11">
                 <span className="flex min-w-0 items-center gap-1.5">
-                  <Link className="link truncate font-semibold" to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>
+                  <Link className="link truncate font-semibold" to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>{s.moiVao && <MoiVao />}
                   <span className="shrink-0 text-[11px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
                   <MissingBadge items={s.missing} gon />
                   <CanhBaoYThuc cb={s.canhBaoYThuc} />

@@ -357,7 +357,7 @@ function HangEm({ s, d, ft, luoi, maKe, routeTu, tuanCh, homNay, loi, loiMayChu,
       {!ft && (
         <span role="cell" className="min-w-0">
           <span className={nhan}>Web gợi ý</span>
-          {s.cuoiKhoa?.goiY ? <span className="block text-xs text-slate-300">{s.cuoiKhoa.goiY.nhanNgan ?? s.cuoiKhoa.goiY.nhan}</span> : <span className="text-slate-600" title="Gợi ý theo luật Cuối khoá sẽ hiện khi có điểm">—</span>}
+          {s.cuoiKhoa?.goiY ? <span className="block text-xs text-slate-300">{s.cuoiKhoa.goiY.nhanNgan ?? s.cuoiKhoa.goiY.nhan}</span> : <span className="text-slate-500" title="Gợi ý theo luật Cuối khoá sẽ hiện khi có điểm">—</span>}
           {s.cuoiKhoa?.goiY?.canQl && <span className="mt-0.5 inline-flex rounded-full bg-soon-bg px-[7px] text-[11.5px] font-bold leading-[18px] text-soon">Quản lý cân nhắc</span>}
         </span>
       )}
@@ -398,7 +398,7 @@ function HangEm({ s, d, ft, luoi, maKe, routeTu, tuanCh, homNay, loi, loiMayChu,
               </span>
             )}
           </span>
-        ) : <span className="text-slate-600">—</span>}
+        ) : <span className="text-slate-500">—</span>}
       </span>
 
       {d.kieu === 'ft' && (
