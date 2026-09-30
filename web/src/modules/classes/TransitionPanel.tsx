@@ -20,8 +20,8 @@ const HUONG_CUA: Record<Kieu, HuongLenh> = { len: 'len_lop', ft: 'fast_track', l
 const canLop = (k: Kieu | '') => k !== '' && k !== 'bao-luu' && k !== 'dung';
 
 /** Cột lưới: thường 7 cột (có Web gợi ý), FT 6 cột. Dưới sm mỗi em là một khối xếp dọc (375 px, không cuộn ngang). */
-const LUOI_THUONG = 'sm:grid-cols-[28px_minmax(150px,1.25fr)_minmax(120px,.9fr)_minmax(110px,.8fr)_minmax(250px,1.7fr)_minmax(160px,1.15fr)_minmax(120px,.8fr)]';
-const LUOI_FT = 'sm:grid-cols-[28px_minmax(150px,1.25fr)_minmax(150px,1.1fr)_minmax(250px,1.7fr)_minmax(160px,1.15fr)_minmax(120px,.8fr)]';
+const LUOI_THUONG = 'lg:grid-cols-[28px_minmax(140px,1.15fr)_minmax(120px,.9fr)_minmax(90px,.7fr)_minmax(330px,2.1fr)_minmax(170px,1.1fr)_minmax(140px,.8fr)]';
+const LUOI_FT = 'lg:grid-cols-[28px_minmax(140px,1.15fr)_minmax(150px,1.1fr)_minmax(330px,2.1fr)_minmax(170px,1.1fr)_minmax(140px,.8fr)]';
 
 /**
  * CHUYỂN LỚP CẢ LỚP (PR-CT, §3.1f Q30-1, mockup 20 màn B · C · I) — Quản lý RA LỆNH: em nào · lớp đích · tuần bắt đầu. Web tự chuyển vào Thứ Hai
@@ -135,7 +135,7 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
     tuan: r.d.tuan || tuanCh, mucTieu: mucTieuCua(r.d), ngayXemLai: r.d.ngayXemLai || null,
   }));
   const cau = tomTatLenh(dsTomTat, homNay);
-  const han = hanBanGiao(homNay || tuanCh);
+  const han = homNay ? hanBanGiao(homNay) : { gvbm: '', gvcn: '' };   // chưa nạp xong thì chưa có ngày
 
   const gui = async () => {
     setBusy(true);
@@ -187,7 +187,7 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
 
   const tieuDe = data ? `Chuyển lớp · ${data.from.code} · ${students.length} em` : 'Chuyển lớp';
   const luoi = ft ? LUOI_FT : LUOI_THUONG;
-  const cotTieuDe = 'hidden gap-3 border-b px-3 py-2 text-[11px] font-extrabold uppercase tracking-[.06em] text-slate-500 sm:grid';
+  const cotTieuDe = 'hidden gap-3 border-b px-3 py-2 text-[11px] font-extrabold uppercase tracking-[.06em] text-slate-500 lg:grid';
 
   return (
     <>
@@ -330,9 +330,11 @@ function HangEm({ s, d, ft, luoi, maKe, routeTu, tuanCh, homNay, loi, loiMayChu,
     ? [['chuyen', 'Chuyển lớp FT'], ['doi', 'Đổi lộ trình']]
     : [...(maKe ? [['len', `Lên ${maKe}`] as [Kieu, string]] : []), ['ft', 'Lên FT'], ['lai', 'Học lại']];
   const khac = d.kieu === 'bao-luu' || d.kieu === 'dung';
-  const nhan = 'text-[11px] text-slate-500 sm:hidden';
+  const nhan = 'text-[11px] text-slate-500 lg:hidden';
   const dsLop = lopHopLe(d.kieu);
   const tuanRieng = d.tuan && d.tuan !== tuanCh;
+  /* Tuần chung chỉ hiện chữ; ô chọn tuần riêng chỉ mở khi bấm "Đổi" (hoặc em đã có tuần riêng) — bảng gọn, cột thẳng. */
+  const [doiTuan, setDoiTuan] = useState(false);
 
   return (
     <div role="row" className={`grid gap-x-3 gap-y-2 px-3 py-2.5 text-sm ${luoi} ${chon ? 'bg-ink-800/60' : ''}`}>
@@ -389,7 +391,8 @@ function HangEm({ s, d, ft, luoi, maKe, routeTu, tuanCh, homNay, loi, loiMayChu,
           <span className="block">
             <span className="tabular-nums text-slate-200">{tuanLich(d.tuan || tuanCh, homNay)}</span>
             {!tuanRieng && <span className="text-[11px] text-slate-500"> (chung)</span>}
-            {!khoa && (
+            {!khoa && !doiTuan && !tuanRieng && <button type="button" className="link ml-2 border-0 bg-transparent p-0 text-[11px]" onClick={() => setDoiTuan(true)}>Đổi</button>}
+            {!khoa && (doiTuan || tuanRieng) && (
               <span className="mt-1 block max-w-[9.5rem]">
                 <OTuan tuanChon={data.tuanChon} value={d.tuan || tuanCh} onChange={(v) => sua({ tuan: v === tuanCh ? '' : v })} ariaLabel={`Tuần bắt đầu của ${s.fullName}`} />
               </span>
@@ -399,7 +402,7 @@ function HangEm({ s, d, ft, luoi, maKe, routeTu, tuanCh, homNay, loi, loiMayChu,
       </span>
 
       {d.kieu === 'ft' && (
-        <div className="flex flex-wrap items-end gap-3 sm:col-start-2 sm:col-end-[-1]">
+        <div className="flex flex-wrap items-end gap-3 lg:col-start-2 lg:col-end-[-1]">
           <label className="block">
             <span className="mb-0.5 block text-[11px] text-slate-500">Target</span>
             <span className="flex items-center gap-1">
@@ -416,7 +419,7 @@ function HangEm({ s, d, ft, luoi, maKe, routeTu, tuanCh, homNay, loi, loiMayChu,
         </div>
       )}
       {(d.kieu === 'bao-luu' || d.kieu === 'dung' || d.kieu === 'chuyen' || d.kieu === 'doi') && (
-        <div className="flex flex-wrap items-end gap-3 sm:col-start-2 sm:col-end-[-1]">
+        <div className="flex flex-wrap items-end gap-3 lg:col-start-2 lg:col-end-[-1]">
           <label className="block min-w-[14rem] flex-1">
             <span className="mb-0.5 block text-[11px] text-slate-500">Lý do <span className="text-bad">*</span></span>
             <input className="field w-full" aria-label={`Lý do của ${s.fullName}`} value={d.lyDo} disabled={khoa} onChange={(e) => sua({ lyDo: e.target.value })} />
@@ -431,16 +434,16 @@ function HangEm({ s, d, ft, luoi, maKe, routeTu, tuanCh, homNay, loi, loiMayChu,
         </div>
       )}
       {thieuDiem && d.kieu && (
-        <p className="m-0 text-[12px] text-slate-400 sm:col-start-2 sm:col-end-[-1]">Vẫn chuyển đúng tuần. Khi có điểm, web áp luật Cuối khoá ở lớp mới (bổ trợ, Mini Test nếu cần).</p>
+        <p className="m-0 text-[12px] text-slate-400 lg:col-start-2 lg:col-end-[-1]">Vẫn chuyển đúng tuần. Khi có điểm, web áp luật Cuối khoá ở lớp mới (bổ trợ, Mini Test nếu cần).</p>
       )}
       {!ft && d.kieu === 'ft' && s.cuoiKhoa?.ketLuanFt && (
-        <p className="m-0 text-[12px] text-slate-400 sm:col-start-2 sm:col-end-[-1]">
+        <p className="m-0 text-[12px] text-slate-400 lg:col-start-2 lg:col-end-[-1]">
           Kỳ vọng đầu ra: {s.cuoiKhoa.ketLuanFt.nhan ?? 'chưa đánh dấu'} · <a className="link" href={`/hoc-vien/${s.id}`}>Mở hồ sơ</a>
         </p>
       )}
-      {loiHang && <p role="alert" className="m-0 text-[12px] text-late sm:col-start-2 sm:col-end-[-1]">{loiHang}</p>}
+      {loiHang && <p role="alert" className="m-0 text-[12px] text-late lg:col-start-2 lg:col-end-[-1]">{loiHang}</p>}
       {lenh && !khoa && (
-        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400 sm:col-start-2 sm:col-end-[-1]">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400 lg:col-start-2 lg:col-end-[-1]">
           <span>Đã có lệnh · bắt đầu {tuanLich(lenh.tuan, homNay)}</span>
           {!huy && <button type="button" className="link border-0 bg-transparent p-0 text-xs" onClick={moHuy}>Huỷ lệnh</button>}
           {huy && (

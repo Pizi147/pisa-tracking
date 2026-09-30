@@ -11,6 +11,7 @@ import { standingFor, standingLine } from '../students/standing.ts';
 import { trangThaiYThuc } from '../yThuc/trangThai.ts';
 import { nguoiNhanGoiY } from './luatLoTrinh.ts';
 import { nguoiNhanCuaLop } from './lenhChuyen.ts';
+import { mocNghiepVu } from '../duyet/yeuCau.ts';
 import { coTheRaLenh, phanCongO } from './quyenChuyenLop.ts';
 
 /**
@@ -219,7 +220,7 @@ export function ghiMon(p: Principal, lenhId: number, mon: string, noiDung: strin
     db().prepare(
       `INSERT INTO ban_giao_mon (lenh_id, mon, noi_dung, nguoi_ghi, dien_thay, ghi_luc) VALUES (?,?,?,?,?,?)
        ON CONFLICT (lenh_id, mon) DO UPDATE SET noi_dung = excluded.noi_dung, nguoi_ghi = excluded.nguoi_ghi, dien_thay = excluded.dien_thay, ghi_luc = excluded.ghi_luc`,
-    ).run(lenhId, mon, text, p.userId, q.gvbmDungMon ? 0 : 1, nowIso());
+    ).run(lenhId, mon, text, p.userId, q.gvbmDungMon ? 0 : 1, mocNghiepVu());   // ngày nghiệp vụ (bản demo: ngày demo + giờ thật)
     writeAudit({ actorUserId: p.userId, action: 'ban_giao.ghi_mon', entityType: 'student', entityId: l.student_id, entityLabel: l.full_name, after: { lenhId, mon, dienThay: !q.gvbmDungMon } });
   });
 }
@@ -239,7 +240,7 @@ export function xacNhanBanGiao(p: Principal, lenhId: number, nhanXetChung: strin
     const tuDien = tuDienTheoLo([l]).get(l.id)!;
     const da = new Set((conn.prepare('SELECT mon FROM ban_giao_mon WHERE lenh_id = ?').all(lenhId) as any[]).map((r) => r.mon as string));
     const chuaBanGiao = boMonLich(l.ct).filter((m) => !da.has(m)).map((m) => tenMonNgan(l.ct, m));
-    const luc = nowIso();
+    const luc = mocNghiepVu();
     const r = conn.prepare(
       `UPDATE lenh_chuyen_lop SET nhan_xet_chung = ?, tu_dien = ?, xac_nhan_boi = ?, xac_nhan_luc = ?, xac_nhan_thay = ?, sua_luc = ?
         WHERE id = ? AND xac_nhan_luc IS NULL`,

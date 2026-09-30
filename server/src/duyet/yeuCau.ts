@@ -28,7 +28,7 @@ const DO_DAI_LY_DO = 3;
  * khác đồng hồ) → ngày demo + GIỜ THẬT theo giờ Việt Nam: thẻ không ghi "đề xuất 29/09" giữa ngày demo 14/09, lọc 30/60 ngày tính
  * đúng, và các thẻ vẫn có thứ tự thật trong ngày (Đã xử lý mới trước).
  */
-function mocNghiepVu(): string {
+export function mocNghiepVu(): string {
   const ngay = demoToday();
   if (ngay === todayInBusinessTz()) return nowIso();
   const gioVN = new Date(Date.now() + 7 * 3_600_000).toISOString().slice(11, 23);
