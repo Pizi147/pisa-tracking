@@ -2,6 +2,7 @@
  * LUẬT THUẦN CỦA HỒ SƠ GIÁO VIÊN (PR-GV, kế hoạch 2026-09-30-pr-gv-ho-so-giao-vien Q2–Q4, Q11).
  * Không tính số mới: số luôn đến từ hàm có sẵn ở máy chủ (`myWork`, `scoreDebtCells`, `listCases`, `phanTichLop`).
  */
+import { DUONG_TAB_CONG_VIEC } from './dieuHuong.ts';
 import { NHOM_VIEC, nhomViecCua, type NhomViec } from './tongQuan.ts';
 
 /** Ô bấm được ở hồ sơ GV / bảng GV chi nhánh (Q2, Q11). Mỗi ô một hàm tập ở server/src/giaoVien/hoSo.ts. */
@@ -17,12 +18,15 @@ export function demViecTheoNhom(items: readonly { group: string; urgency: string
   });
 }
 
-/** Đường tới Công việc đã lọc đúng người + nhóm (Q4). `khung=tat-ca` để lựa chọn khung đã nhớ không làm lệch số. */
+/**
+ * Đường tới Công việc đã lọc đúng người + nhóm (Q4). `khung=tat-ca` để lựa chọn khung đã nhớ không làm lệch số.
+ * Tab Việc học viên là `/cong-viec` (không có đoạn `/ho-tro` — đoạn đó bị trang chuyển về `/cong-viec` và mất bộ lọc).
+ */
 export function duongViecCuaGv(gvId: number, nguoiXem: { userId: number; laQuanLy: boolean }, nhom: NhomViec | null, chiQuaHan = false): string {
   const q = new URLSearchParams();
   if (nguoiXem.laQuanLy) q.set('nguoi', gvId === nguoiXem.userId ? 'toi' : String(gvId));
   if (nhom) q.set('nhom', nhom);
   q.set('khung', 'tat-ca');
   if (chiQuaHan) q.set('loc', 'qua-han');
-  return `/cong-viec/ho-tro?${q}`;
+  return `${DUONG_TAB_CONG_VIEC['ho-tro']}?${q}`;
 }

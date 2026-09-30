@@ -44,7 +44,7 @@ export type LopGv = {
   vai: string[];
   /** Mã kỹ năng/môn thật được phân công (không phải nhãn) — để tô viền ô môn mình dạy. */
   monDay: string[];
-  laCn: boolean; hocVien: number;
+  hocVien: number;
   /** Học viên đang học của lớp — để đếm học viên KHÁC NHAU của cả hồ sơ (một em học hai lớp của GV chỉ đếm một lần). */
   hvIds: Set<number>;
 };
@@ -66,9 +66,9 @@ export function lopCuaGv(gvId: number, homNay: string, branchIds: number[] | nul
     const khung = bang.get(r.class_id)?.isFastTrack ? 'ft' : 'thuong';
     if (!locKhung(ct, khung)) continue;
     const l = theoLop.get(r.class_id)
-      ?? { id: r.class_id, ma: r.code, khung, ct: r.programme_code ?? null, branchId: r.branch_id, vai: [], monDay: [], laCn: false, hocVien: 0, hvIds: new Set() } as LopGv;
+      ?? { id: r.class_id, ma: r.code, khung, ct: r.programme_code ?? null, branchId: r.branch_id, vai: [], monDay: [], hocVien: 0, hvIds: new Set() } as LopGv;
     theoLop.set(r.class_id, l);
-    if (r.is_core) { l.laCn = true; if (!l.vai.includes('GVCN')) l.vai.unshift('GVCN'); }
+    if (r.is_core && !l.vai.includes('GVCN')) l.vai.unshift('GVCN');
     if (r.skill && !l.monDay.includes(r.skill)) { l.monDay.push(r.skill); l.vai.push(tenMonNgan(l.ct, r.skill)); }
   }
   const lop = [...theoLop.values()];
@@ -153,7 +153,7 @@ function ketQuaCuaLop(p: Principal, l: LopGv): KetQuaLop {
 export type HoSoGv = {
   gv: { id: number; ten: string; vai: string[]; chiNhanh: string[]; kyNang: string[]; laChinhMinh: boolean };
   phamVi: { chiNhanh: string[] | null };
-  lop: (Omit<LopGv, 'monDay' | 'laCn' | 'branchId' | 'hvIds'> & { chuaNhap: number; quaHan: number })[];
+  lop: (Omit<LopGv, 'monDay' | 'branchId' | 'hvIds'> & { chuaNhap: number; quaHan: number })[];
   /** Học viên KHÁC NHAU ở mọi lớp trên — cùng số với ô "Học viên" (`oHoSoGv` cot=hoc-vien). */
   tongHocVien: number;
   caseMo: CaseGv[];
@@ -185,7 +185,7 @@ export function hoSoGiaoVien(p: Principal, gvId: number): HoSoGv {
       kyNang: ENTRY_SKILLS.filter((k) => daKhai.has(k)).map((k) => ENTRY_SKILL_SHORT[k]),
     },
     phamVi: { chiNhanh: laChinhMinh ? null : tenChiNhanh },
-    lop: lop.map(({ monDay, laCn, branchId, hvIds, ...l }) => ({ ...l, chuaNhap: dem(l.id, false), quaHan: dem(l.id, true) })),
+    lop: lop.map(({ monDay, branchId, hvIds, ...l }) => ({ ...l, chuaNhap: dem(l.id, false), quaHan: dem(l.id, true) })),
     tongHocVien: new Set(lop.flatMap((l) => [...l.hvIds])).size,
     caseMo: caseMoCuaGv(p, gvId, branchIds),
     yeuCau: soYeuCau(theYeuCauCuaGv(p, gvId), homNay),

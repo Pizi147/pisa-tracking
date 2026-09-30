@@ -24,9 +24,9 @@ export async function runPrGvTests(t: YThucTestKit) {
   });
 
   check('PR-GV (1) · duongViecCuaGv: QL có nguoi=id, tự xem có nguoi=toi, GV không có nguoi; có khung=tat-ca', () => {
-    assert(duongViecCuaGv(7, { userId: 2, laQuanLy: true }, 'cham-diem', true) === '/cong-viec/ho-tro?nguoi=7&nhom=cham-diem&khung=tat-ca&loc=qua-han', 'QL xem GV');
-    assert(duongViecCuaGv(7, { userId: 7, laQuanLy: false }, null) === '/cong-viec/ho-tro?khung=tat-ca', 'GV tự xem không có nguoi');
-    assert(duongViecCuaGv(2, { userId: 2, laQuanLy: true }, 'y-thuc') === '/cong-viec/ho-tro?nguoi=toi&nhom=y-thuc&khung=tat-ca', 'QL tự xem = toi');
+    assert(duongViecCuaGv(7, { userId: 2, laQuanLy: true }, 'cham-diem', true) === '/cong-viec?nguoi=7&nhom=cham-diem&khung=tat-ca&loc=qua-han', 'QL xem GV');
+    assert(duongViecCuaGv(7, { userId: 7, laQuanLy: false }, null) === '/cong-viec?khung=tat-ca', 'GV tự xem không có nguoi');
+    assert(duongViecCuaGv(2, { userId: 2, laQuanLy: true }, 'y-thuc') === '/cong-viec?nguoi=toi&nhom=y-thuc&khung=tat-ca', 'QL tự xem = toi');
   });
 
   check('PR-GV (1) · laCotOGv: chỉ nhận cột trong COT_O_GV, KPI đã bỏ', () => {

@@ -39,6 +39,8 @@ type KetQuaLop = { classId: number; ma: string; khung: 'ft' | 'thuong'; ct: stri
 
 const nguon = (id: number, q: string) => `/giao-vien/${id}/o?${q}`;
 const soDam = 'font-semibold';
+/** Vùng bấm >= 44 px cho số nhỏ (chạm tay) mà không đổi nhịp dòng: đệm dọc + lề âm bù. */
+const vung = 'inline-block py-2 -my-2';
 
 /** ⓘ vẽ bằng SVG (ký tự ⓘ cỡ nhỏ của Inter chỉ còn như một dấu chấm); lời giải thích ở `title`, như mọi chú thích khác của web. */
 function Goi({ chu }: { chu: string }) {
@@ -123,7 +125,7 @@ function KhoiViec({ gvId, nguoiXem, homNay, ngan }: {
                     : <Link to={link(false)} className="text-2xl font-bold leading-tight tabular-nums text-slate-100 no-underline after:absolute after:inset-0 after:rounded-lg"
                         aria-label={`${x.n} việc ${NHOM_VIEC_LABEL[x.nhom]}. Bấm để mở Công việc`}>{x.n}</Link>}
                   {x.quaHan > 0
-                    ? <Link to={link(true)} className={`relative z-10 w-fit text-xs text-bad no-underline hover:underline ${soDam}`}>{x.quaHan} quá hạn</Link>
+                    ? <Link to={link(true)} className={`relative z-10 w-fit py-2 -my-2 text-xs text-bad no-underline hover:underline ${soDam}`}>{x.quaHan} quá hạn</Link>
                     : <span className="text-xs text-slate-500">{trong ? '—' : 'không quá hạn'}</span>}
                 </div>
               );
@@ -161,11 +163,11 @@ const chipKhung = (k: 'ft' | 'thuong') => (
 function KhoiLop({ data, dienThoai, ketQuaCua }: { data: HoSo; dienThoai: boolean; ketQuaCua: (id: number) => KetQuaLop | null }) {
   const id = data.gv.id;
   const so = (l: LopHs, cot: 'chua-nhap' | 'qua-han', n: number, ten: string, className = '') => (
-    <SoLieuO giaTri={n} tieuDe={`${ten} · ${l.ma}`} nguon={nguon(id, `cot=${cot}&lop=${l.id}`)} className={className} />
+    <SoLieuO giaTri={n} tieuDe={`${ten} · ${l.ma}`} nguon={nguon(id, `cot=${cot}&lop=${l.id}`)} className={`${vung} ${className}`} />
   );
   const tong = (
     <span className="text-xs text-slate-400">
-      <span className="tabular-nums text-slate-200">{data.lop.length}</span> lớp · <SoLieuO giaTri={data.tongHocVien} tieuDe="Học viên đang học" nguon={nguon(id, 'cot=hoc-vien')} className="text-slate-200" /> học viên
+      <span className="tabular-nums text-slate-200">{data.lop.length}</span> lớp · <SoLieuO giaTri={data.tongHocVien} tieuDe="Học viên đang học" nguon={nguon(id, 'cot=hoc-vien')} className={`${vung} text-slate-200`} /> học viên
     </span>
   );
   return (
@@ -225,7 +227,7 @@ function OKq({ id, k, o }: { id: number; k: KetQuaLop; o: OKetQua }) {
   if (o.tong <= 0) return <span className="text-slate-500">—</span>;
   return (
     <SoLieuO giaTri={o.tong} nhan={`${o.dat}/${o.tong}`} tieuDe={`${o.nhan} · ${k.ma} · ${k.moc!.nhan}`}
-      nguon={nguon(id, `cot=ket-qua&lop=${k.classId}&dong=${o.dong}&moc=${k.moc!.key}`)} className={`${soDam} text-slate-100`} />
+      nguon={nguon(id, `cot=ket-qua&lop=${k.classId}&dong=${o.dong}&moc=${k.moc!.key}`)} className={`${vung} ${soDam} text-slate-100`} />
   );
 }
 const thap = (o: OKetQua) => o.tong > 0 && o.dat * 2 < o.tong;
@@ -298,20 +300,21 @@ function KhoiKetQua({ data, kq }: { data: HoSo; kq: { data: { ketQua: KetQuaLop[
                   <colgroup><col style={{ width: '30%' }} /><col /><col /><col /><col /></colgroup>
                   <thead><tr>
                     <Th hint="Mỗi ô: số học viên đạt (từ 70%) / số học viên đã có điểm môn đó. Tên môn theo chương trình: FOU L · R · G+V · P; BE, ELE L · R · W · S.">Lớp thường</Th>
-                    <Th align="center" className="!normal-case">Môn · đạt / có điểm</Th><Th>{''}</Th><Th>{''}</Th><Th>{''}</Th>
+                    <th className="th text-center" colSpan={4}>Môn · đạt / có điểm</th>
                   </tr></thead>
                   <tbody>
                     {thuong.map((k) => (
                       <tr key={k.classId}>
                         <td className="td"><Link to={`/hoc-vien/lop/${k.classId}`} className="link">{k.ma}</Link>
                           <div className="text-xs text-slate-500">{k.moc ? k.moc.nhan : 'Chưa có điểm'}</div></td>
-                        {k.o.length ? k.o.map((o) => (
-                          <td key={o.dong} className={`td text-center tabular-nums ${o.cuaMinh ? MON_CUA_MINH : ''} ${thap(o) ? 'bg-bad-bg' : ''}`}>
+                        {k.o.length ? k.o.map((o, i) => (
+                          /* Lớp có ít hơn 4 môn (Pre FOU: một ô Tổng hợp) — ô cuối kéo hết bề rộng còn lại, chữ không rớt dòng. */
+                          <td key={o.dong} colSpan={i === k.o.length - 1 ? 5 - k.o.length : 1}
+                            className={`td text-center tabular-nums ${o.cuaMinh ? MON_CUA_MINH : ''} ${thap(o) ? 'bg-bad-bg' : ''}`}>
                             <span className="block text-xs leading-4 text-slate-400">{o.nhan}</span>
                             <OKq id={id} k={k} o={o} />
                           </td>
                         )) : <td className="td text-slate-500" colSpan={4}>Chưa có điểm</td>}
-                        {k.o.length > 0 && k.o.length < 4 && <td className="td" colSpan={4 - k.o.length} />}
                       </tr>
                     ))}
                   </tbody>
@@ -343,9 +346,9 @@ function KhoiCase({ data, homNay }: { data: HoSo; homNay: string }) {
     <Card title="Case đang phụ trách" bodyClass="p-0"
       action={ds.length ? (
         <span className="text-xs text-slate-400">
-          <SoLieuO giaTri={ds.length} tieuDe="Case đang phụ trách" nguon={nguon(id, 'cot=case-mo')} className="text-slate-200" /> Case ·{' '}
+          <SoLieuO giaTri={ds.length} tieuDe="Case đang phụ trách" nguon={nguon(id, 'cot=case-mo')} className={`${vung} text-slate-200`} /> Case ·{' '}
           {quaHan > 0
-            ? <><SoLieuO giaTri={quaHan} tieuDe="Case có việc tiếp quá hạn" nguon={nguon(id, 'cot=case-qua-han')} className={`${soDam} text-bad`} /> <span className="text-bad">việc tiếp quá hạn</span></>
+            ? <><SoLieuO giaTri={quaHan} tieuDe="Case có việc tiếp quá hạn" nguon={nguon(id, 'cot=case-qua-han')} className={`${vung} ${soDam} text-bad`} /> <span className="text-bad">việc tiếp quá hạn</span></>
             : <span>không có việc tiếp quá hạn</span>}
         </span>
       ) : undefined}>
@@ -361,7 +364,7 @@ function KhoiCase({ data, homNay }: { data: HoSo; homNay: string }) {
         ) : (
           <div className="table-scroll">
             <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: '47rem' }}>
-              <colgroup><col style={{ width: '18%' }} /><col style={{ width: '12%' }} /><col style={{ width: '31%' }} /><col style={{ width: '16%' }} /><col style={{ width: '23%' }} /></colgroup>
+              <colgroup><col style={{ width: '17%' }} /><col style={{ width: '12%' }} /><col style={{ width: '28%' }} /><col style={{ width: '14%' }} /><col style={{ width: '29%' }} /></colgroup>
               <thead><tr><Th>Học viên</Th><Th>Lớp</Th><Th>Case</Th><Th>Trạng thái</Th><Th>Việc tiếp</Th></tr></thead>
               <tbody>
                 {ds.map((c) => (
@@ -394,10 +397,10 @@ function KhoiYeuCau({ data, coDuyet }: { data: HoSo; coDuyet: boolean }) {
     <Card title={gv.laChinhMinh ? 'Yêu cầu đã gửi' : `Yêu cầu ${gv.ten.split(' ').pop()} đã gửi`} action={link}>
       {y.cho === 0 && y.tuChoi === 0 ? <p className="m-0 text-sm text-slate-400">Không có yêu cầu nào đang chờ.</p> : (
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm">
-          <span><SoLieuO giaTri={y.cho} tieuDe="Yêu cầu đang chờ duyệt" nguon={nguon(id, 'cot=yc-cho')} className={`${soDam} text-slate-100`} /> chờ duyệt
+          <span><SoLieuO giaTri={y.cho} tieuDe="Yêu cầu đang chờ duyệt" nguon={nguon(id, 'cot=yc-cho')} className={`${vung} ${soDam} text-slate-100`} /> chờ duyệt
             {y.choQuaHan > 0 && <span className={`ml-1 text-xs text-bad ${soDam}`}>({y.choQuaHan} quá hạn duyệt)</span>}</span>
           <span className="text-slate-600" aria-hidden>·</span>
-          <span><SoLieuO giaTri={y.tuChoi} tieuDe="Yêu cầu bị từ chối trong 60 ngày" nguon={nguon(id, 'cot=yc-tu-choi')} className={`${soDam} text-slate-100`} /> bị từ chối trong 60 ngày</span>
+          <span><SoLieuO giaTri={y.tuChoi} tieuDe="Yêu cầu bị từ chối trong 60 ngày" nguon={nguon(id, 'cot=yc-tu-choi')} className={`${vung} ${soDam} text-slate-100`} /> bị từ chối trong 60 ngày</span>
         </div>
       )}
     </Card>
