@@ -246,5 +246,45 @@ export async function runPrPb2bTests(t: YThucTestKit) {
     assert(ds.length === 5 && ds[0].is_core === 1 && ds[0].skill === null && ds[0].user_id === a, JSON.stringify(ds));
     assert(ds.slice(1).map((x) => `${x.skill}:${x.user_id === a ? 'a' : 'b'}`).join() === 'listening:a,reading:a,speaking:b,writing:a', JSON.stringify(ds));
   });
+
+  // ------------------------------------------------------------------ khối 3 · hồ sơ GV: vai một chip, chip bàn giao, 4 cột lớp thường (Task 3)
+  console.log('\nPR-Pb2-b · Hồ sơ GV: vai GVCN · L R G+V, chip Bàn giao n/m em, lớp thường 4 cột');
+  const hoSo: any = await import('../giaoVien/hoSo.ts');
+  const { myWork } = await import('../worklist/mywork.ts');
+  const { loadPrincipal } = await import('../permissions.ts');
+  check('Pb2b (3a) · nhanVaiLop: GVCN + L R G+V → "GVCN · L R G+V"; chỉ P → "P"; chỉ GVCN → "GVCN"', () => {
+    assert(d.nhanVaiLop({ gvcn: true, mon: ['L', 'R', 'G+V'] }) === 'GVCN · L R G+V', d.nhanVaiLop({ gvcn: true, mon: ['L', 'R', 'G+V'] }));
+    assert(d.nhanVaiLop({ gvcn: false, mon: ['P'] }) === 'P' && d.nhanVaiLop({ gvcn: true, mon: [] }) === 'GVCN', 'P / GVCN');
+  });
+  check('Pb2b (3b) · lớp FOU vừa phân công: hồ sơ GV người L · R · G+V kiêm GVCN có vai "GVCN · L R G+V", người P có vai "P"', () => {
+    const lopA = hoSo.hoSoGiaoVien(P.admin, P.normalCoreTeacher.userId).lop.find((l: any) => l.id === lopFouMoi);
+    const lopB = hoSo.hoSoGiaoVien(P.admin, P.normalSubjectTeacher.userId).lop.find((l: any) => l.id === lopFouMoi);
+    assert(lopA?.vai === 'GVCN · L R G+V' && lopB?.vai === 'P', `${lopA?.vai} · ${lopB?.vai}`);
+  });
+  check('Pb2b (3c) · chip Bàn giao (hai đường, cùng viecBanGiao): GVCN MB FOU 22 → { gvcn, da, n } = việc "Bàn giao … MB FOU 22" ở /my-work; GVBM P → { gvbm, mon P }', () => {
+    const lop = classId('MB FOU 22');
+    const gvcnId = get(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active' ORDER BY id LIMIT 1`, lop).user_id as number;
+    const chip = hoSo.hoSoGiaoVien(P.admin, gvcnId).lop.find((l: any) => l.id === lop)?.banGiao;
+    const viec = (myWork(loadPrincipal(gvcnId)) as any).items.find((i: any) => i.key === `ban_giao:${lop}`) as any;
+    assert(viec && chip?.loai === 'gvcn' && chip.n === viec.count && viec.contextLabel.includes(`${chip.da}/${chip.n}`), `${JSON.stringify(chip)} ‖ ${JSON.stringify(viec?.contextLabel)}`);
+    const pId = get(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND skill = 'speaking' AND status = 'active' AND user_id != ? ORDER BY id LIMIT 1`, lop, gvcnId)?.user_id as number | undefined;
+    if (pId) {
+      const chipP = hoSo.hoSoGiaoVien(P.admin, pId).lop.find((l: any) => l.id === lop)?.banGiao;
+      const viecP = (myWork(loadPrincipal(pId)) as any).items.find((i: any) => i.key === `ban_giao_mon:${lop}:speaking`) as any;
+      assert(!viecP || (chipP?.loai === 'gvbm' && chipP.mon === 'P' && chipP.n === Number(viecP.contextLabel.match(/\/(\d+) em/)?.[1])), `${JSON.stringify(chipP)} ‖ ${viecP?.contextLabel}`);
+    }
+  });
+  check('Pb2b (3d) · lớp không có lệnh chuyển → không chip bàn giao', () => {
+    const l = hoSo.hoSoGiaoVien(P.admin, P.normalCoreTeacher.userId).lop.find((x: any) => x.id === lopFouMoi);
+    assert(l && l.banGiao === null, JSON.stringify(l?.banGiao));
+  });
+  check('Pb2b (3e) · ketQuaHoSoGv lớp thường: khoá dòng ∈ listening/reading/writing/speaking (Pre FOU tong_hop) — web xếp đúng 4 cột cố định', () => {
+    for (const gv of all(`SELECT DISTINCT ta.user_id FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id WHERE c.is_fast_track = 0 AND ta.status = 'active' LIMIT 6`)) {
+      for (const k of hoSo.ketQuaHoSoGv(P.admin, gv.user_id).ketQua.filter((x: any) => x.khung === 'thuong')) {
+        assert(k.o.every((o: any) => ['listening', 'reading', 'writing', 'speaking', 'tong_hop'].includes(o.dong)), `${k.ma}: ${k.o.map((o: any) => o.dong)}`);
+      }
+    }
+  });
+
   void maLoi;
 }
