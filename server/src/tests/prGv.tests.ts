@@ -350,4 +350,19 @@ export async function runPrGvTests(t: YThucTestKit) {
     assert(/nhan\?: string/.test(doc('ui/SoLieuO.tsx')), 'SoLieuO có prop nhan');
     assert(/path="\/giao-vien\/:id"/.test(doc('App.tsx')), 'route /giao-vien/:id');
   });
+  await t.checkAsync('PR-GV (6) · bảng GV chi nhánh không xếp hạng; BranchPulse dùng BangGiaoVienChiNhanh; menu tài khoản có Hồ sơ giáo viên; bảng quyền ghi quyền dẫn xuất', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const { fileURLToPath } = await import('node:url');
+    const REPO = path.resolve(fileURLToPath(new URL('../../../../', import.meta.url)));
+    const doc = (f: string) => fs.readFileSync(path.join(REPO, 'web/src', f), 'utf-8');
+    const bang = doc('modules/giaoVien/BangGiaoVienChiNhanh.tsx');
+    assert(!/\bsort=|onSort|kpi/i.test(bang), 'bảng không nút sắp xếp, không KPI');
+    assert(!/#[0-9a-fA-F]{3,8}\b|\bwhite\b|color-mix|text-bad|text-ok/.test(bang), 'không màu viết cứng, không màu tốt/xấu cho người');
+    const pulse = doc('modules/worklist/BranchPulse.tsx');
+    assert(pulse.includes('<BangGiaoVienChiNhanh') && !pulse.includes('BangTheoGiaoVien') && !pulse.includes('PEOPLE_COLS'), 'BranchPulse thay bảng cũ');
+    const header = doc('modules/platform/Header.tsx');
+    assert(/roles\?\.includes\('teacher'\)/.test(header) && header.includes('/giao-vien/'), 'menu tài khoản: Hồ sơ giáo viên cho vai Giáo viên');
+    assert(doc('modules/platform/AdminPage.tsx').includes('Quyền dẫn xuất'), 'bảng quyền ghi quyền dẫn xuất (K1-53)');
+  });
 }
