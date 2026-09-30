@@ -13,6 +13,7 @@ import { can, type Principal } from '../permissions.ts';
 import { emCuaLop, nhanNhomEm, trangThaiYThuc } from '../yThuc/trangThai.ts';
 import { listCases, type MappedCase } from '../cases/cases.ts';
 import { chiTietCaseMo } from '../cases/caseLop.ts';
+import { quetYeuCau } from '../duyet/yeuCau.ts';
 
 /**
  * PR-YT4: nhãn Ý thức ở dòng em — `Quá hạn` / `Cần xử lý` (nhóm `qua_han` | `bat_buoc` của `trangThaiYThuc`), không còn "{n} vi phạm".
@@ -82,6 +83,8 @@ export function viecHocVienTheoLop(p: Principal, o: {
     const n = em.tamDung ? null : nhanNhomEm(em);
     if (n) yThuc.set(id, n);
   }
+  /* PR-S4F #5: quét trước khi đếm, như mọi đường đọc hộp (K5-17) — không thì badge đếm thiếu thẻ Báo lên mà hộp (quét rồi) có. */
+  quetYeuCau(o.homNay);
   /* Thẻ đang chờ Quản lý (`yeu_cau_duyet`): theo em (`hoc_vien_id`) hoặc theo lớp (`lop_id`) — MỘT câu cho mỗi lô 400. */
   const chia = <T,>(a: readonly T[]) => Array.from({ length: Math.ceil(a.length / 400) }, (_, i) => a.slice(i * 400, i * 400 + 400));
   const nhomHv = chia(emIds); const nhomLop = chia([...o.emTheoLop.keys()]);

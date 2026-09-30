@@ -576,7 +576,7 @@ function scoreToneText(row: Row): string {
 
 function outcomeTone(outcome: string | null): string {
   if (outcome === 'improved') return 'text-emerald-300';
-  if (outcome === 'partial') return 'text-emerald-200/90';
+  if (outcome === 'partial') return 'text-emerald-200';
   if (outcome === 'unchanged' || outcome === 'worse') return 'text-rose-300';
   return 'text-amber-200';
 }
@@ -638,11 +638,11 @@ function Trend({ row }: { row: Row }) {
 
 /** Cùng bốn màu với ô điểm, nhưng so với kỳ vọng CỦA CHÍNH LƯỢT ĐÓ. */
 function pointTone(pt: Row['points'][number], ratio: boolean): string {
-  if (ratio) return pt.passed === false ? 'text-rose-300/80' : pt.passed === true ? 'text-emerald-300/80' : 'text-slate-400';
+  if (ratio) return pt.passed === false ? 'text-rose-300' : pt.passed === true ? 'text-emerald-300' : 'text-slate-400';
   if (pt.expectation === null) return 'text-slate-400';
-  if (pt.band < pt.expectation) return 'text-rose-300/80';
-  if (pt.band === pt.expectation) return 'text-sky-300/80';
-  return 'text-emerald-300/80';
+  if (pt.band < pt.expectation) return 'text-rose-300';
+  if (pt.band === pt.expectation) return 'text-sky-300';
+  return 'text-emerald-300';
 }
 
 /** CỘT PHẢI của hàng Case/PA (YC-12.5.4): nút ở TRÊN, chữ phụ ở DƯỚI, cùng một mép trái — mọi hàng như nhau. */

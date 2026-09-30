@@ -34,7 +34,7 @@ const TONE_MARK: Record<ProgressTone, string> = { muted: '·', danger: '●', in
  * `phan="overall"` chỉ vẽ ô Overall (`Chưa đủ điểm` / `Đạt kỳ vọng` …) để bảng có một cột
  * Overall mà không phải tự dựng chữ.
  */
-export function KetQuaDot({ coDiem, yeuCau, dat, sos, phan = 'cau', cheDo, soMonChuaDat }: {
+export function KetQuaDot({ coDiem, yeuCau, dat, sos, phan = 'cau', cheDo, soMonChuaDat, duoiKyVong }: {
   /** Số KỸ NĂNG (L/R/W/S) đã có điểm. */
   coDiem: number;
   /** Số KỸ NĂNG bắt buộc của đợt. */
@@ -48,6 +48,8 @@ export function KetQuaDot({ coDiem, yeuCau, dat, sos, phan = 'cau', cheDo, soMon
   cheDo?: 'ielts' | 'ratio';
   /** Chỉ `cheDo: 'ratio'` — số môn chưa đạt THẬT, `sos` bị chặn trần ở 3 nên sai khi trượt cả 4 môn. */
   soMonChuaDat?: number | null;
+  /** PR-S4F #10: chip cạnh Overall — kỹ năng dưới kỳ vọng ("W", "L · S") thay cho "Chưa đạt kỳ vọng" chung chung. */
+  duoiKyVong?: readonly string[];
 }) {
   const v = attemptProgressView({ scored: coDiem, required: yeuCau, passed: dat, sos, cheDo, soMonChuaDat });
   const tone: ProgressTone = phan === 'overall' && v.overall === 'incomplete' ? 'muted' : v.tone;
@@ -60,7 +62,9 @@ export function KetQuaDot({ coDiem, yeuCau, dat, sos, phan = 'cau', cheDo, soMon
       data-overall={v.overall} data-pass-badge={v.passBadge} title={v.title}
       className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium ${SCORE_CHIP[mau]} ${v.overall === 'incomplete' ? 'border-dashed' : ''}`}>
       <span aria-hidden>{mark}</span>
-      {phan === 'overall' ? v.overallText : v.text}
+      {phan === 'overall'
+        ? (v.overall === 'not-passed' && duoiKyVong?.length ? `Dưới kỳ vọng: ${duoiKyVong.join(' · ')}` : v.overallText)
+        : v.text}
     </span>
   );
 }

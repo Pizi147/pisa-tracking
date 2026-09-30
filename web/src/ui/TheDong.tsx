@@ -34,8 +34,9 @@ export function TheDong({ dau, hanhDong, dong, className = '' }: {
         <div className="min-w-0 flex-1">{dau}</div>
         {hanhDong && <div className="shrink-0">{hanhDong}</div>}
       </div>
+      {/* PR-S4F #11: items-baseline — link trong ô giá trị có py-3.5 (vùng bấm 44 px) nên nhãn phải theo baseline, không theo mép trên. */}
       {dong.length > 0 && (
-        <dl className="m-0 mt-1.5 grid grid-cols-[5.5rem_minmax(0,1fr)] gap-x-3 gap-y-1 text-xs">
+        <dl className="m-0 mt-1.5 grid grid-cols-[5.5rem_minmax(0,1fr)] items-baseline gap-x-3 gap-y-1 text-xs">
           {dong.map((d) => (
             <Fragment key={d.nhan}>
               <dt className="text-slate-500">{d.nhan}</dt>

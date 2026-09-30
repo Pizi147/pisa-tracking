@@ -341,7 +341,7 @@ function Info({ label, title, children }: { label: string; title?: string; child
 function KhoiNhanXet({ cells, save }: { cells: Cell[]; save: (skill: string, patch: SavePatch) => Promise<boolean> }) {
   const o = (k: string) => cells.find((c) => c.skill === k);
   const sua = (c: Cell | undefined): boolean => !!c && c.canEdit && !lockedByNoShow(c);
-  const phu = (c: Cell) => (c.enteredByName ? `nhập điểm: ${c.enteredByName}` : null);
+  const phu = (c: Cell) => (c.enteredByName ? `Người nhập điểm: ${c.enteredByName}` : null);
   const phan = (c: Cell | undefined, nhan: string) => {
     if (!c) return null;
     if (sua(c)) return <ONhanXet key={c.skill} nhan={nhan} phu={phu(c)} giaTri={c.nhanXet ?? null} onLuu={(v) => save(c.skill, { nhanXet: v })} />;

@@ -106,7 +106,7 @@ export function phanTichLop(p: Principal, classId: number): PhanTichLop {
  * `cot`: hv · case · dang-theo-doi · da-co-pa · da-xong · thanh-cong (Case) · pa-dang · pa-da · pa-thanh-cong (PA, kèm `kind`).
  */
 export function oPhanTichLop(p: Principal, classId: number, category: string, cot: string, kind: string | null): { n: number; tieuDe: string; rows: MetricRow[] } {
-  require_(p, PERMISSIONS.CASE_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
+  require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
   const b = classIssueBoard(classId, category);
   const mon = caseCategoryLabel(category);
   const caseCot: Record<string, [number[], string]> = {

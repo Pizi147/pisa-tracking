@@ -4165,10 +4165,12 @@ check('Lớp Normal: chấm lại một bài CŨ vẫn hạ được mức của
   const after = conn.prepare('SELECT sos_level FROM sos_cases WHERE id = ?').get(row.id) as any;
   assert(after.sos_level === 0,
     `Kỹ năng đã đạt mà mức của case vẫn là ${after.sos_level} — case tìm theo lượt thi thay vì theo học viên`);
+  /* PR-S4F #3 (mục 9.4): lượt này là căn cứ của case → đạt ở đây là SỬA ĐIỂM, không phải tiến bộ — không ghi mốc "đã đạt". */
   const passed = conn
-    .prepare(`SELECT 1 FROM case_milestones WHERE case_id = ? AND kind = 'passed'`)
-    .get(row.id);
-  assert(passed, 'Hạ mức mà không ghi mốc "đã đạt kỳ vọng"');
+    .prepare(`SELECT 1 FROM case_milestones WHERE case_id = ? AND kind = 'passed' AND attempt_id = ?`)
+    .get(row.id, row.attempt_id);
+  const canCu = conn.prepare('SELECT 1 FROM case_signals WHERE case_id = ? AND attempt_id = ?').get(row.id, row.attempt_id);
+  assert(!(canCu && passed), 'Sửa điểm chính lượt làm căn cứ mà vẫn ghi mốc "đã đạt kỳ vọng" (mục 9.4)');
 });
 
 console.log('\n28. Vòng 4 phase 2 — tuần bắt đầu học và tiến độ lớp');
@@ -9817,6 +9819,9 @@ await runPrHvlTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 // ==================================================================== PR-SANG (giao diện sáng/tối, phông, cỡ chữ)
 const { runPrSangTests } = await import('./prSang.tests.ts');
 await runPrSangTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== PR-S4F (sửa sau rà cuối đợt 4)
+const { runPrS4fTests } = await import('./prS4f.tests.ts');
+await runPrS4fTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

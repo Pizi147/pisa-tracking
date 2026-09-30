@@ -100,6 +100,8 @@ export async function runPrSangTests(t: YThucTestKit) {
     for (const { f, text } of nguon) for (const [n, s] of dongNguon(text)) {
       for (const m of s.matchAll(HEX)) if (/[a-fA-F]/.test(m[0]) || m[0].length > 4) hong.push(`${f}:${n} ${m[0]}`);
       if (/rgba?\(\s*\d/.test(s)) hong.push(`${f}:${n} rgb(số)`);
+      /* PR-S4F #7: từ khoá màu cứng trong style (color-mix(…, white) để lại vệt trắng ở chế độ sáng) — dùng rgb(var(--phu-rgb)). */
+      if (/color-mix\([^;]*\b(?:white|black)\b|:\s*['"](?:white|black)['"]/.test(s)) hong.push(`${f}:${n} white/black cứng`);
     }
     assert(hong.length === 0, hong.slice(0, 12).join(' · ') + (hong.length > 12 ? ` … (${hong.length})` : ''));
   });
@@ -123,6 +125,11 @@ export async function runPrSangTests(t: YThucTestKit) {
       for (const m of s.matchAll(/theme\(colors\.(\w+)\.(\d+)\)/g)) if (!trongBien(m[1], m[2])) hong.add(`theme(colors.${m[1]}.${m[2]}) chưa ánh xạ (${f})`);
     }
     assert(hong.size === 0, [...hong].slice(0, 10).join(' · ') + (hong.size > 10 ? ` … (${hong.size})` : ''));
+    /* PR-S4F #6: chữ màu NGHĨA không làm trong (/70 /80 /90…) — ở chế độ sáng tụt dưới 4.5:1. */
+    const trong: string[] = [];
+    const reTrong = /\btext-(?:emerald|sky|rose|amber|ok|bad|late|soon|doing|done|wait|dat|sos[123]?)(?:-\d{2,3})?\/[\d.[\]]+/g;
+    for (const { f, text } of nguon) for (const [n, s] of dongNguon(text)) for (const m of s.matchAll(reTrong)) trong.push(`${f}:${n} ${m[0]}`);
+    assert(trong.length === 0, `chữ màu nghĩa làm trong: ${trong.slice(0, 10).join(' · ')}`);
   });
 
   check('SANG · S7: phông Be Vietnam Pro tự phục vụ + chữ số thẳng cột (Inter), ghim phiên bản', () => {

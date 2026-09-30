@@ -234,15 +234,26 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
       if (!luotSinhViecRow(a, homNay)) continue;
       const scores = bundle.scores.get(a.id) ?? [];
       if (!scores.length) continue;   /* chưa có điểm: đi tiếp xuống lượt cũ hơn */
+      /* Một nguồn bộ môn: bảng `programme_skills` (qua `allProgrammes`, nhớ trong request), hằng số chỉ dự phòng (K5-45). */
+      const rr = ratio ? evaluateRegular(boMonCua(cycle.programme_code), scores as any, cycle.programme_code) : null;
+      const skips = ratio ? [] : bundle.skips.get(a.id) ?? [];
+      const ri = ratio ? null : evaluateAttempt(
+        /* T9 (23/09): kết quả gần nhất dùng mục tiêu TẠI THỜI ĐIỂM THI, không phải mục tiêu hiện tại của lộ
+         * trình — đúng như `resultOf` ở `attempts.ts:155` đã làm, để SOS/kỳ vọng không đổi ngược khi hồ sơ sửa
+         * mục tiêu sau này. */
+        a.target_at_attempt ?? cycle.target_score ?? null, a.attempt_no,
+        entryBandsOf(scores as any), skips.map((x: any) => x.skill ?? x), a.route ?? cycle.route,
+      );
+      /* PR-S4F #11: lượt chưa có kỹ năng nào ĐỦ điểm (chỉ W1 lẻ, chỉ dòng nhận xét) không nói được gì — xuống lượt cũ hơn. */
+      if ((rr ? rr.scored : ri!.scoredRequired) === 0) continue;
       s.attemptId = a.id;
       s.attemptNo = a.attempt_no;
       s.attemptKind = a.kind ?? 'mock';
       s.attemptLabel = labelOf(a.kind, a.attempt_no);
       s.periodCode = a.period_code ?? null;
 
-      if (ratio) {
-        /* Một nguồn bộ môn: bảng `programme_skills` (qua `allProgrammes`, nhớ trong request), hằng số chỉ dự phòng (K5-45). */
-        const r = evaluateRegular(boMonCua(cycle.programme_code), scores as any, cycle.programme_code);
+      if (rr) {
+        const r = rr;
         s.sosLevel = r.sosLevel;
         s.provisional = r.provisional;
         s.scored = r.scored;
@@ -254,14 +265,7 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
           .filter((x) => x.outcome === 'fail' && x.score !== null && x.total !== null)
           .map((x) => ({ skill: x.skill, score: x.score as number, total: x.total as number }));
       } else {
-        const skips = bundle.skips.get(a.id) ?? [];
-        const r = evaluateAttempt(
-          /* T9 (23/09): kết quả gần nhất dùng mục tiêu TẠI THỜI ĐIỂM THI, không phải mục tiêu hiện tại của lộ
-           * trình — đúng như `resultOf` ở `attempts.ts:155` đã làm, để SOS/kỳ vọng không đổi ngược khi hồ sơ sửa
-           * mục tiêu sau này. */
-          a.target_at_attempt ?? cycle.target_score ?? null, a.attempt_no,
-          entryBandsOf(scores as any), skips.map((x: any) => x.skill ?? x), a.route ?? cycle.route,
-        );
+        const r = ri!;
         s.sosLevel = r.sosLevel;
         s.provisional = r.provisional;
         s.scored = r.scoredRequired;

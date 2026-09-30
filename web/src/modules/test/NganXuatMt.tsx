@@ -234,7 +234,8 @@ export function NganXuatMt({ khung: khungDau, chiNhanh, lop, thoiGianMacDinh, on
               ? <p className="m-0 text-xs text-slate-400">Không có lượt nào khớp — mở rộng thời gian hoặc bỏ bớt chi nhánh, lớp.</p>
               : <ul className="m-0 list-none space-y-0.5 p-0" aria-label="Dòng đầu của tệp">
                 {(xtHienTai ?? xemGanNhat)?.dauDong.map((d, i) => (
-                  <li key={i} className={`truncate text-[12.5px] ${xtHienTai ? 'text-slate-300' : 'text-slate-500'}`} title={d}>{d}</li>
+                  /* PR-S4F #12: xuống dòng thay vì cắt — đuôi "tạm thời" / trạng thái lượt không mất. */
+                  <li key={i} className={`break-words text-[12.5px] ${xtHienTai ? 'text-slate-300' : 'text-slate-500'}`} title={d}>{d}</li>
                 ))}
               </ul>}
           </div>

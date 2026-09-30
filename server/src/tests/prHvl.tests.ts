@@ -45,7 +45,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ Task 1 · chip, badge
 
   check('PR-HVL (1) · K2-02/03 chip Cần làm · Chờ duyệt · Đang SOS · Thiếu thông tin; link cũ không vỡ; demLoc một hàm đếm', () => {
-    eq(d.LOC_HOC_VIEN, ['tat-ca', 'can-lam', 'cho-duyet', 'sos', 'thieu_tt'], 'Khoá chip');
+    eq(d.LOC_HOC_VIEN, ['tat-ca', 'can-lam', 'qua-han', 'cho-duyet', 'sos', 'thieu_tt'], 'Khoá chip (PR-S4F thêm qua-han)');
     for (const v of ['case_working', 'case_no_plan', 'case_overdue']) eq(d.docThamSoLoc(v), { loc: 'can-lam' }, `view=${v}`);
     eq(d.docThamSoLoc('sos_open'), { loc: 'sos' }, 'sos_open');
     eq(d.docThamSoLoc('cho-duyet'), { loc: 'cho-duyet' }, 'cho-duyet');
@@ -53,8 +53,8 @@ export async function runPrHvlTests(t: YThucTestKit) {
       { loc: ['tat-ca', 'sos', 'can-lam'], khung: 'ft' }, { loc: ['tat-ca', 'cho-duyet'], khung: 'thuong' },
       { loc: ['tat-ca', 'can-lam', 'thieu_tt'], khung: 'thuong' },
     ];
-    eq(d.demLoc(hv, 'tat-ca'), { 'tat-ca': 3, 'can-lam': 2, 'cho-duyet': 1, sos: 1, thieu_tt: 1 }, 'Đếm cả hai khung');
-    eq(d.demLoc(hv, 'thuong'), { 'tat-ca': 2, 'can-lam': 1, 'cho-duyet': 1, sos: 0, thieu_tt: 1 }, 'Đếm lớp thường');
+    eq(d.demLoc(hv, 'tat-ca'), { 'tat-ca': 3, 'can-lam': 2, 'qua-han': 0, 'cho-duyet': 1, sos: 1, thieu_tt: 1 }, 'Đếm cả hai khung');
+    eq(d.demLoc(hv, 'thuong'), { 'tat-ca': 2, 'can-lam': 1, 'qua-han': 0, 'cho-duyet': 1, sos: 0, thieu_tt: 1 }, 'Đếm lớp thường');
     eq(d.demLoc(hv, 'ft')['tat-ca'], 1, 'Đếm Fast Track');
   });
 
@@ -423,7 +423,8 @@ export async function runPrHvlTests(t: YThucTestKit) {
 
   check('PR-HVL (5) · web Cần hỗ trợ: hàng theo kỹ năng (`hangCanHoTro`), mở Ngăn Case tại chỗ, công tắc "Chỉ kỹ năng tôi dạy"; không còn luật một-Case-chính/em', () => {
     const b = web('modules/classes/BangCanHoTro.tsx');
-    assert(/hangCanHoTro\(/.test(b) && /sapEmCanHoTro\(/.test(b) && /<NganCase /.test(b) && /Chỉ kỹ năng tôi dạy/.test(b), 'thiếu hàng theo kỹ năng / Ngăn Case tại chỗ / công tắc');
+    /* PR-S4F #5: hàng + xếp em đi qua `locCanHoTro` (gọi `hangCanHoTro` rồi `sapEmCanHoTro`). */
+    assert(/locCanHoTro\(/.test(b) && /<NganCase /.test(b) && /Chỉ kỹ năng tôi dạy/.test(b), 'thiếu hàng theo kỹ năng / Ngăn Case tại chỗ / công tắc');
     assert(!/chonCaseChinh|viecTiepTheoCua|Chưa có PA học thuật|\/cases\?classId=/.test(b), 'còn luật/chữ cũ');
     assert(!/\u{1F512}/u.test(b), 'ổ khoá phải là SVG (KhoaQuyChe), không phải emoji');
     assert(/tenSos/.test(b) && /export function TenCase/.test(web('modules/cases/SkillBoard.tsx')), 'chip [MT1] dùng TenCase của SkillBoard');

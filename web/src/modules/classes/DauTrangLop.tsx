@@ -57,8 +57,8 @@ export type ViecDauTrang = 'tien-do' | 'chuyen-tiep' | 'phan-cong' | 'thong-tin'
  *   dòng 4  tối đa 2 badge theo vai, phần còn lại "+n" (menu)
  * Mỗi nút chỉ hiện khi người xem làm được (Q9).
  */
-export function DauTrangLop({ data, periodId, onViec, onCheDoCanHoTro }: {
-  data: HoSoLop; periodId: number | null; onViec: (v: ViecDauTrang) => void; onCheDoCanHoTro: () => void;
+export function DauTrangLop({ data, periodId, onViec }: {
+  data: HoSoLop; periodId: number | null; onViec: (v: ViecDauTrang) => void;
 }) {
   const navigate = useNavigate();
   const { session } = useSession();
@@ -77,10 +77,11 @@ export function DauTrangLop({ data, periodId, onViec, onCheDoCanHoTro }: {
     chuongTrinh: data.programme?.code ?? null,
   });
   const bamBadge = (x: BadgeLop): (() => void) | null =>
-    x.key === 'qua-han' ? onCheDoCanHoTro
+    /* PR-S4F #4: cùng đích với hộp lớp ở Học viên & Lớp — số trên badge = số dòng. */
+    x.key === 'qua-han' ? () => navigate(`/hoc-vien?view=qua-han&classId=${data.id}`)
       : x.key === 'cham' ? () => navigate(duongLichTest({ classId: data.id }))
       : x.key === 'xep-lop' && data.viewer.coTheChuyenTiep ? () => onViec('chuyen-tiep')
-      : x.key === 'cho-duyet' ? () => navigate('/cong-viec/cho-duyet')
+      : x.key === 'cho-duyet' ? () => navigate(`/cong-viec/cho-duyet?lop=${data.id}`)
       : null;
   /* Chỉ Quản trị hệ thống mới gọi được đường này (403 với người khác) — nên chỉ hỏi khi có cờ. */
   const xk = useApi<TinhTrangXoaKetThuc>(data.viewer.coTheXoaKetThuc ? `/classes/${data.id}/xoa-ket-thuc` : null, [data.id, data.viewer.coTheXoaKetThuc]);

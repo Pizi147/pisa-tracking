@@ -306,7 +306,7 @@ async function mayChu(t: YThucTestKit) {
     const rong = xm.duLieuXuatMt(P.coreTeacher, locThuong({ lop: String(mbLop) }));
     assert(rong.dem.luot === 0 && rong.sheets.map((s) => s.ten).join() === 'Bộ lọc đã dùng', `${rong.dem.luot} lượt, sheet ${rong.sheets.map((s) => s.ten)}`);
     const pf = xm.duLieuXuatMt(P.admin, locThuong());
-    const sheetPf = pf.sheets.find((s) => s.ten.startsWith('PREFOU'));
+    const sheetPf = pf.sheets.find((s) => s.ten.startsWith('Pre FOU · '));
     assert(sheetPf, `Pre FOU cần một sheet: ${pf.sheets.map((s) => s.ten)}`);
     const mon = sheetPf!.aoa[0].filter((c) => String(c).endsWith(' %') && c !== '% tổng');
     assert(mon.join() === 'Tổng hợp %', `Pre FOU: ${mon.join()}`);

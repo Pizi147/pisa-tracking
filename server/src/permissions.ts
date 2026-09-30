@@ -292,6 +292,11 @@ export function lopFtChoGvSpeaking(p: Principal, date = demoToday()): number[] {
 }
 const laGvSpeakingLop = (p: Principal, classId: number, date?: string) => lopFtChoGvSpeaking(p, date).includes(classId);
 
+/** PR-S4F: xem lượt MT để CHẤM — `ATTEMPT_VIEW` hoặc GV Speaking chấm S chéo lớp FT cùng chi nhánh. Chỉ dùng ở đường chấm. */
+export function requireXemLuotCham(p: Principal, ctx: Ctx, message: string) {
+  if (!can(p, PERMISSIONS.ATTEMPT_VIEW, ctx) && !(ctx.classId && laGvSpeakingLop(p, ctx.classId, ctx.date))) require_(p, PERMISSIONS.ATTEMPT_VIEW, ctx, message);
+}
+
 /** Chi nhánh mà ngữ cảnh đang nói tới. */
 function ctxBranches(ctx: Ctx): number[] {
   const set = new Set<number>();
@@ -345,8 +350,9 @@ function teacherAllows(p: Principal, permission: string, ctx: Ctx): boolean {
 
     // Xem: chỉ trong lớp được phân công, bất kỳ môn nào (xem KHÔNG cần đúng môn).
     case PERMISSIONS.ATTEMPT_VIEW:
-      /* PR-HSM: GV Speaking xem được lượt MT của lớp FT cùng chi nhánh (để chấm S chéo) — chỉ khi hỏi theo LỚP. */
-      return ctx.anyScope === true || hasAssignment(p, ctx, 'any') || (!!ctx.classId && laGvSpeakingLop(p, ctx.classId, ctx.date));
+      /* PR-S4F: GV Speaking chấm S chéo KHÔNG mở ở đây (mở cho mọi lần kiểm có classId: Case, tín hiệu, roster…) — chỉ mở ở hai đường
+         chấm `attemptDetail` / `classScoreSheet` (`requireXemLuotCham`) và Lịch Test (`lopFtChoGvSpeaking`). */
+      return ctx.anyScope === true || hasAssignment(p, ctx, 'any');
     case PERMISSIONS.STUDENT_VIEW:
       return ctx.anyScope === true || hasAssignment(p, ctx, 'any');
 

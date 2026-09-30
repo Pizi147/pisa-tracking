@@ -649,12 +649,21 @@ export function refreshRegularOutcome(p: Principal, attemptId: number) {
    */
   reconcileCorrectedSignals(p, {
     attemptId, passingSkills: r.skills.filter((x) => x.outcome === 'pass').map((x) => x.skill), passText: 'đạt',
+    /* PR-S4F #3: môn nay TRỐNG (xoá điểm có lý do) — tín hiệu dựng trên điểm đó hết căn cứ, như nhánh FT (`reconcileCorrectedScores`). */
+    clearedSkills: r.skills.filter((x) => x.outcome === 'missing').map((x) => x.skill),
   });
   // Nhưng CASE thì mở ngay khi kết luận được, không chờ đủ.
   if (r.sosLevel === null) return r;
 
   const failing = r.skills.filter((x) => x.outcome === 'fail').map((x) => x.skill);
   const failingCats = new Set(failing.map((sk) => categoryOf(sk)).filter(Boolean) as string[]);
+  /* PR-S4F #3: chỉ môn CÓ ĐIỂM ĐẠT ở lượt này mới là "đã đạt" — môn trống / không thuộc lượt này không nói gì về Case. */
+  const passingCats = new Set(r.skills.filter((x) => x.outcome === 'pass').map((x) => categoryOf(x.skill)).filter(Boolean) as string[]);
+  /* Mục 9.4: Case có căn cứ từ CHÍNH lượt này → đạt ở đây là SỬA ĐIỂM, không phải tiến bộ — không ghi mốc "đã đạt". */
+  const coCanCuLuotNay = conn.prepare(
+    `SELECT 1 FROM case_signals WHERE case_id = ? AND attempt_id = ?
+     UNION ALL SELECT 1 FROM case_milestones WHERE case_id = ? AND attempt_id = ? AND kind != 'passed' LIMIT 1`,
+  );
 
   /*
    * TÌM CASE THEO HỌC VIÊN, KHÔNG THEO LƯỢT THI.
@@ -679,9 +688,10 @@ export function refreshRegularOutcome(p: Principal, attemptId: number) {
   for (const c of open) {
     const cat = c.category ?? categoryOf(c.topic);
     if (!cat) continue;
-    const gone = !failingCats.has(cat);
-    const level = gone || r.sosLevel === 0 ? 0 : r.sosLevel;
-    if (gone) {
+    const dat = passingCats.has(cat);
+    if (!dat && !failingCats.has(cat)) continue;
+    const level = dat || r.sosLevel === 0 ? 0 : r.sosLevel;
+    if (dat && !coCanCuLuotNay.get(c.id, attemptId, c.id, attemptId)) {
       addMilestone({
         caseId: c.id, kind: 'passed', attemptId, attemptNo: a.attempt_no,
         sosLevel: r.sosLevel, occurredOn: detectedAt, createdBy: p.userId,
