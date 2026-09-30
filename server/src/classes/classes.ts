@@ -3,7 +3,7 @@ import {
   ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS, awaitingScore, chuanHoaMaLop, soSanhLop, kiemPhanCong, moRongPhanCong, nhanKetThucVi, nhanTiepTheo,
   oPhanCong, pendingSkillsOf, tenMonNgan, trongHaiTuanCuoi, viecTiepCuaEm,
   type AssessedSkill, type SlotPhanCong, type AttemptKind, type PendingCell, type ProgrammeCode, type WorkScope,
-  coMocTiepTheo, mocKeTiep,
+  coMocTiepTheo, coMocTiepTheoThuong, mocKeTiep,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { mondayOf } from '../platform/week.ts';
@@ -20,7 +20,7 @@ import { standingFor, standingLine } from '../students/standing.ts';
 import { allProgrammes, evaluateRegular, programmeOfClass } from '../normal/regular.ts';
 import { cuoiKhoaTheoHocVien, emConMiniTest, nguoiGhiMiniTest } from '../normal/cuoiKhoa.ts';
 import { classProgressMany, missingForClasses, missingForStudent, mocKetKhoa, type TienDoMoc } from './schedule.ts';
-import { canhBaoTheoHocVien, caseViecTheoHocVien, soEmCanXuLyYThuc, viecHocVienTheoLop } from './dongHocVien.ts';
+import { canhBaoTheoHocVien, caseViecTheoHocVien, nhapDiemTheoEm, soEmCanXuLyYThuc, viecHocVienTheoLop } from './dongHocVien.ts';
 import { demChuaLoTrinh, tiepTheoTheoHocVien } from './loTrinhTiep.ts';
 import { daiLop } from './daiChuyenLop.ts';
 import { listCases } from '../cases/cases.ts';
@@ -386,8 +386,12 @@ export function classRoster(p: Principal, classId: number, q?: string) {
   for (const r of openRows) {
     const cur = activeCycle.get(r.student_id) ?? null;
     const carried = cur !== null && r.cycle_id !== null && r.cycle_id !== cur;
-    openCaseCount.set(r.student_id, (openCaseCount.get(r.student_id) ?? 0) + 1);
     if (carried) handoverCount.set(r.student_id, (handoverCount.get(r.student_id) ?? 0) + 1);
+  }
+  /* PR-UXF-a G-10 (Q17): cột Case đếm từ `listCases(p, { classId })` — THEO QUYỀN người xem, cùng nguồn với "n Case đang mở" đầu hồ sơ lớp. */
+  for (const c of listCases(p, { classId }).rows) {
+    if (c.status === 'done' || c.studentId === null) continue;
+    openCaseCount.set(c.studentId, (openCaseCount.get(c.studentId) ?? 0) + 1);
   }
   /*
    * TÌNH TRẠNG HỌC THUẬT lấy từ KẾT QUẢ BÀI GẦN NHẤT, không suy từ case còn mở.
@@ -408,6 +412,8 @@ export function classRoster(p: Principal, classId: number, q?: string) {
   const maChuongTrinhHienTai = (prog?.code ?? null) as ProgrammeCode | null;
   /* PR-UXF-a K2-12: % tổng + Hướng gợi ý Cuối khoá — CÙNG hàm panel Chuyển lớp đọc, một lần cho cả lớp. */
   const cuoiKhoaLop = isRatio ? cuoiKhoaTheoHocVien(classId, undefined, { daRoi: finished }) : null;
+  /* PR-UXF-a VN29: nhập điểm của người xem — CÙNG hàm với chip Cần làm / badge quá hạn (Học viên & Lớp, đầu hồ sơ lớp). */
+  const nhapDiemEm = nhapDiemTheoEm(p, [classId], today, () => classId);
 
   const dauTuanNay = mondayOf(demoToday());   // MỘT lần — không tính lại theo từng em (N+1)
   return students.map((s) => {
@@ -470,13 +476,6 @@ export function classRoster(p: Principal, classId: number, q?: string) {
             const scored = row?.raw_score !== null && row?.raw_score !== undefined;
             return !scored && !!regViews.get(k)?.overdue;
           }).length,
-          /* PR-N1 A6: hạn nhập điểm SỚM NHẤT của các môn người xem còn nợ — "Nhập điểm R · MT2 ⚠ quá hạn n ngày". */
-          hanNhap: myRegularSkills.filter((k) => {
-            const row = scores.find((x) => x.skill === k);
-            const scored = row?.raw_score !== null && row?.raw_score !== undefined;
-            const v = regViews.get(k);
-            return !scored && !!v && awaitingScore(v.progress);
-          }).map((k) => regViews.get(k)?.deadline ?? null).filter(Boolean).sort()[0] ?? null,
           /* Tuần thi của TỪNG môn (thứ Hai) — ô chưa có điểm ở bảng lớp thường ghi tuần này (đặc tả §3.7, 10b A). */
           tuanMon: Object.fromEntries(prog!.skills.map((k) => [k, regViews.get(k)?.weekStart ?? null])),
         };
@@ -507,12 +506,10 @@ export function classRoster(p: Principal, classId: number, q?: string) {
         passedCount: null, failedCount: result.failedCount,
         sosLevel: result.sosLevel, evaluable: result.evaluable,
         caseStatus: c?.status ?? null,
-        myPending: cells.filter((x) => x.viec && x.band === null && x.progress === 'due')
+        /* PR-UXF-a (d): như nhánh lớp thường — ô của người xem, gồm 'sat' (đã thi, chờ điểm); quá hạn chỉ đếm ô của người xem. */
+        myPending: cells.filter((x) => x.viec && x.band === null && awaitingScore(x.progress) && !x.noShow)
           .map((x) => x.skill),
-        overdueSkills: cells.filter((x) => x.overdue).length,
-        /* PR-N1 A6: hạn nhập điểm SỚM NHẤT của các ô người xem còn nợ (đến lịch hoặc đã trễ). */
-        hanNhap: cells.filter((x) => x.viec && x.band === null && (x.progress === 'due' || x.overdue))
-          .map((x) => x.deadline).filter(Boolean).sort()[0] ?? null,
+        overdueSkills: cells.filter((x) => x.viec && x.overdue).length,
       };
     });
     const done = timeline.filter((t) => t.evaluable);
@@ -632,7 +629,10 @@ export function classRoster(p: Principal, classId: number, q?: string) {
          * nhưng chỉ khi em CÒN ĐANG HỌC. Em đã kết thúc thì không cần mốc tiếp nào nữa.
          */
         hasNextMilestone: s.status === 'active'
-          ? (isRatio ? timeline.some((t) => t.status === 'planned') : coMocTiepTheo({
+          ? (isRatio ? coMocTiepTheoThuong({
+            soLuotKeHoach: timeline.filter((t) => t.status === 'planned').length,
+            coCuoiKhoa: timeline.some((t) => t.kind === 'final' && t.status !== 'cancelled'),
+          }) : coMocTiepTheo({
             coMoc: !!mocFt, route: s.route ?? null, coNgayThi: !!(s.exam_month || s.exam_period_id),
             mtCuoi: Math.max(0, ...timeline.filter((t) => t.status !== 'cancelled').map((t) => t.attemptNo)),
           }))
@@ -646,15 +646,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
       canhBaoYThuc: canhBao.get(s.id) ?? null,
       /* Cột "Việc tiếp theo" (Q13): nhập điểm của CHÍNH người xem ở đợt đang chờ + việc của từng Case chưa xong. */
       viecTiepTheo: viecTiepCuaEm({
-        nhapDiem: (() => {
-          const cho = [...new Set(timeline.flatMap((t) => t.myPending))];
-          if (!cho.length) return null;
-          const dot = timeline.find((t) => t.myPending.length > 0) ?? null;
-          return {
-            kyNang: cho, dot: dot?.kindLabel ?? null, quaHan: timeline.some((t) => t.overdueSkills > 0),
-            han: timeline.map((t) => t.hanNhap).filter(Boolean).sort()[0] ?? null,
-          };
-        })(),
+        nhapDiem: nhapDiemEm.get(s.id) ?? null,
         cases: caseViec.get(s.id) ?? [],
         yThuc: canhBao.get(s.id) ?? null,
         homNay: today,
@@ -731,6 +723,7 @@ function classOverviewThat(p: Principal, classId: number) {
   })();
   const vl = viecHocVienTheoLop(p, {
     emTheoLop: new Map([[classId, emDangHoc]]), cases: caseCuaLop, homNay: demoToday(), chuongTrinhTheoLop: new Map([[classId, prog?.code ?? null]]),
+    nhapDiemTheoEm: nhapDiemTheoEm(p, [classId], demoToday(), () => classId),
   });
 
   return {

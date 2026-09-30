@@ -337,16 +337,16 @@ export const TRAN: Record<string, number> = {
   /* PR-S4F #5: +3 câu — `quetYeuCau` trước khi đếm thẻ chờ duyệt (badge = hộp); nhớ theo request nên chỉ một lần. */
   /* PR-LT2a (Task 7): +1 câu `emCoBaoPhChuaLam` (việc Báo phụ huynh qua TVV của GVCN, MỘT câu theo lô) — đo 67; trần 66 → 72 (+9%, < 30%). */
   'QL /hoc-vien-lop': 72,
-  'GVCN /hoc-vien-lop': 72,
-  'GVBM /hoc-vien-lop': 72,
-  'GVCN_THUONG /hoc-vien-lop': 72,
+  'GVCN /hoc-vien-lop': 93,   // PR-UXF-a VN29: +4 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 76, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋)
+  'GVBM /hoc-vien-lop': 93,   // PR-UXF-a VN29: +4 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 76, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋)
+  'GVCN_THUONG /hoc-vien-lop': 93,   // PR-UXF-a VN29: +4 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 76, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋)
   'QT /hoc-vien-lop': 85,
   'QL /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 72,
   'QT /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 70,
   'QL /classes/3/overview': 62,   // PR-CT gộp LT2b: 61 → 62
-  'GVCN /classes/3/overview': 62,   // PR-CT gộp LT2b: 61 → 62
-  'GVBM /classes/3/overview': 62,   // PR-CT gộp LT2b: 61 → 62
-  'GVCN_THUONG /classes/3/overview': 62,   // PR-CT gộp LT2b: 61 → 62
+  'GVCN /classes/3/overview': 80,   // PR-UXF-a VN29: +6 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 68, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋)   // PR-CT gộp LT2b: 61 → 62
+  'GVBM /classes/3/overview': 80,   // PR-UXF-a VN29: +6 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 68, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋)   // PR-CT gộp LT2b: 61 → 62
+  'GVCN_THUONG /classes/3/overview': 80,   // PR-UXF-a VN29: +6 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 68, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋)   // PR-CT gộp LT2b: 61 → 62
   'QT /classes/3/overview': 59,   // PR-CT gộp LT2b: 58 → 59   // PR-CT gộp main (LT2a + GV + demo CT): 57 → 58   // PR-S4F #5: +3 câu quét thẻ chờ duyệt   // PR-CT: 54 → 57 (gộp main)
   /* PR-HVL (2): mốc 46 (QT 43) + Case mở theo lô (`chiTietCaseMo`) đo 50 (QT 47) — trần kế hoạch = mốc + 6. */
   /* PR-HVL (5): `/classes/:id/can-ho-tro` đo 25 (QT 22) = `/cases?classId=` 17 (QT 14) + 8 — đúng trần kế hoạch. */
@@ -365,9 +365,9 @@ export const TRAN: Record<string, number> = {
   'GVCN_THUONG /classes/6/can-ho-tro': 25,
   'QT /classes/6/can-ho-tro': 22,
   'QL /classes/3/roster': 52,
-  'GVCN /classes/3/roster': 52,
-  'GVBM /classes/3/roster': 52,
-  'GVCN_THUONG /classes/3/roster': 52,
+  'GVCN /classes/3/roster': 67,   // PR-UXF-a VN29: +6 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 58, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋)
+  'GVBM /classes/3/roster': 67,   // PR-UXF-a VN29: +6 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 58, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋)
+  'GVCN_THUONG /classes/3/roster': 67,   // PR-UXF-a VN29: +6 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 58, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋)
   'QT /classes/3/roster': 49,
   /* PR-HVL (6): `issueBoard` chỉ gọi `planOutcomes` MỘT lần — mốc 22 (QT 21) → đo 16 (QT 15); trần = đo + 2 (kế hoạch: ≤ mốc + 2). Đường `/o` (danh sách sau số) đo 17 (QT 16). */
   'QL /classes/3/issue-board?category=listening': 18,

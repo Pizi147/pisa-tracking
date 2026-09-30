@@ -375,8 +375,14 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     const b = taoHocVien({ cid: LOP_THUONG, ft: false });
     const at = themLuot({ ...b, cid: LOP_THUONG, no: 1, kind: 'progress', weekStart: '2026-09-07' });
     diemThuong(at, { listening: [30, 40], reading: [32, 40], speaking: [8, 10] });
-    const row = classes.classRoster(P.admin, LOP_THUONG).find((s: any) => s.id === b.sid);
-    /* PR-N1 A6: máy chủ truyền hạn nhập điểm (`hanNhap`) → việc trễ nói đủ "quá hạn n ngày". */
+    /* PR-UXF-a VN29: việc nhập điểm = ô được PHÂN CÔNG (cùng luật hàng đợi Công việc) — Quản trị không phải người nhập; kiểm bằng GVBM môn W. */
+    assert(!classes.classRoster(P.admin, LOP_THUONG).find((s: any) => s.id === b.sid).viecTiepTheo.some((v: any) => v.dich.loai === 'nhap-diem'), 'Quản trị không nhận việc nhập điểm');
+    const gvW = (conn.prepare(`SELECT u.id FROM users u JOIN user_roles ur ON ur.user_id = u.id JOIN roles r ON r.id = ur.role_id WHERE r.key = 'teacher' AND ur.branch_id = ? ORDER BY u.id LIMIT 1`).get(MB) as any).id as number;
+    const pcW = Number(conn.prepare(`INSERT INTO teacher_assignments (class_id, user_id, skill, is_core, status, effective_from, created_at) VALUES (?, ?, 'writing', 0, 'active', '2026-08-03', ?)`)
+      .run(LOP_THUONG, gvW, NOW).lastInsertRowid);
+    const row = classes.classRoster(loadPrincipal(gvW), LOP_THUONG).find((s: any) => s.id === b.sid);
+    conn.prepare('DELETE FROM teacher_assignments WHERE id = ?').run(pcW);
+    /* PR-N1 A6: máy chủ truyền hạn nhập điểm → việc trễ nói đủ "quá hạn n ngày". */
     // PR-MON (MH2): lớp FOU — ô W hiện G+V.
     eq(row.viecTiepTheo[0], { viec: 'Nhập điểm G+V · Giữa khoá', han: '13/09', quaHanNgay: 1, tone: 'danger', dich: { loai: 'nhap-diem' }, title: 'Nhập điểm G+V · Giữa khoá · hạn 13/09 · quá hạn 1 ngày' }, 'Writing tuần 07/09 chưa có điểm, hạn CN 13/09 đã qua');
     const t = row.timeline.find((x: any) => x.kind === 'progress');

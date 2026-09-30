@@ -164,6 +164,12 @@ export function ketQuaGanNhat(k: KetQuaVao | null): KetQuaHien {
   };
 }
 
+/**
+ * PR-UXF-a K2-05 (Q5): em lớp thường "có mốc đánh giá tiếp theo" = còn lượt planned, HOẶC đã có bài Cuối khoá (không huỷ) — hết khoá
+ * không còn mốc nào; việc tiếp theo là lệnh chuyển lớp. Một luật cho badge Thiếu thông tin ở Học viên & Lớp và bảng lớp.
+ */
+export const coMocTiepTheoThuong = (o: { soLuotKeHoach: number; coCuoiKhoa: boolean }): boolean => o.soLuotKeHoach > 0 || o.coCuoiKhoa;
+
 // ---------------------------------------------------------------- cột Khoá lớp thường (§3.6, Q21)
 
 export function khoaLopThuong(i: {
