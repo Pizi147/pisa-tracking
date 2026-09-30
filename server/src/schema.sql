@@ -1775,3 +1775,41 @@ CREATE TABLE y_thuc_khai_bac (
   sua_boi INTEGER REFERENCES users(id), sua_luc TEXT,
   UNIQUE (student_id, chuoi_cycle_id)
 );
+
+/*
+ * LỆNH CHUYỂN LỚP + BÀN GIAO (PR-CT, §3.1f Q30-1…Q30-4): Quản lý ra lệnh (em · lớp nguồn → đích · tuần bắt đầu là Thứ Hai); tới Thứ Hai đó
+ * web thi hành bằng luật lộ trình đang có. Một lệnh = một phiếu bàn giao (hạn, nhận xét chung, bản chụp tự điền, xác nhận). `xac_nhan_thay`
+ * = 1: Quản lý xác nhận thay GVCN (planning chốt 30/09). Chỉ mục duy nhất một phần: một em có tối đa MỘT lệnh đang chờ.
+ */
+CREATE TABLE lenh_chuyen_lop (
+  id INTEGER PRIMARY KEY,
+  student_id INTEGER NOT NULL REFERENCES students(id),
+  lop_nguon_id INTEGER NOT NULL REFERENCES classes(id),
+  lop_dich_id INTEGER REFERENCES classes(id),
+  huong TEXT NOT NULL,
+  boi_canh TEXT NOT NULL,
+  tuan_bat_dau TEXT NOT NULL,
+  muc_tieu REAL, khong_cam_ket INTEGER NOT NULL DEFAULT 0, ngay_thi TEXT, ngay_xem_lai TEXT,
+  ly_do TEXT, khac_goi_y INTEGER NOT NULL DEFAULT 0,
+  nguoi_ra_lenh INTEGER NOT NULL REFERENCES users(id), ngay_ra_lenh TEXT NOT NULL,
+  tu_yeu_cau_id INTEGER REFERENCES yeu_cau_duyet(id),
+  trang_thai TEXT NOT NULL DEFAULT 'cho',
+  thi_hanh_luc TEXT, loi TEXT,
+  huy_boi INTEGER REFERENCES users(id), huy_luc TEXT, ly_do_huy TEXT,
+  han_gvbm TEXT, han_gvcn TEXT,
+  nhan_xet_chung TEXT, tu_dien TEXT,
+  xac_nhan_boi INTEGER REFERENCES users(id), xac_nhan_luc TEXT, xac_nhan_thay INTEGER NOT NULL DEFAULT 0,
+  tao_luc TEXT NOT NULL, sua_luc TEXT
+);
+CREATE UNIQUE INDEX ux_lenh_cho_hv ON lenh_chuyen_lop (student_id) WHERE trang_thai = 'cho';
+CREATE INDEX ix_lenh_den_han ON lenh_chuyen_lop (trang_thai, tuan_bat_dau);
+CREATE INDEX ix_lenh_nguon ON lenh_chuyen_lop (lop_nguon_id, trang_thai);
+CREATE INDEX ix_lenh_dich ON lenh_chuyen_lop (lop_dich_id, trang_thai);
+CREATE TABLE ban_giao_mon (
+  id INTEGER PRIMARY KEY,
+  lenh_id INTEGER NOT NULL REFERENCES lenh_chuyen_lop(id),
+  mon TEXT NOT NULL,
+  noi_dung TEXT NOT NULL,
+  nguoi_ghi INTEGER NOT NULL REFERENCES users(id), dien_thay INTEGER NOT NULL DEFAULT 0, ghi_luc TEXT NOT NULL,
+  UNIQUE (lenh_id, mon)
+);

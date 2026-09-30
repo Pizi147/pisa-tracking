@@ -290,6 +290,10 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     ins(`INSERT INTO y_thuc_khai_bac (student_id, chuoi_cycle_id, bac, ghi_chu, khai_luc) VALUES (?,?, 2, 'Khai thử', ?)`, sid, y1, TODAY);
     const q1 = ins(`INSERT INTO yeu_cau_duyet (loai, phan_loai, doi_tuong_loai, doi_tuong_id, hoc_vien_id, lop_id, nguoi_xin, tao_luc)
                     VALUES ('de_xuat_pa', 'hoc-thuat', 'intervention', ?, ?, ?, ?, ?)`, i1, sid, FT, U, now);
+    /* PR-CT: lệnh chuyển lớp của em (trỏ thẻ Chờ duyệt q1) + một dòng bàn giao môn */
+    const l1 = ins(`INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, huong, boi_canh, tuan_bat_dau, nguoi_ra_lenh, ngay_ra_lenh, tu_yeu_cau_id, tao_luc)
+                    VALUES (?,?, 'bao_luu', 'giua-khoa', '2026-10-05', ?, ?, ?, ?)`, sid, FT, U, TODAY, q1, now);
+    ins(`INSERT INTO ban_giao_mon (lenh_id, mon, noi_dung, nguoi_ghi, ghi_luc) VALUES (?, 'reading', 'Thử', ?, ?)`, l1, U, now);
     const task = ins(`INSERT INTO tasks (code, title, created_at) VALUES (?, 'Việc thử xoá', ?)`, `CV-XOA2-${xSeq}`, now);
     ins(`INSERT INTO task_students (task_id, student_id, case_id, intervention_id, created_at) VALUES (?,?,?,?,?)`, task, sid, c1, i1, now);
     conn.prepare('INSERT INTO task_case_links (task_id, case_id, created_at) VALUES (?,?,?)').run(task, c1, now);
@@ -308,20 +312,20 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     return { sid, ma, ten, y1, y2, a1, a2, c1, i1, f1, g1, v1, m1, x1, r1, task, tep };
   }
 
-  check('PR-XOA X1 · Bao đóng theo PRAGMA foreign_key_list BẰNG ĐÚNG BANG_CUA_HOC_VIEN (31 bảng — PR-YT4 thêm y_thuc_khai_bac)', () => {
+  check('PR-XOA X1 · Bao đóng theo PRAGMA foreign_key_list BẰNG ĐÚNG BANG_CUA_HOC_VIEN (33 bảng — PR-YT4 thêm y_thuc_khai_bac; PR-CT thêm lenh_chuyen_lop, ban_giao_mon)', () => {
     const tap = baoDongLuocDo();
     const coDinh = new Set(xoaHV.BANG_CUA_HOC_VIEN);
     const thieu = [...tap].filter((b) => !coDinh.has(b));
     const thua = [...coDinh].filter((b) => !tap.has(b));
     assert(!thieu.length, thieu.map((b) => `Bảng ${b} trỏ tới học viên mà xoaHocVien chưa xoá`).join('; '));
     assert(!thua.length, `BANG_CUA_HOC_VIEN có bảng không trỏ tới học viên: ${thua.join(', ')}`);
-    assert(tap.size === 31, `Bao đóng đổi cỡ (${tap.size}) — cập nhật bảng tham chiếu của kế hoạch`);
+    assert(tap.size === 33, `Bao đóng đổi cỡ (${tap.size}) — cập nhật bảng tham chiếu của kế hoạch`);
   });
 
   check('PR-XOA X2 · Mỗi cạnh FK vào bao đóng có câu trong CAU_XOA_HOC_VIEN (DELETE theo cột, hoặc UPDATE … = NULL cho CANH_NULL); đủ owner_type tệp', () => {
     const tap = baoDongLuocDo();
     const vao = CANH.filter((c) => tap.has(c.toi));
-    assert(vao.length === 55, `Số cạnh vào bao đóng đổi (${vao.length})`);
+    assert(vao.length === 58, `Số cạnh vào bao đóng đổi (${vao.length})`);
     const sot: string[] = [];
     for (const c of vao) {
       const ok = laCanhNull(c)
@@ -387,7 +391,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     assert(maLoi(() => xoaHV.xoaHocVien(P.admin, 99_999_999, { maXacNhan: 'x' })) === 404, 'id lạ xoá phải 404');
   });
 
-  check('PR-XOA X10 · Số câu SQL: xoá ≤ 42 và KHÔNG đổi theo số lượt Test (2 lượt vs 7 lượt); xem trước ≤ 3', () => {
+  check('PR-XOA X10 · Số câu SQL: xoá ≤ 44 (PR-CT thêm 2 câu) và KHÔNG đổi theo số lượt Test (2 lượt vs 7 lượt); xem trước ≤ 3', () => {
     const it = taoHocVienDuDuLieu();
     const nhieu = taoHocVienDuDuLieu({ soLuotThem: 5 });
     const xemIt = demTruyVan(() => { xoaHV.xemXoaHocVien(P.admin, it.sid); });
@@ -397,7 +401,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     try {
       const nIt = demTruyVan(() => { xoaHV.xoaHocVien(P.admin, it.sid, { maXacNhan: it.ma }); });
       const nNhieu = demTruyVan(() => { xoaHV.xoaHocVien(P.admin, nhieu.sid, { maXacNhan: nhieu.ma }); });
-      assert(nIt <= 42, `xoá tốn ${nIt} câu (> 42)`);
+      assert(nIt <= 44, `xoá tốn ${nIt} câu (> 44)`);
       assert(nNhieu === nIt, `số câu đổi theo số lượt: ${nIt} → ${nNhieu}`);
     } finally { khoTepMod.datKhoTepChoKiemThu(null); tepDaXoa.length = 0; }
   });
@@ -585,12 +589,12 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     return { id: userId, email, ten: `Thu Xoa ${ten} ${tkSeq}` };
   };
 
-  check('PR-XOA T1 · COT_TRO_TAI_KHOAN (74 — PR-YT4 thêm 3, PR-HSM thêm 1) BẰNG ĐÚNG tập cột FK trỏ users; đúng 9 cột thiết lập', () => {
+  check('PR-XOA T1 · COT_TRO_TAI_KHOAN (78 — PR-YT4 thêm 3, PR-HSM thêm 1, PR-CT thêm 4) BẰNG ĐÚNG tập cột FK trỏ users; đúng 9 cột thiết lập', () => {
     const coDinh = xoaTK.COT_TRO_TAI_KHOAN.map((x) => `${x.bang}.${x.cot}`);
     const thieu = COT_USERS.filter((k) => !coDinh.includes(k));
     const thua = coDinh.filter((k) => !COT_USERS.includes(k));
     assert(!thieu.length, thieu.map((k) => `Phân loại cột ${k} (dấu vết hay thiết lập)`).join('; '));
-    assert(!thua.length && coDinh.length === 74 && new Set(coDinh).size === 74, `thừa/trùng: ${thua.join(', ')} · ${coDinh.length}`);
+    assert(!thua.length && coDinh.length === 78 && new Set(coDinh).size === 78, `thừa/trùng: ${thua.join(', ')} · ${coDinh.length}`);
     const tl = xoaTK.COT_TRO_TAI_KHOAN.filter((x) => x.loai === 'thiet_lap').map((x) => `${x.bang}.${x.cot}`).sort();
     assert(JSON.stringify(tl) === JSON.stringify(['demo_sessions.user_id', 'notifications.user_id', 'task_followers.user_id', 'teacher_assignments.user_id',
       'user_emails.user_id', 'user_permissions.user_id', 'user_prefs.user_id', 'user_roles.user_id', 'user_skills.user_id']), tl.join());

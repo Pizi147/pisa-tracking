@@ -18,6 +18,8 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'case.report': 'Tạo Case', 'case.report.merge': 'Ghi vào Case đang có', 'case.result.update': 'Ghi kết quả PA',
   'case.retired_score_fixed': 'Huỷ Case vì sửa điểm', 'case.system_close': 'Hệ thống đóng Case',
   'class.assign': 'Phân công giáo viên', 'class.create': 'Tạo lớp', 'class.delete': 'Xoá lớp', 'class.finished': 'Kết thúc lớp',
+  'lenh_chuyen.tao': 'Ra lệnh chuyển lớp', 'lenh_chuyen.sua': 'Sửa lệnh chuyển lớp', 'lenh_chuyen.huy': 'Huỷ lệnh chuyển lớp',
+  'lenh_chuyen.thi_hanh': 'Thi hành lệnh chuyển lớp', 'ban_giao.ghi_mon': 'Ghi bàn giao môn', 'ban_giao.xac_nhan': 'Xác nhận bàn giao',
   'class.info': 'Sửa thông tin lớp', 'class.progress': 'Đổi tiến độ lớp', 'class.transition': 'Chuyển tiếp lớp',
   'cycle.baseline.clear': 'Xoá điểm đầu vào', 'cycle.baseline.set': 'Ghi điểm đầu vào', 'cycle.create': 'Mở lộ trình',
   'cycle.outcome': 'Kết luận lộ trình', 'cycle.target.revise': 'Đổi mục tiêu band', 'cycle.update': 'Sửa lộ trình',

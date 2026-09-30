@@ -107,4 +107,61 @@ export async function runPrCtTests(t: YThucTestKit) {
     const chua = d.trangThaiPhieu({ soMonDaGhi: 0, soMon: 4, daXacNhan: false });
     assert(chua.khoa === 'chua-lam' && chua.nhan === 'Chưa làm', JSON.stringify(chua));
   });
+
+  // ------------------------------------------------------------------ khối 2 · migrate cấu trúc (Task 2)
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const { default: SqliteDb } = await import('libsql');
+  const { migratePrCt } = await import('../migrate/prCt.ts');
+  const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
+  const SCHEMA = fs.readFileSync(path.join(REPO, 'server/src/schema.sql'), 'utf8').replace(/\r\n/g, '\n');
+  const cot = (db: any, bang: string) => (db.prepare(`PRAGMA table_info(${bang})`).all() as any[]).map((c) => `${c.name}:${c.type}:${c.notnull}:${c.pk}`);
+  /** DB thời trước PR-CT: chữ schema.sql cắt từ khối chú thích của PR-CT (luôn nằm CUỐI file) trở đi. */
+  const truocCt = () => {
+    const i = SCHEMA.indexOf('/*\n * LỆNH CHUYỂN LỚP + BÀN GIAO (PR-CT');
+    if (i < 0) throw new Error('schema.sql đổi khuôn — sửa bộ cắt của phép kiểm CT (2)');
+    const m = new SqliteDb(':memory:');
+    m.exec(SCHEMA.slice(0, i));
+    return m;
+  };
+
+  check('CT (2a) · migrate chạy lặp được: lần một tạo 2 bảng, lần hai không báo gì; DB dựng từ schema.sql không bị đổi', () => {
+    const m = truocCt();
+    const a: string[] = []; migratePrCt(m, a);
+    const b: string[] = []; migratePrCt(m, b);
+    assert(a.length === 2 && b.length === 0, `${a.join(' | ')} ‖ ${b.join(' | ')}`);
+    const c: string[] = []; migratePrCt(t.conn, c);
+    assert(c.length === 0, `DB dựng từ schema.sql vẫn bị đổi: ${c.join(' | ')}`);
+  });
+  check('CT (2b) · DB migrate có cột GIỐNG HỆT DB dựng từ schema.sql (tên, kiểu, NOT NULL, thứ tự) và cùng chỉ mục', () => {
+    const m = truocCt();
+    migratePrCt(m, []);
+    const moi = new SqliteDb(':memory:');
+    moi.exec(SCHEMA);
+    for (const b of ['lenh_chuyen_lop', 'ban_giao_mon']) {
+      assert(JSON.stringify(cot(m, b)) === JSON.stringify(cot(moi, b)), `${b}:\n  ${cot(m, b).join(',')}\n  ${cot(moi, b).join(',')}`);
+    }
+    const chiMuc = (db: any) => (db.prepare(`SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'lenh_chuyen_lop' AND name LIKE '%lenh%' ORDER BY name`).all() as any[]).map((x) => x.name).join();
+    assert(chiMuc(m) === chiMuc(moi) && chiMuc(m).includes('ux_lenh_cho_hv'), `${chiMuc(m)} ‖ ${chiMuc(moi)}`);
+  });
+  check('CT (2c) · chỉ mục chặn lệnh "cho" thứ hai của cùng em (lệnh đã chuyển / huỷ thì không chặn) · UNIQUE (lệnh, môn) chặn dòng môn thứ hai', () => {
+    const m = new SqliteDb(':memory:');
+    m.exec(SCHEMA);
+    m.exec('PRAGMA foreign_keys = OFF');
+    const lenh = (tt: string) => m.prepare(
+      `INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, huong, boi_canh, tuan_bat_dau, nguoi_ra_lenh, ngay_ra_lenh, trang_thai, tao_luc)
+       VALUES (1, 1, 'bao_luu', 'cuoi-khoa', '2026-10-05', 1, '2026-09-30', ?, '2026-09-30')`).run(tt);
+    const loi = (fn: () => void) => { try { fn(); return ''; } catch (e: any) { return String(e?.message ?? e); } };
+    lenh('huy'); lenh('da_chuyen'); lenh('cho');
+    assert(/UNIQUE/i.test(loi(() => lenh('cho'))), 'lệnh cho thứ hai phải bị chặn');
+    const mon = () => m.prepare(`INSERT INTO ban_giao_mon (lenh_id, mon, noi_dung, nguoi_ghi, ghi_luc) VALUES (3, 'reading', 'x', 1, '2026-09-30')`).run();
+    mon();
+    assert(/UNIQUE/i.test(loi(mon)), 'dòng môn thứ hai của cùng lệnh phải bị chặn');
+  });
+  check('CT (2d) · nhãn nhật ký tiếng Việt cho 6 mã mới', () => {
+    for (const ma of ['lenh_chuyen.tao', 'lenh_chuyen.sua', 'lenh_chuyen.huy', 'lenh_chuyen.thi_hanh', 'ban_giao.ghi_mon', 'ban_giao.xac_nhan']) {
+      assert(d.nhanHanhDongNhatKy(ma) !== 'Thao tác hệ thống', `thiếu nhãn ${ma}`);
+    }
+  });
 }
