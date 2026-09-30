@@ -486,4 +486,4 @@ U1: `fasttrack/planning.ts:164`, `worklist/branchpulse.ts:137`, `worklist/summar
 
 | Ngày | Task | Ghi chú (mốc B, model thật, trần tốc độ, lệch kế hoạch, cổng gộp) |
 |---|---|---|
-| | | |
+| 01/10 | 0 | Model thật Opus 5.5 (đổi từ Sonnet 5.5 đầu phiên). Worktree từ `origin/main` @ `4379cc63`. **Mốc B:** 2028 phép kiểm chính ✓ · 0 ✗ · tốc độ 28/28 · typecheck xanh (11 phút, 4 phiên chạy check song song) |
