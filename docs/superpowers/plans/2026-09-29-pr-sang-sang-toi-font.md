@@ -432,3 +432,16 @@ Trang 03 chụp ở `/hoc-vien` (danh sách lớp, các lớp thu gọn); trang 
 **Task 1 (30/09).** Phép kiểm trước: `npm run check` → **10 đỏ** (S1 tối + S1 sáng vì thiếu token `chu-*`/`accent-ink-rgb`/`chon-dau-rgb`, S2, S3, S4, S5, S6, S7, S8, S9),
 **1799 đạt** (bằng mốc B; N-1 cũ xanh khi đọc khối `:root`). Lệch kế hoạch nhỏ: `docMauHaiCheDo` ghép **văn bản** `:root` + khối sáng rồi mới giải bí danh
 (thay vì trộn hai bảng đã giải) — để `--dat-rgb: var(--ok-rgb)` ở sáng theo `--ok-rgb` sáng. S1 thêm `accent` trên nền trang (chữ liên kết).
+
+**Task 2–5 (30/09).** Task 2: S1–S4 xanh (giá trị sáng của planning đạt 4.5:1 ngay lần đầu, không chỉnh). Task 3: CSS build không còn `<alpha-value>`; bóng
+`inset … theme(colors.teal.600)` ra `rgb(var(--chon-vien-rgb) / 1)`. **So "bảng màu tính được" tối, 10 trang, trước = sau, chỉ lệch 1 bộ**: nền `bg-sky-500/20`
+(nút lọc đang chọn, trang 01–02) `rgba(14,165,233,.2)` → `rgba(128,184,255,.2)` (= `doing`) — đúng ánh xạ `sky-500: doing` của kế hoạch. Task 4: 4 chỗ màu cứng
+đã đổi (bảng Task 4). Task 5: nút ◐ + script `index.html`; S9 xanh. Sập Node (139) ở check Task 3 → chạy lại 1 lần, xanh.
+
+**Task 6 · 🛑 6a đã hỏi (30/09).** Đo `@fontsource/be-vietnam-pro` 5.3.0: **không có số cùng độ rộng** — chữ số 1 rộng 5,4 px, số 4 rộng 10 px ở cỡ 14, bật
+`font-feature-settings: "tnum"` không đổi gì (400 và 600). Chủ sản phẩm chọn: **Be Vietnam Pro + chữ số 0–9 lấy từ Inter** — `index.css` khai lại họ
+`'Be Vietnam Pro'` (5 độ đậm) với `unicode-range: U+0030-0039` trỏ vào `@fontsource/inter` 5.3.0 (ghim), mặt khai sau thắng ở vùng trùng nên `--font-sans`
+vẫn bắt đầu bằng Be Vietnam Pro. Đo lại: `tnum` cho 10 chữ số cùng độ rộng ở cả 400/500/600/700/800 (9,05–9,08 px). S7 đổi theo (kiểm 5 mặt số + ghim Inter).
+Đo còn lại: `.woff2` tải từ cùng tên miền (`/node_modules/@fontsource/…` ở dev, tệp băm trong bản build); ký hiệu ✓ ⚠ ▶ ○ ◐ ✗ → ▾ đều có độ rộng
+10–12 px (đo canvas; xem ảnh Task 9 để chắc không ô vuông). Tràn/xuống dòng 8 trang ở 1440 px (01,03,04,05,06,07,08,09), so với Segoe UI: **số phần tử tràn, số phần tử
+xuống dòng và chiều cao trang giống hệt nhau, không cuộn ngang**; chữ rộng hơn Segoe ~3–9 %. Không màn nào vỡ → không 🛑 6b.

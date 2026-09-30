@@ -125,7 +125,7 @@ export async function runPrSangTests(t: YThucTestKit) {
     assert(hong.size === 0, [...hong].slice(0, 10).join(' · ') + (hong.size > 10 ? ` … (${hong.size})` : ''));
   });
 
-  check('SANG · S7: phông Be Vietnam Pro tự phục vụ, ghim phiên bản, không còn Inter', () => {
+  check('SANG · S7: phông Be Vietnam Pro tự phục vụ + chữ số thẳng cột (Inter), ghim phiên bản', () => {
     const body = /body\s*\{[^}]*\}/.exec(css)?.[0] ?? '';
     assert(/font-family:\s*var\(--font-sans\)/.test(body), 'body phải dùng var(--font-sans)');
     assert(/--font-sans:\s*'Be Vietnam Pro'/.test(goc), "--font-sans phải bắt đầu bằng 'Be Vietnam Pro'");
@@ -135,7 +135,13 @@ export async function runPrSangTests(t: YThucTestKit) {
     const pkg = JSON.parse(fs.readFileSync(path.join(REPO, 'package.json'), 'utf8'));
     const ban = pkg.dependencies?.['@fontsource/be-vietnam-pro'];
     assert(typeof ban === 'string' && /^\d/.test(ban), `@fontsource/be-vietnam-pro phải nằm ở dependencies và ghim đúng phiên bản (không ^/~), đang "${ban}"`);
-    assert(!/\bInter\b/.test(css) && !/\bInter\b/.test(cfgTho), 'index.css / tailwind.config.js không còn "Inter"');
+    // Be Vietnam Pro không có số cùng độ rộng → chữ số 0–9 lấy từ Inter (khai lại họ 'Be Vietnam Pro', unicode-range chữ số), đủ 5 độ đậm.
+    for (const w of [400, 500, 600, 700, 800]) {
+      assert(new RegExp(`font-weight: ${w};[^}]*unicode-range: U\\+0030-0039;[^}]*inter-latin-${w}-normal\\.woff2`).test(css), `index.css thiếu mặt chữ số Inter độ đậm ${w}`);
+    }
+    const inter = pkg.dependencies?.['@fontsource/inter'];
+    assert(typeof inter === 'string' && /^\d/.test(inter), `@fontsource/inter phải ghim đúng phiên bản (chỉ cho chữ số), đang "${inter}"`);
+    assert(!/Inter/.test(cfgTho.replace(/\/\/.*$/gm, '')), 'tailwind.config.js không khai Inter');
   });
 
   check('SANG · S8: không chữ < 11 px; Nhan 11,5 px; slate-600/700 chỉ bọc dấu trang trí (E4)', () => {
