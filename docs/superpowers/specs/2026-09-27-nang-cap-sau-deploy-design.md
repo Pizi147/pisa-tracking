@@ -142,6 +142,15 @@ Mockup: `thiet-ke/mockup/20-chuyen-lop-ban-giao.html` (màn A–I, mỗi màn gh
 - **Dải:** hồ sơ HV "Sắp chuyển … từ W2 OCT · bàn giao n/4 môn" (màn E); hồ sơ lớp cũ "Bàn giao · n/m em" / "Bàn giao môn P · n/m em"; hồ sơ lớp mới "Sắp nhận n em" (màn H); sau khi chuyển hiện 2 tuần rồi vào Hành trình.
 - PR-LT2b bỏ phần thẻ Quyết định Cuối khoá và bỏ khoá dòng thiếu điểm; xuất hàm gợi ý cho PR-CT.
 
+### 3.1g. Chủ sản phẩm chốt 01/10 — đợt 6 (sau kiểm kê `2026-10-01-kiem-ke-truoc-dot-6.md`)
+
+| Mã | Nội dung | Thay |
+|---|---|---|
+| Q31-1 | **Bỏ hẳn "Cả hai"** ở mọi khối theo kỹ năng / bài test (Tổng quan, Phân tích, Test): chỉ công tắc `Fast Track · Lớp thường`. Quản lý mặc định **FT**; giáo viên mặc định **khung của lớp mình dạy** (dạy cả hai → FT). Khối không theo kỹ năng (Chờ duyệt, Ý thức, Việc) vẫn gộp | T60 (làm dứt điểm) |
+| Q31-2 | **Bảng Phân tích giáo viên** (Tổng quan › Phân tích, Quản lý/Quản trị): mỗi GV một hàng, sắp theo tên, **không xếp hạng, không tô tốt/xấu**, chọn khoảng tuần/tháng. Cột: **chấm điểm đúng hạn** (thêm cột "lần nhập đầu" cho ô điểm — DB reset nên tính chuẩn từ đầu) · Case phụ trách (xác nhận nguyên nhân đúng hạn, ghi kết quả PA đúng hạn) · **tỷ lệ PA do GV thêm có tiến bộ** · **kết quả môn mình dạy** · GVCN: **vi phạm xử lý đúng hạn**, **bàn giao đúng hạn**. Mọi số bấm được ra danh sách. Không KPI (Q30-5 giữ) | C1 29/09 (không làm chấm đúng hạn) — nay LÀM |
+| Q31-3 | **Điện thoại:** làm các màn GV dùng hằng ngày — Tổng quan, Công việc, hồ sơ HV (bảng kỹ năng → thẻ), lưới chấm, Lịch Test (bộ lọc gọn), thông báo, thanh dưới có biểu tượng. **Hoãn** bảng quản trị / Vận hành / Báo cáo đơn vị (UX-D D7) | — |
+| Q31-4 | **Cỡ chữ:** kết quả, hạn, người phụ trách **12 px**; nhãn nhỏ khác giữ 11–11,5 px (`Nhan`) | kế hoạch PR-SANG câu 2 (giữ 11 px) |
+
 ### 3.2. Những gì tôi tự quyết — anh/chị gạch dòng nào không đồng ý
 
 Ký hiệu ⚠ = điểm tôi ít chắc nhất, nên xem trước.
