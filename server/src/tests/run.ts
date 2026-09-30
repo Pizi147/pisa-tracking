@@ -1290,7 +1290,7 @@ check('Nhiều việc quanh MỘT vấn đề gom lại thành MỘT chương, k
     .get() as any;
   assert(row, 'Dữ liệu mẫu thiếu vấn đề đã có tác động');
   const eps = profile.studentProfile(P.admin, row.sid).episodes;
-  const mine = eps.filter((e: any) => e.link === `/hoc-thuat/case/${row.cid}`);
+  const mine = eps.filter((e: any) => e.link === `/hoc-vien/${row.sid}?case=${row.cid}`);   // PR-Pb2-a: dòng Case mở Ngăn Case trên hồ sơ
   assert(mine.length <= 1, `Vấn đề ${row.cid} bị tách thành ${mine.length} chương rời nhau`);
 });
 check('Target chốt tại lượt: sửa lộ trình không viết lại lịch sử', () => {

@@ -510,7 +510,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     assert(!/sosLabel/.test(doc('cham/LuoiThuong.tsx')), 'LuoiThuong không còn sosLabel');
     const hs = doc('students/StudentDetailPage.tsx');
     assert(!/sosLabel/.test(hs) && /nhanKetQuaThuong/.test(hs), 'hồ sơ HV lớp thường dùng nhanKetQuaThuong');
-    assert(/nhanDot/.test(doc('cases/CaseBoardPage.tsx')), 'Case board: Điểm · Giữa khoá');
+    assert(!/DanhSachCase|nhanDot/.test(doc('cases/CaseBoardPage.tsx')), 'PR-Pb2-a: Case board / Danh sách Case đã bỏ (nhãn đợt đọc ở Ngăn Case trên hồ sơ HV)');
     const em = taoEm('LT2a T58', 'MB FOU 12');
     nhap(em.pt!, { listening: 18, reading: 18, writing: 11, speaking: 12 });
     const c = caseTheoMon(em.id, 'writing');

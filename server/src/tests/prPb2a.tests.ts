@@ -27,6 +27,7 @@ export async function runPrPb2aTests(t: YThucTestKit) {
   const metrics: any = await import('../worklist/metrics.ts');
   const chuongTrinh: any = await import('../worklist/chuongTrinh.ts');
   const hoSo: any = await import('../giaoVien/hoSo.ts');
+  const hoSoHv: any = await import('../students/profile.ts');
   const { createApp } = await import('../app.ts');
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const mbId = get(`SELECT id FROM branches WHERE code = 'MB'`).id as number;
@@ -129,5 +130,66 @@ export async function runPrPb2aTests(t: YThucTestKit) {
       });
     }
     assert(!lo.length, `còn: ${lo.join(', ')}`);
+  });
+
+  // ================================================================== khối 2 · bỏ Danh sách Case (T59, K1-27; P8b bỏ)
+  check('Pb2-a (2) · duongMoi Q4: đường dẫn cũ của Danh sách Case đi thẳng tới đích mới, một bước; đích không chuyển lần nữa', () => {
+    const ca: [string, string, string][] = [
+      ['/phan-tich', '?goc=danh-sach&cn=2&ct=ft', '/phan-tich?goc=van-de&cn=2&ct=ft'],
+      ['/phan-tich', '?ky-nang=reading', '/phan-tich?goc=van-de'],
+      ['/phan-tich', '?tinh-hinh=no_plan&cn=3&tg=26', '/phan-tich?goc=van-de&cn=3'],
+      ['/phan-tich', '?hang-doi=due&cn=2', '/cong-viec?nhom=case-hoc-thuat&loc=qua-han&nguoi=tat-ca&cn=2'],
+      ['/phan-tich', '?goc=danh-sach&hang-doi=due&ct=ft', '/cong-viec?nhom=case-hoc-thuat&loc=qua-han&nguoi=tat-ca'],
+      ['/phan-tich', '?hang-doi=can-ho-tro-2-lan&cn=2', '/?cn=2'],
+      ['/phan-tich', '?goc=danh-sach&hang-doi=can-ho-tro-2-lan&ct=thuong', '/?ct=thuong'],
+      ['/phan-tich', '?hang-doi=review', '/phan-tich?goc=van-de'],
+      ['/', '?tab=tinh-hinh&ky-nang=listening', '/phan-tich?goc=van-de'],
+      ['/', '?tab=tinh-hinh&hang-doi=due&cn=4', '/cong-viec?nhom=case-hoc-thuat&loc=qua-han&nguoi=tat-ca&cn=4'],
+      ['/hoc-thuat', '?hang-doi=can-ho-tro-2-lan', '/'],
+    ];
+    for (const [p, s, want] of ca) {
+      const got = d.duongMoi(p, s);
+      assert(got === want, `${p}${s} → ${got}, cần ${want}`);
+      const u = new URL(got, 'http://x');
+      assert(d.duongMoi(u.pathname, u.search) === null, `đích ${got} còn chuyển tiếp`);
+    }
+    for (const [p, s] of [['/phan-tich', ''], ['/phan-tich', '?goc=van-de&cn=2'], ['/phan-tich', '?goc=hieu-qua-pa&gv=7'], ['/', '?cn=2']]) {
+      assert(d.duongMoi(p, s) === null, `${p}${s} không phải đường cũ`);
+    }
+  });
+
+  check('Pb2-a (2) · gocNhinTuThamSo không bao giờ trả danh-sach; GOC_NHIN không còn danh-sach', () => {
+    for (const s of ['goc=danh-sach', 'hang-doi=due', 'tinh-hinh=no_plan', 'ky-nang=listening', 'goc=danh-sach&hang-doi=can-ho-tro-2-lan', '']) {
+      assert(d.gocNhinTuThamSo(new URLSearchParams(s)).goc !== 'danh-sach', s);
+    }
+    assert(!(d.GOC_NHIN as string[]).includes('danh-sach') && !('danh-sach' in d.GOC_NHIN_LABEL), 'GOC_NHIN');
+    assert(d.CAN_XU_LY.every((x: any) => !('denLoc' in x)), 'CAN_XU_LY không còn denLoc');
+  });
+
+  check('Pb2-a (2) · rowsFor Case / PA / nghĩa vụ và dòng Case của hồ sơ HV: Case có em → hồ sơ HV mở Ngăn Case, không /hoc-thuat/case/', () => {
+    const c = get(`SELECT sc.id, sc.student_id AS sid, (SELECT iv.id FROM case_interventions iv WHERE iv.case_id = sc.id LIMIT 1) AS iv
+      FROM sos_cases sc WHERE sc.student_id IS NOT NULL AND EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sc.id) ORDER BY sc.id LIMIT 1`);
+    assert(c, 'dữ liệu demo có Case có PA');
+    const dung = `/hoc-vien/${c.sid}?case=${c.id}`;
+    assert(metrics.rowsFor('case', [c.id])[0]?.href === dung, `Case: ${metrics.rowsFor('case', [c.id])[0]?.href}`);
+    assert(metrics.rowsFor('phuong-an', [c.iv])[0]?.href === dung, `PA: ${metrics.rowsFor('phuong-an', [c.iv])[0]?.href}`);
+    assert(metrics.rowsFor('nghia-vu', [metrics.obligationId(c.iv, 1)])[0]?.href === dung, 'nghĩa vụ');
+    const profile: any = hoSoHv;
+    const tap = profile.studentProfile(P.admin, c.sid);
+    const links = [...tap.episodes, ...tap.allEpisodes].map((e: any) => e.link).filter(Boolean);
+    assert(!links.some((l: string) => l.startsWith('/hoc-thuat/case/')), `hồ sơ HV còn link cũ: ${links.filter((l: string) => l.startsWith('/hoc-thuat/case/'))}`);
+  });
+
+  check('Pb2-a (2) · quét nguồn: không còn goc=danh-sach, DanhSachCase, DanhSachBoQuen ở web/src, shared; file DanhSachBoQuen.tsx đã xoá', () => {
+    const lo: string[] = [];
+    for (const { file, dong } of [...quetNguon('shared'), ...quetNguon('web/src')]) {
+      dong.forEach((l, i) => { if (/goc=danh-sach|DanhSachCase|DanhSachBoQuen/.test(l)) lo.push(`${file}:${i + 1}`); });
+    }
+    assert(!lo.length, `còn: ${lo.join(', ')}`);
+    assert(!fsMod.existsSync(pathMod.join(REPO, 'web/src/modules/phanTich/DanhSachBoQuen.tsx')), 'DanhSachBoQuen.tsx còn');
+    const ov = fsMod.readFileSync(pathMod.join(REPO, 'web/src/modules/worklist/OverviewPage.tsx'), 'utf8');
+    assert(/import \{ PhanTich \} from '\.\.\/phanTich\/PhanTich\.tsx'/.test(ov) && !/CaseBoard/.test(ov), 'OverviewPage import PhanTich thẳng');
+    const rt = fsMod.readFileSync(pathMod.join(REPO, 'web/src/modules/cases/CaseBoardPage.tsx'), 'utf8');
+    assert(/<Navigate replace to=\{duongHoSoHocVien\(/.test(rt), 'CaseRoutePage chuyển hướng về hồ sơ HV');
   });
 }

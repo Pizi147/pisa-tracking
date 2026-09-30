@@ -105,9 +105,9 @@ export async function runTongQuanTests(t: YThucTestKit) {
       'case-chua-co-nguoi-phu-trach', 'hv-can-ho-tro-2-lan-chua-case',
       'case-thieu-pa', 'pa-can-cap-nhat', 'bai-qua-han-nhap-diem',
     ], 'Thứ tự (PR-UX4 chèn dòng "bỏ quên"; PR-YT4 bỏ "vi phạm quá 5 ngày"; PR-LT2a bỏ "tín hiệu quá hạn" + "Bỏ qua tín hiệu")');
-    eq(d.CAN_XU_LY.filter((x: any) => x.denLoc).map((x: any) => [x.metricId, x.denLoc, x.nut, x.mau]), [
-      ['hv-can-ho-tro-2-lan-chua-case', 'can-ho-tro-2-lan', 'Xem', 'vang'],
-    ], 'Dòng "bỏ quên": nút Xem, màu vàng, mở bộ lọc Danh sách Case');
+    eq(d.CAN_XU_LY.filter((x: any) => x.metricId === 'hv-can-ho-tro-2-lan-chua-case').map((x: any) => [x.metricId, x.denLoc, x.nut, x.mau]), [
+      ['hv-can-ho-tro-2-lan-chua-case', undefined, 'Xem', 'vang'],
+    ], 'Dòng "bỏ quên": nút Xem, màu vàng; PR-Pb2-a bỏ denLoc (mở ngăn số)');
     const dem = { 'pa-can-cap-nhat': 3, 'case-chua-co-nguoi-phu-trach': 2, 'pa-cho-duyet': 1, 'case-thieu-pa': 0 };
     const co = d.sapCanXuLy(dem, true);
     eq(co.map((x: any) => [x.metricId, x.n]), [['case-chua-co-nguoi-phu-trach', 2], ['pa-can-cap-nhat', 3]], 'PA chờ duyệt không còn là dòng Cần xử lý');
@@ -116,7 +116,7 @@ export async function runTongQuanTests(t: YThucTestKit) {
     eq(co[1].nut, 'Xem', 'Nút');
     const all = Object.fromEntries(d.CAN_XU_LY.map((x: any) => [x.metricId, 5]));
     assert(d.sapCanXuLy(all, true).length === d.CAN_XU_LY.length && d.CAN_XU_LY.length === 5 && d.CAN_XU_LY_TOI_DA === 10, 'Đủ 5 dòng, trần 10');
-    eq(d.sapCanXuLy({ 'hv-can-ho-tro-2-lan-chua-case': 2 }, false)[0].denLoc, 'can-ho-tro-2-lan', 'denLoc đi kèm dòng');
+    assert(!('denLoc' in d.sapCanXuLy({ 'hv-can-ho-tro-2-lan-chua-case': 2 }, false)[0]), 'PR-Pb2-a: dòng bỏ quên không còn denLoc');
     assert(!('denLoc' in d.sapCanXuLy({ 'case-thieu-pa': 1 }, false)[0]), 'Dòng thường không có denLoc');
   });
 

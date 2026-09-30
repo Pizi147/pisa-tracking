@@ -36,13 +36,13 @@ export async function runPhanTichTests(t: YThucTestKit) {
     for (const k of ['luot', 'kn:listening', 'hvCoCase', 'case', 'choNguyenNhan', 'dangLam']) eq(d.mauOKetQua(k, 5), null, `${k} không tô`);
   });
 
-  check('PR-Pb · gocNhinTuThamSo: Q16 — hang-doi/tinh-hinh/ky-nang KHÔNG bị xoá khỏi URL', () => {
+  check('PR-Pb · gocNhinTuThamSo: Q16 — tham số cũ; PR-Pb2-a: không còn suy về Danh sách Case', () => {
     const g = (qs: string) => d.gocNhinTuThamSo(new URLSearchParams(qs));
     eq(g('xem=tuan'), { goc: 'tong-hop', ct: null, boThamSo: ['xem'], gocMoi: null }, '?xem=tuan → Tổng hợp, xoá xem');
-    eq(g('goc=danh-sach&hang-doi=due'), { goc: 'danh-sach', ct: null, boThamSo: [], gocMoi: null }, 'goc=danh-sach giữ hang-doi');
-    eq(g('hang-doi=review'), { goc: 'danh-sach', ct: null, boThamSo: [], gocMoi: null }, 'chỉ có hang-doi cũng vào Danh sách Case');
-    eq(g('tinh-hinh=no_plan'), { goc: 'danh-sach', ct: null, boThamSo: [], gocMoi: null }, 'chỉ có tinh-hinh cũng vào Danh sách Case');
-    eq(g('ky-nang=listening'), { goc: 'danh-sach', ct: null, boThamSo: [], gocMoi: null }, 'chỉ có ky-nang cũng vào Danh sách Case');
+    eq(g('goc=danh-sach&hang-doi=due'), { goc: 'tong-hop', ct: null, boThamSo: [], gocMoi: null }, 'goc=danh-sach (đã bỏ) → mặc định; duongMoi chuyển hướng trước');
+    eq(g('hang-doi=review'), { goc: 'tong-hop', ct: null, boThamSo: [], gocMoi: null }, 'chỉ có hang-doi không còn vào Danh sách Case');
+    eq(g('tinh-hinh=no_plan'), { goc: 'tong-hop', ct: null, boThamSo: [], gocMoi: null }, 'chỉ có tinh-hinh không còn vào Danh sách Case');
+    eq(g('ky-nang=listening'), { goc: 'tong-hop', ct: null, boThamSo: [], gocMoi: null }, 'chỉ có ky-nang không còn vào Danh sách Case');
     eq(g('loai-lop=normal'), { goc: 'tong-hop', ct: 'thuong', boThamSo: ['loai-lop'], gocMoi: null }, 'loai-lop=normal → ct=thuong, xoá loai-lop');
     eq(g('loai-lop=ft'), { goc: 'tong-hop', ct: 'ft', boThamSo: ['loai-lop'], gocMoi: null }, 'loai-lop=ft → ct=ft');
     eq(g('goc=y-thuc'), { goc: 'y-thuc', ct: null, boThamSo: [], gocMoi: null }, 'goc=y-thuc giữ nguyên');
@@ -55,8 +55,8 @@ export async function runPhanTichTests(t: YThucTestKit) {
     eq(g('goc=chua-ai-nhan'), { goc: 'van-de', ct: null, boThamSo: [], gocMoi: 'van-de' }, 'chua-ai-nhan → Tổng hợp vấn đề HV');
     eq(g('goc=hieu-qua-pa').gocMoi, null, 'khoá mới không cần thay URL');
     eq(g('goc=van-de').goc, 'van-de', 'van-de giữ khoá cũ');
-    eq(g('goc=danh-sach&hang-doi=can-ho-tro-2-lan'), { goc: 'danh-sach', ct: null, boThamSo: [], gocMoi: null }, 'hang-doi giữ nguyên');
-    eq([...d.GOC_NHIN], ['tong-hop', 'van-de', 'hieu-qua-pa', 'y-thuc', 'danh-sach'], 'đúng thứ tự chủ sản phẩm chốt');
+    eq(g('goc=danh-sach&hang-doi=can-ho-tro-2-lan').goc, 'tong-hop', 'danh-sach đã bỏ (PR-Pb2-a)');
+    eq([...d.GOC_NHIN], ['tong-hop', 'van-de', 'hieu-qua-pa', 'y-thuc'], 'đúng thứ tự chủ sản phẩm chốt (PR-Pb2-a bỏ Danh sách Case)');
     eq(d.GOC_NHIN_LABEL['van-de'], 'Tổng hợp vấn đề HV', 'nhãn');
     eq(d.GOC_NHIN_LABEL['hieu-qua-pa'], 'Hiệu quả PA', 'nhãn');
   });
@@ -402,7 +402,7 @@ export async function runPhanTichTests(t: YThucTestKit) {
         assert(o.n === want && o.rows.length === o.n && want >= 1, `Chưa phân loại · ${cot}: ${o.n}/${o.rows.length} ≠ ${want}`);
       }
       const ca = vanDeHvSvc.oVanDeHv(P.admin, { ...f, dong: 'chua-phan-loai', cot: 'case' });
-      assert(ca.rows.every((r: any) => r.href.startsWith('/hoc-thuat/case/')), 'dòng Chưa phân loại mở Case');
+      assert(ca.rows.every((r: any) => /^\/hoc-vien\/\d+\?case=\d+$/.test(r.href)), 'dòng Chưa phân loại mở Ngăn Case trên hồ sơ HV (PR-Pb2-a)');
       const hv = vanDeHvSvc.oVanDeHv(P.admin, { ...f, dong: 'kn:writing', cot: 'hv' });
       assert(hv.rows.every((r: any) => r.sub.length <= 60 && r.href.startsWith('/hoc-vien/')), 'dòng HV: sub ≤ 60 ký tự, mở hồ sơ');
       assert(/^(Lỗi chính|Lỗi phụ) · /.test(hv.rows[0].sub), `sub phải bắt đầu bằng vai lỗi: ${hv.rows[0].sub}`);
@@ -976,7 +976,7 @@ export async function runPhanTichTests(t: YThucTestKit) {
         const dong = tq.canXuLy.find((r: any) => r.metricId === METRIC_BQ[loai]);
         assert(!!dong, `Cần xử lý phải hiện dòng ${METRIC_BQ[loai]} khi n > 0`);
         eq(dong.n, metricsUx4.metricSet(P.admin, METRIC_BQ[loai], { program: 'ft' }).n, `${loai}: số dòng = metricSet`);
-        eq([dong.denLoc, dong.nut, dong.mau], [loai, 'Xem', 'vang'], `${loai}: nút Xem → bộ lọc, màu vàng`);
+        eq([dong.denLoc, dong.nut, dong.mau], [undefined, 'Xem', 'vang'], `${loai}: nút Xem mở ngăn số (PR-Pb2-a bỏ bộ lọc Danh sách Case), màu vàng`);
       }
       assert(tq.canXuLy.length <= 10, 'Cần xử lý tối đa 10 dòng');
       const chiNhanh = boQuenSvc.danhSachBoQuen(P.mbManager, { branchId: mbBranch, ct: 'ft', loai: 'can-ho-tro-2-lan' }, TODAY);
@@ -1152,15 +1152,14 @@ export async function runPhanTichTests(t: YThucTestKit) {
 
   console.log('\nPR-Pb · Sửa sau rà planning (PR #73)');
 
-  check('PR-Pb · #1: chọn góc nhìn khác Danh sách Case thì xoá hang-doi/tinh-hinh/ky-nang — không kẹt lại ở Danh sách Case', () => {
+  check('PR-Pb · #1: chọn góc nhìn thì xoá hang-doi/tinh-hinh/ky-nang (PR-Pb2-a: luôn xoá, Danh sách Case đã bỏ)', () => {
     // Mô phỏng đúng những gì setGoc('tong-hop') làm khi bấm "Tổng hợp" từ URL ?tinh-hinh=no_plan.
     const p1 = new URLSearchParams('tinh-hinh=no_plan');
-    eq(d.gocNhinTuThamSo(p1).goc, 'danh-sach', 'Trước khi bấm: tinh-hinh một mình cũng vào Danh sách Case');
+    eq(d.gocNhinTuThamSo(p1).goc, 'tong-hop', 'tinh-hinh một mình không còn vào Danh sách Case');
     const next = new URLSearchParams(p1);
     next.delete('goc');
     for (const k of d.thamSoXoaKhiDoiGoc('tong-hop')) next.delete(k);
     eq(d.gocNhinTuThamSo(next).goc, 'tong-hop', 'Sau khi bấm Tổng hợp: phải sang Tổng hợp, không kẹt lại Danh sách Case');
-    eq(d.thamSoXoaKhiDoiGoc('danh-sach'), [], 'Ở lại/quay về Danh sách Case thì không xoá gì');
     eq(d.thamSoXoaKhiDoiGoc('van-de'), ['hang-doi', 'tinh-hinh', 'ky-nang'], 'Sang góc nhìn khác cũng xoá y hệt');
     // gocNhinTuThamSo tự nó cũng phải để `goc` tường minh thắng heuristic, không cần chờ dọn tham số.
     eq(d.gocNhinTuThamSo(new URLSearchParams('goc=tong-hop&tinh-hinh=no_plan')).goc, 'tong-hop',

@@ -16,40 +16,33 @@ import type { TrangThaiCaseV4 } from './sosV4.ts';
 
 // ------------------------------------------------------------------ góc nhìn (Q1, Q16)
 
-export const GOC_NHIN = ['tong-hop', 'van-de', 'hieu-qua-pa', 'y-thuc', 'danh-sach'] as const;
+/* PR-Pb2-a (T59, K1-27): góc nhìn Danh sách Case đã bỏ — đường dẫn cũ chuyển hướng ở `duongMoi` (dieuHuong.ts). */
+export const GOC_NHIN = ['tong-hop', 'van-de', 'hieu-qua-pa', 'y-thuc'] as const;
 export type GocNhin = (typeof GOC_NHIN)[number];
 export const GOC_NHIN_LABEL: Record<GocNhin, string> = {
   'tong-hop': 'Tổng hợp Test + SOS',
   'van-de': 'Tổng hợp vấn đề HV',
   'hieu-qua-pa': 'Hiệu quả PA',
   'y-thuc': 'Ý thức',   // PR-YT4 (K1-25): Phối hợp SOS ở Việc của GVCN, không ở góc nhìn này
-  'danh-sach': 'Danh sách Case',
 };
 export const GOC_NHIN_MAC_DINH: GocNhin = 'tong-hop';
 
 /**
- * ĐƯỜNG DẪN CŨ VẪN PHẢI MỞ ĐÚNG MÀN (Q16). `boThamSo` là các tham số CŨ cần xoá khỏi URL —
- * `hang-doi` / `tinh-hinh` / `ky-nang` KHÔNG có mặt ở đây dù chúng đưa người dùng vào Danh sách
- * Case: đó là BỘ LỌC của chính màn đó, không phải tên góc nhìn cũ, nên phải giữ nguyên trên URL.
+ * ĐƯỜNG DẪN CŨ VẪN PHẢI MỞ ĐÚNG MÀN (Q16). `boThamSo` là các tham số CŨ cần xoá khỏi URL.
  * `ct` khác `null` nghĩa là `loai-lop` cũ cần đổi thành tham số chương trình mới.
  * `gocMoi` khác `null` nghĩa là `goc` trên URL là TÊN CŨ (`ket-qua`, `chua-ai-nhan`) — web thay bằng tên mới (replace).
+ * Bộ lọc cũ của Danh sách Case (`hang-doi`/`tinh-hinh`/`ky-nang`) không tới được đây: `duongMoi` đã chuyển hướng trước.
  */
 export type KetQuaGocNhinTuThamSo = { goc: GocNhin; ct: ChuongTrinh | null; boThamSo: string[]; gocMoi: GocNhin | null };
 
 export function gocNhinTuThamSo(params: { get(key: string): string | null }): KetQuaGocNhinTuThamSo {
   const gocParam = params.get('goc');
-  const coBoLocDanhSach = !!(params.get('hang-doi') || params.get('tinh-hinh') || params.get('ky-nang'));
-  /*
-   * `goc` TƯỜNG MINH LUÔN THẮNG (kể cả `tong-hop`, vốn không có tham số riêng — vắng `goc` mới
-   * là lúc suy theo bộ lọc Danh sách Case). Thiếu nhánh này thì bấm "Tổng hợp" trong khi
-   * `hang-doi`/`tinh-hinh`/`ky-nang` còn sót trên URL sẽ kẹt mãi ở Danh sách Case.
-   */
   let gocMoi: GocNhin | null = null;
   let goc: GocNhin;
   if (gocParam === 'ket-qua') { goc = 'hieu-qua-pa'; gocMoi = goc; }
   else if (gocParam === 'chua-ai-nhan') { goc = 'van-de'; gocMoi = goc; }
   else if ((GOC_NHIN as readonly string[]).includes(gocParam ?? '')) goc = gocParam as GocNhin;
-  else goc = coBoLocDanhSach ? 'danh-sach' : GOC_NHIN_MAC_DINH;
+  else goc = GOC_NHIN_MAC_DINH;
   const boThamSo: string[] = [];
   if (params.get('xem') !== null) boThamSo.push('xem');
   const loaiLop = params.get('loai-lop');
@@ -61,12 +54,9 @@ export function gocNhinTuThamSo(params: { get(key: string): string | null }): Ke
   return { goc, ct, boThamSo, gocMoi };
 }
 
-/**
- * THAM SỐ CẦN XOÁ KHI BẤM SANG MỘT GÓC NHÌN KHÁC — `hang-doi`/`tinh-hinh`/`ky-nang` là bộ lọc RIÊNG của Danh sách
- * Case; rời màn đó mà không dọn thì lần bấm kế tiếp lại bị `gocNhinTuThamSo` suy nhầm về Danh sách Case.
- */
-export function thamSoXoaKhiDoiGoc(goc: GocNhin): readonly string[] {
-  return goc === 'danh-sach' ? [] : ['hang-doi', 'tinh-hinh', 'ky-nang'];
+/** THAM SỐ CẦN XOÁ KHI BẤM SANG MỘT GÓC NHÌN — ba bộ lọc cũ của Danh sách Case (đã bỏ), luôn dọn. */
+export function thamSoXoaKhiDoiGoc(_goc?: GocNhin): readonly string[] {
+  return ['hang-doi', 'tinh-hinh', 'ky-nang'];
 }
 
 // ------------------------------------------------------------------ khoảng thời gian (Q5)
@@ -286,7 +276,7 @@ export function hoKyNang(k: string | null | undefined): HoKyNang | null {
 
 // ------------------------------------------------------------------ hai việc "bỏ quên" (Q17–Q19)
 
-/** Loại học viên "bỏ quên" của "Chưa ai nhận" cũ — vừa là chỉ số trong sổ, vừa là bộ lọc ở Danh sách Case (`hang-doi`). PR-LT2a bỏ loại "Bỏ qua tín hiệu". */
+/** Loại học viên "bỏ quên" của "Chưa ai nhận" cũ — chỉ số trong sổ (Danh sách Case đã bỏ ở PR-Pb2-a; VAI-a xoá hẳn U3). PR-LT2a bỏ loại "Bỏ qua tín hiệu". */
 export const LOAI_BO_QUEN = ['can-ho-tro-2-lan'] as const;
 export type LoaiBoQuen = (typeof LOAI_BO_QUEN)[number];
 export const LOAI_BO_QUEN_LABEL: Record<LoaiBoQuen, string> = {
