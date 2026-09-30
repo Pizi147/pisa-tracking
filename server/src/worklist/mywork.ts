@@ -481,11 +481,14 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   for (const iv of ghiKetQua) {
     if (f.branchId && iv.eff_branch_id !== f.branchId) continue;
     if (iv.kind === 'bo_tro' && iv.nhom_bo_tro && minNhom.get(iv.nhom_bo_tro) !== iv.id) continue;
-    if (iv.kind === 'bo_tro' ? !quyenBoTro(p, iv) : !can(p, PERMISSIONS.SOS_EDIT, { classId: iv.eff_class_id, studentId: iv.eff_student_id, skill: iv.topic ?? undefined })) continue;
+    /* PR-S5F-b: lọc rẻ trước (việc của mình · lớp mình dạy · QL quá hạn), quyền sau — tính từ cột đã JOIN, không đọc lại từng Case. */
     const u = urgencyOf(iv.action_due, today);
     const mine = iv.owner_id === p.userId;
     const qlQuaHan = u === 'overdue' && can(p, PERMISSIONS.CASE_APPROVE, { classId: iv.eff_class_id, studentId: iv.eff_student_id });
     if (!mine && !teachesClass(p, iv.eff_class_id) && !qlQuaHan) continue;
+    if (iv.kind === 'bo_tro'
+      ? !quyenBoTro(p, { ...iv, ctx: { classId: iv.eff_class_id ?? null, studentId: iv.eff_student_id ?? null, topic: iv.topic ?? null } })
+      : !can(p, PERMISSIONS.SOS_EDIT, { classId: iv.eff_class_id, studentId: iv.eff_student_id, skill: iv.topic ?? undefined })) continue;
     reviewedCases.add(iv.case_id);
     /* PR-SOS (T22, M-17): PA theo quy chế chạm mốc → "Ghi kết quả cuối" (PA thường không có mốc — Q28-4). */
     const tuanCuoi = laLanGhiCuoi({ preset: iv.preset === 1, followupDue: iv.followup_due ?? null, actionDue: iv.action_due ?? null }, today);
@@ -799,10 +802,10 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     if (!rows.some((r) => r.co_nn)) continue;                         // chưa môn nào có nguyên nhân → còn là việc Xác nhận nguyên nhân
     const iv = rows[0];                                               // id nhỏ nhất của nhóm còn chờ
     if (f.branchId && iv.eff_branch_id !== f.branchId) continue;
-    if (!quyenBoTro(p, iv)) continue;
     const mine = rows.some((r) => r.performer_user_id === p.userId);
     const cuaGv = tatCa && can(p, PERMISSIONS.CASE_APPROVE, { classId: iv.eff_class_id, studentId: iv.eff_student_id });
     if (!mine && !cuaGv) continue;
+    if (!quyenBoTro(p, { ...iv, ctx: { classId: iv.eff_class_id ?? null, studentId: iv.eff_student_id ?? null, topic: iv.topic ?? null } })) continue;
     const han = rows.map((r) => r.han_ke_hoach as string | null).filter(Boolean).sort()[0] ?? null;
     const ct = ctCua(iv.eff_class_id);
     const mon = tenNhomMon(ct, REGULAR_SKILLS.filter((k) => rows.some((r) => r.topic === k)));

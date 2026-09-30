@@ -22,8 +22,9 @@ const ROLE_KEYS_OF: Record<NhomNguoi, readonly string[]> = {
  * Người này có thuộc nhóm `nhom` không: tài khoản đang hoạt động, có vai đúng nhóm đang hoạt động.
  * Không trả `true` cho tài khoản chỉ có vai `system_admin` — nhóm đó không nằm trong `ROLE_KEYS_OF`.
  * Dùng lại ở Task 3 (`server/src/cases/nguoiThucHien.ts`) để kiểm `performerUserId` gửi lên.
+ * `branchId` (PR-S5F-b): vai đó phải ở ĐÚNG chi nhánh này — người dạy bổ trợ là GV cùng chi nhánh của lớp.
  */
-export function laNguoiHopLe(userId: number, nhom: NhomNguoi): boolean {
+export function laNguoiHopLe(userId: number, nhom: NhomNguoi, branchId?: number | null): boolean {
   const keys = ROLE_KEYS_OF[nhom];
   const placeholders = keys.map(() => '?').join(',');
   const row = db()
@@ -31,9 +32,9 @@ export function laNguoiHopLe(userId: number, nhom: NhomNguoi): boolean {
       `SELECT 1 FROM users u
         JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active'
         JOIN roles r ON r.id = ur.role_id
-       WHERE u.id = ? AND u.status = 'active' AND r.key IN (${placeholders}) LIMIT 1`,
+       WHERE u.id = ? AND u.status = 'active' AND r.key IN (${placeholders})${branchId ? ' AND ur.branch_id = ?' : ''} LIMIT 1`,
     )
-    .get(userId, ...keys);
+    .get(userId, ...keys, ...(branchId ? [branchId] : []));
   return !!row;
 }
 
@@ -85,7 +86,7 @@ function nguoiHopLe(nhom: NhomNguoi, ids: readonly number[] | null, branchIds: r
 
 export function timNguoi(
   p: Principal,
-  opts: { q?: string; nhom?: NhomNguoi; studentId?: number | null; trongPhamVi?: boolean },
+  opts: { q?: string; nhom?: NhomNguoi; studentId?: number | null; trongPhamVi?: boolean; cungChiNhanh?: boolean },
 ): HangNguoi[] {
   const nhom: NhomNguoi = opts.nhom === 'nhan_vien' ? 'nhan_vien' : 'giao_vien';
   const term = (opts.q ?? '').trim();
@@ -100,7 +101,10 @@ export function timNguoi(
 
   /* QT (`scope.all`) không giới hạn; các vai khác chỉ thấy người trong đúng chi nhánh mình quản lý. */
   const scope = opts.trongPhamVi ? scopeFor(p, PERMISSIONS.ATTEMPT_VIEW) : null;
-  const branchIds = scope && !scope.all ? scope.branchIds : null;
+  /* PR-S5F-b: `cungChiNhanh` — chỉ GV ở chi nhánh của lớp em đang học (người dạy bổ trợ; máy chủ kiểm lại ở `nopKeHoachBoTro`). */
+  const cnLop = opts.cungChiNhanh && classId
+    ? (db().prepare('SELECT branch_id FROM classes WHERE id = ?').get(classId) as any)?.branch_id as number | undefined : undefined;
+  const branchIds = cnLop ? [cnLop] : scope && !scope.all ? scope.branchIds : null;
 
   const build = (row: HangNguoiTho): HangNguoi => ({
     id: row.id, name: row.full_name, role: row.role,

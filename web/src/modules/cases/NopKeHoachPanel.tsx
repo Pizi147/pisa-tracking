@@ -54,7 +54,7 @@ export function KhoiKeHoach({ boTro, f, dat, lf, loi, studentId }: {
           onChange={(e) => dat({ keHoach: e.target.value })} placeholder="Ví dụ: Buổi 1: thì quá khứ; buổi 2: mạo từ; trọng tâm: viết câu; bài tập: 2 đoạn ngắn mỗi buổi" />
       </Truong>
       <Truong nhan="Người dạy bổ trợ" as="div">
-        <ChonNguoi nhom="giao_vien" studentId={studentId} value={f.nguoi} onChange={(nguoi) => dat({ nguoi })} />
+        <ChonNguoi nhom="giao_vien" studentId={studentId} cungChiNhanh value={f.nguoi} onChange={(nguoi) => dat({ nguoi })} />
       </Truong>
       <p className="m-0 text-xs text-slate-400">
         Bổ trợ {boTro.buoiMoiTuan} buổi/tuần · {mocChuBoTro(boTro.denKhi, homNay)} · trừ buổi Free

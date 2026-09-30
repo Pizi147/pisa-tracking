@@ -18,7 +18,7 @@ import {
   HAN_DUYET_NGAY, hanTheoNgay,
   type NextStep, type RescheduleTarget,
   issueBranchOf, issueLabel, caseTopicLabel, urgencyFromSos,
-  caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac, chanHoanThanh, laLanGhiCuoi, mocChuPa, programmeOf, quyetDinhChoPa, trangThaiCaseV4, viecTiepCuaCase, tenCaseSos, tenCaseThuong, nhanDot, tenMon, tenMonNgan,
+  SIGNAL_WITHDRAW_SCORE_FIXED, caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac, chanHoanThanh, laLanGhiCuoi, mocChuPa, programmeOf, quyetDinhChoPa, trangThaiCaseV4, viecTiepCuaCase, tenCaseSos, tenCaseThuong, nhanDot, tenMon, tenMonNgan,
   type CaseOutcome, type FollowUpOutcome, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -306,6 +306,10 @@ function sosEditCtx(c: { class_id?: number | null; eff_student_id?: number | nul
  * QUYỀN CỦA MỘT CASE, cho module khác hỏi (kho tệp) thay vì tự dựng lại ngữ cảnh quyền — đúng bài học AUTH-01: mỗi nơi
  * tự viết `can(...)` một kiểu là cách sinh ra lỗi quyền. Xem = quyền xem case; sửa = `SOS_EDIT` theo đúng kỹ năng (C02).
  */
+/** Case đã rút vì điểm nguồn được sửa/huỷ — `retireCaseForCorrectedScore` ghi `outcome_note` bắt đầu bằng `SIGNAL_WITHDRAW_SCORE_FIXED`. */
+const laRutSuaDiem = (c: { status?: string; outcome_note?: string | null }) =>
+  c.status === 'done' && String(c.outcome_note ?? '').startsWith(SIGNAL_WITHDRAW_SCORE_FIXED);
+
 export function caseAccess(caseId: number) {
   const c = loadCase(caseId);
   return {
@@ -314,6 +318,7 @@ export function caseAccess(caseId: number) {
     requireEdit: (p: Principal, message: string) => require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c), message),
     /** Ngữ cảnh quyền của Case (lớp, học viên, kỹ năng) — cho `cases/boTro.ts` hỏi quyền mà không dựng lại (AUTH-01). */
     ctx: sosEditCtx(c),
+    topic: (c.topic ?? null) as string | null,
   };
 }
 
@@ -1625,6 +1630,7 @@ export function caseDetail(p: Principal, caseId: number) {
         status: c.status, fromSos: st.fromSos, hasCause: st.hasCause, dismissed: !!st.dismissed, systemClosed: !!c.system_close_reason,
         choDuyetKhongTheoDoi: !!st.choDuyetKhongTheoDoi, coPaChoXacNhan: st.coPaChoXacNhan, hanXacNhan: st.dueOn, boTro: st.boTro,
         lyDoHeThong: c.system_close_reason ? SYSTEM_CLOSE_REASON_LABEL[c.system_close_reason as keyof typeof SYSTEM_CLOSE_REASON_LABEL] ?? null : null,
+        rutSuaDiem: laRutSuaDiem(c),
       };
       const pas = interventions.filter((i) => i.status !== 'cancelled').map((i) => ({
         /* PR-LT2a: PA Bổ trợ nói "Bổ trợ" (mô tả dài `Bổ trợ 2 buổi/tuần · …` nằm ở hàng PA) — việc tiếp đọc `Ghi kết quả PA Bổ trợ`. */
@@ -2536,6 +2542,7 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>, bo
     status: c.status, fromSos: sos.fromSos, hasCause: sos.hasCause, dismissed: !!sos.dismissed, systemClosed: !!c.system_close_reason,
     choDuyetKhongTheoDoi: !!sos.choDuyetKhongTheoDoi, coPaChoXacNhan: sos.coPaChoXacNhan, hanXacNhan: sos.dueOn, boTro: sos.boTro,
     lyDoHeThong: c.system_close_reason ? SYSTEM_CLOSE_REASON_LABEL[c.system_close_reason as keyof typeof SYSTEM_CLOSE_REASON_LABEL] ?? null : null,
+    rutSuaDiem: laRutSuaDiem(c),
   };
   /* Lượt đánh giá mà case này đã đi qua — "MT2 · 17/08" ở chân thẻ (lớp thường: "Giữa khoá"/"Cuối khoá" thay MT{n}). */
   const attempts = (conn

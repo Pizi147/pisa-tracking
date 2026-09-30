@@ -217,7 +217,7 @@ const COT_XU_LY: CotTongHop[] = [
 /** Trạng thái Case v4 → cột nhóm Xử lý của bảng Tổng hợp. `choNguyenNhanQuaHan` là số phụ trong ngoặc của cột Chờ nguyên nhân. */
 export const COT_XU_LY_V4: Record<TrangThaiCaseV4, string> = {
   'cho-nguyen-nhan': 'choNguyenNhan', 'cho-duyet-khong-theo-doi': 'choDuyet', 'cho-xac-nhan-pa': 'dangLam', 'dang-lam': 'dangLam',
-  xong: 'xongHuy', 'huy-khong-theo-doi': 'xongHuy', 'he-thong-dong': 'xongHuy',
+  xong: 'xongHuy', 'huy-khong-theo-doi': 'xongHuy', 'he-thong-dong': 'xongHuy', 'rut-sua-diem': 'xongHuy',
   'cho-ke-hoach': 'dangLam', 'cho-duyet-ke-hoach': 'choDuyet',   // PR-LT2a: đã có nguyên nhân; kế hoạch bổ trợ chờ Quản lý duyệt
 };
 

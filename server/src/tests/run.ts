@@ -9799,6 +9799,9 @@ await runPrLt2bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 // ==================================================================== PR-CT (lệnh chuyển lớp do Quản lý quyết + bàn giao)
 const { runPrCtTests } = await import('./prCt.tests.ts');
 await runPrCtTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== PR-S5F-b (sửa sau rà cuối đợt 5 — Giữa khoá, hồ sơ GV, tốc độ)
+const { runPrS5fbTests } = await import('./prS5fb.tests.ts');
+await runPrS5fbTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

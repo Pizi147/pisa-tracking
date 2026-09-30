@@ -30,7 +30,8 @@ export function mocQuyChe(span: AcademicSupportSpan, ctx: { ngayXacNhan: string;
  */
 export function mocChuPa(x: { span: string | null; followupDue: string | null; mtKe: number | null; daXacNhan: boolean }, homNay: string): string {
   if (x.span === 'mini_test') return x.daXacNhan && x.followupDue ? `đến Mini Test · ${ngay(x.followupDue, homNay)}` : 'đến Mini Test';   // PR-LT2b
-  if (x.span === 'den_cuoi_khoa') return x.daXacNhan ? mocChuBoTro(x.followupDue, homNay) : 'đến Cuối khoá';   // PR-LT2a: PA bổ trợ
+  /* PR-LT2a: PA bổ trợ. PR-S5F-b: mốc Cuối khoá có từ lúc tạo PA (`taoPaBoTro`) — PA chưa chạy (BE chờ kế hoạch) cũng nói mã tuần. */
+  if (x.span === 'den_cuoi_khoa') return x.daXacNhan || x.followupDue ? mocChuBoTro(x.followupDue, homNay) : 'đến Cuối khoá';
   const dau = x.span === 'one_month' ? '1 tháng' : x.span === 'until_next_mt' ? (x.mtKe ? `đến MT${x.mtKe}` : 'đến MT kế tiếp')
     : x.span === 'until_exam' ? 'đến lúc thi' : '';
   if (!dau || !x.daXacNhan) return dau;
@@ -55,13 +56,15 @@ export function tenCaseSos(x: { mt: number | null; giua: string; sos: number | n
   return [x.mt ? `[MT${x.mt}]` : '', x.giua, x.sos ? `[SOS ${x.sos}]` : ''].filter(Boolean).join(' ');
 }
 
-export type TrangThaiCaseV4 = 'cho-nguyen-nhan' | 'cho-ke-hoach' | 'cho-duyet-ke-hoach' | 'cho-duyet-khong-theo-doi' | 'cho-xac-nhan-pa' | 'dang-lam' | 'xong' | 'huy-khong-theo-doi' | 'he-thong-dong';
+export type TrangThaiCaseV4 = 'cho-nguyen-nhan' | 'cho-ke-hoach' | 'cho-duyet-ke-hoach' | 'cho-duyet-khong-theo-doi' | 'cho-xac-nhan-pa' | 'dang-lam' | 'xong' | 'huy-khong-theo-doi' | 'he-thong-dong' | 'rut-sua-diem';
 
 export type CaseV4Input = {
   status: 'open' | 'in_progress' | 'done'; fromSos: boolean; hasCause: boolean; dismissed: boolean; systemClosed: boolean;
   choDuyetKhongTheoDoi: boolean; coPaChoXacNhan: boolean; hanXacNhan: string | null;
   /** Chữ lý do hệ thống đóng có sẵn (vd "Lượt Test đã huỷ") — chỉ dùng khi `systemClosed`. */
   lyDoHeThong?: string | null;
+  /** PR-S5F-b: Case rút khỏi danh sách vì điểm nguồn được sửa/huỷ (`retireCaseForCorrectedScore`) — không phải "Xong". */
+  rutSuaDiem?: boolean;
   /** PR-LT2a: Case Giữa khoá có PA bổ trợ chưa chạy — kế hoạch đang chờ nộp / chờ Quản lý duyệt. */
   boTro?: { choNop: boolean; choDuyet: boolean; hanKeHoach: string | null } | null;
 };
@@ -69,6 +72,7 @@ export type CaseV4Input = {
 /** MỘT nhãn trạng thái cho một Case (§7.3) — xét từ trên xuống. */
 export function trangThaiCaseV4(c: CaseV4Input, homNay: string): { k: TrangThaiCaseV4; t: TrangThai; chu: string; han: string | null } {
   if (c.systemClosed) return { k: 'he-thong-dong', t: 'da-huy', chu: c.lyDoHeThong ? `Hệ thống đóng · ${c.lyDoHeThong}` : 'Hệ thống đóng', han: null };
+  if (c.rutSuaDiem) return { k: 'rut-sua-diem', t: 'da-huy', chu: 'Đã rút (sửa điểm)', han: null };
   if (c.dismissed) return { k: 'huy-khong-theo-doi', t: 'da-huy', chu: 'Đã huỷ · không cần theo dõi', han: null };
   if (c.status === 'done') return { k: 'xong', t: 'xong', chu: 'Xong', han: null };
   if (c.choDuyetKhongTheoDoi) return { k: 'cho-duyet-khong-theo-doi', t: 'cho-duyet', chu: 'Chờ Quản lý duyệt · không theo dõi', han: null };
@@ -93,7 +97,7 @@ export type ViecTiepCase = { chu: string; loaiHan: DeadlineKind | null; han: str
  */
 export function viecTiepCuaCase(c: CaseV4Input, pas: PaViecTiep[], homNay: string, hanLapPa: string | null = null): ViecTiepCase | null {
   const s = trangThaiCaseV4(c, homNay);
-  if (s.k === 'xong' || s.k === 'huy-khong-theo-doi' || s.k === 'he-thong-dong') return null;
+  if (s.k === 'xong' || s.k === 'huy-khong-theo-doi' || s.k === 'he-thong-dong' || s.k === 'rut-sua-diem') return null;
   if (s.k === 'cho-nguyen-nhan') return { chu: 'Xác nhận nguyên nhân', loaiHan: 'xac-minh-sos', han: c.hanXacNhan };
   if (s.k === 'cho-duyet-khong-theo-doi') return { chu: 'Chờ Quản lý duyệt · không theo dõi', loaiHan: null, han: null };
   if (s.k === 'cho-ke-hoach') return { chu: 'Nộp kế hoạch bổ trợ', loaiHan: 'ke-hoach-bo-tro', han: s.han };

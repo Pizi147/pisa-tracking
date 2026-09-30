@@ -149,6 +149,8 @@ function useNguoiSearch(
   term: string, nhom: 'giao_vien' | 'nhan_vien', studentId: number | null | undefined, active: boolean,
   /** PR-Ra Q2: chỉ người trong phạm vi người xem (chi nhánh mình quản) — mặc định false (giữ hành vi cũ). */
   trongPhamVi = false,
+  /** PR-S5F-b: chỉ GV ở chi nhánh lớp của em (`studentId`) — người dạy bổ trợ. */
+  cungChiNhanh = false,
 ) {
   const [rows, setRows] = useState<NguoiKetQua[]>([]);
   const [loading, setLoading] = useState(false);
@@ -162,12 +164,13 @@ function useNguoiSearch(
         const qs = new URLSearchParams({ q: term.trim(), nhom });
         if (studentId) qs.set('studentId', String(studentId));
         if (trongPhamVi) qs.set('trongPhamVi', '1');
+        if (cungChiNhanh) qs.set('cungChiNhanh', '1');
         const r = await api.get<NguoiKetQua[]>(`/ref/nguoi?${qs.toString()}`);
         if (my === seq.current) setRows(r);          // bỏ qua kết quả của lượt gõ cũ
       } catch { if (my === seq.current) setRows([]); } finally { if (my === seq.current) setLoading(false); }
     }, 250);
     return () => clearTimeout(t);
-  }, [term, nhom, studentId, active, trongPhamVi]);
+  }, [term, nhom, studentId, active, trongPhamVi, cungChiNhanh]);
   return { rows, loading };
 }
 
@@ -192,7 +195,7 @@ type ChonNguoiOption =
  * vào ô, hoặc ngay khi bấm "Đổi". `tuMo`: nơi gọi vừa được bấm để chọn người (menu "Chọn giáo viên…") → focus + mở ngay.
  */
 export function ChonNguoi({
-  value, onChange, nhom, studentId, choToi = true, choNgoai = true, trongPhamVi = false,
+  value, onChange, nhom, studentId, choToi = true, choNgoai = true, trongPhamVi = false, cungChiNhanh = false,
   khongDoi, macDinhTrong, ariaLabel, disabled, tuMo,
 }: {
   value: NguoiChon | null;
@@ -202,6 +205,8 @@ export function ChonNguoi({
   choToi?: boolean; choNgoai?: boolean;
   /** PR-Ra Q2: chỉ người trong phạm vi người xem — dùng cho "Chọn giáo viên…" của Quản lý. */
   trongPhamVi?: boolean;
+  /** PR-S5F-b: chỉ GV cùng chi nhánh lớp của em — ô Người dạy bổ trợ. */
+  cungChiNhanh?: boolean;
   /** Ô Điều chỉnh: khi `value = null` hiện "Không đổi · hiện: {khongDoi}". */
   khongDoi?: string;
   /** Ô Phụ trách: khi `value = null` hiện nguyên câu này (ví dụ "Mặc định: GVCN của lớp"). */
@@ -218,7 +223,7 @@ export function ChonNguoi({
   const box = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const uid = useId();
-  const { rows, loading } = useNguoiSearch(term, nhom, studentId, editing, trongPhamVi);
+  const { rows, loading } = useNguoiSearch(term, nhom, studentId, editing, trongPhamVi, cungChiNhanh);
   /* Nằm dưới Truong/Field: nhãn trỏ vào ô gõ (label htmlFor), không bọc cả danh sách + nút "Đổi" (`BaoOTrongNhan`). */
   const bao = useContext(BaoOTrongNhan);
   /* Đang hiện tên (chưa sửa): nhãn trỏ vào nút "Đổi"; không có nút (disabled) thì không trỏ đâu. */

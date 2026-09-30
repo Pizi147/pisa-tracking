@@ -77,16 +77,24 @@ const theHienHanh = (conn: any, nhom: string) => conn.prepare(
   `SELECT * FROM yeu_cau_duyet WHERE loai = 'ke_hoach_bo_tro' AND doi_tuong_loai = 'nhom_bo_tro' AND doi_tuong_id = ? AND trang_thai IN ('cho', 'duyet') ORDER BY id DESC LIMIT 1`,
 ).get(minIdNhom(conn, nhom)) as any;
 
-/** Ghi kết quả PA bổ trợ được: người dạy (tài khoản) · GVCN lớp · GVBM đúng môn (SOS_EDIT) · Quản lý phạm vi. Không sửa `permissions.ts` (Q9). */
-export function quyenBoTro(p: Principal, iv: { performer_user_id: number | null; case_id: number }): boolean {
+/**
+ * Ghi kết quả PA bổ trợ được: người dạy (tài khoản) · GVCN lớp · Quản lý phạm vi · GVBM đúng môn (SOS_EDIT) CHỈ với nhóm một môn (BE/ELE).
+ * Không sửa `permissions.ts` (Q9). `ctx` = cột lớp/học viên/môn đã JOIN sẵn (danh sách việc) → không đọc lại Case; thiếu thì đọc `caseAccess`.
+ */
+export function quyenBoTro(p: Principal, iv: {
+  performer_user_id: number | null; case_id: number; nhom_bo_tro: string | null;
+  ctx?: { classId: number | null; studentId: number | null; topic: string | null };
+}): boolean {
   if (iv.performer_user_id === p.userId) return true;
-  const ctx = caseAccess(iv.case_id).ctx;
+  const a = iv.ctx ? null : caseAccess(iv.case_id);
+  const ctx = iv.ctx ?? { classId: a!.ctx.classId ?? null, studentId: a!.ctx.studentId ?? null, topic: a!.topic };
   if (ctx.classId && isCoreTeacherOf(p, ctx.classId)) return true;
-  /* PR-LT2b (Q14): Case `tong_hop` (Pre FOU → FOU) không có ô phân công ở lớp mới — GVBM một môn KHÔNG ghi hộ; chỉ người dạy, GVCN, Quản lý. */
-  if ((db().prepare('SELECT topic FROM sos_cases WHERE id = ?').get(iv.case_id) as any)?.topic === 'tong_hop') {
+  /* M-03 (PR-S5F-b): PA CHUNG (FOU `gk:{lượt}`) ghi một lần cho cả nhóm — GVBM một môn KHÔNG ghi thay; chỉ người dạy, GVCN, Quản lý.
+     PR-LT2b (Q14): Case `tong_hop` (Pre FOU → FOU) không có ô phân công ở lớp mới — cùng luật. */
+  if ((iv.nhom_bo_tro && nhomChung(iv.nhom_bo_tro)) || ctx.topic === 'tong_hop') {
     return can(p, PERMISSIONS.CASE_APPROVE, { classId: ctx.classId, studentId: ctx.studentId });
   }
-  return can(p, PERMISSIONS.SOS_EDIT, ctx);
+  return can(p, PERMISSIONS.SOS_EDIT, { classId: ctx.classId, studentId: ctx.studentId, skill: ctx.topic ?? undefined });
 }
 
 /**
@@ -139,7 +147,9 @@ export function nopKeHoachBoTro(p: Principal, ivId: number, input: {
   if (the?.trang_thai === 'duyet') throw badRequest('Kế hoạch bổ trợ của nhóm này đã được duyệt.');
   if (!rows.some((r) => r.co_nn)) throw badRequest('Cần ít nhất một môn đã xác nhận nguyên nhân rồi mới nộp kế hoạch.');
   const { noiDungYeu, keHoach } = kiemKeHoach(input);
-  const nguoi = chuanHoaNguoiThucHien(p, input, { nhom: 'giao_vien', batBuoc: false });
+  const lop = caseAccess(rows[0].case_id).ctx.classId;
+  const cn = lop ? (conn.prepare('SELECT branch_id FROM classes WHERE id = ?').get(lop) as any)?.branch_id ?? null : null;
+  const nguoi = chuanHoaNguoiThucHien(p, input, { nhom: 'giao_vien', batBuoc: false, branchId: cn });
   const today = demoToday();
   return tx(() => {
     if (nguoi) {

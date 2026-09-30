@@ -18,7 +18,7 @@ import { rowsFor, type MetricRow } from '../worklist/metrics.ts';
 import { badRequest } from '../util.ts';
 import { loadBundle } from '../fasttrack/attempts.ts';
 import { expectationFor } from '../fasttrack/scoring.ts';
-import { evaluateRegular, programmeOfClass } from '../normal/regular.ts';
+import { evaluateRegular, programmeByCode, type ProgrammeInfo } from '../normal/regular.ts';
 
 export type OPhanTich = { dat: number; tong: number };
 export type PhanTichLop = {
@@ -34,24 +34,49 @@ export type PhanTichLop = {
 
 export function phanTichLop(p: Principal, classId: number): PhanTichLop {
   require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
+  return phanTichNhieuLop([classId]).get(classId)!;
+}
+
+/**
+ * NHIỀU LỚP MỘT LƯỢT (PR-S5F-b — hồ sơ GV 15–16 lớp từng tốn ≈ 7 câu/lớp): lớp · học viên · bài thi · điểm mỗi thứ một câu (chia lô),
+ * tính từng lớp trong bộ nhớ — cùng luật với `phanTichLop`. KHÔNG kiểm quyền: nơi gọi lọc lớp theo `ATTEMPT_VIEW` trước.
+ */
+export function phanTichNhieuLop(classIds: readonly number[]): Map<number, PhanTichLop> {
+  const out = new Map<number, PhanTichLop>();
+  if (!classIds.length) return out;
   const conn = db();
-  const prog = programmeOfClass(classId);
-  const thuong = prog?.scoringMode === 'ratio';
-  const hv = conn.prepare(
-    `SELECT s.id, cy.id AS cycle_id, cy.target_score FROM enrollments e
-       JOIN students s ON s.id = e.student_id
-       LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
-      WHERE e.class_id = ? AND e.status = 'active' AND s.archived_at IS NULL`,
-  ).all(classId) as any[];
-  const mucTieu = new Map<number, number | null>(hv.filter((h) => h.cycle_id).map((h) => [h.cycle_id, h.target_score ?? null]));
-  const cycleIds = [...mucTieu.keys()];
-  const attempts = cycleIds.length
-    ? conn.prepare(
+  const lo = <T>(ds: readonly T[]) => Array.from({ length: Math.ceil(ds.length / 900) }, (_, i) => ds.slice(i * 900, (i + 1) * 900));
+  const cho = (n: number) => Array.from({ length: n }, () => '?').join(',');
+  const progCua = new Map<number, ProgrammeInfo | null>();
+  const hvCua = new Map<number, any[]>();
+  for (const l of lo(classIds)) {
+    for (const r of conn.prepare(`SELECT id, programme_code FROM classes WHERE id IN (${cho(l.length)})`).all(...l) as any[]) progCua.set(r.id, programmeByCode(r.programme_code));
+    for (const r of conn.prepare(
+      `SELECT e.class_id, s.id, cy.id AS cycle_id, cy.target_score FROM enrollments e
+         JOIN students s ON s.id = e.student_id
+         LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
+        WHERE e.class_id IN (${cho(l.length)}) AND e.status = 'active' AND s.archived_at IS NULL`,
+    ).all(...l) as any[]) hvCua.set(r.class_id, [...(hvCua.get(r.class_id) ?? []), r]);
+  }
+  const cycleIds = [...new Set([...hvCua.values()].flat().map((h) => h.cycle_id).filter(Boolean))] as number[];
+  const baiCua = new Map<number, any[]>();
+  for (const l of lo(cycleIds)) {
+    for (const a of conn.prepare(
       `SELECT a.*, cy.route FROM assessment_attempts a JOIN learning_cycles cy ON cy.id = a.cycle_id
-        WHERE a.cycle_id IN (${cycleIds.map(() => '?').join(',')}) AND a.status != 'cancelled'`,
-    ).all(...cycleIds) as any[]
-    : [];
-  const bundle = loadBundle(attempts.map((a) => a.id));
+        WHERE a.cycle_id IN (${cho(l.length)}) AND a.status != 'cancelled'`,
+    ).all(...l) as any[]) baiCua.set(a.cycle_id, [...(baiCua.get(a.cycle_id) ?? []), a]);
+  }
+  const bundle = loadBundle([...baiCua.values()].flat().map((a) => a.id));
+  for (const id of classIds) {
+    const hv = hvCua.get(id) ?? [];
+    const mucTieu = new Map<number, number | null>(hv.filter((h) => h.cycle_id).map((h) => [h.cycle_id, h.target_score ?? null]));
+    out.set(id, tinhMotLop(progCua.get(id) ?? null, hv.length, mucTieu, [...mucTieu.keys()].flatMap((c) => baiCua.get(c) ?? []), bundle));
+  }
+  return out;
+}
+
+function tinhMotLop(prog: ProgrammeInfo | null, soHocVien: number, mucTieu: Map<number, number | null>, attempts: any[], bundle: ReturnType<typeof loadBundle>): PhanTichLop {
+  const thuong = prog?.scoringMode === 'ratio';
   const o: Record<string, OPhanTich> = {};
   const ds: PhanTichLop['ds'] = {};
   const cong = (k: string, dat: boolean, hvId: number) => {
@@ -81,7 +106,7 @@ export function phanTichLop(p: Principal, classId: number): PhanTichLop {
       /* K2-40, PF6: cột theo mốc của chương trình — Pre FOU chỉ Cuối khoá, một dòng Tổng hợp. */
       cot: (prog?.checkpoints.length ? prog.checkpoints.map((c) => c.kind) : ['progress', 'final'] as const)
         .map((k) => ({ key: k as string, nhan: ATTEMPT_KIND_SHORT[k as AttemptKind] ?? k })),
-      o, ds, soHocVien: hv.length,
+      o, ds, soHocVien,
     };
   }
 
@@ -100,7 +125,7 @@ export function phanTichLop(p: Principal, classId: number): PhanTichLop {
     loai: 'ft',
     dong: ENTRY_SKILLS.map((k) => ({ key: k, nhan: ENTRY_SKILL_SHORT[k], tenDayDu: tenKyNang(k), category: k })),
     cot: Array.from({ length: soDot }, (_, i) => ({ key: `mt${i + 1}`, nhan: `MT${i + 1}` })),
-    o, ds, soHocVien: hv.length,
+    o, ds, soHocVien,
   };
 }
 

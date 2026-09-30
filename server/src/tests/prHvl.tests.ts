@@ -101,9 +101,9 @@ export async function runPrHvlTests(t: YThucTestKit) {
     eq([pa.viec, pa.tone, pa.quaHanNgay, pa.dich.paId], ['Xác nhận PA R', 'danger', 2, 90], 'Xác nhận PA quá hạn');
     assert(!/True|Ôn lại/.test(pa.viec) && /Ôn lại/.test(pa.title), `Tên PA dài phải bỏ khỏi viec, còn ở title: ${JSON.stringify(pa)}`);
     const gk = theoViec(/^Ghi kết quả PA/);
-    eq([gk.viec, gk.han, gk.tone, gk.dich.ghiKetQua], ['Ghi kết quả PA S', 'hết T2 21/09', 'info', true], 'Ghi kết quả');
+    eq([gk.viec, gk.han, gk.tone, gk.dich.ghiKetQua], ['Ghi kết quả PA S · tuần W3 SEP', 'hết T2 21/09', 'info', true], 'Ghi kết quả');
     const cuoi = theoViec(/^Ghi kết quả cuối/);
-    eq([cuoi.viec, cuoi.tone, cuoi.quaHanNgay], ['Ghi kết quả cuối W1', 'danger', 2], 'Ghi kết quả cuối');
+    eq([cuoi.viec, cuoi.tone, cuoi.quaHanNgay], ['Ghi kết quả cuối W1 · tuần W2 SEP', 'danger', 2], 'Ghi kết quả cuối');
     assert(/hạn hết T2 14\/09 · quá hạn 2 ngày/.test(cuoi.title), cuoi.title);
     eq(theoViec(/^Đề ra PA/).tone, 'warn', 'Đề ra PA chưa hạn');
     eq([theoViec(/^Chờ Quản lý/).viec, theoViec(/^Chờ Quản lý/).tone], ['Chờ Quản lý duyệt Case', 'info'], 'Chờ QL duyệt');
