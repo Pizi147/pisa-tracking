@@ -4,6 +4,7 @@ import { useSession } from '../../lib/session.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { api } from '../../lib/api.ts';
 import { Info } from '../../ui/ui.tsx';
+import { CongTacGiaoDien } from '../../ui/CongTacGiaoDien.tsx';
 import { roleLabel, skillShort } from '../../lib/format.ts';
 import { buocDanhSach, chuanHoaMaLop, duongThongBao } from '@shared/domain/index.ts';
 
@@ -194,6 +195,8 @@ export function Header() {
           </div>
         )}
       </div>
+
+      <CongTacGiaoDien />
 
       <div className="relative">
         <button ref={nutTaiKhoan} className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setOpenMenu(openMenu === 'account' ? null : 'account')}
