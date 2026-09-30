@@ -302,7 +302,7 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved, on
             <Truong nhan="Mini Test (%)" batBuoc loi={loiCua('mt-ty-le')} phu="Đạt từ 70%">
               <input className="field w-full tabular-nums" inputMode="decimal" {...o('mt-ty-le')} value={mtTyLe} onChange={(e) => setMtTyLe(e.target.value)} placeholder="Ví dụ: 72" />
             </Truong>
-            <Truong nhan="Ngày làm" batBuoc loi={loiCua('mt-ngay')}>
+            <Truong nhan="Ngày làm Mini Test" batBuoc loi={loiCua('mt-ngay')}>
               <ONgay kieu="ngay" value={mtNgay} onChange={setMtNgay} toiDa={homNay} />
             </Truong>
           </Hang2>

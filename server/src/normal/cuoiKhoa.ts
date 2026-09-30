@@ -71,7 +71,7 @@ export type EmCuoiKhoa = {
 const jsonMang = (s: string | null): string[] => { try { const v = JSON.parse(s ?? '[]'); return Array.isArray(v) ? v.map(String) : []; } catch { return []; } };
 
 /** `lo_trinh_tiep_theo` → phần kết luận của một em (dùng chung cho lớp và hồ sơ). */
-export function ketLuanCuaDong(r: any): Pick<EmCuoiKhoa, 'quyetDinh' | 'ketLuanFt'> {
+function ketLuanCuaDong(r: any): Pick<EmCuoiKhoa, 'quyetDinh' | 'ketLuanFt'> {
   return {
     quyetDinh: r?.quyet_luc ? { huong: r.huong, boiId: r.quyet_boi, boi: r.quyet_ten ?? null, luc: r.quyet_luc } : null,
     ketLuanFt: r && (r.ky_vong_dat !== null || r.ky_vong_nguyen_nhan)

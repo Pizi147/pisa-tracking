@@ -539,7 +539,8 @@ function KetQua({ row, sheet }: { row: Row; sheet: ThuongSheet }) {
     ? <span className="text-xs text-slate-500">{kq.chinh}</span>
     : (
       <Level tone={tone} title={chiTiet}>
-        {kq.chinh}
+        {/* PR-LT2b: Cuối khoá đủ điểm → tầng 1 là % tổng (hướng gợi ý ở dòng phụ); Giữa khoá giữ `n/4 môn đạt`. */}
+        {row.kind === 'final' && r.tyLeTong != null && !khongChiaMon ? `${Math.round(r.tyLeTong * 100)}%` : kq.chinh}
       </Level>
     );
 

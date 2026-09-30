@@ -32,7 +32,7 @@ export type GoiYCuoiKhoa = {
   dai: DaiCuoiKhoa; tyLe: number; huong: HuongGoiY;
   /** 50–59%: chip "Quản lý cân nhắc" ở màn Chuyển lớp, bắt chọn trước khi gửi. */
   canQuanLy: boolean;
-  /** Bí danh của `canQuanLy` cho kế hoạch PR-CT viết trước chốt 30/09 — bỏ khi PR-CT đổi tên. */
+  /** ponytail: bí danh của `canQuanLy` cho kế hoạch PR-CT viết trước chốt 30/09 — bỏ khi PR-CT đổi tên. */
   canQl: boolean;
   boTroNeuLen: BoTroMienPhi | null;     // 50–59 (nếu Quản lý cho lên) và 60–69
   baoPhTvv: boolean;                    // < 50 (50–59 mà Quản lý chọn học lại thì máy chủ tự thêm — Q6)
