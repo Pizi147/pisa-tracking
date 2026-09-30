@@ -505,4 +505,4 @@ Không có. Mọi chỗ planning tự quyết nằm ở bảng Q (Q4 "Bạn", Q1
 
 | Ngày | Task | Ghi chú (mốc B, model thật, trần tốc độ, lệch kế hoạch, cổng gộp) |
 |---|---|---|
-| | | |
+| 01/10 | 0 | Model thật **Opus 5.5** (claude-opus-5-5). Worktree từ `origin/main` @ `4379cc63`. **Mốc B: 2000 phép kiểm chính + 28 tốc độ.** Lần check đầu sập "out of memory" (máy chạy song song check của session khác) → chạy lại một lần, không qua npm, xanh. Pb2 / UXF-a / VAI-b **chưa merge** lúc bắt đầu → cổng gộp ở Task 12 |
