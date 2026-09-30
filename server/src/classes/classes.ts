@@ -406,6 +406,8 @@ export function classRoster(p: Principal, classId: number, q?: string) {
   /* PR-LT: Lộ trình tiếp theo của cả lớp — một câu, cột Khoá dùng ngay, không hỏi lại theo từng em. */
   const tiepTheoLop = tiepTheoTheoHocVien([classId]);
   const maChuongTrinhHienTai = (prog?.code ?? null) as ProgrammeCode | null;
+  /* PR-UXF-a K2-12: % tổng + Hướng gợi ý Cuối khoá — CÙNG hàm panel Chuyển lớp đọc, một lần cho cả lớp. */
+  const cuoiKhoaLop = isRatio ? cuoiKhoaTheoHocVien(classId, undefined, { daRoi: finished }) : null;
 
   const dauTuanNay = mondayOf(demoToday());   // MỘT lần — không tính lại theo từng em (N+1)
   return students.map((s) => {
@@ -663,6 +665,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
       /* Cột Khoá "tiếp theo: …" (PR-LT, Q1/Q4) — chỉ có nghĩa cho lớp thường còn đang học. */
       tiepTheo: isRatio ? nhanTiepTheo(tiepTheoLop.get(s.id) ?? null, maChuongTrinhHienTai) : null,
       chuaLoTrinh: isRatio && (!tiepTheoLop.has(s.id) || tiepTheoLop.get(s.id)!.huong === 'chua_ro'),
+      cuoiKhoa: (() => { const e = cuoiKhoaLop?.get(s.id); return e ? { tyLe: e.tyLe, goiY: e.goiY } : null; })(),
     };
   });
 }

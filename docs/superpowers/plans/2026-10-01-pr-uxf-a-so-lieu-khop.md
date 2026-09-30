@@ -488,3 +488,4 @@ U1: `fasttrack/planning.ts:164`, `worklist/branchpulse.ts:137`, `worklist/summar
 |---|---|---|
 | 01/10 | 0 | Model thật Opus 5.5 (đổi từ Sonnet 5.5 đầu phiên). Worktree từ `origin/main` @ `4379cc63`. **Mốc B:** 2000 phép kiểm chính ✓ · 0 ✗ · tốc độ 28/28 · typecheck xanh (11 phút, 4 phiên chạy check song song) |
 | 01/10 | 1 | 2003 ✓ · tốc độ 28/28. `raLenhCaLop` đo 20 → 27 câu (+7: `cuoiKhoaTheoHocVien` một lần/lô), dưới trần 30 — không nâng trần |
+| 01/10 | 2 | 2005 ✓ · tốc độ 28/28. `/classes/6/roster` (lớp thường) đo 52 câu — không có trần riêng (chỉ trần chung ≤ 100); thêm đúng một lần `cuoiKhoaTheoHocVien` (câu cố định, không theo số em). clarify: cột gọi thống nhất "% tổng" (kể cả cột % cũ của Pre FOU), "Hướng gợi ý" + tooltip; chip "Quản lý cân nhắc" dùng lại `Nhan tone=soon` (không tách `ChipCanNhac`). Sửa kỳ vọng `prHvl.tests.ts` (3 chỗ "Cuối khoá" → có hậu tố) |

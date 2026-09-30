@@ -1,6 +1,6 @@
-import type { NhanYThucEm } from '@shared/domain/index.ts';
+import type { GoiYCuoiKhoa, NhanYThucEm } from '@shared/domain/index.ts';
 import { Link } from 'react-router-dom';
-import { DauDuoi } from '../../ui/Nhan.tsx';
+import { DauDuoi, Nhan } from '../../ui/Nhan.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { Empty, Skeleton } from '../../ui/ui.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
@@ -24,7 +24,10 @@ type DongThuong = {
   timeline: LuotThuong[];
   /** "Kết thúc vì" (Q18/Q22) — chỉ có ở bảng lớp ĐÃ KẾT THÚC. */
   ketThucVi?: string | null;
+  /** PR-UXF-a K2-12: % tổng + gợi ý hướng Cuối khoá — cùng hàm với panel Chuyển lớp (`cuoiKhoaTheoHocVien`). */
+  cuoiKhoa?: { tyLe: number | null; goiY: GoiYCuoiKhoa | null } | null;
 };
+const TIEU_DE_HUONG = 'Theo luật Cuối khoá — Quản lý quyết ở panel Chuyển lớp';
 
 /** Hồ sơ lớp cũ chưa gửi mốc: Giữa khoá + Cuối khoá như trước. */
 const MOC_MAC_DINH = ['progress', 'final'];
@@ -51,9 +54,14 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
   if (!rows.length) return <Empty title="Lớp chưa có học viên" />;
   const mon = rows[0].skills ?? [];
   const BAI = (moc?.length ? moc : MOC_MAC_DINH).map((kind) => ({ kind, nhan: ATTEMPT_KIND_SHORT[kind as AttemptKind] ?? kind }));
-  /* MH7: Pre FOU không chia môn — thêm cột % tổng sau cột Tổng hợp của mỗi mốc. */
+  /* MH7: Pre FOU không chia môn — thêm cột % tổng sau cột Tổng hợp của mỗi mốc. K2-12: nhóm Cuối khoá mọi lớp thường có "% tổng" + "Hướng gợi ý". */
   const coPhanTram = CHUONG_TRINH_KHONG_CHIA_MON.includes(chuongTrinh ?? '');
-  const soCot = mon.length + (coPhanTram ? 1 : 0);
+  const cotPhu = (kind: string) => [...(coPhanTram || kind === 'final' ? ['%'] : []), ...(kind === 'final' ? ['huong'] : [])];
+  const coCuoiKhoa = BAI.some((b) => b.kind === 'final');
+  /** % của một mốc: Cuối khoá đọc % tổng máy chủ (cùng số với panel Chuyển lớp); mốc khác của Pre FOU tính từ ô Tổng hợp. */
+  const phanTram = (s: DongThuong, kind: string, o: ODiem | null): number | null => (kind === 'final'
+    ? s.cuoiKhoa?.tyLe ?? null
+    : o && o.score !== null && o.total ? o.score / o.total : null);
 
   /* D2: điện thoại (< 640 px) — mỗi em một thẻ, mỗi MỐC một dòng: "Giữa khoá · L 14/20 · R … · %". */
   if (dienThoai) {
@@ -86,15 +94,13 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
                         <ODiemThuong o={t?.ratios?.[k] ?? null} tuan={t?.tuanMon?.[k] ?? null} homNay={homNay} />
                       </span>
                     ))}
-                    {coPhanTram && (
-                      <span className="whitespace-nowrap"><span className="text-slate-500">%</span>{' '}
-                        {o && o.score !== null && o.total ? `${Math.round((o.score / o.total) * 100)}%` : <span className="text-slate-600">—</span>}
-                      </span>
+                    {cotPhu(b.kind).includes('%') && (
+                      <span className="whitespace-nowrap"><span className="text-slate-500">% tổng</span>{' '}<OPhanTram v={phanTram(s, b.kind, o)} /></span>
                     )}
                   </span>
                 ),
               };
-            })} />
+            }).concat(coCuoiKhoa ? [{ nhan: 'Hướng gợi ý', noiDung: <OHuongGoiY goiY={s.cuoiKhoa?.goiY ?? null} /> }] : [])} />
         ))}
         {tt.panels}
       </div>
@@ -103,17 +109,17 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
 
   return (
     <div className="card overflow-x-auto">
-      <table className="w-full min-w-[840px] table-fixed text-sm">
+      <table className={`w-full ${coCuoiKhoa ? 'min-w-[960px]' : 'min-w-[840px]'} table-fixed text-sm`}>
         <colgroup>
           <col className="w-[24%]" />
-          {BAI.flatMap((b) => [...mon, ...(coPhanTram ? ['%'] : [])].map((k) => <col key={`${b.kind}-${k}`} />))}
+          {BAI.flatMap((b) => [...mon, ...cotPhu(b.kind)].map((k) => <col key={`${b.kind}-${k}`} className={k === 'huong' ? 'w-[10rem]' : undefined} />))}
           <col className="w-12" />
         </colgroup>
         <thead>
           <tr>
             <th className="th sticky-col align-bottom" rowSpan={2}>Học viên</th>
             {BAI.map((b) => (
-              <th key={b.kind} className="th border-b text-center" colSpan={soCot} style={{ borderColor: 'var(--line)' }}>{b.nhan}</th>
+              <th key={b.kind} className="th border-b text-center" colSpan={mon.length + cotPhu(b.kind).length} style={{ borderColor: 'var(--line)' }}>{b.nhan}</th>
             ))}
             <th className="th" rowSpan={2}><span className="sr-only">Thao tác</span></th>
           </tr>
@@ -122,7 +128,8 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
               ...mon.map((k) => (
                 <th key={`${b.kind}-${k}`} className="th text-center"><abbr className="no-underline" title={tenMon(chuongTrinh, k)}>{tenMonNgan(chuongTrinh, k)}</abbr></th>
               )),
-              ...(coPhanTram ? [<th key={`${b.kind}-%`} className="th text-right" title="Điểm đạt / tổng điểm cả bài">%</th>] : []),
+              ...(cotPhu(b.kind).includes('%') ? [<th key={`${b.kind}-%`} className="th text-right" title="Điểm đạt / tổng điểm cả bài">% tổng</th>] : []),
+              ...(b.kind === 'final' ? [<th key={`${b.kind}-huong`} className="th" title={TIEU_DE_HUONG}>Hướng gợi ý</th>] : []),
             ])}
           </tr>
         </thead>
@@ -148,11 +155,10 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
                       <ODiemThuong o={t?.ratios?.[k] ?? null} tuan={t?.tuanMon?.[k] ?? null} homNay={homNay} />
                     </td>
                   )),
-                  ...(coPhanTram ? [(
-                    <td key={`${b.kind}-%`} className="td text-right tabular-nums">
-                      {o && o.score !== null && o.total ? `${Math.round((o.score / o.total) * 100)}%` : <span className="text-slate-600">—</span>}
-                    </td>
+                  ...(cotPhu(b.kind).includes('%') ? [(
+                    <td key={`${b.kind}-%`} className="td text-right"><OPhanTram v={phanTram(s, b.kind, o)} /></td>
                   )] : []),
+                  ...(b.kind === 'final' ? [<td key={`${b.kind}-huong`} className="td"><OHuongGoiY goiY={s.cuoiKhoa?.goiY ?? null} /></td>] : []),
                 ];
               })}
               <td className="td text-center">
@@ -165,6 +171,17 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
       {tt.panels}
     </div>
   );
+}
+
+function OPhanTram({ v }: { v: number | null }) {
+  return v === null ? <span className="text-slate-600">—</span> : <span className="text-[12px] tabular-nums text-slate-100">{Math.round(v * 100)}%</span>;
+}
+
+/** Chữ "Hướng gợi ý" — cùng chữ, cùng chip với cột Web gợi ý của panel Chuyển lớp (`goiY.nhanHuong`; 50–59 % chip "Quản lý cân nhắc"). */
+function OHuongGoiY({ goiY }: { goiY: GoiYCuoiKhoa | null }) {
+  if (!goiY) return <span className="text-slate-600" title="Hiện khi đủ điểm Cuối khoá">—</span>;
+  if (goiY.canQuanLy) return <Nhan tone="soon" title={goiY.nhan}>Quản lý cân nhắc</Nhan>;
+  return <span className="text-[12px] text-slate-300" title={`${goiY.nhan} · ${TIEU_DE_HUONG}`}>{goiY.nhanHuong}</span>;
 }
 
 function ODiemThuong({ o, tuan, homNay }: { o: ODiem | null; tuan: string | null; homNay: string }) {

@@ -5,6 +5,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
+import { Nhan } from '../../ui/Nhan.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import {
   NORMAL_LADDER, chuHopKetLuan, hanBanGiao, khacGoiY, kiemDongLenh, ketQuaGanNhat, ngay, tomTatLenh, tuanLich,
@@ -370,7 +371,7 @@ function HangEm({ s, d, ft, luoi, maKe, routeTu, tuanCh, homNay, loi, loiMayChu,
           <span className={nhan}>Web gợi ý</span>
           {/* PR-S5F-a (mockup 20): ghi HƯỚNG ("Lên BE", "Học lại FOU"); 50–59% chỉ chip "Quản lý cân nhắc" — không "→ Pass". */}
           {!ck?.goiY ? <span className="text-slate-500" title="Gợi ý theo luật Cuối khoá sẽ hiện khi có điểm">—</span>
-            : ck.goiY.canQuanLy ? <span className="inline-flex rounded-full bg-soon-bg px-[7px] text-[11.5px] font-bold leading-[18px] text-soon" title={ck.goiY.nhan}>Quản lý cân nhắc</span>
+            : ck.goiY.canQuanLy ? <Nhan tone="soon" title={ck.goiY.nhan}>Quản lý cân nhắc</Nhan>
             : <span className="block text-xs text-slate-300" title={ck.goiY.nhan}>{ck.goiY.nhanHuong}</span>}
         </span>
       )}

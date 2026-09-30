@@ -5,6 +5,9 @@ export async function runPrUxfATests(t: YThucTestKit) {
   const { check, assert, conn, P, TODAY } = t;
   const d: any = await import('../../../shared/domain/index.ts');
   const lenh: any = await import('../classes/lenhChuyen.ts');
+  const classes: any = await import('../classes/classes.ts');
+  const transition: any = await import('../classes/transition.ts');
+  const cuoiKhoaMod: any = await import('../normal/cuoiKhoa.ts');
   console.log('\nPR-UXF-a · Số liệu khớp + sót lớp thường');
 
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
@@ -54,5 +57,42 @@ export async function runPrUxfATests(t: YThucTestKit) {
     assert(!('khacGoiY' in lenh.suaTuBody({ khacGoiY: false, huong: 'hoc_lai' })), 'suaTuBody bỏ khacGoiY');
     assert(maLoi(() => lenh.suaLenh(P.mbManager, l.id, lenh.suaTuBody({ huong: 'hoc_lai', toClassId: be03, khacGoiY: false }))) === 400, 'đổi sang học lại không lý do');
     lenh.huyLenh(P.mbManager, l.id, 'Dọn phép kiểm');
+  });
+
+  // ==================================================================== Task 2 · K2-01 + K2-12
+  check('UXF-a (2) · ketQuaGanNhat lớp thường Cuối khoá đủ điểm: hậu tố hướng ở dòng 1 (45/55/64/78 %); thiếu điểm, Giữa khoá: không hậu tố', () => {
+    const k = (o: any) => d.ketQuaGanNhat({
+      mode: 'ratio', attemptLabel: 'Cuối khoá', attemptKind: 'final', sosLevel: 0, provisional: false, scored: 4, required: 4, failed: 0,
+      overall: null, expectation: null, belowSkills: [], failedSkills: [], chuongTrinh: 'BE', ...o,
+    });
+    const truot = [{ skill: 'writing', score: 8, total: 20 }, { skill: 'speaking', score: 9, total: 20 }];
+    assert(k({ tyLeTong: 0.45 }).dong1 === 'Cuối khoá → học lại', k({ tyLeTong: 0.45 }).dong1);
+    assert(k({ tyLeTong: 0.55 }).dong1 === 'Cuối khoá → QL cân nhắc', '55%');
+    assert(k({ tyLeTong: 0.64, failed: 2, failedSkills: truot }).dong1 === 'Cuối khoá → lên + bổ trợ', '64%');
+    assert(k({ tyLeTong: 0.78 }).dong1 === 'Cuối khoá → Pass', '78%');
+    assert(k({ tyLeTong: null, scored: 3 }).dong1 === 'Cuối khoá · 3/4 môn có điểm', 'thiếu điểm');
+    assert(k({ attemptLabel: 'Giữa khoá', attemptKind: 'progress', tyLeTong: 0.45 }).dong1 === 'Giữa khoá', 'Giữa khoá');
+    assert(!/\d%/.test(k({ tyLeTong: 0.45 }).dong1), 'hậu tố không dính số %');
+  });
+
+  check('UXF-a (2) · hai đường MB BE 04: roster.cuoiKhoa.tyLe = cuoiKhoaTheoHocVien; hậu tố Kết quả gần nhất = goiY.nhanNgan; cột Hướng gợi ý = chữ panel Chuyển lớp', () => {
+    const be04 = lopId('MB BE 04');
+    const roster = classes.classRoster(P.mbManager, be04) as any[];
+    const ck = cuoiKhoaMod.cuoiKhoaTheoHocVien(be04);
+    const tp = transition.transitionPlan(P.mbManager, be04);
+    let coGoiY = 0;
+    assert(roster.length > 0, 'lớp có em');
+    for (const r of roster) {
+      const e = ck.get(r.id);
+      assert(r.cuoiKhoa && e && r.cuoiKhoa.tyLe === e.tyLe, `tyLe ${r.fullName}`);
+      const g = r.cuoiKhoa.goiY;
+      const dong1 = d.ketQuaGanNhat(r.standing).dong1 as string;
+      if (!g) { assert(!/→/.test(dong1 ?? ''), `không gợi ý thì không hậu tố: ${dong1}`); continue; }
+      coGoiY += 1;
+      assert(dong1.endsWith(g.nhanNgan), `hậu tố ${r.fullName}: ${dong1} ≠ ${g.nhanNgan}`);
+      const x = tp.students.find((s: any) => s.id === r.id);
+      assert(x?.cuoiKhoa?.goiY?.nhanHuong === g.nhanHuong, `Hướng gợi ý ${r.fullName}: ${x?.cuoiKhoa?.goiY?.nhanHuong} ≠ ${g.nhanHuong}`);
+    }
+    assert(coGoiY >= 2, `ít nhất Huy + Khôi có gợi ý: ${coGoiY}`);
   });
 }
