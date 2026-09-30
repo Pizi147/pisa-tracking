@@ -30,6 +30,12 @@ export function DaiLopChuyen({ dai, homNay, onChuyenTiep, onBanGiao }: {
   const h = homNay ?? '';
   return (
     <div className="space-y-2">
+      {dai.chuaChuyenDuoc && (
+        <Dai nhan="Chưa chuyển được" do
+          nut={<button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onChuyenTiep}>Sửa lệnh…</button>}>
+          <b className="tabular-nums text-slate-100">{dai.chuaChuyenDuoc.n} em</b> · {dai.chuaChuyenDuoc.loi} · chọn tuần hoặc lớp đích mới, hoặc huỷ lệnh
+        </Dai>
+      )}
       {kt && (
         <Dai nhan="Kết thúc khoá" do={kt.do}
           nut={v.coTheRaLenh ? <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={onChuyenTiep}>Chuyển lớp cả lớp…</button> : undefined}>
@@ -99,7 +105,7 @@ export function DaiHocVienChuyen({ dai, homNay, onLam }: {
           </>
         )}
       </Dai>
-      {dai.loi && <p role="alert" className="m-0 text-[12px] text-late">Chưa chuyển được: {dai.loi}</p>}
+      {dai.loi && <p role="alert" className="m-0 text-[12px] text-late">Chưa chuyển được: {dai.loi} — sửa lệnh sang tuần mới hoặc huỷ lệnh.</p>}
     </div>
   );
 }

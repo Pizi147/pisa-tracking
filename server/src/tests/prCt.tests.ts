@@ -303,7 +303,7 @@ export async function runPrCtTests(t: YThucTestKit) {
     assert(maLoi(() => luatLoTrinh.lopDichChoChuyen(gvcnNguon, em[1])) === 'không ném' && maLoi(() => luatLoTrinh.lopDichChoChuyen(gvbm2, em[1])) === 403, 'GVCN xem được danh sách lớp để Đề xuất chuyển lớp; GVBM thì không');
     assert(!luatLoTrinh.coTheChuyenLop(gvcnNguon, em[1]) && !!luatLoTrinh.coTheChuyenLop(P.mbManager, em[1]), 'coTheChuyenLop: QL có, GVCN không');
   });
-  check('CT (3f) · sửa / huỷ đúng luật: huỷ cần lý do ≥ 3 ký tự; huỷ xong → em có thể có lệnh mới; huỷ hai lần → 409; sau tuần bắt đầu → 400', () => {
+  check('CT (3f) · sửa / huỷ đúng luật: huỷ cần lý do ≥ 3 ký tự; huỷ xong → em có thể có lệnh mới; huỷ hai lần → 409; sau tuần bắt đầu giữ tuần cũ → 400', () => {
     const l = lenhCua(em[2]);
     assert(maLoi(() => lenh.huyLenh(P.mbManager, l.id, 'ab')) === 400, 'lý do ngắn');
     lenh.huyLenh(P.mbManager, l.id, 'Phụ huynh xin ở lại');
@@ -313,11 +313,10 @@ export async function runPrCtTests(t: YThucTestKit) {
     assert(maLoi(() => lenh.suaLenh(P.mbManager, l.id, { tuan: TUAN[2] })) === 409, 'sửa lệnh đã huỷ phải 409');
     const r = lenh.raLenh(P.mbManager, { lopNguonId: nguon, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: [dongCua(em[2], 'len_lop', beDich)] });
     assert(r.ok.length === 1 && lenhCua(em[2]).trang_thai === 'cho', 'sau huỷ ra lệnh mới được (chỉ mục chỉ chặn lệnh "cho")');
-    /* tuần bắt đầu đã tới (đặt lại bằng SQL) → không sửa / huỷ được, ra lại cũng bị chặn */
+    /* tuần bắt đầu đã tới (đặt lại bằng SQL) → sửa mà giữ tuần cũ bị chặn (tuần phải từ tuần sau). PR-S5F-a: huỷ / sửa sang tuần mới được — xem prS5fA. */
     const den = lenhCua(em[3]);
     conn.prepare('UPDATE lenh_chuyen_lop SET tuan_bat_dau = ? WHERE id = ?').run(mondayNow, den.id);
-    assert(maLoi(() => lenh.suaLenh(P.mbManager, den.id, { lyDo: 'đổi ý' })) === 400, 'sửa sau tuần bắt đầu phải 400');
-    assert(maLoi(() => lenh.huyLenh(P.mbManager, den.id, 'muộn rồi')) === 400, 'huỷ sau tuần bắt đầu phải 400');
+    assert(maLoi(() => lenh.suaLenh(P.mbManager, den.id, { lyDo: 'đổi ý' })) === 400, 'sửa sau tuần bắt đầu mà giữ tuần cũ phải 400');
     conn.prepare('UPDATE lenh_chuyen_lop SET tuan_bat_dau = ? WHERE id = ?').run(TUAN[0], den.id);
   });
   check('CT (3g) · suaLenh đổi được tuần / lớp đích / lý do và giữ phần còn lại; sai thì báo lỗi rõ', () => {

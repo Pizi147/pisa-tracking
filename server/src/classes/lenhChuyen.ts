@@ -103,10 +103,8 @@ export function raLenh(p: Principal, v: {
       if (canDich && d.toClassId && !lopDich) { loi('Lớp đích không hợp lệ.'); continue; }
       const tuan = d.tuan ?? v.tuanChung;
       const cu = daCo.get(d.studentId);
-      if (cu) {
-        if (cu.lop_nguon_id !== v.lopNguonId) { loi('Em đã có lệnh chuyển ở lớp khác.'); continue; }
-        if (homNay >= cu.tuan_bat_dau) { loi('Lệnh đã tới tuần bắt đầu — không sửa được.'); continue; }
-      }
+      /* PR-S5F-a: lệnh còn `cho` luôn sửa được (kể cả đã tới tuần mà chưa chuyển được) — tuần mới vẫn phải từ tuần sau (`kiemDongLenh`). */
+      if (cu && cu.lop_nguon_id !== v.lopNguonId) { loi('Em đã có lệnh chuyển ở lớp khác.'); continue; }
       const sai = kiemDongLenh({
         huong: d.huong, lopDichId: lopDich?.id ?? null, lopDichFt: !!lopDich?.is_fast_track, nguonFt, tuan: tuan ?? null, homNay,
         lyDo: d.lyDo ?? null, khacGoiY: !!d.khacGoiY, mucTieu: d.mucTieu ?? null, ngayXemLai: d.ngayXemLai ?? null,
@@ -142,7 +140,7 @@ export function raLenh(p: Principal, v: {
            nguoi_ra_lenh = excluded.nguoi_ra_lenh, tu_yeu_cau_id = COALESCE(excluded.tu_yeu_cau_id, lenh_chuyen_lop.tu_yeu_cau_id),
            han_gvbm = CASE WHEN excluded.han_gvbm IS NULL THEN NULL ELSE COALESCE(lenh_chuyen_lop.han_gvbm, excluded.han_gvbm) END,
            han_gvcn = CASE WHEN excluded.han_gvcn IS NULL THEN NULL ELSE COALESCE(lenh_chuyen_lop.han_gvcn, excluded.han_gvcn) END,
-           loi = NULL, sua_luc = excluded.sua_luc`,
+           loi = NULL, thu_ngay = NULL, sua_luc = excluded.sua_luc`,
       );
       const moi = hang.length - daSua.size;
       const theoHuong: Record<string, number> = {};
@@ -188,10 +186,12 @@ function docLenh(id: number): any {
   return l;
 }
 
-/** Q6: sửa / huỷ chỉ khi lệnh còn `cho` VÀ hôm nay < tuần bắt đầu. Lệnh không còn `cho` → 409 (vừa thi hành / đã huỷ). */
+/**
+ * Q6 + PR-S5F-a: sửa / huỷ khi lệnh còn `cho`. Lệnh đã tới tuần mà còn `cho` là lệnh CHƯA chuyển được (lớp đích bị kết thúc, lệch luật…) —
+ * Quản lý phải huỷ được hoặc sửa sang tuần mới, không để kẹt. Lệnh không còn `cho` → 409 (vừa thi hành / đã huỷ).
+ */
 function kiemConSuaDuoc(l: any) {
   if (l.trang_thai !== 'cho') throw conflict(l.trang_thai === 'huy' ? 'Lệnh đã được huỷ.' : 'Lệnh vừa được thi hành.');
-  if (demoToday() >= l.tuan_bat_dau) throw badRequest('Lệnh đã tới tuần bắt đầu — không sửa được.');
 }
 
 export function suaLenh(p: Principal, id: number, v: Partial<DongLenhVao>): void {
@@ -268,7 +268,7 @@ export function suaTuBody(b: any): Partial<DongLenhVao> {
 
 /** Q22: mỗi lượt tối đa 40 nhóm (lớp nguồn × tuần × bối cảnh); phần còn lại lượt quét sau làm. Lời gọi Netlify có hạn giờ. */
 export const NHOM_TOI_DA = 40;
-/** Placeholder cho Target KCK: `apDungMotDong`/`applyTransition` chỉ nhận số, KCK đặt ngay sau bằng `reviseTarget` (Q29-1). */
+/** Placeholder cho Target KCK: `apDungMotDong`/`applyTransition` chỉ nhận số, KCK đặt ngay sau ở `datKck` (Q29-1) — số tạm không ra Hành trình. */
 const TARGET_TAM = 5;
 
 type KetQuaThiHanh = { daChuyen: number; huy: number; loi: number };
@@ -276,6 +276,8 @@ type KetQuaThiHanh = { daChuyen: number; huy: number; loi: number };
 /**
  * Cron Thứ Hai (cùng chot-vang) + quét khi đọc (`quetLenhDenHan`). Chạy 2 lần liền → lần 2 không làm gì: đọc lệnh TRONG tx sau BEGIN IMMEDIATE,
  * đánh dấu `da_chuyen` TRƯỚC khi chuyển, mỗi nhóm một tx. Ngày hiệu lực luôn là Thứ Hai của lệnh, kể cả khi quét muộn (Q5).
+ * PR-S5F-a: lệnh lỗi (`thu_ngay` = hôm nay) chỉ thử lại MỘT lần mỗi ngày hoặc khi Quản lý sửa (xoá `thu_ngay`) — đọc trang không ghi DB lặp lại,
+ * nhóm lỗi không chiếm chỗ của nhóm khác trong 40 nhóm/lượt. Nhật ký chỉ ghi khi có em được chuyển hoặc lệnh bị huỷ.
  */
 export function thiHanhLenhDenHan(homNay = demoToday()): KetQuaThiHanh {
   const kq: KetQuaThiHanh = { daChuyen: 0, huy: 0, loi: 0 };
@@ -283,8 +285,8 @@ export function thiHanhLenhDenHan(homNay = demoToday()): KetQuaThiHanh {
   /* Một câu rẻ NGOÀI tx: đường đọc không xin khoá ghi khi không có gì đến hạn. */
   const nhom = conn.prepare(
     `SELECT DISTINCT lop_nguon_id, tuan_bat_dau, boi_canh FROM lenh_chuyen_lop
-      WHERE trang_thai = 'cho' AND tuan_bat_dau <= ? ORDER BY tuan_bat_dau, lop_nguon_id LIMIT ?`,
-  ).all(homNay, NHOM_TOI_DA) as any[];   // ponytail: 40 nhóm/lượt (Q22), lượt quét sau làm tiếp
+      WHERE trang_thai = 'cho' AND tuan_bat_dau <= ? AND (thu_ngay IS NULL OR thu_ngay < ?) ORDER BY tuan_bat_dau, lop_nguon_id LIMIT ?`,
+  ).all(homNay, homNay, NHOM_TOI_DA) as any[];   // ponytail: 40 nhóm/lượt (Q22), lượt quét sau làm tiếp
   for (const g of nhom) {
     try {
       tx(() => {
@@ -292,8 +294,8 @@ export function thiHanhLenhDenHan(homNay = demoToday()): KetQuaThiHanh {
         const ds = conn.prepare(
           `SELECT l.*, e.id AS enr_id FROM lenh_chuyen_lop l
              LEFT JOIN enrollments e ON e.student_id = l.student_id AND e.class_id = l.lop_nguon_id AND e.status = 'active'
-            WHERE l.trang_thai = 'cho' AND l.lop_nguon_id = ? AND l.tuan_bat_dau = ? AND l.boi_canh = ?`,
-        ).all(g.lop_nguon_id, g.tuan_bat_dau, g.boi_canh) as any[];
+            WHERE l.trang_thai = 'cho' AND l.lop_nguon_id = ? AND l.tuan_bat_dau = ? AND l.boi_canh = ? AND (l.thu_ngay IS NULL OR l.thu_ngay < ?)`,
+        ).all(g.lop_nguon_id, g.tuan_bat_dau, g.boi_canh, homNay) as any[];
         if (!ds.length) return;
         const mat = ds.filter((l) => !l.enr_id), con = ds.filter((l) => l.enr_id);
         if (mat.length) { huyHeThong(mat, 'Em không còn học lớp nguồn lúc thi hành'); kq.huy += mat.length; }   // Q8
@@ -301,9 +303,9 @@ export function thiHanhLenhDenHan(homNay = demoToday()): KetQuaThiHanh {
         danhDau(con.map((l) => l.id as number), nowIso());
         const p = loadPrincipal(con[0].nguoi_ra_lenh);   // người ra lệnh = tác giả nhật ký
         const loiDong = g.boi_canh === 'cuoi-khoa' ? thiHanhCuoiKhoa(p, g, con) : thiHanhGiuaKhoa(p, g, con);
-        if (loiDong.length) traVeCho(loiDong);   // Q8: lệnh lỗi luật về 'cho' + cột loi — không chặn em khác
+        if (loiDong.length) traVeCho(loiDong, homNay);   // Q8: lệnh lỗi luật về 'cho' + cột loi — không chặn em khác
         kq.daChuyen += con.length - loiDong.length;
-        writeAudit({
+        if (con.length > loiDong.length || mat.length) writeAudit({
           actorUserId: con[0].nguoi_ra_lenh, action: 'lenh_chuyen.thi_hanh', entityType: 'class', entityId: g.lop_nguon_id,
           after: { tuan: g.tuan_bat_dau, boiCanh: g.boi_canh, daChuyen: con.length - loiDong.length, loi: loiDong.length, huy: mat.length },
         });
@@ -314,7 +316,7 @@ export function thiHanhLenhDenHan(homNay = demoToday()): KetQuaThiHanh {
       });
     } catch (e) {
       kq.loi += 1;
-      ghiLoiNhom(g, e);   // UPDATE loi ngoài tx đã cuộn lại
+      ghiLoiNhom(g, e, homNay);   // UPDATE loi ngoài tx đã cuộn lại
     }
   }
   return kq;
@@ -338,17 +340,17 @@ function danhDau(ids: readonly number[], luc: string) {
   db().prepare(`UPDATE lenh_chuyen_lop SET trang_thai = 'da_chuyen', thi_hanh_luc = ?, loi = NULL WHERE trang_thai = 'cho' AND id IN (${inHang(ids)})`).run(luc, ...ids);
 }
 
-function traVeCho(loi: { id: number; loi: string }[]) {
+function traVeCho(loi: { id: number; loi: string }[], homNay: string) {
   const conn = db();
-  for (const x of loi) conn.prepare(`UPDATE lenh_chuyen_lop SET trang_thai = 'cho', thi_hanh_luc = NULL, loi = ? WHERE id = ?`).run(x.loi, x.id);
+  for (const x of loi) conn.prepare(`UPDATE lenh_chuyen_lop SET trang_thai = 'cho', thi_hanh_luc = NULL, loi = ?, thu_ngay = ? WHERE id = ?`).run(x.loi, homNay, x.id);
 }
 
-function ghiLoiNhom(g: any, e: unknown) {
+function ghiLoiNhom(g: any, e: unknown, homNay: string) {
   const msg = String((e as any)?.message ?? e).slice(0, 300);
   console.error('[chuyen-lop]', g.lop_nguon_id, g.tuan_bat_dau, msg);
   try {
-    db().prepare(`UPDATE lenh_chuyen_lop SET loi = ? WHERE trang_thai = 'cho' AND lop_nguon_id = ? AND tuan_bat_dau = ? AND boi_canh = ?`)
-      .run(msg, g.lop_nguon_id, g.tuan_bat_dau, g.boi_canh);
+    db().prepare(`UPDATE lenh_chuyen_lop SET loi = ?, thu_ngay = ? WHERE trang_thai = 'cho' AND lop_nguon_id = ? AND tuan_bat_dau = ? AND boi_canh = ?`)
+      .run(msg, homNay, g.lop_nguon_id, g.tuan_bat_dau, g.boi_canh);
   } catch { /* kết nối hỏng: lượt quét sau thử lại */ }
 }
 
@@ -370,18 +372,30 @@ function thongBaoNguoiRaLenh(ds: { l: any; vi: 'huy' | 'loi'; msg: string }[]) {
 
 const soTuKck = (l: any): number | null => (l.khong_cam_ket ? TARGET_TAM : l.muc_tieu ?? null);
 
-/** Sau khi mở lộ trình mới: em có lệnh KCK thì đặt Target = KCK bằng đường sửa target đang có (không tự chế cột). Mọi em cùng lô, một câu đọc. */
+/**
+ * Sau khi chuyển: em có lệnh KCK thì đặt Target = KCK. Lộ trình VỪA MỞ bởi lệnh (bắt đầu đúng Thứ Hai của lệnh, còn số tạm) → ghi thẳng, không có
+ * sự kiện "Đổi mục tiêu 5 → KCK" (số tạm không phải mục tiêu thật). Lộ trình giữ nguyên (FT → FT cùng lộ trình) → đường sửa target có Hành trình.
+ * Không kiểm quyền lại: lệnh đã được kiểm lúc ra — người ra lệnh mất vai sau đó không được làm cả nhóm cuộn lại. Một câu đọc cho cả lô.
+ */
 function datKck(p: Principal, ds: any[]) {
   const kck = ds.filter((l) => l.khong_cam_ket);
   if (!kck.length) return;
-  const cyc = new Map<number, number>();
+  const conn = db();
+  const cyc = new Map<number, any>();
   theoLo(kck.map((l) => l.student_id as number), (lo, ph) => {
-    for (const r of db().prepare(`SELECT student_id, id FROM learning_cycles WHERE status = 'active' AND student_id IN (${ph})`).all(...lo) as any[]) cyc.set(r.student_id, r.id);
+    for (const r of conn.prepare(`SELECT id, student_id, started_at, target_score, khong_cam_ket FROM learning_cycles WHERE status = 'active' AND student_id IN (${ph})`).all(...lo) as any[]) cyc.set(r.student_id, r);
   });
+  const moi: number[] = [];
   for (const l of kck) {
     const c = cyc.get(l.student_id);
-    if (c) reviseTarget(p, c, { newTarget: 'KCK', effectiveFrom: l.tuan_bat_dau, reason: 'Không cam kết (lệnh chuyển lớp)' });
+    if (!c || c.khong_cam_ket) continue;
+    if (c.started_at === l.tuan_bat_dau && c.target_score === TARGET_TAM) moi.push(c.id);
+    else reviseTarget(p, c.id, { newTarget: 'KCK', effectiveFrom: l.tuan_bat_dau, reason: 'Không cam kết (lệnh chuyển lớp)' }, { daDuyet: true });
   }
+  theoLo(moi, (lo, ph) => {
+    conn.prepare(`UPDATE learning_cycles SET target_score = NULL, khong_cam_ket = 1 WHERE id IN (${ph})`).run(...lo);
+    conn.prepare(`UPDATE assessment_attempts SET target_at_attempt = NULL WHERE cycle_id IN (${ph})`).run(...lo);   // lộ trình vừa mở: chưa có điểm
+  });
 }
 
 /** Lớp thường hết khoá: cả nhóm qua MỘT `applyTransition` (theo lô, luật cũ nguyên vẹn, `daDuyet`). Trả các lệnh bị luật từ chối. */
@@ -481,7 +495,8 @@ export function guiDeXuatChuyenLop(p: Principal, sid: number, v: { toClassId?: n
   if (toClassId && !lopDichHopLe(toClassId, enr.class_id)) throw badRequest('Lớp muốn chuyển tới không hợp lệ.');
   const tuan = v.tuan || null;
   if (tuan && !tuanHopLe(tuan, demoToday())) throw badRequest('Từ tuần phải là Thứ Hai của tuần sau trở đi.');
-  if (conn.prepare(`SELECT 1 FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho'`).get(sid)) throw badRequest('Em đã có lệnh chuyển lớp đang chờ.');
+  /* Lệnh CHƯA chuyển được (có lỗi) không chặn đề xuất — Quản lý duyệt thì chính lệnh đó được sửa theo đề xuất (cùng lớp nguồn). */
+  if (conn.prepare(`SELECT 1 FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho' AND loi IS NULL`).get(sid)) throw badRequest('Em đã có lệnh chuyển lớp đang chờ.');
   return tx(() => {
     const id = taoYeuCau(conn, {
       loai: 'de_xuat_chuyen_lop', doiTuongLoai: 'student:chuyen-lop', doiTuongId: sid, hocVienId: sid, lopId: enr.class_id,

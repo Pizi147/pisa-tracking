@@ -72,7 +72,8 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
     setDaDien(true);
     const l = xem.data.lenh;
     if (l && !duyet) {
-      setToClassId(l.lopDichId); setTuan(l.tuan); setLyDo(l.lyDo ?? '');
+      /* Lệnh đã tới tuần mà chưa chuyển được: điền sẵn tuần hợp lệ gần nhất (PR-S5F-a) — tuần cũ máy chủ không nhận. */
+      setToClassId(l.lopDichId); setTuan(l.tuan >= (xem.data.tuanChon[0] ?? '') ? l.tuan : xem.data.tuanChon[0] ?? ''); setLyDo(l.lyDo ?? '');
       setMucTieu(l.mucTieu == null ? '' : String(l.mucTieu)); setThangThi(l.ngayThi ?? '');
     } else if (!duyet?.tuan) setTuan(xem.data.tuanChon[0] ?? '');
     setChiNhanhId(null);
@@ -162,7 +163,8 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
             </p>
           )}
           {lenh?.loi && !duyet && <p role="alert" className="mb-0 mt-2 text-xs text-late">Chưa chuyển được: {lenh.loi}</p>}
-          {!dx && lenh && !duyet && <p className="mb-0 mt-2 text-xs text-slate-400">Em đã có lệnh chuyển bắt đầu {tuanLich(lenh.tuan, homNay)} — sửa hoặc huỷ trước tuần đó.</p>}
+          {!dx && lenh && !duyet && !lenh.loi && <p className="mb-0 mt-2 text-xs text-slate-400">Em đã có lệnh chuyển bắt đầu {tuanLich(lenh.tuan, homNay)} — sửa hoặc huỷ trước tuần đó.</p>}
+          {!dx && lenh?.loi && !duyet && <p className="mb-0 mt-1 text-xs text-slate-400">Chọn tuần hoặc lớp đích mới rồi lưu, hoặc huỷ lệnh.</p>}
           {dangHuy && (
             <Khoi tieuDe="Huỷ lệnh chuyển">
               <Truong nhan="Lý do huỷ" batBuoc>

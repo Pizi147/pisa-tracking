@@ -20,13 +20,13 @@ export function daiLop(p: Principal, classId: number, o: { phase: string | null;
   const pc = phanCongO(conn, p.userId, classId);
   const ra = coTheRaLenh(p, classId);
   const rows = conn.prepare(
-    `SELECT 'nguon' AS k, l.id AS a, l.huong AS b, l.trang_thai AS c, l.tuan_bat_dau AS d, l.xac_nhan_luc AS e, l.han_gvcn AS f, l.han_gvbm AS g
+    `SELECT 'nguon' AS k, l.id AS a, l.huong AS b, l.trang_thai AS c, l.tuan_bat_dau AS d, l.xac_nhan_luc AS e, l.han_gvcn AS f, l.han_gvbm AS g, l.loi AS h
        FROM lenh_chuyen_lop l WHERE l.lop_nguon_id = ? AND l.trang_thai != 'huy'
-     UNION ALL SELECT 'dich', l.lop_nguon_id, n.code, l.trang_thai, l.tuan_bat_dau, l.xac_nhan_luc, NULL, NULL
+     UNION ALL SELECT 'dich', l.lop_nguon_id, n.code, l.trang_thai, l.tuan_bat_dau, l.xac_nhan_luc, NULL, NULL, NULL
        FROM lenh_chuyen_lop l JOIN classes n ON n.id = l.lop_nguon_id WHERE l.lop_dich_id = ? AND l.trang_thai = 'cho'
-     UNION ALL SELECT 'mon', b.lenh_id, b.mon, NULL, NULL, NULL, NULL, NULL
+     UNION ALL SELECT 'mon', b.lenh_id, b.mon, NULL, NULL, NULL, NULL, NULL, NULL
        FROM ban_giao_mon b WHERE b.lenh_id IN (SELECT id FROM lenh_chuyen_lop WHERE lop_nguon_id = ?)
-     UNION ALL SELECT 'gvcn', COUNT(*), NULL, NULL, NULL, NULL, NULL, NULL
+     UNION ALL SELECT 'gvcn', COUNT(*), NULL, NULL, NULL, NULL, NULL, NULL, NULL
        FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active'`,
   ).all(classId, classId, classId, classId) as any[];
   const min = (xs: (string | null)[]) => xs.filter((x): x is string => !!x).sort()[0] ?? null;
@@ -67,7 +67,10 @@ export function daiLop(p: Principal, classId: number, o: { phase: string | null;
       ketThucKhoa = { tuanCuoiKhoa: pr?.finalWeekStart ?? null, tuanKetThuc, soChuaLenh: so, do: !!tuanKetThuc && homNay >= tuanKetThuc, tuanGoiY: tuanChonDuoc(homNay)[0] };
     }
   }
-  return { ketThucKhoa, banGiao, banGiaoMon, sapNhan, viewer: { coTheRaLenh: ra, coTheChuyenNhieuEm: ra && o.ft, laGvcn: pc.gvcn, xacNhanDuoc: pc.gvcn || qlThay } };
+  /* PR-S5F-a: lệnh lỗi (kể cả Dừng học) — Quản lý thấy ngay ở hồ sơ lớp để sửa, không phải mở từng hồ sơ em. */
+  const loi = ra ? rows.filter((r) => r.k === 'nguon' && r.c === 'cho' && r.h) : [];
+  const chuaChuyenDuoc = loi.length ? { n: loi.length, loi: loi[0].h as string } : null;
+  return { ketThucKhoa, banGiao, banGiaoMon, sapNhan, chuaChuyenDuoc, viewer: { coTheRaLenh: ra, coTheChuyenNhieuEm: ra && o.ft, laGvcn: pc.gvcn, xacNhanDuoc: pc.gvcn || qlThay } };
 }
 
 /** Hồ sơ HV (E): lệnh đang chờ hoặc đã chuyển ≤ 14 ngày (Q17) — 2 câu. */
@@ -95,7 +98,7 @@ export function daiHocVien(p: Principal, studentId: number): DaiHocVien | null {
     if (pc.gvcn || qlThay) nut.push('ban-giao');
     if (monToi) nut.push('ban-giao-mon');
   }
-  if (ra && l.trang_thai === 'cho' && homNay < l.tuan_bat_dau) nut.push('huy-lenh');
+  if (ra && l.trang_thai === 'cho') nut.push('huy-lenh');   // PR-S5F-a: cả lệnh đã tới tuần mà chưa chuyển được
   if (phieu && (l.xac_nhan_luc || l.trang_thai === 'da_chuyen')) nut.push('doc-ban-giao');   // ai xem được hồ sơ thì đọc được phiếu đã xác nhận / đã chuyển (Q15)
   return {
     loai: l.trang_thai === 'cho' ? 'sap' : 'da', lenhId: l.id, lopNguon: { id: l.lop_nguon_id, code: l.nguon },

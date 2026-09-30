@@ -371,7 +371,8 @@ export function applyTransition(p: Principal, input: TransitionInput, o?: { daDu
 
     const theoHuong: Record<string, number> = {};
     for (const o of okAll) theoHuong[o.huong] = (theoHuong[o.huong] ?? 0) + 1;
-    writeAudit({
+    /* PR-S5F-a: không em nào qua được luật (lệnh lỗi thử lại) → không có gì để ghi nhật ký. */
+    if (okAll.length || created) writeAudit({
       actorUserId: p.userId, action: 'class.transition', entityType: 'class', entityId: from.id, entityLabel: from.code,
       after: { newClass: created?.code ?? null, theoHuong, failed: failed.length, effectiveDate: input.effectiveDate },
     });

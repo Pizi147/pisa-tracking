@@ -75,7 +75,8 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
     const l = s.lenh;
     if (!l) return DONG_TRONG;
     return {
-      kieu: kieuTuLenh(l), toClassId: l.lopDichId ?? '', tuan: l.tuan === tuanCh ? '' : l.tuan, mucTieu: l.mucTieu == null ? '' : String(l.mucTieu),
+      /* Tuần đã qua (lệnh chưa chuyển được, PR-S5F-a) → về tuần chung để Quản lý chọn tuần mới. */
+      kieu: kieuTuLenh(l), toClassId: l.lopDichId ?? '', tuan: l.tuan === tuanCh || (!!homNay && l.tuan <= homNay) ? '' : l.tuan, mucTieu: l.mucTieu == null ? '' : String(l.mucTieu),
       ngayThi: l.ngayThi ?? '', lyDo: l.lyDo ?? '', ngayXemLai: l.ngayXemLai ?? '',
     };
   };
@@ -113,8 +114,8 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
   const quyet = rows.filter((r) => r.d.kieu);
   const chua = rows.length - quyet.length;
   const coLoi = quyet.some((r) => r.loi);
-  /** Chỉ gửi em MỚI quyết hoặc lệnh cũ đã sửa — lệnh đã có mà không đụng tới thì đứng yên. */
-  const canGui = quyet.filter((r) => !r.coLenh || daSua.has(r.s.id));
+  /** Chỉ gửi em MỚI quyết hoặc lệnh cũ đã sửa — lệnh đã có mà không đụng tới thì đứng yên. Lệnh chưa chuyển được gửi lại theo tuần mới (PR-S5F-a). */
+  const canGui = quyet.filter((r) => !r.coLenh || daSua.has(r.s.id) || !!r.s.lenh?.loi);
   const hienLoi = (sid: number) => lf.daBam || daSua.has(sid);
   const dsLoi = quyet.filter((r) => r.loi).map((r) => ({ khoa: `dong-${r.s.id}`, nhan: r.s.fullName as string, lyDo: r.loi as string }));
 
@@ -324,7 +325,7 @@ function HangEm({ s, d, ft, luoi, maKe, routeTu, tuanCh, homNay, loi, loiMayChu,
   const ketQua = s.ketQua as KetQuaVao | null;
   const thieuDiem = !ft && !!ketQua && ketQua.mode === 'ratio' && ketQua.scored < ketQua.required;
   const lenh = s.lenh;
-  const loiHang = loi ?? loiMayChu ?? (lenh?.loi ? `Chưa chuyển được: ${lenh.loi}` : null);
+  const loiHang = loi ?? loiMayChu ?? (lenh?.loi ? `Chưa chuyển được: ${lenh.loi} — chọn tuần/lớp đích mới rồi gửi, hoặc huỷ lệnh.` : null);
   const chonKieu = (kieu: Kieu | '') => sua({ kieu, toClassId: kieu === d.kieu ? d.toClassId : '' });
   const nutKieu: [Kieu, string][] = ft
     ? [['chuyen', 'Chuyển lớp FT'], ['doi', 'Đổi lộ trình']]

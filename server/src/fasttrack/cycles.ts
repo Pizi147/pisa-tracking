@@ -456,10 +456,11 @@ export function targetRevisions(cycleId: number) {
 export function reviseTarget(p: Principal, cycleId: number, input: {
   /** Số, `null`/'' (chưa có) hoặc KCK / '-' / "không cam kết" (Q29-1). */
   newTarget: number | string | null; effectiveFrom?: string; reason?: string | null;
-}) {
+}, o?: { daDuyet?: true }) {
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
-  require_(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id }, CHI_QL_SUA);
+  /* `daDuyet`: chỉ lệnh chuyển lớp lúc thi hành truyền — lệnh đã được kiểm quyền lúc ra (như `applyTransition`). */
+  if (!o?.daDuyet) require_(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id }, CHI_QL_SUA);
   const { target, kck } = docTarget(input.newTarget);
   if (target === (c.target_score ?? null) && kck === !!c.khong_cam_ket) return { cycle: c, revision: null };
   const effectiveFrom = input.effectiveFrom ?? nowIso().slice(0, 10);
