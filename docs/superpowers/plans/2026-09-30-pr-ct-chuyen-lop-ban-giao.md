@@ -539,7 +539,7 @@ cần chữ phụ hai dòng) · Hành trình (mục `ref_table='lenh_chuyen_lop'
 
 | Ngày | Task | Ghi chú (mốc B, trần tốc độ, lệch kế hoạch, cổng gộp) |
 |---|---|---|
-| | | |
+| 30/09 | 0 | **Mốc B: 1821 phép kiểm chính + 25 phép tốc độ**, xanh (main @ 80cb0ffb). LT2a, LT2b, PR-GV **chưa merge** → cột Web gợi ý chờ LT2b. Model thật: Sonnet 5.5 (kế hoạch ghi Opus 5.5 / phương án B Fable 5.1 — session chạy theo lệnh của chủ sản phẩm). |
 
 ## Planning chốt 30/09 (thắng các chỗ lệch trong kế hoạch)
 
