@@ -9822,6 +9822,9 @@ await runPrSangTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 // ==================================================================== PR-S4F (sửa sau rà cuối đợt 4)
 const { runPrS4fTests } = await import('./prS4f.tests.ts');
 await runPrS4fTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== PR-LT2a (lớp thường · Giữa khoá)
+const { runPrLt2aTests } = await import('./prLt2a.tests.ts');
+await runPrLt2aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

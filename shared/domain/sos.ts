@@ -98,6 +98,8 @@ export function sosPlanEndDate(
 /** SÁU LOẠI việc phối hợp (§5.2). `Report cho gia đình` KHÔNG ở đây — đó là biện pháp xử lý vi phạm. */
 export const COORDINATION_KINDS = [
   'talk_student', 'talk_family', 'gvcn_meeting', 'cx_meeting_student', 'cx_meeting_family', 'other',
+  /* PR-LT2a (N3, T45): chỉ MÁY tạo (Giữa khoá lớp thường) — danh sách chọn "+ Thêm việc" lọc bỏ. */
+  'bao_ph_tvv',
 ] as const;
 export type CoordinationKind = (typeof COORDINATION_KINDS)[number];
 export const COORDINATION_KIND_LABEL: Record<CoordinationKind, string> = {
@@ -107,6 +109,7 @@ export const COORDINATION_KIND_LABEL: Record<CoordinationKind, string> = {
   cx_meeting_student: 'CX / GĐCN meeting với HS',
   cx_meeting_family: 'CX / GĐCN meeting với HS / PH',
   other: 'Khác',
+  bao_ph_tvv: 'Báo phụ huynh qua TVV',
 };
 
 export const COORDINATION_STATUSES = ['pending', 'done', 'removed'] as const;

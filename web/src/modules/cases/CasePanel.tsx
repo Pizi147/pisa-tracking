@@ -320,6 +320,10 @@ const MILESTONE_TITLE: Record<string, string> = {
   xin_khong_theo_doi: 'Xin không theo dõi',
   ql_duyet_khong_theo_doi: 'Quản lý duyệt không theo dõi',
   ql_tu_choi_khong_theo_doi: 'Quản lý từ chối không theo dõi',
+  /* PR-LT2a (K3-21): kế hoạch bổ trợ lớp thường. */
+  nop_ke_hoach: 'Nộp kế hoạch bổ trợ',
+  ke_hoach_duyet: 'Quản lý duyệt kế hoạch',
+  ke_hoach_tu_choi: 'Quản lý từ chối kế hoạch',
 };
 
 /** Điểm cô tự chấm: LUÔN có chữ "cô chấm" — một con số 6.5 đứng trơ sẽ bị đọc nhầm thành điểm mock. */

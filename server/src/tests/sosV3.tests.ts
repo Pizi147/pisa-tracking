@@ -83,9 +83,10 @@ export async function runSosV3Tests(t: YThucTestKit) {
   });
 
   check('PR-T · T1 Sáu loại việc phối hợp đúng thứ tự + nhãn §5.2; không có `Report cho gia đình` (đó là biện pháp Ý thức)', () => {
+    /* PR-LT2a: thêm `bao_ph_tvv` (chỉ máy tạo) CUỐI mảng — sáu loại người dùng chọn giữ nguyên. */
     assert(JSON.stringify(domain.COORDINATION_KINDS) === JSON.stringify(
-      ['talk_student', 'talk_family', 'gvcn_meeting', 'cx_meeting_student', 'cx_meeting_family', 'other']), `Sáu loại sai: ${domain.COORDINATION_KINDS}`);
-    assert(JSON.stringify(domain.COORDINATION_KINDS.map((k: string) => domain.COORDINATION_KIND_LABEL[k])) === JSON.stringify([
+      ['talk_student', 'talk_family', 'gvcn_meeting', 'cx_meeting_student', 'cx_meeting_family', 'other', 'bao_ph_tvv']), `Loại sai: ${domain.COORDINATION_KINDS}`);
+    assert(JSON.stringify(domain.COORDINATION_KINDS.slice(0, 6).map((k: string) => domain.COORDINATION_KIND_LABEL[k])) === JSON.stringify([
       'Trao đổi ngắn với HS', 'Trao đổi với gia đình', 'GVCN meeting với HS', 'CX / GĐCN meeting với HS', 'CX / GĐCN meeting với HS / PH', 'Khác']),
     'Nhãn sáu loại sai');
     assert(!domain.COORDINATION_KINDS.some((k: string) => /report|family_report/.test(k)), 'Không dùng Report cho gia đình');
