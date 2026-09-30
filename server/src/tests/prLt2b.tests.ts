@@ -2,7 +2,7 @@
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runPrLt2bTests(t: YThucTestKit) {
-  const { check, assert, assertThrows, conn } = t;
+  const { check, assert, assertThrows, conn, P, TODAY, addDays, classId } = t;
   const d = await import('../../../shared/domain/index.ts');
   const { migratePrLt2b } = await import('../migrate/prLt2b.ts');
   const { default: SqliteDb } = await import('libsql');
@@ -93,5 +93,119 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     for (const ma of ['cuoi_khoa.quyet', 'cuoi_khoa.bo_tro_tao', 'cuoi_khoa.mini_test', 'cuoi_khoa.ket_luan_ft']) {
       assert(d.nhanHanhDongNhatKy(ma) !== 'Thao tác hệ thống', `${ma} chưa có nhãn`);
     }
+  });
+
+  // ------------------------------------------------------------------ Task 3 · một cửa đọc
+  const week: any = await import('../platform/week.ts');
+  const intakeMod: any = await import('../classes/intake.ts');
+  const regularMod: any = await import('../normal/regular.ts');
+  const cuoiKhoaMod: any = await import('../normal/cuoiKhoa.ts');
+  const MB = (conn.prepare("SELECT id FROM branches WHERE code = 'MB'").get() as any).id as number;
+  let soLop = 0;
+  /** Lớp thường thử (BE/FOU/PREFOU), n em, đã xếp bài; trả bài Cuối khoá của từng em. Điểm ghi thẳng bằng SQL — phép kiểm ĐỌC, không qua luật nhập. */
+  const taoLop = (kind: 'BE' | 'FOU' | 'PREFOU', soEm: number) => {
+    soLop += 1;
+    const tuanKg = week.ensurePeriod(addDays(TODAY, -70));
+    const lop = intakeMod.createClass(P.admin, { code: `MB ${kind === 'PREFOU' ? 'Pre FOU' : kind} 9${soLop}`, branchId: MB, kind, startPeriodId: tuanKg.id, startDate: tuanKg.weekStart });
+    const now = new Date().toISOString();
+    const sids: number[] = [];
+    for (let i = 0; i < soEm; i++) {
+      const tag = `LT2B-${soLop}-${i}`;
+      const sid = Number(conn.prepare(`INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`)
+        .run(`PISA-${tag}`, `Học viên ${tag}`, `hoc vien ${tag.toLowerCase()}`, MB, now).lastInsertRowid);
+      conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`).run(sid, lop.id, tuanKg.weekStart, now);
+      sids.push(sid);
+    }
+    regularMod.planRegularTests(P.admin, lop.id);
+    const luot = new Map<number, number>();
+    for (const r of conn.prepare(`SELECT id, student_id FROM assessment_attempts WHERE class_id = ? AND kind = 'final'`).all(lop.id) as any[]) luot.set(r.student_id, r.id);
+    return { classId: lop.id as number, sids, luot };
+  };
+  const ghiDiem = (attemptId: number, diem: Record<string, number>, tong = 40) => {
+    for (const [skill, s] of Object.entries(diem)) {
+      conn.prepare('DELETE FROM assessment_scores WHERE attempt_id = ? AND skill = ?').run(attemptId, skill);
+      conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total) VALUES (?,?,?,?)').run(attemptId, skill, s, tong);
+    }
+  };
+  const L = 'listening', R = 'reading', W = 'writing', S = 'speaking';
+  const dem = (fn: () => void): number => {
+    let n = 0; const goc = conn.prepare.bind(conn);
+    (conn as any).prepare = (sql: string) => { n += 1; return goc(sql); };
+    try { fn(); } finally { (conn as any).prepare = goc; }
+    return n;
+  };
+
+  check('LT2b (3) · lớp BE 8 em: 4 dải + thiếu môn + chưa thi → đúng dải, gợi ý, môn trượt', () => {
+    const l = taoLop('BE', 8);
+    const a = (i: number) => l.luot.get(l.sids[i])!;
+    ghiDiem(a(0), { [L]: 18, [R]: 18, [W]: 18, [S]: 18 });   // 45%
+    ghiDiem(a(1), { [L]: 22, [R]: 22, [W]: 22, [S]: 22 });   // 55%
+    ghiDiem(a(2), { [L]: 30, [R]: 30, [W]: 20, [S]: 22 });   // 63,75%: trượt W, S
+    ghiDiem(a(3), { [L]: 32, [R]: 32, [W]: 30, [S]: 31 });   // 78%
+    ghiDiem(a(4), { [L]: 30, [R]: 30, [W]: 30 });            // thiếu S
+    const m = cuoiKhoaMod.cuoiKhoaTheoHocVien(l.classId);
+    assert(m.size === 8, `số em ${m.size}`);
+    const g = (i: number) => m.get(l.sids[i]);
+    assert(g(0).goiY.dai === 'duoi_50' && g(0).goiY.huong === 'hoc_lai' && g(0).goiY.baoPhTvv, '45%');
+    assert(g(1).goiY.dai === '50_59' && g(1).goiY.canQuanLy && g(1).monTruot.length === 4, '55%');
+    assert(g(2).goiY.dai === '60_69' && g(2).monTruot.join() === 'writing,speaking' && g(2).goiY.boTroNeuLen.soBuoi === 2, `64%: ${g(2).monTruot}`);
+    assert(g(3).goiY.dai === 'dat' && g(3).goiY.nhan === 'Pass', '78%');
+    assert(g(4).goiY === null && g(4).tyLe === null && g(4).scored === 3 && g(4).required === 4, 'thiếu môn không gợi ý');
+    assert(g(5).goiY === null && g(5).attemptId === l.luot.get(l.sids[5]) && g(5).scored === 0, 'chưa thi');
+  });
+  check('LT2b (3) · cuoiKhoaTheoHocVien: số câu SQL ≤ 5 và KHÔNG tăng theo số em (30 em)', () => {
+    const be = taoLop('BE', 3);
+    const ba = taoLop('BE', 30);
+    for (const sid of ba.sids) ghiDiem(ba.luot.get(sid)!, { [L]: 28, [R]: 28, [W]: 28, [S]: 28 });
+    for (const sid of be.sids) ghiDiem(be.luot.get(sid)!, { [L]: 28, [R]: 28, [W]: 28, [S]: 28 });
+    const it = dem(() => { cuoiKhoaMod.cuoiKhoaTheoHocVien(be.classId); });
+    const nhieu = dem(() => { cuoiKhoaMod.cuoiKhoaTheoHocVien(ba.classId); });
+    assert(nhieu <= 8 && nhieu === it, `3 em ${it} câu · 30 em ${nhieu} câu (bao gồm 3 câu đọc chương trình)`);
+  });
+  check('LT2b (3) · sửa một điểm Cuối khoá → gợi ý đổi theo (không lưu ở đâu)', () => {
+    const l = taoLop('BE', 1);
+    const a = l.luot.get(l.sids[0])!;
+    ghiDiem(a, { [L]: 24, [R]: 24, [W]: 24, [S]: 24 });      // 60% → 60_69
+    assert(cuoiKhoaMod.cuoiKhoaTheoHocVien(l.classId).get(l.sids[0]).goiY.dai === '60_69', '60%');
+    ghiDiem(a, { [W]: 20 });                                  // 92/160 = 57,5% → 50_59
+    assert(cuoiKhoaMod.cuoiKhoaTheoHocVien(l.classId).get(l.sids[0]).goiY.dai === '50_59', 'sau sửa điểm');
+    assert(!conn.prepare('SELECT 1 FROM lo_trinh_tiep_theo WHERE student_id = ?').get(l.sids[0]), 'gợi ý không được lưu');
+  });
+  check('LT2b (3) · tyLeTongLo: bài thiếu môn → du false, tyLe null; ≤ 2 câu cho cả lô; lượt FT không có', () => {
+    const l = taoLop('BE', 2);
+    ghiDiem(l.luot.get(l.sids[0])!, { [L]: 20, [R]: 20, [W]: 20 });
+    ghiDiem(l.luot.get(l.sids[1])!, { [L]: 28, [R]: 28, [W]: 28, [S]: 28 });
+    const ft = conn.prepare(`SELECT a.id FROM assessment_attempts a WHERE a.class_id = ? AND a.status != 'cancelled' LIMIT 1`).get(classId('MB FT 101')) as any;
+    let m: Map<number, any> = new Map();
+    const n = dem(() => { m = cuoiKhoaMod.tyLeTongLo([...l.luot.values(), ft.id]); });
+    assert(n <= 5, `${n} câu (2 câu + 3 câu đọc chương trình)`);
+    const thieu = m.get(l.luot.get(l.sids[0])!);
+    assert(thieu.du === false && thieu.tyLe === null && thieu.scored === 3, JSON.stringify(thieu));
+    assert(m.get(l.luot.get(l.sids[1])!).tyLe === 112 / 160 && !m.has(ft.id), 'đủ môn / FT');
+  });
+  check('LT2b (3) · Pre FOU: một ô tong_hop → % = điểm / tổng, gợi ý 4 buổi khi 52%', () => {
+    const l = taoLop('PREFOU', 1);
+    ghiDiem(l.luot.get(l.sids[0])!, { tong_hop: 21 });        // 21/40 = 52,5%
+    const e = cuoiKhoaMod.cuoiKhoaTheoHocVien(l.classId).get(l.sids[0]);
+    assert(e.tyLe === 0.525 && e.goiY.dai === '50_59' && e.goiY.boTroNeuLen.soBuoi === 4 && !e.goiY.boTroNeuLen.theoMon, JSON.stringify(e.goiY));
+  });
+  const transitionMod: any = await import('../classes/transition.ts');
+  const loTrinhMod: any = await import('../classes/loTrinhTiep.ts');
+  const profileMod: any = await import('../students/profile.ts');
+  check('LT2b (3) · API: transitionPlan / lo-trinh-tiep / hồ sơ HV / lưới lớp đều mang cuoiKhoa · goiY (cùng một con số)', () => {
+    const l = taoLop('BE', 2);
+    const sid = l.sids[0];
+    ghiDiem(l.luot.get(sid)!, { [L]: 26, [R]: 26, [W]: 26, [S]: 26 });   // 65%
+    const tp = transitionMod.transitionPlan(P.admin, l.classId).students.find((x: any) => x.id === sid);
+    const lt = loTrinhMod.layLoTrinhTiep(P.admin, sid).cuoiKhoa;
+    const hs = profileMod.studentProfile(P.admin, sid).cuoiKhoa;
+    const dong = regularMod.regularSheet(P.admin, l.classId, 'final').rows.find((r: any) => r.studentId === sid);
+    for (const [ten, x] of [['transition', tp.cuoiKhoa], ['lo-trinh-tiep', lt], ['hồ sơ', hs]] as const) {
+      assert(x?.goiY?.dai === '60_69' && x.tyLe === 104 / 160, `${ten}: ${JSON.stringify(x?.goiY)}`);
+    }
+    assert(dong.goiY.dai === '60_69' && dong.goiY.nhanNgan === '→ lên + bổ trợ', 'lưới lớp');
+    assert(regularMod.regularSheet(P.admin, l.classId, 'progress').rows.every((r: any) => r.goiY === null), 'bài Giữa khoá không có hướng Cuối khoá');
+    const ft = profileMod.studentProfile(P.admin, (conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' AND student_id IN (SELECT student_id FROM enrollments WHERE status = 'active' GROUP BY student_id HAVING COUNT(*) = 1) LIMIT 1`).get(classId('MB FT 101')) as any).student_id);
+    assert(ft.cuoiKhoa === null, `em FT không có cuoiKhoa: ${JSON.stringify(ft.cuoiKhoa)} · ${typeof ft.cuoiKhoa}`);
   });
 }

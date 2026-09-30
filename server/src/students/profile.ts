@@ -11,13 +11,14 @@ import { addDays, diffDays, notFound } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { entryBandsOf, routeCuaLuot, scoresOf, skipsOf } from '../fasttrack/attempts.ts';
 import { assessedBands, evaluateAttempt } from '../fasttrack/scoring.ts';
-import { evaluateRegular, isRatioCycle, programmeByCode, programmeCodeOfCycle, programmeOfClass } from '../normal/regular.ts';
+import { evaluateRegular, isRatioClass, isRatioCycle, programmeByCode, programmeCodeOfCycle, programmeOfClass } from '../normal/regular.ts';
 import { cycleById, cyclesOf, currentCycle, examPlanOf, targetRevisions } from '../fasttrack/cycles.ts';
 import { parseMetrics, skillSupportBoard } from '../cases/cases.ts';
 import { standingFor, standingLine } from './standing.ts';
 import { luotSinhViecRow } from '../worklist/danhGia.ts';
 import { missingForStudent, suggestedMockWeeks } from '../classes/schedule.ts';
 import { lopHocCua } from '../classes/loTrinhTiep.ts';
+import { cuoiKhoaTheoHocVien } from '../normal/cuoiKhoa.ts';
 import { listSignals } from '../cases/signals.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { activeClassOf, canManageDiscipline } from '../yThuc/access.ts';
@@ -976,6 +977,11 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       };
     })(),
     lopHoc: lopHocCua(p, studentId, current),
+    /** PR-LT2b: % Cuối khoá, hướng gợi ý, kết luận kỳ vọng đầu ra của lớp thường ĐANG học (null với FT / chưa có lớp). */
+    cuoiKhoa: (() => {
+      const lop = activeClassOf(studentId);
+      return lop && isRatioClass(lop) ? cuoiKhoaTheoHocVien(lop, [studentId]).get(studentId) ?? null : null;
+    })(),
   };
 }
 

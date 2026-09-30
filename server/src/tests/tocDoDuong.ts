@@ -490,9 +490,10 @@ export const TRAN: Record<string, number> = {
   'GVCN_THUONG /hoc-vien-lop/luu-tru?branchId=1': 22,
   'QT /hoc-vien-lop/luu-tru?branchId=1': 22,
   /* PR-HVL (8): `/classes/:id/transition` thêm `ketQua` từng em (một lần `standingFor`, 7 câu): 28 → 35 (QT 27 → 34). Kế hoạch dự kiến mốc + 5 = 33; `standingFor` tự nó tốn 7 câu nên lệch 2 — ghi Nhật ký. */
-  'QL /classes/6/transition': 37,
-  'QT /classes/6/transition': 36,
-  'GVCN_THUONG /classes/6/transition': 37,
+  /* PR-LT2b (3): `cuoiKhoaTheoHocVien` cho cả lớp (+2 câu: lượt Cuối khoá · lộ trình tiếp theo; điểm + chương trình đã đọc chung): QL 37 → 39, QT 36 → 38, GVCN_THUONG 37 → 39 (+5 %). */
+  'QL /classes/6/transition': 39,
+  'QT /classes/6/transition': 38,
+  'GVCN_THUONG /classes/6/transition': 39,
   'QL /classes/5/transition': 36,
   'QT /classes/5/transition': 35,
   'GVCN_THUONG /classes/5/transition': 36,

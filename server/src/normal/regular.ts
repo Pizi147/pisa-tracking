@@ -3,7 +3,7 @@ import { addMilestone, followUntilAfter } from '../cases/sos.ts';
 import { raiseSignal, reconcileCorrectedSignals } from '../cases/signals.ts';
 import {
   ATTEMPT_KIND_LABEL, PERMISSIONS, RATIO_PASS_THRESHOLD,
-  caseCategoriesFor, categoryOf, kiemLyDo, kiemLyDoThaoTac, ngay, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanKeTiep, tuanLich,
+  caseCategoriesFor, categoryOf, goiYCuoiKhoa, kiemLyDo, kiemLyDoThaoTac, ngay, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanKeTiep, tuanLich,
   type AssessedSkill, type AttemptKind, type CaseCategory, type RatioOutcome, type SosLevel,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -955,6 +955,8 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
         periodCode: a.period_code ?? null,
         status: a.status,
         result,
+        /** PR-LT2b: hướng gợi ý Cuối khoá — chỉ dòng Cuối khoá đủ điểm (null còn lại). Cùng luật `goiYCuoiKhoa` với hồ sơ HV / Excel. */
+        goiY: a.kind === 'final' ? goiYCuoiKhoa({ ct: prog.code, tyLe: result.tyLeTong, monTruot: failing }) : null,
         /** Các Case gắn với những môn CHƯA ĐẠT của chính dòng này (theo học viên + khoá + hạng mục). */
         cases: dongCases,
         caseId: c?.id ?? null, caseStatus: c?.status ?? null, caseLevel: c?.level ?? null,
