@@ -578,7 +578,10 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     /* G5: Báo lên + Không cần theo dõi chờ */
     assert(get(`SELECT han_xac_nhan h FROM sos_cases WHERE id = ?`, cs('Phan Khánh Linh', 'listening').id).h < TODAY, 'hạn xác nhận G5 đã quá');
     assert(v4('Ngô Gia Hân', 'speaking').k === 'cho-duyet-khong-theo-doi', JSON.stringify(v4('Ngô Gia Hân', 'speaking')));
-    for (const ten of ['Lê Hoàng Anh', 'Bùi Minh Châu', 'Hoàng Quốc Bình', 'Mai Hải Long', 'Phan Khánh Linh', 'Ngô Gia Hân']) {
+    /* G6: Khoa (không phải người dạy FOU) đã xác nhận → GVCN Hà có việc Nộp kế hoạch bổ trợ, hạn hôm nay + 2; Trang có việc cho G4 */
+    const viecHa = ((mywork.myWork(P.normalCoreTeacher) as any).items as any[]).filter((x) => x.key.startsWith('kehoach:') && x.studentId === hv('Trương Gia Bảo'));
+    assert(viecHa.length === 1 && viecHa[0].due === d.hanXacNhan(TODAY) && /^Nộp kế hoạch bổ trợ · Giữa khoá · G\+V · /.test(viecHa[0].tieuDe), JSON.stringify(viecHa.map((x) => [x.tieuDe, x.due])));
+    for (const ten of ['Lê Hoàng Anh', 'Bùi Minh Châu', 'Hoàng Quốc Bình', 'Mai Hải Long', 'Phan Khánh Linh', 'Ngô Gia Hân', 'Trương Gia Bảo']) {
       assert(get(`SELECT COUNT(*) n FROM sos_coordination_actions WHERE student_id = ? AND kind = 'bao_ph_tvv' AND status != 'removed'`, hv(ten)).n === 1, `Báo PH của ${ten}`);
     }
   });

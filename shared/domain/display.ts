@@ -207,7 +207,8 @@ export function attemptProgressView(i: AttemptProgressInput): AttemptProgressVie
     const soChuaDatThat = ratio ? (soMonChuaDat ?? sos) : sos;
     return {
       /* PR-N1 A4: "x/y môn đạt" — không nhãn đỏ nào mở đầu bằng "Đạt" ("0/4 môn đạt · SOS 3"). */
-      text: ratio ? `${required - soChuaDatThat}/${required} ${donVi} đạt · SOS ${sos}` : `Đã đủ điểm · SOS ${sos}`,
+      /* PR-LT2a (T58): lớp thường không có chữ SOS — chỉ `x/y môn đạt`. */
+      text: ratio ? `${required - soChuaDatThat}/${required} ${donVi} đạt` : `Đã đủ điểm · SOS ${sos}`,
       tone: 'danger', overall: 'not-passed', overallText: ratio ? 'Chưa đạt' : 'Chưa đạt kỳ vọng', passBadge: false,
     };
   }

@@ -58,7 +58,8 @@ export function XacNhanCasePanel({ caseId, topic, kyNang, ct, tenSos, paQuyChe, 
 }) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
-  const [giua, setGiua] = useState(tenSos?.giua ?? `${kyNang} không đạt`);
+  /* Lớp thường: tên môn NGẮN như tên Case (`G+V không đạt`), khớp máy chủ. */
+  const [giua, setGiua] = useState(tenSos?.giua ?? `${boTro?.mon.find((m) => m.caseId === caseId)?.tenMon ?? kyNang} không đạt`);
   const [code, setCode] = useState('');
   const [ghiRo, setGhiRo] = useState('');
   const [urgency, setUrgency] = useState('');
@@ -144,9 +145,12 @@ export function XacNhanCasePanel({ caseId, topic, kyNang, ct, tenSos, paQuyChe, 
       {kem && boTro && (
         <KhoiKeHoach boTro={boTro} f={fKh} dat={(p) => setKh((x) => ({ ...x, ...p }))} lf={lf} loi={loiKh} studentId={studentId} />
       )}
-      {boTro && !kem && !boTro.keHoach && boTro.chung && (
+      {boTro && !kem && boTro.chung && (
         <Khoi tieuDe="Kế hoạch bài giảng">
-          <p className="m-0 text-xs text-slate-300">Kế hoạch chung do {boTro.nguoiDay?.ten ?? 'giáo viên chủ nhiệm'} nộp sau khi có nguyên nhân.</p>
+          <p className="m-0 text-xs text-slate-300">
+            Kế hoạch chung do {boTro.nguoiDay?.ten ?? 'giáo viên chủ nhiệm'}{' '}
+            {boTro.keHoach?.trangThai === 'cho' ? 'đã nộp — đang chờ Quản lý duyệt.' : boTro.keHoach?.trangThai === 'duyet' ? 'đã nộp và được duyệt.' : 'nộp sau khi có nguyên nhân.'}
+          </p>
         </Khoi>
       )}
       {paQuyChe.length > 0 && (

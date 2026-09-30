@@ -269,7 +269,7 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     const v = d.attemptProgressView({ scored: 2, required: 4, passed: null, sos: 2, cheDo: 'ielts' });
     assert(v.text === 'SOS 2 tạm thời · 2/4 kỹ năng' && v.tamThoi, v.text);
     const r = d.attemptProgressView({ scored: 4, required: 4, passed: false, sos: 3, cheDo: 'ratio', soMonChuaDat: 4 });
-    assert(!/^Đạt/.test(r.text) && r.text === '0/4 môn đạt · SOS 3', r.text);
+    assert(!/^Đạt/.test(r.text) && r.text === '0/4 môn đạt', r.text);   // PR-LT2a (T58): lớp thường không chữ SOS
     for (const f of ['shared/domain/hocVienLop.ts', 'shared/domain/chamDiem.ts', 'shared/domain/hanhTrinh.ts', 'shared/domain/display.ts', 'server/src/students/standing.ts'])
       assert(!/`Đạt \$\{/.test(docSach(f)), `${f} còn "Đạt x/y"`);
   });

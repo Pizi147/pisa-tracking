@@ -590,6 +590,9 @@ function insertCase(
   }
   const dedupKey = c.parallel ? null : `a:${sid}:${cycleId}:${category}`;
 
+  /* PR-LT2a (T58): Case của LỚP THƯỜNG (lộ trình không route) không có mức SOS — kịch bản cũ ghi `sosLevel` thì bỏ. */
+  const laThuong = (conn.prepare('SELECT route FROM learning_cycles WHERE id = ?').get(cycleId) as any)?.route == null;
+  const sosLv = laThuong ? null : c.sosLevel ?? null;
   const ownerId = c.owner ? ctx.userId.get(c.owner) ?? null : null;
   const reporterId = c.reportedBy ? ctx.userId.get(c.reportedBy) ?? null : (ownerId ?? null);
 
@@ -606,7 +609,7 @@ function insertCase(
       attemptId, sid, cycleId, c.topic, category,
       dedupKey, c.parallel ? 1 : 0, previousCaseId, ownerId, c.title ?? null,
       originKind, c.detectedAt, reporterId, c.summary, c.urgency ?? 'attention',
-      c.sosLevel ?? null,
+      sosLv,
       c.status, c.disposition ?? null, c.dispositionNote ?? null,
       c.outcome ?? null, c.outcomeNote ?? null,
       c.status === 'done' ? (ctx.userId.get(c.closedBy ?? '') ?? ownerId ?? ctx.adminId) : null,
@@ -644,7 +647,7 @@ function insertCase(
          VALUES (?,?,?,?,?,?,?,?,?)
          ON CONFLICT(dedup_key) DO NOTHING`,
       )
-      .run(caseId, kind, aid, no, c.sosLevel ?? null, on, ctx.adminId, NOW,
+      .run(caseId, kind, aid, no, sosLv, on, ctx.adminId, NOW,
            `ms:${caseId}:${kind}:${no ?? 0}`);
     counts.milestones += 1;
   };
@@ -663,7 +666,7 @@ function insertCase(
          VALUES (?, 'recurrence', ?,?,?,?,?,?,?,?)
          ON CONFLICT(dedup_key) DO NOTHING`,
       )
-      .run(previousCaseId, attemptId, c.fromTest ?? null, c.sosLevel ?? null, c.detectedAt,
+      .run(previousCaseId, attemptId, c.fromTest ?? null, sosLv, c.detectedAt,
            `Tái diễn ở một case mới: ${c.title ?? category}`, ctx.adminId, NOW,
            `rec:${previousCaseId}:${caseId}`);
     counts.milestones += 1;

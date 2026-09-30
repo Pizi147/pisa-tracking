@@ -2126,8 +2126,8 @@ check('Case SOS của lớp thường dùng CHUNG hệ thống case với lớp 
         WHERE a.kind != 'mock' GROUP BY sc.sos_level ORDER BY sc.sos_level`,
     )
     .all() as any[];
-  assert(cases.filter((c) => c.sos_level >= 1).length >= 3, 'Dữ liệu mẫu cần đủ cả ba mức SOS của lớp thường');
-  for (const c of cases) assert(c.sos_level >= 0 && c.sos_level <= 3, `Mức SOS lạ: ${c.sos_level}`);
+  /* PR-LT2a (T58): Case lớp thường KHÔNG có mức SOS (`sos_level` NULL) — vẫn dùng chung bảng `sos_cases`, và dữ liệu mẫu có đủ Case Giữa khoá. */
+  assert(cases.length > 0 && cases.every((c) => c.sos_level === null), `Case lớp thường không được có sos_level: ${JSON.stringify(cases)}`);
   /*
    * MỨC 0 LÀ MỘT MỨC HỢP LỆ, không phải dữ liệu hỏng.
    *

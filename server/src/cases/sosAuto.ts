@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, CONFIRM_EDIT_REASON, URGENCY_LEVELS, academicSupportFor, caseTopicLabel, issueBranchOf,
+  CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, CONFIRM_EDIT_REASON, URGENCY_LEVELS, academicSupportFor, caseTopicLabel, issueBranchOf, tenMonNgan,
   hanXacNhan, issuesForTopic, kiemGhiRoKhac, laKhac, mocQuyChe, ngay, reasonNeedsText, tenCaseSos, weeklyUpdateDue,
   type AcademicSupportPreset, type CaseDismissReason, type MilestoneKind,
 } from '../../../shared/domain/index.ts';
@@ -163,9 +163,12 @@ export function ghiMoc(caseId: number, kind: MilestoneKind, on: string, note: st
 }
 
 /** Phần giữa của tên Case SOS — người sửa được (lưu `title`), mặc định `{kỹ năng} không đạt`. */
-export function tenGiuaCua(c: { title?: string | null; topic?: string | null; category?: string | null; cycle_id?: number | null }): string {
+export function tenGiuaCua(c: { title?: string | null; topic?: string | null; category?: string | null; cycle_id?: number | null; attempt_id?: number | null }): string {
   const own = (c.title ?? '').trim();
   if (own) return own;
+  /* PR-LT2a: Case Giữa/Cuối khoá lớp thường — tên môn NGẮN (`G+V không đạt`), khớp `caseTitleOf`. */
+  const luot = c.attempt_id ? (db().prepare('SELECT a.kind, cl.programme_code ct FROM assessment_attempts a LEFT JOIN classes cl ON cl.id = a.class_id WHERE a.id = ?').get(c.attempt_id) as any) : null;
+  if (luot && (luot.kind === 'progress' || luot.kind === 'final')) return `${tenMonNgan(luot.ct ?? null, c.topic ?? c.category ?? '')} không đạt`;
   const ct = c.cycle_id ? (db().prepare('SELECT programme_code ct FROM learning_cycles WHERE id = ?').get(c.cycle_id) as any)?.ct ?? null : null;
   return `${caseTopicLabel(c.topic ?? c.category ?? '', ct)} không đạt`;
 }

@@ -745,13 +745,13 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
   check('PR-Qb · sửa sau rà #75 (3): trượt cả 4/4 môn → "0/4 môn đạt", không lấy sosLevel (chặn trần 3) làm số môn', () => {
     // sosLevel thật sự chặn trần ở 3 (sosFromFailCount) dù trượt cả 4 môn — phải truyền soMonChuaDat riêng.
     const v = d.attemptProgressView({ scored: 4, required: 4, passed: false, sos: 3, cheDo: 'ratio', soMonChuaDat: 4 });
-    assert(v.text === '0/4 môn đạt · SOS 3', `Chữ: ${v.text}`);
+    assert(v.text === '0/4 môn đạt', `Chữ: ${v.text}`);   // PR-LT2a (T58): lớp thường không chữ SOS
     assert(!v.text.includes('1/4'), `Không được lấy nhầm mức SOS 3 làm số môn: ${v.text}`);
   });
 
   check('PR-Qb · sửa sau rà #75 (3): thiếu soMonChuaDat → tạm lấy sos (không vỡ giao diện cũ)', () => {
     const v = d.attemptProgressView({ scored: 4, required: 4, passed: false, sos: 2, cheDo: 'ratio' });
-    assert(v.text === '2/4 môn đạt · SOS 2', `Chữ: ${v.text}`);
+    assert(v.text === '2/4 môn đạt', `Chữ: ${v.text}`);   // PR-LT2a (T58)
   });
 
   check('PR-Qb (6) · StudentDetailPage.tsx không còn chữ cấm §6: "Số MT đánh lại", "Progress Test", "Final Test", "Lớp Normal", "Mở case"', () => {

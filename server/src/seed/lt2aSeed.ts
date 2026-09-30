@@ -8,6 +8,7 @@
  *  G2       FOU 15 · Bùi Minh Châu — trượt R: Hà xác nhận + kế hoạch → QL duyệt → PA đang chạy, một lần ghi kết quả; Báo PH đã làm.
  *  G3 (D10) BE 03  · Hoàng Quốc Bình — trượt W: Khoa xác nhận + kế hoạch → QL duyệt → PA 1 buổi/tuần đang chạy.
  *  G4       BE 03  · Mai Hải Long — trượt S: kế hoạch bị TỪ CHỐI (lý do) → việc "Nộp kế hoạch bổ trợ" của Trang, hạn 3 ngày.
+ *  G6       FOU 15 · Trương Gia Bảo — trượt G+V: Khoa đã xác nhận (không phải người dạy) → GVCN Hà CHƯA nộp kế hoạch → việc "Nộp kế hoạch bổ trợ" của Hà, hạn 3 ngày.
  *  G5       FOU 15 · Phan Khánh Linh — trượt L, hạn xác nhận lùi → thẻ Báo lên (Case chờ nguyên nhân quá hạn) · Ngô Gia Hân — trượt P: "Không cần theo dõi" chờ QL.
  */
 import { loadPrincipal, type Principal } from '../permissions.ts';
@@ -92,5 +93,8 @@ export function buildLt2aDemo(ctx: BuildCtx): { em: number } {
   conn.prepare('UPDATE sos_cases SET han_xac_nhan = ? WHERE id = ?').run(addDays(DEMO_DATE, -2), caseMon(e, 'listening'));
   const f = dung(fou15, 'Ngô Gia Hân', { ...dat, speaking: 12 });
   guiKhongTheoDoi(gv(fou15, 'speaking'), caseMon(f, 'speaking'), { reasonCode: 'single_incident' });
-  return { em: 6 };
+  // G6 · FOU 15 — người dạy (Hà) chưa nộp kế hoạch: việc Nộp kế hoạch bổ trợ của GVCN
+  const g = dung(fou15, 'Trương Gia Bảo', { ...dat, writing: 11 });
+  xacNhanCase(gv(fou15, 'writing'), caseMon(g, 'writing'), xn('writing', 'FOU'));
+  return { em: 7 };
 }

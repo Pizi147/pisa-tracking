@@ -482,6 +482,7 @@ Dựng bằng hàm nghiệp vụ (`server/src/seed/lt2aSeed.ts`), sau ngày demo
 | G2 · trượt R | **Bùi Minh Châu** (MB FOU 15) | Case Đang làm, PA bổ trợ chạy, một lần ghi kết quả; Báo PH `Đã làm` |
 | G3 (D10) · trượt W | **Hoàng Quốc Bình** (MB BE 03) | PA `Bổ trợ 1 buổi/tuần · W` đang chạy sau khi Vy duyệt |
 | G4 · trượt S | **Mai Hải Long** (MB BE 03) | Kế hoạch bị từ chối (lý do trong khung vàng); Việc cần làm của Trang: `Nộp kế hoạch bổ trợ` hạn 3 ngày |
+| G6 · Hà chưa nộp kế hoạch | **Trương Gia Bảo** (MB FOU 15) | Việc cần làm của Hà: `Nộp kế hoạch bổ trợ · Giữa khoá · G+V · Trương Gia Bảo` hạn 3 ngày (Khoa đã xác nhận nguyên nhân) |
 | G5 · Báo lên / Không cần theo dõi | **Phan Khánh Linh**, **Ngô Gia Hân** (MB FOU 15) | Case L chờ nguyên nhân quá hạn → thẻ Báo lên; Case P `Không cần theo dõi` chờ Quản lý duyệt |
 
 Bài Giữa khoá đã qua tuần nên `commitIntake` không tự dựng (M1b bỏ mốc đã qua) — seed xếp bằng `planRegularTests` (Quản lý được xếp tuần đã qua).

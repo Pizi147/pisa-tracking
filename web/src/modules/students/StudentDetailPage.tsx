@@ -419,7 +419,9 @@ function HeaderStats({ data, rows, homNay, onOpenDot, onOpenKn }: {
   /* PR-S3F #10: PA "Chờ xác nhận" (Q28-3) chưa chạy — không tính vào "đang theo dõi", ghi riêng. */
   const songPlans = openCases.flatMap((c) => c.plans).filter((p) => p.status === 'planned' || p.status === 'started');
   const choXacNhan = songPlans.filter((p) => p.choXacNhan).length;
-  const runningPlans = songPlans.length - choXacNhan;
+  /* PR-LT2a: PA Bổ trợ chờ kế hoạch được duyệt cũng chưa chạy. */
+  const chuaChay = songPlans.filter((p) => p.chuaChay).length;
+  const runningPlans = songPlans.length - choXacNhan - chuaChay;
   const next = data.headline?.next ?? null;
   const kq = ketQuaTestGanNhat(data.attempts ?? [], homNay);
   const cheDo = data.cycle?.ratio ? 'ratio' as const : 'ielts' as const;
@@ -453,7 +455,7 @@ function HeaderStats({ data, rows, homNay, onOpenDot, onOpenKn }: {
         tone={openCases.length ? 'warn' : undefined}
         onClick={openCases.length ? () => onOpenKn(openCases[0].category) : undefined}
         title="Mở bảng kỹ năng ở kỹ năng của Case mở đầu tiên"
-        sub={openCases.length ? `${runningPlans} PA đang theo dõi${choXacNhan ? ` · ${choXacNhan} chờ xác nhận` : ''}` : 'không có case nào đang mở'} />
+        sub={openCases.length ? `${runningPlans} PA đang theo dõi${choXacNhan ? ` · ${choXacNhan} chờ xác nhận` : ''}${chuaChay ? ` · ${chuaChay} chờ kế hoạch` : ''}` : 'không có case nào đang mở'} />
 
       <Stat label="Việc cần làm tiếp" nho
         value={next?.text ?? 'Không có'}
