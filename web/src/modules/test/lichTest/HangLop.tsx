@@ -36,7 +36,7 @@ function KyNang({ l }: { l: LopLichTest }) {
         const co = l.kyNangTuan.includes(k);
         const ten = tenMon(l.chuongTrinh, k);
         return (
-          <span key={k} className={co ? 'text-slate-200' : 'text-slate-600'}
+          <span key={k} className={co ? 'text-slate-200' : 'text-slate-500'}
             title={co ? ten : `${ten} — không thi tuần này`}>
             {tenMonNgan(l.chuongTrinh, k)}
           </span>

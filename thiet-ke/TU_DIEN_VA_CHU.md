@@ -480,3 +480,14 @@ Một nguồn: `CHU_THAO_TAC` (`shared/domain/thaoTacMt.ts`). Menu hồ sơ Mock
 | Đầu hồ sơ lớp | một nút chính theo chặng: `+ Học viên` (lớp rỗng) · `Chuyển tiếp lớp · 6 em` (lớp thường cuối khoá) · `Nhập điểm Test`; dòng chặng `Cuối khoá: 6/8 em có đủ điểm`; ⋮ `Tuần khai giảng` (FT) / `Lịch kiểm tra` (lớp thường) | "Lộ trình lớp" (tên panel), "Mở từng em rồi bấm Chuyển lớp…" |
 | Panel Tuần khai giảng (FT) | `Tuần khai giảng là tuần bắt đầu mặc định khi thêm học viên. Lịch MT của từng em tính từ tuần bắt đầu của em (FT: tuần 6 · 12 · 16; RF: 4 · 8) — xem ở Test › Kế hoạch Test.` · `8 em · 6 em có MT sắp tới · 2 em đã xong MT cuối` · `Đổi tuần khai giảng không dời lịch MT của em đã có.` | "Kế hoạch học" |
 | Bảng điểm FT / Lộ trình tiếp theo / Chuyển tiếp lớp | nhãn mốc `lịch sử` (ô điểm xám); khối `Kết quả gần nhất`; câu `Chỉ là dự định, chưa đổi lớp…` hiện thẳng dưới `Hướng đi` | nút "Gọn / Đầy đủ" |
+
+---
+
+## 12. PR-SANG — 30/09/2026 · giao diện sáng/tối
+
+Chữ mới duy nhất: nút ◐ ở thanh đầu (không có chữ hiện, chỉ `title` / `aria-label`, nói **hành động kế tiếp**).
+
+| Chỗ | Chữ | Không viết |
+|---|---|---|
+| Nút ◐ khi đang Tối | `Chuyển sang giao diện sáng` | `Chế độ sáng`, `Light mode`, `Theme` |
+| Nút ◐ khi đang Sáng | `Chuyển sang giao diện tối` | `Chế độ tối`, `Dark mode` |

@@ -4,6 +4,7 @@ import { useSession } from '../../lib/session.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { api } from '../../lib/api.ts';
 import { Info } from '../../ui/ui.tsx';
+import { CongTacGiaoDien } from '../../ui/CongTacGiaoDien.tsx';
 import { roleLabel, skillShort } from '../../lib/format.ts';
 import { buocDanhSach, chuanHoaMaLop, duongThongBao } from '@shared/domain/index.ts';
 
@@ -98,7 +99,7 @@ export function Header() {
 
   return (
     <div className="flex items-center gap-2 min-w-0" ref={boxRef}>
-      <div className="relative w-28 sm:w-52 lg:w-64 shrink">
+      <div className="relative w-28 min-w-[4.5rem] sm:w-52 lg:w-64 shrink">
         <input
           ref={oTim}
           className="field"
@@ -165,7 +166,7 @@ export function Header() {
           {/* Chuông nét mảnh 14 px thay emoji (luật "dấu nhỏ gọn"). */}
           <svg className="sm:hidden" aria-hidden width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M4 11V7a4 4 0 0 1 8 0v4l1.5 1.5h-11L4 11ZM6.5 14a1.5 1.5 0 0 0 3 0" strokeLinejoin="round" /></svg>
-          {unread > 0 && <span className="ml-1 rounded bg-sky-300/25 text-sky-200 px-1.5 text-[10px] tabular-nums">{unread}</span>}
+          {unread > 0 && <span className="ml-1 rounded bg-doing-bg text-doing px-1.5 text-[11.5px] tabular-nums">{unread}</span>}
         </button>
         {openMenu === 'notif' && (
           <div className="absolute right-0 mt-1 w-[min(24rem,calc(100vw-2rem))] card z-40 shadow-2xl max-h-96 overflow-y-auto">
@@ -195,10 +196,12 @@ export function Header() {
         )}
       </div>
 
+      <CongTacGiaoDien />
+
       <div className="relative">
         <button ref={nutTaiKhoan} className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setOpenMenu(openMenu === 'account' ? null : 'account')}
           aria-expanded={openMenu === 'account'}>
-          <span className="text-slate-200 truncate max-w-[6rem] sm:max-w-[10rem]">{session?.user?.fullName}</span>
+          <span className="text-slate-200 truncate max-w-[4.5rem] sm:max-w-[10rem]">{session?.user?.fullName}</span>
         </button>
         {openMenu === 'account' && (
           <div className="absolute right-0 mt-1 w-[min(20rem,calc(100vw-2rem))] card p-3 z-40 shadow-2xl">

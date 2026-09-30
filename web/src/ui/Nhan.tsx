@@ -24,7 +24,7 @@ const NHAN: Record<ToneNhan, string> = {
 export function Nhan({ tone, dut, title, onClick, children }: {
   tone: ToneNhan; dut?: boolean; title?: string; onClick?: () => void; children: ReactNode;
 }) {
-  const cls = `inline-flex items-center rounded-full px-[7px] text-[10.5px] font-bold leading-4 whitespace-nowrap ${NHAN[tone]} ${
+  const cls = `inline-flex items-center rounded-full px-[7px] text-[11.5px] font-bold leading-[18px] whitespace-nowrap ${NHAN[tone]} ${
     dut ? 'bg-transparent border border-dashed border-current' : ''}`;
   if (onClick) {
     return (

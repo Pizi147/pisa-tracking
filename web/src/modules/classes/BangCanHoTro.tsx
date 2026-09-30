@@ -105,7 +105,7 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
               <div className="flex items-start gap-1.5">
                 <span className="min-w-0 flex-1">
                   <Link className="link font-semibold" to={`/hoc-vien/${e.id}`}>{e.ten}</Link>{' '}
-                  <span className="text-[10px] tabular-nums text-slate-500">{maHocVienNgan(e.ma)}</span>
+                  <span className="text-[11px] tabular-nums text-slate-500">{maHocVienNgan(e.ma)}</span>
                 </span>
                 {r && (
                   <MenuDong muc={tt.mucCua({ id: e.id, ten: e.ten, dangHoc: r.status === 'active', nhapDiem: nhapDiemCua(classId, laLopThuong, r.timeline ?? []) })} />

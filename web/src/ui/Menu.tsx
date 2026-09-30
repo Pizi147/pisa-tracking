@@ -44,7 +44,7 @@ export function Menu({ label, items, align = 'right', className = 'btn btn-sm bt
     <div ref={ref} className="relative inline-block">
       <button type="button" className={className} aria-haspopup="menu" aria-expanded={open}
         onClick={() => setOpen((o) => !o)}>
-        {label} <span aria-hidden className="text-[10px]">▾</span>
+        {label} <span aria-hidden className="text-[11px]">▾</span>
       </button>
       {open && (
         <div role="menu"

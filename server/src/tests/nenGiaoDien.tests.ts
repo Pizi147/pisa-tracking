@@ -17,7 +17,7 @@ export async function runNenGiaoDienTests(t: YThucTestKit) {
   console.log('\nPR-UX0 · Nền giao diện');
 
   const css = fs.readFileSync(path.join(REPO, 'web/src/index.css'), 'utf8');
-  const mau = d.docMauCss(css);
+  const mau = d.docMauCss(d.docKhoiCss(css, ':root'));
 
   check('UX0 · N-1: tuongPhan đúng công thức', () => {
     assert(d.tuongPhan('#000000', '#ffffff') === 21, `đen/trắng = ${d.tuongPhan('#000000', '#ffffff')}`);

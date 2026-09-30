@@ -71,7 +71,7 @@ export function TongHopVanDeHv(props: PhamViPhanTich) {
     <span className="block min-w-0 truncate">
       {d.nhan}
       {d.loai === 'ky-nang' && d.khoa === 'kn:writing' && (
-        <abbr title="Writing Task 1 + Writing Task 2" className="ml-1.5 text-[10.5px] font-normal text-slate-400 no-underline">W1 + W2</abbr>
+        <abbr title="Writing Task 1 + Writing Task 2" className="ml-1.5 text-[11px] font-normal text-slate-400 no-underline">W1 + W2</abbr>
       )}
       {d.loai === 'chung' && d.goiY && <span className="ml-1 cursor-help font-normal text-slate-500" title={d.goiY}>ⓘ</span>}
     </span>
@@ -83,7 +83,7 @@ export function TongHopVanDeHv(props: PhamViPhanTich) {
         {([['', 'Lỗi chính + phụ', 'Vấn đề chính và yếu tố đi kèm của Case'], ['chinh', 'Chỉ lỗi chính', 'Chỉ Vấn đề chính của Case']] as const).map(([v, nhan, tip]) => (
           <button key={v} type="button" role="radio" aria-checked={chiChinh === (v === 'chinh')} title={tip}
             onClick={() => datTham('loi', v || null)}
-            className={`px-3 py-1 text-xs border-0 cursor-pointer ${chiChinh === (v === 'chinh') ? 'bg-sky-500/20 text-sky-200 font-semibold' : 'bg-transparent text-slate-400 hover:text-slate-200'}`}>
+            className={`px-3 py-1 text-xs border-0 cursor-pointer ${chiChinh === (v === 'chinh') ? 'bg-doing-bg text-doing font-semibold' : 'bg-transparent text-slate-400 hover:text-slate-200'}`}>
             {nhan}
           </button>
         ))}

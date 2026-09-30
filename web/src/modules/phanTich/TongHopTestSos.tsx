@@ -145,7 +145,7 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
   const tenDong = (row: DongTongHop) => (
     <span className="block min-w-0">
       <span className="block truncate">{row.nhan}</span>
-      {row.phu && <span className="block truncate text-[10px] font-normal text-slate-500">{row.phu}</span>}
+      {row.phu && <span className="block truncate text-[11px] font-normal text-slate-500">{row.phu}</span>}
     </span>
   );
 
@@ -182,7 +182,7 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
           <div role="radiogroup" aria-label="Cách xếp dòng" className="inline-flex rounded-lg border overflow-hidden" style={{ borderColor: 'var(--line)' }}>
             {THEO_DONG.filter((k) => k !== 'cn' || !anCotChiNhanh).map((k) => (
               <button key={k} type="button" role="radio" aria-checked={theo === k} onClick={() => setTheo(k)}
-                className={`px-3 py-1 text-xs border-0 cursor-pointer ${theo === k ? 'bg-sky-500/20 text-sky-200 font-semibold' : 'bg-transparent text-slate-400 hover:text-slate-200'}`}>
+                className={`px-3 py-1 text-xs border-0 cursor-pointer ${theo === k ? 'bg-doing-bg text-doing font-semibold' : 'bg-transparent text-slate-400 hover:text-slate-200'}`}>
                 {THEO_DONG_LABEL[k]}
               </button>
             ))}
@@ -190,7 +190,7 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
           <span className="flex flex-wrap items-center gap-1" role="group" aria-label="Chú giải màu kết quả">
             {CHU_GIAI.map((g) => (
               <span key={g.khoa} title={allCols.find((c) => c.khoa === g.khoa)?.goiY}
-                className={`inline-flex items-center rounded-md border px-1.5 text-[10.5px] font-medium leading-4 ${SCORE_CHIP[g.chip]}`}>
+                className={`inline-flex items-center rounded-md border px-1.5 text-xs font-medium leading-4 ${SCORE_CHIP[g.chip]}`}>
                 {g.nhan}
               </span>
             ))}

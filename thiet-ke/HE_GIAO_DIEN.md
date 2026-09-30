@@ -27,18 +27,28 @@ Cụ thể hóa `PISA-Design-Plan-after-PR28.md` mục 18.1 thành thứ code đ
 
 ### Màu nền và bề mặt
 
-Màu nền thật khai báo **một chỗ** ở `web/src/index.css :root` (biến CSS). Bảng `ink` trong `tailwind.config.js`
-chỉ còn dùng cho màu "Đang chọn" (`ink-800`).
+Màu thật khai báo **một chỗ, hai khối** ở `web/src/index.css`: `:root` = **Tối** (mặc định) và `:root[data-theme="light"]` = **Sáng**
+(PR-SANG, T15). Nút ◐ ở thanh đầu (`ui/CongTacGiaoDien.tsx`) đổi giữa hai khối, nhớ theo máy (`localStorage` khoá `pisa-giao-dien`).
+**Luật:** màu chỉ đi qua token — component không viết hex / `rgb(…)` số / cấp màu Tailwind chưa ánh xạ; `tailwind.config.js` ánh xạ tên Tailwind cũ
+(`slate-100…700`, `white`, `ink-800/950`, `teal-*`, `rose/amber/sky/emerald-*`) về biến, nên tên là tên **cũ**, giá trị **theo chế độ**. Phép kiểm
+`prSang.tests.ts` S1–S6 chặn (tương phản ≥ 4.5:1 hai chế độ, viền ô nhập sáng ≥ 3:1, đủ cặp token, không màu cứng, mọi cấp màu dùng đều ánh xạ).
+Bảng `ink` trong `tailwind.config.js` chỉ còn `ink-800` ("Đang chọn") và `ink-950` (chữ trên chip `doing` đặc).
 
-| Token | Giá trị hiện có | Dùng ở đâu |
-|---|---|---|
-| Nền trang | `--bg` (`#0c1220`) | `body` |
-| Bề mặt nội dung | `--surface` (`#141d2f`) | Card (lớp `.card`), panel `KhungPanel`, bảng |
-| Bề mặt nổi | `--surface-2` (`#1a2437`, lớp `.surface-2`) | Popover, menu ⋯, lịch `LichNho`, nút thường (`.btn`), đầu cột bảng |
-| Đang chọn | `ink-800` + viền `teal-600` + dấu ✓ nhỏ | Nút đang chọn `NutChon`, bộ lọc `BoLocDoan`, ngày/tuần đang chọn trên lịch |
-| Viền | `--line` (mọi viền mặc định), `--line-strong` (viền panel, ô nhập, nút) | Đường kẻ bảng, viền card |
+| Token | Tối | Sáng | Dùng ở đâu |
+|---|---|---|---|
+| Nền trang | `--bg` `#0c1220` | `#f5f7fa` | `body` |
+| Bề mặt nội dung | `--surface` `#141d2f` | `#ffffff` | Card (lớp `.card`), panel `KhungPanel`, bảng |
+| Bề mặt nổi | `--surface-2` `#1a2437` | `#eef1f5` | Popover, menu ⋯, lịch `LichNho`, nút thường (`.btn`), đầu cột bảng |
+| Đang chọn | `chon-*`: nền `#13212d`, viền `#0d9488`, ✓ `#5eead4` | nền `#e0f2ef`, viền + ✓ `#0f766e` | Nút đang chọn `NutChon`, bộ lọc `BoLocDoan`, ngày/tuần đang chọn trên lịch — cùng nghĩa (nền + viền + ✓) ở hai chế độ |
+| Viền | `--line`, `--line-strong` (`rgba(160,178,214,…)`) | `rgba(15,23,42,…)`; viền ô nhập `--o-nhap-vien` `#7c8799` (≥ 3:1) | Đường kẻ bảng, viền card, ô nhập |
+| Chữ | `--text` `#dde5f2`; `slate-100/200/300` = `chu-1/2/3` | `#0f172a`; `chu-1/2/3` đậm dần | Chữ chính, chữ phụ |
+| Chữ phụ | `slate-400` = `--text-dim`, `slate-500` = `--text-faint` | `71 85 105`, `91 102 120` | Chú thích; luôn ≥ 4.5:1 |
+| Dấu trang trí | `slate-600/700` = `chu-mo*` | nhạt | **Chỉ** dấu (`—`, `/`, `›`, `→`); chữ thật dùng `slate-500` trở lên (phép kiểm S8) |
 
-Hàng đang rê chuột dùng nền trắng rất mờ (`bg-white/5`), không phải một mức nền riêng. Chỉ ba mức nền nội dung.
+Màu nghĩa (`ok, bad, late, soon, doing, done, wait, muted` — chữ · nền · viền) có giá trị riêng cho từng chế độ, **cùng nghĩa, cùng tông**, chỉ đậm/nhạt khác;
+SOS 1 vàng · SOS 2 cam · SOS 3 đỏ · Đạt xanh lá giữ nguyên ở chế độ sáng. Đổi chế độ **tức thì**, không hiệu ứng chuyển màu.
+
+Hàng đang rê chuột dùng lớp phủ mờ (`bg-white/5` = `--phu-rgb`: trắng ở tối, mực ở sáng), không phải một mức nền riêng. Chỉ ba mức nền nội dung.
 Thấy một sắc xanh thứ tư trong màn nào là lỗi cần gỡ, không phải phong cách riêng của màn đó (design plan 18.1).
 
 ### Màu ý nghĩa — chỉ bốn, và chỉ cho điểm số
@@ -62,10 +72,16 @@ cho mọi SOS tạm thời. Hàng "đỏ" ở bảng `<KetQuaDot>` mục 5 đọ
 
 ### Chữ và khoảng cách
 
+**Phông: Be Vietnam Pro** (PR-SANG, T16), tự phục vụ bằng gói `@fontsource/be-vietnam-pro` (bó vào bản build, cùng tên miền, không gọi Google), năm độ đậm
+400–800, khai ở `--font-sans`. **Chữ số 0–9 lấy từ Inter** (`@fontsource/inter`, khai lại họ `'Be Vietnam Pro'` với `unicode-range` chỉ gồm chữ số) vì Be Vietnam Pro
+không có số cùng độ rộng: `tabular-nums` vẫn là cách canh số thẳng cột.
+
 | Vai trò | Desktop | Ghi chú |
 |---|---|---|
 | Nội dung chính, số trong bảng | 14–16px | Không dùng cỡ này cho chú thích |
-| Phụ, ghi chú | 12–13px | **Cấm** dùng cho kết quả, hạn, người phụ trách |
+| Kết quả, hạn, trạng thái, người phụ trách, số đếm việc | **≥ 12px** (`text-xs`) | Sàn cứng; kèm `slate-400` trở lên |
+| Phụ, ghi chú, mã, chú giải, ký hiệu nhỏ | 11px (`text-[11px]`) — không chữ nào nhỏ hơn (phép kiểm S8) | **Cấm** dùng cho kết quả, hạn, người phụ trách |
+| Badge `Nhan`, số đếm trên menu / chuông | 11,5px | |
 | Giữa hai khu vực lớn | 20–24px | |
 | Trong một khối | 12–16px | |
 

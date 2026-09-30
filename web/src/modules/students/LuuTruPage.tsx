@@ -118,7 +118,7 @@ export default function LuuTruPage() {
               {data.hocVien.map((s) => (
                 <div key={s.id} className="card flex flex-wrap items-center gap-x-2 gap-y-1 p-3 opacity-70 hover:opacity-100">
                   <Link to={`/hoc-vien/${s.id}`} className="link font-semibold">{s.fullName}</Link>
-                  <span className="text-[10px] tabular-nums text-slate-500">{s.studentCode}</span>
+                  <span className="text-[11px] tabular-nums text-slate-500">{s.studentCode}</span>
                   <span className="text-xs text-slate-500">
                     {s.lopCuoi ? <>lớp cuối {s.lopCuoi}</> : 'chưa từng học lớp nào'}{s.chiNhanh && <> · {s.chiNhanh}</>}
                   </span>

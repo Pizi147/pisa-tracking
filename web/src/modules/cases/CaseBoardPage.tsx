@@ -186,11 +186,11 @@ export function DanhSachCase({ branchId, ct, classId }: { branchId: number | nul
                       onClick={() => setOpenCase(r.id)}>
                       <td className="td whitespace-nowrap">
                         <span className="text-slate-100">{r.studentName}</span>
-                        <div className="text-[10px] text-slate-500">{r.classCode ?? '—'}</div>
+                        <div className="text-[11px] text-slate-500">{r.classCode ?? '—'}</div>
                       </td>
                       <td className="td text-slate-300">
                         {r.title ?? r.headline}
-                        <div className="text-[10px] text-slate-500">
+                        <div className="text-[11px] text-slate-500">
                           {fmtDate(r.detectedAt)}{r.reporterName ? ` · ${r.reporterName}` : ''}
                         </div>
                       </td>
@@ -198,7 +198,7 @@ export function DanhSachCase({ branchId, ct, classId }: { branchId: number | nul
                         {r.topicLabel && <Info>{r.topicLabel}</Info>}
                         {r.primaryLabel
                           ? <div className="mt-0.5"><Info>{r.primaryLabel}</Info></div>
-                          : <div className="text-[10px] text-slate-600 mt-0.5">chưa rõ nguyên nhân</div>}
+                          : <div className="text-xs text-slate-400 mt-0.5">chưa rõ nguyên nhân</div>}
                       </td>
                       <td className="td text-xs text-slate-400 whitespace-nowrap">
                         {r.originKind === 'teacher_report' ? 'Giáo viên báo' : `Điểm · MT${r.attemptNo ?? '?'}`}
@@ -206,7 +206,7 @@ export function DanhSachCase({ branchId, ct, classId }: { branchId: number | nul
                       <td className="td text-xs text-slate-300">
                         {r.interventionCount > 0 ? `${r.interventionCount} việc` : '—'}
                         {r.nextDue && (
-                          <div className="text-[10px]"><Han loai="cap-nhat-pa" han={r.nextDue} /></div>
+                          <div className="text-xs"><Han loai="cap-nhat-pa" han={r.nextDue} /></div>
                         )}
                       </td>
                       <td className="td whitespace-nowrap">
@@ -290,7 +290,7 @@ function FilterRow({ label, children }: { label: string; children: React.ReactNo
 function ChipBoLoc({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
   return (
     <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" title="Bỏ lọc này" onClick={onClick}>
-      <span className="sr-only">Bỏ lọc: </span>{children} <span aria-hidden className="text-[10px] text-slate-400">✕</span>
+      <span className="sr-only">Bỏ lọc: </span>{children} <span aria-hidden className="text-[11px] text-slate-400">✕</span>
     </button>
   );
 }

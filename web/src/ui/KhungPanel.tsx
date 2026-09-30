@@ -102,7 +102,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
 export function Khoi({ tieuDe, luat, children }: { tieuDe: string; luat?: ReactNode; children: ReactNode }) {
   return (
     <section className="mt-3.5 border-t pt-3.5 first:mt-0 first:border-t-0 first:pt-3.5" style={{ borderColor: 'var(--line)' }}>
-      <h3 className="mb-2.5 mt-0 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[.06em] text-slate-500">
+      <h3 className="mb-2.5 mt-0 flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[.06em] text-slate-500">
         {tieuDe}{luat && <NutLuat>{luat}</NutLuat>}
       </h3>
       <div className="space-y-3">{children}</div>
@@ -130,7 +130,7 @@ export function Truong({ nhan, batBuoc, tuyChon, phu, loi, dem, as = 'label', ch
       {nhan}{batBuoc && <><span aria-hidden className="text-bad"> *</span><span className="sr-only"> (bắt buộc)</span></>}
       {tuyChon && <span className="font-normal text-slate-500"> (không bắt buộc)</span>}
     </span>
-    {dem && <span className={`text-[10.5px] font-normal tabular-nums ${dem.co < dem.can ? 'text-slate-500' : 'text-slate-400'}`}>{dem.co}/{dem.can}</span>}
+    {dem && <span className={`text-[11px] font-normal tabular-nums ${dem.co < dem.can ? 'text-slate-500' : 'text-slate-400'}`}>{dem.co}/{dem.can}</span>}
   </>;
   const lopNhan = 'mb-1 flex items-baseline gap-2 text-[11.5px] font-bold text-slate-200';
   return (
@@ -139,7 +139,7 @@ export function Truong({ nhan, batBuoc, tuyChon, phu, loi, dem, as = 'label', ch
         {troO ? <label htmlFor={troO} className={lopNhan}>{chu}</label> : <span id={idNhan} className={lopNhan}>{chu}</span>}
         {/* Luôn cùng một lớp bọc (`contents`, không đổi bố cục): bọc/bỏ bọc theo `loi` làm ô dựng lại → mất focus khi đang gõ. */}
         <div className={loi ? 'contents [&_.field]:border-late [&_.field]:ring-1 [&_.field]:ring-late/40' : 'contents'}>{children}</div>
-        {phu && <span className="mt-1 block truncate text-[10.5px] text-slate-500">{phu}</span>}
+        {phu && <span className="mt-1 block truncate text-[11px] text-slate-500">{phu}</span>}
         {loi && <span className="mt-1 block text-[11px] text-late">{loi}</span>}
       </Vo>
     </BaoOTrongNhan.Provider>

@@ -225,7 +225,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone }: {
                             onChange={(v) => setNguoiNhan((prev) => ({ ...prev, [c.id]: v }))}
                             nhom="giao_vien" choNgoai={false}
                             macDinhTrong={c.owner ? `Giữ nguyên: ${c.owner}` : 'Chưa có người phụ trách'} />
-                          {kn && <span className="block text-[10.5px] text-slate-500">GV {kn} lớp mới</span>}
+                          {kn && <span className="block text-xs text-slate-400">GV {kn} lớp mới</span>}
                         </>
                       )}
                     </div>

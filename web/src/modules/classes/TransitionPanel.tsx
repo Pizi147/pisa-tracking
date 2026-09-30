@@ -266,7 +266,7 @@ function CanDienThem({ s, d, suaDong }: { s: any; d: Dong; suaDong: (p: Partial<
       <input className="field w-20 tabular-nums" type="number" step="0.5" min={0} max={9} placeholder="Mục tiêu" aria-label="Mục tiêu"
         value={d.mucTieu} onChange={(e) => suaDong({ mucTieu: e.target.value })} />
       <span className="block w-36">
-        <span className="block text-[10.5px] text-slate-500 mb-0.5" aria-hidden>Dự kiến thi</span>
+        <span className="block text-[11px] text-slate-500 mb-0.5" aria-hidden>Dự kiến thi</span>
         <ONgay kieu="thang" value={d.thangThi} onChange={(v) => suaDong({ thangThi: v })} ariaLabel="Tháng dự kiến thi" />
       </span>
     </div>
@@ -275,7 +275,7 @@ function CanDienThem({ s, d, suaDong }: { s: any; d: Dong; suaDong: (p: Partial<
     <div className="flex flex-wrap items-end gap-1.5">
       <input className="field flex-1 min-w-[8rem]" placeholder="Lý do" aria-label="Lý do" value={d.lyDo} onChange={(e) => suaDong({ lyDo: e.target.value })} />
       <span className="block w-40">
-        <span className="block text-[10.5px] text-slate-500 mb-0.5" aria-hidden>Xem lại</span>
+        <span className="block text-[11px] text-slate-500 mb-0.5" aria-hidden>Xem lại</span>
         <ONgay kieu="ngay" value={d.ngayXemLai} onChange={(v) => suaDong({ ngayXemLai: v })} ariaLabel="Ngày xem lại" />
       </span>
     </div>
@@ -291,7 +291,7 @@ function OLopDich({ d, suaDong, lopHopLe }: {
   d: Dong; suaDong: (p: Partial<Dong>) => void; lopHopLe: (h: Huong | '') => any[];
 }) {
   if (!d.huong || d.huong === 'bao_luu' || d.huong === 'dung_hoc' || d.huong === 'xep_sau') {
-    return <span className="text-slate-600">không chuyển</span>;
+    return <span className="text-slate-500">không chuyển</span>;
   }
   return (
     <select className="field w-full" value={d.toClassId} onChange={(e) => suaDong({ toClassId: e.target.value === 'new' ? 'new' : e.target.value ? Number(e.target.value) : '' })}>
@@ -328,7 +328,7 @@ function DongBang({ s, d, loi, oId, suaDong, lopHopLe, fromMa }: {
         {loi && <div className="text-[11px] text-rose-300 mt-1">{loi}</div>}
       </td>
       <td className="td"><KetQuaEm ketQua={s.ketQua} /></td>
-      <td className="td" style={trong ? { boxShadow: 'inset 0 0 0 1px var(--warn, #fbbf24)', borderRadius: 6 } : undefined}>
+      <td className="td" style={trong ? { boxShadow: 'inset 0 0 0 1px var(--warn)', borderRadius: 6 } : undefined}>
         <select id={oId} aria-invalid={!!loi} className="field w-full" value={d.huong} onChange={(e) => suaDong({ huong: e.target.value as Huong, toClassId: '' })}>
           <option value="">Chưa chọn</option>
           {HUONG_CHUYEN_TIEP.map((h) => <option key={h} value={h}>{nhanHuongNgan(h, { ma: fromMa as any, maKe: null })}</option>)}

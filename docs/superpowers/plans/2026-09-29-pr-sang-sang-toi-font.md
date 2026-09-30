@@ -412,4 +412,57 @@ Mười trang (Task 0 "trước" và Task 9 "sau" dùng **cùng** danh sách):
 cứng, chữ < 11 px); số đỏ Task 1; đo tnum/glyph/tràn cột Task 6; số chỗ < AA trước/sau (hai chế độ) Task 8; so "bảng màu tính được" tối
 Task 9; chỗ lệch kế hoạch; 🛑 đã hỏi; chú thích ponytail:. -->
 
+**Task 0 (30/09).** Model thật: **Sonnet 5.5**. Nhánh `pr-sang-sang-toi-font` từ `origin/main` `e7832cde`. Đã merge: PR-HSM #131 (`ada8f6c4`),
+PR-XUAT #132 (`ce768d1c`), PR-HVL #133 (`e7832cde`). Ba PR đổi 33 file giao diện (`git diff --stat 507abc2a e7832cde -- web/src`): mới
+`cham/GvCham.tsx`, `fasttrack/NhanXet.tsx`, `fasttrack/ODiemLon.tsx`, `test/NganXuatMt.tsx`, `ui/TheDong.tsx`; sửa nhiều ở `MockDetailPage`,
+`ScoreEntry`, `LuoiFT`, `LuoiThuong`, `MotKyNang`, `BangCanHoTro`, `ClassIssueBoard`, `ClassProgressPanel`, `DauTrangLop`, `PhanTichLopTab`,
+`TransitionPanel`, `BangHocVienLop`, `ClassRoster`, `StudentsPage`, `StudentDetailPage`, `LoTrinhTiepPanel`, `LichTestTab`, `HangLop`, `KhoiNo`,
+`ViecTiep`, `MenuDong`, `SaveState`, `CongTacKhung`, `SkillBoard`, `TongHopTestSos`.
+**Mốc B** = `npm run check` xanh, 1824 dòng ✓ ở `run.js` + 25 phép kiểm tốc độ, ~5 phút 8 giây.
+**Đếm lại** (`web/src`): `text-[10px]` **71** + `text-[10.5px]` **30** ở **36 file** (kế hoạch 72 + 30 / 37). Màu cứng trong `.tsx` còn **4**:
+`TransitionPanel.tsx:331` `var(--warn, #fbbf24)` · `DemoBar.tsx:55` `bg-[#0b141d]` · `HanhTrinh.tsx:160` `#dbe9ff` · `MeetingPage.tsx:138`
+`var(--text-muted, #94a3b8)` + `rgb(252 165 165)`. **`ClassProgressPanel.tsx` không còn** `rgba(242,161,161,.08)` (PR-SOS/HSM đã bỏ). Ba PR **không**
+thêm màu cứng mới. Cấp màu chưa ánh xạ (số lần dùng, không đếm biến thể `/nn`): `slate-100` 154 · `200` 141 · `300` 121 · `600` 52 · `700` 5 ·
+`bg-white` 36 · `text-white` 4 · `ink-800` 5 · `ink-950` 1 · `teal-300/500/600` … như Hiện trạng.
+Ảnh "trước" 10 trang (tối, 1440 px) ở `thiet-ke/anh/pr-sang/truoc-toi-NN-*.png`; JSON "bảng màu tính được" trước ở scratchpad (không commit).
+Trang 03 chụp ở `/hoc-vien` (danh sách lớp, các lớp thu gọn); trang 04 mở tab "Cần hỗ trợ"; trang 08 là lượt Mock id 123.
+
 > **Chủ sản phẩm chốt 30/09:** phông **Be Vietnam Pro**; chữ phụ **giữ 11 px**, chỉ nâng chữ < 11 px và chữ kết quả/hạn/trạng thái lên 12 px. Task cuối **sửa `CLAUDE.md`** dòng "giữ phông Inter" → "phông Be Vietnam Pro (PR-SANG)".
+
+**Task 1 (30/09).** Phép kiểm trước: `npm run check` → **10 đỏ** (S1 tối + S1 sáng vì thiếu token `chu-*`/`accent-ink-rgb`/`chon-dau-rgb`, S2, S3, S4, S5, S6, S7, S8, S9),
+**1799 đạt** (bằng mốc B; N-1 cũ xanh khi đọc khối `:root`). Lệch kế hoạch nhỏ: `docMauHaiCheDo` ghép **văn bản** `:root` + khối sáng rồi mới giải bí danh
+(thay vì trộn hai bảng đã giải) — để `--dat-rgb: var(--ok-rgb)` ở sáng theo `--ok-rgb` sáng. S1 thêm `accent` trên nền trang (chữ liên kết).
+
+**Task 2–5 (30/09).** Task 2: S1–S4 xanh (giá trị sáng của planning đạt 4.5:1 ngay lần đầu, không chỉnh). Task 3: CSS build không còn `<alpha-value>`; bóng
+`inset … theme(colors.teal.600)` ra `rgb(var(--chon-vien-rgb) / 1)`. **So "bảng màu tính được" tối, 10 trang, trước = sau, chỉ lệch 1 bộ**: nền `bg-sky-500/20`
+(nút lọc đang chọn, trang 01–02) `rgba(14,165,233,.2)` → `rgba(128,184,255,.2)` (= `doing`) — đúng ánh xạ `sky-500: doing` của kế hoạch. Task 4: 4 chỗ màu cứng
+đã đổi (bảng Task 4). Task 5: nút ◐ + script `index.html`; S9 xanh. Sập Node (139) ở check Task 3 → chạy lại 1 lần, xanh.
+
+**Task 6 · 🛑 6a đã hỏi (30/09).** Đo `@fontsource/be-vietnam-pro` 5.3.0: **không có số cùng độ rộng** — chữ số 1 rộng 5,4 px, số 4 rộng 10 px ở cỡ 14, bật
+`font-feature-settings: "tnum"` không đổi gì (400 và 600). Chủ sản phẩm chọn: **Be Vietnam Pro + chữ số 0–9 lấy từ Inter** — `index.css` khai lại họ
+`'Be Vietnam Pro'` (5 độ đậm) với `unicode-range: U+0030-0039` trỏ vào `@fontsource/inter` 5.3.0 (ghim), mặt khai sau thắng ở vùng trùng nên `--font-sans`
+vẫn bắt đầu bằng Be Vietnam Pro. Đo lại: `tnum` cho 10 chữ số cùng độ rộng ở cả 400/500/600/700/800 (9,05–9,08 px). S7 đổi theo (kiểm 5 mặt số + ghim Inter).
+Đo còn lại: `.woff2` tải từ cùng tên miền (`/node_modules/@fontsource/…` ở dev, tệp băm trong bản build); ký hiệu ✓ ⚠ ▶ ○ ◐ ✗ → ▾ đều có độ rộng
+10–12 px (đo canvas; xem ảnh Task 9 để chắc không ô vuông). Tràn/xuống dòng 8 trang ở 1440 px (01,03,04,05,06,07,08,09), so với Segoe UI: **số phần tử tràn, số phần tử
+xuống dòng và chiều cao trang giống hệt nhau, không cuộn ngang**; chữ rộng hơn Segoe ~3–9 %. Không màn nào vỡ → không 🛑 6b.
+
+**Task 7 (30/09).** 101 chỗ `text-[9/10/10.5px]` ở 36 file → 0. Phân loại: 30 chỗ kết quả/hạn/trạng thái/người → `text-xs` (mười mấy chỗ kèm `slate-500/600 → slate-400`), 6 badge/số đếm → 11,5 px
+(`Nhan` 11,5 px `leading-[18px]`, menu, chuông, `HangTab`, chip "lịch sử", `MissingBadge`), còn lại 11 px. `text-slate-600/700` bọc **chữ** → `slate-500` (9 chỗ tự động + 5 chỗ tay: tên môn mờ `HangLop`,
+số 0 mờ `Highlights`/`BranchPulse`/`SoLieuO`, "Không áp dụng"); giữ ở dấu (`—`, `–`, `/`, `›`, `→`). S8 thêm `›` là dấu. Sập Node 139 ở check → chạy lại 1 lần.
+
+**Task 8 (30/09) — tương phản AA trên trang thật** (Playwright, 1440 px, 18 trạng thái: 10 trang KIỂM + Thông báo, menu tài khoản, menu ⋯, hồ sơ lớp mở "Điểm", Công việc, hồ sơ lớp).
+Trước khi sửa: **sáng 64 chỗ < ngưỡng (8 nhóm) · tối 40 chỗ (4 nhóm, có sẵn từ trước)**. Sau khi sửa: **sáng 0 · tối 0**. Nhóm đã sửa: (1) `opacity-55` của mốc cũ trong `ClassRoster.Band` → màu xám
+`slate-400` (độ trong làm chữ đạt/chưa đạt < 4.5:1); (2) badge đếm thông báo `bg-sky-300/25 text-sky-200` → `bg-doing-bg text-doing` (cùng kiểu `HangTab`), nút lọc đang chọn
+`bg-sky-500/20 text-sky-200` ×3 → `bg-doing-bg text-doing`; (3) `text-amber-200/70` "x/y" → bỏ `/70`; (4) `opacity-80/70` trong chip `ChipKyNang` → bỏ. **Chỗ tối có sẵn nay cũng được sửa** (badge 4.44:1, mốc cũ 3.3–3.8:1)
+vì cùng một lớp CSS cho cả hai chế độ — lệch nhỏ so với "tối không đổi", ghi vào danh sách cố ý Task 9. Chưa đo được bằng kịch bản: panel Thêm PA, lịch `ONgay`, toast (script bấm không ra panel) —
+phủ bằng S5/S6 (chỉ dùng token) + chụp tay ở Task 9.
+`colorize` (chỉ rà bảng sáng): không đổi giá trị nào, không đề xuất màu mới. `adapt` thanh đầu 375 px: ô tìm bị ép còn 41 px sau khi thêm ◐ → `min-w-[4.5rem]` cho ô tìm + tên tài khoản `max-w-[4.5rem]`
+dưới `sm` (72 px ô tìm; không tràn ngang, mọi nút 44 px, cả hai chế độ, 4 trang). `audit`: máy dò cơ học 0 phát hiện trên 50 file đổi; ◐: Tab tới được, Enter/Space đổi, vòng focus 2 px thấy rõ ở cả hai chế độ
+(`rgb(125,179,240)` tối · `rgb(29,95,191)` sáng), F5 giữ chế độ, chặn `localStorage` vẫn đổi được trong phiên, 0 lỗi console. Ghi chú P3: `aria-label` nói hành động kế tiếp **và** có `aria-pressed` — trình đọc màn hình đọc "… nút bật tắt, đã nhấn"; theo Q11.
+
+**Task 9 (30/09) — bấm thử + ảnh.** Ảnh ở `thiet-ke/anh/pr-sang/`: `sau-toi-NN-*` và `sau-sang-NN-*` (10 trang, 1440 px) · `sau-{toi,sang}-375-NN` (trang 01, 03, 05, 09) · `xam-sang-{03,05,07}-*` (chế độ sáng, lọc xám) ·
+`nut-giao-dien-{toi,sang}[-375].png` (thanh đầu) · `sau-{toi,sang}-menu-thong-bao.png` · `sau-{toi,sang}-panel-them-case.png`. Kết quả KIỂM: K1–K3, K8 đã chạy bằng Playwright (Enter/Space/Tab, F5, chặn `localStorage`: đạt, 0 lỗi console);
+K6/K7 xem ảnh (SOS 1 vàng · 2 cam · 3 đỏ, hàng lớn ≠ hàng con, ảnh xám vẫn phân biệt nhờ chữ "SOS n", "Cần làm", "Chờ duyệt"); K9 (375 px, 4 trang × 2 chế độ) không tràn ngang, mọi nút 44 px; K11 phông
+Be Vietnam Pro đang áp (`getComputedStyle`), `.woff2` cùng tên miền. **Chưa bấm tay** (script không mở được): panel Thêm PA, lịch `ONgay`, toast — chỉ chụp panel "Tạo Case" (sáng đọc tốt) — người rà nên bấm lại.
+**So "bảng màu tính được" tối, 10 trang, trước → sau**: chỉ lệch các mục cố ý — (a) nền `DemoBar` `#0b141d → var(--bg)` `rgb(12,18,32)` (mọi trang); (b) badge đếm Thông báo và nút lọc đang chọn `sky-*/25|/20 → doing-bg` (Task 8);
+(c) chữ `slate-600 → slate-500` (trang 01); (d) núm `HanhTrinh`/`MeetingPage`/`TransitionPanel` không nằm trên 10 trang. **Không có lệch ngoài danh sách → không 🛑 6c.**

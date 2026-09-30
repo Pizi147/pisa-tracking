@@ -12,7 +12,7 @@ Tệp này tự nạp vào mọi session của repo (planning, code, worktree), 
 ## Giao diện và UX: dùng `impeccable`
 - PISA là công cụ làm việc cho giáo viên (chế độ Operate): dễ hiểu, dễ dùng, nhất quán trước; trang trí sau.
 - Không dùng taste-skill (đã tắt; không dành cho dashboard, bảng dữ liệu).
-- Tinh chỉnh, không làm lại: giữ phông Inter, bảng màu, bố cục đã khoá, trừ khi kế hoạch PR ghi rõ là đổi.
+- Tinh chỉnh, không làm lại: phông Be Vietnam Pro (PR-SANG; chữ số lấy từ Inter), bảng màu, bố cục đã khoá — giữ, trừ khi kế hoạch PR ghi rõ là đổi.
 - Lệnh dùng: `critique` ở session planning để tìm vấn đề · `polish`, `clarify`, `layout`, `harden`, `adapt` ở
   session code, chỉ trong phạm vi PR · `audit` trước khi mở PR có sửa giao diện.
 - Session code không chạy `init`, `document`, `hooks on`, `npx impeccable install|update`. PRODUCT.md / DESIGN.md

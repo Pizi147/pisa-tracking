@@ -23,7 +23,7 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, ca
             {t.label}
             {t.canhBao && <span className="ml-1 text-soon" role="img" aria-label="có nhắc" title="Có nhắc">●</span>}
             {!!t.so && t.so > 0 && (
-              <span className="ml-1.5 rounded-full px-1.5 text-[10px] tabular-nums bg-doing-bg text-doing">{t.so}</span>
+              <span className="ml-1.5 rounded-full px-1.5 text-[11.5px] tabular-nums bg-doing-bg text-doing">{t.so}</span>
             )}
           </button>
         );

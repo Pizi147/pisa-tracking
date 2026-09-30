@@ -183,7 +183,7 @@ function DeadlineSummary({ cells }: { cells: Cell[] }) {
     && c.progress !== 'cancelled' && c.progress !== 'absent');
   const noShows = cells.filter((c) => c.required && c.noShow);
   const dongDau = noShows.length ? (
-    <span className="text-[10px] text-slate-400 leading-tight truncate max-w-full"
+    <span className="text-xs text-slate-400 leading-tight truncate max-w-full"
       title={noShows.map((c) => `${skillShort(c.skill)}: ${c.noShow!.text}`).join('\n')}>
       {noShows.map((c) => skillShort(c.skill)).join(', ')}: {noShows[0].noShow!.text}
     </span>
@@ -205,7 +205,7 @@ function DeadlineSummary({ cells }: { cells: Cell[] }) {
     <div className="flex flex-col items-start gap-0.5 min-w-0">
       <DeadlinePill cell={soonest} />
       {dongDau ?? (weeks.size > 1 && (
-        <span className="max-w-full truncate text-[10px] text-slate-500" title={skillLabel(soonest.skill)}>
+        <span className="max-w-full truncate text-xs text-slate-400" title={skillLabel(soonest.skill)}>
           {skillShort(soonest.skill)} · đợt này thi {weeks.size} tuần
         </span>
       ))}
@@ -317,7 +317,7 @@ function SheetRow({ row, rowIndex, active, cot, tuanDangXem, onReload, gvMacDinh
               : `Chờ ${row.result.required.length - row.result.scoredRequired} kỹ năng`}
           </Level>
           {row.result.scopeNote && (
-            <span className="text-[10px] text-slate-500 truncate max-w-full" title={row.result.scopeDetail ?? row.result.scopeNote}>
+            <span className="text-[11px] text-slate-500 truncate max-w-full" title={row.result.scopeDetail ?? row.result.scopeNote}>
               {row.result.scopeNote}
             </span>
           )}
@@ -350,7 +350,7 @@ export function DauLuu({ status, error, onRetry, soLoi = 0, lon = false }: {
       </span>
     );
   }
-  if (status === 'saving') return <span className="text-[10px] text-slate-500">Đang lưu…</span>;
+  if (status === 'saving') return <span className="text-xs text-slate-400">Đang lưu…</span>;
   if (status === 'saved') return <span className="text-[11px] text-slate-500" title="Đã lưu">✓</span>;
   return null;
 }
@@ -377,12 +377,12 @@ export function DauO({ tt, loi, onLuuLai, lon = false }: {
   if (tt === 'loi') {
     return (
       <button type="button" onClick={onLuuLai} title={`Chưa lưu được${loi ? `: ${loi}` : ''}. Bấm để lưu lại.`}
-        className={`${cho} appearance-none border-0 bg-transparent p-0 text-[10px] font-semibold text-bad underline ${lon ? 'min-h-[44px] px-1 text-xs' : ''}`}>
+        className={`${cho} appearance-none border-0 bg-transparent p-0 text-xs font-semibold text-bad underline ${lon ? 'min-h-[44px] px-1 text-xs' : ''}`}>
         Lưu lại
       </button>
     );
   }
-  if (tt === 'dang-luu') return <span className={`${cho} text-[10px] text-slate-500`} title="Đang lưu">…</span>;
-  if (hienXong) return <span className={`${cho} text-[10px] text-slate-500`} title="Đã lưu">✓</span>;
+  if (tt === 'dang-luu') return <span className={`${cho} text-[11px] text-slate-500`} title="Đang lưu">…</span>;
+  if (hienXong) return <span className={`${cho} text-[11px] text-slate-500`} title="Đã lưu">✓</span>;
   return null;
 }

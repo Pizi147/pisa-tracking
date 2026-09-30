@@ -466,7 +466,7 @@ export function WorkQueue({ view, branchId, q, scope }: {
                           trong khi dữ liệu vẫn đã lọc theo đúng phạm vi quản lý.
                         */}
                         {r.pendingSkills.some((sk: string) => !r.myPendingSkills.includes(sk)) && (
-                          <span className="text-[10px] text-slate-500">
+                          <span className="text-xs text-slate-400">
                             {r.pendingSkills
                               .filter((sk: string) => !r.myPendingSkills.includes(sk))
                               .map((sk: string) => `${tenMonNgan(r.programmeCode ?? null, sk)}: ${r.pendingOwners?.[sk] ?? 'chưa phân công'}`)
@@ -486,7 +486,7 @@ export function WorkQueue({ view, branchId, q, scope }: {
                           {/* PR-NEN (Q15): nhãn 6 chữ chung; chữ trạng thái case cũ còn ở tooltip. */}
                           <NhanTrangThai t={trangThaiCaseDong(r.caseStatus)} title={caseStatusLabel(r.caseStatus ?? 'open')} />
                         </span>
-                        <span className="text-[10px] text-slate-500">
+                        <span className="text-xs text-slate-400">
                           {r.caseFollowUp ?? 'Chưa có follow-up'}
                         </span>
                       </div>

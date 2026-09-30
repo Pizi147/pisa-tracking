@@ -52,7 +52,7 @@ export function DemoBar() {
   };
 
   return (
-    <div className="flex items-center gap-2 flex-wrap px-4 py-1.5 text-xs border-b bg-[#0b141d]" style={{ borderColor: 'var(--line)' }}>
+    <div className="flex items-center gap-2 flex-wrap px-4 py-1.5 text-xs border-b bg-[color:var(--bg)]" style={{ borderColor: 'var(--line)' }}>
       <Alert tone="warn">Dữ liệu demo</Alert>
       <span className="text-slate-500 hidden sm:inline">Toàn bộ dữ liệu là giả, không phải dữ liệu thật của trung tâm.</span>
       <div className="flex-1" />

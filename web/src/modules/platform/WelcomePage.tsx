@@ -348,7 +348,7 @@ function DemoAccounts({ accounts, loading }: { accounts: Account[]; loading: boo
         return (
           <section key={role} className="mb-4">
             <h2 className="text-xs uppercase tracking-wide text-slate-500 font-semibold mb-2">
-              {ROLE_LABEL[role as Role]} <span className="text-slate-600">({group.length})</span>
+              {ROLE_LABEL[role as Role]} <span className="text-slate-500">({group.length})</span>
             </h2>
             <div className="grid sm:grid-cols-2 gap-2">
               {group.map((a) => (

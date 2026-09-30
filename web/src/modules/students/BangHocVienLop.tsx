@@ -106,7 +106,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
               dau={(
                 <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
                   <Link className="link font-semibold" to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>
-                  <span className="text-[10px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
+                  <span className="text-[11px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
                   <MissingBadge items={s.missing} gon />
                   <CanhBaoYThuc cb={s.canhBaoYThuc} />
                 </span>
@@ -150,7 +150,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
             <td className="td h-14">
               <span className="flex min-w-0 items-center gap-1.5">
                 <Link className="link truncate font-semibold" to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>
-                <span className="shrink-0 text-[10px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
+                <span className="shrink-0 text-[11px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
                 <MissingBadge items={s.missing} gon />
                 <CanhBaoYThuc cb={s.canhBaoYThuc} />
               </span>
@@ -195,7 +195,7 @@ function KetQuaOHocVien({ k, standing, thuong }: { k: ReturnType<typeof ketQuaGa
       <span className="flex flex-wrap items-center gap-x-1.5">
         <span className="text-sm font-bold tabular-nums text-slate-100">{k.chinh}</span>
         {k.lech && <span className="text-[11px] font-semibold tabular-nums text-bad" title={`Dưới kỳ vọng ${k.lech.replace('−', '')}`}>{k.lech}</span>}
-        {k.dat && <span className="text-[10px] text-slate-400" title={thuong ? 'Đạt mọi môn' : 'Đạt kỳ vọng'}>✓</span>}
+        {k.dat && <span className="text-[11px] text-slate-400" title={thuong ? 'Đạt mọi môn' : 'Đạt kỳ vọng'}>✓</span>}
         {k.sos && (
           <Level tone={sosTone(standing?.sosLevel ?? null)} dut={k.sosTamThoi}
             title={k.sosTamThoi ? 'Tạm thời: chưa đủ điểm các môn' : undefined}>{k.sos}{k.sosTamThoi ? ' tạm thời' : ''}</Level>

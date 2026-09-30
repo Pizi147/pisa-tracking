@@ -157,7 +157,7 @@ export function HanhTrinh({ studentId, active, episodes, allEpisodes, onOpenCase
           title="Thu hẹp cột tuần về 40px — cuộn ngang trong thẻ"
           className={`btn btn-sm inline-flex items-center gap-1.5 ${xemGon ? 'bg-doing-bg text-doing border-doing-line' : ''}`}>
           <i aria-hidden className="relative inline-block h-3 w-[22px] rounded-full" style={{ background: xemGon ? 'rgb(var(--doing-line-rgb))' : 'var(--line-strong)' }}>
-            <span className="absolute top-[2px] h-2 w-2 rounded-full" style={{ left: xemGon ? 12 : 2, background: xemGon ? '#dbe9ff' : 'var(--text-faint)' }} />
+            <span className="absolute top-[2px] h-2 w-2 rounded-full" style={{ left: xemGon ? 12 : 2, background: xemGon ? 'var(--text)' : 'var(--text-faint)' }} />
           </i>
           Xem gọn
         </button>
@@ -186,15 +186,15 @@ export function HanhTrinh({ studentId, active, episodes, allEpisodes, onOpenCase
             {/* ---- trục: tháng (hàng 1) · tuần (hàng 2) */}
             <CotGhim hang={1} cotTen={boCuc.cotTen} nen="var(--surface)" />
             {truc.thang.map((th) => (
-              <div key={`${th.tu}-${th.nhan}`} className="z-[2] px-1.5 pb-1 pt-0.5 text-[10px] font-extrabold uppercase tracking-[0.06em] text-dim whitespace-nowrap"
+              <div key={`${th.tu}-${th.nhan}`} className="z-[2] px-1.5 pb-1 pt-0.5 text-[11px] font-extrabold uppercase tracking-[0.06em] text-dim whitespace-nowrap"
                 style={{ gridRow: 1, gridColumn: `${th.tu + 2} / ${th.tu + th.so + 2}` }}>
                 {th.nhan}
               </div>
             ))}
-            <CotGhim hang={2} cotTen={boCuc.cotTen} nen="var(--surface)" className="items-center px-3 text-[10.5px] text-faint">Tuần</CotGhim>
+            <CotGhim hang={2} cotTen={boCuc.cotTen} nen="var(--surface)" className="items-center px-3 text-[11px] text-faint">Tuần</CotGhim>
             {truc.tuan.map((w, i) => (
               <div key={w.thuHai} title={`${tuanLich(w.thuHai, homNay)}${w.homNay ? ' · tuần này' : ''}`}
-                className={`z-[2] pb-1.5 pt-1 text-center text-[10.5px] tabular-nums ${w.homNay ? 'font-extrabold text-doing' : 'text-faint'}`}
+                className={`z-[2] pb-1.5 pt-1 text-center text-[11px] tabular-nums ${w.homNay ? 'font-extrabold text-doing' : 'text-faint'}`}
                 style={{ gridRow: 2, gridColumn: i + 2 }}>
                 {w.nhan}
               </div>
@@ -204,7 +204,7 @@ export function HanhTrinh({ studentId, active, episodes, allEpisodes, onOpenCase
             {/* ---- hàng Khoá / Lộ trình */}
             {hang.hangDoan && (
               <>
-                <CotGhim hang={hang.hangDoan} cotTen={boCuc.cotTen} nen="var(--surface)" className="items-center px-3 py-1 text-[10.5px] text-faint">
+                <CotGhim hang={hang.hangDoan} cotTen={boCuc.cotTen} nen="var(--surface)" className="items-center px-3 py-1 text-[11px] text-faint">
                   {doanHienThi[0].loai === 'khoa' ? 'Khoá' : 'Lộ trình'}
                 </CotGhim>
                 {doanHienThi.map((dg, di) => {
@@ -212,7 +212,7 @@ export function HanhTrinh({ studentId, active, episodes, allEpisodes, onOpenCase
                   const b = cotCua(dg.den, truc);
                   return (
                     <div key={di} title={dg.nhan}
-                      className="z-[2] mx-[3px] mt-1.5 truncate rounded-md bg-muted-bg px-2 py-0.5 text-[10.5px] text-muted"
+                      className="z-[2] mx-[3px] mt-1.5 truncate rounded-md bg-muted-bg px-2 py-0.5 text-[11px] text-muted"
                       style={{ gridRow: hang.hangDoan!, gridColumn: `${a + 2} / ${b + 3}` }}>
                       {dg.nhan}
                     </div>
@@ -224,7 +224,7 @@ export function HanhTrinh({ studentId, active, episodes, allEpisodes, onOpenCase
             {/* ---- hàng Đợt Test: mỗi tuần một ô, ghim cùng tuần xếp dọc */}
             {hang.hangGhim && (
               <>
-                <CotGhim hang={hang.hangGhim} cotTen={boCuc.cotTen} nen="var(--surface)" className="items-center px-3 py-1 text-[10.5px] text-faint">
+                <CotGhim hang={hang.hangGhim} cotTen={boCuc.cotTen} nen="var(--surface)" className="items-center px-3 py-1 text-[11px] text-faint">
                   Đợt Test
                 </CotGhim>
                 {nhomGhim.map((nhom) => {
@@ -237,7 +237,7 @@ export function HanhTrinh({ studentId, active, episodes, allEpisodes, onOpenCase
                         return (
                           <button key={g.attemptId} type="button" title={nh.day}
                             onClick={() => navigate(duongHoSoHocVien(studentId, { dot: g.attemptId }))}
-                            className={`rounded-full border px-2 text-[10.5px] font-bold leading-4 whitespace-nowrap ${SCORE_CHIP[MAU_GHIM[nh.mau]]}`}>
+                            className={`rounded-full border px-2 text-xs font-bold leading-4 whitespace-nowrap ${SCORE_CHIP[MAU_GHIM[nh.mau]]}`}>
                             {boCuc.xuongDong ? nh.gon : nh.chu}
                           </button>
                         );
@@ -324,7 +324,7 @@ function HopKyNang({ hop, vi, vanDe, soAn, truc, boCuc, rongTuan, homNay, onOpen
                 : moc.map((m, k) => (
                   <Fragment key={k}>
                     {m.lech && (
-                      <i className={`mx-[5px] text-[10px] font-bold not-italic ${LECH[m.lech.dau]}`} title={LECH_TITLE[m.lech.dau]}>{m.lech.chu}</i>
+                      <i className={`mx-[5px] text-[11px] font-bold not-italic ${LECH[m.lech.dau]}`} title={LECH_TITLE[m.lech.dau]}>{m.lech.chu}</i>
                     )}
                     <b title={m.title}
                       className={m.cho ? 'ml-2 font-semibold text-faint' : m.xau ? 'font-bold text-bad' : 'font-bold text-[var(--text)]'}>
@@ -341,7 +341,7 @@ function HopKyNang({ hop, vi, vanDe, soAn, truc, boCuc, rongTuan, homNay, onOpen
               </Nhan>
             </span>
           ) : (
-            <span className="ml-1.5 text-[10.5px] text-faint">Không có Case</span>
+            <span className="ml-1.5 text-[11px] text-faint">Không có Case</span>
           )}
         </div>
       </div>
@@ -394,7 +394,7 @@ function VanDeHang({ v, vi, cuoi, truc, boCuc, rongTuan, homNay, onOpenCase }: {
         className={`min-w-0 flex-col justify-center pr-3 ${boCuc.xuongDong ? 'pl-3' : 'pl-6'} ${cuoi ? 'rounded-bl-lg' : ''}`}>
         <button type="button" onClick={() => onOpenCase(v.caseId)} className="group min-w-0 appearance-none border-0 bg-transparent p-0 text-left">
           <span className="block truncate text-[11.5px] leading-[15px] text-[var(--text)] group-hover:underline" title={v.ten}>{v.ten}</span>
-          <span className="block truncate text-[10.5px] leading-[14px] text-faint" title={phu}>{phu}</span>
+          <span className="block truncate text-[11px] leading-[14px] text-faint" title={phu}>{phu}</span>
         </button>
       </CotGhim>
       {v.pa.length === 0 ? (
@@ -440,10 +440,10 @@ function KhoiPa({ p, hang, truc, rongTuan, homNay, onOpenCase }: {
 
 /** Chú giải theo nhóm: ĐIỂM · ĐỢT TEST · PHƯƠNG ÁN · ô màu tuần này. Dấu nào cũng có tooltip ở chỗ dùng (G-7). */
 function ChuGiai({ cheDo }: { cheDo: 'ielts' | 'ratio' }) {
-  const tieuDe = 'text-[10px] font-extrabold uppercase tracking-[0.05em] text-faint';
+  const tieuDe = 'text-[11px] font-extrabold uppercase tracking-[0.05em] text-faint';
   const khoiMau = (tone: ToneKhoiPa, dau: string, chu: string) => (
     <span className="inline-flex items-center gap-1">
-      <span className={`inline-block rounded px-[5px] text-[10px] font-extrabold leading-[15px] ${KHOI[tone]}`}>{dau}</span>{chu}
+      <span className={`inline-block rounded px-[5px] text-[11px] font-extrabold leading-[15px] ${KHOI[tone]}`}>{dau}</span>{chu}
     </span>
   );
   const ghim: [MauKetQua, string][] = [['dat', 'Đạt'], ['sos1', 'SOS 1'], ['sos2', 'SOS 2'], ['sos3', 'SOS 3'], ['tam', 'Tạm thời']];
@@ -459,7 +459,7 @@ function ChuGiai({ cheDo }: { cheDo: 'ielts' | 'ratio' }) {
       <span aria-hidden className="h-3 w-px" style={{ background: 'var(--line-strong)' }} />
       <span className={tieuDe}>Đợt Test</span>
       {ghim.map(([mau, chu]) => (
-        <span key={mau} className={`rounded-full border px-2 text-[10.5px] font-bold leading-4 ${SCORE_CHIP[MAU_GHIM[mau]]}`}>{chu}</span>
+        <span key={mau} className={`rounded-full border px-2 text-xs font-bold leading-4 ${SCORE_CHIP[MAU_GHIM[mau]]}`}>{chu}</span>
       ))}
       <span aria-hidden className="h-3 w-px" style={{ background: 'var(--line-strong)' }} />
       <span className={tieuDe}>Phương án</span>
@@ -469,7 +469,7 @@ function ChuGiai({ cheDo }: { cheDo: 'ielts' | 'ratio' }) {
       {khoiMau('run', '▶', 'Đang làm')}
       {khoiMau('late', '⚠', 'Quá hạn cập nhật')}
       <span className="inline-flex items-center gap-1">
-        <span className="inline-block rounded border border-dashed border-soon-line px-[5px] text-[10px] font-extrabold leading-[13px] text-soon">Chưa có PA</span>
+        <span className="inline-block rounded border border-dashed border-soon-line px-[5px] text-[11px] font-extrabold leading-[13px] text-soon">Chưa có PA</span>
       </span>
       <span aria-hidden className="h-3 w-px" style={{ background: 'var(--line-strong)' }} />
       <span className="inline-flex items-center gap-1">

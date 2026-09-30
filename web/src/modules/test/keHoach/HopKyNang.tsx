@@ -234,11 +234,11 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
           <label className="block">
             <span className="mb-1 flex items-baseline gap-2 text-[11.5px] font-bold text-slate-200">
               <span className="flex-1">{bo.length ? 'Lý do bỏ' : 'Lý do dời'} <span className="text-bad">*</span></span>
-              <span className="text-[10.5px] font-normal tabular-nums text-slate-500">{lyDo.trim().length}/{LY_DO_TOI_THIEU}</span>
+              <span className="text-[11px] font-normal tabular-nums text-slate-500">{lyDo.trim().length}/{LY_DO_TOI_THIEU}</span>
             </span>
             <input className="field w-full" value={lyDo} onChange={(e) => setLyDo(e.target.value)}
               placeholder={bo.length ? 'Ví dụ: đợt này không thi Speaking' : 'Ví dụ: trùng lịch phòng thi'} />
-            {doiTuanDaBatDau && !bo.length && <span className="mt-1 block text-[10.5px] text-slate-500">Tuần thi cũ đã bắt đầu — dời lúc này phải ghi lý do.</span>}
+            {doiTuanDaBatDau && !bo.length && <span className="mt-1 block text-xs text-slate-400">Tuần thi cũ đã bắt đầu — dời lúc này phải ghi lý do.</span>}
           </label>
         )}
         <div className={`min-h-[16px] text-xs leading-relaxed ${dongTrangThai.tone === 'bad' ? 'text-bad' : dongTrangThai.tone === 'soon' ? 'text-soon' : 'text-slate-400'}`} role="status">

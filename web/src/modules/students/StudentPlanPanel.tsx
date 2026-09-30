@@ -178,7 +178,7 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, canEditCycle = t
                           <td className="td text-slate-400 whitespace-nowrap tabular-nums">tuần {r.studyWeek}</td>
                           <td className="td whitespace-nowrap">
                             <span className="text-slate-200">{r.code}</span>
-                            <span className="block text-[10px] text-slate-500">{fmtDate(r.weekStart)}</span>
+                            <span className="block text-[11px] text-slate-500">{fmtDate(r.weekStart)}</span>
                           </td>
                           <td className="td">
                             {/*
@@ -203,7 +203,7 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, canEditCycle = t
                                 Mở lịch kỹ năng
                               </a>
                             ) : (
-                              <span className="text-xs text-slate-600">chưa có đợt</span>
+                              <span className="text-xs text-slate-500">chưa có đợt</span>
                             )}
                           </td>
                         </tr>
