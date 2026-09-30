@@ -377,8 +377,12 @@ export function nhanGhim(a: {
   const sos = a.sosLevel ?? (soDat >= a.soYeuCau ? 0 : Math.min(3, a.soYeuCau - soDat));
   const mau = mauTuSos(sos);
   const datMon = `${soDat}/${a.soYeuCau} môn đạt`;
-  if (sos <= 0) return { chu: `${ngan} · Đạt`, gon: ngan, day: ghep(dai, datMon), mau };
-  return { chu: `${ngan} · SOS ${sos}`, gon: ngan, day: ghep(dai, datMon, `SOS ${sos}`), mau };
+  /* PR-LT2a (T58): lớp thường KHÔNG có chữ SOS — Giữa khoá `2/4 môn đạt`, Cuối khoá `64%` (màu vẫn theo số môn trượt). */
+  if (a.kind === 'final' && a.tyLe != null) {
+    const pt = `${Math.round(a.tyLe * 100)}%`;
+    return { chu: `${ngan} · ${pt}`, gon: ngan, day: ghep(dai, `${pt} tổng`, datMon), mau };
+  }
+  return { chu: `${ngan} · ${datMon}`, gon: ngan, day: ghep(dai, datMon, sos <= 0 ? 'Đạt' : `${Math.min(sos, 3)} môn trượt`), mau };
 }
 
 /**

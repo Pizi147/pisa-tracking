@@ -12,7 +12,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { Empty, Info, Level, Status } from '../../ui/ui.tsx';
 import { useTrangThaiLuuO } from '../../ui/SaveState.tsx';
 import { ODiemThuong, laTuChoi, type SaveOpts } from '../fasttrack/ScoreEntry.tsx';
-import { caseStatusLabel, sosLabel, sosTone } from '../../lib/format.ts';
+import { caseStatusLabel, sosTone } from '../../lib/format.ts';
 import {
   ATTEMPT_KIND_SHORT, CHU_THAO_TAC, CHUONG_TRINH_KHONG_CHIA_MON, ketQuaThuong, mondayOfDate, ngay, tenMon, tenMonNgan, thaoTacKyNang, trangThaiTT, tuanLich,
   type AttemptKind, type ThaoTac,
@@ -528,7 +528,7 @@ function KetQua({ row, sheet }: { row: Row; sheet: ThuongSheet }) {
       : null;
 
   const chiTiet = r.skills.map((s) => `${ngan(s.skill)} ${s.score === null ? '—' : `${s.score}/${s.total ?? '?'}`}`).join(' · ');
-  /* N-1b: màu kết quả Test — Đạt xanh lá · SOS 1 vàng · SOS 2 cam · SOS 3 đỏ · chưa đủ điểm xám. */
+  /* N-1b: màu kết quả Test — Đạt xanh lá · 1 môn trượt vàng · 2 cam · ≥ 3 đỏ · chưa đủ điểm xám. Chỉ MÀU, không có chữ SOS (T58). */
   const tone = khongChiaMon ? (truot ? 'warn' : r.complete ? 'ok' : 'muted')
     : truot ? (r.sosLevel ? sosTone(r.sosLevel) : 'sos3') : r.complete ? 'ok' : 'muted';
   const chinh = r.scored === 0
@@ -536,11 +536,6 @@ function KetQua({ row, sheet }: { row: Row; sheet: ThuongSheet }) {
     : (
       <Level tone={tone} title={chiTiet}>
         {kq.chinh}
-        {truot && r.sosLevel && !khongChiaMon ? (
-          <span title={`${sosLabel(r.sosLevel)} — mức cần hỗ trợ theo số môn chưa đạt (${r.failedCount} môn)`}>
-            {` · ${sosLabel(r.sosLevel)}`}
-          </span>
-        ) : null}
       </Level>
     );
 

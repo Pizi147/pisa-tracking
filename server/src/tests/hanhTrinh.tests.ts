@@ -301,17 +301,17 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     assert(chuaKy.mau === 'tam' && chuaKy.day.includes('chưa có kỳ vọng'), `Chưa có kỳ vọng: ${JSON.stringify(chuaKy)}`);
   });
 
-  check('PR-UX5 (1) · nhanGhim lớp thường: "Giữa · SOS 1" / "Cuối · Đạt" / "Cuối · tạm thời", không chữ "MT"', () => {
+  check('PR-UX5 (1) · nhanGhim lớp thường: "Giữa · 3/4 môn đạt" / "Cuối · 64%" / "Cuối · tạm thời", không chữ "MT" và không "SOS" (PR-LT2a T58)', () => {
     const base = { cheDo: 'ratio' as const, attemptNo: 1, overall: null, soYeuCau: 4, maLop: 'MB FOU 03' };
     const g = d.nhanGhim({ ...base, kind: 'progress', sosLevel: 1, soDat: 3, soCoDiem: 4 });
-    assert(g.chu === 'Giữa · SOS 1' && g.mau === 'sos1' && g.day === 'Giữa khoá MB FOU 03 · 3/4 môn đạt · SOS 1', `Giữa: ${JSON.stringify(g)}`);
-    const c = d.nhanGhim({ ...base, kind: 'final', sosLevel: 0, soDat: 4, soCoDiem: 4 });
-    assert(c.chu === 'Cuối · Đạt' && c.mau === 'dat', `Cuối đạt: ${JSON.stringify(c)}`);
+    assert(g.chu === 'Giữa · 3/4 môn đạt' && g.mau === 'sos1' && g.day === 'Giữa khoá MB FOU 03 · 3/4 môn đạt · 1 môn trượt', `Giữa: ${JSON.stringify(g)}`);
+    const c = d.nhanGhim({ ...base, kind: 'final', sosLevel: 0, soDat: 4, soCoDiem: 4, tyLe: 0.64 });
+    assert(c.chu === 'Cuối · 64%' && c.mau === 'dat', `Cuối: ${JSON.stringify(c)}`);
     const t = d.nhanGhim({ ...base, kind: 'final', sosLevel: 2, soDat: 2, soCoDiem: 3 });
     assert(t.chu === 'Cuối · tạm thời' && t.mau === 'tam' && t.day.includes('mới chấm 3/4 môn'), `Tạm thời: ${JSON.stringify(t)}`);
     const trong = d.nhanGhim({ ...base, kind: 'progress', sosLevel: null, soDat: null, soCoDiem: 0 });
     assert(trong.chu === 'Giữa' && trong.mau === 'tam', `Chưa điểm: ${JSON.stringify(trong)}`);
-    for (const r of [g, c, t, trong]) assert(!/MT/.test(`${r.chu}${r.gon}${r.day}`), `Không "MT": ${JSON.stringify(r)}`);
+    for (const r of [g, c, t, trong]) assert(!/MT|SOS/.test(`${r.chu}${r.gon}${r.day}`), `Không "MT"/"SOS": ${JSON.stringify(r)}`);
   });
 
   check('PR-UX5 (1) · gomGhimTheoTuan: hai ngày khác nhau trong một tuần → 1 nhóm đúng thứ tự; khác tuần → 2 nhóm', () => {

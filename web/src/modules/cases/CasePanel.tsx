@@ -350,7 +350,7 @@ function buildLichSu(data: CaseDetail, ngan: (d: string | null | undefined) => s
   for (const m of data.milestones ?? []) {
     if (m.kind === 'opened') continue;   // ngày mở và người tạo đã ở khối Vấn đề
     out.push({
-      key: `m${m.id}`, on: m.occurredOn, dot: m.attemptNo ? `MT${m.attemptNo}` : null,
+      key: `m${m.id}`, on: m.occurredOn, dot: m.attemptNo ? (m.dot ?? `MT${m.attemptNo}`) : null,
       tieuDe: MILESTONE_TITLE[m.kind] ?? m.kind,
       badge: (
         <>

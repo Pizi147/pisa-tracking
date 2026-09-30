@@ -116,7 +116,7 @@ export function QuickReport({
    */
   /* Cần mã chương trình để gọi đúng tên môn và bộ nguyên nhân (FOU G+V / P, Pre FOU Tổng hợp — T57). */
   const chuDe = useApi<{ ratio: boolean; topics: string[]; chuongTrinh: string | null;
-    choNguyenNhan?: Record<string, { caseId: number; mt: number | null; sos: number | null }> }>(
+    choNguyenNhan?: Record<string, { caseId: number; mt: number | null; sos: number | null; dot?: string | null }> }>(
     open && studentId ? `/students/${studentId}/case-topics${cycleId ? `?cycleId=${cycleId}` : ''}` : null,
     [open, studentId, cycleId],
   );
@@ -377,7 +377,7 @@ export function QuickReport({
           <div className="space-y-2">
             <p className="m-0 text-sm text-slate-200">
               {topicLabel(topic)} đang có Case chờ xác nhận nguyên nhân
-              {cnn.mt || cnn.sos ? ` (${[cnn.mt ? `MT${cnn.mt}` : null, cnn.sos ? `SOS ${cnn.sos}` : null].filter(Boolean).join(' · ')})` : ''}.
+              {cnn.mt || cnn.sos ? ` (${[cnn.mt ? (cnn.dot ?? `MT${cnn.mt}`) : null, cnn.sos ? `SOS ${cnn.sos}` : null].filter(Boolean).join(' · ')})` : ''}.
             </p>
             {onMoCase && (
               <button type="button" className="btn btn-primary btn-sm min-h-[44px] sm:min-h-0" onClick={() => { onClose(); onMoCase(cnn.caseId, 'xac-nhan'); }}>

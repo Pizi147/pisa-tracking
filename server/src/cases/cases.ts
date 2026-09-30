@@ -17,7 +17,7 @@ import {
   HAN_DUYET_NGAY, hanTheoNgay,
   type NextStep, type RescheduleTarget,
   issueBranchOf, issueLabel, caseTopicLabel, urgencyFromSos,
-  caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac, chanHoanThanh, laLanGhiCuoi, mocChuPa, programmeOf, quyetDinhChoPa, trangThaiCaseV4, viecTiepCuaCase, tenCaseSos, tenCaseThuong, tenMon, tenMonNgan,
+  caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac, chanHoanThanh, laLanGhiCuoi, mocChuPa, programmeOf, quyetDinhChoPa, trangThaiCaseV4, viecTiepCuaCase, tenCaseSos, tenCaseThuong, nhanDot, tenMon, tenMonNgan,
   type CaseOutcome, type FollowUpOutcome, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -100,13 +100,13 @@ export function caseTitleOf(c: {
 export function milestonesOf(caseId: number) {
   return (db()
     .prepare(
-      `SELECT m.*, u.full_name AS actor_name FROM case_milestones m
+      `SELECT m.*, u.full_name AS actor_name, (SELECT a.kind FROM assessment_attempts a WHERE a.id = m.attempt_id) AS attempt_kind FROM case_milestones m
          LEFT JOIN users u ON u.id = m.created_by
         WHERE m.case_id = ? ORDER BY m.occurred_on, m.id`,
     )
     .all(caseId) as any[])
     .map((m) => ({
-      id: m.id, kind: m.kind, attemptId: m.attempt_id, attemptNo: m.attempt_no,
+      id: m.id, kind: m.kind, attemptId: m.attempt_id, attemptNo: m.attempt_no, dot: m.attempt_kind ? nhanDot(m.attempt_kind, m.attempt_no) : null,
       band: m.band, expectation: m.expectation, sosLevel: m.sos_level,
       occurredOn: m.occurred_on, note: m.note, actorName: m.actor_name,
     }));
@@ -620,11 +620,11 @@ export function caseTopicsOf(p: Principal, studentId: number, cycleId?: number |
   const ratio = !!(cycle && isRatioCycle(cycle));
   const chuongTrinh: string | null = cycle ? cycle.programme_code ?? programmeCodeOfCycle(cycle.id) : null;
   /* PR-SOS (K3-23): kỹ năng đang có Case chờ xác nhận nguyên nhân — form "+ Case" chấm nhỏ nút đó và dẫn sang Xác nhận Case. */
-  const mo = conn.prepare(`SELECT sc.id, sc.topic, sc.category, sc.sos_level, a.attempt_no FROM sos_cases sc
+  const mo = conn.prepare(`SELECT sc.id, sc.topic, sc.category, sc.sos_level, a.attempt_no, a.kind AS attempt_kind FROM sos_cases sc
       LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE sc.student_id = ? AND sc.status != 'done'`).all(studentId) as any[];
   const cho = new Set(awaitingCauseCaseIds(mo.map((c) => c.id as number)));
-  const choNguyenNhan: Record<string, { caseId: number; mt: number | null; sos: number | null }> = {};
-  for (const c of mo) if (cho.has(c.id)) choNguyenNhan[c.topic ?? c.category] = { caseId: c.id, mt: c.attempt_no ?? null, sos: c.sos_level ?? null };
+  const choNguyenNhan: Record<string, { caseId: number; mt: number | null; sos: number | null; dot: string | null }> = {};
+  for (const c of mo) if (cho.has(c.id)) choNguyenNhan[c.topic ?? c.category] = { caseId: c.id, mt: c.attempt_no ?? null, sos: c.sos_level ?? null, dot: c.attempt_kind ? nhanDot(c.attempt_kind, c.attempt_no ?? null) : null };   // lớp thường: `Giữa khoá` thay `MT2` (T58)
   return { ratio, topics: caseTopicsFor(ratio, chuongTrinh), chuongTrinh, choNguyenNhan };
 }
 
@@ -1890,7 +1890,7 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
       homeBranchId: r.home_branch_id ?? r.eff_branch_id,
       /* Lớp Normal và lớp FT chấm khác nhau, nên bộ lọc loại lớp là bộ lọc ĐẦU TIÊN. */
       classKind: (r.class_is_ft ? 'ft' : 'normal') as 'ft' | 'normal',
-      attemptId: r.attempt_id, attemptNo: r.attempt_no,
+      attemptId: r.attempt_id, attemptNo: r.attempt_no, attemptKind: r.attempt_kind ?? null,
       sosLevel: r.sos_level, urgency: r.urgency,
       summary: r.summary,
       headline: caseHeadline({

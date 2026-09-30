@@ -23,6 +23,8 @@ type CoordAction = {
 export type CoordTurn = {
   attemptId: number; attemptNo: number; studentId: number; studentName: string;
   classCode: string | null; sosLevel: number | null; skillLabels: string[];
+  /** Lớp thường (T58): `Giữa khoá` + `2/4 môn đạt` thay cho `MT2 · SOS 2`; null với lượt Mock FT. */
+  nhanDot?: string | null; ketQua?: { chinh: string; phu: string | null } | null;
   summary: { done: number; active: number; label: string; complete: boolean };
   actions: CoordAction[]; canAct: boolean;
 };
@@ -70,7 +72,9 @@ export function TheSos({ t, cot1 = 'luot', onGoAcademic, onChanged }: {
 }) {
   const [open, setOpen] = useState(!t.summary.complete);
   const [adding, setAdding] = useState(false);
-  const mtSos = `MT${t.attemptNo}${t.sosLevel !== null ? ` · ${sosLabel(t.sosLevel)}` : ''}`;
+  const mtSos = t.nhanDot
+    ? `${t.nhanDot}${t.ketQua ? ` · ${t.ketQua.chinh}` : ''}`
+    : `MT${t.attemptNo}${t.sosLevel !== null ? ` · ${sosLabel(t.sosLevel)}` : ''}`;
   const kyNang = t.skillLabels.length > 0 ? t.skillLabels.join(' + ') : '—';
 
   return (

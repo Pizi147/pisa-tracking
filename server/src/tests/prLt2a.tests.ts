@@ -476,4 +476,50 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     const b = all('SELECT kind FROM assessment_attempts WHERE cycle_id = ? ORDER BY attempt_no', cy.id).map((x) => x.kind).join();
     assert(b === 'progress,final', `bài sau chuyển: ${b}`);
   });
+
+  // ------------------------------------------------------------------ khối 9 · lớp thường không nhãn SOS (Task 9 · T58)
+  check('LT2a (9) · nhanKetQuaThuong: 6 ca — Giữa khoá n/4 môn đạt + Không đạt, đủ đạt, đang chấm dở, Cuối khoá %, Pre FOU %, chưa có điểm; không ca nào có chữ SOS', () => {
+    const k = (o: any) => d.nhanKetQuaThuong({ kind: 'progress', ct: 'FOU', scored: 4, required: 4, failedSkills: [], tyLeTong: null, khongChiaMon: false, ...o });
+    const ca = [
+      k({ failedSkills: ['writing', 'speaking'] }), k({}), k({ scored: 2 }), k({ kind: 'final', tyLeTong: 0.64, failedSkills: ['reading'] }),
+      k({ ct: 'PREFOU', khongChiaMon: true, tyLeTong: 0.68, scored: 1, required: 1, kind: 'final' }), k({ scored: 0 }),
+    ];
+    assert(ca[0].chinh === '2/4 môn đạt' && ca[0].phu === 'Không đạt: G+V P' && ca[0].dat === false, JSON.stringify(ca[0]));
+    assert(ca[1].chinh === '4/4 môn đạt' && ca[1].phu === null && ca[1].dat === true, JSON.stringify(ca[1]));
+    assert(ca[2].chinh === '2/2 môn đạt (đã chấm)' && ca[2].dat === null, JSON.stringify(ca[2]));
+    assert(ca[3].chinh === '64%' && ca[3].phu === 'Không đạt: R', JSON.stringify(ca[3]));
+    assert(ca[4].chinh === '68%' && ca[4].phu === null && ca[4].dat === false, JSON.stringify(ca[4]));
+    assert(ca[5].chinh === '—' && ca[5].dat === null, JSON.stringify(ca[5]));
+    assert(!/SOS/.test(JSON.stringify(ca)), 'không chữ SOS');
+  });
+
+  check('LT2a (9) · Ghim Hành trình lớp thường: "Giữa · 2/4 môn đạt", "Cuối · 64%" — không SOS; ghim FT (MT) vẫn "SOS n"', () => {
+    const g = (o: any) => d.nhanGhim({ cheDo: 'ratio', attemptNo: 1, kind: 'progress', overall: null, sosLevel: 2, soDat: 2, soYeuCau: 4, soCoDiem: 4, ...o });
+    const gk = g({}), ck = g({ kind: 'final', sosLevel: 1, soDat: 3, tyLe: 0.64 }), dat = g({ sosLevel: 0, soDat: 4 });
+    assert(gk.chu === 'Giữa · 2/4 môn đạt' && ck.chu === 'Cuối · 64%' && dat.chu === 'Giữa · 4/4 môn đạt', `${gk.chu} | ${ck.chu} | ${dat.chu}`);
+    assert(!/SOS/.test(JSON.stringify([gk, ck, dat])), 'không chữ SOS');
+    const ft = d.nhanGhim({ cheDo: 'ielts', attemptNo: 2, kind: 'mock', overall: 5.5, sosLevel: 2, soDat: null, soYeuCau: 4, soCoDiem: 4 });
+    assert(/SOS 2/.test(ft.chu), ft.chu);
+  });
+
+  check('LT2a (9) · Tổng hợp Test khung thường: cột "1 môn trượt / 2 môn trượt / ≥ 3 môn trượt" (cùng khoá sos1..3); khung FT vẫn "SOS 1..3"', () => {
+    const nhan = (ct: any) => d.cotTongHopFor(ct).filter((c: any) => /^sos[123]$/.test(c.khoa)).map((c: any) => c.nhan(ct)).join('|');
+    assert(nhan('thuong') === '1 môn trượt|2 môn trượt|≥ 3 môn trượt', nhan('thuong'));
+    assert(nhan('ft') === 'SOS 1|SOS 2|SOS 3', nhan('ft'));
+  });
+
+  await checkAsync('LT2a (9) · Quét nguồn web: lưới lớp thường, hồ sơ HV lớp thường không gọi sosLabel; Case lớp thường không có sos_level; Case board/mốc đọc nhãn đợt', async () => {
+    const fs = await import('node:fs'), path = await import('node:path');
+    const doc = (f: string) => fs.readFileSync(path.join(process.cwd(), 'web/src/modules', f), 'utf8');
+    assert(!/sosLabel/.test(doc('cham/LuoiThuong.tsx')), 'LuoiThuong không còn sosLabel');
+    const hs = doc('students/StudentDetailPage.tsx');
+    assert(!/sosLabel/.test(hs) && /nhanKetQuaThuong/.test(hs), 'hồ sơ HV lớp thường dùng nhanKetQuaThuong');
+    assert(/nhanDot/.test(doc('cases/CaseBoardPage.tsx')), 'Case board: Điểm · Giữa khoá');
+    const em = taoEm('LT2a T58', 'MB FOU 12');
+    nhap(em.pt!, { listening: 18, reading: 18, writing: 11, speaking: 12 });
+    const c = caseTheoMon(em.id, 'writing');
+    assert(get('SELECT sos_level s FROM sos_cases WHERE id = ?', c.id).s === null, 'Case lớp thường: sos_level NULL');
+    const ms: any[] = (cases as any).milestonesOf(c.id);
+    assert(ms.length > 0 && ms.filter((m) => m.attemptNo).every((m) => m.dot === 'Giữa khoá'), JSON.stringify(ms.map((m) => [m.kind, m.dot])));
+  });
 }

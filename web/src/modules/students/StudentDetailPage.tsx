@@ -16,11 +16,11 @@ import { QuickReport } from '../cases/QuickReport.tsx';
 import { StudentYThucSection } from '../yThuc/StudentYThucSection.tsx';
 import {
   attemptHref,
-  attemptStatusLabel, fmtBand, skillLabel, skillShort, sosLabel, sosTone, studentStatusLabel,
+  attemptStatusLabel, fmtBand, skillLabel, skillShort, sosTone, studentStatusLabel,
 } from '../../lib/format.ts';
 import {
   HO_SO_TAB_LABEL, JOURNEY_EVENT_LABEL, caseCategoriesFor, tenMonNgan, docThamSoHoSo, duongHoSoHocVien,
-  deadlineView, khoaLopThuong, ketQuaTestGanNhat, ngay, tuanLich, type HoSoTab,
+  deadlineView, khoaLopThuong, ketQuaTestGanNhat, nhanKetQuaThuong, CHUONG_TRINH_KHONG_CHIA_MON, ngay, tuanLich, type HoSoTab,
 } from '@shared/domain/index.ts';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
@@ -593,7 +593,7 @@ function RatioAttempts({ attempts, dotId, homNay, onOpen, ct = null }: {
             <th className="th">Lớp</th>
             <Th hint="Tuần kế hoạch của lượt này. Một lượt chỉ thuộc đúng một tuần — không có ngày thi cụ thể.">Tuần</Th>
             <Th hint="Số câu đúng / tổng số câu từng môn. Đạt khi từ 70% trở lên.">Điểm từng phần</Th>
-            <Th hint="Số môn chưa đạt — chính là mức SOS. Môn chưa có điểm không tính là chưa đạt.">Kết quả</Th>
+            <Th hint="Giữa khoá: số môn đạt trên tổng, kèm môn không đạt. Cuối khoá: % tổng. Môn chưa có điểm không tính là chưa đạt.">Kết quả</Th>
           </tr>
         </thead>
         <tbody>
@@ -616,9 +616,7 @@ function RatioAttempts({ attempts, dotId, homNay, onOpen, ct = null }: {
                 </span>
               </td>
               <td className="td">
-                <Level tone={sosTone(a.sosLevel)}>
-                  {a.sosLevel === null ? `Chờ ${a.required - a.scored} môn` : sosLabel(a.sosLevel)}
-                </Level>
+                <KetQuaThuongO a={a} ct={ct} />
                 {a.provisional && <div className="text-xs text-slate-400">mới {a.scored}/{a.required} môn</div>}
                 <Link to={attemptHref(a)} className="link text-[11px]" onClick={(e) => e.stopPropagation()}>Hồ sơ đợt ›</Link>
               </td>
@@ -627,6 +625,22 @@ function RatioAttempts({ attempts, dotId, homNay, onOpen, ct = null }: {
         </tbody>
       </table>
     </div>
+  );
+}
+
+/** PR-LT2a (T58): kết quả một lượt lớp thường — `2/4 môn đạt` + `Không đạt: L R` (Giữa khoá), `64%` (Cuối khoá); không có chữ SOS. */
+function KetQuaThuongO({ a, ct }: { a: any; ct: string | null }) {
+  if (a.sosLevel === null && a.scored === 0) return <Level tone="muted">Chờ {a.required - a.scored} môn</Level>;
+  const kq = nhanKetQuaThuong({
+    kind: a.kind === 'final' ? 'final' : 'progress', ct, scored: a.scored, required: a.required,
+    failedSkills: (a.skills ?? []).filter((s: any) => s.outcome === 'fail').map((s: any) => s.skill as string),
+    tyLeTong: a.tyLeTong ?? null, khongChiaMon: !!ct && CHUONG_TRINH_KHONG_CHIA_MON.includes(ct),
+  });
+  return (
+    <>
+      <Level tone={a.sosLevel === null ? (kq.dat ? 'ok' : 'muted') : sosTone(a.sosLevel)}>{kq.chinh}</Level>
+      {kq.phu && <div className="text-xs text-slate-400">{kq.phu}</div>}
+    </>
   );
 }
 
