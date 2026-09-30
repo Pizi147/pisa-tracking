@@ -21,7 +21,7 @@ import { demoToday } from '../demoConfig.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { laNguoiHopLe } from '../platform/timNguoi.ts';
 import { KEY_TAKEN_MESSAGE, canManageDiscipline, requireManageDiscipline, requireViewStudent } from './access.ts';
-import { trangThaiYThuc, type EmYThuc } from './trangThai.ts';
+import { ghiPhanHoi, trangThaiYThuc, type EmYThuc } from './trangThai.ts';
 import { noteMeasureChange, violationsByIds, type ViolationView } from './violations.ts';
 import { dongThoiGian, type DongThoiGianYt } from './board.ts';
 import { taoYeuCau, theCuaDoiTuong } from '../duyet/yeuCau.ts';
@@ -155,6 +155,7 @@ export function xacNhanXuLy(p: Principal, studentId: number, v: XuLyVao): XuLyVi
     const mId = Number(info.lastInsertRowid);
     const link = db().prepare('INSERT INTO measure_violations (measure_id, violation_id, added_by, added_at) VALUES (?,?,?,?)');
     for (const vid of ids) { link.run(mId, vid, p.userId, nowIso()); noteMeasureChange(vid, null, mId, p.userId); }
+    ghiPhanHoi(ids);
     writeAudit({ actorUserId: p.userId, action: 'discipline.handle', entityType: 'discipline_measure', entityId: mId,
       entityLabel: `${hv.student_code} · ${MEASURE_KIND_LABEL[ke.kind]}`, after: { kind: ke.kind, bac: ke.bac, violations: ids, performedOn } });
     if (BAC_BAO_QL.has(ke.kind)) {
@@ -427,6 +428,7 @@ export function guiDeXuat(p: Principal, measureId: number) {
     viPhamChon(em, vIds);
     const doi = db().prepare(`UPDATE discipline_measures SET status = 'cho_duyet', updated_at = ? WHERE id = ? AND status = 'nhap'`).run(nowIso(), measureId).changes;
     if (!doi) throw conflict('Đề xuất này vừa được gửi — mở lại.');
+    ghiPhanHoi(vIds);
     const ngoaiThang = (NGOAI_THANG as readonly string[]).includes(m.kind);
     taoYeuCau(db(), {
       loai: 'y_thuc', doiTuongLoai: 'discipline_measure', doiTuongId: measureId, hocVienId: m.student_id, lopId: em.lopId,

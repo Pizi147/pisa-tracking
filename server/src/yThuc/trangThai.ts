@@ -8,7 +8,7 @@
  */
 import { db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
-import { coNho, coKhoa, datNho, nho } from '../platform/nguCanhRequest.ts';
+import { coNho, coKhoa, datNho, nho, xoaNho } from '../platform/nguCanhRequest.ts';
 import {
   bacHienTai, bacKeTiep, batBuocTu, chuoiThang, nhomEm, trangThaiViPham, hanTheoNgay, HAN_Y_THUC_NGAY,
   type MeasureStatus, type NhanYThucEm, type NhomEm, type TrangThaiViPhamKq, type TrangThaiVp, type ViPhamVao,
@@ -203,6 +203,47 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
     });
   }
   return out;
+}
+
+/**
+ * PR-Pb2-b (Q14) — CHỐT HẠN XỬ LÝ vào `violations.han_xu_ly` để bảng Phân tích giáo viên đo "Xử lý vi phạm đúng hạn" theo hạn LÚC thành
+ * "Cần xử lý", không theo hạn suy lại hôm nay. Luật hạn không chép: đọc `trangThaiYThuc` (không qua bộ nhớ request).
+ *   · vi phạm bắt buộc (Cần xử lý / Quá hạn vì chưa xử lý) có hạn, chưa chốt → chốt; `ghiDe` (Quay lại học, T65) → chốt lại nếu chưa phản hồi.
+ *   · vi phạm hết bắt buộc (sửa / xoá vi phạm khác, Q1) mà chưa phản hồi → bỏ hạn chốt.
+ * Gọi TRONG giao dịch ghi của: ghi · sửa · xoá vi phạm, QL từ chối đề xuất, Quay lại học.
+ */
+export function chotHanXuLy(studentIds: readonly number[], o: { ghiDe?: boolean } = {}): void {
+  if (!studentIds.length) return;
+  xoaNho();
+  const theoHan = new Map<string, number[]>();
+  const bo: number[] = [];
+  for (const em of trangThaiYThuc(studentIds).values()) {
+    for (const [id, t] of em.viPham) {
+      if (t.t === 'can_xu_ly' || t.lyDoQuaHan === 'xu-ly') {
+        if (t.han) theoHan.set(t.han, [...(theoHan.get(t.han) ?? []), id]);
+      } else if (t.t === 'moi' || t.t === 'da_ghi_nhan' || t.lyDoQuaHan === 'xem') bo.push(id);
+    }
+  }
+  const conn = db();
+  for (const [han, ids] of theoHan) {
+    for (let i = 0; i < ids.length; i += LO) {
+      const lo = ids.slice(i, i + LO);
+      conn.prepare(`UPDATE violations SET han_xu_ly = ? WHERE id IN (${cho(lo.length)})
+                      AND (han_xu_ly IS NULL${o.ghiDe ? ' OR phan_hoi_ngay IS NULL' : ''})`).run(han, ...lo);
+    }
+  }
+  for (let i = 0; i < bo.length; i += LO) {
+    const lo = bo.slice(i, i + LO);
+    conn.prepare(`UPDATE violations SET han_xu_ly = NULL WHERE id IN (${cho(lo.length)}) AND han_xu_ly IS NOT NULL AND phan_hoi_ngay IS NULL`).run(...lo);
+  }
+}
+
+/** PR-Pb2-b (Q14): ngày nghiệp vụ lần đầu GVCN phản hồi (xác nhận xử lý / gửi đề xuất) các vi phạm này — lần sau không đổi. */
+export function ghiPhanHoi(violationIds: readonly number[], homNay = demoToday()): void {
+  for (let i = 0; i < violationIds.length; i += LO) {
+    const lo = violationIds.slice(i, i + LO);
+    db().prepare(`UPDATE violations SET phan_hoi_ngay = ? WHERE id IN (${cho(lo.length)}) AND phan_hoi_ngay IS NULL`).run(homNay, ...lo);
+  }
 }
 
 /**

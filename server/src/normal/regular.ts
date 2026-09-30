@@ -527,22 +527,24 @@ export function saveRegularScore(
     if (loi) throw badRequest(loi);
   }
 
+  /* PR-Pb2-b (Q13): cùng luật FT — ngày nghiệp vụ lần đầu ô có điểm, sửa sau giữ nguyên, xoá điểm về NULL. */
+  const nhapDau = (score ?? null) !== null ? existing?.nhap_dau_ngay ?? today : null;
   return tx(() => {
     if (existing) {
       conn
         .prepare(
-          `UPDATE assessment_scores SET raw_score=?, raw_total=?, entered_by=?, entered_at=?, note=?
+          `UPDATE assessment_scores SET raw_score=?, raw_total=?, entered_by=?, entered_at=?, note=?, nhap_dau_ngay=?
             WHERE id=?`,
         )
         .run(score ?? null, total ?? null, p.userId, nowIso(),
-             patch.note !== undefined ? patch.note : existing.note ?? null, existing.id);
+             patch.note !== undefined ? patch.note : existing.note ?? null, nhapDau, existing.id);
     } else {
       conn
         .prepare(
-          `INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total, entered_by, entered_at, note)
-           VALUES (?,?,?,?,?,?,?)`,
+          `INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total, entered_by, entered_at, note, nhap_dau_ngay)
+           VALUES (?,?,?,?,?,?,?,?)`,
         )
-        .run(attemptId, skill, score ?? null, total ?? null, p.userId, nowIso(), patch.note ?? null);
+        .run(attemptId, skill, score ?? null, total ?? null, p.userId, nowIso(), patch.note ?? null, nhapDau);
     }
     const after = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?')
       .get(attemptId, skill);

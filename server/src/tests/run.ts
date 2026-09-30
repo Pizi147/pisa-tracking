@@ -9805,6 +9805,9 @@ await runPrS5fATests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 // ==================================================================== PR-S5F-b (sửa sau rà cuối đợt 5 — Giữa khoá, hồ sơ GV, tốc độ)
 const { runPrS5fbTests } = await import('./prS5fb.tests.ts');
 await runPrS5fbTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== PR-Pb2-b (Phân tích giáo viên · FOU 2 GV · hồ sơ GV · ngày nghiệp vụ mới)
+const { runPrPb2bTests } = await import('./prPb2b.tests.ts');
+await runPrPb2bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
