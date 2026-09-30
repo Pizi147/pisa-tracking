@@ -4,9 +4,13 @@ import {
   type HuongLenh, type MucTieuLenh, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { badRequest, conflict, notFound, nowIso } from '../util.ts';
-import { require_, type Principal } from '../permissions.ts';
+import { loadPrincipal, require_, type Principal } from '../permissions.ts';
+import { nho } from '../platform/nguCanhRequest.ts';
+import { reviseTarget } from '../fasttrack/cycles.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
+import { applyTransition } from './transition.ts';
+import { apDungMotDong, dongLopNeuHet, lopDichHopLe, nguoiNhanGoiY } from './luatLoTrinh.ts';
 import { coTheRaLenh } from './quyenChuyenLop.ts';
 
 /**
@@ -257,4 +261,187 @@ export function suaTuBody(b: any): Partial<DongLenhVao> {
   const v: Record<string, unknown> = {};
   for (const k of ['huong', 'toClassId', 'tuan', 'mucTieu', 'ngayThi', 'lyDo', 'khacGoiY', 'ngayXemLai'] as const) if (b && k in b) v[k] = d[k];
   return v as Partial<DongLenhVao>;
+}
+
+// ==================================================================== THI HÀNH đúng Thứ Hai tuần bắt đầu (Task 4)
+
+/** Q22: mỗi lượt tối đa 40 nhóm (lớp nguồn × tuần × bối cảnh); phần còn lại lượt quét sau làm. Lời gọi Netlify có hạn giờ. */
+export const NHOM_TOI_DA = 40;
+/** Placeholder cho Target KCK: `apDungMotDong`/`applyTransition` chỉ nhận số, KCK đặt ngay sau bằng `reviseTarget` (Q29-1). */
+const TARGET_TAM = 5;
+
+type KetQuaThiHanh = { daChuyen: number; huy: number; loi: number };
+
+/**
+ * Cron Thứ Hai (cùng chot-vang) + quét khi đọc (`quetLenhDenHan`). Chạy 2 lần liền → lần 2 không làm gì: đọc lệnh TRONG tx sau BEGIN IMMEDIATE,
+ * đánh dấu `da_chuyen` TRƯỚC khi chuyển, mỗi nhóm một tx. Ngày hiệu lực luôn là Thứ Hai của lệnh, kể cả khi quét muộn (Q5).
+ */
+export function thiHanhLenhDenHan(homNay = demoToday()): KetQuaThiHanh {
+  const kq: KetQuaThiHanh = { daChuyen: 0, huy: 0, loi: 0 };
+  const conn = db();
+  /* Một câu rẻ NGOÀI tx: đường đọc không xin khoá ghi khi không có gì đến hạn. */
+  const nhom = conn.prepare(
+    `SELECT DISTINCT lop_nguon_id, tuan_bat_dau, boi_canh FROM lenh_chuyen_lop
+      WHERE trang_thai = 'cho' AND tuan_bat_dau <= ? ORDER BY tuan_bat_dau, lop_nguon_id LIMIT ?`,
+  ).all(homNay, NHOM_TOI_DA) as any[];   // ponytail: 40 nhóm/lượt (Q22), lượt quét sau làm tiếp
+  for (const g of nhom) {
+    try {
+      tx(() => {
+        /* ĐỌC LẠI trong tx: lượt song song đã làm xong thì ở đây ra 0 dòng. */
+        const ds = conn.prepare(
+          `SELECT l.*, e.id AS enr_id FROM lenh_chuyen_lop l
+             LEFT JOIN enrollments e ON e.student_id = l.student_id AND e.class_id = l.lop_nguon_id AND e.status = 'active'
+            WHERE l.trang_thai = 'cho' AND l.lop_nguon_id = ? AND l.tuan_bat_dau = ? AND l.boi_canh = ?`,
+        ).all(g.lop_nguon_id, g.tuan_bat_dau, g.boi_canh) as any[];
+        if (!ds.length) return;
+        const mat = ds.filter((l) => !l.enr_id), con = ds.filter((l) => l.enr_id);
+        if (mat.length) { huyHeThong(mat, 'Em không còn học lớp nguồn lúc thi hành'); kq.huy += mat.length; }   // Q8
+        if (!con.length) return;
+        danhDau(con.map((l) => l.id as number), nowIso());
+        const p = loadPrincipal(con[0].nguoi_ra_lenh);   // người ra lệnh = tác giả nhật ký
+        const loiDong = g.boi_canh === 'cuoi-khoa' ? thiHanhCuoiKhoa(p, g, con) : thiHanhGiuaKhoa(p, g, con);
+        if (loiDong.length) traVeCho(loiDong);   // Q8: lệnh lỗi luật về 'cho' + cột loi — không chặn em khác
+        kq.daChuyen += con.length - loiDong.length;
+        writeAudit({
+          actorUserId: con[0].nguoi_ra_lenh, action: 'lenh_chuyen.thi_hanh', entityType: 'class', entityId: g.lop_nguon_id,
+          after: { tuan: g.tuan_bat_dau, boiCanh: g.boi_canh, daChuyen: con.length - loiDong.length, loi: loiDong.length, huy: mat.length },
+        });
+        thongBaoNguoiRaLenh([
+          ...mat.map((l) => ({ l, vi: 'huy' as const, msg: 'Em không còn học lớp nguồn lúc thi hành' })),
+          ...loiDong.map((x) => ({ l: con.find((c) => c.id === x.id)!, vi: 'loi' as const, msg: x.loi })),
+        ]);
+      });
+    } catch (e) {
+      kq.loi += 1;
+      ghiLoiNhom(g, e);   // UPDATE loi ngoài tx đã cuộn lại
+    }
+  }
+  return kq;
+}
+
+/** Quét khi đọc: một lần mỗi request GET (`nho`) — thêm 1 câu khi không có gì đến hạn. Lỗi thi hành không làm hỏng trang đang đọc. */
+export function quetLenhDenHan(homNay = demoToday()): void {
+  nho(`thi-hanh-lenh:${homNay}`, () => { try { thiHanhLenhDenHan(homNay); } catch (e) { console.error('[chuyen-lop] quét khi đọc', e); } return true; });
+}
+
+const inHang = (ids: readonly number[]) => ids.map(() => '?').join(',');
+
+function huyHeThong(mat: any[], lyDo: string) {
+  const ids = mat.map((l) => l.id as number);
+  db().prepare(`UPDATE lenh_chuyen_lop SET trang_thai = 'huy', huy_luc = ?, ly_do_huy = ?, sua_luc = ? WHERE trang_thai = 'cho' AND id IN (${inHang(ids)})`)
+    .run(nowIso(), lyDo, nowIso(), ...ids);
+}
+
+/** Đánh dấu TRƯỚC khi chuyển; `AND trang_thai = 'cho'` để lượt song song không đánh dấu lần hai. */
+function danhDau(ids: readonly number[], luc: string) {
+  db().prepare(`UPDATE lenh_chuyen_lop SET trang_thai = 'da_chuyen', thi_hanh_luc = ?, loi = NULL WHERE trang_thai = 'cho' AND id IN (${inHang(ids)})`).run(luc, ...ids);
+}
+
+function traVeCho(loi: { id: number; loi: string }[]) {
+  const conn = db();
+  for (const x of loi) conn.prepare(`UPDATE lenh_chuyen_lop SET trang_thai = 'cho', thi_hanh_luc = NULL, loi = ? WHERE id = ?`).run(x.loi, x.id);
+}
+
+function ghiLoiNhom(g: any, e: unknown) {
+  const msg = String((e as any)?.message ?? e).slice(0, 300);
+  console.error('[chuyen-lop]', g.lop_nguon_id, g.tuan_bat_dau, msg);
+  try {
+    db().prepare(`UPDATE lenh_chuyen_lop SET loi = ? WHERE trang_thai = 'cho' AND lop_nguon_id = ? AND tuan_bat_dau = ? AND boi_canh = ?`)
+      .run(msg, g.lop_nguon_id, g.tuan_bat_dau, g.boi_canh);
+  } catch { /* kết nối hỏng: lượt quét sau thử lại */ }
+}
+
+/** Người ra lệnh biết lệnh nào bị huỷ / chưa chuyển được (dedup theo lệnh: quét lại không nhắc lần hai). */
+function thongBaoNguoiRaLenh(ds: { l: any; vi: 'huy' | 'loi'; msg: string }[]) {
+  if (!ds.length) return;
+  const ten = new Map<number, string>();
+  theoLo([...new Set(ds.map((x) => x.l.student_id as number))], (lo, ph) => {
+    for (const r of db().prepare(`SELECT id, full_name FROM students WHERE id IN (${ph})`).all(...lo) as any[]) ten.set(r.id, r.full_name);
+  });
+  for (const { l, vi, msg } of ds) {
+    notify({
+      userId: l.nguoi_ra_lenh, kind: vi === 'huy' ? 'huy_lenh' : 'lenh_loi',
+      title: vi === 'huy' ? `Lệnh chuyển lớp bị huỷ · ${ten.get(l.student_id) ?? 'học viên'}` : `Chưa chuyển được · ${ten.get(l.student_id) ?? 'học viên'}`,
+      body: msg, entityType: 'student', entityId: l.student_id, dedupKey: `lenh_${vi}:${l.id}`,
+    });
+  }
+}
+
+const soTuKck = (l: any): number | null => (l.khong_cam_ket ? TARGET_TAM : l.muc_tieu ?? null);
+
+/** Sau khi mở lộ trình mới: em có lệnh KCK thì đặt Target = KCK bằng đường sửa target đang có (không tự chế cột). Mọi em cùng lô, một câu đọc. */
+function datKck(p: Principal, ds: any[]) {
+  const kck = ds.filter((l) => l.khong_cam_ket);
+  if (!kck.length) return;
+  const cyc = new Map<number, number>();
+  theoLo(kck.map((l) => l.student_id as number), (lo, ph) => {
+    for (const r of db().prepare(`SELECT student_id, id FROM learning_cycles WHERE status = 'active' AND student_id IN (${ph})`).all(...lo) as any[]) cyc.set(r.student_id, r.id);
+  });
+  for (const l of kck) {
+    const c = cyc.get(l.student_id);
+    if (c) reviseTarget(p, c, { newTarget: 'KCK', effectiveFrom: l.tuan_bat_dau, reason: 'Không cam kết (lệnh chuyển lớp)' });
+  }
+}
+
+/** Lớp thường hết khoá: cả nhóm qua MỘT `applyTransition` (theo lô, luật cũ nguyên vẹn, `daDuyet`). Trả các lệnh bị luật từ chối. */
+function thiHanhCuoiKhoa(p: Principal, g: any, con: any[]): { id: number; loi: string }[] {
+  const byStudent = new Map(con.map((l) => [l.student_id as number, l]));
+  const r = applyTransition(p, {
+    fromClassId: g.lop_nguon_id, effectiveDate: g.tuan_bat_dau,
+    dongs: con.map((l) => ({
+      studentId: l.student_id, huong: l.huong, toClassId: l.lop_dich_id, mucTieu: soTuKck(l), thangThi: l.ngay_thi, lyDo: l.ly_do, ngayXemLai: l.ngay_xem_lai,
+    })),
+  }, { daDuyet: true });
+  const hong = new Set<number>(r.failed.map((f: any) => f.studentId));
+  datKck(p, con.filter((l) => !hong.has(l.student_id)));
+  return r.failed.map((f: any) => ({ id: byStudent.get(f.studentId)!.id as number, loi: f.message as string }));
+}
+
+/**
+ * Giữa khoá (một em, FT gộp/tách lớp): từng em qua `apDungMotDong` — ngoại lệ per-em được phép như S17 (hiếm). Bảo lưu / Dừng học qua
+ * `applyTransition` cho cả nhóm (cùng luật, cùng lô). Mỗi em một savepoint nên em lỗi không kéo em khác.
+ */
+function thiHanhGiuaKhoa(p: Principal, g: any, con: any[]): { id: number; loi: string }[] {
+  const conn = db();
+  const loi: { id: number; loi: string }[] = [];
+  const roi = con.filter((l) => l.huong === 'chuyen_lop' || l.huong === 'fast_track');
+  const khac = con.filter((l) => !roi.includes(l));
+  if (khac.length) {
+    const byStudent = new Map(khac.map((l) => [l.student_id as number, l]));
+    const r = applyTransition(p, {
+      fromClassId: g.lop_nguon_id, effectiveDate: g.tuan_bat_dau,
+      dongs: khac.map((l) => ({ studentId: l.student_id, huong: l.huong, lyDo: l.ly_do, ngayXemLai: l.ngay_xem_lai })),
+    }, { daDuyet: true });
+    for (const f of r.failed) loi.push({ id: byStudent.get(f.studentId)!.id, loi: f.message });
+  }
+  if (roi.length) {
+    const caseMo = new Map<number, { id: number; category: string | null }[]>();
+    theoLo(roi.map((l) => l.student_id as number), (lo, ph) => {
+      for (const c of conn.prepare(`SELECT id, student_id, category FROM sos_cases WHERE status != 'done' AND student_id IN (${ph})`).all(...lo) as any[]) {
+        caseMo.set(c.student_id, [...(caseMo.get(c.student_id) ?? []), { id: c.id, category: c.category }]);
+      }
+    });
+    const xong: any[] = [];
+    for (const l of roi) {
+      try {
+        const goiY = nguoiNhanGoiY(caseMo.get(l.student_id) ?? [], l.lop_dich_id);
+        const nguoiNhan: Record<number, number> = {};
+        for (const [caseId, u] of goiY) if (u) nguoiNhan[caseId] = u.id;   // bỏ giá trị null (giữ người cũ)
+        tx(() => {
+          if (!lopDichHopLe(l.lop_dich_id, g.lop_nguon_id)) throw badRequest('Lớp đích không hợp lệ.');
+          apDungMotDong(p, {
+            sid: l.student_id, toClassId: l.lop_dich_id, ngay: g.tuan_bat_dau, lyDo: l.ly_do, mucTieu: soTuKck(l), thangThi: l.ngay_thi,
+            nguoiNhan, boiCanh: 'giua-khoa',
+          });
+        });
+        xong.push(l);
+      } catch (e) {
+        loi.push({ id: l.id, loi: String((e as any)?.message ?? e).slice(0, 300) });
+      }
+    }
+    datKck(p, xong);
+    const nguon = conn.prepare('SELECT is_fast_track FROM classes WHERE id = ?').get(g.lop_nguon_id) as any;
+    if (xong.length && !nguon?.is_fast_track) dongLopNeuHet([g.lop_nguon_id], g.tuan_bat_dau);   // Q21: lớp FT không tự kết thúc
+  }
+  return loi;
 }

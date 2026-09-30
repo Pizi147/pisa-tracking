@@ -380,6 +380,7 @@ api.get('/ref/units', requireAuth, wrap((req) => {
  */
 api.get('/my-work', requireAuth, wrap((req) => {
   maybeSimulateReadError();
+  lenhSvc.quetLenhDenHan();   // PR-CT: lệnh chuyển lớp tới Thứ Hai thì thi hành (chạy lặp an toàn)
   const p = principalOf(req);
   const branchId = qInt(req, 'branchId');
   const nguoi = thamSoNguoi(qStr(req, 'nguoi'));
@@ -1178,6 +1179,7 @@ api.get('/metrics/:id', requireAuth, wrap((req) => {
 
 api.get('/classes/:id/overview', requireAuth, wrap((req) => {
   maybeSimulateReadError();
+  lenhSvc.quetLenhDenHan();
   return classSvc.classOverview(principalOf(req), pInt(req, 'id'));
 }));
 
@@ -1388,6 +1390,7 @@ api.get('/classes/:id/progress', requireAuth, wrap((req) => {
  */
 api.get('/classes/:id/transition', requireAuth, wrap((req) => {
   maybeSimulateReadError();
+  lenhSvc.quetLenhDenHan();
   return transitionSvc.transitionPlan(principalOf(req), pInt(req, 'id'));
 }));
 
@@ -1542,6 +1545,7 @@ api.get('/highlights', requireAuth, wrap((req) => {
 /** Khối Quản lý: Cần xử lý + Điểm đáng chú ý. Mọi số đi qua `metricSet` — cùng số với `/metrics/:id`. */
 api.get('/tong-quan/quan-ly', requireAuth, wrap((req) => {
   maybeSimulateReadError();
+  lenhSvc.quetLenhDenHan();
   return tongQuanSvc.tongQuanQuanLy(principalOf(req), {
     branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')),
   });
@@ -1804,6 +1808,7 @@ api.get('/students', requireAuth, wrap((req) => {
  */
 api.get('/students/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
+  lenhSvc.quetLenhDenHan();
   return profileSvc.studentProfile(principalOf(req), pInt(req, 'id'), qInt(req, 'cycleId'), qInt(req, 'attemptId'));
 }));
 
