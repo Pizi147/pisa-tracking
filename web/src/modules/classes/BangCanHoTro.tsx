@@ -163,7 +163,7 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
           </article>
         );
       })}
-      {soEmHoc > em.length && <p className="m-0 text-[11px] text-slate-500">{soEmHoc - em.length} học viên không có Case đang mở.</p>}
+      {soEmHoc > em.length && <p className="m-0 text-[11px] text-slate-500">{soEmHoc - em.length} học viên không có Case đang mở{bat ? ' ở kỹ năng bạn dạy' : ''}.</p>}
       {tt.panels}
       {ngan && (
         <NganCase caseId={ngan.caseId} paId={ngan.paId} viec={ngan.viec} hocVien={ngan.em} lop={maLop}

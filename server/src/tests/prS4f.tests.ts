@@ -316,7 +316,8 @@ export async function runPrS4fTests(t: YThucTestKit) {
     const hn = docWeb('ui/HangNhom.tsx');
     const mt = hn.slice(hn.indexOf('export function MuiTenMo'), hn.indexOf('function boQuaNutCon'));
     assert(mt.includes('<svg') && !/[▸▾]/.test(mt.replace(/\/\*[\s\S]*?\*\//g, '')), 'MuiTenMo phải vẽ SVG');
-    assert(docWeb('ui/ViecTiep.tsx').includes('block max-w-full truncate'), 'ViecTiep max-w-full');
+    const vt = docWeb('ui/ViecTiep.tsx');
+    assert(vt.includes('flex max-w-full items-baseline') && vt.includes('<span className="min-w-0 truncate">') && vt.includes('shrink-0 whitespace-nowrap">&nbsp;<QuaHan'), 'ViecTiep: chỉ chữ việc bị cắt, quá hạn luôn đủ');
   });
 
   check('S4F (14) · thẻ Báo lên không có người nhận: ẩn Nhắc, ghi "Lớp chưa có GVCN" / "Case chưa có người phụ trách"', () => {

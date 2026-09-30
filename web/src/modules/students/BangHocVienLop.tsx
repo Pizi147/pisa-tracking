@@ -210,7 +210,7 @@ function KetQuaOHocVien({ k, standing, thuong }: { k: ReturnType<typeof ketQuaGa
 
 /** PR-S4F #11: dòng "a · b · c" chỉ xuống dòng Ở DẤU "·" (không bẻ "…có / điểm", không để "W ·" đứng riêng ở 375 px). */
 function DongCham({ chu }: { chu: string }) {
-  return <>{chu.split(' · ').map((x, i) => <span key={i} className="whitespace-nowrap">{i ? '· ' : ''}{x}</span>).reduce<ReactNode[]>((a, x, i) => (i ? [...a, ' ', x] : [x]), [])}</>;
+  return <>{chu.split(' · ').flatMap((x, i) => [i ? ' ' : null, <span key={i} className="whitespace-nowrap">{i ? '· ' : ''}{x}</span>])}</>;
 }
 
 /** Hàng "Cả lớp" (Q6, B8): việc Nhập điểm chung của cả lớp — chữ + hạn + số em + link tới lưới nhập điểm; dùng cho bảng và thẻ. */
