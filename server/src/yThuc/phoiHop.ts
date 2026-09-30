@@ -1,13 +1,13 @@
 import { db, tx } from '../db.ts';
 import {
   COORDINATION_KINDS, COORDINATION_KIND_LABEL, COORDINATION_REMOVE_REASON_LABEL, COORDINATION_STATUS_LABEL,
-  COORDINATION_USER_REMOVE_REASONS, coordinationSummary, tenMon, kiemGhiRoKhac, reasonNeedsText, sosCoordinationFor,
+  COORDINATION_USER_REMOVE_REASONS, coordinationSummary, tenMon, tenMonNgan, kiemGhiRoKhac, reasonNeedsText, sosCoordinationFor,
   type CoordinationKind, type CoordinationRemoveReason, type CoordinationStatus,
 } from '../../../shared/domain/index.ts';
-import type { Principal } from '../permissions.ts';
+import { napTruocPhamVi, type Principal } from '../permissions.ts';
 import { badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
-import { writeAudit } from '../platform/audit.ts';
+import { notify, writeAudit } from '../platform/audit.ts';
 import { countAttachments } from '../platform/attachments.ts';
 import { loadBundle, resultOf, routeCuaLuot } from '../fasttrack/attempts.ts';
 import { branchSql, checkClassInScope, classSql, statScope } from './thongKe.ts';
@@ -92,6 +92,45 @@ export function syncSosCoordination(attempt: { id: number; student_id: number; a
   }
 }
 
+/**
+ * BÁO PHỤ HUYNH QUA TVV (PR-LT2a N3, T45, K5-10, Q13) — MỘT việc mỗi bài Giữa khoá lớp thường, KHÔNG theo môn, không hạn (M-05), việc của GVCN.
+ * Bài có ≥ 1 môn trượt → dòng `bao_ph_tvv` (`preset = 1`, `pending`) + thông báo GVCN MỘT lần. Điểm sửa cho hết môn trượt → dòng chưa làm tự
+ * `removed · system_sos_changed` (như P03); trượt lại → hồi. Việc đã `done` không bao giờ bị đụng. Chạy lặp không sinh dòng thứ hai.
+ * `monTruot`: mã kỹ năng đang trượt của bài (từ `regularResultOf`).
+ */
+export function dongBoBaoPh(attempt: { id: number; student_id: number; class_id?: number | null }, monTruot: string[]) {
+  const conn = db();
+  const now = nowIso();
+  const row = conn.prepare(`SELECT * FROM sos_coordination_actions WHERE attempt_id = ? AND kind = 'bao_ph_tvv'`).get(attempt.id) as any;
+  if (!monTruot.length) {
+    if (row?.preset === 1 && row.status === 'pending') {
+      conn.prepare(`UPDATE sos_coordination_actions SET status = 'removed', remove_reason_code = 'system_sos_changed', removed_by = NULL, removed_at = ?, updated_at = ? WHERE id = ?`)
+        .run(now, now, row.id);
+    }
+    return;
+  }
+  if (row) {
+    if (row.status === 'removed' && row.remove_reason_code === 'system_sos_changed') {
+      conn.prepare(`UPDATE sos_coordination_actions SET status = 'pending', remove_reason_code = NULL, remove_reason_text = NULL, removed_by = NULL, removed_at = NULL, updated_at = ? WHERE id = ?`)
+        .run(now, row.id);
+    }
+    return;
+  }
+  conn.prepare(`INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, custom_name, preset, status, created_at) VALUES (?,?,'bao_ph_tvv', NULL, 1, 'pending', ?)`)
+    .run(attempt.id, attempt.student_id, now);
+  if (!attempt.class_id) return;
+  const ct = (conn.prepare('SELECT programme_code FROM classes WHERE id = ?').get(attempt.class_id) as any)?.programme_code ?? null;
+  const hv = conn.prepare('SELECT full_name FROM students WHERE id = ?').get(attempt.student_id) as any;
+  const mon = monTruot.map((s) => tenMonNgan(ct, s)).join(', ');
+  for (const g of conn.prepare(`SELECT DISTINCT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active'`).all(attempt.class_id) as any[]) {
+    notify({
+      userId: g.user_id, kind: 'phoi_hop', title: `Giữa khoá: ${hv?.full_name ?? ''} không đạt ${mon} — Báo phụ huynh qua TVV`,
+      body: 'Tạo task cho TVV trên Base với 4 nội dung, rồi đánh dấu đã làm.',
+      entityType: 'assessment_attempt', entityId: attempt.id, dedupKey: `bao-ph:${attempt.id}`,
+    });
+  }
+}
+
 // ---------------------------------------------------------------- đọc
 
 export type CoordinationAction = {
@@ -133,6 +172,7 @@ function turnsOf(p: Principal, rows: any[]): CoordinationTurn[] {
   if (!rows.length) return [];
   const conn = db();
   const attachments = countAttachments('sos_coordination_action', rows.map((r) => r.id));
+  napTruocPhamVi([...new Set(rows.map((r) => r.student_id as number))]);   // `canManageDiscipline` từng em đọc bộ nhớ, không N+1
   const byAttempt = new Map<number, any[]>();
   for (const r of rows) byAttempt.set(r.attempt_id, [...(byAttempt.get(r.attempt_id) ?? []), r]);
   const out: CoordinationTurn[] = [];

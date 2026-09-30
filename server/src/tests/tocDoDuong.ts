@@ -68,7 +68,8 @@ export const DUONG_DO: MucDo[] = [
   },
   { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/phan-tich/bo-quen?loai=can-ho-tro-2-lan' },
   { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/metrics/hv-can-ho-tro-2-lan-chua-case' },
-  { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/metrics/hv-bo-qua-van-can-ho-tro' },
+  /* PR-LT2a: thay chỉ số "Bỏ qua tín hiệu" đã bỏ bằng chỉ số Case chờ nguyên nhân quá hạn (FT + Giữa khoá lớp thường — ô Tổng quan). */
+  { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/metrics/case-xac-dinh-nguyen-nhan-qua-han' },
 
   // ---------------------------------------------------------------- Tổng quan · Giáo viên
   { trang: 'Tổng quan GV', vai: ['GVCN', 'GVBM', 'GVCN_THUONG'], url: '/my-work' },
@@ -270,8 +271,8 @@ export const TRAN: Record<string, number> = {
   'QT /phan-tich/bo-quen?loai=can-ho-tro-2-lan': 32,
   'QL /metrics/hv-can-ho-tro-2-lan-chua-case': 32,
   'QT /metrics/hv-can-ho-tro-2-lan-chua-case': 32,
-  'QL /metrics/hv-bo-qua-van-can-ho-tro': 32,
-  'QT /metrics/hv-bo-qua-van-can-ho-tro': 32,
+  'QL /metrics/case-xac-dinh-nguyen-nhan-qua-han': 32,
+  'QT /metrics/case-xac-dinh-nguyen-nhan-qua-han': 32,
   'GVCN /my-work': 63,
   'GVBM /my-work': 62,
   'GVCN_THUONG /my-work': 63,

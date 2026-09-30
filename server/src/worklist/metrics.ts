@@ -1,10 +1,9 @@
 import { db } from '../db.ts';
-import { nhanLoaiXuLy, PERMISSIONS, VIOLATION_CATEGORY_LABEL, metricById, type ChiSo, type ChuongTrinh, type LoaiBoQuen } from '../../../shared/domain/index.ts';
+import { nhanLoaiXuLy, PERMISSIONS, VIOLATION_CATEGORY_LABEL, metricById, tenMon, type ChiSo, type ChuongTrinh, type LoaiBoQuen } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, forbidden, HttpError, notFound } from '../util.ts';
 import { listCases } from '../cases/cases.ts';
-import { labelOf, listSignals, overdueNormalSignalIds } from '../cases/signals.ts';
 import { NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds } from '../cases/sosState.ts';
 import { improvementRate, planOutcomes } from '../cases/effectiveness.ts';
 import { doPhuDanhGia, hvDuoiKyVongMon, hvSosHienTai } from './danhGia.ts';
@@ -76,12 +75,14 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
       }
     } else if (unit === 'case') {
       for (const r of conn.prepare(
-        `SELECT sc.id, COALESCE(sc.title, sc.category, sc.topic) AS title, s.full_name, s.student_code, sc.status
+        `SELECT sc.id, sc.title, COALESCE(sc.category, sc.topic) AS mon, cy.programme_code AS ct, s.full_name, s.student_code, sc.status
            FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+           LEFT JOIN learning_cycles cy ON cy.id = sc.cycle_id
            LEFT JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
           WHERE sc.id IN (${ph})`,
       ).all(...chunk) as any[]) {
-        byId.set(r.id, { id: r.id, title: r.title ?? `Case ${r.id}`, sub: [r.full_name, r.student_code].filter(Boolean).join(' · '), href: `/hoc-thuat/case/${r.id}` });
+        /* MH2: tên môn theo chương trình của lộ trình (FOU "G+V"), không chữ thô "listening". */
+        byId.set(r.id, { id: r.id, title: r.title ?? (r.mon ? tenMon(r.ct ?? null, r.mon) : `Case ${r.id}`), sub: [r.full_name, r.student_code].filter(Boolean).join(' · '), href: `/hoc-thuat/case/${r.id}` });
       }
     } else if (unit === 'phuong-an') {
       for (const r of conn.prepare(
@@ -158,13 +159,6 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
       ).all(...chunk) as any[]) {
         byId.set(r.id, { id: r.id, title: `MT${r.attempt_no} · ${r.full_name}`, sub: [r.student_code, r.class_code].filter(Boolean).join(' · '), href: `/hoc-vien/${r.student_id}` });
       }
-    } else if (unit === 'tin-hieu') {
-      for (const r of conn.prepare(
-        `SELECT sg.id, sg.student_id, sg.skill, sg.verify_due, s.full_name, s.student_code
-           FROM case_signals sg JOIN students s ON s.id = sg.student_id WHERE sg.id IN (${ph})`,
-      ).all(...chunk) as any[]) {
-        byId.set(r.id, { id: r.id, title: `Tín hiệu cần xác minh · ${labelOf(r)}`, sub: [r.full_name, r.student_code, `hạn ${String(r.verify_due).slice(8, 10)}/${String(r.verify_due).slice(5, 7)}`].filter(Boolean).join(' · '), href: `/hoc-vien/${r.student_id}` });
-      }
     }
   }
   /* Giữ đúng thứ tự của tập ID; ID không tra được vẫn hiện — không im lặng làm rơi bản ghi khỏi danh sách. */
@@ -194,10 +188,10 @@ export function metricResponse(r: MetricResult, withRows: boolean) {
 
 /** Các chỉ số ĐÃ CÓ hàm tập ID. Chỉ số khác trong sổ chưa dùng được. */
 export const LISTED_METRICS: readonly string[] = [
-  'hv-sos-hien-tai', 'hv-duoi-ky-vong-mon', 'hv-co-case-mo', 'case-mo', 'tin-hieu-cho-xac-minh', 'tin-hieu-qua-han',
+  'hv-sos-hien-tai', 'hv-duoi-ky-vong-mon', 'hv-co-case-mo', 'case-mo',
   'case-xac-dinh-nguyen-nhan-qua-han', 'bai-qua-han-nhap-diem', 'case-chua-co-nguoi-phu-trach',
   'case-cho-xac-dinh-nguyen-nhan', 'case-thieu-pa', 'pa-can-cap-nhat', 'pa-cho-duyet', 'pa-co-ket-qua', 'ty-le-co-cai-thien',
-  'dung-han-cap-nhat', 'do-phu-danh-gia', 'hv-can-ho-tro-2-lan-chua-case', 'hv-bo-qua-van-can-ho-tro',
+  'dung-han-cap-nhat', 'do-phu-danh-gia', 'hv-can-ho-tro-2-lan-chua-case',
   ...YTHUC_METRIC_IDS,
   ...PHOI_HOP_METRIC_IDS,
 ];
@@ -478,10 +472,6 @@ function metricSetGoc(
     case 'case-thieu-pa':
       /* Case CHỜ DUYỆT có `state` riêng — không quy chậm cho giáo viên (hợp đồng §2). */
       return done(openCases().filter((c: any) => c.state === 'no_plan').map((c: any) => c.id as number));
-    case 'tin-hieu-cho-xac-minh':
-      return done(listSignals(p, { branchId, status: 'open' }).rows.map((s) => s.id));
-    case 'tin-hieu-qua-han':
-      return done(overdueNormalSignalIds(p, { branchId: branchId ?? null, today }));
     case 'case-xac-dinh-nguyen-nhan-qua-han':
       return done(causeOverdue(awaitingCauseCaseIds(openCases().map((c: any) => c.id as number)), today));
     case 'bai-qua-han-nhap-diem':
@@ -512,11 +502,8 @@ function metricSetGoc(
       return done(r.ids, { numeratorIds: r.numeratorIds });
     }
     case 'hv-can-ho-tro-2-lan-chua-case':
-    case 'hv-bo-qua-van-can-ho-tro': {
-      /* PR-UX4: một hàm `boQuen` tính cả hai, nhớ trong request — số ở Cần xử lý, danh sách Danh sách Case và bảng đều cùng tập. */
-      const loai: LoaiBoQuen = id === 'hv-bo-qua-van-can-ho-tro' ? 'bo-qua-van-can-ho-tro' : 'can-ho-tro-2-lan';
-      return done(boQuen(p, branchId ?? null, today)[loai].map((r) => r.studentId).sort((a, b) => a - b));
-    }
+      /* PR-UX4: một hàm `boQuen`, nhớ trong request — số ở Cần xử lý, Danh sách Case và bảng đều cùng tập. */
+      return done(boQuen(p, branchId ?? null, today)['can-ho-tro-2-lan'].map((r) => r.studentId).sort((a, b) => a - b));
     case 'dung-han-cap-nhat': {
       /* Nghĩa vụ của MỌI case học thuật trong phạm vi — kể cả case đã đóng: nghĩa vụ đã đến hạn vẫn là chuyện đã xảy ra. */
       const caseIds = listCases(p, { branchId }).rows

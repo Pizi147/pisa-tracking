@@ -16,7 +16,7 @@ import {
   HAN_DUYET_NGAY, hanTheoNgay,
   type NextStep, type RescheduleTarget,
   issueBranchOf, issueLabel, caseTopicLabel, urgencyFromSos,
-  caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac, chanHoanThanh, laLanGhiCuoi, mocChuPa, programmeOf, quyetDinhChoPa, trangThaiCaseV4, viecTiepCuaCase, tenCaseSos, tenMon, tenMonNgan,
+  caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac, chanHoanThanh, laLanGhiCuoi, mocChuPa, programmeOf, quyetDinhChoPa, trangThaiCaseV4, viecTiepCuaCase, tenCaseSos, tenCaseThuong, tenMon, tenMonNgan,
   type CaseOutcome, type FollowUpOutcome, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -28,7 +28,6 @@ import { currentCycle } from '../fasttrack/cycles.ts';
 import { expectationFor } from '../fasttrack/scoring.ts';
 import { isRatioCycle, programmeCodeOfCycle } from '../normal/regular.ts';
 import { suggestCaseOwner } from './owner.ts';
-import { linkSignalToCase, loadSignal } from './signals.ts';
 import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
 import { PLAN_DECISIONS, decisionToStep, type PlanDecision } from '../../../shared/domain/index.ts';
 import { apDungDieuChinh, chuanHoaDieuChinh, lichSuDieuChinhCuaCase } from './planRevisions.ts';
@@ -81,6 +80,11 @@ export function caseTitleOf(c: {
   if (c.origin_kind === 'mock' && (latest?.kind ?? 'mock') === 'mock') {
     const cat = c.category ?? categoryOf(c.topic);
     return tenCaseSos({ mt: latest?.attempt_no ?? null, giua: own || `${cat ? tenMon(latest?.ct ?? null, cat) : caseCategoryLabel(cat)} không đạt`, sos: c.sos_level ?? null });
+  }
+  /* PR-LT2a T58: Case tự tạo từ Giữa khoá lớp thường = `[Giữa khoá] G+V không đạt` — không MT, không SOS. */
+  if (c.origin_kind === 'mock' && (latest?.kind === 'progress' || latest?.kind === 'final')) {
+    const cat = c.category ?? categoryOf(c.topic);
+    return tenCaseThuong({ dot: latest.kind, giua: own || `${cat ? tenMonNgan(latest?.ct ?? null, cat) : caseCategoryLabel(cat)} không đạt` });
   }
   if (own) return own;
   return caseTitle({
@@ -348,13 +352,6 @@ export function reportIssue(p: Principal, input: {
   /** Người phụ trách chính. Bỏ trống thì hệ thống gợi ý theo phân công của lớp. */
   ownerUserId?: number | null;
   /**
-   * TÍN HIỆU mà case này ra đời để trả lời (mục 6.2).
-   *
-   * Đây là đường DUY NHẤT một tín hiệu trở thành case: người dùng mở form, đặt tên, viết mô
-   * tả rồi gửi. Hệ thống không tự đi con đường này thay họ.
-   */
-  fromSignalId?: number | null;
-  /**
    * NHẬP BÙ MỘT CASE ĐÃ XONG TỪ LÂU (PR-C Task 3, mục 10.3–10.4) — cờ chảy suốt cả chuỗi
    * `reportIssue` → `recordIntervention` → `completeIntervention` → `closeCaseOutcome`.
    *
@@ -413,23 +410,8 @@ export function reportIssue(p: Principal, input: {
     if (seen) return caseDetail(p, seen.id);
   }
 
-  /*
-   * Tín hiệu mà Case này trả lời (§3.10 "Tạo Case: mở form Case MÔN ĐÓ"). Chỉ tín hiệu còn chờ mới mở Case được. Đứng SAU khối
-   * `idempotencyKey`: bấm gửi lại (tín hiệu đã `linked` từ lần đầu) phải trả Case cũ, không báo "đã được xử lý".
-   */
-  const fromSignal = input.fromSignalId ? loadSignal(input.fromSignalId) : null;
-  if (fromSignal && fromSignal.status !== 'pending') {
-    throw badRequest('Tín hiệu này đã được xử lý rồi (đã thành Case, đã bỏ qua hoặc đã thu hồi).');
-  }
-
-  /*
-   * Lộ trình: mở từ tín hiệu thì LUÔN là khoá của tín hiệu — gửi kèm khoá khác là lỗi, không phải lựa chọn (§3.10 "đúng khoá").
-   * Không từ tín hiệu: gửi rõ thì dùng; không thì lộ trình đang mở.
-   */
-  if (fromSignal?.cycle_id && input.cycleId && Number(input.cycleId) !== fromSignal.cycle_id) {
-    throw badRequest('Case tạo từ tín hiệu phải nằm đúng khoá của tín hiệu đó.');
-  }
-  const wantedCycleId = fromSignal?.cycle_id ?? input.cycleId ?? null;
+  /* Lộ trình: gửi rõ thì dùng; không thì lộ trình đang mở. (PR-LT2a: không còn Case tạo từ tín hiệu — Giữa khoá tự tạo Case.) */
+  const wantedCycleId = input.cycleId ?? null;
   const cycle = wantedCycleId
     ? (conn.prepare('SELECT * FROM learning_cycles WHERE id = ? AND student_id = ?')
         .get(wantedCycleId, input.studentId) as any)
@@ -451,9 +433,6 @@ export function reportIssue(p: Principal, input: {
     : programmeOf(ctCuaCase) === 'PREFOU' ? caseTopicsFor(true, ctCuaCase)          // Pre FOU chỉ "Tổng hợp" (PF6)
     : [...new Set([...caseTopicsFor(true, ctCuaCase), ...ENTRY_SKILLS])];
   if (!allowedTopics.includes(topic)) throw badRequest(`Chủ đề không hợp lệ: ${topic}`);
-  if (fromSignal && categoryOf(topic) !== (fromSignal.category ?? categoryOf(fromSignal.skill))) {
-    throw badRequest('Case tạo từ tín hiệu phải đúng môn của tín hiệu đó.');
-  }
 
   /*
    * CẢNH BÁO CASE TRÙNG (mục 7.13).
@@ -550,7 +529,6 @@ export function reportIssue(p: Principal, input: {
       writeAudit({ actorUserId: p.userId, action: 'case.report.merge', entityType: 'sos_case',
         entityId: existing.id, entityLabel: `${student.student_code} · ${summary.slice(0, 40)}`,
         after: { mergedInto: existing.id } });
-      if (input.fromSignalId) linkSignalToCase(p, input.fromSignalId, existing.id, summary);
       return caseDetail(p, existing.id);
     });
   }
@@ -614,8 +592,6 @@ export function reportIssue(p: Principal, input: {
     writeAudit({ actorUserId: p.userId, action: input.backfill ? 'case.backfill' : 'case.report',
       entityType: 'sos_case', entityId: caseId,
       entityLabel: `${student.student_code} · ${summary.slice(0, 40)}`, after: { urgency, detectedAt } });
-    /* Tín hiệu đã được trả lời: từ đây nó không còn nằm trong hàng chờ xác minh nữa. */
-    if (input.fromSignalId) linkSignalToCase(p, input.fromSignalId, caseId, summary);
     return caseDetail(p, caseId);
   });
 }
@@ -2217,21 +2193,6 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
    * mất phân biệt giữa hai bài do hai giáo viên khác nhau chấm.
    */
   /*
-   * TÍN HIỆU CHỜ XÁC MINH, gom sẵn theo hạng mục (mục 4.2).
-   *
-   * Cột "Vấn đề đang theo dõi" phải nói được CẢ HAI thứ: case đã mở, và tín hiệu chưa ai
-   * xác minh. Bỏ tín hiệu ra khỏi bảng này thì một kỹ năng vừa trượt trông như đang yên —
-   * trong khi việc phải làm đang nằm ở đúng dòng đó.
-   */
-  const signalRows = conn
-    .prepare(
-      `SELECT sg.*, u.full_name AS owner_name FROM case_signals sg
-         LEFT JOIN users u ON u.id = sg.owner_user_id
-        WHERE sg.student_id = ? AND sg.status = 'pending'`,
-    )
-    .all(studentId) as any[];
-
-  /*
    * THỨ TỰ CASE TRONG MỘT KỸ NĂNG (mục 4.3): đang mở trước, rồi tới cập nhật NGHIỆP VỤ mới
    * nhất, rồi ngày tạo.
    *
@@ -2375,20 +2336,6 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
       nextActionDue: openIv.filter((i) => i.action_due && (i.approval_state ?? '') !== 'pending')
         .map((i) => i.action_due as string).sort()[0] ?? null,
       pendingApproval: interventions.some((i) => i.approval_state === 'pending'),
-
-      /*
-       * TÍN HIỆU CHƯA AI XÁC MINH ở chính kỹ năng này (mục 4.2). Nó KHÔNG phải một case —
-       * chưa ai xem bài, chưa ai đặt tên vấn đề — nên để riêng chứ không trộn vào `caseId`.
-       */
-      signal: (() => {
-        const sg = signalRows.find((x) => (x.category ?? categoryOf(x.skill)) === category);
-        if (!sg) return null;
-        return {
-          id: sg.id, skill: sg.skill, band: sg.band, expectation: sg.expectation,
-          verifyDue: sg.verify_due, overdue: !!sg.verify_due && sg.verify_due < demoToday(),
-          ownerName: sg.owner_name ?? null,
-        };
-      })(),
 
       /*
        * ĐỦ CÁC CASE CỦA KỸ NĂNG NÀY (mục 4.2) — không chỉ một case đại diện.

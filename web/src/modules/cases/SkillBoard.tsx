@@ -111,10 +111,6 @@ export type Row = {
     attemptKind?: string | null;
   }[];
   score: number | null; total: number | null; ratio: boolean;
-  signal: {
-    id: number; skill: string | null; band: number | null; expectation: number | null;
-    verifyDue: string | null; overdue: boolean; ownerName: string | null;
-  } | null;
   cases: CaseCard[];
 };
 
@@ -187,7 +183,7 @@ function SkillRows({ row, open, onToggle, onReport, onChanged, onMoCase }: {
   onMoCase: (caseId: number, o?: MoCase) => void;
 }) {
   const { homNay, ngan } = useNgayNghiepVu();
-  const expandable = row.cases.length > 0 || row.band !== null || !!row.signal;
+  const expandable = row.cases.length > 0 || row.band !== null;
   /* Đang xử lý / mới cập nhật lên trước, đã hoàn thành xuống dưới. */
   const ordered = [...row.cases].sort((a, b) => {
     const done = (x: CaseCard) => (x.status === 'done' ? 1 : 0);
@@ -241,7 +237,6 @@ function SkillRows({ row, open, onToggle, onReport, onChanged, onMoCase }: {
  */
 function CotCase({ row }: { row: Row }) {
   const { ngan } = useNgayNghiepVu();
-  if (row.signal) return <span className="text-xs font-normal text-slate-500">chưa mở Case</span>;
   const c = row.cases.find((x) => x.id === row.caseId) ?? row.cases.find((x) => x.status !== 'done') ?? row.cases[0];
   if (c) {
     const tt = c.trangThaiV4;
@@ -583,13 +578,10 @@ function outcomeTone(outcome: string | null): string {
 
 /**
  * Việc tiếp theo của cả hàng — MỘT việc (động từ + đối tượng) + hạn tách riêng (B-2/B-3). PR-SOS (K3-07): lấy `viecTiepCuaCase` của Case
- * đang mở gấp nhất (máy chủ tính sẵn); tín hiệu lớp thường chưa mở Case → "Tạo Case".
+ * đang mở gấp nhất (máy chủ tính sẵn).
  */
 function nextStepOf(row: Row, homNay: string): { viec: string; han: DeadlineView | null; title: string } | null {
   const dong = (viec: string, han: DeadlineView | null) => ({ viec, han, title: han && han.han !== 'chưa có hạn' ? han.text : viec });
-  if (row.signal) {
-    return dong('Tạo Case', deadlineView({ kind: 'xac-minh-sos', due: row.signal.verifyDue, today: homNay }));
-  }
   const viec = row.cases.filter((c) => c.status !== 'done' && c.viecTiep).map((c) => c.viecTiep!)
     .sort((a, b) => (a.han ?? '9999').localeCompare(b.han ?? '9999'))[0];
   if (!viec) return null;

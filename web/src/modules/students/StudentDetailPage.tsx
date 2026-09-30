@@ -3,9 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useApi } from '../../lib/useApi.ts';
 import { BoLocDoan, Card, DaiChiXem, Empty, ErrorState, Info, Level, Outcome, Skeleton, Status, TargetText, Th} from '../../ui/ui.tsx';
 import { Modal } from '../../ui/Drawer.tsx';
-import { api, invalidate } from '../../lib/api.ts';
 import { cuonOnDinh } from '../../lib/cuonOnDinh.ts';
-import { useToast } from '../../ui/Toast.tsx';
 import { SkillBoard, type SkillBoardRow } from '../cases/SkillBoard.tsx';
 import { HanhTrinh } from './HanhTrinh.tsx';
 import { LichSuLop } from './LichSuLop.tsx';
@@ -72,8 +70,6 @@ export default function StudentDetailPage() {
   const [viecQuanLy, setViecQuanLy] = useState<ViecQuanLy | null>(null);
   const [planOpen, setPlanOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
-  /** Tín hiệu đang được xác minh — mở form case với đầu mục và kỹ năng điền sẵn. */
-  const [verify, setVerify] = useState<any | null>(null);
   /** Ngăn Case (Q9) mở do BẤM trong trang (khối PA, ⋮ …) — mở do URL (`?case=`) đọc thẳng từ `p`. */
   const [openCase, setOpenCase] = useState<OpenCase>(null);
   /*
@@ -261,9 +257,6 @@ export default function StudentDetailPage() {
         onOpenDot={(attemptId) => navigate(duongHoSoHocVien(data.id, { dot: attemptId }))}
         onOpenKn={moKyNang} />
 
-      {/* Xác minh SOS: giữ chỗ cũ — dưới 4 ô số, trên hàng tab; tự ẩn khi không có tín hiệu. */}
-      <PendingSignals signals={data.pendingSignals ?? []} onVerify={(sg) => setVerify(sg)} onReload={reload} />
-
       {/*
         BA TAB NGAY DƯỚI ĐẦU TRANG (D2, spec 2026-09-22): Học thuật (mặc định) · Ý thức & Phối hợp · Hành trình.
         Tab nhớ qua địa chỉ `?tab=` (A6) để Việc cần làm / hồ sơ lớp mở thẳng đúng tab — không nhớ bằng localStorage.
@@ -379,12 +372,6 @@ export default function StudentDetailPage() {
         studentId={data.id} studentName={data.fullName} lop={data.currentClass?.code} cycleId={cy?.id ?? null}
         onDone={(cid) => { reload(); setOpenCase({ caseId: cid }); }}
         onMoCase={(cid, viec) => { reload(); setOpenCase({ caseId: cid, viec }); }} />
-
-      {/* Tạo Case ĐỂ TRẢ LỜI một tín hiệu: đầu mục và kỹ năng điền sẵn, nhận định do người viết. */}
-      <QuickReport open={!!verify} onClose={() => setVerify(null)}
-        studentId={data.id} studentName={data.fullName} lop={data.currentClass?.code} cycleId={cy?.id ?? null}
-        signal={verify}
-        onDone={(cid) => { setVerify(null); reload(); setOpenCase({ caseId: cid }); }} />
 
       {/* Ngăn Case (Q9) — không đổi tab; cuộn tới đúng PA khi mở kèm `paId`. Mở do `?case=` thì đóng cũng xoá URL. */}
       {ngan && (
@@ -718,91 +705,4 @@ function anhXaKyNang(kn: string, boHop: readonly string[]): string | null {
   if ((kn === 'writing1' || kn === 'writing2') && boHop.includes('writing')) return 'writing';
   if (kn === 'writing' && boHop.includes('writing1')) return 'writing1';
   return null;
-}
-
-/**
- * TÍN HIỆU CHỜ XÁC MINH — khối riêng, đặt TRƯỚC bảng tiến độ và danh sách case.
- *
- * Đây là thứ chặn đầu chuỗi: chừng nào chưa ai xem, chưa ai biết vấn đề thật là gì, nên
- * không có phương án nào để làm và không có kết quả nào để cập nhật.
- *
- * Nó cố ý KHÔNG nằm chung với danh sách case. Một tín hiệu chưa ai xác minh không phải một
- * vấn đề đã được xác định; để lẫn vào nhau là cách chắc chắn nhất để con số "em này đang có
- * mấy vấn đề" nói quá sự thật.
- *
- * Hai lối ra, cả hai đều hợp lệ:
- *   · mở case — khi xem lại bài thấy có vấn đề thật
- *   · ghi nhận đã xem — khi không có vấn đề thật, và phải viết ra vì sao
- */
-function PendingSignals({ signals, onVerify, onReload }: {
-  signals: any[]; onVerify: (sg: any) => void; onReload: () => void;
-}) {
-  if (!signals.length) return null;
-  const overdue = signals.filter((s) => s.overdue).length;
-  return (
-    <Card title={<>Xác minh vấn đề SOS <Info title="Tín hiệu chờ người dạy xem bài; hạn 3 ngày.">ⓘ</Info></>}
-      action={<span className="text-xs text-slate-500">
-        {signals.length} tín hiệu{overdue > 0 ? ` · ${overdue} quá hạn` : ''}
-      </span>}>
-      <ul className="space-y-2 list-none p-0 m-0">
-        {signals.map((sg) => <TinHieuHang key={sg.id} sg={sg} onVerify={onVerify} onReload={onReload} />)}
-      </ul>
-    </Card>
-  );
-}
-
-/**
- * Một tín hiệu — sửa sau rà #75 (7): làm Y HỆT `DongTinHieu.tsx` (cùng luồng SOS lớp thường) thay vì
- * tự viết lại thiếu: ô lý do KHÔNG bắt buộc, chặn bấm hai lần khi đang gửi, báo lỗi ra toast, làm mới
- * cả `/my-work` và `/signals` (không chỉ hồ sơ này) sau khi xử lý xong.
- */
-function TinHieuHang({ sg, onVerify, onReload }: { sg: any; onVerify: (sg: any) => void; onReload: () => void }) {
-  const toast = useToast();
-  const [lyDo, setLyDo] = useState('');
-  const [busy, setBusy] = useState(false);
-  const boQua = async () => {
-    setBusy(true);
-    try {
-      await api.post(`/signals/pending/${sg.id}/dismiss`, { reason: lyDo.trim() || null });
-      toast.push('ok', 'Đã bỏ qua tín hiệu.');
-      invalidate('/my-work'); invalidate('/signals');
-      onReload();
-    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
-  };
-  // form Tạo Case mở từ hồ sơ phải điền sẵn điểm ("Điểm: 26/40") — QuickReport tự thêm nhãn "Điểm:".
-  const moCase = () => onVerify({ ...sg, scoreText: sg.score !== null && sg.total !== null ? `${sg.score}/${sg.total}` : null });
-  return (
-    <li className="surface-2 rounded-lg p-3 flex flex-wrap items-start justify-between gap-3">
-      <div className="min-w-0">
-        <div className="text-sm text-slate-100">
-          {/* Q19: lớp thường ghi {môn} {đúng}/{tổng} · Giữa|Cuối khoá — không "MT{n}", không "so với kỳ vọng". */}
-          {sg.kind === 'normal'
-            ? <>{sg.label} {sg.score}/{sg.total} · {sg.attemptKind === 'final' ? 'Cuối khoá' : 'Giữa khoá'}</>
-            : <>
-                {sg.label}
-                {sg.band !== null && sg.expectation !== null && (
-                  <span className="text-slate-400"> · {fmtBand(sg.band)} so với kỳ vọng {fmtBand(sg.expectation)}</span>
-                )}
-                {sg.attemptNo && <span className="text-slate-500 text-xs"> · MT{sg.attemptNo}</span>}
-              </>}
-        </div>
-        <div className="text-xs mt-1">
-          <Han loai="xac-minh-sos" han={sg.verifyDue} coViec />
-          {sg.ownerName && <span className="text-slate-500"> · {sg.ownerName}</span>}
-        </div>
-      </div>
-      {sg.canResolve && (
-        <span className="flex flex-wrap items-center gap-1.5 justify-end">
-          {sg.actions?.includes('dismiss') && (
-            <>
-              <input className="field h-7 text-xs w-36" value={lyDo} maxLength={200} onChange={(e) => setLyDo(e.target.value)}
-                placeholder="Lý do (không bắt buộc)" aria-label="Lý do bỏ qua (không bắt buộc)" />
-              <button className="btn btn-sm btn-ghost" disabled={busy} onClick={boQua}>Bỏ qua</button>
-            </>
-          )}
-          <button className="btn btn-sm btn-primary" onClick={moCase}>Tạo Case</button>
-        </span>
-      )}
-    </li>
-  );
 }

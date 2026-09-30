@@ -33,7 +33,8 @@ export function overview(p: Principal, periodId: number, branchId?: number) {
 
   // Hai cụm case KHÔNG chồng nhau: 'open' là chưa xử lý, 'in_progress' là đang xử lý.
   // Đã ghi nhận GVCN nhận nhưng chưa bắt đầu vẫn nằm ở nhóm chưa xử lý.
-  const withCase = active.filter((m) => m.caseId);
+  /* PR-LT2a (T58): chỉ Case SOS (mức > 0) — cùng luật với bộ lọc `sos_open`; Case Giữa khoá lớp thường không mang mức SOS. */
+  const withCase = active.filter((m) => m.caseId && (m.caseLevel ?? 0) > 0);
   const caseNew = withCase.filter((m) => m.caseStatus === 'open');
   const caseHandling = withCase.filter((m) => m.caseStatus === 'in_progress');
   const caseDone = withCase.filter((m) => m.caseStatus === 'done');

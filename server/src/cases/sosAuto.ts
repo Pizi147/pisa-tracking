@@ -24,8 +24,8 @@ export { UNCONFIRMED_PRESET, NOT_UNCONFIRMED_PRESET, PA_QUY_CHE_CHUA_GHI } from 
 /**
  * SOS TỰ TẠO CASE — PHẦN GHI DỮ LIỆU (SOS v4, PR-SOS; đặc tả 27/09 §3.1d + §5.3 S4-1…S4-7, Q28-3).
  *
- * Chỉ lượt Mock Test FAST TRACK mới đi qua đây (Q-V3-1). Lớp Normal giữ mô hình tín hiệu cũ — không case tự tạo, không phương án điền
- * sẵn, không Phối hợp SOS.
+ * Chỉ lượt Mock Test FAST TRACK mới đi qua đây (Q-V3-1). Lớp thường KHÔNG có SOS: Giữa khoá tự tạo Case + PA Bổ trợ (PR-LT2a, `cases/boTro.ts`), Cuối khoá không tín
+ * hiệu (LT2b) — không phương án điền sẵn theo mức SOS, không Phối hợp SOS.
  *
  * `cases/sos.ts` (nơi sở hữu `raiseSignalsForResult`, `taoCaseTuDong`) quyết định KHI NÀO tạo hay gắn case; file này lo phần "PA theo quy chế":
  *   · dựng PA theo bảng MT × mức SOS (`shared/domain/sos.ts`) — PA "CHỜ XÁC NHẬN", KHÔNG tự chạy (Q28-3),
@@ -125,18 +125,20 @@ export function resyncUnconfirmedPresets(
 export function announceAutoCase(input: {
   caseId: number; studentId: number; cycleId: number | null; skillLabel: string; attemptNo: number;
   sosLevel: number | null; ownerUserId: number | null; detectedOn: string; hanXacNhan: string; actorUserId: number | null;
+  /** PR-LT2a: Giữa khoá lớp thường — tên Case dựng sẵn (không `[MT n]`/`[SOS n]`) + chữ hành trình riêng. */
+  ten?: string; dot?: 'giua-khoa';
 }) {
   const st = db().prepare('SELECT full_name FROM students WHERE id = ?').get(input.studentId) as any;
-  const ten = tenCaseSos({ mt: input.attemptNo, giua: `${input.skillLabel} không đạt`, sos: input.sosLevel });
+  const ten = input.ten ?? tenCaseSos({ mt: input.attemptNo, giua: `${input.skillLabel} không đạt`, sos: input.sosLevel });
   addJourney({
     studentId: input.studentId, cycleId: input.cycleId, eventType: 'case_opened', eventDate: input.detectedOn,
-    title: `SOS tự tạo Case ${ten}`,
-    detail: 'PA theo quy chế chờ GVBM xác nhận.',
+    title: input.dot === 'giua-khoa' ? `Giữa khoá tự tạo Case ${ten}` : `SOS tự tạo Case ${ten}`,
+    detail: input.dot === 'giua-khoa' ? 'PA Bổ trợ chờ GVBM xác nhận nguyên nhân và kế hoạch bài giảng.' : 'PA theo quy chế chờ GVBM xác nhận.',
     refTable: 'sos_cases', refId: input.caseId, createdBy: input.actorUserId,
     dedupKey: `case_open:${input.caseId}`,
   });
   writeAudit({
-    actorUserId: input.actorUserId, action: 'case.auto_from_sos', entityType: 'sos_case', entityId: input.caseId,
+    actorUserId: input.actorUserId, action: input.dot ? 'case.auto_from_giua_khoa' : 'case.auto_from_sos', entityType: 'sos_case', entityId: input.caseId,
     entityLabel: `${st?.full_name ?? ''} · ${input.skillLabel}`, after: { attemptNo: input.attemptNo, sosLevel: input.sosLevel },
   });
   if (input.ownerUserId) {

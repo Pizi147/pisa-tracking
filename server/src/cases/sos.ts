@@ -18,6 +18,8 @@ import { UNCONFIRMED_PRESET, sosCaseState } from './sosState.ts';
 import { syncSosCoordination } from '../yThuc/phoiHop.ts';
 import { mondayOf } from '../platform/week.ts';
 import { ngayTaoLuot } from '../classes/schedule.ts';
+import { taoPaBoTro } from './boTro.ts';
+import { tenCaseThuong, tenMonNgan } from '../../../shared/domain/index.ts';
 
 /**
  * Hành động phối hợp theo Lần MT × mức SOS, lấy nguyên từ 'Quy trinh SOS' của trung tâm.
@@ -470,34 +472,41 @@ function recordChange(caseId: number, field: string, oldValue: string | null, ne
  * có case "Writing tổng"). Case đã ĐÓNG mà trượt lại thì `upsertCategoryCase` mở case mới NỐI vào case cũ. Case mới có PA theo quy chế
  * CHỜ XÁC NHẬN (Q28-3) + hạn xác nhận 3 ngày tính từ NGÀY CASE RA ĐỜI (không phải tuần thi — K5 §4 #6).
  * Tách hàm (Q15) để PR-LT2a gọi lại với PA Bổ trợ — không đổi luật FT. Trả dòng `sos_cases`.
+ * PR-LT2a: `pa: 'bo_tro'` = Giữa khoá lớp thường — PA Bổ trợ thay PA quy chế, tên `[Giữa khoá] G+V không đạt`, không nhãn SOS (`sosLevel` null).
  */
 export function taoCaseTuDong(p: Principal, x: {
   attempt: any; category: CaseCategory; skill: string; sosLevel: number | null; detectedAt: string;
   band: number | null; expectation: number | null; signalId: number;
+  pa?: 'quy_che' | 'bo_tro';
 }): any {
   const conn = db();
   const { attempt } = x;
   const up = upsertCategoryCase(p, attempt, x.category, x.skill, x.sosLevel, x.detectedAt);
   const han = hanXacNhan(demoToday());
+  const boTro = x.pa === 'bo_tro';
+  const ct = boTro ? (conn.prepare('SELECT programme_code FROM classes WHERE id = ?').get(attempt.class_id ?? 0) as any)?.programme_code ?? null : null;
   conn.prepare('UPDATE sos_cases SET han_xac_nhan = ? WHERE id = ?').run(han, up.id);
   const open = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(up.id) as any;
   addMilestone({
     caseId: up.id, kind: 'opened', attemptId: attempt.id, attemptNo: attempt.attempt_no,
     band: x.band, expectation: x.expectation, sosLevel: x.sosLevel,
-    occurredOn: x.detectedAt, note: 'SOS tự tạo case từ kết quả Mock Test', createdBy: p.userId,
+    occurredOn: x.detectedAt, note: boTro ? 'Giữa khoá tự tạo Case' : 'SOS tự tạo case từ kết quả Mock Test', createdBy: p.userId,
     dedupKey: `mt:${attempt.id}:${up.id}:opened`,
   });
-  createPresetPlan({ caseId: up.id, attempt, category: x.category, sosLevel: x.sosLevel });
+  if (boTro) taoPaBoTro(conn, { caseId: up.id, attempt, skill: x.skill, category: x.category, ct, han });
+  else createPresetPlan({ caseId: up.id, attempt, category: x.category, sosLevel: x.sosLevel });
   /* Dây nối SOS ↔ Case (Q-V3-2): tín hiệu `linked` — thu hồi khi sửa điểm (S08) dùng lại nguyên vẹn. Hạn xác nhận ở `sos_cases.han_xac_nhan`. */
   conn
     .prepare(
       `UPDATE case_signals SET status = 'linked', case_id = ?, resolved_by = NULL, resolved_at = ?,
               resolution_note = ?, updated_at = ? WHERE id = ?`,
     )
-    .run(up.id, nowIso(), 'Mock Test có SOS đã tự tạo Case và PA theo quy chế cho kỹ năng này — chờ GVBM xác nhận nguyên nhân.', nowIso(), x.signalId);
+    .run(up.id, nowIso(), boTro ? 'Giữa khoá đã tự tạo Case và PA Bổ trợ cho môn này — chờ GVBM xác nhận nguyên nhân.'
+      : 'Mock Test có SOS đã tự tạo Case và PA theo quy chế cho kỹ năng này — chờ GVBM xác nhận nguyên nhân.', nowIso(), x.signalId);
   announceAutoCase({
-    caseId: up.id, studentId: attempt.student_id, cycleId: attempt.cycle_id ?? null, skillLabel: labelOf({ skill: x.skill }),
+    caseId: up.id, studentId: attempt.student_id, cycleId: attempt.cycle_id ?? null, skillLabel: labelOf({ skill: x.skill, programme_code: ct }),
     attemptNo: attempt.attempt_no, sosLevel: x.sosLevel, ownerUserId: open.owner_user_id ?? null,
+    ...(boTro ? { ten: tenCaseThuong({ dot: 'progress', giua: `${tenMonNgan(ct, x.skill)} không đạt` }), dot: 'giua-khoa' as const } : {}),
     detectedOn: x.detectedAt, hanXacNhan: han, actorUserId: p.userId,
   });
   return open;

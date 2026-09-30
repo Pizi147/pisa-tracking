@@ -15,7 +15,6 @@ import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
 import { classAlerts } from '../classes/schedule.ts';
 import { demChuaLoTrinh } from '../classes/loTrinhTiep.ts';
 import { myMgmtTasks } from './mgmttasks.ts';
-import { listSignals, type SignalAction } from '../cases/signals.ts';
 import { NOT_UNCONFIRMED_PRESET, UNCONFIRMED_PRESET, awaitingCauseCaseIds } from '../cases/sosState.ts';
 import { dienMocQuyChe } from '../cases/sosAuto.ts';
 import { settleNoShows, sweepExpiredMoves } from '../fasttrack/absence.ts';
@@ -93,13 +92,6 @@ export type WorkItem = {
    * khác nhau, nên số em đi kèm dòng chứ không biến thành sáu dòng riêng.
    */
   count: number | null;
-  /**
-   * DÒNG TÍN HIỆU SOS (đặc tả §3.10) — đủ để giao diện vẽ hai nút "Tạo Case · Bỏ qua" mà không phải gọi thêm. Chỉ dòng `verify` có.
-   */
-  signal?: {
-    id: number; kind: 'normal' | 'ft'; skill: string | null; skillLabel: string;
-    score: number | null; total: number | null; deadline: string; actions: SignalAction[];
-  } | null;
   /** PR-Ra Q5: chỉ dòng có người phụ trách là TÀI KHOẢN KHÁC người xem, và người xem là QL/QT. */
   nhac?: { ownerId: number; daNhacLuc: string | null } | null;
 };
@@ -113,7 +105,7 @@ export type WorkItem = {
  * chắn nhất để nó không bao giờ được làm.
  */
 export type WorkGroupKey =
-  | 'verify' | 'cause' | 'xac_nhan_pa' | 'score' | 'no_plan' | 'result'
+  | 'cause' | 'xac_nhan_pa' | 'score' | 'no_plan' | 'result'
   | 'no_owner' | 'placement' | 'next_step' | 'missing_data' | 'mgmt'
   /* PR-YT4 (K5 §3 dòng 6–8): việc Ý thức THẬT có hạn — thay nhắc mềm W01–W06. */
   | 'yt_xu_ly' | 'yt_xem' | 'yt_thuc_hien';
@@ -126,21 +118,7 @@ export type WorkGroupKey =
  */
 const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   /*
-   * NHÓM ĐẦU TIÊN, VÌ NÓ ĐỨNG TRƯỚC MỌI THỨ KHÁC (mục 6.2).
-   *
-   * Điểm dưới kỳ vọng không còn tự mở case. Nó sinh một tín hiệu, và chừng nào chưa ai xác
-   * minh thì chưa ai biết vấn đề thật là gì — nên không có phương án nào để làm, không có
-   * kết quả nào để cập nhật. Đây là việc chặn đầu chuỗi, và hạn của nó chỉ có ba ngày.
-   */
-  verify: {
-    label: 'Xác minh SOS',
-    hint: 'Kết quả của em dưới kỳ vọng ở kỹ năng này. Hệ thống chỉ báo con số — bạn xem lại bài '
-      + 'rồi mở case với tên và mô tả cụ thể. Hạn ba ngày kể từ lúc tín hiệu được ghi nhận, '
-      + 'tính cả ngày đầu.',
-  },
-
-  /*
-   * XÁC ĐỊNH NGUYÊN NHÂN (rulebook v3, S04) — thay `verify` cho MOCK TEST FAST TRACK.
+   * XÁC ĐỊNH NGUYÊN NHÂN (rulebook v3, S04) — Case tự tạo từ Mock Test FT và từ Giữa khoá lớp thường (PR-LT2a).
    *
    * Mock FT nay TỰ TẠO case cho kỹ năng trượt kèm phương án điền sẵn, nên không còn tín hiệu nào để "xác minh". Việc còn lại của GVBM đúng kỹ năng có
    * đúng hạn ba ngày: xác định nguyên nhân, hoặc đóng `Không cần theo dõi`. PA theo quy chế đã tự chạy từ lúc tạo (PR-N1, S4-1) — không còn vế
@@ -280,56 +258,6 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    */
   const xemNguoiKhac = can(p, PERMISSIONS.CASE_APPROVE, { anyScope: true });
   const tatCa = f.nguoi === 'tat-ca' && xemNguoiKhac;
-
-  // ---------------------------------------------------------------- 0. xác minh tín hiệu
-  /*
-   * MỘT DÒNG CHO MỖI TÍN HIỆU, KHÔNG GOM.
-   *
-   * Khác với nhập điểm — nơi một người mở một bảng và gõ cho cả lớp — mỗi tín hiệu là một
-   * nhận định riêng về một em và một kỹ năng. Gom sáu em vào một dòng "xác minh Reading" sẽ
-   * mời người ta bấm một nút cho cả sáu, mà đó đúng là thứ mục 6.2 muốn bỏ.
-   */
-  const pushVerifyItem = (sg: any, mine: boolean) => {
-    const u = urgencyOf(sg.verifyDue, today);
-    items.push({
-      key: `verify:${sg.id}`,
-      group: 'verify', urgency: u,
-      studentId: sg.studentId, studentName: sg.studentName,
-      classId: sg.classId, classCode: sg.classCode,
-      attemptId: sg.attemptId, attemptNo: sg.attemptNo, caseId: null,
-      level: sg.sosLevel !== null ? { tone: sosTone(sg.sosLevel), text: SOS_LABEL[sg.sosLevel as 0 | 1 | 2 | 3] } : null,
-      reason: sg.kind === 'normal'
-        ? `${sg.label} chưa đạt${sg.score !== null && sg.total !== null ? ` (${sg.score}/${sg.total})` : ''}.`
-        : `${sg.label} dưới kỳ vọng${sg.band !== null ? ` (${sg.band} so với ${sg.expectation ?? '—'})` : ''}.`
-          + ' Xem lại bài rồi xác minh.',
-      tieuDe: `Xác minh SOS ${sg.label}`,
-      actionLabel: sg.kind === 'normal' ? 'Tạo Case' : 'Mở Case',
-      signal: {
-        id: sg.id, kind: sg.kind, skill: sg.skill, skillLabel: sg.label,
-        score: sg.score, total: sg.total, deadline: sg.verifyDue, actions: sg.actions,
-      },
-      href: `/hoc-vien/${sg.studentId}`,
-      ownerId: sg.ownerUserId, owner: null, mine,
-      due: sg.verifyDue,
-      statusLabel: 'Chờ xác minh',
-      contextLabel: sg.attemptNo
-        ? (sg.attemptKind && sg.attemptKind !== 'mock'
-            ? `${ATTEMPT_KIND_SHORT[sg.attemptKind as AttemptKind] ?? 'Bài kiểm tra'} · ${sg.label}`
-            : `MT${sg.attemptNo} · ${sg.label}`)
-        : sg.label,
-      count: null,
-    });
-  };
-  for (const sg of listSignals(p, { status: 'pending', branchId: f.branchId ?? undefined, mine: true }).rows) {
-    pushVerifyItem(sg, true);
-  }
-  /* PR-Ra Q1: "Tất cả trong phạm vi" cộng thêm tín hiệu chờ xác minh của NGƯỜI KHÁC trong phạm vi. */
-  if (tatCa) {
-    for (const sg of listSignals(p, { status: 'pending', branchId: f.branchId ?? undefined }).rows) {
-      if (sg.ownerUserId === p.userId) continue;   // đã có ở trên
-      pushVerifyItem(sg, false);
-    }
-  }
 
   // ---------------------------------------------------------------- 1. nhập điểm
   /*
@@ -1014,7 +942,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * còn lại. "Cần xếp lớp tiếp" đứng ngay sau ba nhóm chính vì nó treo cả một lớp.
    */
   const order: WorkGroupKey[] = [
-    'verify', 'cause', 'xac_nhan_pa', 'score', 'no_plan', 'result', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien',
+    'cause', 'xac_nhan_pa', 'score', 'no_plan', 'result', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien',
     'placement', 'next_step', 'no_owner', 'mgmt', 'missing_data',
   ];
   const weight = (u: WorkUrgency) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);

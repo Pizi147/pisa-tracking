@@ -5,10 +5,15 @@
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runPrLt2aTests(t: YThucTestKit) {
-  const { check, assert, conn } = t;
+  const { check, checkAsync, assert, conn, P, classId, TODAY } = t;
   const d = await import('../../../shared/domain/index.ts');
   const { migratePrLt2a } = await import('../migrate/prLt2a.ts');
   const { default: SqliteDb } = await import('libsql');
+  const regular: any = await import('../normal/regular.ts');
+  const intake: any = await import('../classes/intake.ts');
+  const cases: any = await import('../cases/cases.ts');
+  const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
+  const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
   console.log('\nPR-LT2a · Lớp thường Giữa khoá');
 
   // ------------------------------------------------------------------ khối 1 · luật thuần (Task 1)
@@ -89,5 +94,76 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     tam.close();
     const c: string[] = []; migratePrLt2a(conn, c);
     assert(c.length === 0 && coCot(conn, 'nhom_bo_tro') && coCot(conn, 'han_ke_hoach') && coChiMuc(conn), 'schema.sql thiếu cột/chỉ mục PR-LT2a');
+  });
+
+  // ------------------------------------------------------------------ khối 3 · Giữa khoá tự tạo Case + PA Bổ trợ + Báo PH (Task 3)
+  /** Thêm một em vào lớp thường + xếp bài Giữa/Cuối khoá (đường QL) → id các lượt. */
+  const taoEm = (ten: string, lop: string) => {
+    const cid = classId(lop);
+    intake.commitIntake(P.admin, { classId: cid, rows: [{ fullName: ten, email: 'hv@demo.test' }], idempotencyKey: `lt2a-${ten}` });
+    regular.planRegularTests(P.admin, cid);
+    const st = get('SELECT id FROM students WHERE full_name = ?', ten);
+    const luot = (kind: string) => get('SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = ?', st.id, kind)?.id as number | undefined;
+    return { id: st.id as number, pt: luot('progress'), ft: luot('final') };
+  };
+  /** Nhập điểm /20 theo môn. */
+  const nhap = (aid: number, dd: Record<string, number>) => {
+    for (const [k, v] of Object.entries(dd)) regular.saveRegularScore(P.admin, aid, k, { score: v, total: 20, lyDo: 'Phép kiểm LT2a' });
+  };
+  const caseCua = (hv: number) => all(`SELECT * FROM sos_cases WHERE student_id = ? ORDER BY id`, hv);
+  const paCua = (caseId: number) => all(`SELECT * FROM case_interventions WHERE case_id = ? AND kind = 'bo_tro' ORDER BY id`, caseId);
+  const gvcnFou = P.normalCoreTeacher.userId;
+
+  check('LT2a (3) · FOU Giữa khoá trượt G+V, P → 2 Case không nhãn SOS, mỗi Case một PA bổ trợ chờ cùng nhóm, người dạy GVCN; chạy lặp không nhân đôi', () => {
+    const em = taoEm('LT2a FOU A', 'MB FOU 12');
+    nhap(em.pt!, { listening: 18, reading: 18, writing: 11, speaking: 12 });
+    let cs = caseCua(em.id);
+    assert(cs.length === 2, `phải 2 Case: ${cs.length}`);
+    assert(cs.every((c) => c.sos_level === null && c.origin_kind === 'mock'), 'sos_level phải NULL');
+    assert(cs.every((c) => c.han_xac_nhan === d.hanXacNhan(TODAY)), 'hạn xác nhận 3 ngày tính cả hôm nay');
+    const ten = cs.map((c) => cases.caseTitleOf(c)).sort();
+    assert(ten[0] === '[Giữa khoá] G+V không đạt' && ten[1] === '[Giữa khoá] P không đạt' && !ten.some((x) => /SOS|MT/.test(x)), ten.join(' | '));
+    const pas = cs.flatMap((c) => paCua(c.id));
+    assert(pas.length === 2 && pas.every((x) => x.status === 'planned' && x.preset === 1 && x.confirmed_at === null && x.confirmed_by === null), 'PA chờ');
+    assert(new Set(pas.map((x) => x.nhom_bo_tro)).size === 1 && pas[0].nhom_bo_tro === `gk:${em.pt}`, 'cùng một nhóm FOU');
+    assert(pas.every((x) => x.performer_user_id === gvcnFou && x.moc_quy_che === 'den_cuoi_khoa' && x.han_ke_hoach === d.hanXacNhan(TODAY)), 'người dạy = GVCN');
+    assert(pas.every((x) => x.description.includes('2 buổi/tuần') && x.description.includes('trừ buổi Free')), pas[0].description);
+    nhap(em.pt!, { writing: 11, speaking: 12 });   // lưu lại điểm
+    cs = caseCua(em.id);
+    assert(cs.length === 2 && cs.flatMap((c) => paCua(c.id)).length === 2, 'chạy lặp không thêm Case/PA');
+    assert(all(`SELECT 1 FROM sos_coordination_actions WHERE attempt_id = ? AND kind = 'bao_ph_tvv' AND status = 'pending'`, em.pt).length === 1, 'một dòng Báo PH');
+    const tb = all(`SELECT user_id, title, body, dedup_key FROM notifications WHERE dedup_key IN (?, ?, ?)`, `sos-case:${cs[0].id}`, `sos-case:${cs[1].id}`, `bao-ph:${em.pt}`);
+    assert(tb.filter((x) => x.dedup_key === `bao-ph:${em.pt}`).length === 1 && tb.some((x) => x.user_id === gvcnFou && /Báo phụ huynh qua TVV/.test(x.title)), 'GVCN nhận một thông báo Báo PH');
+    assert(tb.filter((x) => /^sos-case:/.test(x.dedup_key)).length === 2, 'mỗi Case một thông báo cho GVBM');
+    assert(!tb.some((x) => /SOS/.test(`${x.title} ${x.body}`)), 'không thông báo nào có chữ SOS');
+  });
+
+  check('LT2a (3) · BE Giữa khoá trượt W, S → 2 PA KHÁC nhóm, người dạy = GVBM từng môn', () => {
+    const em = taoEm('LT2a BE A', 'MB BE 08');
+    nhap(em.pt!, { listening: 18, reading: 18, writing: 10, speaking: 10 });
+    const pas = caseCua(em.id).flatMap((c) => paCua(c.id));
+    assert(pas.length === 2 && new Set(pas.map((x) => x.nhom_bo_tro)).size === 2, 'hai nhóm');
+    assert(pas.every((x) => /^gk:\d+:(writing|speaking)$/.test(x.nhom_bo_tro) && x.description.includes('1 buổi/tuần')), pas.map((x) => x.nhom_bo_tro).join());
+    const dayW = pas.find((x) => x.nhom_bo_tro.endsWith('writing'))!.performer_user_id, dayS = pas.find((x) => x.nhom_bo_tro.endsWith('speaking'))!.performer_user_id;
+    const gv = (lop: string, skill: string) => get(`SELECT ta.user_id u FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id WHERE c.code = ? AND ta.skill = ? AND ta.status = 'active'`, lop, skill).u;
+    assert(dayW === gv('MB BE 08', 'writing') && dayS === gv('MB BE 08', 'speaking'), `người dạy ${dayW}/${dayS}`);
+  });
+
+  check('LT2a (3) · Cuối khoá trượt → 0 tín hiệu, 0 Case (cả FOU và Pre FOU); Giữa khoá sửa lên đạt → Case tự huỷ + PA huỷ, hết môn trượt → Báo PH removed', () => {
+    const em = taoEm('LT2a FOU B', 'MB FOU 12');
+    nhap(em.ft!, { listening: 5, reading: 5, writing: 5, speaking: 5 });
+    assert(!all('SELECT 1 FROM case_signals WHERE attempt_id = ?', em.ft).length && !caseCua(em.id).length, 'Cuối khoá FOU không tín hiệu/Case');
+    const pre = taoEm('LT2a PRE A', 'MB Pre FOU 03');
+    for (const aid of [pre.pt, pre.ft].filter(Boolean) as number[]) nhap(aid, { tong_hop: 5 });
+    assert(!all('SELECT 1 FROM case_signals WHERE student_id = ?', pre.id).length && !caseCua(pre.id).length, 'Pre FOU không tín hiệu/Case');
+
+    nhap(em.pt!, { listening: 18, reading: 18, writing: 11, speaking: 12 });
+    const [cGv, cP] = ['writing', 'speaking'].map((k) => caseCua(em.id).find((c) => c.topic === k)!);
+    nhap(em.pt!, { writing: 18 });
+    assert(get('SELECT status FROM sos_cases WHERE id = ?', cGv.id).status === 'done' && paCua(cGv.id).every((x) => x.status === 'cancelled'), 'Case G+V phải tự huỷ cùng PA');
+    assert(get('SELECT status FROM sos_cases WHERE id = ?', cP.id).status !== 'done', 'Case P giữ');
+    assert(get(`SELECT status FROM sos_coordination_actions WHERE attempt_id = ? AND kind = 'bao_ph_tvv'`, em.pt).status === 'pending', 'còn môn trượt → Báo PH giữ');
+    nhap(em.pt!, { speaking: 18 });
+    assert(get(`SELECT status FROM sos_coordination_actions WHERE attempt_id = ? AND kind = 'bao_ph_tvv'`, em.pt).status === 'removed', 'hết môn trượt → Báo PH removed');
   });
 }

@@ -15,16 +15,14 @@ import { phamViPhanTich } from './phamVi.ts';
 export type { LoaiBoQuen };
 
 /**
- * HAI VIỆC "BỎ QUÊN" CỦA "CHƯA AI NHẬN" cũ (PR-UX4, Q17–Q19) — không còn là góc nhìn riêng: thành hai dòng ở khối Cần xử lý của
- * Tổng quan QL (hai chỉ số trong sổ) và một bộ lọc ở Danh sách Case.
+ * VIỆC "BỎ QUÊN" CỦA "CHƯA AI NHẬN" cũ (PR-UX4, Q17–Q19) — không còn là góc nhìn riêng: thành một dòng ở khối Cần xử lý của
+ * Tổng quan QL (chỉ số trong sổ) và một bộ lọc ở Danh sách Case. (PR-LT2a: việc thứ hai "Bỏ qua tín hiệu" đã bỏ cùng mô hình tín hiệu.)
  *
  *  · `can-ho-tro-2-lan`: cùng HỌ kỹ năng (W1/W2/W = Writing) dưới kỳ vọng (FT) / chưa đạt (lớp thường) ở HAI lượt hợp lệ mới nhất
  *    (đã có điểm — kể cả tạm thời) mà KHÔNG có Case mở cùng họ.
- *  · `bo-qua-van-can-ho-tro`: tín hiệu lớp thường bị Bỏ qua (`noted`); lượt hợp lệ NGAY SAU lượt của tín hiệu vẫn chưa đạt cùng họ;
- *    không có Case mở cùng họ.
  *
- * Một hàm tính cả hai, nhớ trong request theo (người xem, chi nhánh, hôm nay) — `metricSet` và route dùng CHUNG nên số và danh sách
- * không thể lệch (G-10). Số câu SQL không đổi theo số học viên (lô 400): lượt, Case, tín hiệu, tên.
+ * Một hàm tính, nhớ trong request theo (người xem, chi nhánh, hôm nay) — `metricSet` và route dùng CHUNG nên số và danh sách
+ * không thể lệch (G-10). Số câu SQL không đổi theo số học viên (lô 400): lượt, Case, tên.
  */
 
 export type DongBoQuen = { studentId: number; ten: string; lop: string | null; kyNang: string; chiTiet: string; tu: string };
@@ -40,7 +38,7 @@ export function boQuen(p: Principal, branchId: number | null, today: string): Re
 }
 
 function tinh(p: Principal, branchId: number | null, today: string): Record<LoaiBoQuen, DongBoQuen[]> {
-  const ketQua: Record<LoaiBoQuen, DongBoQuen[]> = { 'can-ho-tro-2-lan': [], 'bo-qua-van-can-ho-tro': [] };
+  const ketQua: Record<LoaiBoQuen, DongBoQuen[]> = { 'can-ho-tro-2-lan': [] };
   const hvIds = studentsInScope(p, branchId);
   if (!hvIds.length) return ketQua;
   const conn = db();
@@ -78,25 +76,7 @@ function tinh(p: Principal, branchId: number | null, today: string): Record<Loai
   }
   const coCaseMo = (sid: number, ho: HoKyNang) => moCua.get(sid)?.has(ho) ?? false;
 
-  // Tín hiệu lớp thường bị Bỏ qua.
-  const boQuaCua = new Map<number, { attemptId: number; ho: HoKyNang; resolvedAt: string | null }[]>();
-  for (const chunk of chunks(hvIds)) {
-    for (const r of conn.prepare(
-      `SELECT sg.student_id, sg.attempt_id, sg.skill, sg.category, sg.resolved_at
-         FROM case_signals sg JOIN classes c ON c.id = sg.class_id
-        WHERE sg.status = 'noted' AND c.is_fast_track = 0 AND sg.student_id IN (${marks(chunk.length)})
-          AND EXISTS (SELECT 1 FROM enrollments e2 JOIN classes c2 ON c2.id = e2.class_id
-                       WHERE e2.student_id = sg.student_id AND e2.status = 'active' AND c2.is_fast_track = 0)`,
-    ).all(...chunk) as any[]) {
-      const ho = hoKyNang(r.skill ?? r.category);
-      if (!ho || !r.attempt_id) continue;
-      if (!boQuaCua.has(r.student_id)) boQuaCua.set(r.student_id, []);
-      boQuaCua.get(r.student_id)!.push({ attemptId: r.attempt_id, ho, resolvedAt: r.resolved_at ?? null });
-    }
-  }
-
   const dong1 = new Map<number, { ho: HoKyNang[]; moi: any; cu: any; lopThuong: boolean; daDong: string | null }>();
-  const dong2 = new Map<number, { ho: HoKyNang[]; ngayBoQua: string | null; sau: any }>();
 
   for (const [sid, list] of luotCua) {
     const hopLe = list.filter((a) => luotSinhViecRow(a, today) && evOf(a).scored > 0);   // mới nhất trước; MT lịch sử ngoài 4 tuần không báo động (K1-04)
@@ -109,25 +89,10 @@ function tinh(p: Principal, branchId: number | null, today: string): Record<Loai
         dong1.set(sid, { ho, moi, cu, lopThuong: laLopThuong(moi), daDong: ngayDong });
       }
     }
-    // 2) tín hiệu bị Bỏ qua, lượt hợp lệ ngay sau vẫn chưa đạt cùng họ, không Case mở cùng họ
-    const tinHieu = boQuaCua.get(sid) ?? [];
-    if (tinHieu.length) {
-      const ho: HoKyNang[] = []; let ngayBoQua: string | null = null; let sau: any = null;
-      for (const t of tinHieu) {
-        const i = hopLe.findIndex((a) => a.id === t.attemptId);
-        if (i <= 0) continue;                                       // không có lượt hợp lệ NGAY SAU (mới hơn)
-        const tiep = hopLe[i - 1];
-        if (!laLopThuong(tiep)) continue;                          // lượt ngay sau phải là lớp thường (em đã lên FT thì hết "bỏ quên")
-        if (!duoi(evOf(tiep), t.ho) || coCaseMo(sid, t.ho)) continue;
-        if (!ho.includes(t.ho)) ho.push(t.ho);
-        if (!sau || (tiep.period_start ?? '') > (sau.period_start ?? '')) { sau = tiep; ngayBoQua = t.resolvedAt; }
-      }
-      if (ho.length) dong2.set(sid, { ho: THU_TU_HO.filter((h) => ho.includes(h)), ngayBoQua, sau });
-    }
   }
 
   // Tên + lớp đang học, một lô cho các em đã chọn.
-  const chon = [...new Set([...dong1.keys(), ...dong2.keys()])];
+  const chon = [...dong1.keys()];
   const ten = new Map<number, { ten: string; lop: string | null }>();
   for (const chunk of chunks(chon)) {
     for (const r of conn.prepare(
@@ -145,12 +110,6 @@ function tinh(p: Principal, branchId: number | null, today: string): Record<Loai
     ketQua['can-ho-tro-2-lan'].push({
       studentId: sid, ten: ten.get(sid)?.ten ?? `#${sid}`, lop: ten.get(sid)?.lop ?? null, kyNang: nhan(x.ho),
       chiTiet: cat(`${dongChu(x.cu)}, ${dongChu(x.moi)} ${dongTu} · ${phanCase}`), tu: tuanLich(x.moi.period_start, today),
-    });
-  }
-  for (const [sid, x] of [...dong2].sort((a, b) => a[0] - b[0])) {
-    ketQua['bo-qua-van-can-ho-tro'].push({
-      studentId: sid, ten: ten.get(sid)?.ten ?? `#${sid}`, lop: ten.get(sid)?.lop ?? null, kyNang: nhan(x.ho),
-      chiTiet: cat(`Bỏ qua ${x.ngayBoQua ? ngay(x.ngayBoQua, today) : '—'} · ${dongChu(x.sau)} vẫn chưa đạt`), tu: tuanLich(x.sau.period_start, today),
     });
   }
   return ketQua;

@@ -42,7 +42,7 @@ type BfAction = { description: string; nguoi: NguoiChon; fromDate: string; toDat
  * độ…) là Vi phạm — có form riêng ở phần Ý thức, không đi qua cửa case.
  */
 export function QuickReport({
-  open, onClose, studentId, studentName, lop, cycleId, onDone, signal, students, onPickStudent, onMoCase,
+  open, onClose, studentId, studentName, lop, cycleId, onDone, students, onPickStudent, onMoCase,
 }: {
   /** PR-SOS (K3-23, K3-24): mở Ngăn Case của Case có sẵn — Xác nhận Case (kỹ năng đang chờ nguyên nhân) / Thêm PA (Case vừa tạo). */
   onMoCase?: (caseId: number, viec: 'xac-nhan' | 'them-pa') => void;
@@ -58,14 +58,6 @@ export function QuickReport({
    */
   students?: { id: number; name: string; code?: string | null }[];
   onPickStudent?: (id: number) => void;
-  /**
-   * TÍN HIỆU mà case này ra đời để trả lời (mục 6.2).
-   *
-   * Khi mở form từ một tín hiệu, đầu mục và kỹ năng được điền sẵn — đó là phần máy BIẾT
-   * chắc. Tên và mô tả thì không: máy chỉ đọc được con số, còn vấn đề thật là gì thì người
-   * dạy mới biết, và đó chính là lý do bước xác minh này tồn tại.
-   */
-  signal?: { id: number; skill: string | null; label: string; kind?: 'normal' | 'ft'; scoreText?: string | null; contextLabel?: string | null } | null;
 }) {
   const toast = useToast();
   /*
@@ -113,29 +105,22 @@ export function QuickReport({
     [studentId, open],
   );
 
-  /* Mở từ một tín hiệu: điền sẵn đầu mục và kỹ năng, để người dạy chỉ còn phải viết nhận định. */
-  useEffect(() => {
-    if (!open || !signal) return;
-    setTopic(signal.skill ?? '');
-  }, [open, signal?.id]);
-
   /* Mở lại hộp thoại cho một lần báo mới thì bước "Đã lưu" của lần trước không còn ý nghĩa. */
   useEffect(() => { if (open) setDaLuu(null); }, [open]);
 
   /*
    * F07 — KỸ NĂNG THEO ĐÚNG CHƯƠNG TRÌNH EM ĐANG HỌC.
    *
-   * Mở từ tín hiệu thì đã biết chắc chắn kỹ năng (chỉ đúng môn của tín hiệu). Còn lại (hồ sơ
-   * học viên, trang lớp) hỏi máy chủ: lớp thường bốn ô L·R·W·S, Fast Track năm ô L·R·W1·W2·S
+   * Hồ sơ học viên, trang lớp hỏi máy chủ: lớp thường bốn ô L·R·W·S, Fast Track năm ô L·R·W1·W2·S
    * (Q8) — form không tự đoán chương trình.
    */
-  /* Hỏi cả khi mở từ tín hiệu: cần mã chương trình để gọi đúng tên môn và bộ nguyên nhân (FOU G+V / P, Pre FOU Tổng hợp — T57). */
+  /* Cần mã chương trình để gọi đúng tên môn và bộ nguyên nhân (FOU G+V / P, Pre FOU Tổng hợp — T57). */
   const chuDe = useApi<{ ratio: boolean; topics: string[]; chuongTrinh: string | null;
     choNguyenNhan?: Record<string, { caseId: number; mt: number | null; sos: number | null }> }>(
     open && studentId ? `/students/${studentId}/case-topics${cycleId ? `?cycleId=${cycleId}` : ''}` : null,
-    [open, studentId, cycleId, signal],
+    [open, studentId, cycleId],
   );
-  const topics: readonly string[] = signal?.skill ? [signal.skill] : (chuDe.data?.topics ?? []);
+  const topics: readonly string[] = chuDe.data?.topics ?? [];
   const topicsKey = topics.join('|');
   /* Đổi học viên (trang lớp): bộ kỹ năng đổi theo — kỹ năng/phân loại cũ không còn hợp lệ thì bỏ, không giữ lại một lựa chọn sai chương trình. */
   useEffect(() => {
@@ -194,7 +179,6 @@ export function QuickReport({
         observation: laKhac(primaryCode) ? ghiRo.trim() : undefined,
         detectedAt: detectedAt || undefined,
         idempotencyKey,
-        fromSignalId: signal?.id ?? undefined,
         ...extra,
       });
       invalidate('/cases'); invalidate('/students'); invalidate('/overview');
@@ -297,10 +281,9 @@ export function QuickReport({
   const o = (khoa: string) => lf.o(loi, khoa);
 
   if (!open) return null;
-  const cnn = !signal && mode === 'now' && topic ? chuDe.data?.choNguyenNhan?.[topic] ?? null : null;
+  const cnn = mode === 'now' && topic ? chuDe.data?.choNguyenNhan?.[topic] ?? null : null;
 
-  const tieuDe = signal?.kind === 'normal' ? `Tạo Case ${signal.label}`
-    : signal ? `Xác minh SOS ${signal.label}` : 'Tạo Case';
+  const tieuDe = 'Tạo Case';
   const tenChon = (students ?? []).find((st) => st.id === studentId)?.name ?? studentName;
   const nhanTuan = (iso: string) => (iso ? tuanLich(iso, homNay) : '');
 
@@ -336,14 +319,10 @@ export function QuickReport({
 
   return (
     <KhungPanel tieuDe={tieuDe} hocVien={tenChon} lop={lop} onDong={dong}
-      /* Điểm của tín hiệu = phần máy biết chắc, hiện ở dòng ngữ cảnh (≤ 1 dòng) để khỏi mở bài lên dò. */
-      ngCanh={signal?.scoreText ? (
-        <span>Điểm {signal.contextLabel ?? signal.label}: <span className="tabular-nums text-late">{signal.scoreText}</span></span>
-      ) : undefined}
-      tabs={!signal ? (
+      tabs={(
         <HangTab cap="con" ariaLabel="Loại Case" value={mode} onChange={(k) => { setMode(k); lf.datLai(); }}
           tabs={[{ key: 'now', label: 'Đang gặp vấn đề' }, { key: 'backfill', label: 'Đã xong từ trước' }]} />
-      ) : undefined}
+      )}
       chan={{
         conThieu: lf.daBam && !cnn ? oLoi : undefined,
         chinh: cnn ? undefined : (
@@ -373,7 +352,7 @@ export function QuickReport({
             <div className="grid grid-cols-4 gap-2 opacity-40" aria-hidden>
               {['L', 'R', 'W', 'S'].map((k) => <span key={k} className="btn justify-center">{k}</span>)}
             </div>
-          ) : !signal && chuDe.loading && !chuDe.data ? (
+          ) : chuDe.loading && !chuDe.data ? (
             <div className="h-[34px] animate-pulse rounded-md" style={{ background: 'var(--surface-2)' }} />
           ) : (
             <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.max(topics.length, 1)}, minmax(0, 1fr))` }}>
@@ -382,7 +361,7 @@ export function QuickReport({
                   className="justify-center px-1"
                   onClick={() => { setTopic(k); setPrimaryCode(''); }}>
                   {topicShort(k)}
-                  {!signal && chuDe.data?.choNguyenNhan?.[k] && (
+                  {chuDe.data?.choNguyenNhan?.[k] && (
                     <span className="ml-1 inline-block h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: 'rgb(var(--soon-rgb))' }}
                       title="Đang có Case chờ xác nhận nguyên nhân" aria-label="đang có Case chờ xác nhận nguyên nhân" />
                   )}

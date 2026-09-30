@@ -1,8 +1,9 @@
 import { db, tx } from '../db.ts';
-import { addMilestone, followUntilAfter } from '../cases/sos.ts';
+import { addMilestone, followUntilAfter, taoCaseTuDong } from '../cases/sos.ts';
+import { dongBoBaoPh } from '../yThuc/phoiHop.ts';
 import { raiseSignal, reconcileCorrectedSignals } from '../cases/signals.ts';
 import {
-  ATTEMPT_KIND_LABEL, PERMISSIONS, RATIO_PASS_THRESHOLD,
+  ATTEMPT_KIND_LABEL, PERMISSIONS, RATIO_PASS_THRESHOLD, boTroGiuaKhoa,
   caseCategoriesFor, categoryOf, kiemLyDo, kiemLyDoThaoTac, ngay, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanKeTiep, tuanLich,
   type AssessedSkill, type AttemptKind, type CaseCategory, type RatioOutcome, type SosLevel,
 } from '../../../shared/domain/index.ts';
@@ -652,11 +653,25 @@ export function refreshRegularOutcome(p: Principal, attemptId: number) {
     /* PR-S4F #3: môn nay TRỐNG (xoá điểm có lý do) — tín hiệu dựng trên điểm đó hết căn cứ, như nhánh FT (`reconcileCorrectedScores`). */
     clearedSkills: r.skills.filter((x) => x.outcome === 'missing').map((x) => x.skill),
   });
-  // Nhưng CASE thì mở ngay khi kết luận được, không chờ đủ.
-  if (r.sosLevel === null) return r;
+  /*
+   * PR-LT2a (K5-01, Q11): CUỐI KHOÁ KHÔNG SINH tín hiệu hay Case mới — kết luận Cuối khoá (% hướng) là việc của PR-LT2b. Pre FOU không có Giữa khoá (PF2).
+   * GIỮA KHOÁ: môn trượt TỰ TẠO Case + PA Bổ trợ (N1) — không tín hiệu "Tạo Case / Bỏ qua", không nhãn SOS (T58).
+   * Case Giữa khoá còn mở mà môn đó ĐẠT ở lượt sau (Cuối khoá) thì vẫn ghi mốc "Đã đạt" (giữ phép kiểm S4F); không đổi mức, không mở Case.
+   */
+  // Case mở ngay khi kết luận được, không chờ đủ điểm.
+  if (r.sosLevel !== null) taoCaseGiuaKhoa(p, a, r);
+  if (a.kind === 'progress') dongBoBaoPh(a, r.skills.filter((x) => x.outcome === 'fail').map((x) => x.skill));
+  return r;
+}
 
+/**
+ * GIỮA KHOÁ LỚP THƯỜNG → CASE TỰ TẠO + PA BỔ TRỢ (PR-LT2a N1, M-03, Q-F). Chạy lặp được: tín hiệu đã nối vào một Case (kể cả Case nay đã đóng vì
+ * "Không cần theo dõi") thì KHÔNG tạo lại; Case đang mở cùng môn thì thêm mốc "Trượt lại" + nối tín hiệu. Tín hiệu luôn `silent` — chỉ là dây nối
+ * S08 (sửa điểm lên đạt thì rút Case chưa ai làm) và Không cần theo dõi. `sos_level` của Case và mốc luôn NULL (T58).
+ */
+function taoCaseGiuaKhoa(p: Principal, a: any, r: RegularResult) {
+  const conn = db();
   const failing = r.skills.filter((x) => x.outcome === 'fail').map((x) => x.skill);
-  const failingCats = new Set(failing.map((sk) => categoryOf(sk)).filter(Boolean) as string[]);
   /* PR-S4F #3: chỉ môn CÓ ĐIỂM ĐẠT ở lượt này mới là "đã đạt" — môn trống / không thuộc lượt này không nói gì về Case. */
   const passingCats = new Set(r.skills.filter((x) => x.outcome === 'pass').map((x) => categoryOf(x.skill)).filter(Boolean) as string[]);
   /* Mục 9.4: Case có căn cứ từ CHÍNH lượt này → đạt ở đây là SỬA ĐIỂM, không phải tiến bộ — không ghi mốc "đã đạt". */
@@ -664,106 +679,51 @@ export function refreshRegularOutcome(p: Principal, attemptId: number) {
     `SELECT 1 FROM case_signals WHERE case_id = ? AND attempt_id = ?
      UNION ALL SELECT 1 FROM case_milestones WHERE case_id = ? AND attempt_id = ? AND kind != 'passed' LIMIT 1`,
   );
-
-  /*
-   * TÌM CASE THEO HỌC VIÊN, KHÔNG THEO LƯỢT THI.
-   *
-   * Bản trước tìm bằng `WHERE attempt_id = ?`. Từ vòng 4 case sống suốt khoá và cột đó luôn
-   * trỏ tới LƯỢT MỚI NHẤT đã chạm vào nó, nên chấm lại một bài CŨ thì câu đó không tìm ra
-   * case nào — điểm sửa lên thành đạt mà mức SOS vẫn nằm nguyên, không có lỗi nào báo ra.
-   *
-   * Điểm sửa lên thành đạt: hạ mức và ghi một mốc, KHÔNG xoá case — xoá đi là mất luôn
-   * những việc đã làm cho em vì vấn đề đó.
-   */
-  const open = conn
-    .prepare(
-      `SELECT * FROM sos_cases
-        WHERE student_id = ? AND COALESCE(cycle_id, 0) = ?
-          AND status != 'done'`,
-    )
+  /* TÌM CASE THEO HỌC VIÊN, KHÔNG THEO LƯỢT THI (Case sống suốt khoá — `attempt_id` chỉ trỏ lượt mới nhất chạm vào nó). */
+  const open = conn.prepare(`SELECT * FROM sos_cases WHERE student_id = ? AND COALESCE(cycle_id, 0) = ? AND status != 'done'`)
     .all(a.student_id, a.cycle_id ?? 0) as any[];
-
   // Ngày phát hiện = thứ Hai của TUẦN bài kiểm tra; không còn ngày làm bài riêng.
   const detectedAt = weekStartOf(a) ?? demoToday();
   for (const c of open) {
     const cat = c.category ?? categoryOf(c.topic);
-    if (!cat) continue;
-    const dat = passingCats.has(cat);
-    if (!dat && !failingCats.has(cat)) continue;
-    const level = dat || r.sosLevel === 0 ? 0 : r.sosLevel;
-    if (dat && !coCanCuLuotNay.get(c.id, attemptId, c.id, attemptId)) {
-      addMilestone({
-        caseId: c.id, kind: 'passed', attemptId, attemptNo: a.attempt_no,
-        sosLevel: r.sosLevel, occurredOn: detectedAt, createdBy: p.userId,
-        dedupKey: `mt:${attemptId}:${c.id}:passed`,
-      });
-    }
-    if (c.sos_level !== level) {
-      conn.prepare('UPDATE sos_cases SET sos_level = ?, updated_at = ? WHERE id = ?')
-        .run(level, nowIso(), c.id);
-      conn.prepare(
-        `INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at)
-         VALUES (?, 'sos_level', ?, ?, ?, ?)`,
-      ).run(c.id, String(c.sos_level), String(level), p.userId, nowIso());
-    }
+    if (!cat || !passingCats.has(cat) || coCanCuLuotNay.get(c.id, a.id, c.id, a.id)) continue;
+    addMilestone({
+      caseId: c.id, kind: 'passed', attemptId: a.id, attemptNo: a.attempt_no, sosLevel: null,
+      occurredOn: detectedAt, createdBy: p.userId, dedupKey: `mt:${a.id}:${c.id}:passed`,
+    });
   }
-  if (r.sosLevel === 0 || !failing.length) return r;
+  /* Chỉ bài GIỮA KHOÁ của lớp có Giữa khoá (FOU · BE · ELE — Pre FOU không có, PF2) mới tự tạo Case / ghi mốc "Trượt lại". */
+  if (a.kind !== 'progress' || !boTroGiuaKhoa(a.class_id ? programmeOfClass(a.class_id)?.code : null)) return;
+  if (r.sosLevel === 0 || !failing.length) return;
 
-  /*
-   * MỘT CASE CHO MỖI HẠNG MỤC, SỐNG SUỐT KHOÁ — dùng chung hệt lớp FT.
-   *
-   * Bốn môn của lớp Normal ứng thẳng với bốn hạng mục CÙNG TÊN: L · R · W · S. Không gộp
-   * W vào W2 của Fast Track — hai môn khác nhau, chấm theo hai cách khác nhau.
-   *
-   * Progress Test rồi Final Test cùng trượt một môn thì đó là MỘT case với hai mốc, không
-   * phải hai case rời — giống hệt MT1/MT2 của lớp FT.
-   */
-  /*
-   * MÔN DƯỚI NGƯỠNG SINH TÍN HIỆU, KHÔNG SINH CASE (mục 6.2) — giống hệt lớp Fast Track.
-   *
-   * Hạng mục đã có case đang mở thì thêm một mốc vào chính case đó và gắn tín hiệu vào nó:
-   * Progress Test rồi Final Test cùng trượt một môn là MỘT vấn đề với hai bằng chứng, không
-   * phải hai vấn đề. Chưa có case nào thì tín hiệu nằm chờ giáo viên bộ môn xác minh.
-   */
-  const conn2 = conn;
   for (const skill of failing) {
     const category = categoryOf(skill);
     if (!category) continue;
     const existing = open.find((c: any) => (c.category ?? categoryOf(c.topic)) === category) ?? null;
     const signal = raiseSignal({
-      actorUserId: p.userId,
-      studentId: a.student_id, cycleId: a.cycle_id ?? null,
-      attemptId: a.id, classId: a.class_id ?? null,
-      skill, category,
-      sosLevel: r.sosLevel, detectedOn: detectedAt,
+      actorUserId: p.userId, studentId: a.student_id, cycleId: a.cycle_id ?? null, attemptId: a.id, classId: a.class_id ?? null,
+      skill, category, sosLevel: null, detectedOn: detectedAt, silent: true,
     });
     if (existing) {
+      if (signal.status === 'linked' && signal.case_id === existing.id) continue;   // chạy lặp: lượt này đã ghi vào Case
       addMilestone({
-        caseId: existing.id, kind: 'repeat', attemptId: a.id, attemptNo: a.attempt_no,
-        sosLevel: r.sosLevel, occurredOn: detectedAt, createdBy: p.userId,
+        caseId: existing.id, kind: 'repeat', attemptId: a.id, attemptNo: a.attempt_no, sosLevel: null,
+        occurredOn: detectedAt, createdBy: p.userId,
         note: r.skills.find((x) => x.skill === skill)?.label ?? tenMon(null, skill),   // tên môn theo chương trình (FOU G+V)
         dedupKey: `mt:${a.id}:${existing.id}:repeat`,
       });
-      conn2
-        .prepare(
-          `UPDATE sos_cases SET attempt_id = ?, sos_level = ?,
-                  follow_until = COALESCE(?, follow_until), updated_at = ? WHERE id = ?`,
-        )
-        .run(a.id, r.sosLevel, followUntilAfter(a), nowIso(), existing.id);
+      conn.prepare('UPDATE sos_cases SET attempt_id = ?, follow_until = COALESCE(?, follow_until), updated_at = ? WHERE id = ?')
+        .run(a.id, followUntilAfter(a), nowIso(), existing.id);
       if (signal.status === 'pending') {
-        conn2
-          .prepare(
-            `UPDATE case_signals SET status = 'linked', case_id = ?, resolved_by = ?, resolved_at = ?,
-                    resolution_note = ?, updated_at = ? WHERE id = ?`,
-          )
-          .run(existing.id, p.userId, nowIso(),
-               'Nối vào case đang mở của môn này — cùng một vấn đề, thêm một bằng chứng.',
-               nowIso(), signal.id);
+        conn.prepare(`UPDATE case_signals SET status = 'linked', case_id = ?, resolved_by = ?, resolved_at = ?, resolution_note = ?, updated_at = ? WHERE id = ?`)
+          .run(existing.id, p.userId, nowIso(), 'Nối vào case đang mở của môn này — cùng một vấn đề, thêm một bằng chứng.', nowIso(), signal.id);
       }
+    } else if (!(signal.status === 'linked' && signal.case_id != null)) {
+      open.push(taoCaseTuDong(p, {
+        attempt: a, category, skill, sosLevel: null, detectedAt, band: null, expectation: null, signalId: signal.id, pa: 'bo_tro',
+      }));
     }
   }
-
-  return r;
 }
 
 // ---------------------------------------------------------------- bảng điểm lớp

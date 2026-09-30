@@ -213,7 +213,8 @@ export async function runPrHvlTests(t: YThucTestKit) {
     assert(mo.length > 6, 'cần nhiều Case');
     const dem = (ds: any[]) => { const a = soCauSql(); caseLop.chiTietCaseMo(ds); return soCauSql() - a; };
     const it = dem(mo.slice(0, 3)); const tat = dem(mo);
-    eq(tat, it, 'Chênh số câu giữa 3 Case và mọi Case');
+    /* PR-LT2a: Giữa khoá tự tạo Case nên Case mở có thể vượt 400 — mỗi LÔ 400 thêm đúng 4 câu (một câu mỗi bảng), không thêm theo số Case. */
+    eq(tat, it + 4 * (Math.ceil(mo.length / 400) - 1), 'Chênh số câu giữa 3 Case và mọi Case (chỉ theo số lô 400)');
     assert(it <= 6, `${it} câu cho một lô`);
   });
 
