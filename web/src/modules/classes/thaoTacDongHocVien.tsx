@@ -7,7 +7,8 @@ import { ChuyenLopPanel } from '../students/ChuyenLopPanel.tsx';
 import type { MucMenu } from '../../ui/MenuDong.tsx';
 import { MUC_MENU_DONG_HIEM, MUC_MENU_DONG_NHAN, duongHoSoHocVien, mucMenuDongHocVien, type ViecTiepTheo } from '@shared/domain/index.ts';
 
-export type QuyenDong = { coTheSuaHocVien: boolean; coTheBaoCase: boolean; coTheGhiViPham: boolean; coTheNhapDiem: boolean };
+/** `coTheChuyenTiep` = `class.edit` ở lớp (Quản lý — ra lệnh chuyển lớp); người chỉ có `coTheSuaHocVien` (GVCN) thì Đề xuất chuyển lớp. */
+export type QuyenDong = { coTheSuaHocVien: boolean; coTheBaoCase: boolean; coTheGhiViPham: boolean; coTheNhapDiem: boolean; coTheChuyenTiep?: boolean };
 export type DongChoMenu = { id: number; ten: string; dangHoc: boolean; nhapDiem: { nhan: string; den: string } | null };
 
 /** "Nhập điểm MT3" / "Nhập điểm Giữa khoá" khi em còn kỹ năng người xem phải chấm; không có thì không có mục (g3-072). */
@@ -47,13 +48,13 @@ export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone, maLop }: {
   maLop?: string | null;
 }): { mucCua: (d: DongChoMenu) => MucMenu[]; panels: ReactNode } {
   const navigate = useNavigate();
-  const [mo, setMo] = useState<{ viec: 'case' | 'vi-pham' | 'lo-trinh-tiep' | 'chuyen-lop'; id: number; ten: string } | null>(null);
+  const [mo, setMo] = useState<{ viec: 'case' | 'vi-pham' | 'lo-trinh-tiep' | 'chuyen-lop' | 'de-xuat-chuyen-lop'; id: number; ten: string } | null>(null);
 
   const mucCua = (d: DongChoMenu): MucMenu[] => mucMenuDongHocVien({
     laLopThuong, dangHoc: d.dangHoc,
     coTheGhiViPham: quyen.coTheGhiViPham, coTheBaoCase: quyen.coTheBaoCase,
     coTheNhapDiem: quyen.coTheNhapDiem && d.nhapDiem !== null,
-    coTheSuaHocVien: quyen.coTheSuaHocVien, coTheChuyenLop: quyen.coTheSuaHocVien,
+    coTheSuaHocVien: quyen.coTheSuaHocVien, coTheChuyenLop: !!quyen.coTheChuyenTiep, coTheDeXuatChuyenLop: quyen.coTheSuaHocVien && !quyen.coTheChuyenTiep,
   }).map((k, i, ds) => ({
     key: k,
     nhan: k === 'nhap-diem' && d.nhapDiem ? d.nhapDiem.nhan : MUC_MENU_DONG_NHAN[k],
@@ -74,7 +75,7 @@ export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone, maLop }: {
         studentId={mo?.id ?? 0} studentName={mo?.ten} lop={maLop} onDone={xong} />
       <LoTrinhTiepPanel open={mo?.viec === 'lo-trinh-tiep'} onClose={() => setMo(null)}
         studentId={mo?.id ?? 0} studentName={mo?.ten} lop={maLop} onDone={xong} />
-      <ChuyenLopPanel open={mo?.viec === 'chuyen-lop'} onClose={() => setMo(null)}
+      <ChuyenLopPanel open={mo?.viec === 'chuyen-lop' || mo?.viec === 'de-xuat-chuyen-lop'} cheDo={mo?.viec === 'de-xuat-chuyen-lop' ? 'de-xuat' : 'lenh'} onClose={() => setMo(null)}
         studentId={mo?.id ?? 0} studentName={mo?.ten} lop={maLop} onDone={xong} />
     </>
   );

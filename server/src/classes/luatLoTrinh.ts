@@ -1,7 +1,8 @@
 import { THAM_SO_TOI_DA, db, theoLo, tx } from '../db.ts';
 import {
-  PERMISSIONS, luatDoiLop, type LoaiLop, type LuatDoiLop, type ProgrammeCode,
+  PERMISSIONS, luatDoiLop, tuanChonDuoc, type LoaiLop, type LuatDoiLop, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
+import { demoToday } from '../demoConfig.ts';
 import { badRequest, notFound, nowIso } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
@@ -54,7 +55,8 @@ export function lopDichHopLe(toClassId: number, lopNguonId: number): any | null 
 export function lopDichChoChuyen(p: Principal, sid: number) {
   const enr = lopHienTaiCua(sid);
   if (!enr) throw badRequest('Học viên không đang học lớp nào.');
-  require_(p, PERMISSIONS.CLASS_EDIT, { classId: enr.class_id }, 'Bạn không có quyền chuyển lớp học viên này.');   // PR-CT (Q30-1)
+  /* PR-CT: danh sách lớp là dữ liệu chỉ đọc, không lộ học viên — GVCN cần nó để chọn "Lớp muốn chuyển tới" khi Đề xuất chuyển lớp. Ra lệnh vẫn chỉ Quản lý (`raLenh`). */
+  require_(p, PERMISSIONS.STUDENT_EDIT, { classId: enr.class_id }, 'Bạn không có quyền xem lớp đích của học viên này.');
   const conn = db();
   const branches = conn.prepare(`SELECT id, name FROM branches WHERE status = 'active' ORDER BY name`).all() as any[];
   const lopRows = conn
@@ -343,7 +345,11 @@ export function xemChuyenLop(p: Principal, sid: number, toClassId?: number | nul
   return {
     hienTai: {
       lop: { id: enr.class_id, code: enr.code }, ma: (enr.programme_code ?? null) as ProgrammeCode | null,
-      ft: !!enr.is_fast_track, chiNhanhId: enr.branch_id,
+      ft: !!enr.is_fast_track, chiNhanhId: enr.branch_id, route: (enr.route ?? null) as string | null,
+      tuanHoc: (() => {
+        const pr = classProgressMany([enr.class_id]).get(enr.class_id);
+        return pr?.currentWeek && pr.totalWeeks && pr.currentWeek >= 1 ? { tuan: pr.currentWeek, tong: pr.totalWeeks } : null;
+      })(),
     },
     caseMo: openCases.map((c) => ({
       id: c.id, title: c.title, category: c.category, owner: c.owner ?? null,
@@ -351,6 +357,17 @@ export function xemChuyenLop(p: Principal, sid: number, toClassId?: number | nul
       goiY: toClassId ? (goiY.get(c.id) ?? null) : null,
     })),
     luat, canLuuY: openCases.length === 0, doiChiNhanh,
+    /** PR-CT: lệnh đang chờ của em (nếu có) — panel mở ở chế độ sửa + Huỷ lệnh. */
+    lenh: (() => {
+      const l = conn.prepare(`SELECT id, huong, lop_dich_id, tuan_bat_dau, muc_tieu, khong_cam_ket, ngay_thi, ly_do, loi FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho'`).get(sid) as any;
+      return l ? {
+        id: l.id as number, huong: l.huong as string, lopDichId: (l.lop_dich_id ?? null) as number | null, tuan: l.tuan_bat_dau as string,
+        mucTieu: (l.khong_cam_ket ? 'KCK' : l.muc_tieu ?? null) as number | 'KCK' | null, ngayThi: (l.ngay_thi ?? null) as string | null,
+        lyDo: (l.ly_do ?? null) as string | null, loi: (l.loi ?? null) as string | null,
+      } : null;
+    })(),
+    tuanChon: tuanChonDuoc(demoToday()),
+    today: demoToday(),
   };
 }
 

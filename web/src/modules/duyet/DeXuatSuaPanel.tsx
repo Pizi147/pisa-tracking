@@ -9,11 +9,11 @@ import { GIAI_THICH_KCK, KCK, dsLoi, type LuatTruong } from '@shared/domain/inde
 
 /**
  * ĐỀ XUẤT SỬA THÔNG TIN HV (PR-DUYET, T44) — GV của lớp gửi, Quản lý duyệt ở Công việc › Chờ duyệt.
- * Câu 1 = B: GVCN vẫn tự chuyển lớp; target và lộ trình phải qua đây. Mở từ ⋮ hồ sơ HV hoặc liên kết "Đề xuất sửa" ở panel Lộ trình.
+ * Target và lộ trình phải qua đây (PR-CT: chuyển lớp có Đề xuất chuyển lớp… riêng, GVCN không còn tự chuyển). Mở từ ⋮ hồ sơ HV hoặc liên kết "Đề xuất sửa" ở panel Lộ trình.
  */
-export type TruongDeXuat = 'target' | 'lo-trinh' | 'lop' | 'lich-mt' | 'khac';
+export type TruongDeXuat = 'target' | 'lo-trinh' | 'lich-mt' | 'khac';   // PR-CT: bỏ 'lop' — dùng Đề xuất chuyển lớp…
 const TRUONG: { key: TruongDeXuat; nhan: string }[] = [
-  { key: 'target', nhan: 'Target' }, { key: 'lo-trinh', nhan: 'Lộ trình' }, { key: 'lop', nhan: 'Lớp' },
+  { key: 'target', nhan: 'Target' }, { key: 'lo-trinh', nhan: 'Lộ trình' },
   { key: 'lich-mt', nhan: 'Lịch MT' }, { key: 'khac', nhan: 'Khác' },
 ];
 const LY_DO_TOI_THIEU = 15;
@@ -95,7 +95,7 @@ export function DeXuatSuaPanel({ studentId, studentName, lop, truongDau, hienTai
               </div>
             ) : (
               <input className="field w-full" maxLength={200} {...lf.o(loi, 'moi')} value={moi} onChange={(e) => setMoi(e.target.value)}
-                placeholder={truong === 'lop' ? 'Ví dụ: chuyển sang MB FT 102' : truong === 'lich-mt' ? 'Ví dụ: MT3 dời sang W2 OCT' : 'Ghi rõ cần sửa gì'} />
+                placeholder={truong === 'lich-mt' ? 'Ví dụ: MT3 dời sang W2 OCT' : 'Ghi rõ cần sửa gì'} />
             )}
           </Truong>
         )}

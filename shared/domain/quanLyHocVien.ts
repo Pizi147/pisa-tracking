@@ -3,13 +3,14 @@
  * và mở THẲNG panel của mục được chọn. Ẩn một mục không phải là chặn nó: máy chủ vẫn kiểm quyền.
  */
 export type ViecQuanLy = 'info' | 'lo-trinh-tiep' | 'lo-trinh' | 'chuyen-lop' | 'outcome' | 'tam-dung' | 'quay-lai' | 'ket-thuc' | 'luu-tru' | 'bo-luu-tru'
-  | 'xoa-hoc-vien' | 'de-xuat-sua';
+  | 'xoa-hoc-vien' | 'de-xuat-sua' | 'de-xuat-chuyen-lop';
 
 export const NHAN_VIEC_QUAN_LY: Record<ViecQuanLy, string> = {
   info: 'Thông tin học viên',
   'lo-trinh-tiep': 'Lộ trình tiếp theo',
   'lo-trinh': 'Lộ trình',
-  'chuyen-lop': 'Chuyển lớp',
+  'chuyen-lop': 'Chuyển lớp…',
+  'de-xuat-chuyen-lop': 'Đề xuất chuyển lớp…',
   outcome: 'Kết luận lộ trình',
   'tam-dung': 'Tạm dừng học',
   'quay-lai': 'Quay lại học',
@@ -21,7 +22,7 @@ export const NHAN_VIEC_QUAN_LY: Record<ViecQuanLy, string> = {
 };
 
 export type LopHocQuyen = {
-  ghiLoTrinhTiep: boolean; chuyenLop: boolean; tamDung: boolean; quayLai: boolean;
+  ghiLoTrinhTiep: boolean; chuyenLop: boolean; /** PR-CT: GVCN đề xuất; Quản lý (`chuyenLop`) ra lệnh. */ deXuatChuyenLop?: boolean; tamDung: boolean; quayLai: boolean;
   ketThuc: boolean; luuTru: boolean; boLuuTru: boolean;
 };
 
@@ -49,6 +50,7 @@ export function mucQuanLyHocVien({ canEdit, lopHoc, cycle, status, coTheXoa, deX
   if (canEdit && cycle && !ratio) ds.push('lo-trinh');
   if (deXuatSua && dangHoc) ds.push('de-xuat-sua');
   if (quyen?.chuyenLop) ds.push('chuyen-lop');
+  if (quyen?.deXuatChuyenLop && dangHoc) ds.push('de-xuat-chuyen-lop');
   if (canEdit && cycle && !ratio) ds.push('outcome');
   if (quyen?.tamDung && dangHoc) ds.push('tam-dung');
   if (quyen?.quayLai && !dangHoc && status === 'inactive') ds.push('quay-lai');

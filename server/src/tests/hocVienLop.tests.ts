@@ -168,7 +168,9 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     eq(d.mucMenuDongHocVien({ ...q, dangHoc: false }), [], 'Em đã kết thúc: không có thao tác');
     eq(d.mucMenuDongHocVien({ ...q, coTheGhiViPham: false, coTheNhapDiem: false }), ['case', 'lo-trinh-tiep', 'chuyen-lop'], 'Theo quyền');
     eq(d.MUC_MENU_DONG_NHAN['vi-pham'], '+ Ghi vi phạm', 'Chữ');
-    eq([...d.MUC_MENU_DONG_HIEM], ['lo-trinh-tiep', 'chuyen-lop'], 'Việc hiếm');
+    eq([...d.MUC_MENU_DONG_HIEM], ['lo-trinh-tiep', 'chuyen-lop', 'de-xuat-chuyen-lop'], 'Việc hiếm (PR-CT thêm Đề xuất chuyển lớp…)');
+    eq(d.mucMenuDongHocVien({ ...q, coTheChuyenLop: false, coTheDeXuatChuyenLop: true }), ['vi-pham', 'case', 'nhap-diem', 'lo-trinh-tiep', 'de-xuat-chuyen-lop'], 'GVCN: Đề xuất chuyển lớp… thay Chuyển lớp…');
+    eq(d.mucMenuDongHocVien({ ...q, coTheChuyenLop: true, coTheDeXuatChuyenLop: true }).includes('de-xuat-chuyen-lop'), false, 'Quản lý chỉ thấy Chuyển lớp…');
   });
 
   check('PR-Qa · §3.6 xếp A→Z hoặc "Cần chú ý trước"; lớp mở sẵn', () => {

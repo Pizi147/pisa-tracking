@@ -8,6 +8,7 @@ import { ONgay } from '../../ui/ONgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useSession } from '../../lib/session.tsx';
 import { deadlineView, nhanKhongNguoiNhac, nhanTrangThaiYc, type TheYeuCauDto } from '@shared/domain/index.ts';
+import { ChuyenLopPanel } from '../students/ChuyenLopPanel.tsx';
 
 /**
  * MỘT THẺ YÊU CẦU (PR-DUYET, mockup M8, đặc tả §7.6) — MỘT khuôn cho hộp Chờ duyệt, Yêu cầu của tôi, Ngăn Case (`gon`) và hồ sơ HV
@@ -46,6 +47,8 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   const [busy, setBusy] = useState(false);
   const [moHet, setMoHet] = useState(false);
   const [daNhac, setDaNhac] = useState<string | null>((yc.duLieu?.daNhacLuc as string | null) ?? null);
+  /* PR-CT: Duyệt thẻ Đề xuất chuyển lớp = mở panel ra lệnh điền sẵn (Quản lý sửa lớp, tuần rồi `Duyệt và ra lệnh`). */
+  const [moChuyenLop, setMoChuyenLop] = useState(false);
   const nutMo = useRef<HTMLButtonElement | null>(null);
   /* "Xem thêm" chỉ khi chữ THẬT SỰ bị cắt ở 2 dòng (đo, không đoán theo số ký tự). */
   const khungDong = useRef<HTMLDivElement | null>(null);
@@ -88,6 +91,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
 
   const canGhiChu = !!yc.duLieu?.canGhiChu;
   const duyet = (nut: HTMLButtonElement) => {
+    if (yc.duLieu?.moPanelChuyenLop) return setMoChuyenLop(true);
     if (yc.loai === 'lich_thi') return moO('tuan', nut);
     if (canGhiChu) return moO('ghi-chu', nut);
     void gui(`/yeu-cau/${yc.id}/duyet`, {}, `Đã duyệt: ${yc.tieuDe}`);
@@ -121,7 +125,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   const tt = nhanTrangThaiYc(yc.trangThai, yc.tuDuyet);
   const nhanO = o?.loai === 'tu-choi' ? 'Lý do từ chối (người gửi sẽ đọc)' : o?.loai === 'tra-loi' ? 'Câu trả lời cho giáo viên' : 'Ghi chú việc đã xử lý ở màn gốc';
   /* Nút mở thêm một bước (chọn tuần / ghi chú) có dấu "…", như Từ chối… — Duyệt trơn là quyết ngay. */
-  const duyetCoBuoc = yc.loai === 'lich_thi' || canGhiChu;
+  const duyetCoBuoc = yc.loai === 'lich_thi' || canGhiChu || !!yc.duLieu?.moPanelChuyenLop;
   const loiChu = daBam && o && o.loai !== 'tuan' && chu.trim().length < TOI_THIEU ? `Cần ít nhất ${TOI_THIEU} ký tự` : null;
   const moTaPhu = [!gon && yc.hocVien, !gon && yc.lop, yc.phu].filter(Boolean).join(' · ');
 
@@ -240,6 +244,11 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
             </button>
           </div>
         </div>
+      )}
+      {moChuyenLop && yc.hocVienId != null && (
+        <ChuyenLopPanel open cheDo="lenh" studentId={yc.hocVienId} studentName={yc.hocVien ?? undefined} lop={yc.lop}
+          duyet={{ id: yc.id, lopDichId: (yc.duLieu?.lopDichId as number | null) ?? null, tuan: (yc.duLieu?.tuan as string | null) ?? null, lyDo: yc.lyDo }}
+          onClose={() => setMoChuyenLop(false)} onDone={() => onXong(yc.id)} />
       )}
     </article>
   );

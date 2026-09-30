@@ -1858,12 +1858,15 @@ api.post('/students/:id/transfer', requireAuth, wrap((req) => {
     nguoiNhan, mucTieu, thangThi,
   } = req.body ?? {};
   if (!toClassId) throw badRequest('Cần chọn lớp đích.');
+  /* PR-CT: panel mới gửi thẳng `lyDo` (một ô chữ ≥ 3 ký tự); đường lý do chọn nhanh cũ giữ cho phép kiểm và client cũ. */
+  const lyDoTuDo = typeof req.body?.lyDo === 'string' ? req.body.lyDo.trim() : '';
+  if (req.body?.lyDo !== undefined && lyDoTuDo.length < 3) throw badRequest('Ghi lý do chuyển lớp (ít nhất 3 ký tự).');
   /* RB-3: lý do chọn nhanh BẮT BUỘC; "Khác" phải ghi rõ ≥ 3 ký tự (T13). */
-  if (laKhac(reasonCode)) {
+  if (!lyDoTuDo && laKhac(reasonCode)) {
     const loi = kiemGhiRoKhac(reasonNote);
     if (loi) throw badRequest(`Lý do "Khác": ${loi}.`);
   }
-  const reason = transferReasonText(reasonCode, reasonNote);
+  const reason = lyDoTuDo || transferReasonText(reasonCode, reasonNote);
   if (!reason) throw badRequest('Chọn lý do chuyển lớp (chọn "Khác" thì ghi rõ).');
   /* PR-CT: em đang học một lớp → RA LỆNH (Quản lý); chỉ em CHƯA TỪNG xếp lớp (xếp lần đầu) mới đi đường cũ. */
   const sid = pInt(req, 'id');

@@ -299,7 +299,8 @@ export async function runPrCtTests(t: YThucTestKit) {
     assert(maLoi(() => lenh.raLenh(P.cpManager, { lopNguonId: nguon, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: [dongCua(em[1], 'len_lop', cpDich)] })) === 403, 'QL chi nhánh đích phải 403');
     assert(maLoi(() => studentsSvc.transferStudent(gvcnNguon, em[1], beDich, TODAY, 'Đổi lịch học', { noNote: true })) === 403, 'transferStudent bởi GVCN phải 403');
     assert(maLoi(() => transitionSvc.applyTransition(gvcnNguon, { fromClassId: nguon, effectiveDate: TODAY, dongs: [] })) === 403, 'applyTransition bởi GVCN phải 403');
-    assert(maLoi(() => luatLoTrinh.lopDichChoChuyen(gvcnNguon, em[1])) === 403 && maLoi(() => luatLoTrinh.xemChuyenLop(gvcnNguon, em[1])) === 403, 'GVCN mở panel chuyển lớp một em phải 403');
+    assert(maLoi(() => luatLoTrinh.xemChuyenLop(gvcnNguon, em[1])) === 403, 'GVCN mở panel RA LỆNH (xemChuyenLop) phải 403');
+    assert(maLoi(() => luatLoTrinh.lopDichChoChuyen(gvcnNguon, em[1])) === 'không ném' && maLoi(() => luatLoTrinh.lopDichChoChuyen(gvbm2, em[1])) === 403, 'GVCN xem được danh sách lớp để Đề xuất chuyển lớp; GVBM thì không');
     assert(!luatLoTrinh.coTheChuyenLop(gvcnNguon, em[1]) && !!luatLoTrinh.coTheChuyenLop(P.mbManager, em[1]), 'coTheChuyenLop: QL có, GVCN không');
   });
   check('CT (3f) · sửa / huỷ đúng luật: huỷ cần lý do ≥ 3 ký tự; huỷ xong → em có thể có lệnh mới; huỷ hai lần → 409; sau tuần bắt đầu → 400', () => {
