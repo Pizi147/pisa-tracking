@@ -45,6 +45,8 @@ export type LopGv = {
   /** Mã kỹ năng/môn thật được phân công (không phải nhãn) — để tô viền ô môn mình dạy. */
   monDay: string[];
   laCn: boolean; hocVien: number;
+  /** Học viên đang học của lớp — để đếm học viên KHÁC NHAU của cả hồ sơ (một em học hai lớp của GV chỉ đếm một lần). */
+  hvIds: Set<number>;
 };
 const locKhung = (ct: ChuongTrinh, khung: 'ft' | 'thuong') => ct === 'ca-hai' || ct === khung;
 
@@ -64,19 +66,19 @@ export function lopCuaGv(gvId: number, homNay: string, branchIds: number[] | nul
     const khung = bang.get(r.class_id)?.isFastTrack ? 'ft' : 'thuong';
     if (!locKhung(ct, khung)) continue;
     const l = theoLop.get(r.class_id)
-      ?? { id: r.class_id, ma: r.code, khung, ct: r.programme_code ?? null, branchId: r.branch_id, vai: [], monDay: [], laCn: false, hocVien: 0 } as LopGv;
+      ?? { id: r.class_id, ma: r.code, khung, ct: r.programme_code ?? null, branchId: r.branch_id, vai: [], monDay: [], laCn: false, hocVien: 0, hvIds: new Set() } as LopGv;
     theoLop.set(r.class_id, l);
     if (r.is_core) { l.laCn = true; if (!l.vai.includes('GVCN')) l.vai.unshift('GVCN'); }
     if (r.skill && !l.monDay.includes(r.skill)) { l.monDay.push(r.skill); l.vai.push(tenMonNgan(l.ct, r.skill)); }
   }
   const lop = [...theoLop.values()];
-  const dem = new Map<number, number>();
+  const theoId = new Map(lop.map((l) => [l.id, l]));
   for (const lo of theoLo(lop.map((l) => l.id))) {
     for (const r of conn.prepare(
-      `SELECT e.class_id, COUNT(DISTINCT e.student_id) AS n FROM enrollments e JOIN students s ON s.id = e.student_id
-        WHERE e.class_id IN (${cho(lo.length)}) AND e.status = 'active' AND s.archived_at IS NULL GROUP BY e.class_id`).all(...lo) as any[]) dem.set(r.class_id, r.n);
+      `SELECT e.class_id, e.student_id FROM enrollments e JOIN students s ON s.id = e.student_id
+        WHERE e.class_id IN (${cho(lo.length)}) AND e.status = 'active' AND s.archived_at IS NULL`).all(...lo) as any[]) theoId.get(r.class_id)!.hvIds.add(r.student_id);
   }
-  for (const l of lop) l.hocVien = dem.get(l.id) ?? 0;
+  for (const l of lop) l.hocVien = l.hvIds.size;
   return lop.sort((a, b) => (a.khung === b.khung ? a.ma.localeCompare(b.ma, 'vi') : a.khung === 'ft' ? -1 : 1));
 }
 
@@ -151,7 +153,9 @@ function ketQuaCuaLop(p: Principal, l: LopGv): KetQuaLop {
 export type HoSoGv = {
   gv: { id: number; ten: string; vai: string[]; chiNhanh: string[]; kyNang: string[]; laChinhMinh: boolean };
   phamVi: { chiNhanh: string[] | null };
-  lop: (Omit<LopGv, 'monDay' | 'laCn' | 'branchId'> & { chuaNhap: number; quaHan: number })[];
+  lop: (Omit<LopGv, 'monDay' | 'laCn' | 'branchId' | 'hvIds'> & { chuaNhap: number; quaHan: number })[];
+  /** Học viên KHÁC NHAU ở mọi lớp trên — cùng số với ô "Học viên" (`oHoSoGv` cot=hoc-vien). */
+  tongHocVien: number;
   caseMo: CaseGv[];
   yeuCau: { cho: number; choQuaHan: number; tuChoi: number };
   homNay: string;
@@ -181,7 +185,8 @@ export function hoSoGiaoVien(p: Principal, gvId: number): HoSoGv {
       kyNang: ENTRY_SKILLS.filter((k) => daKhai.has(k)).map((k) => ENTRY_SKILL_SHORT[k]),
     },
     phamVi: { chiNhanh: laChinhMinh ? null : tenChiNhanh },
-    lop: lop.map(({ monDay, laCn, branchId, ...l }) => ({ ...l, chuaNhap: dem(l.id, false), quaHan: dem(l.id, true) })),
+    lop: lop.map(({ monDay, laCn, branchId, hvIds, ...l }) => ({ ...l, chuaNhap: dem(l.id, false), quaHan: dem(l.id, true) })),
+    tongHocVien: new Set(lop.flatMap((l) => [...l.hvIds])).size,
     caseMo: caseMoCuaGv(p, gvId, branchIds),
     yeuCau: soYeuCau(theYeuCauCuaGv(p, gvId), homNay),
     homNay,
@@ -243,13 +248,8 @@ export function oHoSoGv(p: Principal, gvId: number, q: ThamSoO): { n: number; ti
     return ket(lop.map((l) => ({ id: l.id, title: l.ma, sub: l.vai.join(' · '), href: `/hoc-vien/lop/${l.id}` })), (n) => `${n} lớp đang dạy`);
   }
   if (cot === 'hoc-vien') {
-    const ids: number[] = [];
-    for (const lo of theoLo(chonLop.map((l) => l.id))) {
-      for (const r of conn.prepare(
-        `SELECT DISTINCT e.student_id FROM enrollments e JOIN students s ON s.id = e.student_id
-          WHERE e.class_id IN (${cho(lo.length)}) AND e.status = 'active' AND s.archived_at IS NULL`).all(...lo) as any[]) ids.push(r.student_id);
-    }
-    return ket(rowsFor('hoc-vien', [...new Set(ids)].sort((a, b) => a - b)), (n) => `${n} học viên đang học`);
+    const ids = [...new Set(chonLop.flatMap((l) => [...l.hvIds]))].sort((a, b) => a - b);
+    return ket(rowsFor('hoc-vien', ids), (n) => `${n} học viên đang học`);
   }
   if (cot === 'chua-nhap' || cot === 'qua-han') {
     const o = noDiemCuaGv(p, gvId, homNay, chonLop).filter((d) => cot === 'chua-nhap' || d.overdue);

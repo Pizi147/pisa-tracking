@@ -153,6 +153,7 @@ export async function runPrGvTests(t: YThucTestKit) {
         assert(vaoO(nguoiXem, gv, { cot: 'qua-han', lop: l.id }).n === l.quaHan, `${l.ma}: quá hạn theo lớp`);
       }
       assert(vaoO(nguoiXem, gv, { cot: 'lop' }).n === h.lop.length, 'số lớp');
+      assert(vaoO(nguoiXem, gv, { cot: 'hoc-vien' }).n === h.tongHocVien, 'học viên khác nhau');
       const ids = new Set(vaoO(nguoiXem, gv, { cot: 'chua-nhap' }).rows.map((r: any) => r.id));
       assert(ids.size === chuaNhap, 'id dòng ô nợ duy nhất');
       assert(vaoO(nguoiXem, gv, { cot: 'case-mo' }).n === h.caseMo.length, 'Case mở');
@@ -330,5 +331,23 @@ export async function runPrGvTests(t: YThucTestKit) {
       assert(ok.status === 200 && Array.isArray(ok.body.hang) && ok.body.ct === 'ft', 'QL MB → 200, đúng khung');
       assert((await goi(P.admin.userId, `/giao-vien?cn=${cpId}`)).status === 200, 'Quản trị xem chi nhánh khác → 200');
     } finally { may.close(); }
+  });
+
+  // ------------------------------------------------------------------ Task 5–6 · giao diện (quét mã nguồn — web không có bộ kiểm riêng)
+  await t.checkAsync('PR-GV (5) · HoSoGiaoVienPage: không KPI / không nút sắp xếp / không màu viết cứng / chữ >= 12 px / tuần viết mã; SoLieuO nhận nhan', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const { fileURLToPath } = await import('node:url');
+    const REPO = path.resolve(fileURLToPath(new URL('../../../../', import.meta.url)));
+    const doc = (f: string) => fs.readFileSync(path.join(REPO, 'web/src', f), 'utf-8');
+    const trang = doc('modules/giaoVien/HoSoGiaoVienPage.tsx');
+    assert(!/kpi/i.test(trang), 'không KPI (Q30-5)');
+    assert(!/\bsort=|onSort/.test(trang), 'không nút sắp xếp — không xếp hạng');
+    assert(!/#[0-9a-fA-F]{3,8}\b|\bwhite\b|color-mix|rgb\(\d/.test(trang), 'chỉ token màu, không màu viết cứng');
+    assert(!/text-\[(?:[0-9]|1[01])(?:\.\d+)?px\]/.test(trang), 'chữ >= 12 px');
+    assert(/tuanLich\(/.test(trang), 'tuần hiện mã (W2 OCT)');
+    assert(!/'progress'|writing1|attempt_no/.test(trang), 'không lộ mã kỹ thuật');
+    assert(/nhan\?: string/.test(doc('ui/SoLieuO.tsx')), 'SoLieuO có prop nhan');
+    assert(/path="\/giao-vien\/:id"/.test(doc('App.tsx')), 'route /giao-vien/:id');
   });
 }
