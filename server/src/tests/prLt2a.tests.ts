@@ -5,13 +5,18 @@
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runPrLt2aTests(t: YThucTestKit) {
-  const { check, checkAsync, assert, conn, P, classId, TODAY } = t;
+  const { check, checkAsync, assert, assertThrows, conn, P, classId, TODAY } = t;
   const d = await import('../../../shared/domain/index.ts');
   const { migratePrLt2a } = await import('../migrate/prLt2a.ts');
   const { default: SqliteDb } = await import('libsql');
   const regular: any = await import('../normal/regular.ts');
   const intake: any = await import('../classes/intake.ts');
   const cases: any = await import('../cases/cases.ts');
+  const sosAuto: any = await import('../cases/sosAuto.ts');
+  const boTro: any = await import('../cases/boTro.ts');
+  const yc: any = await import('../duyet/yeuCau.ts');
+  const { loadPrincipal } = await import('../permissions.ts');
+  const { createApp } = await import('../app.ts');
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
   console.log('\nPR-LT2a · Lớp thường Giữa khoá');
@@ -165,5 +170,107 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     assert(get(`SELECT status FROM sos_coordination_actions WHERE attempt_id = ? AND kind = 'bao_ph_tvv'`, em.pt).status === 'pending', 'còn môn trượt → Báo PH giữ');
     nhap(em.pt!, { speaking: 18 });
     assert(get(`SELECT status FROM sos_coordination_actions WHERE attempt_id = ? AND kind = 'bao_ph_tvv'`, em.pt).status === 'removed', 'hết môn trượt → Báo PH removed');
+  });
+
+  // ------------------------------------------------------------------ khối 4 · Xác nhận Case + Nộp kế hoạch + thẻ kế hoạch (Task 4)
+  const gvOf = (lop: string, skill: string) => loadPrincipal(get(`SELECT ta.user_id u FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id WHERE c.code = ? AND ta.skill = ? AND ta.status = 'active'`, lop, skill).u);
+  const theKh = (caseId: number) => get(`SELECT y.* FROM yeu_cau_duyet y JOIN case_interventions iv ON iv.id = y.doi_tuong_id WHERE y.loai = 'ke_hoach_bo_tro' AND iv.nhom_bo_tro = (SELECT nhom_bo_tro FROM case_interventions WHERE case_id = ? AND kind = 'bo_tro' LIMIT 1) ORDER BY y.id DESC LIMIT 1`, caseId);
+  const paBt = (caseId: number) => get(`SELECT * FROM case_interventions WHERE case_id = ? AND kind = 'bo_tro' AND status != 'cancelled' ORDER BY id LIMIT 1`, caseId);
+  const XN = (topic: string, ct: string) => ({ primaryCode: d.issuesForTopic(topic, ct)[0].code, urgency: 'attention', moTa: 'Em mất điểm ở phần này, thiếu nền tảng ngữ pháp cơ bản.' });
+  const KH = { noiDungYeu: 'Thì hiện tại đơn và quá khứ đơn còn nhầm lẫn khi viết câu.', keHoach: 'Buổi 1: ôn thì; buổi 2: luyện viết đoạn ngắn; trọng tâm: chia động từ; bài tập về nhà 10 câu.' };
+  const maLoi = (fn: () => unknown) => { try { fn(); return 200; } catch (e: any) { return e.status ?? 500; } };
+  const caseTheoMon = (hv: number, topic: string) => get('SELECT * FROM sos_cases WHERE student_id = ? AND topic = ? ORDER BY id DESC', hv, topic);
+  const chiTiet = (who: any, caseId: number) => cases.caseDetail(who, caseId) as any;
+
+  check('LT2a (4) · BE: GVBM W xác nhận THIẾU kế hoạch → 400; đủ → Case "Chờ Quản lý duyệt · kế hoạch bổ trợ", thẻ chờ hạn 3 ngày, PA còn chờ; QL duyệt → PA chạy (hạn T2 tuần sau, mốc Cuối khoá, người nộp), Case Đang làm', () => {
+    const em = taoEm('LT2a BE KH', 'MB BE 08');
+    nhap(em.pt!, { listening: 18, reading: 18, writing: 10, speaking: 18 });
+    const c = caseTheoMon(em.id, 'writing');
+    const khoa = gvOf('MB BE 08', 'writing');
+    assertThrows(() => sosAuto.xacNhanCase(khoa, c.id, XN('writing', 'BE')), /Gửi kèm kế hoạch bài giảng/, 'thiếu kế hoạch');
+    assertThrows(() => sosAuto.xacNhanCase(khoa, c.id, { ...XN('writing', 'BE'), keHoach: { noiDungYeu: 'ngắn', keHoach: 'ngắn' } }), /ít nhất 15 ký tự/, 'kế hoạch quá ngắn');
+    assert(!get('SELECT 1 FROM case_issues WHERE case_id = ?', c.id), 'Lỗi kế hoạch không được ghi nguyên nhân nửa chừng');
+    sosAuto.xacNhanCase(khoa, c.id, { ...XN('writing', 'BE'), keHoach: KH });
+    const dt = chiTiet(khoa, c.id);
+    assert(dt.trangThaiV4.k === 'cho-duyet-ke-hoach' && dt.trangThaiV4.chu === 'Chờ Quản lý duyệt · kế hoạch bổ trợ', JSON.stringify(dt.trangThaiV4));
+    const the = theKh(c.id);
+    assert(the && the.trang_thai === 'cho' && the.phan_loai === 'hoc-thuat' && the.han_duyet === d.hanTheoNgay(TODAY, 3) && the.nguoi_xin === khoa.userId, JSON.stringify(the));
+    assert(paBt(c.id).status === 'planned' && paBt(c.id).confirmed_at === null, 'PA vẫn chờ khi thẻ chưa duyệt');
+    assert(dt.boTro?.keHoach?.trangThai === 'cho' && dt.boTro.keHoach.keHoach === KH.keHoach && dt.boTro.chung === false, JSON.stringify(dt.boTro));
+    assertThrows(() => boTro.nopKeHoachBoTro(khoa, paBt(c.id).id, KH), /đang chờ Quản lý duyệt/, 'nộp lần hai khi thẻ đang chờ');
+    yc.duyetYeuCau(P.mbManager, the.id);
+    const pa = paBt(c.id);
+    assert(pa.status === 'started' && pa.confirmed_by === khoa.userId && pa.action_due === d.weeklyUpdateDue(TODAY) && pa.started_date === TODAY, JSON.stringify(pa));
+    assert(pa.followup_due === boTro.mocCuoiKhoa(em.pt ? get('SELECT cycle_id c FROM assessment_attempts WHERE id = ?', em.pt).c : null, classId('MB BE 08')), 'mốc Cuối khoá');
+    assert(chiTiet(khoa, c.id).trangThaiV4.k === 'dang-lam' && get('SELECT status FROM sos_cases WHERE id = ?', c.id).status === 'in_progress', 'Case Đang làm');
+    const moc = all('SELECT kind FROM case_milestones WHERE case_id = ?', c.id).map((m) => m.kind);
+    assert(['xac_nhan_case', 'nop_ke_hoach', 'ke_hoach_duyet'].every((k) => moc.includes(k)), moc.join());
+  });
+
+  check('LT2a (4) · FOU: GVBM G+V xác nhận (không kế hoạch) → "Chờ nộp kế hoạch bổ trợ" hạn han_ke_hoach; GVCN nộp → MỘT thẻ cho cả nhóm; duyệt → PA G+V chạy, PA P còn chờ; GVBM P xác nhận sau → PA P chạy ngay', () => {
+    const em = taoEm('LT2a FOU KH', 'MB FOU 12');
+    nhap(em.pt!, { listening: 18, reading: 18, writing: 11, speaking: 12 });
+    const cGv = caseTheoMon(em.id, 'writing'), cP = caseTheoMon(em.id, 'speaking');
+    const khoa = gvOf('MB FOU 12', 'writing'), trang = gvOf('MB FOU 12', 'speaking'), ha = P.normalCoreTeacher;
+    sosAuto.xacNhanCase(khoa, cGv.id, XN('writing', 'FOU'));           // không kèm kế hoạch (không phải người dạy)
+    const dt = chiTiet(khoa, cGv.id);
+    assert(dt.trangThaiV4.k === 'cho-ke-hoach' && dt.trangThaiV4.chu === 'Chờ nộp kế hoạch bổ trợ' && dt.trangThaiV4.han === d.hanXacNhan(TODAY), JSON.stringify(dt.trangThaiV4));
+    assert(dt.viecTiep?.chu === 'Nộp kế hoạch bổ trợ' && dt.viecTiep.loaiHan === 'ke-hoach-bo-tro', JSON.stringify(dt.viecTiep));
+    assert(dt.boTro.coTheNop === false && chiTiet(ha, cGv.id).boTro.coTheNop === true, 'Chỉ người dạy / GVCN / QL nộp được');
+    /* Phủ định: GVBM P (không phải người dạy, không GVCN) nộp → 403; GVCN đã có nguyên nhân một môn → nộp được */
+    assert(maLoi(() => boTro.nopKeHoachBoTro(trang, paBt(cGv.id).id, KH)) === 403, 'GVBM P nộp kế hoạch chung phải 403');
+    assert(maLoi(() => boTro.nopKeHoachBoTro(P.w2Teacher, paBt(cGv.id).id, KH)) === 403, 'GV lớp khác nộp phải 403');
+    boTro.nopKeHoachBoTro(ha, paBt(cGv.id).id, KH);
+    const cacThe = all(`SELECT * FROM yeu_cau_duyet WHERE loai = 'ke_hoach_bo_tro' AND trang_thai = 'cho' AND hoc_vien_id = ?`, em.id);
+    assert(cacThe.length === 1, `MỘT thẻ cho cả nhóm: ${cacThe.length}`);
+    assert(maLoi(() => yc.duyetYeuCau(ha, cacThe[0].id)) === 403, 'GVCN không có quyền duyệt thẻ');
+    yc.duyetYeuCau(P.mbManager, cacThe[0].id);
+    assert(paBt(cGv.id).status === 'started' && paBt(cGv.id).confirmed_by === ha.userId, 'PA G+V chạy, người nộp = GVCN');
+    assert(paBt(cP.id).status === 'planned' && paBt(cP.id).confirmed_at === null, 'PA P (chưa có nguyên nhân) vẫn chờ');
+    sosAuto.xacNhanCase(trang, cP.id, XN('speaking', 'FOU'));
+    assert(paBt(cP.id).status === 'started' && paBt(cP.id).confirmed_by === ha.userId, 'Môn xác nhận sau tự chạy theo kế hoạch đã duyệt');
+    assert(paBt(cGv.id).nhom_bo_tro === paBt(cP.id).nhom_bo_tro, 'cùng một nhóm');
+  });
+
+  check('LT2a (4) · QL từ chối (lý do): nguyên nhân GIỮ, han_ke_hoach = hôm nay + 2, việc Nộp kế hoạch trở lại, người dạy nhận thông báo; nộp lại được', () => {
+    const em = taoEm('LT2a BE TC', 'MB BE 08');
+    nhap(em.pt!, { listening: 18, reading: 18, writing: 10, speaking: 18 });
+    const c = caseTheoMon(em.id, 'writing'); const khoa = gvOf('MB BE 08', 'writing');
+    sosAuto.xacNhanCase(khoa, c.id, { ...XN('writing', 'BE'), keHoach: KH });
+    const the = theKh(c.id);
+    assertThrows(() => yc.tuChoiYeuCau(P.mbManager, the.id, 'ab'), /lý do/, 'từ chối phải có lý do');
+    yc.tuChoiYeuCau(P.mbManager, the.id, 'Kế hoạch chưa nêu rõ trọng tâm từng buổi, bổ sung giúp.');
+    assert(get('SELECT 1 FROM case_issues WHERE case_id = ? AND role = ?', c.id, 'primary'), 'nguyên nhân phải giữ');
+    assert(paBt(c.id).han_ke_hoach === d.hanXacNhan(TODAY) && paBt(c.id).status === 'planned', 'hạn nộp mới, PA còn chờ');
+    const dt = chiTiet(khoa, c.id);
+    assert(dt.trangThaiV4.k === 'cho-ke-hoach' && dt.viecTiep.chu === 'Nộp kế hoạch bổ trợ', JSON.stringify(dt.trangThaiV4));
+    assert(dt.boTro.keHoach?.trangThai === 'tu_choi' && /trọng tâm/.test(dt.boTro.keHoach.lyDoTuChoi), 'panel phải cho thấy lý do từ chối');
+    assert(all('SELECT 1 FROM notifications WHERE user_id = ? AND dedup_key = ?', khoa.userId, `ke-hoach-tu-choi:${the.id}:${khoa.userId}`).length === 1, 'người dạy nhận thông báo');
+    boTro.nopKeHoachBoTro(khoa, paBt(c.id).id, KH);                   // nộp lại
+    assert(theKh(c.id).trang_thai === 'cho' && theKh(c.id).id !== the.id, 'thẻ mới');
+  });
+
+  await checkAsync('LT2a (4) · HTTP: POST /cases/:id/xac-nhan kèm kế hoạch → 200; POST /bo-tro/:id/ke-hoach vai sai (GV lớp FT) → 403, GVCN → 200', async () => {
+    const em = taoEm('LT2a HTTP', 'MB BE 08');
+    nhap(em.pt!, { listening: 18, reading: 18, writing: 10, speaking: 10 });
+    const cW = caseTheoMon(em.id, 'writing'), cS = caseTheoMon(em.id, 'speaking');
+    const may = createApp().listen(0);
+    const cong = (may.address() as any).port as number;
+    const goi = async (uid: number, url: string, body: unknown) => {
+      const ss = await fetch(`http://127.0.0.1:${cong}/api/demo/session`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ userId: uid }) });
+      const ck = (ss.headers.get('set-cookie') ?? '').split(';')[0];
+      return fetch(`http://127.0.0.1:${cong}/api${url}`, { method: 'POST', headers: { 'content-type': 'application/json', cookie: ck }, body: JSON.stringify(body) });
+    };
+    try {
+      const khoa = gvOf('MB BE 08', 'writing'), trang = gvOf('MB BE 08', 'speaking');
+      const r1 = await goi(khoa.userId, `/cases/${cW.id}/xac-nhan`, { ...XN('writing', 'BE'), keHoach: KH });
+      assert(r1.status === 200, `xác nhận + kế hoạch: ${r1.status} ${await r1.text()}`);
+      const r2 = await goi(trang.userId, `/cases/${cS.id}/xac-nhan`, XN('speaking', 'BE'));
+      assert(r2.status === 400, `thiếu kế hoạch phải 400: ${r2.status}`);
+      const r3 = await goi(P.w2Teacher.userId, `/bo-tro/${paBt(cS.id).id}/ke-hoach`, KH);
+      assert(r3.status === 403, `GV lớp FT nộp kế hoạch phải 403: ${r3.status}`);
+      const r4 = await goi(trang.userId, `/cases/${cS.id}/xac-nhan`, { ...XN('speaking', 'BE'), keHoach: KH });
+      assert(r4.status === 200, `GVBM S BE gửi kèm: ${r4.status}`);
+    } finally { may.close(); }
   });
 }

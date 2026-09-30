@@ -1,4 +1,5 @@
 import { db, tx } from '../db.ts';
+import { boTroCuaCase, type BoTroDto } from './boTro.ts';
 import {
   DISPOSITIONS, INTERVENTION_KINDS, SYSTEM_KINDS, INTERVENTION_KIND_LABEL, INTERVENTION_STATUSES,
   INTERVENTION_STATUS_LABEL,
@@ -309,6 +310,8 @@ export function caseAccess(caseId: number) {
     requireView: (p: Principal, message: string) =>
       require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId: c.class_id, studentId: c.eff_student_id }, message),
     requireEdit: (p: Principal, message: string) => require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c), message),
+    /** Ngữ cảnh quyền của Case (lớp, học viên, kỹ năng) — cho `cases/boTro.ts` hỏi quyền mà không dựng lại (AUTH-01). */
+    ctx: sosEditCtx(c),
   };
 }
 
@@ -1605,6 +1608,8 @@ export function caseDetail(p: Principal, caseId: number) {
     sos: sosCaseState(caseId),
     /** PR-SOS (S4-5): thẻ ĐANG CHỜ ở mức Case ("Không cần theo dõi") — Ngăn Case nhúng `TheYeuCau gon` cho Quản lý. */
     yeuCauCase: theCuaDoiTuong('sos_case', [caseId]).find((y) => y.trangThai === 'cho' && y.loai === 'khong_theo_doi') ?? null,
+    /** PR-LT2a (N1, N2): khối PA Bổ trợ Giữa khoá — nhóm, môn, người dạy, kế hoạch (thẻ), hạn nộp, người xem nộp được không. `null` = Case không có PA bổ trợ. */
+    boTro: boTroCuaCase(p, [caseId]).get(caseId) ?? null,
     /** PR-SOS (T21, §7.3, K3-07): tên Case SOS ba phần · MỘT nhãn trạng thái · MỘT việc tiếp — Ngăn Case chọn nút chính theo đây. */
     tenSos: c.origin_kind === 'mock' && (c.attempt_kind ?? 'mock') === 'mock'
       ? { mt: (conn.prepare('SELECT MAX(attempt_no) n FROM case_milestones WHERE case_id = ?').get(caseId) as any)?.n ?? c.attempt_no ?? null,
@@ -1614,7 +1619,7 @@ export function caseDetail(p: Principal, caseId: number) {
       const st = sosCaseState(caseId);
       const v4 = {
         status: c.status, fromSos: st.fromSos, hasCause: st.hasCause, dismissed: !!st.dismissed, systemClosed: !!c.system_close_reason,
-        choDuyetKhongTheoDoi: !!st.choDuyetKhongTheoDoi, coPaChoXacNhan: st.coPaChoXacNhan, hanXacNhan: st.dueOn,
+        choDuyetKhongTheoDoi: !!st.choDuyetKhongTheoDoi, coPaChoXacNhan: st.coPaChoXacNhan, hanXacNhan: st.dueOn, boTro: st.boTro,
         lyDoHeThong: c.system_close_reason ? SYSTEM_CLOSE_REASON_LABEL[c.system_close_reason as keyof typeof SYSTEM_CLOSE_REASON_LABEL] ?? null : null,
       };
       const pas = interventions.filter((i) => i.status !== 'cancelled').map((i) => ({
@@ -2184,6 +2189,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
     .all(cycle?.id ?? 0, studentId, cycle?.id ?? 0) as any[];
   /* AN-8: số bằng chứng của MỌI Case trên bảng — một câu hỏi, không phải một câu cho mỗi thẻ. */
   const soBangChung = demBangChungCase(caseRows.map((c) => c.id as number));
+  const boTroMap = boTroCuaCase(p, caseRows.map((c) => c.id as number));   // PR-LT2a: theo TẬP, không hỏi từng Case
 
   /*
    * BỘ HẠNG MỤC THEO ĐÚNG CHƯƠNG TRÌNH EM ĐANG HỌC.
@@ -2375,7 +2381,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
           canClose: canCloseCase(p, { class_id: enr?.class_id ?? null, student_id: studentId, topic: c.topic }),
           closeBlockers: c.status === 'done' ? [] : closeBlockers(c.id),
           /* Đủ thứ để vẽ MỘT THẺ CASE mà không phải gọi thêm một đường nữa (mục 1 · 2). */
-          ...caseCardOf(c.id, c, soBangChung),
+          ...caseCardOf(c.id, c, soBangChung, boTroMap.get(c.id) ?? null),
         }))
         .sort((a, b) => {
           const open = (x: typeof a) => (x.status === 'done' ? 1 : 0);
@@ -2419,7 +2425,7 @@ export function demBangChungCase(caseIds: number[]): Map<number, number> {
  *
  * (Trước 21/09/2026 thẻ này còn trả "báo cáo nguồn" của case Ý thức; Ý thức nay là vi phạm và biện pháp xử lý ở một bảng riêng.)
  */
-function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>) {
+function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>, boTro: BoTroDto | null = null) {
   const conn = db();
   const today = demoToday();
 
@@ -2522,7 +2528,7 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>) {
   const sos = sosCaseState(caseId);
   const v4 = {
     status: c.status, fromSos: sos.fromSos, hasCause: sos.hasCause, dismissed: !!sos.dismissed, systemClosed: !!c.system_close_reason,
-    choDuyetKhongTheoDoi: !!sos.choDuyetKhongTheoDoi, coPaChoXacNhan: sos.coPaChoXacNhan, hanXacNhan: sos.dueOn,
+    choDuyetKhongTheoDoi: !!sos.choDuyetKhongTheoDoi, coPaChoXacNhan: sos.coPaChoXacNhan, hanXacNhan: sos.dueOn, boTro: sos.boTro,
     lyDoHeThong: c.system_close_reason ? SYSTEM_CLOSE_REASON_LABEL[c.system_close_reason as keyof typeof SYSTEM_CLOSE_REASON_LABEL] ?? null : null,
   };
   /* Lượt đánh giá mà case này đã đi qua — "MT2 · 17/08" ở chân thẻ (lớp thường: "Giữa khoá"/"Cuối khoá" thay MT{n}). */
@@ -2572,6 +2578,8 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>) {
     backfilledOn: c.origin_kind === 'backfill' && c.created_at ? String(c.created_at).slice(0, 10) : null,
     /* Số bằng chứng của Case (PR-HV) — để nhãn "Bằng chứng (n)" thu gọn mà không phải tải danh sách tệp. Đếm sẵn cả bảng (AN-8). */
     attachmentCount: soBangChung.get(caseId) ?? 0,
+    /** PR-LT2a: khối PA Bổ trợ (xem `boTroCuaCase`) — `null` với Case không có PA bổ trợ. */
+    boTro,
   };
 }
 

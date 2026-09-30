@@ -18,6 +18,7 @@ import { mondayOf } from '../platform/week.ts';
 import { taoYeuCau } from '../duyet/yeuCau.ts';
 import { PA_QUY_CHE_CHUA_GHI, UNCONFIRMED_PRESET, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
 import { ghiBanDieuChinh } from './planRevisions.ts';
+import { chayNeuKeHoachDaDuyet, kiemKeHoach, nopKeHoachBoTro, phaiGuiKemKeHoach } from './boTro.ts';
 
 export { UNCONFIRMED_PRESET, NOT_UNCONFIRMED_PRESET, PA_QUY_CHE_CHUA_GHI } from './sosState.ts';
 
@@ -156,7 +157,7 @@ export function announceAutoCase(input: {
 const EDIT_MESSAGE = 'Bạn chỉ xử lý được case của kỹ năng mình được phân công (hoặc là Quản lý trong phạm vi).';
 
 /** Ghi một mốc của Case (khoá chống trùng tuỳ chọn). Viết tại chỗ để không import vòng `sos.ts`. */
-function ghiMoc(caseId: number, kind: MilestoneKind, on: string, note: string | null, actor: number | null, dedupKey: string | null = null) {
+export function ghiMoc(caseId: number, kind: MilestoneKind, on: string, note: string | null, actor: number | null, dedupKey: string | null = null) {
   db().prepare(`INSERT OR IGNORE INTO case_milestones (case_id, kind, occurred_on, note, created_by, created_at, dedup_key) VALUES (?,?,?,?,?,?,?)`)
     .run(caseId, kind, on, note, actor, nowIso(), dedupKey);
 }
@@ -176,6 +177,8 @@ export function tenGiuaCua(c: { title?: string | null; topic?: string | null; ca
  */
 export function xacNhanCase(p: Principal, caseId: number, input: {
   primaryCode?: string | null; observation?: string | null; urgency?: string | null; moTa?: string | null; tenGiua?: string | null;
+  /** PR-LT2a (N2, Q8): Case Giữa khoá có PA Bổ trợ — người xác nhận là người dạy / GVCN / Quản lý (BE/ELE: GVBM) PHẢI gửi kèm kế hoạch bài giảng. */
+  keHoach?: { noiDungYeu?: string; keHoach?: string; performerSelf?: boolean; performerUserId?: number | null; performerName?: string | null } | null;
 }) {
   const conn = db();
   const c = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(caseId) as any;
@@ -204,12 +207,18 @@ export function xacNhanCase(p: Principal, caseId: number, input: {
   if (moTa.length > 2000) throw badRequest('Mô tả tối đa 2000 ký tự.');
   const tenGiua = input.tenGiua === undefined || input.tenGiua === null ? tenGiuaCua(c) : String(input.tenGiua).trim();
   if (tenGiua.length < 3 || tenGiua.length > 80) throw badRequest('Tên Case (phần giữa) cần từ 3 đến 80 ký tự.');
+  /* PR-LT2a: kiểm kế hoạch TRƯỚC khi ghi nguyên nhân — thiếu thì 400, không ghi nửa chừng. */
+  const keHoach = phaiGuiKemKeHoach(p, caseId) ? (kiemKeHoach(input.keHoach), input.keHoach!) : null;
   const today = demoToday();
   return tx(() => {
     addIssues(caseId, p.userId, { primaryCode, observation, topic: c.topic });
     conn.prepare('UPDATE sos_cases SET urgency = ?, summary = ?, title = ?, updated_at = ? WHERE id = ?').run(urgency, moTa, tenGiua, nowIso(), caseId);
     ghiMoc(caseId, 'xac_nhan_case', today, moTa, p.userId, `xac_nhan_case:${caseId}`);
     dongBoTrangThaiCase(caseId);
+    if (keHoach) {
+      const pa = conn.prepare(`SELECT id FROM case_interventions WHERE case_id = ? AND kind = 'bo_tro' AND status = 'planned' ORDER BY id LIMIT 1`).get(caseId) as any;
+      nopKeHoachBoTro(p, pa.id, keHoach);
+    } else chayNeuKeHoachDaDuyet(conn, caseId, today, p.userId);
     const ten = caseTitleOf({ ...c, title: tenGiua });
     addJourney({
       studentId: c.student_id, cycleId: c.cycle_id ?? null, eventType: 'intervention', eventDate: today,
@@ -320,6 +329,7 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
   if (!iv) throw notFound('Không tìm thấy phương án.');
   caseAccess(iv.case_id).requireEdit(p, EDIT_MESSAGE);
   if (!iv.preset) throw badRequest('Phương án này không phải PA theo quy chế — không cần xác nhận.');
+  if (iv.kind === 'bo_tro') throw badRequest('PA bổ trợ chạy khi Quản lý duyệt kế hoạch — không xác nhận riêng.');
   if (iv.case_status === 'done') throw badRequest('Case đã đóng — không còn xác nhận PA được.');
   if (iv.confirmed_at || iv.status !== 'planned') throw badRequest('PA này đã được xác nhận rồi.');
   if (!sosCaseState(iv.case_id).hasCause) throw badRequest('Xác nhận nguyên nhân (Xác nhận Case) trước, rồi mới xác nhận PA.');
