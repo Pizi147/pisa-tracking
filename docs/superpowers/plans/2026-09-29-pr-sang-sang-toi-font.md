@@ -459,3 +459,10 @@ phủ bằng S5/S6 (chỉ dùng token) + chụp tay ở Task 9.
 `colorize` (chỉ rà bảng sáng): không đổi giá trị nào, không đề xuất màu mới. `adapt` thanh đầu 375 px: ô tìm bị ép còn 41 px sau khi thêm ◐ → `min-w-[4.5rem]` cho ô tìm + tên tài khoản `max-w-[4.5rem]`
 dưới `sm` (72 px ô tìm; không tràn ngang, mọi nút 44 px, cả hai chế độ, 4 trang). `audit`: máy dò cơ học 0 phát hiện trên 50 file đổi; ◐: Tab tới được, Enter/Space đổi, vòng focus 2 px thấy rõ ở cả hai chế độ
 (`rgb(125,179,240)` tối · `rgb(29,95,191)` sáng), F5 giữ chế độ, chặn `localStorage` vẫn đổi được trong phiên, 0 lỗi console. Ghi chú P3: `aria-label` nói hành động kế tiếp **và** có `aria-pressed` — trình đọc màn hình đọc "… nút bật tắt, đã nhấn"; theo Q11.
+
+**Task 9 (30/09) — bấm thử + ảnh.** Ảnh ở `thiet-ke/anh/pr-sang/`: `sau-toi-NN-*` và `sau-sang-NN-*` (10 trang, 1440 px) · `sau-{toi,sang}-375-NN` (trang 01, 03, 05, 09) · `xam-sang-{03,05,07}-*` (chế độ sáng, lọc xám) ·
+`nut-giao-dien-{toi,sang}[-375].png` (thanh đầu) · `sau-{toi,sang}-menu-thong-bao.png` · `sau-{toi,sang}-panel-them-case.png`. Kết quả KIỂM: K1–K3, K8 đã chạy bằng Playwright (Enter/Space/Tab, F5, chặn `localStorage`: đạt, 0 lỗi console);
+K6/K7 xem ảnh (SOS 1 vàng · 2 cam · 3 đỏ, hàng lớn ≠ hàng con, ảnh xám vẫn phân biệt nhờ chữ "SOS n", "Cần làm", "Chờ duyệt"); K9 (375 px, 4 trang × 2 chế độ) không tràn ngang, mọi nút 44 px; K11 phông
+Be Vietnam Pro đang áp (`getComputedStyle`), `.woff2` cùng tên miền. **Chưa bấm tay** (script không mở được): panel Thêm PA, lịch `ONgay`, toast — chỉ chụp panel "Tạo Case" (sáng đọc tốt) — người rà nên bấm lại.
+**So "bảng màu tính được" tối, 10 trang, trước → sau**: chỉ lệch các mục cố ý — (a) nền `DemoBar` `#0b141d → var(--bg)` `rgb(12,18,32)` (mọi trang); (b) badge đếm Thông báo và nút lọc đang chọn `sky-*/25|/20 → doing-bg` (Task 8);
+(c) chữ `slate-600 → slate-500` (trang 01); (d) núm `HanhTrinh`/`MeetingPage`/`TransitionPanel` không nằm trên 10 trang. **Không có lệch ngoài danh sách → không 🛑 6c.**
