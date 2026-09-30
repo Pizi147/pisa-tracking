@@ -47,7 +47,9 @@ export function tinhTrangLop(classId: number) {
   if (nLoTrinh > 0) gan.push(`${nLoTrinh} lộ trình tiếp theo`);
   const nHocTiep = dem('SELECT COUNT(*) n FROM classes WHERE previous_class_id = ?', classId);
   if (nHocTiep > 0) gan.push(`${nHocTiep} lớp học tiếp từ lớp này`);
-  return { soTungGhiDanh, soDangHoc, gan, coDuLieu: soTungGhiDanh > 0 || gan.length > 0 };
+  /* PR-LT2b (K2-35): việc còn treo — KHÔNG chặn Kết thúc lớp, chỉ nói ra: Mini Test của em từ lớp này chưa ghi. */
+  const nMiniTest = dem(`SELECT COUNT(*) n FROM mini_test m JOIN assessment_attempts a ON a.id = m.tu_attempt_id WHERE a.class_id = ? AND m.ty_le IS NULL`, classId);
+  return { soTungGhiDanh, soDangHoc, gan, coDuLieu: soTungGhiDanh > 0 || gan.length > 0, conTreo: nMiniTest > 0 ? `Còn treo: ${nMiniTest} Mini Test chưa ghi` : null };
 }
 
 /** GET /classes/:id/xoa-ket-thuc — cho panel biết nên hiện nút nào và vì sao. Chỉ Quản trị hệ thống. */
@@ -58,7 +60,7 @@ export function xemXoaKetThuc(p: Principal, classId: number) {
   const daKetThuc = c.status === 'finished';
   return {
     id: c.id, ma: c.code, chiNhanh: c.branch_name, daKetThuc,
-    soDangHoc: t.soDangHoc, soTungGhiDanh: t.soTungGhiDanh, coDuLieu: t.coDuLieu, dangGan: t.gan,
+    soDangHoc: t.soDangHoc, soTungGhiDanh: t.soTungGhiDanh, coDuLieu: t.coDuLieu, dangGan: t.gan, conTreo: t.conTreo,
     /** Xoá: chỉ lớp trống hẳn. Kết thúc: lớp còn hoạt động và không còn học viên đang học. */
     coTheXoa: !t.coDuLieu,
     coTheKetThuc: !daKetThuc && t.soDangHoc === 0,

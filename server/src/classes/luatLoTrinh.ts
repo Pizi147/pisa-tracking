@@ -9,7 +9,8 @@ import { chuyenCaseSangLoTrinh, closeCasesOnProgrammeSwitch } from '../cases/sys
 import { banGiaoPaQuyChe } from '../cases/sosAuto.ts';
 import { taoMtMacDinh, taoMtMacDinhLo } from '../fasttrack/mtMacDinh.ts';
 import { classProgressMany } from './schedule.ts';
-import { programmeByCode, taoBaiThuongMacDinh } from '../normal/regular.ts';
+import { isRatioClass, programmeByCode, taoBaiThuongMacDinh } from '../normal/regular.ts';
+import { sauChuyenCuoiKhoa } from '../normal/cuoiKhoa.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { trangThaiYThuc } from '../yThuc/trangThai.ts';
 
@@ -273,6 +274,13 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
   }
 
   if (luat.dongCase) closeCasesOnProgrammeSwitch(p.userId, d.sid, luat.dongCase, d.ngay);
+  /* PR-LT2b: lên / học lại / sang FT từ lớp thường — Case đi theo + Cuối khoá (bổ trợ miễn phí, Báo PH, Tutor FT). Sau `closeCasesOnProgrammeSwitch`. */
+  if (luat.khoa === 'dong-mo' && (luat.endKind === 'len_lop' || luat.endKind === 'hoc_lai' || luat.endKind === 'sang_ft') && !tuLop.ft) {
+    sauChuyenCuoiKhoa(p, [{
+      sid: d.sid, fromClassId: enr.class_id, toClassId: d.toClassId, toFt: denLop.ft, ngay: d.ngay,
+      huong: luat.endKind === 'sang_ft' ? 'fast_track' : luat.endKind,
+    }]);
+  }
   /* PR-SOS (K3-44): FT → FT cùng chương trình — PA theo quy chế chưa khép sang GVBM đúng kỹ năng lớp mới. */
   else if (tuLop.ft && denLop.ft) banGiaoPaQuyChe(d.sid, d.toClassId, p.userId);
 
@@ -485,6 +493,11 @@ export function apDungCaLop(p: Principal, o: {
   }, THAM_SO_TOI_DA / 2);
   for (const sid of sangFt) {
     if (coViecMo.has(sid)) closeCasesOnProgrammeSwitch(p.userId, sid, 'ft', o.ngay);
+  }
+
+  // 6b) PR-LT2b: Cuối khoá — Case đi theo em (lớp thường → lớp thường) + bổ trợ miễn phí, Báo PH qua TVV, Tutor FT. Sau bước 6 (Case FT đã đóng).
+  if (isRatioClass(o.fromClass.id)) {
+    sauChuyenCuoiKhoa(p, o.dongs.map((d) => ({ sid: d.sid, fromClassId: o.fromClass.id, toClassId: d.toClassId, toFt: d.toClass.ft, huong: d.huong, ngay: o.ngay })));
   }
 
   // 7) Hành trình — MỘT INSERT nhiều dòng.

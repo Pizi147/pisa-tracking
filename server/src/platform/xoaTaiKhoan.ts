@@ -27,7 +27,7 @@ const c = (bang: string, cot: string, loai: Loai, nhan: string) => ({ bang, cot,
 const DV = 'dau_vet' as const;
 const TL = 'thiet_lap' as const;
 
-/** 74 cột FK trỏ `users.id` (PR-HSM thêm `assessment_scores.examiner_user_id`) (bảng tham chiếu của kế hoạch). `nhan` gộp dòng "Có dấu vết" của panel. */
+/** 76 cột FK trỏ `users.id` (PR-HSM thêm `assessment_scores.examiner_user_id`) (bảng tham chiếu của kế hoạch). `nhan` gộp dòng "Có dấu vết" của panel. */
 export const COT_TRO_TAI_KHOAN: readonly { bang: string; cot: string; loai: Loai; nhan: string }[] = [
   /* thiết lập (9) — xoá hẳn thì xoá theo; xoá mềm xử lý riêng (Q11) */
   c('user_roles', 'user_id', TL, 'vai trò'), c('user_permissions', 'user_id', TL, 'quyền riêng'), c('user_emails', 'user_id', TL, 'email phụ'),
@@ -52,6 +52,7 @@ export const COT_TRO_TAI_KHOAN: readonly { bang: string; cot: string; loai: Loai
   c('discipline_measures', 'owner_user_id', DV, 'PA xử lý'), c('discipline_measures', 'performed_by', DV, 'PA xử lý'),
   c('discipline_measures', 'confirmed_by', DV, 'PA xử lý'), c('discipline_measures', 'created_by', DV, 'PA xử lý'),
   c('journey_events', 'created_by', DV, 'hành trình'), c('lo_trinh_tiep_theo', 'updated_by', DV, 'lộ trình tiếp theo'),
+  c('lo_trinh_tiep_theo', 'quyet_boi', DV, 'lộ trình tiếp theo'), c('mini_test', 'ghi_boi', DV, 'Mini Test'),
   c('measure_violations', 'added_by', DV, 'PA xử lý'),
   c('skill_move_requests', 'requested_by', DV, 'xin dời lịch'), c('skill_move_requests', 'decided_by', DV, 'xin dời lịch'),
   c('sos_case_history', 'actor_user_id', DV, 'Case'),

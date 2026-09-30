@@ -4,7 +4,7 @@ import { dongBoBaoPh } from '../yThuc/phoiHop.ts';
 import { raiseSignal, reconcileCorrectedSignals } from '../cases/signals.ts';
 import {
   ATTEMPT_KIND_LABEL, ATTEMPT_KIND_SHORT, PERMISSIONS, RATIO_PASS_THRESHOLD, boMonLich, boTroGiuaKhoa,
-  caseCategoriesFor, categoryOf, kiemLyDo, kiemLyDoThaoTac, ngay, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanKeTiep, tuanLich,
+  caseCategoriesFor, categoryOf, goiYCuoiKhoa, kiemLyDo, kiemLyDoThaoTac, ngay, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanKeTiep, tuanLich,
   type AssessedSkill, type AttemptKind, type CaseCategory, type RatioOutcome, type SosLevel,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -18,6 +18,7 @@ import { checkSkillWeekMove, ensureSkillRows, loadSkillRows, setSkillWeek } from
 import { dotHoanTat, dotHoanTatMany, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
 import { canRequest } from '../fasttrack/absence.ts';
 import { classProgress, classProgressMany } from '../classes/schedule.ts';
+import { baoLenCuoiKhoaDoiQuaHan, capNhatCuoiKhoaSauChuyen } from './cuoiKhoa.ts';
 
 /**
  * LỚP THƯỜNG (Foundation / Beginner / Elementary).
@@ -701,6 +702,11 @@ export function reportRegularNoShow(
           });
         }
       }
+      /* PR-LT2b (K4-23 vế 2): Cuối khoá dời quá tuần cuối khoá của lớp → thẻ Báo lên cho Quản lý (Giữa khoá không có thẻ). */
+      if (a.kind === 'final' && a.class_id) {
+        const cuoi = classProgress(a.class_id).finalWeekStart;
+        if (cuoi && moi.weekStart > cuoi) baoLenCuoiKhoaDoiQuaHan(conn, a);
+      }
       return { moved: true, tuanCu: cu.code ?? null, tuanMoi: moi.code, result: regularResultOf(attemptId) };
     }
 
@@ -758,6 +764,8 @@ export function refreshRegularOutcome(p: Principal, attemptId: number) {
   // Case mở ngay khi kết luận được, không chờ đủ điểm.
   if (r.sosLevel !== null) taoCaseGiuaKhoa(p, a, r);
   if (a.kind === 'progress') dongBoBaoPh(a, r.skills.filter((x) => x.outcome === 'fail').map((x) => x.skill));
+  /* PR-LT2b (Q30-4): Cuối khoá ĐỦ điểm mà em đã chuyển đi → luật Cuối khoá áp ở lộ trình mới. Không sinh tín hiệu / Case ở lớp cũ (T70). */
+  if (a.kind === 'final' && r.complete) capNhatCuoiKhoaSauChuyen(p, a);
   return r;
 }
 
@@ -1012,6 +1020,8 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
         periodCode: a.period_code ?? null,
         status: a.status,
         result,
+        /** PR-LT2b: hướng gợi ý Cuối khoá — chỉ dòng Cuối khoá đủ điểm (null còn lại). Cùng luật `goiYCuoiKhoa` với hồ sơ HV / Excel. */
+        goiY: a.kind === 'final' ? goiYCuoiKhoa({ ct: prog.code, tyLe: result.tyLeTong, monTruot: failing }) : null,
         /** Các Case gắn với những môn CHƯA ĐẠT của chính dòng này (theo học viên + khoá + hạng mục). */
         cases: dongCases,
         caseId: c?.id ?? null, caseStatus: c?.status ?? null, caseLevel: c?.level ?? null,

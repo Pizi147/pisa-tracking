@@ -333,6 +333,8 @@ export function nhanGhim(a: {
   maLop?: string | null; kyNangChuaDat?: string[]; kyVong?: number | null; tuan?: string; homNay?: string;
   /** MH7: Pre FOU không chia môn — ghim là `Cuối · 68%` (đủ điểm mới có `tyLe`), không SOS. */
   khongChiaMon?: boolean; tyLe?: number | null;
+  /** PR-LT2b: hướng gợi ý Cuối khoá đủ điểm (`goiYCuoiKhoa`) — ghim `Cuối · 64% → lên + bổ trợ`. */
+  goiY?: { dai: string; nhan: string; nhanNgan: string } | null;
   /** PR-MT (T34): MT lịch sử — nhãn nhỏ "lịch sử" cạnh "MT2". */
   lichSu?: boolean;
 }): NhanGhim {
@@ -368,7 +370,7 @@ export function nhanGhim(a: {
   if (a.khongChiaMon && a.tyLe != null) {
     const pt = `${Math.round(a.tyLe * 100)}%`;
     const dat = (a.sosLevel ?? 1) <= 0;
-    return { chu: `${ngan} · ${pt}`, gon: ngan, day: ghep(dai, `${pt} tổng`, dat ? 'Đạt' : 'Chưa đạt'), mau: dat ? 'dat' : 'sos1' };
+    return { chu: `${ngan} · ${pt}${a.goiY ? ` ${a.goiY.nhanNgan}` : ''}`, gon: ngan, day: ghep(dai, `${pt} tổng`, a.goiY?.nhan ?? (dat ? 'Đạt' : 'Chưa đạt')), mau: dat ? 'dat' : 'sos1' };
   }
   if (a.soCoDiem < a.soYeuCau) {
     return { chu: `${ngan} · tạm thời`, gon: ngan, day: ghep(dai, `mới chấm ${a.soCoDiem}/${a.soYeuCau} môn`, 'tạm thời'), mau: 'tam' };
@@ -380,7 +382,7 @@ export function nhanGhim(a: {
   /* PR-LT2a (T58): lớp thường KHÔNG có chữ SOS — Giữa khoá `2/4 môn đạt`, Cuối khoá `64%` (màu vẫn theo số môn trượt). */
   if (a.kind === 'final' && a.tyLe != null) {
     const pt = `${Math.round(a.tyLe * 100)}%`;
-    return { chu: `${ngan} · ${pt}`, gon: ngan, day: ghep(dai, `${pt} tổng`, datMon), mau };
+    return { chu: `${ngan} · ${pt}${a.goiY ? ` ${a.goiY.nhanNgan}` : ''}`, gon: ngan, day: ghep(dai, `${pt} tổng`, a.goiY?.nhan ?? datMon), mau: a.goiY?.dai === 'dat' ? 'dat' : mau };
   }
   return { chu: `${ngan} · ${datMon}`, gon: ngan, day: ghep(dai, datMon, sos <= 0 ? 'Đạt' : `${Math.min(sos, 3)} môn trượt`), mau };
 }

@@ -474,10 +474,11 @@ export const ISSUE_ROLE_LABEL: Record<IssueRole, string> = {
 
 // ------------------------------------------------ Nguồn case, hướng xử lý, tác động
 
-export const CASE_ORIGINS = ['mock', 'teacher_report'] as const;
+/** `chuyen_cap` (PR-LT2b): Case Cuối khoá lớp thường / Kỳ vọng đầu ra sinh khi chuyển lớp — KHÔNG phải Case SOS (không chờ nguyên nhân). */
+export const CASE_ORIGINS = ['mock', 'teacher_report', 'chuyen_cap'] as const;
 export type CaseOrigin = (typeof CASE_ORIGINS)[number];
 export const CASE_ORIGIN_LABEL: Record<CaseOrigin, string> = {
-  mock: 'Từ kết quả đánh giá', teacher_report: 'Giáo viên báo',
+  mock: 'Từ kết quả đánh giá', teacher_report: 'Giáo viên báo', chuyen_cap: 'Từ Chuyển tiếp lớp',
 };
 
 /**
@@ -575,7 +576,7 @@ export const SYSTEM_CLOSE_REASON_LABEL: Record<SystemCloseReason, string> = {
 export const SUPPORT_KINDS = ['self_study', 'tutor', 'teaching_adjust', 'extra_homework', 'other'] as const;
 export const PROPOSAL_KINDS = ['reschedule_mt', 'extra_support', 'meeting_cx', 'other_proposal'] as const;
 /** PR-LT2a: PA do HỆ THỐNG tạo (Bổ trợ Giữa khoá) — không nằm trong danh sách chọn Thêm PA / Thay PA, người dùng không tự tạo. */
-export const SYSTEM_KINDS = ['bo_tro'] as const;
+export const SYSTEM_KINDS = ['bo_tro', 'bo_tro_mien_phi'] as const;
 export const INTERVENTION_KINDS = [...SUPPORT_KINDS, ...PROPOSAL_KINDS, ...SYSTEM_KINDS] as const;
 export type InterventionKind = (typeof INTERVENTION_KINDS)[number];
 export const INTERVENTION_KIND_LABEL: Record<InterventionKind, string> = {
@@ -591,6 +592,8 @@ export const INTERVENTION_KIND_LABEL: Record<InterventionKind, string> = {
   meeting_cx: 'Meeting CX / GĐCN',
   other_proposal: 'Khác',
   bo_tro: 'Bổ trợ',
+  /** PR-LT2b (T47, M-05): sau Cuối khoá — miễn phí học viên, không tính lương GV; kết quả cuối là Mini Test. */
+  bo_tro_mien_phi: 'Bổ trợ miễn phí',
 };
 
 /**

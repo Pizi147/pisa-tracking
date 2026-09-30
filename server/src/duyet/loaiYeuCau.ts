@@ -8,7 +8,7 @@
  */
 import type { Principal } from '../permissions.ts';
 import {
-  INTERVENTION_KIND_LABEL, REGULAR_SKILLS, caseTopicLabel, duongHoSoHocVien, moTaBoTro, nhanDotNgan, nhanLoaiXuLy, outcomeLabelFor, shortDate, tenMonNgan,
+  INTERVENTION_KIND_LABEL, REGULAR_SKILLS, caseTopicLabel, duongHoSoHocVien, moTaBoTro, nhanDotNgan, nhanLoaiXuLy, outcomeLabelFor, shortDate, tenMonNgan, tuanLich,
   type InterventionKind, type LoaiYeuCau, type TrangThaiYc,
 } from '../../../shared/domain/index.ts';
 import { caseTitleOf, respondToPlan } from '../cases/cases.ts';
@@ -442,6 +442,48 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         ],
         neuDuyet: 'PA bổ trợ bắt đầu hôm nay, ghi kết quả hằng tuần hạn hết T2.',
         mo: yc.hoc_vien_id && x ? duongHoSoHocVien(yc.hoc_vien_id, { caseId: x.case_id }) : undefined,
+      };
+    },
+  },
+  /* ------------------------------------------------------------ PR-LT2b · Báo lên: Mini Test dưới 70% (M-05, T76, K1-41) — tạo lúc ghi Mini Test, không cần duyệt */
+  {
+    loai: 'bao_len_mini_test',
+    /* Hết ý nghĩa khi Mini Test đã đạt (sửa điểm) hoặc mọi Case của nhóm đã Hoàn thành (QL xử lý xong). */
+    chet: {
+      sql: `NOT EXISTS (SELECT 1 FROM mini_test m WHERE m.id = y.doi_tuong_id AND m.ty_le < 0.7
+             AND EXISTS (SELECT 1 FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE iv.nhom_bo_tro = m.nhom_bo_tro AND sc.status != 'done'))`,
+      lyDo: 'Case đã hoàn thành hoặc Mini Test đã đạt',
+    },
+    nap: (conn, ds) => napTheoDoiTuong(conn, ds,
+      `SELECT m.id, m.ty_le, m.ngay_lam, m.han, s.full_name, (SELECT MIN(iv.case_id) FROM case_interventions iv WHERE iv.nhom_bo_tro = m.nhom_bo_tro) AS case_id
+         FROM mini_test m JOIN students s ON s.id = m.student_id WHERE m.id IN (?)`),
+    moTa: (yc, ngu) => {
+      const x = ngu.them.get(yc.id);
+      const pt = x?.ty_le != null ? `${Math.round(x.ty_le * 100)}%` : '';
+      return {
+        tieuDe: `Mini Test chưa đạt${pt ? ` · ${pt}` : ''}`,
+        phu: x?.full_name ?? null,
+        dong: [`Mini Test ${pt} ngày ${ngay(x?.ngay_lam, ngu)} (cần từ 70%) — Case để mở, Quản lý xử lý từng trường hợp.`, 'Không cần duyệt — để QL biết và nhắc.'],
+        mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, x?.case_id ? { caseId: x.case_id } : undefined) : undefined,
+      };
+    },
+  },
+  /* ------------------------------------------------------------ PR-LT2b · Báo lên: Cuối khoá dời quá tuần cuối khoá (K4-23 vế 2) — một thẻ mỗi bài */
+  {
+    loai: 'bao_len_cuoi_khoa',
+    chet: {
+      sql: `NOT EXISTS (SELECT 1 FROM assessment_attempts a WHERE a.id = y.doi_tuong_id AND a.status = 'planned')`,
+      lyDo: 'Bài đã có điểm đủ hoặc đã huỷ',
+    },
+    nap: (conn, ds) => napTheoDoiTuong(conn, ds,
+      `SELECT a.id, s.full_name, rp.week_start FROM assessment_attempts a JOIN students s ON s.id = a.student_id LEFT JOIN report_periods rp ON rp.id = a.planned_period_id WHERE a.id IN (?)`),
+    moTa: (yc, ngu) => {
+      const x = ngu.them.get(yc.id);
+      return {
+        tieuDe: 'Cuối khoá dời quá tuần cuối khoá',
+        phu: x?.full_name ?? null,
+        dong: [`Bài Cuối khoá bị dời tới ${x?.week_start ? tuanLich(x.week_start, ngu.homNay) : 'tuần sau'} — sau tuần cuối khoá của lớp.`, 'Không cần duyệt — để QL biết và nhắc.'],
+        mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id) : undefined,
       };
     },
   },

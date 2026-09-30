@@ -171,17 +171,19 @@ export type DongThuong = {
   /** Mỗi môn của chương trình: tên đã qua `tenMon(ct, k)`; % = số như `68.5`. */
   mon: { ten: string; pct: number | null; diem: number | null; tong: number | null; tuan: string | null }[];
   tyLeTong: number | null; trangThai: string; nguoiNhap: string | null;
+  /** PR-LT2b: hướng gợi ý Cuối khoá — chỉ dòng Cuối khoá đủ điểm, còn lại `null` (ô trống). */
+  huong: string | null;
 };
 
 /** Một chương trình một sheet — môn khác nhau giữa chương trình nên tiêu đề lấy từ `mon` của dòng đầu (cả sheet cùng chương trình). */
 export function bangThuong(dong: DongThuong[], cot: 'gon' | 'day-du'): Cell[][] {
   const day = cot === 'day-du';
   const mon = dong[0]?.mon ?? [];
-  const tieuDe: Cell[] = ['Mã', 'Tên', 'Chi nhánh', 'Lớp', 'Bài', 'Tuần', ...mon.map((m) => `${m.ten} %`), '% tổng', 'Trạng thái lượt'];
+  const tieuDe: Cell[] = ['Mã', 'Tên', 'Chi nhánh', 'Lớp', 'Bài', 'Tuần', ...mon.map((m) => `${m.ten} %`), '% tổng', 'Hướng gợi ý', 'Trạng thái lượt'];
   if (day) tieuDe.push(...mon.flatMap((m) => [`${m.ten} điểm`, `${m.ten} tổng`, `Tuần ${m.ten}`]), 'Người nhập');
   const out: Cell[][] = [tieuDe];
   for (const d of dong) {
-    const hang: Cell[] = [d.ma, d.ten, d.chiNhanh, d.lop, d.bai, d.tuan, ...d.mon.map((m) => m.pct), d.tyLeTong, d.trangThai];
+    const hang: Cell[] = [d.ma, d.ten, d.chiNhanh, d.lop, d.bai, d.tuan, ...d.mon.map((m) => m.pct), d.tyLeTong, d.huong, d.trangThai];
     if (day) hang.push(...d.mon.flatMap((m) => [m.diem, m.tong, m.tuan]), d.nguoiNhap);
     out.push(hang);
   }

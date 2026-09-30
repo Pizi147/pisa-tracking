@@ -1,6 +1,6 @@
 import { db } from '../db.ts';
 import {
-  PERMISSIONS, ROUTE_NAME, XUAT_TOI_DA_BYTE, XUAT_TOI_DA_LUOT, soTenVi, nhanXetW, tenGvCham, bangBoLoc, bangFT, bangThuong, dongXemTruoc, dongXemTruocThuong, moTaBoLoc, nhanDot, phanTram,
+  PERMISSIONS, ROUTE_NAME, XUAT_TOI_DA_BYTE, XUAT_TOI_DA_LUOT, soTenVi, nhanXetW, tenGvCham, bangBoLoc, bangFT, bangThuong, goiYCuoiKhoa, dongXemTruoc, dongXemTruocThuong, moTaBoLoc, nhanDot, phanTram,
   tenMon, tenSheetThuong, tenTepXuatMt, trangThaiLuotXuat,
   type BoLocXuatMt, type Cell, type DongFT, type DongThuong,
 } from '../../../shared/domain/index.ts';
@@ -134,6 +134,9 @@ function dongThuong(a: any, b: AttemptBundle, prog: { code: string; skills: stri
       tuan: skillRows.find((x) => x.skill === m.skill)?.period_code ?? null,
     })),
     tyLeTong: phanTram(r.tyLeTong),
+    /* PR-LT2b: cùng luật `goiYCuoiKhoa` với lưới / hồ sơ HV — chỉ Cuối khoá đủ điểm. */
+    huong: a.kind === 'final' && r.tyLeTong !== null
+      ? goiYCuoiKhoa({ ct: prog.code, tyLe: r.tyLeTong, monTruot: r.skills.filter((m) => m.outcome === 'fail').map((m) => m.skill) })?.nhanExcel ?? null : null,
     // T58: lớp thường không có SOS — `tamThoi: false`, không "SOS tạm thời" trong trạng thái.
     trangThai: trangThaiLuotXuat({
       coDiem: r.scored, yeuCau: r.required, du: r.complete, lichSu: !!a.lich_su,

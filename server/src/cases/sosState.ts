@@ -30,7 +30,7 @@ export const PA_QUY_CHE_CHUA_GHI = (a = 'iv') => `(${a}.preset = 1 AND ${a}.conf
  * nhận không tính. `sc` là bí danh `sos_cases`. MỘT điều kiện cho hàm đồng bộ dưới đây và migrate PR-N1.
  */
 export const LA_CASE_SOS = (sc = 'sc') =>
-  `EXISTS (SELECT 1 FROM case_interventions p_s WHERE p_s.case_id = ${sc}.id AND p_s.preset = 1)`;
+  `(EXISTS (SELECT 1 FROM case_interventions p_s WHERE p_s.case_id = ${sc}.id AND p_s.preset = 1) AND COALESCE(${sc}.origin_kind, '') != 'chuyen_cap')`;   // PR-LT2b: Case Cuối khoá không chờ nguyên nhân
 export const CASE_SOS_DANG_XU_LY = (sc = 'sc') => `(EXISTS (SELECT 1 FROM case_issues ci_s WHERE ci_s.case_id = ${sc}.id AND ci_s.role = 'primary')
   AND EXISTS (SELECT 1 FROM case_interventions p_x WHERE p_x.case_id = ${sc}.id AND p_x.status != 'cancelled'
                AND (COALESCE(p_x.preset, 0) = 0 OR p_x.confirmed_by IS NOT NULL)))`;
@@ -92,7 +92,7 @@ export function sosCaseStateMany(caseIds: readonly number[]): Map<number, SosCas
   for (let i = 0; i < caseIds.length; i += 400) {
     const chunk = caseIds.slice(i, i + 400);
     const rows = conn.prepare(`SELECT sc.id, sc.status, sc.dismiss_reason_code, sc.dismiss_reason_text, sc.han_xac_nhan,
-      EXISTS (SELECT 1 FROM case_interventions WHERE case_id = sc.id AND preset = 1) AS from_sos,
+      ${LA_CASE_SOS('sc')} AS from_sos,
       EXISTS (SELECT 1 FROM case_issues WHERE case_id = sc.id AND role = 'primary') AS has_cause,
       EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sc.id AND ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND iv.kind != 'bo_tro') AS pa_cho,
       EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sc.id AND iv.kind = 'bo_tro' AND iv.status = 'planned' AND ${YC_KE_HOACH('iv', "'cho'")}) AS bt_cho_duyet,
@@ -136,7 +136,7 @@ export function awaitingCauseCaseIds(caseIds: number[]): number[] {
       .prepare(
         `SELECT sc.id FROM sos_cases sc
           WHERE sc.id IN (${chunk.map(() => '?').join(',')}) AND sc.status != 'done'
-            AND EXISTS (SELECT 1 FROM case_interventions p WHERE p.case_id = sc.id AND p.preset = 1)
+            AND ${LA_CASE_SOS('sc')}
             AND NOT EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary')
             AND NOT ${CO_THE_KHONG_THEO_DOI('sc')}
           ORDER BY sc.id`,

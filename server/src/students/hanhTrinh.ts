@@ -1,6 +1,6 @@
 import { db } from '../db.ts';
 import {
-  CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS, caseCategoriesFor, caseTitle, tenCaseSos, tenMon, tenMonNgan, type CaseCategory,
+  CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS, caseCategoriesFor, caseTitle, goiYCuoiKhoa, tenCaseSos, tenMon, tenMonNgan, type CaseCategory,
   type AssessedSkill, type DiemMoc, type DotRef,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -96,7 +96,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
   // -------------------------------------------------------------- (2) lượt đánh giá
   const attemptRows = conn
     .prepare(
-      `SELECT a.*, c.code AS class_code, pr.week_start AS week_start, (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route
+      `SELECT a.*, c.code AS class_code, c.programme_code AS class_programme, pr.week_start AS week_start, (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route
          FROM assessment_attempts a
          LEFT JOIN classes c ON c.id = a.class_id
          LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
@@ -220,6 +220,9 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
           maLop: (a.class_code as string | null) ?? null, kyVong: null as number | null,
           kyNangChuaDat: r.skills.filter((s) => s.outcome === 'fail').map((s) => s.skill as string),
           khongChiaMon: r.skills.length === 1 && r.skills[0].skill === 'tong_hop', tyLe: r.tyLeTong,
+          /* PR-LT2b: hướng gợi ý Cuối khoá (chỉ Cuối khoá đủ điểm) — cùng luật `goiYCuoiKhoa`. */
+          goiY: a.kind === 'final' && a.class_programme
+            ? goiYCuoiKhoa({ ct: a.class_programme, tyLe: r.tyLeTong, monTruot: r.skills.filter((s) => s.outcome === 'fail').map((s) => s.skill as string) }) : null,
         };
       }
       const r = t.ft!;

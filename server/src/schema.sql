@@ -414,6 +414,12 @@ CREATE TABLE lo_trinh_tiep_theo (
   updated_by INTEGER REFERENCES users(id),
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
+  quyet_boi INTEGER REFERENCES users(id),             -- PR-LT2b: Quản lý đã quyết hướng (ghi khi thi hành lệnh chuyển 50–59%)
+  quyet_luc TEXT,
+  ky_vong_dat INTEGER,                                -- PR-LT2b, T49: 1 đạt · 0 không đạt · NULL chưa đánh dấu (BE/ELE lên FT)
+  ky_vong_nguyen_nhan TEXT,                           -- 'trung_tam' | 'hoc_sinh'
+  ky_vong_mon TEXT,                                   -- JSON ô chuẩn lớp cũ Quản lý chọn
+  ky_vong_ghi_chu TEXT,                               -- Học sinh: phương án case-by-case
   UNIQUE (student_id, class_id)
 );
 CREATE INDEX idx_ltt_class ON lo_trinh_tiep_theo(class_id);
@@ -1778,4 +1784,17 @@ CREATE TABLE y_thuc_khai_bac (
   khai_boi INTEGER REFERENCES users(id), khai_luc TEXT NOT NULL,
   sua_boi INTEGER REFERENCES users(id), sua_luc TEXT,
   UNIQUE (student_id, chuoi_cycle_id)
+);
+
+/*
+ * MINI TEST sau bổ trợ miễn phí (PR-LT2b, §6.3, M-05) — MỘT dòng cho một em × một bài Cuối khoá (Q3), ở lộ trình MỚI.
+ * ty_le NULL = chưa ghi. Các PA bổ trợ của lần chuyển cùng nhom_bo_tro = 'mt:{tu_attempt_id}'.
+ */
+CREATE TABLE mini_test (
+  id INTEGER PRIMARY KEY,
+  student_id INTEGER NOT NULL REFERENCES students(id), cycle_id INTEGER NOT NULL REFERENCES learning_cycles(id),
+  tu_attempt_id INTEGER NOT NULL REFERENCES assessment_attempts(id),
+  nhom_bo_tro TEXT NOT NULL, so_buoi INTEGER NOT NULL, ngay_du_kien TEXT NOT NULL, han TEXT NOT NULL,
+  ty_le REAL, ngay_lam TEXT, ghi_boi INTEGER REFERENCES users(id), ghi_luc TEXT,
+  UNIQUE (student_id, tu_attempt_id)
 );
