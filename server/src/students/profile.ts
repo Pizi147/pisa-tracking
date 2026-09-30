@@ -18,7 +18,8 @@ import { standingFor, standingLine } from './standing.ts';
 import { luotSinhViecRow } from '../worklist/danhGia.ts';
 import { missingForStudent, suggestedMockWeeks } from '../classes/schedule.ts';
 import { lopHocCua } from '../classes/loTrinhTiep.ts';
-import { cuoiKhoaTheoHocVien } from '../normal/cuoiKhoa.ts';
+import { cuoiKhoaTheoHocVien, miniTestCuaHocVien } from '../normal/cuoiKhoa.ts';
+import { quyenBoTro } from '../cases/boTro.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { activeClassOf, canManageDiscipline } from '../yThuc/access.ts';
 
@@ -963,10 +964,20 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
         canManageDiscipline: canManageDiscipline(p, studentId),
         /* PR-XOA: ⋮ › Xoá học viên — CHỈ Quản trị hệ thống (máy chủ kiểm lại ở `xoaHocVien`). */
         coTheXoa: can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }),
+        /* PR-LT2b (T49): đánh dấu kỳ vọng đầu ra + sửa Mini Test — chỉ Quản lý (`request.approve`). */
+        coTheKetLuan: can(p, PERMISSIONS.REQUEST_APPROVE, { studentId }),
       };
     })(),
     lopHoc: lopHocCua(p, studentId, current),
     /** PR-LT2b: % Cuối khoá, hướng gợi ý, kết luận kỳ vọng đầu ra của lớp thường ĐANG học (null với FT / chưa có lớp). */
+    /** PR-LT2b (M-05): Mini Test của em (lộ trình mới) + Case/PA để mở form Ghi kết quả cuối. */
+    miniTest: (() => {
+      const mt = miniTestCuaHocVien([studentId]).get(studentId);
+      if (!mt) return null;
+      const iv = db().prepare(`SELECT MIN(case_id) AS case_id, MIN(CASE WHEN status IN ('planned', 'started') THEN id END) AS pa_id FROM case_interventions WHERE nhom_bo_tro = ?`).get(mt.nhom) as any;
+      const pa = iv?.pa_id ? db().prepare('SELECT * FROM case_interventions WHERE id = ?').get(iv.pa_id) as any : null;
+      return { ...mt, caseId: iv?.case_id ?? null, paId: iv?.pa_id ?? null, coTheGhi: mt.tyLe === null && !!pa && quyenBoTro(p, pa) };
+    })(),
     cuoiKhoa: (() => {
       const lop = activeClassOf(studentId);
       return lop && isRatioClass(lop) ? cuoiKhoaTheoHocVien(lop, [studentId]).get(studentId) ?? null : null;

@@ -10,6 +10,8 @@ import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 export type TinhTrangXoaKetThuc = {
   id: number; ma: string; chiNhanh: string; daKetThuc: boolean; soDangHoc: number; soTungGhiDanh: number;
   coDuLieu: boolean; dangGan: string[]; coTheXoa: boolean; coTheKetThuc: boolean; lyDoChanKetThuc: string | null;
+  /** PR-LT2b (K2-35): việc còn treo, KHÔNG chặn — `Còn treo: 2 Mini Test chưa ghi`. */
+  conTreo?: string | null;
 };
 
 /**
@@ -93,6 +95,7 @@ export function KetThucLopPanel({ classId, classCode, onClose, onDone }: { class
               Lớp <strong>{tt.data.ma}</strong> · {tt.data.chiNhanh} sẽ chuyển sang <strong>Đã kết thúc</strong> và vào khu Lưu trữ. Hồ sơ chỉ còn xem; dữ liệu giữ nguyên.
             </p>
             {chan && <p className="m-0 text-xs text-late">{chan}</p>}
+            {tt.data.conTreo && <p className="m-0 mt-1 text-xs text-slate-400">{tt.data.conTreo} — không chặn kết thúc lớp.</p>}
           </Khoi>
         )}
     </KhungPanel>

@@ -137,7 +137,7 @@ export function emCoBaoPhChuaLam(studentIds: readonly number[]): Set<number> {
   const out = new Set<number>();
   for (let i = 0; i < studentIds.length; i += 400) {
     const lo = studentIds.slice(i, i + 400);
-    for (const r of db().prepare(`SELECT DISTINCT student_id FROM sos_coordination_actions WHERE kind = 'bao_ph_tvv' AND status = 'pending' AND student_id IN (${lo.map(() => '?').join(',')})`).all(...lo) as any[]) out.add(r.student_id as number);
+    for (const r of db().prepare(`SELECT DISTINCT student_id FROM sos_coordination_actions WHERE kind = 'bao_ph_tvv' AND status = 'pending' AND attempt_id IN (SELECT id FROM assessment_attempts WHERE kind != 'final') AND student_id IN (${lo.map(() => '?').join(',')})`).all(...lo) as any[]) out.add(r.student_id as number);
   }
   return out;
 }

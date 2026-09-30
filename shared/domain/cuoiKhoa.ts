@@ -12,6 +12,7 @@ import { CHUONG_TRINH_KHONG_CHIA_MON, RATIO_PASS_THRESHOLD, programmeOf, tenMonN
 import { NORMAL_LADDER } from './fasttrack.ts';
 import type { ProgrammeCode } from './normal.ts';
 import { kyHieuLop } from './tenLop.ts';
+import { ngay } from './hienThiNgay.ts';
 
 export type DaiCuoiKhoa = 'duoi_50' | '50_59' | '60_69' | 'dat';
 /** Ngưỡng dưới của hai dải giữa; ngưỡng Pass là `RATIO_PASS_THRESHOLD`. */
@@ -89,3 +90,54 @@ export function lichBoTro(x: { batDau: string; soTuan: 1 | 2 }): { ngayMiniTest:
 
 /** M-21: lên FT thì Writing của lớp thường → Writing 2 (FT tách W1/W2); các ô khác giữ, `tong_hop` giữ. */
 export const kyNangLopDich = (mon: string, denFt: boolean): string => (denFt && mon === 'writing' ? 'writing2' : mon);
+
+/** BE IELTS 4.0 · ELE IELTS 4.5–5.0 (§6.4) — chỉ nhắc chữ, không lưu Placement. */
+const KY_VONG_DAU_RA: Record<string, string> = { BE: 'BE IELTS 4.0', ELE: 'ELE IELTS 4.5–5.0' };
+
+export type HopKetLuanVao = {
+  ct: string | null; tyLe: number | null; scored: number; required: number;
+  mon: readonly { skill: string; ratio: number | null }[];
+  goiY: GoiYCuoiKhoa | null;
+  quyetDinh: { huong: string; luc: string } | null;
+  ketLuanFt: { dat: boolean | null; nguyenNhan: string | null; mon: readonly string[] } | null;
+  homNay?: string | null;
+};
+export type HopKetLuan = {
+  /** Dòng 1, tầng 1: `Cuối khoá 64%` (thiếu môn: `Cuối khoá · 3/4 môn có điểm`). */
+  chinh: string;
+  /** Chữ phụ cạnh số: `L 70 · R 58 · G+V 66 · P 62`. */
+  phu: string | null;
+  /** Dòng 2: MỘT nhãn trạng thái/hướng; null khi chưa đủ điểm. */
+  nhan: string | null;
+  tone: 'ok' | 'warn' | 'bad' | 'muted';
+  /** BE/ELE: dòng Kỳ vọng đầu ra (T49) — null với chương trình khác. */
+  kyVong: { nhan: string; trangThai: string; daDanhDau: boolean } | null;
+};
+
+/** Chữ hộp "Kết luận khoá" ở hồ sơ HV (K3 §4b, K3-43) — MỘT hàm, sáu trạng thái: thiếu môn · Pass · lên + bổ trợ · QL cân nhắc · QL đã quyết · học lại. */
+export function chuHopKetLuan(x: HopKetLuanVao): HopKetLuan {
+  const ct = programmeOf(x.ct);
+  const kyVong = ct && KY_VONG_DAU_RA[ct]
+    ? {
+      nhan: `Kỳ vọng đầu ra (${KY_VONG_DAU_RA[ct]})`,
+      daDanhDau: x.ketLuanFt?.dat !== null && x.ketLuanFt?.dat !== undefined,
+      trangThai: x.ketLuanFt?.dat === true ? 'Đạt'
+        : x.ketLuanFt?.dat === false
+          ? `Không đạt · ${x.ketLuanFt.nguyenNhan === 'hoc_sinh' ? 'Học sinh' : `Trung tâm${x.ketLuanFt.mon.length ? ` · ${x.ketLuanFt.mon.map((m) => tenMonNgan(ct, m)).join(', ')}` : ''}`}`
+          : 'Chưa đánh dấu',
+    }
+    : null;
+  const g = x.goiY;
+  if (x.tyLe === null || !g || !ct) {
+    return { chinh: `Cuối khoá · ${x.scored}/${x.required} môn có điểm`, phu: null, nhan: null, tone: 'muted', kyVong };
+  }
+  const phu = x.mon.map((m) => `${tenMonNgan(ct, m.skill)} ${m.ratio === null ? '—' : Math.round(m.ratio * 100)}`).join(' · ');
+  const chinh = `Cuối khoá ${Math.round(x.tyLe * 100)}%`;
+  if (g.dai === 'dat') return { chinh, phu, nhan: 'Pass', tone: 'ok', kyVong };
+  if (g.dai === '60_69') return { chinh, phu, nhan: g.nhan, tone: 'warn', kyVong };
+  if (g.dai === 'duoi_50') return { chinh, phu, nhan: `${g.nhan} · Quản lý báo phụ huynh qua TVV`, tone: 'bad', kyVong };
+  /* 50–59%: chưa quyết → Quản lý cân nhắc; đã chuyển thì hiện điều Quản lý đã quyết (Q30-3, không còn thẻ). */
+  if (!x.quyetDinh) return { chinh, phu, nhan: 'Quản lý cân nhắc: học lại hoặc lên (chọn khi chuyển lớp)', tone: 'warn', kyVong };
+  const dich = x.quyetDinh.huong === 'hoc_lai' ? `Học lại ${tenBac(ct)}` : `Lên ${tenBacKe(ct)} + bổ trợ`;
+  return { chinh, phu, nhan: `QL đã quyết: ${dich} · ${ngay(x.quyetDinh.luc.slice(0, 10), x.homNay)}`, tone: 'warn', kyVong };
+}

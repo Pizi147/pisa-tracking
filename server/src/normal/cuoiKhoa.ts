@@ -24,6 +24,8 @@ export type TyLeLuot = {
   /** Σ điểm / Σ tổng, CHƯA làm tròn; `null` khi chưa đủ môn. */
   tyLe: number | null; du: boolean; scored: number; required: number;
   ct: string | null; monTruot: string[]; kind: string;
+  /** % từng môn (chưa làm tròn; null = chưa có điểm) — hộp Kết luận khoá ở hồ sơ HV. */
+  mon: { skill: string; ratio: number | null }[];
 };
 
 /** % tổng của nhiều lượt lớp thường — 2 câu cho cả lô (lượt + điểm), mỗi lượt qua `evaluateRegular`. Lượt không phải lớp thường → không có trong kết quả. */
@@ -50,6 +52,7 @@ export function tyLeTongLo(attemptIds: readonly number[]): Map<number, TyLeLuot>
     out.set(id, {
       tyLe: kq.tyLeTong, du: kq.complete, scored: kq.scored, required: kq.required, ct: prog.code, kind: l.kind,
       monTruot: kq.skills.filter((s) => s.outcome === 'fail').map((s) => s.skill),
+      mon: kq.skills.map((s) => ({ skill: s.skill, ratio: s.ratio })),
     });
   }
   return out;
@@ -57,9 +60,10 @@ export function tyLeTongLo(attemptIds: readonly number[]): Map<number, TyLeLuot>
 
 export type EmCuoiKhoa = {
   attemptId: number | null; tyLe: number | null; scored: number; required: number; monTruot: string[];
+  mon: { skill: string; ratio: number | null }[];
   goiY: GoiYCuoiKhoa | null;
-  /** Quản lý đã quyết khi thi hành chuyển lớp (`lo_trinh_tiep_theo.quyet_*`). */
-  quyetDinh: { boiId: number; boi: string | null; luc: string } | null;
+  /** Quản lý đã quyết khi thi hành chuyển lớp (`lo_trinh_tiep_theo.quyet_*`); `huong` = hướng đã ghi ở dòng đó. */
+  quyetDinh: { huong: string; boiId: number; boi: string | null; luc: string } | null;
   /** T49: kết luận kỳ vọng đầu ra BE/ELE lên FT. */
   ketLuanFt: { dat: boolean | null; nguyenNhan: 'trung_tam' | 'hoc_sinh' | null; mon: string[]; ghiChu: string | null } | null;
 };
@@ -69,7 +73,7 @@ const jsonMang = (s: string | null): string[] => { try { const v = JSON.parse(s 
 /** `lo_trinh_tiep_theo` → phần kết luận của một em (dùng chung cho lớp và hồ sơ). */
 export function ketLuanCuaDong(r: any): Pick<EmCuoiKhoa, 'quyetDinh' | 'ketLuanFt'> {
   return {
-    quyetDinh: r?.quyet_luc ? { boiId: r.quyet_boi, boi: r.quyet_ten ?? null, luc: r.quyet_luc } : null,
+    quyetDinh: r?.quyet_luc ? { huong: r.huong, boiId: r.quyet_boi, boi: r.quyet_ten ?? null, luc: r.quyet_luc } : null,
     ketLuanFt: r && (r.ky_vong_dat !== null || r.ky_vong_nguyen_nhan)
       ? { dat: r.ky_vong_dat === null ? null : !!r.ky_vong_dat, nguyenNhan: r.ky_vong_nguyen_nhan ?? null, mon: jsonMang(r.ky_vong_mon), ghiChu: r.ky_vong_ghi_chu ?? null }
       : null,
@@ -100,7 +104,7 @@ export function cuoiKhoaTheoHocVien(classId: number, sids?: readonly number[]): 
   for (const [sid, attemptId] of luotCuaEm) {
     const t = attemptId ? tyLe.get(attemptId) : undefined;
     out.set(sid, {
-      attemptId, tyLe: t?.tyLe ?? null, scored: t?.scored ?? 0, required: t?.required ?? 0, monTruot: t?.monTruot ?? [],
+      attemptId, tyLe: t?.tyLe ?? null, scored: t?.scored ?? 0, required: t?.required ?? 0, monTruot: t?.monTruot ?? [], mon: t?.mon ?? [],
       goiY: t ? goiYCuoiKhoa({ ct: t.ct, tyLe: t.tyLe, monTruot: t.monTruot }) : null,
       ...ketLuanCuaDong(dinhKem.get(sid)),
     });
@@ -520,4 +524,25 @@ export function baoLenCuoiKhoaDoiQuaHan(conn: any, a: { id: number; student_id: 
     loai: 'bao_len_cuoi_khoa', doiTuongLoai: 'attempt', doiTuongId: a.id, hocVienId: a.student_id, lopId: a.class_id, nguoiXin: null, hanDuyet: null, lyDo,
     duLieu: { viecKey: `cuoi_khoa:${a.id}`, ownerId: gvcn, lyDo },
   });
+}
+
+/** Em còn Mini Test CHƯA ghi (MỘT câu): hạn, Case + PA để mở form, người dạy bổ trợ (tài khoản). */
+export function emConMiniTest(sids: readonly number[]): Map<number, { han: string; caseId: number | null; paId: number | null; gv: number | null }> {
+  const out = new Map<number, { han: string; caseId: number | null; paId: number | null; gv: number | null }>();
+  theoLo([...sids], (lo, ph) => {
+    for (const r of db().prepare(
+      `SELECT m.student_id, m.han, MIN(iv.case_id) AS case_id, MIN(CASE WHEN iv.status IN ('planned', 'started') THEN iv.id END) AS pa_id,
+              MIN(iv.performer_user_id) AS gv
+         FROM mini_test m LEFT JOIN case_interventions iv ON iv.nhom_bo_tro = m.nhom_bo_tro
+        WHERE m.ty_le IS NULL AND m.student_id IN (${ph}) GROUP BY m.id ORDER BY m.id`,
+    ).all(...lo) as any[]) out.set(r.student_id, { han: r.han, caseId: r.case_id ?? null, paId: r.pa_id ?? null, gv: r.gv ?? null });
+  });
+  return out;
+}
+
+/** Ai thấy việc "Ghi Mini Test" ở cột Việc tiếp theo: người dạy bổ trợ, hoặc GVCN lớp em ĐANG học (khi chưa có người dạy có tài khoản). */
+export function nguoiGhiMiniTest(p: Principal, classId: number, mt: { han: string; caseId: number | null; paId: number | null; gv: number | null } | undefined) {
+  if (!mt) return null;
+  const laNguoiLam = mt.gv ? mt.gv === p.userId : isCoreTeacherOf(p, classId);
+  return laNguoiLam ? { han: mt.han, caseId: mt.caseId, paId: mt.paId } : null;
 }

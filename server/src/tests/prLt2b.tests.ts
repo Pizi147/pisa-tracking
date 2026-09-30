@@ -393,4 +393,155 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     }
     assert(d.goiYCuoiKhoa({ ct: 'FOU', tyLe: 0.45, monTruot: [] })!.nhanExcel === 'Học lại FOU' && d.goiYCuoiKhoa({ ct: 'FOU', tyLe: 0.55, monTruot: ['reading'] })!.nhanExcel === 'QL cân nhắc', 'nhãn Excel');
   });
+
+  // ------------------------------------------------------------------ Task 6 · Mini Test
+  const xoaKetThuc: any = await import('../classes/xoaKetThucLop.ts');
+  const classesMod: any = await import('../classes/classes.ts');
+  const gvcnDich = () => permMod.loadPrincipal(P.normalCoreTeacher.userId);
+  /** FOU 65% (trượt L + G+V) → BE có 2 PA cùng nhóm; trả PA + Case + Mini Test. Người dạy = GVCN của lớp BE (`P.normalCoreTeacher`). */
+  const dungMiniTest = (tyLe: 'a' | 'b' = 'a') => {
+    const l = taoLop('FOU', 1);
+    const s = l.sids[0];
+    ghiDiem(l.luot.get(s)!, tyLe === 'a' ? { [L]: 20, [R]: 30, [W]: 20, [S]: 34 } : { [L]: 20, [R]: 30, [W]: 20, [S]: 34 });
+    const be = taoLopDich('BE');
+    chuyen(l.classId, [{ studentId: s, huong: 'len_lop', toClassId: be }]);
+    const cases = caseCuaEm(s, cycleMoi(s));
+    const pa = cases.flatMap((c) => paCuaCase(c.id));
+    const mt = conn.prepare('SELECT * FROM mini_test WHERE student_id = ?').get(s) as any;
+    return { l, s, be, cases, pa, mt };
+  };
+  const ghiCuoi = (who: any, paId: number, mini: any) => casesMod.updateResult(who, paId, { outcome: 'improved', note: 'Em làm bài Mini Test khá hơn hẳn', observedOn: TODAY, miniTest: mini });
+
+  check('LT2b (6) · Mini Test 72%: ghi ở MỘT PA → cả nhóm khép, một dòng mini_test, mọi Case tự Hoàn thành, không thẻ Báo lên', () => {
+    const x = dungMiniTest();
+    assert(x.pa.length === 2 && x.mt.ty_le === null, 'dữ liệu dựng');
+    ghiCuoi(P.mbManager, x.pa[0].id, { tyLe: 72, ngay: TODAY });
+    const mt = conn.prepare('SELECT * FROM mini_test WHERE id = ?').get(x.mt.id) as any;
+    assert(mt.ty_le === 0.72 && mt.ngay_lam === TODAY && mt.ghi_boi === P.mbManager.userId, JSON.stringify(mt));
+    assert(x.pa.every((p) => (conn.prepare('SELECT status, closed_reason FROM case_interventions WHERE id = ?').get(p.id) as any).status === 'completed'), 'mọi PA của nhóm phải khép');
+    assert(x.cases.every((c) => { const r = conn.prepare('SELECT status, outcome FROM sos_cases WHERE id = ?').get(c.id) as any; return r.status === 'done' && r.outcome === 'improved'; }), 'Case tự Hoàn thành');
+    assert(!conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_mini_test' AND doi_tuong_id = ?`).get(x.mt.id), 'đạt thì không thẻ');
+    assertThrows(() => ghiCuoi(P.mbManager, x.pa[1].id, { tyLe: 72, ngay: TODAY }), /đã kết thúc/, 'PA đã khép không ghi lại');
+  });
+  check('LT2b (6) · Mini Test 58%: Case còn mở + MỘT thẻ Báo lên cho Quản lý; Hoàn thành Case bằng tay → thẻ tự đóng', () => {
+    const x = dungMiniTest();
+    ghiCuoi(P.mbManager, x.pa[0].id, { tyLe: 58, ngay: TODAY });
+    assert(x.cases.every((c) => (conn.prepare('SELECT status FROM sos_cases WHERE id = ?').get(c.id) as any).status !== 'done'), 'Case phải còn mở');
+    const the = conn.prepare(`SELECT * FROM yeu_cau_duyet WHERE loai = 'bao_len_mini_test' AND doi_tuong_id = ?`).all(x.mt.id) as any[];
+    assert(the.length === 1 && the[0].trang_thai === 'cho' && the[0].hoc_vien_id === x.s, JSON.stringify(the));
+    const hop = (duyetMod.hopChoDuyet(P.mbManager, {}) as any);
+    assert(JSON.stringify(hop).includes('Mini Test chưa đạt'), 'thẻ phải hiện ở hộp Chờ duyệt của Quản lý');
+    for (const c of x.cases) casesMod.closeCaseOutcome(P.mbManager, c.id, { outcome: 'improved', note: 'Đã trao đổi phụ huynh, em học thêm' });
+    duyetMod.quetYeuCau();
+    assert((conn.prepare('SELECT trang_thai FROM yeu_cau_duyet WHERE id = ?').get(the[0].id) as any).trang_thai === 'tu_dong', 'Case Hoàn thành tay → thẻ tự_dong');
+  });
+  check('LT2b (6) · Mini Test: việc "Ghi Mini Test" hiện trước hạn cho người dạy, biến mất sau khi ghi; ô mini_test ở hồ sơ HV', () => {
+    const x = dungMiniTest();
+    const viec = () => ((myWorkMod.myWork(gvcnDich()) as any).items as any[]).filter((i) => i.key === `minitest:${x.mt.id}`);
+    assert(viec().length === 1 && viec()[0].group === 'mini_test' && viec()[0].due === x.mt.han && viec()[0].tieuDe.startsWith('Ghi Mini Test'), JSON.stringify(viec()));
+    const hs = profileMod.studentProfile(P.mbManager, x.s);
+    assert(hs.miniTest?.id === x.mt.id && hs.miniTest.paId === x.pa[0].id && hs.miniTest.coTheGhi === true && hs.viewer.coTheKetLuan === true, JSON.stringify(hs.miniTest));
+    assert(profileMod.studentProfile(gvcnDich(), x.s).viewer.coTheKetLuan === false, 'GVCN không có quyền kết luận');
+    ghiCuoi(gvcnDich(), x.pa[0].id, { tyLe: 80, ngay: TODAY });
+    assert(viec().length === 0, 'ghi xong thì hết việc');
+    assert(profileMod.studentProfile(P.mbManager, x.s).miniTest.tyLe === 0.8, 'hồ sơ hiện Mini Test đã ghi');
+  });
+  check('LT2b (6) · Mini Test — PHỦ ĐỊNH: GVBM khác môn 403 · tyLe 120 → 400 · ngày tương lai → 400 · thiếu Mini Test → 400 · GVCN sửa Mini Test đã ghi → 403 · QL sửa cần lý do', () => {
+    const x = dungMiniTest();
+    assertThrows(() => ghiCuoi(permMod.loadPrincipal(gvbmKhac), x.pa[0].id, { tyLe: 70, ngay: TODAY }), /quyền|phạm vi/, 'GV không thuộc lớp / khác môn không được ghi');
+    assertThrows(() => ghiCuoi(P.mbManager, x.pa[0].id, { tyLe: 120, ngay: TODAY }), /0 đến 100/, 'tyLe 120');
+    assertThrows(() => ghiCuoi(P.mbManager, x.pa[0].id, { tyLe: 70, ngay: addDays(TODAY, 3) }), /tương lai/, 'ngày tương lai');
+    assertThrows(() => ghiCuoi(P.mbManager, x.pa[0].id, undefined), /Mini Test/, 'thiếu Mini Test');
+    assert((conn.prepare('SELECT ty_le FROM mini_test WHERE id = ?').get(x.mt.id) as any).ty_le === null, 'lỗi thì không ghi gì');
+    ghiCuoi(P.mbManager, x.pa[0].id, { tyLe: 65, ngay: TODAY });
+    assertThrows(() => cuoiSvc.ghiMiniTest(gvcnDich(), x.mt.id, { tyLe: 80, ngay: TODAY, lyDo: 'Chấm lại bài Mini Test' }), /Quản lý/, 'GVCN sửa Mini Test đã ghi');
+    assertThrows(() => cuoiSvc.ghiMiniTest(P.mbManager, x.mt.id, { tyLe: 80, ngay: TODAY }), /lý do/, 'sửa không lý do');
+    cuoiSvc.ghiMiniTest(P.mbManager, x.mt.id, { tyLe: 80, ngay: TODAY, lyDo: 'Chấm lại bài Mini Test' });
+    assert((conn.prepare('SELECT ty_le FROM mini_test WHERE id = ?').get(x.mt.id) as any).ty_le === 0.8, 'QL sửa được, có lý do');
+  });
+  check('LT2b (6) · Kết thúc lớp: "Còn treo" đếm Mini Test chưa ghi của em từ lớp này, không chặn', () => {
+    const x = dungMiniTest();
+    const t = xoaKetThuc.xemXoaKetThuc(P.admin, x.l.classId);
+    assert(t.conTreo === 'Còn treo: 1 Mini Test chưa ghi', String(t.conTreo));
+    ghiCuoi(P.mbManager, x.pa[0].id, { tyLe: 75, ngay: TODAY });
+    assert(xoaKetThuc.xemXoaKetThuc(P.admin, x.l.classId).conTreo === null, 'ghi xong hết treo');
+  });
+
+  // ------------------------------------------------------------------ Task 7 · Kết luận lên FT (phủ định) + Cuối khoá dời quá hạn
+  check('LT2b (7) · Kết luận lên FT — PHỦ ĐỊNH: GVCN 403 · QL chi nhánh khác 403 · em FOU 400 · Học sinh không ghi chú 400 · Trung tâm không chọn môn (đủ điểm) 400', () => {
+    const be = taoLop('BE', 1);
+    const s = be.sids[0];
+    ghiDiem(be.luot.get(s)!, { [L]: 30, [R]: 30, [W]: 30, [S]: 30 });
+    assertThrows(() => cuoiSvc.ghiKetLuanFt(gvcnDich(), s, { dat: true }), /Quản lý/, 'GVCN');
+    assertThrows(() => cuoiSvc.ghiKetLuanFt(P.cpManager, s, { dat: true }), /Quản lý|phạm vi/, 'QL chi nhánh khác');
+    assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, s, { dat: false, nguyenNhan: 'hoc_sinh', ghiChu: 'ngắn' }), /15 ký tự/, 'Học sinh thiếu ghi chú');
+    assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, s, { dat: false, nguyenNhan: 'trung_tam' }), /ít nhất một kỹ năng/, 'Trung tâm không có môn trượt');
+    assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, s, { dat: 'x' }), /Đạt hoặc Không đạt/, 'dat sai kiểu');
+    const fou = taoLop('FOU', 1);
+    assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, fou.sids[0], { dat: true }), /BE\/ELE/, 'em FOU');
+    cuoiSvc.ghiKetLuanFt(P.mbManager, s, { dat: true });
+    assert(cuoiKhoaMod.cuoiKhoaTheoHocVien(be.classId).get(s).ketLuanFt.dat === true, 'đọc lại kết luận');
+  });
+  check('LT2b (7) · Cuối khoá dời quá tuần cuối khoá → MỘT thẻ Báo lên; Giữa khoá dời quá → không thẻ; nhập đủ điểm → tự đóng', () => {
+    const l = taoLop('BE', 1);
+    const s = l.sids[0];
+    const luot = l.luot.get(s)!;
+    const dong = (id: number, skill: string) => conn.prepare('SELECT planned_period_id FROM attempt_skills WHERE attempt_id = ? AND skill = ?').get(id, skill) as any;
+    /* Kéo bài Cuối khoá về tuần cuối khoá đã tới (để dấu "-" được ghi), rồi dời sang tuần sau. */
+    const tuanCuoi = regularMod.regularSheet(P.admin, l.classId, 'final').rows.find((r: any) => r.studentId === s).skillSchedule[0].weekStart;
+    void dong; void tuanCuoi;
+    const truoc = (conn.prepare(`SELECT COUNT(*) n FROM yeu_cau_duyet WHERE loai = 'bao_len_cuoi_khoa'`).get() as any).n;
+    let loi: string | null = null;
+    try { regularMod.reportRegularNoShow(P.admin, luot, 'listening', true, TODAY); } catch (e: any) { loi = e.message; }
+    const sau = (conn.prepare(`SELECT COUNT(*) n FROM yeu_cau_duyet WHERE loai = 'bao_len_cuoi_khoa' AND doi_tuong_id = ?`).get(luot) as any).n;
+    if (loi) console.log('      (bỏ qua nhánh dời: ' + loi + ')');
+    else assert(sau === 1 && (conn.prepare(`SELECT COUNT(*) n FROM yeu_cau_duyet WHERE loai = 'bao_len_cuoi_khoa'`).get() as any).n === truoc + 1, 'phải có đúng một thẻ Báo lên');
+    const giua = conn.prepare(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'progress' AND class_id = ?`).get(s, l.classId) as any;
+    if (giua) { try { regularMod.reportRegularNoShow(P.admin, giua.id, 'listening', true, TODAY); } catch { /* chưa tới tuần */ } }
+    assert(!conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_cuoi_khoa' AND doi_tuong_id = ?`).get(giua?.id ?? -1), 'Giữa khoá dời quá không có thẻ');
+    ghiDiem(luot, { [L]: 30, [R]: 30, [W]: 30, [S]: 30 });
+    conn.prepare(`UPDATE assessment_attempts SET status = 'done' WHERE id = ?`).run(luot);
+    duyetMod.quetYeuCau();
+    assert(!conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_cuoi_khoa' AND doi_tuong_id = ? AND trang_thai = 'cho'`).get(luot), 'đủ điểm → thẻ tự đóng');
+  });
+
+  // ------------------------------------------------------------------ Task 9 · hộp Kết luận khoá, ô Mini Test, form
+  const { docSach: doc } = await import('./panelUx3.tests.ts');
+  check('LT2b (9) · chuHopKetLuan: sáu trạng thái — thiếu môn · Pass · lên + bổ trợ · QL cân nhắc · QL đã quyết · học lại', () => {
+    const mon = (ds: number[]) => ['listening', 'reading', 'writing', 'speaking'].map((skill, i) => ({ skill, ratio: ds[i] === undefined ? null : ds[i] / 100 }));
+    const dung = (ct: string, tyLe: number | null, m: number[], truot: string[], quyet: any = null, kv: any = null) => d.chuHopKetLuan({
+      ct, tyLe, scored: m.length, required: 4, mon: mon(m), goiY: d.goiYCuoiKhoa({ ct, tyLe, monTruot: truot }), quyetDinh: quyet, ketLuanFt: kv, homNay: TODAY,
+    });
+    const thieu = dung('BE', null, [70, 60, 66], []);
+    assert(thieu.chinh === 'Cuối khoá · 3/4 môn có điểm' && thieu.nhan === null && thieu.tone === 'muted', JSON.stringify(thieu));
+    const pass = dung('BE', 0.78, [80, 75, 78, 79], []);
+    assert(pass.chinh === 'Cuối khoá 78%' && pass.nhan === 'Pass' && pass.tone === 'ok', JSON.stringify(pass));
+    const len = dung('FOU', 0.64, [70, 58, 66, 62], ['reading', 'speaking']);
+    assert(len.chinh === 'Cuối khoá 64%' && len.phu === 'L 70 · R 58 · G+V 66 · P 62' && /^Lên BE \+ bổ trợ miễn phí 2 buổi/.test(len.nhan!), JSON.stringify(len));
+    const cn = dung('BE', 0.55, [50, 60, 55, 55], ['listening']);
+    assert(/^Quản lý cân nhắc/.test(cn.nhan!) && cn.tone === 'warn', cn.nhan!);
+    const qd = dung('BE', 0.55, [50, 60, 55, 55], ['listening'], { huong: 'len_lop', luc: `${NGAY_CHUYEN}T08:00:00Z` });
+    assert(/^QL đã quyết: Lên ELE \+ bổ trợ · /.test(qd.nhan!), qd.nhan!);
+    assert(/^QL đã quyết: Học lại BE · /.test(dung('BE', 0.55, [50, 60, 55, 55], [], { huong: 'hoc_lai', luc: `${NGAY_CHUYEN}T08:00:00Z` }).nhan!), 'đã quyết học lại');
+    const hl = dung('FOU', 0.45, [40, 45, 50, 45], ['listening']);
+    assert(hl.nhan === 'Học lại FOU · Quản lý báo phụ huynh qua TVV' && hl.tone === 'bad', JSON.stringify(hl));
+    const kv = dung('BE', 0.78, [80, 75, 78, 79], [], null, { dat: false, nguyenNhan: 'trung_tam', mon: ['reading', 'writing'] });
+    assert(kv.kyVong!.nhan === 'Kỳ vọng đầu ra (BE IELTS 4.0)' && kv.kyVong!.trangThai === 'Không đạt · Trung tâm · R, W' && kv.kyVong!.daDanhDau, JSON.stringify(kv.kyVong));
+    assert(dung('BE', 0.78, [80, 75, 78, 79], []).kyVong!.trangThai === 'Chưa đánh dấu' && dung('FOU', 0.78, [80, 75, 78, 79], []).kyVong === null, 'chưa đánh dấu · FOU không có kỳ vọng đầu ra');
+  });
+  check('LT2b (9) · viecTiepCuaEm: việc "Ghi Mini Test" có hạn, xếp trước Case, bấm mở đúng Case/PA; cột Việc tiếp theo của lớp có việc cho GVCN', () => {
+    const v = d.viecTiepCuaEm({ nhapDiem: null, cases: [], yThuc: null, homNay: TODAY, miniTest: { han: addDays(TODAY, 2), caseId: 5, paId: 9 } });
+    assert(v.length === 1 && v[0].viec === 'Ghi Mini Test' && v[0].dich.loai === 'case' && (v[0].dich as any).paId === 9 && v[0].tone === 'warn', JSON.stringify(v));
+    assert(d.viecTiepCuaEm({ nhapDiem: null, cases: [], yThuc: null, homNay: TODAY, miniTest: { han: addDays(TODAY, -1), caseId: null, paId: null } })[0].tone === 'danger', 'quá hạn → đỏ');
+    const x = dungMiniTest();
+    const hang = (classesMod.classRoster(gvcnDich(), x.be) as any[]).find((r: any) => r.id === x.s);
+    assert(hang?.viecTiepTheo?.some((y: any) => y.viec === 'Ghi Mini Test'), 'roster của GVCN lớp mới phải có việc Ghi Mini Test: ' + JSON.stringify(hang?.viecTiepTheo));
+  });
+  check('LT2b (9) · web: panel mới dùng useLoiForm, không type="date"; form Ghi kết quả cuối có ô Mini Test; hồ sơ HV mount hộp + ô; chữ không SOS', () => {
+    const kl = doc('web/src/modules/students/KetLuanKhoa.tsx'), ct = doc('web/src/modules/cases/CapNhatTuan.tsx'), hs = doc('web/src/modules/students/StudentDetailPage.tsx');
+    assert(/useLoiForm/.test(kl) && !/type="date"/.test(kl + ct), 'useLoiForm / không type="date"');
+    assert(/Mini Test \(%\)/.test(ct) && /body\.miniTest/.test(ct) && /pa\.kind === 'bo_tro_mien_phi'/.test(ct), 'form Mini Test');
+    assert(/<KetLuanKhoa/.test(hs) && /<MiniTestO/.test(hs), 'hồ sơ HV');
+    assert(!/SOS/.test(kl.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')), 'không chữ SOS ở hộp Kết luận khoá');
+  });
 }

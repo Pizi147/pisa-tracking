@@ -7,7 +7,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonThang } from '../../ui/ChonNgay.tsx';
 import { Level } from '../../ui/ui.tsx';
 import { sosTone } from '../../lib/format.ts';
-import { dsLoi, huongTiepKhaDung, ketQuaGanNhat, nhanHuong, type Huong, type KetQuaVao } from '@shared/domain/index.ts';
+import { dsLoi, huongTiepKhaDung, ketQuaGanNhat, nhanHuong, tenMonNgan, type Huong, type KetQuaVao } from '@shared/domain/index.ts';
 
 type LoTrinhTiepData = {
   lop: { id: number; code: string; ma: string | null; maKe: string | null; laLopThuong: boolean; dangHoc: boolean } | null;
@@ -16,6 +16,8 @@ type LoTrinhTiepData = {
   coTheGhi: boolean;
   /** B9: kết quả gần nhất của em (`standingFor`). */
   ketQua: KetQuaVao | null;
+  /** PR-LT2b (K2-26): % Cuối khoá + hướng gợi ý (không lưu) của em. */
+  cuoiKhoa?: { tyLe: number | null; scored: number; required: number; monTruot: string[]; goiY: { nhan: string; nhanNgan: string; huong: 'hoc_lai' | 'len' | null } | null } | null;
 };
 
 /** Khối "Kết quả gần nhất" của em: số chính + tối đa hai dòng chữ (cùng `ketQuaGanNhat` với cột Kết quả ở Học viên & Lớp). */
@@ -123,6 +125,15 @@ function NoiDungLoTrinhTiep({ onClose, studentId, studentName, lop, onDone }: {
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy}>Lưu</button>,
       }}>
       <KetQuaGanNhatEm ketQua={data.ketQua} />
+      {data.cuoiKhoa?.goiY && (
+        <Khoi tieuDe="Web gợi ý theo Cuối khoá">
+          <div className="flex flex-wrap items-baseline gap-x-2">
+            <span className="text-sm font-bold tabular-nums text-slate-100">Cuối khoá {Math.round((data.cuoiKhoa.tyLe ?? 0) * 100)}%</span>
+            {data.cuoiKhoa.monTruot.length > 0 && <span className="text-[12px] text-slate-500">không đạt {data.cuoiKhoa.monTruot.map((m) => tenMonNgan(lopHoc.ma, m)).join(', ')}</span>}
+          </div>
+          <span className="block text-[12px] leading-4 text-slate-400">{data.cuoiKhoa.goiY.nhan}</span>
+        </Khoi>
+      )}
       <Khoi tieuDe="Hướng đi">
         <p className="m-0 mb-2 text-xs text-slate-400">Chỉ là dự định, chưa đổi lớp. Ghi trước để người kế nhiệm biết em sẽ đi đâu sau lớp này.</p>
         <div {...lf.o(loi, 'huong')} tabIndex={-1} role="radiogroup" aria-label="Hướng đi" className="space-y-1.5 outline-none">

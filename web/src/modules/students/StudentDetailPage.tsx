@@ -5,6 +5,7 @@ import { BoLocDoan, Card, DaiChiXem, Empty, ErrorState, Info, Level, Outcome, Sk
 import { Modal } from '../../ui/Drawer.tsx';
 import { cuonOnDinh } from '../../lib/cuonOnDinh.ts';
 import { SkillBoard, type SkillBoardRow } from '../cases/SkillBoard.tsx';
+import { KetLuanKhoa, MiniTestO } from './KetLuanKhoa.tsx';
 import { HanhTrinh } from './HanhTrinh.tsx';
 import { LichSuLop } from './LichSuLop.tsx';
 import { NganCase } from './NganCase.tsx';
@@ -281,6 +282,12 @@ export default function StudentDetailPage() {
             mà bảng này vừa tóm tắt, nên cùng một case hiện hai lần trên một trang, và bấm
             một hàng ở đây thì phải cuộn xuống chỗ khác mới thấy kết quả.
           */}
+          {/* PR-LT2b (M-05): ô Mini Test ở đầu tab (lộ trình mới có bổ trợ miễn phí) · hộp Kết luận khoá (lớp thường đã có điểm Cuối khoá). */}
+          {data.miniTest && <MiniTestO mt={data.miniTest} onGhi={(caseId, paId) => setOpenCase({ caseId, paId, viec: 'ghi-ket-qua' })} />}
+          {data.cuoiKhoa && data.cuoiKhoa.scored > 0 && (
+            <KetLuanKhoa studentId={data.id} studentName={data.fullName} lop={data.currentClass?.code ?? null} ct={cy.programmeCode ?? null}
+              cuoiKhoa={data.cuoiKhoa} coTheKetLuan={!!data.viewer?.coTheKetLuan} onDoi={reload} />
+          )}
           {/* id để R8c/kn cuộn tới đúng khung này (Task 5) — không sửa SkillBoard. */}
           <div id="bang-ky-nang">
             <Card title="Tiến độ và hỗ trợ theo kỹ năng"
