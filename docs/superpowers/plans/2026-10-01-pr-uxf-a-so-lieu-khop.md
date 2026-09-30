@@ -256,7 +256,14 @@ Hiện trạng:
 ```ts
 /** "tuần học 3/8" (lớp thường, có tổng) · "tuần học thứ 9" (FT — không giới hạn tuần). */
 export const chuTuanHoc = (tuan: number, tong: number | null): string => (tong ? `tuần học ${tuan}/${tong}` : `tuần học thứ ${tuan}`);
+/** Q31-11: tuần học thứ n của em FT tại tuần `tuan` — đếm từ tuần bắt đầu lộ trình, bỏ tuần Tạm dừng. Trước tuần bắt đầu hoặc tuần đang dừng → null. */
+export function tuanHocFt(batDau: string, tuan: string, dung: readonly { tu: string; den: string | null }[]): number | null;
 ```
+> **Giao kèo với PR-VAI-b (planning 01/10):** hai PR chạy song song và **cùng cần** luật đếm này. Cả hai viết **đúng** ba hàm
+> `chuTuanHoc`, `tuanHocFt` (`shared/domain/hienThiNgay.ts`) và `khoangTamDung(ids)` (`server/src/students/tamDung.ts`, mới — một câu SQL
+> `event_type IN ('pause','resume')`, ghép cặp theo ngày, trả `{ tu, den | null, lyDo, boiId }[]` theo em) **cùng chữ ký, cùng thân, cùng phép
+> kiểm** như kế hoạch VAI-b Task 1. Đầu Task: `git log origin/main --oneline | grep VAI-b` — đã merge thì **dùng bản có sẵn**, không viết lại.
+> PR merge **sau** xoá bản trùng của mình ở cổng gộp. Không có cách đếm thứ hai.
 - [ ] **Phép kiểm trước:**
   - `chuTuanHoc(3, 8)` = `tuần học 3/8`; `chuTuanHoc(9, null)` = `tuần học thứ 9`.
   - `xemChuyenLop` em FT `hvlSeed` "Trịnh Bảo Ngọc" (bắt đầu 8 tuần trước ngày demo) → `tuanHoc = { tuan: 9, tong: null }`.
@@ -264,8 +271,9 @@ export const chuTuanHoc = (tuan: number, tong: number | null): string => (tong ?
   - `transitionPlan` lớp FT: mọi em có `tuanHoc.tong === null`.
   - Quét chữ: không payload FT nào có `tong: 16`.
   - Em FT bắt đầu 10 tuần trước, Tạm dừng 2 tuần rồi Quay lại → `tuan = 9` (không phải 11).
+  - `tuanHocFt` và `khoangTamDung`: đúng bộ phép kiểm của kế hoạch VAI-b Task 1 (tuần đang dừng → `null`; dừng chưa quay lại; Tạm dừng và Quay lại cùng tuần → không trừ; `khoangTamDung` một câu SQL).
 - [ ] Máy chủ:
-  - FT: `tuan = studyWeekOf(tuần bắt đầu lộ trình của em, mondayOf(homNay))` **trừ số tuần Tạm dừng** trong khoảng đó, `tong: null` (Q6);
+  - FT: `tuan = tuanHocFt(tuần bắt đầu lộ trình của em, mondayOf(homNay), khoangTamDung([id])[id] ?? [])`, `tong: null` (Q6) — panel cả lớp gọi `khoangTamDung(ids)` **một lần**;
   - `xemChuyenLop`: một câu (một em);
   - `transitionPlan`: một câu cho cả lớp (JOIN `learning_cycles` + `report_periods` sẵn có).
 - [ ] Web: `ChuyenLopPanel.tsx:162` và dòng phụ em ở panel FT dùng `chuTuanHoc`.
