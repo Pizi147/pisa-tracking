@@ -1625,7 +1625,8 @@ export function caseDetail(p: Principal, caseId: number) {
         lyDoHeThong: c.system_close_reason ? SYSTEM_CLOSE_REASON_LABEL[c.system_close_reason as keyof typeof SYSTEM_CLOSE_REASON_LABEL] ?? null : null,
       };
       const pas = interventions.filter((i) => i.status !== 'cancelled').map((i) => ({
-        id: i.id, ten: (i.description ?? '').trim() || (INTERVENTION_KIND_LABEL[i.kind as InterventionKind] ?? i.kind),
+        /* PR-LT2a: PA Bổ trợ nói "Bổ trợ" (mô tả dài `Bổ trợ 2 buổi/tuần · …` nằm ở hàng PA) — việc tiếp đọc `Ghi kết quả PA Bổ trợ`. */
+        id: i.id, ten: i.kind === 'bo_tro' ? INTERVENTION_KIND_LABEL.bo_tro : (i.description ?? '').trim() || (INTERVENTION_KIND_LABEL[i.kind as InterventionKind] ?? i.kind),
         batBuoc: i.batBuoc, choXacNhan: i.awaitingConfirmation, xong: i.status === 'completed', actionDue: i.actionDue,
         followupDue: i.followupDue, choDuyet: i.approvalState === 'pending',
       }));
@@ -2560,7 +2561,7 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>, bo
     /** PR-SOS (§7.3, K3-07): MỘT nhãn trạng thái + MỘT việc tiếp của Case — bảng kỹ năng, Ngăn Case, đầu hồ sơ đọc chung. */
     trangThaiV4: trangThaiCaseV4(v4, today),
     viecTiep: viecTiepCuaCase(v4, plans.map((pl) => ({
-      id: pl.id, ten: pl.name, batBuoc: pl.batBuoc, choXacNhan: pl.choXacNhan, xong: pl.status === 'completed',
+      id: pl.id, ten: pl.kind === 'bo_tro' ? INTERVENTION_KIND_LABEL.bo_tro : pl.name, batBuoc: pl.batBuoc, choXacNhan: pl.choXacNhan, xong: pl.status === 'completed',
       actionDue: pl.actionDue, followupDue: pl.followupDue, choDuyet: pl.pendingApproval,
     })), today, c.origin_kind === 'mock' ? null : planDueDate(String(c.detected_at ?? c.created_at ?? today).slice(0, 10), c.urgency)),
     plans,

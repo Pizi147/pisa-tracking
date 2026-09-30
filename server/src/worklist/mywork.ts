@@ -750,7 +750,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   napTruocPhamVi(keHoach.map((r) => r.eff_student_id));
   const nhomKh = new Map<string, any[]>();
   for (const r of keHoach) nhomKh.set(r.nhom_bo_tro, [...(nhomKh.get(r.nhom_bo_tro) ?? []), r]);
-  for (const [nhom, rows] of nhomKh) {
+  for (const rows of nhomKh.values()) {
     if (!rows.some((r) => r.co_nn)) continue;                         // chưa môn nào có nguyên nhân → còn là việc Xác nhận nguyên nhân
     const iv = rows[0];                                               // id nhỏ nhất của nhóm còn chờ
     if (f.branchId && iv.eff_branch_id !== f.branchId) continue;
@@ -774,7 +774,6 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       ownerId: iv.performer_user_id ?? null, owner: iv.performer_user_id ? null : ((iv.performer_name ?? '').trim() || null), mine,
       due: han, statusLabel: 'Chờ nộp kế hoạch bổ trợ',
     });
-    void nhom;
   }
   /* Báo phụ huynh qua TVV: GVCN lớp em ĐANG học (và Quản lý ở "Tất cả trong phạm vi"); KHÔNG hạn (M-05), không tính quá hạn. */
   const baoPh = conn

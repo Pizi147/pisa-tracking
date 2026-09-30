@@ -375,8 +375,6 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     assert(!dongViec(khoa, 'xnpa:', em.id).length && !dongViec(ha, 'xnpa:', em.id).length, 'không có dòng "Xác nhận PA" cho PA bổ trợ');
     boTro.nopKeHoachBoTro(ha, paBt(cGv.id).id, KH);
     assert(!dongViec(ha, 'kehoach:', em.id).length, 'nộp xong → dòng biến mất');
-    /* QL thấy dòng của GV ở "Tất cả trong phạm vi" khi chưa nộp: dựng nhóm mới */
-    void cP; void trang;
   });
 
   check('LT2a (7) · Nhóm 2 PA đang chạy → MỘT dòng "Ghi kết quả" (id nhỏ nhất) nói "PA chung · G+V, P"; GVCN ghi được, GV không liên quan không thấy', () => {
@@ -426,8 +424,6 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     soLop += 1;
     const khai = d.mondayOfDate ? d.mondayOfDate(t.addDays(TODAY, -7 * tuanTruoc)) : t.addDays(TODAY, -7 * tuanTruoc);
     const now = new Date().toISOString();
-    const week = { ensurePeriod: (x: string) => get('SELECT id FROM report_periods WHERE week_start = ?', x) };
-    void week;
     const pid = (conn.prepare('SELECT id FROM report_periods WHERE week_start = ?').get(khai) as any)?.id
       ?? Number(conn.prepare(`INSERT INTO report_periods (code, week_start, week_end, created_at) VALUES (?,?,?,?)`).run(`LT2a-${khai}`, khai, t.addDays(khai, 6), now).lastInsertRowid);
     const lop = Number(conn.prepare(
