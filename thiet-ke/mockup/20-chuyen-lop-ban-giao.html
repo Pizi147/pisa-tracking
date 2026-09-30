@@ -158,7 +158,7 @@ textarea::placeholder{color:var(--muted)}
 <header style="display:flex;flex-direction:column;gap:8px">
   <span class="small muted">PISA Tracking · mockup 20 · 30/09/2026 · dữ liệu ví dụ</span>
   <h1>Chuyển lớp và Bàn giao</h1>
-  <p class="lead">Quản lý quyết định em nào chuyển sang lớp nào, bắt đầu từ tuần nào. GVCN lớp cũ gom góp ý của GVBM và xác nhận bàn giao trong 3 ngày. Áp dụng cho cả <b>lớp thường</b> (kết thúc khoá) và <b>Fast Track</b> (chuyển giữa lộ trình).</p>
+  <p class="lead">Quản lý quyết định em nào chuyển sang lớp nào, bắt đầu từ tuần nào. GVBM ghi thông tin bàn giao môn mình, GVCN lớp cũ gom lại và xác nhận trong 3 ngày. Áp dụng cho cả <b>lớp thường</b> (kết thúc khoá) và <b>Fast Track</b> (chuyển giữa lộ trình).</p>
 </header>
 
 <!-- ====================================================== LUỒNG -->
@@ -166,9 +166,9 @@ textarea::placeholder{color:var(--muted)}
   <h2 id="h-flow">Luồng một lệnh chuyển lớp</h2>
   <div class="flow">
     <div class="step"><span class="who">Quản lý</span><b>Ra lệnh chuyển</b><span class="small">Chọn em, lớp đích, tuần bắt đầu. Cả lớp (kết thúc khoá) hoặc từng em.</span><span class="when">Ngày ra lệnh = ngày 1</span></div>
-    <div class="step"><span class="who">GVBM từng môn</span><b>Góp ý môn mình</b><span class="small">Một câu nhận xét mỗi em, điền trong một bảng. GVCN điền thay được.</span><span class="when">Hạn hết ngày 2</span></div>
+    <div class="step"><span class="who">GVBM từng môn</span><b>Bàn giao môn mình</b><span class="small">Một câu mỗi em, điền trong một bảng. Mở từ Công việc, hồ sơ lớp hoặc hồ sơ HV. GVCN điền thay được.</span><span class="when">Hạn hết ngày 2</span></div>
     <div class="step"><span class="who">GVCN lớp cũ</span><b>Xác nhận bàn giao</b><span class="small">Web tự điền kết quả, Case, Ý thức. GVCN viết nhận xét chung rồi xác nhận.</span><span class="when">Hạn hết ngày 3 · quá hạn → Báo lên Quản lý</span></div>
-    <div class="step"><span class="who">Web · GVCN lớp mới</span><b>Chuyển đúng tuần</b><span class="small">Thứ Hai tuần bắt đầu, web tự chuyển em. GVCN lớp mới đọc bàn giao.</span><span class="when">Không có chuyển giữa tuần</span></div>
+    <div class="step"><span class="who">Web · GVCN lớp mới</span><b>Chuyển đúng tuần</b><span class="small">Thứ Hai tuần bắt đầu, web tự chuyển em. GVCN lớp mới đọc bàn giao.</span><span class="when">Không chuyển giữa tuần · tới tuần kết thúc lớp thường là PHẢI chuyển</span></div>
   </div>
 </section>
 
@@ -185,11 +185,11 @@ textarea::placeholder{color:var(--muted)}
       </div>
       <div class="strip warn">
         <span class="chip c-warn">Kết thúc khoá</span>
-        <span class="grow">Cuối khoá xong tuần <b class="num">W4 SEP</b> · <b class="num">8</b> em chưa có lệnh chuyển · lớp kế tiếp nên bắt đầu <b class="num">W2 OCT</b> (Thứ Hai 05/10)</span>
+        <span class="grow">Cuối khoá xong tuần <b class="num">W4 SEP</b> · <b class="num">8</b> em chưa có lệnh chuyển · lớp kế tiếp nên bắt đầu <b class="num">W2 OCT</b></span>
         <button class="btn pri" type="button" onclick="document.getElementById('h-b').scrollIntoView({behavior:'smooth'})">Chuyển lớp cả lớp…</button>
       </div>
       <div class="tabs"><span class="on">Học viên</span><span>Bảng điểm</span><span>Cần hỗ trợ</span><span>Ý thức &amp; Phối hợp</span><span>Phân tích lớp</span></div>
-      <p class="why"><b>GVCN nhìn thấy dải này nhưng không có nút.</b> Thay vào đó GVCN thấy "Chờ Quản lý quyết định chuyển lớp · 8 em", để biết mình chưa phải làm gì. Lớp FT cũng có dải giống vậy khi Quản lý cần gộp hoặc tách lớp (nút "Chuyển nhiều em…" trong ⋮).</p>
+      <p class="why"><b>GVCN nhìn thấy dải này nhưng không có nút.</b> Thay vào đó GVCN thấy "Chờ Quản lý quyết định chuyển lớp · 8 em", để biết mình chưa phải làm gì. Sau khi có lệnh, dải này đổi thành "Bàn giao · 2/7 em" (GVCN) và "Bàn giao môn P · 2/7 em" (GVBM môn P); bấm là mở thẳng panel. <b>Lớp đã tới tuần kết thúc mà còn em chưa có lệnh</b> thì dải chuyển đỏ và Quản lý nhận thẻ Báo lên. Lớp FT cũng có dải giống vậy khi Quản lý cần gộp hoặc tách lớp (nút "Chuyển nhiều em…" trong ⋮).</p>
     </div>
   </div>
 </section>
@@ -208,19 +208,19 @@ textarea::placeholder{color:var(--muted)}
           </div>
           <div class="row">
             <label class="field" for="tuanchung">Tuần bắt đầu chung
-              <span class="fake caret num" id="tuanchung" tabindex="0">W2 OCT · Thứ Hai 05/10</span>
+              <span class="fake caret num" id="tuanchung" tabindex="0">W2 OCT</span>
             </label>
             <button class="btn ghost" type="button">Đóng</button>
           </div>
         </div>
         <div class="panel-b">
           <div class="bulk" id="bulk">
-            <span><b id="nsel" class="num">3</b> em đang chọn</span>
+            <span><b id="nsel" class="num">4</b> em đang chọn</span>
             <span class="seg" role="group" aria-label="Quyết định cho các em đã chọn">
               <button type="button" class="on">Lên BE</button><button type="button">Lên FT</button><button type="button">Học lại</button><button type="button">Bảo lưu</button><button type="button">Dừng học</button>
             </span>
-            <span class="fake caret">MB BE 04 · bắt đầu 05/10 · 9 em</span>
-            <button class="btn pri" type="button">Áp cho 3 em</button>
+            <span class="fake caret">MB BE 04 · bắt đầu W2 OCT · 9 em</span>
+            <button class="btn pri" type="button">Áp cho 4 em</button>
           </div>
 
           <div class="tbl-wrap">
@@ -235,7 +235,7 @@ textarea::placeholder{color:var(--muted)}
                 <td><span class="pct">82%</span><div class="sub">4/4 môn đạt</div></td>
                 <td><span class="chip c-ok">Lên BE</span></td>
                 <td><span class="seg"><button type="button" class="on">Lên BE</button><button type="button">Lên FT</button><button type="button">Học lại</button><button type="button">Khác ▾</button></span></td>
-                <td><span class="fake caret">MB BE 04</span></td><td class="num sub">05/10 (chung)</td></tr>
+                <td><span class="fake caret">MB BE 04</span></td><td class="num sub">W2 OCT (chung)</td></tr>
 
               <tr><td><input class="cb" type="checkbox" aria-label="Chọn Đỗ Bảo Linh"></td>
                 <td><div class="name">Đỗ Bảo Linh</div><div class="sub">PISA-000118</div></td>
@@ -243,7 +243,7 @@ textarea::placeholder{color:var(--muted)}
                 <td><span class="chip c-ok">Lên BE</span></td>
                 <td><span class="seg"><button type="button">Lên BE</button><button type="button" class="on">Lên FT</button><button type="button">Học lại</button><button type="button">Khác ▾</button></span>
                   <div class="extra"><span class="fake">Target <b class="num">6.0</b></span><span class="fake">Thi dự kiến <span class="num">06/2027</span></span><span class="chip c-mute">khác gợi ý · lý do: phụ huynh muốn học FT</span></div></td>
-                <td><span class="fake caret">MB FT 105 · LT1</span></td><td class="num sub">05/10 (chung)</td></tr>
+                <td><span class="fake caret">MB FT 105 · LT1</span></td><td class="num sub">W2 OCT (chung)</td></tr>
 
               <tr class="sel"><td><input class="cb" type="checkbox" checked aria-label="Chọn Ngô Minh Huy"></td>
                 <td><div class="name">Ngô Minh Huy</div><div class="sub">PISA-000121</div></td>
@@ -251,7 +251,7 @@ textarea::placeholder{color:var(--muted)}
                 <td><span class="chip c-ok">Lên BE</span> <span class="chip c-acc">+ bổ trợ P · 2 buổi</span></td>
                 <td><span class="seg"><button type="button" class="on">Lên BE</button><button type="button">Lên FT</button><button type="button">Học lại</button><button type="button">Khác ▾</button></span>
                   <div class="extra"><span class="sub">Web tự tạo PA bổ trợ miễn phí P + Mini Test ở lớp mới</span></div></td>
-                <td><span class="fake caret">MB BE 04</span></td><td class="num sub">05/10 (chung)</td></tr>
+                <td><span class="fake caret">MB BE 04</span></td><td class="num sub">W2 OCT (chung)</td></tr>
 
               <tr class="need"><td><input class="cb" type="checkbox" aria-label="Chọn Bùi Thu Trang"></td>
                 <td><div class="name">Bùi Thu Trang</div><div class="sub">PISA-000125</div></td>
@@ -267,14 +267,14 @@ textarea::placeholder{color:var(--muted)}
                 <td><span class="chip c-bad">Học lại FOU</span></td>
                 <td><span class="seg"><button type="button">Lên BE</button><button type="button">Lên FT</button><button type="button" class="on">Học lại</button><button type="button">Khác ▾</button></span>
                   <div class="extra"><span class="sub">Web tạo việc "Báo phụ huynh qua TVV" cho Quản lý</span></div></td>
-                <td><span class="fake caret">MB FOU 14</span></td><td><span class="fake caret num">W3 OCT · 12/10</span></td></tr>
+                <td><span class="fake caret">MB FOU 14</span></td><td><span class="fake caret num">W3 OCT</span></td></tr>
 
               <tr><td><input class="cb" type="checkbox" aria-label="Chọn Phan Quang Nam"></td>
                 <td><div class="name">Phan Quang Nam</div><div class="sub">PISA-000129</div></td>
                 <td><span class="pct">71%</span><div class="sub">4/4 môn đạt</div></td>
                 <td><span class="chip c-ok">Lên BE</span></td>
                 <td><span class="seg"><button type="button">Lên BE</button><button type="button">Lên FT</button><button type="button">Học lại</button><button type="button" class="on">Bảo lưu ▾</button></span>
-                  <div class="extra"><span class="fake">Lý do: đi du lịch cùng gia đình 3 tuần</span><span class="fake">Xem lại <span class="num">26/10</span></span></div></td>
+                  <div class="extra"><span class="fake">Lý do: đi du lịch cùng gia đình 3 tuần</span><span class="fake">Xem lại <span class="num">W5 OCT</span></span></div></td>
                 <td><span class="fake muted">—</span></td><td class="num sub">—</td></tr>
 
               <tr class="sel"><td><input class="cb" type="checkbox" checked aria-label="Chọn Lê Hải Mai"></td>
@@ -282,31 +282,33 @@ textarea::placeholder{color:var(--muted)}
                 <td><span class="pct">79%</span><div class="sub">4/4 môn đạt</div></td>
                 <td><span class="chip c-ok">Lên BE</span></td>
                 <td><span class="seg"><button type="button" class="on">Lên BE</button><button type="button">Lên FT</button><button type="button">Học lại</button><button type="button">Khác ▾</button></span></td>
-                <td><span class="fake caret">MB BE 04</span></td><td class="num sub">05/10 (chung)</td></tr>
+                <td><span class="fake caret">MB BE 04</span></td><td class="num sub">W2 OCT (chung)</td></tr>
 
-              <tr class="lock"><td><input class="cb" type="checkbox" disabled aria-label="Trịnh Đức Long chưa chọn được"></td>
+              <tr class="sel"><td><input class="cb" type="checkbox" checked aria-label="Chọn Trịnh Đức Long"></td>
                 <td><div class="name">Trịnh Đức Long</div><div class="sub">PISA-000133</div></td>
-                <td><span class="pct">—</span><div class="sub">Thiếu điểm P</div></td>
-                <td><span class="chip c-mute">Chờ điểm</span></td>
-                <td colspan="3"><span class="sub">Chưa quyết được: GVBM môn P chưa nhập Cuối khoá (hạn 30/09). Dòng mở lại khi có điểm.</span></td></tr>
+                <td><span class="pct">—</span><div class="sub">Chưa có điểm P · cập nhật sau</div></td>
+                <td><span class="chip c-mute">Chưa đủ điểm</span><div class="sub">Giữa khoá 4/4 môn đạt</div></td>
+                <td><span class="seg"><button type="button" class="on">Lên BE</button><button type="button">Lên FT</button><button type="button">Học lại</button><button type="button">Khác ▾</button></span>
+                  <div class="extra"><span class="sub">Vẫn chuyển đúng tuần. Khi có điểm P, web áp luật Cuối khoá ở lớp mới (bổ trợ, Mini Test nếu cần).</span></div></td>
+                <td><span class="fake caret">MB BE 04</span></td><td class="num sub">W2 OCT (chung)</td></tr>
             </tbody>
           </table>
           </div>
 
           <div class="summary">
-            <div class="sumbox"><span class="small muted">Lên BE · MB BE 04</span><span class="n">3</span></div>
+            <div class="sumbox"><span class="small muted">Lên BE · MB BE 04</span><span class="n">4</span></div>
             <div class="sumbox"><span class="small muted">Lên FT · MB FT 105</span><span class="n">1</span></div>
             <div class="sumbox"><span class="small muted">Học lại · MB FOU 14</span><span class="n">1</span></div>
             <div class="sumbox"><span class="small muted">Bảo lưu</span><span class="n">1</span></div>
-            <div class="sumbox" style="border-color:var(--warn)"><span class="small" style="color:var(--warn)">Chưa quyết / chờ điểm</span><span class="n">1 · 1</span></div>
+            <div class="sumbox" style="border-color:var(--warn)"><span class="small" style="color:var(--warn)">Chưa quyết</span><span class="n">1</span></div>
           </div>
         </div>
         <div class="panel-f">
-          <span class="small muted">Em chưa quyết vẫn ở lại lớp cũ. Quản lý gửi phần đã quyết trước, quyết nốt sau.</span>
-          <div class="row"><button class="btn ghost" type="button">+ Mở lớp mới</button><button class="btn pri" type="button" onclick="document.getElementById('h-c').scrollIntoView({behavior:'smooth'})">Tiếp tục · 6 em</button></div>
+          <span class="small muted">Gửi phần đã quyết trước, quyết nốt sau. Tới tuần kết thúc lớp (W1 OCT) mà còn em chưa có lệnh thì Quản lý nhận thẻ Báo lên.</span>
+          <div class="row"><button class="btn ghost" type="button">+ Mở lớp mới</button><button class="btn pri" type="button" onclick="document.getElementById('h-c').scrollIntoView({behavior:'smooth'})">Tiếp tục · 7 em</button></div>
         </div>
       </div>
-      <p class="why"><b>Vì sao gọn:</b> mỗi hàng là một em với đúng 3 quyết định cần có (hướng, lớp đích, tuần). Cột "Web gợi ý" giữ luật Cuối khoá (≥ 70% lên, 60–69% lên + bổ trợ, 50–59% cân nhắc, &lt; 50% học lại) để Quản lý quyết nhanh; chọn khác gợi ý thì bắt ghi lý do ngắn. Chọn nhiều hàng rồi "Áp cho n em" cho trường hợp phần đông cùng một lớp. <b>Lên FT</b> mở thêm Target (ghi được KCK) và Thi dự kiến ngay trong hàng; lộ trình lấy theo lớp đích. <b>Tuần bắt đầu</b> chỉ chọn được từ tuần sau trở đi; để trống thì theo tuần chung.</p>
+      <p class="why"><b>Vì sao gọn:</b> mỗi hàng là một em với đúng 3 quyết định cần có (hướng, lớp đích, tuần). Cột "Web gợi ý" giữ luật Cuối khoá (≥ 70% lên, 60–69% lên + bổ trợ, 50–59% cân nhắc, &lt; 50% học lại) để Quản lý quyết nhanh; chọn khác gợi ý thì bắt ghi lý do ngắn. Em <b>thiếu điểm Cuối khoá</b> không bị khoá: vẫn chuyển, điểm nhập sau. Chọn nhiều hàng rồi "Áp cho n em" cho trường hợp phần đông cùng một lớp. <b>Lên FT</b> mở thêm Target (ghi được KCK) và Thi dự kiến ngay trong hàng; lộ trình lấy theo lớp đích. <b>Tuần bắt đầu</b> chỉ chọn được từ tuần sau trở đi; để trống thì theo tuần chung.</p>
     </div>
   </div>
 </section>
@@ -320,15 +322,15 @@ textarea::placeholder{color:var(--muted)}
       <div class="panel-h"><h3>Xác nhận lệnh chuyển · MB FOU 12</h3><span class="steps2"><span>1 Soạn</span> <span>›</span> <b>2 Xác nhận</b></span></div>
       <div class="panel-b">
         <ul class="sentence">
-          <li><b>3 em</b> lên <b>MB BE 04</b> từ Thứ Hai <b class="num">05/10</b> (Vũ Gia An, Ngô Minh Huy, Lê Hải Mai). Ngô Minh Huy có PA bổ trợ miễn phí P, 2 buổi, và Mini Test.</li>
-          <li><b>1 em</b> lên Fast Track <b>MB FT 105 · LT1</b> từ <b class="num">05/10</b> (Đỗ Bảo Linh, target 6.0). Web tự tạo MT1–MT3.</li>
-          <li><b>1 em</b> học lại <b>MB FOU 14</b> từ <b class="num">12/10</b> (Hoàng Khánh Vy). Quản lý có việc "Báo phụ huynh qua TVV".</li>
-          <li><b>1 em</b> bảo lưu, xem lại <b class="num">26/10</b> (Phan Quang Nam).</li>
-          <li class="muted">Chưa gửi: Bùi Thu Trang (chưa quyết), Trịnh Đức Long (chờ điểm P).</li>
+          <li><b>4 em</b> lên <b>MB BE 04</b> từ <b class="num">W2 OCT</b> (Vũ Gia An, Ngô Minh Huy, Lê Hải Mai, Trịnh Đức Long). Ngô Minh Huy có PA bổ trợ miễn phí P, 2 buổi, và Mini Test. Trịnh Đức Long chưa có điểm P: luật Cuối khoá áp khi có điểm.</li>
+          <li><b>1 em</b> lên Fast Track <b>MB FT 105 · LT1</b> từ <b class="num">W2 OCT</b> (Đỗ Bảo Linh, target 6.0). Web tự tạo MT1–MT3.</li>
+          <li><b>1 em</b> học lại <b>MB FOU 14</b> từ <b class="num">W3 OCT</b> (Hoàng Khánh Vy). Quản lý có việc "Báo phụ huynh qua TVV".</li>
+          <li><b>1 em</b> bảo lưu, xem lại <b class="num">W5 OCT</b> (Phan Quang Nam).</li>
+          <li class="muted">Chưa gửi: Bùi Thu Trang (chưa quyết).</li>
         </ul>
-        <div class="strip acc"><span class="grow">Sau khi gửi: GVCN Nguyễn Ngọc Hà có việc <b>Bàn giao 6 em · hạn hết 02/10</b>. 4 GVBM có việc <b>Góp ý bàn giao</b>, hạn hết 01/10. GVCN lớp mới được báo.</span></div>
+        <div class="strip acc"><span class="grow">Sau khi gửi: GVCN Nguyễn Ngọc Hà có việc <b>Bàn giao 7 em · hạn hết 02/10</b>. 4 GVBM có việc <b>Bàn giao môn</b>, hạn hết 01/10. GVCN lớp mới được báo.</span></div>
       </div>
-      <div class="panel-f"><button class="btn ghost" type="button">‹ Sửa</button><button class="btn pri" type="button">Gửi lệnh chuyển 6 em</button></div>
+      <div class="panel-f"><button class="btn ghost" type="button">‹ Sửa</button><button class="btn pri" type="button">Gửi lệnh chuyển 7 em</button></div>
     </div>
   </div></div>
 </section>
@@ -345,14 +347,14 @@ textarea::placeholder{color:var(--muted)}
           <span class="sub">Đang học MB FT 101 · LT1 · tuần học 9/16 · MT2 xong, MT3 W3 OCT</span>
           <label class="field">Lớp đích<span class="fake caret">MB FT 103 · LT1 · ca tối · 11 em</span></label>
           <label class="field">Tuần bắt đầu
-            <span class="row"><span class="chip c-acc num">W2 OCT · 05/10</span><span class="chip c-mute num">W3 OCT · 12/10</span><span class="chip c-mute num">W4 OCT · 19/10</span><span class="chip c-mute">Tuần khác…</span></span></label>
+            <span class="row"><span class="chip c-acc num">W2 OCT</span><span class="chip c-mute num">W3 OCT</span><span class="chip c-mute num">W4 OCT</span><span class="chip c-mute">Tuần khác…</span></span></label>
           <label class="field">Lý do (bắt buộc)<span class="fake">Đổi sang ca tối vì lịch học ở trường</span></label>
           <div class="card">
             <span class="small muted">Khi chuyển, web sẽ</span>
             <span class="small">· Giữ lộ trình LT1 (cùng lộ trình, không mở lộ trình mới) · MT3 dời theo lịch MB FT 103 · 1 Case đang mở đi theo em, người nhận gợi ý: GV Reading lớp mới</span>
           </div>
         </div>
-        <div class="panel-f"><span class="small muted">GVCN MB FT 101 bàn giao trước 02/10</span><button class="btn pri" type="button">Ra lệnh chuyển</button></div>
+        <div class="panel-f"><span class="small muted">GVCN MB FT 101 bàn giao, hạn hết 02/10</span><button class="btn pri" type="button">Ra lệnh chuyển</button></div>
       </div>
     </div></div>
     <div class="frame"><div class="frame-bar"><span class="crumb">GVCN · cùng hồ sơ</span></div><div class="frame-body">
@@ -360,7 +362,7 @@ textarea::placeholder{color:var(--muted)}
         <div class="panel-h"><h3>Đề xuất chuyển lớp · Trần Minh Khoa</h3><button class="btn ghost" type="button">Đóng</button></div>
         <div class="panel-b">
           <label class="field">Lớp muốn chuyển tới (tuỳ chọn)<span class="fake caret">MB FT 103 · LT1 · ca tối</span></label>
-          <label class="field">Từ tuần (tuỳ chọn)<span class="fake caret num">W2 OCT · 05/10</span></label>
+          <label class="field">Từ tuần (tuỳ chọn)<span class="fake caret num">W2 OCT</span></label>
           <label class="field">Lý do (bắt buộc)<span class="fake">Phụ huynh xin đổi ca tối</span></label>
           <p class="small muted">Gửi thành thẻ trong <b>Chờ duyệt</b> của Quản lý (loại Thông tin HV, hạn 5 ngày). Quản lý duyệt = ra lệnh chuyển; Quản lý được sửa lớp và tuần trước khi duyệt.</p>
         </div>
@@ -377,14 +379,14 @@ textarea::placeholder{color:var(--muted)}
   <div class="frame"><div class="frame-body" style="gap:10px">
     <div class="strip acc">
       <span class="chip c-acc">Sắp chuyển</span>
-      <span class="grow">Sang <b>MB BE 04</b> từ Thứ Hai <b class="num">05/10</b> · lệnh của Nguyễn Khánh Vy ngày 30/09 · Bàn giao: <b>chờ góp ý 3/4 môn</b> · hạn hết <span class="num">02/10</span></span>
+      <span class="grow">Sang <b>MB BE 04</b> từ <b class="num">W2 OCT</b> · lệnh của Nguyễn Khánh Vy ngày 30/09 · Bàn giao: <b>đã có 3/4 môn</b> · hạn hết <span class="num">02/10</span></span>
       <button class="btn pri" type="button">Bàn giao</button>
       <button class="btn ghost" type="button">Huỷ lệnh</button>
     </div>
-    <span class="small muted">GVCN thấy nút "Bàn giao"; GVBM thấy "Góp ý môn R"; Quản lý thấy "Huỷ lệnh" (trước tuần bắt đầu). GVCN lớp mới thấy "Đọc bàn giao" khi đã xác nhận.</span>
+    <span class="small muted">GVCN thấy nút "Bàn giao"; GVBM thấy "Bàn giao môn R" (mở bảng môn mình); Quản lý thấy "Huỷ lệnh" (trước tuần bắt đầu). GVCN lớp mới thấy "Đọc bàn giao" khi đã xác nhận.</span>
     <div class="strip">
       <span class="chip c-ok">Đã chuyển</span>
-      <span class="grow">Từ <b>MB FOU 12</b> ngày 05/10 · bàn giao của Nguyễn Ngọc Hà, xác nhận 01/10</span>
+      <span class="grow">Từ <b>MB FOU 12</b> tuần W2 OCT · bàn giao của Nguyễn Ngọc Hà, xác nhận 01/10</span>
       <button class="btn" type="button">Đọc bàn giao</button>
     </div>
     <span class="small muted">Dạng sau khi chuyển (hiện 2 tuần rồi thu vào tab Hành trình).</span>
@@ -394,24 +396,24 @@ textarea::placeholder{color:var(--muted)}
 <!-- ====================================================== F. BÀN GIAO -->
 <section class="screen" aria-labelledby="h-f">
   <div class="where"><span class="tag">Màn F</span><h2 id="h-f">Panel Bàn giao của GVCN lớp cũ</h2></div>
-  <div class="where"><span class="tag">Nằm ở</span><span class="path">Công việc › việc <b>Bàn giao 6 em · MB FOU 12</b> · hoặc hồ sơ lớp cũ › dải "Bàn giao" · hoặc hồ sơ HV › nút <b>Bàn giao</b> (mở thẳng em đó) · <b>GVCN lớp cũ</b></span></div>
+  <div class="where"><span class="tag">Nằm ở</span><span class="path">Công việc › việc <b>Bàn giao 7 em · MB FOU 12</b> · hoặc hồ sơ lớp cũ › dải "Bàn giao" · hoặc hồ sơ HV › nút <b>Bàn giao</b> (mở thẳng em đó) · <b>GVCN lớp cũ</b></span></div>
   <div class="frame"><div class="frame-body">
     <div class="panel">
       <div class="panel-h">
-        <div style="display:flex;flex-direction:column;gap:3px"><h3>Bàn giao · MB FOU 12</h3><span class="small muted">6 em · <b class="num" style="color:var(--fg)">2/6</b> đã xác nhận · hạn hết <span class="num">02/10</span></span></div>
+        <div style="display:flex;flex-direction:column;gap:3px"><h3>Bàn giao · MB FOU 12</h3><span class="small muted">7 em · <b class="num" style="color:var(--fg)">2/7</b> đã xác nhận · hạn hết <span class="num">02/10</span></span></div>
         <button class="btn ghost" type="button">Đóng</button>
       </div>
       <div class="md">
         <div class="list" role="listbox" aria-label="Học viên cần bàn giao">
-          <button class="li" type="button" data-i="0"><span class="spread"><b>Vũ Gia An</b><span class="chip c-ok">Đã xác nhận</span></span><span class="sub">→ MB BE 04 · 05/10</span></button>
-          <button class="li on" type="button" data-i="1"><span class="spread"><b>Ngô Minh Huy</b><span class="chip c-warn">Góp ý 3/4</span></span><span class="sub">→ MB BE 04 · 05/10</span></button>
-          <button class="li" type="button" data-i="2"><span class="spread"><b>Đỗ Bảo Linh</b><span class="chip c-mute">Chưa làm</span></span><span class="sub">→ MB FT 105 · 05/10</span></button>
-          <button class="li" type="button" data-i="3"><span class="spread"><b>Lê Hải Mai</b><span class="chip c-ok">Đã xác nhận</span></span><span class="sub">→ MB BE 04 · 05/10</span></button>
-          <button class="li" type="button" data-i="4"><span class="spread"><b>Hoàng Khánh Vy</b><span class="chip c-warn">Góp ý 4/4</span></span><span class="sub">→ MB FOU 14 · 12/10</span></button>
-          <button class="li" type="button" data-i="5"><span class="spread"><b>Phan Quang Nam</b><span class="chip c-mute">Chưa làm</span></span><span class="sub">Bảo lưu · xem lại 26/10</span></button>
+          <button class="li" type="button" data-i="0"><span class="spread"><b>Vũ Gia An</b><span class="chip c-ok">Đã xác nhận</span></span><span class="sub">→ MB BE 04 · W2 OCT</span></button>
+          <button class="li on" type="button" data-i="1"><span class="spread"><b>Ngô Minh Huy</b><span class="chip c-warn">Môn 3/4</span></span><span class="sub">→ MB BE 04 · W2 OCT</span></button>
+          <button class="li" type="button" data-i="2"><span class="spread"><b>Đỗ Bảo Linh</b><span class="chip c-mute">Chưa làm</span></span><span class="sub">→ MB FT 105 · W2 OCT</span></button>
+          <button class="li" type="button" data-i="3"><span class="spread"><b>Lê Hải Mai</b><span class="chip c-ok">Đã xác nhận</span></span><span class="sub">→ MB BE 04 · W2 OCT</span></button>
+          <button class="li" type="button" data-i="4"><span class="spread"><b>Hoàng Khánh Vy</b><span class="chip c-warn">Môn 4/4</span></span><span class="sub">→ MB FOU 14 · W3 OCT</span></button>
+          <button class="li" type="button" data-i="5"><span class="spread"><b>Phan Quang Nam</b><span class="chip c-mute">Chưa làm</span></span><span class="sub">Bảo lưu · xem lại W5 OCT</span></button>
         </div>
         <div class="detail">
-          <div class="spread"><h3>Ngô Minh Huy <span class="muted" style="font-weight:500">→ MB BE 04 từ 05/10</span></h3><span class="chip c-warn">Chờ góp ý môn P</span></div>
+          <div class="spread"><h3>Ngô Minh Huy <span class="muted" style="font-weight:500">→ MB BE 04 từ W2 OCT</span></h3><span class="chip c-warn">Chờ môn P</span></div>
           <div class="card">
             <span class="small muted">Web tự điền · chỉ đọc</span>
             <dl class="kv">
@@ -422,16 +424,16 @@ textarea::placeholder{color:var(--muted)}
             </dl>
           </div>
           <div class="card">
-            <span class="spread"><span class="small muted">Góp ý của GVBM · mỗi môn một câu</span><span class="small muted">GVCN điền thay được</span></span>
+            <span class="spread"><span class="small muted">Thông tin bàn giao của GVBM · mỗi môn một câu</span><span class="small muted">GVCN điền thay được</span></span>
             <div class="gop"><span class="mon">L</span><span>Nghe ý chính tốt, còn yếu dạng điền bản đồ. <span class="sub">— Trần Thu Trang, 30/09</span></span><span class="chip c-ok">✓</span></div>
             <div class="gop"><span class="mon">R</span><span>Đọc chậm với bài dài, nên luyện đọc lướt. <span class="sub">— Lê Minh Đức, 30/09</span></span><span class="chip c-ok">✓</span></div>
             <div class="gop"><span class="mon">G+V</span><span>Ổn, hay sai thì hiện tại hoàn thành. <span class="sub">— Phạm Thu Hà, 01/10</span></span><span class="chip c-ok">✓</span></div>
-            <div class="gop"><span class="mon">P</span><span class="muted">Chưa có góp ý · Đặng Quốc Bảo, hạn hết 01/10</span><span class="row"><button class="btn ghost" type="button">Nhắc</button><button class="btn ghost" type="button">Điền thay</button></span></div>
+            <div class="gop"><span class="mon">P</span><span class="muted">Chưa có · Đặng Quốc Bảo, hạn hết 01/10</span><span class="row"><button class="btn ghost" type="button">Nhắc</button><button class="btn ghost" type="button">Điền thay</button></span></div>
           </div>
           <label class="field" for="nx">Nhận xét chung của GVCN (bắt buộc)
             <textarea id="nx" placeholder="Tính cách, phụ huynh, điều lớp mới cần biết ngay. Ví dụ: em ngại nói trước lớp; mẹ theo sát, liên hệ qua Zalo.">Em chăm, ngại nói trước lớp. Mẹ theo sát, liên hệ qua Zalo. Cần khích lệ phần Pronunciation.</textarea></label>
           <div class="spread">
-            <span class="small muted">Xác nhận được khi đủ nhận xét chung. Môn chưa có góp ý sẽ ghi "không góp ý".</span>
+            <span class="small muted">Xác nhận được khi đủ nhận xét chung. Môn chưa có thông tin sẽ ghi "GVBM chưa bàn giao".</span>
             <button class="btn pri" type="button">Xác nhận bàn giao</button>
           </div>
         </div>
@@ -443,14 +445,14 @@ textarea::placeholder{color:var(--muted)}
 
 <!-- ====================================================== G. GVBM GÓP Ý -->
 <section class="screen" aria-labelledby="h-g">
-  <div class="where"><span class="tag">Màn G</span><h2 id="h-g">GVBM góp ý môn mình</h2></div>
-  <div class="where"><span class="tag">Nằm ở</span><span class="path">Công việc › việc <b>Góp ý bàn giao · P · MB FOU 12 · 6 em</b> · panel nhỏ · <b>GVBM của môn đó</b></span></div>
+  <div class="where"><span class="tag">Màn G</span><h2 id="h-g">GVBM bàn giao môn mình</h2></div>
+  <div class="where"><span class="tag">Nằm ở</span><span class="path">Ba lối vào cùng một panel: Công việc › việc <b>Bàn giao môn P · MB FOU 12</b> · hồ sơ lớp › dải <b>Bàn giao môn P · 2/7 em</b> · hồ sơ HV › dải "Sắp chuyển" › <b>Bàn giao môn P</b> (mở thẳng em đó) · <b>GVBM của môn đó</b></span></div>
   <div class="frame"><div class="frame-body">
     <div class="panel" style="max-width:720px">
-      <div class="panel-h"><div style="display:flex;flex-direction:column;gap:3px"><h3>Góp ý bàn giao · môn P (Pronunciation)</h3><span class="small muted">MB FOU 12 · 6 em · hạn hết 01/10 · mỗi em một câu</span></div><button class="btn ghost" type="button">Đóng</button></div>
+      <div class="panel-h"><div style="display:flex;flex-direction:column;gap:3px"><h3>Bàn giao môn P (Pronunciation)</h3><span class="small muted">MB FOU 12 · 7 em · hạn hết 01/10 · mỗi em một câu</span></div><button class="btn ghost" type="button">Đóng</button></div>
       <div class="panel-b">
         <div class="tbl-wrap"><table style="min-width:520px">
-          <thead><tr><th>Học viên</th><th class="num">Cuối khoá P</th><th>Góp ý</th></tr></thead>
+          <thead><tr><th>Học viên</th><th class="num">Cuối khoá P</th><th>Thông tin bàn giao</th></tr></thead>
           <tbody>
             <tr><td class="name">Vũ Gia An</td><td class="num">84%</td><td><span class="fake" style="white-space:normal">Phát âm rõ, ngữ điệu tự nhiên.</span></td></tr>
             <tr><td class="name">Ngô Minh Huy</td><td class="num" style="color:var(--bad)">48%</td><td><span class="fake muted" style="white-space:normal">Viết một câu…</span></td></tr>
@@ -459,7 +461,7 @@ textarea::placeholder{color:var(--muted)}
           </tbody>
         </table></div>
       </div>
-      <div class="panel-f"><span class="small muted">Lưu từng dòng khi rời ô · 2/6 đã góp ý</span><button class="btn pri" type="button">Xong</button></div>
+      <div class="panel-f"><span class="small muted">Lưu từng dòng khi rời ô · 2/7 đã có</span><button class="btn pri" type="button">Xong</button></div>
     </div>
   </div></div>
 </section>
@@ -471,8 +473,8 @@ textarea::placeholder{color:var(--muted)}
     <div style="display:flex;flex-direction:column;gap:8px">
       <div class="where"><span class="tag">Nằm ở</span><span class="path">Công việc › Việc của tôi · nhóm <b>Lớp &amp; vận hành</b></span></div>
       <div class="frame"><div class="tasks">
-        <div class="task"><div><b>Bàn giao 6 em · MB FOU 12</b><div class="sub">GVCN · 2/6 đã xác nhận · chờ góp ý môn P</div></div><span class="chip c-warn num">hạn hết 02/10</span></div>
-        <div class="task"><div><b>Góp ý bàn giao · P · MB FOU 12</b><div class="sub">GVBM · 2/6 em</div></div><span class="chip c-warn num">hạn hết 01/10</span></div>
+        <div class="task"><div><b>Bàn giao 7 em · MB FOU 12</b><div class="sub">GVCN · 2/7 đã xác nhận · chờ môn P</div></div><span class="chip c-warn num">hạn hết 02/10</span></div>
+        <div class="task"><div><b>Bàn giao môn P · MB FOU 12</b><div class="sub">GVBM · 2/7 em</div></div><span class="chip c-warn num">hạn hết 01/10</span></div>
         <div class="task"><div><b>Bàn giao Trần Minh Khoa → MB FT 103</b><div class="sub">GVCN MB FT 101 · chuyển giữa lộ trình</div></div><span class="chip c-mute num">hạn hết 02/10</span></div>
       </div></div>
       <span class="small muted">Một việc cho cả lớp, không phải 6 việc riêng. Quá hạn → thẻ Báo lên trong Chờ duyệt của Quản lý.</span>
@@ -480,8 +482,8 @@ textarea::placeholder{color:var(--muted)}
     <div style="display:flex;flex-direction:column;gap:8px">
       <div class="where"><span class="tag">Nằm ở</span><span class="path">Hồ sơ lớp <b>MB BE 04</b> (lớp mới) · dải dưới tên lớp · GVCN + GVBM lớp mới, Quản lý</span></div>
       <div class="frame"><div class="frame-body">
-        <div class="strip acc"><span class="chip c-acc">Sắp nhận</span><span class="grow"><b>3 em</b> từ MB FOU 12 vào lớp từ Thứ Hai <b class="num">05/10</b> · bàn giao <b class="num">2/3</b> đã xác nhận</span><button class="btn" type="button">Xem</button></div>
-        <span class="small muted">Tuần 05/10 các em hiện trong danh sách lớp với nhãn nhỏ "mới vào"; Case bàn giao hiện ở Cần hỗ trợ với người nhận gợi ý.</span>
+        <div class="strip acc"><span class="chip c-acc">Sắp nhận</span><span class="grow"><b>4 em</b> từ MB FOU 12 vào lớp từ <b class="num">W2 OCT</b> · bàn giao <b class="num">2/4</b> đã xác nhận</span><button class="btn" type="button">Xem</button></div>
+        <span class="small muted">Tuần W2 OCT các em hiện trong danh sách lớp với nhãn nhỏ "mới vào"; Case bàn giao hiện ở Cần hỗ trợ với người nhận gợi ý.</span>
       </div></div>
     </div>
   </div>
@@ -497,26 +499,27 @@ textarea::placeholder{color:var(--muted)}
       <tbody>
         <tr><td><div class="name">Trần Minh Khoa</div><div class="sub">LT1 · tuần 9/16</div></td><td><span class="num">MT2 · kỳ vọng 6.0</span><div class="sub">Không đạt: W</div></td>
           <td><span class="seg"><button type="button" class="on">Chuyển lớp FT</button><button type="button">Đổi lộ trình</button><button type="button">Bảo lưu</button><button type="button">Dừng học</button></span></td>
-          <td><span class="fake caret">MB FT 103 · LT1</span></td><td><span class="fake caret num">W2 OCT · 05/10</span></td></tr>
+          <td><span class="fake caret">MB FT 103 · LT1</span></td><td><span class="fake caret num">W2 OCT</span></td></tr>
         <tr><td><div class="name">Phạm Gia Hân</div><div class="sub">RF · tuần 5/8</div></td><td><span class="num">MT1 · KCK</span><div class="sub">không tính SOS</div></td>
           <td><span class="seg"><button type="button">Chuyển lớp FT</button><button type="button" class="on">Đổi lộ trình</button><button type="button">Bảo lưu</button><button type="button">Dừng học</button></span>
             <div class="extra"><span class="chip c-vio">LT ↔ RF = mở lộ trình mới, MT đánh lại từ MT1</span></div></td>
-          <td><span class="fake caret">MB FT 104 · LT2</span></td><td class="num sub">05/10 (chung)</td></tr>
+          <td><span class="fake caret">MB FT 104 · LT2</span></td><td class="num sub">W2 OCT (chung)</td></tr>
       </tbody>
     </table></div>
-    <p class="why"><b>Khác lớp thường ở hai chỗ:</b> cột kết quả là MT gần nhất (không có % Cuối khoá, không có gợi ý tự động), và hướng là "Chuyển lớp FT / Đổi lộ trình / Bảo lưu / Dừng học". Phần bàn giao giống hệt, môn góp ý là L · R · W · S.</p>
+    <p class="why"><b>Khác lớp thường ở hai chỗ:</b> cột kết quả là MT gần nhất (không có % Cuối khoá, không có gợi ý tự động), và hướng là "Chuyển lớp FT / Đổi lộ trình / Bảo lưu / Dừng học". Phần bàn giao giống hệt, các môn là L · R · W · S.</p>
   </div></div>
 </section>
 
-<!-- ====================================================== CÂU HỎI -->
+<!-- ====================================================== ĐÃ CHỐT -->
 <section class="screen" aria-labelledby="h-q">
-  <h2 id="h-q">Điểm mockup đang theo khuyến nghị</h2>
+  <h2 id="h-q">Chủ sản phẩm đã chốt 30/09</h2>
   <div class="sticky-note">
     <ol class="dq">
-      <li>GVBM góp ý <b>ngay trên web</b> (việc riêng, hạn 2 ngày); GVCN điền thay được. Phương án khác: GVCN tự hỏi ngoài web rồi điền hết.</li>
-      <li>GVCN quá hạn 3 ngày → <b>Báo lên Quản lý</b>, lệnh vẫn chạy đúng tuần. Phương án khác: hoãn chuyển tới khi bàn giao xong.</li>
-      <li>Bỏ thẻ "Quyết định Cuối khoá 50–59%" vì Quản lý đã tự quyết trong panel.</li>
-      <li>GVCN còn <b>Đề xuất chuyển lớp</b> một em (thẻ Chờ duyệt); không còn tự chuyển.</li>
+      <li>GVBM ghi <b>thông tin bàn giao</b> môn mình trên web (hạn 2 ngày); mở được từ Công việc, hồ sơ lớp và hồ sơ HV. GVCN điền thay được.</li>
+      <li>GVCN quá hạn 3 ngày thì Quản lý nhận thẻ <b>Báo lên</b>; em vẫn chuyển đúng tuần.</li>
+      <li>Bỏ thẻ "Quyết định Cuối khoá 50–59%": Quản lý quyết ngay trong panel.</li>
+      <li>Em thiếu điểm Cuối khoá <b>vẫn phải chuyển</b> khi lớp tới tuần kết thúc; điểm nhập sau, luật Cuối khoá áp ở lớp mới.</li>
+      <li>Toàn web ưu tiên <b>mã tuần</b> (W2 OCT); chỉ dùng ngày cho hạn cụ thể và ngày thi.</li>
     </ol>
   </div>
 </section>

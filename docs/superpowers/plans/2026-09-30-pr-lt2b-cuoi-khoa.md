@@ -544,3 +544,12 @@ lớp — grep `demChuaLoTrinh(`) · tạo `web/src/modules/students/KetLuanKhoa
 - Phép kiểm cũ sửa kỳ vọng (khối → lý do, số trước/sau): …
 - Cổng gộp (LT2a, S4F, PR-GV, PR-CT): …
 - `/ponytail-review`: …
+
+## Chủ sản phẩm / planning chốt 30/09 (thắng các chỗ lệch trong kế hoạch)
+
+- **Q30-3 (chủ sản phẩm): BỎ thẻ "Quyết định Cuối khoá"** (50–59% và đổi hướng có lợi) — không có loại thẻ mới trong loaiYeuCau.ts, không hạn M-19/T54 phần thẻ. `goiYCuoiKhoa` vẫn trả `canQuanLy: true` cho 50–59% để panel PR-CT hiện chip "Quản lý cân nhắc". Câu 2 của kế hoạch (thẻ tự tạo hay GVCN gửi) **không còn**.
+- **Q30-4 (chủ sản phẩm): KHÔNG khoá dòng thiếu điểm Cuối khoá.** Em vẫn chuyển đúng tuần; khi điểm nhập sau (kể cả khi em đã sang lớp/lộ trình mới), `sauChuyenCuoiKhoa`/luật Cuối khoá áp ở lộ trình mới (PA bổ trợ miễn phí, Mini Test, Báo PH qua TVV) — thêm phép kiểm "nhập điểm Cuối khoá sau khi đã chuyển". Bỏ `kiemDongCuoiKhoa` phần khoá.
+- **Câu 1 = A (planning chốt):** Mini Test **một lần mỗi em** (một ô `% · ngày`).
+- Mọi phần màn Chuyển tiếp lớp, quyền chuyển lớp → **PR-CT** (đặc tả §3.1f, mockup 20). LT2b xuất hàm như đã ghi.
+- **Q30-6 mã tuần:** chữ mới trên màn dùng mã tuần; ngày chỉ cho hạn Mini Test/ngày thi.
+- Planning duyệt bảng Q (15 dòng) và R1–R5; K1-19 → PR-Pb2 (xác nhận).

@@ -557,3 +557,11 @@ lý duyệt; GVCN đánh dấu Báo phụ huynh qua TVV".
 - S4F / GV / LT2b đã merge lúc bắt đầu? …
 - Câu hỏi 1 · Câu hỏi 2 (chủ sản phẩm): …
 - Dòng thật lệch kế hoạch: …
+
+## Chủ sản phẩm / planning chốt 30/09 (thắng các chỗ lệch trong kế hoạch)
+
+- **Câu 1 = A (planning chốt):** FOU trượt nhiều môn → nộp kế hoạch chung khi ≥ 1 môn đã xác nhận; môn xác nhận sau chạy theo kế hoạch đã duyệt.
+- **Câu 2 = A (planning chốt):** em vào lớp thường tự có bài Giữa khoá và Cuối khoá theo mốc của lớp, bỏ mốc đã qua (M1b).
+- Đặc tả §3.1f (30/09): chuyển lớp do **Quản lý** quyết + bàn giao (PR-CT, cùng đợt 5). LT2a không chạm quyền/màn chuyển lớp.
+- **Q30-6 mã tuần:** mọi chữ mới trên màn (hạn nộp kế hoạch, tuần bổ trợ, nhãn Giữa khoá) dùng mã tuần `W2 OCT`; ngày chỉ cho hạn cụ thể.
+- Planning duyệt bảng Q (Q1–Q19) và R1–R7 như agent đề xuất.
