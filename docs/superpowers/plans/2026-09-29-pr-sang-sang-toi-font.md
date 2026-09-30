@@ -445,3 +445,17 @@ vẫn bắt đầu bằng Be Vietnam Pro. Đo lại: `tnum` cho 10 chữ số c�
 Đo còn lại: `.woff2` tải từ cùng tên miền (`/node_modules/@fontsource/…` ở dev, tệp băm trong bản build); ký hiệu ✓ ⚠ ▶ ○ ◐ ✗ → ▾ đều có độ rộng
 10–12 px (đo canvas; xem ảnh Task 9 để chắc không ô vuông). Tràn/xuống dòng 8 trang ở 1440 px (01,03,04,05,06,07,08,09), so với Segoe UI: **số phần tử tràn, số phần tử
 xuống dòng và chiều cao trang giống hệt nhau, không cuộn ngang**; chữ rộng hơn Segoe ~3–9 %. Không màn nào vỡ → không 🛑 6b.
+
+**Task 7 (30/09).** 101 chỗ `text-[9/10/10.5px]` ở 36 file → 0. Phân loại: 30 chỗ kết quả/hạn/trạng thái/người → `text-xs` (mười mấy chỗ kèm `slate-500/600 → slate-400`), 6 badge/số đếm → 11,5 px
+(`Nhan` 11,5 px `leading-[18px]`, menu, chuông, `HangTab`, chip "lịch sử", `MissingBadge`), còn lại 11 px. `text-slate-600/700` bọc **chữ** → `slate-500` (9 chỗ tự động + 5 chỗ tay: tên môn mờ `HangLop`,
+số 0 mờ `Highlights`/`BranchPulse`/`SoLieuO`, "Không áp dụng"); giữ ở dấu (`—`, `–`, `/`, `›`, `→`). S8 thêm `›` là dấu. Sập Node 139 ở check → chạy lại 1 lần.
+
+**Task 8 (30/09) — tương phản AA trên trang thật** (Playwright, 1440 px, 18 trạng thái: 10 trang KIỂM + Thông báo, menu tài khoản, menu ⋯, hồ sơ lớp mở "Điểm", Công việc, hồ sơ lớp).
+Trước khi sửa: **sáng 64 chỗ < ngưỡng (8 nhóm) · tối 40 chỗ (4 nhóm, có sẵn từ trước)**. Sau khi sửa: **sáng 0 · tối 0**. Nhóm đã sửa: (1) `opacity-55` của mốc cũ trong `ClassRoster.Band` → màu xám
+`slate-400` (độ trong làm chữ đạt/chưa đạt < 4.5:1); (2) badge đếm thông báo `bg-sky-300/25 text-sky-200` → `bg-doing-bg text-doing` (cùng kiểu `HangTab`), nút lọc đang chọn
+`bg-sky-500/20 text-sky-200` ×3 → `bg-doing-bg text-doing`; (3) `text-amber-200/70` "x/y" → bỏ `/70`; (4) `opacity-80/70` trong chip `ChipKyNang` → bỏ. **Chỗ tối có sẵn nay cũng được sửa** (badge 4.44:1, mốc cũ 3.3–3.8:1)
+vì cùng một lớp CSS cho cả hai chế độ — lệch nhỏ so với "tối không đổi", ghi vào danh sách cố ý Task 9. Chưa đo được bằng kịch bản: panel Thêm PA, lịch `ONgay`, toast (script bấm không ra panel) —
+phủ bằng S5/S6 (chỉ dùng token) + chụp tay ở Task 9.
+`colorize` (chỉ rà bảng sáng): không đổi giá trị nào, không đề xuất màu mới. `adapt` thanh đầu 375 px: ô tìm bị ép còn 41 px sau khi thêm ◐ → `min-w-[4.5rem]` cho ô tìm + tên tài khoản `max-w-[4.5rem]`
+dưới `sm` (72 px ô tìm; không tràn ngang, mọi nút 44 px, cả hai chế độ, 4 trang). `audit`: máy dò cơ học 0 phát hiện trên 50 file đổi; ◐: Tab tới được, Enter/Space đổi, vòng focus 2 px thấy rõ ở cả hai chế độ
+(`rgb(125,179,240)` tối · `rgb(29,95,191)` sáng), F5 giữ chế độ, chặn `localStorage` vẫn đổi được trong phiên, 0 lỗi console. Ghi chú P3: `aria-label` nói hành động kế tiếp **và** có `aria-pressed` — trình đọc màn hình đọc "… nút bật tắt, đã nhấn"; theo Q11.

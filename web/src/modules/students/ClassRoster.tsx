@@ -229,7 +229,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents }: {
                             <span className={`text-xs whitespace-nowrap ${i === 0 ? 'text-slate-200' : 'text-slate-500'}`}>
                               {h.label}{h.lichSu && <> <ChipLichSu /></>}
                               {h.scoredRequired < h.requiredCount && (
-                                <span className="text-[11px] text-amber-200/70 ml-1">
+                                <span className="text-[11px] text-amber-200 ml-1">
                                   {h.scoredRequired}/{h.requiredCount}
                                 </span>
                               )}
@@ -316,9 +316,10 @@ function Band({ v, kyVong, faded, soSanh = true, lichSu = false }: { v: number |
   /* MT lịch sử: xám, không đạt/chưa đạt, không dấu dưới — hết mâu thuẫn "Chưa có kết quả" cạnh "▾5.0" đỏ (rà #119). */
   if (lichSu) return <span className="tabular-nums text-xs text-slate-400" title="MT lịch sử — không phải hiện trạng">{fmtBand(v)}</span>;
   const duoi = soSanh && kyVong !== null && v < kyVong;
-  const tone = !soSanh || kyVong === null ? 'text-slate-100' : duoi ? 'text-rose-200' : 'text-emerald-200';
+  /* Mốc cũ (faded) nhạt hơn bằng MÀU XÁM chứ không bằng độ trong: opacity-55 làm chữ đạt/chưa đạt < 4.5:1 ở chế độ sáng (PR-SANG, Task 8). */
+  const tone = faded ? 'text-slate-400' : !soSanh || kyVong === null ? 'text-slate-100' : duoi ? 'text-rose-200' : 'text-emerald-200';
   return (
-    <span className={`tabular-nums text-xs ${tone} ${faded ? 'opacity-55' : ''}`} title={kyVong !== null ? `kỳ vọng ${fmtBand(kyVong)}` : undefined}>
+    <span className={`tabular-nums text-xs ${tone}`} title={kyVong !== null ? `kỳ vọng ${fmtBand(kyVong)}` : undefined}>
       {duoi && <DauDuoi />}{fmtBand(v)}
     </span>
   );

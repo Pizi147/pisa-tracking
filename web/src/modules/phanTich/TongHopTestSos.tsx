@@ -182,7 +182,7 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
           <div role="radiogroup" aria-label="Cách xếp dòng" className="inline-flex rounded-lg border overflow-hidden" style={{ borderColor: 'var(--line)' }}>
             {THEO_DONG.filter((k) => k !== 'cn' || !anCotChiNhanh).map((k) => (
               <button key={k} type="button" role="radio" aria-checked={theo === k} onClick={() => setTheo(k)}
-                className={`px-3 py-1 text-xs border-0 cursor-pointer ${theo === k ? 'bg-sky-500/20 text-sky-200 font-semibold' : 'bg-transparent text-slate-400 hover:text-slate-200'}`}>
+                className={`px-3 py-1 text-xs border-0 cursor-pointer ${theo === k ? 'bg-doing-bg text-doing font-semibold' : 'bg-transparent text-slate-400 hover:text-slate-200'}`}>
                 {THEO_DONG_LABEL[k]}
               </button>
             ))}
