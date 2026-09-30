@@ -9814,6 +9814,9 @@ await runPrXuatTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 // ==================================================================== PR-HVL (Học viên & Lớp + hồ sơ lớp)
 const { runPrHvlTests } = await import('./prHvl.tests.ts');
 await runPrHvlTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== PR-SANG (giao diện sáng/tối, phông, cỡ chữ)
+const { runPrSangTests } = await import('./prSang.tests.ts');
+await runPrSangTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

@@ -54,3 +54,29 @@ export function tuongPhan(a: RGB | string, b: RGB | string): number {
   const [hi, lo] = x >= y ? [x, y] : [y, x];
   return Math.round(((hi + 0.05) / (lo + 0.05)) * 100) / 100;
 }
+
+/** Thân khối CSS ĐẦU TIÊN có đúng bộ chọn (`:root` không khớp `:root[data-theme="light"]`); không có thì ''. */
+export function docKhoiCss(css: string, boChon: string): string {
+  const goc = boChon.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const m = new RegExp(`(?:^|[\\s}])${goc}\\s*\\{`).exec(css);
+  if (!m) return '';
+  const dau = m.index + m[0].length;
+  return css.slice(dau, css.indexOf('}', dau));
+}
+
+/**
+ * Bảng token hai chế độ. Sáng = khối `:root` ghi đè bởi khối sáng, giải bí danh SAU khi ghi đè
+ * (`--dat-rgb: var(--ok-rgb)` ở `:root` tự theo `--ok-rgb` sáng).
+ */
+export function docMauHaiCheDo(css: string): { toi: Record<string, RGB>; sang: Record<string, RGB> } {
+  const goc = docKhoiCss(css, ':root');
+  return { toi: docMauCss(goc), sang: docMauCss(`${goc}\n${docKhoiCss(css, ':root[data-theme="light"]')}`) };
+}
+
+/** Khoá `localStorage` nhớ chế độ giao diện theo máy (PR-SANG, T15). */
+export const CHE_DO_KHOA = 'pisa-giao-dien';
+
+/** Chỉ đúng chuỗi 'light' là sáng; thiếu, lạ, hỏng → tối (mặc định). */
+export function docCheDo(v: unknown): 'dark' | 'light' {
+  return v === 'light' ? 'light' : 'dark';
+}

@@ -428,3 +428,7 @@ thêm màu cứng mới. Cấp màu chưa ánh xạ (số lần dùng, không đ
 Trang 03 chụp ở `/hoc-vien` (danh sách lớp, các lớp thu gọn); trang 04 mở tab "Cần hỗ trợ"; trang 08 là lượt Mock id 123.
 
 > **Chủ sản phẩm chốt 30/09:** phông **Be Vietnam Pro**; chữ phụ **giữ 11 px**, chỉ nâng chữ < 11 px và chữ kết quả/hạn/trạng thái lên 12 px. Task cuối **sửa `CLAUDE.md`** dòng "giữ phông Inter" → "phông Be Vietnam Pro (PR-SANG)".
+
+**Task 1 (30/09).** Phép kiểm trước: `npm run check` → **10 đỏ** (S1 tối + S1 sáng vì thiếu token `chu-*`/`accent-ink-rgb`/`chon-dau-rgb`, S2, S3, S4, S5, S6, S7, S8, S9),
+**1799 đạt** (bằng mốc B; N-1 cũ xanh khi đọc khối `:root`). Lệch kế hoạch nhỏ: `docMauHaiCheDo` ghép **văn bản** `:root` + khối sáng rồi mới giải bí danh
+(thay vì trộn hai bảng đã giải) — để `--dat-rgb: var(--ok-rgb)` ở sáng theo `--ok-rgb` sáng. S1 thêm `accent` trên nền trang (chữ liên kết).
