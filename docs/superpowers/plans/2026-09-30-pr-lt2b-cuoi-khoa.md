@@ -553,3 +553,5 @@ lớp — grep `demChuaLoTrinh(`) · tạo `web/src/modules/students/KetLuanKhoa
 - Mọi phần màn Chuyển tiếp lớp, quyền chuyển lớp → **PR-CT** (đặc tả §3.1f, mockup 20). LT2b xuất hàm như đã ghi.
 - **Q30-6 mã tuần:** chữ mới trên màn dùng mã tuần; ngày chỉ cho hạn Mini Test/ngày thi.
 - Planning duyệt bảng Q (15 dòng) và R1–R5; K1-19 → PR-Pb2 (xác nhận).
+
+- **KPI bỏ (Q30-5):** `datTheoTyLe`/`tyLeTongLo` không còn phục vụ KPI của PR-GV — giữ nếu LT2b tự cần, không xuất riêng cho PR-GV.

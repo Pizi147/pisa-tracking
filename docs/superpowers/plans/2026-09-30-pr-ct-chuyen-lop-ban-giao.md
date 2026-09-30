@@ -540,3 +540,12 @@ cần chữ phụ hai dòng) · Hành trình (mục `ref_table='lenh_chuyen_lop'
 | Ngày | Task | Ghi chú (mốc B, trần tốc độ, lệch kế hoạch, cổng gộp) |
 |---|---|---|
 | | | |
+
+## Planning chốt 30/09 (thắng các chỗ lệch trong kế hoạch)
+
+- **Câu 1 = A (planning chốt):** lớp **không có GVCN**, hoặc bàn giao **quá 3 ngày** → Quản lý (phạm vi lớp nguồn) được điền thay và **xác nhận thay**; phiếu ghi "Quản lý xác nhận thay". Thêm nhánh quyền + phép kiểm (dương và phủ định).
+- **Câu 2 = A (planning chốt):** "Tạm dừng" / "Kết thúc học" ở ⋮ hồ sơ HV giữ như cũ (GVCN làm được, hiệu lực ngay) — đó là trạng thái học, không phải chuyển lớp.
+- Mockup 20 màn D ghi "MT3 dời theo lịch lớp mới": KHÔNG hứa dời lịch (luật hiện có chỉ chuyển lượt chưa làm sang lớp mới) — câu trên màn: "MT chưa thi chuyển sang lớp mới".
+- Báo lên lớp tới tuần kết thúc còn em chưa có lệnh: theo đặc tả Q30-4 (khi **hết** tuần kết thúc); dải đỏ từ **đầu** tuần kết thúc. Nhóm việc dùng "Vận hành" có sẵn.
+- Học viên không học ca cố định — không có khái niệm ca. Mã tuần `W2 OCT` trên mọi chữ mới.
+- Planning duyệt bảng Q (22 dòng) như agent đề xuất.

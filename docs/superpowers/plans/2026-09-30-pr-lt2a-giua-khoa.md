@@ -565,3 +565,5 @@ lý duyệt; GVCN đánh dấu Báo phụ huynh qua TVV".
 - Đặc tả §3.1f (30/09): chuyển lớp do **Quản lý** quyết + bàn giao (PR-CT, cùng đợt 5). LT2a không chạm quyền/màn chuyển lớp.
 - **Q30-6 mã tuần:** mọi chữ mới trên màn (hạn nộp kế hoạch, tuần bổ trợ, nhãn Giữa khoá) dùng mã tuần `W2 OCT`; ngày chỉ cho hạn cụ thể.
 - Planning duyệt bảng Q (Q1–Q19) và R1–R7 như agent đề xuất.
+
+- **KPI bỏ (Q30-5):** PR-GV không còn thêm 2 chỉ số KPI → phép kiểm sổ chỉ số: LT2a chỉ bớt 3 mã của mình (bỏ con số "GV 31→33, gộp = 30"; tính lại theo main lúc gộp).
