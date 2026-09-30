@@ -274,23 +274,23 @@ export const TRAN: Record<string, number> = {
   'QT /metrics/hv-can-ho-tro-2-lan-chua-case': 32,
   'QL /metrics/hv-bo-qua-van-can-ho-tro': 32,
   'QT /metrics/hv-bo-qua-van-can-ho-tro': 32,
-  'GVCN /my-work': 66,   // PR-CT Task 6: 63 → 66
-  'GVBM /my-work': 64,   // PR-CT Task 6: 62 → 64
-  'GVCN_THUONG /my-work': 66,   // PR-CT Task 6: 63 → 66
+  'GVCN /my-work': 69,   // PR-CT Task 12 (bộ demo có lệnh): 66 → 69   // PR-CT Task 6: 63 → 66
+  'GVBM /my-work': 66,   // PR-CT Task 12 (bộ demo có lệnh): 64 → 66   // PR-CT Task 6: 62 → 64
+  'GVCN_THUONG /my-work': 69,   // PR-CT Task 12 (bộ demo có lệnh): 66 → 69   // PR-CT Task 6: 63 → 66
   /* PR-Ra: trang "Công việc" dùng lại /my-work cho QL·QT, cộng chế độ nguoi=tat-ca/{gv} (Q1–Q2). */
-  'QL /my-work': 63,   // PR-CT Task 6: 62 → 63
+  'QL /my-work': 66,   // PR-CT Task 12 (bộ demo có lệnh): 63 → 66   // PR-CT Task 6: 62 → 63
   'QT /my-work': 68,
-  'QL /my-work?nguoi=tat-ca': 75,
-  'QT /my-work?nguoi=tat-ca': 77,   // PR-CT Task 6: 75 → 77
+  'QL /my-work?nguoi=tat-ca': 78,   // PR-CT Task 12 (bộ demo có lệnh): 75 → 78
+  'QT /my-work?nguoi=tat-ca': 80,   // PR-CT Task 12 (bộ demo có lệnh): 77 → 80   // PR-CT Task 6: 75 → 77
   'GVCN /my-work?nguoi=tat-ca': 19,
-  'QL /my-work?nguoi=7': 75,   // PR-CT Task 6: 74 → 75
+  'QL /my-work?nguoi=7': 78,   // PR-CT Task 12 (bộ demo có lệnh): 75 → 78   // PR-CT Task 6: 74 → 75
   /* PR-DUYET: đo khi hộp đã có thẻ thật (Task 4) — trần max(sau+10, ⌈sau×1,3⌉). */
-  'QL /yeu-cau?hop=cho-duyet': 32,   // PR-CT Task 6: 30 → 32   // PR-YT4 sau khi gộp PR-SOS: thẻ khong_theo_doi + bao_len_y_thuc cùng nạp (đo 29, +3,6%); PR-HVL (10): demo H1 thêm một thẻ "không theo dõi" chờ duyệt → đo 30
-  'QT /yeu-cau?hop=cho-duyet': 32,   // PR-CT Task 6: 29 → 32
+  'QL /yeu-cau?hop=cho-duyet': 35,   // PR-CT Task 12 (bộ demo có lệnh): 32 → 35   // PR-CT Task 6: 30 → 32   // PR-YT4 sau khi gộp PR-SOS: thẻ khong_theo_doi + bao_len_y_thuc cùng nạp (đo 29, +3,6%); PR-HVL (10): demo H1 thêm một thẻ "không theo dõi" chờ duyệt → đo 30
+  'QT /yeu-cau?hop=cho-duyet': 34,   // PR-CT Task 12 (bộ demo có lệnh): 32 → 34   // PR-CT Task 6: 29 → 32
   'GVCN /yeu-cau?hop=cho-duyet': 17,
   'QL /yeu-cau?hop=cho-duyet&xem=da-xu-ly': 29,   // PR-CT Task 6: 27 → 29   // PR-SOS: loại thẻ khong_theo_doi thêm câu nạp (đo 23); + thẻ Ý thức PR-YT4 (đo 27)
   'QT /yeu-cau?hop=cho-duyet&xem=da-xu-ly': 28,   // PR-CT Task 6: 26 → 28   // PR-SOS: loại thẻ khong_theo_doi thêm câu nạp (đo 22)
-  'GVCN /yeu-cau?hop=cua-toi': 26,   // PR-CT Task 6: 25 → 26
+  'GVCN /yeu-cau?hop=cua-toi': 27,   // PR-CT Task 12 (bộ demo có lệnh): 26 → 27   // PR-CT Task 6: 25 → 26
   'GVBM /yeu-cau?hop=cua-toi': 21,
   'QL /yeu-cau/dem': 25,
   'GVCN /yeu-cau/dem': 21,
@@ -312,7 +312,7 @@ export const TRAN: Record<string, number> = {
   'GVCN /highlights': 28,
   'GVBM /highlights': 28,
   'GVCN_THUONG /highlights': 28,
-  'GVCN /y-thuc/my-coordination': 51,
+  'GVCN /y-thuc/my-coordination': 59,   // PR-CT Task 12 (bộ demo có lệnh): 51 → 59
   'QL /classes': 35,
   'GVCN /classes': 36,
   'GVBM /classes': 36,

@@ -979,4 +979,55 @@ export async function runPrCtTests(t: YThucTestKit) {
     assert(a <= 4 && b <= 4, `daiHocVien ${a} câu, daiLop ${b} câu`);
   });
 
+  // ------------------------------------------------------------------ khối 8 · bộ demo `ctSeed.ts` (Task 12) — soi CHÍNH dữ liệu seed (các khối trên dựng lớp riêng nên không lẫn)
+  console.log('\nPR-CT · Bộ demo chuyển lớp và bàn giao (6 kịch bản + 1 lệnh đã chuyển)');
+  const lopMa = (ma: string) => get('SELECT id FROM classes WHERE code = ?', ma)?.id as number | undefined;
+  const emCua = (ten: string) => get('SELECT id FROM students WHERE full_name = ?', ten)?.id as number;
+  check('CT (8a) · kịch bản 1 — MB FOU 21: 6 em, chưa lệnh nào, đủ dải điểm + 1 em thiếu điểm P; dải đỏ (đã hết tuần kết thúc), thẻ Báo lên "Lớp hết khoá còn em chưa có lệnh"', () => {
+    const id = lopMa('MB FOU 21');
+    assert(id, 'thiếu lớp MB FOU 21');
+    assert(all(`SELECT 1 FROM enrollments WHERE class_id = ? AND status = 'active'`, id).length === 6, '6 em');
+    assert(get(`SELECT COUNT(*) n FROM lenh_chuyen_lop WHERE lop_nguon_id = ?`, id).n === 0, 'chưa có lệnh');
+    const nam = emCua('Phan Quang Nam CT');
+    assert(get(`SELECT COUNT(*) n FROM assessment_scores s JOIN assessment_attempts a ON a.id = s.attempt_id WHERE a.student_id = ? AND a.kind = 'final' AND s.raw_score IS NOT NULL`, nam).n === 3, 'Nam thiếu điểm P (3/4 môn)');
+    assert(get(`SELECT COUNT(*) n FROM yeu_cau_duyet WHERE loai = 'bao_len_chua_lenh' AND doi_tuong_id = ?`, id).n === 1, 'thẻ Báo lên chưa lệnh');
+  });
+  check('CT (8b) · kịch bản 2–3 — MB FOU 22: 4 em lên MB BE 09 (một em thiếu điểm P vẫn có lệnh) + 1 bảo lưu; GVBM đã ghi 3 môn cho cả 4 em, còn thiếu P; GVCN chưa xác nhận', () => {
+    const id = lopMa('MB FOU 22'), be09 = lopMa('MB BE 09');
+    const ls = all(`SELECT l.*, s.full_name FROM lenh_chuyen_lop l JOIN students s ON s.id = l.student_id WHERE l.lop_nguon_id = ? ORDER BY l.id`, id);
+    assert(ls.length === 5 && ls.filter((l) => l.huong === 'len_lop' && l.lop_dich_id === be09).length === 4 && ls.filter((l) => l.huong === 'bao_luu').length === 1, JSON.stringify(ls.map((l) => l.huong)));
+    assert(ls.every((l) => l.ngay_ra_lenh === t.addDays(TODAY, -1) && l.xac_nhan_luc === null), 'lệnh ra hôm qua, GVCN chưa xác nhận');
+    const gn = get(`SELECT id FROM lenh_chuyen_lop WHERE student_id = ?`, emCua('Mai Thùy Dương CT'));
+    assert(gn, 'em thiếu điểm P có lệnh');
+    const len = ls.filter((l) => l.huong === 'len_lop').map((l) => l.id);
+    assert(get(`SELECT COUNT(*) n FROM ban_giao_mon WHERE lenh_id IN (${len.join(',')})`).n === 12, '3 môn × 4 em');
+    assert(get(`SELECT COUNT(*) n FROM ban_giao_mon WHERE lenh_id IN (${len.join(',')}) AND mon = 'speaking'`).n === 0, 'thiếu P');
+  });
+  check('CT (8c) · kịch bản 4 — MB FT 103 tách 2 em sang MB FT 104 (cùng LT1) từ tuần sau; một em có Case Reading đang mở', () => {
+    const a = lopMa('MB FT 103'), b = lopMa('MB FT 104');
+    const ls = all(`SELECT * FROM lenh_chuyen_lop WHERE lop_nguon_id = ?`, a);
+    assert(ls.length === 2 && ls.every((l) => l.lop_dich_id === b && l.boi_canh === 'giua-khoa' && l.huong === 'chuyen_lop'), JSON.stringify(ls));
+    assert(get(`SELECT COUNT(*) n FROM sos_cases WHERE student_id = ? AND category = 'reading'`, emCua('Trần Minh Khoa CT')).n >= 1, 'em có Case Reading');
+  });
+  check('CT (8d) · kịch bản 5 — GVCN MB FOU 22 đã đề xuất chuyển một em: thẻ "Đề xuất chuyển lớp" (Thông tin HV) trong Chờ duyệt', () => {
+    const x = get(`SELECT * FROM yeu_cau_duyet WHERE loai = 'de_xuat_chuyen_lop' AND hoc_vien_id = ?`, emCua('Đinh Quốc Bảo CT'));
+    assert(x && x.phan_loai === 'thong-tin-hv' && x.nguoi_xin > 0 && x.han_duyet, JSON.stringify(x));
+  });
+  check('CT (8e) · kịch bản 6 — MB FOU 23: lệnh ra 4 ngày trước, GVCN chưa xác nhận, hạn GVCN đã qua → thẻ Báo lên "Bàn giao quá hạn"', () => {
+    const id = lopMa('MB FOU 23');
+    const ls = all(`SELECT * FROM lenh_chuyen_lop WHERE lop_nguon_id = ?`, id);
+    assert(ls.length === 2 && ls.every((l) => l.ngay_ra_lenh === t.addDays(TODAY, -4) && l.han_gvcn === t.addDays(TODAY, -2) && !l.xac_nhan_luc), JSON.stringify(ls.map((l) => [l.ngay_ra_lenh, l.han_gvcn])));
+    assert(get(`SELECT COUNT(*) n FROM yeu_cau_duyet WHERE loai = 'bao_len_ban_giao' AND doi_tuong_id = ?`, id).n === 1, 'thẻ Báo lên bàn giao');
+  });
+  check('CT (8f) · lệnh đã chuyển Thứ Hai tuần demo: Nguyễn Phương Thảo ở MB BE 09 từ ngày demo, bàn giao đã xác nhận (4 môn + nhận xét), Hành trình có "Bàn giao"', () => {
+    const e = emCua('Nguyễn Phương Thảo CT'), be09 = lopMa('MB BE 09');
+    const l = get(`SELECT * FROM lenh_chuyen_lop WHERE student_id = ?`, e);
+    assert(l.trang_thai === 'da_chuyen' && l.tuan_bat_dau === TODAY && l.xac_nhan_luc && l.nhan_xet_chung.startsWith('Em chăm'), JSON.stringify(l));
+    assert(get(`SELECT class_id, started_at FROM enrollments WHERE student_id = ? AND status = 'active'`, e).class_id === be09, 'ở MB BE 09');
+    assert(get(`SELECT COUNT(*) n FROM ban_giao_mon WHERE lenh_id = ?`, l.id).n === 4, '4 môn');
+    assert(get(`SELECT COUNT(*) n FROM journey_events WHERE student_id = ? AND ref_table = 'lenh_chuyen_lop'`, e).n === 1, 'Hành trình');
+    const dto = profileSvc.studentProfile(P.admin, e).dai;
+    assert(dto && dto.loai === 'da' && dto.nut.includes('doc-ban-giao'), JSON.stringify(dto));
+  });
+
 }

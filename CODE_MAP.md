@@ -331,6 +331,21 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | Tên và ý nghĩa của chín nhóm việc | `server/src/worklist/mywork.ts` → `GROUP_META` |
 | "Việc của tôi" khác "tôi sửa được" | `server/src/permissions.ts` → `mySkills` vs `editableSkills` |
 
+### Chuyển lớp do Quản lý quyết + Bàn giao (PR-CT, §3.1f, mockup 20)
+
+| Muốn sửa | Mở file |
+|---|---|
+| Luật thuần: tuần bắt đầu (Thứ Hai, từ tuần sau), hạn bàn giao 2/3 ngày, kiểm một dòng lệnh, câu tóm tắt, kiểu `DaiLop`/`DaiHocVien`/`PhieuBanGiaoDto` | `shared/domain/chuyenLop.ts` |
+| Ra / sửa / huỷ lệnh · **thi hành đúng Thứ Hai** (`thiHanhLenhDenHan`: cron + quét khi đọc, chạy lặp an toàn) · Đề xuất chuyển lớp · thông báo "Sắp nhận" | `server/src/classes/lenhChuyen.ts` · cron `server/src/ops/chotVangDinhKy.ts` |
+| Phiếu bàn giao (tự điền, dòng môn GVBM, xác nhận, Nhắc) · việc `ban_giao` | `server/src/classes/banGiao.ts` · quyền `server/src/classes/quyenChuyenLop.ts` |
+| Dữ liệu các dải (hồ sơ lớp A · H, hồ sơ HV E) | `server/src/classes/daiChuyenLop.ts` → web `web/src/modules/classes/DaiChuyenLop.tsx` |
+| Panel chuyển cả lớp (lớp thường + FT) · chuyển một em / đề xuất · Bàn giao (GVCN, GVBM, đọc) | `web/src/modules/classes/TransitionPanel.tsx` · `web/src/modules/students/ChuyenLopPanel.tsx` · `web/src/modules/classes/BanGiaoPanel.tsx` |
+| Ba loại thẻ Chờ duyệt (`de_xuat_chuyen_lop`, `bao_len_ban_giao`, `bao_len_chua_lenh`) | `server/src/duyet/loaiYeuCau.ts` · `shared/domain/yeuCauDuyet.ts` |
+| Bảng `lenh_chuyen_lop`, `ban_giao_mon` · migrate | `server/src/schema.sql` (cuối file) · `server/src/migrate/prCt.ts` |
+| Bộ demo 6 kịch bản | `server/src/seed/ctSeed.ts` · `DEMO.md` mục 14 |
+
+Quy tắc: **mọi chuyển lớp thật chỉ đi qua `thiHanhLenhDenHan`**; `applyTransition`/`transferStudent` là hàm nội bộ (thi hành, phép kiểm, seed). Đường web cũ `POST /classes/:id/transition`, `POST /students/:id/transfer` nay RA LỆNH.
+
 ### Tiến độ công việc (tab Vận hành)
 
 | Muốn sửa | Mở file |
