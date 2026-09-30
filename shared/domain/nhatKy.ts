@@ -28,7 +28,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'measure.add_violations': 'Gom thêm vi phạm vào PA', 'measure.confirm': 'Xác nhận đã xử lý vi phạm', 'measure.create': 'Tạo PA xử lý vi phạm',
   'measure.delete': 'Xoá PA xử lý vi phạm', 'measure.edit': 'Sửa PA xử lý vi phạm', 'measure.note': 'Ghi chú PA xử lý vi phạm',
   'measure.remove_violation': 'Bỏ vi phạm khỏi PA',
-  'mgmt_task.create': 'Tạo công việc quản lý',
+  'mgmt_task.create': 'Tạo công việc quản lý', 'mt.xuat_excel': 'Xuất Excel kết quả Test',
   'regular.no_show': 'Ghi vắng thi môn', 'regular.no_show_cleared': 'Bỏ ghi vắng thi môn', 'regular.plan': 'Xếp lịch bài lớp thường',
   'request.approve': 'Duyệt yêu cầu', 'request.decline': 'Từ chối yêu cầu', 'request.answer': 'Trả lời Xin ý kiến',
   'request.create': 'Gửi yêu cầu duyệt',

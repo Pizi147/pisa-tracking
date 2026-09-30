@@ -9808,6 +9808,9 @@ await runPrS3fTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 // ==================================================================== PR-HSM (hồ sơ Mock, nhận xét W/S, GV chấm)
 const { runPrHsmTests } = await import('./prHsm.tests.ts');
 await runPrHsmTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== PR-XUAT (Xuất Excel kết quả Mock Test / Test lớp thường)
+const { runPrXuatTests } = await import('./prXuat.tests.ts');
+await runPrXuatTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-HVL (Học viên & Lớp + hồ sơ lớp)
 const { runPrHvlTests } = await import('./prHvl.tests.ts');
 await runPrHvlTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });

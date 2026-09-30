@@ -5,9 +5,10 @@ import { useSession } from '../../lib/session.tsx';
 import { Card, Empty, ErrorState, SCORE_CHIP, Skeleton, Th } from '../../ui/ui.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { DINH_TRAI, SoO as SoLieuO } from './dungChung.tsx';
+import { NganXuatMt } from '../test/NganXuatMt.tsx';
 import {
   CHUONG_TRINH_LABEL, KHOANG_LABEL, KHOANG_MAC_DINH, THEO_DONG, THEO_DONG_COT_DAU, THEO_DONG_DANH_TU, THEO_DONG_LABEL,
-  bangXuatTongHop, cotTongHopFor, mauOKetQua, ngay, nhomCotNhanNgan,
+  addDaysIso, bangXuatTongHop, cotTongHopFor, mauOKetQua, mondayOfDate, ngay, nhomCotNhanNgan,
   type ChuongTrinh, type CotTongHop, type DongTongHop, type Khoang, type MauOKetQua, type NhomCot, type TheoDong, type TongHopKetQua,
 } from '@shared/domain/index.ts';
 
@@ -63,6 +64,7 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
   const [open, setOpen] = useState<Set<string>>(new Set());
   const [cotHien, setCotHien] = useState<Set<NhomCot>>(() => docCotHien());
   const [menuMo, setMenuMo] = useState(false);
+  const [moXuat, setMoXuat] = useState(false);
   /* Mặc định thu gọn; hàng lớn ĐẦU TIÊN (tuần mới nhất) mở sẵn, một lần cho mỗi cách xếp dòng. */
   const daMoSan = useRef<string | null>(null);
   useEffect(() => { setOpen(new Set()); daMoSan.current = null; }, [theo]);
@@ -172,6 +174,7 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
   );
 
   return (
+    <>
     <Card
       bodyClass="p-0"
       action={
@@ -209,8 +212,9 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
             )}
           </div>
           <button type="button" className="btn btn-sm" disabled={!data || data.hang.length === 0 || !demoDate} onClick={xuatExcel}>
-            ⤓ Xuất Excel
+            ⤓ Xuất bảng này
           </button>
+          {session?.nav?.xuatMt && <button type="button" className="btn btn-sm" onClick={() => setMoXuat(true)}>Xuất kết quả từng lượt</button>}
         </div>
       }>
       {error ? <div className="p-4"><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></div>
@@ -262,5 +266,10 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
           </div>
         )}
     </Card>
+    {moXuat && demoDate && (
+      <NganXuatMt khung={ct === 'thuong' ? 'thuong' : 'ft'} chiNhanh={branchId} lop={classId ? { id: classId, ma: className ?? `#${classId}` } : null}
+        thoiGianMacDinh={{ kieu: 'tuan', tu: addDaysIso(mondayOfDate(demoDate), -7 * (tg - 1)), den: mondayOfDate(demoDate) }} onDong={() => setMoXuat(false)} />
+    )}
+    </>
   );
 }

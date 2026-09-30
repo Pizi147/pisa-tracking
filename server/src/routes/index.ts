@@ -7,7 +7,7 @@ import {
   PERMISSIONS, ROLE_LABEL, WORK_SCOPES, chuongTrinhTuThamSo, khoangTuThamSo, laLoaiBoQuen, thamSoNguoi, tuDauKhoang,
   type Role, type TheoDong, type WorkScope,
 } from '../../../shared/domain/index.ts';
-import { kiemGhiRoKhac, laKhac, soSanhLop, transferReasonText } from '../../../shared/domain/index.ts';
+import { docBoLocXuatMt, kiemGhiRoKhac, laKhac, soSanhLop, transferReasonText } from '../../../shared/domain/index.ts';
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
 import { HttpError, badRequest, forbidden, isIsoDate, notFound, toInt } from '../util.ts';
 import { SESSION_COOKIE, createSession, destroySession, principalOf, requireAuth } from '../auth.ts';
@@ -79,6 +79,7 @@ import * as tongQuanSvc from '../worklist/tongQuan.ts';
 import * as bangSvc from '../worklist/bangChiNhanh.ts';
 import { weeklyDrill, weeklyRollup } from '../worklist/weekly.ts';
 import * as tongHopSvc from '../phanTich/tongHop.ts';
+import * as xuatMtSvc from '../phanTich/xuatMt.ts';
 import * as vanDeHvSvc from '../phanTich/vanDeHv.ts';
 import * as hieuQuaPaSvc from '../phanTich/hieuQuaPa.ts';
 import * as yThucPhanTichSvc from '../phanTich/yThucPhanTich.ts';
@@ -633,6 +634,18 @@ api.get('/phan-tich/tong-hop/o', requireAuth, wrap((req) => {
   return tongHopSvc.oTongHop(principalOf(req), {
     ...filterTongHopOf(req), khoa: qStr(req, 'khoa') ?? '', cot: qStr(req, 'cot') ?? '',
   });
+}));
+/* Xuất Excel kết quả Test (PR-XUAT, YC-13.9): xem trước (GET, không ghi) và xuất (POST, ghi nhật ký `mt.xuat_excel`) cùng một hàm lọc. */
+api.get('/xuat-mt/xem-truoc', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const f = docBoLocXuatMt(req.query as Record<string, unknown>);
+  if (typeof f === 'string') throw badRequest(f);
+  return xuatMtSvc.xemTruoc(principalOf(req), f);
+}));
+api.post('/xuat-mt', requireAuth, wrap((req) => {
+  const f = docBoLocXuatMt((req.body ?? {}) as Record<string, unknown>);
+  if (typeof f === 'string') throw badRequest(f);
+  return xuatMtSvc.xuatExcel(principalOf(req), f);
 }));
 /* Tổng hợp vấn đề HV (PR-UX4): đếm HV theo loại lỗi. `loi=chinh` chỉ lỗi chính; `gop=1` gộp theo loại lỗi chung. */
 const filterVanDeHvOf = (req: Request) => ({

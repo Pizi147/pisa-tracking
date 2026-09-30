@@ -464,7 +464,8 @@ Một nguồn: `CHU_THAO_TAC` (`shared/domain/thaoTacMt.ts`). Menu hồ sơ Mock
 | Lượt đã có ≥ 1 kỹ năng còn thiếu | `Đang chấm · 2/4` | "Đã lên lịch" |
 | Tiêu chí Writing Task 2 | `TR — Task Response` (Task 1 vẫn `TA — Task Achievement`) | "TA" cho Task 2 |
 | Bài đã xác nhận vắng ở lưới | chữ `vắng` · tooltip `Đã xác nhận vắng — Quản lý xếp lại bài trước khi nhập.` | ô nhập mở rồi máy chủ từ chối |
-## 16. PR-HVL — 30/09/2026 · Học viên & Lớp, Cần hỗ trợ, Phân tích lớp
+| Xuất Excel kết quả Test | `Xuất Excel` · `Xuất bảng này` (bảng Tổng hợp đang xem) · `Xuất kết quả từng lượt` · `Cột gọn` / `Cột đầy đủ` · `Chỉ lượt đủ điểm` · sheet `Bộ lọc đã dùng` · `Trạng thái lượt` (`Đủ điểm` / `Thiếu điểm 2/4` / `Chưa có điểm` + `lịch sử` · `đã huỷ phần còn lại` · `SOS tạm thời` · `không cam kết`) · "tuần của lượt = tuần sớm nhất trong các kỹ năng phải thi" | "Export", "CSV", "Tải về" |
+## 17. PR-HVL — 30/09/2026 · Học viên & Lớp, Cần hỗ trợ, Phân tích lớp
 
 | Chỗ | Chữ | Không dùng |
 |---|---|---|

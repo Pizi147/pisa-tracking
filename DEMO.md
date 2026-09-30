@@ -457,7 +457,8 @@ Dựng bằng `saveScore` (`server/src/seed/hsmSeed.ts`) sau PR-KCK. Tài khoả
 | H4 · vắng lần 2 chờ duyệt | **Kiều Thu Trang** MT1 (MB FT 102) | Ô S tím `chờ Quản lý duyệt dời lần 2 · hạn …` |
 | H4 · huỷ phần | **Mạc Đức Long** MT1 (MB FT 102) | Ô W, S `Đã huỷ phần thi`; hồ sơ HV nhãn `huỷ phần` |
 | H4 · RF | **Phan Gia Hân** (MB FT RF 12) | Đầu hồ sơ Mock chữ `RF`, `Kỳ vọng x = target`; hồ sơ HV một dòng "Lộ trình RF — kỳ vọng mọi MT bằng target." |
-## 12. PR-HVL — Học viên & Lớp, Cần hỗ trợ theo kỹ năng, Phân tích lớp (chỉ máy dev, 30/09/2026)
+| X5 · Xuất Excel kết quả Test (PR-XUAT) | Đăng nhập **Quản lý** (Nguyễn Khánh Vy) hoặc **GVCN** (Trần Ngọc Hà) → Test › Lịch Test › **Xuất Excel** | Ngăn 3 khối + xem trước `n lượt · k học viên · m lớp`; bấm Xuất → tệp `.xlsx` (sheet `Mock Test` + `Bộ lọc đã dùng`). GVBM thuần (Phạm Thu Trang) không có nút. Cũng mở được ở hồ sơ lớp ⋮ và Phân tích › Tổng hợp Test |
+## 13. PR-HVL — Học viên & Lớp, Cần hỗ trợ theo kỹ năng, Phân tích lớp (chỉ máy dev, 30/09/2026)
 
 Dựng bằng hàm nghiệp vụ (`server/src/seed/hvlSeed.ts`), sau ngày demo. Tài khoản gợi ý: **Quản lý Nguyễn Khánh Vy** (thấy cả hai lớp) và **GVCN Trần Ngọc Hà** (MB FT 101). Phép kiểm `PR-HVL (10)` soi từng dòng ngay sau khi dựng.
 

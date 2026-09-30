@@ -8,12 +8,13 @@ import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useManHinhHep } from '../cham/LuoiChamLop.tsx';
-import { chuOChuaLuu, mondayOfDate, tenMon, tuanLich } from '@shared/domain/index.ts';
+import { chuOChuaLuu, mondayOfDate, tenMon, tuanDauThangCua, tuanLich } from '@shared/domain/index.ts';
 import type { DongNo, LichTest, LopLichTest } from './lichTest/kieu.ts';
 import { DaiSo, type OSo } from './lichTest/DaiSo.tsx';
 import { KhoiNo } from './lichTest/KhoiNo.tsx';
 import { HangLop } from './lichTest/HangLop.tsx';
 import { dangMo, docMo, ghiMo } from './lichTest/moLop.ts';
+import { NganXuatMt } from './NganXuatMt.tsx';
 
 type Loai = 'ft' | 'thuong';
 const loaiCua = (l: { mode: LopLichTest['mode'] }): Loai => (l.mode === 'ielts_band' ? 'ft' : 'thuong');
@@ -75,6 +76,7 @@ export function LichTestTab() {
   const [conTro, setConTro] = useState<Set<string>>(new Set());
   const [moNo, setMoNo] = useState(true);
   const [chiQuaHan, setChiQuaHan] = useState(false);
+  const [moXuat, setMoXuat] = useState(false);
   const [dongMo, setDongMo] = useState<{ d: DongNo; viTri: number; conTro: boolean } | null>(null);
   /* Số ô lưu hỏng theo hàng lớp / dòng Nợ (PR-UX1) — badge của hàng nói "n ô chưa lưu" tới khi hết. */
   const [chuaLuu, setChuaLuu] = useState<Record<string, number>>({});
@@ -208,6 +210,9 @@ export function LichTestTab() {
           </div>
         )}
         <div className="flex-1" />
+        {session?.nav?.xuatMt && (
+          <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setMoXuat(true)}>Xuất Excel</button>
+        )}
         <BranchFilter branchId={branchId} onBranch={(id) => datThamSo({ branchId: id ? String(id) : null })} />
       </div>
       {urlClassId && (
@@ -262,6 +267,10 @@ export function LichTestTab() {
             )}
           </div>
         </>
+      )}
+      {moXuat && data.tuan && (
+        <NganXuatMt khung={loai ?? 'ft'} chiNhanh={branchId} lop={urlClassId ? { id: urlClassId, ma: data.lopDangLoc?.code ?? `#${urlClassId}` } : null}
+          thoiGianMacDinh={{ kieu: 'tuan', tu: tuanDauThangCua(data.tuan.weekStart), den: data.tuan.weekStart }} onDong={() => setMoXuat(false)} />
       )}
       {/* PR-MT (K2-32): nhắc MỜ — không số đỏ, không vào dải số hay Nợ, không hạn. Chỉ GVCN của lớp / Quản lý thấy. */}
       {data.nhacLichSu.length > 0 && (
