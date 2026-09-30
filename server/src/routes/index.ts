@@ -86,6 +86,7 @@ import * as yThucPhanTichSvc from '../phanTich/yThucPhanTich.ts';
 import * as boQuenSvc from '../phanTich/boQuen.ts';
 import { metricResponse, metricSet, rowsFor } from '../worklist/metrics.ts';
 import { myWork, viecCuaNguoi } from '../worklist/mywork.ts';
+import { hoSoGiaoVien, ketQuaHoSoGv, oHoSoGv, viecHoSoGv } from '../giaoVien/hoSo.ts';
 import { nhacViec } from '../worklist/nhacViec.ts';
 import * as caseSvc from '../cases/cases.ts';
 import * as caseSignalSvc from '../cases/signals.ts';
@@ -1450,6 +1451,33 @@ api.get('/summary', requireAuth, wrap((req) => {
 api.get('/branch-pulse', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return pulseSvc.branchPulse(principalOf(req), { branchId: qInt(req, 'branchId') });
+}));
+
+/* PR-GV: hồ sơ giáo viên + danh sách sau một số. `:id`/`lop`/`cn` là số nguyên dương (sai → 400); quyền kiểm ở `phamViHoSoGv`. */
+const soDuong = (v: unknown, ten: string): number | null => {
+  if (v === undefined || v === '') return null;
+  const n = Number(v);
+  if (typeof v !== 'string' || !/^\d+$/.test(v) || !Number.isSafeInteger(n) || n < 1) throw badRequest(`Tham số "${ten}" không hợp lệ.`);
+  return n;
+};
+api.get('/giao-vien/:id', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return hoSoGiaoVien(principalOf(req), soDuong(req.params.id, 'id') ?? pInt(req, 'id'));
+}));
+api.get('/giao-vien/:id/viec', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return viecHoSoGv(principalOf(req), soDuong(req.params.id, 'id') ?? pInt(req, 'id'));
+}));
+api.get('/giao-vien/:id/ket-qua', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return ketQuaHoSoGv(principalOf(req), soDuong(req.params.id, 'id') ?? pInt(req, 'id'));
+}));
+api.get('/giao-vien/:id/o', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return oHoSoGv(principalOf(req), soDuong(req.params.id, 'id') ?? pInt(req, 'id'), {
+    cot: qStr(req, 'cot') ?? '', lop: soDuong(req.query.lop, 'lop'), dong: qStr(req, 'dong') ?? null, moc: qStr(req, 'moc') ?? null,
+    cn: soDuong(req.query.cn, 'cn'), ct: qStr(req, 'ct') ?? null,
+  });
 }));
 
 /**

@@ -194,6 +194,13 @@ export const DUONG_DO: MucDo[] = [
   /* Không đo vai GVBM: `USER.GVBM` (GV bộ môn MB FT 101) ở bộ demo kiêm GVCN lớp khác nên được xuất lớp đó (200); 403 của GVBM thuần kiểm ở prXuat.tests.ts. */
   { trang: 'Xuất Excel MT', vai: ['QL', 'QT', 'GVCN'], url: '/xuat-mt/xem-truoc?tg=dot&dot=mt:1,mt:2,mt:3,mt:4,mt:5,mt:6,mt:7,mt:8' },
   { trang: 'Xuất Excel MT', vai: ['GVCN_THUONG'], url: '/xuat-mt/xem-truoc?khung=thuong&tg=dot&dot=giua,cuoi' },
+
+  // ---------------------------------------------------------------- PR-GV — hồ sơ giáo viên + ô danh sách (GV chỉ xem chính mình: GVBM → 403; GVCN và GVCN_THUONG là cùng một người, id 7)
+  { trang: 'Hồ sơ GV', vai: MOI_VAI, url: '/giao-vien/{gv}', maChuDich: { GVBM: 403 } },
+  { trang: 'Hồ sơ GV', vai: MOI_VAI, url: '/giao-vien/{gv}/viec', maChuDich: { GVBM: 403 } },
+  { trang: 'Hồ sơ GV', vai: MOI_VAI, url: '/giao-vien/{gv}/ket-qua', maChuDich: { GVBM: 403 } },
+  { trang: 'Hồ sơ GV', vai: MOI_VAI, url: '/giao-vien/{gv}/o?cot=chua-nhap', maChuDich: { GVBM: 403 } },
+  { trang: 'Hồ sơ GV', vai: MOI_VAI, url: '/giao-vien/{gv}/o?cot=case-mo', maChuDich: { GVBM: 403 } },
 ];
 
 /**
@@ -530,6 +537,32 @@ export const TRAN: Record<string, number> = {
   'QT /xuat-mt/xem-truoc?tg=dot&dot=mt:1,mt:2,mt:3,mt:4,mt:5,mt:6,mt:7,mt:8': 26,
   'GVCN /xuat-mt/xem-truoc?tg=dot&dot=mt:1,mt:2,mt:3,mt:4,mt:5,mt:6,mt:7,mt:8': 26,
   'GVCN_THUONG /xuat-mt/xem-truoc?khung=thuong&tg=dot&dot=giua,cuoi': 29,
+  // PR-GV (3), 30/09/2026 — hồ sơ GV tách 3 lời gọi (gộp một lời gọi đo 113–126 câu, vượt trần cứng 100): max(sau+10, ⌈sau×1.3⌉). Đo GVCN id 7 (6 lớp, 17 Case): hồ sơ 60–65, việc 61–72, kết quả 44–45, ô 20–27 câu; 403 = 10 câu.
+  'QL /giao-vien/7': 85,
+  'GVCN /giao-vien/7': 78,
+  'GVBM /giao-vien/7': 20,
+  'GVCN_THUONG /giao-vien/7': 78,
+  'QT /giao-vien/7': 80,
+  'QL /giao-vien/7/viec': 94,
+  'GVCN /giao-vien/7/viec': 80,
+  'GVBM /giao-vien/7/viec': 20,
+  'GVCN_THUONG /giao-vien/7/viec': 80,
+  'QT /giao-vien/7/viec': 91,
+  'QL /giao-vien/7/ket-qua': 59,
+  'GVCN /giao-vien/7/ket-qua': 58,
+  'GVBM /giao-vien/7/ket-qua': 20,
+  'GVCN_THUONG /giao-vien/7/ket-qua': 58,
+  'QT /giao-vien/7/ket-qua': 58,
+  'QL /giao-vien/7/o?cot=chua-nhap': 37,
+  'GVCN /giao-vien/7/o?cot=chua-nhap': 36,
+  'GVBM /giao-vien/7/o?cot=chua-nhap': 20,
+  'GVCN_THUONG /giao-vien/7/o?cot=chua-nhap': 36,
+  'QT /giao-vien/7/o?cot=chua-nhap': 36,
+  'QL /giao-vien/7/o?cot=case-mo': 34,
+  'GVCN /giao-vien/7/o?cot=case-mo': 33,
+  'GVBM /giao-vien/7/o?cot=case-mo': 20,
+  'GVCN_THUONG /giao-vien/7/o?cot=case-mo': 33,
+  'QT /giao-vien/7/o?cot=case-mo': 30,
 };
 
 /**

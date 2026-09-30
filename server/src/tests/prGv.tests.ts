@@ -7,7 +7,8 @@ import { COT_O_GV, demViecTheoNhom, duongViecCuaGv, laCotOGv } from '../../../sh
 export async function runPrGvTests(t: YThucTestKit) {
   const { check, assert, assertThrows, conn, P, classId, TODAY, addDays } = t;
   const { phamViHoSoGv } = await import('../giaoVien/phamVi.ts');
-  const { viecCuaGv } = await import('../giaoVien/hoSo.ts');
+  const { viecCuaGv, hoSoGiaoVien, ketQuaHoSoGv, viecHoSoGv, oHoSoGv } = await import('../giaoVien/hoSo.ts');
+  const { createApp } = await import('../app.ts');
   const { viecCuaNguoi, myWork } = await import('../worklist/mywork.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
@@ -100,5 +101,130 @@ export async function runPrGvTests(t: YThucTestKit) {
     assert(ql.length === 4 && ql.reduce((a, x) => a + x.n, 0) === dong, `tổng nhóm ${ql.reduce((a, x) => a + x.n, 0)} = ${dong} dòng`);
     const tuMinh = viecCuaGv(P.coreTeacher, gv);
     assert(tuMinh.reduce((a, x) => a + x.n, 0) === (myWork(P.coreTeacher) as any).items.length, 'GV tự xem = myWork(p)');
+  });
+
+  // ------------------------------------------------------------------ Task 3 · hồ sơ GV + ô danh sách
+  const vaoO = (ql: any, id: number, q: Record<string, unknown>) => oHoSoGv(ql, id, { cot: '', ...q } as any);
+  const nhanDat = /(Đạt|Đạt kỳ vọng)$/;
+
+  check('PR-GV (3) · quyền ô = quyền số tổng: GVBM/QL CP bị 403, cột lạ / ô lạ bị 400, ô kết quả của lớp không thuộc hồ sơ bị 403', () => {
+    const gv = gvcn('MB FT 101');
+    assertThrows(() => vaoO(P.subjectTeacher, gv, { cot: 'case-mo' }), /chính mình/, 'GVBM gọi ô của GVCN');
+    assertThrows(() => hoSoGiaoVien(P.subjectTeacher, gv), /chính mình/, 'GVBM xem hồ sơ GVCN');
+    assertThrows(() => viecHoSoGv(P.subjectTeacher, gv), /chính mình/, 'GVBM xem việc của GVCN');
+    assertThrows(() => ketQuaHoSoGv(P.subjectTeacher, gv), /chính mình/, 'GVBM xem kết quả của GVCN');
+    assert(viecHoSoGv(P.mbManager, gv).viec.length === 4, 'QL MB xem việc → đủ 4 nhóm');
+    const chiMb = dungGv('TMP-GV-O', 'MB', { lop: 'MB FT 101', den: null });
+    try { assertThrows(() => vaoO(P.cpManager, chiMb, { cot: 'case-mo' }), /chi nhánh bạn quản lý/, 'QL CP gọi ô của GV chỉ ở MB'); } finally { don(chiMb); }
+    assertThrows(() => vaoO(P.mbManager, gv, { cot: 'kpi-bai' }), /Cột không hợp lệ/, 'cột KPI đã bỏ → 400');
+    assertThrows(() => vaoO(P.mbManager, gv, { cot: 'ket-qua', lop: classId('MB FT 101'), dong: 'kpi', moc: 'mt1' }), /không có trong bảng/, 'dòng lạ → 400');
+    assertThrows(() => vaoO(P.mbManager, gv, { cot: 'ket-qua', dong: 'listening', moc: 'mt1' }), /Thiếu lớp/, 'thiếu lớp → 400');
+    assertThrows(() => vaoO(P.mbManager, gv, { cot: 'chua-nhap', lop: 99999999 }), /không nằm trong danh sách lớp/, 'lớp ngoài hồ sơ → 403');
+    assertThrows(() => vaoO(P.mbManager, gv, { cot: 'case-mo', cn: 999999 }), /ngoài phạm vi/, 'cn ngoài phạm vi → 403');
+  });
+
+  check('PR-GV (3) · phạm vi QL: QL MB chỉ thấy lớp/Case MB, Quản trị thấy thêm lớp CP của cùng GV (GV tạm có vai MB, dạy lớp MB và lớp CP)', () => {
+    const gv = dungGv('TMP-GV-2CN', 'MB', { lop: 'MB FT 101', den: null });
+    try {
+      const lopCp = get(`SELECT c.id FROM classes c JOIN branches b ON b.id = c.branch_id WHERE b.code = 'CP' AND c.status = 'active' ORDER BY c.id LIMIT 1`).id as number;
+      conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, effective_to, status, created_at)
+        VALUES (?, ?, 'reading', 0, ?, NULL, 'active', ?)`).run(gv, lopCp, addDays(TODAY, -30), TODAY);
+      const mb = hoSoGiaoVien(P.mbManager, gv);
+      const qt = hoSoGiaoVien(P.admin, gv);
+      assert(mb.lop.length === 1 && mb.lop[0].id === classId('MB FT 101'), 'QL MB: chỉ lớp MB');
+      assert(qt.lop.length === 2 && qt.lop.some((l) => l.id === lopCp), 'Quản trị thấy thêm lớp CP');
+      assert(mb.phamVi.chiNhanh?.length === 1 && qt.phamVi.chiNhanh === null, 'phạm vi ghi đúng: QL một chi nhánh, Quản trị mọi chi nhánh');
+      assert(vaoO(P.mbManager, gv, { cot: 'lop' }).n === 1 && vaoO(P.admin, gv, { cot: 'lop' }).n === 2, 'ô "Lớp" cùng phạm vi với số');
+      assertThrows(() => vaoO(P.mbManager, gv, { cot: 'chua-nhap', lop: lopCp }), /không nằm trong danh sách lớp/, 'QL MB không mở được ô của lớp CP');
+    } finally { don(gv); }
+  });
+
+  check('PR-GV (3) · số ở ô = số dòng khi bấm — QL MB và Quản trị xem GVCN (lớp, ô nợ, quá hạn, Case, yêu cầu, kết quả)', () => {
+    const gv = gvcn('MB FT 101');
+    let coKetQua = 0;
+    for (const nguoiXem of [P.mbManager, P.admin]) {
+      const h = hoSoGiaoVien(nguoiXem, gv);
+      const chuaNhap = h.lop.reduce((a, l) => a + l.chuaNhap, 0);
+      const quaHan = h.lop.reduce((a, l) => a + l.quaHan, 0);
+      assert(vaoO(nguoiXem, gv, { cot: 'chua-nhap' }).rows.length === chuaNhap, `ô chưa nhập ${chuaNhap}`);
+      assert(vaoO(nguoiXem, gv, { cot: 'qua-han' }).rows.length === quaHan, `ô quá hạn ${quaHan}`);
+      for (const l of h.lop) {
+        assert(vaoO(nguoiXem, gv, { cot: 'chua-nhap', lop: l.id }).n === l.chuaNhap, `${l.ma}: chưa nhập theo lớp`);
+        assert(vaoO(nguoiXem, gv, { cot: 'qua-han', lop: l.id }).n === l.quaHan, `${l.ma}: quá hạn theo lớp`);
+      }
+      assert(vaoO(nguoiXem, gv, { cot: 'lop' }).n === h.lop.length, 'số lớp');
+      const ids = new Set(vaoO(nguoiXem, gv, { cot: 'chua-nhap' }).rows.map((r: any) => r.id));
+      assert(ids.size === chuaNhap, 'id dòng ô nợ duy nhất');
+      assert(vaoO(nguoiXem, gv, { cot: 'case-mo' }).n === h.caseMo.length, 'Case mở');
+      assert(vaoO(nguoiXem, gv, { cot: 'case-qua-han' }).n === h.caseMo.filter((c) => c.quaHan).length, 'Case quá hạn');
+      assert(vaoO(nguoiXem, gv, { cot: 'yc-cho' }).n === h.yeuCau.cho, 'yêu cầu chờ duyệt');
+      assert(vaoO(nguoiXem, gv, { cot: 'yc-tu-choi' }).n === h.yeuCau.tuChoi, 'yêu cầu bị từ chối');
+      for (const k of ketQuaHoSoGv(nguoiXem, gv).ketQua) {
+        for (const o of k.o.filter((x) => x.tong > 0)) {
+          const r = vaoO(nguoiXem, gv, { cot: 'ket-qua', lop: k.classId, dong: o.dong, moc: k.moc!.key });
+          assert(r.rows.length === o.tong, `${k.ma} ${o.dong}: ${r.rows.length} dòng ≠ ${o.tong}`);
+          assert(r.rows.filter((x: any) => nhanDat.test(x.sub)).length === o.dat, `${k.ma} ${o.dong}: số "Đạt" = ${o.dat}`);
+          coKetQua += 1;
+        }
+      }
+    }
+    assert(coKetQua > 0, 'phép kiểm không rỗng: có ít nhất một ô kết quả có điểm');
+  });
+
+  await t.checkAsync('PR-GV (3) · kết quả gần nhất khớp tab Phân tích lớp; không cột "Cả bài"; ô môn mình dạy theo phân công; lớp thường không có SOS', async () => {
+    const { phanTichLop } = await import('../classes/phanTichLop.ts');
+    for (const nguoi of [gvcn('MB FT 101'), gvcn('MB FOU 12'), P.subjectTeacher.userId]) {
+      for (const k of ketQuaHoSoGv(P.admin, nguoi).ketQua) {
+        const pt = phanTichLop(P.admin, k.classId);
+        assert(k.o.every((o) => o.dong !== 'ca-bai'), `${k.ma}: bỏ dòng Cả bài`);
+        const day = (conn.prepare(`SELECT skill FROM teacher_assignments WHERE user_id = ? AND class_id = ? AND status = 'active' AND skill IS NOT NULL`).all(nguoi, k.classId) as any[]).map((r) => r.skill);
+        for (const o of k.o) {
+          const x = pt.o[`${o.dong}|${k.moc!.key}`] ?? { dat: 0, tong: 0 };
+          assert(o.dat === x.dat && o.tong === x.tong, `${k.ma} ${o.dong}: khớp phanTichLop`);
+          assert(o.cuaMinh === day.includes(o.dong), `${k.ma} ${o.dong}: cuaMinh theo phân công`);
+        }
+        if (k.khung === 'thuong') assert(!JSON.stringify(k).toLowerCase().includes('sos'), `${k.ma}: lớp thường không có chữ SOS`);
+        if (k.moc && k.khung === 'ft') assert(/^mt\d+$/.test(k.moc.key), 'FT: mốc là MT');
+      }
+    }
+  });
+
+  check('PR-GV (3) · kyNang chỉ mã trong ENTRY_SKILLS (L R W1 W2 S), đúng thứ tự', () => {
+    const h = hoSoGiaoVien(P.admin, P.w2Teacher.userId);
+    const thuTu = ['L', 'R', 'W1', 'W2', 'S'];
+    assert(h.gv.kyNang.join() === thuTu.filter((k) => h.gv.kyNang.includes(k)).join(), `kyNang ${h.gv.kyNang.join(',')}`);
+  });
+
+  await t.checkAsync('PR-GV (3) · qua HTTP: :id/lop/cn sai → 400, id lạ → 404, GVBM → 403, chính mình / QL → 200', async () => {
+    const may = createApp().listen(0);
+    const cong = (may.address() as any).port as number;
+    const phien = new Map<number, string>();
+    const goi = async (userId: number, url: string) => {
+      if (!phien.has(userId)) {
+        const r = await fetch(`http://127.0.0.1:${cong}/api/demo/session`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ userId }) });
+        phien.set(userId, (r.headers.get('set-cookie') ?? '').split(';')[0]);
+      }
+      const r = await fetch(`http://127.0.0.1:${cong}/api${url}`, { headers: { cookie: phien.get(userId)! } });
+      if (r.status >= 500) throw new Error(`${url} → ${r.status} ${(await r.text()).slice(0, 300)}`);
+      return r.status;
+    };
+    try {
+      const gv = gvcn('MB FT 101');
+      const ql = P.mbManager.userId;
+      assert(await goi(ql, '/giao-vien/abc') === 400, ':id chữ → 400');
+      assert(await goi(ql, '/giao-vien/0') === 400, ':id 0 → 400');
+      assert(await goi(ql, '/giao-vien/999999') === 404, 'id lạ → 404');
+      assert(await goi(P.subjectTeacher.userId, `/giao-vien/${gv}`) === 403, 'GVBM xem GVCN → 403');
+      assert(await goi(gv, `/giao-vien/${gv}`) === 200, 'GVCN xem mình → 200');
+      assert(await goi(ql, `/giao-vien/${gv}`) === 200, 'QL MB xem GV chi nhánh mình → 200');
+      for (const khoi of ['viec', 'ket-qua']) {
+        assert(await goi(gv, `/giao-vien/${gv}/${khoi}`) === 200 && await goi(ql, `/giao-vien/${gv}/${khoi}`) === 200, `${khoi}: chính mình / QL → 200`);
+        assert(await goi(P.subjectTeacher.userId, `/giao-vien/${gv}/${khoi}`) === 403 && await goi(ql, `/giao-vien/999999/${khoi}`) === 404, `${khoi}: GVBM → 403, id lạ → 404`);
+      }
+      assert(await goi(ql, `/giao-vien/${gv}/o?cot=kpi-bai`) === 400, 'cột lạ → 400');
+      assert(await goi(ql, `/giao-vien/${gv}/o?cot=lop&lop=x`) === 400, 'lop chữ → 400');
+      assert(await goi(ql, `/giao-vien/${gv}/o?cot=chua-nhap&cn=-1`) === 400, 'cn âm → 400');
+      assert(await goi(P.subjectTeacher.userId, `/giao-vien/${gv}/o?cot=case-mo`) === 403, 'ô: GVBM → 403');
+    } finally { may.close(); }
   });
 }
