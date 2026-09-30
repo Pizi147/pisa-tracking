@@ -9,7 +9,7 @@ import { demoToday } from '../demoConfig.ts';
 import { badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { dotHoanTat, dotHoanTatMany, quyenSuaSauHoanTat } from './hoanTat.ts';
 import {
-  can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, moveableSkills, mySkills, require_, scopeFor, scoreEditPath, type LuotQuyen,
+  can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, moveableSkills, mySkills, require_, requireXemLuotCham, scopeFor, scoreEditPath, type LuotQuyen,
   type Principal,
 } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
@@ -890,8 +890,7 @@ export function attemptDetail(p: Principal, attemptId: number) {
   const conn = db();
   const a = conn.prepare(`${ATTEMPT_SELECT} WHERE a.id = ?`).get(attemptId) as any;
   if (!a) throw notFound('Không tìm thấy lượt Mock Test');
-  require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId: a.class_id, studentId: a.student_id },
-    'Lượt Mock này nằm ngoài phạm vi bạn được xem.');
+  requireXemLuotCham(p, { classId: a.class_id, studentId: a.student_id }, 'Lượt Mock này nằm ngoài phạm vi bạn được xem.');
 
   const scores = scoresOf(attemptId);
   /*
@@ -1737,7 +1736,7 @@ export function classScoreSheet(
   const cls = conn.prepare('SELECT c.*, b.name AS branch_name FROM classes c JOIN branches b ON b.id=c.branch_id WHERE c.id=?')
     .get(classId) as any;
   if (!cls) throw notFound('Không tìm thấy lớp');
-  require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
+  requireXemLuotCham(p, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
   /*
    * BẢNG NÀY LÀ BẢNG MOCK TEST. Lớp thường có bảng riêng (`regularSheet`): chấm theo số câu đúng/tổng số câu, bài tên
    * "Giữa khoá"/"Cuối khoá". Mở nhầm bảng là đọc sai cả kết quả — bảng này gọi mọi lượt là "MT{n}" và chấm theo band.

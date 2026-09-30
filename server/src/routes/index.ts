@@ -933,7 +933,7 @@ api.get('/classes/:id/issue-board', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   const p = principalOf(req);
   const id = pInt(req, 'id');
-  require_(p, PERMISSIONS.CASE_VIEW, { classId: id }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
+  require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId: id }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
   const category = qStr(req, 'category');
   if (!category) throw badRequest('Chưa chọn kỹ năng để phân tích.');
   return effectiveness.classIssueBoard(id, category, { fromDate: qStr(req, 'from') ?? null });
@@ -952,7 +952,7 @@ api.get('/classes/:id/issue-board/needs-evaluation', requireAuth, wrap((req) => 
   maybeSimulateReadError();
   const p = principalOf(req);
   const id = pInt(req, 'id');
-  require_(p, PERMISSIONS.CASE_VIEW, { classId: id }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
+  require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId: id }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
   const category = qStr(req, 'category');
   if (!category) throw badRequest('Chưa chọn kỹ năng để xem chi tiết.');
   const need = effectiveness.plansNeedingEvaluation({ classId: id, category, fromDate: qStr(req, 'from') ?? null });
