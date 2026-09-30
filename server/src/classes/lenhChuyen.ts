@@ -1,6 +1,6 @@
 import { chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
-  NHAN_XET_TOI_THIEU, PERMISSIONS, coPhieu, canLopDich, hanBanGiao, kiemDongChuyenTiep, kiemDongLenh, tuanHopLe, tuanLich,
+  NHAN_XET_TOI_THIEU, PERMISSIONS, coPhieu, canLopDich, hanBanGiao, khacGoiY, kiemDongChuyenTiep, kiemDongLenh, tuanHopLe, tuanLich,
   type HuongLenh, type MucTieuLenh, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { badRequest, conflict, notFound, nowIso } from '../util.ts';
@@ -14,6 +14,7 @@ import { applyTransition } from './transition.ts';
 import { apDungMotDong, dongLopNeuHet, lopDichHopLe, nguoiNhanGoiY } from './luatLoTrinh.ts';
 import { coTheRaLenh } from './quyenChuyenLop.ts';
 import { classProgressMany, mocKetKhoa } from './schedule.ts';
+import { cuoiKhoaTheoHocVien } from '../normal/cuoiKhoa.ts';
 
 /**
  * LỆNH CHUYỂN LỚP do QUẢN LÝ quyết (PR-CT, §3.1f Q30-1): em nào · lớp đích nào · tuần bắt đầu (Thứ Hai, từ tuần sau trở đi).
@@ -22,7 +23,7 @@ import { classProgressMany, mocKetKhoa } from './schedule.ts';
 
 export type DongLenhVao = {
   studentId: number; huong: HuongLenh; toClassId?: number | null; tuan?: string | null;
-  mucTieu?: MucTieuLenh | null; ngayThi?: string | null; lyDo?: string | null; khacGoiY?: boolean; ngayXemLai?: string | null;
+  mucTieu?: MucTieuLenh | null; ngayThi?: string | null; lyDo?: string | null; ngayXemLai?: string | null;
 };
 export type BoiCanhLenh = 'cuoi-khoa' | 'giua-khoa';
 
@@ -96,6 +97,9 @@ export function raLenh(p: Principal, v: {
       ).all(...lo, v.lopNguonId) as any[]) dich.set(c.id, c);
     });
 
+    /* PR-UXF-a Q2 (P0 K2-25): "khác Web gợi ý" máy chủ TỰ tính từ luật Cuối khoá — một lần cho cả lô, không tin cờ của thân yêu cầu. */
+    const ck = v.boiCanh === 'cuoi-khoa' ? cuoiKhoaTheoHocVien(v.lopNguonId, dongs.map((d) => d.studentId)) : null;
+
     const failed: { studentId: number; message: string }[] = [];
     const hang: any[] = [];
     const daSua = new Set<number>();
@@ -110,9 +114,10 @@ export function raLenh(p: Principal, v: {
       const cu = daCo.get(d.studentId);
       /* PR-S5F-a: lệnh còn `cho` luôn sửa được (kể cả đã tới tuần mà chưa chuyển được) — tuần mới vẫn phải từ tuần sau (`kiemDongLenh`). */
       if (cu && cu.lop_nguon_id !== v.lopNguonId) { loi('Em đã có lệnh chuyển ở lớp khác.'); continue; }
+      const khac = khacGoiY(d.huong, ck?.get(d.studentId)?.goiY);
       const sai = kiemDongLenh({
         huong: d.huong, lopDichId: lopDich?.id ?? null, lopDichFt: !!lopDich?.is_fast_track, nguonFt, tuan: tuan ?? null, homNay,
-        lyDo: d.lyDo ?? null, khacGoiY: !!d.khacGoiY, mucTieu: d.mucTieu ?? null, ngayXemLai: d.ngayXemLai ?? null,
+        lyDo: d.lyDo ?? null, khacGoiY: khac, mucTieu: d.mucTieu ?? null, ngayXemLai: d.ngayXemLai ?? null,
       });
       if (sai) { loi(sai); continue; }
       if (v.boiCanh === 'cuoi-khoa' && (d.huong === 'len_lop' || d.huong === 'hoc_lai' || d.huong === 'fast_track')) {
@@ -128,7 +133,7 @@ export function raLenh(p: Principal, v: {
       if (cu) daSua.add(d.studentId);
       hang.push([
         d.studentId, v.lopNguonId, lopDich?.id ?? null, d.huong, v.boiCanh, tuan, kck || d.mucTieu == null ? null : d.mucTieu, kck ? 1 : 0,
-        d.ngayThi ?? null, d.huong === 'bao_luu' ? d.ngayXemLai ?? null : null, (d.lyDo ?? '').trim() || null, d.khacGoiY ? 1 : 0,
+        d.ngayThi ?? null, d.huong === 'bao_luu' ? d.ngayXemLai ?? null : null, (d.lyDo ?? '').trim() || null, khac ? 1 : 0,
         p.userId, homNay, v.tuYeuCauId ?? null, 'cho', han?.gvbm ?? null, han?.gvcn ?? null, nowIso(), nowIso(),
       ]);
     }
@@ -207,7 +212,7 @@ export function suaLenh(p: Principal, id: number, v: Partial<DongLenhVao>): void
     studentId: l.student_id, huong: (v.huong ?? l.huong) as HuongLenh, toClassId: v.toClassId !== undefined ? v.toClassId : l.lop_dich_id,
     tuan: v.tuan ?? l.tuan_bat_dau, mucTieu: v.mucTieu !== undefined ? v.mucTieu : l.khong_cam_ket ? 'KCK' : l.muc_tieu,
     ngayThi: v.ngayThi !== undefined ? v.ngayThi : l.ngay_thi, lyDo: v.lyDo !== undefined ? v.lyDo : l.ly_do,
-    khacGoiY: v.khacGoiY ?? !!l.khac_goi_y, ngayXemLai: v.ngayXemLai !== undefined ? v.ngayXemLai : l.ngay_xem_lai,
+    ngayXemLai: v.ngayXemLai !== undefined ? v.ngayXemLai : l.ngay_xem_lai,
   };
   const r = raLenh(p, { lopNguonId: l.lop_nguon_id, boiCanh: l.boi_canh, tuanChung: null, dongs: [gop] });
   if (r.failed.length) throw badRequest(r.failed[0].message);
@@ -250,7 +255,7 @@ export function dongTuBody(x: any): DongLenhVao {
   return {
     studentId: Number(x?.studentId), huong: String(x?.huong ?? '') as HuongLenh, toClassId: x?.toClassId ? Number(x.toClassId) : null,
     tuan: x?.tuan ?? null, mucTieu: soHoacKck(x?.mucTieu), ngayThi: x?.ngayThi ?? x?.thangThi ?? null,
-    lyDo: x?.lyDo ?? null, khacGoiY: x?.khacGoiY === true, ngayXemLai: x?.ngayXemLai ?? null,
+    lyDo: x?.lyDo ?? null, ngayXemLai: x?.ngayXemLai ?? null,
   };
 }
 
@@ -265,7 +270,7 @@ export function boiCanhTheoLop(lopId: number): BoiCanhLenh {
 export function suaTuBody(b: any): Partial<DongLenhVao> {
   const d = dongTuBody(b ?? {});
   const v: Record<string, unknown> = {};
-  for (const k of ['huong', 'toClassId', 'tuan', 'mucTieu', 'ngayThi', 'lyDo', 'khacGoiY', 'ngayXemLai'] as const) if (b && k in b) v[k] = d[k];
+  for (const k of ['huong', 'toClassId', 'tuan', 'mucTieu', 'ngayThi', 'lyDo', 'ngayXemLai'] as const) if (b && k in b) v[k] = d[k];
   return v as Partial<DongLenhVao>;
 }
 

@@ -7,7 +7,7 @@ import { ONgay } from '../../ui/ONgay.tsx';
 import { ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import {
-  NORMAL_LADDER, chuHopKetLuan, hanBanGiao, kiemDongLenh, ketQuaGanNhat, ngay, tomTatLenh, tuanLich,
+  NORMAL_LADDER, chuHopKetLuan, hanBanGiao, khacGoiY, kiemDongLenh, ketQuaGanNhat, ngay, tomTatLenh, tuanLich,
   type DongTomTatLenh, type GoiYCuoiKhoa, type HopKetLuanVao, type HuongLenh, type KetQuaVao, type MucTieuLenh, type ProgrammeCode,
 } from '@shared/domain/index.ts';
 import { ClassCreatePanel } from './ClassCreatePanel.tsx';
@@ -103,16 +103,16 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
 
   const dichCua = (d: Dong) => (typeof d.toClassId === 'number' ? (data?.candidates ?? []).find((c: any) => c.id === d.toClassId) ?? null : null);
   const mucTieuCua = (d: Dong): MucTieuLenh | null => (d.mucTieu.trim().toUpperCase() === 'KCK' ? 'KCK' : d.mucTieu.trim() === '' ? null : Number(d.mucTieu));
-  const kiemTra = (d: Dong): string | null => {
+  const kiemTra = (s: any, d: Dong): string | null => {
     if (!d.kieu) return null;
     const dich = dichCua(d);
     return kiemDongLenh({
       huong: HUONG_CUA[d.kieu], lopDichId: dich?.id ?? null, lopDichFt: !!dich?.ft, nguonFt: ft, tuan: d.tuan || tuanCh, homNay,
-      lyDo: d.lyDo || null, khacGoiY: false, mucTieu: mucTieuCua(d), ngayXemLai: d.ngayXemLai || null,
+      lyDo: d.lyDo || null, khacGoiY: khacGoiY(HUONG_CUA[d.kieu], (s.cuoiKhoa as CuoiKhoaEm | null)?.goiY), mucTieu: mucTieuCua(d), ngayXemLai: d.ngayXemLai || null,
     });
   };
 
-  const rows = students.map((s) => { const d = dongCua(s); return { s, d, loi: kiemTra(d), coLenh: !!s.lenh }; });
+  const rows = students.map((s) => { const d = dongCua(s); return { s, d, loi: kiemTra(s, d), coLenh: !!s.lenh }; });
   const quyet = rows.filter((r) => r.d.kieu);
   const chua = rows.length - quyet.length;
   const coLoi = quyet.some((r) => r.loi);
@@ -339,6 +339,8 @@ function HangEm({ s, d, ft, luoi, maKe, routeTu, tuanCh, homNay, loi, loiMayChu,
     ? [['chuyen', 'Chuyển lớp FT'], ['doi', 'Đổi lộ trình']]
     : [...(maKe ? [['len', `Lên ${maKe}`] as [Kieu, string]] : []), ['ft', 'Lên FT'], ['lai', 'Học lại']];
   const khac = d.kieu === 'bao-luu' || d.kieu === 'dung';
+  /* PR-UXF-a (K2-25): chọn khác Web gợi ý → bắt ghi lý do (máy chủ cũng tự kiểm). */
+  const lechGoiY = khacGoiY(d.kieu ? HUONG_CUA[d.kieu] : null, ck?.goiY);
   const nhan = 'text-[11px] text-slate-500 lg:hidden';
   const dsLop = lopHopLe(d.kieu);
   const tuanRieng = d.tuan && d.tuan !== tuanCh;
@@ -429,10 +431,13 @@ function HangEm({ s, d, ft, luoi, maKe, routeTu, tuanCh, homNay, loi, loiMayChu,
           <span className="pb-1 text-[11px] text-slate-500">Lộ trình theo lớp đích</span>
         </div>
       )}
-      {(d.kieu === 'bao-luu' || d.kieu === 'dung' || d.kieu === 'chuyen' || d.kieu === 'doi') && (
+      {(d.kieu === 'bao-luu' || d.kieu === 'dung' || d.kieu === 'chuyen' || d.kieu === 'doi' || lechGoiY) && (
         <div className="flex flex-wrap items-end gap-3 lg:col-start-2 lg:col-end-[-1]">
           <label className="block min-w-[14rem] flex-1">
-            <span className="mb-0.5 block text-[11px] text-slate-500">Lý do <span className="text-bad">*</span></span>
+            <span className="mb-0.5 block text-[11px] text-slate-500">
+              Lý do <span className="text-bad">*</span>
+              {lechGoiY && <span className="ml-1.5 text-[12px] text-slate-400">khác Web gợi ý</span>}
+            </span>
             <input className="field w-full" aria-label={`Lý do của ${s.fullName}`} value={d.lyDo} disabled={khoa} onChange={(e) => sua({ lyDo: e.target.value })} />
           </label>
           {d.kieu === 'bao-luu' && (

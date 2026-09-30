@@ -9805,6 +9805,9 @@ await runPrS5fATests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 // ==================================================================== PR-S5F-b (sửa sau rà cuối đợt 5 — Giữa khoá, hồ sơ GV, tốc độ)
 const { runPrS5fbTests } = await import('./prS5fb.tests.ts');
 await runPrS5fbTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== PR-UXF-a (số liệu khớp + sót lớp thường)
+const { runPrUxfATests } = await import('./prUxfA.tests.ts');
+await runPrUxfATests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
