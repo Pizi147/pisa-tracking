@@ -1,0 +1,654 @@
+<meta charset="utf-8">
+<!-- mockup 25 · 01/10/2026 · dữ liệu ví dụ · PR-Pb2 -->
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Phân tích giáo viên</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Inter:wght@500;600;700&display=swap">
+<style>
+/* Bố cục: giấy mockup — mỗi màn một khung "màn hình" có nhãn NẰM Ở; màu theo token PISA (§7.4), mặc định Tối như web thật */
+:root{
+  --bg:#0c1220; --surface:#141d2f; --surface2:#1a2437; --line:rgba(160,178,214,.14); --line2:rgba(160,178,214,.26);
+  --fg:#dde5f2; --muted:rgb(147,163,192); --accent:#7db3f0; --accent-bg:rgba(125,179,240,.12);
+  --ok:rgb(111,220,159); --ok-bg:rgba(111,220,159,.12); --warn:#f0c46b; --warn-bg:rgba(240,196,107,.13);
+  --bad:#f08a8a; --bad-bg:rgba(240,138,138,.13); --violet:#b9a3f5; --violet-bg:rgba(185,163,245,.13);
+  --note:#e9d9a8; --paper:#101828;
+  --f-body:"Be Vietnam Pro",system-ui,"Segoe UI",sans-serif; --f-num:"Inter","Be Vietnam Pro",system-ui,sans-serif;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){
+  --bg:#f5f7fa; --surface:#ffffff; --surface2:#eef1f5; --line:rgba(15,23,42,.12); --line2:rgba(15,23,42,.22);
+  --fg:#0f172a; --muted:#475569; --accent:#1d5fbf; --accent-bg:rgba(29,95,191,.09);
+  --ok:#157a42; --ok-bg:#dcf3e5; --warn:#8a5a00; --warn-bg:#fdf1cf; --bad:#b42323; --bad-bg:#fde2e2; --violet:#5b3fb0; --violet-bg:#ece6fb;
+  --note:#6b5313; --paper:#e9edf3; color-scheme:light; } }
+:root[data-theme="light"]{
+  --bg:#f5f7fa; --surface:#ffffff; --surface2:#eef1f5; --line:rgba(15,23,42,.12); --line2:rgba(15,23,42,.22);
+  --fg:#0f172a; --muted:#475569; --accent:#1d5fbf; --accent-bg:rgba(29,95,191,.09);
+  --ok:#157a42; --ok-bg:#dcf3e5; --warn:#8a5a00; --warn-bg:#fdf1cf; --bad:#b42323; --bad-bg:#fde2e2; --violet:#5b3fb0; --violet-bg:#ece6fb;
+  --note:#6b5313; --paper:#e9edf3; color-scheme:light; }
+:root[data-theme="dark"]{
+  --bg:#0c1220; --surface:#141d2f; --surface2:#1a2437; --line:rgba(160,178,214,.14); --line2:rgba(160,178,214,.26);
+  --fg:#dde5f2; --muted:rgb(147,163,192); --accent:#7db3f0; --accent-bg:rgba(125,179,240,.12);
+  --ok:rgb(111,220,159); --ok-bg:rgba(111,220,159,.12); --warn:#f0c46b; --warn-bg:rgba(240,196,107,.13);
+  --bad:#f08a8a; --bad-bg:rgba(240,138,138,.13); --violet:#b9a3f5; --violet-bg:rgba(185,163,245,.13); --note:#e9d9a8; --paper:#101828; color-scheme:dark; }
+
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--fg);font:14px/1.55 var(--f-body);margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:28px 64px;display:flex;flex-direction:column;gap:36px}
+h1{font-size:24px;font-weight:700;margin:0;text-wrap:balance}
+h2{font-size:18px;font-weight:700;margin:0;text-wrap:balance}
+h3{font-size:15px;font-weight:600;margin:0}
+p{margin:0}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+.lead{max-width:72ch;color:var(--muted)}
+
+/* luồng */
+.flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.step{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.step .who{font-size:11.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--accent)}
+.step .when{font-size:12px;color:var(--muted)}
+@media (max-width:820px){.flow{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:480px){.flow{grid-template-columns:1fr}}
+
+/* khung màn */
+.screen{display:flex;flex-direction:column;gap:10px}
+.where{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline}
+.where .tag{font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.where .path{font-size:13px}
+.where .path b{font-weight:600}
+.frame{background:var(--bg);border:1px solid var(--line2);border-radius:12px;overflow:hidden}
+.frame-bar{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--surface)}
+.frame-bar .crumb{font-size:12.5px;color:var(--muted)}
+.frame-body{padding:16px;display:flex;flex-direction:column;gap:14px}
+.why{border-left:2px solid var(--line2);padding-left:12px;font-size:13px;color:var(--muted);max-width:90ch}
+.why b{color:var(--fg);font-weight:600}
+
+/* thành phần */
+.btn{font:600 13px var(--f-body);border-radius:8px;padding:7px 12px;border:1px solid var(--line2);background:var(--surface2);color:var(--fg);cursor:pointer;min-height:34px}
+.btn:hover{border-color:var(--accent)}
+.btn:focus-visible,.seg button:focus-visible,.li:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.btn.ghost{background:transparent}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;border-radius:999px;padding:2px 8px;white-space:nowrap;border:1px solid transparent}
+.c-ok{color:var(--ok);background:var(--ok-bg)} .c-warn{color:var(--warn);background:var(--warn-bg)}
+.c-bad{color:var(--bad);background:var(--bad-bg)} .c-acc{color:var(--accent);background:var(--accent-bg)}
+.c-vio{color:var(--violet);background:var(--violet-bg)} .c-mute{color:var(--muted);border-color:var(--line2)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.spread{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.strip{display:flex;gap:12px;align-items:center;flex-wrap:wrap;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface)}
+.strip.warn{background:var(--warn-bg);border-color:transparent}
+.strip.acc{background:var(--accent-bg);border-color:transparent}
+.strip .grow{flex:1;min-width:0}
+.kbd{font-size:11.5px;color:var(--muted)}
+
+/* hồ sơ lớp giả */
+.classhead{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+.classhead .t{display:flex;flex-direction:column;gap:2px}
+.tabs{display:flex;gap:18px;border-bottom:1px solid var(--line);font-size:13px;overflow-x:auto}
+.tabs span{padding:8px 0;color:var(--muted);white-space:nowrap}
+.tabs span.on{color:var(--fg);border-bottom:2px solid var(--accent)}
+
+/* panel toàn rộng */
+.panel{background:var(--surface);border:1px solid var(--line2);border-radius:12px;display:flex;flex-direction:column}
+.panel-h{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.panel-f{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 16px;border-top:1px solid var(--line);flex-wrap:wrap}
+.panel-b{padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.steps2{display:flex;gap:8px;font-size:12.5px;color:var(--muted)}
+.steps2 b{color:var(--fg)}
+
+.bulk{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--accent-bg);border-radius:8px;padding:8px 10px;font-size:13px}
+.field{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)}
+.fake{font:500 13px var(--f-body);color:var(--fg);background:var(--bg);border:1px solid var(--line2);border-radius:7px;padding:6px 9px;min-height:32px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.fake.caret::after{content:"";width:0;height:0;border:4px solid transparent;border-top-color:var(--muted);margin-top:4px;margin-left:auto}
+
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;min-width:980px;font-size:13px}
+th{font-size:11.5px;font-weight:600;letter-spacing:.03em;color:var(--muted);text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--surface2)}
+td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+tr.sel td{background:var(--accent-bg)}
+tr.lock td{color:var(--muted)}
+tr.need td:first-child{box-shadow:inset 3px 0 0 var(--warn)}
+.name{font-weight:600}
+.sub{font-size:12px;color:var(--muted)}
+.pct{font-family:var(--f-num);font-variant-numeric:tabular-nums;font-weight:700;font-size:15px}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden;flex-wrap:nowrap}
+.seg button{font:500 12.5px var(--f-body);background:transparent;color:var(--muted);border:0;border-right:1px solid var(--line);padding:5px 9px;cursor:pointer;white-space:nowrap}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--accent-bg);color:var(--accent);font-weight:600}
+.cb{width:15px;height:15px;accent-color:var(--accent);margin-top:3px}
+.extra{margin-top:6px;display:flex;gap:6px;flex-wrap:wrap}
+
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.sumbox{border:1px solid var(--line);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:2px;background:var(--bg)}
+.sumbox .n{font-family:var(--f-num);font-weight:700;font-size:20px;font-variant-numeric:tabular-nums}
+
+.sentence{font-size:14.5px;max-width:78ch;display:flex;flex-direction:column;gap:8px}
+.sentence li{margin-left:18px}
+
+/* bàn giao */
+.md{display:grid;grid-template-columns:280px minmax(0,1fr);min-height:420px}
+.md .list{border-right:1px solid var(--line);display:flex;flex-direction:column}
+.li{display:flex;flex-direction:column;gap:3px;padding:10px 14px;border-bottom:1px solid var(--line);cursor:pointer;background:transparent;border-left:0;border-right:0;border-top:0;text-align:left;color:var(--fg);font:inherit}
+.li.on{background:var(--accent-bg)}
+.li .spread{gap:6px}
+.detail{padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.card{border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px;background:var(--bg)}
+.kv{display:grid;grid-template-columns:130px minmax(0,1fr);gap:6px 12px;font-size:13px}
+.kv dt{color:var(--muted)} .kv dd{margin:0}
+.gop{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:8px 12px;align-items:start;font-size:13px;padding:8px 0;border-top:1px solid var(--line)}
+.gop:first-of-type{border-top:0}
+.mon{font-weight:700;font-family:var(--f-num)}
+textarea{font:13px/1.5 var(--f-body);color:var(--fg);background:var(--surface);border:1px solid var(--line2);border-radius:8px;padding:8px 10px;width:100%;min-height:70px;resize:vertical}
+textarea::placeholder{color:var(--muted)}
+@media (max-width:820px){.md{grid-template-columns:1fr}.md .list{border-right:0;border-bottom:1px solid var(--line)}.kv{grid-template-columns:1fr}}
+
+.tasks{display:flex;flex-direction:column}
+.task{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;padding:10px 12px;border-bottom:1px solid var(--line);align-items:center}
+.task:last-child{border-bottom:0}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:820px){.grid2{grid-template-columns:1fr}}
+.dq{display:flex;flex-direction:column;gap:8px}
+.dq li{margin-left:18px}
+.sticky-note{background:var(--surface);border:1px dashed var(--line2);border-radius:10px;padding:12px 14px;font-size:13px;display:flex;flex-direction:column;gap:6px}
+
+/* ---------------- riêng mockup 21 — hồ sơ giáo viên (cùng token, cùng lớp dùng chung với mockup 20) ---------------- */
+.lnk{color:var(--accent);text-decoration:none;font-weight:600}
+.lnk:hover{text-decoration:underline}
+.so{font:inherit;font-family:var(--f-num);font-variant-numeric:tabular-nums;background:none;border:0;padding:0;color:inherit;cursor:pointer;text-decoration:underline dotted;text-underline-offset:4px}
+.so:focus-visible,.tile:focus-visible,.lnk:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.zero{color:var(--muted);font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.gvhead{display:flex;gap:14px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap}
+.gvhead .t{display:flex;flex-direction:column;gap:4px;min-width:0}
+.gvname{font-size:20px;font-weight:700}
+.sk{font:600 11.5px var(--f-num);border:1px solid var(--line2);border-radius:5px;padding:1px 6px;color:var(--fg);white-space:nowrap}
+.sec{display:flex;flex-direction:column;gap:8px}
+.sec-h{display:flex;justify-content:space-between;align-items:baseline;gap:6px 12px;flex-wrap:wrap}
+.i{display:inline-grid;place-items:center;width:15px;height:15px;border:1px solid var(--line2);border-radius:50%;font:600 10px var(--f-num);color:var(--muted);margin-left:4px;vertical-align:1px;cursor:help}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.tile{display:flex;flex-direction:column;gap:2px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface);text-decoration:none;color:var(--fg);min-width:0}
+.tile:hover{border-color:var(--accent)}
+.tile .lb{font-size:12px;color:var(--muted)}
+.tile .n{font:700 24px/1.2 var(--f-num);font-variant-numeric:tabular-nums}
+.tile .od{font-size:12px;color:var(--bad);font-weight:600}
+.tile .od.none{color:var(--muted);font-weight:500}
+.tile.empty .n{color:var(--muted)}
+@media (max-width:640px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+table.fit{min-width:0;table-layout:fixed}
+table.w760{min-width:760px;table-layout:fixed}
+th.r,td.r{text-align:right}
+th.c,td.c{text-align:center}
+td.n{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.vai{display:inline-flex;gap:4px;flex-wrap:wrap}
+.res{font-family:var(--f-num);font-variant-numeric:tabular-nums;font-weight:600}
+td.low{background:var(--bad-bg)}
+td.dimc .so,td.dimc .res{color:var(--muted);font-weight:400}
+.sticky{position:sticky;left:0;background:var(--bg);z-index:1}
+th.sticky{background:var(--surface2)}
+.tot{font-size:12px;color:var(--muted)}
+.tick{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;white-space:nowrap}
+.tick svg{width:12px;height:12px;flex:none}
+.t-ok{color:var(--ok)} .t-bad{color:var(--bad)}
+.dl{display:flex;flex-direction:column}
+.dl-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.dl-row:last-child{border-bottom:0}
+.phone{width:375px;max-width:100%;margin:0 auto}
+.phone .frame-body{padding:14px 12px}
+.mcard{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:3px;background:var(--surface)}
+.mini{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin-top:4px}
+.mini span{border:1px solid var(--line);border-radius:6px;padding:3px 0;text-align:center;font:600 12px var(--f-num);font-variant-numeric:tabular-nums}
+.mini span small{display:block;font:500 11px var(--f-body);color:var(--muted)}
+.mini span.low{background:var(--bad-bg)}
+.menu{width:220px;max-width:100%;border:1px solid var(--line2);border-radius:10px;background:var(--surface);padding:8px;display:flex;flex-direction:column;gap:6px}
+.menu .btn{width:100%;text-align:center}
+.menu .btn.on{border-color:var(--accent);background:var(--accent-bg);color:var(--accent)}
+.split{display:grid;grid-template-columns:240px minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:820px){.split{grid-template-columns:1fr}}
+.who{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.who table{min-width:0}
+td.mine{background:var(--accent-bg);box-shadow:inset 0 0 0 1px var(--accent)}
+td.mine .so{font-weight:700;color:var(--accent)}
+.lbl{display:block;font:500 11px var(--f-body);color:var(--muted);margin-bottom:1px}
+td.mine .lbl{color:var(--accent)}
+.mini span.mine{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
+.mini span.mine small{color:var(--accent);font-weight:600}
+.mine-tag{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;color:var(--accent)}
+.mine-tag::before{content:"";width:10px;height:10px;border-radius:3px;background:var(--accent-bg);box-shadow:inset 0 0 0 1px var(--accent)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+
+/* ---------------- riêng mockup 25 — Phân tích giáo viên (cùng token, cùng lớp dùng chung với mockup 20/21) ---------------- */
+table.ga{min-width:1000px;table-layout:fixed}
+.ga th .hh{white-space:nowrap}
+/* tên cột ngắn; cách tính hiện khi rê chuột HOẶC Tab tới (không chỉ dựa vào title) */
+.hh{position:relative;display:inline-block;border-bottom:1px dotted var(--muted);cursor:help}
+.hh:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+.hh .tip{display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:5;width:264px;padding:8px 10px;border-radius:8px;background:var(--surface);border:1px solid var(--line2);box-shadow:0 10px 24px rgba(0,0,0,.28);color:var(--fg);font:400 12px/1.5 var(--f-body);letter-spacing:0;text-align:left;white-space:normal}
+.hh.l .tip{right:auto;left:0}
+.hh:hover .tip,.hh:focus .tip{display:block}
+/* chỉ ô kết quả có màu (chủ sản phẩm 01/10): tô màu chính con số phần trăm, không thêm thanh */
+
+
+.m-thap{color:var(--bad)!important;font-weight:600} .m-vua{color:var(--warn)!important;font-weight:600} .m-cao{color:var(--ok)!important;font-weight:600}
+.ga th{white-space:normal;vertical-align:bottom;line-height:1.3}
+.ga th.grp{text-align:center;vertical-align:middle;color:var(--fg);font-weight:600}
+.ga td{vertical-align:top}
+.ga .bl{border-left:1px solid var(--line)}
+.ga td.r .so{font-weight:600}
+.pc{display:block;font:500 11.5px/1.35 var(--f-num);font-variant-numeric:tabular-nums;color:var(--muted);margin-top:1px}
+.nho{display:block;font:500 11.5px/1.35 var(--f-body);color:var(--muted);margin-top:1px}
+.nho.solo{margin-top:2px}
+.na{color:var(--muted);font-family:var(--f-num)}
+.kc{font-size:12px;color:var(--muted)}
+.de{display:inline-flex;align-items:center;font-size:11px;font-weight:600;border-radius:999px;padding:0 7px;border:1px dashed var(--violet);color:var(--violet);white-space:nowrap;vertical-align:1px}
+.filters{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:flex-end}
+.legend{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:12px;color:var(--muted)}
+.legend b{color:var(--fg);font-family:var(--f-num);font-weight:600}
+table.lst{min-width:640px;table-layout:fixed}
+tr.tre td:first-child{box-shadow:inset 3px 0 0 var(--bad)}
+table.def{min-width:900px;table-layout:fixed}
+.def td:first-child{font-weight:600}
+.moi{color:var(--warn);font-weight:600}
+.pcard .dl-row{padding:7px 0}
+.pcard .dl-row > span:first-child{font-size:13px}
+.pcard .v{text-align:right;font-family:var(--f-num);font-variant-numeric:tabular-nums;font-weight:600;font-size:13px}
+.pcard .v small{display:block;font:500 11.5px var(--f-num);color:var(--muted)}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="ok" viewBox="0 0 12 12"><path d="M2.5 6.3 5 8.6l4.5-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="no" viewBox="0 0 12 12"><path d="M3.5 3.5l5 5M8.5 3.5l-5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+</svg>
+
+<div class="wrap">
+
+<header style="display:flex;flex-direction:column;gap:8px">
+  <span class="small muted">PISA Tracking · mockup 25 · 01/10/2026 · dữ liệu ví dụ · PR-Pb2</span>
+  <h1>Phân tích giáo viên</h1>
+  <p class="lead">Một bảng cho Quản lý: mỗi giáo viên một hàng, trong một khoảng tuần hoặc một tháng, cho biết việc nào làm đúng hạn và kết quả môn mình dạy ra sao. <b>Không có KPI, không xếp hạng, không hàng tổng</b> (Q30-5, Q31-2): sắp theo tên, Quản lý đọc số cụ thể rồi tự đánh giá. Cột việc giữ một màu; <b>riêng phần trăm ở ô kết quả</b> được tô màu để đọc nhanh (chủ sản phẩm 01/10). Mọi số gạch chấm đều bấm được: ô Chấm điểm mở danh sách ô điểm, các ô khác mở trang liên quan đã lọc sẵn. Chỗ có nhãn là planning thêm, chờ chủ sản phẩm duyệt.</p>
+</header>
+
+<!-- ====================================================== AI THẤY GÌ -->
+<section class="screen" aria-labelledby="h-who">
+  <h2 id="h-who">Ai thấy gì</h2>
+  <div class="who"><table class="fit">
+    <colgroup><col style="width:24%"><col style="width:76%"></colgroup>
+    <thead><tr><th>Vai</th><th>Góc nhìn "Giáo viên" ở Tổng quan › Phân tích</th></tr></thead>
+    <tbody>
+      <tr><td class="name">Giáo viên</td><td class="muted">Không thấy góc nhìn này. Việc của mình xem ở hồ sơ giáo viên (mockup 21).</td></tr>
+      <tr><td class="name">Quản lý</td><td>Giáo viên có lớp ở chi nhánh mình. Số chỉ tính lớp, Case, học viên trong chi nhánh mình.</td></tr>
+      <tr><td class="name">Quản trị hệ thống</td><td>Chọn một chi nhánh (bảng luôn là một chi nhánh, không gộp nhiều chi nhánh).</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ====================================================== A. BẢNG FT -->
+<section class="screen" aria-labelledby="h-a">
+  <div class="where"><span class="tag">Màn A</span><h2 id="h-a">Bảng Phân tích giáo viên · Fast Track</h2></div>
+  <div class="where"><span class="tag">Nằm ở</span><span class="path">Tổng quan › tab <b>Phân tích</b> › góc nhìn mới <b>Giáo viên</b> (cuối hàng góc nhìn, thay chỗ "Danh sách Case" đã bỏ) · <b>Quản lý, Quản trị</b></span></div>
+  <div class="frame">
+    <div class="frame-bar"><span class="crumb">Tổng quan › Phân tích › Giáo viên</span></div>
+    <div class="frame-body">
+      <div class="tabs" aria-label="Góc nhìn">
+        <span>Tổng hợp Test + SOS</span><span>Tổng hợp vấn đề HV</span><span>Hiệu quả PA</span><span>Ý thức</span><span class="on">Giáo viên</span>
+      </div>
+      <div class="filters">
+        <div class="field">Chi nhánh<span class="fake caret" style="min-width:130px">Monbay</span></div>
+        <div class="field">Khung<span class="seg"><button type="button" class="on">Fast Track</button><button type="button">Lớp thường</button></span></div>
+        <div class="field">Khoảng<span class="row" style="gap:6px"><span class="seg"><button type="button" class="on">Theo tuần</button><button type="button">Theo tháng</button></span><span class="fake caret num">W1 SEP</span><span class="muted">–</span><span class="fake caret num">W4 SEP</span></span></div>
+      </div>
+      <div class="spread">
+        <span class="small muted"><span class="num">7</span> giáo viên có lớp Fast Track ở Monbay trong <b class="num" style="color:var(--fg)">W1 SEP – W4 SEP</b> · sắp theo tên · rê chuột hoặc Tab vào tên cột gạch chấm để xem cách tính</span>
+        <div class="legend"><span><b>18/20</b> đúng hạn / có hạn trong khoảng</span><span><b>—</b> không áp dụng</span><span>không có = áp dụng, chưa có mục</span><span>mẫu nhỏ = dưới 5 mục</span><span class="row" style="gap:4px">ô kết quả<span class="pc m-thap" style="display:inline">dưới 50%</span><span class="pc m-vua" style="display:inline">50–69%</span><span class="pc m-cao" style="display:inline">từ 70%</span></span></div>
+      </div>
+
+      <div class="tbl-wrap" role="region" aria-label="Bảng Phân tích giáo viên, cuộn ngang" tabindex="0"><table class="ga">
+        <colgroup><col style="width:158px"><col style="width:74px"><col style="width:84px"><col style="width:112px"><col style="width:104px"><col style="width:84px"><col style="width:60px"><col style="width:60px"><col style="width:60px"><col style="width:60px"><col style="width:60px"><col style="width:84px"></colgroup>
+        <thead>
+          <tr>
+            <th rowspan="2" class="sticky">Giáo viên</th>
+            <th rowspan="2" class="r"><span class="hh l" tabindex="0">Đang dạy<span class="tip" role="tooltip">Ngữ cảnh, không phải chỉ số. Số lớp Fast Track giáo viên có phân công (GVCN hoặc một kỹ năng) ở chi nhánh này, và số học viên các lớp đó, tính ở cuối khoảng.</span></span></th>
+            <th colspan="3" class="grp bl">Đúng hạn</th>
+            <th rowspan="2" class="r bl"><span class="hh" tabindex="0">PA hiệu quả<span class="tip" role="tooltip">PA giáo viên tự thêm vào Case (không tính PA điền sẵn theo quy chế, PA bổ trợ) đã có kết quả cuối trong khoảng. Số trên: PA có tiến bộ (nhóm "cải thiện", cùng luật với góc nhìn Hiệu quả PA) / PA đã có kết quả cuối.</span></span></th>
+            <th colspan="5" class="grp bl"><span class="hh" tabindex="0">Kết quả môn mình dạy<span class="tip" role="tooltip">Một mục là một học viên × một bài có tuần thi trong khoảng, ở lớp giáo viên dạy kỹ năng đó lúc thi. Số trên: đạt kỳ vọng của đợt đó / đã có điểm (W1, W2 so từng bài). Em đã chuyển lớp vẫn tính cho người dạy em lúc thi. Phần trăm tô màu: đỏ dưới 50%, vàng 50–69%, xanh từ 70%.</span></span></th>
+            <th rowspan="2" class="r bl"><span class="hh" tabindex="0">HV tiến bộ<span class="tip" role="tooltip">Một mục là một học viên × một kỹ năng giáo viên dạy, ở bài có tuần thi trong khoảng, mà em đã có điểm kỹ năng đó ở bài trước. Tiến bộ khi điểm cao hơn bài trước; bằng hoặc thấp hơn thì không.</span></span><span class="de" style="margin-top:3px">đề xuất</span></th>
+          </tr>
+          <tr>
+            <th class="r bl"><span class="hh l" tabindex="0">Chấm điểm<span class="tip" role="tooltip">Một mục là một ô điểm: một học viên × một bài × một kỹ năng giáo viên được phân công, tuần thi trong khoảng. Đúng hạn khi lần nhập đầu không muộn hơn hạn nhập (hạn sau khi dời, nếu có); sửa điểm sau đó không tính. Quá hạn mà chưa nhập là trễ. Không tính: vắng đã xác nhận, huỷ, "không có bài", ô chưa tới hạn.</span></span></th>
+            <th class="r"><span class="hh" tabindex="0">Ghi kết quả PA<span class="tip" role="tooltip">Một mục là một lần phải ghi kết quả PA (mỗi tuần theo dõi) ở Case giáo viên phụ trách, hạn ghi trong khoảng. Đúng hạn khi ghi trước hạn. Quá hạn mà chưa ghi là trễ.</span></span></th>
+            <th class="r"><span class="hh" tabindex="0">Xử lý vi phạm<span class="tip" role="tooltip">Chỉ lớp giáo viên làm GVCN. Một mục là một vi phạm thành "Cần xử lý", hạn xử lý trong khoảng. Đúng hạn khi GVCN xác nhận xử lý, hoặc gửi đề xuất cho Quản lý, trước hạn. Thời gian chờ Quản lý duyệt không tính cho GVCN.</span></span></th>
+            <th class="r bl">L</th><th class="r">R</th><th class="r">W1</th><th class="r">W2</th><th class="r">S</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="sticky"><a class="lnk" href="#">Đinh Thu Hương</a><div class="sub">R · W1 · W2</div></td>
+            <td class="r"><button class="so" type="button">2</button> <span class="kc">lớp</span><span class="nho"><span class="num">21</span> HV</span></td>
+            <td class="r bl"><button class="so" type="button">60/63</button><span class="pc">95%</span></td>
+            <td class="r"><button class="so" type="button">6/6</button><span class="pc">100%</span></td>
+            <td class="r"><span class="na" title="Không làm GVCN lớp Fast Track nào ở Monbay trong khoảng">—</span></td>
+            <td class="r bl"><button class="so" type="button">2/3</button><span class="nho">mẫu nhỏ</span></td>
+            <td class="r bl"><span class="na">—</span></td>
+            <td class="r"><button class="so" type="button">12/21</button><span class="pc m-vua">57%</span></td>
+            <td class="r"><button class="so" type="button">8/21</button><span class="pc m-thap">38%</span></td>
+            <td class="r"><button class="so" type="button">9/21</button><span class="pc m-thap">43%</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r bl"><button class="so" type="button">34/50</button><span class="pc">68%</span></td>
+          </tr>
+          <tr>
+            <td class="sticky"><a class="lnk" href="#">Lâm Quang Vinh</a><div class="sub">S · <span style="white-space:nowrap">GVCN MB FT 103</span></div></td>
+            <td class="r"><button class="so" type="button">2</button> <span class="kc">lớp</span><span class="nho"><span class="num">19</span> HV</span></td>
+            <td class="r bl"><button class="so" type="button">17/19</button><span class="pc">89%</span></td>
+            <td class="r"><button class="so" type="button">4/5</button><span class="pc">80%</span></td>
+            <td class="r"><button class="so" type="button">6/7</button><span class="pc">86%</span></td>
+            <td class="r bl"><span class="nho solo">không có</span></td>
+            <td class="r bl"><span class="na">—</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><button class="so" type="button">11/18</button><span class="pc m-vua">61%</span></td>
+            <td class="r bl"><button class="so" type="button">9/16</button><span class="pc">56%</span></td>
+          </tr>
+          <tr>
+            <td class="sticky"><a class="lnk" href="#">Ngô Bích Ngọc</a><div class="sub">L · R</div></td>
+            <td class="r"><button class="so" type="button">1</button> <span class="kc">lớp</span><span class="nho"><span class="num">9</span> HV</span></td>
+            <td class="r bl"><button class="so" type="button">18/18</button><span class="pc">100%</span></td>
+            <td class="r"><button class="so" type="button">3/3</button><span class="nho">mẫu nhỏ</span></td>
+            <td class="r"><span class="na" title="Không làm GVCN lớp Fast Track nào ở Monbay trong khoảng">—</span></td>
+            <td class="r bl"><button class="so" type="button">1/2</button><span class="nho">mẫu nhỏ</span></td>
+            <td class="r bl"><button class="so" type="button">5/9</button><span class="pc m-vua">56%</span></td>
+            <td class="r"><button class="so" type="button">6/9</button><span class="pc m-vua">67%</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r bl"><button class="so" type="button">11/18</button><span class="pc">61%</span></td>
+          </tr>
+          <tr>
+            <td class="sticky"><a class="lnk" href="#">Nguyễn Văn Khải</a><div class="sub">W1 · W2 · <span style="white-space:nowrap">GVCN MB FT 105</span></div></td>
+            <td class="r"><button class="so" type="button">2</button> <span class="kc">lớp</span><span class="nho"><span class="num">20</span> HV</span></td>
+            <td class="r bl"><button class="so" type="button">31/38</button><span class="pc">82%</span></td>
+            <td class="r"><button class="so" type="button">5/7</button><span class="pc">71%</span></td>
+            <td class="r"><button class="so" type="button">3/5</button><span class="pc">60%</span></td>
+            <td class="r bl"><button class="so" type="button">3/5</button><span class="pc">60%</span></td>
+            <td class="r bl"><span class="na">—</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><button class="so" type="button">9/19</button><span class="pc m-thap">47%</span></td>
+            <td class="r"><button class="so" type="button">10/19</button><span class="pc m-vua">53%</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r bl"><button class="so" type="button">14/30</button><span class="pc">47%</span></td>
+          </tr>
+          <tr>
+            <td class="sticky"><a class="lnk" href="#">Phạm Thu Trang</a><div class="sub">L · S</div></td>
+            <td class="r"><button class="so" type="button">3</button> <span class="kc">lớp</span><span class="nho"><span class="num">30</span> HV</span></td>
+            <td class="r bl"><button class="so" type="button">49/56</button><span class="pc">88%</span></td>
+            <td class="r"><button class="so" type="button">9/10</button><span class="pc">90%</span></td>
+            <td class="r"><span class="na" title="Không làm GVCN lớp Fast Track nào ở Monbay trong khoảng">—</span></td>
+            <td class="r bl"><button class="so" type="button">4/6</button><span class="pc">67%</span></td>
+            <td class="r bl"><button class="so" type="button">16/29</button><span class="pc m-vua">55%</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><button class="so" type="button">17/27</button><span class="pc m-vua">63%</span></td>
+            <td class="r bl"><button class="so" type="button">27/44</button><span class="pc">61%</span></td>
+          </tr>
+          <tr class="sel">
+            <td class="sticky"><a class="lnk" href="#">Trần Ngọc Hà</a><div class="sub">L · <span style="white-space:nowrap">GVCN MB FT 101</span></div></td>
+            <td class="r"><button class="so" type="button">2</button> <span class="kc">lớp</span><span class="nho"><span class="num">22</span> HV</span></td>
+            <td class="r bl mine"><button class="so" type="button">18/20</button><span class="pc">90%</span></td>
+            <td class="r"><button class="so" type="button">7/8</button><span class="pc">88%</span></td>
+            <td class="r"><button class="so" type="button">4/5</button><span class="pc">80%</span></td>
+            <td class="r bl"><button class="so" type="button">3/4</button><span class="nho">mẫu nhỏ</span></td>
+            <td class="r bl"><button class="so" type="button">12/19</button><span class="pc m-vua">63%</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r bl"><button class="so" type="button">10/15</button><span class="pc">67%</span></td>
+          </tr>
+          <tr>
+            <td class="sticky"><a class="lnk" href="#">Võ Mỹ Duyên</a><div class="sub">W1 · W2</div></td>
+            <td class="r"><button class="so" type="button">1</button> <span class="kc">lớp</span><span class="nho"><span class="num">8</span> HV</span></td>
+            <td class="r bl"><button class="so" type="button">14/16</button><span class="pc">88%</span></td>
+            <td class="r"><button class="so" type="button">2/2</button><span class="nho">mẫu nhỏ</span></td>
+            <td class="r"><span class="na" title="Không làm GVCN lớp Fast Track nào ở Monbay trong khoảng">—</span></td>
+            <td class="r bl"><span class="nho solo">không có</span></td>
+            <td class="r bl"><span class="na">—</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><button class="so" type="button">3/8</button><span class="pc m-thap">38%</span></td>
+            <td class="r"><button class="so" type="button">4/8</button><span class="pc m-vua">50%</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r bl"><button class="so" type="button">7/12</button><span class="pc">58%</span></td>
+          </tr>
+        </tbody>
+      </table></div>
+      <p class="small muted">Hàng Trần Ngọc Hà đang chọn vì vừa bấm ô "Chấm điểm 18/20" (màn C). Bấm tên mở hồ sơ giáo viên (mockup 21, màn B).</p>
+    </div>
+  </div>
+  <p class="why"><b>Mỗi ô ghi số đếm trước, phần trăm nhỏ bên dưới</b>: "18/20" cho Quản lý biết cả mức độ lẫn cỡ mẫu, còn "90%" một mình thì "1/1" và "45/50" trông như nhau. Dưới 5 mục, phần trăm được thay bằng chữ <b>mẫu nhỏ</b> (cùng ngưỡng 5 với "Ít dữ liệu" ở Hiệu quả PA). <b>"—"</b> là không áp dụng (không dạy môn đó, không làm GVCN); <b>"không có"</b> là có áp dụng nhưng khoảng này chưa có mục nào. <b>Tên cột ngắn</b> (2–3 chữ); cách tính nằm trong chú thích nổi, hiện khi rê chuột hoặc Tab tới tên cột. Ba cột "đúng hạn" gom dưới một nhóm nên tên cột không lặp chữ "đúng hạn". <b>Thanh màu chỉ có ở ô kết quả</b>, mảnh và nhạt, số vẫn là thứ đọc trước; cột việc không tô. Không nút sắp theo số, không hàng tổng. Công tắc khung lọc cả hàng: mọi cột chỉ tính lớp Fast Track, kể cả Case và vi phạm (Q31-1: chỉ hai khung <b>Fast Track · Lớp thường</b>; Quản lý mặc định Fast Track).</p>
+</section>
+
+<!-- ====================================================== B. BẢNG LỚP THƯỜNG -->
+<section class="screen" aria-labelledby="h-b">
+  <div class="where"><span class="tag">Màn B</span><h2 id="h-b">Cùng bảng · khung Lớp thường · theo tháng</h2></div>
+  <div class="where"><span class="tag">Nằm ở</span><span class="path">Như màn A · công tắc Khung › <b>Lớp thường</b> · Khoảng › <b>Theo tháng</b> › <b>09/2026</b> (= <span class="num">W1 SEP – W4 SEP</span>) · <b>Quản lý, Quản trị</b></span></div>
+  <div class="frame">
+    <div class="frame-bar"><span class="crumb">Tổng quan › Phân tích › Giáo viên</span></div>
+    <div class="frame-body">
+      <div class="filters">
+        <div class="field">Chi nhánh<span class="fake caret" style="min-width:130px">Monbay</span></div>
+        <div class="field">Khung<span class="seg"><button type="button">Fast Track</button><button type="button" class="on">Lớp thường</button></span></div>
+        <div class="field">Khoảng<span class="row" style="gap:6px"><span class="seg"><button type="button">Theo tuần</button><button type="button" class="on">Theo tháng</button></span><span class="fake caret num">09/2026</span><span class="small muted num">W1 SEP – W4 SEP</span></span></div>
+      </div>
+      <span class="small muted"><span class="num">6</span> giáo viên có lớp thường ở Monbay trong <b class="num" style="color:var(--fg)">09/2026</b> · sắp theo tên</span>
+
+      <div class="tbl-wrap" role="region" aria-label="Bảng Phân tích giáo viên lớp thường, cuộn ngang" tabindex="0"><table class="ga" style="min-width:780px">
+        <colgroup><col style="width:190px"><col style="width:76px"><col style="width:88px"><col style="width:112px"><col style="width:104px"><col style="width:66px"><col style="width:66px"><col style="width:76px"><col style="width:66px"></colgroup>
+        <thead>
+          <tr>
+            <th rowspan="2" class="sticky">Giáo viên</th>
+            <th rowspan="2" class="r"><span class="hh l" tabindex="0">Đang dạy<span class="tip" role="tooltip">Ngữ cảnh. Số lớp thường giáo viên có phân công ở chi nhánh này và số học viên, tính ở cuối khoảng.</span></span></th>
+            <th colspan="3" class="grp bl">Đúng hạn</th>
+            <th colspan="4" class="grp bl"><span class="hh" tabindex="0">Kết quả môn mình dạy<span class="tip" role="tooltip">Đạt từ 70%. Một mục là một học viên × một bài (Giữa khoá, Cuối khoá) có tuần thi trong khoảng. Bốn cột cố định; môn giáo viên không dạy ghi —. Phần trăm tô màu: đỏ dưới 50%, vàng 50–69%, xanh từ 70%.</span></span></th>
+          </tr>
+          <tr>
+            <th class="r bl"><span class="hh l" tabindex="0">Chấm điểm<span class="tip" role="tooltip">Như Fast Track: một ô là một học viên × một bài × một môn. Hạn nhập là hạn của chính môn đó trong tuần thi. Đúng hạn khi lần nhập đầu không muộn hơn hạn.</span></span></th>
+            <th class="r" style="font-weight:500"><span class="hh" tabindex="0">Ghi kết quả PA<span class="tip" role="tooltip">Lớp thường ngắn nên Case, PA ít; cột để mờ. Như Fast Track: mỗi lần phải ghi kết quả PA (gồm PA Bổ trợ) ở Case giáo viên phụ trách, hạn ghi trong khoảng.</span></span></th>
+            <th class="r"><span class="hh" tabindex="0">Xử lý vi phạm<span class="tip" role="tooltip">Chỉ lớp giáo viên làm GVCN. Một mục là một vi phạm thành "Cần xử lý", hạn xử lý trong khoảng. Đúng hạn khi GVCN xác nhận xử lý, hoặc gửi đề xuất cho Quản lý, trước hạn. Thời gian chờ Quản lý duyệt không tính cho GVCN.</span></span></th>
+            <th class="r bl">L</th><th class="r">R</th><th class="r"><span class="hh" tabindex="0">W <span style="font-weight:500">(G+V)</span><span class="tip" role="tooltip">BE, ELE: Writing. FOU: Grammar + Vocabulary (G+V).</span></span></th><th class="r"><span class="hh" tabindex="0">S <span style="font-weight:500">(P)</span><span class="tip" role="tooltip">BE, ELE: Speaking. FOU: Pronunciation (P).</span></span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="sticky"><a class="lnk" href="#">Đinh Thu Hương</a><div class="sub">R</div></td>
+            <td class="r"><button class="so" type="button">1</button> <span class="kc">lớp</span><span class="nho"><span class="num">9</span> HV</span></td>
+            <td class="r bl"><button class="so" type="button">9/9</button><span class="pc">100%</span></td>
+            <td class="r dimc"><button class="so" type="button">2/2</button><span class="nho">mẫu nhỏ</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r bl"><span class="na">—</span></td>
+            <td class="r"><button class="so" type="button">8/9</button><span class="pc m-cao">89%</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><span class="na">—</span></td>
+          </tr>
+          <tr>
+            <td class="sticky"><a class="lnk" href="#">Lê Thanh Bình</a><div class="sub">L · R · G+V · <span style="white-space:nowrap">GVCN MB FOU 14</span></div></td>
+            <td class="r"><button class="so" type="button">1</button> <span class="kc">lớp</span><span class="nho"><span class="num">8</span> HV</span></td>
+            <td class="r bl"><button class="so" type="button">22/24</button><span class="pc">92%</span></td>
+            <td class="r dimc"><button class="so" type="button">3/4</button><span class="nho">mẫu nhỏ</span></td>
+            <td class="r"><button class="so" type="button">5/6</button><span class="pc">83%</span></td>
+            <td class="r bl"><button class="so" type="button">6/8</button><span class="pc m-cao">75%</span></td>
+            <td class="r"><button class="so" type="button">5/8</button><span class="pc m-vua">62%</span></td>
+            <td class="r"><button class="so" type="button">4/8</button><span class="pc m-vua">50%</span></td>
+            <td class="r"><span class="na">—</span></td>
+          </tr>
+          <tr>
+            <td class="sticky"><a class="lnk" href="#">Ngô Bích Ngọc</a><div class="sub">P</div></td>
+            <td class="r"><button class="so" type="button">2</button> <span class="kc">lớp</span><span class="nho"><span class="num">16</span> HV</span></td>
+            <td class="r bl"><button class="so" type="button">16/16</button><span class="pc">100%</span></td>
+            <td class="r dimc"><span class="nho solo">không có</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r bl"><span class="na">—</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><button class="so" type="button">12/16</button><span class="pc m-cao">75%</span></td>
+          </tr>
+          <tr>
+            <td class="sticky"><a class="lnk" href="#">Phan Hải Đăng</a><div class="sub">S · <span style="white-space:nowrap">GVCN MB BE 04</span></div></td>
+            <td class="r"><button class="so" type="button">1</button> <span class="kc">lớp</span><span class="nho"><span class="num">9</span> HV</span></td>
+            <td class="r bl"><button class="so" type="button">7/9</button><span class="pc">78%</span></td>
+            <td class="r dimc"><button class="so" type="button">1/1</button><span class="nho">mẫu nhỏ</span></td>
+            <td class="r"><button class="so" type="button">3/4</button><span class="nho">mẫu nhỏ</span></td>
+            <td class="r bl"><span class="na">—</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><button class="so" type="button">6/9</button><span class="pc m-vua">67%</span></td>
+          </tr>
+          <tr>
+            <td class="sticky"><a class="lnk" href="#">Trần Ngọc Hà</a><div class="sub">L · R · G+V · <span style="white-space:nowrap">GVCN MB FOU 12</span></div></td>
+            <td class="r"><button class="so" type="button">2</button> <span class="kc">lớp</span><span class="nho"><span class="num">17</span> HV</span></td>
+            <td class="r bl"><button class="so" type="button">31/33</button><span class="pc">94%</span></td>
+            <td class="r dimc"><button class="so" type="button">4/4</button><span class="nho">mẫu nhỏ</span></td>
+            <td class="r"><button class="so" type="button">3/3</button><span class="nho">mẫu nhỏ</span></td>
+            <td class="r bl"><button class="so" type="button">13/17</button><span class="pc m-cao">76%</span></td>
+            <td class="r"><button class="so" type="button">7/8</button><span class="pc m-cao">88%</span></td>
+            <td class="r"><button class="so" type="button">3/8</button><span class="pc m-thap">38%</span></td>
+            <td class="r"><span class="na">—</span></td>
+          </tr>
+          <tr>
+            <td class="sticky"><a class="lnk" href="#">Võ Mỹ Duyên</a><div class="sub">W</div></td>
+            <td class="r"><button class="so" type="button">1</button> <span class="kc">lớp</span><span class="nho"><span class="num">9</span> HV</span></td>
+            <td class="r bl"><button class="so" type="button">8/9</button><span class="pc">89%</span></td>
+            <td class="r dimc"><button class="so" type="button">1/2</button><span class="nho">mẫu nhỏ</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r bl"><span class="na">—</span></td>
+            <td class="r"><span class="na">—</span></td>
+            <td class="r"><button class="so" type="button">3/9</button><span class="pc m-thap">33%</span></td>
+            <td class="r"><span class="na">—</span></td>
+          </tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+  <p class="why"><b>Bốn cột kết quả cố định L · R · W (G+V) · S (P):</b> FOU dùng G+V ở chỗ W và P ở chỗ S (BE, ELE dùng W, S), nên mọi lớp thường chung một bảng, ô chỉ có số. Lớp FOU thường có hai giáo viên: một người dạy L, R, G+V (Trần Ngọc Hà ở MB FOU 12, Lê Thanh Bình ở MB FOU 14, cũng là GVCN), một người dạy P (Ngô Bích Ngọc, cả hai lớp). Lớp thường ngắn nên Case, PA ít: chỉ giữ một cột mờ "Ghi kết quả PA", bỏ cột PA hiệu quả. Lớp thường không có SOS; Case ở đây là Case Giữa khoá, Cuối khoá (vd "[Giữa khoá] G+V không đạt"). Tháng <b class="num">09/2026</b> đúng bằng bốn tuần <span class="num">W1 SEP – W4 SEP</span> (tuần thuộc tháng chứa ngày Thứ Năm), nên chọn theo tháng hay theo tuần đều ra cùng khoảng.</p>
+</section>
+
+<!-- ====================================================== C. BẤM MỘT Ô -->
+<section class="screen" aria-labelledby="h-c">
+  <div class="where"><span class="tag">Màn C</span><h2 id="h-c">Bấm "Chấm điểm 18/20" → 20 ô điểm tạo nên nó</h2></div>
+  <div class="where"><span class="tag">Nằm ở</span><span class="path">Màn A › hàng <b>Trần Ngọc Hà</b> › nhóm Đúng hạn › ô <b>Chấm điểm 18/20</b> · panel bên phải (cùng khung panel các góc nhìn Phân tích khác) · <b>Quản lý, Quản trị</b></span></div>
+  <div class="panel" style="max-width:780px">
+    <div class="panel-h">
+      <div><h3>Chấm điểm đúng hạn · Trần Ngọc Hà</h3><span class="sub">Fast Track · Monbay · tuần thi <span class="num">W1 SEP – W4 SEP</span> · <b class="num" style="color:var(--fg)">18</b> đúng hạn · <b class="num" style="color:var(--fg)">2</b> trễ · <span class="num">20</span> ô</span></div>
+      <div class="row"><span class="seg"><button type="button" class="on">Tất cả <span class="num">20</span></button><button type="button">Trễ <span class="num">2</span></button></span><button class="btn ghost" type="button" aria-label="Đóng">Đóng</button></div>
+    </div>
+    <div class="panel-b">
+      <div class="tbl-wrap" role="region" aria-label="Danh sách ô điểm" tabindex="0"><table class="lst">
+        <colgroup><col style="width:22%"><col style="width:21%"><col style="width:11%"><col style="width:11%"><col style="width:13%"><col style="width:22%"></colgroup>
+        <thead><tr><th>Học viên</th><th>Lớp · bài · kỹ năng</th><th>Tuần thi</th><th class="r">Hạn nhập</th><th class="r">Lần nhập đầu</th><th>Kết quả</th></tr></thead>
+        <tbody>
+          <tr class="tre"><td><a class="lnk" href="#">Đặng Tuấn Kiệt</a></td><td>MB FT 101 · MT2 · L</td><td class="num">W3 SEP</td><td class="r n">22/09</td><td class="r n">25/09</td><td><span class="tick t-bad"><svg><use href="#no"/></svg>Trễ 3 ngày</span></td></tr>
+          <tr class="tre"><td><a class="lnk" href="#">Tô Minh Châu</a></td><td>MB FT 103 · MT1 · L</td><td class="num">W4 SEP</td><td class="r n">29/09</td><td class="r"><span class="muted">chưa nhập</span></td><td><span class="tick t-bad"><svg><use href="#no"/></svg>Trễ 2 ngày</span><div class="sub">tới hôm nay 01/10</div></td></tr>
+          <tr><td><a class="lnk" href="#">Bùi Khánh Linh</a></td><td>MB FT 101 · MT2 · L</td><td class="num">W3 SEP</td><td class="r n">22/09</td><td class="r n">18/09</td><td><span class="tick t-ok"><svg><use href="#ok"/></svg>Đúng hạn</span></td></tr>
+          <tr><td><a class="lnk" href="#">Châu Minh Khôi</a></td><td>MB FT 101 · MT2 · L</td><td class="num">W3 SEP</td><td class="r n">22/09</td><td class="r n">18/09</td><td><span class="tick t-ok"><svg><use href="#ok"/></svg>Đúng hạn</span></td></tr>
+          <tr><td><a class="lnk" href="#">Đỗ Gia Bảo</a></td><td>MB FT 101 · MT2 · L</td><td class="num">W3 SEP</td><td class="r n">22/09</td><td class="r n">18/09</td><td><span class="tick t-ok"><svg><use href="#ok"/></svg>Đúng hạn</span></td></tr>
+          <tr><td><a class="lnk" href="#">Hoàng Nhật Nam</a></td><td>MB FT 101 · MT2 · L</td><td class="num">W3 SEP</td><td class="r n">22/09</td><td class="r n">19/09</td><td><span class="tick t-ok"><svg><use href="#ok"/></svg>Đúng hạn</span></td></tr>
+          <tr><td><a class="lnk" href="#">Lê Minh Anh</a></td><td>MB FT 101 · MT2 · L</td><td class="num">W3 SEP</td><td class="r n">22/09</td><td class="r n">19/09<div class="sub">sửa 26/09</div></td><td><span class="tick t-ok"><svg><use href="#ok"/></svg>Đúng hạn</span><div class="sub">lần sửa không tính</div></td></tr>
+          <tr><td><a class="lnk" href="#">Lý Bảo Ngọc</a></td><td>MB FT 101 · MT2 · L</td><td class="num">W3 SEP</td><td class="r n">22/09</td><td class="r n">19/09</td><td><span class="tick t-ok"><svg><use href="#ok"/></svg>Đúng hạn</span></td></tr>
+          <tr><td><a class="lnk" href="#">Phan Đức Mạnh</a></td><td>MB FT 101 · MT2 · L</td><td class="num">W3 SEP</td><td class="r n">22/09</td><td class="r n">19/09</td><td><span class="tick t-ok"><svg><use href="#ok"/></svg>Đúng hạn</span></td></tr>
+          <tr><td><a class="lnk" href="#">Tạ Thu Hằng</a></td><td>MB FT 101 · MT2 · L</td><td class="num">W3 SEP</td><td class="r n">22/09</td><td class="r n">20/09</td><td><span class="tick t-ok"><svg><use href="#ok"/></svg>Đúng hạn</span></td></tr>
+          <tr><td><a class="lnk" href="#">Trịnh Mai Chi</a></td><td>MB FT 101 · MT2 · L</td><td class="num">W3 SEP</td><td class="r n">22/09</td><td class="r n">20/09</td><td><span class="tick t-ok"><svg><use href="#ok"/></svg>Đúng hạn</span></td></tr>
+          <tr><td><a class="lnk" href="#">Vũ Hoàng Long</a></td><td>MB FT 101 · MT2 · L</td><td class="num">W3 SEP</td><td class="r n">22/09</td><td class="r n">21/09</td><td><span class="tick t-ok"><svg><use href="#ok"/></svg>Đúng hạn</span></td></tr>
+          <tr><td><a class="lnk" href="#">Võ Thanh Tâm</a></td><td>MB FT 101 · MT2 · L</td><td class="num">W3 SEP</td><td class="r n">22/09</td><td class="r n">22/09</td><td><span class="tick t-ok"><svg><use href="#ok"/></svg>Đúng hạn</span></td></tr>
+          <tr><td><a class="lnk" href="#">An Khánh Vân</a></td><td>MB FT 103 · MT1 · L</td><td class="num">W4 SEP</td><td class="r n">29/09</td><td class="r n">25/09</td><td><span class="tick t-ok"><svg><use href="#ok"/></svg>Đúng hạn</span></td></tr>
+          <tr><td><a class="lnk" href="#">Cao Đức Trí</a></td><td>MB FT 103 · MT1 · L</td><td class="num">W4 SEP</td><td class="r n">29/09</td><td class="r n">25/09</td><td><span class="tick t-ok"><svg><use href="#ok"/></svg>Đúng hạn</span></td></tr>
+          <tr><td><a class="lnk" href="#">Hồ Ngọc Diệp</a></td><td>MB FT 103 · MT1 · L</td><td class="num">W4 SEP</td><td class="r n">29/09</td><td class="r n">26/09</td><td><span class="tick t-ok"><svg><use href="#ok"/></svg>Đúng hạn</span></td></tr>
+          <tr><td><a class="lnk" href="#">Kiều Anh Thư</a></td><td>MB FT 103 · MT1 · L</td><td class="num">W4 SEP</td><td class="r n">29/09</td><td class="r n">26/09</td><td><span class="tick t-ok"><svg><use href="#ok"/></svg>Đúng hạn</span></td></tr>
+          <tr><td><a class="lnk" href="#">Mai Tiến Dũng</a></td><td>MB FT 103 · MT1 · L</td><td class="num">W4 SEP</td><td class="r n">29/09</td><td class="r n">27/09</td><td><span class="tick t-ok"><svg><use href="#ok"/></svg>Đúng hạn</span></td></tr>
+          <tr><td><a class="lnk" href="#">Phạm Quốc Huy</a></td><td>MB FT 103 · MT1 · L</td><td class="num">W4 SEP</td><td class="r n">29/09</td><td class="r n">28/09</td><td><span class="tick t-ok"><svg><use href="#ok"/></svg>Đúng hạn</span></td></tr>
+          <tr><td><a class="lnk" href="#">Quách Gia Hân</a></td><td>MB FT 103 · MT1 · L</td><td class="num">W4 SEP</td><td class="r n">29/09</td><td class="r n">29/09</td><td><span class="tick t-ok"><svg><use href="#ok"/></svg>Đúng hạn</span></td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <div class="panel-f"><span class="small muted">Không tính: 2 em MB FT 103 vắng đã xác nhận · ô chưa tới hạn và chưa nhập.</span><a class="lnk small" href="#">Mở Lịch Test ›</a></div>
+  </div>
+  <p class="why"><b>Hai dòng trễ đứng đầu, còn lại theo lớp rồi tên.</b> Mỗi dòng là một ô điểm: một học viên × một bài × một kỹ năng Hà được phân công. "Lần nhập đầu" là cột mới của ô điểm: lần sửa sau (Lê Minh Anh sửa 26/09) không làm ô thành trễ, nên giáo viên không ngại sửa điểm sai. Ô đã quá hạn mà vẫn chưa nhập (Tô Minh Châu) tính là trễ, số ngày đếm tới hôm nay (đã chốt). Dấu tích 12 px vẽ bằng SVG; đỏ chỉ đánh dấu từng ô trễ, không tô cả giáo viên. Tuần viết mã, chỉ hạn và ngày nhập mới viết ngày. <b>Chỉ ô Chấm điểm mở panel này</b>, vì không trang nào có sẵn danh sách "lần nhập đầu so với hạn". Các ô khác mở trang liên quan đã lọc sẵn (cột "Bấm số mở" ở bảng định nghĩa), nơi Quản lý làm tiếp được ngay.</p>
+</section>
+
+<!-- ====================================================== D. ĐIỆN THOẠI -->
+<section class="screen" aria-labelledby="h-d">
+  <div class="where"><span class="tag">Màn D</span><h2 id="h-d">Điện thoại 375 px: chỉ cần không vỡ</h2></div>
+  <div class="where"><span class="tag">Nằm ở</span><span class="path">Như màn A trên màn hẹp · bảng đổi thành <b>thẻ mỗi giáo viên</b>, không cuộn ngang · Quản lý dùng máy tính là chính (Q31-3 hoãn bảng quản trị trên điện thoại)</span></div>
+  <div class="frame phone">
+    <div class="frame-bar"><span class="crumb">Phân tích › Giáo viên</span></div>
+    <div class="frame-body">
+      <div class="row"><span class="seg"><button type="button" class="on">Fast Track</button><button type="button">Lớp thường</button></span><span class="fake caret num">W1 SEP – W4 SEP</span></div>
+      <div class="strip acc"><span class="grow small">Trên điện thoại hiện dạng thẻ mỗi giáo viên, sắp theo tên. Số trong thẻ bấm được như trên bảng.</span></div>
+      <div class="mcard pcard">
+        <div class="spread"><a class="lnk" href="#">Trần Ngọc Hà</a><span class="sub">L · GVCN MB FT 101</span></div>
+        <span class="sub">2 lớp · 22 HV</span>
+        <div class="dl">
+          <div class="dl-row"><span>Chấm điểm đúng hạn</span><span class="v"><button class="so" type="button">18/20</button><small>90%</small></span></div>
+          <div class="dl-row"><span>Ghi kết quả PA đúng hạn</span><span class="v"><button class="so" type="button">7/8</button><small>88%</small></span></div>
+          <div class="dl-row"><span>Xử lý vi phạm đúng hạn</span><span class="v"><button class="so" type="button">4/5</button><small>80%</small></span></div>
+          <div class="dl-row"><span>PA hiệu quả</span><span class="v"><button class="so" type="button">3/4</button><small>mẫu nhỏ</small></span></div>
+          <div class="dl-row"><span>Kết quả L · đạt kỳ vọng</span><span class="v"><button class="so" type="button">12/19</button><small class="m-vua">63%</small></span></div>
+          <div class="dl-row"><span>HV tiến bộ</span><span class="v"><button class="so" type="button">10/15</button><small>67%</small></span></div>
+        </div>
+      </div>
+      <span class="small muted">+ 6 giáo viên nữa</span>
+    </div>
+  </div>
+  <p class="why"><b>Không làm riêng cho điện thoại</b> (Q31-3): chỉ bảo đảm trang không vỡ. Thẻ dùng khuôn thẻ có sẵn; dòng không áp dụng (không làm GVCN, không dạy môn) thì không hiện, thay vì hiện "—".</p>
+</section>
+
+<!-- ====================================================== ĐỊNH NGHĨA -->
+<section class="screen" aria-labelledby="h-def">
+  <h2 id="h-def">Định nghĩa từng cột</h2>
+  <p class="lead">Cùng nội dung với chú thích nổi trên tên cột. Khoảng thời gian tính theo <b>hạn</b> của mục (hoặc tuần thi, với điểm và kết quả), không theo ngày làm, để mỗi mục chỉ rơi vào đúng một khoảng. Cột "Dữ liệu" cho biết web đã có hay cần ghi thêm từ nay (DB reset trước khi dùng thật nên tính chuẩn từ đầu). Cột cuối là nơi bấm số dẫn tới: trang › tab · bộ lọc.</p>
+  <div class="tbl-wrap" role="region" aria-label="Định nghĩa cột" tabindex="0"><table class="def">
+    <colgroup><col style="width:13%"><col style="width:21%"><col style="width:16%"><col style="width:10%"><col style="width:17%"><col style="width:23%"></colgroup>
+    <thead><tr><th>Cột</th><th>Một mục là (mẫu số)</th><th>Tử số: đúng / đạt khi</th><th>Vào khoảng theo</th><th>Dữ liệu</th><th>Bấm số mở</th></tr></thead>
+    <tbody>
+      <tr><td>Đang dạy</td><td>Lớp thuộc khung có phân công GV · HV các lớp đó</td><td>—</td><td>Cuối khoảng</td><td>Có sẵn</td><td>Hồ sơ giáo viên › khối <b>Lớp đang dạy</b></td></tr>
+      <tr><td>Chấm điểm</td><td>Ô điểm (HV × bài × kỹ năng) GV được phân công lúc tới hạn; bỏ vắng, huỷ, "không có bài", ô chưa tới hạn chưa nhập</td><td>Lần nhập đầu ≤ hạn nhập của ô</td><td>Tuần thi của ô</td><td><span class="moi">Cần thêm</span>: thời điểm <b>nhập lần đầu</b> (hiện chỉ lưu lần sửa cuối)</td><td><b>Panel danh sách ô điểm</b> (màn C) · chân panel có "Mở Lịch Test ›"</td></tr>
+      <tr><td>Ghi kết quả PA</td><td>Mỗi lần phải ghi kết quả PA (tuần theo dõi) ở Case GV phụ trách</td><td>Ngày ghi ≤ hạn tuần đó</td><td>Hạn ghi</td><td>Có sẵn (hạn, ngày ghi)</td><td>Công việc › <b>Việc học viên</b> · Việc của ai = GV đó · nhóm Case học thuật</td></tr>
+      <tr><td>Xử lý vi phạm</td><td>Vi phạm thành "Cần xử lý" ở lớp GV làm GVCN</td><td>Xác nhận xử lý hoặc gửi QL duyệt ≤ hạn xử lý</td><td>Hạn xử lý</td><td><span class="moi">Cần thêm</span>: <b>hạn xử lý chốt</b> lúc xử lý (hạn hiện chỉ suy ra lúc xem)</td><td>Hồ sơ lớp GV làm GVCN › tab <b>Ý thức &amp; Phối hợp</b> · GVCN nhiều lớp: Tổng quan › Phân tích › Ý thức · lọc lớp</td></tr>
+      <tr><td>PA hiệu quả</td><td>PA GV tự thêm (không PA điền sẵn theo quy chế, không PA bổ trợ) đã có kết quả cuối</td><td>Kết quả cuối nhóm "cải thiện", như Hiệu quả PA</td><td>Ngày ghi kết quả cuối</td><td>Có sẵn</td><td>Tổng quan › Phân tích › <b>Hiệu quả PA</b> · cùng khung, khoảng · <span class="moi">cần thêm</span> lọc giáo viên</td></tr>
+      <tr><td>Kết quả môn mình dạy</td><td>HV × bài có điểm môn đó, ở lớp GV dạy môn đó lúc thi</td><td>FT: đạt kỳ vọng · Lớp thường: từ 70%</td><td>Tuần thi</td><td>Có sẵn (phân công có ngày bắt đầu, kết thúc)</td><td>Hồ sơ lớp › tab <b>Phân tích lớp</b>, dòng kỹ năng đó · dạy môn đó ở nhiều lớp: hồ sơ giáo viên › khối Kết quả gần nhất · <span class="moi">cần thêm</span> tham số mở sẵn dòng kỹ năng</td></tr>
+      <tr><td>HV tiến bộ</td><td>HV × kỹ năng GV dạy, bài có tuần thi trong khoảng, em đã có điểm kỹ năng đó ở bài trước (chỉ Fast Track)</td><td>Điểm cao hơn bài trước</td><td>Tuần thi</td><td>Có sẵn (điểm từng bài; Hành trình đã so "so với lần trước")</td><td>Hồ sơ lớp › tab <b>Phân tích lớp</b> (kỹ năng × MT1…MT5, thấy lên hay xuống)</td></tr>
+    </tbody>
+  </table></div>
+  <p class="small muted">Không dẫn tới "Danh sách Case": góc nhìn đó đang bỏ trong đợt này.</p>
+</section>
+
+<!-- ====================================================== ĐỀ XUẤT + CÂU HỎI -->
+<section class="screen" aria-labelledby="h-q">
+  <h2 id="h-q">Đề xuất và đã chốt</h2>
+  <div class="grid2">
+    <div class="sticky-note">
+      <b>Đã duyệt (chủ sản phẩm 01/10)</b>
+      <ol class="dq">
+        <li>Cột <b>HV tiến bộ</b> (Fast Track): bao nhiêu em có điểm kỹ năng giáo viên dạy cao hơn bài trước; "đạt kỳ vọng" nói em đang ở đâu, cột này nói em có đi lên không. Tính từ điểm đã có.</li>
+        <li>Đã cân nhắc, <b>không thêm</b> cột "Case quá hạn": đó là số của hôm nay, không theo khoảng, và đã có ở bảng giáo viên chi nhánh (mockup 21, màn D). Lớp thường cũng không thêm HV tiến bộ: chỉ có Giữa khoá → Cuối khoá.</li>
+        <li>Cột <b>Đang dạy</b> (lớp · HV) làm ngữ cảnh khối lượng.</li>
+        <li>Ô ghi <b>n/m</b> trước, % nhỏ bên dưới; dưới 5 mục thay % bằng <b>mẫu nhỏ</b>.</li>
+        <li><b>"—"</b> = không áp dụng; <b>"không có"</b> = áp dụng nhưng chưa có mục.</li>
+        <li>Panel Chấm điểm có công tắc <b>Tất cả · Trễ</b>, dòng trễ đứng đầu.</li>
+        <li>Khoảng tối đa 13 tuần (một quý) để bảng mở nhanh; "theo tháng" chỉ là lối tắt của 4–5 tuần.</li>
+      </ol>
+    </div>
+    <div class="sticky-note">
+      <b>Đã chốt</b>
+      <ol class="dq">
+        <li><b>Việc đã quá hạn mà chưa làm tính trễ</b>, đếm ngày tới hôm nay (phương án A).</li>
+        <li><b>Bỏ cột</b> "Xác nhận nguyên nhân đúng hạn" và "Bàn giao đúng hạn" (chủ sản phẩm 01/10).</li>
+        <li>Tên cột 2–3 chữ; cách tính trong chú thích nổi khi rê chuột hoặc Tab tới.</li>
+        <li>Chỉ phần trăm ở ô kết quả được tô màu (đỏ · vàng · xanh), không thêm thanh; cột việc giữ một màu (chủ sản phẩm 01/10).</li>
+        <li>Lớp thường: bốn cột kết quả cố định <b>L · R · W (G+V) · S (P)</b>; Case, PA gọn thành một cột mờ.</li>
+        <li>Bấm số mở trang liên quan đã lọc; riêng Chấm điểm mở panel (màn C).</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+</div>

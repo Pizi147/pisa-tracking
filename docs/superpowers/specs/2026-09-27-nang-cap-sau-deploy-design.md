@@ -142,6 +142,28 @@ Mockup: `thiet-ke/mockup/20-chuyen-lop-ban-giao.html` (màn A–I, mỗi màn gh
 - **Dải:** hồ sơ HV "Sắp chuyển … từ W2 OCT · bàn giao n/4 môn" (màn E); hồ sơ lớp cũ "Bàn giao · n/m em" / "Bàn giao môn P · n/m em"; hồ sơ lớp mới "Sắp nhận n em" (màn H); sau khi chuyển hiện 2 tuần rồi vào Hành trình.
 - PR-LT2b bỏ phần thẻ Quyết định Cuối khoá và bỏ khoá dòng thiếu điểm; xuất hàm gợi ý cho PR-CT.
 
+### 3.1g. Chủ sản phẩm chốt 01/10 — đợt 6 (sau kiểm kê `2026-10-01-kiem-ke-truoc-dot-6.md`)
+
+| Mã | Nội dung | Thay |
+|---|---|---|
+| Q31-1 | **Bỏ hẳn "Cả hai"** ở mọi khối theo kỹ năng / bài test (Tổng quan, Phân tích, Test): chỉ công tắc `Fast Track · Lớp thường`. Quản lý mặc định **FT**; giáo viên mặc định **khung của lớp mình dạy** (dạy cả hai → FT). Khối không theo kỹ năng (Chờ duyệt, Ý thức, Việc) vẫn gộp | T60 (làm dứt điểm) |
+| Q31-2 | **Bảng Phân tích giáo viên** (Tổng quan › Phân tích, Quản lý/Quản trị): mỗi GV một hàng, sắp theo tên, **không xếp hạng, không tô tốt/xấu**, chọn khoảng tuần/tháng. Cột: **chấm điểm đúng hạn** (thêm cột "lần nhập đầu" cho ô điểm — DB reset nên tính chuẩn từ đầu) · Case phụ trách (xác nhận nguyên nhân đúng hạn, ghi kết quả PA đúng hạn) · **tỷ lệ PA do GV thêm có tiến bộ** · **kết quả môn mình dạy** · GVCN: **vi phạm xử lý đúng hạn**, **bàn giao đúng hạn**. Mọi số bấm được ra danh sách. Không KPI (Q30-5 giữ) | C1 29/09 (không làm chấm đúng hạn) — nay LÀM |
+| Q31-3 | **Điện thoại:** làm các màn GV dùng hằng ngày — Tổng quan, Công việc, hồ sơ HV (bảng kỹ năng → thẻ), lưới chấm, Lịch Test (bộ lọc gọn), thông báo, thanh dưới có biểu tượng. **Hoãn** bảng quản trị / Vận hành / Báo cáo đơn vị (UX-D D7) | — |
+| Q31-4 | **Cỡ chữ:** kết quả, hạn, người phụ trách **12 px**; nhãn nhỏ khác giữ 11–11,5 px (`Nhan`) | kế hoạch PR-SANG câu 2 (giữ 11 px) |
+
+### 3.1h. Chủ sản phẩm chốt 01/10 (lượt 2) — góp ý mockup 23–26
+
+| Mã | Nội dung | Thay |
+|---|---|---|
+| Q31-5 | **Lớp FOU thường 2 GV**: một người L · R · G+V, một người P. Màn phân công FOU mặc định **2 ô** "L · R · G+V" và "P", nút nhỏ **"Tách từng môn"** cho lớp hiếm có 3 GV. Dữ liệu không đổi (vẫn 4 dòng `teacher_assignments`, một người nhận nhiều ô đã được phép). Hồ sơ GV ghi vai "GVCN · L R G+V" | mockup 21, 25 vẽ mỗi GV FOU một môn |
+| Q31-6 | **Bảng trộn nhiều chương trình lớp thường** (hồ sơ GV, Phân tích GV): đúng **4 cột cố định L · R · W (G+V) · S (P)**, ô chỉ có số | cột 6 môn / nhãn từng ô |
+| Q31-7 | **KCK chỉ miễn kỳ vọng MT và SOS tự động.** GV vẫn mở Case tay, thêm PA, ghi kết quả; Ý thức tính vi phạm và hạn như mọi em (mã hiện đã vậy — chỉ sửa chữ) | mockup 24 D2 cũ đọc thành "KCK = không theo dõi" |
+| Q31-8 | Câu tóm tắt hồ sơ HV nêu cả **việc quá hạn của người khác**, **mọi GV của em** đều thấy. Người xem không có việc với em → không vẽ thanh việc (T72, planning tự quyết) | K3-01 |
+| Q31-9 | **Bảng Phân tích GV** (thay phần cột của Q31-2). FT: Đang dạy · Đúng hạn (Chấm điểm · Ghi kết quả PA · Xử lý vi phạm — chỉ lớp làm GVCN, giải thích ở chú thích nổi, không ghi chữ "GVCN" dưới tên cột) · PA hiệu quả · Kết quả môn mình dạy (L R W1 W2 S) · **HV tiến bộ** (điểm kỹ năng GV dạy cao hơn bài trước). Lớp thường: Đang dạy · Đúng hạn (Chấm điểm · Ghi kết quả PA, cột mờ · Xử lý vi phạm) · Kết quả 4 cột (Q31-6). **Bỏ** xác nhận nguyên nhân, bàn giao. Tên cột 2–3 chữ, cách tính ở chú thích nổi (rê chuột + Tab). **Phần trăm ở ô kết quả tô màu** (đỏ < 50 %, vàng 50–69 %, xanh ≥ 70 %), không thêm thanh; cột việc một màu. Quá hạn chưa làm = trễ, đếm tới hôm nay. Bấm số: Chấm điểm → panel danh sách ô; số khác → **trang liên quan đã lọc** (bảng "Bấm số mở" mockup 25) | Q31-2 phần cột; "không tô" chỉ còn cho cột việc |
+| Q31-10 | **Tab Hành trình** = mockup 26 **bản 2 + bản 1**: đầu tab là các thẻ **chương theo lớp** (thay bảng Lịch sử lớp; chỉ hành trình của em: lớp, tuần, GVCN, kết quả Test, Case + PA với kết quả, Tạm dừng, vì sao sang lớp sau — **không** trạng thái việc, hạn, quá hạn, người giữ việc). Dưới là **trục tuần nâng cấp**: tên tháng căn giữa có viền kéo hết các tuần của tháng; đợt Test gọn "MT1 / 5.5" nằm đúng một cột tuần; Case = khung rỗng, PA = khối đặc (luật dùng chung cả hồ sơ HV); hàng Lớp; dải Tạm dừng; hàng Tuần học; cột tuần tới | bảng Lịch sử lớp + trục tuần cũ |
+| Q31-11 | **FT "tuần học thứ n"** của em đếm từ **tuần em bắt đầu FT**, **bỏ các tuần Tạm dừng**, chuyển lớp FT không đếm lại. **Lớp FT có số tuần riêng của lớp** — hai số khác nhau, không dùng lẫn | UXF-a Q6 |
+| Q31-12 | Bài quá hạn của môn **chưa phân công GV** vẫn tính; bảng GV chi nhánh có hàng **"Chưa phân công"** | UXF-a Q8 |
+
 ### 3.2. Những gì tôi tự quyết — anh/chị gạch dòng nào không đồng ý
 
 Ký hiệu ⚠ = điểm tôi ít chắc nhất, nên xem trước.
@@ -216,7 +238,7 @@ Ký hiệu ⚠ = điểm tôi ít chắc nhất, nên xem trước.
 | T69 | Quyền duyệt | Quyền mới `request.approve` (QL, Quản trị) — **GVCN không tự duyệt** đề xuất Ý thức của mình dù có `discipline.manage` (K5-32); QL tự gửi → Q-D |
 | T70 | Case Cuối khoá lớp thường | Cuối khoá **không** tạo Case "chờ xác nhận nguyên nhân". Chỉ khi web tạo **PA bổ trợ miễn phí** (50–59% được lên, 60–69%) mới tạo Case "Cuối khoá · {môn} không đạt" (Pre FOU: "Cuối khoá · Tổng hợp") ở **lộ trình của lớp kế tiếp**, chạy ngay; Mini Test là kết quả cuối của PA đó (M-01, K3-27). Tín hiệu lớp thường đang chờ lúc deploy: Giữa khoá → thành Case theo §6.2; Cuối khoá → thu hồi (K5-66, K3-26) |
 | T71 | Chuyển tiếp lớp / Lộ trình tiếp theo | Theo luồng K2 §4(a): web **gợi ý** hướng theo dải % (không còn "chọn 1 trong 6–7 hướng"); người xác nhận hoặc đổi **có lý do**; 50–59% và đổi theo chiều có lợi cho em → thẻ Chờ duyệt "Quyết định Cuối khoá"; dòng chưa đủ điểm Cuối khoá **khoá**. "+ Mở lớp mới" trong Chuyển tiếp dùng **panel Tạo lớp M1** (K2-16). Chuyển vào lớp FT lấy lộ trình **của lớp đích** (LT1/LT2/RF), không mặc định LT1 (K2-17); đổi LT ↔ RF = lộ trình mới (M-20) |
-| T72 | Đầu hồ sơ HV "hiểu trong 30 giây" | Bản cuối K3 §4(e): dòng thông tin (có **tuần học n/16**, thi dự kiến, GVCN) · câu tóm tắt máy viết · 4 ô **Kết quả gần nhất · Học thuật · Ý thức · Sắp tới** · **thanh việc của chính người xem** (không có việc thì không vẽ) (K3-01, K3-03) |
+| T72 | Đầu hồ sơ HV "hiểu trong 30 giây" | Bản cuối K3 §4(e): dòng thông tin (có **tuần học thứ n** — FT KHÔNG có giới hạn tuần, không mẫu số; lớp thường "tuần x/y" — chủ sản phẩm 01/10; thi dự kiến, GVCN) · câu tóm tắt máy viết · 4 ô **Kết quả gần nhất · Học thuật · Ý thức · Sắp tới** · **thanh việc của chính người xem** (không có việc thì không vẽ) (K3-01, K3-03) |
 | T73 | Tab Ý thức của HV | Bố cục K3 §4(f): thanh việc · thang một dòng · bộ lọc một hàng · dòng thời gian trộn vi phạm + lần xử lý (không ô tick; chọn vi phạm trong panel Xác nhận xử lý). Ô khai "đã xử lý trước khi dùng web: bậc n" (T27) đặt **ở dòng thang**, chỉ hiện khi lộ trình chưa có lần xử lý nào trên web; sửa khai chỉ QL (K3 §4f). HS cũ đã có biện pháp kiểu cũ trên bản chính: web **gợi ý bậc** từ dữ liệu cũ (K5-69) |
 | T74 | Chú giải Hành trình | Rút từ 16 xuống **8** ký hiệu, một dòng, mặc định thu gọn (K3 §4d) |
 | T75 | Bộ nhóm việc mới | Theo K5 §3 và K1 §4(c): bỏ `verify`, chuyển `decide`/`decide_move` sang Chờ duyệt, gộp `do_plan` + `result` thành **"Ghi kết quả PA tuần … · hạn hết T2"**, thêm các việc Ý thức, kế hoạch bổ trợ, Mini Test, Báo PH qua TVV, khai bậc. Hiển thị **4 nhóm**: `Chấm điểm · Case học thuật · Ý thức · Lớp & vận hành`; bỏ ô "Loại việc" 13 mục. Tên việc = **động từ + đối tượng + hạn** |

@@ -1,6 +1,6 @@
-# Việc nhỏ còn lại sau rà đợt 2 (29/09/2026)
+# Việc nhỏ còn lại sau rà đợt 2–5 (cập nhật 01/10/2026)
 
-Ghi lại mọi phát hiện Minor của người rà PR #117–#121 mà chưa PR nào làm, kèm PR nhận. Session planning soạn kế hoạch PR nhận thì đọc bảng này. Dòng "(đã giao)" là đã làm trong PR gốc.
+Mọi phát hiện Minor của người rà PR #117–#143 chưa PR nào làm, kèm PR nhận. Kiểm kê đầy đủ trước đợt 6: 2026-10-01-kiem-ke-truoc-dot-6.md.
 
 | Nguồn | Việc | Giao |
 |---|---|---|
@@ -27,3 +27,15 @@ Ghi lại mọi phát hiện Minor của người rà PR #117–#121 mà chưa P
 | Rà #121 | Lớp thường khai giảng trước (năm nay − 3) → tuần mặc định cả lô báo lỗi dòng 0 (rất hiếm) | PR-Dọn |
 | Rà #121 | Đo thật Thêm HV 35 em + chuyển cả lớp 32 em trên DB THỬ Turso (ước 1–6 s) — cần chủ sản phẩm đồng ý | trước deploy |
 | Rà #121 lần 2 | cycles.ts:160-173 — lộ trình cũ ngoài khoảng năm có exam_date nhưng exam_period_id rỗng/lệch: gửi lại đúng examDate cũ vẫn 400 → chỉ kiểm examPeriodId khi examDate đổi (chưa gặp được; DB reset) | PR-Dọn |
+| Rà cuối đợt 3 A | Seed PA 15 hạn ghi kết quả rơi Chủ nhật 20/09 → migrate R-PA5 dời lại mỗi DB mới | PR-Dọn |
+| Rà cuối đợt 3 A | PATCH /cycles đổi target (chỉ API) không ghi lịch sử đổi target, không đòi lý do (có từ trước) | PR-Dọn |
+| Rà cuối đợt 3 B | Dòng em sau khi QL từ chối vẫn ghi "2 vi phạm / 2 tuần" (board.ts / ClassYThucCard) — dễ hiểu nhầm | PR-UXF |
+| Rà cuối đợt 4 HVL | Demo H1 thiếu "Case chung" (reportIssue bắt buộc kỹ năng; hàng "Chung" chỉ có phép kiểm thuần) | PR-Dọn |
+| Rà cuối đợt 4 HVL | Ô hạn hiện "hết T2 14/09", kế hoạch ghi "hạn hết T2" — chữ đủ chỉ ở tooltip | PR-UXF |
+| Rà cuối đợt 4 HVL | Việc Nhập điểm quá hạn đỏ ở cột Việc tiếp theo của GV nhưng em không vào chip Cần làm (theo Q3) — dễ hiểu nhầm | PR-VAI |
+| Rà cuối đợt 4 HVL | Trần tốc độ nâng: /classes/6/transition 37 (dự kiến 33), chuyenCaLopSangFT 200 (+23 %) — planning chấp nhận | — |
+| Rà cuối đợt 4 XUAT | nav.ts gọi phamViXuatMt: GV thêm 1 câu SQL mỗi lần tải phiên | PR-Dọn |
+| Rà cuối đợt 4 SANG | Hạn (ui/Han.tsx) + "Chờ 4 kỹ năng" + "SOS 1 tạm thời" 11 px, E4 muốn 12 px — kế hoạch SANG chọn A (giữ 11 px) | chủ sản phẩm nếu muốn đổi |
+| Rà cuối đợt 4 SANG | 375 px: ô tìm bị ép "Tìm học", tên tài khoản cắt "Nguyễn K…" | PR-UXD |
+| Kế hoạch VAI-a 01/10 | VAI-a bỏ việc GVCN "Ghi lộ trình tiếp theo" (Q30-1). Badge "chưa có lộ trình tiếp theo" ở hồ sơ lớp (`classes.ts:91-106`, `loTrinhTiep.ts:220`) còn đúng không, hay cũng bỏ / đổi chữ theo lệnh chuyển lớp của QL | PR-Dọn |
+| Kế hoạch VAI-b 01/10 | VAI-b làm luôn phần Hành trình của B5 (mã tuần), R5-2, mã tuần ở hàng PA bảng kỹ năng, menu ⋮ K3-48 — kế hoạch UXF-b phải gạch các mục này; đường dẫn sâu G5 ở màn ngoài hồ sơ HV giao UXF-b | PR-UXF-b |

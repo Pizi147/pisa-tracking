@@ -9,7 +9,7 @@
   --bg:#0c1220; --surface:#141d2f; --surface2:#1a2437; --line:rgba(160,178,214,.14); --line2:rgba(160,178,214,.26);
   --fg:#dde5f2; --muted:rgb(147,163,192); --accent:#7db3f0; --accent-bg:rgba(125,179,240,.12);
   --ok:rgb(111,220,159); --ok-bg:rgba(111,220,159,.12); --warn:#f0c46b; --warn-bg:rgba(240,196,107,.13);
-  --bad:#f08a8a; --bad-bg:rgba(240,138,138,.13); --violet:#b9a3f5; --violet-bg:rgba(185,163,245,.13);
+  --bad:#f08a8a; --bad-bg:rgba(240,138,138,.13); --violet:#b9a3f5; --violet-bg:rgba(185,163,245,.13); --late:#f4a468; --late-bg:rgba(244,164,104,.14);
   --note:#e9d9a8; --paper:#101828;
   --f-body:"Be Vietnam Pro",system-ui,"Segoe UI",sans-serif; --f-num:"Inter","Be Vietnam Pro",system-ui,sans-serif;
   color-scheme:dark;
@@ -17,18 +17,18 @@
 @media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){
   --bg:#f5f7fa; --surface:#ffffff; --surface2:#eef1f5; --line:rgba(15,23,42,.12); --line2:rgba(15,23,42,.22);
   --fg:#0f172a; --muted:#475569; --accent:#1d5fbf; --accent-bg:rgba(29,95,191,.09);
-  --ok:#157a42; --ok-bg:#dcf3e5; --warn:#8a5a00; --warn-bg:#fdf1cf; --bad:#b42323; --bad-bg:#fde2e2; --violet:#5b3fb0; --violet-bg:#ece6fb;
+  --ok:#157a42; --ok-bg:#dcf3e5; --warn:#8a5a00; --warn-bg:#fdf1cf; --bad:#b42323; --bad-bg:#fde2e2; --violet:#5b3fb0; --violet-bg:#ece6fb; --late:#9a4608; --late-bg:#fde6d3;
   --note:#6b5313; --paper:#e9edf3; color-scheme:light; } }
 :root[data-theme="light"]{
   --bg:#f5f7fa; --surface:#ffffff; --surface2:#eef1f5; --line:rgba(15,23,42,.12); --line2:rgba(15,23,42,.22);
   --fg:#0f172a; --muted:#475569; --accent:#1d5fbf; --accent-bg:rgba(29,95,191,.09);
-  --ok:#157a42; --ok-bg:#dcf3e5; --warn:#8a5a00; --warn-bg:#fdf1cf; --bad:#b42323; --bad-bg:#fde2e2; --violet:#5b3fb0; --violet-bg:#ece6fb;
+  --ok:#157a42; --ok-bg:#dcf3e5; --warn:#8a5a00; --warn-bg:#fdf1cf; --bad:#b42323; --bad-bg:#fde2e2; --violet:#5b3fb0; --violet-bg:#ece6fb; --late:#9a4608; --late-bg:#fde6d3;
   --note:#6b5313; --paper:#e9edf3; color-scheme:light; }
 :root[data-theme="dark"]{
   --bg:#0c1220; --surface:#141d2f; --surface2:#1a2437; --line:rgba(160,178,214,.14); --line2:rgba(160,178,214,.26);
   --fg:#dde5f2; --muted:rgb(147,163,192); --accent:#7db3f0; --accent-bg:rgba(125,179,240,.12);
   --ok:rgb(111,220,159); --ok-bg:rgba(111,220,159,.12); --warn:#f0c46b; --warn-bg:rgba(240,196,107,.13);
-  --bad:#f08a8a; --bad-bg:rgba(240,138,138,.13); --violet:#b9a3f5; --violet-bg:rgba(185,163,245,.13); --note:#e9d9a8; --paper:#101828; color-scheme:dark; }
+  --bad:#f08a8a; --bad-bg:rgba(240,138,138,.13); --violet:#b9a3f5; --violet-bg:rgba(185,163,245,.13); --late:#f4a468; --late-bg:rgba(244,164,104,.14); --note:#e9d9a8; --paper:#101828; color-scheme:dark; }
 
 *{box-sizing:border-box}
 body{background:var(--paper);color:var(--fg);font:14px/1.55 var(--f-body);margin:0}
@@ -73,7 +73,7 @@ p{margin:0}
 .chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;border-radius:999px;padding:2px 8px;white-space:nowrap;border:1px solid transparent}
 .c-ok{color:var(--ok);background:var(--ok-bg)} .c-warn{color:var(--warn);background:var(--warn-bg)}
 .c-bad{color:var(--bad);background:var(--bad-bg)} .c-acc{color:var(--accent);background:var(--accent-bg)}
-.c-vio{color:var(--violet);background:var(--violet-bg)} .c-mute{color:var(--muted);border-color:var(--line2)}
+.c-vio{color:var(--violet);background:var(--violet-bg)} .c-late{color:var(--late);background:var(--late-bg)} .c-mute{color:var(--muted);border-color:var(--line2)}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .spread{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 .strip{display:flex;gap:12px;align-items:center;flex-wrap:wrap;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface)}
@@ -211,8 +211,10 @@ td.mine{background:var(--accent-bg);box-shadow:inset 0 0 0 1px var(--accent)}
 td.mine .so{font-weight:700;color:var(--accent)}
 .lbl{display:block;font:500 11px var(--f-body);color:var(--muted);margin-bottom:1px}
 td.mine .lbl{color:var(--accent)}
+td.mine.low{background:var(--bad-bg)}
 .mini span.mine{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
 .mini span.mine small{color:var(--accent);font-weight:600}
+.mini span.mine.low{background:var(--bad-bg)}
 .mine-tag{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;color:var(--accent)}
 .mine-tag::before{content:"";width:10px;height:10px;border-radius:3px;background:var(--accent-bg);box-shadow:inset 0 0 0 1px var(--accent)}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
@@ -291,7 +293,7 @@ td.mine .lbl{color:var(--accent)}
           <tbody>
             <tr><td><a class="lnk" href="#">MB FT 101</a></td><td><span class="chip c-acc">FT</span></td><td><span class="vai"><span class="sk">GVCN</span><span class="sk">L</span></span></td><td class="r n">12</td><td class="r"><button class="so" type="button">3</button></td><td class="r"><button class="so t-bad" type="button" style="font-weight:600">1</button></td></tr>
             <tr><td><a class="lnk" href="#">MB FT 103</a></td><td><span class="chip c-acc">FT</span></td><td><span class="vai"><span class="sk">L</span></span></td><td class="r n">10</td><td class="r"><button class="so" type="button">2</button></td><td class="r"><span class="zero">0</span></td></tr>
-            <tr><td><a class="lnk" href="#">MB FOU 12</a></td><td><span class="chip c-vio">Lớp thường</span></td><td><span class="vai"><span class="sk">GVCN</span><span class="sk">L</span></span></td><td class="r n">8</td><td class="r"><span class="zero">0</span></td><td class="r"><span class="zero">0</span></td></tr>
+            <tr><td><a class="lnk" href="#">MB FOU 12</a></td><td><span class="chip c-vio">Lớp thường</span></td><td><span class="vai"><span class="sk">GVCN</span><span class="sk">L</span><span class="sk">R</span><span class="sk">G+V</span></span></td><td class="r n">8</td><td class="r"><span class="zero">0</span></td><td class="r"><span class="zero">0</span></td></tr>
             <tr><td><a class="lnk" href="#">MB BE 04</a></td><td><span class="chip c-vio">Lớp thường</span></td><td><span class="vai"><span class="sk">L</span></span></td><td class="r n">9</td><td class="r"><button class="so" type="button">4</button></td><td class="r"><button class="so t-bad" type="button" style="font-weight:600">2</button></td></tr>
           </tbody>
         </table></div>
@@ -315,14 +317,14 @@ td.mine .lbl{color:var(--accent)}
           </table></div>
           <div class="tbl-wrap"><table class="fit">
             <colgroup><col style="width:30%"><col><col><col><col></colgroup>
-            <thead><tr><th>Lớp thường<span class="i" title="Mỗi ô: số học viên đạt (từ 70%) / số học viên đã có điểm môn đó. Tên môn theo chương trình: FOU L · R · G+V · P; BE, ELE L · R · W · S.">i</span></th><th class="c" colspan="4">Môn · đạt / có điểm</th></tr></thead>
+            <thead><tr><th>Lớp thường<span class="i" title="Mỗi ô: số học viên đạt (từ 70%) / số học viên đã có điểm môn đó. Bốn cột cố định: L · R · W (G+V) · S (P). BE, ELE dùng W và S; FOU dùng G+V ở chỗ W và P ở chỗ S.">i</span></th><th class="c">L</th><th class="c">R</th><th class="c">W <span class="muted" style="font-weight:500">(G+V)</span></th><th class="c">S <span class="muted" style="font-weight:500">(P)</span></th></tr></thead>
             <tbody>
               <tr><td><a class="lnk" href="#">MB FOU 12</a><div class="sub">Cuối khoá · GVCN</div></td>
-                <td class="c mine"><span class="lbl">L</span><button class="so res" type="button">6/8</button></td><td class="c"><span class="lbl">R</span><button class="so res" type="button">7/8</button></td>
-                <td class="c low"><span class="lbl">G+V</span><button class="so res" type="button">3/8</button></td><td class="c"><span class="lbl">P</span><button class="so res" type="button">6/8</button></td></tr>
+                <td class="c mine"><button class="so res" type="button">6/8</button></td><td class="c mine"><button class="so res" type="button">7/8</button></td>
+                <td class="c mine low"><button class="so res" type="button">3/8</button></td><td class="c"><button class="so res" type="button">6/8</button></td></tr>
               <tr><td><a class="lnk" href="#">MB BE 04</a><div class="sub">Giữa khoá</div></td>
-                <td class="c mine"><span class="lbl">L</span><button class="so res" type="button">7/9</button></td><td class="c"><span class="lbl">R</span><button class="so res" type="button">8/9</button></td>
-                <td class="c low"><span class="lbl">W</span><button class="so res" type="button">3/9</button></td><td class="c"><span class="lbl">S</span><button class="so res" type="button">6/9</button></td></tr>
+                <td class="c mine"><button class="so res" type="button">7/9</button></td><td class="c"><button class="so res" type="button">8/9</button></td>
+                <td class="c low"><button class="so res" type="button">3/9</button></td><td class="c"><button class="so res" type="button">6/9</button></td></tr>
             </tbody>
           </table></div>
         </div>
@@ -335,11 +337,11 @@ td.mine .lbl{color:var(--accent)}
           <colgroup><col style="width:18%"><col style="width:12%"><col style="width:31%"><col style="width:16%"><col style="width:23%"></colgroup>
           <thead><tr><th>Học viên</th><th>Lớp</th><th>Case</th><th>Trạng thái</th><th>Việc tiếp</th></tr></thead>
           <tbody>
-            <tr class="need"><td><a class="lnk" href="#">Lê Minh Anh</a></td><td>MB FT 101</td><td><span class="chip c-mute">MT2</span> Writing dưới kỳ vọng <span class="chip c-warn">SOS 2</span></td><td><span class="chip c-acc">Đang theo dõi</span></td><td>Ghi kết quả PA tuần <b class="num">W4 SEP</b><div class="sub"><span class="t-bad" style="font-weight:600">hạn 29/09 · quá hạn 1 ngày</span></div></td></tr>
+            <tr class="need"><td><a class="lnk" href="#">Lê Minh Anh</a></td><td>MB FT 101</td><td><span class="chip c-mute">MT2</span> Writing dưới kỳ vọng <span class="chip c-late">SOS 2</span></td><td><span class="chip c-acc">Đang theo dõi</span></td><td>Ghi kết quả PA tuần <b class="num">W4 SEP</b><div class="sub"><span class="t-bad" style="font-weight:600">hạn 29/09 · quá hạn 1 ngày</span></div></td></tr>
             <tr><td><a class="lnk" href="#">Đỗ Gia Bảo</a></td><td>MB FT 101</td><td><span class="chip c-mute">MT2</span> Reading dưới kỳ vọng <span class="chip c-warn">SOS 1</span></td><td><span class="chip c-warn">Chờ xác nhận PA</span></td><td>Xác nhận PA<div class="sub">hạn 02/10</div></td></tr>
             <tr><td><a class="lnk" href="#">Phạm Quốc Huy</a></td><td>MB FT 103</td><td><span class="chip c-mute">MT1</span> Listening dưới kỳ vọng <span class="chip c-warn">SOS 1</span></td><td><span class="chip c-acc">Đang theo dõi</span></td><td>Ghi kết quả PA tuần <b class="num">W1 OCT</b><div class="sub">hạn 06/10</div></td></tr>
-            <tr><td><a class="lnk" href="#">Nguyễn Thảo Vy</a></td><td>MB FOU 12</td><td>Writing chưa đạt Cuối khoá</td><td><span class="chip c-acc">Đang theo dõi</span></td><td>Ghi kết quả PA tuần <b class="num">W1 OCT</b><div class="sub">hạn 06/10</div></td></tr>
-            <tr><td><a class="lnk" href="#">Vũ Hải Yến</a></td><td>MB BE 04</td><td>Listening chưa đạt Giữa khoá</td><td><span class="chip c-mute">Chờ nguyên nhân</span></td><td>Xác nhận nguyên nhân<div class="sub">hạn 01/10</div></td></tr>
+            <tr><td><a class="lnk" href="#">Nguyễn Thảo Vy</a></td><td>MB FOU 12</td><td>[Giữa khoá] G+V không đạt</td><td><span class="chip c-acc">Đang theo dõi</span></td><td>Ghi kết quả PA tuần <b class="num">W1 OCT</b><div class="sub">hạn 06/10</div></td></tr>
+            <tr><td><a class="lnk" href="#">Vũ Hải Yến</a></td><td>MB BE 04</td><td>[Giữa khoá] L không đạt</td><td><span class="chip c-mute">Chờ nguyên nhân</span></td><td>Xác nhận nguyên nhân<div class="sub">hạn 01/10</div></td></tr>
           </tbody>
         </table></div>
       </div>
@@ -355,7 +357,7 @@ td.mine .lbl{color:var(--accent)}
       </div>
     </div>
   </div>
-  <p class="why"><b>Việc đứng đầu vì đó là thứ cần làm ngay.</b> Bốn ô là bốn nhóm việc của trang Công việc; bấm ô là mở Công việc đã lọc đúng nhóm (bấm "2 quá hạn" thì lọc thêm quá hạn), nên số trên ô luôn bằng số dòng ở đó. "Chấm điểm 3" đếm <b>việc</b> (một dòng việc gom cả lớp), còn cột "Ô điểm chưa nhập" đếm <b>ô điểm</b> (mỗi kỹ năng của mỗi bài) — nhãn và ⓘ nói rõ để không lẫn. Kết quả tách hai bảng vì FT (L R W1 W2 S, so kỳ vọng) và lớp thường (từ 70%, tên môn theo chương trình: FOU L · R · G+V · P, BE/ELE L · R · W · S) là hai thang khác nhau. <b>Môn bạn dạy</b> có ô viền xanh; làm GVCN không làm cả hàng nổi lên — các môn khác hiện bình thường để giáo viên thấy cả lớp. Tuần viết mã (<b>W4 SEP</b>), chỉ hạn mới viết ngày.</p>
+  <p class="why"><b>Việc đứng đầu vì đó là thứ cần làm ngay.</b> Bốn ô là bốn nhóm việc của trang Công việc; bấm ô là mở Công việc đã lọc đúng nhóm (bấm "2 quá hạn" thì lọc thêm quá hạn), nên số trên ô luôn bằng số dòng ở đó. "Chấm điểm 3" đếm <b>việc</b> (một dòng việc gom cả lớp), còn cột "Ô điểm chưa nhập" đếm <b>ô điểm</b> (mỗi kỹ năng của mỗi bài) — nhãn và ⓘ nói rõ để không lẫn. Kết quả tách hai bảng vì FT (L R W1 W2 S, so kỳ vọng) và lớp thường (từ 70%) là hai thang khác nhau. Bảng lớp thường có <b>bốn cột cố định L · R · W (G+V) · S (P)</b>: FOU dùng G+V ở chỗ W và P ở chỗ S, nên ô chỉ còn số, không in tên môn. Lớp FOU thường có hai giáo viên: một người dạy L, R, G+V (ở đây Hà, cũng là GVCN), một người dạy P. <b>Môn bạn dạy</b> có ô viền xanh; làm GVCN không làm cả hàng nổi lên — các môn khác hiện bình thường để giáo viên thấy cả lớp. Tuần viết mã (<b>W4 SEP</b>), chỉ hạn mới viết ngày.</p>
 </section>
 
 <!-- ====================================================== B. QL XEM MỘT GV -->
@@ -475,9 +477,9 @@ td.mine .lbl{color:var(--accent)}
           <span class="small">12 HV · <button class="so" type="button">3</button> ô chưa nhập · <button class="so t-bad" type="button" style="font-weight:600">1</button> <span class="t-bad">quá hạn</span></span>
           <div class="mini"><span class="mine">7/12<small>L</small></span><span>9/12<small>R</small></span><span class="low">5/12<small>W1</small></span><span>6/12<small>W2</small></span><span>8/11<small>S</small></span></div>
           <span class="sub">MT2 · đạt kỳ vọng / có điểm</span></div>
-        <div class="mcard"><div class="spread"><a class="lnk" href="#">MB FOU 12</a><span class="vai"><span class="sk">GVCN</span><span class="sk">L</span></span></div>
+        <div class="mcard"><div class="spread"><a class="lnk" href="#">MB FOU 12</a><span class="vai"><span class="sk">GVCN</span><span class="sk">L</span><span class="sk">R</span><span class="sk">G+V</span></span></div>
           <span class="small">8 HV · <span class="zero">0</span> ô chưa nhập</span>
-          <div class="mini" style="grid-template-columns:repeat(4,minmax(0,1fr))"><span class="mine">6/8<small>L</small></span><span>7/8<small>R</small></span><span class="low">3/8<small>G+V</small></span><span>6/8<small>P</small></span></div>
+          <div class="mini" style="grid-template-columns:repeat(4,minmax(0,1fr))"><span class="mine">6/8<small>L</small></span><span class="mine">7/8<small>R</small></span><span class="mine low">3/8<small>G+V</small></span><span>6/8<small>P</small></span></div>
           <span class="sub">Cuối khoá · đạt / có điểm</span></div>
         <span class="small muted">+ 2 lớp nữa (MB FT 103, MB BE 04)</span>
       </div>
