@@ -120,6 +120,28 @@ Không chặn việc soạn kế hoạch: mọi dòng dưới đây đã đượ
 - Đổi có target → KCK: lượt MT **chưa có điểm** bỏ kỳ vọng (như đổi target thường); **Case SOS đang mở giữ nguyên** tới khi GV xử lý xong (không tự đóng — tránh mất việc đang làm); MT đã có điểm giữ lịch sử SOS. Đổi KCK → có target: lượt chưa có điểm lấy target mới.
 - Số liệu SOS / tỷ lệ đạt kỳ vọng: học viên KCK **ngoài mẫu số**; sĩ số vẫn đếm. Lớp thường không có target nên không áp.
 
+### 3.1f. Chủ sản phẩm chỉnh 30/09 — Quản lý quyết chuyển lớp, GVCN bàn giao (giao **PR-CT**, đợt 5) · bỏ KPI GV · mã tuần
+
+Mockup: `thiet-ke/mockup/20-chuyen-lop-ban-giao.html` (màn A–I, mỗi màn ghi NẰM Ở).
+
+| Mã | Nội dung | Thay |
+|---|---|---|
+| Q30-1 | **Mọi lần chuyển lớp** (lớp thường kết thúc khoá · FT gộp/tách lớp, đổi lộ trình · chuyển một em giữa khoá) do **Quản lý** quyết: em nào, lớp đích nào, **tuần bắt đầu** (từ tuần sau trở đi — không bao giờ chuyển giữa tuần). GVCN **không** tự chuyển nữa; GVCN có **"Đề xuất chuyển lớp…"** → thẻ Chờ duyệt (Thông tin HV, 5 ngày); Quản lý duyệt = ra lệnh (sửa được lớp, tuần trước khi duyệt) | chốt 24/09 và Câu 1 = B 29/09 (PR-DUYET) "GVCN vẫn tự chuyển lớp" |
+| Q30-2 | **Bàn giao:** có lệnh → mỗi GVBM ghi **thông tin bàn giao** môn mình (một câu mỗi em, hạn 2 ngày; mở được từ **Công việc, hồ sơ lớp, hồ sơ HV**); GVCN lớp cũ gom lại, viết nhận xét chung, **Xác nhận bàn giao trong 3 ngày** (tính cả ngày ra lệnh); GVCN điền thay được phần GVBM. Quá hạn → thẻ **Báo lên** cho Quản lý; lệnh **vẫn chạy đúng tuần** | — |
+| Q30-3 | **Bỏ thẻ "Quyết định Cuối khoá"** (50–59% và đổi hướng có lợi): Quản lý quyết ngay trong panel Chuyển lớp; dải 50–59% chỉ hiện chip "Quản lý cân nhắc" và bắt chọn trước khi gửi | T48, T54 (phần thẻ), T71 (phần thẻ), M-19 |
+| Q30-4 | Lớp thường tới **tuần kết thúc** thì **mọi em phải có lệnh** (chuyển · học lại · bảo lưu · dừng). Em **thiếu điểm Cuối khoá không bị khoá dòng** — vẫn chuyển; điểm nhập sau thì luật Cuối khoá (PA bổ trợ, Mini Test, Báo PH) áp ở lộ trình mới. Hết tuần kết thúc còn em chưa có lệnh → thẻ Báo lên | T71 "dòng chưa đủ điểm Cuối khoá khoá" |
+| Q30-5 | **Bỏ KPI tháng của giáo viên** (tạm hoãn, không làm): không cột "Tỷ lệ pass tháng / Điểm KPI". Thay bằng **số liệu theo giáo viên** cụ thể, trực quan, dễ nhìn, hữu dụng — GV xem của chính mình, Quản lý xem GV chi nhánh mình; Quản lý tự đánh giá | T50, §6.5 (phần KPI) |
+| Q30-6 | **Toàn web ưu tiên mã tuần** (`W1 OCT`, `W2 SEP`) thay ngày khi nói về tuần học, tuần thi, tuần bắt đầu, lịch. Chỉ dùng ngày khi logic cần: hạn cụ thể (`hạn hết 02/10`), ngày thi, ngày sinh, nhật ký/lịch sử | quy ước hiển thị mọi PR (§7.3) |
+
+**Planning tự quyết (theo Q30-1…4):**
+- **Lệnh chuyển lớp** là một bản ghi (em · lớp nguồn · lớp đích/hướng · tuần bắt đầu · người ra lệnh · lý do · trạng thái `cho` → `da_chuyen` / `huy`). Tới **Thứ Hai tuần bắt đầu** web tự thi hành bằng luật chuyển lớp hiện có (`luatLoTrinh.ts`) — chạy trong lượt sáng Thứ Hai (cùng chốt vắng) **và** quét khi đọc (chạy lặp an toàn, không chuyển đôi). Quản lý sửa/huỷ lệnh trước tuần bắt đầu.
+- **Một panel** cho cả lớp (màn B–C, lớp thường và FT — màn I) và **một panel một em** (màn D). Lớp thường: cột Web gợi ý lấy từ hàm luật Cuối khoá của PR-LT2b; chọn khác gợi ý phải ghi lý do ngắn. Lên FT: Target (nhận KCK) + Thi dự kiến ngay trong hàng; lộ trình theo lớp đích; LT ↔ RF = lộ trình mới (M-20).
+- **Khác chi nhánh:** Quản lý chi nhánh lớp cũ quyết; Quản lý chi nhánh mới nhận thông báo "Sắp nhận".
+- **Việc:** GVCN có **một** việc "Bàn giao n em · {lớp}" (không mỗi em một việc); GVBM "Bàn giao môn {X} · {lớp}". Bảo lưu có bàn giao (để khi quay lại); Dừng học không.
+- **Phiếu bàn giao** tự điền (chỉ đọc): kết quả gần nhất, Case/PA đang mở + người nhận gợi ý, Ý thức (bậc, vi phạm chờ xử lý), việc còn dở. Nhận xét chung GVCN bắt buộc ≥ 15 ký tự; môn GVBM chưa ghi → "GVBM chưa bàn giao".
+- **Dải:** hồ sơ HV "Sắp chuyển … từ W2 OCT · bàn giao n/4 môn" (màn E); hồ sơ lớp cũ "Bàn giao · n/m em" / "Bàn giao môn P · n/m em"; hồ sơ lớp mới "Sắp nhận n em" (màn H); sau khi chuyển hiện 2 tuần rồi vào Hành trình.
+- PR-LT2b bỏ phần thẻ Quyết định Cuối khoá và bỏ khoá dòng thiếu điểm; xuất hàm gợi ý cho PR-CT.
+
 ### 3.2. Những gì tôi tự quyết — anh/chị gạch dòng nào không đồng ý
 
 Ký hiệu ⚠ = điểm tôi ít chắc nhất, nên xem trước.
@@ -621,6 +643,8 @@ Trước khi dùng impeccable trong repo: chạy `/impeccable init` (viết `PRO
 Một dòng = **một** nhãn trạng thái chính (`Cần làm · Đang làm · Chờ duyệt · Quá hạn · Xong · Đã huỷ`) + hạn viết
 bằng chữ + người phụ trách bằng tên. Chi tiết và ví dụ: `thiet-ke/BRAINSTORM_FEEDBACK_2026-09-27.md` mục C.2.
 Màu điểm và mức SOS là hệ riêng (không đổi).
+
+**Mã tuần (Q30-6):** mọi chỗ nói về tuần (tuần học, tuần thi, tuần bắt đầu, lịch, bộ lọc) hiện mã `W{n} {THÁNG}` (vd `W2 OCT`); ngày cụ thể chỉ dùng cho hạn, ngày thi, ngày sinh, nhật ký. PR nào chạm màn có ngày-thay-tuần thì đổi luôn; phần còn lại gom ở PR-UXF.
 
 ### 7.4. Token
 
