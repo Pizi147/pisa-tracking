@@ -201,6 +201,7 @@ export async function runLenLopTests(t: YThucTestKit) {
   const { fileURLToPath } = await import('node:url');
   const { default: SqliteDb } = await import('libsql');
   const migrateMod: any = await import('../migrate.ts');
+  const migLt2b: any = await import('../migrate/prLt2b.ts');
   const REPO = pathMod.resolve(fileURLToPath(new URL('../../../../', import.meta.url)));
   const SCHEMA = fsMod.readFileSync(pathMod.join(REPO, 'server/src/schema.sql'), 'utf8');
   const colsOf = (db: any, table: string): string[] =>
@@ -232,6 +233,7 @@ export async function runLenLopTests(t: YThucTestKit) {
     const m = preLT();
     const applied: string[] = [];
     migrateMod.migrateLenLop(m, applied);
+    migLt2b.migratePrLt2b(m, []);   // PR-LT2b thêm 6 cột vào cùng bảng
     assert(applied.length === 1 && /PR-LT/.test(applied[0]), `Phải báo đúng một dòng PR-LT: ${applied.join(' | ')}`);
     const fresh = new SqliteDb(':memory:');
     fresh.exec(SCHEMA);

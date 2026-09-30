@@ -82,6 +82,10 @@ export function quyenBoTro(p: Principal, iv: { performer_user_id: number | null;
   if (iv.performer_user_id === p.userId) return true;
   const ctx = caseAccess(iv.case_id).ctx;
   if (ctx.classId && isCoreTeacherOf(p, ctx.classId)) return true;
+  /* PR-LT2b (Q14): Case `tong_hop` (Pre FOU → FOU) không có ô phân công ở lớp mới — GVBM một môn KHÔNG ghi hộ; chỉ người dạy, GVCN, Quản lý. */
+  if ((db().prepare('SELECT topic FROM sos_cases WHERE id = ?').get(iv.case_id) as any)?.topic === 'tong_hop') {
+    return can(p, PERMISSIONS.CASE_APPROVE, { classId: ctx.classId, studentId: ctx.studentId });
+  }
   return can(p, PERMISSIONS.SOS_EDIT, ctx);
 }
 
@@ -205,7 +209,7 @@ export function chepKetQuaNhom(conn: any, iv: any, followupId: number, x: {
   const f = conn.prepare('SELECT * FROM case_followups WHERE id = ?').get(followupId) as any;
   const anhEm = conn.prepare(
     `SELECT iv.* FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
-      WHERE iv.nhom_bo_tro = ? AND iv.kind = 'bo_tro' AND iv.id != ? AND iv.status = 'started' AND sc.status != 'done' ORDER BY iv.id`,
+      WHERE iv.nhom_bo_tro = ? AND iv.kind IN ('bo_tro', 'bo_tro_mien_phi') AND iv.id != ? AND iv.status = 'started' AND sc.status != 'done' ORDER BY iv.id`,
   ).all(iv.nhom_bo_tro, iv.id) as any[];
   for (const s of anhEm) {
     const info = conn.prepare(

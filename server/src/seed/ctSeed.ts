@@ -78,7 +78,7 @@ export function buildCtDemo(ctx: BuildCtx): { lenh: number; lop: number } {
   soLop += 1;
 
   // ---------------------------------------------------------------- 1 · MB FOU 21 — hết tuần kết thúc, chưa lệnh nào
-  const fou21 = lop('MB FOU 21', 'FOU', null, false, '2026-07-13', { listening: 'T_HA', reading: 'T_KHOA', writing1: 'T_KHOA', speaking: 'T_TRANG' }, 'T_HA');
+  const fou21 = lop('MB FOU 21', 'FOU', null, false, '2026-07-13', { listening: 'T_KHOA', reading: 'T_KHOA', writing1: 'T_KHOA', speaking: 'T_TRANG' }, 'T_KHOA');
   soLop += 1;
   const diem21: [string, (number | null)[]][] = [
     ['Vũ Gia An CT', [21, 20, 21, 20]], ['Đỗ Bảo Linh CT', [19, 18, 19, 18]], ['Ngô Minh Huy CT', [17, 16, 17, 16]],

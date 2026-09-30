@@ -516,3 +516,19 @@ Lớp thường **không có chữ SOS ở bất kỳ đâu** (chủ sản phẩ
 | Việc cần làm | `Nộp kế hoạch bổ trợ · Giữa khoá · G+V, P · {HV}` (nút `Nộp kế hoạch`) · `Báo phụ huynh qua TVV · {HV} · Giữa khoá` (không hạn) | — |
 | Phối hợp | thẻ `Giữa khoá · 2/4 môn đạt`; việc `Báo phụ huynh qua TVV` + gập `Nội dung gửi TVV (4)`; nút `Đánh dấu đã làm` | `Xác nhận` cho việc này |
 | Thông báo vắng lần 2 | `{HV} vắng {môn} Giữa khoá lần 2 — đã dời sang W2 OCT` | — |
+
+## 14. PR-LT2b — 30/09/2026 · lớp thường Cuối khoá
+
+| Chỗ | Chữ | Không viết |
+|---|---|---|
+| Hộp Kết luận khoá, dòng 1 | `Cuối khoá 64%` + `L 70 · R 58 · G+V 66 · P 62` (thiếu môn: `Cuối khoá · 3/4 môn có điểm`) | `SOS` |
+| Hướng gợi ý (lưới, Hành trình, Excel) | `→ học lại` · `→ QL cân nhắc` · `→ lên + bổ trợ` · `→ Pass`; Excel: `Học lại FOU` · `QL cân nhắc` · `Lên BE + bổ trợ` · `Pass` | mã `50_59` |
+| Hộp Kết luận khoá, dòng 2 | `Lên BE + bổ trợ miễn phí 2 buổi (L, G+V) · 1 tuần · Mini Test sau buổi cuối` · `Quản lý cân nhắc: học lại hoặc lên (chọn khi chuyển lớp)` · `QL đã quyết: Lên ELE + bổ trợ · dd/mm` · `Học lại FOU · Quản lý báo phụ huynh qua TVV` · `Pass` | `Quyết định Cuối khoá` (đã bỏ thẻ) |
+| Kỳ vọng đầu ra (BE/ELE) | `Kỳ vọng đầu ra (BE IELTS 4.0)` · `Chưa đánh dấu` · `Đạt` · `Không đạt · Trung tâm · R, W` · `Không đạt · Học sinh` | — |
+| Case sau chuyển | `Cuối khoá FOU · G+V không đạt` (Pre FOU: `· Tổng hợp`) · FT: `Kỳ vọng đầu ra chưa đạt · Reading` | `[SOS n]` |
+| PA | `Bổ trợ miễn phí` (`2 buổi miễn phí · 1 tuần · Mini Test sau buổi cuối · không tính phí học sinh, không tính lương giáo viên`) · `Tutor 10 buổi/kỹ năng` | — |
+| Mini Test | `Mini Test · — · hạn 15/09` · `Ghi Mini Test` · `Mini Test 72% · Đạt` · `Mini Test 58% · Chưa đạt — đã báo QL` · mốc PA `đến Mini Test · dd/mm` | — |
+| Thẻ Báo lên | `Mini Test chưa đạt` · `Cuối khoá dời quá hạn` | — |
+| Việc cần làm | `Ghi Mini Test · {HV}` · `Báo phụ huynh qua TVV · {HV} · Cuối khoá 45%` (việc của Quản lý) | — |
+| Kết thúc lớp | `Còn treo: n Mini Test chưa ghi` (không chặn) | — |
+| Đầu hồ sơ lớp | `Cuối khoá: 7/8 em có đủ điểm · 1 em Quản lý cân nhắc` | — |

@@ -34,6 +34,8 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'regular.no_show': 'Ghi vắng thi môn', 'regular.no_show_cleared': 'Bỏ ghi vắng thi môn', 'regular.plan': 'Xếp lịch bài lớp thường',
   'request.approve': 'Duyệt yêu cầu', 'request.decline': 'Từ chối yêu cầu', 'request.answer': 'Trả lời Xin ý kiến',
   'request.create': 'Gửi yêu cầu duyệt',
+  'cuoi_khoa.quyet': 'Quản lý quyết hướng Cuối khoá', 'cuoi_khoa.bo_tro_tao': 'Tạo bổ trợ miễn phí sau Cuối khoá',
+  'cuoi_khoa.mini_test': 'Ghi Mini Test', 'cuoi_khoa.ket_luan_ft': 'Kết luận kỳ vọng đầu ra lên FT',
   'regular.score': 'Nhập điểm lớp thường', 'regular.score.override': 'Sửa điểm lớp thường',
   'score.lich_su': 'Nhập điểm MT lịch sử',
   'report.unlock': 'Mở khoá báo cáo', 'report.relock': 'Khoá lại báo cáo',

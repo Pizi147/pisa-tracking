@@ -21,14 +21,14 @@ import { conLaiMs } from '../platform/hanGio.ts';
 
 const CHI_ADMIN = 'Chỉ Quản trị hệ thống mới xoá được học viên.';
 
-/** Bao đóng theo FK của `students` (31 bảng) — phép kiểm X1 so bằng đúng với đồ thị dựng từ PRAGMA. */
+/** Bao đóng theo FK của `students` (32 bảng) — phép kiểm X1 so bằng đúng với đồ thị dựng từ PRAGMA. */
 export const BANG_CUA_HOC_VIEN: readonly string[] = [
   'students', 'enrollments', 'learning_cycles', 'lo_trinh_tiep_theo', 'journey_events', 'teacher_estimates', 'cycle_target_revisions',
   'assessment_attempts', 'assessment_scores', 'attempt_skills', 'attempt_skill_skips', 'attempt_schedule_history', 'skill_move_requests',
   'sos_cases', 'case_interventions', 'case_followups', 'case_intervention_revisions', 'case_issues', 'case_sources', 'case_milestones',
   'sos_case_history', 'case_signals', 'task_students', 'task_case_links',
   'violations', 'violation_history', 'discipline_measures', 'measure_violations', 'sos_coordination_actions',
-  'yeu_cau_duyet', 'y_thuc_khai_bac', 'lenh_chuyen_lop', 'ban_giao_mon',
+  'yeu_cau_duyet', 'y_thuc_khai_bac', 'mini_test', 'lenh_chuyen_lop', 'ban_giao_mon',
 ];
 
 /** Dòng của NGƯỜI KHÁC trỏ vào dữ liệu của em (Q5) — đặt NULL, không xoá. Cả ba cột cho phép NULL. */
@@ -108,6 +108,8 @@ export const CAU_XOA_HOC_VIEN: readonly { bang: string; sql: string }[] = [
   { bang: 'discipline_measures', sql: `DELETE FROM discipline_measures WHERE id IN (${M})` },
   { bang: 'violations', sql: `DELETE FROM violations WHERE id IN (${V})` },
   { bang: 'sos_coordination_actions', sql: `DELETE FROM sos_coordination_actions WHERE id IN (${X})` },
+  /* PR-LT2b: Mini Test trỏ lộ trình + bài Cuối khoá của em */
+  { bang: 'mini_test', sql: `DELETE FROM mini_test WHERE student_id = ?1 OR cycle_id IN (${Y}) OR tu_attempt_id IN (${A})` },
   /* lượt Test */
   { bang: 'skill_move_requests', sql: `DELETE FROM skill_move_requests WHERE attempt_id IN (${A})` },
   { bang: 'assessment_scores', sql: `DELETE FROM assessment_scores WHERE attempt_id IN (${A})` },

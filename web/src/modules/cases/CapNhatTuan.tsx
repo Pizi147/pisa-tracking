@@ -97,6 +97,10 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved, on
   };
   /* PR-SOS: lần CUỐI của PA theo quy chế — không khối Quyết định; "Chưa đủ dữ liệu" được, kèm Lý do (K3-13). */
   const lanCuoi = !!pa.lanCuoi;
+  /* PR-LT2b (M-05): lần ghi cuối của PA Bổ trợ miễn phí bắt buộc kèm Mini Test — một lần cho cả nhóm PA của em. */
+  const coMiniTest = lanCuoi && pa.kind === 'bo_tro_mien_phi';
+  const [mtTyLe, setMtTyLe] = useState('');
+  const [mtNgay, setMtNgay] = useState(homNay ?? '');
   /* T63, K3-12: PA theo quy chế chỉ có Giữ nguyên / Điều chỉnh / Xin hỗ trợ — Thay và Kết thúc ẨN (không mờ). */
   const dsQuyetDinh = quyetDinhChoPa({ preset: !!pa.batBuoc }, lanCuoi);
   const needReason = !!decision && decisionNeedsReason(decision);
@@ -116,6 +120,11 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved, on
     ...(decision === 'ask_manager' ? [{ khoa: 'ly-do', nhan: 'Cần Quản lý giúp gì', toiThieu: 8 }] : []),
   ];
   const loi = dsLoi(LUAT, { 'ket-qua': outcome, 'tien-trien': progress, 'quyet-dinh': decision, 'ghi-ro': newGhiRo, 'pa-moi': newDesc, 'ly-do': reason });
+  if (coMiniTest) {
+    const so = Number(mtTyLe.replace(',', '.'));
+    if (mtTyLe.trim() === '' || !Number.isFinite(so) || so < 0 || so > 100) loi.push({ khoa: 'mt-ty-le', nhan: 'Mini Test (%)', lyDo: 'Nhập số từ 0 đến 100' });
+    if (!mtNgay) loi.push({ khoa: 'mt-ngay', nhan: 'Ngày làm', lyDo: 'Chọn ngày làm Mini Test' });
+  }
   if (decision === 'adjust') {
     if (!adjustChanged) loi.push({ khoa: 'noi-dung', nhan: 'Nội dung PA', lyDo: 'Đổi ít nhất một ô: nội dung hoặc người làm' });
     else if (descChanged && desc.trim().length < 8) loi.push({ khoa: 'noi-dung', nhan: 'Nội dung PA', lyDo: `Cần ít nhất 8 ký tự (đang có ${desc.trim().length})` });
@@ -134,6 +143,7 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved, on
         remainingIssue: remaining.trim() || undefined, decisionNote: reason.trim() || undefined,
       };
       if (decision === 'end') body.completedOn = endOn || undefined;
+      if (coMiniTest) body.miniTest = { tyLe: Number(mtTyLe.replace(',', '.')), ngay: mtNgay };
       if (decision === 'adjust') {
         body.adjust = {
           description: descChanged ? desc : undefined,
@@ -286,6 +296,18 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved, on
         </Truong>
       </Khoi>
 
+      {coMiniTest && (
+        <Khoi tieuDe="Mini Test">
+          <Hang2>
+            <Truong nhan="Mini Test (%)" batBuoc loi={loiCua('mt-ty-le')} phu="Đạt từ 70%">
+              <input className="field w-full tabular-nums" inputMode="decimal" {...o('mt-ty-le')} value={mtTyLe} onChange={(e) => setMtTyLe(e.target.value)} placeholder="Ví dụ: 72" />
+            </Truong>
+            <Truong nhan="Ngày làm Mini Test" batBuoc loi={loiCua('mt-ngay')}>
+              <ONgay kieu="ngay" value={mtNgay} onChange={setMtNgay} toiDa={homNay} />
+            </Truong>
+          </Hang2>
+        </Khoi>
+      )}
       {lanCuoi && outcome === 'insufficient' && (
         <Khoi tieuDe="Lý do">
           <Truong nhan="Lý do chưa đủ dữ liệu" batBuoc loi={loiCua('ly-do')}>

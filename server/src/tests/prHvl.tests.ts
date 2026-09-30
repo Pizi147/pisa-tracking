@@ -540,7 +540,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
     for (const ten of ['HVL7 An', 'HVL7 Binh']) intakeMod.commitIntake(P.admin, { classId: lop, rows: [{ fullName: ten, email: 'hv@demo.test' }], idempotencyKey: `hvl7-${ten}` });
     const ov = classesMod.classOverview(P.admin, lop);
     assert(['final_week', 'finished'].includes(ov.summary.phase), `Lớp khai giảng 7 tuần trước phải ở tuần Cuối khoá: ${ov.summary.phase}`);
-    eq(ov.cuoiKhoa, { du: 0, tong: 2 }, 'chưa em nào có điểm Cuối khoá');
+    eq(ov.cuoiKhoa, { du: 0, tong: 2, canQl: 0 }, 'chưa em nào có điểm Cuối khoá');
   });
 
   check('PR-HVL (7) · web đầu hồ sơ lớp: một nút chính theo chặng, ⋮ có Tuần khai giảng / Lịch kiểm tra, LT bọc abbr; panel không còn "Lộ trình lớp" / "Mở từng em rồi bấm"; ô Giữa khoá ẩn với Pre FOU', () => {

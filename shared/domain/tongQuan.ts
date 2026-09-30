@@ -31,7 +31,7 @@ export const NHOM_VIEC_LABEL: Record<NhomViec, string> = {
 /** Loại việc của `mywork.ts` → 4 nhóm (PR-DUYET bỏ `decide`, `decide_move` — thẻ ở hộp Chờ duyệt). PR-YT4: ba loại việc Ý thức có hạn thật; Phối hợp SOS vẫn là nhắc mềm. */
 const NHOM_CUA_LOAI: Record<string, NhomViec> = {
   score: 'cham-diem',
-  cause: 'case-hoc-thuat', xac_nhan_pa: 'case-hoc-thuat', ke_hoach_bo_tro: 'case-hoc-thuat', phoi_hop: 'case-hoc-thuat', no_plan: 'case-hoc-thuat', result: 'case-hoc-thuat',
+  cause: 'case-hoc-thuat', xac_nhan_pa: 'case-hoc-thuat', ke_hoach_bo_tro: 'case-hoc-thuat', phoi_hop: 'case-hoc-thuat', mini_test: 'case-hoc-thuat', no_plan: 'case-hoc-thuat', result: 'case-hoc-thuat',
   do_plan: 'case-hoc-thuat', no_owner: 'case-hoc-thuat',
   placement: 'van-hanh', next_step: 'van-hanh', mgmt: 'van-hanh', missing_data: 'van-hanh',
   yt_xu_ly: 'y-thuc', yt_xem: 'y-thuc', yt_thuc_hien: 'y-thuc',
@@ -41,7 +41,7 @@ export function nhomViecCua(loai: string): NhomViec { return NHOM_CUA_LOAI[loai]
 
 /** Loại hạn của từng loại việc — để dòng việc hiện hạn qua `<Han>` (G-10). Loại không có ở đây: hạn là ngày trơn. */
 export const LOAI_HAN_CUA_VIEC: Partial<Record<string, DeadlineKind>> = {
-  cause: 'xac-minh-sos', xac_nhan_pa: 'xac-minh-sos', ke_hoach_bo_tro: 'ke-hoach-bo-tro', no_plan: 'lap-pa', result: 'cap-nhat-pa', score: 'nhap-diem',
+  cause: 'xac-minh-sos', xac_nhan_pa: 'xac-minh-sos', ke_hoach_bo_tro: 'ke-hoach-bo-tro', mini_test: 'mini-test', no_plan: 'lap-pa', result: 'cap-nhat-pa', score: 'nhap-diem',
   yt_xu_ly: 'xu-ly-vi-pham', yt_xem: 'xu-ly-vi-pham', yt_thuc_hien: 'xu-ly-vi-pham',
   ban_giao: 'viec-van-hanh',
 };

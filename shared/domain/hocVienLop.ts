@@ -336,6 +336,8 @@ export function viecTiepCuaEm(i: {
   chuongTrinh?: string | null;
   /** PR-LT2a (#133): người xem là GVCN của em và còn việc Báo phụ huynh qua TVV chưa làm — xếp SAU các việc có hạn. */
   baoPh?: boolean;
+  /** PR-LT2b (M-05): em còn Mini Test chưa ghi và người xem là người làm — hạn = ngày buổi cuối + 2. */
+  miniTest?: { han: string; caseId: number | null; paId: number | null } | null;
 }): ViecTiepTheo[] {
   const ct = i.chuongTrinh ?? null;
   const out: ViecTiepTheo[] = [];
@@ -354,6 +356,14 @@ export function viecTiepCuaEm(i: {
     } else {
       out.push({ viec, han: null, quaHanNgay: null, tone: n.quaHan ? 'danger' : 'warn', dich, title: n.quaHan ? `${viec} · quá hạn` : viec });
     }
+  }
+  if (i.miniTest) {
+    const d = deadlineView({ kind: 'mini-test', due: i.miniTest.han, today: i.homNay });
+    out.push({
+      viec: 'Ghi Mini Test', han: boTienTo(d.han), quaHanNgay: d.daysOverdue, tone: d.tone === 'overdue' ? 'danger' : 'warn',
+      dich: i.miniTest.caseId ? { loai: 'case', caseId: i.miniTest.caseId, paId: i.miniTest.paId ?? undefined, ghiKetQua: true } : { loai: 'y-thuc' },
+      title: `Ghi Mini Test · ${d.han}${d.quaHan ? ` · ${d.quaHan}` : ''}`,
+    });
   }
   for (const c of i.cases) {
     const v = c.viecTiep;

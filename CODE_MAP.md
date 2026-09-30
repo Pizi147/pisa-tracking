@@ -261,6 +261,10 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 |---|---|
 | **Tín hiệu từ điểm** (điểm dưới kỳ vọng sinh gì) — từ PR-LT2a chỉ còn FT; lớp thường không có tín hiệu | `server/src/cases/signals.ts` |
 | **Lớp thường Giữa khoá** (PR-LT2a): luật thuần (`boTroGiuaKhoa`, `nhomBoTro`, `moTaBoTro`, `tenCaseThuong`, `nhanKetQuaThuong`, `noiDungBaoPh`) | `shared/domain/lopThuong.ts` |
+| **Cuối khoá lớp thường** (PR-LT2b): luật thuần (dải, hướng gợi ý `goiYCuoiKhoa`, bổ trợ miễn phí, `lichBoTro`, `chuHopKetLuan`) | `shared/domain/cuoiKhoa.ts` |
+| Cuối khoá — một cửa máy chủ: % theo lô (`tyLeTongLo`, `cuoiKhoaTheoHocVien`), sau chuyển (`sauChuyenCuoiKhoa`, `capNhatCuoiKhoaSauChuyen`), Mini Test (`ghiMiniTestTrongTx`, `ghiMiniTest`), kết luận lên FT (`ghiKetLuanFt`) | `server/src/normal/cuoiKhoa.ts` |
+| Case `chuyen_cap` không phải Case SOS — MỘT định nghĩa `LA_CASE_SOS` | `server/src/cases/sosState.ts` |
+| Hộp Kết luận khoá + ô Mini Test (hồ sơ HV); ô Mini Test ở form Ghi kết quả cuối | `web/src/modules/students/KetLuanKhoa.tsx` · `web/src/modules/cases/CapNhatTuan.tsx` |
 | PA Bổ trợ: tạo (`taoCaseTuDong({ pa: 'bo_tro' })`), nộp kế hoạch (`nopKeHoachBoTro`), chạy khi duyệt (`chayPaBoTro`, `khiDuyetKeHoach`), quyền (`quyenBoTro`, `coQuyenNop`), khối `boTro` cho Ngăn Case (`boTroCuaCase`) | `server/src/cases/boTro.ts` |
 | Điểm lớp thường → Case Giữa khoá + PA + Báo PH (`refreshRegularOutcome` → `taoCaseGiuaKhoa`); em vào lớp thường tự có bài Giữa/Cuối khoá (`taoBaiThuongMacDinh`, M1b) | `server/src/normal/regular.ts` |
 | Thẻ Chờ duyệt `ke_hoach_bo_tro` (`doi_tuong_loai = 'nhom_bo_tro'`); trạng thái kế hoạch đọc từ thẻ (`YC_KE_HOACH`) | `server/src/duyet/loaiYeuCau.ts` · `server/src/cases/sosState.ts` |

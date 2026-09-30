@@ -285,19 +285,19 @@ export const TRAN: Record<string, number> = {
   'QT /metrics/hv-can-ho-tro-2-lan-chua-case': 32,
   'QL /metrics/case-xac-dinh-nguyen-nhan-qua-han': 32,
   'QT /metrics/case-xac-dinh-nguyen-nhan-qua-han': 32,
-  'GVCN /my-work': 69,   // PR-CT: 63 → 69 (gộp main)
-  'GVBM /my-work': 67,   // PR-CT gộp main (LT2a + GV + demo CT): 66 → 67   // PR-CT: 62 → 66 (gộp main)
-  'GVCN_THUONG /my-work': 69,   // PR-CT: 63 → 69 (gộp main)
+  'GVCN /my-work': 76,   // PR-CT gộp LT2b: 68 → 76   // PR-LT2b: việc Ghi Mini Test + bộ demo D10–D13 (2 lớp mới: MB BE 04, MB ELE 02) 63 → 68 (+8 %)
+  'GVBM /my-work': 79,   // PR-CT gộp LT2b: 70 → 79   // PR-LT2b: như trên 62 → 70 (+13 %)
+  'GVCN_THUONG /my-work': 76,   // PR-CT gộp LT2b: 68 → 76
   /* PR-Ra: trang "Công việc" dùng lại /my-work cho QL·QT, cộng chế độ nguoi=tat-ca/{gv} (Q1–Q2). */
-  'QL /my-work': 69,   // PR-CT gộp main (LT2a + GV + demo CT): 66 → 69   // PR-CT Task 12 (bộ demo có lệnh): 63 → 66   // PR-CT Task 6: 62 → 63
-  'QT /my-work': 71,   // PR-CT gộp main (LT2a + GV + demo CT): 68 → 71
-  'QL /my-work?nguoi=tat-ca': 78,   // PR-CT Task 12 (bộ demo có lệnh): 75 → 78
-  'QT /my-work?nguoi=tat-ca': 80,   // PR-CT Task 12 (bộ demo có lệnh): 77 → 80   // PR-CT Task 6: 75 → 77
+  'QL /my-work': 77,   // PR-CT gộp LT2b: 67 → 77   // PR-LT2b: bộ demo D10–D13
+  'QT /my-work': 79,   // PR-CT gộp LT2b: 69 → 79
+  'QL /my-work?nguoi=tat-ca': 86,   // PR-CT gộp LT2b: 77 → 86   // PR-LT2b: Mini Test + demo D10–D13 (+2)
+  'QT /my-work?nguoi=tat-ca': 88,   // PR-CT gộp LT2b: 79 → 88
   'GVCN /my-work?nguoi=tat-ca': 19,
-  'QL /my-work?nguoi=7': 79,   // PR-CT gộp main (LT2a + GV + demo CT): 78 → 79   // PR-CT Task 12 (bộ demo có lệnh): 75 → 78   // PR-CT Task 6: 74 → 75
+  'QL /my-work?nguoi=7': 86,   // PR-CT gộp LT2b: 78 → 86
   /* PR-DUYET: đo khi hộp đã có thẻ thật (Task 4) — trần max(sau+10, ⌈sau×1,3⌉). */
-  'QL /yeu-cau?hop=cho-duyet': 37,   // PR-CT gộp main (LT2a + GV + demo CT): 35 → 37   // PR-LT2a (11): demo G1–G5 có thẻ ke_hoach_bo_tro → loại thẻ thêm câu nạp (đo 32, MỘT lần mỗi loại, không theo số thẻ); PR-YT4 sau khi gộp PR-SOS: thẻ khong_theo_doi + bao_len_y_thuc cùng nạp (đo 29, +3,6%); PR-HVL (10): demo H1 thêm một thẻ "không theo dõi" chờ duyệt → đo 30   // PR-CT: 32 → 35 (gộp main)
-  'QT /yeu-cau?hop=cho-duyet': 36,   // PR-CT gộp main (LT2a + GV + demo CT): 34 → 36   // PR-CT: 31 → 34 (gộp main)
+  'QL /yeu-cau?hop=cho-duyet': 38,   // PR-CT gộp LT2b: 34 → 38   // PR-LT2a (11): demo G1–G5 có thẻ ke_hoach_bo_tro → loại thẻ thêm câu nạp (đo 32, MỘT lần mỗi loại, không theo số thẻ); PR-YT4 sau khi gộp PR-SOS: thẻ khong_theo_doi + bao_len_y_thuc cùng nạp (đo 29, +3,6%); PR-HVL (10): demo H1 thêm một thẻ "không theo dõi" chờ duyệt → đo 30   // PR-LT2b: hai loại thẻ Báo lên mới (+1–2 câu nap)
+  'QT /yeu-cau?hop=cho-duyet': 37,   // PR-CT gộp LT2b: 33 → 37
   'GVCN /yeu-cau?hop=cho-duyet': 17,
   'QL /yeu-cau?hop=cho-duyet&xem=da-xu-ly': 30,   // PR-CT gộp main (LT2a + GV + demo CT): 29 → 30   // PR-SOS: loại thẻ khong_theo_doi thêm câu nạp (đo 23); + thẻ Ý thức PR-YT4 (đo 27)   // PR-CT: 28 → 29 (gộp main)
   'QT /yeu-cau?hop=cho-duyet&xem=da-xu-ly': 29,   // PR-CT gộp main (LT2a + GV + demo CT): 28 → 29   // PR-SOS: loại thẻ khong_theo_doi thêm câu nạp (đo 22)   // PR-CT: 27 → 28 (gộp main)
@@ -341,11 +341,11 @@ export const TRAN: Record<string, number> = {
   'QT /hoc-vien-lop': 85,
   'QL /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 72,
   'QT /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 70,
-  'QL /classes/3/overview': 61,
-  'GVCN /classes/3/overview': 61,
-  'GVBM /classes/3/overview': 61,
-  'GVCN_THUONG /classes/3/overview': 61,
-  'QT /classes/3/overview': 58,   // PR-CT gộp main (LT2a + GV + demo CT): 57 → 58   // PR-S4F #5: +3 câu quét thẻ chờ duyệt   // PR-CT: 54 → 57 (gộp main)
+  'QL /classes/3/overview': 62,   // PR-CT gộp LT2b: 61 → 62
+  'GVCN /classes/3/overview': 62,   // PR-CT gộp LT2b: 61 → 62
+  'GVBM /classes/3/overview': 62,   // PR-CT gộp LT2b: 61 → 62
+  'GVCN_THUONG /classes/3/overview': 62,   // PR-CT gộp LT2b: 61 → 62
+  'QT /classes/3/overview': 59,   // PR-CT gộp LT2b: 58 → 59   // PR-CT gộp main (LT2a + GV + demo CT): 57 → 58   // PR-S4F #5: +3 câu quét thẻ chờ duyệt   // PR-CT: 54 → 57 (gộp main)
   /* PR-HVL (2): mốc 46 (QT 43) + Case mở theo lô (`chiTietCaseMo`) đo 50 (QT 47) — trần kế hoạch = mốc + 6. */
   /* PR-HVL (5): `/classes/:id/can-ho-tro` đo 25 (QT 22) = `/cases?classId=` 17 (QT 14) + 8 — đúng trần kế hoạch. */
   /* PR-HVL (7): `/classes/:id/progress` đo 17 (QT 16) sau khi thêm `tomTatMt` — trần = đo + 3. */
@@ -504,9 +504,10 @@ export const TRAN: Record<string, number> = {
   'GVCN_THUONG /hoc-vien-lop/luu-tru?branchId=1': 22,
   'QT /hoc-vien-lop/luu-tru?branchId=1': 22,
   /* PR-HVL (8): `/classes/:id/transition` thêm `ketQua` từng em (một lần `standingFor`, 7 câu): 28 → 35 (QT 27 → 34). Kế hoạch dự kiến mốc + 5 = 33; `standingFor` tự nó tốn 7 câu nên lệch 2 — ghi Nhật ký. */
-  'QL /classes/6/transition': 38,   // PR-CT Task 8 (lệnh + gvcn): 37 → 38
-  'QT /classes/6/transition': 37,   // PR-CT Task 8 (lệnh + gvcn): 36 → 37
-  'GVCN_THUONG /classes/6/transition': 38,   // PR-CT Task 8 (lệnh + gvcn): 37 → 38
+  /* PR-LT2b (3): `cuoiKhoaTheoHocVien` cho cả lớp (+2 câu: lượt Cuối khoá · lộ trình tiếp theo; điểm + chương trình đã đọc chung): QL 37 → 39, QT 36 → 38, GVCN_THUONG 37 → 39 (+5 %). */
+  'QL /classes/6/transition': 42,   // PR-CT gộp LT2b: 39 → 42
+  'QT /classes/6/transition': 41,   // PR-CT gộp LT2b: 38 → 41
+  'GVCN_THUONG /classes/6/transition': 42,   // PR-CT gộp LT2b: 39 → 42
   'QL /classes/5/transition': 36,
   'QT /classes/5/transition': 35,
   'GVCN_THUONG /classes/5/transition': 36,
@@ -559,11 +560,11 @@ export const TRAN: Record<string, number> = {
   'GVBM /giao-vien/7/viec': 20,
   'GVCN_THUONG /giao-vien/7/viec': 80,
   'QT /giao-vien/7/viec': 91,
-  'QL /giao-vien/7/ket-qua': 73,   // PR-CT gộp main (LT2a + GV + demo CT): 59 → 73
-  'GVCN /giao-vien/7/ket-qua': 72,   // PR-CT gộp main (LT2a + GV + demo CT): 58 → 72
+  'QL /giao-vien/7/ket-qua': 80,   // PR-CT gộp LT2b: 74 → 80   // PR-LT2b: bộ demo D10–D13 thêm 2 lớp cho GVCN Hà (MB BE 04 · MB ELE 02) — `ket-qua` tốn thêm câu theo lớp: 59 → 73 (+24 %)
+  'GVCN /giao-vien/7/ket-qua': 79,   // PR-CT gộp LT2b: 73 → 79
   'GVBM /giao-vien/7/ket-qua': 20,
-  'GVCN_THUONG /giao-vien/7/ket-qua': 72,   // PR-CT gộp main (LT2a + GV + demo CT): 58 → 72
-  'QT /giao-vien/7/ket-qua': 72,   // PR-CT gộp main (LT2a + GV + demo CT): 58 → 72
+  'GVCN_THUONG /giao-vien/7/ket-qua': 79,   // PR-CT gộp LT2b: 73 → 79
+  'QT /giao-vien/7/ket-qua': 79,   // PR-CT gộp LT2b: 73 → 79
   'QL /giao-vien/7/o?cot=chua-nhap': 37,
   'GVCN /giao-vien/7/o?cot=chua-nhap': 36,
   'GVBM /giao-vien/7/o?cot=chua-nhap': 20,
@@ -594,9 +595,9 @@ export const TRAN_GHI_LO = {
   /** POST /classes/:id/transition — cả lớp thường (≥ 20 em) sang FT, mỗi em có lịch MT mặc định. Trước PR-TOC 1505, sau 124 → 128 sau rà #121 (32 em, gồm đóng Case mở của em có sẵn — S17). */
   /** POST /classes/:id/transition RA LỆNH cho cả lớp thường (≥ 20 em) — PR-CT (Q30-1) chỉ ghi lệnh theo lô, không chuyển. Trần đặt sau khi đo (Task 3). */
   raLenhCaLop: 30,   // đo 20 câu (41 em) → max(20+10, ⌈20×1.3⌉) = 30
-  chuyenCaLopSangFT: 200,   // PR-HVL (10): bộ demo H2 thêm 2 em vào MB FOU 12 (một em có 2 Case đóng theo S17, một em có bài Cuối khoá 4 điểm) → đo 191; trần theo dữ liệu, không phải chậm đi của đường
+  chuyenCaLopSangFT: 224,   // PR-LT2b (4, 5): đọc Cuối khoá cả lớp + Case/PA bổ trợ theo lô sau chuyển (đo 214; gốc 200, +7 %) → 224; PR-HVL (10): bộ demo H2 thêm 2 em vào MB FOU 12 (một em có 2 Case đóng theo S17, một em có bài Cuối khoá 4 điểm) → đo 191; trần theo dữ liệu, không phải chậm đi của đường
   /** POST /ke-hoach-test/hang-loat `xemTruoc` — cả lớp MB FT 101 (63 em trong bộ đo), MT3, 4 kỹ năng tuần tới (PR-XLMT, rà #126). Đo 78 câu. */
-  xemTruocXepLichMt: 108,   // PR-HVL (10): bộ demo H1 thêm 1 em vào MB FT 101 (+3 câu/em) → đo 105
+  xemTruocXepLichMt: 114,   // PR-LT2b (10): bộ demo D13 thêm 2 em vào MB FT 101 (+3 câu/em) → đo 111; PR-HVL (10): bộ demo H1 thêm 1 em vào MB FT 101 (+3 câu/em) → đo 105
   /** GET /my-work?nguoi=tat-ca (QL) khi 30 PA "đến lúc thi" chưa có ngày thi (PR-S3F, rà cuối đợt 3). Trước 63 → 147 câu; ngày thi + tuần MT kế tiếp nay lấy trong câu chính. Đo 70 câu (68 khi không có PA) → trần max(sau+10, ⌈sau×1.3⌉) = 91. */
   congViec30PaChuaNgayThi: 91,
   /** POST /xuat-mt — Quản lý xuất cả chi nhánh MB, MT1–MT8, cột đầy đủ, SAU khi nhân dữ liệu ×3 (PR-XUAT). Phải KHÔNG tăng theo số lượt (một câu lượt + các câu lô của loadBundle). Đo 16 câu / 550 lượt → trần max(sau+10, ⌈sau×1.3⌉) = 26. */

@@ -10,6 +10,7 @@ import { addJourney, writeAudit } from '../platform/audit.ts';
 import { classProgress } from './schedule.ts';
 import { standingFor } from '../students/standing.ts';
 import { coTheRaLenh } from './quyenChuyenLop.ts';
+import { cuoiKhoaTheoHocVien } from '../normal/cuoiKhoa.ts';
 
 /**
  * LỘ TRÌNH TIẾP THEO (PR-LT, Q1, §3.9.1) — dự định của một em SAU lớp đang học, ghi trước khi
@@ -47,7 +48,7 @@ export function layLoTrinhTiep(p: Principal, studentId: number) {
   require_(p, PERMISSIONS.STUDENT_VIEW, { studentId }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
 
   const enr = enrollmentDangHoc(studentId);
-  if (!enr) return { lop: null, banGhi: null, lopDuKien: [] as LopDuKien[], coTheGhi: false, ketQua: null };
+  if (!enr) return { lop: null, banGhi: null, lopDuKien: [] as LopDuKien[], coTheGhi: false, ketQua: null, cuoiKhoa: null };
 
   const ma = (enr.programme_code ?? null) as ProgrammeCode | null;
   const laLopThuong = !enr.is_fast_track;
@@ -75,6 +76,8 @@ export function layLoTrinhTiep(p: Principal, studentId: number) {
     banGhi, lopDuKien, coTheGhi,
     /** B9: kết quả gần nhất của em — đầu panel Lộ trình tiếp theo hiện chính + hai dòng (`ketQuaGanNhat`). */
     ketQua: standingFor([studentId]).get(studentId) ?? null,
+    /** PR-LT2b (K2-26): dòng dữ kiện đầu panel — % Cuối khoá, môn trượt, hướng gợi ý (không lưu). */
+    cuoiKhoa: laLopThuong ? cuoiKhoaTheoHocVien(enr.class_id, [studentId]).get(studentId) ?? null : null,
   };
 }
 

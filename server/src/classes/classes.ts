@@ -18,6 +18,7 @@ import { examPlanOf } from '../fasttrack/cycles.ts';
 import { dotHoanTatMany, type HoanTatInfo } from '../fasttrack/hoanTat.ts';
 import { standingFor, standingLine } from '../students/standing.ts';
 import { allProgrammes, evaluateRegular, programmeOfClass } from '../normal/regular.ts';
+import { cuoiKhoaTheoHocVien, emConMiniTest, nguoiGhiMiniTest } from '../normal/cuoiKhoa.ts';
 import { classProgressMany, missingForClasses, missingForStudent } from './schedule.ts';
 import { canhBaoTheoHocVien, caseViecTheoHocVien, soEmCanXuLyYThuc, viecHocVienTheoLop } from './dongHocVien.ts';
 import { demChuaLoTrinh, tiepTheoTheoHocVien } from './loTrinhTiep.ts';
@@ -397,6 +398,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
   /* PR-Qa: nhãn cảnh báo Ý thức 5 ngày (YT-8) và Case đang mở cho "Việc tiếp theo" — mỗi thứ MỘT lần cho cả lớp. */
   const canhBao = canhBaoTheoHocVien(p, classId);
   const caseViec = caseViecTheoHocVien(p, classId);
+  const miniTestEm = emConMiniTest(sids);   // PR-LT2b: Mini Test chưa ghi — MỘT câu cho cả lớp
   const baoPhEm = emCoBaoPhChuaLam(sids);   // PR-LT2a: Báo phụ huynh qua TVV (GVCN) — MỘT câu cho cả lớp
   /* PR-LT: Lộ trình tiếp theo của cả lớp — một câu, cột Khoá dùng ngay, không hỏi lại theo từng em. */
   const tiepTheoLop = tiepTheoTheoHocVien([classId]);
@@ -653,6 +655,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
         homNay: today,
         chuongTrinh: prog?.code ?? null,
         baoPh: baoPhEm.has(s.id) && isCoreTeacherOf(p, classId),
+        miniTest: nguoiGhiMiniTest(p, classId, miniTestEm.get(s.id)),
       }),
       /* Cột Khoá "tiếp theo: …" (PR-LT, Q1/Q4) — chỉ có nghĩa cho lớp thường còn đang học. */
       tiepTheo: isRatio ? nhanTiepTheo(tiepTheoLop.get(s.id) ?? null, maChuongTrinhHienTai) : null,
@@ -716,7 +719,9 @@ function classOverviewThat(p: Principal, classId: number) {
   const cuoiKhoa = (() => {
     if (finished || prog?.scoringMode !== 'ratio' || !summary || (summary.phase !== 'final_week' && summary.phase !== 'finished') || !emDangHoc.length) return null;
     const st = standingFor(emDangHoc);
-    return { du: emDangHoc.filter((id) => { const s = st.get(id); return !!s && s.attemptKind === 'final' && s.required > 0 && s.scored >= s.required; }).length, tong: emDangHoc.length };
+    /* PR-LT2b: em Cuối khoá 50–59% — Quản lý cân nhắc trước khi chuyển (không còn thẻ, Q30-3). */
+    const canQl = [...cuoiKhoaTheoHocVien(classId, emDangHoc).values()].filter((e) => e.goiY?.canQuanLy).length;
+    return { du: emDangHoc.filter((id) => { const s = st.get(id); return !!s && s.attemptKind === 'final' && s.required > 0 && s.scored >= s.required; }).length, tong: emDangHoc.length, canQl };
   })();
   const vl = viecHocVienTheoLop(p, {
     emTheoLop: new Map([[classId, emDangHoc]]), cases: caseCuaLop, homNay: demoToday(), chuongTrinhTheoLop: new Map([[classId, prog?.code ?? null]]),
