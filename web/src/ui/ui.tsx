@@ -424,7 +424,7 @@ export function BandCell({ cell, target }: {
         : `Lượt trước ${cell.prev} → lượt này ${cell.now}`}>
       <span className={`tabular-nums ${tone}`}>{cell.now}</span>
       {delta !== null && delta !== 0 && (
-        <span className={`text-[11px] ${cell.dir > 0 ? 'text-ok/70' : 'text-bad/70'}`}>
+        <span className={`text-[11px] ${cell.dir > 0 ? 'text-ok' : 'text-bad'}`}>
           {cell.dir > 0 ? '▲' : '▼'}{Math.abs(delta)}
         </span>
       )}

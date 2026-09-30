@@ -898,7 +898,7 @@ function DongDatPhanTram({ ketQua, tiLe, chiChu = false }: { ketQua?: 'pass' | '
   const chu = chiChu ? datPhanTram(ketQua, tiLe)?.split(' · ')[0] ?? null : datPhanTram(ketQua, tiLe);
   if (!chu) return null;
   return (
-    <span className={`block text-xs leading-none mt-0.5 whitespace-nowrap tabular-nums ${ketQua === 'fail' ? 'text-rose-300/80' : 'text-slate-400'}`}>
+    <span className={`block text-xs leading-none mt-0.5 whitespace-nowrap tabular-nums ${ketQua === 'fail' ? 'text-rose-300' : 'text-slate-400'}`}>
       {chu}
     </span>
   );

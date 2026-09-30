@@ -115,7 +115,7 @@ function DongHv({ studentId, active, ten, href, phu, phuTitle, phuDo = false, lu
           {nhan}
         </div>
         <div className="flex items-center gap-1.5 text-[11px] text-slate-500 min-w-0 tabular-nums">
-          <span className={`truncate ${phuDo ? 'text-rose-300/80' : ''}`} title={phuTitle}>{phu}</span>
+          <span className={`truncate ${phuDo ? 'text-rose-300' : ''}`} title={phuTitle}>{phu}</span>
           {luu}
         </div>
       </div>

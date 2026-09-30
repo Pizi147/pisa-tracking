@@ -236,7 +236,7 @@ function RemoveCoordinationForm({ actionId, onClose, onChanged }: {
         ))}
       </div>
       <OKhac hien={reasonNeedsText(reason)} value={text} onChange={setText} goiY="Ví dụ: Gia đình xin dời sang tuần sau" loi={loiGhiRo} />
-      {missing && <p className="text-xs text-amber-200/90 m-0">{missing}</p>}
+      {missing && <p className="text-xs text-amber-200 m-0">{missing}</p>}
       <div className="flex gap-1.5">
         <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>Huỷ</button>
         <button type="button" className="btn btn-sm btn-primary" disabled={busy || !!missing || !!loiGhiRo} title={missing ?? loiGhiRo ?? undefined} onClick={save}>Bỏ việc này</button>
@@ -278,7 +278,7 @@ function AddCoordinationForm({ attemptId, existing, onClose, onChanged }: {
         ))}
       </div>
       <OKhac hien={kind === 'other'} value={customName} onChange={setCustomName} nhan="Tên việc" goiY="Ví dụ: Gặp trợ giảng sau giờ học" loi={loiGhiRo} />
-      {missing && <p className="text-xs text-amber-200/90 m-0">{missing}</p>}
+      {missing && <p className="text-xs text-amber-200 m-0">{missing}</p>}
       <div className="flex gap-1.5">
         <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>Huỷ</button>
         <button type="button" className="btn btn-sm btn-primary" disabled={busy || !!missing || !!loiGhiRo} title={missing ?? loiGhiRo ?? undefined} onClick={save}>Thêm</button>
