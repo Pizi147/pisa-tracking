@@ -446,7 +446,9 @@ function ChuGiai({ cheDo }: { cheDo: 'ielts' | 'ratio' }) {
       <span className={`inline-block rounded px-[5px] text-[11px] font-extrabold leading-[15px] ${KHOI[tone]}`}>{dau}</span>{chu}
     </span>
   );
-  const ghim: [MauKetQua, string][] = [['dat', 'Đạt'], ['sos1', 'SOS 1'], ['sos2', 'SOS 2'], ['sos3', 'SOS 3'], ['tam', 'Tạm thời']];
+  const ghim: [MauKetQua, string][] = cheDo === 'ratio'
+    ? [['dat', 'Đạt'], ['sos1', '1 môn trượt'], ['sos2', '2 môn trượt'], ['sos3', '≥ 3 môn trượt'], ['tam', 'Tạm thời']]   // lớp thường: không chữ SOS (T58)
+    : [['dat', 'Đạt'], ['sos1', 'SOS 1'], ['sos2', 'SOS 2'], ['sos3', 'SOS 3'], ['tam', 'Tạm thời']];
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] text-dim">
       <span className={tieuDe}>Điểm</span>

@@ -2126,8 +2126,8 @@ check('Case SOS của lớp thường dùng CHUNG hệ thống case với lớp 
         WHERE a.kind != 'mock' GROUP BY sc.sos_level ORDER BY sc.sos_level`,
     )
     .all() as any[];
-  assert(cases.filter((c) => c.sos_level >= 1).length >= 3, 'Dữ liệu mẫu cần đủ cả ba mức SOS của lớp thường');
-  for (const c of cases) assert(c.sos_level >= 0 && c.sos_level <= 3, `Mức SOS lạ: ${c.sos_level}`);
+  /* PR-LT2a (T58): Case lớp thường KHÔNG có mức SOS (`sos_level` NULL) — vẫn dùng chung bảng `sos_cases`, và dữ liệu mẫu có đủ Case Giữa khoá. */
+  assert(cases.length > 0 && cases.every((c) => c.sos_level === null), `Case lớp thường không được có sos_level: ${JSON.stringify(cases)}`);
   /*
    * MỨC 0 LÀ MỘT MỨC HỢP LỆ, không phải dữ liệu hỏng.
    *
@@ -2154,27 +2154,27 @@ check('Case SOS của lớp thường dùng CHUNG hệ thống case với lớp 
   assert(one, 'Không có case lớp thường nào đang mở để kiểm tra');
 });
 
-check('Sửa điểm làm đổi mức SOS thì GIỮ case và ghi lịch sử, không xoá làm lại', () => {
+check('Sửa điểm lớp thường thì GIỮ case và ghi lịch sử, không xoá làm lại (PR-LT2a: không còn mức SOS để đổi — Case chỉ căn cứ điểm sai thì rút, Case có việc thật thì giữ)', () => {
   const target = conn
     .prepare(
-      `SELECT sc.id AS case_id, sc.sos_level, a.id AS attempt_id, a.class_id
+      `SELECT sc.id AS case_id, a.id AS attempt_id, a.class_id
          FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id
-        WHERE a.kind != 'mock' AND sc.sos_level >= 2
+        WHERE a.kind = 'progress' AND sc.status != 'done'
         ORDER BY sc.id LIMIT 1`,
     )
     .get() as any;
-  assert(target, 'Cần một case lớp thường mức từ 2 trở lên để thử');
+  assert(target, 'Cần một Case Giữa khoá lớp thường đang mở để thử');
   const prog = regular.programmeOfClass(target.class_id)!;
-  // Nâng mọi kỹ năng lên mức đạt: SOS phải về 0 nhưng case vẫn còn để tra lịch sử.
+  // Nâng mọi kỹ năng lên mức đạt: Case không được biến mất — còn để tra lịch sử.
   for (const skill of prog.skills) {
     regular.saveRegularScore(P.admin, target.attempt_id, skill, { score: 38, total: 40, lyDo: 'Phép kiểm: sửa điểm đã có' });
   }
   const after = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(target.case_id) as any;
   assert(after, 'Case bị xoá mất khi điểm đổi');
-  assert(after.sos_level === 0, `Mức SOS phải tính lại về 0, đang là ${after.sos_level}`);
-  const hist = conn.prepare(`SELECT * FROM sos_case_history WHERE case_id = ? AND field = 'sos_level'`)
-    .all(target.case_id) as any[];
-  assert(hist.length > 0, 'Đổi mức SOS mà không ghi lịch sử');
+  if (after.status === 'done') {
+    const hist = conn.prepare(`SELECT * FROM sos_case_history WHERE case_id = ? AND field = 'status'`).all(target.case_id) as any[];
+    assert(hist.length > 0, 'Rút Case vì sửa điểm mà không ghi lịch sử');
+  }
 });
 
 check('Đủ điểm mọi kỹ năng thì bài mới chuyển sang đã xong', () => {
@@ -4129,7 +4129,7 @@ check('Cảnh báo case trùng: báo lại hạng mục đã có case chưa xong
   assert(parallel.parallel === true, 'Case mở riêng không được đánh dấu là song song');
 });
 
-check('Lớp Normal: chấm lại một bài CŨ vẫn hạ được mức của case', () => {
+check('Lớp Normal: chấm lại một bài CŨ vẫn tìm đúng Case theo học viên — sửa điểm chính lượt làm căn cứ không ghi mốc "đã đạt" (PR-LT2a: không còn mức SOS để hạ)', () => {
   /*
    * Case sống suốt khoá nên cột `attempt_id` của nó luôn trỏ tới LƯỢT MỚI NHẤT. Tìm case
    * bằng `WHERE attempt_id = ?` thì chấm lại một bài cũ sẽ không tìm ra case nào, và điểm
@@ -4147,7 +4147,7 @@ check('Lớp Normal: chấm lại một bài CŨ vẫn hạ được mức của
          JOIN assessment_attempts a
            ON a.student_id = sc.student_id AND a.cycle_id = sc.cycle_id
          JOIN classes cl ON cl.id = a.class_id
-        WHERE sc.status != 'done' AND sc.sos_level > 0
+        WHERE sc.status != 'done'
           AND cl.kind != 'FT' AND a.status = 'done'
           AND EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND s.skill = sc.topic)
         ORDER BY a.attempt_no LIMIT 1`,
@@ -4162,9 +4162,7 @@ check('Lớp Normal: chấm lại một bài CŨ vẫn hạ được mức của
   const total = sc?.raw_total ?? 40;
   regular.saveRegularScore(P.admin, row.attempt_id, row.topic, { score: total, total, lyDo: 'Phép kiểm: sửa điểm đã có' });
 
-  const after = conn.prepare('SELECT sos_level FROM sos_cases WHERE id = ?').get(row.id) as any;
-  assert(after.sos_level === 0,
-    `Kỹ năng đã đạt mà mức của case vẫn là ${after.sos_level} — case tìm theo lượt thi thay vì theo học viên`);
+  assert(conn.prepare('SELECT 1 FROM sos_cases WHERE id = ?').get(row.id), 'Case bị xoá mất khi chấm lại bài cũ');
   /* PR-S4F #3 (mục 9.4): lượt này là căn cứ của case → đạt ở đây là SỬA ĐIỂM, không phải tiến bộ — không ghi mốc "đã đạt". */
   const passed = conn
     .prepare(`SELECT 1 FROM case_milestones WHERE case_id = ? AND kind = 'passed' AND attempt_id = ?`)
@@ -4959,7 +4957,9 @@ check('Chuyển lớp rồi thì case theo em sang lớp mới TRÊN BẢNG TỔ
   }
 
   /* Còn HỒ SƠ HỌC VIÊN vẫn phải giữ lớp lúc đánh giá — chuyển lớp không viết lại quá khứ. */
-  const pr = profile.studentProfile(P.admin, moved.sid) as any;
+  /* PR-LT2a M1b: vào lớp thường mới tự có bài ở lộ trình MỚI — hồ sơ mặc định giờ mở lộ trình mới; lịch sử lớp cũ nằm ở lộ trình CŨ (không viết lại quá khứ). */
+  const cuCycle = (conn.prepare('SELECT cycle_id FROM assessment_attempts WHERE student_id = ? AND class_id = ? LIMIT 1').get(moved.sid, moved.oldc) as any)?.cycle_id ?? null;
+  const pr = profile.studentProfile(P.admin, moved.sid, cuCycle) as any;
   const oldCode = (conn.prepare('SELECT code FROM classes WHERE id = ?').get(moved.oldc) as any).code;
   const kept = pr.attempts.some((a: any) => a.classCode === oldCode);
   if (pr.attempts.length) {
@@ -6072,11 +6072,12 @@ check('[6.2] Không phương án nào còn được sinh tự động từ đi�
   assert(orphan.n === 0, `${orphan.n} phương án thuộc case chưa ai xác minh`);
 });
 
-check('[6.2] Tín hiệu chờ xác minh KHÔNG được đếm như case đã xác định', () => {
+check('[6.2] Tín hiệu KHÔNG được đếm như case đã xác định; PR-LT2a: không còn tín hiệu chờ xác minh (FT nối ngay vào Case, lớp thường Giữa khoá tự tạo Case)', () => {
+  /* PR-LT2a (N4): trước đây phép kiểm này đòi bộ demo CÓ tín hiệu chờ. Nay không tín hiệu nào được ở trạng thái chờ — mọi tín hiệu là dây nối. */
   const pending = conn
-    .prepare(`SELECT COUNT(*) n FROM case_signals WHERE status = 'pending'`)
+    .prepare(`SELECT COUNT(*) n FROM case_signals sg JOIN classes c ON c.id = sg.class_id WHERE sg.status = 'pending' AND c.is_fast_track = 0 AND sg.attempt_id IN (SELECT id FROM assessment_attempts WHERE kind = 'progress')`)
     .get() as any;
-  assert(pending.n > 0, 'Bộ demo thiếu tín hiệu đang chờ xác minh — hàng việc mới sẽ trống');
+  assert(pending.n === 0, `${pending.n} tín hiệu Giữa khoá lớp thường còn "chờ xác minh" — mô hình đã bỏ`);
 
   /* Không tín hiệu chờ nào có case: chờ nghĩa là chưa thành gì cả. */
   const wrong = conn
@@ -6084,10 +6085,7 @@ check('[6.2] Tín hiệu chờ xác minh KHÔNG được đếm như case đã x
     .get() as any;
   assert(wrong.n === 0, `${wrong.n} tín hiệu vừa "chờ xác minh" vừa đã có case`);
 
-  /*
-   * Và tín hiệu đã xử lý xong cũng không được quay lại hàng chờ: mỗi dòng đúng một trạng
-   * thái, không có dòng vừa chờ vừa xong.
-   */
+  /* Mỗi dòng đúng một trạng thái, không có dòng vừa chờ vừa xong. */
   const muddled = conn
     .prepare(
       `SELECT COUNT(*) n FROM case_signals
@@ -6097,88 +6095,53 @@ check('[6.2] Tín hiệu chờ xác minh KHÔNG được đếm như case đã x
     )
     .get() as any;
   assert(muddled.n === 0, `${muddled.n} tín hiệu có trạng thái không khớp với dữ liệu của chính nó`);
-
-  /* Tổng hợp riêng phải đếm được, và con số phải khớp với chính bảng dữ liệu. */
-  const listed = signalsSvc.listSignals(P.admin, { status: 'pending' });
-  assert(listed.rows.length === pending.n,
-    `Tổng hợp tín hiệu đếm ${listed.rows.length} mà bảng có ${pending.n}`);
+  assert(!('listSignals' in signalsSvc), 'PR-LT2a: hàng "tín hiệu chờ xác minh" đã bỏ khỏi mã');
 });
 
-check('[6.2] Tín hiệu hiện ở hồ sơ học viên và ở hàng việc của đúng người', () => {
-  const sg = conn
-    .prepare(`SELECT * FROM case_signals WHERE status = 'pending' AND owner_user_id IS NOT NULL LIMIT 1`)
+check('[6.2] Hồ sơ học viên và Việc cần làm không còn tín hiệu chờ xác minh; Case Giữa khoá tự tạo nằm ở nhóm "Xác nhận nguyên nhân" của đúng GVBM', () => {
+  const c = conn
+    .prepare(`SELECT sc.* FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id
+               WHERE a.kind = 'progress' AND sc.origin_kind = 'mock' AND sc.status = 'open' AND sc.owner_user_id IS NOT NULL
+                 AND NOT EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sc.id AND iv.kind = 'bo_tro' AND iv.confirmed_at IS NOT NULL) LIMIT 1`)
     .get() as any;
-  assert(sg, 'Bộ demo thiếu tín hiệu chờ xác minh đã có người phụ trách');
-
-  const prof = profile.studentProfile(P.admin, sg.student_id) as any;
-  assert(prof.pendingSignals.some((x: any) => x.id === sg.id),
-    'Hồ sơ học viên không hiện tín hiệu đang chờ xác minh');
-
-  const owner = loadPrincipal(sg.owner_user_id);
+  assert(c, 'Bộ demo thiếu Case Giữa khoá tự tạo (chưa xác nhận) có người phụ trách');
+  const prof = profile.studentProfile(P.admin, c.student_id) as any;
+  assert(!('pendingSignals' in prof), 'Hồ sơ học viên không còn khối tín hiệu chờ xác minh');
+  const owner = loadPrincipal(c.owner_user_id);
   const work = mywork.myWork(owner);
-  assert((work.items ?? []).some((i: any) => i.key === `verify:${sg.id}`),
-    'Tín hiệu không xuất hiện trong hàng việc của người phải xác minh');
+  const items = (work.items ?? []) as any[];
+  assert(!items.some((i) => i.group === 'verify' || String(i.key).startsWith('verify:')), 'Việc cần làm không còn nhóm "verify"');
+});
 
-  /* Người KHÁC không thấy nó như việc của mình. */
-  const other = conn
-    .prepare(`SELECT user_id AS id FROM teacher_assignments WHERE class_id = ? AND user_id != ? LIMIT 1`)
-    .get(sg.class_id, sg.owner_user_id) as any;
-  if (other) {
-    const w2 = mywork.myWork(loadPrincipal(other.id));
-    assert(!(w2.items ?? []).some((i: any) => i.key === `verify:${sg.id}`),
-      'Tín hiệu của người khác lại nằm trong hàng việc của mình');
+check('[6.2] Lớp thường không còn đường "Bỏ qua" / "Tạo Case từ tín hiệu": mã và tuyến đã bỏ, Case chỉ mở bằng form thường', () => {
+  for (const ten of ['noteSignal', 'dismissSignal', 'assignSignal', 'signalDetail', 'linkSignalToCase']) {
+    assert(!(ten in signalsSvc), `PR-LT2a: ${ten} đã bỏ`);
   }
-});
-
-check('[6.2] Xác minh tín hiệu: đường "ghi nhận đã xem" cũ không quay lại; lối ra không mở Case duy nhất là Bỏ qua (S1)', () => {
-  /*
-   * Quyết định 16/09 bỏ đường "ghi nhận đã xem". Ngày 22/09 chủ sản phẩm mở lại MỘT lối ra có tên riêng — `dismissSignal`
-   * (Bỏ qua, chỉ lớp thường, S1). Tên cũ `noteSignal` vẫn không được quay lại.
-   */
-  assert(!('noteSignal' in signalsSvc),
-    'Vẫn còn đường ghi nhận đã xem mà không mở case — chủ sản phẩm đã bỏ lối ra này');
-  assert('dismissSignal' in signalsSvc, 'S1: phải có đường Bỏ qua tín hiệu lớp thường');
-
-  const sg = conn
-    .prepare(`SELECT * FROM case_signals WHERE status = 'pending' LIMIT 1`)
-    .get() as any;
-  assert(sg, 'Bộ demo thiếu tín hiệu đang chờ xác minh');
   const made = cases.reportIssue(P.admin, {
-    studentId: sg.student_id, cycleId: sg.cycle_id,
-    topic: sg.skill,
-    title: 'Xác minh từ tín hiệu của đợt đánh giá',
-    summary: 'Đã xem lại bài và xác định vấn đề cụ thể của em ở phần này.',
-    primaryCode: sg.skill
-      ? `student.${sg.skill.replace(/[12]$/, '')}.${sg.skill.startsWith('writing') ? 'task' : sg.skill === 'speaking' ? 'fluency' : 'technique'}`
-      : 'student.listening.technique',
-    fromSignalId: sg.id,
-  }) as any;
-  const after = conn.prepare('SELECT * FROM case_signals WHERE id = ?').get(sg.id) as any;
-  assert(after.status === 'linked' && after.case_id === made.id,
-    'Xác minh xong mà tín hiệu không gắn vào case vừa mở');
+    studentId: formTestStudent().id, cycleId: formTestStudent().cycle_id, topic: 'listening',
+    title: 'Ghi nhận tay sau khi xem bài', summary: 'Đã xem lại bài và xác định vấn đề cụ thể của em ở phần này.',
+    primaryCode: 'student.listening.technique',
+    fromSignalId: 999999,   // tham số đã bỏ — máy chủ bỏ qua, không lỗi, không gắn tín hiệu nào
+  } as any) as any;
+  assert(made.id && !conn.prepare('SELECT 1 FROM case_signals WHERE case_id = ?').get(made.id), 'Case tạo tay không được gắn tín hiệu');
 });
 
-check('[6.2] Chỉ người trong phạm vi phụ trách mới xác minh được tín hiệu', () => {
-  const sg = conn
+check('[6.2] Quản lý chi nhánh khác không tạo được Case cho học viên ngoài phạm vi', () => {
+  const st = conn
     .prepare(
-      `SELECT sg.* FROM case_signals sg
-         JOIN classes c ON c.id = sg.class_id
-         JOIN branches b ON b.id = c.branch_id
-        WHERE sg.status = 'pending' AND b.code = 'MB' LIMIT 1`,
+      `SELECT e.student_id, e.class_id FROM enrollments e JOIN classes c ON c.id = e.class_id JOIN branches b ON b.id = c.branch_id
+        WHERE e.status = 'active' AND b.code = 'MB' LIMIT 1`,
     )
     .get() as any;
-  if (!sg) return;
-  /* Quản lý chi nhánh khác không đụng được. */
+  assert(st, 'Bộ demo thiếu học viên Monbay đang học');
   assertThrows(
     () => cases.reportIssue(P.cpManager, {
-      studentId: sg.student_id, cycleId: sg.cycle_id,
-      topic: sg.skill,
+      studentId: st.student_id, topic: 'listening',
       title: 'Xem hộ chi nhánh khác một chút',
       summary: 'Tôi xem hộ chi nhánh khác một cái cho nhanh, xem em vướng gì.',
       primaryCode: 'student.listening.technique',
-      fromSignalId: sg.id,
     }),
-    /phạm vi/, 'Quản lý chi nhánh khác xác minh được tín hiệu ngoài phạm vi',
+    /phạm vi/, 'Quản lý chi nhánh khác tạo được Case ngoài phạm vi',
   );
 });
 
@@ -6706,8 +6669,8 @@ check('[4.1] Câu tổng hợp đầu hồ sơ nói rõ TỪNG kỹ năng, khôn
     .get() as any;
   const pr = profile.studentProfile(P.admin, row.sid, row.cid) as any;
   assert(pr.headline, 'Hồ sơ không có câu tổng hợp nào ở đầu');
-  assert(Array.isArray(pr.headline.below) && Array.isArray(pr.headline.signals),
-    'Câu tổng hợp không tách được kỹ năng dưới kỳ vọng với tín hiệu chờ xác minh');
+  assert(Array.isArray(pr.headline.below) && !('signals' in pr.headline),
+    'Câu tổng hợp phải nêu kỹ năng dưới kỳ vọng và không còn khối tín hiệu chờ xác minh (PR-LT2a)');
 
   /* Câu tổng hợp phải khớp với BẢNG BÊN DƯỚI — hai chỗ không được nói ngược nhau. */
   const board = (cases.skillSupportBoard(P.admin, row.sid, row.cid) as any).rows;
@@ -6776,22 +6739,21 @@ check('[4.2] Kỹ năng KHÔNG có case vẫn có hàng riêng — "chưa có d�
   assert(board.every((r: any) => r.category !== GONE), 'Bảng kỹ năng không còn hàng Ý thức');
   for (const r of board) {
     assert(Array.isArray(r.cases), `Hàng ${r.category} không có danh sách case`);
-    assert(r.signal === null || typeof r.signal === 'object',
-      `Hàng ${r.category} có tín hiệu sai kiểu`);
+    assert(!('signal' in r), `Hàng ${r.category} không còn khối tín hiệu chờ xác minh (PR-LT2a)`);
   }
 });
 
-check('[4.2] Tín hiệu chờ xác minh nằm ở ĐÚNG hàng kỹ năng của nó', () => {
-  const sg = conn
-    .prepare(`SELECT * FROM case_signals WHERE status = 'pending' AND category IS NOT NULL LIMIT 1`)
+check('[4.2] Case Giữa khoá tự tạo (PR-LT2a) nằm ở ĐÚNG hàng kỹ năng của nó, không lọt sang hàng khác', () => {
+  const c = conn
+    .prepare(`SELECT sc.* FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id
+               WHERE a.kind = 'progress' AND sc.origin_kind = 'mock' AND sc.category IS NOT NULL AND sc.status != 'done' LIMIT 1`)
     .get() as any;
-  assert(sg, 'Bộ demo không còn tín hiệu nào chờ xác minh');
-  const board = (cases.skillSupportBoard(P.admin, sg.student_id, sg.cycle_id) as any).rows;
-  const row = board.find((r: any) => r.category === sg.category);
-  assert(row?.signal?.id === sg.id,
-    `Tín hiệu ${sg.category} không hiện ở hàng ${sg.category} của bảng kỹ năng`);
-  for (const other of board.filter((r: any) => r.category !== sg.category)) {
-    assert(other.signal?.id !== sg.id, `Tín hiệu ${sg.category} lọt sang hàng ${other.category}`);
+  assert(c, 'Bộ demo không còn Case Giữa khoá tự tạo nào');
+  const board = (cases.skillSupportBoard(P.admin, c.student_id, c.cycle_id) as any).rows;
+  const row = board.find((r: any) => r.category === c.category);
+  assert(row?.cases.some((x: any) => x.id === c.id), `Case ${c.category} không hiện ở hàng ${c.category} của bảng kỹ năng`);
+  for (const other of board.filter((r: any) => r.category !== c.category)) {
+    assert(!other.cases.some((x: any) => x.id === c.id), `Case ${c.category} lọt sang hàng ${other.category}`);
   }
 });
 
@@ -8188,14 +8150,15 @@ const branchIdOf = (code: string) => (conn.prepare('SELECT id FROM branches WHER
 
 check('PR-F · Sổ chỉ số: đúng hai mươi chỉ số (PR-N thêm pa-cho-duyet; PR-J thêm tám chỉ số Ý thức), mỗi chỉ số đủ tám trường (thiếu một trường thì không được lên dashboard)', () => {
   const list = domain.METRICS as readonly any[];
-  assert(list.length === 31, `Phải có ba mươi mốt chỉ số (PR-YT4: bien-phap-dang-chuan-bi → bien-phap-cho-duyet, thêm hv-theo-bac; hai của PR-UX4: hv-can-ho-tro-2-lan-chua-case, hv-bo-qua-van-can-ho-tro + hai mươi tám chỉ số cũ: mười hai của PR-F/PR-N + bảy của PR-J còn lại sau khi PR-T bỏ vi-pham-khong-hieu-luc + bốn của PR-T: case-cho-xac-dinh-nguyen-nhan và ba phoi-hop-* + một của PR-S1: tin-hieu-qua-han + ba của PR-Pa: case-xac-dinh-nguyen-nhan-qua-han, bai-qua-han-nhap-diem, case-chua-co-nguoi-phu-trach + một của PR-YT2: vi-pham-theo-nhom), đang có ${list.length}`);
-  const expected = ['hv-sos-hien-tai', 'hv-duoi-ky-vong-mon', 'hv-co-case-mo', 'case-mo', 'tin-hieu-cho-xac-minh', 'tin-hieu-qua-han',
+  /* PR-LT2a (N4, Q14): bỏ ba chỉ số của mô hình tín hiệu — tin-hieu-cho-xac-minh, tin-hieu-qua-han, hv-bo-qua-van-can-ho-tro (31 → 28). */
+  assert(list.length === 28, `Phải có hai mươi tám chỉ số (PR-YT4: bien-phap-dang-chuan-bi → bien-phap-cho-duyet, thêm hv-theo-bac; hai của PR-UX4: hv-can-ho-tro-2-lan-chua-case, hv-bo-qua-van-can-ho-tro + hai mươi tám chỉ số cũ: mười hai của PR-F/PR-N + bảy của PR-J còn lại sau khi PR-T bỏ vi-pham-khong-hieu-luc + bốn của PR-T: case-cho-xac-dinh-nguyen-nhan và ba phoi-hop-* + một của PR-S1: tin-hieu-qua-han + ba của PR-Pa: case-xac-dinh-nguyen-nhan-qua-han, bai-qua-han-nhap-diem, case-chua-co-nguoi-phu-trach + một của PR-YT2: vi-pham-theo-nhom), đang có ${list.length}`);
+  const expected = ['hv-sos-hien-tai', 'hv-duoi-ky-vong-mon', 'hv-co-case-mo', 'case-mo',
     'case-xac-dinh-nguyen-nhan-qua-han', 'bai-qua-han-nhap-diem', 'case-chua-co-nguoi-phu-trach', 'case-cho-xac-dinh-nguyen-nhan',
     'case-thieu-pa', 'pa-can-cap-nhat', 'pa-cho-duyet', 'pa-co-ket-qua', 'ty-le-co-cai-thien', 'dung-han-cap-nhat', 'do-phu-danh-gia',
     'vi-pham-tong', 'vi-pham-theo-nhom', 'vi-pham-chua-xu-ly', 'hv-co-vi-pham', 'hv-can-xu-ly',
     'bien-phap-da-thuc-hien', 'bien-phap-cho-duyet', 'bien-phap-theo-loai', 'hv-theo-bac',
     'phoi-hop-luot-sos', 'phoi-hop-dang-xu-ly', 'phoi-hop-hoan-thanh',
-    'hv-can-ho-tro-2-lan-chua-case', 'hv-bo-qua-van-can-ho-tro'];
+    'hv-can-ho-tro-2-lan-chua-case'];
   for (const id of expected) assert(list.some((m) => m.id === id), `Thiếu chỉ số ${id}`);
   assert(new Set(list.map((m) => m.id)).size === list.length, 'Có hai chỉ số trùng mã');
   const fields = ['id', 'ten', 'cauHoi', 'donVi', 'tapDuDieuKien', 'thoiGian', 'khuTrung', 'drilldown'];
@@ -8203,7 +8166,7 @@ check('PR-F · Sổ chỉ số: đúng hai mươi chỉ số (PR-N thêm pa-cho-
     for (const f of fields) {
       assert(typeof m[f] === 'string' && m[f].trim().length > 0, `Chỉ số ${m.id} thiếu trường "${f}"`);
     }
-    assert(['hoc-vien', 'case', 'phuong-an', 'bai-thi', 'tin-hieu', 'dot-test', 'nghia-vu', 'vi-pham', 'bien-phap', 'luot-sos'].includes(m.donVi), `${m.id}: đơn vị lạ "${m.donVi}"`);
+    assert(['hoc-vien', 'case', 'phuong-an', 'bai-thi', 'dot-test', 'nghia-vu', 'vi-pham', 'bien-phap', 'luot-sos'].includes(m.donVi), `${m.id}: đơn vị lạ "${m.donVi}"`);
     assert(['hien-trang', 'phat-sinh-trong-ky', 'ket-qua-trong-ky'].includes(m.thoiGian), `${m.id}: thời gian lạ "${m.thoiGian}"`);
   }
   assert(domain.metricById('hv-co-case-mo')?.ten === 'Học viên có case đang mở', 'metricById phải tra đúng chỉ số');
@@ -9822,6 +9785,9 @@ await runPrSangTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 // ==================================================================== PR-S4F (sửa sau rà cuối đợt 4)
 const { runPrS4fTests } = await import('./prS4f.tests.ts');
 await runPrS4fTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== PR-LT2a (lớp thường · Giữa khoá)
+const { runPrLt2aTests } = await import('./prLt2a.tests.ts');
+await runPrLt2aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-LT2b (Cuối khoá lớp thường)
 const { runPrLt2bTests } = await import('./prLt2b.tests.ts');
 await runPrLt2bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });

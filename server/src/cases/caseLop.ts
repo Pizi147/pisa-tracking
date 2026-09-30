@@ -82,7 +82,7 @@ export function chiTietCaseMo(cases: readonly MappedCase[]): Map<number, CaseChi
     };
     const pas: PaCase[] = cua(paTheoCase, c.id).map((iv) => ({
       id: iv.id, ten: (iv.description ?? '').trim() || (INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] ?? iv.kind), loai: iv.kind,
-      batBuoc: iv.preset === 1, choXacNhan: iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned',
+      batBuoc: iv.preset === 1, choXacNhan: iv.kind !== 'bo_tro' && iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned',
       choDuyet: iv.approval_state === 'pending', xong: iv.status === 'completed',
       nguoi: iv.performer_account ?? iv.performer_name ?? null,
       mocChu: iv.preset === 1
@@ -90,7 +90,7 @@ export function chiTietCaseMo(cases: readonly MappedCase[]): Map<number, CaseChi
     }));
     const v4 = {
       status: c.status as 'open' | 'in_progress' | 'done', fromSos: s.fromSos, hasCause: s.hasCause, dismissed: !!s.dismissed, systemClosed: !!g.system_close_reason,
-      choDuyetKhongTheoDoi: !!s.choDuyetKhongTheoDoi, coPaChoXacNhan: s.coPaChoXacNhan, hanXacNhan: s.dueOn,
+      choDuyetKhongTheoDoi: !!s.choDuyetKhongTheoDoi, coPaChoXacNhan: s.coPaChoXacNhan, hanXacNhan: s.dueOn, boTro: s.boTro,
       lyDoHeThong: g.system_close_reason ? SYSTEM_CLOSE_REASON_LABEL[g.system_close_reason as keyof typeof SYSTEM_CLOSE_REASON_LABEL] ?? null : null,
     };
     const hanLapPa = c.originKind === 'mock' ? null : planDueDate(String(c.detectedAt ?? homNay).slice(0, 10), c.urgency);

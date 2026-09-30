@@ -19,6 +19,7 @@ import { migratePrKck } from './migrate/prKck.ts';
 import { migratePrSos } from './migrate/prSos.ts';
 import { migratePrYt4 } from './migrate/prYt4.ts';
 import { migratePrHsm } from './migrate/prHsm.ts';
+import { migratePrLt2a } from './migrate/prLt2a.ts';
 import { migratePrLt2b } from './migrate/prLt2b.ts';
 
 /**
@@ -476,6 +477,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     /* PR-YT4: Ý thức v4 — ghi nhận vi phạm, ngày QL quyết, bảng khai bậc (chỉ cấu trúc). */
     migratePrYt4(conn, applied);
     /* PR-HSM: nhận xét W/S + GV chấm Speaking (T39). */ migratePrHsm(conn, applied);
+    /* PR-LT2a: nhóm PA bổ trợ Giữa khoá + hạn nộp kế hoạch (M-03, M-05) — chỉ cấu trúc. */ migratePrLt2a(conn, applied);
     /* PR-LT2b: Mini Test + kỳ vọng đầu ra (Cuối khoá lớp thường). */ migratePrLt2b(conn, applied);
 
     /*

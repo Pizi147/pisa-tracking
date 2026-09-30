@@ -31,7 +31,7 @@ export const NHOM_VIEC_LABEL: Record<NhomViec, string> = {
 /** Loại việc của `mywork.ts` → 4 nhóm (PR-DUYET bỏ `decide`, `decide_move` — thẻ ở hộp Chờ duyệt). PR-YT4: ba loại việc Ý thức có hạn thật; Phối hợp SOS vẫn là nhắc mềm. */
 const NHOM_CUA_LOAI: Record<string, NhomViec> = {
   score: 'cham-diem',
-  verify: 'case-hoc-thuat', cause: 'case-hoc-thuat', xac_nhan_pa: 'case-hoc-thuat', no_plan: 'case-hoc-thuat', result: 'case-hoc-thuat',
+  cause: 'case-hoc-thuat', xac_nhan_pa: 'case-hoc-thuat', ke_hoach_bo_tro: 'case-hoc-thuat', phoi_hop: 'case-hoc-thuat', no_plan: 'case-hoc-thuat', result: 'case-hoc-thuat',
   do_plan: 'case-hoc-thuat', no_owner: 'case-hoc-thuat',
   placement: 'van-hanh', next_step: 'van-hanh', mgmt: 'van-hanh', missing_data: 'van-hanh',
   yt_xu_ly: 'y-thuc', yt_xem: 'y-thuc', yt_thuc_hien: 'y-thuc',
@@ -40,7 +40,7 @@ export function nhomViecCua(loai: string): NhomViec { return NHOM_CUA_LOAI[loai]
 
 /** Loại hạn của từng loại việc — để dòng việc hiện hạn qua `<Han>` (G-10). Loại không có ở đây: hạn là ngày trơn. */
 export const LOAI_HAN_CUA_VIEC: Partial<Record<string, DeadlineKind>> = {
-  verify: 'xac-minh-sos', cause: 'xac-minh-sos', xac_nhan_pa: 'xac-minh-sos', no_plan: 'lap-pa', result: 'cap-nhat-pa', score: 'nhap-diem',
+  cause: 'xac-minh-sos', xac_nhan_pa: 'xac-minh-sos', ke_hoach_bo_tro: 'ke-hoach-bo-tro', no_plan: 'lap-pa', result: 'cap-nhat-pa', score: 'nhap-diem',
   yt_xu_ly: 'xu-ly-vi-pham', yt_xem: 'xu-ly-vi-pham', yt_thuc_hien: 'xu-ly-vi-pham',
 };
 
@@ -69,9 +69,9 @@ export function gomNhomViec<T extends ViecGom>(items: T[], soNhacYThuc = 0): Nho
 
 // ------------------------------------------------------------------ Cần xử lý (Quản lý)
 export type MaCanXuLy =
-  | 'tin-hieu-qua-han' | 'case-xac-dinh-nguyen-nhan-qua-han' | 'pa-cho-duyet' | 'case-chua-co-nguoi-phu-trach'
+  | 'case-xac-dinh-nguyen-nhan-qua-han' | 'pa-cho-duyet' | 'case-chua-co-nguoi-phu-trach'
   | 'case-thieu-pa' | 'pa-can-cap-nhat' | 'bai-qua-han-nhap-diem' | 'hv-can-xu-ly'
-  | 'hv-can-ho-tro-2-lan-chua-case' | 'hv-bo-qua-van-can-ho-tro';
+  | 'hv-can-ho-tro-2-lan-chua-case';
 
 /**
  * MỖI DÒNG LÀ MỘT CHỈ SỐ TRONG SỔ — bấm số hay bấm nút đều mở đúng tập đó (G-10).
@@ -83,12 +83,10 @@ export const CAN_XU_LY: readonly {
   /** PR-UX4: nút Xem mở Danh sách Case với bộ lọc `hang-doi=<denLoc>` (Phân tích › Danh sách Case), không mở ngăn số. */
   denLoc?: LoaiBoQuen;
 }[] = [
-  { metricId: 'tin-hieu-qua-han', nhan: 'tín hiệu cần xác minh quá hạn', nut: 'Mở', mau: 'do' },
   /* PR-DUYET (K1-01): "PA chờ Quản lý duyệt" và "Case quá hạn xác định nguyên nhân" không còn ở đây — chúng là thẻ ở hộp Chờ duyệt
      (dải "Chờ duyệt n · k quá hạn · Báo lên m" trên đầu khối). Hai chỉ số vẫn sống cho Phân tích / branch-pulse. */
   { metricId: 'case-chua-co-nguoi-phu-trach', nhan: 'Case chưa có người phụ trách', nut: 'Xem', mau: 'vang' },
   { metricId: 'hv-can-ho-tro-2-lan-chua-case', nhan: 'học viên cần hỗ trợ 2 lần Test liền, chưa có Case mở', nut: 'Xem', mau: 'vang', denLoc: 'can-ho-tro-2-lan' },
-  { metricId: 'hv-bo-qua-van-can-ho-tro', nhan: 'học viên bị Bỏ qua tín hiệu, lần Test sau vẫn chưa đạt', nut: 'Xem', mau: 'vang', denLoc: 'bo-qua-van-can-ho-tro' },
   { metricId: 'case-thieu-pa', nhan: 'Case thiếu PA học thuật', nut: 'Xem', mau: 'vang' },
   { metricId: 'pa-can-cap-nhat', nhan: 'PA học thuật quá hạn cập nhật', nut: 'Xem', mau: 'do' },
   { metricId: 'bai-qua-han-nhap-diem', nhan: 'bài chưa nhập điểm quá hạn', nut: 'Xem', mau: 'do' },

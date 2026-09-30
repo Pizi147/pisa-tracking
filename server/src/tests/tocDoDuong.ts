@@ -68,7 +68,8 @@ export const DUONG_DO: MucDo[] = [
   },
   { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/phan-tich/bo-quen?loai=can-ho-tro-2-lan' },
   { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/metrics/hv-can-ho-tro-2-lan-chua-case' },
-  { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/metrics/hv-bo-qua-van-can-ho-tro' },
+  /* PR-LT2a: thay chỉ số "Bỏ qua tín hiệu" đã bỏ bằng chỉ số Case chờ nguyên nhân quá hạn (FT + Giữa khoá lớp thường — ô Tổng quan). */
+  { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/metrics/case-xac-dinh-nguyen-nhan-qua-han' },
 
   // ---------------------------------------------------------------- Tổng quan · Giáo viên
   { trang: 'Tổng quan GV', vai: ['GVCN', 'GVBM', 'GVCN_THUONG'], url: '/my-work' },
@@ -270,8 +271,8 @@ export const TRAN: Record<string, number> = {
   'QT /phan-tich/bo-quen?loai=can-ho-tro-2-lan': 32,
   'QL /metrics/hv-can-ho-tro-2-lan-chua-case': 32,
   'QT /metrics/hv-can-ho-tro-2-lan-chua-case': 32,
-  'QL /metrics/hv-bo-qua-van-can-ho-tro': 32,
-  'QT /metrics/hv-bo-qua-van-can-ho-tro': 32,
+  'QL /metrics/case-xac-dinh-nguyen-nhan-qua-han': 32,
+  'QT /metrics/case-xac-dinh-nguyen-nhan-qua-han': 32,
   'GVCN /my-work': 63,
   'GVBM /my-work': 62,
   'GVCN_THUONG /my-work': 63,
@@ -283,11 +284,11 @@ export const TRAN: Record<string, number> = {
   'GVCN /my-work?nguoi=tat-ca': 19,
   'QL /my-work?nguoi=7': 74,
   /* PR-DUYET: đo khi hộp đã có thẻ thật (Task 4) — trần max(sau+10, ⌈sau×1,3⌉). */
-  'QL /yeu-cau?hop=cho-duyet': 30,   // PR-YT4 sau khi gộp PR-SOS: thẻ khong_theo_doi + bao_len_y_thuc cùng nạp (đo 29, +3,6%); PR-HVL (10): demo H1 thêm một thẻ "không theo dõi" chờ duyệt → đo 30
-  'QT /yeu-cau?hop=cho-duyet': 29,
+  'QL /yeu-cau?hop=cho-duyet': 32,   // PR-LT2a (11): demo G1–G5 có thẻ ke_hoach_bo_tro → loại thẻ thêm câu nạp (đo 32, MỘT lần mỗi loại, không theo số thẻ); PR-YT4 sau khi gộp PR-SOS: thẻ khong_theo_doi + bao_len_y_thuc cùng nạp (đo 29, +3,6%); PR-HVL (10): demo H1 thêm một thẻ "không theo dõi" chờ duyệt → đo 30
+  'QT /yeu-cau?hop=cho-duyet': 31,
   'GVCN /yeu-cau?hop=cho-duyet': 17,
-  'QL /yeu-cau?hop=cho-duyet&xem=da-xu-ly': 27,   // PR-SOS: loại thẻ khong_theo_doi thêm câu nạp (đo 23); + thẻ Ý thức PR-YT4 (đo 27)
-  'QT /yeu-cau?hop=cho-duyet&xem=da-xu-ly': 26,   // PR-SOS: loại thẻ khong_theo_doi thêm câu nạp (đo 22)
+  'QL /yeu-cau?hop=cho-duyet&xem=da-xu-ly': 28,   // PR-SOS: loại thẻ khong_theo_doi thêm câu nạp (đo 23); + thẻ Ý thức PR-YT4 (đo 27)
+  'QT /yeu-cau?hop=cho-duyet&xem=da-xu-ly': 27,   // PR-SOS: loại thẻ khong_theo_doi thêm câu nạp (đo 22)
   'GVCN /yeu-cau?hop=cua-toi': 25,
   'GVBM /yeu-cau?hop=cua-toi': 21,
   'QL /yeu-cau/dem': 25,
@@ -320,17 +321,18 @@ export const TRAN: Record<string, number> = {
   'QT /classes?branchId=1': 35,
   /* PR-HVL (3): mốc 51 (QT 49) + việc tiếp theo/Ý thức/thẻ chờ duyệt theo lô đo 59 (QT 57) — trần kế hoạch = mốc + 12. */
   /* PR-S4F #5: +3 câu — `quetYeuCau` trước khi đếm thẻ chờ duyệt (badge = hộp); nhớ theo request nên chỉ một lần. */
-  'QL /hoc-vien-lop': 66,
-  'GVCN /hoc-vien-lop': 66,
-  'GVBM /hoc-vien-lop': 66,
-  'GVCN_THUONG /hoc-vien-lop': 66,
+  /* PR-LT2a (Task 7): +1 câu `emCoBaoPhChuaLam` (việc Báo phụ huynh qua TVV của GVCN, MỘT câu theo lô) — đo 67; trần 66 → 72 (+9%, < 30%). */
+  'QL /hoc-vien-lop': 72,
+  'GVCN /hoc-vien-lop': 72,
+  'GVBM /hoc-vien-lop': 72,
+  'GVCN_THUONG /hoc-vien-lop': 72,
   'QT /hoc-vien-lop': 85,
-  'QL /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 66,
-  'QT /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 64,
-  'QL /classes/3/overview': 55,
-  'GVCN /classes/3/overview': 55,
-  'GVBM /classes/3/overview': 55,
-  'GVCN_THUONG /classes/3/overview': 55,
+  'QL /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 72,
+  'QT /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 70,
+  'QL /classes/3/overview': 61,
+  'GVCN /classes/3/overview': 61,
+  'GVBM /classes/3/overview': 61,
+  'GVCN_THUONG /classes/3/overview': 61,
   'QT /classes/3/overview': 54,   // PR-S4F #5: +3 câu quét thẻ chờ duyệt
   /* PR-HVL (2): mốc 46 (QT 43) + Case mở theo lô (`chiTietCaseMo`) đo 50 (QT 47) — trần kế hoạch = mốc + 6. */
   /* PR-HVL (5): `/classes/:id/can-ho-tro` đo 25 (QT 22) = `/cases?classId=` 17 (QT 14) + 8 — đúng trần kế hoạch. */
@@ -549,4 +551,6 @@ export const TRAN_GHI_LO = {
   congViec30PaChuaNgayThi: 91,
   /** POST /xuat-mt — Quản lý xuất cả chi nhánh MB, MT1–MT8, cột đầy đủ, SAU khi nhân dữ liệu ×3 (PR-XUAT). Phải KHÔNG tăng theo số lượt (một câu lượt + các câu lô của loadBundle). Đo 16 câu / 550 lượt → trần max(sau+10, ⌈sau×1.3⌉) = 26. */
   xuatMtChiNhanh: 26,
+  /** POST /intake/commit — 30 em lớp THƯỜNG (MB FOU 12), mỗi em tự có bài Giữa/Cuối khoá còn hiệu lực (PR-LT2a M1b). Ghi theo lô: số câu không tăng theo số em. */
+  themHocVien30Thuong: 72,   // đo 55 câu → trần max(sau+10, ⌈sau×1,3⌉) = 72
 };

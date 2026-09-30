@@ -1,22 +1,23 @@
-import { db, tx } from '../db.ts';
-import { addMilestone, followUntilAfter } from '../cases/sos.ts';
+import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
+import { addMilestone, followUntilAfter, taoCaseTuDong } from '../cases/sos.ts';
+import { dongBoBaoPh } from '../yThuc/phoiHop.ts';
 import { raiseSignal, reconcileCorrectedSignals } from '../cases/signals.ts';
 import {
-  ATTEMPT_KIND_LABEL, PERMISSIONS, RATIO_PASS_THRESHOLD,
+  ATTEMPT_KIND_LABEL, ATTEMPT_KIND_SHORT, PERMISSIONS, RATIO_PASS_THRESHOLD, boMonLich, boTroGiuaKhoa,
   caseCategoriesFor, categoryOf, goiYCuoiKhoa, kiemLyDo, kiemLyDoThaoTac, ngay, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanKeTiep, tuanLich,
   type AssessedSkill, type AttemptKind, type CaseCategory, type RatioOutcome, type SosLevel,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, editableSkills, isCoreTeacherOf, require_, scoreEditPath, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
-import { addJourney, writeAudit } from '../platform/audit.ts';
-import { ensurePeriod } from '../platform/week.ts';
+import { addJourney, notify, writeAudit } from '../platform/audit.ts';
+import { ensurePeriod, ensurePeriods } from '../platform/week.ts';
 import { regularSkillViews, weekStartOf } from '../fasttrack/attempts.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { checkSkillWeekMove, ensureSkillRows, loadSkillRows, setSkillWeek } from '../fasttrack/skillSchedule.ts';
 import { dotHoanTat, dotHoanTatMany, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
 import { canRequest } from '../fasttrack/absence.ts';
-import { classProgress } from '../classes/schedule.ts';
+import { classProgress, classProgressMany } from '../classes/schedule.ts';
 
 /**
  * LỚP THƯỜNG (Foundation / Beginner / Elementary).
@@ -360,6 +361,90 @@ export function planRegularTests(p: Principal, classId: number, opts: {
   });
 }
 
+/**
+ * M1b (K2-23, Câu 2 = A): em VÀO LỚP THƯỜNG (thêm mới, chuyển vào, Chuyển tiếp lớp) tự có bài Giữa khoá + Cuối khoá theo mốc của lớp — không có bài thì
+ * không có Case Giữa khoá. Bỏ mốc có tuần thi KẾT THÚC TRƯỚC `ngayVao` (không dựng bài quá hạn — lớp thường không có "lịch sử"); Pre FOU chỉ Cuối khoá
+ * (lớp không có mốc thì bỏ). Việc HỆ THỐNG: KHÔNG kiểm quyền (như `taoMtMacDinh`), gọi TRONG tx của nơi mở lộ trình. Số câu SQL KHÔNG phụ thuộc số em
+ * (lô 900). Chạy lại không tạo trùng. `planRegularTests` (Quản lý xếp tay, kể cả tuần đã qua) không đổi. Trả id các lượt mới.
+ */
+export function taoBaiThuongMacDinh(cycleIds: readonly number[], actorUserId: number | null, ngayVao: string = demoToday()): number[] {
+  if (!cycleIds.length) return [];
+  const conn = db();
+  const cys: any[] = [];
+  theoLo([...new Set(cycleIds)], (lo, ph) => { cys.push(...(conn.prepare(`SELECT id, student_id FROM learning_cycles WHERE id IN (${ph}) AND route IS NULL AND status = 'active'`).all(...lo) as any[])); });
+  if (!cys.length) return [];
+  const lopOf = new Map<number, number>();
+  theoLo([...new Set(cys.map((c) => c.student_id as number))], (lo, ph) => {
+    for (const r of conn.prepare(`SELECT student_id, class_id FROM enrollments WHERE student_id IN (${ph}) AND status = 'active' ORDER BY id DESC`).all(...lo) as any[]) {
+      if (!lopOf.has(r.student_id)) lopOf.set(r.student_id, r.class_id);
+    }
+  });
+  const chuongTrinh = allProgrammes();
+  const ctLop = new Map<number, string | null>();
+  theoLo([...new Set(lopOf.values())], (lo, ph) => {
+    for (const c of conn.prepare(`SELECT id, programme_code FROM classes WHERE id IN (${ph})`).all(...lo) as any[]) ctLop.set(c.id, c.programme_code ?? null);
+  });
+  const lopThuong = [...ctLop].filter(([, ct]) => ct && chuongTrinh.get(ct)?.scoringMode === 'ratio').map(([id]) => id);
+  if (!lopThuong.length) return [];
+  const moc = classProgressMany(lopThuong);
+  const daCo = new Set<string>(), daCoId = new Set<number>(), soLuot = new Map<number, number>();
+  theoLo(cys.map((c) => c.id as number), (lo, ph) => {
+    for (const a of conn.prepare(`SELECT id, cycle_id, kind, attempt_no FROM assessment_attempts WHERE cycle_id IN (${ph})`).all(...lo) as any[]) {
+      daCo.add(`${a.cycle_id}:${a.kind}`); daCoId.add(a.id); soLuot.set(a.cycle_id, Math.max(soLuot.get(a.cycle_id) ?? 0, a.attempt_no));
+    }
+  });
+  const moi: { cy: any; kind: 'progress' | 'final'; classId: number; week: string; no: number }[] = [];
+  for (const cy of cys) {
+    const classId = lopOf.get(cy.student_id);
+    if (classId === undefined || !lopThuong.includes(classId)) continue;
+    const pr = moc.get(classId);
+    if (!pr) continue;
+    for (const kind of ['progress', 'final'] as const) {
+      const week = kind === 'progress' ? pr.progressWeekStart : pr.finalWeekStart;
+      if (!week || daCo.has(`${cy.id}:${kind}`) || addDays(week, 6) < ngayVao) continue;   // không tạo bài quá hạn
+      const no = (soLuot.get(cy.id) ?? 0) + 1;
+      soLuot.set(cy.id, no);
+      moi.push({ cy, kind, classId, week, no });
+    }
+  }
+  if (!moi.length) return [];
+  const tuan = ensurePeriods([...new Set(moi.map((m) => m.week))]);
+  const now = nowIso();
+  chenNhieuDong(
+    'INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id, status, created_by, created_at)',
+    moi.map((m) => [m.cy.id, m.cy.student_id, m.no, m.kind, m.classId, tuan.get(m.week)!.id, 'planned', actorUserId, now]));
+  /* INSERT nhiều dòng không trả id → đọc lại: lượt mới là lượt của các lộ trình này chưa có trước đó (cùng giao dịch). */
+  const idOf = new Map<string, number>();
+  theoLo([...new Set(moi.map((m) => m.cy.id as number))], (lo, ph) => {
+    for (const a of conn.prepare(`SELECT id, cycle_id, kind FROM assessment_attempts WHERE cycle_id IN (${ph})`).all(...lo) as any[]) {
+      if (!daCoId.has(a.id)) idOf.set(`${a.cycle_id}:${a.kind}`, a.id);
+    }
+  });
+  const ids = moi.map((m) => idOf.get(`${m.cy.id}:${m.kind}`)!);
+  /* = `ensureSkillRows` của lượt mới: bộ môn theo chương trình lớp (FOU/BE/ELE 4 môn, Pre FOU Tổng hợp), tuần theo lượt. Một câu mỗi chương trình. */
+  const theoCt = new Map<string | null, { bo: readonly string[]; ids: number[] }>();
+  moi.forEach((m, i) => {
+    const ct = ctLop.get(m.classId) ?? null;
+    if (!theoCt.has(ct)) theoCt.set(ct, { bo: boMonLich(ct, programmeByCode(ct)?.skills), ids: [] });
+    theoCt.get(ct)!.ids.push(ids[i]);
+  });
+  for (const { bo, ids: dsId } of theoCt.values()) {
+    const mon = bo.map((_, i) => `SELECT ? AS skill, ${i} AS thu`).join(' UNION ALL ');
+    theoLo(dsId, (lo, ph) => {
+      conn.prepare(
+        `INSERT INTO attempt_skills (attempt_id, skill, required, planned_period_id, plan_source, sit_status, created_at)
+         SELECT a.id, k.skill, CASE WHEN EXISTS (SELECT 1 FROM attempt_skill_skips x WHERE x.attempt_id = a.id AND x.skill = k.skill) THEN 0 ELSE 1 END,
+                a.planned_period_id, 'auto', 'scheduled', ?
+           FROM assessment_attempts a CROSS JOIN (${mon}) k WHERE a.id IN (${ph}) ORDER BY a.id, k.thu`).run(now, ...bo, ...lo);
+    }, THAM_SO_TOI_DA - bo.length - 1);
+  }
+  chenNhieuDong(
+    'INSERT INTO journey_events (student_id, cycle_id, event_type, event_date, title, detail, ref_table, ref_id, created_by, created_at)',
+    moi.map((m, i) => [m.cy.student_id, m.cy.id, 'mock_scheduled', m.week, `${ATTEMPT_KIND_LABEL[m.kind]} · ${tuan.get(m.week)!.code}`,
+      'Tự xếp khi vào lớp', 'assessment_attempts', ids[i], actorUserId, now]));
+  return ids;
+}
+
 // ---------------------------------------------------------------- nhập điểm
 
 /**
@@ -603,6 +688,19 @@ export function reportRegularNoShow(
         actorUserId: p.userId, action: 'regular.no_show', entityType: 'assessment_attempt', entityId: attemptId,
         entityLabel: skill, before: { week: cu.code }, after: { week: moi.code, noShow: true },
       });
+      /* PR-LT2a (K4-23): vắng cùng môn, cùng bài từ LẦN 2 trở đi → thông báo GVCN (lần 1 thì không). Dedup theo lần. */
+      const lan = (conn.prepare(`SELECT COUNT(*) n FROM audit_logs WHERE action = 'regular.no_show' AND entity_type = 'assessment_attempt' AND entity_id = ? AND entity_label = ?`)
+        .get(attemptId, skill) as any).n as number;
+      if (lan >= 2 && a.class_id) {
+        const hv = conn.prepare('SELECT full_name FROM students WHERE id = ?').get(a.student_id) as any;
+        for (const g of conn.prepare(`SELECT DISTINCT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active'`).all(a.class_id) as any[]) {
+          notify({
+            userId: g.user_id, kind: 'sos', entityType: 'assessment_attempt', entityId: attemptId, dedupKey: `vang-thuong:${attemptId}:${skill}:${lan}`,
+            title: `${hv?.full_name ?? 'Học viên'} vắng ${tenMonNgan(prog.code, skill)} ${ATTEMPT_KIND_SHORT[a.kind as AttemptKind] ?? 'bài kiểm tra'} lần ${lan} — đã dời sang ${tuanLich(moi.weekStart, today)}`,
+            body: 'Vắng từ lần hai trở đi — GVCN xem có cần trao đổi với em / phụ huynh.',
+          });
+        }
+      }
       return { moved: true, tuanCu: cu.code ?? null, tuanMoi: moi.code, result: regularResultOf(attemptId) };
     }
 
@@ -652,11 +750,25 @@ export function refreshRegularOutcome(p: Principal, attemptId: number) {
     /* PR-S4F #3: môn nay TRỐNG (xoá điểm có lý do) — tín hiệu dựng trên điểm đó hết căn cứ, như nhánh FT (`reconcileCorrectedScores`). */
     clearedSkills: r.skills.filter((x) => x.outcome === 'missing').map((x) => x.skill),
   });
-  // Nhưng CASE thì mở ngay khi kết luận được, không chờ đủ.
-  if (r.sosLevel === null) return r;
+  /*
+   * PR-LT2a (K5-01, Q11): CUỐI KHOÁ KHÔNG SINH tín hiệu hay Case mới — kết luận Cuối khoá (% hướng) là việc của PR-LT2b. Pre FOU không có Giữa khoá (PF2).
+   * GIỮA KHOÁ: môn trượt TỰ TẠO Case + PA Bổ trợ (N1) — không tín hiệu "Tạo Case / Bỏ qua", không nhãn SOS (T58).
+   * Case Giữa khoá còn mở mà môn đó ĐẠT ở lượt sau (Cuối khoá) thì vẫn ghi mốc "Đã đạt" (giữ phép kiểm S4F); không đổi mức, không mở Case.
+   */
+  // Case mở ngay khi kết luận được, không chờ đủ điểm.
+  if (r.sosLevel !== null) taoCaseGiuaKhoa(p, a, r);
+  if (a.kind === 'progress') dongBoBaoPh(a, r.skills.filter((x) => x.outcome === 'fail').map((x) => x.skill));
+  return r;
+}
 
+/**
+ * GIỮA KHOÁ LỚP THƯỜNG → CASE TỰ TẠO + PA BỔ TRỢ (PR-LT2a N1, M-03, Q-F). Chạy lặp được: tín hiệu đã nối vào một Case (kể cả Case nay đã đóng vì
+ * "Không cần theo dõi") thì KHÔNG tạo lại; Case đang mở cùng môn thì thêm mốc "Trượt lại" + nối tín hiệu. Tín hiệu luôn `silent` — chỉ là dây nối
+ * S08 (sửa điểm lên đạt thì rút Case chưa ai làm) và Không cần theo dõi. `sos_level` của Case và mốc luôn NULL (T58).
+ */
+function taoCaseGiuaKhoa(p: Principal, a: any, r: RegularResult) {
+  const conn = db();
   const failing = r.skills.filter((x) => x.outcome === 'fail').map((x) => x.skill);
-  const failingCats = new Set(failing.map((sk) => categoryOf(sk)).filter(Boolean) as string[]);
   /* PR-S4F #3: chỉ môn CÓ ĐIỂM ĐẠT ở lượt này mới là "đã đạt" — môn trống / không thuộc lượt này không nói gì về Case. */
   const passingCats = new Set(r.skills.filter((x) => x.outcome === 'pass').map((x) => categoryOf(x.skill)).filter(Boolean) as string[]);
   /* Mục 9.4: Case có căn cứ từ CHÍNH lượt này → đạt ở đây là SỬA ĐIỂM, không phải tiến bộ — không ghi mốc "đã đạt". */
@@ -664,106 +776,51 @@ export function refreshRegularOutcome(p: Principal, attemptId: number) {
     `SELECT 1 FROM case_signals WHERE case_id = ? AND attempt_id = ?
      UNION ALL SELECT 1 FROM case_milestones WHERE case_id = ? AND attempt_id = ? AND kind != 'passed' LIMIT 1`,
   );
-
-  /*
-   * TÌM CASE THEO HỌC VIÊN, KHÔNG THEO LƯỢT THI.
-   *
-   * Bản trước tìm bằng `WHERE attempt_id = ?`. Từ vòng 4 case sống suốt khoá và cột đó luôn
-   * trỏ tới LƯỢT MỚI NHẤT đã chạm vào nó, nên chấm lại một bài CŨ thì câu đó không tìm ra
-   * case nào — điểm sửa lên thành đạt mà mức SOS vẫn nằm nguyên, không có lỗi nào báo ra.
-   *
-   * Điểm sửa lên thành đạt: hạ mức và ghi một mốc, KHÔNG xoá case — xoá đi là mất luôn
-   * những việc đã làm cho em vì vấn đề đó.
-   */
-  const open = conn
-    .prepare(
-      `SELECT * FROM sos_cases
-        WHERE student_id = ? AND COALESCE(cycle_id, 0) = ?
-          AND status != 'done'`,
-    )
+  /* TÌM CASE THEO HỌC VIÊN, KHÔNG THEO LƯỢT THI (Case sống suốt khoá — `attempt_id` chỉ trỏ lượt mới nhất chạm vào nó). */
+  const open = conn.prepare(`SELECT * FROM sos_cases WHERE student_id = ? AND COALESCE(cycle_id, 0) = ? AND status != 'done'`)
     .all(a.student_id, a.cycle_id ?? 0) as any[];
-
   // Ngày phát hiện = thứ Hai của TUẦN bài kiểm tra; không còn ngày làm bài riêng.
   const detectedAt = weekStartOf(a) ?? demoToday();
   for (const c of open) {
     const cat = c.category ?? categoryOf(c.topic);
-    if (!cat) continue;
-    const dat = passingCats.has(cat);
-    if (!dat && !failingCats.has(cat)) continue;
-    const level = dat || r.sosLevel === 0 ? 0 : r.sosLevel;
-    if (dat && !coCanCuLuotNay.get(c.id, attemptId, c.id, attemptId)) {
-      addMilestone({
-        caseId: c.id, kind: 'passed', attemptId, attemptNo: a.attempt_no,
-        sosLevel: r.sosLevel, occurredOn: detectedAt, createdBy: p.userId,
-        dedupKey: `mt:${attemptId}:${c.id}:passed`,
-      });
-    }
-    if (c.sos_level !== level) {
-      conn.prepare('UPDATE sos_cases SET sos_level = ?, updated_at = ? WHERE id = ?')
-        .run(level, nowIso(), c.id);
-      conn.prepare(
-        `INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at)
-         VALUES (?, 'sos_level', ?, ?, ?, ?)`,
-      ).run(c.id, String(c.sos_level), String(level), p.userId, nowIso());
-    }
+    if (!cat || !passingCats.has(cat) || coCanCuLuotNay.get(c.id, a.id, c.id, a.id)) continue;
+    addMilestone({
+      caseId: c.id, kind: 'passed', attemptId: a.id, attemptNo: a.attempt_no, sosLevel: null,
+      occurredOn: detectedAt, createdBy: p.userId, dedupKey: `mt:${a.id}:${c.id}:passed`,
+    });
   }
-  if (r.sosLevel === 0 || !failing.length) return r;
+  /* Chỉ bài GIỮA KHOÁ của lớp có Giữa khoá (FOU · BE · ELE — Pre FOU không có, PF2) mới tự tạo Case / ghi mốc "Trượt lại". */
+  if (a.kind !== 'progress' || !boTroGiuaKhoa(a.class_id ? programmeOfClass(a.class_id)?.code : null)) return;
+  if (r.sosLevel === 0 || !failing.length) return;
 
-  /*
-   * MỘT CASE CHO MỖI HẠNG MỤC, SỐNG SUỐT KHOÁ — dùng chung hệt lớp FT.
-   *
-   * Bốn môn của lớp Normal ứng thẳng với bốn hạng mục CÙNG TÊN: L · R · W · S. Không gộp
-   * W vào W2 của Fast Track — hai môn khác nhau, chấm theo hai cách khác nhau.
-   *
-   * Progress Test rồi Final Test cùng trượt một môn thì đó là MỘT case với hai mốc, không
-   * phải hai case rời — giống hệt MT1/MT2 của lớp FT.
-   */
-  /*
-   * MÔN DƯỚI NGƯỠNG SINH TÍN HIỆU, KHÔNG SINH CASE (mục 6.2) — giống hệt lớp Fast Track.
-   *
-   * Hạng mục đã có case đang mở thì thêm một mốc vào chính case đó và gắn tín hiệu vào nó:
-   * Progress Test rồi Final Test cùng trượt một môn là MỘT vấn đề với hai bằng chứng, không
-   * phải hai vấn đề. Chưa có case nào thì tín hiệu nằm chờ giáo viên bộ môn xác minh.
-   */
-  const conn2 = conn;
   for (const skill of failing) {
     const category = categoryOf(skill);
     if (!category) continue;
     const existing = open.find((c: any) => (c.category ?? categoryOf(c.topic)) === category) ?? null;
     const signal = raiseSignal({
-      actorUserId: p.userId,
-      studentId: a.student_id, cycleId: a.cycle_id ?? null,
-      attemptId: a.id, classId: a.class_id ?? null,
-      skill, category,
-      sosLevel: r.sosLevel, detectedOn: detectedAt,
+      actorUserId: p.userId, studentId: a.student_id, cycleId: a.cycle_id ?? null, attemptId: a.id, classId: a.class_id ?? null,
+      skill, category, sosLevel: null, detectedOn: detectedAt, silent: true,
     });
     if (existing) {
+      if (signal.status === 'linked' && signal.case_id === existing.id) continue;   // chạy lặp: lượt này đã ghi vào Case
       addMilestone({
-        caseId: existing.id, kind: 'repeat', attemptId: a.id, attemptNo: a.attempt_no,
-        sosLevel: r.sosLevel, occurredOn: detectedAt, createdBy: p.userId,
+        caseId: existing.id, kind: 'repeat', attemptId: a.id, attemptNo: a.attempt_no, sosLevel: null,
+        occurredOn: detectedAt, createdBy: p.userId,
         note: r.skills.find((x) => x.skill === skill)?.label ?? tenMon(null, skill),   // tên môn theo chương trình (FOU G+V)
         dedupKey: `mt:${a.id}:${existing.id}:repeat`,
       });
-      conn2
-        .prepare(
-          `UPDATE sos_cases SET attempt_id = ?, sos_level = ?,
-                  follow_until = COALESCE(?, follow_until), updated_at = ? WHERE id = ?`,
-        )
-        .run(a.id, r.sosLevel, followUntilAfter(a), nowIso(), existing.id);
+      conn.prepare('UPDATE sos_cases SET attempt_id = ?, follow_until = COALESCE(?, follow_until), updated_at = ? WHERE id = ?')
+        .run(a.id, followUntilAfter(a), nowIso(), existing.id);
       if (signal.status === 'pending') {
-        conn2
-          .prepare(
-            `UPDATE case_signals SET status = 'linked', case_id = ?, resolved_by = ?, resolved_at = ?,
-                    resolution_note = ?, updated_at = ? WHERE id = ?`,
-          )
-          .run(existing.id, p.userId, nowIso(),
-               'Nối vào case đang mở của môn này — cùng một vấn đề, thêm một bằng chứng.',
-               nowIso(), signal.id);
+        conn.prepare(`UPDATE case_signals SET status = 'linked', case_id = ?, resolved_by = ?, resolved_at = ?, resolution_note = ?, updated_at = ? WHERE id = ?`)
+          .run(existing.id, p.userId, nowIso(), 'Nối vào case đang mở của môn này — cùng một vấn đề, thêm một bằng chứng.', nowIso(), signal.id);
       }
+    } else if (!(signal.status === 'linked' && signal.case_id != null)) {
+      open.push(taoCaseTuDong(p, {
+        attempt: a, category, skill, sosLevel: null, detectedAt, band: null, expectation: null, signalId: signal.id, pa: 'bo_tro',
+      }));
     }
   }
-
-  return r;
 }
 
 // ---------------------------------------------------------------- bảng điểm lớp

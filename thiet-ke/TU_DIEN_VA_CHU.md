@@ -491,3 +491,28 @@ Chữ mới duy nhất: nút ◐ ở thanh đầu (không có chữ hiện, ch�
 |---|---|---|
 | Nút ◐ khi đang Tối | `Chuyển sang giao diện sáng` | `Chế độ sáng`, `Light mode`, `Theme` |
 | Nút ◐ khi đang Sáng | `Chuyển sang giao diện tối` | `Chế độ tối`, `Dark mode` |
+
+---
+
+## 13. PR-LT2a — 30/09/2026 · lớp thường Giữa khoá
+
+Lớp thường **không có chữ SOS ở bất kỳ đâu** (chủ sản phẩm 30/09): kết quả là số môn đạt hoặc % tổng; màu vẫn theo số môn trượt.
+
+| Chỗ | Chữ | Không viết |
+|---|---|---|
+| Tên Case tự tạo | `[Giữa khoá] G+V không đạt` | `[MT1] … [SOS 2]` |
+| Kết quả Giữa khoá (lưới, hồ sơ, Phối hợp) | `2/4 môn đạt` + dòng 2 `Không đạt: G+V P` | `SOS 2` |
+| Kết quả Cuối khoá | `64%` (Pre FOU cũng vậy) | `Cuối · SOS 1` |
+| Ghim Hành trình | `Giữa · 2/4 môn đạt` · `Cuối · 64%` | `Giữa · SOS 1` |
+| Chú giải ghim / cột Tổng hợp Test khung thường | `1 môn trượt` · `2 môn trượt` · `≥ 3 môn trượt` | `SOS 1/2/3` |
+| Case board, cột Nguồn | `Điểm · Giữa khoá` | `Điểm · MT1` |
+| Nhãn Case (một nhãn + việc tiếp) | `Cần làm · Xác nhận nguyên nhân · hạn …` → `Chờ nộp kế hoạch bổ trợ` → `Chờ Quản lý duyệt · kế hoạch bổ trợ` (tím) → `Đang làm` → `Xong` | `Chờ xác nhận PA` cho PA Bổ trợ |
+| PA Bổ trợ | `Bổ trợ 2 buổi/tuần · chung các môn trượt · đến Cuối khoá · trừ buổi Free` (FOU) · `Bổ trợ 1 buổi/tuần · W · đến Cuối khoá · trừ buổi Free` (BE, ELE); dòng phụ FOU `PA chung · G+V, P` | `Tutor`, `học thêm` |
+| PA Bổ trợ chưa chạy | `Chờ kế hoạch` (chưa nộp) · `Chờ Quản lý duyệt` (đã nộp) · nút `Nộp kế hoạch` | `Chờ xác nhận` |
+| Form Xác nhận Case (người dạy phải nộp kế hoạch) | khối `Kế hoạch bài giảng` · `Nội dung yếu` · `Kế hoạch` · `Người dạy bổ trợ` · nút chính `Xác nhận Case và gửi kế hoạch` · toast `Đã xác nhận Case và gửi Quản lý duyệt — xem ở Yêu cầu của tôi` | `Trình duyệt`, `Xin phép` |
+| FOU · GVBM không phải người dạy | `Kế hoạch chung do {GVCN} nộp sau khi có nguyên nhân.` · nút `Xác nhận Case` | — |
+| Panel Nộp kế hoạch | `Nộp kế hoạch bổ trợ` · khối `Nguyên nhân từng môn` (`G+V — {Mô tả}` · môn chưa xác nhận: `Giáo viên bộ môn chưa xác nhận nguyên nhân`) · nút `Gửi Quản lý duyệt` · toast `Đã gửi Quản lý duyệt — xem ở Yêu cầu của tôi` | — |
+| Kế hoạch bị từ chối | khung vàng `Quản lý không duyệt lần trước.` + lý do + `Nộp lại trước {ngày}.` | — |
+| Việc cần làm | `Nộp kế hoạch bổ trợ · Giữa khoá · G+V, P · {HV}` (nút `Nộp kế hoạch`) · `Báo phụ huynh qua TVV · {HV} · Giữa khoá` (không hạn) | — |
+| Phối hợp | thẻ `Giữa khoá · 2/4 môn đạt`; việc `Báo phụ huynh qua TVV` + gập `Nội dung gửi TVV (4)`; nút `Đánh dấu đã làm` | `Xác nhận` cho việc này |
+| Thông báo vắng lần 2 | `{HV} vắng {môn} Giữa khoá lần 2 — đã dời sang W2 OCT` | — |

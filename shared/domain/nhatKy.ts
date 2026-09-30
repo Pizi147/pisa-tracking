@@ -10,7 +10,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'attempt.create': 'Tạo lượt Test', 'attempt.no_show_settled': 'Chốt vắng thi', 'attempt.recreate': 'Tạo lại lượt Test (số dùng lại)',
   'attempt.restore_part': 'Khôi phục phần đã huỷ', 'attempt.restore_skill': 'Khôi phục kỹ năng thi',
   'attempt.skip_skill': 'Bỏ kỹ năng không thi', 'attempt.sit_status': 'Ghi đã thi / vắng', 'attempt.skill_week': 'Đổi tuần thi kỹ năng',
-  'case.auto_from_sos': 'Tạo Case từ SOS', 'case.backfill': 'Nhập bù Case đã xong', 'case.backfill.done': 'Nhập bù Case đã xong',
+  'case.auto_from_sos': 'Tạo Case từ SOS', 'case.auto_from_giua_khoa': 'Tạo Case từ Giữa khoá', 'case.bo_tro.nop_ke_hoach': 'Nộp kế hoạch bổ trợ', 'case.backfill': 'Nhập bù Case đã xong', 'case.backfill.done': 'Nhập bù Case đã xong',
   'case.classify': 'Phân loại Case', 'case.close': 'Đóng Case', 'case.disposition': 'Kết luận Case', 'case.dismiss': 'Không cần theo dõi',
   'case.intervention': 'Thêm PA', 'case.intervention.complete': 'Kết thúc PA', 'case.outcome': 'Hoàn thành Case',
   'case.plan.approved': 'Duyệt đề xuất PA', 'case.plan.declined': 'Không duyệt đề xuất PA', 'case.plan.comment': 'Góp ý đề xuất PA',

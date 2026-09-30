@@ -1,12 +1,14 @@
 import {
   ATTEMPT_KIND_SHORT, PROGRAMME_TEMPLATES, boMonLich, categoryOf, cycleDeadline, issuesForTopic,
-  hanDuyetDoiLan2, mondayOfDate, programmeOf, ratioResult, weeklyUpdateDue,
+  hanDuyetDoiLan2, mondayOfDate, programmeOf, weeklyUpdateDue,
   type AttemptKind,
 } from '../../../shared/domain/index.ts';
 import { addDays, normalizeName, nowIso, padCode } from '../util.ts';
 import { ensurePeriod } from '../platform/week.ts';
 import { LISTENING_BY_RAW, READING_BY_RAW, expectationFor, failingEntrySkills } from '../fasttrack/scoring.ts';
 import { raiseSignal } from '../cases/signals.ts';
+import { refreshRegularOutcome } from '../normal/regular.ts';
+import { loadPrincipal } from '../permissions.ts';
 import { DEMO_DATE, type CaseSeed, type CycleSeed, type StudentSeed, type TestSeed } from './journeys.ts';
 import { STUDENTS } from './students.ts';
 
@@ -465,25 +467,27 @@ function academicSignals(
         .get(a.class_id) as any)
     : null;
   const isRatio = prog?.mode === 'ratio';
-
-  /* Môn nào dưới kỳ vọng — hai cách chấm, hai phép so, không dùng chung công thức. */
-  let failing: string[] = [];
-  let expectation: number | null = null;
+  /*
+   * PR-LT2a (N4): LỚP THƯỜNG không còn tín hiệu chờ xác minh. Giữa khoá của em ĐANG HỌC đi đường thật (Case tự tạo + PA Bổ trợ + Báo PH —
+   * `refreshRegularOutcome`); Cuối khoá không sinh gì; lộ trình đã khép thì không mở Case mới.
+   */
   if (isRatio) {
-    failing = scores
-      .filter((r) => r.raw_score !== null && r.raw_total)
-      .filter((r) => ratioResult(r.raw_score, r.raw_total).outcome === 'fail')
-      .map((r) => r.skill as string);
-  } else {
-    expectation = expectationFor(a.target_at_attempt, a.attempt_no,
-      (conn.prepare('SELECT route FROM learning_cycles WHERE id = ?').get(a.cycle_id) as any)?.route);
-    const entry: Record<string, number | null> = {};
-    for (const r of scores) entry[r.skill] = r.band;
-    const skips = (conn
-      .prepare('SELECT skill FROM attempt_skills WHERE attempt_id = ? AND required = 0')
-      .all(attemptId) as any[]).map((r) => r.skill as string);
-    failing = failingEntrySkills(expectation, entry as any, skips);
+    const dangHoc = (conn.prepare('SELECT status FROM learning_cycles WHERE id = ?').get(cycleId) as any)?.status === 'active';
+    /* Bài Giữa khoá đã XA (> 2 tuần trước ngày demo) mà kịch bản không có Case thì thôi — cùng ngưỡng "stale" cũ; không dựng nợ Case giả cho cả lịch sử. */
+    const gan = addDays(weekStartOfRow(conn, a) ?? DEMO_DATE, 14) > DEMO_DATE;
+    if (a.kind === 'progress' && dangHoc && gan) refreshRegularOutcome(loadPrincipal(ctx.adminId), attemptId);
+    return;
   }
+
+  /* Môn nào dưới kỳ vọng (Fast Track — band). */
+  const expectation = expectationFor(a.target_at_attempt, a.attempt_no,
+    (conn.prepare('SELECT route FROM learning_cycles WHERE id = ?').get(a.cycle_id) as any)?.route);
+  const entry: Record<string, number | null> = {};
+  for (const r of scores) entry[r.skill] = r.band;
+  const skips = (conn
+    .prepare('SELECT skill FROM attempt_skills WHERE attempt_id = ? AND required = 0')
+    .all(attemptId) as any[]).map((r) => r.skill as string);
+  const failing: string[] = failingEntrySkills(expectation, entry as any, skips);
   if (!failing.length) return;
 
   const detectedOn = weekStartOfRow(conn, a) ?? DEMO_DATE;
@@ -586,6 +590,9 @@ function insertCase(
   }
   const dedupKey = c.parallel ? null : `a:${sid}:${cycleId}:${category}`;
 
+  /* PR-LT2a (T58): Case của LỚP THƯỜNG (lộ trình không route) không có mức SOS — kịch bản cũ ghi `sosLevel` thì bỏ. */
+  const laThuong = (conn.prepare('SELECT route FROM learning_cycles WHERE id = ?').get(cycleId) as any)?.route == null;
+  const sosLv = laThuong ? null : c.sosLevel ?? null;
   const ownerId = c.owner ? ctx.userId.get(c.owner) ?? null : null;
   const reporterId = c.reportedBy ? ctx.userId.get(c.reportedBy) ?? null : (ownerId ?? null);
 
@@ -602,7 +609,7 @@ function insertCase(
       attemptId, sid, cycleId, c.topic, category,
       dedupKey, c.parallel ? 1 : 0, previousCaseId, ownerId, c.title ?? null,
       originKind, c.detectedAt, reporterId, c.summary, c.urgency ?? 'attention',
-      c.sosLevel ?? null,
+      sosLv,
       c.status, c.disposition ?? null, c.dispositionNote ?? null,
       c.outcome ?? null, c.outcomeNote ?? null,
       c.status === 'done' ? (ctx.userId.get(c.closedBy ?? '') ?? ownerId ?? ctx.adminId) : null,
@@ -640,7 +647,7 @@ function insertCase(
          VALUES (?,?,?,?,?,?,?,?,?)
          ON CONFLICT(dedup_key) DO NOTHING`,
       )
-      .run(caseId, kind, aid, no, c.sosLevel ?? null, on, ctx.adminId, NOW,
+      .run(caseId, kind, aid, no, sosLv, on, ctx.adminId, NOW,
            `ms:${caseId}:${kind}:${no ?? 0}`);
     counts.milestones += 1;
   };
@@ -659,7 +666,7 @@ function insertCase(
          VALUES (?, 'recurrence', ?,?,?,?,?,?,?,?)
          ON CONFLICT(dedup_key) DO NOTHING`,
       )
-      .run(previousCaseId, attemptId, c.fromTest ?? null, c.sosLevel ?? null, c.detectedAt,
+      .run(previousCaseId, attemptId, c.fromTest ?? null, sosLv, c.detectedAt,
            `Tái diễn ở một case mới: ${c.title ?? category}`, ctx.adminId, NOW,
            `rec:${previousCaseId}:${caseId}`);
     counts.milestones += 1;

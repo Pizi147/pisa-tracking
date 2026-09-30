@@ -187,7 +187,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
     const laSos = (conn.prepare(`SELECT sc.id FROM sos_cases sc WHERE ${sosState.LA_CASE_SOS('sc')} ORDER BY sc.id`).all() as any[]).map((r) => r.id);
     eq(ids.filter((id) => nhieu.get(id).fromSos), laSos, 'fromSos');
     assert(ids.length > 5 && laSos.length > 0, 'Bộ demo phải có Case SOS');
-    eq(sosState.sosCaseState(99999999), { fromSos: false, hasCause: false, awaitingCause: false, dueOn: null, dismissed: null, choDuyetKhongTheoDoi: null, coPaChoXacNhan: false }, 'Case không có');
+    eq(sosState.sosCaseState(99999999), { fromSos: false, hasCause: false, awaitingCause: false, dueOn: null, dismissed: null, choDuyetKhongTheoDoi: null, coPaChoXacNhan: false, boTro: null }, 'Case không có');
   });
 
   check('PR-HVL (2) · chiTietCaseMo: trạng thái v4 + việc tiếp = đúng `caseDetail` (một nguồn luật SOS); PA đủ; tên Case SOS ba phần', () => {
@@ -213,7 +213,8 @@ export async function runPrHvlTests(t: YThucTestKit) {
     assert(mo.length > 6, 'cần nhiều Case');
     const dem = (ds: any[]) => { const a = soCauSql(); caseLop.chiTietCaseMo(ds); return soCauSql() - a; };
     const it = dem(mo.slice(0, 3)); const tat = dem(mo);
-    eq(tat, it, 'Chênh số câu giữa 3 Case và mọi Case');
+    /* PR-LT2a: Giữa khoá tự tạo Case nên Case mở có thể vượt 400 — mỗi LÔ 400 thêm đúng 4 câu (một câu mỗi bảng), không thêm theo số Case. */
+    eq(tat, it + 4 * (Math.ceil(mo.length / 400) - 1), 'Chênh số câu giữa 3 Case và mọi Case (chỉ theo số lô 400)');
     assert(it <= 6, `${it} câu cho một lô`);
   });
 

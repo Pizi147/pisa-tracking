@@ -1082,14 +1082,18 @@ CREATE TABLE case_interventions (
   migration_key TEXT UNIQUE,
   created_at TEXT NOT NULL,
   updated_at TEXT,
-  /* PR-SOS (Q2): loại mốc của PA theo quy chế — one_month | until_next_mt | until_exam · NULL với PA thường */
-  moc_quy_che TEXT
+  /* PR-SOS (Q2): loại mốc của PA theo quy chế — one_month | until_next_mt | until_exam | den_cuoi_khoa (PR-LT2a) · NULL với PA thường */
+  moc_quy_che TEXT,
+  /* PR-LT2a (M-03, M-05): nhóm PA bổ trợ Giữa khoá (`gk:{lượt}` FOU · `gk:{lượt}:{môn}` BE/ELE) + hạn nộp kế hoạch. NULL với PA khác. */
+  nhom_bo_tro TEXT,
+  han_ke_hoach TEXT
 );
 -- Việc đang chờ duyệt là thứ Quản lý phải tìm nhanh, nên có chỉ số riêng.
 CREATE INDEX idx_intervention_approval ON case_interventions(approval_state)
   WHERE approval_state = 'pending';
 CREATE INDEX idx_intervention_case ON case_interventions(case_id);
 CREATE INDEX idx_intervention_due ON case_interventions(followup_due) WHERE followup_due IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_ci_nhom_bo_tro ON case_interventions(nhom_bo_tro);
 
 /*
  * XEM LẠI SAU TÁC ĐỘNG. Một tác động có thể xem lại nhiều lần; cũng có thể xem lại ở mức

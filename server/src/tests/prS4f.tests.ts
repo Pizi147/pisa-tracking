@@ -52,20 +52,19 @@ export async function runPrS4fTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ 2 · GV Speaking chấm chéo: chỉ mở hai đường chấm
-  await checkAsync('S4F (2) · GV Speaking chấm chéo MB FT 102: Case · tín hiệu · roster · phân tích lớp · cần hỗ trợ · tệp Case → 403; lượt MT + bảng chấm → 200', async () => {
+  await checkAsync('S4F (2) · GV Speaking chấm chéo MB FT 102: Case · roster · phân tích lớp · cần hỗ trợ · tệp Case → 403; lượt MT + bảng chấm → 200', async () => {
     const ft102 = classId('MB FT 102');
     const trang = P.sTeacher.userId;
     const pc = get(`SELECT id FROM teacher_assignments WHERE user_id = ? AND class_id = ? AND skill = 'speaking' AND status = 'active'`, trang, ft102);
     assert(pc, 'dữ liệu demo: Trang dạy S ở MB FT 102');
     const caseId = get(`SELECT sc.id FROM sos_cases sc JOIN enrollments e ON e.student_id = sc.student_id AND e.status = 'active' WHERE e.class_id = ? LIMIT 1`, ft102)?.id;
-    const tinHieu = get(`SELECT id FROM case_signals WHERE class_id = ? ORDER BY id LIMIT 1`, ft102)?.id;
     const luot = get(`SELECT id FROM assessment_attempts WHERE class_id = ? AND status != 'cancelled' LIMIT 1`, ft102)?.id;
-    assert(caseId && tinHieu && luot, `dữ liệu demo lớp 102: case ${caseId} · tín hiệu ${tinHieu} · lượt ${luot}`);
+    assert(caseId && luot, `dữ liệu demo lớp 102: case ${caseId} · lượt ${luot}`);
     conn.prepare(`UPDATE teacher_assignments SET status = 'ended' WHERE id = ?`).run(pc.id);
     try {
       await voiMayChu(async (goi) => {
         for (const url of [
-          `/cases/${caseId}`, `/signals/pending/${tinHieu}`, `/classes/${ft102}/roster`, `/classes/${ft102}/phan-tich-lop`,
+          `/cases/${caseId}`, `/classes/${ft102}/roster`, `/classes/${ft102}/phan-tich-lop`,
           `/classes/${ft102}/can-ho-tro`, `/attachments?ownerType=sos_case&ownerId=${caseId}`,
         ]) {
           const r = await goi(trang, url);
@@ -82,7 +81,7 @@ export async function runPrS4fTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ 3 · Lớp thường xoá điểm môn trượt
-  await checkAsync('S4F (3) · Lớp thường: xoá điểm R trượt (API) → Case chỉ dựng trên điểm đó đóng, không mốc "đã đạt"; sửa lên đạt cũng không mốc; lượt sau đạt → có mốc', async () => {
+  await checkAsync('S4F (3) · Lớp thường: xoá điểm R trượt (API) → Case chỉ dựng trên điểm đó đóng, không mốc "đã đạt"; sửa lên đạt cũng không mốc; lượt sau đạt → có mốc (Case Giữa khoá tự tạo — PR-LT2a)', async () => {
     const fou = classId('MB FOU 12');
     const taoEm = (ten: string) => {
       intake.commitIntake(P.admin, { classId: fou, rows: [{ fullName: ten, email: 'hv@demo.test' }], idempotencyKey: `s4f-${ten}` });
@@ -95,14 +94,9 @@ export async function runPrS4fTests(t: YThucTestKit) {
     const skills = regular.programmeOfClass(fou).skills as string[];
     const nhap = (aid: number, rTruot: boolean) => skills.forEach((k) =>
       regular.saveRegularScore(P.admin, aid, k, { score: k === 'reading' && rTruot ? 10 : 36, total: 40, lyDo: 'Phép kiểm S4F' }));
-    const moCaseR = (em: { id: number; cycleId: number | null }, aid: number) => {
-      const c = cases.reportIssue(P.admin, {
-        studentId: em.id, cycleId: em.cycleId, title: 'Reading: đọc sót ý chính', topic: 'reading', primaryCode: 'student.reading.logic', urgency: 'attention',
-        summary: 'Em đọc sót ý chính ở bài Reading giữa khoá.',
-        fromSignalId: get(`SELECT id FROM case_signals WHERE attempt_id = ? AND skill = 'reading'`, aid).id,
-      });
-      return (c.id ?? c.case?.id) as number;
-    };
+    /* PR-LT2a: Giữa khoá trượt R TỰ TẠO Case Reading (không còn "Tạo Case từ tín hiệu") — lấy đúng Case đó. */
+    const moCaseR = (em: { id: number; cycleId: number | null }, _aid: number) =>
+      get(`SELECT id FROM sos_cases WHERE student_id = ? AND topic = 'reading' ORDER BY id DESC LIMIT 1`, em.id).id as number;
     const mocDat = (caseId: number) => all(`SELECT dedup_key FROM case_milestones WHERE case_id = ? AND kind = 'passed'`, caseId);
 
     /* Tình huống rà: xoá ô R trượt qua đúng route PUT → Case (chỉ căn cứ điểm đó) đóng, tín hiệu rút, KHÔNG mốc passed. */
@@ -135,7 +129,7 @@ export async function runPrS4fTests(t: YThucTestKit) {
     if (c.ft) {
       nhap(c.ft, false);
       assert(mocDat(caseC).some((m: any) => m.dedup_key === `mt:${c.ft}:${caseC}:passed`), `lượt sau đạt phải có mốc: ${JSON.stringify(mocDat(caseC))}`);
-      assert(get('SELECT sos_level FROM sos_cases WHERE id = ?', caseC).sos_level === 0, 'lượt sau đạt phải hạ mức');
+      assert(get('SELECT sos_level FROM sos_cases WHERE id = ?', caseC).sos_level === null, 'Case Giữa khoá không nhãn SOS — lượt sau đạt không đổi mức');
     } else {
       assert(false, 'dữ liệu: em mới không có bài Cuối khoá');
     }

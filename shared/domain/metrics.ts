@@ -25,7 +25,7 @@ export type ChiSo = {
   /** Câu hỏi mà con số trả lời, viết đủ chữ. */
   cauHoi: string;
   /** Đơn vị đếm. Ba đơn vị học viên · case · phương án KHÔNG BAO GIỜ cộng vào nhau. */
-  donVi: 'hoc-vien' | 'case' | 'phuong-an' | 'bai-thi' | 'tin-hieu' | 'dot-test' | 'nghia-vu' | 'vi-pham' | 'bien-phap' | 'luot-sos';
+  donVi: 'hoc-vien' | 'case' | 'phuong-an' | 'bai-thi' | 'dot-test' | 'nghia-vu' | 'vi-pham' | 'bien-phap' | 'luot-sos';
   /** Mô tả MẪU SỐ (tập đủ điều kiện), viết đủ chữ. */
   tapDuDieuKien: string;
   thoiGian: 'hien-trang' | 'phat-sinh-trong-ky' | 'ket-qua-trong-ky';
@@ -64,24 +64,10 @@ export const METRICS: readonly ChiSo[] = [
     tapDuDieuKien: 'Case HỌC THUẬT chưa kết luận trong phạm vi (Ý thức không còn case). Đếm case, không đếm học viên, không đếm tín hiệu SOS.',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi Case chỉ đếm 1 lần', drilldown: '/metrics/case-mo',
   },
-  {
-    id: 'tin-hieu-cho-xac-minh', ten: 'Tín hiệu cần xác minh',
-    cauHoi: 'Bao nhiêu tín hiệu từ điểm Test còn chờ người tìm nguyên nhân?',
-    donVi: 'tin-hieu',
-    tapDuDieuKien: 'Tín hiệu còn hiệu lực, chưa xác minh, hạn ba ngày. Sửa điểm sai thì THU HỒI tín hiệu.',
-    thoiGian: 'hien-trang', khuTrung: 'Mỗi tín hiệu chỉ đếm 1 lần', drilldown: '/metrics/tin-hieu-cho-xac-minh',
-  },
-  {
-    id: 'tin-hieu-qua-han', ten: 'Chờ xác minh quá hạn',
-    cauHoi: 'Bao nhiêu tín hiệu SOS lớp thường đã quá 3 ngày mà chưa ai tạo Case hay bỏ qua?',
-    donVi: 'tin-hieu',
-    tapDuDieuKien: 'Tín hiệu của LỚP THƯỜNG còn chờ (chưa thành Case, chưa bỏ qua, chưa thu hồi) mà hạn xác minh 3 ngày, tính cả ngày đầu, đã qua. Fast Track tự tạo Case nên không có ở đây.',
-    thoiGian: 'hien-trang', khuTrung: 'Mỗi tín hiệu chỉ đếm 1 lần', drilldown: '/metrics/tin-hieu-qua-han',
-  },
   /* Ba chỉ số của khối Cần xử lý (PR-Pa, đặc tả §3.2) — mỗi dòng của khối là một chỉ số, để bấm vào ra đúng tập. */
   {
     id: 'case-xac-dinh-nguyen-nhan-qua-han', ten: 'Case quá hạn xác nhận nguyên nhân',
-    cauHoi: 'Bao nhiêu Case SOS tự tạo đã quá hạn 3 ngày mà GVBM chưa xác nhận nguyên nhân?',
+    cauHoi: 'Bao nhiêu Case tự tạo (SOS Fast Track, Giữa khoá lớp thường) đã quá hạn 3 ngày mà GVBM chưa xác nhận nguyên nhân?',
     donVi: 'case',
     tapDuDieuKien: 'Trong tập "Case chờ xác nhận nguyên nhân": Case mà hạn xác nhận (3 ngày, tính cả ngày Case ra đời) đã qua. Hết ngày hạn mới tính quá hạn.',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi Case chỉ đếm 1 lần', drilldown: '/metrics/case-xac-dinh-nguyen-nhan-qua-han',
@@ -102,9 +88,9 @@ export const METRICS: readonly ChiSo[] = [
   },
   {
     id: 'case-cho-xac-dinh-nguyen-nhan', ten: 'Case chờ xác nhận nguyên nhân',
-    cauHoi: 'Bao nhiêu case SOS tự tạo đang chờ GVBM xác nhận nguyên nhân?',
+    cauHoi: 'Bao nhiêu Case tự tạo (SOS Fast Track, Giữa khoá lớp thường) đang chờ GVBM xác nhận nguyên nhân?',
     donVi: 'case',
-    tapDuDieuKien: 'Case HỌC THUẬT do Mock Test Fast Track tự tạo, đang mở, mà chưa có nguyên nhân (phân loại vấn đề chính) và không có yêu cầu "Không cần theo dõi" đang chờ Quản lý duyệt (SOS v4, K5-51). Case tạo tay, case lớp Normal và case đã đóng (kể cả `Không cần theo dõi`) không thuộc tập.',
+    tapDuDieuKien: 'Case HỌC THUẬT do Mock Test Fast Track hoặc Giữa khoá lớp thường tự tạo, đang mở, mà chưa có nguyên nhân (phân loại vấn đề chính) và không có yêu cầu "Không cần theo dõi" đang chờ Quản lý duyệt (SOS v4, K5-51). Case tạo tay và case đã đóng (kể cả `Không cần theo dõi`) không thuộc tập.',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi Case chỉ đếm 1 lần', drilldown: '/metrics/case-cho-xac-dinh-nguyen-nhan',
   },
   {
@@ -257,13 +243,6 @@ export const METRICS: readonly ChiSo[] = [
     tapDuDieuKien: 'Học viên đang học trong phạm vi có HAI lượt hợp lệ mới nhất (đã có điểm, kể cả tạm thời) cùng dưới kỳ vọng (Fast Track) / chưa đạt (lớp thường) ở một họ kỹ năng (W1, W2 và Writing là một họ), mà không có Case đang mở cùng họ. Case đã đóng không chặn.',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi học viên chỉ đếm 1 lần', drilldown: '/metrics/hv-can-ho-tro-2-lan-chua-case',
   },
-  {
-    id: 'hv-bo-qua-van-can-ho-tro', ten: 'Học viên bị Bỏ qua tín hiệu, lần Test sau vẫn chưa đạt',
-    cauHoi: 'Bao nhiêu học viên lớp thường bị Bỏ qua tín hiệu mà lần Test sau vẫn chưa đạt cùng kỹ năng?',
-    donVi: 'hoc-vien',
-    tapDuDieuKien: 'Học viên lớp thường đang học có tín hiệu chưa đạt bị Bỏ qua (đã xem, không thành Case), mà lượt hợp lệ NGAY SAU lượt của tín hiệu vẫn chưa đạt cùng họ kỹ năng và không có Case đang mở cùng họ. Fast Track không có bước Bỏ qua nên không thuộc tập.',
-    thoiGian: 'hien-trang', khuTrung: 'Mỗi học viên chỉ đếm 1 lần', drilldown: '/metrics/hv-bo-qua-van-can-ho-tro',
-  },
 ];
 
 /**
@@ -272,7 +251,7 @@ export const METRICS: readonly ChiSo[] = [
  */
 export const METRIC_UNIT_LABEL: Record<ChiSo['donVi'], string> = {
   'hoc-vien': 'học viên', case: 'case', 'phuong-an': 'PA học thuật', 'bai-thi': 'bài thi',
-  'tin-hieu': 'tín hiệu', 'dot-test': 'đợt Test', 'nghia-vu': 'nghĩa vụ',
+  'dot-test': 'đợt Test', 'nghia-vu': 'nghĩa vụ',
   'vi-pham': 'vi phạm', 'bien-phap': 'phương án xử lý', 'luot-sos': 'lượt',
 };
 
