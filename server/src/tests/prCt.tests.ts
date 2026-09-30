@@ -888,4 +888,94 @@ export async function runPrCtTests(t: YThucTestKit) {
     assert(get(`SELECT COUNT(*) n FROM notifications WHERE user_id = ? AND kind = 'nhac_viec' AND dedup_key = ?`, GV[0].userId, `nhac:ban_giao:${n}:${TODAY}`).n === 1, 'thông báo nhắc');
   });
 
+  // ------------------------------------------------------------------ khối 7 · dữ liệu dải cho hồ sơ lớp và hồ sơ HV (Task 7)
+  console.log('\nPR-CT · Dải Chuyển lớp / Bàn giao / Sắp nhận (hồ sơ lớp, hồ sơ HV)');
+  const classesSvc: any = await import('../classes/classes.ts');
+  const profileSvc: any = await import('../students/profile.ts');
+  const dai: any = await import('../classes/daiChuyenLop.ts');
+  const n7 = lopMoi({ kind: 'FOU', tuanHienTai: 8 });
+  const d7 = lopMoi({ kind: 'BE', tuanHienTai: 1 });
+  ganGv(n7, GV[0].userId, null, true);
+  ganGv(n7, GV[1].userId, 'listening', false);
+  ganGv(d7, GV[3].userId, null, true);
+  const g7 = loadPrincipal(GV[0].userId), l7 = loadPrincipal(GV[1].userId), gd7 = loadPrincipal(GV[3].userId);
+  const em7 = Array.from({ length: 7 }, () => hocVien(n7, 'FOU', false).sid);
+  const daiCua = (who: any, lop: number) => classesSvc.classOverview(who, lop).dai;
+
+  check('CT (7a) · dải lớp nguồn dạng 1 "chưa lệnh": tới tuần Cuối khoá còn 7 em chưa có lệnh → ketThucKhoa; QL có nút Chuyển lớp cả lớp, GVCN / GVBM không', () => {
+    const q = daiCua(P.mbManager, n7);
+    assert(q.ketThucKhoa && q.ketThucKhoa.soChuaLenh === 7 && q.ketThucKhoa.tuanGoiY === TUAN[0] && q.ketThucKhoa.tuanKetThuc && q.ketThucKhoa.tuanCuoiKhoa, JSON.stringify(q.ketThucKhoa));
+    assert(q.viewer.coTheRaLenh === true && q.viewer.coTheChuyenNhieuEm === false, JSON.stringify(q.viewer));
+    assert(q.banGiao === null && q.sapNhan === null && q.banGiaoMon.length === 0, 'chưa lệnh → chưa có dải bàn giao');
+    const g = daiCua(g7, n7);
+    assert(g.ketThucKhoa?.soChuaLenh === 7 && g.viewer.coTheRaLenh === false && g.viewer.laGvcn === true, 'GVCN thấy dải, không có nút');
+    assert(daiCua(l7, n7).viewer.coTheRaLenh === false, 'GVBM không có nút');
+  });
+  ra(P.mbManager, n7, 'cuoi-khoa', em7.map((s) => dongCua(s, 'len_lop', d7)));
+  const lenh7 = em7.map((s) => lenhCua(s));
+  for (const l of lenh7.slice(0, 2)) { bg.ghiMon(l7, l.id, 'listening', 'Nghe ổn.'); bg.xacNhanBanGiao(g7, l.id, 'Em học đều, cần nhắc nộp bài đúng hạn.'); }
+  check('CT (7b) · dải lớp nguồn dạng 2 "Bàn giao 2/7 em" (GVCN) và dạng 3 "Bàn giao môn L · 2/7 em" (GVBM); hết dải "chưa lệnh"', () => {
+    const g = daiCua(g7, n7);
+    assert(g.banGiao.daXacNhan === 2 && g.banGiao.tong === 7 && g.banGiao.hanGvcn === d.hanBanGiao(TODAY).gvcn && g.ketThucKhoa === null, JSON.stringify(g.banGiao));
+    assert(g.viewer.xacNhanDuoc === true && g.banGiaoMon.length === 0, 'GVCN không có dòng môn');
+    const b = daiCua(l7, n7);
+    assert(b.banGiaoMon.length === 1 && b.banGiaoMon[0].mon === 'listening' && b.banGiaoMon[0].daGhi === 2 && b.banGiaoMon[0].tong === 7 && b.banGiaoMon[0].han === d.hanBanGiao(TODAY).gvbm, JSON.stringify(b.banGiaoMon));
+    assert(b.viewer.xacNhanDuoc === false, 'GVBM không xác nhận');
+    const q = daiCua(P.mbManager, n7);
+    assert(q.banGiao.tong === 7 && q.viewer.xacNhanDuoc === false, 'QL: thấy tiến độ, chưa được xác nhận thay (còn hạn, có GVCN)');
+  });
+  check('CT (7c) · dải lớp đích "Sắp nhận 4 em từ lớp X vào lớp từ W2" — GVCN lớp đích + QL thấy; lớp không liên quan không có', () => {
+    const dd = daiCua(gd7, d7);
+    assert(dd.sapNhan && dd.sapNhan.n === 7 && dd.sapNhan.tuLop.length === 1 && dd.sapNhan.tuan === TUAN[0] && dd.sapNhan.daXacNhan === 2, JSON.stringify(dd.sapNhan));
+    assert(daiCua(P.mbManager, d7).sapNhan?.n === 7, 'QL cũng thấy');
+    assert(daiCua(g7, n7).sapNhan === null, 'lớp nguồn không có "sắp nhận"');
+  });
+  check('CT (7d) · lớp FT: coTheChuyenNhieuEm chỉ QL; lớp đã kết thúc không có dải', () => {
+    const ft = lopMoi({ kind: 'FT', ft: true, route: 'LT1', tuanHienTai: 3 });
+    assert(daiCua(P.mbManager, ft).viewer.coTheChuyenNhieuEm === true && daiCua(P.mbManager, ft).ketThucKhoa === null, 'QL FT: chuyển nhiều em, không dải chưa lệnh');
+    conn.prepare(`UPDATE classes SET status = 'finished' WHERE id = ?`).run(ft);
+    assert(classesSvc.classOverview(P.admin, ft).dai === null, 'lớp đã kết thúc: dai null');
+  });
+  check('CT (7e) · hồ sơ HV dải "Sắp chuyển": lệnh, người ra lệnh, bàn giao a/4 môn, nút theo vai (GVCN Bàn giao · GVBM Bàn giao môn · QL Huỷ lệnh · không ai có nút sai)', () => {
+    const e = em7[4];
+    const l = lenh7[4];
+    bg.ghiMon(l7, l.id, 'listening', 'Nghe khá.');
+    const hv = (who: any) => profileSvc.studentProfile(who, e).dai;
+    const cn = hv(g7), bm = hv(l7), ql = hv(P.mbManager);
+    assert(cn.loai === 'sap' && cn.lopNguon.id === n7 && cn.lopDich.id === d7 && cn.tuan === TUAN[0] && cn.nguoiRaLenh && cn.banGiao.soMon === 4 && cn.banGiao.daGhi === 1 && cn.banGiao.daXacNhan === false, JSON.stringify(cn));
+    assert(cn.nut.join() === 'ban-giao', `GVCN: ${cn.nut}`);
+    assert(bm.nut.join() === '' && bm.mon === null, `GVBM đã ghi môn L → không nút: ${bm.nut} ${JSON.stringify(bm.mon)}`);
+    assert(ql.nut.join() === 'huy-lenh', `QL: ${ql.nut}`);
+    const e2 = em7[5];
+    const bm2 = profileSvc.studentProfile(l7, e2).dai;
+    assert(bm2.nut.includes('ban-giao-mon') && bm2.mon.ma === 'listening', `GVBM chưa ghi môn L: ${bm2.nut}`);
+    assert(!profileSvc.studentProfile(g7, e2).dai.nut.includes('huy-lenh'), 'GVCN không có nút Huỷ lệnh');
+    assert(!profileSvc.studentProfile(P.mbManager, e2).dai.nut.includes('ban-giao'), 'QL (còn hạn, có GVCN) không có nút Bàn giao');
+    conn.prepare('UPDATE lenh_chuyen_lop SET loi = ? WHERE id = ?').run('Lớp đích đã kết thúc', lenh7[6].id);
+    assert(profileSvc.studentProfile(P.mbManager, em7[6]).dai.loi === 'Lớp đích đã kết thúc' && profileSvc.studentProfile(g7, em7[6]).dai.loi === null, 'lỗi chỉ Quản lý thấy');
+    conn.prepare('UPDATE lenh_chuyen_lop SET loi = NULL WHERE id = ?').run(lenh7[6].id);
+  });
+  check('CT (7f) · dải "Sắp chuyển" → "Đã chuyển" (≤ 14 ngày) → hết; xác nhận rồi có nút Đọc bàn giao; hồ sơ em chưa có lệnh: dai null', () => {
+    const e = em7[0];
+    assert(profileSvc.studentProfile(P.mbManager, e).dai.nut.includes('doc-ban-giao'), 'đã xác nhận → Đọc bàn giao');
+    chay(THU_HAI);
+    const sau = profileSvc.studentProfile(P.mbManager, e).dai;
+    assert(sau.loai === 'da' && sau.lopNguon.id === n7 && sau.banGiao.daXacNhan && sau.banGiao.nguoiXacNhan && !sau.nut.includes('huy-lenh') && sau.nut.includes('doc-ban-giao'), JSON.stringify(sau));
+    const setDemo = (ngay: string) => { setConfig('demo_date', ngay); };
+    setDemo(t.addDays(THU_HAI, 13));
+    try { assert(profileSvc.studentProfile(P.admin, e).dai?.loai === 'da', 'còn hiện ở ngày thứ 13 sau chuyển'); } finally { setDemo(TODAY); }
+    setDemo(t.addDays(THU_HAI, 15));
+    try { assert(profileSvc.studentProfile(P.admin, e).dai === null, 'hết sau 14 ngày'); } finally { setDemo(TODAY); }
+    const chuaCo = hocVien(lopMoi({ kind: 'FOU', tuanHienTai: 2 }), 'FOU', false).sid;
+    assert(profileSvc.studentProfile(P.admin, chuaCo).dai === null, 'em chưa có lệnh');
+  });
+  check('CT (7g) · số câu SQL của dải: daiHocVien ≤ 4, daiLop ≤ 4 (gồm 1–2 câu tra chi nhánh của `can()`; chưa tới Cuối khoá)', () => {
+    const e = hocVien(n7, 'FOU', false).sid;
+    ra(P.mbManager, n7, 'cuoi-khoa', [dongCua(e, 'len_lop', d7)]);
+    const a = demTruyVan(() => { dai.daiHocVien(P.mbManager, e); });
+    const giua = lopMoi({ kind: 'FOU', tuanHienTai: 3 });
+    const b = demTruyVan(() => { dai.daiLop(P.mbManager, giua, { phase: 'in_progress', ft: false, ct: 'FOU' }); });
+    assert(a <= 4 && b <= 4, `daiHocVien ${a} câu, daiLop ${b} câu`);
+  });
+
 }

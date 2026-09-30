@@ -18,6 +18,7 @@ import { standingFor, standingLine } from './standing.ts';
 import { luotSinhViecRow } from '../worklist/danhGia.ts';
 import { missingForStudent, suggestedMockWeeks } from '../classes/schedule.ts';
 import { lopHocCua } from '../classes/loTrinhTiep.ts';
+import { daiHocVien } from '../classes/daiChuyenLop.ts';
 import { listSignals } from '../cases/signals.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { activeClassOf, canManageDiscipline } from '../yThuc/access.ts';
@@ -976,6 +977,8 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       };
     })(),
     lopHoc: lopHocCua(p, studentId, current),
+    /** PR-CT: dải "Sắp chuyển / Đã chuyển" ngay dưới dòng thông tin đầu trang (mockup 20 — E). */
+    dai: daiHocVien(p, studentId),
   };
 }
 

@@ -20,6 +20,7 @@ import { allProgrammes, evaluateRegular, programmeOfClass } from '../normal/regu
 import { classProgressMany, missingForClasses, missingForStudent } from './schedule.ts';
 import { canhBaoTheoHocVien, caseViecTheoHocVien, soEmCanXuLyYThuc, viecHocVienTheoLop } from './dongHocVien.ts';
 import { demChuaLoTrinh, tiepTheoTheoHocVien } from './loTrinhTiep.ts';
+import { daiLop } from './daiChuyenLop.ts';
 import { listCases } from '../cases/cases.ts';
 import { trongBoNho } from '../platform/nguCanhRequest.ts';
 
@@ -748,6 +749,8 @@ function classOverviewThat(p: Principal, classId: number) {
     soChoDuyet: vl.soChoDuyet.get(classId) ?? 0, soEmQuaHan: vl.soEmQuaHan.get(classId) ?? 0,
     /** Lớp thường ở Cuối khoá / hết khoá: số em có đủ điểm bài Cuối khoá (null ở chặng khác và với FT). */
     cuoiKhoa,
+    /** PR-CT: dải Kết thúc khoá / Bàn giao / Sắp nhận (mockup 20 — A, H). Lớp đã kết thúc: không dải. */
+    dai: finished ? null : daiLop(p, classId, { phase: summary?.phase ?? null, ft: cls.is_fast_track === 1, ct: cls.programme_code ?? null }),
     /** Số học viên có vi phạm chưa xử lý quá 5 ngày — dấu ⚠ trên tab Ý thức & Phối hợp (Q15). */
     canhBaoYThuc: soEmCanXuLyYThuc(p, classId),
     /*

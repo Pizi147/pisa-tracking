@@ -329,11 +329,11 @@ export const TRAN: Record<string, number> = {
   'QT /hoc-vien-lop': 85,
   'QL /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 68,   // PR-CT Task 6: 66 → 68
   'QT /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 66,   // PR-CT Task 6: 64 → 66
-  'QL /classes/3/overview': 58,   // PR-CT Task 6: 56 → 58   // PR-CT: +1 câu quét lệnh chuyển lớp đến hạn
-  'GVCN /classes/3/overview': 58,   // PR-CT Task 6: 56 → 58   // PR-CT: +1 câu quét lệnh chuyển lớp đến hạn
-  'GVBM /classes/3/overview': 58,   // PR-CT Task 6: 56 → 58   // PR-CT: +1 câu quét lệnh chuyển lớp đến hạn
-  'GVCN_THUONG /classes/3/overview': 58,   // PR-CT Task 6: 56 → 58   // PR-CT: +1 câu quét lệnh chuyển lớp đến hạn
-  'QT /classes/3/overview': 55,   // PR-S4F #5: +3 câu quét thẻ chờ duyệt; PR-CT +1 câu quét lệnh đến hạn
+  'QL /classes/3/overview': 60,   // PR-CT Task 7: 58 → 60   // PR-CT Task 6: 56 → 58   // PR-CT: +1 câu quét lệnh chuyển lớp đến hạn
+  'GVCN /classes/3/overview': 60,   // PR-CT Task 7: 58 → 60   // PR-CT Task 6: 56 → 58   // PR-CT: +1 câu quét lệnh chuyển lớp đến hạn
+  'GVBM /classes/3/overview': 60,   // PR-CT Task 7: 58 → 60   // PR-CT Task 6: 56 → 58   // PR-CT: +1 câu quét lệnh chuyển lớp đến hạn
+  'GVCN_THUONG /classes/3/overview': 60,   // PR-CT Task 7: 58 → 60   // PR-CT Task 6: 56 → 58   // PR-CT: +1 câu quét lệnh chuyển lớp đến hạn
+  'QT /classes/3/overview': 57,   // PR-CT Task 7: 55 → 57   // PR-S4F #5: +3 câu quét thẻ chờ duyệt; PR-CT +1 câu quét lệnh đến hạn
   /* PR-HVL (2): mốc 46 (QT 43) + Case mở theo lô (`chiTietCaseMo`) đo 50 (QT 47) — trần kế hoạch = mốc + 6. */
   /* PR-HVL (5): `/classes/:id/can-ho-tro` đo 25 (QT 22) = `/cases?classId=` 17 (QT 14) + 8 — đúng trần kế hoạch. */
   /* PR-HVL (7): `/classes/:id/progress` đo 17 (QT 16) sau khi thêm `tomTatMt` — trần = đo + 3. */
