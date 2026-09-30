@@ -9802,6 +9802,9 @@ await runPrCtTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, ad
 // ==================================================================== PR-S5F-a (sửa sau rà cuối đợt 5 — chuyển lớp, bàn giao, Cuối khoá)
 const { runPrS5fATests } = await import('./prS5fA.tests.ts');
 await runPrS5fATests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== PR-S5F-b (sửa sau rà cuối đợt 5 — Giữa khoá, hồ sơ GV, tốc độ)
+const { runPrS5fbTests } = await import('./prS5fb.tests.ts');
+await runPrS5fbTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

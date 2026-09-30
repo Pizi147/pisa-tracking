@@ -795,6 +795,33 @@ await checkAsync(`PR-S3F · Công việc QL (nguoi=tat-ca) với 30 PA "đến l
   assert(r.n <= TRAN_GHI_LO.congViec30PaChuaNgayThi, `${r.n} câu > trần ${TRAN_GHI_LO.congViec30PaChuaNgayThi}`);
 });
 
+await checkAsync(`PR-S5F-b · Công việc GVCN + QL (nguoi=tat-ca) với 60 nhóm PA bổ trợ khắp hệ thống: số câu không tăng theo số nhóm (≤ +${TRAN_GHI_LO.congViec60NhomBoTro})`, async () => {
+  const { demoToday } = await import('../demoConfig.ts');
+  const { addDays } = await import('../util.ts');
+  const n0 = { gv: (await doSql('GVCN', 'GET', '/my-work')).n, ql: (await doSql('QL', 'GET', '/my-work?nguoi=tat-ca')).n };
+  const cs = conn.prepare(
+    `SELECT MIN(sc.id) AS id FROM sos_cases sc JOIN students s ON s.id = sc.student_id
+      WHERE sc.status != 'done' AND s.status = 'active' AND s.archived_at IS NULL
+        AND EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary')
+      GROUP BY sc.student_id ORDER BY sc.student_id LIMIT 30`).all() as any[];
+  assert(cs.length === 30, `Cần 30 Case mở đã có nguyên nhân của 30 em khác nhau, có ${cs.length}`);
+  const homNay = demoToday(), bayGio = new Date().toISOString();
+  [...cs, ...cs].forEach((c, i) => {
+    const chay = i < 30;   // mỗi Case hai nhóm: 30 nhóm đang chạy (Ghi kết quả) · 30 nhóm chờ nộp kế hoạch
+    conn.prepare(`INSERT INTO case_interventions (case_id, kind, description, status, needs_approval, preset, moc_quy_che, nhom_bo_tro, han_ke_hoach,
+        started_date, cycle_no, cycle_started_on, action_due, followup_due, confirmed_by, confirmed_at, created_at) VALUES (?, 'bo_tro', 'Bổ trợ · đo tốc độ', ?, 0, 1, 'den_cuoi_khoa', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      /* Như `taoPaBoTro`: PA bổ trợ luôn có mốc Cuối khoá (`followup_due`) từ lúc tạo. */
+      .run(c.id, chay ? 'started' : 'planned', `gk:toc${i}`, addDays(homNay, 3), chay ? homNay : null, 1, chay ? homNay : null,
+        chay ? homNay : null, addDays(homNay, 35), chay ? USER.QT : null, chay ? bayGio : null, bayGio);
+  });
+  const gv = await doSql('GVCN', 'GET', '/my-work'), ql = await doSql('QL', 'GET', '/my-work?nguoi=tat-ca');
+  assert(gv.status === 200 && ql.status === 200, `Mã ${gv.status} / ${ql.status}`);
+  console.log(`      (đo: GVCN ${n0.gv} → ${gv.n} câu · QL tất cả ${n0.ql} → ${ql.n} câu với 60 nhóm bổ trợ)`);
+  assert(gv.n - n0.gv <= TRAN_GHI_LO.congViec60NhomBoTro && ql.n - n0.ql <= TRAN_GHI_LO.congViec60NhomBoTro,
+    `Tăng ${gv.n - n0.gv} / ${ql.n - n0.ql} câu > trần +${TRAN_GHI_LO.congViec60NhomBoTro}`);
+  conn.prepare(`DELETE FROM case_interventions WHERE nhom_bo_tro LIKE 'gk:toc%'`).run();
+});
+
 console.log('\nBảng đo (vai · url → mã HTTP · số câu SQL):');
 for (const dong of bangDo) console.log(`  ${dong}`);
 

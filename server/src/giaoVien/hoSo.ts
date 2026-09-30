@@ -12,7 +12,7 @@ import { db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import { bangLop, can, loadPrincipal, scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, forbidden, notFound } from '../util.ts';
-import { phanTichLop } from '../classes/phanTichLop.ts';
+import { phanTichLop, phanTichNhieuLop, type PhanTichLop } from '../classes/phanTichLop.ts';
 import { listCases, type MappedCase } from '../cases/cases.ts';
 import { chiTietCaseMo, type CaseChiTiet } from '../cases/caseLop.ts';
 import { trongPhamVi, yeuCauCuaToi } from '../duyet/yeuCau.ts';
@@ -135,8 +135,7 @@ export type KetQuaLop = {
   o: { dong: string; nhan: string; dat: number; tong: number; cuaMinh: boolean }[];
 };
 /** "Mốc gần nhất" = cột CUỐI (theo thứ tự `cot`) có ít nhất một ô có điểm — một mốc cho cả dòng lớp. */
-function ketQuaCuaLop(p: Principal, l: LopGv): KetQuaLop {
-  const pt = phanTichLop(p, l.id);
+function ketQuaCuaLop(l: LopGv, pt: PhanTichLop): KetQuaLop {
   const dong = pt.dong.filter((d) => d.key !== 'ca-bai');
   const moc = [...pt.cot].reverse().find((c) => dong.some((d) => (pt.o[`${d.key}|${c.key}`]?.tong ?? 0) > 0)) ?? null;
   return {
@@ -194,8 +193,8 @@ export function hoSoGiaoVien(p: Principal, gvId: number): HoSoGv {
 }
 
 /**
- * Hai khối nặng tách khỏi `hoSoGiaoVien` để mỗi lời gọi ≤ trần 100 câu SQL của `tocDoDuong` (đo: việc ≈ 45–55 câu, mỗi lớp ≈ 7 câu
- * `phanTichLop`; gộp một lời gọi ≈ 113–126 câu). Web gọi song song, khối nào xong vẽ khối đó. Quyền kiểm ở CẢ hai (`phamViHoSoGv` trước hết).
+ * Hai khối nặng tách khỏi `hoSoGiaoVien` để mỗi lời gọi ≤ trần 100 câu SQL của `tocDoDuong` (đo: việc ≈ 45–55 câu; kết quả đọc mọi lớp
+ * một lượt qua `phanTichNhieuLop` — PR-S5F-b, trước đó ≈ 7 câu/lớp). Web gọi song song, khối nào xong vẽ khối đó. Quyền kiểm ở CẢ hai (`phamViHoSoGv` trước hết).
  */
 export function viecHoSoGv(p: Principal, gvId: number): { viec: { nhom: NhomViec; n: number; quaHan: number }[] } {
   phamViHoSoGv(p, gvId);
@@ -204,10 +203,11 @@ export function viecHoSoGv(p: Principal, gvId: number): { viec: { nhom: NhomViec
 
 export function ketQuaHoSoGv(p: Principal, gvId: number): { ketQua: KetQuaLop[] } {
   const { branchIds } = phamViHoSoGv(p, gvId);
-  const lop = lopCuaGv(gvId, demoToday(), branchIds);
-  // ponytail: phanTichLop mỗi lớp (≈ 7 câu/lớp, GV thường ≤ 8 lớp → ≤ 60 câu); nâng: gộp lô nhiều lớp một lượt nếu GV có nhiều lớp hơn
   /* Lớp người xem không có quyền xem điểm (vd GV được phân công lớp ở chi nhánh khác vai của họ) thì bỏ khỏi khối kết quả — không làm cả hồ sơ 403. */
-  return { ketQua: lop.filter((l) => can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: l.id })).map((l) => ketQuaCuaLop(p, l)) };
+  const lop = lopCuaGv(gvId, demoToday(), branchIds).filter((l) => can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: l.id }));
+  /* PR-S5F-b: mọi lớp một lượt (bài thi + điểm đọc một câu mỗi bảng) — số câu không tăng theo số lớp. */
+  const pt = phanTichNhieuLop(lop.map((l) => l.id));
+  return { ketQua: lop.map((l) => ketQuaCuaLop(l, pt.get(l.id)!)) };
 }
 
 // ------------------------------------------------------------------ danh sách sau một số (ô bấm được)

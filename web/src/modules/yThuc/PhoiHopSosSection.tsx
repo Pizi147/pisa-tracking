@@ -48,7 +48,8 @@ export function PhoiHopSosSection({ turns, loading, cot1 = 'hocVien', onGoAcadem
   onGoAcademic?: () => void; onChanged?: () => void;
 }) {
   if (loading || !turns) return <Skeleton rows={3} />;
-  if (!turns.length) return <Empty title="Không có lượt Phối hợp SOS nào" />;
+  /* PR-S5F-b: tab dùng chung FT và lớp thường — màn rỗng không nói "SOS" (lớp thường không có SOS). */
+  if (!turns.length) return <Empty title="Không có lượt phối hợp nào" />;
   return (
     <div className="space-y-2">
       {turns.map((t) => (
@@ -112,7 +113,8 @@ export function TheSos({ t, cot1 = 'luot', onGoAcademic, onChanged }: {
           {t.actions.map((a) => (
             <ActionRow key={a.id} a={a} canAct={t.canAct} onChanged={onChanged} />
           ))}
-          {t.canAct && !adding && (
+          {/* PR-S5F-b: lượt Giữa khoá lớp thường (`nhanDot`) không thêm việc — máy chủ chỉ nhận ở lượt Mock FT có SOS. */}
+          {t.canAct && !adding && !t.nhanDot && (
             <button type="button" className="btn btn-sm mt-2" onClick={() => setAdding(true)}>+ Thêm việc</button>
           )}
           {adding && (

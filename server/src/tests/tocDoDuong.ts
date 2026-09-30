@@ -202,6 +202,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ GV', vai: MOI_VAI, url: '/giao-vien/{gv}', maChuDich: { GVBM: 403 } },
   { trang: 'Hồ sơ GV', vai: MOI_VAI, url: '/giao-vien/{gv}/viec', maChuDich: { GVBM: 403 } },
   { trang: 'Hồ sơ GV', vai: MOI_VAI, url: '/giao-vien/{gv}/ket-qua', maChuDich: { GVBM: 403 } },
+  /* PR-S5F-b: GV nhiều lớp nhất bộ demo (Phạm Thu Trang, id 9 — 18 lớp): kết quả đọc mọi lớp một lượt, số câu không tăng theo lớp. */
+  { trang: 'Hồ sơ GV', vai: ['QL', 'QT'], url: '/giao-vien/9/ket-qua' },
   { trang: 'Hồ sơ GV', vai: MOI_VAI, url: '/giao-vien/{gv}/o?cot=chua-nhap', maChuDich: { GVBM: 403 } },
   { trang: 'Hồ sơ GV', vai: MOI_VAI, url: '/giao-vien/{gv}/o?cot=case-mo', maChuDich: { GVBM: 403 } },
   /* Bảng giáo viên của chi nhánh (Tổng quan › Theo lớp › Theo giáo viên): chỉ Quản lý / Quản trị; GVCN → 403. */
@@ -560,11 +562,14 @@ export const TRAN: Record<string, number> = {
   'GVBM /giao-vien/7/viec': 20,
   'GVCN_THUONG /giao-vien/7/viec': 80,
   'QT /giao-vien/7/viec': 91,
-  'QL /giao-vien/7/ket-qua': 80,   // PR-CT gộp LT2b: 74 → 80   // PR-LT2b: bộ demo D10–D13 thêm 2 lớp cho GVCN Hà (MB BE 04 · MB ELE 02) — `ket-qua` tốn thêm câu theo lớp: 59 → 73 (+24 %)
-  'GVCN /giao-vien/7/ket-qua': 79,   // PR-CT gộp LT2b: 73 → 79
+  /* PR-S5F-b: `phanTichNhieuLop` đọc mọi lớp một lượt — đo 23–24 câu (trước 73–79, tăng theo số lớp) → trần HẠ về max(sau+10, ⌈sau×1.3⌉). */
+  'QL /giao-vien/7/ket-qua': 34,
+  'GVCN /giao-vien/7/ket-qua': 33,
   'GVBM /giao-vien/7/ket-qua': 20,
-  'GVCN_THUONG /giao-vien/7/ket-qua': 79,   // PR-CT gộp LT2b: 73 → 79
-  'QT /giao-vien/7/ket-qua': 79,   // PR-CT gộp LT2b: 73 → 79
+  'GVCN_THUONG /giao-vien/7/ket-qua': 33,
+  'QT /giao-vien/7/ket-qua': 34,
+  'QL /giao-vien/9/ket-qua': 34,   // PR-S5F-b: GV 18 lớp — trước 105–111 câu (vượt trần cứng 100), nay 24
+  'QT /giao-vien/9/ket-qua': 34,
   'QL /giao-vien/7/o?cot=chua-nhap': 37,
   'GVCN /giao-vien/7/o?cot=chua-nhap': 36,
   'GVBM /giao-vien/7/o?cot=chua-nhap': 20,
@@ -602,6 +607,12 @@ export const TRAN_GHI_LO = {
   congViec30PaChuaNgayThi: 91,
   /** POST /xuat-mt — Quản lý xuất cả chi nhánh MB, MT1–MT8, cột đầy đủ, SAU khi nhân dữ liệu ×3 (PR-XUAT). Phải KHÔNG tăng theo số lượt (một câu lượt + các câu lô của loadBundle). Đo 16 câu / 550 lượt → trần max(sau+10, ⌈sau×1.3⌉) = 26. */
   xuatMtChiNhanh: 26,
+  /**
+   * GET /my-work (GVCN) và /my-work?nguoi=tat-ca (QL) khi toàn hệ thống có thêm 30 nhóm PA bổ trợ đang chạy + 30 nhóm chờ nộp kế hoạch
+   * (PR-S5F-b). Trần là số câu TĂNG THÊM so với trước khi chèn 60 nhóm. Trước sửa: GVCN +88, QL +119 (`quyenBoTro` đọc lại Case từng nhóm).
+   * Sau: lọc rẻ trước, quyền từ cột đã JOIN → đo +0 / −1 → trần +10.
+   */
+  congViec60NhomBoTro: 10,
   /** POST /intake/commit — 30 em lớp THƯỜNG (MB FOU 12), mỗi em tự có bài Giữa/Cuối khoá còn hiệu lực (PR-LT2a M1b). Ghi theo lô: số câu không tăng theo số em. */
   themHocVien30Thuong: 72,   // đo 55 câu → trần max(sau+10, ⌈sau×1,3⌉) = 72
 };

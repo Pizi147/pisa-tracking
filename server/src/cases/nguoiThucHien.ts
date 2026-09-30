@@ -26,10 +26,14 @@ const NHOM_MESSAGE: Record<NhomNguoi, string> = {
 export function chuanHoaNguoiThucHien(
   p: Principal,
   input: { performerSelf?: boolean; performerUserId?: number | null; performerName?: string | null },
-  opts: { nhom: NhomNguoi; batBuoc: boolean },
+  /** `branchId`: tài khoản được chọn phải có vai ở đúng chi nhánh này (PR-S5F-b — người dạy bổ trợ cùng chi nhánh của lớp). */
+  opts: { nhom: NhomNguoi; batBuoc: boolean; branchId?: number | null },
 ): NguoiThucHienKetQua | null {
   if (input.performerUserId) {
     if (!laNguoiHopLe(input.performerUserId, opts.nhom)) throw badRequest(NHOM_MESSAGE[opts.nhom]);
+    if (opts.branchId && !laNguoiHopLe(input.performerUserId, opts.nhom, opts.branchId)) {
+      throw badRequest('Người dạy phải là giáo viên cùng chi nhánh với lớp. Người ngoài thì chọn "Người ngoài" và gõ tên.');
+    }
     return { userId: input.performerUserId, name: null };
   }
   const ten = (input.performerName ?? '').trim();

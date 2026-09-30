@@ -9,7 +9,7 @@ import { type BanDieuChinh } from './CapNhatTuan.tsx';
 import { KhongTheoDoiForm } from '../yThuc/CaseSosControls.tsx';
 import type { BoTro } from './NopKeHoachPanel.tsx';
 import {
-  ATTEMPT_KIND_SHORT, OUTCOME_MARK, OUTCOME_TONE, dangChay, deadlineView, tienDoCase, viecTiepPhuongAn,
+  ATTEMPT_KIND_SHORT, OUTCOME_MARK, OUTCOME_TONE, dangChay, deadlineView, tienDoCase, tuanLich, viecTiepPhuongAn,
   type AttemptKind, type DeadlineKind, type DeadlineView, type TrangThai, type TrangThaiCaseV4,
 } from '@shared/domain/index.ts';
 
@@ -330,8 +330,9 @@ function HangCase({ c, ngan, onChanged, onMoCase }: {
   const choNguyenNhan = tt.k === 'cho-nguyen-nhan';
   const chanNut = tt.k === 'cho-nguyen-nhan' || tt.k === 'cho-duyet-khong-theo-doi';
   /* K3-08: Case chờ nguyên nhân chưa có gì để tóm tắt — dòng phụ trống. */
+  /* PR-S5F-b: Case rút vì sửa/xoá điểm — không tóm tắt PA ("Chưa có PA" / "n PA …" gây hiểu là chưa làm). */
   const dongPhu = choNguyenNhan ? null : [
-    c.issueLabel, td.text,
+    c.issueLabel, tt.k === 'rut-sua-diem' ? null : td.text,
     c.carriedOver ? 'từ lộ trình trước' : null,
     c.backfilledOn ? `nhập bù${c.backfilledBy ? ` · ${c.backfilledBy}` : ''} ghi ngày ${ngan(c.backfilledOn)}` : null,
   ].filter(Boolean).join(' · ');
@@ -427,8 +428,12 @@ function HangPA({ p, c, ngan, onMoCase }: {
   const { homNay } = useNgayNghiepVu();
   const v = viecTiepPhuongAn(p);
   const han = p.actionDue ? deadlineView({ kind: 'cap-nhat-pa', due: p.actionDue, today: homNay }) : null;
-  const khoang = p.startedOn ? `từ ${ngan(p.startedOn)}${p.completedOn ? ` → ${ngan(p.completedOn)}` : ''}` : null;
+  /* PR-S5F-b: PA Bổ trợ nói TUẦN (`từ W3 SEP`), không ngày — thời gian trên màn ưu tiên mã tuần. */
+  const boTro = p.kind === 'bo_tro' && !!c.boTro;
+  const khoang = p.startedOn ? `từ ${boTro ? tuanLich(p.startedOn, homNay) : ngan(p.startedOn)}${p.completedOn ? ` → ${ngan(p.completedOn)}` : ''}` : null;
   const chuaLich = !!p.mocChu && /chưa có (lịch|ngày thi)/.test(p.mocChu);
+  /* PR-S5F-b (mockup LT2a): tên PA Bổ trợ = `Bổ trợ 2 buổi/tuần · đến Cuối khoá · W4 OCT · trừ buổi Free` — mốc nằm trong tên, không lặp ở dòng phụ. */
+  const ten = boTro ? `Bổ trợ ${c.boTro!.buoiMoiTuan} buổi/tuần · ${p.mocChu ?? 'đến Cuối khoá'} · trừ buổi Free` : p.name;
   const chuaChay = !!p.chuaChay;
   const choDuyetKh = chuaChay && c.boTro?.keHoach?.trangThai === 'cho';
   const chung = c.boTro?.chung && c.boTro.mon.length > 1 ? `PA chung · ${c.boTro.mon.map((m) => m.tenMon).join(', ')}` : null;
@@ -440,8 +445,8 @@ function HangPA({ p, c, ngan, onMoCase }: {
         <div className="flex min-w-0 items-center gap-1.5 pl-5">
           <span className={`shrink-0 rounded border px-1 text-[11px] font-semibold leading-4 ${choDuyetKh ? 'border-dashed border-current text-wait' : 'border-[color:var(--line-strong)] text-slate-400'}`}>PA</span>
           <button type="button" onClick={() => onMoCase(c.id, { paId: p.id })} title="Mở PA trong ngăn Case"
-            className="min-w-0 appearance-none truncate border-0 bg-transparent p-0 text-left text-xs text-slate-100 hover:underline">
-            {p.name}
+            className={`min-w-0 appearance-none border-0 bg-transparent p-0 text-left text-xs text-slate-100 hover:underline ${boTro ? '' : 'truncate'}`}>
+            {ten}
           </button>
           {p.batBuoc && (
             <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[11px] text-slate-400" title={p.kind === 'bo_tro' ? 'PA Bổ trợ bắt buộc đến Cuối khoá — không thay, không kết thúc sớm' : 'PA theo quy chế SOS — không thay, không kết thúc sớm'}>
@@ -451,7 +456,7 @@ function HangPA({ p, c, ngan, onMoCase }: {
         </div>
         <span className="block truncate pl-5 text-[11px] text-slate-500" title={dongPhu}>
           {dongPhu}
-          {p.mocChu && <span className={chuaLich ? 'text-soon' : ''}> · {p.mocChu}</span>}
+          {p.mocChu && !boTro && <span className={chuaLich ? 'text-soon' : ''}> · {p.mocChu}</span>}
         </span>
       </td>
       <td className="td">

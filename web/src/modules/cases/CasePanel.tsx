@@ -11,7 +11,7 @@ import { caseStatusLabel, fmtBand, skillLabel, sosLabel, sosTone } from '../../l
 import {
   INTERVENTION_KIND_LABEL, INTERVENTION_STATUS_LABEL,
   NEXT_STEP_LABEL, OUTCOME_MARK, OUTCOME_TONE,
-  deadlineView, outcomeLabelFor, tenMon, type TrangThai,
+  deadlineView, outcomeLabelFor, tenMon, tuanLich, type TrangThai,
 } from '@shared/domain/index.ts';
 import { LichSuDieuChinh, type BanDieuChinh } from './CapNhatTuan.tsx';
 import { NganCase } from '../students/NganCase.tsx';
@@ -230,7 +230,9 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
   const batDau = iv.startedDate ?? iv.plannedDate ?? null;
   /* PR-SOS (Q28-4): không còn "dự kiến kết thúc" — khoảng ngày là `từ dd/mm` hoặc ngày xong thật; PA quy chế nói mốc riêng. */
   const ketThuc = iv.completedDate ?? null;
-  const khoang = batDau && ketThuc ? `${ngan(batDau)} → ${ngan(ketThuc)}` : batDau ? `từ ${ngan(batDau)}` : ketThuc ? `đến ${ngan(ketThuc)}` : null;
+  /* PR-S5F-b: PA Bổ trợ bắt đầu nói TUẦN (`từ W3 SEP`), như hàng PA ở bảng kỹ năng. */
+  const tu = (d: string) => (iv.kind === 'bo_tro' ? tuanLich(d, homNay) : ngan(d));
+  const khoang = batDau && ketThuc ? `${ngan(batDau)} → ${ngan(ketThuc)}` : batDau ? `từ ${tu(batDau)}` : ketThuc ? `đến ${ngan(ketThuc)}` : null;
   const nguoi = iv.performer ? `${iv.performer}${iv.byProxy && iv.recordedBy ? ` (${iv.recordedBy} nhập hộ)` : ''}` : 'Chưa có người làm';
   return (
     <li className="rounded-lg border px-3 py-2.5 surface-2" style={{ borderColor: 'var(--line)' }} data-pa-id={iv.id}>

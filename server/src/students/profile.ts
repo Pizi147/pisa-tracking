@@ -478,7 +478,8 @@ function headlineOf(p: Principal, studentId: number, cycleId: number | null) {
       else if (v.chu.startsWith('Xác nhận PA')) xacDinh.push({ text: `Xác nhận PA ${sk(r)}`, due: v.han, rank: 1, category: r.category });
       /* PR-LT2a: PA Bổ trợ — nộp kế hoạch chặn đầu chuỗi (hạn nộp); chờ Quản lý duyệt là việc chờ người khác. */
       else if (v.chu === 'Nộp kế hoạch bổ trợ') xacDinh.push({ text: `Nộp kế hoạch bổ trợ ${sk(r)}`, due: v.han, rank: 1, category: r.category });
-      else if (v.chu === 'Chờ Quản lý duyệt kế hoạch') cands.push({ text: `Chờ Quản lý duyệt kế hoạch ${sk(r)}`, due: null, rank: 2, category: r.category });
+      /* PR-S5F-b: hạn = hạn duyệt THẬT của thẻ kế hoạch (không "chưa đặt hạn"). */
+      else if (v.chu === 'Chờ Quản lý duyệt kế hoạch') cands.push({ text: `Chờ Quản lý duyệt kế hoạch ${sk(r)}`, due: c.boTro?.keHoach?.hanDuyet ?? null, rank: 2, category: r.category });
       else if (v.chu.startsWith('Ghi kết quả cuối')) cands.push({ text: `Ghi kết quả cuối ${sk(r)}${v.chu.endsWith('(lớp cũ)') ? ' (lớp cũ)' : ''}`, due: v.han, rank: v.chu.endsWith('(lớp cũ)') ? 2 : 1, category: r.category, loai: 'cap-nhat-pa' });
       else if (v.chu === 'Hoàn thành Case') cands.push({ text: `Hoàn thành Case ${sk(r)}`, due: null, rank: 2, category: r.category });
     }

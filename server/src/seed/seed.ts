@@ -204,6 +204,8 @@ export function runSeed() {
       }
     }
     dienMocLop(conn);   // PF1: chụp số tuần vào lớp thường — seed không chạy migrate()
+    /* PR-S5F-b: "Phụ trách được" (hồ sơ GV) đọc `user_skills` — GV demo khai đúng các kỹ năng đang được phân công. */
+    conn.prepare(`INSERT OR IGNORE INTO user_skills (user_id, skill) SELECT DISTINCT user_id, skill FROM teacher_assignments WHERE skill IS NOT NULL`).run();
 
     // ---------------------------------------------------------------- học viên & hành trình
     conn.prepare('INSERT INTO student_code_seq (id, next_value) VALUES (1, 1)').run();

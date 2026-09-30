@@ -201,10 +201,11 @@ export async function runHocVienLopTests(t: YThucTestKit) {
       homNay: '2026-09-14',
     });
     eq(v.map((x: any) => [x.viec, x.han, x.quaHanNgay, x.tone, x.title]), [
-      ['Ghi kết quả PA L', 'hết T2 13/09', 1, 'danger', 'Ghi kết quả PA Nghe podcast · Listening · hạn hết T2 13/09 · quá hạn 1 ngày'],
+      /* PR-S5F-b (mockup 21): việc ghi kết quả PA nói tuần của kết quả. */
+      ['Ghi kết quả PA L · tuần W1 SEP', 'hết T2 13/09', 1, 'danger', 'Ghi kết quả PA Nghe podcast · Listening · tuần W1 SEP · hạn hết T2 13/09 · quá hạn 1 ngày'],
       ['Nhập điểm L, W · Giữa khoá', null, null, 'warn', 'Nhập điểm L, W · Giữa khoá'],
       ['Đề ra PA W2', null, null, 'warn', 'Đề ra PA · Writing Task 2'],
-      ['Ghi kết quả PA R', 'hết T2 20/09', null, 'info', 'Ghi kết quả PA Đọc báo · Reading · hạn hết T2 20/09'],
+      ['Ghi kết quả PA R · tuần W2 SEP', 'hết T2 20/09', null, 'info', 'Ghi kết quả PA Đọc báo · Reading · tuần W2 SEP · hạn hết T2 20/09'],
     ], 'Thứ tự và chữ (Case không việc bị bỏ)');
     /* Ý kiểm cũ "Case nói trước" (chonCaseChinh) nay là thứ tự hàng của `hangCanHoTro` — kiểm ở prHvl.tests.ts (T19). */
   });

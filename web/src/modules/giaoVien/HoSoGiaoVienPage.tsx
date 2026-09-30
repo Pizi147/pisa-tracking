@@ -240,7 +240,8 @@ function MiniKetQua({ id, k }: { id: number; k: KetQuaLop }) {
           <span key={o.dong} className={`rounded-md border px-0.5 py-1 text-center text-xs tabular-nums ${o.cuaMinh ? MON_CUA_MINH : ''} ${thap(o) ? 'bg-bad-bg' : ''}`}
             style={o.cuaMinh ? undefined : { borderColor: 'var(--line)' }}>
             <OKq id={id} k={k} o={o} />
-            <span className="block text-xs leading-4 text-slate-400">{o.nhan}</span>
+            {/* PR-S5F-b: cách số một nhịp — gạch chấm dưới số (underline-offset-4) không chạm nhãn môn ở 375 px. */}
+            <span className="mt-1 block text-xs leading-4 text-slate-400">{o.nhan}</span>
           </span>
         ))}
       </span>
@@ -346,10 +347,11 @@ function KhoiCase({ data, homNay }: { data: HoSo; homNay: string }) {
     <Card title="Case đang phụ trách" bodyClass="p-0"
       action={ds.length ? (
         <span className="text-xs text-slate-400">
-          <SoLieuO giaTri={ds.length} tieuDe="Case đang phụ trách" nguon={nguon(id, 'cot=case-mo')} className={`${vung} text-slate-200`} /> Case ·{' '}
+          {/* PR-S5F-b: mỗi cụm `17 Case` · `2 việc tiếp quá hạn` giữ liền một dòng — hẹp thì xuống dòng GIỮA hai cụm, không giữa số và chữ. */}
+          <span className="whitespace-nowrap"><SoLieuO giaTri={ds.length} tieuDe="Case đang phụ trách" nguon={nguon(id, 'cot=case-mo')} className={`${vung} text-slate-200`} /> Case</span> ·{' '}
           {quaHan > 0
-            ? <><SoLieuO giaTri={quaHan} tieuDe="Case có việc tiếp quá hạn" nguon={nguon(id, 'cot=case-qua-han')} className={`${vung} ${soDam} text-bad`} /> <span className="text-bad">việc tiếp quá hạn</span></>
-            : <span>không có việc tiếp quá hạn</span>}
+            ? <span className="whitespace-nowrap"><SoLieuO giaTri={quaHan} tieuDe="Case có việc tiếp quá hạn" nguon={nguon(id, 'cot=case-qua-han')} className={`${vung} ${soDam} text-bad`} /> <span className="text-bad">việc tiếp quá hạn</span></span>
+            : <span className="whitespace-nowrap">không có việc tiếp quá hạn</span>}
         </span>
       ) : undefined}>
       {!ds.length ? <Empty title="Không có Case nào đang mở." />

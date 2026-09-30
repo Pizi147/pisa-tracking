@@ -33,7 +33,8 @@ function capText(value: string | null | undefined, max: number, label: string): 
   return text;
 }
 
-const ACT_MESSAGE = 'Chỉ giáo viên chủ nhiệm của lớp em đang học và Quản lý trong phạm vi mới xử lý được Phối hợp SOS — giáo viên bộ môn chỉ xem.';
+/* PR-S5F-b: dùng chung lượt Mock FT và Giữa khoá lớp thường — không nói "SOS" (lớp thường không có SOS). */
+const ACT_MESSAGE = 'Chỉ giáo viên chủ nhiệm của lớp em đang học và Quản lý trong phạm vi mới xử lý được việc phối hợp — giáo viên bộ môn chỉ xem.';
 
 // ---------------------------------------------------------------- điền sẵn và đồng bộ theo mức SOS (P01–P03)
 

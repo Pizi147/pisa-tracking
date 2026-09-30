@@ -8,7 +8,7 @@
  */
 import { db } from '../db.ts';
 import {
-  INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, URGENCY_LABEL, mocChuPa, ngay, planDueDate, tenCaseSos, tenPaViecTiep, trangThaiCaseV4, viecTiepCuaCase,
+  INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, URGENCY_LABEL, mocChuPa, planDueDate, tenCaseSos, tenPaViecTiep, trangThaiCaseV4, viecTiepCuaCase,
   type InterventionKind, type ViecTiepCase,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -26,7 +26,7 @@ export type CaseChiTiet = {
   /** Ba phần của tên Case SOS Fast Track (web vẽ chip `[MT1]` + phần giữa + chip SOS) — null với Case tay / lớp thường. */
   tenSos: { mt: number | null; giua: string; sos: number | null } | null;
   nguyenNhan: string | null; urgency: string | null;
-  /** "Gấp · mở 14/09" — dòng phụ dưới tên Case (web nối `nguyenNhan · moTu`). */
+  /** Mức gấp (`Gấp`) — dòng phụ dưới tên Case (web nối `nguyenNhan · moTu`). Tên giữ để không đổi hợp đồng API. */
   moTu: string;
   trangThai: ReturnType<typeof trangThaiCaseV4>;
   viecTiep: ViecTiepCase | null;
@@ -108,7 +108,8 @@ export function chiTietCaseMo(cases: readonly MappedCase[]): Map<number, CaseChi
       tieuDe: laSosFt ? tenCaseSos({ mt: mt ?? null, giua, sos: c.sosLevel }) : c.title,
       tenSos: laSosFt ? { mt: mt ?? null, giua, sos: c.sosLevel } : null,
       nguyenNhan: c.primaryLabel, urgency: c.urgency,
-      moTu: [c.urgency ? URGENCY_LABEL[c.urgency] ?? null : null, c.detectedAt ? `mở ${ngay(c.detectedAt, homNay)}` : null].filter(Boolean).join(' · '),
+      /* PR-S5F-b: bỏ "mở dd/mm" — thời gian trên màn ưu tiên mã tuần, và việc tiếp đã nói hạn. */
+      moTu: c.urgency ? URGENCY_LABEL[c.urgency] ?? '' : '',
       trangThai: trangThaiCaseV4(v4, homNay), viecTiep,
       quaHan: !!viecTiep?.han && viecTiep.han < homNay,
       pas,

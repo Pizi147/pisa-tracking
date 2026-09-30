@@ -174,7 +174,7 @@ export async function runPrS5fATests(t: YThucTestKit) {
     assert(c.owner_user_id === GV[2] && c.cycle_id !== cyc, `chủ Case: ${JSON.stringify(c)}`);
     assert(get(`SELECT 1 FROM sos_case_history WHERE case_id = ? AND field = 'owner' AND new_value = 'bàn giao khi chuyển lớp'`, caseId), 'lịch sử đổi chủ');
     const iv = get('SELECT performer_user_id, status FROM case_interventions WHERE id = ?', ivId);
-    assert(iv.performer_user_id === GV[1] && iv.status === 'started' && quyenBoTro(loadPrincipal(GV[1]), { performer_user_id: GV[1], case_id: caseId }), `PA cũ: ${JSON.stringify(iv)}`);
+    assert(iv.performer_user_id === GV[1] && iv.status === 'started' && quyenBoTro(loadPrincipal(GV[1]), { performer_user_id: GV[1], case_id: caseId, nhom_bo_tro: null }), `PA cũ: ${JSON.stringify(iv)}`);
     /* Việc tiếp của Case: ưu tiên PA ở lớp mới; PA lớp cũ ghi rõ "(lớp cũ)". */
     const pa = (o: Record<string, unknown>) => ({ id: 1, ten: 'Bổ trợ', batBuoc: false, choXacNhan: false, xong: false, actionDue: '2026-10-05', followupDue: null, ...o });
     const v4 = { status: 'in_progress', fromSos: false, hasCause: true, dismissed: false, systemClosed: false, choDuyetKhongTheoDoi: false, coPaChoXacNhan: false, hanXacNhan: null, boTro: null };
