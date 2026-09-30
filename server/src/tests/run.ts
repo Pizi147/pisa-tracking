@@ -4957,7 +4957,9 @@ check('Chuyển lớp rồi thì case theo em sang lớp mới TRÊN BẢNG TỔ
   }
 
   /* Còn HỒ SƠ HỌC VIÊN vẫn phải giữ lớp lúc đánh giá — chuyển lớp không viết lại quá khứ. */
-  const pr = profile.studentProfile(P.admin, moved.sid) as any;
+  /* PR-LT2a M1b: vào lớp thường mới tự có bài ở lộ trình MỚI — hồ sơ mặc định giờ mở lộ trình mới; lịch sử lớp cũ nằm ở lộ trình CŨ (không viết lại quá khứ). */
+  const cuCycle = (conn.prepare('SELECT cycle_id FROM assessment_attempts WHERE student_id = ? AND class_id = ? LIMIT 1').get(moved.sid, moved.oldc) as any)?.cycle_id ?? null;
+  const pr = profile.studentProfile(P.admin, moved.sid, cuCycle) as any;
   const oldCode = (conn.prepare('SELECT code FROM classes WHERE id = ?').get(moved.oldc) as any).code;
   const kept = pr.attempts.some((a: any) => a.classCode === oldCode);
   if (pr.attempts.length) {

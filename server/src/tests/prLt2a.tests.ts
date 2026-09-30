@@ -17,6 +17,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
   const yc: any = await import('../duyet/yeuCau.ts');
   const effectiveness: any = await import('../cases/effectiveness.ts');
   const mywork: any = await import('../worklist/mywork.ts');
+  const students: any = await import('../students/students.ts');
   const phoiHop: any = await import('../yThuc/phoiHop.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const { createApp } = await import('../app.ts');
@@ -290,6 +291,13 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     yc.duyetYeuCau(P.mbManager, theKh(cGv.id).id);
     return { em, cGv, cP, khoa, trang, ha };
   };
+  const taoHocVienFt = (): number => {
+    const now = new Date().toISOString();
+    const sid = Number(conn.prepare("INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES ('PISA-LT2A-FT', 'LT2a HV FT', 'lt2a hv ft', (SELECT branch_id FROM classes WHERE code = 'MB FT 101'), 'active', ?)").run(now).lastInsertRowid);
+    conn.prepare("INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', '2026-07-27', ?)").run(sid, classId('MB FT 101'), now);
+    conn.prepare("INSERT INTO learning_cycles (student_id, seq, route, started_at, status, created_at) VALUES (?, 1, 'LT1', '2026-07-27', 'active', ?)").run(sid, now);
+    return sid;
+  };
   const KQ = { outcome: 'improved', note: 'Em viết đúng thì ở phần đặt câu, còn nhầm thì quá khứ.', decision: 'keep' };
   const folCua = (ivId: number) => all('SELECT * FROM case_followups WHERE intervention_id = ? ORDER BY id', ivId);
 
@@ -400,6 +408,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
 
   check('LT2a (7) · Vắng cùng môn lần 2 → GVCN nhận thông báo (dời sang tuần …); lần 1 thì không', () => {
     const em = taoEm('LT2a VANG', 'MB FOU 12');
+    conn.prepare(`UPDATE assessment_attempts SET status = 'cancelled' WHERE cycle_id = (SELECT cycle_id FROM assessment_attempts WHERE id = ?) AND kind = 'final'`).run(em.pt);   // Cuối khoá tuần này chặn dời L (T15) — bỏ để thử vắng lần 2
     const ha = P.normalCoreTeacher;
     const co = (lan: number) => all('SELECT 1 FROM notifications WHERE user_id = ? AND dedup_key = ?', ha.userId, `vang-thuong:${em.pt}:reading:${lan}`).length;
     regular.saveRegularScore(P.admin, em.pt!, 'reading', { noShow: true });
@@ -408,5 +417,63 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     assert(co(2) === 1, 'lần 2 phải có thông báo');
     const tb = get('SELECT title FROM notifications WHERE user_id = ? AND dedup_key = ?', ha.userId, `vang-thuong:${em.pt}:reading:2`);
     assert(/vắng R Giữa khoá lần 2 — đã dời sang W\d/.test(tb.title) && !/SOS/.test(tb.title), tb.title);
+  });
+
+  // ------------------------------------------------------------------ khối 8 · M1b — em vào lớp thường tự có bài Giữa khoá + Cuối khoá (Task 8)
+  let soLop = 0;
+  /** Lớp thường mới khai giảng cách hôm nay `tuanTruoc` tuần (0 = hôm nay). */
+  const dungLop = (ct: 'FOU' | 'PREFOU' | 'BE', tuanTruoc: number) => {
+    soLop += 1;
+    const khai = d.mondayOfDate ? d.mondayOfDate(t.addDays(TODAY, -7 * tuanTruoc)) : t.addDays(TODAY, -7 * tuanTruoc);
+    const now = new Date().toISOString();
+    const week = { ensurePeriod: (x: string) => get('SELECT id FROM report_periods WHERE week_start = ?', x) };
+    void week;
+    const pid = (conn.prepare('SELECT id FROM report_periods WHERE week_start = ?').get(khai) as any)?.id
+      ?? Number(conn.prepare(`INSERT INTO report_periods (code, week_start, week_end, created_at) VALUES (?,?,?,?)`).run(`LT2a-${khai}`, khai, t.addDays(khai, 6), now).lastInsertRowid);
+    const lop = Number(conn.prepare(
+      `INSERT INTO classes (code, branch_id, kind, programme_code, route, is_fast_track, start_date, start_period_id, status, note, created_at)
+       VALUES (?, (SELECT branch_id FROM classes WHERE code = 'MB FOU 12'), ?, ?, NULL, 0, ?, ?, 'active', 'Phép kiểm LT2a M1b', ?)`,
+    ).run(`QA LT2a ${ct} ${soLop}`, ct === 'PREFOU' ? 'PREFOU' : ct, ct, khai, pid, now).lastInsertRowid);
+    return lop;
+  };
+  const themEm = (lop: number, ten: string[]) => {
+    intake.commitIntake(P.admin, { classId: lop, rows: ten.map((n) => ({ fullName: n, email: 'hv@demo.test' })), idempotencyKey: `lt2a-m1b-${lop}-${ten.join()}` });
+    return ten.map((n) => get('SELECT id FROM students WHERE full_name = ?', n).id as number);
+  };
+  const baiCua = (sid: number) => all(`SELECT a.id, a.kind, a.status, a.class_id, (SELECT COUNT(*) FROM attempt_skills k WHERE k.attempt_id = a.id AND k.required = 1) AS mon FROM assessment_attempts a WHERE a.student_id = ? ORDER BY a.attempt_no`, sid);
+
+  check('LT2a (8) · Thêm 3 HV vào FOU khai giảng hôm nay → mỗi em 2 bài (Giữa khoá tuần 4, Cuối khoá tuần 8) planned đủ 4 môn; Pre FOU 1 bài (Cuối khoá); chạy lại không trùng', () => {
+    const fou = dungLop('FOU', 0);
+    const em = themEm(fou, ['LT2a M1b A', 'LT2a M1b B', 'LT2a M1b C']);
+    for (const id of em) {
+      const b = baiCua(id);
+      assert(b.length === 2 && b.map((x) => x.kind).join() === 'progress,final' && b.every((x) => x.status === 'planned' && x.mon === 4 && x.class_id === fou), JSON.stringify(b));
+    }
+    const pre = dungLop('PREFOU', 0);
+    const [ep] = themEm(pre, ['LT2a M1b Pre']);
+    const bp = baiCua(ep);
+    assert(bp.length === 1 && bp[0].kind === 'final' && bp[0].mon === 1, JSON.stringify(bp));
+    assert(regular.taoBaiThuongMacDinh(all('SELECT id FROM learning_cycles WHERE student_id IN (?, ?)', em[0], ep).map((c) => c.id), P.admin.userId).length === 0, 'chạy lại không tạo trùng');
+    const gk = get(`SELECT rp.week_start w FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id WHERE a.student_id = ? AND a.kind = 'progress'`, em[0]).w;
+    assert(gk === t.addDays(get('SELECT start_date d FROM classes WHERE id = ?', fou).d, 21), `Giữa khoá tuần 4 = khai giảng + 3 tuần: ${gk}`);
+  });
+
+  check('LT2a (8) · Thêm HV vào lớp đã QUA tuần Giữa khoá → chỉ Cuối khoá (không dựng bài quá hạn); QL vẫn xếp tay được bài đã qua (planRegularTests)', () => {
+    const fou = dungLop('FOU', 5);                                    // khai giảng 5 tuần trước → hôm nay ở tuần 6: Giữa khoá (tuần 4) đã qua
+    const [em] = themEm(fou, ['LT2a M1b Muon']);
+    const b = baiCua(em);
+    assert(b.length === 1 && b[0].kind === 'final', JSON.stringify(b));
+    const ket = regular.planRegularTests(P.mbManager, fou, { studentIds: [em], kinds: ['progress'] });
+    assert(ket.created === 1 && baiCua(em).map((x) => x.kind).join() === 'final,progress', `QL xếp tay bài đã qua: ${JSON.stringify(baiCua(em))}`);
+  });
+
+  check('LT2a (8) · Chuyển em FT → FOU (transferStudent) → em có 2 bài ở lộ trình mới', () => {
+    const fou = dungLop('FOU', 0);
+    const hv = taoHocVienFt();
+    students.transferStudent(P.mbManager, hv, fou, TODAY, 'Đổi lịch học', { noNote: true });
+    const cy = get(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active' AND route IS NULL`, hv);
+    assert(cy, 'phải có lộ trình lớp thường mới');
+    const b = all('SELECT kind FROM assessment_attempts WHERE cycle_id = ? ORDER BY attempt_no', cy.id).map((x) => x.kind).join();
+    assert(b === 'progress,final', `bài sau chuyển: ${b}`);
   });
 }

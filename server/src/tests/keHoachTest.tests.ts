@@ -563,7 +563,9 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
          JOIN students s ON s.id = a.student_id JOIN enrollments e ON e.student_id=s.id AND e.status='active' AND e.class_id=a.class_id
          JOIN attempt_skills ask ON ask.attempt_id = a.id AND ask.skill = 'listening'
          JOIN report_periods pr ON pr.id = ask.planned_period_id
-        WHERE a.class_id = ? AND a.status != 'cancelled' AND a.kind='progress' AND s.status='active' AND s.archived_at IS NULL LIMIT 1`,
+        WHERE a.class_id = ? AND a.status != 'cancelled' AND a.kind='progress' AND s.status='active' AND s.archived_at IS NULL
+          AND NOT EXISTS (SELECT 1 FROM assessment_attempts f WHERE f.cycle_id = a.cycle_id AND f.kind = 'final' AND f.status != 'cancelled')   /* PR-LT2a M1b: em vào lớp qua Thêm HV nay tự có Cuối khoá (tuần sau chặn dời L, T15) — chọn em chưa có */
+        LIMIT 1`,
     ).get(foundationClass) as any;
     assert(row, 'Seed thiếu một bài Giữa khoá ở MB FOU 12 đã có lịch L để kiểm R14');
     /* Dùng ĐÚNG tuần L đã có sẵn trong seed (không tự đặt tuần khác) — tránh chạm T15 với bài Cuối khoá cùng
@@ -988,7 +990,8 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     const dong = conn.prepare(
       `SELECT a.id AS attemptId, a.student_id FROM assessment_attempts a
          JOIN students s ON s.id = a.student_id JOIN enrollments e ON e.student_id=s.id AND e.status='active' AND e.class_id=a.class_id
-        WHERE a.class_id = ? AND a.status != 'cancelled' AND a.kind='progress' AND s.status='active' AND s.archived_at IS NULL`,
+        WHERE a.class_id = ? AND a.status != 'cancelled' AND a.kind='progress' AND s.status='active' AND s.archived_at IS NULL
+          AND NOT EXISTS (SELECT 1 FROM assessment_attempts f WHERE f.cycle_id = a.cycle_id AND f.kind = 'final' AND f.status != 'cancelled')   /* PR-LT2a M1b: chọn em chưa có Cuối khoá tự tạo (T15 chặn dời S sang tuần thi Cuối khoá) */`,
     ).all(foundationClass) as any[];
     assert(dong.length >= 2, 'Seed thiếu ít nhất 2 bài Giữa khoá ở MB FOU 12');
     const [emA, emB] = dong;

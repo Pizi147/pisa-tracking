@@ -1,9 +1,9 @@
-import { db, tx } from '../db.ts';
+import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import { addMilestone, followUntilAfter, taoCaseTuDong } from '../cases/sos.ts';
 import { dongBoBaoPh } from '../yThuc/phoiHop.ts';
 import { raiseSignal, reconcileCorrectedSignals } from '../cases/signals.ts';
 import {
-  ATTEMPT_KIND_LABEL, ATTEMPT_KIND_SHORT, PERMISSIONS, RATIO_PASS_THRESHOLD, boTroGiuaKhoa,
+  ATTEMPT_KIND_LABEL, ATTEMPT_KIND_SHORT, PERMISSIONS, RATIO_PASS_THRESHOLD, boMonLich, boTroGiuaKhoa,
   caseCategoriesFor, categoryOf, kiemLyDo, kiemLyDoThaoTac, ngay, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanKeTiep, tuanLich,
   type AssessedSkill, type AttemptKind, type CaseCategory, type RatioOutcome, type SosLevel,
 } from '../../../shared/domain/index.ts';
@@ -11,13 +11,13 @@ import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../
 import { can, editableSkills, isCoreTeacherOf, require_, scoreEditPath, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
-import { ensurePeriod } from '../platform/week.ts';
+import { ensurePeriod, ensurePeriods } from '../platform/week.ts';
 import { regularSkillViews, weekStartOf } from '../fasttrack/attempts.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { checkSkillWeekMove, ensureSkillRows, loadSkillRows, setSkillWeek } from '../fasttrack/skillSchedule.ts';
 import { dotHoanTat, dotHoanTatMany, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
 import { canRequest } from '../fasttrack/absence.ts';
-import { classProgress } from '../classes/schedule.ts';
+import { classProgress, classProgressMany } from '../classes/schedule.ts';
 
 /**
  * LỚP THƯỜNG (Foundation / Beginner / Elementary).
@@ -359,6 +359,90 @@ export function planRegularTests(p: Principal, classId: number, opts: {
       entityLabel: cls.code, after: { created: created.length, students: students.length } });
     return { created: created.length, students: students.length, programme: prog };
   });
+}
+
+/**
+ * M1b (K2-23, Câu 2 = A): em VÀO LỚP THƯỜNG (thêm mới, chuyển vào, Chuyển tiếp lớp) tự có bài Giữa khoá + Cuối khoá theo mốc của lớp — không có bài thì
+ * không có Case Giữa khoá. Bỏ mốc có tuần thi KẾT THÚC TRƯỚC `ngayVao` (không dựng bài quá hạn — lớp thường không có "lịch sử"); Pre FOU chỉ Cuối khoá
+ * (lớp không có mốc thì bỏ). Việc HỆ THỐNG: KHÔNG kiểm quyền (như `taoMtMacDinh`), gọi TRONG tx của nơi mở lộ trình. Số câu SQL KHÔNG phụ thuộc số em
+ * (lô 900). Chạy lại không tạo trùng. `planRegularTests` (Quản lý xếp tay, kể cả tuần đã qua) không đổi. Trả id các lượt mới.
+ */
+export function taoBaiThuongMacDinh(cycleIds: readonly number[], actorUserId: number | null, ngayVao: string = demoToday()): number[] {
+  if (!cycleIds.length) return [];
+  const conn = db();
+  const cys: any[] = [];
+  theoLo([...new Set(cycleIds)], (lo, ph) => { cys.push(...(conn.prepare(`SELECT id, student_id FROM learning_cycles WHERE id IN (${ph}) AND route IS NULL AND status = 'active'`).all(...lo) as any[])); });
+  if (!cys.length) return [];
+  const lopOf = new Map<number, number>();
+  theoLo([...new Set(cys.map((c) => c.student_id as number))], (lo, ph) => {
+    for (const r of conn.prepare(`SELECT student_id, class_id FROM enrollments WHERE student_id IN (${ph}) AND status = 'active' ORDER BY id DESC`).all(...lo) as any[]) {
+      if (!lopOf.has(r.student_id)) lopOf.set(r.student_id, r.class_id);
+    }
+  });
+  const chuongTrinh = allProgrammes();
+  const ctLop = new Map<number, string | null>();
+  theoLo([...new Set(lopOf.values())], (lo, ph) => {
+    for (const c of conn.prepare(`SELECT id, programme_code FROM classes WHERE id IN (${ph})`).all(...lo) as any[]) ctLop.set(c.id, c.programme_code ?? null);
+  });
+  const lopThuong = [...ctLop].filter(([, ct]) => ct && chuongTrinh.get(ct)?.scoringMode === 'ratio').map(([id]) => id);
+  if (!lopThuong.length) return [];
+  const moc = classProgressMany(lopThuong);
+  const daCo = new Set<string>(), daCoId = new Set<number>(), soLuot = new Map<number, number>();
+  theoLo(cys.map((c) => c.id as number), (lo, ph) => {
+    for (const a of conn.prepare(`SELECT id, cycle_id, kind, attempt_no FROM assessment_attempts WHERE cycle_id IN (${ph})`).all(...lo) as any[]) {
+      daCo.add(`${a.cycle_id}:${a.kind}`); daCoId.add(a.id); soLuot.set(a.cycle_id, Math.max(soLuot.get(a.cycle_id) ?? 0, a.attempt_no));
+    }
+  });
+  const moi: { cy: any; kind: 'progress' | 'final'; classId: number; week: string; no: number }[] = [];
+  for (const cy of cys) {
+    const classId = lopOf.get(cy.student_id);
+    if (classId === undefined || !lopThuong.includes(classId)) continue;
+    const pr = moc.get(classId);
+    if (!pr) continue;
+    for (const kind of ['progress', 'final'] as const) {
+      const week = kind === 'progress' ? pr.progressWeekStart : pr.finalWeekStart;
+      if (!week || daCo.has(`${cy.id}:${kind}`) || addDays(week, 6) < ngayVao) continue;   // không tạo bài quá hạn
+      const no = (soLuot.get(cy.id) ?? 0) + 1;
+      soLuot.set(cy.id, no);
+      moi.push({ cy, kind, classId, week, no });
+    }
+  }
+  if (!moi.length) return [];
+  const tuan = ensurePeriods([...new Set(moi.map((m) => m.week))]);
+  const now = nowIso();
+  chenNhieuDong(
+    'INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id, status, created_by, created_at)',
+    moi.map((m) => [m.cy.id, m.cy.student_id, m.no, m.kind, m.classId, tuan.get(m.week)!.id, 'planned', actorUserId, now]));
+  /* INSERT nhiều dòng không trả id → đọc lại: lượt mới là lượt của các lộ trình này chưa có trước đó (cùng giao dịch). */
+  const idOf = new Map<string, number>();
+  theoLo([...new Set(moi.map((m) => m.cy.id as number))], (lo, ph) => {
+    for (const a of conn.prepare(`SELECT id, cycle_id, kind FROM assessment_attempts WHERE cycle_id IN (${ph})`).all(...lo) as any[]) {
+      if (!daCoId.has(a.id)) idOf.set(`${a.cycle_id}:${a.kind}`, a.id);
+    }
+  });
+  const ids = moi.map((m) => idOf.get(`${m.cy.id}:${m.kind}`)!);
+  /* = `ensureSkillRows` của lượt mới: bộ môn theo chương trình lớp (FOU/BE/ELE 4 môn, Pre FOU Tổng hợp), tuần theo lượt. Một câu mỗi chương trình. */
+  const theoCt = new Map<string | null, { bo: readonly string[]; ids: number[] }>();
+  moi.forEach((m, i) => {
+    const ct = ctLop.get(m.classId) ?? null;
+    if (!theoCt.has(ct)) theoCt.set(ct, { bo: boMonLich(ct, programmeByCode(ct)?.skills), ids: [] });
+    theoCt.get(ct)!.ids.push(ids[i]);
+  });
+  for (const { bo, ids: dsId } of theoCt.values()) {
+    const mon = bo.map((_, i) => `SELECT ? AS skill, ${i} AS thu`).join(' UNION ALL ');
+    theoLo(dsId, (lo, ph) => {
+      conn.prepare(
+        `INSERT INTO attempt_skills (attempt_id, skill, required, planned_period_id, plan_source, sit_status, created_at)
+         SELECT a.id, k.skill, CASE WHEN EXISTS (SELECT 1 FROM attempt_skill_skips x WHERE x.attempt_id = a.id AND x.skill = k.skill) THEN 0 ELSE 1 END,
+                a.planned_period_id, 'auto', 'scheduled', ?
+           FROM assessment_attempts a CROSS JOIN (${mon}) k WHERE a.id IN (${ph}) ORDER BY a.id, k.thu`).run(now, ...bo, ...lo);
+    }, THAM_SO_TOI_DA - bo.length - 1);
+  }
+  chenNhieuDong(
+    'INSERT INTO journey_events (student_id, cycle_id, event_type, event_date, title, detail, ref_table, ref_id, created_by, created_at)',
+    moi.map((m, i) => [m.cy.student_id, m.cy.id, 'mock_scheduled', m.week, `${ATTEMPT_KIND_LABEL[m.kind]} · ${tuan.get(m.week)!.code}`,
+      'Tự xếp khi vào lớp', 'assessment_attempts', ids[i], actorUserId, now]));
+  return ids;
 }
 
 // ---------------------------------------------------------------- nhập điểm
