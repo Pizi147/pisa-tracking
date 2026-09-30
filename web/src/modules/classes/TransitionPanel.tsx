@@ -328,7 +328,7 @@ function DongBang({ s, d, loi, oId, suaDong, lopHopLe, fromMa }: {
         {loi && <div className="text-[11px] text-rose-300 mt-1">{loi}</div>}
       </td>
       <td className="td"><KetQuaEm ketQua={s.ketQua} /></td>
-      <td className="td" style={trong ? { boxShadow: 'inset 0 0 0 1px var(--warn, #fbbf24)', borderRadius: 6 } : undefined}>
+      <td className="td" style={trong ? { boxShadow: 'inset 0 0 0 1px var(--warn)', borderRadius: 6 } : undefined}>
         <select id={oId} aria-invalid={!!loi} className="field w-full" value={d.huong} onChange={(e) => suaDong({ huong: e.target.value as Huong, toClassId: '' })}>
           <option value="">Chưa chọn</option>
           {HUONG_CHUYEN_TIEP.map((h) => <option key={h} value={h}>{nhanHuongNgan(h, { ma: fromMa as any, maKe: null })}</option>)}

@@ -157,7 +157,7 @@ export function HanhTrinh({ studentId, active, episodes, allEpisodes, onOpenCase
           title="Thu hẹp cột tuần về 40px — cuộn ngang trong thẻ"
           className={`btn btn-sm inline-flex items-center gap-1.5 ${xemGon ? 'bg-doing-bg text-doing border-doing-line' : ''}`}>
           <i aria-hidden className="relative inline-block h-3 w-[22px] rounded-full" style={{ background: xemGon ? 'rgb(var(--doing-line-rgb))' : 'var(--line-strong)' }}>
-            <span className="absolute top-[2px] h-2 w-2 rounded-full" style={{ left: xemGon ? 12 : 2, background: xemGon ? '#dbe9ff' : 'var(--text-faint)' }} />
+            <span className="absolute top-[2px] h-2 w-2 rounded-full" style={{ left: xemGon ? 12 : 2, background: xemGon ? 'var(--text)' : 'var(--text-faint)' }} />
           </i>
           Xem gọn
         </button>

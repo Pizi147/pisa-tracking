@@ -135,7 +135,7 @@ export function MeetingBoard() {
          * nhưng khác hẳn về mức độ — gộp chung một câu đỏ "Đã khoá" cho cả "chưa mở" là báo động
          * giả. Phân biệt bằng `ew.locked` (chỉ true ở ca thật sự khoá — xem `reportEditWindow`).
          */
-        <p className="text-xs m-0" style={{ color: ew.open || !ew.locked ? 'var(--text-muted, #94a3b8)' : 'rgb(252 165 165)' }}>
+        <p className="text-xs m-0" style={{ color: ew.open || !ew.locked ? 'var(--text-dim)' : 'var(--danger)' }}>
           {ew.open
             ? (ew.locked
                 ? 'Đã khoá nhưng Quản trị hệ thống đã mở lại để bổ sung.'
