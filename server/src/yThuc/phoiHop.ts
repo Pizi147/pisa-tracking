@@ -289,12 +289,26 @@ export function myCoordinationLines(p: Principal) {
     .filter((a) => a.isCore && a.effectiveFrom <= today && (!a.effectiveTo || a.effectiveTo >= today))
     .map((a) => a.classId))];
   const lines: Array<{ classId: number; className: string; pendingCount: number; text: string }> = [];
+  if (!classIds.length) return lines;
+  /* MỘT lượt đọc cho MỌI lớp mình chủ nhiệm (số câu không tăng theo số lớp — PR-LT2a thêm hai lớp demo làm lộ N+1 theo lớp), rồi chia lại theo lớp em đang học.
+     Cùng luật đếm với `coordinationOfClass`: lượt chưa hoàn thành. Lớp mình chủ nhiệm nên không cần `requireViewClass`. */
+  const conn = db();
+  const ph = classIds.map(() => '?').join(',');
+  const rows = conn.prepare(
+    `SELECT x.*, e.class_id AS lop_dang_hoc FROM sos_coordination_actions x
+       JOIN enrollments e ON e.student_id = x.student_id AND e.class_id IN (${ph}) AND e.status = 'active'
+      ORDER BY x.attempt_id, x.id`,
+  ).all(...classIds) as any[];
+  const lopCua = new Map<number, number>();
+  for (const r of rows) lopCua.set(r.student_id, r.lop_dang_hoc);
+  const dem = new Map<number, number>();
+  for (const t of turnsOf(p, rows)) if (!t.summary.complete) dem.set(lopCua.get(t.studentId)!, (dem.get(lopCua.get(t.studentId)!) ?? 0) + 1);
+  const ma = new Map((conn.prepare(`SELECT id, code FROM classes WHERE id IN (${ph})`).all(...classIds) as any[]).map((c) => [c.id as number, c.code as string]));
   for (const classId of classIds) {
-    const c = db().prepare('SELECT code FROM classes WHERE id = ?').get(classId) as any;
-    if (!c) continue;
-    const { pendingCount } = coordinationOfClass(p, classId);
-    if (pendingCount > 0) {
-      lines.push({ classId, className: c.code, pendingCount, text: `Lớp ${c.code} — ${pendingCount} lượt Phối hợp cần xử lý` });
+    const pendingCount = dem.get(classId) ?? 0;
+    if (pendingCount > 0 && ma.has(classId)) {
+      const code = ma.get(classId)!;
+      lines.push({ classId, className: code, pendingCount, text: `Lớp ${code} — ${pendingCount} lượt Phối hợp cần xử lý` });
     }
   }
   return lines;

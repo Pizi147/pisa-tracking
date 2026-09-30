@@ -554,4 +554,32 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     assert(/Đánh dấu đã làm/.test(doc('yThuc/PhoiHopSosSection.tsx')) && /Nội dung gửi TVV/.test(doc('yThuc/PhoiHopSosSection.tsx')), 'Phối hợp: Đánh dấu đã làm + 4 nội dung');
     assert(/chuaChay/.test(doc('cases/SkillBoard.tsx')) && /chuaChay/.test(doc('cases/CasePanel.tsx')), 'HangPA / TheKhoiPa biết PA chưa chạy');
   });
+
+  // ------------------------------------------------------------------ khối 11 · dữ liệu demo G1–G5 (Task 11)
+  check('LT2a (11) · Demo: 0 tín hiệu pending của lớp thường; G1–G5 đúng trạng thái; mỗi em trượt Giữa khoá có đúng 1 dòng Báo PH', () => {
+    assert(get(`SELECT COUNT(*) n FROM case_signals cs JOIN assessment_attempts a ON a.id = cs.attempt_id WHERE cs.status = 'pending' AND a.kind IN ('progress', 'final')`).n === 0, 'lớp thường không còn tín hiệu pending');
+    const hv = (ten: string) => get('SELECT id FROM students WHERE full_name = ?', ten).id as number;
+    const cs = (ten: string, topic: string) => get('SELECT * FROM sos_cases WHERE student_id = ? AND topic = ? ORDER BY id DESC', hv(ten), topic);
+    const v4 = (ten: string, topic: string) => (chiTiet(P.admin, cs(ten, topic).id) as any).trangThaiV4;
+    const theKhCua = (ten: string, topic: string) => get(`SELECT trang_thai FROM yeu_cau_duyet WHERE loai = 'ke_hoach_bo_tro' AND hoc_vien_id = ? ORDER BY id DESC`, hv(ten))?.trang_thai;
+    /* G1: G+V đã xác nhận, kế hoạch chung đang chờ QL; P chưa xác nhận */
+    assert(v4('Lê Hoàng Anh', 'writing').k === 'cho-duyet-ke-hoach' && theKhCua('Lê Hoàng Anh', 'writing') === 'cho', JSON.stringify(v4('Lê Hoàng Anh', 'writing')));
+    assert(v4('Lê Hoàng Anh', 'speaking').k === 'cho-nguyen-nhan', JSON.stringify(v4('Lê Hoàng Anh', 'speaking')));
+    /* G2: PA đang chạy + 1 lần ghi kết quả; Báo PH đã làm */
+    assert(v4('Bùi Minh Châu', 'reading').k === 'dang-lam', JSON.stringify(v4('Bùi Minh Châu', 'reading')));
+    const paB = get(`SELECT id, status FROM case_interventions WHERE case_id = ? AND kind = 'bo_tro'`, cs('Bùi Minh Châu', 'reading').id);
+    assert(paB.status === 'started' && all('SELECT 1 FROM case_followups WHERE intervention_id = ?', paB.id).length === 1, JSON.stringify(paB));
+    assert(get(`SELECT status FROM sos_coordination_actions WHERE student_id = ? AND kind = 'bao_ph_tvv'`, hv('Bùi Minh Châu')).status === 'done', 'Báo PH G2 đã làm');
+    /* G3: BE, PA 1 buổi/tuần đang chạy */
+    assert(v4('Hoàng Quốc Bình', 'writing').k === 'dang-lam', JSON.stringify(v4('Hoàng Quốc Bình', 'writing')));
+    /* G4: kế hoạch bị từ chối → việc Nộp kế hoạch của GVBM S */
+    const g4 = chiTiet(P.admin, cs('Mai Hải Long', 'speaking').id);
+    assert(g4.trangThaiV4.k === 'cho-ke-hoach' && theKhCua('Mai Hải Long', 'speaking') === 'tu_choi' && g4.boTro.keHoach.lyDoTuChoi, JSON.stringify([g4.trangThaiV4, g4.boTro?.keHoach]));
+    /* G5: Báo lên + Không cần theo dõi chờ */
+    assert(get(`SELECT han_xac_nhan h FROM sos_cases WHERE id = ?`, cs('Phan Khánh Linh', 'listening').id).h < TODAY, 'hạn xác nhận G5 đã quá');
+    assert(v4('Ngô Gia Hân', 'speaking').k === 'cho-duyet-khong-theo-doi', JSON.stringify(v4('Ngô Gia Hân', 'speaking')));
+    for (const ten of ['Lê Hoàng Anh', 'Bùi Minh Châu', 'Hoàng Quốc Bình', 'Mai Hải Long', 'Phan Khánh Linh', 'Ngô Gia Hân']) {
+      assert(get(`SELECT COUNT(*) n FROM sos_coordination_actions WHERE student_id = ? AND kind = 'bao_ph_tvv' AND status != 'removed'`, hv(ten)).n === 1, `Báo PH của ${ten}`);
+    }
+  });
 }
