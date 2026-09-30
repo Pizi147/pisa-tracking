@@ -42,7 +42,7 @@ const MAU_O: Record<MauOKetQua, string> = {
 /** Chú giải màu ở đầu bảng: năm chip nhỏ, tooltip từng chip là chú giải của cột đó. */
 const CHU_GIAI: { khoa: string; nhan: string; chip: keyof typeof SCORE_CHIP }[] = [
   { khoa: 'dat', nhan: 'Đạt', chip: 'emerald' }, { khoa: 'sos1', nhan: 'SOS 1', chip: 'sos1' },
-  { khoa: 'sos2', nhan: 'SOS 2', chip: 'sos2' }, { khoa: 'sos3', nhan: 'SOS 3', chip: 'sos3' },
+  { khoa: 'sos2', nhan: 'SOS 2', chip: 'sos2' }, { khoa: 'sos3', nhan: 'SOS 3', chip: 'sos3' },   // chữ thật lấy từ cột theo ct (khung thường: n môn trượt)
   { khoa: 'tamThoi', nhan: 'Tạm thời / Chưa đủ điểm', chip: 'tam' },
 ];
 
@@ -191,7 +191,7 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
             {CHU_GIAI.map((g) => (
               <span key={g.khoa} title={allCols.find((c) => c.khoa === g.khoa)?.goiY}
                 className={`inline-flex items-center rounded-md border px-1.5 text-xs font-medium leading-4 ${SCORE_CHIP[g.chip]}`}>
-                {g.nhan}
+                {allCols.find((c) => c.khoa === g.khoa)?.nhan(ct) ?? g.nhan}
               </span>
             ))}
           </span>

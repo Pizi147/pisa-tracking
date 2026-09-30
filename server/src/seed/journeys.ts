@@ -370,4 +370,18 @@ export const CLASSES: ClassSeed[] = [
     teachers: { listening: 'T_KIEN', reading: 'T_KIEN', writing: 'T_KIEN' },
     core: 'T_KIEN', note: 'Đã học hết chương trình. Thiếu GV Speaking.',
   },
+
+  /* ------------------------------------------------------------------ PR-LT2a — Giữa khoá lớp thường (demo G1–G5, thêm CUỐI mảng) */
+  {
+    code: 'MB FOU 15', branch: 'MB', kind: 'FOU', route: null, isFastTrack: false,
+    startDate: '2026-08-17', status: 'active',
+    teachers: { listening: 'T_HA', reading: 'T_HA', writing: 'T_KHOA', speaking: 'T_TRANG' },
+    core: 'T_HA', note: 'Tuần 5/8 — Giữa khoá tuần trước, Cuối khoá W1 OCT.',
+  },
+  {
+    code: 'MB BE 03', branch: 'MB', kind: 'BE', route: null, isFastTrack: false,
+    startDate: '2026-08-10', status: 'active',
+    teachers: { listening: 'T_HA', reading: 'T_HA', writing: 'T_KHOA', speaking: 'T_TRANG' },
+    core: 'T_HA', note: 'Tuần 6/10 — Giữa khoá tuần trước.',
+  },
 ];

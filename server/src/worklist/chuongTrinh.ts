@@ -77,13 +77,6 @@ export function lopCuaTap(unit: ChiSo['donVi'], ids: number[]): Map<number, LopC
       const iv = lopCuaTap('phuong-an', [...new Set(ivOf.values())]);
       return new Map(ids.map((id) => [id, iv.get(ivOf.get(id)!) ?? RONG]));
     }
-    case 'tin-hieu': {
-      const out = new Map<number, LopCuaPhanTu>();
-      for (const r of theoLo(ids, (chunk, ph) => conn.prepare(
-        `SELECT sg.id, c.id AS class_id, c.code, c.is_fast_track FROM case_signals sg
-           LEFT JOIN classes c ON c.id = sg.class_id WHERE sg.id IN (${ph})`).all(...chunk) as any[])) out.set(r.id, lopTu(r));
-      return out;
-    }
     case 'bai-thi': case 'dot-test': case 'luot-sos': {
       const out = new Map<number, LopCuaPhanTu>();
       for (const r of theoLo(ids, (chunk, ph) => conn.prepare(

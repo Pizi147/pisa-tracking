@@ -3,7 +3,6 @@ import { Level } from '../../ui/ui.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { toneTheoNhan } from '../../lib/format.ts';
 import { LOAI_HAN_CUA_VIEC } from '@shared/domain/index.ts';
-import { DongTinHieu } from './DongTinHieu.tsx';
 
 export type WorkItem = {
   key: string; group: string; urgency: 'overdue' | 'today' | 'normal';
@@ -22,11 +21,6 @@ export type WorkItem = {
   contextLabel: string | null;
   /** Số học viên trong một dòng việc gom. NULL khi dòng chỉ nói về một em. */
   count: number | null;
-  /** Dòng tín hiệu SOS (§3.10): đủ để vẽ hai nút "Tạo Case · Bỏ qua". Chỉ dòng `verify` có. */
-  signal?: {
-    id: number; kind: 'normal' | 'ft'; skill: string | null; skillLabel: string;
-    score: number | null; total: number | null; deadline: string; actions: ('create_case' | 'dismiss')[];
-  } | null;
   /** PR-Ra Q5: chỉ dòng có người phụ trách là TÀI KHOẢN KHÁC người xem, và người xem là QL/QT. */
   nhac?: { ownerId: number; daNhacLuc: string | null } | null;
 };
@@ -37,7 +31,7 @@ export type WorkGroup = { key: string; label: string; hint: string; items: WorkI
  *
  * Việc cần làm là TIÊU ĐỀ (động từ + đối tượng), không nằm trong badge. Không còn `Status`/`Task`/`Alert`/`Info`
  * trên dòng: em nào · lớp · bài · số HV · người phụ trách gộp một dòng phụ mờ; hạn ở cột riêng qua `<Han>` —
- * quá hạn nối ngay sau bằng chữ "⚠ quá hạn n ngày" (B-3, B-5). Thẻ ngoài là `div` để nút "Tạo Case · Bỏ qua"
+ * quá hạn nối ngay sau bằng chữ "⚠ quá hạn n ngày" (B-3, B-5). Thẻ ngoài là `div` để nút phụ
  * đứng cạnh phần bấm-mở mà không lồng `button` trong `button`. Loại việc chưa có loại hạn thì hạn là ngày trơn.
  */
 export function DongViec({ it, onOpen, nutPhu }: {
@@ -46,7 +40,6 @@ export function DongViec({ it, onOpen, nutPhu }: {
   nutPhu?: ReactNode;
 }) {
   const loaiHan = LOAI_HAN_CUA_VIEC[it.group];
-  const coNut = !!it.signal && it.signal.actions.length > 0;
   /* Lớp chỉ hiện khi dòng đang nói về MỘT EM — dòng gom đã lấy chính tên lớp làm tiêu đề phụ. */
   const dongPhu = [
     it.studentName,
@@ -69,8 +62,7 @@ export function DongViec({ it, onOpen, nutPhu }: {
       </span>
       <span className="flex items-center gap-2 sm:justify-end">
         {nutPhu}
-        {coNut ? <DongTinHieu it={it} />
-          : <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[32px]" onClick={() => onOpen(it.href)}>{it.actionLabel}</button>}
+        <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[32px]" onClick={() => onOpen(it.href)}>{it.actionLabel}</button>
       </span>
     </div>
   );

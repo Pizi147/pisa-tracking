@@ -788,6 +788,16 @@ await checkAsync(`PR-XUAT · Xuất Excel cả chi nhánh MB, MT1–MT8, cột �
   assert(r.n <= TRAN_GHI_LO.xuatMtChiNhanh, `${r.n} câu > trần ${TRAN_GHI_LO.xuatMtChiNhanh}`);
 });
 
+await checkAsync(`PR-LT2a (M1b) · Thêm 30 em lớp thường (POST /intake/commit) ≤ ${TRAN_GHI_LO.themHocVien30Thuong} câu SQL, em nào cũng có bài Cuối khoá tự tạo`, async () => {
+  const r = await doGhi('QL', '/intake/commit', { classId: LOP_THUONG, rows: dongNhap('Tốc Độ Thường LT2a', 30, false), idempotencyKey: 'pr-lt2a-30' });
+  assert(r.status === 200 && r.json.added === 30, `Phải thêm đủ 30 em: ${r.status} ${JSON.stringify(r.json).slice(0, 200)}`);
+  const coBai = (conn.prepare(
+    `SELECT COUNT(DISTINCT student_id) n FROM assessment_attempts WHERE kind = 'final' AND status = 'planned' AND student_id IN (${r.json.studentIds.join(',')})`).get() as any).n;
+  assert(coBai === 30, `Em nào vào lớp thường cũng có bài Cuối khoá: ${coBai}/30`);
+  console.log(`      (đo: 30 em, ${r.n} câu)`);
+  assert(r.n <= TRAN_GHI_LO.themHocVien30Thuong, `${r.n} câu > trần ${TRAN_GHI_LO.themHocVien30Thuong}`);
+});
+
 console.log('');
 console.log('='.repeat(60));
 if (failures.length === 0) {

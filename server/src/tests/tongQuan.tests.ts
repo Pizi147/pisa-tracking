@@ -77,7 +77,7 @@ export async function runTongQuanTests(t: YThucTestKit) {
   check('PR-Pa · Gom nhóm việc GV: 10 loại việc về đúng 4 nhóm, nhóm có việc quá hạn tự mở, Ý thức không bao giờ tự mở', () => {
     /* PR-DUYET: `decide`, `decide_move` không còn là loại việc (thẻ ở hộp Chờ duyệt). */
     const cham = ['score'];
-    const kase = ['verify', 'cause', 'no_plan', 'result', 'do_plan', 'no_owner'];
+    const kase = ['cause', 'no_plan', 'result', 'do_plan', 'no_owner'];
     const van = ['placement', 'mgmt', 'missing_data'];
     for (const g of cham) eq(d.nhomViecCua(g), 'cham-diem', g);
     for (const g of kase) eq(d.nhomViecCua(g), 'case-hoc-thuat', g);
@@ -85,39 +85,38 @@ export async function runTongQuanTests(t: YThucTestKit) {
     eq(d.nhomViecCua('loai-la'), 'van-hanh', 'Loại lạ');
     const v = (group: string, urgency: string, due: string | null) => ({ group, urgency, due });
     const nhom = d.gomNhomViec([
-      v('result', 'normal', '2026-09-20'), v('verify', 'overdue', '2026-09-10'), v('score', 'normal', null), v('mgmt', 'today', '2026-09-14'),
+      v('result', 'normal', '2026-09-20'), v('cause', 'overdue', '2026-09-10'), v('score', 'normal', null), v('mgmt', 'today', '2026-09-14'),
     ], 2);
     eq(nhom.map((g: any) => g.key), ['cham-diem', 'case-hoc-thuat', 'y-thuc', 'van-hanh'], 'Thứ tự nhóm cố định');
     const kh = nhom.find((g: any) => g.key === 'case-hoc-thuat');
     eq([kh.n, kh.quaHan, kh.moSan], [2, 1, true], 'Case học thuật: 2 việc, 1 quá hạn, tự mở');
-    eq(kh.items[0].group, 'verify', 'Việc quá hạn lên đầu nhóm');
+    eq(kh.items[0].group, 'cause', 'Việc quá hạn lên đầu nhóm');
     const yt = nhom.find((g: any) => g.key === 'y-thuc');
     eq([yt.n, yt.moSan], [2, false], 'Ý thức: đếm dòng nhắc, không tự mở');
     eq(nhom.find((g: any) => g.key === 'cham-diem').moSan, false, 'Nhóm không quá hạn thì gập');
     eq(d.gomNhomViec([], 0), [], 'Không việc thì không nhóm');
-    eq(d.LOAI_HAN_CUA_VIEC.verify, 'xac-minh-sos', 'Hạn tín hiệu');
+    eq(d.LOAI_HAN_CUA_VIEC.cause, 'xac-minh-sos', 'Hạn xác nhận nguyên nhân');
+    eq(d.nhomViecCua('verify'), 'van-hanh', 'PR-LT2a: nhóm "verify" đã bỏ — loại lạ về Vận hành');
     eq(d.LOAI_HAN_CUA_VIEC.score, 'nhap-diem', 'Hạn nhập điểm');
   });
 
   check('PR-Pa · Cần xử lý: đúng thứ tự design §4.1, bỏ dòng 0, tối đa 10; PR-DUYET bỏ "PA chờ duyệt" + "Case quá hạn xác định nguyên nhân" (thành thẻ)', () => {
     eq(d.CAN_XU_LY.map((x: any) => x.metricId), [
-      'tin-hieu-qua-han', 'case-chua-co-nguoi-phu-trach',
-      'hv-can-ho-tro-2-lan-chua-case', 'hv-bo-qua-van-can-ho-tro',
+      'case-chua-co-nguoi-phu-trach', 'hv-can-ho-tro-2-lan-chua-case',
       'case-thieu-pa', 'pa-can-cap-nhat', 'bai-qua-han-nhap-diem',
-    ], 'Thứ tự (PR-UX4 chèn hai dòng "bỏ quên"; PR-YT4 bỏ "vi phạm quá 5 ngày" — thành thẻ Báo lên)');
+    ], 'Thứ tự (PR-UX4 chèn dòng "bỏ quên"; PR-YT4 bỏ "vi phạm quá 5 ngày"; PR-LT2a bỏ "tín hiệu quá hạn" + "Bỏ qua tín hiệu")');
     eq(d.CAN_XU_LY.filter((x: any) => x.denLoc).map((x: any) => [x.metricId, x.denLoc, x.nut, x.mau]), [
       ['hv-can-ho-tro-2-lan-chua-case', 'can-ho-tro-2-lan', 'Xem', 'vang'],
-      ['hv-bo-qua-van-can-ho-tro', 'bo-qua-van-can-ho-tro', 'Xem', 'vang'],
-    ], 'Hai dòng mới: nút Xem, màu vàng, mở bộ lọc Danh sách Case');
-    const dem = { 'pa-can-cap-nhat': 3, 'tin-hieu-qua-han': 2, 'pa-cho-duyet': 1, 'case-thieu-pa': 0 };
+    ], 'Dòng "bỏ quên": nút Xem, màu vàng, mở bộ lọc Danh sách Case');
+    const dem = { 'pa-can-cap-nhat': 3, 'case-chua-co-nguoi-phu-trach': 2, 'pa-cho-duyet': 1, 'case-thieu-pa': 0 };
     const co = d.sapCanXuLy(dem, true);
-    eq(co.map((x: any) => [x.metricId, x.n]), [['tin-hieu-qua-han', 2], ['pa-can-cap-nhat', 3]], 'PA chờ duyệt không còn là dòng Cần xử lý');
-    eq(d.sapCanXuLy(dem, false).map((x: any) => x.metricId), ['tin-hieu-qua-han', 'pa-can-cap-nhat'], 'Không quyền duyệt');
-    eq(co[0].nhan, 'tín hiệu cần xác minh quá hạn', 'Chữ g11-041 + g8-070');
+    eq(co.map((x: any) => [x.metricId, x.n]), [['case-chua-co-nguoi-phu-trach', 2], ['pa-can-cap-nhat', 3]], 'PA chờ duyệt không còn là dòng Cần xử lý');
+    eq(d.sapCanXuLy(dem, false).map((x: any) => x.metricId), ['case-chua-co-nguoi-phu-trach', 'pa-can-cap-nhat'], 'Không quyền duyệt');
+    eq(co[0].nhan, 'Case chưa có người phụ trách', 'Chữ dòng đầu');
     eq(co[1].nut, 'Xem', 'Nút');
     const all = Object.fromEntries(d.CAN_XU_LY.map((x: any) => [x.metricId, 5]));
-    assert(d.sapCanXuLy(all, true).length === d.CAN_XU_LY.length && d.CAN_XU_LY.length === 7 && d.CAN_XU_LY_TOI_DA === 10, 'Đủ 7 dòng, trần 10');
-    eq(d.sapCanXuLy({ 'hv-bo-qua-van-can-ho-tro': 2 }, false)[0].denLoc, 'bo-qua-van-can-ho-tro', 'denLoc đi kèm dòng');
+    assert(d.sapCanXuLy(all, true).length === d.CAN_XU_LY.length && d.CAN_XU_LY.length === 5 && d.CAN_XU_LY_TOI_DA === 10, 'Đủ 5 dòng, trần 10');
+    eq(d.sapCanXuLy({ 'hv-can-ho-tro-2-lan-chua-case': 2 }, false)[0].denLoc, 'can-ho-tro-2-lan', 'denLoc đi kèm dòng');
     assert(!('denLoc' in d.sapCanXuLy({ 'case-thieu-pa': 1 }, false)[0]), 'Dòng thường không có denLoc');
   });
 
@@ -147,19 +146,26 @@ export async function runTongQuanTests(t: YThucTestKit) {
   });
 
   // ================================================================== 2. Nợ S1 (1)
-  check('PR-Pa · Nợ S1: overdueNormalSignalIds cùng tập với cách cũ (4 vai, có và không chọn chi nhánh) mà không gọi quyền từng tín hiệu', () => {
+  check('PR-Pa · Nợ S1 (PR-LT2a): Case Giữa khoá quá hạn xác nhận nguyên nhân vào chỉ số case-xac-dinh-nguyen-nhan-qua-han — chỉ lớp thường, đúng phạm vi; tín hiệu chờ xác minh đã bỏ khỏi mã', () => {
+    const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
+    diem(hv.attemptId, 'listening', 10, 40);
+    const c = conn.prepare('SELECT id, status FROM sos_cases WHERE student_id = ?').get(hv.sid) as any;
+    assert(c, 'Giữa khoá trượt phải tự tạo Case');
+    const vaoTap = () => ids('case-xac-dinh-nguyen-nhan-qua-han').includes(c.id);
+    assert(!vaoTap(), 'Case còn trong hạn 3 ngày thì chưa quá hạn');
+    conn.prepare('UPDATE sos_cases SET han_xac_nhan = ? WHERE id = ?').run(t.addDays(TODAY, -1), c.id);
+    assert(vaoTap(), 'Case quá hạn xác nhận nguyên nhân phải vào chỉ số');
     const mb = (conn.prepare(`SELECT id FROM branches WHERE code = 'MB'`).get() as any).id as number;
-    for (const who of [P.admin, P.mbManager, P.cpManager, P.normalCoreTeacher, P.lrTeacher]) {
+    for (const who of [P.admin, P.mbManager]) {
       for (const branchId of [null, mb]) {
-        const cu = (signals.listSignals(who, { status: 'open', branchId, today: TODAY }).rows as any[])
-          .filter((s) => s.kind === 'normal' && s.overdue).map((s) => s.id).sort((a: number, b: number) => a - b);
-        eq(signals.overdueNormalSignalIds(who, { branchId, today: TODAY }), cu, `Lệch tập (user ${who.userId}, cn ${branchId})`);
+        assert(metricsSvc.metricSet(who, 'case-xac-dinh-nguyen-nhan-qua-han', { branchId }).ids.includes(c.id), `Vai ${who.userId}, cn ${branchId}: thiếu Case quá hạn`);
       }
     }
-    const src = fsMod.readFileSync(pathMod.join(REPO, 'server/src/cases/signals.ts'), 'utf8');
-    const body = src.slice(src.indexOf('export function overdueNormalSignalIds'), src.indexOf('export function signalDetail'));
-    assert(body.length > 0 && !/listSignals\(|\bcan\(|canResolveSignal\(/.test(body),
-      'overdueNormalSignalIds vẫn gọi quyền từng tín hiệu (listSignals / can) — trên Turso mất vài giây mỗi lần mở Tổng quan');
+    assert(!metricsSvc.metricSet(P.cpManager, 'case-xac-dinh-nguyen-nhan-qua-han', {}).ids.includes(c.id), 'Quản lý chi nhánh khác không thấy');
+    eq(chuongTrinh.locTheoChuongTrinh('case', [c.id], 'ft'), [], 'Case lớp thường không lọt vào Fast Track');
+    for (const ten of ['listSignals', 'overdueNormalSignalIds', 'signalDetail', 'dismissSignal']) assert(!(ten in signals), `${ten} đã bỏ`);
+    /* Dọn: đưa Case về hạn trong ngày để không lệch các phép kiểm sau. */
+    conn.prepare('UPDATE sos_cases SET han_xac_nhan = ? WHERE id = ?').run(d.hanXacNhan(TODAY), c.id);
   });
 
   // ================================================================== 3. Lọc chương trình
@@ -180,7 +186,7 @@ export async function runTongQuanTests(t: YThucTestKit) {
     assert(mau.length > 0, 'Mẫu số của hv-duoi-ky-vong-mon (Lớp thường) phải có em — nếu rỗng thì phép kiểm bên dưới vô nghĩa');
     eq(chuongTrinh.locTheoChuongTrinh('hoc-vien', mau, 'thuong'), mau, 'Mẫu số cũng phải được lọc theo chương trình');
     assert(r.n === r.ids.length && r.ids.every((x: number) => mau.includes(x)), 'n = độ dài tập; tập đếm ⊆ mẫu số');
-    eq(ids('tin-hieu-qua-han', { program: 'ft' }), [], 'Tín hiệu quá hạn chỉ có ở lớp thường');
+    eq(chuongTrinh.locTheoChuongTrinh('case', ids('case-xac-dinh-nguyen-nhan-qua-han', { program: 'ft' }), 'thuong'), [], 'Chỉ số Case quá hạn theo Fast Track không lẫn Case lớp thường');
   });
 
   check('PR-Pa · Chương trình: /metrics nhận tham số ct; Cả hai = không lọc', () => {
@@ -271,11 +277,11 @@ export async function runTongQuanTests(t: YThucTestKit) {
     }
   });
 
-  check('PR-Pa · rowsFor: tín hiệu ghi tên môn (không chữ thô "listening"); bài thi có dòng', () => {
+  check('PR-Pa · rowsFor: Case Giữa khoá ghi tên môn (không chữ thô "listening"); bài thi có dòng', () => {
     const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'listening', 10, 40);
-    const sg = tinHieu(hv.attemptId, 'listening');
-    const row = metricsSvc.rowsFor('tin-hieu', [sg.id])[0];
+    const c = conn.prepare('SELECT id FROM sos_cases WHERE student_id = ?').get(hv.sid) as any;
+    const row = metricsSvc.rowsFor('case', [c.id])[0];
     assert(/Listening/.test(row.title) && !/listening/.test(row.title), `Chữ thô: ${row.title}`);
     const bai = metricsSvc.rowsFor('bai-thi', [hv.attemptId])[0];
     assert(bai.href !== '#' && /Giữa khoá|Bài/.test(bai.title), `Bài thi không có dòng: ${JSON.stringify(bai)}`);
@@ -386,7 +392,7 @@ export async function runTongQuanTests(t: YThucTestKit) {
   });
 
   // ================================================================== 8. Nợ S1 (2)
-  check('PR-Pa · Nợ S1: không ai dạy Speaking → tín hiệu về GVCN; GVCN thấy hai nút; Tạo Case thành công, gửi lại cùng khoá ra cùng Case; dòng biến mất', () => {
+  check('PR-Pa · Nợ S1 (PR-LT2a): không ai dạy Speaking → Case Giữa khoá tự tạo về GVCN, PA bổ trợ FOU do GVCN dạy; Việc cần làm không còn dòng "verify"', () => {
     const cid = classId('MB FOU 12');
     const tam = (conn.prepare(`SELECT id FROM teacher_assignments WHERE class_id = ? AND skill = 'speaking' AND status = 'active'`)
       .all(cid) as any[]).map((r) => r.id as number);
@@ -397,21 +403,11 @@ export async function runTongQuanTests(t: YThucTestKit) {
       const gvcn = loadPrincipal(P.normalCoreTeacher.userId);
       const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
       diem(hv.attemptId, 'speaking', 5, 25);
-      const sg = tinHieu(hv.attemptId, 'speaking');
-      assert(sg && sg.owner_user_id === gvcn.userId, `Tín hiệu Speaking phải về GVCN: ${sg?.owner_user_id}`);
-      const dong = (mywork.myWork(gvcn).items as any[]).find((i) => i.key === `verify:${sg.id}`);
-      assert(dong?.signal, 'GVCN không thấy dòng tín hiệu');
-      eq(dong.signal.actions, ['create_case', 'dismiss'], 'Hai nút');
-      const gui = () => cases.reportIssue(gvcn, {
-        studentId: hv.sid, topic: 'speaking', fromSignalId: sg.id, idempotencyKey: `pa-e2e-${sg.id}`,
-        title: 'Speaking — trả lời cụt, không mở rộng ý', summary: 'Part 2 nói dưới một phút, lặp từ nối; đã nghe lại bài thi.',
-        primaryCode: d.issuesForTopic('speaking', 'FOU')[0].code,   // PR-MON: FOU S = P
-      }) as any;
-      const c = gui();
-      eq(gui().id, c.id, 'Gửi lại cùng idempotencyKey phải ra cùng Case');
-      const sau = conn.prepare('SELECT status, case_id FROM case_signals WHERE id = ?').get(sg.id) as any;
-      eq([sau.status, sau.case_id], ['linked', c.id], 'Tín hiệu phải gắn vào Case');
-      assert(!(mywork.myWork(gvcn).items as any[]).some((i) => i.key === `verify:${sg.id}`), 'Dòng tín hiệu phải biến mất');
+      const c = conn.prepare(`SELECT * FROM sos_cases WHERE student_id = ? AND topic = 'speaking'`).get(hv.sid) as any;
+      assert(c && c.owner_user_id === gvcn.userId, `Case Speaking phải về GVCN: ${c?.owner_user_id}`);
+      const pa = conn.prepare(`SELECT performer_user_id FROM case_interventions WHERE case_id = ? AND kind = 'bo_tro'`).get(c.id) as any;
+      eq(pa.performer_user_id, gvcn.userId, 'Người dạy bổ trợ FOU = GVCN');
+      assert(!(mywork.myWork(gvcn).items as any[]).some((i) => i.group === 'verify'), 'Không còn dòng verify');
     } finally {
       conn.prepare(`UPDATE teacher_assignments SET status = 'active' WHERE id IN (${ph})`).run(...tam);
     }

@@ -9,7 +9,7 @@ import { chuyenCaseSangLoTrinh, closeCasesOnProgrammeSwitch } from '../cases/sys
 import { banGiaoPaQuyChe } from '../cases/sosAuto.ts';
 import { taoMtMacDinh, taoMtMacDinhLo } from '../fasttrack/mtMacDinh.ts';
 import { classProgressMany } from './schedule.ts';
-import { programmeByCode } from '../normal/regular.ts';
+import { programmeByCode, taoBaiThuongMacDinh } from '../normal/regular.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { trangThaiYThuc } from '../yThuc/trangThai.ts';
 
@@ -264,7 +264,7 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
     if (denLop.ft) {
       taoMtMacDinh(moiId, { actorUserId: p.userId });   // M1: vào lớp FT / đổi LT ↔ RF = lộ trình mới có lịch MT mặc định
       if (tuLop.ft && curCycle) chuyenCaseSangLoTrinh(p.userId, d.sid, curCycle.id, moiId, route, d.ngay);   // K5-60
-    }
+    } else taoBaiThuongMacDinh([moiId], p.userId, d.ngay);   // PR-LT2a M1b: sang lớp thường = tự có bài Giữa khoá / Cuối khoá
   }
 
   /* Q12: bài chưa làm CHỈ đi theo em khi GIỮ khoá — đóng khoá thì lượt planned ở lại lớp cũ. */
@@ -460,6 +460,14 @@ export function apDungCaLop(p: Principal, o: {
         `SELECT id FROM learning_cycles WHERE student_id IN (${ftSids.map(() => '?').join(',')}) AND status = 'active' AND route IS NOT NULL`,
       ).all(...ftSids) as any[];
       taoMtMacDinhLo(ftCycles.map((c) => ({ cycleId: c.id })), { actorUserId: p.userId });
+    }
+    /* PR-LT2a M1b: em sang lớp thường (Chuyển tiếp lớp) tự có bài Giữa khoá / Cuối khoá — MỘT câu đọc lại lộ trình mới + tạo theo lô. */
+    const thuongSids = o.dongs.filter((d) => !d.toClass.ft).map((d) => d.sid);
+    if (thuongSids.length) {
+      const cyc = conn.prepare(
+        `SELECT id FROM learning_cycles WHERE student_id IN (${thuongSids.map(() => '?').join(',')}) AND status = 'active' AND route IS NULL`,
+      ).all(...thuongSids) as any[];
+      taoBaiThuongMacDinh(cyc.map((c) => c.id as number), p.userId, o.ngay);
     }
   }
 

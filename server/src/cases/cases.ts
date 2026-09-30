@@ -1,6 +1,7 @@
 import { db, tx } from '../db.ts';
+import { boTroCuaCase, chepKetQuaNhom, quyenBoTro, type BoTroDto } from './boTro.ts';
 import {
-  DISPOSITIONS, INTERVENTION_KINDS, INTERVENTION_KIND_LABEL, INTERVENTION_STATUSES,
+  DISPOSITIONS, INTERVENTION_KINDS, SYSTEM_KINDS, INTERVENTION_KIND_LABEL, INTERVENTION_STATUSES,
   INTERVENTION_STATUS_LABEL,
   FOLLOWUP_OUTCOMES, CASE_DECISIONS, CASE_OUTCOMES, ENTRY_SKILLS,
   ISSUE_ROLES, PERMISSIONS, URGENCY_LEVELS, DEFAULT_URGENCY,
@@ -16,10 +17,10 @@ import {
   HAN_DUYET_NGAY, hanTheoNgay,
   type NextStep, type RescheduleTarget,
   issueBranchOf, issueLabel, caseTopicLabel, urgencyFromSos,
-  caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac, chanHoanThanh, laLanGhiCuoi, mocChuPa, programmeOf, quyetDinhChoPa, trangThaiCaseV4, viecTiepCuaCase, tenCaseSos, tenMon, tenMonNgan,
+  caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac, chanHoanThanh, laLanGhiCuoi, mocChuPa, programmeOf, quyetDinhChoPa, trangThaiCaseV4, viecTiepCuaCase, tenCaseSos, tenCaseThuong, nhanDot, tenMon, tenMonNgan,
   type CaseOutcome, type FollowUpOutcome, type InterventionKind,
 } from '../../../shared/domain/index.ts';
-import { addDays, badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
+import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, isCoreTeacherOf, napTruocPhamVi, require_, scopeFor, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { nho, trongBoNho } from '../platform/nguCanhRequest.ts';
@@ -28,7 +29,6 @@ import { currentCycle } from '../fasttrack/cycles.ts';
 import { expectationFor } from '../fasttrack/scoring.ts';
 import { isRatioCycle, programmeCodeOfCycle } from '../normal/regular.ts';
 import { suggestCaseOwner } from './owner.ts';
-import { linkSignalToCase, loadSignal } from './signals.ts';
 import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
 import { PLAN_DECISIONS, decisionToStep, type PlanDecision } from '../../../shared/domain/index.ts';
 import { apDungDieuChinh, chuanHoaDieuChinh, lichSuDieuChinhCuaCase } from './planRevisions.ts';
@@ -82,6 +82,11 @@ export function caseTitleOf(c: {
     const cat = c.category ?? categoryOf(c.topic);
     return tenCaseSos({ mt: latest?.attempt_no ?? null, giua: own || `${cat ? tenMon(latest?.ct ?? null, cat) : caseCategoryLabel(cat)} không đạt`, sos: c.sos_level ?? null });
   }
+  /* PR-LT2a T58: Case tự tạo từ Giữa khoá lớp thường = `[Giữa khoá] G+V không đạt` — không MT, không SOS. */
+  if (c.origin_kind === 'mock' && (latest?.kind === 'progress' || latest?.kind === 'final')) {
+    const cat = c.category ?? categoryOf(c.topic);
+    return tenCaseThuong({ dot: latest.kind, giua: own || `${cat ? tenMonNgan(latest?.ct ?? null, cat) : caseCategoryLabel(cat)} không đạt` });
+  }
   if (own) return own;
   return caseTitle({
     category: c.category ?? categoryOf(c.topic),
@@ -95,13 +100,13 @@ export function caseTitleOf(c: {
 export function milestonesOf(caseId: number) {
   return (db()
     .prepare(
-      `SELECT m.*, u.full_name AS actor_name FROM case_milestones m
+      `SELECT m.*, u.full_name AS actor_name, (SELECT a.kind FROM assessment_attempts a WHERE a.id = m.attempt_id) AS attempt_kind FROM case_milestones m
          LEFT JOIN users u ON u.id = m.created_by
         WHERE m.case_id = ? ORDER BY m.occurred_on, m.id`,
     )
     .all(caseId) as any[])
     .map((m) => ({
-      id: m.id, kind: m.kind, attemptId: m.attempt_id, attemptNo: m.attempt_no,
+      id: m.id, kind: m.kind, attemptId: m.attempt_id, attemptNo: m.attempt_no, dot: m.attempt_kind ? nhanDot(m.attempt_kind, m.attempt_no) : null,
       band: m.band, expectation: m.expectation, sosLevel: m.sos_level,
       occurredOn: m.occurred_on, note: m.note, actorName: m.actor_name,
     }));
@@ -305,6 +310,8 @@ export function caseAccess(caseId: number) {
     requireView: (p: Principal, message: string) =>
       require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId: c.class_id, studentId: c.eff_student_id }, message),
     requireEdit: (p: Principal, message: string) => require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c), message),
+    /** Ngữ cảnh quyền của Case (lớp, học viên, kỹ năng) — cho `cases/boTro.ts` hỏi quyền mà không dựng lại (AUTH-01). */
+    ctx: sosEditCtx(c),
   };
 }
 
@@ -347,13 +354,6 @@ export function reportIssue(p: Principal, input: {
   parallel?: boolean;
   /** Người phụ trách chính. Bỏ trống thì hệ thống gợi ý theo phân công của lớp. */
   ownerUserId?: number | null;
-  /**
-   * TÍN HIỆU mà case này ra đời để trả lời (mục 6.2).
-   *
-   * Đây là đường DUY NHẤT một tín hiệu trở thành case: người dùng mở form, đặt tên, viết mô
-   * tả rồi gửi. Hệ thống không tự đi con đường này thay họ.
-   */
-  fromSignalId?: number | null;
   /**
    * NHẬP BÙ MỘT CASE ĐÃ XONG TỪ LÂU (PR-C Task 3, mục 10.3–10.4) — cờ chảy suốt cả chuỗi
    * `reportIssue` → `recordIntervention` → `completeIntervention` → `closeCaseOutcome`.
@@ -413,23 +413,8 @@ export function reportIssue(p: Principal, input: {
     if (seen) return caseDetail(p, seen.id);
   }
 
-  /*
-   * Tín hiệu mà Case này trả lời (§3.10 "Tạo Case: mở form Case MÔN ĐÓ"). Chỉ tín hiệu còn chờ mới mở Case được. Đứng SAU khối
-   * `idempotencyKey`: bấm gửi lại (tín hiệu đã `linked` từ lần đầu) phải trả Case cũ, không báo "đã được xử lý".
-   */
-  const fromSignal = input.fromSignalId ? loadSignal(input.fromSignalId) : null;
-  if (fromSignal && fromSignal.status !== 'pending') {
-    throw badRequest('Tín hiệu này đã được xử lý rồi (đã thành Case, đã bỏ qua hoặc đã thu hồi).');
-  }
-
-  /*
-   * Lộ trình: mở từ tín hiệu thì LUÔN là khoá của tín hiệu — gửi kèm khoá khác là lỗi, không phải lựa chọn (§3.10 "đúng khoá").
-   * Không từ tín hiệu: gửi rõ thì dùng; không thì lộ trình đang mở.
-   */
-  if (fromSignal?.cycle_id && input.cycleId && Number(input.cycleId) !== fromSignal.cycle_id) {
-    throw badRequest('Case tạo từ tín hiệu phải nằm đúng khoá của tín hiệu đó.');
-  }
-  const wantedCycleId = fromSignal?.cycle_id ?? input.cycleId ?? null;
+  /* Lộ trình: gửi rõ thì dùng; không thì lộ trình đang mở. (PR-LT2a: không còn Case tạo từ tín hiệu — Giữa khoá tự tạo Case.) */
+  const wantedCycleId = input.cycleId ?? null;
   const cycle = wantedCycleId
     ? (conn.prepare('SELECT * FROM learning_cycles WHERE id = ? AND student_id = ?')
         .get(wantedCycleId, input.studentId) as any)
@@ -451,9 +436,6 @@ export function reportIssue(p: Principal, input: {
     : programmeOf(ctCuaCase) === 'PREFOU' ? caseTopicsFor(true, ctCuaCase)          // Pre FOU chỉ "Tổng hợp" (PF6)
     : [...new Set([...caseTopicsFor(true, ctCuaCase), ...ENTRY_SKILLS])];
   if (!allowedTopics.includes(topic)) throw badRequest(`Chủ đề không hợp lệ: ${topic}`);
-  if (fromSignal && categoryOf(topic) !== (fromSignal.category ?? categoryOf(fromSignal.skill))) {
-    throw badRequest('Case tạo từ tín hiệu phải đúng môn của tín hiệu đó.');
-  }
 
   /*
    * CẢNH BÁO CASE TRÙNG (mục 7.13).
@@ -550,7 +532,6 @@ export function reportIssue(p: Principal, input: {
       writeAudit({ actorUserId: p.userId, action: 'case.report.merge', entityType: 'sos_case',
         entityId: existing.id, entityLabel: `${student.student_code} · ${summary.slice(0, 40)}`,
         after: { mergedInto: existing.id } });
-      if (input.fromSignalId) linkSignalToCase(p, input.fromSignalId, existing.id, summary);
       return caseDetail(p, existing.id);
     });
   }
@@ -614,8 +595,6 @@ export function reportIssue(p: Principal, input: {
     writeAudit({ actorUserId: p.userId, action: input.backfill ? 'case.backfill' : 'case.report',
       entityType: 'sos_case', entityId: caseId,
       entityLabel: `${student.student_code} · ${summary.slice(0, 40)}`, after: { urgency, detectedAt } });
-    /* Tín hiệu đã được trả lời: từ đây nó không còn nằm trong hàng chờ xác minh nữa. */
-    if (input.fromSignalId) linkSignalToCase(p, input.fromSignalId, caseId, summary);
     return caseDetail(p, caseId);
   });
 }
@@ -641,11 +620,11 @@ export function caseTopicsOf(p: Principal, studentId: number, cycleId?: number |
   const ratio = !!(cycle && isRatioCycle(cycle));
   const chuongTrinh: string | null = cycle ? cycle.programme_code ?? programmeCodeOfCycle(cycle.id) : null;
   /* PR-SOS (K3-23): kỹ năng đang có Case chờ xác nhận nguyên nhân — form "+ Case" chấm nhỏ nút đó và dẫn sang Xác nhận Case. */
-  const mo = conn.prepare(`SELECT sc.id, sc.topic, sc.category, sc.sos_level, a.attempt_no FROM sos_cases sc
+  const mo = conn.prepare(`SELECT sc.id, sc.topic, sc.category, sc.sos_level, a.attempt_no, a.kind AS attempt_kind FROM sos_cases sc
       LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE sc.student_id = ? AND sc.status != 'done'`).all(studentId) as any[];
   const cho = new Set(awaitingCauseCaseIds(mo.map((c) => c.id as number)));
-  const choNguyenNhan: Record<string, { caseId: number; mt: number | null; sos: number | null }> = {};
-  for (const c of mo) if (cho.has(c.id)) choNguyenNhan[c.topic ?? c.category] = { caseId: c.id, mt: c.attempt_no ?? null, sos: c.sos_level ?? null };
+  const choNguyenNhan: Record<string, { caseId: number; mt: number | null; sos: number | null; dot: string | null }> = {};
+  for (const c of mo) if (cho.has(c.id)) choNguyenNhan[c.topic ?? c.category] = { caseId: c.id, mt: c.attempt_no ?? null, sos: c.sos_level ?? null, dot: c.attempt_kind ? nhanDot(c.attempt_kind, c.attempt_no ?? null) : null };   // lớp thường: `Giữa khoá` thay `MT2` (T58)
   return { ratio, topics: caseTopicsFor(ratio, chuongTrinh), chuongTrinh, choNguyenNhan };
 }
 
@@ -757,7 +736,7 @@ export function recordIntervention(p: Principal, caseId: number, input: {
   if (sosCaseState(caseId).choDuyetKhongTheoDoi) {
     throw badRequest('Case đang chờ Quản lý duyệt "Không cần theo dõi" — chưa thêm phương án được. Chờ duyệt xong (hoặc bị từ chối) rồi thêm.');
   }
-  if (!(INTERVENTION_KINDS as readonly string[]).includes(input.kind)) throw badRequest('Loại hỗ trợ không hợp lệ.');
+  if (!(INTERVENTION_KINDS as readonly string[]).includes(input.kind) || (SYSTEM_KINDS as readonly string[]).includes(input.kind)) throw badRequest('Loại hỗ trợ không hợp lệ.');   // PR-LT2a: PA Bổ trợ chỉ máy tạo
   const status = input.status && (INTERVENTION_STATUSES as readonly string[]).includes(input.status)
     ? input.status : 'completed';
   for (const [d, label] of [[input.plannedDate, 'Ngày dự kiến'], [input.startedDate, 'Ngày bắt đầu'],
@@ -1493,7 +1472,9 @@ export function caseDetail(p: Principal, caseId: number) {
       /** PA theo quy chế SOS. `awaitingConfirmation` = "Chờ xác nhận" (Q28-3, Q3): chạy khi GVBM bấm Xác nhận PA. */
       preset: iv.preset === 1,
       confirmedAt: (iv.confirmed_at ?? null) as string | null,
-      awaitingConfirmation: iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned',
+      /* PR-LT2a: PA Bổ trợ KHÔNG có bước Xác nhận PA — chờ kế hoạch được duyệt (`chuaChay`), không phải "Chờ xác nhận". */
+      awaitingConfirmation: iv.kind !== 'bo_tro' && iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned',
+      chuaChay: iv.kind === 'bo_tro' && iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned',
       /** PR-SOS (T22, T63): PA bắt buộc — không thay, không kết thúc sớm; `mocChu` chữ mốc; `lanCuoi` = lần ghi tới là "Ghi kết quả cuối". */
       batBuoc: iv.preset === 1,
       mocQuyChe: (iv.moc_quy_che ?? null) as string | null,
@@ -1629,6 +1610,8 @@ export function caseDetail(p: Principal, caseId: number) {
     sos: sosCaseState(caseId),
     /** PR-SOS (S4-5): thẻ ĐANG CHỜ ở mức Case ("Không cần theo dõi") — Ngăn Case nhúng `TheYeuCau gon` cho Quản lý. */
     yeuCauCase: theCuaDoiTuong('sos_case', [caseId]).find((y) => y.trangThai === 'cho' && y.loai === 'khong_theo_doi') ?? null,
+    /** PR-LT2a (N1, N2): khối PA Bổ trợ Giữa khoá — nhóm, môn, người dạy, kế hoạch (thẻ), hạn nộp, người xem nộp được không. `null` = Case không có PA bổ trợ. */
+    boTro: boTroCuaCase(p, [caseId]).get(caseId) ?? null,
     /** PR-SOS (T21, §7.3, K3-07): tên Case SOS ba phần · MỘT nhãn trạng thái · MỘT việc tiếp — Ngăn Case chọn nút chính theo đây. */
     tenSos: c.origin_kind === 'mock' && (c.attempt_kind ?? 'mock') === 'mock'
       ? { mt: (conn.prepare('SELECT MAX(attempt_no) n FROM case_milestones WHERE case_id = ?').get(caseId) as any)?.n ?? c.attempt_no ?? null,
@@ -1638,11 +1621,12 @@ export function caseDetail(p: Principal, caseId: number) {
       const st = sosCaseState(caseId);
       const v4 = {
         status: c.status, fromSos: st.fromSos, hasCause: st.hasCause, dismissed: !!st.dismissed, systemClosed: !!c.system_close_reason,
-        choDuyetKhongTheoDoi: !!st.choDuyetKhongTheoDoi, coPaChoXacNhan: st.coPaChoXacNhan, hanXacNhan: st.dueOn,
+        choDuyetKhongTheoDoi: !!st.choDuyetKhongTheoDoi, coPaChoXacNhan: st.coPaChoXacNhan, hanXacNhan: st.dueOn, boTro: st.boTro,
         lyDoHeThong: c.system_close_reason ? SYSTEM_CLOSE_REASON_LABEL[c.system_close_reason as keyof typeof SYSTEM_CLOSE_REASON_LABEL] ?? null : null,
       };
       const pas = interventions.filter((i) => i.status !== 'cancelled').map((i) => ({
-        id: i.id, ten: (i.description ?? '').trim() || (INTERVENTION_KIND_LABEL[i.kind as InterventionKind] ?? i.kind),
+        /* PR-LT2a: PA Bổ trợ nói "Bổ trợ" (mô tả dài `Bổ trợ 2 buổi/tuần · …` nằm ở hàng PA) — việc tiếp đọc `Ghi kết quả PA Bổ trợ`. */
+        id: i.id, ten: i.kind === 'bo_tro' ? INTERVENTION_KIND_LABEL.bo_tro : (i.description ?? '').trim() || (INTERVENTION_KIND_LABEL[i.kind as InterventionKind] ?? i.kind),
         batBuoc: i.batBuoc, choXacNhan: i.awaitingConfirmation, xong: i.status === 'completed', actionDue: i.actionDue,
         followupDue: i.followupDue, choDuyet: i.approvalState === 'pending',
       }));
@@ -1909,7 +1893,7 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
       homeBranchId: r.home_branch_id ?? r.eff_branch_id,
       /* Lớp Normal và lớp FT chấm khác nhau, nên bộ lọc loại lớp là bộ lọc ĐẦU TIÊN. */
       classKind: (r.class_is_ft ? 'ft' : 'normal') as 'ft' | 'normal',
-      attemptId: r.attempt_id, attemptNo: r.attempt_no,
+      attemptId: r.attempt_id, attemptNo: r.attempt_no, attemptKind: r.attempt_kind ?? null,
       sosLevel: r.sos_level, urgency: r.urgency,
       summary: r.summary,
       headline: caseHeadline({
@@ -2208,6 +2192,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
     .all(cycle?.id ?? 0, studentId, cycle?.id ?? 0) as any[];
   /* AN-8: số bằng chứng của MỌI Case trên bảng — một câu hỏi, không phải một câu cho mỗi thẻ. */
   const soBangChung = demBangChungCase(caseRows.map((c) => c.id as number));
+  const boTroMap = boTroCuaCase(p, caseRows.map((c) => c.id as number));   // PR-LT2a: theo TẬP, không hỏi từng Case
 
   /*
    * BỘ HẠNG MỤC THEO ĐÚNG CHƯƠNG TRÌNH EM ĐANG HỌC.
@@ -2216,21 +2201,6 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
    * là bày hai dòng vĩnh viễn trống. Em lớp Fast Track thì ngược lại: một dòng "W" gộp mất
    * mất phân biệt giữa hai bài do hai giáo viên khác nhau chấm.
    */
-  /*
-   * TÍN HIỆU CHỜ XÁC MINH, gom sẵn theo hạng mục (mục 4.2).
-   *
-   * Cột "Vấn đề đang theo dõi" phải nói được CẢ HAI thứ: case đã mở, và tín hiệu chưa ai
-   * xác minh. Bỏ tín hiệu ra khỏi bảng này thì một kỹ năng vừa trượt trông như đang yên —
-   * trong khi việc phải làm đang nằm ở đúng dòng đó.
-   */
-  const signalRows = conn
-    .prepare(
-      `SELECT sg.*, u.full_name AS owner_name FROM case_signals sg
-         LEFT JOIN users u ON u.id = sg.owner_user_id
-        WHERE sg.student_id = ? AND sg.status = 'pending'`,
-    )
-    .all(studentId) as any[];
-
   /*
    * THỨ TỰ CASE TRONG MỘT KỸ NĂNG (mục 4.3): đang mở trước, rồi tới cập nhật NGHIỆP VỤ mới
    * nhất, rồi ngày tạo.
@@ -2377,20 +2347,6 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
       pendingApproval: interventions.some((i) => i.approval_state === 'pending'),
 
       /*
-       * TÍN HIỆU CHƯA AI XÁC MINH ở chính kỹ năng này (mục 4.2). Nó KHÔNG phải một case —
-       * chưa ai xem bài, chưa ai đặt tên vấn đề — nên để riêng chứ không trộn vào `caseId`.
-       */
-      signal: (() => {
-        const sg = signalRows.find((x) => (x.category ?? categoryOf(x.skill)) === category);
-        if (!sg) return null;
-        return {
-          id: sg.id, skill: sg.skill, band: sg.band, expectation: sg.expectation,
-          verifyDue: sg.verify_due, overdue: !!sg.verify_due && sg.verify_due < demoToday(),
-          ownerName: sg.owner_name ?? null,
-        };
-      })(),
-
-      /*
        * ĐỦ CÁC CASE CỦA KỸ NĂNG NÀY (mục 4.2) — không chỉ một case đại diện.
        *
        * Em có hai case Reading song song thì cái thứ hai phải có đường vào. Trước đây bảng
@@ -2428,7 +2384,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
           canClose: canCloseCase(p, { class_id: enr?.class_id ?? null, student_id: studentId, topic: c.topic }),
           closeBlockers: c.status === 'done' ? [] : closeBlockers(c.id),
           /* Đủ thứ để vẽ MỘT THẺ CASE mà không phải gọi thêm một đường nữa (mục 1 · 2). */
-          ...caseCardOf(c.id, c, soBangChung),
+          ...caseCardOf(c.id, c, soBangChung, boTroMap.get(c.id) ?? null),
         }))
         .sort((a, b) => {
           const open = (x: typeof a) => (x.status === 'done' ? 1 : 0);
@@ -2472,7 +2428,7 @@ export function demBangChungCase(caseIds: number[]): Map<number, number> {
  *
  * (Trước 21/09/2026 thẻ này còn trả "báo cáo nguồn" của case Ý thức; Ý thức nay là vi phạm và biện pháp xử lý ở một bảng riêng.)
  */
-function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>) {
+function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>, boTro: BoTroDto | null = null) {
   const conn = db();
   const today = demoToday();
 
@@ -2515,7 +2471,8 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>) {
       confirmedAt: iv.confirmed_at ?? null,
       /* PR-SOS: PA bắt buộc · Chờ xác nhận · chữ mốc · lần ghi tới là "Ghi kết quả cuối" (HangPA, T22, K3-14). */
       batBuoc: iv.preset === 1,
-      choXacNhan: iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned',
+      choXacNhan: iv.kind !== 'bo_tro' && iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned',
+      chuaChay: iv.kind === 'bo_tro' && iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned',
       mocChu: iv.preset === 1 ? mocChuPa({ span: iv.moc_quy_che ?? null, followupDue: iv.followup_due ?? null, mtKe: mtKe(iv), daXacNhan: !!iv.confirmed_at }, today) : null,
       lanCuoi: iv.status === 'started' && laLanGhiCuoi({ preset: iv.preset === 1, followupDue: iv.followup_due ?? null, actionDue: iv.action_due ?? null }, today),
       performer: iv.performer_user_name ?? iv.performer_name ?? null,
@@ -2575,7 +2532,7 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>) {
   const sos = sosCaseState(caseId);
   const v4 = {
     status: c.status, fromSos: sos.fromSos, hasCause: sos.hasCause, dismissed: !!sos.dismissed, systemClosed: !!c.system_close_reason,
-    choDuyetKhongTheoDoi: !!sos.choDuyetKhongTheoDoi, coPaChoXacNhan: sos.coPaChoXacNhan, hanXacNhan: sos.dueOn,
+    choDuyetKhongTheoDoi: !!sos.choDuyetKhongTheoDoi, coPaChoXacNhan: sos.coPaChoXacNhan, hanXacNhan: sos.dueOn, boTro: sos.boTro,
     lyDoHeThong: c.system_close_reason ? SYSTEM_CLOSE_REASON_LABEL[c.system_close_reason as keyof typeof SYSTEM_CLOSE_REASON_LABEL] ?? null : null,
   };
   /* Lượt đánh giá mà case này đã đi qua — "MT2 · 17/08" ở chân thẻ (lớp thường: "Giữa khoá"/"Cuối khoá" thay MT{n}). */
@@ -2604,7 +2561,7 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>) {
     /** PR-SOS (§7.3, K3-07): MỘT nhãn trạng thái + MỘT việc tiếp của Case — bảng kỹ năng, Ngăn Case, đầu hồ sơ đọc chung. */
     trangThaiV4: trangThaiCaseV4(v4, today),
     viecTiep: viecTiepCuaCase(v4, plans.map((pl) => ({
-      id: pl.id, ten: pl.name, batBuoc: pl.batBuoc, choXacNhan: pl.choXacNhan, xong: pl.status === 'completed',
+      id: pl.id, ten: pl.kind === 'bo_tro' ? INTERVENTION_KIND_LABEL.bo_tro : pl.name, batBuoc: pl.batBuoc, choXacNhan: pl.choXacNhan, xong: pl.status === 'completed',
       actionDue: pl.actionDue, followupDue: pl.followupDue, choDuyet: pl.pendingApproval,
     })), today, c.origin_kind === 'mock' ? null : planDueDate(String(c.detected_at ?? c.created_at ?? today).slice(0, 10), c.urgency)),
     plans,
@@ -2625,6 +2582,8 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>) {
     backfilledOn: c.origin_kind === 'backfill' && c.created_at ? String(c.created_at).slice(0, 10) : null,
     /* Số bằng chứng của Case (PR-HV) — để nhãn "Bằng chứng (n)" thu gọn mà không phải tải danh sách tệp. Đếm sẵn cả bảng (AN-8). */
     attachmentCount: soBangChung.get(caseId) ?? 0,
+    /** PR-LT2a: khối PA Bổ trợ (xem `boTroCuaCase`) — `null` với Case không có PA bổ trợ. */
+    boTro,
   };
 }
 
@@ -2841,8 +2800,13 @@ export function updateResult(p: Principal, interventionId: number, input: {
   const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(interventionId) as any;
   if (!iv) throw notFound('Không tìm thấy phương án.');
   const c = loadCase(iv.case_id);
-  require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
-    'Bạn không có quyền cập nhật kết quả của case này.');
+  /* PR-LT2a (Q9): PA Bổ trợ do người dạy (mặc định GVCN cho FOU) ghi — `quyenBoTro`; PA khác vẫn theo kỹ năng (C02). */
+  if (iv.kind === 'bo_tro') {
+    if (!quyenBoTro(p, iv)) throw forbidden('Bạn không có quyền cập nhật kết quả của case này.');
+  } else {
+    require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
+      'Bạn không có quyền cập nhật kết quả của case này.');
+  }
 
   if (iv.preset === 1 && !iv.confirmed_at) {
     throw badRequest('Phương án điền sẵn này chưa được xác nhận — xác nhận (hoặc sửa / thay) trước khi ghi kết quả.');
@@ -3068,6 +3032,11 @@ export function updateResult(p: Principal, interventionId: number, input: {
     }
 
     dongBoTrangThaiCase(iv.case_id);
+    /* PR-LT2a (M-03): PA bổ trợ chung — chép kết quả sang các dòng khác của nhóm. */
+    chepKetQuaNhom(conn, iv, followupId, {
+      nextStep, observedOn, completedOn, lanCuoi, nextDue: weeklyUpdateDue(addDays(observedOn, 1)),
+      apDungDieuChinh: (sib, fid) => apDungDieuChinh(sib, adjustPatch!, { followupId: fid, actorUserId: p.userId, reason: decisionNote!, on: observedOn }),
+    });
 
     addJourney({
       studentId: c.eff_student_id, cycleId: c.eff_cycle_id,

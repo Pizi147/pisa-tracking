@@ -193,14 +193,24 @@ const COT_KET_QUA: CotTongHop[] = [
   { khoa: 'chuaDu', nhom: 'ket-qua', donVi: 'dot-test', nhan: () => 'Chưa đủ điểm',
     goiY: 'Chưa đủ điểm và phần đã chấm chưa kết luận được gì.' },
 ];
+/** PR-LT2a (T58): khung lớp thường KHÔNG có chữ SOS — cùng khoá cột `sos1..3` (màu, số liệu), chữ đổi thành số môn trượt. */
+const COT_KET_QUA_THUONG: CotTongHop[] = COT_KET_QUA.map((c) => {
+  const chu: Record<string, [string, string]> = {
+    sos1: ['1 môn trượt', 'Đủ điểm, đúng một môn dưới 70%.'],
+    sos2: ['2 môn trượt', 'Đủ điểm, hai môn dưới 70%.'],
+    sos3: ['≥ 3 môn trượt', 'Đủ điểm, từ ba môn dưới 70%.'],
+  };
+  const x = chu[c.khoa];
+  return x ? { ...c, nhan: () => x[0], goiY: x[1] } : c;
+});
 const COT_XU_LY: CotTongHop[] = [
   { khoa: 'hvCoCase', nhom: 'xu-ly', donVi: 'hoc-vien', nhan: () => 'HV có Case',
     goiY: 'Học viên có ít nhất một Case sinh từ các lượt trong dòng — một em nhiều Case vẫn tính một lần.' },
   { khoa: 'case', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Case', goiY: 'Case sinh từ các lượt trong dòng — là tình trạng HÔM NAY của case, không phải lúc lượt được chấm.' },
   /* PR-SOS (K1-20): bốn cột theo MỘT nhãn trạng thái Case (`trangThaiCaseV4`) — tình trạng hôm nay. */
   { khoa: 'choNguyenNhan', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Chờ nguyên nhân',
-    goiY: 'Case từ SOS chưa xác nhận nguyên nhân — trong ngoặc là số đã quá hạn 3 ngày.' },
-  { khoa: 'choDuyet', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Chờ Quản lý duyệt', goiY: 'Case đã gửi "Không cần theo dõi", chờ Quản lý duyệt.' },
+    goiY: 'Case chưa xác nhận nguyên nhân — trong ngoặc là số đã quá hạn 3 ngày.' },
+  { khoa: 'choDuyet', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Chờ Quản lý duyệt', goiY: 'Case đã gửi "Không cần theo dõi" hoặc kế hoạch bổ trợ, chờ Quản lý duyệt.' },
   { khoa: 'dangLam', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Đang làm', goiY: 'Case đã có nguyên nhân (kể cả PA theo quy chế còn chờ xác nhận) hoặc Case giáo viên báo, chưa xong.' },
   { khoa: 'xongHuy', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Xong/Huỷ', goiY: 'Case đã hoàn thành, huỷ vì không cần theo dõi, hoặc hệ thống đóng.' },
 ];
@@ -208,6 +218,7 @@ const COT_XU_LY: CotTongHop[] = [
 export const COT_XU_LY_V4: Record<TrangThaiCaseV4, string> = {
   'cho-nguyen-nhan': 'choNguyenNhan', 'cho-duyet-khong-theo-doi': 'choDuyet', 'cho-xac-nhan-pa': 'dangLam', 'dang-lam': 'dangLam',
   xong: 'xongHuy', 'huy-khong-theo-doi': 'xongHuy', 'he-thong-dong': 'xongHuy',
+  'cho-ke-hoach': 'dangLam', 'cho-duyet-ke-hoach': 'choDuyet',   // PR-LT2a: đã có nguyên nhân; kế hoạch bổ trợ chờ Quản lý duyệt
 };
 
 /**
@@ -225,7 +236,7 @@ export function cotKyNangFor(ct: ChuongTrinh): CotTongHop[] {
 
 /** Toàn bộ cột của bảng Tổng hợp, đúng thứ tự hiển thị: Lượt + Kết quả · Dưới kỳ vọng theo kỹ năng · Xử lý. */
 export function cotTongHopFor(ct: ChuongTrinh): CotTongHop[] {
-  return [COT_LUOT, ...COT_KET_QUA, ...cotKyNangFor(ct), ...COT_XU_LY];
+  return [COT_LUOT, ...(ct === 'thuong' ? COT_KET_QUA_THUONG : COT_KET_QUA), ...cotKyNangFor(ct), ...COT_XU_LY];
 }
 
 // ------------------------------------------------------------------ màu ô kết quả (N-1b, Q23)
@@ -278,12 +289,11 @@ export function hoKyNang(k: string | null | undefined): HoKyNang | null {
 
 // ------------------------------------------------------------------ hai việc "bỏ quên" (Q17–Q19)
 
-/** Hai loại học viên "bỏ quên" của "Chưa ai nhận" cũ — vừa là hai chỉ số trong sổ, vừa là hai bộ lọc ở Danh sách Case (`hang-doi`). */
-export const LOAI_BO_QUEN = ['can-ho-tro-2-lan', 'bo-qua-van-can-ho-tro'] as const;
+/** Loại học viên "bỏ quên" của "Chưa ai nhận" cũ — vừa là chỉ số trong sổ, vừa là bộ lọc ở Danh sách Case (`hang-doi`). PR-LT2a bỏ loại "Bỏ qua tín hiệu". */
+export const LOAI_BO_QUEN = ['can-ho-tro-2-lan'] as const;
 export type LoaiBoQuen = (typeof LOAI_BO_QUEN)[number];
 export const LOAI_BO_QUEN_LABEL: Record<LoaiBoQuen, string> = {
   'can-ho-tro-2-lan': 'Cần hỗ trợ 2 lần liền, chưa có Case',
-  'bo-qua-van-can-ho-tro': 'Bỏ qua tín hiệu, vẫn chưa đạt',
 };
 export const laLoaiBoQuen = (s: string | null | undefined): s is LoaiBoQuen => (LOAI_BO_QUEN as readonly string[]).includes(s ?? '');
 

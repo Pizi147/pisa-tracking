@@ -18,7 +18,6 @@ import { standingFor, standingLine } from './standing.ts';
 import { luotSinhViecRow } from '../worklist/danhGia.ts';
 import { missingForStudent, suggestedMockWeeks } from '../classes/schedule.ts';
 import { lopHocCua } from '../classes/loTrinhTiep.ts';
-import { listSignals } from '../cases/signals.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { activeClassOf, canManageDiscipline } from '../yThuc/access.ts';
 
@@ -447,8 +446,6 @@ function headlineOf(p: Principal, studentId: number, cycleId: number | null) {
 
   /* Kỹ năng đang DƯỚI KỲ VỌNG ở bài gần nhất — nói tên môn, không gộp thành một mức. */
   const below = rows.filter((r) => r.missed === true).map((r) => r.short ?? r.label);
-  /* Kỹ năng còn TÍN HIỆU chưa ai xác minh — việc chặn đầu chuỗi, nên tách riêng. */
-  const signals = rows.filter((r) => r.signal).map((r) => r.short ?? r.label);
   /* Vấn đề ĐANG xử lý, đếm theo case chứ không theo kỹ năng: một kỹ năng có thể hai case. */
   const open = rows.reduce((n, r) => n + r.cases.filter((c: any) => c.status !== 'done').length, 0);
 
@@ -474,10 +471,12 @@ function headlineOf(p: Principal, studentId: number, cycleId: number | null) {
       const v = c.viecTiep as { chu: string; han: string | null };
       if (v.chu === 'Xác nhận nguyên nhân') xacDinh.push({ text: `Xác nhận nguyên nhân ${sk(r)}`, due: v.han, rank: 0, category: r.category });
       else if (v.chu.startsWith('Xác nhận PA')) xacDinh.push({ text: `Xác nhận PA ${sk(r)}`, due: v.han, rank: 1, category: r.category });
+      /* PR-LT2a: PA Bổ trợ — nộp kế hoạch chặn đầu chuỗi (hạn nộp); chờ Quản lý duyệt là việc chờ người khác. */
+      else if (v.chu === 'Nộp kế hoạch bổ trợ') xacDinh.push({ text: `Nộp kế hoạch bổ trợ ${sk(r)}`, due: v.han, rank: 1, category: r.category });
+      else if (v.chu === 'Chờ Quản lý duyệt kế hoạch') cands.push({ text: `Chờ Quản lý duyệt kế hoạch ${sk(r)}`, due: null, rank: 2, category: r.category });
       else if (v.chu.startsWith('Ghi kết quả cuối')) cands.push({ text: `Ghi kết quả cuối ${sk(r)}`, due: v.han, rank: 1, category: r.category, loai: 'cap-nhat-pa' });
       else if (v.chu === 'Hoàn thành Case') cands.push({ text: `Hoàn thành Case ${sk(r)}`, due: null, rank: 2, category: r.category });
     }
-    if (r.signal) cands.push({ text: `Xác minh SOS ${sk(r)}`, due: r.signal.verifyDue ?? null, rank: 0, category: r.category });
     if (r.state === 'no_plan') cands.push({ text: `Đề ra PA ${sk(r)}`, due: null, rank: 1, category: r.category });
     if (r.overdueActionDue) cands.push({ text: `Ghi kết quả PA ${sk(r)}`, due: r.overdueActionDue, rank: 1, category: r.category, loai: 'cap-nhat-pa' });
     /* Hạn tuần CHƯA quá hạn — chỉ dùng khi không còn việc khác. Dự kiến kết thúc KHÔNG bao giờ là việc (T53 Q1, K3-02). */
@@ -499,7 +498,7 @@ function headlineOf(p: Principal, studentId: number, cycleId: number | null) {
   xacDinh.sort((a, b) => a.rank - b.rank || ((a.due ?? '9999') < (b.due ?? '9999') ? -1 : 1));
   const chon = xacDinh[0] ?? cands[0] ?? duPhong[0] ?? null;
   return {
-    below, signals, openCases: open,
+    below, openCases: open,
     next: chon ? { text: chon.text, due: chon.due, overdue: quaHan(chon.due, today), category: chon.category, loai: chon.loai } : null,
   };
 }
@@ -591,7 +590,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
         ...base, expectation: null, bands: null, overall: null, evaluable: null,
         skills: r.skills, scored: r.scored, required: r.required,
         complete: r.complete, provisional: r.provisional,
-        sosLevel: r.sosLevel, scopeNote: null,
+        sosLevel: r.sosLevel, scopeNote: null, tyLeTong: r.tyLeTong,   // PR-LT2a (T58): web dựng chữ kết quả qua nhanKetQuaThuong, không đọc sosLevel
       };
     }
     const r = t.ft!;
@@ -750,15 +749,6 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
 
   const standingNow = standingFor([studentId]).get(studentId) ?? null;
 
-  /*
-   * TÍN HIỆU CÒN CHỜ XÁC MINH — phải thấy được ngay ở hồ sơ (mục 6.2).
-   *
-   * Đây là những chỗ hệ thống đã thấy con số bất thường mà chưa ai kết luận gì. Chúng KHÔNG
-   * được trộn vào danh sách case: một tín hiệu chưa ai xem không phải một vấn đề đã xác định,
-   * và đếm chung là nói quá số việc đang có. Nên nó đi ra ở một khoá riêng.
-   */
-  const signals = listSignals(p, { studentId, status: 'pending' }).rows;
-
   // Đọc MỘT LẦN, dùng lại cho cả `programme` lẫn khối `khoa` dưới — tránh gọi lại `programmeOfClass`
   // (và qua đó `isRatioClass`) hai lần cho cùng một lớp (sửa sau rà #75, vấn đề 5).
   const progHienTai = current ? programmeOfClass(current.class_id) : null;
@@ -767,7 +757,6 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     id: s.id, studentCode: s.student_code, fullName: s.full_name, dob: s.dob, email: s.email ?? null,
     status: s.status, finishedAt: s.finished_at, archivedAt: s.archived_at,
     consultantName: s.consultant_name, note: s.note,
-    pendingSignals: signals,
     currentClass: current
       ? {
         id: current.class_id, code: current.class_code, kind: current.class_kind,

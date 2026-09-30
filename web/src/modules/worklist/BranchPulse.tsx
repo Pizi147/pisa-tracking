@@ -25,7 +25,7 @@ type OBang = { n: number; mau?: number };
 type Hang = { khoa: string; id: number; loai: 'chi-nhanh' | 'lop'; nhan: string; laFt: boolean | null; o: Record<CotBang, OBang>; lop?: Hang[] };
 type Bang = { cheDo: 'chi-nhanh' | 'lop'; hang: Hang[]; tong: Record<CotBang, OBang>; tenChiNhanh: string | null; branchId: number | null };
 
-const COT: { key: CotBang; nhan: (ct: ChuongTrinh) => string; goiY: string }[] = [
+const COT_DAY_DU: { key: CotBang; nhan: (ct: ChuongTrinh) => string; goiY: string }[] = [
   { key: 'hocVien', nhan: () => 'Học viên', goiY: 'Học viên đang học, không tính em đã kết thúc.' },
   { key: 'duoiKyVong', nhan: (ct) => (ct === 'thuong' ? 'Chưa đạt' : 'Dưới kỳ vọng'),
     goiY: 'Học viên dưới kỳ vọng ít nhất một kỹ năng ở đợt Test mới nhất hợp lệ (lớp thường: chưa đạt ít nhất một môn).' },
@@ -34,6 +34,8 @@ const COT: { key: CotBang; nhan: (ct: ChuongTrinh) => string; goiY: string }[] =
   { key: 'thieuPa', nhan: () => 'Thiếu PA học thuật', goiY: 'Case đã mở nhưng chưa ai ghi sẽ làm gì cho em.' },
   { key: 'duDuLieu', nhan: () => 'Đủ dữ liệu đánh giá', goiY: 'Em đã chấm đủ mọi kỹ năng ở đợt đã đến lịch mới nhất / em cần được đánh giá.' },
 ];
+/** PR-LT2a (T58): khung Lớp thường không có cột SOS — số SOS chỉ của Fast Track. */
+const cotCua = (ct: ChuongTrinh) => (ct === 'thuong' ? COT_DAY_DU.filter((c) => c.key !== 'sos') : COT_DAY_DU);
 /** Mọi hàng thân bảng cao bằng nhau (G-2): nhãn FT / Lớp thường 11px không được nâng hàng lớp cao hơn hàng tổng. */
 const HANG = '2.5rem';
 
@@ -43,6 +45,7 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
   const { data, loading, error, reload } = useApi<Bang>(q ? `/tong-quan/chi-nhanh?${q}` : '/tong-quan/chi-nhanh', [branchId, ct]);
   const [mo, setMo] = useState<Set<string>>(new Set());
   const [view, setView] = useState<'lop' | 'gv'>('lop');
+  const COT = cotCua(ct);
   const tieuDeTam = branchId ? 'Theo lớp' : 'Theo chi nhánh';   // tiêu đề trung tính khi chưa có dữ liệu, tránh nhấp nháy
   if (error) return <Card title={tieuDeTam}><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></Card>;
   if (loading) return <Card title={tieuDeTam}><Skeleton rows={3} /></Card>;

@@ -19,10 +19,14 @@ type CoordAction = {
   preset: boolean; status: 'pending' | 'done' | 'removed'; statusLabel: string;
   performedOn: string | null; performerName: string | null; note: string | null;
   removeReasonLabel: string | null; attachmentCount: number;
+  /** Báo phụ huynh qua TVV (PR-LT2a): bốn nội dung GVCN chuyển cho TVV — null với việc khác. */
+  noiDung?: string[] | null;
 };
 export type CoordTurn = {
   attemptId: number; attemptNo: number; studentId: number; studentName: string;
   classCode: string | null; sosLevel: number | null; skillLabels: string[];
+  /** Lớp thường (T58): `Giữa khoá` + `2/4 môn đạt` thay cho `MT2 · SOS 2`; null với lượt Mock FT. */
+  nhanDot?: string | null; ketQua?: { chinh: string; phu: string | null } | null;
   summary: { done: number; active: number; label: string; complete: boolean };
   actions: CoordAction[]; canAct: boolean;
 };
@@ -70,7 +74,9 @@ export function TheSos({ t, cot1 = 'luot', onGoAcademic, onChanged }: {
 }) {
   const [open, setOpen] = useState(!t.summary.complete);
   const [adding, setAdding] = useState(false);
-  const mtSos = `MT${t.attemptNo}${t.sosLevel !== null ? ` · ${sosLabel(t.sosLevel)}` : ''}`;
+  const mtSos = t.nhanDot
+    ? `${t.nhanDot}${t.ketQua ? ` · ${t.ketQua.chinh}` : ''}`
+    : `MT${t.attemptNo}${t.sosLevel !== null ? ` · ${sosLabel(t.sosLevel)}` : ''}`;
   const kyNang = t.skillLabels.length > 0 ? t.skillLabels.join(' + ') : '—';
 
   return (
@@ -139,12 +145,20 @@ function ActionRow({ a, canAct, onChanged }: { a: CoordAction; canAct: boolean; 
           <span className="block text-sm text-slate-200">{laMeetingCx(a.kind) ? nhanMeetingSauMock(a.kind) : a.name}</span>
           {laMeetingCx(a.kind) && <span className="block text-[11px] text-slate-500 mt-0.5">Việc phối hợp sau Mock — không phải xử lý vi phạm, không cần QL duyệt</span>}
           {dongPhu && <span className="block text-[11px] text-slate-500 mt-0.5">{dongPhu}</span>}
+          {a.noiDung && a.noiDung.length > 0 && (
+            <details className="mt-1">
+              <summary className="cursor-pointer text-[11px] text-slate-400">Nội dung gửi TVV ({a.noiDung.length})</summary>
+              <ol className="m-0 mt-1 space-y-1 pl-4 text-xs text-slate-300">
+                {a.noiDung.map((x, i) => <li key={i}>{x}</li>)}
+              </ol>
+            </details>
+          )}
         </span>
         <span className="flex flex-wrap gap-1.5 justify-end">
           {/* Việc chờ mà người xem làm được: hai nút đứng chỗ nhãn (dòng phụ đã nói "Cần xử lý"); còn lại là nhãn 6 chữ chung. */}
           {a.status === 'pending' && canAct ? (
             <>
-              <button type="button" className="btn btn-sm btn-primary" onClick={() => setConfirming(!confirming)}>Xác nhận</button>
+              <button type="button" className="btn btn-sm btn-primary" onClick={() => setConfirming(!confirming)}>{a.kind === 'bao_ph_tvv' ? 'Đánh dấu đã làm' : 'Xác nhận'}</button>
               <button type="button" className="btn btn-sm btn-ghost" onClick={() => setRemoving(!removing)}>Bỏ ▾</button>
             </>
           ) : <NhanTrangThai t={trangThaiPhoiHop(a.status)} />}

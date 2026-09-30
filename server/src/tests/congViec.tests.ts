@@ -506,14 +506,14 @@ export async function runCongViecTests(t: YThucTestKit) {
     return { status: res.status, json };
   };
 
-  await checkAsync('PR-Ra Q2 · /my-work?nguoi={X} (qua HTTP, QL): mọi khoá score/verify của X nằm trong khoá của "tat-ca"', async () => {
+  await checkAsync('PR-Ra Q2 · /my-work?nguoi={X} (qua HTTP, QL): mọi khoá score/cause của X nằm trong khoá của "tat-ca"', async () => {
     const tatCaRes = await goiHttp(P.mbManager.userId, 'GET', '/my-work?nguoi=tat-ca');
     assert(tatCaRes.status === 200, `tat-ca: ${tatCaRes.status}`);
-    const tatCaKeys = new Set(tatCaRes.json.items.filter((i: any) => i.group === 'score' || i.group === 'verify').map((i: any) => i.key));
+    const tatCaKeys = new Set(tatCaRes.json.items.filter((i: any) => i.group === 'score' || i.group === 'cause').map((i: any) => i.key));
     const xRes = await goiHttp(P.mbManager.userId, 'GET', `/my-work?nguoi=${gvMB.userId}`);
     assert(xRes.status === 200, `nguoi=X: ${xRes.status}`);
-    const xItems = xRes.json.items.filter((i: any) => i.group === 'score' || i.group === 'verify');
-    assert(xItems.length > 0, 'GV X phải có ít nhất một dòng score/verify');
+    const xItems = xRes.json.items.filter((i: any) => i.group === 'score' || i.group === 'cause');
+    assert(xItems.length > 0, 'GV X phải có ít nhất một dòng score/cause');
     for (const it of xItems) assert(tatCaKeys.has(it.key), `Khoá ${it.key} của X không nằm trong "tat-ca"`);
   });
 
@@ -551,6 +551,18 @@ export async function runCongViecTests(t: YThucTestKit) {
      * thể gom/nhóm dòng khác cách truy vấn đối chứng ở trên tính. Lấy dòng THẬT SỰ myWork trả về
      * (bất kỳ nhóm nào) mà lớp của nó thuộc Bãi Cháy — đúng cái cần thử: chi nhánh của DÒNG.
      */
+    /* PR-LT2a: nhóm "verify" (tín hiệu chờ xác minh) đã bỏ — dựng một Case tự tạo chờ nguyên nhân ở lớp Bãi Cháy của giáo viên này để có dòng "cause" của BC. */
+    {
+      const nowBc = new Date().toISOString();
+      const sidBc = Number(conn.prepare(
+        `INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES ('PISA-RaBC', 'Học viên RaBC', 'hoc vien rabc', ?, 'active', ?)`,
+      ).run(bcBranchId, nowBc).lastInsertRowid);
+      conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', '2026-07-27', ?)`).run(sidBc, gvMbBc.classId, nowBc);
+      const caseBc = Number(conn.prepare(
+        `INSERT INTO sos_cases (student_id, topic, category, origin_kind, detected_at, status, owner_user_id, han_xac_nhan, created_at) VALUES (?, 'speaking', 'speaking', 'mock', ?, 'open', ?, ?, ?)`,
+      ).run(sidBc, TODAY, gvMbBc.principal.userId, TODAY, nowBc).lastInsertRowid);
+      conn.prepare(`INSERT INTO case_interventions (case_id, kind, description, status, needs_approval, preset, created_at) VALUES (?, 'tutor', 'PA chờ', 'planned', 0, 1, ?)`).run(caseBc, nowBc);
+    }
     const bcItemsRes = await goiHttp(gvMbBc.principal.userId, 'GET', '/my-work');
     const bcItem = (bcItemsRes.json.items as any[]).find((i: any) => {
       if (i.classId == null) return false;
