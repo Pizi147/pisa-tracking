@@ -9822,6 +9822,9 @@ await runPrSangTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 // ==================================================================== PR-S4F (sửa sau rà cuối đợt 4)
 const { runPrS4fTests } = await import('./prS4f.tests.ts');
 await runPrS4fTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== PR-GV (hồ sơ giáo viên)
+const { runPrGvTests } = await import('./prGv.tests.ts');
+await runPrGvTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

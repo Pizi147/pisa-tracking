@@ -445,6 +445,8 @@ const rows = o.map((d, i) => ({ ...goc.get(d.attemptId)!, id: d.attemptId * 10 +
 | Ngày | Task | Ghi chú (lệch kế hoạch · dòng mã thật · 🛑 · quyết định) |
 |---|---|---|
 | 30/09 | planning | Viết lại theo Q30-5/Q30-6: bỏ KPI tháng (Task 1–3 cũ, góc Phân tích › Giáo viên, sổ chỉ số); hồ sơ 5 khối từ dữ liệu có sẵn; bảng GV chi nhánh thay bảng cũ. Dòng mã đối chiếu `origin/main` 36be838e (S4F #135 đã merge) |
+| 30/09 | 0 | Session code (Sonnet 5.5 — không phải Fable 5.1/Opus 5.5 như bảng điều hành; commit ghi đúng model thật). Dòng mã đối chiếu khớp kế hoạch (lệch 0). LT2a/LT2b/PR-CT **chưa merge** khi bắt đầu. Mốc B = **1821 + 25** phép kiểm (main c1e24a31) |
+| 30/09 | 1 | `hoSoGiaoVien.ts` + `prGv.tests.ts` (3 phép kiểm); check 1824 + 25 |
 
 ## Chủ sản phẩm / planning chốt 30/09 (thắng các chỗ lệch trong kế hoạch)
 
