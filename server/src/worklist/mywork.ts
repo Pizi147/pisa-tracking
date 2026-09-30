@@ -14,6 +14,8 @@ import { allProgrammes } from '../normal/regular.ts';
 import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
 import { classAlerts } from '../classes/schedule.ts';
 import { demChuaLoTrinh } from '../classes/loTrinhTiep.ts';
+import { viecBanGiao } from '../classes/banGiao.ts';
+import { demChuaCoLenh } from '../classes/lenhChuyen.ts';
 import { myMgmtTasks } from './mgmttasks.ts';
 import { listSignals, type SignalAction } from '../cases/signals.ts';
 import { NOT_UNCONFIRMED_PRESET, UNCONFIRMED_PRESET, awaitingCauseCaseIds } from '../cases/sosState.ts';
@@ -116,7 +118,9 @@ export type WorkGroupKey =
   | 'verify' | 'cause' | 'xac_nhan_pa' | 'score' | 'no_plan' | 'result'
   | 'no_owner' | 'placement' | 'next_step' | 'missing_data' | 'mgmt'
   /* PR-YT4 (K5 §3 dòng 6–8): việc Ý thức THẬT có hạn — thay nhắc mềm W01–W06. */
-  | 'yt_xu_ly' | 'yt_xem' | 'yt_thuc_hien';
+  | 'yt_xu_ly' | 'yt_xem' | 'yt_thuc_hien'
+  /* PR-CT (Q30-2): bàn giao khi có lệnh chuyển lớp — một việc mỗi lớp (GVCN), mỗi (lớp, môn) (GVBM). */
+  | 'ban_giao';
 
 /**
  * Mỗi nhóm có MỘT DÒNG nói rõ nhóm đó nghĩa là gì.
@@ -177,8 +181,8 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
     hint: 'Case đang mở mà chưa ai nhận điều phối. Chọn người phụ trách trước, vì mọi việc sau đó đều treo vào chỗ này.',
   },
   placement: {
-    label: 'Cần xếp lớp tiếp',
-    hint: 'Lớp đã học hết chương trình. Học viên còn đang học phải được xếp lớp tiếp, việc này không tự xảy ra.',
+    label: 'Chuyển lớp cả lớp',
+    hint: 'Lớp tới tuần Cuối khoá mà còn em chưa có lệnh chuyển lớp. Quản lý ra lệnh (lên lớp, học lại, bảo lưu, dừng học) trước hết tuần kết thúc — việc này không tự xảy ra.',
   },
   next_step: {
     label: 'Chưa có lộ trình tiếp theo',
@@ -200,6 +204,10 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   yt_thuc_hien: {
     label: 'Ghi "Đã thực hiện"',
     hint: 'Quản lý đã duyệt đề xuất — ghi ngày đã thực hiện trong 5 ngày kể từ ngày duyệt.',
+  },
+  ban_giao: {
+    label: 'Bàn giao',
+    hint: 'Lớp có lệnh chuyển lớp: GVBM ghi một câu mỗi em cho môn mình (2 ngày), GVCN gom lại, viết nhận xét chung rồi Xác nhận bàn giao (3 ngày, tính cả ngày ra lệnh). Quá hạn thì Quản lý được báo — em vẫn chuyển đúng tuần.',
   },
   mgmt: {
     label: 'Công việc được giao',
@@ -557,15 +565,18 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * Lớp đã hết chương trình thì khác: mỗi ngày trôi qua là mỗi ngày học viên không được học,
    * và việc đó không tự xảy ra.
    */
-  for (const [classId, pr] of classAlerts(
+  /* PR-CT (Q30-4, Q13): từ tuần Cuối khoá, mỗi lớp thường còn em CHƯA CÓ LỆNH chuyển → một việc của Quản lý (chưa quyết = chưa có lệnh). */
+  const tienDoQl = classAlerts(
     (conn
       .prepare(
         `SELECT c.id FROM classes c WHERE c.status = 'active'${f.branchId ? ' AND c.branch_id = ?' : ''}`,
       )
       .all(...(f.branchId ? [f.branchId] : [])) as any[]).map((r) => r.id),
-  )) {
-    if (pr.phase !== 'finished') continue;
-    if (pr.canXepLop === 0) continue;   // đã xếp hết (hoặc đang xếp sau) rồi thì không còn việc gì (Q9)
+  );
+  const chuaCoLenh = demChuaCoLenh([...tienDoQl].filter(([, pr]) => (pr.phase === 'finished' || pr.phase === 'final_week') && pr.programmeCode !== 'FT').map(([id]) => id));
+  for (const [classId, pr] of tienDoQl) {
+    const nChua = chuaCoLenh.get(classId) ?? 0;
+    if (nChua === 0) continue;
     if (!can(p, PERMISSIONS.CLASS_EDIT, { classId })) continue;
     const cls = conn.prepare('SELECT code FROM classes WHERE id = ?').get(classId) as any;
     items.push({
@@ -573,14 +584,14 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       studentId: null, studentName: `Lớp ${cls.code}`,
       classId, classCode: cls.code,
       attemptId: null, attemptNo: null, caseId: null, level: null,
-      contextLabel: `Hết ${pr.totalWeeks} tuần`, count: pr.canXepLop,
-      reason: `${pr.canXepLop} học viên chưa có hướng học tiếp`,
-      tieuDe: 'Xếp lớp tiếp',
-      actionLabel: 'Xếp lớp tiếp theo',
+      contextLabel: pr.phase === 'finished' ? `Hết ${pr.totalWeeks} tuần` : `Tuần Cuối khoá`, count: nChua,
+      reason: `${nChua} em chưa có lệnh chuyển`,
+      tieuDe: 'Chuyển lớp cả lớp',
+      actionLabel: 'Chuyển lớp cả lớp',
       href: `/hoc-vien/lop/${classId}?viec=chuyen-tiep`,
       /* Việc của cả lớp, không của riêng ai — nên không gán người phụ trách. */
       ownerId: null, owner: null, mine: false,
-      due: null, statusLabel: 'Chờ xếp lớp',
+      due: null, statusLabel: 'Chờ lệnh chuyển lớp',
     });
   }
 
@@ -625,6 +636,31 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           due: null, statusLabel: pr.phase === 'finished' ? 'Đã hết khoá' : 'Sắp hết khoá',
         });
       }
+    }
+  }
+
+  // ------------------------------------------------- 2e. bàn giao (PR-CT, Q30-2): GVCN một việc mỗi lớp nguồn, GVBM một việc mỗi (lớp, môn)
+  for (const v of viecBanGiao(p.userId, f.branchId)) {
+    const han = v.han || null;
+    const chung = {
+      group: 'ban_giao' as const, urgency: urgencyOf(han, today), studentId: null, studentName: `Lớp ${v.code}`, classId: v.lopId, classCode: v.code,
+      attemptId: null, attemptNo: null, caseId: null, level: null, ownerId: p.userId, owner: null, mine: true, due: han,
+    };
+    if (v.loai === 'gvcn') {
+      items.push({
+        ...chung, key: `ban_giao:${v.lopId}`, count: v.n,
+        contextLabel: `GVCN · ${v.daXacNhan}/${v.n} đã xác nhận${v.chua.length ? ` · chờ môn ${v.chua.join(', ')}` : ''}`,
+        reason: `${v.n - v.daXacNhan} em chưa xác nhận bàn giao`,
+        tieuDe: v.motEm ? `Bàn giao ${v.motEm.ten}${v.motEm.lopDich ? ` → ${v.motEm.lopDich}` : ''}` : `Bàn giao ${v.n} em · ${v.code}`,
+        actionLabel: 'Bàn giao', href: `/hoc-vien/lop/${v.lopId}?viec=ban-giao`, statusLabel: 'Chờ bàn giao',
+      });
+    } else {
+      items.push({
+        ...chung, key: `ban_giao_mon:${v.lopId}:${v.mon}`, count: v.n - v.daGhi,
+        contextLabel: `GVBM · ${v.daGhi}/${v.n} em`, reason: `${v.n - v.daGhi} em chưa có câu bàn giao môn ${v.monNgan}`,
+        tieuDe: `Bàn giao môn ${v.monNgan} · ${v.code}`, actionLabel: `Bàn giao môn ${v.monNgan}`,
+        href: `/hoc-vien/lop/${v.lopId}?viec=ban-giao&mon=${v.mon}`, statusLabel: 'Chờ bàn giao',
+      });
     }
   }
 
@@ -1015,7 +1051,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    */
   const order: WorkGroupKey[] = [
     'verify', 'cause', 'xac_nhan_pa', 'score', 'no_plan', 'result', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien',
-    'placement', 'next_step', 'no_owner', 'mgmt', 'missing_data',
+    'placement', 'next_step', 'ban_giao', 'no_owner', 'mgmt', 'missing_data',
   ];
   const weight = (u: WorkUrgency) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
 

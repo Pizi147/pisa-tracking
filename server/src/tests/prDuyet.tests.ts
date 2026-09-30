@@ -307,11 +307,12 @@ export async function runPrDuyetTests(t: YThucTestKit) {
     const rev = conn.prepare('SELECT * FROM cycle_target_revisions WHERE cycle_id = ? ORDER BY id DESC LIMIT 1').get(cyc.id) as any;
     assert(cycCua(sid).target_score === 7 && rev.reason === 'PH đăng ký thi 12/2026, cần 7.0' && rev.actor_user_id === P.mbManager.userId, JSON.stringify(rev));
   });
-  check('DUYET (6) · Đề xuất sửa lớp: Duyệt không ghi chú → 400; có ghi chú → Đã duyệt, KHÔNG tự chuyển lớp; ⋮ có mục Đề xuất sửa cho GV không có cycle.edit', () => {
+  check('DUYET (6) · Đề xuất sửa lịch MT (không tự áp): Duyệt không ghi chú → 400; có ghi chú → Đã duyệt, KHÔNG tự đổi gì; trường "lớp" bị bỏ (PR-CT: dùng Đề xuất chuyển lớp → 400); ⋮ có mục Đề xuất sửa cho GV không có cycle.edit', () => {
     const { sid } = hvMoi();
     const lopTruoc = (conn.prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active'`).get(sid) as any).class_id;
-    const { id } = deXuat6.guiDeXuatSua(P.coreTeacher, sid, { truong: 'lop', moi: 'Chuyển sang MB FT 102', lyDo: 'Em theo kịp lớp nhanh hơn, PH đồng ý' });
-    assert(maLoi(() => yc.duyetYeuCau(P.mbManager, id)) === 400, 'duyệt lớp không ghi chú');
+    assert(maLoi(() => deXuat6.guiDeXuatSua(P.coreTeacher, sid, { truong: 'lop', moi: 'Chuyển sang MB FT 102', lyDo: 'Em theo kịp lớp nhanh hơn, PH đồng ý' })) === 400, 'trường lớp đã bỏ');
+    const { id } = deXuat6.guiDeXuatSua(P.coreTeacher, sid, { truong: 'lich-mt', moi: 'Dời MT2 sang tuần sau', lyDo: 'Em theo kịp lớp nhanh hơn, PH đồng ý' });
+    assert(maLoi(() => yc.duyetYeuCau(P.mbManager, id)) === 400, 'duyệt không ghi chú');
     yc.duyetYeuCau(P.mbManager, id, { ghiChu: 'Đã xử lý' });
     const sau = (conn.prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active'`).get(sid) as any).class_id;
     assert(theCua('sua_thong_tin', sid).trang_thai === 'duyet' && sau === lopTruoc, 'tự chuyển lớp');

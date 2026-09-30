@@ -14,7 +14,7 @@ export const PHAN_LOAI_LABEL: Record<PhanLoai, string> = {
 };
 
 /** Mỗi PR thêm khoá của mình VÀO CUỐI mảng này (SOS: 'khong_theo_doi'; YT4: 'y_thuc' + 'bao_len_y_thuc' — hai khoá; LT2: 'ke_hoach_bo_tro', 'quyet_dinh_cuoi_khoa', 'bao_len_mini_test'). */
-export const LOAI_YEU_CAU = ['de_xuat_pa', 'xin_y_kien', 'lich_thi', 'sua_thong_tin', 'bao_len_nguyen_nhan', 'khong_theo_doi', 'y_thuc', 'bao_len_y_thuc'] as const;
+export const LOAI_YEU_CAU = ['de_xuat_pa', 'xin_y_kien', 'lich_thi', 'sua_thong_tin', 'bao_len_nguyen_nhan', 'khong_theo_doi', 'y_thuc', 'bao_len_y_thuc', 'de_xuat_chuyen_lop', 'bao_len_ban_giao', 'bao_len_chua_lenh'] as const;
 export type LoaiYeuCau = (typeof LOAI_YEU_CAU)[number];
 
 /** `da_tra_loi` chỉ của Xin ý kiến; `tu_dong` = hệ thống tự đóng (đối tượng không còn ý nghĩa). */
@@ -46,6 +46,10 @@ export const LOAI_YC_META: Record<LoaiYeuCau, LoaiYcMeta> = {
   y_thuc: { phanLoai: 'y-thuc', nhan: 'Xử lý Ý thức cần duyệt', kieuNut: 'duyet-tu-choi', hanNgay: HAN_DUYET_NGAY, hangLoat: false },
   /* PR-YT4 (V4-4, V4-5, K3-37, Q9): một thẻ mỗi em — không duyệt, QL biết và nhắc. */
   bao_len_y_thuc: { phanLoai: 'bao-len', nhan: 'Ý thức quá hạn', kieuNut: 'nhac', hanNgay: null, hangLoat: false },
+  /* PR-CT (Q30-1, Q30-2, Q30-4): GVCN đề xuất chuyển lớp (5 ngày) · Báo lên bàn giao quá hạn 3 ngày (một thẻ mỗi lớp nguồn) · Báo lên lớp hết khoá còn em chưa có lệnh. */
+  de_xuat_chuyen_lop: { phanLoai: 'thong-tin-hv', nhan: 'Đề xuất chuyển lớp', kieuNut: 'duyet-tu-choi', hanNgay: 5, hangLoat: false },
+  bao_len_ban_giao: { phanLoai: 'bao-len', nhan: 'Bàn giao quá hạn', kieuNut: 'nhac', hanNgay: null, hangLoat: false },
+  bao_len_chua_lenh: { phanLoai: 'bao-len', nhan: 'Lớp hết khoá còn em chưa có lệnh', kieuNut: 'nhac', hanNgay: null, hangLoat: false },
 };
 
 export function laPhanLoai(x: unknown): x is PhanLoai {

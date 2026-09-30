@@ -312,3 +312,68 @@ export function nhacGvbm(p: Principal, lenhId: number, mon: string): { soNguoi: 
   }
   return { soNguoi: dich.length };
 }
+
+// ==================================================================== VIỆC (Công việc › Vận hành) — gộp theo lớp, đọc theo lô
+
+export type ViecBanGiao =
+  | { loai: 'gvcn'; lopId: number; code: string; n: number; daXacNhan: number; chua: string[]; han: string; motEm: { ten: string; lopDich: string | null } | null }
+  | { loai: 'gvbm'; lopId: number; code: string; mon: string; monNgan: string; daGhi: number; n: number; han: string };
+
+/**
+ * Việc bàn giao của MỘT người: GVCN — MỘT việc mỗi lớp nguồn có lệnh (không `huy`, có phiếu, còn phiếu chưa xác nhận); GVBM — MỘT việc mỗi (lớp,
+ * môn) còn em chưa ghi. Ba câu đọc cho mọi lớp của người xem (phân công · lệnh · dòng môn), không hỏi lại theo em.
+ */
+export function viecBanGiao(userId: number, branchId?: number | null): ViecBanGiao[] {
+  const conn = db();
+  const pc = conn.prepare(
+    `SELECT ta.class_id, ta.is_core, ta.skill, c.code, c.programme_code AS ct FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
+      WHERE ta.user_id = ? AND ta.status = 'active'${branchId ? ' AND c.branch_id = ?' : ''}`,
+  ).all(...(branchId ? [userId, branchId] : [userId])) as any[];
+  if (!pc.length) return [];
+  const lop = new Map<number, { code: string; ct: string | null; gvcn: boolean; kyNang: Set<string> }>();
+  for (const r of pc) {
+    const x = lop.get(r.class_id) ?? { code: r.code as string, ct: (r.ct ?? null) as string | null, gvcn: false, kyNang: new Set<string>() };
+    if (r.is_core) x.gvcn = true;
+    if (r.skill) x.kyNang.add(r.skill);
+    lop.set(r.class_id, x);
+  }
+  const ids = [...lop.keys()];
+  const lenh: any[] = [];
+  theoLo(ids, (lo, ph) => {
+    lenh.push(...conn.prepare(
+      `SELECT l.id, l.lop_nguon_id, l.han_gvbm, l.han_gvcn, l.xac_nhan_luc, s.full_name, d.code AS dich
+         FROM lenh_chuyen_lop l JOIN students s ON s.id = l.student_id LEFT JOIN classes d ON d.id = l.lop_dich_id
+        WHERE l.lop_nguon_id IN (${ph}) AND l.trang_thai != 'huy' AND l.huong != 'dung_hoc' ORDER BY s.full_name`,
+    ).all(...lo) as any[]);
+  });
+  if (!lenh.length) return [];
+  const daGhi = new Set<string>();   // `${lenhId}:${mon}`
+  theoLo(lenh.map((l) => l.id as number), (lo, ph) => {
+    for (const r of conn.prepare(`SELECT lenh_id, mon FROM ban_giao_mon WHERE lenh_id IN (${ph})`).all(...lo) as any[]) daGhi.add(`${r.lenh_id}:${r.mon}`);
+  });
+  const out: ViecBanGiao[] = [];
+  for (const [lopId, x] of lop) {
+    const cua = lenh.filter((l) => l.lop_nguon_id === lopId);
+    const chuaXn = cua.filter((l) => !l.xac_nhan_luc);
+    if (!chuaXn.length) continue;
+    const mons = boMonLich(x.ct);
+    if (x.gvcn) {
+      const thieu = mons.filter((m) => chuaXn.some((l) => !daGhi.has(`${l.id}:${m}`))).map((m) => tenMonNgan(x.ct, m));
+      out.push({
+        loai: 'gvcn', lopId, code: x.code, n: cua.length, daXacNhan: cua.length - chuaXn.length, chua: thieu,
+        han: chuaXn.map((l) => l.han_gvcn as string).filter(Boolean).sort()[0] ?? '',
+        motEm: cua.length === 1 ? { ten: cua[0].full_name, lopDich: cua[0].dich ?? null } : null,
+      });
+    }
+    for (const m of mons) {
+      if (!kyNangGoiY(x.ct, m).some((k) => x.kyNang.has(k))) continue;
+      const chua = chuaXn.filter((l) => !daGhi.has(`${l.id}:${m}`));
+      if (!chua.length) continue;
+      out.push({
+        loai: 'gvbm', lopId, code: x.code, mon: m, monNgan: tenMonNgan(x.ct, m), daGhi: chuaXn.length - chua.length, n: chuaXn.length,
+        han: chua.map((l) => l.han_gvbm as string).filter(Boolean).sort()[0] ?? '',
+      });
+    }
+  }
+  return out;
+}

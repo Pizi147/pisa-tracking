@@ -126,6 +126,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/cham' },
   /* PR-LT, Task 5: GVCN_THUONG đọc được kế hoạch Chuyển tiếp lớp (canEdit=false ở đó), không sửa được (chỉ QL/QT gọi POST). */
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/transition' },
+  /* PR-CT (Q30-2): phiếu bàn giao cả lớp nguồn — số câu KHÔNG đổi theo số em (phép kiểm CT 5h). */
+  { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/lenh-chuyen/ban-giao?lop={lopThuong}' },
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/cases?classId={lopThuong}' },
 
   // ---------------------------------------------------------------- Lịch Test (PR-UX1: gộp Cần chấm)
@@ -272,23 +274,23 @@ export const TRAN: Record<string, number> = {
   'QT /metrics/hv-can-ho-tro-2-lan-chua-case': 32,
   'QL /metrics/hv-bo-qua-van-can-ho-tro': 32,
   'QT /metrics/hv-bo-qua-van-can-ho-tro': 32,
-  'GVCN /my-work': 63,
-  'GVBM /my-work': 62,
-  'GVCN_THUONG /my-work': 63,
+  'GVCN /my-work': 66,   // PR-CT Task 6: 63 → 66
+  'GVBM /my-work': 64,   // PR-CT Task 6: 62 → 64
+  'GVCN_THUONG /my-work': 66,   // PR-CT Task 6: 63 → 66
   /* PR-Ra: trang "Công việc" dùng lại /my-work cho QL·QT, cộng chế độ nguoi=tat-ca/{gv} (Q1–Q2). */
-  'QL /my-work': 62,
+  'QL /my-work': 63,   // PR-CT Task 6: 62 → 63
   'QT /my-work': 68,
   'QL /my-work?nguoi=tat-ca': 75,
-  'QT /my-work?nguoi=tat-ca': 75,
+  'QT /my-work?nguoi=tat-ca': 77,   // PR-CT Task 6: 75 → 77
   'GVCN /my-work?nguoi=tat-ca': 19,
-  'QL /my-work?nguoi=7': 74,
+  'QL /my-work?nguoi=7': 75,   // PR-CT Task 6: 74 → 75
   /* PR-DUYET: đo khi hộp đã có thẻ thật (Task 4) — trần max(sau+10, ⌈sau×1,3⌉). */
-  'QL /yeu-cau?hop=cho-duyet': 30,   // PR-YT4 sau khi gộp PR-SOS: thẻ khong_theo_doi + bao_len_y_thuc cùng nạp (đo 29, +3,6%); PR-HVL (10): demo H1 thêm một thẻ "không theo dõi" chờ duyệt → đo 30
-  'QT /yeu-cau?hop=cho-duyet': 29,
+  'QL /yeu-cau?hop=cho-duyet': 32,   // PR-CT Task 6: 30 → 32   // PR-YT4 sau khi gộp PR-SOS: thẻ khong_theo_doi + bao_len_y_thuc cùng nạp (đo 29, +3,6%); PR-HVL (10): demo H1 thêm một thẻ "không theo dõi" chờ duyệt → đo 30
+  'QT /yeu-cau?hop=cho-duyet': 32,   // PR-CT Task 6: 29 → 32
   'GVCN /yeu-cau?hop=cho-duyet': 17,
-  'QL /yeu-cau?hop=cho-duyet&xem=da-xu-ly': 27,   // PR-SOS: loại thẻ khong_theo_doi thêm câu nạp (đo 23); + thẻ Ý thức PR-YT4 (đo 27)
-  'QT /yeu-cau?hop=cho-duyet&xem=da-xu-ly': 26,   // PR-SOS: loại thẻ khong_theo_doi thêm câu nạp (đo 22)
-  'GVCN /yeu-cau?hop=cua-toi': 25,
+  'QL /yeu-cau?hop=cho-duyet&xem=da-xu-ly': 29,   // PR-CT Task 6: 27 → 29   // PR-SOS: loại thẻ khong_theo_doi thêm câu nạp (đo 23); + thẻ Ý thức PR-YT4 (đo 27)
+  'QT /yeu-cau?hop=cho-duyet&xem=da-xu-ly': 28,   // PR-CT Task 6: 26 → 28   // PR-SOS: loại thẻ khong_theo_doi thêm câu nạp (đo 22)
+  'GVCN /yeu-cau?hop=cua-toi': 26,   // PR-CT Task 6: 25 → 26
   'GVBM /yeu-cau?hop=cua-toi': 21,
   'QL /yeu-cau/dem': 25,
   'GVCN /yeu-cau/dem': 21,
@@ -320,17 +322,17 @@ export const TRAN: Record<string, number> = {
   'QT /classes?branchId=1': 35,
   /* PR-HVL (3): mốc 51 (QT 49) + việc tiếp theo/Ý thức/thẻ chờ duyệt theo lô đo 59 (QT 57) — trần kế hoạch = mốc + 12. */
   /* PR-S4F #5: +3 câu — `quetYeuCau` trước khi đếm thẻ chờ duyệt (badge = hộp); nhớ theo request nên chỉ một lần. */
-  'QL /hoc-vien-lop': 66,
-  'GVCN /hoc-vien-lop': 66,
-  'GVBM /hoc-vien-lop': 66,
-  'GVCN_THUONG /hoc-vien-lop': 66,
+  'QL /hoc-vien-lop': 68,   // PR-CT Task 6: 66 → 68
+  'GVCN /hoc-vien-lop': 68,   // PR-CT Task 6: 66 → 68
+  'GVBM /hoc-vien-lop': 68,   // PR-CT Task 6: 66 → 68
+  'GVCN_THUONG /hoc-vien-lop': 68,   // PR-CT Task 6: 66 → 68
   'QT /hoc-vien-lop': 85,
-  'QL /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 66,
-  'QT /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 64,
-  'QL /classes/3/overview': 56,   // PR-CT: +1 câu quét lệnh chuyển lớp đến hạn
-  'GVCN /classes/3/overview': 56,   // PR-CT: +1 câu quét lệnh chuyển lớp đến hạn
-  'GVBM /classes/3/overview': 56,   // PR-CT: +1 câu quét lệnh chuyển lớp đến hạn
-  'GVCN_THUONG /classes/3/overview': 56,   // PR-CT: +1 câu quét lệnh chuyển lớp đến hạn
+  'QL /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 68,   // PR-CT Task 6: 66 → 68
+  'QT /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 66,   // PR-CT Task 6: 64 → 66
+  'QL /classes/3/overview': 58,   // PR-CT Task 6: 56 → 58   // PR-CT: +1 câu quét lệnh chuyển lớp đến hạn
+  'GVCN /classes/3/overview': 58,   // PR-CT Task 6: 56 → 58   // PR-CT: +1 câu quét lệnh chuyển lớp đến hạn
+  'GVBM /classes/3/overview': 58,   // PR-CT Task 6: 56 → 58   // PR-CT: +1 câu quét lệnh chuyển lớp đến hạn
+  'GVCN_THUONG /classes/3/overview': 58,   // PR-CT Task 6: 56 → 58   // PR-CT: +1 câu quét lệnh chuyển lớp đến hạn
   'QT /classes/3/overview': 55,   // PR-S4F #5: +3 câu quét thẻ chờ duyệt; PR-CT +1 câu quét lệnh đến hạn
   /* PR-HVL (2): mốc 46 (QT 43) + Case mở theo lô (`chiTietCaseMo`) đo 50 (QT 47) — trần kế hoạch = mốc + 6. */
   /* PR-HVL (5): `/classes/:id/can-ho-tro` đo 25 (QT 22) = `/cases?classId=` 17 (QT 14) + 8 — đúng trần kế hoạch. */
@@ -496,6 +498,10 @@ export const TRAN: Record<string, number> = {
   'QL /classes/5/transition': 36,
   'QT /classes/5/transition': 35,
   'GVCN_THUONG /classes/5/transition': 36,
+  /* PR-CT (Task 6): phiếu bàn giao cả lớp nguồn — đo 14 / 13 / 13 câu (chưa có lệnh) → trần max(sau+10, ⌈sau×1.3⌉). Task 12 đo lại với bộ demo có lệnh. */
+  'QL /lenh-chuyen/ban-giao?lop=6': 24,
+  'QT /lenh-chuyen/ban-giao?lop=6': 23,
+  'GVCN_THUONG /lenh-chuyen/ban-giao?lop=6': 23,
   'QL /students/1/lich-su-lop': 32,
   'QT /students/1/lich-su-lop': 30,
   'GVCN /students/1/lich-su-lop': 34,

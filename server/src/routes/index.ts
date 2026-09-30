@@ -1358,6 +1358,13 @@ api.post('/students/:id/de-xuat-sua', requireAuth, wrap((req) => {
   return deXuatSuaSvc.guiDeXuatSua(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
+/** PR-CT (Q30-1, Q14): GVCN đề xuất chuyển lớp — thẻ Thông tin HV ở hộp Chờ duyệt; Quản lý duyệt = ra lệnh. */
+api.post('/students/:id/de-xuat-chuyen-lop', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = (req.body ?? {}) as Record<string, any>;
+  return lenhSvc.guiDeXuatChuyenLop(principalOf(req), pInt(req, 'id'), { toClassId: b.toClassId ? Number(b.toClassId) : null, tuan: typeof b.tuan === 'string' ? b.tuan : null, lyDo: b.lyDo });
+}));
+
 /** Đổi mục tiêu: có hiệu lực từ ngày ghi trở đi, KHÔNG chấm lại các lượt đã chốt. */
 api.post('/cycles/:id/target-revision', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();

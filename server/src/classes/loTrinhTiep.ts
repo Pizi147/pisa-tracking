@@ -169,6 +169,7 @@ export function demChuaLoTrinh(classIds: number[]): Map<number, number> {
         WHERE e.class_id IN (${ph}) AND e.status = 'active'
           AND s.status = 'active' AND s.archived_at IS NULL
           AND (lt.id IS NULL OR lt.huong = 'chua_ro')
+          AND NOT EXISTS (SELECT 1 FROM lenh_chuyen_lop lc WHERE lc.student_id = e.student_id AND lc.trang_thai = 'cho')   -- PR-CT: em đã có lệnh không còn "chưa có hướng"
         GROUP BY e.class_id`,
     )
     .all(...classIds) as any[]) {

@@ -714,4 +714,178 @@ export async function runPrCtTests(t: YThucTestKit) {
     });
   });
 
+  // ------------------------------------------------------------------ khối 6 · việc, Báo lên, Đề xuất chuyển lớp (Task 6)
+  console.log('\nPR-CT · Việc bàn giao gộp theo lớp, Báo lên, Đề xuất chuyển lớp');
+  const yc: any = await import('../duyet/yeuCau.ts');
+  const { myWork } = await import('../worklist/mywork.ts');
+  const viecBg = (who: any, lop: number) => ((myWork(who) as any).items ?? []).filter((i: any) => i.group === 'ban_giao' && i.classId === lop);
+  const theBl = (loai: string, lop: number) => get(`SELECT * FROM yeu_cau_duyet WHERE loai = ? AND doi_tuong_id = ? ORDER BY id DESC LIMIT 1`, loai, lop);
+  const n6 = lopMoi({ kind: 'FOU', tuanHienTai: 8 });
+  const d6 = lopMoi({ kind: 'BE', tuanHienTai: 1 });
+  ganGv(n6, GV[0].userId, null, true);
+  ganGv(n6, GV[1].userId, 'listening', false);
+  ganGv(n6, GV[2].userId, 'speaking', false);
+  const g6 = loadPrincipal(GV[0].userId), l6 = loadPrincipal(GV[1].userId), s6 = loadPrincipal(GV[2].userId);
+  const em6 = Array.from({ length: 7 }, () => hocVien(n6, 'FOU', false).sid);
+  ra(P.mbManager, n6, 'cuoi-khoa', em6.map((s) => dongCua(s, 'len_lop', d6)));
+
+  check('CT (6a) · GVCN: MỘT việc "Bàn giao 7 em · lớp" cho cả lớp; GVBM: MỘT việc mỗi môn; hạn theo <Han> (GVCN 3 ngày, GVBM 2 ngày, tính cả ngày ra lệnh)', () => {
+    const cn = viecBg(g6, n6);
+    assert(cn.length === 1 && cn[0].tieuDe === `Bàn giao 7 em · ${get('SELECT code FROM classes WHERE id = ?', n6).code}`, JSON.stringify(cn.map((i: any) => i.tieuDe)));
+    assert(cn[0].key === `ban_giao:${n6}` && cn[0].due === d.hanBanGiao(TODAY).gvcn && cn[0].contextLabel.startsWith('GVCN · 0/7 đã xác nhận') && cn[0].href === `/hoc-vien/lop/${n6}?viec=ban-giao`, JSON.stringify(cn[0]));
+    const bm = viecBg(l6, n6);
+    assert(bm.length === 1 && bm[0].key === `ban_giao_mon:${n6}:listening` && bm[0].due === d.hanBanGiao(TODAY).gvbm && bm[0].contextLabel === 'GVBM · 0/7 em' && bm[0].href.endsWith('&mon=listening'), JSON.stringify(bm));
+    assert(bm[0].tieuDe.startsWith('Bàn giao môn '), bm[0].tieuDe);
+    assert(viecBg(P.mbManager, n6).length === 0 && viecBg(loadPrincipal(GV[4].userId), n6).length === 0, 'QL và GV không dạy lớp: không có việc bàn giao');
+  });
+  check('CT (6b) · việc GVBM biến mất khi ghi đủ 7 em; việc GVCN biến mất khi xác nhận hết; lệnh "huy" → việc tự bớt', () => {
+    const lenhs = em6.map((s) => lenhCua(s));
+    for (const l of lenhs.slice(0, 6)) bg.ghiMon(l6, l.id, 'listening', 'Nghe ổn.');
+    assert(viecBg(l6, n6)[0].contextLabel === 'GVBM · 6/7 em', viecBg(l6, n6)[0].contextLabel);
+    bg.ghiMon(l6, lenhs[6].id, 'listening', 'Nghe ổn.');
+    assert(viecBg(l6, n6).length === 0, 'ghi đủ → hết việc');
+    assert(viecBg(g6, n6)[0].contextLabel.includes('chờ môn'), viecBg(g6, n6)[0].contextLabel);
+    lenh.huyLenh(P.mbManager, lenhs[6].id, 'Em ở lại lớp');
+    assert(viecBg(g6, n6)[0].tieuDe.includes('6 em'), `huỷ 1 lệnh → còn 6: ${viecBg(g6, n6)[0].tieuDe}`);
+    for (const l of lenhs.slice(0, 6)) bg.xacNhanBanGiao(g6, l.id, 'Em học đều, cần nhắc nộp bài đúng hạn.');
+    assert(viecBg(g6, n6).length === 0, 'xác nhận hết → hết việc');
+  });
+  check('CT (6c) · một em: việc ghi rõ "Bàn giao {tên} → {lớp đích}"', () => {
+    const n = lopMoi({ kind: 'FOU', tuanHienTai: 8 });
+    ganGv(n, GV[3].userId, null, true);
+    const e = hocVien(n, 'FOU', false).sid;
+    ra(P.mbManager, n, 'cuoi-khoa', [dongCua(e, 'len_lop', d6)]);
+    const v = viecBg(loadPrincipal(GV[3].userId), n);
+    assert(v.length === 1 && /^Bàn giao Hoc vien CT\d+ → /.test(v[0].tieuDe), v[0]?.tieuDe);
+  });
+  check('CT (6d) · Báo lên bàn giao: sinh đúng NGÀY THỨ 4 (quá han_gvcn), một thẻ mỗi lớp, ownerId = GVCN, đóng khi xác nhận hết', () => {
+    const n = lopMoi({ kind: 'FOU', tuanHienTai: 8 });
+    ganGv(n, GV[4].userId, null, true);
+    const gvn = loadPrincipal(GV[4].userId);
+    const [a, b] = [hocVien(n, 'FOU', false).sid, hocVien(n, 'FOU', false).sid];
+    ra(P.mbManager, n, 'cuoi-khoa', [dongCua(a, 'len_lop', d6), dongCua(b, 'len_lop', d6)]);
+    const han = d.hanBanGiao(TODAY).gvcn;
+    yc.quetYeuCau(han);
+    assert(!theBl('bao_len_ban_giao', n), 'ngày thứ 3 (còn trong hạn): chưa có thẻ');
+    yc.quetYeuCau(t.addDays(han, 1));
+    yc.quetYeuCau(t.addDays(han, 1));
+    const the = theBl('bao_len_ban_giao', n);
+    assert(the && the.trang_thai === 'cho' && the.phan_loai === 'bao-len' && the.han_duyet === han, JSON.stringify(the));
+    assert(JSON.parse(the.du_lieu).ownerId === GV[4].userId && get(`SELECT COUNT(*) n FROM yeu_cau_duyet WHERE loai = 'bao_len_ban_giao' AND doi_tuong_id = ?`, n).n === 1, 'một thẻ mỗi lớp, chủ = GVCN');
+    bg.xacNhanBanGiao(gvn, lenhCua(a).id, 'Em học đều, cần nhắc nộp bài đúng hạn.');
+    yc.quetYeuCau(t.addDays(han, 1));
+    assert(theBl('bao_len_ban_giao', n).trang_thai === 'cho', 'còn một em chưa xác nhận → thẻ còn');
+    bg.xacNhanBanGiao(gvn, lenhCua(b).id, 'Em học đều, cần nhắc nộp bài đúng hạn.');
+    yc.quetYeuCau(t.addDays(han, 1));
+    assert(theBl('bao_len_ban_giao', n).trang_thai === 'tu_dong', 'xác nhận hết → thẻ tự đóng');
+    /* hộp Chờ duyệt của QL thấy thẻ Báo lên khi còn treo */
+    const n2 = lopMoi({ kind: 'FOU', tuanHienTai: 8 });
+    ganGv(n2, GV[4].userId, null, true);
+    ra(P.mbManager, n2, 'cuoi-khoa', [dongCua(hocVien(n2, 'FOU', false).sid, 'len_lop', d6)]);
+    conn.prepare('UPDATE lenh_chuyen_lop SET han_gvcn = ? WHERE lop_nguon_id = ?').run(t.addDays(TODAY, -1), n2);
+    const hop = yc.hopChoDuyet(P.mbManager, {});
+    const t2 = hop.the.find((x: any) => x.loai === 'bao_len_ban_giao' && x.lopId === n2);
+    assert(t2 && t2.kieuNut === 'nhac' && t2.tieuDe.startsWith('Bàn giao quá hạn') && t2.duLieu.ownerId === GV[4].userId && t2.dong[0].includes('1 em'), JSON.stringify(t2));
+    lenh.huyLenh(P.mbManager, lenhCua(get('SELECT student_id FROM lenh_chuyen_lop WHERE lop_nguon_id = ?', n2).student_id).id, 'Em ở lại lớp');
+    yc.quetYeuCau(TODAY);
+    assert(theBl('bao_len_ban_giao', n2).trang_thai === 'tu_dong', 'lệnh huỷ → thẻ tự đóng');
+  });
+  check('CT (6e) · Báo lên "Lớp hết khoá còn em chưa có lệnh": sinh khi lớp thường hết tuần kết thúc, một thẻ/lớp, đóng khi đủ lệnh; lớp chưa hết không có', () => {
+    const het = lopMoi({ kind: 'FOU', tuanHienTai: 9 });
+    const chua = lopMoi({ kind: 'FOU', tuanHienTai: 8 });
+    const [h1, h2] = [hocVien(het, 'FOU', false).sid, hocVien(het, 'FOU', false).sid];
+    hocVien(chua, 'FOU', false);
+    yc.quetYeuCau(TODAY);
+    yc.quetYeuCau(TODAY);
+    const the = theBl('bao_len_chua_lenh', het);
+    assert(the && the.trang_thai === 'cho' && !theBl('bao_len_chua_lenh', chua), 'chỉ lớp đã hết');
+    assert(get(`SELECT COUNT(*) n FROM yeu_cau_duyet WHERE loai = 'bao_len_chua_lenh' AND doi_tuong_id = ?`, het).n === 1, 'một thẻ mỗi lớp');
+    ra(P.mbManager, het, 'cuoi-khoa', [dongCua(h1, 'len_lop', d6)]);
+    yc.quetYeuCau(TODAY);
+    assert(theBl('bao_len_chua_lenh', het).trang_thai === 'cho', 'còn 1 em chưa có lệnh');
+    ra(P.mbManager, het, 'cuoi-khoa', [dongCua(h2, 'len_lop', d6)]);
+    yc.quetYeuCau(TODAY);
+    assert(theBl('bao_len_chua_lenh', het).trang_thai === 'tu_dong', 'đủ lệnh → thẻ tự đóng');
+  });
+  check('CT (6f) · việc của Quản lý: từ tuần Cuối khoá đếm em CHƯA CÓ LỆNH ("n em chưa có lệnh chuyển"); GVCN hết đếm em đã có lệnh vào "chưa có lộ trình tiếp theo"', () => {
+    const cuoi = lopMoi({ kind: 'FOU', tuanHienTai: 8 });
+    ganGv(cuoi, GV[3].userId, null, true);
+    const ds = [hocVien(cuoi, 'FOU', false).sid, hocVien(cuoi, 'FOU', false).sid, hocVien(cuoi, 'FOU', false).sid];
+    const pl = () => (myWork(P.mbManager) as any).items.find((i: any) => i.group === 'placement' && i.classId === cuoi);
+    assert(pl().reason === '3 em chưa có lệnh chuyển' && pl().tieuDe === 'Chuyển lớp cả lớp' && pl().href === `/hoc-vien/lop/${cuoi}?viec=chuyen-tiep`, JSON.stringify(pl()));
+    ra(P.mbManager, cuoi, 'cuoi-khoa', [dongCua(ds[0], 'len_lop', d6)]);
+    assert(pl().reason === '2 em chưa có lệnh chuyển', pl().reason);
+    const ns = (myWork(loadPrincipal(GV[3].userId)) as any).items.find((i: any) => i.group === 'next_step' && i.classId === cuoi);
+    assert(ns && ns.reason === '2 HV chưa có lộ trình tiếp theo', ns?.reason);
+    ra(P.mbManager, cuoi, 'cuoi-khoa', [dongCua(ds[1], 'len_lop', d6), dongCua(ds[2], 'len_lop', d6)]);
+    assert(!pl(), 'đủ lệnh → hết việc');
+    const giua = lopMoi({ kind: 'FOU', tuanHienTai: 3 });
+    hocVien(giua, 'FOU', false);
+    assert(!(myWork(P.mbManager) as any).items.some((i: any) => i.group === 'placement' && i.classId === giua), 'chưa tới tuần Cuối khoá: chưa có việc');
+  });
+  check('CT (6g) · Đề xuất chuyển lớp: GVCN lớp em gửi được; GVBM / GVCN lớp khác / lý do < 15 ký tự → lỗi; gửi trùng → 400; "lớp" bị bỏ khỏi Đề xuất sửa', () => {
+    const lop = lopMoi({ kind: 'FOU', tuanHienTai: 4 });
+    ganGv(lop, GV[0].userId, null, true);
+    ganGv(lop, GV[1].userId, 'listening', false);
+    const gCn = loadPrincipal(GV[0].userId), gBm = loadPrincipal(GV[1].userId), gKhac = loadPrincipal(GV[2].userId);
+    const e = hocVien(lop, 'FOU', false).sid;
+    const dichKhac = lopMoi({ kind: 'FOU', tuanHienTai: 4 });
+    const v = { toClassId: dichKhac, tuan: TUAN[0], lyDo: 'Phụ huynh xin chuyển sang lớp khác giờ học.' };
+    assert(maLoi(() => lenh.guiDeXuatChuyenLop(gBm, e, v)) === 403 && maLoi(() => lenh.guiDeXuatChuyenLop(gKhac, e, v)) === 403, 'GVBM / GVCN lớp khác → 403');
+    assert(maLoi(() => lenh.guiDeXuatChuyenLop(gCn, e, { ...v, lyDo: 'ngắn' })) === 400, 'lý do ngắn');
+    assert(maLoi(() => lenh.guiDeXuatChuyenLop(gCn, e, { ...v, tuan: mondayNow })) === 400, 'tuần hiện tại');
+    const r = lenh.guiDeXuatChuyenLop(gCn, e, v);
+    const the = get('SELECT * FROM yeu_cau_duyet WHERE id = ?', r.id);
+    assert(the.loai === 'de_xuat_chuyen_lop' && the.phan_loai === 'thong-tin-hv' && the.han_duyet === d.hanTheoNgay(TODAY, 5) && the.nguoi_xin === gCn.userId, JSON.stringify(the));
+    assert(maLoi(() => lenh.guiDeXuatChuyenLop(gCn, e, v)) === 400, 'gửi trùng');
+    assert(maLoi(() => yc.duyetYeuCau(gCn, r.id)) === 403, 'GVCN không duyệt');
+    const hop = yc.hopChoDuyet(P.mbManager, {});
+    const t1 = hop.the.find((x: any) => x.id === r.id);
+    assert(t1.tieuDe.startsWith(`Đề xuất chuyển lớp · ${get('SELECT code FROM classes WHERE id = ?', dichKhac).code} · từ `) && t1.duLieu.moPanelChuyenLop === true && t1.duLieu.lopDichId === dichKhac, JSON.stringify(t1));
+    assert(t1.neuDuyet === 'Mở panel ra lệnh — sửa được lớp, tuần.', t1.neuDuyet);
+  });
+  check('CT (6h) · Duyệt đề xuất với duLieu QL sửa lớp / tuần → lệnh đúng giá trị QL sửa, có tu_yeu_cau_id, thẻ Đã duyệt; QL tự gửi rồi tự duyệt → "tự duyệt"', () => {
+    const lop = lopMoi({ kind: 'FOU', tuanHienTai: 4 });
+    ganGv(lop, GV[0].userId, null, true);
+    const gCn = loadPrincipal(GV[0].userId);
+    const dichA = lopMoi({ kind: 'FOU', tuanHienTai: 4 }), dichB = lopMoi({ kind: 'FOU', tuanHienTai: 4 });
+    const e = hocVien(lop, 'FOU', false).sid;
+    const r = lenh.guiDeXuatChuyenLop(gCn, e, { toClassId: dichA, tuan: TUAN[0], lyDo: 'Phụ huynh xin chuyển sang lớp khác giờ học.' });
+    assert(maLoi(() => yc.duyetYeuCau(P.mbManager, r.id, {})) === 400, 'duyệt mà chưa có lớp đích trong duLieu → 400');
+    yc.duyetYeuCau(P.mbManager, r.id, { duLieu: { lopDichId: dichB, tuan: TUAN[2] } });
+    const l = lenhCua(e);
+    assert(l.lop_dich_id === dichB && l.tuan_bat_dau === TUAN[2] && l.tu_yeu_cau_id === r.id && l.trang_thai === 'cho' && l.boi_canh === 'giua-khoa' && l.huong === 'chuyen_lop', JSON.stringify(l));
+    assert(get('SELECT trang_thai FROM yeu_cau_duyet WHERE id = ?', r.id).trang_thai === 'duyet', 'thẻ Đã duyệt');
+    assert(l.ly_do.startsWith('Phụ huynh xin'), 'lý do lấy từ thẻ');
+    /* QL tự gửi rồi tự duyệt */
+    const e2 = hocVien(lop, 'FOU', false).sid;
+    const r2 = lenh.guiDeXuatChuyenLop(P.mbManager, e2, { toClassId: dichA, tuan: TUAN[1], lyDo: 'Quản lý tự đề xuất chuyển lớp cho em.' });
+    yc.duyetYeuCau(P.mbManager, r2.id, { duLieu: { lopDichId: dichA, tuan: TUAN[1] } });
+    assert(get('SELECT tu_duyet FROM yeu_cau_duyet WHERE id = ?', r2.id).tu_duyet === 1, 'tự duyệt');
+    /* đã có lệnh cho từ đường khác → thẻ mới không gửi được; thẻ cũ tự đóng */
+    const e3 = hocVien(lop, 'FOU', false).sid;
+    const r3 = lenh.guiDeXuatChuyenLop(gCn, e3, { toClassId: dichA, tuan: TUAN[0], lyDo: 'Phụ huynh xin chuyển sang lớp khác giờ học.' });
+    ra(P.mbManager, lop, 'cuoi-khoa', [dongCua(e3, 'hoc_lai', lopMoi({ kind: 'FOU', tuanHienTai: 1 }))]);
+    yc.quetYeuCau(TODAY);
+    assert(get('SELECT trang_thai FROM yeu_cau_duyet WHERE id = ?', r3.id).trang_thai === 'tu_dong', 'em có lệnh từ đường khác → thẻ đề xuất tự đóng');
+  });
+  check('CT (6i) · quetYeuCau không có gì để tạo / đóng → KHÔNG mở giao dịch', () => {
+    yc.quetYeuCau(TODAY);
+    let begin = 0;
+    const goc = conn.exec.bind(conn);
+    (conn as any).exec = (sql: string) => { if (/^(BEGIN|SAVEPOINT)/i.test(String(sql))) begin += 1; return goc(sql); };
+    try { yc.quetYeuCau(TODAY); } finally { (conn as any).exec = goc; }
+    assert(begin === 0, `quét lần hai mở ${begin} giao dịch`);
+  });
+  await checkAsync('CT (6j) · Nhắc: QL nhắc GVCN qua việc bàn giao (khoá ban_giao:{lớp}) — nhacViec tìm đúng dòng', async () => {
+    /* dựng lệnh cho lớp có GVCN GV[0] (n6 ở khối 6a đã xác nhận hết → dựng lớp mới) */
+    const n = lopMoi({ kind: 'FOU', tuanHienTai: 8 });
+    ganGv(n, GV[0].userId, null, true);
+    ra(P.mbManager, n, 'cuoi-khoa', [dongCua(hocVien(n, 'FOU', false).sid, 'len_lop', d6)]);
+    const { nhacViec } = await import('../worklist/nhacViec.ts');
+    const r = nhacViec(P.mbManager, { key: `ban_giao:${n}`, ownerId: GV[0].userId });
+    assert(r.daNhacLuc, 'đã nhắc');
+    assert(get(`SELECT COUNT(*) n FROM notifications WHERE user_id = ? AND kind = 'nhac_viec' AND dedup_key = ?`, GV[0].userId, `nhac:ban_giao:${n}:${TODAY}`).n === 1, 'thông báo nhắc');
+  });
+
 }

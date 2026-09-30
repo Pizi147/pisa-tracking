@@ -1,6 +1,6 @@
 import { chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
-  NORMAL_LADDER, PERMISSIONS, coPhieu, canLopDich, hanBanGiao, kiemDongChuyenTiep, kiemDongLenh, tuanLich,
+  NHAN_XET_TOI_THIEU, PERMISSIONS, coPhieu, canLopDich, hanBanGiao, kiemDongChuyenTiep, kiemDongLenh, tuanHopLe, tuanLich,
   type HuongLenh, type MucTieuLenh, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { badRequest, conflict, notFound, nowIso } from '../util.ts';
@@ -9,6 +9,7 @@ import { nho } from '../platform/nguCanhRequest.ts';
 import { reviseTarget } from '../fasttrack/cycles.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
+import { taoYeuCau } from '../duyet/yeuCau.ts';
 import { applyTransition } from './transition.ts';
 import { apDungMotDong, dongLopNeuHet, lopDichHopLe, nguoiNhanGoiY } from './luatLoTrinh.ts';
 import { coTheRaLenh } from './quyenChuyenLop.ts';
@@ -444,4 +445,74 @@ function thiHanhGiuaKhoa(p: Principal, g: any, con: any[]): { id: number; loi: s
     if (xong.length && !nguon?.is_fast_track) dongLopNeuHet([g.lop_nguon_id], g.tuan_bat_dau);   // Q21: lớp FT không tự kết thúc
   }
   return loi;
+}
+
+// ==================================================================== đếm, đề xuất chuyển lớp (Task 6)
+
+/** Số em `active` CHƯA CÓ lệnh chuyển đang chờ của mỗi lớp (chưa quyết = chưa có lệnh, Q3/Q30-4). Một câu cho cả lô lớp. */
+export function demChuaCoLenh(classIds: readonly number[]): Map<number, number> {
+  const out = new Map<number, number>();
+  theoLo([...classIds], (lo, ph) => {
+    for (const r of db().prepare(
+      `SELECT e.class_id, COUNT(*) AS n FROM enrollments e JOIN students s ON s.id = e.student_id
+        WHERE e.class_id IN (${ph}) AND e.status = 'active' AND s.status = 'active' AND s.archived_at IS NULL
+          AND NOT EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.student_id = e.student_id AND l.trang_thai = 'cho')
+        GROUP BY e.class_id`,
+    ).all(...lo) as any[]) out.set(r.class_id, r.n);
+  });
+  return out;
+}
+
+/**
+ * GVCN lớp em đang học gửi "Đề xuất chuyển lớp…" (Q14): thẻ Thông tin HV, 5 ngày. Lớp muốn tới và tuần là TUỲ CHỌN (Quản lý sửa được trước khi duyệt).
+ * Quản lý duyệt = ra lệnh (`apDungDeXuatChuyenLop` chạy trong tx của hộp).
+ */
+export function guiDeXuatChuyenLop(p: Principal, sid: number, v: { toClassId?: number | null; tuan?: string | null; lyDo?: unknown }) {
+  const conn = db();
+  const hv = conn.prepare('SELECT id, full_name, status, archived_at FROM students WHERE id = ?').get(sid) as any;
+  if (!hv) throw notFound('Không tìm thấy học viên');
+  const enr = conn.prepare(`SELECT e.class_id FROM enrollments e WHERE e.student_id = ? AND e.status = 'active' LIMIT 1`).get(sid) as any;
+  if (!enr || hv.status !== 'active' || hv.archived_at) throw badRequest('Học viên không đang học lớp nào — không đề xuất chuyển lớp được.');
+  /* GVCN của lớp em đang học (`student.edit` ở lớp với vai Giáo viên đã siết về GVCN); Quản lý cũng gửi được → tự duyệt (Q-D). */
+  require_(p, PERMISSIONS.STUDENT_EDIT, { classId: enr.class_id }, 'Chỉ GVCN lớp em đang học mới gửi được đề xuất chuyển lớp.');
+  const lyDo = typeof v.lyDo === 'string' ? v.lyDo.trim() : '';
+  if (lyDo.length < NHAN_XET_TOI_THIEU) throw badRequest(`Ghi lý do (ít nhất ${NHAN_XET_TOI_THIEU} ký tự) để Quản lý có căn cứ duyệt.`);
+  const toClassId = v.toClassId ? Number(v.toClassId) : null;
+  if (toClassId && !lopDichHopLe(toClassId, enr.class_id)) throw badRequest('Lớp muốn chuyển tới không hợp lệ.');
+  const tuan = v.tuan || null;
+  if (tuan && !tuanHopLe(tuan, demoToday())) throw badRequest('Từ tuần phải là Thứ Hai của tuần sau trở đi.');
+  if (conn.prepare(`SELECT 1 FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho'`).get(sid)) throw badRequest('Em đã có lệnh chuyển lớp đang chờ.');
+  return tx(() => {
+    const id = taoYeuCau(conn, {
+      loai: 'de_xuat_chuyen_lop', doiTuongLoai: 'student:chuyen-lop', doiTuongId: sid, hocVienId: sid, lopId: enr.class_id,
+      nguoiXin: p.userId, lyDo, duLieu: { lopDichId: toClassId, tuan },
+    });
+    if (id === null) throw badRequest('Đã có một đề xuất chuyển lớp của em đang chờ Quản lý.');
+    writeAudit({ actorUserId: p.userId, action: 'request.create', entityType: 'yeu_cau_duyet', entityId: id, entityLabel: `Đề xuất chuyển lớp · ${hv.full_name}`, after: { toClassId, tuan, lyDo } });
+    return { ok: true, id };
+  });
+}
+
+/** `khiDuyet` của thẻ Đề xuất chuyển lớp: `duLieu` là ô của panel D do Quản lý sửa (lớp đích, tuần, Target…) → RA LỆNH (`tu_yeu_cau_id`). */
+export function apDungDeXuatChuyenLop(p: Principal, yc: { id: number; hoc_vien_id: number | null; ly_do: string | null }, duLieu: unknown): void {
+  const d = (duLieu ?? {}) as { lopDichId?: unknown; tuan?: unknown; lyDo?: unknown; mucTieu?: unknown; ngayThi?: unknown };
+  if (!yc.hoc_vien_id) throw badRequest('Thẻ không có học viên.');
+  const conn = db();
+  const enr = conn.prepare(
+    `SELECT e.class_id, c.is_fast_track FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = ? AND e.status = 'active' LIMIT 1`,
+  ).get(yc.hoc_vien_id) as any;
+  if (!enr) throw badRequest('Em không còn học lớp nào.');
+  const lopDich = Number(d.lopDichId);
+  if (!lopDich) throw badRequest('Chọn lớp đích trước khi duyệt.');
+  const dich = lopDichHopLe(lopDich, enr.class_id);
+  if (!dich) throw badRequest('Lớp đích không hợp lệ.');
+  const r = raLenh(p, {
+    lopNguonId: enr.class_id, boiCanh: 'giua-khoa', tuanChung: null, tuYeuCauId: yc.id,
+    dongs: [{
+      studentId: yc.hoc_vien_id, huong: dich.is_fast_track && !enr.is_fast_track ? 'fast_track' : 'chuyen_lop', toClassId: lopDich,
+      tuan: typeof d.tuan === 'string' ? d.tuan : null, mucTieu: soHoacKck(d.mucTieu), ngayThi: typeof d.ngayThi === 'string' ? d.ngayThi : null,
+      lyDo: typeof d.lyDo === 'string' && d.lyDo.trim() ? d.lyDo : yc.ly_do,
+    }],
+  });
+  if (r.failed.length) throw badRequest(r.failed[0].message);
 }
