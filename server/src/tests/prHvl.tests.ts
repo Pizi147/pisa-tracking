@@ -161,8 +161,8 @@ export async function runPrHvlTests(t: YThucTestKit) {
   check('PR-HVL (1) · K2-14 nutChinhDauTrang: lớp rỗng / cuối khoá lớp thường / nhập điểm / không nút', () => {
     const g = { thuong: false, phase: 'running', needsPlacement: false, soHocVien: 8, coTheThemHv: true, coTheNhapDiem: false, coTheChuyenTiep: true, soEmChuyen: 0 };
     eq(d.nutChinhDauTrang({ ...g, soHocVien: 0 }), { loai: 'them-hv', nhan: '+ Học viên' }, 'Lớp rỗng');
-    eq(d.nutChinhDauTrang({ ...g, thuong: true, phase: 'final_week', soEmChuyen: 6 }), { loai: 'chuyen-tiep', nhan: 'Chuyển tiếp lớp · 6 em' }, 'Cuối khoá lớp thường');
-    eq(d.nutChinhDauTrang({ ...g, thuong: true, phase: 'running', needsPlacement: true, soEmChuyen: 2 }).loai, 'chuyen-tiep', 'Cần xếp lớp');
+    eq(d.nutChinhDauTrang({ ...g, thuong: true, phase: 'final_week', soEmChuyen: 6 }), { loai: null, nhan: '' }, 'PR-CT: cuối khoá lớp thường');
+    eq(d.nutChinhDauTrang({ ...g, thuong: true, phase: 'running', needsPlacement: true, soEmChuyen: 2 }).loai, null, 'PR-CT: cần xếp lớp — nút ở dải');
     eq(d.nutChinhDauTrang({ ...g, thuong: true, phase: 'final_week', coTheChuyenTiep: false, coTheNhapDiem: true }).loai, 'nhap-diem', 'Không chuyển tiếp được → Nhập điểm');
     eq(d.nutChinhDauTrang({ ...g, coTheNhapDiem: true }), { loai: 'nhap-diem', nhan: 'Nhập điểm Test' }, 'Nhập điểm');
     eq(d.nutChinhDauTrang(g).loai, null, 'Không nút');
@@ -570,7 +570,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
     const lt = web('modules/students/LoTrinhTiepPanel.tsx');
     assert(/Kết quả gần nhất/.test(lt) && /ketQuaGanNhat\(/.test(lt) && !/luat="Chỉ là dự định/.test(lt) && /Chỉ là dự định, chưa đổi lớp/.test(lt), 'LoTrinhTiepPanel');
     const tp = web('modules/classes/TransitionPanel.tsx');
-    assert(/useLoiForm\(\)/.test(tp) && /lf\.bam\(\)/.test(tp) && /daSua/.test(tp) && /<Th>Kết quả<\/Th>/.test(tp) && /KetQuaEm/.test(tp), 'TransitionPanel');
+    assert(/useLoiForm\(\)/.test(tp) && /lf\.bam\(\)/.test(tp) && /daSua/.test(tp) && /Cuối khoá/.test(tp) && /Kết quả gần nhất/.test(tp) && /ketQuaGanNhat\(/.test(tp), 'TransitionPanel (PR-CT: cột Cuối khoá / Kết quả gần nhất dùng ketQuaGanNhat)');
     assert(!/disabled=\{coLoi \|\| !data\?\.canEdit\}/.test(tp), 'nút Tiếp tục không được khoá vì lỗi (phải bấm được để hiện lỗi)');
   });
 

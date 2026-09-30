@@ -24,6 +24,7 @@ import { closeCasesBySystem } from '../cases/systemClose.ts';
 import { dienMocLop } from '../migrate/prLop.ts';
 import { napYeuCauTuNguonCu } from '../migrate/prDuyet.ts';
 import { buildDuyetDemo } from './duyetSeed.ts';
+import { buildCtDemo } from './ctSeed.ts';
 
 const NOW = nowIso();
 
@@ -267,10 +268,13 @@ export function runSeed() {
     napYeuCauTuNguonCu(conn);
     /* PR-DUYET (D17): mỗi phân loại có thẻ, có quá hạn, tự duyệt, tự đóng, Báo lên — dựng qua hàm dịch vụ. */
     const duyet = buildDuyetDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
+    /* PR-CT: lệnh chuyển lớp + bàn giao (6 kịch bản + 1 lệnh đã chuyển) — SAU bộ demo Chờ duyệt, tự quét Báo lên ở cuối. */
+    const ct = buildCtDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
 
     return {
       'Chi nhánh': BRANCHES.length,
       'Thẻ Chờ duyệt (demo)': duyet.the,
+      'Lệnh chuyển lớp (demo PR-CT)': ct.lenh,
       'Lớp': CLASSES.length,
       'Người dùng': userSeq,
       'Giáo viên': TEACHERS.length,

@@ -733,22 +733,42 @@ await checkAsync(`PR-TOC · Thêm 35 em lớp FT (POST /intake/commit) ≤ ${TRA
   assert(r.n <= TRAN_GHI_LO.themHocVien35FT, `${r.n} câu > trần ${TRAN_GHI_LO.themHocVien35FT}`);
 });
 
-await checkAsync(`PR-TOC · Chuyển cả lớp thường sang FT (POST /classes/:id/transition) ≤ ${TRAN_GHI_LO.chuyenCaLopSangFT} câu SQL`, async () => {
+await checkAsync(`PR-TOC · Ra lệnh chuyển cả lớp thường sang FT (POST /classes/:id/transition, PR-CT) ≤ ${TRAN_GHI_LO.raLenhCaLop} câu SQL`, async () => {
   const them = await callHttp('QL', 'POST', '/intake/commit', { classId: LOP_THUONG, rows: dongNhap('Tốc Độ Thường', 20, false), idempotencyKey: 'pr-toc-20' });
   assert(them.status === 200 && them.json.added === 20, `Chuẩn bị lớp thường 20 em: ${them.status} ${JSON.stringify(them.json)}`);
   const sids = (conn.prepare(
     `SELECT s.id FROM enrollments e JOIN students s ON s.id = e.student_id
       WHERE e.class_id = ? AND e.status = 'active' AND s.status = 'active' AND s.archived_at IS NULL`).all(LOP_THUONG) as any[]).map((x) => x.id);
+  const { tuanChonDuoc } = await import('../../../shared/domain/index.ts');
+  const { demoToday } = await import('../demoConfig.ts');
   const r = await doGhi('QL', `/classes/${LOP_THUONG}/transition`, {
-    effectiveDate: '2026-09-28', dongs: sids.map((studentId) => ({ studentId, huong: 'fast_track', toClassId: LOP_FT, mucTieu: 6.5 })),
+    tuanChung: tuanChonDuoc(demoToday())[0], dongs: sids.map((studentId) => ({ studentId, huong: 'fast_track', toClassId: LOP_FT, mucTieu: 6.5 })),
   });
-  assert(r.status === 200 && !r.json.failed?.length, `Chuyển phải thành công: ${r.status} ${JSON.stringify(r.json).slice(0, 300)}`);
+  assert(r.status === 200 && r.json.ok?.length === sids.length && !r.json.failed?.length, `Ra lệnh phải thành công: ${r.status} ${JSON.stringify(r.json).slice(0, 300)}`);
+  console.log(`      (đo: ${sids.length} em, ${r.n} câu)`);
+  assert(r.n <= TRAN_GHI_LO.raLenhCaLop, `${r.n} câu > trần ${TRAN_GHI_LO.raLenhCaLop}`);
+});
+
+await checkAsync(`PR-TOC · THI HÀNH lệnh chuyển cả lớp thường sang FT (thiHanhLenhDenHan, PR-CT) ≤ ${TRAN_GHI_LO.chuyenCaLopSangFT} câu SQL, mỗi em có lịch MT mặc định`, async () => {
+  const { thiHanhLenhDenHan } = await import('../classes/lenhChuyen.ts');
+  const { demoToday } = await import('../demoConfig.ts');
+  const { mondayOfDate } = await import('../../../shared/domain/index.ts');
+  const sids = (conn.prepare(`SELECT student_id AS id FROM lenh_chuyen_lop WHERE lop_nguon_id = ? AND trang_thai = 'cho'`).all(LOP_THUONG) as any[]).map((x) => x.id);
+  assert(sids.length >= 20, `Cần lệnh của cả lớp từ phép đo trước: ${sids.length}`);
+  /* Tới Thứ Hai tuần bắt đầu: kéo lệnh về Thứ Hai của tuần hiện tại (đã tới hạn) rồi thi hành. */
+  conn.prepare(`UPDATE lenh_chuyen_lop SET tuan_bat_dau = ? WHERE lop_nguon_id = ? AND trang_thai = 'cho'`).run(mondayOfDate(demoToday()), LOP_THUONG);
+  let n = 0;
+  const goc = conn.prepare.bind(conn);
+  (conn as any).prepare = (sql: string) => { n += 1; return goc(sql); };
+  let kq: any;
+  try { kq = thiHanhLenhDenHan(demoToday()); } finally { (conn as any).prepare = goc; }
+  assert(kq.daChuyen === sids.length && kq.loi === 0, `Thi hành phải chuyển đủ: ${JSON.stringify(kq)}`);
   const coLich = (conn.prepare(
     `SELECT COUNT(DISTINCT c.student_id) n FROM learning_cycles c JOIN assessment_attempts a ON a.cycle_id = c.id
       WHERE c.status = 'active' AND c.route IS NOT NULL AND c.student_id IN (${sids.join(',')})`).get() as any).n;
   assert(coLich === sids.length, `Em nào sang FT cũng có lịch MT: ${coLich}/${sids.length}`);
-  console.log(`      (đo: ${sids.length} em, ${r.n} câu)`);
-  assert(r.n <= TRAN_GHI_LO.chuyenCaLopSangFT, `${r.n} câu > trần ${TRAN_GHI_LO.chuyenCaLopSangFT}`);
+  console.log(`      (đo: ${sids.length} em, ${n} câu)`);
+  assert(n <= TRAN_GHI_LO.chuyenCaLopSangFT, `${n} câu > trần ${TRAN_GHI_LO.chuyenCaLopSangFT}`);
 });
 
 await checkAsync(`PR-S3F · Công việc QL (nguoi=tat-ca) với 30 PA "đến lúc thi" chưa có ngày thi ≤ ${TRAN_GHI_LO.congViec30PaChuaNgayThi} câu SQL`, async () => {

@@ -645,6 +645,8 @@ Bạn **không cần làm gì**. Mỗi sáng thứ Hai lúc 00:05 và 06:05, má
 "Không dự thi" — kể cả khi không ai mở web. Muốn xem nó có chạy không: trang Netlify của site › **Logs** › **Functions** ›
 **chot-vang** — mỗi lần chạy có một dòng bắt đầu bằng `[chot-vang]`. Không thấy dòng nào sau một sáng thứ Hai → gửi session thiết kế.
 
+Cùng lượt sáng thứ Hai này, web **tự chuyển lớp** cho các lệnh chuyển lớp của Quản lý có tuần bắt đầu là hôm đó (trường `daChuyen` trong dòng log). Lượt nào lỡ thì lần mở web đầu tiên trong tuần cũng chuyển nốt, với ngày hiệu lực vẫn là thứ Hai.
+
 ---
 
 ## 12. Bảng tra — mọi tên biến dùng trong file này

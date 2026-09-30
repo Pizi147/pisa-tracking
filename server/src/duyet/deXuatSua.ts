@@ -11,10 +11,10 @@ import { writeAudit } from '../platform/audit.ts';
 import { KCK, PERMISSIONS, laKck } from '../../../shared/domain/index.ts';
 import { taoYeuCau } from './yeuCau.ts';
 
-export const TRUONG_DE_XUAT = ['target', 'lo-trinh', 'lop', 'lich-mt', 'khac'] as const;
+export const TRUONG_DE_XUAT = ['target', 'lo-trinh', 'lich-mt', 'khac'] as const;   // PR-CT: bỏ 'lop' — dùng Đề xuất chuyển lớp
 export type TruongDeXuat = (typeof TRUONG_DE_XUAT)[number];
 export const NHAN_TRUONG_DE_XUAT: Record<TruongDeXuat, string> = {
-  target: 'target', 'lo-trinh': 'lộ trình', lop: 'lớp', 'lich-mt': 'lịch MT', khac: 'thông tin khác',
+  target: 'target', 'lo-trinh': 'lộ trình', 'lich-mt': 'lịch MT', khac: 'thông tin khác',
 };
 /** Hai trường Duyệt là áp luôn; ba trường còn lại Quản lý tự làm ở màn gốc (Q6). */
 export const TRUONG_TU_AP: readonly TruongDeXuat[] = ['target', 'lo-trinh'];
@@ -36,6 +36,7 @@ export function guiDeXuatSua(p: Principal, studentId: number, body: { truong?: u
   /* GV của lớp em đang học (GVCN hoặc GVBM) — cùng phạm vi "xem hồ sơ" của giáo viên. */
   require_(p, PERMISSIONS.STUDENT_VIEW, { studentId }, 'Chỉ giáo viên của lớp em đang học mới gửi được đề xuất sửa.');
   if (hv.status !== 'active' || hv.archived_at) throw badRequest('Học viên không còn đang học — không gửi đề xuất sửa được.');
+  if (body.truong === 'lop') throw badRequest('Dùng Đề xuất chuyển lớp.');   // PR-CT (Q30-1)
   const truong = body.truong as TruongDeXuat;
   if (!(TRUONG_DE_XUAT as readonly string[]).includes(String(truong))) throw badRequest('Chọn thông tin cần sửa.');
   const lyDo = typeof body.lyDo === 'string' ? body.lyDo.trim() : '';
@@ -63,7 +64,7 @@ export function guiDeXuatSua(p: Principal, studentId: number, body: { truong?: u
     const chu = String(body.moi ?? '').trim();
     if (chu.length < 2) throw badRequest('Ghi giá trị mới cần sửa.');
     if (chu.length > 200) throw badRequest('Giá trị mới tối đa 200 ký tự.');
-    moi = chu; cu = truong === 'lop' ? ht.lop : null;
+    moi = chu; cu = null;
   }
   return tx(() => {
     const id = taoYeuCau(conn, {

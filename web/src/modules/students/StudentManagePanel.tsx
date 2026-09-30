@@ -46,7 +46,8 @@ export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempt
   const chung = { studentId: student.id, studentName: student.name, lop, onClose, onDone: xong };
   switch (viec) {
     case 'lo-trinh-tiep': return <LoTrinhTiepPanel open {...chung} />;
-    case 'chuyen-lop': return <ChuyenLopPanel open {...chung} />;
+    case 'chuyen-lop': return <ChuyenLopPanel open cheDo="lenh" {...chung} />;
+    case 'de-xuat-chuyen-lop': return <ChuyenLopPanel open cheDo="de-xuat" {...chung} />;
     case 'tam-dung': return <TrangThaiPanel {...chung} status="inactive" />;
     case 'quay-lai': return <TrangThaiPanel {...chung} status="active" />;
     case 'ket-thuc': return <TrangThaiPanel {...chung} status="finished" />;

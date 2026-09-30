@@ -503,3 +503,19 @@ Dựng bằng hàm nghiệp vụ (`server/src/seed/lt2bSeed.ts`), sau bộ LT2a,
 | D12 · Pre FOU 52% lên FOU | **Ninh Gia Bảo** (MB FOU 15) | Case `Cuối khoá Pre FOU · Tổng hợp không đạt`, PA `4 buổi miễn phí · 2 tuần`, Mini Test hạn W1 OCT — GVCN FOU ghi được, GVBM L không |
 | D13 · Trung tâm | **Chu Nhật Minh** (MB FT 101) | Case FT `Kỳ vọng đầu ra chưa đạt · Reading` + PA `Tutor 10 buổi` |
 | D13 · Học sinh | **Kiều Thảo Nhi** (MB FT 101) | Không Case; hộp Kết luận khoá (trước khi chuyển) ghi phương án case-by-case |
+
+---
+
+## 16. PR-CT — chuyển lớp do Quản lý quyết + bàn giao (chỉ máy dev, 30/09/2026)
+
+Dựng bằng hàm nghiệp vụ (`server/src/seed/ctSeed.ts`), sau ngày demo **14/09/2026** (Thứ Hai; tuần bắt đầu của mọi lệnh là **W3 SEP**). Tài khoản gợi ý: **Quản lý Nguyễn Khánh Vy** (ra lệnh, thấy thẻ Chờ duyệt), **GVCN Trần Ngọc Hà** (MB FOU 22, có việc Bàn giao), **GVBM Phạm Thu Trang** (môn Speaking — thiếu `P`), **GVCN Lê Minh Khoa** (MB FOU 23/24).
+
+| Kịch bản | Lớp · học viên | Bạn sẽ thấy |
+|---|---|---|
+| 1 · hết khoá, chưa lệnh | **MB FOU 21** — 6 em (82 · 74 · 66 · 57 · 44 %, **Phan Quang Nam CT** thiếu điểm P) | Hồ sơ lớp: dải **đỏ** "Kết thúc khoá · 6 em chưa có lệnh chuyển" + nút `Chuyển lớp cả lớp…` (Quản lý); GVCN (Lê Minh Khoa) thấy "Chờ Quản lý quyết định chuyển lớp · 6 em", không nút. Công việc › Chờ duyệt: thẻ Báo lên "Lớp hết khoá còn em chưa có lệnh". Mở panel: 6 hàng, em thiếu điểm P **không bị khoá** |
+| 2 · chờ bàn giao | **MB FOU 22** — Lê Hải Mai, Trịnh Đức Long, Lâm Gia Bảo, Mai Thùy Dương → **MB BE 09** (+ Phan Hà My bảo lưu) | Lệnh ra hôm qua. GVCN Hà: việc **Bàn giao 5 em · MB FOU 22**, dải "Bàn giao · 0/5 em"; GVBM Trang: việc **Bàn giao môn P** (0/4 em). L, R, W đã có câu của GVBM; thiếu P |
+| 3 · thiếu điểm vẫn chuyển | **Mai Thùy Dương CT** (MB FOU 22) | Có lệnh lên MB BE 09 dù thiếu điểm P (Q30-4) |
+| 4 · FT tách lớp | **MB FT 103** → **MB FT 104** (cùng LT1): Trần Minh Khoa CT (có Case Reading mở), Phạm Gia Hân CT | Hồ sơ lớp MB FT 103 ⋮ `Chuyển nhiều em…`; hồ sơ hai em: dải **Sắp chuyển** từ W3 SEP; Case đi theo em, người nhận gợi ý = GV Reading lớp mới |
+| 5 · GVCN đề xuất | **Đinh Quốc Bảo CT** (MB FOU 22) | Chờ duyệt (Thông tin HV): thẻ **Đề xuất chuyển lớp**; `Duyệt…` mở panel điền sẵn (sửa lớp / tuần) rồi `Duyệt và ra lệnh` |
+| 6 · bàn giao quá hạn | **MB FOU 23** — Hồ Diệu Anh CT, Vương Thu Hà CT | Lệnh ra 4 ngày trước, GVCN Khoa chưa xác nhận → thẻ Báo lên **Bàn giao quá hạn** (nút Nhắc); em vẫn chuyển đúng tuần |
+| 7 · đã chuyển | **Nguyễn Phương Thảo CT** (MB FOU 24 → MB BE 09) | Chuyển Thứ Hai 14/09; hồ sơ em: dải **Đã chuyển · bàn giao của Lê Minh Khoa** + `Đọc bàn giao`; Hành trình có mốc "Bàn giao"; **MB BE 09** có em nhãn **mới vào** và dải "Sắp nhận 5 em" |

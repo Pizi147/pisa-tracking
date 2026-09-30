@@ -398,10 +398,10 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     }
   });
 
-  check('UX3 (8) · ChuyenLopPanel: chuyển lớp hỏi lại MỘT câu qua ConfirmDialog và không gửi effectiveDate khi chọn tuần này', () => {
+  check('UX3 (8) · ChuyenLopPanel (PR-CT: ra lệnh): nút chính nói thẳng việc, gửi tuần bắt đầu (Thứ Hai tuần sau trở đi) — không còn ngày hiệu lực "hôm nay"', () => {
     const src = docSach('web/src/modules/students/ChuyenLopPanel.tsx');
-    assert(/<ConfirmDialog/.test(src) && /Chuyển \$\{studentName/.test(src), 'thiếu hộp xác nhận một câu');
-    assert(/effectiveDate: tuan && tuan !== tuanNay \? tuan : undefined/.test(src), 'tuần này phải không gửi effectiveDate');
+    assert(/Ra lệnh chuyển/.test(src) && /Đề xuất chuyển lớp/.test(src) && /Duyệt và ra lệnh/.test(src), 'thiếu nút chính của ba chế độ');
+    assert(!/effectiveDate/.test(src) && /\/students\/\$\{studentId\}\/transfer/.test(src) && /tuan,/.test(src), 'phải gửi tuần bắt đầu, không gửi effectiveDate');
   });
 
   // ==================================================================== 11. ⋮ Hồ sơ lớp › Xoá lớp / Kết thúc lớp (chỉ Quản trị hệ thống)

@@ -50,6 +50,8 @@ import * as classSvc from '../classes/classes.ts';
 import * as scheduleSvc from '../classes/schedule.ts';
 import * as intakeSvc from '../classes/intake.ts';
 import * as transitionSvc from '../classes/transition.ts';
+import * as lenhSvc from '../classes/lenhChuyen.ts';
+import * as banGiaoSvc from '../classes/banGiao.ts';
 import * as loTrinhTiepSvc from '../classes/loTrinhTiep.ts';
 import * as cuoiKhoaSvc from '../normal/cuoiKhoa.ts';
 import * as luatLoTrinhSvc from '../classes/luatLoTrinh.ts';
@@ -381,6 +383,7 @@ api.get('/ref/units', requireAuth, wrap((req) => {
  */
 api.get('/my-work', requireAuth, wrap((req) => {
   maybeSimulateReadError();
+  lenhSvc.quetLenhDenHan();   // PR-CT: lệnh chuyển lớp tới Thứ Hai thì thi hành (chạy lặp an toàn)
   const p = principalOf(req);
   const branchId = qInt(req, 'branchId');
   const nguoi = thamSoNguoi(qStr(req, 'nguoi'));
@@ -1122,6 +1125,7 @@ api.get('/metrics/:id', requireAuth, wrap((req) => {
 
 api.get('/classes/:id/overview', requireAuth, wrap((req) => {
   maybeSimulateReadError();
+  lenhSvc.quetLenhDenHan();
   return classSvc.classOverview(principalOf(req), pInt(req, 'id'));
 }));
 
@@ -1299,6 +1303,13 @@ api.post('/students/:id/de-xuat-sua', requireAuth, wrap((req) => {
   return deXuatSuaSvc.guiDeXuatSua(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
+/** PR-CT (Q30-1, Q14): GVCN đề xuất chuyển lớp — thẻ Thông tin HV ở hộp Chờ duyệt; Quản lý duyệt = ra lệnh. */
+api.post('/students/:id/de-xuat-chuyen-lop', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = (req.body ?? {}) as Record<string, any>;
+  return lenhSvc.guiDeXuatChuyenLop(principalOf(req), pInt(req, 'id'), { toClassId: b.toClassId ? Number(b.toClassId) : null, tuan: typeof b.tuan === 'string' ? b.tuan : null, lyDo: b.lyDo });
+}));
+
 /** Đổi mục tiêu: có hiệu lực từ ngày ghi trở đi, KHÔNG chấm lại các lượt đã chốt. */
 api.post('/cycles/:id/target-revision', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -1332,15 +1343,60 @@ api.get('/classes/:id/progress', requireAuth, wrap((req) => {
  */
 api.get('/classes/:id/transition', requireAuth, wrap((req) => {
   maybeSimulateReadError();
+  lenhSvc.quetLenhDenHan();
   return transitionSvc.transitionPlan(principalOf(req), pInt(req, 'id'));
 }));
 
-/** Xác nhận chuyển tiếp: mở lớp mới (nếu có) rồi chuyển từng em sang lớp đích của em. */
+/**
+ * PR-CT (Q30-1): RA LỆNH chuyển lớp (không chuyển ngay) — Quản lý lớp nguồn quyết em nào · lớp đích · tuần bắt đầu; tới Thứ Hai đó web tự thi hành
+ * (`thiHanhLenhDenHan`). GVCN, GVBM → 403.
+ */
 api.post('/classes/:id/transition', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return transitionSvc.applyTransition(principalOf(req), {
-    ...(req.body ?? {}), fromClassId: pInt(req, 'id'),
+  const id = pInt(req, 'id');
+  const b = req.body ?? {};
+  return lenhSvc.raLenh(principalOf(req), {
+    lopNguonId: id, boiCanh: lenhSvc.boiCanhTheoLop(id), tuanChung: b.tuanChung ?? null,
+    dongs: Array.isArray(b.dongs) ? b.dongs.map(lenhSvc.dongTuBody) : [],
   });
+}));
+
+api.patch('/lenh-chuyen/:id', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  lenhSvc.suaLenh(principalOf(req), pInt(req, 'id'), lenhSvc.suaTuBody(req.body));
+  return { ok: true };
+}));
+
+api.post('/lenh-chuyen/:id/huy', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  lenhSvc.huyLenh(principalOf(req), pInt(req, 'id'), req.body?.lyDo);
+  return { ok: true };
+}));
+
+/** Bàn giao (Q30-2): phiếu cả lớp nguồn (một lần đọc), một phiếu, GVBM ghi môn mình, GVCN xác nhận / nhắc. */
+api.get('/lenh-chuyen/ban-giao', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const lop = qInt(req, 'lop');
+  if (!lop) throw badRequest('Cần lớp (lop).');
+  return banGiaoSvc.phieuBanGiao(principalOf(req), { lopNguonId: lop, mon: qStr(req, 'mon') ?? undefined });
+}));
+api.get('/lenh-chuyen/:id/ban-giao', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return banGiaoSvc.phieuBanGiao(principalOf(req), { lenhId: pInt(req, 'id') });
+}));
+api.put('/lenh-chuyen/:id/ban-giao-mon', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  banGiaoSvc.ghiMon(principalOf(req), pInt(req, 'id'), String(req.body?.mon ?? ''), String(req.body?.noiDung ?? ''));
+  return { ok: true };
+}));
+api.post('/lenh-chuyen/:id/xac-nhan', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  banGiaoSvc.xacNhanBanGiao(principalOf(req), pInt(req, 'id'), String(req.body?.nhanXetChung ?? ''));
+  return { ok: true };
+}));
+api.post('/lenh-chuyen/:id/nhac', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return banGiaoSvc.nhacGvbm(principalOf(req), pInt(req, 'id'), String(req.body?.mon ?? ''));
 }));
 
 /**
@@ -1472,6 +1528,7 @@ api.get('/highlights', requireAuth, wrap((req) => {
 /** Khối Quản lý: Cần xử lý + Điểm đáng chú ý. Mọi số đi qua `metricSet` — cùng số với `/metrics/:id`. */
 api.get('/tong-quan/quan-ly', requireAuth, wrap((req) => {
   maybeSimulateReadError();
+  lenhSvc.quetLenhDenHan();
   return tongQuanSvc.tongQuanQuanLy(principalOf(req), {
     branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')),
   });
@@ -1739,6 +1796,7 @@ api.get('/students', requireAuth, wrap((req) => {
  */
 api.get('/students/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
+  lenhSvc.quetLenhDenHan();
   return profileSvc.studentProfile(principalOf(req), pInt(req, 'id'), qInt(req, 'cycleId'), qInt(req, 'attemptId'));
 }));
 
@@ -1754,14 +1812,32 @@ api.post('/students/:id/transfer', requireAuth, wrap((req) => {
     nguoiNhan, mucTieu, thangThi,
   } = req.body ?? {};
   if (!toClassId) throw badRequest('Cần chọn lớp đích.');
+  /* PR-CT: panel mới gửi thẳng `lyDo` (một ô chữ ≥ 3 ký tự); đường lý do chọn nhanh cũ giữ cho phép kiểm và client cũ. */
+  const lyDoTuDo = typeof req.body?.lyDo === 'string' ? req.body.lyDo.trim() : '';
+  if (req.body?.lyDo !== undefined && lyDoTuDo.length < 3) throw badRequest('Ghi lý do chuyển lớp (ít nhất 3 ký tự).');
   /* RB-3: lý do chọn nhanh BẮT BUỘC; "Khác" phải ghi rõ ≥ 3 ký tự (T13). */
-  if (laKhac(reasonCode)) {
+  if (!lyDoTuDo && laKhac(reasonCode)) {
     const loi = kiemGhiRoKhac(reasonNote);
     if (loi) throw badRequest(`Lý do "Khác": ${loi}.`);
   }
-  const reason = transferReasonText(reasonCode, reasonNote);
+  const reason = lyDoTuDo || transferReasonText(reasonCode, reasonNote);
   if (!reason) throw badRequest('Chọn lý do chuyển lớp (chọn "Khác" thì ghi rõ).');
-  return studentSvc.transferStudent(principalOf(req), pInt(req, 'id'), Number(toClassId),
+  /* PR-CT: em đang học một lớp → RA LỆNH (Quản lý); chỉ em CHƯA TỪNG xếp lớp (xếp lần đầu) mới đi đường cũ. */
+  const sid = pInt(req, 'id');
+  const enr = luatLoTrinhSvc.lopHienTaiCua(sid);
+  if (enr) {
+    const dich = luatLoTrinhSvc.lopDichHopLe(Number(toClassId), enr.class_id);
+    const r = lenhSvc.raLenh(principalOf(req), {
+      lopNguonId: enr.class_id, boiCanh: 'giua-khoa', tuanChung: req.body?.tuan ?? effectiveDate ?? null,
+      dongs: [lenhSvc.dongTuBody({
+        studentId: sid, huong: dich?.is_fast_track && !enr.is_fast_track ? 'fast_track' : 'chuyen_lop', toClassId, lyDo: reason,
+        mucTieu, ngayThi: req.body?.ngayThi ?? thangThi,
+      })],
+    });
+    if (r.failed.length) throw badRequest(r.failed[0].message);
+    return r;
+  }
+  return studentSvc.transferStudent(principalOf(req), sid, Number(toClassId),
     effectiveDate ?? demoToday(), reason, {
       note: handoverNote ?? null,
       noNote: noHandoverNote === true,

@@ -26,6 +26,8 @@ import { CO_THE_KHONG_THEO_DOI, awaitingCauseCaseIds } from '../cases/sosState.t
 import { khiDuyetKeHoach, khiTuChoiKeHoach } from '../cases/boTro.ts';
 import { chotYeuCau, taoYeuCau } from './yeuCau.ts';
 import { trangThaiYThuc, ungVienVaThe, type EmYThuc } from '../yThuc/trangThai.ts';
+import { classProgressMany } from '../classes/schedule.ts';
+import { apDungDeXuatChuyenLop, demChuaCoLenh, nguoiNhanCuaLop } from '../classes/lenhChuyen.ts';
 
 /**
  * PR-YT4 — vì sao em cần Báo lên (null = không): bắt buộc quá hạn · Mới quá 5 ngày chưa ai xem · đã duyệt chưa thực hiện quá 5 ngày
@@ -403,6 +405,126 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         dong: ['Không cần duyệt — để QL biết và nhắc.'],
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, { tab: 'y-thuc' }) : undefined,
         duLieu: { tenGv: x?.ten_gv ?? null, daNhacLuc: x?.da_nhac ?? null, ownerId: x?.owner ?? null },
+      };
+    },
+  },
+  /* ------------------------------------------------------------ PR-CT · Đề xuất chuyển lớp (Q30-1, Q14) — Duyệt = ra lệnh, Quản lý sửa được lớp và tuần */
+  {
+    loai: 'de_xuat_chuyen_lop',
+    khiDuyet: (p, yc, v) => { apDungDeXuatChuyenLop(p, yc, v.duLieu); },
+    /* Em không còn học, hoặc đã có lệnh chuyển lớp từ đường khác → thẻ không còn ý nghĩa. */
+    chet: {
+      sql: `NOT EXISTS (SELECT 1 FROM enrollments e WHERE e.student_id = y.hoc_vien_id AND e.status = 'active')
+         OR EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.student_id = y.hoc_vien_id AND l.trang_thai = 'cho' AND l.tu_yeu_cau_id IS NOT y.id)`,
+      lyDo: 'Học viên không còn học hoặc đã có lệnh chuyển lớp',
+    },
+    nap: (conn, ds) => {
+      const ids = ds.map((y) => y.id);
+      return new Map((conn.prepare(
+        `SELECT y.id, c.code AS lop FROM yeu_cau_duyet y LEFT JOIN classes c ON c.id = json_extract(y.du_lieu, '$.lopDichId') WHERE y.id IN (${ids.map(() => '?').join(',')})`,
+      ).all(...ids) as any[]).map((r) => [r.id as number, r]));
+    },
+    moTa: (yc, ngu) => {
+      const d = (() => { try { return JSON.parse(yc.du_lieu ?? '{}'); } catch { return {}; } })() as { lopDichId?: number | null; tuan?: string | null };
+      const lop = ngu.them.get(yc.id)?.lop as string | undefined;
+      return {
+        tieuDe: `Đề xuất chuyển lớp · ${lop ?? 'chưa chọn lớp'}${d.tuan ? ` · từ ${tuanLich(d.tuan, ngu.homNay)}` : ''}`,
+        dong: [`${nguoiXin(yc, ngu)} (${ngay(yc.tao_luc, ngu)}): “${yc.ly_do ?? ''}”`],
+        neuDuyet: 'Mở panel ra lệnh — sửa được lớp, tuần.',
+        mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id) : undefined,
+        duLieu: { moPanelChuyenLop: true, lopDichId: d.lopDichId ?? null, tuan: d.tuan ?? null },
+      };
+    },
+  },
+  /* ------------------------------------------------------------ PR-CT · Báo lên: Bàn giao quá hạn 3 ngày — MỘT thẻ mỗi lớp nguồn (Q12) */
+  {
+    loai: 'bao_len_ban_giao',
+    /* Lệnh vẫn chạy đúng tuần — thẻ chỉ để Quản lý biết và nhắc GVCN. Quét chỉ TẠO (một câu, và thường ra rỗng); ĐÓNG là việc của `chet` dưới đây, chạy chung câu
+       "thẻ chết" của hộp nên không tốn thêm câu nào. Không có gì để tạo → không mở tx. */
+    quet: (conn, homNay) => {
+      const tao = conn.prepare(
+        `SELECT l.lop_nguon_id AS lop, MIN(l.han_gvcn) AS han, c.branch_id FROM lenh_chuyen_lop l JOIN classes c ON c.id = l.lop_nguon_id
+          WHERE l.trang_thai != 'huy' AND l.huong != 'dung_hoc' AND l.xac_nhan_luc IS NULL AND l.han_gvcn < ?
+            AND NOT EXISTS (SELECT 1 FROM yeu_cau_duyet y WHERE y.loai = 'bao_len_ban_giao' AND y.doi_tuong_id = l.lop_nguon_id AND y.trang_thai = 'cho')
+          GROUP BY l.lop_nguon_id`,
+      ).all(homNay) as any[];
+      if (!tao.length) return 0;
+      const gv = nguoiNhanCuaLop(tao.map((r) => r.lop as number));
+      return tx(() => tao.filter((r) => taoYeuCau(conn, {
+        loai: 'bao_len_ban_giao', doiTuongLoai: 'lop:ban-giao', doiTuongId: r.lop, lopId: r.lop, chiNhanhId: r.branch_id, nguoiXin: null, hanDuyet: r.han,
+        duLieu: { viecKey: `ban_giao:${r.lop}`, ownerId: [...(gv.get(r.lop) ?? [])][0] ?? null },
+      }) !== null).length);
+    },
+    chet: {
+      sql: `NOT EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.lop_nguon_id = y.doi_tuong_id AND l.trang_thai != 'huy' AND l.huong != 'dung_hoc' AND l.xac_nhan_luc IS NULL)`,
+      lyDo: 'Việc gốc đã xong',
+    },
+    nap: (conn, ds) => {
+      const ids = ds.map((y) => y.id);
+      return new Map((conn.prepare(
+        `SELECT y.id, c.code AS lop, json_extract(y.du_lieu, '$.ownerId') AS owner, u.full_name AS ten_gv, n.created_at AS da_nhac,
+                (SELECT COUNT(*) FROM lenh_chuyen_lop l WHERE l.lop_nguon_id = y.doi_tuong_id AND l.trang_thai != 'huy' AND l.huong != 'dung_hoc' AND l.xac_nhan_luc IS NULL) AS n
+           FROM yeu_cau_duyet y JOIN classes c ON c.id = y.doi_tuong_id LEFT JOIN users u ON u.id = json_extract(y.du_lieu, '$.ownerId')
+           LEFT JOIN notifications n ON n.user_id = json_extract(y.du_lieu, '$.ownerId') AND n.dedup_key = 'nhac:' || json_extract(y.du_lieu, '$.viecKey') || ':' || ?
+          WHERE y.id IN (${ids.map(() => '?').join(',')})`,
+      ).all(demoToday(), ...ids) as any[]).map((r) => [r.id as number, r]));
+    },
+    moTa: (yc, ngu) => {
+      const x = ngu.them.get(yc.id);
+      return {
+        tieuDe: `Bàn giao quá hạn${x?.lop ? ` · ${x.lop}` : ''}`,
+        phu: x?.ten_gv ? `GVCN ${x.ten_gv}` : 'Lớp chưa có GVCN',
+        dong: [`${x?.n ?? 0} em chưa được xác nhận bàn giao (hạn hết ${ngay(yc.han_duyet, ngu)}). Em vẫn chuyển đúng tuần — không cần duyệt, để QL biết và nhắc.`],
+        mo: `/hoc-vien/lop/${yc.doi_tuong_id}?viec=ban-giao`,
+        duLieu: { tenGv: x?.ten_gv ?? null, daNhacLuc: x?.da_nhac ?? null, ownerId: x?.owner ?? null },
+      };
+    },
+  },
+  /* ------------------------------------------------------------ PR-CT · Báo lên: lớp thường HẾT tuần kết thúc còn em chưa có lệnh (Q30-4, Q13) */
+  {
+    loai: 'bao_len_chua_lenh',
+    /* Quét chỉ TẠO: một câu ra các lớp thường CÓ THỂ đã hết khoá (ngày bắt đầu + số tuần ≤ hôm nay — tập rộng hơn `phase = finished` một chút), còn em chưa có lệnh
+       và chưa có thẻ; thường rỗng → không tính tiến độ lớp. ĐÓNG do `chet` (hết em chưa có lệnh, hoặc lớp đã kết thúc). */
+    quet: (conn, homNay) => {
+      const lop = (conn.prepare(
+        `SELECT c.id FROM classes c LEFT JOIN report_periods rp ON rp.id = c.start_period_id
+          WHERE c.status = 'active' AND c.is_fast_track = 0
+            AND (c.so_tuan IS NULL OR rp.week_start IS NULL OR date(rp.week_start, '+' || (c.so_tuan * 7) || ' days') <= ?)
+            AND EXISTS (SELECT 1 FROM enrollments e JOIN students s ON s.id = e.student_id WHERE e.class_id = c.id AND e.status = 'active'
+                          AND s.status = 'active' AND s.archived_at IS NULL
+                          AND NOT EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.student_id = e.student_id AND l.trang_thai = 'cho'))
+            AND NOT EXISTS (SELECT 1 FROM yeu_cau_duyet y WHERE y.loai = 'bao_len_chua_lenh' AND y.doi_tuong_id = c.id AND y.trang_thai = 'cho')`,
+      ).all(homNay) as any[]).map((r) => r.id as number);
+      if (!lop.length) return 0;
+      const tienDo = classProgressMany(lop);
+      const tao = lop.filter((id) => tienDo.get(id)?.phase === 'finished');
+      if (!tao.length) return 0;
+      return tx(() => tao.filter((id) => taoYeuCau(conn, {
+        loai: 'bao_len_chua_lenh', doiTuongLoai: 'lop:chua-lenh', doiTuongId: id, lopId: id, nguoiXin: null, hanDuyet: null,
+        duLieu: { viecKey: `chua_lenh:${id}`, ownerId: null },
+      }) !== null).length);
+    },
+    chet: {
+      sql: `NOT EXISTS (SELECT 1 FROM classes c WHERE c.id = y.doi_tuong_id AND c.status = 'active')
+         OR NOT EXISTS (SELECT 1 FROM enrollments e JOIN students s ON s.id = e.student_id WHERE e.class_id = y.doi_tuong_id AND e.status = 'active'
+              AND s.status = 'active' AND s.archived_at IS NULL AND NOT EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.student_id = e.student_id AND l.trang_thai = 'cho'))`,
+      lyDo: 'Việc gốc đã xong',
+    },
+    nap: (conn, ds) => {
+      const ids = ds.map((y) => y.id);
+      return new Map((conn.prepare(
+        `SELECT y.id, c.code AS lop, (SELECT COUNT(*) FROM enrollments e JOIN students s ON s.id = e.student_id
+            WHERE e.class_id = y.doi_tuong_id AND e.status = 'active' AND s.status = 'active' AND s.archived_at IS NULL
+              AND NOT EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.student_id = e.student_id AND l.trang_thai = 'cho')) AS n
+           FROM yeu_cau_duyet y JOIN classes c ON c.id = y.doi_tuong_id WHERE y.id IN (${ids.map(() => '?').join(',')})`,
+      ).all(...ids) as any[]).map((r) => [r.id as number, r]));
+    },
+    moTa: (yc, ngu) => {
+      const x = ngu.them.get(yc.id);
+      return {
+        tieuDe: `Lớp hết khoá còn em chưa có lệnh${x?.lop ? ` · ${x.lop}` : ''}`,
+        dong: [`${x?.n ?? 0} em chưa có lệnh chuyển. Không cần duyệt — Quản lý ra lệnh ở hồ sơ lớp.`],
+        mo: `/hoc-vien/lop/${yc.doi_tuong_id}?viec=chuyen-tiep`,
       };
     },
   },

@@ -253,13 +253,13 @@ export function nhomGiaoVienBoMon(
 // ---------------------------------------------------------------- menu ⋯ dòng học viên (§3.7, §4, Q1)
 
 /* PR-YT4 (K2-30 phần chữ): bỏ mục `Hồ sơ` (tên em đã là liên kết); "+ Ghi vi phạm" (T31 — "Ghi nhận" chỉ nghĩa đã xem). */
-export type MucMenuDong = 'vi-pham' | 'case' | 'nhap-diem' | 'lo-trinh-tiep' | 'chuyen-lop';
+export type MucMenuDong = 'vi-pham' | 'case' | 'nhap-diem' | 'lo-trinh-tiep' | 'chuyen-lop' | 'de-xuat-chuyen-lop';
 export const MUC_MENU_DONG_NHAN: Record<MucMenuDong, string> = {
   'vi-pham': '+ Ghi vi phạm', case: '+ Case', 'nhap-diem': 'Nhập điểm',
-  'lo-trinh-tiep': 'Lộ trình tiếp theo', 'chuyen-lop': 'Chuyển lớp',
+  'lo-trinh-tiep': 'Lộ trình tiếp theo', 'chuyen-lop': 'Chuyển lớp…', 'de-xuat-chuyen-lop': 'Đề xuất chuyển lớp…',
 };
 /** Việc HIẾM của dòng (K2-30): kẻ vạch trước mục hiếm đầu tiên — tách khỏi việc hằng ngày (Ghi vi phạm · Case · Nhập điểm). */
-export const MUC_MENU_DONG_HIEM: readonly MucMenuDong[] = ['lo-trinh-tiep', 'chuyen-lop'];
+export const MUC_MENU_DONG_HIEM: readonly MucMenuDong[] = ['lo-trinh-tiep', 'chuyen-lop', 'de-xuat-chuyen-lop'];
 /**
  * Hai mục thuộc PR-LT (đợt 5). Đã có màn làm việc đúng luật §3.9 (`LoTrinhTiepPanel.tsx`,
  * `ChuyenLopPanel.tsx`) — panel gắn ở `web/src/modules/classes/thaoTacDongHocVien.tsx`.
@@ -269,6 +269,8 @@ export const MENU_DONG_CHO_PR_LT = { loTrinhTiepTheo: true, chuyenLop: true } as
 export function mucMenuDongHocVien(i: {
   laLopThuong: boolean; dangHoc: boolean; coTheGhiViPham: boolean; coTheBaoCase: boolean;
   coTheNhapDiem: boolean; coTheSuaHocVien: boolean; coTheChuyenLop: boolean;
+  /** PR-CT (Q30-1): GVCN thấy "Đề xuất chuyển lớp…" thay cho "Chuyển lớp…" (chỉ Quản lý ra lệnh). */
+  coTheDeXuatChuyenLop?: boolean;
 }, bat: { loTrinhTiepTheo: boolean; chuyenLop: boolean } = MENU_DONG_CHO_PR_LT): MucMenuDong[] {
   const out: MucMenuDong[] = [];
   if (!i.dangHoc) return out;
@@ -277,6 +279,7 @@ export function mucMenuDongHocVien(i: {
   if (i.coTheNhapDiem) out.push('nhap-diem');
   if (bat.loTrinhTiepTheo && i.laLopThuong && i.coTheSuaHocVien) out.push('lo-trinh-tiep');
   if (bat.chuyenLop && i.coTheChuyenLop) out.push('chuyen-lop');
+  else if (bat.chuyenLop && i.coTheDeXuatChuyenLop) out.push('de-xuat-chuyen-lop');
   return out;
 }
 
@@ -508,8 +511,7 @@ export function nutChinhDauTrang(i: {
   coTheThemHv: boolean; coTheNhapDiem: boolean; coTheChuyenTiep: boolean; soEmChuyen: number;
 }): NutChinh {
   if (i.soHocVien === 0 && i.coTheThemHv) return { loai: 'them-hv', nhan: '+ Học viên' };
-  const cuoiKhoa = i.thuong && (i.phase === 'final_week' || i.phase === 'finished' || i.needsPlacement);
-  if (cuoiKhoa && i.coTheChuyenTiep) return { loai: 'chuyen-tiep', nhan: i.soEmChuyen > 0 ? `Chuyển tiếp lớp · ${i.soEmChuyen} em` : 'Chuyển tiếp lớp' };
+  /* PR-CT: "Chuyển lớp cả lớp…" nằm ở dải Kết thúc khoá ngay dưới tên lớp (mockup 20 — A), không còn là nút chính đầu trang. */
   if (i.coTheNhapDiem) return { loai: 'nhap-diem', nhan: 'Nhập điểm Test' };
   return { loai: null, nhan: '' };
 }

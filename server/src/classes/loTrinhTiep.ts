@@ -9,6 +9,7 @@ import { can, require_, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { classProgress } from './schedule.ts';
 import { standingFor } from '../students/standing.ts';
+import { coTheRaLenh } from './quyenChuyenLop.ts';
 import { cuoiKhoaTheoHocVien } from '../normal/cuoiKhoa.ts';
 
 /**
@@ -171,6 +172,7 @@ export function demChuaLoTrinh(classIds: number[]): Map<number, number> {
         WHERE e.class_id IN (${ph}) AND e.status = 'active'
           AND s.status = 'active' AND s.archived_at IS NULL
           AND (lt.id IS NULL OR lt.huong = 'chua_ro')
+          AND NOT EXISTS (SELECT 1 FROM lenh_chuyen_lop lc WHERE lc.student_id = e.student_id AND lc.trang_thai = 'cho')   -- PR-CT: em đã có lệnh không còn "chưa có hướng"
         GROUP BY e.class_id`,
     )
     .all(...classIds) as any[]) {
@@ -186,7 +188,7 @@ export function demChuaLoTrinh(classIds: number[]): Map<number, number> {
 export function lopHocCua(p: Principal, studentId: number, current: any): {
   tiepTheo: string | null; nhacLoTrinh: boolean; chiXem: boolean;
   quyen: {
-    ghiLoTrinhTiep: boolean; chuyenLop: boolean; tamDung: boolean; quayLai: boolean;
+    ghiLoTrinhTiep: boolean; chuyenLop: boolean; deXuatChuyenLop: boolean; tamDung: boolean; quayLai: boolean;
     ketThuc: boolean; luuTru: boolean; boLuuTru: boolean;
   };
 } {
@@ -197,7 +199,7 @@ export function lopHocCua(p: Principal, studentId: number, current: any): {
     return {
       tiepTheo: null, nhacLoTrinh: false, chiXem: true,
       quyen: {
-        ghiLoTrinhTiep: false, chuyenLop: false, tamDung: false, quayLai: false, ketThuc: false, luuTru: false,
+        ghiLoTrinhTiep: false, chuyenLop: false, deXuatChuyenLop: false, tamDung: false, quayLai: false, ketThuc: false, luuTru: false,
         boLuuTru: can(p, PERMISSIONS.PLAN_WEEK, { studentId }),
       },
     };
@@ -224,7 +226,9 @@ export function lopHocCua(p: Principal, studentId: number, current: any): {
     tiepTheo, nhacLoTrinh, chiXem: false,
     quyen: {
       ghiLoTrinhTiep: laLopThuong && coTheChuyenLop,
-      chuyenLop: coTheChuyenLop,
+      /* PR-CT: Quản lý ra lệnh (`Chuyển lớp…`); GVCN đề xuất (`Đề xuất chuyển lớp…`). */
+      chuyenLop: !!current && coTheRaLenh(p, current.class_id),
+      deXuatChuyenLop: coTheChuyenLop && !coTheRaLenh(p, current.class_id),
       tamDung: can(p, PERMISSIONS.STUDENT_EDIT, { studentId }),
       quayLai: can(p, PERMISSIONS.STUDENT_EDIT, { studentId }),
       ketThuc: can(p, PERMISSIONS.STUDENT_EDIT, { studentId }),

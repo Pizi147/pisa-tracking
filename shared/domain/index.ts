@@ -64,5 +64,6 @@ export * from './nhapHocVien.ts';
 export * from './thaoTacMt.ts';
 export * from './nhanXet.ts';
 export * from './xuatMt.ts';
+export * from './chuyenLop.ts';
 export * from './cuoiKhoa.ts';
 export * from './hoSoGiaoVien.ts';

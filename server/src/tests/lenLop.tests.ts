@@ -525,7 +525,7 @@ export async function runLenLopTests(t: YThucTestKit) {
     const { sid, cycleId } = taoHV4({ clsId: from, ma: 'FT', ft: true, target: 6.5 });
     const caseId = taoCase4(sid, cycleId, 'writing1');
     const gvcn = ganGVCN3(from, P.normalCoreTeacher.userId);
-    const r = studentsSvc4.transferStudent(gvcn, sid, to, TODAY3, 'Đổi lịch học', { note: 'Đang dở PA Writing.' });
+    const r = studentsSvc4.transferStudent(P.admin, sid, to, TODAY3, 'Đổi lịch học', { note: 'Đang dở PA Writing.' });
     assert(activeCycleCount(sid) === 1 && cycleStatus(cycleId) === 'active', 'FT→FT phải GIỮ nguyên lộ trình (khoa=giu)');
     assert(caseStatus(caseId).status === 'open', 'Case phải giữ nguyên, không tự đóng');
     assert(r.endKind === 'chuyen_lop', `endKind: ${r.endKind}`);
@@ -541,7 +541,7 @@ export async function runLenLopTests(t: YThucTestKit) {
        VALUES (?,?,1,'progress',?,?, 'planned', ?)`,
     ).run(cycleId, sid, from, periodId, new Date().toISOString()).lastInsertRowid);
     const gvcn = ganGVCN3(from, P.normalCoreTeacher.userId);
-    studentsSvc4.transferStudent(gvcn, sid, to, TODAY3, 'Đổi lịch học', { noNote: true });
+    studentsSvc4.transferStudent(P.admin, sid, to, TODAY3, 'Đổi lịch học', { noNote: true });
     assert(cycleStatus(cycleId) === 'active', 'Cùng chương trình, giữa khoá: khoá phải GIỮ (khoa=giu)');
     const att = conn.prepare('SELECT class_id FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
     assert(att.class_id === to, 'Khoá giữ thì lượt chưa làm phải chuyển theo em sang lớp mới');
@@ -553,9 +553,9 @@ export async function runLenLopTests(t: YThucTestKit) {
     const { sid, cycleId } = taoHV4({ clsId: from, ma: 'FOU', ft: false });
     const caseId = taoCase4(sid, cycleId, 'writing');
     const gvcn = ganGVCN3(from, P.normalCoreTeacher.userId);
-    assertThrows(() => studentsSvc4.transferStudent(gvcn, sid, to, TODAY3, 'Xếp lại trình độ', { noNote: false, note: 'Đủ trình lên FT', mucTieu: undefined as any }),
+    assertThrows(() => studentsSvc4.transferStudent(P.admin, sid, to, TODAY3, 'Xếp lại trình độ', { noNote: false, note: 'Đủ trình lên FT', mucTieu: undefined as any }),
       /Mục tiêu/, 'Thiếu Mục tiêu band phải 400');
-    const r = studentsSvc4.transferStudent(gvcn, sid, to, TODAY3, 'Xếp lại trình độ', { note: 'Đủ trình lên FT', mucTieu: 6.5 });
+    const r = studentsSvc4.transferStudent(P.admin, sid, to, TODAY3, 'Xếp lại trình độ', { note: 'Đủ trình lên FT', mucTieu: 6.5 });
     assert(cycleStatus(cycleId) === 'completed', 'Khoá lớp thường cũ phải đóng completed');
     assert(activeCycleCount(sid) === 1, 'Đúng một lộ trình active sau khi sang FT');
     const newCycle = conn.prepare(`SELECT * FROM learning_cycles WHERE student_id=? AND status='active'`).get(sid) as any;
@@ -571,7 +571,7 @@ export async function runLenLopTests(t: YThucTestKit) {
     const { sid, cycleId } = taoHV4({ clsId: from, ma: 'FT', ft: true, target: 6.0 });
     const caseId = taoCase4(sid, cycleId, 'listening');
     const gvcn = ganGVCN3(from, P.normalCoreTeacher.userId);
-    const r = studentsSvc4.transferStudent(gvcn, sid, to, TODAY3, 'Xếp lại trình độ', { noNote: false, note: 'Chuyển sang lớp thường' });
+    const r = studentsSvc4.transferStudent(P.admin, sid, to, TODAY3, 'Xếp lại trình độ', { noNote: false, note: 'Chuyển sang lớp thường' });
     assert(cycleStatus(cycleId) === 'completed', 'Khoá FT cũ phải đóng completed');
     assert(caseStatus(caseId).status === 'done' && caseStatus(caseId).system_close_reason === 'moved_to_normal',
       `Case FT phải đóng moved_to_normal: ${JSON.stringify(caseStatus(caseId))}`);
@@ -589,7 +589,7 @@ export async function runLenLopTests(t: YThucTestKit) {
        VALUES (?,?,1,'final',?,?, 'planned', ?)`,
     ).run(cycleId, sid, from, periodId, new Date().toISOString()).lastInsertRowid);
     const gvcn = ganGVCN3(from, P.normalCoreTeacher.userId);
-    studentsSvc4.transferStudent(gvcn, sid, to, TODAY3, 'Xếp lại trình độ', { noNote: false, note: 'Học lệch trình' });
+    studentsSvc4.transferStudent(P.admin, sid, to, TODAY3, 'Xếp lại trình độ', { noNote: false, note: 'Học lệch trình' });
     assert(cycleStatus(cycleId) === 'completed', 'Khác chương trình giữa khoá vẫn đóng khoá cũ');
     const newCycle = conn.prepare(`SELECT programme_code FROM learning_cycles WHERE student_id=? AND status='active'`).get(sid) as any;
     assert(newCycle.programme_code === 'BE', `Khoá mới phải đúng mã BE: ${newCycle?.programme_code}`);
@@ -598,7 +598,7 @@ export async function runLenLopTests(t: YThucTestKit) {
     assert(att.class_id === from, 'Đóng khoá thì lượt chưa làm phải Ở LẠI lớp cũ (Q12)');
   });
 
-  check('PR-LT (4) · Q3: GVBM lớp nguồn → 403; GVCN lớp KHÁC (không phải nguồn) → 403; GVCN lớp MB chuyển em sang lớp CP thành công; GVCN MB mất quyền xem sau đó', () => {
+  check('PR-LT (4) · Q3 (PR-CT Q30-1 đổi): GVBM lớp nguồn, GVCN lớp KHÁC và GVCN lớp nguồn → 403; QL chi nhánh lớp nguồn chuyển em sang lớp CP thành công; GVCN MB mất quyền xem sau đó', () => {
     const from = taoLop4({ branchId: MB3, kind: 'FOU', ft: false, tuanHienTai: 2 });
     const other = taoLop4({ branchId: MB3, kind: 'FOU', ft: false, tuanHienTai: 2 });
     const to = taoLop4({ branchId: CP4, kind: 'FOU', ft: false, tuanHienTai: 2 });
@@ -612,7 +612,11 @@ export async function runLenLopTests(t: YThucTestKit) {
       /quyền/, 'GVBM (không kiêm GVCN) của lớp nguồn phải 403');
     assertThrows(() => studentsSvc4.transferStudent(gvcnOther, sid, to, TODAY3, 'Đổi chi nhánh', { noNote: true }),
       /quyền/, 'GVCN của một lớp KHÁC (không phải lớp nguồn hiện tại) phải 403');
-    studentsSvc4.transferStudent(gvcnFrom, sid, to, TODAY3, 'Đổi chi nhánh', { noNote: true });
+    assertThrows(() => studentsSvc4.transferStudent(gvcnFrom, sid, to, TODAY3, 'Đổi chi nhánh', { noNote: true }),
+      /quyền/, 'PR-CT (Q30-1): GVCN lớp nguồn không còn tự chuyển — phải 403');
+    assertThrows(() => studentsSvc4.transferStudent(P.cpManager, sid, to, TODAY3, 'Đổi chi nhánh', { noNote: true }),
+      /quyền/, 'QL chi nhánh ĐÍCH (khác lớp nguồn) phải 403');
+    studentsSvc4.transferStudent(P.mbManager, sid, to, TODAY3, 'Đổi chi nhánh', { noNote: true });
     /*
      * "QL CP thấy ngay" (PR-TD Task2(e), đã kiểm ở đó với HV KHÔNG có ghi danh cũ): ở đây HV có
      * ghi danh MB cũ ('transferred') nên `branchesOfStudent` trả CẢ MB lẫn CP — luật can() hiện
@@ -629,7 +633,7 @@ export async function runLenLopTests(t: YThucTestKit) {
     taoHV4({ clsId: to, ma: 'FOU', ft: false }); // học viên lớp đích — không được lộ
     const { sid } = taoHV4({ clsId: from, ma: 'FOU', ft: false });
     const gvcn = ganGVCN3(from, P.normalCoreTeacher.userId);
-    const r = luatLoTrinhSvc.lopDichChoChuyen(gvcn, sid);
+    const r = luatLoTrinhSvc.lopDichChoChuyen(P.mbManager, sid);
     assert(r.chiNhanh.some((b: any) => b.id === CP4), 'Phải có chi nhánh CP');
     assert(r.lop.some((l: any) => l.id === to), 'Phải có lớp đích ở CP');
     const raw = JSON.stringify(r);
@@ -643,7 +647,7 @@ export async function runLenLopTests(t: YThucTestKit) {
     ganGV4(to, gvcnTo.userId, null, true);
     const { sid } = taoHV4({ clsId: from, ma: 'FOU', ft: false });
     const gvcnFrom = ganGVCN3(from, P.normalSubjectTeacher.userId);
-    studentsSvc4.transferStudent(gvcnFrom, sid, to, TODAY3, 'Đổi chi nhánh', { noNote: true });
+    studentsSvc4.transferStudent(P.admin, sid, to, TODAY3, 'Đổi chi nhánh', { noNote: true });
     const notiGvcn = conn.prepare(`SELECT COUNT(*) n FROM notifications WHERE user_id=? AND kind='transfer_in'`).get(gvcnTo.userId) as any;
     assert(notiGvcn.n === 1, `GVCN lớp CP phải nhận đúng 1 thông báo: ${notiGvcn.n}`);
     const notiQlCp = conn.prepare(`SELECT COUNT(*) n FROM notifications WHERE user_id=? AND kind='transfer_in'`).get(P.cpManager.userId) as any;
@@ -668,7 +672,7 @@ export async function runLenLopTests(t: YThucTestKit) {
     const be = taoLop4({ branchId: MB3, kind: 'BE', ft: false, tuanHienTai: 2 });
     const { sid } = taoHV4({ clsId: fou, ma: 'FOU', ft: false });
     const gvcn = ganGVCN3(fou, P.normalCoreTeacher.userId);
-    const r = studentsSvc4.transferStudent(gvcn, sid, be, TODAY3, 'Xếp lại trình độ', { noNote: true });
+    const r = studentsSvc4.transferStudent(P.admin, sid, be, TODAY3, 'Xếp lại trình độ', { noNote: true });
     assert(r.endKind === 'chuyen_lop', `Giữa khoá khác chương trình → chuyen_lop, được ${r.endKind}`);
     const enr = conn.prepare(`SELECT end_kind FROM enrollments WHERE student_id=? AND status='transferred' ORDER BY id DESC LIMIT 1`).get(sid) as any;
     assert(enr.end_kind === 'chuyen_lop', `Cột end_kind trên enrollment: ${enr.end_kind}`);
@@ -901,7 +905,7 @@ export async function runLenLopTests(t: YThucTestKit) {
     const to = taoLop4({ branchId: MB3, kind: 'FOU', ft: false, tuanHienTai: 3 });
     const { sid } = taoHV4({ clsId: from, ma: 'FOU', ft: false });
     const gvcn = ganGVCN3(from, P.normalCoreTeacher.userId);
-    studentsSvc4.transferStudent(gvcn, sid, to, TODAY3, 'Đổi lịch học', { noNote: true });
+    studentsSvc4.transferStudent(P.admin, sid, to, TODAY3, 'Đổi lịch học', { noNote: true });
     const rows = lichSuLopSvc.lichSuLop(P.admin, sid) as any[];
     assert(rows.length === 2, `Phải đúng 2 dòng: ${rows.length}`);
     assert(rows[1].lop.id === from && rows[1].ketThucVi === 'Chuyển lớp', `Dòng cũ phải "Chuyển lớp": ${JSON.stringify(rows[1])}`);
@@ -1095,7 +1099,7 @@ export async function runLenLopTests(t: YThucTestKit) {
     const to = taoLop4({ branchId: MB3, kind: 'FT', ft: true });
     const { sid } = taoHV4({ clsId: from, ma: 'FOU', ft: false });
     const gvcn = ganGVCN3(from, P.normalCoreTeacher.userId);
-    studentsSvc4.transferStudent(gvcn, sid, to, TODAY3, 'Xếp lại trình độ', { note: 'Đủ trình lên FT', mucTieu: 6.5, thangThi: '2027-03' });
+    studentsSvc4.transferStudent(P.admin, sid, to, TODAY3, 'Xếp lại trình độ', { note: 'Đủ trình lên FT', mucTieu: 6.5, thangThi: '2027-03' });
     const cyc = conn.prepare(`SELECT exam_month FROM learning_cycles WHERE student_id=? AND status='active'`).get(sid) as any;
     assert(cyc.exam_month === '2027-03', `exam_month phải lưu đúng thangThi: ${JSON.stringify(cyc)}`);
   });
@@ -1117,7 +1121,7 @@ export async function runLenLopTests(t: YThucTestKit) {
     const to = taoLop4({ branchId: CP4, kind: 'FOU', ft: false, tuanHienTai: 2 });
     const { sid } = taoHV4({ clsId: from, ma: 'FOU', ft: false });
     const gvcn = ganGVCN3(from, P.normalCoreTeacher.userId);
-    studentsSvc4.transferStudent(gvcn, sid, to, TODAY3, 'Đổi chi nhánh', { noNote: true });
+    studentsSvc4.transferStudent(P.admin, sid, to, TODAY3, 'Đổi chi nhánh', { noNote: true });
     assert(!!profileSvc.studentProfile(P.cpManager, sid), 'QL CP phải thấy hồ sơ em ngay sau khi chuyển vào CP (chỉ còn ghi danh active ở CP)');
     assertThrows(() => profileSvc.studentProfile(P.mbManager, sid), /phạm vi/, 'QL MB phải mất quyền xem ngay (không còn ghi danh active ở MB)');
 
@@ -1153,7 +1157,7 @@ export async function runLenLopTests(t: YThucTestKit) {
     ).run(now).lastInsertRowid);
     conn.prepare(`INSERT INTO user_roles (user_id, role_id, branch_id, status, created_at) VALUES (?,?,?, 'inactive', ?)`)
       .run(uid, roleId, CP4, now);
-    studentsSvc4.transferStudent(gvcn, sid, to, TODAY3, 'Đổi chi nhánh', { noNote: true });
+    studentsSvc4.transferStudent(P.admin, sid, to, TODAY3, 'Đổi chi nhánh', { noNote: true });
     const noti = conn.prepare(`SELECT COUNT(*) n FROM notifications WHERE user_id=? AND kind='transfer_in'`).get(uid) as any;
     assert(noti.n === 0, `QL đã nghỉ (user_roles.status inactive) không được nhận thông báo: ${noti.n}`);
   });

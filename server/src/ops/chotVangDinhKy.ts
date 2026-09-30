@@ -1,4 +1,5 @@
 import { isInitialised } from '../db.ts';
+import { thiHanhLenhDenHan } from '../classes/lenhChuyen.ts';
 import { settleNoShows } from '../fasttrack/absence.ts';
 import { todayInBusinessTz } from '../util.ts';
 
@@ -14,14 +15,19 @@ import { todayInBusinessTz } from '../util.ts';
  */
 export const LICH_CHOT_VANG = '5 17,23 * * 0';
 
-export type KetQuaChotVang = { ngay: string; daChot: number; boQua: 'chua-khoi-tao' | null; ms: number };
+export type KetQuaChotVang = { ngay: string; daChot: number; daChuyen: number; boQua: 'chua-khoi-tao' | null; ms: number };
 
 export function chotVangDinhKy(o: {
   ngay?: string; chot?: (ngay: string) => number; daKhoiTao?: () => boolean;
+  /** PR-CT: thi hành lệnh chuyển lớp tới Thứ Hai (mặc định `thiHanhLenhDenHan`); trả số em đã chuyển. */
+  chuyen?: (ngay: string) => number;
 } = {}): KetQuaChotVang {
   const batDau = Date.now();
   const ngay = o.ngay ?? todayInBusinessTz();
-  if (!(o.daKhoiTao ?? isInitialised)()) return { ngay, daChot: 0, boQua: 'chua-khoi-tao', ms: Date.now() - batDau };
+  if (!(o.daKhoiTao ?? isInitialised)()) return { ngay, daChot: 0, daChuyen: 0, boQua: 'chua-khoi-tao', ms: Date.now() - batDau };
   const daChot = (o.chot ?? settleNoShows)(ngay);
-  return { ngay, daChot, boQua: null, ms: Date.now() - batDau };
+  /* Lỗi chuyển lớp KHÔNG làm hỏng chốt vắng (đã chốt xong ở trên) — lượt sáng sau / quét khi đọc thử lại. */
+  let daChuyen = 0;
+  try { daChuyen = (o.chuyen ?? ((n) => thiHanhLenhDenHan(n).daChuyen))(ngay); } catch (e) { console.error('[chot-vang] chuyển lớp', e); }
+  return { ngay, daChot, daChuyen, boQua: null, ms: Date.now() - batDau };
 }

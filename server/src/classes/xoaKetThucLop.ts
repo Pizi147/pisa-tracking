@@ -45,6 +45,8 @@ export function tinhTrangLop(classId: number) {
   }
   const nLoTrinh = dem('SELECT COUNT(*) n FROM lo_trinh_tiep_theo WHERE class_id = ? OR lop_du_kien_id = ?', classId, classId);
   if (nLoTrinh > 0) gan.push(`${nLoTrinh} lộ trình tiếp theo`);
+  const nLenh = dem('SELECT COUNT(*) n FROM lenh_chuyen_lop WHERE lop_nguon_id = ? OR lop_dich_id = ?', classId, classId);
+  if (nLenh > 0) gan.push(`${nLenh} lệnh chuyển lớp`);
   const nHocTiep = dem('SELECT COUNT(*) n FROM classes WHERE previous_class_id = ?', classId);
   if (nHocTiep > 0) gan.push(`${nHocTiep} lớp học tiếp từ lớp này`);
   /* PR-LT2b (K2-35): việc còn treo — KHÔNG chặn Kết thúc lớp, chỉ nói ra: Mini Test của em từ lớp này chưa ghi. */

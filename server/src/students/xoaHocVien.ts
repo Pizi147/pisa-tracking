@@ -28,7 +28,7 @@ export const BANG_CUA_HOC_VIEN: readonly string[] = [
   'sos_cases', 'case_interventions', 'case_followups', 'case_intervention_revisions', 'case_issues', 'case_sources', 'case_milestones',
   'sos_case_history', 'case_signals', 'task_students', 'task_case_links',
   'violations', 'violation_history', 'discipline_measures', 'measure_violations', 'sos_coordination_actions',
-  'yeu_cau_duyet', 'y_thuc_khai_bac', 'mini_test',
+  'yeu_cau_duyet', 'y_thuc_khai_bac', 'mini_test', 'lenh_chuyen_lop', 'ban_giao_mon',
 ];
 
 /** Dòng của NGƯỜI KHÁC trỏ vào dữ liệu của em (Q5) — đặt NULL, không xoá. Cả ba cột cho phép NULL. */
@@ -81,6 +81,9 @@ export const CAU_XOA_HOC_VIEN: readonly { bang: string; sql: string }[] = [
   { bang: 'attachments#tep', sql: `SELECT url FROM attachments WHERE kind = 'file' AND (${DK_TEP})` },
   { bang: 'attachments', sql: `DELETE FROM attachments WHERE ${DK_TEP}` },
   { bang: 'notifications', sql: `DELETE FROM notifications WHERE ${DK_THONG_BAO}` },
+  /* PR-CT: lệnh chuyển lớp + dòng bàn giao của em (lệnh trỏ thẻ Chờ duyệt nên xoá TRƯỚC thẻ) */
+  { bang: 'ban_giao_mon', sql: `DELETE FROM ban_giao_mon WHERE lenh_id IN (SELECT id FROM lenh_chuyen_lop WHERE student_id = ?1 OR tu_yeu_cau_id IN (${Q}))` },
+  { bang: 'lenh_chuyen_lop', sql: `DELETE FROM lenh_chuyen_lop WHERE student_id = ?1 OR tu_yeu_cau_id IN (${Q})` },
   /* PR-DUYET: thẻ Chờ duyệt của em (đối tượng là PA/đề nghị dời/lộ trình của em — xoá cùng em) */
   { bang: 'yeu_cau_duyet', sql: 'DELETE FROM yeu_cau_duyet WHERE hoc_vien_id = ?1' },
   /* Case học thuật và mọi thứ treo dưới Case */

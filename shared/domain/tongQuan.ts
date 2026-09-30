@@ -35,6 +35,7 @@ const NHOM_CUA_LOAI: Record<string, NhomViec> = {
   do_plan: 'case-hoc-thuat', no_owner: 'case-hoc-thuat',
   placement: 'van-hanh', next_step: 'van-hanh', mgmt: 'van-hanh', missing_data: 'van-hanh',
   yt_xu_ly: 'y-thuc', yt_xem: 'y-thuc', yt_thuc_hien: 'y-thuc',
+  ban_giao: 'van-hanh',   // PR-CT (Q19): thuộc nhóm hiển thị Vận hành có sẵn
 };
 export function nhomViecCua(loai: string): NhomViec { return NHOM_CUA_LOAI[loai] ?? 'van-hanh'; }
 
@@ -42,6 +43,7 @@ export function nhomViecCua(loai: string): NhomViec { return NHOM_CUA_LOAI[loai]
 export const LOAI_HAN_CUA_VIEC: Partial<Record<string, DeadlineKind>> = {
   cause: 'xac-minh-sos', xac_nhan_pa: 'xac-minh-sos', ke_hoach_bo_tro: 'ke-hoach-bo-tro', mini_test: 'mini-test', no_plan: 'lap-pa', result: 'cap-nhat-pa', score: 'nhap-diem',
   yt_xu_ly: 'xu-ly-vi-pham', yt_xem: 'xu-ly-vi-pham', yt_thuc_hien: 'xu-ly-vi-pham',
+  ban_giao: 'viec-van-hanh',
 };
 
 export type ViecGom = { group: string; urgency: 'overdue' | 'today' | 'normal'; due: string | null };

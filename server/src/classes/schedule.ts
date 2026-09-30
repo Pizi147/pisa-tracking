@@ -370,6 +370,8 @@ const CLASS_ACTIVE_COUNT_SQL = `
            SELECT 1 FROM lo_trinh_tiep_theo lt
             WHERE lt.student_id = e.student_id AND lt.class_id = e.class_id
               AND lt.huong = 'xep_sau' AND lt.ngay_xem_lai > ?
+         ) OR EXISTS (
+           SELECT 1 FROM lenh_chuyen_lop lc WHERE lc.student_id = e.student_id AND lc.trang_thai = 'cho'   -- PR-CT: em đã có lệnh không còn "cần xếp lớp"
          ) THEN 0 ELSE 1 END) can_xep_lop
     FROM enrollments e
     JOIN students s ON s.id = e.student_id
@@ -408,6 +410,8 @@ export function classProgressMany(classIds: number[], programmes?: Map<string, P
                 SELECT 1 FROM lo_trinh_tiep_theo lt
                  WHERE lt.student_id = e.student_id AND lt.class_id = e.class_id
                    AND lt.huong = 'xep_sau' AND lt.ngay_xem_lai > ?
+              ) OR EXISTS (
+                SELECT 1 FROM lenh_chuyen_lop lc WHERE lc.student_id = e.student_id AND lc.trang_thai = 'cho'
               ) THEN 0 ELSE 1 END) can_xep_lop
          FROM enrollments e
          JOIN students s ON s.id = e.student_id
