@@ -15,6 +15,8 @@ export type CuoiKhoaEm = {
   mon: { skill: string; ratio: number | null }[]; goiY: GoiYCuoiKhoa | null;
   quyetDinh: { huong: string; luc: string } | null;
   ketLuanFt: { dat: boolean | null; nguyenNhan: 'trung_tam' | 'hoc_sinh' | null; mon: string[]; ghiChu: string | null } | null;
+  /** PR-S5F-a: lớp của bài Cuối khoá (có thể là lớp em VỪA RỜI — `daChuyen`). */
+  ct?: string | null; lop?: string | null; daChuyen?: boolean;
 };
 export type MiniTestEm = {
   id: number; soBuoi: number; ngayDuKien: string; han: string; tyLe: number | null; ngayLam: string | null;
@@ -48,6 +50,7 @@ export function KetLuanKhoa({ studentId, studentName, lop, ct, cuoiKhoa, coTheKe
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
         <span className="text-lg font-bold tabular-nums text-slate-100">{h.chinh}</span>
         {h.phu && <span className="text-xs tabular-nums text-slate-400">{h.phu}</span>}
+        {cuoiKhoa.daChuyen && cuoiKhoa.lop && <span className="text-xs text-slate-500">lớp {cuoiKhoa.lop} (đã chuyển)</span>}
       </div>
       {h.nhan && <div><Level tone={TONE[h.tone]}>{h.nhan}</Level></div>}
       {h.kyVong && (
@@ -62,9 +65,11 @@ export function KetLuanKhoa({ studentId, studentName, lop, ct, cuoiKhoa, coTheKe
           )}
         </div>
       )}
-      <div>
-        <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setMoLoTrinh(true)}>Lộ trình tiếp theo</button>
-      </div>
+      {!cuoiKhoa.daChuyen && (
+        <div>
+          <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setMoLoTrinh(true)}>Lộ trình tiếp theo</button>
+        </div>
+      )}
       <LoTrinhTiepPanel open={moLoTrinh} onClose={() => setMoLoTrinh(false)} studentId={studentId} studentName={studentName} lop={lop} onDone={onDoi} />
       {moKhongDat && (
         <PanelKhongDat studentId={studentId} studentName={studentName} lop={lop} ct={ct} monTruot={cuoiKhoa.monTruot}
@@ -144,7 +149,7 @@ function PanelKhongDat({ studentId, studentName, lop, ct, monTruot, ban, onDong,
 
 /**
  * Ô MINI TEST (M-05) — Nằm ở: Hồ sơ HV → tab Học thuật, đầu tab (em đang học lộ trình mới có bổ trợ miễn phí).
- * Chưa ghi: `Mini Test · — · hạn 12/10` + [Ghi Mini Test] (khi có quyền → mở Ngăn Case, form Ghi kết quả cuối). Đã ghi: `72% · 10/10 · Đạt` / `Chưa đạt — đã báo QL`.
+ * Chưa ghi: `Mini Test · — · hạn 12/10` + [Ghi Mini Test] (khi có quyền và đã tới ngày buổi cuối → mở Ngăn Case, form Ghi kết quả cuối có ô Mini Test). Đã ghi: `72% · 10/10 · Đạt` / `Chưa đạt — đã báo QL`.
  */
 export function MiniTestO({ mt, onGhi }: { mt: MiniTestEm; onGhi: (caseId: number, paId: number) => void }) {
   const { homNay } = useNgayNghiepVu();
@@ -154,7 +159,8 @@ export function MiniTestO({ mt, onGhi }: { mt: MiniTestEm; onGhi: (caseId: numbe
         <span className="font-semibold text-slate-100">Mini Test</span>
         <span className="text-slate-500">—</span>
         <Han loai="mini-test" han={mt.han} />
-        {mt.coTheGhi && mt.caseId && mt.paId && (
+        {/* PR-S5F-a: chỉ từ ngày buổi cuối — trước đó form Ghi kết quả chưa phải lần cuối nên không có ô Mini Test. */}
+        {mt.coTheGhi && mt.caseId && mt.paId && !!homNay && homNay >= mt.ngayDuKien && (
           <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => onGhi(mt.caseId!, mt.paId!)}>Ghi Mini Test</button>
         )}
       </div>
