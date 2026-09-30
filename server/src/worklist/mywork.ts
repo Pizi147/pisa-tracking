@@ -8,8 +8,9 @@ import {
   type Khung, type AttemptKind, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { addDays } from '../util.ts';
-import { activeAt, bangLop, can, isCoreTeacherOf, napTruocPhamVi, scopeFor, teachesClass, type Principal } from '../permissions.ts';
+import { addDays, forbidden } from '../util.ts';
+import { activeAt, bangLop, can, isCoreTeacherOf, loadPrincipal, napTruocPhamVi, scopeFor, teachesClass, type Principal } from '../permissions.ts';
+import { phamViHoSoGv } from '../giaoVien/phamVi.ts';
 import { allProgrammes } from '../normal/regular.ts';
 import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
 import { classAlerts } from '../classes/schedule.ts';
@@ -1188,4 +1189,60 @@ function ganKhung(items: WorkItem[], lopCua: (classId: number | null | undefined
     const l = it.classId ? lopCua(it.classId) : null;
     it.khung = l ? khungCua(l.mode) : null;
   }
+}
+
+/**
+ * VIỆC CỦA MỘT GIÁO VIÊN KHÁC, người xem là Quản lý/Quản trị (`/my-work?nguoi={id}` và hồ sơ GV — PR-GV Q4).
+ * Chuyển nguyên từ route; phép kiểm chi nhánh dùng `phamViHoSoGv` (vai hoặc phân công đang hiệu lực) để Công việc
+ * không 403 khi hồ sơ GV trả 200.
+ */
+export function viecCuaNguoi(p: Principal, nguoi: number, branchId?: number | null) {
+  if (!can(p, PERMISSIONS.CASE_APPROVE, { anyScope: true })) throw forbidden('Bạn chỉ xem được việc của mình.');
+  phamViHoSoGv(p, nguoi);
+  const x = loadPrincipal(nguoi);
+  const w = myWork(x, { branchId }) as any;
+  napTruocPhamVi(w.items.map((it: any) => it.studentId));   // `can()` từng dòng bên dưới đọc bộ nhớ, không N+1
+  /* Dòng không lớp/không HV là việc Vận hành ("mgmt") — không thuộc Hỗ trợ học viên, bỏ. */
+  const items = w.items
+    .filter((it: any) => (it.classId !== null || it.studentId !== null)
+      && can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: it.classId, studentId: it.studentId }))
+    .map((it: any) => ({
+      ...it,
+      owner: it.ownerId === x.userId ? x.fullName : it.owner,
+      mine: false,
+    }));
+  if (items.length) {
+    const today = demoToday();
+    const nhacToday = new Map<string, string>();
+    for (const r of db()
+      .prepare(`SELECT dedup_key, created_at FROM notifications WHERE kind = 'nhac_viec' AND dedup_key LIKE ?`)
+      .all(`nhac:%:${today}`) as any[]) {
+      const m = /^nhac:(.+):[^:]+$/.exec(r.dedup_key);
+      if (m) nhacToday.set(m[1], r.created_at);
+    }
+    for (const it of items) {
+      if (it.ownerId === null) continue;
+      it.nhac = { ownerId: it.ownerId, daNhacLuc: nhacToday.get(it.key) ?? null };
+    }
+  }
+  const groupsByKey = new Map<string, any[]>();
+  for (const it of items) (groupsByKey.get(it.group) ?? groupsByKey.set(it.group, []).get(it.group)!).push(it);
+  const groups = w.groups
+    .map((g: any) => ({ ...g, items: groupsByKey.get(g.key) ?? [] }))
+    .filter((g: any) => g.items.length > 0)
+    .map((g: any) => ({
+      ...g,
+      overdue: g.items.filter((i: any) => i.urgency === 'overdue').length,
+      today: g.items.filter((i: any) => i.urgency === 'today').length,
+    }));
+  return {
+    summary: {
+      total: items.length,
+      overdue: items.filter((i: any) => i.urgency === 'overdue').length,
+      today: items.filter((i: any) => i.urgency === 'today').length,
+      approval: items.filter((i: any) => i.group === 'decide').length,
+      mine: 0,
+    },
+    items, groups, scopeEmpty: false, xemNguoiKhac: true,
+  };
 }

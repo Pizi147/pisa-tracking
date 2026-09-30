@@ -487,6 +487,8 @@ Dựng bằng hàm nghiệp vụ (`server/src/seed/lt2aSeed.ts`), sau ngày demo
 
 Bài Giữa khoá đã qua tuần nên `commitIntake` không tự dựng (M1b bỏ mốc đã qua) — seed xếp bằng `planRegularTests` (Quản lý được xếp tuần đã qua).
 
+- **Hồ sơ giáo viên (PR-GV):** menu tài khoản › Hồ sơ giáo viên (**Trần Ngọc Hà**, id 7). QL MB (Nguyễn Khánh Vy): Tổng quan › Theo lớp › Theo giáo viên › bấm tên. GVBM (Phạm Thu Trang) mở `/giao-vien/7` → 403.
+
 ## 15. PR-LT2b — Lớp thường · Cuối khoá (chỉ máy dev, 30/09/2026)
 
 Dựng bằng hàm nghiệp vụ (`server/src/seed/lt2bSeed.ts`), sau bộ LT2a, ở hai lớp mới **MB BE 04** (Cuối khoá W1 SEP) và **MB ELE 02** (lớp đích). Tài khoản gợi ý: **Quản lý Nguyễn Khánh Vy**, **GVCN Trần Ngọc Hà** (ELE 02). Phép kiểm `LT2b (10)` soi từng dòng ngay sau khi dựng. Không còn thẻ "Quyết định Cuối khoá": 50–59% chỉ hiện chip **Quản lý cân nhắc** (Quản lý chọn khi chuyển lớp).
