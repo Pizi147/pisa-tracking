@@ -290,6 +290,25 @@ table.cmp{border-collapse:collapse;width:100%;min-width:760px;font-size:13px}
 .dots{font-family:var(--f-num);letter-spacing:2px;white-space:nowrap}
 .sticky-note{background:var(--surface);border:1px dashed var(--line2);border-radius:10px;padding:12px 14px;font-size:13px;display:flex;flex-direction:column;gap:6px}
 .sticky-note ol{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px}
+
+/* rev 01/10: tháng có ngoặc trải đủ số tuần · ghim Test gọn trong một cột tuần */
+.tt .mo-b{align-self:end;margin:0 5px 3px;text-align:center;font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--muted);line-height:15px;padding-bottom:3px;border-bottom:1px solid var(--line2);position:relative;z-index:2;white-space:nowrap}
+.tt .mo-b::before,.tt .mo-b::after{content:"";position:absolute;bottom:-1px;width:1px;height:6px;background:var(--line2)}
+.tt .mo-b::before{left:0} .tt .mo-b::after{right:0}
+.tt .tpin{margin:4px 3px;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;z-index:3;border:1px solid transparent;cursor:default;min-width:0;overflow:hidden}
+.tt .tpin b{font:700 11.5px/14px var(--f-body);white-space:nowrap}
+.tt .tpin span{font:700 12px/14px var(--f-num);white-space:nowrap}
+.tt .tpin.ok{color:var(--ok);background:var(--ok-bg)} .tt .tpin.s1{color:var(--warn);background:var(--warn-bg)}
+.tt .tpin.s2{color:var(--late);background:var(--late-bg)} .tt .tpin.s3{color:var(--bad);background:var(--bad-bg)}
+.tt .tpin.tam{color:var(--muted);border:1px dashed var(--line2)}
+.ph{border:1px dashed var(--line2);border-radius:10px;padding:10px 12px;font-size:12.5px;color:var(--muted);display:flex;gap:8px;align-items:center}
+.ch .kq-r{display:flex;flex-wrap:wrap;gap:4px}
+.ch .ra-r{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600}
+details.ref{border:1px dashed var(--line2);border-radius:12px;padding:12px 14px}
+details.ref>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px}
+details.ref>summary::-webkit-details-marker{display:none}
+details.ref[open]>summary{margin-bottom:20px}
+details.ref .screen{margin-bottom:36px}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
 </style>
 
@@ -316,8 +335,8 @@ table.cmp{border-collapse:collapse;width:100%;min-width:760px;font-size:13px}
     <span class="small muted">PISA Tracking · mockup 26 · 01/10/2026 · dữ liệu ví dụ · PR-VAI-b</span>
     <span class="seg" role="group" aria-label="Chế độ màu"><button type="button" data-th="dark" class="on">Tối</button><button type="button" data-th="light">Sáng</button></span>
   </div>
-  <h1>Tab Hành trình: một bản nâng cấp và ba hướng mới</h1>
-  <p class="lead">Cả bốn bản dùng cùng một em, cùng dữ liệu. Hôm nay là Thứ Năm 01/10, tuần <b class="num">W1 OCT</b>. Tên người là ví dụ. Chọn một bản, hoặc ghép như gợi ý ở cuối trang.</p>
+  <h1>Tab Hành trình: Chương theo lớp ở trên, trục tuần ở dưới</h1>
+  <p class="lead">Chủ sản phẩm đã chọn (01/10): <b>bản 2 · Chương theo lớp</b> ở đầu tab, <b>bản 1 · trục tuần nâng cấp</b> ngay dưới. Bản 3 và 4 để ở cuối trang cho tham khảo. Hôm nay là Thứ Năm 01/10, tuần <b class="num">W1 OCT</b>. Tên người là ví dụ.</p>
 
   <div class="hd" aria-label="Học viên mẫu">
     <span class="code">Học viên mẫu · Hồ sơ học viên · PISA-000163</span>
@@ -350,24 +369,102 @@ table.cmp{border-collapse:collapse;width:100%;min-width:760px;font-size:13px}
   </ol>
 </section>
 
-<!-- ====================================================== BẢN 1 -->
-<section class="screen" aria-labelledby="h-1">
-  <div class="where"><span class="tag">Phiên bản 1 · Nâng cấp</span><h2 id="h-1">Giữ trục tuần, sửa cho dễ đọc</h2></div>
-  <div class="where"><span class="tag">Nằm ở</span><span class="path">Học viên &amp; Lớp › MB FT 101 › <b>Đặng Minh Thư</b> › tab <b>Hành trình</b> · bảng Lịch sử lớp ở trên, trục tuần bên dưới (đúng chỗ hiện nay) · người xem: GVCN, GVBM của lớp, Quản lý chi nhánh, Quản trị</span></div>
+<!-- ====================================================== BẢN 2 (ĐÃ CHỌN, ĐẦU TAB) -->
+<section class="screen" aria-labelledby="h-2">
+  <div class="where"><span class="tag">Đã chọn · đầu tab</span><h2 id="h-2">Bản 2 · Chương theo lớp: em đã đi qua những đâu</h2></div>
+  <div class="where"><span class="tag">Nằm ở</span><span class="path">Học viên &amp; Lớp › MB FT 101 › <b>Đặng Minh Thư</b> › tab <b>Hành trình</b> · khối đầu tiên của tab, thay bảng Lịch sử lớp · bấm một chương thì trục tuần (bản 1) ngay dưới chuyển tới đúng giai đoạn đó · người xem: GVCN, GVBM của lớp, Quản lý chi nhánh, Quản trị</span></div>
   <div class="frame">
     <div class="frame-bar"><span class="crumb">Học viên &amp; Lớp › MB FT 101 › Đặng Minh Thư › Hành trình</span></div>
     <div class="frame-body">
       <div class="tabs"><span>Học thuật</span><span>Ý thức &amp; Phối hợp</span><span class="on">Hành trình</span></div>
-      <h3>Lịch sử lớp</h3>
-      <div class="ls">
-        <div class="r"><b>MB FT 101 · LT1</b><span class="num muted">W3 AUG → nay</span><span>GVCN Lê Thu Trang · đang học, tuần học thứ 15</span><span class="moc">Vào vì: chuyển lớp · lệnh của Quản lý Nguyễn Khánh Vy 06/08 · GVCN xác nhận bàn giao 14/08</span></div>
-        <div class="r"><b>MB FT 104 · LT1</b><span class="num muted">W2 JUN → W2 AUG</span><span>GVCN Trần Ngọc Hà · MT1 SOS 1</span><span class="moc">Kết thúc vì: chuyển lớp · có Tạm dừng W4 JUL – W5 JUL</span></div>
-        <div class="r"><b>MB BE 06</b><span class="num muted">W3 MAR → W1 JUN</span><span>GVCN Vũ Hải Yến · Cuối khoá 74% · lên FT + bổ trợ S</span></div>
-        <div class="r"><b>MB FOU 11</b><span class="num muted">W2 JAN → W2 MAR</span><span>GVCN Nguyễn Ngọc Hà · Cuối khoá 80% · lên BE</span></div>
+      <div class="spread"><h3>4 lớp · từ W2 JAN · 39 tuần</h3><span class="small muted">Mới nhất ở bên phải · cuối mỗi thẻ là cách em sang lớp sau</span></div>
+
+      <div class="chs">
+        <article class="ch" aria-label="Chương 1 MB FOU 11">
+          <div class="top"><span class="prog">FOU · lớp thường</span><span class="ma">MB FOU 11</span><span class="khi num">W2 JAN → W2 MAR · 10 tuần</span><span class="khi">GVCN Nguyễn Ngọc Hà</span></div>
+          <div class="sec"><div class="kq-r"><span class="pin s1">Giữa khoá · 3/4 môn</span><span class="pin ok">Cuối khoá · 80%</span></div><span class="l12 muted">Giữa khoá không đạt G+V</span></div>
+          <div class="sec"><div class="cl"><span class="h"><span class="tg-case">Case</span>[Giữa khoá] G+V không đạt</span>
+            <span class="pas"><span class="pab ok"><svg class="ico"><use href="#i-ok"/></svg><span class="nm">Bổ trợ G+V</span></span></span></div></div>
+          <div class="ra"><span class="ra-r"><svg class="ico t-mute"><use href="#i-up2"/></svg>Lên BE</span><span class="how">theo Cuối khoá · từ W3 MAR</span></div>
+        </article>
+
+        <article class="ch" aria-label="Chương 2 MB BE 06">
+          <div class="top"><span class="prog">BE · lớp thường</span><span class="ma">MB BE 06</span><span class="khi num">W3 MAR → W1 JUN · 12 tuần</span><span class="khi">GVCN Vũ Hải Yến</span></div>
+          <div class="sec"><div class="kq-r"><span class="pin s1">Giữa khoá · 3/4 môn</span><span class="pin s1">Cuối khoá · 74%</span></div><span class="l12 muted">cả hai lần không đạt S</span></div>
+          <div class="sec"><div class="cl"><span class="h"><span class="tg-case">Case</span>[Giữa khoá] S không đạt</span>
+            <span class="pas"><span class="pab part"><svg class="ico"><use href="#i-part"/></svg><span class="nm">Luyện nói theo cặp</span></span></span></div></div>
+          <div class="ra"><span class="ra-r"><svg class="ico t-mute"><use href="#i-up2"/></svg>Lên FT + bổ trợ S</span><span class="how">theo Cuối khoá · từ W2 JUN</span></div>
+        </article>
+
+        <article class="ch" aria-label="Chương 3 MB FT 104">
+          <div class="top"><span class="prog">FT · LT1 · target 6.5</span><span class="ma">MB FT 104</span><span class="khi num">W2 JUN → W2 AUG · tuần học 1–8</span><span class="khi">GVCN Trần Ngọc Hà</span></div>
+          <div class="pause hatch"><svg class="ico"><use href="#i-pause"/></svg>Tạm dừng W4 JUL – W5 JUL</div>
+          <div class="sec"><div class="kq-r"><span class="pin s1">MT1 · 5.5 · SOS 1</span></div><span class="l12 muted">dưới kỳ vọng: R</span></div>
+          <div class="sec"><div class="cl"><span class="h"><span class="tg-case">Case</span><span class="mtc">MT1</span>Reading<span class="sos s1">SOS 1</span></span>
+            <span class="pas"><span class="pab bad"><svg class="ico"><use href="#i-x"/></svg><span class="nm">Tự học có hướng dẫn</span></span></span>
+            <span class="l12 muted">Case đi theo em sang MB FT 101</span></div></div>
+          <div class="ra"><span class="ra-r"><svg class="ico t-acc"><use href="#i-move"/></svg>Chuyển lớp</span><span class="how">Quản lý ra lệnh · từ W3 AUG</span></div>
+        </article>
+
+        <article class="ch now" aria-label="Chương 4 MB FT 101, đang học">
+          <div class="top"><span class="prog t-acc">FT · LT1 · đang học</span><span class="ma">MB FT 101</span><span class="khi num">từ W3 AUG · tuần học thứ 15</span><span class="khi">GVCN Lê Thu Trang</span></div>
+          <div class="sec"><div class="kq-r"><span class="pin s2">MT2 · 5.5 · SOS 2</span></div><span class="l12 muted">dưới kỳ vọng: W2 · S</span></div>
+          <div class="sec">
+            <div class="cl"><span class="h"><span class="tg-case">Case</span><span class="mtc">MT1</span>Reading<span class="sos s1">SOS 1</span><span class="l12 muted" style="font-weight:500">xong ở MT2</span></span>
+              <span class="pas"><span class="pab ok"><svg class="ico"><use href="#i-ok"/></svg><span class="nm">Học tutor</span></span><span class="l12 muted num">Reading 5.0 → 6.0</span></span></div>
+            <div class="cl"><span class="h"><span class="tg-case">Case</span><span class="mtc">MT2</span>Writing Task 2<span class="sos s2">SOS 2</span></span>
+              <span class="pas"><span class="pab run"><svg class="ico"><use href="#i-play"/></svg><span class="nm">Tăng cường bài tập</span></span></span></div>
+            <div class="cl"><span class="h"><span class="tg-case">Case</span><span class="mtc">MT2</span>Speaking<span class="sos s2">SOS 2</span></span></div>
+          </div>
+          <div class="ra"><span class="row" style="justify-content:space-between"><span class="how">đang học</span><button class="btn sm" type="button">Xem trục tuần</button></span></div>
+        </article>
       </div>
 
+      <div class="callout"><svg class="ico t-late" style="margin-top:3px"><use href="#i-warn"/></svg><span><b>Lặp lại qua các lớp:</b> Speaking không đạt ở BE (Giữa và Cuối khoá) và lại dưới kỳ vọng ở MT2. <span class="muted">Máy tự viết dòng này khi một kỹ năng có Case ở hai lớp trở lên.</span></span></div>
+      <p class="why"><b>Chỉ kể đường đi của em:</b> lớp, số tuần, GVCN, kết quả Test, Case (khung rỗng, kèm mức SOS) với PA (khối đặc, kèm ký hiệu kết quả: tiến bộ rõ, một phần, không tiến bộ, đang làm), Tạm dừng và vì sao em sang lớp sau. <b>Không có việc, hạn hay người phụ trách</b>: những thứ đó ở tab Học thuật và ở trục tuần ngay dưới. Chương đang học viền xanh. Case đi theo em khi chuyển lớp thì ghi ở chương cũ và hiện đủ ở chương mới. Bấm vào thẻ hoặc "Xem trục tuần" để trục tuần bên dưới chuyển tới giai đoạn của chương đó.</p>
+    </div>
+  </div>
+
+  <div class="v-row">
+    <div class="fit">
+      <div><span class="h">Hợp khi</span><ul><li>Mở hồ sơ để hiểu nhanh em đã đi qua những lớp nào, nhất là GVCN mới nhận bàn giao.</li><li>FOU → BE → FT nằm trên một màn.</li></ul></div>
+      <div><span class="h">Cần nhớ</span><ul><li>Muốn biết PA chạy chính xác tuần nào, hạn, ai làm: xem trục tuần bên dưới hoặc tab Học thuật.</li><li>Em mới học một lớp thì chỉ có một thẻ.</li></ul></div>
+    </div>
+    <div class="phone" aria-label="Điện thoại · bản 2">
+      <div class="pbar"><span>‹ Quay lại</span><span>Đặng Minh Thư</span><span></span></div>
+      <div class="pbody">
+        <div class="tabs"><span>Học thuật</span><span>Ý thức…</span><span class="on">Hành trình</span></div>
+        <span class="ptitle">Chương đang học mở sẵn; chương cũ gập thành một dòng, bấm để mở</span>
+        <article class="ch now" style="gap:8px">
+          <div class="top"><span class="prog t-acc">FT · LT1 · đang học</span><span class="ma">MB FT 101</span><span class="khi num">từ W3 AUG · tuần học thứ 15 · GVCN Lê Thu Trang</span></div>
+          <div class="kq-r"><span class="pin s2">MT2 · 5.5 · SOS 2</span><span class="l12 muted" style="align-self:center">dưới kỳ vọng: W2 · S</span></div>
+          <div class="cl"><span class="h"><span class="tg-case">Case</span><span class="mtc">MT1</span>Reading<span class="sos s1">SOS 1</span></span><span class="pas"><span class="pab ok"><svg class="ico"><use href="#i-ok"/></svg><span class="nm">Học tutor</span></span><span class="l12 muted">xong ở MT2</span></span></div>
+          <div class="cl"><span class="h"><span class="tg-case">Case</span><span class="mtc">MT2</span>Writing Task 2<span class="sos s2">SOS 2</span></span><span class="pas"><span class="pab run"><svg class="ico"><use href="#i-play"/></svg><span class="nm">Tăng cường bài tập</span></span></span></div>
+          <div class="cl"><span class="h"><span class="tg-case">Case</span><span class="mtc">MT2</span>Speaking<span class="sos s2">SOS 2</span></span></div>
+        </article>
+        <div class="chs-m">
+          <div class="lnk"><svg class="ico s10"><use href="#i-move"/></svg> chuyển lớp · W3 AUG</div>
+          <div class="one"><b>MB FT 104</b><span class="num muted l12">W2 JUN → W2 AUG</span><span class="s">MT1 SOS 1 · Case Reading · Tạm dừng 2 tuần</span></div>
+          <div class="lnk"><svg class="ico s10"><use href="#i-up2"/></svg> lên FT + bổ trợ S · W2 JUN</div>
+          <div class="one"><b>MB BE 06</b><span class="num muted l12">W3 MAR → W1 JUN</span><span class="s">Cuối khoá 74% · Case S, PA một phần</span></div>
+          <div class="lnk"><svg class="ico s10"><use href="#i-up2"/></svg> lên BE · W3 MAR</div>
+          <div class="one" style="border-bottom:1px solid var(--line);border-radius:0 0 10px 10px"><b>MB FOU 11</b><span class="num muted l12">W2 JAN → W2 MAR</span><span class="s">Cuối khoá 80% · Case G+V, PA tiến bộ rõ</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================== BẢN 1 (ĐÃ CHỌN, DƯỚI CHƯƠNG) -->
+<section class="screen" aria-labelledby="h-1">
+  <div class="where"><span class="tag">Đã chọn · dưới chương</span><h2 id="h-1">Bản 1 · Trục tuần nâng cấp: chi tiết từng tuần</h2></div>
+  <div class="where"><span class="tag">Nằm ở</span><span class="path">Cùng tab <b>Hành trình</b> · ngay dưới Chương theo lớp (bảng Lịch sử lớp bỏ) · nút đổi giai đoạn bỏ: bấm chương nào thì trục hiện giai đoạn chứa chương đó · người xem: GVCN, GVBM của lớp, Quản lý chi nhánh, Quản trị</span></div>
+  <div class="frame">
+    <div class="frame-bar"><span class="crumb">Học viên &amp; Lớp › MB FT 101 › Đặng Minh Thư › Hành trình</span></div>
+    <div class="frame-body">
+      <div class="ph"><svg class="ico"><use href="#i-up2"/></svg>Chương theo lớp (bản 2) ở đây · đang chọn chương MB FT 101</div>
       <div class="ctl">
-        <span class="seg" role="group" aria-label="Giai đoạn"><button type="button">Lớp thường · W2 JAN – W1 JUN</button><button type="button" class="on">Fast Track · từ W2 JUN</button></span>
+        <span class="small">Đang xem <b>Fast Track · từ W2 JUN</b> <span class="muted">(MB FT 104, MB FT 101)</span></span>
         <span class="grow"></span>
         <span class="seg" role="group" aria-label="Kỹ năng"><button type="button" class="on">Tất cả</button><button type="button">L</button><button type="button">R</button><button type="button">W1</button><button type="button">W2</button><button type="button">S</button></span>
         <span class="fake">Cả giai đoạn <svg class="ico s10 t-mute"><use href="#i-car"/></svg></span>
@@ -381,24 +478,25 @@ table.cmp{border-collapse:collapse;width:100%;min-width:760px;font-size:13px}
         <span class="k"><span class="blk bad"><svg class="ico s10"><use href="#i-warn"/></svg></span>quá hạn</span>
         <span class="k"><span class="blk wait"></span>chờ (duyệt / nguyên nhân)</span>
         <span class="k"><svg class="ico s10 t-ok"><use href="#i-up"/></svg><svg class="ico s10 t-bad"><use href="#i-down"/></svg>so với lần trước</span>
-        <span class="k"><span class="pind"></span>tạm thời / dự kiến</span>
+        <span class="k"><span class="pind"></span>dự kiến</span>
         <span class="k"><span class="hatchic hatch"></span>tạm dừng</span>
       </div>
       <div class="scx"><div id="v1" class="tt"></div></div>
-      <p class="why"><b>Đổi gì so với hôm nay:</b> (1) <b>Case có khung riêng trên trục</b>: khung rỗng viền theo màu SOS, từ tuần mở tới tuần xong; hàng PA ngay dưới dùng khối đặc. Case và PA khác nhau ở hình (rỗng / đặc) và ở nhãn "Case" / "PA" trong cột tên, không chỉ lùi lề. (2) <b>Hàng Lớp</b> thay hàng Lộ trình: thấy em chuyển từ MB FT 104 sang MB FT 101 ở W3 AUG. (3) <b>Tạm dừng</b> là dải sọc vàng chạy dọc mọi hàng, hàng "Tuần học" không đếm hai tuần đó. (4) <b>Hàng Tuần học</b> dưới mã tuần: MT1, MT2, MT3 rơi đúng tuần học thứ 6, 12, 16 (lịch mặc định). (5) Thêm một cột <b>tuần tới</b> để thấy đợt Test sắp tới (viền đứt). (6) Badge trạng thái đứng ngay sau tên kỹ năng. Màu, phông, chuỗi điểm giữ nguyên như mockup 18.</p>
+      <span class="small muted">Rê chuột lên ô Test để xem đủ: Overall, mức SOS, kỹ năng dưới kỳ vọng. Khi bấm chương lớp thường (MB FOU 11 hoặc MB BE 06), phần đầu trục trông như sau:</span>
+      <div class="scx"><div id="v1t" class="tt"></div></div>
+      <p class="why"><b>Đổi gì so với hôm nay:</b> (1) <b>Tháng</b>: tên tháng ở giữa, có ngoặc trải đúng số tuần của tháng (4 hoặc 5), vạch đầu tháng đậm hơn. (2) <b>Đợt Test</b>: mỗi đợt nằm gọn trong một cột tuần, hai dòng "MT1 / 5.5" (lớp thường "Giữa / 3/4", "Cuối / 80%"), tô theo mức; chữ dài ở tooltip. (3) <b>Case có khung riêng</b> trên trục (rỗng, viền theo SOS), PA ở hàng dưới (khối đặc). (4) <b>Hàng Lớp</b> cho thấy em chuyển từ MB FT 104 sang MB FT 101 ở W3 AUG. (5) <b>Tạm dừng</b> là dải sọc vàng; hàng <b>Tuần học</b> đếm tuần học thứ n của em từ tuần bắt đầu FT và bỏ qua tuần tạm dừng (hôm nay 15, không phải 17). Lớp thường thì hàng này là tuần của khoá (x/10, x/12). (6) Thêm một cột <b>tuần tới</b> cho đợt Test sắp tới (viền đứt). <b>Tuần của lớp FT khác tuần học của em:</b> MB FT 101 có số tuần riêng của lớp; trục chỉ ghi tuần học của em, không ghi tuần lớp để khỏi lẫn.</p>
     </div>
   </div>
 
   <div class="v-row">
     <div class="fit">
-      <div><span class="h">Hợp khi</span><ul><li>GV cần so ngày: PA chạy mấy tuần, bắt đầu trước hay sau MT.</li><li>Đội làm giao diện muốn đổi ít: cùng lưới, cùng hàm bố cục.</li></ul></div>
-      <div><span class="h">Không hợp khi</span><ul><li>Cần thấy cả đường FOU → BE → FT một lúc (vẫn phải đổi giai đoạn).</li><li>Xem trên điện thoại là chính: vẫn cuộn ngang.</li></ul></div>
+      <div><span class="h">Hợp khi</span><ul><li>GV cần so ngày: PA chạy mấy tuần, bắt đầu trước hay sau MT.</li><li>Xem việc đang mở: quá hạn, chờ nguyên nhân (bản 2 không kể những việc này).</li></ul></div>
+      <div><span class="h">Cần nhớ</span><ul><li>Mỗi lần xem một giai đoạn (Lớp thường hoặc Fast Track).</li><li>Trên điện thoại vẫn cuộn ngang, cột tên ghim trái.</li></ul></div>
     </div>
-    <div class="phone" aria-label="Điện thoại · phiên bản 1">
+    <div class="phone" aria-label="Điện thoại · bản 1">
       <div class="pbar"><span>‹ Quay lại</span><span>Đặng Minh Thư</span><span></span></div>
       <div class="pbody">
-        <div class="tabs"><span>Học thuật</span><span>Ý thức…</span><span class="on">Hành trình</span></div>
-        <span class="ptitle">Xem gọn bật sẵn · cột tên ghim trái · cuộn ngang trong thẻ</span>
+        <span class="ptitle">Dưới Chương theo lớp · Xem gọn bật sẵn · cột tên ghim trái · cuộn ngang trong thẻ</span>
         <div class="scx"><div id="v1m" class="tt"></div></div>
         <span class="ptitle">Tên PA hiện khi khối đủ rộng; bấm khối để mở Case.</span>
       </div>
@@ -406,113 +504,40 @@ table.cmp{border-collapse:collapse;width:100%;min-width:760px;font-size:13px}
   </div>
 </section>
 
-<!-- ====================================================== BẢN 2 -->
-<section class="screen" aria-labelledby="h-2">
-  <div class="where"><span class="tag">Phiên bản 2 · Sáng tạo</span><h2 id="h-2">Chương theo lớp: mỗi lớp em đã học là một thẻ</h2></div>
-  <div class="where"><span class="tag">Nằm ở</span><span class="path">Hồ sơ học viên › tab <b>Hành trình</b> · thay bảng Lịch sử lớp ở đầu tab · bấm một chương thì trục tuần (bản 1) của chương đó mở ngay bên dưới · người xem: GVCN, GVBM của lớp, Quản lý chi nhánh, Quản trị</span></div>
-  <div class="frame">
-    <div class="frame-bar"><span class="crumb">Học viên &amp; Lớp › MB FT 101 › Đặng Minh Thư › Hành trình</span></div>
-    <div class="frame-body">
-      <div class="tabs"><span>Học thuật</span><span>Ý thức &amp; Phối hợp</span><span class="on">Hành trình</span></div>
-      <div class="spread"><h3>4 lớp · từ W2 JAN · 39 tuần</h3><span class="small muted">Mới nhất ở bên phải · mũi tên là cách em sang lớp sau</span></div>
-
-      <div class="chs">
-        <article class="ch" aria-label="Chương 1 MB FOU 11">
-          <div class="top"><span class="prog">FOU · lớp thường</span><span class="ma">MB FOU 11</span><span class="khi num">W2 JAN → W2 MAR · 10 tuần</span><span class="khi">GVCN Nguyễn Ngọc Hà</span></div>
-          <div class="sec"><span class="sec-t">Kết quả</span>
-            <div class="kq"><span class="pin s1">Giữa khoá · 3/4 môn</span><span class="s">không đạt G+V · W1 FEB</span><span class="pin ok">Cuối khoá · 80%</span><span class="s">4/4 môn đạt · W2 MAR</span></div>
-          </div>
-          <div class="sec"><span class="sec-t">Hỗ trợ</span>
-            <div class="cl"><span class="h"><span class="tg-case">Case</span>[Giữa khoá] G+V không đạt</span>
-              <span class="pas"><span class="pab ok"><svg class="ico"><use href="#i-ok"/></svg><span class="nm">Bổ trợ G+V 1 buổi/tuần</span></span></span>
-              <span class="l12 muted num">W1 FEB → W2 MAR · Xong</span></div>
-          </div>
-          <div class="ra"><b>Lên BE</b><span class="how">theo Cuối khoá · W3 MAR</span></div>
-        </article>
-
-        <article class="ch" aria-label="Chương 2 MB BE 06">
-          <div class="top"><span class="prog">BE · lớp thường</span><span class="ma">MB BE 06</span><span class="khi num">W3 MAR → W1 JUN · 12 tuần</span><span class="khi">GVCN Vũ Hải Yến</span></div>
-          <div class="sec"><span class="sec-t">Kết quả</span>
-            <div class="kq"><span class="pin s1">Giữa khoá · 3/4 môn</span><span class="s">không đạt S · W3 APR</span><span class="pin s1">Cuối khoá · 74%</span><span class="s">3/4 môn · không đạt S · W1 JUN</span></div>
-          </div>
-          <div class="sec"><span class="sec-t">Hỗ trợ</span>
-            <div class="cl"><span class="h"><span class="tg-case">Case</span>[Giữa khoá] S không đạt</span>
-              <span class="pas"><span class="pab part"><svg class="ico"><use href="#i-part"/></svg><span class="nm">Luyện nói theo cặp</span></span></span>
-              <span class="l12 muted num">W3 APR → W1 JUN · đóng ở Cuối khoá</span></div>
-          </div>
-          <div class="ra"><b>Lên FT + bổ trợ S</b><span class="how">hướng Cuối khoá · W2 JUN</span></div>
-        </article>
-
-        <article class="ch" aria-label="Chương 3 MB FT 104">
-          <div class="top"><span class="prog">FT · LT1 · target 6.5</span><span class="ma">MB FT 104</span><span class="khi num">W2 JUN → W2 AUG · tuần học 1–8</span><span class="khi">GVCN Trần Ngọc Hà</span></div>
-          <div class="pause hatch"><svg class="ico"><use href="#i-pause"/></svg>Tạm dừng W4 JUL – W5 JUL · 2 tuần</div>
-          <div class="sec"><span class="sec-t">Kết quả</span>
-            <div class="kq"><span class="pin s1">MT1 · 5.5 · SOS 1</span><span class="s">Reading 5.0, kỳ vọng 5.5 · W3 JUL</span></div>
-          </div>
-          <div class="sec"><span class="sec-t">Hỗ trợ</span>
-            <div class="cl"><span class="h"><span class="tg-case">Case</span><span class="mtc">MT1</span>Reading<span class="sos s1">SOS 1</span></span>
-              <span class="pas"><span class="pab bad"><svg class="ico"><use href="#i-x"/></svg><span class="nm">Tự học có hướng dẫn</span></span></span>
-              <span class="l12 muted">Case đi theo em sang MB FT 101</span></div>
-          </div>
-          <div class="ra"><b class="row" style="gap:5px"><svg class="ico t-acc"><use href="#i-move"/></svg>Chuyển lớp</b><span class="how">Quản lý ra lệnh 06/08 · bắt đầu W3 AUG</span></div>
-        </article>
-
-        <article class="ch now" aria-label="Chương 4 MB FT 101, đang học">
-          <div class="top"><span class="prog t-acc">FT · LT1 · đang học</span><span class="ma">MB FT 101</span><span class="khi num">từ W3 AUG · tuần học thứ 15</span><span class="khi">GVCN Lê Thu Trang · nhận bàn giao 14/08</span></div>
-          <div class="sec"><span class="sec-t">Kết quả</span>
-            <div class="kq"><span class="pin s2">MT2 · 5.5 · SOS 2</span><span class="s">dưới kỳ vọng: <b class="t-bad">W2 5.0 · S 5.0</b> · W2 SEP</span><span class="pin tam">MT3 · dự kiến W2 OCT</span><span class="s">tuần học thứ 16 · kỳ vọng 6.0</span></div>
-          </div>
-          <div class="sec"><span class="sec-t">Hỗ trợ</span>
-            <div class="cl"><span class="h"><span class="tg-case">Case</span><span class="mtc">MT1</span>Reading<span class="sos s1">SOS 1</span><span class="nh nh-xong"><svg class="ico s10"><use href="#i-ok"/></svg>Xong W2 SEP</span></span>
-              <span class="pas"><span class="pab ok"><svg class="ico"><use href="#i-ok"/></svg><span class="nm">Học tutor</span></span><span class="l12 muted">Reading 5.0 → 6.0</span></span></div>
-            <div class="cl"><span class="h"><span class="tg-case">Case</span><span class="mtc">MT2</span>Writing Task 2<span class="sos s2">SOS 2</span><span class="nh nh-qua">Quá hạn</span></span>
-              <span class="pas"><span class="pab bad"><svg class="ico"><use href="#i-warn"/></svg><span class="nm">Tăng cường bài tập</span></span><span class="l12 t-bad num">ghi kết quả W4 SEP · quá hạn 3 ngày</span></span></div>
-            <div class="cl"><span class="h"><span class="tg-case">Case</span><span class="mtc">MT2</span>Speaking<span class="sos s2">SOS 2</span><span class="nh nh-cho">Chờ nguyên nhân</span></span>
-              <span class="l12 muted num">Đỗ Thanh Tùng · hạn hết 02/10</span></div>
-          </div>
-          <div class="ra"><span class="row" style="justify-content:space-between"><b>Sắp tới: MT3 · W2 OCT</b><button class="btn sm" type="button">Xem trục tuần</button></span></div>
-        </article>
-      </div>
-
-      <div class="callout"><svg class="ico t-late" style="margin-top:3px"><use href="#i-warn"/></svg><span><b>Lặp lại qua các lớp:</b> Speaking không đạt ở Giữa khoá và Cuối khoá BE, rồi dưới kỳ vọng ở MT2. Lần hỗ trợ ở BE chỉ tiến bộ một phần. <span class="muted">Dòng này máy tự viết khi một kỹ năng có Case ở hai chương trở lên.</span></span></div>
-      <p class="why"><b>Ý tưởng:</b> GV mở tab để hỏi "em đã đi qua những đâu, ở đâu có chuyện". Mỗi lớp em đã học là một chương, đọc trái sang phải như một câu chuyện: kết quả Test, Case (khung rỗng) với PA (khối đặc) và kết quả, rồi <b>vì sao em sang lớp sau</b> (lên lớp theo Cuối khoá, hay chuyển lớp do Quản lý ra lệnh). Chương đang học rộng hơn, viền xanh, đủ việc đang mở. Chương cũ chỉ giữ Case và kết quả cuối. Tạm dừng là dải sọc ngay trong chương. Case đi theo em khi chuyển lớp thì ghi "đi theo em sang MB FT 101" ở chương cũ và hiện đủ ở chương mới. Bấm "Xem trục tuần" (hoặc bấm vào thẻ) mở trục tuần bản 1 lọc đúng tuần của chương.</p>
-    </div>
+<!-- ====================================================== ĐÃ CHỌN -->
+<section class="screen" aria-labelledby="h-s">
+  <h2 id="h-s">Đã chọn: bản 2 + bản 1 (chủ sản phẩm 01/10)</h2>
+  <div class="sticky-note" style="border-style:solid;border-color:var(--accent)">
+    <span><b>Chương theo lớp</b> ở đầu tab, thay bảng Lịch sử lớp: kể em đã đi qua những lớp nào, kết quả, Case và PA, vì sao sang lớp sau. <b>Trục tuần nâng cấp</b> ngay dưới: chi tiết từng tuần, gồm cả việc đang mở. Bấm một chương thì trục chuyển tới giai đoạn chứa chương đó, nên bỏ nút đổi giai đoạn. Luật "khung rỗng = Case, khối đặc = PA" dùng chung cho cả hai. Trên điện thoại: chương xếp dọc, trục tuần giữ Xem gọn.</span>
   </div>
+  <div class="tbl-wrap"><table class="cmp">
+    <thead><tr><th>Bản</th><th>Hiểu đường đi trong vài giây</th><th>Thấy PA chạy bao lâu</th><th>So các kỹ năng</th><th>Điện thoại 375 px</th><th>Công làm</th></tr></thead>
+    <tbody>
+      <tr class="rec"><td><b>2 · Chương theo lớp</b> · đã chọn</td><td><b>Tốt nhất</b>: cả đường đi, vì sao đổi lớp</td><td>Không (xem trục tuần)</td><td>Trung bình</td><td><b>Tốt</b>: xếp dọc</td><td>Vừa: máy chủ gom Test, Case theo từng lớp</td></tr>
+      <tr class="rec"><td><b>1 · Trục tuần nâng cấp</b> · đã chọn</td><td>Trung bình: một giai đoạn một lần</td><td><b>Tốt nhất</b></td><td>Tốt</td><td>Cuộn ngang</td><td>Nhỏ: khung Case, hàng Lớp, tạm dừng, ghim Test gọn</td></tr>
+      <tr><td>3 · Dòng thời gian</td><td>Tốt cho tra lại, chậm để nắm tổng thể</td><td>Chỉ tuần đầu, tuần cuối</td><td>Kém: trộn kỹ năng</td><td>Tốt</td><td>Vừa</td></tr>
+      <tr><td>4 · Làn kỹ năng</td><td>Tốt cho kỹ năng yếu lặp lại</td><td>Có, không tên</td><td>Tốt nhất</td><td>Chỉ chương đang học</td><td>Vừa</td></tr>
+    </tbody>
+  </table></div>
+</section>
 
-  <div class="v-row">
-    <div class="fit">
-      <div><span class="h">Hợp khi</span><ul><li>Mở hồ sơ để hiểu nhanh đường đi của em, nhất là GVCN mới nhận bàn giao.</li><li>Em đã qua nhiều lớp: FOU → BE → FT hiện trên một màn.</li><li>Điện thoại: chương xếp dọc, không cuộn ngang.</li></ul></div>
-      <div><span class="h">Không hợp khi</span><ul><li>Cần biết PA chạy chính xác tuần nào: phải mở trục tuần.</li><li>Em mới học một lớp: chỉ có một thẻ, gần như lặp tab Học thuật.</li></ul></div>
-    </div>
-    <div class="phone" aria-label="Điện thoại · phiên bản 2">
-      <div class="pbar"><span>‹ Quay lại</span><span>Đặng Minh Thư</span><span></span></div>
-      <div class="pbody">
-        <div class="tabs"><span>Học thuật</span><span>Ý thức…</span><span class="on">Hành trình</span></div>
-        <span class="ptitle">Chương đang học mở sẵn ở trên; chương cũ gập thành một dòng</span>
-        <article class="ch now" style="gap:8px">
-          <div class="top"><span class="prog t-acc">FT · LT1 · đang học</span><span class="ma">MB FT 101</span><span class="khi num">từ W3 AUG · tuần học thứ 15</span></div>
-          <div class="kq" style="display:flex;flex-direction:column;gap:4px;align-items:flex-start"><span class="pin s2">MT2 · 5.5 · SOS 2</span><span class="l12 muted">dưới kỳ vọng: <b class="t-bad">W2 · S</b></span></div>
-          <div class="cl"><span class="h"><span class="tg-case">Case</span><span class="mtc">MT2</span>Writing Task 2<span class="nh nh-qua">Quá hạn</span></span><span class="pas"><span class="pab bad"><svg class="ico"><use href="#i-warn"/></svg><span class="nm">Tăng cường bài tập</span></span></span></div>
-          <div class="cl"><span class="h"><span class="tg-case">Case</span><span class="mtc">MT2</span>Speaking<span class="nh nh-cho">Chờ nguyên nhân</span></span></div>
-          <div class="cl"><span class="h"><span class="tg-case">Case</span><span class="mtc">MT1</span>Reading<span class="nh nh-xong"><svg class="ico s10"><use href="#i-ok"/></svg>Xong W2 SEP</span></span></div>
-          <div class="ra"><b>Sắp tới: MT3 · W2 OCT</b></div>
-        </article>
-        <div class="chs-m">
-          <div class="lnk"><svg class="ico s10"><use href="#i-move"/></svg> chuyển lớp · W3 AUG</div>
-          <div class="one"><b>MB FT 104</b><span class="num muted l12">W2 JUN → W2 AUG</span><span class="s">MT1 SOS 1 · Case Reading · tạm dừng 2 tuần</span></div>
-          <div class="lnk"><svg class="ico s10"><use href="#i-up2"/></svg> lên FT + bổ trợ S · W2 JUN</div>
-          <div class="one"><b>MB BE 06</b><span class="num muted l12">W3 MAR → W1 JUN</span><span class="s">Cuối khoá 74% · Case S, PA một phần</span></div>
-          <div class="lnk"><svg class="ico s10"><use href="#i-up2"/></svg> lên BE · W3 MAR</div>
-          <div class="one" style="border-bottom:1px solid var(--line);border-radius:0 0 10px 10px"><b>MB FOU 11</b><span class="num muted l12">W2 JAN → W2 MAR</span><span class="s">Cuối khoá 80% · Case G+V, PA tiến bộ rõ</span></div>
-        </div>
-      </div>
-    </div>
+<section class="screen" aria-labelledby="h-q">
+  <h2 id="h-q">Đã chốt</h2>
+  <div class="sticky-note">
+    <ol>
+      <li><b>Tuần học thứ n (FT)</b> đếm từ tuần em bắt đầu FT và bỏ qua tuần Tạm dừng: hôm nay là tuần học thứ 15, không phải 17. Tuần của lớp FT là số riêng của lớp, không lẫn với tuần học của em.</li>
+      <li><b>Bản 2 + bản 1</b>: Chương theo lớp ở đầu tab, trục tuần nâng cấp ngay dưới. Bảng Lịch sử lớp và nút đổi giai đoạn bỏ.</li>
+      <li><b>Cột tuần tới</b> trên trục tuần: có, để hiện đợt Test sắp tới (viền đứt).</li>
+      <li>Câu hỏi gộp làn của bản 4: không còn cần vì không chọn bản 4.</li>
+    </ol>
   </div>
 </section>
 
+<details class="ref">
+  <summary><h2 style="font-size:16px">Không chọn (để tham khảo): bản 3 · Dòng thời gian, bản 4 · Làn kỹ năng</h2><svg class="ico car t-mute"><use href="#i-car"/></svg></summary>
 <!-- ====================================================== BẢN 3 -->
 <section class="screen" aria-labelledby="h-3">
-  <div class="where"><span class="tag">Phiên bản 3 · Sáng tạo</span><h2 id="h-3">Dòng thời gian theo tuần: đọc như nhật ký, mới nhất trên cùng</h2></div>
+  <div class="where"><span class="tag">Không chọn · bản 3</span><h2 id="h-3">Dòng thời gian theo tuần: đọc như nhật ký, mới nhất trên cùng</h2></div>
   <div class="where"><span class="tag">Nằm ở</span><span class="path">Hồ sơ học viên › tab <b>Hành trình</b> · thay cả trục tuần lẫn bảng Lịch sử lớp · người xem: GVCN, GVBM của lớp, Quản lý chi nhánh, Quản trị</span></div>
   <div class="frame">
     <div class="frame-bar"><span class="crumb">Học viên &amp; Lớp › MB FT 101 › Đặng Minh Thư › Hành trình</span></div>
@@ -611,7 +636,7 @@ table.cmp{border-collapse:collapse;width:100%;min-width:760px;font-size:13px}
 
 <!-- ====================================================== BẢN 4 -->
 <section class="screen" aria-labelledby="h-4">
-  <div class="where"><span class="tag">Phiên bản 4 · Sáng tạo</span><h2 id="h-4">Làn kỹ năng: cả đường đi trên một dải, mỗi kỹ năng một làn</h2></div>
+  <div class="where"><span class="tag">Không chọn · bản 4</span><h2 id="h-4">Làn kỹ năng: cả đường đi trên một dải, mỗi kỹ năng một làn</h2></div>
   <div class="where"><span class="tag">Nằm ở</span><span class="path">Hồ sơ học viên › tab <b>Hành trình</b> · khối đầu tiên của tab, trên trục tuần (bản 1) · người xem: GVCN, GVBM của lớp, Quản lý chi nhánh, Quản trị</span></div>
   <div class="frame">
     <div class="frame-bar"><span class="crumb">Học viên &amp; Lớp › MB FT 101 › Đặng Minh Thư › Hành trình</span></div>
@@ -642,35 +667,7 @@ table.cmp{border-collapse:collapse;width:100%;min-width:760px;font-size:13px}
   </div>
 </section>
 
-<!-- ====================================================== SO SÁNH -->
-<section class="screen" aria-labelledby="h-s">
-  <h2 id="h-s">So sánh và đề xuất</h2>
-  <div class="tbl-wrap"><table class="cmp">
-    <thead><tr><th>Bản</th><th>Hiểu đường đi trong vài giây</th><th>Thấy PA chạy bao lâu</th><th>So các kỹ năng</th><th>Điện thoại 375 px</th><th>Công làm</th></tr></thead>
-    <tbody>
-      <tr><td><b>1 · Nâng cấp trục tuần</b></td><td>Trung bình: một giai đoạn một lần</td><td><b>Tốt nhất</b></td><td>Tốt</td><td>Cuộn ngang</td><td>Nhỏ: thêm khung Case, hàng Lớp, tạm dừng</td></tr>
-      <tr class="rec"><td><b>2 · Chương theo lớp</b></td><td><b>Tốt nhất</b>: cả đường đi, vì sao đổi lớp</td><td>Không (mở trục tuần)</td><td>Trung bình</td><td><b>Tốt</b>: xếp dọc</td><td>Vừa: máy chủ gom Test, Case theo từng lớp</td></tr>
-      <tr><td><b>3 · Dòng thời gian</b></td><td>Tốt cho tra lại, chậm để nắm tổng thể</td><td>Chỉ tuần đầu, tuần cuối</td><td>Kém: trộn kỹ năng</td><td><b>Tốt</b></td><td>Vừa: một danh sách sự kiện mới</td></tr>
-      <tr><td><b>4 · Làn kỹ năng</b></td><td>Tốt cho kỹ năng yếu lặp lại</td><td>Có, không tên</td><td><b>Tốt nhất</b></td><td>Chỉ chương đang học</td><td>Vừa, cần quyết cách gộp làn</td></tr>
-    </tbody>
-  </table></div>
-  <div class="sticky-note" style="border-style:solid;border-color:var(--accent)">
-    <b>Đề xuất: bản 2 ở đầu tab, bản 1 ngay dưới.</b>
-    <span>Chương theo lớp thay bảng Lịch sử lớp: người mở hồ sơ thấy ngay em đã qua những lớp nào, ở đâu có Case, vì sao sang lớp sau. Bấm một chương thì trục tuần nâng cấp (bản 1) mở đúng khoảng tuần của chương đó, nên bỏ được nút đổi giai đoạn. Luật "khung rỗng = Case, khối đặc = PA" dùng chung cho cả hai. Trên điện thoại: chương xếp dọc, trục tuần giữ Xem gọn. Bản 3 và bản 4 để sau: bản 3 gần giống khối Mốc học tập mockup 24 vừa bỏ, bản 4 cần quyết cách gộp làn.</span>
-  </div>
-</section>
-
-<section class="screen" aria-labelledby="h-q">
-  <h2 id="h-q">Cần chủ sản phẩm quyết</h2>
-  <div class="sticky-note">
-    <ol>
-      <li><b>Tuần tạm dừng có tính vào "tuần học thứ n" không?</b> Mockup không tính: em học từ W2 JUN, nghỉ 2 tuần, nên hôm nay là tuần học thứ 15 (không phải 17), và MT3 rơi vào tuần học thứ 16 là W2 OCT.</li>
-      <li><b>Chọn bản nào</b>: đề xuất là bản 2 + bản 1. Nếu chỉ muốn sửa ít thì bản 1 một mình.</li>
-      <li><b>Trục tuần có thêm một cột tuần tới</b> để hiện đợt Test sắp tới (viền đứt) không? Hôm nay trục dừng ở tuần này.</li>
-      <li>Nếu chọn bản 4: đồng ý gộp <b>W1 + W2 thành làn W</b> (lấy điểm thấp hơn) và <b>P của FOU vào làn S</b> không?</li>
-    </ol>
-  </div>
-</section>
+</details>
 
 </div>
 
@@ -679,10 +676,16 @@ table.cmp{border-collapse:collapse;width:100%;min-width:760px;font-size:13px}
 var W=[];[["JAN",2,5],["FEB",1,4],["MAR",1,4],["APR",1,5],["MAY",1,4],["JUN",1,4],["JUL",1,5],["AUG",1,4],["SEP",1,4],["OCT",1,2]].forEach(function(r){for(var n=r[1];n<=r[2];n++)W.push({m:r[0],n:n});});
 var NAY=38, DUNG=[28,29], FT0=22;
 function wk(i){return "W"+W[i].n+" "+W[i].m;}
-function tuanHoc(i){if(i<FT0)return null;if(DUNG.indexOf(i)>=0)return "–";var n=0;for(var j=FT0;j<=i;j++)if(DUNG.indexOf(j)<0)n++;return n;}
+function tuanHoc(i){if(i<FT0){for(var k=0;k<LOP.length;k++)if(i>=LOP[k].tu&&i<=LOP[k].den)return i-LOP[k].tu+1;return null;}if(DUNG.indexOf(i)>=0)return "–";var n=0;for(var j=FT0;j<=i;j++)if(DUNG.indexOf(j)<0)n++;return n;}
 var LOP=[{tu:0,den:9,ma:"MB FOU 11",ngan:"FOU 11",gv:"Nguyễn Ngọc Hà"},{tu:10,den:21,ma:"MB BE 06",ngan:"BE 06",gv:"Vũ Hải Yến"},{tu:22,den:31,ma:"MB FT 104",ngan:"FT 104",gv:"Trần Ngọc Hà"},{tu:32,den:39,ma:"MB FT 101",ngan:"FT 101",gv:"Lê Thu Trang",chuyen:1}];
-var TEST=[{i:4,ngan:"Giữa",chu:"Giữa khoá · 3/4 môn",tone:"s1"},{i:9,ngan:"Cuối",chu:"Cuối khoá · 80%",tone:"ok"},{i:14,ngan:"Giữa",chu:"Giữa khoá · 3/4 môn",tone:"s1"},{i:21,ngan:"Cuối",chu:"Cuối khoá · 74%",tone:"s1"},
-  {i:27,ngan:"MT1",chu:"MT1 · 5.5 · SOS 1",gon:"MT1 5.5",tone:"s1"},{i:35,ngan:"MT2",chu:"MT2 · 5.5 · SOS 2",gon:"MT2 5.5",tone:"s2"},{i:39,ngan:"MT3",chu:"MT3 · dự kiến",gon:"MT3",tone:"tam"}];
+var TEST=[
+  {i:4,ngan:"Giữa",b:"3/4",chu:"Giữa khoá · 3/4 môn",tone:"s1",tip:"Giữa khoá MB FOU 11 · W1 FEB · 3/4 môn đạt · không đạt G+V (58%)"},
+  {i:9,ngan:"Cuối",b:"80%",chu:"Cuối khoá · 80%",tone:"ok",tip:"Cuối khoá MB FOU 11 · W2 MAR · 80% · 4/4 môn đạt · lên BE"},
+  {i:14,ngan:"Giữa",b:"3/4",chu:"Giữa khoá · 3/4 môn",tone:"s1",tip:"Giữa khoá MB BE 06 · W3 APR · 3/4 môn đạt · không đạt S (60%)"},
+  {i:21,ngan:"Cuối",b:"74%",chu:"Cuối khoá · 74%",tone:"s1",tip:"Cuối khoá MB BE 06 · W1 JUN · 74% · 3/4 môn đạt · không đạt S · lên FT + bổ trợ S"},
+  {i:27,ngan:"MT1",b:"5.5",chu:"MT1 · 5.5 · SOS 1",tone:"s1",tip:"MT1 · W3 JUL · tuần học thứ 6 · Overall 5.5 · SOS 1 · dưới kỳ vọng 5.5: Reading 5.0"},
+  {i:35,ngan:"MT2",b:"5.5",chu:"MT2 · 5.5 · SOS 2",tone:"s2",tip:"MT2 · W2 SEP · tuần học thứ 12 · Overall 5.5 · SOS 2 · dưới kỳ vọng 5.5: Writing Task 2 5.0, Speaking 5.0"},
+  {i:39,ngan:"MT3",b:"",chu:"MT3 · dự kiến",tone:"tam",tip:"MT3 · dự kiến W2 OCT · tuần học thứ 16 · kỳ vọng 6.0"}];
 var IC={ok:"i-ok",part:"i-part",bad:"i-x",late:"i-warn",run:"i-play"};
 function ico(id,c){return '<svg class="ico '+(c||"")+'"><use href="#'+id+'"/></svg>';}
 function chuoi(a){return a.map(function(x){
@@ -706,36 +709,37 @@ var KN=[
 
 /* ---- PHIÊN BẢN 1: trục tuần một lưới (gon = Xem gọn điện thoại) */
 function veTruc(host,o){
-  var tu=o.tu,den=o.den,gon=o.gon,ten=o.ten,colPx=o.colPx;
+  var tu=o.tu,den=o.den,gon=o.gon,ten=o.ten,colPx=o.colPx,kn=o.kn||KN;
   var cp=gon?colPx:Math.max(colPx,(host.parentElement.clientWidth-ten)/(den-tu+1)); /* bề rộng cột thật, để quyết hiện tên PA */
   var C=function(i){return i-tu+2;};
   var rows=[],h="";
   function add(px){rows.push(px);return rows.length;}
-  function put(r,c1,c2,cls,inner,st){h+='<div class="'+cls+'" style="grid-row:'+r+';grid-column:'+c1+"/"+c2+";"+(st||"")+'">'+(inner||"")+"</div>";}
+  function put(r,c1,c2,cls,inner,st,title){h+='<div class="'+cls+'" style="grid-row:'+r+';grid-column:'+c1+"/"+c2+";"+(st||"")+'"'+(title?' title="'+title+'"':"")+'>'+(inner||"")+"</div>";}
   function nc(r,inner,bg){h+='<div class="nc" style="grid-row:'+r+';grid-column:1/-1"><div class="nci" style="width:'+ten+"px;background:"+(bg||"var(--surface)")+'">'+inner+"</div></div>";}
-  var rM=add(20),rW=add(22),rT=add(22),rL=add(34),rP=add(34);
+  var rM=add(26),rW=add(22),rT=add(22),rL=add(34),rP=add(44);
   /* tháng */
-  var i0=tu;for(var i=tu;i<=den+1;i++){if(i>den||W[i].m!==W[i0].m){put(rM,C(i0),C(i),"mo-lb",W[i0].m);i0=i;}}
+  var i0=tu;for(var i=tu;i<=den+1;i++){if(i>den||W[i].m!==W[i0].m){put(rM,C(i0),C(i),"mo-b",W[i0].m,"",W[i0].m+" · "+(i-i0)+" tuần");i0=i;}}
   nc(rM,"");
-  nc(rW,'<span class="lb">Tuần</span>');nc(rT,'<span class="lb">Tuần học</span>');nc(rL,'<span class="lb">Lớp</span>');nc(rP,'<span class="lb">Đợt Test</span>');
+  nc(rW,'<span class="lb">Tuần</span>');nc(rT,'<span class="lb">'+(den<FT0?"Tuần khoá":"Tuần học")+'</span>');nc(rL,'<span class="lb">Lớp</span>');nc(rP,'<span class="lb">Đợt Test</span>');
   for(i=tu;i<=den;i++){
     var cls="wk"+(i===NAY?" nay":"")+(i>NAY?" tl":"");
     put(rW,C(i),C(i)+1,cls,"W"+W[i].n,"");
     if(DUNG.indexOf(i)<0){var t=tuanHoc(i);put(rT,C(i),C(i)+1,"th"+(i===NAY?" nay":""),t==null?"":t);}
     put("2/-1",C(i),C(i)+1,"vl"+(W[i].n===1?" m":""),"");
   }
-  put("1/-1",C(NAY),C(NAY)+1,"nay","");
-  put(rT+"/-1",C(DUNG[0]),C(DUNG[1])+1,"dung hatch","");
-  put(rT,C(DUNG[0]),C(DUNG[1])+1,"dchip",ico("i-pause","s10")+(gon?"":"Tạm dừng"),"");
+  if(NAY>=tu&&NAY<=den)put("1/-1",C(NAY),C(NAY)+1,"nay","");
+  if(DUNG[0]>=tu&&DUNG[1]<=den){put(rT+"/-1",C(DUNG[0]),C(DUNG[1])+1,"dung hatch","");
+  put(rT,C(DUNG[0]),C(DUNG[1])+1,"dchip",ico("i-pause","s10")+(gon?"":"Tạm dừng"),"");}
   put(rW,2,"-1","ax","","align-self:end;height:0");
   /* lớp */
   LOP.forEach(function(l){if(l.den<tu||l.tu>den)return;var a=Math.max(l.tu,tu),b=Math.min(l.den,den);
     put(rL,C(a),C(b)+1,"seg-l",(l.chuyen?ico("i-move","t-acc"):"")+"<b>"+(gon?l.ngan:l.ma)+"</b>"+(gon?"":'<span class="gv">GVCN '+l.gv+"</span>"),"");});
   /* đợt Test */
-  TEST.forEach(function(p){if(p.i<tu||p.i>den)return;var j=p.i===den?"flex-end":p.i===tu?"flex-start":"center";
-    put(rP,C(p.i),C(p.i)+1,"pw",'<span class="pin '+p.tone+'" title="'+p.chu+" · "+wk(p.i)+'">'+(gon?p.gon:p.chu)+"</span>","justify-content:"+j);});
+  /* mỗi đợt gọn trong đúng một cột tuần: nhãn ngắn / điểm; chữ dài ở tooltip */
+  TEST.forEach(function(p){if(p.i<tu||p.i>den)return;
+    put(rP,C(p.i),C(p.i)+1,"tpin "+p.tone,"<b>"+p.ngan+"</b>"+(p.b?"<span>"+p.b+"</span>":""),"",p.tip);});
   /* hộp kỹ năng */
-  KN.forEach(function(g){
+  kn.forEach(function(g){
     var r=add(40);put(r,1,"-1","bg-h","");
     nc(r,'<span class="l1"><span class="kn">'+(gon?g.g:g.k)+'</span><span style="margin-left:auto'+(gon?";margin-left:6px":"")+'">'+chuoi(gon?g.c.slice(-1):g.c)+"</span></span>","var(--surface2)");
     if(g.badge)put(r,C(tu),C(tu)+(gon?3:6),"badge",'<span class="nh '+g.badge[0]+'">'+(gon?g.badge[2]:g.badge[1])+"</span>","");
@@ -759,8 +763,9 @@ function veTruc(host,o){
   host.style.gridTemplateRows=rows.map(function(x){return x+"px";}).join(" ");
   host.innerHTML=h;
 }
-veTruc(document.getElementById("v1"),{tu:22,den:39,ten:236,colPx:40,gon:false});
-veTruc(document.getElementById("v1m"),{tu:22,den:39,ten:112,colPx:34,gon:true});
+veTruc(document.getElementById("v1"),{tu:22,den:39,ten:236,colPx:44,gon:false});
+veTruc(document.getElementById("v1t"),{tu:0,den:21,ten:120,colPx:42,gon:false,kn:[]});
+veTruc(document.getElementById("v1m"),{tu:22,den:39,ten:112,colPx:36,gon:true});
 
 /* ---- PHIÊN BẢN 4: làn kỹ năng */
 var LAN=[
