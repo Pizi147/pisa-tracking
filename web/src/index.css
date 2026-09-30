@@ -18,7 +18,8 @@
 
     --accent: #7db3f0;          /* xanh pastel — nhấn chính */
     --accent-strong: #a9cdf7;
-    --accent-ink: #0b1626;      /* chữ trên nền accent */
+    --accent-ink-rgb: 11 22 38; /* chữ trên nền accent */
+    --accent-ink: rgb(var(--accent-ink-rgb));
     --accent-soft: rgba(125, 179, 240, 0.14);
     --accent-line: rgba(125, 179, 240, 0.38);
 
@@ -60,22 +61,68 @@
     --hang-lon-dong-bg: #131f35;  --hang-lon-dong-vach: #3a4f72;
     --hang-con-bg: #0b1322;       --hang-con-chu: #c9d4e6;
     /* Ô sửa được / chỉ đọc (lưới chấm) */
-    --o-sua-vien: #3d5f8f;        --o-sua-nen: #0e1a2e;
+    --o-sua-vien: #3d5f8f;        --o-sua-nen: #0e1a2e;   --o-sua-focus: #84baff;
+
+    /*
+     * PR-SANG (T15) — HAI CHẾ ĐỘ. Khối này = TỐI (mặc định, giá trị hôm nay); khối `:root[data-theme="light"]` ngay dưới ghi đè
+     * đúng các biến GỐC (bí danh `--dat-*`, `--sos*-*`, `--ok`… tự theo). `tailwind.config.js` ánh xạ tên Tailwind cũ về các biến này:
+     * `slate-100/200/300` → chu-1/2/3 · `slate-600/700` → chu-mo (chỉ dấu trang trí) · `white` → phu (lớp phủ rê chuột) · `ink-800`,
+     * `teal-*` → chon-* (Đang chọn). Component không tự khai màu; phép kiểm `prSang` S4–S6 chặn.
+     */
+    --chu-1-rgb: 241 245 249;  --chu-2-rgb: 226 232 240;  --chu-3-rgb: 203 213 225;
+    --chu-mo-rgb: 71 85 105;   --chu-mo-2-rgb: 51 65 85;
+    --phu-rgb: 255 255 255;
+    --chon-bg-rgb: 19 33 45;   --chon-vien-rgb: 13 148 136;  --chon-dau-rgb: 94 234 212;
+    --nut-hover: #24304a;      --o-nhap-nen: #0e1727;        --o-nhap-tat: #0b1322;   --o-nhap-vien: var(--line-strong);
+    --cuon: rgba(160, 178, 214, 0.2);  --cuon-hover: rgba(160, 178, 214, 0.35);
+
+    /* Phông tự phục vụ (`@fontsource/be-vietnam-pro`, nạp ở main.tsx) — một giá trị cho cả hai chế độ. */
+    --font-sans: 'Be Vietnam Pro', system-ui, 'Segoe UI', Roboto, sans-serif;
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --bg: #f5f7fa;  --surface: #ffffff;  --surface-2: #eef1f5;
+    --line: rgba(15, 23, 42, 0.12);  --line-strong: rgba(15, 23, 42, 0.22);
+    --accent: #1d5fbf;  --accent-strong: #174e9e;  --accent-ink-rgb: 255 255 255;
+    --accent-soft: rgba(29, 95, 191, 0.08);  --accent-line: rgba(29, 95, 191, 0.35);
+    --text: #0f172a;
+
+    --ok-rgb: 21 122 66;      --ok-bg-rgb: 220 243 229;    --ok-line-rgb: 143 209 171;
+    --bad-rgb: 180 35 35;     --bad-bg-rgb: 253 226 226;   --bad-line-rgb: 240 163 163;
+    --late-rgb: 180 64 15;    --late-bg-rgb: 253 230 216;  --late-line-rgb: 241 174 138;
+    --soon-rgb: 138 90 0;     --soon-bg-rgb: 253 241 207;  --soon-line-rgb: 230 196 107;
+    --doing-rgb: 29 95 191;   --doing-bg-rgb: 227 237 251; --doing-line-rgb: 157 187 232;
+    --done-rgb: 75 85 99;     --done-bg-rgb: 238 240 243;  --done-line-rgb: 207 213 221;
+    --wait-rgb: 91 63 184;    --wait-bg-rgb: 236 230 253;  --wait-line-rgb: 189 174 240;
+    --muted-rgb: 51 65 85;    --muted-bg-rgb: 238 241 245; --muted-line-rgb: 207 213 221;
+    --text-dim-rgb: 71 85 105;  --text-faint-rgb: 91 102 120;
+
+    --hang-lon-bg: #eaf1fb;       --hang-lon-vach: #1d5fbf;
+    --hang-lon-dong-bg: #f1f4f8;  --hang-lon-dong-vach: #9fb0c8;
+    --hang-con-bg: #fafbfc;       --hang-con-chu: #334155;
+    --o-sua-vien: #7c8799;        --o-sua-nen: #ffffff;   --o-sua-focus: #1d5fbf;
+
+    --chu-1-rgb: 15 23 42;  --chu-2-rgb: 30 41 59;  --chu-3-rgb: 51 65 85;
+    --chu-mo-rgb: 148 163 184;  --chu-mo-2-rgb: 203 213 225;
+    --phu-rgb: 15 23 42;
+    --chon-bg-rgb: 224 242 239;  --chon-vien-rgb: 15 118 110;  --chon-dau-rgb: 15 118 110;
+    --nut-hover: #e4e8ee;  --o-nhap-nen: #ffffff;  --o-nhap-tat: #f1f4f8;  --o-nhap-vien: #7c8799;
+    --cuon: rgba(15, 23, 42, 0.2);  --cuon-hover: rgba(15, 23, 42, 0.35);
   }
   html, body, #root { height: 100%; }
   body {
     margin: 0;
     background: var(--bg);
     color: var(--text);
-    font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    font-family: var(--font-sans);
     font-size: 14px;
     -webkit-font-smoothing: antialiased;
   }
   * { border-color: var(--line); }
   ::-webkit-scrollbar { width: 10px; height: 10px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: rgba(160, 178, 214, 0.2); border-radius: 6px; }
-  ::-webkit-scrollbar-thumb:hover { background: rgba(160, 178, 214, 0.35); }
+  ::-webkit-scrollbar-thumb { background: var(--cuon); border-radius: 6px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--cuon-hover); }
 
   :focus-visible {
     outline: 2px solid var(--accent);
@@ -124,7 +171,7 @@
     font-weight: 500; white-space: nowrap;
     transition: background 120ms, border-color 120ms, color 120ms;
   }
-  .btn:hover:not(:disabled) { background: #24304a; border-color: var(--accent-line); }
+  .btn:hover:not(:disabled) { background: var(--nut-hover); border-color: var(--accent-line); }
   .btn:disabled { opacity: 0.45; cursor: not-allowed; }
   .btn-primary {
     background: var(--accent); border-color: var(--accent-strong); color: var(--accent-ink); font-weight: 600;
@@ -134,14 +181,14 @@
   .btn-danger:hover:not(:disabled) { background: rgb(var(--bad-rgb) / 0.12); }
   .btn-sm { padding: 0.25rem 0.6rem; font-size: 12px; border-radius: 0.4rem; }
   .btn-ghost { background: transparent; border-color: transparent; }
-  .btn-ghost:hover:not(:disabled) { background: rgba(160,178,214,0.1); }
+  .btn-ghost:hover:not(:disabled) { background: rgb(var(--phu-rgb) / 0.1); }
 
   .field {
     width: 100%; padding: 0.45rem 0.6rem; border-radius: 0.5rem;
-    background: #0e1727; border: 1px solid var(--line-strong); color: var(--text);
+    background: var(--o-nhap-nen); border: 1px solid var(--o-nhap-vien); color: var(--text);
   }
   .field:focus { border-color: var(--accent); }
-  .field:disabled { opacity: 0.6; background: #0b1322; }
+  .field:disabled { opacity: 0.6; background: var(--o-nhap-tat); }
   .label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 0.25rem; font-weight: 500; }
 
   .th {
@@ -194,12 +241,12 @@
 
   /* Ô điểm/ô nhập: sửa được có viền + nền riêng, chỉ đọc thì không viền, nền trong suốt. */
   .o-sua { border: 1px solid var(--o-sua-vien); background: var(--o-sua-nen); border-radius: 0.375rem; }
-  .o-sua:focus, .o-sua:focus-within { border-color: #84baff; box-shadow: 0 0 0 3px rgba(132, 186, 255, 0.22); outline: none; }
+  .o-sua:focus, .o-sua:focus-within { border-color: var(--o-sua-focus); box-shadow: 0 0 0 3px var(--accent-soft); outline: none; }
   .o-doc { border: 1px solid transparent; background: transparent; }
 
   .link { color: var(--accent); text-decoration: none; }
   .link:hover { text-decoration: underline; }
 
-  .skel { background: linear-gradient(90deg, #1a2437 25%, #24304a 50%, #1a2437 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 0.375rem; }
+  .skel { background: linear-gradient(90deg, var(--surface-2) 25%, var(--nut-hover) 50%, var(--surface-2) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 0.375rem; }
   @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 }
