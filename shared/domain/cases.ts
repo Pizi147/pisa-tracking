@@ -52,6 +52,8 @@ export const CASE_CATEGORIES = [
   'listening', 'reading', 'writing1', 'writing2', 'writing', 'speaking', 'tong_hop',
 ] as const;
 export type CaseCategory = (typeof CASE_CATEGORIES)[number];
+/** PR-UXF-a Q7 (chép nguyên văn cho PR-Pb2-b — PR merge sau giữ MỘT bản): bài = ô nhập; FT W1, W2 là hai bài. id ổn định cho ô số, bảng GV, hồ sơ GV. */
+export const baiId = (attemptId: number, skill: string) => attemptId * 10 + (CASE_CATEGORIES as readonly string[]).indexOf(skill);
 
 export const CASE_CATEGORY_LABEL: Record<CaseCategory, string> = {
   listening: 'Listening',

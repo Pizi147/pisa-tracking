@@ -16,7 +16,7 @@ import type { TrangThaiCaseV4 } from './sosV4.ts';
 
 // ------------------------------------------------------------------ góc nhìn (Q1, Q16)
 
-export const GOC_NHIN = ['tong-hop', 'van-de', 'hieu-qua-pa', 'y-thuc', 'danh-sach'] as const;
+export const GOC_NHIN = ['tong-hop', 'van-de', 'hieu-qua-pa', 'y-thuc', 'danh-sach', 'giao-vien'] as const;
 export type GocNhin = (typeof GOC_NHIN)[number];
 export const GOC_NHIN_LABEL: Record<GocNhin, string> = {
   'tong-hop': 'Tổng hợp Test + SOS',
@@ -24,6 +24,7 @@ export const GOC_NHIN_LABEL: Record<GocNhin, string> = {
   'hieu-qua-pa': 'Hiệu quả PA',
   'y-thuc': 'Ý thức',   // PR-YT4 (K1-25): Phối hợp SOS ở Việc của GVCN, không ở góc nhìn này
   'danh-sach': 'Danh sách Case',
+  'giao-vien': 'Giáo viên',
 };
 export const GOC_NHIN_MAC_DINH: GocNhin = 'tong-hop';
 

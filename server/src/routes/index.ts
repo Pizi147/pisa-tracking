@@ -88,6 +88,8 @@ import * as vanDeHvSvc from '../phanTich/vanDeHv.ts';
 import * as hieuQuaPaSvc from '../phanTich/hieuQuaPa.ts';
 import * as yThucPhanTichSvc from '../phanTich/yThucPhanTich.ts';
 import * as boQuenSvc from '../phanTich/boQuen.ts';
+import * as giaoVienPtSvc from '../phanTich/giaoVien.ts';
+import { khungPtGvTuThamSo } from '../../../shared/domain/index.ts';   // PR-Pb2-b: dòng riêng (Hợp đồng a↔b — không sửa import chung)
 import { metricResponse, metricSet, rowsFor } from '../worklist/metrics.ts';
 import { myWork, viecCuaNguoi } from '../worklist/mywork.ts';
 import { bangGvChiNhanh, hoSoGiaoVien, ketQuaHoSoGv, oHoSoGv, viecHoSoGv } from '../giaoVien/hoSo.ts';
@@ -650,6 +652,21 @@ api.get('/phan-tich/bo-quen', requireAuth, wrap((req) => {
   return boQuenSvc.danhSachBoQuen(principalOf(req), {
     branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')), loai,
   }, demoToday());
+}));
+/* PR-Pb2-b: bảng Phân tích giáo viên (Q30-5, Q31-9) + panel Chấm điểm của một GV. `cn`, `gv` số nguyên dương; khoảng `tu`/`den` (Thứ Hai) hoặc `thang`. */
+const filterPtGvOf = (req: Request) => ({
+  cn: soDuong(req.query.cn, 'cn'), ct: khungPtGvTuThamSo(qStr(req, 'ct')),
+  tu: qStr(req, 'tu') ?? null, den: qStr(req, 'den') ?? null, thang: qStr(req, 'thang') ?? null,
+});
+api.get('/phan-tich/giao-vien', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return giaoVienPtSvc.phanTichGiaoVien(principalOf(req), filterPtGvOf(req));
+}));
+api.get('/phan-tich/giao-vien/cham-diem', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const gv = soDuong(req.query.gv, 'gv');
+  if (gv == null) throw badRequest('Thiếu giáo viên.');
+  return giaoVienPtSvc.oChamDiemGv(principalOf(req), { ...filterPtGvOf(req), gv });
 }));
 
 /** Việc sinh ra từ dữ liệu — tự hết khi nguồn được xử lý, không có nút đóng giả. */

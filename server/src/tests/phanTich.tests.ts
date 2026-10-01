@@ -57,7 +57,8 @@ export async function runPhanTichTests(t: YThucTestKit) {
     eq(g('goc=hieu-qua-pa').gocMoi, null, 'khoá mới không cần thay URL');
     eq(g('goc=van-de').goc, 'van-de', 'van-de giữ khoá cũ');
     eq(g('goc=danh-sach&hang-doi=can-ho-tro-2-lan'), { goc: 'danh-sach', ct: null, boThamSo: [], gocMoi: null }, 'hang-doi giữ nguyên');
-    eq([...d.GOC_NHIN], ['tong-hop', 'van-de', 'hieu-qua-pa', 'y-thuc', 'danh-sach'], 'đúng thứ tự chủ sản phẩm chốt');
+    /* PR-Pb2-b: thêm 'giao-vien' ở CUỐI (Hợp đồng a↔b; Pb2-a bỏ 'danh-sach'). */
+    eq([...d.GOC_NHIN], ['tong-hop', 'van-de', 'hieu-qua-pa', 'y-thuc', 'danh-sach', 'giao-vien'], 'đúng thứ tự chủ sản phẩm chốt');
     eq(d.GOC_NHIN_LABEL['van-de'], 'Tổng hợp vấn đề HV', 'nhãn');
     eq(d.GOC_NHIN_LABEL['hieu-qua-pa'], 'Hiệu quả PA', 'nhãn');
   });
@@ -288,7 +289,12 @@ export async function runPhanTichTests(t: YThucTestKit) {
   await checkAsync('PR-Pb · Không N+1: số câu SQL của tongHop không đổi khi khoảng thời gian thay đổi (soTuan 4 và 26)', async () => {
     const n4 = await demCauHoi(() => tongHopSvc.tongHop(P.admin, { branchId: null, ct: 'ca-hai', soTuan: 4, classId: null, theo: 'lop' }));
     const n26 = await demCauHoi(() => tongHopSvc.tongHop(P.admin, { branchId: null, ct: 'ca-hai', soTuan: 26, classId: null, theo: 'lop' }));
-    assert(n4 === n26, `Số câu SQL đổi theo khoảng thời gian: soTuan=4 → ${n4} câu, soTuan=26 → ${n26} câu`);
+    /* PR-Pb2-b: Tổng hợp đọc theo LÔ 400 lượt (2 câu mỗi lô: lượt có điểm + Case) — khoảng 26 tuần có thể sang lô kế tiếp khi bộ dữ liệu
+       đủ lớn (bộ demo D18 + lượt do phép kiểm trước tạo). Chênh được phép = đúng số lô thêm; KHÔNG được tăng theo từng lượt. */
+    const soLuot = (n: number) => (conn.prepare(`SELECT COUNT(*) n FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id
+      WHERE a.status != 'cancelled' AND rp.week_start >= ? AND rp.week_start <= ?`).get(d.tuDauKhoang(TODAY, n), week.mondayOf(TODAY)) as any).n as number;
+    const loThem = Math.ceil(soLuot(26) / 400) - Math.ceil(soLuot(4) / 400);
+    assert(n26 - n4 <= 2 * loThem, `Số câu SQL đổi theo khoảng thời gian: soTuan=4 → ${n4} câu, soTuan=26 → ${n26} câu (thêm ${loThem} lô 400)`);
     assert(n4 <= 12, `Quá nhiều câu SQL cho một lần tính Tổng hợp: ${n4} (tối đa 12)`);
   });
 

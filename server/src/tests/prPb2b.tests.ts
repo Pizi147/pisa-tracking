@@ -6,7 +6,6 @@ export async function runPrPb2bTests(t: YThucTestKit) {
   const d: any = await import('../../../shared/domain/index.ts');
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
-  const maLoi = (fn: () => unknown): number | string => { try { fn(); return 'không ném'; } catch (e: any) { return e?.status ?? String(e?.message ?? e); } };
 
   // ------------------------------------------------------------------ khối 1 · migrate ba cột (Task 1)
   console.log('\nPR-Pb2-b · Migrate: ngày nhập đầu ô điểm, hạn xử lý chốt, ngày phản hồi vi phạm');
@@ -286,5 +285,188 @@ export async function runPrPb2bTests(t: YThucTestKit) {
     }
   });
 
-  void maLoi;
+  // ------------------------------------------------------------------ khối 4 · bảng Phân tích giáo viên — máy chủ (Task 4)
+  console.log('\nPR-Pb2-b · Bảng Phân tích giáo viên: mỗi cột một hàm tập, hai đường, quyền, không N+1');
+  const pt: any = await import('../phanTich/giaoVien.ts');
+  const metricsSvc: any = await import('../worklist/metrics.ts');
+  const nguCanh: any = await import('../platform/nguCanhRequest.ts');
+  check('Pb2b (4a) · khoangPtGv: tháng 09/2026 = W1 SEP – W4 SEP (31/08 – 21/09); 14 tuần → lỗi; vắng → 4 tuần tới tuần hôm nay; tu > den → lỗi', () => {
+    const t9 = d.khoangPtGv({ thang: '2026-09' }, '2026-09-14');
+    assert(t9.tu === '2026-08-31' && t9.den === '2026-09-21', JSON.stringify(t9));
+    assert('loi' in d.khoangPtGv({ tu: '2026-06-01', den: '2026-08-31' }, '2026-09-14'), '14 tuần');
+    assert(!('loi' in d.khoangPtGv({ tu: '2026-06-08', den: '2026-08-31' }, '2026-09-14')), '13 tuần được');
+    const vang = d.khoangPtGv({}, '2026-09-16');
+    assert(vang.tu === '2026-08-24' && vang.den === '2026-09-14', JSON.stringify(vang));
+    assert('loi' in d.khoangPtGv({ tu: '2026-09-14', den: '2026-09-07' }, '2026-09-14') && 'loi' in d.khoangPtGv({ tu: '2026-09-15', den: '2026-09-21' }, '2026-09-14'), 'ngược / không Thứ Hai');
+  });
+  check('Pb2b (4b) · chuOPtGv bốn dạng · mauKetQuaGv (12,21) vàng · (8,21) đỏ · (13,17) xanh · (3,4) không màu · khungPtGvTuThamSo("ca-hai") = ft', () => {
+    assert(JSON.stringify(d.chuOPtGv({ k: 'so', dung: 18, tong: 20 })) === '{"so":"18/20","phu":"90%"}', 'số');
+    assert(d.chuOPtGv({ k: 'so', dung: 3, tong: 4 }).phu === 'mẫu nhỏ' && d.chuOPtGv({ k: 'na' }).phu === '—' && d.chuOPtGv({ k: 'rong' }).phu === 'không có', 'ba dạng');
+    assert(d.mauKetQuaGv(12, 21) === 'vua' && d.mauKetQuaGv(8, 21) === 'thap' && d.mauKetQuaGv(13, 17) === 'cao' && d.mauKetQuaGv(3, 4) === null, 'màu');
+    assert(d.khungPtGvTuThamSo('ca-hai') === 'ft' && d.khungPtGvTuThamSo(null) === 'ft' && d.khungPtGvTuThamSo('thuong') === 'thuong', 'khung');
+  });
+
+  /* Dữ liệu dựng: em mới MB FT 101, MT1 tuần này — L nhập đúng hạn rồi sửa sau hạn · R quá hạn chưa nhập (hạn dời về hôm qua) · S dấu "-". */
+  const MB_FT = classId('MB FT 101');
+  const tuanNay = week.mondayOf(D);
+  /* Phép kiểm trước có thể đã kết thúc phân công L/R của MB FT 101 mà không ai thay — dựng lại để ô thử có người phụ trách ở hạn nhập. */
+  for (const k of ['listening', 'reading']) {
+    if (!get(`SELECT 1 FROM teacher_assignments WHERE class_id = ? AND skill = ? AND status = 'active' AND effective_to IS NULL`, MB_FT, k)) {
+      conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at) VALUES (?,?,?,0,?, 'active', ?)`)
+        .run(P.lrTeacher.userId, MB_FT, k, D, new Date().toISOString());
+    }
+  }
+  const e1 = emMoi('MB FT 101');
+  boLichTuTao(conn, e1.cy);
+  const a1 = luotThu(conn, svc.createAttempt, P.admin, { studentId: e1.sid, cycleId: e1.cy, classId: MB_FT, no: 1, periodId: week.ensurePeriod(tuanNay).id });
+  svc.saveScore(P.admin, a1.id, 'listening', { rawScore: 30 }, D);
+  const hanL = (svc.skillCells(P.admin, get('SELECT * FROM assessment_attempts WHERE id = ?', a1.id), svc.scoresOf(a1.id), [], D,
+    svc.loadBundle([a1.id]).skillRows.get(a1.id)) as any[]).find((x) => x.skill === 'listening').deadline as string;
+  if (!hanL) throw new Error('Pb2b (4): ô L của lượt thử không có hạn nhập — dữ liệu dựng sai');
+  svc.saveScore(P.admin, a1.id, 'listening', { rawScore: 31, lyDo: 'Chấm lại câu 12' }, addDays(hanL, 2));
+  svc.saveScore(P.admin, a1.id, 'speaking', { noShow: true }, D);
+  conn.prepare(`UPDATE attempt_skills SET deadline_override = ? WHERE attempt_id = ? AND skill = 'reading'`).run(addDays(D, -1), a1.id);
+  const { demoToday: demoTodayNay } = await import('../demoConfig.ts');
+  const bang = (ct = 'ft', q: Record<string, unknown> = {}) => pt.phanTichGiaoVien(P.mbManager, { ct, ...q });
+  const hangCua = (b: any, id: number) => b.hang.find((h: any) => h.id === id);
+
+  check('Pb2b (4c) · Chấm điểm, HAI ĐƯỜNG: mọi GV có số → panel đúng m dòng, "Trễ" = m − n dòng (cùng tapChamDiem)', () => {
+    const b = bang();
+    const coSo = b.hang.filter((h: any) => h.chamDiem.k === 'so');
+    assert(coSo.length >= 1, 'không GV nào có ô Chấm điểm');
+    for (const h of coSo) {
+      const pn = pt.oChamDiemGv(P.mbManager, { ct: 'ft', gv: h.id });
+      assert(pn.rows.length === h.chamDiem.tong && pn.tre === h.chamDiem.tong - h.chamDiem.dung && pn.rows.filter((r: any) => !r.dung).length === pn.tre, `${h.ten}: ${h.chamDiem.dung}/${h.chamDiem.tong} ‖ ${pn.rows.length} dòng, ${pn.tre} trễ`);
+      assert(pn.rows.every((r: any, i: number, ds: any[]) => i === 0 || Number(ds[i - 1].dung) <= Number(r.dung)), `${h.ten}: dòng trễ phải đứng đầu`);
+    }
+  });
+  check('Pb2b (4d) · ô L nhập đúng hạn rồi sửa sau hạn → vẫn đúng hạn, panel ghi ngày sửa; R quá hạn chưa nhập → trễ; S dấu "-" → không có mặt', () => {
+    /* Dòng panel của MỌI GV (phép kiểm trước có thể đã đổi người dạy L/R của MB FT 101 — gán người theo hạn, không theo người cố định). */
+    const kh = { ct: 'ft', tu: tuanNay, den: tuanNay };
+    const dongPanel = new Map<number, any>(bang('ft', kh).hang.flatMap((h: any) => pt.oChamDiemGv(P.mbManager, { ...kh, gv: h.id }).rows.map((r: any) => [r.id, r])));
+    const L = dongPanel.get(d.baiId(a1.id, 'listening'));
+    const pcL = all(`SELECT user_id, effective_from, effective_to, status FROM teacher_assignments WHERE class_id = ? AND skill = 'listening'`, MB_FT);
+    assert(L?.dung && L.nhapDau === D && L.sua, `ô L: ${JSON.stringify(L) ?? 'không có trong panel nào'} · hôm nay ${demoTodayNay()} · hạn ${hanL} · phân công L ${JSON.stringify(pcL)}`);
+    const R = dongPanel.get(d.baiId(a1.id, 'reading'));
+    assert(R && !R.dung && R.nhapDau === null && R.tre === 1, `ô R: ${JSON.stringify(R) ?? 'không có trong panel nào'}`);
+    const S = [...(pt.tapChamDiem(pt.nguCanhPtGv(P.mbManager, { ct: 'ft' }), { o: [], attempts: new Map(), bundle: null }).dong.values())];
+    assert(S.length === 0, 'rỗng khi không có ô');
+    const tatCa = [...dongPanel.keys()];
+    assert(!tatCa.includes(d.baiId(a1.id, 'speaking')), 'ô dấu "-" không được tính');
+    assert(!tatCa.includes(d.baiId(a1.id, 'writing1')), 'ô chưa tới hạn chưa nhập không được tính');
+  });
+  check('Pb2b (4e) · em Tạm dừng → ô không có mặt; đổi phân công giữa khoảng → người ở ngày đó (dòng mới thắng)', () => {
+    const e2 = emMoi('MB FT 101');
+    boLichTuTao(conn, e2.cy);
+    const a2 = luotThu(conn, svc.createAttempt, P.admin, { studentId: e2.sid, cycleId: e2.cy, classId: MB_FT, no: 1, periodId: week.ensurePeriod(tuanNay).id });
+    svc.saveScore(P.admin, a2.id, 'listening', { rawScore: 25 }, D);
+    conn.prepare(`UPDATE students SET status = 'inactive' WHERE id = ?`).run(e2.sid);
+    const pn = pt.oChamDiemGv(P.mbManager, { ct: 'ft', gv: P.lrTeacher.userId });
+    conn.prepare(`UPDATE students SET status = 'active' WHERE id = ?`).run(e2.sid);
+    assert(!pn.rows.some((r: any) => r.id === d.baiId(a2.id, 'listening')), 'em Tạm dừng vẫn tính');
+    const a = P.normalCoreTeacher.userId; const b = P.normalSubjectTeacher.userId; const c3 = P.w1Teacher.userId;
+    conn.prepare(`UPDATE teacher_assignments SET status = 'ended', effective_to = ? WHERE class_id = ? AND skill = 'speaking' AND status = 'active'`).run(addDays(D, 2), lopFouMoi);
+    conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at) VALUES (?,?, 'speaking', 0, ?, 'active', ?)`).run(c3, lopFouMoi, addDays(D, 2), new Date().toISOString());
+    const nc = pt.nguCanhPtGv(P.mbManager, { ct: 'thuong' });
+    assert(nc.nguoiLuc(lopFouMoi, 'speaking', addDays(D, 1)) === b && nc.nguoiLuc(lopFouMoi, 'speaking', addDays(D, 2)) === c3 && nc.nguoiLuc(lopFouMoi, 'speaking', addDays(D, 5)) === c3, 'người theo ngày');
+    assert(nc.nguoiLuc(lopFouMoi, null, D) === a && nc.nguoiLuc(lopFouMoi, 'listening', addDays(D, -30)) === null, 'GVCN / trước phân công');
+  });
+  check('Pb2b (4f) · Ghi kết quả PA: Σ tong các GV + nghĩa vụ Case không người phụ trách = metricSet("dung-han-cap-nhat").n cùng khoảng + khung', () => {
+    const nc = pt.nguCanhPtGv(P.mbManager, { ct: 'ft', thang: '2026-09' });
+    const r = pt.tapGhiKetQuaPa(P.mbManager, nc);
+    const tong = [...r.tap.values()].reduce((s: number, x: any) => s + x.tong.length, 0);
+    const m = metricsSvc.metricSet(P.mbManager, 'dung-han-cap-nhat', { branchId: nc.cn, program: 'ft', from: nc.tu, to: nc.cuoi });
+    assert(tong + r.khongNguoi === m.n, `${tong} + ${r.khongNguoi} ≠ ${m.n}`);
+    const b = pt.phanTichGiaoVien(P.mbManager, { ct: 'ft', thang: '2026-09' });
+    assert(b.hang.every((h: any) => h.ghiKetQuaPa.k !== 'so' || h.ghiKetQuaPa.tong === r.tap.get(h.id)?.tong.length), 'ô = tập');
+  });
+  check('Pb2b (4g) · Xử lý vi phạm: gửi đề xuất trước hạn (QL chưa duyệt) → đúng hạn cho GVCN; GV không làm GVCN lớp FT nào → "—"; vi phạm chưa tới hạn chưa phản hồi → chưa tính', () => {
+    const sid = hv();
+    const ids = [ghiVp(sid, addDays(D, -2)), ghiVp(sid, addDays(D, -1)), ghiVp(sid, D)];
+    const nc = pt.nguCanhPtGv(P.mbManager, { ct: 'ft', tu: tuanNay, den: week.mondayOf(addDays(D, 7)) });
+    assert(!ids.some((v) => pt.tapXuLyViPham(nc).get(gvcn.userId)?.tong.includes(v)), 'chưa tới hạn, chưa phản hồi → chưa tính');
+    deXuatGui(sid, ids).gui();
+    const t = pt.tapXuLyViPham(nc).get(gvcn.userId);
+    assert(ids.every((v) => t?.dung.includes(v)), JSON.stringify(t));
+    const b = bang('ft', { tu: tuanNay, den: week.mondayOf(addDays(D, 7)) });
+    const khongGvcn = b.hang.filter((h: any) => !/GVCN/.test(h.phu));
+    assert(khongGvcn.length > 0 && khongGvcn.every((h: any) => h.xuLyViPham.k === 'na'), khongGvcn.map((h: any) => `${h.ten}:${h.xuLyViPham.k}`).join());
+    assert(hangCua(b, gvcn.userId)?.xuLyViPham.lopGvcn?.includes(MB_FT), 'lớp GVCN để bấm số');
+  });
+  check('Pb2b (4h) · PHỦ ĐỊNH: vi phạm valid = 0 không vào tập Xử lý vi phạm', () => {
+    const sid = hv();
+    const ids = [ghiVp(sid, addDays(D, -2)), ghiVp(sid, addDays(D, -1)), ghiVp(sid, D)];
+    deXuatGui(sid, ids).gui();
+    conn.prepare(`UPDATE violations SET valid = 0 WHERE id = ?`).run(ids[0]);
+    const nc = pt.nguCanhPtGv(P.mbManager, { ct: 'ft', tu: tuanNay, den: week.mondayOf(addDays(D, 7)) });
+    assert(!pt.tapXuLyViPham(nc).get(gvcn.userId)?.tong.includes(ids[0]), 'vi phạm valid = 0 vẫn tính');
+    conn.prepare(`UPDATE violations SET valid = 1 WHERE id = ?`).run(ids[0]);
+  });
+  check('Pb2b (4i) · Kết quả: GV L có ô L (FT 5 khoá), GV không dạy L → "—" ở L; em KCK không tính; HV tiến bộ: MT trước L 5.5 → nay 6.0 tiến bộ; chưa có bài trước → không có mặt', () => {
+    /* Em có bài trước (MT1 tuần trước, L 5.5) và bài nay (MT2 tuần này, L 6.0); em KCK chỉ có bài nay. */
+    const e3 = emMoi('MB FT 101');
+    boLichTuTao(conn, e3.cy);
+    const truoc = luotThu(conn, svc.createAttempt, P.admin, { studentId: e3.sid, cycleId: e3.cy, classId: MB_FT, no: 1, periodId: week.ensurePeriod(addDays(tuanNay, -7)).id });
+    const nay = luotThu(conn, svc.createAttempt, P.admin, { studentId: e3.sid, cycleId: e3.cy, classId: MB_FT, no: 2, periodId: week.ensurePeriod(tuanNay).id });
+    const diem = (aid: number, band: number) => conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total, band, nhap_dau_ngay) VALUES (?, 'listening', 20, 40, ?, ?)`).run(aid, band, D);
+    diem(truoc.id, 5.5); diem(nay.id, 6.0);
+    const e4 = emMoi('MB FT 101');
+    boLichTuTao(conn, e4.cy);
+    conn.prepare(`UPDATE learning_cycles SET khong_cam_ket = 1, target_score = NULL WHERE id = ?`).run(e4.cy);
+    const kck = luotThu(conn, svc.createAttempt, P.admin, { studentId: e4.sid, cycleId: e4.cy, classId: MB_FT, no: 1, periodId: week.ensurePeriod(tuanNay).id });
+    diem(kck.id, 6.0);
+    const b = pt.phanTichGiaoVien(P.mbManager, { ct: 'ft', tu: tuanNay, den: tuanNay });
+    const hL = hangCua(b, P.lrTeacher.userId);
+    assert(hL && Object.keys(hL.ketQua).join() === 'listening,reading,writing1,writing2,speaking', JSON.stringify(hL?.ketQua));
+    const khongL = b.hang.find((h: any) => h.ketQua.listening.k === 'na' && h.ketQua.speaking.k !== 'na');
+    assert(!khongL || khongL.ketQua.listening.k === 'na', 'GV không dạy L phải "—"');
+    assert(hL.ketQua.listening.k === 'so', `ô L: ${JSON.stringify(hL.ketQua.listening)}`);
+    assert(hL.tienBo?.k === 'so' && hL.tienBo.dung >= 1, `tiến bộ: ${JSON.stringify(hL.tienBo)}`);
+    const tb1 = hL.tienBo.tong;
+    conn.prepare(`DELETE FROM assessment_scores WHERE attempt_id = ?`).run(truoc.id);
+    const sau = hangCua(pt.phanTichGiaoVien(P.mbManager, { ct: 'ft', tu: tuanNay, den: tuanNay }), P.lrTeacher.userId);
+    assert((sau.tienBo.k === 'so' ? sau.tienBo.tong : 0) === tb1 - 1, `bỏ bài trước → bớt một mục: ${tb1} → ${JSON.stringify(sau.tienBo)}`);
+    const kq1 = hL.ketQua.listening.tong;
+    conn.prepare(`UPDATE learning_cycles SET khong_cam_ket = 0, target_score = 6.5 WHERE id = ?`).run(e4.cy);
+    const kq2 = hangCua(pt.phanTichGiaoVien(P.mbManager, { ct: 'ft', tu: tuanNay, den: tuanNay }), P.lrTeacher.userId).ketQua.listening.tong;
+    assert(kq2 === kq1 + 1, `em KCK không tính, có Target thì tính: ${kq1} → ${kq2}`);
+  });
+  check('Pb2b (4j) · Lớp thường: không PA hiệu quả, không HV tiến bộ; Kết quả đúng 4 khoá; FOU người P chỉ có cột S (P); sắp theo tên; GV không phân công trong khung → không hàng', () => {
+    const b = pt.phanTichGiaoVien(P.mbManager, { ct: 'thuong', thang: '2026-09' });
+    assert(b.hang.length > 0 && b.hang.every((h: any) => h.paHieuQua === undefined && h.tienBo === undefined && Object.keys(h.ketQua).join() === 'listening,reading,writing,speaking'), 'khoá cột');
+    assert(b.hang.every((h: any, i: number) => i === 0 || b.hang[i - 1].ten.localeCompare(h.ten, 'vi') <= 0), 'sắp theo tên');
+    const ft = pt.phanTichGiaoVien(P.mbManager, { ct: 'ft', thang: '2026-09' });
+    const chiThuong = b.hang.filter((h: any) => !ft.hang.some((x: any) => x.id === h.id));
+    const coTrongKhung = new Set(all(`SELECT DISTINCT ta.user_id FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id WHERE c.branch_id = ? AND c.is_fast_track = 1`, MB).map((r) => r.user_id));
+    assert(chiThuong.every((h: any) => !coTrongKhung.has(h.id)), 'người không phân công FT không được có hàng FT');
+  });
+  check('Pb2b (4k) · PA hiệu quả: CHỜ Pb2-a (paCoKetQua) — tạm "không có" ở mọi hàng FT', () => {
+    assert(bang().hang.every((h: any) => h.paHieuQua?.k === 'rong'), 'cột PA hiệu quả còn tạm');
+  });
+  await t.checkAsync('Pb2b (4l) · PHỦ ĐỊNH qua route: GVCN / GVBM → 403; QL CP xem cn = MB → 403; Quản trị không cn → 400; 14 tuần → 400; QL MB → 200', async () => {
+    await voiMayChu(async (goi) => {
+      const ma = async (u: number, url: string) => (await goi(u, url)).status;
+      assert(await ma(gvcn.userId, `/phan-tich/giao-vien?cn=${MB}&ct=ft`) === 403, 'GVCN');
+      assert(await ma(P.w1Teacher.userId, `/phan-tich/giao-vien/cham-diem?cn=${MB}&ct=ft&gv=${gvcn.userId}`) === 403, 'GVBM');
+      assert(await ma(P.cpManager.userId, `/phan-tich/giao-vien?cn=${MB}&ct=ft`) === 403, 'QL CP');
+      assert(await ma(P.admin.userId, `/phan-tich/giao-vien?ct=ft`) === 400, 'QT không cn');
+      assert(await ma(P.mbManager.userId, `/phan-tich/giao-vien?cn=${MB}&ct=ft&tu=2026-06-01&den=2026-08-31`) === 400, '14 tuần');
+      assert(await ma(P.mbManager.userId, `/phan-tich/giao-vien?cn=${MB}&ct=ft&thang=2026-09`) === 200, 'QL MB');
+      assert(await ma(P.mbManager.userId, `/phan-tich/giao-vien/cham-diem?cn=${MB}&ct=ft&gv=abc`) === 400, 'gv sai dạng');
+    });
+  });
+  check('Pb2b (4m) · KHÔNG N+1: số câu SQL của bảng bằng nhau khi chi nhánh có thêm 3 GV + 2 lớp FT có phân công', () => {
+    const dem = () => { const a = nguCanh.soCauSql(); nguCanh.trongBoNho(() => pt.phanTichGiaoVien(P.mbManager, { ct: 'ft', thang: '2026-09' })); return nguCanh.soCauSql() - a; };
+    dem();
+    const truoc = dem();
+    const gvMoi = [P.normalCoreTeacher.userId, P.normalSubjectTeacher.userId, P.bcManager.userId];
+    for (let i = 0; i < 2; i++) {
+      const bat = d.mondayOfDate(addDays(D, -21));
+      const lop = (intake2.createClass(P.admin, { code: `MB FT PB2B${i}`, branchId: MB, kind: 'FT', isFastTrack: true, route: 'LT1', startDate: bat, startPeriodId: week.ensurePeriod(bat).id }) as any).id as number;
+      gvMoi.forEach((g, j) => conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at) VALUES (?,?,?,?,?, 'active', ?)`)
+        .run(g, lop, j === 0 ? null : ['listening', 'reading'][j - 1], j === 0 ? 1 : 0, bat, new Date().toISOString()));
+    }
+    const sau = dem();
+    assert(sau === truoc, `${truoc} → ${sau} câu`);
+  });
 }
