@@ -202,11 +202,17 @@ export function SkillBoard({ rows, loading, error, onRetry, selected, onPick, on
 
 /**
  * Dòng phụ của cột Việc tiếp (12 px, Q22): `hạn hết 02/10 · Đỗ Thanh Tùng` · quá hạn: ⚠ SVG + `quá hạn 3 ngày` đỏ + người · hôm nay vàng.
- * Em Tạm dừng: nhãn vàng thay quá hạn (T65). Chỗ DUY NHẤT nói quá hạn của kỹ năng.
+ * Em Tạm dừng: nhãn vàng thay MỌI hạn (T65 — "mọi hạn đang dừng", kể cả hạn chưa tới), giữ người. Chỗ DUY NHẤT nói quá hạn của kỹ năng.
  */
 function DongHan({ v }: { v: NonNullable<ReturnType<typeof viecTiepHang>> }) {
   const tamDung = useContext(TamDungCtx);
-  if (tamDung && v.quaHan) return <span className="mt-0.5 block"><NhanTamDung tu={tamDung} /></span>;
+  if (tamDung && (v.quaHan || v.homNay || v.han)) {
+    return (
+      <span className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[12px] text-slate-400">
+        <NhanTamDung tu={tamDung} />{v.nguoi && <span className="truncate">{v.nguoi}</span>}
+      </span>
+    );
+  }
   if (!v.han && !v.nguoi) return null;
   return (
     <span className="block truncate text-[12px] font-normal tabular-nums text-slate-400">
@@ -250,7 +256,7 @@ function SkillRows({ row, open, onToggle, onReport, onChanged, onMoCase }: {
               <span className="block truncate text-[12px] text-slate-100">{buoc.viec}</span>
               <DongHan v={buoc} />
             </span>
-          ) : <span className="text-xs text-slate-600">—</span>}
+          ) : <span className="text-xs text-faint" title="Không có việc tiếp">—</span>}
         </td>
       </HangNhom>
 

@@ -133,7 +133,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
   const { loadPrincipal } = await import('../permissions.ts');
   const viecCua = (p: any, sid: number) => (studentProfile(p, sid) as any).dauHoSo.viec as { cuaBan: any[]; nguoiKhac: any[] };
   const emLop = (ma: string) => all(`SELECT e.student_id id ${SACH} ORDER BY e.student_id`, classId(ma), seedMax.students).map((r) => r.id as number);
-  const NHOM_HOC_VIEN = new Set(['cause', 'xac_nhan_pa', 'result', 'ke_hoach_bo_tro', 'phoi_hop', 'mini_test', 'yt_xu_ly']);
+  const NHOM_HOC_VIEN = new Set(['cause', 'xac_nhan_pa', 'ghi_ket_qua_pa', 'ke_hoach_bo_tro', 'phoi_hop', 'mini_test', 'yt_xu_ly']);
   const LOAI_HOC_VIEN = new Set(['nguyen-nhan', 'xac-nhan-pa', 'ghi-ket-qua', 'ke-hoach', 'bao-ph', 'mini-test', 'y-thuc']);
 
   check('VAI-b (2) · nguoiLam của Case (Q3): chờ nguyên nhân → người phụ trách; PA chạy chờ ghi kết quả → người ghi PA (thiếu thì recorded_by); không ai phụ trách → null; có tên', () => {
@@ -331,7 +331,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
       assert((skillSupportBoard(P.admin, sid) as any).tamDungTu === null, 'đã Quay lại → null');
     });
     const web = fs.readFileSync(path.join(REPO, 'web/src/modules/cases/SkillBoard.tsx'), 'utf8');
-    assert(/tamDung && tt\.t === 'qua-han' \? <NhanTamDung/.test(web) && /tamDung && v\.quaHan\) return <span className="mt-0\.5 block"><NhanTamDung/.test(web), 'SkillBoard thay "Quá hạn" bằng NhanTamDung');
+    assert(/tamDung && tt\.t === 'qua-han' \? <NhanTamDung/.test(web) && /tamDung && \(v\.quaHan \|\| v\.homNay \|\| v\.han\)\) \{[\s\S]{0,160}<NhanTamDung/.test(web), 'SkillBoard thay "Quá hạn" bằng NhanTamDung');
     assert(/data\.tamDungTu \? <NhanTamDung/.test(fs.readFileSync(path.join(REPO, 'web/src/modules/cases/CasePanel.tsx'), 'utf8')), 'Ngăn Case thay quá hạn bằng NhanTamDung');
   });
 
@@ -510,14 +510,18 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     const r = hanhTrinhHocVien(P.admin, 1, null) as any;
     const soGhiDanh = get('SELECT COUNT(*) n FROM enrollments WHERE student_id = 1').n;
     assert(r.chuong.length === soGhiDanh && r.chuong.every((c: any, i: number) => i === 0 || r.chuong[i - 1].tu <= c.tu), `chương: ${r.chuong.map((c: any) => c.code)}`);
-    assert(r.chuong.every((c: any) => c.gvcn), `mỗi chương có GVCN: ${r.chuong.map((c: any) => c.gvcn)}`);
+    /* Chương của lớp CÓ GVCN (phân công is_core, kể cả đã thôi) phải ghi tên — lớp các khối trước tạo thêm có thể không có GVCN. */
+    const coGvcn = new Set(all('SELECT DISTINCT class_id FROM teacher_assignments WHERE is_core = 1').map((x) => x.class_id));
+    assert(r.chuong.every((c: any) => !coGvcn.has(c.classId) || c.gvcn), `mỗi chương có GVCN: ${r.chuong.map((c: any) => `${c.code}:${c.gvcn}`)}`);
+    assert(r.chuong.slice(0, 3).every((c: any) => c.gvcn), 'ba chương demo FOU → BE → FT có GVCN');
     for (const c of r.chuong.filter((x: any) => !x.ft)) {
       const chu = JSON.stringify(c.ghim.map((g: any) => d.nhanGhim(g))) + JSON.stringify(c.caseDong.map((x: any) => x.ten)) + c.nhan;
       assert(!/SOS/.test(chu), `chương lớp thường có chữ SOS: ${chu}`);
     }
-    const dang = r.chuong.find((c: any) => c.dangHoc && c.ft);
-    const dau = (studentProfile(P.admin, 1) as any).dauHoSo.thongTin.tuanHoc;
-    assert(dang && dang.tuanHoc?.tu === dau.tuan && dang.tuanHoc.den === null, `tuần học chương ${JSON.stringify(dang?.tuanHoc)} ≠ đầu hồ sơ ${dau.tuan}`);
+    const hv = emCuaLop('MB FT 101');
+    const dang = (hanhTrinhHocVien(P.admin, hv, null) as any).chuong.find((c: any) => c.dangHoc && c.ft);
+    const dau = (studentProfile(P.admin, hv) as any).dauHoSo.thongTin.tuanHoc;
+    assert(dang && dau && dang.tuanHoc?.tu === dau.tuan && dang.tuanHoc.den === null, `tuần học chương ${JSON.stringify(dang?.tuanHoc)} ≠ đầu hồ sơ ${dau?.tuan}`);
     assert(!('episodes' in (studentProfile(P.admin, 1) as any)), 'hồ sơ còn episodes');
   });
 
@@ -587,15 +591,17 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     assert(d.khoiCho({ soPa: 1, pa: [{}] }) === null, 'có khối PA');
   });
 
-  check('VAI-b (11) · soTuanCot: FT tuần Tạm dừng → null, tuần sau dừng không đếm; khoá 1…n, ngoài khoá → null; tuần này của HV 1 = tuần học ở đầu hồ sơ (hai đường)', () => {
+  check('VAI-b (11) · soTuanCot: FT tuần Tạm dừng → null, tuần sau dừng không đếm; khoá 1…n, ngoài khoá → null; tuần này của em FT = tuần học ở đầu hồ sơ (hai đường)', () => {
     const ft = { loai: 'ft' as const, ds: [{ batDau: '2026-09-07', tu: '2026-09-07', den: null }] };
     const dung = [{ tu: '2026-09-21', den: '2026-09-28' }];   // den = ngày Quay lại
     assert(d.soTuanCot(ft, dung, '2026-09-14') === 2 && d.soTuanCot(ft, dung, '2026-09-21') === null && d.soTuanCot(ft, dung, '2026-09-28') === 3, 'FT bỏ tuần dừng');
     const khoa = { loai: 'khoa' as const, ds: [{ batDau: '2026-09-07', tong: 3, tu: '2026-09-07', den: null }] };
     assert(d.soTuanCot(khoa, [], '2026-09-07') === 1 && d.soTuanCot(khoa, [], '2026-09-21') === 3 && d.soTuanCot(khoa, [], '2026-09-28') === null, 'khoá 1…n');
     assert(d.soTuanCot(null, [], '2026-09-07') === null, 'không có giai đoạn');
-    const r = hanhTrinhHocVien(P.admin, 1, 'ft') as any;
-    const dau = (studentProfile(P.admin, 1) as any).dauHoSo.thongTin.tuanHoc;
+    /* Em FT "sạch" (HV 1 bị các khối trước thêm ghi danh / đổi lộ trình trong lượt chạy đầy đủ). */
+    const hv = emCuaLop('MB FT 101');
+    const r = hanhTrinhHocVien(P.admin, hv, 'ft') as any;
+    const dau = (studentProfile(P.admin, hv) as any).dauHoSo.thongTin.tuanHoc;
     assert(dau && d.soTuanCot(r.tuanHoc, r.tamDung, thu2) === dau.tuan, `trục ${d.soTuanCot(r.tuanHoc, r.tamDung, thu2)} ≠ đầu hồ sơ ${dau?.tuan}`);
   });
 
@@ -613,5 +619,31 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     const muc = (cg.slice(cg.indexOf('const muc'), cg.indexOf('\n  ];')).match(/^ {4}\[/gm) ?? []).length;
     assert(muc > 0 && muc <= 9, `chú giải ${muc} mục`);
     assert(/duongDotTest\(/.test(ht), 'điểm chuỗi chưa qua duongDotTest');
+  });
+
+  // ------------------------------------------------------------------ khối 12 · bấm thử (Task 12)
+  check('VAI-b (12) · uocRongChuoi: mốc phần trăm (lớp thường) rộng hơn mốc cùng số ký tự không "%" — chuỗi 5 mốc % không tràn cột tên', () => {
+    const pt = d.chuoiDiem([{ gt: 6, tong: 10, chuaDat: false }], 'ratio', false);
+    assert(pt[0].chu.endsWith('%') && d.uocRongChuoi(pt) === Math.ceil(pt[0].chu.length * 7.6 + 5), `ước ${d.uocRongChuoi(pt)} cho ${pt[0].chu}`);
+  });
+
+  // em Tạm dừng THẬT — ghi danh chuyển `paused`
+  check('VAI-b (12) · Em Tạm dừng thật (ghi danh `paused`): đầu hồ sơ vẫn ghi lớp · GVCN (không "Chưa xếp lớp"); Việc tiếp thay MỌI hạn bằng nhãn Tạm dừng', () => {
+    const sid = emCuaLop('MB FT 101');
+    const e = get(`SELECT id, class_id FROM enrollments WHERE student_id = ? AND status = 'active'`, sid);
+    conn.prepare(`UPDATE students SET status = 'inactive' WHERE id = ?`).run(sid);
+    conn.prepare(`UPDATE enrollments SET status = 'paused' WHERE id = ?`).run(e.id);
+    try {
+      voiNhatKy(sid, [['pause', TODAY]], () => {
+        const tt = (studentProfile(P.admin, sid) as any).dauHoSo.thongTin;
+        assert(tt.lopId === e.class_id && !!tt.gvcn && tt.tamDung?.tu === TODAY, `thông tin em Tạm dừng: ${JSON.stringify(tt)}`);
+      });
+    } finally {
+      conn.prepare(`UPDATE enrollments SET status = 'active' WHERE id = ?`).run(e.id);
+      conn.prepare(`UPDATE students SET status = 'active' WHERE id = ?`).run(sid);
+    }
+    const sb = fs.readFileSync(path.join(REPO, 'web/src/modules/cases/SkillBoard.tsx'), 'utf8');
+    const the = fs.readFileSync(path.join(REPO, 'web/src/modules/cases/TheKyNang.tsx'), 'utf8');
+    assert(/tamDung && \(v\.quaHan \|\| v\.homNay \|\| v\.han\)/.test(sb) && /tamDung && han \?/.test(the), 'Việc tiếp của em Tạm dừng còn hiện hạn');
   });
 }

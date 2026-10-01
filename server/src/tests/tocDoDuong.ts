@@ -460,7 +460,7 @@ export const TRAN: Record<string, number> = {
   'QT /cham/lich-test?classId=3': 35,
   'GVCN /cham/lich-test?classId=3': 36,
   'GVBM /cham/lich-test?classId=3': 36,
-  // PR-VAI-b: đầu hồ sơ 30 giây (việc theo người, câu tóm tắt, bốn ô, Tạm dừng) — đo 97/94/99/99 sau khi nhớ `programmeOfClass` theo request
+  // PR-VAI-b: đầu hồ sơ 30 giây (việc theo người, câu tóm tắt, bốn ô, Tạm dừng) — đo 97/94/99/99 (phiên 2, Task 9 bỏ `journeyRows`/`episodes`: 96/93/98/98) sau khi nhớ `programmeOfClass` theo request
   // và lấy tên người làm qua JOIN; giữ trần cứng 100 (luật +10/+30 % cho 107–109, vượt trần cứng).
   'QL /students/1': 100,
   'QT /students/1': 100,
@@ -475,6 +475,8 @@ export const TRAN: Record<string, number> = {
   'GVCN /cases/1': 42,
   'GVBM /cases/1': 42,
   // PR-Qb (sửa sau rà #75, vấn đề 5) — trần đo NGAY SAU khi bỏ isRatioClass/classProgressMany thừa ở profile.ts.
+  // PR-VAI-b: thêm chương theo lớp (ghi danh, GVCN, lệnh chuyển, Tạm dừng — số câu cố định) → đo 26/24/27/27 (trước 22/20/23/23); trần giữ.
+  // Bù lại tab không còn gọi `/lich-su-lop` (21–23 câu một lượt — đường đã bỏ).
   'QL /students/1/hanh-trinh': 39,
   'QT /students/1/hanh-trinh': 38,
   'GVCN /students/1/hanh-trinh': 40,

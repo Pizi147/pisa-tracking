@@ -117,7 +117,9 @@ function TheChuong({ c, homNay, onChon }: { c: ChuongWeb; homNay: string; onChon
       style={c.dangHoc ? undefined : { borderColor: 'var(--line)' }}>
       <div className="flex flex-col gap-0.5">
         <span className={`text-[11px] font-bold tracking-[.05em] ${c.dangHoc ? 'text-[color:var(--accent)]' : 'text-slate-400'}`}>{c.nhan}</span>
-        <span className="text-[16px] font-bold leading-tight text-slate-100">{c.code}</span>
+        {/* Bàn phím: mã lớp là nút (cả thẻ bấm được bằng chuột) — Tab tới được mọi chương, không lồng liên kết ghim vào nút. */}
+        <button type="button" className="self-start rounded border-0 bg-transparent p-0 text-left text-[16px] font-bold leading-tight text-slate-100"
+          title={`Xem trục tuần ${c.code}`} onClick={(e) => { e.stopPropagation(); onChon(c); }}>{c.code}</button>
         <span className="text-[12px] tabular-nums text-slate-400">{khiChuong(c, homNay)}</span>
         {c.gvcn && <span className="text-[12px] text-slate-400">GVCN {c.gvcn}</span>}
       </div>

@@ -348,7 +348,8 @@ export function chuoiDiem(
 export function uocRongChuoi(moc: readonly MocDiem[]): number {
   let px = 0;
   for (const m of moc) {
-    px += m.chu.length * 7.6;
+    /* "%" rộng gần gấp rưỡi chữ số (lớp thường `60%`) — đo thật 5 mốc % hụt ~20 px, chuỗi tràn sang lưới (PR-VAI-b bấm thử). */
+    px += m.chu.length * 7.6 + (m.chu.endsWith('%') ? 5 : 0);
     if (m.lech) px += m.lech.chu.length * 6.2 + 12;
   }
   if (moc.some((m) => m.cho)) px += 16;

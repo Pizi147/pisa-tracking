@@ -325,7 +325,8 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     assert(khac.length === 2 && khac[0].tuan < khac[1].tuan, `Khác tuần: ${JSON.stringify(khac)}`);
   });
 
-  check('PR-UX5 (1) · nhanKhoiPa: dấu/màu 7 nhánh, tên PA không chứa "·", tooltip quá hạn có số ngày và ngày dd/mm', () => {
+  /* PR-VAI-b (Q19): khoảng PA trong tooltip nói mã tuần thay dd/mm. */
+  check('PR-UX5 (1) → VAI-b · nhanKhoiPa: dấu/màu 7 nhánh, tên PA không chứa "·", tooltip quá hạn có số ngày và mã tuần', () => {
     const co = { ten: 'Học tutor', followupOverdue: false, tu: '2026-09-14', den: null as string | null };
     const dem = (o: object) => d.nhanKhoiPa({ status: 'completed', lastOutcome: null, ...co, ...o } as any, '2026-09-23');
     const cacNhanh = [
@@ -338,9 +339,9 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
       assert(n.dau === dau && n.tone === tone && !n.ten.includes('·'), `${JSON.stringify(o)} → ${JSON.stringify(n)}`);
     }
     const quaHan = dem({ status: 'started', followupOverdue: true, soNgayQuaHan: 2 });
-    assert(quaHan.day === 'Học tutor · ▶ Đang thực hiện · ⚠ Quá hạn cập nhật 2 ngày · từ 14/09', `Quá hạn: ${quaHan.day}`);
-    assert(dem({ status: 'started' }).day === 'Học tutor · ▶ Đang thực hiện · từ 14/09', 'Đang chạy');
-    assert(dem({ den: '2026-09-20', lastOutcome: 'improved' }).day === 'Học tutor · ✓ Tiến bộ rõ · 14/09 → 20/09', 'Đã xong có kết quả');
+    assert(quaHan.day === 'Học tutor · ▶ Đang thực hiện · ⚠ Quá hạn cập nhật 2 ngày · từ W3 SEP', `Quá hạn: ${quaHan.day}`);
+    assert(dem({ status: 'started' }).day === 'Học tutor · ▶ Đang thực hiện · từ W3 SEP', 'Đang chạy');
+    assert(dem({ den: '2026-09-20', lastOutcome: 'improved' }).day === 'Học tutor · ✓ Tiến bộ rõ · W3 SEP → W3 SEP', 'Đã xong có kết quả');
     assert(dem({}).day.includes('■ Đã kết thúc, chưa ghi kết quả'), 'Đã kết thúc chưa ghi');
   });
 
@@ -356,7 +357,7 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     assert(ngan({ caseMo: [{ mo: '2026-08-01', soPa: 0 }], coTungCase: true, diemCuoiChuaDat: null, xongGanNhat: null }) === 'Cần làm', 'Cần làm');
     assert(ngan({ caseMo: [{ mo: '2026-08-01', soPa: 1 }], coTungCase: true, diemCuoiChuaDat: true, xongGanNhat: null }) === 'Đang làm', 'Đang làm (chưa đạt)');
     assert(ngan({ caseMo: [{ mo: '2026-08-01', soPa: 1 }], coTungCase: true, diemCuoiChuaDat: false, xongGanNhat: null }) === 'Đang làm', 'Đang làm');
-    assert(ngan({ caseMo: [], coTungCase: true, diemCuoiChuaDat: null, xongGanNhat: '2026-08-30' }) === 'Xong 30/08', 'Xong');
+    assert(ngan({ caseMo: [], coTungCase: true, diemCuoiChuaDat: null, xongGanNhat: '2026-08-30' }) === 'Xong W4 AUG', 'Xong (mã tuần — VAI-b Q19)');
   });
 
   /* PR-VAI-b (Q19): dòng phụ vấn đề nói MÃ TUẦN (mockup 26) thay dd/mm — năm chỉ khi khác năm nay (G-6 giữ). */

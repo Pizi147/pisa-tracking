@@ -102,8 +102,12 @@ function KhoiCase({ c, onMoCase }: { c: CaseCard; onMoCase: (caseId: number, o?:
         <div className="mt-2 flex flex-col gap-1.5">
           <span className="text-[12px] text-slate-200">
             {/* Ghi kết quả: dạng ngắn theo tuần ("Ghi kết quả tuần W4 SEP") — tên PA đã ở khối PA ngay trên. */}
-            {v.loaiHan === 'cap-nhat-pa' && han ? han.viec : v.chu}{han && han.han !== 'chưa có hạn' && <span className="text-slate-400"> · {han.han}</span>}
-            {han?.quaHan && !tamDung && <span className="inline-flex items-center gap-1 font-semibold text-bad"> <IconCanhBao />{han.quaHan}</span>}
+            {v.loaiHan === 'cap-nhat-pa' && han ? han.viec : v.chu}
+            {/* Em Tạm dừng: mọi hạn đang dừng → nhãn vàng thay hạn (cùng luật DongHan ở bảng). */}
+            {tamDung && han ? <> <NhanTamDung tu={tamDung} /></> : <>
+              {han && han.han !== 'chưa có hạn' && <span className="text-slate-400"> · {han.han}</span>}
+              {han?.quaHan && <span className="inline-flex items-center gap-1 font-semibold text-bad"> <IconCanhBao />{han.quaHan}</span>}
+            </>}
           </span>
           {c.canEdit && viecMo
             ? <button type="button" className="btn btn-primary min-h-[44px] w-full" onClick={() => onMoCase(c.id, viecMo)}>{v.chu.startsWith('Ghi kết quả cuối') ? 'Ghi kết quả cuối' : NUT_VIEC[viecMo.viec!]}</button>

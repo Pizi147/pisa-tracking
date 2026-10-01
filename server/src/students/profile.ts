@@ -525,6 +525,8 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     )
     .all(studentId) as any[];
   const current = enrollments.find((e) => e.status === 'active') ?? null;
+  /* PR-VAI-b (KIỂM 5): Tạm dừng chuyển ghi danh sang `paused` nhưng em GIỮ lớp — đầu hồ sơ (lớp · GVCN · khoá) đọc ghi danh đó, không "Chưa xếp lớp". */
+  const lopDangGiu = current ?? (s.status === 'inactive' ? enrollments.find((e) => e.status === 'paused') ?? null : null);
 
   // --------------------------------------------------------- lượt đánh giá của lộ trình
   const attemptRows = selected
@@ -704,19 +706,19 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
 
   // Đọc MỘT LẦN, dùng lại cho cả `programme` lẫn khối `khoa` dưới — tránh gọi lại `programmeOfClass`
   // (và qua đó `isRatioClass`) hai lần cho cùng một lớp (sửa sau rà #75, vấn đề 5).
-  const progHienTai = current ? programmeOfClass(current.class_id) : null;
-  const gvcnHienTai = current
+  const progHienTai = lopDangGiu ? programmeOfClass(lopDangGiu.class_id) : null;
+  const gvcnHienTai = lopDangGiu
     ? (conn.prepare(
       `SELECT u.full_name FROM teacher_assignments t JOIN users u ON u.id = t.user_id
         WHERE t.class_id = ? AND t.is_core = 1 AND t.status = 'active' LIMIT 1`,
-    ).get(current.class_id) as any)?.full_name ?? null
+    ).get(lopDangGiu.class_id) as any)?.full_name ?? null
     : null;
-  const khoaHienTai = progHienTai?.scoringMode === 'ratio' && current
+  const khoaHienTai = progHienTai?.scoringMode === 'ratio' && lopDangGiu
     ? {
       ma: progHienTai.code,
-      tuanHienTai: studyWeekOf(current.class_start_week, mondayOf(today)),
+      tuanHienTai: studyWeekOf(lopDangGiu.class_start_week, mondayOf(today)),
       tongTuan: progHienTai.weeks,
-      tuanKetThuc: current.class_start_week && progHienTai.weeks ? addDays(current.class_start_week, (progHienTai.weeks - 1) * 7) : null,
+      tuanKetThuc: lopDangGiu.class_start_week && progHienTai.weeks ? addDays(lopDangGiu.class_start_week, (progHienTai.weeks - 1) * 7) : null,
     }
     : null;
   const startWeekSel = selected?.start_period_id
@@ -744,7 +746,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   const viec = viecCuaHocVien(p, studentId, board, {
     trangThaiEm: s.status, lopId: current?.class_id ?? null, chuongTrinh: board.chuongTrinh, yThuc: yThucEm, miniTest, dai,
   });
-  const thongTin = dongThongTin({ keSel: selected ? { cycleId: selected.id, ke: examPlan } : null, startWeekSel: selected ? { cycleId: selected.id, weekStart: startWeekSel?.week_start ?? null } : null, s, current, khoa: khoaHienTai, gvcn: gvcnHienTai, dangChay: allCycles.find((c) => c.status === 'active') ?? null, today });
+  const thongTin = dongThongTin({ keSel: selected ? { cycleId: selected.id, ke: examPlan } : null, startWeekSel: selected ? { cycleId: selected.id, weekStart: startWeekSel?.week_start ?? null } : null, s, current: lopDangGiu, khoa: khoaHienTai, gvcn: gvcnHienTai, dangChay: allCycles.find((c) => c.status === 'active') ?? null, today });
   const cuoiKhoaEm = (() => {
     /* MỘT câu: lớp đang học + lớp thường vừa rời (nếu có). PR-S5F-a: vừa chuyển (lên lớp / học lại / sang FT) mà lớp đang học chưa có điểm Cuối khoá
        → vẫn thấy % Cuối khoá của lớp thường vừa rời (hộp Kết luận khoá; kỳ vọng đầu ra BE/ELE — Quản lý đánh dấu được cả sau khi em đã sang FT). */
