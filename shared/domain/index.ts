@@ -67,3 +67,4 @@ export * from './xuatMt.ts';
 export * from './chuyenLop.ts';
 export * from './cuoiKhoa.ts';
 export * from './hoSoGiaoVien.ts';
+export * from './phanTichGv.ts';

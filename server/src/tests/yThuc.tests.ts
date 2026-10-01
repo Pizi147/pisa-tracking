@@ -229,7 +229,8 @@ export async function runYThucTests(t: YThucTestKit) {
     const cols = colsOf('violations');
     const want = ['id', 'student_id', 'cycle_id', 'class_id', 'category', 'skill', 'occurred_on', 'reported_on', 'reported_by', 'description',
       'valid', 'invalid_reason', 'invalidated_by', 'invalidated_at', 'idempotency_key', 'created_at', 'updated_at',
-      /* PR-YT4: Ghi nhận (V4-1) — trạng thái vẫn suy ra, không có cột status */ 'ghi_nhan_luc', 'ghi_nhan_boi'];
+      /* PR-YT4: Ghi nhận (V4-1) — trạng thái vẫn suy ra, không có cột status */ 'ghi_nhan_luc', 'ghi_nhan_boi',
+      /* PR-Pb2-b (Q14): hạn xử lý chốt + ngày phản hồi — hai NGÀY, vẫn không có cột status */ 'han_xu_ly', 'phan_hoi_ngay'];
     assert(JSON.stringify(cols) === JSON.stringify(want), `Cột violations sai: ${cols.join(', ')}`);
     for (const banned of ['severity', 'status', 'due_date', 'episode_no', 'urgency']) {
       assert(!cols.includes(banned), `violations không được có cột ${banned} (quyết định của đặc tả §4.1, không phải thiếu sót)`);

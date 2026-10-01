@@ -16,14 +16,15 @@ import type { TrangThaiCaseV4 } from './sosV4.ts';
 
 // ------------------------------------------------------------------ góc nhìn (Q1, Q16)
 
-/* PR-Pb2-a (T59, K1-27): góc nhìn Danh sách Case đã bỏ — đường dẫn cũ chuyển hướng ở `duongMoi` (dieuHuong.ts). */
-export const GOC_NHIN = ['tong-hop', 'van-de', 'hieu-qua-pa', 'y-thuc'] as const;
+/* PR-Pb2-a (T59, K1-27): góc nhìn Danh sách Case đã bỏ — đường dẫn cũ chuyển hướng ở `duongMoi` (dieuHuong.ts). PR-Pb2-b: 'giao-vien' cuối. */
+export const GOC_NHIN = ['tong-hop', 'van-de', 'hieu-qua-pa', 'y-thuc', 'giao-vien'] as const;
 export type GocNhin = (typeof GOC_NHIN)[number];
 export const GOC_NHIN_LABEL: Record<GocNhin, string> = {
   'tong-hop': 'Tổng hợp Test + SOS',
   'van-de': 'Tổng hợp vấn đề HV',
   'hieu-qua-pa': 'Hiệu quả PA',
   'y-thuc': 'Ý thức',   // PR-YT4 (K1-25): Phối hợp SOS ở Việc của GVCN, không ở góc nhìn này
+  'giao-vien': 'Giáo viên',
 };
 export const GOC_NHIN_MAC_DINH: GocNhin = 'tong-hop';
 

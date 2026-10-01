@@ -9818,6 +9818,9 @@ await runPrUxfATests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 
 const { runPrVaiBTests } = await import('./prVaiB.tests.ts');
 await runPrVaiBTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== PR-Pb2-b (Phân tích giáo viên · FOU 2 GV · hồ sơ GV · ngày nghiệp vụ mới)
+const { runPrPb2bTests } = await import('./prPb2b.tests.ts');
+await runPrPb2bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

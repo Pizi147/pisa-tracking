@@ -223,6 +223,11 @@ export const DUONG_DO: MucDo[] = [
   /* PR-Pb2-a (4): Tổng hợp Test — lớp thường thêm một câu Mini Test cố định (theo lô), không tăng theo số bài. */
   { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/phan-tich/tong-hop?ct=ft' },
   { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/phan-tich/tong-hop?ct=thuong&theo=dot' },
+
+  // ---------------------------------------------------------------- PR-Pb2-b — bảng Phân tích giáo viên + panel Chấm điểm (QL, QT; GVCN → 403)
+  { trang: 'Phân tích GV', vai: ['QL', 'QT', 'GVCN'], url: '/phan-tich/giao-vien?cn={cn}&ct=ft', maChuDich: { GVCN: 403 } },
+  { trang: 'Phân tích GV', vai: ['QL', 'QT'], url: '/phan-tich/giao-vien?cn={cn}&ct=thuong&thang=2026-09' },
+  { trang: 'Phân tích GV', vai: ['QL', 'QT'], url: '/phan-tich/giao-vien/cham-diem?cn={cn}&ct=ft&gv={gv}' },
 ];
 
 /**
@@ -619,6 +624,14 @@ export const TRAN: Record<string, number> = {
   'QT /phan-tich/tong-hop?ct=ft': 29,
   'QL /phan-tich/tong-hop?ct=thuong&theo=dot': 30,
   'QT /phan-tich/tong-hop?ct=thuong&theo=dot': 30,
+  // PR-Pb2-b — bảng Phân tích giáo viên (đo 01/10, bộ demo D18): max(đo+10, ⌈đo×1.3⌉)
+  'QL /phan-tich/giao-vien?cn=1&ct=ft': 48,   // đo 37
+  'QT /phan-tich/giao-vien?cn=1&ct=ft': 44,   // đo 34
+  'GVCN /phan-tich/giao-vien?cn=1&ct=ft': 19,   // 403, đo 9
+  'QL /phan-tich/giao-vien?cn=1&ct=thuong&thang=2026-09': 44,   // đo 34
+  'QT /phan-tich/giao-vien?cn=1&ct=thuong&thang=2026-09': 41,   // đo 31
+  'QL /phan-tich/giao-vien/cham-diem?cn=1&ct=ft&gv=7': 34,   // đo 24
+  'QT /phan-tich/giao-vien/cham-diem?cn=1&ct=ft&gv=7': 33,   // đo 23
 };
 
 /**
@@ -636,7 +649,7 @@ export const TRAN_GHI_LO = {
   /** POST /ke-hoach-test/hang-loat `xemTruoc` — cả lớp MB FT 101 (63 em trong bộ đo), MT3, 4 kỹ năng tuần tới (PR-XLMT, rà #126). Đo 78 câu. */
   xemTruocXepLichMt: 114,   // PR-LT2b (10): bộ demo D13 thêm 2 em vào MB FT 101 (+3 câu/em) → đo 111; PR-HVL (10): bộ demo H1 thêm 1 em vào MB FT 101 (+3 câu/em) → đo 105
   /** GET /my-work?nguoi=tat-ca (QL) khi 30 PA "đến lúc thi" chưa có ngày thi (PR-S3F, rà cuối đợt 3). Trước 63 → 147 câu; ngày thi + tuần MT kế tiếp nay lấy trong câu chính. Đo 70 câu (68 khi không có PA) → trần max(sau+10, ⌈sau×1.3⌉) = 91. */
-  congViec30PaChuaNgayThi: 91,
+  congViec30PaChuaNgayThi: 94,   // PR-Pb2-b: bộ demo D18 (+12 em, Case Giữa khoá FOU 14) sau ×3: đo 90 câu không PA → 93 câu với 30 PA (vẫn chỉ +3, không tăng theo PA)
   /** POST /xuat-mt — Quản lý xuất cả chi nhánh MB, MT1–MT8, cột đầy đủ, SAU khi nhân dữ liệu ×3 (PR-XUAT). Phải KHÔNG tăng theo số lượt (một câu lượt + các câu lô của loadBundle). Đo 16 câu / 550 lượt → trần max(sau+10, ⌈sau×1.3⌉) = 26. */
   xuatMtChiNhanh: 26,
   /**

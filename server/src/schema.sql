@@ -703,6 +703,8 @@ CREATE TABLE assessment_scores (
   comment TEXT,
   examiner_user_id INTEGER REFERENCES users(id),
   examiner_name TEXT,
+  -- PR-Pb2-b (Q13): NGÀY NGHIỆP VỤ lần đầu ô có điểm. Sửa sau không đổi; ô mất hết điểm → NULL; dấu "-" không đặt. Bảng GV "Chấm điểm đúng hạn".
+  nhap_dau_ngay TEXT,
   UNIQUE (attempt_id, skill)
 );
 CREATE INDEX idx_score_attempt ON assessment_scores(attempt_id);
@@ -1634,7 +1636,11 @@ CREATE TABLE violations (
   -- PR-YT4 (§5.4, V4-1): GVCN bấm "Ghi nhận" = đã xem, không cần xử lý. Vi phạm do chính GVCN lớp đang học ghi → tự Ghi nhận (Q5).
   -- Trạng thái (Mới · Đã ghi nhận · Cần xử lý · Quá hạn · Chờ QL duyệt · Đã xử lý) vẫn SUY RA — trangThaiViPham(), không lưu.
   ghi_nhan_luc TEXT,
-  ghi_nhan_boi INTEGER REFERENCES users(id)
+  ghi_nhan_boi INTEGER REFERENCES users(id),
+  -- PR-Pb2-b (Q14): hạn lúc vi phạm thành "Cần xử lý" lần đầu (chotHanXuLy); không ghi đè, trừ Quay lại học khi chưa phản hồi.
+  han_xu_ly TEXT,
+  -- PR-Pb2-b (Q14): ngày nghiệp vụ lần đầu GVCN xác nhận xử lý hoặc gửi đề xuất có vi phạm này. Đúng hạn ⇔ phan_hoi_ngay ≤ han_xu_ly.
+  phan_hoi_ngay TEXT
 );
 CREATE INDEX idx_violation_student ON violations(student_id, occurred_on);
 CREATE INDEX idx_violation_class ON violations(class_id, occurred_on);

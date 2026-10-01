@@ -90,9 +90,9 @@ function tinhMotLop(prog: ProgrammeInfo | null, soHocVien: number, mucTieu: Map<
     const mon = [...(prog?.skills ?? REGULAR_SKILLS)];
     const khongChiaMon = prog?.code === 'PREFOU';
     for (const a of attempts) {
-      if (a.kind !== 'progress' && a.kind !== 'final') continue;
-      const r = evaluateRegular(mon, (bundle.scores.get(a.id) ?? []) as any, prog?.code);
-      for (const x of r.skills) if (x.outcome === 'pass' || x.outcome === 'fail') cong(`${x.skill}|${a.kind}`, x.outcome === 'pass', a.student_id);
+      const r = danhGiaMon(a, bundle.scores.get(a.id) ?? [], prog, null);
+      if (!r) continue;
+      for (const x of r.mon) cong(`${x.skill}|${a.kind}`, x.dat, a.student_id);
       /* K2-40: "Cả bài" = % tổng của bài (đủ điểm mới có) so với ngưỡng đạt chung — không viết số 0.7 thứ hai. */
       if (!khongChiaMon && r.tyLeTong != null) cong(`ca-bai|${a.kind}`, r.tyLeTong >= RATIO_PASS_THRESHOLD, a.student_id);
     }
@@ -114,11 +114,8 @@ function tinhMotLop(prog: ProgrammeInfo | null, soHocVien: number, mucTieu: Map<
   for (const a of attempts) {
     if ((a.kind ?? 'mock') !== 'mock') continue;
     soDot = Math.max(soDot, a.attempt_no);
-    const kyVong = expectationFor(mucTieu.get(a.cycle_id) ?? null, a.attempt_no, a.route);
-    if (kyVong === null) continue;
-    for (const s of (bundle.scores.get(a.id) ?? []) as any[]) {
-      if (s.band === null || s.band === undefined) continue;
-      cong(`${s.skill}|mt${a.attempt_no}`, s.band >= kyVong, a.student_id);
+    for (const x of danhGiaMon(a, bundle.scores.get(a.id) ?? [], prog, mucTieu.get(a.cycle_id) ?? null)?.mon ?? []) {
+      cong(`${x.skill}|mt${a.attempt_no}`, x.dat, a.student_id);
     }
   }
   return {
@@ -127,6 +124,27 @@ function tinhMotLop(prog: ProgrammeInfo | null, soHocVien: number, mucTieu: Map<
     cot: Array.from({ length: soDot }, (_, i) => ({ key: `mt${i + 1}`, nhan: `MT${i + 1}` })),
     o, ds, soHocVien,
   };
+}
+
+/**
+ * LUẬT CHẤM ĐẠT TỪNG MÔN CỦA MỘT BÀI (PR-Pb2-b tách nguyên thân từ `tinhMotLop` — tab Phân tích lớp và bảng Phân tích giáo viên gọi chung):
+ *   FT (`mock`)          band ≥ kỳ vọng của đợt (`expectationFor`, theo Target + lộ trình); không kỳ vọng (KCK) → null. W1, W2 so riêng.
+ *   Lớp thường           Giữa / Cuối khoá: `evaluateRegular` (từ 70%) — chỉ môn đã đủ điểm (pass / fail); kèm % tổng cho dòng "Cả bài".
+ * `null` = bài không chấm đạt ở đây (loại bài khác, hoặc không có kỳ vọng).
+ */
+export function danhGiaMon(a: any, scores: readonly any[], prog: ProgrammeInfo | null, mucTieu: number | null): { mon: { skill: string; dat: boolean }[]; tyLeTong: number | null } | null {
+  if (prog?.scoringMode === 'ratio') {
+    if (a.kind !== 'progress' && a.kind !== 'final') return null;
+    const r = evaluateRegular([...(prog?.skills ?? REGULAR_SKILLS)], scores as any, prog?.code);
+    return {
+      mon: r.skills.filter((x) => x.outcome === 'pass' || x.outcome === 'fail').map((x) => ({ skill: x.skill as string, dat: x.outcome === 'pass' })),
+      tyLeTong: r.tyLeTong ?? null,
+    };
+  }
+  if ((a.kind ?? 'mock') !== 'mock') return null;
+  const kyVong = expectationFor(mucTieu, a.attempt_no, a.route);
+  if (kyVong === null) return null;
+  return { mon: scores.filter((s) => s.band !== null && s.band !== undefined).map((s) => ({ skill: s.skill as string, dat: s.band >= kyVong })), tyLeTong: null };
 }
 
 /**

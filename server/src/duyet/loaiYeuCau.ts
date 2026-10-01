@@ -18,6 +18,7 @@ import { attemptHref } from '../fasttrack/attempts.ts';
 import { ensurePeriod } from '../platform/week.ts';
 import { addJourney } from '../platform/audit.ts';
 import { db, tx } from '../db.ts';
+import { chotHanXuLy } from '../yThuc/trangThai.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest } from '../util.ts';
 import { reviseTarget, updateCycle } from '../fasttrack/cycles.ts';
@@ -330,6 +331,8 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     khiTuChoi: (_p, yc) => {
       db().prepare(`UPDATE discipline_measures SET status = 'tu_choi', quyet_luc = ?, updated_at = ? WHERE id = ? AND status = 'cho_duyet'`)
         .run(demoToday(), new Date().toISOString(), yc.doi_tuong_id);
+      /* PR-Pb2-b (Q14): vi phạm chưa từng bắt buộc nay thành Cần xử lý → chốt hạn; đã chốt thì giữ. */
+      if (yc.hoc_vien_id) chotHanXuLy([yc.hoc_vien_id]);
     },
     chet: {
       sql: `NOT EXISTS (SELECT 1 FROM discipline_measures m WHERE m.id = y.doi_tuong_id AND m.status = 'cho_duyet')

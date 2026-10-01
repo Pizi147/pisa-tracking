@@ -22,6 +22,7 @@ import { migratePrHsm } from './migrate/prHsm.ts';
 import { migratePrLt2a } from './migrate/prLt2a.ts';
 import { migratePrLt2b } from './migrate/prLt2b.ts';
 import { migratePrCt } from './migrate/prCt.ts';
+import { migratePrPb2b } from './migrate/prPb2b.ts';
 
 /**
  * Giá trị cũ của cột `track` cho case Ý thức. Mô hình Case Ý thức đã BỎ 21/09/2026 (rule book mục 18) — hằng số này chỉ để NÂNG CẤP
@@ -481,6 +482,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     /* PR-LT2a: nhóm PA bổ trợ Giữa khoá + hạn nộp kế hoạch (M-03, M-05) — chỉ cấu trúc. */ migratePrLt2a(conn, applied);
     /* PR-LT2b: Mini Test + kỳ vọng đầu ra (Cuối khoá lớp thường). */ migratePrLt2b(conn, applied);
     /* PR-CT: lệnh chuyển lớp + bàn giao (chỉ cấu trúc). LUÔN ĐỨNG CUỐI danh sách PR. */ migratePrCt(conn, applied);
+    /* PR-Pb2-b: ngày nhập đầu ô điểm + hạn xử lý chốt, ngày phản hồi vi phạm (chỉ cấu trúc). */ migratePrPb2b(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống

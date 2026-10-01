@@ -172,7 +172,7 @@ export async function runPrLopTests(t: YThucTestKit) {
   check('LOP (9) · Sửa phân công / Sửa thông tin lớp / Chuyển tiếp dùng luật chung, không ô gõ tên tự do (YC-4, K2-16, K2-18)', () => {
     const lopDir = 'web/src/modules/classes/';
     const tap = docSach(lopDir + 'TeacherAssignPanel.tsx');
-    assert(!/\+ Thêm giáo viên|HAI người/.test(tap) && /oPhanCong\(/.test(tap) && /kiemPhanCong\(/.test(tap), 'Sửa phân công');
+    assert(!/\+ Thêm giáo viên|HAI người/.test(tap) && /* PR-Pb2-b: ô theo chương trình qua useTachFou (bọc oPhanCong, FOU gộp L · R · G+V) */ /oPhanCong\(|useTachFou\(/.test(tap) && /kiemPhanCong\(/.test(tap), 'Sửa phân công');
     const ttlSrc = docSach(lopDir + 'SuaThongTinLopPanel.tsx');
     assert(!/MB-FT|setCode\(/.test(ttlSrc) && /locSoLop\(/.test(ttlSrc) && /ghepMaLop\(/.test(ttlSrc), 'Sửa thông tin lớp');
     const tp = docSach(lopDir + 'TransitionPanel.tsx');

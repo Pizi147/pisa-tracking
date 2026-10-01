@@ -4,6 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { ChonChuongTrinh } from '../worklist/ChonChuongTrinh.tsx';
 import { HieuQuaPa } from './HieuQuaPa.tsx';
+import { PhanTichGiaoVien } from './PhanTichGiaoVien.tsx';
 import { TongHopTestSos } from './TongHopTestSos.tsx';
 import { TongHopVanDeHv } from './TongHopVanDeHv.tsx';
 import { YThucPhoiHop } from './YThucPhoiHop.tsx';
@@ -117,7 +118,7 @@ export function PhanTich() {
             </button>
           ))}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        {goc !== 'giao-vien' && (<div className="flex flex-wrap items-center gap-2">
           {!laYThuc && <ChonChuongTrinh value={ct} onChange={setCt} />}
           {goc === 'van-de' && <span className="text-xs text-slate-500" title="Case đang mở, cộng Case đã đóng trong khoảng này">Case mở + đóng trong</span>}
           {!(goc === 'hieu-qua-pa' && params.get('tu')) && <select className="field w-28 text-xs" value={tg} onChange={(e) => setTg(Number(e.target.value))} aria-label="Khoảng thời gian">
@@ -127,14 +128,14 @@ export function PhanTich() {
             <option value="">Mọi lớp</option>
             {classes.map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
           </select>
-        </div>
+        </div>)}
       </div>
 
       {goc === 'tong-hop' && <TongHopTestSos branchId={branchId} ct={ct} tg={tg} classId={classId} />}
       {goc === 'van-de' && <TongHopVanDeHv branchId={branchId} ct={ct} tg={tg} classId={classId} />}
       {goc === 'hieu-qua-pa' && <HieuQuaPa branchId={branchId} ct={ct} tg={tg} classId={classId} />}
       {goc === 'y-thuc' && <YThucPhoiHop branchId={branchId} ct={null} tg={tg} classId={classId} />}
-
+      {goc === 'giao-vien' && <PhanTichGiaoVien branchId={branchId} />}
     </div>
   );
 }

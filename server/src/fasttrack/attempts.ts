@@ -44,6 +44,8 @@ export type ScoreRow = {
   no_show_late?: number | null; no_show_settled_at?: string | null;
   /** PR-HSM (T39): nhận xét của bài nhập (W1/W2/S) + GV chấm Speaking (tài khoản hoặc tên ngoài; tên tài khoản join sẵn). */
   comment?: string | null; examiner_user_id?: number | null; examiner_name?: string | null; examiner_user_name?: string | null;
+  /** PR-Pb2-b (Q13): ngày nghiệp vụ lần đầu ô có điểm. */
+  nhap_dau_ngay?: string | null;
 };
 
 /** PR-TD: nhớ trong request GET theo attemptId — hồ sơ HV gọi lặp cho mỗi lượt của em (`profile.ts`, `students.ts`). */
@@ -1672,24 +1674,26 @@ export function saveScore(
     const comment = matHet ? null : nxGt !== undefined ? nxGt : existing?.comment ?? null;
     const exUser = matHet ? null : gv !== undefined ? gv?.userId ?? null : existing?.examiner_user_id ?? null;
     const exName = matHet ? null : gv !== undefined ? gv?.name ?? null : existing?.examiner_name ?? null;
+    /* PR-Pb2-b (Q13): ngày NGHIỆP VỤ lần đầu ô có điểm — sửa sau giữ nguyên, ô mất hết điểm về NULL (nhập lại tính lần đầu mới). */
+    const nhapDau = hasValue ? existing?.nhap_dau_ngay ?? today : null;
     if (existing) {
       conn
         .prepare(
           `UPDATE assessment_scores SET raw_score=?, raw_total=?, c1=?, c2=?, c3=?, c4=?, band=?,
                                         result_date=?, entered_by=?, entered_at=?, note=?,
-                                        comment=?, examiner_user_id=?, examiner_name=? WHERE id=?`,
+                                        comment=?, examiner_user_id=?, examiner_name=?, nhap_dau_ngay=? WHERE id=?`,
         )
         .run(raw, total, crit[0], crit[1], crit[2], crit[3], band, resultDate, enteredBy, enteredAt,
-             patch.note !== undefined ? patch.note : existing.note ?? null, comment, exUser, exName, existing.id);
+             patch.note !== undefined ? patch.note : existing.note ?? null, comment, exUser, exName, nhapDau, existing.id);
     } else {
       conn
         .prepare(
           `INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total, c1, c2, c3, c4, band,
-                                          result_date, entered_by, entered_at, note, comment, examiner_user_id, examiner_name)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+                                          result_date, entered_by, entered_at, note, comment, examiner_user_id, examiner_name, nhap_dau_ngay)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         )
         .run(attemptId, skill, raw, total, crit[0], crit[1], crit[2], crit[3], band,
-             resultDate, enteredBy, enteredAt, patch.note ?? null, comment, exUser, exName);
+             resultDate, enteredBy, enteredAt, patch.note ?? null, comment, exUser, exName, nhapDau);
     }
 
     /*

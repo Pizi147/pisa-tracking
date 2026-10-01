@@ -1,17 +1,59 @@
 /** PHÂN CÔNG (L3, MH6, T55, T56, M-09): ô nào có theo chương trình + luật kiểm TRƯỚC khi ghi. Web vẽ lỗi tại ô, máy chủ từ chối — cùng hàm. */
-import { CHUONG_TRINH_KHONG_CHIA_MON, tenMonNgan } from './normal.ts';
+import { CHUONG_TRINH_KHONG_CHIA_MON, programmeOf, tenMonNgan } from './normal.ts';
 
-export type OPhanCong = { khoa: string; skill: string | null; laGvcn: boolean; nhan: string };
+/** `gop`: ô GỘP nhiều môn một người (Q31-5, FOU "L · R · G+V") — web trải thành một dòng mỗi môn (`slotsTuO`), máy chủ nhận dạng cũ. */
+export type OPhanCong = { khoa: string; skill: string | null; laGvcn: boolean; nhan: string; gop?: readonly string[] };
 export type SlotPhanCong = { userId: number; skill: string | null; isCore: boolean };
 export type LoiPhanCong = { khoa: string; lyDo: string };
 
 /** T56 (chủ sản phẩm 28/09): lớp không chia môn (Pre FOU) chỉ có MỘT ô — GVCN, và GVCN dạy luôn. */
 const khongChiaMon = (ct: string | null) => CHUONG_TRINH_KHONG_CHIA_MON.includes(ct ?? '');
 
-export function oPhanCong(chuongTrinh: string | null, kyNangLop: readonly string[]): OPhanCong[] {
+/** Q31-5: lớp FOU thường hai giáo viên — một người L · R · G+V, một người P. */
+const GOP_FOU: readonly string[] = ['listening', 'reading', 'writing'];
+
+/**
+ * Ô phân công theo chương trình. Q31-5: `{ tach: false }` + lớp FOU → 2 ô môn "L · R · G+V" và "P"; KHÔNG truyền `tach` = mỗi môn một ô
+ * như cũ (máy chủ, Danh mục, phép kiểm cũ). Chương trình khác bỏ qua `tach`.
+ */
+export function oPhanCong(chuongTrinh: string | null, kyNangLop: readonly string[], o: { tach?: boolean } = {}): OPhanCong[] {
   const gvcn: OPhanCong = { khoa: 'gvcn', skill: null, laGvcn: true, nhan: 'GVCN' };
   if (khongChiaMon(chuongTrinh)) return [gvcn];
-  return [gvcn, ...kyNangLop.map((k) => ({ khoa: k, skill: k, laGvcn: false, nhan: tenMonNgan(chuongTrinh, k) }))];
+  const mon: OPhanCong[] = kyNangLop.map((k) => ({ khoa: k, skill: k, laGvcn: false, nhan: tenMonNgan(chuongTrinh, k) }));
+  const gop = o.tach === false && programmeOf(chuongTrinh) === 'FOU' ? GOP_FOU.filter((k) => kyNangLop.includes(k)) : [];
+  if (gop.length < 2) return [gvcn, ...mon];
+  const oGop: OPhanCong = { khoa: 'gop-fou', skill: null, laGvcn: false, nhan: gop.map((k) => tenMonNgan(chuongTrinh, k)).join(' · '), gop };
+  return [gvcn, oGop, ...mon.filter((m) => !gop.includes(m.khoa))];
+}
+
+/** Người chọn ở từng ô → dòng phân công máy chủ nhận: ô gộp trải thành một dòng mỗi môn (Q31-5). */
+export function slotsTuO(oList: readonly OPhanCong[], chon: Record<string, number | ''>): SlotPhanCong[] {
+  return oList.flatMap((o): SlotPhanCong[] => {
+    const u = chon[o.khoa];
+    if (!u) return [];
+    return o.laGvcn ? [{ userId: Number(u), skill: null, isCore: true }] : (o.gop ?? [o.skill!]).map((skill) => ({ userId: Number(u), skill, isCore: false }));
+  });
+}
+
+/** Lớp FOU mà L, R, G+V đang do NHIỀU người dạy → phải mở sẵn tách (không gộp được). */
+export function nenTachFou(chuongTrinh: string | null, bySkill: readonly { skill: string; userId: number }[]): boolean {
+  if (programmeOf(chuongTrinh) !== 'FOU') return false;
+  return new Set(bySkill.filter((s) => GOP_FOU.includes(s.skill)).map((s) => s.userId)).size > 1;
+}
+
+/** Đổi lưới gộp ↔ tách mà giữ người đã chọn: tách → mỗi môn nhận người của ô gộp; gộp → ô gộp nhận người của môn đầu tiên đã chọn. */
+export function chonKhiDoiTach(chon: Record<string, number | ''>, gop: readonly string[], tach: boolean): Record<string, number | ''> {
+  const c = { ...chon };
+  if (tach) {
+    const u = c['gop-fou'];
+    delete c['gop-fou'];
+    if (u) for (const k of gop) c[k] = u;
+  } else {
+    const u = gop.map((k) => c[k]).find(Boolean);
+    for (const k of gop) delete c[k];
+    if (u) c['gop-fou'] = u;
+  }
+  return c;
 }
 
 /** Máy chủ gọi TRƯỚC khi kiểm + ghi: Pre FOU → GVCN tự nhận ô môn duy nhất (`tong_hop`), để quyền nhập điểm / xử lý Case

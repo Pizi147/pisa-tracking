@@ -5,8 +5,8 @@
  * Không xếp hạng, không so sánh giữa người (Q30-5): chỉ số của MỘT người, hoặc bảng sắp theo tên.
  */
 import {
-  ENTRY_SKILLS, ENTRY_SKILL_SHORT, PERMISSIONS, baiId, chuongTrinhTuThamSo, ctTuyChon, demViecTheoNhom, duongThe, laCotOGv, roleLabel, tenMonNgan,
-  type ChuongTrinh, type CotOGv, type NhomViec,
+  ENTRY_SKILLS, ENTRY_SKILL_SHORT, PERMISSIONS, baiId, chuongTrinhTuThamSo, ctTuyChon, demViecTheoNhom, duongThe, laCotOGv, nhanVaiLop, roleLabel, tenMonNgan,
+  type ChipBanGiao, type ChuongTrinh, type CotOGv, type NhomViec,
 } from '../../../shared/domain/index.ts';
 import { db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -19,6 +19,7 @@ import { trongPhamVi, yeuCauCuaToi } from '../duyet/yeuCau.ts';
 import { rowsFor, type MetricRow } from '../worklist/metrics.ts';
 import { myWork, viecCuaNguoi } from '../worklist/mywork.ts';
 import { scoreDebtCells, type DebtCell } from '../worklist/scoreDebt.ts';
+import { viecBanGiao } from '../classes/banGiao.ts';
 import { phamViHoSoGv } from './phamVi.ts';
 
 const LO = 400;
@@ -40,14 +41,17 @@ export function viecCuaGv(p: Principal, gvId: number): { nhom: NhomViec; n: numb
 
 export type LopGv = {
   id: number; ma: string; khung: 'ft' | 'thuong'; ct: string | null; branchId: number | null;
-  /** Nhãn hiển thị: `GVCN` + tên môn ngắn. */
-  vai: string[];
+  /** Q31-6: MỘT nhãn "GVCN · L R G+V" (`nhanVaiLop`). */
+  vai: string;
+  laGvcn: boolean;
   /** Mã kỹ năng/môn thật được phân công (không phải nhãn) — để tô viền ô môn mình dạy. */
   monDay: string[];
   hocVien: number;
   /** Học viên đang học của lớp — để đếm học viên KHÁC NHAU của cả hồ sơ (một em học hai lớp của GV chỉ đếm một lần). */
   hvIds: Set<number>;
 };
+/** Thứ tự môn trong nhãn vai (Q31-6): L · R · W / W1 · W2 · S — cùng thứ tự cột kết quả. */
+const THU_TU_MON = ['tong_hop', 'listening', 'reading', 'writing', 'writing1', 'writing2', 'speaking'];
 /** PR-Pb2-a: `ct = null` = gộp hai khung (hồ sơ GV, Lịch sắp tới). */
 const locKhung = (ct: ChuongTrinh | null, khung: 'ft' | 'thuong') => ct === null || ct === khung;
 
@@ -67,12 +71,16 @@ export function lopCuaGv(gvId: number, homNay: string, branchIds: number[] | nul
     const khung = bang.get(r.class_id)?.isFastTrack ? 'ft' : 'thuong';
     if (!locKhung(ct, khung)) continue;
     const l = theoLop.get(r.class_id)
-      ?? { id: r.class_id, ma: r.code, khung, ct: r.programme_code ?? null, branchId: r.branch_id, vai: [], monDay: [], hocVien: 0, hvIds: new Set() } as LopGv;
+      ?? { id: r.class_id, ma: r.code, khung, ct: r.programme_code ?? null, branchId: r.branch_id, vai: '', laGvcn: false, monDay: [], hocVien: 0, hvIds: new Set() } as LopGv;
     theoLop.set(r.class_id, l);
-    if (r.is_core && !l.vai.includes('GVCN')) l.vai.unshift('GVCN');
-    if (r.skill && !l.monDay.includes(r.skill)) { l.monDay.push(r.skill); l.vai.push(tenMonNgan(l.ct, r.skill)); }
+    if (r.is_core) l.laGvcn = true;
+    if (r.skill && !l.monDay.includes(r.skill)) l.monDay.push(r.skill);
   }
   const lop = [...theoLop.values()];
+  for (const l of lop) {
+    l.monDay.sort((a, b) => THU_TU_MON.indexOf(a) - THU_TU_MON.indexOf(b));
+    l.vai = nhanVaiLop({ gvcn: l.laGvcn, mon: l.monDay.map((k) => tenMonNgan(l.ct, k)) });
+  }
   const theoId = new Map(lop.map((l) => [l.id, l]));
   for (const lo of theoLo(lop.map((l) => l.id))) {
     for (const r of conn.prepare(
@@ -152,8 +160,9 @@ function ketQuaCuaLop(l: LopGv, pt: PhanTichLop): KetQuaLop {
 
 export type HoSoGv = {
   gv: { id: number; ten: string; vai: string[]; chiNhanh: string[]; kyNang: string[]; laChinhMinh: boolean };
-  phamVi: { chiNhanh: string[] | null };
-  lop: (Omit<LopGv, 'monDay' | 'branchId' | 'hvIds'> & { chuaNhap: number; quaHan: number })[];
+  /** `cn`: chi nhánh cho link "Hiệu quả PA của …" (P6, Q26) — chi nhánh duy nhất trong phạm vi người xem, không thì chi nhánh của GV. */
+  phamVi: { chiNhanh: string[] | null; cn: number | null };
+  lop: (Omit<LopGv, 'monDay' | 'branchId' | 'hvIds' | 'laGvcn'> & { chuaNhap: number; quaHan: number; banGiao: ChipBanGiao | null })[];
   /** Học viên KHÁC NHAU ở mọi lớp trên — cùng số với ô "Học viên" (`oHoSoGv` cot=hoc-vien). */
   tongHocVien: number;
   caseMo: CaseGv[];
@@ -167,7 +176,7 @@ export function hoSoGiaoVien(p: Principal, gvId: number): HoSoGv {
   const conn = db();
   const ten = (conn.prepare(`SELECT full_name FROM users WHERE id = ?`).get(gvId) as any).full_name as string;
   const vaiRows = conn.prepare(
-    `SELECT r.key, b.name AS chi_nhanh FROM user_roles ur JOIN roles r ON r.id = ur.role_id LEFT JOIN branches b ON b.id = ur.branch_id
+    `SELECT r.key, b.id AS cn, b.name AS chi_nhanh FROM user_roles ur JOIN roles r ON r.id = ur.role_id LEFT JOIN branches b ON b.id = ur.branch_id
       WHERE ur.user_id = ? AND ur.status = 'active' ORDER BY ur.id`).all(gvId) as any[];
   const daKhai = new Set((conn.prepare(`SELECT skill FROM user_skills WHERE user_id = ?`).all(gvId) as any[]).map((r) => r.skill));
   const tenChiNhanh = branchIds
@@ -177,6 +186,7 @@ export function hoSoGiaoVien(p: Principal, gvId: number): HoSoGv {
   const lop = lopCuaGv(gvId, homNay, branchIds);
   const no = noDiemCuaGv(p, gvId, homNay, lop);
   const dem = (id: number, chiQuaHan: boolean) => no.filter((d) => d.classId === id && (!chiQuaHan || d.overdue)).length;
+  const banGiao = chipBanGiao(gvId);
   return {
     gv: {
       id: gvId, ten, laChinhMinh,
@@ -184,13 +194,34 @@ export function hoSoGiaoVien(p: Principal, gvId: number): HoSoGv {
       chiNhanh: [...new Set(vaiRows.map((r) => r.chi_nhanh).filter(Boolean))],
       kyNang: ENTRY_SKILLS.filter((k) => daKhai.has(k)).map((k) => ENTRY_SKILL_SHORT[k]),
     },
-    phamVi: { chiNhanh: laChinhMinh ? null : tenChiNhanh },
-    lop: lop.map(({ monDay, branchId, hvIds, ...l }) => ({ ...l, chuaNhap: dem(l.id, false), quaHan: dem(l.id, true) })),
+    phamVi: {
+      chiNhanh: laChinhMinh ? null : tenChiNhanh,
+      cn: branchIds?.length === 1 ? branchIds[0] : vaiRows.map((r) => r.cn as number | null).find((b) => b != null && (!branchIds || branchIds.includes(b))) ?? null,
+    },
+    lop: lop.map(({ monDay, branchId, hvIds, laGvcn, ...l }) => ({ ...l, chuaNhap: dem(l.id, false), quaHan: dem(l.id, true), banGiao: banGiao.get(l.id) ?? null })),
     tongHocVien: new Set(lop.flatMap((l) => [...l.hvIds])).size,
     caseMo: caseMoCuaGv(p, gvId, branchIds),
     yeuCau: soYeuCau(theYeuCauCuaGv(p, gvId), homNay),
     homNay,
   };
+}
+
+/**
+ * O6 (Q25): chip bàn giao theo lớp từ `viecBanGiao` — cùng nguồn việc Bàn giao ở Công việc, gọi MỘT lần (ba câu cố định). Chỉ lớp còn dở.
+ * GVCN: phiếu đã xác nhận / số em có lệnh. GVBM (không làm GVCN lớp đó): môn còn thiếu dòng, số em đã ghi ít nhất trong các môn / số em cần ghi.
+ */
+export function chipBanGiao(gvId: number): Map<number, ChipBanGiao> {
+  const out = new Map<number, ChipBanGiao>();
+  const viec = viecBanGiao(gvId);
+  for (const v of viec) if (v.loai === 'gvcn') out.set(v.lopId, { loai: 'gvcn', mon: null, da: v.daXacNhan, n: v.n });
+  for (const v of viec) {
+    if (v.loai !== 'gvbm' || out.get(v.lopId)?.loai === 'gvcn') continue;
+    const cu = out.get(v.lopId);
+    out.set(v.lopId, cu
+      ? { ...cu, mon: `${cu.mon} ${v.monNgan}`, da: Math.min(cu.da, v.daGhi) }
+      : { loai: 'gvbm', mon: v.monNgan, da: v.daGhi, n: v.n });
+  }
+  return out;
 }
 
 /**
@@ -246,7 +277,7 @@ export function oHoSoGv(p: Principal, gvId: number, q: ThamSoO): { n: number; ti
   if (q.lop != null && !chonLop.length) throw forbidden('Lớp này không nằm trong danh sách lớp đang dạy của giáo viên.');
 
   if (cot === 'lop') {
-    return ket(lop.map((l) => ({ id: l.id, title: l.ma, sub: l.vai.join(' · '), href: `/hoc-vien/lop/${l.id}` })), (n) => `${n} lớp đang dạy`);
+    return ket(lop.map((l) => ({ id: l.id, title: l.ma, sub: l.vai, href: `/hoc-vien/lop/${l.id}` })), (n) => `${n} lớp đang dạy`);
   }
   if (cot === 'hoc-vien') {
     const ids = [...new Set(chonLop.flatMap((l) => [...l.hvIds]))].sort((a, b) => a - b);

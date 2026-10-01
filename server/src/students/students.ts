@@ -11,6 +11,7 @@ import { addJourney, writeAudit } from '../platform/audit.ts';
 import { NOT_UNCONFIRMED_PRESET } from '../cases/sosState.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
 import { datLaiHanCase } from '../cases/sosAuto.ts';
+import { chotHanXuLy } from '../yThuc/trangThai.ts';
 import { entryBandsOf, scoresOf, skipsOf } from '../fasttrack/attempts.ts';
 import { evaluateAttempt } from '../fasttrack/scoring.ts';
 import { currentCycle, cyclesOf, examPlanOf } from '../fasttrack/cycles.ts';
@@ -300,6 +301,8 @@ export function setStudentStatus(
       title: status === 'inactive' ? 'Tạm dừng học' : status === 'active' ? 'Quay lại học' : 'Kết thúc học',
       detail: reason ?? null, createdBy: p.userId,
     });
+    /* PR-Pb2-b (Q14, T65): Quay lại học → hạn xử lý vi phạm chưa phản hồi chốt lại từ ngày quay lại (sau `addJourney` — mốc đọc sự kiện resume). */
+    if (status === 'active' && s.status === 'inactive') chotHanXuLy([studentId], { ghiDe: true });
     writeAudit({ actorUserId: p.userId, action: 'student.status', entityType: 'student', entityId: studentId,
       entityLabel: s.student_code, before: { status: s.status }, after: { status, date, reason, archivedAt } });
     if (curEnr && status !== 'active') dongLopNeuHet([curEnr.class_id], date);

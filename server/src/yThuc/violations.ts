@@ -4,7 +4,7 @@ import {
   VIOLATION_SKILLS, XU_LY_STATUS_LABEL, nhanLoaiXuLy, tenMon,
   type ViolationCategory, type TrangThaiVp,
 } from '../../../shared/domain/index.ts';
-import { trangThaiYThuc, type EmYThuc } from './trangThai.ts';
+import { chotHanXuLy, trangThaiYThuc, type EmYThuc } from './trangThai.ts';
 import { baoKhiGhiViPham, dangBatBuoc, laGvcnDangHoc } from './xuLy.ts';
 import type { Principal } from '../permissions.ts';
 import { badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -254,6 +254,7 @@ export function recordViolation(p: Principal, input: {
       after: { category, skill, occurredOn, description },
     });
     baoKhiGhiViPham(p, input.studentId, newId, category, truocBatBuoc);
+    chotHanXuLy([input.studentId]);
     return newId;
   });
   return { violation: loadViolation(id), similar };
@@ -318,6 +319,7 @@ export function editViolation(p: Principal, id: number, patch: {
       .prepare('UPDATE violations SET description = ?, category = ?, skill = ?, occurred_on = ?, updated_at = ? WHERE id = ?')
       .run(description, category, skill ?? null, occurredOn, nowIso(), id);
     for (const [field, from, to] of changes) addHistory(id, field, from, to, p.userId);
+    chotHanXuLy([row.student_id]);
     writeAudit({
       actorUserId: p.userId, action: 'violation.edit', entityType: 'violation', entityId: id,
       entityLabel: `${row.student_code} · ${VIOLATION_CATEGORY_LABEL[category]}`,
@@ -357,6 +359,7 @@ export function deleteViolation(p: Principal, id: number): { ok: true; removedFr
     db().prepare('DELETE FROM measure_violations WHERE violation_id = ?').run(id);
     db().prepare('DELETE FROM violation_history WHERE violation_id = ?').run(id);
     db().prepare('DELETE FROM violations WHERE id = ?').run(id);
+    chotHanXuLy([row.student_id]);
     writeAudit({
       actorUserId: p.userId, action: 'violation.delete', entityType: 'violation', entityId: id,
       entityLabel: `${row.student_code} · ${VIOLATION_CATEGORY_LABEL[row.category as ViolationCategory]}`,
