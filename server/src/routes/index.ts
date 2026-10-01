@@ -7,7 +7,7 @@ import {
   PERMISSIONS, ROLE_LABEL, WORK_SCOPES, chuongTrinhTuThamSo, ctTuyChon, khoangTuThamSo, thamSoNguoi, tuDauKhoang,
   type Role, type TheoDong, type WorkScope,
 } from '../../../shared/domain/index.ts';
-import { docBoLocXuatMt, kiemGhiRoKhac, laKhac, soSanhLop, transferReasonText } from '../../../shared/domain/index.ts';
+import { canNamGan, docBoLocXuatMt, kiemGhiRoKhac, laKhac, soSanhLop, transferReasonText } from '../../../shared/domain/index.ts';
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
 import { HttpError, badRequest, chuTuDo, forbidden, isIsoDate, notFound, toInt } from '../util.ts';
 import { SESSION_COOKIE, createSession, destroySession, principalOf, requireAuth } from '../auth.ts';
@@ -295,6 +295,9 @@ api.get('/ref/period-window', requireAuth, wrap((req) => {
 api.post('/ref/periods/resolve', requireAuth, wrap((req) => {
   const weekStart = req.body?.weekStart;
   if (!isIsoDate(weekStart)) throw badRequest('Cần một ngày hợp lệ (YYYY-MM-DD) để xác định tuần.');
+  /* PR-DEPLOY (0b-1): mọi vai đều dùng bộ chọn tuần nên không đòi quyền ghi; chặn ngày ngoài ±3 năm để không ai ghi được `report_periods` rác (0001-01-01, 9999-12-27). */
+  const tran = canNamGan(demoToday());
+  if (weekStart < tran.toiThieu || weekStart > tran.toiDa) throw badRequest('Ngày nằm ngoài khoảng ba năm quanh hôm nay.');
   return ensurePeriod(weekStart);
 }));
 

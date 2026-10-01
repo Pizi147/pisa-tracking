@@ -9037,6 +9037,10 @@ await runPrUxfBTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 const { runPrS3ChuTests } = await import('./prS3Chu.tests.ts');
 await runPrS3ChuTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
+// ==================================================================== PR-DEPLOY (chuẩn bị reset bản chính)
+const { runPrDeployTests } = await import('./prDeploy.tests.ts');
+await runPrDeployTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
