@@ -53,7 +53,7 @@ export function HieuQuaPa(props: PhamViPhanTich) {
       {coNenDung && (
         <td>
           {d.nenDung ? <Nhan tone="ok" title="Cải thiện từ 70%, đủ mẫu và cao nhất trong vấn đề này">Nên dùng</Nhan>
-            : d.itDuLieu ? <Nhan tone="muted" title={`Dưới ${NGUONG_IT_DU_LIEU} PA có kết quả — chưa đủ để so sánh`}>Ít dữ liệu</Nhan> : null}
+            : d.itDuLieu && d.khoa !== 'chua-phan-loai' ? <Nhan tone="muted" title={`Dưới ${NGUONG_IT_DU_LIEU} PA có kết quả — chưa đủ để so sánh`}>Ít dữ liệu</Nhan> : null}
         </td>
       )}
     </>
