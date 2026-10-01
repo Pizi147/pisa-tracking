@@ -86,8 +86,10 @@ export async function runPrUxdTests(t: YThucTestKit) {
   check('UXD (6) · /hoc-vien-lop: mỗi lớp Fast Track mang route ∈ LT1 / LT2 / RF (máy chủ đã có sẵn)', () => {
     const { P } = t;
     const r = hvl.danhSachHocVienLop(P.mbManager, {});
-    const ft = r.rows.filter((x: any) => x.scoringMode !== 'ratio');
-    assert(ft.length > 0, 'không có lớp FT nào');
+    /* Chỉ lớp FT của bộ demo — các phép kiểm chạy trước có thể tạo thêm lớp FT thử chưa có lộ trình. */
+    const DEMO_FT = ['MB FT 101', 'MB FT 102', 'MB FT 103', 'MB FT 104', 'MB FT 105', 'MB FT RF 12'];
+    const ft = r.rows.filter((x: any) => DEMO_FT.includes(x.code));
+    assert(ft.length === DEMO_FT.length, `thiếu lớp FT demo: ${ft.map((x: any) => x.code).join(', ')}`);
     const hong = ft.filter((x: any) => !['LT1', 'LT2', 'RF'].includes(x.route)).map((x: any) => `${x.code}:${x.route}`);
     assert(hong.length === 0, `lớp FT thiếu route: ${hong.join(', ')}`);
   });
