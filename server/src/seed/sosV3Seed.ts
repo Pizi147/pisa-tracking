@@ -145,7 +145,7 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
   const chauR = caseOf(chau.id, 'reading');
   xacNhan(activeTeacher('reading'), chauR.id, 'reading', 'Em sai dạng Matching Headings ở cả ba passage.');
   xacNhanPa(activeTeacher('reading'), chauR.id, 'Tự học Reading: hai bài Matching Headings mỗi tuần, cô Hà chữa.');
-  hanPa(chauR.id, addDays(DEMO_DATE, -16), addDays(DEMO_DATE, -2));
+  hanPa(chauR.id, addDays(DEMO_DATE, -16), addDays(DEMO_DATE, -7));   // quá hạn 1 tuần — PR-Dọn (10a): hạn rơi Thứ Hai (07/09)
 
   // ---------------------------------------------------------------- D8: Hoàng Bảo Ngọc — MT1 · Listening, PA quy chế ở TUẦN MỐC (Ghi kết quả cuối)
   const ngoc = addStudent('Hoàng Bảo Ngọc', 1, 5);

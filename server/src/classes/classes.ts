@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS, awaitingScore, chuanHoaMaLop, soSanhLop, kiemPhanCong, moRongPhanCong, nhanKetThucVi, nhanTiepTheo,
-  oPhanCong, pendingSkillsOf, tenMonNgan, trongHaiTuanCuoi, viecTiepCuaEm,
+  oPhanCong, pendingSkillsOf, tenMonNgan, viecTiepCuaEm,
   type AssessedSkill, type SlotPhanCong, type AttemptKind, type PendingCell, type ProgrammeCode, type WorkScope,
   coMocTiepTheo, coMocTiepTheoThuong, mocKeTiep,
 } from '../../../shared/domain/index.ts';
@@ -21,7 +21,8 @@ import { allProgrammes, evaluateRegular, programmeOfClass } from '../normal/regu
 import { cuoiKhoaTheoHocVien, emConMiniTest, nguoiGhiMiniTest } from '../normal/cuoiKhoa.ts';
 import { classProgressMany, missingForClasses, missingForStudent, mocKetKhoa, type TienDoMoc } from './schedule.ts';
 import { canhBaoTheoHocVien, caseViecTheoHocVien, nhapDiemTheoEm, soEmCanXuLyYThuc, viecHocVienTheoLop } from './dongHocVien.ts';
-import { demChuaLoTrinh, tiepTheoTheoHocVien } from './loTrinhTiep.ts';
+import { tiepTheoTheoHocVien } from './loTrinhTiep.ts';
+import { emChuaCoLenh } from './lenhChuyen.ts';
 import { daiLop } from './daiChuyenLop.ts';
 import { listCases } from '../cases/cases.ts';
 import { emCoBaoPhChuaLam } from '../yThuc/phoiHop.ts';
@@ -89,7 +90,13 @@ export type ClassSummary = {
 function progressMapOf(classIds: number[]) {
   const prs = classProgressMany(classIds);
   const ms = missingForClasses(classIds);
-  const chua = demChuaLoTrinh(classIds);
+  /*
+   * PR-Dọn (Câu 2 = B): badge "n HV chưa có lệnh chuyển lớp" — CÙNG tập với dòng Cần xử lý `hv-chua-co-lenh-chuyen` (`lopChoLenhChuyen`):
+   * lớp thường đã tới tuần Cuối khoá (`mocKetKhoa`), em đang học chưa có lệnh chờ (`emChuaCoLenh`), chia theo lớp.
+   */
+  const homNay = demoToday();
+  const toiCuoiKhoa = (pr: ReturnType<typeof prs.get>) => !!pr && pr.programmeCode !== 'FT' && mocKetKhoa(pr, homNay).tuCuoiKhoa;
+  const chua = emChuaCoLenh(classIds.filter((id) => toiCuoiKhoa(prs.get(id))));
   const out = new Map<number, {
     progressLabel: string | null; phase: string; phaseLabel: string;
     currentWeek: number | null; totalWeeks: number | null;
@@ -102,9 +109,8 @@ function progressMapOf(classIds: number[]) {
   for (const id of classIds) {
     const pr = prs.get(id);
     const m = ms.get(id);
-    /* Lộ trình tiếp theo chỉ áp dụng lớp thường, và chỉ nhắc ở hai tuần cuối khoá (Q5). */
-    const nhacLoTrinh = !!pr && pr.programmeCode !== 'FT'
-      && trongHaiTuanCuoi(pr.currentWeek, pr.totalWeeks, pr.phase);
+    /* Chỉ lớp thường, từ tuần Cuối khoá (PR-Dọn Câu 2 = B — trước đây: hai tuần cuối, đếm em chưa ghi lộ trình tiếp theo). */
+    const nhacLoTrinh = toiCuoiKhoa(pr);
     out.set(id, {
       progressLabel: pr?.label ?? null,
       phase: (pr?.phase ?? 'unknown') as string,
@@ -117,7 +123,7 @@ function progressMapOf(classIds: number[]) {
       missing: m?.items ?? [],
       missingSkills: m?.missingSkills ?? [],
       canXepLop: pr?.canXepLop ?? 0,
-      soChuaLoTrinhTiep: nhacLoTrinh ? (chua.get(id) ?? 0) : 0,
+      soChuaLoTrinhTiep: chua.get(id)?.length ?? 0,
       nhacLoTrinh,
     });
   }
@@ -411,6 +417,8 @@ export function classRoster(p: Principal, classId: number, q?: string) {
   const baoPhEm = emCoBaoPhChuaLam(sids);   // PR-LT2a: Báo phụ huynh qua TVV (GVCN) — MỘT câu cho cả lớp
   /* PR-LT: Lộ trình tiếp theo của cả lớp — một câu, cột Khoá dùng ngay, không hỏi lại theo từng em. */
   const tiepTheoLop = tiepTheoTheoHocVien([classId]);
+  /* PR-Dọn (Câu 2 = B): cờ dòng = em chưa có lệnh chuyển lớp chờ (cùng `emChuaCoLenh` của badge lớp; badge chỉ bật từ tuần Cuối khoá). */
+  const chuaCoLenh = new Set(isRatio ? emChuaCoLenh([classId]).get(classId) ?? [] : []);
   const maChuongTrinhHienTai = (prog?.code ?? null) as ProgrammeCode | null;
   /* PR-UXF-a K2-12: % tổng + Hướng gợi ý Cuối khoá — CÙNG hàm panel Chuyển lớp đọc, một lần cho cả lớp. */
   const cuoiKhoaLop = isRatio ? cuoiKhoaTheoHocVien(classId, undefined, { daRoi: finished }) : null;
@@ -658,7 +666,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
       }),
       /* Cột Khoá "tiếp theo: …" (PR-LT, Q1/Q4) — chỉ có nghĩa cho lớp thường còn đang học. */
       tiepTheo: isRatio ? nhanTiepTheo(tiepTheoLop.get(s.id) ?? null, maChuongTrinhHienTai) : null,
-      chuaLoTrinh: isRatio && (!tiepTheoLop.has(s.id) || tiepTheoLop.get(s.id)!.huong === 'chua_ro'),
+      chuaLoTrinh: isRatio && chuaCoLenh.has(s.id),
       cuoiKhoa: (() => { const e = cuoiKhoaLop?.get(s.id); return e ? { tyLe: e.tyLe, goiY: e.goiY } : null; })(),
     };
   });

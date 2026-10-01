@@ -766,7 +766,7 @@ export const STUDENTS: StudentSeed[] = [
                 kind: 'teaching_adjust',
                 description: 'Mỗi buổi 10 phút luyện viết câu tổng quan từ một biểu đồ mẫu',
                 performer: 'T_TRANG', cycleStart: '2026-07-20', status: 'started',
-                startedOn: '2026-07-21', followupDue: '2026-09-20',
+                startedOn: '2026-07-21', followupDue: '2026-09-21',   // PR-Dọn (10a): hạn PA luôn rơi Thứ Hai
               },
             ],
           },
@@ -1741,7 +1741,7 @@ export const STUDENTS: StudentSeed[] = [
             {
               kind: 'meeting_cx', description: 'Gặp phụ huynh bàn hướng học lại Foundation hoặc học chậm hơn',
               performer: 'T_KIEN', cycleStart: '2026-08-31', status: 'planned',
-              actionDue: '2026-09-11',
+              actionDue: '2026-09-07',   // PR-Dọn (10a): hạn rơi Thứ Hai — vẫn quá hạn như cũ (11/09 là Thứ Sáu)
             },
           ],
         },

@@ -770,4 +770,38 @@ export async function runPrDonATests(t: YThucTestKit) {
     });
     assert(!/luot-moi:\$\{pick\}:\$\{today\}:\$\{studentIds\.join/.test(docNguon('server/src/worklist/danhGia.ts')), 'khoá còn ghép thô cả mảng id');
   });
+
+  // ------------------------------------------------------------------ khối 10 · seed demo và badge "em chưa có lệnh chuyển lớp" (Câu 2 = B)
+  console.log('\nPR-Dọn-a · (10) Seed hạn Thứ Hai, câu demo không hàm ý ca học; badge lớp = em chưa có lệnh chuyển lớp');
+  const lenhSvc: any = await import('../classes/lenhChuyen.ts');
+  const classesSvc: any = await import('../classes/classes.ts');
+  check('Dọn-a (10a) · bộ demo: mọi hạn ghi kết quả PA (action_due) là Thứ Hai', () => {
+    const sai = all(`SELECT id, action_due FROM case_interventions WHERE action_due IS NOT NULL AND id <= ? AND strftime('%w', action_due) != '1'`,
+      t.seedMax.case_interventions ?? 1e9);
+    assert(!sai.length, `PA có hạn không phải Thứ Hai: ${sai.map((r) => `${r.id}:${r.action_due}`).join(', ')}`);
+  });
+  check('Dọn-a (10b) · câu demo không hàm ý ca học cố định (Q27): seed không còn "buổi sáng", "buổi chiều", "ca tối", "đổi ca"', () => {
+    const con = fs.readdirSync(path.join(REPO, 'server/src/seed')).filter((f) => f.endsWith('.ts'))
+      .filter((f) => /buổi sáng|buổi chiều|ca tối|đổi ca/.test(docNguon(`server/src/seed/${f}`)));
+    assert(!con.length, `còn ở: ${con.join(', ')}`);
+  });
+  check('Dọn-a (10c) · Q28 khoá lại: không có lượt Giữa khoá (kind = progress) nào thuộc lớp Pre FOU', () => {
+    const n = get(`SELECT COUNT(*) n FROM assessment_attempts a JOIN classes c ON c.id = a.class_id WHERE c.programme_code = 'PREFOU' AND a.kind = 'progress'`).n;
+    assert(n === 0, `${n} lượt Giữa khoá ở lớp Pre FOU`);
+  });
+  check('Dọn-a (10d) · Câu 2 = B: badge "n HV chưa có lệnh chuyển lớp" của lớp = số em của dòng Cần xử lý (lopChoLenhChuyen) = số em có cờ ở bảng học viên; em có lệnh chờ → không cờ', () => {
+    const lop = lenhSvc.lopChoLenhChuyen(P.mbManager, MB, TODAY) as any[];
+    assert(lop.length > 0, 'dữ liệu demo: cần một lớp thường đã tới Cuối khoá còn em chưa có lệnh');
+    const tom = classesSvc.listClassSummaries(P.mbManager, { branchId: MB }).rows as any[];
+    for (const x of lop) {
+      const r = tom.find((c) => c.id === x.classId);
+      const roster = classesSvc.classRoster(P.mbManager, x.classId) as any[];
+      const coCo = roster.filter((s) => s.chuaLoTrinh).map((s) => s.id).sort((a: number, b: number) => a - b);
+      assert(r && r.soChuaLoTrinhTiep === x.emIds.length && JSON.stringify(coCo) === JSON.stringify([...x.emIds].sort((a: number, b: number) => a - b)),
+        `${x.code}: badge ${r?.soChuaLoTrinhTiep} · Cần xử lý ${x.emIds.length} · cờ ${coCo.length}`);
+    }
+    const b = d.badgeLop({ vai: 'ql', needsPlacement: false, canXepLop: 0, soChuaLoTrinhTiep: 3, missingSkills: [], soBaiChoCham: 0, needScoresTitle: null, phase: 'running', missingCount: 0 });
+    const x = [...b.hien, ...b.an].find((y: any) => y.key === 'xep-lop');
+    assert(x?.nhan === '3 HV chưa có lệnh chuyển lớp' && x.title === 'Quản lý ra lệnh ở ⋮ Chuyển lớp cả lớp', JSON.stringify(x));
+  });
 }
