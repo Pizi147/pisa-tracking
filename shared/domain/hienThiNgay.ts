@@ -35,23 +35,26 @@ export function tuanKhoa(n: number, tong: number): string {
   return `W${n}/${tong}`;
 }
 
-/** "tuần học 3/8" (lớp thường, có tổng) · "tuần học thứ 9" (FT — không giới hạn tuần). Cùng thân với PR-VAI-b Task 1. */
+/** "tuần học 3/8" (lớp thường, có tổng) · "tuần học thứ 9" (FT — không giới hạn tuần). Cùng thân với UXF-a Task 4. */
 export const chuTuanHoc = (tuan: number, tong: number | null): string => (tong ? `tuần học ${tuan}/${tong}` : `tuần học thứ ${tuan}`);
 
 /**
- * Q31-11 (chủ sản phẩm 01/10): tuần học thứ n của em FT tại tuần `tuan` — đếm từ tuần bắt đầu lộ trình `batDau`, BỎ tuần Tạm dừng
- * (tuần có ngày Tạm dừng tới trước tuần Quay lại; Tạm dừng và Quay lại cùng tuần → không trừ). Trước tuần bắt đầu, hoặc `tuan` nằm
- * trong một khoảng dừng ĐÃ khép → null. Đang dừng (chưa quay lại) → số tuần đã học tới trước tuần dừng. Cùng luật với PR-VAI-b Task 1.
+ * Q31-11: tuần học thứ n của em FT tại tuần `tuan` — đếm từ tuần bắt đầu lộ trình, bỏ tuần Tạm dừng. Trước tuần bắt đầu hoặc tuần đang dừng → null.
+ * Tuần Tạm dừng = tuần có ngày Tạm dừng tới TRƯỚC tuần Quay lại (Tạm dừng và Quay lại cùng tuần → không trừ tuần nào).
  */
 export function tuanHocFt(batDau: string, tuan: string, dung: readonly { tu: string; den: string | null }[]): number | null {
-  const dau = mondayOfDate(batDau), den = mondayOfDate(tuan);
-  if (den < dau) return null;
-  const khoang = dung.map((k) => ({ tu: mondayOfDate(k.tu), den: k.den ? mondayOfDate(k.den) : null }));
-  if (khoang.some((k) => k.den !== null && den >= k.tu && den < k.den)) return null;
-  const dangDung = (w: string) => khoang.some((k) => w >= k.tu && (k.den === null || w < k.den));
-  const TUAN_MS = 7 * 86_400_000;
-  const soTuan = Math.round((Date.parse(den) - Date.parse(dau)) / TUAN_MS) + 1;
-  let n = 0;
-  for (let i = 0; i < soTuan; i++) if (!dangDung(new Date(Date.parse(dau) + i * TUAN_MS).toISOString().slice(0, 10))) n += 1;
-  return n || null;
+  const a = mondayOfDate(batDau);
+  const t = mondayOfDate(tuan);
+  if (t < a) return null;
+  const soTuan = (x: string, y: string) => Math.round((Date.parse(`${y}T00:00:00Z`) - Date.parse(`${x}T00:00:00Z`)) / (7 * 86_400_000));
+  let n = soTuan(a, t) + 1;
+  for (const k of dung) {
+    const tu = mondayOfDate(k.tu);
+    const den = k.den ? mondayOfDate(k.den) : null;
+    if (t >= tu && (den === null || t < den)) return null;
+    const lo = tu < a ? a : tu;
+    const hi = den === null || den > t ? t : den;   // tuần `t` không nằm trong khoảng dừng → hi là cận trên mở
+    if (hi > lo) n -= soTuan(lo, hi);
+  }
+  return n;
 }

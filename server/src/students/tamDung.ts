@@ -1,25 +1,24 @@
 import { db, theoLo } from '../db.ts';
 
-/** Một khoảng Tạm dừng của em: `tu` = ngày Tạm dừng, `den` = ngày Quay lại (null = đang dừng). */
 export type KhoangTamDung = { tu: string; den: string | null; lyDo: string | null; boiId: number | null };
 
 /**
- * Q31-11: các khoảng Tạm dừng theo em — MỘT câu SQL cho cả lô (`journey_events` pause/resume, `students.ts` ghi), ghép cặp theo thứ tự ngày.
- * Em không từng dừng thì không có khoá. Cùng chữ ký, cùng thân với PR-VAI-b Task 1 — PR merge sau xoá bản trùng.
+ * KHOẢNG TẠM DỪNG của nhiều em — MỘT câu (≤ 900 em) trên nhật ký `pause`/`resume` (`setStudentStatus`), ghép cặp theo ngày.
+ * Em chưa từng Tạm dừng thì không có khoá. Khoảng đang dừng có `den: null`. Cùng thân với PR-UXF-a (giao kèo đếm tuần học FT, Q1).
  */
 export function khoangTamDung(ids: readonly number[]): Record<number, KhoangTamDung[]> {
-  const out: Record<number, KhoangTamDung[]> = {};
+  const kq: Record<number, KhoangTamDung[]> = {};
   theoLo([...new Set(ids)], (lo, ph) => {
-    for (const r of db().prepare(
+    const rows = db().prepare(
       `SELECT student_id, event_type, event_date, detail, created_by FROM journey_events
         WHERE event_type IN ('pause', 'resume') AND student_id IN (${ph}) ORDER BY student_id, event_date, id`,
-    ).all(...lo) as any[]) {
-      const ds = (out[r.student_id] ??= []);
-      const cuoi = ds[ds.length - 1];
+    ).all(...lo) as any[];
+    for (const r of rows) {
+      const cuoi = kq[r.student_id]?.at(-1);
       if (r.event_type === 'pause') {
-        if (!cuoi || cuoi.den !== null) ds.push({ tu: r.event_date, den: null, lyDo: r.detail ?? null, boiId: r.created_by ?? null });
+        if (!cuoi || cuoi.den !== null) (kq[r.student_id] ??= []).push({ tu: r.event_date, den: null, lyDo: r.detail ?? null, boiId: r.created_by ?? null });
       } else if (cuoi && cuoi.den === null) cuoi.den = r.event_date;
     }
   });
-  return out;
+  return kq;
 }

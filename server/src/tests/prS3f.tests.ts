@@ -130,7 +130,10 @@ export async function runPrS3fTests(t: YThucTestKit) {
     assert(hang.band != null && hang.missed === null && hang.kck === true, JSON.stringify({ band: hang.band, missed: hang.missed, kck: hang.kck }));
     const web = (f: string) => fs.readFileSync(path.join(REPO, 'web/src/modules', f), 'utf8');
     assert(/row\.missed === false[\s\S]{0,160}Đạt kỳ vọng/.test(web('cases/SkillBoard.tsx')) && !/row\.band !== null && !row\.missed/.test(web('cases/SkillBoard.tsx')), 'SkillBoard vẫn dùng !row.missed');
-    assert(/khongKyVong/.test(web('students/StudentDetailPage.tsx')), 'câu tóm tắt hồ sơ chưa tách em không kỳ vọng');
+    /* PR-VAI-b (Task 3): câu tóm tắt dựng ở máy chủ (`cauTomTat`) — em KCK có điểm không bao giờ "đạt kỳ vọng" (cùng ý câu cũ ở web). */
+    const cau = d.cauTomTat({ dacBiet: { loai: 'kck' }, ketQua: { dau: 'MT1', ratio: false, sos: null, dat: null, overall: 5, kck: true, soDat: 0, soMon: 4, monTruot: [], phanTram: null },
+      hoTro: [], viec: [], yThuc: null, homNay: '2026-09-14' });
+    assert(!cau.some((m: any) => /đạt kỳ vọng/.test(m.chu)) && cau[0].chu.startsWith('KCK'), `câu tóm tắt hồ sơ chưa tách em không kỳ vọng: ${JSON.stringify(cau)}`);
   });
 
   // ------------------------------------------------------------------ 6–7 · Ý thức
@@ -211,7 +214,12 @@ export async function runPrS3fTests(t: YThucTestKit) {
     const c = web('yThuc/CaseSosControls.tsx');
     assert(!/useState\(pa\.description/.test(c) && /const \[moTa, setMoTa\] = useState\(''\)/.test(c.slice(c.indexOf('export function XacNhanPaPanel'))), 'Xác nhận PA còn điền sẵn mô tả');
     assert(/toiThieu: 15/.test(c.slice(c.indexOf('export function XacNhanPaPanel'))) && /placeholder=\{GOI_Y_MO_TA_PA\}/.test(c.slice(c.indexOf('export function XacNhanPaPanel'))), 'mất ràng buộc 15 ký tự / gợi ý');
-    assert(/choXacNhan[\s\S]{0,400}chờ xác nhận/.test(web('students/StudentDetailPage.tsx')), 'đầu hồ sơ chưa nói "chờ xác nhận"');
+    /* PR-VAI-b (Task 3): ô "Case đang mở" cũ → ô Học thuật, mỗi Case một dòng — Case có PA chờ xác nhận nói "xác nhận PA", tách khỏi Case đang theo dõi. */
+    const o = d.oHocThuat([{ short: 'L', label: 'Listening', category: 'listening', missed: true, cases: [
+      { status: 'open', trangThaiV4: { t: 'can-lam' }, viecTiep: { chu: 'Xác nhận PA Tutor' } },
+      { status: 'in_progress', trangThaiV4: { t: 'dang-lam' }, viecTiep: { chu: 'Ghi kết quả PA Tutor' } },
+    ] }]);
+    assert(o.dong.map((x: any) => x.viec).join() === 'xác nhận PA,ghi kết quả', `đầu hồ sơ chưa nói "chờ xác nhận": ${JSON.stringify(o.dong)}`);
   });
 
   // ------------------------------------------------------------------ 11 · ngày đổi trạng thái học viên

@@ -28,6 +28,7 @@ import { nho, trongBoNho } from '../platform/nguCanhRequest.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { currentCycle } from '../fasttrack/cycles.ts';
 import { expectationFor } from '../fasttrack/scoring.ts';
+import { khoangTamDung } from '../students/tamDung.ts';
 import { isRatioCycle, programmeCodeOfCycle } from '../normal/regular.ts';
 import { suggestCaseOwner } from './owner.ts';
 import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
@@ -1396,6 +1397,15 @@ export function setDisposition(p: Principal, caseId: number, input: {
 
 // ---------------------------------------------------------------- đọc
 
+/**
+ * PR-VAI-b (T65, Q11): ngày Tạm dừng gần nhất khi em ĐANG Tạm dừng (`students.status = 'inactive'`), không thì null — giao diện thay "Quá hạn"
+ * bằng nhãn vàng "Tạm dừng từ dd/mm". Chỉ đổi chữ: luật số liệu đã lọc em Tạm dừng. Một câu, chỉ khi em đang dừng.
+ */
+function tamDungTuCua(student: { id: number; status: string } | null | undefined): string | null {
+  if (!student || student.status !== 'inactive') return null;
+  return khoangTamDung([student.id])[student.id]?.find((k) => k.den === null)?.tu ?? null;
+}
+
 export function caseDetail(p: Principal, caseId: number) {
   const conn = db();
   const c = loadCase(caseId);
@@ -1536,6 +1546,8 @@ export function caseDetail(p: Principal, caseId: number) {
     .all(caseId) as any[];
 
   return {
+    /** PR-VAI-b (T65): em đang Tạm dừng → ngày dừng (nhãn vàng thay "Quá hạn" ở Ngăn Case). */
+    tamDungTu: tamDungTuCua(student),
     id: c.id,
     originKind: c.origin_kind,
     student: student ? { id: student.id, code: student.student_code, name: student.full_name, status: student.status } : null,
@@ -2197,7 +2209,8 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
    */
   const caseRows = conn
     .prepare(
-      `SELECT *, (COALESCE(cycle_id, 0) != ?) AS carried_over, (SELECT cy.started_at FROM learning_cycles cy WHERE cy.id = sos_cases.cycle_id) AS lo_trinh_bat_dau FROM sos_cases
+      `SELECT *, (COALESCE(cycle_id, 0) != ?) AS carried_over, (SELECT cy.started_at FROM learning_cycles cy WHERE cy.id = sos_cases.cycle_id) AS lo_trinh_bat_dau,
+              (SELECT u.full_name FROM users u WHERE u.id = sos_cases.owner_user_id) AS owner_name FROM sos_cases
         WHERE student_id = ?
           AND (COALESCE(cycle_id, 0) = ? OR status != 'done')
         ORDER BY carried_over, (status = 'done'), parallel, id DESC`,
@@ -2305,6 +2318,8 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
       /* Band MT gần nhất — chưa có điểm thì để trống chứ không ghi 0. */
       band: latest?.band ?? null,
       bandAttemptNo: latest?.attemptNo ?? null,
+      /** PR-VAI-b (G5): id lượt của `bandAttemptNo` — "MT1" ở bảng kỹ năng mở hồ sơ Mock của đúng lượt, cuộn tới kỹ năng. */
+      bandAttemptId: latest?.attemptId ?? null,
       bandWeek: latest?.week ?? null,
       expectation: latest?.expectation ?? null,
       /*
@@ -2416,7 +2431,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
     };
   });
 
-  return { studentId, cycleId: cycle?.id ?? null, chuongTrinh: ctBang, rows };
+  return { studentId, cycleId: cycle?.id ?? null, chuongTrinh: ctBang, rows, tamDungTu: tamDungTuCua(student) };
 }
 
 /**
@@ -2458,8 +2473,8 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>, bo
 
   const ivs = conn
     .prepare(
-      `SELECT iv.*, u.full_name AS performer_user_name FROM case_interventions iv
-         LEFT JOIN users u ON u.id = iv.performer_user_id
+      `SELECT iv.*, u.full_name AS performer_user_name, rb.full_name AS recorder_user_name FROM case_interventions iv
+         LEFT JOIN users u ON u.id = iv.performer_user_id LEFT JOIN users rb ON rb.id = iv.recorded_by
         WHERE iv.case_id = ? AND iv.status != 'cancelled'
         ORDER BY iv.status IN ('completed'), COALESCE(iv.started_date, iv.planned_date, iv.created_at) DESC, iv.id DESC`,
     )
@@ -2500,6 +2515,10 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>, bo
       mocChu: iv.preset === 1 ? mocChuPa({ span: iv.moc_quy_che ?? null, followupDue: iv.followup_due ?? null, mtKe: mtKe(iv), daXacNhan: !!iv.confirmed_at }, today) : null,
       lanCuoi: iv.status === 'started' && laLanGhiCuoi({ preset: iv.preset === 1, followupDue: iv.followup_due ?? null, actionDue: iv.action_due ?? null }, today),
       performer: iv.performer_user_name ?? iv.performer_name ?? null,
+      /** PR-VAI-b (Q2): người ghi kết quả PA — đúng cột Công việc dùng (`performer_user_id ?? recorded_by`, `mywork.ts` 2b). */
+      nguoiId: (iv.performer_user_id ?? iv.recorded_by ?? null) as number | null,
+      nguoiTen: (iv.performer_user_id ? iv.performer_user_name : iv.recorder_user_name) ?? null as string | null,
+      nhom: (iv.nhom_bo_tro ?? null) as string | null,
       status: iv.status as string,
       statusLabel: INTERVENTION_STATUS_LABEL[iv.status as keyof typeof INTERVENTION_STATUS_LABEL] ?? iv.status,
       startedOn: iv.started_date ?? iv.planned_date ?? null,
@@ -2560,6 +2579,11 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>, bo
     lyDoHeThong: c.system_close_reason ? SYSTEM_CLOSE_REASON_LABEL[c.system_close_reason as keyof typeof SYSTEM_CLOSE_REASON_LABEL] ?? null : null,
     rutSuaDiem: laRutSuaDiem(c),
   };
+  const viecTiep = viecTiepCuaCase(v4, plans.map((pl) => ({
+    lopCu: laPaLopCu(ivs.find((iv) => iv.id === pl.id)),
+    id: pl.id, ten: tenPaViecTiep(pl.kind, pl.name), batBuoc: pl.batBuoc, choXacNhan: pl.choXacNhan, xong: pl.status === 'completed',
+    actionDue: pl.actionDue, followupDue: pl.followupDue, choDuyet: pl.pendingApproval,
+  })), today, c.origin_kind === 'mock' ? null : planDueDate(String(c.detected_at ?? c.created_at ?? today).slice(0, 10), c.urgency));
   /* Lượt đánh giá mà case này đã đi qua — "MT2 · 17/08" ở chân thẻ (lớp thường: "Giữa khoá"/"Cuối khoá" thay MT{n}). */
   const attempts = (conn
     .prepare(
@@ -2585,11 +2609,10 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>, bo
       ? { mt: attempts.length ? Math.max(...attempts.map((x) => x.attemptNo)) : null, giua: tenGiuaCua(c), sos: c.sos_level ?? null } : null,
     /** PR-SOS (§7.3, K3-07): MỘT nhãn trạng thái + MỘT việc tiếp của Case — bảng kỹ năng, Ngăn Case, đầu hồ sơ đọc chung. */
     trangThaiV4: trangThaiCaseV4(v4, today),
-    viecTiep: viecTiepCuaCase(v4, plans.map((pl) => ({
-      lopCu: laPaLopCu(ivs.find((iv) => iv.id === pl.id)),
-      id: pl.id, ten: tenPaViecTiep(pl.kind, pl.name), batBuoc: pl.batBuoc, choXacNhan: pl.choXacNhan, xong: pl.status === 'completed',
-      actionDue: pl.actionDue, followupDue: pl.followupDue, choDuyet: pl.pendingApproval,
-    })), today, c.origin_kind === 'mock' ? null : planDueDate(String(c.detected_at ?? c.created_at ?? today).slice(0, 10), c.urgency)),
+    viecTiep,
+    nguoiLam: nguoiLamCua(viecTiep, c, plans, boTro),
+    /** Người phụ trách Case (`owner_user_id`) — việc Xác nhận nguyên nhân / Xác nhận PA của Công việc (Q2). */
+    ownerId: (c.owner_user_id ?? null) as number | null,
     plans,
     attempts,
     followUntil: c.follow_until ?? null,
@@ -2611,6 +2634,21 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>, bo
     /** PR-LT2a: khối PA Bổ trợ (xem `boTroCuaCase`) — `null` với Case không có PA bổ trợ. */
     boTro,
   };
+}
+
+/**
+ * NGƯỜI LÀM VIỆC TIẾP của một Case (PR-VAI-b Q3) — tính MỘT chỗ; cột Việc tiếp, thẻ điện thoại và thanh việc cùng đọc. Cùng luật người làm
+ * với Công việc (Q2): Xác nhận nguyên nhân / Xác nhận PA / Đề ra PA → người phụ trách Case · Ghi kết quả → người ghi PA · Nộp kế hoạch →
+ * người dạy bổ trợ · Chờ Quản lý duyệt → "Quản lý" (vai, không tên). Tên đọc sẵn trong câu Case / câu PA (JOIN) — không câu thêm.
+ */
+function nguoiLamCua(v: { chu: string; paId?: number } | null, c: any, plans: { id: number; nguoiId: number | null; nguoiTen: string | null }[], boTro: BoTroDto | null): { id: number | null; ten: string | null } | null {
+  if (!v) return null;
+  if (v.chu.startsWith('Chờ Quản lý')) return { id: null, ten: 'Quản lý' };
+  const pa = v.paId ? plans.find((pl) => pl.id === v.paId) : null;
+  const [id, ten] = pa ? [pa.nguoiId, pa.nguoiTen]
+    : v.chu === 'Nộp kế hoạch bổ trợ' ? [boTro?.nguoiDay?.userId ?? null, boTro?.nguoiDay?.ten ?? null]
+    : [c.owner_user_id ?? null, c.owner_name ?? null];
+  return id ? { id, ten } : null;
 }
 
 /**

@@ -166,6 +166,7 @@ export async function runPrPb2aTests(t: YThucTestKit) {
     assert(d.CAN_XU_LY.every((x: any) => !('denLoc' in x)), 'CAN_XU_LY không còn denLoc');
   });
 
+  const hanhTrinhSvc = await import('../students/hanhTrinh.ts');
   check('Pb2-a (2) · rowsFor Case / PA / nghĩa vụ và dòng Case của hồ sơ HV: Case có em → hồ sơ HV mở Ngăn Case, không /hoc-thuat/case/', () => {
     const c = get(`SELECT sc.id, sc.student_id AS sid, (SELECT iv.id FROM case_interventions iv WHERE iv.case_id = sc.id LIMIT 1) AS iv
       FROM sos_cases sc WHERE sc.student_id IS NOT NULL AND EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sc.id) ORDER BY sc.id LIMIT 1`);
@@ -176,8 +177,9 @@ export async function runPrPb2aTests(t: YThucTestKit) {
     assert(metrics.rowsFor('nghia-vu', [metrics.obligationId(c.iv, 1)])[0]?.href === dung, 'nghĩa vụ');
     const profile: any = hoSoHv;
     const tap = profile.studentProfile(P.admin, c.sid);
-    const links = [...tap.episodes, ...tap.allEpisodes].map((e: any) => e.link).filter(Boolean);
-    assert(!links.some((l: string) => l.startsWith('/hoc-thuat/case/')), `hồ sơ HV còn link cũ: ${links.filter((l: string) => l.startsWith('/hoc-thuat/case/'))}`);
+    /* PR-VAI-b: hồ sơ HV không còn "Mốc học tập" (episodes) — kiểm cả hồ sơ lẫn Hành trình không còn link Case cũ. */
+    const { hanhTrinhHocVien } = hanhTrinhSvc;
+    assert(!JSON.stringify(tap).includes('/hoc-thuat/case/') && !JSON.stringify(hanhTrinhHocVien(P.admin, c.sid, null)).includes('/hoc-thuat/case/'), 'hồ sơ HV còn link cũ /hoc-thuat/case/');
   });
 
   check('Pb2-a (2) · quét nguồn: không còn goc=danh-sach, DanhSachCase, DanhSachBoQuen ở web/src, shared; file DanhSachBoQuen.tsx đã xoá', () => {

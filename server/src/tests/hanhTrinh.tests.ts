@@ -188,7 +188,8 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     const dangTheoDoi = d.trangThaiHop({ caseMo: [{ mo: '2026-08-01', soPa: 2 }], coTungCase: true, diemCuoiChuaDat: false, xongGanNhat: null }, homNay);
     assert(dangTheoDoi?.tone === 'warn' && dangTheoDoi.chu.startsWith('Đang làm · '), `Đang làm: ${JSON.stringify(dangTheoDoi)}`);
     const daOn = d.trangThaiHop({ caseMo: [], coTungCase: true, diemCuoiChuaDat: null, xongGanNhat: '2026-08-30' }, homNay);
-    assert(daOn?.tone === 'ok' && daOn.chu === 'Xong 30/08', `Xong: ${JSON.stringify(daOn)}`);
+    /* PR-VAI-b (Q19): "Xong" nói mã tuần, không dd/mm. */
+    assert(daOn?.tone === 'ok' && daOn.chu === `Xong ${d.tuanLich('2026-08-30', homNay)}` && /^Xong W\d [A-Z]{3}$/.test(daOn.chu), `Xong: ${JSON.stringify(daOn)}`);
     assert(d.trangThaiHop({ caseMo: [], coTungCase: true, diemCuoiChuaDat: null, xongGanNhat: '2026-08-30', huyGanNhat: true }, homNay)?.chu === 'Đã huỷ', 'Đã huỷ');
     const chuaTungCo = d.trangThaiHop({ caseMo: [], coTungCase: false, diemCuoiChuaDat: null, xongGanNhat: null }, homNay);
     assert(chuaTungCo === null, 'Chưa từng có Case → null (giao diện tự vẽ chữ mờ)');    /* mo 01/08 → 22/09 = 52 ngày = 7.43 tuần → làm tròn lên 8 */
@@ -221,11 +222,12 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     for (const r of [giua, cuoi]) assert(!r.chu.includes('MT') && !r.gon.includes('MT') && !r.day.includes('MT'), `Lớp thường không chứa MT: ${JSON.stringify(r)}`);
   });
 
-  check('PR-Qb (1) · nhanGiaiDoan: giai đoạn đã xong có khoảng, đang chạy chỉ có "từ"', () => {
-    const xong = d.nhanGiaiDoan({ loai: 'thuong', tu: '2026-06-08', den: '2026-09-25' }, '2026-09-22');
-    assert(xong === 'Lớp thường · W2 JUN – W4 SEP', `Giai đoạn đã xong: ${xong}`);
-    const dangChay = d.nhanGiaiDoan({ loai: 'ft', tu: '2026-10-05', den: null }, '2026-09-22');
-    assert(dangChay === 'Fast Track · từ W2 OCT', `Giai đoạn đang chạy: ${dangChay}`);
+  /* PR-VAI-b (Q16): nút đổi giai đoạn bỏ (bấm chương thì trục chuyển giai đoạn) — `nhanGiaiDoan` bỏ; trục ghi "Đang xem {giai đoạn} · từ W.." bằng mã tuần. */
+  check('PR-Qb (1) → VAI-b · nút giai đoạn bỏ: không còn nhanGiaiDoan; trục ghi "Đang xem" giai đoạn bằng mã tuần (W2 JUN – W4 SEP / từ W2 OCT)', () => {
+    assert(!('nhanGiaiDoan' in d), 'nhanGiaiDoan còn ở shared');
+    const src = fs.readFileSync(path.join(ROOT, 'web/src/modules/students/HanhTrinh.tsx'), 'utf8');
+    assert(/Đang xem/.test(src) && /tuanLich\(giaiDoanDangXem\.tu, homNay\)/.test(src), 'trục phải ghi giai đoạn đang xem bằng mã tuần');
+    assert(d.tuanLich('2026-06-08', '2026-09-22') === 'W2 JUN' && d.tuanLich('2026-10-05', '2026-09-22') === 'W2 OCT', 'mã tuần của khoảng giai đoạn');
   });
 
   // ==================================================================== PR-UX5 (1) — luật thuần mới
@@ -323,7 +325,8 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     assert(khac.length === 2 && khac[0].tuan < khac[1].tuan, `Khác tuần: ${JSON.stringify(khac)}`);
   });
 
-  check('PR-UX5 (1) · nhanKhoiPa: dấu/màu 7 nhánh, tên PA không chứa "·", tooltip quá hạn có số ngày và ngày dd/mm', () => {
+  /* PR-VAI-b (Q19): khoảng PA trong tooltip nói mã tuần thay dd/mm. */
+  check('PR-UX5 (1) → VAI-b · nhanKhoiPa: dấu/màu 7 nhánh, tên PA không chứa "·", tooltip quá hạn có số ngày và mã tuần', () => {
     const co = { ten: 'Học tutor', followupOverdue: false, tu: '2026-09-14', den: null as string | null };
     const dem = (o: object) => d.nhanKhoiPa({ status: 'completed', lastOutcome: null, ...co, ...o } as any, '2026-09-23');
     const cacNhanh = [
@@ -336,9 +339,9 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
       assert(n.dau === dau && n.tone === tone && !n.ten.includes('·'), `${JSON.stringify(o)} → ${JSON.stringify(n)}`);
     }
     const quaHan = dem({ status: 'started', followupOverdue: true, soNgayQuaHan: 2 });
-    assert(quaHan.day === 'Học tutor · ▶ Đang thực hiện · ⚠ Quá hạn cập nhật 2 ngày · từ 14/09', `Quá hạn: ${quaHan.day}`);
-    assert(dem({ status: 'started' }).day === 'Học tutor · ▶ Đang thực hiện · từ 14/09', 'Đang chạy');
-    assert(dem({ den: '2026-09-20', lastOutcome: 'improved' }).day === 'Học tutor · ✓ Tiến bộ rõ · 14/09 → 20/09', 'Đã xong có kết quả');
+    assert(quaHan.day === 'Học tutor · ▶ Đang thực hiện · ⚠ Quá hạn cập nhật 2 ngày · từ W3 SEP', `Quá hạn: ${quaHan.day}`);
+    assert(dem({ status: 'started' }).day === 'Học tutor · ▶ Đang thực hiện · từ W3 SEP', 'Đang chạy');
+    assert(dem({ den: '2026-09-20', lastOutcome: 'improved' }).day === 'Học tutor · ✓ Tiến bộ rõ · W3 SEP → W3 SEP', 'Đã xong có kết quả');
     assert(dem({}).day.includes('■ Đã kết thúc, chưa ghi kết quả'), 'Đã kết thúc chưa ghi');
   });
 
@@ -354,15 +357,16 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     assert(ngan({ caseMo: [{ mo: '2026-08-01', soPa: 0 }], coTungCase: true, diemCuoiChuaDat: null, xongGanNhat: null }) === 'Cần làm', 'Cần làm');
     assert(ngan({ caseMo: [{ mo: '2026-08-01', soPa: 1 }], coTungCase: true, diemCuoiChuaDat: true, xongGanNhat: null }) === 'Đang làm', 'Đang làm (chưa đạt)');
     assert(ngan({ caseMo: [{ mo: '2026-08-01', soPa: 1 }], coTungCase: true, diemCuoiChuaDat: false, xongGanNhat: null }) === 'Đang làm', 'Đang làm');
-    assert(ngan({ caseMo: [], coTungCase: true, diemCuoiChuaDat: null, xongGanNhat: '2026-08-30' }) === 'Xong 30/08', 'Xong');
+    assert(ngan({ caseMo: [], coTungCase: true, diemCuoiChuaDat: null, xongGanNhat: '2026-08-30' }) === 'Xong W4 AUG', 'Xong (mã tuần — VAI-b Q19)');
   });
 
-  check('PR-UX5 (1) · dongPhuVanDe: 3 dạng, ngày dd/mm không năm khi cùng năm (G-6), ≤ 60 ký tự', () => {
+  /* PR-VAI-b (Q19): dòng phụ vấn đề nói MÃ TUẦN (mockup 26) thay dd/mm — năm chỉ khi khác năm nay (G-6 giữ). */
+  check('PR-UX5 (1) → VAI-b · dongPhuVanDe: 3 dạng, mã tuần (năm chỉ khi khác năm), ≤ 60 ký tự', () => {
     const h = '2026-09-23';
-    assert(d.dongPhuVanDe({ mo: '2026-09-14', dong: null, soPa: 1 }, h) === 'từ 14/09 · 1 PA', 'Đang mở có PA');
-    assert(d.dongPhuVanDe({ mo: '2026-09-18', dong: null, soPa: 0 }, h) === 'từ 18/09 · chưa có PA', 'Đang mở chưa PA');
-    assert(d.dongPhuVanDe({ mo: '2026-07-12', dong: '2026-08-24', soPa: 2 }, h) === '12/07 → 24/08 · 2 PA', 'Đã đóng');
-    assert(d.dongPhuVanDe({ mo: '2025-12-12', dong: '2026-01-24', soPa: 2 }, h).startsWith('12/12/2025'), 'Khác năm có năm');
+    assert(d.dongPhuVanDe({ mo: '2026-09-14', dong: null, soPa: 1 }, h) === 'từ W3 SEP · 1 PA', 'Đang mở có PA');
+    assert(d.dongPhuVanDe({ mo: '2026-09-18', dong: null, soPa: 0 }, h) === 'từ W3 SEP · chưa có PA', 'Đang mở chưa PA');
+    assert(d.dongPhuVanDe({ mo: '2026-07-12', dong: '2026-08-24', soPa: 2 }, h) === 'W2 JUL → W4 AUG · 2 PA', 'Đã đóng');
+    assert(d.dongPhuVanDe({ mo: '2025-12-12', dong: '2026-01-24', soPa: 2 }, h).startsWith('W2 DEC 2025'), 'Khác năm có năm');
   });
 
   check('PR-UX5 (1) · boCucHanhTrinh: 5 tình huống (gọn · 1440 ≥ 300 · 1920 → 320 · 700px → 148 · chuỗi dài 300 < cotTen ≤ 440)', () => {
@@ -388,15 +392,17 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     assert(d.rongCotTuan(d.boCucHanhTrinh({ rong: 600, soTuan: 20, xemGon: false, rongChuoi: 0, cheDo: 'ielts' }), 600, 20) === 48, 'Không thấp hơn 48');
   });
 
-  check('PR-UX5 (1) · xepHangLuoi: đúng ví dụ kế hoạch (không đoạn, 2 hộp) và ví dụ có đoạn (hangDoan 3, hangGhim 4)', () => {
-    const a = d.xepHangLuoi({ coDoan: false, coGhim: true, hop: [{ soTangVanDe: [] }, { soTangVanDe: [2, 1] }] });
-    assert(a.hangDoan === null && a.hangGhim === 3 && a.hangCuoi === 11, `Hàng: ${JSON.stringify(a)}`);
+  /* PR-VAI-b (mockup 26 bản 1): hàng Khoá/Lộ trình bỏ; thêm Tuần học, Lớp; mỗi Case MỘT hàng KHUNG + các tầng PA. */
+  check('PR-UX5 (1) → VAI-b · xepHangLuoi: tháng · tuần · [Tuần học] · [Lớp] · [Đợt Test]; mỗi Case một hàng khung + tầng PA; dòng ẩn', () => {
+    const a = d.xepHangLuoi({ coTuanHoc: false, coLop: false, coGhim: true, hop: [{ soTangVanDe: [] }, { soTangVanDe: [2, 1] }] });
+    assert(a.hangTuanHoc === null && a.hangLop === null && a.hangGhim === 3 && a.hangCuoi === 13, `Hàng: ${JSON.stringify(a)}`);
     assert(a.hop[0].dau === 5 && a.hop[0].khung.join() === '5,6' && a.hop[0].vanDe.length === 0 && a.hop[0].dongAn === null, `Hộp 0: ${JSON.stringify(a.hop[0])}`);
-    assert(a.hop[1].dau === 7 && a.hop[1].khung.join() === '7,11' && JSON.stringify(a.hop[1].vanDe) === '[{"tu":8,"so":2},{"tu":10,"so":1}]', `Hộp 1: ${JSON.stringify(a.hop[1])}`);
-    assert(a.mau === 'auto auto auto 10px minmax(42px, auto) 10px minmax(42px, auto) minmax(40px, auto) 30px minmax(40px, auto)', `Mẫu: ${a.mau}`);
-    const b = d.xepHangLuoi({ coDoan: true, coGhim: true, hop: [{ soTangVanDe: [1], coDongAn: true }] });
-    assert(b.hangDoan === 3 && b.hangGhim === 4 && b.hop[0].dau === 6 && b.hop[0].dongAn === 8 && b.hangCuoi === 9, `Có đoạn + dòng ẩn: ${JSON.stringify(b)}`);
-    assert(d.xepHangLuoi({ coDoan: false, coGhim: false, hop: [] }).hangCuoi === 3, 'Lưới rỗng chỉ còn hai hàng trục');
+    assert(a.hop[1].dau === 7 && a.hop[1].khung.join() === '7,13' && JSON.stringify(a.hop[1].vanDe) === '[{"khung":8,"tu":9,"so":2},{"khung":11,"tu":12,"so":1}]', `Hộp 1: ${JSON.stringify(a.hop[1])}`);
+    assert(a.mau === 'auto auto minmax(44px, auto) 10px minmax(42px, auto) 10px minmax(42px, auto) minmax(34px, auto) minmax(30px, auto) 30px minmax(34px, auto) minmax(30px, auto)', `Mẫu: ${a.mau}`);
+    const b = d.xepHangLuoi({ coTuanHoc: true, coLop: true, coGhim: true, hop: [{ soTangVanDe: [1], coDongAn: true }] });
+    assert(b.hangTuanHoc === 3 && b.hangLop === 4 && b.hangGhim === 5 && b.hop[0].dau === 7 && b.hop[0].vanDe[0].khung === 8 && b.hop[0].dongAn === 10 && b.hangCuoi === 11, `Đủ hàng trục + dòng ẩn: ${JSON.stringify(b)}`);
+    assert(d.xepHangLuoi({ coTuanHoc: false, coLop: false, coGhim: false, hop: [] }).hangCuoi === 3, 'Lưới rỗng chỉ còn hai hàng trục');
+    assert(d.xepHangLuoi({ coTuanHoc: false, coLop: false, coGhim: false, hop: [{ soTangVanDe: [0] }] }).hop[0].vanDe[0].so === 1, 'Case chưa có PA vẫn một hàng (khối chờ)');
   });
 
   check('PR-UX5 (1) · uocRongChuoi: tăng theo số mốc, có mũi tên thì rộng hơn, "?" cộng 16px', () => {
@@ -421,15 +427,16 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     assert(r.giaiDoan === 'ft', `Mặc định phải là giai đoạn của lộ trình đang xem (FT đang chạy): ${r.giaiDoan}`);
   });
 
-  check('PR-Qb (2) · HV1 giai đoạn "thuong": 2 đoạn FOU→BE đúng thứ tự, 4 hộp L/R/W/S, không hộp nào có hạng mục Ý thức', () => {
+  /* PR-VAI-b (Q31-10): hàng "Khoá / Lộ trình" (`doan`) thay bằng hàng Lớp (`lop`) + chương theo lớp — cùng ý: FOU→BE đúng thứ tự, đếm đủ +1 tuần. */
+  check('PR-Qb (2) · HV1 giai đoạn "thuong": hàng Lớp FOU→BE đúng thứ tự, chương lớp thường đếm đủ tuần, 4 hộp L/R/W/S, không hộp Ý thức', () => {
     const r = hanhTrinhHocVien(P.admin, HV1, 'thuong');
-    assert(r.doan.length === 2, `2 đoạn: ${JSON.stringify(r.doan)}`);
-    assert(r.doan[0].tu < r.doan[1].tu, `Đúng thứ tự thời gian: ${JSON.stringify(r.doan)}`);
-    assert(r.doan.every((x: any) => x.loai === 'khoa'), 'Lớp thường ghi đoạn "khoa"');
+    assert(r.lop.length === 2, `2 lớp: ${JSON.stringify(r.lop)}`);
+    assert(r.lop[0].tu < r.lop[1].tu && !r.lop[0].chuyen && r.lop[1].chuyen, `Đúng thứ tự thời gian: ${JSON.stringify(r.lop)}`);
+    assert(r.tuanHoc?.loai === 'khoa', 'Lớp thường: hàng Tuần khoá');
     // Sửa sau rà #75 (7): đếm TRỌN tuần chứa `tu` và tuần chứa `den` — thiếu +1 thì mọi khoá đều báo ít hơn 1 tuần.
-    for (const x of r.doan) {
-      const soTuanKyVong = Math.max(1, Math.round((Date.parse(x.den) - Date.parse(x.tu)) / (7 * 86_400_000)) + 1);
-      assert(x.nhan.endsWith(`${soTuanKyVong} tuần`), `Đoạn "${x.nhan}" phải đếm đủ +1 tuần (kỳ vọng ${soTuanKyVong} tuần)`);
+    for (const x of r.chuong.filter((c: any) => !c.ft)) {
+      const soTuanKyVong = Math.max(1, Math.round((Date.parse(x.den ?? r.homNay) - Date.parse(x.tu)) / (7 * 86_400_000)) + 1);
+      assert(x.soTuan === soTuanKyVong, `Chương "${x.code}" phải đếm đủ +1 tuần (kỳ vọng ${soTuanKyVong}, được ${x.soTuan})`);
     }
     const kyNang = r.hop.map((h: any) => h.kyNang);
     assert(kyNang.join(',') === 'listening,reading,writing,speaking', `4 hộp L/R/W/S: ${kyNang}`);
@@ -454,12 +461,12 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     assert(kyNang.join(',') === 'listening,reading,writing1,writing2,speaking', `5 hộp FT: ${kyNang}`);
   });
 
-  check('PR-Qb (2) · HV40 (LT1→LT2): doan có 2 lộ trình, nhãn không rỗng', () => {
+  check('PR-Qb (2) · HV40 (LT1→LT2): hàng Tuần học có 2 lộ trình (mỗi lộ trình đếm lại từ tuần 1), đúng thứ tự; chương có nhãn', () => {
     const r = hanhTrinhHocVien(P.admin, HV40, null);
     assert(r.giaiDoan === 'ft', `HV40 chỉ có FT: ${r.giaiDoan}`);
-    assert(r.doan.length === 2 && r.doan.every((x: any) => x.loai === 'lo-trinh'), `2 lộ trình: ${JSON.stringify(r.doan)}`);
-    assert(r.doan.every((x: any) => x.nhan), 'Mỗi lộ trình phải có nhãn');
-    assert(r.doan[0].tu < r.doan[1].tu, 'Đúng thứ tự thời gian');
+    assert(r.tuanHoc?.loai === 'ft' && r.tuanHoc.ds.length === 2 && r.tuanHoc.ds.every((x: any) => x.batDau), `2 lộ trình: ${JSON.stringify(r.tuanHoc)}`);
+    assert(r.tuanHoc!.ds[0].tu < r.tuanHoc!.ds[1].tu, 'Đúng thứ tự thời gian');
+    assert(r.chuong.every((c: any) => c.nhan), 'Mỗi chương phải có nhãn');
   });
 
   check('PR-Qb (2) · Giáo viên/Quản lý ngoài phạm vi bị từ chối xem hành trình', () => {
@@ -628,25 +635,28 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     assert(profFt.currentClass?.khoa === null, `FT không có khoá đang học: ${JSON.stringify(profFt.currentClass?.khoa)}`);
   });
 
-  check('PR-Qb (3) · Q11: headline.next.category (khi có) thuộc đúng bộ hạng mục case', () => {
+  /* PR-VAI-b (Q5): `headline.next` → `dauHoSo.viec` (mọi việc của em theo người) — cùng ý: kỹ năng của việc thuộc đúng bộ hạng mục case. */
+  check('PR-Qb (3) · Q11: kỹ năng của mỗi việc ở đầu hồ sơ (dauHoSo.viec, khi có) thuộc đúng bộ hạng mục case', () => {
     const CATEGORY_HOP_LE = new Set<string>(d.CASE_CATEGORIES);
     for (const sid of [HV1, HV40]) {
-      const prof = studentProfile(P.admin, sid);
-      if (prof.headline.next) {
-        assert(CATEGORY_HOP_LE.has(prof.headline.next.category), `category lạ: ${prof.headline.next.category}`);
+      const v = (studentProfile(P.admin, sid) as any).dauHoSo.viec;
+      for (const x of [...v.cuaBan, ...v.nguoiKhac]) {
+        if (x.kyNang) assert(CATEGORY_HOP_LE.has(x.kyNang), `category lạ: ${x.kyNang}`);
       }
     }
   });
 
-  check('PR-Qb (3) · Q8: sự kiện Ý thức (warning/wl) không còn trong episodes lẫn allEpisodes', () => {
+  /* PR-VAI-b (K3-32): khối "Mốc học tập" (`episodes`) bỏ — Hành trình là chương theo lớp + trục tuần; Ý thức vẫn không vào Hành trình. */
+  check('PR-Qb (3) · Q8 → VAI-b: sự kiện Ý thức (warning/wl) không vào Hành trình (chương, trục); hồ sơ không còn episodes', () => {
     const now = new Date().toISOString();
     const id = conn.prepare(
       `INSERT INTO journey_events (student_id, event_type, event_date, title, created_at) VALUES (?, 'warning', ?, 'Cảnh báo thử', ?)`,
     ).run(HV1, TODAY, now).lastInsertRowid as number;
     try {
-      const prof = studentProfile(P.admin, HV1);
-      assert(!prof.episodes.some((e: any) => e.events.some((ev: any) => ev.id === id)), 'episodes không được chứa sự kiện Ý thức');
-      assert(!prof.allEpisodes.some((e: any) => e.events.some((ev: any) => ev.id === id)), 'allEpisodes không được chứa sự kiện Ý thức');
+      const prof = studentProfile(P.admin, HV1) as any;
+      assert(!('episodes' in prof) && !('allEpisodes' in prof), 'hồ sơ còn episodes / allEpisodes');
+      const ht = JSON.stringify(hanhTrinhHocVien(P.admin, HV1, null));
+      assert(!ht.includes('Cảnh báo thử') && !/"warning"|"wl"/.test(ht), 'Hành trình không được chứa sự kiện Ý thức');
     } finally {
       conn.prepare('DELETE FROM journey_events WHERE id = ?').run(id);
     }
@@ -701,9 +711,10 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     assert(!src.includes('weekCodeOf'), 'Trục dùng trucTuan/hanhTrinh.ts, không dùng weekCodeOf cũ');
   });
 
-  check('PR-Qb (4) · StudentDetailPage.tsx không còn chữ "Các mốc đã qua" (đổi thành "Mốc học tập")', () => {
+  /* PR-VAI-b (K3-32): khối "Mốc học tập" bỏ hẳn — chương theo lớp thay. */
+  check('PR-Qb (4) → VAI-b · không còn "Các mốc đã qua" lẫn "Mốc học tập"; Hành trình mở đầu bằng chương theo lớp', () => {
     assert(!doc('web/src/modules/students/StudentDetailPage.tsx').includes('Các mốc đã qua'), 'Chữ cũ phải hết');
-    assert(doc('web/src/modules/students/HanhTrinh.tsx').includes('Mốc học tập'), 'Chữ mới phải có ở HanhTrinh.tsx');
+    assert(!doc('web/src/modules/students/HanhTrinh.tsx').includes('Mốc học tập') && doc('web/src/modules/students/HanhTrinh.tsx').includes('<ChuongLop '), 'HanhTrinh còn Mốc học tập / thiếu chương');
   });
 
   // ==================================================================== Task 5 — R7/R8c (quét nguồn)

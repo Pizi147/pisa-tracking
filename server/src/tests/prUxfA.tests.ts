@@ -209,14 +209,16 @@ export async function runPrUxfATests(t: YThucTestKit) {
     `INSERT INTO journey_events (student_id, event_type, event_date, title, detail, created_by, created_at) VALUES (?,?,?,?,?,?,?)`,
   ).run(sid, loai, ngay, loai === 'pause' ? 'Tạm dừng học' : 'Quay lại học', loai === 'pause' ? 'Ốm' : null, P.admin.userId, NOW);
 
-  check('UXF-a (4) · chuTuanHoc + tuanHocFt: đếm từ tuần bắt đầu, bỏ tuần Tạm dừng; tuần đang dừng (đã khép) → null; đang dừng → số tới trước tuần dừng; cùng tuần không trừ', () => {
+  check('UXF-a (4) · chuTuanHoc + tuanHocFt (bản PR-VAI-b): đếm từ tuần bắt đầu, bỏ tuần Tạm dừng; tuần trong khoảng dừng (kể cả đang dừng) → null; cùng tuần không trừ', () => {
     assert(d.chuTuanHoc(3, 8) === 'tuần học 3/8' && d.chuTuanHoc(9, null) === 'tuần học thứ 9', 'chuTuanHoc');
     const bd = tuanTruoc(10), nay = d.mondayOfDate(TODAY);
     assert(d.tuanHocFt(bd, nay, []) === 11, `không dừng: ${d.tuanHocFt(bd, nay, [])}`);
     const dung = [{ tu: t.addDays(tuanTruoc(7), 2), den: t.addDays(tuanTruoc(5), 1) }];   // dừng 2 tuần (tuần −7, −6)
     assert(d.tuanHocFt(bd, nay, dung) === 9, `dừng 2 tuần rồi quay lại: ${d.tuanHocFt(bd, nay, dung)}`);
     assert(d.tuanHocFt(bd, tuanTruoc(6), dung) === null, 'tuần trong khoảng dừng → null');
-    assert(d.tuanHocFt(bd, nay, [{ tu: tuanTruoc(2), den: null }]) === 8, `đang dừng từ tuần −2 → 8: ${d.tuanHocFt(bd, nay, [{ tu: tuanTruoc(2), den: null }])}`);
+    /* Luật của bản dùng chung (PR-VAI-b merge trước — giao kèo): tuần đang ở trong khoảng dừng, kể cả chưa quay lại → null. */
+    assert(d.tuanHocFt(bd, nay, [{ tu: tuanTruoc(2), den: null }]) === null, `đang dừng → null: ${d.tuanHocFt(bd, nay, [{ tu: tuanTruoc(2), den: null }])}`);
+    assert(d.tuanHocFt(bd, tuanTruoc(3), [{ tu: tuanTruoc(2), den: null }]) === 8, 'tuần trước khi dừng vẫn đếm bình thường');
     assert(d.tuanHocFt(bd, tuanTruoc(11), []) === null, 'trước tuần bắt đầu → null');
     assert(d.tuanHocFt(bd, nay, [{ tu: tuanTruoc(4), den: t.addDays(tuanTruoc(4), 3) }]) === 11, 'Tạm dừng và Quay lại cùng tuần → không trừ');
   });
