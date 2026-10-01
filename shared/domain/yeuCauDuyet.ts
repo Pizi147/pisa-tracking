@@ -163,7 +163,23 @@ export type TheYeuCauDto = {
 };
 
 /** `cho` = mọi thẻ đang chờ trong hộp (= chip "Tất cả", gồm Báo lên); `quaHan` = thẻ đỏ; `baoLen` = trong đó Báo lên — xem `demHop`. */
-export type DemYeuCau = { cho: number; quaHan: number; baoLen: number; cuaToiCho: number; cuaToiTuChoi: number };
+export type DemYeuCau = {
+  cho: number; quaHan: number; baoLen: number; cuaToiCho: number; cuaToiTuChoi: number;
+  /** PR-VAI-a (Q17): chip từng phân loại + số thẻ Báo lên theo loại (dòng phụ dải Chờ duyệt) — chỉ người duyệt. */
+  chip?: Record<KhoaChip, number>;
+  baoLenTheoLoai?: Partial<Record<string, number>>;
+};
+
+/** Dòng phụ dải Chờ duyệt: "Học thuật 3 · Ý thức 1 · Báo lên 3 (2 Case chờ nguyên nhân quá hạn, 1 Ý thức quá hạn)". Phân loại 0 bỏ. */
+export function dongPhuChoDuyet(d: DemYeuCau): string {
+  if (!d.chip) return '';
+  return PHAN_LOAI.filter((k) => d.chip![k] > 0).map((k) => {
+    if (k !== 'bao-len') return `${PHAN_LOAI_LABEL[k]} ${d.chip![k]}`;
+    const loai = Object.entries(d.baoLenTheoLoai ?? {}).filter(([, n]) => (n ?? 0) > 0)
+      .map(([l, n]) => `${n} ${(LOAI_YC_META as Record<string, LoaiYcMeta>)[l]?.nhan ?? l}`);
+    return `${PHAN_LOAI_LABEL[k]} ${d.chip![k]}${loai.length ? ` (${loai.join(', ')})` : ''}`;
+  }).join(' · ');
+}
 
 /** PR-S4F #14: thẻ Báo lên không có người để Nhắc (`duLieu.ownerId` rỗng) — ghi rõ vì sao thay cho nút Nhắc. */
 export const nhanKhongNguoiNhac = (loai: string): string =>

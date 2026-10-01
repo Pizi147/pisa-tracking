@@ -7,7 +7,7 @@
  */
 import { db, tx } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, notFound, nowIso, addDays, todayInBusinessTz } from '../util.ts';
+import { badRequest, forbidden, notFound, nowIso, addDays, todayInBusinessTz } from '../util.ts';
 import { can, napTruocPhamVi, require_, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
@@ -179,7 +179,8 @@ export function chotYeuCau(
           : trangThai === 'da_tra_loi' ? `Quản lý đã trả lời: ${(v.traLoi ?? '').trim()}`
           : `tự đóng: ${lyDo ?? ''}`;
         notify({
-          userId: r.nguoi_xin, kind: 'duyet_ket_qua',
+          /* PR-VAI-a (Q19): từ chối là việc CẦN LÀM (sửa và gửi lại) — tách loại để chuông xếp đúng nhóm; duyệt / trả lời vẫn là tin để biết. */
+          userId: r.nguoi_xin, kind: trangThai === 'tu_choi' ? 'duyet_tu_choi' : 'duyet_ket_qua',
           title: `Yêu cầu ${meta.nhan}${r.hv ? ` — ${r.hv}` : ''}: ${ketQua}`.slice(0, 200),
           entityType: 'yeu_cau_duyet', entityId: r.id, dedupKey: `duyet_ket_qua:${r.id}`,
         });
@@ -315,7 +316,11 @@ export function trongPhamVi(p: Principal, rows: any[]): any[] {
 const tuNgay = (n: number) => `${addDays(demoToday(), -n)}T00:00:00.000Z`;
 const xepDaXuLy = (a: TheYeuCauDto, b: TheYeuCauDto) => ((b.xuLyLuc ?? '') < (a.xuLyLuc ?? '') ? -1 : 1);
 
-export function hopChoDuyet(p: Principal, f: { phanLoai?: PhanLoai | null; xem?: 'cho' | 'da-xu-ly'; studentId?: number | null; branchId?: number | null; classId?: number | null } = {}) {
+export function hopChoDuyet(p: Principal, f: {
+  phanLoai?: PhanLoai | null; xem?: 'cho' | 'da-xu-ly'; studentId?: number | null; branchId?: number | null; classId?: number | null;
+  /** PR-VAI-a (Q17): chỉ thẻ quá hạn — cùng điều kiện `quaHan` của `demHop`; chip vẫn đếm cả hộp (như lọc phân loại). */
+  quaHan?: boolean;
+} = {}) {
   require_(p, P_DUYET, { anyScope: true }, 'Chỉ Quản lý và Quản trị hệ thống mở được hộp Chờ duyệt.');
   const homNay = demoToday();
   quetYeuCau(homNay);
@@ -335,6 +340,7 @@ export function hopChoDuyet(p: Principal, f: { phanLoai?: PhanLoai | null; xem?:
   }
   const dem = demHop(rows.map((r) => ({ phanLoai: metaCua(r.loai).phanLoai, hanDuyet: r.han_duyet })), homNay).chip;
   if (f.phanLoai && laPhanLoai(f.phanLoai)) rows = rows.filter((r) => metaCua(r.loai).phanLoai === f.phanLoai);
+  if (f.quaHan && xem === 'cho') rows = rows.filter((r) => !!r.han_duyet && r.han_duyet < homNay);
   const ngu = napNguCanh(conn, rows, homNay);
   const the = rows.map((r) => theRa(r, ngu));
   return { the: xem === 'cho' ? sapThe(the) : the.sort(xepDaXuLy), dem, homNay, lopDangLoc };
@@ -352,17 +358,23 @@ export function yeuCauCuaToi(p: Principal) {
   return { the: [...sapThe(the.filter((x) => x.trangThai === 'cho')), ...the.filter((x) => x.trangThai !== 'cho').sort(xepDaXuLy)], homNay };
 }
 
-export function demYeuCau(p: Principal): DemYeuCau {
+export function demYeuCau(p: Principal, f: { branchId?: number | null } = {}): DemYeuCau {
   const homNay = demoToday();
   quetYeuCau(homNay);
   const conn = db();
   const kq: DemYeuCau = { cho: 0, quaHan: 0, baoLen: 0, cuaToiCho: 0, cuaToiTuChoi: 0 };
   if (can(p, P_DUYET, { anyScope: true })) {
-    const rows = trongPhamVi(p, conn.prepare(
+    /* PR-VAI-a (Q17, VN05): dải Chờ duyệt theo chi nhánh đang chọn — hỏi chi nhánh ngoài phạm vi thì 403, không trả số rỗng. */
+    if (f.branchId && !can(p, P_DUYET, { branchId: f.branchId })) throw forbidden('Chi nhánh này nằm ngoài phạm vi bạn được duyệt.');
+    let rows = trongPhamVi(p, conn.prepare(
       `SELECT loai, han_duyet, hoc_vien_id, lop_id, chi_nhanh_id FROM yeu_cau_duyet WHERE trang_thai = 'cho'`).all() as any[]);
+    if (f.branchId) rows = rows.filter((r) => r.chi_nhanh_id === f.branchId);
     /* CÙNG hàm đếm với chip của hộp — badge, dải Tổng quan và chip "Tất cả" luôn một số. */
     const d = demHop(rows.map((r) => ({ phanLoai: metaCua(r.loai).phanLoai, hanDuyet: r.han_duyet })), homNay);
     kq.cho = d.tong; kq.quaHan = d.quaHan; kq.baoLen = d.baoLen;
+    kq.chip = d.chip;
+    kq.baoLenTheoLoai = {};
+    for (const r of rows) if (metaCua(r.loai).phanLoai === 'bao-len') kq.baoLenTheoLoai[r.loai] = (kq.baoLenTheoLoai[r.loai] ?? 0) + 1;
   }
   for (const r of conn.prepare(
     `SELECT trang_thai, COUNT(*) AS n FROM yeu_cau_duyet WHERE nguoi_xin = ? AND (trang_thai = 'cho' OR (trang_thai = 'tu_choi' AND xu_ly_luc >= ?))

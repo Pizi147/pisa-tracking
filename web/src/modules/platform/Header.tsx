@@ -6,9 +6,18 @@ import { api } from '../../lib/api.ts';
 import { Info } from '../../ui/ui.tsx';
 import { CongTacGiaoDien } from '../../ui/CongTacGiaoDien.tsx';
 import { roleLabel, skillShort } from '../../lib/format.ts';
-import { buocDanhSach, chuanHoaMaLop, duongThongBao } from '@shared/domain/index.ts';
+import { buocDanhSach, chuanHoaMaLop, duongThongBao, ngayTheoGioVN, noiDenThongBao, nhomThongBao } from '@shared/domain/index.ts';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 
 type SearchHit = { id: number; studentCode: string; fullName: string; classCode: string | null };
+
+/** Giờ của một thông báo (Q21): hôm nay chỉ giờ, ngày khác thêm ngày — giờ Việt Nam. */
+function gioThongBao(iso: string | null | undefined, homNay: string, ngan: (d: string) => string): string {
+  const ngayVn = ngayTheoGioVN(iso);
+  if (!iso || !ngayVn) return '';
+  const gio = new Date(iso).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Ho_Chi_Minh' });
+  return ngayVn === homNay ? gio : `${ngan(ngayVn)} ${gio}`;
+}
 type LopRef = { id: number; code: string; student_count: number };
 
 /** Thanh phải: tìm học viên + lớp (K1-43), thông báo, tài khoản. Không lặp lại điều hướng chính. */
@@ -30,6 +39,7 @@ export function Header() {
   const nutTaiKhoan = useRef<HTMLButtonElement>(null);
   const idDs = useId();
   const notifications = useApi<any[]>('/notifications');
+  const { homNay, ngan } = useNgayNghiepVu();
   /* Danh sách lớp trong phạm vi: đọc một lần (useApi nhớ sẵn), lọc tại chỗ theo mã chuẩn hoá — gõ "ft101" ra MB FT 101. */
   const lopRef = useApi<LopRef[]>('/ref/classes');
   const timDu = q.trim().length >= 2;
@@ -160,8 +170,9 @@ export function Header() {
       </div>
 
       <div className="relative">
-        <button ref={nutThongBao} className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setOpenMenu(openMenu === 'notif' ? null : 'notif')}
-          aria-label="Thông báo" aria-expanded={openMenu === 'notif'}>
+        <button ref={nutThongBao} className="btn btn-sm min-h-[44px] sm:min-h-0"
+          onClick={() => { if (openMenu !== 'notif') notifications.reload(); setOpenMenu(openMenu === 'notif' ? null : 'notif'); }}
+          aria-label={`Thông báo${unread ? `, ${unread} chưa đọc` : ''}`} aria-expanded={openMenu === 'notif'}>
           <span className="hidden sm:inline">Thông báo</span>
           {/* Chuông nét mảnh 14 px thay emoji (luật "dấu nhỏ gọn"). */}
           <svg className="sm:hidden" aria-hidden width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -169,29 +180,59 @@ export function Header() {
           {unread > 0 && <span className="ml-1 rounded bg-doing-bg text-doing px-1.5 text-[11.5px] tabular-nums">{unread}</span>}
         </button>
         {openMenu === 'notif' && (
-          <div className="absolute right-0 mt-1 w-[min(24rem,calc(100vw-2rem))] card z-40 shadow-2xl max-h-96 overflow-y-auto">
+          /*
+           * PR-VAI-a (mockup 23 màn D, T76, UX-D6): hai nhóm Cần làm / Để biết, giờ, dòng "bấm tới đâu", Đọc hết. Máy tính: thả dưới nút.
+           * Điện thoại (< 640 px): neo HAI MÉP ngay dưới thanh trên, cao tối đa 70 vh, cuộn trong — không cắt nửa trái như bảng thả cũ.
+           */
+          <div role="dialog" aria-label="Thông báo"
+            className="card fixed inset-x-2 top-14 z-40 max-h-[70vh] overflow-y-auto shadow-2xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-1 sm:max-h-[32rem] sm:w-[min(26rem,calc(100vw-2rem))]">
+            <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b px-3.5 py-2" style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
+              <h2 className="m-0 text-sm font-semibold text-slate-100">Thông báo <span className="font-normal text-slate-500">· <span className="tabular-nums">{unread}</span> chưa đọc</span></h2>
+              <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={!unread}
+                onClick={async () => { await api.post('/notifications/doc-het'); notifications.reload(); }}>Đọc hết</button>
+            </div>
             {(notifications.data ?? []).length === 0 && <div className="p-4 text-sm text-slate-500">Không có thông báo nào.</div>}
-            {(notifications.data ?? []).map((n) => (
-              <button
-                key={n.id}
-                className="block w-full text-left px-3 py-2 border-b hover:bg-white/5"
-                style={{ borderColor: 'var(--line)' }}
-                onClick={async () => {
-                  await api.post(`/notifications/${n.id}/read`);
-                  notifications.reload();
-                  /* Mỗi loại thông báo về đúng chỗ làm được việc của nó (R8, Q12) — một quy ước duy nhất. */
-                  const den = duongThongBao(n);
-                  if (den) navigate(den);
-                  setOpenMenu(null);
-                }}
-              >
-                <div className="text-sm text-slate-200 flex items-center gap-2">
-                  {!n.read_at && <span className="w-1.5 h-1.5 rounded-full bg-sky-300 shrink-0" />}
-                  {n.title}
+            {(['can-lam', 'de-biet'] as const).map((nhom) => {
+              const ds = (notifications.data ?? []).filter((n) => nhomThongBao(n) === nhom);
+              if (!ds.length) return null;
+              return (
+                <div key={nhom}>
+                  <div className="flex items-baseline gap-2 border-b px-3.5 py-1.5 text-[11.5px] font-bold uppercase tracking-wide text-slate-400"
+                    style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
+                    {nhom === 'can-lam' ? 'Cần làm' : 'Để biết'} <span className="tabular-nums">{ds.length}</span>
+                  </div>
+                  {ds.map((n) => {
+                    const toi = noiDenThongBao(n);
+                    return (
+                      <button key={n.id} type="button"
+                        className="grid w-full grid-cols-[10px_minmax(0,1fr)_auto] items-start gap-x-2.5 gap-y-0.5 border-b px-3.5 py-2.5 text-left hover:bg-white/5"
+                        style={{ borderColor: 'var(--line)' }}
+                        onClick={async () => {
+                          await api.post(`/notifications/${n.id}/read`);
+                          notifications.reload();
+                          /* Mỗi loại thông báo về đúng chỗ làm được việc của nó (R8, Q12) — một quy ước duy nhất. */
+                          const den = duongThongBao(n);
+                          if (den) navigate(den);
+                          setOpenMenu(null);
+                        }}>
+                        <span aria-hidden className={`mt-1.5 h-1.5 w-1.5 rounded-full ${n.read_at ? '' : 'bg-[color:var(--accent)]'}`} />
+                        <span className={`text-[13px] leading-snug text-slate-100 ${n.read_at ? 'font-normal' : 'font-semibold'}`}>
+                          {!n.read_at && <span className="sr-only">Chưa đọc: </span>}{n.title}
+                        </span>
+                        <time className="whitespace-nowrap pt-px text-xs tabular-nums text-slate-500">{gioThongBao(n.created_at, homNay, ngan)}</time>
+                        {n.body && <span className="col-start-2 text-xs text-slate-400">{n.body}</span>}
+                        {toi && (
+                          <span className="col-start-2 inline-flex items-center gap-1 text-xs text-[color:var(--accent)]">
+                            {toi}
+                            <svg aria-hidden width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="m6 3.5 4.5 4.5L6 12.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
-                {n.body && <div className="text-xs text-slate-500 mt-0.5">{n.body}</div>}
-              </button>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

@@ -3087,7 +3087,7 @@ check('Việc quá hạn: tiêu đề nói việc gì, hạn nói quá hạn —
 check('Kết quả sau hỗ trợ là việc của NGƯỜI THỰC HIỆN; quá hạn thì Quản lý cũng thấy', () => {
   const gv = loadPrincipal(teacherOfSkill('CP FT 110', 'speaking'));
   const mgr = loadPrincipal(userByRole('manager', 'CP'));
-  const reviewOf = (p: any) => (mywork.myWork(p).groups.find((g: any) => g.key === 'result')?.items ?? []);
+  const reviewOf = (p: any) => (mywork.myWork(p).groups.find((g: any) => g.key === 'ghi_ket_qua_pa')?.items ?? []);
 
   // Dữ liệu mẫu: tutor CP FT 110 hẹn 10/09, nay đã 14/09 — quá hạn, nên cả hai đều thấy.
   const gvItems = reviewOf(gv);
@@ -3109,7 +3109,7 @@ check('Đề xuất đang chờ duyệt thì chưa đòi cập nhật kết qu�
     kind: 'tutor', description: 'Xin tutor, hẹn xem lại ngay', status: 'planned',
     needsApproval: true, followupDue: addDays(demoToday(), -1),
   });
-  const items = (mywork.myWork(P.coreTeacher).groups.find((g: any) => g.key === 'result')?.items ?? []);
+  const items = (mywork.myWork(P.coreTeacher).groups.find((g: any) => g.key === 'ghi_ket_qua_pa')?.items ?? []);
   assert(!items.some((i: any) => i.caseId === c.id),
     'Phương án chưa được duyệt đã bị đòi cập nhật kết quả');
 });
@@ -3778,7 +3778,7 @@ check('Việc làm phương án chỉ về đúng GVBM của kỹ năng — khô
   conn.prepare('UPDATE case_interventions SET action_due = ? WHERE id = ?').run(TODAY, ivId);
 
   const has = (who: any) => mywork.myWork(who, {}).groups
-    .filter((g: any) => g.key === 'result').some((g: any) => g.items.some((it: any) => it.key === `action:${ivId}`));
+    .filter((g: any) => g.key === 'ghi_ket_qua_pa').some((g: any) => g.items.some((it: any) => it.key === `action:${ivId}`));
 
   assert(has(P.subjectTeacher), 'GVBM đúng kỹ năng không nhận việc làm phương án của case kỹ năng mình');
   assert(!has(mismatchTeacher), 'AUTH-01: GVBM sai môn vẫn nhận được việc của case kỹ năng khác');
@@ -8152,14 +8152,15 @@ const branchIdOf = (code: string) => (conn.prepare('SELECT id FROM branches WHER
 check('PR-F · Sổ chỉ số: đúng hai mươi chỉ số (PR-N thêm pa-cho-duyet; PR-J thêm tám chỉ số Ý thức), mỗi chỉ số đủ tám trường (thiếu một trường thì không được lên dashboard)', () => {
   const list = domain.METRICS as readonly any[];
   /* PR-LT2a (N4, Q14): bỏ ba chỉ số của mô hình tín hiệu — tin-hieu-cho-xac-minh, tin-hieu-qua-han, hv-bo-qua-van-can-ho-tro (31 → 28). */
-  assert(list.length === 28, `Phải có hai mươi tám chỉ số (PR-YT4: bien-phap-dang-chuan-bi → bien-phap-cho-duyet, thêm hv-theo-bac; hai của PR-UX4: hv-can-ho-tro-2-lan-chua-case, hv-bo-qua-van-can-ho-tro + hai mươi tám chỉ số cũ: mười hai của PR-F/PR-N + bảy của PR-J còn lại sau khi PR-T bỏ vi-pham-khong-hieu-luc + bốn của PR-T: case-cho-xac-dinh-nguyen-nhan và ba phoi-hop-* + một của PR-S1: tin-hieu-qua-han + ba của PR-Pa: case-xac-dinh-nguyen-nhan-qua-han, bai-qua-han-nhap-diem, case-chua-co-nguoi-phu-trach + một của PR-YT2: vi-pham-theo-nhom), đang có ${list.length}`);
+  assert(list.length === 32, /* PR-VAI-a: −1 (U3) +1 (lop-thieu-gv-mon) +4 (Q8) */ `Phải có hai mươi tám chỉ số (PR-YT4: bien-phap-dang-chuan-bi → bien-phap-cho-duyet, thêm hv-theo-bac; hai của PR-UX4: hv-can-ho-tro-2-lan-chua-case, hv-bo-qua-van-can-ho-tro + hai mươi tám chỉ số cũ: mười hai của PR-F/PR-N + bảy của PR-J còn lại sau khi PR-T bỏ vi-pham-khong-hieu-luc + bốn của PR-T: case-cho-xac-dinh-nguyen-nhan và ba phoi-hop-* + một của PR-S1: tin-hieu-qua-han + ba của PR-Pa: case-xac-dinh-nguyen-nhan-qua-han, bai-qua-han-nhap-diem, case-chua-co-nguoi-phu-trach + một của PR-YT2: vi-pham-theo-nhom), đang có ${list.length}`);
   const expected = ['hv-sos-hien-tai', 'hv-duoi-ky-vong-mon', 'hv-co-case-mo', 'case-mo',
     'case-xac-dinh-nguyen-nhan-qua-han', 'bai-qua-han-nhap-diem', 'case-chua-co-nguoi-phu-trach', 'case-cho-xac-dinh-nguyen-nhan',
     'case-thieu-pa', 'pa-can-cap-nhat', 'pa-cho-duyet', 'pa-co-ket-qua', 'ty-le-co-cai-thien', 'dung-han-cap-nhat', 'do-phu-danh-gia',
     'vi-pham-tong', 'vi-pham-theo-nhom', 'vi-pham-chua-xu-ly', 'hv-co-vi-pham', 'hv-can-xu-ly',
     'bien-phap-da-thuc-hien', 'bien-phap-cho-duyet', 'bien-phap-theo-loai', 'hv-theo-bac',
     'phoi-hop-luot-sos', 'phoi-hop-dang-xu-ly', 'phoi-hop-hoan-thanh',
-    'hv-can-ho-tro-2-lan-chua-case'];
+    'lop-thieu-gv-mon',   // PR-VAI-a: bỏ hv-can-ho-tro-2-lan-chua-case (K1-04), thêm lop-thieu-gv-mon (K1-05)
+    'van-hanh-can-quyet-dinh', 'hv-chua-co-lenh-chuyen', 'hv-ft-xong-mt-cuoi-chua-mt-ke', 'hv-len-ft-chua-ky-vong'];   // PR-VAI-a Q8
   for (const id of expected) assert(list.some((m) => m.id === id), `Thiếu chỉ số ${id}`);
   assert(new Set(list.map((m) => m.id)).size === list.length, 'Có hai chỉ số trùng mã');
   const fields = ['id', 'ten', 'cauHoi', 'donVi', 'tapDuDieuKien', 'thoiGian', 'khuTrung', 'drilldown'];
@@ -8167,7 +8168,7 @@ check('PR-F · Sổ chỉ số: đúng hai mươi chỉ số (PR-N thêm pa-cho-
     for (const f of fields) {
       assert(typeof m[f] === 'string' && m[f].trim().length > 0, `Chỉ số ${m.id} thiếu trường "${f}"`);
     }
-    assert(['hoc-vien', 'case', 'phuong-an', 'bai-thi', 'dot-test', 'nghia-vu', 'vi-pham', 'bien-phap', 'luot-sos'].includes(m.donVi), `${m.id}: đơn vị lạ "${m.donVi}"`);
+    assert(['hoc-vien', 'case', 'phuong-an', 'bai-thi', 'dot-test', 'nghia-vu', 'vi-pham', 'bien-phap', 'luot-sos', 'lop', 'viec-van-hanh'].includes(m.donVi), `${m.id}: đơn vị lạ "${m.donVi}"`);
     assert(['hien-trang', 'phat-sinh-trong-ky', 'ket-qua-trong-ky'].includes(m.thoiGian), `${m.id}: thời gian lạ "${m.thoiGian}"`);
   }
   assert(domain.metricById('hv-co-case-mo')?.ten === 'Học viên có case đang mở', 'metricById phải tra đúng chỉ số');
@@ -8899,7 +8900,8 @@ const PRH_OLD_STRINGS = [
   'Người làm', '+ thêm dòng', 'Lịch sử và kết thúc phương án', 'Mở trang riêng',
   // danh sách lớp, học viên, nhập liệu
   'Lớp là gốc', 'Badge chỉ xuất hiện', 'Em nào vào muộn thì ghi đè', 'Cả lô này vào một lớp', 'Bỏ qua {blocking} dòng lỗi',
-  'Thêm 0 học viên', 'Việc của tôi', 'Cả phạm vi quản lý', 'Hai mốc kiểm tra đếm từ đây', 'Tiến độ lớp',
+  /* PR-VAI-a: bỏ 'Việc của tôi' khỏi danh sách — mockup 23 đã duyệt đặt lại tên khối GV "Việc của tôi · hôm nay" (nguồn ưu tiên cao hơn PR-H). */
+  'Thêm 0 học viên', 'Cả phạm vi quản lý', 'Hai mốc kiểm tra đếm từ đây', 'Tiến độ lớp',
   // mười hai khái niệm — chữ tuyệt đối không viết
   'SOS ý thức', 'Hoàn thành phương án', 'hoàn thành phương án', 'Đã hoàn thành phương án',
 ];
@@ -9808,6 +9810,9 @@ await runPrS5fbTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 // ==================================================================== PR-Pb2-a (bỏ Cả hai, bỏ Danh sách Case, Hiệu quả PA, Tổng hợp lớp thường)
 const { runPrPb2aTests } = await import('./prPb2a.tests.ts');
 await runPrPb2aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== PR-VAI-a (Tổng quan theo vai · Công việc · chuông)
+const { runPrVaiATests } = await import('./prVaiA.tests.ts');
+await runPrVaiATests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

@@ -15,7 +15,9 @@ import { allProgrammes } from '../normal/regular.ts';
  *
  * `branchIds = null` là không lọc; `[]` là phạm vi rỗng → rỗng (hợp đồng số liệu, luật 3).
  */
-export type DebtCell = { attemptId: number; classId: number; skill: string; userId: number; overdue: boolean };
+export type DebtCell = { attemptId: number; classId: number; skill: string; userId: number; overdue: boolean;
+  /** PR-VAI-a (Q24): hạn nhập của ô — cột Hạn "quá hạn a–b ngày" ở Cần xử lý đọc từ chính tập này. */
+  han: string | null };
 
 /** Tiến độ KHÔNG phải nợ điểm: vắng đã xác nhận, huỷ phần thi, ngoài phạm vi, đang chờ Quản lý duyệt dời, MT lịch sử (T34). */
 const NOT_DEBT = new Set(['absent', 'cancelled', 'skipped', 'reschedule_pending', 'lich_su']);
@@ -80,14 +82,14 @@ export function scoreDebtCells(p: Principal, today: string, branchIds: number[] 
         const v = views.get(skill);
         if (!v || !v.required || v.scored || !v.weekStart || v.weekStart > today || NOT_DEBT.has(v.progress)) continue;
         const userId = teacherOf.get(`${a.class_id}|${skill}`);
-        if (userId) out.push({ attemptId: a.id, classId: a.class_id, skill, userId, overdue: v.overdue });
+        if (userId) out.push({ attemptId: a.id, classId: a.class_id, skill, userId, overdue: v.overdue, han: v.deadline ?? null });
       }
     } else {
       /* Không truyền `hoanTat` (R11) có chủ ý: nợ điểm đọc band/noShow/lịch, không đọc canEdit/khoa — đỡ 3 câu SQL. */
       for (const c of skillCells(p, a, scores, bundle.skips.get(a.id) ?? [], today, skillRows)) {
         if (!c.required || c.band !== null || c.noShow !== null || !c.weekStart || c.weekStart > today || NOT_DEBT.has(c.progress)) continue;
         const userId = teacherOf.get(`${a.class_id}|${c.skill}`);
-        if (userId) out.push({ attemptId: a.id, classId: a.class_id, skill: c.skill, userId, overdue: c.overdue });
+        if (userId) out.push({ attemptId: a.id, classId: a.class_id, skill: c.skill, userId, overdue: c.overdue, han: c.deadline ?? null });
       }
     }
   }

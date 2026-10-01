@@ -36,7 +36,8 @@ export function ClassYThucCard({ classId }: { classId: number }) {
   const [params, setParams] = useSearchParams();
   const board = useApi<BangYThucLop>(`/classes/${classId}/y-thuc`);
   const roster = useApi<any[]>(`/classes/${classId}/roster`);
-  const [sub, setSub] = useState<'vi-pham' | 'phoi-hop'>('vi-pham');
+  /* PR-VAI-a (K5-10): việc "Phối hợp SOS" mở `?tab=y-thuc&sub=phoi-hop` — vào thẳng tab con Phối hợp. */
+  const [sub, setSub] = useState<'vi-pham' | 'phoi-hop'>(params.get('sub') === 'phoi-hop' ? 'phoi-hop' : 'vi-pham');
   const [includeDone, setIncludeDone] = useState(false);
   const coord = useApi<{ rows: CoordTurn[]; pendingCount: number }>(
     sub === 'phoi-hop' ? `/classes/${classId}/phoi-hop-sos${includeDone ? '?includeDone=1' : ''}` : null, [sub, includeDone],
@@ -60,6 +61,7 @@ export function ClassYThucCard({ classId }: { classId: number }) {
     const moGi = params.get('mo');
     if (hv) { setChonHv(hv); setKhungDt('vi-pham'); }
     if (hv && moGi === 'xu-ly') mo({ loai: 'xu-ly', studentId: hv });
+    if (hv && moGi === 'khai') mo({ loai: 'khai', studentId: hv });   // PR-VAI-a (K1-15): việc "Khai bậc Ý thức HS cũ"
     const xl = Number(params.get('xl')) || null;
     if (moGi === 'da-thuc-hien' && xl) mo({ loai: 'da-thuc-hien', id: xl });
     if (moGi || params.get('loc')) {
