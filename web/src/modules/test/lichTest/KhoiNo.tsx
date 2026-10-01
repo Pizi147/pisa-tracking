@@ -40,6 +40,9 @@ function NhanDong({ d, xong, chuaLuu = 0 }: { d: DongNo; xong: boolean; chuaLuu?
  * Q14: dòng đang mở mà máy chủ không còn trả (vừa chấm hết) vẫn giữ trên màn, ghi "Đã chấm ✓", tới khi người dùng thu —
  * dòng biến mất giữa lúc gõ là mất ô đang nhập. `dongMo` là bản sao dòng đó, do `LichTestTab` giữ.
  */
+/** PR-UXF-a (UX-F7, K4-06): ô Đợt ghi kèm TUẦN THI — "MT3 · W3 SEP"; một lớp có MT3 ở hai tuần thi ra hai dòng khác chữ. */
+const dotTuan = (d: DongNo, homNay: string) => (d.weekStart ? `${d.dotLabel} · ${tuanLich(d.weekStart, homNay)}` : d.dotLabel);
+
 export function KhoiNo({ no, mo, onMo, chiQuaHan, onBoQuaHan, dongMo, onMoDong, hep, homNay, onDaLuu, knUrl, chuaLuu, baoChuaLuu }: {
   no: DongNo[]; mo: boolean; onMo: () => void;
   chiQuaHan: boolean; onBoQuaHan: () => void;
@@ -130,7 +133,7 @@ export function KhoiNo({ no, mo, onMo, chiQuaHan, onBoQuaHan, dongMo, onMoDong, 
                       <>
                         <td className="td py-1.5">
                           <div className="truncate font-semibold text-slate-100">
-                            {d.classCode} · {d.dotLabel} · <span title={k.goiY}>{k.chu}</span>
+                            {d.classCode} · {dotTuan(d, homNay)} · <span title={k.goiY}>{k.chu}</span>
                           </div>
                           {k.phu && <div className="truncate text-[11px] text-slate-500">{k.phu}</div>}
                           <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-slate-400 tabular-nums">
@@ -144,10 +147,7 @@ export function KhoiNo({ no, mo, onMo, chiQuaHan, onBoQuaHan, dongMo, onMoDong, 
                     ) : (
                       <>
                         <td className="td truncate font-semibold text-slate-100" title={d.classCode}>{d.classCode}</td>
-                        <td className="td whitespace-nowrap text-slate-300"
-                          title={d.weekStart ? `${d.dotLabel} · thi ${tuanLich(d.weekStart, homNay)}` : d.dotLabel}>
-                          {d.dotLabel}
-                        </td>
+                        <td className="td whitespace-nowrap text-slate-300">{dotTuan(d, homNay)}</td>
                         <td className="td truncate text-slate-300" title={k.goiY}>
                           {k.chu}
                           {k.phu && <span className="block truncate text-[11px] leading-4 text-slate-500">{k.phu}</span>}

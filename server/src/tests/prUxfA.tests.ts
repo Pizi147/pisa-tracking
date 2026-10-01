@@ -334,4 +334,47 @@ export async function runPrUxfATests(t: YThucTestKit) {
     assert(o && o.userId === null, `ô L phải chưa phân công: ${JSON.stringify(o)}`);
     assert(chuaPc && chuaPc.quaHan >= 1, 'hàng Chưa phân công có bài');
   });
+
+  // ==================================================================== Task 6 · một luật quá hạn (Q10) + dòng Nợ có tuần thi, nhóm theo lớp
+  const TUAN_NAY = d.mondayOfDate(TODAY);                      // W3 SEP (14/09) — tuần đang chạy
+  const W = taoHv(LOP, false);                                // Giữa khoá tuần NÀY, hạn bị đặt đè sớm hơn Chủ nhật (13/09)
+  const luotW = themLuot({ ...W, cid: LOP, no: 1, kind: 'progress', tuan: TUAN_NAY });
+  conn.prepare(`UPDATE attempt_skills SET deadline_override = ? WHERE attempt_id = ?`).run(t.addDays(TODAY, -1), luotW);
+  const V = taoHv(LOP, false);                                // tuần tương lai (W1 OCT)
+  const luotV = themLuot({ ...V, cid: LOP, no: 1, kind: 'progress', tuan: '2026-10-05' });
+  const tuanNayId = week.ensurePeriod(TUAN_NAY).id;
+  const quaHanO = (attemptId: number) => (debt.scoreDebtCells(P.admin, TODAY, [MB]) as any[]).filter((c) => c.attemptId === attemptId && c.overdue).length;
+
+  check('UXF-a (6) · Q10: ô tuần đang chạy (kể cả hạn đặt đè sớm) và tuần tương lai KHÔNG quá hạn ở mọi đường; ô tuần đã hết + qua hạn quá hạn ở mọi đường', () => {
+    const roster = classes.classRoster(pL, LOP) as any[];
+    const ohRoster = (sid: number) => roster.find((s) => s.id === sid).timeline.reduce((n: number, x: any) => n + x.overdueSkills, 0);
+    const ids = baiQuaHan(P.admin).ids as number[];
+    const coBai = (aid: number) => ids.some((id) => d.tachBaiId(id).attemptId === aid);
+    const lich = cham.lichTest(P.admin, tuanNayId, null, TODAY, { classId: LOP });
+    const lopLich = (lich.lop as any[]).find((l) => l.classId === LOP);
+    for (const [ten, aid, sid] of [['W (tuần này, hạn đè sớm)', luotW, W.sid], ['V (tuần tương lai)', luotV, V.sid]] as const) {
+      assert(quaHanO(aid) === 0, `${ten}: scoreDebtCells`);
+      assert(!coBai(aid), `${ten}: bai-qua-han-nhap-diem`);
+      assert(ohRoster(sid) === 0, `${ten}: roster.overdueSkills`);
+    }
+    assert(!lopLich || !lopLich.quaHan, `Lịch Test tuần này không quá hạn: ${JSON.stringify(lopLich?.quaHan)}`);
+    /* Đối chứng: X (W2 SEP, tuần đã hết, qua hạn) quá hạn ở mọi đường. */
+    assert(quaHanO(luotX) === 1 && coBai(luotX) && ohRoster(X.sid) === 1, `X phải quá hạn: ô ${quaHanO(luotX)} · roster ${ohRoster(X.sid)}`);
+    const no = (cham.lichTest(pL, tuanNayId, null, TODAY, { classId: LOP }).no as any[]).find((x) => x.attemptIds.includes(luotX));
+    assert(no && no.quaHan, `dòng Nợ của X quá hạn: ${JSON.stringify(no)}`);
+  });
+
+  check('UXF-a (6) · Nợ: lớp FT có MT3 ở hai tuần thi → hai dòng, chữ Đợt khác nhau (tuần thi); dòng nhóm theo lớp (soSanhLop); conBai = số bài', () => {
+    const tuanA = tuanTruoc(2), tuanB = tuanTruoc(1);
+    const em = [taoHv(LOP_FT, true), taoHv(LOP_FT, true)];
+    const luot = [themLuot({ ...em[0], cid: LOP_FT, no: 3, kind: 'mock', tuan: tuanA }), themLuot({ ...em[1], cid: LOP_FT, no: 3, kind: 'mock', tuan: tuanB })];
+    const no = (cham.lichTest(P.admin, tuanNayId, null, TODAY).no as any[]);
+    const cuaFt = no.filter((x) => x.classId === LOP_FT && x.attemptNo === 3);
+    assert(cuaFt.length === 2, `hai dòng MT3: ${cuaFt.length}`);
+    const chu = cuaFt.map((x) => `${x.dotLabel} · ${d.tuanLich(x.weekStart, TODAY)}`);
+    assert(chu[0] !== chu[1] && chu.every((c) => /^MT3 · W\d [A-Z]{3}$/.test(c)), `chữ Đợt: ${chu.join(' | ')}`);
+    const soO = (debt.scoreDebtCells(P.admin, TODAY, [MB]) as any[]).filter((c) => luot.includes(c.attemptId)).length;
+    assert(cuaFt.reduce((n, x) => n + x.conBai, 0) === soO, `conBai ${cuaFt.reduce((n, x) => n + x.conBai, 0)} ≠ số bài ${soO}`);
+    for (let i = 1; i < no.length; i++) assert(d.soSanhLop({ code: no[i - 1].classCode }, { code: no[i].classCode }) <= 0, `Nợ không nhóm theo lớp: ${no[i - 1].classCode} › ${no[i].classCode}`);
+  });
 }

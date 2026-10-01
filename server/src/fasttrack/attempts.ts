@@ -17,7 +17,7 @@ import {
   ScoreError, assessedSkillOf, bandFromCriteria, bandFromRaw, entrySkillsOf, evaluateAttempt,
   failingEntrySkills, isCriteriaSkill, isRawSkill, type AttemptResult,
 } from './scoring.ts';
-import { weekInfo } from '../platform/week.ts';
+import { quaHanNhapDiem, weekInfo } from '../platform/week.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import {
   completionWeekOf, ensureSkillRows, loadSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf,
@@ -383,8 +383,7 @@ export function skillCells(
       deadline: view.deadline,
       deadlineSource: view.deadlineSource,
       /* Quá hạn tính trên Ô NÀY: W2 còn trống thì W2 quá hạn, W1 đã nộp thì không. */
-      overdue: required && !cellScored && !!view.deadline && !!view.weekStart
-        && view.weekStart <= today && view.deadline < today
+      overdue: required && !cellScored && quaHanNhapDiem(view.deadline, view.weekStart, today)   // PR-UXF-a Q10: cùng luật `viewSkill`
         && progress !== 'absent' && progress !== 'cancelled' && !attempt.lich_su
         /* Đã báo "không có bài" thì không nợ điểm ở ô này — hạn nhập điểm chỉ áp cho bài CÓ thực hiện. */
         && noShow === null,
@@ -716,7 +715,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
           const v = views.get(k);
           return {
             skill: k, deadline: v?.deadline ?? null, periodId: v?.periodId ?? null,
-            weekCode: v?.periodCode ?? null, weekStart: v?.weekStart ?? null,
+            weekCode: v?.periodCode ?? null, weekStart: v?.weekStart ?? null, overdue: !!v?.overdue,
             moved: monDoiLich(scores.find((x) => x.skill === k), v?.periodId ?? null, v?.absenceMoveCount ?? 0),
           };
         }),
@@ -801,7 +800,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
         const lich = bundle.skillRows.get(a.id)?.find((r) => r.skill === c?.assessedSkill);
         return {
           skill: k, deadline: c?.deadline ?? null, periodId: c?.periodId ?? null,
-          weekCode: c?.periodCode ?? null, weekStart: c?.weekStart ?? null,
+          weekCode: c?.periodCode ?? null, weekStart: c?.weekStart ?? null, overdue: !!c?.overdue,
           moved: monDoiLich(scores.find((x) => x.skill === k), c?.periodId ?? null, lich?.absence_move_count ?? 0),
         };
       }),
