@@ -486,3 +486,4 @@ Mọi P0 / P1 đều **đúng** khi mở mã (`attempts.ts:1666-1678`, `giaoVien
 
 | Ngày | Task | Ghi chú (mốc B, model thật, phép kiểm trước đỏ bao nhiêu ✗, trần tốc độ, lệch kế hoạch, cổng gộp) |
 |---|---|---|
+| 01/10 | [S6F-a] 0 | Model thật **Opus 5.5** (claude-opus-5-5). Worktree `pr-s6f-a-may-chu-du-lieu` từ `origin/main` @ `ceecd0da`. **Mốc B = 2162 + 28** (xanh; chạy ~40 phút vì S6F-b check cùng lúc). Phép kiểm trước viết đủ khối 1–4 rồi chạy trên mã `main`: 19 ✗ / 22 (1c, 4f, 4h xanh sẵn — phép kiểm khoá lại). |
