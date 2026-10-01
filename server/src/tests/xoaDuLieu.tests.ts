@@ -793,14 +793,16 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
 
   // ==================================================================== Task 6 — lệnh kiểm chỉ đọc
 
-  console.log('\nPR-XOA (6) · npm run kiem-sau-xoa — CHỈ ĐỌC');
+  /* PR-DEPLOY (Task 4): `kiem-sau-xoa` hết việc (dữ liệu thử đã dọn, DB reset) → thay bằng `kiem-sau-init`, cùng luật CHỈ ĐỌC. */
+  console.log('\nPR-XOA (6) · npm run kiem-sau-init (thay kiem-sau-xoa, PR-DEPLOY) — CHỈ ĐỌC');
 
-  check('PR-XOA (6) · kiemSauXoa.ts (bỏ chú thích) không có .run( / .exec( / INSERT / UPDATE / DELETE; package.json có lệnh', () => {
-    const nguon = docNguon('server/src/ops/kiemSauXoa.ts');
+  check('PR-XOA (6) · kiemSauInit.ts (bỏ chú thích) không có .run( / .exec( / INSERT / UPDATE / DELETE; package.json có lệnh, không còn kiem-sau-xoa', () => {
+    const nguon = docNguon('server/src/ops/kiemSauInit.ts');
     const cam = ['.run(', '.exec(', 'INSERT', 'UPDATE', 'DELETE'].filter((x) => nguon.includes(x));
     assert(!cam.length, `lệnh chỉ đọc có câu ghi: ${cam.join(', ')}`);
-    assert(/prepare\('PRAGMA foreign_key_check'\)/.test(nguon) && nguon.includes('deleted_at'), 'thiếu mục (4) hoặc (6)');
+    assert(/prepare\('PRAGMA foreign_key_check'\)/.test(nguon) && nguon.includes('DEFAULT_ADMIN_PASSWORD'), 'thiếu mục khoá ngoại hoặc mật khẩu demo');
     const pkg = JSON.parse(fsMod.readFileSync(pathMod.join(REPO, 'package.json'), 'utf8'));
-    assert(/ops\/kiemSauXoa\.js$/.test(pkg.scripts?.['kiem-sau-xoa'] ?? ''), 'package.json thiếu kiem-sau-xoa');
+    assert(/ops\/kiemSauInit\.js$/.test(pkg.scripts?.['kiem-sau-init'] ?? ''), 'package.json thiếu kiem-sau-init');
+    assert(!pkg.scripts?.['kiem-sau-xoa'] && !fsMod.existsSync(pathMod.join(REPO, 'server/src/ops/kiemSauXoa.ts')), 'kiem-sau-xoa phải xoá hẳn');
   });
 }
