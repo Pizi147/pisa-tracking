@@ -338,6 +338,12 @@ export function caseAccess(caseId: number) {
  *
  * Chống trùng bằng `idempotency_key`: bấm hai lần hoặc thử lại sau lỗi mạng chỉ ra một case.
  */
+/** Case đã tạo bằng khoá chống gửi đôi này (`sos_cases.idempotency_key`, UNIQUE) — chung cho Báo vấn đề và Nhập bù (PR-Dọn Q3). */
+function caseDaCoTheoKhoa(key: string | null | undefined): number | null {
+  if (!key) return null;
+  return (db().prepare('SELECT id FROM sos_cases WHERE idempotency_key = ?').get(key) as any)?.id ?? null;
+}
+
 export function reportIssue(p: Principal, input: {
   studentId: number;
   cycleId?: number | null;
@@ -421,10 +427,8 @@ export function reportIssue(p: Principal, input: {
   const detectedAt = input.detectedAt ?? demoToday();
   if (!isIsoDate(detectedAt)) throw badRequest('Ngày phát hiện không hợp lệ.');
   const key = input.idempotencyKey?.trim() || null;
-  if (key) {
-    const seen = conn.prepare('SELECT id FROM sos_cases WHERE idempotency_key = ?').get(key) as any;
-    if (seen) return caseDetail(p, seen.id);
-  }
+  const daCo = caseDaCoTheoKhoa(key);
+  if (daCo) return caseDetail(p, daCo);
 
   /* Lộ trình: gửi rõ thì dùng; không thì lộ trình đang mở. (PR-LT2a: không còn Case tạo từ tín hiệu — Giữa khoá tự tạo Case.) */
   const wantedCycleId = input.cycleId ?? null;
@@ -1133,9 +1137,20 @@ export function backfillCase(p: Principal, input: {
   metrics?: unknown;
   /** Người dùng đã thấy cảnh báo trùng nhập bù (chốt 6) và xác nhận đây là lần khác. */
   confirmDuplicate?: boolean;
+  /** PR-Dọn (Q3): khoá chống gửi đôi — một khoá cho mỗi lần mở form, như `/cases/report`. */
+  idempotencyKey?: string;
 }) {
   const conn = db();
   const today = demoToday();
+  /*
+   * PR-Dọn (Q1, quét #6): KIỂM QUYỀN TRƯỚC MỌI BƯỚC — câu kiểm trùng bên dưới trả tên + ngày Case của em; chạy trước khi kiểm quyền
+   * thì GV gửi `studentId` của chi nhánh khác đọc được Case nhập bù của em đó. Cùng ngữ cảnh với `reportIssue` (lớp đang học).
+   */
+  const lopDangHoc = (conn.prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status='active' ORDER BY id DESC LIMIT 1`)
+    .get(input.studentId) as any)?.class_id ?? null;
+  require_(p, PERMISSIONS.SOS_REPORT, { classId: lopDangHoc, studentId: input.studentId },
+    'Bạn chỉ báo được vấn đề của học viên trong phạm vi mình phụ trách.');
+  const key = typeof input.idempotencyKey === 'string' ? input.idempotencyKey.trim() || null : null;
   if (!isIsoDate(input.fromDate) || !isIsoDate(input.toDate)) {
     throw badRequest('Khoảng ngày "từ → đến" không hợp lệ.');
   }
@@ -1173,31 +1188,34 @@ export function backfillCase(p: Principal, input: {
 
   const category = categoryOf((input.topic ?? '').trim() || null);
 
-  /*
-   * CHỐT 6 (mục 10.4): KHÔNG kích hoạt cảnh báo case trùng như đường thường (đường thường
-   * chặn khi hạng mục đã có case đang mở — case nhập bù đã đóng ngay khi tạo nên không đụng
-   * luật đó). NHƯNG phải cảnh báo khi trùng với MỘT CASE NHẬP BÙ KHÁC cùng khoảng thời gian
-   * — đó mới thật sự là nhập hai lần cùng một chuyện.
-   */
-  if (category && !input.confirmDuplicate) {
-    const overlap = conn
-      .prepare(
-        `SELECT id, title, detected_at, closed_at FROM sos_cases
-          WHERE student_id = ? AND category = ? AND origin_kind = 'backfill'
-            AND NOT (closed_at < ? OR detected_at > ?)
-          LIMIT 1`,
-      )
-      .get(input.studentId, category, input.fromDate, input.toDate) as any;
-    if (overlap) {
-      throw badRequest(
-        `Học viên này đã có một case nhập bù "${overlap.title ?? caseCategoryLabel(category)}" `
-        + `trùng khoảng ${overlap.detected_at} → ${overlap.closed_at} — có phải cùng một lần không?`,
-        { duplicateBackfill: { id: overlap.id, title: overlap.title, from: overlap.detected_at, to: overlap.closed_at } },
-      );
-    }
-  }
-
   return tx(() => {
+    /* PR-Dọn (Q3, quét #25): gửi lại cùng khoá → trả Case đã tạo. Kiểm TRONG giao dịch (BEGIN IMMEDIATE) để hai lần gửi sát nhau không cùng lọt. */
+    const daCo = caseDaCoTheoKhoa(key);
+    if (daCo) return caseDetail(p, daCo);
+    /*
+     * CHỐT 6 (mục 10.4): KHÔNG kích hoạt cảnh báo case trùng như đường thường (đường thường
+     * chặn khi hạng mục đã có case đang mở — case nhập bù đã đóng ngay khi tạo nên không đụng
+     * luật đó). NHƯNG phải cảnh báo khi trùng với MỘT CASE NHẬP BÙ KHÁC cùng khoảng thời gian
+     * — đó mới thật sự là nhập hai lần cùng một chuyện.
+     */
+    if (category && !input.confirmDuplicate) {
+      const overlap = conn
+        .prepare(
+          `SELECT id, title, detected_at, closed_at FROM sos_cases
+            WHERE student_id = ? AND category = ? AND origin_kind = 'backfill'
+              AND NOT (closed_at < ? OR detected_at > ?)
+            LIMIT 1`,
+        )
+        .get(input.studentId, category, input.fromDate, input.toDate) as any;
+      if (overlap) {
+        throw badRequest(
+          `Học viên này đã có một case nhập bù "${overlap.title ?? caseCategoryLabel(category)}" `
+          + `trùng khoảng ${overlap.detected_at} → ${overlap.closed_at} — có phải cùng một lần không?`,
+          { duplicateBackfill: { id: overlap.id, title: overlap.title, from: overlap.detected_at, to: overlap.closed_at } },
+        );
+      }
+    }
+
     const created = reportIssue(p, {
       studentId: input.studentId, cycleId: input.cycleId,
       topic: input.topic, primaryCode: input.primaryCode,
@@ -1205,6 +1223,7 @@ export function backfillCase(p: Principal, input: {
       detectedAt: input.fromDate,
       parallel: true,
       backfill: true,
+      idempotencyKey: key ?? undefined,
     }) as any;
 
     for (const a of input.actions) {
@@ -1769,6 +1788,15 @@ function khoaDsCase(userId: number, f: CaseFilters): string {
 }
 
 /**
+ * PR-Dọn (Q5, quét #8): LỚP CỦA MỘT CASE cho danh sách — lớp em ĐANG HỌC, chưa xếp lớp thì lớp của lượt. MỘT biểu thức cho bộ lọc
+ * `classId`/`branchId`, cho `branchId` trả về và cho lớp đưa vào `can()`: lọc theo lớp nào thì quyền xét theo đúng lớp đó (trước đây
+ * lọc theo lớp hiện tại mà xét quyền theo lớp của lượt → em chuyển chi nhánh thì QL cả hai chi nhánh và GVCN mới đều mất Case cũ).
+ * Bí danh cố định của câu `caseTrongPhamVi`: `cur` ghi danh đang học, `a` lượt, `cc`/`ac` lớp tương ứng.
+ */
+const LOP_CUA_CASE = 'COALESCE(cur.class_id, a.class_id)';
+const CN_CUA_CASE = 'COALESCE(cc.branch_id, ac.branch_id)';
+
+/**
  * PHẦN SQL + LỌC QUYỀN + DỰNG `MappedCase` của `listCases` — tách riêng để nhớ trong request theo bộ lọc SQL
  * (`khoaDsCase`), không phụ thuộc `queue`/`classKind`/`skill` (lọc trong bộ nhớ ở `listCases`, không đổi).
  */
@@ -1790,8 +1818,8 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
    *
    * Em chưa xếp lớp thì lấy lớp của bài — vẫn hơn là rơi ra khỏi mọi bộ lọc.
    */
-  if (f.classId) { where.push('COALESCE(cur.class_id, a.class_id) = ?'); params.push(f.classId); }
-  if (f.branchId) { where.push('COALESCE(cc.branch_id, ac.branch_id) = ?'); params.push(f.branchId); }
+  if (f.classId) { where.push(`${LOP_CUA_CASE} = ?`); params.push(f.classId); }
+  if (f.branchId) { where.push(`${CN_CUA_CASE} = ?`); params.push(f.branchId); }
   if (f.status) { where.push('sc.status = ?'); params.push(f.status); }
   if (f.cycleId) { where.push('COALESCE(sc.cycle_id, a.cycle_id) = ?'); params.push(f.cycleId); }
   if (f.origin) { where.push('sc.origin_kind = ?'); params.push(f.origin); }
@@ -1805,7 +1833,8 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
               COALESCE(sc.student_id, a.student_id) AS eff_student_id,
               COALESCE(sc.cycle_id, a.cycle_id) AS eff_cycle_id,
               COALESCE(a.class_id, cur.class_id) AS eff_class_id,
-              COALESCE(ac.branch_id, cc.branch_id) AS eff_branch_id,
+              ${LOP_CUA_CASE} AS lop_quyen_id,
+              ${CN_CUA_CASE} AS eff_branch_id,
               cur.class_id AS home_class_id,
               cc.branch_id AS home_branch_id,
               COALESCE(ac.code, cc.code) AS class_code,
@@ -1904,7 +1933,7 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
   if (!scopeFor(p, PERMISSIONS.ATTEMPT_VIEW).all) napTruocPhamVi(rows.map((r) => r.eff_student_id));
 
   const all: MappedCase[] = rows
-    .filter((r) => can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: r.eff_class_id, studentId: r.eff_student_id }))
+    .filter((r) => can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: r.lop_quyen_id, studentId: r.eff_student_id }))
     .map((r) => ({
       id: r.id,
       originKind: r.origin_kind,

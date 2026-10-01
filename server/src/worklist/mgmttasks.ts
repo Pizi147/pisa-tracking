@@ -4,7 +4,7 @@ import {
   TASK_PROGRESS_NEEDS_REASON, facetVanHanh, locVanHanh,
   type DongVanHanh, type HangSo, type TaskGroup, type TaskProgress, type TrangThaiLoc,
 } from '../../../shared/domain/index.ts';
-import { addDays, badRequest, isIsoDate, notFound, nowIso, padCode } from '../util.ts';
+import { addDays, badRequest, chuTuDo, isIsoDate, notFound, nowIso, padCode } from '../util.ts';
 import { can, require_, scopeFor, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { ensurePeriod } from '../platform/week.ts';
@@ -515,7 +515,7 @@ export function updateMgmtTask(p: Principal, taskId: number, input: {
   let helpName: string | null = null;
   if (input.progress === 'paused') {
     helpUserId = input.helpUserId ?? null;
-    helpName = (input.helpName ?? '').trim() || null;
+    helpName = chuTuDo(input.helpName, 'Cần ai hỗ trợ', 120);
     if (!helpUserId && !helpName) throw badRequest('Tạm ngưng phải ghi cần ai hỗ trợ.');
     if (helpUserId) {
       kiemNguoi('Người cần hỗ trợ', helpUserId);

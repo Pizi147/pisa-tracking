@@ -318,7 +318,6 @@ api.get('/ref/nguoi', requireAuth, wrap((req) => {
     q: qStr(req, 'q'),
     nhom: nhom === 'nhan_vien' ? 'nhan_vien' : 'giao_vien',
     studentId: qInt(req, 'studentId'),
-    trongPhamVi: qStr(req, 'trongPhamVi') === '1',
     cungChiNhanh: qStr(req, 'cungChiNhanh') === '1',
   });
 }));

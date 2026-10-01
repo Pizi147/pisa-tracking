@@ -443,14 +443,15 @@ export function traLoiYeuCau(p: Principal, id: number, traLoi: unknown) {
 
 /** Duyệt hàng loạt — cùng MỘT loại có `hangLoat`. Mỗi thẻ một giao dịch: thẻ lỗi báo riêng, thẻ khác vẫn xong. */
 export function duyetNhieu(p: Principal, ids: unknown): { ok: number[]; loi: { id: number; loi: string }[] } {
-  if (!Array.isArray(ids) || !ids.length || ids.length > 50 || !ids.every((x) => Number.isInteger(x) && x > 0)) {
-    throw badRequest('Chọn từ 1 đến 50 yêu cầu để duyệt.');
-  }
-  /* Kiểm quyền TRƯỚC khi đọc thẻ nào (GV → 403). Từng thẻ vẫn kiểm theo phạm vi của nó ở `duyetYeuCau`. */
+  /* PR-Dọn (Q1): kiểm quyền TRƯỚC mọi bước đọc thân yêu cầu (GV → 403, không phải 400). Từng thẻ vẫn kiểm theo phạm vi ở `duyetYeuCau`. */
   require_(p, P_DUYET, { anyScope: true }, 'Chỉ Quản lý và Quản trị hệ thống duyệt được yêu cầu.');
-  const ds = [...new Set(ids as number[])];
+  if (!Array.isArray(ids) || !ids.length || ids.length > 50) throw badRequest('Chọn từ 1 đến 50 yêu cầu để duyệt.');
   const ok: number[] = [];
   const loi: { id: number; loi: string }[] = [];
+  /* Mã sai dạng chỉ lỗi riêng dòng đó (trả lại nguyên giá trị đã gửi), các mã đúng vẫn duyệt. */
+  for (const x of ids) if (!(Number.isInteger(x) && x > 0)) loi.push({ id: x as number, loi: 'Mã yêu cầu không hợp lệ.' });
+  const ds = [...new Set(ids.filter((x): x is number => Number.isInteger(x) && x > 0))];
+  if (!ds.length) return { ok, loi };
   const conn = db();
   const theo = new Map((conn.prepare(`SELECT id, loai FROM yeu_cau_duyet WHERE id IN (${ds.map(() => '?').join(',')})`).all(...ds) as any[])
     .map((r) => [r.id as number, r.loai as string]));

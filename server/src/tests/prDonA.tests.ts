@@ -1,0 +1,145 @@
+/** PHÉP KIỂM PR-Dọn-a — quyền, an toàn, một luật cho một khái niệm, xoá mã chết, tốc độ (kế hoạch 2026-10-01-pr-don-ma-thua-quyen, Task 1–10). */
+import type { YThucTestKit } from './yThuc.tests.ts';
+
+export async function runPrDonATests(t: YThucTestKit) {
+  const { check, checkAsync, assert, conn, P, TODAY, classId } = t;
+  const d: any = await import('../../../shared/domain/index.ts');
+  const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
+  const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
+  const maLoi = (fn: () => unknown): number | string => { try { fn(); return 'không ném'; } catch (e: any) { return e?.status ?? String(e?.message ?? e); } };
+  const loiCua = (fn: () => unknown): any => { try { fn(); return null; } catch (e: any) { return e; } };
+  const { loadPrincipal } = await import('../permissions.ts');
+  const intake: any = await import('../classes/intake.ts');
+  const cases: any = await import('../cases/cases.ts');
+  const yc: any = await import('../duyet/yeuCau.ts');
+  const mgmt: any = await import('../worklist/mgmttasks.ts');
+  const timNguoiSvc: any = await import('../platform/timNguoi.ts');
+  const { createApp } = await import('../app.ts');
+
+  const cn = (code: string) => get('SELECT id FROM branches WHERE code = ?', code).id as number;
+  const MB = cn('MB');
+  const CP = cn('CP');
+  const gvcnCua = (lop: string) => loadPrincipal(get('SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = \'active\' LIMIT 1', classId(lop)).user_id);
+  let seq = 0;
+  /** Em mới vào lớp `lop` qua đường Thêm HV thật; trả id em + lộ trình đang chạy. */
+  const emMoi = (lop: string) => {
+    const ten = `DONA HV ${++seq}`;
+    intake.commitIntake(P.admin, { classId: classId(lop), rows: [{ fullName: ten, target: 6.5, email: 'hv@demo.test' }], idempotencyKey: `dona-${seq}` });
+    const st = get('SELECT id FROM students WHERE full_name = ?', ten);
+    const cy = get("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'", st.id);
+    return { sid: st.id as number, cy: cy?.id as number };
+  };
+
+  /** Máy chủ thật + phiên demo theo người dùng — phép kiểm quyền đi qua đúng route như trình duyệt. */
+  async function voiMayChu(fn: (goi: (userId: number | null, url: string, init?: RequestInit) => Promise<{ status: number; json: any }>) => Promise<void>) {
+    const may = createApp().listen(0);
+    const cong = (may.address() as any).port as number;
+    const phien = new Map<number, string>();
+    const goi = async (userId: number | null, url: string, init: RequestInit = {}) => {
+      if (userId !== null && !phien.has(userId)) {
+        const s = await fetch(`http://127.0.0.1:${cong}/api/demo/session`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ userId }) });
+        phien.set(userId, (s.headers.get('set-cookie') ?? '').split(';')[0]);
+      }
+      const res = await fetch(`http://127.0.0.1:${cong}/api${url}`, {
+        ...init, headers: { 'content-type': 'application/json', ...(userId !== null ? { cookie: phien.get(userId)! } : {}), ...(init.headers ?? {}) },
+      });
+      let json: any = null;
+      try { json = await res.json(); } catch { /* không có thân JSON */ }
+      return { status: res.status, json };
+    };
+    try { await fn(goi); } finally { may.close(); }
+  }
+
+  // ------------------------------------------------------------------ khối 1 · quyền đã biết (quét #6, #7, #8, #11, #25, helpName)
+  console.log('\nPR-Dọn-a · (1) Quyền đã biết: /ref/nguoi, duyetNhieu, listCases, nhập bù, helpName');
+  const emCp = emMoi('CP FT 110');
+  /* GV chỉ thuộc CP (không có vai ở MB) — để đối chứng phạm vi của /ref/nguoi. */
+  const gvChiCp = get(
+    `SELECT u.id, u.full_name FROM users u JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active' JOIN roles r ON r.id = ur.role_id AND r.key = 'teacher'
+      WHERE u.status = 'active' AND ur.branch_id = ?
+        AND NOT EXISTS (SELECT 1 FROM user_roles x WHERE x.user_id = u.id AND x.status = 'active' AND (x.branch_id IS NULL OR x.branch_id != ?)) LIMIT 1`, CP, CP);
+
+  await checkAsync('Dọn-a (1a) · /ref/nguoi?studentId={HV CP}: QL MB → 403; QL CP → 200 có người; không gửi trongPhamVi QL MB vẫn KHÔNG thấy GV chỉ thuộc CP (Q2)', async () => {
+    assert(gvChiCp, 'dữ liệu demo: cần một GV chỉ thuộc CP');
+    await voiMayChu(async (goi) => {
+      const mb = await goi(P.mbManager.userId, `/ref/nguoi?nhom=giao_vien&studentId=${emCp.sid}`);
+      assert(mb.status === 403 && !JSON.stringify(mb.json).includes(gvChiCp.full_name), `QL MB hỏi em CP: ${mb.status} ${JSON.stringify(mb.json).slice(0, 200)}`);
+      const cp = await goi(P.cpManager.userId, `/ref/nguoi?nhom=giao_vien&studentId=${emCp.sid}`);
+      assert(cp.status === 200 && Array.isArray(cp.json) && cp.json.length > 0, `QL CP: ${cp.status}`);
+      const tim = await goi(P.mbManager.userId, `/ref/nguoi?nhom=giao_vien&q=${encodeURIComponent(gvChiCp.full_name)}`);
+      assert(tim.status === 200 && !tim.json.some((x: any) => x.id === gvChiCp.id), `QL MB thấy GV chỉ thuộc CP: ${JSON.stringify(tim.json)}`);
+      const qt = await goi(P.admin.userId, `/ref/nguoi?nhom=giao_vien&q=${encodeURIComponent(gvChiCp.full_name)}`);
+      assert(qt.status === 200 && qt.json.some((x: any) => x.id === gvChiCp.id), 'khẳng định: Quản trị (toàn hệ thống) vẫn thấy');
+    });
+    /* GV MB (không dạy lớp CP) cũng không thấy GV chỉ thuộc CP. */
+    assert(!timNguoiSvc.timNguoi(P.w1Teacher, { q: gvChiCp.full_name, nhom: 'giao_vien' }).some((x: any) => x.id === gvChiCp.id), 'GV MB thấy GV chỉ thuộc CP');
+  });
+
+  /* Một thẻ Đề xuất PA đang chờ ở MB (loại duyệt hàng loạt được). */
+  const theDeXuatMb = () => {
+    const { sid } = emMoi('MB FT 101');
+    const c = cases.reportIssue(P.lrTeacher, { studentId: sid, topic: 'listening', title: `Case thử Dọn-a ${seq}`,
+      summary: 'Case dựng riêng cho phép kiểm duyệt nhiều.', primaryCode: d.issuesForTopic('listening')[0].code, idempotencyKey: `dona-case-${seq}` });
+    const r = cases.recordIntervention(P.lrTeacher, c.id, { kind: 'tutor', description: 'Tutor 1-1 hai buổi mỗi tuần', status: 'planned', needsApproval: true });
+    const ivId = r.interventions[r.interventions.length - 1].id;
+    return get(`SELECT id FROM yeu_cau_duyet WHERE loai = 'de_xuat_pa' AND doi_tuong_id = ? ORDER BY id DESC LIMIT 1`, ivId).id as number;
+  };
+  check('Dọn-a (1b) · duyetNhieu([\'abc\', id]): GV → 403 (không phải 400); QL → mã sai dạng lỗi riêng, mã đúng vẫn duyệt (Q1)', () => {
+    const id = theDeXuatMb();
+    assert(maLoi(() => yc.duyetNhieu(P.coreTeacher, ['abc', id])) === 403, `GV: ${maLoi(() => yc.duyetNhieu(P.coreTeacher, ['abc', id]))}`);
+    assert(maLoi(() => yc.duyetNhieu(P.coreTeacher, 'khong-phai-mang')) === 403, 'GV gửi thân sai dạng vẫn phải 403');
+    const r = yc.duyetNhieu(P.mbManager, ['abc', id]);
+    assert(r.ok.length === 1 && r.ok[0] === id && r.loi.length === 1 && r.loi[0].id === 'abc', JSON.stringify(r));
+  });
+
+  check('Dọn-a (1c) · listCases: em chuyển MB → CP, Case cũ gắn lượt lớp MB: lọc lớp CP → QL CP và GVCN CP thấy, branchId = CP; QL MB lọc lớp CP không thấy (Q5)', () => {
+    const { sid } = emMoi('MB FT 101');
+    const luot = get(`SELECT id FROM assessment_attempts WHERE student_id = ? ORDER BY id LIMIT 1`, sid);
+    assert(luot, 'em FT mới phải có lượt MT tự tạo');
+    const c = cases.reportIssue(P.lrTeacher, { studentId: sid, topic: 'listening', title: 'Case cũ trước khi chuyển chi nhánh',
+      summary: 'Case gắn lượt ở lớp cũ, em đã chuyển chi nhánh.', primaryCode: d.issuesForTopic('listening')[0].code, idempotencyKey: `dona-1c-${sid}` });
+    /* Dựng tay: Case gắn lượt của lớp MB; em chuyển sang CP FT 110 (ghi danh cũ `transferred`). */
+    conn.prepare('UPDATE sos_cases SET attempt_id = ? WHERE id = ?').run(luot.id, c.id);
+    conn.prepare(`UPDATE enrollments SET status = 'transferred', ended_at = ? WHERE student_id = ? AND status = 'active'`).run(TODAY, sid);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`).run(sid, classId('CP FT 110'), TODAY, new Date().toISOString());
+    conn.prepare('UPDATE students SET branch_id = ? WHERE id = ?').run(CP, sid);
+    const cpLop = classId('CP FT 110');
+    const cuaCp = cases.listCases(P.cpManager, { classId: cpLop }).rows.find((r: any) => r.id === c.id);
+    assert(cuaCp && cuaCp.branchId === CP, `QL CP lọc lớp CP: ${JSON.stringify(cuaCp && { branchId: cuaCp.branchId })}`);
+    assert(cases.listCases(gvcnCua('CP FT 110'), { classId: cpLop }).rows.some((r: any) => r.id === c.id), 'GVCN lớp mới phải thấy Case cũ');
+    assert(cases.listCases(P.cpManager, { branchId: CP }).rows.some((r: any) => r.id === c.id), 'QL CP lọc chi nhánh CP');
+    assert(!cases.listCases(P.mbManager, { classId: cpLop }).rows.some((r: any) => r.id === c.id), 'phủ định: QL MB lọc lớp CP vẫn thấy Case');
+    assert(!cases.listCases(P.mbManager, {}).rows.some((r: any) => r.id === c.id), 'phủ định: QL MB vẫn thấy Case của em đã sang CP');
+  });
+
+  const nhapBu = (p: any, studentId: number, khoa?: string) => cases.backfillCase(p, {
+    studentId, topic: 'listening', primaryCode: d.issuesForTopic('listening')[0].code,
+    title: 'Nhập bù thử Dọn-a', summary: 'Case nhập bù dùng cho phép kiểm Dọn-a.',
+    fromDate: '2026-08-01', toDate: '2026-08-10',
+    actions: [{ ketQua: 'partial', description: 'Tutor ngoài kèm hai buổi', performerName: 'Tutor ngoài Lan', fromDate: '2026-08-01', toDate: '2026-08-10' }],
+    outcome: 'improved', note: 'Hai buổi hỗ trợ, ghi lại đủ.', ...(khoa ? { idempotencyKey: khoa } : {}),
+  });
+  check('Dọn-a (1d) · nhập bù hai lần cùng idempotencyKey → MỘT Case, lần hai trả id cũ (Q3)', () => {
+    const { sid } = emMoi('MB FT 101');
+    const a = nhapBu(P.mbManager, sid, `dona-bf-${sid}`);
+    const b = nhapBu(P.mbManager, sid, `dona-bf-${sid}`);
+    const n = get(`SELECT COUNT(*) n FROM sos_cases WHERE student_id = ? AND origin_kind = 'backfill'`, sid).n;
+    assert(a.id === b.id && n === 1, `hai lần: ${a.id} / ${b.id}, số Case ${n}`);
+  });
+  check('Dọn-a (1d) · GV MB nhập bù cho em CP (đã có Case nhập bù trùng khoảng) → 403, thân lỗi KHÔNG có duplicateBackfill (quét #6)', () => {
+    nhapBu(P.cpManager, emCp.sid, `dona-bf-cp-${emCp.sid}`);
+    const e = loiCua(() => nhapBu(P.w1Teacher, emCp.sid));
+    assert(e && e.status === 403 && !JSON.stringify(e.details ?? {}).includes('duplicateBackfill') && !/trùng khoảng/.test(e.message),
+      `GV MB: ${e?.status} ${e?.message} ${JSON.stringify(e?.details ?? {})}`);
+  });
+
+  check('Dọn-a (1e) · Tạm ngưng việc Vận hành: helpName 121 ký tự → 400 "Tối đa 120 ký tự"; 120 → ok; helpName: 42 → 400 (không phải 500)', () => {
+    const v = mgmt.createMgmtTask(P.mbManager, { title: 'Việc thử helpName Dọn-a', group: 'teacher', branchId: MB });
+    const tamNgung = (helpName: unknown) => mgmt.updateMgmtTask(P.mbManager, v.id, { progress: 'paused', reason: 'Chờ người hỗ trợ.', reviewOn: TODAY, helpName });
+    const e = loiCua(() => tamNgung('a'.repeat(121)));
+    assert(e?.status === 400 && /Tối đa 120 ký tự/.test(e.message), `121: ${e?.status} ${e?.message}`);
+    assert(maLoi(() => tamNgung(42)) === 400, `42: ${maLoi(() => tamNgung(42))}`);
+    tamNgung('b'.repeat(120));
+    assert(get('SELECT help_name FROM tasks WHERE id = ?', v.id).help_name === 'b'.repeat(120), 'lưu đủ 120 ký tự');
+  });
+}
