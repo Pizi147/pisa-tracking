@@ -165,7 +165,7 @@ export const noiVa = (ds: readonly string[]): string => (ds.length < 2 ? ds.join
 const ngayNgan = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 const toneSos = (n: number): ToneManh => (n >= 3 ? 'sos3' : n === 2 ? 'sos2' : 'sos1');
 /** Việc học thuật (mệnh đề 2) — Ý thức, Báo PH, Bàn giao không tính ở đây. */
-const VIEC_HOC_THUAT = new Set(['nguyen-nhan', 'xac-nhan-pa', 'ghi-ket-qua', 'ke-hoach', 'cho-duyet', 'mini-test']);
+const VIEC_HOC_THUAT = new Set(['nguyen-nhan', 'de-ra-pa', 'xac-nhan-pa', 'ghi-ket-qua', 'ke-hoach', 'cho-duyet', 'mini-test']);
 
 export type DauVaoCau = {
   /** Mệnh đề 0 — một trạng thái đặc biệt (máy chủ chọn theo thứ tự đã kết thúc › tạm dừng › sắp chuyển › KCK). */
@@ -301,6 +301,8 @@ export function oSapToi(i: {
   ketLuan: string | null; sauCuoiKhoa: { tuanKetThuc: string | null } | null;
   next: { dau: string; attemptNo: number; tuan: string | null; kyVong: number | null; soPhan: number; final: boolean } | null;
   ratio: boolean; kck: boolean; bacKe: string | null; homNay: string;
+  /** Em đang Tạm dừng (mockup 24 D1): mốc vẫn giữ, chữ phụ "giữ lịch · Quản lý dời nếu cần". */
+  tamDung?: boolean;
 }): { tren: string; gt: string; phu: string | null } {
   if (i.ketLuan) return { tren: 'lộ trình đã khép', gt: `Kết luận: ${i.ketLuan}`, phu: null };
   if (i.sauCuoiKhoa) {
@@ -309,6 +311,7 @@ export function oSapToi(i: {
   const n = i.next;
   if (!n) return { tren: 'mốc kế tiếp', gt: 'Chưa có mốc', phu: 'chưa xếp lịch Test' };
   const gt = n.tuan ? `${n.dau} · ${tuanLich(n.tuan, i.homNay)}` : n.dau;
+  if (i.tamDung) return { tren: 'mốc kế tiếp', gt, phu: 'giữ lịch · Quản lý dời nếu cần' };
   if (i.ratio) return { tren: 'mốc kế tiếp', gt, phu: `${n.soPhan} môn${n.final && i.bacKe ? ` · xét lên ${i.bacKe}` : ''}` };
   if (i.kck) return { tren: 'mốc kế tiếp', gt, phu: n.attemptNo > 1 ? `so với MT${n.attemptNo - 1}, không kỳ vọng` : 'không kỳ vọng' };
   return { tren: 'mốc kế tiếp', gt, phu: `${n.kyVong !== null ? `kỳ vọng ${n.kyVong.toFixed(1)} · ` : ''}${n.soPhan} phần` };

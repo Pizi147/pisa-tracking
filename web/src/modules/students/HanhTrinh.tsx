@@ -342,7 +342,7 @@ export function HanhTrinh({ studentId, active, onOpenCase }: {
             {/* ---- hộp kỹ năng */}
             {hopHienThi.map((h, i) => (
               <HopKyNang key={h.kyNang} hop={h} vi={hang.hop[i]} vanDe={vanDeCua(h)} soAn={h.vanDe.length - vanDeCua(h).length}
-                truc={truc} boCuc={boCuc} rongTuan={rongTuan} homNay={homNay} ghim={data.ghim}
+                truc={truc} boCuc={boCuc} rongTuan={rongTuan} homNay={homNay}
                 onOpenCase={onOpenCase} onXemCaGiaiDoan={() => setCheDoKhoang('ca-giai-doan')} />
             ))}
           </div>
@@ -357,9 +357,9 @@ export function HanhTrinh({ studentId, active, onOpenCase }: {
  * hàng khe → hàng đầu (tên · chuỗi điểm ở cột tên, badge ngay đầu vùng trục) → mỗi Case một hàng khung + các tầng PA.
  * Cột tên và hàng đầu ghim trái (`sticky`) để còn đọc được khi cuộn ngang ở màn hẹp.
  */
-function HopKyNang({ hop, vi, vanDe, soAn, truc, boCuc, rongTuan, homNay, ghim, onOpenCase, onXemCaGiaiDoan }: {
+function HopKyNang({ hop, vi, vanDe, soAn, truc, boCuc, rongTuan, homNay, onOpenCase, onXemCaGiaiDoan }: {
   hop: Hop; vi: ReturnType<typeof xepHangLuoi>['hop'][number]; vanDe: VanDe[]; soAn: number;
-  truc: Truc; boCuc: BoCuc; rongTuan: number; homNay: string; ghim: Ghim[];
+  truc: Truc; boCuc: BoCuc; rongTuan: number; homNay: string;
   onOpenCase: (caseId: number, paId?: number) => void; onXemCaGiaiDoan: () => void;
 }) {
   const moc = chuoiDiem(hop.diem, hop.cheDo, hop.conCho, { toiDa: boCuc.toiDaMoc, dotCho: hop.dotCho });
@@ -369,11 +369,10 @@ function HopKyNang({ hop, vi, vanDe, soAn, truc, boCuc, rongTuan, homNay, ghim, 
   const rongTen = RONG_TEN_KY_NANG[hop.cheDo];
   const cuoiHop = vanDe.length === 0 && soAn === 0;
   /* G5: mốc điểm mở hồ sơ Mock của đúng lượt, cuộn tới kỹ năng này (lớp thường → bảng điểm lớp thường). */
-  const duongMoc = (attemptId: number | null | undefined) => {
-    if (!attemptId) return null;
-    const g = ghim.find((x) => x.attemptId === attemptId);
-    return duongDotTest({ id: attemptId, kind: g?.kind ?? (hop.cheDo === 'ielts' ? 'mock' : null), classId: g?.classId ?? null }, hop.kyNang);
-  };
+  /* PR-S6F-b: mốc mang sẵn kind + classId từ máy chủ (lượt lớp thường chưa xếp tuần không có trong ghim). */
+  const duongMoc = (m: { attemptId?: number | null; kind?: string | null; classId?: number | null }) =>
+    (m.attemptId ? duongDotTest({ id: m.attemptId, kind: m.kind ?? null, classId: m.classId ?? null }, hop.kyNang) : null);
+
 
   return (
     <>
@@ -395,7 +394,7 @@ function HopKyNang({ hop, vi, vanDe, soAn, truc, boCuc, rongTuan, homNay, ghim, 
               {moc.length === 0
                 ? <span className="text-faint">chưa có điểm</span>
                 : moc.map((m, k) => {
-                  const href = m.cho ? null : duongMoc(m.attemptId);
+                  const href = m.cho ? null : duongMoc(m);
                   const lop = m.cho ? 'ml-2 font-semibold text-faint' : m.xau ? 'font-bold text-bad' : 'font-bold text-[var(--text)]';
                   return (
                     <Fragment key={k}>
@@ -553,7 +552,7 @@ function KhoiPa({ p, hang, truc, rongTuan, homNay, onOpenCase }: {
 
 /**
  * CHÚ GIẢI GỌN (Q17, mockup 26): 9 mục một dòng, biểu tượng SVG — Case khung rỗng · PA khối đặc · đang làm · kết quả PA · quá hạn · chờ ·
- * so với lần trước · đợt Test chưa có điểm (viền đứt) · tạm dừng. < 640 px thu gọn chỉ ký hiệu, nút "Ký hiệu" mở chữ.
+ * so với lần trước · đợt Test chưa có điểm (viền đứt, chữ theo mockup 26) · tạm dừng. < 640 px thu gọn chỉ ký hiệu, nút "Ký hiệu" mở chữ.
  */
 function ChuGiai({ cheDo }: { cheDo: 'ielts' | 'ratio' }) {
   const [moChu, setMoChu] = useState(false);
@@ -567,7 +566,7 @@ function ChuGiai({ cheDo }: { cheDo: 'ielts' | 'ratio' }) {
     [khoi(KHOI.late, <IconCanhBao size={10} />), 'quá hạn'],
     [khoi(KHOI_CHO, null), 'chờ (duyệt / nguyên nhân)'],
     [<span key="l" className="inline-flex gap-0.5 text-[11px] font-bold"><i className="not-italic text-ok">▲</i><i className="not-italic text-bad">▼</i></span>, 'so với lần trước'],
-    [<span key="d" className="inline-block h-3 w-[22px] rounded-md border border-dashed border-[color:var(--text)] opacity-70" />, cheDo === 'ratio' ? 'bài chưa chấm' : 'đợt Test chưa có điểm'],
+    [<span key="d" className="inline-block h-3 w-[22px] rounded-md border border-dashed border-[color:var(--text)] opacity-70" />, cheDo === 'ratio' ? 'bài chưa chấm' : 'dự kiến'],
     [<span key="t" className="inline-block h-3 w-4 rounded-sm" style={{ background: SOC_DUNG }} />, 'tạm dừng'],
   ];
   return (

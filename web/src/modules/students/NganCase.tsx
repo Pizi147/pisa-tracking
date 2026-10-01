@@ -13,6 +13,7 @@ import { HoanThanhCasePanel, ThemPaPanel } from '../cases/ThaoTacCase.tsx';
 import { XacNhanCasePanel, XacNhanPaPanel, type PaQuyChe } from '../yThuc/CaseSosControls.tsx';
 import { NopKeHoachPanel } from '../cases/NopKeHoachPanel.tsx';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
+import { NhanTamDung } from '../cases/SkillBoard.tsx';
 
 export type { ViewCase };
 
@@ -164,12 +165,14 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
           {data.systemCloseLabel
             ? <Nhan tone="muted" title={data.systemCloseLabel}>Hệ thống tự đóng · {data.systemCloseLabel}</Nhan>
             : data.trangThaiV4
-              ? <><NhanTrangThai t={data.trangThaiV4.t} title={data.trangThaiV4.chu} /><span className="truncate text-slate-300">{data.trangThaiV4.chu}</span></>
+              ? <>{data.tamDungTu && data.trangThaiV4.t === 'qua-han'
+                  ? <NhanTamDung tu={data.tamDungTu} />
+                  : <NhanTrangThai t={data.trangThaiV4.t} title={data.trangThaiV4.chu} />}<span className="truncate text-slate-300">{data.trangThaiV4.chu}</span></>
               : <Nhan tone={data.status === 'done' ? 'done' : data.status === 'open' ? 'muted' : 'doing'}>{caseStatusLabel(data.status)}</Nhan>}
           <span className="truncate text-slate-400">
             · mở {ngan(data.detectedAt)}{data.reportedBy ? ` · ${data.reportedBy} báo` : ''}
             {/* Hạn báo kết quả cả Case chỉ khi KHÔNG có PA chạy — có PA chạy thì hạn của PA đã nói (B-5, Q2). */}
-            {canDong && !conPaChay && data.followUntil ? ` · hạn báo kết quả ${ngan(data.followUntil)}` : ''}
+            {!data.tamDungTu && canDong && !conPaChay && data.followUntil ? ` · hạn báo kết quả ${ngan(data.followUntil)}` : ''}
           </span>
         </span>
       )}

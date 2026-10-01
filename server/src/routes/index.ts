@@ -398,14 +398,7 @@ api.get('/my-work', requireAuth, wrap((req) => {
   return myWork(p, { branchId });
 }));
 
-/**
- * PR-VAI-a (V2, K1-44, Q16): số đỏ cạnh "Công việc" của giáo viên = số việc QUÁ HẠN của chính họ — cùng `myWork(p).summary.overdue`, chỉ trả
- * `{ quaHan }`. Web tải một lần khi mở và khi `/my-work` bị làm mới (không mỗi lần đổi trang — một lần `myWork` ~ 76 câu).
- */
-api.get('/my-work/dem', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  return { quaHan: myWork(principalOf(req)).summary.overdue };
-}));
+/* PR-S6F-b (D14): `/my-work/dem` đã bỏ — badge GV đọc `summary.overdue` của chính `/my-work` (web gộp GET đang bay, không tính `myWork` hai lần). */
 
 api.post('/my-work/nhac', requireAuth, wrap((req) => {
   const key = String(req.body?.key ?? '');
@@ -1587,10 +1580,6 @@ api.get('/prefs', requireAuth, wrap((req) => prefSvc.allPrefs(principalOf(req)))
 api.put('/prefs/:key', requireAuth, wrap((req) => prefSvc.setPref(
   principalOf(req), String(req.params.key), req.body?.value ?? null,
 )));
-
-api.get('/cases/queues', requireAuth, wrap((req) => caseSvc.caseQueueCounts(principalOf(req), {
-  branchId: toInt(req.query?.branchId), classId: toInt(req.query?.classId),
-})));
 
 api.get('/cases/:id', requireAuth, wrap((req) => caseSvc.caseDetail(principalOf(req), pInt(req, 'id'))));
 

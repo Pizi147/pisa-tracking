@@ -75,7 +75,7 @@ export function ViecCuaToi() {
         })}
         {data && (
           <div className="border-t px-3.5 py-2.5" style={{ borderColor: 'var(--line)' }}>
-            <Link to="/cong-viec?loc=den-het-tuan" className="btn btn-sm flex min-h-[44px] w-full justify-center no-underline">Xem hết ({soXemHet})</Link>
+            <Link to="/cong-viec?loc=den-het-tuan&khung=tat-ca" className="btn btn-sm flex min-h-[44px] w-full justify-center no-underline">Xem hết ({soXemHet})</Link>
           </div>
         )}
       </section>
@@ -108,7 +108,7 @@ export function ViecCuaToi() {
       {data && !data.scopeEmpty && (
         <footer className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t px-4 py-2.5 text-xs" style={{ borderColor: 'var(--line)' }}>
           <span className="text-slate-500">{tatCa.length - khoi.length > 0 ? `${tatCa.length - khoi.length} việc khác chưa đến hạn tuần này` : ''}</span>
-          <Link to="/cong-viec" className="link">Tất cả việc ({tatCa.length}) trong Công việc →</Link>
+          <Link to="/cong-viec?khung=tat-ca" className="link">Tất cả việc ({tatCa.length}) trong Công việc →</Link>
         </footer>
       )}
     </section>

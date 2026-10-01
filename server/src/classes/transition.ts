@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  PERMISSIONS, PROGRAMME_TEMPLATES, kiemDongChuyenTiep, tuanChonDuoc, kyHieuLop, soSanhLop, tachSoLop, luatDoiLop, nextStepsAfter, programmeOf, tuanHocFt, tuanKhoa,
+  PERMISSIONS, PROGRAMME_TEMPLATES, kiemDongChuyenTiep, tuanChonDuoc, kyHieuLop, soSanhLop, tachSoLop, luatDoiLop, nextStepsAfter, programmeOf, tuanHocTai, tuanKhoa,
   type DongChuyenTiep, type Huong, type LoaiLop, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, isIsoDate, notFound } from '../util.ts';
@@ -177,7 +177,7 @@ export function transitionPlan(p: Principal, classId: number) {
       cycleId: s.cycle_id ?? null, target: s.target_score ?? null,
       /** PR-UXF-a (mockup 20 màn I): FT `{ tuan, tong: null }` — "LT1 · tuần học thứ 9"; lớp thường null (cột Khoá đã có tuần của lớp). */
       route: (s.route ?? null) as string | null,
-      tuanHoc: ft && s.start_week ? (() => { const tuan = tuanHocFt(s.start_week, tuanNay, dungCua[s.id] ?? []); return tuan ? { tuan, tong: null } : null; })() : null,
+      tuanHoc: ft && s.start_week ? (() => { const th = tuanHocTai(s.start_week, tuanNay, dungCua[s.id] ?? []); return th ? { tuan: th.tuan, tong: null, dangDung: th.dangDung } : null; })() : null,
       loTrinhTiep: loTrinhTiepMap.get(s.id) ?? null,
       ketQua: ketQua.get(s.id) ?? null,
       cuoiKhoa: cuoiKhoa.get(s.id) ?? null,

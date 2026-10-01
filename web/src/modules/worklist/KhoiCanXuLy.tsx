@@ -109,7 +109,10 @@ export function KhoiCanXuLy({ branchId }: { branchId: number | null }) {
  * Cùng số với chip "Tất cả" và badge Công việc (`demHop`): Báo lên nằm TRONG tổng, nói rõ là "gồm".
  */
 export function DaiChoDuyet({ branchId }: { branchId: number | null }) {
-  const d = useApi<Data>(branchId ? `/tong-quan/quan-ly?branchId=${branchId}` : '/tong-quan/quan-ly', [branchId]).data?.choDuyet;
+  /* Cùng đường với Cần xử lý — `useApi` gộp GET đang bay nên máy chủ chỉ tính một lần (D14). Lỗi thì báo gọn, không biến mất. */
+  const { data, error, reload } = useApi<Data>(branchId ? `/tong-quan/quan-ly?branchId=${branchId}` : '/tong-quan/quan-ly', [branchId]);
+  if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
+  const d = data?.choDuyet;
   if (!d?.cho) return null;
   /* Q17: theo chi nhánh đang chọn; "k quá hạn" và "n Báo lên" mở hộp đã lọc đúng các thẻ đó (cùng `demHop`). */
   const cn = branchId ? `&cn=${branchId}` : '';

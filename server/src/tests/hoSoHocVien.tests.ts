@@ -132,7 +132,7 @@ export async function runHoSoHocVienTests(t: YThucTestKit) {
       for (const x of tatCa) {
         assert((x.quaHanNgay !== null) === (x.han !== null && x.han < t.TODAY), `HV ${student_id}: quaHanNgay phải = (hạn < hôm nay ${t.TODAY}): ${JSON.stringify(x)}`);
         if (x.loai !== 'cho-duyet') {
-          assert(/^(Xác nhận nguyên nhân|Xác nhận PA|Ghi kết quả|Nộp kế hoạch bổ trợ|Báo phụ huynh|Ghi Mini Test|Xác nhận xử lý|Bàn giao) /.test(x.chu), `HV ${student_id}: câu phải bắt đầu bằng động từ: "${x.chu}"`);
+          assert(/^(Xác nhận nguyên nhân|Đề ra PA|Xác nhận PA|Ghi kết quả|Nộp kế hoạch bổ trợ|Báo phụ huynh|Ghi Mini Test|Xác nhận xử lý|Ghi nhận|Ghi "Đã thực hiện"|Bàn giao) /.test(x.chu), `HV ${student_id}: câu phải bắt đầu bằng động từ: "${x.chu}"`);
         }
         /* Mục 3 (chủ sản phẩm 22/09): tên kỹ năng ĐẦY ĐỦ, không viết tắt L / R / W1 / W2 / S. */
         assert(!/ (L|R|W|W1|W2|S)$/.test(x.chu), `HV ${student_id}: câu phải dùng tên đầy đủ của kỹ năng: "${x.chu}"`);

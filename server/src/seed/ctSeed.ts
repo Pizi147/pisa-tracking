@@ -106,7 +106,7 @@ export function buildCtDemo(ctx: BuildCtx): { lenh: number; lop: number } {
   for (const [ma, mon] of [['T_HA', 'listening'], ['T_KHOA', 'reading'], ['T_KHOA', 'writing']] as const) {   // thiếu P (speaking)
     for (const e of em22) ghiMon(nguoi(ma), lenh22(e.id), mon, mon === 'listening' ? 'Nghe ý chính tốt, còn yếu dạng điền bản đồ.' : mon === 'reading' ? 'Đọc chậm với bài dài, nên luyện đọc lướt.' : 'Ổn, hay sai thì hiện tại hoàn thành.');
   }
-  guiDeXuatChuyenLop(nguoi('T_HA'), deXuat.id, { toClassId: be09, tuan: TUAN[1], lyDo: 'Phụ huynh xin chuyển em sang lớp học buổi tối.' });
+  guiDeXuatChuyenLop(nguoi('T_HA'), deXuat.id, { toClassId: be09, tuan: TUAN[1], lyDo: 'Phụ huynh xin chuyển em sang lớp có lịch học phù hợp hơn.' });
 
   // ---------------------------------------------------------------- 4 · MB FT 103 → MB FT 104 (tách lớp, cùng lộ trình LT1)
   const ft103 = lop('MB FT 103', 'FT', 'LT1', true, '2026-06-01', { listening: 'T_LINH', reading: 'T_LINH', writing1: 'T_KHOA', writing2: 'T_LINH', speaking: 'T_TRANG' }, 'T_LINH');

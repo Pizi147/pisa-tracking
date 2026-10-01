@@ -91,7 +91,10 @@ export async function runPrVaiATests(t: YThucTestKit) {
       const dau = metricsSvc.rowsFor('lop', metricsSvc.metricSet(P.mbManager, 'lop-thieu-gv-mon', { branchId: MB }).ids)[0];
       assert(lop && lop.phu.startsWith(`${dau.title} ${dau.sub}`.slice(0, 20)) && lop.phu.length <= 60, `dòng phụ lớp thiếu GV (cùng dòng panel, ≤ 60): ${JSON.stringify(lop)}`);
       const k = metricsSvc.metricSet(P.mbManager, 'case-chua-co-nguoi-phu-trach', { branchId: MB }).n;
-      eq(lop.kem ?? null, k ? `${k} Case chưa có người nhận` : null, 'số Case chưa có người nhận = chỉ số giữ lại');
+      /* PR-S6F-b (Q6 vế m): kèm "m bài chưa có người chấm" — bài quá hạn của tập `bai-qua-han-nhap-diem` không có người trong `chiTiet`. */
+      const bai = metricsSvc.metricSet(P.mbManager, 'bai-qua-han-nhap-diem', { branchId: MB });
+      const m = (bai.ids as number[]).filter((id) => !bai.chiTiet?.get(id)?.nguoi.length).length;
+      eq(lop.kem ?? null, [k ? `${k} Case chưa có người nhận` : '', m ? `${m} bài chưa có người chấm` : ''].filter(Boolean).join(' · ') || null, 'số Case chưa có người nhận = chỉ số giữ lại; m bài chưa có người chấm');
     } finally { khoiPhuc(); }
   });
 
@@ -262,7 +265,7 @@ export async function runPrVaiATests(t: YThucTestKit) {
     const ngay = o.filter((c) => c.han).map((c) => soNgay(c.han, TODAY));
     const a = Math.min(...ngay), b = Math.max(...ngay);
     eq(dong.han.chu, a === b ? `quá hạn ${a} ngày` : `quá hạn ${a}–${b} ngày`, 'hạn ngắn nhất–dài nhất');
-    eq([dong.trangThai, dong.den], ['qua-han', `/cong-viec?nhom=cham-diem&loc=qua-han&cn=${MB}`], 'Quá hạn + nút tới Công việc đã lọc');
+    eq([dong.trangThai, dong.den], ['qua-han', `/cong-viec?nhom=cham-diem&loc=qua-han&khung=tat-ca&cn=${MB}`], 'Quá hạn + nút tới Công việc đã lọc');
     const mbLop = new Set((conn.prepare('SELECT id FROM classes WHERE branch_id = ?').all(MB) as any[]).map((x) => x.id));
     for (const u of dong.nguoi.ids) {
       assert((conn.prepare(`SELECT class_id FROM teacher_assignments WHERE user_id = ? AND status = 'active'`).all(u) as any[]).some((x) => mbLop.has(x.class_id)), `GV ${u} không dạy lớp MB`);
@@ -499,13 +502,16 @@ export async function runPrVaiATests(t: YThucTestKit) {
     assert(!('hocVienCanHoTro' in tq), 'khối Học viên cần hỗ trợ đã bỏ');
   });
 
-  check('VAI-a (8c) · baiChoChamTheoLop = Σ count việc Chấm điểm cùng lớp (cùng nguồn /my-work); quá hạn tách riêng', () => {
-    const it = (classId: number | null, count: number | null, urgency = 'normal', group = 'score') => ({ group, classId, count, urgency });
-    const m = d.baiChoChamTheoLop([it(1, 4, 'overdue'), it(1, 11), it(2, 3), it(1, 5, 'normal', 'ghi_ket_qua_pa'), it(null, 2)]);
-    eq([m.get(1), m.get(2), m.has(0)], [{ tong: 15, quaHan: 4 }, { tong: 3, quaHan: 0 }, false], 'gom theo lớp');
-    const w = mywork.myWork(P.coreTeacher) as any;
-    const tuW = w.items.filter((i: any) => i.group === 'score' && i.classId).reduce((s: number, i: any) => s + (i.count ?? 1), 0);
-    eq([...d.baiChoChamTheoLop(w.items).values()].reduce((s: number, x: any) => s + x.tong, 0), tuW, 'tổng khớp /my-work');
+  /* PR-S6F-b (D10): "Bài chờ chấm" đếm BÀI ở máy chủ (cùng hàm cột hồ sơ GV), không còn cộng `count` (số em) của việc Chấm điểm — sửa kỳ vọng, giữ phép kiểm. */
+  check('VAI-a (8c) → S6F-b D10 · Bài chờ chấm / quá hạn của Lớp tôi dạy = số ô điểm (bài) của chính GV ở lớp đó; quá hạn ⊆ chờ chấm', () => {
+    const p = P.coreTeacher;
+    const rows = tq.lopToiDay(p, { ct: 'ft' }).rows as any[];
+    const no = (debt.scoreDebtCells(p, TODAY, null) as any[]).filter((c) => c.userId === p.userId);
+    for (const h of rows) {
+      const cua = no.filter((c) => c.classId === h.classId);
+      eq([h.baiCho, h.baiQuaHan], [cua.length, cua.filter((c) => c.overdue).length], `${h.code}: bài chờ chấm / quá hạn`);
+      assert(h.baiQuaHan <= h.baiCho, 'quá hạn ⊆ chờ chấm');
+    }
   });
 
   // ================================================================== Task 9 · điện thoại + badge
@@ -520,12 +526,13 @@ export async function runPrVaiATests(t: YThucTestKit) {
     eq(r.soXemHet, 4, 'đếm đúng');
   });
 
-  check('VAI-a (9b) · /my-work/dem trả đúng { quaHan } = myWork(p).summary.overdue; App đọc cho GV, số đỏ cả thanh trên và thanh dưới', () => {
+  /* PR-S6F-b (D14): `/my-work/dem` bỏ — App đọc `summary.overdue` của `/my-work` (sửa kỳ vọng, giữ phép kiểm). */
+  check('VAI-a (9b) → S6F-b D14 · badge GV = myWork(p).summary.overdue đọc từ /my-work; App đọc cho GV, số đỏ cả thanh trên và thanh dưới', () => {
     const src = fs.readFileSync(pathM.join(REPO, 'server/src/routes/index.ts'), 'utf8');
-    assert(/api\.get\('\/my-work\/dem', requireAuth, wrap\(\(req\) => \{\s*maybeSimulateReadError\(\);\s*return \{ quaHan: myWork\(principalOf\(req\)\)\.summary\.overdue \};/.test(src), 'route /my-work/dem');
+    assert(!src.includes("api.get('/my-work/dem'"), 'route /my-work/dem đã bỏ');
     for (const gv of [P.coreTeacher, P.subjectTeacher]) assert(Number.isInteger((mywork.myWork(gv) as any).summary.overdue), 'summary.overdue');
     const app = fs.readFileSync(pathM.join(REPO, 'web/src/App.tsx'), 'utf8');
-    assert(/'\/my-work\/dem'/.test(app) && /<NavItem[^>]*so=\{so\}/.test(app) && /<NutDay[^>]*so=\{so\}/.test(app) && /việc quá hạn/.test(app), 'badge GV ở hai thanh');
+    assert(/'\/my-work'/.test(app) && /summary\?\.overdue/.test(app) && /<NavItem[^>]*so=\{so\}/.test(app) && /<NutDay[^>]*so=\{so\}/.test(app) && /việc quá hạn/.test(app), 'badge GV ở hai thanh');
   });
 
   // ================================================================== Task 10 · chuông

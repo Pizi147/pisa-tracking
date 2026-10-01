@@ -43,6 +43,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/tong-quan/chi-nhanh' },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/tong-quan/chi-nhanh/o?cot=caseMo&khoa=tong' },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/branch-pulse' },
+  /* PR-S6F-b (UXF-a P1): Báo cáo đơn vị — tín hiệu đọc sổ chỉ số MỘT lần mỗi chỉ số (không theo chi nhánh). */
+  { trang: 'Báo cáo đơn vị', vai: ['QL', 'QT'], url: '/signals' },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/metrics/case-mo' },
   /* PR-UXF-a Task 5: danh sách bấm ra "bài chưa nhập điểm quá hạn" — mỗi dòng một bài (ô điểm). */
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/metrics/bai-qua-han-nhap-diem?rows=1' },
@@ -94,7 +96,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Tổng quan GV', vai: ['GVCN', 'GVBM', 'GVCN_THUONG'], url: '/tong-quan/lop-toi-day?ct=ft' },
   { trang: 'Tổng quan GV', vai: ['GVCN_THUONG'], url: '/tong-quan/lop-toi-day?ct=thuong' },
   { trang: 'Tổng quan GV', vai: ['GVCN'], url: '/tong-quan/lop-toi-day/o?ct=ft&classId={lopFT}&cot=duoiKyVong' },
-  { trang: 'Tổng quan GV', vai: ['GVCN', 'GVBM', 'GVCN_THUONG'], url: '/my-work/dem' },
+  /* PR-S6F-b (D10): cột Bài chờ chấm / quá hạn bấm ra danh sách bài (cùng `noDiemCuaGv`). */
+  { trang: 'Tổng quan GV', vai: ['GVCN'], url: '/tong-quan/lop-toi-day/o?ct=ft&classId={lopFT}&cot=bai-qua-han' },
   { trang: 'Tổng quan GV', vai: ['GVCN', 'GVBM', 'GVCN_THUONG'], url: '/highlights' },
 
   // ---------------------------------------------------------------- Học viên & Lớp
@@ -177,7 +180,6 @@ export const DUONG_DO: MucDo[] = [
 
   // ---------------------------------------------------------------- Danh sách Case
   { trang: 'Danh sách Case', vai: MOI_VAI, url: '/cases' },
-  { trang: 'Danh sách Case', vai: MOI_VAI, url: '/cases/queues' },
 
   // ---------------------------------------------------------------- Việc cần làm
   { trang: 'Việc cần làm', vai: MOI_VAI, url: '/tasks' },
@@ -265,9 +267,9 @@ export const TRAN: Record<string, number> = {
   'GVCN_THUONG /tong-quan/lop-toi-day?ct=ft': 47,
   'GVCN_THUONG /tong-quan/lop-toi-day?ct=thuong': 47,
   'GVCN /tong-quan/lop-toi-day/o?ct=ft&classId=3&cot=duoiKyVong': 47,   // {lopFT} = MB FT 101
-  'GVCN /my-work/dem': 85,
-  'GVBM /my-work/dem': 85,
-  'GVCN_THUONG /my-work/dem': 85,
+  'GVCN /tong-quan/lop-toi-day/o?ct=ft&classId=3&cot=bai-qua-han': 60,   // PR-S6F-b D10 — đo 46 (01/10)
+  'QL /signals': 50,   // PR-S6F-b: đo 38 (một metricSet mỗi chỉ số)
+  'QT /signals': 46,   // đo 35
   'QL /tong-quan/quan-ly': 75,
   'QT /tong-quan/quan-ly': 71,
   'GVCN /tong-quan/quan-ly': 20,
@@ -438,6 +440,10 @@ export const TRAN: Record<string, number> = {
   'QL /classes/5/overview': 55,
   'QT /classes/5/overview': 51,
   'GVCN_THUONG /classes/5/overview': 55,
+  /* PR-S6F-b (UXF-a P2): roster lớp thường — id lớp {lopThuong} nay là 6 (các khoá /classes/5/… cũ không còn khớp, xem thân PR). Đo 01/10. */
+  'QL /classes/6/roster': 68,
+  'QT /classes/6/roster': 64,
+  'GVCN_THUONG /classes/6/roster': 76,
   'QL /classes/5/roster': 52,
   'QT /classes/5/roster': 49,
   'GVCN_THUONG /classes/5/roster': 52,
@@ -499,11 +505,6 @@ export const TRAN: Record<string, number> = {
   'GVBM /cases': 28,
   'GVCN_THUONG /cases': 28,
   'QT /cases': 25,
-  'QL /cases/queues': 27,
-  'GVCN /cases/queues': 27,
-  'GVBM /cases/queues': 27,
-  'GVCN_THUONG /cases/queues': 27,
-  'QT /cases/queues': 24,
   'QL /tasks': 23,
   'GVCN /tasks': 20,
   'GVBM /tasks': 20,
@@ -660,4 +661,20 @@ export const TRAN_GHI_LO = {
   congViec60NhomBoTro: 10,
   /** POST /intake/commit — 30 em lớp THƯỜNG (MB FOU 12), mỗi em tự có bài Giữa/Cuối khoá còn hiệu lực (PR-LT2a M1b). Ghi theo lô: số câu không tăng theo số em. */
   themHocVien30Thuong: 72,   // đo 55 câu → trần max(sau+10, ⌈sau×1,3⌉) = 72
+};
+
+/**
+ * PR-S6F-b (D14): TẢI TRANG ĐẦU — các GET trang Tổng quan gọi khi mở (ghi từ log mạng trình duyệt 01/10, màn đầu 1440, ngày demo 14/09; StrictMode
+ * ở dev gọi đôi `/demo/session` — không tính). MỖI đường một lần (`useApi` gộp GET đang bay): trước PR GV gọi `/my-work` ×2 + `/my-work/dem`
+ * (= ba lần `myWork`), QL gọi `/tong-quan/quan-ly` ×2. Trần = TỔNG câu SQL của cả lượt tải.
+ */
+export const TAI_TRANG: Record<string, { vai: Vai; urls: string[]; tran: number }> = {
+  'GV trang Tổng quan': {
+    vai: 'GVCN', tran: 205,   // đo 157 (trước PR ≈ 157 + 2 × 66 = 289)
+    urls: ['/demo/session', '/my-work', '/notifications', '/ref/classes', '/tong-quan/lop-toi-day?ct=ft', '/yeu-cau/dem'],
+  },
+  'QL trang Tổng quan': {
+    vai: 'QL', tran: 164,   // đo 126 (trước PR ≈ 126 + 71 = 197)
+    urls: ['/demo/session', '/notifications', '/ref/branches', '/ref/classes', '/tong-quan/quan-ly', '/metrics/hv-duoi-ky-vong-mon?ct=ft'],
+  },
 };

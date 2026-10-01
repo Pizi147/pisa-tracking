@@ -27,7 +27,7 @@ export function BangGiaoVienChiNhanh({ branchId, ct }: { branchId: number | null
   const { data, loading, error, reload } = useApi<Bang>(`/giao-vien${tham ? `?${tham}` : ''}`, [branchId, ct]);
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (loading || !data) return <div className="p-4"><Skeleton rows={4} /></div>;
-  if (!data.hang.length) return <Empty title="Chưa có giáo viên nào có lớp trong chi nhánh này." />;
+  if (!data.hang.length && !data.chuaPhanCong) return <Empty title="Chưa có giáo viên nào có lớp trong chi nhánh này." />;
   const qua = `cn=${data.cn}${thamSoCt(ct)}`;
   return (
     <>

@@ -27,6 +27,9 @@ export const GOC_NHIN_LABEL: Record<GocNhin, string> = {
   'giao-vien': 'Giáo viên',
 };
 export const GOC_NHIN_MAC_DINH: GocNhin = 'tong-hop';
+/** PR-S6F-b (D8): lớp thường không có SOS — tab, tiêu đề Excel của Tổng hợp khung Lớp thường là "Tổng hợp Test". */
+export const nhanGocNhin = (goc: GocNhin, ct: ChuongTrinh | null): string =>
+  goc === 'tong-hop' && ct === 'thuong' ? 'Tổng hợp Test' : GOC_NHIN_LABEL[goc];
 
 /**
  * ĐƯỜNG DẪN CŨ VẪN PHẢI MỞ ĐÚNG MÀN (Q16). `boThamSo` là các tham số CŨ cần xoá khỏi URL.
@@ -57,10 +60,12 @@ export function gocNhinTuThamSo(params: { get(key: string): string | null }): Ke
 
 /**
  * THAM SỐ CẦN XOÁ KHI BẤM SANG MỘT GÓC NHÌN — ba bộ lọc cũ của Danh sách Case (đã bỏ) luôn dọn; `gv`/`tu`/`den` là bộ lọc RIÊNG
- * của Hiệu quả PA (PR-Pb2-a) — rời góc nhìn đó thì dọn, để quay lại không bị lọc ngầm.
+ * của Hiệu quả PA (PR-Pb2-a) — rời góc nhìn đó thì dọn, để quay lại không bị lọc ngầm. PR-S6F-b: `tu`/`den`/`thang` của góc
+ * Giáo viên cũng vậy — rời `tuGoc = 'giao-vien'` (kể cả sang Hiệu quả PA) thì dọn.
  */
-export function thamSoXoaKhiDoiGoc(goc: GocNhin): readonly string[] {
-  return goc === 'hieu-qua-pa' ? ['hang-doi', 'tinh-hinh', 'ky-nang'] : ['hang-doi', 'tinh-hinh', 'ky-nang', 'gv', 'tu', 'den'];
+export function thamSoXoaKhiDoiGoc(goc: GocNhin, tuGoc?: GocNhin): readonly string[] {
+  const x = goc === 'hieu-qua-pa' ? ['hang-doi', 'tinh-hinh', 'ky-nang'] : ['hang-doi', 'tinh-hinh', 'ky-nang', 'gv', 'tu', 'den'];
+  return tuGoc === 'giao-vien' && goc !== 'giao-vien' ? [...new Set([...x, 'tu', 'den', 'thang'])] : x;
 }
 
 // ------------------------------------------------------------------ khoảng thời gian (Q5)
@@ -466,7 +471,7 @@ export function bangXuatTongHop(
 ): (string | number)[][] {
   const cols = cotTongHopFor(kq.ct).filter((c) => cotHien.has(c.nhom));
   const out: (string | number)[][] = [];
-  out.push([`Tổng hợp Test + SOS · ${moTaBoLoc}`]);
+  out.push([`${nhanGocNhin('tong-hop', kq.ct)} · ${moTaBoLoc}`]);
   out.push([]);
   out.push(['', ...cols.map((c) => (c.nhomCon ? NHAN_NHOM_CON[c.nhomCon] : nhomCotLabel(c.nhom, kq.ct)))]);
   out.push([THEO_DONG_COT_DAU[kq.theo], ...cols.map((c) => c.nhan(kq.ct))]);

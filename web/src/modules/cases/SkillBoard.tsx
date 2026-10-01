@@ -413,7 +413,10 @@ function HangCase({ c, ngan, onChanged, onMoCase }: {
               {tt.k === 'dang-lam' ? td.text : tt.k === 'xong' ? null : tt.chu}
             </span>
           </span>
-          {tt.han && !daXong && !(tamDung && tt.t === 'qua-han') && <span className="mt-0.5 block"><Han loai={tt.k === 'cho-ke-hoach' ? 'ke-hoach-bo-tro' : 'xac-minh-sos'} han={tt.han} /></span>}
+          {/* Em Tạm dừng: MỌI hạn dừng (T65, như `DongHan`) — Quá hạn đã thành nhãn Tạm dừng ở trên, hạn chưa tới cũng thay bằng nhãn. */}
+          {tt.han && !daXong && (tamDung
+            ? tt.t !== 'qua-han' && <span className="mt-0.5 block"><NhanTamDung tu={tamDung} /></span>
+            : <span className="mt-0.5 block"><Han loai={tt.k === 'cho-ke-hoach' ? 'ke-hoach-bo-tro' : 'xac-minh-sos'} han={tt.han} /></span>)}
           {tt.k === 'cho-duyet-ke-hoach' && c.boTro?.keHoach?.hanDuyet && <span className="mt-0.5 block text-[12px] text-wait tabular-nums">Quản lý hạn {ngan(c.boTro.keHoach.hanDuyet)}</span>}
           {daXong && c.outcomeLabel && <span className="mt-0.5 block text-[12px] text-slate-500">Kết luận: {c.outcomeLabel}</span>}
         </td>
@@ -488,7 +491,6 @@ function HangPA({ p, c, ngan, onMoCase }: {
   const boTro = p.kind === 'bo_tro' && !!c.boTro;
   /* Q19: khoảng PA nói MÃ TUẦN (`từ W3 SEP · đến MT2 · W4 OCT`), không dd/mm. PA Bổ trợ: mốc đã nằm trong tên. */
   const khoang = chuKhoangPa({ startedOn: p.startedOn, completedOn: p.completedOn, mocChu: boTro ? null : p.mocChu }, homNay);
-  const chuaLich = !!p.mocChu && /chưa có (lịch|ngày thi)/.test(p.mocChu);
   /* PR-S5F-b (mockup LT2a): tên PA Bổ trợ = `Bổ trợ 2 buổi/tuần · đến Cuối khoá · W4 OCT · trừ buổi Free` — mốc nằm trong tên, không lặp ở dòng phụ. */
   const ten = boTro ? `Bổ trợ ${c.boTro!.buoiMoiTuan} buổi/tuần · ${p.mocChu ?? 'đến Cuối khoá'} · trừ buổi Free` : p.name;
   const chuaChay = !!p.chuaChay;
@@ -515,7 +517,6 @@ function HangPA({ p, c, ngan, onMoCase }: {
         </div>
         <span className="block truncate pl-[30px] text-[12px] text-slate-400" title={dongPhu}>
           {dongPhu}
-          {chuaLich && <span className="text-soon"> · chưa có lịch</span>}
         </span>
       </td>
       <td className="td">
@@ -550,7 +551,7 @@ function HangPA({ p, c, ngan, onMoCase }: {
                 {v.loai === 'ghi-cuoi' ? 'Ghi kết quả cuối' : 'Ghi kết quả'}
               </button>
             ) : undefined}
-            phu={tamDung && han?.tone === 'overdue' ? <NhanTamDung tu={tamDung} />
+            phu={tamDung && han ? <NhanTamDung tu={tamDung} />
               : han ? <>{han.viec} · {han.han}{han.quaHan && <span className="inline-flex items-center gap-1 font-semibold text-bad"> <IconCanhBao />{han.quaHan}</span>}</> : null} />
         ) : <CotPhai phu={<NhanTrangThai t={p.closedReason === 'khong_theo_doi' || p.status === 'cancelled' ? 'da-huy' : 'xong'} />} />}
       </td>

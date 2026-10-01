@@ -9,8 +9,8 @@ import { TongHopTestSos } from './TongHopTestSos.tsx';
 import { TongHopVanDeHv } from './TongHopVanDeHv.tsx';
 import { YThucPhoiHop } from './YThucPhoiHop.tsx';
 import {
-  GOC_NHIN, GOC_NHIN_LABEL, KHOANG, KHOANG_LABEL, KHOANG_MAC_DINH,
-  chuongTrinhTuThamSo, gocNhinTuThamSo, khoangTuThamSo, thamSoXoaKhiDoiGoc,
+  GOC_NHIN, KHOANG, KHOANG_LABEL, KHOANG_MAC_DINH,
+  chuongTrinhTuThamSo, gocNhinTuThamSo, khoangTuThamSo, nhanGocNhin, thamSoXoaKhiDoiGoc,
   type ChuongTrinh, type GocNhin,
 } from '@shared/domain/index.ts';
 
@@ -70,7 +70,7 @@ export function PhanTich() {
   const setGoc = (k: GocNhin) => {
     const next = new URLSearchParams(params);
     if (k === 'tong-hop') next.delete('goc'); else next.set('goc', k);
-    for (const p of thamSoXoaKhiDoiGoc(k)) next.delete(p);   // dọn tham số cũ nếu còn sót
+    for (const p of thamSoXoaKhiDoiGoc(k, goc)) next.delete(p);   // dọn tham số cũ nếu còn sót
     setParams(next, { replace: false });
   };
   const setCt = (v: ChuongTrinh) => {
@@ -114,7 +114,7 @@ export function PhanTich() {
                   ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)] font-semibold'
                   : 'bg-transparent text-slate-400 hover:text-slate-200'
               }`}>
-              {GOC_NHIN_LABEL[k]}
+              {nhanGocNhin(k, ct)}
             </button>
           ))}
         </div>

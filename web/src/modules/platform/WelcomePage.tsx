@@ -310,7 +310,7 @@ function RegisterForm({ info, onDone }: { info: AuthInfo | null; onDone: () => v
       </Field>
 
       <Field label="Ghi chú cho người duyệt">
-        <input className="field w-full" value={form.note} placeholder="Ví dụ: dạy ca tối thứ 3, 5, 7"
+        <input className="field w-full" value={form.note} placeholder="Ví dụ: rảnh thứ 3, 5, 7"
           onChange={(e) => setForm({ ...form, note: e.target.value })} />
       </Field>
 

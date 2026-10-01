@@ -101,21 +101,11 @@ export function demLoaiViec<T extends MucLocNhanh & { group: string }>(
   return out;
 }
 
-/** "Bài chờ chấm" của bảng Lớp tôi dạy (Q12): Σ số bài của việc Chấm điểm cùng lớp trong `/my-work` — cùng nguồn khối việc; `quaHan` = phần quá hạn. */
-export function baiChoChamTheoLop(items: readonly { group: string; classId: number | null; count: number | null; urgency: string }[]) {
-  const out = new Map<number, { tong: number; quaHan: number }>();
-  for (const it of items) {
-    if (it.group !== 'score' || !it.classId) continue;
-    const x = out.get(it.classId) ?? { tong: 0, quaHan: 0 };
-    x.tong += it.count ?? 1;
-    if (it.urgency === 'overdue') x.quaHan += it.count ?? 1;
-    out.set(it.classId, x);
-  }
-  return out;
-}
-
 /** Khung mặc định của bảng Lớp tôi dạy (Q31-1): dạy cả hai → Fast Track; chỉ lớp thường → Lớp thường. */
 export const khungMacDinhGv = (coFt: boolean, coThuong: boolean): 'ft' | 'thuong' => (!coFt && coThuong ? 'thuong' : 'ft');
+/** PR-S6F-b (D7): khung đã nhớ chỉ dùng khi người xem CÓ lớp ở khung đó — không thì về khung mặc định (không bao giờ ra bảng rỗng mất công tắc). */
+export const khungLopToiDay = (nho: string | null, coFt: boolean, coThuong: boolean): 'ft' | 'thuong' =>
+  (nho === 'ft' && coFt) || (nho === 'thuong' && coThuong) ? nho : khungMacDinhGv(coFt, coThuong);
 
 // ====================================================================== Người phụ trách
 

@@ -1,12 +1,12 @@
 import { db, theoLo } from '../db.ts';
 import {
   CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS, caseCategoriesFor, caseTitle, chiaChuong, goiYCuoiKhoa, lapLaiQuaLop,
-  ASSESSED_SKILLS, tenCaseSos, tenMon, tenMonNgan, tuanHocFt, type CaseCategory, type CaseChuongVao, type LopChuong, type TonePaChuong,
-  type AssessedSkill, type DiemMoc, type DotRef,
+  ASSESSED_SKILLS, tenCaseSos, tenMon, tenMonNgan, tuanHocTai, type CaseCategory, type CaseChuongVao, type LopChuong, type TonePaChuong,
+  mondayOfDate, type AssessedSkill, type DiemMoc, type DotRef,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { require_, type Principal } from '../permissions.ts';
-import { allProgrammes, programmeCodeOfCycle } from '../normal/regular.ts';
+import { allProgrammes } from '../normal/regular.ts';
 import { typedResult } from './profile.ts';
 import { khoangTamDung } from './tamDung.ts';
 import { addDays } from '../util.ts';
@@ -49,11 +49,30 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
     `SELECT cy.*, rp.week_start AS start_week FROM learning_cycles cy LEFT JOIN report_periods rp ON rp.id = cy.start_period_id
       WHERE cy.student_id = ? ORDER BY cy.seq`,
   ).all(studentId) as any[];
+  const moiCycleIds = cycles.map((c) => c.id);
+
+  // -------------------------------------------------------------- (2) lượt đánh giá của MỌI lộ trình (một câu; chương trình lớp từ JOIN)
+  const attemptRows: any[] = [];
+  theoLo(moiCycleIds, (lo, ph) => {
+    attemptRows.push(...conn.prepare(
+      `SELECT a.*, c.code AS class_code, c.programme_code AS class_programme, pr.week_start AS week_start,
+              (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route
+         FROM assessment_attempts a
+         LEFT JOIN classes c ON c.id = a.class_id
+         LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
+        WHERE a.cycle_id IN (${ph}) AND a.status != 'cancelled'`,
+    ).all(...lo) as any[]);
+  });
+  attemptRows.sort((x, y) => x.cycle_id - y.cycle_id || x.attempt_no - y.attempt_no);
+  /* PR-S6F-b: chương trình của lộ trình thiếu `programme_code` lấy từ lượt đã nạp (cùng luật `programmeCodeOfCycle`, không hỏi lại mỗi lộ trình). */
+  const maCtCuaCycle = new Map<number, string>();
+  for (const a of attemptRows) if (a.class_programme && !maCtCuaCycle.has(a.cycle_id)) maCtCuaCycle.set(a.cycle_id, a.class_programme);
+
   const progs = allProgrammes();
   const progOf = (code: string | null | undefined) => (code ? progs.get(code) ?? null : null);
   const ratioOf = new Map<number, boolean>();
   /* Cùng luật `isRatioCycle`, tra bảng chương trình đã nạp. */
-  for (const c of cycles) ratioOf.set(c.id, !c.route && progOf(c.programme_code ?? programmeCodeOfCycle(c.id))?.scoringMode === 'ratio');
+  for (const c of cycles) ratioOf.set(c.id, !c.route && progOf(c.programme_code ?? maCtCuaCycle.get(c.id))?.scoringMode === 'ratio');
   const thuongCycles = cycles.filter((c) => ratioOf.get(c.id));
   const ftCycles = cycles.filter((c) => !ratioOf.get(c.id));
   const dungGiaiDoan = (list: any[]): { tu: string; den: string | null } | null => {
@@ -73,23 +92,9 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
   const ratio = giaiDoan === 'thuong';
   const cuoi = chonCycles[chonCycles.length - 1];
   /* MH2, PF6: tên môn + bộ hộp theo chương trình của khoá mới nhất trong giai đoạn (FOU G+V/P, Pre FOU một hộp Tổng hợp). */
-  const ct: string | null = ratio && cuoi ? cuoi.programme_code ?? programmeCodeOfCycle(cuoi.id) : null;
+  const ct: string | null = ratio && cuoi ? cuoi.programme_code ?? maCtCuaCycle.get(cuoi.id) ?? null : null;
   const cycleIds = chonCycles.map((c) => c.id);
-  const moiCycleIds = cycles.map((c) => c.id);
 
-  // -------------------------------------------------------------- (2) lượt đánh giá của MỌI lộ trình (một câu; chương trình lớp từ JOIN)
-  const attemptRows: any[] = [];
-  theoLo(moiCycleIds, (lo, ph) => {
-    attemptRows.push(...conn.prepare(
-      `SELECT a.*, c.code AS class_code, c.programme_code AS class_programme, pr.week_start AS week_start,
-              (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route
-         FROM assessment_attempts a
-         LEFT JOIN classes c ON c.id = a.class_id
-         LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
-        WHERE a.cycle_id IN (${ph}) AND a.status != 'cancelled'`,
-    ).all(...lo) as any[]);
-  });
-  attemptRows.sort((x, y) => x.cycle_id - y.cycle_id || x.attempt_no - y.attempt_no);
   const attemptIds = attemptRows.map((a) => a.id);
 
   // -------------------------------------------------------------- (3) điểm + phạm vi kỹ năng các lượt (bulk)
@@ -164,7 +169,9 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
   const lenhRows = conn.prepare(
     `SELECT id, lop_nguon_id, xac_nhan_luc FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'da_chuyen' ORDER BY id`,
   ).all(studentId) as any[];
-  const dung = (khoangTamDung([studentId])[studentId] ?? []).map(({ tu, den }) => ({ tu, den }));
+  /* PR-S6F-b: Tạm dừng và Quay lại CÙNG tuần không trừ tuần nào (`tuanHocFt`) → không có khoảng để vẽ trên trục / chương. */
+  const dung = (khoangTamDung([studentId])[studentId] ?? []).map(({ tu, den }) => ({ tu, den }))
+    .filter((k) => k.den === null || mondayOfDate(k.tu) !== mondayOfDate(k.den));
 
   // -------------------------------------------------------------- ghim (đợt Test) — mọi lộ trình; trục chỉ lấy giai đoạn đang xem
   /* Chương nhận cả lượt chưa xếp tuần (như lịch sử lớp cũ); trục tuần chỉ vẽ lượt có tuần. */
@@ -236,12 +243,12 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
         const s = t.ratio!.skills.find((x) => x.skill === kyNang);
         if (!s) continue;
         if (s.score === null) { choDiem(a, 'ratio'); continue; }
-        diem.push({ gt: s.score, tong: s.total, chuaDat: s.outcome === 'fail', attemptNo: a.attempt_no, kind: a.kind, maLop: a.class_code ?? null, kyVong: null, attemptId: a.id });
+        diem.push({ gt: s.score, tong: s.total, chuaDat: s.outcome === 'fail', attemptNo: a.attempt_no, kind: a.kind, maLop: a.class_code ?? null, kyVong: null, attemptId: a.id, classId: a.class_id ?? null });
       } else {
         const band = scoresByAttempt.get(a.id)?.find((x) => x.skill === kyNang)?.band ?? null;
         if (band === null) { choDiem(a, 'ielts'); continue; }
         const exp = t.ft!.expectation;
-        diem.push({ gt: band, tong: null, chuaDat: exp !== null && band < exp, attemptNo: a.attempt_no, kind: a.kind, maLop: a.class_code ?? null, kyVong: exp, attemptId: a.id });
+        diem.push({ gt: band, tong: null, chuaDat: exp !== null && band < exp, attemptNo: a.attempt_no, kind: a.kind, maLop: a.class_code ?? null, kyVong: exp, attemptId: a.id, classId: a.class_id ?? null });
       }
     }
     const casesOfSkill = casesInGiaiDoan.filter((c) => anhXaHangMuc(c.category ?? c.topic, boHop) === kyNang);
@@ -294,12 +301,20 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
   };
   const lop: LopChuong[] = enr.map((e) => {
     const ft = !!e.is_fast_track;
-    const dangHoc = e.status === 'active';
+    /*
+     * PR-S6F-b (D17): ghi danh `paused` chưa có ngày rời = em đang Tạm dừng (setStudentStatus đổi mọi ghi danh active/paused theo trạng thái em;
+     * thôi học thì thành `completed`) — chương đó vẫn là chương ĐANG HỌC, không chân "Bảo lưu". Tuần học qua `tuanHocTai` (= đầu hồ sơ).
+     */
+    const dangDung = e.status === 'paused' && !e.ended_at;
+    const dangHoc = e.status === 'active' || dangDung;
     const cy = ft ? ftCuaNgay(e.started_at) : null;
     const batDau = cy ? cy.start_week ?? cy.started_at : null;
+    const hienTai = cy && batDau && dangHoc ? tuanHocTai(batDau, homNay, dung) : null;
     const tuanHoc = cy && batDau ? {
-      tu: tuanHocFt(batDau, dangHoc ? homNay : e.started_at, dung) ?? 1,
-      den: dangHoc ? null : e.ended_at ? tuanHocFt(batDau, addDays(e.ended_at, -1), dung) : null,
+      tu: dangHoc ? hienTai?.tuan ?? null : tuanHocTai(batDau, e.started_at, dung)?.tuan ?? 1,
+      /* Rời lớp trong tuần dừng → tuần học cuối TRƯỚC tuần dừng (không null). */
+      den: dangHoc ? null : e.ended_at ? tuanHocTai(batDau, addDays(e.ended_at, -1), dung)?.tuan ?? null : null,
+      dangDung: hienTai?.dangDung ?? false,
     } : null;
     const lenh = lenhRows.filter((l) => l.lop_nguon_id === e.class_id).at(-1);
     const target = cy ? (cy.khong_cam_ket ? 'KCK' : cy.target_score != null ? Number(cy.target_score).toFixed(1) : null) : null;

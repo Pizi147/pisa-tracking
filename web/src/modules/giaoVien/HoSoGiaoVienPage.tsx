@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
-  ENTRY_SKILLS, ENTRY_SKILL_SHORT, NHOM_VIEC_LABEL, duongHoSoHocVien, duongViecCuaGv, laVaiQuanLy, tuanLich, viecTiepCuaEm,
+  ENTRY_SKILLS, ENTRY_SKILL_SHORT, NHOM_VIEC_LABEL, duongHieuQuaPaGv, duongHoSoHocVien, duongViecCuaGv, laVaiQuanLy, tuanLich, viecTiepCuaEm,
   type ChipBanGiao, type NhomViec, type TrangThai, type ViecTiepCase,
 } from '@shared/domain/index.ts';
 import { useApi } from '../../lib/useApi.ts';
@@ -98,7 +98,7 @@ export function HoSoGiaoVienPage() {
       <KhoiLopVaKetQua data={data} />
       <KhoiCase data={data} homNay={homNay}
         linkPa={!gv.laChinhMinh && session?.nav?.analysis && data.phamVi.cn
-          ? { den: `/phan-tich?goc=hieu-qua-pa&cn=${data.phamVi.cn}&gv=${gv.id}`, chu: `Hiệu quả PA của ${tenGoi} ›` } : null} />
+          ? { den: duongHieuQuaPaGv(data.phamVi.cn, gv.id, data.lop), chu: `Hiệu quả PA của ${tenGoi} ›` } : null} />
       <KhoiYeuCau data={data} coDuyet={!!session?.nav?.workApprove} />
     </div>
   );
@@ -165,7 +165,7 @@ function ChipBanGiaoLop({ l }: { l: LopHs }) {
   const b = l.banGiao;
   if (!b) return null;
   return (
-    <Link to={`/hoc-vien/lop/${l.id}?viec=ban-giao`} className="inline-flex whitespace-nowrap rounded-full bg-soon-bg px-2 text-xs font-semibold leading-5 tabular-nums text-soon no-underline hover:underline"
+    <Link to={`/hoc-vien/lop/${l.id}?viec=ban-giao${b.maMon ? `&mon=${b.maMon}` : ''}`} className="inline-flex whitespace-nowrap rounded-full bg-soon-bg px-2 text-xs font-semibold leading-5 tabular-nums text-soon no-underline hover:underline"
       title={b.loai === 'gvcn' ? 'Phiếu bàn giao đã xác nhận / số em có lệnh chuyển' : `Môn ${b.mon}: số em đã ghi bàn giao / số em cần ghi`}>
       Bàn giao{b.mon ? ` ${b.mon} ·` : ''} {b.da}/{b.n} em
     </Link>

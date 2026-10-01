@@ -250,7 +250,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
         {iv.approvalState === 'approved' && <Nhan tone="done">Đã duyệt</Nhan>}
         {iv.approvalState === 'declined' && <Nhan tone="muted">Không duyệt</Nhan>}
         <span className="flex-1" />
-        {hanGhi && hanGhi.tone === 'overdue' && !choDuyet && (data.tamDungTu ? <NhanTamDung tu={data.tamDungTu} /> : <QuaHan ngay={hanGhi.daysOverdue} />)}
+        {hanGhi && !choDuyet && (data.tamDungTu ? <NhanTamDung tu={data.tamDungTu} /> : hanGhi.tone === 'overdue' && <QuaHan ngay={hanGhi.daysOverdue} />)}
       </div>
       {iv.description && <p className="m-0 mt-1 text-sm text-slate-300">{iv.description}</p>}
       {iv.kind === 'bo_tro' && bt?.chung && bt.mon.length > 1 && (
@@ -263,7 +263,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
       )}
       <p className="m-0 mt-1 text-[11px] text-slate-500">
         {[nguoi, khoang, iv.mocChu ? `kết thúc theo quy chế: ${iv.mocChu}` : null].filter(Boolean).join(' · ')}
-        {hanGhi && !choDuyet && <> · hạn ghi kết quả {hanGhi.han.replace(/^hạn /, '')}</>}
+        {hanGhi && !choDuyet && !data.tamDungTu && <> · hạn ghi kết quả {hanGhi.han.replace(/^hạn /, '')}</>}
       </p>
       {iv.approvalNote && (
         <p className="m-0 mt-1 border-l pl-3 text-xs text-slate-300" style={{ borderColor: 'var(--line)' }}>

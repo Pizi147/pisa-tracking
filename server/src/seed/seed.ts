@@ -342,7 +342,7 @@ function seedMeeting(conn: any, ctx: {
 
   const NOTES: Record<string, string[]> = {
     ok: ['Không có vấn đề nổi bật trong tuần.', 'Lịch dạy chạy đúng kế hoạch.'],
-    watch: ['Hai lớp thiếu giáo viên dự phòng ca tối.', 'Một số học viên nghỉ nhiều, đã liên hệ phụ huynh.'],
+    watch: ['Hai lớp thiếu giáo viên dự phòng khi có giáo viên nghỉ.', 'Một số học viên nghỉ nhiều, đã liên hệ phụ huynh.'],
     problem: ['Giáo trình Writing bản mới thiếu đáp án, cần in bổ sung.', 'Ba học viên chưa nộp bài Speaking hai tuần liền.'],
   };
 

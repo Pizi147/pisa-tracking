@@ -22,7 +22,7 @@ type CaseDong = { caseId: number; ten: string; kyNang: string; sos: number | nul
   pa: { id: number; ten: string; tone: TonePaChuong }[] };
 export type ChuongWeb = {
   enrollmentId: number; classId: number; code: string; ngan: string; nhan: string; ct: string | null; ft: boolean;
-  tu: string; den: string | null; dangHoc: boolean; soTuan: number | null; tuanHoc: { tu: number; den: number | null } | null; gvcn: string | null;
+  tu: string; den: string | null; dangHoc: boolean; soTuan: number | null; tuanHoc: { tu: number | null; den: number | null; dangDung: boolean } | null; gvcn: string | null;
   tamDung: { tu: string; den: string | null }[]; ghim: Ghim[]; caseDong: CaseDong[];
   ra: { loai: string | null; chu: string; how: string | null; tu: string | null; docBanGiao: { lenhId: number; lopNguonId: number } | null } | null;
 };
@@ -55,7 +55,7 @@ const khiChuong = (c: ChuongWeb, homNay: string) => {
   const tu = tuanLich(c.tu, homNay);
   const den = c.den ? tuanLich(c.den, homNay) : null;
   const tuan = c.ft
-    ? c.tuanHoc ? (c.tuanHoc.den === null ? chuTuanHoc(c.tuanHoc.tu, null) : `tuần học ${c.tuanHoc.tu}–${c.tuanHoc.den}`) : null
+    ? c.tuanHoc ? (c.tuanHoc.den === null ? chuTuanHoc(c.tuanHoc.tu, null, c.tuanHoc.dangDung) : `tuần học ${c.tuanHoc.tu}–${c.tuanHoc.den}`) : null
     : c.soTuan ? `${c.soTuan} tuần` : null;
   return [den ? `${tu} → ${den}` : `từ ${tu}`, tuan].filter(Boolean).join(' · ');
 };
@@ -65,6 +65,9 @@ const duoiCua = (c: ChuongWeb): string | null => {
   if (!g?.kyNangChuaDat?.length) return null;
   return g.cheDo === 'ielts' ? `dưới kỳ vọng: ${g.kyNangChuaDat.map((k) => skillShort(k)).join(' · ')}` : `không đạt: ${g.kyNangChuaDat.map((k) => tenMonNgan(c.ct, k)).join(' · ')}`;
 };
+
+/** Q23: > 4 chương cuộn ngang — khi gắn khung, cuộn tới mép phải (chương đang học), như trục tuần. Hàm ở cấp module nên chỉ chạy lúc gắn. */
+const cuonVeChuongMoi = (el: HTMLDivElement | null) => { if (el) el.scrollLeft = el.scrollWidth; };
 
 export function ChuongLop({ chuong, lapLai, homNay, onChon }: {
   chuong: ChuongWeb[]; lapLai: { kyNang: string; lop: string[] }[]; homNay: string; onChon: (c: ChuongWeb) => void;
@@ -83,7 +86,7 @@ export function ChuongLop({ chuong, lapLai, homNay, onChon }: {
 
       {dienThoai ? <ChuongDienThoai chuong={chuong} homNay={homNay} onChon={onChon} /> : (
         /* > 4 chương: cuộn ngang trong khung (Q23), chương đang học luôn ở bên phải. */
-        <div className="overflow-x-auto pb-1">
+        <div ref={cuonVeChuongMoi} className="overflow-x-auto pb-1">
           <div className={chuong.length > 4 ? 'flex gap-[26px]' : 'grid gap-[26px]'}
             style={chuong.length > 4 ? undefined : { gridTemplateColumns: `${chuong.length > 1 ? `repeat(${chuong.length - 1}, minmax(0,1fr)) ` : ''}minmax(0,1.45fr)` }}>
             {chuong.map((c, i) => (
@@ -138,7 +141,7 @@ function TheChuong({ c, homNay, onChon }: { c: ChuongWeb; homNay: string; onChon
                 <Link key={g.attemptId} to={duongDotTest({ id: g.attemptId, kind: g.kind, classId: g.classId })} title={nh.day}
                   onClick={(e) => e.stopPropagation()}
                   className={`inline-flex items-center whitespace-nowrap rounded-full border px-2 text-[12px] font-semibold leading-[19px] no-underline ${SCORE_CHIP[MAU_PIN[nh.mau]]}`}>
-                  {nh.chu}
+                  {nh.chuong ?? nh.chu}
                 </Link>
               );
             })}

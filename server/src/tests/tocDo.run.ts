@@ -563,6 +563,25 @@ await checkAsync('PR-TD Task5(1) · trần câu SQL — mọi (đường × vai)
   assert(sai.length === 0, `Vượt trần:\n${sai.join('\n')}`);
 });
 
+/* PR-S6F-b (D14): cả LẦN TẢI TRANG Tổng quan — mỗi GET một lần, tổng câu SQL ≤ trần của trang. */
+await checkAsync('PR-S6F-b · tải trang đầu Tổng quan GV / QL: mỗi GET một lần (không /my-work/dem, không gọi đôi route nặng), tổng câu SQL ≤ trần trang', async () => {
+  const { TAI_TRANG } = await import('./tocDoDuong.ts');
+  const sai: string[] = [];
+  for (const [trang, x] of Object.entries(TAI_TRANG)) {
+    if (new Set(x.urls).size !== x.urls.length) sai.push(`${trang}: có GET lặp`);
+    if (x.urls.includes('/my-work/dem')) sai.push(`${trang}: còn /my-work/dem`);
+    let tong = 0;
+    for (const u of x.urls) {
+      const r = await doSql(x.vai, 'GET', urlFor(u));
+      if (r.status !== 200) sai.push(`${trang} ${u} → ${r.status}`);
+      tong += r.n;
+    }
+    console.log(`      (đo: ${trang} ${tong} câu / ${x.urls.length} GET)`);
+    if (tong > x.tran) sai.push(`${trang}: ${tong} câu > trần ${x.tran}`);
+  }
+  assert(sai.length === 0, sai.join('\n'));
+});
+
 /**
  * PR-TD Task 5 — nhân dữ liệu ×N: với MỖI HV đang có, chép thêm (N-1) bản (học viên, ghi danh — mọi trạng thái,
  * lộ trình, lượt MT, điểm từng kỹ năng, Case, phân loại vấn đề, tác động). KHÔNG nhân lớp (Q11 — lớp đổi chậm, nhân

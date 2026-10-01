@@ -134,7 +134,7 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Tong hop');
     const ten = ngay(demoDate).split('/').join('-');
-    XLSX.writeFile(wb, `tong-hop-test-sos-${ten}.xlsx`);
+    XLSX.writeFile(wb, `${ct === 'thuong' ? 'tong-hop-test' : 'tong-hop-test-sos'}-${ten}.xlsx`);   // D8: lớp thường không chữ SOS
   }
 
   const oCell = (row: DongTongHop, col: CotTongHop) => {

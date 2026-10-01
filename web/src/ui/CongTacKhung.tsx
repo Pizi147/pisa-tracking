@@ -2,13 +2,17 @@ import { BoLocDoan } from './ui.tsx';
 
 /**
  * CÔNG TẮC HAI KHUNG (MH4, K4-05, Q3, Q8) — `Fast Track · Lớp thường` (Test) hoặc `Tất cả · Fast Track · Lớp thường` (Công việc).
- * Một khung một bộ môn: không trộn môn hai khung (MH5). Nhớ theo máy (localStorage, bọc try/catch — trang vẫn chạy khi không đọc
- * được); tham số `loai` trên đường dẫn thắng (nơi gọi đọc URL trước `khungDaNho`). Chỉ một khung có dữ liệu → không vẽ gì.
+ * Một khung một bộ môn: không trộn môn hai khung (MH5). Nhớ theo máy VÀ theo người (localStorage, khoá `.u{userId}` — PR-S6F-b Q7: máy chung,
+ * demo đổi vai; bọc try/catch — trang vẫn chạy khi không đọc được); tham số `loai` trên đường dẫn thắng (nơi gọi đọc URL trước `khungDaNho`).
+ * Chỉ một khung có dữ liệu → không vẽ gì.
  */
 export type KhungLoc = 'ft' | 'thuong' | 'tat-ca';
 type Trang = 'lich-test' | 'ke-hoach-test' | 'cong-viec' | 'hoc-vien-lop' | 'tong-quan' | 'phan-tich-gv';
 
-const khoa = (trang: Trang) => `pisa.khung.${trang}`;
+/** Người đang đăng nhập — `SessionProvider` đặt mỗi khi phiên đổi; một chỗ cho mọi trang dùng công tắc. */
+let nguoiDung: number | null = null;
+export const datNguoiDungKhung = (id: number | null) => { nguoiDung = id; };
+const khoa = (trang: Trang) => `pisa.khung.${trang}${nguoiDung ? `.u${nguoiDung}` : ''}`;
 const hopLe = (v: unknown): v is KhungLoc => v === 'ft' || v === 'thuong' || v === 'tat-ca';
 
 export function khungDaNho(trang: Trang): KhungLoc | null {

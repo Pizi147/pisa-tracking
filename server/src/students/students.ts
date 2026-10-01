@@ -260,6 +260,11 @@ export function setStudentStatus(
     const tamDung = (conn.prepare(`SELECT MAX(event_date) d FROM journey_events WHERE student_id = ? AND event_type = 'pause'`).get(studentId) as any)?.d as string | null;
     if (tamDung && date < tamDung) throw badRequest(`Ngày quay lại không được trước ngày tạm dừng (${tamDung.split('-').reverse().join('/')}).`);
   }
+  /* PR-S6F-b: ngày Tạm dừng không trước lần Quay lại gần nhất — `khoangTamDung` ghép cặp theo ngày, ghi lùi thì mất khoảng đang dừng. */
+  if (status === 'inactive') {
+    const quayLai = (conn.prepare(`SELECT MAX(event_date) d FROM journey_events WHERE student_id = ? AND event_type = 'resume'`).get(studentId) as any)?.d as string | null;
+    if (quayLai && date < quayLai) throw badRequest(`Ngày tạm dừng không được trước lần quay lại học gần nhất (${quayLai.slice(8, 10)}/${quayLai.slice(5, 7)}).`);
+  }
 
   const curEnr = conn
     .prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status IN ('active','paused') ORDER BY id DESC LIMIT 1`)

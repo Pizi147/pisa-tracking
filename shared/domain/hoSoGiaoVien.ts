@@ -15,8 +15,8 @@ export function nhanVaiLop(v: { gvcn: boolean; mon: readonly string[] }): string
   return [v.gvcn ? 'GVCN' : '', v.mon.join(' ')].filter(Boolean).join(' · ');
 }
 
-/** O6: chip "Bàn giao n/m em" cạnh mã lớp — từ `viecBanGiao` (cùng nguồn việc Bàn giao ở Công việc). `mon` = tên môn ngắn (GVBM). */
-export type ChipBanGiao = { loai: 'gvcn' | 'gvbm'; mon: string | null; da: number; n: number };
+/** O6: chip "Bàn giao n/m em" cạnh mã lớp — từ `viecBanGiao` (cùng nguồn việc Bàn giao ở Công việc). `mon` = tên môn ngắn (GVBM); `maMon` = mã môn đầu còn thiếu (link `&mon=`). */
+export type ChipBanGiao = { loai: 'gvcn' | 'gvbm'; mon: string | null; maMon: string | null; da: number; n: number };
 
 /** Đếm việc theo 4 nhóm (Q3) — cùng `nhomViecCua` với Công việc, nên số = số dòng ở Công việc đã lọc nhóm. */
 export function demViecTheoNhom(items: readonly { group: string; urgency: string }[]): { nhom: NhomViec; n: number; quaHan: number }[] {
@@ -37,4 +37,10 @@ export function duongViecCuaGv(gvId: number, nguoiXem: { userId: number; laQuanL
   q.set('khung', 'tat-ca');
   if (chiQuaHan) q.set('loc', 'qua-han');
   return `${DUONG_TAB_CONG_VIEC['ho-tro']}?${q}`;
+}
+
+/** PR-S6F-b: link "Hiệu quả PA của …" ở hồ sơ GV mang khung — GV chỉ dạy lớp thường mở khung Lớp thường (không rơi về bảng FT trống). */
+export function duongHieuQuaPaGv(cn: number, gvId: number, lop: readonly { khung: 'ft' | 'thuong' }[]): string {
+  const ct = lop.length && lop.every((l) => l.khung === 'thuong') ? 'thuong' : 'ft';
+  return `/phan-tich?goc=hieu-qua-pa&cn=${cn}&ct=${ct}&gv=${gvId}`;
 }
