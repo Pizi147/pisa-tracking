@@ -118,3 +118,120 @@ export function ThanhViec({ viec, homNay, onLam }: { viec: { cuaBan: Viec[]; ngu
     </section>
   );
 }
+
+// ====================================================================== câu tóm tắt + bốn ô (Task 3)
+
+const MAU_MANH: Record<string, string> = {
+  danger: 'text-bad', warn: 'text-soon', sos1: 'text-sos1', sos2: 'text-sos2', sos3: 'text-sos3', wait: 'text-wait', accent: 'text-doing',
+};
+
+/** CÂU TÓM TẮT (Q6) — máy viết, tối đa 3 mảnh, mỗi mảnh một màu theo nghĩa, ngăn bằng `·` mờ. 14 px, dưới vạch mảnh của khung thông tin. */
+export function CauTomTat({ manh }: { manh: { chu: string; tone: string | null }[] | null | undefined }) {
+  if (!manh?.length) return null;
+  return (
+    <p className="m-0 mt-2.5 border-t pt-2.5 text-[14px] leading-[1.55] text-slate-200" style={{ borderColor: 'var(--line)' }}>
+      {manh.map((m, i) => (
+        <span key={i}>
+          {i > 0 && <span aria-hidden className="px-1.5 text-slate-500">·</span>}
+          <span className={m.tone ? `font-semibold ${MAU_MANH[m.tone] ?? ''}` : ''}>{m.chu}</span>
+        </span>
+      ))}
+    </p>
+  );
+}
+
+const CHIP_SOS_O: Record<number, string> = { 1: 'bg-sos1-bg text-sos1', 2: 'bg-sos2-bg text-sos2', 3: 'bg-sos3-bg text-sos3' };
+const MAU_NHAN: Record<string, string> = {
+  'qua-han': 'bg-bad-bg text-bad', 'can-lam': 'border border-[color:var(--line-strong)] text-slate-200', 'cho-duyet': 'bg-wait-bg text-wait',
+  'dang-lam': 'bg-[color:var(--surface-2)] text-slate-200',
+};
+
+/** Một ô: nhãn 11,5 px · dòng trên 12 px · giá trị 17 px đậm · dòng phụ 12 px. Là `<button>` khi có chỗ để mở (mở đúng chỗ sinh ra số). */
+function O({ nhan, tren, children, phu, onClick, title }: {
+  nhan: string; tren?: ReactNode; children: ReactNode; phu?: ReactNode; onClick?: () => void; title: string;
+}) {
+  const Khung = onClick ? 'button' : 'div';
+  return (
+    <Khung type={onClick ? 'button' : undefined} onClick={onClick} title={title}
+      className={`flex min-w-0 flex-col gap-[3px] rounded-[10px] border bg-[color:var(--surface)] px-3 py-2.5 text-left ${onClick ? 'cursor-pointer hover:border-[color:var(--line-strong)]' : ''}`}
+      style={{ borderColor: 'var(--line)' }}>
+      <span className="text-[11.5px] font-semibold tracking-[.03em] text-slate-400">{nhan}</span>
+      {tren && <span className="text-[12px] text-slate-400">{tren}</span>}
+      <span className="flex flex-wrap items-center gap-1.5 text-[17px] font-bold leading-[1.35] text-slate-100">{children}</span>
+      {phu && <span className="text-[12px] leading-[1.45] text-slate-400">{phu}</span>}
+    </Khung>
+  );
+}
+
+/**
+ * BỐN Ô (K3-03, T72): Kết quả gần nhất · Học thuật · Ý thức · Sắp tới — mỗi ô MỘT nguồn (máy chủ `dauHoSo.o`), bấm mở đúng chỗ:
+ * đợt Test · bảng kỹ năng ở Case gấp nhất · tab Ý thức · đợt Test kế tiếp. < 760 px: lưới 2×2.
+ */
+export function BonO({ o, homNay, onDot, onKn, onYThuc, kyNangHref }: {
+  o: any; homNay: string | null; onDot: (attemptId: number) => void; onKn: (kn: string) => void; onYThuc: () => void;
+  /** G5 (Task 8): đường tới hồ sơ Mock cuộn tới kỹ năng — null thì mã kỹ năng chỉ là chữ. */
+  kyNangHref?: (kn: string) => string | null;
+}) {
+  if (!o) return null;
+  const k = o.ketQua;
+  const kq = k.kq;
+  const h = o.hocThuat;
+  const y = o.yThuc;
+  const s = o.sapToi;
+  const giaTriKq = !kq ? '—'
+    : k.ratio ? (kq.phanTram !== null ? `Cuối khoá ${kq.phanTram}%` : kq.dat === null ? `${kq.coDiem}/${kq.yeuCau} môn có điểm` : `${kq.yeuCau - (kq.soMonChuaDat ?? 0)}/${kq.yeuCau} môn đạt`)
+    : k.kck ? null
+    : kq.sos ? <span className={`rounded-md px-2 font-bold leading-6 tabular-nums ${CHIP_SOS_O[Math.min(3, kq.sos)]}`}>SOS {kq.sos}</span>
+    : kq.dat ? <span className="text-ok">Đạt kỳ vọng</span> : 'Chưa đủ điểm';
+  const duoi = k.duoi?.length ? (
+    <>dưới kỳ vọng: {k.duoi.map((d: any, i: number) => {
+      const href = kyNangHref?.(d.kn) ?? null;
+      return (
+        <span key={d.kn}>{i > 0 && ' · '}{href
+          ? <a href={href} className="link" onClick={(e) => e.stopPropagation()} title={`Mở hồ sơ Mock · ${d.ngan}`}>{d.ngan}</a>
+          : d.ngan}</span>
+      );
+    })}</>
+  ) : null;
+  const phuKq = !kq ? 'chưa có điểm nào'
+    : k.ratio ? (k.huong ? <>{k.huong}{k.duoi?.length ? <> · không đạt: {k.duoi.map((d: any) => d.ngan).join(' · ')}</> : null}</>
+      : k.duoi?.length ? <>Không đạt: {k.duoi.map((d: any) => d.ngan).join(' · ')}</> : null)
+    : k.kck ? 'KCK · không đặt kỳ vọng MT'
+    : <>{kq.coDiem}/{kq.yeuCau} phần có điểm{duoi && <> · {duoi}</>}</>;
+  const gap = h.dong[0];
+  return (
+    <div className="grid grid-cols-2 gap-2.5 min-[760px]:grid-cols-4">
+      <O nhan="Kết quả gần nhất" tren={kq?.nhan} phu={phuKq} title="Mở đợt Test này ở bảng Học thuật"
+        onClick={kq ? () => onDot(kq.attemptId) : undefined}>
+        {k.kck && kq
+          ? <span className="rounded-md border px-2 text-[15px] leading-6 tabular-nums text-slate-300" style={{ borderColor: 'var(--line-strong)' }}>Overall {k.overall !== null ? k.overall.toFixed(1) : '—'}</span>
+          : giaTriKq}
+      </O>
+      <O nhan="Học thuật" title="Mở bảng kỹ năng ở Case gấp nhất"
+        onClick={gap ? () => onKn(gap.category) : undefined}
+        phu={h.dong.length ? (
+          <span className="flex flex-col gap-[3px]">
+            {h.dong.slice(0, 3).map((d: any, i: number) => (
+              <span key={i} className="flex min-w-0 items-center gap-1.5">
+                <span className="min-w-[30px] font-bold tabular-nums text-slate-100">{d.kn}</span>
+                <span className={`whitespace-nowrap rounded-md px-1.5 text-[11.5px] font-semibold leading-[18px] ${MAU_NHAN[d.t] ?? ''}`}>{d.nhan}</span>
+                {d.viec && <span className="truncate">{d.viec}</span>}
+              </span>
+            ))}
+            {h.dong.length > 3 && <span>+{h.dong.length - 3} Case khác</span>}
+            {h.phu && <span>{h.phu}</span>}
+          </span>
+        ) : h.phu}>
+        {h.so} Case
+      </O>
+      <O nhan="Ý thức" tren={y.tren} title="Mở tab Ý thức & Phối hợp" onClick={onYThuc}
+        phu={<span className={y.tone === 'danger' ? 'font-semibold text-bad' : y.tone === 'warn' ? 'font-semibold text-soon' : y.tone === 'wait' ? 'text-wait' : ''}>{y.phu}</span>}>
+        <span className={y.tren ? '' : 'text-[15px]'}>{y.gt}</span>
+      </O>
+      <O nhan="Sắp tới" tren={s.tren} phu={s.phu} title="Mở đợt Test kế tiếp ở bảng Học thuật"
+        onClick={s.attemptId ? () => onDot(s.attemptId) : undefined}>
+        <span className="text-[15px] tabular-nums">{s.gt}</span>
+      </O>
+    </div>
+  );
+}

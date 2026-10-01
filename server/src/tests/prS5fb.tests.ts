@@ -110,8 +110,12 @@ export async function runPrS5fbTests(t: YThucTestKit) {
     /* PR-VAI-b (Q5): `headline.next` → `dauHoSo.viec` — việc chờ Quản lý duyệt kế hoạch nằm ở "việc của người khác", người làm "Quản lý". */
     const next = profile.studentProfile(P.mbManager, hv).dauHoSo.viec.nguoiKhac.find((x: any) => x.loai === 'cho-duyet' && /kế hoạch/.test(x.chu));
     assert(next && /chờ Quản lý duyệt kế hoạch$/.test(next.chu) && next.han === the.han_duyet && !!the.han_duyet && next.nguoi.ten === 'Quản lý', `việc tiếp: ${JSON.stringify(next)} · hạn thẻ ${the?.han_duyet}`);
-    const web = doc('students/StudentDetailPage.tsx');
-    assert(/chờ nguyên nhân/.test(web) && /awaitingCause/.test(web), 'ô Case đếm riêng PA của Case chờ nguyên nhân');
+    /* PR-VAI-b (K3-03): ô "Case" cũ thay bằng ô Học thuật — mỗi Case một dòng, Case chờ nguyên nhân tách khỏi Case chờ kế hoạch. */
+    const o = d.oHocThuat([{ short: 'P', label: 'P', category: 'speaking', missed: true, cases: [
+      { status: 'open', trangThaiV4: { t: 'can-lam' }, viecTiep: { chu: 'Xác nhận nguyên nhân' } },
+      { status: 'open', trangThaiV4: { t: 'cho-duyet' }, viecTiep: { chu: 'Chờ Quản lý duyệt kế hoạch' } },
+    ] }]);
+    assert(o.dong.map((x: any) => `${x.nhan}|${x.viec}`).join() === 'Cần làm|nguyên nhân,Chờ duyệt|kế hoạch bổ trợ', `ô Học thuật tách chờ nguyên nhân / chờ kế hoạch: ${JSON.stringify(o.dong)}`);
   });
 
   // ------------------------------------------------------------------ 7 · Dòng PA Bổ trợ có mã tuần

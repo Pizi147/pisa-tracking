@@ -207,4 +207,99 @@ export async function runPrVaiBTests(t: YThucTestKit) {
       assert(v.cuaBan.length === 0 && v.nguoiKhac.length === 0, `em Tạm dừng vẫn có việc: ${JSON.stringify(v)}`);
     } finally { conn.prepare(`UPDATE students SET status = 'active' WHERE id = ?`).run(coViec); }
   });
+
+  // ------------------------------------------------------------------ khối 3 · câu tóm tắt + bốn ô (T72, K3-03, Q31-7, Q31-8)
+  const HN = '2026-10-01';
+  const KQ_FT = { dau: 'MT1', ratio: false, sos: 2, dat: false, overall: 5.5, kck: false, soDat: 0, soMon: 5, monTruot: [], phanTram: null };
+  const cau = (o: Record<string, unknown>) => d.cauTomTat({ dacBiet: null, ketQua: KQ_FT, hoTro: [], viec: [], yThuc: null, homNay: HN, ...o }) as { chu: string; tone: string | null }[];
+  const chu = (ds: { chu: string }[]) => ds.map((m) => m.chu);
+
+  check('VAI-b (3) · cauTomTat theo bảng luật mockup 24: FT SOS 2 · PA quá hạn của người khác · Ý thức bắt buộc → 3 mảnh đúng chữ, đúng màu', () => {
+    const r = cau({
+      hoTro: ['Writing Task 2', 'Speaking'],
+      viec: [{ loai: 'nguyen-nhan', chu: 'Xác nhận nguyên nhân Speaking', kyNangTen: 'Speaking', quaHanNgay: null },
+        { loai: 'ghi-ket-qua', chu: 'Ghi kết quả tuần W4 SEP · PA …', kyNangTen: 'Writing Task 2', quaHanNgay: 3 }],
+      yThuc: { nhom: 'bat_buoc', keTiep: 'Report 2', han: '2026-10-04', quaHanNgay: null, deXuat: null },
+    });
+    assert(JSON.stringify(chu(r)) === JSON.stringify(['MT1 SOS 2: đang hỗ trợ Writing Task 2 và Speaking', 'PA Writing Task 2 quá hạn ghi kết quả 3 ngày', 'Ý thức: bắt buộc Report 2, hạn hết 04/10']), JSON.stringify(r));
+    assert(r.map((m) => m.tone).join() === 'sos2,danger,warn', `màu: ${r.map((m) => m.tone)}`);
+  });
+
+  check('VAI-b (3) · cauTomTat: Tạm dừng / KCK / Sắp chuyển / Đã kết thúc đứng đầu, bỏ mệnh đề cuối; không bao giờ quá 3 mảnh', () => {
+    const day = { hoTro: ['Reading'], viec: [{ loai: 'ghi-ket-qua', chu: 'Ghi kết quả', kyNangTen: 'Reading', quaHanNgay: 2 }],
+      yThuc: { nhom: 'bat_buoc', keTiep: 'Report 1', han: '2026-10-04', quaHanNgay: null, deXuat: null } };
+    const td = cau({ ...day, dacBiet: { loai: 'tam-dung', tu: '2026-09-07' } });
+    assert(td[0].chu === 'Tạm dừng từ 07/09' && td[0].tone === 'warn' && td.length === 3 && !td.some((m) => m.chu.startsWith('Ý thức')), JSON.stringify(td));
+    const kck = cau({ dacBiet: { loai: 'kck' }, ketQua: { ...KQ_FT, kck: true, sos: null }, hoTro: ['Reading'] });
+    assert(chu(kck).join(' · ') === 'KCK · không đặt kỳ vọng MT, không SOS · MT1 Overall 5.5: đang hỗ trợ Reading', JSON.stringify(kck));
+    const sc = cau({ dacBiet: { loai: 'sap-chuyen', lop: 'MB FT 103', tuan: '2026-10-05' } });
+    assert(sc[0].chu === 'Sắp chuyển MB FT 103 từ W2 OCT' && sc[0].tone === 'accent', JSON.stringify(sc));
+    const kt = cau({ ...day, dacBiet: { loai: 'ket-thuc' } });
+    assert(kt[0].chu === 'Đã kết thúc' && kt.length <= 3, JSON.stringify(kt));
+    for (const r of [td, kck, sc, kt]) assert(r.length <= 3 && !r.some((m) => /_|cho_duyet|inactive/.test(m.chu)), `quá 3 mảnh / mã thô: ${JSON.stringify(r)}`);
+  });
+
+  check('VAI-b (3) · cauTomTat lớp thường: "Giữa khoá 2/4 môn đạt: không đạt G+V và P" + việc chờ Quản lý duyệt (tím) — KHÔNG chữ SOS; đạt hết → "· không có việc đang mở"', () => {
+    const r = cau({
+      ketQua: { dau: 'Giữa khoá', ratio: true, sos: 2, dat: false, overall: null, kck: false, soDat: 2, soMon: 4, monTruot: ['G+V', 'P'], phanTram: null },
+      hoTro: ['Grammar + Vocabulary', 'Pronunciation'],
+      viec: [{ loai: 'cho-duyet', chu: 'PA Bổ trợ chung chờ Quản lý duyệt kế hoạch', kyNangTen: null, quaHanNgay: null }],
+    });
+    assert(chu(r).join(' · ') === 'Giữa khoá 2/4 môn đạt: không đạt G+V và P · PA Bổ trợ chung chờ Quản lý duyệt kế hoạch', JSON.stringify(r));
+    assert(r[1].tone === 'wait' && !JSON.stringify(r).includes('SOS'), JSON.stringify(r));
+    const dat = cau({ ketQua: { ...KQ_FT, dau: 'MT2', sos: 0, dat: true } });
+    assert(chu(dat).join(' · ') === 'MT2 đạt kỳ vọng · không có việc đang mở', JSON.stringify(dat));
+  });
+
+  check('VAI-b (3) · oHocThuat / oYThuc / oSapToi: số = số Case mở; nhãn §7.3 + việc; Ý thức bậc + bắt buộc; mốc FT/KCK/lớp thường/sau Cuối khoá', () => {
+    const c = (o: Record<string, unknown>) => ({ status: 'in_progress', trangThaiV4: { t: 'dang-lam' }, viecTiep: null, plans: [], boTro: null, ...o });
+    const h = d.oHocThuat([
+      { short: 'L', label: 'Listening', category: 'listening', missed: false, cases: [] },
+      { short: 'W2', label: 'Writing Task 2', category: 'writing2', missed: true, cases: [c({ viecTiep: { chu: 'Ghi kết quả PA x' }, plans: [{ actionOverdue: true }] }), c({ status: 'done' })] },
+      { short: 'S', label: 'Speaking', category: 'speaking', missed: true, cases: [c({ trangThaiV4: { t: 'can-lam' }, viecTiep: { chu: 'Xác nhận nguyên nhân' } })] },
+    ]);
+    assert(h.so === 2 && h.dong[0].kn === 'W2' && h.dong[0].nhan === 'Quá hạn' && h.dong[0].viec === 'ghi kết quả'
+      && h.dong[1].kn === 'S' && h.dong[1].nhan === 'Cần làm' && h.dong[1].viec === 'nguyên nhân', JSON.stringify(h));
+    const bt = d.oHocThuat([{ short: 'G+V', label: 'G+V', category: 'grammar_vocab', missed: true, cases: [c({ trangThaiV4: { t: 'cho-duyet' },
+      boTro: { nhom: 'n1', chung: true, buoiMoiTuan: 2, keHoach: { trangThai: 'cho' } } })] }]);
+    assert(bt.phu === 'PA Bổ trợ chung · 2 buổi/tuần · kế hoạch chờ Quản lý' && bt.dong[0].nhan === 'Chờ duyệt', JSON.stringify(bt));
+    assert(d.oHocThuat([{ short: 'L', label: 'L', category: 'listening', missed: false, cases: [] }]).phu === 'mọi kỹ năng đạt', 'không Case');
+    const y = d.oYThuc({ bacTen: 'Report 1', nhom: 'bat_buoc', soBatBuoc: 3, keTiep: 'Report 2', han: '2026-10-04', quaHanNgay: null, deXuat: null, soMo: 3, tamDung: false });
+    assert(y.gt === 'Report 1' && y.tren === 'bậc đã xử lý' && y.phu === '3 vi phạm / 2 tuần → bắt buộc Report 2 · hạn hết 04/10' && y.tone === 'warn', JSON.stringify(y));
+    const y0 = d.oYThuc(null);
+    assert(y0.gt === 'Chưa xử lý lần nào' && y0.phu === 'không có vi phạm mở', JSON.stringify(y0));
+    const st = (o: Record<string, unknown>) => d.oSapToi({ ketLuan: null, sauCuoiKhoa: null, ratio: false, kck: false, bacKe: null, homNay: HN,
+      next: { dau: 'MT2', attemptNo: 2, tuan: '2026-10-19', kyVong: 6, soPhan: 5, final: false }, ...o });
+    let s = st({});
+    assert(s.gt === 'MT2 · W4 OCT' && s.phu === 'kỳ vọng 6.0 · 5 phần', JSON.stringify(s));
+    s = st({ kck: true });
+    assert(s.phu === 'so với MT1, không kỳ vọng' && !s.phu.includes('kỳ vọng 6'), JSON.stringify(s));
+    s = st({ ratio: true, bacKe: 'BE', next: { dau: 'Cuối khoá', attemptNo: 2, tuan: '2026-10-19', kyVong: null, soPhan: 4, final: true } });
+    assert(s.gt === 'Cuối khoá · W4 OCT' && s.phu === '4 môn · xét lên BE', JSON.stringify(s));
+    s = st({ sauCuoiKhoa: { tuanKetThuc: '2026-10-19' } });
+    assert(s.gt === 'Chuyển lớp' && s.phu === 'chờ Quản lý ra lệnh · lớp kết thúc W4 OCT', JSON.stringify(s));
+    assert(st({ ketLuan: 'Đạt mục tiêu' }).gt === 'Kết luận: Đạt mục tiêu', 'kết luận');
+  });
+
+  check('VAI-b (3) · HAI ĐƯỜNG: ô Học thuật = số hàng Case mở của /skill-board (bốn vai); câu tóm tắt nêu việc quá hạn của NGƯỜI KHÁC cho mọi người xem (Q31-8)', () => {
+    const vai = [P.mbManager, P.admin, P.coreTeacher, P.w2Teacher];
+    let coQuaHan = 0;
+    for (const sid of emLop('MB FT 101')) {
+      let cauTruoc: string | null = null;
+      for (const p of vai) {
+        const pr = studentProfile(p, sid) as any;
+        const mo = (skillSupportBoard(p, sid, pr.cycle?.id ?? null) as any).rows.reduce((n: number, r: any) => n + r.cases.filter((c: any) => c.status !== 'done').length, 0);
+        assert(pr.dauHoSo.o.hocThuat.so === mo, `em ${sid}: ô Học thuật ${pr.dauHoSo.o.hocThuat.so} ≠ ${mo} Case mở của bảng kỹ năng`);
+        const cauNay = JSON.stringify(pr.dauHoSo.tomTat);
+        assert(cauTruoc === null || cauTruoc === cauNay, `em ${sid}: câu tóm tắt khác theo người xem`);
+        cauTruoc = cauNay;
+        const tatCa = [...pr.dauHoSo.viec.cuaBan, ...pr.dauHoSo.viec.nguoiKhac];
+        if (tatCa.some((v: any) => v.quaHanNgay !== null && ['ghi-ket-qua', 'nguyen-nhan', 'xac-nhan-pa', 'ke-hoach', 'mini-test'].includes(v.loai))) {
+          assert(pr.dauHoSo.tomTat.some((m: any) => m.tone === 'danger' && /quá hạn/.test(m.chu)),`em ${sid}: có việc quá hạn mà câu không nêu: ${cauNay}`);
+          coQuaHan++;
+        }
+      }
+    }
+    assert(coQuaHan > 0, 'bộ demo MB FT 101 phải có em có việc học thuật quá hạn');
+  });
 }

@@ -2,7 +2,8 @@ import { db } from '../db.ts';
 import {
   ASSESSED_SKILLS, BASELINE_SOURCE_LABEL, CYCLE_OUTCOME_LABEL, ENTRY_SKILLS,
   ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, JOURNEY_GROUP, PERMISSIONS,
-  caseHeadline, issueLabel, caseCategoryLabel, categoryOf, fmtExamMonth, mocKeTiep, quaHan, studyWeekOf, tenMon, tuanHocFt, tuanLich,
+  caseHeadline, issueLabel, caseCategoryLabel, categoryOf, fmtExamMonth, cauTomTat, ketQuaTestGanNhat, oHocThuat, oSapToi, oYThuc,
+  MEASURE_KIND_LABEL, THANG, nhanLoaiXuLy, programmeOf, tenBacKe, tenMonNgan, mocKeTiep, quaHan, studyWeekOf, tenMon, tuanHocFt, tuanLich,
   type AssessedSkill, type EntrySkill, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { outcomeGroup } from '../cases/effectiveness.ts';
@@ -10,7 +11,7 @@ import { demoToday } from '../demoConfig.ts';
 import { addDays, diffDays, notFound } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { entryBandsOf, routeCuaLuot, scoresOf, skipsOf } from '../fasttrack/attempts.ts';
-import { assessedBands, evaluateAttempt } from '../fasttrack/scoring.ts';
+import { assessedBands, evaluateAttempt, expectationFor } from '../fasttrack/scoring.ts';
 import { evaluateRegular, isRatioClass, isRatioCycle, programmeByCode, programmeCodeOfCycle, programmeOfClass } from '../normal/regular.ts';
 import { cycleById, cyclesOf, currentCycle, examPlanOf, targetRevisions } from '../fasttrack/cycles.ts';
 import { parseMetrics, skillSupportBoard } from '../cases/cases.ts';
@@ -444,6 +445,78 @@ function progressOf(
 }
 
 /**
+ * CÂU TÓM TẮT + BỐN Ô (PR-VAI-b Task 3, T72, K3-03) — mọi số từ CÙNG `board`, `viec`, `trangThaiYThuc`, `attempts`, `nextCheckpoint` đã nạp,
+ * không câu SQL nào thêm. Mỗi ô một nguồn (Q7): Kết quả = `ketQuaTestGanNhat` · Học thuật = hàng Case mở của bảng kỹ năng ·
+ * Ý thức = `trangThaiYThuc` · Sắp tới = mốc kế tiếp.
+ */
+function boOVaCau(i: {
+  s: any; selected: any; attempts: any[]; board: { rows: any[]; chuongTrinh: string | null };
+  viec: { cuaBan: any[]; nguoiKhac: any[] }; yThucEm: any; dai: any; thongTin: any; nextRow: any;
+  cuoiKhoaDang: boolean; khoaHienTai: { tuanKetThuc: string | null } | null; today: string; huong: string | null;
+}) {
+  const { s, selected, attempts, board, viec, yThucEm: em, dai, today } = i;
+  const ct = board.chuongTrinh;
+  const kck = !!selected?.khong_cam_ket;
+  const kq = ketQuaTestGanNhat(attempts, today);
+  const a = kq ? attempts.find((x) => x.id === kq.attemptId) : null;
+  const ratio = a?.mode === 'ratio';
+  const dauDot = (x: any) => (x.mode === 'ratio' ? (x.kind === 'final' ? 'Cuối khoá' : 'Giữa khoá') : `MT${x.attemptNo}`);
+  const tenKn = new Map(board.rows.map((r) => [r.category as string, r.label as string]));
+  const vi = em?.viPham ? [...em.viPham.values()] as any[] : [];
+  const quaHanYt = Math.max(0, ...vi.map((t) => t.quaHanNgay ?? 0)) || null;
+  const deXuatCho = em?.deXuat?.status === 'cho_duyet' ? nhanLoaiXuLy(em.deXuat.kind, em.deXuat.customName) : null;
+  const keTiep = em?.keTiep ? MEASURE_KIND_LABEL[em.keTiep.kind as keyof typeof MEASURE_KIND_LABEL] ?? null : null;
+
+  const tomTat = cauTomTat({
+    dacBiet: s.status === 'finished' ? { loai: 'ket-thuc' }
+      : s.status === 'inactive' ? { loai: 'tam-dung', tu: i.thongTin.tamDung?.tu ?? today }
+      : dai?.loai === 'sap' && dai.lopDich ? { loai: 'sap-chuyen', lop: dai.lopDich.code, tuan: dai.tuan }
+      : kck ? { loai: 'kck' } : null,
+    ketQua: a && kq ? {
+      dau: dauDot(a), ratio, sos: kq.sos, dat: kq.dat, overall: a.overall ?? null, kck,
+      soDat: ratio ? (a.skills ?? []).filter((x: any) => x.outcome === 'pass').length : 0, soMon: a.required,
+      monTruot: ratio ? (a.skills ?? []).filter((x: any) => x.outcome === 'fail').map((x: any) => tenMonNgan(ct, x.skill)) : [],
+      phanTram: kq.phanTram,
+    } : null,
+    hoTro: board.rows.filter((r) => r.cases.some((c: any) => c.status !== 'done')).map((r) => r.label as string),
+    viec: [...viec.cuaBan, ...viec.nguoiKhac].map((v) => ({ loai: v.loai, chu: v.chu, quaHanNgay: v.quaHanNgay, kyNangTen: v.kyNang ? tenKn.get(v.kyNang) ?? null : null })),
+    yThuc: em && !em.tamDung ? { nhom: em.nhom ?? null, keTiep, han: em.han ?? null, quaHanNgay: quaHanYt, deXuat: deXuatCho } : null,
+    homNay: today,
+  });
+
+  const nextA = i.nextRow ? attempts.find((x) => x.id === i.nextRow.id) : null;
+  const daCuoiKhoa = i.cuoiKhoaDang && !nextA && attempts.some((x) => x.kind === 'final' && x.status !== 'cancelled' && x.scored > 0);
+  const pc = programmeOf(ct);
+  const o = {
+    /** Ô Kết quả: lượt + kỹ năng dưới kỳ vọng (mỗi mã một liên kết, G5) · KCK · hướng Cuối khoá. */
+    ketQua: {
+      kq, kck, ratio, overall: (a?.overall ?? null) as number | null,
+      duoi: board.rows.filter((r) => r.missed === true).map((r) => ({ ngan: (r.short ?? r.label) as string, kn: r.category as string })),
+      huong: ratio && a?.kind === 'final' ? i.huong : null,
+    },
+    hocThuat: oHocThuat(board.rows),
+    yThuc: oYThuc(em ? {
+      bacTen: em.bac > 0 ? MEASURE_KIND_LABEL[THANG[em.bac - 1] as keyof typeof MEASURE_KIND_LABEL] ?? null : null,
+      nhom: em.nhom ?? null, soBatBuoc: em.soBatBuoc ?? 0, keTiep, han: em.han ?? null, quaHanNgay: quaHanYt, deXuat: deXuatCho,
+      soMo: vi.filter((t) => t.t !== 'da_xu_ly').length, tamDung: !!em.tamDung || s.status === 'inactive',
+    } : null),
+    sapToi: {
+      ...oSapToi({
+        ketLuan: s.status === 'finished' ? (selected?.outcome ? CYCLE_OUTCOME_LABEL[selected.outcome as keyof typeof CYCLE_OUTCOME_LABEL] ?? 'Kết thúc học' : 'Kết thúc học') : null,
+        sauCuoiKhoa: daCuoiKhoa ? { tuanKetThuc: i.khoaHienTai?.tuanKetThuc ?? null } : null,
+        next: nextA ? {
+          dau: dauDot(nextA), attemptNo: nextA.attemptNo, tuan: nextA.weekStart ?? null, soPhan: nextA.required, final: nextA.kind === 'final',
+          kyVong: nextA.mode === 'ratio' || kck ? null : expectationFor(selected?.target_score ?? null, nextA.attemptNo, selected?.route ?? null),
+        } : null,
+        ratio: !!nextA ? nextA.mode === 'ratio' : i.cuoiKhoaDang, kck, bacKe: pc && pc !== 'FT' ? tenBacKe(pc) : null, homNay: today,
+      }),
+      attemptId: nextA?.id ?? null,
+    },
+  };
+  return { tomTat, o };
+}
+
+/**
  * DÒNG THÔNG TIN ĐẦU HỒ SƠ (PR-VAI-b Task 1, mockup 24 A/C/D1) — "em là ai":
  *   FT          MB FT 101 · LT1 · target 6.5 · tuần học thứ 9 · thi dự kiến 06/2027 · GVCN …
  *   lớp thường  MB FOU 15 · FOU · tuần học 7/10 · Cuối khoá W4 OCT · GVCN …
@@ -782,6 +855,26 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     trangThaiEm: s.status, lopId: current?.class_id ?? null, chuongTrinh: board.chuongTrinh, yThuc: yThucEm, miniTest, dai,
   });
   const thongTin = dongThongTin({ startWeekSel: selected ? { cycleId: selected.id, weekStart: startWeekSel?.week_start ?? null } : null, s, current, khoa: khoaHienTai, gvcn: gvcnHienTai, dangChay: allCycles.find((c) => c.status === 'active') ?? null, today });
+  const cuoiKhoaEm = (() => {
+    /* MỘT câu: lớp đang học + lớp thường vừa rời (nếu có). PR-S5F-a: vừa chuyển (lên lớp / học lại / sang FT) mà lớp đang học chưa có điểm Cuối khoá
+       → vẫn thấy % Cuối khoá của lớp thường vừa rời (hộp Kết luận khoá; kỳ vọng đầu ra BE/ELE — Quản lý đánh dấu được cả sau khi em đã sang FT). */
+    const ds = db().prepare(
+      `SELECT e.class_id, e.status, c.code, c.programme_code, c.is_fast_track FROM enrollments e JOIN classes c ON c.id = e.class_id
+        WHERE e.student_id = ? AND (e.status = 'active' OR (e.status = 'transferred' AND c.is_fast_track = 0))
+        ORDER BY e.status = 'active' DESC, e.ended_at DESC, e.id DESC LIMIT 2`,
+    ).all(studentId) as any[];
+    const dangHoc = ds.find((r) => r.status === 'active');
+    if (!dangHoc) return null;
+    const kem = (r: any, x: EmCuoiKhoa | null, daChuyen: boolean) => (x ? { ...x, ct: r.programme_code ?? null, lop: r.code ?? null, daChuyen } : null);
+    const dang = !dangHoc.is_fast_track && isRatioClass(dangHoc.class_id) ? cuoiKhoaTheoHocVien(dangHoc.class_id, [studentId]).get(studentId) ?? null : null;
+    if (dang && dang.scored > 0) return kem(dangHoc, dang, false);   // bài Cuối khoá của lớp đang học đã có điểm
+    const cu = ds.find((r) => r.status === 'transferred');
+    const x = cu && isRatioClass(cu.class_id) ? cuoiKhoaTheoHocVien(cu.class_id, [studentId], { daRoi: true }).get(studentId) ?? null : null;
+    return x && x.scored > 0 ? kem(cu, x, true) : kem(dangHoc, dang, false);
+  })();
+  const dau = boOVaCau({
+    s, selected, attempts, board, viec, yThucEm, dai, thongTin, nextRow, cuoiKhoaDang: progHienTai?.scoringMode === 'ratio', khoaHienTai, today, huong: cuoiKhoaEm?.goiY?.nhanHuong ?? null,
+  });
 
   return {
     id: s.id, studentCode: s.student_code, fullName: s.full_name, dob: s.dob, email: s.email ?? null,
@@ -967,7 +1060,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     })(),
     /** PR-VAI-b: đầu hồ sơ "hiểu trong 30 giây" (mockup 24) — em là ai · em đang thế nào · bốn ô · việc của bạn. */
     dauHoSo: {
-      thongTin, viec,
+      thongTin, viec, tomTat: dau.tomTat, o: dau.o,
       /** Kỹ năng dưới kỳ vọng ở đợt gần nhất (tên ngắn) — dựng từ CÙNG bảng kỹ năng bên dưới, hai chỗ không nói ngược nhau (mục 4.1). */
       duoi: board.rows.filter((r) => r.missed === true).map((r) => (r.short ?? r.label) as string),
     },
@@ -977,23 +1070,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     /** PR-LT2b: % Cuối khoá, hướng gợi ý, kết luận kỳ vọng đầu ra của lớp thường ĐANG học (null với FT / chưa có lớp). */
     /** PR-LT2b (M-05): Mini Test của em (lộ trình mới) + Case/PA để mở form Ghi kết quả cuối. */
     miniTest,
-    cuoiKhoa: (() => {
-      /* MỘT câu: lớp đang học + lớp thường vừa rời (nếu có). PR-S5F-a: vừa chuyển (lên lớp / học lại / sang FT) mà lớp đang học chưa có điểm Cuối khoá
-         → vẫn thấy % Cuối khoá của lớp thường vừa rời (hộp Kết luận khoá; kỳ vọng đầu ra BE/ELE — Quản lý đánh dấu được cả sau khi em đã sang FT). */
-      const ds = db().prepare(
-        `SELECT e.class_id, e.status, c.code, c.programme_code, c.is_fast_track FROM enrollments e JOIN classes c ON c.id = e.class_id
-          WHERE e.student_id = ? AND (e.status = 'active' OR (e.status = 'transferred' AND c.is_fast_track = 0))
-          ORDER BY e.status = 'active' DESC, e.ended_at DESC, e.id DESC LIMIT 2`,
-      ).all(studentId) as any[];
-      const dangHoc = ds.find((r) => r.status === 'active');
-      if (!dangHoc) return null;
-      const kem = (r: any, x: EmCuoiKhoa | null, daChuyen: boolean) => (x ? { ...x, ct: r.programme_code ?? null, lop: r.code ?? null, daChuyen } : null);
-      const dang = !dangHoc.is_fast_track && isRatioClass(dangHoc.class_id) ? cuoiKhoaTheoHocVien(dangHoc.class_id, [studentId]).get(studentId) ?? null : null;
-      if (dang && dang.scored > 0) return kem(dangHoc, dang, false);   // bài Cuối khoá của lớp đang học đã có điểm
-      const cu = ds.find((r) => r.status === 'transferred');
-      const x = cu && isRatioClass(cu.class_id) ? cuoiKhoaTheoHocVien(cu.class_id, [studentId], { daRoi: true }).get(studentId) ?? null : null;
-      return x && x.scored > 0 ? kem(cu, x, true) : kem(dangHoc, dang, false);
-    })(),
+    cuoiKhoa: cuoiKhoaEm,
   };
 }
 

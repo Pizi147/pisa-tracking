@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { BoLocDoan, Card, DaiChiXem, Empty, ErrorState, Info, Level, Outcome, Skeleton, TargetText, Th} from '../../ui/ui.tsx';
@@ -7,7 +7,7 @@ import { cuonOnDinh } from '../../lib/cuonOnDinh.ts';
 import { MuiTen, SkillBoard, type SkillBoardRow } from '../cases/SkillBoard.tsx';
 import { KetLuanKhoa, MiniTestO } from './KetLuanKhoa.tsx';
 import { HanhTrinh } from './HanhTrinh.tsx';
-import { DongThongTin, ThanhViec, type Viec } from './DauHoSo.tsx';
+import { BonO, CauTomTat, DongThongTin, ThanhViec, type Viec } from './DauHoSo.tsx';
 import { LichSuLop } from './LichSuLop.tsx';
 import { NganCase } from './NganCase.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
@@ -22,11 +22,10 @@ import {
 } from '../../lib/format.ts';
 import {
   HO_SO_TAB_LABEL, JOURNEY_EVENT_LABEL, caseCategoriesFor, tenMonNgan, docThamSoHoSo, duongHoSoHocVien,
-  ketQuaTestGanNhat, nhanKetQuaThuong, CHUONG_TRINH_KHONG_CHIA_MON, ngay, tuanLich, type HoSoTab,
+  nhanKetQuaThuong, CHUONG_TRINH_KHONG_CHIA_MON, ngay, tuanLich, type HoSoTab,
 } from '@shared/domain/index.ts';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
-import { Han } from '../../ui/Han.tsx';
 import { ChipLichSu } from '../../ui/Nhan.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { DaiHocVienChuyen } from '../classes/DaiChuyenLop.tsx';
@@ -218,6 +217,9 @@ export default function StudentDetailPage() {
             </div>
           </div>
 
+          {/* PR-VAI-b (Q6): câu tóm tắt máy viết — "em đang thế nào", dưới vạch mảnh của khung thông tin. */}
+          <CauTomTat manh={data.dauHoSo.tomTat} />
+
           {/*
             DẢI LỘ TRÌNH chỉ bày khi được hỏi tới. Nó là thứ dùng vài lần một khoá, không đáng
             chiếm một tầng cố định ở đầu mọi hồ sơ.
@@ -241,10 +243,10 @@ export default function StudentDetailPage() {
           navigate(`/hoc-vien/lop/${d.lopNguon.id}?viec=ban-giao&lenh=${d.lenhId}${k === 'ban-giao-mon' && d.mon ? `&mon=${d.mon.ma}` : ''}`);
         }} />
 
-      {/* BỐN Ô SỐ (Q7, R8c/Q11) — bốn câu hỏi, không phải một phép chia. LUÔN hiện phía trên hàng tab, kể cả khi chưa có lộ trình (spec §4.1; chủ sản phẩm chốt 22/09 sau rà soát). */}
-      <HeaderStats data={data} rows={skillRows} homNay={homNay}
-        onOpenDot={(attemptId) => navigate(duongHoSoHocVien(data.id, { dot: attemptId }))}
-        onOpenKn={moKyNang} />
+      {/* BỐN Ô (PR-VAI-b, K3-03, T72): Kết quả gần nhất · Học thuật · Ý thức · Sắp tới — mỗi ô một nguồn, bấm mở đúng chỗ sinh số. */}
+      <BonO o={data.dauHoSo.o} homNay={homNay}
+        onDot={(attemptId) => navigate(duongHoSoHocVien(data.id, { dot: attemptId, loTrinh: p.loTrinh }))}
+        onKn={moKyNang} onYThuc={() => setTab('y-thuc')} />
 
       {/* PR-VAI-b (K3-01, T72): việc gấp nhất của NGƯỜI XEM với em; không có việc thì không vẽ gì. */}
       <ThanhViec viec={data.dauHoSo.viec} homNay={homNay} onLam={lamViec} />
@@ -391,97 +393,6 @@ export default function StudentDetailPage() {
 }
 
 // ==================================================================== khối nhỏ
-
-/**
- * BỐN Ô SỐ Ở ĐẦU HỒ SƠ (Q7, spec PR-HV §4.1) — bốn câu hỏi khác nhau, cố ý không cộng thành gì.
- *
- *   Kết quả Test gần nhất   bài vừa rồi ra sao — đúng câu của <KetQuaDot>; lớp Normal KHÔNG bịa Overall
- *   Kỹ năng cần hỗ trợ      giờ đang yếu ở đâu — số kỹ năng dưới kỳ vọng, kèm tên
- *   Case đang mở            còn bao nhiêu việc chưa xong — số case, và số PA đang theo dõi
- *   Việc cần làm tiếp       phải làm gì, trước ngày nào — câu có động từ do máy chủ dựng (`headline.next`)
- *
- * Mỗi ô nói ĐÚNG MỘT điều. BỐN Ô ĐỀU BẤM ĐƯỢC (R8c, Q11) — mỗi ô dẫn đúng chỗ tạo ra con số đó.
- * Giá trị `—`/`0` không bấm được (không có gì để mở).
- */
-function HeaderStats({ data, rows, homNay, onOpenDot, onOpenKn }: {
-  data: any; rows: SkillBoardRow[] | null; homNay: string | null;
-  onOpenDot: (attemptId: number) => void; onOpenKn: (kn: string | null | undefined) => void;
-}) {
-  const scored = (rows ?? []).filter((r) => r.band !== null);
-  const below = scored.filter((r) => r.missed === true);
-  /* PR-S3F #5: môn có điểm mà không có kỳ vọng (em KCK, chưa target) không được tính là "đạt kỳ vọng". */
-  const khongKyVong = scored.filter((r) => r.missed === null).length;
-  const daDatHet = scored.length > 0 && khongKyVong === 0;
-  const openCases = (rows ?? []).flatMap((r) => r.cases.map((c) => ({ ...c, category: r.category })))
-    .filter((c) => c.status !== 'done');
-  /* PR-S3F #10: PA "Chờ xác nhận" (Q28-3) chưa chạy — không tính vào "đang theo dõi", ghi riêng. */
-  const songPlans = openCases.flatMap((c) => c.plans).filter((p) => p.status === 'planned' || p.status === 'started');
-  const choXacNhan = songPlans.filter((p) => p.choXacNhan).length;
-  /* PR-LT2a: PA Bổ trợ chờ kế hoạch được duyệt cũng chưa chạy. PR-S5F-b: Case còn chờ nguyên nhân thì PA của nó chờ NGUYÊN NHÂN,
-     chưa tới bước kế hoạch — đếm riêng, không gọi "chờ kế hoạch". */
-  const chuaChayCua = (cs: typeof openCases) => cs.flatMap((c) => c.plans).filter((p) => (p.status === 'planned' || p.status === 'started') && p.chuaChay).length;
-  const choNguyenNhan = chuaChayCua(openCases.filter((c) => c.sos?.awaitingCause));
-  const choKeHoach = chuaChayCua(openCases.filter((c) => !c.sos?.awaitingCause));
-  const runningPlans = songPlans.length - choXacNhan - choNguyenNhan - choKeHoach;
-  const kq = ketQuaTestGanNhat(data.attempts ?? [], homNay);
-  const cheDo = data.cycle?.ratio ? 'ratio' as const : 'ielts' as const;
-
-  return (
-    <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-      <Stat label="Kết quả Test gần nhất"
-        value={kq ? kq.nhan : '—'}
-        onClick={kq ? () => onOpenDot(kq.attemptId) : undefined}
-        title="Mở đợt Test này ở bảng Học thuật"
-        sub={kq
-          ? (kq.phanTram !== null ? `${kq.phanTram}% tổng` : kq.dungKetQuaDot
-            ? <KetQuaDot coDiem={kq.coDiem} yeuCau={kq.yeuCau} dat={kq.dat} sos={kq.sos} cheDo={cheDo} soMonChuaDat={kq.soMonChuaDat} />
-            : `${kq.coDiem}/${kq.yeuCau} phần có điểm`)
-          : 'chưa có điểm nào'} />
-
-      <Stat label="Kỹ năng cần hỗ trợ"
-        value={String(below.length)}
-        tone={below.length ? 'danger' : scored.length > khongKyVong ? 'ok' : undefined}
-        onClick={below.length ? () => onOpenKn(below[0].category) : undefined}
-        title="Mở bảng kỹ năng ở đúng môn chưa đạt đầu tiên"
-        sub={below.length
-          ? below.map((r) => r.label).join(' · ')
-          : !scored.length ? 'chưa có điểm nào'
-          : daDatHet ? (cheDo === 'ratio' ? 'mọi môn đạt' : 'mọi môn đạt kỳ vọng')
-          : khongKyVong === scored.length ? (data.cycle?.khongCamKet ? 'KCK · không đặt kỳ vọng' : 'chưa có kỳ vọng')
-          : 'các môn có kỳ vọng đều đạt'} />
-
-      <Stat label="Case đang mở"
-        value={String(openCases.length)}
-        tone={openCases.length ? 'warn' : undefined}
-        onClick={openCases.length ? () => onOpenKn(openCases[0].category) : undefined}
-        title="Mở bảng kỹ năng ở kỹ năng của Case mở đầu tiên"
-        sub={openCases.length ? `${runningPlans} PA đang theo dõi${choXacNhan ? ` · ${choXacNhan} chờ xác nhận` : ''}${choNguyenNhan ? ` · ${choNguyenNhan} chờ nguyên nhân` : ''}${choKeHoach ? ` · ${choKeHoach} chờ kế hoạch` : ''}` : 'không có case nào đang mở'} />
-
-    </div>
-  );
-}
-
-function Stat({ label, value, sub, tone, nho, onClick, title }: {
-  label: string; value: string; sub?: ReactNode; tone?: 'ok' | 'warn' | 'danger';
-  /** Giá trị là một câu chữ (ô "Việc cần làm tiếp"): chữ nhỏ hơn, cho xuống dòng. */
-  nho?: boolean;
-  /** Có thì cả ô vẽ thành nút bấm được (R8c) — không có thì vẫn là thẻ tĩnh như cũ. */
-  onClick?: () => void; title?: string;
-}) {
-  const color = tone === 'danger' ? 'text-rose-300'
-    : tone === 'warn' ? 'text-amber-200'
-    : tone === 'ok' ? 'text-emerald-300' : 'text-slate-100';
-  const Khung = onClick ? 'button' : 'div';
-  return (
-    <Khung type={onClick ? 'button' : undefined} onClick={onClick}
-      className={`rounded-xl border px-3 py-2.5 min-w-0 text-left w-full appearance-none bg-transparent group ${onClick ? '' : ''}`}
-      style={{ borderColor: 'var(--line)' }} title={onClick ? title : undefined}>
-      <span className="block text-[11px] text-slate-500">{label}</span>
-      <span className={`block font-semibold mt-0.5 break-words ${nho ? 'text-sm leading-snug' : 'text-lg leading-tight'} ${color} ${onClick ? 'group-hover:underline' : ''}`}>{value}</span>
-      {sub && <span className="block text-[11px] text-slate-500 mt-0.5">{sub}</span>}
-    </Khung>
-  );
-}
 
 /**
  * BẢNG MOCK TEST của hồ sơ HV (F8, K4-33). Nằm ở: Học viên & Lớp › hồ sơ học viên › tab Học thuật › khối "Mock Test".
