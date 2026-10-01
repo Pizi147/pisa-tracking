@@ -95,7 +95,13 @@ export async function runPrS6fATests(t: YThucTestKit) {
   boLichTuTao(conn, eX.cy);
   /* Tạo lượt NGAY tuần đó (T34: lượt tạo sau khi tuần thi đã hết là MT lịch sử, không nợ). */
   const aX = voiNgay(tuanW1, () => luotThu(conn, svc.createAttempt, P.admin, { studentId: eX.sid, cycleId: eX.cy, classId: MB_FT, no: 1, periodId: week.ensurePeriod(tuanW1).id }));
-  const badge = () => (classes.listClassSummaries(P.mbManager).rows as any[]).find((r) => r.id === MB_FT).needScores as number;
+  const badge = () => {
+    const n = (classes.listClassSummaries(P.mbManager).rows as any[]).find((r) => r.id === MB_FT).needScores as number;
+    /* Số = danh sách: badge bằng danh sách "cần chấm" nó mở ra (listAttempts need my_scores). */
+    const ds = (svc.listAttempts(P.mbManager, { classId: MB_FT, need: 'my_scores', scope: 'managed' }).rows as any[]).reduce((s, r) => s + r.pendingSkills.length, 0);
+    if (ds !== n) throw new Error(`badge ${n} ≠ danh sách cần chấm ${ds}`);
+    return n;
+  };
   const lt = () => {
     const r = canCham.lichTest(P.mbManager, week.ensurePeriod(tuanW1).id, MB, TODAY, { phamVi: 'tat-ca' });
     return { conBai: r.lop.find((l: any) => l.classId === MB_FT)?.conBai ?? 0, quaHan: r.tongQuan.quaHan };
