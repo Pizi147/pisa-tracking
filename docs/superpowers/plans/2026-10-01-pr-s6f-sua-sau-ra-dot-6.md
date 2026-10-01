@@ -399,7 +399,9 @@ Pb2-a P2 "hai route Danh sách Case còn sót" (một phần) · Pb2-b P2 / câu
   - "Đã loại" và "Chuyển cho PR khác" (bảng dưới);
   - `ponytail:`.
 
-## Câu hỏi cho chủ sản phẩm (tối đa 3)
+## Câu hỏi cho chủ sản phẩm — ĐÃ CHỐT 01/10
+
+> **Câu 1 = B** (chủ sản phẩm): hai PR song song **PR-S6F-a** (Task 0, 1, 2, 3, 4, 10, 11, 14) và **PR-S6F-b** (Task 0, 5, 6, 7, 8, 9, 12, 13, 14), theo hợp đồng file dưới. Nhánh `pr-s6f-a-may-chu-du-lieu` / `pr-s6f-b-giao-dien-toc-do`; worktree cùng tên trong `.claude/worktrees/`; phép kiểm `prS6fA.tests.ts` / `prS6fB.tests.ts`; commit `PR-S6F-a (n): …` / `PR-S6F-b (n): …`. Không thứ tự merge bắt buộc; PR merge sau làm cổng gộp. **Câu 2 = A, Câu 3 = A** (planning).
 
 - **Câu 1 — Một PR hay hai PR song song?** Kế hoạch có **15 Task** (0–14), vượt ngưỡng ~14. Mỗi lần `npm run check` ~13 phút → một PR chạy nối tiếp khoảng 3–4 giờ chỉ riêng phép kiểm.
   - A. **Một PR-S6F** (như kế hoạch). Ít rủi ro gộp, một lượt rà; chậm hơn.
