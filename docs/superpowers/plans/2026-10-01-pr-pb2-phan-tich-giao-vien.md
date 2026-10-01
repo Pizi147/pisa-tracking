@@ -782,6 +782,7 @@ VAI-a đã chốt:
 | 01/10 | 2 | 2014 ✓, tốc độ 28/28. Đích chuyển hướng giữ đúng Q4; `hang-doi` khác `due`/bỏ quên (vd `review` từ `summary.ts`) → Vấn đề HV |
 | 01/10 | 3 | Check qua npm sập Node 2 lần (exit 9, máy tải nặng, phiên bị ngắt một lần) → chạy thẳng: **2023 ✓**, tốc độ 28/28. Hiệu quả PA 24→16 câu (giữ trần); đường mới `?gv&tu&den` 17/16 câu → trần 27/26. `NGUONG_MINI_TEST` chuyển lên `shared/domain/cuoiKhoa.ts` (ghi Mini Test, Hiệu quả PA, Tổng hợp đọc chung) thay vì xuất từ `normal/cuoiKhoa.ts`. `queryPlans` so `toDate` theo 10 ký tự ngày. Chip lọc dùng chữ `✕` như các chip lọc sẵn có (nhất quán) |
 | 01/10 | 4 | Lượt 1 hỏng hàng loạt ở vùng không đụng (`malloc failure`, `database disk image is malformed` — RAM còn 3 GB, hai `run.js` của session khác chiếm 4,6 GB) → chạy lại: **2028 ✓**, tốc độ 28/28. `tocDoDuong` CHƯA có `/phan-tich/tong-hop` → thêm: FT 19 câu, lớp thường 20 (+1 Mini Test) → trần 29/30. Lớp thường bỏ `tamThoi` (Q12 không có cột này): bài chưa đủ điểm → Chưa đủ điểm. Chú giải màu SOS ẩn ở khung lớp thường |
+| 01/10 | 5 | Cổng gộp: `origin/main` chưa có PR mới (không gỡ). Bấm thử KIỂM A 36/36 + A6 ô Mini Test (ảnh `thiet-ke/anh/pr-pb2a/`). impeccable detect 0; polish: chip 44 px trên điện thoại, bỏ tóm tắt `0 … 0` lặp, cột lớp thường 72 px, tiêu đề ngăn `Mini Test · Trượt`. `/ponytail-review`: gộp `hrefCase`/`linkCase` → `duongCase` (shared), bỏ export `HQ_PA_TOI_DA_TUAN`. Check cuối **2028 ✓**, tốc độ 28/28. Đã tắt 4177/5377, không còn `run.js` của worktree này |
 | | | |
 
 ## Nhật ký B (Pb2-b)

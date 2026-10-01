@@ -347,7 +347,7 @@ export function tuanTrungVi(soNgay: readonly number[]): number | null {
 }
 
 /** Tham số URL của Hiệu quả PA (Hợp đồng a↔b): `tu`/`den` = Thứ Hai tuần đầu / tuần cuối (gồm cả tuần `den`), tối đa 52 tuần. */
-export const HQ_PA_TOI_DA_TUAN = 52;
+const HQ_PA_TOI_DA_TUAN = 52;
 /** Kiểm `tu`/`den`: trả lỗi (chuỗi) hoặc null. `den` vắng = tới hôm nay. */
 export function loiKhoangTuan(tu: string, den: string | null): string | null {
   const laThuHai = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(`${s}T00:00:00Z`)) && new Date(`${s}T00:00:00Z`).getUTCDay() === 1

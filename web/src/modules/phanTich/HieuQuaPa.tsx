@@ -115,7 +115,7 @@ export function HieuQuaPa(props: PhamViPhanTich) {
               <span>{[props.ct ? CHUONG_TRINH_LABEL[props.ct] : null, tenChiNhanh, khoang].filter(Boolean).join(' · ')}</span>
               {data.loc.gv && (
                 <button type="button" onClick={() => boLoc('gv')} title="Bỏ lọc giáo viên"
-                  className="inline-flex min-h-[28px] items-center gap-1 rounded-full border px-2.5 text-xs text-slate-200"
+                  className="inline-flex min-h-[44px] sm:min-h-[28px] items-center gap-1 rounded-full border px-2.5 text-xs text-slate-200"
                   style={{ borderColor: 'var(--accent-line)', background: 'var(--accent-soft)' }}>
                   Giáo viên: {data.loc.gv.ten} <span aria-hidden>✕</span>
                 </button>
@@ -125,7 +125,7 @@ export function HieuQuaPa(props: PhamViPhanTich) {
               )}
               {data.loc.theoKhoang && (
                 <button type="button" onClick={() => boLoc('tu', 'den')} title="Bỏ lọc khoảng tuần"
-                  className="inline-flex min-h-[28px] items-center gap-1 rounded-full border px-2.5 text-xs text-slate-200 tabular-nums"
+                  className="inline-flex min-h-[44px] sm:min-h-[28px] items-center gap-1 rounded-full border px-2.5 text-xs text-slate-200 tabular-nums"
                   style={{ borderColor: 'var(--accent-line)', background: 'var(--accent-soft)' }}>
                   {khoang} <span aria-hidden>✕</span>
                 </button>
@@ -135,7 +135,7 @@ export function HieuQuaPa(props: PhamViPhanTich) {
             {/* ---------------------------------------------------------------- 1. PA do giáo viên thêm */}
             <DongTomTat
               chinh={`PA do giáo viên thêm · ${data.gvThem.tomTat.paCoKetQua} PA có kết quả`}
-              phu={`${data.gvThem.tomTat.caiThien} có cải thiện · ${data.gvThem.tomTat.vanDeDuDuLieu} vấn đề đủ dữ liệu`}
+              phu={data.gvThem.tomTat.paCoKetQua ? `${data.gvThem.tomTat.caiThien} có cải thiện · ${data.gvThem.tomTat.vanDeDuDuLieu} vấn đề đủ dữ liệu` : undefined}
               luat={(
                 <NutLuat label="Cách đọc">
                   <p className="m-0">"Có cải thiện" = Tiến bộ rõ + Tiến bộ một phần, trên PA đã kết thúc có kết quả xác định. PA huỷ vì "không cần theo dõi" không tính.</p>
@@ -170,7 +170,7 @@ export function HieuQuaPa(props: PhamViPhanTich) {
             <div className="border-t" style={{ borderColor: 'var(--line)' }}>
               <DongTomTat
                 chinh={`PA theo quy chế · ${data.quyChe.tomTat.paCoKetQua} PA có kết quả`}
-                phu={`${data.quyChe.tomTat.caiThien} có cải thiện · PA bắt buộc theo quy chế — không so, không xếp hạng`} />
+                phu={`${data.quyChe.tomTat.paCoKetQua ? `${data.quyChe.tomTat.caiThien} có cải thiện · ` : ''}PA bắt buộc theo quy chế — không so, không xếp hạng`} />
               {data.quyChe.hang.length === 0
                 ? <p className="m-0 px-4 pb-3 text-sm text-slate-400">Chưa có PA theo quy chế có kết quả trong {khoang}.</p>
                 : (

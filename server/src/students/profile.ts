@@ -2,7 +2,7 @@ import { db } from '../db.ts';
 import {
   ASSESSED_SKILLS, BASELINE_SOURCE_LABEL, CYCLE_OUTCOME_LABEL, ENTRY_SKILLS,
   ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, JOURNEY_GROUP, PERMISSIONS,
-  caseHeadline, duongHoSoHocVien, issueLabel, caseCategoryLabel, categoryOf, mocKeTiep, quaHan, studyWeekOf, tenMon,
+  caseHeadline, duongCase, issueLabel, caseCategoryLabel, categoryOf, mocKeTiep, quaHan, studyWeekOf, tenMon,
   type AssessedSkill, type EntrySkill, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { outcomeGroup } from '../cases/effectiveness.ts';
@@ -185,19 +185,18 @@ function episodesOf(rows: any[]) {
       .all(...fuIds) as any[]) caseOfFollowup.set(r.id, r.case_id);
   }
 
-  /* PR-Pb2-a (Q5): dòng Case của hồ sơ mở thẳng Ngăn Case trên chính hồ sơ này (sự kiện hành trình luôn có `student_id`). */
-  const linkCase = (caseId: number, sid: number | null | undefined) => (sid ? duongHoSoHocVien(sid, { caseId }) : `/hoc-thuat/case/${caseId}`);
+  /* PR-Pb2-a (Q5): dòng Case của hồ sơ mở thẳng Ngăn Case trên chính hồ sơ này (`duongCase`). */
   const keyOf = (e: any): { key: string; kind: string; link: string | null } => {
     if (e.ref_table === 'sos_cases' && e.ref_id) {
-      return { key: `case:${e.ref_id}`, kind: 'case', link: linkCase(e.ref_id, e.student_id) };
+      return { key: `case:${e.ref_id}`, kind: 'case', link: duongCase(e.student_id, e.ref_id) };
     }
     if (e.ref_table === 'case_interventions' && caseOfIntervention.has(e.ref_id)) {
       const id = caseOfIntervention.get(e.ref_id)!;
-      return { key: `case:${id}`, kind: 'case', link: linkCase(id, e.student_id) };
+      return { key: `case:${id}`, kind: 'case', link: duongCase(e.student_id, id) };
     }
     if (e.ref_table === 'case_followups' && caseOfFollowup.has(e.ref_id)) {
       const id = caseOfFollowup.get(e.ref_id)!;
-      return { key: `case:${id}`, kind: 'case', link: linkCase(id, e.student_id) };
+      return { key: `case:${id}`, kind: 'case', link: duongCase(e.student_id, id) };
     }
     if (e.ref_table === 'assessment_attempts' && e.ref_id) {
       return { key: `attempt:${e.ref_id}`, kind: 'assessment', link: `/mock/${e.ref_id}` };

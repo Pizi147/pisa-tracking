@@ -144,7 +144,7 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
     /* Ô 0: "0" xám, không gạch chân (không có danh sách để mở — thay cho "—" cũ). */
     if (v <= 0) return <span className="tabular-nums text-faint">0</span>;
     const nguon = `/phan-tich/tong-hop/o?${query}&khoa=${encodeURIComponent(row.khoa)}&cot=${encodeURIComponent(col.khoa)}`;
-    const so = <SoLieuO giaTri={v} nguon={nguon} tieuDe={`${col.nhan(ct)} · ${row.nhan}`} />;
+    const so = <SoLieuO giaTri={v} nguon={nguon} tieuDe={`${col.nhomCon ? `${NHAN_NHOM_CON[col.nhomCon]} · ` : ''}${col.nhan(ct)} · ${row.nhan}`} />;
     /* PR-SOS (K1-20): Chờ nguyên nhân kèm số quá hạn trong ngoặc. */
     const quaHan = col.khoa === 'choNguyenNhan' ? row.o.choNguyenNhanQuaHan ?? 0 : 0;
     if (!mau) return <span className={MAU_COT[col.khoa] ?? ''}>{so}{quaHan > 0 && <span className="text-faint"> ({quaHan} quá hạn)</span>}</span>;
@@ -237,7 +237,7 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
               <colgroup>
                 <col style={{ width: 180 }} />
                 {/* Nhóm Xử lý cần rộng hơn — tiêu đề "HV có Case"/"Đang xử lý"/"Thiếu PA học thuật" bị cắt ở 64px. */}
-                {cols.map((c) => <col key={c.khoa} style={{ width: c.nhom === 'xu-ly' || (laThuong && !c.nhomCon) ? 88 : 64 }} />)}
+                {cols.map((c) => <col key={c.khoa} style={{ width: c.nhom === 'xu-ly' || (laThuong && !c.nhomCon) ? 88 : laThuong ? 72 : 64 }} />)}
               </colgroup>
               <thead>
                 <tr>

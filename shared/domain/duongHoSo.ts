@@ -48,6 +48,10 @@ export function duongHoSoHocVien(studentId: number, o: ThamSoHoSo = {}): string 
   return `/hoc-vien/${studentId}${s ? `?${s}` : ''}`;
 }
 
+/** PR-Pb2-a (Q5): link một Case — có em → hồ sơ HV mở Ngăn Case; không em → trang Case riêng (`/hoc-thuat/case/:id` vẫn còn cho trường hợp này). */
+export const duongCase = (studentId: number | null | undefined, caseId: number): string =>
+  (studentId ? duongHoSoHocVien(studentId, { caseId }) : `/hoc-thuat/case/${caseId}`);
+
 const soNguyenDuong = (v: string | null): number | undefined => {
   if (v == null || !/^[1-9]\d*$/.test(v)) return undefined;
   return Number(v);

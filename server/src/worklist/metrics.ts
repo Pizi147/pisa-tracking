@@ -1,5 +1,5 @@
 import { db } from '../db.ts';
-import { duongHoSoHocVien, nhanLoaiXuLy, PERMISSIONS, VIOLATION_CATEGORY_LABEL, metricById, tenMon, type ChiSo, type ChuongTrinh, type LoaiBoQuen } from '../../../shared/domain/index.ts';
+import { duongCase, nhanLoaiXuLy, PERMISSIONS, VIOLATION_CATEGORY_LABEL, metricById, tenMon, type ChiSo, type ChuongTrinh, type LoaiBoQuen } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, forbidden, HttpError, notFound } from '../util.ts';
@@ -54,9 +54,6 @@ const EMPTY_NOTE = 'Không có dữ liệu trong phạm vi';
 /** Một dòng của panel danh sách: đủ để người đọc nhận ra bản ghi và bấm sang đúng chỗ. */
 export type MetricRow = { id: number; title: string; sub: string; href: string };
 
-/** PR-Pb2-a (Q5): Case có học viên → hồ sơ HV mở Ngăn Case; không có em → link sâu cũ (trang Case riêng còn giữ cho trường hợp này). */
-const hrefCase = (sid: number | null, caseId: number) => (sid ? duongHoSoHocVien(sid, { caseId }) : `/hoc-thuat/case/${caseId}`);
-
 /**
  * DỰNG DÒNG CHO MỘT TẬP ID — chỉ "tô màu" tập đã có (tên, lớp, đường dẫn), KHÔNG lọc thêm gì.
  * Tập ID đã qua quyền ở `metricSet`; hàm này không nhận phạm vi nên không thể mở rộng hay thu hẹp nó.
@@ -85,7 +82,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
           WHERE sc.id IN (${ph})`,
       ).all(...chunk) as any[]) {
         /* MH2: tên môn theo chương trình của lộ trình (FOU "G+V"), không chữ thô "listening". */
-        byId.set(r.id, { id: r.id, title: r.title ?? (r.mon ? tenMon(r.ct ?? null, r.mon) : `Case ${r.id}`), sub: [r.full_name, r.student_code].filter(Boolean).join(' · '), href: hrefCase(r.sid, r.id) });
+        byId.set(r.id, { id: r.id, title: r.title ?? (r.mon ? tenMon(r.ct ?? null, r.mon) : `Case ${r.id}`), sub: [r.full_name, r.student_code].filter(Boolean).join(' · '), href: duongCase(r.sid, r.id) });
       }
     } else if (unit === 'phuong-an') {
       for (const r of conn.prepare(
@@ -94,7 +91,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
            LEFT JOIN students s ON s.id = sc.student_id
           WHERE iv.id IN (${ph})`,
       ).all(...chunk) as any[]) {
-        byId.set(r.id, { id: r.id, title: r.title, sub: [r.full_name, r.student_code].filter(Boolean).join(' · '), href: hrefCase(r.sid, r.case_id) });
+        byId.set(r.id, { id: r.id, title: r.title, sub: [r.full_name, r.student_code].filter(Boolean).join(' · '), href: duongCase(r.sid, r.case_id) });
       }
     } else if (unit === 'dot-test' || unit === 'bai-thi') {
       /* Lượt Test: FT mở hồ sơ Test; bài của lớp Normal mở bảng điểm thường của lớp. */
@@ -127,7 +124,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
         if (!r) continue;
         byId.set(id, {
           id, title: `${r.title} · chu kỳ ${cycle}`,
-          sub: [r.full_name, r.student_code].filter(Boolean).join(' · '), href: hrefCase(r.sid, r.case_id),
+          sub: [r.full_name, r.student_code].filter(Boolean).join(' · '), href: duongCase(r.sid, r.case_id),
         });
       }
     } else if (unit === 'vi-pham') {

@@ -1,6 +1,6 @@
 import { db } from '../db.ts';
 import {
-  COT_XU_LY_V4, LEGACY_REGULAR_SKILL_MAP, METRIC_UNIT_LABEL, NGUONG_MINI_TEST, PERMISSIONS, daiCuoiKhoa, isNoPlanCase, khoaDot, trangThaiCaseV4,
+  COT_XU_LY_V4, LEGACY_REGULAR_SKILL_MAP, METRIC_UNIT_LABEL, NGUONG_MINI_TEST, NHAN_NHOM_CON, PERMISSIONS, daiCuoiKhoa, isNoPlanCase, khoaDot, trangThaiCaseV4,
   nhanDot, thuTuDot, tuDauKhoang, type ChuongTrinh, type CotTongHop, type DongTongHop, type TheoDong, type TongHopKetQua,
 } from '../../../shared/domain/index.ts';
 import { cotTongHopFor } from '../../../shared/domain/phanTich.ts';
@@ -319,7 +319,7 @@ export function oTongHop(p: Principal, f: FilterTongHop & { khoa: string; cot: s
   const ids = [...(tap.get(f.cot) ?? new Set<number>())].sort((a, b) => a - b);
   return {
     n: ids.length,
-    tieuDe: `${ids.length} ${METRIC_UNIT_LABEL[cotDef.donVi]} — ${cotDef.nhan(f.ct)} · ${nhanDong}`,
+    tieuDe: `${ids.length} ${METRIC_UNIT_LABEL[cotDef.donVi]} — ${cotDef.nhomCon ? `${NHAN_NHOM_CON[cotDef.nhomCon]} · ` : ''}${cotDef.nhan(f.ct)} · ${nhanDong}`,
     rows: rowsFor(cotDef.donVi, ids),
   };
 }
