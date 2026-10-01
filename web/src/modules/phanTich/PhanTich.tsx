@@ -120,9 +120,9 @@ export function PhanTich() {
         <div className="flex flex-wrap items-center gap-2">
           {!laYThuc && <ChonChuongTrinh value={ct} onChange={setCt} />}
           {goc === 'van-de' && <span className="text-xs text-slate-500" title="Case đang mở, cộng Case đã đóng trong khoảng này">Case mở + đóng trong</span>}
-          <select className="field w-28 text-xs" value={tg} onChange={(e) => setTg(Number(e.target.value))} aria-label="Khoảng thời gian">
+          {!(goc === 'hieu-qua-pa' && params.get('tu')) && <select className="field w-28 text-xs" value={tg} onChange={(e) => setTg(Number(e.target.value))} aria-label="Khoảng thời gian">
             {KHOANG.map((n) => <option key={n} value={n}>{KHOANG_LABEL[n]}</option>)}
-          </select>
+          </select>}
           <select className="field w-40 text-xs" value={classId ?? ''} onChange={(e) => setClassId(e.target.value)} aria-label="Lớp">
             <option value="">Mọi lớp</option>
             {classes.map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}

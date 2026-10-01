@@ -90,10 +90,11 @@ export async function runPhanTichTests(t: YThucTestKit) {
     eq(d.nenDung({ soPa: 10, caiThien: 8 }, [{ soPa: 3, caiThien: 3 }]), true, 'anh em dưới 5 PA không được xếp hạng');
   });
 
-  check('UX4 · tuanTrungBinh: [] null, [3] 1, [20,22] 3', () => {
-    eq(d.tuanTrungBinh([]), null, 'rỗng');
-    eq(d.tuanTrungBinh([3]), 1, 'tối thiểu 1 tuần');
-    eq(d.tuanTrungBinh([20, 22]), 3, '21 ngày = 3 tuần');
+  check('UX4 · tuanTrungVi (PR-Pb2-a thay trung bình): [] null, [3] 1, [20,22] 3, [7,14,70] 2', () => {
+    eq(d.tuanTrungVi([]), null, 'rỗng');
+    eq(d.tuanTrungVi([3]), 1, 'tối thiểu 1 tuần');
+    eq(d.tuanTrungVi([20, 22]), 3, '21 ngày = 3 tuần');
+    eq(d.tuanTrungVi([7, 14, 70]), 2, 'trung vị 14 ngày = 2 tuần (trung bình sẽ là 5)');
   });
 
   check('UX4 · nhanSoVoiTruoc: +3/-1/0/null', () => {
@@ -551,7 +552,7 @@ export async function runPhanTichTests(t: YThucTestKit) {
   const effSvc: any = await import('../cases/effectiveness.ts');
   const FQ = (o: Record<string, unknown> = {}) => ({ branchId: null, ct: 'ft', classId: null, soTuan: 8, ...o });
   const boiHttp = (fn: () => unknown): number => { try { fn(); return 200; } catch (e: any) { return e?.status ?? 500; } };
-  const moiDongPa = (kq: any): any[] => [...kq.hang, ...(kq.gom?.hang ?? [])].flatMap((h: any) => [h, ...(h.con ?? [])]);
+  const moiDongPa = (kq: any): any[] => [...kq.gvThem.hang, ...(kq.gvThem.gom?.hang ?? [])].flatMap((h: any) => [h, ...(h.con ?? [])]);
   const nowPa = new Date().toISOString();
   /** Một PA đã kết thúc của Case `caseId`: bắt đầu `batDau`, ghi kết quả `ketQua` (null = xong nhưng chưa ghi) vào `ngayKq`. */
   const dungPa = (bo: { pa: number[]; fu: number[] }, caseId: number, kind: string, ketQua: string | null, batDau: string, ngayKq: string) => {
@@ -593,22 +594,22 @@ export async function runPhanTichTests(t: YThucTestKit) {
         dungPa(bo, c, kind, i < 4 ? 'improved' : 'unchanged', NGAY_BD, cong(TODAY, -2));
       }
       const kq = hieuQuaSvc.hieuQuaPa(P.admin, FQ());
-      const tong = [...kq.hang, ...(kq.gom?.hang ?? [])].reduce((s: number, h: any) => s + h.soPa, 0);
-      eq(tong, kq.tomTat.paCoKetQua, 'Σ soPa hàng lớn + gom = paCoKetQua');
-      eq([...kq.hang, ...(kq.gom?.hang ?? [])].reduce((s: number, h: any) => s + h.caiThien, 0), kq.tomTat.caiThien, 'Σ caiThien = tomTat.caiThien');
-      for (const h of [...kq.hang, ...(kq.gom?.hang ?? [])]) {
+      const tong = [...kq.gvThem.hang, ...(kq.gvThem.gom?.hang ?? [])].reduce((s: number, h: any) => s + h.soPa, 0);
+      eq(tong, kq.gvThem.tomTat.paCoKetQua, 'Σ soPa hàng lớn + gom = paCoKetQua');
+      eq([...kq.gvThem.hang, ...(kq.gvThem.gom?.hang ?? [])].reduce((s: number, h: any) => s + h.caiThien, 0), kq.gvThem.tomTat.caiThien, 'Σ caiThien = tomTat.caiThien');
+      for (const h of [...kq.gvThem.hang, ...(kq.gvThem.gom?.hang ?? [])]) {
         eq((h.con ?? []).reduce((s: number, c: any) => s + c.soPa, 0), h.soPa, `"${h.khoa}": con cộng đúng cha (soPa)`);
         eq((h.con ?? []).reduce((s: number, c: any) => s + c.caiThien, 0), h.caiThien, `"${h.khoa}": con cộng đúng cha (caiThien)`);
         assert(h.caiThien <= h.soPa, `"${h.khoa}": caiThien ≤ soPa`);
       }
       const json = JSON.stringify(kq);
       assert(!/khongCaiThien|khong-cai-thien|failure|unchanged/i.test(json), 'không có cột/khoá "không cải thiện"');
-      eq(kq.tomTat.vanDeDuDuLieu, kq.hang.filter((h: any) => h.soPa >= 5).length + (kq.gom?.hang ?? []).filter((h: any) => h.soPa >= 5).length, 'vanDeDuDuLieu = số hàng lớn ≥ 5 PA');
-      assert(kq.hang.every((h: any) => h.soPa > 2) && (kq.gom?.hang ?? []).every((h: any) => h.soPa <= 2), 'hàng lớn > 2 PA; ≤ 2 PA vào gom');
+      eq(kq.gvThem.tomTat.vanDeDuDuLieu, kq.gvThem.hang.filter((h: any) => h.soPa >= 5).length + (kq.gvThem.gom?.hang ?? []).filter((h: any) => h.soPa >= 5).length, 'vanDeDuDuLieu = số hàng lớn ≥ 5 PA');
+      assert(kq.gvThem.hang.every((h: any) => h.soPa > 2) && (kq.gvThem.gom?.hang ?? []).every((h: any) => h.soPa <= 2), 'hàng lớn > 2 PA; ≤ 2 PA vào gom');
     } finally { donPa(bo); kit.don(); }
   });
 
-  check('UX4 · Hiệu quả PA: itDuLieu đúng biên 5; tbTuan null khi < 5; nenDung chỉ ở hàng con đủ Q9', () => {
+  check('UX4 · Hiệu quả PA: itDuLieu đúng biên 5; tvTuan null khi < 5; nenDung chỉ ở hàng con đủ Q9', () => {
     const kit = baiTapUx4(); const bo = { pa: [] as number[], fu: [] as number[] };
     try {
       const { kind, ma } = chonO(0);
@@ -622,10 +623,10 @@ export async function runPhanTichTests(t: YThucTestKit) {
       const dong = () => moiDongPa(hieuQuaSvc.hieuQuaPa(P.admin, FQ())).find((h: any) => h.khoa === `vd:${ma}|${kind}`);
       them(4, 'improved', cong(TODAY, -30), cong(TODAY, -9));     // 21 ngày → 3 tuần
       const bon = dong();
-      eq([bon.soPa, bon.itDuLieu, bon.tbTuan, bon.nenDung], [4, true, null, false], '4 PA: Ít dữ liệu, không thời gian, không Nên dùng');
+      eq([bon.soPa, bon.itDuLieu, bon.tvTuan, bon.nenDung], [4, true, null, false], '4 PA: Ít dữ liệu, không thời gian, không Nên dùng');
       them(1, 'improved', cong(TODAY, -30), cong(TODAY, -9));
       const nam = dong();
-      eq([nam.soPa, nam.itDuLieu, nam.tbTuan, nam.nenDung], [5, false, 3, true], '5 PA cải thiện 100%: đủ dữ liệu, 3 tuần, Nên dùng');
+      eq([nam.soPa, nam.itDuLieu, nam.tvTuan, nam.nenDung], [5, false, 3, true], '5 PA cải thiện 100%: đủ dữ liệu, 3 tuần, Nên dùng');
       const cha = moiDongPa(hieuQuaSvc.hieuQuaPa(P.admin, FQ())).find((h: any) => h.khoa === `vd:${ma}`);
       eq(cha.nenDung, false, 'hàng lớn không bao giờ "Nên dùng"');
       them(3, 'unchanged', cong(TODAY, -30), cong(TODAY, -9));
@@ -665,7 +666,7 @@ export async function runPhanTichTests(t: YThucTestKit) {
       const oCase = hieuQuaSvc.oHieuQuaPa(P.admin, { ...f, dong: 'case-chua-phan-loai', cot: '' });
       assert(oCase.n === kq.caseChuaPhanLoai && oCase.rows.length === oCase.n && oCase.n >= 1, `Case chưa phân loại: ${oCase.n}/${oCase.rows.length} ≠ ${kq.caseChuaPhanLoai}`);
       assert(oCase.rows.some((r: any) => r.id === c3), 'Case không có lỗi chính phải nằm trong danh sách chưa phân loại');
-      const scope = { branchIds: null, ratio: null, classId: null, fromDate: d.tuDauKhoang(TODAY, 8) };
+      const scope = { branchIds: null, ratio: false, classId: null, fromDate: d.tuDauKhoang(TODAY, 8) };   // FQ: ct=ft
       eq(kq.chuaGhiKetQua, effSvc.plansNeedingEvaluation(scope).count, 'chuaGhiKetQua = plansNeedingEvaluation(cùng scope).count');
       let s = 0; try { hieuQuaSvc.oHieuQuaPa(P.admin, { ...f, dong: 'vd:khong-co', cot: 'pa' }); } catch (e: any) { s = e?.status; }
       eq(s, 400, 'khoá lạ → 400');
@@ -1066,12 +1067,12 @@ export async function runPhanTichTests(t: YThucTestKit) {
         dungPa(bo, c, kind, 'improved', NGAY_BD, cong(TODAY, -2));
       }
       const kq = hieuQuaSvc.hieuQuaPa(P.admin, FQ());
-      assert(!!kq.gom && kq.gom.hang.some((h: any) => h.khoa === `vd:${ma}`), 'vấn đề 2 PA phải nằm trong gom');
-      assert(!kq.hang.some((h: any) => h.khoa === `vd:${ma}`), 'không lặp ở hàng chính');
-      eq(kq.gom.soVanDe, kq.gom.hang.length, 'soVanDe = số hàng gom');
-      assert(kq.gom.hang.every((h: any) => h.soPa <= 2 && h.itDuLieu), 'gom chỉ có vấn đề ≤ 2 PA, đều Ít dữ liệu');
-      const h = kq.gom.hang.find((x: any) => x.khoa === `vd:${ma}`);
-      eq([h.soPa, h.caiThien, h.tbTuan, h.nenDung], [2, 2, null, false], 'chỉ số hàng gom');
+      assert(!!kq.gvThem.gom && kq.gvThem.gom.hang.some((h: any) => h.khoa === `vd:${ma}`), 'vấn đề 2 PA phải nằm trong gom');
+      assert(!kq.gvThem.hang.some((h: any) => h.khoa === `vd:${ma}`), 'không lặp ở hàng chính');
+      eq(kq.gvThem.gom.soVanDe, kq.gvThem.gom.hang.length, 'soVanDe = số hàng gom');
+      assert(kq.gvThem.gom.hang.every((h: any) => h.soPa <= 2 && h.itDuLieu), 'gom chỉ có vấn đề ≤ 2 PA, đều Ít dữ liệu');
+      const h = kq.gvThem.gom.hang.find((x: any) => x.khoa === `vd:${ma}`);
+      eq([h.soPa, h.caiThien, h.tvTuan, h.nenDung], [2, 2, null, false], 'chỉ số hàng gom');
       const o = hieuQuaSvc.oHieuQuaPa(P.admin, { ...FQ(), dong: `vd:${ma}`, cot: 'pa' });
       eq([o.n, o.rows.length], [2, 2], 'ngăn danh sách của hàng gom mở đúng 2 PA');
     } finally { donPa(bo); kit.don(); }
@@ -1160,7 +1161,8 @@ export async function runPhanTichTests(t: YThucTestKit) {
     next.delete('goc');
     for (const k of d.thamSoXoaKhiDoiGoc('tong-hop')) next.delete(k);
     eq(d.gocNhinTuThamSo(next).goc, 'tong-hop', 'Sau khi bấm Tổng hợp: phải sang Tổng hợp, không kẹt lại Danh sách Case');
-    eq(d.thamSoXoaKhiDoiGoc('van-de'), ['hang-doi', 'tinh-hinh', 'ky-nang'], 'Sang góc nhìn khác cũng xoá y hệt');
+    eq(d.thamSoXoaKhiDoiGoc('van-de'), ['hang-doi', 'tinh-hinh', 'ky-nang', 'gv', 'tu', 'den'], 'Sang góc nhìn khác: xoá thêm bộ lọc riêng của Hiệu quả PA (PR-Pb2-a)');
+    eq(d.thamSoXoaKhiDoiGoc('hieu-qua-pa'), ['hang-doi', 'tinh-hinh', 'ky-nang'], 'Vào Hiệu quả PA: giữ gv/tu/den');
     // gocNhinTuThamSo tự nó cũng phải để `goc` tường minh thắng heuristic, không cần chờ dọn tham số.
     eq(d.gocNhinTuThamSo(new URLSearchParams('goc=tong-hop&tinh-hinh=no_plan')).goc, 'tong-hop',
       'goc=tong-hop tường minh phải thắng dù tinh-hinh còn sót trên URL');

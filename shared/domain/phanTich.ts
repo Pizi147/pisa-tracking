@@ -54,9 +54,12 @@ export function gocNhinTuThamSo(params: { get(key: string): string | null }): Ke
   return { goc, ct, boThamSo, gocMoi };
 }
 
-/** THAM SỐ CẦN XOÁ KHI BẤM SANG MỘT GÓC NHÌN — ba bộ lọc cũ của Danh sách Case (đã bỏ), luôn dọn. */
-export function thamSoXoaKhiDoiGoc(_goc?: GocNhin): readonly string[] {
-  return ['hang-doi', 'tinh-hinh', 'ky-nang'];
+/**
+ * THAM SỐ CẦN XOÁ KHI BẤM SANG MỘT GÓC NHÌN — ba bộ lọc cũ của Danh sách Case (đã bỏ) luôn dọn; `gv`/`tu`/`den` là bộ lọc RIÊNG
+ * của Hiệu quả PA (PR-Pb2-a) — rời góc nhìn đó thì dọn, để quay lại không bị lọc ngầm.
+ */
+export function thamSoXoaKhiDoiGoc(goc: GocNhin): readonly string[] {
+  return goc === 'hieu-qua-pa' ? ['hang-doi', 'tinh-hinh', 'ky-nang'] : ['hang-doi', 'tinh-hinh', 'ky-nang', 'gv', 'tu', 'den'];
 }
 
 // ------------------------------------------------------------------ khoảng thời gian (Q5)
@@ -304,11 +307,25 @@ export function nenDung(
   return anhEm.every((x) => x.soPa < NGUONG_IT_DU_LIEU || x.caiThien / x.soPa <= ty + 1e-9);
 }
 
-/** "Thời gian trung bình" (Q10): số ngày → tuần, làm tròn, tối thiểu 1; không có PA nào → null. */
-export function tuanTrungBinh(soNgay: readonly number[]): number | null {
+/** "Thời gian thường mất" (P9b, PR-Pb2-a): TRUNG VỊ số ngày → tuần, làm tròn, tối thiểu 1; không có PA nào → null. */
+export function tuanTrungVi(soNgay: readonly number[]): number | null {
   if (!soNgay.length) return null;
-  const tb = soNgay.reduce((s, x) => s + x, 0) / soNgay.length;
-  return Math.max(1, Math.round(tb / 7));
+  const x = [...soNgay].sort((a, b) => a - b);
+  const g = x.length >> 1;
+  const tv = x.length % 2 ? x[g] : (x[g - 1] + x[g]) / 2;
+  return Math.max(1, Math.round(tv / 7));
+}
+
+/** Tham số URL của Hiệu quả PA (Hợp đồng a↔b): `tu`/`den` = Thứ Hai tuần đầu / tuần cuối (gồm cả tuần `den`), tối đa 52 tuần. */
+export const HQ_PA_TOI_DA_TUAN = 52;
+/** Kiểm `tu`/`den`: trả lỗi (chuỗi) hoặc null. `den` vắng = tới hôm nay. */
+export function loiKhoangTuan(tu: string, den: string | null): string | null {
+  const laThuHai = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(`${s}T00:00:00Z`)) && new Date(`${s}T00:00:00Z`).getUTCDay() === 1
+    && new Date(`${s}T00:00:00Z`).toISOString().slice(0, 10) === s;
+  if (!laThuHai(tu) || (den !== null && !laThuHai(den))) return 'Khoảng tuần phải bắt đầu bằng ngày Thứ Hai (YYYY-MM-DD).';
+  if (den !== null && tu > den) return 'Tuần đầu phải trước hoặc bằng tuần cuối.';
+  if (den !== null && (Date.parse(den) - Date.parse(tu)) / 604800000 + 1 > HQ_PA_TOI_DA_TUAN) return `Khoảng tối đa ${HQ_PA_TOI_DA_TUAN} tuần.`;
+  return null;
 }
 
 // ------------------------------------------------------------------ Ý thức (PR-YT4): bỏ "bước tiếp theo · Sắp Thư CC" (v3)
@@ -361,17 +378,30 @@ export type VanDeHvKetQua = {
   scopeEmpty: boolean;
 };
 
-/** Hiệu quả PA: hàng lớn = vấn đề (mã lỗi chính), hàng con = loại PA. */
+/**
+ * Hiệu quả PA — một dòng. PA do GV thêm: hàng lớn = vấn đề (mã lỗi chính), hàng con = loại PA. PA theo quy chế: hàng lớn = SOS 1·2·3 (FT)
+ * hoặc Bổ trợ Giữa khoá / sau Cuối khoá (lớp thường), không `nenDung` (PR-Pb2-a, Q8). `tvTuan` = trung vị (Q10); `dongThoi` = số PA chạy cùng PA khác của cùng Case.
+ */
 export type DongHieuQuaPa = {
-  khoa: string; nhan: string; soPa: number; caiThien: number;
-  tbTuan: number | null; itDuLieu: boolean; nenDung: boolean;
+  khoa: string; nhan: string; soPa: number; caiThien: number; hocVien: number;
+  tvTuan: number | null; dongThoi: number; itDuLieu: boolean; nenDung: boolean;
   con?: DongHieuQuaPa[];
 };
 export type HieuQuaPaKetQua = {
-  tomTat: { paCoKetQua: number; caiThien: number; vanDeDuDuLieu: number };
-  hang: DongHieuQuaPa[];
-  gom: { soVanDe: number; hang: DongHieuQuaPa[] } | null;
-  chuaGhiKetQua: number; caseChuaPhanLoai: number; scopeEmpty: boolean;
+  /** PA do giáo viên thêm (`preset = 0`) — như bảng cũ, giữ "Nên dùng". */
+  gvThem: {
+    tomTat: { paCoKetQua: number; caiThien: number; vanDeDuDuLieu: number };
+    hang: DongHieuQuaPa[];
+    gom: { soVanDe: number; hang: DongHieuQuaPa[] } | null;
+  };
+  /** PA theo quy chế (`preset = 1`, gồm Bổ trợ) — thứ tự cố định, không so, không xếp hạng. */
+  quyChe: { tomTat: { paCoKetQua: number; caiThien: number }; hang: DongHieuQuaPa[] };
+  chuaGhiKetQua: number; caseChuaPhanLoai: number;
+  /** PA có kết quả mà chưa rõ em học ở đâu lúc làm PA (F03) — không vào bảng nào. */
+  chuaRoNguon: number;
+  /** Ngữ cảnh đang lọc: tên GV đọc từ máy chủ (không tin URL); khoảng tuần (`den` null = tới hôm nay). */
+  loc: { gv: { id: number; ten: string } | null; tu: string; den: string | null; theoKhoang: boolean };
+  scopeEmpty: boolean;
 };
 
 /** Ý thức (PR-YT4): "Học viên cần chú ý" + "Lớp nhiều vi phạm". */

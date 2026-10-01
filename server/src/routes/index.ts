@@ -612,10 +612,11 @@ api.get('/phan-tich/van-de-hv/o', requireAuth, wrap((req) => {
     ...filterVanDeHvOf(req), dong: qStr(req, 'dong') ?? '', cot: qStr(req, 'cot') ?? '',
   });
 }));
-/* Hiệu quả PA (PR-UX4): vấn đề (lỗi chính) → loại PA, kèm cỡ mẫu. */
+/* Hiệu quả PA (PR-UX4; PR-Pb2-a): PA GV thêm / PA theo quy chế. `gv`, `tu`, `den` — tên CHỐT trong Hợp đồng a↔b; `tu`/`den` thắng `tg`. */
 const filterHieuQuaPaOf = (req: Request) => ({
   branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')),
   classId: qInt(req, 'lop') ?? null, soTuan: khoangTuThamSo(qStr(req, 'tg')),
+  gv: qStr(req, 'gv') ?? null, tu: qStr(req, 'tu') ?? null, den: qStr(req, 'den') ?? null,
 });
 api.get('/phan-tich/hieu-qua-pa', requireAuth, wrap((req) => {
   maybeSimulateReadError();

@@ -192,4 +192,171 @@ export async function runPrPb2aTests(t: YThucTestKit) {
     const rt = fsMod.readFileSync(pathMod.join(REPO, 'web/src/modules/cases/CaseBoardPage.tsx'), 'utf8');
     assert(/<Navigate replace to=\{duongHoSoHocVien\(/.test(rt), 'CaseRoutePage chuyển hướng về hồ sơ HV');
   });
+
+  // ================================================================== khối 3 · Hiệu quả PA (T61, K1-23, P9, P9b, P12)
+  const hq: any = await import('../phanTich/hieuQuaPa.ts');
+  const eff: any = await import('../cases/effectiveness.ts');
+  const boi = (fn: () => unknown): number => { try { fn(); return 200; } catch (e: any) { return e?.status ?? 500; } };
+  const lopFt = classId('MB FT 101'), lopTh = classId('MB FOU 12');
+  const gvX = get(`SELECT user_id AS id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 LIMIT 1`, lopFt).id as number;
+  const gvCp = get(`SELECT ta.user_id AS id FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id JOIN branches b ON b.id = c.branch_id
+    WHERE b.code = 'CP' AND ta.status = 'active' AND ta.user_id NOT IN (SELECT ta2.user_id FROM teacher_assignments ta2 JOIN classes c2 ON c2.id = ta2.class_id WHERE c2.branch_id = ?) LIMIT 1`, mbId)?.id as number | undefined;
+  const now = new Date().toISOString();
+  const XONG = addDays(TODAY, -3), BD = addDays(TODAY, -24);
+  const F = (o: Record<string, unknown> = {}) => ({ branchId: null, ct: 'ft', classId: null, soTuan: 8, ...o });
+  const L = (o: Record<string, unknown> = {}) => ({ branchIds: null, ct: 'ft', classId: null, tu: d.tuDauKhoang(TODAY, 8), den: null, ...o });
+  const tao = { hv: [] as number[], ca: [] as number[], pa: [] as number[], cyc: [] as number[], luot: [] as number[] };
+  const hv = (cid: number) => {
+    const b = get('SELECT branch_id FROM classes WHERE id = ?', cid).branch_id;
+    const ma = `PB2A-${Date.now()}-${tao.hv.length}`;
+    const sid = Number(conn.prepare(`INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`)
+      .run(ma, `Học viên ${ma}`, `hoc vien ${ma.toLowerCase()}`, b, now).lastInsertRowid);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', '2026-07-27', ?)`).run(sid, cid, now);
+    tao.hv.push(sid); return sid;
+  };
+  const ca = (sid: number, cat: string, o: { owner?: number | null; sos?: number | null; loi?: string } = {}) => {
+    const id = Number(conn.prepare(`INSERT INTO sos_cases (student_id, category, status, sos_level, owner_user_id, closed_at, created_at) VALUES (?,?, 'done', ?, ?, ?, ?)`)
+      .run(sid, cat, o.sos ?? null, o.owner ?? null, XONG, now).lastInsertRowid);
+    if (o.loi) conn.prepare(`INSERT INTO case_issues (case_id, role, taxonomy_code, created_at) VALUES (?, 'primary', ?, ?)`).run(id, o.loi, now);
+    tao.ca.push(id); return id;
+  };
+  const pa = (caseId: number, o: { kind: string; preset?: 0 | 1; kq?: string | null; nhom?: string | null; status?: string; closedReason?: string | null }) => {
+    const id = Number(conn.prepare(
+      `INSERT INTO case_interventions (case_id, kind, status, started_date, completed_date, preset, confirmed_at, nhom_bo_tro, closed_reason, created_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?)`).run(caseId, o.kind, o.status ?? 'completed', BD, XONG, o.preset ?? 0, o.preset ? now : null, o.nhom ?? null, o.closedReason ?? null, now).lastInsertRowid);
+    if (o.kq) conn.prepare(`INSERT INTO case_followups (case_id, intervention_id, observed_on, outcome, created_at) VALUES (?,?,?,?,?)`).run(caseId, id, XONG, o.kq, now);
+    tao.pa.push(id); return id;
+  };
+  /** Bài Cuối khoá gốc + dòng Mini Test (`ty_le` 0–1, null = chưa ghi) → trả khoá nhóm `mt:{bài}`. */
+  const miniTest = (sid: number, tyLe: number | null) => {
+    const cyc = Number(conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, programme_code, started_at, status, created_at) VALUES (?, 1, 'LT1', 'FOU', '2026-07-27', 'active', ?)`).run(sid, now).lastInsertRowid);
+    const luot = Number(conn.prepare(`INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, status, created_at) VALUES (?, ?, 1, 'final', ?, 'planned', ?)`)
+      .run(cyc, sid, lopTh, now).lastInsertRowid);
+    tao.cyc.push(cyc); tao.luot.push(luot);
+    conn.prepare(`INSERT INTO mini_test (student_id, cycle_id, tu_attempt_id, nhom_bo_tro, so_buoi, ngay_du_kien, han, ty_le, ngay_lam) VALUES (?,?,?,?, 4, ?, ?, ?, ?)`)
+      .run(sid, cyc, luot, `mt:${luot}`, XONG, XONG, tyLe, tyLe === null ? null : XONG);
+    return `mt:${luot}`;
+  };
+  const don = () => {
+    for (const id of tao.pa) { conn.prepare('DELETE FROM case_followups WHERE intervention_id = ?').run(id); conn.prepare('DELETE FROM case_interventions WHERE id = ?').run(id); }
+    for (const id of tao.ca) { conn.prepare('DELETE FROM case_issues WHERE case_id = ?').run(id); conn.prepare('DELETE FROM sos_cases WHERE id = ?').run(id); }
+    for (const id of tao.luot) { conn.prepare('DELETE FROM mini_test WHERE tu_attempt_id = ?').run(id); conn.prepare('DELETE FROM assessment_attempts WHERE id = ?').run(id); }
+    for (const id of tao.cyc) conn.prepare('DELETE FROM learning_cycles WHERE id = ?').run(id);
+    for (const id of tao.hv) { conn.prepare('DELETE FROM enrollments WHERE student_id = ?').run(id); conn.prepare('DELETE FROM students WHERE id = ?').run(id); }
+  };
+  /** Mọi dòng (lớn + con) của một phần. */
+  const moiDong = (hang: any[]): any[] => hang.flatMap((h) => [h, ...(h.con ?? [])]);
+  const idsO = (p: any, f: any, dong: string, cot = 'pa') => (hq.oHieuQuaPa(p, { ...f, dong, cot }).rows as any[]).map((r) => r.id as number);
+
+  try {
+    const s1 = hv(lopFt);
+    const c1 = ca(s1, 'speaking', { owner: gvX, sos: 2, loi: 'student.speaking.fluency' });
+    const c2 = ca(s1, 'listening', { owner: gvX, sos: 1 });
+    const A = pa(c1, { kind: 'tutor', kq: 'improved' });                       // GV thêm
+    const B = pa(c1, { kind: 'self_study', preset: 1, kq: 'improved' });        // quy chế · SOS 2
+    const C = pa(c2, { kind: 'teaching_adjust', preset: 1, kq: 'unchanged' });  // quy chế · SOS 1
+    const D = pa(c1, { kind: 'extra_homework', status: 'cancelled', closedReason: 'khong_theo_doi' });   // huỷ "không cần theo dõi"
+    const s2 = hv(lopTh), s3 = hv(lopTh), s4 = hv(lopTh);
+    const c3 = ca(s2, 'writing'), c4 = ca(s3, 'writing'), c5 = ca(s4, 'writing');
+    const E = pa(c3, { kind: 'bo_tro_mien_phi', preset: 1, nhom: miniTest(s2, 0.75) });   // Mini Test 75 % → Tiến bộ
+    const Fp = pa(c3, { kind: 'bo_tro', preset: 1, nhom: `gk:${c3}`, kq: 'improved' });  // Bổ trợ Giữa khoá
+    const G = pa(c4, { kind: 'bo_tro_mien_phi', preset: 1, nhom: miniTest(s3, 0.6) });    // 60 % → Không tiến bộ
+    const H = pa(c5, { kind: 'bo_tro_mien_phi', preset: 1, nhom: miniTest(s4, null) });   // chưa ghi → chưa ghi kết quả
+
+    check('Pb2-a (3) · hai phần tách đúng: preset=1 (gồm Bổ trợ) chỉ ở quy chế, preset=0 chỉ ở GV thêm; quy chế không "Nên dùng"; Σ khớp paCoKetQua', () => {
+      const k = hq.hieuQuaPa(P.admin, F());
+      const coKq = hq.paCoKetQua(L()) as any[];
+      assert(coKq.find((x) => x.id === A)?.quyChe === false && coKq.find((x) => x.id === B)?.quyChe === true, 'cờ quyChe');
+      assert(idsO(P.admin, F(), 'vd:student.speaking.fluency').includes(A) && !idsO(P.admin, F(), 'vd:student.speaking.fluency').includes(B), 'A ở GV thêm, B không');
+      assert(idsO(P.admin, F(), 'qc:sos2').includes(B) && idsO(P.admin, F(), 'qc:sos1').includes(C) && !idsO(P.admin, F(), 'qc:sos2').includes(A), 'B ở SOS 2, C ở SOS 1');
+      assert(moiDong(k.quyChe.hang).every((h) => !h.nenDung), 'quy chế không Nên dùng');
+      assert(k.quyChe.hang.map((h: any) => h.khoa).join() === ['qc:sos1', 'qc:sos2', 'qc:sos3', 'qc:khac'].filter((x) => k.quyChe.hang.some((h: any) => h.khoa === x)).join(), 'thứ tự cố định SOS 1·2·3');
+      assert(k.quyChe.tomTat.paCoKetQua === coKq.filter((x) => x.quyChe).length, `Σ quy chế ${k.quyChe.tomTat.paCoKetQua} ≠ ${coKq.filter((x) => x.quyChe).length}`);
+      const coLoi = new Set((conn.prepare(`SELECT DISTINCT case_id FROM case_issues WHERE role = 'primary'`).all() as any[]).map((r) => r.case_id));
+      const gvThem = coKq.filter((x) => !x.quyChe && coLoi.has(x.caseId) && x.category !== 'tong_hop').length;
+      assert(k.gvThem.tomTat.paCoKetQua === gvThem, `Σ GV thêm ${k.gvThem.tomTat.paCoKetQua} ≠ ${gvThem}`);
+      assert(k.quyChe.tomTat.paCoKetQua + gvThem + coKq.filter((x) => !x.quyChe && !(coLoi.has(x.caseId) && x.category !== 'tong_hop')).length === coKq.length, 'hai phần + chưa phân loại = mọi PA có kết quả');
+    });
+
+    check('Pb2-a (3) · PA huỷ "không cần theo dõi" không vào Số PA, không vào "chưa ghi kết quả"', () => {
+      assert(!(hq.paCoKetQua(L()) as any[]).some((x) => x.id === D), 'D trong Số PA');
+      assert(!idsO(P.admin, F(), 'chua-ghi-ket-qua').includes(D), 'D trong chưa ghi kết quả');
+    });
+
+    check('Pb2-a (3) · Mini Test (Q9): nhóm mt: 75 % → cải thiện, 60 % → không tiến bộ, chưa ghi → "chưa ghi kết quả"; lớp thường Bổ trợ Giữa khoá / sau Cuối khoá, không chữ SOS', () => {
+      const Ft = F({ ct: 'thuong' });
+      const k = hq.hieuQuaPa(P.admin, Ft);
+      assert(idsO(P.admin, Ft, 'qc:mt', 'cai-thien').includes(E) && !idsO(P.admin, Ft, 'qc:mt', 'cai-thien').includes(G), 'E cải thiện, G không');
+      assert(idsO(P.admin, Ft, 'qc:mt').includes(G) && idsO(P.admin, Ft, 'qc:gk').includes(Fp), 'G vào Số PA; F ở Giữa khoá');
+      assert(idsO(P.admin, Ft, 'chua-ghi-ket-qua').includes(H), 'H chưa ghi kết quả');
+      assert(!JSON.stringify(k.quyChe).includes('SOS'), 'lớp thường không chữ SOS');
+      assert(k.quyChe.hang.find((h: any) => h.khoa === 'qc:mt')?.nhan === 'Bổ trợ sau Cuối khoá', 'nhãn');
+    });
+
+    check('Pb2-a (3) · tuanTrungVi([7, 14, 70]) = 2; ([]) = null; loiKhoangTuan', () => {
+      assert(d.tuanTrungVi([7, 14, 70]) === 2 && d.tuanTrungVi([]) === null, 'trung vị');
+      assert(d.loiKhoangTuan('2026-08-31', '2026-09-14') === null && d.loiKhoangTuan('2026-09-01', null) !== null
+        && d.loiKhoangTuan('2026-09-14', '2026-08-31') !== null && d.loiKhoangTuan('2025-01-06', '2026-09-14') !== null, 'loiKhoangTuan');
+    });
+
+    check('Pb2-a (3) · lọc gv: mọi PA thuộc Case do X phụ trách; GV thêm với gv=X = PA preset=0 (đã phân loại) của Case của X; tên GV từ máy chủ', () => {
+      const k = hq.hieuQuaPa(P.admin, F({ gv: gvX }));
+      const coKq = hq.paCoKetQua(L({ gv: gvX })) as any[];
+      assert(coKq.length > 0 && coKq.every((x) => x.chuCase === gvX), 'paCoKetQua(gv) chỉ PA của Case X phụ trách');
+      assert(coKq.some((x) => x.id === A) && coKq.some((x) => x.id === B), 'có A và B');
+      const coLoi = new Set((conn.prepare(`SELECT DISTINCT case_id FROM case_issues WHERE role = 'primary'`).all() as any[]).map((r) => r.case_id));
+      assert(k.gvThem.tomTat.paCoKetQua === coKq.filter((x) => !x.quyChe && coLoi.has(x.caseId) && x.category !== 'tong_hop').length, 'GV thêm với gv');
+      assert(k.quyChe.tomTat.paCoKetQua === coKq.filter((x) => x.quyChe).length, 'quy chế với gv');
+      assert(k.loc.gv?.id === gvX && typeof k.loc.gv?.ten === 'string' && k.loc.gv.ten.length > 0, 'tên GV từ API');
+      assert(boi(() => hq.hieuQuaPa(P.admin, F({ gv: 'abc' }))) === 400 && boi(() => hq.hieuQuaPa(P.admin, F({ gv: '-1' }))) === 400, 'gv sai → 400');
+    });
+
+    check('Pb2-a (3) · PHỦ ĐỊNH: QL Monbay lọc gv là người chỉ dạy chi nhánh khác → rỗng, không lộ tên', () => {
+      assert(gvCp, 'dữ liệu demo có GV chỉ dạy CP');
+      const k = hq.hieuQuaPa(P.mbManager, F({ gv: gvCp }));
+      assert(k.gvThem.tomTat.paCoKetQua === 0 && k.quyChe.tomTat.paCoKetQua === 0 && k.chuaGhiKetQua === 0 && k.loc.gv === null, JSON.stringify(k.loc));
+    });
+
+    check('Pb2-a (3) · tu/den → đúng tập planOutcomes({ fromDate, toDate = Chủ nhật tuần den }); tu > den, > 52 tuần, không phải Thứ Hai, thiếu tu → 400', () => {
+      const tu = d.mondayOfDate(addDays(TODAY, -21)), den = d.mondayOfDate(TODAY);
+      const a = (hq.paCoKetQua(L({ tu, den })) as any[]).map((x) => x.id);
+      const b = (eff.planOutcomes({ branchIds: null, ratio: false, classId: null, fromDate: tu, toDate: addDays(den, 6) }) as any[])
+        .filter((x) => x.group !== 'undetermined').map((x) => x.id);
+      assert(sx(a) === sx(b) && a.includes(A), 'cùng tập planOutcomes');
+      const k = hq.hieuQuaPa(P.admin, F({ tu, den, soTuan: 4 }));
+      assert(k.loc.theoKhoang && k.loc.tu === tu && k.loc.den === den, 'tu/den thắng tg');
+      for (const [x, y] of [[den, tu], ['2025-01-06', den], ['2026-09-01', den]] as const) assert(boi(() => hq.hieuQuaPa(P.admin, F({ tu: x, den: y }))) === 400, `${x}…${y} → 400`);
+      assert(boi(() => hq.hieuQuaPa(P.admin, F({ den }))) === 400, 'thiếu tu → 400');
+    });
+
+    check('Pb2-a (3) · hai đường: mỗi ô (Số PA, Học viên, Có cải thiện) của CẢ HAI phần = số dòng khi bấm; chân bảng cũng vậy', () => {
+      let dem = 0;
+      for (const f of [F(), F({ ct: 'thuong' }), F({ gv: gvX })]) {
+        const k = hq.hieuQuaPa(P.admin, f);
+        for (const h of [...moiDong(k.gvThem.hang), ...moiDong(k.gvThem.gom?.hang ?? []), ...moiDong(k.quyChe.hang)]) {
+          for (const [cot, want] of [['pa', h.soPa], ['cai-thien', h.caiThien], ['hv', h.hocVien]] as const) {
+            const o = hq.oHieuQuaPa(P.admin, { ...f, dong: h.khoa, cot });
+            assert(o.n === want && o.rows.length === want, `${h.khoa} · ${cot}: ${o.n} ≠ ${want}`);
+            dem++;
+          }
+        }
+        for (const [dong, want] of [['chua-ghi-ket-qua', k.chuaGhiKetQua], ['case-chua-phan-loai', k.caseChuaPhanLoai], ['chua-ro-nguon', k.chuaRoNguon]] as const) {
+          assert(hq.oHieuQuaPa(P.admin, { ...f, dong, cot: 'pa' }).n === want, `${dong}`);
+        }
+      }
+      assert(dem > 10, 'phép kiểm không rỗng');
+    });
+
+    await checkAsync('Pb2-a (3) · qua HTTP: tên tham số gv/tu/den đúng Hợp đồng; GVCN 403; tu sai 400', async () => {
+      await voiMay(async (goi) => {
+        const tu = d.mondayOfDate(addDays(TODAY, -21)), den = d.mondayOfDate(TODAY);
+        const r = await goi(P.mbManager.userId, `/phan-tich/hieu-qua-pa?branchId=${mbId}&ct=ft&gv=${gvX}&tu=${tu}&den=${den}`);
+        assert(r.status === 200 && r.body.loc.gv?.id === gvX && r.body.loc.theoKhoang, `${r.status} ${JSON.stringify(r.body.loc)}`);
+        const o = await goi(P.mbManager.userId, `/phan-tich/hieu-qua-pa/o?branchId=${mbId}&ct=ft&gv=${gvX}&tu=${tu}&den=${den}&dong=chua-ghi-ket-qua&cot=pa`);
+        assert(o.status === 200, `ô ${o.status}`);
+        assert((await goi(P.coreTeacher.userId, `/phan-tich/hieu-qua-pa?ct=ft&gv=${gvX}`)).status === 403, 'GVCN → 403');
+        assert((await goi(P.mbManager.userId, `/phan-tich/hieu-qua-pa?ct=ft&tu=2026-09-02`)).status === 400, 'tu không phải Thứ Hai → 400');
+      });
+    });
+  } finally { don(); }
 }
