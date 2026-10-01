@@ -1,4 +1,5 @@
 import { db } from '../db.ts';
+import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
   ASSESSED_SKILLS, ATTEMPT_KIND_SHORT, CAN_XU_LY, baiId, MOC_KE_TIEP_SQL, PERMISSIONS, type AttemptKind, tenMon, tenMonNgan, chonDiemDangChuY, sapCanXuLy,
   duongHoSoHocVien, nguoiGiuViecChu, soSanhLop, tuanCuaHanGhiKetQua, tuanLich,
@@ -213,7 +214,7 @@ function tinhLopToiDay(p: Principal, ct: 'ft' | 'thuong') {
   const lop = ids.length ? (conn.prepare(
     `SELECT c.id, c.code, c.programme_code AS ct, c.is_fast_track AS ft, c.route, c.branch_id,
             (SELECT COUNT(*) FROM enrollments e JOIN students s ON s.id = e.student_id
-              WHERE e.class_id = c.id AND e.status = 'active' AND s.status = 'active' AND s.archived_at IS NULL) AS so_hv
+              WHERE e.class_id = c.id AND e.status = 'active' AND ${HV_DANG_HOC_SQL('s')}) AS so_hv
        FROM classes c WHERE c.status = 'active' AND c.id IN (${ids.map(() => '?').join(',')})`,
   ).all(...ids) as any[]) : [];
   const soFt = lop.filter((l) => !!l.ft).length, soThuong = lop.length - soFt;

@@ -595,7 +595,8 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
     where.push(`a.class_id IN (${f.classIds.map(() => '?').join(',')})`); params.push(...f.classIds);
   }
   /* PR-S6F-a Q2: một điều kiện "em đang học" — cả danh sách "cần chấm" (`my_scores`), đích của badge "n bài chờ chấm" (số = danh sách). */
-  if (f.chiDangHoc || f.need === 'my_scores') where.push(HV_DANG_HOC_SQL('s'));
+  /* PR-Dọn (Q9): và CÙNG luật Nợ điểm (`scoreDebt.ts`) — lớp đã kết thúc không sinh việc nhập điểm. */
+  if (f.chiDangHoc || f.need === 'my_scores') where.push(HV_DANG_HOC_SQL('s'), `c.status = 'active'`);
   if (f.studentId) { where.push('a.student_id = ?'); params.push(f.studentId); }
   if (f.status) { where.push('a.status = ?'); params.push(f.status); }
   // Tuần kết quả LUÔN là tuần kế hoạch của lượt, kể cả khi các kỹ năng mock lệch tuần.

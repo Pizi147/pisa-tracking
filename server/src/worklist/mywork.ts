@@ -1,4 +1,5 @@
 import { db } from '../db.ts';
+import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
   ATTEMPT_KIND_SHORT,
   INTERVENTION_KIND_LABEL, PERMISSIONS,
@@ -485,7 +486,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           AND sc.status != 'done'
           AND COALESCE(iv.approval_state, '') != 'pending'
           AND ${NOT_UNCONFIRMED_PRESET('iv')}
-          AND s.archived_at IS NULL AND s.status = 'active'`,   /* K3-41: em Tạm dừng dừng hạn */
+          AND ${HV_DANG_HOC_SQL('s')}`,   /* K3-41: em Tạm dừng dừng hạn */
     )
     .all(addDays(today, 1)) as any[];
   napTruocPhamVi(ghiKetQua.map((r) => r.eff_student_id));
@@ -690,7 +691,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   const causeCandidates = conn
     .prepare(
       `SELECT ${cotCase} FROM sos_cases sc ${noiCase}
-        WHERE sc.status != 'done' AND s.archived_at IS NULL AND s.status = 'active'
+        WHERE sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')}
           AND ${LA_CASE_SOS('sc')}`,
     )
     .all() as any[];
@@ -698,7 +699,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   const xacNhanPa = conn
     .prepare(
       `SELECT ${cotCase}, iv.id AS iv_id FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id ${noiCase}
-        WHERE ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND iv.kind != 'bo_tro' AND sc.status != 'done' AND s.archived_at IS NULL AND s.status = 'active'   /* PA bổ trợ chờ kế hoạch, không chờ "Xác nhận PA" (M8) */
+        WHERE ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND iv.kind != 'bo_tro' AND sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')}   /* PA bổ trợ chờ kế hoạch, không chờ "Xác nhận PA" (M8) */
           AND EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary')`,
     )
     .all() as any[];
@@ -755,7 +756,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
               a.attempt_no, a.kind AS attempt_kind,
               EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary') AS co_nn
          FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id ${noiCase}
-        WHERE iv.kind = 'bo_tro' AND iv.status = 'planned' AND sc.status != 'done' AND s.archived_at IS NULL AND s.status = 'active'
+        WHERE iv.kind = 'bo_tro' AND iv.status = 'planned' AND sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')}
           AND NOT ${YC_KE_HOACH('iv', "'cho','duyet'")} AND iv.nhom_bo_tro IS NOT NULL
         ORDER BY iv.id`,
     )
@@ -793,7 +794,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     .prepare(
       `SELECT x.id, x.attempt_id, x.student_id, s.full_name, a.attempt_no, a.kind AS attempt_kind, cur.class_id AS cur_class_id, c.code AS class_code, c.branch_id,
               (SELECT ta.user_id FROM teacher_assignments ta WHERE ta.class_id = cur.class_id AND ta.is_core = 1 AND ta.status = 'active' ORDER BY ta.id LIMIT 1) AS gvcn_id
-         FROM sos_coordination_actions x JOIN students s ON s.id = x.student_id AND s.archived_at IS NULL AND s.status = 'active'
+         FROM sos_coordination_actions x JOIN students s ON s.id = x.student_id AND ${HV_DANG_HOC_SQL('s')}
          JOIN assessment_attempts a ON a.id = x.attempt_id
          JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active' JOIN classes c ON c.id = cur.class_id
         WHERE x.kind = 'bao_ph_tvv' AND x.status = 'pending' ORDER BY x.id`,
@@ -846,7 +847,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
               (SELECT iv.performer_user_id FROM case_interventions iv WHERE iv.nhom_bo_tro = m.nhom_bo_tro AND iv.performer_user_id IS NOT NULL ORDER BY iv.id LIMIT 1) AS gv,
               (SELECT MIN(iv.case_id) FROM case_interventions iv WHERE iv.nhom_bo_tro = m.nhom_bo_tro) AS case_id,
               (SELECT MIN(iv.id) FROM case_interventions iv WHERE iv.nhom_bo_tro = m.nhom_bo_tro AND iv.status IN ('planned', 'started')) AS pa_id
-         FROM mini_test m JOIN students s ON s.id = m.student_id AND s.archived_at IS NULL AND s.status = 'active'
+         FROM mini_test m JOIN students s ON s.id = m.student_id AND ${HV_DANG_HOC_SQL('s')}
          JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active' JOIN classes c ON c.id = cur.class_id
         WHERE m.ty_le IS NULL ORDER BY m.han, m.id`,
     )
@@ -898,7 +899,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     if (lopCn.length) {
       for (const h of (conn.prepare(
         `SELECT s.id, s.full_name, e.class_id, c.code AS class_code FROM learning_cycles cy
-           JOIN students s ON s.id = cy.student_id AND s.status = 'active' AND s.archived_at IS NULL
+           JOIN students s ON s.id = cy.student_id AND ${HV_DANG_HOC_SQL('s')}
            JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
            JOIN classes c ON c.id = e.class_id
           WHERE cy.status = 'active' AND cy.route IS NOT NULL AND cy.target_score IS NULL AND cy.khong_cam_ket = 0
@@ -945,7 +946,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
          LEFT JOIN classes ac ON ac.id = a.class_id
          LEFT JOIN classes cc ON cc.id = cur.class_id
         WHERE iv.preset = 1 AND iv.status = 'started' AND iv.followup_due IS NULL AND iv.moc_quy_che IN ('until_next_mt', 'until_exam')
-          AND sc.status != 'done' AND s.archived_at IS NULL AND s.status = 'active'`;
+          AND sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')}`;
     const truoc = conn.prepare(sql).all() as any[];
     if (truoc.length) {
       dienMocQuyChe({ caseIds: [...new Set(truoc.map((r) => r.case_id as number))] });
@@ -1041,7 +1042,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     const lopCn = [...new Set(p.assignments.filter((x) => x.isCore && activeAt(x, today)).map((x) => x.classId))];
     const emMoi = lopCn.length ? conn.prepare(
       `SELECT s.id, s.full_name, e.class_id, c.code, c.branch_id FROM enrollments e
-         JOIN students s ON s.id = e.student_id AND s.status = 'active' AND s.archived_at IS NULL
+         JOIN students s ON s.id = e.student_id AND ${HV_DANG_HOC_SQL('s')}
          JOIN classes c ON c.id = e.class_id
         WHERE e.status = 'active' AND e.class_id IN (${lopCn.map(() => '?').join(',')}) AND substr(s.created_at, 1, 10) BETWEEN ? AND ?
         ORDER BY s.full_name`,

@@ -15,7 +15,7 @@ import { apDungBaoLuuCaLop, apDungCaLop, dongLopNeuHet, type DongCaLop } from '.
 import { tiepTheoTheoHocVien } from './loTrinhTiep.ts';
 import { standingFor } from '../students/standing.ts';
 import { cuoiKhoaTheoHocVien } from '../normal/cuoiKhoa.ts';
-import { khoangTamDung } from '../students/tamDung.ts';
+import { HV_DANG_HOC_SQL, khoangTamDung } from '../students/tamDung.ts';
 
 /**
  * CHUYỂN TIẾP KHI MỘT LỚP HỌC HẾT CHƯƠNG TRÌNH — mục 6.1, đặc tả §3.9.2 (PR-LT thay khung cũ).
@@ -67,7 +67,7 @@ export function transitionPlan(p: Principal, classId: number) {
          LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
          LEFT JOIN report_periods sp ON sp.id = cy.start_period_id
         WHERE e.class_id = ? AND e.status = 'active'
-          AND s.status = 'active' AND s.archived_at IS NULL
+          AND ${HV_DANG_HOC_SQL('s')}
         ORDER BY s.full_name`,
     )
     .all(classId) as any[];
@@ -251,7 +251,7 @@ export function applyTransition(p: Principal, input: TransitionInput, o?: { daDu
       (conn
         .prepare(
           `SELECT s.id FROM enrollments e JOIN students s ON s.id = e.student_id
-            WHERE e.class_id = ? AND e.status = 'active' AND s.status = 'active' AND s.archived_at IS NULL`,
+            WHERE e.class_id = ? AND e.status = 'active' AND ${HV_DANG_HOC_SQL('s')}`,
         )
         .all(input.fromClassId) as any[]).map((r) => r.id as number),
     );

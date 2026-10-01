@@ -1,4 +1,5 @@
 import { db } from '../db.ts';
+import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
   CASE_CATEGORY_LABEL, CASE_CATEGORY_SHORT,
   PERMISSIONS, SOS_LABEL, soSanhLop,
@@ -185,7 +186,7 @@ export function branchSummary(p: Principal, f: { branchId?: number | null } = {}
          FROM enrollments e
          JOIN students s ON s.id = e.student_id
          JOIN classes cl ON cl.id = e.class_id
-        WHERE e.status = 'active' AND s.status = 'active' AND s.archived_at IS NULL`,
+        WHERE e.status = 'active' AND ${HV_DANG_HOC_SQL('s')}`,
     )
     .all() as any[]) {
     const k = byBranch ? `b${r.branch_id}` : `c${r.class_id}`;

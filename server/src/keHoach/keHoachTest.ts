@@ -8,6 +8,7 @@
  *
  * Quyền: MỌI hàm ở đây gọi `require_(PLAN_WEEK, { classId })` TRƯỚC khi đọc gì của lớp/em (QL chi nhánh khác → 403).
  */
+import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { db, theoLo, tx } from '../db.ts';
 import {
   KY_NANG_KE_HOACH, MT_TOI_DA, O_KE_HOACH, PERMISSIONS, boMonLich, kiemLyDoThaoTac, kiemSoMtMoi, kiemTuanDaQua, laLichSu, lichMtMacDinh, viecXepMt, laVaoMuon, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang,
@@ -82,7 +83,7 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
            FROM students s
            JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
            LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
-          WHERE e.class_id IN (${phOf(ftClassIds.length)}) AND s.status = 'active' AND s.archived_at IS NULL`,
+          WHERE e.class_id IN (${phOf(ftClassIds.length)}) AND ${HV_DANG_HOC_SQL('s')}`,
       )
       .all(...ftClassIds) as any[]) {
       if (!hvCuaLop.has(r.class_id)) hvCuaLop.set(r.class_id, []);
@@ -95,7 +96,7 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
            FROM assessment_attempts a
            JOIN learning_cycles cy ON cy.id = a.cycle_id AND cy.status = 'active'
            JOIN enrollments e ON e.student_id = a.student_id AND e.class_id = a.class_id AND e.status = 'active'
-           JOIN students s ON s.id = a.student_id AND s.status = 'active' AND s.archived_at IS NULL
+           JOIN students s ON s.id = a.student_id AND ${HV_DANG_HOC_SQL('s')}
           WHERE a.class_id IN (${phOf(ftClassIds.length)}) AND a.status != 'cancelled'`,
       )
       .all(...ftClassIds) as any[]) {
@@ -136,7 +137,7 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
       .prepare(
         `SELECT e.class_id AS class_id, COUNT(*) AS n
            FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
-          WHERE e.class_id IN (${phOf(thuongIds.length)}) AND s.status = 'active' AND s.archived_at IS NULL
+          WHERE e.class_id IN (${phOf(thuongIds.length)}) AND ${HV_DANG_HOC_SQL('s')}
             AND NOT EXISTS (
               SELECT 1 FROM assessment_attempts a
                WHERE a.student_id = s.id AND a.class_id = e.class_id AND a.kind IN ('progress', 'final') AND a.status != 'cancelled')
@@ -235,7 +236,7 @@ export function luoiFT(p: Principal, classId: number, today: string = demoToday(
     .prepare(
       `SELECT s.id, s.full_name, s.student_code, s.status, e.started_at
          FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
-        WHERE e.class_id = ? AND s.status = 'active' AND s.archived_at IS NULL
+        WHERE e.class_id = ? AND ${HV_DANG_HOC_SQL('s')}
         ORDER BY s.full_name`,
     )
     .all(classId) as any[];
@@ -593,7 +594,7 @@ export function luoiThuong(p: Principal, classId: number) {
     .prepare(
       `SELECT s.id, s.full_name, s.student_code
          FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
-        WHERE e.class_id = ? AND s.status = 'active' AND s.archived_at IS NULL
+        WHERE e.class_id = ? AND ${HV_DANG_HOC_SQL('s')}
         ORDER BY s.full_name`,
     )
     .all(classId) as any[];
@@ -601,7 +602,7 @@ export function luoiThuong(p: Principal, classId: number) {
     .prepare(
       `SELECT a.* FROM assessment_attempts a
          JOIN enrollments e ON e.student_id = a.student_id AND e.status = 'active' AND e.class_id = a.class_id
-         JOIN students s ON s.id = a.student_id AND s.status = 'active' AND s.archived_at IS NULL
+         JOIN students s ON s.id = a.student_id AND ${HV_DANG_HOC_SQL('s')}
         WHERE a.class_id = ? AND a.kind IN ('progress', 'final') AND a.status != 'cancelled'
         ORDER BY a.attempt_no DESC`,
     )

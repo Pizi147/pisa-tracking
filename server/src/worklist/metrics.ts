@@ -1,4 +1,5 @@
 import { db } from '../db.ts';
+import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { ATTEMPT_KIND_SHORT, addDaysIso, baiId, duongCase, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, metricById, tachBaiId, tenMon, tenMonNgan, tuanLich, type AttemptKind, type ChiSo, type ChuongTrinh } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { classScopeSql, scopeFor, type Principal, type Scope } from '../permissions.ts';
@@ -554,7 +555,7 @@ export function hvLenFtChuaKyVong(sc: Scope, branchId: number | null): number[] 
     `SELECT DISTINCT l.student_id AS id FROM lenh_chuyen_lop l
        JOIN classes c ON c.id = l.lop_nguon_id JOIN students s ON s.id = l.student_id
       WHERE l.huong = 'fast_track' AND l.trang_thai IN ('cho', 'da_chuyen') AND c.programme_code IN ('BE', 'ELE')
-        AND s.status = 'active' AND s.archived_at IS NULL
+        AND ${HV_DANG_HOC_SQL('s')}
         AND ${cs.sql}${branchId ? ' AND c.branch_id = ?' : ''}
         AND EXISTS (SELECT 1 FROM assessment_attempts a WHERE a.student_id = l.student_id AND a.class_id = l.lop_nguon_id
                       AND a.kind = 'final' AND a.status != 'cancelled')
@@ -680,7 +681,7 @@ function metricSetGoc(
       return done((db().prepare(
         `SELECT DISTINCT s.id FROM enrollments e JOIN classes c ON c.id = e.class_id JOIN students s ON s.id = e.student_id
            JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
-          WHERE e.status = 'active' AND c.status = 'active' AND c.is_fast_track = 1 AND s.status = 'active' AND s.archived_at IS NULL
+          WHERE e.status = 'active' AND c.status = 'active' AND c.is_fast_track = 1 AND ${HV_DANG_HOC_SQL('s')}
             AND ${cs.sql}${scope.branchId ? ' AND c.branch_id = ?' : ''}
             AND cy.exam_month IS NULL AND cy.exam_period_id IS NULL AND cy.exam_date IS NULL
             AND ${XONG_MT_CUOI_SQL('cy')} AND NOT ${CO_MOC_KE_TIEP_SQL('cy')}

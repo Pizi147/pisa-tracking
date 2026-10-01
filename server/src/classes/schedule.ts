@@ -1,4 +1,5 @@
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
+import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
   CHUONG_TRINH_KHONG_CHIA_MON, boMonLich, CLASS_PHASE_LABEL, CO_DIEM_SQL, MOC_KE_TIEP_SQL, PERMISSIONS, kiemSoMtMoi, laLichSu, lichMtMacDinh, tuanHocCuaMt, tuanLich,
   PROGRAMME_TEMPLATES, kyHieuLop, nextStepsAfter, programmeOf, studyWeekOf,
@@ -376,7 +377,7 @@ const CLASS_ACTIVE_COUNT_SQL = `
     FROM enrollments e
     JOIN students s ON s.id = e.student_id
    WHERE e.class_id = ? AND e.status = 'active'
-     AND s.status = 'active' AND s.archived_at IS NULL`;
+     AND ${HV_DANG_HOC_SQL('s')}`;
 
 /**
  * TIẾN ĐỘ CỦA NHIỀU LỚP TRONG BA CÂU LỆNH — không phải ba câu MỖI LỚP.
@@ -430,7 +431,7 @@ export function classProgressMany(classIds: number[], programmes?: Map<string, P
          FROM enrollments e
          JOIN students s ON s.id = e.student_id
         WHERE e.class_id IN (${ph}) AND e.status = 'active'
-          AND s.status = 'active' AND s.archived_at IS NULL
+          AND ${HV_DANG_HOC_SQL('s')}
         GROUP BY e.class_id`,
     )
     .all(demoToday(), ...classIds) as any[]) {
@@ -558,7 +559,7 @@ export function tomTatMt(classId: number): { soEm: number; coMocSapToi: number; 
          FROM enrollments e
          JOIN students s ON s.id = e.student_id
          LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
-        WHERE e.class_id = ? AND e.status = 'active' AND s.status = 'active' AND s.archived_at IS NULL
+        WHERE e.class_id = ? AND e.status = 'active' AND ${HV_DANG_HOC_SQL('s')}
         GROUP BY s.id)`,
   ).get(mondayOf(demoToday()), classId) as any;
   return { soEm: r?.n ?? 0, coMocSapToi: r?.co_moc ?? 0, daXongMtCuoi: r?.xong ?? 0 };

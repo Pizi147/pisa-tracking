@@ -1,4 +1,5 @@
 import { chenNhieuDong, db, theoLo, tx } from '../db.ts';
+import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
   NHAN_XET_TOI_THIEU, PERMISSIONS, coPhieu, canLopDich, hanBanGiao, khacGoiY, kiemDongChuyenTiep, kiemDongLenh, tuanHopLe, tuanLich,
   type HuongLenh, type MucTieuLenh, type ProgrammeCode,
@@ -82,7 +83,7 @@ export function raLenh(p: Principal, v: {
     /* Tập em hợp lệ = đúng em còn ghi danh `active` ở lớp NGUỒN (như `applyTransition`). */
     const hopLe = new Set((conn.prepare(
       `SELECT s.id FROM enrollments e JOIN students s ON s.id = e.student_id
-        WHERE e.class_id = ? AND e.status = 'active' AND s.status = 'active' AND s.archived_at IS NULL`,
+        WHERE e.class_id = ? AND e.status = 'active' AND ${HV_DANG_HOC_SQL('s')}`,
     ).all(v.lopNguonId) as any[]).map((r) => r.id as number));
     const dongs = [...new Map(v.dongs.map((d) => [d.studentId, d])).values()];
     const daCo = new Map<number, any>();
@@ -487,7 +488,7 @@ export function emChuaCoLenh(classIds: readonly number[]): Map<number, number[]>
   theoLo([...classIds], (lo, ph) => {
     for (const r of db().prepare(
       `SELECT e.class_id, e.student_id FROM enrollments e JOIN students s ON s.id = e.student_id
-        WHERE e.class_id IN (${ph}) AND e.status = 'active' AND s.status = 'active' AND s.archived_at IS NULL
+        WHERE e.class_id IN (${ph}) AND e.status = 'active' AND ${HV_DANG_HOC_SQL('s')}
           AND NOT EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.student_id = e.student_id AND l.trang_thai = 'cho')
         ORDER BY e.class_id, e.student_id`,
     ).all(...lo) as any[]) (out.get(r.class_id) ?? out.set(r.class_id, []).get(r.class_id)!).push(r.student_id);

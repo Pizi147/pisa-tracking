@@ -1,4 +1,5 @@
 import { db, tx, vuaGhi } from '../db.ts';
+import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
   BRANCH_REPORT_CATEGORIES, ENTRY_SKILLS, PERMISSIONS, tenMon,
   TASK_PROGRESS, TASK_PROGRESS_LABEL, TASK_TYPES,
@@ -521,7 +522,7 @@ function fanOutToStudents(
     : (conn
         .prepare(
           `SELECT s.id FROM enrollments e JOIN students s ON s.id = e.student_id
-            WHERE e.class_id = ? AND e.status = 'active' AND s.status = 'active' AND s.archived_at IS NULL`,
+            WHERE e.class_id = ? AND e.status = 'active' AND ${HV_DANG_HOC_SQL('s')}`,
         )
         .all(input.classId ?? 0) as any[]).map((r) => r.id as number);
   if (!ids.length) throw badRequest('Không có học viên nào để giao việc.');

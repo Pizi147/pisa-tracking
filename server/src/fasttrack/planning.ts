@@ -1,4 +1,5 @@
 import { db, tx } from '../db.ts';
+import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { ASSESSED_SKILLS, PERMISSIONS, soSanhLop, type AssessedSkill } from '../../../shared/domain/index.ts';
 import { badRequest, nowIso } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
@@ -134,7 +135,7 @@ export function noPlanQueue(
   const conn = db();
   /* Kế hoạch Test CHỈ dành cho Fast Track (sổ MT-01) — Normal thi theo lịch lớp, không có lượt MT để xếp. */
   const where: string[] = [
-    `s.status = 'active'`, 's.archived_at IS NULL', 'cy.id IS NOT NULL', `pg.scoring_mode = 'ielts_band'`,
+    HV_DANG_HOC_SQL('s'), 'cy.id IS NOT NULL', `pg.scoring_mode = 'ielts_band'`,
   ];
   const params: unknown[] = [];
   if (f.branchId) { where.push('c.branch_id = ?'); params.push(f.branchId); }

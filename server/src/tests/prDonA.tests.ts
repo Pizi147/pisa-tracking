@@ -449,4 +449,62 @@ export async function runPrDonATests(t: YThucTestKit) {
     const ca = transitionSvc.transitionPlan(P.mbManager, lop).students.find((s: any) => s.id === sid)?.tuanHoc?.tuan;
     assert(dau != null && ht === dau && xem === dau && ca === dau, JSON.stringify({ hanhTrinh: ht, dauHoSo: dau, xemChuyenLop: xem, transitionPlan: ca }));
   });
+
+  // ------------------------------------------------------------------ khối 5 · một luật "em đang học" (Q8), việc nhập điểm theo luật Nợ điểm (Q9), VN18
+  console.log('\nPR-Dọn-a · (5) Một luật "em đang học"; việc nhập điểm = Nợ điểm; chương trình đã ngưng');
+  const mw: any = await import('../worklist/mywork.ts');
+  const debt: any = await import('../worklist/scoreDebt.ts');
+  const regular: any = await import('../normal/regular.ts');
+  const { HV_DANG_HOC_SQL } = await import('../students/tamDung.ts');
+
+  check('Dọn-a (5a, 5b) · không còn điều kiện "em đang học" viết tay ở server/src (cả hai thứ tự, cùng bí danh); HV_DANG_HOC_SQL giữ đúng chữ cũ (số không đổi — Q8)', () => {
+    const cungBiDanh = [/\b(\w+)\.status\s*=\s*'active'\s+AND\s+\1\.archived_at IS NULL/, /\b(\w+)\.archived_at IS NULL\s+AND\s+\1\.status\s*=\s*'active'/];
+    const goc = path.join(REPO, 'server/src');
+    const con: string[] = [];
+    const duyet = (thuMuc: string) => {
+      for (const ten of fs.readdirSync(thuMuc)) {
+        const p = path.join(thuMuc, ten);
+        if (fs.statSync(p).isDirectory()) { if (ten !== 'tests') duyet(p); continue; }
+        if (!ten.endsWith('.ts') || ten === 'tamDung.ts') continue;
+        fs.readFileSync(p, 'utf8').split('\n').forEach((dong, i) => {
+          if (cungBiDanh.some((re) => re.test(dong)) && !/cố ý:/.test(dong)) con.push(`${path.relative(goc, p)}:${i + 1}`);
+        });
+      }
+    };
+    duyet(goc);
+    assert(!con.length, `còn ${con.length} chỗ viết tay:\n${con.join('\n')}`);
+    assert(HV_DANG_HOC_SQL('s') === `s.status = 'active' AND s.archived_at IS NULL`,
+      `HV_DANG_HOC_SQL đổi chữ: ${HV_DANG_HOC_SQL('s')}`);
+  });
+
+  check('Dọn-a (5c) · Q9 lớp đã kết thúc còn ô trống của GV L: /my-work nhóm score KHÔNG có lớp đó, Nợ điểm cũng không; (lớp, đợt) hai đường bằng nhau trên mọi lớp', () => {
+    const gv = P.lrTeacher;
+    const viecScore = () => (mw.myWork(gv).groups as any[]).flatMap((x) => x.items).filter((it: any) => it.group === 'score' && it.mine);
+    const lop = viecScore()[0]?.classId;
+    assert(lop, 'dữ liệu demo: GV L cần ít nhất một việc nhập điểm');
+    conn.prepare(`UPDATE classes SET status = 'finished' WHERE id = ?`).run(lop);
+    try {
+      assert(!viecScore().some((it: any) => it.classId === lop), 'Công việc vẫn có việc nhập điểm của lớp đã kết thúc');
+      assert(!(debt.scoreDebtCells(P.admin, TODAY, null) as any[]).some((x) => x.classId === lop), 'Nợ điểm vẫn có lớp đã kết thúc');
+      const luot = new Map(all('SELECT id, class_id, attempt_no, kind FROM assessment_attempts').map((a) => [a.id, a]));
+      const viec = new Set(viecScore().filter((it: any) => it.urgency === 'overdue').map((it: any) => `${it.classId}|${it.attemptNo}`));
+      const no = new Set((debt.scoreDebtCells(P.admin, TODAY, null) as any[]).filter((x) => x.overdue && x.userId === gv.userId)
+        .map((x) => `${luot.get(x.attemptId).class_id}|${luot.get(x.attemptId).attempt_no}`));
+      const lech = [...viec].filter((k) => !no.has(k)).concat([...no].filter((k) => !viec.has(k)));
+      assert(!lech.length, `lệch: ${lech.join(' ; ')}`);
+    } finally { conn.prepare(`UPDATE classes SET status = 'active' WHERE id = ?`).run(lop); }
+  });
+
+  await checkAsync('Dọn-a (5d) · VN18 chương trình BE đã ngưng: lớp BE vẫn chấm theo tỷ lệ (allProgrammes / programmeOfClass); /ref/programmes không còn BE', async () => {
+    const lopBe = get(`SELECT id FROM classes WHERE programme_code = 'BE' AND status = 'active' LIMIT 1`)?.id;
+    assert(lopBe, 'dữ liệu demo: cần một lớp BE');
+    conn.prepare(`UPDATE programmes SET status = 'inactive' WHERE code = 'BE'`).run();
+    try {
+      assert(regular.allProgrammes().get('BE')?.scoringMode === 'ratio' && regular.programmeOfClass(lopBe)?.scoringMode === 'ratio', 'lớp BE mất chương trình');
+      await voiMayChu(async (goi) => {
+        const r = await goi(P.mbManager.userId, '/ref/programmes');
+        assert(r.status === 200 && !r.json.some((x: any) => x.code === 'BE') && r.json.some((x: any) => x.code === 'FOU'), `/ref/programmes: ${r.json.map((x: any) => x.code)}`);
+      });
+    } finally { conn.prepare(`UPDATE programmes SET status = 'active' WHERE code = 'BE'`).run(); }
+  });
 }
