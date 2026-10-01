@@ -356,12 +356,15 @@ export function viecTiepCuaEm(i: {
     const viec = `Nhập điểm ${n.kyNang.map((k) => tenMonNgan(ct, k)).join(', ')}${n.dot ? ` · ${n.dot}` : ''}`;
     const dich: DichViec = { loai: 'nhap-diem' };
     if (n.han) {
-      /* Cùng luật với <Han loai="nhap-diem">: số ngày trễ đếm từ hạn, không chỉ "quá hạn" trơn (A6). */
+      /*
+       * PR-S6F-a Q6: TRỄ chỉ theo cờ ô (`quaHan` = tuần thi đã hết và qua hạn) — `deadlineView` chỉ để in chữ hạn và số ngày trễ
+       * (đếm từ hạn, A6), không quyết tone: hạn đặt đè đã qua mà tuần thi còn chạy thì chưa trễ.
+       */
       const v = deadlineView({ kind: 'nhap-diem', due: n.han, today: i.homNay });
-      const tre = n.quaHan || v.tone === 'overdue';
+      const tre = n.quaHan;
       out.push({
-        viec, han: boTienTo(v.han), quaHanNgay: v.daysOverdue, tone: tre ? 'danger' : 'warn', dich,
-        title: `${viec} · ${v.han}${v.quaHan ? ` · ${v.quaHan}` : tre ? ' · quá hạn' : ''}`,
+        viec, han: boTienTo(v.han), quaHanNgay: tre ? v.daysOverdue : null, tone: tre ? 'danger' : 'warn', dich,
+        title: `${viec} · ${v.han}${tre ? (v.quaHan ? ` · ${v.quaHan}` : ' · quá hạn') : ''}`,
       });
     } else {
       out.push({ viec, han: null, quaHanNgay: null, tone: n.quaHan ? 'danger' : 'warn', dich, title: n.quaHan ? `${viec} · quá hạn` : viec });

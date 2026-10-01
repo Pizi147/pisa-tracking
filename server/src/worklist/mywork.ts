@@ -318,11 +318,13 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     classId: number | null; classCode: string | null; attemptNo: number | null;
     kind: string | null; testLabel: string; skill: string; skillLabel: string;
     students: Map<number, string>; due: string | null; href: string; attemptId: number; ownerId: number | null;
+    /** PR-S6F-a Q6: có ô quá hạn theo cờ ô (`quaHanNhapDiem`) — không so hạn trơn. */
+    quaHan: boolean;
   };
   type BaiChuaCham = {
     classId: number | null; classCode: string | null; attemptNo: number | null; kind: string | null;
     attemptId: number; studentId: number; studentName: string;
-    skill: string; deadline: string | null; ownerId: number | null;
+    skill: string; deadline: string | null; ownerId: number | null; overdue: boolean;
   };
   /*
    * PR-Ra Q1: tách phần gom thành một hàm dùng chung cho "việc của mình" (ownerId luôn là
@@ -346,11 +348,12 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           /* PR-UX1 Q13: bấm Chấm mở Lịch Test đúng lớp, con trỏ vào môn này; bài không có lớp giữ hồ sơ lượt. */
           students: new Map(), due: null,
           href: d.classId ? duongLichTest({ classId: d.classId, kn: d.skill }) : attemptHref({ id: d.attemptId, kind: d.kind, classId: d.classId }),
-          attemptId: d.attemptId, ownerId: d.ownerId,
+          attemptId: d.attemptId, ownerId: d.ownerId, quaHan: false,
         };
         buckets.set(k, b);
       }
       b.students.set(d.studentId, d.studentName);
+      if (d.overdue) b.quaHan = true;
       if (d.deadline && (!b.due || d.deadline < b.due)) b.due = d.deadline;
     }
     /*
@@ -369,7 +372,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       const skills = list.map((b) => b.skillLabel).join(', ');
       const students = new Map<number, string>();
       for (const b of list) for (const [sid, name] of b.students) students.set(sid, name);
-      const u = urgencyOf(first.due, today);
+      /* PR-S6F-a Q6: nhập điểm quá hạn ⇔ có ô `overdue` (tuần thi đã hết và qua hạn) — cùng cờ với Nợ điểm, Lịch Test, bảng GV. */
+      const u: WorkUrgency = list.some((b) => b.quaHan) ? 'overdue' : first.due === today ? 'today' : 'normal';
       /*
        * ĐÚNG MỘT EM thì gọi tên em, không nói "Lớp X" — người đọc đi tìm một cái tên, và
        * "cả lớp" cho một học viên là một câu nói vòng vo.
@@ -407,7 +411,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       minhDongs.push({
         classId: a.classId ?? null, classCode: a.classCode ?? null, attemptNo: a.attemptNo ?? null,
         kind: a.kind ?? null, attemptId: a.id, studentId: a.studentId, studentName: a.studentName,
-        skill: c.skill, deadline: c.deadline, ownerId: p.userId,
+        skill: c.skill, deadline: c.deadline, ownerId: p.userId, overdue: !!c.overdue,
       });
     }
   }
@@ -438,7 +442,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         khacDongs.push({
           classId: a.classId ?? null, classCode: a.classCode ?? null, attemptNo: a.attemptNo ?? null,
           kind: a.kind ?? null, attemptId: a.id, studentId: a.studentId, studentName: a.studentName,
-          skill: c.skill, deadline: c.deadline, ownerId,
+          skill: c.skill, deadline: c.deadline, ownerId, overdue: !!c.overdue,
         });
       }
     }

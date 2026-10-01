@@ -8,6 +8,7 @@ import { CongTacGiaoDien } from '../../ui/CongTacGiaoDien.tsx';
 import { roleLabel, skillShort } from '../../lib/format.ts';
 import { buocDanhSach, chuanHoaMaLop, duongThongBao, ngayTheoGioVN, noiDenThongBao, nhomThongBao } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { useToast } from '../../ui/Toast.tsx';
 
 type SearchHit = { id: number; studentCode: string; fullName: string; classCode: string | null };
 
@@ -23,6 +24,7 @@ type LopRef = { id: number; code: string; student_count: number };
 /** Thanh phải: tìm học viên + lớp (K1-43), thông báo, tài khoản. Không lặp lại điều hướng chính. */
 export function Header() {
   const { session, signOut } = useSession();
+  const toast = useToast();
   const navigate = useNavigate();
   const [q, setQ] = useState('');
   const [openMenu, setOpenMenu] = useState<null | 'account' | 'notif'>(null);
@@ -189,7 +191,10 @@ export function Header() {
             <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b px-3.5 py-2" style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
               <h2 className="m-0 text-sm font-semibold text-slate-100">Thông báo <span className="font-normal text-slate-500">· <span className="tabular-nums">{unread}</span> chưa đọc</span></h2>
               <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={!unread}
-                onClick={async () => { await api.post('/notifications/doc-het'); notifications.reload(); }}>Đọc hết</button>
+                onClick={async () => {
+                  try { await api.post('/notifications/doc-het'); notifications.reload(); }
+                  catch (e: any) { toast.push('error', e?.message || 'Chưa đánh dấu đã đọc được — thử lại.'); }
+                }}>Đọc hết</button>
             </div>
             {(notifications.data ?? []).length === 0 && <div className="p-4 text-sm text-slate-500">Không có thông báo nào.</div>}
             {(['can-lam', 'de-biet'] as const).map((nhom) => {

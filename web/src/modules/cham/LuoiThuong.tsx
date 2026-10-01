@@ -202,6 +202,7 @@ export function useLuuThuong(attemptId: number, onReload: () => void, ct: string
          tải lại mỗi ô làm nặng Turso. Lưới (`/classes/:id/cham`) vẫn tải lại qua `/classes`. */
       invalidate('/regular'); invalidate('/classes'); invalidate('/attempts');
       invalidate('/students'); invalidate('/overview');
+      invalidate('/my-work');   // PR-S6F-a: badge quá hạn của GV tải lại sau khi nhập điểm
       tt.thanhCong(skill);
       onReload();
       return r ?? {};

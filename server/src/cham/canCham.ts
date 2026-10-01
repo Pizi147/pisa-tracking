@@ -21,6 +21,7 @@ import {
 } from '../../../shared/domain/index.ts';
 import { classScoreSheet, conBaiCanCham, listAttempts, type MonDoiLich } from '../fasttrack/attempts.ts';
 import { pendingMovesFor } from '../fasttrack/absence.ts';
+import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { assessedSkillOf, entrySkillsOf } from '../fasttrack/scoring.ts';
 import { allProgrammes, isRatioClass, programmeOfClass, regularSheet } from '../normal/regular.ts';
 import { quaHanNhapDiem, skillScoreDeadline, weekInfo } from '../platform/week.ts';
@@ -448,6 +449,7 @@ export function lichTest(
               ask.skill, ask.sit_status, ask.deadline_override AS han_mon
          FROM assessment_attempts a
          JOIN attempt_skills ask ON ask.attempt_id = a.id
+         JOIN students s ON s.id = a.student_id AND ${HV_DANG_HOC_SQL('s')}   -- PR-S6F-a Q2: cùng tập khối Nợ / badge
          JOIN classes c ON c.id = a.class_id
          JOIN branches b ON b.id = c.branch_id
         WHERE ${where}

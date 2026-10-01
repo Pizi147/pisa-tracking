@@ -9,7 +9,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { NutChon } from '../../ui/ui.tsx';
 import {
   CHO_TAO_PRE_FOU, ENTRY_SKILLS, PROGRAMME_TEMPLATES,
-  chonKhiDoiTach, chuanHoaMaLop, dsLoi, ghepMaLop, kiemPhanCong, kiemSoLop, kyHieuLop, kyNangGoiY, locSoLop, oPhanCong, skillShort, slotsTuO,
+  chonKhiDoiTach, chuanHoaMaLop, dsLoi, ghepMaLop, kiemPhanCong, kiemSoLop, kyHieuLop, kyNangGoiY, locSoLop, nhanDayDuoc, oPhanCong, slotsTuO,
   type LoiPhanCong, type LoiTruong, type OPhanCong,
 } from '@shared/domain/index.ts';
 
@@ -250,10 +250,11 @@ export function LuoiPhanCong({ oList, chon, onChon, nguoi, loi, oId, nhanTrong, 
               onChange={(e) => onChon(o.khoa, e.target.value ? Number(e.target.value) : '')}>
               <option value="">{nhanTrong?.(o.khoa) ?? '— Chưa chọn —'}</option>
               {xep(o).map((t) => {
-                const k = hop(o, t);
+                /* PR-S6F-a: tên môn theo chương trình lớp (FOU "L, R, G+V" / "P"), không mã kỹ năng FT (W1, S). */
+                const k = nhanDayDuoc(chuongTrinh, o, t.skills ?? []);
                 return (
                   <option key={t.id} value={t.id}>
-                    {t.name}{t.classCount ? ` · ${t.classCount} lớp` : ''}{k.length ? ` — dạy được ${k.map(skillShort).join(', ')}` : ''}
+                    {t.name}{t.classCount ? ` · ${t.classCount} lớp` : ''}{k.length ? ` — dạy được ${k.join(', ')}` : ''}
                   </option>
                 );
               })}

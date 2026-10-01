@@ -13,7 +13,7 @@ import { classProgressMany } from './schedule.ts';
 import { isRatioClass, programmeByCode, taoBaiThuongMacDinh } from '../normal/regular.ts';
 import { sauChuyenCuoiKhoa } from '../normal/cuoiKhoa.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
-import { trangThaiYThuc } from '../yThuc/trangThai.ts';
+import { chotHanXuLy, trangThaiYThuc } from '../yThuc/trangThai.ts';
 import { khoangTamDung } from '../students/tamDung.ts';
 
 /**
@@ -301,6 +301,9 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
         .run(caseId, c.owner_user_id, p.userId, nowIso());
     }
   }
+
+  /* PR-S6F-a Q1 (D1): lớp đổi → mốc vào lớp đổi → hạn xử lý vi phạm chưa phản hồi chốt LẠI (như Quay lại học) — hạn ở màn Ý thức = hạn bảng GV. */
+  chotHanXuLy([d.sid], { ghiDe: true });
 
   addJourney({
     studentId: d.sid, eventType: d.boiCanh === 'cuoi-khoa' ? 'promote' : 'transfer', eventDate: d.ngay,

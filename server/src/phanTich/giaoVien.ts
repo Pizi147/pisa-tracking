@@ -13,12 +13,14 @@ import {
 import { db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
-import { addDays, badRequest, forbidden, notFound } from '../util.ts';
+import { BUSINESS_TZ, addDays, badRequest, forbidden, notFound } from '../util.ts';
 import { loadBundle, regularSkillViews, skillCells } from '../fasttrack/attempts.ts';
 import { allProgrammes } from '../normal/regular.ts';
 import { danhGiaMon } from '../classes/phanTichLop.ts';
 import { metricSet, parseObligation } from '../worklist/metrics.ts';
+import { mocTreNhapDiem, quaHanNhapDiem } from '../platform/week.ts';
 import { paCoKetQua } from './hieuQuaPa.ts';
+import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 
 const LO = 400;
 const cho = (n: number) => Array.from({ length: n }, () => '?').join(',');
@@ -88,18 +90,26 @@ export function nguCanhPtGv(p: Principal, f: LocPtGv): NguCanhPtGv {
 
 type OBai = {
   id: number; attemptId: number; classId: number; studentId: number; hocVien: string; skill: string; tuan: string; han: string | null;
-  nhapDau: string | null; band: number | null; coDiem: boolean; tienDo: string; noShow: boolean; tamDung: boolean; kck: boolean; bai: string;
+  nhapDau: string | null; band: number | null; coDiem: boolean; tienDo: string; noShow: boolean;
+  /** Q2: em đang học — chỉ tập Chấm điểm lọc theo cờ này; Kết quả / Tiến bộ giữ bài đã có điểm của em đã thôi học. */
+  dangHoc: boolean; kck: boolean; bai: string;
 };
 type NapBai = { o: OBai[]; attempts: Map<number, any>; bundle: ReturnType<typeof loadBundle> };
 
-/** Mọi ô điểm (một kỹ năng một lượt) có TUẦN THI CỦA CHÍNH Ô ĐÓ trong khoảng, ở lớp của chi nhánh + khung — `skillCells` / `regularSkillViews` như `scoreDebt.ts`. */
-function napBai(p: Principal, c: NguCanhPtGv): NapBai {
+/**
+ * Mọi ô điểm (một kỹ năng một lượt) có TUẦN THI CỦA CHÍNH Ô ĐÓ trong khoảng, ở lớp của chi nhánh + khung — `skillCells` / `regularSkillViews` như `scoreDebt.ts`.
+ * PR-S6F-a Q19: `classId` của ô = LỚP EM HỌC Ở TUẦN THI (ghi danh hiệu lực trong tuần đó, một câu theo lô) — chuyển lớp giữ khoá dời lượt `planned`
+ * sang lớp mới (`luatLoTrinh.ts`) nhưng ô đã thi vẫn tính cho người dạy em lúc thi. Không có ghi danh khớp → lớp của lượt.
+ * ponytail: chỉ nạp lượt ĐANG ở lớp của chi nhánh + khung — lượt đã dời sang lớp chi nhánh khác không còn ở bảng chi nhánh cũ (chuyển chi nhánh giữ khoá hiếm);
+ * cần thì nạp thêm theo ghi danh.
+ */
+export function napBai(p: Principal, c: NguCanhPtGv): NapBai {
   const conn = db();
   const rows: any[] = [];
   for (const lo of theoLo([...c.lop.keys()])) {
     rows.push(...conn.prepare(
       `SELECT a.*, pg.scoring_mode, cl.programme_code, rp.week_start AS period_start, rp.week_end AS period_end, rp.code AS period_code,
-              cy.target_score, cy.khong_cam_ket, cy.route, s.full_name AS hv_ten, s.status AS hv_status
+              cy.target_score, cy.khong_cam_ket, cy.route, s.full_name AS hv_ten, (${HV_DANG_HOC_SQL('s')}) AS dang_hoc
          FROM assessment_attempts a
          JOIN classes cl ON cl.id = a.class_id
          JOIN students s ON s.id = a.student_id
@@ -114,17 +124,31 @@ function napBai(p: Principal, c: NguCanhPtGv): NapBai {
   }
   const bundle = loadBundle(rows.map((r) => r.id));
   const programmes = allProgrammes();
+  const ghiDanh = new Map<number, { lop: number; tu: string; den: string | null }[]>();
+  for (const lo of theoLo([...new Set(rows.map((r) => r.student_id as number))])) {
+    for (const e of conn.prepare(
+      `SELECT student_id, class_id, substr(started_at, 1, 10) AS tu, substr(ended_at, 1, 10) AS den FROM enrollments WHERE student_id IN (${cho(lo.length)})`,
+    ).all(...lo) as any[]) (ghiDanh.get(e.student_id) ?? ghiDanh.set(e.student_id, []).get(e.student_id)!).push({ lop: e.class_id, tu: e.tu, den: e.den });
+  }
+  /* Lớp lúc thi: ghi danh bắt đầu trước hết tuần thi và chưa kết thúc trước tuần thi; nhiều dòng → dòng bắt đầu muộn nhất. */
+  const lopLucThi = (sid: number, tuan: string, lopLuot: number) => {
+    const cuoi = addDays(tuan, 6);
+    const ds = (ghiDanh.get(sid) ?? []).filter((e) => e.tu && e.tu <= cuoi && (!e.den || e.den > tuan));
+    return ds.length ? ds.reduce((x, y) => (y.tu > x.tu ? y : x)).lop : lopLuot;
+  };
   const o: OBai[] = [];
   for (const a of rows) {
     const scores = bundle.scores.get(a.id) ?? [];
     const chung = (skill: string, v: { weekStart: string | null; deadline: string | null; progress: string; noShow: boolean }) => {
       if (!v.weekStart || v.weekStart < c.tu || v.weekStart > c.den) return;
+      const lop = lopLucThi(a.student_id, v.weekStart, a.class_id);
+      if (!c.lop.has(lop)) return;   // lớp lúc thi ngoài chi nhánh + khung đang xem
       const row = scores.find((s) => s.skill === skill);
       o.push({
-        id: baiId(a.id, skill), attemptId: a.id, classId: a.class_id, studentId: a.student_id, hocVien: a.hv_ten, skill, tuan: v.weekStart, han: v.deadline,
+        id: baiId(a.id, skill), attemptId: a.id, classId: lop, studentId: a.student_id, hocVien: a.hv_ten, skill, tuan: v.weekStart, han: v.deadline,
         nhapDau: row?.nhap_dau_ngay ?? null, band: row?.band ?? null,
         coDiem: (row?.band ?? null) !== null || (row?.raw_score ?? null) !== null, tienDo: v.progress, noShow: v.noShow,
-        tamDung: a.hv_status === 'inactive', kck: !!a.khong_cam_ket, bai: nhanDotNgan(a.kind, a.attempt_no) ?? '',
+        dangHoc: !!a.dang_hoc, kck: !!a.khong_cam_ket, bai: nhanDotNgan(a.kind, a.attempt_no) ?? '',
       });
     };
     if (a.scoring_mode === 'ratio') {
@@ -150,8 +174,9 @@ export type DongChamDiem = {
   nhapDau: string | null; tre: number | null; dung: boolean;
 };
 /**
- * Q13, Q20: ô có tuần thi trong khoảng, gán cho người được phân công ở HẠN NHẬP. Đúng hạn ⇔ `nhap_dau_ngay ≤ hạn` (sửa sau không tính); chưa nhập
- * mà hôm nay > hạn = trễ. Không tính: vắng / huỷ / ngoài phạm vi / chờ duyệt dời / MT lịch sử / dấu "-" / em Tạm dừng / ô chưa tới hạn chưa nhập.
+ * Q13, Q20: ô có tuần thi trong khoảng, gán cho người được phân công ở HẠN NHẬP. Đúng hạn ⇔ `nhap_dau_ngay ≤ mốc trễ` (sửa sau không tính);
+ * chưa nhập mà đã quá hạn = trễ. PR-S6F-a Q6: mốc trễ = `mocTreNhapDiem` (max(hạn, Chủ nhật tuần thi)), quá hạn = `quaHanNhapDiem` — một luật
+ * với Nợ điểm / Việc / Lịch Test; số ngày trễ đếm từ mốc. Panel vẫn hiện HẠN (mốc chỉ để tính). Không tính: vắng / huỷ / ngoài phạm vi / chờ duyệt dời / MT lịch sử / dấu "-" / em không đang học (Q2) / ô chưa tới hạn chưa nhập.
  */
 export function tapChamDiem(c: NguCanhPtGv, nap: NapBai): { tap: Tap; dong: Map<number, DongChamDiem & { gv: number }>; khongTinh: Map<number, number> } {
   const tap: Tap = new Map();
@@ -162,16 +187,17 @@ export function tapChamDiem(c: NguCanhPtGv, nap: NapBai): { tap: Tap; dong: Map<
     const l = c.lop.get(x.classId)!;
     const gv = kyNangPhuTrach(l.ct, x.skill).map((k) => c.nguoiLuc(x.classId, k, x.han!)).find((g) => g != null) ?? null;
     if (gv == null) continue;
-    const boQua = KHONG_TINH.has(x.tienDo) || x.noShow || x.tamDung;
-    if (boQua || (!x.nhapDau && c.homNay <= x.han)) {
+    const boQua = KHONG_TINH.has(x.tienDo) || x.noShow || !x.dangHoc;
+    if (boQua || (!x.nhapDau && !quaHanNhapDiem(x.han, x.tuan, c.homNay))) {
       if (x.tienDo === 'absent') khongTinh.set(gv, (khongTinh.get(gv) ?? 0) + 1);
       continue;
     }
-    const dung = !!x.nhapDau && x.nhapDau <= x.han;
+    const moc = mocTreNhapDiem(x.han, x.tuan);
+    const dung = !!x.nhapDau && x.nhapDau <= moc;
     them(tap, gv, x.id, dung);
     dong.set(x.id, {
       id: x.id, gv, studentId: x.studentId, hocVien: x.hocVien, lop: l.ma, bai: x.bai, mon: tenMonNgan(l.ct, x.skill), tuan: x.tuan, han: x.han,
-      nhapDau: x.nhapDau, dung, tre: dung ? null : ngayCach(x.han, x.nhapDau ?? c.homNay),
+      nhapDau: x.nhapDau, dung, tre: dung ? null : ngayCach(moc, x.nhapDau ?? c.homNay),
     });
   }
   return { tap, dong, khongTinh };
@@ -271,8 +297,9 @@ export function tapXuLyViPham(c: NguCanhPtGv): Tap & { lop?: Map<number, Set<num
   const lop = new Map<number, Set<number>>();
   for (const lo of theoLo([...c.lop.keys()])) {
     for (const v of db().prepare(
-      `SELECT id, class_id, han_xu_ly, phan_hoi_ngay FROM violations
-        WHERE valid = 1 AND class_id IN (${cho(lo.length)}) AND han_xu_ly BETWEEN ? AND ?`,
+      `SELECT v.id, v.class_id, v.han_xu_ly, v.phan_hoi_ngay FROM violations v
+         JOIN students s ON s.id = v.student_id AND ${HV_DANG_HOC_SQL('s')}   -- Q2: em không đang học không bị tính trễ
+        WHERE v.valid = 1 AND v.class_id IN (${cho(lo.length)}) AND v.han_xu_ly BETWEEN ? AND ?`,
     ).all(...lo, c.tu, c.cuoi) as any[]) {
       if (!v.phan_hoi_ngay && c.homNay <= v.han_xu_ly) continue;
       const gv = c.nguoiLuc(v.class_id, null, v.han_xu_ly);
@@ -370,19 +397,23 @@ export function phanTichGiaoVien(p: Principal, f: LocPtGv): PhanTichGvKq {
 
 /**
  * PANEL "Chấm điểm" của một GV (mockup 25 màn C): ĐÚNG các ô tạo nên số ở bảng (cùng `tapChamDiem`). Trễ trước, rồi lớp, rồi tên.
- * "Sửa sau": ô có lần sửa ghi lý do (RB-5) trong nhật ký — ngày sửa lấy từ nhật ký. ponytail: ngày nhật ký là giờ máy, không phải ngày nghiệp vụ.
+ * "Sửa sau": ô có lần sửa ghi lý do (RB-5) trong nhật ký — ngày sửa lấy từ nhật ký, đổi sang ngày giờ VN (PR-S6F-a).
+ * ponytail: ngày nhật ký là ngày MÁY (giờ VN), không phải ngày nghiệp vụ — bản demo đặt ngày demo thì "sửa" có thể sau "hôm nay"; ghi ngày nghiệp vụ
+ * vào `after_json` nếu cần khớp tuyệt đối.
  */
 export function oChamDiemGv(p: Principal, f: LocPtGv & { gv: number }): {
   ten: string; tenChiNhanh: string; khung: KhungPtGv; tu: string; den: string; n: number; tre: number; khongTinhVang: number;
   rows: (DongChamDiem & { sua: string | null })[];
 } {
   const c = nguCanhPtGv(p, f);
+  /* PR-S6F-a: chỉ GV có phân công ở lớp của chi nhánh + khung — không trả tên tài khoản bất kỳ qua `gv=`. */
+  const ten = c.pc.find((a) => a.gv === f.gv)?.ten;
+  if (!ten) throw notFound('Giáo viên không có lớp ở chi nhánh này.');
   const r = tapChamDiem(c, napBai(p, c));
   const rows = [...r.dong.values()].filter((d) => d.gv === f.gv);
   const conn = db();
-  const ten = (conn.prepare(`SELECT full_name FROM users WHERE id = ?`).get(f.gv) as any)?.full_name;
-  if (!ten) throw notFound('Không tìm thấy giáo viên này.');
-  /* Lần sửa có lý do: FT ghi theo lượt + nhãn kỹ năng, lớp thường theo dòng điểm — một câu mỗi lô. */
+  /* Lần sửa có lý do: FT ghi theo lượt + nhãn kỹ năng, lớp thường theo dòng điểm — một câu mỗi lô. Nhật ký ghi giờ UTC → ngày VN. */
+  const ngayVn = new Intl.DateTimeFormat('en-CA', { timeZone: BUSINESS_TZ, year: 'numeric', month: '2-digit', day: '2-digit' });
   const sua = new Map<number, string>();
   const attemptIds = [...new Set(rows.map((d) => Math.floor(d.id / 10)))];
   for (const lo of theoLo(attemptIds)) {
@@ -394,7 +425,7 @@ export function oChamDiemGv(p: Principal, f: LocPtGv & { gv: number }): {
        SELECT sc.attempt_id, sc.skill, MAX(al.created_at) FROM audit_logs al JOIN assessment_scores sc ON sc.id = al.entity_id
         WHERE al.entity_type = 'assessment_score' AND sc.attempt_id IN (${cho(lo.length)}) AND al.action IN ('regular.score', 'regular.score.override')
           AND al.after_json LIKE '%"lyDo"%' GROUP BY sc.attempt_id, sc.skill`,
-    ).all(...lo, ...lo) as any[]) sua.set(baiId(x.a, x.k), String(x.luc).slice(0, 10));
+    ).all(...lo, ...lo) as any[]) sua.set(baiId(x.a, x.k), ngayVn.format(new Date(String(x.luc))));
   }
   const out = rows.map((d) => ({ ...d, sua: sua.get(d.id) ?? null }))
     .sort((a, b) => Number(a.dung) - Number(b.dung) || a.lop.localeCompare(b.lop, 'vi') || a.hocVien.localeCompare(b.hocVien, 'vi') || a.id - b.id);
