@@ -1264,21 +1264,18 @@ check('Ba trạng thái học viên; lưu trữ chỉ ẩn, không đóng việc
       WHERE a.student_id = ? AND sc.status != 'done'`).get(s.id) as any).n;
   assert(openAfter === openBefore, 'Lưu trữ đã âm thầm đóng case còn dở');
 });
-check('Hành trình gom thành CHƯƠNG: mọi việc quanh một vấn đề nằm chung một chỗ', () => {
-  const s = conn.prepare(`SELECT student_id AS id FROM journey_events WHERE event_type='cycle_start' LIMIT 1`).get() as any;
-  const eps = profile.studentProfile(P.admin, s.id).episodes;
-  assert(eps.some((e: any) => e.events.some((x: any) => x.eventType === 'cycle_start')),
-    'Thiếu sự kiện bắt đầu lộ trình');
-  // Một chương phải xếp sự kiện theo đúng thứ tự xảy ra, để đọc được như một mạch chuyện.
-  for (const ep of eps) {
-    for (let i = 1; i < ep.events.length; i += 1) {
-      assert(ep.events[i - 1].eventDate <= ep.events[i].eventDate,
-        `Chương "${ep.title}" xếp sự kiện sai thứ tự thời gian`);
-    }
-  }
-  // Chương của một vấn đề phải mở được đúng vấn đề đó.
-  const caseEp = eps.find((e: any) => e.kind === 'case');
-  if (caseEp) assert(/^\/hoc-thuat\/case\/\d+$/.test(caseEp.link), `Chương vấn đề thiếu đường dẫn: ${caseEp.link}`);
+/* PR-VAI-b (Q31-10, K3-32): "chương" nay là CHƯƠNG THEO LỚP của tab Hành trình (mỗi ghi danh một chương), không còn gom sự kiện nhật ký. */
+const hanhTrinhSvc = await import('../students/hanhTrinh.ts');
+check('Hành trình gom thành CHƯƠNG: mỗi lớp em học một chương, cũ → mới; Case nằm trong chương của lớp em học lúc mở', () => {
+  const s = conn.prepare(`SELECT student_id AS id FROM enrollments GROUP BY student_id HAVING COUNT(*) >= 2 ORDER BY student_id LIMIT 1`).get() as any;
+  const ch = hanhTrinhSvc.hanhTrinhHocVien(P.admin, s.id, null).chuong as any[];
+  const soGhiDanh = (conn.prepare('SELECT COUNT(*) n FROM enrollments WHERE student_id = ?').get(s.id) as any).n;
+  assert(ch.length === soGhiDanh, `Mỗi ghi danh một chương: ${ch.length} ≠ ${soGhiDanh}`);
+  // Chương xếp theo đúng thứ tự thời gian, để đọc được như một mạch chuyện.
+  for (let i = 1; i < ch.length; i += 1) assert(ch[i - 1].tu <= ch[i].tu, `Chương "${ch[i].code}" xếp sai thứ tự thời gian`);
+  // Mọi Case của em đều có chỗ trong một chương (không Case nào rơi khỏi hành trình).
+  const soCase = (conn.prepare('SELECT COUNT(*) n FROM sos_cases WHERE student_id = ? AND detected_at IS NOT NULL').get(s.id) as any).n;
+  assert(new Set(ch.flatMap((c: any) => c.caseDong.map((x: any) => x.caseId))).size === soCase, 'Mỗi Case của em phải nằm trong một chương');
 });
 check('Nhiều việc quanh MỘT vấn đề gom lại thành MỘT chương, không thành nhiều dòng rời', () => {
   const row = conn
@@ -1289,9 +1286,11 @@ check('Nhiều việc quanh MỘT vấn đề gom lại thành MỘT chương, k
     )
     .get() as any;
   assert(row, 'Dữ liệu mẫu thiếu vấn đề đã có tác động');
-  const eps = profile.studentProfile(P.admin, row.sid).episodes;
-  const mine = eps.filter((e: any) => e.link === `/hoc-vien/${row.sid}?case=${row.cid}`);   // PR-Pb2-a: dòng Case mở Ngăn Case trên hồ sơ
-  assert(mine.length <= 1, `Vấn đề ${row.cid} bị tách thành ${mine.length} chương rời nhau`);
+  /* PR-VAI-b: chương theo lớp — một Case một khối trong chương (PA nằm trong khối Case), chỉ lặp ở chương sau khi Case đi theo em sang lớp mới. */
+  const ch = hanhTrinhSvc.hanhTrinhHocVien(P.admin, row.sid, null).chuong as any[];
+  const mine = ch.flatMap((c: any) => c.caseDong.filter((x: any) => x.caseId === row.cid));
+  assert(ch.every((c: any) => c.caseDong.filter((x: any) => x.caseId === row.cid).length <= 1), `Vấn đề ${row.cid} bị tách thành nhiều khối trong một chương`);
+  assert(mine.length <= 1 || mine.some((x: any) => x.diTheoSang), `Vấn đề ${row.cid} lặp ở ${mine.length} chương mà không đi theo em sang lớp mới`);
 });
 check('Target chốt tại lượt: sửa lộ trình không viết lại lịch sử', () => {
   const a = conn.prepare(`SELECT * FROM assessment_attempts WHERE status='done' ORDER BY id LIMIT 1`).get() as any;
@@ -6791,17 +6790,13 @@ check('[4.5] Hành trình chỉ giữ mốc xuyên chương trình, không lặp
     )
     .get() as any;
   assert(row, 'Bộ demo thiếu sự kiện phương án trong hành trình');
-  const pr = profile.studentProfile(P.admin, row.sid, row.cid) as any;
-  const types = new Set<string>();
-  for (const ep of pr.episodes) for (const e of ep.events) types.add(e.eventType);
-  assert(!types.has('intervention') && !types.has('followup'),
-    `Mốc hành trình vẫn lặp lại cập nhật phương án: ${[...types].join(', ')}`);
-
-  /* Nhưng TOÀN BỘ ghi nhận vẫn tra lại được — chỉ là không bày mặc định. */
-  const allTypes = new Set<string>();
-  for (const ep of pr.allEpisodes) for (const e of ep.events) allTypes.add(e.eventType);
-  assert(allTypes.has('intervention') || allTypes.has('followup'),
-    'Mở toàn hành trình mà vẫn không thấy các cập nhật phương án');
+  /* PR-VAI-b (Q14): chương theo lớp chỉ kể Case + PA (khối gọn, kèm kết quả) — KHÔNG lặp từng lần ghi kết quả, không việc / hạn / người giữ việc.
+     Từng lần ghi kết quả vẫn tra lại được ở trục tuần (khối PA) và Ngăn Case. */
+  const ht = hanhTrinhSvc.hanhTrinhHocVien(P.admin, row.sid, null) as any;
+  const chuoi = JSON.stringify(ht.chuong);
+  assert(!/"(han|actionDue|followupDue|nguoi|ownerId|observed_on)"/.test(chuoi), 'Chương kể cả việc / hạn / người hoặc từng lần ghi kết quả');
+  assert(ht.hop.some((h: any) => h.vanDe.some((v: any) => v.pa.length > 0)) || !ht.chuong.some((c: any) => c.caseDong.some((x: any) => x.pa.length)),
+    'Trục tuần phải còn khối PA để tra lại');
 });
 
 check('[4.5] Hành trình là của CẢ em, không bị cắt theo lộ trình đang xem', () => {
@@ -6813,10 +6808,12 @@ check('[4.5] Hành trình là của CẢ em, không bị cắt theo lộ trình 
     .get() as any;
   assert(many, 'Bộ demo thiếu em đi qua nhiều lộ trình');
   const cys = conn.prepare('SELECT id FROM learning_cycles WHERE student_id = ? ORDER BY seq').all(many.sid) as any[];
-  const first = profile.studentProfile(P.admin, many.sid, cys[0].id) as any;
-  const last = profile.studentProfile(P.admin, many.sid, cys[cys.length - 1].id) as any;
-  assert(first.allEpisodes.length === last.allEpisodes.length,
-    'Đổi lộ trình đang xem làm hành trình toàn học viên dài ngắn khác nhau');
+  /* PR-VAI-b: chương theo lớp là của CẢ em — không đổi theo giai đoạn đang xem trên trục. */
+  void cys;
+  const a = hanhTrinhSvc.hanhTrinhHocVien(P.admin, many.sid, 'thuong') as any;
+  const b = hanhTrinhSvc.hanhTrinhHocVien(P.admin, many.sid, 'ft') as any;
+  assert(JSON.stringify(a.chuong) === JSON.stringify(b.chuong),
+    'Đổi giai đoạn đang xem làm chương theo lớp của em dài ngắn khác nhau');
 });
 
 check('[5.1] Kết luận lộ trình KHÔNG lấy một lượt Mock Test làm kết quả thi thật', () => {

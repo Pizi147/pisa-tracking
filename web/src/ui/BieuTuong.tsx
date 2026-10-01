@@ -45,3 +45,50 @@ export function IconTamDung(p: P) {
     </svg>
   );
 }
+
+/** ◐ tiến bộ một phần. */
+export function IconMotPhan(p: P) {
+  return (
+    <svg {...khung(p)}>
+      <circle cx="6" cy="6" r="4.1" fill="none" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M6 1.9a4.1 4.1 0 0 1 0 8.2z" fill="currentColor" />
+    </svg>
+  );
+}
+
+/** ✗ không tiến bộ. */
+export function IconKhong(p: P) {
+  return <svg {...khung(p)}><path d="M3.4 3.4 8.6 8.6M8.6 3.4 3.4 8.6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>;
+}
+
+/** ▶ đang làm. */
+export function IconDangLam(p: P) {
+  return <svg {...khung(p)}><path d="M4.2 2.9v6.2L9.1 6z" fill="currentColor" /></svg>;
+}
+
+/** ↑ lên lớp. */
+export function IconLen(p: P) {
+  return (
+    <svg {...khung(p)}>
+      <path d="M6 10V2.6M2.8 5.6 6 2.4l3.2 3.2" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** ⇄ chuyển lớp. */
+export function IconChuyenLop(p: P) {
+  return (
+    <svg {...khung(p)}>
+      <path d="M2 4h7.2M7.4 2.2 9.2 4 7.4 5.8M10 8H2.8M4.6 6.2 2.8 8l1.8 1.8" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** › mũi tên sang phải (giữa hai thẻ chương). */
+export function IconSang(p: P) {
+  return (
+    <svg {...khung(p)}>
+      <path d="M4.5 3 7.5 6 4.5 9" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}

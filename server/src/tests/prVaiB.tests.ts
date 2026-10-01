@@ -472,4 +472,146 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     }
     assert(so > 0, 'bộ demo MB FT 101 phải có hàng có điểm');
   });
+
+  // ------------------------------------------------------------------ khối 9 · Hành trình máy chủ: chương theo lớp (Q14, Q20, K3-32)
+  const { hanhTrinhHocVien } = await import('../students/hanhTrinh.ts');
+  check('VAI-b (9) · chiaChuong: Case mở ở chương 3 còn mở sang chương 4 → chương 3 ghi "đi theo em sang", chương 4 có Case; PA theo ngày bắt đầu; ghim theo lớp; chương không Case rỗng', () => {
+    const l = (k: number, tu: string, den: string | null, o: Record<string, unknown> = {}) => ({
+      enrollmentId: k, classId: 100 + k, code: `MB L${k}`, ngan: `L${k}`, nhan: 'x', ct: 'FOU', ft: false, tu, den, dangHoc: den === null,
+      soTuan: null, tuanHoc: null, gvcn: 'GV', endKind: den ? 'len_lop' : null, status: den ? 'transferred' : 'active', endReason: null, lenh: null, ...o,
+    });
+    const lop = [l(1, '2026-01-05', '2026-03-09'), l(2, '2026-03-09', '2026-06-01'), l(3, '2026-06-01', '2026-08-10', { ft: true, endKind: 'chuyen_lop', lenh: { id: 9, xacNhan: true } }),
+      l(4, '2026-08-10', null, { ft: true })];
+    const ch = d.chiaChuong({
+      lop, homNay: '2026-10-01', tamDung: [{ tu: '2026-07-20', den: '2026-08-03' }],
+      ghim: [{ classId: 103, tuan: '2026-07-13', nhanNgan: 'MT1' }, { classId: 104, tuan: '2026-09-07', nhanNgan: 'MT2' }],
+      cases: [{ caseId: 7, ten: 'Reading', kyNang: 'Reading', sos: 1, mo: '2026-07-14', dong: '2026-09-10',
+        pa: [{ id: 70, ten: 'Tự học', tu: '2026-07-27', tone: 'bad' }, { id: 71, ten: 'Tutor', tu: '2026-08-31', tone: 'ok' }] }],
+    }) as any[];
+    assert(ch.length === 4 && ch[0].caseDong.length === 0 && ch[1].caseDong.length === 0, 'chương không Case → rỗng');
+    assert(ch[2].caseDong[0].diTheoSang === 'MB L4' && ch[2].caseDong[0].pa.map((p: any) => p.id).join() === '70', JSON.stringify(ch[2].caseDong));
+    assert(ch[3].caseDong[0].caseId === 7 && ch[3].caseDong[0].pa.map((p: any) => p.id).join() === '71' && ch[3].caseDong[0].xongO === 'MT2', JSON.stringify(ch[3].caseDong));
+    assert(ch[2].ghim.length === 1 && ch[3].ghim[0].nhanNgan === 'MT2', 'ghim theo lớp');
+    assert(ch[2].tamDung.length === 1 && ch[3].tamDung.length === 0, 'Tạm dừng nằm đúng chương');
+    assert(ch[0].ra.chu === 'Lên FOU' && ch[0].ra.how === 'theo Cuối khoá' && ch[0].ra.tu === '2026-03-09', JSON.stringify(ch[0].ra));
+    assert(ch[2].ra.loai === 'chuyen' && ch[2].ra.how === 'Quản lý ra lệnh' && ch[2].ra.docBanGiao?.lenhId === 9, JSON.stringify(ch[2].ra));
+    assert(ch[3].ra === null, 'chương đang học không có "ra"');
+    assert(!/"(han|nguoi|ownerId|endKind|lenh)"/.test(JSON.stringify(ch)), 'chương không kể việc / hạn / người giữ việc');
+  });
+
+  check('VAI-b (9) · lapLaiQuaLop: kỹ năng có Case ở ≥ 2 lớp → một dòng; một lớp → không; Case đi theo em sang lớp mới không tính lặp', () => {
+    const c = (code: string, ds: [number, string][]) => ({ code, caseDong: ds.map(([caseId, kyNang]) => ({ caseId, kyNang })) });
+    const r = d.lapLaiQuaLop([c('BE 06', [[1, 'Speaking']]), c('FT 104', [[2, 'Reading']]), c('FT 101', [[2, 'Reading'], [3, 'Speaking']])]);
+    assert(r.length === 1 && r[0].kyNang === 'Speaking' && r[0].lop.join() === 'BE 06,FT 101', JSON.stringify(r));
+    assert(d.lapLaiQuaLop([c('FT 101', [[1, 'Speaking'], [2, 'Speaking']])]).length === 0, 'một lớp → không');
+  });
+
+  check('VAI-b (9) · HV 1 (FOU → BE → FT): mỗi ghi danh một chương, cũ → mới, có GVCN; lớp thường không chữ SOS; chương FT đang học = tuần học ở đầu hồ sơ (hai đường)', () => {
+    const r = hanhTrinhHocVien(P.admin, 1, null) as any;
+    const soGhiDanh = get('SELECT COUNT(*) n FROM enrollments WHERE student_id = 1').n;
+    assert(r.chuong.length === soGhiDanh && r.chuong.every((c: any, i: number) => i === 0 || r.chuong[i - 1].tu <= c.tu), `chương: ${r.chuong.map((c: any) => c.code)}`);
+    assert(r.chuong.every((c: any) => c.gvcn), `mỗi chương có GVCN: ${r.chuong.map((c: any) => c.gvcn)}`);
+    for (const c of r.chuong.filter((x: any) => !x.ft)) {
+      const chu = JSON.stringify(c.ghim.map((g: any) => d.nhanGhim(g))) + JSON.stringify(c.caseDong.map((x: any) => x.ten)) + c.nhan;
+      assert(!/SOS/.test(chu), `chương lớp thường có chữ SOS: ${chu}`);
+    }
+    const dang = r.chuong.find((c: any) => c.dangHoc && c.ft);
+    const dau = (studentProfile(P.admin, 1) as any).dauHoSo.thongTin.tuanHoc;
+    assert(dang && dang.tuanHoc?.tu === dau.tuan && dang.tuanHoc.den === null, `tuần học chương ${JSON.stringify(dang?.tuanHoc)} ≠ đầu hồ sơ ${dau.tuan}`);
+    assert(!('episodes' in (studentProfile(P.admin, 1) as any)), 'hồ sơ còn episodes');
+  });
+
+  check('VAI-b (9) · Chân chương có lệnh chuyển đã xác nhận bàn giao → "Đọc bàn giao" (PR-CT Q17 không mất); số câu cố định khi thêm lớp cũ (Q20)', () => {
+    const sid = emCuaLop('MB FT 101');
+    const lop = get(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active'`, sid).class_id;
+    const n1 = demTruyVan(() => { hanhTrinhHocVien(P.admin, sid, null); });
+    const ids: number[] = [];
+    try {
+      const cu = classId('MB FOU 12');
+      ids.push(Number(conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, ended_at, end_kind, created_at) VALUES (?, ?, 'transferred', '2026-01-05', '2026-03-02', 'chuyen_lop', ?)`)
+        .run(sid, cu, `${TODAY}T00:00:00Z`).lastInsertRowid));
+      const lenh = Number(conn.prepare(`INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, lop_dich_id, huong, boi_canh, tuan_bat_dau, nguoi_ra_lenh, ngay_ra_lenh, trang_thai, xac_nhan_boi, xac_nhan_luc, tao_luc)
+        VALUES (?, ?, ?, 'chuyen_lop', 'giua-khoa', '2026-03-02', ?, '2026-02-25', 'da_chuyen', ?, '2026-02-27', ?)`)
+        .run(sid, cu, lop, P.mbManager.userId, P.mbManager.userId, `${TODAY}T00:00:00Z`).lastInsertRowid);
+      const n2 = demTruyVan(() => { hanhTrinhHocVien(P.admin, sid, null); });
+      const ch = (hanhTrinhHocVien(P.admin, sid, null) as any).chuong.find((c: any) => c.classId === cu);
+      conn.prepare('DELETE FROM lenh_chuyen_lop WHERE id = ?').run(lenh);
+      assert(ch?.ra?.docBanGiao?.lenhId === lenh && ch.ra.how === 'Quản lý ra lệnh', JSON.stringify(ch?.ra));
+      assert(n2 - n1 <= 1, `thêm lớp cũ tăng câu SQL: ${n1} → ${n2}`);
+    } finally { conn.prepare(`DELETE FROM enrollments WHERE id IN (${ids.map(() => '?').join(',')})`).run(...ids); }
+  });
+
+  check('VAI-b (9) · PHỦ ĐỊNH: Quản lý chi nhánh CP mở Hành trình em MB → bị chặn', () => {
+    assertThrows(() => hanhTrinhHocVien(P.cpManager, emCuaLop('MB FT 101'), null), /phạm vi/, 'QL CP xem Hành trình em MB');
+  });
+
+  // ------------------------------------------------------------------ khối 10 · Hành trình web: thẻ chương thay Lịch sử lớp (mockup 26 bản 2)
+  check('VAI-b (10) · Quét mã: HanhTrinh.tsx không còn "Mốc học tập", nút "Giai đoạn"; StudentDetailPage không còn LichSuLop / Episode; LichSuLop.tsx, lichSuLop.ts đã xoá; chương dùng duongDotTest', () => {
+    const doc = (f: string) => fs.readFileSync(path.join(REPO, f), 'utf8');
+    const ht = doc('web/src/modules/students/HanhTrinh.tsx');
+    assert(!/Mốc học tập/.test(ht) && !/BoLocDoan ariaLabel="Giai đoạn"/.test(ht) && !/nhanGiaiDoan/.test(ht), 'HanhTrinh còn Mốc học tập / nút giai đoạn');
+    assert(/<ChuongLop /.test(ht) && /scrollIntoView/.test(ht), 'HanhTrinh chưa vẽ chương / bấm chương chưa cuộn tới trục');
+    const sd = doc('web/src/modules/students/StudentDetailPage.tsx');
+    assert(!/LichSuLop|function Episode|episodes=/.test(sd), 'StudentDetailPage còn LichSuLop / Episode');
+    for (const f of ['web/src/modules/students/LichSuLop.tsx', 'server/src/classes/lichSuLop.ts']) assert(!fs.existsSync(path.join(REPO, f)), `${f} chưa xoá`);
+    const ch = doc('web/src/modules/students/ChuongLop.tsx');
+    assert(!/`\/mock-test\//.test(ch) && /duongDotTest\(/.test(ch) && /e\.stopPropagation\(\)/.test(ch), 'ghim chương phải qua duongDotTest, bấm ghim không kích hoạt thẻ');
+    assert(/Đọc bàn giao/.test(ch) && /Lặp lại qua các lớp/.test(ch) && /Case đi theo em sang/.test(ch), 'thẻ chương thiếu Đọc bàn giao / Lặp lại / đi theo');
+    assert(!/text-\[11px\][^"]*"[^>]*>\s*\{?(c\.gvcn|khiChuong)/.test(ch), 'người / thời gian 12 px');
+  });
+  // ------------------------------------------------------------------ khối 11 · Trục tuần nâng cấp (mockup 26 bản 1; Q18, Q19, R5-2, Q31-11)
+  check('VAI-b (11) · nhanGhim hai dòng: FT [MT1, 5.5] / chưa điểm [MT3, ""]; lớp thường [Giữa, 3/4] / [Cuối, 80%], không chữ MT/SOS', () => {
+    const g = (x: any) => d.nhanGhim({ soDat: null, soYeuCau: 4, soCoDiem: 4, overall: null, sosLevel: null, kind: 'mid', ...x }).hai;
+    assert(JSON.stringify(g({ cheDo: 'ielts', attemptNo: 1, overall: 5.5, sosLevel: 1 })) === '["MT1","5.5"]', 'FT có điểm');
+    assert(JSON.stringify(g({ cheDo: 'ielts', attemptNo: 3, soCoDiem: 0 })) === '["MT3",""]', 'FT chưa điểm');
+    const giua = g({ cheDo: 'ratio', attemptNo: 1, soDat: 3 });
+    const cuoi = g({ cheDo: 'ratio', attemptNo: 2, kind: 'final', soDat: 3, tyLe: 0.8 });
+    assert(JSON.stringify(giua) === '["Giữa","3/4"]' && JSON.stringify(cuoi) === '["Cuối","80%"]', `lớp thường: ${giua} · ${cuoi}`);
+    assert(!/MT|SOS/.test(JSON.stringify([giua, cuoi])), 'lớp thường có chữ MT/SOS');
+  });
+
+  check('VAI-b (11) · Mã tuần thay dd/mm: badge "Xong W.."; dòng phụ vấn đề; tooltip khối PA', () => {
+    const h = '2026-09-22';
+    const xong = d.trangThaiHop({ caseMo: [], coTungCase: true, diemCuoiChuaDat: null, xongGanNhat: '2026-08-30' }, h);
+    assert(xong?.chu === `Xong ${d.tuanLich('2026-08-30', h)}` && !/\d\d\/\d\d/.test(xong.chu), JSON.stringify(xong));
+    assert(d.dongPhuVanDe({ mo: '2026-09-14', dong: null, soPa: 1 }, h) === `từ ${d.tuanLich('2026-09-14', h)} · 1 PA`, 'dòng phụ');
+    const pa = d.nhanKhoiPa({ ten: 'Luyện nghe', status: 'active', lastOutcome: null, followupOverdue: false, tu: '2026-09-07', den: null }, h);
+    assert(pa.day.endsWith(`từ ${d.tuanLich('2026-09-07', h)}`) && !/\d\d\/\d\d/.test(pa.day), pa.day);
+  });
+
+  check('VAI-b (11) · khoiCho (R5-2): chờ nguyên nhân / chờ duyệt kế hoạch (không còn "Chưa có PA") / chưa có PA / chờ xác nhận PA / có PA → null', () => {
+    assert(d.khoiCho({ cho: 'nguyen-nhan', soPa: 0, pa: [] }) === 'Chờ nguyên nhân', 'nguyên nhân');
+    assert(d.khoiCho({ cho: 'ke-hoach', soPa: 0, pa: [] }) === 'Chờ duyệt kế hoạch', 'Bổ trợ chờ kế hoạch');
+    assert(d.khoiCho({ cho: null, soPa: 0, pa: [] }) === 'Chưa có PA', 'chưa PA');
+    assert(d.khoiCho({ soPa: 1, pa: [] }) === 'Chờ xác nhận PA', 'PA chưa vẽ được');
+    assert(d.khoiCho({ soPa: 1, pa: [{}] }) === null, 'có khối PA');
+  });
+
+  check('VAI-b (11) · soTuanCot: FT tuần Tạm dừng → null, tuần sau dừng không đếm; khoá 1…n, ngoài khoá → null; tuần này của HV 1 = tuần học ở đầu hồ sơ (hai đường)', () => {
+    const ft = { loai: 'ft' as const, ds: [{ batDau: '2026-09-07', tu: '2026-09-07', den: null }] };
+    const dung = [{ tu: '2026-09-21', den: '2026-09-28' }];   // den = ngày Quay lại
+    assert(d.soTuanCot(ft, dung, '2026-09-14') === 2 && d.soTuanCot(ft, dung, '2026-09-21') === null && d.soTuanCot(ft, dung, '2026-09-28') === 3, 'FT bỏ tuần dừng');
+    const khoa = { loai: 'khoa' as const, ds: [{ batDau: '2026-09-07', tong: 3, tu: '2026-09-07', den: null }] };
+    assert(d.soTuanCot(khoa, [], '2026-09-07') === 1 && d.soTuanCot(khoa, [], '2026-09-21') === 3 && d.soTuanCot(khoa, [], '2026-09-28') === null, 'khoá 1…n');
+    assert(d.soTuanCot(null, [], '2026-09-07') === null, 'không có giai đoạn');
+    const r = hanhTrinhHocVien(P.admin, 1, 'ft') as any;
+    const dau = (studentProfile(P.admin, 1) as any).dauHoSo.thongTin.tuanHoc;
+    assert(dau && d.soTuanCot(r.tuanHoc, r.tamDung, thu2) === dau.tuan, `trục ${d.soTuanCot(r.tuanHoc, r.tamDung, thu2)} ≠ đầu hồ sơ ${dau?.tuan}`);
+  });
+
+  check('VAI-b (11) · chuKhoangDung: chữ dừng ở tuần TRƯỚC tuần quay lại (khớp dải trên trục + tuanHocFt); cùng tuần → một tuần; chưa quay lại → "từ"', () => {
+    const h = '2026-09-14';
+    assert(d.chuKhoangDung({ tu: '2026-07-20', den: '2026-08-03' }, h) === 'W4 JUL – W5 JUL', d.chuKhoangDung({ tu: '2026-07-20', den: '2026-08-03' }, h));
+    assert(d.chuKhoangDung({ tu: '2026-07-20', den: '2026-07-27' }, h) === 'W4 JUL' && d.chuKhoangDung({ tu: '2026-07-21', den: '2026-07-23' }, h) === 'W4 JUL', 'một tuần');
+    assert(d.chuKhoangDung({ tu: '2026-07-20', den: null }, h) === 'từ W4 JUL', 'đang dừng');
+  });
+
+  check('VAI-b (11) · Quét mã HanhTrinh: không "n/16", không "Overall", không <svg> viết tay; chú giải ≤ 9 mục; điểm chuỗi qua duongDotTest', () => {
+    const ht = fs.readFileSync(path.join(REPO, 'web/src/modules/students/HanhTrinh.tsx'), 'utf8');
+    assert(!/\/16\b|Overall|<svg/.test(ht), 'HanhTrinh còn n/16 / Overall / svg viết tay');
+    const cg = ht.slice(ht.indexOf('function ChuGiai'));
+    const muc = (cg.slice(cg.indexOf('const muc'), cg.indexOf('\n  ];')).match(/^ {4}\[/gm) ?? []).length;
+    assert(muc > 0 && muc <= 9, `chú giải ${muc} mục`);
+    assert(/duongDotTest\(/.test(ht), 'điểm chuỗi chưa qua duongDotTest');
+  });
 }

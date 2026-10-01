@@ -168,82 +168,6 @@ function checkpointView(attempts: any[]) {
 }
 
 /**
- * GOM SỰ KIỆN THÀNH CHƯƠNG.
- *
- * Hành trình đọc theo dòng thời gian phẳng thì mỗi lần ghi nhận là một dòng, và một vấn
- * đề được theo dõi ba tháng biến thành mười lăm dòng rời rạc. Gom lại: mọi việc quanh
- * MỘT vấn đề nằm chung một chương, mọi ghi nhận trong MỘT tuần nằm chung một chương.
- */
-function episodesOf(rows: any[]) {
-  const conn = db();
-  const caseOfIntervention = new Map<number, number>();
-  const caseOfFollowup = new Map<number, number>();
-  const ivIds = rows.filter((r) => r.ref_table === 'case_interventions').map((r) => r.ref_id);
-  const fuIds = rows.filter((r) => r.ref_table === 'case_followups').map((r) => r.ref_id);
-  if (ivIds.length) {
-    for (const r of conn.prepare(`SELECT id, case_id FROM case_interventions WHERE id IN (${ivIds.map(() => '?').join(',')})`)
-      .all(...ivIds) as any[]) caseOfIntervention.set(r.id, r.case_id);
-  }
-  if (fuIds.length) {
-    for (const r of conn.prepare(`SELECT id, case_id FROM case_followups WHERE id IN (${fuIds.map(() => '?').join(',')})`)
-      .all(...fuIds) as any[]) caseOfFollowup.set(r.id, r.case_id);
-  }
-
-  /* PR-Pb2-a (Q5): dòng Case của hồ sơ mở thẳng Ngăn Case trên chính hồ sơ này (`duongCase`). */
-  const keyOf = (e: any): { key: string; kind: string; link: string | null } => {
-    if (e.ref_table === 'sos_cases' && e.ref_id) {
-      return { key: `case:${e.ref_id}`, kind: 'case', link: duongCase(e.student_id, e.ref_id) };
-    }
-    if (e.ref_table === 'case_interventions' && caseOfIntervention.has(e.ref_id)) {
-      const id = caseOfIntervention.get(e.ref_id)!;
-      return { key: `case:${id}`, kind: 'case', link: duongCase(e.student_id, id) };
-    }
-    if (e.ref_table === 'case_followups' && caseOfFollowup.has(e.ref_id)) {
-      const id = caseOfFollowup.get(e.ref_id)!;
-      return { key: `case:${id}`, kind: 'case', link: duongCase(e.student_id, id) };
-    }
-    if (e.ref_table === 'assessment_attempts' && e.ref_id) {
-      return { key: `attempt:${e.ref_id}`, kind: 'assessment', link: `/mock/${e.ref_id}` };
-    }
-    if (e.ref_table === 'learning_cycles' || e.ref_table === 'cycle_target_revisions') {
-      return { key: `cycle:${e.event_type}:${e.ref_id ?? e.id}`, kind: 'cycle', link: null };
-    }
-    return { key: `event:${e.id}`, kind: JOURNEY_GROUP[e.event_type] ?? 'other', link: null };
-  };
-
-  const byKey = new Map<string, any>();
-  for (const e of rows) {
-    const { key, kind, link } = keyOf(e);
-    const item = {
-      id: e.id, eventType: e.event_type, eventDate: e.event_date, title: e.title,
-      detail: e.detail, actorName: e.actor_name ?? null,
-      group: JOURNEY_GROUP[e.event_type] ?? 'other',
-      /* PR-CT (Q17): sự kiện Xác nhận bàn giao mở lại được phiếu — cần lớp NGUỒN của lệnh. */
-      ...(e.ref_table === 'lenh_chuyen_lop' ? { banGiao: { lenhId: e.ref_id as number, lopNguonId: (e.lenh_lop_nguon ?? null) as number | null } } : {}),
-    };
-    const ex = byKey.get(key);
-    if (ex) {
-      ex.events.push(item);
-      if (e.event_date < ex.from) ex.from = e.event_date;
-      if (e.event_date > ex.to) ex.to = e.event_date;
-    } else {
-      byKey.set(key, {
-        key, kind, link, title: e.title, from: e.event_date, to: e.event_date, events: [item],
-      });
-    }
-  }
-  const list = [...byKey.values()];
-  for (const ep of list) {
-    ep.events.sort((a: any, b: any) => (a.eventDate < b.eventDate ? -1 : a.eventDate > b.eventDate ? 1 : a.id - b.id));
-    // Tiêu đề chương lấy từ sự kiện MỞ ĐẦU, vì đó là lý do chương này tồn tại.
-    ep.title = ep.events[0].title;
-    ep.count = ep.events.length;
-  }
-  list.sort((a, b) => (a.to < b.to ? 1 : a.to > b.to ? -1 : 0));
-  return list;
-}
-
-/**
  * BIỂU ĐỒ TIẾN BỘ GỌN (mục 7.12.A).
  *
  * Một chuỗi điểm cho MỖI kỹ năng, để giao diện chỉ việc vẽ. Bốn quy tắc đã chốt, và ba
@@ -776,43 +700,6 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   }));
   const openCases = cases.filter((c) => c.status !== 'done');
 
-  /*
-   * HÀNH TRÌNH TOÀN HỌC VIÊN (mục 4.5) — KHÔNG lọc theo lộ trình đang xem.
-   *
-   * Phần này trả lời một câu hỏi khác hẳn phần trên: em đã đi qua những đâu. Lọc nó theo
-   * lộ trình đang chọn thì "toàn hành trình" chỉ còn một chặng, và lịch sử lớp/lộ trình cũ
-   * — kể cả case đã bàn giao — biến mất đúng lúc người ta cần tra lại.
-   */
-  const journeyRows = conn
-    .prepare(
-      `SELECT j.*, u.full_name AS actor_name, lc.seq AS cycle_seq, lc.programme_code, lp.lop_nguon_id AS lenh_lop_nguon
-         FROM journey_events j
-         LEFT JOIN users u ON u.id = j.created_by
-         LEFT JOIN learning_cycles lc ON lc.id = j.cycle_id
-         LEFT JOIN lenh_chuyen_lop lp ON j.ref_table = 'lenh_chuyen_lop' AND lp.id = j.ref_id
-        WHERE j.student_id = ?
-        ORDER BY j.event_date DESC, j.id DESC`,
-    )
-    .all(studentId) as any[];
-
-  /*
-   * MỐC XUYÊN CHƯƠNG TRÌNH — cái duy nhất thuộc về phần này (mục 4.5).
-   *
-   * Mọi cập nhật phương án đã nằm ngay trong hàng kỹ năng ở khối trên, kèm biểu đồ và case.
-   * Kể lại chúng lần nữa ở đây là biến một mục "em đã đi qua những đâu" thành một cuộn giấy
-   * mười lăm dòng cho một vấn đề, và cả hai chỗ cùng dài ra mà không chỗ nào rõ hơn.
-   */
-  /* Q8 (PR-Qb): Hành trình KHÔNG có Ý thức — bỏ 'warning'/'wl' khỏi cả mốc chính lẫn toàn bộ sự kiện. */
-  const JOURNEY_MILESTONES = new Set([
-    'enrollment', 'transfer', 'pause', 'resume', 'finish',
-    'cycle_start', 'repeat', 'exam_date_changed', 'exam_result',
-    'case_handover', 'cycle_outcome', 'handover',
-  ]);
-  const Y_THUC_EVENTS = new Set(['warning', 'wl']);
-  const journeyRowsKhongYThuc = journeyRows.filter((r) => !Y_THUC_EVENTS.has(r.event_type));
-  const milestoneRows = journeyRowsKhongYThuc.filter((r) => JOURNEY_MILESTONES.has(r.event_type)
-    || r.ref_table === 'learning_cycles' || r.ref_table === 'cycle_target_revisions');
-
   const standingNow = standingFor([studentId]).get(studentId) ?? null;
 
   // Đọc MỘT LẦN, dùng lại cho cả `programme` lẫn khối `khoa` dưới — tránh gọi lại `programmeOfClass`
@@ -1034,9 +921,6 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     progress: progressOf(attempts, isRatioCycle(selected ?? {}), cases.map((c: any) => c.id),
       selected ? selected.programme_code ?? programmeCodeOfCycle(selected.id) : null),
     cases,
-    /* Mặc định chỉ mốc xuyên chương trình; giao diện mở được toàn bộ khi cần tra lại. */
-    episodes: episodesOf(milestoneRows),
-    allEpisodes: episodesOf(journeyRowsKhongYThuc),
     viewer: (() => {
       /*
        * K2-6e (Q16) — MỘT NGUỒN "lớp đang học": `activeClassOf` (bảng `enrollments`, xếp theo `id DESC`), không phải

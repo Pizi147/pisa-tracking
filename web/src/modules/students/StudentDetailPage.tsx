@@ -8,7 +8,6 @@ import { MuiTen, SkillBoard, type SkillBoardRow } from '../cases/SkillBoard.tsx'
 import { KetLuanKhoa, MiniTestO } from './KetLuanKhoa.tsx';
 import { HanhTrinh } from './HanhTrinh.tsx';
 import { BonO, CauTomTat, DaiChoDuyet, DaiTamDung, DongThongTin, ThanhViec, type Viec } from './DauHoSo.tsx';
-import { LichSuLop } from './LichSuLop.tsx';
 import { NganCase } from './NganCase.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
 import { StudentPlanPanel } from './StudentPlanPanel.tsx';
@@ -351,15 +350,13 @@ export default function StudentDetailPage() {
 
       {tab === 'hanh-trinh' && (
         <Card title="Hành trình học tập" bodyClass="p-4 space-y-4">
-          {/* LỊCH SỬ LỚP (PR-LT, §3.8 dòng cuối) — đứng TRÊN trục tuần, mỗi lớp em từng học một dòng. */}
-          <LichSuLop studentId={data.id} active={tab === 'hanh-trinh'} />
           {/*
             TRỤC TUẦN THEO LỊCH THẬT, MỖI GIAI ĐOẠN MỘT TRỤC (§3.8, PR-Qb) — thay dòng thời gian
             cũ vẽ lại đúng biểu đồ điểm đã có ở khối trên. Tự gọi máy chủ riêng theo giai đoạn
             đang chọn, chỉ khi tab này đang mở.
           */}
+          {/* PR-VAI-b: chương theo lớp (thay Lịch sử lớp) + trục tuần — một đường `/hanh-trinh`. */}
           <HanhTrinh studentId={data.id} active={tab === 'hanh-trinh'}
-            episodes={data.episodes} allEpisodes={data.allEpisodes}
             onOpenCase={(caseId, paId) => setOpenCase({ caseId, paId })} />
         </Card>
       )}
@@ -551,73 +548,6 @@ function KetQuaThuongO({ a, ct }: { a: any; ct: string | null }) {
       <Level tone={a.sosLevel === null ? (kq.dat ? 'ok' : 'muted') : sosTone(a.sosLevel)}>{kq.chinh}</Level>
       {kq.phu && <div className="text-xs text-slate-400">{kq.phu}</div>}
     </>
-  );
-}
-
-/**
- * MỘT CHƯƠNG của hành trình.
- *
- * Chương có nhiều sự kiện thì mặc định gấp lại, chỉ hiện dòng mở đầu và số việc bên trong —
- * người đọc quét cả năm tháng trong một màn hình, mở ra khi thực sự muốn xem chi tiết.
- */
-export function Episode({ ep, onOpenCase }: { ep: any; onOpenCase: (id: number) => void }) {
-  const [open, setOpen] = useState(false);
-  const navigate = useNavigate();
-  /* PR-CT (Q17): chương có sự kiện Xác nhận bàn giao → nút mở lại phiếu (chỉ đọc nếu người xem không phải GVCN lớp cũ). */
-  const banGiao = ep.events.find((e: any) => e.banGiao?.lopNguonId)?.banGiao ?? null;
-  const many = ep.events.length > 1;
-  const caseId = ep.kind === 'case' ? Number(String(ep.link).split('/').pop()) : null;
-
-  return (
-    <li className="rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>
-      <div className="flex flex-wrap items-baseline gap-2">
-        <span className="text-xs text-slate-500 tabular-nums">
-          {ep.from === ep.to ? ngay(ep.from) : `${ngay(ep.from)} → ${ngay(ep.to)}`}
-        </span>
-        <span className="text-sm text-slate-100 min-w-0">{ep.title}</span>
-        {many && <Info>{ep.events.length} mốc</Info>}
-      </div>
-
-      {/*
-        Chương một sự kiện: tiêu đề ĐÃ LÀ nội dung, chỉ hiện thêm phần chi tiết nếu có.
-        Lặp lại y hệt tiêu đề ngay bên dưới chỉ làm hành trình dài gấp đôi mà không thêm gì.
-      */}
-      {!many && ep.events[0].detail && (
-        <p className="text-xs text-slate-400 mt-1 mb-0">{ep.events[0].detail}</p>
-      )}
-      {open && many && (
-        <ol className="mt-2 space-y-1 list-none p-0 m-0">
-          {ep.events.map((e: any) => (
-            <li key={e.id} className="flex gap-3 items-start">
-              <span className="text-[11px] text-slate-500 w-20 shrink-0 tabular-nums pt-0.5">{ngay(e.eventDate)}</span>
-              <span className="min-w-0">
-                <span className="block text-sm text-slate-200">
-                  {e.title}
-                  <span className="text-[11px] text-slate-500 ml-2">
-                    {JOURNEY_EVENT_LABEL[e.eventType] ?? e.eventType}
-                  </span>
-                </span>
-                {e.detail && <span className="block text-xs text-slate-400">{e.detail}</span>}
-              </span>
-            </li>
-          ))}
-        </ol>
-      )}
-
-      <div className="flex gap-2 mt-1">
-        {many && (
-          <button className="btn btn-sm btn-ghost" onClick={() => setOpen((v) => !v)}>
-            {open ? 'Thu gọn' : `Xem ${ep.events.length} mốc`}
-          </button>
-        )}
-        {caseId && (
-          <button className="btn btn-sm btn-ghost" onClick={() => onOpenCase(caseId)}>Mở vấn đề</button>
-        )}
-        {banGiao && (
-          <button className="btn btn-sm btn-ghost" onClick={() => navigate(`/hoc-vien/lop/${banGiao.lopNguonId}?viec=ban-giao&lenh=${banGiao.lenhId}`)}>Đọc bàn giao</button>
-        )}
-      </div>
-    </li>
   );
 }
 

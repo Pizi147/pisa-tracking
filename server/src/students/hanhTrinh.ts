@@ -1,34 +1,31 @@
 import { db } from '../db.ts';
 import {
-  CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS, caseCategoriesFor, caseTitle, goiYCuoiKhoa, tenCaseSos, tenMon, tenMonNgan, type CaseCategory,
+  CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS, caseCategoriesFor, caseTitle, chiaChuong, goiYCuoiKhoa, lapLaiQuaLop,
+  tenCaseSos, tenMon, tenMonNgan, tuanHocFt, type CaseCategory, type CaseChuongVao, type LopChuong, type TonePaChuong,
   type AssessedSkill, type DiemMoc, type DotRef,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { require_, type Principal } from '../permissions.ts';
-import { cyclesOf } from '../fasttrack/cycles.ts';
-import { isRatioCycle, programmeByCode, programmeCodeOfCycle, programmeOfClass } from '../normal/regular.ts';
+import { isRatioCycle, programmeByCode, programmeCodeOfCycle } from '../normal/regular.ts';
 import { typedResult } from './profile.ts';
+import { khoangTamDung } from './tamDung.ts';
 import { addDays } from '../util.ts';
 import { CO_THE_KHONG_THEO_DOI, awaitingCauseCaseIds } from '../cases/sosState.ts';
 
 /**
- * MÁY CHỦ CỦA TAB HÀNH TRÌNH (PR-Qb, spec §3.8, plan Task 2) — trả dữ liệu THÔ theo giai đoạn; mọi
- * nhãn, màu, tầng đều tính ở `shared/domain/hanhTrinh.ts` bên nhận (web gọi lại đúng các hàm đó).
+ * MÁY CHỦ CỦA TAB HÀNH TRÌNH (PR-Qb, spec §3.8; PR-VAI-b Task 9, mockup 26 bản 2 + bản 1) — trả dữ liệu THÔ; mọi nhãn, màu, tầng tính ở
+ * `shared/domain/hanhTrinh.ts` bên nhận.
  *
- * NGÂN SÁCH TRUY VẤN: 6 câu cố định (không phụ thuộc số Case) — `cyclesOf`, lượt đánh giá (JOIN
- * tuần + lớp), điểm các lượt (một câu IN), case, phương án, lần xem lại có kết quả — CỘNG mỗi lượt
- * một lần gọi `typedResult` (đã tự query điểm/kỳ vọng của riêng lượt đó, chấp nhận theo đúng kế
- * hoạch) và mỗi LỘ TRÌNH lớp thường một câu tra tuần bắt đầu để tính tuần kết thúc chương trình
- * (số lộ trình luôn nhỏ, không phụ thuộc số Case).
+ *   chuong   em đã đi qua những lớp nào (một ghi danh một chương) — `chiaChuong`; thay `/lich-su-lop` và khối "Mốc học tập"
+ *   lop · tamDung · tuanHoc   hàng Lớp, dải Tạm dừng, hàng Tuần học / Tuần khoá của trục tuần (giai đoạn đang xem)
+ *   giaiDoan · ghim · hop     trục tuần như cũ, vẫn theo `?giai-doan=`
+ *
+ * NGÂN SÁCH TRUY VẤN (Q20): số câu CỐ ĐỊNH, không theo số lớp / số Case — lộ trình (kèm tuần bắt đầu), lượt (JOIN lớp: chương trình
+ * lấy từ JOIN, không `programmeOfClass` từng lớp), điểm, lịch kỹ năng, Case, PA, lần ghi kết quả, ghi danh + lớp, GVCN, lệnh chuyển,
+ * khoảng Tạm dừng. Lượt cũ chưa có dòng lịch kỹ năng vẫn đi đường cũ `typedResult(a)` (dữ liệu cũ, hiếm).
  */
 
 type GiaiDoanLoai = 'thuong' | 'ft';
-
-const nhanLoTrinh = (c: any): string => {
-  if (c.route) return c.route;
-  const prog = programmeByCode(c.programme_code) ?? programmeByCode(programmeCodeOfCycle(c.id));
-  return prog ? prog.name : `Lộ trình ${c.seq}`;
-};
 
 /** Hạng mục case ↔ hộp kỹ năng đang xem: writing1/2 ghép vào "writing" khi hộp là lớp thường, ngược lại bỏ. */
 function anhXaHangMuc(category: string | null, boHop: readonly CaseCategory[]): CaseCategory | null {
@@ -38,186 +35,136 @@ function anhXaHangMuc(category: string | null, boHop: readonly CaseCategory[]): 
   return null;
 }
 
-function tuanCuoiChuongTrinh(conn: any, cycle: any): string | null {
-  if (!cycle.start_period_id) return null;
-  const tpl = programmeByCode(cycle.programme_code ?? programmeCodeOfCycle(cycle.id));
-  if (!tpl?.weeks) return null;
-  const start = conn.prepare('SELECT week_start FROM report_periods WHERE id = ?').get(cycle.start_period_id) as any;
-  if (!start?.week_start) return null;
-  return addDays(start.week_start, (tpl.weeks - 1) * 7);
-}
+const soTuanGiua = (tu: string, den: string) => Math.max(1, Math.round((Date.parse(den) - Date.parse(tu)) / (7 * 86_400_000)) + 1);
 
 export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: GiaiDoanLoai | null) {
   const conn = db();
   require_(p, PERMISSIONS.STUDENT_VIEW, { studentId }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
   const homNay = demoToday();
 
-  // -------------------------------------------------------------- (1) lộ trình + giai đoạn
-  const cycles = cyclesOf(studentId);
+  // -------------------------------------------------------------- (1) lộ trình (kèm tuần bắt đầu) + giai đoạn
+  const cycles = conn.prepare(
+    `SELECT cy.*, rp.week_start AS start_week FROM learning_cycles cy LEFT JOIN report_periods rp ON rp.id = cy.start_period_id
+      WHERE cy.student_id = ? ORDER BY cy.seq`,
+  ).all(studentId) as any[];
   const ratioOf = new Map<number, boolean>();
   for (const c of cycles) ratioOf.set(c.id, isRatioCycle(c));
-
   const thuongCycles = cycles.filter((c) => ratioOf.get(c.id));
   const ftCycles = cycles.filter((c) => !ratioOf.get(c.id));
   const dungGiaiDoan = (list: any[]): { tu: string; den: string | null } | null => {
     if (!list.length) return null;
     const sorted = [...list].sort((a, b) => a.started_at.localeCompare(b.started_at));
-    const cuoi = sorted[sorted.length - 1];
-    return { tu: sorted[0].started_at, den: cuoi.ended_at ?? null };
+    return { tu: sorted[0].started_at, den: sorted[sorted.length - 1].ended_at ?? null };
   };
   const cacGiaiDoan: { loai: GiaiDoanLoai; tu: string; den: string | null }[] = [];
   const khoangThuong = dungGiaiDoan(thuongCycles);
   if (khoangThuong) cacGiaiDoan.push({ loai: 'thuong', ...khoangThuong });
   const khoangFt = dungGiaiDoan(ftCycles);
   if (khoangFt) cacGiaiDoan.push({ loai: 'ft', ...khoangFt });
-
-  if (!cycles.length) {
-    return { giaiDoan: null, cacGiaiDoan: [], homNay, doan: [], ghim: [], hop: [] };
-  }
-
-  const current = [...cycles].sort((a, b) => {
-    const activeA = a.status === 'active' ? 0 : 1;
-    const activeB = b.status === 'active' ? 0 : 1;
-    return activeA !== activeB ? activeA - activeB : b.seq - a.seq;
-  })[0];
-  const giaiDoan: GiaiDoanLoai = giaiDoanMuon ?? (ratioOf.get(current.id) ? 'thuong' : 'ft');
-  const chonCycles = (giaiDoan === 'thuong' ? thuongCycles : ftCycles).slice()
+  const current = [...cycles].sort((a, b) => (a.status === 'active' ? 0 : 1) - (b.status === 'active' ? 0 : 1) || b.seq - a.seq)[0] ?? null;
+  const giaiDoan: GiaiDoanLoai | null = giaiDoanMuon ?? (current ? (ratioOf.get(current.id) ? 'thuong' : 'ft') : null);
+  const chonCycles = (giaiDoan === 'thuong' ? thuongCycles : giaiDoan === 'ft' ? ftCycles : []).slice()
     .sort((a, b) => a.started_at.localeCompare(b.started_at));
   const ratio = giaiDoan === 'thuong';
-  /* MH2, PF6: tên môn + bộ hộp theo chương trình của khoá mới nhất trong giai đoạn (FOU G+V/P, Pre FOU một hộp Tổng hợp). */
   const cuoi = chonCycles[chonCycles.length - 1];
+  /* MH2, PF6: tên môn + bộ hộp theo chương trình của khoá mới nhất trong giai đoạn (FOU G+V/P, Pre FOU một hộp Tổng hợp). */
   const ct: string | null = ratio && cuoi ? cuoi.programme_code ?? programmeCodeOfCycle(cuoi.id) : null;
-
-  if (!chonCycles.length) {
-    return { giaiDoan, cacGiaiDoan, homNay, doan: [], ghim: [], hop: [] };
-  }
   const cycleIds = chonCycles.map((c) => c.id);
+  const moiCycleIds = cycles.map((c) => c.id);
 
-  // -------------------------------------------------------------- (2) lượt đánh giá
-  const attemptRows = conn
+  // -------------------------------------------------------------- (2) lượt đánh giá của MỌI lộ trình (một câu; chương trình lớp từ JOIN)
+  const attemptRows = moiCycleIds.length ? conn
     .prepare(
-      `SELECT a.*, c.code AS class_code, c.programme_code AS class_programme, pr.week_start AS week_start, (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route
+      `SELECT a.*, c.code AS class_code, c.programme_code AS class_programme, pr.week_start AS week_start,
+              (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route
          FROM assessment_attempts a
          LEFT JOIN classes c ON c.id = a.class_id
          LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
-        WHERE a.cycle_id IN (${cycleIds.map(() => '?').join(',')}) AND a.status != 'cancelled'
+        WHERE a.cycle_id IN (${moiCycleIds.map(() => '?').join(',')}) AND a.status != 'cancelled'
         ORDER BY a.cycle_id, a.attempt_no`,
     )
-    .all(...cycleIds) as any[];
+    .all(...moiCycleIds) as any[] : [];
   const attemptIds = attemptRows.map((a) => a.id);
 
-  // -------------------------------------------------------------- (3) điểm các lượt (bulk, entry-level cho FT)
+  // -------------------------------------------------------------- (3) điểm + phạm vi kỹ năng các lượt (bulk)
   const scoresByAttempt = new Map<number, any[]>();
-  /* PR-MT: phạm vi kỹ năng + chương trình theo lớp cũng nạp theo lô — em FT nào cũng có sẵn ≥ 3 lượt từ ngày đầu (M1). */
   const skipsByAttempt = new Map<number, AssessedSkill[]>();
   const coDongKyNang = new Set<number>();
   if (attemptIds.length) {
     const ph = attemptIds.map(() => '?').join(',');
     for (const r of conn.prepare(`SELECT * FROM assessment_scores WHERE attempt_id IN (${ph})`).all(...attemptIds) as any[]) {
-      const list = scoresByAttempt.get(r.attempt_id) ?? [];
-      list.push(r);
-      scoresByAttempt.set(r.attempt_id, list);
+      scoresByAttempt.set(r.attempt_id, [...(scoresByAttempt.get(r.attempt_id) ?? []), r]);
     }
     for (const r of conn.prepare(`SELECT attempt_id, skill, required FROM attempt_skills WHERE attempt_id IN (${ph})`).all(...attemptIds) as any[]) {
       coDongKyNang.add(r.attempt_id);
       if (!r.required) skipsByAttempt.set(r.attempt_id, [...(skipsByAttempt.get(r.attempt_id) ?? []), r.skill]);
     }
   }
-  const progByClass = new Map<number, ReturnType<typeof programmeOfClass>>();
-  const progOf = (classId: number | null) => {
-    if (!classId) return null;
-    if (!progByClass.has(classId)) progByClass.set(classId, programmeOfClass(classId));
-    return progByClass.get(classId)!;
-  };
-
   const typed = new Map<number, ReturnType<typeof typedResult>>();
   for (const a of attemptRows) {
-    /* Lượt cũ chưa có dòng lịch kỹ năng → đường cũ đọc bảng ngoại lệ (skipsOf). */
     typed.set(a.id, coDongKyNang.has(a.id)
-      ? typedResult(a, { scores: scoresByAttempt.get(a.id) ?? [], skips: skipsByAttempt.get(a.id) ?? [], prog: progOf(a.class_id) })
+      ? typedResult(a, { scores: scoresByAttempt.get(a.id) ?? [], skips: skipsByAttempt.get(a.id) ?? [], prog: a.class_id ? programmeByCode(a.class_programme) : null })
       : typedResult(a));
   }
 
-  // -------------------------------------------------------------- (4) case
+  // -------------------------------------------------------------- (4) case · (5) PA · (6) lần ghi kết quả — của MỌI lộ trình
   const caseRows = conn
     .prepare(
-      /* PR-SOS (K3-29): cờ "chờ nguyên nhân" (một định nghĩa — `awaitingCauseCaseIds` dưới) + thẻ Không cần theo dõi đang chờ. */
-      `SELECT sc.*, a.attempt_no AS attempt_no, a.kind AS attempt_kind, ${CO_THE_KHONG_THEO_DOI('sc')} AS co_the_ktd
+      `SELECT sc.*, a.attempt_no AS attempt_no, a.kind AS attempt_kind, ${CO_THE_KHONG_THEO_DOI('sc')} AS co_the_ktd,
+              (SELECT cy.programme_code FROM learning_cycles cy WHERE cy.id = sc.cycle_id) AS cycle_programme,
+              (SELECT cy.route FROM learning_cycles cy WHERE cy.id = sc.cycle_id) AS cycle_route
          FROM sos_cases sc
          LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
         WHERE sc.student_id = ?`,
     )
     .all(studentId) as any[];
-  const casesInGiaiDoan = caseRows.filter((c) => {
-    if (c.cycle_id != null) return cycleIds.includes(c.cycle_id);
-    if (!c.detected_at) return false;
-    const kh = giaiDoan === 'thuong' ? khoangThuong : khoangFt;
-    if (!kh) return false;
-    if (c.detected_at < kh.tu) return false;
-    if (kh.den && c.detected_at > kh.den) return false;
-    return true;
-  });
-  const caseIds = casesInGiaiDoan.map((c) => c.id);
-  const choNguyenNhan = new Set(awaitingCauseCaseIds(casesInGiaiDoan.filter((c) => c.status !== 'done').map((c) => c.id as number)));
-
-  // -------------------------------------------------------------- (5) phương án
-  const ivRows = caseIds.length
-    ? conn
-      .prepare(`SELECT * FROM case_interventions WHERE case_id IN (${caseIds.map(() => '?').join(',')}) AND status != 'cancelled'`)
-      .all(...caseIds) as any[]
+  const allCaseIds = caseRows.map((c) => c.id as number);
+  const ivRows = allCaseIds.length
+    ? conn.prepare(`SELECT iv.*, u.full_name AS performer_user_name FROM case_interventions iv LEFT JOIN users u ON u.id = iv.performer_user_id
+        WHERE iv.case_id IN (${allCaseIds.map(() => '?').join(',')}) AND iv.status != 'cancelled'`)
+      .all(...allCaseIds) as any[]
     : [];
   const ivByCase = new Map<number, any[]>();
-  for (const iv of ivRows) {
-    const list = ivByCase.get(iv.case_id) ?? [];
-    list.push(iv);
-    ivByCase.set(iv.case_id, list);
-  }
+  for (const iv of ivRows) ivByCase.set(iv.case_id, [...(ivByCase.get(iv.case_id) ?? []), iv]);
   const noiTiepTuOf = new Map<number, number>();
   for (const iv of ivRows) if (iv.superseded_by != null) noiTiepTuOf.set(iv.superseded_by, iv.id);
-
-  // -------------------------------------------------------------- (6) lần xem lại có kết quả (mới nhất mỗi PA)
   const lastOutcomeOf = new Map<number, string>();
-  if (caseIds.length) {
-    const rows = conn
-      .prepare(
-        `SELECT intervention_id, outcome, observed_on, id FROM case_followups
-          WHERE outcome IS NOT NULL AND case_id IN (${caseIds.map(() => '?').join(',')})
-          ORDER BY observed_on, id`,
-      )
-      .all(...caseIds) as any[];
-    for (const r of rows) if (r.intervention_id != null) lastOutcomeOf.set(r.intervention_id, r.outcome);
+  if (allCaseIds.length) {
+    for (const r of conn.prepare(
+      `SELECT intervention_id, outcome FROM case_followups WHERE outcome IS NOT NULL AND case_id IN (${allCaseIds.map(() => '?').join(',')})
+        ORDER BY observed_on, id`,
+    ).all(...allCaseIds) as any[]) if (r.intervention_id != null) lastOutcomeOf.set(r.intervention_id, r.outcome);
   }
 
-  // -------------------------------------------------------------- doan (khoá / lộ trình)
-  const doan: { loai: 'khoa' | 'lo-trinh'; nhan: string; tu: string; den: string }[] = [];
-  if (ratio) {
-    for (const c of chonCycles) {
-      const attemptsOfCycle = attemptRows.filter((a) => a.cycle_id === c.id);
-      const maLop = attemptsOfCycle[attemptsOfCycle.length - 1]?.class_code
-        ?? programmeByCode(c.programme_code ?? programmeCodeOfCycle(c.id))?.name ?? '—';
-      const den = c.ended_at ?? tuanCuoiChuongTrinh(conn, c) ?? homNay;
-      // +1: đếm TRỌN tuần chứa `tu` VÀ tuần chứa `den` — hiệu hai mốc chỉ ra số tuần ĐÃ TRÔI QUA
-      // giữa hai tuần đó, thiếu tuần đầu (sửa sau rà #75, vấn đề 7: khoá W8/8 hiện sai "7 tuần").
-      const soTuan = Math.max(1, Math.round((Date.parse(den) - Date.parse(c.started_at)) / (7 * 86_400_000)) + 1);
-      doan.push({ loai: 'khoa', nhan: `${maLop} · ${soTuan} tuần`, tu: c.started_at, den });
-    }
-  } else if (chonCycles.length >= 2) {
-    for (const c of chonCycles) doan.push({ loai: 'lo-trinh', nhan: nhanLoTrinh(c), tu: c.started_at, den: c.ended_at ?? homNay });
-  }
+  // -------------------------------------------------------------- (7) ghi danh + lớp · (8) GVCN · (9) lệnh chuyển · (10) Tạm dừng
+  const enr = conn.prepare(
+    `SELECT e.*, c.code AS class_code, c.programme_code AS class_programme, c.is_fast_track, c.so_tuan, rp.week_start AS class_start
+       FROM enrollments e JOIN classes c ON c.id = e.class_id LEFT JOIN report_periods rp ON rp.id = c.start_period_id
+      WHERE e.student_id = ? ORDER BY e.started_at, e.id`,
+  ).all(studentId) as any[];
+  const lopIds = [...new Set(enr.map((e) => e.class_id as number))];
+  const gvcnRows = lopIds.length ? conn.prepare(
+    `SELECT ta.class_id, ta.effective_from, ta.effective_to, ta.status, u.full_name FROM teacher_assignments ta JOIN users u ON u.id = ta.user_id
+      WHERE ta.is_core = 1 AND ta.class_id IN (${lopIds.map(() => '?').join(',')}) ORDER BY ta.status = 'active' DESC, ta.id DESC`,
+  ).all(...lopIds) as any[] : [];
+  const lenhRows = conn.prepare(
+    `SELECT id, lop_nguon_id, xac_nhan_luc FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'da_chuyen' ORDER BY id`,
+  ).all(studentId) as any[];
+  const dung = (khoangTamDung([studentId])[studentId] ?? []).map(({ tu, den }) => ({ tu, den }));
 
-  // -------------------------------------------------------------- ghim (đợt Test trên trục)
-  const ghim = attemptRows
-    .filter((a) => a.week_start)
+  // -------------------------------------------------------------- ghim (đợt Test) — mọi lộ trình; trục chỉ lấy giai đoạn đang xem
+  /* Chương nhận cả lượt chưa xếp tuần (như lịch sử lớp cũ); trục tuần chỉ vẽ lượt có tuần. */
+  const ghimMoi = attemptRows
     .map((a) => {
       const t = typed.get(a.id)!;
+      const chung = { attemptId: a.id, classId: (a.class_id as number | null) ?? null, cycleId: a.cycle_id as number, tuan: (a.week_start ?? null) as string | null, attemptNo: a.attempt_no, kind: a.kind,
+        maLop: (a.class_code as string | null) ?? null };
       if (t.mode === 'ratio') {
         const r = t.ratio!;
-        const soDat = r.skills.filter((s) => s.outcome === 'pass').length;
         return {
-          attemptId: a.id, tuan: a.week_start,
-          cheDo: 'ratio' as const, attemptNo: a.attempt_no, kind: a.kind,
-          overall: null, sosLevel: r.sosLevel, soDat, soYeuCau: r.required, soCoDiem: r.scored,
-          maLop: (a.class_code as string | null) ?? null, kyVong: null as number | null,
+          ...chung, cheDo: 'ratio' as const, nhanNgan: a.kind === 'final' ? 'Cuối khoá' : 'Giữa khoá',
+          overall: null, sosLevel: r.sosLevel, soDat: r.skills.filter((s) => s.outcome === 'pass').length, soYeuCau: r.required, soCoDiem: r.scored,
+          kyVong: null as number | null,
           kyNangChuaDat: r.skills.filter((s) => s.outcome === 'fail').map((s) => s.skill as string),
           khongChiaMon: r.skills.length === 1 && r.skills[0].skill === 'tong_hop', tyLe: r.tyLeTong,
           /* PR-LT2b: hướng gợi ý Cuối khoá (chỉ Cuối khoá đủ điểm) — cùng luật `goiYCuoiKhoa`. */
@@ -227,16 +174,38 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
       }
       const r = t.ft!;
       return {
-        attemptId: a.id, tuan: a.week_start, lichSu: !!a.lich_su,
-        cheDo: 'ielts' as const, attemptNo: a.attempt_no, kind: a.kind,
-        overall: r.overall, sosLevel: r.sosLevel, soDat: null, soYeuCau: r.required.length, soCoDiem: r.scoredRequired,
-        maLop: (a.class_code as string | null) ?? null, kyVong: r.expectation,
+        ...chung, cheDo: 'ielts' as const, nhanNgan: `MT${a.attempt_no}`, lichSu: !!a.lich_su,
+        overall: r.overall, sosLevel: r.sosLevel, soDat: null, soYeuCau: r.required.length, soCoDiem: r.scoredRequired, kyVong: r.expectation,
         kyNangChuaDat: r.verdicts.filter((v) => v.passed === false).map((v) => v.skill as string),
       };
     });
+  const ghim = ghimMoi.filter((g): g is typeof g & { tuan: string } => !!g.tuan && cycleIds.includes(g.cycleId));
 
-  // -------------------------------------------------------------- hop (hộp kỹ năng)
-  const boHop = caseCategoriesFor(ratio ? 'ratio' : 'ielts_band', ct);
+  // -------------------------------------------------------------- tên Case (một luật cho trục và chương)
+  const choNguyenNhan = new Set(awaitingCauseCaseIds(caseRows.filter((c) => c.status !== 'done').map((c) => c.id as number)));
+  const tenCaseCua = (c: any): string => {
+    const ctCase: string | null = c.cycle_programme ?? null;
+    const ratioCase = !c.cycle_route && !!ctCase && programmeByCode(ctCase)?.scoringMode === 'ratio';
+    /* PR-SOS T21: Case SOS Fast Track = `[MT1] {phần giữa} [SOS 3]` như `caseTitleOf` (không gọi nó — mỗi Case một truy vấn). Lớp thường
+       không mượn "… dưới kỳ vọng" của Fast Track. */
+    if (c.origin_kind === 'mock' && (c.attempt_kind ?? 'mock') === 'mock') {
+      return tenCaseSos({ mt: c.attempt_no ?? null, giua: (c.title ?? '').trim() || `${tenMon(ctCase, c.category ?? c.topic ?? '')} không đạt`, sos: c.sos_level ?? null });
+    }
+    return (c.title ?? '').trim() || (ratioCase
+      ? `${tenMon(ctCase, c.category ?? c.topic ?? '')} chưa đạt`
+      : caseTitle({ category: c.category ?? c.topic, latestAttemptNo: c.attempt_no, latestAttemptKind: c.attempt_kind }));
+  };
+
+  // -------------------------------------------------------------- hop (hộp kỹ năng của trục) — giai đoạn đang xem
+  const casesInGiaiDoan = caseRows.filter((c) => {
+    if (c.cycle_id != null) return cycleIds.includes(c.cycle_id);
+    if (!c.detected_at) return false;
+    const kh = giaiDoan === 'thuong' ? khoangThuong : khoangFt;
+    if (!kh) return false;
+    return c.detected_at >= kh.tu && (!kh.den || c.detected_at <= kh.den);
+  });
+  const attemptGiaiDoan = attemptRows.filter((a) => cycleIds.includes(a.cycle_id));
+  const boHop = giaiDoan ? caseCategoriesFor(ratio ? 'ratio' : 'ielts_band', ct) : [];
   const hop = boHop.map((kyNang) => {
     const diem: DiemMoc[] = [];
     let conCho = false;
@@ -247,81 +216,115 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
       if (!conCho) dotCho = { cheDo, attemptNo: a.attempt_no, kind: a.kind, maLop: a.class_code ?? null };
       conCho = true;
     };
-    for (const a of attemptRows) {
+    for (const a of attemptGiaiDoan) {
       const t = typed.get(a.id)!;
       if (t.mode === 'ratio') {
         const s = t.ratio!.skills.find((x) => x.skill === kyNang);
         if (!s) continue;
         if (s.score === null) { choDiem(a, 'ratio'); continue; }
-        diem.push({
-          gt: s.score, tong: s.total, chuaDat: s.outcome === 'fail',
-          attemptNo: a.attempt_no, kind: a.kind, maLop: a.class_code ?? null, kyVong: null,
-        });
+        diem.push({ gt: s.score, tong: s.total, chuaDat: s.outcome === 'fail', attemptNo: a.attempt_no, kind: a.kind, maLop: a.class_code ?? null, kyVong: null, attemptId: a.id });
       } else {
         const band = scoresByAttempt.get(a.id)?.find((x) => x.skill === kyNang)?.band ?? null;
         if (band === null) { choDiem(a, 'ielts'); continue; }
         const exp = t.ft!.expectation;
-        diem.push({
-          gt: band, tong: null, chuaDat: exp !== null && band < exp,
-          attemptNo: a.attempt_no, kind: a.kind, maLop: a.class_code ?? null, kyVong: exp,
-        });
+        diem.push({ gt: band, tong: null, chuaDat: exp !== null && band < exp, attemptNo: a.attempt_no, kind: a.kind, maLop: a.class_code ?? null, kyVong: exp, attemptId: a.id });
       }
     }
-    const diemCuoiChuaDat = diem.length ? diem[diem.length - 1].chuaDat : null;
-
     const casesOfSkill = casesInGiaiDoan.filter((c) => anhXaHangMuc(c.category ?? c.topic, boHop) === kyNang);
     const openCases = casesOfSkill.filter((c) => c.status !== 'done');
     const doneCases = casesOfSkill.filter((c) => c.status === 'done');
-    const caseMo = openCases.map((c) => ({ mo: c.detected_at, soPa: (ivByCase.get(c.id) ?? []).length,
-      choNguyenNhan: choNguyenNhan.has(c.id), choDuyet: !!c.co_the_ktd }));
     const moiNhat = [...doneCases].sort((x, y) => String(y.closed_at ?? '').localeCompare(String(x.closed_at ?? '')))[0];
-    const huyGanNhat = !openCases.length && !!moiNhat && !!(moiNhat.dismiss_reason_code || moiNhat.system_close_reason);
-    const coTungCase = casesOfSkill.length > 0;
-    const xongGanNhat = !openCases.length && doneCases.length
-      ? doneCases.reduce((mx: string | null, c) => {
-        const d = c.closed_at ?? c.outcome_at ?? c.detected_at;
-        return d && (!mx || d > mx) ? d : mx;
-      }, null as string | null)
-      : null;
-
     const vanDe = casesOfSkill.map((c) => {
+      const ivs = ivByCase.get(c.id) ?? [];
       /* PR-SOS: PA quy chế "Chờ xác nhận" chưa có ngày bắt đầu (mốc tính lúc xác nhận) — chưa vẽ khối trên trục tuần. */
-      const pa = (ivByCase.get(c.id) ?? []).filter((iv) => iv.started_date ?? iv.planned_date).map((iv) => ({
-        id: iv.id,
-        ten: caseInterventionLabel(iv.kind),
-        tu: iv.started_date ?? iv.planned_date,
-        den: iv.completed_date ?? null,
-        status: iv.status,
-        lastOutcome: lastOutcomeOf.get(iv.id) ?? null,
+      const pa = ivs.filter((iv) => iv.started_date ?? iv.planned_date).map((iv) => ({
+        id: iv.id, ten: caseInterventionLabel(iv.kind), tu: iv.started_date ?? iv.planned_date, den: iv.completed_date ?? null,
+        status: iv.status, lastOutcome: lastOutcomeOf.get(iv.id) ?? null,
         followupOverdue: iv.status !== 'completed' && !!iv.action_due && iv.action_due < homNay,
         soNgayQuaHan: iv.status !== 'completed' && iv.action_due && iv.action_due < homNay
-          ? Math.max(1, Math.round((Date.parse(homNay) - Date.parse(iv.action_due)) / 86_400_000))
-          : null,
-        supersededBy: iv.superseded_by ?? null,
-        noiTiepTu: noiTiepTuOf.get(iv.id) ?? null,
+          ? Math.max(1, Math.round((Date.parse(homNay) - Date.parse(iv.action_due)) / 86_400_000)) : null,
+        supersededBy: iv.superseded_by ?? null, noiTiepTu: noiTiepTuOf.get(iv.id) ?? null,
+        /* PR-VAI-b (Q18, R5-2): PA chưa chạy vì chờ — Quản lý duyệt kế hoạch / chờ duyệt PA — vẽ khối "chờ", không phải "Chưa có PA". */
+        cho: (iv.approval_state ?? '') === 'pending' || (iv.kind === 'bo_tro' && iv.status === 'planned') ? 'duyet' as const : null,
       }));
       return {
-        caseId: c.id,
-        // Tên người tạo đặt thắng tên suy ra (như caseTitleOf, server/src/cases/cases.ts:58); lớp
-        // thường không mượn "… dưới kỳ vọng" của Fast Track — chấm theo môn đạt/chưa đạt, không có kỳ vọng band.
-        /* PR-SOS T21: Case SOS Fast Track = `[MT1] {phần giữa} [SOS 3]` như `caseTitleOf` (không gọi nó — mỗi Case một truy vấn). */
-        ten: c.origin_kind === 'mock' && (c.attempt_kind ?? 'mock') === 'mock'
-          ? tenCaseSos({ mt: c.attempt_no ?? null, giua: (c.title ?? '').trim() || `${tenMon(ct, c.category ?? c.topic ?? '')} không đạt`, sos: c.sos_level ?? null })
-          : (c.title ?? '').trim() || (ratio
-          ? `${tenMon(ct, c.category ?? c.topic ?? '')} chưa đạt`
-          : caseTitle({ category: c.category ?? c.topic, latestAttemptNo: c.attempt_no, latestAttemptKind: c.attempt_kind })),
+        caseId: c.id, ten: tenCaseCua(c), sos: ratio ? null : c.sos_level ?? null, attemptNo: c.attempt_no ?? null,
         mo: c.detected_at, dong: c.status === 'done' ? (c.closed_at ?? c.outcome_at ?? null) : null,
-        soPa: pa.length, pa,
+        soPa: ivs.length, pa,
+        /* Cột tên hàng PA: "2 phương án · {người}" (mockup 26 bản 1) — người ghi PA mới nhất. */
+        nguoi: (ivs.at(-1)?.performer_user_name ?? ivs.at(-1)?.performer_name ?? null) as string | null,
+        /* Q18: Case chờ nguyên nhân / có PA Bổ trợ chờ kế hoạch — khối chờ (viền đứt tím) với chữ đúng. */
+        cho: c.status !== 'done' && choNguyenNhan.has(c.id) ? 'nguyen-nhan' as const
+          : c.status !== 'done' && ivs.some((iv) => iv.kind === 'bo_tro' && iv.status === 'planned') ? 'ke-hoach' as const : null,
       };
     });
-
     return {
       kyNang, nhan: ratio ? tenMon(ct, kyNang) : CASE_CATEGORY_LABEL[kyNang], nhanNgan: tenMonNgan(ratio ? ct : null, kyNang), cheDo: ratio ? ('ratio' as const) : ('ielts' as const),
-      diem, conCho, dotCho: dotCho as DotRef | null, caseMo, coTungCase, diemCuoiChuaDat, xongGanNhat, huyGanNhat, vanDe,
+      diem, conCho, dotCho: dotCho as DotRef | null,
+      caseMo: openCases.map((c) => ({ mo: c.detected_at, soPa: (ivByCase.get(c.id) ?? []).length, choNguyenNhan: choNguyenNhan.has(c.id), choDuyet: !!c.co_the_ktd })),
+      coTungCase: casesOfSkill.length > 0, diemCuoiChuaDat: diem.length ? diem[diem.length - 1].chuaDat : null,
+      xongGanNhat: !openCases.length && doneCases.length
+        ? doneCases.reduce((mx: string | null, c) => { const d = c.closed_at ?? c.outcome_at ?? c.detected_at; return d && (!mx || d > mx) ? d : mx; }, null as string | null)
+        : null,
+      huyGanNhat: !openCases.length && !!moiNhat && !!(moiNhat.dismiss_reason_code || moiNhat.system_close_reason),
+      vanDe,
     };
   });
 
-  return { giaiDoan, cacGiaiDoan, homNay, doan, ghim, hop, chuongTrinh: ct };
+  // -------------------------------------------------------------- chương theo lớp (mockup 26 bản 2)
+  const ftCuaNgay = (d: string) => [...ftCycles].sort((a, b) => a.started_at.localeCompare(b.started_at)).filter((c) => c.started_at <= d).at(-1) ?? ftCycles[0] ?? null;
+  const gvcnCua = (e: any): string | null => {
+    const den = e.ended_at ?? homNay;
+    return gvcnRows.find((g) => g.class_id === e.class_id && g.effective_from <= den && (!g.effective_to || g.effective_to >= e.started_at))?.full_name
+      ?? gvcnRows.find((g) => g.class_id === e.class_id)?.full_name ?? null;
+  };
+  const lop: LopChuong[] = enr.map((e) => {
+    const ft = !!e.is_fast_track;
+    const dangHoc = e.status === 'active';
+    const cy = ft ? ftCuaNgay(e.started_at) : null;
+    const batDau = cy ? cy.start_week ?? cy.started_at : null;
+    const tuanHoc = cy && batDau ? {
+      tu: tuanHocFt(batDau, dangHoc ? homNay : e.started_at, dung) ?? 1,
+      den: dangHoc ? null : e.ended_at ? tuanHocFt(batDau, addDays(e.ended_at, -1), dung) : null,
+    } : null;
+    const lenh = lenhRows.filter((l) => l.lop_nguon_id === e.class_id).at(-1);
+    const target = cy ? (cy.khong_cam_ket ? 'KCK' : cy.target_score != null ? Number(cy.target_score).toFixed(1) : null) : null;
+    return {
+      enrollmentId: e.id, classId: e.class_id, code: e.class_code, ngan: String(e.class_code).split(' ').slice(1).join(' ') || e.class_code,
+      nhan: ft ? ['FT', cy?.route, dangHoc ? 'đang học' : target ? `target ${target}` : null].filter(Boolean).join(' · ') : `${e.class_programme ?? '—'} · lớp thường`,
+      ct: e.class_programme ?? null, ft, tu: e.started_at, den: e.ended_at ?? null, dangHoc,
+      soTuan: ft ? null : soTuanGiua(e.started_at, e.ended_at ?? homNay), tuanHoc,
+      gvcn: gvcnCua(e), endKind: e.end_kind ?? null, status: e.status, endReason: e.end_reason ?? null,
+      lenh: lenh ? { id: lenh.id, xacNhan: !!lenh.xac_nhan_luc } : null,
+    };
+  });
+  const toneCua = (iv: any): TonePaChuong => {
+    if ((iv.approval_state ?? '') === 'pending' || (iv.kind === 'bo_tro' && iv.status === 'planned') || (iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned')) return 'wait';
+    if (iv.status !== 'completed') return 'run';
+    const o = lastOutcomeOf.get(iv.id);
+    return o === 'improved' ? 'ok' : o === 'partial' ? 'part' : o === 'unchanged' || o === 'worse' ? 'bad' : 'done';
+  };
+  const casesChuong: CaseChuongVao[] = caseRows.filter((c) => c.detected_at).map((c) => ({
+    caseId: c.id, ten: tenCaseCua(c), kyNang: tenMon(c.cycle_programme ?? null, c.category ?? c.topic ?? ''),
+    sos: c.cycle_route ? c.sos_level ?? null : null, mo: c.detected_at, dong: c.status === 'done' ? (c.closed_at ?? c.outcome_at ?? null) : null,
+    pa: (ivByCase.get(c.id) ?? []).map((iv) => ({ id: iv.id, ten: (iv.description ?? '').trim() || caseInterventionLabel(iv.kind), tu: iv.started_date ?? iv.planned_date ?? null, tone: toneCua(iv) })),
+  }));
+  /* Chương chỉ kể đợt ĐÃ có điểm (kết quả), không kể lượt còn chờ. */
+  const chuong = chiaChuong({ lop, ghim: ghimMoi.filter((g) => g.soCoDiem > 0), cases: casesChuong, tamDung: dung, homNay });
+
+  // -------------------------------------------------------------- hàng Lớp · Tuần học / Tuần khoá của trục (giai đoạn đang xem)
+  const chuongGd = chuong.filter((c) => (giaiDoan === 'ft' ? c.ft : !c.ft));
+  const lopTruc = chuongGd.map((c, k) => ({ code: c.code, ngan: c.ngan, gvcn: c.gvcn, tu: c.tu, den: c.den, chuyen: k > 0 }));
+  const tuanHoc = giaiDoan === 'ft'
+    ? { loai: 'ft' as const, ds: ftCycles.map((c) => ({ batDau: c.start_week ?? c.started_at, tu: c.started_at, den: c.ended_at ?? null })) }
+    : giaiDoan === 'thuong'
+      ? { loai: 'khoa' as const, ds: enr.filter((e) => !e.is_fast_track).map((e) => ({ batDau: e.class_start ?? e.started_at, tong: e.so_tuan ?? null, tu: e.started_at, den: e.ended_at ?? null })) }
+      : null;
+
+  return {
+    giaiDoan, cacGiaiDoan, homNay, ghim, hop, chuongTrinh: ct,
+    chuong, lapLai: lapLaiQuaLop(chuong), lop: lopTruc, tamDung: dung, tuanHoc,
+  };
 }
 
 function caseInterventionLabel(kind: string): string {

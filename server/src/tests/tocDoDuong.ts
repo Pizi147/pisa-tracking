@@ -148,7 +148,6 @@ export const DUONG_DO: MucDo[] = [
   /* PR-Qb (sửa sau rà #75, vấn đề 5) — tab Hành trình, cả giai đoạn mặc định lẫn ?giai-doan=thuong. */
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/hanh-trinh' },
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/hanh-trinh?giai-doan=thuong' },
-  { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/lich-su-lop' },
   /* PR-YT4: tab Ý thức của HV (thang, thanh việc, dòng thời gian trộn) — cũng là khung phải của tab lớp khi chọn em. */
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/y-thuc' },
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/y-thuc?pham-vi=tat-ca' },
@@ -530,10 +529,6 @@ export const TRAN: Record<string, number> = {
   'QL /lenh-chuyen/ban-giao?lop=6': 24,
   'QT /lenh-chuyen/ban-giao?lop=6': 23,
   'GVCN_THUONG /lenh-chuyen/ban-giao?lop=6': 23,
-  'QL /students/1/lich-su-lop': 32,
-  'QT /students/1/lich-su-lop': 30,
-  'GVCN /students/1/lich-su-lop': 34,
-  'GVBM /students/1/lich-su-lop': 34,
   /* PR-YT4: tab Ý thức của HV — đo 29/09: QL/GVCN/GVBM 23, QT 20 → trần max(sau+10, ⌈sau×1,3⌉). */
   'QL /students/1/y-thuc': 33,
   'QT /students/1/y-thuc': 30,
