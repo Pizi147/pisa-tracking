@@ -756,7 +756,7 @@ Chọn một:
   - **PR-Dọn-a** (máy chủ: Task 0–10, 15) chạy ngay ở lượt 2;
   - **PR-Dọn-b** (web: Task 0, 11–14, 15) chạy ở **lượt 3**, song song PR-S3.
 
-  Hai PR dùng chung kế hoạch này: phép kiểm `prDonA.tests.ts` / `prDonB.tests.ts`, nhánh `pr-don-a-may-chu` / `pr-don-b-web`, log `check-don-a.log` / `check-don-b.log`. Dọn-b dùng cổng 4177/5377 sau khi Dọn-a xong. Tệp chung có kiểm soát: chỉ `MgmtTasksPage.tsx` (Dọn-b) với C-chữ của S3 (`:222`, khác dòng).
+  Hai PR dùng chung kế hoạch này: phép kiểm `prDonA.tests.ts` / `prDonB.tests.ts`, nhánh `pr-don-a-may-chu` / `pr-don-b-giao-dien`, log `check-don-a.log` / `check-don-b.log`. Dọn-b dùng cổng 4177/5377 sau khi Dọn-a xong. Tệp chung có kiểm soát: chỉ `MgmtTasksPage.tsx` (Dọn-b) với C-chữ của S3 (`:222`, khác dòng).
 
 **Khuyên B.**
 - Phần quyền / an toàn lên sớm.
@@ -835,3 +835,37 @@ Chọn một:
 | 01/10 | 10 | Seed: hạn PA15 → Thứ Hai 21/09, "Gặp phụ huynh…" 07/09, `sosV3Seed` −7, câu demo Q27 không hàm ý ca học; `pb2bSeed`/`prMtSeed` bỏ `classId`. Badge lớp (Câu 2 = B): **"n HV chưa có lệnh chuyển lớp"** (= tập dòng Cần xử lý, `emChuaCoLenh`, từ tuần Cuối khoá), tooltip "Quản lý ra lệnh ở ⋮ Chuyển lớp cả lớp"; lớp đã hết khoá giữ "n HV cần xếp lớp tiếp". Khối prDonA cuối: 49 phép kiểm (khối 1–10). |
 | 01/10 | 15 | Bấm thử (Playwright kênh Chrome, API 4177 · Vite 5377): KIỂM 1 bấm Lưu hai lần → **một** Case (id 88), link cũ `/cases/88` → `/hoc-vien/1?case=88`; KIỂM 2 GV MB tìm GV chỉ có vai CP → 0 người, `studentId` ngoài phạm vi → 403; KIỂM 9 badge có ở MB Pre FOU 03 (4), FOU 12 (7), FOU 22 (1); `/ref/issue-taxonomy` → 404. Ảnh `thiet-ke/anh/pr-don/` (Tổng quan, Học viên & Lớp, hồ sơ HV FT — QL 1440/375 sáng/tối; Công việc GVBM). impeccable **audit** hẹp (badge, dòng phụ Khoá, `CaseRoutePage`): detector 0 phát hiện; badge dài hơn cũ vẫn một dòng ở 1440, thẻ 375 giữ ≤ 2 badge + "+n"; tooltip chỉ hiện khi rê chuột (mẫu badge sẵn có, không đổi trong PR này) → không polish thêm. KIỂM 3–8, 10 đã có phép kiểm máy chủ (khối 3–10); KIỂM 11–16 thuộc Dọn-b. |
 | 01/10 | 15 | Cổng gộp: `origin/main` vẫn `cebb6fff` (UXD / UXF-b chưa merge) → không cần gộp. Check `13568cde`: 2235 đạt, 2 ✗ — SOS (11) D8 còn ghi hạn PA Châu −2 ngày (seed đã dời Thứ Hai −7 theo 10a) và VAI-b (2) còn luật cũ `COALESCE(performer, recorded_by)` (luật Task 6: thiếu người thực hiện thì người phụ trách Case) → sửa hai phép kiểm. **Check cuối `11d83482`: 2237 đạt + tốc độ 32 đạt + typecheck 0 lỗi** (mốc B 2232 + 29; +49 khối prDonA, −44 xoá cùng mã chết; tốc độ +3: 9a, 9c, 9d). `/ponytail-review`: Lean already. Không còn `run.js` của phiên này; đã tắt 4177/5377. |
+
+---
+
+## Bổ sung 02/10 cho PR-Dọn-b (planning — đọc TRƯỚC Task 11)
+
+**Model:** gợi ý **Sonnet 5.5 · High** (phương án B: Opus 5.5 · High) — phần chạm luật Case/migrate đã chuyển sang PR-DEPLOY. **Dọn-b không bắt buộc trước deploy**: chủ yếu giao diện quản trị và lỗi nhỏ. Chỉ là gợi ý; ghi model thật vào thân PR.
+**Nhánh** `pr-don-b-giao-dien` · cổng 4187/5387 (máy local) · log `check-don-b.log` · phép kiểm `prDonB.tests.ts`. Song song **PR-S3** (`docs/superpowers/plans/2026-10-02-pr-s3-chu-cuoi.md`, mục "Hợp đồng với PR-Dọn-b"): Dọn-b giữ cấu trúc, S3 đổi chữ; PR merge sau áp lại phần của mình.
+
+### A. Sửa kế hoạch cũ theo quyết định chủ sản phẩm (thắng Q25, Q13d cũ)
+- **Q25 thay bằng:** trạng thái Vận hành = **Chưa bắt đầu · Đang xử lý · Tạm ngưng · Dừng hẳn · Xong** (bảng `thiet-ke/THUAT_NGU_2026-10-01.md` C-069…C-073). Bỏ "Cần làm/Đang làm/Đã dừng" ở Q25, Task 12 (12a) và bảng bấm thử dòng 11. "Đã dừng" là nhãn khoá học của HV — không dùng cho việc.
+- **(13d) và bảng bấm thử dòng 14:** không có chữ "lệnh". Chữ mới: lớp thường → "Quyết định chuyển lớp cho cả lớp"; còn quyết định đang chờ thi hành → "Sắp chuyển · từ {tuần}". Bộ chữ chuyển lớp lấy từ hằng S3 thêm ở `shared/domain/chuyenLop.ts` (nếu S3 chưa merge: dùng đúng chữ ở mục "Đã chốt" của kế hoạch S3, S3 sẽ gom).
+- Mọi chữ mới Dọn-b thêm theo bảng THUAT_NGU + mục "Đã chốt" của kế hoạch S3 (nút thoát "Đóng", "Báo QL", Case viết hoa, PA/QL ngắn…).
+- Dọn-a để lại: web `PeoplePicker` / `ChonPhuTrach` còn gửi `trongPhamVi` (máy chủ đã bỏ) → gỡ. Từ S3: 4 cờ quyền cũ `mocks/meeting/academic/mgmtTasks` (`shared/domain/dieuHuong.ts:22-23`, `server/src/platform/nav.ts:27`), `NEXT_STEP_HINT` (`shared/domain/cases.ts:914`), import chết `JOURNEY_EVENT_LABEL` (`StudentDetailPage.tsx:23`) → xoá (grep mọi chỗ gọi trước).
+
+### B. Sửa sau rà lượt 2 — PR-UXF-b #157 (báo cáo `docs/superpowers/reviews/2026-10-02-ra-dot-6-luot-2/uxf-b.md`)
+1. **[ĐÃ CHUYỂN sang PR-DEPLOY Task 0b — Dọn-b BỎ QUA mục này]** ~~[P1] Case của lớp trước (R5-5) phải nhớ lớp gốc.~~ Hiện đoán lớp gốc qua `sos_cases.attempt_id` (`server/src/cases/cases.ts:2204-2205`) — cột này trỏ bài mới nhất chạm Case, và Case tự báo (QuickReport) có `attempt_id` rỗng (`cases.ts:584`).
+   - Thêm cột ghi **lớp + chương trình gốc lúc mở Case** (migrate thêm cột theo mẫu `migrate.ts`; DB reset nên không chép dữ liệu cũ; `schema.sql` = migrate). Ghi ở mọi đường mở Case (Mock/SOS tự động, Giữa khoá, QuickReport, mở tay).
+   - **Planning quyết:** lần trượt ở **chương trình mới mở Case mới**; `taoCaseGiuaKhoa` (`server/src/normal/regular.ts:814-820`) không nối lần trượt Writing ở BE vào Case G+V của FOU.
+   - Nhóm "Case bàn giao" (S3 đổi tên từ "Từ lớp trước"), tên môn ở bảng kỹ năng, **Ngăn Case** (`caseDetail`, `cases.ts:1532-1579`) và bộ nguyên nhân ở panel Xác nhận nguyên nhân đều dùng **chương trình gốc** → một Case một tên ở mọi chỗ.
+   - Phép kiểm: em FOU có Case G+V → lên BE → trượt Writing Giữa khoá BE ⇒ 2 Case (G+V cũ, Writing mới), Case G+V ghi "G+V" ở bảng kỹ năng, Ngăn Case và danh sách; Case tự báo G+V vào đúng nhóm; tổng Case ở Tổng quan / Phân tích không đổi nghĩa.
+2. **[P2] Báo PH đã làm không đổi nội dung** (`server/src/yThuc/phoiHop.ts:264-296`): chỉ bỏ môn có Case đóng **trước** ngày làm.
+3. **[P2] Gõ mã tuần không năm** (`docTuanLich`): chọn tuần **gần hôm nay nhất** (cuối tháng 12 gõ "W1 JAN" = tháng 1 năm sau). Sửa kỳ vọng phép kiểm Q6 cũ.
+4. **[P2] Ô tuần trên điện thoại** dùng `inputMode="text"` (hiện `numeric` nên không gõ được chữ).
+5. **[P2]** Dòng "Tạm dừng từ" dùng hàm chung `ngay` (bỏ hàm cắt ngày riêng). Phép kiểm Task 10 của UXF-b: kiểm **tổng Case không đổi** như kế hoạch.
+6. **[P2] Mã tuần còn kèm năm** (B5 sót): toast báo vắng lớp thường ("dời sang W4 SEP 2026"), lỗi dời lịch FT, câu "Tuần … chưa bắt đầu" ở Họp tuần → `tuanLich`.
+7. Nghi ngờ (ghi, không sửa nếu không chắc): sau khi lên BE, người phụ trách Case G+V là GV Writing của BE (luật S5F-a). Với lớp gốc mới ở B1, người phụ trách Case cũ giữ nguyên người lúc mở; ghi vào thân PR nếu khác.
+
+### C. Sửa sau rà lượt 2 — PR-Dọn-a #155 và tích hợp/UXD #156
+**P0/P1 ĐÃ CHUYỂN sang PR-DEPLOY Task 0b** (chủ sản phẩm có thể bỏ Dọn-b). Dọn-b chỉ làm các **P2** rẻ trong hai báo cáo. Xem `docs/superpowers/reviews/2026-10-02-ra-dot-6-luot-2/don-a.md` và `tich-hop-uxd.md`. Làm **mọi P0/P1** ở hai báo cáo đó và P2 nào rẻ; P2 còn lại ghi "Chuyển cho PR khác" ở thân PR.
+
+### Task bổ sung
+- **Task 14b** (sau Task 14): mục B ở trên (trừ B1).
+- **Task 14c**: mục C ở trên.
+- Task 15 bấm thử thêm: ô tuần trên điện thoại gõ "W1 JAN".
