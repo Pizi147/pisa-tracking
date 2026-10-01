@@ -6,6 +6,7 @@ import { ChonChuongTrinh } from '../worklist/ChonChuongTrinh.tsx';
 import { DanhSachCase } from '../cases/CaseBoardPage.tsx';
 import { DanhSachBoQuen } from './DanhSachBoQuen.tsx';
 import { HieuQuaPa } from './HieuQuaPa.tsx';
+import { PhanTichGiaoVien } from './PhanTichGiaoVien.tsx';
 import { TongHopTestSos } from './TongHopTestSos.tsx';
 import { TongHopVanDeHv } from './TongHopVanDeHv.tsx';
 import { YThucPhoiHop } from './YThucPhoiHop.tsx';
@@ -129,7 +130,7 @@ export function PhanTich() {
             </button>
           ))}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        {goc !== 'giao-vien' && (<div className="flex flex-wrap items-center gap-2">
           <ChonChuongTrinh value={ct} onChange={setCt} />
           {laHienTrang
             ? (demoDate && <span className="text-xs text-slate-500">Hiện trạng · đến {ngay(demoDate)}</span>)
@@ -145,7 +146,7 @@ export function PhanTich() {
             <option value="">Mọi lớp</option>
             {classes.map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
           </select>
-        </div>
+        </div>)}
       </div>
 
       {goc === 'tong-hop' && <TongHopTestSos branchId={branchId} ct={ct} tg={tg} classId={classId} />}
@@ -169,6 +170,7 @@ export function PhanTich() {
             : <DanhSachCase branchId={branchId} ct={ct} classId={classId} />}
         </>
       )}
+      {goc === 'giao-vien' && <PhanTichGiaoVien branchId={branchId} />}
     </div>
   );
 }

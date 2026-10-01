@@ -1,4 +1,5 @@
-import { Fragment, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
 import { HangNhom } from '../../ui/HangNhom.tsx';
@@ -20,7 +21,15 @@ type PhanTich = {
  */
 export function PhanTichLopTab({ classId }: { classId: number }) {
   const { data, loading, error, reload } = useApi<PhanTich>(`/classes/${classId}/phan-tich-lop`, [classId]);
-  const [mo, setMo] = useState<string | null>(null);
+  /* PR-Pb2-b (Q22): `?ky-nang=` từ bảng Phân tích giáo viên mở sẵn dòng kỹ năng đó và cuộn tới; khoá lạ bỏ qua. */
+  const [params] = useSearchParams();
+  const [mo, setMo] = useState<string | null>(params.get('ky-nang'));
+  useEffect(() => {
+    if (!data || !mo) return;
+    if (!data.dong.some((d) => d.key === mo && d.moRong !== false)) { setMo(null); return; }
+    document.getElementById(`pt-lop-${mo}`)?.scrollIntoView({ block: 'center' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (loading || !data) return <Skeleton rows={5} />;
   const ft = data.loai === 'ft';
@@ -70,7 +79,7 @@ export function PhanTichLopTab({ classId }: { classId: number }) {
                   {oCac}
                 </HangNhom>
                 {mo === d.key && (
-                  <tr><td className="td" colSpan={data.cot.length + 1}><VanDeKyNang classId={classId} category={d.category} /></td></tr>
+                  <tr id={`pt-lop-${d.key}`}><td className="td" colSpan={data.cot.length + 1}><VanDeKyNang classId={classId} category={d.category} /></td></tr>
                 )}
               </Fragment>
             );
