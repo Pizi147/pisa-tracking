@@ -1,8 +1,14 @@
 # PISA Progress — Rule book: SOS, case, phương án và Test
 
-Phiên bản 1.2 · 21/09/2026 · Cập nhật theo chốt mới nhất của chủ sản phẩm.
+Phiên bản 1.3 · 02/10/2026 · Cập nhật theo chốt mới nhất của chủ sản phẩm và đối chiếu với code `main`.
 
-> **ĐỌC MỤC 19 RỒI MỤC 18.** Mục 19 (tối 21/09, rulebook v3) ưu tiên hơn mục 18.
+> **ĐỌC MỤC 20 TRƯỚC (ngày 02/10/2026), RỒI MỤC 19, RỒI MỤC 18.** Mục 20 tổng hợp mọi luật đã đổi từ 21/09 đến nay
+> (đặc tả nâng cấp 27/09, các PR đến 01/10, lời chủ sản phẩm 02/10) và đã đối chiếu với code đang chạy; **mục 20 ưu tiên
+> hơn mọi mục khác khi trái**. Những chỗ sau trong mục 1–19 đã bị thay và có đánh dấu **[ĐÃ THAY — xem §20.x]**: hạn cập nhật PA
+> (Chủ nhật → hết Thứ Hai), "Dự kiến kết thúc", SOS FT điền sẵn và "Không cần theo dõi" đóng ngay, Ý thức (thang 6 bậc, hạn thật,
+> QL duyệt), SOS lớp thường, dấu "-" lớp thường (C08), môn lớp thường, sửa Target/lộ trình, chuyển lớp. Chữ gốc giữ nguyên làm lịch sử.
+>
+> **ĐỌC MỤC 19 RỒI MỤC 18 (lịch sử).** Mục 19 (tối 21/09, rulebook v3) ưu tiên hơn mục 18.
 >
 > **Mục 18:** Chốt ngày 21/09/2026 **bỏ hẳn mô hình Case Ý thức**, thay bằng
 > **Vi phạm** và **Biện pháp xử lý** quan hệ nhiều–nhiều. Mục 18 ưu tiên hơn mục 6, mục 17.2
@@ -86,7 +92,7 @@ L/R dùng bảng quy đổi số câu đúng của trung tâm đang có trong co
 - Mỗi kỹ năng đạt khi `điểm đạt / tổng điểm >= 70%`; không làm tròn tỷ lệ trước khi so. Ví dụ 7/10 đạt, 23/33 chưa đạt.
 - Không dùng band/target FT để chấm Normal. Writing Normal là W riêng, không gộp vào W2.
 - Thiếu môn không suy thành “đạt cả đợt”. Không hủy nghĩa vụ kiểm tra để đóng đợt thiếu môn.
-- Ngưỡng SOS theo số môn dưới chuẩn cần dùng cùng định nghĩa đã chốt cho Normal; nghiệm thu cả ba mức và trường hợp thiếu môn. Không suy số môn chưa nhập là số môn trượt.
+- Ngưỡng SOS theo số môn dưới chuẩn cần dùng cùng định nghĩa đã chốt cho Normal; nghiệm thu cả ba mức và trường hợp thiếu môn. Không suy số môn chưa nhập là số môn trượt. **[ĐÃ THAY 27–30/09 — lớp thường không còn nhãn SOS: Giữa khoá tự tạo Case + PA Bổ trợ, Cuối khoá dùng dải % tổng; Pre FOU không chia môn; FOU hiện G+V · P. Xem §20.6]**
 
 ### 3.4. Tín hiệu và hiệu chỉnh — đã chốt
 
@@ -133,9 +139,9 @@ L/R dùng bảng quy đổi số câu đúng của trung tâm đang có trong co
 - Một case có thể có nhiều PA chạy song song, chủ trách nhiệm, ngày bắt đầu/kết thúc và kết quả riêng.
 - Danh mục tự thực hiện trong prompt: ba loại cũ và Tăng cường bài tập. Không bịa tên ba loại khi chưa trích đủ danh mục chuẩn. Phương án ngoài danh mục phải xin QL, gồm Hỗ trợ học thuật/Khác theo luồng duyệt.
 - Mô tả PA bắt buộc; cho file/link. Mặc định Đang theo dõi; nhập PA đã xong phải có ngày và kết quả phù hợp, không tự coi ngày quá khứ là bằng chứng đã hoàn thành.
-- Dự kiến kết thúc mặc định Chủ nhật tuần tiếp theo nếu chưa chọn, theo prompt. Đây khác hạn cập nhật tuần.
-- GVBM phụ trách cập nhật **từng PA đang theo dõi trước hết Chủ nhật hằng tuần**; không bắt nhập lại thông tin không đổi.
-- Cập nhật có hai lựa chọn rõ: **Tiếp tục theo dõi / Kết thúc phương án**. Kết quả và ghi chú; không có điểm tự chấm ở bước này.
+- Dự kiến kết thúc mặc định Chủ nhật tuần tiếp theo nếu chưa chọn, theo prompt. Đây khác hạn cập nhật tuần. **[ĐÃ THAY 28/09 — bỏ ô "Dự kiến kết thúc", xem §20.1 dòng 2]**
+- GVBM phụ trách cập nhật **từng PA đang theo dõi trước hết Chủ nhật hằng tuần**; không bắt nhập lại thông tin không đổi. **[ĐÃ THAY 27/09 — hạn là hết THỨ HAI tuần kế, xem §20.1 dòng 1–3]**
+- Cập nhật có hai lựa chọn rõ: **Tiếp tục theo dõi / Kết thúc phương án**. **[ĐÃ THAY 27/09 — nay là Giữ nguyên / Điều chỉnh / Xin hỗ trợ QL, xem §20.1 dòng 3]** Kết quả và ghi chú; không có điểm tự chấm ở bước này.
 - Năm mức: Có tiến bộ; Tiến bộ một phần; Không tiến bộ; Kém hơn; Chưa đủ dữ liệu. Giữ mã/nhãn hiện hành tương ứng, không biến “chưa đủ” thành thất bại.
 - Chưa đủ dữ liệu: tiếp tục theo dõi, không đóng PA như một kết quả xác định và không vào tổng hợp hiệu quả.
 - PA đã kết thúc có kết quả xác định mới đóng góp một lần vào hiệu quả. Nhiều cập nhật của một PA không thành nhiều PA thành công.
@@ -246,11 +252,11 @@ Không bỏ sót các mục ngoài ba nhóm luật chính:
 | Đầu vào Normal | OVR theo yêu cầu cũ; không ép target/lộ trình LT của FT |
 | Tạo lớp | Phân công GVBM/GVCN ngay trong form; một môn một GV; GVCN dạy ít nhất một môn của lớp |
 | Chọn GV | Combobox gõ tìm; chỉ người được phân công giảng dạy tại CN, không suy từ quyền QL toàn hệ thống |
-| Thông tin HV | QL/GVCN sửa thông tin theo quyền: tên, ngày sinh, đầu vào, tư vấn viên, mục tiêu/lộ trình/thi dự kiến phù hợp chương trình |
+| Thông tin HV | QL/GVCN sửa thông tin theo quyền: tên, ngày sinh, đầu vào, tư vấn viên, mục tiêu/lộ trình/thi dự kiến phù hợp chương trình. **[ĐÃ THAY 29/09 — Target và lộ trình chỉ QL sửa; GVCN "Đề xuất sửa". Xem §20.1 dòng 14]** |
 | Thi thật FT | Có thể mới biết tháng, sau bổ sung tuần/ngày; không ép ngày giả và không hiện “chưa xác định tuần” cạnh tháng đã có |
 | Đổi target | Lý do và ngày hiệu lực; cùng nguồn dữ liệu giữa Thông tin HV và Lộ trình |
 | Lộ trình | QL chốt lịch MT; GVCN không có toàn quyền lịch FT chủ động chỉ vì được sửa thông tin lộ trình |
-| Chuyển lớp | CN → lớp; ngày hiệu lực, lý do, bàn giao, lưu ý, người nhận. Bắt đủ thông tin; có lựa chọn “Không có lưu ý” rõ ràng |
+| Chuyển lớp | CN → lớp; ngày hiệu lực, lý do, bàn giao, lưu ý, người nhận. Bắt đủ thông tin; có lựa chọn “Không có lưu ý” rõ ràng. **[ĐÃ THAY 30/09 — Quản lý ra lệnh, tự thi hành Thứ Hai; bàn giao GVBM 2 ngày / GVCN 3 ngày. Xem §20.7]** |
 | Kết luận FT | Kết quả IELTS thật và ghi chú; không ép chọn một MT làm kết quả thi thật; học lại mở lộ trình mới |
 | Kết luận Normal | Dùng Final đủ bốn môn; giữ lịch sử chương trình/lớp cũ khi chuyển tiếp |
 | Chuyển tiếp Normal | Tạo lớp kế tiếp và chọn HV chuyển; người chuyển riêng/học lại xử lý thủ công theo lớp đích phù hợp, không ép toàn lớp cùng tiến cấp |
@@ -397,14 +403,14 @@ Chủ sản phẩm đã trả lời. Mục này **thay thế** mọi chỗ ghi "
 
 | Mã | Đã chốt | Ghi chú |
 |---|---|---|
-| **C01** | Trong 3 ngày kể từ SOS phải có phương án; có phương án rồi thì theo luật cũ: **Học thuật** ghi kết quả vào mỗi Chủ nhật hằng tuần và chốt kết quả cuối đợt; **Ý thức** hoàn thành hết phương án trong thời hạn mặc định của case là 1 tuần | Chủ sản phẩm hỏi lại "đúng không?" — **chờ xác nhận cách hiểu**, chưa đổi mã |
+| **C01** | **[ĐÃ THAY — "mỗi Chủ nhật" nay là hết Thứ Hai; Case SOS dùng một hạn 3 ngày. Xem §20.1 dòng 1, 6]** Trong 3 ngày kể từ SOS phải có phương án; có phương án rồi thì theo luật cũ: **Học thuật** ghi kết quả vào mỗi Chủ nhật hằng tuần và chốt kết quả cuối đợt; **Ý thức** hoàn thành hết phương án trong thời hạn mặc định của case là 1 tuần | Chủ sản phẩm hỏi lại "đúng không?" — **chờ xác nhận cách hiểu**, chưa đổi mã |
 | **C02** | GVCN **không** được xử lý case học thuật trái môn: mọi giáo viên, kể cả GVCN, chỉ xử lý case đúng kỹ năng mình dạy. Case Ý thức vẫn chỉ GVCN | Đã áp ở quyền máy chủ |
 | **C03** | Bỏ câu hỏi hạn khi nâng mức. **Chỉ với Ý thức:** báo cáo khác cùng phân loại trong **3 ngày đầu** tồn tại của case cũ thì lồng vào case đang có; không thì ra case mới. Hạn mặc định của case vẫn 1 tuần từ ngày mở; nâng mức ưu tiên không siết hạn | Đã áp: cửa sổ gộp 3 ngày (ngày mở + 2), bỏ luật "ngày nâng + 2" |
 | **C04** | Giữ: đợt Ý thức đã đóng mà có báo cáo mới thì tạo **đợt mới liên kết**, không mở lại | Khớp hành vi cũ |
 | **C05** | (đã chốt 19/09) SOS không bắt buộc sinh phương án trao đổi | — |
 | **C06** | Giữ: tab "Đã xong từ trước" chỉ nhận case đã hoàn thành | Khớp hành vi cũ |
 | **C07** | Writing **phải đủ cả W1 và W2**. Thiếu một bài nghĩa là giáo viên của bài đó chưa chấm hoặc chấm sai — cứ báo quá hạn như bình thường | Khớp hành vi cũ |
-| **C08** | Hạn chấm Normal: hết Chủ nhật của tuần thi. Nếu chưa có bài thì thêm "-" và dời sang tuần sau | **Một nửa chưa rõ** (ai thêm "-", và Normal có dùng "-" không) — chưa triển khai, chờ trả lời |
+| **C08** | Hạn chấm Normal: hết Chủ nhật của tuần thi. Nếu chưa có bài thì thêm "-" và dời sang tuần sau | **[ĐÃ CHỐT 02/10/2026 — Normal có dùng "-"; còn "-" thì dời tuần liên tục đến khi có điểm hoặc QL xác nhận huỷ kết quả môn đó. Code mới làm một phần: xem §20.4 và §20.13]** ~~Một nửa chưa rõ (ai thêm "-", và Normal có dùng "-" không) — chưa triển khai, chờ trả lời~~ |
 | **C09** | Đề nghị dời lịch lần hai: chờ Quản lý duyệt hết tuần đó; không phản hồi/thao tác thì **huỷ**. Giáo viên muốn xếp lại thì tự trao đổi với Quản lý ngoài website | Khớp hành vi cũ (tài liệu trước đó ghi ngược lại) |
 | **C10** | Nhập "-" cho tuần đã kết thúc từ trước: **chốt ngay** | Đã áp |
 
@@ -450,6 +456,8 @@ Case trực tiếp · một case sống suốt khoá cho mỗi kỹ năng · g�
 case mới khi vấn đề khác hoặc case cũ đã đóng mà tái diễn · chỉ đóng case khi vấn đề đã xử lý.
 
 ### 18.3. Ý thức — luật mới
+
+> **[ĐÃ THAY 27/09 (PR-YT4, Q27-1) — đọc §20.3.]** Đoạn dưới còn đúng ở: ghi vi phạm, sửa/xoá thẳng, năm nhóm, đếm theo hành động thật, Ý thức ngoài bảng hiệu quả. **Không còn đúng ở:** "không có thứ tự xử lý" (nay thang bắt buộc 6 bậc), "chín biện pháp" và "Thư cảnh cáo 1→2→3" (nay Report 1 → Report 2 → WL 1 → Report 4 + Meeting → WL 2 → WL 3), "không có bước Quản lý duyệt" (WL 3 và loại ngoài thang cần QL duyệt), "không có hạn, chỉ cảnh báo mềm 5 ngày" (nay hạn thật 5 ngày + Quá hạn + Báo lên), "hai trạng thái Đang chuẩn bị / Đã thực hiện" (nay sáu nhãn).
 
 - **Vi phạm:** mọi giáo viên dạy lớp đều ghi được. Bắt buộc học viên · ngày xảy ra · nhóm · mô tả.
   Tùy chọn môn · tệp hoặc liên kết. Ghi vi phạm **không** sinh case, biện pháp, việc hay hạn nào.
@@ -516,7 +524,7 @@ nhân*, và *không được hiểu rằng trong 3 ngày đó phải hoàn thàn
 
 Vậy `C01_HAN_XAC_MINH_SOS_GOM_PA = 'hai-moc-rieng'` — đúng như mã đang chạy. **C01 đóng.**
 
-### 18.7. Còn đúng một điểm chưa chốt: C08
+### 18.7. Còn đúng một điểm chưa chốt: C08 — **[ĐÃ CHỐT 02/10/2026, xem §17.7 và §20.4]**
 
 Hạn chấm Normal hết Chủ nhật tuần thi — đã đúng. Còn chưa rõ: *"chưa có bài thì thêm - và dời
 sang tuần sau"* — ai thêm dấu `-` (hệ thống tự thêm hay giáo viên), và Normal có thật sự dùng
@@ -526,6 +534,8 @@ dấu `-` không (hiện Normal luôn đủ bốn môn, không có `-`). **Chưa
 ---
 
 ## 19. Chốt tối 21/09/2026 — rulebook v3: SOS tự tạo case, Phối hợp SOS, vi phạm sửa/xoá thẳng
+
+> **[MỘT PHẦN ĐÃ THAY 27–30/09 — đọc §20.1 dòng 4, 5, 11, 17.]** Còn đúng: SOS FT tự tạo/gắn Case; GVBM có 3 ngày; tab "Ý thức & Phối hợp". **Đã đổi:** PA quy chế không "điền sẵn rồi chỉnh" mà ở "Chờ xác nhận"; "Không cần theo dõi" phải QL duyệt trong 5 ngày; lớp Normal không còn mô hình tín hiệu; Phối hợp SOS là việc thật không hạn.
 
 Nguồn: `thiet-ke/NGUON-Rule-v3-YThuc-PhoiHop-2026-09-21.md`. Đặc tả: `thiet-ke/SOS_VA_PHOI_HOP_V3.md`.
 **Ưu tiên hơn mục 18.** Không xoá dấu vết các mục cũ.
@@ -612,3 +622,194 @@ Nguồn: `thiet-ke/NGUON-Rule-v3-YThuc-PhoiHop-2026-09-21.md`. Đặc tả: `thi
 - **Phân tích lớp:** mỗi số là độ dài một tập id, bấm ra danh sách đúng số đó (`/issue-board/o`). "Thành công" của Case = đã xong và kết luận tiến bộ rõ / một phần. Số "Đã thực hiện / Thành công" theo loại PA dùng chung `planOutcomes` với Phân tích › Hiệu quả PA (khác nhau chỉ vì khung thời gian 52 tuần và Case chưa có lỗi chính).
   Lớp thường có dòng "Cả bài" (% tổng ≥ ngưỡng đạt chung); Pre FOU không có.
 - **Đầu hồ sơ lớp:** một nút chính theo chặng (`nutChinhDauTrang`); ô Giữa khoá ở Lịch kiểm tra chỉ với chương trình có mốc Giữa khoá; khung hết khoá không tô đỏ.
+
+---
+
+## 20. Tổng hợp luật hiện hành — đối chiếu với code `main` ngày 02/10/2026
+
+**Ưu tiên hơn mục 1–19 khi trái nhau.** Mục 17–19 và các khối PR-MT … PR-HVL ở trên vẫn là lịch sử quyết định; chỗ nào trái mục này thì mục này thắng. Không xoá dấu vết.
+
+**Nguồn:** đặc tả nâng cấp 27/09 và các chốt Q27–Q31 (`docs/superpowers/specs/2026-09-27-nang-cap-sau-deploy-design.md`) · kế hoạch PR 28/09–01/10 (`docs/superpowers/plans/`) · bảng thuật ngữ 01/10 · lời chủ sản phẩm 02/10 · code đã merge, HEAD `0aad2a0a`. Đường dẫn code tính từ gốc repo; `sd/` = `shared/domain/`, `ss/` = `server/src/`.
+
+**Nhãn:** **CODE-OK** — code đang chạy đúng luật (đã đối chiếu ngày 02/10) · **CHƯA CÓ** — chủ sản phẩm đã chốt nhưng code chưa làm · **CHỜ CHỐT** — hai nguồn lệch nhau, cần chủ sản phẩm quyết (liệt kê ở 20.13).
+
+**Vì sao cần mục này:** Rulebook dừng ở 21/09 cộng vài khối PR đến 30/09. Đợt nâng cấp 27–28/09 và các PR sau đó đã đổi nhiều luật mà Rulebook chưa chép; ai viết tài liệu hay sổ tay chỉ từ §1–19 sẽ sai (đã xảy ra ngày 02/10). **Viết tài liệu cho người dùng: đối chiếu mục 20 + hàm trong `sd/`, đừng chỉ đọc §1–19.**
+
+### 20.1 Bảng thay thế — luật cũ → luật hiện hành
+
+| # | Luật cũ trong Rulebook | Luật hiện hành | Mã nguồn · code |
+|---|---|---|---|
+| 1 | §5, §17.7 C01: GVBM cập nhật PA **trước hết Chủ nhật** hằng tuần | Kết quả của tuần Thứ Hai → Chủ nhật phải ghi xong **trước hết Thứ Hai tuần kế**. Ghi ngày Chủ nhật hay Thứ Hai đều khép đúng tuần vừa hết. Áp mọi PA học thuật (FT, lớp thường, PA quy chế, PA bổ trợ); không áp Ý thức, Phối hợp SOS | Q27-9, R-PA1 · `sd/cases.ts:847` `weeklyUpdateDue` · CODE-OK |
+| 2 | §5: "Dự kiến kết thúc" mặc định Chủ nhật tuần sau | Bỏ ô "Dự kiến kết thúc" ở mọi form PA. PA thường chạy đến khi GV bấm Kết thúc PA; PA quy chế kết thúc theo mốc quy chế. Dự kiến kết thúc không còn là hạn và không sinh việc | Q28-4 · `ss/cases/cases.ts:725,831` · CODE-OK |
+| 3 | §5: cập nhật có hai lựa chọn Tiếp tục theo dõi / Kết thúc PA | Ghi kết quả bắt buộc chọn: **Giữ nguyên · Điều chỉnh** (người + mô tả) **· Xin hỗ trợ QL**. "Xin hỗ trợ QL" không dừng PA; thành thẻ Xin ý kiến (5 ngày), QL trả lời bằng chữ | T63, T64 · `sd/sosV4.ts:48` · `ss/cases/cases.ts:2876,3049` · CODE-OK |
+| 4 | §19: SOS FT tự tạo Case và **điền sẵn** PA; GVBM xác nhận/chỉnh | Case tự tạo cùng PA quy chế ở trạng thái **Chờ xác nhận** — không tự chạy, không huỷ được. GVBM đúng kỹ năng có **3 ngày** (tính cả ngày đầu) chọn **một trong hai**: Xác nhận nguyên nhân (rồi Xác nhận PA) hoặc Không cần theo dõi | S4-1, S4-2 · `ss/cases/sosAuto.ts:71-81,184-231,346-385` · CODE-OK |
+| 5 | §19: "Không cần theo dõi" đóng ngay kèm lý do | Thành thẻ **Chờ duyệt (Học thuật), QL duyệt trong 5 ngày**. Duyệt → Case và mọi PA chưa xong huỷ (không tính thất bại, ngoài hiệu quả PA). Từ chối (bắt buộc lý do) → Case về "Chờ xác nhận nguyên nhân", hạn mới 3 ngày kể từ ngày từ chối | S4-5…7 · `ss/cases/sosAuto.ts:407-509` · CODE-OK |
+| 6 | §18.6: C01 "hai mốc riêng" (3 ngày nguyên nhân, rồi 5/3 ngày có PA) | Chỉ còn đúng cho **Case GV tạo tay** (Bình thường 5 ngày / Gấp 3 ngày). **Case SOS dùng một hạn 3 ngày** cho cả Xác nhận nguyên nhân lẫn Xác nhận PA | SOS-2 · `sd/sosV4.ts:15-17` · CODE-OK |
+| 7 | §18.3: Ý thức không có thứ tự xử lý; chín biện pháp; chỉ Thư cảnh cáo 1→2→3 | **Thang bắt buộc 6 bậc** (mục 20.3). Ba loại cũ (trao đổi ngắn, GV meeting, CX meeting HS/PH) bỏ khỏi danh sách | Q27-1, V4-8 · `sd/yThuc.ts:78` · CODE-OK |
+| 8 | §18.3 (Y01): GVCN tự làm hết, **không có bước Quản lý duyệt** | **WL 3** và các loại ngoài thang (Meeting CX/GĐCN, Đình chỉ học tạm thời, Khác) **cần QL duyệt trong 5 ngày**, kèm mô tả và bằng chứng | V4-9, V4-10 · `sd/yThuc.ts:106` · `ss/yThuc/xuLy.ts:384-443` · CODE-OK |
+| 9 | §18.3, §18.4: Ý thức không có hạn, chỉ **cảnh báo mềm 5 ngày** | **Hạn thật 5 ngày** (tính cả ngày đầu) → nhãn **Quá hạn** + thẻ **Báo lên** QL. ≥ 3 vi phạm trong tuần này + tuần trước = **bắt buộc xử lý** | V4-2…5 · `sd/yThuc.ts:126,156-208` · CODE-OK |
+| 10 | §18.3: biện pháp có hai trạng thái Đang chuẩn bị / Đã thực hiện | Nhãn vi phạm: **Mới · Đã ghi nhận · Cần xử lý · Quá hạn · Chờ QL duyệt · Đã xử lý**. "Đang soạn" chỉ là trạng thái nội bộ, không hiện | YT4-1 · `sd/yThuc.ts:122-129` · CODE-OK |
+| 11 | §19: lớp Normal giữ mô hình tín hiệu theo số môn | Lớp thường **không có chữ SOS ở đâu cả**. Giữa khoá: môn < 70 % tự tạo Case + PA Bổ trợ bắt buộc. Cuối khoá: không sinh Case, dùng dải % tổng (mục 20.6) | T58, N1 · `ss/normal/regular.ts:746-838` · CODE-OK |
+| 12 | §17.1, §18.7: Normal chưa rõ có dùng "-" không (C08) | **Normal có dùng "-"**; luật chốt 02/10 ở mục 20.4. Code mới làm một phần | Chủ sản phẩm 02/10 · `ss/normal/regular.ts:591-738` · CODE-OK một phần, xem 20.4 |
+| 13 | §3.3, §10: Normal luôn đủ bốn môn L/R/W/S | **FOU** hiện L · R · **G+V** · **P**; **Pre FOU** không chia môn (một ô Tổng hợp, chỉ Cuối khoá); BE, ELE L · R · W · S | Q27-13 · `sd/normal.ts:156-163` · CODE-OK |
+| 14 | §10: QL/GVCN sửa mục tiêu, lộ trình | Chỉ **QL** sửa Target và lộ trình (`cycle.edit`, bắt lý do + ngày hiệu lực). GVCN bấm **Đề xuất sửa** (lý do ≥ 15 ký tự). GVCN vẫn tự sửa họ tên, ngày sinh, email, tuần bắt đầu, thi dự kiến | T44 · `ss/fasttrack/cycles.ts:244` · CODE-OK |
+| 15 | §10: Chuyển lớp (GVCN làm, có "Không có lưu ý") | Mọi lần chuyển lớp là **lệnh do Quản lý ra**; GVCN chỉ "Đề xuất chuyển lớp"; bàn giao có hạn riêng (mục 20.7) | Q30-1…4 · `ss/classes/lenhChuyen.ts` · CODE-OK |
+| 16 | §10: Thêm HV, '-' là thiếu dữ liệu | **Email bắt buộc khi thêm mới**; bảng dán **bắt buộc có dòng tiêu đề** chứa "Họ và tên"; dòng lỗi ở lại panel, không khoá cả lô | NHAP-1/2 · `ss/classes/intake.ts:245-250` · CODE-OK |
+| 17 | §19: Phối hợp SOS điền sẵn, GVCN xác nhận hoặc bỏ | Phối hợp SOS là **việc thật, một dòng mỗi lớp cho GVCN, không hạn**; chỉ sinh từ lượt Mock FT (lớp thường có việc "Báo phụ huynh qua TVV" riêng) | VAI-a·Q14 · `ss/yThuc/phoiHop.ts:307` · CODE-OK |
+| 18 | §9, §17.7: không có hộp duyệt chung | **Một hộp "Chờ duyệt"** cho Quản lý (mục 20.5) | Q27-3 · `sd/yeuCauDuyet.ts` · CODE-OK |
+
+### 20.2 Bảng hạn tổng hợp
+
+Mọi hạn "n ngày" là **n ngày liên tiếp theo lịch, tính cả ngày bắt đầu**; không có "ngày làm việc"; quá hạn khi hôm nay > hạn (Q27-5 · `sd/cases.ts:739`). Em **Tạm dừng**: mọi hạn của em dừng, việc ẩn, không bao giờ quá hạn (T65).
+
+| Việc | Hạn | Nguồn |
+|---|---|---|
+| Xác nhận nguyên nhân SOS (FT) và Case Giữa khoá lớp thường | 3 ngày kể từ ngày ghi nhận; Xác nhận PA cùng hạn đó | `sd/sosV4.ts:15-17` |
+| Có PA — Case GV tạo tay | Bình thường 5 ngày · Gấp 3 ngày, từ ngày Case được tạo | `sd/cases.ts:827,837` |
+| Ghi kết quả PA hằng tuần | Hết **Thứ Hai** tuần kế | `sd/cases.ts:847` |
+| PA quy chế: ghi kết quả cuối | Khi chạm mốc quy chế: "1 tháng" · "đến MT kế tiếp" · "đến lúc thi" (MT5 trở đi: Tutor đến lúc thi). Quá mốc → hạn hết Thứ Hai. Chưa có lịch mốc → PA chạy tiếp, hiện "chờ lịch" | `sd/sos.ts:54-94` |
+| QL duyệt một thẻ | 5 ngày. Riêng **kế hoạch bổ trợ 3 ngày**; **dời lịch lần 2** hết Chủ nhật tuần gửi; **Báo lên** không hạn. Quá hạn chỉ báo QL + Quản trị, không tự đóng (trừ lịch thi: hết hạn thì huỷ phần thi) | `sd/yeuCauDuyet.ts:40-61` |
+| Chấm Fast Track | Hết **Thứ Tư** tuần kế tiếp tuần thi của chính kỹ năng đó. "Quá hạn" chỉ khi tuần thi đã hết và qua hạn. Hạn riêng cần lý do ≥ 5 ký tự | `ss/platform/week.ts:68-113` |
+| Chấm lớp thường | Hết **Chủ nhật** của tuần thi | `ss/platform/week.ts:89-92` |
+| Dấu "-" Fast Track | Sửa được đến hết Chủ nhật; chốt đầu Thứ Hai (cron 00:05 và 06:05 giờ VN) | `ss/ops/chotVangDinhKy.ts` |
+| Ý thức: xử lý | 5 ngày kể từ ngày ghi lên web (hoặc từ ngày vi phạm thứ 3 nếu "bắt buộc"); sau khi QL duyệt: 5 ngày để bấm Đã thực hiện | `sd/yThuc.ts:126,156-208` |
+| Bàn giao chuyển lớp | GVBM 2 ngày · GVCN 3 ngày, tính từ ngày ra lệnh; quá hạn không chặn việc chuyển | `sd/chuyenLop.ts:36-39` |
+| Mini Test (sau Cuối khoá) | Chủ nhật tuần cuối PA cộng 2 ngày lịch | `sd/cuoiKhoa.ts:89-93` |
+| Khoá sửa điểm sau khi đợt hoàn tất | GVBM không sửa; chỉ Quản lý. MT lịch sử khoá 7 ngày sau lần nhập cuối | `sd/keHoachTest.ts:69-81` |
+| Cửa sổ MT lịch sử sinh Case/PA/Phối hợp | 28 ngày trước ngày tạo | `sd/lichMt.ts:13` |
+| Kỳ vọng MT | MT1 = Target − 1.0 · MT2 = Target − 0.5 · MT3 trở đi = Target · RF: mọi MT = Target. Trần MT8 | `sd/fasttrack.ts:15-21` |
+
+### 20.3 Ý thức (thang xử lý) — thay §18.3
+
+- **Ai ghi vi phạm:** mọi giáo viên dạy lớp; bắt buộc học viên · ngày xảy ra · nhóm · mô tả. Năm nhóm (Chuyên cần · BTVN · Thái độ / hành vi · Kỷ luật lớp học · Khác). Sai thì **sửa hoặc xoá thẳng** (§19); người ghi sửa/xoá vi phạm của mình, GVCN lớp em đang học sửa/xoá được mọi vi phạm của em.
+- **Thang 6 bậc, bắt buộc theo thứ tự**, hiện một dòng trên màn: **Report 1 → Report 2 → WL 1 → Report 4 + Meeting CX/GĐCN → WL 2 → WL 3**. WL = thư cảnh cáo. Mỗi lần "Xác nhận xử lý", máy tự điền bậc kế tiếp (web không gửi loại). Bậc không lùi, kể cả khi xoá vi phạm. `sd/yThuc.ts:78`
+- **GVCN lớp em đang học tự làm được bậc 1–5** (một bước, mô tả ≥ 10 ký tự, ngày thực hiện ≤ hôm nay, người thực hiện là GV hoặc tên ngoài, gộp nhiều vi phạm; tệp không bắt buộc). Không hỏi tiến bộ. QL chỉ nhận thông báo "để biết" khi GVCN xử lý WL 1, Report 4 + Meeting, WL 2.
+- **Cần QL duyệt:** WL 3 (chỉ khi là bậc kế tiếp) và ba loại **ngoài thang**: Meeting CX/GĐCN đứng riêng, Đình chỉ học tạm thời, Khác (ghi rõ ≥ 3 ký tự). Quy trình: GVCN **đề xuất** (mô tả + ít nhất một tệp/liên kết bằng chứng) → QL duyệt trong 5 ngày → GVCN bấm **Đã thực hiện** (hạn 5 ngày từ ngày duyệt). Từ chối → vi phạm về "Cần xử lý", bậc giữ nguyên. Loại ngoài thang **không đẩy bậc**. Bậc 4 "Report 4 + Meeting" không cần QL, còn "Meeting CX/GĐCN" đứng riêng thì cần — đúng như chốt, dễ bị hỏi lại.
+- **Bắt buộc xử lý:** từ 3 vi phạm (mọi nhóm) chưa nằm trong lần xử lý nào, xảy ra trong [Thứ Hai tuần trước, ngày ghi]. Nút "Ghi nhận" biến mất, chỉ còn "Xác nhận xử lý". "Đã ghi nhận" vẫn đếm. Cửa sổ neo vào **ngày ghi** của vi phạm, nên vi phạm ghi muộn vẫn "dính".
+- **Quá hạn:** bắt buộc xử lý quá 5 ngày chưa có lần xử lý xong; hoặc vi phạm Mới quá 5 ngày chưa ai Ghi nhận/Xử lý → nhãn Quá hạn + một thẻ **Báo lên** QL cho mỗi em (tự đóng khi hết lý do).
+- **Đếm thang theo lộ trình:** FT sang lộ trình mới về Report 1. **Lớp thường đếm liên tục** qua chuỗi Pre FOU → FOU → BE → ELE (kể cả học lại), về Report 1 khi sang FT hoặc nghỉ học. Học sinh cũ: GVCN/QL **khai bậc** một lần (≤ bậc 5; sửa chỉ QL; chỉ khi chuỗi chưa có lần xử lý). Em chuyển lớp: hạn đặt lại từ ngày vào lớp mới; chỉ GVCN lớp đang học xử lý.
+- **Ý thức nằm ngoài mọi bảng hiệu quả hỗ trợ**; đếm theo hành động thật (một Report gom ba vi phạm là một Report). Cảnh báo trùng mềm (cùng em, cùng nhóm, cùng ngày) vẫn cho tạo mới.
+- Việc Ý thức là **việc thật có hạn**: xử lý bắt buộc, ghi nhận, đã thực hiện, khai bậc.
+
+### 20.4 Dấu "-" (không có bài)
+
+**Fast Track — CODE-OK** (khớp §17.1 và khối PR-MT/PR-XLMT; chốt đầu Thứ Hai chạy bằng cron Netlify, có cả khi không ai mở web):
+- GV đúng ô gõ "-"; GVCN/QL báo vắng qua menu (lý do ≥ 5 ký tự, từ Thứ Hai tuần thi). Sửa được đến hết Chủ nhật; điểm thật thắng "-"; ô đã có điểm không xoá được bằng "-".
+- Hết Chủ nhật còn "-" → **Không dự thi**. **Lần 1 máy tự dời** sang tuần kế (nếu còn thi được), báo GVCN + GVBM đúng kỹ năng. **Lần 2** thành đề nghị chờ QL (hạn hết Chủ nhật tuần gửi, tuần đích mặc định = tuần chưa bắt đầu gần nhất hợp luật); QL từ chối (lý do ≥ 3 ký tự) hoặc hết hạn → **huỷ phần thi** (giữ điểm các phần khác); chỉ QL khôi phục.
+- Nhập "-" cho tuần đã kết thúc: chốt ngay. Sau cuối tuần chỉ QL sửa kết luận, ghi đè trực tiếp. Writing chỉ chốt khi cả W1 và W2 đều "-", đếm một lần.
+
+**Lớp thường — chủ sản phẩm chốt 02/10 (thay §17.1 dòng "Normal không hủy", C08 §17.7, §18.7):**
+> Normal có dùng "-". Còn "-" thì bài **dời sang tuần sau, lặp lại**, cho đến khi **có điểm** hoặc **QL xác nhận huỷ kết quả điểm môn đó** thì dừng.
+
+Code đã có (`ss/normal/regular.ts:591-738`): GV đúng ô gõ "-" (hoặc GVCN/QL qua menu Báo vắng, lý do ≥ 5 ký tự, từ Thứ Hai tuần thi); môn **dời ngay sang tuần sau của chính bài đó**; lặp không giới hạn; thông báo GVCN từ lần vắng thứ 2; có điểm ở tuần mới thì "-" không gỡ được nữa.
+
+**CHƯA CÓ trong code (khoảng cách giữa luật chốt và web):**
+1. **Không có nút QL "xác nhận huỷ kết quả điểm môn đó".** Gần nhất chỉ có thẻ Báo lên "Cuối khoá dời quá hạn" (QL nhắc GVCN, không huỷ được gì).
+2. **Dời đi theo lúc GV ghi "-", không phải "còn '-' cuối tuần thì tự dời".** Không có cron cho lớp thường; mỗi tuần mới GV phải ghi "-" lại bằng tay. Nếu GV không ghi thì ô vẫn nợ điểm.
+3. Không có bộ đếm lần "-" riêng (số lần chỉ suy ra từ nhật ký để báo GVCN).
+4. Dời bị chặn khi vướng đợt kế (Giữa khoá không qua được tuần Cuối khoá): web báo "Nhờ Quản lý dời lịch ở Kế hoạch Test" và **dấu "-" không lưu**; GV bị kẹt.
+
+### 20.5 Hộp Chờ duyệt của Quản lý
+
+- Mọi việc "xin QL quyết" là **một thẻ** trong **một hộp** Công việc › **Chờ duyệt** (tab đầu của QL/Quản trị; giáo viên xem "Yêu cầu của tôi"). Năm phân loại: **Học thuật · Ý thức · Lịch thi · Thông tin HV · Báo lên**. Duyệt tài khoản đăng ký nằm ở Quản trị, ngoài hộp. `sd/yeuCauDuyet.ts:10-61`
+- Các loại thẻ và hạn: xem 20.2. Thẻ gồm: Đề xuất PA · Xin ý kiến · Không cần theo dõi · Kế hoạch bổ trợ (3 ngày) · Dời lịch lần 2 · Đề xuất sửa (target, lộ trình, lịch MT, khác — **không còn trường "Lớp"**) · Đề xuất chuyển lớp · Xử lý Ý thức cần duyệt · Báo lên.
+- **Từ chối bắt buộc lý do** (≥ 3 ký tự). Xin ý kiến chỉ "Trả lời"; Báo lên chỉ "Nhắc {GV}", không có nút Duyệt, tự đóng khi việc gốc xong. Duyệt hàng loạt chỉ cho Đề xuất PA và Dời lịch cùng loại.
+- **Chỉ QL và Quản trị hệ thống duyệt** (quyền `request.approve`) trong phạm vi chi nhánh. **GVCN và GVBM không bao giờ duyệt.** QL kiêm GV tự gửi thì **tự duyệt được**: thẻ ghi "tự duyệt", có nhật ký, báo Quản trị. (Câu "không bao giờ tự duyệt" trong đặc tả T23 đã bị Q-D thay; code theo Q-D.)
+- Thẻ quá hạn duyệt: trạng thái đỏ + một thông báo cho QL chi nhánh và Quản trị; thẻ "chết" (PA đã huỷ, Case đã đóng) tự đóng khi quét. Việc quét này **chỉ chạy khi có người mở web**, nên thông báo có thể chậm.
+
+### 20.6 Lớp thường
+
+- **Hệ môn:** FT L · R · W1 · W2 · S (Writing tổng = W) · BE, ELE L · R · W · S · FOU L · R · **G+V** · **P** · Pre FOU **không chia môn** (một ô Tổng hợp, 5 tuần, chỉ Cuối khoá, không Giữa khoá). Kỹ năng GV "phụ trách được" luôn chỉ L · R · W1 · W2 · S. Hai khung **Fast Track / Lớp thường tách hẳn**; không còn "Cả hai" ở các khối theo kỹ năng (QL mặc định xem Fast Track; GV xem khung lớp mình dạy). `sd/normal.ts:14-17,156-163`
+- **FOU thường có hai GV** (một người L·R·G+V, một người P); BE/ELE mỗi môn một người; Pre FOU chỉ GVCN (máy gán ô Tổng hợp).
+- **Ngưỡng đạt 70 %** trên tỷ lệ chính xác (7/10 đạt, 23/33 chưa). Hạn chấm hết Chủ nhật tuần thi.
+- **Giữa khoá (FOU, BE, ELE):** môn dưới 70 % → máy **tự tạo Case** "[Giữa khoá] {môn} không đạt" (không nhãn SOS) + **PA Bổ trợ bắt buộc** đến Cuối khoá. GVBM đúng môn xác nhận nguyên nhân trong 3 ngày; người dạy bổ trợ nộp **kế hoạch bài giảng** (mỗi ô ≥ 15 ký tự) → QL duyệt trong 3 ngày → PA chạy; từ chối thì nộp lại, hạn mới 3 ngày. **FOU: 2 buổi/tuần chung** cho mọi môn trượt (một nhóm, người dạy mặc định GVCN); **BE/ELE: 1 buổi/tuần/môn** (mặc định GVBM môn). FOU: GVBM một môn không nộp hộ và không ghi kết quả PA chung (chỉ người dạy, GVCN, QL). Có môn trượt → việc "Báo phụ huynh qua TVV" cho GVCN. Không còn nút "Bỏ qua" tín hiệu. `ss/cases/boTro.ts`
+- **Cuối khoá:** % tổng = Σ điểm / Σ tổng câu (chỉ khi đủ môn), xét trên số chưa làm tròn. Dải **< 50 · 50–59 · 60–69 · ≥ 70 (Pass)**. Gợi ý (không lưu): < 50 học lại + Báo PH qua TVV (việc của QL) · 50–59 "Quản lý cân nhắc" (học lại hoặc lên + bổ trợ) · 60–69 lên + **bổ trợ miễn phí** · ≥ 70 lên. Không sinh Case trước khi chuyển. Sau khi chuyển lên: Case "Cuối khoá {CT} · {môn} không đạt" + PA Bổ trợ miễn phí (FOU/BE/ELE 1 buổi/môn trượt; Pre FOU 4 buổi nếu 50–59, 2 buổi nếu 60–69) + **Mini Test một lần** (≥ 70 % → Case tự hoàn thành; < 70 % → Case mở + Báo lên QL; sửa Mini Test chỉ QL, có lý do). Bổ trợ miễn phí không tính lương GV. `sd/cuoiKhoa.ts:17-99`
+- **BE/ELE lên FT:** chỉ QL đánh dấu Đạt / Không đạt **kỳ vọng đầu ra**; nguyên nhân "Trung tâm" → Case FT + PA Tutor 10 buổi/kỹ năng (tính buổi Free, có lương); "Học sinh" → ghi chú, không Case. Writing lớp thường → W2.
+- Giữa khoá và Cuối khoá tự có cho em vào lớp (bỏ mốc đã qua, không sinh nợ giả). Lớp thường không có "Bỏ kỹ năng khỏi đợt".
+
+### 20.7 Chuyển lớp và bàn giao — thay §10 "Chuyển lớp", "Chuyển tiếp Normal"
+
+- **Quản lý ra lệnh** cho mọi lần chuyển (lớp thường hết khoá, FT gộp/tách/đổi lộ trình, một em giữa khoá): em nào, lớp đích, **tuần bắt đầu = Thứ Hai, từ tuần sau trở đi**. Tới Thứ Hai đó web **tự thi hành** (cron + quét khi đọc, chạy lặp an toàn). GVCN **không tự chuyển**; chỉ "Đề xuất chuyển lớp" (lý do ≥ 15 ký tự) → thẻ Thông tin HV → QL "Duyệt" = mở panel điền sẵn rồi ra lệnh. Khác chi nhánh: QL chi nhánh nguồn quyết, chi nhánh đích nhận "Sắp nhận". `sd/chuyenLop.ts:26-34` · `ss/classes/lenhChuyen.ts`
+- Sáu hướng: lên lớp · học lại · FT · chuyển lớp · bảo lưu · dừng học. Bảo lưu và dừng học không có lớp đích; **Dừng học không có phiếu bàn giao**, các hướng khác có. Lên FT bắt buộc Target (hoặc KCK). Chọn khác "Web gợi ý" bắt ghi lý do (máy chủ tự tính). Mỗi em tối đa một lệnh chờ.
+- **Em thiếu điểm Cuối khoá vẫn chuyển được**; điểm nhập sau áp luật Cuối khoá ở lộ trình mới. Lớp thường tới tuần kết thúc thì **mọi em phải có lệnh**; còn em chưa có lệnh → thẻ Báo lên QL.
+- **Bàn giao:** GVBM ghi một câu (≤ 300 ký tự) cho mỗi em, môn mình, hạn **2 ngày**; GVCN lớp cũ viết nhận xét chung ≥ 15 ký tự và **Xác nhận bàn giao** trong **3 ngày**. QL điền/xác nhận thay khi lớp không có GVCN hoặc quá hạn. Quá hạn → thẻ Báo lên; **lệnh vẫn chạy đúng tuần**.
+- Em Tạm dừng không mở được chuyển lớp (QL bấm "Quay lại học" trước). "Tạm dừng" và "Kết thúc học" từ hồ sơ HV giữ như cũ (GVCN làm được, hiệu lực ngay).
+- Đã bỏ: thẻ "Quyết định Cuối khoá", "Ghi hướng cả lớp", việc GVCN "Ghi lộ trình tiếp theo".
+
+### 20.8 Lịch MT — các điểm bổ sung cho PR-MT / PR-XLMT
+
+Đã đủ ở các khối PR-MT, PR-XLMT. Bổ sung: (a) em có lộ trình FT tự có MT1/2/3 (tuần học 6/12/16; RF MT1/2 tuần 4/8); (b) đổi LT ↔ RF là mở **lộ trình mới**, giữ Target, Case đang mở đi theo em; (c) PA quy chế chuyển lớp FT→FT cùng chương trình **đổi người** sang GVBM lớp mới, đổi chương trình thì hệ thống đóng Case; (d) huỷ cả lượt đóng mọi Case/PA quy chế/việc Phối hợp sinh từ lượt đó ("lượt đã huỷ", không tính thất bại); (e) Target `KCK` = không cam kết: **không kỳ vọng MT, không SOS tự động** (không Case, PA quy chế, Phối hợp), vẫn có lịch MT, nhập điểm, Case tay và Ý thức; (f) việc nhập điểm không tính lớp đã kết thúc và em không đang học.
+
+### 20.9 Ai làm được gì
+
+Vai trong hệ thống chỉ có **3**: Quản trị hệ thống · Quản lý · Giáo viên. **Admin chi nhánh đã bỏ** (vai ở trạng thái retired, không còn quyền). **GVCN và GVBM không phải vai**: suy từ phân công lớp; GVCN dạy ít nhất một môn; mỗi môn một người. Phạm vi của QL là chi nhánh của mình; Quản trị hệ thống là toàn hệ thống. `ss/seed/data.ts:45-81` · `ss/permissions.ts`
+
+| Hành động | Ai làm |
+|---|---|
+| Nhập điểm FT / lớp thường | GVBM đúng ô (W1 và W2 là hai ô riêng); GVCN chỉ ô môn mình dạy; QL/Quản trị mọi ô |
+| Nhập ô S của Mock ở lớp FT khác | GV được phân công Speaking ở một lớp FT nhập được ô S mọi lớp FT cùng chi nhánh (chỉ là quyền, không phải việc/nợ) |
+| Nhập MT lịch sử | GVCN ô trống cả 4 kỹ năng; QL mọi ô |
+| Sửa điểm đã nhập (lý do ≥ 5 ký tự) | GVBM đúng ô, chỉ trước khi đợt hoàn tất; QL mọi lúc |
+| Báo vắng FT | GVCN, QL (GVBM chỉ gõ "-" trong ô) |
+| Dời lịch thi một kỹ năng | **FT: chỉ QL.** Lớp thường: GVCN và GVBM đúng môn cũng dời được |
+| Dời hạn chấm, bỏ kỹ năng, xếp lịch MT, Kế hoạch Test, thi lại, huỷ lượt, trả lời đề nghị dời lần 2, khôi phục phần đã huỷ | Chỉ QL / Quản trị |
+| Tạo Case | QL; mọi GV có phân công trong lớp (bất kỳ môn nào) |
+| Xác nhận nguyên nhân SOS, thêm/cập nhật/kết thúc PA, ghi kết quả, hoàn thành Case | QL; GV **đúng kỹ năng mình dạy** (GVCN cũng vậy, C02) |
+| Đề xuất PA ngoài danh mục | GV đề xuất → QL duyệt |
+| Ghi vi phạm | Mọi GV dạy lớp (kể cả trái môn) |
+| Xác nhận xử lý Ý thức, Phối hợp SOS | GVCN lớp em đang học; QL |
+| Duyệt WL 3 / loại ngoài thang | Chỉ QL / Quản trị |
+| Chuyển lớp: ra lệnh | Chỉ QL; GVCN đề xuất |
+| Bàn giao | GVBM ghi môn mình; GVCN xác nhận; QL thay khi cần |
+| Kết luận lộ trình FT, Tạm dừng, Kết thúc học | GVCN lớp em đang học; QL |
+| Đổi Target, lộ trình | Chỉ QL; GVCN "Đề xuất sửa" |
+| Tạo lớp, phân công GV, sửa thông tin lớp | QL / Quản trị |
+| Thêm học viên | QL; GVCN **chỉ lớp mình chủ nhiệm** |
+| Đánh dấu kỳ vọng đầu ra Cuối khoá | Chỉ QL / Quản trị |
+| Lưu trữ học viên | QL |
+| Xoá học viên / lớp đã kết thúc, tài khoản, cấu hình, mở lại tuần báo cáo | Chỉ Quản trị hệ thống |
+| Duyệt các thẻ trong Chờ duyệt | QL / Quản trị; GV không bao giờ |
+| Nhắc việc giáo viên | QL / Quản trị |
+| Xuất Excel kết quả Test | QL/Quản trị (theo phạm vi) và GVCN lớp mình; GVBM không |
+
+### 20.10 Tổng quan, hồ sơ giáo viên, Phân tích
+
+- **Tổng quan giáo viên:** "Việc của tôi · hôm nay" = việc **quá hạn** + việc có hạn từ hôm nay **đến hết Chủ nhật tuần này**. Badge đỏ cạnh Công việc = số việc quá hạn. Hộp thông báo (chuông) chia **Cần làm / Để biết**, tối đa 50 dòng.
+- **Tổng quan Quản lý:** *Cần xử lý* (có cột **Người giữ việc** và **Hạn**) và dải *Chờ duyệt* luôn gộp hai khung; số liệu theo công tắc **Fast Track · Lớp thường** (mặc định Fast Track). Việc "tự quyết" của QL (Case chờ nguyên nhân quá hạn, vi phạm quá 5 ngày) chỉ nằm ở hộp Chờ duyệt (thẻ Báo lên).
+- **Hồ sơ giáo viên:** chỉ-xem, năm khối (Việc đang có · Lớp đang dạy · Kết quả gần nhất · Case đang phụ trách · Yêu cầu đã gửi). GV xem chính mình; QL xem GV có vai giáo viên trong chi nhánh mình; Quản trị tất cả; GV xem đồng nghiệp bị 403. **Không có KPI tháng, không xếp hạng, không hàng tổng; sắp theo tên.** Số trên ô = số dòng khi bấm.
+- **Phân tích › Giáo viên** (chỉ QL/Quản trị): Fast Track và Lớp thường tách; mặc định 4 tuần, tối đa 13 tuần. Cột: Chấm điểm · Ghi kết quả PA · Xử lý vi phạm (chỉ GVCN) · PA hiệu quả · Kết quả theo môn · HV tiến bộ · Đang dạy. Màu chỉ ở ô kết quả (đỏ < 50 %, vàng 50–69 %, xanh ≥ 70 %; dưới 5 mục không màu). Có hàng "Chưa phân công" để tổng khớp. **Đúng hạn** = nhập điểm lần đầu không muộn hơn hạn; **quá hạn** = tuần thi đã hết và qua hạn.
+- **Phân tích khác:** vẫn là tab trong Tổng quan; góc "Danh sách Case" đã bỏ (link cũ chuyển hướng). Hiệu quả PA tách "PA theo quy chế" (không xếp hạng, không "Nên dùng") và "PA do GV thêm"; PA huỷ do "không cần theo dõi" ngoài mẫu số.
+- **Hồ sơ học viên:** FT hiện "tuần học thứ n" tính từ tuần bắt đầu lộ trình của em, **bỏ tuần Tạm dừng, không có mẫu số** (không "n/16"); lớp thường "x/y". Thanh việc chỉ của chính người xem. Ưu tiên **mã tuần** `W2 OCT`; ngày chỉ cho hạn, ngày thi, ngày sinh, nhật ký.
+
+### 20.11 Thông báo
+
+Chỉ chuông trong ứng dụng, không email/Zalo. Chia "Cần làm" (trỏ tới việc/thẻ đang chờ chính người đọc; rời nhóm khi việc xong) và "Để biết". Người nhận chính: Case SOS mới → GVBM đúng môn (xác nhận nguyên nhân) và GVCN lớp ("SOS n") · FT "-" lần 1 máy dời → GVCN + GVBM đúng kỹ năng · lớp thường vắng từ lần 2 → GVCN · thẻ mới trong Chờ duyệt → QL chi nhánh + Quản trị · kết quả duyệt/từ chối → người xin · vi phạm mới do người khác ghi và em thành "bắt buộc" → GVCN · GVCN xử lý WL 1 / Report 4 + Meeting / WL 2 → QL · chuyển lớp → "Sắp nhận" GVCN lớp đích; bàn giao xác nhận → GVCN lớp đích.
+
+### 20.12 Chữ trên màn hình (bảng thuật ngữ 01/10)
+
+Đã chốt: PA viết ngắn, chỗ rộng viết "Phương án" · **Case** luôn hoa · Ý thức: "phương án xử lý" → **lần xử lý** · **Lịch Test** · mục tiêu band → **Target** · QL như PA · nút thoát hộp **Đóng** · "Báo lên" → **Báo QL** · lệnh chuyển lớp → **Xác nhận chuyển lớp**. Các chữ này **chưa lên web** (PR-S3 chưa chạy); sổ tay viết theo chữ đang hiện trên bản chạy, ghi chữ mới trong ngoặc.
+
+### 20.13 Điểm còn mở — cần chủ sản phẩm chốt
+
+| Mã | Điểm | Hiện trạng |
+|---|---|---|
+| C08-a | Lớp thường: nút QL **"xác nhận huỷ kết quả điểm môn đó"** | Chưa có (20.4 mục 1) |
+| C08-b | Lớp thường: dời tự động mỗi tuần còn "-", hay GV ghi "-" lại mỗi tuần như code đang làm? | Code: GV ghi tay |
+| C08-c | Lớp thường: dời bị chặn khi vướng đợt kế → GV kẹt | Cần lối ra cho GV |
+| P01 | "1 tháng" của PA quy chế: đặc tả = ngày xác nhận + 1 tháng; code = **Chủ nhật đầu tiên sau (ngày xác nhận + 30 ngày)** (`sd/sos.ts:82-90`) | Chờ chốt |
+| P02 | Sửa/huỷ lệnh chuyển lớp: kế hoạch ghi chỉ trước tuần bắt đầu; code cho sửa/huỷ **mọi lúc khi còn "chờ"** (`ss/classes/lenhChuyen.ts:208-214`) | Chờ xác nhận ý muốn |
+| P03 | PA Bổ trợ Giữa khoá **không tự khép khi chuyển lớp**: GV lớp cũ còn việc "Ghi kết quả cuối" có thể quá hạn | Chưa có luật |
+| P04 | Em < 50 % mà QL chọn "Lên": không có bổ trợ miễn phí | Chờ xác nhận |
+| P05 | Mini Test "trên 70 %" (văn bản quy định) hay "từ 70 %" (code) | Chờ P. Học thuật |
+| P06 | PA Bổ trợ nhóm FOU: GVBM một môn **không** ghi kết quả PA chung (code chặt hơn kế hoạch) | Chờ xác nhận |
+| P07 | Hồ sơ giáo viên: QL/Quản trị xem hồ sơ của QL/Quản trị khác bị 404 (chỉ mở cho tài khoản có vai giáo viên) | Chờ xác nhận |
+| P08 | Quét huỷ phần thi hết hạn (lần 2) và quét quá hạn duyệt **chỉ chạy khi có người mở web**, không có cron | Chậm tới khi có người mở |
+| P09 | Hiệu quả PA quy chế xếp theo mức SOS **hiện tại** của Case, không theo lúc tạo (S6F Câu 3 = A) | Đã giữ, ghi để biết |
+
+### 20.14 Chưa merge — đừng coi là luật đã chạy
+
+UXF-b (mã tuần trên mọi chỗ, "Báo PH theo Case", nhóm "Từ lớp trước") · Dọn-b (nhãn Vận hành, nút "+ Giao việc", Sửa quyền, Hoàn tác) · PR-S3 (chữ thuật ngữ 01/10) · DEPLOY. Cập nhật mục này khi các PR đó merge.
+
+### 20.15 Chữ lỗi thời còn trong code và tài liệu (để dọn)
+
+`sd/policy.ts:18` còn ghi "hết Chủ nhật"; `sd/cases.ts` còn `planEndDefault` và `cycleDeadline` (code chết); comment "dự án không có cron" ở `sd/fasttrack.ts:276` và `ss/fasttrack/absence.ts:636` đã sai (có cron `chot-vang`); README.md vẫn nói "hai mục điều hướng", Admin chi nhánh và dữ liệu cũ; `thiet-ke/BRAINSTORM_FEEDBACK_2026-09-27.md` còn "5 ngày làm việc" và "bậc 1…5". Chưa sửa trong PR này.
