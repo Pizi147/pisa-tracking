@@ -511,9 +511,14 @@ export async function runChamDiemTests(t: YThucTestKit) {
       assert(!/MT/.test(x.dotLabel), `Lớp thường không gọi đợt là MT: ${x.dotLabel}`);
       assert(['Giữa khoá', 'Cuối khoá'].includes(x.dotLabel), x.dotLabel);
     }
-    /* Quá hạn xếp trước. */
-    const dauChuaQua = no.findIndex((x: any) => !x.quaHan);
-    assert(dauChuaQua === -1 || no.slice(dauChuaQua).every((x: any) => !x.quaHan), 'Dòng quá hạn đứng trước');
+    /* PR-UXF-a (UX-F7): nhóm theo LỚP; trong mỗi lớp, quá hạn xếp trước. */
+    for (const cid of new Set(no.map((x: any) => x.classId))) {
+      const cuaLop = no.filter((x: any) => x.classId === cid);
+      const dauChuaQua = cuaLop.findIndex((x: any) => !x.quaHan);
+      assert(dauChuaQua === -1 || cuaLop.slice(dauChuaQua).every((x: any) => !x.quaHan), 'Trong lớp: dòng quá hạn đứng trước');
+      const dau = no.findIndex((x: any) => x.classId === cid);
+      assert(no.slice(dau, dau + cuaLop.length).every((x: any) => x.classId === cid), 'Dòng của một lớp đứng liền nhau');
+    }
     assert(r.tongQuan.no.bai === no.reduce((n: number, x: any) => n + x.conBai, 0), 'Số nợ = cộng các dòng');
     assert(r.tongQuan.no.lop === new Set(no.map((x: any) => x.classId)).size, 'Số lớp nợ = số lớp khác nhau');
     /* Quản lý không dạy lớp nào: không có dòng "của tôi". */

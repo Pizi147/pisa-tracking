@@ -6,6 +6,7 @@
  */
 import { PROGRAMME_TEMPLATES, programmeOf, skillShort, tenMon, tenMonNgan } from './normal.ts';
 import { deadlineView } from './display.ts';
+import { goiYCuoiKhoa } from './cuoiKhoa.ts';
 import type { ViecTiepCase } from './sosV4.ts';
 import type { NhanYThucEm } from './yThuc.ts';
 import { tuanKhoa, tuanLich } from './hienThiNgay.ts';
@@ -142,9 +143,12 @@ export function ketQuaGanNhat(k: KetQuaVao | null): KetQuaHien {
       : k.khongChiaMon || k.scored === 0 ? '—' : `${k.scored - (k.failed ?? 0)}/${thieuDiem ? k.scored : k.required} môn đạt`;
     /* Pre FOU: đạt/không xét trên tỷ lệ chính xác ở máy chủ (`sosLevel === 0`); lớp thường khác: đủ môn và không môn nào trượt. */
     const dat = k.khongChiaMon ? k.sosLevel === 0 : k.sosLevel === 0 && !k.provisional && !thieuDiem;
+    /* PR-UXF-a K2-01 (Q3): Cuối khoá đủ điểm → hậu tố hướng ở dòng 1 ("Cuối khoá → học lại"), cùng luật `goiYCuoiKhoa`; không dính vào số %. */
+    const huong = k.attemptKind === 'final' && !thieuDiem && k.tyLeTong != null
+      ? goiYCuoiKhoa({ ct, tyLe: k.tyLeTong, monTruot: k.failedSkills.map((f) => f.skill) })?.nhanNgan ?? null : null;
     return {
       chinh, lech: null, dat, sos: null,
-      dong1: k.khongChiaMon || !thieuDiem ? k.attemptLabel : `${k.attemptLabel} · ${k.scored}/${k.required} môn có điểm`,
+      dong1: huong ? `${k.attemptLabel} ${huong}` : k.khongChiaMon || !thieuDiem ? k.attemptLabel : `${k.attemptLabel} · ${k.scored}/${k.required} môn có điểm`,
       dong2: k.khongChiaMon || !k.failedSkills.length ? null : `Không đạt: ${k.failedSkills.map((f) => tenMonNgan(ct, f.skill)).join(' ')}`,
     };
   }
@@ -159,6 +163,12 @@ export function ketQuaGanNhat(k: KetQuaVao | null): KetQuaHien {
     ...(sosTamThoi ? { sosTamThoi } : {}),
   };
 }
+
+/**
+ * PR-UXF-a K2-05 (Q5): em lớp thường "có mốc đánh giá tiếp theo" = còn lượt planned, HOẶC đã có bài Cuối khoá (không huỷ) — hết khoá
+ * không còn mốc nào; việc tiếp theo là lệnh chuyển lớp. Một luật cho badge Thiếu thông tin ở Học viên & Lớp và bảng lớp.
+ */
+export const coMocTiepTheoThuong = (o: { soLuotKeHoach: number; coCuoiKhoa: boolean }): boolean => o.soLuotKeHoach > 0 || o.coCuoiKhoa;
 
 // ---------------------------------------------------------------- cột Khoá lớp thường (§3.6, Q21)
 

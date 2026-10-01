@@ -8,14 +8,14 @@ import { NutChon } from '../../ui/ui.tsx';
 import { ChonThang } from '../../ui/ChonNgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { OTuan } from '../classes/TransitionPanel.tsx';
-import { NHAN_XET_TOI_THIEU, dsLoi, hanBanGiao, ngay, tuanChonDuoc, tuanLich, type LuatTruong } from '@shared/domain/index.ts';
+import { NHAN_XET_TOI_THIEU, chuTuanHoc, dsLoi, hanBanGiao, ngay, tuanChonDuoc, tuanLich, type LuatTruong } from '@shared/domain/index.ts';
 
 type LopDich = { id: number; code: string; chiNhanhId: number; ma: string | null; ft: boolean; tenChuongTrinh: string | null; tuan: string | null; gvcn: string | null };
 type LopDichData = { chiNhanh: { id: number; name: string }[]; lop: LopDich[] };
 type CaseMo = { id: number; title: string | null; category: string | null; owner: string | null; seDong: boolean; goiY: { id: number; ten: string } | null };
 type LenhCho = { id: number; huong: string; lopDichId: number | null; tuan: string; mucTieu: number | 'KCK' | null; ngayThi: string | null; lyDo: string | null; loi: string | null };
 type XemChuyenLopData = {
-  hienTai: { lop: { id: number; code: string }; ma: string | null; ft: boolean; chiNhanhId: number; route: string | null; tuanHoc: { tuan: number; tong: number } | null };
+  hienTai: { lop: { id: number; code: string }; ma: string | null; ft: boolean; chiNhanhId: number; route: string | null; tuanHoc: { tuan: number; tong: number | null } | null };
   caseMo: CaseMo[];
   luat: { khoa: 'giu' | 'dong-mo'; dongCase: 'ft' | 'normal' | null; canMucTieu: boolean; endKind: string } | null;
   canLuuY: boolean; doiChiNhanh: boolean; lenh: LenhCho | null; tuanChon: string[]; today: string;
@@ -159,7 +159,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
         <>
           {!dx && dangHoc && (
             <p className="mb-0 mt-3 text-xs text-slate-400">
-              Đang học {dangHoc.lop.code}{dangHoc.route ? ` · ${dangHoc.route}` : ''}{dangHoc.tuanHoc ? ` · tuần học ${dangHoc.tuanHoc.tuan}/${dangHoc.tuanHoc.tong}` : ''}
+              Đang học {dangHoc.lop.code}{dangHoc.route ? ` · ${dangHoc.route}` : ''}{dangHoc.tuanHoc ? ` · ${chuTuanHoc(dangHoc.tuanHoc.tuan, dangHoc.tuanHoc.tong)}` : ''}
             </p>
           )}
           {lenh?.loi && !duyet && <p role="alert" className="mb-0 mt-2 text-xs text-late">Chưa chuyển được: {lenh.loi}</p>}

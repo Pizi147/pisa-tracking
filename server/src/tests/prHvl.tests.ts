@@ -32,9 +32,9 @@ export async function runPrHvlTests(t: YThucTestKit) {
     eq(d.ketQuaGanNhat(thuong()), { chinh: '3/4 môn đạt', lech: null, dat: false, sos: null, dong1: 'Giữa khoá', dong2: 'Không đạt: G+V' }, 'FOU Giữa khoá');
     const be = d.ketQuaGanNhat(thuong({ chuongTrinh: 'BE', attemptLabel: 'Cuối khoá', attemptKind: 'final', tyLeTong: 0.58, failed: 2,
       failedSkills: [{ skill: 'reading', score: 10, total: 20 }, { skill: 'writing', score: 8, total: 20 }] }));
-    eq([be.chinh, be.dong1, be.dong2, be.sos], ['58%', 'Cuối khoá', 'Không đạt: R W', null], 'BE Cuối khoá đủ điểm');
+    eq([be.chinh, be.dong1, be.dong2, be.sos], ['58%', 'Cuối khoá → QL cân nhắc', 'Không đạt: R W', null], 'BE Cuối khoá đủ điểm (PR-UXF-a K2-01: hậu tố hướng)');
     const pre = d.ketQuaGanNhat(thuong({ chuongTrinh: 'PREFOU', khongChiaMon: true, attemptLabel: 'Cuối khoá', attemptKind: 'final', tyLeTong: 0.64, failed: 0, sosLevel: 0, failedSkills: [] }));
-    eq([pre.chinh, pre.dong1, pre.dong2, pre.dat], ['64%', 'Cuối khoá', null, true], 'Pre FOU: không dòng 2');
+    eq([pre.chinh, pre.dong1, pre.dong2, pre.dat], ['64%', 'Cuối khoá → lên + bổ trợ', null, true], 'Pre FOU: không dòng 2 (PR-UXF-a K2-01: hậu tố hướng)');
     const thieu = d.ketQuaGanNhat(thuong({ attemptLabel: 'Cuối khoá', attemptKind: 'final', scored: 2, failed: 0, sosLevel: null, failedSkills: [] }));
     eq([thieu.chinh, thieu.dong1], ['2/2 môn đạt', 'Cuối khoá · 2/4 môn có điểm'], 'Cuối khoá còn thiếu môn thì chưa có %');
     eq(d.ketQuaGanNhat(thuong({ scored: 0, failed: 0, sosLevel: null, failedSkills: [] })).chinh, '—', 'chưa môn nào có điểm: không "0/0 môn đạt"');
@@ -645,7 +645,7 @@ export async function runPrHvlDemoTests(t: YThucTestKit) {
     eq(nhanHang(d.hangCanHoTro({ ct: fou.ct, cases: linh.cases })), ['~Không có Case: L · R', 'G+V:1', 'P:1'], 'Hàng G+V và P');
     const vy = standingMod.standingFor([idHv('Nguyễn Thảo Vy')!]).get(idHv('Nguyễn Thảo Vy')!);
     const kq = d.ketQuaGanNhat(vy);
-    eq([kq.chinh, kq.sos, kq.dong1], ['58%', null, 'Cuối khoá'], 'H2 Cuối khoá 58/100');
+    eq([kq.chinh, kq.sos, kq.dong1], ['58%', null, 'Cuối khoá → QL cân nhắc'], 'H2 Cuối khoá 58/100 (PR-UXF-a K2-01)');
     const pre = (conn.prepare(`SELECT s.id FROM students s JOIN enrollments e ON e.student_id = s.id JOIN classes c ON c.id = e.class_id
                                 WHERE c.code = 'MB Pre FOU 03' AND e.status = 'active'`).all() as any[]).map((r) => r.id as number);
     const chinhPre = [...standingMod.standingFor(pre).values()].map((s: any) => d.ketQuaGanNhat(s).chinh);

@@ -48,6 +48,17 @@ export type TaskFilter = {
   periodId?: number | null;
 };
 
+/**
+ * PR-UXF-a Q16 (G-10): hạn gốc + số lần DỜI từ lịch sử `due_date` (sắp theo id tăng). Dòng `old` null = lần ĐẶT hạn đầu — không phải dời.
+ * `hanGoc` = hạn đặt đầu tiên (`old` của dòng dời đầu, hoặc `new` của dòng đặt); chỉ có khi đã dời ít nhất một lần.
+ */
+export function hanGocCua(hist: readonly { old: string | null; new: string | null; reason: string | null }[]):
+  { hanGoc: string | null; lyDoDoiHan: string | null; soLanDoiHan: number } {
+  const doi = hist.filter((h) => h.old !== null);
+  if (!doi.length) return { hanGoc: null, lyDoDoiHan: null, soLanDoiHan: 0 };
+  return { hanGoc: hist[0].old ?? hist[0].new, lyDoDoiHan: doi[doi.length - 1].reason, soLanDoiHan: doi.length };
+}
+
 /** Toàn bộ tab chỉ dành cho Quản trị hệ thống và Quản lý chi nhánh (mục 8.3). */
 export function canSeeBoard(p: Principal): boolean {
   return can(p, PERMISSIONS.MEETING_EDIT, { anyScope: true })
@@ -154,7 +165,7 @@ export function listMgmtTasks(p: Principal, f: TaskFilter = {}) {
     }
   }
 
-  // (4) lịch sử dời hạn
+  // (4) lịch sử hạn (đặt hạn + dời hạn)
   const dueHistOf = new Map<number, { old_value: string; new_value: string; reason: string | null; created_at: string }[]>();
   if (ph) {
     for (const h of conn
@@ -224,10 +235,8 @@ export function listMgmtTasks(p: Principal, f: TaskFilter = {}) {
       subOverdueCount: overdueChildren.length,
       subOverdueTitles: overdueChildren.slice(0, 2).map((c: any) => c.title as string),
       caseLinks: r.case_links as number,
-      /* Q9: hạn ĐẦU TIÊN trước mọi lần dời, và lý do của lần dời GẦN NHẤT. */
-      hanGoc: hist.length ? hist[0].old_value : null,
-      lyDoDoiHan: hist.length ? hist[hist.length - 1].reason : null,
-      soLanDoiHan: hist.length,
+      /* Q9: hạn ĐẦU TIÊN trước mọi lần dời, và lý do của lần dời GẦN NHẤT. PR-UXF-a Q16: lần ĐẶT hạn đầu không phải "dời". */
+      ...hanGocCua(hist.map((h) => ({ old: h.old_value ?? null, new: h.new_value ?? null, reason: h.reason ?? null }))),
       lastUpdate: lu
         ? {
           on: lu.updated_on, progress: lu.progress,
@@ -310,6 +319,8 @@ export function mgmtTaskDetail(p: Principal, taskId: number) {
     helpUserId: t.help_user_id ?? null,
     helpName: (t.help_user_id ? names.get(t.help_user_id) : null) ?? t.help_name ?? null,
     overdue: !closed(t.progress) && !!t.due_date && t.due_date < today,
+    /* PR-UXF-a Q16 (G-10): chi tiết trả CÙNG `hanGoc` với danh sách (web đang đọc `data.hanGoc` mà trước đây không có). */
+    ...hanGocCua(dueHistory),
     dueHistory,
     openSubTitles: openSubs.map((x) => x.title as string),
     subtasks: subs.map((x) => ({

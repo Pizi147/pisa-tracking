@@ -14,7 +14,7 @@ import { NganViecVanHanh } from '../worklist/MgmtTasksPage.tsx';
 import { ChonPhuTrach, type NguoiPhuTrach } from './ChonPhuTrach.tsx';
 import { CongTacKhung, khungDaNho, type KhungLoc } from '../../ui/CongTacKhung.tsx';
 import {
-  LOC_NHANH, LOC_NHANH_LABEL, NHOM_VIEC, NHOM_VIEC_LABEL, demLocNhanh, gomNhomViec, khopLocNhanh, nhomViecCua, type LocNhanh, type NhomViec as MaNhomViec,
+  LOC_NHANH, LOC_NHANH_LABEL, NHOM_VIEC, NHOM_VIEC_LABEL, demLocNhanh, demNhomChip, gomNhomViec, khopLocNhanh, nhomViecCua, type LocNhanh, type NhomViec as MaNhomViec,
 } from '@shared/domain/index.ts';
 
 type Work = {
@@ -83,12 +83,9 @@ export function HoTroHocVienTab() {
   const demHan = useMemo(() => demLocNhanh(trongNhom, 'tat-ca', homNay), [trongNhom, homNay]);
   const locItems = useMemo(() => items.filter((it) => khopLocNhanh(it, loc, homNay)), [items, loc, homNay]);
   const cuoiItems = useMemo(() => (nhom ? locItems.filter((it) => nhomViecCua(it.group) === nhom) : locItems), [locItems, nhom]);
-  const demNhom = useMemo(() => {
-    const out = Object.fromEntries(NHOM_VIEC.map((k) => [k, 0])) as Record<MaNhomViec, number>;
-    for (const it of locItems) out[nhomViecCua(it.group)] += 1;
-    return out;
-  }, [locItems]);
-  /* PR-VAI-a (K5-10): mọi số đếm từ `items` — Phối hợp SOS là việc thật, không còn nhắc mềm cộng tay. */
+  /* PR-VAI-a (K5-10): mọi số đếm từ `items` — Phối hợp SOS là việc thật, không còn nhắc mềm cộng tay. PR-UXF-a F5: hàng chip Nhóm đếm bằng
+     hàm thuần chung (`demNhomChip`) — "Tất cả" = Σ nhóm = ô "Tất cả" của Lọc nhanh khi không lọc. */
+  const demNhom = useMemo(() => demNhomChip(items, loc, homNay), [items, loc, homNay]);
   const dsNhom = useMemo(() => gomNhomViec(cuoiItems), [cuoiItems]);
   /* Đang lọc thì kết quả đã ít — mở hết luôn, không bắt bấm thêm một lần gập/mở nữa. */
   const moHet = loc !== 'tat-ca' || !!nhom;
@@ -144,7 +141,7 @@ export function HoTroHocVienTab() {
         )}
         <BoLocDoan ariaLabel="Nhóm việc" value={nhom ?? 'tat-ca'}
           onChange={(k) => { const next = new URLSearchParams(params); next.delete('loai'); if (k === 'tat-ca') next.delete('nhom'); else next.set('nhom', k); setParams(next, { replace: true }); }}
-          muc={[{ key: 'tat-ca', nhan: 'Tất cả', so: locItems.length },
+          muc={[{ key: 'tat-ca', nhan: 'Tất cả', so: demNhom['tat-ca'] },
             ...NHOM_VIEC.map((k) => ({ key: k, nhan: NHOM_VIEC_LABEL[k], so: demNhom[k] }))]} />
         <BranchFilter branchId={branchId} onBranch={(id) => setParam('cn', id ? String(id) : null)} />
       </div>

@@ -8166,7 +8166,7 @@ check('PR-F · Sổ chỉ số: đúng hai mươi chỉ số (PR-N thêm pa-cho-
     for (const f of fields) {
       assert(typeof m[f] === 'string' && m[f].trim().length > 0, `Chỉ số ${m.id} thiếu trường "${f}"`);
     }
-    assert(['hoc-vien', 'case', 'phuong-an', 'bai-thi', 'dot-test', 'nghia-vu', 'vi-pham', 'bien-phap', 'luot-sos', 'lop', 'viec-van-hanh'].includes(m.donVi), `${m.id}: đơn vị lạ "${m.donVi}"`);
+    assert(['hoc-vien', 'case', 'phuong-an', 'bai', 'bai-thi', 'dot-test', 'nghia-vu', 'vi-pham', 'bien-phap', 'luot-sos', 'lop', 'viec-van-hanh'].includes(m.donVi), `${m.id}: đơn vị lạ "${m.donVi}"`);
     assert(['hien-trang', 'phat-sinh-trong-ky', 'ket-qua-trong-ky'].includes(m.thoiGian), `${m.id}: thời gian lạ "${m.thoiGian}"`);
   }
   assert(domain.metricById('hv-co-case-mo')?.ten === 'Học viên có case đang mở', 'metricById phải tra đúng chỉ số');
@@ -9194,10 +9194,11 @@ check('PR-N · N1 dung-han-cap-nhat: nghĩa vụ (phương án × chu kỳ) đú
   /* Ý thức KHÔNG vào chỉ số này — nó không còn là case; phép kiểm riêng nằm ở phần PR-J (đặc tả nghiệm thu 19). */
 
   const r = prnIds(P.admin, 'dung-han-cap-nhat');
-  const code = (ivId: number, cycle: number) => ivId * 1000 + cycle;
+  /* PR-UXF-a Q13: id nghĩa vụ = PA × 1e6 + chu kỳ × 1e3 + tuần k của khoảng ghi bù. "missed" hạn 06/09 chưa ghi tới 14/09 = 2 tuần trễ (06/09, 13/09). */
+  const code = (ivId: number, cycle: number, k = 0) => ivId * 1_000_000 + cycle * 1000 + k;
   const gained = (r.ids as number[]).filter((id) => !(before.ids as number[]).includes(id)).sort((x, y) => x - y);
-  assert(JSON.stringify(gained) === JSON.stringify([code(ontime, 1), code(lateIv, 1), code(missed, 1)].sort((x, y) => x - y)),
-    `Nghĩa vụ đến hạn phải đúng ba (đúng hạn, trễ, chưa làm); đang có [${gained.join(',')}]`);
+  assert(JSON.stringify(gained) === JSON.stringify([code(ontime, 1), code(lateIv, 1), code(missed, 1), code(missed, 1, 1)].sort((x, y) => x - y)),
+    `Nghĩa vụ đến hạn phải là: đúng hạn, trễ (1 tuần), chưa làm (2 tuần); đang có [${gained.join(',')}]`);
   assert(!r.ids.includes(code(pending, 1)) && !r.ids.includes(code(future, 1)), 'Chờ duyệt và chưa đến hạn không phải nghĩa vụ đến hạn');
   const onTime = (r.numeratorIds as number[]).filter((id) => !(before.numeratorIds as number[]).includes(id));
   assert(JSON.stringify(onTime) === JSON.stringify([code(ontime, 1)]), 'Chỉ nghĩa vụ hoàn thành ĐÚNG HẠN mới vào tử số (trễ và chưa làm thì không)');
@@ -9811,6 +9812,9 @@ await runPrPb2aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 // ==================================================================== PR-VAI-a (Tổng quan theo vai · Công việc · chuông)
 const { runPrVaiATests } = await import('./prVaiA.tests.ts');
 await runPrVaiATests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== PR-UXF-a (số liệu khớp + sót lớp thường)
+const { runPrUxfATests } = await import('./prUxfA.tests.ts');
+await runPrUxfATests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 const { runPrVaiBTests } = await import('./prVaiB.tests.ts');
 await runPrVaiBTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });

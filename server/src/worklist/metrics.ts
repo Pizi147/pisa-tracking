@@ -1,5 +1,5 @@
 import { db } from '../db.ts';
-import { duongCase, nhanLoaiXuLy, PERMISSIONS, VIOLATION_CATEGORY_LABEL, metricById, tenMon, tenMonNgan, type ChiSo, type ChuongTrinh } from '../../../shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, addDaysIso, baiId, duongCase, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, metricById, tachBaiId, tenMon, tenMonNgan, tuanLich, type AttemptKind, type ChiSo, type ChuongTrinh } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { classScopeSql, scopeFor, type Principal, type Scope } from '../permissions.ts';
 import { badRequest, forbidden, HttpError, notFound } from '../util.ts';
@@ -11,6 +11,7 @@ import { isYThucMetric, yThucMetric, YTHUC_METRIC_IDS } from '../yThuc/thongKe.t
 import { PHOI_HOP_METRIC_IDS, isPhoiHopMetric, phoiHopMetric } from '../yThuc/phoiHop.ts';
 import { locTheoChuongTrinh } from './chuongTrinh.ts';
 import { scoreDebtCells } from './scoreDebt.ts';
+import { assessedSkillOf } from '../fasttrack/scoring.ts';
 import { CO_MOC_KE_TIEP_SQL, XONG_MT_CUOI_SQL, missingForClasses } from '../classes/schedule.ts';
 import { lopChoLenhChuyen } from '../classes/lenhChuyen.ts';
 import { listMgmtTasks } from './mgmttasks.ts';
@@ -118,6 +119,32 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
           href: duongCase(r.sid, r.case_id), nguoi: r.nguoi ?? null, han: r.action_due ?? null,
         });
       }
+    } else if (unit === 'bai') {
+      /* PR-UXF-a Q7: một dòng = một BÀI (ô điểm). "MT2 · Tên em · R"; dòng phụ ghi TUẦN THI CỦA MÔN (`W2 SEP`), không tuần của lượt. */
+      const tach = chunk.map((id) => ({ id, ...tachBaiId(id) }));
+      const at = [...new Set(tach.map((x) => x.attemptId))];
+      const pa = at.map(() => '?').join(',');
+      const luot = new Map((conn.prepare(
+        `SELECT a.id, a.kind, a.attempt_no, a.class_id, c.programme_code, c.code AS class_code, s.full_name, s.student_code, pr.week_start
+           FROM assessment_attempts a JOIN students s ON s.id = a.student_id
+           LEFT JOIN classes c ON c.id = a.class_id LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
+          WHERE a.id IN (${pa})`,
+      ).all(...at) as any[]).map((r) => [r.id as number, r]));
+      const tuanMon = new Map((conn.prepare(
+        `SELECT k.attempt_id, k.skill, rp.week_start FROM attempt_skills k JOIN report_periods rp ON rp.id = k.planned_period_id WHERE k.attempt_id IN (${pa})`,
+      ).all(...at) as any[]).map((r) => [`${r.attempt_id}|${r.skill}`, r.week_start as string]));
+      const homNay = demoToday();
+      for (const x of tach) {
+        const r = luot.get(x.attemptId);
+        if (!r) continue;
+        const tuan = tuanMon.get(`${x.attemptId}|${x.skill}`) ?? tuanMon.get(`${x.attemptId}|${assessedSkillOf(x.skill)}`) ?? r.week_start ?? null;
+        const ten = r.kind === 'mock' ? `MT${r.attempt_no}` : ATTEMPT_KIND_SHORT[r.kind as AttemptKind] ?? r.kind;
+        byId.set(x.id, {
+          id: x.id, title: `${ten} · ${r.full_name} · ${tenMonNgan(r.programme_code ?? null, x.skill)}`,
+          sub: [r.student_code, r.class_code, tuan ? tuanLich(tuan, homNay) : null].filter(Boolean).join(' · '),
+          href: r.kind === 'mock' || !r.class_id ? `/mock-test/${r.id}` : `/bang-diem-thuong/${r.class_id}?kind=${r.kind}`,
+        });
+      }
     } else if (unit === 'dot-test' || unit === 'bai-thi') {
       /* Lượt Test: FT mở hồ sơ Test; bài của lớp Normal mở bảng điểm thường của lớp. */
       for (const r of conn.prepare(
@@ -144,11 +171,11 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
            LEFT JOIN students s ON s.id = sc.student_id WHERE iv.id IN (${phi})`,
       ).all(...ivIds) as any[]) byIv.set(r.id, r);
       for (const id of chunk) {
-        const { interventionId, cycle } = parseObligation(id);
+        const { interventionId, cycle, k } = parseObligation(id);
         const r = byIv.get(interventionId);
         if (!r) continue;
         byId.set(id, {
-          id, title: `${r.title} · chu kỳ ${cycle}`,
+          id, title: `${r.title} · chu kỳ ${cycle}${k ? ` · tuần ghi bù thứ ${k + 1}` : ''}`,
           sub: [r.full_name, r.student_code].filter(Boolean).join(' · '), href: duongCase(r.sid, r.case_id),
         });
       }
@@ -249,8 +276,12 @@ export const CT_LOP = ['FOU', 'BE', 'ELE', 'PREFOU'] as const;
  * NGHĨA VỤ CẬP NHẬT = MỘT PHƯƠNG ÁN × MỘT CHU KỲ. Mã số của nó là `id phương án × 1000 + số chu kỳ` (chu kỳ
  * không bao giờ tới 1000) để đi qua cùng đường `ids: number[]` như mọi chỉ số khác.
  */
-export const obligationId = (interventionId: number, cycle: number) => interventionId * 1000 + cycle;
-export const parseObligation = (id: number) => ({ interventionId: Math.floor(id / 1000), cycle: id % 1000 });
+/**
+ * PR-UXF-a Q13 (U7/K3-17): một nghĩa vụ = (PA, đợt, tuần thứ k của khoảng ghi bù). Ghi bù N tuần = N nghĩa vụ trễ.
+ * ponytail: ≤ 999 đợt mỗi PA và ≤ 999 tuần mỗi đợt (hệ số 1e3); vượt thì đổi hệ số.
+ */
+export const obligationId = (interventionId: number, cycle: number, k = 0) => interventionId * 1_000_000 + cycle * 1000 + k;
+export const parseObligation = (id: number) => ({ interventionId: Math.floor(id / 1_000_000), cycle: Math.floor(id / 1000) % 1000, k: id % 1000 });
 
 /**
  * NGHĨA VỤ CẬP NHẬT ĐÃ QUA HẠN của một tập case (`dung-han-cap-nhat`).
@@ -262,6 +293,14 @@ export const parseObligation = (id: number) => ({ interventionId: Math.floor(id 
  * "Đã qua hạn" là hạn < ngày dữ liệu — cùng luật với `pa-can-cap-nhat`. Không tính phương án chờ duyệt (chưa được
  * chạy nên chưa có nghĩa vụ) và không tính case nhập bù (không có hạn cập nhật). Ý thức không còn case (21/09/2026).
  */
+/**
+ * Các tuần (k = 0…N−1) của khoảng ghi bù có hạn ĐÃ QUA trước `den` (ngày ghi, hoặc hôm nay khi chưa ghi). N = `nhanTuanGhiKetQua(hạn, den).soTuan`
+ * — cùng hàm với tiêu đề "ghi bù N tuần" ở form ghi kết quả; chặn thêm "hạn tuần k đã qua" để hạn Chủ nhật của dữ liệu cũ không đếm dư một tuần.
+ */
+function tuanTre(due: string, den: string): number[] {
+  return Array.from({ length: nhanTuanGhiKetQua(due, den).soTuan }, (_, k) => k).filter((k) => addDaysIso(due, 7 * k) < den);
+}
+
 function obligations(caseIds: number[], today: string, from: string | null, to: string | null) {
   const inPeriod = (due: string) => (!from || due >= from) && (!to || due <= to);
   const den = new Map<number, boolean>();           // id nghĩa vụ → hoàn thành đúng hạn
@@ -270,13 +309,16 @@ function obligations(caseIds: number[], today: string, from: string | null, to: 
     const ph = chunk.map(() => '?').join(',');
     for (const r of db()
       .prepare(
-        `SELECT f.intervention_id AS iv, f.cycle_no AS cycle, MIN(f.cycle_due) AS due, MIN(f.late) AS late
+        `SELECT f.intervention_id AS iv, f.cycle_no AS cycle, MIN(f.cycle_due) AS due, MIN(f.late) AS late, MIN(f.observed_on) AS ghi
            FROM case_followups f
           WHERE f.case_id IN (${ph}) AND f.intervention_id IS NOT NULL AND f.cycle_no IS NOT NULL AND f.cycle_due IS NOT NULL
           GROUP BY f.intervention_id, f.cycle_no`,
       )
       .all(...chunk) as any[]) {
-      if (r.due < today && inPeriod(r.due)) den.set(obligationId(r.iv, r.cycle), r.late === 0);
+      if (r.due >= today) continue;
+      /* Đúng hạn: một nghĩa vụ đúng. Trễ: mỗi tuần ghi bù là một nghĩa vụ trễ. */
+      const ks = r.late === 0 ? [0] : tuanTre(r.due, r.ghi ?? today);
+      for (const k of ks) if (inPeriod(addDaysIso(r.due, 7 * k))) den.set(obligationId(r.iv, r.cycle, k), r.late === 0);
     }
     for (const r of db()
       .prepare(
@@ -288,7 +330,8 @@ function obligations(caseIds: number[], today: string, from: string | null, to: 
             AND NOT EXISTS (SELECT 1 FROM case_followups f WHERE f.intervention_id = iv.id AND f.cycle_no = iv.cycle_no)`,
       )
       .all(...chunk, today) as any[]) {
-      if (inPeriod(r.due)) den.set(obligationId(r.id, r.cycle), false);
+      /* Chưa ghi: mỗi tuần đã bỏ quên là một nghĩa vụ trễ (PA bỏ quên nhiều tuần không còn chỉ tính 1). */
+      for (const k of tuanTre(r.due, today)) if (inPeriod(addDaysIso(r.due, 7 * k))) den.set(obligationId(r.id, r.cycle, k), false);
     }
   }
   const ids = [...den.keys()].sort((x, y) => x - y);
@@ -441,11 +484,11 @@ function causeOverdue(caseIds: number[], today: string): number[] {
 }
 
 /**
- * Lượt có ô điểm QUÁ HẠN nhập, trong phạm vi. `scoreDebtCells` chỉ lọc theo chi nhánh; ở đây áp đúng luật của `classScopeSql`:
+ * BÀI (ô điểm — PR-UXF-a Q7) QUÁ HẠN nhập, trong phạm vi; id = `baiId`. `scoreDebtCells` chỉ lọc theo chi nhánh; ở đây áp đúng luật của `classScopeSql`:
  * giữ ô khi lớp thuộc chi nhánh được cấp HOẶC là lớp mình dạy. Người vừa dạy lớp vừa có quyền chi nhánh không được nới thành
  * cả chi nhánh của lớp mình chỉ dạy.
  */
-function overdueScoreAttempts(p: Principal, branchId: number | null, today: string): { ids: number[]; chiTiet: NonNullable<MetricResult['chiTiet']> } {
+function overdueScoreBai(p: Principal, branchId: number | null, today: string): { ids: number[]; chiTiet: NonNullable<MetricResult['chiTiet']> } {
   const sc = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   const chiTiet: NonNullable<MetricResult['chiTiet']> = new Map();
   if (sc.none) return { ids: [], chiTiet };
@@ -463,10 +506,12 @@ function overdueScoreAttempts(p: Principal, branchId: number | null, today: stri
   const cells = scoreDebtCells(p, today, branches).filter((x) => x.overdue);
   const ids = new Set<number>();
   /* PR-VAI-a (Q24): người phụ trách và hạn của từng ô đã giữ — cột "Người giữ việc", "Hạn" của Cần xử lý. */
+  /* PR-UXF-a Q7: khoá theo BÀI (`baiId`) — mỗi bài một người (môn chưa phân công: không có người, Q8) và một hạn. */
   const them = (x: (typeof cells)[number]) => {
-    ids.add(x.attemptId);
-    const c = chiTiet.get(x.attemptId) ?? chiTiet.set(x.attemptId, { nguoi: [], han: [] }).get(x.attemptId)!;
-    if (!c.nguoi.includes(x.userId)) c.nguoi.push(x.userId);
+    const id = baiId(x.attemptId, x.skill);
+    ids.add(id);
+    const c = chiTiet.get(id) ?? chiTiet.set(id, { nguoi: [], han: [] }).get(id)!;
+    if (x.userId !== null && !c.nguoi.includes(x.userId)) c.nguoi.push(x.userId);
     if (x.han) c.han.push(x.han);
   };
   if (sc.all) {
@@ -576,7 +621,7 @@ function metricSetGoc(
     case 'case-xac-dinh-nguyen-nhan-qua-han':
       return done(causeOverdue(awaitingCauseCaseIds(openCases().map((c: any) => c.id as number)), today));
     case 'bai-qua-han-nhap-diem': {
-      const r = overdueScoreAttempts(p, scope.branchId, today);
+      const r = overdueScoreBai(p, scope.branchId, today);
       return done(r.ids, { chiTiet: r.chiTiet });
     }
     case 'case-chua-co-nguoi-phu-trach':

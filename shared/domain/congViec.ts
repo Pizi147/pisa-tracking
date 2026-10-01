@@ -10,6 +10,7 @@ import { catDongPhu } from './hocVienLop.ts';
 import { ngay } from './hienThiNgay.ts';
 import { mondayOfDate } from './week.ts';
 import { TASK_GROUPS, TASK_PROGRESS_CLOSED, type TaskGroup, type TaskProgress } from './worklist.ts';
+import { NHOM_VIEC, nhomViecCua, type NhomViec } from './tongQuan.ts';
 
 const DAY_MS = 86_400_000;
 const addDaysIso = (iso: string, n: number): string =>
@@ -74,6 +75,17 @@ export function demLocNhanh<T extends MucLocNhanh & { group: string }>(
   const base = !loai || loai === 'tat-ca' ? items : items.filter((it) => it.group === loai);
   const out = {} as Record<LocNhanh, number>;
   for (const loc of LOC_NHANH) out[loc] = base.filter((it) => khopLocNhanh(it, loc, homNay)).length;
+  return out;
+}
+
+/**
+ * PR-UXF-a F5: hàng chip Nhóm việc — ĐÃ áp lọc nhanh `loc`, CHƯA áp nhóm. "Tất cả" = Σ nhóm — nên ở mặc định (không lọc) nó bằng ô "Tất cả"
+ * của Lọc nhanh (cùng việc; nhắc mềm đã thành việc thật ở PR-VAI-a K5-10).
+ */
+export function demNhomChip<T extends MucLocNhanh & { group: string }>(items: T[], loc: LocNhanh, homNay: string): Record<NhomViec | 'tat-ca', number> {
+  const out = Object.fromEntries([...NHOM_VIEC, 'tat-ca'].map((k) => [k, 0])) as Record<NhomViec | 'tat-ca', number>;
+  for (const it of items) if (khopLocNhanh(it, loc, homNay)) out[nhomViecCua(it.group)] += 1;
+  out['tat-ca'] = NHOM_VIEC.reduce((n, k) => n + out[k], 0);
   return out;
 }
 

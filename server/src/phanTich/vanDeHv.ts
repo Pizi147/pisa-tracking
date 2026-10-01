@@ -163,14 +163,13 @@ function tinh(p: Principal, f: FilterVanDeHv) {
   const hvCoLoi = new Set<number>();
   const lopCoLoi = new Set<number>();
 
+  const vaoChuaPhanLoai = (c: CaseInfo) => {
+    chuaPhanLoai.cases.add(c.id);
+    chuaPhanLoai.hv.add(c.studentId);
+    for (const k of lopCuaHv.get(c.studentId) ?? []) chuaPhanLoai.lop.add(k);
+  };
   for (const c of cases.values()) {
-    const loi = loiCua.get(c.id);
-    if (!loi?.length) {
-      chuaPhanLoai.cases.add(c.id);
-      chuaPhanLoai.hv.add(c.studentId);
-      for (const k of lopCuaHv.get(c.studentId) ?? []) chuaPhanLoai.lop.add(k);
-      continue;
-    }
+    const loi = loiCua.get(c.id) ?? [];
     for (const l of loi) {
       if (f.chiChinh && l.vai !== 'primary') continue;
       const x = locHo(l.ma, c);
@@ -187,6 +186,9 @@ function tinh(p: Principal, f: FilterVanDeHv) {
       hvCoLoi.add(c.studentId);
       for (const k of lopCuaHv.get(c.studentId) ?? []) lopCoLoi.add(k);
     }
+    /* PR-UXF-a Q15 (§9): Case không vào được hàng nào (chưa có lỗi, lỗi không thuộc họ nào — vd Pre FOU `tong_hop`, hoặc chỉ có lỗi phụ khi
+       bật "chỉ vấn đề chính") → nhóm "Chưa phân loại", không rơi im. Σ hàng + Chưa phân loại = số Case trong phạm vi. */
+    if (!caseCoDong.has(c.id)) vaoChuaPhanLoai(c);
   }
 
   // 5) Case sinh từ lượt của hai đợt gần nhất (không giới hạn khoảng) — chỉ để tính "so với lần Test trước".

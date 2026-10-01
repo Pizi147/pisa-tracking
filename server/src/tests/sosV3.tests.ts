@@ -695,7 +695,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(!keysOf(w2T).some((k) => k === `support:${f.w2.id}`), 'Case có sẵn phương án điền sẵn không phải "chưa có phương án" (không có hạn 3/5 ngày lập phương án — S04)');
     const M = (id: string) => metricsSvc.metricSet(P.mbManager, id, { branchId: get("SELECT branch_id n FROM classes WHERE id = ?", CLASS).n }).ids as number[];
     assert(!M('pa-can-cap-nhat').includes(f.w2Plan.id), 'Chưa xác nhận mà vào "phương án cần cập nhật"');
-    assert(!M('dung-han-cap-nhat').some((id: number) => Math.floor(id / 1000) === f.w2Plan.id), 'Chưa xác nhận mà sinh nghĩa vụ cập nhật tuần');
+    assert(!M('dung-han-cap-nhat').some((id: number) => Math.floor(id / 1_000_000) === f.w2Plan.id), 'Chưa xác nhận mà sinh nghĩa vụ cập nhật tuần');   // PR-UXF-a: id = PA × 1e6 + …
     assertThrows(() => cases.completeIntervention(w2T, f.w2Plan.id, { doneOn: TODAY, performerSelf: true }), /xác nhận/, 'Ghi "đã xong" cho phương án chưa xác nhận');
     assertThrows(() => cases.updateResult(w2T, f.w2Plan.id, { outcome: 'improved', note: 'Kết quả thử nghiệm ghi cho phương án chưa xác nhận' }), /xác nhận/, 'Ghi kết quả cho phương án chưa xác nhận');
     const board = effectivenessSvc.issueBoard({ studentIds: [f.st.id] }, 'writing2');

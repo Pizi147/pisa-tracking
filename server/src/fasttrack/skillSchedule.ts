@@ -10,7 +10,7 @@ import { writeAudit } from '../platform/audit.ts';
 import { programmeByCode } from '../normal/regular.ts';
 import { rutDeNghiDoi } from './absence.ts';
 import {
-  effectiveSkillDeadline, isOverdue, mondayOf, weekInfo, type ScoringMode,
+  effectiveSkillDeadline, mondayOf, quaHanNhapDiem, weekInfo, type ScoringMode,
 } from '../platform/week.ts';
 
 /**
@@ -331,8 +331,7 @@ export function viewSkill(input: {
      * Đã xác nhận vắng cũng không phải nợ điểm: không có bài thì không có gì để chấm.
      */
     overdue:
-      required && !scored && !!dl.date && !!weekStart
-      && weekStart <= today && isOverdue(dl.date, today)
+      required && !scored && quaHanNhapDiem(dl.date, weekStart, today)   // PR-UXF-a Q10: tuần thi chưa hết thì chưa quá hạn
       && progress !== 'absent' && progress !== 'cancelled' && !lichSu,
     scored,
     progress,

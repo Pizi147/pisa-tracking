@@ -1,5 +1,5 @@
 import { db } from '../db.ts';
-import type { ChiSo, ChuongTrinh } from '../../../shared/domain/index.ts';
+import { tachBaiId, type ChiSo, type ChuongTrinh } from '../../../shared/domain/index.ts';
 import { parseObligation } from './metrics.ts';
 
 /**
@@ -84,6 +84,11 @@ export function lopCuaTap(unit: ChiSo['donVi'], ids: number[]): Map<number, LopC
         `SELECT a.id, c.id AS class_id, c.code, c.is_fast_track FROM assessment_attempts a
            LEFT JOIN classes c ON c.id = a.class_id WHERE a.id IN (${ph})`).all(...chunk) as any[])) out.set(r.id, lopTu(r));
       return out;
+    }
+    case 'bai': {
+      /* PR-UXF-a Q7: bài = ô điểm của một lượt → lớp của lượt (`tachBaiId`). */
+      const luot = lopCuaTap('bai-thi', [...new Set(ids.map((id) => tachBaiId(id).attemptId))]);
+      return new Map(ids.map((id) => [id, luot.get(tachBaiId(id).attemptId) ?? RONG]));
     }
     case 'lop': {
       /* PR-VAI-a: phần tử là chính lớp đó. */

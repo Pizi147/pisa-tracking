@@ -187,8 +187,8 @@ function KhoiLop({ data, dienThoai, ketQuaCua }: { data: HoSo; dienThoai: boolea
                   )}
                   dong={[
                     { nhan: 'Học viên', noiDung: <span className="tabular-nums">{l.hocVien}</span> },
-                    { nhan: 'Ô chưa nhập', noiDung: <span className="inline-flex items-baseline gap-2">{so(l, 'chua-nhap', l.chuaNhap, 'Ô điểm chưa nhập')}
-                      {l.quaHan > 0 && <span className="text-bad">{so(l, 'qua-han', l.quaHan, 'Ô điểm quá hạn nhập', `${soDam} text-bad`)} quá hạn</span>}</span> },
+                    { nhan: 'Bài chưa nhập', noiDung: <span className="inline-flex items-baseline gap-2">{so(l, 'chua-nhap', l.chuaNhap, 'Bài chưa nhập')}
+                      {l.quaHan > 0 && <span className="text-bad">{so(l, 'qua-han', l.quaHan, 'Bài quá hạn nhập', `${soDam} text-bad`)} quá hạn</span>}</span> },
                     ...(k?.moc ? [{ nhan: k.moc.nhan, noiDung: <MiniKetQua id={id} k={k} /> }] : []),
                   ]} />
               );
@@ -200,8 +200,8 @@ function KhoiLop({ data, dienThoai, ketQuaCua }: { data: HoSo; dienThoai: boolea
               <colgroup><col style={{ width: '17%' }} /><col style={{ width: '15%' }} /><col style={{ width: '20%' }} /><col style={{ width: '12%' }} /><col style={{ width: '19%' }} /><col style={{ width: '17%' }} /></colgroup>
               <thead><tr>
                 <Th>Lớp</Th><Th>Khung</Th><Th>Vai</Th><Th align="right">Học viên</Th>
-                <Th align="right" hint="Một ô = một kỹ năng của một bài, tuần thi đã bắt đầu. Cùng số với Lịch Test. Khác với số ở khối Việc đang có, vốn đếm việc.">Ô điểm chưa nhập</Th>
-                <Th align="right">Quá hạn nhập</Th>
+                <Th align="right" hint="Một bài = một kỹ năng của một em trong một lượt, tuần thi đã bắt đầu. Cùng số với Lịch Test. Khác với số ở khối Việc đang có, vốn đếm việc.">Bài chưa nhập</Th>
+                <Th align="right">Bài quá hạn</Th>
               </tr></thead>
               <tbody>
                 {data.lop.map((l) => (
@@ -210,8 +210,8 @@ function KhoiLop({ data, dienThoai, ketQuaCua }: { data: HoSo; dienThoai: boolea
                     <td className="td">{chipKhung(l.khung)}</td>
                     <td className="td"><VaiChip vai={l.vai} /></td>
                     <td className="td text-right tabular-nums">{l.hocVien}</td>
-                    <td className="td text-right tabular-nums">{so(l, 'chua-nhap', l.chuaNhap, 'Ô điểm chưa nhập')}</td>
-                    <td className="td text-right tabular-nums">{so(l, 'qua-han', l.quaHan, 'Ô điểm quá hạn nhập', `${soDam} text-bad`)}</td>
+                    <td className="td text-right tabular-nums">{so(l, 'chua-nhap', l.chuaNhap, 'Bài chưa nhập')}</td>
+                    <td className="td text-right tabular-nums">{so(l, 'qua-han', l.quaHan, 'Bài quá hạn nhập', `${soDam} text-bad`)}</td>
                   </tr>
                 ))}
               </tbody>

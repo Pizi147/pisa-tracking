@@ -256,8 +256,9 @@ export async function runPrVaiATests(t: YThucTestKit) {
     const dong = r.canXuLy.find((x: any) => x.metricId === 'bai-qua-han-nhap-diem');
     assert(dong, 'bộ demo MB phải có bài quá hạn nhập điểm');
     const ids = new Set(metricsSvc.metricSet(P.mbManager, 'bai-qua-han-nhap-diem', { branchId: MB }).ids);
-    const o = (debt.scoreDebtCells(P.mbManager, TODAY, [MB]) as any[]).filter((c) => c.overdue && ids.has(c.attemptId));
-    eq(sx(dong.nguoi.ids), sx([...new Set(o.map((c) => c.userId as number))]), 'tập người = GV của ô quá hạn');
+    /* PR-UXF-a Q7: id của ô = `baiId` (bài = ô điểm); ô môn chưa phân công (userId null, Q8) không có người giữ việc. */
+    const o = (debt.scoreDebtCells(P.mbManager, TODAY, [MB]) as any[]).filter((c) => c.overdue && ids.has(d.baiId(c.attemptId, c.skill)));
+    eq(sx(dong.nguoi.ids), sx([...new Set(o.filter((c) => c.userId !== null).map((c) => c.userId as number))]), 'tập người = GV của ô quá hạn');
     const ngay = o.filter((c) => c.han).map((c) => soNgay(c.han, TODAY));
     const a = Math.min(...ngay), b = Math.max(...ngay);
     eq(dong.han.chu, a === b ? `quá hạn ${a} ngày` : `quá hạn ${a}–${b} ngày`, 'hạn ngắn nhất–dài nhất');
