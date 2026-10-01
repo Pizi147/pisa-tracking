@@ -681,4 +681,30 @@ export async function runPrDonATests(t: YThucTestKit) {
     const r = e ? null : bangCn.bangChiNhanh(P.mbManager, { branchId: CP, ct: 'ft' });
     assert(e?.status === 403 || (r && !r.hang.some((h: any) => lopCp.has(h.id) || (h.lop ?? []).some((l: any) => lopCp.has(l.id)))), `QL MB hỏi CP: ${e?.status ?? JSON.stringify(r?.hang?.map((h: any) => h.nhan))}`);
   });
+
+  // ------------------------------------------------------------------ khối 8 · gọn mã không đổi hành vi (Dn1, Dn10, Dn11, Dn12, CaseRoutePage)
+  console.log('\nPR-Dọn-a · (8) Gọn mã — hằng/bí danh thừa, đường newClass, builtin, TruongDeXuat một bản, Case luôn mở ở hồ sơ HV');
+  check('Dọn-a (8a) · không còn ACADEMIC_SUPPORTS / OPS_POLICIES; bí danh canQl ở cuoiKhoa.ts; newClass ở transition.ts; builtin ở sysconfig.ts; TruongDeXuat một bản', () => {
+    const sai: string[] = [];
+    if (/ACADEMIC_SUPPORTS|OPS_POLICIES/.test(docNguon('shared/domain/cases.ts'))) sai.push('cases.ts: hằng thừa');
+    if (/\bcanQl\b/.test(docNguon('shared/domain/cuoiKhoa.ts'))) sai.push('cuoiKhoa.ts: canQl');
+    if (/newClass|toNewClass/.test(docNguon('server/src/classes/transition.ts')) || /toNewClass/.test(docNguon('shared/domain/lenLop.ts'))) sai.push('transition: newClass');
+    if (/builtin/.test(docNguon('server/src/platform/sysconfig.ts'))) sai.push('sysconfig: builtin');
+    if (/programmes\?:/.test(docNguon('server/src/classes/schedule.ts'))) sai.push('schedule: programmes?');
+    if (/code\?: unknown|input\.route/.test(docNguon('server/src/classes/thongTinLop.ts'))) sai.push('thongTinLop: code/route kiểu cũ');
+    if (/type TruongDeXuat =/.test(docNguon('server/src/duyet/deXuatSua.ts') + docNguon('web/src/modules/duyet/DeXuatSuaPanel.tsx'))) sai.push('TruongDeXuat còn hai bản');
+    if (/export const HAN_XAC_NHAN_NGAY/.test(docNguon('shared/domain/sosV4.ts'))) sai.push('HAN_XAC_NHAN_NGAY còn export');
+    assert(!sai.length, sai.join('; '));
+  });
+  check('Dọn-a (8b) · bộ demo: mọi Case đều có học viên (khoá cho bước bỏ đường dự phòng /hoc-thuat/case/)', () => {
+    const n = get(`SELECT COUNT(*) n FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+      WHERE sc.id <= ? AND COALESCE(sc.student_id, a.student_id) IS NULL`, t.seedMax.sos_cases ?? 1e9).n;
+    assert(n === 0, `${n} Case không có học viên`);
+  });
+  check('Dọn-a (8c) · máy chủ không sinh href /hoc-thuat/case/; duongCase luôn dẫn về hồ sơ HV; CaseRoutePage chỉ chuyển hướng', () => {
+    assert(!/hoc-thuat\/case\//.test(docNguon('server/src/worklist/mywork.ts')), 'mywork.ts còn /hoc-thuat/case/');
+    assert(d.duongCase(12, 34) === d.duongHoSoHocVien(12, { caseId: 34 }) && !/export const duongCase[^;]*hoc-thuat/.test(docNguon('shared/domain/duongHoSo.ts')), `duongCase: ${d.duongCase(12, 34)}`);
+    const rt = docNguon('web/src/modules/cases/CaseBoardPage.tsx');
+    assert(!/NganCase|<nav/.test(rt) && /<Navigate replace to=\{duongHoSoHocVien\(/.test(rt) && /hoc-thuat\/case\/:id/.test(docNguon('web/src/App.tsx')), 'CaseRoutePage');
+  });
 }

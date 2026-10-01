@@ -9,7 +9,6 @@ import { demoToday } from '../demoConfig.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { classProgress, classProgressMany } from './schedule.ts';
-import { taoLopVaPhanCong, type TaoLopInput } from './intake.ts';
 import { setStudentStatus } from '../students/students.ts';
 import { apDungBaoLuuCaLop, apDungCaLop, dongLopNeuHet, type DongCaLop } from './luatLoTrinh.ts';
 import { tiepTheoTheoHocVien } from './loTrinhTiep.ts';
@@ -197,16 +196,14 @@ export function transitionPlan(p: Principal, classId: number) {
 // ==================================================================== Xác nhận (ghi)
 
 export type TransitionDong = {
-  studentId: number; huong?: Huong | null; toClassId?: number | null; toNewClass?: boolean;
+  studentId: number; huong?: Huong | null; toClassId?: number | null;
   mucTieu?: number | null; thangThi?: string | null; lyDo?: string | null; ngayXemLai?: string | null; luuY?: string | null;
 };
 export type TransitionInput = {
   fromClassId: number;
-  /** Chỉ phép kiểm còn gửi — web mới tạo lớp trước bằng panel Tạo lớp (Q8) rồi gán vào dòng. */
-  newClass?: Omit<TaoLopInput, 'branchId'> | null;
   dongs?: TransitionDong[];
   /** Dạng cũ (trước PR-LT) — vẫn nhận để phép kiểm cũ chạy; web mới chỉ gửi `dongs`. */
-  moves?: { studentId: number; toClassId?: number | null; toNewClass?: boolean; handoverNote?: string | null; receiverUserId?: number | null }[];
+  moves?: { studentId: number; toClassId?: number | null; handoverNote?: string | null; receiverUserId?: number | null }[];
   effectiveDate: string;
   note?: string | null;
   handoverNote?: string | null;
@@ -232,14 +229,7 @@ export function applyTransition(p: Principal, input: TransitionInput, o?: { daDu
   const maTu = (from.programme_code ?? null) as ProgrammeCode | null;
 
   return tx(() => {
-    let created: any = null;
-    if (input.newClass) {
-      /* Cùng hàm với panel Tạo lớp: kiểm luật phân công TRƯỚC khi ghi (không chèn GVCN thẳng — lách L3). */
-      const r = taoLopVaPhanCong(p, {
-        ...input.newClass, branchId: from.branch_id, previousClassId: from.id, note: `Học tiếp từ lớp ${from.code}`,
-      });
-      created = conn.prepare('SELECT * FROM classes WHERE id = ?').get(r.id);
-    }
+    /* PR-Dọn (Q22): không còn mở lớp mới ở đây — web tạo lớp trước bằng panel Tạo lớp (`taoLopVaPhanCong`) rồi gán vào dòng. */
 
     /*
      * TẬP HỌC VIÊN HỢP LỆ — đúng em còn ghi danh `active` ở LỚP NGUỒN (cùng tập `transitionPlan`
@@ -262,8 +252,8 @@ export function applyTransition(p: Principal, input: TransitionInput, o?: { daDu
      * tồn tại thì `classInfoOf` không có, dòng đó rơi vào "Lớp đích không hợp lệ" bên dưới.
      */
     const rawToClassIds = new Set<number>();
-    for (const m of input.moves ?? []) if (!m.toNewClass && m.toClassId) rawToClassIds.add(m.toClassId);
-    for (const d of input.dongs ?? []) if (!d.toNewClass && d.toClassId) rawToClassIds.add(d.toClassId);
+    for (const m of input.moves ?? []) if (m.toClassId) rawToClassIds.add(m.toClassId);
+    for (const d of input.dongs ?? []) if (d.toClassId) rawToClassIds.add(d.toClassId);
     const classInfoOf = new Map<number, { ma: ProgrammeCode | null; ft: boolean; code: string; branchId: number; route: string | null }>();
     if (rawToClassIds.size) {
       const ids = [...rawToClassIds];
@@ -276,17 +266,16 @@ export function applyTransition(p: Principal, input: TransitionInput, o?: { daDu
         classInfoOf.set(c.id, { ma: (c.programme_code ?? null) as ProgrammeCode | null, ft: !!c.is_fast_track, code: c.code, branchId: c.branch_id, route: c.route ?? null });
       }
     }
-    if (created) classInfoOf.set(created.id, { ma: (created.programme_code ?? null) as ProgrammeCode | null, ft: !!created.is_fast_track, code: created.code, branchId: created.branch_id, route: created.route ?? null });
 
     /* Dạng cũ → dạng mới: suy hướng từ luật lộ trình so với lớp đích đã chọn (giữ tương thích phép kiểm cũ). */
     const legacyDongs: TransitionDong[] = (input.moves ?? []).map((m) => {
-      const toClassId = m.toNewClass ? created?.id ?? null : m.toClassId ?? null;
+      const toClassId = m.toClassId ?? null;
       const toClass = toClassId ? classInfoOf.get(toClassId) ?? null : null;
       /* Không có lớp đích thì vẫn cần một hướng cụ thể để kiemDongChuyenTiep báo đúng "thiếu lớp đích", không phải "thiếu hướng". */
       const huong: Huong = !toClass ? 'len_lop'
         : toClass.ft ? 'fast_track' : toClass.ma === maTu ? 'hoc_lai' : 'len_lop';
       return {
-        studentId: m.studentId, huong, toClassId, toNewClass: m.toNewClass,
+        studentId: m.studentId, huong, toClassId,
         luuY: (m.handoverNote ?? '').trim() || (input.handoverNote ?? '').trim() || null,
       };
     });
@@ -302,11 +291,11 @@ export function applyTransition(p: Principal, input: TransitionInput, o?: { daDu
 
     for (const dg of dongs) {
       if (!eligibleIds.has(dg.studentId)) { failed.push({ studentId: dg.studentId, message: 'Học viên không thuộc lớp này.' }); continue; }
-      const toClassId = dg.toNewClass ? created?.id ?? null : dg.toClassId ?? null;
+      const toClassId = dg.toClassId ?? null;
       const toClass = toClassId ? classInfoOf.get(toClassId) ?? null : null;
-      if (toClassId && !dg.toNewClass && !toClass) { failed.push({ studentId: dg.studentId, message: 'Lớp đích không hợp lệ.' }); continue; }
+      if (toClassId && !toClass) { failed.push({ studentId: dg.studentId, message: 'Lớp đích không hợp lệ.' }); continue; }
       const kiemTra: DongChuyenTiep = {
-        huong: dg.huong ?? null, toClassId, toClass, toNewClass: dg.toNewClass,
+        huong: dg.huong ?? null, toClassId, toClass,
         mucTieu: dg.mucTieu ?? null, thangThi: dg.thangThi ?? null, lyDo: dg.lyDo ?? null, ngayXemLai: dg.ngayXemLai ?? null,
       };
       const loi = kiemDongChuyenTiep(kiemTra, { maTu });
@@ -380,13 +369,12 @@ export function applyTransition(p: Principal, input: TransitionInput, o?: { daDu
     const theoHuong: Record<string, number> = {};
     for (const o of okAll) theoHuong[o.huong] = (theoHuong[o.huong] ?? 0) + 1;
     /* PR-S5F-a: không em nào qua được luật (lệnh lỗi thử lại) → không có gì để ghi nhật ký. */
-    if (okAll.length || created) writeAudit({
+    if (okAll.length) writeAudit({
       actorUserId: p.userId, action: 'class.transition', entityType: 'class', entityId: from.id, entityLabel: from.code,
-      after: { newClass: created?.code ?? null, theoHuong, failed: failed.length, effectiveDate: input.effectiveDate },
+      after: { theoHuong, failed: failed.length, effectiveDate: input.effectiveDate },
     });
 
     return {
-      newClass: created ? { id: created.id, code: created.code } : null,
       done: doneList, failed, lopCuDaKetThuc: classSau?.status === 'finished',
     };
   });

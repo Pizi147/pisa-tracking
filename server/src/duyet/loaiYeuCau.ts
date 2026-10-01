@@ -11,6 +11,7 @@ import type { Principal } from '../permissions.ts';
 import {
   INTERVENTION_KIND_LABEL, REGULAR_SKILLS, caseTopicLabel, duongHoSoHocVien, moTaBoTro, nhanDotNgan, nhanLoaiXuLy, outcomeLabelFor, shortDate, tenMonNgan, tuanLich,
   type InterventionKind, type LoaiYeuCau, type TrangThaiYc,
+  type TruongDeXuat,
 } from '../../../shared/domain/index.ts';
 import { caseTitleOf, respondToPlan } from '../cases/cases.ts';
 import { apDungKhongTheoDoi, tuChoiKhongTheoDoi } from '../cases/sosAuto.ts';
@@ -23,7 +24,7 @@ import { chotHanXuLy } from '../yThuc/trangThai.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest } from '../util.ts';
 import { reviseTarget, updateCycle } from '../fasttrack/cycles.ts';
-import { NHAN_TRUONG_DE_XUAT, TRUONG_TU_AP, hienTaiCua, type TruongDeXuat } from './deXuatSua.ts';
+import { NHAN_TRUONG_DE_XUAT, TRUONG_TU_AP, hienTaiCua } from './deXuatSua.ts';
 import { CO_THE_KHONG_THEO_DOI, awaitingCauseCaseIds } from '../cases/sosState.ts';
 import { khiDuyetKeHoach, khiTuChoiKeHoach } from '../cases/boTro.ts';
 import { chotYeuCau, taoYeuCau } from './yeuCau.ts';

@@ -740,13 +740,11 @@ export async function runLenLopTests(t: YThucTestKit) {
     const { cls, sids } = taoLopHetKhoa5(9, 1);
     ganGVCN3(cls, P.normalCoreTeacher.userId);
     const tuanKhaiGiang = week.ensurePeriod(mondayForWeek3(2)).id;
-    const r = transitionSvc.applyTransition(P.mbManager, {
-      fromClassId: cls, effectiveDate: TODAY3,
-      newClass: { chuongTrinh: 'BE', so: transitionSvc.soGoiY('MB', 'BE', null), startPeriodId: tuanKhaiGiang,
-        slots: [{ userId: P.normalCoreTeacher.userId, skill: null, isCore: true }, { userId: P.normalCoreTeacher.userId, skill: 'listening', isCore: false }] },
-      dongs: [{ studentId: sids[0], huong: 'len_lop', toNewClass: true }],
-    }) as any;
-    const created = conn.prepare('SELECT start_period_id FROM classes WHERE id = ?').get(r.newClass.id) as any;
+    /* PR-Dọn (Q22): như web — tạo lớp trước bằng panel Tạo lớp (`taoLopVaPhanCong`), rồi gán vào dòng. */
+    const moi = intake.taoLopVaPhanCong(P.mbManager, { chuongTrinh: 'BE', so: transitionSvc.soGoiY('MB', 'BE', null), startPeriodId: tuanKhaiGiang, branchId: MB3, previousClassId: cls,
+      slots: [{ userId: P.normalCoreTeacher.userId, skill: null, isCore: true }, { userId: P.normalCoreTeacher.userId, skill: 'listening', isCore: false }] });
+    transitionSvc.applyTransition(P.mbManager, { fromClassId: cls, effectiveDate: TODAY3, dongs: [{ studentId: sids[0], huong: 'len_lop', toClassId: moi.id }] });
+    const created = conn.prepare('SELECT start_period_id FROM classes WHERE id = ?').get(moi.id) as any;
     assert(created.start_period_id === tuanKhaiGiang, `Tuần khai giảng phải đúng tuần gửi lên: ${created.start_period_id} vs ${tuanKhaiGiang}`);
   });
 
@@ -827,13 +825,10 @@ export async function runLenLopTests(t: YThucTestKit) {
 
   check('PR-LT (5) · "+ Mở lớp mới": GVCN được gán ngay khi tạo lớp', () => {
     const { cls, sids } = taoLopHetKhoa5(9, 1);
-    const r = transitionSvc.applyTransition(P.mbManager, {
-      fromClassId: cls, effectiveDate: TODAY3,
-      newClass: { chuongTrinh: 'BE', so: transitionSvc.soGoiY('MB', 'BE', null), startPeriodId: week.ensurePeriod(TODAY3).id,
-        slots: [{ userId: P.normalCoreTeacher.userId, skill: null, isCore: true }, { userId: P.normalCoreTeacher.userId, skill: 'listening', isCore: false }] },
-      dongs: [{ studentId: sids[0], huong: 'len_lop', toNewClass: true }],
-    }) as any;
-    const gv = conn.prepare(`SELECT user_id FROM teacher_assignments WHERE class_id=? AND is_core=1 AND status='active'`).get(r.newClass.id) as any;
+    const moi = intake.taoLopVaPhanCong(P.mbManager, { chuongTrinh: 'BE', so: transitionSvc.soGoiY('MB', 'BE', null), startPeriodId: week.ensurePeriod(TODAY3).id, branchId: MB3, previousClassId: cls,
+      slots: [{ userId: P.normalCoreTeacher.userId, skill: null, isCore: true }, { userId: P.normalCoreTeacher.userId, skill: 'listening', isCore: false }] });
+    transitionSvc.applyTransition(P.mbManager, { fromClassId: cls, effectiveDate: TODAY3, dongs: [{ studentId: sids[0], huong: 'len_lop', toClassId: moi.id }] });
+    const gv = conn.prepare(`SELECT user_id FROM teacher_assignments WHERE class_id=? AND is_core=1 AND status='active'`).get(moi.id) as any;
     assert(gv?.user_id === P.normalCoreTeacher.userId, `GVCN phải được gán: ${JSON.stringify(gv)}`);
   });
 

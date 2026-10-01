@@ -16,7 +16,7 @@ import { activeRouteCodes } from '../platform/sysconfig.ts';
 
 export function capNhatThongTinLop(
   p: Principal, classId: number,
-  input: { so?: unknown; loTrinh?: unknown; note?: unknown; programmeCode?: unknown; code?: unknown; route?: unknown },
+  input: { so?: unknown; loTrinh?: unknown; note?: unknown; programmeCode?: unknown },
 ) {
   const conn = db();
   const c = conn.prepare(
@@ -26,15 +26,12 @@ export function capNhatThongTinLop(
   require_(p, PERMISSIONS.CLASS_EDIT, { classId }, 'Bạn không có quyền sửa thông tin lớp này.');
   const cn = String(c.branch_code);
 
-  /* Số lớp: `so` mới; `code` cũ (web trước PR-LOP) chỉ lấy phần số — ký hiệu/tiền tố do máy ghép. */
+  /* Số lớp: chỉ phần số — ký hiệu/tiền tố do máy ghép (PR-Dọn Q22: bỏ khoá `code` kiểu cũ). */
   let soMoi: string | null = null;
   if (input.so !== undefined) {
     soMoi = String(input.so ?? '').trim().toUpperCase();
     const loi = kiemSoLop(soMoi);
     if (loi) throw badRequest(loi);
-  } else if (input.code !== undefined && String(input.code ?? '').trim() !== c.code) {
-    soMoi = tachSoLop(String(input.code ?? ''), cn);
-    if (!soMoi) throw badRequest('Chỉ đổi được phần số của tên lớp.');
   }
 
   const cu = (c.programme_code ?? programmeOf(c.kind)) as string | null;
@@ -46,7 +43,7 @@ export function capNhatThongTinLop(
     chuongTrinh = pc;
   }
   let route: string | null = chuongTrinh === 'FT' ? (c.route ?? 'LT1') : null;
-  const loTrinh = input.loTrinh !== undefined ? input.loTrinh : input.route;
+  const loTrinh = input.loTrinh;
   if (loTrinh !== undefined) {
     if (chuongTrinh !== 'FT') throw badRequest('Chỉ lớp Fast Track có lộ trình.');
     route = String(loTrinh ?? '');

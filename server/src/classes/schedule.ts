@@ -400,7 +400,7 @@ export function mocKetKhoa(pr: TienDoMoc, homNay: string) {
   return { tuanCuoiKhoa: pr?.finalWeekStart ?? null, tuanKetThuc, hetKhoa, tuCuoiKhoa: hetKhoa || (!!pr?.finalWeekStart && thu2 >= pr.finalWeekStart) };
 }
 
-export function classProgressMany(classIds: number[], programmes?: Map<string, ProgrammeInfo>): Map<number, ClassProgress> {
+export function classProgressMany(classIds: number[]): Map<number, ClassProgress> {
   const out = new Map<number, ClassProgress>();
   if (!classIds.length) return out;
   const conn = db();
@@ -439,7 +439,7 @@ export function classProgressMany(classIds: number[], programmes?: Map<string, P
     canXepByClass.set(r.class_id, r.can_xep_lop ?? 0);
   }
 
-  const progs = programmes ?? allProgrammes();
+  const progs = allProgrammes();   // nhớ trong request (`nho`) — PR-Dọn Q22: bỏ tham số truyền tay
   for (const c of classes) {
     out.set(c.id, computeProgress(c, c.start_period_id ? periods.get(c.start_period_id) ?? null : null,
       counts.get(c.id) ?? 0, canXepByClass.get(c.id) ?? 0, progs));
@@ -710,16 +710,14 @@ export function missingForClass(classId: number): { items: MissingInfo[]; missin
 }
 
 /** Bản hàng loạt — hai câu lệnh cho cả trang, không phải hai câu mỗi lớp. */
-export function missingForClasses(
-  classIds: number[],
-  programmes?: Map<string, ProgrammeInfo>,
-): Map<number, { items: MissingInfo[]; missingSkills: string[] }> {
+export function missingForClasses(classIds: number[]): Map<number, { items: MissingInfo[]; missingSkills: string[] }> {
   const out = new Map<number, { items: MissingInfo[]; missingSkills: string[] }>();
   if (!classIds.length) return out;
   const conn = db();
   const ph = classIds.map(() => '?').join(',');
 
   const classes = conn.prepare(`SELECT * FROM classes WHERE id IN (${ph})`).all(...classIds) as any[];
+  let programmes: Map<string, ProgrammeInfo> | undefined;   // nạp một lần, chỉ khi có lớp cần
   const byClass = new Map<number, any[]>();
   for (const a of conn
     .prepare(

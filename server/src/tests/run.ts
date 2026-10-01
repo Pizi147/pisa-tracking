@@ -4315,10 +4315,11 @@ check('Lộ trình và loại lớp là DỮ LIỆU, và không xoá được th
     'Giáo viên sửa được lộ trình');
 
   /* Loại lớp GỐC khoá cách chấm và bộ kỹ năng — đổi là đổi ý nghĩa của điểm đã nhập. */
+  /* Thân yêu cầu gửi kèm cách chấm / bộ kỹ năng (khoá lạ) vẫn bị bỏ qua — PR-Dọn Q22: hàm không còn nhận hai khoá này. */
   sysconfig.saveProgramme(P.admin, {
     code: 'FOU', name: 'Foundation', weeks: 8, scoringMode: 'ielts_band',
     skills: ['listening'], progressWeek: 4, finalWeek: 8,
-  });
+  } as any);
   const fou = sysconfig.listProgrammes(P.admin).find((x: any) => x.code === 'FOU')!;
   assert(fou.scoringMode === 'ratio', 'Đổi được cách chấm của loại lớp gốc');
   assert(fou.skills.length === 4, `Đổi được bộ kỹ năng của loại lớp gốc: còn ${fou.skills.length}`);
@@ -4443,17 +4444,18 @@ check('Chuyển tiếp: mở lớp mới, chuyển cả lớp, GIỮ NGUYÊN l�
   const plan = transition.transitionPlan(P.admin, src.id) as any;
   const ids = plan.students.map((s: any) => s.id);
   const gv = (conn.prepare(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active'`).get(src.id) as any).user_id;
+  /* PR-Dọn (Q22): như web — tạo lớp trước (`taoLopVaPhanCong`, nối `previousClassId`), rồi chuyển em vào lớp đó. */
+  const moi = intake.taoLopVaPhanCong(P.admin, { chuongTrinh: 'BE', so: plan.goiYLopMoi.so, startPeriodId: plan.goiYLopMoi.startPeriodId,
+    branchId: plan.from.branchId, previousClassId: src.id,
+    slots: [{ userId: gv, skill: null, isCore: true }, { userId: gv, skill: 'listening', isCore: false }] });
   const r = transition.applyTransition(P.admin, {
     fromClassId: src.id,
-    newClass: { chuongTrinh: 'BE', so: plan.goiYLopMoi.so, startPeriodId: plan.goiYLopMoi.startPeriodId,
-      slots: [{ userId: gv, skill: null, isCore: true }, { userId: gv, skill: 'listening', isCore: false }] },
-    moves: ids.map((id: number) => ({ studentId: id, toNewClass: true })),
+    moves: ids.map((id: number) => ({ studentId: id, toClassId: moi.id })),
     effectiveDate: demoToday(),
   }) as any;
-  assert(r.newClass, 'Không mở được lớp mới');
   assert(r.done.length === ids.length, `Phải chuyển ${ids.length} em, thực tế ${r.done.length}`);
 
-  const created = conn.prepare('SELECT * FROM classes WHERE id = ?').get(r.newClass.id) as any;
+  const created = conn.prepare('SELECT * FROM classes WHERE id = ?').get(moi.id) as any;
   assert(created.programme_code === 'BE', 'Lớp mới sai chương trình');
   assert(created.previous_class_id === src.id, 'Lớp mới không giữ sợi dây về lớp cũ');
   const newSkills = (conn.prepare('SELECT skill FROM class_skills WHERE class_id = ? ORDER BY skill').all(created.id) as any[])
@@ -4482,12 +4484,13 @@ check('Chuyển tiếp: một dòng lỗi không làm hỏng cả lô', () => {
   const plan = transition.transitionPlan(P.admin, src.id) as any;
   if (!plan.students.length) return;
   const gv = (conn.prepare(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active'`).get(src.id) as any).user_id;
+  const moi = intake.taoLopVaPhanCong(P.admin, { chuongTrinh: 'BE', so: transition.soGoiY(plan.from.branchCode, 'BE', null), startPeriodId: plan.goiYLopMoi.startPeriodId,
+    branchId: plan.from.branchId, previousClassId: src.id,
+    slots: [{ userId: gv, skill: null, isCore: true }, { userId: gv, skill: 'listening', isCore: false }] });
   const r = transition.applyTransition(P.admin, {
     fromClassId: src.id,
-    newClass: { chuongTrinh: 'BE', so: transition.soGoiY(plan.from.branchCode, 'BE', null), startPeriodId: plan.goiYLopMoi.startPeriodId,
-      slots: [{ userId: gv, skill: null, isCore: true }, { userId: gv, skill: 'listening', isCore: false }] },
     moves: [
-      { studentId: plan.students[0].id, toNewClass: true },
+      { studentId: plan.students[0].id, toClassId: moi.id },
       { studentId: plan.students[0].id, toClassId: null },   // cố ý thiếu lớp đích
     ],
     effectiveDate: demoToday(),

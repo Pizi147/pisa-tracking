@@ -481,7 +481,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     /* PR-HSM: nhận xét W/S + GV chấm Speaking (T39). */ migratePrHsm(conn, applied);
     /* PR-LT2a: nhóm PA bổ trợ Giữa khoá + hạn nộp kế hoạch (M-03, M-05) — chỉ cấu trúc. */ migratePrLt2a(conn, applied);
     /* PR-LT2b: Mini Test + kỳ vọng đầu ra (Cuối khoá lớp thường). */ migratePrLt2b(conn, applied);
-    /* PR-CT: lệnh chuyển lớp + bàn giao (chỉ cấu trúc). LUÔN ĐỨNG CUỐI danh sách PR. */ migratePrCt(conn, applied);
+    /* PR-CT: lệnh chuyển lớp + bàn giao (chỉ cấu trúc). Thứ tự thật: PR-CT rồi mới PR-Pb2-b (PR-Dọn: bỏ câu "luôn đứng cuối" đã sai). */ migratePrCt(conn, applied);
     /* PR-Pb2-b: ngày nhập đầu ô điểm + hạn xử lý chốt, ngày phản hồi vi phạm (chỉ cấu trúc). */ migratePrPb2b(conn, applied);
 
     /*

@@ -517,9 +517,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         mine ? null : 'người thực hiện chưa ghi'].filter(Boolean).join(' — '),
       tieuDe: tuanCuoi ? `Ghi kết quả cuối · ${tenPa}` : `Ghi kết quả PA${duoiKyNang(iv.topic, ctCua(iv.eff_class_id))}`,
       actionLabel: tuanCuoi ? 'Ghi kết quả cuối' : 'Ghi kết quả',
-      href: iv.eff_student_id
-        ? duongHoSoHocVien(iv.eff_student_id, { caseId: iv.case_id, paId: iv.id, viec: 'ghi-ket-qua' })
-        : `/hoc-thuat/case/${iv.case_id}`,
+      href: duongHoSoHocVien(iv.eff_student_id, { caseId: iv.case_id, paId: iv.id, viec: 'ghi-ket-qua' }),
       ownerId: iv.performer_user_id ?? iv.owner_id ?? null,
       owner: iv.performer_user_id ? null : ((iv.performer_name ?? '').trim() || null),
       mine, due: iv.action_due, statusLabel: 'Chờ ghi kết quả',
@@ -654,7 +652,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       count: null,
       tieuDe: `Đề ra PA học thuật${duoiKyNang(c.topic, ctCua(c.eff_class_id))}`,
       actionLabel: 'Đề ra PA',
-      href: c.eff_student_id ? `/hoc-vien/${c.eff_student_id}` : `/hoc-thuat/case/${c.id}`,
+      href: `/hoc-vien/${c.eff_student_id}`,
       /* PR-Dọn (Q10): người làm = người phụ trách Case (cùng `support:{caseId}` ở hồ sơ em); Case chưa ai phụ trách thì để trống. */
       ownerId: c.owner_user_id ?? null, owner: null, mine: c.owner_user_id != null && c.owner_user_id === p.userId,
       due: deadline, statusLabel: 'Chưa có PA học thuật',
@@ -727,7 +725,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       tieuDe: nguyenNhan ? `Xác nhận nguyên nhân ${skillLabel} · ${hv}` : `Xác nhận PA · ${skillLabel} · ${hv}`,
       actionLabel: nguyenNhan ? 'Xác nhận nguyên nhân' : 'Xác nhận PA',
       /* PR-DUYET (K5-12): mở thẳng Ngăn Case — Nhắc lưu đường này vào thông báo, chuông về đúng chỗ. */
-      href: c.eff_student_id ? duongHoSoHocVien(c.eff_student_id, { caseId: c.id }) : `/hoc-thuat/case/${c.id}`,
+      href: duongHoSoHocVien(c.eff_student_id, { caseId: c.id }),
       ownerId: c.owner_user_id ?? null, owner: null, mine,
       due: c.due ?? null, statusLabel: nguyenNhan ? 'Chờ xác nhận nguyên nhân' : 'Chờ xác nhận PA',
     });
@@ -776,7 +774,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       reason: `${mon} chưa đạt — đã xác nhận nguyên nhân, cần kế hoạch bài giảng để Quản lý duyệt${mine ? '' : ' — người dạy chưa nộp'}`,
       tieuDe: `Nộp kế hoạch bổ trợ · Giữa khoá · ${mon} · ${iv.full_name ?? 'Học viên'}`,
       actionLabel: 'Nộp kế hoạch',
-      href: iv.eff_student_id ? duongHoSoHocVien(iv.eff_student_id, { caseId: iv.case_id, viec: 'ke-hoach' }) : `/hoc-thuat/case/${iv.case_id}`,
+      href: duongHoSoHocVien(iv.eff_student_id, { caseId: iv.case_id, viec: 'ke-hoach' }),
       ownerId: iv.performer_user_id ?? null, owner: iv.performer_user_id ? null : ((iv.performer_name ?? '').trim() || null), mine,
       due: han, statusLabel: 'Chờ nộp kế hoạch bổ trợ',
     });
@@ -1013,8 +1011,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       reason: `${head} — chưa ai nhận điều phối`,
       tieuDe: 'Chọn người phụ trách',
       actionLabel: suaPc ? 'Sửa phân công' : 'Chọn người phụ trách',
-      href: suaPc ? `/hoc-vien/lop/${c.eff_class_id}?viec=phan-cong`
-        : c.eff_student_id ? `/hoc-vien/${c.eff_student_id}` : `/hoc-thuat/case/${c.id}`,
+      href: suaPc ? `/hoc-vien/lop/${c.eff_class_id}?viec=phan-cong` : `/hoc-vien/${c.eff_student_id}`,
       ownerId: null, owner: null, mine: false,
       due: null, statusLabel: 'Chưa có người phụ trách',
     });
