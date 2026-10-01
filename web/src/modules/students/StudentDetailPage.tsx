@@ -423,7 +423,7 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen }: {
     }] : []),
   ];
   /** Chip lịch sử + nhãn nhỏ cạnh MT{n} — dùng chung bảng (máy tính) và thẻ (điện thoại). */
-  const NhanMt = ({ a }: { a: any }) => {
+  const nhanMt = (a: any) => {
     const nhan = nhanCua(a);
     return (
       <>
@@ -460,7 +460,7 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen }: {
             dau={(
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <Link to={attemptHref(a)} className="link font-semibold tabular-nums">MT{a.attemptNo}</Link><NhanMt a={a} />
+                  <Link to={attemptHref(a)} className="link font-semibold tabular-nums">MT{a.attemptNo}</Link>{nhanMt(a)}
                   <div className="text-xs text-slate-500">{a.weekStart ? tuanLich(a.weekStart, homNay) : <Info pending>Chưa có tuần</Info>}</div>
                 </div>
                 <div className="shrink-0 text-right">
@@ -507,7 +507,7 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen }: {
                 style={a.id === dotId ? { background: 'var(--accent-soft)' } : undefined}>
                 <td className="td whitespace-nowrap">
                   <Link to={attemptHref(a)} className="link tabular-nums" onClick={(e) => e.stopPropagation()}>MT{a.attemptNo}</Link>
-                  <NhanMt a={a} />
+                  {nhanMt(a)}
                 </td>
                 <td className="td text-slate-300">{a.classCode ?? '—'}</td>
                 <td className="td whitespace-nowrap">
