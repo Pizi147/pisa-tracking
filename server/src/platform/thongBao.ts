@@ -1,5 +1,6 @@
 import { db } from '../db.ts';
 import { tenMon } from '../../../shared/domain/index.ts';
+import { CO_THE_KHONG_THEO_DOI, LA_CASE_SOS } from '../cases/sosState.ts';
 
 /** Chuông trả tối đa bấy nhiêu dòng: MỌI dòng chưa đọc trước, rồi dòng mới nhất (PR-VAI-a Q18). */
 export const THONG_BAO_TOI_DA = 50;
@@ -15,6 +16,8 @@ export const THONG_BAO_TOI_DA = 50;
  *
  * PR-VAI-a (Q18, Q21): cùng MỘT câu thêm tên em, môn của Case, lớp em đang học và `con_viec` — Case còn chờ nguyên nhân / thẻ còn chờ
  * người duyệt (1) hay đã xong (0) — để chuông xếp Cần làm / Để biết (`nhomThongBao`) và viết dòng "bấm tới đâu" (`noiDenThongBao`).
+ * PR-S6F-a: Case chờ nguyên nhân = CÙNG luật `awaitingCauseCaseIds` (Case từ SOS, không có thẻ "Không cần theo dõi" chờ QL); thẻ Báo lên
+ * như thẻ chờ duyệt; thẻ bị từ chối còn việc khi chưa có thẻ cùng loại, cùng người, cùng em / lớp gửi SAU nó (đã sửa gửi lại → Để biết).
  */
 export function thongBaoCua(userId: number) {
   const rows = db()
@@ -30,9 +33,14 @@ export function thongBaoCua(userId: number) {
                   COALESCE(sc.category, sc.topic) AS mon_goc, cy.programme_code AS ct,
                   CASE
                     WHEN n.entity_type = 'sos_case' AND n.kind IN ('sos', 'sos_new') THEN
-                      CASE WHEN sc.status != 'done' AND NOT EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary') THEN 1 ELSE 0 END
-                    WHEN n.entity_type = 'yeu_cau_duyet' AND n.kind IN ('duyet_moi', 'duyet_qua_han') THEN
+                      CASE WHEN sc.status != 'done' AND ${LA_CASE_SOS('sc')} AND NOT ${CO_THE_KHONG_THEO_DOI('sc')}
+                                AND NOT EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary') THEN 1 ELSE 0 END
+                    WHEN n.entity_type = 'yeu_cau_duyet' AND n.kind IN ('duyet_moi', 'duyet_qua_han', 'bao_len') THEN
                       CASE WHEN ycd.trang_thai = 'cho' THEN 1 ELSE 0 END
+                    WHEN n.entity_type = 'yeu_cau_duyet' AND n.kind = 'duyet_tu_choi' THEN
+                      CASE WHEN ycd.trang_thai = 'tu_choi' AND NOT EXISTS (SELECT 1 FROM yeu_cau_duyet y2
+                             WHERE y2.id > ycd.id AND y2.loai = ycd.loai AND y2.nguoi_xin IS ycd.nguoi_xin
+                               AND y2.hoc_vien_id IS ycd.hoc_vien_id AND y2.lop_id IS ycd.lop_id) THEN 1 ELSE 0 END
                   END AS con_viec
              FROM notifications n
              LEFT JOIN sos_cases sc ON n.entity_type = 'sos_case' AND sc.id = n.entity_id

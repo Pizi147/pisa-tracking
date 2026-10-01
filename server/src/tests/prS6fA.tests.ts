@@ -355,4 +355,66 @@ export async function runPrS6fATests(t: YThucTestKit) {
     const dong = voiNgay('2026-09-28', () => pt.oChamDiemGv(P.mbManager, { ct: 'ft', tu: tuanNay, den: tuanNay, gv }).rows as any[]).find((r) => r.id === d.baiId(aW.id, 'listening'));
     assert(dong?.sua === '2026-09-23', `sửa: ${JSON.stringify(dong)}`);
   });
+  // ------------------------------------------------------------------ khối 10 · chuông + Phối hợp SOS (Q11, Q12)
+  console.log('\nPR-S6F-a · (10) Chuông: Báo lên ở Cần làm; Phối hợp SOS chỉ lượt Mock FT');
+  const phoiHop: any = await import('../yThuc/phoiHop.ts');
+  const tb: any = await import('../platform/thongBao.ts');
+  const tbMoi = (userId: number, kind: string, entityType: string, entityId: number) =>
+    Number(conn.prepare(`INSERT INTO notifications (user_id, kind, title, body, entity_type, entity_id, dedup_key, read_at, created_at)
+      VALUES (?,?,?,?,?,?,?,NULL,?)`).run(userId, kind, `thử ${kind}`, null, entityType, entityId, `s6fa:${kind}:${entityId}:${Math.random()}`, now()).lastInsertRowid);
+  const nhomCua = (userId: number, id: number) => {
+    const r = (tb.thongBaoCua(userId) as any[]).find((x) => x.id === id);
+    if (!r) throw new Error(`thông báo ${id} không có trong chuông`);
+    return d.nhomThongBao(r);
+  };
+  const theMoi = (o: { loai: string; doiTuongLoai: string; doiTuongId: number; hv: number | null; lop: number | null; nguoiXin: number; trangThai: string }) =>
+    Number(conn.prepare(`INSERT INTO yeu_cau_duyet (loai, phan_loai, doi_tuong_loai, doi_tuong_id, hoc_vien_id, lop_id, chi_nhanh_id, nguoi_xin, trang_thai, tao_luc)
+      VALUES (?, 'duyet', ?, ?, ?, ?, ?, ?, ?, ?)`).run(o.loai, o.doiTuongLoai, o.doiTuongId, o.hv, o.lop, MB, o.nguoiXin, o.trangThai, now()).lastInsertRowid);
+  const coLop = (p: any, lop: number) => (phoiHop.myCoordinationLines(loadPrincipal(p.userId)) as any[]).some((l) => l.classId === lop);
+
+  check('S6F-a (10a) · GVCN lớp thường có "Báo PH qua TVV" chờ của bài Giữa khoá → KHÔNG có Phối hợp SOS; lượt Mock FT chưa xong → vẫn có', () => {
+    const FOU = classId('MB FOU 12');
+    const em = get(`SELECT e.student_id AS sid, a.id AS aid FROM enrollments e JOIN assessment_attempts a ON a.student_id = e.student_id AND a.class_id = e.class_id
+                     WHERE e.class_id = ? AND e.status = 'active' AND a.status != 'cancelled' AND COALESCE(a.kind, 'mock') != 'mock' ORDER BY a.id LIMIT 1`, FOU);
+    assert(em, 'MB FOU 12 không có bài lớp thường nào');
+    conn.prepare(`INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, status, created_at) VALUES (?, ?, 'bao_ph_tvv', 'pending', ?)`).run(em.aid, em.sid, now());
+    assert(!coLop(P.normalCoreTeacher, FOU), 'lớp thường vẫn có dòng Phối hợp SOS');
+    const viec = (mw.myWork(loadPrincipal(P.normalCoreTeacher.userId)).groups as any[]).flatMap((g) => g.items).filter((it: any) => it.group === 'phoi_hop_sos');
+    assert(!viec.some((it: any) => it.classId === FOU), JSON.stringify(viec.map((it: any) => it.key)));
+    conn.prepare(`INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, status, created_at) VALUES (?, ?, 'bao_ph_tvv', 'pending', ?)`).run(aW.id, eW.sid, now());
+    assert(coLop(P.coreTeacher, MB_FT), 'lượt Mock FT chưa xong phải còn dòng Phối hợp SOS');
+  });
+  check('S6F-a (10b) · thông báo Báo lên: thẻ đang chờ → Cần làm; thẻ đã xử lý → Để biết', () => {
+    const the = theMoi({ loai: 'khong_theo_doi', doiTuongLoai: 'sos_case', doiTuongId: 999001, hv: eW.sid, lop: MB_FT, nguoiXin: P.coreTeacher.userId, trangThai: 'cho' });
+    const id = tbMoi(P.mbManager.userId, 'bao_len', 'yeu_cau_duyet', the);
+    const cho = nhomCua(P.mbManager.userId, id);
+    conn.prepare(`UPDATE yeu_cau_duyet SET trang_thai = 'duyet' WHERE id = ?`).run(the);
+    assert(cho === 'can-lam' && nhomCua(P.mbManager.userId, id) === 'de-biet', `chờ: ${cho}`);
+  });
+  check('S6F-a (10c) · "Quản lý từ chối": thẻ còn bị từ chối → Cần làm; đã sửa gửi lại → Để biết; thẻ đóng → Để biết', () => {
+    const o = { loai: 'y_thuc', doiTuongLoai: 'discipline_measure', hv: eW.sid, lop: MB_FT, nguoiXin: P.coreTeacher.userId };
+    const the = theMoi({ ...o, doiTuongId: 999002, trangThai: 'tu_choi' });
+    const id = tbMoi(P.coreTeacher.userId, 'duyet_tu_choi', 'yeu_cau_duyet', the);
+    const truoc = nhomCua(P.coreTeacher.userId, id);
+    theMoi({ ...o, doiTuongId: 999003, trangThai: 'cho' });
+    const guiLai = nhomCua(P.coreTeacher.userId, id);
+    const the2 = theMoi({ ...o, hv: eV.sid, doiTuongId: 999004, trangThai: 'tu_choi' });
+    const id2 = tbMoi(P.coreTeacher.userId, 'duyet_tu_choi', 'yeu_cau_duyet', the2);
+    conn.prepare(`UPDATE yeu_cau_duyet SET trang_thai = 'dong' WHERE id = ?`).run(the2);
+    assert(truoc === 'can-lam' && guiLai === 'de-biet' && nhomCua(P.coreTeacher.userId, id2) === 'de-biet', `từ chối: ${truoc} · gửi lại: ${guiLai}`);
+  });
+  check('S6F-a (10d) · Case SOS chờ nguyên nhân → Cần làm; đã gửi thẻ "Không cần theo dõi" (chờ QL) → Để biết (cùng luật awaitingCauseCaseIds)', () => {
+    const ca = Number(conn.prepare(`INSERT INTO sos_cases (student_id, cycle_id, category, topic, origin_kind, status, owner_user_id, sos_level, created_at)
+      VALUES (?, ?, 'reading', 'reading', 'mock', 'open', ?, 1, ?)`).run(eW.sid, eW.cy, P.lrTeacher.userId, now()).lastInsertRowid);
+    conn.prepare(`INSERT INTO case_interventions (case_id, kind, status, preset, created_at) VALUES (?, 'tutor', 'planned', 1, ?)`).run(ca, now());
+    const id = tbMoi(P.lrTeacher.userId, 'sos', 'sos_case', ca);
+    const truoc = nhomCua(P.lrTeacher.userId, id);
+    theMoi({ loai: 'khong_theo_doi', doiTuongLoai: 'sos_case', doiTuongId: ca, hv: eW.sid, lop: MB_FT, nguoiXin: P.lrTeacher.userId, trangThai: 'cho' });
+    assert(truoc === 'can-lam' && nhomCua(P.lrTeacher.userId, id) === 'de-biet', `trước thẻ: ${truoc}`);
+  });
+  check('S6F-a (10e) · "Đọc hết" đúng 1 câu SQL', () => {
+    const a = nguCanh.soCauSql();
+    nguCanh.trongBoNho(() => tb.docHet(P.coreTeacher.userId, TODAY));
+    assert(nguCanh.soCauSql() - a === 1, `${nguCanh.soCauSql() - a} câu`);
+  });
 }

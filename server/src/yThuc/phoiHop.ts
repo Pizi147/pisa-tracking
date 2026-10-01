@@ -304,6 +304,7 @@ export function myCoordinationLines(p: Principal) {
     `SELECT x.attempt_id, x.status, e.class_id AS lop_dang_hoc FROM sos_coordination_actions x
        JOIN enrollments e ON e.student_id = x.student_id AND e.class_id IN (${ph}) AND e.status = 'active'
        JOIN assessment_attempts a ON a.id = x.attempt_id AND a.status != 'cancelled'
+                                 AND COALESCE(a.kind, 'mock') = 'mock'   -- PR-S6F-a Q11: chỉ lượt Mock FT; lớp thường có việc phoi_hop riêng
       ORDER BY x.attempt_id, x.id`,
   ).all(...classIds) as any[];
   const luot = new Map<number, { lop: number; trangThai: string[] }>();
