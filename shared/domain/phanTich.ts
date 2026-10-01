@@ -309,12 +309,9 @@ export function hoKyNang(k: string | null | undefined): HoKyNang | null {
 
 // ------------------------------------------------------------------ hai việc "bỏ quên" (Q17–Q19)
 
-/** Loại học viên "bỏ quên" của "Chưa ai nhận" cũ — chỉ số trong sổ (Danh sách Case đã bỏ ở PR-Pb2-a; VAI-a xoá hẳn U3). PR-LT2a bỏ loại "Bỏ qua tín hiệu". */
+/** Loại "bỏ quên" cũ — PR-VAI-a (Q7) đã gỡ chỉ số U3 + boQuen.ts; chỉ còn để `duongMoi` chuyển đường dẫn cũ `hang-doi=…` về Tổng quan. */
 export const LOAI_BO_QUEN = ['can-ho-tro-2-lan'] as const;
 export type LoaiBoQuen = (typeof LOAI_BO_QUEN)[number];
-export const LOAI_BO_QUEN_LABEL: Record<LoaiBoQuen, string> = {
-  'can-ho-tro-2-lan': 'Cần hỗ trợ 2 lần liền, chưa có Case',
-};
 export const laLoaiBoQuen = (s: string | null | undefined): s is LoaiBoQuen => (LOAI_BO_QUEN as readonly string[]).includes(s ?? '');
 
 // ------------------------------------------------------------------ Hiệu quả PA (Q9, Q10)

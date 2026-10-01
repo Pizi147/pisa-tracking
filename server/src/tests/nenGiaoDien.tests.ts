@@ -92,7 +92,7 @@ export async function runNenGiaoDienTests(t: YThucTestKit) {
     let thay = 0;
     for (const who of nguoiXem) {
       for (const g of myworkSvc.myWork(who, {}).groups as any[]) {
-        if (g.key !== 'placement' && g.key !== 'next_step') continue;
+        if (g.key !== 'placement') continue;   // PR-VAI-a (Q27): việc next_step đã bỏ
         for (const it of g.items) {
           thay++;
           assert(it.urgency !== 'overdue', `${g.key} ${it.key} đang quá hạn dù không có hạn`);

@@ -71,7 +71,7 @@ export function KhoiNo({ no, mo, onMo, chiQuaHan, onBoQuaHan, dongMo, onMoDong, 
   );
 
   if (!no.length && !dongMo) return null;
-  const soCot = hep ? 2 : 7;
+  const soCot = hep ? 2 : 8;
 
   return (
     <div id="lich-test-no" className="card overflow-hidden p-0">
@@ -97,7 +97,7 @@ export function KhoiNo({ no, mo, onMo, chiQuaHan, onBoQuaHan, dongMo, onMoDong, 
               <>
                 {/* E5: ba cột đầu cùng độ rộng với bảng lớp (`COT_DAU_LICH_TEST`) — hai bảng thẳng cột. */}
                 {COT_DAU_LICH_TEST.map((w, i) => <col key={i} style={{ width: w }} />)}
-                <col style={{ width: 80 }} /><col style={{ width: 190 }} /><col /><col style={{ width: 84 }} />
+                <col style={{ width: 80 }} /><col style={{ width: 190 }} /><col style={{ width: 150 }} /><col /><col style={{ width: 84 }} />
               </>
             )}
           </colgroup>
@@ -105,7 +105,7 @@ export function KhoiNo({ no, mo, onMo, chiQuaHan, onBoQuaHan, dongMo, onMoDong, 
             <thead>
               <tr>
                 <th className="th">Lớp</th><th className="th">Đợt</th><th className="th">Kỹ năng</th>
-                <th className="th text-right">Còn</th><th className="th">Hạn</th>
+                <th className="th text-right">Còn</th><th className="th">Hạn</th><th className="th">GV chấm</th>
                 <th className="th"><span className="sr-only">Trạng thái</span></th>
                 <th className="th"><span className="sr-only">Thao tác</span></th>
               </tr>
@@ -138,6 +138,7 @@ export function KhoiNo({ no, mo, onMo, chiQuaHan, onBoQuaHan, dongMo, onMoDong, 
                             {!xong && <span className="whitespace-nowrap"><Han loai="nhap-diem" han={d.han} /></span>}
                             <NhanDong d={d} xong={xong} chuaLuu={chuaLuu[`no:${d.key}`]} />
                           </div>
+                          {d.gvNo.length > 0 && <div className="truncate text-xs text-slate-500">GV chấm: {d.gvNo.join(', ')}</div>}
                         </td>
                         <td className="td py-1.5 text-right">{nut}</td>
                       </>
@@ -154,6 +155,8 @@ export function KhoiNo({ no, mo, onMo, chiQuaHan, onBoQuaHan, dongMo, onMoDong, 
                         </td>
                         <td className="td text-right tabular-nums text-slate-200">{xong ? 0 : d.conBai} <span className="text-[11px] text-slate-500">bài</span></td>
                         <td className="td whitespace-nowrap">{xong ? <span className="text-slate-600">—</span> : <Han loai="nhap-diem" han={d.han} />}</td>
+                        {/* PR-VAI-a (UX-B5, Q23): ai đang nợ — 12 px, cắt gọn, đủ tên khi rê chuột. */}
+                        <td className="td truncate text-xs text-slate-300" title={d.gvNo.join(', ')}>{d.gvNo.join(', ') || '—'}</td>
                         <td className="td"><NhanDong d={d} xong={xong} chuaLuu={chuaLuu[`no:${d.key}`]} /></td>
                         <td className="td text-right">{nut}</td>
                       </>

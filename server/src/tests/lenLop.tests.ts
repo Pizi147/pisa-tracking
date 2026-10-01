@@ -407,14 +407,14 @@ export async function runLenLopTests(t: YThucTestKit) {
     assert(r7.soChuaLoTrinhTiep === 2, `W7/8 phải 2: ${r7.soChuaLoTrinhTiep}`);
   });
 
-  check('PR-LT (3) · myWork: việc "Chưa có lộ trình tiếp theo" chỉ có với GVCN của lớp, không có với GVBM và QL', () => {
+  check('PR-LT (3) · myWork: PR-VAI-a (Q27) — không ai còn việc "Ghi lộ trình tiếp theo" (GVCN, GVBM, QL "Tất cả"); Quản lý quyết chuyển lớp', () => {
     const cls = taoLopThuong3(7);
     const gvcn = ganGVCN3(cls, P.normalCoreTeacher.userId);
     taoHocVien3(cls, 'FOU');
-    const co = (p: any) => (myworkSvc.myWork(p, {}) as any).items.some((i: any) => i.group === 'next_step' && i.classId === cls);
-    assert(co(gvcn), 'GVCN phải thấy việc');
-    assert(!co(P.normalSubjectTeacher), 'GVBM không thấy việc (không phải GVCN của lớp)');
-    assert(!co(P.mbManager), 'QL không thấy việc next_step (đã có việc đỏ Hết khoá riêng — Q5)');
+    const co = (p: any, f: any = {}) => (myworkSvc.myWork(p, f) as any).items.some((i: any) => i.group === 'next_step');
+    assert(!co(gvcn), 'GVCN không còn việc next_step');
+    assert(!co(P.normalSubjectTeacher), 'GVBM không có việc next_step');
+    assert(!co(P.mbManager, { nguoi: 'tat-ca' }), 'QL (Tất cả) không có việc next_step');
   });
 
   check('PR-LT (3) · canXepLop trừ em "xếp sau" còn hạn xem lại; hết đỏ khi mọi em có hướng; qua ngày xem lại thì đỏ lại (Q9)', () => {

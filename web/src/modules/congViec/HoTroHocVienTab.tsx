@@ -11,7 +11,6 @@ import { NhomViec } from '../worklist/NhomViec.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import type { WorkGroup, WorkItem } from '../worklist/WorkList.tsx';
 import { NganViecVanHanh } from '../worklist/MgmtTasksPage.tsx';
-import { useNhacYThuc } from '../yThuc/YThucReminders.tsx';
 import { ChonPhuTrach, type NguoiPhuTrach } from './ChonPhuTrach.tsx';
 import { CongTacKhung, khungDaNho, type KhungLoc } from '../../ui/CongTacKhung.tsx';
 import {
@@ -49,7 +48,6 @@ export function HoTroHocVienTab() {
   const nhomTs = params.get('nhom') ?? (params.get('loai') ? nhomViecCua(params.get('loai')!) : null);
   const nhom: MaNhomViec | null = (NHOM_VIEC as readonly string[]).includes(nhomTs ?? '') ? (nhomTs as MaNhomViec) : null;
   const moViec = params.get('mo-viec') ? Number(params.get('mo-viec')) : null;
-  const nhac = useNhacYThuc();
 
   const setParam = (k: string, v: string | null) => {
     const next = new URLSearchParams(params);
@@ -85,15 +83,13 @@ export function HoTroHocVienTab() {
   const demHan = useMemo(() => demLocNhanh(trongNhom, 'tat-ca', homNay), [trongNhom, homNay]);
   const locItems = useMemo(() => items.filter((it) => khopLocNhanh(it, loc, homNay)), [items, loc, homNay]);
   const cuoiItems = useMemo(() => (nhom ? locItems.filter((it) => nhomViecCua(it.group) === nhom) : locItems), [locItems, nhom]);
-  /* Ý thức & Phối hợp là nhắc MỀM của chính người xem — không có ý nghĩa khi đang xem việc người khác. */
-  const soNhacYThuc = nguoi === 'toi' && (!nhom || nhom === 'y-thuc') ? nhac.length : 0;
   const demNhom = useMemo(() => {
     const out = Object.fromEntries(NHOM_VIEC.map((k) => [k, 0])) as Record<MaNhomViec, number>;
     for (const it of locItems) out[nhomViecCua(it.group)] += 1;
-    out['y-thuc'] += nguoi === 'toi' ? nhac.length : 0;
     return out;
-  }, [locItems, nguoi, nhac.length]);
-  const dsNhom = useMemo(() => gomNhomViec(cuoiItems, soNhacYThuc), [cuoiItems, soNhacYThuc]);
+  }, [locItems]);
+  /* PR-VAI-a (K5-10): mọi số đếm từ `items` — Phối hợp SOS là việc thật, không còn nhắc mềm cộng tay. */
+  const dsNhom = useMemo(() => gomNhomViec(cuoiItems), [cuoiItems]);
   /* Đang lọc thì kết quả đã ít — mở hết luôn, không bắt bấm thêm một lần gập/mở nữa. */
   const moHet = loc !== 'tat-ca' || !!nhom;
 
@@ -148,7 +144,7 @@ export function HoTroHocVienTab() {
         )}
         <BoLocDoan ariaLabel="Nhóm việc" value={nhom ?? 'tat-ca'}
           onChange={(k) => { const next = new URLSearchParams(params); next.delete('loai'); if (k === 'tat-ca') next.delete('nhom'); else next.set('nhom', k); setParams(next, { replace: true }); }}
-          muc={[{ key: 'tat-ca', nhan: 'Tất cả', so: locItems.length + (nguoi === 'toi' ? nhac.length : 0) },
+          muc={[{ key: 'tat-ca', nhan: 'Tất cả', so: locItems.length },
             ...NHOM_VIEC.map((k) => ({ key: k, nhan: NHOM_VIEC_LABEL[k], so: demNhom[k] }))]} />
         <BranchFilter branchId={branchId} onBranch={(id) => setParam('cn', id ? String(id) : null)} />
       </div>
@@ -162,7 +158,7 @@ export function HoTroHocVienTab() {
       )}
       {data && !data.scopeEmpty && dsNhom.length > 0 && (
         <Card bodyClass="p-0">
-          <NhomViec nhom={dsNhom} nhac={nguoi === 'toi' ? nhac : []} soHien={10} moHet={moHet} onOpen={navigate} nutPhu={nutPhu} />
+          <NhomViec nhom={dsNhom} soHien={10} moHet={moHet} onOpen={navigate} nutPhu={nutPhu} />
         </Card>
       )}
 

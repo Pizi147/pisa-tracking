@@ -553,18 +553,26 @@ export function tomTatMt(classId: number): { soEm: number; coMocSapToi: number; 
   const r = db().prepare(
     `SELECT COUNT(*) AS n, SUM(co_moc) AS co_moc, SUM(xong) AS xong FROM (
        SELECT s.id,
-              MAX(CASE WHEN EXISTS (SELECT 1 FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id
-                                     WHERE a.cycle_id = cy.id AND ${MOC_KE_TIEP_SQL('a', 'rp')}) THEN 1 ELSE 0 END) AS co_moc,
-              MAX(CASE WHEN EXISTS (SELECT 1 FROM assessment_attempts a2 WHERE a2.cycle_id = cy.id AND a2.kind = 'mock'
-                                     AND a2.attempt_no >= (CASE WHEN cy.route = 'RF' THEN ? ELSE ? END) AND ${CO_DIEM_SQL('a2')}) THEN 1 ELSE 0 END) AS xong
+              MAX(CASE WHEN ${CO_MOC_KE_TIEP_SQL('cy')} THEN 1 ELSE 0 END) AS co_moc,
+              MAX(CASE WHEN ${XONG_MT_CUOI_SQL('cy')} THEN 1 ELSE 0 END) AS xong
          FROM enrollments e
          JOIN students s ON s.id = e.student_id
          LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
         WHERE e.class_id = ? AND e.status = 'active' AND s.status = 'active' AND s.archived_at IS NULL
         GROUP BY s.id)`,
-  ).get(mondayOf(demoToday()), lichMtMacDinh('RF').length, lichMtMacDinh('LT1').length, classId) as any;
+  ).get(mondayOf(demoToday()), classId) as any;
   return { soEm: r?.n ?? 0, coMocSapToi: r?.co_moc ?? 0, daXongMtCuoi: r?.xong ?? 0 };
 }
+
+/**
+ * HAI ĐIỀU KIỆN CỦA `tomTatMt`, tách thành hằng SQL để chỉ số `hv-ft-xong-mt-cuoi-chua-mt-ke` (PR-VAI-a Q8c) dùng ĐÚNG luật này.
+ *   CO_MOC_KE_TIEP  — lộ trình có lượt mốc kế tiếp (`MOC_KE_TIEP_SQL`), MỘT tham số `?` = thứ Hai tuần này.
+ *   XONG_MT_CUOI    — đã có lượt MT có điểm ở số thứ tự ≥ số MT của lịch mặc định (LT: 3, RF: 2), tính cả MT lịch sử. Không tham số.
+ */
+export const CO_MOC_KE_TIEP_SQL = (cy: string) => `EXISTS (SELECT 1 FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id
+  WHERE a.cycle_id = ${cy}.id AND ${MOC_KE_TIEP_SQL('a', 'rp')})`;
+export const XONG_MT_CUOI_SQL = (cy: string) => `EXISTS (SELECT 1 FROM assessment_attempts a2 WHERE a2.cycle_id = ${cy}.id AND a2.kind = 'mock'
+  AND a2.attempt_no >= (CASE WHEN ${cy}.route = 'RF' THEN ${lichMtMacDinh('RF').length} ELSE ${lichMtMacDinh('LT1').length} END) AND ${CO_DIEM_SQL('a2')})`;
 
 /**
  * NHỮNG LỚP ĐANG CÓ CHUYỆN CẦN BÁO — dùng cho màn việc và cho thanh lớp.

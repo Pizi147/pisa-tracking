@@ -281,8 +281,8 @@ export function coordinationOfClass(p: Principal, classId: number, opts: { inclu
 
 /**
  * MỘT DÒNG TRONG VIỆC CẦN LÀM CỦA GVCN (đặc tả §7 mục "Việc cần làm", PR-K): mỗi lớp mình chủ nhiệm mà còn lượt Phối hợp SOS
- * chưa hoàn thành. Cùng tinh thần P10 — không có hạn, không tô như quá hạn. Dùng lại `coordinationOfClass` nên số ở đây luôn
- * khớp sub-tab `Phối hợp SOS` của chính lớp đó — không có đường đếm riêng.
+ * chưa hoàn thành. Cùng tinh thần P10 — không có hạn, không tô như quá hạn. Cùng luật "lượt chưa xong" với `coordinationOfClass`
+ * (`coordinationSummary`) nên số ở đây khớp sub-tab `Phối hợp SOS` của chính lớp đó — phép kiểm sosV3 PR-K và VAI-a (6c) so hai đường.
  */
 export function myCoordinationLines(p: Principal) {
   const today = demoToday();
@@ -295,15 +295,24 @@ export function myCoordinationLines(p: Principal) {
      Cùng luật đếm với `coordinationOfClass`: lượt chưa hoàn thành. Lớp mình chủ nhiệm nên không cần `requireViewClass`. */
   const conn = db();
   const ph = classIds.map(() => '?').join(',');
+  /*
+   * PR-VAI-a (K5-10): dòng này nay là VIỆC trong `/my-work` (gọi mỗi lần mở Tổng quan/Công việc) — không dựng cả lượt (`turnsOf`, ~10 câu)
+   * chỉ để biết lượt nào chưa xong. CÙNG luật của `turnsOf`: lượt = (lượt Test, các việc của nó), xong theo `coordinationSummary` trên trạng
+   * thái các việc, lượt đã huỷ không còn là SOS Event — một câu.
+   */
   const rows = conn.prepare(
-    `SELECT x.*, e.class_id AS lop_dang_hoc FROM sos_coordination_actions x
+    `SELECT x.attempt_id, x.status, e.class_id AS lop_dang_hoc FROM sos_coordination_actions x
        JOIN enrollments e ON e.student_id = x.student_id AND e.class_id IN (${ph}) AND e.status = 'active'
+       JOIN assessment_attempts a ON a.id = x.attempt_id AND a.status != 'cancelled'
       ORDER BY x.attempt_id, x.id`,
   ).all(...classIds) as any[];
-  const lopCua = new Map<number, number>();
-  for (const r of rows) lopCua.set(r.student_id, r.lop_dang_hoc);
+  const luot = new Map<number, { lop: number; trangThai: string[] }>();
+  for (const r of rows) {
+    const l = luot.get(r.attempt_id) ?? luot.set(r.attempt_id, { lop: r.lop_dang_hoc, trangThai: [] }).get(r.attempt_id)!;
+    l.trangThai.push(r.status);
+  }
   const dem = new Map<number, number>();
-  for (const t of turnsOf(p, rows)) if (!t.summary.complete) dem.set(lopCua.get(t.studentId)!, (dem.get(lopCua.get(t.studentId)!) ?? 0) + 1);
+  for (const l of luot.values()) if (!coordinationSummary(l.trangThai).complete) dem.set(l.lop, (dem.get(l.lop) ?? 0) + 1);
   const ma = new Map((conn.prepare(`SELECT id, code FROM classes WHERE id IN (${ph})`).all(...classIds) as any[]).map((c) => [c.id as number, c.code as string]));
   for (const classId of classIds) {
     const pendingCount = dem.get(classId) ?? 0;

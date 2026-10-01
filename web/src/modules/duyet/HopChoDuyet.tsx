@@ -39,6 +39,8 @@ export function HopChoDuyet() {
   const branchId = params.get('cn') ? Number(params.get('cn')) : null;
   /* PR-S4F #5: `?lop=` — từ badge "n chờ duyệt" của một lớp. */
   const lopId = Number(params.get('lop')) || null;
+  /* PR-VAI-a (Q17): `?qua-han=1` — từ số "k quá hạn" của dải Chờ duyệt ở Tổng quan. */
+  const quaHan = params.get('qua-han') === '1' && xem === 'cho';
   const setParam = (k: string, v: string | null) => {
     const next = new URLSearchParams(params);
     if (v) next.set(k, v); else next.delete(k);
@@ -51,6 +53,7 @@ export function HopChoDuyet() {
   if (xem === 'da-xu-ly') qs.set('xem', xem);
   if (branchId) qs.set('branchId', String(branchId));
   if (lopId) qs.set('lop', String(lopId));
+  if (quaHan) qs.set('quaHan', '1');
   const url = `/yeu-cau?${qs}`;
   const { data, loading, error, reload } = useApi<Hop>(url, [url]);
   const nhan = useTheNhanManh(data?.the);
@@ -95,6 +98,11 @@ export function HopChoDuyet() {
         <BoLocDoan ariaLabel="Trạng thái" value={xem} onChange={(k) => setParam('xem', k === 'cho' ? null : k)}
           muc={[{ key: 'cho', nhan: 'Đang chờ' }, { key: 'da-xu-ly', nhan: 'Đã xử lý (30 ngày)' }]} />
         <BranchFilter branchId={branchId} onBranch={(id) => setParam('cn', id ? String(id) : null)} />
+        {quaHan && (
+          <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" title="Bỏ lọc quá hạn" onClick={() => setParam('qua-han', null)}>
+            Quá hạn · <span className="tabular-nums">{ds.length}</span> ✕
+          </button>
+        )}
         {lopId && (
           <button type="button" className="btn btn-sm" title="Bỏ lọc lớp" onClick={() => setParam('lop', null)}>
             Lớp {data?.lopDangLoc?.code ?? lopId} ✕

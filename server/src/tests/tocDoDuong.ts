@@ -36,6 +36,10 @@ export const DUONG_DO: MucDo[] = [
     maChuDich: { GVCN: 403, GVBM: 403 },
   },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/highlights' },
+  {
+    trang: 'Tổng quan QL', vai: ['QL', 'QT', 'GVCN'], url: '/tong-quan/diem-chu-y?ct=ft',   // PR-VAI-a: tách khỏi /tong-quan/quan-ly
+    maChuDich: { GVCN: 403 },
+  },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/tong-quan/chi-nhanh' },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/tong-quan/chi-nhanh/o?cot=caseMo&khoa=tong' },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/branch-pulse' },
@@ -66,8 +70,7 @@ export const DUONG_DO: MucDo[] = [
     trang: 'Phân tích QL', vai: ['QL', 'QT', 'GVCN'], url: '/phan-tich/y-thuc',
     maChuDich: { GVCN: 403 },
   },
-  { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/phan-tich/bo-quen?loai=can-ho-tro-2-lan' },
-  { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/metrics/hv-can-ho-tro-2-lan-chua-case' },
+  { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/metrics/lop-thieu-gv-mon' },   // PR-VAI-a: thay chỉ số U3 đã xoá
   /* PR-LT2a: thay chỉ số "Bỏ qua tín hiệu" đã bỏ bằng chỉ số Case chờ nguyên nhân quá hạn (FT + Giữa khoá lớp thường — ô Tổng quan). */
   { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/metrics/case-xac-dinh-nguyen-nhan-qua-han' },
 
@@ -85,9 +88,12 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Công việc', vai: ['QL', 'QT'], url: '/yeu-cau?hop=cho-duyet&xem=da-xu-ly' },
   { trang: 'Công việc', vai: ['GVCN', 'GVBM'], url: '/yeu-cau?hop=cua-toi' },
   { trang: 'Công việc', vai: MOI_VAI, url: '/yeu-cau/dem' },
-  { trang: 'Tổng quan GV', vai: ['QL', 'QT', 'GVCN', 'GVBM', 'GVCN_THUONG'], url: '/tong-quan/hoc-vien-can-ho-tro' },
+  /* PR-VAI-a (Q12, Q16): Lớp tôi dạy thay Học viên cần hỗ trợ; badge việc quá hạn của GV. */
+  { trang: 'Tổng quan GV', vai: ['GVCN', 'GVBM', 'GVCN_THUONG'], url: '/tong-quan/lop-toi-day?ct=ft' },
+  { trang: 'Tổng quan GV', vai: ['GVCN_THUONG'], url: '/tong-quan/lop-toi-day?ct=thuong' },
+  { trang: 'Tổng quan GV', vai: ['GVCN'], url: '/tong-quan/lop-toi-day/o?ct=ft&classId={lopFT}&cot=duoiKyVong' },
+  { trang: 'Tổng quan GV', vai: ['GVCN', 'GVBM', 'GVCN_THUONG'], url: '/my-work/dem' },
   { trang: 'Tổng quan GV', vai: ['GVCN', 'GVBM', 'GVCN_THUONG'], url: '/highlights' },
-  { trang: 'Tổng quan GV', vai: ['GVCN'], url: '/y-thuc/my-coordination' },
 
   // ---------------------------------------------------------------- Học viên & Lớp
   { trang: 'Học viên & Lớp', vai: MOI_VAI, url: '/classes' },
@@ -241,8 +247,22 @@ export const TRAN: Record<string, number> = {
   'GVBM /prefs': 19,
   'GVCN_THUONG /prefs': 19,
   'QT /prefs': 19,
-  'QL /tong-quan/quan-ly': 87,   // PR-Pb2-a: vắng ct = FT (lọc khung), đo 81–83
-  'QT /tong-quan/quan-ly': 87,   // PR-Pb2-a: như trên
+  /* PR-VAI-a: trần đường mới = max(đo+10, ⌈đo×1,3⌉) — đo 01/10. */
+  'QL /tong-quan/diem-chu-y?ct=ft': 52,
+  'QT /tong-quan/diem-chu-y?ct=ft': 49,
+  'GVCN /tong-quan/diem-chu-y?ct=ft': 19,
+  'QL /metrics/lop-thieu-gv-mon': 25,
+  'QT /metrics/lop-thieu-gv-mon': 25,
+  'GVCN /tong-quan/lop-toi-day?ct=ft': 47,
+  'GVBM /tong-quan/lop-toi-day?ct=ft': 47,
+  'GVCN_THUONG /tong-quan/lop-toi-day?ct=ft': 47,
+  'GVCN_THUONG /tong-quan/lop-toi-day?ct=thuong': 47,
+  'GVCN /tong-quan/lop-toi-day/o?ct=ft&classId=3&cot=duoiKyVong': 47,   // {lopFT} = MB FT 101
+  'GVCN /my-work/dem': 85,
+  'GVBM /my-work/dem': 85,
+  'GVCN_THUONG /my-work/dem': 85,
+  'QL /tong-quan/quan-ly': 75,
+  'QT /tong-quan/quan-ly': 71,
   'GVCN /tong-quan/quan-ly': 20,
   'GVBM /tong-quan/quan-ly': 20,
   'QL /highlights': 28,
@@ -286,11 +306,7 @@ export const TRAN: Record<string, number> = {
   'QL /phan-tich/y-thuc': 26,
   'QT /phan-tich/y-thuc': 26,
   'GVCN /phan-tich/y-thuc': 20,
-  // PR-UX4 (5): boQuen dùng chung cho đường, hai chỉ số và hai dòng Cần xử lý — đo 22 câu (một lượt gọi, không nhân theo số HV).
-  'QL /phan-tich/bo-quen?loai=can-ho-tro-2-lan': 32,
-  'QT /phan-tich/bo-quen?loai=can-ho-tro-2-lan': 32,
-  'QL /metrics/hv-can-ho-tro-2-lan-chua-case': 32,
-  'QT /metrics/hv-can-ho-tro-2-lan-chua-case': 32,
+  // PR-VAI-a (Q7): đường /phan-tich/bo-quen đã gỡ cùng boQuen.ts.
   'QL /metrics/case-xac-dinh-nguyen-nhan-qua-han': 32,
   'QT /metrics/case-xac-dinh-nguyen-nhan-qua-han': 32,
   'GVCN /my-work': 76,   // PR-CT gộp LT2b: 68 → 76   // PR-LT2b: việc Ghi Mini Test + bộ demo D10–D13 (2 lớp mới: MB BE 04, MB ELE 02) 63 → 68 (+8 %)
@@ -327,15 +343,9 @@ export const TRAN: Record<string, number> = {
   'QT /mgmt-tasks?hang=qua-han': 23,
   'QL /meeting/board': 30,
   'QT /meeting/board': 30,
-  'QL /tong-quan/hoc-vien-can-ho-tro': 42,
-  'QT /tong-quan/hoc-vien-can-ho-tro': 39,
-  'GVCN /tong-quan/hoc-vien-can-ho-tro': 42,
-  'GVBM /tong-quan/hoc-vien-can-ho-tro': 42,
-  'GVCN_THUONG /tong-quan/hoc-vien-can-ho-tro': 42,
   'GVCN /highlights': 28,
   'GVBM /highlights': 28,
   'GVCN_THUONG /highlights': 28,
-  'GVCN /y-thuc/my-coordination': 59,   // PR-CT Task 12 (bộ demo có lệnh): 51 → 59
   'QL /classes': 35,
   'GVCN /classes': 36,
   'GVBM /classes': 36,

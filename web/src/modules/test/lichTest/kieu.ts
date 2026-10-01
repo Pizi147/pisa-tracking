@@ -17,6 +17,8 @@ export type DongNo = {
   conBai: number; soHv: number; attemptIds: number[];
   han: string | null; quaHan: boolean; luiLich: LuiLich | null;
   cuaToi: boolean; duocCham: boolean; coDayLop: boolean; hrefDayDu: string;
+  /** PR-VAI-a (UX-B5): tên GV đang nợ, sắp theo tên; môn chưa phân công → "chưa phân công". */
+  gvNo: string[];
 };
 export type LopLichTest = {
   key: string; classId: number; classCode: string; mode: 'ielts_band' | 'ratio'; branchName: string;

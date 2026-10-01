@@ -160,7 +160,7 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
   check('UX3 (2) · việc "Ghi kết quả" mở thẳng ngăn Case đúng PA: href có case=, pa=, viec=ghi-ket-qua; nhãn không còn "Cập nhật"', () => {
     let thay = 0;
     for (const who of nguoiXem) {
-      const nhom = (myworkSvc.myWork(who, {}).groups as any[]).find((g) => g.key === 'result');
+      const nhom = (myworkSvc.myWork(who, {}).groups as any[]).find((g) => g.key === 'ghi_ket_qua_pa');
       if (!nhom) continue;
       assert(nhom.label === 'Ghi kết quả PA', `nhãn nhóm: ${nhom.label}`);
       for (const it of nhom.items) {

@@ -5,7 +5,7 @@ import { classScopeSql, scopeFor, type Principal } from '../permissions.ts';
 
 /**
  * QUYỀN CHUNG CỦA MỌI ĐƯỜNG PHÂN TÍCH MỚI (PR-UX4, Q20) — một chỗ, để bốn dịch vụ (`vanDeHv`, `hieuQuaPa`,
- * `yThucPhanTich`, `boQuen`) không mỗi nơi tự viết lại một phiên bản hơi khác.
+ * `yThucPhanTich`) không mỗi nơi tự viết lại một phiên bản hơi khác.
  *
  * - Không có `meeting.view` (giáo viên) → 403.
  * - Quản lý hỏi một chi nhánh / một lớp NGOÀI phạm vi của mình → 403 (khác `tongHop.ts` cũ vốn trả rỗng —

@@ -1,7 +1,6 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { BoLocDoan, Card, Info, Skeleton } from '../../ui/ui.tsx';
+import { Card, Info, Skeleton } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { thamSoCt, tuanLich, type ChuongTrinh } from '@shared/domain/index.ts';
 
@@ -31,157 +30,68 @@ type Data = {
   scopeEmpty: boolean;
 };
 
-const TAB_LABEL = ['Tuần này', 'Tuần tới', 'Tuần nữa'];
-
-/** Số đợt Test của một tuần — dùng cho dòng tóm tắt khi khối đang gập. */
-const soDot = (w?: Week) => w ? w.normal.progressClasses.length + w.normal.finalClasses.length + w.ft.mockClasses.length : 0;
+/**
+ * PR-VAI-a (mockup 23 màn B): danh sách PHẲNG theo khung đang chọn — mỗi dòng một đợt Test: mã tuần · bài · lớp · số em. Không còn ba tab
+ * tuần; khối nhỏ ở tầng 3, đọc lướt. Cùng `/highlights` với trước (không đếm thêm gì).
+ */
+type DongLich = { tuan: string; tuanNay: boolean; chu: string; den: string | null; key: string };
 
 /** `ct = null`: giáo viên xem lịch gộp hai khung (Q2). */
 export function LichSapToi({ branchId, ct }: { branchId: number | null; ct: ChuongTrinh | null }) {
-  const navigate = useNavigate();
   const { homNay } = useNgayNghiepVu();
   const { data, loading } = useApi<Data | null>(
     `/highlights?${branchId ? `branchId=${branchId}` : ''}${thamSoCt(ct)}`.replace(/\?&/, '?'), [branchId, ct],
   );
-  /*
-   * MẶC ĐỊNH THU GỌN. Đây là thông tin để LIẾC, không phải để làm — mở sẵn thì nó chiếm
-   * đầu màn hình mỗi ngày trong khi việc cần làm bị đẩy xuống dưới.
-   */
-  const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState(0);
-
-  if (loading) return <Card title="Lịch sắp tới"><Skeleton rows={2} /></Card>;
+  if (loading) return <Card title="Lịch sắp tới"><Skeleton rows={3} /></Card>;
   if (!data || data.scopeEmpty) return null;
 
-  const week = data.weeks[tab] ?? data.weeks[0];
-  if (!week) return null;
-
-  const tuanNay = soDot(data.weeks[0]);
-  const tuanSau = soDot(data.weeks[1]);
   const hienThuong = ct !== 'ft';
   const hienFt = ct !== 'thuong';
+  const dong: DongLich[] = [];
+  for (const w of data.weeks) {
+    const tuan = tuanLich(w.weekStart, homNay);
+    const tuanNay = w.offset === 0;
+    const them = (chu: string, den: string | null, key: string) => dong.push({ tuan, tuanNay, chu, den, key: `${w.weekStart}-${key}` });
+    if (hienFt) {
+      w.ft.mockClasses.forEach((m, i) => them(`${m.attemptNo !== null ? `MT${m.attemptNo} · ` : 'MT · '}${m.code} · ${m.students} em`, m.id ? `/hoc-vien/lop/${m.id}` : null, `mt${i}`));
+      if (w.ft.examStudents) them(`Dự kiến thi IELTS · ${w.ft.examStudents} em`, null, 'thi');
+    }
+    if (hienThuong) {
+      for (const r of w.normal.progressClasses) them(`Giữa khoá · ${r.code} · ${r.students} em`, `/hoc-vien/lop/${r.id}`, `g${r.id}`);
+      for (const r of w.normal.finalClasses) them(`Cuối khoá · ${r.code} · ${r.students} em`, `/hoc-vien/lop/${r.id}`, `c${r.id}`);
+      for (const r of w.normal.endingClasses) them(`Hết khoá · ${r.code} · chuẩn bị chuyển lớp`, `/hoc-vien/lop/${r.id}?viec=chuyen-tiep`, `h${r.id}`);
+    }
+  }
 
   return (
-    <Card
-      title={
-        <button type="button" onClick={() => setOpen((v) => !v)}
-          className="appearance-none bg-transparent border-0 p-0 text-[inherit] font-[inherit] cursor-pointer flex flex-wrap items-center gap-2">
-          <span className="text-slate-500" aria-hidden>{open ? '▾' : '▸'}</span>
-          Lịch sắp tới
-          {!open && (
-            <span className="text-xs font-normal text-slate-500">
-              {tuanNay === 0 && tuanSau === 0
-                ? '· không có đợt Test nào trong hai tuần tới'
-                : `· ${tuanNay} đợt Test tuần này · ${tuanSau} đợt tuần sau`}
-            </span>
-          )}
-        </button>
-      }
-      bodyClass="p-0"
-    >
-      {!open ? null : (
-        <>
-          <div className="px-4 py-3 border-b flex flex-wrap items-center gap-1.5"
-            style={{ borderColor: 'var(--line)' }}>
-            <BoLocDoan ariaLabel="Tuần" value={String(tab)} onChange={(k) => setTab(Number(k))}
-              muc={data.weeks.map((w, i) => ({ key: String(i), nhan: `${TAB_LABEL[i]} · ${tuanLich(w.weekStart, homNay)}` }))} />
-            <span className="text-[11px] text-slate-500 ml-1">{week.range}</span>
-          </div>
-
-          <div className={`grid gap-px ${hienThuong && hienFt ? 'sm:grid-cols-2' : ''}`} style={{ background: 'var(--line)' }}>
-            {/* ───────────────────────────────────── Lớp thường */}
-            {hienThuong && (
-              <div className="p-4" style={{ background: 'var(--surface)' }}>
-                <h3 className="text-xs uppercase tracking-wide text-slate-500 m-0 mb-2">Lớp thường</h3>
-                <ul className="list-none p-0 m-0 space-y-1.5">
-                  <EventRow label="Giữa khoá" rows={week.normal.progressClasses}
-                    onOpen={(id) => navigate(`/hoc-vien/lop/${id}`)} unit="lớp" />
-                  <EventRow label="Cuối khoá" rows={week.normal.finalClasses}
-                    onOpen={(id) => navigate(`/hoc-vien/lop/${id}`)} unit="lớp" />
-                  <EventRow label="Hết chương trình — chuẩn bị chuyển lớp" rows={week.normal.endingClasses}
-                    onOpen={(id) => navigate(`/hoc-vien/lop/${id}?viec=chuyen-tiep`)} unit="lớp" />
-                </ul>
-              </div>
-            )}
-
-            {/* ───────────────────────────────────── FT */}
-            {hienFt && (
-              <div className="p-4" style={{ background: 'var(--surface)' }}>
-                <h3 className="text-xs uppercase tracking-wide text-slate-500 m-0 mb-2">Lớp Fast Track</h3>
-                <ul className="list-none p-0 m-0 space-y-1.5">
-                  {week.ft.mockClasses.length === 0 ? (
-                    <li className="text-xs text-slate-500">Không có MT nào trong tuần.</li>
-                  ) : (
-                    <li>
-                      <div className="text-xs text-slate-400">
-                        MT trong tuần · <strong className="text-slate-100 tabular-nums">{week.ft.mockStudents}</strong> học viên
-                      </div>
-                      <div className="flex flex-wrap gap-1.5 mt-1">
-                        {week.ft.mockClasses.map((m, i) => (
-                          <button key={`${m.id}-${m.attemptNo}-${i}`} className="btn btn-sm"
-                            onClick={() => m.id && navigate(`/hoc-vien/lop/${m.id}`)}>
-                            {m.code}
-                            {m.attemptNo !== null && <span className="opacity-70 ml-1">MT{m.attemptNo}</span>}
-                            <span className="opacity-70 ml-1.5 tabular-nums">{m.students} em</span>
-                          </button>
-                        ))}
-                      </div>
-                    </li>
-                  )}
-                  <li className="text-xs text-slate-400">
-                    Dự kiến thi IELTS trong tuần ·{' '}
-                    <strong className={week.ft.examStudents ? 'text-slate-100 tabular-nums' : 'text-slate-500 tabular-nums'}>
-                      {week.ft.examStudents}
-                    </strong> học viên
-                  </li>
-                </ul>
-              </div>
-            )}
-          </div>
-
-          {/*
-            CHỈ BIẾT THÁNG THÌ KHÔNG XẾP VÀO TUẦN NÀO (mục 3.5).
-            Nói thẳng ra là chưa xác định tuần, thay vì lặng lẽ xếp các em vào tuần đầu tháng
-            — một lịch không ai từng chốt mà nhìn thì y như đã chốt.
-          */}
-          {hienFt && data.examMonthOnly.students > 0 && (
-            <p className="px-4 py-2.5 m-0 text-[11px] text-slate-500 border-t"
-              style={{ borderColor: 'var(--line)' }}>
-              <Info>Chưa xác định tuần</Info>{' '}
-              {data.examMonthOnly.students} học viên mới biết tháng dự kiến thi
-              {' '}({data.examMonthOnly.months.map(monthLabel).join(', ')}), nên không xếp vào tuần nào ở trên.
-            </p>
-          )}
-        </>
+    <Card title="Lịch sắp tới" bodyClass="p-0">
+      {!dong.length ? (
+        <p className="m-0 px-4 py-3 text-sm text-slate-400">Không có đợt Test nào trong ba tuần tới.</p>
+      ) : (
+        <ul className="m-0 list-none divide-y p-0" style={{ borderColor: 'var(--line)' }}>
+          {dong.map((x) => (
+            <li key={x.key} className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-baseline gap-3 px-4 py-2 text-sm">
+              <b className="tabular-nums font-semibold text-slate-200">{x.tuan}</b>
+              <span className="min-w-0 text-slate-300">
+                {x.den ? <Link to={x.den} className="text-slate-200 no-underline hover:underline">{x.chu}</Link> : x.chu}
+                {x.tuanNay && <span className="ml-1.5 text-xs text-slate-500">tuần này</span>}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {/*
+        CHỈ BIẾT THÁNG THÌ KHÔNG XẾP VÀO TUẦN NÀO (mục 3.5) — nói thẳng là chưa xác định tuần, không lặng lẽ xếp vào tuần đầu tháng.
+      */}
+      {hienFt && data.examMonthOnly.students > 0 && (
+        <p className="m-0 border-t px-4 py-2.5 text-xs text-slate-500" style={{ borderColor: 'var(--line)' }}>
+          <Info>Chưa xác định tuần</Info>{' '}
+          {data.examMonthOnly.students} học viên mới biết tháng dự kiến thi ({data.examMonthOnly.months.map(monthLabel).join(', ')}).
+        </p>
       )}
     </Card>
   );
 }
-
-function EventRow({ label, rows, onOpen, unit }: {
-  label: string; rows: ClassRow[]; onOpen: (id: number) => void; unit: string;
-}) {
-  return (
-    <li>
-      <div className="text-xs text-slate-400">
-        {label} ·{' '}
-        <strong className={rows.length ? 'text-slate-100 tabular-nums' : 'text-slate-500 tabular-nums'}>
-          {rows.length}
-        </strong> {unit}
-      </div>
-      {rows.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mt-1">
-          {rows.map((r) => (
-            <button key={r.id} className="btn btn-sm" onClick={() => onOpen(r.id)}>
-              {r.code}<span className="opacity-70 ml-1.5 tabular-nums">{r.students} em</span>
-            </button>
-          ))}
-        </div>
-      )}
-    </li>
-  );
-}
-
 const MONTHS = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
 function monthLabel(m: string): string {
   const [y, mm] = m.split('-');
