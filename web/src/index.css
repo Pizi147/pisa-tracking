@@ -72,7 +72,7 @@
     --hang-lon-dong-bg: #131f35;  --hang-lon-dong-vach: #3a4f72;
     --hang-con-bg: #0b1322;       --hang-con-chu: #c9d4e6;
     /* Ô sửa được / chỉ đọc (lưới chấm) */
-    --o-sua-vien: #3d5f8f;        --o-sua-nen: #0e1a2e;   --o-sua-focus: #84baff;
+    --o-sua-vien: #4f79b3;        --o-sua-nen: #0e1a2e;   --o-sua-focus: #84baff;
 
     /*
      * PR-SANG (T15) — HAI CHẾ ĐỘ. Khối này = TỐI (mặc định, giá trị hôm nay); khối `:root[data-theme="light"]` ngay dưới ghi đè
@@ -84,7 +84,7 @@
     --chu-mo-rgb: 71 85 105;   --chu-mo-2-rgb: 51 65 85;
     --phu-rgb: 255 255 255;
     --chon-bg-rgb: 19 33 45;   --chon-vien-rgb: 13 148 136;  --chon-dau-rgb: 94 234 212;
-    --nut-hover: #24304a;      --o-nhap-nen: #0e1727;        --o-nhap-tat: #0b1322;   --o-nhap-vien: var(--line-strong);
+    --nut-hover: #24304a;      --o-nhap-nen: #0e1727;        --o-nhap-tat: #0b1322;   --o-nhap-vien: #64748b;
     --cuon: rgba(160, 178, 214, 0.2);  --cuon-hover: rgba(160, 178, 214, 0.35);
 
     /* Phông tự phục vụ (`@fontsource/be-vietnam-pro`, nạp ở main.tsx) — một giá trị cho cả hai chế độ. */
@@ -170,6 +170,9 @@
    * Trang trượt ngang là lỗi nặng nhất ở màn hẹp: thanh điều hướng cũng trôi theo.
    */
   .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* VN17: có panel / hộp thoại mở thì toast lên trên (dưới đầu panel), không che nút ở chân panel. */
+  body:has([aria-modal="true"]) .vung-toast { top: 3.75rem; bottom: auto; }
 
   /* Hộp tra cứu cuộn riêng, không phụ thuộc cuộn của cả trang. */
   .box-scroll { overflow-y: auto; overscroll-behavior: contain; }

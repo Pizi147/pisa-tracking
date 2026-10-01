@@ -146,7 +146,7 @@ export async function runLenLopTests(t: YThucTestKit) {
   check('PR-LT (1) · khoaLopThuong: ưu tiên tiếp theo › nhắc › kết thúc khoá', () => {
     const base = { maChuongTrinh: 'FOU', tuanHienTai: 8, tongTuan: 8, tuanKetThuc: '2026-09-21', homNay: '2026-09-14' };
     assert(d.khoaLopThuong({ ...base, tiepTheo: 'BE', nhacLoTrinh: true }).phu === 'tiếp theo: BE', 'Có tiếp theo thì ưu tiên trên hết');
-    assert(d.khoaLopThuong({ ...base, tiepTheo: null, nhacLoTrinh: true }).phu === 'chưa có lộ trình tiếp theo', 'Không tiếp theo, có nhắc');
+    assert(d.khoaLopThuong({ ...base, tiepTheo: null, nhacLoTrinh: true }).phu === 'chưa có lệnh chuyển lớp', 'Không tiếp theo, có nhắc (PR-Dọn Câu 2 = B)');
     assert(d.khoaLopThuong({ ...base, tiepTheo: null, nhacLoTrinh: false }).phu === 'kết thúc W4 SEP', 'Không tiếp theo, không nhắc → kết thúc khoá');
   });
 
@@ -159,7 +159,8 @@ export async function runLenLopTests(t: YThucTestKit) {
     assert(het.an.map((x: any) => x.key).join(',') === 'xep-lop', `Phần gom: ${JSON.stringify(het.an)}`);
     assert(het.an[0].nhan === '3 HV cần xếp lớp tiếp' && /hết khoá/.test(het.an[0].title ?? ''), 'Hết khoá: số em cần xếp lớp');
     const chua = d.badgeLop({ ...goc, needsPlacement: false, canXepLop: 0 });
-    assert(chua.an[0].nhan === '5 HV cần xếp lớp tiếp' && /chưa có lộ trình/.test(chua.an[0].title ?? '') && chua.an[0].tone === 'warn', JSON.stringify(chua.an[0]));
+    /* PR-Dọn (Câu 2 = B): lớp chưa hết khoá → em chưa có lệnh chuyển lớp (cùng tập dòng Cần xử lý). */
+    assert(chua.an[0].nhan === '5 HV chưa có lệnh chuyển lớp' && /Chuyển lớp cả lớp/.test(chua.an[0].title ?? '') && chua.an[0].tone === 'warn', JSON.stringify(chua.an[0]));
   });
 
   // ==================================================================== trongHaiTuanCuoi
@@ -379,32 +380,38 @@ export async function runLenLopTests(t: YThucTestKit) {
     const roster = classesSvc.classRoster(P.admin, cls) as any[];
     const row = roster.find((r) => r.id === sid);
     assert(row?.tiepTheo === 'BE', `tiepTheo: ${row?.tiepTheo}`);
-    assert(row?.chuaLoTrinh === false, 'Đã ghi rồi thì không còn tính là chưa có lộ trình');
+    /* PR-Dọn (Câu 2 = B): ghi Lộ trình tiếp theo không tắt cờ — cờ nay là "chưa có lệnh chuyển lớp". */
+    assert(row?.chuaLoTrinh === true, 'Chưa có lệnh chuyển lớp thì vẫn có cờ');
   });
 
-  check('PR-LT (3) · chua_ro: không hiện "tiếp theo" nhưng VẪN tính vào soChuaLoTrinhTiep (Q4 — không tắt nhắc)', () => {
-    const cls = taoLopThuong3(7);
+  /* PR-Dọn (Câu 2 = B): đếm em CHƯA CÓ LỆNH chuyển lớp (lệnh `cho` thì hết cờ); "chua_ro" chỉ còn ảnh hưởng chữ "tiếp theo". */
+  check('PR-LT (3) · chua_ro: không hiện "tiếp theo"; em có lệnh chờ → hết cờ, em chưa có lệnh → có cờ và vào soChuaLoTrinhTiep', () => {
+    const cls = taoLopThuong3(8);
     const gvcn = ganGVCN3(cls, P.normalCoreTeacher.userId);
     const { sid } = taoHocVien3(cls, 'FOU');
+    const { sid: coLenh } = taoHocVien3(cls, 'FOU');
+    conn.prepare(`INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, huong, boi_canh, tuan_bat_dau, nguoi_ra_lenh, ngay_ra_lenh, trang_thai, tao_luc)
+      VALUES (?, ?, 'hoc_lai', 'cuoi-khoa', ?, ?, ?, 'cho', ?)`).run(coLenh, cls, mondayForWeek3(9), P.admin.userId, TODAY3, new Date().toISOString());
     loTrinhTiepSvc.ghiLoTrinhTiep(gvcn, sid, { huong: 'chua_ro', ghiChu: 'Chưa quyết' });
     const roster = classesSvc.classRoster(P.admin, cls) as any[];
     const row = roster.find((r) => r.id === sid);
     assert(row?.tiepTheo === null, `chua_ro không hiện "tiếp theo": ${row?.tiepTheo}`);
-    assert(row?.chuaLoTrinh === true, 'chua_ro vẫn tính là chưa có lộ trình');
+    assert(row?.chuaLoTrinh === true && roster.find((r) => r.id === coLenh)?.chuaLoTrinh === false, 'cờ theo lệnh chuyển lớp');
     const r = classesSvc.listClassSummaries(P.admin, { branchId: MB3 }).rows.find((x) => x.id === cls)!;
-    assert(r.soChuaLoTrinhTiep === 1, `Vẫn đếm vào nhắc: ${r.soChuaLoTrinhTiep}`);
+    assert(r.soChuaLoTrinhTiep === 1, `Đếm em chưa có lệnh: ${r.soChuaLoTrinhTiep}`);
   });
 
-  check('PR-LT (3) · listClassSummaries: soChuaLoTrinhTiep = 0 ở W6/8 (chưa vào hai tuần cuối), = n ở W7/8', () => {
-    const clsW6 = taoLopThuong3(6);
-    taoHocVien3(clsW6, 'FOU');
+  /* PR-Dọn (Câu 2 = B): badge bật từ tuần Cuối khoá (cùng mốc dòng Cần xử lý `hv-chua-co-lenh-chuyen`), không còn "hai tuần cuối". */
+  check('PR-LT (3) · listClassSummaries: soChuaLoTrinhTiep = 0 ở W7/8 (chưa tới tuần Cuối khoá), = n ở W8/8', () => {
     const clsW7 = taoLopThuong3(7);
-    taoHocVien3(clsW7, 'FOU'); taoHocVien3(clsW7, 'FOU');
+    taoHocVien3(clsW7, 'FOU');
+    const clsW8 = taoLopThuong3(8);
+    taoHocVien3(clsW8, 'FOU'); taoHocVien3(clsW8, 'FOU');
     const rows = classesSvc.listClassSummaries(P.admin, { branchId: MB3 }).rows;
-    const r6 = rows.find((r) => r.id === clsW6)!;
     const r7 = rows.find((r) => r.id === clsW7)!;
-    assert(r6.soChuaLoTrinhTiep === 0, `W6/8 phải 0: ${r6.soChuaLoTrinhTiep}`);
-    assert(r7.soChuaLoTrinhTiep === 2, `W7/8 phải 2: ${r7.soChuaLoTrinhTiep}`);
+    const r8 = rows.find((r) => r.id === clsW8)!;
+    assert(r7.soChuaLoTrinhTiep === 0, `W7/8 phải 0: ${r7.soChuaLoTrinhTiep}`);
+    assert(r8.soChuaLoTrinhTiep === 2, `W8/8 phải 2: ${r8.soChuaLoTrinhTiep}`);
   });
 
   check('PR-LT (3) · myWork: PR-VAI-a (Q27) — không ai còn việc "Ghi lộ trình tiếp theo" (GVCN, GVBM, QL "Tất cả"); Quản lý quyết chuyển lớp', () => {
@@ -740,13 +747,11 @@ export async function runLenLopTests(t: YThucTestKit) {
     const { cls, sids } = taoLopHetKhoa5(9, 1);
     ganGVCN3(cls, P.normalCoreTeacher.userId);
     const tuanKhaiGiang = week.ensurePeriod(mondayForWeek3(2)).id;
-    const r = transitionSvc.applyTransition(P.mbManager, {
-      fromClassId: cls, effectiveDate: TODAY3,
-      newClass: { chuongTrinh: 'BE', so: transitionSvc.soGoiY('MB', 'BE', null), startPeriodId: tuanKhaiGiang,
-        slots: [{ userId: P.normalCoreTeacher.userId, skill: null, isCore: true }, { userId: P.normalCoreTeacher.userId, skill: 'listening', isCore: false }] },
-      dongs: [{ studentId: sids[0], huong: 'len_lop', toNewClass: true }],
-    }) as any;
-    const created = conn.prepare('SELECT start_period_id FROM classes WHERE id = ?').get(r.newClass.id) as any;
+    /* PR-Dọn (Q22): như web — tạo lớp trước bằng panel Tạo lớp (`taoLopVaPhanCong`), rồi gán vào dòng. */
+    const moi = intake.taoLopVaPhanCong(P.mbManager, { chuongTrinh: 'BE', so: transitionSvc.soGoiY('MB', 'BE', null), startPeriodId: tuanKhaiGiang, branchId: MB3, previousClassId: cls,
+      slots: [{ userId: P.normalCoreTeacher.userId, skill: null, isCore: true }, { userId: P.normalCoreTeacher.userId, skill: 'listening', isCore: false }] });
+    transitionSvc.applyTransition(P.mbManager, { fromClassId: cls, effectiveDate: TODAY3, dongs: [{ studentId: sids[0], huong: 'len_lop', toClassId: moi.id }] });
+    const created = conn.prepare('SELECT start_period_id FROM classes WHERE id = ?').get(moi.id) as any;
     assert(created.start_period_id === tuanKhaiGiang, `Tuần khai giảng phải đúng tuần gửi lên: ${created.start_period_id} vs ${tuanKhaiGiang}`);
   });
 
@@ -827,13 +832,10 @@ export async function runLenLopTests(t: YThucTestKit) {
 
   check('PR-LT (5) · "+ Mở lớp mới": GVCN được gán ngay khi tạo lớp', () => {
     const { cls, sids } = taoLopHetKhoa5(9, 1);
-    const r = transitionSvc.applyTransition(P.mbManager, {
-      fromClassId: cls, effectiveDate: TODAY3,
-      newClass: { chuongTrinh: 'BE', so: transitionSvc.soGoiY('MB', 'BE', null), startPeriodId: week.ensurePeriod(TODAY3).id,
-        slots: [{ userId: P.normalCoreTeacher.userId, skill: null, isCore: true }, { userId: P.normalCoreTeacher.userId, skill: 'listening', isCore: false }] },
-      dongs: [{ studentId: sids[0], huong: 'len_lop', toNewClass: true }],
-    }) as any;
-    const gv = conn.prepare(`SELECT user_id FROM teacher_assignments WHERE class_id=? AND is_core=1 AND status='active'`).get(r.newClass.id) as any;
+    const moi = intake.taoLopVaPhanCong(P.mbManager, { chuongTrinh: 'BE', so: transitionSvc.soGoiY('MB', 'BE', null), startPeriodId: week.ensurePeriod(TODAY3).id, branchId: MB3, previousClassId: cls,
+      slots: [{ userId: P.normalCoreTeacher.userId, skill: null, isCore: true }, { userId: P.normalCoreTeacher.userId, skill: 'listening', isCore: false }] });
+    transitionSvc.applyTransition(P.mbManager, { fromClassId: cls, effectiveDate: TODAY3, dongs: [{ studentId: sids[0], huong: 'len_lop', toClassId: moi.id }] });
+    const gv = conn.prepare(`SELECT user_id FROM teacher_assignments WHERE class_id=? AND is_core=1 AND status='active'`).get(moi.id) as any;
     assert(gv?.user_id === P.normalCoreTeacher.userId, `GVCN phải được gán: ${JSON.stringify(gv)}`);
   });
 

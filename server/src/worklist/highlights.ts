@@ -2,7 +2,7 @@ import { db } from '../db.ts';
 import { PERMISSIONS, type ChuongTrinh } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays } from '../util.ts';
-import { scopeFor, type Principal } from '../permissions.ts';
+import { classScopeSql, scopeFor, type Principal } from '../permissions.ts';
 import { mondayOf, weekInfo } from '../platform/week.ts';
 import { classProgressMany } from '../classes/schedule.ts';
 
@@ -60,7 +60,7 @@ export type Highlights = {
 };
 
 /** Lớp mà người đang xem được nhìn, đã lọc theo chi nhánh và chương trình đang chọn. */
-function visibleClasses(p: Principal, branchId: number | null, program: ChuongTrinh | null = null) {
+export function visibleClasses(p: Principal, branchId: number | null, program: ChuongTrinh | null = null) {
   const scope = scopeFor(p, PERMISSIONS.STUDENT_VIEW);
   if (scope.none) return null;
   const conn = db();
@@ -68,10 +68,10 @@ function visibleClasses(p: Principal, branchId: number | null, program: ChuongTr
   const args: any[] = [];
   if (branchId) { where.push('c.branch_id = ?'); args.push(branchId); }
   if (program) { where.push('c.is_fast_track = ?'); args.push(program === 'ft' ? 1 : 0); }
-  if (!scope.all && scope.branchIds?.length) {
-    where.push(`c.branch_id IN (${scope.branchIds.map(() => '?').join(',')})`);
-    args.push(...scope.branchIds);
-  }
+  /* PR-Dọn (quét #3): đúng phạm vi người xem — GV thuần chỉ lớp mình dạy (trước đây bỏ qua `scope.classIds`: GV thấy mọi lớp). */
+  const ps = classScopeSql(scope);
+  where.push(ps.sql);
+  args.push(...ps.params);
   return conn
     .prepare(`SELECT c.id, c.code, c.is_fast_track, c.branch_id FROM classes c WHERE ${where.join(' AND ')}`)
     .all(...args) as any[];

@@ -7,7 +7,7 @@ import {
 import { chotHanXuLy, trangThaiYThuc, type EmYThuc } from './trangThai.ts';
 import { baoKhiGhiViPham, dangBatBuoc, laGvcnDangHoc } from './xuLy.ts';
 import type { Principal } from '../permissions.ts';
-import { badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
+import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { currentCycle } from '../fasttrack/cycles.ts';
@@ -128,7 +128,7 @@ function checkCategory(category: unknown): ViolationCategory {
 }
 
 function checkDescription(category: ViolationCategory, description: unknown, ghiRoKhac?: string | null): string {
-  const text = String(description ?? '').trim();
+  const text = chuTuDo(description, 'Mô tả vi phạm', 2000) ?? '';   // PR-Dọn (Q4, quét #24)
   if (text.length < VIOLATION_DESCRIPTION_MIN) {
     throw badRequest(`Mô tả vi phạm cần từ ${VIOLATION_DESCRIPTION_MIN} ký tự — nói rõ em đã làm gì, ở buổi nào.`);
   }

@@ -7,7 +7,7 @@
  */
 import { db, tx } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, forbidden, notFound, nowIso, addDays, todayInBusinessTz } from '../util.ts';
+import { badRequest, chuTuDo, forbidden, notFound, nowIso, addDays, todayInBusinessTz } from '../util.ts';
 import { can, napTruocPhamVi, require_, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
@@ -407,7 +407,7 @@ export function duyetYeuCau(p: Principal, id: number, v: { ghiChu?: string | nul
   return quyetDinh(p, id, (yc, meta) => {
     if (meta.kieuNut === 'tra-loi') throw badRequest('Xin ý kiến chỉ cần Trả lời, không có Duyệt.');
     if (meta.kieuNut === 'nhac') throw badRequest('Báo lên không cần duyệt — bấm Nhắc để nhắc giáo viên.');
-    const ghiChu = (v.ghiChu ?? '').trim() || null;
+    const ghiChu = chuTuDo(v.ghiChu, 'Ghi chú', 2000);   // PR-Dọn (Q4, quét #24)
     dinhNghiaCua(yc.loai)?.khiDuyet?.(p, yc, { ghiChu, duLieu: v.duLieu });
     chotYeuCau(db(), doiTuongCua(yc), 'duyet', { nguoiDuyet: p.userId, lyDo: ghiChu });
     const tuDuyet = laTuDuyet(yc.nguoi_xin, p.userId);
@@ -418,7 +418,7 @@ export function duyetYeuCau(p: Principal, id: number, v: { ghiChu?: string | nul
 }
 
 export function tuChoiYeuCau(p: Principal, id: number, lyDo: unknown) {
-  const ld = typeof lyDo === 'string' ? lyDo.trim() : '';
+  const ld = typeof lyDo === 'string' ? chuTuDo(lyDo, 'Lý do', 2000) ?? '' : '';   // PR-Dọn (Q4, quét #24)
   if (ld.length < DO_DAI_LY_DO) throw badRequest(`Ghi lý do từ chối (ít nhất ${DO_DAI_LY_DO} ký tự).`);
   return quyetDinh(p, id, (yc, meta) => {
     if (meta.kieuNut !== 'duyet-tu-choi') throw badRequest('Yêu cầu này không có Từ chối.');
@@ -430,7 +430,7 @@ export function tuChoiYeuCau(p: Principal, id: number, lyDo: unknown) {
 }
 
 export function traLoiYeuCau(p: Principal, id: number, traLoi: unknown) {
-  const tl = typeof traLoi === 'string' ? traLoi.trim() : '';
+  const tl = typeof traLoi === 'string' ? chuTuDo(traLoi, 'Câu trả lời', 2000) ?? '' : '';   // PR-Dọn (Q4, quét #24)
   if (tl.length < DO_DAI_LY_DO) throw badRequest(`Ghi câu trả lời (ít nhất ${DO_DAI_LY_DO} ký tự).`);
   return quyetDinh(p, id, (yc, meta) => {
     if (meta.kieuNut !== 'tra-loi') throw badRequest('Yêu cầu này cần Duyệt hoặc Từ chối, không phải Trả lời.');
@@ -443,14 +443,15 @@ export function traLoiYeuCau(p: Principal, id: number, traLoi: unknown) {
 
 /** Duyệt hàng loạt — cùng MỘT loại có `hangLoat`. Mỗi thẻ một giao dịch: thẻ lỗi báo riêng, thẻ khác vẫn xong. */
 export function duyetNhieu(p: Principal, ids: unknown): { ok: number[]; loi: { id: number; loi: string }[] } {
-  if (!Array.isArray(ids) || !ids.length || ids.length > 50 || !ids.every((x) => Number.isInteger(x) && x > 0)) {
-    throw badRequest('Chọn từ 1 đến 50 yêu cầu để duyệt.');
-  }
-  /* Kiểm quyền TRƯỚC khi đọc thẻ nào (GV → 403). Từng thẻ vẫn kiểm theo phạm vi của nó ở `duyetYeuCau`. */
+  /* PR-Dọn (Q1): kiểm quyền TRƯỚC mọi bước đọc thân yêu cầu (GV → 403, không phải 400). Từng thẻ vẫn kiểm theo phạm vi ở `duyetYeuCau`. */
   require_(p, P_DUYET, { anyScope: true }, 'Chỉ Quản lý và Quản trị hệ thống duyệt được yêu cầu.');
-  const ds = [...new Set(ids as number[])];
+  if (!Array.isArray(ids) || !ids.length || ids.length > 50) throw badRequest('Chọn từ 1 đến 50 yêu cầu để duyệt.');
   const ok: number[] = [];
   const loi: { id: number; loi: string }[] = [];
+  /* Mã sai dạng chỉ lỗi riêng dòng đó (trả lại nguyên giá trị đã gửi), các mã đúng vẫn duyệt. */
+  for (const x of ids) if (!(Number.isInteger(x) && x > 0)) loi.push({ id: x as number, loi: 'Mã yêu cầu không hợp lệ.' });
+  const ds = [...new Set(ids.filter((x): x is number => Number.isInteger(x) && x > 0))];
+  if (!ds.length) return { ok, loi };
   const conn = db();
   const theo = new Map((conn.prepare(`SELECT id, loai FROM yeu_cau_duyet WHERE id IN (${ds.map(() => '?').join(',')})`).all(...ds) as any[])
     .map((r) => [r.id as number, r.loai as string]));

@@ -215,6 +215,8 @@ export function QuickReport({
           fromDate: a.fromDate || bfFrom, toDate: a.toDate || bfTo, ketQua: a.ketQua,
         })),
         outcome: bfOutcome, note: bfNote,
+        /* PR-Dọn Q3: cùng khoá chống gửi đôi của lần mở form — bấm Lưu hai lần chỉ ra một Case. */
+        idempotencyKey,
         /* S5 — điểm giáo viên tự chấm theo kỹ năng, luôn TUỲ CHỌN. */
         metrics: componentsPayload(category, bfMetrics, componentsAreCounts(category)),
         ...extra,

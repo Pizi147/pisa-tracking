@@ -15,7 +15,8 @@ const DAY = 86_400_000;
 const cong = (iso: string, n: number) => new Date(Date.parse(`${iso}T00:00:00Z`) + n * DAY).toISOString().slice(0, 10);
 const p2 = (x: number | string) => String(x).padStart(2, '0');
 function hop(y: number, m: number, d: number): string | null {
-  const iso = `${y}-${p2(m)}-${p2(d)}`;
+  /* PR-Dọn (VN20): năm đệm đủ 4 chữ số — "0208" từng thành "208-…", không đọc được, báo nhầm "Ngày không có thật" thay vì câu cận năm. */
+  const iso = `${String(y).padStart(4, '0')}-${p2(m)}-${p2(d)}`;
   const t = new Date(`${iso}T00:00:00Z`);
   return Number.isNaN(t.getTime()) || t.toISOString().slice(0, 10) !== iso ? null : iso;
 }

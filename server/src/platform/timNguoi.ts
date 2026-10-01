@@ -1,7 +1,7 @@
 import { db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import { normalizeName } from '../util.ts';
-import { scopeFor, type Principal } from '../permissions.ts';
+import { bangLop, require_, scopeFor, type Principal } from '../permissions.ts';
 import { activeClassOf } from '../yThuc/access.ts';
 import { PERMISSIONS, type NhomNguoi } from '../../../shared/domain/index.ts';
 
@@ -63,7 +63,7 @@ function nguoiHopLe(nhom: NhomNguoi, ids: readonly number[] | null, branchIds: r
   const keys = ROLE_KEYS_OF[nhom];
   const keyPlaceholders = keys.map(() => '?').join(',');
   const idClause = ids ? ` AND u.id IN (${ids.map(() => '?').join(',')})` : '';
-  /* PR-Ra (`trongPhamVi`, Task 3): chỉ người có vai đang hoạt động ở MỘT chi nhánh thuộc phạm vi người xem. */
+  /* PR-Ra (Task 3), PR-Dọn Q2: chỉ người có vai đang hoạt động ở MỘT chi nhánh thuộc phạm vi người xem. */
   const branchClause = branchIds
     ? ` AND EXISTS (SELECT 1 FROM user_roles ur4 WHERE ur4.user_id = u.id AND ur4.status = 'active'
           AND ur4.branch_id IN (${branchIds.map(() => '?').join(',')}))`
@@ -86,10 +86,12 @@ function nguoiHopLe(nhom: NhomNguoi, ids: readonly number[] | null, branchIds: r
 
 export function timNguoi(
   p: Principal,
-  opts: { q?: string; nhom?: NhomNguoi; studentId?: number | null; trongPhamVi?: boolean; cungChiNhanh?: boolean },
+  opts: { q?: string; nhom?: NhomNguoi; studentId?: number | null; cungChiNhanh?: boolean },
 ): HangNguoi[] {
   const nhom: NhomNguoi = opts.nhom === 'nhan_vien' ? 'nhan_vien' : 'giao_vien';
   const term = (opts.q ?? '').trim();
+  /* PR-Dọn (Q2): hỏi theo một em → phải xem được em đó, TRƯỚC khi đọc lớp / người dạy của em. */
+  if (opts.studentId) require_(p, PERMISSIONS.STUDENT_VIEW, { studentId: opts.studentId }, 'Bạn không có quyền xem học viên này.');
   const classId = opts.studentId ? activeClassOf(opts.studentId) : null;
   const gv = classId ? dangDayLop(classId) : [];
   const monDayOf = new Map<number, string[]>();
@@ -99,12 +101,18 @@ export function timNguoi(
   }
   const cungLopIds = new Set(gv.map((g) => g.userId));
 
-  /* QT (`scope.all`) không giới hạn; các vai khác chỉ thấy người trong đúng chi nhánh mình quản lý. */
-  const scope = opts.trongPhamVi ? scopeFor(p, PERMISSIONS.ATTEMPT_VIEW) : null;
+  /*
+   * PR-Dọn (Q2): LUÔN theo phạm vi người xem (trước đây chỉ khi web gửi `trongPhamVi=1`). QT (`scope.all`) không giới hạn; Quản lý
+   * thấy người của chi nhánh mình; GV thấy người của các chi nhánh có lớp mình đang dạy.
+   */
+  const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
+  const bang = bangLop();
+  const cnPhamVi = [...new Set([...scope.branchIds,
+    ...scope.classIds.map((id) => bang.get(id)?.branchId).filter((b): b is number => b != null)])];
   /* PR-S5F-b: `cungChiNhanh` — chỉ GV ở chi nhánh của lớp em đang học (người dạy bổ trợ; máy chủ kiểm lại ở `nopKeHoachBoTro`). */
-  const cnLop = opts.cungChiNhanh && classId
-    ? (db().prepare('SELECT branch_id FROM classes WHERE id = ?').get(classId) as any)?.branch_id as number | undefined : undefined;
-  const branchIds = cnLop ? [cnLop] : scope && !scope.all ? scope.branchIds : null;
+  const cnLop = opts.cungChiNhanh && classId ? bang.get(classId)?.branchId ?? undefined : undefined;
+  const branchIds = cnLop ? [cnLop] : scope.all ? null : cnPhamVi;
+  if (branchIds && !branchIds.length) return [];
 
   const build = (row: HangNguoiTho): HangNguoi => ({
     id: row.id, name: row.full_name, role: row.role,

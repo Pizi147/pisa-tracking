@@ -1,11 +1,12 @@
-import { db, tx } from '../db.ts';
+import { db, tx, vuaGhi } from '../db.ts';
+import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
   BRANCH_REPORT_CATEGORIES, ENTRY_SKILLS, PERMISSIONS, tenMon,
   TASK_PROGRESS, TASK_PROGRESS_LABEL, TASK_TYPES,
   TUTOR_REPORT_CATEGORIES, UNIT_STATUSES, trangThaiDonVi, trangThaiO, type DueState,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, diffDays, isIsoDate, notFound, nowIso, padCode } from '../util.ts';
+import { badRequest, chuTuDo, diffDays, forbidden, isIsoDate, notFound, nowIso, padCode } from '../util.ts';
 import { can, require_, scopeFor, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { owningMonth, periodById, reportEditWindow } from '../platform/week.ts';
@@ -521,7 +522,7 @@ function fanOutToStudents(
     : (conn
         .prepare(
           `SELECT s.id FROM enrollments e JOIN students s ON s.id = e.student_id
-            WHERE e.class_id = ? AND e.status = 'active' AND s.status = 'active' AND s.archived_at IS NULL`,
+            WHERE e.class_id = ? AND e.status = 'active' AND ${HV_DANG_HOC_SQL('s')}`,
         )
         .all(input.classId ?? 0) as any[]).map((r) => r.id as number);
   if (!ids.length) throw badRequest('Không có học viên nào để giao việc.');
@@ -571,7 +572,7 @@ export function createTask(p: Principal, input: any) {
     ? (conn.prepare('SELECT branch_id FROM reporting_units WHERE id = ?').get(input.unitId) as any)?.branch_id ?? null
     : null);
   require_(p, PERMISSIONS.MEETING_EDIT, { branchId, anyScope: branchId === null }, 'Bạn không có quyền tạo công việc.');
-  if (!input.title?.trim()) throw badRequest('Cần nội dung công việc.');
+  if (!chuTuDo(input.title, 'Nội dung công việc', 200)) throw badRequest('Cần nội dung công việc.');   // PR-Dọn (Q4): kiểu + trần
   if (input.dueDate && !isIsoDate(input.dueDate)) throw badRequest('Hạn không hợp lệ.');
   // `Loại` đã bỏ khỏi form; cột cũ giữ nguyên giá trị lịch sử, việc mới ghi mặc định.
   const taskType = 'in_period';
@@ -585,6 +586,9 @@ export function createTask(p: Principal, input: any) {
   }
 
   return tx(() => {
+    /* PR-Dọn (quét #26): bấm đúp → trả lại việc vừa tạo (việc giao GV toả PA cho từng em — gửi đôi là nhân đôi PA). */
+    const cu = vuaGhi('tasks', { title: input.title.trim(), kind, class_id: input.classId ?? null, branch_id: branchId, created_by: p.userId });
+    if (cu) return conn.prepare('SELECT * FROM tasks WHERE id = ?').get(cu);
     const n = (conn.prepare('SELECT COUNT(*) AS n FROM tasks').get() as any).n as number;
     const code = padCode('CV', n + 1, 4);
     const info = conn
@@ -686,7 +690,7 @@ export function updateTask(p: Principal, taskId: number, patch: any) {
       .run(taskId, map[k], t[map[k]] === null ? null : String(t[map[k]]), v === null ? null : String(v), p.userId, nowIso());
   }
   if (patch.followerIds !== undefined) {
-    if (!manage) throw badRequest('Chỉ người quản lý công việc mới đổi được người theo dõi.');
+    if (!manage) throw forbidden('Chỉ người quản lý công việc mới đổi được người theo dõi.');
     setFollowers(conn, taskId, p.userId, t.branch_id, patch.followerIds);
   }
   if (patch.progress === 'done' && t.progress !== 'done') { sets.push('completed_at = ?'); params.push(nowIso()); }
@@ -699,15 +703,6 @@ export function updateTask(p: Principal, taskId: number, patch: any) {
   writeAudit({ actorUserId: p.userId, action: 'task.update', entityType: 'task', entityId: taskId,
     entityLabel: t.code, before: t, after });
   return after;
-}
-
-export function taskHistory(taskId: number) {
-  return db()
-    .prepare(
-      `SELECT h.*, u.full_name AS actor_name FROM task_history h LEFT JOIN users u ON u.id = h.actor_user_id
-        WHERE h.task_id = ? ORDER BY h.id DESC`,
-    )
-    .all(taskId) as any[];
 }
 
 

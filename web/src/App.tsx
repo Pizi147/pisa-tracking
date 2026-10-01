@@ -1,4 +1,4 @@
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, type ReactNode } from 'react';
 import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useSession } from './lib/session.tsx';
 import { useApi } from './lib/useApi.ts';
@@ -20,7 +20,7 @@ import AdminPage from './modules/platform/AdminPage.tsx';
 import ProfilePage from './modules/platform/ProfilePage.tsx';
 import { HoSoGiaoVienPage } from './modules/giaoVien/HoSoGiaoVienPage.tsx';
 import WelcomePage from './modules/platform/WelcomePage.tsx';
-import { NAV_RONG, duongMoi, khuVucCuaDuong, khuVucHienThi, type DemYeuCau, type KhuVucMuc } from '@shared/domain/index.ts';
+import { NAV_RONG, duongMoi, khuVucCuaDuong, khuVucHienThi, type DemYeuCau, type KhuVuc, type KhuVucMuc } from '@shared/domain/index.ts';
 
 /**
  * Trang thử thành phần dùng chung (PR-E Step 9) — CHỈ có khi chạy `npm run dev`. Điều kiện đứng
@@ -39,11 +39,11 @@ const ThanhPhanDemo = import.meta.env.DEV ? lazy(() => import('./modules/dev/Tha
  * Giáo viên (PR-VAI-a V2, Q16): số việc QUÁ HẠN của chính mình (`/my-work` → `summary.overdue`, PR-S6F-b D14), luôn đỏ. Thanh trên và thanh dưới cùng một số.
  */
 type SoBadge = { n: number; quaHan: boolean; sr: string } | null;
-function SoCho({ so }: { so: SoBadge }) {
+function SoCho({ so, className = 'ml-1.5' }: { so: SoBadge; className?: string }) {
   if (!so?.n) return null;
   return (
     <>
-      <span aria-hidden className={`ml-1.5 inline-flex min-w-[1.25rem] justify-center rounded-full border px-1 text-[11.5px] font-semibold leading-4 tabular-nums ${
+      <span aria-hidden className={`${className} inline-flex min-w-[1.25rem] justify-center rounded-full border px-1 text-[11.5px] font-semibold leading-4 tabular-nums ${
         so.quaHan ? 'border-late-line bg-late-bg text-late' : 'border-transparent bg-white/10 text-slate-300'}`}>{so.n}</span>
       <span className="sr-only">, {so.sr}</span>
     </>
@@ -63,13 +63,26 @@ function NavItem({ muc, active, so }: { muc: KhuVucMuc; active: boolean; so: SoB
   );
 }
 
+/** Biểu tượng nét mảnh 20 px của thanh dưới — đường vẽ chép từ mockup 23 màn C (`#i-home` … `#i-work`). */
+const BIEU_TUONG: Record<KhuVuc, ReactNode> = {
+  'tong-quan': <path d="M3.5 9.5 10 4l6.5 5.5M5 8.5V16h3.5v-4h3v4H15V8.5" />,
+  'hoc-vien': <><circle cx="7.5" cy="7" r="2.6" /><path d="M2.8 16c.6-2.7 2.4-4.1 4.7-4.1s4.1 1.4 4.7 4.1" /><circle cx="14" cy="7.6" r="2" /><path d="M13.6 11.9c1.8 0 3.1 1.2 3.6 3.4" /></>,
+  test: <><rect x="4.5" y="3.8" width="11" height="13" rx="1.6" /><path d="M8 3.8V3h4v.8M7.5 9h5M7.5 12.2h5" /></>,
+  'cong-viec': <path d="m3.8 6.2 1.5 1.5L8 5M3.8 12.2l1.5 1.5L8 11M10.8 6.5h5.4M10.8 12.5h5.4" />,
+};
+
 function NutDay({ muc, active, so }: { muc: KhuVucMuc; active: boolean; so: SoBadge }) {
   return (
     <Link to={muc.to} aria-current={active ? 'page' : undefined} title={muc.label}
-      className={`flex-1 min-w-0 text-center py-2.5 text-[11px] no-underline truncate ${
+      className={`relative flex min-h-[56px] min-w-0 flex-1 flex-col items-center justify-center gap-[3px] text-[11.5px] no-underline ${
         active ? 'text-[color:var(--accent-strong)] font-semibold' : 'text-slate-400'
       }`}>
-      {muc.labelNgan}{muc.key === 'cong-viec' && <SoCho so={so} />}
+      {active && <span aria-hidden className="absolute top-0 left-1/2 h-[3px] w-8 -translate-x-1/2 rounded-b bg-[color:var(--accent)]" />}
+      <svg aria-hidden width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        {BIEU_TUONG[muc.key]}
+      </svg>
+      <span className="max-w-full truncate">{muc.labelNgan}</span>
+      {muc.key === 'cong-viec' && <SoCho so={so} className="absolute top-[5px] left-[calc(50%+5px)] ml-0" />}
     </Link>
   );
 }
@@ -104,7 +117,7 @@ export default function App() {
       <a href="#noi-dung" onClick={(e) => { e.preventDefault(); document.getElementById('noi-dung')?.focus(); }}
         className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[110] btn btn-sm">Bỏ qua tới nội dung</a>
       {!banChinh && <DemoBar />}
-      <header className="shrink-0 border-b bg-[color:var(--surface)]" style={{ borderColor: 'var(--line)' }}>
+      <header className="relative shrink-0 border-b bg-[color:var(--surface)]" style={{ borderColor: 'var(--line)' }}>
         <div className="flex items-center gap-3 px-3 sm:px-4 h-14 min-w-0">
           <div className="flex items-center gap-2 shrink-0">
             <div className="w-7 h-7 rounded-md border grid place-items-center font-bold text-xs"

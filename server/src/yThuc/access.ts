@@ -1,4 +1,5 @@
 import { db } from '../db.ts';
+import { nho } from '../platform/nguCanhRequest.ts';
 import { PERMISSIONS } from '../../../shared/domain/index.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { forbidden, notFound } from '../util.ts';
@@ -21,10 +22,10 @@ export const VIEW_MESSAGE = 'Bản ghi này nằm ngoài phạm vi bạn đượ
 
 /** Lớp em đang học (ghi danh còn hiệu lực gần nhất), hoặc null nếu em không còn học ở lớp nào. */
 export function activeClassOf(studentId: number): number | null {
-  const r = db()
+  /* PR-Dọn (Task 9c): nhớ trong request GET — hồ sơ HV hỏi lại nhiều lần (bảng kỹ năng, Cuối khoá, khối lớp học). */
+  return nho(`lop-dang-hoc:${studentId}`, () => (db()
     .prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1`)
-    .get(studentId) as any;
-  return r?.class_id ?? null;
+    .get(studentId) as any)?.class_id ?? null);
 }
 
 /** Ngữ cảnh quyền của một học viên. */

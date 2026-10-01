@@ -1155,7 +1155,8 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
     };
     const may = createApp().listen(0);
     const cong = (may.address() as any).port as number;
-    const goiVoi = (ma: string) => fetch(`http://127.0.0.1:${cong}/api/overview`, { headers: { cookie: `pisa_demo_session=${ma}` } });
+    /* PR-Dọn (Q14): `/overview` đã xoá — dùng một đường sống cần đăng nhập. */
+    const goiVoi = (ma: string) => fetch(`http://127.0.0.1:${cong}/api/notifications`, { headers: { cookie: `pisa_demo_session=${ma}` } });
     try {
       const cu = taoPhienCu(31);
       const r31 = await goiVoi(cu);

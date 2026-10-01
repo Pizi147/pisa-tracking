@@ -18,7 +18,7 @@ import {
 } from '@shared/domain/index.ts';
 
 type Work = {
-  summary: { total: number; overdue: number; today: number; approval: number; mine: number };
+  summary: { total: number; overdue: number; today: number; mine: number };
   items: WorkItem[]; groups: WorkGroup[]; scopeEmpty: boolean; xemNguoiKhac?: boolean;
 };
 

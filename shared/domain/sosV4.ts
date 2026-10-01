@@ -12,7 +12,7 @@ import type { TrangThai } from './trangThai.ts';
 import { ngay, tuanLich } from './hienThiNgay.ts';
 import { mocChuBoTro } from './lopThuong.ts';
 
-export const HAN_XAC_NHAN_NGAY = 3;
+const HAN_XAC_NHAN_NGAY = 3;
 /** Hạn Xác nhận nguyên nhân / Xác nhận PA: 3 ngày tính cả ngày đầu ('2026-09-14' → '2026-09-16'). */
 export const hanXacNhan = (ngay: string) => hanTheoNgay(ngay, HAN_XAC_NHAN_NGAY);
 

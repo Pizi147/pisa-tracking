@@ -112,8 +112,7 @@ export function trongHaiTuanCuoi(tuanHienTai: number | null, tongTuan: number | 
 export type DongChuyenTiep = {
   huong: Huong | null;
   toClassId?: number | null;
-  toClass?: { ma: ProgrammeCode | null; ft: boolean } | null;   // lớp đích đã resolve (toClassId hoặc lớp mới)
-  toNewClass?: boolean;                                          // chọn "+ Mở lớp mới" thay vì lớp có sẵn
+  toClass?: { ma: ProgrammeCode | null; ft: boolean } | null;   // lớp đích đã resolve từ toClassId
   mucTieu?: number | null;
   thangThi?: string | null;
   lyDo?: string | null;
@@ -124,7 +123,7 @@ export type DongChuyenTiep = {
 export function kiemDongChuyenTiep(dong: DongChuyenTiep, ctx: { maTu: ProgrammeCode | null }): string | null {
   if (!dong.huong) return 'Thiếu hướng';
   if (dong.huong === 'len_lop' || dong.huong === 'fast_track' || dong.huong === 'hoc_lai') {
-    if (!dong.toClassId && !dong.toNewClass) return 'Thiếu lớp đích';
+    if (!dong.toClassId) return 'Thiếu lớp đích';
     if (dong.toClass) {
       if (dong.huong === 'len_lop' && (dong.toClass.ft || dong.toClass.ma !== NORMAL_LADDER[ctx.maTu as ProgrammeCode])) {
         return 'Lớp đích phải là chương trình kế tiếp';

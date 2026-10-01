@@ -1,0 +1,7 @@
+K9 Học viên & Lớp (QL): có badge "… chưa có lệnh chuyển lớp" · có "cần xếp lớp tiếp" (lớp hết khoá)
+Route đã xoá /ref/issue-taxonomy → 404
+K1 nhập bù gửi đôi cùng khoá: 200/200 · id 88 / 88 → MỘT Case
+K1 số Case nhập bù "Bấm thử nhập bù gửi đôi": 1
+Link cũ /hoc-thuat/case/88 → /hoc-vien/1?case=88
+K2 GV MB gõ "Ngô Bảo Nam" (GV chỉ thuộc CP) ở ô chọn người: 200 · 0 người → không ra người chi nhánh khác
+K2 /ref/nguoi với studentId ngoài phạm vi: 403

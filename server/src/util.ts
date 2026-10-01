@@ -23,6 +23,18 @@ export function kiemKieuO(o: Record<string, unknown>, chu: readonly string[], so
   }
 }
 
+/**
+ * PR-Dọn (Q4): CHỮ TỰ DO lưu vào DB — một cửa kiểm kiểu và trần độ dài. Trống / không gửi → `null`; không phải chuỗi → 400
+ * (không để `.trim()` trên object ra 500); dài quá `toiDa` ký tự (sau khi bỏ khoảng trắng hai đầu) → 400, KHÔNG cắt ngầm.
+ */
+export function chuTuDo(v: unknown, ten: string, toiDa: number): string | null {
+  if (v === undefined || v === null) return null;
+  if (typeof v !== 'string') throw badRequest(`${ten}: giá trị không hợp lệ — cần chữ.`);
+  const s = v.trim();
+  if (s.length > toiDa) throw badRequest(`${ten}: Tối đa ${toiDa} ký tự (đang có ${s.length}).`);
+  return s || null;
+}
+
 /** Ngày nghiệp vụ theo Asia/Ho_Chi_Minh, lưu dạng YYYY-MM-DD. */
 export const BUSINESS_TZ = 'Asia/Ho_Chi_Minh';
 

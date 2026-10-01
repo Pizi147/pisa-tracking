@@ -184,3 +184,7 @@ export function dongPhuChoDuyet(d: DemYeuCau): string {
 /** PR-S4F #14: thẻ Báo lên không có người để Nhắc (`duLieu.ownerId` rỗng) — ghi rõ vì sao thay cho nút Nhắc. */
 export const nhanKhongNguoiNhac = (loai: string): string =>
   loai === 'bao_len_nguyen_nhan' ? 'Case chưa có người phụ trách' : 'Lớp chưa có GVCN';
+
+/** Trường của thẻ Đề xuất sửa (PR-DUYET T44) — MỘT bản cho máy chủ (`duyet/deXuatSua.ts`) và web (`DeXuatSuaPanel`). PR-CT: bỏ 'lop' — dùng Đề xuất chuyển lớp. */
+export const TRUONG_DE_XUAT = ['target', 'lo-trinh', 'lich-mt', 'khac'] as const;
+export type TruongDeXuat = (typeof TRUONG_DE_XUAT)[number];

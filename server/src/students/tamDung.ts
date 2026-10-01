@@ -1,4 +1,8 @@
 import { db, theoLo } from '../db.ts';
+import { nho } from '../platform/nguCanhRequest.ts';
+
+/** PR-Dọn (Task 9b): dòng `students` của một em, nhớ trong request GET — hồ sơ HV đọc ba lần (đầu hồ sơ, bảng kỹ năng, khối lớp học). */
+export const dongHocVien = (id: number): any => nho(`hv:${id}`, () => db().prepare('SELECT * FROM students WHERE id = ?').get(id) ?? null);
 
 /**
  * PR-S6F-a (Q2): MỘT điều kiện SQL "em ĐANG HỌC" cho nợ điểm và các số tính cho giáo viên — Tạm dừng, Kết thúc học, đã lưu trữ đều

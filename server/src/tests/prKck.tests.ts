@@ -97,18 +97,16 @@ export async function runPrKckTests(t: YThucTestKit) {
 
   {
     const tongHop: any = await import('../phanTich/tongHop.ts');
-    const weekly: any = await import('../worklist/weekly.ts');
+    /* PR-Dọn (Q14): bảng tuần `/weekly-rollup` đã xoá (web không gọi) — chỉ còn Tổng hợp. */
     const dem = () => ({
       th: tongHop.oTongHop(P.admin, { branchId: null, ct: 'ft', soTuan: 52, classId: null, theo: 'lop', khoa: 'tong', cot: 'luot' }).n as number,
-      wk: (weekly.weeklyRollup(P.admin, {}).rows as any[]).reduce((s, r) => s + (r.attempts ?? 0), 0) as number,
     });
-    check('KCK (4) · số liệu: lượt đã chấm của em KCK ngoài mẫu số "Lượt MT" (Tổng hợp, báo cáo tuần); bỏ KCK thì lại vào', () => {
+    check('KCK (4) · số liệu: lượt đã chấm của em KCK ngoài mẫu số "Lượt MT" (Tổng hợp); bỏ KCK thì lại vào', () => {
       const co = dem();
       conn.prepare('UPDATE learning_cycles SET khong_cam_ket = 0 WHERE id = ?').run(han.cid);
       const khong = dem();
       conn.prepare('UPDATE learning_cycles SET khong_cam_ket = 1 WHERE id = ?').run(han.cid);
       assert(khong.th === co.th + 1, `Tổng hợp: ${JSON.stringify({ co, khong })}`);
-      assert(khong.wk === co.wk + 1, `báo cáo tuần: ${JSON.stringify({ co, khong })}`);
     });
   }
 
@@ -133,9 +131,9 @@ export async function runPrKckTests(t: YThucTestKit) {
     assert(cy(x.sid).khong_cam_ket === 0 && cy(x.sid).target_score === 7, JSON.stringify(cy(x.sid)));
     assert(ls2[0].target_at_attempt === 6.5 && ls2.slice(1).every((a) => a.target_at_attempt === 7), JSON.stringify(ls2.map((a) => a.target_at_attempt)));
 
-    cycles.updateCycle(P.mbManager, x.cid, { targetScore: 'kck' });      // PATCH lộ trình cũng nhận KCK
+    cycles.updateCycle(P.mbManager, x.cid, { targetScore: 'kck', lyDo: 'Em chưa cam kết mục tiêu' });      // PATCH lộ trình cũng nhận KCK
     assert(cy(x.sid).khong_cam_ket === 1 && luot(x.sid).slice(1).every((a) => a.target_at_attempt === null), 'PATCH KCK');
-    cycles.updateCycle(P.mbManager, x.cid, { targetScore: 6 });
+    cycles.updateCycle(P.mbManager, x.cid, { targetScore: 6, lyDo: 'Em đặt lại mục tiêu' });
     assert(cy(x.sid).khong_cam_ket === 0 && cy(x.sid).target_score === 6, 'PATCH số bỏ KCK');
   });
 

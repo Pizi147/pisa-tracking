@@ -394,7 +394,7 @@ function thamChieuCaseIds(
   const rows = conn
     .prepare(
       `SELECT sc.id AS id,
-              COALESCE(a.class_id, cur.class_id) AS eff_class_id,
+              COALESCE(cur.class_id, a.class_id) AS eff_class_id,   -- PR-Dọn Q5: quyền theo CÙNG lớp với bộ lọc (lớp đang học, rồi lớp của lượt)
               COALESCE(sc.student_id, a.student_id) AS eff_student_id
          FROM sos_cases sc
          LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
@@ -561,6 +561,22 @@ await checkAsync('PR-TD Task5(1) · trần câu SQL — mọi (đường × vai)
     if (n > tran || n > 100) sai.push(`${khoa}: ${n} câu > trần ${tran} (trần cứng 100)`);
   }
   assert(sai.length === 0, `Vượt trần:\n${sai.join('\n')}`);
+});
+
+/* PR-Dọn (9a): hồ sơ HV (FT) ≤ 90 câu ở mọi vai (trước PR 93–98). */
+await checkAsync('PR-Dọn (9a) · GET /students/{hv} ≤ 90 câu SQL ở QL, QT, GVCN, GVBM', async () => {
+  const sai: string[] = [];
+  for (const vai of ['QL', 'QT', 'GVCN', 'GVBM'] as const) {
+    const r = await doSql(vai, 'GET', `/students/${HV}`);
+    if (r.status !== 200 || r.n > 90) sai.push(`${vai}: ${r.status} · ${r.n} câu`);
+  }
+  assert(!sai.length, sai.join('; '));
+});
+
+/* PR-Dọn (9c): khoá TRAN lạc (id lớp đổi, đường đã xoá…) từng bị bỏ qua lặng lẽ ở phép trên — nay báo đỏ. */
+await checkAsync('PR-Dọn (9c) · mọi khoá trong TRAN khớp một cặp (vai × đường) đã đo', async () => {
+  const lac = Object.keys(TRAN).filter((k) => !truocNhan.has(k));
+  assert(!lac.length, `Khoá TRAN không khớp đường đo nào:\n${lac.join('\n')}`);
 });
 
 /* PR-S6F-b (D14): cả LẦN TẢI TRANG Tổng quan — mỗi GET một lần, tổng câu SQL ≤ trần của trang. */
@@ -843,6 +859,13 @@ await checkAsync(`PR-S5F-b · Công việc GVCN + QL (nguoi=tat-ca) với 60 nh�
 
 console.log('\nBảng đo (vai · url → mã HTTP · số câu SQL):');
 for (const dong of bangDo) console.log(`  ${dong}`);
+
+await checkAsync(`PR-Dọn (9d) · Đọc hết thông báo (POST /notifications/doc-het) ≤ ${TRAN_GHI_LO.docHet} câu SQL`, async () => {
+  const r = await doGhi('GVCN', '/notifications/doc-het', {});
+  assert(r.status === 200 && typeof r.json?.daDoc === 'number', `doc-het: ${r.status} ${JSON.stringify(r.json)}`);
+  console.log(`      (đo: ${r.n} câu)`);
+  assert(r.n <= TRAN_GHI_LO.docHet, `${r.n} câu > trần ${TRAN_GHI_LO.docHet}`);
+});
 
 await checkAsync(`PR-XUAT · Xuất Excel cả chi nhánh MB, MT1–MT8, cột đầy đủ (POST /xuat-mt) ≤ ${TRAN_GHI_LO.xuatMtChiNhanh} câu SQL, phản hồi < 6 MB`, async () => {
   const mb = (conn.prepare(`SELECT id FROM branches WHERE code = 'MB'`).get() as any).id as number;

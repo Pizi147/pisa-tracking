@@ -4,6 +4,8 @@ import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { BranchFilter, WeekPicker } from '../../ui/Filters.tsx';
+import { IconGap } from '../../ui/BieuTuong.tsx';
+import { useDienThoai } from '../../ui/TheDong.tsx';
 import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -39,6 +41,20 @@ export function LichTestTab() {
   const nguoiId = session?.user?.id ?? null;
   const { homNay } = useNgayNghiepVu();
   const hep = useManHinhHep();
+  /* Điện thoại (UX-D8, mockup 13 mục 4): hàng lọc gọn — tuần + công tắc khung ở trên, phần còn lại gom vào nút "Lọc". */
+  const dienThoai = useDienThoai();
+  const [moLoc, setMoLoc] = useState(false);
+  const nutLoc = useRef<HTMLButtonElement>(null);
+  /* Esc đóng khối Lọc và trả focus về nút — nghe ở tài liệu vì đổi chi nhánh làm trang tải lại, ô đang focus mất. Có hộp thoại mở thì nhường Esc. */
+  useEffect(() => {
+    if (!moLoc) return undefined;
+    const phim = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || document.querySelector('[aria-modal="true"]')) return;
+      setMoLoc(false); nutLoc.current?.focus();
+    };
+    document.addEventListener('keydown', phim);
+    return () => document.removeEventListener('keydown', phim);
+  }, [moLoc]);
   const [params, setParams] = useSearchParams();
   const so = (k: string) => (params.get(k) ? Number(params.get(k)) : null);
   const periodParam = so('periodId');
@@ -171,50 +187,85 @@ export function LichTestTab() {
   const tenTuan = !data.tuan ? 'Tuần này' : laTuanNay ? 'Tuần này' : `Tuần ${tuanLich(data.tuan.weekStart, homNay)}`;
   const trong = data.lop.length === 0 && data.no.length === 0 && !dongMo;
 
+  /* Các phần của hàng lọc — máy tính xếp một hàng, điện thoại gom vào khối "Lọc". */
+  const tuanPicker = (
+    <WeekPicker periodId={periodParam ?? data.tuan?.id ?? null} label="Tuần"
+      onPeriod={(id) => datThamSo({ periodId: id ? String(id) : null })} />
+  );
+  const congTacKhung = loai && (
+    <CongTacKhung trang="lich-test" value={loai} dem={dem} donVi={dienThoai ? '' : 'lớp'}
+      onChange={(k) => datThamSo({ loai: k === 'tat-ca' ? null : k })} />
+  );
+  const nutLuatLuoi = loai === 'thuong' && (
+    <span className="inline-flex min-h-[44px] items-center sm:min-h-[32px]">
+      <NutLuat label="Luật lưới lớp thường">
+        <span className="block">
+          Mỗi ô hai số: số câu đúng / tổng số câu{monThangDiem.length ? ` (${monThangDiem.join(', ')} chấm theo thang điểm thì điểm đạt / tổng
+          điểm)` : ''}. Ô tổng đầu cột + nút ↓ điền nhanh cả cột; em làm đề khác thì sửa riêng ô đó — viền vàng khi
+          khác tổng của cột.
+        </span>
+        <span className="block">Dưới 70% là chưa đạt (tô đỏ nhẹ). Thiếu điểm khác chưa đạt.</span>
+        <span className="block">Gõ "-" khi em vắng: môn đó tự dời sang tuần sau, môn khác không đổi.</span>
+      </NutLuat>
+    </span>
+  );
+  const nhomPhamVi = data.coPhamViRong && (
+    <div className="inline-flex overflow-hidden rounded-md border" role="group" aria-label="Lớp"
+      style={{ borderColor: 'var(--line-strong)' }}>
+      {([['cua-toi', 'Lớp tôi dạy'], ['tat-ca', 'Tất cả']] as const).map(([k, nhan]) => (
+        <button key={k} type="button" aria-pressed={data.phamVi === k}
+          onClick={() => datThamSo({ phamVi: k })}
+          className={`min-h-[44px] px-3 text-xs font-semibold sm:min-h-[36px] ${data.phamVi === k
+            ? 'bg-[color:var(--accent-soft)] text-slate-100' : 'bg-transparent text-slate-400 hover:text-slate-200'}`}>
+          {nhan}
+        </button>
+      ))}
+    </div>
+  );
+  const nutXuat = session?.nav?.xuatMt && (
+    <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setMoXuat(true)}>Xuất Excel</button>
+  );
+  const locChiNhanh = <BranchFilter branchId={branchId} onBranch={(id) => datThamSo({ branchId: id ? String(id) : null })} />;
+  /* Số lựa chọn đang KHÁC mặc định: chi nhánh đã chọn, phạm vi "Tất cả" (máy chủ mặc định 'cua-toi' khi GV có lớp). */
+  const soLoc = (branchId ? 1 : 0) + (data.coPhamViRong && data.phamVi !== 'cua-toi' ? 1 : 0);
+  const coGiTrongLoc = branchCount > 1 || !!data.coPhamViRong || loai === 'thuong' || !!session?.nav?.xuatMt;
+
   return (
     <div className="space-y-3">
-      {/* Hàng lọc — một hàng; < 768px tự xuống dòng. */}
-      <div className="flex flex-wrap items-end gap-2">
-        <div className="w-[26rem] max-w-full">
-          <WeekPicker periodId={periodParam ?? data.tuan?.id ?? null} label="Tuần"
-            onPeriod={(id) => datThamSo({ periodId: id ? String(id) : null })} />
-        </div>
-        {loai && (
-          <CongTacKhung trang="lich-test" value={loai} dem={dem} donVi="lớp"
-            onChange={(k) => datThamSo({ loai: k === 'tat-ca' ? null : k })} />
-        )}
-        {loai === 'thuong' && (
-          <span className="inline-flex min-h-[44px] items-center sm:min-h-[32px]">
-            <NutLuat label="Luật lưới lớp thường">
-              <span className="block">
-                Mỗi ô hai số: số câu đúng / tổng số câu{monThangDiem.length ? ` (${monThangDiem.join(', ')} chấm theo thang điểm thì điểm đạt / tổng
-                điểm)` : ''}. Ô tổng đầu cột + nút ↓ điền nhanh cả cột; em làm đề khác thì sửa riêng ô đó — viền vàng khi
-                khác tổng của cột.
-              </span>
-              <span className="block">Dưới 70% là chưa đạt (tô đỏ nhẹ). Thiếu điểm khác chưa đạt.</span>
-              <span className="block">Gõ "-" khi em vắng: môn đó tự dời sang tuần sau, môn khác không đổi.</span>
-            </NutLuat>
-          </span>
-        )}
-        {data.coPhamViRong && (
-          <div className="inline-flex overflow-hidden rounded-md border" role="group" aria-label="Lớp"
-            style={{ borderColor: 'var(--line-strong)' }}>
-            {([['cua-toi', 'Lớp tôi dạy'], ['tat-ca', 'Tất cả']] as const).map(([k, nhan]) => (
-              <button key={k} type="button" aria-pressed={data.phamVi === k}
-                onClick={() => datThamSo({ phamVi: k })}
-                className={`min-h-[36px] px-3 text-xs font-semibold ${data.phamVi === k
-                  ? 'bg-[color:var(--accent-soft)] text-slate-100' : 'bg-transparent text-slate-400 hover:text-slate-200'}`}>
-                {nhan}
+      {dienThoai ? (
+        <div className="space-y-2">
+          <div className="w-full">{tuanPicker}</div>
+          <div className="flex items-center gap-2">
+            {congTacKhung}
+            <div className="flex-1" />
+            {coGiTrongLoc && (
+              <button ref={nutLoc} type="button" className="btn btn-sm min-h-[44px] shrink-0" aria-expanded={moLoc}
+                onClick={() => setMoLoc((v) => !v)}>
+                Lọc{soLoc ? ` · ${soLoc}` : ''} <IconGap mo={moLoc} />
               </button>
-            ))}
+            )}
           </div>
-        )}
-        <div className="flex-1" />
-        {session?.nav?.xuatMt && (
-          <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setMoXuat(true)}>Xuất Excel</button>
-        )}
-        <BranchFilter branchId={branchId} onBranch={(id) => datThamSo({ branchId: id ? String(id) : null })} />
-      </div>
+          {moLoc && coGiTrongLoc && (
+            <div className="card grid gap-3 p-3">
+              {locChiNhanh}
+              {nhomPhamVi}
+              {nutLuatLuoi}
+              {nutXuat}
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Hàng lọc — một hàng; < 768px tự xuống dòng. */
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="w-[26rem] max-w-full">{tuanPicker}</div>
+          {congTacKhung}
+          {nutLuatLuoi}
+          {nhomPhamVi}
+          <div className="flex-1" />
+          {nutXuat}
+          {locChiNhanh}
+        </div>
+      )}
       {urlClassId && (
         <div>
           <button type="button" onClick={() => datThamSo({ classId: null, kn: null })} title="Bỏ lọc lớp"

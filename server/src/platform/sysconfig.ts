@@ -1,5 +1,5 @@
 import { db, tx } from '../db.ts';
-import { LUAT_LO_TRINH_HIEN, PERMISSIONS, PROGRAMME_TEMPLATES, ROUTES as BUILTIN_ROUTES, ROUTE_NAME } from '../../../shared/domain/index.ts';
+import { LUAT_LO_TRINH_HIEN, PERMISSIONS, ROUTES as BUILTIN_ROUTES, ROUTE_NAME } from '../../../shared/domain/index.ts';
 import { badRequest, notFound, nowIso } from '../util.ts';
 import { clearScoringModeCache } from '../fasttrack/skillSchedule.ts';
 import { require_, type Principal } from '../permissions.ts';
@@ -20,6 +20,7 @@ const KHONG_THEM_MA = 'Không thêm lộ trình/chương trình mới ở đây 
 
 /* ------------------------------------------------------------------ lộ trình */
 
+/** `includeInactive` = bản Quản trị: cả mã đã ngừng, kèm `inUse`. Bản chọn (`/ref/routes`) không có `inUse` (PR-Dọn, quét #10). */
 export function listRoutes(includeInactive = false) {
   const conn = db();
   const rows = conn
@@ -31,8 +32,10 @@ export function listRoutes(includeInactive = false) {
     kyVong: LUAT_LO_TRINH_HIEN[r.code]?.kyVong ?? null,
     lichMt: LUAT_LO_TRINH_HIEN[r.code]?.lichMt ?? null,
     /* Đang có bao nhiêu lộ trình học viên dùng mã này — con số quyết định có ngừng được không. */
-    inUse: (conn.prepare('SELECT COUNT(*) n FROM learning_cycles WHERE route = ?').get(r.code) as any).n
-      + (conn.prepare('SELECT COUNT(*) n FROM classes WHERE route = ?').get(r.code) as any).n,
+    ...(includeInactive ? {
+      inUse: (conn.prepare('SELECT COUNT(*) n FROM learning_cycles WHERE route = ?').get(r.code) as any).n
+        + (conn.prepare('SELECT COUNT(*) n FROM classes WHERE route = ?').get(r.code) as any).n,
+    } : {}),
   }));
 }
 
@@ -71,8 +74,6 @@ export function listProgrammes(p: Principal) {
     checkpoints: (conn.prepare('SELECT kind, study_week FROM programme_checkpoints WHERE programme_code = ? ORDER BY study_week')
       .all(r.code) as any[]).map((x) => ({ kind: x.kind, studyWeek: x.study_week })),
     classes: (conn.prepare("SELECT COUNT(*) n FROM classes WHERE programme_code = ?").get(r.code) as any).n,
-    /* Chương trình gốc không cho đổi cách chấm hay bộ kỹ năng — xem `saveProgramme`. */
-    builtin: Object.prototype.hasOwnProperty.call(PROGRAMME_TEMPLATES, r.code),
   }));
 }
 
@@ -88,8 +89,8 @@ export function listProgrammes(p: Principal) {
  * số tuần chụp lúc tạo (PF1). Trả `lopGiuSoCu` để màn Quản trị nói bao nhiêu lớp giữ số cũ.
  */
 export function saveProgramme(p: Principal, input: {
-  code: string; name: string; weeks?: number | null; scoringMode?: string;
-  skills?: string[]; progressWeek?: number | null; finalWeek?: number | null;
+  code: string; name: string; weeks?: number | null;
+  progressWeek?: number | null; finalWeek?: number | null;
   status?: string;
 }) {
   require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, 'Chỉ Quản trị hệ thống sửa được chương trình.');
@@ -101,9 +102,8 @@ export function saveProgramme(p: Principal, input: {
 
   const had = conn.prepare('SELECT * FROM programmes WHERE code = ?').get(code) as any;
   if (!had) throw badRequest(KHONG_THEM_MA);
-  const builtin = Object.prototype.hasOwnProperty.call(PROGRAMME_TEMPLATES, code);
-  const scoring = builtin ? had.scoring_mode
-    : (input.scoringMode === 'ratio' ? 'ratio' : 'ielts_band');
+  /* PR-Dọn (Q22): mọi chương trình đều có mẫu và không thêm mã mới được (KHONG_THEM_MA) — cách chấm và bộ kỹ năng luôn giữ nguyên. */
+  const scoring = had.scoring_mode;
   const weeks = input.weeks === null || input.weeks === undefined ? null : Number(input.weeks);
   if (weeks !== null && (!Number.isInteger(weeks) || weeks < 1 || weeks > 104)) {
     throw badRequest('Số tuần phải là số nguyên từ 1 đến 104, hoặc để trống nếu khoá không cố định.');
@@ -126,15 +126,6 @@ export function saveProgramme(p: Principal, input: {
     clearScoringModeCache();
     conn.prepare('UPDATE programmes SET name=?, weeks=?, scoring_mode=?, status=? WHERE code=?')
       .run(name, weeks, scoring, status, code);
-
-    if (!builtin && input.skills) {
-      const skills = input.skills.map((s) => String(s)).filter(Boolean);
-      if (!skills.length) throw badRequest('Chương trình phải có ít nhất một kỹ năng.');
-      conn.prepare('DELETE FROM programme_skills WHERE programme_code = ?').run(code);
-      skills.forEach((s, i) => {
-        conn.prepare('INSERT INTO programme_skills (programme_code, skill, seq) VALUES (?,?,?)').run(code, s, i);
-      });
-    }
 
     /* Hai mốc kiểm tra chỉ có nghĩa với khoá có số tuần cố định. */
     if (weeks !== null && finalWeek) {

@@ -1,6 +1,7 @@
 import { chenNhieuDong, db, theoLo } from '../db.ts';
 import { addDays, nowIso, parseDate } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
+import { nho } from './nguCanhRequest.ts';
 
 /**
  * Mã tuần dạng "W1 SEP 2026".
@@ -280,10 +281,12 @@ export function setPeriodUnlocked(periodId: number, on: boolean, actorUserId: nu
   }
 }
 
+/** PR-Dọn (Task 9e): nhớ trong request GET — hồ sơ HV đọc lại tuần bắt đầu lộ trình ở hai khối. */
 export function periodById(id: number) {
-  const row = db().prepare('SELECT * FROM report_periods WHERE id = ?').get(id) as any;
-  if (!row) return null;
-  return { ...row, ...weekInfo(row.week_start) };
+  return nho(`ky-bao-cao:${id}`, () => {
+    const row = db().prepare('SELECT * FROM report_periods WHERE id = ?').get(id) as any;
+    return row ? { ...row, ...weekInfo(row.week_start) } : null;
+  });
 }
 
 /**
