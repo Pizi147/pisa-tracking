@@ -202,4 +202,38 @@ export async function runPrUxfBTests(t: YThucTestKit) {
     assert(/p\.muc === 'ket-luan-khoa'/.test(doc('web/src/modules/students/StudentDetailPage.tsx')), 'StudentDetailPage đọc muc');
     assert(/id="ket-luan-khoa"/.test(doc('web/src/modules/students/KetLuanKhoa.tsx')), 'KetLuanKhoa thiếu id');
   });
+
+  // ------------------------------------------------------------------ Task 6 · bảng kỹ năng: Xin ý kiến ở hàng PA, ô Học thuật em Tạm dừng
+  const duyetSvc: any = await import('../duyet/yeuCau.ts');
+  const paBang = (p: any, sid: number) => (casesSvc.skillSupportBoard(p, sid).rows as any[]).flatMap((r) => r.cases).flatMap((c: any) => c.plans ?? []);
+  check('UXF-b (6) · O1: PA có thẻ Xin ý kiến chờ → plans[].xinYKien.trangThai "cho"; đã trả lời → "da_tra_loi" + traLoi; PA không có thẻ → null', () => {
+    const the = t.conn.prepare(`SELECT y.id, y.doi_tuong_id AS pa, sc.student_id AS sid FROM yeu_cau_duyet y JOIN case_interventions iv ON iv.id = y.doi_tuong_id JOIN sos_cases sc ON sc.id = iv.case_id
+      WHERE y.loai = 'xin_y_kien' AND y.trang_thai = 'cho' LIMIT 1`).get() as any;
+    assert(the, 'seed không có thẻ Xin ý kiến chờ');
+    const cho = paBang(t.P.mbManager, the.sid).find((x: any) => x.id === the.pa);
+    assert(cho?.xinYKien?.trangThai === 'cho', JSON.stringify(cho?.xinYKien));
+    assert(paBang(t.P.mbManager, the.sid).filter((x: any) => x.id !== the.pa).every((x: any) => x.xinYKien === null || x.xinYKien === undefined || x.xinYKien.doiTuongId === x.id), 'PA khác không mượn thẻ');
+    duyetSvc.traLoiYeuCau(t.P.mbManager, the.id, 'Xếp tutor thứ Tư, tôi báo tổ');
+    const xong = paBang(t.P.mbManager, the.sid).find((x: any) => x.id === the.pa);
+    assert(xong?.xinYKien?.trangThai === 'da_tra_loi' && xong.xinYKien.traLoi === 'Xếp tutor thứ Tư, tôi báo tổ', JSON.stringify(xong?.xinYKien));
+  });
+  check('UXF-b (6) · PHỦ ĐỊNH: người ngoài phạm vi không đọc được bảng kỹ năng (nên không nhận xinYKien)', () => {
+    const sid = (t.conn.prepare(`SELECT sc.student_id sid FROM yeu_cau_duyet y JOIN case_interventions iv ON iv.id = y.doi_tuong_id JOIN sos_cases sc ON sc.id = iv.case_id WHERE y.loai = 'xin_y_kien' LIMIT 1`).get() as any).sid;
+    let nem = false; try { casesSvc.skillSupportBoard(t.P.cpManager, sid); } catch { nem = true; }
+    assert(nem, 'QL chi nhánh khác phải bị chặn');
+  });
+  check('UXF-b (6) · Q13 oHocThuat: em Tạm dừng → mọi dòng có hạn (Quá hạn VÀ Cần làm) là "Tạm dừng từ dd/mm"; Chờ duyệt / Đang làm giữ; không Tạm dừng → như cũ', () => {
+    const hang = (tt: string) => [{ short: 'R', label: 'Reading', category: 'reading', missed: true,
+      cases: [{ status: 'open', trangThaiV4: { t: tt }, viecTiep: { chu: 'Xác nhận PA' }, plans: [] }] }];
+    const dung = (tt: string) => d.oHocThuat(hang(tt), '2026-09-10').dong[0];
+    for (const tt of ['can-lam', 'qua-han']) assert(dung(tt).t === 'tam-dung' && dung(tt).nhan === 'Tạm dừng từ 10/09', `${tt}: ${JSON.stringify(dung(tt))}`);
+    for (const tt of ['cho-duyet', 'dang-lam']) assert(dung(tt).t === tt, `${tt}: ${dung(tt).t}`);
+    assert(d.oHocThuat(hang('can-lam')).dong[0].t === 'can-lam', 'không Tạm dừng → Cần làm');
+  });
+  check('UXF-b (6) · quét chữ: DongXinYKien dùng ở Ngăn Case, hàng PA (bảng kỹ năng) và thẻ PA; hạn duyệt kế hoạch nói "Quản lý duyệt · hạn"', () => {
+    assert(/<DongXinYKien/.test(doc('web/src/modules/cases/CasePanel.tsx')), 'CasePanel');
+    assert(/<DongXinYKien/.test(doc('web/src/modules/cases/SkillBoard.tsx')), 'HangPA');
+    assert(/<DongXinYKien/.test(doc('web/src/modules/cases/TheKyNang.tsx')), 'KhoiPa');
+    assert(/Quản lý duyệt · hạn/.test(doc('web/src/modules/cases/SkillBoard.tsx')) && !/Quản lý hạn /.test(doc('web/src/modules/cases/SkillBoard.tsx')), 'R5-3');
+  });
 }

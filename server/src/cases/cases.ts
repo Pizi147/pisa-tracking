@@ -1,4 +1,4 @@
-import { db, tx } from '../db.ts';
+import { db, theoLo, tx } from '../db.ts';
 import { boTroCuaCase, chepKetQuaNhom, quyenBoTro, type BoTroDto } from './boTro.ts';
 import { ghiMiniTestTrongTx, kiemMiniTest } from '../normal/cuoiKhoa.ts';
 import {
@@ -2213,6 +2213,18 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
   /* AN-8: số bằng chứng của MỌI Case trên bảng — một câu hỏi, không phải một câu cho mỗi thẻ. */
   const soBangChung = demBangChungCase(caseRows.map((c) => c.id as number));
   const boTroMap = boTroCuaCase(p, caseRows.map((c) => c.id as number));   // PR-LT2a: theo TẬP, không hỏi từng Case
+  /* PR-UXF-b (O1): thẻ Xin ý kiến của MỌI PA trên bảng — một câu tìm PA có thẻ, rồi MỘT lần `theCuaDoiTuong` (rỗng thì không câu nào). Cùng luật chọn với Ngăn Case. */
+  const xinYKienCua = new Map<number, any>();
+  {
+    const idPa: number[] = [];
+    theoLo(caseRows.map((c) => c.id as number), (lo, ph) => {
+      for (const r of conn.prepare(`SELECT y.doi_tuong_id AS id FROM yeu_cau_duyet y JOIN case_interventions iv ON iv.id = y.doi_tuong_id
+         WHERE y.doi_tuong_loai = 'intervention' AND y.loai = 'xin_y_kien' AND iv.case_id IN (${ph})`).all(...lo) as any[]) idPa.push(r.id);
+    });
+    for (const y of theCuaDoiTuong('intervention', [...new Set(idPa)])) {
+      if (y.loai === 'xin_y_kien' && y.trangThai !== 'tu_dong' && !xinYKienCua.has(y.doiTuongId)) xinYKienCua.set(y.doiTuongId, y);
+    }
+  }
 
   /*
    * BỘ HẠNG MỤC THEO ĐÚNG CHƯƠNG TRÌNH EM ĐANG HỌC.
@@ -2402,7 +2414,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
           canClose: canCloseCase(p, { class_id: enr?.class_id ?? null, student_id: studentId, topic: c.topic }),
           closeBlockers: c.status === 'done' ? [] : closeBlockers(c.id),
           /* Đủ thứ để vẽ MỘT THẺ CASE mà không phải gọi thêm một đường nữa (mục 1 · 2). */
-          ...caseCardOf(c.id, c, soBangChung, boTroMap.get(c.id) ?? null),
+          ...caseCardOf(c.id, c, soBangChung, boTroMap.get(c.id) ?? null, xinYKienCua),
         }))
         .sort((a, b) => {
           const open = (x: typeof a) => (x.status === 'done' ? 1 : 0);
@@ -2446,7 +2458,7 @@ export function demBangChungCase(caseIds: number[]): Map<number, number> {
  *
  * (Trước 21/09/2026 thẻ này còn trả "báo cáo nguồn" của case Ý thức; Ý thức nay là vi phạm và biện pháp xử lý ở một bảng riêng.)
  */
-function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>, boTro: BoTroDto | null = null) {
+function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>, boTro: BoTroDto | null = null, xinYKienCua: ReadonlyMap<number, unknown> = new Map()) {
   const conn = db();
   const today = demoToday();
 
@@ -2513,6 +2525,7 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>, bo
       followupOverdue: !!(open && iv.followup_due && iv.followup_due < today && !(iv.preset === 1 && !iv.confirmed_at)),
       pendingApproval: pending,
       approvalDue: pending ? iv.approval_due ?? null : null,
+      xinYKien: xinYKienCua.get(iv.id) ?? null,
       /*
        * PR-S2: KHÉP LẠI VÌ SAO và PA NÀO THAY NÓ. `superseded` = Được thay thế; `supersededBy` trỏ PA mới.
        * Hành trình (PR-Qb) nối các khối PA theo đúng chuỗi này.

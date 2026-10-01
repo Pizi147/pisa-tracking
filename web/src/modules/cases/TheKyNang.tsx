@@ -3,6 +3,7 @@ import { NhanTrangThai, Outcome } from '../../ui/ui.tsx';
 import { IconCanhBao, IconDat, IconGap } from '../../ui/BieuTuong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { fmtBand } from '../../lib/format.ts';
+import { DongXinYKien } from './DongXinYKien.tsx';
 import {
   OUTCOME_MARK, OUTCOME_TONE, chuKetQuaPa, chuKhoangPa, dangChay, deadlineView, tienDoCase, xepTheKyNang,
 } from '@shared/domain/index.ts';
@@ -125,7 +126,7 @@ function KhoiCase({ c, onMoCase }: { c: CaseCard; onMoCase: (caseId: number, o?:
 
 /** Khối PA: thụt vào, nền `surface-2`, đường nối từ Case (khối đặc), `người · đến MT2 · W4 OCT`, kết quả gần nhất. */
 function KhoiPa({ p, c, onMoCase }: { p: Plan; c: CaseCard; onMoCase: (caseId: number, o?: MoCase) => void }) {
-  const { homNay } = useNgayNghiepVu();
+  const { homNay, ngan } = useNgayNghiepVu();
   const choKh = !!p.chuaChay && c.boTro?.keHoach?.trangThai === 'cho';
   const khoang = chuKhoangPa({ startedOn: null, completedOn: null, mocChu: p.mocChu }, homNay);
   return (
@@ -135,6 +136,7 @@ function KhoiPa({ p, c, onMoCase }: { p: Plan; c: CaseCard; onMoCase: (caseId: n
         <NhanLoai loai="PA" cho={choKh} /><span className="min-w-0 truncate">{p.name}</span>
       </button>
       <div className="mt-0.5 truncate text-[12px] text-slate-400">{[p.performer ?? 'chưa có người làm', khoang].filter(Boolean).join(' · ')}</div>
+      <DongXinYKien x={p.xinYKien} ngan={ngan} gon />
       {p.lastOutcomeLabel && (
         <div className="mt-1">
           <Outcome tone={OUTCOME_TONE[p.lastOutcome ?? ''] ?? 'muted'} mark={OUTCOME_MARK[p.lastOutcome ?? '']}>{chuKetQuaPa(p.lastOutcomeLabel, p.lastOutcomeOn, homNay)}</Outcome>

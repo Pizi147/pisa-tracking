@@ -10,6 +10,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { TheKyNangDs } from './TheKyNang.tsx';
 import { type BanDieuChinh } from './CapNhatTuan.tsx';
+import { DongXinYKien, type XinYKien } from './DongXinYKien.tsx';
 import { KhongTheoDoiForm } from '../yThuc/CaseSosControls.tsx';
 import type { BoTro } from './NopKeHoachPanel.tsx';
 import {
@@ -44,6 +45,8 @@ type Plan = {
   actionDue: string | null; actionOverdue: boolean;
   followupDue: string | null; followupOverdue: boolean;
   pendingApproval: boolean; approvalDue: string | null;
+  /** PR-UXF-b (O1): thẻ Xin ý kiến gần nhất của PA (máy chủ nạp một câu cho cả bảng). */
+  xinYKien?: XinYKien;
   lastOutcome: string | null; lastOutcomeLabel: string | null;
   lastOutcomeOn: string | null; lastNote: string | null;
   /** PR-S2: khép lại vì sao (`superseded` = Được thay thế) và PA nào thay nó. */
@@ -417,7 +420,7 @@ function HangCase({ c, ngan, onChanged, onMoCase }: {
           {tt.han && !daXong && (tamDung
             ? tt.t !== 'qua-han' && <span className="mt-0.5 block"><NhanTamDung tu={tamDung} /></span>
             : <span className="mt-0.5 block"><Han loai={tt.k === 'cho-ke-hoach' ? 'ke-hoach-bo-tro' : 'xac-minh-sos'} han={tt.han} /></span>)}
-          {tt.k === 'cho-duyet-ke-hoach' && c.boTro?.keHoach?.hanDuyet && <span className="mt-0.5 block text-[12px] text-wait tabular-nums">Quản lý hạn {ngan(c.boTro.keHoach.hanDuyet)}</span>}
+          {tt.k === 'cho-duyet-ke-hoach' && c.boTro?.keHoach?.hanDuyet && <span className="mt-0.5 block text-[12px] text-wait tabular-nums">Quản lý duyệt · hạn {ngan(c.boTro.keHoach.hanDuyet)}</span>}
           {daXong && c.outcomeLabel && <span className="mt-0.5 block text-[12px] text-slate-500">Kết luận: {c.outcomeLabel}</span>}
         </td>
         <td className="td">
@@ -518,6 +521,7 @@ function HangPA({ p, c, ngan, onMoCase }: {
         <span className="block truncate pl-[30px] text-[12px] text-slate-400" title={dongPhu}>
           {dongPhu}
         </span>
+        <span className="block pl-[30px]"><DongXinYKien x={p.xinYKien} ngan={ngan} gon /></span>
       </td>
       <td className="td">
         {p.lastOutcomeLabel ? (

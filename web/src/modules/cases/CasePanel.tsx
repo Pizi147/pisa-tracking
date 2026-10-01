@@ -15,6 +15,7 @@ import {
   chuKhoangPa, deadlineView, outcomeLabelFor, tenMon, tuanLich, type TrangThai,
 } from '@shared/domain/index.ts';
 import { LichSuDieuChinh, type BanDieuChinh } from './CapNhatTuan.tsx';
+import { DongXinYKien } from './DongXinYKien.tsx';
 import { NganCase } from '../students/NganCase.tsx';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
 import type { BoTro } from './NopKeHoachPanel.tsx';
@@ -269,16 +270,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
         </p>
       )}
       {/* PR-DUYET (T64): Xin ý kiến không dừng PA — dòng tím khi đang chờ, câu trả lời của QL khi đã có. */}
-      {iv.xinYKien?.trangThai === 'cho' && (
-        <p className="m-0 mt-1 text-xs text-wait tabular-nums">
-          Đã xin Quản lý hỗ trợ {ngan(iv.xinYKien.taoLuc)} · chờ trả lời{iv.xinYKien.hanDuyet ? ` · hạn ${ngan(iv.xinYKien.hanDuyet)}` : ''}
-        </p>
-      )}
-      {iv.xinYKien?.trangThai === 'da_tra_loi' && (
-        <p className="m-0 mt-1 border-l pl-3 text-xs text-slate-300" style={{ borderColor: 'var(--line)' }}>
-          Quản lý{iv.xinYKien.nguoiDuyet ? ` (${iv.xinYKien.nguoiDuyet})` : ''} trả lời {ngan(iv.xinYKien.xuLyLuc)}: {iv.xinYKien.traLoi}
-        </p>
-      )}
+      <DongXinYKien x={iv.xinYKien} ngan={ngan} />
       {revisions.length > 0 && (
         <details className="mt-1">
           <summary className="cursor-pointer text-[11px] text-slate-400">Đã điều chỉnh {revisions.length} lần</summary>
