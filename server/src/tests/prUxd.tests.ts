@@ -37,4 +37,24 @@ export async function runPrUxdTests(t: YThucTestKit) {
     assert(/aria-label=\{`Tài khoản \$\{/.test(hd), 'nút tài khoản thiếu aria-label');
     assert(/<header className="relative /.test(doc('web/src/App.tsx')), '<header> thiếu relative');
   });
+
+  // ------------------------------------------------------------------ Task 3 · Toast không che chân panel (VN17) + viền ô nhập tối (U13)
+  check('UXD (3) · toast: một quy tắc body:has([aria-modal="true"]) .vung-toast; Toast dùng vung-toast + IconDat, không còn ký tự ✓', () => {
+    const css = doc('web/src/index.css');
+    const toast = doc('web/src/ui/Toast.tsx');
+    assert(/body:has\(\[aria-modal="true"\]\)\s*\.vung-toast/.test(css), 'index.css thiếu quy tắc :has([aria-modal]) .vung-toast');
+    assert(/vung-toast/.test(toast) && /IconDat/.test(toast), 'Toast chưa dùng vung-toast / IconDat');
+    assert(!toast.includes('✓'), 'Toast còn ký tự ✓');
+  });
+
+  check('UXD (3) · U13: viền ô nhập / ô sửa ở chế độ TỐI ≥ 3:1 (WCAG 1.4.11) trên surface và surface-2', () => {
+    const { toi } = d.docMauHaiCheDo(doc('web/src/index.css'));
+    const hong: string[] = [];
+    for (const v of ['o-nhap-vien', 'o-sua-vien']) for (const n of ['surface', 'surface-2']) {
+      if (!toi[v] || !toi[n]) { hong.push(`thiếu token ${!toi[v] ? v : n}`); continue; }
+      const r = d.tuongPhan(toi[v], toi[n]);
+      if (r < 3) hong.push(`${v} trên ${n} = ${r}`);
+    }
+    assert(hong.length === 0, hong.join(' · '));
+  });
 }

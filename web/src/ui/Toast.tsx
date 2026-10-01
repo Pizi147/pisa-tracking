@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { HOAN_TAC_MS, giayHoanTacConLai } from '@shared/domain/index.ts';
+import { IconDat } from './BieuTuong.tsx';
 
 /** PR-YT2 Q5: nút trong toast (ví dụ `Hoàn tác`) — bấm thì chạy `onBam` rồi gỡ toast luôn, không chờ hết `ms`. */
 type HanhDong = { nhan: string; onBam: () => void };
@@ -43,7 +44,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastCtx.Provider value={value}>
       {children}
-      <div className="fixed bottom-20 md:bottom-4 right-4 z-[100] flex flex-col gap-2 max-w-md" role="status" aria-live="polite">
+      <div className="vung-toast fixed bottom-20 md:bottom-4 right-4 z-[100] flex flex-col gap-2 max-w-md" role="status" aria-live="polite">
         {items.map((t) => (
           <div
             key={t.id}
@@ -52,7 +53,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               t.kind === 'error' ? 'border-bad-line text-bad' : 'border-[color:var(--line-strong)] text-slate-100'
             }`}
           >
-            <span className="flex-1">{t.kind === 'ok' && <span aria-hidden className="mr-1.5 text-[11px] text-slate-400">✓</span>}{t.text}</span>
+            <span className="flex-1">{t.kind === 'ok' && <IconDat className="mr-1.5 text-slate-400" />}{t.text}</span>
             {t.hanhDong && (
               <button
                 type="button"
