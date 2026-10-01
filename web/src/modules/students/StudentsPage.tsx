@@ -23,6 +23,8 @@ import {
 /** Một lớp của `GET /hoc-vien-lop` (server/src/classes/hocVienLop.ts → LopHocVienLop). */
 export type LopTrenTrang = {
   id: number; code: string; programmeCode: string | null; programmeName: string | null; scoringMode: string | null;
+  /** Lộ trình lớp Fast Track (LT1 / LT2 / RF); lớp thường không có (U14, PR-UXD). */
+  route: string | null;
   branchId: number; branchName: string; studentCount: number; needScores: number; workScope: WorkScope;
   phase: string; currentWeek: number | null; totalWeeks: number | null; needsPlacement: boolean;
   missing: { key: string; label: string; who: string }[]; missingSkills: string[];
@@ -294,6 +296,8 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, the =
   const navigate = useNavigate();
   const { session } = useSession();
   const thuong = lop.scoringMode === 'ratio';
+  /** Dòng phụ hàng lớp: `Fast Track · LT1 · 18 HV` — lớp thường không có lộ trình nên bỏ khúc giữa (mockup 21 mục 5). */
+  const chuLop = [lop.programmeName ?? '—', !thuong && lop.route ? lop.route : null, `${lop.studentCount} HV`].filter(Boolean).join(' · ');
   const b = badgeLop({
     vai: laVaiQuanLy(session?.roles) ? 'ql' : 'gv', needsPlacement: lop.needsPlacement, canXepLop: lop.canXepLop, missingSkills: lop.missingSkills,
     soBaiChoCham: lop.needScores,
@@ -341,7 +345,7 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, the =
             <span className="min-w-0">
               <span className="block font-extrabold text-slate-100">{lop.code}</span>
               <span className="block text-[11px] text-slate-400">
-                {lop.programmeName ?? '—'} · {lop.studentCount} HV{lop.gvcn && <> · GVCN {lop.gvcn.name}</>}
+                {chuLop}{lop.gvcn && <> · GVCN {lop.gvcn.name}</>}
               </span>
             </span>
           </button>
@@ -362,8 +366,8 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, the =
               {lop.code}
             </Link>
             <span className="min-w-0 truncate text-[11px] font-normal text-slate-400"
-              title={`${lop.programmeName ?? '—'} · ${lop.studentCount} HV${lop.gvcn ? ` · GVCN ${lop.gvcn.name}` : ''}`}>
-              {lop.programmeName ?? '—'} · {lop.studentCount} HV
+              title={`${chuLop}${lop.gvcn ? ` · GVCN ${lop.gvcn.name}` : ''}`}>
+              {chuLop}
               {lop.gvcn && <> · <abbr title="Giáo viên chủ nhiệm" className="no-underline">GVCN</abbr> <TenGiaoVien id={lop.gvcn.id} ten={lop.gvcn.name} /></>}
             </span>
           </span>

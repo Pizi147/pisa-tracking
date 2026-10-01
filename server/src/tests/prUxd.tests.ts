@@ -12,6 +12,7 @@ const than = (src: string, ten: string) => src.match(new RegExp(`function ${ten}
 export async function runPrUxdTests(t: YThucTestKit) {
   const { check, assert } = t;
   const d: any = await import('../../../shared/domain/index.ts');
+  const hvl: any = await import('../classes/hocVienLop.ts');
   console.log('\nPR-UXD · Điện thoại 375 px');
 
   // ------------------------------------------------------------------ Task 1 · Thanh dưới có biểu tượng (UX-D9)
@@ -79,5 +80,21 @@ export async function runPrUxdTests(t: YThucTestKit) {
     assert(!lt.includes('▾'), 'LichTestTab còn ký tự ▾');
     /* Dải số giữ 2×2 trên điện thoại (Câu 2 = A: ô "Nợ tuần trước · n lớp" xuống dòng ở 375 nên về 2×2). */
     assert(/useEffect/.test(lt) && /Escape/.test(lt), 'khối Lọc chưa đóng bằng Esc');
+  });
+
+  // ------------------------------------------------------------------ Task 6 · Hàng lớp ghi lộ trình (U14)
+  check('UXD (6) · /hoc-vien-lop: mỗi lớp Fast Track mang route ∈ LT1 / LT2 / RF (máy chủ đã có sẵn)', () => {
+    const { P } = t;
+    const r = hvl.danhSachHocVienLop(P.mbManager, {});
+    const ft = r.rows.filter((x: any) => x.scoringMode !== 'ratio');
+    assert(ft.length > 0, 'không có lớp FT nào');
+    const hong = ft.filter((x: any) => !['LT1', 'LT2', 'RF'].includes(x.route)).map((x: any) => `${x.code}:${x.route}`);
+    assert(hong.length === 0, `lớp FT thiếu route: ${hong.join(', ')}`);
+  });
+
+  check('UXD (6) · StudentsPage: kiểu LopTrenTrang có route; dòng phụ (thẻ điện thoại + bảng) đọc lop.route qua cùng một chuỗi', () => {
+    const sp = doc('web/src/modules/students/StudentsPage.tsx');
+    assert(/route: string \| null/.test(sp), 'LopTrenTrang chưa có route');
+    assert((sp.match(/lop\.route/g) ?? []).length >= 1 && (sp.match(/\bchuLop\b/g) ?? []).length >= 3, 'dòng phụ chưa dùng chuLop (thẻ + bảng)');
   });
 }
