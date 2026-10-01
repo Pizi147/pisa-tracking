@@ -11,14 +11,12 @@ onInvalidate((prefix) => {
   for (const k of [...dangBay.keys()]) if (prefix === null || k.startsWith(prefix)) dangBay.delete(k);
 });
 function getChung<T>(path: string): Promise<T> {
-  let p = dangBay.get(path) as Promise<T> | undefined;
-  if (!p) {
-    p = api.get<T>(path);
-    const xong = p;
-    dangBay.set(path, xong);
-    const bo = () => { if (dangBay.get(path) === xong) dangBay.delete(path); };
-    xong.then(bo, bo);
-  }
+  const cu = dangBay.get(path) as Promise<T> | undefined;
+  if (cu) return cu;
+  const p = api.get<T>(path);
+  dangBay.set(path, p);
+  const bo = () => { if (dangBay.get(path) === p) dangBay.delete(path); };
+  p.then(bo, bo);
   return p;
 }
 
