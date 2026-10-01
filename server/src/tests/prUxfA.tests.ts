@@ -377,4 +377,48 @@ export async function runPrUxfATests(t: YThucTestKit) {
     assert(cuaFt.reduce((n, x) => n + x.conBai, 0) === soO, `conBai ${cuaFt.reduce((n, x) => n + x.conBai, 0)} ≠ số bài ${soO}`);
     for (let i = 1; i < no.length; i++) assert(d.soSanhLop({ code: no[i - 1].classCode }, { code: no[i].classCode }) <= 0, `Nợ không nhóm theo lớp: ${no[i - 1].classCode} › ${no[i].classCode}`);
   });
+
+  // ==================================================================== Task 7 · Báo cáo đơn vị: tín hiệu từ sổ chỉ số, đếm đơn vị, tuần đã nộp
+  const signals: any = await import('../worklist/signals.ts');
+  const meeting: any = await import('../worklist/meeting.ts');
+  const { readFileSync } = await import('node:fs');
+  const { join } = await import('node:path');
+
+  check('UXF-a (7) · K1-37 hai đường: mỗi tín hiệu từ sổ chỉ số có count = metricSet(id).n = số dòng mở ra; signals.ts không còn SQL đếm Case SOS / thiếu điểm riêng; PHỦ ĐỊNH QL CP không thấy tín hiệu MB', () => {
+    const ds = signals.signalsFor(P.mbManager, { branchId: MB }) as any[];
+    const tuSo = ds.filter((s) => s.metricId);
+    assert(tuSo.some((s) => s.metricId === 'bai-qua-han-nhap-diem'), `phải có tín hiệu bài quá hạn: ${JSON.stringify(ds.map((s) => s.kind))}`);
+    for (const s of tuSo) {
+      const m = metricsSvc.metricSet(P.mbManager, s.metricId, { branchId: s.branchId });
+      assert(s.count === m.n && metricsSvc.rowsFor(d.metricById(s.metricId).donVi, m.ids).length === s.count, `${s.metricId}: ${s.count} ≠ ${m.n}`);
+    }
+    const src = readFileSync(join(process.cwd(), 'server/src/worklist/signals.ts'), 'utf8');
+    assert(!/sos_level > 0/.test(src) && !/FROM sos_cases/.test(src) && !/FROM assessment_attempts a\s+JOIN classes/.test(src), 'signals.ts còn SQL đếm riêng');
+    assert((signals.signalsFor(P.cpManager) as any[]).every((s) => s.branchId !== MB), 'QL CP thấy tín hiệu chi nhánh MB');
+  });
+
+  check('UXF-a (7) · F4: "Đã nộp / Đang nhập / Chưa báo cáo" đếm ĐƠN VỊ = số hàng chip lọc ra; ba số cộng = số đơn vị', () => {
+    const b = meeting.meetingBoard(P.admin, tuanNayId);
+    const theo = (ma: string) => (b.units as any[]).filter((u) => u.trangThai.ma === ma).length;
+    assert(b.totals.daNop === theo('da-nop') && b.totals.nhap === theo('nhap') && b.totals.chua === theo('chua'), `totals ${JSON.stringify(b.totals)}`);
+    assert(b.totals.daNop + b.totals.nhap + b.totals.chua === b.units.length, 'ba số cộng = số đơn vị');
+  });
+
+  check('UXF-a (7) · weeksReported = tuần ĐÃ NỘP / tuần ĐÃ BẮT ĐẦU trong tháng; worstStatus bỏ qua nháp', () => {
+    const unitId = Number(conn.prepare(`INSERT INTO reporting_units (code, name, kind, branch_id, seq, status) VALUES ('UXF-A-TMP', 'Đơn vị tạm UXF-a', 'branch', ?, 98, 'active')`).run(MB).lastInsertRowid);
+    try {
+      const ghi = (tuan: string, status: string, nop: boolean) => conn.prepare(
+        `INSERT INTO unit_reports (reporting_unit_id, period_id, category_key, category_label, status, note, reporter_user_id, updated_at, submitted_at, submitted_by)
+         VALUES (?,?, 'teachers', 'Giáo viên', ?, NULL, ?, ?, ?, ?)`,
+      ).run(unitId, week.ensurePeriod(tuan).id, status, P.admin.userId, NOW, nop ? NOW : null, nop ? P.admin.userId : null);
+      ghi('2026-08-31', 'ok', true); ghi('2026-09-07', 'watch', true); ghi('2026-09-14', 'problem', false);   // tuần 21/09 chưa bắt đầu
+      const b = meeting.meetingBoard(P.admin, tuanNayId, { month: '2026-09' });
+      const o = (b.units as any[]).find((u) => u.unitId === unitId).cells.find((c: any) => c.key === 'teachers');
+      assert(o.weeksReported === 2 && o.weeksTotal === 3, `n/m tuần: ${o.weeksReported}/${o.weeksTotal}`);
+      assert(o.worstStatus === 'watch', `worstStatus bỏ qua nháp "problem": ${o.worstStatus}`);
+    } finally {
+      conn.prepare('DELETE FROM unit_reports WHERE reporting_unit_id = ?').run(unitId);
+      conn.prepare('DELETE FROM reporting_units WHERE id = ?').run(unitId);
+    }
+  });
 }

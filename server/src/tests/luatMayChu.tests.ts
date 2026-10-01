@@ -295,7 +295,8 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   check('§6 · Lượt lớp thường đủ bốn môn (số câu đúng) KHÔNG còn "thiếu điểm"; thiếu một môn thì có', () => {
     const base = countOf('missing_scores');
     const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
-    assert(countOf('missing_scores') === base + 1, 'Lượt chưa có điểm nào phải được đếm thiếu điểm');
+    /* PR-UXF-a K1-37: tín hiệu đọc sổ chỉ số `bai-qua-han-nhap-diem` — đơn vị BÀI (ô): lượt FOU tuần 07/09 chưa có điểm = 4 bài quá hạn. */
+    assert(countOf('missing_scores') === base + 4, `Lượt chưa có điểm nào phải là 4 bài quá hạn: ${base} → ${countOf('missing_scores')}`);
     for (const k of ['listening', 'reading', 'writing', 'speaking']) diem(hv.attemptId, k, 30, 40);
     assert(countOf('missing_scores') === base, `Đủ bốn môn mà vẫn "thiếu điểm": ${base} → ${countOf('missing_scores')}`);
   });

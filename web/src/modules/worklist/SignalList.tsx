@@ -1,12 +1,15 @@
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Card, Info, SectionNote, Skeleton, Task } from '../../ui/ui.tsx';
+import { SoLieuO } from '../../ui/SoLieuO.tsx';
 
 type Signal = {
   key: string; kind: string; label: string; count: number;
   owner: 'manager' | 'teacher';
   tone: 'danger' | 'warn' | 'info';
   branchId: number | null; branchName: string | null; href: string;
+  /** PR-UXF-a K1-37: tín hiệu lấy từ sổ chỉ số — số bấm mở đúng danh sách của chỉ số (số = số dòng). */
+  metricId: string | null;
 };
 
 const OWNER_LABEL: Record<Signal['owner'], string> = {
@@ -41,16 +44,25 @@ export function SignalList({ branchId, periodId }: { branchId?: number | null; p
   }
 
   return (
-    <Card title="Việc đang tồn" action={<Info>{data.length} nhóm</Info>} bodyClass="p-0">
+    <Card title="Việc đang tồn" action={<Info>{data.length} loại việc</Info>} bodyClass="p-0">
       <ul className="divide-y list-none p-0 m-0" style={{ borderColor: 'var(--line)' }}>
         {data.map((s) => (
           <li key={s.key}>
+            {s.metricId ? (
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5">
+                <Task tone={s.tone}><SoLieuO id={s.metricId} giaTri={s.count} phamVi={{ branchId: s.branchId }} /></Task>
+                <span className="text-sm text-slate-200 flex-1 min-w-0">{s.label}</span>
+                {s.branchName && <span className="text-xs text-slate-500">{s.branchName}</span>}
+                <Info>{OWNER_LABEL[s.owner]}</Info>
+              </div>
+            ) : (
             <Link to={s.href} className="no-underline flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5 hover:bg-white/5">
               <Task tone={s.tone}>{s.count}</Task>
               <span className="text-sm text-slate-200 flex-1 min-w-0">{s.label}</span>
               {s.branchName && <span className="text-xs text-slate-500">{s.branchName}</span>}
               <Info>{OWNER_LABEL[s.owner]}</Info>
             </Link>
+            )}
           </li>
         ))}
       </ul>

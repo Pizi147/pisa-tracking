@@ -18,7 +18,8 @@ type Cell = {
   key: string; label: string; hint: string;
   status: string | null; note: string | null;
   reporterName: string | null; updatedAt: string | null; reportedOn: string | null; reportId: number | null;
-  trangThai: TrangThaiO; submittedAt: string | null; submittedBy: string | null;
+  /** Trạng thái MỘT ô — máy chủ trả chuỗi (`trangThaiO`); chỉ hàng đơn vị mới là đối tượng có nhãn (PR-UXF-a sửa: trước đọc `.ma` nên "nháp" không bao giờ hiện). */
+  trangThai: TrangThaiO['ma']; submittedAt: string | null; submittedBy: string | null;
   taskGroup: string | null; linkedTasks: LinkedTask[]; evidenceCount: number;
   worstStatus: string | null; weeksReported: number | null; weeksTotal: number | null;
   history: { status: string | null; note: string | null; at: string; actor: string | null; kind: string | null }[];
@@ -152,7 +153,8 @@ export function MeetingBoard() {
         <>
           {/* Hàng số — bấm lọc hàng đơn vị (G-10). */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-            {([['da-nop', 'Đã nộp', board.data.totals.daNop], ['nhap', 'Nháp', board.data.totals.nhap], ['chua', 'Chưa báo cáo', board.data.totals.chua]] as const).map(([ma, nhan, n]) => {
+            {/* PR-UXF-a F4: ba số đếm ĐƠN VỊ (cùng tập chip lọc ra), không đếm ô. */}
+            {([['da-nop', 'đơn vị đã nộp', board.data.totals.daNop], ['nhap', 'đơn vị đang nhập', board.data.totals.nhap], ['chua', 'đơn vị chưa báo cáo', board.data.totals.chua]] as const).map(([ma, nhan, n]) => {
               const active = locTrangThai === ma;
               return (
                 <button key={ma} type="button" disabled={n === 0 && !active}
@@ -213,7 +215,7 @@ export function MeetingBoard() {
             <div className="pt-2"><ManagerTaskList periodId={periodId} /></div>
           </details>
           <details>
-            <summary className="cursor-pointer text-sm text-slate-300 py-1">Việc đang tồn ({soTinHieuDangTon})</summary>
+            <summary className="cursor-pointer text-sm text-slate-300 py-1">Việc đang tồn · {soTinHieuDangTon} loại việc</summary>
             <div className="pt-2"><SignalList periodId={periodId} /></div>
           </details>
 
@@ -240,7 +242,7 @@ function useSignalCount(periodId: number | null): number {
 /** Một ô của ma trận — mức + (nháp) + kỳ tháng "(từng …)". */
 function OTaBang({ cell, thTutor }: { cell: Cell; thTutor?: string }) {
   if (!cell.status) return <span className="text-slate-600">—</span>;
-  const nhat = cell.trangThai.ma === 'nhap';
+  const nhat = cell.trangThai === 'nhap';
   return (
     <span className={nhat ? 'opacity-70' : ''}>
       {thTutor && <span className="text-slate-500">{thTutor}: </span>}
@@ -249,7 +251,7 @@ function OTaBang({ cell, thTutor }: { cell: Cell; thTutor?: string }) {
       {cell.worstStatus && cell.worstStatus !== cell.status && (
         <span className="text-[11px] text-slate-500"> (từng {unitStatusLabel(cell.worstStatus).toLowerCase()})</span>
       )}
-      {cell.weeksTotal ? <span className="text-[11px] text-slate-500"> · {cell.weeksReported}/{cell.weeksTotal} tuần</span> : ''}
+      {cell.weeksTotal ? <span className="text-[11px] text-slate-500"> · đã nộp {cell.weeksReported}/{cell.weeksTotal} tuần</span> : ''}
     </span>
   );
 }
@@ -273,7 +275,7 @@ function NganBaoCao({ unit, cell, periodId, editable, editWindow, onClose, onSav
     setChonMo(false);
   }, [cell?.key, unit?.unitId]);
 
-  const daNop = cell?.trangThai.ma === 'da-nop';
+  const daNop = cell?.trangThai === 'da-nop';
   /* Khớp đúng luật chặn của máy chủ (`saveUnitReport`: `before?.submitted_at && !window.open` → 400) —
      ô đã nộp mà tuần đã khoá thì Lưu nháp cũng bị chặn, không riêng gì Nộp. */
   const nhapBiChan = daNop && !(editWindow?.open ?? true);
