@@ -4,7 +4,7 @@ import {
   type HuongLenh, type MucTieuLenh, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { badRequest, conflict, notFound, nowIso } from '../util.ts';
-import { loadPrincipal, require_, type Principal } from '../permissions.ts';
+import { can, loadPrincipal, require_, type Principal } from '../permissions.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { reviseTarget } from '../fasttrack/cycles.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -473,18 +473,40 @@ function thiHanhGiuaKhoa(p: Principal, g: any, con: any[]): { id: number; loi: s
 
 // ==================================================================== đếm, đề xuất chuyển lớp (Task 6)
 
-/** Số em `active` CHƯA CÓ lệnh chuyển đang chờ của mỗi lớp (chưa quyết = chưa có lệnh, Q3/Q30-4). Một câu cho cả lô lớp. */
-export function demChuaCoLenh(classIds: readonly number[]): Map<number, number> {
-  const out = new Map<number, number>();
+/** Em `active` CHƯA CÓ lệnh chuyển đang chờ của mỗi lớp (chưa quyết = chưa có lệnh, Q3/Q30-4). Một câu cho cả lô lớp. */
+export function emChuaCoLenh(classIds: readonly number[]): Map<number, number[]> {
+  const out = new Map<number, number[]>();
   theoLo([...classIds], (lo, ph) => {
     for (const r of db().prepare(
-      `SELECT e.class_id, COUNT(*) AS n FROM enrollments e JOIN students s ON s.id = e.student_id
+      `SELECT e.class_id, e.student_id FROM enrollments e JOIN students s ON s.id = e.student_id
         WHERE e.class_id IN (${ph}) AND e.status = 'active' AND s.status = 'active' AND s.archived_at IS NULL
           AND NOT EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.student_id = e.student_id AND l.trang_thai = 'cho')
-        GROUP BY e.class_id`,
-    ).all(...lo) as any[]) out.set(r.class_id, r.n);
+        ORDER BY e.class_id, e.student_id`,
+    ).all(...lo) as any[]) (out.get(r.class_id) ?? out.set(r.class_id, []).get(r.class_id)!).push(r.student_id);
   });
   return out;
+}
+/** Số em của `emChuaCoLenh` — một luật (PR-VAI-a), hàm cũ giữ chữ ký. */
+export function demChuaCoLenh(classIds: readonly number[]): Map<number, number> {
+  return new Map([...emChuaCoLenh(classIds)].map(([id, ds]) => [id, ds.length]));
+}
+
+/**
+ * LỚP THƯỜNG TỚI CUỐI KHOÁ CÒN EM CHƯA CÓ LỆNH CHUYỂN (PR-CT Q30-4 + PR-S5F-a: theo HÔM NAY, không theo chặng) mà người xem ra lệnh được
+ * (`class.edit`). MỘT luật cho việc "Chuyển lớp cả lớp" của `myWork` và chỉ số `hv-chua-co-lenh-chuyen` ở Cần xử lý (PR-VAI-a Q8b).
+ */
+export function lopChoLenhChuyen(p: Principal, branchId: number | null, homNay: string) {
+  const conn = db();
+  const lop = conn.prepare(`SELECT c.id, c.code FROM classes c WHERE c.status = 'active'${branchId ? ' AND c.branch_id = ?' : ''}`)
+    .all(...(branchId ? [branchId] : [])) as any[];
+  const ma = new Map(lop.map((c) => [c.id as number, c.code as string]));
+  const tienDo = classProgressMany([...ma.keys()]);
+  const toi = [...tienDo].filter(([id, pr]) => pr.programmeCode !== 'FT' && mocKetKhoa(pr, homNay).tuCuoiKhoa && can(p, PERMISSIONS.CLASS_EDIT, { classId: id }));
+  const em = emChuaCoLenh(toi.map(([id]) => id));
+  return toi.flatMap(([classId, pr]) => {
+    const ds = em.get(classId) ?? [];
+    return ds.length ? [{ classId, code: ma.get(classId)!, pr, emIds: ds, moc: mocKetKhoa(pr, homNay) }] : [];
+  });
 }
 
 /**

@@ -188,6 +188,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   const dongHv: any = await import('../classes/dongHocVien.ts');
   const metricsSvc: any = await import('../worklist/metrics.ts');
   const tongQuanSvc: any = await import('../worklist/tongQuan.ts');
+  const myworkYt: any = await import('../worklist/mywork.ts');
   const { soCauSql } = await import('../platform/nguCanhRequest.ts');
   const mbId = (conn.prepare("SELECT id FROM branches WHERE code = 'MB'").get() as any).id as number;
   const LOP = t.classId('MB FT 101');
@@ -341,14 +342,15 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const roster = classesSvc.classRoster(P.admin, lop.id) as any[];
     assert(ov.canhBaoYThuc === 2 && roster.filter((s) => s.canhBaoYThuc).length === 2, `${ov.canhBaoYThuc} · ${roster.filter((s) => s.canhBaoYThuc).length}`);
   });
-  check('YT4 (3) · Tổng quan › HV cần hỗ trợ (K1-17): "Ý thức · Quá hạn" cam / "Ý thức · Cần xử lý" vàng, dòng phụ có hạn; không còn tone xanh', () => {
+  check('YT4 (3) · (PR-VAI-a) Tổng quan GV: Ý thức nằm ở việc yt_* của khối "Việc của tôi" — Quá hạn / Cần làm theo hạn, có hạn (K1-17)', () => {
     const q = hv(); vpDb(q, addDays(TODAY, -9));
     const b = hv(); ba3(b);
-    const rows = tongQuanSvc.hocVienCanHoTro(P.coreTeacher).rows as any[];
-    const rq = rows.find((r) => r.studentId === q); const rb = rows.find((r) => r.studentId === b);
-    assert(rq?.huyHieu?.text === 'Ý thức · Quá hạn' && rq.huyHieu.tone === 'late', JSON.stringify(rq));
-    assert(rb?.huyHieu?.text === 'Ý thức · Cần xử lý' && rb.huyHieu.tone === 'warn' && /3 vi phạm chưa xử lý · hạn \d\d\/\d\d/.test(rb.phu), JSON.stringify(rb));
-    assert(!rows.some((r) => r.huyHieu?.text?.startsWith('Ý thức') && r.huyHieu.tone === 'info'), 'không còn tone xanh');
+    const items = (myworkYt.myWork(P.coreTeacher).items as any[]);
+    const iq = items.find((i) => i.studentId === q && i.group.startsWith('yt_'));
+    const ib = items.find((i) => i.studentId === b && i.group === 'yt_xu_ly');
+    assert(iq && iq.urgency === 'overdue' && iq.due, `em vi phạm để lâu → việc Ý thức quá hạn có hạn: ${JSON.stringify(iq)}`);
+    assert(ib && ib.urgency !== 'overdue' && ib.due && /3/.test(ib.reason), `em 3 vi phạm → Xử lý vi phạm (Cần làm) có hạn: ${JSON.stringify(ib)}`);
+    assert(!('hocVienCanHoTro' in tongQuanSvc), 'khối Học viên cần hỗ trợ đã bỏ');
   });
   check('YT4 (3) · Cảnh báo mềm đã gỡ: không còn canhBao.ts', () => {
     assert(!fs.existsSync(path.join(REPO3, 'server/src/yThuc/canhBao.ts')), 'canhBao.ts còn');
@@ -736,8 +738,9 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   check('YT4 (6) · Hai loại hạn Ý thức cũ đã bỏ; "Xử lý vi phạm · hạn dd/mm"; dòng nhắc chỉ còn Phối hợp SOS', () => {
     assert(!(d.DEADLINE_KINDS as readonly string[]).some((k) => k === 'thuc-hien-y-thuc' || k === 'hoan-thanh-y-thuc'), 'loại cũ');
     assert(d.deadlineView({ kind: 'xu-ly-vi-pham', due: '2026-09-18', today: TODAY }).text === 'Xử lý vi phạm · hạn 18/09', 'nhãn hạn');
-    const src = fs.readFileSync(path.join(REPO3, 'web/src/modules/yThuc/YThucReminders.tsx'), 'utf8');
-    assert(!/my-warnings/.test(src), 'còn gọi /y-thuc/my-warnings');
+    /* PR-VAI-a (K5-10): dòng nhắc mềm Phối hợp SOS đã thành việc thật — YThucReminders.tsx đã xoá cùng /y-thuc/my-coordination. */
+    const f3 = path.join(REPO3, 'web/src/modules/yThuc/YThucReminders.tsx');
+    assert(!fs.existsSync(f3) || !/my-warnings/.test(fs.readFileSync(f3, 'utf8')), 'còn gọi /y-thuc/my-warnings');
   });
 
   // ------------------------------------------------------------------ Task 7 · chỉ số và Phân tích Ý thức theo trạng thái v4
@@ -797,7 +800,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const b = hv(lop.id); ba3(b);
     const c = hv(lop.id); deXuatGui(lop.gvcn, c, 'suspension', [vpDb(c, TODAY)]);
     const e = hv(lop.id); vpDb(e, TODAY, { ghiNhan: TODAY });
-    const kq = ptYt.yThucPhanTich(P.mbManager, { branchId: mbId, ct: 'ca-hai', classId: lop.id, from: addDays(TODAY, -30), to: TODAY });
+    const kq = ptYt.yThucPhanTich(P.mbManager, { branchId: mbId, ct: null, classId: lop.id, from: addDays(TODAY, -30), to: TODAY });
     const bd = board.bangYThucLop(lop.gvcn, lop.id);
     const tabCanChuY = [...bd.nhom.qua_han, ...bd.nhom.bat_buoc, ...bd.nhom.cho_duyet].map((x: any) => x.studentId).sort().join();
     assert(kq.hvCanChuY.map((x: any) => x.studentId).sort().join() === tabCanChuY, `${kq.hvCanChuY.map((x: any) => x.studentId)} ≠ ${tabCanChuY}`);

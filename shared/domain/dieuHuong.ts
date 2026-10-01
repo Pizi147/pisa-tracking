@@ -4,6 +4,8 @@
  * Máy chủ trả bộ cờ `NavQuyen` (server/src/platform/nav.ts); giao diện chỉ đọc cờ + các hàm ở đây. Khu vực hay tab không
  * có quyền thì bỏ hẳn, không hiện ô khoá. Quyền thật vẫn do API chặn.
  */
+import { laLoaiBoQuen } from './phanTich.ts';
+
 export type KhuVuc = 'tong-quan' | 'hoc-vien' | 'test' | 'cong-viec';
 export type TabTest = 'lich' | 'ke-hoach';
 export type TabCongViec = 'cho-duyet' | 'ho-tro' | 'yeu-cau' | 'van-hanh' | 'bao-cao';
@@ -128,7 +130,8 @@ export function tabCongViecTuDuong(seg: string | undefined): TabCongViec | null 
 
 // ---------------------------------------------------------------- Tổng quan
 
-export const TAB_TONG_QUAN_LABEL: Record<TabTongQuan, string> = { 'tong-quan': 'Tổng quan', 'phan-tich': 'Phân tích' };
+/** PR-VAI-a (K1-10, Q10): tab đầu đổi tên "Việc hôm nay" — không lặp chữ "Tổng quan" của menu. */
+export const TAB_TONG_QUAN_LABEL: Record<TabTongQuan, string> = { 'tong-quan': 'Việc hôm nay', 'phan-tich': 'Phân tích' };
 
 // ---------------------------------------------------------------- Đường dẫn cũ
 
@@ -136,6 +139,25 @@ const voiThamSo = (path: string, q: URLSearchParams) => {
   const s = q.toString();
   return s ? `${path}?${s}` : path;
 };
+
+/**
+ * PR-Pb2-a (Q4, T59, K1 §4b): Danh sách Case đã bỏ — tham số của nó đi THẲNG tới đích mới, một bước. Không có tham số cũ → null.
+ *   `hang-doi=due`            → Công việc · Case học thuật quá hạn (giữ `cn`)
+ *   `hang-doi=<bỏ quên>`      → Tổng quan (giữ `cn`, `ct`) — dòng Cần xử lý của nó đã gỡ (PR-VAI-a Q7)
+ *   góc `danh-sach` / `hang-doi` khác / `tinh-hinh` / `ky-nang` → Vấn đề HV (giữ `cn`, `ct`)
+ */
+function phanTichCu(q: URLSearchParams): string | null {
+  const hangDoi = q.get('hang-doi');
+  if (q.get('goc') !== 'danh-sach' && !hangDoi && !q.has('tinh-hinh') && !q.has('ky-nang')) return null;
+  const giu = (khoa: readonly string[], dau: [string, string][] = []) => {
+    const m = new URLSearchParams(dau);
+    for (const k of khoa) { const v = q.get(k); if (v) m.set(k, v); }
+    return m;
+  };
+  if (hangDoi === 'due') return voiThamSo('/cong-viec', giu(['cn'], [['nhom', 'case-hoc-thuat'], ['loc', 'qua-han'], ['nguoi', 'tat-ca']]));
+  if (laLoaiBoQuen(hangDoi)) return voiThamSo('/', giu(['cn', 'ct']));
+  return voiThamSo('/phan-tich', giu(['cn', 'ct'], [['goc', 'van-de']]));
+}
 
 /**
  * ĐƯỜNG DẪN CŨ → MỚI (O5, O7). Link đã lưu, link trong thông báo và link máy chủ sinh ra vẫn mở đúng chỗ.
@@ -152,9 +174,10 @@ export function duongMoi(pathname: string, search: string): string | null {
   if (p === '/' && q.has('tab')) {
     const tab = q.get('tab');
     q.delete('tab');
-    return voiThamSo(tab === 'tinh-hinh' ? '/phan-tich' : '/', q);
+    return tab === 'tinh-hinh' ? phanTichCu(q) ?? voiThamSo('/phan-tich', q) : voiThamSo('/', q);
   }
-  if (p === '/hoc-thuat') return voiThamSo('/phan-tich', q);
+  if (p === '/hoc-thuat') return phanTichCu(q) ?? voiThamSo('/phan-tich', q);
+  if (p === '/phan-tich') return phanTichCu(q);
   if (p === '/tong-hop-tuan') {
     const cn = q.get('branchId');
     const moi = new URLSearchParams({ xem: 'tuan' });

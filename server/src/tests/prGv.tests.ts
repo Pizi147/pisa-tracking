@@ -16,7 +16,7 @@ export async function runPrGvTests(t: YThucTestKit) {
   console.log('\nPR-GV · Hồ sơ giáo viên');
 
   check('PR-GV (1) · demViecTheoNhom: luôn đủ 4 nhóm đúng thứ tự, loại lạ rơi vào Vận hành', () => {
-    const r = demViecTheoNhom([{ group: 'score', urgency: 'overdue' }, { group: 'result', urgency: 'normal' },
+    const r = demViecTheoNhom([{ group: 'score', urgency: 'overdue' }, { group: 'ghi_ket_qua_pa', urgency: 'normal' },
       { group: 'yt_xem', urgency: 'today' }, { group: 'la', urgency: 'overdue' }]);
     assert(JSON.stringify(r.map((x) => x.nhom)) === JSON.stringify(['cham-diem', 'case-hoc-thuat', 'y-thuc', 'van-hanh']), 'thứ tự NHOM_VIEC');
     assert(JSON.stringify(r.map((x) => [x.n, x.quaHan])) === JSON.stringify([[1, 1], [1, 0], [1, 0], [1, 1]]), 'n / quá hạn từng nhóm');
@@ -232,7 +232,7 @@ export async function runPrGvTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ Task 4 · bảng giáo viên của chi nhánh
   const mbId = get(`SELECT id FROM branches WHERE code = 'MB'`).id as number;
   const cpId = get(`SELECT id FROM branches WHERE code = 'CP'`).id as number;
-  const KHUNG = ['thuong', 'ft', 'ca-hai'] as const;
+  const KHUNG = ['ft', 'thuong'] as const;
 
   check('PR-GV (4) · phủ định: GV → 403, QL CP xem cn MB → 403, Quản trị thiếu cn → 400, QL một chi nhánh tự lấy chi nhánh mình', () => {
     assertThrows(() => bangGvChiNhanh(P.normalCoreTeacher, { cn: mbId }), /Chỉ Quản lý và Quản trị/, 'GVCN → 403');
@@ -244,7 +244,7 @@ export async function runPrGvTests(t: YThucTestKit) {
   });
 
   check('PR-GV (4) · không xếp hạng: hàng sắp theo tên, không hàng/trường tổng hay trung bình; mỗi người một hàng', () => {
-    const b = bangGvChiNhanh(P.mbManager, { cn: mbId, ct: 'ca-hai' });
+    const b = bangGvChiNhanh(P.mbManager, { cn: mbId, ct: 'ft' });
     assert(b.hang.length > 0, 'có hàng');
     const ten = b.hang.map((h) => h.ten);
     assert(JSON.stringify(ten) === JSON.stringify([...ten].sort((x, y) => x.localeCompare(y, 'vi'))), 'sắp theo tên');
@@ -256,6 +256,8 @@ export async function runPrGvTests(t: YThucTestKit) {
 
   check('PR-GV (4) · số ở bảng = số dòng khi bấm (ô danh sách cùng cn/ct) và = hồ sơ của người đó — mọi khung', () => {
     let coSo = 0;
+    /* PR-Pb2-a: bảng theo từng khung, hồ sơ GV gộp → cộng hai khung của một người = hồ sơ người đó. */
+    const cong = new Map<number, { ten: string; lop: number; chuaNhap: number; quaHan: number; caseMo: number; caseQuaHan: number }>();
     for (const ct of KHUNG) {
       const b = bangGvChiNhanh(P.mbManager, { cn: mbId, ct });
       for (const h of b.hang) {
@@ -265,14 +267,15 @@ export async function runPrGvTests(t: YThucTestKit) {
         assert(o('chua-nhap') === h.chuaNhap && o('qua-han') === h.quaHan, `${h.ten}/${ct}: ô nợ`);
         assert(o('case-mo') === h.caseMo && o('case-qua-han') === h.caseQuaHan, `${h.ten}/${ct}: Case`);
         coSo += h.chuaNhap + h.caseMo + h.hocVien;
-        if (ct === 'ca-hai') {
-          const ho = hoSoGiaoVien(P.mbManager, h.id);
-          assert(ho.lop.length === h.lop && ho.lop.reduce((a, l) => a + l.chuaNhap, 0) === h.chuaNhap && ho.lop.reduce((a, l) => a + l.quaHan, 0) === h.quaHan, `${h.ten}: hồ sơ khớp bảng (lớp, ô nợ)`);
-          assert(ho.caseMo.length === h.caseMo && ho.caseMo.filter((c) => c.quaHan).length === h.caseQuaHan, `${h.ten}: hồ sơ khớp bảng (Case)`);
-        }
+        const x = cong.get(h.id) ?? { ten: h.ten, lop: 0, chuaNhap: 0, quaHan: 0, caseMo: 0, caseQuaHan: 0 };
+        for (const k of ['lop', 'chuaNhap', 'quaHan', 'caseMo', 'caseQuaHan'] as const) x[k] += h[k];
+        cong.set(h.id, x);
       }
-      const tong = (k: 'lop' | 'caseMo') => b.hang.reduce((a, h) => a + h[k], 0);
-      if (ct === 'ca-hai') assert(tong('lop') >= bangGvChiNhanh(P.mbManager, { cn: mbId, ct: 'ft' }).hang.reduce((a, h) => a + h.lop, 0), 'khung Cả hai ≥ khung FT');
+    }
+    for (const [id, h] of cong) {
+      const ho = hoSoGiaoVien(P.mbManager, id);
+      assert(ho.lop.length === h.lop && ho.lop.reduce((a, l) => a + l.chuaNhap, 0) === h.chuaNhap && ho.lop.reduce((a, l) => a + l.quaHan, 0) === h.quaHan, `${h.ten}: hồ sơ (gộp) khớp FT + Lớp thường của bảng (lớp, ô nợ)`);
+      assert(ho.caseMo.length === h.caseMo && ho.caseMo.filter((c) => c.quaHan).length === h.caseQuaHan, `${h.ten}: hồ sơ (gộp) khớp FT + Lớp thường của bảng (Case)`);
     }
     assert(coSo > 0, 'phép kiểm không rỗng');
   });
@@ -288,7 +291,7 @@ export async function runPrGvTests(t: YThucTestKit) {
       const goc = conn.prepare;
       const co = Object.prototype.hasOwnProperty.call(conn, 'prepare');
       conn.prepare = function (this: unknown, sql: string, ...r: unknown[]) { n += 1; return goc.call(this, sql, ...r); };
-      try { bangGvChiNhanh(P.admin, { cn: mbId, ct: 'ca-hai' }); } finally { if (co) conn.prepare = goc; else delete (conn as any).prepare; }
+      try { bangGvChiNhanh(P.admin, { cn: mbId, ct: 'ft' }); } finally { if (co) conn.prepare = goc; else delete (conn as any).prepare; }
       return n;
     };
     const truoc = dem();
@@ -302,7 +305,7 @@ export async function runPrGvTests(t: YThucTestKit) {
       for (const [i, gv] of gvs.entries()) cases.push(chep('sos_cases', caseGoc, { owner_user_id: gv, dedup_key: `TMP-NP1-${i}` }));
       const sau = dem();
       assert(sau === truoc, `số câu SQL đổi khi thêm dữ liệu: ${truoc} → ${sau} (N+1)`);
-      const b = bangGvChiNhanh(P.admin, { cn: mbId, ct: 'ca-hai' });
+      const b = bangGvChiNhanh(P.admin, { cn: mbId, ct: 'ft' });
       assert(gvs.every((id) => b.hang.some((h) => h.id === id)), 'GV mới có mặt ở bảng (phép kiểm không rỗng)');
     } finally {
       for (const id of cases) conn.prepare(`DELETE FROM sos_cases WHERE id = ?`).run(id);

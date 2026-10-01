@@ -1,5 +1,5 @@
 import { type ReactNode } from 'react';
-import { Level } from '../../ui/ui.tsx';
+import { Level, NhanTrangThai } from '../../ui/ui.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { toneTheoNhan } from '../../lib/format.ts';
 import { LOAI_HAN_CUA_VIEC } from '@shared/domain/index.ts';
@@ -48,10 +48,12 @@ export function DongViec({ it, onOpen, nutPhu }: {
     it.classCode && it.studentName !== `Lớp ${it.classCode}` ? it.classCode : null,
     it.contextLabel,
     !gomLop && it.count !== null && it.count > 1 ? `${it.count} HV` : null,
-    it.owner ?? (it.ownerId === null && !it.mine && it.group !== 'placement' && it.group !== 'next_step' ? 'chưa ai phụ trách' : null),
+    it.owner ?? (it.ownerId === null && !it.mine && it.group !== 'placement' ? 'chưa ai phụ trách' : null),
   ].filter(Boolean).join(' · ');
   return (
-    <div className="grid grid-cols-1 gap-x-3 gap-y-1 py-2 pr-3 hover:bg-white/5 sm:grid-cols-[minmax(0,1fr)_150px_230px] sm:items-center" title={it.reason}>
+    /* PR-VAI-a (§7.3, mockup 23 màn A): bốn cột thẳng qua mọi nhóm — nhãn trạng thái · việc · hạn (12 px) · nút. */
+    <div className="grid grid-cols-[78px_minmax(0,1fr)] gap-x-3 gap-y-1 py-2 pr-3 hover:bg-white/5 sm:grid-cols-[78px_minmax(0,1fr)_150px_230px] sm:items-center" title={it.reason}>
+      <span className="pt-0.5 sm:pt-0"><NhanTrangThai t={it.urgency === 'overdue' ? 'qua-han' : 'can-lam'} /></span>
       <button type="button" className="min-w-0 appearance-none border-0 bg-transparent p-0 text-left cursor-pointer" onClick={() => onOpen(it.href)}>
         <span className="flex min-w-0 items-center gap-2">
           <span className="truncate text-[13px] font-semibold text-slate-100">{it.tieuDe}</span>
@@ -59,10 +61,10 @@ export function DongViec({ it, onOpen, nutPhu }: {
         </span>
         <span className="block truncate text-[11px] text-slate-500">{dongPhu}</span>
       </button>
-      <span className="text-[11px]">
-        {it.due ? <Han loai={loaiHan ?? 'viec-van-hanh'} han={it.due} haiDong /> : <span className="text-slate-500">—</span>}
+      <span className="col-start-2 text-xs sm:col-start-auto [&>span]:text-xs">
+        {it.due ? <Han loai={loaiHan ?? 'viec-van-hanh'} han={it.due} haiDong /> : <span className="text-slate-500">không có hạn</span>}
       </span>
-      <span className="flex items-center gap-2 sm:justify-end">
+      <span className="col-start-2 flex items-center gap-2 sm:col-start-auto sm:justify-end">
         {nutPhu}
         <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[32px]" onClick={() => onOpen(it.href)}>{it.actionLabel}</button>
       </span>

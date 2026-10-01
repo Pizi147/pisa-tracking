@@ -88,6 +88,8 @@ export type DongNo = {
   /** Người xem có dạy lớp này → "Chờ GV khác"; không dạy → "Chờ chấm". */
   coDayLop: boolean;
   hrefDayDu: string;
+  /** PR-VAI-a (UX-B5, Q23): tên GV đang nợ các ô của dòng (từ `pendingOwners`, sắp theo tên, không trùng); môn chưa phân công → "chưa phân công". */
+  gvNo: string[];
 };
 
 /** Tên đợt trên dòng: FT gọi MT{n}; lớp thường gọi "Giữa khoá"/"Cuối khoá" — không bao giờ gọi đợt lớp thường là MT. */
@@ -235,7 +237,7 @@ export function noTuanTruoc(
     overdue: boolean;
     moved: MonDoiLich | null;
   };
-  type Gom = DongNo & { _hs: Set<number>; _aid: Set<number> };
+  type Gom = DongNo & { _hs: Set<number>; _aid: Set<number>; _gv: Set<string>; _chuaPc: boolean };
   type Doi = {
     key: string; skill: string; hv: string; attemptId: number; moved: MonDoiLich;
     sangTuan: string | null; sangTuanStart: string | null;
@@ -257,8 +259,8 @@ export function noTuanTruoc(
           kind: a.kind, attemptNo: a.attemptNo ?? null, dotLabel: dotLabelOf(a.kind, a.attemptNo ?? null),
           periodId: x.periodId, weekStart: x.weekStart,
           kyNang: [], kyNangLabel: '', conBai: 0, soHv: 0, attemptIds: [], han: null, quaHan: false, luiLich: null,
-          cuaToi: false, duocCham: false, coDayLop: f.lopCuaToi.has(a.classId), hrefDayDu: '',
-          _hs: new Set(), _aid: new Set(),
+          cuaToi: false, duocCham: false, coDayLop: f.lopCuaToi.has(a.classId), hrefDayDu: '', gvNo: [],
+          _hs: new Set(), _aid: new Set(), _gv: new Set(), _chuaPc: false,
         };
         gom.set(key, cu);
       }
@@ -266,6 +268,8 @@ export function noTuanTruoc(
       cu.conBai += 1;
       cu._hs.add(a.studentId);
       cu._aid.add(a.id);
+      const gv = (a.pendingOwners ?? {})[x.skill] ?? null;   // cùng nguồn tên với lượt (listAttempts) — không câu SQL mới
+      if (gv) cu._gv.add(gv); else cu._chuaPc = true;
       if (x.deadline && (!cu.han || x.deadline < cu.han)) cu.han = x.deadline;
       if (x.overdue) { cu.quaHan = true; quaHanBai += 1; quaHanBaiKhung[khungCua(lopOf(a.classId).mode)] += 1; }
       /* Lùi lịch CHỈ khi có bằng chứng dời thật (`moved` — dấu "-" hoặc dời do vắng), không suy từ thứ tự tuần. */
@@ -280,13 +284,14 @@ export function noTuanTruoc(
   const luiLichOf = dungLuiLich(doi);
 
   const dong: DongNo[] = [...gom.values()].map((d) => {
-    const { _hs, _aid, ...rest } = d;
+    const { _hs, _aid, _gv, _chuaPc, ...rest } = d;
     const kyNang = [...d.kyNang].sort(theoThuTu);
     return {
       ...rest,
       kyNang,
       kyNangLabel: kyNangLabelOf(d.mode, kyNang, d.chuongTrinh),
       soHv: _hs.size,
+      gvNo: [...[..._gv].sort((x, y) => x.localeCompare(y, 'vi')), ...(_chuaPc ? ['chưa phân công'] : [])],
       attemptIds: [..._aid],
       luiLich: luiLichOf.get(d.key) ?? null,
       cuaToi: mySkills(p, d.classId, kyNang).length > 0,

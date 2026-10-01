@@ -92,13 +92,13 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     assert(!groups.some((g) => g.key === 'do_plan'), 'còn nhóm do_plan');
     /* Chỉ khoá theo id PA (`action:`/`review:`) — `support:`/`owner:` mang id CASE, có thể trùng số với id PA này. */
     const dong = groups.flatMap((g) => g.items).filter((it: any) => it.key === `action:${ivId}` || it.key === `review:${ivId}`);
-    assert(dong.length === 1 && dong[0].key === `action:${ivId}` && dong[0].group === 'result', JSON.stringify(dong.map((x: any) => x.key)));
+    assert(dong.length === 1 && dong[0].key === `action:${ivId}` && dong[0].group === 'ghi_ket_qua_pa', JSON.stringify(dong.map((x: any) => x.key)));
     assert(dong[0].tieuDe.startsWith('Ghi kết quả PA') && dong[0].actionLabel === 'Ghi kết quả', dong[0].tieuDe);
   });
   check('N1 (2) · T53 Q1: dự kiến kết thúc đã qua mà hạn tuần chưa tới → KHÔNG có việc', () => {
     const { ivId } = taoPa('du-kien');
     t.conn.prepare('UPDATE case_interventions SET action_due = ?, followup_due = ? WHERE id = ?').run(t.addDays(t.TODAY, 6), t.addDays(t.TODAY, -3), ivId);
-    assert(!nhomCua(t.P.coreTeacher, 'result').some((it: any) => it.key.endsWith(`:${ivId}`)), 'dự kiến kết thúc thành việc');
+    assert(!nhomCua(t.P.coreTeacher, 'ghi_ket_qua_pa').some((it: any) => it.key.endsWith(`:${ivId}`)), 'dự kiến kết thúc thành việc');
   });
   check('N1 (2) · K5-58: PA đã huỷ không còn "Chờ tôi xử lý"; duyệt PA đã huỷ bị từ chối', () => {
     const { ivId } = taoPa('huy', { needsApproval: true, status: 'planned', kind: 'tutor' });

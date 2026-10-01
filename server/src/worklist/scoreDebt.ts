@@ -19,7 +19,9 @@ import { allProgrammes } from '../normal/regular.ts';
  * `userId` null = môn CHƯA PHÂN CÔNG giáo viên — vẫn là nợ (PR-UXF-a Q8: không giấu nợ; bảng Theo giáo viên có hàng "Chưa phân công").
  * `weekStart` = Thứ Hai tuần thi của CHÍNH môn đó (dòng bấm ra ghi `W2 SEP` của môn, không tuần của lượt).
  */
-export type DebtCell = { attemptId: number; classId: number; skill: string; userId: number | null; overdue: boolean; weekStart: string };
+export type DebtCell = { attemptId: number; classId: number; skill: string; userId: number | null; overdue: boolean; weekStart: string;
+  /** PR-VAI-a (Q24): hạn nhập của ô — cột Hạn "quá hạn a–b ngày" ở Cần xử lý đọc từ chính tập này. */
+  han: string | null };
 
 /** Tiến độ KHÔNG phải nợ điểm: vắng đã xác nhận, huỷ phần thi, ngoài phạm vi, đang chờ Quản lý duyệt dời, MT lịch sử (T34). */
 const NOT_DEBT = new Set(['absent', 'cancelled', 'skipped', 'reschedule_pending', 'lich_su']);
@@ -87,13 +89,13 @@ export function scoreDebtCells(p: Principal, today: string, branchIds: number[] 
       for (const skill of bo) {
         const v = views.get(skill);
         if (!v || !v.required || v.scored || !v.weekStart || v.weekStart > today || NOT_DEBT.has(v.progress)) continue;
-        out.push({ attemptId: a.id, classId: a.class_id, skill, userId: teacherOf.get(`${a.class_id}|${skill}`) ?? null, overdue: v.overdue, weekStart: v.weekStart });
+        out.push({ attemptId: a.id, classId: a.class_id, skill, userId: teacherOf.get(`${a.class_id}|${skill}`) ?? null, overdue: v.overdue, weekStart: v.weekStart, han: v.deadline ?? null });
       }
     } else {
       /* Không truyền `hoanTat` (R11) có chủ ý: nợ điểm đọc band/noShow/lịch, không đọc canEdit/khoa — đỡ 3 câu SQL. */
       for (const c of skillCells(p, a, scores, bundle.skips.get(a.id) ?? [], today, skillRows)) {
         if (!c.required || c.band !== null || c.noShow !== null || !c.weekStart || c.weekStart > today || NOT_DEBT.has(c.progress)) continue;
-        out.push({ attemptId: a.id, classId: a.class_id, skill: c.skill, userId: teacherOf.get(`${a.class_id}|${c.skill}`) ?? null, overdue: c.overdue, weekStart: c.weekStart });
+        out.push({ attemptId: a.id, classId: a.class_id, skill: c.skill, userId: teacherOf.get(`${a.class_id}|${c.skill}`) ?? null, overdue: c.overdue, weekStart: c.weekStart, han: c.deadline ?? null });
       }
     }
   }

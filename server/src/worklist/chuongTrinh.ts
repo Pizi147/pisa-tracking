@@ -12,7 +12,8 @@ import { parseObligation } from './metrics.ts';
  *   tín hiệu            lớp của tín hiệu
  *   bài / lượt          lớp của lượt
  *   vi phạm / PA xử lý  qua học viên
- * Chương trình = `classes.is_fast_track`. Không tìm được lớp → `isFt = null`: chỉ có mặt khi xem "Cả hai".
+ *   lớp                 chính lớp đó (PR-VAI-a)
+ * Chương trình = `classes.is_fast_track`. Không tìm được lớp → `isFt = null`: chỉ có mặt ở chỉ số gộp (không lọc khung).
  * Truy vấn theo lô 400 — không một câu mỗi phần tử.
  */
 export type LopCuaPhanTu = { classId: number | null; code: string | null; isFt: boolean | null };
@@ -89,6 +90,13 @@ export function lopCuaTap(unit: ChiSo['donVi'], ids: number[]): Map<number, LopC
       const luot = lopCuaTap('bai-thi', [...new Set(ids.map((id) => tachBaiId(id).attemptId))]);
       return new Map(ids.map((id) => [id, luot.get(tachBaiId(id).attemptId) ?? RONG]));
     }
+    case 'lop': {
+      /* PR-VAI-a: phần tử là chính lớp đó. */
+      const out = new Map<number, LopCuaPhanTu>();
+      for (const r of theoLo(ids, (chunk, ph) => conn.prepare(
+        `SELECT id, id AS class_id, code, is_fast_track FROM classes WHERE id IN (${ph})`).all(...chunk) as any[])) out.set(r.id, lopTu(r));
+      return out;
+    }
     case 'vi-pham':
       return quaHocVien(theoLo(ids, (chunk, ph) => conn.prepare(
         `SELECT id, student_id AS sid FROM violations WHERE id IN (${ph})`).all(...chunk) as any[]));
@@ -100,9 +108,9 @@ export function lopCuaTap(unit: ChiSo['donVi'], ids: number[]): Map<number, LopC
   }
 }
 
-/** Giữ phần tử thuộc đúng chương trình. Cả hai = không lọc. Không xác định được lớp → bị loại khỏi cả hai chương trình. */
+/** Giữ phần tử thuộc đúng chương trình. Không xác định được lớp → bị loại khỏi cả hai chương trình. */
 export function locTheoChuongTrinh(unit: ChiSo['donVi'], ids: number[], ct: ChuongTrinh): number[] {
-  if (ct === 'ca-hai' || !ids.length) return ids;
+  if (!ids.length) return ids;
   const m = lopCuaTap(unit, ids);
   const muonFt = ct === 'ft';
   return ids.filter((id) => { const x = m.get(id); return !!x && x.isFt !== null && x.isFt === muonFt; });

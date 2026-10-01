@@ -215,7 +215,7 @@ export async function runPrMonTests(t: YThucTestKit) {
     assert(no(l.classId).length === 0, 'còn nợ sau khi đủ điểm');
   });
   check('MON (4) · quét danh sách 4 môn viết tay ở máy chủ: chỉ bảng trắng', () => {
-    const TRANG = ['metrics.ts', 'boQuen.ts', 'vanDeHv.ts', 'phanTich.ts', 'keHoachTest.ts'];
+    const TRANG = ['metrics.ts', 'vanDeHv.ts', 'phanTich.ts', 'keHoachTest.ts'];
     const mau = [/\[\s*'listening',\s*'reading',\s*'writing',\s*'speaking'\s*\]/];
     const lo = quet('server/src').filter((f) => !/\/(tests|seed)\/|\/migrate/.test(f) && !TRANG.includes(path.basename(f)))
       .filter((f) => mau.some((m) => m.test(doc(f))));
@@ -277,9 +277,9 @@ export async function runPrMonTests(t: YThucTestKit) {
     const v = viMod.recordViolation(ha, { studentId: l.sids[0], category: 'homework', description: 'Không làm bài tập về nhà hai buổi liền.' });
     assert(v.violation.skill === null, `môn tự điền: ${v.violation.skill}`);
   });
-  check('MON (5) · bỏ quên không nối FOU → BE: khoá họ khác nhau (K5-57)', () => {
-    const src = doc('server/src/phanTich/boQuen.ts');
-    assert(src.includes('khoaHo(hopLe[0]) === khoaHo(hopLe[1])') && src.includes("=== 'FOU' ? 'FOU' : 'thuong'"), 'boQuen chưa so khoá họ');
+  /* PR-VAI-a (Q7): boQuen.ts đã gỡ cùng dòng "2 lần Test" — không còn nơi nối hai lượt FOU → BE, K5-57 hết đối tượng. */
+  check('MON (5) · bỏ quên không nối FOU → BE (K5-57) — PR-VAI-a: boQuen.ts đã gỡ', () => {
+    assert(!quet('server/src').some((f) => path.basename(f) === 'boQuen.ts'), 'boQuen.ts còn');
   });
   // ------------------------------------------------------------------ Task 6 · tên môn phía máy chủ
   const mywork: any = await import('../worklist/mywork.ts');
@@ -383,9 +383,9 @@ export async function runPrMonTests(t: YThucTestKit) {
     assert(cua('MB FT 101').length > 0 && cua('MB FT 101').every((x) => x.khung === 'ft'), 'FT');
     assert(it.filter((x) => !x.classId).every((x) => x.khung === null), 'không lớp');
   });
-  check('MON (9) · Tổng hợp Test: không cột môn khi Lớp thường / Cả hai; Tổng quan không câu "môn dưới kỳ vọng" ngoài FT (MH5)', () => {
+  check('MON (9) · Tổng hợp Test: không cột môn khi Lớp thường; Tổng quan không câu "môn dưới kỳ vọng" ngoài FT (MH5)', () => {
     const kn = (ct: string) => d.cotTongHopFor(ct as any).filter((c: any) => c.khoa.startsWith('kn:')).length;
-    assert(kn('thuong') === 0 && kn('ca-hai') === 0 && kn('ft') === 5, `${kn('thuong')} ${kn('ca-hai')} ${kn('ft')}`);
+    assert(kn('thuong') === 0 && kn('ft') === 5, `${kn('thuong')} ${kn('ft')}`);
     const ung = [{ loai: 'mon-duoi-ky-vong', metricId: 'hv-duoi-ky-vong-mon', tu: 9, mau: 10, nhanMon: 'Writing', extra: { skill: 'writing' } }];
     assert(d.chonDiemDangChuY(ung as any, 'thuong').length === 0 && d.chonDiemDangChuY(ung as any, 'ft').length === 1, 'chonDiemDangChuY');
   });

@@ -87,13 +87,13 @@ export async function runKhungTests(t: YThucTestKit) {
       && d.DUONG_TAB_CONG_VIEC['cho-duyet'] === '/cong-viec/cho-duyet', 'Đường dẫn tab');
     assert(d.khuVucHienThi(QL).find((k: any) => k.key === 'cong-viec')?.to === '/cong-viec/cho-duyet'
       && d.khuVucHienThi(GV).find((k: any) => k.key === 'cong-viec')?.to === '/cong-viec', 'Mục Công việc: QL vào thẳng Chờ duyệt');
-    assert(Object.values(d.TAB_TONG_QUAN_LABEL).join(',') === 'Tổng quan,Phân tích', 'Chữ tab Tổng quan (O3)');
+    assert(Object.values(d.TAB_TONG_QUAN_LABEL).join(',') === 'Việc hôm nay,Phân tích', 'Chữ tab Tổng quan (O3; PR-VAI-a K1-10: \"Việc hôm nay\")');
   });
 
   check('PR-O · O5/O7 Mọi đường dẫn cũ về đúng chỗ, giữ bộ lọc, không vòng lặp', () => {
     const cases: Array<[string, string, string | null]> = [
       ['/tong-quan', '?cn=4', '/?cn=4'],
-      ['/', '?tab=tinh-hinh&cn=2&hang-doi=no_plan', '/phan-tich?cn=2&hang-doi=no_plan'],
+      ['/', '?tab=tinh-hinh&cn=2&hang-doi=no_plan', '/phan-tich?goc=van-de&cn=2'],   // PR-Pb2-a: một bước tới Vấn đề HV
       ['/', '?tab=bao-cao', '/'],
       ['/', '?cn=2', null], ['/', '', null],
       ['/hoc-thuat', '', '/phan-tich'], ['/hoc-thuat/', '?goc=y-thuc&cn=2', '/phan-tich?goc=y-thuc&cn=2'],

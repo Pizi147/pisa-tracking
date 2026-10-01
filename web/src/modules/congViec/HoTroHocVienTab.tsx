@@ -11,7 +11,6 @@ import { NhomViec } from '../worklist/NhomViec.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import type { WorkGroup, WorkItem } from '../worklist/WorkList.tsx';
 import { NganViecVanHanh } from '../worklist/MgmtTasksPage.tsx';
-import { useNhacYThuc } from '../yThuc/YThucReminders.tsx';
 import { ChonPhuTrach, type NguoiPhuTrach } from './ChonPhuTrach.tsx';
 import { CongTacKhung, khungDaNho, type KhungLoc } from '../../ui/CongTacKhung.tsx';
 import {
@@ -49,7 +48,6 @@ export function HoTroHocVienTab() {
   const nhomTs = params.get('nhom') ?? (params.get('loai') ? nhomViecCua(params.get('loai')!) : null);
   const nhom: MaNhomViec | null = (NHOM_VIEC as readonly string[]).includes(nhomTs ?? '') ? (nhomTs as MaNhomViec) : null;
   const moViec = params.get('mo-viec') ? Number(params.get('mo-viec')) : null;
-  const nhac = useNhacYThuc();
 
   const setParam = (k: string, v: string | null) => {
     const next = new URLSearchParams(params);
@@ -82,15 +80,13 @@ export function HoTroHocVienTab() {
   const khung: KhungLoc = demKhung.ft > 0 && demKhung.thuong > 0 ? khungChon : 'tat-ca';
   const items = useMemo(() => (khung === 'tat-ca' ? tatCaViec : tatCaViec.filter((it) => !it.khung || it.khung === khung)), [tatCaViec, khung]);
   const trongNhom = useMemo(() => (nhom ? items.filter((it) => nhomViecCua(it.group) === nhom) : items), [items, nhom]);
-  /* PR-UXF-a F5 (Q19): MỘT biến nhắc cho mọi chip "Tất cả" — nhắc (không hạn) của chính người xem; chỉ hiện ở "Tất cả", không ở Quá hạn/Hôm nay. */
-  const soNhac = nguoi === 'toi' ? nhac.length : 0;
-  const demHan = useMemo(() => demLocNhanh(trongNhom, 'tat-ca', homNay, !nhom || nhom === 'y-thuc' ? soNhac : 0), [trongNhom, homNay, nhom, soNhac]);
+  const demHan = useMemo(() => demLocNhanh(trongNhom, 'tat-ca', homNay), [trongNhom, homNay]);
   const locItems = useMemo(() => items.filter((it) => khopLocNhanh(it, loc, homNay)), [items, loc, homNay]);
   const cuoiItems = useMemo(() => (nhom ? locItems.filter((it) => nhomViecCua(it.group) === nhom) : locItems), [locItems, nhom]);
-  /* Ý thức & Phối hợp là nhắc MỀM của chính người xem — không có ý nghĩa khi đang xem việc người khác; không có hạn nên chỉ ở lọc "Tất cả". */
-  const soNhacYThuc = loc === 'tat-ca' && (!nhom || nhom === 'y-thuc') ? soNhac : 0;
-  const demNhom = useMemo(() => demNhomChip(items, loc, homNay, soNhac), [items, loc, homNay, soNhac]);
-  const dsNhom = useMemo(() => gomNhomViec(cuoiItems, soNhacYThuc), [cuoiItems, soNhacYThuc]);
+  /* PR-VAI-a (K5-10): mọi số đếm từ `items` — Phối hợp SOS là việc thật, không còn nhắc mềm cộng tay. PR-UXF-a F5: hàng chip Nhóm đếm bằng
+     hàm thuần chung (`demNhomChip`) — "Tất cả" = Σ nhóm = ô "Tất cả" của Lọc nhanh khi không lọc. */
+  const demNhom = useMemo(() => demNhomChip(items, loc, homNay), [items, loc, homNay]);
+  const dsNhom = useMemo(() => gomNhomViec(cuoiItems), [cuoiItems]);
   /* Đang lọc thì kết quả đã ít — mở hết luôn, không bắt bấm thêm một lần gập/mở nữa. */
   const moHet = loc !== 'tat-ca' || !!nhom;
 
@@ -159,7 +155,7 @@ export function HoTroHocVienTab() {
       )}
       {data && !data.scopeEmpty && dsNhom.length > 0 && (
         <Card bodyClass="p-0">
-          <NhomViec nhom={dsNhom} nhac={nguoi === 'toi' ? nhac : []} soHien={10} moHet={moHet} onOpen={navigate} nutPhu={nutPhu} />
+          <NhomViec nhom={dsNhom} soHien={10} moHet={moHet} onOpen={navigate} nutPhu={nutPhu} />
         </Card>
       )}
 

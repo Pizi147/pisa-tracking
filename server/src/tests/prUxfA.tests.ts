@@ -275,14 +275,21 @@ export async function runPrUxfATests(t: YThucTestKit) {
     const o = baiQuaHan(P.mbManager, { branchId: MB });
     const rows = metricsSvc.rowsFor('bai', o.ids);
     assert(o.n === o.ids.length && rows.length === o.n && o.n > 0, `n ${o.n} · ids ${o.ids.length} · rows ${rows.length}`);
-    const bang = hoSoGv.bangGvChiNhanh(P.mbManager, { cn: MB });
-    const tong = bang.hang.reduce((n: number, h: any) => n + h.quaHan, 0) + (bang.chuaPhanCong?.quaHan ?? 0);
-    assert(tong === o.n, `Σ bảng GV (gồm Chưa phân công) ${tong} ≠ ô ${o.n}`);
-    for (const h of bang.hang.filter((x: any) => x.quaHan > 0)) {
-      const r = hoSoGv.oHoSoGv(P.mbManager, h.id, { cot: 'qua-han', cn: MB });
-      assert(r.rows.length === h.quaHan, `${h.ten}: hồ sơ ${r.rows.length} ≠ bảng ${h.quaHan}`);
-      for (const x of r.rows) assert(o.ids.includes(x.id), `id bài ${x.id} của hồ sơ không có trong ô`);
+    /* PR-Pb2-a: bảng Theo giáo viên luôn theo MỘT khung — so ô của cùng khung. */
+    let tongHaiKhung = 0;
+    for (const ct of ['ft', 'thuong']) {
+      const oK = baiQuaHan(P.mbManager, { branchId: MB, program: ct });
+      const bang = hoSoGv.bangGvChiNhanh(P.mbManager, { cn: MB, ct });
+      const tong = bang.hang.reduce((n: number, h: any) => n + h.quaHan, 0) + (bang.chuaPhanCong?.quaHan ?? 0);
+      assert(tong === oK.n, `${ct}: Σ bảng GV (gồm Chưa phân công) ${tong} ≠ ô ${oK.n}`);
+      for (const h of bang.hang.filter((x: any) => x.quaHan > 0)) {
+        const r = hoSoGv.oHoSoGv(P.mbManager, h.id, { cot: 'qua-han', cn: MB, ct });
+        assert(r.rows.length === h.quaHan, `${ct} · ${h.ten}: hồ sơ ${r.rows.length} ≠ bảng ${h.quaHan}`);
+        for (const x of r.rows) assert(oK.ids.includes(x.id), `id bài ${x.id} của hồ sơ không có trong ô`);
+      }
+      tongHaiKhung += oK.n;
     }
+    assert(tongHaiKhung === o.n, `ô FT + ô thường ${tongHaiKhung} ≠ ô gộp ${o.n}`);
     const cells = (debt.scoreDebtCells(P.admin, TODAY, [MB]) as any[]).filter((c) => c.overdue);
     const c0 = cells[0];
     const dong = metricsSvc.rowsFor('bai', [d.baiId(c0.attemptId, c0.skill)])[0];
@@ -304,7 +311,7 @@ export async function runPrUxfATests(t: YThucTestKit) {
     const tuanNay = week.ensurePeriod(d.mondayOfDate(TODAY)).id;
     const doc = () => ({
       o: baiQuaHan(P.mbManager, { branchId: MB }).n as number,
-      bang: hoSoGv.bangGvChiNhanh(P.mbManager, { cn: MB }).hang.find((h: any) => h.id === gvMb[0])?.quaHan ?? 0,
+      bang: hoSoGv.bangGvChiNhanh(P.mbManager, { cn: MB, ct: 'thuong' }).hang.find((h: any) => h.id === gvMb[0])?.quaHan ?? 0,
       hoSo: hoSoGv.oHoSoGv(P.mbManager, gvMb[0], { cot: 'qua-han', cn: MB }).rows.length as number,
       /* Việc nhập điểm L ở lớp thử — X là em duy nhất nợ ô L ở lớp này. */
       viec: (mywork.myWork(pL).items as any[]).some((i) => String(i.href ?? '').includes(`classId=${LOP}`) && String(i.href ?? '').includes('kn=listening')),
@@ -329,7 +336,7 @@ export async function runPrUxfATests(t: YThucTestKit) {
     const pc = get(`SELECT id FROM teacher_assignments WHERE user_id = ? AND class_id = ? AND skill = 'listening'`, gvMb[0], LOP).id;
     conn.prepare('UPDATE teacher_assignments SET effective_to = ? WHERE id = ?').run(t.addDays(TODAY, -1), pc);
     const o = (debt.scoreDebtCells(P.admin, TODAY, [MB]) as any[]).find((c) => c.attemptId === luotX && c.skill === 'listening');
-    const chuaPc = hoSoGv.bangGvChiNhanh(P.mbManager, { cn: MB }).chuaPhanCong;
+    const chuaPc = hoSoGv.bangGvChiNhanh(P.mbManager, { cn: MB, ct: 'thuong' }).chuaPhanCong;
     conn.prepare('UPDATE teacher_assignments SET effective_to = NULL WHERE id = ?').run(pc);
     assert(o && o.userId === null, `ô L phải chưa phân công: ${JSON.stringify(o)}`);
     assert(chuaPc && chuaPc.quaHan >= 1, 'hàng Chưa phân công có bài');
@@ -477,8 +484,10 @@ export async function runPrUxfATests(t: YThucTestKit) {
       /* SQL có thể vẫn ORDER BY (thứ tự phụ trong lớp); thứ tự LỚP do `soSanhLop` sắp lại bằng JS sau câu. */
       assert(/\.sort\(\(a, b\) => soSanhLop\(/.test(readFileSync(join(goc, f), 'utf8')), `${f}: chưa sắp lớp bằng soSanhLop`);
     }
-    const lop = bangCn.bangChiNhanh(P.mbManager, { branchId: MB, ct: 'ca-hai' }).hang as any[];
-    for (let i = 1; i < lop.length; i++) assert(d.soSanhLop({ code: lop[i - 1].nhan }, { code: lop[i].nhan }) <= 0, `${lop[i - 1].nhan} › ${lop[i].nhan}`);
+    for (const ct of ['ft', 'thuong']) {   // PR-Pb2-a: không còn khung "Cả hai"
+      const lop = bangCn.bangChiNhanh(P.mbManager, { branchId: MB, ct }).hang as any[];
+      for (let i = 1; i < lop.length; i++) assert(d.soSanhLop({ code: lop[i - 1].nhan }, { code: lop[i].nhan }) <= 0, `${lop[i - 1].nhan} › ${lop[i].nhan}`);
+    }
   });
 
   check('UXF-a (9) · F5 hàm thuần: n việc + m nhắc → Lọc nhanh "Tất cả" = Nhóm "Tất cả" = Σ nhóm; Quá hạn / Hôm nay không gồm nhắc', () => {
