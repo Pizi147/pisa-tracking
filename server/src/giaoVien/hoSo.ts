@@ -5,7 +5,7 @@
  * Không xếp hạng, không so sánh giữa người (Q30-5): chỉ số của MỘT người, hoặc bảng sắp theo tên.
  */
 import {
-  ENTRY_SKILLS, ENTRY_SKILL_SHORT, PERMISSIONS, chuongTrinhTuThamSo, demViecTheoNhom, duongThe, laCotOGv, roleLabel, tenMonNgan,
+  ENTRY_SKILLS, ENTRY_SKILL_SHORT, PERMISSIONS, chuongTrinhTuThamSo, ctTuyChon, demViecTheoNhom, duongThe, laCotOGv, roleLabel, tenMonNgan,
   type ChuongTrinh, type CotOGv, type NhomViec,
 } from '../../../shared/domain/index.ts';
 import { db } from '../db.ts';
@@ -48,10 +48,11 @@ export type LopGv = {
   /** Học viên đang học của lớp — để đếm học viên KHÁC NHAU của cả hồ sơ (một em học hai lớp của GV chỉ đếm một lần). */
   hvIds: Set<number>;
 };
-const locKhung = (ct: ChuongTrinh, khung: 'ft' | 'thuong') => ct === 'ca-hai' || ct === khung;
+/** PR-Pb2-a: `ct = null` = gộp hai khung (hồ sơ GV, Lịch sắp tới). */
+const locKhung = (ct: ChuongTrinh | null, khung: 'ft' | 'thuong') => ct === null || ct === khung;
 
 /** Lớp GV đang dạy (phân công đang hiệu lực, lớp `active`), trong `branchIds` (null = mọi chi nhánh) và khung `ct`. FT trước, rồi theo mã lớp (Q17). */
-export function lopCuaGv(gvId: number, homNay: string, branchIds: number[] | null, ct: ChuongTrinh = 'ca-hai'): LopGv[] {
+export function lopCuaGv(gvId: number, homNay: string, branchIds: number[] | null, ct: ChuongTrinh | null = null): LopGv[] {
   if (Array.isArray(branchIds) && !branchIds.length) return [];
   const conn = db();
   const rows = conn.prepare(
@@ -91,14 +92,14 @@ export function noDiemCuaGv(p: Principal, gvId: number, homNay: string, lop: rea
 
 export type CaseGv = CaseChiTiet & { hocVien: string; maLop: string | null };
 /** Case đang mở GV làm người phụ trách chính, trong `branchIds`, khung `ct`; quá hạn trước, rồi hạn gần (Q8, Q17). */
-export function caseMoCuaGv(p: Principal, gvId: number, branchIds: number[] | null, ct: ChuongTrinh = 'ca-hai'): CaseGv[] {
+export function caseMoCuaGv(p: Principal, gvId: number, branchIds: number[] | null, ct: ChuongTrinh | null = null): CaseGv[] {
   return caseGvTuRows(listCases(p, { ownerUserId: gvId }).rows, branchIds, ct).map(({ chu, ...c }) => c);
 }
 /** Cùng luật lọc cho hồ sơ một GV và bảng chi nhánh (số ở bảng = số ở hồ sơ): Case chưa xong, chi nhánh gốc ∈ `branchIds`, khung `ct`. */
-function caseGvTuRows(mapped: readonly MappedCase[], branchIds: number[] | null, ct: ChuongTrinh): (CaseGv & { chu: number })[] {
+function caseGvTuRows(mapped: readonly MappedCase[], branchIds: number[] | null, ct: ChuongTrinh | null): (CaseGv & { chu: number })[] {
   const rows = mapped.filter((c) => c.state !== 'done'
     && (branchIds === null || branchIds.includes((c.homeBranchId ?? c.branchId) as number))
-    && (ct === 'ca-hai' || (ct === 'ft') === (c.classKind === 'ft')));
+    && locKhung(ct, c.classKind === 'ft' ? 'ft' : 'thuong'));
   const chiTiet = chiTietCaseMo(rows);
   const out: (CaseGv & { chu: number })[] = [];
   for (const c of rows) {
@@ -223,7 +224,7 @@ export function oHoSoGv(p: Principal, gvId: number, q: ThamSoO): { n: number; ti
     branchIds = [q.cn];
   }
   const homNay = demoToday();
-  const ct = chuongTrinhTuThamSo(q.ct);
+  const ct = ctTuyChon(q.ct);   // vắng = gộp hai khung (Q2)
   const conn = db();
   const ket = (rows: MetricRow[], tieuDe: (n: number) => string) => ({ n: rows.length, tieuDe: tieuDe(rows.length), rows });
 

@@ -4,6 +4,8 @@
  * Máy chủ trả bộ cờ `NavQuyen` (server/src/platform/nav.ts); giao diện chỉ đọc cờ + các hàm ở đây. Khu vực hay tab không
  * có quyền thì bỏ hẳn, không hiện ô khoá. Quyền thật vẫn do API chặn.
  */
+import { laLoaiBoQuen } from './phanTich.ts';
+
 export type KhuVuc = 'tong-quan' | 'hoc-vien' | 'test' | 'cong-viec';
 export type TabTest = 'lich' | 'ke-hoach';
 export type TabCongViec = 'cho-duyet' | 'ho-tro' | 'yeu-cau' | 'van-hanh' | 'bao-cao';
@@ -138,6 +140,25 @@ const voiThamSo = (path: string, q: URLSearchParams) => {
 };
 
 /**
+ * PR-Pb2-a (Q4, T59, K1 §4b): Danh sách Case đã bỏ — tham số của nó đi THẲNG tới đích mới, một bước. Không có tham số cũ → null.
+ *   `hang-doi=due`            → Công việc · Case học thuật quá hạn (giữ `cn`)
+ *   `hang-doi=<bỏ quên>`      → Tổng quan (giữ `cn`, `ct`) — dòng Cần xử lý của nó mở đúng tập
+ *   góc `danh-sach` / `hang-doi` khác / `tinh-hinh` / `ky-nang` → Vấn đề HV (giữ `cn`, `ct`)
+ */
+function phanTichCu(q: URLSearchParams): string | null {
+  const hangDoi = q.get('hang-doi');
+  if (q.get('goc') !== 'danh-sach' && !hangDoi && !q.has('tinh-hinh') && !q.has('ky-nang')) return null;
+  const giu = (khoa: readonly string[], dau: [string, string][] = []) => {
+    const m = new URLSearchParams(dau);
+    for (const k of khoa) { const v = q.get(k); if (v) m.set(k, v); }
+    return m;
+  };
+  if (hangDoi === 'due') return voiThamSo('/cong-viec', giu(['cn'], [['nhom', 'case-hoc-thuat'], ['loc', 'qua-han'], ['nguoi', 'tat-ca']]));
+  if (laLoaiBoQuen(hangDoi)) return voiThamSo('/', giu(['cn', 'ct']));
+  return voiThamSo('/phan-tich', giu(['cn', 'ct'], [['goc', 'van-de']]));
+}
+
+/**
  * ĐƯỜNG DẪN CŨ → MỚI (O5, O7). Link đã lưu, link trong thông báo và link máy chủ sinh ra vẫn mở đúng chỗ.
  * Trả null khi đường dẫn đang dùng được. Mọi đích trả về đều không bị chuyển tiếp lần nữa (phép kiểm PR-O khẳng định).
  */
@@ -152,9 +173,10 @@ export function duongMoi(pathname: string, search: string): string | null {
   if (p === '/' && q.has('tab')) {
     const tab = q.get('tab');
     q.delete('tab');
-    return voiThamSo(tab === 'tinh-hinh' ? '/phan-tich' : '/', q);
+    return tab === 'tinh-hinh' ? phanTichCu(q) ?? voiThamSo('/phan-tich', q) : voiThamSo('/', q);
   }
-  if (p === '/hoc-thuat') return voiThamSo('/phan-tich', q);
+  if (p === '/hoc-thuat') return phanTichCu(q) ?? voiThamSo('/phan-tich', q);
+  if (p === '/phan-tich') return phanTichCu(q);
   if (p === '/tong-hop-tuan') {
     const cn = q.get('branchId');
     const moi = new URLSearchParams({ xem: 'tuan' });

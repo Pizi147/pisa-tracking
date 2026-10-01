@@ -18,6 +18,8 @@ export type DaiCuoiKhoa = 'duoi_50' | '50_59' | '60_69' | 'dat';
 /** Ngưỡng dưới của hai dải giữa; ngưỡng Pass là `RATIO_PASS_THRESHOLD`. */
 const NGUONG_HOC_LAI = 0.5;
 const NGUONG_LEN = 0.6;
+/** Mini Test ≥ 70 % là đạt (= `RATIO_PASS_THRESHOLD`). PR-Pb2-a: chuyển lên shared — ghi Mini Test, Hiệu quả PA và Tổng hợp Test đọc chung. */
+export const NGUONG_MINI_TEST = RATIO_PASS_THRESHOLD;
 
 export function daiCuoiKhoa(tyLe: number): DaiCuoiKhoa {
   if (tyLe >= RATIO_PASS_THRESHOLD) return 'dat';

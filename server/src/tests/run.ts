@@ -1290,7 +1290,7 @@ check('Nhiều việc quanh MỘT vấn đề gom lại thành MỘT chương, k
     .get() as any;
   assert(row, 'Dữ liệu mẫu thiếu vấn đề đã có tác động');
   const eps = profile.studentProfile(P.admin, row.sid).episodes;
-  const mine = eps.filter((e: any) => e.link === `/hoc-thuat/case/${row.cid}`);
+  const mine = eps.filter((e: any) => e.link === `/hoc-vien/${row.sid}?case=${row.cid}`);   // PR-Pb2-a: dòng Case mở Ngăn Case trên hồ sơ
   assert(mine.length <= 1, `Vấn đề ${row.cid} bị tách thành ${mine.length} chương rời nhau`);
 });
 check('Target chốt tại lượt: sửa lộ trình không viết lại lịch sử', () => {
@@ -9805,6 +9805,9 @@ await runPrS5fATests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 // ==================================================================== PR-S5F-b (sửa sau rà cuối đợt 5 — Giữa khoá, hồ sơ GV, tốc độ)
 const { runPrS5fbTests } = await import('./prS5fb.tests.ts');
 await runPrS5fbTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== PR-Pb2-a (bỏ Cả hai, bỏ Danh sách Case, Hiệu quả PA, Tổng hợp lớp thường)
+const { runPrPb2aTests } = await import('./prPb2a.tests.ts');
+await runPrPb2aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
