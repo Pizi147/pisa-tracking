@@ -19,6 +19,10 @@ export const THONG_BAO_TOI_DA = 50;
  * PR-S6F-a: Case chờ nguyên nhân = CÙNG luật `awaitingCauseCaseIds` (Case từ SOS, không có thẻ "Không cần theo dõi" chờ QL); thẻ Báo lên
  * như thẻ chờ duyệt; thẻ bị từ chối còn việc khi chưa có thẻ cùng loại, cùng người, cùng em / lớp gửi SAU nó (đã sửa gửi lại → Để biết).
  */
+/** Case của đối tượng một thẻ duyệt — `sos_case` là chính Case, `intervention` là Case của PA; thẻ khác (Ý thức, lịch…) NULL. */
+const CASE_CUA_THE = (y: string) => `(CASE ${y}.doi_tuong_loai WHEN 'sos_case' THEN ${y}.doi_tuong_id
+  WHEN 'intervention' THEN (SELECT ci.case_id FROM case_interventions ci WHERE ci.id = ${y}.doi_tuong_id) END)`;
+
 export function thongBaoCua(userId: number) {
   const rows = db()
     .prepare(
@@ -41,9 +45,10 @@ export function thongBaoCua(userId: number) {
                       CASE WHEN ycd.trang_thai = 'tu_choi' AND NOT EXISTS (SELECT 1 FROM yeu_cau_duyet y2
                              WHERE y2.id > ycd.id AND y2.loai = ycd.loai AND y2.nguoi_xin IS ycd.nguoi_xin
                                AND y2.hoc_vien_id IS ycd.hoc_vien_id AND y2.lop_id IS ycd.lop_id
-                               /* PR-Dọn: thẻ gửi lại phải cùng ĐỐI TƯỢNG (thẻ cho Case B không xoá việc của thẻ bị từ chối ở Case A).
+                               /* PR-Dọn: thẻ gắn Case phải cùng CASE (thẻ cho Case B không xoá việc của thẻ bị từ chối ở Case A); thẻ
+                                  không gắn Case (Ý thức…) gửi lại là một đối tượng mới, nên vẫn so theo em như cũ.
                                   ponytail: nối thẻ cũ → thẻ mới bằng cột riêng nếu sau này có luồng gửi lại khác đối tượng. */
-                               AND y2.doi_tuong_loai IS ycd.doi_tuong_loai AND y2.doi_tuong_id IS ycd.doi_tuong_id) THEN 1 ELSE 0 END
+                               AND ${CASE_CUA_THE('y2')} IS ${CASE_CUA_THE('ycd')}) THEN 1 ELSE 0 END
                   END AS con_viec
              FROM notifications n
              LEFT JOIN sos_cases sc ON n.entity_type = 'sos_case' AND sc.id = n.entity_id

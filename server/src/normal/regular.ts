@@ -104,14 +104,14 @@ export function isRatioClass(classId: number | null | undefined): boolean {
  */
 export function programmeCodeOfCycle(cycleId: number | null | undefined): string | null {
   if (!cycleId) return null;
-  const row = db()
+  /* PR-Dọn (Task 9h): nhớ trong request GET — hồ sơ HV hỏi lại cùng lộ trình nhiều lần. */
+  return nho(`ct-lo-trinh:${cycleId}`, () => (db()
     .prepare(
       `SELECT c.programme_code AS code FROM assessment_attempts a
          JOIN classes c ON c.id = a.class_id
         WHERE a.cycle_id = ? AND c.programme_code IS NOT NULL LIMIT 1`,
     )
-    .get(cycleId) as any;
-  return row?.code ?? null;
+    .get(cycleId) as any)?.code ?? null);
 }
 
 /**

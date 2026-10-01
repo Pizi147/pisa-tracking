@@ -1,5 +1,5 @@
 import { db } from '../db.ts';
-import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
+import { HV_DANG_HOC_SQL, dongHocVien } from '../students/tamDung.ts';
 import {
   HUONG_TIEP, NORMAL_LADDER, PERMISSIONS, nhanHuong, nhanTiepTheo, soSanhLop, trongHaiTuanCuoi,
   type Huong, type ProgrammeCode,
@@ -194,7 +194,7 @@ export function lopHocCua(p: Principal, studentId: number, current: any): {
   };
 } {
   const conn = db();
-  const s = conn.prepare('SELECT status, archived_at FROM students WHERE id = ?').get(studentId) as any;
+  const s = dongHocVien(studentId);
   const chiXem = !!s?.archived_at;
   if (chiXem) {
     return {

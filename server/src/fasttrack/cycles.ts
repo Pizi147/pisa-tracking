@@ -1,4 +1,5 @@
 import { db, tx } from '../db.ts';
+import { nho } from '../platform/nguCanhRequest.ts';
 import {
   BASELINE_SOURCES, CO_DIEM_SQL, CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, CYCLE_STATUSES, PERMISSIONS, soMtKeTiep, tuanLich,
   KCK, canNamGan, docNgayNhap, laKck, mondayOfDate, ngay, type ExamPlan, type LuotSo, type Route,
@@ -20,16 +21,17 @@ import { activeRouteCodes } from '../platform/sysconfig.ts';
  * MT3 trở đi kỳ vọng luôn bằng target. Chỉ khi sang lộ trình mới (LT1 → LT2) mới đánh số
  * lại từ MT1, vì lúc đó học viên đã có target mới.
  */
+/** Mọi lộ trình của em theo `seq` — PR-Dọn (Task 9d): nhớ trong request GET (hồ sơ HV đọc lại ở lộ trình đang chạy, bảng kỹ năng). */
 export function cyclesOf(studentId: number) {
-  return db()
+  return nho(`ds-lo-trinh:${studentId}`, () => db()
     .prepare('SELECT * FROM learning_cycles WHERE student_id = ? ORDER BY seq')
-    .all(studentId) as any[];
+    .all(studentId) as any[]);
 }
 
+/** Lộ trình đang chạy có `seq` lớn nhất; không có thì lộ trình `seq` lớn nhất (= `ORDER BY (status = 'active') DESC, seq DESC`). */
 export function currentCycle(studentId: number) {
-  return (db()
-    .prepare(`SELECT * FROM learning_cycles WHERE student_id = ? ORDER BY (status = 'active') DESC, seq DESC LIMIT 1`)
-    .get(studentId) as any) ?? null;
+  const ds = cyclesOf(studentId);
+  return [...ds].reverse().find((c) => c.status === 'active') ?? ds.at(-1) ?? null;
 }
 
 /**

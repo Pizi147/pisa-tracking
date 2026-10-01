@@ -477,7 +477,8 @@ export async function runPrDonATests(t: YThucTestKit) {
       `HV_DANG_HOC_SQL đổi chữ: ${HV_DANG_HOC_SQL('s')}`);
   });
 
-  check('Dọn-a (5c) · Q9 lớp đã kết thúc còn ô trống của GV L: /my-work nhóm score KHÔNG có lớp đó, Nợ điểm cũng không; (lớp, đợt) hai đường bằng nhau trên mọi lớp', () => {
+  /* Vế "(lớp, đợt) hai đường bằng nhau trên mọi lớp" đã khoá ở S6F-a (3e) (sửa kỳ vọng ở Task 5). */
+  check('Dọn-a (5c) · Q9 lớp đã kết thúc còn ô trống của GV L: /my-work nhóm score KHÔNG có lớp đó, Nợ điểm cũng không', () => {
     const gv = P.lrTeacher;
     const viecScore = () => (mw.myWork(gv).groups as any[]).flatMap((x) => x.items).filter((it: any) => it.group === 'score' && it.mine);
     const lop = viecScore()[0]?.classId;
@@ -486,12 +487,6 @@ export async function runPrDonATests(t: YThucTestKit) {
     try {
       assert(!viecScore().some((it: any) => it.classId === lop), 'Công việc vẫn có việc nhập điểm của lớp đã kết thúc');
       assert(!(debt.scoreDebtCells(P.admin, TODAY, null) as any[]).some((x) => x.classId === lop), 'Nợ điểm vẫn có lớp đã kết thúc');
-      const luot = new Map(all('SELECT id, class_id, attempt_no, kind FROM assessment_attempts').map((a) => [a.id, a]));
-      const viec = new Set(viecScore().filter((it: any) => it.urgency === 'overdue').map((it: any) => `${it.classId}|${it.attemptNo}`));
-      const no = new Set((debt.scoreDebtCells(P.admin, TODAY, null) as any[]).filter((x) => x.overdue && x.userId === gv.userId)
-        .map((x) => `${luot.get(x.attemptId).class_id}|${luot.get(x.attemptId).attempt_no}`));
-      const lech = [...viec].filter((k) => !no.has(k)).concat([...no].filter((k) => !viec.has(k)));
-      assert(!lech.length, `lệch: ${lech.join(' ; ')}`);
     } finally { conn.prepare(`UPDATE classes SET status = 'active' WHERE id = ?`).run(lop); }
   });
 
@@ -706,5 +701,73 @@ export async function runPrDonATests(t: YThucTestKit) {
     assert(d.duongCase(12, 34) === d.duongHoSoHocVien(12, { caseId: 34 }) && !/export const duongCase[^;]*hoc-thuat/.test(docNguon('shared/domain/duongHoSo.ts')), `duongCase: ${d.duongCase(12, 34)}`);
     const rt = docNguon('web/src/modules/cases/CaseBoardPage.tsx');
     assert(!/NganCase|<nav/.test(rt) && /<Navigate replace to=\{duongHoSoHocVien\(/.test(rt) && /hoc-thuat\/case\/:id/.test(docNguon('web/src/App.tsx')), 'CaseRoutePage');
+  });
+
+  // ------------------------------------------------------------------ khối 9 · tốc độ (phần đo số câu nằm ở tocDo.run.ts: 9a, 9c, 9d)
+  console.log('\nPR-Dọn-a · (9) Tốc độ — tải trang đầu bắt route mới, VN31, khoá nhớ latestAttempts');
+  const { TAI_TRANG } = await import('./tocDoDuong.ts');
+  const nguCanh: any = await import('../platform/nguCanhRequest.ts');
+  const { phamViXuatMt } = await import('../phanTich/xuatMt.ts');
+  const danhGia: any = await import('../worklist/danhGia.ts');
+  const { createHash } = await import('node:crypto');
+  /**
+   * Đường GET gọi KHÔNG phải lúc mở trang Tổng quan — mỗi đường một lý do. Đường mới xuất hiện trong cây Tổng quan mà không có ở
+   * `TAI_TRANG` cũng không có ở đây → phép (9e) đỏ, buộc người sửa đo lại trần tải trang.
+   */
+  const GOI_KHI_BAM: Record<string, string> = {
+    '/ref/periods': 'Filters.tsx — bộ lọc tuần, Tổng quan không vẽ', '/ref/current-period': 'Filters.tsx — như trên', '/ref/period-window': 'Filters.tsx — như trên',
+    '/phan-tich/hieu-qua-pa': 'tab Phân tích — khi bấm tab', '/phan-tich/giao-vien': 'tab Phân tích', '/phan-tich/giao-vien/cham-diem': 'tab Phân tích',
+    '/phan-tich/tong-hop': 'tab Phân tích', '/phan-tich/van-de-hv': 'tab Phân tích', '/phan-tich/y-thuc': 'tab Phân tích', '/xuat-mt/xem-truoc': 'tab Phân tích › Xuất',
+    '/giao-vien': 'bảng Theo giáo viên — tab Phân tích', '/metrics/': 'SoLieu / SoLieuO — mở danh sách khi bấm ô (ô số lúc mở trang kiểm riêng ở dưới)',
+    '/yeu-cau': 'Yêu cầu của tôi — chỉ khi đã có thẻ', '/students': 'ô tìm học viên ở thanh trên — khi gõ',
+  };
+  check('Dọn-a (9e) · tải trang đầu Tổng quan bắt được route mới: mọi GET trong cây OverviewPage (+ App, Header) có trong TAI_TRANG hoặc trong danh sách "gọi khi bấm"', () => {
+    const tep = new Set<string>();
+    const di = (f: string, deQuy: boolean) => {
+      const p = path.resolve(f);
+      if (tep.has(p) || !fs.existsSync(p)) return;
+      tep.add(p);
+      if (deQuy) for (const m of fs.readFileSync(p, 'utf8').matchAll(/from\s+'(\.[^']+)'/g)) di(path.resolve(path.dirname(p), m[1]), true);
+    };
+    di(path.join(REPO, 'web/src/modules/worklist/OverviewPage.tsx'), true);
+    di(path.join(REPO, 'web/src/App.tsx'), false);
+    di(path.join(REPO, 'web/src/modules/platform/Header.tsx'), false);
+    const goc = (u: string) => u.split(/[?$]/)[0];
+    const coTrang = new Set(Object.values(TAI_TRANG).flatMap((x) => x.urls.map(goc)));
+    const thieu: string[] = [];
+    for (const p of tep) {
+      const ma = fs.readFileSync(p, 'utf8');
+      for (const m of ma.matchAll(/(?:useApi|api\.get)\s*(?:<[^>]*(?:<[^>]*>[^>]*)*>)?\(\s*([^;]+?)(?:,\s*\[|\);|\)\s*;)/g)) {
+        for (const l of m[1].matchAll(/['`](\/[^'`?$]*)/g)) {
+          const g = l[1];
+          if (!coTrang.has(g) && !(g in GOI_KHI_BAM)) thieu.push(`${path.relative(REPO, p)}: ${g}`);
+        }
+      }
+    }
+    /* Sáu ô số của Quản lý gọi `/metrics/{id}` lúc mở trang — id ghi trong MetricTiles.tsx. */
+    const o = [...docNguon('web/src/modules/worklist/MetricTiles.tsx').matchAll(/<(?:O|SoPhu) id="([^"]+)"/g)].map((m) => `/metrics/${m[1]}`);
+    for (const u of o) if (!TAI_TRANG['QL trang Tổng quan'].urls.some((x) => goc(x) === u)) thieu.push(`MetricTiles: ${u}`);
+    assert(tep.size > 20 && o.length >= 4 && !thieu.length, `GET lúc mở trang chưa có trong TAI_TRANG:\n${[...new Set(thieu)].join('\n')}`);
+  });
+
+  check('Dọn-a (9f) · VN31 khoá lại: phamViXuatMt (nav "Xuất") không chạy câu SQL nào trong request', () => {
+    nguCanh.chayTrongRequest('GET', () => {
+      phamViXuatMt(P.coreTeacher);   // lượt đầu: ngày nghiệp vụ được nhớ trong request
+      const truoc = nguCanh.soCauSql();
+      for (const p of [P.coreTeacher, P.mbManager, P.admin]) phamViXuatMt(p);
+      assert(nguCanh.soCauSql() === truoc, `phamViXuatMt chạy ${nguCanh.soCauSql() - truoc} câu`);
+    });
+  });
+
+  check('Dọn-a (9g) · latestAttempts: khoá nhớ ≤ 80 ký tự với 2 000 id; kết quả như gọi ngoài request', () => {
+    const ids = Array.from({ length: 2000 }, (_, k) => k + 1);
+    const khoa = `luot-moi:valid:${TODAY}:${createHash('sha1').update(ids.join(',')).digest('hex')}`;
+    nguCanh.chayTrongRequest('GET', () => {
+      const trong = danhGia.latestAttempts(ids, 'valid', TODAY) as Map<number, any>;
+      assert(nguCanh.coKhoa(khoa) && khoa.length <= 80, `khoá dài ${khoa.length} hoặc không đúng khoá băm`);
+      const ngoai = danhGia.latestAttempts(ids, 'valid', TODAY);   // vẫn trong request: đọc từ bộ nhớ, cùng đối tượng
+      assert(trong === ngoai && trong.size > 0, 'không đọc lại từ bộ nhớ');
+    });
+    assert(!/luot-moi:\$\{pick\}:\$\{today\}:\$\{studentIds\.join/.test(docNguon('server/src/worklist/danhGia.ts')), 'khoá còn ghép thô cả mảng id');
   });
 }

@@ -26,9 +26,10 @@ import { can, isCoreTeacherOf, napTruocPhamVi, require_, scopeFor, type Principa
 import { demoToday } from '../demoConfig.ts';
 import { nho, trongBoNho } from '../platform/nguCanhRequest.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
-import { currentCycle } from '../fasttrack/cycles.ts';
+import { currentCycle, cyclesOf } from '../fasttrack/cycles.ts';
 import { expectationFor } from '../fasttrack/scoring.ts';
-import { khoangTamDung } from '../students/tamDung.ts';
+import { dongHocVien, khoangTamDung } from '../students/tamDung.ts';
+import { activeClassOf } from '../yThuc/access.ts';
 import { isRatioCycle, programmeCodeOfCycle } from '../normal/regular.ts';
 import { suggestCaseOwner } from './owner.ts';
 import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
@@ -2104,12 +2105,11 @@ function facetsOf(all: MappedCase[], f: CaseFilters) {
  */
 export function skillSupportBoard(p: Principal, studentId: number, cycleId?: number | null) {
   const conn = db();
-  const student = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
+  const student = dongHocVien(studentId);
   if (!student) throw notFound('Không tìm thấy học viên');
-  const enr = conn
-    .prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status='active' ORDER BY id DESC LIMIT 1`)
-    .get(studentId) as any;
-  require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId: enr?.class_id ?? null, studentId },
+  /* PR-Dọn (9c): lớp đang học qua `activeClassOf` (nhớ trong request) — cùng câu, không đọc lại. */
+  const lopDangHoc = activeClassOf(studentId);
+  require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId: lopDangHoc, studentId },
     'Bạn không có quyền xem học viên này.');
   dienMocQuyChe({ studentId });   // PR-SOS K3-14
 
@@ -2126,9 +2126,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
    * lần hỏi chung ở đây.
    */
 
-  const cycle = cycleId
-    ? (conn.prepare('SELECT * FROM learning_cycles WHERE id = ? AND student_id = ?').get(cycleId, studentId) as any)
-    : currentCycle(studentId);
+  const cycle = cycleId ? cyclesOf(studentId).find((c) => c.id === cycleId) : currentCycle(studentId);   // PR-Dọn (9d): cùng danh sách đã nhớ
 
   /*
    * ĐIỂM HAI LƯỢT GẦN NHẤT của từng ô nhập điểm, để nói được "tăng hay giảm".
@@ -2398,7 +2396,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
            * khác tên trường `class_id`/`eff_student_id`).
            */
           canEdit: can(p, PERMISSIONS.SOS_EDIT, {
-            classId: enr?.class_id ?? null, studentId,
+            classId: lopDangHoc, studentId,
             skill: c.topic ?? undefined,
           }),
           /*
@@ -2406,7 +2404,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
            * gỡ, nên thẻ tự nói: người xem có chốt được không, và còn gì đang chặn. Lấy đúng
            * hai hàm mà nút "Hoàn thành case" ở trang riêng vẫn hỏi — không phép tính thứ hai.
            */
-          canClose: canCloseCase(p, { class_id: enr?.class_id ?? null, student_id: studentId, topic: c.topic }),
+          canClose: canCloseCase(p, { class_id: lopDangHoc, student_id: studentId, topic: c.topic }),
           closeBlockers: c.status === 'done' ? [] : closeBlockers(c.id),
           /* Đủ thứ để vẽ MỘT THẺ CASE mà không phải gọi thêm một đường nữa (mục 1 · 2). */
           ...caseCardOf(c.id, c, soBangChung, boTroMap.get(c.id) ?? null),
@@ -2505,9 +2503,9 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>, bo
       mocChu: iv.preset === 1 ? mocChuPa({ span: iv.moc_quy_che ?? null, followupDue: iv.followup_due ?? null, mtKe: mtKe(iv), daXacNhan: !!iv.confirmed_at }, today) : null,
       lanCuoi: iv.status === 'started' && laLanGhiCuoi({ preset: iv.preset === 1, followupDue: iv.followup_due ?? null, actionDue: iv.action_due ?? null }, today),
       performer: iv.performer_user_name ?? iv.performer_name ?? null,
-      /** PR-VAI-b (Q2): người ghi kết quả PA — đúng cột Công việc dùng (`performer_user_id ?? recorded_by`, `mywork.ts` 2b). */
-      nguoiId: (iv.performer_user_id ?? iv.recorded_by ?? null) as number | null,
-      nguoiTen: (iv.performer_user_id ? iv.performer_user_name : iv.recorder_user_name) ?? null as string | null,
+      /** PR-VAI-b (Q2) → PR-Dọn: người ghi kết quả PA — người thực hiện, không có thì người phụ trách Case (cùng Công việc 2b và chỉ số pa-can-cap-nhat). */
+      nguoiId: (iv.performer_user_id ?? c.owner_user_id ?? null) as number | null,
+      nguoiTen: (iv.performer_user_id ? iv.performer_user_name : c.owner_name) ?? null as string | null,
       nhom: (iv.nhom_bo_tro ?? null) as string | null,
       status: iv.status as string,
       statusLabel: INTERVENTION_STATUS_LABEL[iv.status as keyof typeof INTERVENTION_STATUS_LABEL] ?? iv.status,

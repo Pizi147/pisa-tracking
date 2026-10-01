@@ -1,4 +1,5 @@
-import { db } from '../db.ts';
+import { db, theoLo } from '../db.ts';
+import { datNho } from '../platform/nguCanhRequest.ts';
 import {
   ASSESSED_SKILLS, BASELINE_SOURCE_LABEL, CYCLE_OUTCOME_LABEL, ENTRY_SKILLS,
   ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, JOURNEY_GROUP, PERMISSIONS,
@@ -24,7 +25,7 @@ import { cuoiKhoaTheoHocVien, miniTestCuaHocVien, type EmCuoiKhoa } from '../nor
 import { quyenBoTro } from '../cases/boTro.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { activeClassOf, canManageDiscipline } from '../yThuc/access.ts';
-import { khoangTamDung } from './tamDung.ts';
+import { dongHocVien, khoangTamDung } from './tamDung.ts';
 import { viecCuaHocVien } from './viecHocVien.ts';
 import { trangThaiYThuc } from '../yThuc/trangThai.ts';
 
@@ -499,7 +500,7 @@ function dongThongTin(i: {
 
 export function studentProfile(p: Principal, studentId: number, wantCycleId?: number | null, attemptId?: number | null) {
   const conn = db();
-  const s = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
+  const s = dongHocVien(studentId);
   if (!s) throw notFound('Không tìm thấy học viên');
   require_(p, PERMISSIONS.STUDENT_VIEW, { studentId }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
 
@@ -553,16 +554,31 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       .prepare(`SELECT id, attempt_id, sos_level, status, urgency FROM sos_cases WHERE attempt_id IN (${ids.map(() => '?').join(',')})`)
       .all(...ids) as any[]) caseByAttempt.set(r.attempt_id, r);
   }
-  /* PR-HSM (F8, K4-33): nhãn "dời S" / "huỷ phần" ở bảng Mock Test — MỘT câu cả lô trên lịch từng kỹ năng. */
+  /*
+   * PR-HSM (F8, K4-33): nhãn "dời S" / "huỷ phần" ở bảng Mock Test — MỘT câu cả lô trên lịch từng kỹ năng.
+   * PR-Dọn (Task 9a): CÙNG câu đó (bỏ lọc `required`) nạp sẵn phạm vi kỹ năng (`skipsOf`), và MỘT câu nạp điểm (`scoresOf`) cho mọi
+   * lượt — trong request GET đặt vào bộ nhớ đúng khoá hai hàm đó dùng (`bo-mon:`, `diem:`), thay vì hai câu cho MỖI lượt. Lượt không có
+   * dòng lịch nào (dữ liệu cũ) không nạp sẵn phạm vi: `skipsOf` tự đọc bảng cũ như trước.
+   */
   const kyNangCua = new Map<number, any[]>();
   if (attemptRows.length) {
     const ids = attemptRows.map((a) => a.id);
-    for (let i = 0; i < ids.length; i += 900) {
-      const lo = ids.slice(i, i + 900);
-      for (const r of conn
-        .prepare(`SELECT attempt_id, skill, sit_status, absence_move_count FROM attempt_skills WHERE required = 1 AND attempt_id IN (${lo.map(() => '?').join(',')})`)
-        .all(...lo) as any[]) kyNangCua.set(r.attempt_id, [...(kyNangCua.get(r.attempt_id) ?? []), r]);
+    const lichCua = new Map<number, any[]>();
+    const diemCua = new Map<number, any[]>(ids.map((id) => [id, []]));
+    theoLo(ids, (lo, ph) => {
+      for (const r of conn.prepare(`SELECT attempt_id, skill, required, sit_status, absence_move_count FROM attempt_skills WHERE attempt_id IN (${ph})`)
+        .all(...lo) as any[]) lichCua.set(r.attempt_id, [...(lichCua.get(r.attempt_id) ?? []), r]);
+      for (const r of conn.prepare(
+        `SELECT s.*, u.full_name AS entered_by_name, g.full_name AS examiner_user_name FROM assessment_scores s
+           LEFT JOIN users u ON u.id = s.entered_by LEFT JOIN users g ON g.id = s.examiner_user_id WHERE s.attempt_id IN (${ph})`,
+      ).all(...lo) as any[]) diemCua.get(r.attempt_id)!.push(r);
+    });
+    for (const [id, rows] of lichCua) {
+      const batBuoc = rows.filter((r) => r.required === 1).map(({ required: _, ...r }) => r);
+      if (batBuoc.length) kyNangCua.set(id, batBuoc);
+      datNho(`bo-mon:${id}`, rows.filter((r) => !r.required).map((r) => r.skill as AssessedSkill));
     }
+    for (const [id, rows] of diemCua) datNho(`diem:${id}`, rows);
   }
 
   const homNayHs = demoToday();
