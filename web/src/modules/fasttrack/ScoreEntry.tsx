@@ -11,7 +11,7 @@ import { fmtBand, skillLabel } from '../../lib/format.ts';
 import { useSession } from '../../lib/session.tsx';
 import { DongGvCham, cungGvCham, gvChamPayload, gvChamThanhChon } from '../cham/GvCham.tsx';
 import {
-  BAI_CO_NHAN_XET, NHAN_XET_TOI_DA, NO_SHOW_HINT, demNguocSuaDau, kiemLyDo, oLuoiThuong, tieuChiCua, tieuChiNganCua,
+  BAI_CO_NHAN_XET, NHAN_XET_TOI_DA, NO_SHOW_HINT, demNguocSuaDau, kiemLyDo, oLuoiThuong, tieuChiCua, tieuChiNganCua, tuanLich,
   type EntrySkill, type NguoiChon,
 } from '@shared/domain/index.ts';
 
@@ -727,6 +727,7 @@ export function InlineScoreEditor({ cell, onSave, onClose }: {
  * cái hạn trông như đang đếm ngược. Đây là chỗ dễ đọc nhầm nhất của lịch tách tuần.
  */
 export function DeadlinePill({ cell }: { cell: Cell }) {
+  const { homNay } = useNgayNghiepVu();
   if (!cell.required) return <Info pending>Ngoài phạm vi</Info>;
   if (cell.progress === 'cancelled') return <Info pending>Đã huỷ phần thi</Info>;
   /* MT lịch sử (T34): không hạn, không "Quá hạn" — chỉ là nhập bù. */
@@ -747,7 +748,7 @@ export function DeadlinePill({ cell }: { cell: Cell }) {
    * Nguồn hạn (riêng môn / riêng cả đợt) chuyển thành ghi chú đứng sau, không mất thông tin.
    */
   if (cell.progress === 'upcoming') {
-    return <Han loai="nhap-diem" han={cell.deadline} tienTo={`Thi ${cell.weekRange ?? cell.periodCode ?? ''}`.trim()} />;
+    return <Han loai="nhap-diem" han={cell.deadline} tienTo={`Thi ${cell.weekStart ? tuanLich(cell.weekStart, homNay) : cell.weekRange ?? cell.periodCode ?? ''}`.trim()} />;
   }
   const ghiChu = cell.deadlineSource === 'skill_override' ? 'riêng môn này'
     : cell.deadlineSource === 'attempt_override' ? 'riêng cả đợt'

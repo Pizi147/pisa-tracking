@@ -321,7 +321,7 @@ export default function StudentDetailPage() {
             <div className="p-3">
               {cy.targetRevisions.length > 0 && (
                 <p className="text-xs text-slate-500 mt-2 mb-0">
-                  Mục tiêu đã đổi {cy.targetRevisions.length} lần — lần gần nhất {ngay(cy.targetRevisions[0].effectiveFrom, homNay)}:
+                  Mục tiêu đã đổi {cy.targetRevisions.length} lần — lần gần nhất {tuanLich(cy.targetRevisions[0].effectiveFrom, homNay)}:
                   {' '}<TargetText band={cy.targetRevisions[0].oldTarget} kck={cy.targetRevisions[0].oldKck} /> → <TargetText band={cy.targetRevisions[0].newTarget} kck={cy.targetRevisions[0].newKck} />
                   {cy.targetRevisions[0].reason && ` (${cy.targetRevisions[0].reason})`}.
                   {' '}Các lượt đã chốt vẫn giữ kỳ vọng tính theo mục tiêu lúc đó.

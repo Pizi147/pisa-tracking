@@ -113,4 +113,19 @@ export async function runPrUxfBTests(t: YThucTestKit) {
     assert(!/supportLineOf|supportLine\b/.test(doc('server/src/cases/cases.ts') + doc('web/src/modules/cases/SkillBoard.tsx')), 'supportLine còn');
     assert(!/scheduleHeadline/.test(doc('server/src/fasttrack/attempts.ts')), 'scheduleHeadline còn');
   });
+
+  // ------------------------------------------------------------------ Task 4 · Phân tích, nhập điểm, Mục tiêu đã đổi
+  const vanDeHvSvc: any = await import('../phanTich/vanDeHv.ts');
+  check('UXF-b (4) · Phân tích › Vấn đề HV (cột Case): dòng phụ nói "mở W…", không còn ngày dd/mm', () => {
+    const o = vanDeHvSvc.oVanDeHv(t.P.admin, { branchId: null, ct: 'ft', classId: null, soTuan: 8, chiChinh: false, gop: false, dong: 'chua-phan-loai', cot: 'case' });
+    const co = o.rows.filter((r: any) => /mở /.test(r.sub));
+    assert(o.rows.length > 0 && co.length > 0, 'seed không có Case chưa phân loại có ngày mở');
+    for (const r of co) assert(/mở W\d [A-Z]{3}/.test(r.sub) && !/\b\d{2}\/\d{2}\b/.test(r.sub), r.sub);
+  });
+  check('UXF-b (4) · quét chữ: Mục tiêu đã đổi, hạn ô nhập điểm FT, trang mẫu nói mã tuần', () => {
+    assert(/tuanLich\(cy\.targetRevisions\[0\]\.effectiveFrom/.test(doc('web/src/modules/students/StudentDetailPage.tsx')), 'Mục tiêu đã đổi: lần gần nhất');
+    const se = doc('web/src/modules/fasttrack/ScoreEntry.tsx');
+    assert(!/Thi \$\{cell\.weekRange/.test(se) && /tuanLich\(cell\.weekStart/.test(se), 'ô nhập điểm FT còn khoảng ngày');
+    assert(!/14\/09 – 20\/09/.test(doc('web/src/modules/dev/ThanhPhanDemo.tsx')), 'trang mẫu còn khoảng ngày');
+  });
 }
