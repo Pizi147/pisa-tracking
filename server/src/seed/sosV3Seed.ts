@@ -26,7 +26,7 @@ import { DEMO_DATE } from './journeys.ts';
  *   (5) Đã huỷ · không cần theo dõi          Vũ Ngọc Lan · Speaking
  *   (6) đang chạy, PA quy chế đã xác nhận    Đỗ Minh Khôi · Speaking
  *   (7) đã xác nhận Case, PA còn chờ xác nhận   Bùi Thảo Vy · Speaking
- * D8 — hạn PA: Khôi · Speaking hạn hết T2 ĐÚNG ngày demo · Lý Minh Châu · Reading quá hạn 2 ngày · Hoàng Bảo Ngọc · Listening ở TUẦN MỐC
+ * D8 — hạn PA: Khôi · Speaking hạn hết T2 ĐÚNG ngày demo · Lý Minh Châu · Reading quá hạn 1 tuần · Hoàng Bảo Ngọc · Listening ở TUẦN MỐC
  * (Ghi kết quả cuối).
  */
 export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number; coordination: number } {
@@ -139,7 +139,7 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
   guiKhongTheoDoi(activeTeacher('listening'), baoL.id, { reasonCode: 'single_incident' });
   tuChoiYeuCau(quanLy, theKtd(baoL.id), 'Em trượt Listening hai lượt liền — cần theo dõi');
 
-  // ---------------------------------------------------------------- D8: Lý Minh Châu — MT2 · Reading, PA quy chế quá hạn 2 ngày
+  // ---------------------------------------------------------------- D8: Lý Minh Châu — MT2 · Reading, PA quy chế quá hạn 1 tuần
   const chau = addStudent('Lý Minh Châu', 2, 2);
   score(attempt(chau), 'reading', 5.5);
   const chauR = caseOf(chau.id, 'reading');

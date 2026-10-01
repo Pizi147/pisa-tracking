@@ -136,7 +136,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
   const NHOM_HOC_VIEN = new Set(['cause', 'xac_nhan_pa', 'ghi_ket_qua_pa', 'ke_hoach_bo_tro', 'phoi_hop', 'mini_test', 'yt_xu_ly']);
   const LOAI_HOC_VIEN = new Set(['nguyen-nhan', 'xac-nhan-pa', 'ghi-ket-qua', 'ke-hoach', 'bao-ph', 'mini-test', 'y-thuc']);
 
-  check('VAI-b (2) · nguoiLam của Case (Q3): chờ nguyên nhân → người phụ trách; PA chạy chờ ghi kết quả → người ghi PA (thiếu thì recorded_by); không ai phụ trách → null; có tên', () => {
+  check('VAI-b (2) · nguoiLam của Case (Q3): chờ nguyên nhân → người phụ trách; PA chạy chờ ghi kết quả → người thực hiện PA (thiếu thì người phụ trách Case — PR-Dọn Task 6); không ai phụ trách → null; có tên', () => {
     let chu = 0, ghi = 0, rong = 0;
     for (const sid of emLop('MB FT 101')) {
       for (const r of (skillSupportBoard(P.admin, sid) as any).rows) {
@@ -148,8 +148,8 @@ export async function runPrVaiBTests(t: YThucTestKit) {
             if (!sc.owner_user_id) rong++;
           } else if (c.viecTiep.paId) {
             ghi++;
-            const iv = get('SELECT COALESCE(performer_user_id, recorded_by) u FROM case_interventions WHERE id = ?', c.viecTiep.paId);
-            assert((c.nguoiLam?.id ?? null) === (iv.u ?? null), `Case ${c.id}: nguoiLam ${JSON.stringify(c.nguoiLam)} ≠ người ghi PA ${iv.u}`);
+            const iv = get('SELECT COALESCE(ci.performer_user_id, sc2.owner_user_id) u FROM case_interventions ci JOIN sos_cases sc2 ON sc2.id = ci.case_id WHERE ci.id = ?', c.viecTiep.paId);
+            assert((c.nguoiLam?.id ?? null) === (iv.u ?? null), `Case ${c.id}: nguoiLam ${JSON.stringify(c.nguoiLam)} ≠ người thực hiện PA / phụ trách Case ${iv.u}`);
           }
           if (c.nguoiLam?.id) assert(typeof c.nguoiLam.ten === 'string' && c.nguoiLam.ten.length > 0, `Case ${c.id}: thiếu tên người làm`);
         }
