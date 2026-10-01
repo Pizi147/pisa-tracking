@@ -16,7 +16,7 @@ export async function runPrGvTests(t: YThucTestKit) {
   console.log('\nPR-GV · Hồ sơ giáo viên');
 
   check('PR-GV (1) · demViecTheoNhom: luôn đủ 4 nhóm đúng thứ tự, loại lạ rơi vào Vận hành', () => {
-    const r = demViecTheoNhom([{ group: 'score', urgency: 'overdue' }, { group: 'result', urgency: 'normal' },
+    const r = demViecTheoNhom([{ group: 'score', urgency: 'overdue' }, { group: 'ghi_ket_qua_pa', urgency: 'normal' },
       { group: 'yt_xem', urgency: 'today' }, { group: 'la', urgency: 'overdue' }]);
     assert(JSON.stringify(r.map((x) => x.nhom)) === JSON.stringify(['cham-diem', 'case-hoc-thuat', 'y-thuc', 'van-hanh']), 'thứ tự NHOM_VIEC');
     assert(JSON.stringify(r.map((x) => [x.n, x.quaHan])) === JSON.stringify([[1, 1], [1, 0], [1, 0], [1, 1]]), 'n / quá hạn từng nhóm');

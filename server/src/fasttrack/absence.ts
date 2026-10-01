@@ -534,7 +534,8 @@ function cancelPart(
     ratio
       ? `Đã huỷ lịch hẹn ${skillName(row.skill)} — ${why} Môn này vẫn phải thi, chờ Quản lý xếp lại.`
       : `Đã huỷ phần thi ${skillName(row.skill)} — ${why} Đợt này chưa đủ kết quả cho tới khi được khôi phục.`,
-    requestId, actor,
+    requestId, actor, {},
+    ratio ? `Xếp lại lịch ${skillName(row.skill)}` : `Khôi phục phần thi ${skillName(row.skill)}`,
   );
 }
 
@@ -599,8 +600,13 @@ export function restoreCancelledSkill(p: Principal, attemptId: number, skill: st
 function notifyPlanners(
   attempt: any, message: string, refId: number, actor: number | null,
   opts: { entityType?: string; dedupBase?: string } = {},
+  /** PR-VAI-a (K1-42, Q20): tiêu đề = việc + em + lớp — không còn một tiêu đề lịch thi chung chung cho mọi trường hợp. */
+  viec = 'Xử lý lịch thi',
 ) {
   const conn = db();
+  const ai = conn.prepare('SELECT s.full_name AS hv, (SELECT code FROM classes WHERE id = ?) AS lop FROM students s WHERE s.id = ?')
+    .get(attempt.class_id ?? null, attempt.student_id) as any;
+  const tieuDe = [viec, [ai?.hv, ai?.lop].filter(Boolean).join(' · ')].filter(Boolean).join(' — ');
   const cls = attempt.class_id
     ? (conn.prepare('SELECT branch_id FROM classes WHERE id = ?').get(attempt.class_id) as any)
     : null;
@@ -617,7 +623,7 @@ function notifyPlanners(
   for (const m of managers) {
     if (!m.user_id || m.user_id === actor) continue;
     notify({
-      userId: m.user_id, kind: 'schedule_move', title: 'Lịch thi cần xử lý',
+      userId: m.user_id, kind: 'schedule_move', title: tieuDe,
       body: message, entityType: opts.entityType ?? 'skill_move_requests', entityId: refId,
       dedupKey: `${opts.dedupBase ?? `move:${refId}`}:${m.user_id}`,
     });
@@ -751,7 +757,7 @@ export function settleGroup(
       )
       .all(attempt.class_id, ...entrySkillsOf(assessed as AssessedSkill)) as any[]) {
       notify({
-        userId: t.user_id, kind: 'schedule_move', title: 'Đã tự dời bài không dự thi',
+        userId: t.user_id, kind: 'tu_doi_lich', title: 'Đã tự dời bài không dự thi',   // PR-VAI-a (Q19): tin để biết, tách khỏi schedule_move
         body: `Đã tự dời ${skillName(assessed)} của ${em} · MT${attempt.attempt_no} sang ${tuanMoi} (vắng lần 1).`,
         entityType: 'assessment_attempt', entityId: attemptId,
         dedupKey: `no_show:${attemptId}:${assessed}:${weekEnd.slice(0, 10)}:${t.user_id}`,
@@ -773,6 +779,7 @@ export function flagLateNoShow(attempt: any, assessed: string, weekCode: string,
     attempt.id, actor,
     /* Trỏ về ĐÚNG lượt thi (không phải một đề nghị dời), và mỗi (lượt, môn, tuần) một thông báo riêng. */
     { entityType: 'assessment_attempt', dedupBase: `late_no_show:${attempt.id}:${assessed}:${weekCode}` },
+    `Xác nhận không dự thi ${skillName(assessed)}`,
   );
 }
 

@@ -167,15 +167,16 @@ export async function runPrSosTests(t: YThucTestKit) {
     const keys = (myworkSvc.myWork(P.admin, { nguoi: 'tat-ca' }).items as any[]).map((i: any) => i.key as string);
     assert(!keys.includes(`action:${iv.id}`) && !keys.includes(`review:${iv.id}`), 'PA chờ xác nhận sinh việc Ghi kết quả');
   });
-  check('SOS (3) · Thông báo: GVBM một "Case mới: [MT1] Listening không đạt [SOS 3]" + hạn; GVCN "SOS 3 — {tên}"; GV W1 không nhận gì', () => {
+  check('SOS (3) · Thông báo: GVBM một "Xác nhận nguyên nhân Listening — em · lớp" (thân "Case mới sau MT1: …") + hạn; GVCN "SOS 3 — {tên}"; GV W1 không nhận gì', () => {
     const { st, a } = mt1Sos3('T3b');
     const c = caseOf(st.id, 'listening');
     /* Mức SOS trong tên là mức LÚC Case ra đời (nhập L trước → SOS 1); Speaking nhập sau cùng → SOS 3. */
     const nL = all(`SELECT * FROM notifications WHERE entity_type = 'sos_case' AND entity_id = ?`, c.id);
-    assert(nL.length === 1 && nL[0].user_id === gvKyNang('listening') && /^Case mới: \[MT1\] Listening không đạt \[SOS \d\] — /.test(nL[0].title)
-      && nL[0].body === `Xác nhận nguyên nhân trước hết ${d.ngay(d.hanXacNhan(TODAY), TODAY)}`, JSON.stringify(nL));
+    /* PR-VAI-a (K1-42, Q20): tiêu đề = việc + em + lớp; thân "Case mới sau MT1: [MT1] Listening không đạt [SOS n] · hạn dd/mm". */
+    assert(nL.length === 1 && nL[0].user_id === gvKyNang('listening') && /^Xác nhận nguyên nhân Listening — /.test(nL[0].title)
+      && /^Case mới sau MT1: \[MT1\] Listening không đạt \[SOS \d\] · hạn /.test(nL[0].body) && nL[0].body.endsWith(d.ngay(d.hanXacNhan(TODAY), TODAY)), JSON.stringify(nL));
     const nS = all(`SELECT * FROM notifications WHERE entity_type = 'sos_case' AND entity_id = ?`, caseOf(st.id, 'speaking').id);
-    assert(nS.length === 1 && nS[0].title.startsWith('Case mới: [MT1] Speaking không đạt [SOS 3]'), JSON.stringify(nS));
+    assert(nS.length === 1 && nS[0].title.startsWith('Xác nhận nguyên nhân Speaking — ') && nS[0].body.includes('[MT1] Speaking không đạt [SOS 3]'), JSON.stringify(nS));
     /* GVCN nhận một thông báo mỗi lần mức SOS của lượt lên (khoá theo mức, có sẵn) — chỉ GVCN. */
     const nA = all(`SELECT * FROM notifications WHERE entity_type = 'assessment_attempt' AND entity_id = ? ORDER BY id`, a.id);
     assert(nA.length >= 1 && nA.every((n: any) => n.user_id === gvcn()) && nA[nA.length - 1].title === `SOS 3 — ${st.name}`, JSON.stringify(nA));

@@ -1,6 +1,5 @@
 import { type ReactNode, useState } from 'react';
-import { Link, type NavigateFunction } from 'react-router-dom';
-import { Nhan } from '../../ui/Nhan.tsx';
+import { type NavigateFunction } from 'react-router-dom';
 import { KhoiNhom } from '../../ui/HangNhom.tsx';
 import { type NhomViecXem } from '@shared/domain/index.ts';
 import { DongViec, type WorkItem } from './WorkList.tsx';
@@ -10,9 +9,8 @@ import { DongViec, type WorkItem } from './WorkList.tsx';
  * nhóm cố định, mỗi nhóm gập/mở, nhóm có việc quá hạn tự mở sẵn. Tổng quan giữ đúng hành vi cũ
  * (`soHien = 5`); Hỗ trợ học viên gọi với `soHien = 10` và có thể ép mở hết khi đang lọc.
  */
-export function NhomViec({ nhom, nhac, soHien, moHet, onOpen, nutPhu }: {
+export function NhomViec({ nhom, soHien, moHet, onOpen, nutPhu }: {
   nhom: NhomViecXem<WorkItem>[];
-  nhac: { classId: number; text: string }[];
   soHien: number;
   /** Ép mở hết mọi nhóm — dùng khi đang lọc nhanh/loại việc, kết quả đã ít thì không cần gập nữa. */
   moHet?: boolean;
@@ -36,7 +34,7 @@ export function NhomViec({ nhom, nhac, soHien, moHet, onOpen, nutPhu }: {
         return (
           <KhoiNhom key={g.key} id={`nhom-${g.key}`} mo={dangMo} onMo={() => setMo((s) => ({ ...s, [g.key]: !dangMo }))}
             nhan={g.label} tieuDe={g.label} dem={g.n} phu={phu}>
-            {/* PR-YT4: nhóm Ý thức có việc thật (`yt_*`, có hạn) như mọi nhóm; dòng nhắc Phối hợp SOS nằm dưới. */}
+            {/* PR-YT4: nhóm Ý thức có việc thật (`yt_*`, có hạn). PR-VAI-a: Phối hợp SOS là việc `phoi_hop_sos` — hết dòng nhắc mềm. */}
             {(
               <>
                 <ul className="list-none m-0 p-0 divide-y" style={{ borderColor: 'var(--line)' }}>
@@ -50,17 +48,6 @@ export function NhomViec({ nhom, nhac, soHien, moHet, onOpen, nutPhu }: {
                       Xem thêm {Math.min(soHien, g.items.length - soHienNhom)} việc
                     </button>
                   </div>
-                )}
-                {g.key === 'y-thuc' && nhac.length > 0 && (
-                  <ul className="list-none m-0 p-0 pb-2">
-                    {nhac.map((l, i) => (
-                      <li key={`${l.classId}-${i}`} className="py-1.5 pr-3">
-                        <Link to={`/hoc-vien/lop/${l.classId}`} className="block no-underline text-xs text-slate-300 leading-snug hover:text-slate-100">
-                          <Nhan tone="muted">Nhắc</Nhan> {l.text}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
                 )}
               </>
             )}

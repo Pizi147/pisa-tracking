@@ -1,6 +1,6 @@
-import { useState, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { METRIC_UNIT_LABEL, metricById, thamSoCt, type ChiSo, type ChuongTrinh } from '@shared/domain/index.ts';
+import { METRIC_UNIT_LABEL, metricById, nhanQuaHan, thamSoCt, type ChiSo, type ChuongTrinh } from '@shared/domain/index.ts';
 import { useApi } from '../lib/useApi.ts';
 import { KhungPanel } from './KhungPanel.tsx';
 import { Empty, ErrorState, Skeleton } from './ui.tsx';
@@ -13,7 +13,8 @@ const THOI_GIAN_NHAN: Record<ChiSo['thoiGian'], string> = {
 };
 
 export type PhamViSoLieu = { branchId?: number | null; chuongTrinh?: ChuongTrinh };
-export type DongSoLieu = { id: number; title: string; sub: string; href: string };
+/** PR-VAI-a (Q26): dòng Case/PA có người phụ trách + hạn — panel ghi "người · quá hạn n ngày". */
+export type DongSoLieu = { id: number; title: string; sub: string; href: string; nguoi?: string | null; han?: string | null };
 
 type Drill = {
   id: string; unit: ChiSo['donVi']; n: number; numerator: number | null;
@@ -42,6 +43,18 @@ function CachTinh({ cs }: { cs: ChiSo }) {
   );
 }
 
+/** Người giữ việc · hạn của một dòng panel — 12 px (Q31-4); quá hạn nói bằng chữ. */
+function DongNguoiHan({ nguoi, han }: { nguoi: string | null; han: string | null }) {
+  const { homNay, ngan } = useNgayNghiepVu();
+  const tre = han && han.slice(0, 10) < homNay ? Math.round((Date.parse(homNay) - Date.parse(han.slice(0, 10))) / 86_400_000) : 0;
+  return (
+    <span className="mt-0.5 block text-xs tabular-nums text-slate-400">
+      {nguoi ?? 'chưa có người phụ trách'}
+      {han && (tre > 0 ? <span className="font-semibold text-late"> · {nhanQuaHan(tre)}</span> : <> · hạn {ngan(han)}</>)}
+    </span>
+  );
+}
+
 export function DongDanhSach({ rows, onPick }: { rows: DongSoLieu[]; onPick?: () => void }) {
   return (
     <ul className="list-none p-0 m-0 space-y-1.5">
@@ -51,6 +64,7 @@ export function DongDanhSach({ rows, onPick }: { rows: DongSoLieu[]; onPick?: ()
             style={{ borderColor: 'var(--line)' }}>
             <span className="block text-sm text-slate-100">{r.title}</span>
             {r.sub && <span className="block text-[11px] text-slate-500 mt-0.5">{r.sub}</span>}
+            {(r.nguoi || r.han) && <DongNguoiHan nguoi={r.nguoi ?? null} han={r.han ?? null} />}
           </Link>
         </li>
       ))}
@@ -105,17 +119,27 @@ export function SoLieu({ id, giaTri, phamVi, rong, className = '', extra, nhan, 
   const cs = metricById(id);
   const [open, setOpen] = useState(false);
   const [howTo, setHowTo] = useState(false);
+  const idCachTinh = useId();
   if (!cs) return <span className="text-xs text-bad">Chỉ số không có trong sổ: {id}</span>;
   const dv = METRIC_UNIT_LABEL[cs.donVi];
   const clickable = giaTri > 0;
   const mau = tone === 'danger' ? 'text-bad' : tone === 'warn' ? 'text-soon' : 'text-slate-100';
   return (
     <div className={`card p-4 h-full ${className}`}>
-      <div className="flex items-start justify-between gap-2">
+      <div className="relative flex items-start justify-between gap-2">
         <div className="text-[11px] uppercase tracking-wide text-slate-400 font-semibold">{nhan ?? cs.ten}</div>
-        <button type="button" onClick={() => setHowTo(!howTo)} aria-expanded={howTo}
-          className="appearance-none bg-transparent border-0 p-0 cursor-pointer text-[11px] text-slate-500 hover:text-slate-300 whitespace-nowrap"
-          title={`${cs.cauHoi} — ${cs.tapDuDieuKien}`}>Cách tính</button>
+        {/* PR-VAI-a (K1-08): "Cách tính" là chú thích NỔI — rê chuột, Tab hoặc bấm; Esc đóng. Không đẩy giãn hàng ô. */}
+        <span className="shrink-0" onMouseEnter={() => setHowTo(true)} onMouseLeave={() => setHowTo(false)}>
+          <button type="button" onClick={() => setHowTo(!howTo)} aria-expanded={howTo} aria-describedby={howTo ? idCachTinh : undefined}
+            onFocus={() => setHowTo(true)} onBlur={() => setHowTo(false)}
+            onKeyDown={(e) => { if (e.key === 'Escape' && howTo) { e.stopPropagation(); setHowTo(false); } }}
+            className="appearance-none bg-transparent border-0 p-0 cursor-pointer text-[11px] text-slate-500 hover:text-slate-300 whitespace-nowrap">Cách tính</button>
+          {howTo && (
+            <div id={idCachTinh} role="tooltip" className="card absolute right-0 top-full z-30 mt-1.5 w-[min(20rem,calc(100vw-2.5rem))] p-3 shadow-2xl">
+              <CachTinh cs={cs} />
+            </div>
+          )}
+        </span>
       </div>
       <div className="mt-2 flex items-baseline gap-1.5 flex-wrap">
         {clickable ? (
@@ -129,7 +153,6 @@ export function SoLieu({ id, giaTri, phamVi, rong, className = '', extra, nhan, 
       </div>
       {phu ? <div className="text-[11px] text-slate-500 mt-1">{phu}</div>
         : (rong || giaTri === 0) && <div className="text-[11px] text-slate-500 mt-1">{rong ? 'Không có dữ liệu trong phạm vi' : 'Không có mục nào'}</div>}
-      {howTo && <div className="mt-2 pt-2 border-t" style={{ borderColor: 'var(--line)' }}><CachTinh cs={cs} /></div>}
       <DanhSachSoLieu id={id} giaTri={giaTri} phamVi={phamVi} extra={extra} open={open} onClose={() => setOpen(false)} />
     </div>
   );

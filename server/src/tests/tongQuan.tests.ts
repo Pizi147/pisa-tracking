@@ -77,7 +77,7 @@ export async function runTongQuanTests(t: YThucTestKit) {
   check('PR-Pa · Gom nhóm việc GV: 10 loại việc về đúng 4 nhóm, nhóm có việc quá hạn tự mở, Ý thức không bao giờ tự mở', () => {
     /* PR-DUYET: `decide`, `decide_move` không còn là loại việc (thẻ ở hộp Chờ duyệt). */
     const cham = ['score'];
-    const kase = ['cause', 'no_plan', 'result', 'do_plan', 'no_owner'];
+    const kase = ['cause', 'no_plan', 'ghi_ket_qua_pa', 'do_plan', 'no_owner', 'phoi_hop_sos'];   // PR-VAI-a: result → ghi_ket_qua_pa (V3), Phối hợp SOS thành việc
     const van = ['placement', 'mgmt', 'missing_data'];
     for (const g of cham) eq(d.nhomViecCua(g), 'cham-diem', g);
     for (const g of kase) eq(d.nhomViecCua(g), 'case-hoc-thuat', g);
@@ -85,39 +85,36 @@ export async function runTongQuanTests(t: YThucTestKit) {
     eq(d.nhomViecCua('loai-la'), 'van-hanh', 'Loại lạ');
     const v = (group: string, urgency: string, due: string | null) => ({ group, urgency, due });
     const nhom = d.gomNhomViec([
-      v('result', 'normal', '2026-09-20'), v('cause', 'overdue', '2026-09-10'), v('score', 'normal', null), v('mgmt', 'today', '2026-09-14'),
-    ], 2);
+      v('ghi_ket_qua_pa', 'normal', '2026-09-20'), v('cause', 'overdue', '2026-09-10'), v('score', 'normal', null), v('mgmt', 'today', '2026-09-14'),
+      v('yt_xem', 'normal', '2026-09-18'), v('khai_bac', 'normal', null),
+    ]);
     eq(nhom.map((g: any) => g.key), ['cham-diem', 'case-hoc-thuat', 'y-thuc', 'van-hanh'], 'Thứ tự nhóm cố định');
     const kh = nhom.find((g: any) => g.key === 'case-hoc-thuat');
     eq([kh.n, kh.quaHan, kh.moSan], [2, 1, true], 'Case học thuật: 2 việc, 1 quá hạn, tự mở');
     eq(kh.items[0].group, 'cause', 'Việc quá hạn lên đầu nhóm');
     const yt = nhom.find((g: any) => g.key === 'y-thuc');
-    eq([yt.n, yt.moSan], [2, false], 'Ý thức: đếm dòng nhắc, không tự mở');
+    eq([yt.n, yt.moSan], [2, false], 'Ý thức: PR-VAI-a — mọi số đếm từ items (không còn dòng nhắc mềm), không quá hạn thì không tự mở');
+    eq(d.NHOM_VIEC_LABEL, { 'cham-diem': 'Chấm điểm', 'case-hoc-thuat': 'Case học thuật', 'y-thuc': 'Ý thức', 'van-hanh': 'Lớp & vận hành' }, 'T75: tên nhóm');
     eq(nhom.find((g: any) => g.key === 'cham-diem').moSan, false, 'Nhóm không quá hạn thì gập');
-    eq(d.gomNhomViec([], 0), [], 'Không việc thì không nhóm');
+    eq(d.gomNhomViec([]), [], 'Không việc thì không nhóm');
     eq(d.LOAI_HAN_CUA_VIEC.cause, 'xac-minh-sos', 'Hạn xác nhận nguyên nhân');
     eq(d.nhomViecCua('verify'), 'van-hanh', 'PR-LT2a: nhóm "verify" đã bỏ — loại lạ về Vận hành');
     eq(d.LOAI_HAN_CUA_VIEC.score, 'nhap-diem', 'Hạn nhập điểm');
   });
 
-  check('PR-Pa · Cần xử lý: đúng thứ tự design §4.1, bỏ dòng 0, tối đa 10; PR-DUYET bỏ "PA chờ duyệt" + "Case quá hạn xác định nguyên nhân" (thành thẻ)', () => {
-    eq(d.CAN_XU_LY.map((x: any) => x.metricId), [
-      'case-chua-co-nguoi-phu-trach', 'hv-can-ho-tro-2-lan-chua-case',
-      'case-thieu-pa', 'pa-can-cap-nhat', 'bai-qua-han-nhap-diem',
-    ], 'Thứ tự (PR-UX4 chèn dòng "bỏ quên"; PR-YT4 bỏ "vi phạm quá 5 ngày"; PR-LT2a bỏ "tín hiệu quá hạn" + "Bỏ qua tín hiệu")');
-    eq(d.CAN_XU_LY.filter((x: any) => x.denLoc).map((x: any) => [x.metricId, x.denLoc, x.nut, x.mau]), [
-      ['hv-can-ho-tro-2-lan-chua-case', 'can-ho-tro-2-lan', 'Xem', 'vang'],
-    ], 'Dòng "bỏ quên": nút Xem, màu vàng, mở bộ lọc Danh sách Case');
-    const dem = { 'pa-can-cap-nhat': 3, 'case-chua-co-nguoi-phu-trach': 2, 'pa-cho-duyet': 1, 'case-thieu-pa': 0 };
+  check('PR-Pa · Cần xử lý: bỏ dòng 0, tối đa 10; PR-DUYET bỏ "PA chờ duyệt" + "Case quá hạn xác định nguyên nhân" (thành thẻ); PR-VAI-a bỏ "2 lần Test", "Case thiếu PA", "Case chưa có người" → lớp thiếu GV môn', () => {
+    const ma = d.CAN_XU_LY.map((x: any) => x.metricId);
+    for (const bo of ['case-chua-co-nguoi-phu-trach', 'hv-can-ho-tro-2-lan-chua-case', 'case-thieu-pa', 'case-xac-dinh-nguyen-nhan-qua-han', 'pa-cho-duyet', 'hv-can-xu-ly']) {
+      assert(!ma.includes(bo), `Cần xử lý không còn dòng ${bo}`);
+    }
+    assert(ma.includes('lop-thieu-gv-mon'), 'Có dòng lớp thiếu GV môn (K1-05)');
+    assert(d.CAN_XU_LY.every((x: any) => !('denLoc' in x)), 'Không còn cơ chế denLoc');
+    const dem = { 'pa-can-cap-nhat': 3, 'lop-thieu-gv-mon': 2, 'pa-cho-duyet': 1, 'case-thieu-pa': 4, 'case-xac-dinh-nguyen-nhan-qua-han': 5, 'hv-can-xu-ly': 6 };
     const co = d.sapCanXuLy(dem, true);
-    eq(co.map((x: any) => [x.metricId, x.n]), [['case-chua-co-nguoi-phu-trach', 2], ['pa-can-cap-nhat', 3]], 'PA chờ duyệt không còn là dòng Cần xử lý');
-    eq(d.sapCanXuLy(dem, false).map((x: any) => x.metricId), ['case-chua-co-nguoi-phu-trach', 'pa-can-cap-nhat'], 'Không quyền duyệt');
-    eq(co[0].nhan, 'Case chưa có người phụ trách', 'Chữ dòng đầu');
-    eq(co[1].nut, 'Xem', 'Nút');
+    eq(co.map((x: any) => x.metricId).sort(), ['lop-thieu-gv-mon', 'pa-can-cap-nhat'], 'Q3: việc QL tự quyết không lặp ở Cần xử lý; dòng 0 bị bỏ');
+    eq(co.find((x: any) => x.metricId === 'lop-thieu-gv-mon').nhan, 'lớp thiếu GV môn', 'Chữ dòng lớp thiếu GV');
     const all = Object.fromEntries(d.CAN_XU_LY.map((x: any) => [x.metricId, 5]));
-    assert(d.sapCanXuLy(all, true).length === d.CAN_XU_LY.length && d.CAN_XU_LY.length === 5 && d.CAN_XU_LY_TOI_DA === 10, 'Đủ 5 dòng, trần 10');
-    eq(d.sapCanXuLy({ 'hv-can-ho-tro-2-lan-chua-case': 2 }, false)[0].denLoc, 'can-ho-tro-2-lan', 'denLoc đi kèm dòng');
-    assert(!('denLoc' in d.sapCanXuLy({ 'case-thieu-pa': 1 }, false)[0]), 'Dòng thường không có denLoc');
+    assert(d.sapCanXuLy(all, true).length === d.CAN_XU_LY.length && d.CAN_XU_LY.length <= d.CAN_XU_LY_TOI_DA && d.CAN_XU_LY_TOI_DA === 10, 'Đủ dòng, trần 10');
   });
 
   check('PR-Pa · Điểm đáng chú ý: tối đa 3; dưới ngưỡng thì bỏ; lớp thường nói "chưa đạt"; link ghi đúng số dòng sẽ mở', () => {
@@ -288,52 +285,53 @@ export async function runTongQuanTests(t: YThucTestKit) {
   });
 
   // ================================================================== 5. Cần xử lý · Điểm đáng chú ý · HV cần hỗ trợ
-  check('PR-Pa · Cần xử lý: mỗi dòng có số = độ dài tập của đúng chỉ số đó (cùng chi nhánh, cùng chương trình); đúng thứ tự; ≤ 8', () => {
+  check('PR-Pa · Cần xử lý: mỗi dòng có số = độ dài tập của đúng chỉ số đó (cùng chi nhánh, GỘP hai khung — PR-VAI-a Q5); ≤ 10', () => {
     const mb = mbBranch;
-    for (const [who, f] of [[P.admin, { ct: 'ca-hai' }], [P.mbManager, { branchId: mb, ct: 'thuong' }], [P.mbManager, { ct: 'ft' }]] as const) {
+    for (const [who, f] of [[P.admin, {}], [P.mbManager, { branchId: mb }], [P.mbManager, {}]] as const) {
       const r = tq.tongQuanQuanLy(who, f);
-      if (who === P.admin && f.ct === 'ca-hai') assert(r.canXuLy.length > 0, 'Cần xử lý (admin, Cả hai) phải có dòng — nếu rỗng thì vòng kiểm bên dưới vô nghĩa');
+      if (who === P.admin) assert(r.canXuLy.length > 0, 'Cần xử lý (admin) phải có dòng — nếu rỗng thì vòng kiểm bên dưới vô nghĩa');
       assert(r.canXuLy.length <= 10, 'Quá 10 dòng');
-      const thuTu = d.CAN_XU_LY.map((x: any) => x.metricId);
-      let truoc = -1;
       for (const dong of r.canXuLy) {
-        const n = metricsSvc.metricSet(who, dong.metricId, { branchId: (f as any).branchId ?? null, program: f.ct }).n;
+        const n = metricsSvc.metricSet(who, dong.metricId, { branchId: (f as any).branchId ?? null }).n;
         eq(dong.n, n, `Số dòng ${dong.metricId}`);
         assert(dong.n > 0, 'Dòng 0 phải bị bỏ');
-        assert(thuTu.indexOf(dong.metricId) > truoc, 'Sai thứ tự');
-        truoc = thuTu.indexOf(dong.metricId);
         assert(typeof dong.phu === 'string' && dong.phu.length <= 60, `Dòng phụ quá 60 ký tự: ${dong.phu}`);
       }
     }
   });
 
-  check('PR-Pa · Điểm đáng chú ý: ≤ 3; mỗi link mở đúng số dòng đã ghi', () => {
-    const r = tq.tongQuanQuanLy(P.admin, { ct: 'ca-hai' });
-    assert(r.diemDangChuY.length > 0, 'Điểm đáng chú ý (admin) phải có điểm');
-    assert(r.diemDangChuY.length <= 3, 'Quá 3 điểm');
-    for (const x of r.diemDangChuY) {
-      const set = metricsSvc.metricSet(P.admin, x.metricId, { ...(x.extra ?? {}), program: 'ca-hai' });
-      eq(x.soDanhSach, set.ids.length, `Link ${x.loai} ghi ${x.soDanhSach} mà danh sách có ${set.ids.length}`);
+  check('PR-Pa · Điểm đáng chú ý: ≤ 3; mỗi link mở đúng số dòng đã ghi (PR-VAI-a: route riêng theo khung)', () => {
+    let co = 0;
+    for (const ct of ['ft', 'thuong'] as const) {
+      const r = tq.diemChuY(P.admin, { ct });
+      co += r.length;
+      assert(r.length <= 3, 'Quá 3 điểm');
+      for (const x of r) {
+        const set = metricsSvc.metricSet(P.admin, x.metricId, { ...(x.extra ?? {}), program: ct });
+        eq(x.soDanhSach, set.ids.length, `Link ${x.loai} ghi ${x.soDanhSach} mà danh sách có ${set.ids.length}`);
+      }
     }
+    assert(co > 0, 'Điểm đáng chú ý (admin) phải có điểm');
   });
 
   check('PR-Pa · Khối Quản lý: giáo viên bị từ chối (403), không trả tập rút gọn', () => {
-    assertThrows(() => tq.tongQuanQuanLy(P.normalCoreTeacher, { ct: 'ca-hai' }), /Quản lý/, 'GVCN mở khối Quản lý');
+    assertThrows(() => tq.tongQuanQuanLy(P.normalCoreTeacher, {}), /Quản lý/, 'GVCN mở khối Quản lý');
+    assertThrows(() => tq.diemChuY(P.normalCoreTeacher, { ct: 'ft' }), /Quản lý/, 'GVCN mở Điểm đáng chú ý');
   });
 
-  check('PR-Pa · Học viên cần hỗ trợ: em có SOS ở lớp tôi dạy có mặt kèm nhãn SOS; em không có gì thì không; GV lớp khác không thấy', () => {
+  check('PR-Pa · (PR-VAI-a Q12) Lớp tôi dạy thay Học viên cần hỗ trợ: em chưa đạt ở lớp tôi dạy vào ô "Chưa đạt" của đúng lớp; em đạt hết thì không; GV lớp khác không có hàng lớp đó', () => {
     const co = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     for (const [s, sc, tt] of [['listening', 10, 40], ['reading', 10, 40], ['writing', 5, 20], ['speaking', 20, 25]] as const) diem(co.attemptId, s, sc, tt);
     const khong = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     for (const [s, sc, tt] of [['listening', 35, 40], ['reading', 35, 40], ['writing', 18, 20], ['speaking', 22, 25]] as const) diem(khong.attemptId, s, sc, tt);
-    const r = tq.hocVienCanHoTro(P.normalCoreTeacher);
-    const dong = r.rows.find((x: any) => x.studentId === co.sid);
-    assert(dong && /^SOS [123]/.test(dong.huyHieu?.text ?? ''), `Thiếu em có SOS hoặc thiếu nhãn: ${JSON.stringify(dong)}`);
-    assert(!r.rows.some((x: any) => x.studentId === khong.sid), 'Em đạt hết không phải "cần hỗ trợ"');
-    eq(r.tong, r.rows.length, 'tong = số dòng');
-    assert(!tq.hocVienCanHoTro(P.w2Teacher /* GV W2 MB FT 101, không dạy MB FOU 12 */).rows.some((x: any) => x.studentId === co.sid), 'GV lớp khác thấy em');
-    const sos = r.rows.filter((x: any) => x.huyHieu && /^SOS/.test(x.huyHieu.text)).map((x: any) => Number(x.huyHieu.text[4]));
-    assert(sos.every((v: number, i: number) => i === 0 || sos[i - 1] >= v), 'Phải xếp mức SOS giảm dần');
+    const cid = classId('MB FOU 12');
+    const r = tq.lopToiDay(P.normalCoreTeacher, { ct: 'thuong' });
+    const hang = r.rows.find((x: any) => x.classId === cid);
+    assert(hang && hang.sos === null && hang.tuanHoc !== undefined, `Thiếu hàng MB FOU 12 hoặc có cột SOS: ${JSON.stringify(hang)}`);
+    const o = tq.oLopToiDay(P.normalCoreTeacher, { ct: 'thuong', classId: cid, cot: 'duoiKyVong' });
+    assert(o.rows.some((x: any) => x.id === co.sid) && !o.rows.some((x: any) => x.id === khong.sid), 'em chưa đạt có, em đạt hết không');
+    eq(o.n, hang.duoiKyVong, 'số ở ô = số dòng khi bấm');
+    assert(!tq.lopToiDay(P.w2Teacher /* GV W2 MB FT 101, không dạy MB FOU 12 */, { ct: 'thuong' }).rows.some((x: any) => x.classId === cid), 'GV lớp khác có hàng lớp này');
   });
 
   // ================================================================== 6. Bảng Theo chi nhánh

@@ -815,8 +815,9 @@ export async function runPrCtTests(t: YThucTestKit) {
     assert(pl().reason === '3 em chưa có lệnh chuyển' && /^Chuyển lớp cả lớp · \S.* · 3 HV$/.test(pl().tieuDe) && pl().href === `/hoc-vien/lop/${cuoi}?viec=chuyen-tiep`, JSON.stringify(pl()));
     ra(P.mbManager, cuoi, 'cuoi-khoa', [dongCua(ds[0], 'len_lop', d6)]);
     assert(pl().reason === '2 em chưa có lệnh chuyển', pl().reason);
-    const ns = (myWork(loadPrincipal(GV[3].userId)) as any).items.find((i: any) => i.group === 'next_step' && i.classId === cuoi);
-    assert(ns && ns.reason === '2 HV chưa có lộ trình tiếp theo', ns?.reason);
+    /* PR-VAI-a (Q27): GVCN không còn việc "Ghi lộ trình tiếp theo" — việc "Chuyển lớp cả lớp" của Quản lý đã phủ. */
+    assert(!(myWork(loadPrincipal(GV[3].userId)) as any).items.some((i: any) => i.group === 'next_step'), 'GVCN không còn việc next_step');
+    assert(pl() && pl().count === 2, 'việc của Quản lý còn, đúng 2 em');
     ra(P.mbManager, cuoi, 'cuoi-khoa', [dongCua(ds[1], 'len_lop', d6), dongCua(ds[2], 'len_lop', d6)]);
     assert(!pl(), 'đủ lệnh → hết việc');
     const giua = lopMoi({ kind: 'FOU', tuanHienTai: 3 });

@@ -399,7 +399,8 @@ export async function runPhanTichTests(t: YThucTestKit) {
         assert(o.n === want && o.rows.length === o.n && want >= 1, `Chưa phân loại · ${cot}: ${o.n}/${o.rows.length} ≠ ${want}`);
       }
       const ca = vanDeHvSvc.oVanDeHv(P.admin, { ...f, dong: 'chua-phan-loai', cot: 'case' });
-      assert(ca.rows.every((r: any) => r.href.startsWith('/hoc-thuat/case/')), 'dòng Chưa phân loại mở Case');
+      /* PR-VAI-a (Q26): dòng Case mở hồ sơ HV ở Ngăn Case (`?case=`); Case không có học viên giữ trang Case riêng. */
+      assert(ca.rows.every((r: any) => /^\/hoc-vien\/\d+\?case=\d+$/.test(r.href) || r.href.startsWith('/hoc-thuat/case/')), 'dòng Chưa phân loại mở Case');
       const hv = vanDeHvSvc.oVanDeHv(P.admin, { ...f, dong: 'kn:writing', cot: 'hv' });
       assert(hv.rows.every((r: any) => r.sub.length <= 60 && r.href.startsWith('/hoc-vien/')), 'dòng HV: sub ≤ 60 ký tự, mở hồ sơ');
       assert(/^(Lỗi chính|Lỗi phụ) · /.test(hv.rows[0].sub), `sub phải bắt đầu bằng vai lỗi: ${hv.rows[0].sub}`);
@@ -955,29 +956,26 @@ export async function runPhanTichTests(t: YThucTestKit) {
     } finally { b.don(); }
   });
 
-  check("UX4 · Bỏ quên: n của /phan-tich/bo-quen = metricSet(...).n cho loại × 3 ct; Cần xử lý hiện dòng khi n>0, số = metricSet", () => {
+  check("UX4 · Bỏ quên: n của /phan-tich/bo-quen = số dòng ⊆ tập boQuen cho loại × 3 ct; PR-VAI-a (K1-04): Cần xử lý không còn dòng bỏ quên", () => {
     const b = taoBoQuen();
     try {
       const x = b.kit.hv(CID_FT, 'bq4x'); b.ft(x, 4, 1, 3.0); b.ft(x, 5, 2, 3.0);
       for (const loai of LOAI_BQ) {
+        const goc = (boQuenSvc.boQuen(P.admin, null, TODAY)[loai] as any[]).map((r) => r.studentId as number);
         for (const ct of ['ca-hai', 'ft', 'thuong']) {
           const dk = boQuenSvc.danhSachBoQuen(P.admin, { branchId: null, ct, loai }, TODAY);
-          const so = metricsUx4.metricSet(P.admin, METRIC_BQ[loai], { program: ct });
-          eq([dk.n, dk.rows.length], [so.n, so.ids.length], `${loai} × ${ct}: đường Danh sách Case = sổ chỉ số`);
-          eq([...dk.rows.map((r: any) => r.studentId)].sort((p, q) => p - q), so.ids, `${loai} × ${ct}: cùng tập HV`);
+          eq(dk.n, dk.rows.length, `${loai} × ${ct}: n = số dòng`);
+          assert(dk.rows.every((r: any) => goc.includes(r.studentId)), `${loai} × ${ct}: dòng ngoài tập boQuen`);
         }
+        eq(boQuenSvc.danhSachBoQuen(P.admin, { branchId: null, ct: 'ca-hai', loai }, TODAY).n, goc.length, `${loai}: Cả hai = cả tập boQuen`);
       }
       assert(!!hangCua('can-ho-tro-2-lan', x), 'dữ liệu dựng phải vào danh sách');
-      const tq = tongQuanSvc.tongQuanQuanLy(P.admin, { ct: 'ca-hai' });
-      for (const loai of LOAI_BQ) {
-        const dong = tq.canXuLy.find((r: any) => r.metricId === METRIC_BQ[loai]);
-        assert(!!dong, `Cần xử lý phải hiện dòng ${METRIC_BQ[loai]} khi n > 0`);
-        eq(dong.n, metricsUx4.metricSet(P.admin, METRIC_BQ[loai], { program: 'ca-hai' }).n, `${loai}: số dòng = metricSet`);
-        eq([dong.denLoc, dong.nut, dong.mau], [loai, 'Xem', 'vang'], `${loai}: nút Xem → bộ lọc, màu vàng`);
-      }
+      const tq = tongQuanSvc.tongQuanQuanLy(P.admin, {});
+      assert(!tq.canXuLy.some((r: any) => 'denLoc' in r || /2 lần Test/.test(r.nhan)), 'Cần xử lý không còn dòng bỏ quên');
+      assert(Object.values(METRIC_BQ).every((id) => !metricsUx4.LISTED_METRICS.includes(id)), 'Chỉ số U3 đã xoá khỏi sổ');
       assert(tq.canXuLy.length <= 10, 'Cần xử lý tối đa 10 dòng');
       const chiNhanh = boQuenSvc.danhSachBoQuen(P.mbManager, { branchId: mbBranch, ct: 'ca-hai', loai: 'can-ho-tro-2-lan' }, TODAY);
-      eq(chiNhanh.n, metricsUx4.metricSet(P.mbManager, METRIC_BQ['can-ho-tro-2-lan'], { branchId: mbBranch, program: 'ca-hai' }).n, 'QL chi nhánh: cùng số với sổ');
+      eq(chiNhanh.n, chiNhanh.rows.length, 'QL chi nhánh: n = số dòng');
     } finally { b.don(); }
   });
 

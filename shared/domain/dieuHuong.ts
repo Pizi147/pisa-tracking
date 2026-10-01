@@ -128,7 +128,8 @@ export function tabCongViecTuDuong(seg: string | undefined): TabCongViec | null 
 
 // ---------------------------------------------------------------- Tổng quan
 
-export const TAB_TONG_QUAN_LABEL: Record<TabTongQuan, string> = { 'tong-quan': 'Tổng quan', 'phan-tich': 'Phân tích' };
+/** PR-VAI-a (K1-10, Q10): tab đầu đổi tên "Việc hôm nay" — không lặp chữ "Tổng quan" của menu. */
+export const TAB_TONG_QUAN_LABEL: Record<TabTongQuan, string> = { 'tong-quan': 'Việc hôm nay', 'phan-tich': 'Phân tích' };
 
 // ---------------------------------------------------------------- Đường dẫn cũ
 
