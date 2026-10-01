@@ -1,6 +1,6 @@
 import { chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
-  CHO_TAO_PRE_FOU, ENTRY_SKILLS, MOCK_FT_STUDY_WEEK, PERMISSIONS, PROGRAMME_TEMPLATES, chuanHoaMaLop, ghepMaLop, khoaMaLopSql, kiemSoLop,
+  CHO_TAO_PRE_FOU, ENTRY_SKILLS, PERMISSIONS, PROGRAMME_TEMPLATES, chuanHoaMaLop, ghepMaLop, khoaMaLopSql, kiemSoLop,
   moRongPhanCong, programmeOf, type Route, type SlotPhanCong,
   KCK, NGAY_SINH_TOI_THIEU, canNamGan, laKck, docEmail, docNgayNhap, laLichSu, nhanCotNhap, lichMtMacDinh, mtDaThiChuaQua, nhanDangCot, tuanBatDauMacDinh, tuanHocCuaMt, tuanLich, type VanDeNhap,
 } from '../../../shared/domain/index.ts';
@@ -371,15 +371,6 @@ export function previewIntake(
     classCode: cls.code,
     defaultStartWeek: defaultWeek,
   };
-}
-
-/** Tuần MT gợi ý theo mốc tuần HỌC của FT. Chỉ là đề xuất, quản lý sửa được. */
-export function suggestMockWeeks(classStart: string | null, count = 3): string[] {
-  if (!classStart) return [];
-  return Array.from({ length: count }, (_, i) => {
-    const studyWeek = MOCK_FT_STUDY_WEEK[i + 1];
-    return studyWeek ? mondayOf(addDays(classStart, (studyWeek - 1) * 7)) : null;
-  }).filter((x): x is string => !!x);
 }
 
 /** `hangDaThem`: số dòng (theo lưới) đã thêm — panel bỏ các dòng đó, giữ dòng còn lỗi (K2-21). */

@@ -155,7 +155,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       const kn = x ? tenMonNgan(x.ct ?? null, x.skill) : 'kỹ năng';   // MH2: G+V / P / Tổng hợp theo chương trình lớp
       const dot = x ? nhanDotNgan(x.kind, x.attempt_no) : null;
       return {
-        /* PR-MT (K4-04): thẻ Mock nói đủ trong một dòng — `Dời L · MT1 · lần 2 · Duyệt = L thi W1 OCT` (chuTheDoiLan2, chung với moTaDoiLan2). */
+        /* PR-MT (K4-04): thẻ Mock nói đủ trong một dòng — `Dời L · MT1 · lần 2 · Duyệt = L thi W1 OCT` (chuTheDoiLan2). */
         tieuDe: x?.kind === 'mock'
           ? chuTheDoiLan2({ skill: x.skill, attemptNo: x.attempt_no, moveNo: x.move_no, tuanDich: x.week_start ?? null, homNay: ngu.homNay, ct: x.ct ?? null })
           : `Dời ${kn}${dot ? ` ${dot}` : ''} lần ${x?.move_no ?? 2}`,

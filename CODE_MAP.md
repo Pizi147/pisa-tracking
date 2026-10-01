@@ -190,7 +190,7 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | Hai phạm vi công việc và nhãn của chúng | `shared/domain/people.ts` → `WORK_SCOPES`, `WORK_SCOPE_LABEL`, `WORK_SCOPE_HINT` |
 | Phạm vi mở ra mặc định theo vai | `server/src/permissions.ts` → `defaultWorkScope` |
 | Ai phụ trách từng bài còn thiếu (cột GV ở hàng đợi) | `server/src/fasttrack/attempts.ts` → `ownersOf` |
-| Xếp tuần MT — UI hiện tại là Test › **Kế hoạch Test** (xem bảng màn hình ở trên); `server/src/fasttrack/planning.ts` (`/attempts/no-plan`, `/attempts/bulk-plan`) giữ lại cho đường dẫn cũ và phép kiểm, không còn màn riêng gọi tới |
+| Xếp tuần MT — Test › **Kế hoạch Test** (xem bảng màn hình ở trên). PR-Dọn-a xoá `planning.ts` (`/attempts/no-plan`, `/attempts/bulk-plan`, `POST /attempts`) — web không gọi |
 | Nhãn "Dự kiến thi" (tuần / chỉ tháng / chưa biết) | `server/src/fasttrack/cycles.ts` → `examPlanOf` · `web/src/ui/ui.tsx` → `ExamPlanText` |
 | **Lịch thi, phạm vi, trạng thái thi và hạn chấm CỦA TỪNG KỸ NĂNG** | `server/src/fasttrack/skillSchedule.ts` |
 | Hạn chấm của một kỹ năng (FT thứ Tư tuần sau · Normal Chủ nhật cùng tuần) | `server/src/platform/week.ts` → `skillScoreDeadline` · `effectiveSkillDeadline` |
@@ -341,7 +341,7 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | Lọc chương trình Lớp thường / FT cho mọi chỉ số | `shared/domain/tongQuan.ts` · `server/src/worklist/chuongTrinh.ts` |
 | Một dòng việc (năm ô) và khối bốn nhóm gập/mở | `web/src/modules/worklist/WorkList.tsx` → `DongViec` · `worklist/NhomViec.tsx` (dùng chung ở `ViecCuaToi.tsx` và tab Hỗ trợ học viên, PR-Ra) |
 | Tab **Hỗ trợ học viên** — lọc nhanh theo hạn, Người phụ trách (QL: Tất cả trong phạm vi/Chọn giáo viên…), Loại việc, nút Nhắc/Duyệt trên dòng (PR-Ra) | `web/src/modules/congViec/HoTroHocVienTab.tsx` · `congViec/ChonPhuTrach.tsx` · `server/src/worklist/mywork.ts` (`nguoi`) · `nhacViec.ts` |
-| Bảng "Theo chi nhánh" / "Theo lớp" (Việc cần lưu ý) | `web/src/modules/worklist/BranchPulse.tsx` · `server/src/worklist/bangChiNhanh.ts` (bảng **Theo giáo viên** vẫn ở `branchpulse.ts`) |
+| Bảng "Theo chi nhánh" / "Theo lớp" (Việc cần lưu ý) | `web/src/modules/worklist/BranchPulse.tsx` · `server/src/worklist/bangChiNhanh.ts` (PR-Dọn-a xoá `branchpulse.ts`, `summary.ts`, `dashboard.ts`, `weekly.ts` cùng `/branch-pulse`, `/summary`, `/overview`, `/weekly-rollup` — web không gọi) |
 | **Ô điểm còn nợ** của bảng chi nhánh — đi qua đúng hàm của bảng chấm (S12, §6) | `server/src/worklist/scoreDebt.ts` → `scoreDebtCells` |
 | Quản lý giao việc cho giáo viên | `web/src/modules/worklist/ManagerTasks.tsx` · `server/src/worklist/meeting.ts` (không còn gọi từ Phân tích — PR-Ra quyết, xem `MeetingPage`) |
 | Khối "Lịch sắp tới" (tuần này · tuần tới · tuần nữa; cột Lớp thường / Fast Track) | `web/src/modules/worklist/Highlights.tsx` · `server/src/worklist/highlights.ts` |

@@ -576,26 +576,6 @@ export const XONG_MT_CUOI_SQL = (cy: string) => `EXISTS (SELECT 1 FROM assessmen
   AND a2.attempt_no >= (CASE WHEN ${cy}.route = 'RF' THEN ${lichMtMacDinh('RF').length} ELSE ${lichMtMacDinh('LT1').length} END) AND ${CO_DIEM_SQL('a2')})`;
 
 /**
- * NHỮNG LỚP ĐANG CÓ CHUYỆN CẦN BÁO — dùng cho màn việc và cho thanh lớp.
- *
- * Chỉ trả về lớp ở chặng ĐÁNG NÓI: sắp thi, đang thi, hoặc đã hết chương trình. Lớp đang
- * học bình thường không xuất hiện — một danh sách liệt kê cả những lớp không cần làm gì là
- * một danh sách không ai đọc.
- */
-export function classAlerts(classIds: number[]): Map<number, ClassProgress> {
-  const out = new Map<number, ClassProgress>();
-  for (const [id, pr] of classProgressMany(classIds)) {
-    if (pr.phase === 'progress_soon' || pr.phase === 'progress_week'
-      || pr.phase === 'final_soon' || pr.phase === 'final_week'
-      || (pr.phase === 'finished' && pr.activeStudents > 0)
-      || pr.phase === 'unknown') {
-      out.set(id, pr);
-    }
-  }
-  return out;
-}
-
-/**
  * Đổi tuần bắt đầu và mốc kiểm tra của lớp. Quyền: Admin CN và Quản lý CN (mục 7.6).
  *
  * Đặt mốc về TRỐNG là quay lại mốc mặc định của chương trình — không phải xoá mốc. Cần có

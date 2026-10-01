@@ -97,18 +97,16 @@ export async function runPrKckTests(t: YThucTestKit) {
 
   {
     const tongHop: any = await import('../phanTich/tongHop.ts');
-    const weekly: any = await import('../worklist/weekly.ts');
+    /* PR-Dọn (Q14): bảng tuần `/weekly-rollup` đã xoá (web không gọi) — chỉ còn Tổng hợp. */
     const dem = () => ({
       th: tongHop.oTongHop(P.admin, { branchId: null, ct: 'ft', soTuan: 52, classId: null, theo: 'lop', khoa: 'tong', cot: 'luot' }).n as number,
-      wk: (weekly.weeklyRollup(P.admin, {}).rows as any[]).reduce((s, r) => s + (r.attempts ?? 0), 0) as number,
     });
-    check('KCK (4) · số liệu: lượt đã chấm của em KCK ngoài mẫu số "Lượt MT" (Tổng hợp, báo cáo tuần); bỏ KCK thì lại vào', () => {
+    check('KCK (4) · số liệu: lượt đã chấm của em KCK ngoài mẫu số "Lượt MT" (Tổng hợp); bỏ KCK thì lại vào', () => {
       const co = dem();
       conn.prepare('UPDATE learning_cycles SET khong_cam_ket = 0 WHERE id = ?').run(han.cid);
       const khong = dem();
       conn.prepare('UPDATE learning_cycles SET khong_cam_ket = 1 WHERE id = ?').run(han.cid);
       assert(khong.th === co.th + 1, `Tổng hợp: ${JSON.stringify({ co, khong })}`);
-      assert(khong.wk === co.wk + 1, `báo cáo tuần: ${JSON.stringify({ co, khong })}`);
     });
   }
 

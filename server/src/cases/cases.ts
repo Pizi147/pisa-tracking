@@ -672,45 +672,6 @@ export function addIssues(caseId: number, actor: number | null, input: {
   for (const c of input.secondaryCodes ?? []) add(c, 'secondary', null);
 }
 
-/** Sửa phân loại vấn đề. Tối đa MỘT vấn đề chính — nhận định đổi được, có lịch sử. */
-export function setIssues(p: Principal, caseId: number, input: {
-  primaryCode?: string | null; secondaryCodes?: string[];
-  observation?: string | null; note?: string | null;
-}) {
-  const conn = db();
-  const c = loadCase(caseId);
-  require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
-    'Bạn không có quyền phân loại vấn đề cho case này.');
-  /* PR-S3F #8: Case tự tạo từ SOS chưa có nguyên nhân thì nguyên nhân chỉ đặt qua "Xác nhận Case" (mốc, mô tả, PA đi theo) — không đi đường vòng chỉ-API. */
-  const trangThaiSos = sosCaseState(caseId);
-  if (trangThaiSos.fromSos && !trangThaiSos.hasCause) {
-    throw badRequest('Case tự tạo từ SOS chưa xác nhận nguyên nhân — dùng "Xác nhận Case" để đặt nguyên nhân.');
-  }
-  for (const code of [input.primaryCode, ...(input.secondaryCodes ?? [])]) {
-    if (code && !issueBranchOf(code)) throw badRequest(`Mã vấn đề không hợp lệ: ${code}`);
-  }
-  if (laKhac(input.primaryCode)) {
-    const loi = kiemGhiRoKhac(input.observation);
-    if (loi) throw badRequest(`Phân loại "Khác": ${loi}.`);
-  }
-  return tx(() => {
-    const before = conn.prepare('SELECT * FROM case_issues WHERE case_id = ?').all(caseId);
-    conn.prepare('DELETE FROM case_issues WHERE case_id = ?').run(caseId);
-    // Chủ đề lấy từ chính bản ghi vấn đề — người phân loại không đổi được kỹ năng ở đây.
-    addIssues(caseId, p.userId, { ...input, topic: c.topic });
-    /* Q28-5: có nguyên nhân là một nửa điều kiện "Đang xử lý" của Case từ SOS. */
-    dongBoTrangThaiCase(caseId);
-    if (input.note !== undefined) {
-      conn.prepare('UPDATE sos_cases SET note = ?, updated_at = ? WHERE id = ?')
-        .run((input.note ?? '').trim() || null, nowIso(), caseId);
-    }
-    const after = conn.prepare('SELECT * FROM case_issues WHERE case_id = ?').all(caseId);
-    writeAudit({ actorUserId: p.userId, action: 'case.classify', entityType: 'sos_case', entityId: caseId,
-      entityLabel: `Case ${caseId}`, before, after });
-    return caseDetail(p, caseId);
-  });
-}
-
 // ---------------------------------------------------------------- tác động và xem lại
 
 /**
@@ -2712,41 +2673,6 @@ function supportLineOf(openIv: any[], lastDone: any | null, lastFollow: any | nu
     ].filter(Boolean).join(' ');
   }
   return null;
-}
-
-/**
- * ĐỔI NGƯỜI PHỤ TRÁCH CHÍNH của một case (mục 2.3).
- *
- * Đổi người phụ trách KHÔNG cấp thêm quyền cho ai: người mới vẫn chỉ làm được những gì vai
- * và phân công của họ cho phép. Nó chỉ trả lời câu "ai đang giữ việc này" — câu mà trước
- * vòng này không có chỗ nào trả lời được.
- */
-export function setCaseOwner(p: Principal, caseId: number, ownerUserId: number | null) {
-  const conn = db();
-  const c = loadCase(caseId);
-  require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
-    'Bạn không có quyền đổi người phụ trách case này.');
-  if (ownerUserId !== null) {
-    const u = conn.prepare("SELECT id, full_name FROM users WHERE id = ? AND status = 'active'").get(ownerUserId) as any;
-    if (!u) throw badRequest('Không tìm thấy người này, hoặc tài khoản đã ngừng hoạt động.');
-  }
-  return tx(() => {
-    const before = c.owner_user_id
-      ? ((conn.prepare('SELECT full_name FROM users WHERE id = ?').get(c.owner_user_id) as any)?.full_name ?? null)
-      : null;
-    conn.prepare('UPDATE sos_cases SET owner_user_id = ?, updated_at = ? WHERE id = ?')
-      .run(ownerUserId, nowIso(), caseId);
-    const after = ownerUserId
-      ? ((conn.prepare('SELECT full_name FROM users WHERE id = ?').get(ownerUserId) as any)?.full_name ?? null)
-      : null;
-    conn
-      .prepare(
-        `INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at)
-         VALUES (?, 'owner', ?, ?, ?, ?)`,
-      )
-      .run(caseId, before, after, p.userId, nowIso());
-    return caseDetail(p, caseId);
-  });
 }
 
 // ================================================================ điểm GV tự đánh giá

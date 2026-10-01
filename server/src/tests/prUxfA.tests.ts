@@ -483,7 +483,7 @@ export async function runPrUxfATests(t: YThucTestKit) {
   check('UXF-a (9) · U1: lớp sắp theo soSanhLop (MB FT 9 trước MB FT 10) ở 6 đường kiểm kê; bảng chi nhánh theo đúng thứ tự', () => {
     assert(d.soSanhLop({ code: 'MB FT 9' }, { code: 'MB FT 10' }) < 0, 'soSanhLop');
     const goc = join(process.cwd(), 'server/src');
-    for (const f of ['fasttrack/planning.ts', 'worklist/branchpulse.ts', 'worklist/summary.ts', 'platform/xoaTaiKhoan.ts', 'phanTich/xuatMt.ts', 'worklist/bangChiNhanh.ts', 'cham/canCham.ts']) {
+    for (const f of ['platform/xoaTaiKhoan.ts', 'phanTich/xuatMt.ts', 'worklist/bangChiNhanh.ts', 'cham/canCham.ts']) {
       /* SQL có thể vẫn ORDER BY (thứ tự phụ trong lớp); thứ tự LỚP do `soSanhLop` sắp lại bằng JS sau câu. */
       assert(/\.sort\(\(a, b\) => soSanhLop\(/.test(readFileSync(join(goc, f), 'utf8')), `${f}: chưa sắp lớp bằng soSanhLop`);
     }

@@ -1,6 +1,6 @@
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
-  NGUONG_MINI_TEST, PERMISSIONS, REGULAR_SKILLS, caseDedupKey, categoryOf, chuHopKetLuan, chuMonTruot, daiCuoiKhoa, goiYCuoiKhoa, kyHieuLop, kyNangLopDich, lichBoTro, ngay, tenMon, weeklyUpdateDue,
+  NGUONG_MINI_TEST, PERMISSIONS, REGULAR_SKILLS, caseDedupKey, categoryOf, chuHopKetLuan, chuMonTruot, goiYCuoiKhoa, kyHieuLop, kyNangLopDich, lichBoTro, ngay, tenMon, weeklyUpdateDue,
   type BoTroMienPhi, type GoiYCuoiKhoa,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -561,22 +561,6 @@ export function ghiKetLuanFt(p: Principal, sid: number, input: { dat?: unknown; 
       luuY: (dat || nguyenNhan !== 'trung_tam') && daCo ? 'Case Tutor đã tạo trước đó được giữ nguyên — giáo viên tự xử lý.' : null,
     };
   });
-}
-
-/** Số em ĐANG học mỗi lớp có Cuối khoá 50–59% (Quản lý cân nhắc) — cho chữ việc "Chưa có lộ trình tiếp theo". 3 câu cho cả lô lớp. */
-export function demCanQuanLyTheoLop(classIds: readonly number[]): Map<number, number> {
-  const out = new Map<number, number>();
-  const lopCua = new Map<number, number>();
-  theoLo([...classIds], (lo, ph) => {
-    for (const r of db().prepare(
-      `SELECT a.id, a.class_id FROM assessment_attempts a JOIN enrollments e ON e.student_id = a.student_id AND e.class_id = a.class_id AND e.status = 'active'
-        WHERE a.kind = 'final' AND a.status = 'done' AND a.class_id IN (${ph})`,
-    ).all(...lo) as any[]) lopCua.set(r.id, r.class_id);
-  });
-  for (const [id, t] of tyLeTongLo([...lopCua.keys()])) {
-    if (t.tyLe !== null && daiCuoiKhoa(t.tyLe) === '50_59') out.set(lopCua.get(id)!, (out.get(lopCua.get(id)!) ?? 0) + 1);
-  }
-  return out;
 }
 
 /** K4-23 vế 2: bài Cuối khoá bị dời quá tuần cuối khoá → MỘT thẻ Báo lên (không duyệt, QL nhắc GVCN). Chạy trong tx của `reportRegularNoShow`. */

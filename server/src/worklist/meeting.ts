@@ -705,15 +705,6 @@ export function updateTask(p: Principal, taskId: number, patch: any) {
   return after;
 }
 
-export function taskHistory(taskId: number) {
-  return db()
-    .prepare(
-      `SELECT h.*, u.full_name AS actor_name FROM task_history h LEFT JOIN users u ON u.id = h.actor_user_id
-        WHERE h.task_id = ? ORDER BY h.id DESC`,
-    )
-    .all(taskId) as any[];
-}
-
 
 /**
  * Danh sách người để chọn Người phụ trách / Người theo dõi.

@@ -172,14 +172,6 @@ export function chuTheDoiLan2(o: { skill: string; attemptNo: number | null; move
   return `Dời ${k} · MT${o.attemptNo ?? '?'} · lần ${o.moveNo} · Duyệt = ${k} thi ${o.tuanDich ? tuanLich(o.tuanDich, o.homNay) : '—'}`;
 }
 
-/** Như `chuTheDoiLan2`, đọc từ một đề nghị (giao kèo PR-MT → PR-DUYET). */
-export function moTaDoiLan2(req: { attempt_id: number; skill: string; move_no: number; to_period_id: number }): string {
-  const conn = db();
-  const a = conn.prepare('SELECT a.attempt_no, c.programme_code FROM assessment_attempts a LEFT JOIN classes c ON c.id = a.class_id WHERE a.id = ?').get(req.attempt_id) as any;
-  const w = conn.prepare('SELECT week_start FROM report_periods WHERE id = ?').get(req.to_period_id) as any;
-  return chuTheDoiLan2({ skill: req.skill, attemptNo: a?.attempt_no ?? null, moveNo: req.move_no, tuanDich: w?.week_start ?? null, homNay: demoToday(), ct: a?.programme_code ?? null });
-}
-
 export type MoveOutcome = {
   skill: AssessedSkill;
   /** `moved` đã đổi lịch ngay · `pending` đang chờ duyệt · `escalated` phải chuyển Quản lý. */
@@ -841,27 +833,6 @@ export function resolveLateNoShow(
       marks.map((m) => m.id), p.userId, 'Không dự thi — Quản lý xác nhận dấu "-" nhập cho tuần đã kết thúc.');
     return { ok: true, result: done ? ('confirmed' as const) : ('unchanged' as const) };
   });
-}
-
-/** Danh sách đề nghị đang chờ, cho hàng việc của Quản lý. */
-export function openMoveRequests(p: Principal, limit = 50) {
-  sweepExpiredMoves();
-  const rows = db()
-    .prepare(
-      `SELECT r.*, a.attempt_no, a.kind, a.class_id, a.student_id,
-              s.full_name AS student_name, s.code AS student_code,
-              c.code AS class_code, pr.code AS to_week, pr.week_start AS to_week_start
-         FROM skill_move_requests r
-         JOIN assessment_attempts a ON a.id = r.attempt_id
-         JOIN students s ON s.id = a.student_id
-         LEFT JOIN classes c ON c.id = a.class_id
-         LEFT JOIN report_periods pr ON pr.id = r.to_period_id
-        WHERE r.status = 'pending'
-        ORDER BY r.decide_by, r.id
-        LIMIT ?`,
-    )
-    .all(limit) as any[];
-  return rows.filter((r) => can(p, PERMISSIONS.PLAN_WEEK, { classId: r.class_id, studentId: r.student_id }));
 }
 
 /**

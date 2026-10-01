@@ -633,4 +633,52 @@ export async function runPrDonATests(t: YThucTestKit) {
       assert(a === b && d.tuanKetQuaCuaHan(han) === t.addDays(han, -7), `${han}: "${a}" ≠ "${b}"`);
     }
   });
+
+  // ------------------------------------------------------------------ khối 7 · xoá đường API web không gọi và hàm chết (Q14)
+  console.log('\nPR-Dọn-a · (7) Xoá đường API web không còn gọi và hàm không ai gọi');
+  check('Dọn-a (7a) · 21 route đã xoá khỏi routes/index.ts (Tổng quan cũ, dời lịch cửa thứ hai, quét an toàn #1 #2 #4 #10 #13 #22, không ai gọi)', () => {
+    const idx = docNguon('server/src/routes/index.ts');
+    const routes = [
+      "get('/overview'", "get('/summary'", "get('/branch-pulse'", "get('/move-requests'", "post('/move-requests/:id/decide'",
+      "post('/attempts'", "post('/attempts/bulk-plan'", "get('/tasks/:id/history'", "put('/cases/:id/owner'", "get('/prefs'", "put('/prefs/:key'",
+      "get('/classes/:id/suggested-weeks'", "get('/weekly-rollup'", "get('/weekly-rollup/ids'", "get('/attempts/no-plan'", "get('/classes/:id/score-sheet'",
+      "get('/mgmt-tasks/mine'", "put('/cases/:id/issues'", "post('/interventions/:id/respond'", "post('/interventions/:id/complete'",
+      "post('/attempts/:id/skills/:skill/sit'", "get('/ref/issue-taxonomy'",
+    ];
+    const con = routes.filter((r) => idx.includes(`api.${r}`));
+    assert(!con.length, `còn route: ${con.join(', ')}`);
+  });
+  check('Dọn-a (7b) · tệp và hàm chết không còn trong server/src (trừ phép kiểm này), web/src, shared', () => {
+    const tep = ['server/src/worklist/dashboard.ts', 'server/src/worklist/summary.ts', 'server/src/worklist/branchpulse.ts', 'server/src/platform/prefs.ts',
+      'server/src/worklist/weekly.ts', 'server/src/fasttrack/planning.ts'];
+    const conTep = tep.filter((f) => fs.existsSync(path.join(REPO, f)));
+    const ten = ['branchSummary', 'summaryColumns', 'SUMMARY_PRESETS', 'branchPulse', 'peopleOf', 'openMoveRequests', 'moTaDoiLan2', 'bulkPlan', 'noPlanQueue',
+      'taskHistory', 'setCaseOwner', 'allPrefs', 'setPref', 'getPref', 'weeklyRollup', 'weeklyDrill', 'issueSkillRows', 'issueBoardCases', 'classAlerts',
+      'demCanQuanLyTheoLop', 'WorkQueue', 'suggestMockWeeks', 'setIssues'];
+    const re = new RegExp(`\\b(${ten.join('|')})\\b`);
+    const con: string[] = [];
+    const duyet = (thuMuc: string) => {
+      for (const x of fs.readdirSync(thuMuc)) {
+        const p = path.join(thuMuc, x);
+        if (fs.statSync(p).isDirectory()) { if (x !== 'node_modules') duyet(p); continue; }
+        if (!/\.(ts|tsx)$/.test(x) || x === 'prDonA.tests.ts') continue;
+        /* Bỏ chú thích (nhắc tên cũ để giải thích lịch sử là được) — chỉ bắt MÃ còn gọi. */
+        const ma = fs.readFileSync(p, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+        const m = ma.match(new RegExp(re.source, 'g'));
+        if (m) con.push(`${path.relative(REPO, p)}: ${[...new Set(m)].join(', ')}`);
+      }
+    };
+    for (const g of ['server/src', 'web/src', 'shared']) duyet(path.join(REPO, g));
+    assert(!conTep.length && !con.length, `còn tệp: ${conTep.join(', ')}\ncòn tên:\n${con.slice(0, 40).join('\n')}`);
+  });
+  /* Ý còn đúng của các phép kiểm Tổng quan cũ đã xoá ("QL chỉ thấy chi nhánh mình") — chuyển sang bảng sống `/tong-quan/chi-nhanh`. */
+  const bangCn: any = await import('../worklist/bangChiNhanh.ts');
+  check('Dọn-a (7c) · bảng chi nhánh (đường sống thay /summary, /branch-pulse): QL MB chỉ có lớp MB; hỏi chi nhánh CP không ra lớp CP', () => {
+    const lopCp = new Set(all('SELECT id FROM classes WHERE branch_id = ?', CP).map((r) => r.id));
+    const mb = bangCn.bangChiNhanh(P.mbManager, { ct: 'ft' });
+    assert(mb.hang.length > 0 && mb.hang.every((h: any) => h.loai === 'lop' && !lopCp.has(h.id)), 'QL MB thấy lớp CP');
+    const e = loiCua(() => bangCn.bangChiNhanh(P.mbManager, { branchId: CP, ct: 'ft' }));
+    const r = e ? null : bangCn.bangChiNhanh(P.mbManager, { branchId: CP, ct: 'ft' });
+    assert(e?.status === 403 || (r && !r.hang.some((h: any) => lopCp.has(h.id) || (h.lop ?? []).some((l: any) => lopCp.has(l.id)))), `QL MB hỏi CP: ${e?.status ?? JSON.stringify(r?.hang?.map((h: any) => h.nhan))}`);
+  });
 }

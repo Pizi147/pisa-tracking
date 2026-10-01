@@ -25,7 +25,7 @@ import { hvLenFtChuaKyVong } from './metrics.ts';
 import { phanCongDangHieuLuc } from './scoreDebt.ts';
 import { dienMocQuyChe } from '../cases/sosAuto.ts';
 import { settleNoShows, sweepExpiredMoves } from '../fasttrack/absence.ts';
-import { demYeuCau, quetYeuCau } from '../duyet/yeuCau.ts';
+import { quetYeuCau } from '../duyet/yeuCau.ts';
 import { mtLichSuChuaNhap } from '../cham/canCham.ts';
 import { trangThaiYThuc, ungVienVaThe } from '../yThuc/trangThai.ts';
 import { khaiDuoc } from '../yThuc/xuLy.ts';
@@ -1237,8 +1237,6 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       total: items.length,
       overdue: items.filter((i) => i.urgency === 'overdue').length,
       today: items.filter((i) => i.urgency === 'today').length,
-      /* Thẻ đang chờ người xem duyệt ở hộp Chờ duyệt (K5-04) — không còn là dòng việc. */
-      approval: demYeuCau(p).cho,
       mine: items.filter((i) => i.mine).length,
     },
     items: flat,
@@ -1305,7 +1303,6 @@ export function viecCuaNguoi(p: Principal, nguoi: number, branchId?: number | nu
       total: items.length,
       overdue: items.filter((i: any) => i.urgency === 'overdue').length,
       today: items.filter((i: any) => i.urgency === 'today').length,
-      approval: items.filter((i: any) => i.group === 'decide').length,
       mine: 0,
     },
     items, groups, scopeEmpty: false, xemNguoiKhac: true,
