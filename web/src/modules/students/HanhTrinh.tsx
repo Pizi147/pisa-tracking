@@ -552,7 +552,7 @@ function KhoiPa({ p, hang, truc, rongTuan, homNay, onOpenCase }: {
 
 /**
  * CHÚ GIẢI GỌN (Q17, mockup 26): 9 mục một dòng, biểu tượng SVG — Case khung rỗng · PA khối đặc · đang làm · kết quả PA · quá hạn · chờ ·
- * so với lần trước · đợt Test dự kiến, chưa có điểm (viền đứt — chữ "dự kiến" như mockup 26) · tạm dừng. < 640 px thu gọn chỉ ký hiệu, nút "Ký hiệu" mở chữ.
+ * so với lần trước · đợt Test chưa có điểm (viền đứt, chữ theo mockup 26) · tạm dừng. < 640 px thu gọn chỉ ký hiệu, nút "Ký hiệu" mở chữ.
  */
 function ChuGiai({ cheDo }: { cheDo: 'ielts' | 'ratio' }) {
   const [moChu, setMoChu] = useState(false);

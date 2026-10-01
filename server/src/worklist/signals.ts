@@ -1,10 +1,11 @@
-import { db } from '../db.ts';
+import { db, theoLo } from '../db.ts';
 import { PERMISSIONS } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { bangLop, require_, scopeFor, type Principal } from '../permissions.ts';
 import { reportEditWindow } from '../platform/week.ts';
 import { metricSet } from './metrics.ts';
 import { lopCuaTap } from './chuongTrinh.ts';
+import { listCases } from '../cases/cases.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 
 /**
@@ -76,18 +77,30 @@ export function signalsFor(p: Principal, f: { branchId?: number | null; periodId
   };
   /*
    * PR-UXF-a K1-37 (Q12): (b), (c) đọc sổ chỉ số — một cửa, cùng tập với ô Cần xử lý ở Tổng quan; không SQL đếm riêng.
-   * PR-S6F-b: `metricSet` MỘT lần cho cả phạm vi (không một lần mỗi chi nhánh — N+1), chia theo chi nhánh của lớp bằng `lopCuaTap`
-   * (cùng hàm bộ lọc khung) + bảng lớp đã nhớ.
+   * PR-S6F-b: `metricSet` MỘT lần cho cả phạm vi (không một lần mỗi chi nhánh — N+1), rồi chia theo ĐÚNG chi nhánh mà bộ lọc `branchId`
+   * của chỉ số dùng (số mỗi chi nhánh = `metricSet({ branchId })` — phép kiểm hai đường):
+   *   Case / PA → `homeBranchId` của `listCases` (= `COALESCE(lớp hiện tại, lớp của lượt)`, biểu thức lọc của `listCases`; trong request dùng
+   *   chung bộ nhớ với lần `listCases` của chính `metricSet`) · bài → chi nhánh của lớp (`overdueScoreBai` lọc theo lớp).
    */
+  let nhaCase: Map<number, number | null> | null = null;
+  const chiNhanhCua = (unit: string, ids: number[]): Map<number, number | null> => {
+    if (unit === 'case' || unit === 'phuong-an') {
+      nhaCase ??= new Map(listCases(p, {}).rows.map((c) => [c.id as number, (c.homeBranchId ?? null) as number | null]));
+      if (unit === 'case') return new Map(ids.map((id) => [id, nhaCase!.get(id) ?? null]));
+      const out = new Map<number, number | null>();
+      theoLo(ids, (lo, ph) => {
+        for (const r of conn.prepare(`SELECT id, case_id FROM case_interventions WHERE id IN (${ph})`).all(...lo) as any[]) out.set(r.id, nhaCase!.get(r.case_id) ?? null);
+      });
+      return out;
+    }
+    const lop = lopCuaTap(unit as any, ids);
+    const bl = bangLop();
+    return new Map(ids.map((id) => [id, bl.get(lop.get(id)?.classId ?? -1)?.branchId ?? null]));
+  };
   const tuSo = (kind: Signal['kind'], metricId: string, owner: Signal['owner'], tone: Signal['tone'], nhan: (n: number) => string) => {
     const r = metricSet(p, metricId, f.branchId ? { branchId: f.branchId } : {});
-    const lop = lopCuaTap(r.unit, r.ids);
-    const bl = bangLop();
     const dem = new Map<number, number>();
-    for (const id of r.ids) {
-      const b = bl.get(lop.get(id)?.classId ?? -1)?.branchId;
-      if (b != null) dem.set(b, (dem.get(b) ?? 0) + 1);
-    }
+    for (const b of chiNhanhCua(r.unit, r.ids).values()) if (b != null) dem.set(b, (dem.get(b) ?? 0) + 1);
     for (const b of branches) {
       const n = dem.get(b.id) ?? 0;
       push(kind, b.id, n, nhan(n), owner, tone, `/metrics/${metricId}?branchId=${b.id}`, metricId);
