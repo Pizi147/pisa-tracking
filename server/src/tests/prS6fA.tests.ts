@@ -485,7 +485,8 @@ export async function runPrS6fATests(t: YThucTestKit) {
     if (l2) lenh.huyLenh(P.mbManager, l2.id, 'Dọn phép kiểm');
     assert(r2.ok.length === 1 && l2?.khac_goi_y === 1, `có lý do: ${JSON.stringify(r2)} · ${JSON.stringify(l2)}`);
   });
-  check('S6F-a (11e) · raLenh 1 000 dòng (đa số không thuộc lớp) → "Học viên không thuộc lớp này", không câu SQL nào quá 900 tham số', () => {
+  /* PR-Dọn (Q6): lệnh chuyển lớp tối đa 500 dòng — phép kiểm gửi đúng trần (không còn 1 000). */
+  check('S6F-a (11e) · raLenh 500 dòng (trần Q6, đa số không thuộc lớp) → "Học viên không thuộc lớp này", không câu SQL nào quá 900 tham số', () => {
     const be04 = classId('MB BE 04');
     const tuan = (d.tuanChonDuoc(TODAY) as string[])[0];
     const goc = conn.prepare;
@@ -494,9 +495,9 @@ export async function runPrS6fATests(t: YThucTestKit) {
     let r: any;
     try {
       r = lenh.raLenh(P.mbManager, { lopNguonId: be04, boiCanh: 'cuoi-khoa', tuanChung: tuan,
-        dongs: Array.from({ length: 1000 }, (_, i) => ({ studentId: 900000 + i, huong: 'hoc_lai', toClassId: classId('MB BE 03') })) });
+        dongs: Array.from({ length: 500 }, (_, i) => ({ studentId: 900000 + i, huong: 'hoc_lai', toClassId: classId('MB BE 03') })) });
     } finally { conn.prepare = goc; }
-    assert(r.failed.length === 1000 && r.failed.every((f: any) => f.message === 'Học viên không thuộc lớp này.'), JSON.stringify(r.failed.slice(0, 2)));
+    assert(r.failed.length === 500 && r.failed.every((f: any) => f.message === 'Học viên không thuộc lớp này.'), JSON.stringify(r.failed.slice(0, 2)));
     assert(maxThamSo <= 900, `câu SQL ${maxThamSo} tham số`);
   });
 }
