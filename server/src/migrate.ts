@@ -23,6 +23,7 @@ import { migratePrLt2a } from './migrate/prLt2a.ts';
 import { migratePrLt2b } from './migrate/prLt2b.ts';
 import { migratePrCt } from './migrate/prCt.ts';
 import { migratePrPb2b } from './migrate/prPb2b.ts';
+import { migratePrDeploy } from './migrate/prDeploy.ts';
 
 /**
  * Giá trị cũ của cột `track` cho case Ý thức. Mô hình Case Ý thức đã BỎ 21/09/2026 (rule book mục 18) — hằng số này chỉ để NÂNG CẤP
@@ -246,6 +247,13 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
   };
 
   if (!has('sos_cases')) return { applied, skipped };
+  /*
+   * PR-DEPLOY (DEP-2): DẤU DB MỚI — database dựng bằng mã hiện hành (`init-ban-chinh` / `seed`, cùng `napDuLieuNen`) không có dữ liệu kiểu cũ.
+   * Các bước CHUYỂN DỮ LIỆU CŨ có thể đổi dữ liệu do mã hiện hành ghi → bỏ qua khi có dấu. Bước cấu trúc (cột, bảng, chỉ mục) vẫn chạy.
+   * DB THỬ / máy dev cũ không có dấu → vẫn chạy như trước. Bảng rà từng bước: thân PR-DEPLOY.
+   * ponytail: khoá bằng cờ thay vì gỡ mã chuyển dữ liệu cũ — gỡ hẳn sau reset bản chính + DB THỬ seed lại (kế hoạch PR-DEPLOY Q2).
+   */
+  const dbMoi = has('demo_config') && !!conn.prepare("SELECT 1 FROM demo_config WHERE key = 'khoi_tao_moi_at'").get();
 
   conn.pragma('foreign_keys = OFF');
   conn.transaction(() => {
@@ -379,7 +387,8 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
      */
 
     // 7. Hành trình cũ: gắn lộ trình khi tra được từ bản ghi thật, còn lại để trống.
-    const j = conn
+    /* DB mới (khoi_tao_moi_at) không có dữ liệu kiểu cũ — bỏ qua (DEP-2): mã hiện hành ghi hành trình lượt thi không kèm lộ trình (addJourney không truyền cycleId). */
+    const j = dbMoi ? { changes: 0 } : conn
       .prepare(
         `UPDATE journey_events SET cycle_id = (
             SELECT a.cycle_id FROM assessment_attempts a
@@ -412,7 +421,8 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
      * Suy lại từ lớp của chính các bài kiểm tra trong khoá, và CHỈ khi mọi bài đều thuộc
      * cùng một chương trình; mập mờ thì để trống chứ không đoán.
      */
-    const prog = conn
+    /* DB mới (khoi_tao_moi_at) không có dữ liệu kiểu cũ — bỏ qua (DEP-2): lộ trình tạo bởi mã hiện hành có thể để trống mã chương trình. */
+    const prog = dbMoi ? { changes: 0 } : conn
       .prepare(
         `UPDATE learning_cycles SET programme_code = (
             SELECT MIN(c.programme_code) FROM assessment_attempts a
@@ -428,13 +438,13 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
 
     migrateSkillTopics(conn, applied);
     migrateCaseLifecycle(conn, applied);
-    migrateSchedulingFields(conn, applied);
+    migrateSchedulingFields(conn, applied, dbMoi);
     migratePermissions(conn, applied);
     migrateAccounts(conn, applied);
     migrateWeekOnlySchedule(conn, applied);
-    migrateNormalFourSkills(conn, applied);
+    migrateNormalFourSkills(conn, applied, dbMoi);
     migrateCaseCycles(conn, applied);
-    migrateMgmtTasks(conn, applied);
+    migrateMgmtTasks(conn, applied, dbMoi);
     migrateDropBranchAdmin(conn, applied);
     migrateNormalPassThreshold(conn, applied);
     migrateSkillSchedule(conn, applied);
@@ -464,16 +474,16 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     migrateLenLop(conn, applied);
     /* PR-XOA: cột users.deleted_at (xoá mềm tài khoản) + đưa em đã thôi học vào Lưu trữ (một lần). */
     migrateXoaDuLieu(conn, applied);
-    /* PR-N1: hạn ghi kết quả PA hết Thứ Hai (R-PA5). */ migratePrN1(conn, applied);
+    /* PR-N1: hạn ghi kết quả PA hết Thứ Hai (R-PA5). */ migratePrN1(conn, applied, dbMoi);
     /* PR-LOP: số tuần lớp, RF, Pre FOU, đổi tên lớp (T2, T78). */
-    migratePrLop(conn, applied);
+    migratePrLop(conn, applied, dbMoi);
     /* PR-DUYET: hộp Chờ duyệt (bảng yeu_cau_duyet + thẻ từ hai luồng cũ), tasks.assignee_name, notifications.duong. */
-    migratePrDuyet(conn, applied);
+    migratePrDuyet(conn, applied, dbMoi);
     /* PR-MT: cột lich_su (MT lịch sử, T34). */ migratePrMt(conn, applied);
     /* PR-NHAP: email học viên + ngày thi dự kiến (T8, T9). */
     migratePrNhap(conn, applied);
     /* PR-MON: kỹ năng phụ trách được chỉ L · R · W1 · W2 · S (MH1). */
-    migratePrMon(conn, applied);
+    migratePrMon(conn, applied, dbMoi);
     /* PR-KCK: Target "không cam kết" (Q29-1). */ migratePrKck(conn, applied);
     /* PR-SOS: hạn xác nhận Case SOS + loại mốc PA quy chế (Q28-3). */ migratePrSos(conn, applied);
     /* PR-YT4: Ý thức v4 — ghi nhận vi phạm, ngày QL quyết, bảng khai bậc (chỉ cấu trúc). */
@@ -483,6 +493,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     /* PR-LT2b: Mini Test + kỳ vọng đầu ra (Cuối khoá lớp thường). */ migratePrLt2b(conn, applied);
     /* PR-CT: lệnh chuyển lớp + bàn giao (chỉ cấu trúc). Thứ tự thật: PR-CT rồi mới PR-Pb2-b (PR-Dọn: bỏ câu "luôn đứng cuối" đã sai). */ migratePrCt(conn, applied);
     /* PR-Pb2-b: ngày nhập đầu ô điểm + hạn xử lý chốt, ngày phản hồi vi phạm (chỉ cấu trúc). */ migratePrPb2b(conn, applied);
+    /* PR-DEPLOY (0b-3): lớp + chương trình gốc của Case (chỉ cấu trúc; chép cho Case có sẵn chỉ khi vừa thêm cột). */ migratePrDeploy(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống
@@ -493,7 +504,8 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
      * hai mới nhặt nốt. Một bước nâng cấp cần xong hẳn trong MỘT lần chạy, nếu không thì
      * không ai biết bao nhiêu lần mới là đủ.
      */
-    const legacyClosed = conn
+    /* DB mới (khoi_tao_moi_at) không có dữ liệu kiểu cũ — bỏ qua (DEP-2): mã hiện hành đóng Case (tự đóng, Không cần theo dõi…) không ghi hướng xử lý. */
+    const legacyClosed = dbMoi ? { changes: 0 } : conn
       .prepare(
         `UPDATE sos_cases SET disposition = 'other',
                 disposition_note = 'Đóng theo hệ thống cũ — chưa ghi hướng xử lý'
@@ -1312,19 +1324,27 @@ function migratePermissions(conn: any, applied: string[]) {
   if (!has('permissions') || !has('roles') || !has('role_permissions')) return;
 
   let added = 0;
+  const moi = new Set<string>();
   for (const [key, label] of Object.entries(PERMISSION_LABEL)) {
     const row = conn.prepare('SELECT id FROM permissions WHERE key = ?').get(key) as any;
     if (row) continue;
     conn.prepare('INSERT INTO permissions (key, name_vi) VALUES (?,?)').run(key, label);
+    moi.add(key);
     added += 1;
   }
 
-  /* Cấp quyền mới cho đúng những vai mà seed cấp — không tự ý nới cho vai khác. */
+  /*
+   * Cấp quyền mới cho đúng những vai mà seed cấp — không tự ý nới cho vai khác.
+   * PR-DEPLOY (DEP-2, phân quyền): CHỈ quyền VỪA THÊM ở lần chạy này. Trước đây mọi cặp vai–quyền mặc định đang thiếu đều được cấp lại ở
+   * MỖI lần migrate — Quản trị gỡ một quyền (Quản trị › Vai trò) thì lần deploy sau quyền tự quay lại. PR sau muốn cấp quyền CŨ cho vai
+   * thì viết bước migrate riêng.
+   */
   let granted = 0;
   for (const [roleKey, keys] of Object.entries(ROLE_PERMISSIONS)) {
     const role = conn.prepare('SELECT id FROM roles WHERE key = ?').get(roleKey) as any;
     if (!role) continue;
     for (const k of keys) {
+      if (!moi.has(k)) continue;
       const perm = conn.prepare('SELECT id FROM permissions WHERE key = ?').get(k) as any;
       if (!perm) continue;
       const had = conn
@@ -1339,7 +1359,7 @@ function migratePermissions(conn: any, applied: string[]) {
   if (added || granted) applied.push(`Bổ sung ${added} quyền mới và ${granted} lượt cấp quyền cho vai trò`);
 }
 
-function migrateSchedulingFields(conn: any, applied: string[]) {
+function migrateSchedulingFields(conn: any, applied: string[], dbMoi = false) {
   const cols = (t: string) => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
   const has = (t: string) =>
     !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
@@ -1411,7 +1431,8 @@ function migrateSchedulingFields(conn: any, applied: string[]) {
    * KHÔNG suy từ ngày làm bài MT1 rồi trừ ngược 5 tuần: MT1 có thể đã bị xếp lại, và một
    * phép trừ ngược như thế dựng ra một "sự thật" chưa từng ai khai.
    */
-  const cycleWeeks = conn
+  /* DB mới (khoi_tao_moi_at) không có dữ liệu kiểu cũ — bỏ qua (DEP-2): tuần bắt đầu trống là thật (badge "Thiếu thông tin"), không suy từ lớp đầu tiên của em. */
+  const cycleWeeks = dbMoi ? [] : conn
     .prepare(
       `SELECT lc.id, MIN(e.started_at) AS first_day
          FROM learning_cycles lc
@@ -1431,7 +1452,7 @@ function migrateSchedulingFields(conn: any, applied: string[]) {
   }
   if (filled) applied.push(`Suy tuần bắt đầu học cho ${filled} lộ trình từ ngày ghi danh`);
 
-  const classWeeks = conn
+  const classWeeks = dbMoi ? [] : conn   // DB mới (khoi_tao_moi_at) không có dữ liệu kiểu cũ — bỏ qua (DEP-2)
     .prepare(`SELECT id, start_date FROM classes WHERE start_period_id IS NULL AND start_date IS NOT NULL`)
     .all() as any[];
   let filledClass = 0;
@@ -1550,10 +1571,12 @@ function migrateWeekOnlySchedule(conn: any, applied: string[]) {
   }
 
   /* --------------------------------------------- 4. ngày thi IELTS → tuần dự kiến thi */
-  if (has('learning_cycles') && cols('learning_cycles').includes('exam_date')) {
-    if (!cols('learning_cycles').includes('exam_period_id')) {
-      conn.exec('ALTER TABLE learning_cycles ADD COLUMN exam_period_id INTEGER REFERENCES report_periods(id)');
-    }
+  /*
+   * PR-DEPLOY (DEP-2, lỗi MẤT DỮ LIỆU): chỉ DB đời trước khi có `exam_period_id`. PR-NHAP (T9) thêm lại cột `exam_date` (ngày thi dự kiến
+   * cụ thể) — chốt cũ "còn cột exam_date" khiến MỌI lần migrate xoá sạch ngày thi T9 rồi `migratePrNhap` thêm lại cột rỗng.
+   */
+  if (has('learning_cycles') && cols('learning_cycles').includes('exam_date') && !cols('learning_cycles').includes('exam_period_id')) {
+    conn.exec('ALTER TABLE learning_cycles ADD COLUMN exam_period_id INTEGER REFERENCES report_periods(id)');
     let moved = 0;
     for (const c of conn
       .prepare('SELECT id, exam_date, exam_month FROM learning_cycles WHERE exam_date IS NOT NULL')
@@ -1613,7 +1636,7 @@ function migrateWeekOnlySchedule(conn: any, applied: string[]) {
  *    `writing2` của Fast Track; owner bác bỏ ở vòng 5. Đổi lại hạng mục và đặt lại khoá
  *    chống trùng cho đúng.
  */
-function migrateNormalFourSkills(conn: any, applied: string[]) {
+function migrateNormalFourSkills(conn: any, applied: string[], dbMoi = false) {
   const has = (t: string) =>
     !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(t);
   const cols = (t: string) => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
@@ -1684,7 +1707,8 @@ function migrateNormalFourSkills(conn: any, applied: string[]) {
      * lần trượt sau sinh ra một case thứ hai ở cùng một hạng mục — đúng cái khoá này sinh
      * ra để chặn. Case nào đổi khoá mà đụng một case đã có thì để nguyên khoá cũ và báo ra.
      */
-    if (cols('sos_cases').includes('dedup_key')) {
+    /* DB mới (khoi_tao_moi_at) không có dữ liệu kiểu cũ — bỏ qua (DEP-2): mã hiện hành CỐ Ý để khoá NULL (Case đã đóng, song song, Case khác chương trình đã nhả khoá — 0b-3). */
+    if (!dbMoi && cols('sos_cases').includes('dedup_key')) {
       let rekeyed = 0;
       let conflicts = 0;
       for (const c of conn
@@ -1819,7 +1843,7 @@ function migrateCaseCycles(conn: any, applied: string[]) {
  * Cơ sở dữ liệu dựng mới đã có sẵn từ `schema.sql`; hàm này chỉ vá cho cơ sở dữ liệu cũ.
  * Mọi bước đều kiểm tra trước nên chạy lại lần hai không đổi gì.
  */
-function migrateMgmtTasks(conn: any, applied: string[]) {
+function migrateMgmtTasks(conn: any, applied: string[], dbMoi = false) {
   const cols = (t: string) => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c: any) => c.name);
   let added = 0;
   for (const [c, d] of [
@@ -1846,7 +1870,7 @@ function migrateMgmtTasks(conn: any, applied: string[]) {
       actor_user_id INTEGER REFERENCES users(id),
       updated_on TEXT NOT NULL,
       created_at TEXT NOT NULL);
-    CREATE INDEX IF NOT EXISTS idx_task_updates_task ON task_updates(task_id);
+    CREATE INDEX IF NOT EXISTS idx_task_update_task ON task_updates(task_id);   -- PR-DEPLOY (DEP-2c): đúng tên trong schema.sql (trước đây tên khác → DB mới có hai chỉ mục trùng sau migrate)
     CREATE TABLE IF NOT EXISTS task_case_links (
       task_id INTEGER NOT NULL REFERENCES tasks(id),
       case_id INTEGER NOT NULL REFERENCES sos_cases(id),
@@ -1860,7 +1884,8 @@ function migrateMgmtTasks(conn: any, applied: string[]) {
    * lại để TRỐNG. Không đoán bừa nhóm cho việc không có dấu hiệu nào — bảng lọc theo nhóm
    * mà nhóm sai thì người dùng tìm mãi không thấy việc của mình.
    */
-  const n = conn
+  /* DB mới (khoi_tao_moi_at) không có dữ liệu kiểu cũ — bỏ qua (DEP-2): việc giao GV của mã hiện hành không có nhóm — không xếp nhầm vào "Học sinh / Phụ huynh". */
+  const n = dbMoi ? 0 : conn
     .prepare(
       `UPDATE tasks SET group_key = 'student_parent'
         WHERE group_key IS NULL

@@ -1,7 +1,7 @@
 /**
  * DỮ LIỆU NỀN DÙNG CHUNG — quyền, vai trò (kể cả vai `retired`), lộ trình, chương trình học + kỹ năng + mốc.
  * Bộ demo (`seed.ts`) và bản chính (`ops/initBanChinh.ts`, PR-Z2) cùng gọi hàm này, nên hai bên không bao giờ lệch nhau.
- * KHÔNG tạo chi nhánh, người dùng, lớp, học viên hay cấu hình demo nào (chỉ một dòng dấu ngưỡng ở `demo_config` — xem cuối hàm).
+ * KHÔNG tạo chi nhánh, người dùng, lớp, học viên hay cấu hình demo nào (chỉ ba dòng dấu ở `demo_config` — ngưỡng, khoá backfill, DB mới — xem cuối hàm).
  * Mã bên dưới chuyển NGUYÊN VĂN từ `runSeed()`.
  */
 import { PERMISSION_LABEL, PROGRAMME_TEMPLATES } from '../../../shared/domain/index.ts';
@@ -62,5 +62,9 @@ export function napDuLieuNen(conn: any, now: string): { roleId: Map<string, numb
    * (bản chính vừa khởi tạo) ghi audit "đổi luật 60% → 70%" — sai sự thật: database đó chưa từng có luật 60%.
    */
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('normal_pass_threshold', '0.7', now);
+  /* DB mới chưa từng có em thôi học kiểu cũ — khoá trước để migrate không lưu trữ lại em QL đã Bỏ lưu trữ (DEP-1, `migrateXoaDuLieu`). */
+  conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('xoa_du_lieu_backfill_at', now, now);
+  /* DẤU DB MỚI (DEP-2): database dựng bằng mã hiện hành (init / seed) không có dữ liệu kiểu cũ — các bước CHUYỂN DỮ LIỆU CŨ của migrate bỏ qua. */
+  conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('khoi_tao_moi_at', now, now);
   return { roleId, permId };
 }
