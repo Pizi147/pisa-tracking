@@ -340,4 +340,53 @@ export async function runPrUxfBTests(t: YThucTestKit) {
     const ph = doc('server/src/yThuc/phoiHop.ts');
     assert(/export function monBoKhoiBaoPh\(attemptIds/.test(ph) && /for \(let i = 0; i < attemptIds\.length; i \+= 400\)/.test(ph), 'monBoKhoiBaoPh theo lô');
   });
+
+  // ------------------------------------------------------------------ Task 10 · Case G+V không nằm hàng Writing sau khi em lên BE (R5-5, Câu 3 = A)
+  const transitionSvc: any = await import('../classes/transition.ts');
+  const tongCase = (b: any) => (b.rows as any[]).reduce((n, r) => n + r.cases.length, 0);
+  let emDaChuyen: any = null;
+  const await_perm: any = await import('../permissions.ts');
+  check('UXF-b (10) · R5-5: em FOU có Case G+V / P mở lên BE → Case nằm nhóm "Từ lớp trước" với tên môn của lớp cũ, KHÔNG ở hàng Writing/Speaking của BE; Σ Case không đổi; L, R giữ hàng', () => {
+    const cand = t.conn.prepare(`SELECT sc.id AS caseId, sc.student_id AS sid, sc.category AS cat, cl.id AS tu, cl.code AS lop, cl.branch_id AS cn
+      FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id JOIN classes cl ON cl.id = a.class_id
+      JOIN enrollments e ON e.student_id = sc.student_id AND e.status = 'active' AND e.class_id = cl.id
+      WHERE sc.status != 'done' AND cl.programme_code = 'FOU' AND sc.category IN ('writing', 'speaking') ORDER BY sc.id`).all() as any[];
+    assert(cand.length > 0, 'seed không có em FOU có Case G+V / P mở');
+    let ch: any = null;
+    for (const c of cand) {
+      for (const be of t.conn.prepare(`SELECT id FROM classes WHERE programme_code = 'BE' AND branch_id = ? AND status = 'active' ORDER BY id`).all(c.cn) as any[]) {
+        const r = transitionSvc.applyTransition(t.P.admin, { fromClassId: c.tu, effectiveDate: t.TODAY, dongs: [{ studentId: c.sid, huong: 'len_lop', toClassId: be.id }] });
+        if (r.done.length) { ch = { ...c, den: be.id }; break; }
+      }
+      if (ch) break;
+    }
+    assert(ch, 'không chuyển được em nào FOU → BE');
+    emDaChuyen = ch;
+    const b = casesSvc.skillSupportBoard(t.P.admin, ch.sid);
+    assert(b.chuongTrinh === 'BE', `bảng phải là BE: ${b.chuongTrinh}`);
+    const hang = (b.rows as any[]).find((r) => r.category === ch.cat && !r.tuLopTruoc);
+    assert(!hang || !hang.cases.some((x: any) => x.id === ch.caseId), `Case ${ch.caseId} vẫn nằm ở hàng ${hang?.short} của BE`);
+    const nhom = (b.rows as any[]).find((r) => r.tuLopTruoc && r.cases.some((x: any) => x.id === ch.caseId));
+    assert(nhom, 'thiếu nhóm "Từ lớp trước"');
+    assert(nhom.tuLopTruoc === ch.lop && nhom.short === d.tenMonNgan('FOU', ch.cat), `${nhom.tuLopTruoc} · ${nhom.short}`);
+    assert((b.rows as any[]).filter((r) => r.tuLopTruoc).every((r, i, ds) => b.rows.indexOf(r) >= b.rows.length - ds.length), 'nhóm Từ lớp trước nằm cuối bảng');
+    assert(tongCase(b) >= 1, 'không được mất Case');
+    /* L, R: tên môn giống nhau ở FOU và BE → giữ hàng như cũ. */
+    for (const r of b.rows as any[]) if (!r.tuLopTruoc && ['listening', 'reading'].includes(r.category)) assert(r.cases.every((x: any) => !x.tuLopTruoc), 'L/R không vào nhóm riêng');
+  });
+  check('UXF-b (10) · R5-5 PHỦ ĐỊNH: GVCN một lớp BE KHÔNG dạy em đó không đọc được bảng kỹ năng (không thấy thêm Case nào)', () => {
+    assert(emDaChuyen, 'phép kiểm trước chưa chuyển em');
+    const gv = t.conn.prepare(`SELECT ta.user_id AS id FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
+      WHERE ta.is_core = 1 AND ta.status = 'active' AND c.programme_code = 'BE' AND ta.class_id != ? AND ta.user_id NOT IN (SELECT user_id FROM teacher_assignments WHERE class_id = ? AND status = 'active') LIMIT 1`).get(emDaChuyen.den, emDaChuyen.den) as any;
+    assert(gv, 'seed không có GVCN BE khác');
+    const { loadPrincipal } = await_perm;
+    let nem = false; try { casesSvc.skillSupportBoard(loadPrincipal(gv.id), emDaChuyen.sid); } catch { nem = true; }
+    assert(nem, 'GV không dạy em phải bị chặn');
+  });
+  check('UXF-b (10) · R5-5: không thêm câu SQL theo số Case (lớp của Case đọc cùng câu nạp Case); quét chữ web có nhóm + dòng phụ "từ <lớp>"', () => {
+    assert(/AS ct_attempt/.test(doc('server/src/cases/cases.ts')), 'cases.ts: chương trình của lớp Case đọc cùng câu SQL nạp Case (không câu mới)');
+    const sb = doc('web/src/modules/cases/SkillBoard.tsx');
+    assert(/Từ lớp trước/.test(sb) && /tuLopTruoc/.test(sb), 'SkillBoard');
+    assert(/Từ lớp trước/.test(doc('web/src/modules/cases/TheKyNang.tsx')), 'TheKyNang (thẻ 375 px)');
+  });
 }

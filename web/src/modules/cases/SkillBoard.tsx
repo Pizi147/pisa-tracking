@@ -100,6 +100,8 @@ type CaseCard = {
 };
 export type Row = {
   category: string; label: string; short: string;
+  /** PR-UXF-b (R5-5): nhóm "Từ lớp trước" — mã lớp cũ của Case có tên môn khác chương trình đang xem (G+V ≠ Writing). Hàng chuẩn: null. */
+  tuLopTruoc?: string | null;
   /** Mã chương trình lộ trình — bộ nguyên nhân theo môn (T57: FOU G+V / P, Pre FOU Tổng hợp). */
   chuongTrinh?: string | null;
   band: number | null; bandAttemptNo: number | null; bandWeek: string | null;
@@ -160,6 +162,9 @@ export const TamDungCtx = createContext<string | null>(null);
 /** Việc mở ngăn Case từ bảng này (Q3): không còn form trải trong trang. `viec` không có = mở view Case. PR-SOS: + Xác nhận Case / PA. */
 export type MoCase = { viec?: 'ghi-ket-qua' | 'them-pa' | 'xac-nhan' | 'xac-nhan-pa' | 'ke-hoach'; paId?: number };
 
+/** Khoá hàng: nhóm "Từ lớp trước" cùng `category` với hàng chuẩn của chương trình mới (G+V ↔ Writing) nên cần khoá riêng. */
+export const khoaHang = (r: { category: string; tuLopTruoc?: string | null }) => (r.tuLopTruoc ? `${r.category}@truoc` : r.category);
+
 export function SkillBoard({ rows, loading, error, onRetry, selected, onPick, onReport, onChanged, onMoCase, tamDungTu = null }: {
   rows: Row[] | null;
   /** PR-VAI-b (T65): em đang Tạm dừng → ngày dừng; "Quá hạn" thành nhãn vàng. */
@@ -190,13 +195,19 @@ export function SkillBoard({ rows, loading, error, onRetry, selected, onPick, on
         <thead>
           <tr><th className="th">Kỹ năng</th><th className="th">Gần nhất</th><th className="th">Case</th><th className="th">Việc tiếp</th></tr>
         </thead>
-        {rows.map((r) => (
-          <tbody key={r.category}>
-            <SkillRows row={r} open={selected === r.category}
-              onToggle={() => onPick(selected === r.category ? null : r.category)}
-              onReport={onReport} onChanged={onChanged} onMoCase={onMoCase} />
-          </tbody>
-        ))}
+        {rows.map((r, i) => {
+          const khoa = khoaHang(r);
+          return (
+            <tbody key={khoa}>
+              {r.tuLopTruoc && !rows[i - 1]?.tuLopTruoc && (
+                <tr><td colSpan={4} className="px-3 pb-1 pt-3 text-[12px] font-semibold uppercase tracking-wide text-slate-400">Từ lớp trước</td></tr>
+              )}
+              <SkillRows row={r} open={selected === khoa}
+                onToggle={() => onPick(selected === khoa ? null : khoa)}
+                onReport={onReport} onChanged={onChanged} onMoCase={onMoCase} />
+            </tbody>
+          );
+        })}
       </table>
     </div>
     </TamDungCtx.Provider>
@@ -248,7 +259,7 @@ function SkillRows({ row, open, onToggle, onReport, onChanged, onMoCase }: {
         tieuDe={(
           <span className="block min-w-0 font-normal">
             <span className="text-sm font-extrabold text-slate-100">{row.label}</span>
-            <Trend row={row} />
+            {row.tuLopTruoc ? <span className="ml-2 text-[12px] font-normal text-slate-400">từ {row.tuLopTruoc}</span> : <Trend row={row} />}
           </span>
         )}>
         <td className="px-3 font-normal"><ScoreCell row={row} /></td>

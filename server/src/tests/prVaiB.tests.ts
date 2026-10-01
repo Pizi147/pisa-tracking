@@ -434,7 +434,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     const web = fs.readFileSync(path.join(REPO, 'web/src/modules/cases/SkillBoard.tsx'), 'utf8');
     assert(/if \(dienThoai\) return <TamDungCtx\.Provider[^]*?<TheKyNangDs/.test(web), 'SkillBoard chọn thẻ trên điện thoại, không vẽ bảng rồi ẩn');
     const the = fs.readFileSync(path.join(REPO, 'web/src/modules/cases/TheKyNang.tsx'), 'utf8');
-    assert(/xepTheKyNang\(rows\)/.test(the) && /min-h-\[44px\]/.test(the) && !/text-\[11px\]/.test(the), 'thẻ: xếp theo luật, vùng bấm 44 px, không chữ 11 px');
+    assert(/xepTheKyNang\(rows/.test(the) && /min-h-\[44px\]/.test(the) && !/text-\[11px\]/.test(the), 'thẻ: xếp theo luật, vùng bấm 44 px, không chữ 11 px');
   });
 
   // ------------------------------------------------------------------ khối 8 · đường dẫn sâu "MT · kỹ năng" → hồ sơ Mock (E.4 / G5)

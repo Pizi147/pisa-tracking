@@ -387,7 +387,7 @@ function boOVaCau(i: {
   const a = kq ? attempts.find((x) => x.id === kq.attemptId) : null;
   const ratio = a?.mode === 'ratio';
   const dauDot = (x: any) => (x.mode === 'ratio' ? (x.kind === 'final' ? 'Cuối khoá' : 'Giữa khoá') : `MT${x.attemptNo}`);
-  const tenKn = new Map(board.rows.map((r) => [r.category as string, r.label as string]));
+  const tenKn = new Map(board.rows.filter((r) => !r.tuLopTruoc).map((r) => [r.category as string, r.label as string]));   // PR-UXF-b (R5-5): nhóm "Từ lớp trước" không đè tên hàng chuẩn
   const vi = em?.viPham ? [...em.viPham.values()] as any[] : [];
   const quaHanYt = Math.max(0, ...vi.map((t) => t.quaHanNgay ?? 0)) || null;
   /* PR-UXF-b (Q14): MỘT số vi phạm còn mở — ô Ý thức (`soMo`) và panel Tạm dừng ("n vi phạm Ý thức đang chờ xử lý") cùng đọc nó. */

@@ -20,9 +20,12 @@ import {
 export function TheKyNangDs({ rows, onMoCase }: { rows: SkillBoardRow[]; onMoCase: (caseId: number, o?: MoCase) => void }) {
   return (
     <div className="flex flex-col gap-2 p-2.5">
-      {xepTheKyNang(rows).map(({ row, gon }) => (gon
+      {xepTheKyNang(rows.filter((r) => !r.tuLopTruoc)).map(({ row, gon }) => (gon
         ? <TheGon key={row.category} row={row} onMoCase={onMoCase} />
         : <TheKyNang key={row.category} row={row} onMoCase={onMoCase} />))}
+      {/* PR-UXF-b (R5-5): Case của lớp trước có tên môn khác — nhóm riêng cuối bảng, không nằm ở thẻ Writing / Speaking của chương trình mới. */}
+      {rows.some((r) => r.tuLopTruoc) && <div className="px-1 pt-2 text-[12px] font-semibold uppercase tracking-wide text-slate-400">Từ lớp trước</div>}
+      {rows.filter((r) => r.tuLopTruoc).map((row) => <TheKyNang key={`${row.category}@truoc`} row={row} onMoCase={onMoCase} />)}
     </div>
   );
 }
@@ -56,16 +59,18 @@ function TheKyNang({ row, onMoCase, onGap }: { row: SkillBoardRow; onMoCase: (ca
     <KhungThe>
       <div className="flex items-center gap-2">
         <span className="min-w-0 flex-1 truncate text-[14px] font-extrabold text-slate-100">{row.label}</span>
-        <span className={`inline-flex items-center rounded-md border px-2 text-[15px] font-bold leading-6 tabular-nums ${SCORE_CHIP_ROW(row)}`}>
-          {row.band === null ? '—' : row.ratio && row.total ? `${row.score}/${row.total}` : fmtBand(row.band)}
-        </span>
+        {!row.tuLopTruoc && (
+          <span className={`inline-flex items-center rounded-md border px-2 text-[15px] font-bold leading-6 tabular-nums ${SCORE_CHIP_ROW(row)}`}>
+            {row.band === null ? '—' : row.ratio && row.total ? `${row.score}/${row.total}` : fmtBand(row.band)}
+          </span>
+        )}
         {onGap && (
           <button type="button" aria-label={`Thu gọn ${row.label}`} onClick={onGap} className="inline-flex h-11 w-11 items-center justify-center border-0 bg-transparent text-slate-400">
             <IconGap mo />
           </button>
         )}
       </div>
-      <div className="mt-0.5 text-[12px] text-slate-400"><DongMt row={row} />{!row.ratio && row.gap !== null && <> · {gapText(row.gap)}</>}</div>
+      <div className="mt-0.5 text-[12px] text-slate-400">{row.tuLopTruoc ? <>từ {row.tuLopTruoc}</> : <><DongMt row={row} />{!row.ratio && row.gap !== null && <> · {gapText(row.gap)}</>}</>}</div>
       {mo.length === 0 && <div className="mt-1 text-[12px] text-slate-400">Không có Case mở</div>}
       {mo.map((c) => <KhoiCase key={c.id} c={c} onMoCase={onMoCase} />)}
     </KhungThe>

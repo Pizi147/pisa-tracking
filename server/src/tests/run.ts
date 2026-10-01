@@ -6350,11 +6350,9 @@ check('[4.2] Case Giữa khoá tự tạo (PR-LT2a) nằm ở ĐÚNG hàng kỹ 
     .get() as any;
   assert(c, 'Bộ demo không còn Case Giữa khoá tự tạo nào');
   const board = (cases.skillSupportBoard(P.admin, c.student_id, c.cycle_id) as any).rows;
-  const row = board.find((r: any) => r.category === c.category);
-  assert(row?.cases.some((x: any) => x.id === c.id), `Case ${c.category} không hiện ở hàng ${c.category} của bảng kỹ năng`);
-  for (const other of board.filter((r: any) => r.category !== c.category)) {
-    assert(!other.cases.some((x: any) => x.id === c.id), `Case ${c.category} lọt sang hàng ${other.category}`);
-  }
+  /* PR-UXF-b (R5-5): Case hiện ở ĐÚNG MỘT hàng cùng hạng mục — hàng chuẩn, hoặc nhóm "Từ lớp trước" khi em đã sang chương trình có TÊN MÔN khác (FOU G+V → BE Writing). */
+  const hangCo = board.filter((r: any) => r.cases.some((x: any) => x.id === c.id));
+  assert(hangCo.length === 1 && hangCo[0].category === c.category, `Case ${c.category} phải hiện ở đúng một hàng ${c.category}, đang ở: ${hangCo.map((r: any) => `${r.category}${r.tuLopTruoc ? '(từ lớp trước)' : ''}`).join(', ') || 'không hàng nào'}`);
 });
 
 check('[4.4] Biểu đồ có khoảng thực hiện phương án trên cùng trục thời gian', () => {

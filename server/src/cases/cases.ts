@@ -2201,6 +2201,8 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
   const caseRows = conn
     .prepare(
       `SELECT *, (COALESCE(cycle_id, 0) != ?) AS carried_over, (SELECT cy.started_at FROM learning_cycles cy WHERE cy.id = sos_cases.cycle_id) AS lo_trinh_bat_dau,
+              (SELECT cl.programme_code FROM assessment_attempts a JOIN classes cl ON cl.id = a.class_id WHERE a.id = sos_cases.attempt_id) AS ct_attempt,
+              (SELECT cl.code FROM assessment_attempts a JOIN classes cl ON cl.id = a.class_id WHERE a.id = sos_cases.attempt_id) AS lop_attempt,
               (SELECT u.full_name FROM users u WHERE u.id = sos_cases.owner_user_id) AS owner_name FROM sos_cases
         WHERE student_id = ?
           AND (COALESCE(cycle_id, 0) = ? OR status != 'done')
@@ -2257,10 +2259,21 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
    * phải có dòng — không thì bảng và thẻ tóm tắt nói "không có case" trong khi Case còn mở. Dòng thêm xếp sau các ô chuẩn.
    */
   const oChuan: readonly string[] = caseCategoriesFor(isRatioCycle(cycle) ? 'ratio' : 'ielts_band', ctBang);
-  const oNgoai = [...new Set(caseRows.filter((c) => c.status !== 'done' || !c.carried_over).map((c) => (c.category ?? categoryOf(c.topic)) as string | null)
+  /*
+   * PR-UXF-b (R5-5): Case ĐANG MỞ mà lớp của LƯỢT sinh ra nó (`ct_attempt`) có TÊN MÔN khác chương trình đang xem (FOU "G+V" / "P" → BE "Writing" / "Speaking") không nằm ở hàng cùng khoá
+   * dữ liệu — hàng Writing của BE đọc thành "em yếu Writing" (khi chuyển lớp, Case đi theo em sang lộ trình mới nên không dựa vào `carried_over`). Chúng thành nhóm "Từ lớp trước" cuối
+   * bảng, tên môn theo chương trình của LỚP đó. Tên giống nhau (L, R) giữ hàng. Chương trình / mã lớp đọc cùng câu SQL nạp Case (không thêm câu).
+   */
+  const tuLopTruoc = new Map<number, { ct: string | null; lop: string }>();
+  for (const c of caseRows) {
+    const cat = (c.category ?? categoryOf(c.topic)) as string | null;
+    if (c.status !== 'done' && cat && ctBang && c.ct_attempt && tenMonNgan(c.ct_attempt, cat) !== tenMonNgan(ctBang, cat)) tuLopTruoc.set(c.id, { ct: c.ct_attempt, lop: c.lop_attempt });
+  }
+  const oNgoai = [...new Set(caseRows.filter((c) => !tuLopTruoc.has(c.id) && (c.status !== 'done' || !c.carried_over)).map((c) => (c.category ?? categoryOf(c.topic)) as string | null)
     .filter((k): k is string => !!k && !oChuan.includes(k)))];
-  const rows = [...oChuan, ...oNgoai].map((category) => {
-    const points = byCategory.get(category) ?? [];
+  const dongKyNang = (category: string, thuCu?: { ct: string | null; lop: string; cases: any[] }) => {
+    /* Hàng "Từ lớp trước": không mượn điểm của lộ trình đang xem. */
+    const points = thuCu ? [] : byCategory.get(category) ?? [];
     const latest = points[points.length - 1] ?? null;
     const prev = points.length > 1 ? points[points.length - 2] : null;
 
@@ -2269,7 +2282,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
      * thì lấy cái đã đóng gần nhất — "đã từng có vấn đề và đã xử lý xong" là một câu trả
      * lời khác hẳn "chưa từng có vấn đề", và người dạy cần phân biệt hai câu đó.
      */
-    const mine = caseRows.filter((c) => (c.category ?? categoryOf(c.topic)) === category);
+    const mine = thuCu ? thuCu.cases : caseRows.filter((c) => !tuLopTruoc.has(c.id) && (c.category ?? categoryOf(c.topic)) === category);
     const primary = mine.find((c) => c.status !== 'done') ?? mine[0] ?? null;
 
     let interventions: any[] = [];
@@ -2306,9 +2319,11 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
 
     return {
       category,
-      label: tenMon(ctBang, category),
-      short: tenMonNgan(ctBang, category),
-      chuongTrinh: ctBang,
+      label: tenMon(thuCu ? thuCu.ct : ctBang, category),
+      short: tenMonNgan(thuCu ? thuCu.ct : ctBang, category),
+      chuongTrinh: thuCu ? thuCu.ct : ctBang,
+      /** PR-UXF-b (R5-5): mã lớp cũ của nhóm "Từ lớp trước" (dòng phụ "từ MB FOU 12"); null = hàng chuẩn. */
+      tuLopTruoc: thuCu ? thuCu.lop : null,
       /* Band MT gần nhất — chưa có điểm thì để trống chứ không ghi 0. */
       band: latest?.band ?? null,
       bandAttemptNo: latest?.attemptNo ?? null,
@@ -2421,7 +2436,17 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
           return b.id - a.id;
         }),
     };
-  });
+  };
+  const nhomTruoc = new Map<string, { ct: string | null; lop: string; cases: any[] }>();
+  for (const c of caseRows) {
+    const t = tuLopTruoc.get(c.id); if (!t) continue;
+    const k = `${c.category ?? categoryOf(c.topic)}|${t.ct}|${t.lop}`;
+    (nhomTruoc.get(k) ?? nhomTruoc.set(k, { ...t, cases: [] }).get(k)!).cases.push(c);
+  }
+  const rows = [
+    ...[...oChuan, ...oNgoai].map((category) => dongKyNang(category)),
+    ...[...nhomTruoc].map(([k, g]) => dongKyNang(k.split('|')[0], g)),
+  ];
 
   return { studentId, cycleId: cycle?.id ?? null, chuongTrinh: ctBang, rows, tamDungTu: tamDungTuCua(student) };
 }
