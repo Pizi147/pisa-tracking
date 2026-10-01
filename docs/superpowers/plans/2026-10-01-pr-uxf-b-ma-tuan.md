@@ -463,3 +463,5 @@ và Case còn `classId` lớp cũ. FOU: `writing` = G+V, `speaking` = P; BE: `wr
 
 | Ngày | Task | Ghi chú (mốc B, model thật, phép kiểm trước đỏ bao nhiêu ✗, trần tốc độ, lệch kế hoạch, cổng gộp) |
 |---|---|---|
+| 01/10 | 0 | Model thật: **Sonnet 5.5** (`claude-sonnet-5-5`), effort High. Task 9, 10: ghi ở Nhật ký riêng của hai Task. Mốc B (main `cebb6fff`): **2232 + 29** xanh. Lần chạy đầu sập OOM/0xC0000409 ở PR-GV (3) → chạy lại một lần xanh. |
+| 01/10 | 1 | Phép kiểm trước đỏ **3 ✗** trên main (bộ chạy nhỏ, vì chỉ hàm thuần + quét chữ). Sửa kỳ vọng cũ (không xoá): `NEN (1)` phụ tuần `21/09 – 27/09`; lỗi khoảng ô tuần "Không được sau W1 OCT". Xanh **2235** + 29. Hai lượt chạy bị tắt giữa chừng (một do tôi dừng để sửa kỳ vọng, một mã 5 không lỗi — nghi session song song quét `tests/run.js`) → chạy lại xanh. LichNho ô "Gõ ngày" → "Gõ tuần hoặc ngày" (nhận cả `W4 SEP`). B5 #11, #19: **bỏ** theo planning 01/10 — `pendingWeeks`/`caseFollowUp` chỉ `StudentsPage.WorkQueue` (mã chết) đọc; PR-Dọn xoá. |

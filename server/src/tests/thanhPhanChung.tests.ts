@@ -43,7 +43,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(d.docONgay('28/09/2026', 'tuan', '2026-09-30', { moc: 'cuoi', catHomNay: false }).iso === '2026-10-04', 'hạn tương lai không cắt');
   });
   check('NEN (1) · tuần tương lai không bị cắt về hôm nay; Gần đây có tuần tới khi chỉ nhận từ tuần này', () => {
-    const r = d.docONgay('12/10/2026', 'tuan', H, { moc: 'cuoi', toiDa: H }); assert(r.loi === 'Không được sau hôm nay', JSON.stringify(r));
+    const r = d.docONgay('12/10/2026', 'tuan', H, { moc: 'cuoi', toiDa: H }); assert(r.loi === 'Không được sau ' + d.tuanLich(H, H), JSON.stringify(r));   // ô tuần nói mã tuần (UXF-b), không nói "hôm nay"
     assert(d.docONgay('12/10/2026', 'tuan', H, { moc: 'cuoi' }).iso === '2026-10-18', 'tuần tương lai giữ Chủ nhật thật');
     const w = d.goiYGanDay('tuan', H, { toiThieu: H });
     assert(w.length === 3 && w[0].nhan === 'Tuần này' && w[0].giaTri === H && w.every((x: any) => x.giaTri >= H)
@@ -59,10 +59,10 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(d.docONgay('15/10', 'ngay-hoac-thang', H).iso === '2026-10-15', 'ngày thiếu năm');
     const r = d.docONgay('08/2026', 'thang', H, { toiThieu: H }); assert(r.loi === 'Không được trước tháng 09/2026', JSON.stringify(r));
   });
-  check('NEN (1) · hiện: ngày dd/mm/yyyy · tháng mm/yyyy · phụ tuần "W4 SEP · 21/09 – 27/09"; không bao giờ ISO', () => {
+  check('NEN (1) · hiện: ngày dd/mm/yyyy · tháng mm/yyyy · ô tuần hiện mã tuần, phụ "21/09 – 27/09"; không bao giờ ISO', () => {
     assert(d.hienONgay('2026-09-28', 'ngay') === '28/09/2026' && d.hienONgay('2026-10', 'thang') === '10/2026', 'hien');
     assert(d.hienONgay('2026-10', 'ngay-hoac-thang') === '10/2026' && d.hienONgay('', 'ngay') === '', 'hien 2');
-    assert(d.phuONgay('2026-09-21', 'tuan', H) === 'W4 SEP · 21/09 – 27/09', d.phuONgay('2026-09-21', 'tuan', H));
+    assert(d.phuONgay('2026-09-21', 'tuan', H) === '21/09 – 27/09', d.phuONgay('2026-09-21', 'tuan', H));
     assert(d.phuONgay('2026-09-28', 'ngay', H) === '', 'ngày không có dòng phụ');
   });
   check('NEN (1) · Gần đây theo luật từng chỗ; lưới tháng tròn tuần', () => {

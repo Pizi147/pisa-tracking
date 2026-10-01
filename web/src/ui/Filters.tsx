@@ -4,7 +4,7 @@ import { useSession } from '../lib/session.tsx';
 import { api } from '../lib/api.ts';
 import { useToast } from './Toast.tsx';
 import { addDaysStr } from '../lib/format.ts';
-import { mondayOfDate, tuanLich } from '@shared/domain/index.ts';
+import { mondayOfDate, ngay, tuanLich } from '@shared/domain/index.ts';
 import { LichNho } from './LichNho.tsx';
 
 export type Period = { id: number; code: string; weekStart: string; weekEnd: string; range: string };
@@ -49,13 +49,6 @@ export function usePeriodWindow(anchorId: number | null, scope?: 'planning') {
 }
 
 // --------------------------------------------------------------- dựng ngày/tuần thuần (client)
-
-const dm = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
-
-/** "14/09 – 20/09" — khoảng ngày của tuần bắt đầu tại `weekStart`. */
-function rangeOf(weekStart: string): string {
-  return `${dm(weekStart)} – ${dm(addDaysStr(weekStart, 6))}`;
-}
 
 /**
  * RESOLVE ĐÚNG MỘT TUẦN THÀNH ID THẬT — gọi khi người dùng THẬT SỰ chọn một tuần (mũi tên,
@@ -168,7 +161,7 @@ export function WeekPicker({ periodId, onPeriod, label = 'Tuần', scope, cleara
         <div className="flex flex-1 basis-[17rem] min-w-0 items-stretch gap-2">
           <button
             type="button" className="btn flex-none h-11 px-3" disabled={busy}
-            onClick={() => goAdjacent(-1)} aria-label="Tuần trước"
+            onClick={() => goAdjacent(-1)} aria-label={shown ? `Tuần trước · ${tuanLich(addDaysStr(shown.weekStart, -7), today)}` : 'Tuần trước'}
             title={shown ? `Tuần trước · ${tuanLich(addDaysStr(shown.weekStart, -7), today)}` : 'Tuần trước'}
           >‹</button>
           <button
@@ -179,8 +172,8 @@ export function WeekPicker({ periodId, onPeriod, label = 'Tuần', scope, cleara
           >
             {shown ? (
               <>
-                <span className="text-slate-100 truncate">{rangeOf(shown.weekStart)}</span>
-                <span className="text-slate-500 text-xs shrink-0">{tuanLich(shown.weekStart, today)}</span>
+                <span className="text-slate-100 truncate">{tuanLich(shown.weekStart, today)}</span>
+                <span className="text-slate-500 text-xs shrink-0">{ngay(shown.weekStart, today)} – {ngay(addDaysStr(shown.weekStart, 6), today)}</span>
               </>
             ) : (
               <span className="text-slate-500">{clearable ? 'Chưa xác định' : 'Đang tải…'}</span>
@@ -188,7 +181,7 @@ export function WeekPicker({ periodId, onPeriod, label = 'Tuần', scope, cleara
           </button>
           <button
             type="button" className="btn flex-none h-11 px-3" disabled={busy}
-            onClick={() => goAdjacent(1)} aria-label="Tuần sau"
+            onClick={() => goAdjacent(1)} aria-label={shown ? `Tuần sau · ${tuanLich(addDaysStr(shown.weekStart, 7), today)}` : 'Tuần sau'}
             title={shown ? `Tuần sau · ${tuanLich(addDaysStr(shown.weekStart, 7), today)}` : 'Tuần sau'}
           >›</button>
         </div>

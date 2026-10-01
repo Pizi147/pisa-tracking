@@ -30,6 +30,23 @@ export function tuanLich(d: string | null | undefined, homNay?: string | null): 
   return owningMonthOf(mondayOfDate(h)).year === year ? ma : `${ma} ${year}`;
 }
 
+/**
+ * Bộ ĐỌC, đối ngẫu của `tuanLich` (không phải bộ định dạng thứ hai): "W4 SEP" / "w4 sep 2027" → Thứ Hai của tuần đó.
+ * Không có năm = năm của tuần chứa `homNay` (đúng chiều ngược của `tuanLich`). Tuần không có thật (W5 SEP 2026) hoặc chữ lạ → null.
+ */
+export function docTuanLich(text: string, homNay: string): string | null {
+  const m = /^W([1-6])\s+([A-Z]{3})(?:\s+(\d{4}))?$/i.exec(text.trim());
+  const h = ngayTheoGioVN(homNay);
+  const thang = m ? MONTH_CODE.indexOf(m[2].toUpperCase()) : -1;
+  if (!m || !h || thang < 0) return null;
+  const nam = m[3] ? +m[3] : owningMonthOf(mondayOfDate(h)).year;
+  const dau = new Date(Date.UTC(nam, thang, 1));
+  const thuNamDau = (4 - dau.getUTCDay() + 7) % 7;                      // tuần 1 = tuần chứa Thứ Năm đầu tiên của tháng
+  const t2 = new Date(dau.getTime() + (thuNamDau - 3 + 7 * (+m[1] - 1)) * 86_400_000).toISOString().slice(0, 10);
+  const { year, month } = owningMonthOf(t2);
+  return year === nam && month === thang + 1 ? t2 : null;
+}
+
 export function tuanKhoa(n: number, tong: number): string {
   if (!Number.isInteger(n) || !Number.isInteger(tong) || n < 1 || tong < 1) return '—';
   return `W${n}/${tong}`;

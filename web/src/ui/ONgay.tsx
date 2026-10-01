@@ -43,7 +43,7 @@ type Props = {
 export function ONgay({ kieu, value, onChange, toiThieu, toiDa, moc, catHomNay, goiY, disabled, ariaLabel, id, onBlur, invalid, gon }: Props) {
   const { homNay } = useNgayNghiepVu();
   const luat: LuatONgay = { toiThieu, toiDa, moc, catHomNay };
-  const [text, setText] = useState(hienONgay(value, kieu));
+  const [text, setText] = useState(hienONgay(value, kieu, homNay));
   const [loi, setLoi] = useState<string | null>(null);
   const [mo, setMo] = useState(false);
   const nut = useRef<HTMLButtonElement>(null);
@@ -53,7 +53,7 @@ export function ONgay({ kieu, value, onChange, toiThieu, toiDa, moc, catHomNay, 
   useLayoutEffect(() => { bao?.(idO); return () => bao?.(null); }, [bao, idO]);
   /* Chỉ `value`/`kieu` đổi mới chạy; đọc `text` lúc đó để không xoá chữ gõ sai sau khi chính ô báo '' (chotONgay). */
   useEffect(() => {
-    if (canDongBoONgay(text, value, kieu, homNay, luat)) { setText(hienONgay(value, kieu)); setLoi(null); }
+    if (canDongBoONgay(text, value, kieu, homNay, luat)) { setText(hienONgay(value, kieu, homNay)); setLoi(null); }
   }, [value, kieu]); // eslint-disable-line react-hooks/exhaustive-deps
   const chot = () => {
     const c = chotONgay(text, value, kieu, homNay, luat);
@@ -66,7 +66,7 @@ export function ONgay({ kieu, value, onChange, toiThieu, toiDa, moc, catHomNay, 
       <span className="flex min-w-0 items-stretch gap-1.5">
         <input id={idO} className={`field min-w-0 flex-1 tabular-nums${gon && (invalid || loi) ? ' border-late' : ''}`}
           title={gon ? [phu, loi].filter(Boolean).join(' · ') || undefined : undefined} inputMode="numeric" autoComplete="off" value={text} disabled={disabled}
-          placeholder={goiY ?? (kieu === 'thang' ? 'mm/yyyy' : 'dd/mm/yyyy')} aria-label={ariaLabel} aria-invalid={invalid || !!loi || undefined}
+          placeholder={goiY ?? (kieu === 'thang' ? 'mm/yyyy' : kieu === 'tuan' ? 'W4 SEP hoặc dd/mm' : 'dd/mm/yyyy')} aria-label={ariaLabel} aria-invalid={invalid || !!loi || undefined}
           aria-describedby={gon ? undefined : [phu && `${idO}-phu`, loi && `${idO}-loi`].filter(Boolean).join(' ') || undefined}
           onChange={(e) => setText(e.target.value)} onBlur={() => { chot(); onBlur?.(); }}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); chot(); } else if (e.key === 'ArrowDown' && e.altKey) { e.preventDefault(); setMo(true); } }} />
@@ -77,7 +77,7 @@ export function ONgay({ kieu, value, onChange, toiThieu, toiDa, moc, catHomNay, 
       {phu && !gon && <span id={`${idO}-phu`} className="mt-1 block truncate text-[11.5px] tabular-nums text-slate-400">{phu}</span>}
       {loi && !gon && <span id={`${idO}-loi`} className="mt-1 block text-[11px] text-late" role="alert">{loi}</span>}
       {mo && <LichNho kieu={kieu} value={value || null} homNay={homNay} luat={luat} neo={nut}
-        onChon={(iso) => { if (iso !== value) onChange(iso); setText(hienONgay(iso, kieu)); setLoi(null); setMo(false); nut.current?.focus(); }} onDong={() => setMo(false)} />}
+        onChon={(iso) => { if (iso !== value) onChange(iso); setText(hienONgay(iso, kieu, homNay)); setLoi(null); setMo(false); nut.current?.focus(); }} onDong={() => setMo(false)} />}
     </span>
   );
 }
