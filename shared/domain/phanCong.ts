@@ -1,5 +1,5 @@
 /** PHÂN CÔNG (L3, MH6, T55, T56, M-09): ô nào có theo chương trình + luật kiểm TRƯỚC khi ghi. Web vẽ lỗi tại ô, máy chủ từ chối — cùng hàm. */
-import { CHUONG_TRINH_KHONG_CHIA_MON, programmeOf, tenMonNgan } from './normal.ts';
+import { CHUONG_TRINH_KHONG_CHIA_MON, kyNangGoiY, programmeOf, tenMonNgan } from './normal.ts';
 
 /** `gop`: ô GỘP nhiều môn một người (Q31-5, FOU "L · R · G+V") — web trải thành một dòng mỗi môn (`slotsTuO`), máy chủ nhận dạng cũ. */
 export type OPhanCong = { khoa: string; skill: string | null; laGvcn: boolean; nhan: string; gop?: readonly string[] };
@@ -35,10 +35,22 @@ export function slotsTuO(oList: readonly OPhanCong[], chon: Record<string, numbe
   });
 }
 
-/** Lớp FOU mà L, R, G+V đang do NHIỀU người dạy → phải mở sẵn tách (không gộp được). */
+/**
+ * Lớp FOU phải mở sẵn TÁCH khi L, R, G+V đang do nhiều người dạy, HOẶC có môn gộp đã có người và có môn gộp còn trống (PR-S6F-a Q3) —
+ * mở gộp lúc đó thì lưu sẽ trải ô gộp ra cả môn trống (tự gán G+V cho người dạy L, R mà Quản lý không chọn). Cả ba trống / cùng một người → gộp.
+ */
 export function nenTachFou(chuongTrinh: string | null, bySkill: readonly { skill: string; userId: number }[]): boolean {
   if (programmeOf(chuongTrinh) !== 'FOU') return false;
-  return new Set(bySkill.filter((s) => GOP_FOU.includes(s.skill)).map((s) => s.userId)).size > 1;
+  const gop = bySkill.filter((s) => GOP_FOU.includes(s.skill));
+  const mon = new Set(gop.map((s) => s.skill));
+  return new Set(gop.map((s) => s.userId)).size > 1 || (mon.size > 0 && mon.size < GOP_FOU.length);
+}
+
+/** Dòng gợi ý "dạy được …" của một ứng viên ở ô `o`: môn CỦA LỚP mà người đó khai hợp, viết theo chương trình lớp (FOU "L, R, G+V" / "P"). */
+export function nhanDayDuoc(chuongTrinh: string | null, o: OPhanCong, kyNangKhai: readonly string[]): string[] {
+  return (o.gop ?? (o.skill ? [o.skill] : []))
+    .filter((k) => kyNangGoiY(chuongTrinh, k).some((x) => kyNangKhai.includes(x)))
+    .map((k) => tenMonNgan(chuongTrinh, k));
 }
 
 /** Đổi lưới gộp ↔ tách mà giữ người đã chọn: tách → mỗi môn nhận người của ô gộp; gộp → ô gộp nhận người của môn đầu tiên đã chọn. */

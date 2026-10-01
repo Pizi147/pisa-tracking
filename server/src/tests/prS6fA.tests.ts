@@ -417,4 +417,79 @@ export async function runPrS6fATests(t: YThucTestKit) {
     nguCanh.trongBoNho(() => tb.docHet(P.coreTeacher.userId, TODAY));
     assert(nguCanh.soCauSql() - a === 1, `${nguCanh.soCauSql() - a} câu`);
   });
+  // ------------------------------------------------------------------ khối 11 · chuyển lớp + phân công FOU (Q1, Q3, Q23)
+  console.log('\nPR-S6F-a · (11) Chuyển lớp chốt lại hạn xử lý; phân công FOU không tự gán G+V trống; khác gợi ý giữa khoá');
+  const ltt: any = await import('../classes/luatLoTrinh.ts');
+  const tt: any = await import('../yThuc/trangThai.ts');
+  const lenh: any = await import('../classes/lenhChuyen.ts');
+  const ck: any = await import('../normal/cuoiKhoa.ts');
+
+  check('S6F-a (11a) · thi hành chuyển lớp: vi phạm bắt buộc chưa phản hồi chốt lại han_xu_ly = hạn màn Ý thức sau chuyển; vi phạm đã phản hồi giữ nguyên', () => {
+    const { sid } = emMoi('MB FT 101');
+    const ids = ['2026-09-08', '2026-09-09', '2026-09-10'].map((ngay) =>
+      (viol.recordViolation(P.w1Teacher, { studentId: sid, category: 'homework', description: 'Vi phạm ghi cho phép kiểm S6F-a (11)', occurredOn: ngay }) as any).violation.id as number);
+    const daPh = (viol.recordViolation(P.w1Teacher, { studentId: sid, category: 'homework', description: 'Vi phạm đã phản hồi S6F-a (11)', occurredOn: '2026-09-10' }) as any).violation.id as number;
+    conn.prepare(`UPDATE violations SET han_xu_ly = '2026-09-01', phan_hoi_ngay = '2026-09-02' WHERE id = ?`).run(daPh);
+    const hanCu = get('SELECT han_xu_ly FROM violations WHERE id = ?', ids[0]).han_xu_ly;
+    assert(hanCu, 'vi phạm bắt buộc phải có hạn chốt trước khi chuyển');
+    /* Thi hành lệnh Thứ Hai 21/09 (lệnh chuyển lớp chạy đầu tuần): mốc vào lớp mới sau mốc bắt buộc → hạn dời. */
+    const em = voiNgay('2026-09-21', () => {
+      ltt.apDungMotDong(P.mbManager, { sid, toClassId: lopY, ngay: '2026-09-21', boiCanh: 'giua-khoa', lyDo: 'Chuyển lớp cho phép kiểm' });
+      return tt.trangThaiYThuc([sid]).get(sid);
+    });
+    assert(em.viPham.get(ids[0]).han !== hanCu, `hạn màn Ý thức không đổi sau chuyển (${hanCu}) — phép kiểm không phân biệt được`);
+    const lech = ids.filter((v) => get('SELECT han_xu_ly FROM violations WHERE id = ?', v).han_xu_ly !== em.viPham.get(v).han);
+    assert(lech.length === 0, `hạn chốt ≠ màn Ý thức: ${lech.map((v) => `${get('SELECT han_xu_ly FROM violations WHERE id = ?', v).han_xu_ly} ≠ ${em.viPham.get(v).han}`).join(', ')} (trước: ${hanCu})`);
+    assert(get('SELECT han_xu_ly FROM violations WHERE id = ?', daPh).han_xu_ly === '2026-09-01', 'vi phạm đã phản hồi bị đổi hạn');
+  });
+  check('S6F-a (11b) · nenTachFou: {L,R cùng người} → tách · {L,R,G+V cùng người} → gộp · {} → gộp · {L,R khác G+V} → tách; ở chế độ tách lưu không sinh dòng G+V', () => {
+    const fou = (o: Record<string, number>) => Object.entries(o).map(([skill, userId]) => ({ skill, userId }));
+    assert(d.nenTachFou('FOU', fou({ listening: 7, reading: 7 })) === true, 'L, R cùng người, G+V trống');
+    assert(d.nenTachFou('FOU', fou({ listening: 7, reading: 7, writing: 7 })) === false, 'ba môn cùng người');
+    assert(d.nenTachFou('FOU', []) === false, 'cả ba trống');
+    assert(d.nenTachFou('FOU', fou({ listening: 7, reading: 8, writing: 7 })) === true, 'khác người');
+    const skills = [...d.PROGRAMME_TEMPLATES.FOU.skills] as string[];
+    const slots = d.slotsTuO(d.oPhanCong('FOU', skills, { tach: true }), { gvcn: 9, listening: 7, reading: 7 });
+    assert(!slots.some((s: any) => s.skill === 'writing'), JSON.stringify(slots));
+  });
+  check('S6F-a (11c) · gợi ý ứng viên lớp FOU: ô gộp "L, R, G+V", ô P "P" (không W1, S); lớp FT giữ W1', () => {
+    const oFou = d.oPhanCong('FOU', [...d.PROGRAMME_TEMPLATES.FOU.skills], { tach: false });
+    const gop = oFou.find((o: any) => o.gop); const p = oFou.find((o: any) => o.skill === 'speaking');
+    assert(d.nhanDayDuoc?.('FOU', gop, ['listening', 'reading', 'writing1']).join(', ') === 'L, R, G+V', String(d.nhanDayDuoc?.('FOU', gop, ['listening', 'reading', 'writing1'])));
+    assert(d.nhanDayDuoc('FOU', p, ['speaking', 'writing2']).join(', ') === 'P', 'ô P');
+    assert(d.nhanDayDuoc('FT', { khoa: 'writing1', skill: 'writing1', laGvcn: false, nhan: 'W1' }, ['writing1']).join() === 'W1', 'FT');
+    const goc = path.join(REPO, 'web/src/modules/classes/ClassCreatePanel.tsx');
+    assert(!/map\(skillShort\)/.test(fs.readFileSync(goc, 'utf8')), 'ClassCreatePanel còn ghép mã kỹ năng FT');
+  });
+  check('S6F-a (11d) · em lớp thường đã hết khoá, gợi ý "Lên", panel một em (giữa khoá) chuyển ngang: không lý do → "Ghi lý do ngắn"; có lý do → khac_goi_y = 1', () => {
+    const be04 = classId('MB BE 04');
+    /* Em Pass (gợi ý "Lên") mà panel một em chọn chuyển NGANG sang lớp thường khác = khác gợi ý (khacGoiY). */
+    const hocLai = [...(ck.cuoiKhoaTheoHocVien(be04) as Map<number, any>)].find(([, e]) => e.goiY?.huong === 'len');
+    if (!hocLai) throw new Error('MB BE 04 không có em nào được gợi ý lên lớp');
+    const tuan = (d.tuanChonDuoc(TODAY) as string[])[0];
+    const ra = (lyDo?: string) => lenh.raLenh(P.mbManager, { lopNguonId: be04, boiCanh: 'giua-khoa', tuanChung: tuan,
+      dongs: [{ studentId: hocLai[0], huong: 'chuyen_lop', toClassId: classId('MB BE 03'), lyDo: lyDo ?? null }] });
+    const r1 = ra();
+    const l1 = get(`SELECT id FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho'`, hocLai[0]);
+    if (l1) lenh.huyLenh(P.mbManager, l1.id, 'Dọn phép kiểm');
+    assert(r1.failed[0]?.message === 'Ghi lý do ngắn', `không lý do: ${JSON.stringify(r1)}`);
+    const r2 = ra('Phụ huynh xin học lớp buổi khác');
+    const l2 = get(`SELECT id, khac_goi_y FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho'`, hocLai[0]);
+    if (l2) lenh.huyLenh(P.mbManager, l2.id, 'Dọn phép kiểm');
+    assert(r2.ok.length === 1 && l2?.khac_goi_y === 1, `có lý do: ${JSON.stringify(r2)} · ${JSON.stringify(l2)}`);
+  });
+  check('S6F-a (11e) · raLenh 1 000 dòng (đa số không thuộc lớp) → "Học viên không thuộc lớp này", không câu SQL nào quá 900 tham số', () => {
+    const be04 = classId('MB BE 04');
+    const tuan = (d.tuanChonDuoc(TODAY) as string[])[0];
+    const goc = conn.prepare;
+    let maxThamSo = 0;
+    conn.prepare = function (sql: string) { maxThamSo = Math.max(maxThamSo, (sql.match(/\?/g) ?? []).length); return goc.call(conn, sql); };
+    let r: any;
+    try {
+      r = lenh.raLenh(P.mbManager, { lopNguonId: be04, boiCanh: 'cuoi-khoa', tuanChung: tuan,
+        dongs: Array.from({ length: 1000 }, (_, i) => ({ studentId: 900000 + i, huong: 'hoc_lai', toClassId: classId('MB BE 03') })) });
+    } finally { conn.prepare = goc; }
+    assert(r.failed.length === 1000 && r.failed.every((f: any) => f.message === 'Học viên không thuộc lớp này.'), JSON.stringify(r.failed.slice(0, 2)));
+    assert(maxThamSo <= 900, `câu SQL ${maxThamSo} tham số`);
+  });
 }

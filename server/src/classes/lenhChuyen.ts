@@ -97,8 +97,14 @@ export function raLenh(p: Principal, v: {
       ).all(...lo, v.lopNguonId) as any[]) dich.set(c.id, c);
     });
 
-    /* PR-UXF-a Q2 (P0 K2-25): "khác Web gợi ý" máy chủ TỰ tính từ luật Cuối khoá — một lần cho cả lô, không tin cờ của thân yêu cầu. */
-    const ck = v.boiCanh === 'cuoi-khoa' ? cuoiKhoaTheoHocVien(v.lopNguonId, dongs.map((d) => d.studentId)) : null;
+    /*
+     * PR-UXF-a Q2 (P0 K2-25): "khác Web gợi ý" máy chủ TỰ tính từ luật Cuối khoá — một lần cho cả lô, không tin cờ của thân yêu cầu.
+     * PR-S6F-a Q23: cả bối cảnh "giữa khoá" (panel một em) khi lớp nguồn là lớp thường đã tới Cuối khoá — em hết khoá vẫn có gợi ý.
+     * Chỉ em hợp lệ của lớp nguồn vào `IN (…)` (thân yêu cầu có thể dài hơn 900 dòng).
+     */
+    const tuCuoiKhoa = v.boiCanh === 'cuoi-khoa'
+      || (!nguonFt && mocKetKhoa(classProgressMany([v.lopNguonId]).get(v.lopNguonId), homNay).tuCuoiKhoa);
+    const ck = tuCuoiKhoa ? cuoiKhoaTheoHocVien(v.lopNguonId, dongs.filter((d) => hopLe.has(d.studentId)).map((d) => d.studentId)) : null;
 
     const failed: { studentId: number; message: string }[] = [];
     const hang: any[] = [];
