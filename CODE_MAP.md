@@ -137,7 +137,7 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | Dữ liệu đổ vào bảng đó | `server/src/classes/classes.ts` → `classRoster` |
 | Trang hồ sơ một em | `web/src/modules/students/StudentDetailPage.tsx` |
 | Panel "Quản lý học viên" (kế hoạch · đầu vào · mục tiêu · kết luận · chuyển lớp) | `web/src/modules/students/StudentManagePanel.tsx` |
-| Tab Hành trình — một lưới, chuỗi điểm ▲▼, màu ghim N-1b, Xem gọn (luật thuần `shared/domain/hanhTrinh.ts`: `chuoiDiem`, `nhanGhim`, `boCucHanhTrinh`, `xepHangLuoi`) | `web/src/modules/students/HanhTrinh.tsx` · `server/src/students/hanhTrinh.ts` |
+| Tab Hành trình — một lưới, chuỗi điểm ▲▼, màu ghim N-1b, Xem gọn; hàng Tuần học/Tuần khoá + Lớp, Case khung rỗng + tầng PA, khối Chờ (luật thuần `shared/domain/hanhTrinh.ts`: `chuoiDiem`, `nhanGhim` (`hai`), `boCucHanhTrinh`, `xepHangLuoi`, `soTuanCot`, `khoiCho`, `chuKhoangDung`) | `web/src/modules/students/HanhTrinh.tsx` · `server/src/students/hanhTrinh.ts` |
 | Dữ liệu hồ sơ | `server/src/students/profile.ts` |
 | Danh sách lớp, nhóm theo lớp, 6 chip lọc | `web/src/modules/students/StudentsPage.tsx` → `BangHocVienLop.tsx` |
 | Tên và điều kiện của 5 chip lọc (`Tất cả · Cần làm · Chờ duyệt · Đang SOS · Thiếu thông tin`; link cũ `case_*` → Cần làm) | `shared/domain/hocVienLop.ts` → `LOC_HOC_VIEN` · `LOC_HOC_VIEN_NHAN` · `docThamSoLoc` |
@@ -148,7 +148,9 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | Chuyển lớp | `server/src/students/students.ts` → `transferStudent` · `server/src/classes/luatLoTrinh.ts` → `apDungMotDong` · `web/src/modules/students/ChuyenLopPanel.tsx` |
 | **Luật đổi lớp/khoá dùng chung** (giữ khoá hay đóng-mở, đóng Case tự động, endKind) | `shared/domain/lenLop.ts` → `luatDoiLop` (bảng Q, PR-LT) |
 | Lộ trình tiếp theo (dự định sau lớp đang học, ghi trước khi chuyển thật) | `server/src/classes/loTrinhTiep.ts` · `web/src/modules/students/LoTrinhTiepPanel.tsx` |
-| Lịch sử lớp (đầu tab Hành trình, mỗi lớp em từng học một dòng) | `server/src/classes/lichSuLop.ts` · `web/src/modules/students/LichSuLop.tsx` |
+| Chương theo lớp (đầu tab Hành trình, mỗi ghi danh một thẻ — thay Lịch sử lớp + Mốc học tập, PR-VAI-b) | `shared/domain/hanhTrinh.ts` → `chiaChuong`, `lapLaiQuaLop` · `server/src/students/hanhTrinh.ts` (`chuong`) · `web/src/modules/students/ChuongLop.tsx` |
+| Đầu hồ sơ HV "hiểu trong 30 giây" (PR-VAI-b): dòng thông tin, thanh việc theo người, câu tóm tắt, bốn ô, dải Tạm dừng / chờ duyệt | `server/src/students/profile.ts` (`dauHoSo`) · `server/src/students/viecHocVien.ts` · `server/src/students/tamDung.ts` (`khoangTamDung`) · `shared/domain/hoSoHocVien.ts` · `shared/domain/hienThiNgay.ts` (`tuanHocFt`, `chuTuanHoc`) · `web/src/modules/students/DauHoSo.tsx` |
+| Bảng kỹ năng thành thẻ < 640 px; đường dẫn sâu "MT2 · Speaking" → hồ sơ Mock `?kn=` (PR-VAI-b) | `web/src/modules/cases/TheKyNang.tsx` · `shared/domain/duongHoSo.ts` (`duongDotTest`, `docKnMock`) |
 | Lưu trữ / Bỏ lưu trữ học viên (thôi học tự vào Lưu trữ — `setStudentStatus`, PR-XOA) | `server/src/students/students.ts` → `archiveStudent`, `unarchiveStudent`, `setStudentStatus` |
 | **Xoá học viên** (chỉ Quản trị hệ thống; một giao dịch, danh sách bảng viết cứng + phép kiểm "không sót" so PRAGMA) | `server/src/students/xoaHocVien.ts` → `CAU_XOA_HOC_VIEN`, `xemXoaHocVien`, `xoaHocVien` · `web/src/modules/students/XoaHocVienPanel.tsx` · menu ⋮ `shared/domain/quanLyHocVien.ts` (`coTheXoa`) · phép kiểm `server/src/tests/xoaDuLieu.tests.ts` |
 | Khu Lưu trữ (lớp đã kết thúc, HV đã lưu trữ, chế độ chỉ xem) | `server/src/classes/luuTru.ts` · `web/src/modules/students/LuuTruPage.tsx` |
