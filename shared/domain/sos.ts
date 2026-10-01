@@ -32,7 +32,7 @@ function chuNhatCuaTuan(date: string): string {
  * ĐẾN KHI NÀO của một phương án điền sẵn — quyết định cách tính ngày dự kiến kết thúc (`followup_due`).
  *   one_month     "1 tháng"          → Chủ nhật đầu tiên SAU (ngày tạo + 30 ngày)
  *   until_next_mt "đến MT{n+1}"      → Chủ nhật của tuần kỹ năng muộn nhất của lượt MT kế tiếp, nếu đã có lịch
- *   until_exam    "đến lúc thi"      → ngày thi dự kiến, nếu có
+ *   until_exam    "đến lúc thi"      → dự kiến thi, nếu có
  * PR-SOS: bỏ `expert` (MT5+ "Khác") — chủ sản phẩm chốt 29/09 Câu 1 = A.
  */
 export const ACADEMIC_SUPPORT_SPANS = ['one_month', 'until_next_mt', 'until_exam'] as const;

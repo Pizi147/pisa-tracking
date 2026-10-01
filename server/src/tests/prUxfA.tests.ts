@@ -195,7 +195,7 @@ export async function runPrUxfATests(t: YThucTestKit) {
     assert(sau === 1 && classes.classOverview(pL, LOP).soCaseMo === (classes.classRoster(pL, LOP) as any[]).reduce((n, s) => n + s.openCases, 0), `Case xong không đếm: ${sau}`);
   });
 
-  // ==================================================================== Task 4 · FT "tuần học thứ n" (Q31-11, cùng luật PR-VAI-b Task 1)
+  // ==================================================================== Task 4 · FT "tuần học n" (Q31-11, cùng luật PR-VAI-b Task 1)
   const tamDung: any = await import('../students/tamDung.ts');
   const luatLoTrinh: any = await import('../classes/luatLoTrinh.ts');
   const dem = (fn: () => void): number => {
@@ -210,7 +210,7 @@ export async function runPrUxfATests(t: YThucTestKit) {
   ).run(sid, loai, ngay, loai === 'pause' ? 'Tạm dừng học' : 'Quay lại học', loai === 'pause' ? 'Ốm' : null, P.admin.userId, NOW);
 
   check('UXF-a (4) · chuTuanHoc + tuanHocFt (bản PR-VAI-b): đếm từ tuần bắt đầu, bỏ tuần Tạm dừng; tuần trong khoảng dừng (kể cả đang dừng) → null; cùng tuần không trừ', () => {
-    assert(d.chuTuanHoc(3, 8) === 'tuần học 3/8' && d.chuTuanHoc(9, null) === 'tuần học thứ 9', 'chuTuanHoc');
+    assert(d.chuTuanHoc(3, 8) === 'tuần học 3/8' && d.chuTuanHoc(9, null) === 'tuần học 9', 'chuTuanHoc');
     const bd = tuanTruoc(10), nay = d.mondayOfDate(TODAY);
     assert(d.tuanHocFt(bd, nay, []) === 11, `không dừng: ${d.tuanHocFt(bd, nay, [])}`);
     const dung = [{ tu: t.addDays(tuanTruoc(7), 2), den: t.addDays(tuanTruoc(5), 1) }];   // dừng 2 tuần (tuần −7, −6)
@@ -249,7 +249,7 @@ export async function runPrUxfATests(t: YThucTestKit) {
     assert(!huy || typeof huy.tong === 'number', `lớp thường: ${JSON.stringify(huy)}`);
     const tp = transition.transitionPlan(P.mbManager, lopId('MB FT 101'));
     assert(tp.students.length > 0 && tp.students.every((s: any) => !s.tuanHoc || s.tuanHoc.tong === null), 'FT: tong null');
-    assert(tp.students.find((s: any) => s.id === emId('Trịnh Bảo Ngọc')).tuanHoc.tuan === 9, 'panel FT: Ngọc tuần học thứ 9 — cùng số với panel một em');
+    assert(tp.students.find((s: any) => s.id === emId('Trịnh Bảo Ngọc')).tuanHoc.tuan === 9, 'panel FT: Ngọc tuần học 9 — cùng số với panel một em');
     const tpF = transition.transitionPlan(P.mbManager, LOP_FT).students.find((s: any) => s.id === F.sid);
     assert(tpF.tuanHoc.tuan === xf.tuan, 'hai đường: panel cả lớp = panel một em');
     for (const x of [tp, luatLoTrinh.xemChuyenLop(P.mbManager, F.sid)]) assert(!/"tong":16/.test(JSON.stringify(x)), 'không payload FT nào có tong 16');

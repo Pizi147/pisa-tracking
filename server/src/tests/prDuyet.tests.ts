@@ -432,7 +432,7 @@ export async function runPrDuyetTests(t: YThucTestKit) {
       assert(!dto.dong.some((x: string) => x.includes('tự huỷ')), JSON.stringify(dto.dong));
     }
   });
-  check('DUYET (R7) · GVCN chuyển lớp FT → FT: PR-CT (Q30-1) đổi kỳ vọng thành 403 (chỉ Quản lý ra lệnh); QL gửi mucTieu thì nhận', () => {
+  check('DUYET (R7) · GVCN chuyển lớp FT → FT: PR-CT (Q30-1) đổi kỳ vọng thành 403 (chỉ Quản lý quyết định); QL gửi mucTieu thì nhận', () => {
     const chuyen = (who: any, muc: number) => {
       const { sid } = hvMoi();
       conn.prepare('UPDATE learning_cycles SET target_score = 6.5 WHERE student_id = ?').run(sid);

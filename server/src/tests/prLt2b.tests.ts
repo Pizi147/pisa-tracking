@@ -242,7 +242,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at) VALUES (?,?,?,?, '2026-01-01', 'active', ?)`)
       .run(userId, classId, skill, skill === null ? 1 : 0, new Date().toISOString());
   };
-  /** Lớp đích thử (khai giảng tuần chuyển), GVCN = `P.normalCoreTeacher`, tuỳ chọn GVBM Listening = `P.lrTeacher`. */
+  /** Lớp chuyển đến thử (khai giảng tuần chuyển), GVCN = `P.normalCoreTeacher`, tuỳ chọn GVBM Listening = `P.lrTeacher`. */
   /** Một GV bộ môn KHÁC GVCN (`P.lrTeacher` trùng người với `P.normalCoreTeacher` ở bộ demo). */
   const gvbmKhac = (conn.prepare(`SELECT user_id FROM teacher_assignments WHERE user_id != ? AND skill IS NOT NULL AND is_core = 0 LIMIT 1`).get(P.normalCoreTeacher.userId) as any).user_id as number;
   const taoLopDich = (kind: 'FOU' | 'BE' | 'ELE', gvbmL = false) => {

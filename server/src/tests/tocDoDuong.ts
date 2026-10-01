@@ -489,7 +489,7 @@ export const TRAN: Record<string, number> = {
   'GVCN /cases/1': 42,
   'GVBM /cases/1': 42,
   // PR-Qb (sửa sau rà #75, vấn đề 5) — trần đo NGAY SAU khi bỏ isRatioClass/classProgressMany thừa ở profile.ts.
-  // PR-VAI-b: thêm chương theo lớp (ghi danh, GVCN, lệnh chuyển, Tạm dừng — số câu cố định) → đo 26/24/27/27 (trước 22/20/23/23); trần giữ.
+  // PR-VAI-b: thêm chương theo lớp (ghi danh, GVCN, quyết định chuyển lớp, Tạm dừng — số câu cố định) → đo 26/24/27/27 (trước 22/20/23/23); trần giữ.
   // Bù lại tab không còn gọi `/lich-su-lop` (21–23 câu một lượt — đường đã bỏ).
   'QL /students/1/hanh-trinh': 39,
   'QT /students/1/hanh-trinh': 38,

@@ -330,9 +330,9 @@ check('[12.1] Bộ demo có đủ độ đa dạng mà mục 11.4 yêu cầu', (
     ['kỹ năng không mock', one(`SELECT COUNT(*) n FROM attempt_skill_skips`)],
     ['hạn nhập điểm tự đặt',
       one(`SELECT COUNT(*) n FROM assessment_attempts WHERE deadline_override IS NOT NULL`)],
-    ['lộ trình đã đạt mục tiêu',
+    ['lộ trình đã đạt Target',
       one(`SELECT COUNT(*) n FROM learning_cycles WHERE outcome='reached'`)],
-    ['lộ trình chưa đạt mục tiêu',
+    ['lộ trình chưa đạt Target',
       one(`SELECT COUNT(*) n FROM learning_cycles WHERE outcome='not_reached'`)],
     ['học viên đã kết thúc học',
       one(`SELECT COUNT(*) n FROM students WHERE status='finished'`)],
@@ -1176,7 +1176,7 @@ check('Gửi null xoá điểm về trống, không biến thành 0', () => {
   const back = conn.prepare(`SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill='listening'`).get(a.id) as any;
   assert(back.band === scoring.bandFromRaw('listening', 30) && back.entered_by === teacher.userId, 'Nhập lại không lưu đúng');
 });
-check('PR-LT (4): Chuyển lớp KHÁC chương trình (FT → lớp thường) đóng khoá cũ, lượt chưa xong Ở LẠI lớp cũ (Q10, Q12 — sửa lại phép kiểm cũ ở đây từng cho lượt chưa xong luôn theo em sang mọi lớp đích, kể cả khác chương trình; PR-LT chốt: chỉ theo em khi GIỮ khoá). Dữ liệu TỰ DỰNG, không đụng BC FT 205/BC ELE 01 — hai lớp đó là bể chứa chung của nhiều phép kiểm khác (freshPlannedAttempt).', () => {
+check('PR-LT (4): Chuyển lớp KHÁC chương trình (FT → lớp thường) đóng khoá cũ, lượt chưa xong Ở LẠI lớp cũ (Q10, Q12 — sửa lại phép kiểm cũ ở đây từng cho lượt chưa xong luôn theo em sang mọi lớp chuyển đến, kể cả khác chương trình; PR-LT chốt: chỉ theo em khi GIỮ khoá). Dữ liệu TỰ DỰNG, không đụng BC FT 205/BC ELE 01 — hai lớp đó là bể chứa chung của nhiều phép kiểm khác (freshPlannedAttempt).', () => {
   const bc = (conn.prepare(`SELECT id FROM branches WHERE code = 'BC'`).get() as any).id as number;
   const now = new Date().toISOString();
   const fromCls = (intake.createClass(P.admin, {
@@ -1254,7 +1254,7 @@ check('Nhiều việc quanh MỘT vấn đề gom lại thành MỘT chương, k
     )
     .get() as any;
   assert(row, 'Dữ liệu mẫu thiếu vấn đề đã có tác động');
-  /* PR-VAI-b: chương theo lớp — một Case một khối trong chương (PA nằm trong khối Case), chỉ lặp ở chương sau khi Case đi theo em sang lớp mới. */
+  /* PR-VAI-b: chương theo lớp — một Case một khối trong chương (PA nằm trong khối Case), chỉ lặp ở chương sau khi Case bàn giao sang lớp mới. */
   const ch = hanhTrinhSvc.hanhTrinhHocVien(P.admin, row.sid, null).chuong as any[];
   const mine = ch.flatMap((c: any) => c.caseDong.filter((x: any) => x.caseId === row.cid));
   assert(ch.every((c: any) => c.caseDong.filter((x: any) => x.caseId === row.cid).length <= 1), `Vấn đề ${row.cid} bị tách thành nhiều khối trong một chương`);
@@ -1263,7 +1263,7 @@ check('Nhiều việc quanh MỘT vấn đề gom lại thành MỘT chương, k
 check('Target chốt tại lượt: sửa lộ trình không viết lại lịch sử', () => {
   const a = conn.prepare(`SELECT * FROM assessment_attempts WHERE status='done' ORDER BY id LIMIT 1`).get() as any;
   const before = a.target_at_attempt;
-  cycles.updateCycle(P.admin, a.cycle_id, { targetScore: 8, lyDo: 'Nâng mục tiêu' });
+  cycles.updateCycle(P.admin, a.cycle_id, { targetScore: 8, lyDo: 'Nâng Target' });
   const after = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(a.id) as any;
   assert(after.target_at_attempt === before, 'Sửa target đã viết lại lịch sử lượt cũ');
   assert((conn.prepare('SELECT target_score FROM learning_cycles WHERE id = ?').get(a.cycle_id) as any).target_score === 8,
@@ -1496,7 +1496,7 @@ check('[12.1] Lớp Normal không nhận target IELTS và band từng kỹ năng
   });
   assert(pv.ratio === true, 'Không nhận ra đây là lớp Normal');
   /* Q4: file trộn — cột FT dán vào lớp thường bị BỎ QUA có báo (lưu ý), không chặn dòng. */
-  assert(pv.rows[0].issues.some((i) => i.field === 'target' && /không có target/.test(i.message) && i.muc === 'luu_y'),
+  assert(pv.rows[0].issues.some((i) => i.field === 'target' && /không có Target/.test(i.message) && i.muc === 'luu_y'),
     'Lớp Normal vẫn nhận target IELTS');
   assert(pv.rows[0].issues.some((i) => i.field === 'entryListening' && i.muc === 'luu_y'),
     'Lớp Normal vẫn nhận band đầu vào từng kỹ năng');
@@ -4491,12 +4491,12 @@ check('Chuyển tiếp: một dòng lỗi không làm hỏng cả lô', () => {
     fromClassId: src.id,
     moves: [
       { studentId: plan.students[0].id, toClassId: moi.id },
-      { studentId: plan.students[0].id, toClassId: null },   // cố ý thiếu lớp đích
+      { studentId: plan.students[0].id, toClassId: null },   // cố ý thiếu lớp chuyển đến
     ],
     effectiveDate: demoToday(),
   }) as any;
   assert(r.done.length === 1 && r.failed.length === 1, 'Lô phải có cả dòng xong lẫn dòng lỗi');
-  assert(/lớp đích/i.test(r.failed[0].message), `Lý do lỗi phải nói rõ: ${r.failed[0].message}`);
+  assert(/lớp chuyển đến/i.test(r.failed[0].message), `Lý do lỗi phải nói rõ: ${r.failed[0].message}`);
 });
 
 // ============================================================ 32. Vòng 5 — mục 7
@@ -5800,7 +5800,7 @@ check('[6.3] Bốn trường bắt buộc: tên, mô tả, mức độ hai bậc
     () => cases.reportIssue(P.admin, {
       ...base, title: 'Reading đọc chậm', summary: 'Em đọc kỹ từng câu nên hết giờ.',
     }),
-    /phân loại/, 'Mở được case không có phân loại vấn đề',
+    /nhóm nguyên nhân/, 'Mở được case không có nhóm nguyên nhân',
   );
 
   /* Mã mức cũ `normal` đã bỏ — gửi lên là bị từ chối, không phải âm thầm hạ xuống. (Chữ "Bình thường" nay là NHÃN của mã `attention`, T7.) */
@@ -6350,7 +6350,7 @@ check('[4.2] Case Giữa khoá tự tạo (PR-LT2a) nằm ở ĐÚNG hàng kỹ 
     .get() as any;
   assert(c, 'Bộ demo không còn Case Giữa khoá tự tạo nào');
   const board = (cases.skillSupportBoard(P.admin, c.student_id, c.cycle_id) as any).rows;
-  /* PR-UXF-b (R5-5): Case hiện ở ĐÚNG MỘT hàng cùng hạng mục — hàng chuẩn, hoặc nhóm "Từ lớp trước" khi em đã sang chương trình có TÊN MÔN khác (FOU G+V → BE Writing). */
+  /* PR-UXF-b (R5-5): Case hiện ở ĐÚNG MỘT hàng cùng hạng mục — hàng chuẩn, hoặc nhóm "Case bàn giao" khi em đã sang chương trình có TÊN MÔN khác (FOU G+V → BE Writing). */
   const hangCo = board.filter((r: any) => r.cases.some((x: any) => x.id === c.id));
   assert(hangCo.length === 1 && hangCo[0].category === c.category, `Case ${c.category} phải hiện ở đúng một hàng ${c.category}, đang ở: ${hangCo.map((r: any) => `${r.category}${r.tuLopTruoc ? '(từ lớp trước)' : ''}`).join(', ') || 'không hàng nào'}`);
 });
@@ -6617,7 +6617,7 @@ check('[13.4] Case chưa phân loại có hàng riêng, không bị dồn vào "
   const board = effectiveness.classIssueBoard(st.class_id, 'listening') as any;
   const un = board.rows.find((r: any) => r.code === '__unclassified__');
   assert(un && un.cases >= 1, 'Case chưa phân loại biến mất khỏi bảng phân tích');
-  assert(un.label === 'Chưa phân loại vấn đề', `Hàng chưa phân loại đang mang nhãn "${un.label}"`);
+  assert(un.label === 'Chưa chọn nhóm nguyên nhân', `Hàng chưa phân loại đang mang nhãn "${un.label}"`);
   /* Và nó phải là MỘT HÀNG KHÁC với hàng "Khác" — hai tập này cần hai người xử lý khác nhau. */
   assert(board.rows.filter((r: any) => r.code === '__unclassified__').length === 1,
     'Case chưa phân loại bị tách thành nhiều hàng');
@@ -8992,7 +8992,7 @@ await runPrGvTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, ad
 // ==================================================================== PR-LT2b (Cuối khoá lớp thường)
 const { runPrLt2bTests } = await import('./prLt2b.tests.ts');
 await runPrLt2bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
-// ==================================================================== PR-CT (lệnh chuyển lớp do Quản lý quyết + bàn giao)
+// ==================================================================== PR-CT (quyết định chuyển lớp do Quản lý quyết + bàn giao)
 const { runPrCtTests } = await import('./prCt.tests.ts');
 await runPrCtTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-S5F-a (sửa sau rà cuối đợt 5 — chuyển lớp, bàn giao, Cuối khoá)

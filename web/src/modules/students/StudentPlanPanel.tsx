@@ -31,8 +31,8 @@ type Suggested = {
  *   ĐIỂM ĐẦU VÀO       →  em vào học ở mức nào
  *   bảng các đợt MT    →  mỗi đợt mở được lịch từng kỹ năng
  *
- * Mục tiêu và điểm đầu vào trước đây là HAI mục menu riêng, nên muốn sửa mục tiêu người dùng
- * phải đoán nó nằm ở "Kế hoạch học" hay ở "Đổi mục tiêu". Nay chúng về đúng chỗ.
+ * Target và điểm đầu vào trước đây là HAI mục menu riêng, nên muốn sửa Target người dùng
+ * phải đoán nó nằm ở "Kế hoạch học" hay ở "Đổi Target". Nay chúng về đúng chỗ.
  *
  * Phần lịch MT vẫn giữ nguyên tinh thần cũ: hệ thống ĐỀ XUẤT rồi để người bấm áp, và khi áp
  * thì KHÔNG đụng vào lượt Quản lý đã chốt tay hay lượt đã làm xong.
@@ -47,7 +47,7 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, canEditCycle = t
   const cycle = useApi<any>(`/cycles/${cycleId}`);
   const sugg = useApi<Suggested[]>(ratio ? null : `/cycles/${cycleId}/suggested-mocks`, [cycleId]);
   const [startPeriodId, setStartPeriodId] = useState<number | null>(null);
-  /** T9 · Thi dự kiến: ngày ISO (đã biết ngày) hoặc tháng `yyyy-mm` (mới biết tháng). */
+  /** T9 · Dự kiến thi: ngày ISO (đã biết ngày) hoặc tháng `yyyy-mm` (mới biết tháng). */
   const [thiDuKien, setThiDuKien] = useState<string>('');
   const [examPeriodId, setExamPeriodId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
@@ -124,13 +124,13 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, canEditCycle = t
           */}
           {!ratio && (
             <>
-              <Field label="Thi dự kiến"
+              <Field label="Dự kiến thi"
                 hint="Gõ dd/mm/yyyy nếu đã biết ngày, mm/yyyy nếu mới biết tháng.">
                 <ONgay kieu="ngay-hoac-thang" value={thiDuKien} goiY="dd/mm/yyyy hoặc mm/yyyy"
                   onChange={(v) => { setTouched(true); setThiDuKien(v); }} />
               </Field>
               {hienTuanThi && (
-                <Field as="div" label="Tuần dự kiến thi"
+                <Field as="div" label="Dự kiến thi"
                   hint="Chốt được thì hệ thống mới đếm ngược. Chưa chốt cứ để trống.">
                   <WeekPicker periodId={examPeriodId} label={null} scope="planning" clearable
                     onPeriod={(id) => { setTouched(true); setExamPeriodId(id); }} />
@@ -236,8 +236,8 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, canEditCycle = t
  * phải một lời nhắc lịch sự, mà là điều kiện để lịch sử đọc được: vài tháng sau, lý do là
  * thứ duy nhất giải thích vì sao kỳ vọng của MT3 khác MT2.
  *
- * Và nó KHÔNG chấm lại quá khứ: các lượt đã chốt giữ nguyên kỳ vọng tính theo mục tiêu lúc
- * đó. Đổi mục tiêu từ hôm nay mà viết lại mức SOS của ba tháng trước là sửa lịch sử.
+ * Và nó KHÔNG chấm lại quá khứ: các lượt đã chốt giữ nguyên kỳ vọng tính theo Target lúc
+ * đó. Đổi Target từ hôm nay mà viết lại mức SOS của ba tháng trước là sửa lịch sử.
  */
 function TargetAndBaseline({ cycleId, cy, canEditCycle, onDeXuatSua, onDone }: {
   cycleId: number; cy: any; canEditCycle: boolean; onDeXuatSua?: () => void; onDone: () => void;
@@ -262,7 +262,7 @@ function TargetAndBaseline({ cycleId, cy, canEditCycle, onDeXuatSua, onDone }: {
         reason, effectiveFrom: effectiveFrom || undefined,
       });
       invalidate('/cycles'); invalidate('/students'); invalidate('/attempts');
-      toast.push('ok', 'Đã đổi mục tiêu');
+      toast.push('ok', 'Đã đổi Target');
       setOpenTarget(false); setReason(''); onDone();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
@@ -279,10 +279,10 @@ function TargetAndBaseline({ cycleId, cy, canEditCycle, onDeXuatSua, onDone }: {
 
   return (
     <div className="rounded-lg border p-3 space-y-3" style={{ borderColor: 'var(--line)' }}>
-      {/* ------------------------------------------------------------------ mục tiêu */}
+      {/* ------------------------------------------------------------------ Target */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-sm text-slate-200">
-          Mục tiêu:{' '}
+          Target:{' '}
           {cy?.khong_cam_ket
             ? <strong><TargetText band={null} kck /></strong>
             : cy?.target_score !== null && cy?.target_score !== undefined
@@ -291,7 +291,7 @@ function TargetAndBaseline({ cycleId, cy, canEditCycle, onDeXuatSua, onDone }: {
         </span>
         {canEditCycle ? (
           <button className="btn btn-sm" onClick={() => setOpenTarget(!openTarget)}>
-            {openTarget ? 'Thôi' : 'Đổi mục tiêu'}
+            {openTarget ? 'Thôi' : 'Đổi Target'}
           </button>
         ) : onDeXuatSua && (
           <button type="button" className="btn btn-sm btn-ghost" onClick={onDeXuatSua} title="Target do Quản lý sửa — gửi đề xuất để Quản lý duyệt">
@@ -301,9 +301,9 @@ function TargetAndBaseline({ cycleId, cy, canEditCycle, onDeXuatSua, onDone }: {
       </div>
       {openTarget && canEditCycle && (
         <div className="space-y-2">
-          <Field label="Mục tiêu mới" required as="div" hint={`KCK: ${GIAI_THICH_KCK}.`}>
+          <Field label="Target mới" required as="div" hint={`KCK: ${GIAI_THICH_KCK}.`}>
             <span className="flex flex-wrap items-center gap-2">
-              <input className="field max-w-[8rem]" type="number" step="0.5" min={0} max={9} aria-label="Band mục tiêu mới"
+              <input className="field max-w-[8rem]" type="number" step="0.5" min={0} max={9} aria-label="Target mới"
                 value={newTarget} disabled={kck} onChange={(e) => setNewTarget(e.target.value)} />
               {!cy?.khong_cam_ket && (
                 <NutChon nho chon={kck} onClick={() => { setKck(!kck); setNewTarget(''); }}>Không cam kết (KCK)</NutChon>
@@ -311,21 +311,21 @@ function TargetAndBaseline({ cycleId, cy, canEditCycle, onDeXuatSua, onDone }: {
             </span>
           </Field>
           <Field label="Lý do" required
-            hint="Vài tháng sau, đây là thứ duy nhất giải thích vì sao mục tiêu đổi.">
+            hint="Vài tháng sau, đây là thứ duy nhất giải thích vì sao Target đổi.">
             <input className="field" value={reason} onChange={(e) => setReason(e.target.value)}
               placeholder="Gia đình lùi kế hoạch du học sang năm sau" />
           </Field>
           <Field label="Có hiệu lực từ ngày" required
-            hint="Ghi vào lịch sử đổi mục tiêu. MT đã có điểm giữ kỳ vọng cũ; MT chưa có điểm theo mục tiêu mới.">
+            hint="Ghi vào lịch sử đổi Target. MT đã có điểm giữ kỳ vọng cũ; MT chưa có điểm theo Target mới.">
             <ONgay kieu="ngay" value={effectiveFrom} onChange={setEffectiveFrom} />
           </Field>
           <button className="btn btn-primary btn-sm" disabled={busy || !reason.trim() || (!newTarget && !kck)}
             onClick={saveTarget}>
-            {busy ? 'Đang lưu…' : 'Lưu mục tiêu mới'}
+            {busy ? 'Đang lưu…' : 'Lưu Target mới'}
           </button>
           <SectionNote>
-            Các lượt đã chốt GIỮ NGUYÊN kỳ vọng tính theo mục tiêu lúc đó. Đổi mục tiêu từ hôm
-            nay không chấm lại quá khứ — sửa một mục tiêu lịch sử ghi sai là một thao tác hiệu
+            Các lượt đã chốt GIỮ NGUYÊN kỳ vọng tính theo Target lúc đó. Đổi Target từ hôm
+            nay không chấm lại quá khứ — sửa một Target lịch sử ghi sai là một thao tác hiệu
             chỉnh riêng, có nhật ký và phải đối soát lại các kết luận đã ra. Chọn KCK: MT chưa có điểm bỏ kỳ vọng, không
             sinh SOS; Case đang mở giữ nguyên tới khi xử lý xong.
           </SectionNote>
@@ -336,7 +336,7 @@ function TargetAndBaseline({ cycleId, cy, canEditCycle, onDeXuatSua, onDone }: {
       <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t"
            style={{ borderColor: 'var(--line)' }}>
         <span className="text-sm text-slate-200">
-          Đầu vào:{' '}
+          Điểm đầu vào:{' '}
           {cy?.baseline_score !== null && cy?.baseline_score !== undefined
             ? <strong>{cy.baseline_score}</strong>
             : <span className="text-amber-300">chưa ghi</span>}
@@ -352,7 +352,7 @@ function TargetAndBaseline({ cycleId, cy, canEditCycle, onDeXuatSua, onDone }: {
               {BASELINE_SOURCES.map((x) => <option key={x} value={x}>{BASELINE_SOURCE_LABEL[x]}</option>)}
             </select>
           </Field>
-          <Field label="Điểm đầu vào (OVR)" required>
+          <Field label="Điểm đầu vào" required>
             <input className="field max-w-[8rem]" type="number" step="0.5" min={0} max={9}
               value={score} onChange={(e) => setScore(e.target.value)} />
           </Field>

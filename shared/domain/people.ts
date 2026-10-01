@@ -156,7 +156,7 @@ export const PERMISSION_LABEL: Record<string, string> = {
   'meeting.edit': 'Cập nhật báo cáo và ghi chú',
   'admin.config': 'Quản trị hệ thống',
   'request.approve': 'Duyệt yêu cầu trong hộp Chờ duyệt',
-  'cycle.edit': 'Sửa target, lộ trình học viên',
+  'cycle.edit': 'Sửa Target, lộ trình học viên',
 };
 
 /** Sự kiện hành trình học viên. Bộ lọc chỉ có 3 lựa chọn, xem JOURNEY_FILTERS. */

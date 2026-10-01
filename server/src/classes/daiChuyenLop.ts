@@ -66,7 +66,7 @@ export function daiLop(p: Principal, classId: number, o: { pr: TienDoMoc; ft: bo
       ketThucKhoa = { tuanCuoiKhoa: moc.tuanCuoiKhoa, tuanKetThuc: moc.tuanKetThuc, soChuaLenh: so, do: !!moc.tuanKetThuc && homNay >= moc.tuanKetThuc, tuanGoiY: tuanChonDuoc(homNay)[0] };
     }
   }
-  /* PR-S5F-a: lệnh lỗi (kể cả Dừng học) — Quản lý thấy ngay ở hồ sơ lớp để sửa, không phải mở từng hồ sơ em. */
+  /* PR-S5F-a: lệnh lỗi (kể cả Dừng học hẳn) — Quản lý thấy ngay ở hồ sơ lớp để sửa, không phải mở từng hồ sơ em. */
   const loi = ra ? rows.filter((r) => r.k === 'nguon' && r.c === 'cho' && r.h) : [];
   const chuaChuyenDuoc = loi.length ? { n: loi.length, loi: loi[0].h as string } : null;
   return { ketThucKhoa, banGiao, banGiaoMon, sapNhan, chuaChuyenDuoc, viewer: { coTheRaLenh: ra, coTheChuyenNhieuEm: ra && o.ft, laGvcn: pc.gvcn, xacNhanDuoc: pc.gvcn || qlThay } };

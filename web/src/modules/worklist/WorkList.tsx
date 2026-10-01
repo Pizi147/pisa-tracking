@@ -41,7 +41,7 @@ export function DongViec({ it, onOpen, nutPhu }: {
 }) {
   const loaiHan = LOAI_HAN_CUA_VIEC[it.group];
   /* Lớp chỉ hiện khi dòng đang nói về MỘT EM — dòng gom đã lấy chính tên lớp làm tiêu đề phụ. */
-  /* "Chuyển lớp cả lớp · lớp · n HV" (PR-S5F-a, mockup 20): tiêu đề đã có lớp và số em — dòng phụ không nhắc lại. */
+  /* "Chuyển tiếp lớp · lớp · n HV" (PR-S5F-a, mockup 20): tiêu đề đã có lớp và số em — dòng phụ không nhắc lại. */
   const gomLop = it.group === 'placement';
   const dongPhu = [
     gomLop ? null : it.studentName,

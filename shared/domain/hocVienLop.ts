@@ -10,6 +10,7 @@ import { goiYCuoiKhoa } from './cuoiKhoa.ts';
 import type { ViecTiepCase } from './sosV4.ts';
 import type { NhanYThucEm } from './yThuc.ts';
 import { tuanKhoa, tuanLich } from './hienThiNgay.ts';
+import { CHU_CHUYEN_LOP } from './chuyenLop.ts';
 import { CLASS_PHASE_LABEL, type ClassPhase } from './fasttrack.ts';
 
 // ---------------------------------------------------------------- chung
@@ -168,7 +169,7 @@ export function ketQuaGanNhat(k: KetQuaVao | null): KetQuaHien {
 
 /**
  * PR-UXF-a K2-05 (Q5): em lớp thường "có mốc đánh giá tiếp theo" = còn lượt planned, HOẶC đã có bài Cuối khoá (không huỷ) — hết khoá
- * không còn mốc nào; việc tiếp theo là lệnh chuyển lớp. Một luật cho badge Thiếu thông tin ở Học viên & Lớp và bảng lớp.
+ * không còn mốc nào; việc tiếp theo là quyết định chuyển lớp. Một luật cho badge Thiếu thông tin ở Học viên & Lớp và bảng lớp.
  */
 export const coMocTiepTheoThuong = (o: { soLuotKeHoach: number; coCuoiKhoa: boolean }): boolean => o.soLuotKeHoach > 0 || o.coCuoiKhoa;
 
@@ -184,7 +185,7 @@ export function khoaLopThuong(i: {
   else if (i.tuanHienTai !== null && i.tongTuan) tuan = tuanKhoa(Math.min(i.tuanHienTai, i.tongTuan), i.tongTuan);
   // Thứ tự ưu tiên dòng phụ (PR-LT): tiếp theo đã ghi › nhắc chưa ghi › kết thúc khoá.
   const phu = i.tiepTheo ? `tiếp theo: ${i.tiepTheo}`
-    : i.nhacLoTrinh ? 'chưa có lệnh chuyển lớp'
+    : i.nhacLoTrinh ? CHU_CHUYEN_LOP.chua.toLowerCase()
     : i.tuanKetThuc ? `kết thúc ${tuanLich(i.tuanKetThuc, i.homNay)}` : null;
   return { chinh: tuan ? `${ma} · ${tuan}` : ma, phu };
 }
@@ -222,9 +223,9 @@ export function badgeLop(c: {
   const co: Partial<Record<BadgeLop['key'], BadgeLop>> = {};
   if (nXep > 0) {
     co['xep-lop'] = {
-      /* PR-Dọn (Câu 2 = B): lớp chưa hết khoá → em chưa có lệnh chuyển lớp (cùng tập dòng Cần xử lý). */
-      key: 'xep-lop', nhan: c.needsPlacement ? `${nXep} HV cần xếp lớp tiếp` : `${nXep} HV chưa có lệnh chuyển lớp`, tone: 'warn',
-      title: c.needsPlacement ? 'Lớp đã hết khoá: những học viên này chưa được xếp lớp tiếp' : 'Quản lý ra lệnh ở ⋮ Chuyển lớp cả lớp',
+      /* PR-Dọn (Câu 2 = B): lớp chưa hết khoá → em chưa có quyết định chuyển lớp (cùng tập dòng Cần xử lý). */
+      key: 'xep-lop', nhan: c.needsPlacement ? `${nXep} HV cần xếp lớp tiếp` : `${nXep} HV ${CHU_CHUYEN_LOP.chua.toLowerCase()}`, tone: 'warn',
+      title: c.needsPlacement ? 'Lớp đã hết khoá: những học viên này chưa được xếp lớp tiếp' : 'Quản lý quyết định ở ⋮ Chuyển tiếp lớp',
     };
   }
   if (c.missingSkills.length) co['thieu-gv'] = { key: 'thieu-gv', nhan: `Thiếu GV ${c.missingSkills.map((k) => tenMonNgan(c.chuongTrinh, k)).join(', ')}`, tone: 'warn' };
@@ -528,7 +529,7 @@ export function nutChinhDauTrang(i: {
   coTheThemHv: boolean; coTheNhapDiem: boolean; coTheChuyenTiep: boolean; soEmChuyen: number;
 }): NutChinh {
   if (i.soHocVien === 0 && i.coTheThemHv) return { loai: 'them-hv', nhan: '+ Học viên' };
-  /* PR-CT: "Chuyển lớp cả lớp…" nằm ở dải Kết thúc khoá ngay dưới tên lớp (mockup 20 — A), không còn là nút chính đầu trang. */
+  /* PR-CT: "Chuyển tiếp lớp…" nằm ở dải Kết thúc khoá ngay dưới tên lớp (mockup 20 — A), không còn là nút chính đầu trang. */
   if (i.coTheNhapDiem) return { loai: 'nhap-diem', nhan: 'Nhập điểm Test' };
   return { loai: null, nhan: '' };
 }

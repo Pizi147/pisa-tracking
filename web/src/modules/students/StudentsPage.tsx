@@ -123,10 +123,10 @@ export default function StudentsPage() {
 
   const lopHien = (data?.rows ?? []).filter((c) => (khung === 'tat-ca' || khungCua(c.scoringMode) === khung)
     && (!chiLop || c.id === chiLop) && (!dangLoc || idsTheoLop.has(c.id)));
-  /* M3, K2-03: nhóm theo kiểu lớp (Fast Track trước, lớp thường sau) — mỗi nhóm một khối tiêu đề cột riêng: "Mục tiêu" cho FT, "Khoá" cho lớp thường. */
+  /* M3, K2-03: nhóm theo kiểu lớp (Fast Track trước, lớp thường sau) — mỗi nhóm một khối tiêu đề cột riêng: "Target" cho FT, "Khoá" cho lớp thường. */
   const nhomLop = (['ft', 'thuong'] as const)
     .map((k) => ({ k, lop: lopHien.filter((c) => khungCua(c.scoringMode) === k) })).filter((g) => g.lop.length > 0);
-  const tieuDeCot = (k: 'ft' | 'thuong') => ['Học viên', 'Kết quả gần nhất', k === 'ft' ? 'Mục tiêu' : 'Khoá', 'Sắp tới', 'Case', 'Việc tiếp theo', ''];
+  const tieuDeCot = (k: 'ft' | 'thuong') => ['Học viên', 'Kết quả gần nhất', k === 'ft' ? 'Target' : 'Khoá', 'Sắp tới', 'Case', 'Việc tiếp theo', ''];
   const openIds = lopMoSan({
     thamSoOpen: openRaw === null ? null : openRaw === '-' ? []
       : openRaw.split(',').map(Number).filter((n) => Number.isFinite(n) && n > 0),
@@ -219,7 +219,7 @@ export default function StudentsPage() {
         </Card>
       ) : (
         /*
-         * Mỗi NHÓM khung (Fast Track · Lớp thường) là một <section> có khối tiêu đề cột riêng ("Mục tiêu" / "Khoá"); trong nhóm mỗi lớp MỘT
+         * Mỗi NHÓM khung (Fast Track · Lớp thường) là một <section> có khối tiêu đề cột riêng ("Target" / "Khoá"); trong nhóm mỗi lớp MỘT
          * bảng riêng (cùng colgroup nên cột thẳng nhau) — PR-UX0 N-2; menu ⋯ vẽ ra ngoài (portal).
          * YC-11.1 (PR-N1): từ 768px bỏ khung cuộn ngang; khối tiêu đề là khối dính riêng theo <main>, hàng lớp đang mở dính ngay dưới nó
          * (`.hang-lon-dinh`). Khối tiêu đề dính chỉ trong <section> của nhóm mình (bẫy sticky: `sticky` bị chặn trong phần tử cha) nên hai

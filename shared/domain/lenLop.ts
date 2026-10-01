@@ -24,20 +24,20 @@ function nhan(h: Huong, ctx: { ma: ProgrammeCode | null; maKe: ProgrammeCode | n
   const maKe = ctx.maKe ?? NORMAL_LADDER[ctx.ma as ProgrammeCode] ?? '—';
   switch (h) {
     case 'len_lop': return ngan ? `Lên ${maKe}` : `Lên lớp thường tiếp (${maKe})`;
-    case 'fast_track': return ngan ? 'Sang Fast Track' : 'Chuyển sang Fast Track';
+    case 'fast_track': return 'Lên FT';
     case 'hoc_lai': return `Học lại ${ma}`;
-    case 'bao_luu': return 'Bảo lưu';
-    case 'dung_hoc': return 'Dừng học';
+    case 'bao_luu': return 'Tạm dừng học (bảo lưu)';
+    case 'dung_hoc': return 'Dừng học hẳn';
     case 'chua_ro': return 'Chưa rõ';
     case 'xep_sau': return 'Xếp sau';
   }
 }
 
-/** Nhãn đầy đủ cho form (mockup 11-1): "Lên lớp thường tiếp (BE)", "Chuyển sang Fast Track", … */
+/** Nhãn đầy đủ cho form (mockup 11-1): "Lên lớp thường tiếp (BE)", "Lên FT", … */
 export function nhanHuong(h: Huong, ctx: { ma: ProgrammeCode | null; maKe: ProgrammeCode | null }): string {
   return nhan(h, ctx, false);
 }
-/** Nhãn ngắn cho bảng (cột Khoá, cột Lộ trình tiếp theo): "Lên BE", "Sang Fast Track", … */
+/** Nhãn ngắn cho bảng (cột Khoá, cột Lộ trình tiếp theo): "Lên BE", "Lên FT", … */
 export function nhanHuongNgan(h: Huong, ctx: { ma: ProgrammeCode | null; maKe: ProgrammeCode | null }): string {
   return nhan(h, ctx, true);
 }
@@ -52,8 +52,8 @@ export function nhanTiepTheo(banGhi: { huong: Huong } | null | undefined, ma: Pr
     case 'len_lop': return NORMAL_LADDER[ma as ProgrammeCode] ?? null;
     case 'fast_track': return 'Fast Track';
     case 'hoc_lai': return ma ? `học lại ${ma}` : null;
-    case 'bao_luu': return 'bảo lưu';
-    case 'dung_hoc': return 'dừng học';
+    case 'bao_luu': return 'tạm dừng học (bảo lưu)';
+    case 'dung_hoc': return 'dừng học hẳn';
     default: return null; // chua_ro, xep_sau (xep_sau chỉ dùng ở bước 2, không hiện ở cột Khoá)
   }
 }
@@ -66,7 +66,7 @@ export type EndKind = 'len_lop' | 'hoc_lai' | 'sang_ft' | 'chuyen_lop' | 'bao_lu
 export type LuatDoiLop = {
   khoa: 'giu' | 'dong-mo';            // giữ lộ trình/khoá đang chạy, hay đóng ('completed') rồi mở cái mới
   dongCase: 'ft' | 'normal' | null;   // tham số `to` của closeCasesOnProgrammeSwitch; null = Case đi theo em
-  canMucTieu: boolean;                // sang FT: Mục tiêu band (bắt buộc khi chuyển thật), tháng thi (không bắt buộc)
+  canMucTieu: boolean;                // sang FT: Target (bắt buộc khi chuyển thật), tháng thi (không bắt buộc)
   endKind: EndKind;                   // ghi vào enrollments.end_kind của dòng cũ → "Kết thúc vì"
 };
 export function luatDoiLop(tu: LoaiLop, den: LoaiLop, boiCanh: 'giua-khoa' | 'cuoi-khoa'): LuatDoiLop {
@@ -85,8 +85,8 @@ export function luatDoiLop(tu: LoaiLop, den: LoaiLop, boiCanh: 'giua-khoa' | 'cu
 }
 
 export const END_KIND_LABEL: Record<EndKind, string> = {
-  len_lop: 'Lên lớp', hoc_lai: 'Học lại', sang_ft: 'Sang Fast Track', chuyen_lop: 'Chuyển lớp',
-  bao_luu: 'Bảo lưu', dung_hoc: 'Dừng học', ket_thuc: 'Kết thúc học',
+  len_lop: 'Lên lớp', hoc_lai: 'Học lại', sang_ft: 'Lên FT', chuyen_lop: 'Chuyển lớp',
+  bao_luu: 'Tạm dừng học (bảo lưu)', dung_hoc: 'Dừng học hẳn', ket_thuc: 'Kết thúc học',
 };
 
 /** "Kết thúc vì" của dòng lịch sử lớp (Q18). Dòng cũ không có `end_kind` thì suy từ `status` cũ. */
@@ -112,7 +112,7 @@ export function trongHaiTuanCuoi(tuanHienTai: number | null, tongTuan: number | 
 export type DongChuyenTiep = {
   huong: Huong | null;
   toClassId?: number | null;
-  toClass?: { ma: ProgrammeCode | null; ft: boolean } | null;   // lớp đích đã resolve từ toClassId
+  toClass?: { ma: ProgrammeCode | null; ft: boolean } | null;   // lớp chuyển đến đã resolve từ toClassId
   mucTieu?: number | null;
   thangThi?: string | null;
   lyDo?: string | null;
@@ -123,21 +123,21 @@ export type DongChuyenTiep = {
 export function kiemDongChuyenTiep(dong: DongChuyenTiep, ctx: { maTu: ProgrammeCode | null }): string | null {
   if (!dong.huong) return 'Thiếu hướng';
   if (dong.huong === 'len_lop' || dong.huong === 'fast_track' || dong.huong === 'hoc_lai') {
-    if (!dong.toClassId) return 'Thiếu lớp đích';
+    if (!dong.toClassId) return 'Thiếu lớp chuyển đến';
     if (dong.toClass) {
       if (dong.huong === 'len_lop' && (dong.toClass.ft || dong.toClass.ma !== NORMAL_LADDER[ctx.maTu as ProgrammeCode])) {
-        return 'Lớp đích phải là chương trình kế tiếp';
+        return 'Lớp chuyển đến phải là chương trình kế tiếp';
       }
       if (dong.huong === 'hoc_lai' && (dong.toClass.ft || dong.toClass.ma !== ctx.maTu)) {
-        return 'Lớp đích phải cùng chương trình để học lại';
+        return 'Lớp chuyển đến phải cùng chương trình để học lại';
       }
-      if (dong.huong === 'fast_track' && !dong.toClass.ft) return 'Lớp đích phải là Fast Track';
+      if (dong.huong === 'fast_track' && !dong.toClass.ft) return 'Lớp chuyển đến phải là Fast Track';
     }
   }
   if (dong.huong === 'fast_track') {
-    if (dong.mucTieu === null || dong.mucTieu === undefined) return 'Thiếu Mục tiêu band';
+    if (dong.mucTieu === null || dong.mucTieu === undefined) return 'Thiếu Target';
     if (dong.mucTieu < 0 || dong.mucTieu > 9 || Math.round(dong.mucTieu * 2) !== dong.mucTieu * 2) {
-      return 'Mục tiêu band phải từ 0 đến 9, cách nhau 0.5';
+      return 'Target phải từ 0 đến 9, cách nhau 0.5';
     }
   }
   if (dong.huong === 'bao_luu' || dong.huong === 'xep_sau') {
@@ -152,7 +152,7 @@ export function kiemDongChuyenTiep(dong: DongChuyenTiep, ctx: { maTu: ProgrammeC
 
 export type DongTomTat = {
   huong: Huong;
-  toClassCode?: string | null;    // mã lớp đích (kể cả lớp mới) — len_lop, hoc_lai, fast_track
+  toClassCode?: string | null;    // mã lớp chuyển đến (kể cả lớp mới) — len_lop, hoc_lai, fast_track
   mucTieu?: number | null;
   caseCount?: number;             // Case đang mở của em ở chương trình đang học
   caseWillClose?: boolean;        // Case sẽ bị hệ thống tự đóng (sang FT — S17)
@@ -202,11 +202,11 @@ export function tomTatChuyenTiep(dongs: readonly DongTomTat[]): {
   for (const x of cauLen) cau.push(`${x.n} em lên ${x.ma}`);
   for (const x of cauHocLai) cau.push(`${x.n} em học lại ${x.ma}`);
   for (const x of cauFt) {
-    const chiTiet = x.n === 1 && x.mucTieu !== null ? ` (mở lộ trình FT, mục tiêu ${x.mucTieu})` : ' (mở lộ trình FT)';
+    const chiTiet = x.n === 1 && x.mucTieu !== null ? ` (mở lộ trình FT, Target ${x.mucTieu})` : ' (mở lộ trình FT)';
     cau.push(`${x.n} em sang ${x.ma}${chiTiet}`);
   }
-  if (khongChuyen.bao_luu) cau.push(`${khongChuyen.bao_luu} em bảo lưu`);
-  if (khongChuyen.dung_hoc) cau.push(`${khongChuyen.dung_hoc} em dừng học`);
+  if (khongChuyen.bao_luu) cau.push(`${khongChuyen.bao_luu} em tạm dừng học (bảo lưu)`);
+  if (khongChuyen.dung_hoc) cau.push(`${khongChuyen.dung_hoc} em dừng học hẳn`);
   if (khongChuyen.xep_sau) cau.push(`${khongChuyen.xep_sau} em xếp sau`);
 
   return {

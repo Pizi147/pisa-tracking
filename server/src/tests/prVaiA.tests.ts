@@ -157,7 +157,7 @@ export async function runPrVaiATests(t: YThucTestKit) {
     assert(metricsSvc.rowsFor('viec-van-hanh', [goc.id])[0].href === `/cong-viec?mo-viec=${goc.id}`, 'dòng mở đúng việc');
   });
 
-  check('VAI-a (2b) · hv-chua-co-lenh-chuyen: Σ theo lớp = count việc "Chuyển lớp cả lớp" của myWork(QL); ra lệnh cho một em → −1', () => {
+  check('VAI-a (2b) · hv-chua-co-lenh-chuyen: Σ theo lớp = count việc "Chuyển tiếp lớp" của myWork(QL); ra quyết định cho một em → −1', () => {
     const cid = classId('MB FOU 12');
     const pr = schedule.classProgress(cid);
     const cu = conn.prepare('SELECT final_week_override, progress_week_override FROM classes WHERE id = ?').get(cid) as any;
@@ -177,7 +177,7 @@ export async function runPrVaiATests(t: YThucTestKit) {
       const sid = r0.ids.find((id: number) => (conn.prepare(`SELECT 1 FROM enrollments WHERE student_id = ? AND class_id = ? AND status = 'active'`).get(id, cid)));
       lenh = Number(conn.prepare(`INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, huong, boi_canh, tuan_bat_dau, nguoi_ra_lenh, ngay_ra_lenh, tao_luc)
         VALUES (?, ?, 'bao_luu', 'cuoi_khoa', ?, ?, ?, ?)`).run(sid, cid, t.addDays(week.mondayOf(TODAY), 7), P.mbManager.userId, TODAY, NOW).lastInsertRowid);
-      eq(hai().n, r0.n - 1, 'ra lệnh cho một em → −1');
+      eq(hai().n, r0.n - 1, 'ra quyết định cho một em → −1');
       eq(metricsSvc.metricSet(P.cpManager, 'hv-chua-co-lenh-chuyen', {}).ids.filter((id: number) => r0.ids.includes(id)), [], 'phủ định: QL CP không thấy em MB');
     } finally {
       if (lenh) conn.prepare('DELETE FROM lenh_chuyen_lop WHERE id = ?').run(lenh);

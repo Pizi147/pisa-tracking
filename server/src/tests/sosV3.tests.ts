@@ -286,7 +286,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const count = (sql: string, ...a: unknown[]) => (get(sql, ...a)?.n ?? 0) as number;
 
-  /** Học viên MỚI, mục tiêu 7.0 (kỳ vọng MT1 6.0 · MT2 6.5 · MT3+ 7.0), riêng cho từng phép kiểm. */
+  /** Học viên MỚI, Target 7.0 (kỳ vọng MT1 6.0 · MT2 6.5 · MT3+ 7.0), riêng cho từng phép kiểm. */
   const makeStudent = (name: string): { id: number; cycleId: number } => {
     intake.commitIntake(P.admin, { classId: CLASS, rows: [{ fullName: `PT ${name}`, target: 7, email: 'hv@demo.test' }], idempotencyKey: `pt-${name}` });
     const st = get('SELECT id FROM students WHERE full_name = ?', `PT ${name}`);

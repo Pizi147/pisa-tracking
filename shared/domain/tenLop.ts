@@ -74,7 +74,7 @@ export function tenMoiChoLopCu(l: { code: string; branchCode: string; programmeC
 /** Quản trị › Lộ trình & chương trình: hai cột CHỈ ĐỌC (K1-47). Chỉ là CHỮ HIỂN THỊ — lịch MT một nguồn: lichMt.ts (K1-49). */
 const lichMtHien = (route: string) => 'Tuần ' + lichMtMacDinh(route).join(' · ');
 export const LUAT_LO_TRINH_HIEN: Record<string, { kyVong: string; lichMt: string }> = {
-  LT1: { kyVong: '−1.0 · −0.5 · target', lichMt: lichMtHien('LT1') },
-  LT2: { kyVong: '−1.0 · −0.5 · target', lichMt: lichMtHien('LT2') },
-  RF: { kyVong: 'Mọi MT = target', lichMt: lichMtHien('RF') },
+  LT1: { kyVong: '−1.0 · −0.5 · Target', lichMt: lichMtHien('LT1') },
+  LT2: { kyVong: '−1.0 · −0.5 · Target', lichMt: lichMtHien('LT2') },
+  RF: { kyVong: 'Mọi MT = Target', lichMt: lichMtHien('RF') },
 };

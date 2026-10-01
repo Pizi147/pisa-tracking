@@ -1,6 +1,6 @@
 /**
  * Kiểm tra môi trường trước khi chạy: phiên bản Node và thư viện database.
- * Mục tiêu là báo lỗi bằng tiếng Việt kèm cách khắc phục, thay vì để người dùng
+ * Target là báo lỗi bằng tiếng Việt kèm cách khắc phục, thay vì để người dùng
  * nhìn thấy stack trace của Node.
  */
 const major = Number(process.versions.node.split('.')[0]);

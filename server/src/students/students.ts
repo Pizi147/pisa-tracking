@@ -170,16 +170,16 @@ export function transferStudent(p: Principal, studentId: number, toClassId: numb
   receiverUserId?: number | null;
   /** caseId → userId người nhận (Q14, panel Chuyển lớp gợi ý theo Case). */
   nguoiNhan?: Record<number, number> | null;
-  /** Sang Fast Track (thật): bắt buộc (Q7). */
+  /** Lên FT (thật): bắt buộc (Q7). */
   mucTieu?: number | null;
   thangThi?: string | null;
 }) {
   /*
    * Q3 (chủ sản phẩm 23/09): quyền kiểm Ở LỚP NGUỒN — GVCN của lớp đó (hoặc QL phạm vi lớp đó).
-   * KHÔNG đòi quyền ở lớp đích: GVCN chuyển được sang MỌI chi nhánh đang hoạt động.
+   * KHÔNG đòi quyền ở lớp chuyển đến: GVCN chuyển được sang MỌI chi nhánh đang hoạt động.
    *
    * Em CHƯA TỪNG ghi danh (xếp lớp lần đầu, không phải "chuyển lớp") thì không có lớp nguồn để
-   * kiểm theo Q3 — giữ đúng luật cũ: quyền theo phạm vi của em (branch_id) VÀ quyền ở lớp đích.
+   * kiểm theo Q3 — giữ đúng luật cũ: quyền theo phạm vi của em (branch_id) VÀ quyền ở lớp chuyển đến.
    */
   const enr = lopHienTaiCua(studentId);
   if (enr) {
@@ -187,10 +187,10 @@ export function transferStudent(p: Principal, studentId: number, toClassId: numb
     require_(p, PERMISSIONS.CLASS_EDIT, { classId: enr.class_id }, 'Bạn không có quyền chuyển lớp học viên này.');
   } else {
     require_(p, PERMISSIONS.STUDENT_EDIT, { studentId }, 'Bạn không có quyền chuyển lớp học viên này.');
-    require_(p, PERMISSIONS.STUDENT_EDIT, { classId: toClassId }, 'Lớp đích nằm ngoài phạm vi bạn được cấp quyền.');
+    require_(p, PERMISSIONS.STUDENT_EDIT, { classId: toClassId }, 'Lớp chuyển đến nằm ngoài phạm vi bạn được cấp quyền.');
   }
   const toClass = lopDichHopLe(toClassId, enr?.class_id ?? -1);
-  if (!toClass) throw badRequest('Lớp đích không hợp lệ.');
+  if (!toClass) throw badRequest('Lớp chuyển đến không hợp lệ.');
   if (!isIsoDate(effectiveDate)) throw badRequest('Ngày hiệu lực không hợp lệ.');
 
   const why = String(reason ?? '').trim();
@@ -210,7 +210,7 @@ export function transferStudent(p: Principal, studentId: number, toClassId: numb
   if (!typed && !handover?.noNote) throw badRequest(`Ghi lưu ý bàn giao, hoặc chọn "${NO_HANDOVER_NOTE}".`);
   const handoverNote = typed || NO_HANDOVER_NOTE;
 
-  /* Q7: chuyển THẬT sang Fast Track (không phải chỉ ghi dự định) bắt buộc Mục tiêu band. Không áp dụng khi xếp lớp lần đầu. */
+  /* Q7: chuyển THẬT sang Fast Track (không phải chỉ ghi dự định) bắt buộc Target. Không áp dụng khi xếp lớp lần đầu. */
   if (enr) {
     const luatXem = luatDoiLop(
       { ma: (enr.programme_code ?? null) as ProgrammeCode | null, ft: !!enr.is_fast_track, lt: enr.route },
@@ -218,7 +218,7 @@ export function transferStudent(p: Principal, studentId: number, toClassId: numb
       'giua-khoa',
     );
     if (luatXem.canMucTieu && (handover?.mucTieu === null || handover?.mucTieu === undefined)) {
-      throw badRequest('Chuyển sang Fast Track cần Mục tiêu band.');
+      throw badRequest('Lên FT cần Target.');
     }
   }
 

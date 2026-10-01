@@ -91,12 +91,12 @@ export function ClassProgressPanel({ classId, classCode, tieuDe, onClose, onDone
           <div className="rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>
             <p className="text-sm text-slate-100 m-0">{data.label ?? 'Chưa tính được tiến độ'}</p>
             {data.startWeekStart && (
-              <p className="text-xs text-slate-500 mt-1 mb-0">Khai giảng {tuanLich(data.startWeekStart, homNay)}</p>
+              <p className="text-xs text-slate-500 mt-1 mb-0">Tuần khai giảng {tuanLich(data.startWeekStart, homNay)}</p>
             )}
           </div>
 
           <Field as="div" label="Tuần khai giảng" required={laLopThuong}
-            hint={laLopThuong ? `Tuần này là tuần học thứ 1 của lớp. ${MOC_KIEM_TRA_NORMAL}` : 'Tuần bắt đầu mặc định khi thêm học viên vào lớp.'}>
+            hint={laLopThuong ? `Tuần này là tuần học 1 của lớp. ${MOC_KIEM_TRA_NORMAL}` : 'Tuần bắt đầu mặc định khi thêm học viên vào lớp.'}>
             <WeekPicker periodId={startPeriodId} label={null} scope="planning"
               onPeriod={(id) => { setTouched(true); setStartPeriodId(id); }} />
           </Field>
@@ -106,14 +106,14 @@ export function ClassProgressPanel({ classId, classCode, tieuDe, onClose, onDone
               <div className={`grid gap-3 ${data.coGiuaKhoa ? 'sm:grid-cols-2' : ''}`}>
                 {/* K2-23: Pre FOU chỉ có Cuối khoá — không vẽ ô Giữa khoá. */}
                 {data.coGiuaKhoa && (
-                  <Field label="Tuần thi Giữa khoá (tuần học thứ)"
+                  <Field label="Tuần thi Giữa khoá (tuần học)"
                     hint={`Mặc định của ${kyHieuLop(data.programmeCode, null) ?? data.programmeCode}: tuần ${data.progressOverridden ? '—' : data.progressWeek ?? '—'}. Để trống là dùng mặc định.`}>
                     <input type="number" min={1} max={data.totalWeeks ?? undefined} className="field w-full"
                       value={progressWeek} placeholder={String(data.progressWeek ?? '')}
                       onChange={(e) => { setTouched(true); setProgressWeek(e.target.value); }} />
                   </Field>
                 )}
-                <Field label="Tuần thi Cuối khoá (tuần học thứ)"
+                <Field label="Tuần thi Cuối khoá (tuần học)"
                   hint="Để trống là dùng mốc mặc định của chương trình.">
                   <input type="number" min={1} max={data.totalWeeks ?? undefined} className="field w-full"
                     value={finalWeek} placeholder={String(data.finalWeek ?? '')}
@@ -152,7 +152,7 @@ export function ClassProgressPanel({ classId, classCode, tieuDe, onClose, onDone
                   </p>
                   <p className="m-0 mt-1.5 text-xs text-slate-500">Hệ thống không tự chuyển em nào.</p>
                   {onChuyenTiep && (
-                    <button type="button" className="btn btn-sm btn-primary mt-2 min-h-[44px] sm:min-h-0" onClick={onChuyenTiep}>Chuyển lớp cả lớp…</button>
+                    <button type="button" className="btn btn-sm btn-primary mt-2 min-h-[44px] sm:min-h-0" onClick={onChuyenTiep}>Chuyển tiếp lớp…</button>
                   )}
                 </div>
               )}

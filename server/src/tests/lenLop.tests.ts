@@ -21,7 +21,7 @@ export async function runLenLopTests(t: YThucTestKit) {
     assert(r.khoa === 'dong-mo' && r.dongCase === 'normal' && r.canMucTieu === false && r.endKind === 'chuyen_lop', JSON.stringify(r));
   });
 
-  check('PR-LT (1) · luatDoiLop: lớp thường → FT đóng khoá cũ, mở lộ trình FT, cần mục tiêu, endKind sang_ft (S17)', () => {
+  check('PR-LT (1) · luatDoiLop: lớp thường → FT đóng khoá cũ, mở lộ trình FT, cần Target, endKind sang_ft (S17)', () => {
     const r = d.luatDoiLop({ ma: 'FOU', ft: false }, { ma: 'FT', ft: true }, 'giua-khoa');
     assert(r.khoa === 'dong-mo' && r.dongCase === 'ft' && r.canMucTieu === true && r.endKind === 'sang_ft', JSON.stringify(r));
   });
@@ -59,8 +59,8 @@ export async function runLenLopTests(t: YThucTestKit) {
     assert(d.nhanTiepTheo({ huong: 'len_lop' }, 'FOU') === 'BE', 'len_lop → mã bậc kế');
     assert(d.nhanTiepTheo({ huong: 'fast_track' }, 'FOU') === 'Fast Track', 'fast_track');
     assert(d.nhanTiepTheo({ huong: 'hoc_lai' }, 'FOU') === 'học lại FOU', 'hoc_lai');
-    assert(d.nhanTiepTheo({ huong: 'bao_luu' }, 'FOU') === 'bảo lưu', 'bao_luu');
-    assert(d.nhanTiepTheo({ huong: 'dung_hoc' }, 'FOU') === 'dừng học', 'dung_hoc');
+    assert(d.nhanTiepTheo({ huong: 'bao_luu' }, 'FOU') === 'tạm dừng học (bảo lưu)', 'bao_luu');
+    assert(d.nhanTiepTheo({ huong: 'dung_hoc' }, 'FOU') === 'dừng học hẳn', 'dung_hoc');
     assert(d.nhanTiepTheo({ huong: 'chua_ro' }, 'FOU') === null, 'chua_ro → null (Q4: không tắt nhắc)');
     assert(d.nhanTiepTheo(null, 'FOU') === null, 'Không có bản ghi → null');
   });
@@ -71,32 +71,32 @@ export async function runLenLopTests(t: YThucTestKit) {
     assert(typeof d.kiemDongChuyenTiep({ huong: null }, { maTu: 'FOU' }) === 'string', 'Phải báo lỗi');
   });
 
-  check('PR-LT (1) · kiemDongChuyenTiep: len_lop/hoc_lai/fast_track thiếu lớp đích', () => {
+  check('PR-LT (1) · kiemDongChuyenTiep: len_lop/hoc_lai/fast_track thiếu lớp chuyển đến', () => {
     for (const huong of ['len_lop', 'hoc_lai', 'fast_track'] as const) {
-      assert(typeof d.kiemDongChuyenTiep({ huong }, { maTu: 'FOU' }) === 'string', `${huong} thiếu lớp đích phải báo lỗi`);
+      assert(typeof d.kiemDongChuyenTiep({ huong }, { maTu: 'FOU' }) === 'string', `${huong} thiếu lớp chuyển đến phải báo lỗi`);
     }
   });
 
-  check('PR-LT (1) · kiemDongChuyenTiep: lớp đích sai loại — len_lop phải đúng chương trình kế, hoc_lai phải cùng chương trình, sang FT phải là lớp FT', () => {
+  check('PR-LT (1) · kiemDongChuyenTiep: lớp chuyển đến sai loại — len_lop phải đúng chương trình kế, hoc_lai phải cùng chương trình, sang FT phải là lớp FT', () => {
     assert(typeof d.kiemDongChuyenTiep({ huong: 'len_lop', toClassId: 1, toClass: { ma: 'ELE', ft: false } }, { maTu: 'FOU' }) === 'string',
       'len_lop sang ELE (không phải bậc kế của FOU) phải báo lỗi');
     assert(typeof d.kiemDongChuyenTiep({ huong: 'hoc_lai', toClassId: 1, toClass: { ma: 'BE', ft: false } }, { maTu: 'FOU' }) === 'string',
       'hoc_lai khác chương trình phải báo lỗi');
     assert(typeof d.kiemDongChuyenTiep({ huong: 'fast_track', toClassId: 1, toClass: { ma: null, ft: false }, mucTieu: 6 }, { maTu: 'FOU' }) === 'string',
-      'sang FT mà lớp đích không phải FT phải báo lỗi');
+      'sang FT mà lớp chuyển đến không phải FT phải báo lỗi');
     assert(d.kiemDongChuyenTiep({ huong: 'len_lop', toClassId: 1, toClass: { ma: 'BE', ft: false } }, { maTu: 'FOU' }) === null,
       'len_lop đúng bậc kế thì hợp lệ');
   });
 
-  check('PR-LT (1) · kiemDongChuyenTiep: sang FT thiếu mục tiêu hoặc mục tiêu ngoài 0–9/không chia hết 0.5', () => {
+  check('PR-LT (1) · kiemDongChuyenTiep: sang FT thiếu Target hoặc Target ngoài 0–9/không chia hết 0.5', () => {
     assert(typeof d.kiemDongChuyenTiep({ huong: 'fast_track', toClassId: 1, toClass: { ma: 'FT', ft: true } }, { maTu: 'FOU' }) === 'string',
-      'Thiếu mục tiêu phải báo lỗi');
+      'Thiếu Target phải báo lỗi');
     assert(typeof d.kiemDongChuyenTiep({ huong: 'fast_track', toClassId: 1, toClass: { ma: 'FT', ft: true }, mucTieu: 9.5 }, { maTu: 'FOU' }) === 'string',
-      'Mục tiêu > 9 phải báo lỗi');
+      'Target > 9 phải báo lỗi');
     assert(typeof d.kiemDongChuyenTiep({ huong: 'fast_track', toClassId: 1, toClass: { ma: 'FT', ft: true }, mucTieu: 6.3 }, { maTu: 'FOU' }) === 'string',
-      'Mục tiêu không chia hết 0.5 phải báo lỗi');
+      'Target không chia hết 0.5 phải báo lỗi');
     assert(d.kiemDongChuyenTiep({ huong: 'fast_track', toClassId: 1, toClass: { ma: 'FT', ft: true }, mucTieu: 6.5 }, { maTu: 'FOU' }) === null,
-      'Mục tiêu hợp lệ thì qua');
+      'Target hợp lệ thì qua');
   });
 
   check('PR-LT (1) · kiemDongChuyenTiep: bao_luu/xep_sau thiếu lý do hoặc ngày xem lại', () => {
@@ -114,7 +114,7 @@ export async function runLenLopTests(t: YThucTestKit) {
 
   // ==================================================================== tomTatChuyenTiep — ví dụ mockup
 
-  check('PR-LT (1) · tomTatChuyenTiep: 2 lên BE, 1 sang FT (mục tiêu 6.5, Case Writing đóng), 1 bảo lưu → đúng câu mockup', () => {
+  check('PR-LT (1) · tomTatChuyenTiep: 2 lên BE, 1 sang FT (Target 6.5, Case Writing đóng), 1 tạm dừng học (bảo lưu) → đúng câu mockup', () => {
     const r = d.tomTatChuyenTiep([
       { huong: 'len_lop', toClassCode: 'MB BE 14' },
       { huong: 'len_lop', toClassCode: 'MB BE 14' },
@@ -126,7 +126,7 @@ export async function runLenLopTests(t: YThucTestKit) {
     assert(r.khongChuyen.bao_luu === 1 && r.khongChuyen.dung_hoc === 0 && r.khongChuyen.xep_sau === 0, `khongChuyen: ${JSON.stringify(r.khongChuyen)}`);
     assert(r.caseDong === 1 && r.caseDiTheo === 0, `Case: đi theo=${r.caseDiTheo} đóng=${r.caseDong}`);
     assert(
-      r.cau.join(' · ') === '2 em lên MB BE 14 · 1 em sang MB FT 105 (mở lộ trình FT, mục tiêu 6.5) · 1 em bảo lưu',
+      r.cau.join(' · ') === '2 em lên MB BE 14 · 1 em sang MB FT 105 (mở lộ trình FT, Target 6.5) · 1 em tạm dừng học (bảo lưu)',
       `Câu bước Xác nhận: ${r.cau.join(' · ')}`,
     );
   });
@@ -138,7 +138,7 @@ export async function runLenLopTests(t: YThucTestKit) {
     ]);
     assert(r.baiChuaLam === 3, `baiChuaLam: ${r.baiChuaLam}`);
     assert(r.khongChuyen.dung_hoc === 1 && r.khongChuyen.xep_sau === 1, JSON.stringify(r.khongChuyen));
-    assert(r.cau.join(' · ') === '1 em dừng học · 1 em xếp sau', r.cau.join(' · '));
+    assert(r.cau.join(' · ') === '1 em dừng học hẳn · 1 em xếp sau', r.cau.join(' · '));
   });
 
   // ==================================================================== khoaLopThuong — ba nhánh phụ
@@ -146,7 +146,7 @@ export async function runLenLopTests(t: YThucTestKit) {
   check('PR-LT (1) · khoaLopThuong: ưu tiên tiếp theo › nhắc › kết thúc khoá', () => {
     const base = { maChuongTrinh: 'FOU', tuanHienTai: 8, tongTuan: 8, tuanKetThuc: '2026-09-21', homNay: '2026-09-14' };
     assert(d.khoaLopThuong({ ...base, tiepTheo: 'BE', nhacLoTrinh: true }).phu === 'tiếp theo: BE', 'Có tiếp theo thì ưu tiên trên hết');
-    assert(d.khoaLopThuong({ ...base, tiepTheo: null, nhacLoTrinh: true }).phu === 'chưa có lệnh chuyển lớp', 'Không tiếp theo, có nhắc (PR-Dọn Câu 2 = B)');
+    assert(d.khoaLopThuong({ ...base, tiepTheo: null, nhacLoTrinh: true }).phu === 'chưa có quyết định chuyển lớp', 'Không tiếp theo, có nhắc (PR-Dọn Câu 2 = B)');
     assert(d.khoaLopThuong({ ...base, tiepTheo: null, nhacLoTrinh: false }).phu === 'kết thúc W4 SEP', 'Không tiếp theo, không nhắc → kết thúc khoá');
   });
 
@@ -159,8 +159,8 @@ export async function runLenLopTests(t: YThucTestKit) {
     assert(het.an.map((x: any) => x.key).join(',') === 'xep-lop', `Phần gom: ${JSON.stringify(het.an)}`);
     assert(het.an[0].nhan === '3 HV cần xếp lớp tiếp' && /hết khoá/.test(het.an[0].title ?? ''), 'Hết khoá: số em cần xếp lớp');
     const chua = d.badgeLop({ ...goc, needsPlacement: false, canXepLop: 0 });
-    /* PR-Dọn (Câu 2 = B): lớp chưa hết khoá → em chưa có lệnh chuyển lớp (cùng tập dòng Cần xử lý). */
-    assert(chua.an[0].nhan === '5 HV chưa có lệnh chuyển lớp' && /Chuyển lớp cả lớp/.test(chua.an[0].title ?? '') && chua.an[0].tone === 'warn', JSON.stringify(chua.an[0]));
+    /* PR-Dọn (Câu 2 = B): lớp chưa hết khoá → em chưa có quyết định chuyển lớp (cùng tập dòng Cần xử lý). */
+    assert(chua.an[0].nhan === '5 HV chưa có quyết định chuyển lớp' && /Chuyển tiếp lớp/.test(chua.an[0].title ?? '') && chua.an[0].tone === 'warn', JSON.stringify(chua.an[0]));
   });
 
   // ==================================================================== trongHaiTuanCuoi
@@ -380,8 +380,8 @@ export async function runLenLopTests(t: YThucTestKit) {
     const roster = classesSvc.classRoster(P.admin, cls) as any[];
     const row = roster.find((r) => r.id === sid);
     assert(row?.tiepTheo === 'BE', `tiepTheo: ${row?.tiepTheo}`);
-    /* PR-Dọn (Câu 2 = B): ghi Lộ trình tiếp theo không tắt cờ — cờ nay là "chưa có lệnh chuyển lớp". */
-    assert(row?.chuaLoTrinh === true, 'Chưa có lệnh chuyển lớp thì vẫn có cờ');
+    /* PR-Dọn (Câu 2 = B): ghi Lộ trình tiếp theo không tắt cờ — cờ nay là "chưa có quyết định chuyển lớp". */
+    assert(row?.chuaLoTrinh === true, 'Chưa có quyết định chuyển lớp thì vẫn có cờ');
   });
 
   /* PR-Dọn (Câu 2 = B): đếm em CHƯA CÓ LỆNH chuyển lớp (lệnh `cho` thì hết cờ); "chua_ro" chỉ còn ảnh hưởng chữ "tiếp theo". */
@@ -396,7 +396,7 @@ export async function runLenLopTests(t: YThucTestKit) {
     const roster = classesSvc.classRoster(P.admin, cls) as any[];
     const row = roster.find((r) => r.id === sid);
     assert(row?.tiepTheo === null, `chua_ro không hiện "tiếp theo": ${row?.tiepTheo}`);
-    assert(row?.chuaLoTrinh === true && roster.find((r) => r.id === coLenh)?.chuaLoTrinh === false, 'cờ theo lệnh chuyển lớp');
+    assert(row?.chuaLoTrinh === true && roster.find((r) => r.id === coLenh)?.chuaLoTrinh === false, 'cờ theo quyết định chuyển lớp');
     const r = classesSvc.listClassSummaries(P.admin, { branchId: MB3 }).rows.find((x) => x.id === cls)!;
     assert(r.soChuaLoTrinhTiep === 1, `Đếm em chưa có lệnh: ${r.soChuaLoTrinhTiep}`);
   });
@@ -554,19 +554,19 @@ export async function runLenLopTests(t: YThucTestKit) {
     assert(att.class_id === to, 'Khoá giữ thì lượt chưa làm phải chuyển theo em sang lớp mới');
   });
 
-  check('PR-LT (4) · Lớp thường → Fast Track (thật, Q7): khoá cũ completed, lộ trình FT mới active có mục tiêu, Case lớp thường đóng moved_to_ft, đúng MỘT lộ trình active', () => {
+  check('PR-LT (4) · Lớp thường → Fast Track (thật, Q7): khoá cũ completed, lộ trình FT mới active có Target, Case lớp thường đóng moved_to_ft, đúng MỘT lộ trình active', () => {
     const from = taoLop4({ branchId: MB3, kind: 'FOU', ft: false, tuanHienTai: 3 });
     const to = taoLop4({ branchId: MB3, kind: 'FT', ft: true });
     const { sid, cycleId } = taoHV4({ clsId: from, ma: 'FOU', ft: false });
     const caseId = taoCase4(sid, cycleId, 'writing');
     const gvcn = ganGVCN3(from, P.normalCoreTeacher.userId);
     assertThrows(() => studentsSvc4.transferStudent(P.admin, sid, to, TODAY3, 'Xếp lại trình độ', { noNote: false, note: 'Đủ trình lên FT', mucTieu: undefined as any }),
-      /Mục tiêu/, 'Thiếu Mục tiêu band phải 400');
+      /Target/, 'Thiếu Target phải 400');
     const r = studentsSvc4.transferStudent(P.admin, sid, to, TODAY3, 'Xếp lại trình độ', { note: 'Đủ trình lên FT', mucTieu: 6.5 });
     assert(cycleStatus(cycleId) === 'completed', 'Khoá lớp thường cũ phải đóng completed');
     assert(activeCycleCount(sid) === 1, 'Đúng một lộ trình active sau khi sang FT');
     const newCycle = conn.prepare(`SELECT * FROM learning_cycles WHERE student_id=? AND status='active'`).get(sid) as any;
-    assert(newCycle.target_score === 6.5, `Lộ trình FT mới phải có mục tiêu: ${newCycle.target_score}`);
+    assert(newCycle.target_score === 6.5, `Lộ trình FT mới phải có Target: ${newCycle.target_score}`);
     assert(caseStatus(caseId).status === 'done' && caseStatus(caseId).system_close_reason === 'moved_to_ft',
       `Case lớp thường phải đóng moved_to_ft: ${JSON.stringify(caseStatus(caseId))}`);
     assert(r.endKind === 'sang_ft', `endKind: ${r.endKind}`);
@@ -637,12 +637,12 @@ export async function runLenLopTests(t: YThucTestKit) {
   check('PR-LT (4) · GET /chuyen-lop/lop-dich: có lớp CP, JSON KHÔNG có khoá nào về học viên lớp khác', () => {
     const from = taoLop4({ branchId: MB3, kind: 'FOU', ft: false, tuanHienTai: 2 });
     const to = taoLop4({ branchId: CP4, kind: 'FOU', ft: false, tuanHienTai: 2 });
-    taoHV4({ clsId: to, ma: 'FOU', ft: false }); // học viên lớp đích — không được lộ
+    taoHV4({ clsId: to, ma: 'FOU', ft: false }); // học viên lớp chuyển đến — không được lộ
     const { sid } = taoHV4({ clsId: from, ma: 'FOU', ft: false });
     const gvcn = ganGVCN3(from, P.normalCoreTeacher.userId);
     const r = luatLoTrinhSvc.lopDichChoChuyen(P.mbManager, sid);
     assert(r.chiNhanh.some((b: any) => b.id === CP4), 'Phải có chi nhánh CP');
-    assert(r.lop.some((l: any) => l.id === to), 'Phải có lớp đích ở CP');
+    assert(r.lop.some((l: any) => l.id === to), 'Phải có lớp chuyển đến ở CP');
     const raw = JSON.stringify(r);
     assert(!/soHv|"students"|hocVien/i.test(raw), `JSON không được lộ khoá học viên lớp khác: ${raw.slice(0, 200)}`);
   });
@@ -763,7 +763,7 @@ export async function runLenLopTests(t: YThucTestKit) {
     }), /quyền/, 'GVCN không có CLASS_EDIT phải 403');
   });
 
-  check('PR-LT (5) · Kịch bản mockup 11-2: 2 lên BE, 1 sang FT (mục tiêu 6.5, Case Writing đóng moved_to_ft), 1 bảo lưu; lớp cũ hết em → finished', () => {
+  check('PR-LT (5) · Kịch bản mockup 11-2: 2 lên BE, 1 sang FT (Target 6.5, Case Writing đóng moved_to_ft), 1 tạm dừng học (bảo lưu); lớp cũ hết em → finished', () => {
     const { cls } = taoLopHetKhoa5(9, 0);
     const { sid: s1 } = taoHV4({ clsId: cls, ma: 'FOU', ft: false });
     const { sid: s2 } = taoHV4({ clsId: cls, ma: 'FOU', ft: false });
@@ -787,11 +787,11 @@ export async function runLenLopTests(t: YThucTestKit) {
     const cyc1 = conn.prepare(`SELECT programme_code FROM learning_cycles WHERE student_id=? AND status='active'`).get(s1) as any;
     assert(cyc1.programme_code === 'BE', `Khoá mới của s1 phải là BE: ${cyc1.programme_code}`);
     const cycFt = conn.prepare(`SELECT programme_code, target_score FROM learning_cycles WHERE student_id=? AND status='active'`).get(s3) as any;
-    assert(cycFt.target_score === 6.5, `Mục tiêu FT: ${cycFt.target_score}`);
+    assert(cycFt.target_score === 6.5, `Target FT: ${cycFt.target_score}`);
     assert(caseStatus(case3).status === 'done' && caseStatus(case3).system_close_reason === 'moved_to_ft',
       `Case Writing phải đóng moved_to_ft: ${JSON.stringify(caseStatus(case3))}`);
     const s4row = conn.prepare('SELECT status FROM students WHERE id = ?').get(s4) as any;
-    assert(s4row.status === 'inactive', 's4 phải inactive (bảo lưu)');
+    assert(s4row.status === 'inactive', 's4 phải inactive (tạm dừng học (bảo lưu))');
     const s4enr = conn.prepare(`SELECT status FROM enrollments WHERE student_id=? ORDER BY id DESC LIMIT 1`).get(s4) as any;
     assert(s4enr.status === 'paused', 's4 enrollment phải paused');
     const clsRow = conn.prepare('SELECT status FROM classes WHERE id = ?').get(cls) as any;
@@ -814,7 +814,7 @@ export async function runLenLopTests(t: YThucTestKit) {
     assert(banGhi.huong === 'xep_sau' && banGhi.da_ap_dung_luc === null, `Dự định phải ghi, chưa áp dụng: ${JSON.stringify(banGhi)}`);
   });
 
-  check('PR-LT (5) · Dòng thiếu lý do (bảo lưu không ghi lý do) vào failed, dòng khác vẫn xong', () => {
+  check('PR-LT (5) · Dòng thiếu lý do (tạm dừng học (bảo lưu) không ghi lý do) vào failed, dòng khác vẫn xong', () => {
     const { cls } = taoLopHetKhoa5(9, 0);
     const { sid: sOk } = taoHV4({ clsId: cls, ma: 'FOU', ft: false });
     const { sid: sBad } = taoHV4({ clsId: cls, ma: 'FOU', ft: false });
@@ -1047,7 +1047,7 @@ export async function runLenLopTests(t: YThucTestKit) {
 
   // ==================================================================== Rà PR #86 (planning) — sửa 7 điểm
 
-  console.log('\nPR-LT (rà #86) · applyTransition kiểm em/lớp đích hợp lệ, exam_month, phạm vi theo chi nhánh đang học, thông báo/bảo lưu');
+  console.log('\nPR-LT (rà #86) · applyTransition kiểm em/lớp chuyển đến hợp lệ, exam_month, phạm vi theo chi nhánh đang học, thông báo/tạm dừng học (bảo lưu)');
 
   check('PR-LT (rà #86) · applyTransition: studentId không thuộc lớp nguồn (mượn từ lớp/chi nhánh khác) → failed, không đổi gì', () => {
     const { cls: clsMB } = taoLopHetKhoa5(9, 0);
@@ -1069,7 +1069,7 @@ export async function runLenLopTests(t: YThucTestKit) {
     assert(enrCP.class_id === clsCP && enrCP.status === 'active', 'Em ngoài lớp nguồn không được đổi gì');
   });
 
-  check('PR-LT (rà #86) · applyTransition: lớp đích đã kết thúc (không còn active) → failed, không đổi gì', () => {
+  check('PR-LT (rà #86) · applyTransition: lớp chuyển đến đã kết thúc (không còn active) → failed, không đổi gì', () => {
     const { cls } = taoLopHetKhoa5(9, 0);
     const { sid } = taoHV4({ clsId: cls, ma: 'FOU', ft: false });
     const daKetThuc = taoLop4({ branchId: MB3, kind: 'BE', ft: false, tuanHienTai: 1 });
@@ -1078,10 +1078,10 @@ export async function runLenLopTests(t: YThucTestKit) {
       fromClassId: cls, effectiveDate: TODAY3,
       dongs: [{ studentId: sid, huong: 'len_lop', toClassId: daKetThuc }],
     }) as any;
-    assert(r.done.length === 0 && r.failed.length === 1 && /Lớp đích không hợp lệ/.test(r.failed[0].message),
-      `Lớp đích đã kết thúc phải failed: ${JSON.stringify(r)}`);
+    assert(r.done.length === 0 && r.failed.length === 1 && /Lớp chuyển đến không hợp lệ/.test(r.failed[0].message),
+      `Lớp chuyển đến đã kết thúc phải failed: ${JSON.stringify(r)}`);
     const enr = conn.prepare(`SELECT status FROM enrollments WHERE student_id=?`).get(sid) as any;
-    assert(enr.status === 'active', 'Không đổi gì khi lớp đích không hợp lệ');
+    assert(enr.status === 'active', 'Không đổi gì khi lớp chuyển đến không hợp lệ');
   });
 
   check('PR-LT (rà #86) · chương theo lớp (thay lichSuLop): em KHÔNG có điểm Cuối khoá dù bạn cùng lớp có điểm — dòng lịch sử không lộ "đạt" của bạn', () => {
@@ -1138,7 +1138,7 @@ export async function runLenLopTests(t: YThucTestKit) {
     assert(!!profileSvc.studentProfile(P.admin, sid), 'Vai toàn hệ thống vẫn thấy đúng theo luật cũ');
   });
 
-  check('PR-LT (rà #86) · applyTransition bảo lưu (cả lớp): enrollment ghi end_reason, journey_events ghi đúng created_by', () => {
+  check('PR-LT (rà #86) · applyTransition tạm dừng học (bảo lưu) (cả lớp): enrollment ghi end_reason, journey_events ghi đúng created_by', () => {
     const { cls } = taoLopHetKhoa5(9, 0);
     const { sid } = taoHV4({ clsId: cls, ma: 'FOU', ft: false });
     transitionSvc.applyTransition(P.mbManager, {

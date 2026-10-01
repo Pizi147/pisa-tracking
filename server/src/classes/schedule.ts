@@ -307,7 +307,7 @@ export type ClassProgress = {
   programmeName: string | null;
   /** Tổng số tuần của chương trình. NULL với lớp FT — FT không có số tuần cố định. */
   totalWeeks: number | null;
-  /** Lớp đang ở tuần học thứ mấy. NULL khi chưa khai tuần bắt đầu. */
+  /** Lớp đang ở tuần học mấy. NULL khi chưa khai tuần bắt đầu. */
   currentWeek: number | null;
   startPeriodId: number | null;
   startWeekStart: string | null;
@@ -372,7 +372,7 @@ const CLASS_ACTIVE_COUNT_SQL = `
             WHERE lt.student_id = e.student_id AND lt.class_id = e.class_id
               AND lt.huong = 'xep_sau' AND lt.ngay_xem_lai > ?
          ) OR EXISTS (
-           SELECT 1 FROM lenh_chuyen_lop lc WHERE lc.student_id = e.student_id AND lc.trang_thai = 'cho'   -- PR-CT: em đã có lệnh không còn "cần xếp lớp"
+           SELECT 1 FROM lenh_chuyen_lop lc WHERE lc.student_id = e.student_id AND lc.trang_thai = 'cho'   -- PR-CT: em đã có quyết định chuyển lớp không còn "cần xếp lớp"
          ) THEN 0 ELSE 1 END) can_xep_lop
     FROM enrollments e
     JOIN students s ON s.id = e.student_id
@@ -391,7 +391,7 @@ export type TienDoMoc = { phase?: string | null; finalWeekStart?: string | null;
 
 /**
  * PR-S5F-a: lớp thường đã tới Cuối khoá chưa / đã hết khoá chưa — so HÔM NAY với tuần Cuối khoá và tuần kết thúc, KHÔNG theo chặng (Quản lý dời
- * Cuối khoá sớm thì các tuần giữa Cuối khoá và tuần kết thúc là chặng `running`, nhưng vẫn là lúc ra lệnh chuyển lớp). Dải, việc, đề xuất đọc chung.
+ * Cuối khoá sớm thì các tuần giữa Cuối khoá và tuần kết thúc là chặng `running`, nhưng vẫn là lúc ra quyết định chuyển lớp). Dải, việc, đề xuất đọc chung.
  */
 export function mocKetKhoa(pr: TienDoMoc, homNay: string) {
   const tuanKetThuc = pr?.startWeekStart && pr.totalWeeks ? addDays(pr.startWeekStart, (pr.totalWeeks - 1) * 7) : null;

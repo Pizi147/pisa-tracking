@@ -22,7 +22,7 @@ export type Viec = {
 
 /**
  * DÒNG THÔNG TIN — "em là ai" (mockup 24 A/C/D1).
- *   FT          MB FT 101 · LT1 · target 6.5 · tuần học thứ 9 · thi dự kiến 06/2027 · GVCN …
+ *   FT          MB FT 101 · LT1 · target 6.5 · tuần học 9 · dự kiến thi 06/2027 · GVCN …
  *   lớp thường  MB FOU 15 · FOU · tuần học 7/10 · Cuối khoá W4 OCT · GVCN …   (không target, FT không bao giờ "n/16")
  */
 export function DongThongTin({ tt }: { tt: any }) {
@@ -30,7 +30,7 @@ export function DongThongTin({ tt }: { tt: any }) {
   const muc: ReactNode[] = [
     <b key="lop">{tt.lop}</b>,
     tt.loTrinh && <b key="lt">{tt.loTrinh}</b>,
-    tt.target !== null && <span key="tg">target <b><TargetText band={tt.target === 'KCK' ? null : tt.target} kck={tt.target === 'KCK'} /></b></span>,
+    tt.target !== null && <span key="tg">Target <b><TargetText band={tt.target === 'KCK' ? null : tt.target} kck={tt.target === 'KCK'} /></b></span>,
     tt.tuanHoc && <span key="tuan"><b className="tabular-nums">{chuTuanHoc(tt.tuanHoc.tuan, tt.tuanHoc.tong, tt.tuanHoc.dangDung)}</b></span>,
     tt.thiDuKien && <span key="thi">{tt.thiDuKien.nhan} <b className="tabular-nums">{tt.thiDuKien.gt}</b></span>,
     tt.gvcn && <span key="gv">GVCN <b>{tt.gvcn}</b></span>,
@@ -222,7 +222,7 @@ export function BonO({ o, homNay, onDot, onKn, onYThuc, kyNangHref }: {
       <O nhan="Kết quả gần nhất" tren={kq?.nhan} phu={phuKq} title="Mở đợt Test này ở bảng Học thuật" phuNgoai={!!kyNangHref && !!k.duoi?.length}
         onClick={kq ? () => onDot(kq.attemptId) : undefined}>
         {k.kck && kq
-          ? <span className="rounded-md border px-2 text-[15px] leading-6 tabular-nums text-slate-300" style={{ borderColor: 'var(--line-strong)' }}>Overall {k.overall !== null ? k.overall.toFixed(1) : '—'}</span>
+          ? <span className="rounded-md border px-2 text-[15px] leading-6 tabular-nums text-slate-300" style={{ borderColor: 'var(--line-strong)' }}>OVR {k.overall !== null ? k.overall.toFixed(1) : '—'}</span>
           : giaTriKq}
       </O>
       <O nhan="Học thuật" title="Mở bảng kỹ năng ở Case gấp nhất"
@@ -265,7 +265,7 @@ export function DaiTamDung({ tamDung }: { tamDung: { tu: string; lyDo: string | 
     <section aria-label="Học viên đang tạm dừng" className="flex items-start gap-2.5 rounded-[10px] bg-soon-bg px-3 py-2.5 shadow-[inset_3px_0_0_rgb(var(--soon-rgb))]">
       <span className="mt-[3px] text-soon"><IconTamDung /></span>
       <span className="min-w-0 text-[13px] text-slate-100">
-        <b className="font-semibold text-soon">Tạm dừng từ {ngayDung}</b> · mọi hạn đang dừng
+        <b className="font-semibold text-soon">Tạm dừng học từ {ngayDung}</b> · mọi hạn đang dừng
         {tamDung.lyDo && <> · lý do: {tamDung.lyDo}</>}
         {tamDung.boi && <> · người ghi: {tamDung.boi}</>}
         <span className="block text-[12px] text-slate-400">Quay lại học thì hạn tính lại từ ngày quay lại</span>

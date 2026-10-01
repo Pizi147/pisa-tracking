@@ -81,7 +81,7 @@ export const CAU_XOA_HOC_VIEN: readonly { bang: string; sql: string }[] = [
   { bang: 'attachments#tep', sql: `SELECT url FROM attachments WHERE kind = 'file' AND (${DK_TEP})` },
   { bang: 'attachments', sql: `DELETE FROM attachments WHERE ${DK_TEP}` },
   { bang: 'notifications', sql: `DELETE FROM notifications WHERE ${DK_THONG_BAO}` },
-  /* PR-CT: lệnh chuyển lớp + dòng bàn giao của em (lệnh trỏ thẻ Chờ duyệt nên xoá TRƯỚC thẻ) */
+  /* PR-CT: quyết định chuyển lớp + dòng bàn giao của em (lệnh trỏ thẻ Chờ duyệt nên xoá TRƯỚC thẻ) */
   { bang: 'ban_giao_mon', sql: `DELETE FROM ban_giao_mon WHERE lenh_id IN (SELECT id FROM lenh_chuyen_lop WHERE student_id = ?1 OR tu_yeu_cau_id IN (${Q}))` },
   { bang: 'lenh_chuyen_lop', sql: `DELETE FROM lenh_chuyen_lop WHERE student_id = ?1 OR tu_yeu_cau_id IN (${Q})` },
   /* PR-DUYET: thẻ Chờ duyệt của em (đối tượng là PA/đề nghị dời/lộ trình của em — xoá cùng em) */
@@ -141,7 +141,7 @@ const LOAI_MAT: { khoa: string; nhan: string; sql: string }[] = [
   { khoa: 'caseHocThuat', nhan: 'Case học thuật', sql: `SELECT COUNT(*) FROM (${C})` },
   { khoa: 'paHocThuat', nhan: 'PA học thuật', sql: `SELECT COUNT(*) FROM (${I})` },
   { khoa: 'ghiKetQua', nhan: 'Ghi kết quả PA', sql: `SELECT COUNT(*) FROM (${F})` },
-  { khoa: 'tinHieu', nhan: 'Tín hiệu', sql: `SELECT COUNT(*) FROM (${G})` },
+  { khoa: 'tinHieu', nhan: 'Case chờ xác nhận nguyên nhân', sql: `SELECT COUNT(*) FROM (${G})` },
   { khoa: 'viPham', nhan: 'Vi phạm', sql: `SELECT COUNT(*) FROM (${V})` },
   { khoa: 'paXuLy', nhan: 'PA xử lý', sql: `SELECT COUNT(*) FROM (${M})` },
   { khoa: 'phoiHop', nhan: 'Phối hợp SOS', sql: `SELECT COUNT(*) FROM (${X})` },

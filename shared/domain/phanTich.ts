@@ -4,7 +4,7 @@
  * Cùng tinh thần `tongQuan.ts` (PR-Pa): không con số nào tính ở đây — số luôn đến từ lõi tập ID
  * ở máy chủ (`server/src/phanTich/*.ts`). File này chỉ giữ những gì máy chủ và web PHẢI đồng ý với
  * nhau: góc nhìn, khoảng thời gian, bộ kỹ năng theo chương trình, cột bảng Tổng hợp, màu ô kết quả,
- * loại lỗi chung, "Nên dùng", bước tiếp theo của Ý thức, và cách xuất Excel từ đúng dữ liệu đang hiện.
+ * nhóm nguyên nhân chung, "Nên dùng", bước tiếp theo của Ý thức, và cách xuất Excel từ đúng dữ liệu đang hiện.
  */
 import {
   CASE_CATEGORY_LABEL, CASE_CATEGORY_SHORT, FT_CASE_CATEGORIES, NORMAL_CASE_CATEGORIES,
@@ -280,10 +280,10 @@ export function mauOKetQua(khoaCot: string, v: number): MauOKetQua | null {
   return null;
 }
 
-// ------------------------------------------------------------------ vấn đề HV: loại lỗi chung, họ kỹ năng (Q3, Q5)
+// ------------------------------------------------------------------ vấn đề HV: nhóm nguyên nhân chung, họ kỹ năng (Q3, Q5)
 
 /**
- * LOẠI LỖI CHUNG (Q3) — công tắc "Gộp theo loại lỗi chung". Một mã có thể nằm ở nhiều nhóm: Reading/Listening chỉ có
+ * LOẠI LỖI CHUNG (Q3) — công tắc "Gộp theo nhóm nguyên nhân chung". Một mã có thể nằm ở nhiều nhóm: Reading/Listening chỉ có
  * mục `language` (Từ vựng / ngữ pháp) nên mục đó tính ở cả Ngữ pháp lẫn Từ vựng.
  */
 export const LOI_CHUNG: readonly { khoa: string; nhan: string; ma: readonly string[] }[] = [
@@ -394,7 +394,7 @@ export type TongHopKetQua = {
   scopeEmpty: boolean;
 };
 
-/** Tổng hợp vấn đề HV (PR-UX4): hàng lớn = kỹ năng (hoặc loại lỗi chung), hàng con = loại lỗi (hoặc kỹ năng · loại lỗi). */
+/** Tổng hợp vấn đề HV (PR-UX4): hàng lớn = kỹ năng (hoặc nhóm nguyên nhân chung), hàng con = nhóm nguyên nhân (hoặc kỹ năng · nhóm nguyên nhân). */
 export type DongVanDeHv = {
   khoa: string; nhan: string; loai: 'ky-nang' | 'loi' | 'chung' | 'gom';
   soHv: number; soLop: number;

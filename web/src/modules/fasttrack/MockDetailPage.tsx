@@ -224,7 +224,7 @@ export default function MockDetailPage() {
             </h1>
             {cancelled && <Tag>Đã huỷ</Tag>}
             {coKhoa && !cancelled && <Tag title={KHOA_HOAN_TAT_HINT}>Đã hoàn tất</Tag>}
-            {laRf && <span className="text-xs text-slate-400" title="Lộ trình RF — kỳ vọng mọi MT bằng target.">RF</span>}
+            {laRf && <span className="text-xs text-slate-400" title="Lộ trình RF — kỳ vọng mọi MT bằng Target.">RF</span>}
             <ChonDot hienTai={d.id} ds={dsDot.data?.rows ?? []} homNay={homNay} onChon={(r) => navigate(attemptHref(r))} />
           </div>
           <p className="text-xs text-slate-500 mt-0.5 m-0" title={d.branchName ? `Lớp lúc đánh giá: ${d.classCode ?? '—'} · ${d.branchName}` : undefined}>
@@ -249,7 +249,7 @@ export default function MockDetailPage() {
         <KetQuaDot coDiem={d.result.scoredRequired} yeuCau={d.result.required.length} dat={passed}
           sos={d.result.sosLevel ?? null} />
         <span className="text-sm text-slate-400 tabular-nums">
-          Kỳ vọng {fmtBand(d.result.expectation)}{laRf && d.result.expectation !== null ? ' = target' : ''}
+          Kỳ vọng {fmtBand(d.result.expectation)}{laRf && d.result.expectation !== null ? ' = Target' : ''}
         </span>
         {d.deadlineOverride && (
           <Tag title={d.deadlineOverride.reason ?? undefined}>
@@ -281,13 +281,13 @@ export default function MockDetailPage() {
               ? <>{tuanLich(d.period.weekStart, homNay)} <span className="text-slate-500 text-xs">({d.period.range})</span></>
               : <Tag pending>Chưa chốt tuần</Tag>}
           </Info>
-          <Info label="Thi thật dự kiến"><ExamPlanText plan={d.cycle.examPlan} /></Info>
-          <Info label="Mục tiêu tại thời điểm đánh giá">
+          <Info label="Dự kiến thi"><ExamPlanText plan={d.cycle.examPlan} /></Info>
+          <Info label="Target tại thời điểm đánh giá">
             <TargetText band={d.targetAtAttempt} kck={d.targetAtAttempt === null && d.cycle.khongCamKet} />
           </Info>
           {d.studyWeekHint && (
             <Info label="Mốc gợi ý" title="Tuần học của chương trình và mã tuần lịch là hai khái niệm khác nhau.">
-              Tuần học FT {d.studyWeekHint}
+              Tuần học {d.studyWeekHint}
             </Info>
           )}
         </dl>
@@ -560,7 +560,7 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory }: {
         </SectionNote>
       )}
       {d.result.complete && !d.result.evaluable && (
-        <SectionNote>Đã đủ điểm nhưng lộ trình chưa có mục tiêu, nên chưa tính được kỳ vọng và SOS.</SectionNote>
+        <SectionNote>Đã đủ điểm nhưng lộ trình chưa có Target, nên chưa tính được kỳ vọng và SOS.</SectionNote>
       )}
 
       {hop && (

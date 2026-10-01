@@ -498,7 +498,7 @@ export function issueBoard(scope: Scope, category: string) {
     const ended = myIvs.map((i) => outcomes.get(i.id)).filter(Boolean) as { group: PlanOutcome }[];
     return {
       code,
-      label: code === '__unclassified__' ? 'Chưa phân loại vấn đề' : issueLabel(code),
+      label: code === '__unclassified__' ? 'Chưa chọn nhóm nguyên nhân' : issueLabel(code),
       cases: ids.length,
       openCases: mine.filter((c) => ids.includes(c.id) && c.status !== 'done').length,
       /*

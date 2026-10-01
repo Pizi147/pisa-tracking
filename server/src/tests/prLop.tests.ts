@@ -223,7 +223,7 @@ export async function runPrLopTests(t: YThucTestKit) {
       sys.saveProgramme(P.admin, { code: 'PREFOU', name: 'Pre Foundation', weeks: 5 });
     }
     const lt = sys.listRoutes(true).find((x: any) => x.code === 'RF');
-    assert(lt.kyVong === 'Mọi MT = target' && lt.lichMt === 'Tuần 4 · 8', JSON.stringify(lt));
+    assert(lt.kyVong === 'Mọi MT = Target' && lt.lichMt === 'Tuần 4 · 8', JSON.stringify(lt));
     const src = docSach('web/src/modules/platform/CatalogAdmin.tsx');
     assert(!/\+ Thêm|Progress Test|Final Test|loại lớp|btn-primary' : ''|ALL_SKILLS/i.test(src), 'CatalogAdmin còn chữ/nút cũ');
     assert(/Lộ trình & chương trình/.test(docSach('web/src/modules/platform/AdminPage.tsx')), 'tên tab');

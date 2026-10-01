@@ -81,7 +81,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     assert(check.blockers.length > 0, `MT4 (chưa tạo) trùng tuần MT3 phải bị CHẶN, đang ra: ${JSON.stringify(check)}`);
   });
 
-  check('T9 · Kết quả gần nhất dùng mục tiêu TẠI THỜI ĐIỂM THI, không dùng target hiện tại của lộ trình', () => {
+  check('T9 · Kết quả gần nhất dùng Target TẠI THỜI ĐIỂM THI, không dùng target hiện tại của lộ trình', () => {
     /*
      * PHẢI khớp đúng cách `standingFor` chọn lượt (standing.ts:207: lượt MỚI NHẤT — attempt_no lớn nhất — có BẤT KỲ
      * dòng nào ở `assessment_scores`, kể cả dòng chỉ mang dấu "-" chưa có band) và đúng lộ trình ĐANG CHẠY của em
@@ -430,7 +430,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     const [hvA, hvB, hvC] = ['T5 A', 'T5 B', 'T5 C'].map((x) => ({ id: emMoiFT(x) }));
     const attemptNo = 1; // PR-MT: em thử mới chưa có lượt nào — MT1 là số hợp lệ duy nhất
     const far0 = week.ensurePeriod('2029-06-04'); // Thứ Hai
-    const far1 = week.ensurePeriod('2030-01-07'); // Thứ Hai, mục tiêu của lô
+    const far1 = week.ensurePeriod('2030-01-07'); // Thứ Hai, Target của lô
 
     /* B: đã có lượt MT1 ở far0, CHƯA có điểm → phải là 'doi' khi lô nhắm tới far1. */
     keHoachMod.xepMoi(P.mbManager, { studentId: hvB.id, attemptNo, tuan: t4(far0.id), force: true });

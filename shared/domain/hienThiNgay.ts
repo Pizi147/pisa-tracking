@@ -53,16 +53,16 @@ export function tuanKhoa(n: number, tong: number): string {
 }
 
 /**
- * "tuần học 3/8" (lớp thường, có tổng) · "tuần học thứ 9" (FT — không giới hạn tuần). Cùng thân với UXF-a Task 4.
- * PR-S6F-b (D17): em đang dừng → "tuần học thứ 14 · đang dừng"; dừng ngay tuần đầu (`tuan` null) → "đang dừng".
+ * "tuần học 3/8" (lớp thường, có tổng) · "tuần học 9" (FT — không giới hạn tuần). Cùng thân với UXF-a Task 4.
+ * PR-S6F-b (D17): em đang dừng → "tuần học 14 · đang dừng"; dừng ngay tuần đầu (`tuan` null) → "đang dừng".
  */
 export const chuTuanHoc = (tuan: number | null, tong: number | null, dangDung = false): string => {
-  const so = tuan === null ? null : tong ? `tuần học ${tuan}/${tong}` : `tuần học thứ ${tuan}`;
+  const so = tuan === null ? null : tong ? `tuần học ${tuan}/${tong}` : `tuần học ${tuan}`;
   return dangDung ? (so ? `${so} · đang dừng` : 'đang dừng') : so ?? '';
 };
 
 /**
- * PR-S6F-b (D17): MỘT hàm "tuần học thứ n · đang dừng" cho đầu hồ sơ, chương Hành trình, panel Chuyển lớp / Lên lớp. `ngay` nằm trong một
+ * PR-S6F-b (D17): MỘT hàm "tuần học n · đang dừng" cho đầu hồ sơ, chương Hành trình, panel Chuyển lớp / Lên lớp. `ngay` nằm trong một
  * khoảng dừng → tuần học cuối TRƯỚC tuần dừng + `dangDung`; dừng ngay tuần đầu → `{ tuan: null, dangDung: true }`; trước tuần bắt đầu → null.
  */
 export function tuanHocTai(batDau: string, ngay: string, dung: readonly { tu: string; den: string | null }[]): { tuan: number | null; dangDung: boolean } | null {
@@ -75,7 +75,7 @@ export function tuanHocTai(batDau: string, ngay: string, dung: readonly { tu: st
 }
 
 /**
- * Q31-11: tuần học thứ n của em FT tại tuần `tuan` — đếm từ tuần bắt đầu lộ trình, bỏ tuần Tạm dừng. Trước tuần bắt đầu hoặc tuần đang dừng → null.
+ * Q31-11: tuần học n của em FT tại tuần `tuan` — đếm từ tuần bắt đầu lộ trình, bỏ tuần Tạm dừng. Trước tuần bắt đầu hoặc tuần đang dừng → null.
  * Tuần Tạm dừng = tuần có ngày Tạm dừng tới TRƯỚC tuần Quay lại (Tạm dừng và Quay lại cùng tuần → không trừ tuần nào).
  */
 export function tuanHocFt(batDau: string, tuan: string, dung: readonly { tu: string; den: string | null }[]): number | null {

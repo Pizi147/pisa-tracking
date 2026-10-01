@@ -275,7 +275,7 @@ export async function runPrPb2bTests(t: YThucTestKit) {
       assert(!viecP || (chipP?.loai === 'gvbm' && chipP.mon === 'P' && chipP.n === Number(viecP.contextLabel.match(/\/(\d+) em/)?.[1])), `${JSON.stringify(chipP)} ‖ ${viecP?.contextLabel}`);
     }
   });
-  check('Pb2b (3d) · lớp không có lệnh chuyển → không chip bàn giao', () => {
+  check('Pb2b (3d) · lớp không có quyết định chuyển lớp → không chip bàn giao', () => {
     const l = hoSo.hoSoGiaoVien(P.admin, P.normalCoreTeacher.userId).lop.find((x: any) => x.id === lopFouMoi);
     assert(l && l.banGiao === null, JSON.stringify(l?.banGiao));
   });

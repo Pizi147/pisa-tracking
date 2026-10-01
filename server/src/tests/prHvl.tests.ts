@@ -68,7 +68,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
     const tat = [...ql.hien, ...ql.an];
     eq(tat.find((x: any) => x.key === 'qua-han'), { key: 'qua-han', nhan: '4 HV quá hạn việc', tone: 'danger', title: tat.find((x: any) => x.key === 'qua-han').title }, 'qua-han');
     eq(tat.find((x: any) => x.key === 'cho-duyet').tone, 'info', 'cho-duyet tone');
-    eq(tat.find((x: any) => x.key === 'xep-lop').nhan, '3 HV chưa có lệnh chuyển lớp', 'xep-lop khi lớp chưa hết khoá (PR-Dọn Câu 2 = B)');
+    eq(tat.find((x: any) => x.key === 'xep-lop').nhan, '3 HV chưa có quyết định chuyển lớp', 'xep-lop khi lớp chưa hết khoá (PR-Dọn Câu 2 = B)');
     const het = d.badgeLop({ ...goc, vai: 'gv', needsPlacement: true, canXepLop: 5 });
     eq([...het.hien, ...het.an].find((x: any) => x.key === 'xep-lop').nhan, '5 HV cần xếp lớp tiếp', 'xep-lop khi hết khoá dùng canXepLop');
     assert(!JSON.stringify(tat).includes('"case"'), 'Còn badge case');
@@ -345,11 +345,11 @@ export async function runPrHvlTests(t: YThucTestKit) {
   const REPO = path.resolve(fileURLToPath(new URL('../../../../', import.meta.url)));
   const web = (f: string) => fs.readFileSync(path.join(REPO, 'web/src', f), 'utf8');
 
-  check('PR-HVL (4) · Học viên & Lớp: công tắc khung, mỗi nhóm một <section> tiêu đề dính riêng, cột Sắp tới, không còn cột "Mục tiêu / Khoá"', () => {
+  check('PR-HVL (4) · Học viên & Lớp: công tắc khung, mỗi nhóm một <section> tiêu đề dính riêng, cột Sắp tới, không còn cột "Target / Khoá"', () => {
     const s = web('modules/students/StudentsPage.tsx');
     assert(/<CongTacKhung trang="hoc-vien-lop" coTatCa/.test(s) && /demLoc\(/.test(s), 'thiếu công tắc khung / demLoc');
     assert(/<section key=\{g\.k\}/.test(s) && /md:sticky md:top-0/.test(s), 'mỗi nhóm khung phải là một <section> chứa khối tiêu đề dính');
-    assert(!/Mục tiêu \/ Khoá/.test(s) && /'Sắp tới'/.test(s), 'cột');
+    assert(!/Target \/ Khoá/.test(s) && /'Sắp tới'/.test(s), 'cột');
     assert(/<MenuDong bieuTuong=\{`\+\$\{b\.an\.length\}`\}/.test(s) && !/x\.key === 'case'/.test(s), '"+n" phải là MenuDong, không còn badge Case');
   });
 
@@ -473,7 +473,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
     assertThrows(() => ptlMod.oPhanTichLop(P.cpManager, LOP_FT, 'listening', 'case', null), /ngoài phạm vi/, 'Quản lý chi nhánh khác');
   });
 
-  check('PR-HVL (6) · cùng `planOutcomes` với Phân tích › Hiệu quả PA: tổng "Đã thực hiện" của lớp = PA có kết quả xác định của lớp; khác Hiệu quả PA chỉ vì khung thời gian và Case chưa phân loại lỗi', () => {
+  check('PR-HVL (6) · cùng `planOutcomes` với Phân tích › Hiệu quả PA: tổng "Đã thực hiện" của lớp = PA có kết quả xác định của lớp; khác Hiệu quả PA chỉ vì khung thời gian và Case chưa chọn nhóm nguyên nhân', () => {
     const tatCa = effMod.planOutcomes({ classId: LOP_FT }).filter((r: any) => r.group !== 'undetermined');
     const tong = CATS_FT.reduce((n, cat) => n + effMod.classIssueBoard(LOP_FT, cat).plans.reduce((m: number, p: any) => m + p.decided, 0), 0);
     eq(tong, tatCa.filter((r: any) => CATS_FT.includes(r.category)).length, 'Σ theo kỹ năng của bảng lớp = planOutcomes của lớp');

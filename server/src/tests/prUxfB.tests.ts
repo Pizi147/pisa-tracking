@@ -114,7 +114,7 @@ export async function runPrUxfBTests(t: YThucTestKit) {
     assert(!/scheduleHeadline/.test(doc('server/src/fasttrack/attempts.ts')), 'scheduleHeadline còn');
   });
 
-  // ------------------------------------------------------------------ Task 4 · Phân tích, nhập điểm, Mục tiêu đã đổi
+  // ------------------------------------------------------------------ Task 4 · Phân tích, nhập điểm, Target đã đổi
   const vanDeHvSvc: any = await import('../phanTich/vanDeHv.ts');
   check('UXF-b (4) · Phân tích › Vấn đề HV (cột Case): dòng phụ nói "mở W…", không còn ngày dd/mm', () => {
     const o = vanDeHvSvc.oVanDeHv(t.P.admin, { branchId: null, ct: 'ft', classId: null, soTuan: 8, chiChinh: false, gop: false, dong: 'chua-phan-loai', cot: 'case' });
@@ -122,8 +122,8 @@ export async function runPrUxfBTests(t: YThucTestKit) {
     assert(o.rows.length > 0 && co.length > 0, 'seed không có Case chưa phân loại có ngày mở');
     for (const r of co) assert(/mở W\d [A-Z]{3}/.test(r.sub) && !/\b\d{2}\/\d{2}\b/.test(r.sub), r.sub);
   });
-  check('UXF-b (4) · quét chữ: Mục tiêu đã đổi, hạn ô nhập điểm FT, trang mẫu nói mã tuần', () => {
-    assert(/tuanLich\(cy\.targetRevisions\[0\]\.effectiveFrom/.test(doc('web/src/modules/students/StudentDetailPage.tsx')), 'Mục tiêu đã đổi: lần gần nhất');
+  check('UXF-b (4) · quét chữ: Target đã đổi, hạn ô nhập điểm FT, trang mẫu nói mã tuần', () => {
+    assert(/tuanLich\(cy\.targetRevisions\[0\]\.effectiveFrom/.test(doc('web/src/modules/students/StudentDetailPage.tsx')), 'Target đã đổi: lần gần nhất');
     const se = doc('web/src/modules/fasttrack/ScoreEntry.tsx');
     assert(!/Thi \$\{cell\.weekRange/.test(se) && /tuanLich\(cell\.weekStart/.test(se), 'ô nhập điểm FT còn khoảng ngày');
     assert(!/14\/09 – 20\/09/.test(doc('web/src/modules/dev/ThanhPhanDemo.tsx')), 'trang mẫu còn khoảng ngày');
@@ -346,7 +346,7 @@ export async function runPrUxfBTests(t: YThucTestKit) {
   const tongCase = (b: any) => (b.rows as any[]).reduce((n, r) => n + r.cases.length, 0);
   let emDaChuyen: any = null;
   const await_perm: any = await import('../permissions.ts');
-  check('UXF-b (10) · R5-5: em FOU có Case G+V / P mở lên BE → Case nằm nhóm "Từ lớp trước" với tên môn của lớp cũ, KHÔNG ở hàng Writing/Speaking của BE; Σ Case không đổi; L, R giữ hàng', () => {
+  check('UXF-b (10) · R5-5: em FOU có Case G+V / P mở lên BE → Case nằm nhóm "Case bàn giao" với tên môn của lớp cũ, KHÔNG ở hàng Writing/Speaking của BE; Σ Case không đổi; L, R giữ hàng', () => {
     const cand = t.conn.prepare(`SELECT sc.id AS caseId, sc.student_id AS sid, sc.category AS cat, cl.id AS tu, cl.code AS lop, cl.branch_id AS cn
       FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id JOIN classes cl ON cl.id = a.class_id
       JOIN enrollments e ON e.student_id = sc.student_id AND e.status = 'active' AND e.class_id = cl.id
@@ -367,9 +367,9 @@ export async function runPrUxfBTests(t: YThucTestKit) {
     const hang = (b.rows as any[]).find((r) => r.category === ch.cat && !r.tuLopTruoc);
     assert(!hang || !hang.cases.some((x: any) => x.id === ch.caseId), `Case ${ch.caseId} vẫn nằm ở hàng ${hang?.short} của BE`);
     const nhom = (b.rows as any[]).find((r) => r.tuLopTruoc && r.cases.some((x: any) => x.id === ch.caseId));
-    assert(nhom, 'thiếu nhóm "Từ lớp trước"');
+    assert(nhom, 'thiếu nhóm "Case bàn giao"');
     assert(nhom.tuLopTruoc === ch.lop && nhom.short === d.tenMonNgan('FOU', ch.cat), `${nhom.tuLopTruoc} · ${nhom.short}`);
-    assert((b.rows as any[]).filter((r) => r.tuLopTruoc).every((r, i, ds) => b.rows.indexOf(r) >= b.rows.length - ds.length), 'nhóm Từ lớp trước nằm cuối bảng');
+    assert((b.rows as any[]).filter((r) => r.tuLopTruoc).every((r, i, ds) => b.rows.indexOf(r) >= b.rows.length - ds.length), 'nhóm Case bàn giao nằm cuối bảng');
     assert(tongCase(b) >= 1, 'không được mất Case');
     /* L, R: tên môn giống nhau ở FOU và BE → giữ hàng như cũ. */
     for (const r of b.rows as any[]) if (!r.tuLopTruoc && ['listening', 'reading'].includes(r.category)) assert(r.cases.every((x: any) => !x.tuLopTruoc), 'L/R không vào nhóm riêng');
@@ -383,15 +383,15 @@ export async function runPrUxfBTests(t: YThucTestKit) {
     let nem = false; try { casesSvc.skillSupportBoard(loadPrincipal(gv.id), emDaChuyen.sid); } catch { nem = true; }
     assert(nem, 'GV không dạy em phải bị chặn');
   });
-  check('UXF-b (11) · polish: khung bảng Phân tích GV đủ cao cho một chú thích nổi khi bảng 1–2 hàng (Q18); nhóm "Từ lớp trước" có tiêu đề ngữ nghĩa; thẻ Xin ý kiến trên 375 px cho xuống dòng', () => {
+  check('UXF-b (11) · polish: khung bảng Phân tích GV đủ cao cho một chú thích nổi khi bảng 1–2 hàng (Q18); nhóm "Case bàn giao" có tiêu đề ngữ nghĩa; thẻ Xin ý kiến trên 375 px cho xuống dòng', () => {
     assert(/table-scroll min-h-\[13rem\]/.test(doc('web/src/modules/phanTich/PhanTichGiaoVien.tsx')), 'Q18 min-height');
-    assert(/<th colSpan=\{4\} scope="colgroup"[^>]*>Từ lớp trước/.test(doc('web/src/modules/cases/SkillBoard.tsx')) && /<h3[^>]*>Từ lớp trước/.test(doc('web/src/modules/cases/TheKyNang.tsx')), 'tiêu đề nhóm');
+    assert(/<th colSpan=\{4\} scope="colgroup"[^>]*>Case bàn giao/.test(doc('web/src/modules/cases/SkillBoard.tsx')) && /<h3[^>]*>Case bàn giao/.test(doc('web/src/modules/cases/TheKyNang.tsx')), 'tiêu đề nhóm');
     assert(/<DongXinYKien x=\{p\.xinYKien\} ngan=\{ngan\} \/>/.test(doc('web/src/modules/cases/TheKyNang.tsx')), 'thẻ 375 px không cắt dòng Xin ý kiến');
   });
   check('UXF-b (10) · R5-5: không thêm câu SQL theo số Case (lớp của Case đọc cùng câu nạp Case); quét chữ web có nhóm + dòng phụ "từ <lớp>"', () => {
     assert(/AS ct_attempt/.test(doc('server/src/cases/cases.ts')), 'cases.ts: chương trình của lớp Case đọc cùng câu SQL nạp Case (không câu mới)');
     const sb = doc('web/src/modules/cases/SkillBoard.tsx');
-    assert(/Từ lớp trước/.test(sb) && /tuLopTruoc/.test(sb), 'SkillBoard');
-    assert(/Từ lớp trước/.test(doc('web/src/modules/cases/TheKyNang.tsx')), 'TheKyNang (thẻ 375 px)');
+    assert(/Case bàn giao/.test(sb) && /tuLopTruoc/.test(sb), 'SkillBoard');
+    assert(/Case bàn giao/.test(doc('web/src/modules/cases/TheKyNang.tsx')), 'TheKyNang (thẻ 375 px)');
   });
 }

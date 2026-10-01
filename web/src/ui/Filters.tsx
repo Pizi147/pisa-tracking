@@ -83,7 +83,7 @@ export function WeekPicker({ periodId, onPeriod, label = 'Tuần', scope, cleara
   scope?: 'planning';
   /**
    * Cho phép BỎ TRỐNG. Chỉ bật ở những chỗ mà "chưa biết" là một câu trả lời hợp lệ —
-   * tuần dự kiến thi là ví dụ: ép chọn thì người ta chọn bừa rồi không ai sửa lại.
+   * dự kiến thi là ví dụ: ép chọn thì người ta chọn bừa rồi không ai sửa lại.
    */
   clearable?: boolean;
 }) {

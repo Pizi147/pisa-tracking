@@ -413,7 +413,7 @@ export async function runPhanTichTests(t: YThucTestKit) {
       assert(ca.rows.every((r: any) => /^\/hoc-vien\/\d+\?case=\d+$/.test(r.href)), 'dòng Chưa phân loại mở Ngăn Case trên hồ sơ HV (PR-Pb2-a)');
       const hv = vanDeHvSvc.oVanDeHv(P.admin, { ...f, dong: 'kn:writing', cot: 'hv' });
       assert(hv.rows.every((r: any) => r.sub.length <= 60 && r.href.startsWith('/hoc-vien/')), 'dòng HV: sub ≤ 60 ký tự, mở hồ sơ');
-      assert(/^(Lỗi chính|Lỗi phụ) · /.test(hv.rows[0].sub), `sub phải bắt đầu bằng vai lỗi: ${hv.rows[0].sub}`);
+      assert(/^(Vấn đề chính|Yếu tố đi kèm) · /.test(hv.rows[0].sub), `sub phải bắt đầu bằng vai lỗi: ${hv.rows[0].sub}`);
       for (const bad of [{ dong: 'kn:xyz', cot: 'hv' }, { dong: 'kn:writing', cot: 'xyz' }, { dong: 'chua-phan-loai', cot: 'xyz' }]) {
         let s = 0; try { vanDeHvSvc.oVanDeHv(P.admin, { ...f, ...bad }); } catch (e: any) { s = e?.status; }
         assert(s === 400, `khoá lạ ${JSON.stringify(bad)} phải 400, ra ${s}`);
@@ -890,7 +890,7 @@ export async function runPhanTichTests(t: YThucTestKit) {
       const gom = sau.hang[sau.hang.length - 1];
       eq(gom.khoa, 'gom:mot', 'nhóm "chỉ một kỹ năng" đứng cuối');
       eq(gom.loai, 'gom', 'loại gom');
-      assert(/loại lỗi chỉ có ở một kỹ năng$/.test(gom.nhan), `nhãn nhóm: ${gom.nhan}`);
+      assert(/nhóm nguyên nhân chỉ có ở một kỹ năng$/.test(gom.nhan), `nhãn nhóm: ${gom.nhan}`);
       const con = (kq: any, k: string) => timHang(kq, k);
       eq(con(sau, `gom:mot|${ISS.rLogic}`).nhan, 'Reading · Tư duy logic', 'mã chỉ ở Reading có dòng riêng kèm tên kỹ năng');
       eq((con(sau, 'gom:mot|khac')?.soHv ?? 0) - (con(truoc, 'gom:mot|khac')?.soHv ?? 0), 1, 'mọi "Khác" gộp MỘT dòng — em b có hai "Khác" (W, S) chỉ đếm 1');

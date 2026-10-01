@@ -76,7 +76,7 @@ export function DeXuatSuaPanel({ studentId, studentName, lop, truongDau, hienTai
             as={truong === 'target' ? 'div' : undefined} phu={truong === 'target' ? `KCK: ${GIAI_THICH_KCK}.` : undefined}>
             {truong === 'target' ? (
               <div className="flex flex-wrap items-center gap-2">
-                <input className="field w-24 tabular-nums" aria-label="Band target mới" type="number" inputMode="decimal" step="0.5" min={0} max={9}
+                <input className="field w-24 tabular-nums" aria-label="Target mới" type="number" inputMode="decimal" step="0.5" min={0} max={9}
                   {...lf.o(loi, 'moi')} value={moi === KCK ? '' : moi} disabled={moi === KCK} onChange={(e) => setMoi(e.target.value)} />
                 {!hienTai?.khongCamKet && (
                   <NutChon nho chon={moi === KCK} onClick={() => setMoi(moi === KCK ? '' : KCK)}>Không cam kết (KCK)</NutChon>

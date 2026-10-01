@@ -32,7 +32,7 @@ const laQuanLy = (p: Principal) => {
  */
 /** Một dòng Cần xử lý đã dựng đủ bốn cột (K1-06, Q4, Q24): nhãn trạng thái · việc · Người giữ việc · Hạn · nút đúng việc. */
 export type DongCanXuLy = DongCanXuLyGoc & {
-  /** Chữ đứng TRƯỚC con số ("Chuyển lớp cả lớp · MB FOU 12 ·"). */
+  /** Chữ đứng TRƯỚC con số ("Chuyển tiếp lớp · MB FOU 12 ·"). */
   truoc?: string;
   phu: string;
   /** Vế nối sau nhãn ("3 Case chưa có người nhận"). */
@@ -129,7 +129,7 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null }) {
           : lenhQuaHan ? { chu: `quá hạn từ ${tuanLich(addDays(ketThuc, 7), today)}`, quaHan: true as const }
           : { chu: `trước ${tuanLich(addDays(ketThuc, 7), today)}` };
         if (lop.length === 1) {
-          return { ...x, ...chung, truoc: `Chuyển lớp cả lớp · ${lop[0].code} ·`, nhan: 'em chưa có lệnh',
+          return { ...x, ...chung, truoc: `Chuyển tiếp lớp · ${lop[0].code} ·`, nhan: 'em chưa có quyết định chuyển lớp',
             phu: ketThuc ? `Lớp kết thúc ${tuanLich(ketThuc, today)}` : '', han, den: `/hoc-vien/lop/${lop[0].classId}?viec=chuyen-tiep` };
         }
         return { ...x, ...chung, truoc: `${lop.length} lớp ·`, phu: tachTheoLop(r.unit, r.ids), han, den: null };

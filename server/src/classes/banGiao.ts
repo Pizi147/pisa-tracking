@@ -16,7 +16,7 @@ import { mocNghiepVu } from '../duyet/yeuCau.ts';
 import { coTheRaLenh, phanCongO } from './quyenChuyenLop.ts';
 
 /**
- * BÀN GIAO (PR-CT, §3.1f Q30-2): có lệnh chuyển lớp → mỗi GVBM ghi MỘT CÂU mỗi em cho môn mình (hạn 2 ngày), GVCN lớp cũ gom lại, viết nhận xét
+ * BÀN GIAO (PR-CT, §3.1f Q30-2): có quyết định chuyển lớp → mỗi GVBM ghi MỘT CÂU mỗi em cho môn mình (hạn 2 ngày), GVCN lớp cũ gom lại, viết nhận xét
  * chung rồi Xác nhận (hạn 3 ngày, tính cả ngày ra lệnh). Quá hạn không chặn việc chuyển — lệnh vẫn chạy đúng tuần. Phiếu = một dòng của
  * `lenh_chuyen_lop` (nhận xét chung + bản chụp phần tự điền + xác nhận) và các dòng `ban_giao_mon`.
  */
@@ -30,7 +30,7 @@ const coGvcn = (lopId: number) => !!db().prepare(`SELECT 1 FROM teacher_assignme
 
 /**
  * Quyền trên phiếu theo phân công Ở LỚP NGUỒN của lệnh (không theo ghi danh hiện tại). Planning 30/09 (Câu 1 = A): Quản lý phạm vi lớp nguồn được điền
- * thay và xác nhận thay khi lớp KHÔNG có GVCN hoặc quá hạn 3 ngày. `doc` không tính GV lớp đích — phần đó cần biết phiếu đã xác nhận/đã chuyển (Q15).
+ * thay và xác nhận thay khi lớp KHÔNG có GVCN hoặc quá hạn 3 ngày. `doc` không tính GV lớp chuyển đến — phần đó cần biết phiếu đã xác nhận/đã chuyển (Q15).
  */
 export function quyenBanGiao(p: Principal, l: { lop_nguon_id: number; han_gvcn: string | null }, mon?: string, o: { coGvcn?: boolean; ct?: string | null } = {}) {
   const pc = phanCongO(db(), p.userId, l.lop_nguon_id);
@@ -96,7 +96,7 @@ function tuDienTheoLo(nguon: { id: number; ct: string | null }, ds: { id: number
       paDo.set(r.student_id, [...(paDo.get(r.student_id) ?? []), `PA bổ trợ Giữa khoá ${tenMonNgan(nguon.ct, r.category)} chờ ghi kết quả cuối${r.gv ? ` (${r.gv})` : ''}`]);
     }
   });
-  /* Người nhận gợi ý: MỘT lần mỗi lớp đích (không mỗi em). */
+  /* Người nhận gợi ý: MỘT lần mỗi lớp chuyển đến (không mỗi em). */
   const goiYTheoDich = new Map<number, Map<number, { id: number; ten: string } | null>>();
   for (const dich of new Set(ds.map((l) => l.lop_dich_id).filter((x): x is number => !!x))) {
     goiYTheoDich.set(dich, nguoiNhanGoiY(cases.map((c) => ({ id: c.id, category: c.category })), dich));
@@ -123,14 +123,14 @@ function tuDienTheoLo(nguon: { id: number; ct: string | null }, ds: { id: number
 
 /**
  * Màn F/G và "Đọc bàn giao": mọi lệnh có phiếu của MỘT lớp nguồn (hoặc một lệnh). Số câu SQL KHÔNG tăng theo số em.
- * Người đọc: GV/QL lớp nguồn; GV/QL lớp đích chỉ khi phiếu đã xác nhận hoặc lệnh đã chuyển (Q15). Còn lại 403.
+ * Người đọc: GV/QL lớp nguồn; GV/QL lớp chuyển đến chỉ khi phiếu đã xác nhận hoặc lệnh đã chuyển (Q15). Còn lại 403.
  */
 export function phieuBanGiao(p: Principal, f: { lopNguonId?: number; lenhId?: number; mon?: string }): PhieuBanGiaoDto {
   const conn = db();
   let lopId = f.lopNguonId ?? 0;
   if (f.lenhId) {
     const r = conn.prepare('SELECT lop_nguon_id FROM lenh_chuyen_lop WHERE id = ?').get(f.lenhId) as any;
-    if (!r) throw notFound('Không tìm thấy lệnh chuyển lớp');
+    if (!r) throw notFound('Không tìm thấy quyết định chuyển lớp');
     lopId = r.lop_nguon_id;
   }
   const nguon = conn.prepare('SELECT id, code, programme_code, is_fast_track FROM classes WHERE id = ?').get(lopId) as any;
@@ -152,7 +152,7 @@ export function phieuBanGiao(p: Principal, f: { lopNguonId?: number; lenhId?: nu
   ).all(lopId) as any[];
   const coGvcnLop = gv.some((r) => !!r.is_core);
 
-  /* Quyền đọc: phía nguồn xem hết; phía đích chỉ dòng đã xác nhận/đã chuyển của lớp đích mình có quyền. */
+  /* Quyền đọc: phía nguồn xem hết; phía đích chỉ dòng đã xác nhận/đã chuyển của lớp chuyển đến mình có quyền. */
   /* Quản lý xác nhận thay theo hạn của dòng CHƯA xác nhận (PR-S5F-a) — dòng đã xác nhận quá hạn cũ không mở quyền thay cho dòng mới. */
   const q = quyenBanGiao(p, { lop_nguon_id: lopId, han_gvcn: rows.filter((r) => !r.xac_nhan_luc).map((r) => r.han_gvcn).filter(Boolean).sort()[0] ?? null }, undefined, { coGvcn: coGvcnLop, ct });
   let thay = rows;
@@ -232,7 +232,7 @@ function docLenhPhieu(id: number): any {
     `SELECT l.*, c.programme_code AS ct, c.code AS nguon_code, s.full_name FROM lenh_chuyen_lop l
        JOIN classes c ON c.id = l.lop_nguon_id JOIN students s ON s.id = l.student_id WHERE l.id = ?`,
   ).get(id);
-  if (!l) throw notFound('Không tìm thấy lệnh chuyển lớp');
+  if (!l) throw notFound('Không tìm thấy quyết định chuyển lớp');
   return l;
 }
 
@@ -241,8 +241,8 @@ export function ghiMon(p: Principal, lenhId: number, mon: string, noiDung: strin
   const l = docLenhPhieu(lenhId);
   const q = quyenBanGiao(p, l, mon, { ct: l.ct });
   if (!q.ghiMon) throw forbidden('Bạn chỉ ghi được bàn giao cho môn mình được phân công (GVCN điền thay được).');
-  if (l.trang_thai === 'huy') throw badRequest('Lệnh đã huỷ — không ghi bàn giao được.');
-  if (!coPhieu(l.huong)) throw badRequest('Lệnh Dừng học không có phiếu bàn giao.');
+  if (l.trang_thai === 'huy') throw badRequest('Quyết định chuyển lớp đã huỷ — không ghi bàn giao được.');
+  if (!coPhieu(l.huong)) throw badRequest('Quyết định Dừng học hẳn không có phiếu bàn giao.');
   if (l.xac_nhan_luc) throw badRequest('Phiếu đã được xác nhận — không ghi thêm được.');
   if (!boMonLich(l.ct).includes(mon)) throw badRequest('Môn này không có ở lớp nguồn.');
   const text = String(noiDung ?? '').trim();
@@ -260,8 +260,8 @@ export function ghiMon(p: Principal, lenhId: number, mon: string, noiDung: strin
 /** GVCN lớp nguồn (hoặc Quản lý xác nhận thay) chốt phiếu: nhận xét chung ≥ 15 ký tự, chụp phần tự điền, một sự kiện Hành trình. Được cả SAU khi lệnh đã chuyển. */
 export function xacNhanBanGiao(p: Principal, lenhId: number, nhanXetChung: string): void {
   const l = docLenhPhieu(lenhId);
-  if (l.trang_thai === 'huy') throw badRequest('Lệnh đã huỷ — không xác nhận bàn giao được.');
-  if (!coPhieu(l.huong)) throw badRequest('Lệnh Dừng học không có phiếu bàn giao.');
+  if (l.trang_thai === 'huy') throw badRequest('Quyết định chuyển lớp đã huỷ — không xác nhận bàn giao được.');
+  if (!coPhieu(l.huong)) throw badRequest('Quyết định Dừng học hẳn không có phiếu bàn giao.');
   const q = quyenBanGiao(p, l, undefined, { ct: l.ct });
   if (!q.xacNhan) throw forbidden('Chỉ GVCN lớp nguồn xác nhận bàn giao (Quản lý xác nhận thay khi lớp không có GVCN hoặc đã quá hạn).');
   if (l.xac_nhan_luc) throw conflict('Phiếu đã được xác nhận.');
@@ -298,7 +298,7 @@ export function xacNhanBanGiao(p: Principal, lenhId: number, nhanXetChung: strin
 /** GVCN nhắc GVBM của một môn (dedup mỗi ngày một lần). */
 export function nhacGvbm(p: Principal, lenhId: number, mon: string): { soNguoi: number } {
   const l = docLenhPhieu(lenhId);
-  if (!coPhieu(l.huong) || l.trang_thai === 'huy') throw badRequest('Lệnh này không có phiếu cần nhắc.');
+  if (!coPhieu(l.huong) || l.trang_thai === 'huy') throw badRequest('Quyết định chuyển lớp này không có phiếu cần nhắc.');
   const q = quyenBanGiao(p, l, undefined, { ct: l.ct });
   if (!q.xacNhan) throw forbidden('Chỉ GVCN lớp nguồn nhắc được GVBM.');
   if (!boMonLich(l.ct).includes(mon)) throw badRequest('Môn này không có ở lớp nguồn.');

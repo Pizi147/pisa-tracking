@@ -432,7 +432,7 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     const r = hanhTrinhHocVien(P.admin, HV1, 'thuong');
     assert(r.lop.length === 2, `2 lớp: ${JSON.stringify(r.lop)}`);
     assert(r.lop[0].tu < r.lop[1].tu && !r.lop[0].chuyen && r.lop[1].chuyen, `Đúng thứ tự thời gian: ${JSON.stringify(r.lop)}`);
-    assert(r.tuanHoc?.loai === 'khoa', 'Lớp thường: hàng Tuần khoá');
+    assert(r.tuanHoc?.loai === 'khoa', 'Lớp thường: hàng Tuần học');
     // Sửa sau rà #75 (7): đếm TRỌN tuần chứa `tu` và tuần chứa `den` — thiếu +1 thì mọi khoá đều báo ít hơn 1 tuần.
     for (const x of r.chuong.filter((c: any) => !c.ft)) {
       const soTuanKyVong = Math.max(1, Math.round((Date.parse(x.den ?? r.homNay) - Date.parse(x.tu)) / (7 * 86_400_000)) + 1);

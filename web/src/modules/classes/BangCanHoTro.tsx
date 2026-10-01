@@ -208,7 +208,7 @@ function DongCase({ h, c, dau, ct, homNay, onMo, the = false }: {
         dong={[
           { nhan: 'Trạng thái', noiDung: (
             <span className="flex flex-wrap items-center gap-x-1.5"><NhanTrangThai t={c.trangThai.t} title={c.trangThai.chu} />
-              {c.banGiaoTu && <span className="text-slate-500" title="Case mang từ lớp trước sang">từ {c.banGiaoTu}</span>}</span>
+              {c.banGiaoTu && <span className="text-slate-500" title="Case bàn giao">từ {c.banGiaoTu}</span>}</span>
           ) },
           { nhan: 'Phương án', noiDung: <span className="text-[11.5px]">{cacPa}</span> },
           { nhan: 'Việc tiếp', noiDung: cauViec },
@@ -224,7 +224,7 @@ function DongCase({ h, c, dau, ct, homNay, onMo, the = false }: {
         {(c.nguyenNhan || c.moTu) && <span className="block text-[11.5px] text-slate-500">{[c.nguyenNhan, c.moTu].filter(Boolean).join(' · ')}</span>}
         <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[11px] text-slate-500">
           <NhanTrangThai t={c.trangThai.t} title={c.trangThai.chu} />
-          {c.banGiaoTu && <span title="Case mang từ lớp trước sang">từ {c.banGiaoTu}</span>}
+          {c.banGiaoTu && <span title="Case bàn giao">từ {c.banGiaoTu}</span>}
         </span>
       </span>
       <span className="min-w-0 text-[11.5px] text-slate-300">{cacPa}</span>

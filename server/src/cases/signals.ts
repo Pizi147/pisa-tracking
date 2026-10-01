@@ -136,8 +136,8 @@ export function raiseSignal(input: {
     const st = conn.prepare('SELECT full_name, student_code FROM students WHERE id = ?').get(input.studentId) as any;
     notify({
       userId: owner, kind: 'sos',
-      title: `Cần xác minh: ${labelOf(row)} — ${st?.full_name ?? ''}`,
-      body: `Hạn ${ngay(row.verify_due, demoToday())}. Tín hiệu từ điểm, chưa phải case.`,
+      title: `Case chờ xác nhận nguyên nhân · ${labelOf(row)} · ${st?.full_name ?? ''}`,
+      body: `Hạn ${ngay(row.verify_due, demoToday())}. Từ điểm vừa nhập, chưa thành Case.`,
       entityType: 'case_signal', entityId: row.id,
       dedupKey: `signal:${row.id}`,
     });
@@ -368,7 +368,7 @@ function gomTinHieu(p: Principal, attemptId: number, skills: string[], passText:
   if (withdrawn.length) {
     writeAudit({
       actorUserId: p.userId, action: 'signal.withdrawn_batch', entityType: 'assessment_attempt',
-      entityId: attemptId, entityLabel: `${withdrawn.length} tín hiệu`,
+      entityId: attemptId, entityLabel: `${withdrawn.length} Case chờ xác nhận nguyên nhân`,
       after: { reason: SIGNAL_WITHDRAW_SCORE_FIXED, skills: withdrawn.map((w) => w.skill) },
     });
   }

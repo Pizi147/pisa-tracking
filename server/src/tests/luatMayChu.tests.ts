@@ -632,14 +632,14 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     };
     const st = (id: number) => conn.prepare('SELECT status, system_close_reason AS r FROM sos_cases WHERE id = ?').get(id) as any;
     const keep = mk();
-    cycles.setOutcome(P.mbManager, keep.hv.cycleId, { outcome: 'reached', score: 6.5, note: 'Đạt mục tiêu, học tiếp LT2' });
+    cycles.setOutcome(P.mbManager, keep.hv.cycleId, { outcome: 'reached', score: 6.5, note: 'Đạt Target, học tiếp LT2' });
     assert(st(keep.caseId).status !== 'done', 'Kết luận lộ trình không cờ đã đóng Case');
     const end = mk();
-    cycles.setOutcome(P.mbManager, end.hv.cycleId, { outcome: 'reached', score: 6.5, note: 'Đạt mục tiêu, thôi học', dongCaseKhiKetThuc: true });
+    cycles.setOutcome(P.mbManager, end.hv.cycleId, { outcome: 'reached', score: 6.5, note: 'Đạt Target, thôi học', dongCaseKhiKetThuc: true });
     assert(st(end.caseId).status === 'done' && st(end.caseId).r === 'course_ended', `Kết luận + thôi học: ${JSON.stringify(st(end.caseId))}`);
   });
 
-  check('S17 · Đổi chương trình: sang lớp thường đóng Case FT "Chuyển sang lớp thường"; sang FT đóng Case lớp thường "Chuyển sang Fast Track"; Case chương trình kia giữ', () => {
+  check('S17 · Đổi chương trình: sang lớp thường đóng Case FT "Chuyển sang lớp thường"; sang FT đóng Case lớp thường "Lên FT"; Case chương trình kia giữ', () => {
     const hv = taoHocVien({ classCode: 'MB FT 101', weekStart: '2026-09-07' });
     const ftCase = cases.reportIssue(P.mbManager, {
       studentId: hv.sid, cycleId: hv.cycleId, topic: 'writing1', title: 'Writing Task 1 (S17)', summary: 'Case FT dựng cho phép kiểm đổi chương trình.',
@@ -703,7 +703,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     assertThrows(() => studentsSvc.transferStudent(P.mbManager, hv.sid, targetClass, TODAY, '  '), /lý do/, 'Chuyển lớp không lý do');
     assertThrows(() => studentsSvc.transferStudent(P.mbManager, hv.sid, targetClass, TODAY, 'Đổi lịch học', {}),
       /Không có lưu ý/, 'Chuyển lớp không lưu ý bàn giao');
-    /* PR-LT, Q7: targetClass là lớp Fast Track — chuyển thật từ lớp thường bắt buộc Mục tiêu band. */
+    /* PR-LT, Q7: targetClass là lớp Fast Track — chuyển thật từ lớp thường bắt buộc Target. */
     studentsSvc.transferStudent(P.mbManager, hv.sid, targetClass, TODAY, 'Đổi lịch học', { noNote: true, mucTieu: 6.5 });
     const j = conn.prepare(`SELECT detail FROM journey_events WHERE student_id = ? AND event_type = 'transfer' ORDER BY id DESC LIMIT 1`).get(hv.sid) as any;
     assert(j && String(j.detail).includes('Đổi lịch học') && String(j.detail).includes('Không có lưu ý'), `Hành trình: ${j?.detail}`);

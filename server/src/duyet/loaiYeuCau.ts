@@ -417,11 +417,11 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
   {
     loai: 'de_xuat_chuyen_lop',
     khiDuyet: (p, yc, v) => { apDungDeXuatChuyenLop(p, yc, v.duLieu); },
-    /* Em không còn học, hoặc đã có lệnh chuyển lớp từ đường khác → thẻ không còn ý nghĩa. */
+    /* Em không còn học, hoặc đã có quyết định chuyển lớp từ đường khác → thẻ không còn ý nghĩa. */
     chet: {
       sql: `NOT EXISTS (SELECT 1 FROM enrollments e WHERE e.student_id = y.hoc_vien_id AND e.status = 'active')
          OR EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.student_id = y.hoc_vien_id AND l.trang_thai = 'cho' AND l.loi IS NULL AND l.tu_yeu_cau_id IS NOT y.id)`,
-      lyDo: 'Học viên không còn học hoặc đã có lệnh chuyển lớp',
+      lyDo: 'Học viên không còn học hoặc đã có quyết định chuyển lớp',
     },
     nap: (conn, ds) => {
       const ids = ds.map((y) => y.id);
@@ -435,7 +435,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       return {
         tieuDe: `Đề xuất chuyển lớp · ${lop ?? 'chưa chọn lớp'}${d.tuan ? ` · từ ${tuanLich(d.tuan, ngu.homNay)}` : ''}`,
         dong: [`${nguoiXin(yc, ngu)} (${ngay(yc.tao_luc, ngu)}): “${yc.ly_do ?? ''}”`],
-        neuDuyet: 'Mở panel ra lệnh — sửa được lớp, tuần.',
+        neuDuyet: 'Mở panel quyết định chuyển lớp — sửa được lớp, tuần.',
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id) : undefined,
         duLieu: { moPanelChuyenLop: true, lopDichId: d.lopDichId ?? null, tuan: d.tuan ?? null },
       };
@@ -527,8 +527,8 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     moTa: (yc, ngu) => {
       const x = ngu.them.get(yc.id);
       return {
-        tieuDe: `Lớp hết khoá còn em chưa có lệnh${x?.lop ? ` · ${x.lop}` : ''}`,
-        dong: [`${x?.n ?? 0} em chưa có lệnh chuyển. Không cần duyệt — Quản lý ra lệnh ở hồ sơ lớp.`],
+        tieuDe: `Lớp hết khoá · chưa có quyết định chuyển lớp${x?.lop ? ` · ${x.lop}` : ''}`,
+        dong: [`${x?.n ?? 0} em chưa có quyết định chuyển lớp. Không cần duyệt — Quản lý quyết định chuyển lớp ở hồ sơ lớp.`],
         mo: `/hoc-vien/lop/${yc.doi_tuong_id}?viec=chuyen-tiep`,
       };
     },

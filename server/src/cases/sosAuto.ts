@@ -49,7 +49,7 @@ export function isFastTrackMock(attempt: { kind?: string | null }, scoringMode: 
 
 /**
  * NGÀY THI DỰ KIẾN của lộ trình, chỉ khi ĐÃ CHỐT TUẦN (`examPlanOf` mức `week`): hết Chủ nhật của tuần thi. Mới biết tháng thì để TRỐNG —
- * bịa một ngày là tạo hạn giả. (Đặc tả §4: "ngày thi dự kiến nếu có".)
+ * bịa một ngày là tạo hạn giả. (Đặc tả §4: "dự kiến thi nếu có".)
  */
 export function examDateOf(cycleId: number | null | undefined): string | null {
   if (!cycleId) return null;
@@ -198,7 +198,7 @@ export function xacNhanCase(p: Principal, caseId: number, input: {
   if (st.choDuyetKhongTheoDoi) throw badRequest('Case đang chờ Quản lý duyệt "Không cần theo dõi" — chờ trả lời rồi mới xác nhận.');
   const ct = c.cycle_id ? (conn.prepare('SELECT programme_code ct FROM learning_cycles WHERE id = ?').get(c.cycle_id) as any)?.ct ?? null : null;
   const primaryCode = String(input.primaryCode ?? '').trim();
-  if (!primaryCode) throw badRequest('Chọn phân loại nguyên nhân.');
+  if (!primaryCode) throw badRequest('Chọn nhóm nguyên nhân.');
   if (!issueBranchOf(primaryCode) || !issuesForTopic(c.topic, ct).some((i) => i.code === primaryCode)) {
     throw badRequest(`Phân loại đã chọn không thuộc bộ phân loại của ${caseTopicLabel(c.topic, ct)}.`);
   }

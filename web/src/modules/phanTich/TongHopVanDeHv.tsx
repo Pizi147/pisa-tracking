@@ -9,7 +9,7 @@ import { KHOANG_LABEL, nhanSoVoiTruoc, type DongVanDeHv, type VanDeHvKetQua } fr
 
 /**
  * TỔNG HỢP VẤN ĐỀ HV (PR-UX4, mockup 16 §3/§3b) — đếm HỌC VIÊN theo LOẠI LỖI của Case (lỗi chính + phụ), hàng lớn kỹ năng → hàng con loại
- * lỗi; công tắc "Gộp theo loại lỗi chung" đổi hàng lớn thành loại lỗi chung (Ngữ pháp, Từ vựng…), hàng con thành "Kỹ năng · loại lỗi".
+ * lỗi; công tắc "Gộp theo nhóm nguyên nhân chung" đổi hàng lớn thành nhóm nguyên nhân chung (Ngữ pháp, Từ vựng…), hàng con thành "Kỹ năng · nhóm nguyên nhân".
  * Mọi số mở đúng danh sách bằng `/phan-tich/van-de-hv/o` (cùng hàm sinh ra số — G-10); không có nút giao việc (G-12).
  */
 export function TongHopVanDeHv(props: PhamViPhanTich) {
@@ -38,7 +38,7 @@ export function TongHopVanDeHv(props: PhamViPhanTich) {
   }, [data]);
   const doiMo = (khoa: string) => setMo((cu) => { const n = new Set(cu); if (n.has(khoa)) n.delete(khoa); else n.add(khoa); return n; });
 
-  const cotDau = gop ? 'Loại lỗi chung / kỹ năng' : 'Kỹ năng / loại lỗi';
+  const cotDau = gop ? 'Nhóm nguyên nhân / kỹ năng' : 'Kỹ năng / nhóm nguyên nhân';
   const cotCuoi = gop ? 'Kỹ năng nhiều nhất' : 'Lỗi phổ biến';
 
   const soVoiTruoc = (d: DongVanDeHv) => {
@@ -79,8 +79,8 @@ export function TongHopVanDeHv(props: PhamViPhanTich) {
 
   const action = (
     <div className="flex flex-wrap items-center gap-2 p-3 pb-0">
-      <div role="radiogroup" aria-label="Lỗi chính hay cả lỗi phụ" className="inline-flex rounded-lg border overflow-hidden" style={{ borderColor: 'var(--line)' }}>
-        {([['', 'Lỗi chính + phụ', 'Vấn đề chính và yếu tố đi kèm của Case'], ['chinh', 'Chỉ lỗi chính', 'Chỉ Vấn đề chính của Case']] as const).map(([v, nhan, tip]) => (
+      <div role="radiogroup" aria-label="Chỉ vấn đề chính hay cả yếu tố đi kèm" className="inline-flex rounded-lg border overflow-hidden" style={{ borderColor: 'var(--line)' }}>
+        {([['', 'Vấn đề chính + đi kèm', 'Vấn đề chính và yếu tố đi kèm của Case'], ['chinh', 'Chỉ vấn đề chính', 'Chỉ Vấn đề chính của Case']] as const).map(([v, nhan, tip]) => (
           <button key={v} type="button" role="radio" aria-checked={chiChinh === (v === 'chinh')} title={tip}
             onClick={() => datTham('loi', v || null)}
             className={`px-3 py-1 text-xs border-0 cursor-pointer ${chiChinh === (v === 'chinh') ? 'bg-doing-bg text-doing font-semibold' : 'bg-transparent text-slate-400 hover:text-slate-200'}`}>
@@ -91,7 +91,7 @@ export function TongHopVanDeHv(props: PhamViPhanTich) {
       <span className="flex-1" />
       <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-slate-300">
         <input type="checkbox" role="switch" checked={gop} onChange={(e) => datTham('gop', e.target.checked ? '1' : null)} />
-        Gộp theo loại lỗi chung
+        Gộp theo nhóm nguyên nhân chung
       </label>
     </div>
   );
@@ -102,16 +102,16 @@ export function TongHopVanDeHv(props: PhamViPhanTich) {
         : loading || !data ? <div className="p-4"><Skeleton rows={8} /></div>
         : data.scopeEmpty ? <div className="p-4"><Empty title="Bạn chưa được cấp phạm vi nào" /></div>
         : data.hang.length === 0 && data.chuaPhanLoai.case === 0
-          ? <div className="p-4"><Empty title={`Chưa có Case nào đã phân loại lỗi trong ${KHOANG_LABEL[props.tg]}`} /></div>
+          ? <div className="p-4"><Empty title={`Chưa có Case nào đã phân nhóm nguyên nhân trong ${KHOANG_LABEL[props.tg]}`} /></div>
         : (
           <>
             <DongTomTat
-              chinh={`${data.tomTat.hv} học viên có Case đã phân loại lỗi`}
+              chinh={`${data.tomTat.hv} học viên có Case đã phân nhóm nguyên nhân`}
               phu={`${data.tomTat.case} Case · ${data.tomTat.lop} lớp`}
               luat={(
                 <NutLuat label="Cách đếm">
-                  <p className="m-0">Đếm học viên có Case mang loại lỗi đó, cả lỗi chính lẫn lỗi phụ; một em chỉ tính một lần trong một dòng.</p>
-                  <p className="m-0">Writing gộp W1 và W2 vì cùng bộ loại lỗi. Không có ngưỡng "nóng" — chỉ xếp số lớn lên trước.</p>
+                  <p className="m-0">Đếm học viên có Case mang nhóm nguyên nhân đó, cả vấn đề chính lẫn yếu tố đi kèm; một em chỉ tính một lần trong một dòng.</p>
+                  <p className="m-0">Writing gộp W1 và W2 vì cùng bộ nhóm nguyên nhân. Không có ngưỡng "nóng" — chỉ xếp số lớn lên trước.</p>
                   <p className="m-0">Case đang mở và Case đóng trong {KHOANG_LABEL[props.tg]} gần đây. Một em có lỗi ở hai kỹ năng được đếm ở cả hai hàng kỹ năng, nhưng chỉ một lần trong con số tổng.</p>
                 </NutLuat>
               )} />
@@ -130,7 +130,7 @@ export function TongHopVanDeHv(props: PhamViPhanTich) {
                     <Th align="right" className="pr-5" hint="Số HV có lỗi này trong Case từ lần Test gần nhất của mỗi lớp, so với lần Test ngay trước của chính lớp đó, rồi cộng lại. ↑ = nhiều em hơn">
                       So với lần Test trước ⓘ
                     </Th>
-                    <Th hint={gop ? 'Kỹ năng có nhiều HV mắc lỗi này nhất' : 'Loại lỗi nhiều HV nhất trong kỹ năng'}>{cotCuoi}</Th>
+                    <Th hint={gop ? 'Kỹ năng có nhiều HV mắc lỗi này nhất' : 'Nhóm nguyên nhân nhiều HV nhất trong kỹ năng'}>{cotCuoi}</Th>
                   </tr>
                 </thead>
                 <tbody>

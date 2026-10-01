@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Han } from '../../ui/Han.tsx';
-import { ngay, tuanLich, type DaiHocVien, type DaiLop } from '@shared/domain/index.ts';
+import { CHU_CHUYEN_LOP, ngay, tuanLich, type DaiHocVien, type DaiLop } from '@shared/domain/index.ts';
 
 /**
  * CÁC DẢI CHUYỂN LỚP / BÀN GIAO (PR-CT, mockup 20 — A · E · H). Mỗi dải MỘT dòng chữ + tối đa MỘT nút chính; chữ tuần là mã tuần (`W2 OCT`), ngày chỉ ở hạn cụ thể
@@ -33,17 +33,17 @@ export function DaiLopChuyen({ dai, homNay, onChuyenTiep, onBanGiao }: {
     <div className="space-y-2">
       {dai.chuaChuyenDuoc && (
         <Dai nhan="Chưa chuyển được" do
-          nut={<button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onChuyenTiep}>Sửa lệnh…</button>}>
-          <b className="tabular-nums text-slate-100">{dai.chuaChuyenDuoc.n} em</b> · {dai.chuaChuyenDuoc.loi.replace(/\.$/, '')} · chọn tuần hoặc lớp đích mới, hoặc huỷ lệnh
+          nut={<button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onChuyenTiep}>{CHU_CHUYEN_LOP.sua}</button>}>
+          <b className="tabular-nums text-slate-100">{dai.chuaChuyenDuoc.n} em</b> · {dai.chuaChuyenDuoc.loi.replace(/\.$/, '')} · chọn tuần hoặc lớp chuyển đến mới, hoặc huỷ quyết định
         </Dai>
       )}
       {kt && (
         <Dai nhan="Kết thúc khoá" do={kt.do}
-          nut={v.coTheRaLenh ? <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={onChuyenTiep}>Chuyển lớp cả lớp…</button> : undefined}>
+          nut={v.coTheRaLenh ? <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={onChuyenTiep}>Chuyển tiếp lớp…</button> : undefined}>
           {v.coTheRaLenh ? (
             <>
               {kt.tuanCuoiKhoa ? `Cuối khoá xong tuần ${tuanLich(kt.tuanCuoiKhoa, h)} · ` : ''}
-              <b className="tabular-nums text-slate-100">{kt.soChuaLenh} em</b> chưa có lệnh chuyển · lớp kế tiếp nên bắt đầu {tuanLich(kt.tuanGoiY, h)}
+              <b className="tabular-nums text-slate-100">{kt.soChuaLenh} em</b> chưa có quyết định chuyển lớp · lớp kế tiếp nên bắt đầu {tuanLich(kt.tuanGoiY, h)}
             </>
           ) : <>Chờ Quản lý quyết định chuyển lớp · <b className="tabular-nums text-slate-100">{kt.soChuaLenh} em</b></>}
         </Dai>
@@ -86,16 +86,16 @@ export function DaiHocVienChuyen({ dai, homNay, onLam }: {
   const nut = [
     dai.nut.includes('ban-giao') ? nutBtn('ban-giao', 'Bàn giao') : null,
     dai.nut.includes('ban-giao-mon') && dai.mon ? nutBtn('ban-giao-mon', `Bàn giao môn ${dai.mon.ngan}`) : null,
-    dai.nut.includes('huy-lenh') ? nutBtn('huy-lenh', 'Huỷ lệnh') : null,
+    dai.nut.includes('huy-lenh') ? nutBtn('huy-lenh', CHU_CHUYEN_LOP.huy) : null,
     dai.nut.includes('doc-ban-giao') ? nutBtn('doc-ban-giao', 'Đọc bàn giao') : null,
   ].filter(Boolean);
-  const dich = dai.lopDich ? `Sang ${dai.lopDich.code}` : dai.huong === 'bao_luu' ? 'Bảo lưu' : 'Rời lớp';
+  const dich = dai.lopDich ? `Sang ${dai.lopDich.code}` : dai.huong === 'bao_luu' ? 'Tạm dừng học (bảo lưu)' : 'Rời lớp';
   return (
     <div className="space-y-1">
-      <Dai nhan={dai.loai === 'sap' ? 'Sắp chuyển' : 'Đã chuyển'} nut={nut.length ? <>{nut}</> : undefined}>
+      <Dai nhan={dai.loai === 'sap' ? CHU_CHUYEN_LOP.sapChuyen(tuanLich(dai.tuan, h)) : 'Đã chuyển'} nut={nut.length ? <>{nut}</> : undefined}>
         {dai.loai === 'sap' ? (
           <>
-            {dich} từ {tuanLich(dai.tuan, h)} · lệnh của {dai.nguoiRaLenh ?? 'Quản lý'}
+            {dich} · quyết định của {dai.nguoiRaLenh ?? 'Quản lý'}
             {bg && <> · Bàn giao: {bg.daXacNhan ? 'GVCN đã xác nhận' : `đã có ${bg.daGhi}/${bg.soMon} môn`}{!bg.daXacNhan && bg.hanGvcn && <> · <Han loai="viec-van-hanh" han={bg.hanGvcn} /></>}</>}
           </>
         ) : (
@@ -106,7 +106,7 @@ export function DaiHocVienChuyen({ dai, homNay, onLam }: {
           </>
         )}
       </Dai>
-      {dai.loi && <p role="alert" className="m-0 text-[12px] text-late">Chưa chuyển được: {dai.loi.replace(/\.$/, '')} — sửa lệnh sang tuần mới hoặc huỷ lệnh.</p>}
+      {dai.loi && <p role="alert" className="m-0 text-[12px] text-late">Chưa chuyển được: {dai.loi.replace(/\.$/, '')} — sửa quyết định sang tuần mới hoặc huỷ quyết định.</p>}
     </div>
   );
 }

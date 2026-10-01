@@ -157,7 +157,7 @@ function tinh(p: Principal, f: FilterHieuQuaPa) {
     const ho = hoKyNang(ma0 ? issueBranchOf(ma0) : null) ?? hoKyNang(r.category);
     if (!ho && (r.category === 'tong_hop' || issueBranchOf(ma0) === 'tong_hop')) continue;   // Pre FOU không thuộc họ kỹ năng
     const ma = ma0 && issueBranchOf(ma0) ? ma0 : ho && ma0 ? `student.${ho}.other` : null;
-    if (!ma || !ho) { caseChuaPhanLoai.add(r.caseId); them(KHOA_CHUA_PHAN_LOAI, 'Case chưa phân loại lỗi', r); continue; }
+    if (!ma || !ho) { caseChuaPhanLoai.add(r.caseId); them(KHOA_CHUA_PHAN_LOAI, 'Case chưa chọn nhóm nguyên nhân', r); continue; }
     const cha = `vd:${ma}`;
     them(cha, `${NHAN_HO_KY_NANG[ho]} · ${issueLabel(ma)}`, r);
     them(`${cha}|${r.kind}`, nhanKind(r.kind), r, cha);
@@ -213,7 +213,7 @@ export function hieuQuaPa(p: Principal, f: FilterHieuQuaPa): HieuQuaPaKetQua {
   const cong = (ds: DongHieuQuaPa[], k: 'soPa' | 'caiThien') => ds.reduce((s, x) => s + x[k], 0);
   const chinh = lon.filter((d) => d.soPa > 2);
   const it = lon.filter((d) => d.soPa <= 2);
-  /* Q20: hàng "Case chưa phân loại lỗi" luôn đứng cuối bảng chính (không vào nhóm "vấn đề khác"), vào tóm tắt — không có "Nên dùng". */
+  /* Q20: hàng "Case chưa chọn nhóm nguyên nhân" luôn đứng cuối bảng chính (không vào nhóm "vấn đề khác"), vào tóm tắt — không có "Nên dùng". */
   const chuaPhanLoai = r.tap.has(KHOA_CHUA_PHAN_LOAI) ? [dongOf(r, KHOA_CHUA_PHAN_LOAI)] : [];
   const tatCa = [...lon, ...chuaPhanLoai];
   return {
@@ -242,7 +242,7 @@ export function oHieuQuaPa(p: Principal, f: FilterHieuQuaPa & { dong: string; co
   }
   if (f.dong === 'case-chua-phan-loai') {
     const ids = sx(r.caseChuaPhanLoai);
-    return { n: ids.length, tieuDe: `${ids.length} Case chưa phân loại lỗi`, rows: rowsFor('case', ids) };
+    return { n: ids.length, tieuDe: `${ids.length} Case chưa chọn nhóm nguyên nhân`, rows: rowsFor('case', ids) };
   }
   if (f.dong === 'chua-ro-nguon') {
     const ids = sx(r.chuaRoNguonIds);

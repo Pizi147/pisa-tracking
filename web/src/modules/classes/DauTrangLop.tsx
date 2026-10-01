@@ -108,9 +108,9 @@ export function DauTrangLop({ data, periodId, onViec, onBanGiao }: {
   const menu: MucMenu[] = [
     /* E7: panel FT tên "Tuần khai giảng", lớp thường "Lịch kiểm tra". Xuất Excel (PR-XUAT) chép vào mảng này, sau "Sửa thông tin lớp". */
     ...(data.viewer.canEditProgress ? [{ key: 'tien-do', nhan: thuong ? 'Lịch Test của lớp' : 'Tuần khai giảng', onChon: () => onViec('tien-do') }] : []),
-    /* PR-CT (Q30-1): Quản lý RA LỆNH — lớp thường "Chuyển lớp cả lớp…", lớp FT (gộp / tách lớp, đổi lộ trình) "Chuyển nhiều em…". GVCN không thấy. */
-    ...(thuong && data.viewer.coTheChuyenTiep ? [{ key: 'chuyen-tiep', nhan: 'Chuyển lớp cả lớp…', onChon: () => onViec('chuyen-tiep') }] : []),
-    ...(!thuong && data.dai?.viewer.coTheChuyenNhieuEm ? [{ key: 'chuyen-tiep', nhan: 'Chuyển nhiều em…', onChon: () => onViec('chuyen-tiep') }] : []),
+    /* PR-CT (Q30-1): Quản lý RA LỆNH — lớp thường "Chuyển tiếp lớp…", lớp FT (gộp / tách lớp, đổi lộ trình) "Chuyển tiếp lớp…". GVCN không thấy. */
+    ...(thuong && data.viewer.coTheChuyenTiep ? [{ key: 'chuyen-tiep', nhan: 'Chuyển tiếp lớp…', onChon: () => onViec('chuyen-tiep') }] : []),
+    ...(!thuong && data.dai?.viewer.coTheChuyenNhieuEm ? [{ key: 'chuyen-tiep', nhan: 'Chuyển tiếp lớp…', onChon: () => onViec('chuyen-tiep') }] : []),
     ...phu.slice(2).map((x) => ({ key: x.key, nhan: x.nhan, onChon: x.lam })),
     ...(data.viewer.canAssign ? [{ key: 'phan-cong', nhan: 'Sửa phân công', onChon: () => onViec('phan-cong') }] : []),
     ...(data.viewer.canEditProgress ? [{ key: 'thong-tin', nhan: 'Sửa thông tin lớp', onChon: () => onViec('thong-tin') }] : []),

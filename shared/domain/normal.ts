@@ -262,7 +262,7 @@ export function caseHeadline(c: {
   const ratio = !!c.attemptKind && c.attemptKind !== 'mock';
   const where = ratio
     ? (ATTEMPT_KIND_SHORT[c.attemptKind as AttemptKind] ?? 'Bài kiểm tra')
-    : c.attemptNo ? `MT${c.attemptNo}` : 'Bài đánh giá';
+    : c.attemptNo ? `MT${c.attemptNo}` : 'Bài kiểm tra';
   const derived = level === null ? `${where}: chưa đủ căn cứ kết luận`
     : level === 0 ? (ratio ? `${where}: đạt tất cả các môn` : `${where}: đạt kỳ vọng ở mọi kỹ năng`)
     : ratio ? `${where}: ${level >= 3 ? 'từ 3' : level} môn chưa đạt`

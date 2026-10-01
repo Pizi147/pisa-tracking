@@ -47,7 +47,7 @@ export const METRICS: readonly ChiSo[] = [
     id: 'hv-duoi-ky-vong-mon', ten: 'Học viên dưới kỳ vọng theo môn',
     cauHoi: 'Bao nhiêu em dưới kỳ vọng ở một môn cụ thể?',
     donVi: 'hoc-vien',
-    tapDuDieuKien: 'Mẫu số: học viên đang học mà đợt Test mới nhất hợp lệ ĐÁNH GIÁ ĐƯỢC môn đó (có điểm và có kỳ vọng). Tập đếm: những em trong đó dưới kỳ vọng CỦA CHÍNH ĐỢT ĐÓ, không phải target hiện tại. Không nêu môn thì tính "bất kỳ môn nào".',
+    tapDuDieuKien: 'Mẫu số: học viên đang học mà đợt Test mới nhất hợp lệ ĐÁNH GIÁ ĐƯỢC môn đó (có điểm và có kỳ vọng). Tập đếm: những em trong đó dưới kỳ vọng CỦA CHÍNH ĐỢT ĐÓ, không phải Target hiện tại. Không nêu môn thì tính "bất kỳ môn nào".',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi học viên chỉ đếm 1 lần ở mỗi môn', drilldown: '/metrics/hv-duoi-ky-vong-mon',
   },
   {
@@ -61,7 +61,7 @@ export const METRICS: readonly ChiSo[] = [
     id: 'case-mo', ten: 'Case đang mở',
     cauHoi: 'Bao nhiêu case đang chờ kết luận?',
     donVi: 'case',
-    tapDuDieuKien: 'Case HỌC THUẬT chưa kết luận trong phạm vi (Ý thức không còn case). Đếm case, không đếm học viên, không đếm tín hiệu SOS.',
+    tapDuDieuKien: 'Case HỌC THUẬT chưa kết luận trong phạm vi (Ý thức không còn case). Đếm Case, không đếm học viên.',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi Case chỉ đếm 1 lần', drilldown: '/metrics/case-mo',
   },
   /* Ba chỉ số của khối Cần xử lý (PR-Pa, đặc tả §3.2) — mỗi dòng của khối là một chỉ số, để bấm vào ra đúng tập. */
@@ -90,7 +90,7 @@ export const METRICS: readonly ChiSo[] = [
     id: 'case-cho-xac-dinh-nguyen-nhan', ten: 'Case chờ xác nhận nguyên nhân',
     cauHoi: 'Bao nhiêu Case tự tạo (SOS Fast Track, Giữa khoá lớp thường) đang chờ GVBM xác nhận nguyên nhân?',
     donVi: 'case',
-    tapDuDieuKien: 'Case HỌC THUẬT do Mock Test Fast Track hoặc Giữa khoá lớp thường tự tạo, đang mở, mà chưa có nguyên nhân (phân loại vấn đề chính) và không có yêu cầu "Không cần theo dõi" đang chờ Quản lý duyệt (SOS v4, K5-51). Case tạo tay và case đã đóng (kể cả `Không cần theo dõi`) không thuộc tập.',
+    tapDuDieuKien: 'Case HỌC THUẬT do Mock Test Fast Track hoặc Giữa khoá lớp thường tự tạo, đang mở, mà chưa có nguyên nhân (nhóm nguyên nhân chính) và không có yêu cầu "Không cần theo dõi" đang chờ Quản lý duyệt (SOS v4, K5-51). Case tạo tay và case đã đóng (kể cả `Không cần theo dõi`) không thuộc tập.',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi Case chỉ đếm 1 lần', drilldown: '/metrics/case-cho-xac-dinh-nguyen-nhan',
   },
   {
@@ -244,10 +244,10 @@ export const METRICS: readonly ChiSo[] = [
     thoiGian: 'hien-trang', khuTrung: 'Mỗi việc chỉ đếm 1 lần', drilldown: '/metrics/van-hanh-can-quyet-dinh',
   },
   {
-    id: 'hv-chua-co-lenh-chuyen', ten: 'Học viên chưa có lệnh chuyển lớp',
-    cauHoi: 'Bao nhiêu em của lớp thường đã tới tuần Cuối khoá mà Quản lý chưa ra lệnh chuyển lớp?',
+    id: 'hv-chua-co-lenh-chuyen', ten: 'Học viên chưa có quyết định chuyển lớp',
+    cauHoi: 'Bao nhiêu em của lớp thường đã tới tuần Cuối khoá mà Quản lý chưa ra quyết định chuyển lớp?',
     donVi: 'hoc-vien',
-    tapDuDieuKien: 'Em đang học ở lớp thường (không FT) đang mở, từ tuần Cuối khoá tính theo hôm nay, chưa có lệnh chuyển lớp đang chờ — cùng hàm với việc "Chuyển lớp cả lớp" của Quản lý.',
+    tapDuDieuKien: 'Em đang học ở lớp thường (không FT) đang mở, từ tuần Cuối khoá tính theo hôm nay, chưa có quyết định chuyển lớp đang chờ — cùng hàm với việc "Chuyển tiếp lớp" của Quản lý.',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi học viên chỉ đếm 1 lần', drilldown: '/metrics/hv-chua-co-lenh-chuyen',
   },
   {
@@ -259,9 +259,9 @@ export const METRICS: readonly ChiSo[] = [
   },
   {
     id: 'hv-len-ft-chua-ky-vong', ten: 'Học viên lên FT chưa đánh dấu kỳ vọng đầu ra',
-    cauHoi: 'Bao nhiêu em BE/ELE có lệnh lên Fast Track mà Quản lý chưa đánh dấu Đạt / Không đạt kỳ vọng đầu ra?',
+    cauHoi: 'Bao nhiêu em BE/ELE có quyết định lên FT mà Quản lý chưa đánh dấu Đạt / Không đạt kỳ vọng đầu ra?',
     donVi: 'hoc-vien',
-    tapDuDieuKien: 'Em có lệnh chuyển lớp hướng Fast Track (đang chờ hoặc đã chuyển) từ lớp BE/ELE, đã có bài Cuối khoá ở lớp đó, chưa có kết luận kỳ vọng đầu ra ở Lộ trình tiếp theo của lớp đó.',
+    tapDuDieuKien: 'Em có quyết định chuyển lớp hướng Fast Track (đang chờ hoặc đã chuyển) từ lớp BE/ELE, đã có bài Cuối khoá ở lớp đó, chưa có kết luận kỳ vọng đầu ra ở Lộ trình tiếp theo của lớp đó.',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi học viên chỉ đếm 1 lần', drilldown: '/metrics/hv-len-ft-chua-ky-vong',
   },
   /* PR-VAI-a (K1-05, Q6): gốc của "Case chưa có người phụ trách" — lớp có môn mà chưa ai dạy. Dòng Cần xử lý "Sửa phân công". */

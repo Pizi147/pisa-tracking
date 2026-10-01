@@ -91,7 +91,7 @@ function progressMapOf(classIds: number[]) {
   const prs = classProgressMany(classIds);
   const ms = missingForClasses(classIds);
   /*
-   * PR-Dọn (Câu 2 = B): badge "n HV chưa có lệnh chuyển lớp" — CÙNG tập với dòng Cần xử lý `hv-chua-co-lenh-chuyen` (`lopChoLenhChuyen`):
+   * PR-Dọn (Câu 2 = B): badge "n HV chưa có quyết định chuyển lớp" — CÙNG tập với dòng Cần xử lý `hv-chua-co-lenh-chuyen` (`lopChoLenhChuyen`):
    * lớp thường đã tới tuần Cuối khoá (`mocKetKhoa`), em đang học chưa có lệnh chờ (`emChuaCoLenh`), chia theo lớp.
    */
   const homNay = demoToday();
@@ -417,7 +417,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
   const baoPhEm = emCoBaoPhChuaLam(sids);   // PR-LT2a: Báo phụ huynh qua TVV (GVCN) — MỘT câu cho cả lớp
   /* PR-LT: Lộ trình tiếp theo của cả lớp — một câu, cột Khoá dùng ngay, không hỏi lại theo từng em. */
   const tiepTheoLop = tiepTheoTheoHocVien([classId]);
-  /* PR-Dọn (Câu 2 = B): cờ dòng = em chưa có lệnh chuyển lớp chờ (cùng `emChuaCoLenh` của badge lớp; badge chỉ bật từ tuần Cuối khoá). */
+  /* PR-Dọn (Câu 2 = B): cờ dòng = em chưa có quyết định chuyển lớp chờ (cùng `emChuaCoLenh` của badge lớp; badge chỉ bật từ tuần Cuối khoá). */
   const chuaCoLenh = new Set(isRatio ? emChuaCoLenh([classId]).get(classId) ?? [] : []);
   const maChuongTrinhHienTai = (prog?.code ?? null) as ProgrammeCode | null;
   /* PR-UXF-a K2-12: % tổng + Hướng gợi ý Cuối khoá — CÙNG hàm panel Chuyển lớp đọc, một lần cho cả lớp. */

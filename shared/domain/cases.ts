@@ -1,4 +1,4 @@
-/** CASE — hạng mục, phân loại nguyên nhân, phương án, phê duyệt và kết quả. */
+/** CASE — hạng mục, nhóm nguyên nhân, phương án, phê duyệt và kết quả. */
 
 import { ENTRY_SKILLS } from './skills.ts';
 import { REGULAR_SKILLS, programmeOf, tenMon } from './normal.ts';
@@ -566,7 +566,7 @@ export type SystemCloseReason = (typeof SYSTEM_CLOSE_REASONS)[number];
 export const SYSTEM_CLOSE_REASON_LABEL: Record<SystemCloseReason, string> = {
   course_ended: 'Học viên kết thúc khoá',
   moved_to_normal: 'Chuyển sang lớp thường',
-  moved_to_ft: 'Chuyển sang Fast Track',
+  moved_to_ft: 'Lên FT',
   /* PR-MT (T67): huỷ cả lượt → Case sinh RIÊNG từ lượt đó đóng theo; không tính thất bại, không vào hiệu quả PA. */
   luot_da_huy: 'Lượt đã huỷ',
 };
@@ -767,7 +767,7 @@ export function cycleDeadlineHint(): string {
  * thì tiện, nhưng nó nói dối ở hai chỗ:
  *
  *   1. Máy KHÔNG chẩn đoán được nguyên nhân. Nó chỉ biết "band 5.5 < kỳ vọng 6.0". Một case
- *      hoàn chỉnh phải có tên, mô tả và phân loại vấn đề — ba thứ chỉ người dạy mới biết.
+ *      hoàn chỉnh phải có tên, mô tả và nhóm nguyên nhân — ba thứ chỉ người dạy mới biết.
  *   2. Máy KHÔNG xếp được tutor thay người. Một phương án tự sinh trông như đã có ai đó lo,
  *      trong khi thật ra chưa ai đụng vào.
  *
@@ -778,7 +778,7 @@ export function cycleDeadlineHint(): string {
 export const SIGNAL_STATUSES = ['pending', 'linked', 'noted', 'withdrawn'] as const;
 export type SignalStatus = (typeof SIGNAL_STATUSES)[number];
 export const SIGNAL_STATUS_LABEL: Record<SignalStatus, string> = {
-  pending: 'Chờ xác minh',
+  pending: 'Chờ xác nhận nguyên nhân',
   linked: 'Đã thành case',
   /*
    * BỎ QUA (S1, chủ sản phẩm chốt 22/09/2026, đặc tả §3.10 + §5): tín hiệu lớp thường được đóng mà KHÔNG tạo Case, một bấm, lý do
@@ -1063,11 +1063,11 @@ export const BASELINE_SOURCE_LABEL: Record<BaselineSource, string> = {
   manual: 'Nhập tay có ghi chú',
 };
 
-/** Kết thúc hành chính KHÁC đạt mục tiêu. */
+/** Kết thúc hành chính KHÁC đạt Target. */
 export const CYCLE_OUTCOMES = ['reached', 'not_reached', 'unknown'] as const;
 export type CycleOutcome = (typeof CYCLE_OUTCOMES)[number];
 export const CYCLE_OUTCOME_LABEL: Record<CycleOutcome, string> = {
-  reached: 'Đạt mục tiêu', not_reached: 'Chưa đạt mục tiêu', unknown: 'Chưa có căn cứ kết luận',
+  reached: 'Đạt Target', not_reached: 'Chưa đạt Target', unknown: 'Chưa có căn cứ kết luận',
 };
 
 // ---------------------------------------------------------------- Xử lý SOS

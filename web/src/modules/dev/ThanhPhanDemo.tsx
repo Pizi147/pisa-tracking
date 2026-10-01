@@ -257,7 +257,7 @@ export default function ThanhPhanDemo() {
             <div style={{ maxWidth: 300 }}><WeekPicker periodId={p2} onPeriod={setP2} label="Tuần khai giảng" scope="planning" /></div>
           </Cell>
           <Cell title="Cho bỏ trống (clearable) — chưa chọn thì ghi 'Chưa xác định'">
-            <div style={{ maxWidth: 600 }}><WeekPicker periodId={p3} onPeriod={setP3} label="Tuần dự kiến thi" scope="planning" clearable /></div>
+            <div style={{ maxWidth: 600 }}><WeekPicker periodId={p3} onPeriod={setP3} label="Dự kiến thi" scope="planning" clearable /></div>
           </Cell>
           <Cell title="Trong panel và hộp thoại — popover phải nổi lên trên, không bị cắt">
             <div className="flex gap-2">

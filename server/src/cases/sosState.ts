@@ -60,7 +60,7 @@ export const YC_KE_HOACH = (iv: string, tt: string) => `EXISTS (SELECT 1 FROM ye
 export type SosCaseState = {
   /** Case do SOS tự tạo: có (hoặc từng có) phương án điền sẵn. Case tạo tay và case Normal thì không. */
   fromSos: boolean;
-  /** Đã có phân loại nguyên nhân (vấn đề chính). */
+  /** Đã có nhóm nguyên nhân (vấn đề chính). */
   hasCause: boolean;
   /**
    * `Chờ xác nhận nguyên nhân` (S04, S4-2): case từ SOS đang mở mà chưa có nguyên nhân. PR-SOS: không tính khi đang có thẻ

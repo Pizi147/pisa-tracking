@@ -100,7 +100,7 @@ type CaseCard = {
 };
 export type Row = {
   category: string; label: string; short: string;
-  /** PR-UXF-b (R5-5): nhóm "Từ lớp trước" — mã lớp cũ của Case có tên môn khác chương trình đang xem (G+V ≠ Writing). Hàng chuẩn: null. */
+  /** PR-UXF-b (R5-5): nhóm "Case bàn giao" — mã lớp cũ của Case có tên môn khác chương trình đang xem (G+V ≠ Writing). Hàng chuẩn: null. */
   tuLopTruoc?: string | null;
   /** Mã chương trình lộ trình — bộ nguyên nhân theo môn (T57: FOU G+V / P, Pre FOU Tổng hợp). */
   chuongTrinh?: string | null;
@@ -162,7 +162,7 @@ export const TamDungCtx = createContext<string | null>(null);
 /** Việc mở ngăn Case từ bảng này (Q3): không còn form trải trong trang. `viec` không có = mở view Case. PR-SOS: + Xác nhận Case / PA. */
 export type MoCase = { viec?: 'ghi-ket-qua' | 'them-pa' | 'xac-nhan' | 'xac-nhan-pa' | 'ke-hoach'; paId?: number };
 
-/** Khoá hàng: nhóm "Từ lớp trước" cùng `category` với hàng chuẩn của chương trình mới (G+V ↔ Writing) nên cần khoá riêng. */
+/** Khoá hàng: nhóm "Case bàn giao" cùng `category` với hàng chuẩn của chương trình mới (G+V ↔ Writing) nên cần khoá riêng. */
 export const khoaHang = (r: { category: string; tuLopTruoc?: string | null }) => (r.tuLopTruoc ? `${r.category}@truoc` : r.category);
 
 export function SkillBoard({ rows, loading, error, onRetry, selected, onPick, onReport, onChanged, onMoCase, tamDungTu = null }: {
@@ -200,7 +200,7 @@ export function SkillBoard({ rows, loading, error, onRetry, selected, onPick, on
           return (
             <tbody key={khoa}>
               {r.tuLopTruoc && !rows[i - 1]?.tuLopTruoc && (
-                <tr><th colSpan={4} scope="colgroup" className="px-3 pb-1 pt-3 text-left text-[12px] font-semibold uppercase tracking-wide text-slate-400">Từ lớp trước</th></tr>
+                <tr><th colSpan={4} scope="colgroup" className="px-3 pb-1 pt-3 text-left text-[12px] font-semibold uppercase tracking-wide text-slate-400">Case bàn giao</th></tr>
               )}
               <SkillRows row={r} open={selected === khoa}
                 onToggle={() => onPick(selected === khoa ? null : khoa)}

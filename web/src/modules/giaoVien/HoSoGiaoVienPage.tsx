@@ -166,7 +166,7 @@ function ChipBanGiaoLop({ l }: { l: LopHs }) {
   if (!b) return null;
   return (
     <Link to={`/hoc-vien/lop/${l.id}?viec=ban-giao${b.maMon ? `&mon=${b.maMon}` : ''}`} className="inline-flex whitespace-nowrap rounded-full bg-soon-bg px-2 text-xs font-semibold leading-5 tabular-nums text-soon no-underline hover:underline"
-      title={b.loai === 'gvcn' ? 'Phiếu bàn giao đã xác nhận / số em có lệnh chuyển' : `Môn ${b.mon}: số em đã ghi bàn giao / số em cần ghi`}>
+      title={b.loai === 'gvcn' ? 'Phiếu bàn giao đã xác nhận / số em có quyết định chuyển lớp' : `Môn ${b.mon}: số em đã ghi bàn giao / số em cần ghi`}>
       Bàn giao{b.mon ? ` ${b.mon} ·` : ''} {b.da}/{b.n} em
     </Link>
   );

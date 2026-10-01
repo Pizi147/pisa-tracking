@@ -95,7 +95,7 @@ export function ghiLoTrinhTiep(p: Principal, studentId: number, input: {
   if (enr.is_fast_track) throw badRequest('Lộ trình tiếp theo chỉ áp dụng cho lớp thường.');
   if (!(HUONG_TIEP as readonly string[]).includes(input.huong)) throw badRequest('Hướng không hợp lệ.');
   const mucTieu = input.mucTieu ?? null;
-  if (mucTieu !== null && (mucTieu < 0 || mucTieu > 9)) throw badRequest('Mục tiêu band phải từ 0 đến 9.');
+  if (mucTieu !== null && (mucTieu < 0 || mucTieu > 9)) throw badRequest('Target phải từ 0 đến 9.');
 
   let lopDuKienId = input.lopDuKienId ?? null;
   if (lopDuKienId) {

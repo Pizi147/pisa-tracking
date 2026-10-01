@@ -52,7 +52,7 @@ export const LOAI_YC_META: Record<LoaiYeuCau, LoaiYcMeta> = {
   /* PR-CT (Q30-1, Q30-2, Q30-4): GVCN đề xuất chuyển lớp (5 ngày) · Báo lên bàn giao quá hạn 3 ngày (một thẻ mỗi lớp nguồn) · Báo lên lớp hết khoá còn em chưa có lệnh. */
   de_xuat_chuyen_lop: { phanLoai: 'thong-tin-hv', nhan: 'Đề xuất chuyển lớp', kieuNut: 'duyet-tu-choi', hanNgay: 5, hangLoat: false },
   bao_len_ban_giao: { phanLoai: 'bao-len', nhan: 'Bàn giao quá hạn', kieuNut: 'nhac', hanNgay: null, hangLoat: false },
-  bao_len_chua_lenh: { phanLoai: 'bao-len', nhan: 'Lớp hết khoá còn em chưa có lệnh', kieuNut: 'nhac', hanNgay: null, hangLoat: false },
+  bao_len_chua_lenh: { phanLoai: 'bao-len', nhan: 'Lớp hết khoá · chưa có quyết định chuyển lớp', kieuNut: 'nhac', hanNgay: null, hangLoat: false },
   /* PR-LT2a (T54, M-05): kế hoạch bài giảng PA bổ trợ Giữa khoá — Quản lý duyệt trong 3 ngày (tính cả ngày gửi). */
   ke_hoach_bo_tro: { phanLoai: 'hoc-thuat', nhan: 'Kế hoạch bổ trợ', kieuNut: 'duyet-tu-choi', hanNgay: 3, hangLoat: false },
   /* PR-LT2b (M-05, T76): Mini Test dưới 70% — QL xử lý case-by-case. Bài Cuối khoá dời quá tuần cuối khoá (K4-23) — QL biết và nhắc. */

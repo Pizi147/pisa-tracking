@@ -19,7 +19,7 @@ const CHI_ADMIN = 'Chỉ Quản trị hệ thống mới xoá hoặc kết thúc
 
 /** Bảng có cột `class_id` mà một dòng ở đó nghĩa là "lớp đã có dữ liệu" (`teacher_assignments`, `class_skills` là cấu hình, không tính). */
 const BANG_DU_LIEU: [string, string][] = [
-  ['assessment_attempts', 'lượt Test'], ['case_signals', 'tín hiệu Case'], ['teacher_estimates', 'ước lượng của giáo viên'],
+  ['assessment_attempts', 'lượt Test'], ['case_signals', 'Case chờ xác nhận nguyên nhân'], ['teacher_estimates', 'ước lượng của giáo viên'],
   ['tasks', 'công việc'], ['violations', 'vi phạm'], ['discipline_measures', 'phương án xử lý vi phạm'],
 ];
 
@@ -46,7 +46,7 @@ export function tinhTrangLop(classId: number) {
   const nLoTrinh = dem('SELECT COUNT(*) n FROM lo_trinh_tiep_theo WHERE class_id = ? OR lop_du_kien_id = ?', classId, classId);
   if (nLoTrinh > 0) gan.push(`${nLoTrinh} lộ trình tiếp theo`);
   const nLenh = dem('SELECT COUNT(*) n FROM lenh_chuyen_lop WHERE lop_nguon_id = ? OR lop_dich_id = ?', classId, classId);
-  if (nLenh > 0) gan.push(`${nLenh} lệnh chuyển lớp`);
+  if (nLenh > 0) gan.push(`${nLenh} quyết định chuyển lớp`);
   const nHocTiep = dem('SELECT COUNT(*) n FROM classes WHERE previous_class_id = ?', classId);
   if (nHocTiep > 0) gan.push(`${nHocTiep} lớp học tiếp từ lớp này`);
   /* PR-LT2b (K2-35): việc còn treo — KHÔNG chặn Kết thúc lớp, chỉ nói ra: Mini Test của em từ lớp này chưa ghi. */

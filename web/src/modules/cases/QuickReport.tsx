@@ -265,7 +265,7 @@ export function QuickReport({
   /* Ô lỗi (YC-12.5.2): lý do dưới ô khi rời ô; chân chỉ đếm "n ô cần sửa ↑" sau khi bấm nút chính — không toast trước khi gửi. */
   const LUAT: LuatTruong[] = [
     ...(students ? [{ khoa: 'hoc-vien', nhan: 'Học viên', chon: true }] : []),
-    { khoa: 'ky-nang', nhan: 'Kỹ năng', chon: true }, { khoa: 'phan-loai', nhan: 'Phân loại vấn đề', chon: true },
+    { khoa: 'ky-nang', nhan: 'Kỹ năng', chon: true }, { khoa: 'phan-loai', nhan: 'Nhóm nguyên nhân', chon: true },
     /* PR-NEN (T13): phân loại "Khác" → ô Ghi rõ ≥ 3 ký tự ngay dưới (OKhac); Mô tả chỉ còn luật 15 ký tự. */
     ...(laKhac(primaryCode) ? [{ khoa: 'ghi-ro', nhan: 'Ghi rõ', toiThieu: KHAC_TOI_THIEU }] : []),
     { khoa: 'ten', nhan: 'Tên Case', toiThieu: 6 },
@@ -391,7 +391,7 @@ export function QuickReport({
         {/* Phân loại BẮT BUỘC (máy chủ cần `primaryCode`): select ≥ 5 lựa chọn, gợi ý của lựa chọn nằm ở `title` (Q6). */}
         {/* OKhac là <label> riêng → đặt ngay SAU Truong (không lồng label), cùng một khối để sát ô chọn. */}
         <div>
-          <Truong nhan="Phân loại vấn đề" batBuoc loi={loiCua('phan-loai')}>
+          <Truong nhan="Nhóm nguyên nhân" batBuoc loi={loiCua('phan-loai')}>
             <select className="field w-full" {...o('phan-loai')} value={primaryCode} disabled={!topic}
               title={causes.find((i) => i.code === primaryCode)?.hint}
               onChange={(e) => setPrimaryCode(e.target.value)}>

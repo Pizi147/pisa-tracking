@@ -222,7 +222,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     const { st } = mt1Sos3('T4a');
     const c = caseOf(st.id, 'listening');
     const gv = P.admin;
-    assertThrows(() => sosAuto.xacNhanCase(gv, c.id, { ...XN, primaryCode: '' }), /Chọn phân loại nguyên nhân/, 'thiếu nguyên nhân');
+    assertThrows(() => sosAuto.xacNhanCase(gv, c.id, { ...XN, primaryCode: '' }), /Chọn nhóm nguyên nhân/, 'thiếu nguyên nhân');
     assertThrows(() => sosAuto.xacNhanCase(gv, c.id, { ...XN, urgency: '' }), /mức độ gấp/, 'thiếu mức gấp');
     assertThrows(() => sosAuto.xacNhanCase(gv, c.id, { ...XN, moTa: 'ngắn quá' }), /ít nhất 15/, 'mô tả ngắn');
     sosAuto.xacNhanCase(gv, c.id, { ...XN, tenGiua: 'Listening Part 1–2 không đạt' });
@@ -385,7 +385,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     const pa = (cases.caseDetail(P.w2Teacher, c.id) as any).interventions.find((x: any) => x.id === iv.id);
     assert(pa.status === 'started' && pa.followupDue === null && pa.mocChu === 'đến lúc thi · chưa có ngày thi', JSON.stringify(pa));
     const viec = (myworkSvc.myWork(P.mbManager, {}).items as any[]).find((x: any) => x.key === `moc:${iv.id}`);
-    assert(viec && viec.tieuDe === `Nhập ngày thi dự kiến · ${st.name}`, JSON.stringify(viec));
+    assert(viec && viec.tieuDe === `Nhập dự kiến thi · ${st.name}`, JSON.stringify(viec));
     const tuanThi = weekSvc.mondayOf(addDays(TODAY, 70));
     conn.prepare('UPDATE learning_cycles SET exam_period_id = ? WHERE id = ?').run(weekSvc.ensurePeriod(tuanThi).id, st.cycleId);
     cases.caseDetail(P.w2Teacher, c.id);

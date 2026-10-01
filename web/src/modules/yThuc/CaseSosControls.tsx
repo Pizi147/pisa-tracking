@@ -43,7 +43,7 @@ function Chip({ children, sos }: { children: string; sos?: number | null }) {
 }
 
 /**
- * XÁC NHẬN CASE (M7, YC-12.3). Kỹ năng khoá · Tên Case: chip MT + phần giữa sửa được + chip SOS · Phân loại nguyên nhân * · Mức độ gấp *
+ * XÁC NHẬN CASE (M7, YC-12.3). Kỹ năng khoá · Tên Case: chip MT + phần giữa sửa được + chip SOS · Nhóm nguyên nhân * · Mức độ gấp *
  * · Mô tả * (≥ 15) · Bắt đầu theo dõi: hôm nay (khoá) · khối chỉ đọc PA theo quy chế. Không tab "Đã xong từ trước", không tệp đính kèm,
  * không "+ Thêm phương án" ở bước này (Q7).
  */
@@ -74,7 +74,7 @@ export function XacNhanCasePanel({ caseId, topic, kyNang, ct, tenSos, paQuyChe, 
 
   const loi = dsLoi([
     { khoa: 'ten', nhan: 'Tên Case', toiThieu: 3 },
-    { khoa: 'nguyen-nhan', nhan: 'Phân loại nguyên nhân', chon: true },
+    { khoa: 'nguyen-nhan', nhan: 'Nhóm nguyên nhân', chon: true },
     ...(laKhac(code) ? [{ khoa: 'ghi-ro', nhan: 'Ghi rõ nguyên nhân', toiThieu: 3 }] : []),
     { khoa: 'muc-do', nhan: 'Mức độ gấp', chon: true },
     { khoa: 'mo-ta', nhan: 'Mô tả', toiThieu: 15 },
@@ -117,7 +117,7 @@ export function XacNhanCasePanel({ caseId, topic, kyNang, ct, tenSos, paQuyChe, 
           </span>
         </Truong>
         <div>
-          <Truong nhan="Phân loại nguyên nhân" batBuoc loi={lf.loiCua(loi, 'nguyen-nhan')}>
+          <Truong nhan="Nhóm nguyên nhân" batBuoc loi={lf.loiCua(loi, 'nguyen-nhan')}>
             <select className="field w-full" {...lf.o(loi, 'nguyen-nhan')} value={code}
               title={causes.find((i) => i.code === code)?.hint} onChange={(e) => setCode(e.target.value)}>
               <option value="">Chọn phân loại</option>

@@ -47,7 +47,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   const [busy, setBusy] = useState(false);
   const [moHet, setMoHet] = useState(false);
   const [daNhac, setDaNhac] = useState<string | null>((yc.duLieu?.daNhacLuc as string | null) ?? null);
-  /* PR-CT: Duyệt thẻ Đề xuất chuyển lớp = mở panel ra lệnh điền sẵn (Quản lý sửa lớp, tuần rồi `Duyệt và ra lệnh`). */
+  /* PR-CT: Duyệt thẻ Đề xuất chuyển lớp = mở panel ra lệnh điền sẵn (Quản lý sửa lớp, tuần rồi `Duyệt và quyết định`). */
   const [moChuyenLop, setMoChuyenLop] = useState(false);
   const nutMo = useRef<HTMLButtonElement | null>(null);
   /* "Xem thêm" chỉ khi chữ THẬT SỰ bị cắt ở 2 dòng (đo, không đoán theo số ký tự). */

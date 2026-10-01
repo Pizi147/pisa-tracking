@@ -174,7 +174,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents }: {
           <thead>
             <tr>
               <Th hint="Tên em, và một câu về kết quả mốc gần nhất của em." className="sticky-col">Học viên</Th>
-              <Th align="right" hint="Điểm mục tiêu của lộ trình em đang học. KCK = không cam kết đầu ra, không tính SOS.">Target</Th>
+              <Th align="right" hint="Điểm Target của lộ trình em đang học. KCK = không cam kết đầu ra, không tính SOS.">Target</Th>
               <Th hint="Kỳ thi IELTS thật, ở đúng mức chắc chắn đang biết: tuần, hoặc mới có tháng, hoặc chưa xác định.">
                 Dự kiến thi
               </Th>

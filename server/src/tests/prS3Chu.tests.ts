@@ -97,4 +97,40 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
     assert(/'ho-tro': 'Hỗ trợ học viên'/.test(docNguon('shared/domain/dieuHuong.ts')), 'TAB_CONG_VIEC_LABEL');
     assert(/'Tổng hợp'/.test(docNguon('web/src/modules/phanTich/TongHopTestSos.tsx')), 'Excel A-054');
   });
+
+  // ------------------------------------------------------------------ Task 2 · khái niệm nghiệp vụ (nhóm B)
+  // Chữ kỹ thuật (dòng lệnh, câu lệnh gõ ở máy dev) và chữ đã lưu trong DB / nhật ký di cư (Q11) được giữ.
+  const KY_THUAT: Array<[string, string]> = [['scripts/', ''], ['server/src/ops/', ''], ['server/src/db.ts', ''], ['server/src/migrate', ''],
+    ['web/src/modules/platform/WelcomePage.tsx', ''], ['web/src/modules/platform/DemoBar.tsx', '']];
+  khongCon('S3 (2) · Chữ "lệnh" (chuyển lớp) đã thành "quyết định chuyển lớp" — chỉ còn "lệnh" kỹ thuật', [['lệnh', /[Ll]ệnh/]], KY_THUAT);
+  khongCon('S3 (2) · Bảo lưu = Tạm dừng học (bảo lưu); "Dừng học" = "Dừng học hẳn"', [
+    ['bảo lưu', /(?<!\()[Bb]ảo lưu/],
+    ['Dừng học', /(?<![Tt]ạm )[Dd]ừng học(?! hẳn)/],
+  ], KY_THUAT);
+  khongCon('S3 (2) · Target: không còn "Mục tiêu", "Mục tiêu band", "Band target"', [['mục tiêu', /[Mm]ục tiêu|Band target/], ['target thường', /bằng target|đổi target|Sửa target|trùng target|có target|Điền target|' = target|MT = target|(, |· )target (?=[\d$])|\btarget <b>|(?<![A-Za-z_.$])target\.(?![A-Za-z])/]], KY_THUAT);
+  khongCon('S3 (2) · Không còn "tín hiệu" / "Cần xác minh" (thành "Case chờ xác nhận nguyên nhân")',
+    [['tín hiệu', /[Tt]ín hiệu|[Cc]ần xác minh|Chờ xác minh/]], [...KY_THUAT, ['web/src/modules/dev/ThanhPhanDemo.tsx', 'không tín hiệu nào chỉ bằng màu']]);
+  khongCon('S3 (2) · "Dự kiến thi" một chữ (không còn Thi dự kiến / Thi thật dự kiến / Tháng · Tuần dự kiến thi)',
+    [['dự kiến thi', /Thi dự kiến|Thi thật dự kiến|[Tt]háng dự kiến thi|[Tt]háng thi dự kiến|[Tt]uần dự kiến thi|ngày thi dự kiến|thi dự kiến/]], KY_THUAT);
+  khongCon('S3 (2) · "Lên FT" một chữ', [['Fast Track', /Sang Fast Track|Chuyển sang Fast Track|[Ll]ên Fast Track/]], KY_THUAT);
+  khongCon('S3 (2) · Một nghĩa một chữ: Lớp chuyển đến, Chuyển tiếp lớp, Nhóm nguyên nhân, Vấn đề chính / Yếu tố đi kèm, Hạn chấm, Bài kiểm tra, Case bàn giao, Tuần học', [
+    ['Lớp đích', /[Ll]ớp đích|Lớp muốn chuyển tới/],
+    ['Chuyển lớp cả lớp', /Chuyển lớp cả lớp|Chuyển nhiều em/],
+    ['Phân loại vấn đề', /[Pp]hân loại (vấn đề|nguyên nhân)|[Ll]oại lỗi/],
+    ['Lỗi chính / phụ', /[Ll]ỗi chính|[Ll]ỗi phụ/],
+    ['Hạn nhập', /Hạn nhập/],
+    ['Bài đánh giá', /Bài đánh giá/],
+    ['Từ lớp trước', /Từ lớp trước|mang từ lớp trước|Case đi theo em/],
+    ['Tuần học FT', /Tuần học FT|Tuần khoá|tuần học thứ/],
+  ], KY_THUAT);
+  check('S3 (2) · Chuyển lớp: hằng chữ CHU_CHUYEN_LOP (quyết định · ba trạng thái · GVCN xác nhận bàn giao); OVR chỉ ở cột hẹp; Điểm đầu vào; Lên FT; Tạm dừng học (bảo lưu)', () => {
+    const cl = docNguon('shared/domain/chuyenLop.ts');
+    for (const chu of ["'Quyết định chuyển lớp'", "'Chưa có quyết định chuyển lớp'", "'Chờ QL duyệt đề xuất'", 'Sắp chuyển · từ', "'GVCN xác nhận bàn giao'", "'Huỷ quyết định'"]) assert(cl.includes(chu), chu);
+    assert(/CHU_CHUYEN_LOP\.huy/.test(docNguon('web/src/modules/students/ChuyenLopPanel.tsx')), 'ChuyenLopPanel dùng hằng');
+    assert(/CHU_CHUYEN_LOP\.sapChuyen/.test(docNguon('web/src/modules/classes/DaiChuyenLop.tsx')), 'DaiChuyenLop dùng hằng');
+    const ll = docNguon('shared/domain/lenLop.ts');
+    assert(ll.includes("'Tạm dừng học (bảo lưu)'") && ll.includes("'Dừng học hẳn'") && ll.includes("'Lên FT'"), 'nhãn hướng (lenLop)');
+    assert(docNguon('web/src/modules/students/StudentPlanPanel.tsx').includes('label="Điểm đầu vào"'), 'Điểm đầu vào');
+    assert(/>OVR<\/Th>/.test(docNguon('web/src/modules/cham/LuoiFT.tsx')), 'LuoiFT OVR (cột hẹp)');
+  });
 }

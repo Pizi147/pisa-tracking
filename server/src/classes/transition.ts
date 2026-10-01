@@ -20,7 +20,7 @@ import { HV_DANG_HOC_SQL, khoangTamDung } from '../students/tamDung.ts';
  * CHUYỂN TIẾP KHI MỘT LỚP HỌC HẾT CHƯƠNG TRÌNH — mục 6.1, đặc tả §3.9.2 (PR-LT thay khung cũ).
  *
  * Luồng mặc định: FOU → BE, và BE/ELE → Fast Track. Mỗi em CHỌN RIÊNG một hướng (lên lớp, học
- * lại, sang Fast Track, bảo lưu, dừng học, xếp sau) — hệ thống không tự chuyển ai.
+ * lại, sang Fast Track, tạm dừng học (bảo lưu), dừng học hẳn, xếp sau) — hệ thống không tự chuyển ai.
  */
 
 // ==================================================================== Kế hoạch (chỉ đọc)
@@ -53,7 +53,7 @@ export function transitionPlan(p: Principal, classId: number) {
     ...(from ? [{ code: from, name: PROGRAMME_TEMPLATES[from].name, huong: 'hoc_lai' as Huong }] : []),
     ...steps.map((c) => ({ code: c, name: PROGRAMME_TEMPLATES[c].name, huong: (c === 'FT' ? 'fast_track' : 'len_lop') as Huong })),
   ];
-  /* PR-CT (màn I): lớp FT chuyển giữa lộ trình — lớp đích là mọi lớp FT còn chạy (mọi lộ trình), không lọc "quá nửa". */
+  /* PR-CT (màn I): lớp FT chuyển giữa lộ trình — lớp chuyển đến là mọi lớp FT còn chạy (mọi lộ trình), không lọc "quá nửa". */
   const ft = !!cls.is_fast_track;
   const optionCodes = ft ? ['FT'] : [...new Set(options.map((o) => o.code))];
 
@@ -71,7 +71,7 @@ export function transitionPlan(p: Principal, classId: number) {
     )
     .all(classId) as any[];
   const sids = students.map((s) => s.id as number);
-  /* PR-UXF-a Q6: lớp FT — "tuần học thứ n" của từng em (bỏ tuần Tạm dừng), MỘT câu khoảng dừng cho cả lớp. Lớp thường không cần. */
+  /* PR-UXF-a Q6: lớp FT — "tuần học n" của từng em (bỏ tuần Tạm dừng), MỘT câu khoảng dừng cho cả lớp. Lớp thường không cần. */
   const dungCua = ft && sids.length ? khoangTamDung(sids) : {};
   const tuanNay = mondayOf(demoToday());
 
@@ -82,7 +82,7 @@ export function transitionPlan(p: Principal, classId: number) {
   /* PR-LT2b: % Cuối khoá + hướng gợi ý của cả lớp — MỘT lần (PR-CT dựng cột "Web gợi ý" từ đây). */
   const cuoiKhoa = sids.length ? cuoiKhoaTheoHocVien(classId, sids) : new Map();
 
-  /* PR-CT: lệnh chuyển lớp đang chờ của cả lớp — MỘT câu (chỉ mục duy nhất một phần: mỗi em tối đa một lệnh `cho`). */
+  /* PR-CT: quyết định chuyển lớp đang chờ của cả lớp — MỘT câu (chỉ mục duy nhất một phần: mỗi em tối đa một lệnh `cho`). */
   const lenhCho = new Map((conn.prepare(
     `SELECT id, student_id, huong, lop_dich_id, tuan_bat_dau, muc_tieu, khong_cam_ket, ngay_thi, ngay_xem_lai, ly_do, khac_goi_y, loi
        FROM lenh_chuyen_lop WHERE lop_nguon_id = ? AND trang_thai = 'cho'`,
@@ -174,7 +174,7 @@ export function transitionPlan(p: Principal, classId: number) {
     students: students.map((s) => ({
       id: s.id, studentCode: s.student_code, fullName: s.full_name,
       cycleId: s.cycle_id ?? null, target: s.target_score ?? null,
-      /** PR-UXF-a (mockup 20 màn I): FT `{ tuan, tong: null }` — "LT1 · tuần học thứ 9"; lớp thường null (cột Khoá đã có tuần của lớp). */
+      /** PR-UXF-a (mockup 20 màn I): FT `{ tuan, tong: null }` — "LT1 · tuần học 9"; lớp thường null (cột Khoá đã có tuần của lớp). */
       route: (s.route ?? null) as string | null,
       tuanHoc: ft && s.start_week ? (() => { const th = tuanHocTai(s.start_week, tuanNay, dungCua[s.id] ?? []); return th ? { tuan: th.tuan, tong: null, dangDung: th.dangDung } : null; })() : null,
       loTrinhTiep: loTrinhTiepMap.get(s.id) ?? null,
@@ -235,7 +235,7 @@ export function applyTransition(p: Principal, input: TransitionInput, o?: { daDu
      * TẬP HỌC VIÊN HỢP LỆ — đúng em còn ghi danh `active` ở LỚP NGUỒN (cùng tập `transitionPlan`
      * đọc), không phải "mọi id gửi lên". Không có kiểm này thì một `studentId` không thuộc lớp
      * (khác chi nhánh, đã rời lớp…) vẫn lọt qua bước 1 (đóng enrollment — 0 dòng khớp) rồi bị
-     * bước 2 CHÈN THẲNG một enrollment mới vào lớp đích, xếp nhầm em chưa từng ở lớp này.
+     * bước 2 CHÈN THẲNG một enrollment mới vào lớp chuyển đến, xếp nhầm em chưa từng ở lớp này.
      */
     const eligibleIds = new Set(
       (conn
@@ -247,9 +247,9 @@ export function applyTransition(p: Principal, input: TransitionInput, o?: { daDu
     );
 
     /*
-     * Đọc thông tin lớp đích THEO LÔ — một câu cho mọi lớp đích khác nhau, không hỏi lại theo
+     * Đọc thông tin lớp chuyển đến THEO LÔ — một câu cho mọi lớp chuyển đến khác nhau, không hỏi lại theo
      * từng em. Chỉ lớp CÒN HOẠT ĐỘNG và KHÁC lớp nguồn mới hợp lệ — lớp đã kết thúc/id không
-     * tồn tại thì `classInfoOf` không có, dòng đó rơi vào "Lớp đích không hợp lệ" bên dưới.
+     * tồn tại thì `classInfoOf` không có, dòng đó rơi vào "Lớp chuyển đến không hợp lệ" bên dưới.
      */
     const rawToClassIds = new Set<number>();
     for (const m of input.moves ?? []) if (m.toClassId) rawToClassIds.add(m.toClassId);
@@ -267,11 +267,11 @@ export function applyTransition(p: Principal, input: TransitionInput, o?: { daDu
       }
     }
 
-    /* Dạng cũ → dạng mới: suy hướng từ luật lộ trình so với lớp đích đã chọn (giữ tương thích phép kiểm cũ). */
+    /* Dạng cũ → dạng mới: suy hướng từ luật lộ trình so với lớp chuyển đến đã chọn (giữ tương thích phép kiểm cũ). */
     const legacyDongs: TransitionDong[] = (input.moves ?? []).map((m) => {
       const toClassId = m.toClassId ?? null;
       const toClass = toClassId ? classInfoOf.get(toClassId) ?? null : null;
-      /* Không có lớp đích thì vẫn cần một hướng cụ thể để kiemDongChuyenTiep báo đúng "thiếu lớp đích", không phải "thiếu hướng". */
+      /* Không có lớp chuyển đến thì vẫn cần một hướng cụ thể để kiemDongChuyenTiep báo đúng "thiếu lớp chuyển đến", không phải "thiếu hướng". */
       const huong: Huong = !toClass ? 'len_lop'
         : toClass.ft ? 'fast_track' : toClass.ma === maTu ? 'hoc_lai' : 'len_lop';
       return {
@@ -293,7 +293,7 @@ export function applyTransition(p: Principal, input: TransitionInput, o?: { daDu
       if (!eligibleIds.has(dg.studentId)) { failed.push({ studentId: dg.studentId, message: 'Học viên không thuộc lớp này.' }); continue; }
       const toClassId = dg.toClassId ?? null;
       const toClass = toClassId ? classInfoOf.get(toClassId) ?? null : null;
-      if (toClassId && !toClass) { failed.push({ studentId: dg.studentId, message: 'Lớp đích không hợp lệ.' }); continue; }
+      if (toClassId && !toClass) { failed.push({ studentId: dg.studentId, message: 'Lớp chuyển đến không hợp lệ.' }); continue; }
       const kiemTra: DongChuyenTiep = {
         huong: dg.huong ?? null, toClassId, toClass,
         mucTieu: dg.mucTieu ?? null, thangThi: dg.thangThi ?? null, lyDo: dg.lyDo ?? null, ngayXemLai: dg.ngayXemLai ?? null,
@@ -320,7 +320,7 @@ export function applyTransition(p: Principal, input: TransitionInput, o?: { daDu
       ? cuoiKhoaTheoHocVien(from.id, okChuyenLop.map((d) => d.sid)) : null;
     if (okChuyenLop.length) apDungCaLop(p, { fromClass: { id: from.id, code: from.code }, ngay: input.effectiveDate, dongs: okChuyenLop });
     if (okBaoLuu.length) apDungBaoLuuCaLop(p, { fromClassId: from.id, ngay: input.effectiveDate, dongs: okBaoLuu });
-    /* Dừng học = Kết thúc học — ngoại lệ đi từng em (hiếm, thường 0-1 em mỗi đợt), tái dùng đúng một luật S16. */
+    /* Dừng học hẳn = Kết thúc học — ngoại lệ đi từng em (hiếm, thường 0-1 em mỗi đợt), tái dùng đúng một luật S16. */
     for (const d of okDungHoc) setStudentStatus(p, d.sid, 'finished', input.effectiveDate, d.lyDo, 'dung_hoc');
 
     /* Lộ trình tiếp theo: ghi/cập nhật dự định cho MỌI dòng hợp lệ — một INSERT nhiều dòng, ON CONFLICT cập nhật. */

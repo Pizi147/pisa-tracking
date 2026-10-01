@@ -205,7 +205,7 @@ export function cauTomTat(i: DauVaoCau): ManhCau[] {
   else if (k.ratio) {
     const dau = k.phanTram !== null ? `${k.dau} ${k.phanTram}%` : `${k.dau} ${k.soDat}/${k.soMon} môn đạt`;
     m1 = { chu: k.monTruot.length ? `${dau}: không đạt ${noiVa(k.monTruot)}` : dau, tone: k.monTruot.length ? 'warn' : null };
-  } else if (k.kck) m1 = { chu: voiHoTro(k.overall !== null ? `${k.dau} Overall ${k.overall.toFixed(1)}` : k.dau), tone: null };
+  } else if (k.kck) m1 = { chu: voiHoTro(k.overall !== null ? `${k.dau} OVR ${k.overall.toFixed(1)}` : k.dau), tone: null };
   else if (k.sos) m1 = { chu: voiHoTro(`${k.dau} SOS ${k.sos}`), tone: toneSos(k.sos) };
   else if (k.dat) m1 = { chu: voiHoTro(`${k.dau} đạt kỳ vọng`), tone: null };
   else m1 = { chu: voiHoTro(`${k.dau} chưa đủ điểm`), tone: null };
@@ -296,7 +296,7 @@ export function oYThuc(y: {
   return { tren, gt, phu: 'không có vi phạm mở', tone: null };
 }
 
-/** Ô "Sắp tới" (Q7): mốc kế tiếp — FT MT + kỳ vọng; lớp thường Giữa/Cuối khoá + xét lên; sau Cuối khoá chờ lệnh chuyển; đã khép → kết luận. */
+/** Ô "Sắp tới" (Q7): mốc kế tiếp — FT MT + kỳ vọng; lớp thường Giữa/Cuối khoá + xét lên; sau Cuối khoá chờ quyết định chuyển lớp; đã khép → kết luận. */
 export function oSapToi(i: {
   ketLuan: string | null; sauCuoiKhoa: { tuanKetThuc: string | null } | null;
   next: { dau: string; attemptNo: number; tuan: string | null; kyVong: number | null; soPhan: number; final: boolean } | null;
@@ -306,7 +306,7 @@ export function oSapToi(i: {
 }): { tren: string; gt: string; phu: string | null } {
   if (i.ketLuan) return { tren: 'lộ trình đã khép', gt: `Kết luận: ${i.ketLuan}`, phu: null };
   if (i.sauCuoiKhoa) {
-    return { tren: 'sau Cuối khoá', gt: 'Chuyển lớp', phu: `chờ Quản lý ra lệnh${i.sauCuoiKhoa.tuanKetThuc ? ` · lớp kết thúc ${tuanLich(i.sauCuoiKhoa.tuanKetThuc, i.homNay)}` : ''}` };
+    return { tren: 'sau Cuối khoá', gt: 'Chuyển lớp', phu: `chờ Quản lý quyết định${i.sauCuoiKhoa.tuanKetThuc ? ` · lớp kết thúc ${tuanLich(i.sauCuoiKhoa.tuanKetThuc, i.homNay)}` : ''}` };
   }
   const n = i.next;
   if (!n) return { tren: 'mốc kế tiếp', gt: 'Chưa có mốc', phu: 'chưa xếp lịch Test' };

@@ -401,9 +401,9 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     }
   });
 
-  check('UX3 (8) · ChuyenLopPanel (PR-CT: ra lệnh): nút chính nói thẳng việc, gửi tuần bắt đầu (Thứ Hai tuần sau trở đi) — không còn ngày hiệu lực "hôm nay"', () => {
+  check('UX3 (8) · ChuyenLopPanel (PR-CT: ra quyết định): nút chính nói thẳng việc, gửi tuần bắt đầu (Thứ Hai tuần sau trở đi) — không còn ngày hiệu lực "hôm nay"', () => {
     const src = docSach('web/src/modules/students/ChuyenLopPanel.tsx');
-    assert(/Ra lệnh chuyển/.test(src) && /Đề xuất chuyển lớp/.test(src) && /Duyệt và ra lệnh/.test(src), 'thiếu nút chính của ba chế độ');
+    assert(/CHU_CHUYEN_LOP.quyetDinh/.test(src) && /Đề xuất chuyển lớp/.test(src) && /Duyệt và quyết định/.test(src), 'thiếu nút chính của ba chế độ');
     assert(!/effectiveDate/.test(src) && /\/students\/\$\{studentId\}\/transfer/.test(src) && /tuan,/.test(src), 'phải gửi tuần bắt đầu, không gửi effectiveDate');
   });
 

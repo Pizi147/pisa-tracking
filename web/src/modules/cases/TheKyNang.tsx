@@ -24,7 +24,7 @@ export function TheKyNangDs({ rows, onMoCase }: { rows: SkillBoardRow[]; onMoCas
         ? <TheGon key={row.category} row={row} onMoCase={onMoCase} />
         : <TheKyNang key={row.category} row={row} onMoCase={onMoCase} />))}
       {/* PR-UXF-b (R5-5): Case của lớp trước có tên môn khác — nhóm riêng cuối bảng, không nằm ở thẻ Writing / Speaking của chương trình mới. */}
-      {rows.some((r) => r.tuLopTruoc) && <h3 className="m-0 px-1 pt-2 text-[12px] font-semibold uppercase tracking-wide text-slate-400">Từ lớp trước</h3>}
+      {rows.some((r) => r.tuLopTruoc) && <h3 className="m-0 px-1 pt-2 text-[12px] font-semibold uppercase tracking-wide text-slate-400">Case bàn giao</h3>}
       {rows.filter((r) => r.tuLopTruoc).map((row) => <TheKyNang key={`${row.category}@truoc`} row={row} onMoCase={onMoCase} />)}
     </div>
   );

@@ -240,9 +240,9 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
       const rr = ratio ? evaluateRegular(boMonCua(cycle.programme_code), scores as any, cycle.programme_code) : null;
       const skips = ratio ? [] : bundle.skips.get(a.id) ?? [];
       const ri = ratio ? null : evaluateAttempt(
-        /* T9 (23/09): kết quả gần nhất dùng mục tiêu TẠI THỜI ĐIỂM THI, không phải mục tiêu hiện tại của lộ
+        /* T9 (23/09): kết quả gần nhất dùng Target TẠI THỜI ĐIỂM THI, không phải Target hiện tại của lộ
          * trình — đúng như `resultOf` ở `attempts.ts:155` đã làm, để SOS/kỳ vọng không đổi ngược khi hồ sơ sửa
-         * mục tiêu sau này. */
+         * Target sau này. */
         a.target_at_attempt ?? cycle.target_score ?? null, a.attempt_no,
         entryBandsOf(scores as any), skips.map((x: any) => x.skill ?? x), a.route ?? cycle.route,
       );

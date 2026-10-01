@@ -9,7 +9,7 @@
  *   students   trạng thái học viên, lộ trình học, mốc hành trình
  *   fasttrack  lịch Mock Test, kỳ vọng theo lượt, mức SOS
  *   normal     chương trình FOU/BE/ELE, mốc kiểm tra, chấm theo tỷ lệ
- *   cases      hạng mục case, phân loại nguyên nhân, phương án, phê duyệt, kết quả
+ *   cases      hạng mục case, nhóm nguyên nhân, phương án, phê duyệt, kết quả
  *   worklist   báo cáo đơn vị, loại việc, nhãn thời hạn
  *   people     vai trò, quyền, bộ lọc học viên theo vai
  *   display    luật hiển thị dùng chung: hạn, tiến độ đợt Test, phần trăm, ngày nghiệp vụ

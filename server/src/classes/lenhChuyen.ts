@@ -18,8 +18,8 @@ import { classProgressMany, mocKetKhoa } from './schedule.ts';
 import { cuoiKhoaTheoHocVien } from '../normal/cuoiKhoa.ts';
 
 /**
- * LỆNH CHUYỂN LỚP do QUẢN LÝ quyết (PR-CT, §3.1f Q30-1): em nào · lớp đích nào · tuần bắt đầu (Thứ Hai, từ tuần sau trở đi).
- * Task 3: ra / sửa / huỷ lệnh. Tới Thứ Hai tuần bắt đầu mới thi hành (Task 4), bằng đúng luật lộ trình đang có.
+ * LỆNH CHUYỂN LỚP do QUẢN LÝ quyết (PR-CT, §3.1f Q30-1): em nào · lớp chuyển đến nào · tuần bắt đầu (Thứ Hai, từ tuần sau trở đi).
+ * Task 3: ra / sửa / huỷ quyết định. Tới Thứ Hai tuần bắt đầu mới thi hành (Task 4), bằng đúng luật lộ trình đang có.
  */
 
 export type DongLenhVao = {
@@ -34,7 +34,7 @@ const HUONG_THEO_BOI_CANH: Record<BoiCanhLenh, readonly HuongLenh[]> = {
   'giua-khoa': ['chuyen_lop', 'fast_track', 'bao_luu', 'dung_hoc'],
 };
 
-const CUNG_LOP_CHI_NHANH = 'Chỉ Quản lý chi nhánh của lớp này mới ra lệnh chuyển lớp.';
+const CUNG_LOP_CHI_NHANH = 'Chỉ Quản lý chi nhánh của lớp này mới ra quyết định chuyển lớp.';
 
 /** GVCN đang hiệu lực + (khi `ql`) mọi Quản lý của các chi nhánh — cho thông báo. Tối đa ba câu cho cả lô lớp (không hỏi lại theo lớp). */
 export function nguoiNhanCuaLop(lopIds: readonly number[], chiNhanhQl: readonly number[] = []): Map<number, Set<number>> {
@@ -73,7 +73,7 @@ export function raLenh(p: Principal, v: {
   if (!nguon) throw notFound('Không tìm thấy lớp');
   require_(p, PERMISSIONS.CLASS_EDIT, { classId: v.lopNguonId }, CUNG_LOP_CHI_NHANH);
   if (!Array.isArray(v.dongs) || !v.dongs.length) throw badRequest('Chưa chọn học viên nào để chuyển.');
-  if (v.dongs.length > 500) throw badRequest('Tối đa 500 học viên một lệnh.');   // PR-Dọn (Q6, quét #16)
+  if (v.dongs.length > 500) throw badRequest('Tối đa 500 học viên một lần quyết định.');   // PR-Dọn (Q6, quét #16)
   for (const d of v.dongs) chuTuDo(d?.lyDo, 'Lý do', 2000);   // PR-Dọn (Q4, quét #24)
 
   return tx(() => {
@@ -92,7 +92,7 @@ export function raLenh(p: Principal, v: {
         `SELECT student_id, lop_nguon_id, tuan_bat_dau FROM lenh_chuyen_lop WHERE trang_thai = 'cho' AND student_id IN (${ph})`,
       ).all(...lo) as any[]) daCo.set(r.student_id, r);
     });
-    /* Lớp đích đọc THEO LÔ: đang hoạt động, khác lớp nguồn. */
+    /* Lớp chuyển đến đọc THEO LÔ: đang hoạt động, khác lớp nguồn. */
     const dich = new Map<number, any>();
     theoLo([...new Set(dongs.map((d) => d.toClassId).filter((x): x is number => !!x))], (lo, ph) => {
       for (const c of conn.prepare(
@@ -118,11 +118,11 @@ export function raLenh(p: Principal, v: {
       if (!HUONG_THEO_BOI_CANH[v.boiCanh].includes(d.huong)) { loi('Hướng này không dùng được ở bối cảnh chuyển lớp này.'); continue; }
       const canDich = canLopDich(d.huong);
       const lopDich = canDich && d.toClassId ? dich.get(d.toClassId) ?? null : null;
-      if (canDich && d.toClassId && !lopDich) { loi('Lớp đích không hợp lệ.'); continue; }
+      if (canDich && d.toClassId && !lopDich) { loi('Lớp chuyển đến không hợp lệ.'); continue; }
       const tuan = d.tuan ?? v.tuanChung;
       const cu = daCo.get(d.studentId);
       /* PR-S5F-a: lệnh còn `cho` luôn sửa được (kể cả đã tới tuần mà chưa chuyển được) — tuần mới vẫn phải từ tuần sau (`kiemDongLenh`). */
-      if (cu && cu.lop_nguon_id !== v.lopNguonId) { loi('Em đã có lệnh chuyển ở lớp khác.'); continue; }
+      if (cu && cu.lop_nguon_id !== v.lopNguonId) { loi('Em đã có quyết định chuyển lớp ở lớp khác.'); continue; }
       const khac = khacGoiY(d.huong, ck?.get(d.studentId)?.goiY);
       const sai = kiemDongLenh({
         huong: d.huong, lopDichId: lopDich?.id ?? null, lopDichFt: !!lopDich?.is_fast_track, nguonFt, tuan: tuan ?? null, homNay,
@@ -130,13 +130,13 @@ export function raLenh(p: Principal, v: {
       });
       if (sai) { loi(sai); continue; }
       if (v.boiCanh === 'cuoi-khoa' && (d.huong === 'len_lop' || d.huong === 'hoc_lai' || d.huong === 'fast_track')) {
-        /* Hướng ↔ lớp đích: dùng lại luật cũ; Target/lý do đã kiểm ở trên nên đưa giá trị đã hợp lệ. */
+        /* Hướng ↔ lớp chuyển đến: dùng lại luật cũ; Target/lý do đã kiểm ở trên nên đưa giá trị đã hợp lệ. */
         const lech = kiemDongChuyenTiep({
           huong: d.huong, toClassId: lopDich.id, toClass: { ma: (lopDich.programme_code ?? null) as ProgrammeCode | null, ft: !!lopDich.is_fast_track },
           mucTieu: 5,
         }, { maTu });
         if (lech) { loi(lech); continue; }
-      } else if (d.huong === 'fast_track' && !lopDich.is_fast_track) { loi('Lớp đích phải là Fast Track'); continue; }
+      } else if (d.huong === 'fast_track' && !lopDich.is_fast_track) { loi('Lớp chuyển đến phải là Fast Track'); continue; }
       const han = coPhieu(d.huong) ? hanBanGiao(homNay) : null;
       const kck = d.mucTieu === 'KCK';
       if (cu) daSua.add(d.studentId);
@@ -172,7 +172,7 @@ export function raLenh(p: Principal, v: {
   });
 }
 
-/** Q18: MỘT thông báo "Sắp nhận" mỗi lớp đích — GVCN lớp đích + Quản lý chi nhánh đích nếu khác chi nhánh. Đếm lại từ bảng nên ra lệnh thêm cùng ngày chỉ cập nhật số. */
+/** Q18: MỘT thông báo "Sắp nhận" mỗi lớp chuyển đến — GVCN lớp chuyển đến + Quản lý chi nhánh đích nếu khác chi nhánh. Đếm lại từ bảng nên ra lệnh thêm cùng ngày chỉ cập nhật số. */
 function thongBaoSapNhan(p: Principal, nguon: any, lopDichIds: number[], dich: Map<number, any>, homNay: string) {
   if (!lopDichIds.length) return;
   const conn = db();
@@ -201,16 +201,16 @@ function thongBaoSapNhan(p: Principal, nguon: any, lopDichIds: number[], dich: M
 
 function docLenh(id: number): any {
   const l = db().prepare('SELECT * FROM lenh_chuyen_lop WHERE id = ?').get(id) as any;
-  if (!l) throw notFound('Không tìm thấy lệnh chuyển lớp');
+  if (!l) throw notFound('Không tìm thấy quyết định chuyển lớp');
   return l;
 }
 
 /**
- * Q6 + PR-S5F-a: sửa / huỷ khi lệnh còn `cho`. Lệnh đã tới tuần mà còn `cho` là lệnh CHƯA chuyển được (lớp đích bị kết thúc, lệch luật…) —
+ * Q6 + PR-S5F-a: sửa / huỷ khi lệnh còn `cho`. Lệnh đã tới tuần mà còn `cho` là lệnh CHƯA chuyển được (lớp chuyển đến bị kết thúc, lệch luật…) —
  * Quản lý phải huỷ được hoặc sửa sang tuần mới, không để kẹt. Lệnh không còn `cho` → 409 (vừa thi hành / đã huỷ).
  */
 function kiemConSuaDuoc(l: any) {
-  if (l.trang_thai !== 'cho') throw conflict(l.trang_thai === 'huy' ? 'Lệnh đã được huỷ.' : 'Lệnh vừa được thi hành.');
+  if (l.trang_thai !== 'cho') throw conflict(l.trang_thai === 'huy' ? 'Quyết định chuyển lớp đã được huỷ.' : 'Quyết định chuyển lớp vừa được thi hành.');
 }
 
 export function suaLenh(p: Principal, id: number, v: Partial<DongLenhVao>): void {
@@ -231,14 +231,14 @@ export function huyLenh(p: Principal, id: number, lyDo: string): void {
   const l = docLenh(id);
   require_(p, PERMISSIONS.CLASS_EDIT, { classId: l.lop_nguon_id }, CUNG_LOP_CHI_NHANH);
   const why = String(lyDo ?? '').trim();
-  if (why.length < 3) throw badRequest('Ghi lý do huỷ lệnh.');
+  if (why.length < 3) throw badRequest('Ghi lý do huỷ quyết định.');
   kiemConSuaDuoc(l);
   tx(() => {
     const conn = db();
     const r = conn.prepare(
       `UPDATE lenh_chuyen_lop SET trang_thai = 'huy', huy_boi = ?, huy_luc = ?, ly_do_huy = ?, sua_luc = ? WHERE id = ? AND trang_thai = 'cho'`,
     ).run(p.userId, nowIso(), why, nowIso(), id);
-    if (!r.changes) throw conflict('Lệnh vừa được thi hành hoặc đã huỷ.');
+    if (!r.changes) throw conflict('Quyết định chuyển lớp vừa được thi hành hoặc đã huỷ.');
     const hv = conn.prepare('SELECT full_name FROM students WHERE id = ?').get(l.student_id) as any;
     const ma = new Map((conn.prepare('SELECT id, code FROM classes WHERE id IN (?, ?)').all(l.lop_nguon_id, l.lop_dich_id ?? l.lop_nguon_id) as any[]).map((r) => [r.id as number, r.code as string]));
     writeAudit({ actorUserId: p.userId, action: 'lenh_chuyen.huy', entityType: 'student', entityId: l.student_id, entityLabel: hv?.full_name ?? null, before: { huong: l.huong, tuan: l.tuan_bat_dau }, after: { lyDo: why } });
@@ -247,7 +247,7 @@ export function huyLenh(p: Principal, id: number, lyDo: string): void {
     for (const userId of tatCa) {
       if (userId === p.userId) continue;
       notify({
-        userId, kind: 'huy_lenh', title: `Huỷ lệnh chuyển lớp · ${hv?.full_name ?? 'học viên'}`,
+        userId, kind: 'huy_lenh', title: `Đã huỷ quyết định chuyển lớp · ${hv?.full_name ?? 'học viên'}`,
         body: `${ma.get(l.lop_nguon_id)}${l.lop_dich_id ? ` → ${ma.get(l.lop_dich_id)}` : ''} · ${why}`,
         entityType: 'student', entityId: l.student_id, dedupKey: `huy_lenh:${id}`,
       });
@@ -383,7 +383,7 @@ function thongBaoNguoiRaLenh(ds: { l: any; vi: 'huy' | 'loi'; msg: string }[]) {
   for (const { l, vi, msg } of ds) {
     notify({
       userId: l.nguoi_ra_lenh, kind: vi === 'huy' ? 'huy_lenh' : 'lenh_loi',
-      title: vi === 'huy' ? `Lệnh chuyển lớp bị huỷ · ${ten.get(l.student_id) ?? 'học viên'}` : `Chưa chuyển được · ${ten.get(l.student_id) ?? 'học viên'}`,
+      title: vi === 'huy' ? `Đã huỷ quyết định chuyển lớp · ${ten.get(l.student_id) ?? 'học viên'}` : `Chưa chuyển được · ${ten.get(l.student_id) ?? 'học viên'}`,
       body: msg, entityType: 'student', entityId: l.student_id, dedupKey: `lenh_${vi}:${l.id}`,
     });
   }
@@ -393,7 +393,7 @@ const soTuKck = (l: any): number | null => (l.khong_cam_ket ? TARGET_TAM : l.muc
 
 /**
  * Sau khi chuyển: em có lệnh KCK thì đặt Target = KCK. Lộ trình VỪA MỞ bởi lệnh (bắt đầu đúng Thứ Hai của lệnh, còn số tạm) → ghi thẳng, không có
- * sự kiện "Đổi mục tiêu 5 → KCK" (số tạm không phải mục tiêu thật). Lộ trình giữ nguyên (FT → FT cùng lộ trình) → đường sửa target có Hành trình.
+ * sự kiện "Đổi Target 5 → KCK" (số tạm không phải Target thật). Lộ trình giữ nguyên (FT → FT cùng lộ trình) → đường sửa target có Hành trình.
  * Không kiểm quyền lại: lệnh đã được kiểm lúc ra — người ra lệnh mất vai sau đó không được làm cả nhóm cuộn lại. Một câu đọc cho cả lô.
  */
 function datKck(p: Principal, ds: any[]) {
@@ -409,7 +409,7 @@ function datKck(p: Principal, ds: any[]) {
     const c = cyc.get(l.student_id);
     if (!c || c.khong_cam_ket) continue;
     if (c.started_at === l.tuan_bat_dau && c.target_score === TARGET_TAM) moi.push(c.id);
-    else reviseTarget(p, c.id, { newTarget: 'KCK', effectiveFrom: l.tuan_bat_dau, reason: 'Không cam kết (lệnh chuyển lớp)' }, { daDuyet: true });
+    else reviseTarget(p, c.id, { newTarget: 'KCK', effectiveFrom: l.tuan_bat_dau, reason: 'Không cam kết (quyết định chuyển lớp)' }, { daDuyet: true });
   }
   theoLo(moi, (lo, ph) => {
     conn.prepare(`UPDATE learning_cycles SET target_score = NULL, khong_cam_ket = 1 WHERE id IN (${ph})`).run(...lo);
@@ -432,7 +432,7 @@ function thiHanhCuoiKhoa(p: Principal, g: any, con: any[]): { id: number; loi: s
 }
 
 /**
- * Giữa khoá (một em, FT gộp/tách lớp): từng em qua `apDungMotDong` — ngoại lệ per-em được phép như S17 (hiếm). Bảo lưu / Dừng học qua
+ * Giữa khoá (một em, FT gộp/tách lớp): từng em qua `apDungMotDong` — ngoại lệ per-em được phép như S17 (hiếm). Tạm dừng học (bảo lưu) / Dừng học hẳn qua
  * `applyTransition` cho cả nhóm (cùng luật, cùng lô). Mỗi em một savepoint nên em lỗi không kéo em khác.
  */
 function thiHanhGiuaKhoa(p: Principal, g: any, con: any[]): { id: number; loi: string }[] {
@@ -462,7 +462,7 @@ function thiHanhGiuaKhoa(p: Principal, g: any, con: any[]): { id: number; loi: s
         const nguoiNhan: Record<number, number> = {};
         for (const [caseId, u] of goiY) if (u) nguoiNhan[caseId] = u.id;   // bỏ giá trị null (giữ người cũ)
         tx(() => {
-          if (!lopDichHopLe(l.lop_dich_id, g.lop_nguon_id)) throw badRequest('Lớp đích không hợp lệ.');
+          if (!lopDichHopLe(l.lop_dich_id, g.lop_nguon_id)) throw badRequest('Lớp chuyển đến không hợp lệ.');
           apDungMotDong(p, {
             sid: l.student_id, toClassId: l.lop_dich_id, ngay: g.tuan_bat_dau, lyDo: l.ly_do, mucTieu: soTuKck(l), thangThi: l.ngay_thi,
             nguoiNhan, boiCanh: 'giua-khoa',
@@ -482,7 +482,7 @@ function thiHanhGiuaKhoa(p: Principal, g: any, con: any[]): { id: number; loi: s
 
 // ==================================================================== đếm, đề xuất chuyển lớp (Task 6)
 
-/** Em `active` CHƯA CÓ lệnh chuyển đang chờ của mỗi lớp (chưa quyết = chưa có lệnh, Q3/Q30-4). Một câu cho cả lô lớp. */
+/** Em `active` CHƯA CÓ quyết định chuyển lớp đang chờ của mỗi lớp (chưa quyết = chưa có lệnh, Q3/Q30-4). Một câu cho cả lô lớp. */
 export function emChuaCoLenh(classIds: readonly number[]): Map<number, number[]> {
   const out = new Map<number, number[]>();
   theoLo([...classIds], (lo, ph) => {
@@ -502,7 +502,7 @@ export function demChuaCoLenh(classIds: readonly number[]): Map<number, number> 
 
 /**
  * LỚP THƯỜNG TỚI CUỐI KHOÁ CÒN EM CHƯA CÓ LỆNH CHUYỂN (PR-CT Q30-4 + PR-S5F-a: theo HÔM NAY, không theo chặng) mà người xem ra lệnh được
- * (`class.edit`). MỘT luật cho việc "Chuyển lớp cả lớp" của `myWork` và chỉ số `hv-chua-co-lenh-chuyen` ở Cần xử lý (PR-VAI-a Q8b).
+ * (`class.edit`). MỘT luật cho việc "Chuyển tiếp lớp" của `myWork` và chỉ số `hv-chua-co-lenh-chuyen` ở Cần xử lý (PR-VAI-a Q8b).
  */
 export function lopChoLenhChuyen(p: Principal, branchId: number | null, homNay: string) {
   const conn = db();
@@ -533,11 +533,11 @@ export function guiDeXuatChuyenLop(p: Principal, sid: number, v: { toClassId?: n
   const lyDo = typeof v.lyDo === 'string' ? v.lyDo.trim() : '';
   if (lyDo.length < NHAN_XET_TOI_THIEU) throw badRequest(`Ghi lý do (ít nhất ${NHAN_XET_TOI_THIEU} ký tự) để Quản lý có căn cứ duyệt.`);
   const toClassId = v.toClassId ? Number(v.toClassId) : null;
-  if (toClassId && !lopDichHopLe(toClassId, enr.class_id)) throw badRequest('Lớp muốn chuyển tới không hợp lệ.');
+  if (toClassId && !lopDichHopLe(toClassId, enr.class_id)) throw badRequest('Lớp chuyển đến không hợp lệ.');
   const tuan = v.tuan || null;
   if (tuan && !tuanHopLe(tuan, demoToday())) throw badRequest('Từ tuần phải là Thứ Hai của tuần sau trở đi.');
   /* Lệnh CHƯA chuyển được (có lỗi) không chặn đề xuất — Quản lý duyệt thì chính lệnh đó được sửa theo đề xuất (cùng lớp nguồn). */
-  if (conn.prepare(`SELECT 1 FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho' AND loi IS NULL`).get(sid)) throw badRequest('Em đã có lệnh chuyển lớp đang chờ.');
+  if (conn.prepare(`SELECT 1 FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho' AND loi IS NULL`).get(sid)) throw badRequest('Em đã có quyết định chuyển lớp đang chờ.');
   return tx(() => {
     const id = taoYeuCau(conn, {
       loai: 'de_xuat_chuyen_lop', doiTuongLoai: 'student:chuyen-lop', doiTuongId: sid, hocVienId: sid, lopId: enr.class_id,
@@ -549,7 +549,7 @@ export function guiDeXuatChuyenLop(p: Principal, sid: number, v: { toClassId?: n
   });
 }
 
-/** `khiDuyet` của thẻ Đề xuất chuyển lớp: `duLieu` là ô của panel D do Quản lý sửa (lớp đích, tuần, Target…) → RA LỆNH (`tu_yeu_cau_id`). */
+/** `khiDuyet` của thẻ Đề xuất chuyển lớp: `duLieu` là ô của panel D do Quản lý sửa (lớp chuyển đến, tuần, Target…) → RA LỆNH (`tu_yeu_cau_id`). */
 export function apDungDeXuatChuyenLop(p: Principal, yc: { id: number; hoc_vien_id: number | null; ly_do: string | null }, duLieu: unknown): void {
   const d = (duLieu ?? {}) as { lopDichId?: unknown; tuan?: unknown; lyDo?: unknown; mucTieu?: unknown; ngayThi?: unknown };
   if (!yc.hoc_vien_id) throw badRequest('Thẻ không có học viên.');
@@ -559,10 +559,10 @@ export function apDungDeXuatChuyenLop(p: Principal, yc: { id: number; hoc_vien_i
   ).get(yc.hoc_vien_id) as any;
   if (!enr) throw badRequest('Em không còn học lớp nào.');
   const lopDich = Number(d.lopDichId);
-  if (!lopDich) throw badRequest('Chọn lớp đích trước khi duyệt.');
+  if (!lopDich) throw badRequest('Chọn lớp chuyển đến trước khi duyệt.');
   const dich = lopDichHopLe(lopDich, enr.class_id);
-  if (!dich) throw badRequest('Lớp đích không hợp lệ.');
-  /* PR-S5F-a (planning chốt): lớp thường đã hết khoá / đang tuần kết thúc → hướng CUỐI KHOÁ (lên lớp / học lại / FT) như panel cả lớp, cùng luật lớp đích. */
+  if (!dich) throw badRequest('Lớp chuyển đến không hợp lệ.');
+  /* PR-S5F-a (planning chốt): lớp thường đã hết khoá / đang tuần kết thúc → hướng CUỐI KHOÁ (lên lớp / học lại / FT) như panel cả lớp, cùng luật lớp chuyển đến. */
   const hetKhoa = !enr.is_fast_track && mocKetKhoa(classProgressMany([enr.class_id]).get(enr.class_id), demoToday()).hetKhoa;
   const huong: HuongLenh = dich.is_fast_track && !enr.is_fast_track ? 'fast_track'
     : !hetKhoa ? 'chuyen_lop' : dich.programme_code === enr.programme_code ? 'hoc_lai' : 'len_lop';

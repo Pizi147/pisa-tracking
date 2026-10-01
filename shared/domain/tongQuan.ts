@@ -102,10 +102,10 @@ export const CAN_XU_LY: readonly {
   { metricId: 'pa-can-cap-nhat', nhan: 'PA chưa ghi kết quả', nut: 'Xem và nhắc', cuaNguoiXem: false, quaHan: true },
   /* PR-VAI-a Q8: bốn việc "của Bạn" — mỗi dòng một chỉ số gọi đúng hàm màn khác đang dùng. */
   { metricId: 'van-hanh-can-quyet-dinh', nhan: 'việc Vận hành cần quyết định', nut: 'Mở Vận hành', cuaNguoiXem: true },
-  { metricId: 'hv-chua-co-lenh-chuyen', nhan: 'em chưa có lệnh chuyển lớp', nut: 'Mở chuyển lớp', cuaNguoiXem: true },
+  { metricId: 'hv-chua-co-lenh-chuyen', nhan: 'em chưa có quyết định chuyển lớp', nut: 'Mở chuyển lớp', cuaNguoiXem: true },
   { metricId: 'lop-thieu-gv-mon', nhan: 'lớp thiếu GV môn', nut: 'Sửa phân công', cuaNguoiXem: true },
   { metricId: 'hv-ft-xong-mt-cuoi-chua-mt-ke', nhan: 'học viên FT xong MT3, chưa có MT kế tiếp', nut: 'Kế hoạch Test', cuaNguoiXem: true },
-  { metricId: 'hv-len-ft-chua-ky-vong', nhan: 'học viên lên Fast Track chưa đánh dấu kỳ vọng đầu ra', nut: 'Mở hồ sơ', cuaNguoiXem: true },
+  { metricId: 'hv-len-ft-chua-ky-vong', nhan: 'học viên lên FT chưa đánh dấu kỳ vọng đầu ra', nut: 'Mở hồ sơ', cuaNguoiXem: true },
 ];
 export const CAN_XU_LY_TOI_DA = 10;
 export type DongCanXuLyGoc = {

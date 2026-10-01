@@ -86,7 +86,7 @@ export function LichSapToi({ branchId, ct }: { branchId: number | null; ct: Chuo
       {hienFt && data.examMonthOnly.students > 0 && (
         <p className="m-0 border-t px-4 py-2.5 text-xs text-slate-500" style={{ borderColor: 'var(--line)' }}>
           <Info>Chưa xác định tuần</Info>{' '}
-          {data.examMonthOnly.students} học viên mới biết tháng dự kiến thi ({data.examMonthOnly.months.map(monthLabel).join(', ')}).
+          {data.examMonthOnly.students} học viên mới có dự kiến thi theo tháng ({data.examMonthOnly.months.map(monthLabel).join(', ')}).
         </p>
       )}
     </Card>

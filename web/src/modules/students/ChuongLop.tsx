@@ -167,7 +167,7 @@ function TheChuong({ c, homNay, onChon }: { c: ChuongWeb; homNay: string; onChon
                   ))}
                 </span>
               )}
-              {x.diTheoSang && <span className="text-[12px] text-slate-400">Case đi theo em sang {x.diTheoSang}</span>}
+              {x.diTheoSang && <span className="text-[12px] text-slate-400">Case bàn giao sang {x.diTheoSang}</span>}
             </div>
           ))}
         </div>

@@ -334,7 +334,7 @@ function PanelChamDiem({ kq, h, onDong }: { kq: PhanTichGvKq; h: HangPtGv; onDon
               <colgroup><col style={{ width: '20%' }} /><col style={{ width: '23%' }} /><col style={{ width: '11%' }} /><col style={{ width: '11%' }} /><col style={{ width: '16%' }} /><col style={{ width: '19%' }} /></colgroup>
               <thead><tr className="whitespace-nowrap">
                 <th className="th">Học viên</th><th className="th">Lớp · bài · kỹ năng</th><th className="th">Tuần thi</th>
-                <th className="th text-right">Hạn nhập</th><th className="th text-right">Lần nhập đầu</th><th className="th">Kết quả</th>
+                <th className="th text-right">Hạn chấm</th><th className="th text-right">Lần nhập đầu</th><th className="th">Kết quả</th>
               </tr></thead>
               <tbody>
                 {rows.map((r) => (

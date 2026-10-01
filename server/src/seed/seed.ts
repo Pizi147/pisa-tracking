@@ -281,7 +281,7 @@ export function runSeed() {
     return {
       'Chi nhánh': BRANCHES.length,
       'Thẻ Chờ duyệt (demo)': duyet.the,
-      'Lệnh chuyển lớp (demo PR-CT)': ct.lenh,
+      'Quyết định chuyển lớp (demo PR-CT)': ct.lenh,
       'Lớp': CLASSES.length,
       'Người dùng': userSeq,
       'Giáo viên': TEACHERS.length,
@@ -294,7 +294,7 @@ export function runSeed() {
        * TÍN HIỆU ĐẾM RIÊNG, KHÔNG GỘP VÀO CASE (mục 6.2). Một tín hiệu chưa ai xác minh
        * không phải một vấn đề đã được xác định; cộng chung là nói quá số việc đang có.
        */
-      'Tín hiệu từ điểm': (conn.prepare('SELECT COUNT(*) AS n FROM case_signals').get() as any).n,
+      'Case chờ xác nhận nguyên nhân': (conn.prepare('SELECT COUNT(*) AS n FROM case_signals').get() as any).n,
       /*
        * ĐẾM TỪ CHÍNH DATABASE, không cộng dồn trong lúc dựng.
        *

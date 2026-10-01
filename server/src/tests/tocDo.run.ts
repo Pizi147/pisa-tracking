@@ -600,7 +600,7 @@ await checkAsync('PR-S6F-b · tải trang đầu Tổng quan GV / QL: mỗi GET 
 
 /**
  * PR-TD Task 5 — nhân dữ liệu ×N: với MỖI HV đang có, chép thêm (N-1) bản (học viên, ghi danh — mọi trạng thái,
- * lộ trình, lượt MT, điểm từng kỹ năng, Case, phân loại vấn đề, tác động). KHÔNG nhân lớp (Q11 — lớp đổi chậm, nhân
+ * lộ trình, lượt MT, điểm từng kỹ năng, Case, nhóm nguyên nhân, tác động). KHÔNG nhân lớp (Q11 — lớp đổi chậm, nhân
  * lớp đòi sao chép phân công/lịch/chương trình, dễ sai). Đọc cột bằng `PRAGMA table_info` nên không cần liệt kê
  * tay từng cột của từng bảng — bảng đổi cột thì hàm này vẫn chạy đúng.
  */
@@ -768,7 +768,7 @@ await checkAsync(`PR-TOC · Thêm 35 em lớp FT (POST /intake/commit) ≤ ${TRA
   assert(r.n <= TRAN_GHI_LO.themHocVien35FT, `${r.n} câu > trần ${TRAN_GHI_LO.themHocVien35FT}`);
 });
 
-await checkAsync(`PR-TOC · Ra lệnh chuyển cả lớp thường sang FT (POST /classes/:id/transition, PR-CT) ≤ ${TRAN_GHI_LO.raLenhCaLop} câu SQL`, async () => {
+await checkAsync(`PR-TOC · Quyết định chuyển lớp cả lớp thường sang FT (POST /classes/:id/transition, PR-CT) ≤ ${TRAN_GHI_LO.raLenhCaLop} câu SQL`, async () => {
   const them = await callHttp('QL', 'POST', '/intake/commit', { classId: LOP_THUONG, rows: dongNhap('Tốc Độ Thường', 20, false), idempotencyKey: 'pr-toc-20' });
   assert(them.status === 200 && them.json.added === 20, `Chuẩn bị lớp thường 20 em: ${them.status} ${JSON.stringify(them.json)}`);
   const sids = (conn.prepare(
@@ -784,7 +784,7 @@ await checkAsync(`PR-TOC · Ra lệnh chuyển cả lớp thường sang FT (POS
   assert(r.n <= TRAN_GHI_LO.raLenhCaLop, `${r.n} câu > trần ${TRAN_GHI_LO.raLenhCaLop}`);
 });
 
-await checkAsync(`PR-TOC · THI HÀNH lệnh chuyển cả lớp thường sang FT (thiHanhLenhDenHan, PR-CT) ≤ ${TRAN_GHI_LO.chuyenCaLopSangFT} câu SQL, mỗi em có lịch MT mặc định`, async () => {
+await checkAsync(`PR-TOC · THI HÀNH quyết định chuyển lớp cả lớp thường sang FT (thiHanhLenhDenHan, PR-CT) ≤ ${TRAN_GHI_LO.chuyenCaLopSangFT} câu SQL, mỗi em có lịch MT mặc định`, async () => {
   const { thiHanhLenhDenHan } = await import('../classes/lenhChuyen.ts');
   const { demoToday } = await import('../demoConfig.ts');
   const { mondayOfDate } = await import('../../../shared/domain/index.ts');

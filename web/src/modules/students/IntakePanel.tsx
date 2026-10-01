@@ -33,7 +33,7 @@ const GOI_Y_COT: Partial<Record<CotNhap, string>> = {
   dob: 'Gõ dd/mm/yyyy.',
   baselineScore: 'Con số trên phiếu điểm chính thức. Nhập độc lập với bốn môn — không phải trung bình cộng.',
   entryWriting: 'Writing TỔNG trên phiếu điểm — không chia W1/W2.',
-  target: `Band 0–9, bước 0,5. Gõ KCK (hoặc -) nếu em không cam kết đầu ra: không kỳ vọng MT, không tính SOS. Bỏ trống = chưa có target.`,
+  target: `Band 0–9, bước 0,5. Gõ KCK (hoặc -) nếu em không cam kết đầu ra: không kỳ vọng MT, không tính SOS. Bỏ trống = chưa có Target.`,
   examDate: 'Gõ dd/mm/yyyy nếu đã biết ngày, mm/yyyy nếu mới biết tháng.',
   daThiToiMt: 'Em cũ đã thi tới MT mấy ngoài web — web tạo sẵn các lượt đó là MT lịch sử để nhập điểm bù. Bỏ trống = em mới.',
   startWeek: 'Theo tuần chọn ở đầu panel; đổi riêng từng dòng được.',

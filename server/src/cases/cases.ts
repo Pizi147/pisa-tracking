@@ -83,7 +83,7 @@ export function caseTitleOf(c: {
         ORDER BY m.attempt_no DESC LIMIT 1`,
     )
     .get(c.id) as any;
-  /* PR-S5F-a: tên môn theo chương trình LÚC MỞ Case (FOU "G+V") — Case đi theo em sang BE vẫn một tên, không lúc "G+V" lúc "Writing". */
+  /* PR-S5F-a: tên môn theo chương trình LÚC MỞ Case (FOU "G+V") — Case bàn giao sang BE vẫn một tên, không lúc "G+V" lúc "Writing". */
   const ctTen = latest?.ct_goc ?? latest?.ct ?? null;
   /* PR-SOS T21: Case SOS Fast Track = `[MT1] {phần giữa} [SOS 3]`; phần giữa người sửa được (`title`), mặc định `{kỹ năng} không đạt`. */
   if (c.origin_kind === 'mock' && (latest?.kind ?? 'mock') === 'mock') {
@@ -480,7 +480,7 @@ export function reportIssue(p: Principal, input: {
    */
   const allowed = issuesForTopic(topic, ctCuaCase).map((i) => i.code);
   const primaryCode = (input.primaryCode ?? '').trim();
-  if (!primaryCode) throw badRequest('Chọn phân loại vấn đề — đây là căn cứ để tổng hợp về sau.');
+  if (!primaryCode) throw badRequest('Chọn nhóm nguyên nhân — đây là căn cứ để tổng hợp về sau.');
   if (!allowed.includes(primaryCode)) {
     throw badRequest(`Phân loại đã chọn không thuộc bộ phân loại của ${caseTopicLabel(topic, ctCuaCase)}.`);
   }
@@ -1951,7 +1951,7 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
       /** Chủ đề: một trong năm ô L·R·W1·W2·S. */
       topic: r.topic as string | null,
       topicLabel: r.topic ? caseTopicLabel(r.topic, r.class_ct) : null,
-      /** Nhánh phân loại nguyên nhân, khi đã có người dạy nhận định. */
+      /** Nhánh nhóm nguyên nhân, khi đã có người dạy nhận định. */
       issueBranch: issueBranchOf(r.primary_code),
       status: r.status as string,
       disposition: r.disposition,
@@ -2261,7 +2261,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
   const oChuan: readonly string[] = caseCategoriesFor(isRatioCycle(cycle) ? 'ratio' : 'ielts_band', ctBang);
   /*
    * PR-UXF-b (R5-5): Case ĐANG MỞ mà lớp của LƯỢT sinh ra nó (`ct_attempt`) có TÊN MÔN khác chương trình đang xem (FOU "G+V" / "P" → BE "Writing" / "Speaking") không nằm ở hàng cùng khoá
-   * dữ liệu — hàng Writing của BE đọc thành "em yếu Writing" (khi chuyển lớp, Case đi theo em sang lộ trình mới nên không dựa vào `carried_over`). Chúng thành nhóm "Từ lớp trước" cuối
+   * dữ liệu — hàng Writing của BE đọc thành "em yếu Writing" (khi chuyển lớp, Case bàn giao sang lộ trình mới nên không dựa vào `carried_over`). Chúng thành nhóm "Case bàn giao" cuối
    * bảng, tên môn theo chương trình của LỚP đó. Tên giống nhau (L, R) giữ hàng. Chương trình / mã lớp đọc cùng câu SQL nạp Case (không thêm câu).
    */
   const tuLopTruoc = new Map<number, { ct: string | null; lop: string }>();
@@ -2272,7 +2272,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
   const oNgoai = [...new Set(caseRows.filter((c) => !tuLopTruoc.has(c.id) && (c.status !== 'done' || !c.carried_over)).map((c) => (c.category ?? categoryOf(c.topic)) as string | null)
     .filter((k): k is string => !!k && !oChuan.includes(k)))];
   const dongKyNang = (category: string, thuCu?: { ct: string | null; lop: string; cases: any[] }) => {
-    /* Hàng "Từ lớp trước": không mượn điểm của lộ trình đang xem. */
+    /* Hàng "Case bàn giao": không mượn điểm của lộ trình đang xem. */
     const points = thuCu ? [] : byCategory.get(category) ?? [];
     const latest = points[points.length - 1] ?? null;
     const prev = points.length > 1 ? points[points.length - 2] : null;
@@ -2322,7 +2322,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
       label: tenMon(thuCu ? thuCu.ct : ctBang, category),
       short: tenMonNgan(thuCu ? thuCu.ct : ctBang, category),
       chuongTrinh: thuCu ? thuCu.ct : ctBang,
-      /** PR-UXF-b (R5-5): mã lớp cũ của nhóm "Từ lớp trước" (dòng phụ "từ MB FOU 12"); null = hàng chuẩn. */
+      /** PR-UXF-b (R5-5): mã lớp cũ của nhóm "Case bàn giao" (dòng phụ "từ MB FOU 12"); null = hàng chuẩn. */
       tuLopTruoc: thuCu ? thuCu.lop : null,
       /* Band MT gần nhất — chưa có điểm thì để trống chứ không ghi 0. */
       band: latest?.band ?? null,

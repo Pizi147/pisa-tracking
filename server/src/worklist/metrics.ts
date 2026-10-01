@@ -683,7 +683,7 @@ function metricSetGoc(
       return done(r.rows.map((x: any) => x.id as number));
     }
     case 'hv-chua-co-lenh-chuyen':
-      /* (b) cùng `lopChoLenhChuyen` của việc "Chuyển lớp cả lớp" (`myWork`) — em chưa có lệnh của lớp thường đã tới Cuối khoá. */
+      /* (b) cùng `lopChoLenhChuyen` của việc "Chuyển tiếp lớp" (`myWork`) — em chưa có lệnh của lớp thường đã tới Cuối khoá. */
       return done([...new Set(lopChoLenhChuyen(p, scope.branchId, today).flatMap((x) => x.emIds))].sort((a, b) => a - b));
     case 'hv-ft-xong-mt-cuoi-chua-mt-ke': {
       /* (c) cùng hai điều kiện của `tomTatMt` (`XONG_MT_CUOI_SQL`, `CO_MOC_KE_TIEP_SQL`) + `coMocTiepTheo`: có ngày/tháng thi thì đã có mốc. */
