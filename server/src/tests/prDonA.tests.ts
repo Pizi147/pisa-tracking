@@ -253,4 +253,125 @@ export async function runPrDonATests(t: YThucTestKit) {
     const cy = cyclesSvc.createCycle(P.mbManager, { studentId: sid, route: 'RF', targetScore: 6.5, startedAt: TODAY });
     assert(cy.route === 'RF', 'khẳng định: RF');
   });
+
+  // ------------------------------------------------------------------ khối 3 · chia lô, trần mảng, trần chữ, chống gửi đôi, ROLLBACK
+  console.log('\nPR-Dọn-a · (3) Quét an toàn — chia lô, trần mảng và chữ tự do, chống gửi đôi, ROLLBACK');
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const toi = path.dirname(fileURLToPath(import.meta.url));
+  const REPO = ['../../..', '../../../..'].map((x) => path.resolve(toi, x)).find((x) => fs.existsSync(path.join(x, 'package.json')))!;
+  const docNguon = (f: string) => fs.readFileSync(path.join(REPO, f), 'utf8');
+  const keHoach: any = await import('../keHoach/keHoachTest.ts');
+  const lenh: any = await import('../classes/lenhChuyen.ts');
+  const accounts: any = await import('../platform/accounts.ts');
+  const viPham: any = await import('../yThuc/violations.ts');
+  const hieuQua: any = await import('../cases/effectiveness.ts');
+  const { tx } = await import('../db.ts');
+  const { chayTrongRequest, nho } = await import('../platform/nguCanhRequest.ts');
+
+  check('Dọn-a (3a) · #14 xếp lịch hàng loạt: 1 200 id (600 em khác nhau) → 400 "Tối đa 500"; 600 id trùng thành 300 em → không báo trần; IN chia lô', () => {
+    const mot = Array.from({ length: 600 }, (_, k) => k + 1);
+    const x = { classId: classId('MB FT 101'), attemptNo: 2, tuan: { listening: week.ensurePeriod(tuanNay).id }, xemTruoc: true };
+    const e = loiCua(() => keHoach.xepHangLoat(P.mbManager, { ...x, studentIds: [...mot, ...mot] }));
+    assert(e?.status === 400 && /Tối đa 500/.test(e.message), `1 200 id: ${e?.status} ${e?.message}`);
+    const e2 = loiCua(() => keHoach.xepHangLoat(P.mbManager, { ...x, studentIds: [...mot.slice(0, 300), ...mot.slice(0, 300)] }));
+    assert(!e2 || !/Tối đa/.test(e2.message), `600 id trùng: ${e2?.message}`);
+    assert(!/phOf\(i\.studentIds\.length\)/.test(docNguon('server/src/keHoach/keHoachTest.ts')), 'còn IN thô theo studentIds');
+  });
+
+  check('Dọn-a (3b) · #16 trần mảng: Thêm HV 201 dòng → 400; lệnh chuyển lớp 501 dòng → 400; nhập bù 51 dòng PA → 400', () => {
+    const e = loiCua(() => intake.previewIntake(P.mbManager, { classId: classId('MB FOU 12'), rows: Array.from({ length: 201 }, (_, k) => ({ fullName: `Em ${k}` })) }));
+    assert(e?.status === 400 && /Tối đa 200/.test(e.message), `201 dòng: ${e?.status} ${e?.message}`);
+    const e2 = loiCua(() => lenh.raLenh(P.mbManager, { lopNguonId: classId('MB FOU 12'), boiCanh: 'cuoi-khoa', tuanChung: null,
+      dongs: Array.from({ length: 501 }, (_, k) => ({ studentId: k + 1, huong: 'len_lop' })) }));
+    assert(e2?.status === 400 && /Tối đa 500/.test(e2.message), `501 dòng: ${e2?.status} ${e2?.message}`);
+    const { sid } = emMoi('MB FT 101');
+    const pa = { ketQua: 'partial', description: 'Tutor ngoài kèm', performerName: 'Tutor ngoài Lan', fromDate: '2026-08-01', toDate: '2026-08-10' };
+    const e3 = loiCua(() => cases.backfillCase(P.mbManager, { studentId: sid, topic: 'listening', primaryCode: d.issuesForTopic('listening')[0].code,
+      title: 'Nhập bù quá nhiều dòng', summary: 'Case nhập bù có 51 dòng PA.', fromDate: '2026-08-01', toDate: '2026-08-10',
+      actions: Array.from({ length: 51 }, () => pa), outcome: 'improved', note: 'Quá nhiều dòng PA.' }));
+    assert(e3?.status === 400 && /Tối đa 50/.test(e3.message), `51 PA: ${e3?.status} ${e3?.message}`);
+  });
+
+  check('Dọn-a (3c) · #23 đăng ký: họ tên 101 ký tự → 400; phone: {} → 400 (không phải 500)', () => {
+    const goc = { email: 'dona.thu.pisa@gmail.com', password: 'matkhau123', branches: ['MB'] };
+    assert(maLoi(() => accounts.register({ ...goc, fullName: 'A'.repeat(101) })) === 400, 'tên 101');
+    assert(maLoi(() => accounts.register({ ...goc, fullName: 'Người Thử', phone: {} })) === 400, 'phone {}');
+    assert(maLoi(() => accounts.register({ ...goc, fullName: 'Người Thử', note: 'x'.repeat(501) })) === 400, 'ghi chú 501');
+  });
+
+  check('Dọn-a (3d) · #24 chữ tự do qua chuTuDo (quét chuỗi) + gọi thật: lý do từ chối 2 001 → 400; mô tả vi phạm 2 001 → 400; tên Case 201 → 400', () => {
+    const phai: [string, RegExp][] = [
+      ['server/src/worklist/mgmttasks.ts', /chuTuDo\(input\.title, 'Tên công việc', 200\)/],
+      ['server/src/worklist/mgmttasks.ts', /chuTuDo\(input\.helpName, 'Cần ai hỗ trợ', 120\)/],
+      ['server/src/worklist/mgmttasks.ts', /chuTuDo\(input\.reason, 'Lý do', 2000\)/],
+      ['server/src/cases/cases.ts', /chuTuDo\(input\.title, 'Tên Case', 200\)/],
+      ['server/src/cases/cases.ts', /chuTuDo\(input\.summary, 'Mô tả', 2000\)/],
+      ['server/src/cases/cases.ts', /const closeNote = chuTuDo\(input\.note, 'Kết luận', 2000\)/],
+      ['server/src/yThuc/violations.ts', /chuTuDo\(description, 'Mô tả vi phạm', 2000\)/],
+      ['server/src/duyet/yeuCau.ts', /chuTuDo\(v\.ghiChu, 'Ghi chú', 2000\)/],
+      ['server/src/duyet/yeuCau.ts', /chuTuDo\(lyDo, 'Lý do', 2000\)/],
+      ['server/src/duyet/yeuCau.ts', /chuTuDo\(traLoi, 'Câu trả lời', 2000\)/],
+      ['server/src/classes/lenhChuyen.ts', /chuTuDo\(d\?\.lyDo, 'Lý do', 2000\)/],
+      ['server/src/routes/index.ts', /chuTuDo\(req\.body\.lyDo, 'Lý do chuyển lớp', 2000\)/],
+      ['server/src/fasttrack/attempts.ts', /chuTuDo\(patch\.note, 'Ghi chú', 2000\)/],
+      ['server/src/platform/accounts.ts', /chuTuDo\(input\.phone, 'Điện thoại', 20\)/],
+    ];
+    const thieu = phai.filter(([f, re]) => !re.test(docNguon(f))).map(([f, re]) => `${f} ${re}`);
+    assert(!thieu.length, `chưa qua chuTuDo:\n${thieu.join('\n')}`);
+    const id = theDeXuatMb();
+    const e = loiCua(() => yc.tuChoiYeuCau(P.mbManager, id, 'x'.repeat(2001)));
+    assert(e?.status === 400 && /Tối đa 2000/.test(e.message), `lý do từ chối: ${e?.status} ${e?.message}`);
+    const { sid } = emMoi('MB FT 101');
+    const e2 = loiCua(() => viPham.recordViolation(P.w1Teacher, { studentId: sid, category: 'homework', description: 'x'.repeat(2001), occurredOn: TODAY }));
+    assert(e2?.status === 400 && /Tối đa 2000/.test(e2.message), `mô tả vi phạm: ${e2?.status} ${e2?.message}`);
+    const e3 = loiCua(() => cases.reportIssue(P.lrTeacher, { studentId: sid, topic: 'listening', title: 'T'.repeat(201), summary: 'Tên Case quá dài phải bị chặn.',
+      primaryCode: d.issuesForTopic('listening')[0].code }));
+    assert(e3?.status === 400 && /Tối đa 200/.test(e3.message), `tên Case: ${e3?.status} ${e3?.message}`);
+  });
+
+  check('Dọn-a (3e) · #26 bấm đúp (cùng người, cùng nội dung, trong 10 giây) → MỘT PA, MỘT lần xem lại, MỘT việc Vận hành, MỘT việc /tasks', () => {
+    const { sid } = emMoi('MB FT 101');
+    const c = cases.reportIssue(P.lrTeacher, { studentId: sid, topic: 'listening', title: 'Case thử bấm đúp', summary: 'Case dùng cho phép kiểm bấm đúp.',
+      primaryCode: d.issuesForTopic('listening')[0].code, idempotencyKey: `dona-dup-${sid}` });
+    const pa = { kind: 'tutor', description: 'Kèm 1-1 hai buổi một tuần', status: 'started', startedDate: TODAY, performerSelf: true };
+    cases.recordIntervention(P.lrTeacher, c.id, pa);
+    cases.recordIntervention(P.lrTeacher, c.id, pa);
+    const nPa = get('SELECT COUNT(*) n FROM case_interventions WHERE case_id = ?', c.id).n;
+    const fu = { outcome: null, note: 'Em tiến bộ ở dạng điền từ.' };
+    cases.recordFollowUp(P.lrTeacher, c.id, fu);
+    cases.recordFollowUp(P.lrTeacher, c.id, fu);
+    const nFu = get(`SELECT COUNT(*) n FROM case_followups WHERE case_id = ? AND note = ?`, c.id, fu.note).n;
+    const viec = { title: `Việc bấm đúp Dọn-a ${sid}`, group: 'teacher', branchId: MB };
+    const v1 = mgmt.createMgmtTask(P.mbManager, viec);
+    const v2 = mgmt.createMgmtTask(P.mbManager, viec);
+    const t1 = meeting.createTask(P.mbManager, { title: `Việc /tasks bấm đúp ${sid}`, kind: 'branch_ops', branchId: MB });
+    const t2 = meeting.createTask(P.mbManager, { title: `Việc /tasks bấm đúp ${sid}`, kind: 'branch_ops', branchId: MB });
+    assert(nPa === 1 && nFu === 1 && v1.id === v2.id && t1.id === t2.id, JSON.stringify({ nPa, nFu, v: [v1.id, v2.id], t: [t1.id, t2.id] }));
+    /* Nội dung khác → bản ghi mới (không chặn nhầm). */
+    cases.recordIntervention(P.lrTeacher, c.id, { ...pa, description: 'Kèm 1-1 ba buổi một tuần' });
+    assert(get('SELECT COUNT(*) n FROM case_interventions WHERE case_id = ?', c.id).n === 2, 'PA khác nội dung bị chặn nhầm');
+  });
+
+  check('Dọn-a (3f) · #27 ROLLBACK / ROLLBACK TO xoá bộ nhớ request: giá trị nhớ trong giao dịch đã cuộn lại được đọc lại từ DB (Q7)', () => {
+    chayTrongRequest('GET', () => {
+      let n = 0;
+      try { tx(() => { nho('dona-k', () => ++n); throw new Error('cuộn lại'); }); } catch { /* cố ý */ }
+      assert(nho('dona-k', () => ++n) === 2, 'ROLLBACK: vẫn đọc giá trị nhớ cũ');
+      let m = 0;
+      tx(() => {
+        try { tx(() => { nho('dona-k2', () => ++m); throw new Error('cuộn savepoint'); }); } catch { /* cố ý */ }
+        assert(nho('dona-k2', () => ++m) === 2, 'ROLLBACK TO: vẫn đọc giá trị nhớ cũ');
+      });
+    });
+  });
+
+  check('Dọn-a (3g) · #17 bảng vấn đề theo kỹ năng nhận 1 200 em không lỗi; câu IN theo em chia lô', () => {
+    const ids = all('SELECT id FROM students ORDER BY id LIMIT 1200').map((r) => r.id);
+    while (ids.length < 1200) ids.push(900000 + ids.length);
+    const b = hieuQua.issueBoard({ studentIds: ids }, 'listening');
+    assert(b && Array.isArray(b.rows), 'issueBoard 1 200 em');
+    assert(!/\.all\(\.\.\.sids\) as any\[\];\s*const mine/.test(docNguon('server/src/cases/effectiveness.ts')), 'còn IN thô theo sids');
+  });
 }

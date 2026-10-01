@@ -1,4 +1,4 @@
-import { db, tx } from '../db.ts';
+import { db, tx, vuaGhi } from '../db.ts';
 import { boTroCuaCase, chepKetQuaNhom, quyenBoTro, type BoTroDto } from './boTro.ts';
 import { ghiMiniTestTrongTx, kiemMiniTest } from '../normal/cuoiKhoa.ts';
 import {
@@ -21,7 +21,7 @@ import {
   SIGNAL_WITHDRAW_SCORE_FIXED, caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac, chanHoanThanh, laLanGhiCuoi, mocChuPa, programmeOf, quyetDinhChoPa, trangThaiCaseV4, viecTiepCuaCase, tenCaseSos, tenCaseThuong, nhanDot, tenMon, tenMonNgan,
   type CaseOutcome, type FollowUpOutcome, type InterventionKind,
 } from '../../../shared/domain/index.ts';
-import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
+import { addDays, badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, isCoreTeacherOf, napTruocPhamVi, require_, scopeFor, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { nho, trongBoNho } from '../platform/nguCanhRequest.ts';
@@ -163,7 +163,7 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
    * GHI CHÚ BẮT BUỘC KHI HOÀN THÀNH CASE (mục 9.2). Bốn mức "thành công đến đâu" không nói được đã làm gì và vì sao kết thúc —
    * mà đó chính là câu người đọc hồ sơ ba tháng sau cần.
    */
-  const closeNote = (input.note ?? '').trim();
+  const closeNote = chuTuDo(input.note, 'Kết luận', 2000) ?? '';   // PR-Dọn (Q4, quét #24)
   if (closeNote.length < 10) {
     throw badRequest('Hoàn thành case thì phải ghi kết luận — ít nhất 10 ký tự.');
   }
@@ -410,12 +410,13 @@ export function reportIssue(p: Principal, input: {
    * case tên "Reading dưới kỳ vọng" do máy đặt, mô tả trống, phân loại "Chưa rõ" — mở ra
    * không biết em vướng gì, và không bảng tổng hợp nào đếm được.
    */
-  const title = (input.title ?? '').trim();
+  /* PR-Dọn (Q4, quét #24): tên ≤ 200, mô tả ≤ 2 000 ký tự. */
+  const title = chuTuDo(input.title, 'Tên Case', 200) ?? '';
   if (title.length < 6) {
     throw badRequest('Đặt tên cho case — một câu ngắn nói đúng vấn đề, ví dụ '
       + '"Reading: chưa xử lý được dạng True/False/Not Given".');
   }
-  const summary = (input.summary ?? '').trim();
+  const summary = chuTuDo(input.summary, 'Mô tả', 2000) ?? '';
   if (summary.length < 15) {
     throw badRequest('Cần mô tả vấn đề cụ thể hơn: em sai ở đâu, sai như thế nào.');
   }
@@ -841,6 +842,8 @@ export function recordIntervention(p: Principal, caseId: number, input: {
   const performerName = nguoi?.name ?? null;
 
   return tx(() => {
+    /* PR-Dọn (quét #26): bấm đúp → trả lại PA vừa ghi. Nhập bù cố ý ghi nhiều dòng có thể giống nhau — không chặn. */
+    if (!input.backfill && vuaGhi('case_interventions', { case_id: caseId, kind: input.kind, description, recorded_by: p.userId })) return caseDetail(p, caseId);
     /*
      * HẠN QUẢN LÝ PHẢI TRẢ LỜI — `HAN_DUYET_NGAY` (5) ngày, tính cả ngày gửi (T54, K3-18, PR-N1).
      * Quá hạn KHÔNG chặn gì cả; nó nổi lên màn của Quản lý để một đề xuất không nằm
@@ -1159,18 +1162,19 @@ export function backfillCase(p: Principal, input: {
   if (input.fromDate > input.toDate) throw badRequest('Ngày bắt đầu phải trước ngày kết thúc.');
   if (input.toDate > today) throw badRequest('Không nhập bù được một case kết thúc ở tương lai.');
 
-  if (!input.actions?.length) {
+  if (!Array.isArray(input.actions) || !input.actions.length) {
     throw badRequest('Ghi ít nhất một dòng "đã làm gì" — nhập bù mà không có việc gì đã làm thì không có gì để ghi.');
   }
+  if (input.actions.length > 50) throw badRequest('Tối đa 50 dòng "đã làm gì" cho một Case nhập bù.');   // PR-Dọn (Q6, quét #16)
   for (const [i, a] of input.actions.entries()) {
     if (!(FOLLOWUP_OUTCOMES as readonly string[]).includes(String(a.ketQua ?? ''))) throw badRequest(`Dòng PA ${i + 1}: chọn Kết quả PA.`);
     if (!isIsoDate(a.fromDate) || !isIsoDate(a.toDate)) throw badRequest('Một dòng "đã làm gì" có ngày không hợp lệ.');
     if (a.fromDate > a.toDate) throw badRequest('Một dòng "đã làm gì" có ngày bắt đầu sau ngày kết thúc.');
     if (a.toDate > today) throw badRequest('Không ghi được một việc đã xong ở ngày tương lai.');
-    if ((a.description ?? '').trim().length < 3) throw badRequest('Mỗi dòng "đã làm gì" phải nói rõ đã làm gì.');
+    if ((chuTuDo(a.description, `Dòng PA ${i + 1}`, 2000) ?? '').length < 3) throw badRequest('Mỗi dòng "đã làm gì" phải nói rõ đã làm gì.');
     chuanHoaNguoiThucHien(p, a, { nhom: 'giao_vien', batBuoc: true });
   }
-  const note = (input.note ?? '').trim();
+  const note = chuTuDo(input.note, 'Kết luận', 2000) ?? '';   // PR-Dọn (Q4, quét #24)
   /*
    * GHI CHÚ KẾT LUẬN BẮT BUỘC — "ngày quá khứ không tự chứng minh hiệu quả" (mục 2 sổ audio).
    * Giao diện đã chặn dưới 10 ký tự, nhưng chặn TAY ở đây nữa: đây là API thật, gọi thẳng
@@ -1284,6 +1288,9 @@ export function recordFollowUp(p: Principal, caseId: number, input: {
   }
 
   return tx(() => {
+    /* PR-Dọn (quét #26): bấm đúp → trả lại lần xem lại vừa ghi. */
+    if (vuaGhi('case_followups', { case_id: caseId, intervention_id: input.interventionId ?? null, observer_user_id: p.userId,
+      outcome: input.outcome ?? null, note: input.note ?? null })) return caseDetail(p, caseId);
     const info = conn
       .prepare(
         `INSERT INTO case_followups (case_id, intervention_id, observed_on, observer_user_id,

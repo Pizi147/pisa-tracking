@@ -173,6 +173,7 @@ export function previewIntake(
   if (!Array.isArray(input.rows) || input.rows.some((r) => !r || typeof r !== 'object' || Array.isArray(r))) {
     throw badRequest('Dữ liệu nhập không hợp lệ — cần danh sách dòng.');
   }
+  if (input.rows.length > 200) throw badRequest('Tối đa 200 học viên một lần thêm.');   // PR-Dọn (Q6, quét #16)
   input.rows.forEach((r, i) => kiemKieuO(r as Record<string, unknown>, COT_CHU, COT_SO, (k) => `Dòng ${i + 1} · ${nhanCotNhap(k)}`));
   kiemKieuO(input as Record<string, unknown>, ['defaultStartWeek'], [], () => 'Tuần bắt đầu');
 

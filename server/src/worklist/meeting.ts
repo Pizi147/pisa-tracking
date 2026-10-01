@@ -1,11 +1,11 @@
-import { db, tx } from '../db.ts';
+import { db, tx, vuaGhi } from '../db.ts';
 import {
   BRANCH_REPORT_CATEGORIES, ENTRY_SKILLS, PERMISSIONS, tenMon,
   TASK_PROGRESS, TASK_PROGRESS_LABEL, TASK_TYPES,
   TUTOR_REPORT_CATEGORIES, UNIT_STATUSES, trangThaiDonVi, trangThaiO, type DueState,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, diffDays, forbidden, isIsoDate, notFound, nowIso, padCode } from '../util.ts';
+import { badRequest, chuTuDo, diffDays, forbidden, isIsoDate, notFound, nowIso, padCode } from '../util.ts';
 import { can, require_, scopeFor, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { owningMonth, periodById, reportEditWindow } from '../platform/week.ts';
@@ -571,7 +571,7 @@ export function createTask(p: Principal, input: any) {
     ? (conn.prepare('SELECT branch_id FROM reporting_units WHERE id = ?').get(input.unitId) as any)?.branch_id ?? null
     : null);
   require_(p, PERMISSIONS.MEETING_EDIT, { branchId, anyScope: branchId === null }, 'Bạn không có quyền tạo công việc.');
-  if (!input.title?.trim()) throw badRequest('Cần nội dung công việc.');
+  if (!chuTuDo(input.title, 'Nội dung công việc', 200)) throw badRequest('Cần nội dung công việc.');   // PR-Dọn (Q4): kiểu + trần
   if (input.dueDate && !isIsoDate(input.dueDate)) throw badRequest('Hạn không hợp lệ.');
   // `Loại` đã bỏ khỏi form; cột cũ giữ nguyên giá trị lịch sử, việc mới ghi mặc định.
   const taskType = 'in_period';
@@ -585,6 +585,9 @@ export function createTask(p: Principal, input: any) {
   }
 
   return tx(() => {
+    /* PR-Dọn (quét #26): bấm đúp → trả lại việc vừa tạo (việc giao GV toả PA cho từng em — gửi đôi là nhân đôi PA). */
+    const cu = vuaGhi('tasks', { title: input.title.trim(), kind, class_id: input.classId ?? null, branch_id: branchId, created_by: p.userId });
+    if (cu) return conn.prepare('SELECT * FROM tasks WHERE id = ?').get(cu);
     const n = (conn.prepare('SELECT COUNT(*) AS n FROM tasks').get() as any).n as number;
     const code = padCode('CV', n + 1, 4);
     const info = conn

@@ -9,7 +9,7 @@ import {
 } from '../../../shared/domain/index.ts';
 import { docBoLocXuatMt, kiemGhiRoKhac, laKhac, soSanhLop, transferReasonText } from '../../../shared/domain/index.ts';
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
-import { HttpError, badRequest, forbidden, isIsoDate, notFound, toInt } from '../util.ts';
+import { HttpError, badRequest, chuTuDo, forbidden, isIsoDate, notFound, toInt } from '../util.ts';
 import { SESSION_COOKIE, createSession, destroySession, principalOf, requireAuth } from '../auth.ts';
 import { can, loadPrincipal, permissionSummary, require_, scopeFor } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
@@ -1846,7 +1846,7 @@ api.post('/students/:id/transfer', requireAuth, wrap((req) => {
   } = req.body ?? {};
   if (!toClassId) throw badRequest('Cần chọn lớp đích.');
   /* PR-CT: panel mới gửi thẳng `lyDo` (một ô chữ ≥ 3 ký tự); đường lý do chọn nhanh cũ giữ cho phép kiểm và client cũ. */
-  const lyDoTuDo = typeof req.body?.lyDo === 'string' ? req.body.lyDo.trim() : '';
+  const lyDoTuDo = typeof req.body?.lyDo === 'string' ? chuTuDo(req.body.lyDo, 'Lý do chuyển lớp', 2000) ?? '' : '';   // PR-Dọn (Q4, quét #24)
   if (req.body?.lyDo !== undefined && lyDoTuDo.length < 3) throw badRequest('Ghi lý do chuyển lớp (ít nhất 3 ký tự).');
   /* RB-3: lý do chọn nhanh BẮT BUỘC; "Khác" phải ghi rõ ≥ 3 ký tự (T13). */
   if (!lyDoTuDo && laKhac(reasonCode)) {

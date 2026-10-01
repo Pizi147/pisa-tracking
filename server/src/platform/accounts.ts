@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { db, tx } from '../db.ts';
 import { ENTRY_SKILLS, PERMISSIONS } from '../../../shared/domain/index.ts';
-import { badRequest, forbidden, notFound, nowIso, padCode } from '../util.ts';
+import { badRequest, chuTuDo, forbidden, notFound, nowIso, padCode } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from './audit.ts';
 
@@ -130,8 +130,11 @@ export function register(input: {
   const conn = db();
   const email = checkEmail(input.email);
   const password = checkPassword(input.password);
-  const fullName = String(input.fullName ?? '').trim();
+  const fullName = chuTuDo(input.fullName, 'Họ tên', 100) ?? '';   // PR-Dọn (Q4, quét #23)
   if (!fullName) throw badRequest('Nhập họ tên.');
+  /* Đường chưa đăng nhập: điện thoại, ghi chú cũng có kiểu và trần. */
+  const phone = chuTuDo(input.phone, 'Điện thoại', 20);
+  const note = chuTuDo(input.note, 'Ghi chú', 500);
 
   if (conn.prepare('SELECT 1 FROM users WHERE email = ?').get(email)) {
     throw badRequest('Email này đã có tài khoản. Đăng nhập, hoặc nhờ Quản trị hệ thống đặt lại mật khẩu.');
@@ -149,8 +152,8 @@ export function register(input: {
                             approval_state, requested_branches, requested_note, status, created_at)
          VALUES (?,?,?,?,?,?,?, 'pending', ?,?, 'active', ?)`,
       )
-      .run(nextUserCode(conn), fullName, email, 'Giáo viên', input.phone ?? null, hash, salt,
-           JSON.stringify(codes), input.note ?? null, nowIso());
+      .run(nextUserCode(conn), fullName, email, 'Giáo viên', phone, hash, salt,
+           JSON.stringify(codes), note, nowIso());
     const userId = Number(info.lastInsertRowid);
     setSkills(conn, userId, input.skills ?? []);
     /* PR-DUYET (K1-41): Quản trị biết có đăng ký mới ngay ở chuông — bấm về Quản trị › Tài khoản. */
@@ -293,7 +296,7 @@ export function createAccount(p: Principal, input: {
   const conn = db();
   const email = checkEmail(input.email);
   const password = checkPassword(input.password);
-  const fullName = String(input.fullName ?? '').trim();
+  const fullName = chuTuDo(input.fullName, 'Họ tên', 100) ?? '';   // PR-Dọn (Q4, quét #23)
   if (!fullName) throw badRequest('Nhập họ tên.');
   if (conn.prepare('SELECT 1 FROM users WHERE email = ?').get(email)) {
     throw badRequest('Email này đã có tài khoản.');
@@ -389,12 +392,12 @@ export function updateProfile(p: Principal, input: {
   const u = conn.prepare('SELECT * FROM users WHERE id = ?').get(p.userId) as any;
   return tx(() => {
     if (input.fullName !== undefined) {
-      const name = String(input.fullName).trim();
+      const name = chuTuDo(input.fullName, 'Họ tên', 100);   // PR-Dọn (quét #23)
       if (!name) throw badRequest('Họ tên không được để trống.');
       conn.prepare('UPDATE users SET full_name = ? WHERE id = ?').run(name, p.userId);
     }
     if (input.phone !== undefined) {
-      conn.prepare('UPDATE users SET phone = ? WHERE id = ?').run(input.phone || null, p.userId);
+      conn.prepare('UPDATE users SET phone = ? WHERE id = ?').run(chuTuDo(input.phone, 'Điện thoại', 20), p.userId);
     }
     if (input.skills !== undefined) setSkills(conn, p.userId, input.skills);
     if (input.extraEmails !== undefined) {

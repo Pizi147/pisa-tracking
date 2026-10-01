@@ -1,4 +1,4 @@
-import { db, tx } from '../db.ts';
+import { db, tx, vuaGhi } from '../db.ts';
 import {
   PERMISSIONS, TASK_GROUPS, TASK_PROGRESS, TASK_PROGRESS_CLOSED, TASK_PROGRESS_LABEL,
   TASK_PROGRESS_NEEDS_REASON, facetVanHanh, locVanHanh,
@@ -391,7 +391,9 @@ export function createMgmtTask(p: Principal, input: {
 }) {
   require_(p, PERMISSIONS.MEETING_EDIT, { branchId: input.branchId ?? null, anyScope: !input.branchId },
     'Chỉ Quản lý mới tạo được công việc quản lý.');
-  const title = (input.title ?? '').trim();
+  /* PR-Dọn (Q4, quét #24): chữ tự do có kiểu và trần. */
+  const title = chuTuDo(input.title, 'Tên công việc', 200) ?? '';
+  chuTuDo(input.note, 'Ghi chú', 2000);
   if (!title) throw badRequest('Công việc phải có tên.');
   if (!(TASK_GROUPS as readonly string[]).includes(input.group)) {
     throw badRequest('Công việc phải thuộc một trong bốn nhóm quản lý.');
@@ -444,6 +446,9 @@ export function createMgmtTask(p: Principal, input: {
   }
 
   return tx(() => {
+    /* PR-Dọn (quét #26): bấm đúp → trả lại việc vừa tạo. */
+    const cu = vuaGhi('tasks', { title, kind: 'branch_ops', branch_id: taskBranchId, parent_task_id: input.parentTaskId ?? null, created_by: p.userId });
+    if (cu) return mgmtTaskDetail(p, cu);
     const info = conn
       .prepare(
         `INSERT INTO tasks (code, title, kind, task_type, group_key, parent_task_id,
@@ -514,7 +519,8 @@ export function updateMgmtTask(p: Principal, taskId: number, input: {
     throw badRequest('Trạng thái không hợp lệ.');
   }
   const needReason = (TASK_PROGRESS_NEEDS_REASON as readonly string[]).includes(input.progress);
-  const reason = (input.reason ?? '').trim();
+  const reason = chuTuDo(input.reason, 'Lý do', 2000) ?? '';   // PR-Dọn (Q4, quét #24)
+  chuTuDo(input.note, 'Ghi chú', 2000);
   if (needReason && !reason) {
     throw badRequest(
       `"${TASK_PROGRESS_LABEL[input.progress as TaskProgress]}" phải ghi lý do — `

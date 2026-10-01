@@ -3,7 +3,7 @@ import {
   NHAN_XET_TOI_THIEU, PERMISSIONS, coPhieu, canLopDich, hanBanGiao, khacGoiY, kiemDongChuyenTiep, kiemDongLenh, tuanHopLe, tuanLich,
   type HuongLenh, type MucTieuLenh, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
-import { badRequest, conflict, notFound, nowIso } from '../util.ts';
+import { badRequest, chuTuDo, conflict, notFound, nowIso } from '../util.ts';
 import { can, loadPrincipal, require_, type Principal } from '../permissions.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { reviseTarget } from '../fasttrack/cycles.ts';
@@ -71,7 +71,9 @@ export function raLenh(p: Principal, v: {
   const nguon = conn.prepare('SELECT * FROM classes WHERE id = ?').get(v.lopNguonId) as any;
   if (!nguon) throw notFound('Không tìm thấy lớp');
   require_(p, PERMISSIONS.CLASS_EDIT, { classId: v.lopNguonId }, CUNG_LOP_CHI_NHANH);
-  if (!v.dongs?.length) throw badRequest('Chưa chọn học viên nào để chuyển.');
+  if (!Array.isArray(v.dongs) || !v.dongs.length) throw badRequest('Chưa chọn học viên nào để chuyển.');
+  if (v.dongs.length > 500) throw badRequest('Tối đa 500 học viên một lệnh.');   // PR-Dọn (Q6, quét #16)
+  for (const d of v.dongs) chuTuDo(d?.lyDo, 'Lý do', 2000);   // PR-Dọn (Q4, quét #24)
 
   return tx(() => {
     const homNay = demoToday();

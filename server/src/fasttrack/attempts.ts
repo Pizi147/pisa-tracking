@@ -6,7 +6,7 @@ import {
   type AssessedSkill, type EntrySkill, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
+import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { dotHoanTat, dotHoanTatMany, quyenSuaSauHoanTat } from './hoanTat.ts';
 import {
   can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, moveableSkills, mySkills, require_, requireXemLuotCham, scopeFor, scoreEditPath, type LuotQuyen,
@@ -1617,6 +1617,7 @@ export function saveScore(
     if (resultDate && !isIsoDate(resultDate)) throw badRequest('Ngày có kết quả không hợp lệ.');
     /* PR-Dọn (quét #19): ngày có kết quả MỚI gửi lên không được ở tương lai (theo ngày nghiệp vụ). */
     if (patch.resultDate && patch.resultDate > demoToday()) throw badRequest('Ngày có kết quả không được ở tương lai.');
+    chuTuDo(patch.note, 'Ghi chú', 2000);   // PR-Dọn (Q4, quét #24)
 
     let raw: number | null = existing?.raw_score ?? null;
     let total: number | null = existing?.raw_total ?? null;

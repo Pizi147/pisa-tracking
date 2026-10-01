@@ -441,39 +441,35 @@ export function issueBoard(scope: Scope, category: string) {
       needsEvaluation: { count: 0, ids: [] as number[] },
     };
   }
-  const ph = sids.map(() => '?').join(',');
-
-  const cases = conn
-    .prepare(
-      `SELECT sc.id, sc.student_id, sc.status, sc.category, sc.topic, sc.disposition, sc.outcome,
-              (SELECT COUNT(*) FROM case_interventions i WHERE i.case_id = sc.id) AS iv_all
-         FROM sos_cases sc
-        WHERE sc.student_id IN (${ph})`,
-    )
-    .all(...sids) as any[];
+  /* PR-Dọn (quét #17): chia lô — phạm vi chi nhánh có thể vượt 900 em. */
+  const cases: any[] = [];
+  theoLo(sids, (lo, ph) => {
+    cases.push(...conn
+      .prepare(
+        `SELECT sc.id, sc.student_id, sc.status, sc.category, sc.topic, sc.disposition, sc.outcome,
+                (SELECT COUNT(*) FROM case_interventions i WHERE i.case_id = sc.id) AS iv_all
+           FROM sos_cases sc
+          WHERE sc.student_id IN (${ph})`,
+      )
+      .all(...lo) as any[]);
+  });
   const mine = cases.filter((c) => (c.category ?? categoryOf(c.topic)) === category);
   const caseIds = mine.map((c) => c.id);
 
-  const issues = caseIds.length
-    ? (conn
-        .prepare(
-          `SELECT case_id, taxonomy_code FROM case_issues
-            WHERE role = 'primary' AND case_id IN (${caseIds.map(() => '?').join(',')})`,
-        )
-        .all(...caseIds) as any[])
-    : [];
+  const issues: any[] = [];
+  const ivs: any[] = [];
+  theoLo(caseIds, (lo, ph) => {
+    issues.push(...conn.prepare(`SELECT case_id, taxonomy_code FROM case_issues WHERE role = 'primary' AND case_id IN (${ph})`).all(...lo) as any[]);
+    ivs.push(...conn
+      .prepare(
+        `SELECT iv.*, sc.id AS case_id FROM case_interventions iv
+           JOIN sos_cases sc ON sc.id = iv.case_id
+          WHERE iv.case_id IN (${ph}) AND iv.status != 'cancelled'
+            AND ${NOT_UNCONFIRMED_PRESET('iv')}`,
+      )
+      .all(...lo) as any[]);
+  });
   const codeOf = new Map<number, string>(issues.map((i) => [i.case_id, i.taxonomy_code]));
-
-  const ivs = caseIds.length
-    ? (conn
-        .prepare(
-          `SELECT iv.*, sc.id AS case_id FROM case_interventions iv
-             JOIN sos_cases sc ON sc.id = iv.case_id
-            WHERE iv.case_id IN (${caseIds.map(() => '?').join(',')}) AND iv.status != 'cancelled'
-              AND ${NOT_UNCONFIRMED_PRESET('iv')}`,
-        )
-        .all(...caseIds) as any[])
-    : [];
   /*
    * KẾT QUẢ THEO ĐƠN VỊ TẠI THỜI ĐIỂM HỖ TRỢ (F03). Danh sách CASE ở trên là hiện trạng (em đang học
    * ở đây), còn kết quả hỗ trợ là lịch sử: gán theo nơi em học lúc phương án xảy ra. Phạm vi không

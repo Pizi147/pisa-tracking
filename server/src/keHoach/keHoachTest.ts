@@ -8,7 +8,7 @@
  *
  * Quyền: MỌI hàm ở đây gọi `require_(PLAN_WEEK, { classId })` TRƯỚC khi đọc gì của lớp/em (QL chi nhánh khác → 403).
  */
-import { db, tx } from '../db.ts';
+import { db, theoLo, tx } from '../db.ts';
 import {
   KY_NANG_KE_HOACH, MT_TOI_DA, O_KE_HOACH, PERMISSIONS, boMonLich, kiemLyDoThaoTac, kiemSoMtMoi, kiemTuanDaQua, laLichSu, lichMtMacDinh, viecXepMt, laVaoMuon, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang,
   tuanKhoa as tuanKhoaCua,
@@ -876,19 +876,19 @@ export function xepHangLoat(p: Principal, i: {
   const bo: readonly KyNangKH[] = laThuong ? boMonThuong(programmeByCode(cls.ct)) : KY_NANG_KE_HOACH;
   for (const k of bo) if (i.tuan?.[k]) tuan[k] = i.tuan[k];
   if (!Object.keys(tuan).length) throw badRequest('Chưa chọn kỹ năng nào.');
-  if (!i.studentIds?.length) throw badRequest('Chưa chọn học viên nào.');
+  if (!Array.isArray(i.studentIds) || !i.studentIds.length) throw badRequest('Chưa chọn học viên nào.');
+  /* PR-Dọn (Q6, quét #14): bỏ trùng rồi mới đặt trần — mảng id trong thân yêu cầu tối đa 500 em; câu `IN` chia lô (Turso ≤ 900 tham số). */
+  const idsGui = [...new Set(i.studentIds)];
+  if (idsGui.length > 500) throw badRequest('Tối đa 500 học viên một lần xếp.');
   const periods = docTuan(Object.values(tuan) as number[]);
 
   /* Chỉ nhận HV đang học ĐÚNG lớp này — id ngoài lớp bị bỏ qua âm thầm, không trả tên (tránh lộ tên HV ngoài phạm vi). */
-  const inClassIds = new Set(
-    (conn
-      .prepare(
-        `SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active'
-           AND student_id IN (${phOf(i.studentIds.length)})`,
-      )
-      .all(i.classId, ...i.studentIds) as any[]).map((r) => r.student_id as number),
-  );
-  const studentIds = i.studentIds.filter((id) => inClassIds.has(id));
+  const inClassIds = new Set<number>();
+  theoLo(idsGui, (lo, ph) => {
+    for (const r of conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' AND student_id IN (${ph})`)
+      .all(i.classId, ...lo) as any[]) inClassIds.add(r.student_id);
+  });
+  const studentIds = idsGui.filter((id) => inClassIds.has(id));
   if (!studentIds.length) throw badRequest('Chưa chọn học viên nào.');
   const hv = new Map<number, { ten: string; vaoWeb: string }>(
     (conn.prepare(`SELECT id, full_name, created_at FROM students WHERE id IN (${phOf(studentIds.length)})`)
