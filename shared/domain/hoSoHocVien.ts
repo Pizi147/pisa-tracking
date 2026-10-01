@@ -9,7 +9,9 @@
  *   đếm vi phạm theo nhóm             → `demTheoNhomViPham`   (Task 4)
  *   tiến độ case, việc tiếp của PA    → `tienDoCase`, `viecTiepPhuongAn` (Task 6)
  */
-import { ATTEMPT_SKILL_UNITS, deadlineView, type DeadlineKind } from './display.ts';
+import { ATTEMPT_SKILL_UNITS, CHUA_CO_HAN, deadlineView, type DeadlineKind } from './display.ts';
+import { NHAN_TRANG_THAI } from './trangThai.ts';
+import { chuTamDung } from './students.ts';
 import { tuanLich } from './hienThiNgay.ts';
 import { VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, type ViolationCategory } from './yThuc.ts';
 
@@ -193,7 +195,7 @@ export function cauTomTat(i: DauVaoCau): ManhCau[] {
   const d = i.dacBiet;
   const m0: ManhCau | null = !d ? null
     : d.loai === 'ket-thuc' ? { chu: 'Đã kết thúc', tone: null }
-    : d.loai === 'tam-dung' ? { chu: `Tạm dừng từ ${ngayNgan(d.tu)}`, tone: 'warn' }
+    : d.loai === 'tam-dung' ? { chu: chuTamDung(ngayNgan(d.tu), true), tone: 'warn' }
     : d.loai === 'sap-chuyen' ? { chu: `Sắp chuyển ${d.lop} từ ${tuanLich(d.tuan, i.homNay)}`, tone: 'accent' }
     : { chu: 'KCK · không đặt kỳ vọng MT, không SOS', tone: null };
 
@@ -240,8 +242,6 @@ export function cauTomTat(i: DauVaoCau): ManhCau[] {
   return !k && !m0 && ds.length === 1 ? [{ chu: 'Chưa có kết quả Test', tone: null }, ...ds] : ds;
 }
 
-const NHAN_TRANG_THAI_O: Record<string, string> = { 'qua-han': 'Quá hạn', 'can-lam': 'Cần làm', 'cho-duyet': 'Chờ duyệt', 'dang-lam': 'Đang làm' };
-
 /** Ô "Học thuật" (K3-03, Q7): số = số Case MỞ của chính bảng kỹ năng; mỗi Case một dòng `W2 · Quá hạn · ghi kết quả`. */
 export function oHocThuat(rows: readonly {
   short: string | null; label: string; category: string; missed: boolean | null;
@@ -264,8 +264,8 @@ export function oHocThuat(rows: readonly {
         : /^Xác nhận PA/.test(v) ? 'xác nhận PA'
         : /kế hoạch/.test(v) ? 'kế hoạch bổ trợ' : null;
       /* T65 + Q13 (UXF-b): em Tạm dừng — MỌI hạn dừng: "Quá hạn" và "Cần làm" đổi thành nhãn vàng "Tạm dừng từ dd/mm" (chỉ đổi chữ). */
-      if (tamDungTu && (t === 'qua-han' || t === 'can-lam')) dong.push({ kn: r.short ?? r.label, nhan: `Tạm dừng từ ${ngayNgan(tamDungTu)}`, t: 'tam-dung', viec: null, category: r.category });
-      else dong.push({ kn: r.short ?? r.label, nhan: NHAN_TRANG_THAI_O[t] ?? 'Đang làm', t, viec, category: r.category });
+      if (tamDungTu && (t === 'qua-han' || t === 'can-lam')) dong.push({ kn: r.short ?? r.label, nhan: chuTamDung(ngayNgan(tamDungTu), true), t: 'tam-dung', viec: null, category: r.category });
+      else dong.push({ kn: r.short ?? r.label, nhan: NHAN_TRANG_THAI[t] ?? NHAN_TRANG_THAI['dang-lam'], t, viec, category: r.category });
       const b = c.boTro;
       if (b && b.keHoach?.trangThai === 'cho' && !nhom.has(b.nhom)) {
         nhom.add(b.nhom);
@@ -276,7 +276,7 @@ export function oHocThuat(rows: readonly {
   /* Gấp lên trước: Quá hạn › Cần làm › Chờ duyệt › Đang làm (trong nhóm giữ thứ tự bảng). */
   const thuTu = ['qua-han', 'tam-dung', 'can-lam', 'cho-duyet', 'dang-lam'];
   dong.sort((a, b) => thuTu.indexOf(a.t) - thuTu.indexOf(b.t));
-  if (!dong.length) phu = rows.some((r) => r.missed === true) ? 'không có Case mở' : 'mọi kỹ năng đạt';
+  if (!dong.length) phu = rows.some((r) => r.missed === true) ? 'Không có Case mở' : 'mọi kỹ năng đạt';
   return { so: dong.length, dong, phu };
 }
 
@@ -345,8 +345,8 @@ export function viecTiepHang(cases: readonly {
   const d = v.loaiHan && v.han ? deadlineView({ kind: v.loaiHan, due: v.han, today: homNay }) : null;
   const nguoi = c.nguoiLam?.ten ?? null;
   return {
-    viec: v.chu, han: d && d.han !== 'chưa có hạn' ? d.han : null, quaHan: d?.quaHan ?? null, homNay: !!d?.homNay, nguoi,
-    title: [d && d.han !== 'chưa có hạn' ? d.text : v.chu, nguoi].filter(Boolean).join(' · '),
+    viec: v.chu, han: d && d.han !== CHUA_CO_HAN ? d.han : null, quaHan: d?.quaHan ?? null, homNay: !!d?.homNay, nguoi,
+    title: [d && d.han !== CHUA_CO_HAN ? d.text : v.chu, nguoi].filter(Boolean).join(' · '),
   };
 }
 

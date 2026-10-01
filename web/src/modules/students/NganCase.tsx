@@ -163,7 +163,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
       ngCanh={(
         <span className="flex items-center gap-1.5">
           {data.systemCloseLabel
-            ? <Nhan tone="muted" title={data.systemCloseLabel}>Hệ thống tự đóng · {data.systemCloseLabel}</Nhan>
+            ? <Nhan tone="muted" title={data.systemCloseLabel}>Hệ thống đóng · {data.systemCloseLabel}</Nhan>
             : data.trangThaiV4
               ? <>{data.tamDungTu && data.trangThaiV4.t === 'qua-han'
                   ? <NhanTamDung tu={data.tamDungTu} />

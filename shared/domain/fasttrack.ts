@@ -129,7 +129,7 @@ export function fmtExamMonth(v: string | null | undefined): string {
 export const ATTEMPT_STATUSES = ['planned', 'done', 'cancelled'] as const;
 export type AttemptStatus = (typeof ATTEMPT_STATUSES)[number];
 export const ATTEMPT_STATUS_LABEL: Record<AttemptStatus, string> = {
-  planned: 'Đã lên lịch', done: 'Đã xong', cancelled: 'Đã huỷ',
+  planned: 'Đã lên lịch', done: 'Xong', cancelled: 'Đã huỷ',
 };
 
 /**
@@ -203,7 +203,7 @@ export const SKILL_PROGRESS_LABEL: Record<SkillProgress, string> = {
   scored: 'Đã có điểm',
   reschedule_pending: 'Chờ duyệt dời',
   cancelled: 'Đã huỷ phần thi',
-  lich_su: 'Nhập bù, không có hạn',
+  lich_su: 'Nhập bù, không tính hạn',
 };
 
 /**

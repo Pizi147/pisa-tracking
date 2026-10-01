@@ -731,7 +731,7 @@ export function DeadlinePill({ cell }: { cell: Cell }) {
   if (!cell.required) return <Info pending>Ngoài phạm vi</Info>;
   if (cell.progress === 'cancelled') return <Info pending>Đã huỷ phần thi</Info>;
   /* MT lịch sử (T34): không hạn, không "Quá hạn" — chỉ là nhập bù. */
-  if (cell.progress === 'lich_su') return <Info pending>Nhập bù, không có hạn</Info>;
+  if (cell.progress === 'lich_su') return <Info pending>Nhập bù, không tính hạn</Info>;
   /*
    * HAI MỐC KHÔNG THAY NHAU (rule book §17.1): "Hạn nhập điểm 23/09" là hạn cho bài CÓ thực hiện; còn bài GV đã
    * báo "-" thì không nợ điểm mà có mốc chốt Chủ nhật — hai cái tên khác nhau, không dùng chung một chỗ.
@@ -831,9 +831,9 @@ export function SuaDiemCoLyDo({ tieuDe, moTaCu, children, onLuu, onDong, loiGiaT
     setBusy(true); setLoi(null);
     try {
       const ok = await onLuu(lyDo.trim());
-      if (!ok) setLoi('Chưa lưu được — thử lại.');
+      if (!ok) setLoi('Không lưu được — thử lại.');
     } catch (e: any) {
-      setLoi(e?.message ?? 'Chưa lưu được — thử lại.');
+      setLoi(e?.message ?? 'Không lưu được — thử lại.');
     } finally {
       dangLuu.current = false;
       setBusy(false);

@@ -339,7 +339,7 @@ export function DauLuu({ status, error, onRetry, soLoi = 0, lon = false }: {
   if (soLoi > 0 || status === 'error') {
     return (
       <span className="inline-flex items-center gap-1 whitespace-nowrap font-semibold text-bad" role="alert"
-        title={error ? `Chưa lưu được: ${error}` : 'Chưa lưu được'}>
+        title={error ? `Không lưu được: ${error}` : 'Không lưu được'}>
         {chuOChuaLuu(Math.max(soLoi, 1))}
         {/* Điện thoại: dòng chỉ một kỹ năng, nút "Lưu lại" 44px nằm ngay ở ô — không lặp hai nút sát nhau. */}
         {onRetry && !lon && (
@@ -377,7 +377,7 @@ export function DauO({ tt, loi, onLuuLai, lon = false }: {
   const cho = lon ? 'inline-flex items-center' : 'absolute bottom-0.5 right-1 leading-none';
   if (tt === 'loi') {
     return (
-      <button type="button" onClick={onLuuLai} title={`Chưa lưu được${loi ? `: ${loi}` : ''}. Bấm để lưu lại.`}
+      <button type="button" onClick={onLuuLai} title={`Không lưu được${loi ? `: ${loi}` : ''}. Bấm để lưu lại.`}
         className={`${cho} appearance-none border-0 bg-transparent p-0 text-xs font-semibold text-bad underline ${lon ? 'min-h-[44px] px-1 text-xs' : ''}`}>
         Lưu lại
       </button>

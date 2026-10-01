@@ -943,7 +943,7 @@ export function respondToPlan(p: Principal, interventionId: number, input: {
 
   const note = (input.note ?? '').trim() || null;
   if (input.decision === 'declined' && !note) {
-    throw badRequest('Không duyệt thì phải ghi lý do, để giáo viên biết nên làm gì tiếp.');
+    throw badRequest('Từ chối thì phải ghi lý do, để giáo viên biết nên làm gì tiếp.');
   }
 
   return tx(() => {
@@ -1711,7 +1711,7 @@ export const CASE_STATE_LABEL: Record<CaseState, string> = {
   chua_xu_ly: 'Chưa xử lý',
   no_plan: 'Chưa có PA học thuật',
   working: 'Đang xử lý',
-  done: 'Đã xong',
+  done: 'Xong',
 };
 
 /** Một dòng trong danh sách case, sau khi đã dựng xong. */

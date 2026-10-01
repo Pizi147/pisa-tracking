@@ -11,6 +11,7 @@ import type { ViecTiepCase } from './sosV4.ts';
 import type { NhanYThucEm } from './yThuc.ts';
 import { tuanKhoa, tuanLich } from './hienThiNgay.ts';
 import { CHU_CHUYEN_LOP } from './chuyenLop.ts';
+import { NHAN_TRANG_THAI } from './trangThai.ts';
 import { CLASS_PHASE_LABEL, type ClassPhase } from './fasttrack.ts';
 
 // ---------------------------------------------------------------- chung
@@ -43,9 +44,9 @@ export const LOC_HOC_VIEN = ['tat-ca', 'can-lam', 'qua-han', 'cho-duyet', 'sos',
 export type LocHocVien = (typeof LOC_HOC_VIEN)[number];
 export const LOC_HOC_VIEN_NHAN: Record<LocHocVien, { nhan: string; goiY: string; can: string | null }> = {
   'tat-ca': { nhan: 'Tất cả', goiY: 'Mọi học viên đang học trong các lớp đang hiện.', can: null },
-  'can-lam': { nhan: 'Cần làm', goiY: 'Có việc quá hạn hoặc việc hạn ngắn (xác nhận, xử lý vi phạm).', can: null },
-  'qua-han': { nhan: 'Quá hạn', goiY: 'Có việc đã quá hạn (xác nhận, ghi kết quả, xử lý vi phạm) — cùng số với badge "HV quá hạn việc".', can: null },
-  'cho-duyet': { nhan: 'Chờ duyệt', goiY: 'Có yêu cầu đang chờ Quản lý duyệt.', can: null },
+  'can-lam': { nhan: NHAN_TRANG_THAI['can-lam'], goiY: 'Có việc quá hạn hoặc việc hạn ngắn (xác nhận, xử lý vi phạm).', can: null },
+  'qua-han': { nhan: NHAN_TRANG_THAI['qua-han'], goiY: 'Có việc đã quá hạn (xác nhận, ghi kết quả, xử lý vi phạm) — cùng số với badge "HV quá hạn việc".', can: null },
+  'cho-duyet': { nhan: NHAN_TRANG_THAI['cho-duyet'], goiY: 'Có yêu cầu đang chờ Quản lý duyệt.', can: null },
   sos: { nhan: 'Đang SOS', goiY: 'Chỉ Fast Track: Mock gần nhất ở mức SOS 1–3.', can: 'case.view' },
   thieu_tt: { nhan: 'Thiếu thông tin', goiY: 'Hồ sơ còn thiếu thông tin cần để xếp lịch và theo dõi.', can: null },
 };

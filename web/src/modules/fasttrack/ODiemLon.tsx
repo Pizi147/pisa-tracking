@@ -53,7 +53,7 @@ function trangThaiO(l: LichKn | undefined, c: Cell | undefined, lichSu: boolean,
     return { chu: cau, mau: 'text-wait', title: `Đề nghị dời sang ${l.pendingMove.toWeek ?? 'tuần kế tiếp'} — Quản lý trả lời trước ${ngay(l.pendingMove.decideBy, homNay)}, quá hạn thì huỷ phần thi.` };
   }
   if (l.sitStatus === 'absent') return { chu: 'vắng · chờ xếp lại', title: 'Đã xác nhận vắng — Quản lý xếp lại bài trước khi nhập.' };
-  if (lichSu) return { chu: 'Nhập bù, không có hạn' };
+  if (lichSu) return { chu: 'Nhập bù, không tính hạn' };
   if (l.doiTu && l.absenceMoveCount > 0) {
     const cau = `vắng · dời sang ${tuanLich(l.weekStart, homNay)} · lần ${l.absenceMoveCount}`;
     return { chu: cau, title: `Dời từ ${l.doiTu} sang ${tuanLich(l.weekStart, homNay)} (vắng lần ${l.absenceMoveCount}).` };

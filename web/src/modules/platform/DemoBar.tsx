@@ -18,7 +18,7 @@ const SCENARIOS = [
   { key: 'loading', label: 'Đang tải (skeleton)' },
   { key: 'empty', label: 'Không có dữ liệu' },
   { key: 'error', label: 'Lỗi khi tải' },
-  { key: 'save_failure', label: 'Lưu thất bại' },
+  { key: 'save_failure', label: 'Không lưu được' },
 ];
 
 /** Thanh Công cụ demo — tách hẳn khỏi nghiệp vụ. */

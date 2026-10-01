@@ -77,7 +77,7 @@ export function LopToiDay() {
               <div className="grid grid-cols-3 gap-1.5 text-lg">
                 <div className="flex flex-col items-start">{so(h, 'duoiKyVong', h.duoiKyVong, nhanDuoi.toLowerCase())}<span className="text-xs text-slate-500">{nhanDuoi.toLowerCase()}</span></div>
                 {laThuong
-                  ? <div className="flex flex-col items-start">{so(h, 'caseMo', h.caseMo, 'Case mở')}<span className="text-xs text-slate-500">Case mở</span></div>
+                  ? <div className="flex flex-col items-start">{so(h, 'caseMo', h.caseMo, 'Case đang mở')}<span className="text-xs text-slate-500">Case đang mở</span></div>
                   : <div className="flex flex-col items-start">{so(h, 'sos', h.sos ?? 0, 'SOS')}<span className="text-xs text-slate-500">SOS</span></div>}
                 <div className="flex flex-col items-start">{baiCham(h, true)}</div>
               </div>
@@ -93,7 +93,7 @@ export function LopToiDay() {
                 {laThuong && <th className="px-3 py-2 font-semibold">Tuần học</th>}
                 <th className="px-3 py-2 text-right font-semibold">Học viên</th><th className="px-3 py-2 text-right font-semibold">{nhanDuoi}</th>
                 {!laThuong && <th className="px-3 py-2 text-right font-semibold">SOS</th>}
-                <th className="px-3 py-2 text-right font-semibold">Case mở</th><th className="px-3 py-2 text-right font-semibold">Bài chờ chấm</th>
+                <th className="px-3 py-2 text-right font-semibold">Case đang mở</th><th className="px-3 py-2 text-right font-semibold">Bài chờ chấm</th>
                 <th className="px-4 py-2 font-semibold">Test kế tiếp</th>
               </tr>
             </thead>

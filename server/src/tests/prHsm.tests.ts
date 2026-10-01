@@ -201,7 +201,7 @@ export async function runPrHsmTests(t: YThucTestKit) {
     assert(/Vắng/.test(nut) && /hoanTac\(/.test(se), 'nút Vắng / toast Hoàn tác');
     const modal = se.slice(se.indexOf('export function CriteriaModal'), se.indexOf('export function InlineScoreEditor'));
     assert(/NHAN_XET_TOI_DA/.test(modal) && /\+ Nhận xét/.test(modal) && /key === 'Enter'/.test(modal), 'hộp tiêu chí thiếu nhận xét / Enter');
-    assert(/progress === 'lich_su'\) return <Info pending>Nhập bù, không có hạn<\/Info>/.test(se), 'mất nhánh Nhập bù (PR-MT)');
+    assert(/progress === 'lich_su'\) return <Info pending>Nhập bù, không tính hạn<\/Info>/.test(se), 'mất nhánh Nhập bù (PR-MT)');
     const gv = docSach('web/src/modules/cham/GvCham.tsx');
     assert(gv.includes('pisa:gv-cham:') && /try \{/.test(gv), 'GvCham thiếu khoá nhớ / try');
   });
@@ -215,7 +215,7 @@ export async function runPrHsmTests(t: YThucTestKit) {
     assert(/COT_DAU_LICH_TEST/.test(docSach('web/src/modules/test/lichTest/KhoiNo.tsx')), 'KhoiNo không dùng COT_DAU_LICH_TEST');
     assert(/<HopNhanXet/.test(docSach('web/src/modules/cham/MotKyNang.tsx')), 'MotKyNang thiếu HopNhanXet');
     assert(d.nhanLuot('planned', 2, 4) === 'Đang chấm · 2/4' && d.nhanLuot('planned', 0, 4) === 'Đã lên lịch', 'nhanLuot planned');
-    assert(d.nhanLuot('cancelled', 2, 4) === 'Đã huỷ' && d.nhanLuot('done', 4, 4) === 'Đã xong', 'nhanLuot huỷ / xong');
+    assert(d.nhanLuot('cancelled', 2, 4) === 'Đã huỷ' && d.nhanLuot('done', 4, 4) === 'Xong', 'nhanLuot huỷ / xong');
   });
 
   // ------------------------------------------------------------------ khối 5: hồ sơ Mock M10 (đọc nguồn)

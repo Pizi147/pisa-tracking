@@ -274,7 +274,7 @@ export function apLichMacDinhLo(yc: readonly YeuCauLichMt[], actorUserId: number
       'INSERT INTO journey_events (student_id, cycle_id, event_type, event_date, title, detail, ref_table, ref_id, created_by, created_at)',
       [...kqs].filter(([, kq]) => kq.created.length).map(([cycleId, kq]) => [goi.get(cycleId)!.cy.student_id, cycleId, 'mock_scheduled', ngayTao,
         `Lịch MT mặc định · ${kq.created.map((x) => `MT${x.attemptNo} ${tuanLich(x.weekStart, ngayTao)}`).join(' · ')}`,
-        kq.created.some((x) => x.lichSu) ? 'MT có tuần thi đã qua là MT lịch sử — nhập bù, không có hạn' : null,
+        kq.created.some((x) => x.lichSu) ? 'MT có tuần thi đã qua là MT lịch sử — nhập bù, không tính hạn' : null,
         'learning_cycles', cycleId, actorUserId, nowIso()]));
     chenNhieuDong(
       'INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, entity_label, before_json, after_json, created_at)',

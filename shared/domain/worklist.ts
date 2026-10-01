@@ -59,8 +59,8 @@ export const TASK_PROGRESS = ['not_started', 'doing', 'done', 'paused', 'stopped
 export type TaskProgress = (typeof TASK_PROGRESS)[number];
 export const TASK_PROGRESS_LABEL: Record<TaskProgress, string> = {
   not_started: 'Chưa bắt đầu',
-  doing: 'Tiếp tục xử lý',
-  done: 'Đã hoàn thành',
+  doing: 'Đang xử lý',
+  done: 'Xong',
   paused: 'Tạm ngưng',
   stopped: 'Dừng hẳn',
 };

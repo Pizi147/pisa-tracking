@@ -5,8 +5,11 @@
 /** Chỉ ba trạng thái. LT1/LT2 là lộ trình, không phải trạng thái học viên. */
 export const STUDENT_STATUSES = ['active', 'inactive', 'finished'] as const;
 export type StudentStatus = (typeof STUDENT_STATUSES)[number];
+/** "Tạm dừng học từ 12/10" (chỗ rộng) · "Tạm dừng từ 12/10" (chip hẹp). */
+export const chuTamDung = (tu: string, hep = false) => `${hep ? 'Tạm dừng' : 'Tạm dừng học'} từ ${tu}`;
+
 export const STUDENT_STATUS_LABEL: Record<StudentStatus, string> = {
-  active: 'Đang học', inactive: 'Tạm dừng', finished: 'Đã kết thúc',
+  active: 'Đang học', inactive: 'Tạm dừng học', finished: 'Đã kết thúc',
 };
 
 /**

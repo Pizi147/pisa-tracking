@@ -105,7 +105,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
     toast.push('ok', chu);
     onDone?.(); onClose();
   };
-  const loiMay = (e: any) => toast.push('error', e?.message ?? 'Chưa lưu được — thử lại.');
+  const loiMay = (e: any) => toast.push('error', e?.message ?? 'Không lưu được — thử lại.');
 
   const gui = async () => {
     lf.bam();

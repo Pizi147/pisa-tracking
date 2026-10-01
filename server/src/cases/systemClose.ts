@@ -93,7 +93,7 @@ export function closeCasesBySystem(input: {
                   outcome_note = ?, dedup_key = NULL, updated_at = ?
             WHERE id = ? AND status != 'done'`,
         )
-        .run(input.on, input.reason, label, `Hệ thống tự đóng · ${label}`, nowIso(), c.id).changes;
+        .run(input.on, input.reason, label, `Hệ thống đóng · ${label}`, nowIso(), c.id).changes;
       if (!changed) continue;
       conn
         .prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, 'status', ?, 'done', ?, ?)`)
@@ -103,10 +103,10 @@ export function closeCasesBySystem(input: {
           `INSERT INTO case_milestones (case_id, kind, occurred_on, note, created_by, created_at, dedup_key)
            VALUES (?, 'closed', ?, ?, ?, ?, ?) ON CONFLICT(dedup_key) DO NOTHING`,
         )
-        .run(c.id, input.on, `Hệ thống tự đóng · ${label}`, input.actorUserId, nowIso(), `system_close:${c.id}`);
+        .run(c.id, input.on, `Hệ thống đóng · ${label}`, input.actorUserId, nowIso(), `system_close:${c.id}`);
       addJourney({
         studentId: input.studentId, cycleId: c.eff_cycle_id ?? null, eventType: 'case_closed', eventDate: input.on,
-        title: `Hệ thống tự đóng Case · ${label}`, detail: null,
+        title: `Hệ thống đóng Case · ${label}`, detail: null,
         refTable: 'sos_cases', refId: c.id, createdBy: input.actorUserId, dedupKey: `case_system_close:${c.id}`,
       });
       writeAudit({

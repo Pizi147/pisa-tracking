@@ -60,7 +60,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
     ];
     const pa: (string | number)[][] = [
       [`Xử lý đã xong trong kỳ theo loại · ${moTa}`], [],
-      ['Loại xử lý', 'Đã xong'],
+      ['Loại xử lý', 'Xong'],
       ...KHOA_LOAI_XU_LY.filter((k) => k !== 'loai-cu' || data.bienPhapTheoLoai[k]).map((k) => [nhanLoaiXuLy(k), data.bienPhapTheoLoai[k] ?? 0]),
     ];
     const wb = XLSX.utils.book_new();

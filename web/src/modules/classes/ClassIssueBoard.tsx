@@ -47,7 +47,7 @@ export function VanDeKyNang({ classId, category }: { classId: number; category: 
                 <Th align="right" hint="Mọi Case ở kỹ năng này, kể cả đã xong.">Case</Th>
                 <Th align="right" hint="Case chưa xong.">Đang theo dõi</Th>
                 <Th align="right" hint="Case có ít nhất một phương án (không tính phương án theo quy chế chưa được xác nhận).">Đã có PA</Th>
-                <Th align="right" hint="Case đã xong → trong đó số Case kết luận tiến bộ rõ hoặc tiến bộ một phần.">Đã xong → Thành công</Th>
+                <Th align="right" hint="Case đã xong → trong đó số Case kết luận tiến bộ rõ hoặc tiến bộ một phần.">Xong → Thành công</Th>
               </tr>
             </thead>
             <tbody>

@@ -65,7 +65,7 @@ export function DongViec({ it, onOpen, nutPhu }: {
         </span>
       </button>
       <span className="col-start-2 text-xs sm:col-start-auto [&>span]:text-xs">
-        {it.due ? <Han loai={loaiHan ?? 'viec-van-hanh'} han={it.due} haiDong /> : <span className="text-slate-500">không có hạn</span>}
+        {it.due ? <Han loai={loaiHan ?? 'viec-van-hanh'} han={it.due} haiDong /> : <span className="text-slate-500">Chưa có hạn</span>}
       </span>
       <span className="col-start-2 flex items-center gap-2 sm:col-start-auto sm:justify-end">
         {nutPhu}

@@ -186,10 +186,10 @@ export function nhanKhoiPa(
     if (ketQua) {
       return { ten, dau: ketQua.dau, tone: ketQua.tone, day: ghep(ten, `${ketQua.dau} ${outcomeLabelFor(pa.lastOutcome!)}`, khoang) };
     }
-    return { ten, dau: '■', tone: 'done', day: ghep(ten, '■ Đã kết thúc, chưa ghi kết quả', khoang) };
+    return { ten, dau: '■', tone: 'done', day: ghep(ten, '■ Chờ ghi kết quả', khoang) };
   }
   if (pa.followupOverdue) {
-    const quaHan = `⚠ Quá hạn cập nhật${pa.soNgayQuaHan ? ` ${pa.soNgayQuaHan} ngày` : ''}`;
+    const quaHan = `Quá hạn${pa.soNgayQuaHan ? ` · ${pa.soNgayQuaHan} ngày` : ''}`;
     return { ten, dau: '⚠', tone: 'late', day: ghep(ten, '▶ Đang thực hiện', quaHan, khoang) };
   }
   return { ten, dau: '▶', tone: 'run', day: ghep(ten, '▶ Đang thực hiện', khoang) };
@@ -392,7 +392,7 @@ export function nhanGhim(a: {
     const so = `MT${a.attemptNo}`;   // bản gọn (điện thoại) không kèm "lịch sử"
     const mt = a.lichSu ? `${so} lịch sử` : so;
     const tuan = a.tuan ? tuanLich(a.tuan, a.homNay) : null;
-    if (a.soCoDiem === 0) return { chu: mt, gon: so, day: ghep(mt, tuan, a.lichSu ? 'nhập bù, không có hạn' : 'chưa có điểm'), mau: 'tam', hai: [so, ''] };
+    if (a.soCoDiem === 0) return { chu: mt, gon: so, day: ghep(mt, tuan, a.lichSu ? 'nhập bù, không tính hạn' : 'chưa có điểm'), mau: 'tam', hai: [so, ''] };
     if (a.soCoDiem < a.soYeuCau) {
       return { chu: `${mt} · đang chấm`, gon: so, day: ghep(mt, tuan, `đang chấm ${a.soCoDiem}/${a.soYeuCau} kỹ năng`), mau: 'tam', hai: [so, `${a.soCoDiem}/${a.soYeuCau}`] };
     }

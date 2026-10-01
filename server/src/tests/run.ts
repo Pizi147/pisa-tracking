@@ -7659,7 +7659,7 @@ check('PR-E · <Han>: cập nhật phương án cũng đếm số ngày quá h�
 
 check('PR-E · <Han>: thiếu ngày hạn thì nói thẳng là chưa có hạn, không vẽ "Invalid Date"', () => {
   const v = domain.deadlineView({ kind: 'nhap-diem', due: null, today: '2026-09-14' });
-  assert(/chưa có hạn/.test(v.text) && v.han === 'chưa có hạn' && !/Invalid|NaN|undefined/.test(v.text), `Đang ghi "${v.text}"`);
+  assert(/Chưa có hạn/.test(v.text) && v.han === 'Chưa có hạn' && !/Invalid|NaN|undefined/.test(v.text), `Đang ghi "${v.text}"`);
 });
 
 check('PR-E · Ngày viết ngắn 14/09 trong cùng năm, có năm khi qua năm khác', () => {

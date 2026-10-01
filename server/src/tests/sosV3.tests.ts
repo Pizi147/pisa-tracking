@@ -130,7 +130,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
 
   check('PR-T · T1 Trạng thái việc phối hợp và nhãn: pending · done · removed', () => {
     assert(JSON.stringify(domain.COORDINATION_STATUSES) === JSON.stringify(['pending', 'done', 'removed']), 'Ba trạng thái');
-    assert(domain.COORDINATION_STATUS_LABEL.pending === 'Cần xử lý' && domain.COORDINATION_STATUS_LABEL.done === 'Đã xong' && domain.COORDINATION_STATUS_LABEL.removed === 'Đã bỏ', 'Nhãn ba trạng thái');
+    assert(domain.COORDINATION_STATUS_LABEL.pending === 'Cần xử lý' && domain.COORDINATION_STATUS_LABEL.done === 'Xong' && domain.COORDINATION_STATUS_LABEL.removed === 'Đã bỏ', 'Nhãn ba trạng thái');
   });
 
   // ================================================================== T2 — schema + migrate

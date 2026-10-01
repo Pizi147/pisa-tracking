@@ -34,7 +34,7 @@ export const pInt = (req: Request, key: string): number => {
  */
 export function maybeSimulateSaveFailure() {
   if (scenarioMode() === 'save_failure') {
-    throw new HttpError(503, 'Lưu thất bại (kịch bản demo đang bật). Bản nháp của bạn vẫn được giữ — bấm Thử lại.');
+    throw new HttpError(503, 'Không lưu được (kịch bản demo đang bật). Bản nháp của bạn vẫn được giữ — bấm Thử lại.');
   }
 }
 

@@ -82,7 +82,7 @@ export function KhoiNo({ no, mo, onMo, chiQuaHan, onBoQuaHan, dongMo, onMoDong, 
         phu={
           <>
             {soLop} lớp
-            {baiQuaHan > 0 && <span className="ml-2 font-bold text-late">⚠ Quá hạn {baiQuaHan} bài</span>}
+            {baiQuaHan > 0 && <span className="ml-2 font-bold text-late">Quá hạn · {baiQuaHan} bài</span>}
           </>
         }>
         {chiQuaHan && (

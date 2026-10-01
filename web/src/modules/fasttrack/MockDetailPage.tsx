@@ -58,7 +58,7 @@ type Detail = {
   history: any[];
   /** Điểm: ai sửa, trước → sau (PR-I). */
   scoreHistory: ScoreHistoryRow[];
-  /** PR-MT (T34): MT lịch sử — nhập bù, không có hạn, không luồng vắng. */
+  /** PR-MT (T34): MT lịch sử — nhập bù, không tính hạn, không luồng vắng. */
   lichSu: boolean;
   viewer: {
     canPlanWeek: boolean; canCancel: boolean; canHandleAbsence: boolean;
@@ -193,7 +193,7 @@ export default function MockDetailPage() {
   const laRf = d.cycle.route === 'RF';
   const dong2 = [
     d.period ? `${tuanLich(d.period.weekStart, homNay)} · ${d.period.range}` : 'Chưa chốt tuần',
-    d.classCode, d.cycle.route ? `Lộ trình ${d.cycle.route}` : null, d.lichSu ? 'Nhập bù, không có hạn' : null,
+    d.classCode, d.cycle.route ? `Lộ trình ${d.cycle.route}` : null, d.lichSu ? 'Nhập bù, không tính hạn' : null,
   ].filter(Boolean).join(' · ');
   const moODiem = (k: KyNangLon) => { setMoO(k); document.getElementById('dai-diem')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
 
@@ -485,7 +485,7 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory }: {
             </Status>
           )}
           {/* Đã có điểm thì chip trạng thái đã nói đủ; hạn chỉ còn nghĩa khi bài còn nợ. */}
-          {/* MT lịch sử không có hạn (T34) — chip tình trạng "Nhập bù, không có hạn" đã nói đủ. */}
+          {/* MT lịch sử không có hạn (T34) — chip tình trạng "Nhập bù, không tính hạn" đã nói đủ. */}
           {prog !== 'scored' && !d.lichSu && <div><DeadlinePill cell={c} /></div>}
           {ownsSchedule && r.absenceMoveCount > 0 && (
             <div className="text-[11px] text-amber-200">Đã dời do vắng {r.absenceMoveCount} lần</div>

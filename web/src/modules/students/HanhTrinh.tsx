@@ -416,7 +416,7 @@ function HopKyNang({ hop, vi, vanDe, soAn, truc, boCuc, rongTuan, homNay, onOpen
               </Nhan>
             </span>
           ) : (
-            <span className="ml-1.5 text-[12px] text-faint">Không có Case</span>
+            <span className="ml-1.5 text-[12px] text-faint">Không có Case mở</span>
           )}
         </div>
       </div>

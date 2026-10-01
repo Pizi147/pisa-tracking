@@ -701,7 +701,7 @@ export function urgencyFromSos(sosLevel: number | null): 'normal' | 'attention' 
 export const APPROVAL_STATES = ['pending', 'approved', 'declined'] as const;
 export type ApprovalState = (typeof APPROVAL_STATES)[number];
 export const APPROVAL_LABEL: Record<ApprovalState, string> = {
-  pending: 'Đang chờ duyệt', approved: 'Đã duyệt', declined: 'Không duyệt',
+  pending: 'Chờ duyệt', approved: 'Đã duyệt', declined: 'Bị từ chối',
 };
 
 /**
@@ -855,7 +855,7 @@ export function planEndDefault(startDate: string): string {
 export const INTERVENTION_STATUSES = ['planned', 'started', 'completed', 'cancelled'] as const;
 export type InterventionStatus = (typeof INTERVENTION_STATUSES)[number];
 export const INTERVENTION_STATUS_LABEL: Record<InterventionStatus, string> = {
-  planned: 'Đã lên kế hoạch', started: 'Đang thực hiện', completed: 'Đã xong', cancelled: 'Đã huỷ',
+  planned: 'Đã lên kế hoạch', started: 'Đang thực hiện', completed: 'Xong', cancelled: 'Đã huỷ',
 };
 
 /**

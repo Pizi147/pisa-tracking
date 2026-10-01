@@ -21,7 +21,7 @@ function hanNgan(it: WorkItem, homNay: string, ngan: (d: string) => string): { c
   if (!it.due) return { chu: 'quá hạn', mau: 'text-late' };
   const n = Math.round((Date.parse(homNay) - Date.parse(it.due.slice(0, 10))) / DAY);
   if (it.urgency === 'overdue') return { chu: n > 0 ? `quá hạn ${n} ngày` : 'quá hạn', mau: 'text-late' };
-  if (it.due.slice(0, 10) === homNay) return { chu: 'hạn hôm nay', mau: 'text-soon' };
+  if (it.due.slice(0, 10) === homNay) return { chu: 'Hạn hôm nay', mau: 'text-soon' };
   return { chu: `hạn ${ngan(it.due)}`, mau: 'text-slate-400' };
 }
 
@@ -153,7 +153,7 @@ export function YeuCauCuaToi() {
           <span className="min-w-0">
             <b className="block text-[13px] font-semibold text-slate-100">{[x.nhanLoai, x.hocVien, x.lop].filter(Boolean).join(' · ')}</b>
             <span className="block text-xs text-slate-500">
-              {x.trangThai === 'tu_choi' ? `Quản lý từ chối${x.lyDoTuChoi ? `: "${x.lyDoTuChoi}"` : ''}` : x.tieuDe}
+              {x.trangThai === 'tu_choi' ? `Bị từ chối${x.lyDoTuChoi ? `: "${x.lyDoTuChoi}"` : ''}` : x.tieuDe}
             </span>
           </span>
           {x.trangThai === 'tu_choi' && (

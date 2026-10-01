@@ -133,4 +133,54 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
     assert(docNguon('web/src/modules/students/StudentPlanPanel.tsx').includes('label="Điểm đầu vào"'), 'Điểm đầu vào');
     assert(/>OVR<\/Th>/.test(docNguon('web/src/modules/cham/LuoiFT.tsx')), 'LuoiFT OVR (cột hẹp)');
   });
+  // ------------------------------------------------------------------ Task 3 · trạng thái & chip (nhóm C)
+  khongCon('S3 (3) · Một nghĩa một chữ: Quá hạn · n ngày, Hạn hôm nay, Chưa có hạn, Xong, Dưới kỳ vọng, Không lưu được, Đã nhắc, Hệ thống đóng, Bị từ chối, Chờ duyệt, Case đang mở…', [
+    ['Trễ / ⚠ Quá hạn', /Trễ \$\{|⚠ Quá hạn/],
+    ['hạn hôm nay', /chu: 'hạn hôm nay'/],
+    ['chưa có hạn', /chưa có hạn/],
+    ['không có hạn', /Nhập bù, không có hạn|nhập bù, không có hạn|>không có hạn<|'không có hạn'|<span[^>]*>không có hạn/],
+    ['Đã xong', /Đã xong|Đã hoàn thành(?! Case)/],
+    ['Chưa đạt kỳ vọng', /Chưa đạt kỳ vọng|chưa đạt kỳ vọng/],
+    ['Chưa có người làm', /[Cc]hưa có người làm/],
+    ['Hệ thống tự đóng', /Hệ thống tự đóng/],
+    ['Tiếp tục xử lý', /Tiếp tục xử lý/],
+    ['Lưu lỗi', /Chưa lưu được|Lưu lỗi|Lưu thất bại/],
+    ['✓ Đã nhắc', /✓ Đã nhắc|"có nhắc"|"Có nhắc"/],
+    ['Không duyệt', /Không duyệt(?! được)/],
+    ['Đang chờ duyệt', /Đang chờ duyệt|nhan: 'Đang chờ'/],
+    ['Case mở', /'Case mở'|>Case mở</],
+    ['Đã kết thúc, chưa ghi kết quả', /Đã kết thúc, chưa ghi kết quả|PA đã xong,? chưa ghi kết quả/],
+  ], [['web/src/modules/cases/QuickReport.tsx', 'Đã xong từ trước'], ['web/src/modules/platform/AccountsAdmin.tsx', 'Không duyệt'],
+    ['shared/domain/students.ts', "completed: 'Đã hoàn thành'"], ['server/src/seed/seed.ts', 'Đã hoàn thành'],
+    ['web/src/modules/platform/DemoBar.tsx', ''], ['web/src/modules/platform/WelcomePage.tsx', ''], ['server/src/migrate', '']]);
+  check('S3 (3) · Q1: trạng thái Vận hành một map (Chưa bắt đầu · Đang xử lý · Tạm ngưng · Dừng hẳn · Xong); MgmtTasksPage lấy từ TASK_PROGRESS_LABEL; HV "Tạm dừng học"', () => {
+    const wl = docNguon('shared/domain/worklist.ts');
+    for (const chu of ["'Chưa bắt đầu'", "'Đang xử lý'", "'Tạm ngưng'", "'Dừng hẳn'", "done: 'Xong'"]) assert(wl.includes(chu), chu);
+    assert(/\.\.\.TASK_PROGRESS_LABEL/.test(docNguon('web/src/modules/worklist/MgmtTasksPage.tsx')), 'MgmtTasksPage dùng TASK_PROGRESS_LABEL');
+    assert(/inactive: 'Tạm dừng học'/.test(docNguon('shared/domain/students.ts')) && /chuTamDung/.test(docNguon('shared/domain/students.ts')), 'students.ts');
+    assert(!/NHAN_TRANG_THAI_O/.test(docNguon('shared/domain/hoSoHocVien.ts')), 'bản sao NHAN_TRANG_THAI_O đã gộp');
+    assert(/CHUA_CO_HAN/.test(docNguon('shared/domain/display.ts')) && /CHUA_CO_HAN/.test(docNguon('shared/domain/hoSoHocVien.ts')) && /CHUA_CO_HAN/.test(docNguon('web/src/modules/cases/TheKyNang.tsx')), 'so khớp "Chưa có hạn" theo hằng, không theo chuỗi');
+  });
+  // ------------------------------------------------------------------ Task 4 · nút và hành động (nhóm D)
+  khongCon('S3 (4) · Nút: thoát hộp là "Đóng" (không Thôi / Huỷ trần), Thao tác khác, Đánh dấu đã đọc, Nhập điểm, Thêm PA, Báo QL, Gửi Quản lý duyệt…', [
+    ['Thôi', /\bThôi\b/],
+    ['Huỷ (thoát hộp)', />Huỷ<|'Huỷ'|nhan: 'Huỷ'/],
+    ['Thêm thao tác / Thao tác với lớp', /Thêm thao tác|Thao tác với lớp/],
+    ['Đọc hết', /Đọc hết/],
+    ['Nhập điểm Test', /Nhập điểm Test|→ Nhập\b|>Chấm<|\? 'Chấm'/],
+    ['Đề ra PA', /Đề ra PA/],
+    ['Báo lên', /[Bb]áo lên/],
+    ['Duyệt dời / Xử lý việc vắng', /Duyệt dời|Xử lý việc vắng/],
+    ['Gửi duyệt', /Gửi duyệt|Gửi QL duyệt/],
+    ['+ Công việc', /\+ Công việc(?! con)/],
+    ['Dời lịch / Lùi lịch', /Lùi lịch thi|Dời lịch một kỹ năng|Đổi tuần thi kỹ năng|Ghi vắng thi|Huỷ lượt (MT|Test)|Bỏ khỏi đợt/],
+    ['Tiếp tục theo dõi / Hoàn thành case', /Tiếp tục theo dõi|Hoàn thành case/],
+    ['Chọn tuần…', /Chọn tuần…|Tuần khác…|xoá điểm|Lưu kết quả|Ghi kết quả PA'|'Ghi kết quả PA'/],
+  ], KY_THUAT);
+  check('S3 (4) · "Thêm PA" so khớp theo hằng CHU_THEM_PA (không so chuỗi hiển thị); KhungPanel / ConfirmDialog mặc định "Đóng"', () => {
+    assert(/CHU_THEM_PA/.test(docNguon('server/src/students/viecHocVien.ts')) && /CHU_THEM_PA/.test(docNguon('web/src/modules/cases/QuickReport.tsx')) && /CHU_THEM_PA/.test(docNguon('shared/domain/sosV4.ts')), 'hằng CHU_THEM_PA');
+    assert(/huy\.nhan \?\? 'Đóng'/.test(docNguon('web/src/ui/KhungPanel.tsx')), 'KhungPanel');
+    assert(/>Đóng<\/button>/.test(docNguon('web/src/ui/Drawer.tsx')), 'ConfirmDialog');
+    assert(/nhan = 'Thao tác khác'/.test(docNguon('web/src/ui/MenuDong.tsx')), 'MenuDong');
+  });
 }

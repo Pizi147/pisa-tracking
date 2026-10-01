@@ -480,16 +480,16 @@ export async function runPrMtTests(t: YThucTestKit) {
       JSON.stringify(viec));
     assert(!cham.lichTest(P.sTeacher, week.ensurePeriod(tuanNay).id, null, TODAY, { phamVi: 'tat-ca' }).nhacLichSu.length, 'GVBM không phải GVCN mà thấy dòng nhắc');
   });
-  check('PR-MT (9) · Quét mã: hồ sơ Mock không vẽ hạn cho MT lịch sử; ô "lich_su" ra "Nhập bù, không có hạn"; không chữ "lich_su" lọt ra màn', () => {
+  check('PR-MT (9) · Quét mã: hồ sơ Mock không vẽ hạn cho MT lịch sử; ô "lich_su" ra "Nhập bù, không tính hạn"; không chữ "lich_su" lọt ra màn', () => {
     const mock = docSach('web/src/modules/fasttrack/MockDetailPage.tsx');
     assert(/prog !== 'scored' && !d\.lichSu && <div><DeadlinePill/.test(mock), 'MockDetailPage vẽ DeadlinePill cho MT lịch sử');
     assert(/d\.lichSu && <> <ChipLichSu \/>/.test(mock), 'đầu trang thiếu nhãn "lịch sử" cạnh MT');
-    assert(/progress === 'lich_su'\) return <Info pending>Nhập bù, không có hạn<\/Info>/.test(docSach('web/src/modules/fasttrack/ScoreEntry.tsx')), 'DeadlinePill thiếu nhánh lịch sử');
+    assert(/progress === 'lich_su'\) return <Info pending>Nhập bù, không tính hạn<\/Info>/.test(docSach('web/src/modules/fasttrack/ScoreEntry.tsx')), 'DeadlinePill thiếu nhánh lịch sử');
     for (const f of ['web/src/modules/test/lichTest/KhoiNo.tsx', 'web/src/modules/test/LichTestTab.tsx', 'web/src/modules/fasttrack/MockDetailPage.tsx',
       'web/src/modules/test/keHoach/ChipKyNang.tsx', 'web/src/modules/students/StudentDetailPage.tsx', 'web/src/ui/Nhan.tsx']) {
       assert(!/>[^<{]*lich_su[^<]*</.test(docSach(f)), `${f}: chữ "lich_su" lọt vào JSX`);
     }
-    assert(d.SKILL_PROGRESS_LABEL.lich_su === 'Nhập bù, không có hạn' && !d.awaitingScore('lich_su'), 'nhãn / không nợ');
+    assert(d.SKILL_PROGRESS_LABEL.lich_su === 'Nhập bù, không tính hạn' && !d.awaitingScore('lich_su'), 'nhãn / không nợ');
   });
 
   // ---------------------------------------------------------------- khối 10: sửa theo rà PR #119

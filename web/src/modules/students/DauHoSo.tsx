@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { chuTuanHoc, deadlineView, type DeadlineKind, type TheYeuCauDto } from '@shared/domain/index.ts';
+import { chuTamDung, chuTuanHoc, deadlineView, type DeadlineKind, type TheYeuCauDto } from '@shared/domain/index.ts';
 import { TargetText } from '../../ui/ui.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
@@ -265,7 +265,7 @@ export function DaiTamDung({ tamDung }: { tamDung: { tu: string; lyDo: string | 
     <section aria-label="Học viên đang tạm dừng" className="flex items-start gap-2.5 rounded-[10px] bg-soon-bg px-3 py-2.5 shadow-[inset_3px_0_0_rgb(var(--soon-rgb))]">
       <span className="mt-[3px] text-soon"><IconTamDung /></span>
       <span className="min-w-0 text-[13px] text-slate-100">
-        <b className="font-semibold text-soon">Tạm dừng học từ {ngayDung}</b> · mọi hạn đang dừng
+        <b className="font-semibold text-soon">{chuTamDung(ngayDung)}</b> · mọi hạn đang dừng
         {tamDung.lyDo && <> · lý do: {tamDung.lyDo}</>}
         {tamDung.boi && <> · người ghi: {tamDung.boi}</>}
         <span className="block text-[12px] text-slate-400">Quay lại học thì hạn tính lại từ ngày quay lại</span>

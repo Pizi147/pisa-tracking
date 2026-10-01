@@ -28,7 +28,7 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, ca
               cap === 'con' ? 'text-xs' : 'text-sm'
             } ${active ? 'border-[color:var(--accent)] text-slate-100' : 'border-transparent text-slate-400 hover:text-slate-200'}`}>
             {t.label}
-            {t.canhBao && <span className="ml-1 text-soon" role="img" aria-label="có nhắc" title="Có nhắc">●</span>}
+            {t.canhBao && <span className="ml-1 text-soon" role="img" aria-label="Đã nhắc" title="Đã nhắc">●</span>}
             {!!t.so && t.so > 0 && (
               <span className="ml-1.5 rounded-full px-1.5 text-[11.5px] tabular-nums bg-doing-bg text-doing">{t.so}</span>
             )}

@@ -121,7 +121,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   };
 
   const hanV = yc.hanDuyet ? deadlineView({ kind: 'duyet', due: yc.hanDuyet, today: homNay }) : null;
-  const tang1 = !hanV ? null : hanV.tone === 'overdue' ? `Quá hạn ${hanV.daysOverdue} ngày` : hanV.homNay ? 'Hạn hôm nay' : hanV.con ? hanV.con[0].toUpperCase() + hanV.con.slice(1) : null;
+  const tang1 = !hanV ? null : hanV.tone === 'overdue' ? `Quá hạn · ${hanV.daysOverdue} ngày` : hanV.homNay ? 'Hạn hôm nay' : hanV.con ? hanV.con[0].toUpperCase() + hanV.con.slice(1) : null;
   const tt = nhanTrangThaiYc(yc.trangThai, yc.tuDuyet);
   const nhanO = o?.loai === 'tu-choi' ? 'Lý do từ chối (người gửi sẽ đọc)' : o?.loai === 'tra-loi' ? 'Câu trả lời cho giáo viên' : 'Ghi chú việc đã xử lý ở màn gốc';
   /* Nút mở thêm một bước (chọn tuần / ghi chú) có dấu "…", như Từ chối… — Duyệt trơn là quyết ngay. */
@@ -206,7 +206,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
               )}
               {coNut && yc.kieuNut === 'nhac' && typeof yc.duLieu?.ownerId === 'number' && (
                 daNhac
-                  ? <span className="self-center whitespace-nowrap text-[12px] text-slate-400">✓ Đã nhắc {fmtTime(daNhac)}</span>
+                  ? <span className="self-center whitespace-nowrap text-[12px] text-slate-400">Đã nhắc {fmtTime(daNhac)}</span>
                   : <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={nhac}>
                     Nhắc {typeof yc.duLieu?.tenGv === 'string' ? yc.duLieu.tenGv : 'GV'}
                   </button>

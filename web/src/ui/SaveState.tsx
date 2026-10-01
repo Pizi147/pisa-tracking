@@ -11,7 +11,7 @@ export function SaveIndicator({ status, error, onRetry }: { status: SaveStatus; 
   if (status === 'saved') return <Status kind="done">Đã lưu</Status>;
   return (
     <span className="inline-flex items-center gap-1">
-      <Alert title={error}>Lưu lỗi</Alert>
+      <Alert title={error}>Không lưu được</Alert>
       {onRetry && <button className="btn btn-sm" onClick={onRetry}>Thử lại</button>}
     </span>
   );

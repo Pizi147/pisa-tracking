@@ -115,7 +115,7 @@ export const COORDINATION_KIND_LABEL: Record<CoordinationKind, string> = {
 export const COORDINATION_STATUSES = ['pending', 'done', 'removed'] as const;
 export type CoordinationStatus = (typeof COORDINATION_STATUSES)[number];
 export const COORDINATION_STATUS_LABEL: Record<CoordinationStatus, string> = {
-  pending: 'Cần xử lý', done: 'Đã xong', removed: 'Đã bỏ',
+  pending: 'Cần xử lý', done: 'Xong', removed: 'Đã bỏ',
 };
 
 /** BỐN lý do người dùng chọn nhanh khi bỏ một việc (P06) — chỉ `Khác` hiện ô chữ. */

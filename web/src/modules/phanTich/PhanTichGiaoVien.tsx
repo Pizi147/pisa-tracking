@@ -349,7 +349,7 @@ function PanelChamDiem({ kq, h, onDong }: { kq: PhanTichGvKq; h: HangPtGv; onDon
                     </td>
                     <td className="td">
                       <span className={`inline-flex items-center gap-1 whitespace-nowrap text-xs font-semibold ${r.dung ? 'text-ok' : 'text-bad'}`}>
-                        <Dau ok={r.dung} />{r.dung ? 'Đúng hạn' : `Trễ ${r.tre} ngày`}
+                        <Dau ok={r.dung} />{r.dung ? 'Đúng hạn' : `Quá hạn · ${r.tre} ngày`}
                       </span>
                       {!r.dung && !r.nhapDau && <span className="block text-xs text-slate-400">tới hôm nay {ngay(homNay, homNay)}</span>}
                       {r.dung && r.sua && <span className="block text-xs text-slate-400">lần sửa không tính</span>}

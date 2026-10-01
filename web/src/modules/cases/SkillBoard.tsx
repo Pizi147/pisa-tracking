@@ -14,7 +14,7 @@ import { DongXinYKien, type XinYKien } from './DongXinYKien.tsx';
 import { KhongTheoDoiForm } from '../yThuc/CaseSosControls.tsx';
 import type { BoTro } from './NopKeHoachPanel.tsx';
 import {
-  ATTEMPT_KIND_SHORT, OUTCOME_MARK, OUTCOME_TONE, chuKetQuaPa, duongDotTest, chuKhoangPa, dangChay, deadlineView, tienDoCase, tuanLich, viecTiepHang, viecTiepPhuongAn,
+  ATTEMPT_KIND_SHORT, OUTCOME_MARK, OUTCOME_TONE, chuKetQuaPa, chuTamDung, duongDotTest, chuKhoangPa, dangChay, deadlineView, tienDoCase, tuanLich, viecTiepHang, viecTiepPhuongAn,
   type AttemptKind, type DeadlineKind, type DeadlineView, type TrangThai, type TrangThaiCaseV4,
 } from '@shared/domain/index.ts';
 
@@ -133,7 +133,7 @@ export type Row = {
 };
 
 const STATE_LABEL: Record<Row['state'], string> = {
-  none: 'Không có case',
+  none: 'Không có Case mở',
   /* Q28-5: Case từ SOS chưa xác nhận đủ nguyên nhân + PA do người xác nhận. */
   chua_xu_ly: 'Chưa xử lý',
   no_plan: 'Chưa có phương án',
@@ -152,7 +152,7 @@ export function NhanTamDung({ tu }: { tu: string }) {
   return (
     <span className="inline-flex items-center whitespace-nowrap rounded-md bg-soon-bg px-1.5 py-0.5 text-[11.5px] font-semibold tabular-nums text-soon"
       title="Em đang Tạm dừng học — mọi hạn đang dừng; quay lại học thì hạn tính lại từ ngày quay lại">
-      Tạm dừng từ {tu.slice(8, 10)}/{tu.slice(5, 7)}
+      {chuTamDung(`${tu.slice(8, 10)}/${tu.slice(5, 7)}`, true)}
     </span>
   );
 }
@@ -510,7 +510,7 @@ function HangPA({ p, c, ngan, onMoCase }: {
   const chuaChay = !!p.chuaChay;
   const choDuyetKh = chuaChay && c.boTro?.keHoach?.trangThai === 'cho';
   const chung = c.boTro?.chung && c.boTro.mon.length > 1 ? `PA chung · ${c.boTro.mon.map((m) => m.tenMon).join(', ')}` : null;
-  const dongPhu = [p.performer ?? 'chưa có người làm', khoang, chung,
+  const dongPhu = [p.performer ?? 'chưa có người thực hiện', khoang, chung,
     p.closedReason === 'superseded' ? 'được thay' : p.revisions.length > 0 ? `điều chỉnh ${p.revisions.length} lần` : null].filter(Boolean).join(' · ');
   return (
     <HangCon className="hang-pa">

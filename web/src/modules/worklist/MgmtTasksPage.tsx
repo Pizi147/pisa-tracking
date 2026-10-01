@@ -43,10 +43,7 @@ const KIND: Record<string, 'doing' | 'waiting' | 'done' | 'idle'> = {
   not_started: 'idle', doing: 'idle', done: 'done', paused: 'waiting', stopped: 'idle',
 };
 
-const TRANG_THAI_LABEL: Record<TrangThaiLoc, string> = {
-  mo: 'Đang mở', not_started: 'Chưa bắt đầu', doing: 'Tiếp tục xử lý', paused: 'Tạm ngưng',
-  stopped: 'Dừng hẳn', done: 'Đã hoàn thành', 'tat-ca': 'Mọi trạng thái',
-};
+const TRANG_THAI_LABEL: Record<TrangThaiLoc, string> = { mo: 'Đang mở', ...TASK_PROGRESS_LABEL, 'tat-ca': 'Mọi trạng thái' };
 
 const idOfNguoi = (v: NguoiChon | null, myId: number | null): number | null => {
   if (!v) return null;

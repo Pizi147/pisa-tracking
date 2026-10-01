@@ -13,7 +13,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'case.auto_from_sos': 'Tạo Case từ SOS', 'case.auto_from_giua_khoa': 'Tạo Case từ Giữa khoá', 'case.bo_tro.nop_ke_hoach': 'Nộp kế hoạch bổ trợ', 'case.backfill': 'Nhập bù Case đã xong', 'case.backfill.done': 'Nhập bù Case đã xong',
   'case.classify': 'Phân loại Case', 'case.close': 'Đóng Case', 'case.disposition': 'Kết luận Case', 'case.dismiss': 'Không cần theo dõi',
   'case.intervention': 'Thêm PA', 'case.intervention.complete': 'Kết thúc PA', 'case.outcome': 'Hoàn thành Case',
-  'case.plan.approved': 'Duyệt đề xuất PA', 'case.plan.declined': 'Không duyệt đề xuất PA', 'case.plan.comment': 'Góp ý đề xuất PA',
+  'case.plan.approved': 'Duyệt đề xuất PA', 'case.plan.declined': 'Từ chối đề xuất PA', 'case.plan.comment': 'Góp ý đề xuất PA',
   'case.preset.confirm': 'Xác nhận PA theo quy chế', 'case.preset.replace': 'Thay PA theo quy chế', 'case.confirm': 'Xác nhận Case', 'case.dismiss.request': 'Gửi Không cần theo dõi',
   'case.report': 'Tạo Case', 'case.report.merge': 'Ghi vào Case đang có', 'case.result.update': 'Ghi kết quả PA',
   'case.retired_score_fixed': 'Huỷ Case vì sửa điểm', 'case.system_close': 'Hệ thống đóng Case',
