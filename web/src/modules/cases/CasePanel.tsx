@@ -12,7 +12,7 @@ import { caseStatusLabel, fmtBand, skillLabel, sosLabel, sosTone } from '../../l
 import {
   INTERVENTION_KIND_LABEL, INTERVENTION_STATUS_LABEL,
   NEXT_STEP_LABEL, OUTCOME_MARK, OUTCOME_TONE,
-  deadlineView, outcomeLabelFor, tenMon, tuanLich, type TrangThai,
+  chuKhoangPa, deadlineView, outcomeLabelFor, tenMon, tuanLich, type TrangThai,
 } from '@shared/domain/index.ts';
 import { LichSuDieuChinh, type BanDieuChinh } from './CapNhatTuan.tsx';
 import { NganCase } from '../students/NganCase.tsx';
@@ -188,7 +188,7 @@ export function ThanCase({ data, onViec }: { data: CaseDetail; onViec: (v: ViewC
           <p className="m-0 text-sm text-slate-100">
             Đã kết luận{data.outcomeLabel && <>: <strong>{data.outcomeLabel}</strong></>}
             {data.outcomeNote && <span className="text-slate-400"> — {data.outcomeNote}</span>}
-            {data.closedAt && <span className="text-slate-500"> · kết thúc theo dõi {ngan(data.closedAt)}</span>}
+            {data.closedAt && <span className="text-slate-500"> · kết thúc theo dõi {tuanLich(data.closedAt, homNay)}</span>}
           </p>
         ) : null}
         {lichSu.length > 0 && (
@@ -231,11 +231,9 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
   const thayBang = iv.supersededBy ? all.find((x) => x.id === iv.supersededBy) ?? null : null;
   const thayCho = all.find((x) => x.supersededBy === iv.id) ?? null;
   const batDau = iv.startedDate ?? iv.plannedDate ?? null;
-  /* PR-SOS (Q28-4): không còn "dự kiến kết thúc" — khoảng ngày là `từ dd/mm` hoặc ngày xong thật; PA quy chế nói mốc riêng. */
+  /* PR-SOS (Q28-4): không còn "dự kiến kết thúc"; PA quy chế nói mốc riêng. PR-UXF-b: khoảng PA nói MÃ TUẦN (`từ W3 SEP` · `W3 SEP → W1 OCT`), cùng hàm với hàng PA ở bảng kỹ năng. */
   const ketThuc = iv.completedDate ?? null;
-  /* PR-S5F-b: PA Bổ trợ bắt đầu nói TUẦN (`từ W3 SEP`), như hàng PA ở bảng kỹ năng. */
-  const tu = (d: string) => (iv.kind === 'bo_tro' ? tuanLich(d, homNay) : ngan(d));
-  const khoang = batDau && ketThuc ? `${ngan(batDau)} → ${ngan(ketThuc)}` : batDau ? `từ ${tu(batDau)}` : ketThuc ? `đến ${ngan(ketThuc)}` : null;
+  const khoang = chuKhoangPa({ startedOn: batDau, completedOn: ketThuc }, homNay) ?? (ketThuc ? `đến ${tuanLich(ketThuc, homNay)}` : null);
   const nguoi = iv.performer ? `${iv.performer}${iv.byProxy && iv.recordedBy ? ` (${iv.recordedBy} nhập hộ)` : ''}` : 'Chưa có người làm';
   return (
     <li className="rounded-lg border px-3 py-2.5 surface-2" style={{ borderColor: 'var(--line)' }} data-pa-id={iv.id}>

@@ -116,7 +116,7 @@ export type Row = {
   sosLevel: number | null; attemptsSpanned: number; parallelCount: number;
   followUntil: string | null; followOverdue: boolean;
   outcome: string | null; outcomeLabel: string | null;
-  supportLine: string | null; openActions: number;
+  openActions: number;
   overdueActionDue: string | null; pendingApproval: boolean;
   points: {
     attemptNo: number; band: number; expectation: number | null;

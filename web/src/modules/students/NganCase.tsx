@@ -6,7 +6,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { caseStatusLabel } from '../../lib/format.ts';
-import { outcomeLabelFor } from '@shared/domain/index.ts';
+import { outcomeLabelFor, tuanLich } from '@shared/domain/index.ts';
 import { ThanCase, tenNganCase, type CaseDetail, type ViewCase } from '../cases/CasePanel.tsx';
 import { GhiKetQuaPanel } from '../cases/CapNhatTuan.tsx';
 import { HoanThanhCasePanel, ThemPaPanel } from '../cases/ThaoTacCase.tsx';
@@ -33,7 +33,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
   hocVien?: string | null; lop?: string | null;
   onClose: () => void; onChanged?: () => void;
 }) {
-  const { ngan } = useNgayNghiepVu();
+  const { homNay, ngan } = useNgayNghiepVu();
   const { data, error, reload } = useApi<CaseDetail>(`/cases/${caseId}`);
   const [view, setView] = useState<ViewCase>(() => viecBanDau ?? tuViec(viec, paId) ?? { loai: 'case' });
   /* Bấm "Hoàn thành Case" khi còn bị chặn: chân nói câu chặn (không phải ô nhập nên không đếm "n ô cần sửa"). */
@@ -170,7 +170,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
                   : <NhanTrangThai t={data.trangThaiV4.t} title={data.trangThaiV4.chu} />}<span className="truncate text-slate-300">{data.trangThaiV4.chu}</span></>
               : <Nhan tone={data.status === 'done' ? 'done' : data.status === 'open' ? 'muted' : 'doing'}>{caseStatusLabel(data.status)}</Nhan>}
           <span className="truncate text-slate-400">
-            · mở {ngan(data.detectedAt)}{data.reportedBy ? ` · ${data.reportedBy} báo` : ''}
+            · mở {tuanLich(data.detectedAt, homNay)}{data.reportedBy ? ` · ${data.reportedBy} báo` : ''}
             {/* Hạn báo kết quả cả Case chỉ khi KHÔNG có PA chạy — có PA chạy thì hạn của PA đã nói (B-5, Q2). */}
             {!data.tamDungTu && canDong && !conPaChay && data.followUntil ? ` · hạn báo kết quả ${ngan(data.followUntil)}` : ''}
           </span>

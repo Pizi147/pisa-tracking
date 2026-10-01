@@ -10,7 +10,7 @@ import { NutChon } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
   CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, GOI_Y_MO_TA_PA, INTERVENTION_KIND_LABEL, URGENCY_LABEL, URGENCY_LEVELS,
-  dsLoi, issuesForTopic, kiemGhiRoKhac, laKhac, ngay, nguoiThanhPayload, reasonNeedsText,
+  dsLoi, issuesForTopic, kiemGhiRoKhac, laKhac, nguoiThanhPayload, tuanLich, reasonNeedsText,
   type CaseDismissReason, type NguoiChon,
 } from '@shared/domain/index.ts';
 
@@ -139,7 +139,7 @@ export function XacNhanCasePanel({ caseId, topic, kyNang, ct, tenSos, paQuyChe, 
             placeholder="Ví dụ: Sai nhiều câu True/False/Not Given ở passage 2" />
         </Truong>
         <Truong nhan="Bắt đầu theo dõi" as="div">
-          <span className="field flex items-center text-slate-300" aria-readonly>Hôm nay · {ngay(homNay)}</span>
+          <span className="field flex items-center text-slate-300" aria-readonly>Tuần này · {tuanLich(homNay, homNay)}</span>
         </Truong>
       </Khoi>
       {kem && boTro && (
@@ -211,7 +211,7 @@ export function XacNhanPaPanel({ pa, studentId, onXong, ...chung }: ChungPanel &
       }}>
       <Khoi tieuDe="Phương án">
         <p className="m-0 text-xs text-slate-300">
-          Phân loại: <b className="text-slate-100">{loaiPa}</b> · Bắt đầu: hôm nay ({ngay(homNay)})
+          Phân loại: <b className="text-slate-100">{loaiPa}</b> · Bắt đầu: tuần này ({tuanLich(homNay, homNay)})
           {pa.mocChu ? <> · Kết thúc theo quy chế: <b className="text-slate-100">{pa.mocChu}</b></> : null}
         </p>
         <Truong nhan="Người thực hiện" as="div">

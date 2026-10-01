@@ -77,4 +77,40 @@ export async function runPrUxfBTests(t: YThucTestKit) {
     assert(!/fmtDate\(r\.weekStart\)/.test(kh) && !/\{r\.code\}/.test(kh), 'lịch MT còn .code / dd/mm/yyyy');
     assert(!/kết thúc \{cycle\.endWeek\.code\}/.test(doc('web/src/modules/students/StudentManagePanel.tsx')), 'panel Tạm dừng in mã tuần có năm');
   });
+
+  // ------------------------------------------------------------------ Task 3 · Case và PA nói mã tuần
+  const casesSvc: any = await import('../cases/cases.ts');
+  check('UXF-b (3) · mocChuPa: PA 1 tháng nói MÃ TUẦN (18/10 → W3 OCT); đến lúc thi và Mini Test giữ NGÀY', () => {
+    const H = '2026-09-14';
+    assert(d.mocChuPa({ span: 'one_month', followupDue: '2026-10-18', mtKe: null, daXacNhan: true }, H) === '1 tháng · đến W3 OCT', d.mocChuPa({ span: 'one_month', followupDue: '2026-10-18', mtKe: null, daXacNhan: true }, H));
+    assert(d.mocChuPa({ span: 'until_exam', followupDue: '2026-11-20', mtKe: null, daXacNhan: true }, H) === 'đến lúc thi · đến 20/11', 'đến lúc thi giữ ngày thi');
+    assert(d.mocChuPa({ span: 'mini_test', followupDue: '2026-10-02', mtKe: null, daXacNhan: true }, H) === 'đến Mini Test · 02/10', 'Mini Test giữ ngày');
+    assert(d.mocChuPa({ span: 'one_month', followupDue: null, mtKe: null, daXacNhan: false }, H) === '1 tháng', 'chưa xác nhận');
+  });
+  check('UXF-b (3) · nhập bù trùng khoảng: lỗi máy chủ nói MÃ TUẦN (W1 SEP → W3 SEP), không in ngày ISO thô', () => {
+    const sv = t.conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' LIMIT 1`).get(t.classId('MB FT 101')) as any;
+    const cyc = t.conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active' LIMIT 1`).get(sv.student_id) as any;
+    const topic = d.ENTRY_SKILLS[0];
+    const ca = (tieuDe: string, tu: string, den: string) => ({
+      studentId: sv.student_id, cycleId: cyc?.id, topic, primaryCode: d.issuesForTopic(topic)[0].code, title: `${topic}: ${tieuDe}`, summary: 'Case nhập bù để kiểm chữ lỗi trùng khoảng.',
+      fromDate: tu, toDate: den, actions: [{ ketQua: 'improved', description: 'Ôn bài với em', performerName: 'GV bộ môn', fromDate: tu, toDate: den }],
+      outcome: 'improved', note: 'Nhập bù UXF-b (3).',
+    });
+    casesSvc.backfillCase(t.P.mbManager, ca('lần 1', '2026-09-01', '2026-09-14'));
+    let loi = '';
+    try { casesSvc.backfillCase(t.P.mbManager, ca('lần 2 (trùng)', '2026-09-05', '2026-09-12')); } catch (e: any) { loi = e.message; }
+    assert(/trùng khoảng W1 SEP → W3 SEP/.test(loi), loi);
+    assert(!/2026-09/.test(loi), loi);
+  });
+  check('UXF-b (3) · quét chữ: Ngăn Case, Báo vấn đề, Mở Case SOS / Thêm PA nói mã tuần; hai chữ ngày không ai vẽ đã xoá', () => {
+    const cp = doc('web/src/modules/cases/CasePanel.tsx');
+    assert(/chuKhoangPa\(/.test(cp) && !/kết thúc theo dõi \{ngan\(/.test(cp) && !/const tu = /.test(cp), 'CasePanel: khoảng PA / kết thúc theo dõi');
+    assert(!/mở \{ngan\(/.test(doc('web/src/modules/students/NganCase.tsx')), 'NganCase còn "mở dd/mm"');
+    const qr = doc('web/src/modules/cases/QuickReport.tsx');
+    assert(!/\{ngan\(bfDup\./.test(qr) && !/Mở \{ngan\(dup\./.test(qr), 'QuickReport còn ngày');
+    const cs = doc('web/src/modules/yThuc/CaseSosControls.tsx');
+    assert(!/Hôm nay · \{ngay\(homNay\)\}/.test(cs) && !/hôm nay \(\{ngay\(homNay\)\}\)/.test(cs), 'CaseSosControls còn "hôm nay · dd/mm"');
+    assert(!/supportLineOf|supportLine\b/.test(doc('server/src/cases/cases.ts') + doc('web/src/modules/cases/SkillBoard.tsx')), 'supportLine còn');
+    assert(!/scheduleHeadline/.test(doc('server/src/fasttrack/attempts.ts')), 'scheduleHeadline còn');
+  });
 }

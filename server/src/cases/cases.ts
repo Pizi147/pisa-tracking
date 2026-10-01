@@ -32,7 +32,7 @@ import { khoangTamDung } from '../students/tamDung.ts';
 import { isRatioCycle, programmeCodeOfCycle } from '../normal/regular.ts';
 import { suggestCaseOwner } from './owner.ts';
 import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
-import { PLAN_DECISIONS, decisionToStep, type PlanDecision } from '../../../shared/domain/index.ts';
+import { PLAN_DECISIONS, decisionToStep, tuanLich, type PlanDecision } from '../../../shared/domain/index.ts';
 import { apDungDieuChinh, chuanHoaDieuChinh, lichSuDieuChinhCuaCase } from './planRevisions.ts';
 import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
 import { dienMocQuyChe, tenGiuaCua } from './sosAuto.ts';
@@ -1191,7 +1191,7 @@ export function backfillCase(p: Principal, input: {
     if (overlap) {
       throw badRequest(
         `Học viên này đã có một case nhập bù "${overlap.title ?? caseCategoryLabel(category)}" `
-        + `trùng khoảng ${overlap.detected_at} → ${overlap.closed_at} — có phải cùng một lần không?`,
+        + `trùng khoảng ${tuanLich(overlap.detected_at, demoToday())} → ${tuanLich(overlap.closed_at, demoToday())} — có phải cùng một lần không?`,
         { duplicateBackfill: { id: overlap.id, title: overlap.title, from: overlap.detected_at, to: overlap.closed_at } },
       );
     }
@@ -2275,15 +2275,6 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
         .get(primary.id) as any).n;
     }
     const openIv = interventions.filter((i) => i.status === 'planned' || i.status === 'started');
-    const lastDone = interventions.find((i) => i.status === 'completed') ?? null;
-    const lastFollow = primary
-      ? (conn
-          .prepare(
-            `SELECT outcome, observed_on, note FROM case_followups
-              WHERE case_id = ? ORDER BY observed_on DESC, id DESC LIMIT 1`,
-          )
-          .get(primary.id) as any)
-      : null;
 
     /*
      * TRẠNG THÁI HIỂN THỊ — bốn mức, và mỗi mức dẫn tới một việc khác nhau:
@@ -2363,8 +2354,6 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
         && primary.follow_until < demoToday(),
       outcome: primary?.outcome ?? null,
       outcomeLabel: primary?.outcome ? CASE_OUTCOME_LABEL[primary.outcome as CaseOutcome] ?? null : null,
-      /** Một dòng "đã hỗ trợ gì" dựng từ dữ liệu thật, không phải câu chung chung. */
-      supportLine: supportLineOf(openIv, lastDone, lastFollow),
       openActions: openIv.length,
       overdueActionDue: overdueAction?.action_due ?? null,
       /** Hạn ghi kết quả tuần gần nhất của PA đang chạy (bỏ PA chờ duyệt) — ô "Việc cần làm tiếp" dùng (K3-02). */
@@ -2640,40 +2629,6 @@ function nguoiLamCua(v: { chu: string; paId?: number } | null, c: any, plans: { 
     : v.chu === 'Nộp kế hoạch bổ trợ' ? [boTro?.nguoiDay?.userId ?? null, boTro?.nguoiDay?.ten ?? null]
     : [c.owner_user_id ?? null, c.owner_name ?? null];
   return id ? { id, ten } : null;
-}
-
-/**
- * MỘT DÒNG "ĐÃ HỖ TRỢ GÌ" — ghép từ phương án đang làm, việc vừa xong và kết quả của nó.
- *
- * Cố ý KHÔNG viết câu chung chung kiểu "đang hỗ trợ". Người đọc cần biết hỗ trợ bằng CÁCH
- * NÀO và có ăn thua không; câu chung chung thì vẫn phải mở case ra mới biết, tức là dòng đó
- * không tiết kiệm được cú bấm nào.
- */
-function supportLineOf(openIv: any[], lastDone: any | null, lastFollow: any | null): string | null {
-  const name = (iv: any) => (iv.description ?? '').trim()
-    || INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] || iv.kind;
-  /*
-   * Ngày viết theo lối người Việt đọc (19/09), không phải lối máy lưu (2026-09-19).
-   * Dòng này ghép sẵn ở máy chủ nên phải tự định dạng — giao diện không tách ra được nữa.
-   */
-  const day = (d: string | null) => (d ? `${d.slice(8, 10)}/${d.slice(5, 7)}` : '');
-  if (openIv.length) {
-    const first = openIv[0];
-    const who = first.performer_name_user ?? first.performer_name ?? null;
-    return [
-      name(first),
-      who ? `· ${who}` : '· chưa có người thực hiện',
-      openIv.length > 1 ? `· và ${openIv.length - 1} việc nữa` : null,
-    ].filter(Boolean).join(' ');
-  }
-  if (lastDone) {
-    return [
-      name(lastDone),
-      lastDone.completed_date ? `· xong ${day(lastDone.completed_date)}` : null,
-      lastFollow?.outcome ? `· ${FOLLOWUP_OUTCOME_LABEL[lastFollow.outcome as FollowUpOutcome] ?? lastFollow.outcome}` : null,
-    ].filter(Boolean).join(' ');
-  }
-  return null;
 }
 
 /**
