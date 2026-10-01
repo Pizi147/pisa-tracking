@@ -1,5 +1,5 @@
 import { db } from '../db.ts';
-import { MEASURE_KIND_LABEL, PERMISSIONS, hanBanGiao, nhanLoaiXuLy, tenMon, tuanLich, type DaiHocVien } from '../../../shared/domain/index.ts';
+import { CHU_THEM_PA, MEASURE_KIND_LABEL, PERMISSIONS, hanBanGiao, nhanLoaiXuLy, tenMon, tuanLich, type DaiHocVien } from '../../../shared/domain/index.ts';
 import { can, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, diffDays } from '../util.ts';
@@ -33,7 +33,7 @@ type Nguon = {
 
 /**
  * VIỆC CỦA MỘT EM THEO NGƯỜI (PR-VAI-b Task 2, K3-01) — mọi việc đang mở của em, MỖI VIỆC CÓ NGƯỜI LÀM, cùng luật người làm với Công việc (Q2):
- *   Xác nhận nguyên nhân / Đề ra PA / Xác nhận PA → người phụ trách Case · Ghi kết quả PA → `performer_user_id ?? recorded_by` · Nộp kế hoạch → người dạy
+ *   Xác nhận nguyên nhân / Thêm PA / Xác nhận PA → người phụ trách Case · Ghi kết quả PA → `performer_user_id ?? recorded_by` · Nộp kế hoạch → người dạy
  *   bổ trợ · Báo PH qua TVV, Xử lý vi phạm, Ghi nhận vi phạm mới, Ghi "Đã thực hiện" → GVCN (Báo PH Cuối khoá → Quản lý) · Mini Test → người dạy bổ trợ, không có thì GVCN · Bàn giao → người xem
  *   theo `dai.nut` · "Chờ Quản lý duyệt…" → "Quản lý" (không ai trong số giáo viên, không vào thanh việc).
  * KHÔNG chạy `myWork` (quét cả phạm vi): Case/PA đọc từ `board` đã dựng, Ý thức / Mini Test / dải chuyển lớp do hồ sơ nạp sẵn.
@@ -67,10 +67,10 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
       ds.push({ key: `cause:${c.id}`, loai: 'nguyen-nhan', chu: `Xác nhận nguyên nhân ${kn}`, kyNang: r.category, caseId: c.id, paId: null,
         han: v.han, tone: 'info', nguoiId: c.ownerId ?? null, nut: 'Xác nhận nguyên nhân', mo: { loai: 'case', caseId: c.id, viec: 'xac-nhan' } });
     }
-    /* PR-S6F-b (Q5): Case chưa có PA → "Đề ra PA" của người phụ trách Case; khoá `support:{caseId}` như Công việc (nhóm no_plan), hạn = hạn lập PA. */
-    if (v?.chu === 'Đề ra PA') {
-      ds.push({ key: `support:${c.id}`, loai: 'de-ra-pa', chu: `Đề ra PA ${kn}`, kyNang: r.category, caseId: c.id, paId: null,
-        han: v.han, tone: 'info', nguoiId: c.ownerId ?? null, nut: 'Đề ra PA', mo: { loai: 'case', caseId: c.id, viec: 'them-pa' } });
+    /* PR-S6F-b (Q5): Case chưa có PA → "Thêm PA" của người phụ trách Case; khoá `support:{caseId}` như Công việc (nhóm no_plan), hạn = hạn lập PA. */
+    if (v?.chu === CHU_THEM_PA) {
+      ds.push({ key: `support:${c.id}`, loai: 'de-ra-pa', chu: `${CHU_THEM_PA} ${kn}`, kyNang: r.category, caseId: c.id, paId: null,
+        han: v.han, tone: 'info', nguoiId: c.ownerId ?? null, nut: CHU_THEM_PA, mo: { loai: 'case', caseId: c.id, viec: 'them-pa' } });
     }
     if (v?.chu === 'Chờ Quản lý duyệt · không theo dõi') {
       ds.push({ key: `cho-duyet:case:${c.id}`, loai: 'cho-duyet', chu: `Case ${kn} chờ Quản lý duyệt · không theo dõi`, kyNang: r.category, caseId: c.id, paId: null,

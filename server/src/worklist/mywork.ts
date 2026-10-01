@@ -65,7 +65,7 @@ export type WorkItem = {
   /** Nhãn MỨC ĐỘ của học viên — chỉ có ở việc liên quan tới một vấn đề đang mở. */
   level: { tone: 'ok' | 'info' | 'warn' | 'danger'; text: string } | null;
   reason: string;
-  /** Nút động từ ngắn: "Nhập điểm", "Đề ra PA", "Ghi kết quả". */
+  /** Nút động từ ngắn: "Nhập điểm", "Thêm PA", "Ghi kết quả". */
   actionLabel: string;
   /**
    * TIÊU ĐỀ DÒNG (PR-UX0, B-2): động từ + đối tượng — "Nhập điểm L, R", "Ghi kết quả PA Reading". Việc cần làm là
@@ -164,7 +164,7 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   },
   /* PR-VAI-a (K1-15, Q15): em cũ mới vào web (14 ngày) mà chưa khai bậc Ý thức trước khi dùng web. */
   khai_bac: {
-    label: 'Khai bậc Ý thức HS cũ',
+    label: 'Khai bậc Ý thức HV cũ',
     hint: 'Em đã học ở trung tâm trước khi có web — khai bậc xử lý Ý thức đã có để thang tính tiếp đúng. Không có hạn; qua 14 ngày thì thôi nhắc.',
   },
   /* PR-VAI-a (K5-11): em BE/ELE lên Fast Track — Quản lý đánh dấu Đạt / Không đạt kỳ vọng đầu ra. */
@@ -181,7 +181,7 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
 
   /* ---------------------------------------------------- ba nhóm học thuật chính (mục 3.2) */
   score: {
-    label: 'Nhập điểm Test',
+    label: 'Nhập điểm',
     hint: 'Học viên đã làm bài rồi mà kỹ năng này chưa có điểm. Các em cùng lớp, cùng bài, cùng kỹ năng gom thành một dòng để nhập một lượt.',
   },
   no_plan: {
@@ -203,7 +203,7 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
     hint: 'Lớp tới tuần Cuối khoá mà còn em chưa có quyết định chuyển lớp. Quản lý quyết định (lên lớp, học lại, tạm dừng học (bảo lưu), dừng học hẳn) trước hết tuần kết thúc — việc này không tự xảy ra.',
   },
   missing_data: {
-    label: 'Thiếu dữ liệu cần cho đánh giá',
+    label: 'Thiếu dữ liệu đánh giá',
     hint: 'Thiếu những thông tin mà không có thì không đánh giá hay lên kế hoạch được: bài chưa xếp vào tuần nào, học viên FT chưa có Target, MT lịch sử chưa nhập (không tính hạn).',
   },
   /* ---------------------------------------------------- Ý thức (PR-YT4, V4-2…V4-5, K3-37) — người nhận = GVCN lớp đang học */
@@ -224,7 +224,7 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
     hint: 'Lớp có quyết định chuyển lớp: GVBM ghi một câu mỗi em cho môn mình (2 ngày), GVCN gom lại, viết nhận xét chung rồi GVCN xác nhận bàn giao (3 ngày, tính cả ngày ra quyết định). Quá hạn thì Quản lý được báo — em vẫn chuyển đúng tuần.',
   },
   mgmt: {
-    label: 'Công việc được giao',
+    label: 'Việc được giao',
     hint: 'Công việc quản lý hoặc việc con được giao cho bạn ở bảng Tiến độ công việc.',
   },
 };
@@ -278,7 +278,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   if (scope.none) return { summary: { total: 0, overdue: 0, today: 0 }, groups: [], scopeEmpty: true, xemNguoiKhac: false };
 
   const conn = db();
-  quetYeuCau(today);   // PR-DUYET (K5-17): thẻ chết tự đóng, Báo lên tự tạo — một lần mỗi request
+  quetYeuCau(today);   // PR-DUYET (K5-17): thẻ chết tự đóng, Báo QL tự tạo — một lần mỗi request
   const items: WorkItem[] = [];
   /*
    * Chương trình + cách chấm của MỌI lớp, nạp lười (MH2 tên môn, MH4 khung) — dùng lại bảng lớp và bảng chương trình
@@ -650,8 +650,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       reason: head,
       contextLabel: nhanDot(c.attempt_kind, c.attempt_no),
       count: null,
-      tieuDe: `Đề ra PA học thuật${duoiKyNang(c.topic, ctCua(c.eff_class_id))}`,
-      actionLabel: 'Đề ra PA',
+      tieuDe: `Thêm PA học thuật${duoiKyNang(c.topic, ctCua(c.eff_class_id))}`,
+      actionLabel: 'Thêm PA',
       href: `/hoc-vien/${c.eff_student_id}`,
       /* PR-Dọn (Q10): người làm = người phụ trách Case (cùng `support:{caseId}` ở hồ sơ em); Case chưa ai phụ trách thì để trống. */
       ownerId: c.owner_user_id ?? null, owner: null, mine: c.owner_user_id != null && c.owner_user_id === p.userId,
@@ -700,7 +700,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     const u = urgencyOf(c.due ?? null, today);
     const mine = c.owner_user_id === p.userId;
     /*
-     * PR-DUYET (K1-57) + PR-SOS (K5-05): QL không có dòng này ở "Của tôi" — quá hạn thì nó là thẻ Báo lên ở hộp Chờ duyệt. "Của GV (nhắc)"
+     * PR-DUYET (K1-57) + PR-SOS (K5-05): QL không có dòng này ở "Của tôi" — quá hạn thì nó là thẻ Báo QL ở hộp Chờ duyệt. "Của GV (nhắc)"
      * (`nguoi=tat-ca`) liệt kê dòng của GV kèm tên như mọi nhóm khác.
      */
     const cuaGv = tatCa && can(p, PERMISSIONS.CASE_APPROVE, { classId: c.eff_class_id, studentId: c.eff_student_id });
@@ -916,7 +916,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       studentId: null, studentName: `Lớp ${l.classCode}`, classId: l.classId, classCode: l.classCode,
       attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: null, count: l.soEm,
       reason: `Nhập MT lịch sử · ${l.soEm} em · không tính hạn`,
-      tieuDe: 'Nhập MT lịch sử', actionLabel: 'Nhập điểm', href: l.href,
+      tieuDe: 'Nhập điểm MT lịch sử', actionLabel: 'Nhập điểm', href: l.href,
       ownerId: p.userId, owner: null, mine: true, due: null, statusLabel: 'Không tính hạn',
     });
   }
@@ -1019,7 +1019,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
 
   // ------------------------------------------------- 5b. Ý thức (PR-YT4) — việc thật có hạn, người nhận = GVCN lớp ĐANG học
   /*
-   * Một cửa trạng thái (`trangThaiYThuc`): quét Báo lên ở đầu request đã nạp các em này, nên ở đây không tốn thêm câu nào ngoài câu
+   * Một cửa trạng thái (`trangThaiYThuc`): quét Báo QL ở đầu request đã nạp các em này, nên ở đây không tốn thêm câu nào ngoài câu
    * ứng viên. Em Tạm dừng không sinh việc (T65). Dòng hết khi làm xong ở bất cứ đâu (Ghi nhận / Xác nhận xử lý / Đề xuất / Đã thực hiện).
    */
   {
@@ -1050,7 +1050,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         studentId: ds.length === 1 ? ds[0].id : null, studentName: ds.length === 1 ? ds[0].full_name : `Lớp ${ds[0].code}`,
         classId: lopId, classCode: ds[0].code, attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: 'Ý thức', count: ds.length,
         reason: `${ds.length} em mới vào web chưa khai bậc Ý thức đã có trước đó`,
-        tieuDe: `Khai bậc Ý thức HS cũ · ${ds[0].code} · ${ds.length} em`, actionLabel: 'Khai bậc',
+        tieuDe: `Khai bậc Ý thức HV cũ · ${ds[0].code} · ${ds.length} em`, actionLabel: 'Khai bậc',
         /* Đường đã có: tab Ý thức của lớp, chọn sẵn em đầu tiên và mở panel Khai bậc (`mo=khai`). */
         href: `/hoc-vien/lop/${lopId}?tab=y-thuc&hv=${ds[0].id}&mo=khai`,
         ownerId: p.userId, owner: null, mine: true, due: null, statusLabel: 'Chưa khai bậc',

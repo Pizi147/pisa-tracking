@@ -291,7 +291,7 @@ function TargetAndBaseline({ cycleId, cy, canEditCycle, onDeXuatSua, onDone }: {
         </span>
         {canEditCycle ? (
           <button className="btn btn-sm" onClick={() => setOpenTarget(!openTarget)}>
-            {openTarget ? 'Thôi' : 'Đổi Target'}
+            {openTarget ? 'Đóng' : 'Đổi Target'}
           </button>
         ) : onDeXuatSua && (
           <button type="button" className="btn btn-sm btn-ghost" onClick={onDeXuatSua} title="Target do Quản lý sửa — gửi đề xuất để Quản lý duyệt">
@@ -342,7 +342,7 @@ function TargetAndBaseline({ cycleId, cy, canEditCycle, onDeXuatSua, onDone }: {
             : <span className="text-amber-300">chưa ghi</span>}
         </span>
         <button className="btn btn-sm" onClick={() => setOpenBaseline(!openBaseline)}>
-          {openBaseline ? 'Thôi' : 'Ghi điểm đầu vào'}
+          {openBaseline ? 'Đóng' : 'Ghi điểm đầu vào'}
         </button>
       </div>
       {openBaseline && (

@@ -7,7 +7,7 @@
  */
 import { hanTheoNgay, PLAN_DECISIONS, type PlanDecision } from './cases.ts';
 import { sosPlanEndDate, type AcademicSupportSpan } from './sos.ts';
-import type { DeadlineKind } from './display.ts';
+import { CHU_THEM_PA, type DeadlineKind } from './display.ts';
 import type { TrangThai } from './trangThai.ts';
 import { ngay, tuanLich } from './hienThiNgay.ts';
 import { mocChuBoTro } from './lopThuong.ts';
@@ -16,8 +16,8 @@ const HAN_XAC_NHAN_NGAY = 3;
 /** Hạn Xác nhận nguyên nhân / Xác nhận PA: 3 ngày tính cả ngày đầu ('2026-09-14' → '2026-09-16'). */
 export const hanXacNhan = (ngay: string) => hanTheoNgay(ngay, HAN_XAC_NHAN_NGAY);
 
-export const GOI_Y_MO_TA_PA = 'Nêu hướng dẫn và trọng tâm cụ thể; ai sẽ thực hiện / hỗ trợ / tutor';                       // Q28-1
-export const GOI_Y_KET_QUA_PA = 'Đã cải thiện ở phần nào, như thế nào, kết quả cụ thể; ai đã thực hiện / hỗ trợ / tutor';  // Q28-2
+export const GOI_Y_MO_TA_PA = 'Nêu hướng dẫn và trọng tâm cụ thể; ai sẽ thực hiện / hỗ trợ / Tutor';                       // Q28-1
+export const GOI_Y_KET_QUA_PA = 'Đã cải thiện ở phần nào, như thế nào, kết quả cụ thể; ai đã thực hiện / hỗ trợ / Tutor';  // Q28-2
 
 /** Mốc quy chế tính từ NGÀY XÁC NHẬN PA (§3.1d, K3-46): dùng lại `sosPlanEndDate` với createdOn = ngày xác nhận. */
 export function mocQuyChe(span: AcademicSupportSpan, ctx: { ngayXacNhan: string; nextMtSunday?: string | null; examDate?: string | null }): string | null {
@@ -95,7 +95,7 @@ export type ViecTiepCase = { chu: string; loaiHan: DeadlineKind | null; han: str
 
 /**
  * VIỆC TIẾP của một Case (K3-07, thay `nextStepOf` và B1) — một việc. Không còn "Xác minh SOS", "Xác nhận PA gợi ý",
- * "Chờ QL trả lời". `hanLapPa`: hạn Đề ra PA của Case tay (nếu biết).
+ * "Chờ QL trả lời". `hanLapPa`: hạn Thêm PA của Case tay (nếu biết).
  */
 export function viecTiepCuaCase(c: CaseV4Input, pas: PaViecTiep[], homNay: string, hanLapPa: string | null = null): ViecTiepCase | null {
   const s = trangThaiCaseV4(c, homNay);
@@ -114,7 +114,7 @@ export function viecTiepCuaCase(c: CaseV4Input, pas: PaViecTiep[], homNay: strin
   if (cuoi) return { chu: `Ghi kết quả cuối ${cuoi.ten}${cu(cuoi)}`, loaiHan: 'cap-nhat-pa', han: cuoi.actionDue, paId: cuoi.id };
   const ganNhat = [...chay].sort((a, b) => (a.actionDue ?? '9999').localeCompare(b.actionDue ?? '9999'))[0];
   if (ganNhat) return { chu: `Ghi kết quả PA ${ganNhat.ten}${cu(ganNhat)}`, loaiHan: 'cap-nhat-pa', han: ganNhat.actionDue, paId: ganNhat.id };
-  if (!pas.length) return { chu: 'Đề ra PA', loaiHan: 'lap-pa', han: hanLapPa };
+  if (!pas.length) return { chu: CHU_THEM_PA, loaiHan: 'lap-pa', han: hanLapPa };
   if (pas.every((p) => p.xong)) return { chu: 'Hoàn thành Case', loaiHan: null, han: null };
   return null;   // chỉ còn PA chờ Quản lý duyệt — việc của Quản lý
 }

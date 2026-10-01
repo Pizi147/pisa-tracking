@@ -79,7 +79,7 @@ export function transitionPlan(p: Principal, classId: number) {
   const loTrinhTiepMap = tiepTheoTheoHocVien([classId]);
   /* B9: kết quả gần nhất của từng em (cột Kết quả) — MỘT lần `standingFor` cho cả lớp. */
   const ketQua = sids.length ? standingFor(sids) : new Map();
-  /* PR-LT2b: % Cuối khoá + hướng gợi ý của cả lớp — MỘT lần (PR-CT dựng cột "Web gợi ý" từ đây). */
+  /* PR-LT2b: % Cuối khoá + hướng gợi ý của cả lớp — MỘT lần (PR-CT dựng cột "Hệ thống gợi ý" từ đây). */
   const cuoiKhoa = sids.length ? cuoiKhoaTheoHocVien(classId, sids) : new Map();
 
   /* PR-CT: quyết định chuyển lớp đang chờ của cả lớp — MỘT câu (chỉ mục duy nhất một phần: mỗi em tối đa một lệnh `cho`). */
@@ -164,7 +164,7 @@ export function transitionPlan(p: Principal, classId: number) {
     options,
     goiYLopMoi,
     candidates,
-    /** Tuần Cuối khoá (đổi tên từ `tuanKetThuc` cũ) và tuần kết thúc = tuần học cuối (Q13): lớp thường tới hết tuần này mà còn em chưa có lệnh thì Báo lên. */
+    /** Tuần Cuối khoá (đổi tên từ `tuanKetThuc` cũ) và tuần kết thúc = tuần học cuối (Q13): lớp thường tới hết tuần này mà còn em chưa có lệnh thì Báo QL. */
     tuanCuoiKhoa: progress.finalWeekStart,
     tuanKetThuc: progress.startWeekStart && progress.totalWeeks ? addDays(progress.startWeekStart, (progress.totalWeeks - 1) * 7) : null,
     cheDo: (ft ? 'ft' : 'thuong') as 'ft' | 'thuong',

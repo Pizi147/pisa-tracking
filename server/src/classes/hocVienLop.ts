@@ -145,7 +145,7 @@ export function danhSachHocVienLop(
   const tienDo = classProgressMany(ids);
   /* Việc tiếp theo của em (chip Cần làm), yêu cầu chờ duyệt, em quá hạn theo lớp — MỘT hàm dùng chung với `classOverview`. */
   const emTheoLop = new Map<number, number[]>();
-  /* PR-CT: lớp rỗng (em đã chuyển đi hết, GVCN còn phải xác nhận bàn giao) vẫn có thẻ Báo lên theo lớp → cũng nằm trong tập lớp để đếm. */
+  /* PR-CT: lớp rỗng (em đã chuyển đi hết, GVCN còn phải xác nhận bàn giao) vẫn có thẻ Báo QL theo lớp → cũng nằm trong tập lớp để đếm. */
   for (const id of ids) emTheoLop.set(id, []);
   for (const h of hv) emTheoLop.set(h.class_id, [...(emTheoLop.get(h.class_id) ?? []), h.id as number]);
   const vl = viecHocVienTheoLop(p, {

@@ -329,7 +329,7 @@ export function LichTestTab() {
           {data.nhacLichSu.map((n) => (
             <p key={n.classId} className="m-0 text-[12.5px] text-slate-500 tabular-nums">
               MT lịch sử chưa nhập · {n.soEm} em · {n.classCode}{' '}
-              <Link to={n.href} className="link inline-flex min-h-[44px] items-center sm:min-h-0" aria-label={`Nhập MT lịch sử lớp ${n.classCode}`}>→ Nhập</Link>
+              <Link to={n.href} className="link inline-flex min-h-[44px] items-center sm:min-h-0" aria-label={`Nhập MT lịch sử lớp ${n.classCode}`}>Nhập điểm</Link>
             </p>
           ))}
         </div>

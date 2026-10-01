@@ -135,7 +135,7 @@ export async function runPhanTichTests(t: YThucTestKit) {
     const dongCon = day.find((r: any[]) => typeof r[0] === 'string' && r[0].startsWith('  FT101'));
     assert(!!dongCon, 'dòng con thụt hai dấu cách');
     const dongTong = day[day.length - 1];
-    eq(dongTong[0], 'Cộng 1 tuần', 'dòng Tổng cuối cùng, đúng danh từ theo trục tuần');
+    eq(dongTong[0], 'Tổng 1 tuần', 'dòng Tổng cuối cùng, đúng danh từ theo trục tuần');
     const day2 = d.bangXuatTongHop(kq, new Set(['ket-qua', 'ky-nang', 'xu-ly']), 'x');
     const hangCot = day2[3];
     assert(hangCot.some((x: any) => x === 'L'), 'bật nhóm ky-nang thì cột hiện nhãn ngắn L, không phải kn:listening');

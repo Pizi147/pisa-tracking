@@ -155,8 +155,8 @@ function isVuaXong(r: DongVanHanh, homNay: string): boolean {
 export const HANG_SO = ['qua-han', 'cho-nguoi-khac', 'can-quyet-dinh', 'vua-xong'] as const;
 export type HangSo = (typeof HANG_SO)[number];
 export const HANG_SO_LABEL: Record<HangSo, string> = {
-  'qua-han': 'quá hạn', 'cho-nguoi-khac': 'chờ người khác', 'can-quyet-dinh': 'cần quyết định',
-  'vua-xong': 'vừa hoàn thành (7 ngày)',
+  'qua-han': 'Quá hạn', 'cho-nguoi-khac': 'Chờ người khác', 'can-quyet-dinh': 'Cần quyết định',
+  'vua-xong': 'Vừa hoàn thành (7 ngày)',
 };
 
 export function khopHang(r: DongVanHanh, hang: HangSo, homNay: string): boolean {

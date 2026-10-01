@@ -85,7 +85,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
             {chan.conThieu?.length ? <DongCanSua muc={chan.conThieu} /> : null}
             {chan.dongTren}
             <div className="flex items-center gap-2 px-4 py-2.5">
-              <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={huy.onClick} disabled={huy.disabled}>{huy.nhan ?? 'Huỷ'}</button>
+              <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={huy.onClick} disabled={huy.disabled}>{huy.nhan ?? 'Đóng'}</button>
               {chan.xoa && <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" onClick={chan.xoa.onClick}>{chan.xoa.nhan ?? 'Xoá'}</button>}
               <span className="flex-1" />
               {chan.phu}

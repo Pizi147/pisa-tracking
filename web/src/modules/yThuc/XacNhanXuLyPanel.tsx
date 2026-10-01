@@ -155,7 +155,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', onClose,
           huy: { nhan: 'Huỷ đề xuất', onClick: dong },
           conThieu: soTep === 0 && lf.daBam ? [{ nhan: 'Bằng chứng', lyDo: 'Cần đính kèm tệp hoặc liên kết' }] : undefined,
           chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy}
-            onClick={() => { lf.bam(); if (soTep > 0) void gui(); }}>Gửi QL duyệt · trả lời trong 5 ngày</button>,
+            onClick={() => { lf.bam(); if (soTep > 0) void gui(); }}>Gửi Quản lý duyệt · trả lời trong 5 ngày</button>,
         }}>
         <Khoi tieuDe="Bằng chứng · bắt buộc">
           <p className="m-0 text-xs text-slate-400">Biên bản, thư, ảnh chụp… — QL xem bằng chứng trước khi duyệt.</p>

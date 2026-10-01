@@ -168,7 +168,7 @@ export function xacNhanXuLy(p: Principal, studentId: number, v: XuLyVao): XuLyVi
     if (BAC_BAO_QL.has(ke.kind)) {
       for (const uid of quanLyCua(studentId)) {
         if (uid === p.userId) continue;
-        notify({ userId: uid, kind: 'discipline_de_biet', title: `Đã xử lý ${MEASURE_KIND_LABEL[ke.kind]} — ${hv.full_name} · để biết`,
+        notify({ userId: uid, kind: 'discipline_de_biet', title: `Đã xử lý ${MEASURE_KIND_LABEL[ke.kind]} · ${hv.full_name} · để biết`,
           entityType: 'discipline_measure', entityId: mId, dedupKey: `yt-xu-ly:${mId}`, duong: duongHoSoHocVien(studentId, { tab: 'y-thuc' }) });
       }
     }
@@ -291,7 +291,7 @@ export type YThucHocVien = {
   khai: EmYThuc['khai'];
   nhom: EmYThuc['nhom']; han: string | null; hanXem: string | null; soBatBuoc: number; soMoi: number; quaHanNgay: number | null;
   deXuat: { id: number; nhan: string; status: 'cho_duyet' | 'da_duyet'; han: string | null; quaHan: boolean } | null;
-  /** Đã có thẻ Báo lên đang chờ cho em (thanh cam "đã báo QL"). */
+  /** Đã có thẻ Báo QL đang chờ cho em (thanh cam "đã báo QL"). */
   daBaoQl: boolean;
   phamVi: 'chuoi' | 'tat-ca';
   viPham: ViolationView[];
@@ -356,11 +356,11 @@ export function baoKhiGhiViPham(p: Principal, studentId: number, violationId: nu
   const t = em.viPham.get(violationId);
   const sauBatBuoc = em.soBatBuoc > 0;
   if (sauBatBuoc && !truocBatBuoc) {
-    notify({ userId: em.gvcnId, kind: 'discipline', title: `${hv.full_name} có 3 vi phạm trong 2 tuần — cần xử lý trước ${shortDate(em.han, homNay)}`,
+    notify({ userId: em.gvcnId, kind: 'discipline', title: `Cần xử lý · ${hv.full_name} · 3 vi phạm trong 2 tuần · trước ${shortDate(em.han, homNay)}`,
       entityType: 'student', entityId: studentId, dedupKey: `yt-bat-buoc:${studentId}:${homNay}`, duong: duongXuLy(studentId) });
   } else if (t?.t === 'moi') {
     notify({ userId: em.gvcnId, kind: 'discipline',
-      title: `Vi phạm mới — ${hv.full_name} (${VIOLATION_CATEGORY_LABEL[category as ViolationCategory] ?? category}) · ghi nhận hoặc xử lý trước ${shortDate(t.han, homNay)}`,
+      title: `Vi phạm mới · ${hv.full_name} (${VIOLATION_CATEGORY_LABEL[category as ViolationCategory] ?? category}) · ghi nhận hoặc xử lý trước ${shortDate(t.han, homNay)}`,
       entityType: 'student', entityId: studentId, dedupKey: `yt-moi:${studentId}:${homNay}`, duong: duongXuLy(studentId) });
   }
 }

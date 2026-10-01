@@ -79,10 +79,10 @@ export function tienDoCase(plans: readonly PhuongAnTomTat[], c: { status: string
     const choDuyet = chay.find((p) => p.pendingApproval);
     const coHan = chay.filter((p) => p.actionDue).sort((a, b) => a.actionDue!.localeCompare(b.actionDue!))[0];
     const quaHanRoi = chay.filter((p) => p.actionDue && p.actionOverdue).sort((a, b) => a.actionDue!.localeCompare(b.actionDue!))[0];
-    if (quaHanRoi) tiep = { text: 'Ghi kết quả PA', due: quaHanRoi.actionDue, overdue: true };
+    if (quaHanRoi) tiep = { text: 'Ghi kết quả', due: quaHanRoi.actionDue, overdue: true };
     else if (choDuyet) tiep = { text: 'Chờ Quản lý trả lời', due: choDuyet.approvalDue, overdue: false };
-    else if (coHan) tiep = { text: 'Ghi kết quả PA', due: coHan.actionDue, overdue: coHan.actionOverdue };
-    else if (c.followUntil) tiep = { text: 'Ghi kết quả PA', due: c.followUntil, overdue: c.followOverdue };
+    else if (coHan) tiep = { text: 'Ghi kết quả', due: coHan.actionDue, overdue: coHan.actionOverdue };
+    else if (c.followUntil) tiep = { text: 'Ghi kết quả', due: c.followUntil, overdue: c.followOverdue };
   }
   return { coKetQua, tong, text, tiep };
 }

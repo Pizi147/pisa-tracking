@@ -102,7 +102,7 @@ export function ChiTietViPham({ violationId, onSua, onDaXoa, onMoXuLy }: {
         ) : (
           <span className="flex flex-wrap items-center gap-2 text-xs text-amber-200">
             {d.measures.length ? `Xoá vi phạm này? Lần xử lý chứa nó vẫn giữ, bậc không lùi.` : 'Xoá vi phạm này?'}
-            <button type="button" className="btn btn-sm btn-ghost" disabled={busy} onClick={() => { setHoiXoa(false); setErrXoa(null); }}>Huỷ</button>
+            <button type="button" className="btn btn-sm btn-ghost" disabled={busy} onClick={() => { setHoiXoa(false); setErrXoa(null); }}>Đóng</button>
             <button type="button" className="btn btn-sm text-rose-200" disabled={busy} onClick={xoa}>Xoá</button>
           </span>
         ))}

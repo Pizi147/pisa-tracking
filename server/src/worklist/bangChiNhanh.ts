@@ -38,7 +38,7 @@ const soCua = (t: Tap): Record<CotBang, OBang> => {
   return o;
 };
 const NHAN_COT: Record<CotBang, string> = {
-  hocVien: 'Học viên', duoiKyVong: 'Dưới kỳ vọng', sos: 'SOS', caseMo: 'Case đang mở', thieuPa: 'Thiếu PA học thuật', duDuLieu: 'Đủ dữ liệu đánh giá',
+  hocVien: 'Học viên', duoiKyVong: 'Dưới kỳ vọng', sos: 'SOS', caseMo: 'Case đang mở', thieuPa: 'Case chưa có PA', duDuLieu: 'Tỷ lệ đủ dữ liệu',
 };
 
 function tinh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh }) {

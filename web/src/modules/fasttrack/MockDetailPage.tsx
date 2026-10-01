@@ -475,7 +475,7 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory }: {
         </div>
 
         <div role="cell" className="space-y-1">
-          <Label>Tình trạng và hạn</Label>
+          <Label>Trạng thái và hạn</Label>
           {r.required && (
             <Status kind={prog === 'scored' ? 'done'
               /* MT lịch sử: nhập bù, không hạn — xám như việc "không tính hạn", không màu chờ. */
@@ -547,7 +547,7 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory }: {
             className={`${ROW_GRID} hidden px-2 pb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500`}>
             <div role="columnheader">Kỹ năng</div>
             <div role="columnheader">Lịch Test</div>
-            <div role="columnheader">Tình trạng và hạn</div>
+            <div role="columnheader">Trạng thái và hạn</div>
             <div role="columnheader" className="text-right">Thao tác</div>
           </div>
           {cells.map(renderRow)}
@@ -631,7 +631,7 @@ function WeekModal({ open, onClose, attemptId, currentPeriodId, batBuocLyDo, onD
         <label className="block">
           <span className="label">Tuần mới</span>
           <select className="field" value={periodId ?? ''} onChange={(e) => setPeriodId(Number(e.target.value) || null)}>
-            <option value="">Chọn tuần…</option>
+            <option value="">Chọn tuần</option>
             {(periods.data ?? []).map((p) => <option key={p.id} value={p.id}>{tuanLich(p.weekStart, homNay)} · {p.range}</option>)}
           </select>
         </label>
@@ -715,7 +715,7 @@ function CancelDialog({ open, onClose, attemptId, attemptNo, heQua, onDone }: {
     <ConfirmDialog
       open={open} onClose={onClose} danger busy={busy}
       title={caLuot ? `Huỷ cả lượt MT${attemptNo}` : `Huỷ phần còn lại của MT${attemptNo}`}
-      confirmLabel={caLuot ? 'Huỷ cả lượt' : 'Huỷ phần còn lại'}
+      confirmLabel={caLuot ? `Huỷ cả lượt MT${attemptNo}` : 'Huỷ phần còn lại'}
       body={
         <div className="space-y-2">
           <p>
@@ -790,9 +790,9 @@ function AbsenceMoveModal({ open, row, detail, onClose, onDone }: {
       footer={result
         ? <button className="btn btn-primary" onClick={close}>Đóng</button>
         : <>
-          <button className="btn" onClick={close} disabled={busy}>Huỷ</button>
+          <button className="btn" onClick={close} disabled={busy}>Đóng</button>
           <button className="btn btn-primary" disabled={busy} onClick={submit}>
-            {busy ? 'Đang xử lý…' : 'Xử lý việc vắng'}
+            {busy ? 'Đang xử lý…' : 'Xếp lại bài vắng'}
           </button>
         </>}>
       {result ? (

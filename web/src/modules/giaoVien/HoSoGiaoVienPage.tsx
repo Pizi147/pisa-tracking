@@ -79,7 +79,7 @@ export function HoSoGiaoVienPage() {
             <h1 className="m-0 text-xl font-bold text-slate-100">{gv.ten}</h1>
             <p className="m-0 text-sm text-slate-400">{[gv.vai.join(' · '), gv.chiNhanh.join(', ')].filter(Boolean).join(' · ')}</p>
             <p className="m-0 flex flex-wrap items-center gap-1.5 text-xs">
-              <span className="text-slate-400">Phụ trách được</span>
+              <span className="text-slate-400">Kỹ năng phụ trách được</span>
               {gv.kyNang.length ? gv.kyNang.map((k) => <span key={k} className={chipVai}>{k}</span>) : <span className="text-slate-500">chưa khai</span>}
             </p>
             {!gv.laChinhMinh && data.phamVi.chiNhanh && (
@@ -205,8 +205,8 @@ function KhoiLop({ data, dienThoai, ketQuaCua }: { data: HoSo; dienThoai: boolea
                   )}
                   dong={[
                     { nhan: 'Học viên', noiDung: <span className="tabular-nums">{l.hocVien}</span> },
-                    { nhan: 'Bài chưa nhập', noiDung: <span className="inline-flex items-baseline gap-2">{so(l, 'chua-nhap', l.chuaNhap, 'Bài chưa nhập')}
-                      {l.quaHan > 0 && <span className="text-bad">{so(l, 'qua-han', l.quaHan, 'Bài quá hạn nhập', `${soDam} text-bad`)} quá hạn</span>}</span> },
+                    { nhan: 'Bài chưa nhập điểm', noiDung: <span className="inline-flex items-baseline gap-2">{so(l, 'chua-nhap', l.chuaNhap, 'Bài chưa nhập điểm')}
+                      {l.quaHan > 0 && <span className="text-bad">{so(l, 'qua-han', l.quaHan, 'Bài quá hạn chưa nhập điểm', `${soDam} text-bad`)} quá hạn</span>}</span> },
                     ...(k?.moc ? [{ nhan: k.moc.nhan, noiDung: <MiniKetQua id={id} k={k} /> }] : []),
                   ]} />
               );
@@ -217,8 +217,8 @@ function KhoiLop({ data, dienThoai, ketQuaCua }: { data: HoSo; dienThoai: boolea
             <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: '40rem' }}>
               <colgroup><col style={{ width: '17%' }} /><col style={{ width: '15%' }} /><col style={{ width: '20%' }} /><col style={{ width: '12%' }} /><col style={{ width: '19%' }} /><col style={{ width: '17%' }} /></colgroup>
               <thead><tr>
-                <Th>Lớp</Th><Th>Khung</Th><Th>Vai</Th><Th align="right">Học viên</Th>
-                <Th align="right" hint="Một bài = một kỹ năng của một em trong một lượt, tuần thi đã bắt đầu. Cùng số với Lịch Test. Khác với số ở khối Việc đang có, vốn đếm việc.">Bài chưa nhập</Th>
+                <Th>Lớp</Th><Th>Khung</Th><Th>Vai trò</Th><Th align="right">Học viên</Th>
+                <Th align="right" hint="Một bài = một kỹ năng của một em trong một lượt, tuần thi đã bắt đầu. Cùng số với Lịch Test. Khác với số ở khối Việc đang có, vốn đếm việc.">Bài chưa nhập điểm</Th>
                 <Th align="right">Bài quá hạn</Th>
               </tr></thead>
               <tbody>
@@ -228,8 +228,8 @@ function KhoiLop({ data, dienThoai, ketQuaCua }: { data: HoSo; dienThoai: boolea
                     <td className="td">{chipKhung(l.khung)}</td>
                     <td className="td"><VaiChip vai={l.vai} /></td>
                     <td className="td text-right tabular-nums">{l.hocVien}</td>
-                    <td className="td text-right tabular-nums">{so(l, 'chua-nhap', l.chuaNhap, 'Bài chưa nhập')}</td>
-                    <td className="td text-right tabular-nums">{so(l, 'qua-han', l.quaHan, 'Bài quá hạn nhập', `${soDam} text-bad`)}</td>
+                    <td className="td text-right tabular-nums">{so(l, 'chua-nhap', l.chuaNhap, 'Bài chưa nhập điểm')}</td>
+                    <td className="td text-right tabular-nums">{so(l, 'qua-han', l.quaHan, 'Bài quá hạn chưa nhập điểm', `${soDam} text-bad`)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -389,7 +389,7 @@ function KhoiCase({ data, homNay, linkPa }: { data: HoSo; homNay: string; linkPa
           {/* PR-S5F-b: mỗi cụm `17 Case` · `2 việc tiếp quá hạn` giữ liền một dòng — hẹp thì xuống dòng GIỮA hai cụm, không giữa số và chữ. */}
           <span className="whitespace-nowrap"><SoLieuO giaTri={ds.length} tieuDe="Case đang phụ trách" nguon={nguon(id, 'cot=case-mo')} className={`${vung} text-slate-200`} /> Case</span> ·{' '}
           {quaHan > 0
-            ? <span className="whitespace-nowrap"><SoLieuO giaTri={quaHan} tieuDe="Case có việc tiếp quá hạn" nguon={nguon(id, 'cot=case-qua-han')} className={`${vung} ${soDam} text-bad`} /> <span className="text-bad">việc tiếp quá hạn</span></span>
+            ? <span className="whitespace-nowrap"><SoLieuO giaTri={quaHan} tieuDe="Case có việc quá hạn" nguon={nguon(id, 'cot=case-qua-han')} className={`${vung} ${soDam} text-bad`} /> <span className="text-bad">việc tiếp quá hạn</span></span>
             : <span className="whitespace-nowrap">không có việc tiếp quá hạn</span>}
           </span>}
           {/* P6 (Q26): Quản lý, Quản trị xem → Hiệu quả PA lọc theo giáo viên này (URL hợp đồng Pb2-a). */}

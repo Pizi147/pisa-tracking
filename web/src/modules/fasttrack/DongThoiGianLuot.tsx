@@ -20,7 +20,7 @@ const NHAN_VIEC: Record<string, { chu: string; loai: Loai }> = {
   cancelled: { chu: 'Huỷ cả lượt', loai: 'huy' }, skill_part_cancelled: { chu: 'Huỷ phần còn lại', loai: 'huy' }, reopened: { chu: 'Mở lại', loai: 'lich' },
   skill_sit_status: { chu: 'Trạng thái thi', loai: 'lich' }, completion_week: { chu: 'Tuần dự kiến hoàn tất', loai: 'lich' },
 };
-const SIT: Record<string, string> = { scheduled: 'Theo lịch', sat: 'Đã thi', absent: 'Vắng', cancelled: 'Đã huỷ phần thi', required: 'Trong đợt', skipped: 'Bỏ khỏi đợt' };
+const SIT: Record<string, string> = { scheduled: 'Theo lịch', sat: 'Đã thi', absent: 'Vắng', cancelled: 'Đã huỷ phần thi', required: 'Trong đợt', skipped: 'Đã bỏ khỏi đợt' };
 
 /** Biểu tượng 12 px bằng SVG — ký tự Unicode nhỏ của Inter ở cỡ này thành dấu chấm (bẫy đã gặp 28/09). */
 function BieuTuong({ loai }: { loai: Loai }) {

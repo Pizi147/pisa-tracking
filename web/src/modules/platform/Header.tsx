@@ -220,7 +220,7 @@ export function Header() {
                 onClick={async () => {
                   try { await api.post('/notifications/doc-het'); notifications.reload(); }
                   catch (e: any) { toast.push('error', e?.message || 'Chưa đánh dấu đã đọc được — thử lại.'); }
-                }}>Đọc hết</button>
+                }}>Đánh dấu đã đọc</button>
             </div>
             {(notifications.data ?? []).length === 0 && <div className="p-4 text-sm text-slate-500">Không có thông báo nào.</div>}
             {(['can-lam', 'de-biet'] as const).map((nhom) => {
@@ -294,7 +294,7 @@ export function Header() {
 
             {core.length > 0 && (
               <>
-                <div className="label">Chủ nhiệm</div>
+                <div className="label">GVCN</div>
                 <div className="flex flex-wrap gap-1 mb-3">
                   {core.map((c) => <Info key={c.classId}>GVCN {c.classCode}</Info>)}
                 </div>

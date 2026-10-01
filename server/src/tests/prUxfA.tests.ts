@@ -33,7 +33,7 @@ export async function runPrUxfATests(t: YThucTestKit) {
     assert(d.khacGoiY(null, goi(0.8)) === false, 'hướng null');
   });
 
-  check('UXF-a (1) · máy chủ bắt lý do khi khác Web gợi ý — thân gửi khacGoiY:false KHÔNG lách được; 50–59% không đòi lý do', () => {
+  check('UXF-a (1) · máy chủ bắt lý do khi khác Hệ thống gợi ý — thân gửi khacGoiY:false KHÔNG lách được; 50–59% không đòi lý do', () => {
     const be04 = lopId('MB BE 04'), be03 = lopId('MB BE 03');
     const huy = emId('Tạ Đức Huy'), khoi = emId('Đặng Minh Khôi');
     const ra = (dong: any) => lenh.raLenh(P.mbManager, { lopNguonId: be04, boiCanh: 'cuoi-khoa', tuanChung: THU_HAI, dongs: [lenh.dongTuBody(dong)] });

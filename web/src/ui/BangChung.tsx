@@ -263,7 +263,7 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = 'Bằng chứn
             <button type="button" className="btn btn-sm btn-primary" disabled={linkBusy || !url.trim()} onClick={() => void saveLink()}>
               {linkBusy ? 'Đang lưu…' : 'Lưu'}
             </button>
-            <button type="button" className="btn btn-sm" disabled={linkBusy} onClick={() => { setLinkOpen(false); setLinkError(null); }}>Huỷ</button>
+            <button type="button" className="btn btn-sm" disabled={linkBusy} onClick={() => { setLinkOpen(false); setLinkError(null); }}>Đóng</button>
           </span>
           {linkError && <p className="text-[11px] text-bad m-0 sm:col-span-3" role="alert">{linkError}</p>}
         </div>

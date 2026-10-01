@@ -42,7 +42,7 @@ export function stepsFor(attemptNo: number, level: SosLevel): SosStep[] {
   const byGvbmOnly = level === 2 && attemptNo >= 2;
   steps.push({
     key: 'talk_student', label: 'Trao đổi với học viên',
-    detail: byGvbmOnly ? 'GVBM trao đổi ngắn với HS' : 'GVCN + GVBM trao đổi ngắn với HS',
+    detail: byGvbmOnly ? 'GVBM trao đổi ngắn với HV' : 'GVCN + GVBM trao đổi ngắn với HV',
     required: true,
   });
 
@@ -54,27 +54,27 @@ export function stepsFor(attemptNo: number, level: SosLevel): SosStep[] {
   });
 
   let academic: string;
-  if (attemptNo === 1) academic = level === 3 ? 'Học tutor cho đến lần mock 2' : 'Xếp tự học trong 1 tháng tiếp theo';
+  if (attemptNo === 1) academic = level === 3 ? 'Học Tutor cho đến lần mock 2' : 'Xếp tự học trong 1 tháng tiếp theo';
   else if (attemptNo === 2)
     academic = level === 3
-      ? 'Học tutor cho đến lần mock 3 (ưu tiên) HOẶC đề xuất lùi lịch thi kèm phương án — chọn một'
+      ? 'Học Tutor cho đến lần mock 3 (ưu tiên) HOẶC đề xuất lùi lịch thi kèm phương án — chọn một'
       : 'Xếp tự học trong 1 tháng tiếp theo';
   else if (attemptNo === 5) academic = 'Bổ sung hành động chuyên môn (nguồn chưa quy định hình thức/thời lượng)';
-  else academic = level === 3 ? 'Học tutor cho đến lúc thi (ưu tiên lịch này)' : 'Học tutor cho đến lúc thi';
+  else academic = level === 3 ? 'Học Tutor cho đến lúc thi (ưu tiên lịch này)' : 'Học Tutor cho đến lúc thi';
   steps.push({ key: 'academic', label: 'Hỗ trợ học thuật', detail: academic, required: true });
 
   if (attemptNo >= 3 && level >= 2) {
     steps.push({
       key: 'ops', label: 'Chính sách vận hành',
-      detail: 'P. Vận hành đưa chính sách hỗ trợ (buổi bổ trợ với tutor / GV cơ hữu) — quyết định theo từng case',
+      detail: 'P. Vận hành đưa chính sách hỗ trợ (buổi bổ trợ với Tutor / GV cơ hữu) — quyết định theo từng case',
       required: false,
     });
   }
 
   let meeting: string | null = null;
-  if (attemptNo === 1 && level === 3) meeting = 'GVCN meeting HS';
-  else if (attemptNo >= 2 && level === 3) meeting = 'CX / GĐCN meeting HS';
-  else if (attemptNo >= 2 && level === 2) meeting = 'GVCN meeting HS';
+  if (attemptNo === 1 && level === 3) meeting = 'GVCN meeting với HV';
+  else if (attemptNo >= 2 && level === 3) meeting = 'CX / GĐCN meeting với HV';
+  else if (attemptNo >= 2 && level === 2) meeting = 'GVCN meeting với HV';
   if (meeting) {
     steps.push({ key: 'meeting', label: 'Meeting bổ sung', detail: `${meeting}: động viên, tìm hiểu nguyên nhân`, required: true });
   }
@@ -524,7 +524,7 @@ function notifyTeachers(attempt: any, level: SosLevel) {
   const student = db().prepare('SELECT full_name, student_code FROM students WHERE id = ?').get(attempt.student_id) as any;
   for (const t of teachers) {
     notify({
-      userId: t.user_id, kind: 'sos', title: `${SOS_LABEL[level]} — ${student.full_name}`,
+      userId: t.user_id, kind: 'sos', title: `${SOS_LABEL[level]} · ${student.full_name}`,
       body: `MT${attempt.attempt_no} · ${student.student_code}`,
       entityType: 'assessment_attempt', entityId: attempt.id, dedupKey: `sos:${attempt.id}:${level}`,
     });

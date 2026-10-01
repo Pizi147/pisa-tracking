@@ -46,7 +46,7 @@ export function LopToiDay() {
     if (!h.baiCho && !gon) return <span className="tabular-nums text-slate-500">0</span>;
     return (
       <>
-        {qua ? so(h, 'bai-qua-han', h.baiQuaHan, 'bài quá hạn nhập', `font-semibold text-late ${gon ? 'font-bold' : ''}`)
+        {qua ? so(h, 'bai-qua-han', h.baiQuaHan, 'bài quá hạn chưa nhập điểm', `font-semibold text-late ${gon ? 'font-bold' : ''}`)
           : so(h, 'bai-cho', h.baiCho, 'bài chờ chấm', `font-semibold ${gon ? 'font-bold' : ''}`)}
         <span className="text-xs text-slate-500">{gon ? nhan : ` ${nhan}`}</span>
       </>
@@ -94,7 +94,7 @@ export function LopToiDay() {
                 <th className="px-3 py-2 text-right font-semibold">Học viên</th><th className="px-3 py-2 text-right font-semibold">{nhanDuoi}</th>
                 {!laThuong && <th className="px-3 py-2 text-right font-semibold">SOS</th>}
                 <th className="px-3 py-2 text-right font-semibold">Case đang mở</th><th className="px-3 py-2 text-right font-semibold">Bài chờ chấm</th>
-                <th className="px-4 py-2 font-semibold">Test kế tiếp</th>
+                <th className="px-4 py-2 font-semibold">Test sắp tới</th>
               </tr>
             </thead>
             <tbody className="tabular-nums">

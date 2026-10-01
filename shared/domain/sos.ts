@@ -103,11 +103,11 @@ export const COORDINATION_KINDS = [
 ] as const;
 export type CoordinationKind = (typeof COORDINATION_KINDS)[number];
 export const COORDINATION_KIND_LABEL: Record<CoordinationKind, string> = {
-  talk_student: 'Trao đổi ngắn với HS',
+  talk_student: 'Trao đổi ngắn với HV',
   talk_family: 'Trao đổi với gia đình',
-  gvcn_meeting: 'GVCN meeting với HS',
-  cx_meeting_student: 'CX / GĐCN meeting với HS',
-  cx_meeting_family: 'CX / GĐCN meeting với HS / PH',
+  gvcn_meeting: 'GVCN meeting với HV',
+  cx_meeting_student: 'CX / GĐCN meeting với HV',
+  cx_meeting_family: 'CX / GĐCN meeting với HV / PH',
   other: 'Khác',
   bao_ph_tvv: 'Báo phụ huynh qua TVV',
 };
@@ -136,7 +136,7 @@ export const COORDINATION_REMOVE_REASON_LABEL: Record<CoordinationRemoveReason, 
 export const CASE_DISMISS_REASONS = ['special_circumstance', 'single_incident', 'other'] as const;
 export type CaseDismissReason = (typeof CASE_DISMISS_REASONS)[number];
 export const CASE_DISMISS_REASON_LABEL: Record<CaseDismissReason, string> = {
-  special_circumstance: 'Học sinh có lý do đặc biệt',
+  special_circumstance: 'Học viên có lý do đặc biệt',
   single_incident: 'Tình huống đơn lẻ',
   other: 'Khác',
 };

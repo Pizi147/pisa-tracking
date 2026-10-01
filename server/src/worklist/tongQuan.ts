@@ -288,7 +288,7 @@ export function oLopToiDay(p: Principal, f: { ct: 'ft' | 'thuong'; classId: numb
   if (!l) throw forbidden('Bạn không dạy lớp này.');
   const ids = tap.get(f.classId)![cot];
   const unit = cot === 'caseMo' ? 'case' : cot === 'baiCho' || cot === 'baiQuaHan' ? 'bai' : 'hoc-vien';
-  const nhan = cot === 'caseMo' ? 'Case đang mở' : cot === 'sos' ? 'học viên có SOS' : cot === 'baiCho' ? 'bài chờ chấm' : cot === 'baiQuaHan' ? 'bài quá hạn nhập'
+  const nhan = cot === 'caseMo' ? 'Case đang mở' : cot === 'sos' ? 'học viên có SOS' : cot === 'baiCho' ? 'bài chờ chấm' : cot === 'baiQuaHan' ? 'bài quá hạn chưa nhập điểm'
     : f.ct === 'thuong' ? 'học viên chưa đạt' : 'học viên dưới kỳ vọng';
   return { n: ids.length, tieuDe: `${l.code} · ${ids.length} ${nhan}`, rows: rowsFor(unit, ids) };
 }

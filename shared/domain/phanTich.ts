@@ -119,7 +119,7 @@ export const THEO_DONG_LABEL: Record<TheoDong, string> = {
 export const THEO_DONG_COT_DAU: Record<TheoDong, string> = {
   tuan: 'Tuần', lop: 'Lớp', dot: 'Đợt', cn: 'Chi nhánh',
 };
-/** Danh từ đếm dùng cho nhãn dòng Tổng — "Cộng {n} tuần", "Cộng {n} lớp"… */
+/** Danh từ đếm dùng cho nhãn dòng Tổng — "Tổng {n} tuần", "Tổng {n} lớp"… */
 export const THEO_DONG_DANH_TU: Record<TheoDong, string> = {
   tuan: 'tuần', lop: 'lớp', dot: 'đợt', cn: 'chi nhánh',
 };
@@ -151,7 +151,7 @@ const NHAN_NHOM_KY_NANG: Record<ChuongTrinh, string> = {
   thuong: 'Chưa đạt theo môn (đếm HV)',
 };
 export function nhomCotLabel(nhom: NhomCot, ct: ChuongTrinh): string {
-  if (nhom === 'ket-qua') return 'Kết quả Test (đếm lượt)';
+  if (nhom === 'ket-qua') return 'Kết quả Test';
   if (nhom === 'xu-ly') return 'Xử lý (tình trạng hiện tại)';
   return NHAN_NHOM_KY_NANG[ct];
 }
@@ -481,6 +481,6 @@ export function bangXuatTongHop(
     out.push(dong(r, false));
     for (const con of r.con ?? []) out.push(dong(con, true));
   }
-  out.push([`Cộng ${kq.hang.length} ${THEO_DONG_DANH_TU[kq.theo]}`, ...cols.map((c) => (oKhongApDung(c, kq.tongCoDot) ? '—' : kq.tong[c.khoa] ?? 0))]);
+  out.push([`Tổng ${kq.hang.length} ${THEO_DONG_DANH_TU[kq.theo]}`, ...cols.map((c) => (oKhongApDung(c, kq.tongCoDot) ? '—' : kq.tong[c.khoa] ?? 0))]);
   return out;
 }

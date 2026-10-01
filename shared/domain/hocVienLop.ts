@@ -399,7 +399,7 @@ export function viecTiepCuaEm(i: {
       const tuan = v.loaiHan === 'cap-nhat-pa' ? d.viec.replace(/^Ghi kết quả /, '') : null;
       out.push({ viec: tuan ? `${viec} · ${tuan}` : viec, han: d.han, quaHanNgay: d.daysOverdue, tone, dich, title: `${goc}${tuan ? ` · ${tuan}` : ''} · ${d.han}${d.quaHan ? ` · ${d.quaHan}` : ''}` });
     } else {
-      /* Chưa có hạn: Đề ra PA (Case tay chưa có PA) vẫn là việc phải làm; "Hoàn thành Case" chỉ nhắc. */
+      /* Chưa có hạn: Thêm PA (Case tay chưa có PA) vẫn là việc phải làm; "Hoàn thành Case" chỉ nhắc. */
       out.push({ viec, han: null, quaHanNgay: null, tone: v.loaiHan === 'lap-pa' ? 'warn' : 'info', dich, title: goc });
     }
   }
@@ -524,14 +524,14 @@ export function sapEmCanHoTro<T extends { ten: string; cases: readonly { quaHan:
 // ---------------------------------------------------------------- nút chính đầu hồ sơ lớp (K2-14)
 
 export type NutChinh = { loai: 'them-hv' | 'chuyen-tiep' | 'nhap-diem' | null; nhan: string };
-/** MỘT nút chính theo chặng của lớp: lớp rỗng → thêm học viên · lớp thường cuối khoá → chuyển tiếp · còn điểm cần nhập → Nhập điểm Test. */
+/** MỘT nút chính theo chặng của lớp: lớp rỗng → thêm học viên · lớp thường cuối khoá → chuyển tiếp · còn điểm cần nhập → Nhập điểm. */
 export function nutChinhDauTrang(i: {
   thuong: boolean; phase: string; needsPlacement: boolean; soHocVien: number;
   coTheThemHv: boolean; coTheNhapDiem: boolean; coTheChuyenTiep: boolean; soEmChuyen: number;
 }): NutChinh {
   if (i.soHocVien === 0 && i.coTheThemHv) return { loai: 'them-hv', nhan: '+ Học viên' };
   /* PR-CT: "Chuyển tiếp lớp…" nằm ở dải Kết thúc khoá ngay dưới tên lớp (mockup 20 — A), không còn là nút chính đầu trang. */
-  if (i.coTheNhapDiem) return { loai: 'nhap-diem', nhan: 'Nhập điểm Test' };
+  if (i.coTheNhapDiem) return { loai: 'nhap-diem', nhan: 'Nhập điểm' };
   return { loai: null, nhan: '' };
 }
 

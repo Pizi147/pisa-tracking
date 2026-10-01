@@ -79,7 +79,7 @@ export async function runPrS3fTests(t: YThucTestKit) {
     keHoach.huyDiem(P.admin, { attemptId: a.id, skill: 'listening', lyDo: 'Chấm nhầm bài, huỷ điểm' });
     assert(get('SELECT status FROM sos_cases WHERE id = ?', c.id).status !== 'done', 'Case có PA đã chạy không được đóng');
     assert(get('SELECT status FROM case_interventions WHERE id = ?', iv.id).status === 'started', 'PA đã chạy bị đụng');
-    assert(get(`SELECT COUNT(*) n FROM notifications WHERE entity_type = 'sos_case' AND entity_id = ? AND title LIKE 'Xem lại case%'`, c.id).n === 1, 'thiếu thông báo xem lại');
+    assert(get(`SELECT COUNT(*) n FROM notifications WHERE entity_type = 'sos_case' AND entity_id = ? AND title LIKE 'Xem lại Case%'`, c.id).n === 1, 'thiếu thông báo xem lại');
   });
 
   // ------------------------------------------------------------------ 2 · Không cần theo dõi: chặn thêm PA khi thẻ chờ, duyệt huỷ MỌI PA
@@ -175,7 +175,7 @@ export async function runPrS3fTests(t: YThucTestKit) {
     attachments.addLink(gvcn, { ownerType: 'discipline_measure', ownerId: nhap.id, url: 'https://example.com/bang-chung', displayName: 'Biên bản' });
     return xuLy.guiDeXuat(gvcn, nhap.id);
   };
-  check('S3F (7) · Meeting đã duyệt rồi gửi thêm Đình chỉ: việc "Ghi Đã thực hiện Meeting" KHÔNG mất; quá hạn tính trên đề xuất đã duyệt → Báo lên; mỗi lần xử lý một việc', () => {
+  check('S3F (7) · Meeting đã duyệt rồi gửi thêm Đình chỉ: việc "Ghi Đã thực hiện Meeting" KHÔNG mất; quá hạn tính trên đề xuất đã duyệt → Báo QL; mỗi lần xử lý một việc', () => {
     const sid = hvYt();
     const ids = [-3, -2, -1].map((n) => ghiVp(gvbm, sid, addDays(TODAY, n)));
     const m1 = deXuatGui(sid, 'meeting_cx', ids);
@@ -236,7 +236,7 @@ export async function runPrS3fTests(t: YThucTestKit) {
   const metricsSvc: any = await import('../worklist/metrics.ts');
   const thongKe: any = await import('../yThuc/thongKe.ts');
   const dongHv: any = await import('../classes/dongHocVien.ts');
-  check('S3F (12) · "Biện pháp" ở chỉ số nói đúng trạng thái (không "đang chuẩn bị"); violationDetail không liệt kê nháp đề xuất; huy hiệu lớp = hv-can-xu-ly với em Tạm dừng; lớp chưa có GVCN vẫn Báo lên', () => {
+  check('S3F (12) · "Biện pháp" ở chỉ số nói đúng trạng thái (không "đang chuẩn bị"); violationDetail không liệt kê nháp đề xuất; huy hiệu lớp = hv-can-xu-ly với em Tạm dừng; lớp chưa có GVCN vẫn Báo QL', () => {
     const sid = hvYt();
     const ids = [-3, -2, -1].map((n) => ghiVp(gvbm, sid, addDays(TODAY, n)));
     const nhap = xuLy.deXuat(gvcn, sid, { kind: 'suspension', violationIds: ids, note: 'Đình chỉ vì vi phạm nặng' });
@@ -259,7 +259,7 @@ export async function runPrS3fTests(t: YThucTestKit) {
     conn.prepare(`INSERT INTO violations (student_id, class_id, category, occurred_on, reported_on, reported_by, description, created_at) VALUES (?,?, 'homework', ?, ?, ?, 'Vi phạm cũ chưa ai xem', ?)`)
       .run(sid3, CLASS, addDays(TODAY, -9), addDays(TODAY, -9), gvbm.userId, new Date().toISOString());
     const em3 = emYt(sid3);
-    assert(lyDoBaoLenYThuc({ ...em3, gvcnId: null }) !== null, 'lớp chưa có GVCN vẫn phải Báo lên');
+    assert(lyDoBaoLenYThuc({ ...em3, gvcnId: null }) !== null, 'lớp chưa có GVCN vẫn phải Báo QL');
   });
   check('S3F (12) · ClassYThucCard: lỗi tải hồ sơ Ý thức của em → ErrorState; chú thích yeuCauDuyet.ts nêu cả hai khoá y_thuc, bao_len_y_thuc', () => {
     assert(/hvY\.error \? [\s\S]{0,120}ErrorState/.test(web('yThuc/ClassYThucCard.tsx')), 'lỗi hvY chưa có ErrorState');

@@ -266,7 +266,7 @@ export function KhongTheoDoiForm({ caseId, onClose, onDone }: { caseId: number; 
       {daBam && thieu && <p className="m-0 text-xs text-bad" role="alert">{thieu}</p>}
       <p className="m-0 text-[11px] text-slate-500">Gửi Quản lý duyệt · trả lời trong 5 ngày · xem ở Yêu cầu của tôi</p>
       <div className="flex gap-1.5">
-        <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>Huỷ</button>
+        <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>Đóng</button>
         <button type="button" className="btn btn-sm btn-primary" disabled={busy} onClick={gui}>Gửi Quản lý duyệt</button>
       </div>
     </div>

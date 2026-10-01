@@ -149,7 +149,7 @@ export function announceAutoCase(input: {
       .get(input.studentId) as any)?.code ?? null;
     notify({
       userId: input.ownerUserId, kind: 'sos',
-      title: `Xác nhận nguyên nhân ${input.skillLabel} — ${[st?.full_name, lop].filter(Boolean).join(' · ')}`,
+      title: `Xác nhận nguyên nhân ${input.skillLabel} · ${[st?.full_name, lop].filter(Boolean).join(' · ')}`,
       body: `Case mới sau ${input.dot === 'giua-khoa' ? 'Giữa khoá' : `MT${input.attemptNo}`}: ${ten} · hạn ${ngay(input.hanXacNhan, demoToday())}`,
       entityType: 'sos_case', entityId: input.caseId, dedupKey: `sos-case:${input.caseId}`,
     });
@@ -315,7 +315,7 @@ export function banGiaoPaQuyChe(studentId: number, toClassId: number, actorUserI
   }
 }
 /**
- * EM QUAY LẠI HỌC (K3-41, Q14): Tạm dừng dừng hạn Case bằng cách LỌC em `inactive` khỏi Việc / Báo lên; quay lại thì hạn tính lại từ ngày
+ * EM QUAY LẠI HỌC (K3-41, Q14): Tạm dừng dừng hạn Case bằng cách LỌC em `inactive` khỏi Việc / Báo QL; quay lại thì hạn tính lại từ ngày
  * quay lại — Case còn chờ (nguyên nhân / xác nhận PA) nhận hạn xác nhận mới, PA đang chạy nhận hạn ghi kết quả mới. Chạy trong tx của nơi gọi.
  */
 export function datLaiHanCase(studentId: number, homNay: string) {
@@ -400,7 +400,7 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
 /**
  * `KHÔNG CẦN THEO DÕI` (S4-5…S4-7, T23, YC-12.4): GVBM đúng kỹ năng (C02) hoặc Quản lý trong phạm vi GỬI Quản lý duyệt một thẻ `khong_theo_doi`
  * kèm lý do chọn nhanh. Case CHƯA đóng: hàng Case "Chờ Quản lý duyệt · không theo dõi", việc Xác nhận nguyên nhân rời Việc của GVBM và không
- * sinh Báo lên (`awaitingCauseCaseIds` loại thẻ đang chờ). Duyệt → `apDungKhongTheoDoi`; Từ chối → `tuChoiKhongTheoDoi` (hạn mới 3 ngày).
+ * sinh Báo QL (`awaitingCauseCaseIds` loại thẻ đang chờ). Duyệt → `apDungKhongTheoDoi`; Từ chối → `tuChoiKhongTheoDoi` (hạn mới 3 ngày).
  *
  * Chỉ khi Case còn CHỜ NGUYÊN NHÂN (S4-2: hai lựa chọn loại trừ, Q4) — đã xác nhận nguyên nhân thì kết thúc bằng Hoàn thành Case.
  * QL kiêm GVBM tự gửi thì tự duyệt được như mọi thẻ (Q-D, Câu hỏi 2 = A: thẻ ghi "tự duyệt", báo Quản trị).
@@ -495,7 +495,7 @@ export function apDungKhongTheoDoi(conn: any, yc: { doi_tuong_id: number; du_lie
 /** QUẢN LÝ TỪ CHỐI "Không cần theo dõi" (trong tx của hộp): Case về chờ nguyên nhân, hạn mới 3 ngày từ ngày từ chối; báo GVBM phụ trách. */
 export function tuChoiKhongTheoDoi(conn: any, yc: { doi_tuong_id: number; nguoi_xin: number | null }, nguoiDuyet: number, lyDo: string) {
   const caseId = yc.doi_tuong_id;
-  const c = conn.prepare('SELECT id, owner_user_id FROM sos_cases WHERE id = ?').get(caseId) as any;
+  const c = conn.prepare('SELECT id, owner_user_id, (SELECT full_name FROM students WHERE id = sos_cases.student_id) AS hv FROM sos_cases WHERE id = ?').get(caseId) as any;
   if (!c) throw notFound('Không tìm thấy case');
   const today = demoToday();
   const han = hanXacNhan(today);
@@ -504,8 +504,8 @@ export function tuChoiKhongTheoDoi(conn: any, yc: { doi_tuong_id: number; nguoi_
   /* Người xin đã nhận "Quản lý từ chối: …" từ hộp; GVBM phụ trách khác người xin thì báo riêng. */
   if (c.owner_user_id && c.owner_user_id !== yc.nguoi_xin && c.owner_user_id !== nguoiDuyet) {
     notify({
-      userId: c.owner_user_id, kind: 'sos', title: `Quản lý từ chối: ${lyDo}`.slice(0, 200),
-      body: `Không cần theo dõi bị từ chối — xác nhận nguyên nhân trước hết ${ngay(han, today)}`,
+      userId: c.owner_user_id, kind: 'sos', title: `Bị từ chối · Không cần theo dõi · ${c.hv ?? 'học viên'}`.slice(0, 200),
+      body: `${lyDo.slice(0, 120)} — xác nhận nguyên nhân trước hết ${ngay(han, today)}`,
       entityType: 'sos_case', entityId: caseId, dedupKey: `tu_choi_ktd:${caseId}:${today}`,
     });
   }

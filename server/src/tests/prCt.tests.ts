@@ -714,8 +714,8 @@ export async function runPrCtTests(t: YThucTestKit) {
     });
   });
 
-  // ------------------------------------------------------------------ khối 6 · việc, Báo lên, Đề xuất chuyển lớp (Task 6)
-  console.log('\nPR-CT · Việc bàn giao gộp theo lớp, Báo lên, Đề xuất chuyển lớp');
+  // ------------------------------------------------------------------ khối 6 · việc, Báo QL, Đề xuất chuyển lớp (Task 6)
+  console.log('\nPR-CT · Việc bàn giao gộp theo lớp, Báo QL, Đề xuất chuyển lớp');
   const yc: any = await import('../duyet/yeuCau.ts');
   const { myWork } = await import('../worklist/mywork.ts');
   const viecBg = (who: any, lop: number) => ((myWork(who) as any).items ?? []).filter((i: any) => i.group === 'ban_giao' && i.classId === lop);
@@ -758,7 +758,7 @@ export async function runPrCtTests(t: YThucTestKit) {
     const v = viecBg(loadPrincipal(GV[3].userId), n);
     assert(v.length === 1 && /^Bàn giao Hoc vien CT\d+ → /.test(v[0].tieuDe), v[0]?.tieuDe);
   });
-  check('CT (6d) · Báo lên bàn giao: sinh đúng NGÀY THỨ 4 (quá han_gvcn), một thẻ mỗi lớp, ownerId = GVCN, đóng khi xác nhận hết', () => {
+  check('CT (6d) · Báo QL bàn giao: sinh đúng NGÀY THỨ 4 (quá han_gvcn), một thẻ mỗi lớp, ownerId = GVCN, đóng khi xác nhận hết', () => {
     const n = lopMoi({ kind: 'FOU', tuanHienTai: 8 });
     ganGv(n, GV[4].userId, null, true);
     const gvn = loadPrincipal(GV[4].userId);
@@ -778,7 +778,7 @@ export async function runPrCtTests(t: YThucTestKit) {
     bg.xacNhanBanGiao(gvn, lenhCua(b).id, 'Em học đều, cần nhắc nộp bài đúng hạn.');
     yc.quetYeuCau(t.addDays(han, 1));
     assert(theBl('bao_len_ban_giao', n).trang_thai === 'tu_dong', 'xác nhận hết → thẻ tự đóng');
-    /* hộp Chờ duyệt của QL thấy thẻ Báo lên khi còn treo */
+    /* hộp Chờ duyệt của QL thấy thẻ Báo QL khi còn treo */
     const n2 = lopMoi({ kind: 'FOU', tuanHienTai: 8 });
     ganGv(n2, GV[4].userId, null, true);
     ra(P.mbManager, n2, 'cuoi-khoa', [dongCua(hocVien(n2, 'FOU', false).sid, 'len_lop', d6)]);
@@ -790,7 +790,7 @@ export async function runPrCtTests(t: YThucTestKit) {
     yc.quetYeuCau(TODAY);
     assert(theBl('bao_len_ban_giao', n2).trang_thai === 'tu_dong', 'lệnh huỷ → thẻ tự đóng');
   });
-  check('CT (6e) · Báo lên "Lớp hết khoá còn em chưa có lệnh": sinh khi lớp thường hết tuần kết thúc, một thẻ/lớp, đóng khi đủ lệnh; lớp chưa hết không có', () => {
+  check('CT (6e) · Báo QL "Lớp hết khoá còn em chưa có lệnh": sinh khi lớp thường hết tuần kết thúc, một thẻ/lớp, đóng khi đủ lệnh; lớp chưa hết không có', () => {
     const het = lopMoi({ kind: 'FOU', tuanHienTai: 9 });
     const chua = lopMoi({ kind: 'FOU', tuanHienTai: 8 });
     const [h1, h2] = [hocVien(het, 'FOU', false).sid, hocVien(het, 'FOU', false).sid];
@@ -983,14 +983,14 @@ export async function runPrCtTests(t: YThucTestKit) {
   console.log('\nPR-CT · Bộ demo chuyển lớp và bàn giao (6 kịch bản + 1 lệnh đã chuyển)');
   const lopMa = (ma: string) => get('SELECT id FROM classes WHERE code = ?', ma)?.id as number | undefined;
   const emCua = (ten: string) => get('SELECT id FROM students WHERE full_name = ?', ten)?.id as number;
-  check('CT (8a) · kịch bản 1 — MB FOU 21: 6 em, chưa lệnh nào, đủ dải điểm + 1 em thiếu điểm P; dải đỏ (đã hết tuần kết thúc), thẻ Báo lên "Lớp hết khoá còn em chưa có lệnh"', () => {
+  check('CT (8a) · kịch bản 1 — MB FOU 21: 6 em, chưa lệnh nào, đủ dải điểm + 1 em thiếu điểm P; dải đỏ (đã hết tuần kết thúc), thẻ Báo QL "Lớp hết khoá còn em chưa có lệnh"', () => {
     const id = lopMa('MB FOU 21');
     assert(id, 'thiếu lớp MB FOU 21');
     assert(all(`SELECT 1 FROM enrollments WHERE class_id = ? AND status = 'active'`, id).length === 6, '6 em');
     assert(get(`SELECT COUNT(*) n FROM lenh_chuyen_lop WHERE lop_nguon_id = ?`, id).n === 0, 'chưa có lệnh');
     const nam = emCua('Phan Quang Nam CT');
     assert(get(`SELECT COUNT(*) n FROM assessment_scores s JOIN assessment_attempts a ON a.id = s.attempt_id WHERE a.student_id = ? AND a.kind = 'final' AND s.raw_score IS NOT NULL`, nam).n === 3, 'Nam thiếu điểm P (3/4 môn)');
-    assert(get(`SELECT COUNT(*) n FROM yeu_cau_duyet WHERE loai = 'bao_len_chua_lenh' AND doi_tuong_id = ?`, id).n === 1, 'thẻ Báo lên chưa lệnh');
+    assert(get(`SELECT COUNT(*) n FROM yeu_cau_duyet WHERE loai = 'bao_len_chua_lenh' AND doi_tuong_id = ?`, id).n === 1, 'thẻ Báo QL chưa lệnh');
   });
   check('CT (8b) · kịch bản 2–3 — MB FOU 22: 4 em lên MB BE 09 (một em thiếu điểm P vẫn có lệnh) + 1 tạm dừng học (bảo lưu); GVBM đã ghi 3 môn cho cả 4 em, còn thiếu P; GVCN chưa xác nhận', () => {
     const id = lopMa('MB FOU 22'), be09 = lopMa('MB BE 09');
@@ -1013,11 +1013,11 @@ export async function runPrCtTests(t: YThucTestKit) {
     const x = get(`SELECT * FROM yeu_cau_duyet WHERE loai = 'de_xuat_chuyen_lop' AND hoc_vien_id = ?`, emCua('Đinh Quốc Bảo CT'));
     assert(x && x.phan_loai === 'thong-tin-hv' && x.nguoi_xin > 0 && x.han_duyet, JSON.stringify(x));
   });
-  check('CT (8e) · kịch bản 6 — MB FOU 23: lệnh ra 4 ngày trước, GVCN chưa xác nhận, hạn GVCN đã qua → thẻ Báo lên "Bàn giao quá hạn"', () => {
+  check('CT (8e) · kịch bản 6 — MB FOU 23: lệnh ra 4 ngày trước, GVCN chưa xác nhận, hạn GVCN đã qua → thẻ Báo QL "Bàn giao quá hạn"', () => {
     const id = lopMa('MB FOU 23');
     const ls = all(`SELECT * FROM lenh_chuyen_lop WHERE lop_nguon_id = ?`, id);
     assert(ls.length === 2 && ls.every((l) => l.ngay_ra_lenh === t.addDays(TODAY, -4) && l.han_gvcn === t.addDays(TODAY, -2) && !l.xac_nhan_luc), JSON.stringify(ls.map((l) => [l.ngay_ra_lenh, l.han_gvcn])));
-    assert(get(`SELECT COUNT(*) n FROM yeu_cau_duyet WHERE loai = 'bao_len_ban_giao' AND doi_tuong_id = ?`, id).n === 1, 'thẻ Báo lên bàn giao');
+    assert(get(`SELECT COUNT(*) n FROM yeu_cau_duyet WHERE loai = 'bao_len_ban_giao' AND doi_tuong_id = ?`, id).n === 1, 'thẻ Báo QL bàn giao');
   });
   check('CT (8f) · lệnh đã chuyển Thứ Hai tuần demo: Nguyễn Phương Thảo ở MB BE 09 từ ngày demo, bàn giao đã xác nhận (4 môn + nhận xét), Hành trình có "Bàn giao"', () => {
     const e = emCua('Nguyễn Phương Thảo CT'), be09 = lopMa('MB BE 09');

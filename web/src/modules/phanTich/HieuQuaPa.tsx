@@ -191,7 +191,7 @@ export function HieuQuaPa(props: PhamViPhanTich) {
 
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t px-4 py-2.5 text-xs text-slate-400" style={{ borderColor: 'var(--line)' }}>
               <span>Để số liệu đủ tin:</span>
-              <span><b className="font-semibold text-slate-100"><SoLieuO giaTri={data.chuaGhiKetQua} nguon={nguon('chua-ghi-ket-qua', 'pa')} tieuDe="PA chờ ghi kết quả" /></b> PA đã xong chưa ghi kết quả</span>
+              <span><b className="font-semibold text-slate-100"><SoLieuO giaTri={data.chuaGhiKetQua} nguon={nguon('chua-ghi-ket-qua', 'pa')} tieuDe="PA chờ ghi kết quả" /></b> PA chờ ghi kết quả</span>
               <span><b className="font-semibold text-slate-100"><SoLieuO giaTri={data.caseChuaPhanLoai} nguon={nguon('case-chua-phan-loai', 'case')} tieuDe="Case chưa chọn nhóm nguyên nhân" /></b> Case chưa chọn nhóm nguyên nhân</span>
               <span title="PA có kết quả nhưng chưa có lần ghi danh nào cho biết em học ở đâu lúc làm PA — không tính vào bảng nào">
                 <b className="font-semibold text-slate-100"><SoLieuO giaTri={data.chuaRoNguon} nguon={nguon('chua-ro-nguon', 'pa')} tieuDe="PA chưa rõ nơi học lúc làm PA" /></b> PA chưa rõ nơi học lúc làm PA

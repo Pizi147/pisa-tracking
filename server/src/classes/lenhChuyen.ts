@@ -101,7 +101,7 @@ export function raLenh(p: Principal, v: {
     });
 
     /*
-     * PR-UXF-a Q2 (P0 K2-25): "khác Web gợi ý" máy chủ TỰ tính từ luật Cuối khoá — một lần cho cả lô, không tin cờ của thân yêu cầu.
+     * PR-UXF-a Q2 (P0 K2-25): "khác Hệ thống gợi ý" máy chủ TỰ tính từ luật Cuối khoá — một lần cho cả lô, không tin cờ của thân yêu cầu.
      * PR-S6F-a Q23: cả bối cảnh "giữa khoá" (panel một em) khi lớp nguồn là lớp thường đã tới Cuối khoá — em hết khoá vẫn có gợi ý.
      * Chỉ em hợp lệ của lớp nguồn vào `IN (…)` (thân yêu cầu có thể dài hơn 900 dòng).
      */

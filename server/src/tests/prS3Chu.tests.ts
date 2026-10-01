@@ -175,12 +175,51 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
     ['+ Công việc', /\+ Công việc(?! con)/],
     ['Dời lịch / Lùi lịch', /Lùi lịch thi|Dời lịch một kỹ năng|Đổi tuần thi kỹ năng|Ghi vắng thi|Huỷ lượt (MT|Test)|Bỏ khỏi đợt/],
     ['Tiếp tục theo dõi / Hoàn thành case', /Tiếp tục theo dõi|Hoàn thành case/],
-    ['Chọn tuần…', /Chọn tuần…|Tuần khác…|xoá điểm|Lưu kết quả|Ghi kết quả PA'|'Ghi kết quả PA'/],
+    ['Chọn tuần…', /Chọn tuần…|Tuần khác…|xoá điểm|Lưu kết quả/],
   ], KY_THUAT);
   check('S3 (4) · "Thêm PA" so khớp theo hằng CHU_THEM_PA (không so chuỗi hiển thị); KhungPanel / ConfirmDialog mặc định "Đóng"', () => {
     assert(/CHU_THEM_PA/.test(docNguon('server/src/students/viecHocVien.ts')) && /CHU_THEM_PA/.test(docNguon('web/src/modules/cases/QuickReport.tsx')) && /CHU_THEM_PA/.test(docNguon('shared/domain/sosV4.ts')), 'hằng CHU_THEM_PA');
     assert(/huy\.nhan \?\? 'Đóng'/.test(docNguon('web/src/ui/KhungPanel.tsx')), 'KhungPanel');
     assert(/>Đóng<\/button>/.test(docNguon('web/src/ui/Drawer.tsx')), 'ConfirmDialog');
     assert(/nhan = 'Thao tác khác'/.test(docNguon('web/src/ui/MenuDong.tsx')), 'MenuDong');
+  });
+  // ------------------------------------------------------------------ Task 5 · tiêu đề cột & số liệu (nhóm E)
+  khongCon('S3 (5) · Số liệu: một số một tên (Học viên có SOS, Case chưa có PA, Tỷ lệ đủ dữ liệu, Bài quá hạn chưa nhập điểm, Cần chấm, Test sắp tới, Người phụ trách, Trạng thái, Tổng, Nguyên nhân phổ biến, Chấm đúng hạn, Kỹ năng phụ trách được)', [
+    ['SOS hiện tại', /Học viên có SOS hiện tại/],
+    ['Thiếu PA học thuật (số liệu)', /Case thiếu PA học thuật|nhan: \(\) => 'Thiếu PA học thuật'|thieuPa: 'Thiếu PA học thuật'/],
+    ['Độ phủ', /Độ phủ đánh giá|Đủ dữ liệu đánh giá/],
+    ['Bài chưa nhập', /Bài chưa nhập điểm quá hạn|bài chưa nhập điểm quá hạn|Bài quá hạn nhập|bài quá hạn nhập|Bài chưa nhập'|Bài chưa nhập\b(?! điểm| đủ)/],
+    ['Bạn cần chấm', /Bạn cần chấm/],
+    ['Test kế tiếp', /Test kế tiếp|Mốc kế tiếp đã xếp lịch/],
+    ['Người giữ việc', /Người giữ việc/],
+    ['Tình trạng', /Tình trạng/],
+    ['Cộng', /\bCộng \{/],
+    ['Kết quả Test (đếm lượt)', /Kết quả Test \(đếm lượt\)|So với lần Test trước|Lỗi phổ biến/],
+    ['Chấm điểm đúng hạn', /Chấm điểm đúng hạn|Case có việc tiếp quá hạn|Tự khai dạy được|>Phụ trách được</],
+  ], KY_THUAT);
+  check('S3 (5) · Chú thích cột bảng Phân tích giáo viên đã chép vào THUAT_NGU_2026-10-01.md (mục mới cuối tệp)', () => {
+    const md = fs.readFileSync(path.join(ROOT, 'thiet-ke/THUAT_NGU_2026-10-01.md'), 'utf8');
+    assert(/## Chú thích cột bảng Phân tích giáo viên/.test(md), 'thiếu mục');
+    for (const k of ['PT-GV-1', 'PT-GV-9']) assert(md.includes(k), k);
+  });
+  // ------------------------------------------------------------------ Task 6 · vai trò, việc, thông báo (nhóm F)
+  khongCon('S3 (6) · Vai trò & việc: HV (không Học sinh / HS), Hệ thống (không Web / Máy), Tư vấn viên, Tutor, Việc con, Việc được giao, Vận hành, Vai trò, Xếp lại lịch thi', [
+    ['Học sinh / HS', /Học sinh|\bHS\b/],
+    ['Web / Máy', /Web gợi ý|Web tự điền|Máy tự/],
+    ['Người tư vấn', /Người tư vấn/],
+    ['Công việc con', /[Cc]ông việc con|Công việc được giao|Việc đã giao/],
+    ['Các vấn đề khác', /Các vấn đề khác|Lớp & vận hành|Thiếu dữ liệu cần cho đánh giá/],
+    ['Xử lý lịch thi', /Xử lý lịch thi|Case chờ nguyên nhân quá hạn/],
+    ['của bạn', /Việc của bạn|việc khác của bạn/],
+    ['chưa có vai', /chưa có vai(?! trò)|\+ Thêm vai(?! trò)/],
+    ['Học tutor / trợ giảng', /Học tutor|trợ giảng/],
+    ['Tiêu đề thông báo cũ', /Vi phạm mới —|Xem lại case|Xác nhận nguyên nhân \S+ —|Đăng ký tài khoản mới —/],
+  ], [...KY_THUAT, ['web/src/modules/platform/WelcomePage.tsx', '']]);
+  check('S3 (6) · Tiêu đề thông báo theo mẫu "việc · em · lớp" (dấu · , không còn "— tên")', () => {
+    const yc = docNguon('server/src/duyet/yeuCau.ts');
+    for (const mau of ["'Chờ duyệt'} · ${meta.nhan}", 'Bổ sung · ${meta.nhan}', 'Quá hạn duyệt · ${metaCua', 'Yêu cầu ${meta.nhan}']) assert(yc.includes(mau), mau);
+    assert(/Vi phạm mới · \$\{hv\.full_name\}/.test(docNguon('server/src/yThuc/xuLy.ts')), 'xuLy');
+    assert(/Báo phụ huynh qua TVV · \$\{hv\?\.full_name/.test(docNguon('server/src/yThuc/phoiHop.ts')), 'phoiHop');
+    assert(/Bị từ chối · Không cần theo dõi/.test(docNguon('server/src/cases/sosAuto.ts')), 'sosAuto');
   });
 }

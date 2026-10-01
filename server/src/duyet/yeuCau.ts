@@ -71,7 +71,7 @@ export type TaoYeuCauVao = {
 
 /**
  * Tạo MỘT thẻ đang chờ. Đã có thẻ chờ cho (loại, đối tượng) → `null`, không tạo, không báo lại (`ux_ycd_dang_cho` + ON CONFLICT —
- * không SELECT rồi INSERT: hai request cùng lúc sẽ tạo đôi). Gửi `duyet_moi` (Báo lên: `bao_len`) cho người duyệt, trừ người xin.
+ * không SELECT rồi INSERT: hai request cùng lúc sẽ tạo đôi). Gửi `duyet_moi` (Báo QL: `bao_len`) cho người duyệt, trừ người xin.
  */
 export function taoYeuCau(conn: any, v: TaoYeuCauVao): number | null {
   const meta = metaCua(v.loai);
@@ -105,7 +105,7 @@ export function taoYeuCau(conn: any, v: TaoYeuCauVao): number | null {
     if (uid === v.nguoiXin) continue;
     notify({
       userId: uid, kind: baoLen ? 'bao_len' : 'duyet_moi',
-      title: `${baoLen ? 'Báo lên' : 'Chờ duyệt'}: ${meta.nhan}${hv ? ` — ${hv}` : ''}`,
+      title: `${baoLen ? 'Báo QL' : 'Chờ duyệt'} · ${meta.nhan}${hv ? ` · ${hv}` : ''}`,
       body: v.lyDo?.trim().slice(0, 120) || null,
       entityType: 'yeu_cau_duyet', entityId: id, dedupKey: `duyet_moi:${id}`,
     });
@@ -135,7 +135,7 @@ export function boSungYeuCau(conn: any, doiTuong: { loai: LoaiYeuCau; doiTuongLo
   for (const uid of nguoiNhanHop(conn, r.chi_nhanh_id, meta.kieuNut === 'nhac')) {
     if (uid === r.nguoi_xin) continue;
     notify({
-      userId: uid, kind: 'duyet_moi', title: `Bổ sung: ${meta.nhan}${r.hv ? ` — ${r.hv}` : ''}`, body: them?.slice(0, 120) ?? null,
+      userId: uid, kind: 'duyet_moi', title: `Bổ sung · ${meta.nhan}${r.hv ? ` · ${r.hv}` : ''}`, body: them?.slice(0, 120) ?? null,
       entityType: 'yeu_cau_duyet', entityId: r.id, dedupKey: `bo_sung:${r.id}:${JSON.stringify(v.duLieu ?? {})}`,
     });
   }
@@ -145,7 +145,7 @@ export function boSungYeuCau(conn: any, doiTuong: { loai: LoaiYeuCau; doiTuongLo
 /**
  * Chốt thẻ đang chờ của một đối tượng. Idempotent: chỉ đổi thẻ `cho`, trả số thẻ đổi (lần hai = 0, không ném, không báo lại).
  * `lyDo`: lý do từ chối (`tu_choi`) · lý do tự đóng (`tu_dong`) · ghi chú của người duyệt (`duyet`). `traLoi`: câu trả lời (`da_tra_loi`).
- * Báo người xin (`duyet_ket_qua`) — trừ Báo lên tự đóng, người xin là hệ thống, hoặc chính người duyệt. QL tự duyệt → báo Quản trị (Q-D).
+ * Báo người xin (`duyet_ket_qua`) — trừ Báo QL tự đóng, người xin là hệ thống, hoặc chính người duyệt. QL tự duyệt → báo Quản trị (Q-D).
  */
 export function chotYeuCau(
   conn: any, doiTuong: { loai?: LoaiYeuCau; doiTuongLoai: string; doiTuongId: number },
@@ -174,14 +174,14 @@ export function chotYeuCau(
       n += doi;
       const baoNguoiXin = r.nguoi_xin != null && r.nguoi_xin !== nguoiDuyet && !(trangThai === 'tu_dong' && meta.kieuNut === 'nhac');
       if (baoNguoiXin) {
-        const ketQua = trangThai === 'duyet' ? 'Quản lý đã duyệt'
-          : trangThai === 'tu_choi' ? `Quản lý từ chối: ${lyDo ?? ''}`
-          : trangThai === 'da_tra_loi' ? `Quản lý đã trả lời: ${(v.traLoi ?? '').trim()}`
-          : `tự đóng: ${lyDo ?? ''}`;
+        const ketQua = trangThai === 'duyet' ? 'Đã duyệt'
+          : trangThai === 'tu_choi' ? `Bị từ chối: ${lyDo ?? ''}`
+          : trangThai === 'da_tra_loi' ? `Đã trả lời: ${(v.traLoi ?? '').trim()}`
+          : `Tự đóng: ${lyDo ?? ''}`;
         notify({
           /* PR-VAI-a (Q19): từ chối là việc CẦN LÀM (sửa và gửi lại) — tách loại để chuông xếp đúng nhóm; duyệt / trả lời vẫn là tin để biết. */
           userId: r.nguoi_xin, kind: trangThai === 'tu_choi' ? 'duyet_tu_choi' : 'duyet_ket_qua',
-          title: `Yêu cầu ${meta.nhan}${r.hv ? ` — ${r.hv}` : ''}: ${ketQua}`.slice(0, 200),
+          title: `Yêu cầu ${meta.nhan}${r.hv ? ` · ${r.hv}` : ''} · ${ketQua}`.slice(0, 200),
           entityType: 'yeu_cau_duyet', entityId: r.id, dedupKey: `duyet_ket_qua:${r.id}`,
         });
       }
@@ -190,7 +190,7 @@ export function chotYeuCau(
           if (uid === nguoiDuyet) continue;
           notify({
             userId: uid, kind: 'duyet_tu_duyet',
-            title: `Quản lý tự duyệt yêu cầu của mình: ${meta.nhan}${r.hv ? ` — ${r.hv}` : ''}`,
+            title: `Quản lý tự duyệt · ${meta.nhan}${r.hv ? ` · ${r.hv}` : ''}`,
             entityType: 'yeu_cau_duyet', entityId: r.id, dedupKey: `tu_duyet:${r.id}`,
           });
         }
@@ -204,7 +204,7 @@ export function chotYeuCau(
 
 /**
  * MỘT hàm quét, gọi ở mọi đường đọc hộp (my-work, hộp, đếm, Tổng quan QL — K5-17); nhớ theo request nên một request chỉ quét một lần.
- * (a) thẻ "chết" → `tu_dong` · (b) Báo lên: loại có `quet` tự tạo thẻ · (c) quá hạn duyệt → một thông báo cho QL + Quản trị (dedup).
+ * (a) thẻ "chết" → `tu_dong` · (b) Báo QL: loại có `quet` tự tạo thẻ · (c) quá hạn duyệt → một thông báo cho QL + Quản trị (dedup).
  * Không có gì để ghi thì không mở giao dịch.
  */
 export function quetYeuCau(homNay = demoToday()): void {
@@ -242,7 +242,7 @@ function quetThat(homNay: string) {
       for (const uid of nguoiNhanHop(conn, r.chi_nhanh_id)) {
         notify({
           userId: uid, kind: 'duyet_qua_han',
-          title: `Quá hạn duyệt: ${metaCua(r.loai).nhan}${r.hv ? ` — ${r.hv}` : ''} (hạn ${r.han_duyet.slice(8, 10)}/${r.han_duyet.slice(5, 7)})`,
+          title: `Quá hạn duyệt · ${metaCua(r.loai).nhan}${r.hv ? ` · ${r.hv}` : ''} · hạn ${r.han_duyet.slice(8, 10)}/${r.han_duyet.slice(5, 7)}`,
           entityType: 'yeu_cau_duyet', entityId: r.id, dedupKey: `qua_han_duyet:${r.id}`,
         });
       }
@@ -406,7 +406,7 @@ const doiTuongCua = (yc: YeuCauRow) => ({ loai: yc.loai, doiTuongLoai: yc.doi_tu
 export function duyetYeuCau(p: Principal, id: number, v: { ghiChu?: string | null; duLieu?: unknown } = {}) {
   return quyetDinh(p, id, (yc, meta) => {
     if (meta.kieuNut === 'tra-loi') throw badRequest('Xin ý kiến chỉ cần Trả lời, không có Duyệt.');
-    if (meta.kieuNut === 'nhac') throw badRequest('Báo lên không cần duyệt — bấm Nhắc để nhắc giáo viên.');
+    if (meta.kieuNut === 'nhac') throw badRequest('Báo QL không cần duyệt — bấm Nhắc để nhắc giáo viên.');
     const ghiChu = chuTuDo(v.ghiChu, 'Ghi chú', 2000);   // PR-Dọn (Q4, quét #24)
     dinhNghiaCua(yc.loai)?.khiDuyet?.(p, yc, { ghiChu, duLieu: v.duLieu });
     chotYeuCau(db(), doiTuongCua(yc), 'duyet', { nguoiDuyet: p.userId, lyDo: ghiChu });

@@ -233,7 +233,7 @@ export function ChoNutDau() {
 
 /**
  * C9 — CÂU LỖI NHẬP NGAY DƯỚI Ô (không chỉ ở tooltip): một dòng, chữ đầy đủ vẫn nằm trong DOM cho trình đọc màn hình
- * (`role="alert"`, ô trỏ tới bằng `aria-describedby`). Báo lên dòng (`onLoiNhap`) để dòng đếm "n ô chưa lưu".
+ * (`role="alert"`, ô trỏ tới bằng `aria-describedby`). Báo QL dòng (`onLoiNhap`) để dòng đếm "n ô chưa lưu".
  */
 function DongLoiNhap({ id, cau }: { id: string; cau: string | null }) {
   if (!cau) return null;
@@ -428,7 +428,7 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false, 
             <input className="field w-20 text-center tabular-nums py-1" inputMode="numeric" value={draft}
               aria-label={`${skillLabel(cell.skill)} — số câu đúng mới`}
               onChange={(e) => setDraft(e.target.value)} />
-            <span className="text-[11px] text-slate-500">{moi === '' ? 'xoá điểm' : ''}</span>
+            <span className="text-[11px] text-slate-500">{moi === '' ? 'huỷ điểm' : ''}</span>
           </label>
         </SuaDiemCoLyDo>
       )}
@@ -709,7 +709,7 @@ export function InlineScoreEditor({ cell, onSave, onClose }: {
             {busy ? 'Đang lưu…' : 'Lưu'}
           </button>
         </span>
-        <button type="button" className="btn btn-sm" disabled={busy} onClick={onClose}>Huỷ</button>
+        <button type="button" className="btn btn-sm" disabled={busy} onClick={onClose}>Đóng</button>
       </div>
       <p className="m-0 text-[11px] text-slate-500">
         {built.dash
@@ -861,7 +861,7 @@ export function SuaDiemCoLyDo({ tieuDe, moTaCu, children, onLuu, onDong, loiGiaT
           </label>
           {loi && <p className="m-0 mt-1 text-[11px] text-rose-300">{loi}</p>}
           <div className="flex justify-end gap-2 mt-2">
-            <button type="button" className="btn btn-sm" disabled={busy} onClick={() => dong.current()}>Huỷ</button>
+            <button type="button" className="btn btn-sm" disabled={busy} onClick={() => dong.current()}>Đóng</button>
             <span title={chan ?? undefined}>
               <button type="button" className="btn btn-sm btn-primary" disabled={busy || !!chan}
                 title={chan ?? undefined} onClick={() => void luu()}>
@@ -1196,7 +1196,7 @@ export function ODiemThuong({
                 <span className="text-slate-600">/</span>
                 <input className={oSo} inputMode="numeric" value={sua.tong} aria-label={`${tenMon} — tổng số câu mới`}
                   onChange={(e) => setSua({ ...sua, tong: e.target.value })} />
-                {sua.diem.trim() === '' && <span className="text-[11px] text-slate-500">xoá điểm</span>}
+                {sua.diem.trim() === '' && <span className="text-[11px] text-slate-500">huỷ điểm</span>}
               </div>
             </SuaDiemCoLyDo>
           )}

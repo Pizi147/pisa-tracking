@@ -353,7 +353,7 @@ function gomTinHieu(p: Principal, attemptId: number, skills: string[], passText:
         const st = conn.prepare('SELECT full_name FROM students WHERE id = ?').get(c.student_id) as any;
         notify({
           userId: c.owner_user_id, kind: 'sos',
-          title: `Xem lại case ${item.label} — ${st?.full_name ?? ''}`,
+          title: `Xem lại Case ${item.label} · ${st?.full_name ?? ''}`,
           body: `${huy ? 'Điểm nguồn đã bị huỷ' : `Điểm nguồn đã được sửa thành ${passText}`}. Case vẫn còn căn cứ khác; xem có cần theo tiếp không.`,
           entityType: 'sos_case', entityId: item.caseId,
           dedupKey: `case_review:${item.caseId}:${attemptId}`,

@@ -363,7 +363,7 @@ export async function runPrS6fATests(t: YThucTestKit) {
     assert(dong?.sua === '2026-09-23', `sửa: ${JSON.stringify(dong)}`);
   });
   // ------------------------------------------------------------------ khối 10 · chuông + Phối hợp SOS (Q11, Q12)
-  console.log('\nPR-S6F-a · (10) Chuông: Báo lên ở Cần làm; Phối hợp SOS chỉ lượt Mock FT');
+  console.log('\nPR-S6F-a · (10) Chuông: Báo QL ở Cần làm; Phối hợp SOS chỉ lượt Mock FT');
   const phoiHop: any = await import('../yThuc/phoiHop.ts');
   const tb: any = await import('../platform/thongBao.ts');
   const tbMoi = (userId: number, kind: string, entityType: string, entityId: number) =>
@@ -391,7 +391,7 @@ export async function runPrS6fATests(t: YThucTestKit) {
     conn.prepare(`INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, status, created_at) VALUES (?, ?, 'bao_ph_tvv', 'pending', ?)`).run(aW.id, eW.sid, now());
     assert(coLop(P.coreTeacher, MB_FT), 'lượt Mock FT chưa xong phải còn dòng Phối hợp SOS');
   });
-  check('S6F-a (10b) · thông báo Báo lên: thẻ đang chờ → Cần làm; thẻ đã xử lý → Để biết', () => {
+  check('S6F-a (10b) · thông báo Báo QL: thẻ đang chờ → Cần làm; thẻ đã xử lý → Để biết', () => {
     const the = theMoi({ loai: 'khong_theo_doi', doiTuongLoai: 'sos_case', doiTuongId: 999001, hv: eW.sid, lop: MB_FT, nguoiXin: P.coreTeacher.userId, trangThai: 'cho' });
     const id = tbMoi(P.mbManager.userId, 'bao_len', 'yeu_cau_duyet', the);
     const cho = nhomCua(P.mbManager.userId, id);

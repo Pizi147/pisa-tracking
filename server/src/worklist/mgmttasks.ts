@@ -409,7 +409,7 @@ export function createMgmtTask(p: Principal, input: {
     parent = conn.prepare('SELECT * FROM tasks WHERE id = ?').get(input.parentTaskId) as any;
     if (!parent) throw notFound('Không tìm thấy công việc cha.');
     /* MỘT TẦNG (mục 8.6): việc con của một việc con là chỗ bảng bắt đầu không đọc được nữa. */
-    if (parent.parent_task_id) throw badRequest('Công việc con chỉ có một tầng.');
+    if (parent.parent_task_id) throw badRequest('Việc con chỉ có một tầng.');
     /* PR-Dọn (quét #5b): việc con chỉ gắn vào việc cha mình quản lý được — không tạo việc con ở chi nhánh khác. */
     if (!coQuyenViec(p, parent)) throw forbidden('Bạn không quản lý công việc cha này.');
   }
@@ -559,7 +559,7 @@ export function updateMgmtTask(p: Principal, taskId: number, input: {
     if (openSubs.length > 0) {
       const verb = input.progress === 'done' ? 'hoàn thành' : 'dừng hẳn';
       throw badRequest(
-        `Còn ${openSubs.length} công việc con chưa khép lại: ${tenViecConMo(openSubs.map((s) => s.title))}. `
+        `Còn ${openSubs.length} việc con chưa khép lại: ${tenViecConMo(openSubs.map((s) => s.title))}. `
         + `Khép chúng trước rồi mới ${verb} việc này.`,
       );
     }

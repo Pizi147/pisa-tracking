@@ -128,7 +128,7 @@ export function signalsFor(p: Principal, f: { branchId?: number | null; periodId
   }
 
   // 2. Bài chưa nhập điểm quá hạn — đơn vị BÀI (ô điểm), tự hết khi giáo viên nhập. MT lịch sử, em Tạm dừng không phải nợ (sổ chỉ số).
-  tuSo('missing_scores', 'bai-qua-han-nhap-diem', 'teacher', 'warn', (n) => `${n} bài chưa nhập điểm quá hạn`);
+  tuSo('missing_scores', 'bai-qua-han-nhap-diem', 'teacher', 'warn', (n) => `${n} bài quá hạn chưa nhập điểm`);
 
   // 3. Case / PA quá hạn — đếm CASE và PA (hai đơn vị, hai dòng), không học viên.
   tuSo('sos_open', 'case-xac-dinh-nguyen-nhan-qua-han', 'teacher', 'danger', (n) => `${n} Case quá hạn xác nhận nguyên nhân`);

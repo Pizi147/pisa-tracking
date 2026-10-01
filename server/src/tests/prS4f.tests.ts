@@ -314,7 +314,7 @@ export async function runPrS4fTests(t: YThucTestKit) {
     assert(vt.includes('flex max-w-full items-baseline') && vt.includes('<span className="min-w-0 truncate">') && vt.includes('shrink-0 whitespace-nowrap">&nbsp;<QuaHan'), 'ViecTiep: chỉ chữ việc bị cắt, quá hạn luôn đủ');
   });
 
-  check('S4F (14) · thẻ Báo lên không có người nhận: ẩn Nhắc, ghi "Lớp chưa có GVCN" / "Case chưa có người phụ trách"', () => {
+  check('S4F (14) · thẻ Báo QL không có người nhận: ẩn Nhắc, ghi "Lớp chưa có GVCN" / "Case chưa có người phụ trách"', () => {
     assert(d.nhanKhongNguoiNhac('bao_len_y_thuc') === 'Lớp chưa có GVCN' && d.nhanKhongNguoiNhac('bao_len_nguyen_nhan') === 'Case chưa có người phụ trách', 'nhãn');
     const tyc = docWeb('modules/duyet/TheYeuCau.tsx');
     assert(tyc.includes("typeof yc.duLieu?.ownerId !== 'number'") && tyc.includes('{nhanKhongNguoiNhac(yc.loai)}'), 'nhãn thay nút');

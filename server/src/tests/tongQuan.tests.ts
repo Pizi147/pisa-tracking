@@ -94,7 +94,7 @@ export async function runTongQuanTests(t: YThucTestKit) {
     eq(kh.items[0].group, 'cause', 'Việc quá hạn lên đầu nhóm');
     const yt = nhom.find((g: any) => g.key === 'y-thuc');
     eq([yt.n, yt.moSan], [2, false], 'Ý thức: PR-VAI-a — mọi số đếm từ items (không còn dòng nhắc mềm), không quá hạn thì không tự mở');
-    eq(d.NHOM_VIEC_LABEL, { 'cham-diem': 'Chấm điểm', 'case-hoc-thuat': 'Case học thuật', 'y-thuc': 'Ý thức', 'van-hanh': 'Lớp & vận hành' }, 'T75: tên nhóm');
+    eq(d.NHOM_VIEC_LABEL, { 'cham-diem': 'Chấm điểm', 'case-hoc-thuat': 'Case học thuật', 'y-thuc': 'Ý thức & Phối hợp', 'van-hanh': 'Vận hành' }, 'T75: tên nhóm');
     eq(nhom.find((g: any) => g.key === 'cham-diem').moSan, false, 'Nhóm không quá hạn thì gập');
     eq(d.gomNhomViec([]), [], 'Không việc thì không nhóm');
     eq(d.LOAI_HAN_CUA_VIEC.cause, 'xac-minh-sos', 'Hạn xác nhận nguyên nhân');

@@ -594,12 +594,12 @@ export const INTERVENTION_KINDS = [...SUPPORT_KINDS, ...PROPOSAL_KINDS, ...SYSTE
 export type InterventionKind = (typeof INTERVENTION_KINDS)[number];
 export const INTERVENTION_KIND_LABEL: Record<InterventionKind, string> = {
   self_study: 'Xếp tự học',
-  tutor: 'Học tutor',
+  tutor: 'Học Tutor',
   teaching_adjust: 'Điều chỉnh cách dạy',
   extra_homework: 'Tăng cường bài tập',
   /* Mã cũ: "Khác" tự thực hiện đã bỏ khỏi danh sách chọn (mục 8.1), giữ để đọc dữ liệu cũ. */
   other: 'Khác (mục cũ)',
-  reschedule_mt: 'Lùi lịch thi',
+  reschedule_mt: 'Dời lịch thi',
   extra_support: 'Hỗ trợ học thuật',
   /* Giữ ĐÚNG chức danh của trung tâm, không tự đổi thành "Ban giám đốc" hay tên khác. */
   meeting_cx: 'Meeting CX / GĐCN',
@@ -915,7 +915,7 @@ export const NEXT_STEP_HINT: Record<NextStep, string> = {
   continue: 'Giữ nguyên phương án, mở đợt mới để làm tiếp.',
   adjust: 'Cùng phương án, sửa mô tả, người thực hiện hoặc ngày dự kiến kết thúc. Bản cũ giữ trong lịch sử.',
   propose: 'Khép phương án cũ với lý do "Được thay thế" và mở phương án mới.',
-  ask_manager: 'Lưu kết quả tuần như Giữ nguyên và gửi câu hỏi cho Quản lý. PA vẫn chạy.',
+  ask_manager: 'Ghi kết quả tuần như Giữ nguyên và gửi câu hỏi cho Quản lý. PA vẫn chạy.',
 };
 
 /** Kết quả tốt được phép khép lại; kết quả chưa tốt BẮT BUỘC đi tiếp. */
@@ -945,7 +945,7 @@ export function nextStepsFor(outcome: string): NextStep[] {
 export const RESULT_MODES = ['monitor', 'end'] as const;
 export type ResultMode = (typeof RESULT_MODES)[number];
 export const RESULT_MODE_LABEL: Record<ResultMode, string> = {
-  monitor: 'Tiếp tục theo dõi',
+  monitor: 'Theo dõi thêm',
   end: 'Kết thúc phương án',
 };
 
@@ -999,7 +999,7 @@ export const PLAN_DECISION_HINT: Record<PlanDecision, string> = {
   adjust: 'Cùng phương án, sửa mô tả, người thực hiện hoặc ngày dự kiến kết thúc. Bản cũ giữ trong lịch sử.',
   replace: 'Khép phương án này (Được thay thế) và mở phương án mới. Đổi loại phương án thì chọn ở đây.',
   end: 'Khép phương án này. Case chỉ hoàn thành được khi mọi phương án đã khép.',
-  ask_manager: 'Lưu kết quả tuần như Giữ nguyên và gửi câu hỏi cho Quản lý. PA vẫn chạy.',
+  ask_manager: 'Ghi kết quả tuần như Giữ nguyên và gửi câu hỏi cho Quản lý. PA vẫn chạy.',
 };
 
 /** Bản NGẮN cho danh sách dọc trong panel Ghi kết quả (PR-UX3, mockup 15 §4): tên một dòng + `PLAN_DECISION_NGHIA` một dòng nghĩa. */
@@ -1015,7 +1015,7 @@ export const PLAN_DECISION_NGHIA: Record<PlanDecision, string> = {
 };
 /** Nút chính ở chân panel theo quyết định đang chọn. */
 export const NUT_LUU_KET_QUA: Record<PlanDecision, string> = {
-  keep: 'Lưu kết quả', adjust: 'Lưu điều chỉnh', replace: 'Thay PA', end: 'Kết thúc PA', ask_manager: 'Gửi Quản lý',
+  keep: 'Ghi kết quả', adjust: 'Lưu điều chỉnh', replace: 'Thay PA', end: 'Kết thúc PA', ask_manager: 'Gửi Quản lý',
 };
 
 export function decisionToStep(d: PlanDecision): { mode: ResultMode; nextStep: NextStep } {
@@ -1072,7 +1072,7 @@ export const CYCLE_OUTCOME_LABEL: Record<CycleOutcome, string> = {
 
 // ---------------------------------------------------------------- Xử lý SOS
 
-export const MEETING_KINDS = ['Không cần', 'GVCN meeting HS', 'CX / GĐCN meeting HS'] as const;
+export const MEETING_KINDS = ['Không cần', 'GVCN meeting với HV', 'CX / GĐCN meeting với HV'] as const;
 
 export const CASE_STATUSES = ['open', 'in_progress', 'done'] as const;
 export type CaseStatus = (typeof CASE_STATUSES)[number];

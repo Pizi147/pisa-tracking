@@ -31,7 +31,7 @@ export const NHOM_VIEC = ['cham-diem', 'case-hoc-thuat', 'y-thuc', 'van-hanh'] a
 export type NhomViec = (typeof NHOM_VIEC)[number];
 /** T75 (PR-VAI-a Q13): "Ý thức" (Phối hợp SOS nay là việc thật ở Case học thuật), "Lớp & vận hành". */
 export const NHOM_VIEC_LABEL: Record<NhomViec, string> = {
-  'cham-diem': 'Chấm điểm', 'case-hoc-thuat': 'Case học thuật', 'y-thuc': 'Ý thức', 'van-hanh': 'Lớp & vận hành',
+  'cham-diem': 'Chấm điểm', 'case-hoc-thuat': 'Case học thuật', 'y-thuc': 'Ý thức & Phối hợp', 'van-hanh': 'Vận hành',
 };
 /**
  * Loại việc của `mywork.ts` → 4 nhóm (PR-DUYET bỏ `decide`, `decide_move` — thẻ ở hộp Chờ duyệt). PR-YT4: ba loại việc Ý thức có hạn thật.
@@ -98,7 +98,7 @@ export const CAN_XU_LY: readonly {
   quaHan?: true;
   canQuyenDuyet?: true;
 }[] = [
-  { metricId: 'bai-qua-han-nhap-diem', nhan: 'bài chưa nhập điểm quá hạn', nut: 'Xem và nhắc', cuaNguoiXem: false, quaHan: true },
+  { metricId: 'bai-qua-han-nhap-diem', nhan: 'bài quá hạn chưa nhập điểm', nut: 'Xem và nhắc', cuaNguoiXem: false, quaHan: true },
   { metricId: 'pa-can-cap-nhat', nhan: 'PA chưa ghi kết quả', nut: 'Xem và nhắc', cuaNguoiXem: false, quaHan: true },
   /* PR-VAI-a Q8: bốn việc "của Bạn" — mỗi dòng một chỉ số gọi đúng hàm màn khác đang dùng. */
   { metricId: 'van-hanh-can-quyet-dinh', nhan: 'việc Vận hành cần quyết định', nut: 'Mở Vận hành', cuaNguoiXem: true },

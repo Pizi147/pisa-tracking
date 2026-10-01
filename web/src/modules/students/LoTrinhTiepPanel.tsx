@@ -126,7 +126,7 @@ function NoiDungLoTrinhTiep({ onClose, studentId, studentName, lop, onDone }: {
       }}>
       <KetQuaGanNhatEm ketQua={data.ketQua} />
       {data.cuoiKhoa?.goiY && (
-        <Khoi tieuDe="Web gợi ý theo Cuối khoá">
+        <Khoi tieuDe="Hệ thống gợi ý theo Cuối khoá">
           <div className="flex flex-wrap items-baseline gap-x-2">
             <span className="text-sm font-bold tabular-nums text-slate-100">Cuối khoá {Math.round((data.cuoiKhoa.tyLe ?? 0) * 100)}%</span>
             {data.cuoiKhoa.monTruot.length > 0 && <span className="text-[12px] text-slate-500">không đạt {data.cuoiKhoa.monTruot.map((m) => tenMonNgan(lopHoc.ma, m)).join(', ')}</span>}

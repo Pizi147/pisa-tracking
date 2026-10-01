@@ -16,10 +16,10 @@ type Bang = { cn: number; tenChiNhanh: string; ct: ChuongTrinh; hang: Hang[]; ch
 const COT: { key: keyof Omit<Hang, 'id' | 'ten'>; cot: string; nhan: string; goiY?: string; rong: string }[] = [
   { key: 'lop', cot: 'lop', nhan: 'Lớp', goiY: 'Lớp người này đang dạy trong chi nhánh, theo khung đang chọn.', rong: '9%' },
   { key: 'hocVien', cot: 'hoc-vien', nhan: 'Học viên', goiY: 'Học viên đang học ở các lớp trên (một em học hai lớp chỉ đếm một lần).', rong: '11%' },
-  { key: 'chuaNhap', cot: 'chua-nhap', nhan: 'Bài chưa nhập', goiY: 'Một bài = một kỹ năng của một em trong một lượt (FT W1 và W2 là hai bài), tuần thi đã bắt đầu. Em Tạm dừng không tính.', rong: '16%' },
-  { key: 'quaHan', cot: 'qua-han', nhan: 'Bài quá hạn', goiY: 'Trong số bài chưa nhập, phần đã qua hạn — cùng số với "bài chưa nhập điểm quá hạn" ở Cần xử lý.', rong: '14%' },
+  { key: 'chuaNhap', cot: 'chua-nhap', nhan: 'Bài chưa nhập điểm', goiY: 'Một bài = một kỹ năng của một em trong một lượt (FT W1 và W2 là hai bài), tuần thi đã bắt đầu. Em Tạm dừng không tính.', rong: '16%' },
+  { key: 'quaHan', cot: 'qua-han', nhan: 'Bài quá hạn', goiY: 'Trong số bài chưa nhập, phần đã qua hạn — cùng số với "bài quá hạn chưa nhập điểm" ở Cần xử lý.', rong: '14%' },
   { key: 'caseMo', cot: 'case-mo', nhan: 'Case phụ trách', goiY: 'Case đang mở mà người này là NGƯỜI PHỤ TRÁCH chính — không phải mọi Case của lớp họ dạy.', rong: '14%' },
-  { key: 'caseQuaHan', cot: 'case-qua-han', nhan: 'Case quá hạn', goiY: 'Trong số Case phụ trách, phần có việc tiếp đã qua hạn.', rong: '14%' },
+  { key: 'caseQuaHan', cot: 'case-qua-han', nhan: 'Case có việc quá hạn', goiY: 'Trong số Case phụ trách, phần có việc tiếp đã qua hạn.', rong: '14%' },
 ];
 
 export function BangGiaoVienChiNhanh({ branchId, ct }: { branchId: number | null; ct: ChuongTrinh }) {

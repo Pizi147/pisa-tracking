@@ -511,7 +511,7 @@ export async function runPrDonATests(t: YThucTestKit) {
   const thongBao: any = await import('../platform/thongBao.ts');
   const itemsCua = (p: any, f: any = {}) => (mw.myWork(p, f).groups as any[]).flatMap((x) => x.items);
 
-  check('Dọn-a (6a) · Q10 "Đề ra PA": người làm = người phụ trách Case (A) ở Công việc của A (mine), của B (không mine) và ở hồ sơ em — cùng khoá support:{caseId}', () => {
+  check('Dọn-a (6a) · Q10 "Thêm PA": người làm = người phụ trách Case (A) ở Công việc của A (mine), của B (không mine) và ở hồ sơ em — cùng khoá support:{caseId}', () => {
     const { sid } = emMoi('MB FT 101');
     const A = P.lrTeacher;
     /* B: một GV khác cũng dạy lớp này (GV L có thể kiêm GVCN). */

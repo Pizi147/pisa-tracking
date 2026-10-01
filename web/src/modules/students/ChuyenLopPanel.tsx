@@ -195,7 +195,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
               {!dx && (
                 <div {...lf.o(loi, 'tuan')} tabIndex={-1} className="flex flex-wrap gap-1.5 outline-none">
                   {tuanDong.map((t) => <NutChon key={t} chon={tuan === t && !khac} onClick={() => { setTuan(t); setKhac(false); }}>{tuanLich(t, homNay)}</NutChon>)}
-                  <NutChon chon={khac || (!!tuan && !tuanDong.includes(tuan))} onClick={() => setKhac(true)}>Tuần khác…</NutChon>
+                  <NutChon chon={khac || (!!tuan && !tuanDong.includes(tuan))} onClick={() => setKhac(true)}>Chọn tuần</NutChon>
                 </div>
               )}
               {(dx || khac || (!!tuan && !tuanDong.includes(tuan))) && (

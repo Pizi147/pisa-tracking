@@ -91,15 +91,15 @@ export function ThanhViec({ viec, homNay, onLam }: { viec: { cuaBan: Viec[]; ngu
   const qh = dau.quaHanNgay !== null;
   const ds = mo === 'ban' ? con : mo === 'khac' ? viec.nguoiKhac : [];
   return (
-    <section aria-label="Việc của bạn với học viên này">
+    <section aria-label="Việc của tôi với học viên này">
       <div className={`flex flex-wrap items-center gap-x-3.5 gap-y-2 rounded-[10px] px-3 py-[9px] ${qh
         ? 'bg-bad-bg shadow-[inset_3px_0_0_rgb(var(--bad-rgb))]' : 'bg-[color:var(--surface-2)] shadow-[inset_3px_0_0_var(--accent)]'}`}>
-        <span className="whitespace-nowrap text-[11.5px] font-bold uppercase tracking-[.04em] text-slate-400">Việc của bạn</span>
+        <span className="whitespace-nowrap text-[11.5px] font-bold uppercase tracking-[.04em] text-slate-400">Việc của tôi</span>
         <span className="min-w-0 flex-1 basis-full text-[13.5px] text-slate-100 sm:basis-auto">
           <ChuViec chu={dau.chu} /> {dau.han && <HanViec x={dau} homNay={homNay} chiQuaHan />}
         </span>
         {dau.mo && <button type="button" className="btn btn-primary btn-sm min-h-[44px] w-full sm:min-h-0 sm:w-auto" onClick={() => onLam(dau)}>{dau.nut}</button>}
-        {con.length > 0 && <NutGap mo={mo === 'ban'} onClick={() => setMo(mo === 'ban' ? null : 'ban')}>{con.length} việc khác của bạn</NutGap>}
+        {con.length > 0 && <NutGap mo={mo === 'ban'} onClick={() => setMo(mo === 'ban' ? null : 'ban')}>{con.length} việc khác của tôi</NutGap>}
         {viec.nguoiKhac.length > 0 && (
           <NutGap mo={mo === 'khac'} onClick={() => setMo(mo === 'khac' ? null : 'khac')}>{viec.nguoiKhac.length} việc của người khác</NutGap>
         )}
@@ -246,7 +246,7 @@ export function BonO({ o, homNay, onDot, onKn, onYThuc, kyNangHref }: {
         phu={<span className={y.tone === 'danger' ? 'font-semibold text-bad' : y.tone === 'warn' ? 'font-semibold text-soon' : y.tone === 'wait' ? 'text-wait' : ''}>{y.phu}</span>}>
         <span className={y.tren ? '' : 'text-[15px]'}>{y.gt}</span>
       </O>
-      <O nhan="Sắp tới" tren={s.tren} phu={s.phu} title="Mở đợt Test kế tiếp ở bảng Học thuật"
+      <O nhan="Sắp tới" tren={s.tren} phu={s.phu} title="Mở đợt Test sắp tới ở bảng Học thuật"
         onClick={s.attemptId ? () => onDot(s.attemptId) : undefined}>
         <span className="text-[15px] tabular-nums">{s.gt}</span>
       </O>

@@ -360,7 +360,7 @@ export function updateStudent(p: Principal, studentId: number, patch: any) {
   /* Kiểm ở biên (PR-NHAP): họ tên không rỗng, ngày sinh có thật và không sau hôm nay, email đúng dạng (trống → NULL, T8). */
   patch = { ...patch };
   kiemKieuO(patch, ['fullName', 'dob', 'email', 'consultantName', 'note'], [],
-    (k) => ({ fullName: 'Họ tên', dob: 'Ngày sinh', email: 'Email', consultantName: 'Người tư vấn', note: 'Ghi chú' })[k] ?? k);
+    (k) => ({ fullName: 'Họ tên', dob: 'Ngày sinh', email: 'Email', consultantName: 'Tư vấn viên', note: 'Ghi chú' })[k] ?? k);
   if (patch.fullName !== undefined) {
     patch.fullName = String(patch.fullName ?? '').trim();
     if (!patch.fullName) throw badRequest('Họ tên không được trống.');

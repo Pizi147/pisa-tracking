@@ -69,7 +69,7 @@ export const JOURNEY_EVENT_LABEL: Record<string, string> = {
   exam_date_changed: 'Đổi ngày thi IELTS',
   mock_scheduled: 'Lên kế hoạch MT',
   mock_rescheduled: 'Đổi lịch MT',
-  mock_cancelled: 'Huỷ lượt MT',
+  mock_cancelled: 'Huỷ cả lượt MT',
   mock_result: 'Kết quả MT',
   /* Kỳ thi IELTS THẬT — khác hẳn một lượt Mock Test, nên có nhãn riêng. */
   exam_result: 'Kết quả thi IELTS',

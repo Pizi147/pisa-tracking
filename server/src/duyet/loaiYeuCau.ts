@@ -33,11 +33,11 @@ import { classProgressMany } from '../classes/schedule.ts';
 import { apDungDeXuatChuyenLop, demChuaCoLenh, nguoiNhanCuaLop } from '../classes/lenhChuyen.ts';
 
 /**
- * PR-YT4 — vì sao em cần Báo lên (null = không): bắt buộc quá hạn · Mới quá 5 ngày chưa ai xem · đã duyệt chưa thực hiện quá 5 ngày
- * (K3-37). Em Tạm dừng không Báo lên (T65). `viec` = tiền tố khoá việc trong Công việc của GVCN (Nhắc trỏ đúng dòng).
+ * PR-YT4 — vì sao em cần Báo QL (null = không): bắt buộc quá hạn · Mới quá 5 ngày chưa ai xem · đã duyệt chưa thực hiện quá 5 ngày
+ * (K3-37). Em Tạm dừng không Báo QL (T65). `viec` = tiền tố khoá việc trong Công việc của GVCN (Nhắc trỏ đúng dòng).
  */
 export function lyDoBaoLenYThuc(em: EmYThuc | undefined): { viec: 'yt_xu_ly' | 'yt_xem' | 'yt_thuc_hien'; ngan: string; cau: string; viecId: number } | null {
-  /* PR-S3F #12: lớp CHƯA có GVCN vẫn Báo lên (thẻ không có `ownerId`) — đúng là lúc QL cần biết nhất. */
+  /* PR-S3F #12: lớp CHƯA có GVCN vẫn Báo QL (thẻ không có `ownerId`) — đúng là lúc QL cần biết nhất. */
   if (!em || em.tamDung) return null;
   const tt = [...em.viPham.values()];
   const xuLy = tt.filter((x) => x.lyDoQuaHan === 'xu-ly').length;
@@ -76,7 +76,7 @@ export type DinhNghiaLoai = {
   khiTraLoi?: (p: Principal, yc: YeuCauRow, traLoi: string) => void;
   /** Điều kiện SQL "đối tượng không còn ý nghĩa" trên bí danh `y` (một biểu thức, không tham số) + lý do hiện trên thẻ. */
   chet?: { sql: string; lyDo: string };
-  /** Báo lên: tạo thẻ mới (ON CONFLICT DO NOTHING) + trả số thẻ tạo. Gọi trong `quetYeuCau`; không có gì để tạo thì không mở tx. */
+  /** Báo QL: tạo thẻ mới (ON CONFLICT DO NOTHING) + trả số thẻ tạo. Gọi trong `quetYeuCau`; không có gì để tạo thì không mở tx. */
   quet?: (conn: any, homNay: string) => number;
   /** Nạp phần riêng của loại cho MỘT lô thẻ (một câu) → `ngu.them.get(yc.id)`. */
   nap?: (conn: any, ds: YeuCauRow[]) => Map<number, any>;
@@ -255,7 +255,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       };
     },
   },
-  /* ------------------------------------------------------------ PR-DUYET · Báo lên: Case chờ nguyên nhân quá hạn (K1-57, T77) */
+  /* ------------------------------------------------------------ PR-DUYET · Báo QL: Case chờ nguyên nhân quá hạn (K1-57, T77) */
   {
     loai: 'bao_len_nguyen_nhan',
     /* PR-SOS: hạn ở `sos_cases.han_xac_nhan`; "chờ nguyên nhân" (đã loại thẻ Không cần theo dõi đang chờ) là của `awaitingCauseCaseIds`. */
@@ -264,7 +264,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         `SELECT sc.id, sc.owner_user_id, COALESCE(sc.student_id, a.student_id) AS sid, a.class_id, sc.han_xac_nhan AS han
            FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
            JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
-          WHERE sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')}   /* K3-41: em Tạm dừng không bị Báo lên */
+          WHERE sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')}   /* K3-41: em Tạm dừng không bị Báo QL */
             AND sc.han_xac_nhan < ?
             AND NOT EXISTS (SELECT 1 FROM yeu_cau_duyet y WHERE y.loai = 'bao_len_nguyen_nhan' AND y.doi_tuong_loai = 'sos_case'
                              AND y.doi_tuong_id = sc.id AND y.trang_thai = 'cho')`,
@@ -295,7 +295,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     moTa: (yc, ngu) => {
       const x = ngu.them.get(yc.id);
       return {
-        tieuDe: `Case chờ nguyên nhân quá hạn${x?.topic ? ` · ${caseTopicLabel(x.topic)}` : ''}`,
+        tieuDe: `Case quá hạn xác nhận nguyên nhân${x?.topic ? ` · ${caseTopicLabel(x.topic)}` : ''}`,
         phu: x?.ten_gv ? `GVBM ${x.ten_gv}` : null,
         dong: ['Không cần duyệt — để QL biết và nhắc.'],
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, { caseId: yc.doi_tuong_id }) : undefined,
@@ -360,7 +360,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       };
     },
   },
-  /* ------------------------------------------------------------ PR-YT4 · Báo lên: Ý thức quá hạn — một thẻ mỗi em (V4-4, V4-5, K3-37, Q9) */
+  /* ------------------------------------------------------------ PR-YT4 · Báo QL: Ý thức quá hạn — một thẻ mỗi em (V4-4, V4-5, K3-37, Q9) */
   {
     loai: 'bao_len_y_thuc',
     /* Luật ở JS (một cửa trạng thái) nên không viết được thành `chet` SQL: tạo VÀ đóng đều ở đây. Không có gì để làm → không mở tx. */
@@ -441,7 +441,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       };
     },
   },
-  /* ------------------------------------------------------------ PR-CT · Báo lên: Bàn giao quá hạn 3 ngày — MỘT thẻ mỗi lớp nguồn (Q12) */
+  /* ------------------------------------------------------------ PR-CT · Báo QL: Bàn giao quá hạn 3 ngày — MỘT thẻ mỗi lớp nguồn (Q12) */
   {
     loai: 'bao_len_ban_giao',
     /* Lệnh vẫn chạy đúng tuần — thẻ chỉ để Quản lý biết và nhắc GVCN. Quét chỉ TẠO (một câu, và thường ra rỗng); ĐÓNG là việc của `chet` dưới đây, chạy chung câu
@@ -485,7 +485,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       };
     },
   },
-  /* ------------------------------------------------------------ PR-CT · Báo lên: lớp thường HẾT tuần kết thúc còn em chưa có lệnh (Q30-4, Q13) */
+  /* ------------------------------------------------------------ PR-CT · Báo QL: lớp thường HẾT tuần kết thúc còn em chưa có lệnh (Q30-4, Q13) */
   {
     loai: 'bao_len_chua_lenh',
     /* Quét chỉ TẠO: một câu ra các lớp thường CÓ THỂ đã hết khoá (ngày bắt đầu + số tuần ≤ hôm nay — tập rộng hơn `phase = finished` một chút), còn em chưa có lệnh
@@ -572,7 +572,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       };
     },
   },
-  /* ------------------------------------------------------------ PR-LT2b · Báo lên: Mini Test dưới 70% (M-05, T76, K1-41) — tạo lúc ghi Mini Test, không cần duyệt */
+  /* ------------------------------------------------------------ PR-LT2b · Báo QL: Mini Test dưới 70% (M-05, T76, K1-41) — tạo lúc ghi Mini Test, không cần duyệt */
   {
     loai: 'bao_len_mini_test',
     /* Hết ý nghĩa khi Mini Test đã đạt (sửa điểm) hoặc mọi Case của nhóm đã Hoàn thành (QL xử lý xong). */
@@ -595,7 +595,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       };
     },
   },
-  /* ------------------------------------------------------------ PR-LT2b · Báo lên: Cuối khoá dời quá tuần cuối khoá (K4-23 vế 2) — một thẻ mỗi bài */
+  /* ------------------------------------------------------------ PR-LT2b · Báo QL: Cuối khoá dời quá tuần cuối khoá (K4-23 vế 2) — một thẻ mỗi bài */
   {
     loai: 'bao_len_cuoi_khoa',
     chet: {

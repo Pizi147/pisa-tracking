@@ -11,7 +11,7 @@ import { CHU_CHUYEN_LOP, NHAN_XET_TOI_THIEU, ngay, tuanLich, type PhieuBanGiaoDt
 
 /**
  * BÀN GIAO (PR-CT, §3.1f Q30-2, mockup 20 màn F · G · đọc bàn giao) — MỘT panel, ba dạng theo người mở:
- *   F  GVCN lớp cũ (hoặc Quản lý xác nhận thay): trái danh sách em + trạng thái phiếu, phải phiếu của em đang chọn — Web tự điền (chỉ đọc), mỗi môn một câu của
+ *   F  GVCN lớp cũ (hoặc Quản lý xác nhận thay): trái danh sách em + trạng thái phiếu, phải phiếu của em đang chọn — Hệ thống tự điền (chỉ đọc), mỗi môn một câu của
  *      GVBM (Nhắc · Điền thay), Nhận xét chung (bắt buộc ≥ 15 ký tự) → Xác nhận bàn giao. ↑/↓ đi từng em. Dưới 820 px: danh sách trên, phiếu dưới.
  *   G  GVBM của môn: bảng mỗi em một câu, lưu khi rời ô.
  *   Đọc: GV / Quản lý lớp mới, hoặc bất kỳ ai không ghi được — cùng bố cục F, chỉ đọc, hiện "Xác nhận bởi …".
@@ -141,8 +141,8 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload }: Chung) {
               {em.xacNhan && <Nhan tone="ok">Đã xác nhận</Nhan>}
             </div>
 
-            <section aria-label="Web tự điền" className="surface-2 rounded-lg p-3">
-              <h4 className="mb-2 mt-0 text-[11px] font-extrabold uppercase tracking-[.06em] text-slate-500">Web tự điền · chỉ đọc{em.tuDienDaChup && ' · chụp lúc xác nhận'}</h4>
+            <section aria-label="Hệ thống tự điền" className="surface-2 rounded-lg p-3">
+              <h4 className="mb-2 mt-0 text-[11px] font-extrabold uppercase tracking-[.06em] text-slate-500">Hệ thống tự điền · chỉ đọc{em.tuDienDaChup && ' · chụp lúc xác nhận'}</h4>
               {em.tuDien ? (
                 <div className={dong}>
                   <span className="text-slate-500">Kết quả</span><span className="text-slate-200">{em.tuDien.ketQua}</span>
@@ -182,7 +182,7 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload }: Chung) {
                             placeholder="Viết một câu…" onChange={(e) => setDienThay({ ...dienThay, chu: e.target.value })}
                             onKeyDown={(e) => { if (e.key === 'Enter') void luuDienThay(); if (e.key === 'Escape') { e.stopPropagation(); setDienThay(null); } }} />
                           <button type="button" className="btn btn-sm btn-primary" disabled={!dienThay.chu.trim()} onClick={luuDienThay}>Lưu</button>
-                          <button type="button" className="btn btn-sm" onClick={() => setDienThay(null)}>Thôi</button>
+                          <button type="button" className="btn btn-sm" onClick={() => setDienThay(null)}>Đóng</button>
                         </span>
                       )}
                     </div>

@@ -87,7 +87,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
         viecCase(12, 'reading', { chu: 'Xác nhận PA Ôn lại dạng bài True/False/NG', loaiHan: 'xac-minh-sos', han: '2026-09-14', paId: 90 }),
         viecCase(13, 'speaking', { chu: 'Ghi kết quả PA Luyện nói', loaiHan: 'cap-nhat-pa', han: '2026-09-21', paId: 91 }),
         viecCase(14, 'writing1', { chu: 'Ghi kết quả cuối Viết lại', loaiHan: 'cap-nhat-pa', han: '2026-09-14', paId: 92 }),
-        viecCase(15, 'writing2', { chu: 'Đề ra PA', loaiHan: 'lap-pa', han: null }),
+        viecCase(15, 'writing2', { chu: 'Thêm PA', loaiHan: 'lap-pa', han: null }),
         viecCase(16, null, { chu: 'Chờ Quản lý duyệt · không theo dõi', loaiHan: null, han: null }),
         viecCase(17, 'listening', null),
       ],
@@ -105,7 +105,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
     const cuoi = theoViec(/^Ghi kết quả cuối/);
     eq([cuoi.viec, cuoi.tone, cuoi.quaHanNgay], ['Ghi kết quả cuối W1 · tuần W2 SEP', 'danger', 2], 'Ghi kết quả cuối');
     assert(/hạn hết T2 14\/09 · quá hạn 2 ngày/.test(cuoi.title), cuoi.title);
-    eq(theoViec(/^Đề ra PA/).tone, 'warn', 'Đề ra PA chưa hạn');
+    eq(theoViec(/^Thêm PA/).tone, 'warn', 'Thêm PA chưa hạn');
     eq([theoViec(/^Chờ Quản lý/).viec, theoViec(/^Chờ Quản lý/).tone], ['Chờ Quản lý duyệt Case', 'info'], 'Chờ QL duyệt');
     const yt = theoViec(/^Xử lý vi phạm/);
     eq([yt.tone, yt.dich, yt.han], ['warn', { loai: 'y-thuc' }, 'hạn 18/09'], 'Ý thức bắt buộc');
@@ -164,7 +164,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
     eq(d.nutChinhDauTrang({ ...g, thuong: true, phase: 'final_week', soEmChuyen: 6 }), { loai: null, nhan: '' }, 'PR-CT: cuối khoá lớp thường');
     eq(d.nutChinhDauTrang({ ...g, thuong: true, phase: 'running', needsPlacement: true, soEmChuyen: 2 }).loai, null, 'PR-CT: cần xếp lớp — nút ở dải');
     eq(d.nutChinhDauTrang({ ...g, thuong: true, phase: 'final_week', coTheChuyenTiep: false, coTheNhapDiem: true }).loai, 'nhap-diem', 'Không chuyển tiếp được → Nhập điểm');
-    eq(d.nutChinhDauTrang({ ...g, coTheNhapDiem: true }), { loai: 'nhap-diem', nhan: 'Nhập điểm Test' }, 'Nhập điểm');
+    eq(d.nutChinhDauTrang({ ...g, coTheNhapDiem: true }), { loai: 'nhap-diem', nhan: 'Nhập điểm' }, 'Nhập điểm');
     eq(d.nutChinhDauTrang(g).loai, null, 'Không nút');
     eq(d.nutChinhDauTrang({ ...g, thuong: false, phase: 'final_week' }).loai, null, 'FT không có "Chuyển tiếp lớp"');
   });

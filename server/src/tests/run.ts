@@ -2315,7 +2315,7 @@ check('MỌI phương án đều có chu kỳ và hạn — không có phương 
  * "Kéo dài theo dõi", "Chọn hướng xử lý" và "Đổi hướng xử lý" đã bỏ — bốn cái tên cho cùng
  * một câu hỏi thì hai case đóng giống nhau lại để lại hai dấu vết khác nhau.
  */
-check('[9.3] Hoàn thành case: một đường duy nhất, có kết luận và mọi phương án đã khép', () => {
+check('[9.3] Hoàn thành Case: một đường duy nhất, có kết luận và mọi phương án đã khép', () => {
   const c = cases.reportIssue(P.coreTeacher, {
     title: 'Vấn đề cần theo dõi ở kỹ năng này',
     primaryCode: 'student.listening.technique',
@@ -2333,7 +2333,7 @@ check('[9.3] Hoàn thành case: một đường duy nhất, có kết luận và
   // KẾT LUẬN LÀ BẮT BUỘC — bốn cái nhãn "tiến bộ đến đâu" không nói được đã làm gì cho em.
   assertThrows(
     () => cases.closeCaseOutcome(P.mbManager, c.id, { outcome: 'improved', note: 'ok' }),
-    /ghi kết luận/, 'Hoàn thành case mà không phải viết kết luận',
+    /ghi kết luận/, 'Hoàn thành Case mà không phải viết kết luận',
   );
 
   /*
@@ -2466,7 +2466,7 @@ check('[9.1] Hai tab cập nhật kết quả: theo dõi tiếp thì không ph�
   const after = cases.updateResult(P.coreTeacher, ivId, {
     outcome: 'unchanged', note: 'Em có làm nhưng chưa đều, còn sai dạng T/F/NG',
   }) as any;
-  assert(after.interventions.length === before, 'Tiếp tục theo dõi mà lại sinh thêm một phương án');
+  assert(after.interventions.length === before, 'Theo dõi thêm mà lại sinh thêm một phương án');
   const iv2 = after.interventions.find((i: any) => i.id === ivId);
   assert(iv2.status === 'started', 'Theo dõi tiếp mà phương án lại bị khép lại');
   assert(iv2.cycleNo === 2, `Phải sang chu kỳ 2, đang là ${iv2.cycleNo}`);
@@ -3288,7 +3288,7 @@ check('Chọn loại trong nhóm Đề xuất TỨC LÀ xin duyệt, không ph�
     () => cases.recordIntervention(P.coreTeacher, c.id, {
       kind: 'reschedule_mt', description: 'Xin lùi MT3 cho em', status: 'planned',
     }),
-    /lùi cái gì/, 'Đề xuất lùi lịch thi không nói rõ đối tượng mà vẫn gửi được',
+    /dời cái gì/, 'Đề xuất lùi lịch thi không nói rõ đối tượng mà vẫn gửi được',
   );
   const r = cases.recordIntervention(P.coreTeacher, c.id, {
     kind: 'reschedule_mt', description: 'Xin lùi MT3 cho em', status: 'planned',
@@ -7617,7 +7617,7 @@ check('PR-E · <KetQuaDot>: đủ điểm nhưng thiếu kỳ vọng thì không
 check('PR-E · <Han>: sáu loại hạn có sáu nhãn khác nhau, đúng bảng HE_GIAO_DIEN §4 (việc · mốc, PR-UX0 B-3)', () => {
   const t = (loai: any, han = '2026-09-23') => domain.deadlineView({ kind: loai, due: han, today: '2026-09-14' }).text;
   assert(t('xac-minh-sos') === 'Xác nhận nguyên nhân · hạn 23/09', `xac-minh-sos: "${t('xac-minh-sos')}"`);
-  assert(t('lap-pa') === 'Đề ra PA · hạn 23/09', `lap-pa: "${t('lap-pa')}"`);
+  assert(t('lap-pa') === 'Thêm PA · hạn 23/09', `lap-pa: "${t('lap-pa')}"`);
   assert(t('cap-nhat-pa') === 'Ghi kết quả tuần W3 SEP · hạn hết T2 23/09', `cap-nhat-pa: "${t('cap-nhat-pa')}"`);
   /* PR-YT4 (K5-24): `thuc-hien-y-thuc`, `hoan-thanh-y-thuc` bỏ — Ý thức dùng `xu-ly-vi-pham`. */
   assert(t('xu-ly-vi-pham') === 'Xử lý vi phạm · hạn 23/09', `xu-ly-vi-pham: "${t('xu-ly-vi-pham')}"`);
@@ -8343,7 +8343,7 @@ check('PR-H · Grep các chuỗi cũ của bảng chữ: không còn ở mã ngu
 });
 
 check('PR-H · Badge đếm nói rõ ĐẾM CỦA AI: việc riêng khác toàn lớp, và phạm vi có tên đúng bộ chữ', () => {
-  assert(domain.needScoresText('mine', 3) === 'Bạn cần chấm: 3 bài', `mine: "${domain.needScoresText('mine', 3)}"`);
+  assert(domain.needScoresText('mine', 3) === 'Cần chấm: 3 bài', `mine: "${domain.needScoresText('mine', 3)}"`);
   assert(domain.needScoresText('managed', 5) === 'Lớp còn 5 bài chưa nhập điểm', `managed: "${domain.needScoresText('managed', 5)}"`);
   assert(domain.needScoresText(null, 5) === 'Lớp còn 5 bài chưa nhập điểm', 'Không nói ai đang xem thì mặc định là toàn lớp');
   assert(domain.WORK_SCOPE_LABEL.mine === 'Tôi' && domain.WORK_SCOPE_LABEL.managed === 'Tất cả trong phạm vi',

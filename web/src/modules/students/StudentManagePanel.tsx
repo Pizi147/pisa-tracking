@@ -306,7 +306,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
           <input className="field w-full" type="email" inputMode="email" autoComplete="off" {...lf.o(loi, 'email')}
             value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Ví dụ: an.nguyen@gmail.com" />
         </Truong>
-        <Truong nhan="Người tư vấn" tuyChon>
+        <Truong nhan="Tư vấn viên" tuyChon>
           <input className="field w-full" value={consultantName} onChange={(e) => setConsultant(e.target.value)} />
         </Truong>
         <Truong nhan="Ghi chú" tuyChon>

@@ -688,7 +688,7 @@ function nhanDuLieu(n: number): { hvTruoc: number; hvSau: number; caseTruoc: num
 
 const soNhanDuLieu = nhanDuLieu(3);
 /*
- * PR-SOS: bản sao chép cả `sos_cases.han_xac_nhan` → Case chờ nguyên nhân quá hạn của bản sao sinh thẻ Báo lên ở lần quét ĐẦU (việc ghi
+ * PR-SOS: bản sao chép cả `sos_cases.han_xac_nhan` → Case chờ nguyên nhân quá hạn của bản sao sinh thẻ Báo QL ở lần quét ĐẦU (việc ghi
  * một lần, không phải số câu đọc). Quét trước khi đo để phép so "trước/sau" chỉ đo đường đọc.
  */
 (await import('../duyet/yeuCau.ts')).quetYeuCau();

@@ -15,7 +15,7 @@ import { NutChon } from '../../ui/ui.tsx';
 import { ComponentsField, componentsPayload } from './ChiTietKyNang.tsx';
 import {
   URGENCY_LEVELS, URGENCY_LABEL, issuesForTopic, DEFAULT_URGENCY, FOLLOWUP_OUTCOMES, GOI_Y_MO_TA_PA, outcomeLabelFor,
-  CASE_OUTCOMES, CASE_OUTCOME_LABEL, tenMon, tenMonNgan,
+  CASE_OUTCOMES, CASE_OUTCOME_LABEL, CHU_THEM_PA, tenMon, tenMonNgan,
   categoryOf, componentsFor, componentsAreCounts,
   nguoiThanhPayload, nguoiThieu, tuanLich, type NguoiChon, dsLoi, type LuatTruong, laKhac, kiemGhiRoKhac, KHAC_TOI_THIEU,
 } from '@shared/domain/index.ts';
@@ -301,7 +301,7 @@ export function QuickReport({
           {daLuu.viecTiep && (
             <p className="m-0 flex flex-wrap items-center gap-2 text-xs text-slate-300">
               Việc tiếp: {daLuu.viecTiep.chu}{daLuu.viecTiep.han ? ` · hạn ${ngan(daLuu.viecTiep.han)}` : ''}
-              {daLuu.canEdit && onMoCase && daLuu.viecTiep.chu === 'Đề ra PA' && (
+              {daLuu.canEdit && onMoCase && daLuu.viecTiep.chu === CHU_THEM_PA && (
                 <button type="button" className="btn btn-sm" onClick={() => { const id = daLuu.id; reset(); onClose(); onMoCase(id, 'them-pa'); }}>+ Thêm PA</button>
               )}
             </p>

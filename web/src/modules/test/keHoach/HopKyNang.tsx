@@ -246,7 +246,7 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
         </div>
       </div>
       <div className="flex items-center justify-end gap-2 border-t px-3 py-2" style={{ borderColor: 'var(--line)' }}>
-        <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onClose} disabled={busy}>Huỷ</button>
+        <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onClose} disabled={busy}>Đóng</button>
         <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => { if (canhBao.length) setForce(true); void luu(); }} disabled={!luuDuoc}>
           {busy ? 'Đang lưu…' : nutLuu}
         </button>
@@ -276,7 +276,7 @@ function DongKyNangHop({ k, o, khoa, moi, loai, d, noiBat, khaiGiang, tongTuan, 
     <div className={`grid items-start gap-2 rounded px-1 py-0.5 ${noiBat ? 'bg-white/5' : ''}`} style={{ gridTemplateColumns: `${coTick ? '20px' : '0px'} 80px minmax(0,1fr) 28px` }}>
       {coTick ? (
         <input type="checkbox" className="mt-3 accent-sky-400" checked={d.tick} onChange={(e) => onTick(e.target.checked)}
-          aria-label={`${tenMon(ct, k)} — ${d.tick ? 'bỏ khỏi đợt' : 'đưa lại vào đợt'}`} title={d.tick ? 'Bỏ khỏi đợt' : 'Đưa lại vào đợt'} />
+          aria-label={`${tenMon(ct, k)} — ${d.tick ? 'bỏ khỏi đợt' : 'đưa lại vào đợt'}`} title={d.tick ? 'Bỏ kỹ năng khỏi đợt' : 'Đưa lại vào đợt'} />
       ) : <span />}
       <div className="mt-2.5 text-xs text-slate-200">
         <b title={tenMon(ct, k)}>{tenMonNgan(ct, k)}</b>
@@ -287,7 +287,7 @@ function DongKyNangHop({ k, o, khoa, moi, loai, d, noiBat, khaiGiang, tongTuan, 
         {khoa ? (
           <div className="mt-2.5 text-xs text-slate-500">{o?.tuan ? tuanLich(o.tuan) : '—'} · {o?.khoa}</div>
         ) : bo ? (
-          <div className="mt-2.5 text-xs text-slate-500">Bỏ khỏi đợt</div>
+          <div className="mt-2.5 text-xs text-slate-500">Bỏ kỹ năng khỏi đợt</div>
         ) : (
           <>
             <TuanNho d={d} goc={goc} onTuan={onTuan} nhanKhoa={nhanTuan} />

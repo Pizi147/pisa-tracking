@@ -79,7 +79,7 @@ export type SosCaseState = {
   boTro: { choNop: boolean; choDuyet: boolean; hanKeHoach: string | null } | null;
 };
 
-/** Điều kiện SQL "case `sc` đang có thẻ Không cần theo dõi chờ duyệt" — MỘT chỗ cho `awaitingCauseCaseIds` và thẻ Báo lên. */
+/** Điều kiện SQL "case `sc` đang có thẻ Không cần theo dõi chờ duyệt" — MỘT chỗ cho `awaitingCauseCaseIds` và thẻ Báo QL. */
 export const CO_THE_KHONG_THEO_DOI = (sc = 'sc') => `EXISTS (SELECT 1 FROM yeu_cau_duyet y_k WHERE y_k.loai = 'khong_theo_doi'
   AND y_k.doi_tuong_loai = 'sos_case' AND y_k.doi_tuong_id = ${sc}.id AND y_k.trang_thai = 'cho')`;
 

@@ -52,7 +52,7 @@ export type ViecDauTrang = 'tien-do' | 'chuyen-tiep' | 'ban-giao' | 'phan-cong' 
 /**
  * ĐẦU TRANG HỒ SƠ LỚP (đặc tả §3.7, mockup 06c §1; PR-HVL K2-14, B4, E7, K2-13). Nằm ở: Học viên & Lớp → Hồ sơ lớp → đầu trang.
  *   dòng 1  "Hồ sơ lớp" · mã · chương trình | MỘT nút chính theo chặng (`nutChinhDauTrang`: + Học viên khi lớp rỗng · Chuyển tiếp lớp · n em khi lớp thường
- *           cuối khoá · Nhập điểm Test khi còn bài chờ nhập) · tối đa 2 nút phụ (Nhập điểm Test · + Học viên · + Case; thừa vào ⋮) · ⋮
+ *           cuối khoá · Nhập điểm khi còn bài chờ nhập) · tối đa 2 nút phụ (Nhập điểm · + Học viên · + Case; thừa vào ⋮) · ⋮
  *   ⋮       Tuần khai giảng (FT) / Lịch kiểm tra (lớp thường) · Chuyển tiếp lớp (khi không phải nút chính) · nút phụ thừa · Sửa phân công ·
  *           Sửa thông tin lớp · (đường kẻ) Xoá / Kết thúc lớp
  *   dòng 2  chi nhánh · LT (bọc `<abbr>` "Lộ trình 1") · n học viên · W{n}/{tổng} · khai giảng — hộp nhỏ "GVCN tên"; lớp thường cuối khoá: "Cuối khoá: 6/8 em có đủ điểm"
@@ -101,7 +101,7 @@ export function DauTrangLop({ data, periodId, onViec, onBanGiao }: {
     coTheChuyenTiep: data.viewer.coTheChuyenTiep, soEmChuyen: s?.canXepLop ?? 0,
   });
   const phu: { key: string; nhan: string; lam: () => void }[] = [
-    ...(data.viewer.canEnterScores && chinh.loai !== 'nhap-diem' ? [{ key: 'nhap-diem', nhan: 'Nhập điểm Test', lam: () => navigate(nhapDiem) }] : []),
+    ...(data.viewer.canEnterScores && chinh.loai !== 'nhap-diem' ? [{ key: 'nhap-diem', nhan: 'Nhập điểm', lam: () => navigate(nhapDiem) }] : []),
     ...(data.viewer.canAddStudents && chinh.loai !== 'them-hv' ? [{ key: 'hoc-vien', nhan: '+ Học viên', lam: () => onViec('hoc-vien') }] : []),
     ...(data.viewer.canReportCase ? [{ key: 'case', nhan: '+ Case', lam: () => onViec('case') }] : []),
   ];
@@ -148,7 +148,7 @@ export function DauTrangLop({ data, periodId, onViec, onBanGiao }: {
             : chinh.loai ? (
               <button type="button" className="btn btn-sm btn-primary" onClick={() => onViec(chinh.loai === 'them-hv' ? 'hoc-vien' : 'chuyen-tiep')}>{chinh.nhan}</button>
             ) : null}
-          <MenuDong muc={menu} bieuTuong="⋮" nhan="Thêm thao tác" />
+          <MenuDong muc={menu} bieuTuong="⋮" nhan="Thao tác khác" />
         </div>
       </div>
 

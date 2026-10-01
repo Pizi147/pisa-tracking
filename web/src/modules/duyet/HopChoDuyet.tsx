@@ -92,7 +92,7 @@ export function HopChoDuyet() {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-end gap-2">
-        <BoLocDoan ariaLabel="Phân loại" value={phan} onChange={(k) => setParam('phan', k === 'tat-ca' ? null : k)}
+        <BoLocDoan ariaLabel="Loại yêu cầu" value={phan} onChange={(k) => setParam('phan', k === 'tat-ca' ? null : k)}
           muc={[{ key: 'tat-ca' as KhoaChip, nhan: 'Tất cả', so: dem?.['tat-ca'] ?? null },
             ...PHAN_LOAI.map((k) => ({ key: k as KhoaChip, nhan: PHAN_LOAI_LABEL[k], so: dem?.[k] ?? null }))]} />
         <BoLocDoan ariaLabel="Trạng thái" value={xem} onChange={(k) => setParam('xem', k === 'cho' ? null : k)}

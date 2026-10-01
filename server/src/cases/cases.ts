@@ -132,7 +132,7 @@ export function milestonesOf(caseId: number) {
  * hai dấu vết khác nhau. Nay chỉ còn ĐÚNG MỘT đường.
  *
  * "Kéo dài theo dõi" biến mất vì nó vốn không phải một cách kết thúc: case chưa xong thì để
- * mở, và việc phải làm nằm ở PHƯƠNG ÁN (tab "Tiếp tục theo dõi" ở mục 9.1), không phải ở
+ * mở, và việc phải làm nằm ở PHƯƠNG ÁN (tab "Theo dõi thêm" ở mục 9.1), không phải ở
  * một cái nút đóng-mà-không-đóng.
  *
  * CHỈ ĐÓNG ĐƯỢC KHI MỌI PHƯƠNG ÁN ĐÃ KHÉP LẠI. Đóng sớm thì con số "đã xử lý xong" nói dối:
@@ -169,7 +169,7 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
    */
   const closeNote = chuTuDo(input.note, 'Kết luận', 2000) ?? '';   // PR-Dọn (Q4, quét #24)
   if (closeNote.length < 10) {
-    throw badRequest('Hoàn thành case thì phải ghi kết luận — ít nhất 10 ký tự.');
+    throw badRequest('Hoàn thành Case thì phải ghi kết luận — ít nhất 10 ký tự.');
   }
   const closedOn = input.closedOn ?? demoToday();
   if (!isIsoDate(closedOn)) throw badRequest('Ngày hoàn thành không hợp lệ.');
@@ -239,7 +239,7 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
       studentId: c.eff_student_id, cycleId: c.eff_cycle_id,
       eventType: 'case_closed', eventDate: closedOn,
       /* Chốt 6/mục 10.3 Step 6: nhãn phân biệt mốc nhập bù với mốc ghi tại chỗ. */
-      title: `${c.origin_kind === 'backfill' ? '(nhập bù) ' : ''}Hoàn thành case: ${CASE_OUTCOME_LABEL[outcome as CaseOutcome]}`,
+      title: `${c.origin_kind === 'backfill' ? '(nhập bù) ' : ''}Hoàn thành Case: ${CASE_OUTCOME_LABEL[outcome as CaseOutcome]}`,
       detail: closeNote,
       refTable: 'sos_cases', refId: caseId, createdBy: p.userId,
       dedupKey: `case_outcome:${caseId}:${closedOn}:end`,
@@ -755,7 +755,7 @@ export function recordIntervention(p: Principal, caseId: number, input: {
   if (input.kind === 'reschedule_mt') {
     if (!input.rescheduleTarget
         || !(RESCHEDULE_TARGETS as readonly string[]).includes(input.rescheduleTarget)) {
-      throw badRequest('Lùi lịch thi thì phải chọn lùi cái gì: '
+      throw badRequest('Dời lịch thi thì phải chọn dời cái gì: '
         + RESCHEDULE_TARGETS.map((t) => RESCHEDULE_TARGET_LABEL[t]).join(' hoặc ') + '.');
     }
     rescheduleTarget = input.rescheduleTarget as RescheduleTarget;
@@ -1304,7 +1304,7 @@ export function setDisposition(p: Principal, caseId: number, input: {
     }
     const disposition = input.disposition ?? c.disposition;
     if (!disposition) {
-      throw badRequest('Hoàn thành case thì phải chọn hướng xử lý — để biết case kết thúc vì đã giải quyết hay bị bỏ quên.');
+      throw badRequest('Hoàn thành Case thì phải chọn hướng xử lý — để biết case kết thúc vì đã giải quyết hay bị bỏ quên.');
     }
     /*
      * CHỈ ĐÓNG ĐƯỢC KHI MỌI PHƯƠNG ÁN ĐÃ KHÉP LẠI (mục 7.7 [5]).
@@ -2421,7 +2421,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
           /*
            * HOÀN THÀNH CASE NGAY TRÊN THẺ (PR-D). Khối `CasePanel` nhúng bên dưới thẻ đã bị
            * gỡ, nên thẻ tự nói: người xem có chốt được không, và còn gì đang chặn. Lấy đúng
-           * hai hàm mà nút "Hoàn thành case" ở trang riêng vẫn hỏi — không phép tính thứ hai.
+           * hai hàm mà nút "Hoàn thành Case" ở trang riêng vẫn hỏi — không phép tính thứ hai.
            */
           canClose: canCloseCase(p, { class_id: lopDangHoc, student_id: studentId, topic: c.topic }),
           closeBlockers: c.status === 'done' ? [] : closeBlockers(c.id),
@@ -2656,7 +2656,7 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>, bo
 
 /**
  * NGƯỜI LÀM VIỆC TIẾP của một Case (PR-VAI-b Q3) — tính MỘT chỗ; cột Việc tiếp, thẻ điện thoại và thanh việc cùng đọc. Cùng luật người làm
- * với Công việc (Q2): Xác nhận nguyên nhân / Xác nhận PA / Đề ra PA → người phụ trách Case · Ghi kết quả → người ghi PA · Nộp kế hoạch →
+ * với Công việc (Q2): Xác nhận nguyên nhân / Xác nhận PA / Thêm PA → người phụ trách Case · Ghi kết quả → người ghi PA · Nộp kế hoạch →
  * người dạy bổ trợ · Chờ Quản lý duyệt → "Quản lý" (vai, không tên). Tên đọc sẵn trong câu Case / câu PA (JOIN) — không câu thêm.
  */
 function nguoiLamCua(v: { chu: string; paId?: number } | null, c: any, plans: { id: number; nguoiId: number | null; nguoiTen: string | null }[], boTro: BoTroDto | null): { id: number | null; ten: string | null } | null {

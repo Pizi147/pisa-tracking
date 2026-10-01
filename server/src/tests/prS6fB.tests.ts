@@ -280,7 +280,7 @@ async function runTask8(t: YThucTestKit, d: any) {
       WHERE e.student_id = ? AND e.status = 'active' ORDER BY ta.id LIMIT 1`, sid)?.id as number | undefined;
 
   // ------------------------------------------------------------------ Task 8 · hồ sơ HV — mọi việc của em (D5)
-  check('S6F-b (8) · HAI ĐƯỜNG "Đề ra PA" (Q5): Case tay chưa PA → việc support:{caseId} ở hồ sơ của người phụ trách = việc ở Công việc (cùng khoá, cùng hạn); GV khác thấy ở "việc người khác"; quá hạn → câu tóm tắt nêu', () => {
+  check('S6F-b (8) · HAI ĐƯỜNG "Thêm PA" (Q5): Case tay chưa PA → việc support:{caseId} ở hồ sơ của người phụ trách = việc ở Công việc (cùng khoá, cùng hạn); GV khác thấy ở "việc người khác"; quá hạn → câu tóm tắt nêu', () => {
     const sid = get(`SELECT e.student_id id FROM enrollments e JOIN students s ON s.id = e.student_id WHERE e.class_id = ? AND e.status = 'active' AND s.status = 'active' AND s.id <= ? ORDER BY s.id DESC LIMIT 1`,
       classId('MB FT 101'), seedMax.students).id as number;
     const c = reportIssue(P.w2Teacher, { studentId: sid, title: 'Reading: chưa nối được logic đoạn', summary: 'Đọc hiểu sai logic đoạn văn — S6F-b', topic: 'reading', primaryCode: 'student.reading.logic', urgency: 'attention' }) as any;
@@ -291,7 +291,7 @@ async function runTask8(t: YThucTestKit, d: any) {
     const key = `support:${caseId}`;
     const x = viecCua(po, sid).cuaBan.find((v) => v.key === key);
     const it = (myWork(po, {}) as any).items.find((i: any) => i.key === key);
-    assert(x && x.loai === 'de-ra-pa' && x.nguoi.id === owner && /^Đề ra PA/.test(x.chu), `hồ sơ: ${JSON.stringify(viecCua(po, sid).cuaBan.map((v) => v.key))}`);
+    assert(x && x.loai === 'de-ra-pa' && x.nguoi.id === owner && /^Thêm PA/.test(x.chu), `hồ sơ: ${JSON.stringify(viecCua(po, sid).cuaBan.map((v) => v.key))}`);
     assert(it && it.studentId === sid && it.due === x.han, `Công việc: ${JSON.stringify(it && { due: it.due })} ≠ hạn ${x?.han}`);
     const gvcn = gvcnCua(sid)!;
     if (gvcn !== owner) {
@@ -300,7 +300,7 @@ async function runTask8(t: YThucTestKit, d: any) {
     }
     conn.prepare('UPDATE sos_cases SET detected_at = ? WHERE id = ?').run(addDays(TODAY, -15), caseId);
     const cau = (hs(po, sid).tomTat as { chu: string }[]).map((m) => m.chu).join(' · ');
-    assert(/Đề ra PA.*quá hạn/.test(cau), `câu tóm tắt: ${cau}`);
+    assert(/Thêm PA.*quá hạn/.test(cau), `câu tóm tắt: ${cau}`);
     conn.prepare(`UPDATE sos_cases SET status = 'done' WHERE id = ?`).run(caseId);
   });
 

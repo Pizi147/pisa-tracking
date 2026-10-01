@@ -157,7 +157,7 @@ export function TasksBoard() {
             );
           })}
         </div>
-        {data?.canEdit && <button className="btn btn-primary" onClick={() => setCreating(true)}>+ Công việc</button>}
+        {data?.canEdit && <button className="btn btn-primary" onClick={() => setCreating(true)}>+ Giao việc</button>}
       </div>
 
       <Card bodyClass="p-0"
@@ -330,7 +330,7 @@ export function NganViecVanHanh({ taskId, onClose, onDone }: {
               {data.viewer.canEdit && (
                 <>
                   <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setEditing(true)}>Sửa</button>
-                  <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setAddingSub(true)}>+ Công việc con</button>
+                  <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setAddingSub(true)}>+ Việc con</button>
                 </>
               )}
             </div>
@@ -339,7 +339,7 @@ export function NganViecVanHanh({ taskId, onClose, onDone }: {
           {/* ─────────────────────────────────────────── việc con, một tầng */}
           <section>
             <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-2">
-              Công việc con
+              Việc con
               {data.subtasks.length > 0 && (
                 <span className="text-slate-500 font-normal tabular-nums ml-2">
                   {data.subtasks.filter((x: any) => x.progress === 'done').length}/{data.subtasks.length} hoàn thành
@@ -447,7 +447,7 @@ function UpdateDialog({ open, onClose, task, onDone }: {
     <Modal open={open} onClose={onClose} title="Cập nhật tiến độ"
       footer={
         <>
-          <button className="btn" onClick={onClose} disabled={busy}>Huỷ</button>
+          <button className="btn" onClick={onClose} disabled={busy}>Đóng</button>
           <button className="btn btn-primary" disabled={busy || (needReason && !reason.trim()) || helpThieu || reviewThieu || chanKhepLai}
             onClick={async () => {
               setBusy(true);
@@ -479,7 +479,7 @@ function UpdateDialog({ open, onClose, task, onDone }: {
         </Field>
         {chanKhepLai && (
           <Alert>
-            Còn {conChuaXong.length} công việc con chưa khép lại: {conChuaXong.slice(0, 2).map((t) => `"${t}"`).join(', ')}
+            Còn {conChuaXong.length} việc con chưa khép lại: {conChuaXong.slice(0, 2).map((t) => `"${t}"`).join(', ')}
             {conChuaXong.length > 2 ? ` và ${conChuaXong.length - 2} việc khác` : ''}.
           </Alert>
         )}
@@ -532,7 +532,7 @@ function SuaViec({ open, onClose, task, onDone }: {
     <Modal open={open} onClose={onClose} title="Sửa công việc"
       footer={
         <>
-          <button className="btn" onClick={onClose} disabled={busy}>Huỷ</button>
+          <button className="btn" onClick={onClose} disabled={busy}>Đóng</button>
           <button className="btn btn-primary" disabled={busy || !title.trim() || (canDoi && lyDoDoiHan.trim().length < 2)}
             onClick={async () => {
               setBusy(true);
@@ -621,10 +621,10 @@ function CreateTask({ open, onClose, onDone, branchId, parent, defaultGroup, uni
 
   return (
     <Modal open={open} onClose={onClose} width="max-w-lg"
-      title={parent ? `Công việc con của "${parent.title}"` : 'Công việc mới'}
+      title={parent ? `Việc con của "${parent.title}"` : 'Công việc mới'}
       footer={
         <>
-          <button className="btn" onClick={onClose} disabled={busy}>Huỷ</button>
+          <button className="btn" onClick={onClose} disabled={busy}>Đóng</button>
           <button className="btn btn-primary" disabled={busy || !title.trim()}
             onClick={async () => {
               setBusy(true);

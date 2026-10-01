@@ -254,7 +254,7 @@ export async function runPrS5fATests(t: YThucTestKit) {
   const { migratePrCt } = await import('../migrate/prCt.ts');
   const { studentProfile } = await import('../students/profile.ts');
 
-  check('S5F-a (11) · cột "Web gợi ý" ghi HƯỚNG (Lên BE · Lên BE + bổ trợ · Quản lý cân nhắc · Học lại FOU), không "→ Pass"; hồ sơ lớp có dải Kết thúc khoá thì bỏ chip "cần xếp lớp tiếp"', () => {
+  check('S5F-a (11) · cột "Hệ thống gợi ý" ghi HƯỚNG (Lên BE · Lên BE + bổ trợ · Quản lý cân nhắc · Học lại FOU), không "→ Pass"; hồ sơ lớp có dải Kết thúc khoá thì bỏ chip "cần xếp lớp tiếp"', () => {
     const h = (tyLe: number, truot: string[] = []) => d.goiYCuoiKhoa({ ct: 'FOU', tyLe, monTruot: truot }).nhanHuong;
     assert(h(0.8) === 'Lên BE' && h(0.65, ['reading']) === 'Lên BE + bổ trợ' && h(0.55, ['reading']) === 'Quản lý cân nhắc' && h(0.4) === 'Học lại FOU',
       [h(0.8), h(0.65, ['reading']), h(0.55, ['reading']), h(0.4)].join(' | '));

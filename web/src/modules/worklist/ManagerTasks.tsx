@@ -50,10 +50,10 @@ export function ManagerTaskList({ periodId }: { periodId: number | null }) {
   const { data, loading } = useApi<{ rows: TaskRow[] }>(
     periodId ? `/tasks?periodId=${periodId}` : null, [periodId],
   );
-  if (loading) return <Card title="Việc đã giao"><Skeleton rows={3} /></Card>;
+  if (loading) return <Card title="Việc được giao"><Skeleton rows={3} /></Card>;
   const rows = data?.rows ?? [];
   return (
-    <Card title={`Việc đã giao (${rows.length})`} bodyClass="p-0">
+    <Card title={`Việc được giao (${rows.length})`} bodyClass="p-0">
       {rows.length === 0 ? (
         <div className="p-4">
           <Empty title="Chưa giao việc nào trong tuần này"
@@ -126,7 +126,7 @@ function TaskDialog({ open, onClose, periodId, onDone }: {
     <Modal open={open} onClose={onClose} title="Giao việc"
       footer={
         <>
-          <button className="btn" onClick={onClose}>Huỷ</button>
+          <button className="btn" onClick={onClose}>Đóng</button>
           <button className="btn btn-primary" disabled={busy} onClick={submit}>Giao</button>
         </>
       }>

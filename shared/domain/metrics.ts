@@ -37,7 +37,7 @@ export type ChiSo = {
 
 export const METRICS: readonly ChiSo[] = [
   {
-    id: 'hv-sos-hien-tai', ten: 'Học viên có SOS hiện tại',
+    id: 'hv-sos-hien-tai', ten: 'Học viên có SOS',
     cauHoi: 'Bao nhiêu em đang có ít nhất một kỹ năng dưới kỳ vọng ở đợt Test mới nhất hợp lệ?',
     donVi: 'hoc-vien',
     tapDuDieuKien: 'Học viên ĐANG HỌC trong phạm vi, có đợt Test mới nhất hợp lệ (không huỷ, đã có điểm) mà SOS ≥ 1. SOS tạm thời (mới chấm một phần) và kết quả cuối (đủ điểm) tách riêng nhưng đều thuộc tập này. Không lấy MAX toàn lịch sử.',
@@ -73,7 +73,7 @@ export const METRICS: readonly ChiSo[] = [
     thoiGian: 'hien-trang', khuTrung: 'Mỗi Case chỉ đếm 1 lần', drilldown: '/metrics/case-xac-dinh-nguyen-nhan-qua-han',
   },
   {
-    id: 'bai-qua-han-nhap-diem', ten: 'Bài chưa nhập điểm quá hạn',
+    id: 'bai-qua-han-nhap-diem', ten: 'Bài quá hạn chưa nhập điểm',
     cauHoi: 'Bao nhiêu bài (một kỹ năng của một em trong một lượt) đã quá hạn nhập điểm mà chưa nhập?',
     donVi: 'bai',
     tapDuDieuKien: 'Bài = một ô điểm (T53 Q2: FT W1 và W2 là hai bài) của lượt không huỷ, lớp đang hoạt động, em đang học (Tạm dừng không sinh nợ — T65), đã quá hạn — cùng luật với ô ở bảng chấm: lớp thường theo số câu đúng, hạn Chủ nhật tuần thi môn đó; Fast Track theo band, dấu "-" theo cặp W1/W2. Vắng đã xác nhận, huỷ phần thi, chờ duyệt dời không phải nợ. Môn chưa phân công giáo viên vẫn tính (bảng Theo giáo viên có hàng "Chưa phân công").',
@@ -94,7 +94,7 @@ export const METRICS: readonly ChiSo[] = [
     thoiGian: 'hien-trang', khuTrung: 'Mỗi Case chỉ đếm 1 lần', drilldown: '/metrics/case-cho-xac-dinh-nguyen-nhan',
   },
   {
-    id: 'case-thieu-pa', ten: 'Case thiếu PA học thuật',
+    id: 'case-thieu-pa', ten: 'Case chưa có PA',
     cauHoi: 'Bao nhiêu case đang mở mà chưa có phương án hợp lệ nào?',
     donVi: 'case',
     tapDuDieuKien: 'Case HỌC THUẬT đang mở, đủ điều kiện cần hỗ trợ, chưa có phương án hợp lệ. Case CHỜ DUYỆT tách riêng, không quy chậm cho giáo viên.',
@@ -136,7 +136,7 @@ export const METRICS: readonly ChiSo[] = [
     thoiGian: 'ket-qua-trong-ky', khuTrung: 'Mỗi PA chỉ đếm 1 lần ở mỗi đợt', drilldown: '/metrics/dung-han-cap-nhat',
   },
   {
-    id: 'do-phu-danh-gia', ten: 'Độ phủ đánh giá',
+    id: 'do-phu-danh-gia', ten: 'Tỷ lệ đủ dữ liệu',
     cauHoi: 'Bao nhiêu phần học viên cần đánh giá đã có dữ liệu đủ điều kiện?',
     donVi: 'hoc-vien',
     tapDuDieuKien: 'Mẫu số: học viên đang học có ít nhất một đợt Test (không huỷ) đã đến lịch — kể cả chưa chấm. Tử số: em mà đợt đã đến lịch mới nhất đủ điểm mọi kỹ năng bắt buộc (dù đạt hay trượt). KHÁC tỷ lệ đạt.',

@@ -39,7 +39,7 @@ export function TongHopVanDeHv(props: PhamViPhanTich) {
   const doiMo = (khoa: string) => setMo((cu) => { const n = new Set(cu); if (n.has(khoa)) n.delete(khoa); else n.add(khoa); return n; });
 
   const cotDau = gop ? 'Nhóm nguyên nhân / kỹ năng' : 'Kỹ năng / nhóm nguyên nhân';
-  const cotCuoi = gop ? 'Kỹ năng nhiều nhất' : 'Lỗi phổ biến';
+  const cotCuoi = gop ? 'Kỹ năng nhiều nhất' : 'Nguyên nhân phổ biến';
 
   const soVoiTruoc = (d: DongVanDeHv) => {
     const v = nhanSoVoiTruoc(d.soVoiTruoc);
@@ -128,7 +128,7 @@ export function TongHopVanDeHv(props: PhamViPhanTich) {
                     <Th align="right">Số lớp</Th>
                     <Th hint="Ba lớp có nhiều HV mắc lỗi này nhất">3 lớp nhiều nhất</Th>
                     <Th align="right" className="pr-5" hint="Số HV có lỗi này trong Case từ lần Test gần nhất của mỗi lớp, so với lần Test ngay trước của chính lớp đó, rồi cộng lại. ↑ = nhiều em hơn">
-                      So với lần Test trước ⓘ
+                      So với Test trước ⓘ
                     </Th>
                     <Th hint={gop ? 'Kỹ năng có nhiều HV mắc lỗi này nhất' : 'Nhóm nguyên nhân nhiều HV nhất trong kỹ năng'}>{cotCuoi}</Th>
                   </tr>

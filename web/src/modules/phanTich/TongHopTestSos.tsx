@@ -267,7 +267,7 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
                 ))}
                 <tr className="border-t" style={{ borderColor: 'var(--line-strong)' }}>
                   <td className="td sticky-col font-semibold text-slate-200 whitespace-nowrap">
-                    Cộng {data.hang.length} {THEO_DONG_DANH_TU[theo]}
+                    Tổng {data.hang.length} {THEO_DONG_DANH_TU[theo]}
                   </td>
                   {cols.map((c) => (
                     <td key={c.khoa} className="td text-right tabular-nums font-semibold">{oCell({ khoa: 'tong', nhan: 'Tổng', o: data.tong, coDot: data.tongCoDot }, c)}</td>

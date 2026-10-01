@@ -91,7 +91,7 @@ export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quay
         conThieu: lf.conThieu(loi),
         chinh: (
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>
-            {deXuat ? 'Gửi duyệt' : 'Thêm PA'}
+            {deXuat ? 'Gửi Quản lý duyệt' : 'Thêm PA'}
           </button>
         ),
       }}>
@@ -115,7 +115,7 @@ export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quay
               </optgroup>
             </select>
           </Truong>
-          <OKhac hien={laKhacPa} value={ghiRo} onChange={setGhiRo} nhan="Tên đề xuất" goiY="Ví dụ: Học kèm 1-1 với trợ giảng"
+          <OKhac hien={laKhacPa} value={ghiRo} onChange={setGhiRo} nhan="Tên đề xuất" goiY="Ví dụ: Học kèm 1-1 với Tutor"
             id={lf.oId('ghi-ro')} onBlur={lf.roi('ghi-ro')} loi={lf.hien('ghi-ro') ? kiemGhiRoKhac(ghiRo) : null} />
         </div>
         {kind === 'reschedule_mt' && (

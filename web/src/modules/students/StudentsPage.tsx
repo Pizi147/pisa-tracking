@@ -284,7 +284,7 @@ function CotBangLop() {
 
 /**
  * HÀNG LỚN của một lớp (đặc tả §3.6; PR-UX0 N-2): ▸ · mã (mở Hồ sơ lớp) · chương trình · n HV · GVCN · tối đa 2 badge (+n) · ⋯.
- * ⋯ của lớp: Hồ sơ lớp · Nhập điểm Test (Q11, Q6) · + Học viên — chỉ mục người xem làm được.
+ * ⋯ của lớp: Hồ sơ lớp · Nhập điểm (Q11, Q6) · + Học viên — chỉ mục người xem làm được.
  */
 function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, the = false }: {
   lop: LopTrenTrang; mo: boolean; onDoiMo: () => void; chiHien: Set<number> | null; sapXep: SapXep;
@@ -315,7 +315,7 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, the =
   const mucLop: MucMenu[] = [
     { key: 'ho-so', nhan: 'Hồ sơ lớp', onChon: () => navigate(`/hoc-vien/lop/${lop.id}`) },
     ...(lop.viewer.coTheNhapDiem
-      ? [{ key: 'nhap-diem', nhan: 'Nhập điểm Test', onChon: () => navigate(thuong ? `/bang-diem-thuong/${lop.id}` : `/nhap-diem/${lop.id}`) }]
+      ? [{ key: 'nhap-diem', nhan: 'Nhập điểm', onChon: () => navigate(thuong ? `/bang-diem-thuong/${lop.id}` : `/nhap-diem/${lop.id}`) }]
       : []),
     ...(lop.viewer.coTheSuaHocVien ? [{ key: 'them', nhan: '+ Học viên', onChon: onThemHocVien }] : []),
   ];
@@ -348,7 +348,7 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, the =
               </span>
             </span>
           </button>
-          <MenuDong muc={mucLop} nhan="Thao tác với lớp" />
+          <MenuDong muc={mucLop} nhan="Thao tác khác" />
         </div>
         {(cacBadge.length > 0 || menuBadgeAn) && <div className="flex flex-wrap items-center gap-1.5 px-3 pb-2">{cacBadge}{menuBadgeAn}</div>}
         {mo && <BangHocVienLop the lop={lop} chiHien={chiHien} sapXep={sapXep} onDoi={onDoi} soCot={1} />}
@@ -374,7 +374,7 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, the =
         <td className="px-3" colSpan={3}>
           <span className="flex items-center justify-end gap-1.5">{cacBadge}{menuBadgeAn}</span>
         </td>
-        <td className="px-2 text-center"><MenuDong muc={mucLop} nhan="Thao tác với lớp" /></td>
+        <td className="px-2 text-center"><MenuDong muc={mucLop} nhan="Thao tác khác" /></td>
       </HangNhom>
       {mo && <BangHocVienLop lop={lop} chiHien={chiHien} sapXep={sapXep} onDoi={onDoi} soCot={7} />}
     </tbody>

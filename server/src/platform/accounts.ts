@@ -160,7 +160,7 @@ export function register(input: {
     for (const a of conn.prepare(
       `SELECT DISTINCT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id JOIN users u ON u.id = ur.user_id
         WHERE r.key = 'system_admin' AND ur.status = 'active' AND u.deleted_at IS NULL`).all() as any[]) {
-      notify({ userId: a.id, kind: 'dang_ky', title: `Đăng ký tài khoản mới — ${fullName}`, body: codes.join(', '),
+      notify({ userId: a.id, kind: 'dang_ky', title: `Đăng ký tài khoản mới · ${fullName}`, body: codes.join(', '),
         entityType: 'user', entityId: userId, dedupKey: `dang_ky:${userId}` });
     }
     return { userId };

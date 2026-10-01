@@ -19,7 +19,7 @@ export type MucMenu = {
  * Bàn phím (E2): mở → focus mục đầu; ↑/↓/Home/End đi vòng; Enter chọn; Esc/Tab đóng và trả focus về nút ⋯. Esc chỉ đóng menu,
  * không đóng panel chứa nó (pha bắt + chặn lan, như `LichNho`).
  */
-export function MenuDong({ muc, nhan = 'Thêm thao tác', bieuTuong = '⋯' }: {
+export function MenuDong({ muc, nhan = 'Thao tác khác', bieuTuong = '⋯' }: {
   /** `bieuTuong`: ⋯ · ⋮, hoặc chữ ngắn như "+2" (badge còn ẩn của hộp lớp — PR-HVL B4). */
   muc: MucMenu[]; nhan?: string; bieuTuong?: string;
 }) {

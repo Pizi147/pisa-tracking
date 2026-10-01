@@ -1,6 +1,6 @@
 /**
  * MỘT CỬA TRẠNG THÁI Ý THỨC (PR-YT4, T68, K1-26, M-08, T65) — mọi nhãn vi phạm, số "chưa xử lý / cần xử lý / quá hạn", việc `yt_*`,
- * thẻ Báo lên, huy hiệu, chỉ số và Phân tích đều đọc `trangThaiYThuc()` ở đây → luật thuần `shared/domain/yThuc.ts`. SQL ở file này
+ * thẻ Báo QL, huy hiệu, chỉ số và Phân tích đều đọc `trangThaiYThuc()` ở đây → luật thuần `shared/domain/yThuc.ts`. SQL ở file này
  * CHỈ nạp dữ liệu và lọc ứng viên; không chép luật (cửa sổ 2 tuần, 5 ngày, thứ tự nhãn) vào SQL.
  *
  * Nạp theo lô 400 id, BA câu cho cả lô (vi phạm + lần xử lý + liên kết · lộ trình + khai bậc · ghi danh hiện tại + ngày Quay lại),
@@ -256,7 +256,7 @@ export function ungVienYThuc(f: { branchId?: number | null; classId?: number | n
 }
 
 /**
- * Như `ungVienYThuc` + em đang có thẻ Báo lên Ý thức chờ (để quét đóng thẻ khi hết lý do) — MỘT câu, cờ `coThe` cho từng em.
+ * Như `ungVienYThuc` + em đang có thẻ Báo QL Ý thức chờ (để quét đóng thẻ khi hết lý do) — MỘT câu, cờ `coThe` cho từng em.
  */
 export function ungVienVaThe(f: { branchId?: number | null; classId?: number | null; kemThe?: boolean } = {}): { id: number; coThe: boolean; ten: string; lop: string | null }[] {
   const loc: string[] = [];

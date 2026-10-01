@@ -132,7 +132,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
       setMoDong(null);
       setKetQua(r);
       if (r.added > 0) onDone();
-      else toast.push('info', 'Chưa thêm được dòng nào — xem cột Tình trạng.');
+      else toast.push('info', 'Chưa thêm được dòng nào — xem cột Trạng thái.');
     } catch (e: any) {
       toast.push('error', e.message);        // giữ nguyên lưới đang nhập để thử lại
     } finally { setBusy(false); }
@@ -146,7 +146,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
     : startWeek ? 'Đổi ở đây thì mọi dòng chưa sửa tay đổi theo.'
     : !cls.start_date ? 'Lớp chưa có ngày khai giảng nên mặc định tuần này. Đổi ở đây thì mọi dòng chưa sửa tay đổi theo.'
     : lopThuong ? 'Lấy sẵn tuần khai giảng của lớp. Đổi ở đây thì mọi dòng chưa sửa tay đổi theo.'
-    : 'Lấy sẵn tuần khai giảng của lớp. Em vào muộn thì đổi tuần — cột Tình trạng báo trước MT nào sẽ là MT lịch sử.';
+    : 'Lấy sẵn tuần khai giảng của lớp. Em vào muộn thì đổi tuần — cột Trạng thái báo trước MT nào sẽ là MT lịch sử.';
 
   const hoSoLop = classId ? `/hoc-vien/lop/${classId}` : null;
 
@@ -246,7 +246,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
                     {c.nhan}{c.batBuoc && <span className="text-bad"> *</span>}
                   </Th>
                 ))}
-                <Th>Tình trạng</Th>
+                <Th>Trạng thái</Th>
               </tr>
             </thead>
             <tbody>

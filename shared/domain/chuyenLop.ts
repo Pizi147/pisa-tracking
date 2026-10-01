@@ -84,7 +84,7 @@ export function kiemDongLenh(d: {
 }
 
 /**
- * PR-UXF-a Q1 (K2-25): hướng Quản lý chọn có KHÁC Web gợi ý (luật Cuối khoá) không. Gợi ý 'len' khớp len_lop và fast_track; 'hoc_lai'
+ * PR-UXF-a Q1 (K2-25): hướng Quản lý chọn có KHÁC Hệ thống gợi ý (luật Cuối khoá) không. Gợi ý 'len' khớp len_lop và fast_track; 'hoc_lai'
  * khớp hoc_lai. Gợi ý null (chưa đủ điểm / 50–59 % Quản lý cân nhắc) → false. Máy chủ tự tính — không tin web.
  */
 export function khacGoiY(huong: HuongLenh | null, goiY: { huong: HuongGoiY } | null | undefined): boolean {

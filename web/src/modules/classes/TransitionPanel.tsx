@@ -22,7 +22,7 @@ const canLop = (k: Kieu | '') => k !== '' && k !== 'bao-luu' && k !== 'dung';
 /** Phần Cuối khoá của một em máy chủ trả (`cuoiKhoaTheoHocVien`) — khai chặt để typecheck bắt tên trường sai (PR-S5F-a). */
 type CuoiKhoaEm = { goiY: GoiYCuoiKhoa | null; ketLuanFt: HopKetLuanVao['ketLuanFt'] };
 
-/** Cột lưới: thường 7 cột (có Web gợi ý), FT 6 cột. Dưới sm mỗi em là một khối xếp dọc (375 px, không cuộn ngang). */
+/** Cột lưới: thường 7 cột (có Hệ thống gợi ý), FT 6 cột. Dưới sm mỗi em là một khối xếp dọc (375 px, không cuộn ngang). */
 const LUOI_THUONG = 'lg:grid-cols-[28px_minmax(140px,1.15fr)_minmax(120px,.9fr)_minmax(90px,.7fr)_minmax(330px,2.1fr)_minmax(170px,1.1fr)_minmax(140px,.8fr)]';
 const LUOI_FT = 'lg:grid-cols-[28px_minmax(140px,1.15fr)_minmax(150px,1.1fr)_minmax(330px,2.1fr)_minmax(170px,1.1fr)_minmax(140px,.8fr)]';
 
@@ -206,7 +206,7 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
                 <span>Chưa quyết <b className="text-slate-100">{chua}</b></span>
               </div>
               <p className="m-0">
-                Gửi phần đã quyết trước, quyết nốt sau. Tới hết tuần kết thúc lớp{data.tuanKetThuc ? ` (${tuanLich(data.tuanKetThuc, homNay)})` : ''} mà còn em chưa có quyết định chuyển lớp thì Quản lý nhận thẻ Báo lên.
+                Gửi phần đã quyết trước, quyết nốt sau. Tới hết tuần kết thúc lớp{data.tuanKetThuc ? ` (${tuanLich(data.tuanKetThuc, homNay)})` : ''} mà còn em chưa có quyết định chuyển lớp thì Quản lý nhận thẻ Báo QL.
               </p>
             </div>
           ) : undefined,
@@ -277,7 +277,7 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
                   onChange={(e) => setChon(e.target.checked ? new Set(students.map((s) => s.id)) : new Set())} /></span>
                 <span role="columnheader">Học viên</span>
                 <span role="columnheader">{ft ? 'Kết quả gần nhất' : 'Cuối khoá'}</span>
-                {!ft && <span role="columnheader">Web gợi ý</span>}
+                {!ft && <span role="columnheader">Hệ thống gợi ý</span>}
                 <span role="columnheader">Quản lý quyết định</span>
                 <span role="columnheader">Lớp chuyển đến</span>
                 <span role="columnheader">Tuần bắt đầu</span>
@@ -340,7 +340,7 @@ function HangEm({ s, d, ft, luoi, maKe, routeTu, tuanCh, homNay, loi, loiMayChu,
     ? [['chuyen', 'Chuyển lớp FT'], ['doi', 'Đổi lộ trình']]
     : [...(maKe ? [['len', `Lên ${maKe}`] as [Kieu, string]] : []), ['ft', 'Lên FT'], ['lai', 'Học lại']];
   const khac = d.kieu === 'bao-luu' || d.kieu === 'dung';
-  /* PR-UXF-a (K2-25): chọn khác Web gợi ý → bắt ghi lý do (máy chủ cũng tự kiểm). */
+  /* PR-UXF-a (K2-25): chọn khác Hệ thống gợi ý → bắt ghi lý do (máy chủ cũng tự kiểm). */
   const lechGoiY = khacGoiY(d.kieu ? HUONG_CUA[d.kieu] : null, ck?.goiY);
   const nhan = 'text-[11px] text-slate-500 lg:hidden';
   const dsLop = lopHopLe(d.kieu);
@@ -370,7 +370,7 @@ function HangEm({ s, d, ft, luoi, maKe, routeTu, tuanCh, homNay, loi, loiMayChu,
       </span>
       {!ft && (
         <span role="cell" className="min-w-0">
-          <span className={nhan}>Web gợi ý</span>
+          <span className={nhan}>Hệ thống gợi ý</span>
           {/* PR-S5F-a (mockup 20): ghi HƯỚNG ("Lên BE", "Học lại FOU"); 50–59% chỉ chip "Quản lý cân nhắc" — không "→ Pass". */}
           {!ck?.goiY ? <span className="text-slate-500" title="Gợi ý theo luật Cuối khoá sẽ hiện khi có điểm">—</span>
             : ck.goiY.canQuanLy ? <Nhan tone="soon" title={ck.goiY.nhan}>Quản lý cân nhắc</Nhan>
@@ -439,7 +439,7 @@ function HangEm({ s, d, ft, luoi, maKe, routeTu, tuanCh, homNay, loi, loiMayChu,
           <label className="block min-w-[14rem] flex-1">
             <span className="mb-0.5 block text-[11px] text-slate-500">
               Lý do <span className="text-bad">*</span>
-              {lechGoiY && <span className="ml-1.5 text-[12px] text-slate-400">khác Web gợi ý</span>}
+              {lechGoiY && <span className="ml-1.5 text-[12px] text-slate-400">khác Hệ thống gợi ý</span>}
             </span>
             <input className="field w-full" aria-label={`Lý do của ${s.fullName}`} value={d.lyDo} disabled={khoa} onChange={(e) => sua({ lyDo: e.target.value })} />
           </label>

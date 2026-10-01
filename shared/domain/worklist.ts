@@ -12,9 +12,9 @@ export const BRANCH_REPORT_CATEGORIES = [
 
 /** Tutor part-time là đơn vị báo cáo riêng, không phải chi nhánh thứ sáu. */
 export const TUTOR_REPORT_CATEGORIES = [
-  { key: 'tutor_count', label: 'Số lượng tutor', hint: '' },
+  { key: 'tutor_count', label: 'Số lượng Tutor', hint: '' },
   { key: 'tutor_quality', label: 'Chất lượng dạy học', hint: '' },
-  { key: 'tutor_other', label: 'Các vấn đề khác', hint: '' },
+  { key: 'tutor_other', label: 'Vấn đề khác', hint: '' },
 ] as const;
 
 export const UNIT_STATUSES = ['ok', 'watch', 'problem'] as const;
@@ -39,7 +39,7 @@ export const TASK_TYPE_LABEL: Record<TaskType, string> = {
 export const TASK_GROUPS = ['student_parent', 'curriculum', 'teacher', 'tutor'] as const;
 export type TaskGroup = (typeof TASK_GROUPS)[number];
 export const TASK_GROUP_LABEL: Record<TaskGroup, string> = {
-  student_parent: 'Học sinh / Phụ huynh',
+  student_parent: 'Học viên / Phụ huynh',
   curriculum: 'Giáo trình',
   teacher: 'Giáo viên',
   tutor: 'Tutor',

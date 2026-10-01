@@ -708,7 +708,7 @@ export function reportRegularNoShow(
           });
         }
       }
-      /* PR-LT2b (K4-23 vế 2): Cuối khoá dời quá tuần cuối khoá của lớp → thẻ Báo lên cho Quản lý (Giữa khoá không có thẻ). */
+      /* PR-LT2b (K4-23 vế 2): Cuối khoá dời quá tuần cuối khoá của lớp → thẻ Báo QL cho Quản lý (Giữa khoá không có thẻ). */
       if (a.kind === 'final' && a.class_id) {
         const cuoi = classProgress(a.class_id).finalWeekStart;
         if (cuoi && moi.weekStart > cuoi) baoLenCuoiKhoaDoiQuaHan(conn, a);

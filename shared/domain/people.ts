@@ -132,8 +132,8 @@ export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
 export const PERMISSION_LABEL: Record<string, string> = {
   'plan.week': 'Chốt tuần MT',
-  'schedule.move': 'Dời lịch một kỹ năng (lớp Normal, đúng phần phụ trách)',
-  'attempt.cancel': 'Huỷ lượt MT',
+  'schedule.move': 'Dời lịch thi (lớp thường, đúng phần phụ trách)',
+  'attempt.cancel': 'Huỷ cả lượt MT',
   'attempt.skip_skill': 'Đánh dấu kỹ năng không mock',
   'deadline.override': 'Đặt hạn nhập điểm riêng',
   'attempt.view': 'Xem lịch và kết quả MT',
@@ -189,7 +189,7 @@ export const STUDENT_FILTERS: {
     hint: 'Học viên đang ở mức SOS 1, 2 hoặc 3 theo lượt MT gần nhất.' },
   { key: 'case_working', label: 'Case đang xử lý', needs: 'case.view',
     hint: 'Case đã có phương án và đang trong thời gian theo dõi.' },
-  { key: 'case_no_plan', label: 'Case thiếu PA học thuật', needs: 'case.view',
+  { key: 'case_no_plan', label: 'Case chưa có PA', needs: 'case.view',
     hint: 'Case đã mở nhưng chưa ai ghi sẽ làm gì cho em.' },
   { key: 'case_overdue', label: 'Case quá hạn cập nhật', needs: 'case.view',
     hint: 'Đã qua hẹn xem lại mà chưa ai cập nhật kết quả sau hỗ trợ.' },
@@ -228,7 +228,7 @@ export const WORK_SCOPE_LABEL: Record<WorkScope, string> = {
  * lớp — hai con số khác nhau cho hai câu hỏi khác nhau, nên chữ phải khác. Không bao giờ vừa nói "cả lớp" vừa dẫn tới việc riêng.
  */
 export function needScoresText(scope: WorkScope | null, n: number): string {
-  return scope === 'mine' ? `Bạn cần chấm: ${n} bài` : `Lớp còn ${n} bài chưa nhập điểm`;
+  return scope === 'mine' ? `Cần chấm: ${n} bài` : `Lớp còn ${n} bài chưa nhập điểm`;
 }
 export const WORK_SCOPE_HINT: Record<WorkScope, string> = {
   mine: 'Kỹ năng bạn được phân công dạy.',

@@ -177,7 +177,7 @@ function OPhanTram({ v }: { v: number | null }) {
   return v === null ? <span className="text-slate-600">—</span> : <span className="text-[12px] tabular-nums text-slate-100">{Math.round(v * 100)}%</span>;
 }
 
-/** Chữ "Hướng gợi ý" — cùng chữ, cùng chip với cột Web gợi ý của panel Chuyển lớp (`goiY.nhanHuong`; 50–59 % chip "Quản lý cân nhắc"). */
+/** Chữ "Hướng gợi ý" — cùng chữ, cùng chip với cột Hệ thống gợi ý của panel Chuyển lớp (`goiY.nhanHuong`; 50–59 % chip "Quản lý cân nhắc"). */
 function OHuongGoiY({ goiY }: { goiY: GoiYCuoiKhoa | null }) {
   if (!goiY) return <span className="text-slate-600" title="Hiện khi đủ điểm Cuối khoá">—</span>;
   if (goiY.canQuanLy) return <Nhan tone="soon" title={goiY.nhan}>Quản lý cân nhắc</Nhan>;

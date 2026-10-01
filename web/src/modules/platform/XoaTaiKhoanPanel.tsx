@@ -50,7 +50,7 @@ export function XoaTaiKhoanPanel({ userId, onClose, onDone }: { userId: number; 
           <>
             <Khoi tieuDe="Tài khoản">
               <p className="m-0 text-sm text-slate-200">
-                {[d.email ?? 'chưa có email', d.vai.join(', ') || 'chưa có vai', d.chiNhanh.join(', ') || 'toàn hệ thống'].join(' · ')}
+                {[d.email ?? 'chưa có email', d.vai.join(', ') || 'chưa có vai trò', d.chiNhanh.join(', ') || 'toàn hệ thống'].join(' · ')}
               </p>
             </Khoi>
             <Khoi tieuDe="Cách xoá">

@@ -89,14 +89,14 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
       assert(d.PLAN_DECISION_NGHIA[k].length <= 45, `nghĩa ${k} dài ${d.PLAN_DECISION_NGHIA[k].length}`);
       assert(!/^Hãy/.test(d.PLAN_DECISION_NGHIA[k]), `nghĩa ${k} mở bằng "Hãy"`);
     }
-    assert(d.PLAN_DECISION_NGAN.ask_manager === 'Xin hỗ trợ QL' && d.NUT_LUU_KET_QUA.keep === 'Lưu kết quả', 'chữ chốt');
+    assert(d.PLAN_DECISION_NGAN.ask_manager === 'Xin hỗ trợ QL' && d.NUT_LUU_KET_QUA.keep === 'Ghi kết quả', 'chữ chốt');
   });
 
   check('UX3 (1) · viecTiepCuaEm: động từ + đối tượng, hạn tách riêng; không còn "Cập nhật"/"Xác định nguyên nhân"', () => {
     const v = d.viecTiepCuaEm({
       nhapDiem: { kyNang: ['listening', 'reading'], dot: 'Giữa khoá', quaHan: false },
       cases: [
-        { caseId: 1, topic: 'writing2', viecTiep: { chu: 'Đề ra PA', loaiHan: 'lap-pa', han: null } },
+        { caseId: 1, topic: 'writing2', viecTiep: { chu: 'Thêm PA', loaiHan: 'lap-pa', han: null } },
         { caseId: 2, topic: 'listening', viecTiep: { chu: 'Ghi kết quả PA Nghe podcast', loaiHan: 'cap-nhat-pa', han: '2026-09-13', paId: 9 } },
       ],
       yThuc: null,
@@ -104,8 +104,8 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     });
     const nd = v.find((x: any) => /^Nhập điểm/.test(x.viec));
     assert(nd && nd.viec === 'Nhập điểm L, R · Giữa khoá' && nd.han === null, JSON.stringify(nd));
-    const dp = v.find((x: any) => /^Đề ra PA/.test(x.viec));
-    assert(dp && dp.viec === 'Đề ra PA W2' && dp.quaHanNgay === null, JSON.stringify(dp));
+    const dp = v.find((x: any) => /^Thêm PA/.test(x.viec));
+    assert(dp && dp.viec === 'Thêm PA W2' && dp.quaHanNgay === null, JSON.stringify(dp));
     const gk = v.find((x: any) => /^Ghi kết quả/.test(x.viec));
     assert(gk && gk.viec === 'Ghi kết quả PA L · tuần W1 SEP' && gk.han === 'hạn hết T2 13/09' && gk.quaHanNgay === 3 && gk.tone === 'danger'
       && gk.title === 'Ghi kết quả PA Nghe podcast · Listening · tuần W1 SEP · hạn hết T2 13/09 · quá hạn 3 ngày', JSON.stringify(gk));
@@ -147,7 +147,7 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     assert(f([PA()], C).text === '1 PA · chưa có kết quả', 'chưa có kết quả');
     assert(f([PA({ lastOutcome: 'improved' }), PA()], C).text === '2 PA · 1 có kết quả', 'một phần');
     assert(f([PA({ lastOutcome: 'improved' }), PA({ lastOutcome: 'partial' })], C).text === '2 PA · đủ kết quả', 'đủ');
-    assert(f([], C).tiep?.text === 'Ghi kết quả PA', 'việc tiếp');
+    assert(f([], C).tiep?.text === 'Ghi kết quả', 'việc tiếp');
   });
 
   // ==================================================================== 2. Máy chủ: chữ việc, đường dẫn mở ngăn Case, người làm PA
@@ -322,7 +322,7 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
         { caseId: 1, topic: 'reading', viecTiep: null },
         { caseId: 2, topic: 'speaking', viecTiep: null },
         { caseId: 3, topic: 'listening', viecTiep: { chu: 'Ghi kết quả PA A', loaiHan: 'cap-nhat-pa', han: '2026-09-20', paId: 1 } },
-        { caseId: 4, topic: 'writing2', viecTiep: { chu: 'Đề ra PA', loaiHan: 'lap-pa', han: null } },
+        { caseId: 4, topic: 'writing2', viecTiep: { chu: 'Thêm PA', loaiHan: 'lap-pa', han: null } },
         { caseId: 5, topic: 'reading', viecTiep: { chu: 'Ghi kết quả PA B', loaiHan: 'cap-nhat-pa', han: '2026-09-10', paId: 2 } },
       ],
       yThuc: null,

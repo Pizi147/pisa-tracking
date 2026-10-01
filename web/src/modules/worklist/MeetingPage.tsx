@@ -211,7 +211,7 @@ export function MeetingBoard() {
 
           {/* ── hai khối thu gọn (Q16) — luôn có số ── */}
           <details>
-            <summary className="cursor-pointer text-sm text-slate-300 py-1">Việc đã giao ({soVanDaGiao})</summary>
+            <summary className="cursor-pointer text-sm text-slate-300 py-1">Việc được giao ({soVanDaGiao})</summary>
             <div className="pt-2"><ManagerTaskList periodId={periodId} /></div>
           </details>
           <details>

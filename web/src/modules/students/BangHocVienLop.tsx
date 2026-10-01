@@ -165,7 +165,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
                 </>
               ) : <span className="tabular-nums text-slate-200"><TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /></span>}
             </td>
-            <td className="td whitespace-nowrap text-xs tabular-nums text-slate-300" title="Mốc kế tiếp đã xếp lịch">
+            <td className="td whitespace-nowrap text-xs tabular-nums text-slate-300" title="Test sắp tới đã xếp lịch">
               {sapToi ?? <span className="text-slate-600">—</span>}
             </td>
             <td className="td text-right tabular-nums"

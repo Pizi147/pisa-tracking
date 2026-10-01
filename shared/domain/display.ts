@@ -254,10 +254,13 @@ export type DeadlineKind = (typeof DEADLINE_KINDS)[number];
  * PR-UX0 (B-2/B-3): "việc" là tiêu đề dòng ở chỗ hiện hạn, còn `<Han>` chỉ nói mốc ("hạn hết T2 28/09").
  * PR-N1 (R-PA1/R-PA3): hạn ghi kết quả tuần là HẾT THỨ HAI tuần kế tiếp; việc có hạn nói rõ tuần ("Ghi kết quả tuần W4 SEP").
  */
+/** D-046: một chữ cho việc lập PA; nơi so khớp (việc học viên, ngăn Case) dùng hằng này, không so chuỗi hiển thị. */
+export const CHU_THEM_PA = 'Thêm PA';
+
 const DEADLINE_VIEC: Record<DeadlineKind, { viec: string; tien: 'hạn' | 'hạn hết T2' | 'dự kiến kết thúc' }> = {
   /* PR-NEN Q16: giữ khoá `xac-minh-sos`, chữ đổi theo thuật ngữ chốt (như N1 Q4). */
   'xac-minh-sos': { viec: 'Xác nhận nguyên nhân', tien: 'hạn' },
-  'lap-pa': { viec: 'Đề ra PA', tien: 'hạn' },
+  'lap-pa': { viec: CHU_THEM_PA, tien: 'hạn' },
   'cap-nhat-pa': { viec: 'Ghi kết quả PA', tien: 'hạn hết T2' },
   'nhap-diem': { viec: 'Nhập điểm', tien: 'hạn' },
   'du-kien-ket-thuc': { viec: 'Dự kiến kết thúc', tien: 'dự kiến kết thúc' },

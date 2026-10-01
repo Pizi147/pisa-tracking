@@ -1638,7 +1638,7 @@ api.post('/cases/:id/followups', requireAuth, wrap((req) => {
 /*
  * ĐƯỜNG "HƯỚNG XỬ LÝ" ĐÃ BỎ (mục 9.3).
  *
- * Case chỉ còn MỘT đường kết thúc: nút "Hoàn thành case" → POST /cases/:id/outcome. Giữ hai
+ * Case chỉ còn MỘT đường kết thúc: nút "Hoàn thành Case" → POST /cases/:id/outcome. Giữ hai
  * đường đóng song song là giữ hai dấu vết khác nhau cho cùng một việc, và sớm muộn sẽ có
  * case đóng được ở đường này mà màn hình ở đường kia bảo là chưa đóng được.
  *
