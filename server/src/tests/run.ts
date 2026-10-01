@@ -980,7 +980,7 @@ check('[6.2→v3] Mock Test FT điểm dưới kỳ vọng: tín hiệu nối NG
     .get(classId('CP FT 110')) as any;
   const cpPeriod = periodOf('2026-11-09');
   const attempt = attempts.createAttempt(P.cpManager, {
-    studentId: s.id, cycleId: s.cycle_id, classId: classId('CP FT 110'), periodId: cpPeriod,
+    studentId: s.id, cycleId: s.cycle_id, periodId: cpPeriod,
   }) as any;
 
   const exp = s.target_score;           // từ MT3 trở đi kỳ vọng bằng target
@@ -1140,7 +1140,7 @@ check('[9.4] Case chỉ sống nhờ con số vừa sửa thì rút khỏi danh 
     .get(classId('UB FT 401')) as any;
   const ubManager = loadPrincipal(userByRole('manager', 'UB'));
   const attempt = attempts.createAttempt(ubManager, {
-    studentId: s.id, cycleId: s.cycle_id, classId: classId('UB FT 401'), periodId: periodOf('2026-12-07'),
+    studentId: s.id, cycleId: s.cycle_id, periodId: periodOf('2026-12-07'),
   }) as any;
   const exp = s.target_score;
   const t = (skill: string) => loadPrincipal(teacherOfSkill('UB FT 401', skill));
@@ -3823,7 +3823,7 @@ check('Trượt Listening ở MT1 rồi MT2 → ĐÚNG MỘT case, tên đổi t
   const lr = loadPrincipal(teacherOfSkill(cls, 'listening'));
   const mk = (no: number, date: string) => {
     const a = attempts.createAttempt(mgr, {
-      studentId: s.id, cycleId: s.cycle_id, classId: classId(cls), periodId: periodOf(date),
+      studentId: s.id, cycleId: s.cycle_id, periodId: periodOf(date),
     }) as any;
     return a;
   };
@@ -3898,7 +3898,7 @@ check('Case đã đóng mà MT sau trượt lại → MỞ CASE MỚI nối vào
   const rt = loadPrincipal(teacherOfSkill(cls, 'reading'));
   const mk = (date: string) => {
     const a = attempts.createAttempt(mgr, {
-      studentId: s.id, cycleId: s.cycle_id, classId: classId(cls), periodId: periodOf(date),
+      studentId: s.id, cycleId: s.cycle_id, periodId: periodOf(date),
     }) as any;
     return a;
   };
@@ -9033,7 +9033,7 @@ const prnRaw = (skill: 'listening' | 'reading', band: number): number => {
 /* PR-MT (rà #119 mục 5): tạo lượt ở tuần đã qua nay thành MT lịch sử. Em thử PR-N là lượt THƯỜNG xếp từ trước tuần thi — đặt lại cờ
  * như lúc được xếp (không nới phép kiểm: chỉ số đo lượt thường). */
 const prnAttempt = (st: { id: number; cycleId: number }, weekStart: string) => {
-  const id = (attempts.createAttempt(P.admin, { studentId: st.id, cycleId: st.cycleId, classId: prnClass, periodId: periodOf(weekStart) }) as any).id as number;
+  const id = (attempts.createAttempt(P.admin, { studentId: st.id, cycleId: st.cycleId, periodId: periodOf(weekStart) }) as any).id as number;
   conn.prepare('UPDATE assessment_attempts SET lich_su = 0 WHERE id = ?').run(id);
   return id;
 };

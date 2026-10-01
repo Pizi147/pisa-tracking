@@ -149,7 +149,7 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
   const conn = db();
   const c = loadCase(caseId);
   if (!canCloseCase(p, c)) {
-    throw badRequest('Chỉ Quản lý, hoặc GVCN dạy đúng môn của Case, mới hoàn thành được Case này.');
+    throw forbidden('Chỉ Quản lý, hoặc GVCN dạy đúng môn của Case, mới hoàn thành được Case này.');
   }
   const outcome: string = input.outcome ?? '';
   if (!(CASE_OUTCOMES as readonly string[]).includes(outcome)) {
@@ -266,7 +266,8 @@ export function setFollowUntil(p: Principal, caseId: number, date: string | null
  * Case không có môn (`topic` rỗng, dữ liệu cũ) thì GVCN vẫn được, để dữ liệu cũ không bị khoá.
  */
 export function canCloseCase(p: Principal, c: { class_id?: number | null; student_id?: number | null; topic?: string | null }): boolean {
-  if (can(p, PERMISSIONS.MEETING_EDIT, { branchId: null, anyScope: true })) return true;
+  /* PR-Dọn (rà thêm, ngoài 24 mục quét): bỏ dòng `can(MEETING_EDIT, { anyScope: true })` đứng đầu — nó cho Quản lý ở BẤT KỲ chi nhánh
+     hoàn thành Case của chi nhánh khác. Quản lý / Quản trị trong phạm vi đã đi qua `CASE_CLOSE` ngay dưới. */
   if (can(p, PERMISSIONS.CASE_CLOSE, { classId: c.class_id ?? null, studentId: c.student_id ?? null })) return true;
   if (!c.class_id || !isCoreTeacherOf(p, c.class_id)) return false;
   if (!c.topic) return true;
@@ -426,6 +427,7 @@ export function reportIssue(p: Principal, input: {
   const urgency = input.urgency ?? DEFAULT_URGENCY;
   const detectedAt = input.detectedAt ?? demoToday();
   if (!isIsoDate(detectedAt)) throw badRequest('Ngày phát hiện không hợp lệ.');
+  if (detectedAt > demoToday()) throw badRequest('Ngày phát hiện không được ở tương lai.');   // PR-Dọn (quét #19)
   const key = input.idempotencyKey?.trim() || null;
   const daCo = caseDaCoTheoKhoa(key);
   if (daCo) return caseDetail(p, daCo);
@@ -1326,7 +1328,7 @@ export function setDisposition(p: Principal, caseId: number, input: {
 
   if (closing) {
     if (!canCloseCase(p, c)) {
-      throw badRequest('Chỉ Quản lý, hoặc GVCN dạy đúng môn của Case, mới hoàn thành được Case này.');
+      throw forbidden('Chỉ Quản lý, hoặc GVCN dạy đúng môn của Case, mới hoàn thành được Case này.');
     }
     const disposition = input.disposition ?? c.disposition;
     if (!disposition) {

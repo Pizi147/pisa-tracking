@@ -20,6 +20,7 @@ const KHONG_THEM_MA = 'Không thêm lộ trình/chương trình mới ở đây 
 
 /* ------------------------------------------------------------------ lộ trình */
 
+/** `includeInactive` = bản Quản trị: cả mã đã ngừng, kèm `inUse`. Bản chọn (`/ref/routes`) không có `inUse` (PR-Dọn, quét #10). */
 export function listRoutes(includeInactive = false) {
   const conn = db();
   const rows = conn
@@ -31,8 +32,10 @@ export function listRoutes(includeInactive = false) {
     kyVong: LUAT_LO_TRINH_HIEN[r.code]?.kyVong ?? null,
     lichMt: LUAT_LO_TRINH_HIEN[r.code]?.lichMt ?? null,
     /* Đang có bao nhiêu lộ trình học viên dùng mã này — con số quyết định có ngừng được không. */
-    inUse: (conn.prepare('SELECT COUNT(*) n FROM learning_cycles WHERE route = ?').get(r.code) as any).n
-      + (conn.prepare('SELECT COUNT(*) n FROM classes WHERE route = ?').get(r.code) as any).n,
+    ...(includeInactive ? {
+      inUse: (conn.prepare('SELECT COUNT(*) n FROM learning_cycles WHERE route = ?').get(r.code) as any).n
+        + (conn.prepare('SELECT COUNT(*) n FROM classes WHERE route = ?').get(r.code) as any).n,
+    } : {}),
   }));
 }
 

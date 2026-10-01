@@ -15,7 +15,7 @@ export function boLichTuTao(conn: any, cycleId: number) {
 export function luotThu(conn: any, createAttempt: (p: any, input: any) => any, p: any,
   o: { studentId: number; cycleId: number; classId: number; no: number; periodId: number }): any {
   const tao = (attemptNo: number) =>
-    createAttempt(p, { studentId: o.studentId, cycleId: o.cycleId, classId: o.classId, attemptNo, periodId: o.periodId });
+    createAttempt(p, { studentId: o.studentId, cycleId: o.cycleId, attemptNo, periodId: o.periodId });
   for (let n = 1; n < o.no; n += 1) {
     if (conn.prepare(`SELECT 1 FROM assessment_attempts WHERE cycle_id = ? AND attempt_no = ? AND status != 'cancelled'`).get(o.cycleId, n)) continue;
     conn.prepare('UPDATE assessment_attempts SET lich_su = 1 WHERE id = ?').run(tao(n).id);

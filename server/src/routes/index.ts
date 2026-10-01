@@ -327,9 +327,20 @@ api.get('/ref/users', requireAuth, wrap((req) => {
   if (!can(p, PERMISSIONS.MEETING_EDIT, { anyScope: true }) && !can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true })) {
     return db().prepare('SELECT id, code, full_name AS fullName, title FROM users WHERE id = ?').all(p.userId);
   }
+  /* PR-Dọn (quét #9): ngoài Quản trị (toàn hệ thống), chỉ người có vai đang hoạt động ở chi nhánh mình quản (cộng chính mình). */
+  const scope = scopeFor(p, PERMISSIONS.MEETING_EDIT);
+  if (scope.all || can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true })) {
+    return db().prepare("SELECT id, code, full_name AS fullName, title FROM users WHERE status='active' ORDER BY full_name").all();
+  }
+  const cn = scope.branchIds.length ? scope.branchIds : [-1];
   return db()
-    .prepare("SELECT id, code, full_name AS fullName, title FROM users WHERE status='active' ORDER BY full_name")
-    .all();
+    .prepare(
+      `SELECT id, code, full_name AS fullName, title FROM users u WHERE status='active'
+         AND (u.id = ? OR EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.status = 'active'
+                                   AND ur.branch_id IN (${cn.map(() => '?').join(',')})))
+        ORDER BY full_name`,
+    )
+    .all(p.userId, ...cn);
 }));
 
 /**
@@ -345,6 +356,10 @@ api.get('/ref/teachers', requireAuth, wrap((req) => {
   const p = principalOf(req);
   if (!can(p, PERMISSIONS.CLASS_ASSIGN, { anyScope: true })) return [];
   const branchId = qInt(req, 'branchId');
+  /* PR-Dọn (quét #9): chi nhánh hỏi phải nằm trong phạm vi phân công của người xem; không gửi → mọi chi nhánh trong phạm vi. */
+  const scope = scopeFor(p, PERMISSIONS.CLASS_ASSIGN);
+  const cn = scope.all ? (branchId ? [branchId] : null) : scope.branchIds.filter((b) => !branchId || b === branchId);
+  if (cn && !cn.length) return [];
   return db()
     .prepare(
       `SELECT u.id, u.code, u.full_name AS name, u.title,
@@ -355,10 +370,10 @@ api.get('/ref/teachers', requireAuth, wrap((req) => {
         WHERE u.status = 'active'
           AND EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id
                        WHERE ur.user_id = u.id AND ur.status = 'active' AND r.key IN ('teacher', 'manager')
-                         AND (? IS NULL OR ur.branch_id IS NULL OR ur.branch_id = ?))
+                         AND (ur.branch_id IS NULL${cn ? ` OR ur.branch_id IN (${cn.map(() => '?').join(',')})` : ' OR 1=1'}))
         ORDER BY u.full_name`,
     )
-    .all(branchId ?? null, branchId ?? null)
+    .all(...(cn ?? []))
     /* MH6: kỹ năng tự khai (5 ô) — gợi ý phân công, không phải quyền. */
     .map((u: any) => ({ ...u, skills: String(u.skills ?? '').split(',').filter(Boolean) }));
 }));
@@ -1274,7 +1289,9 @@ api.get('/students/:id/cycles', requireAuth, wrap((req) => {
 
 api.post('/students/:id/cycles', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return cycleSvc.createCycle(principalOf(req), { ...req.body, studentId: pInt(req, 'id') });
+  /* PR-Dọn (quét #20): chỉ lấy các khoá cần — không trải cả thân yêu cầu (ghi nguyên vào audit `after`). */
+  const { route, targetScore, examPeriodId, startedAt, note } = (req.body ?? {}) as Record<string, any>;
+  return cycleSvc.createCycle(principalOf(req), { route, targetScore, examPeriodId, startedAt, note, studentId: pInt(req, 'id') });
 }));
 
 /** Một lộ trình, để panel Kế hoạch học nạp đúng giá trị đang có. */
@@ -1337,6 +1354,7 @@ api.post('/cycles/:id/target-revision', requireAuth, wrap((req) => {
 api.get('/classes/:id/progress', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   const id = pInt(req, 'id');
+  require_(principalOf(req), PERMISSIONS.ATTEMPT_VIEW, { classId: id }, 'Lớp này nằm ngoài phạm vi bạn được xem.');   // PR-Dọn (quét #10)
   const pr = scheduleSvc.classProgress(id);
   /* K2-22: dòng tóm tắt MT của lớp FT (panel Tuần khai giảng) — chỉ người xem được lớp; người khác không có dòng này. */
   const tomTatMt = pr.programmeCode === 'FT' && can(principalOf(req), PERMISSIONS.ATTEMPT_VIEW, { classId: id }) ? scheduleSvc.tomTatMt(id) : null;
@@ -1415,8 +1433,13 @@ api.patch('/classes/:id/progress', requireAuth, wrap((req) => {
 }));
 
 /** Lịch MT hệ thống ĐỀ XUẤT cho một lộ trình FT, tính từ tuần bắt đầu học. */
-api.get('/cycles/:id/suggested-mocks', requireAuth, wrap((req) =>
-  scheduleSvc.suggestedMockWeeks(pInt(req, 'id'))));
+api.get('/cycles/:id/suggested-mocks', requireAuth, wrap((req) => {
+  /* PR-Dọn (quét #10): chỉ người xem được em của lộ trình. */
+  const c = cycleSvc.cycleById(pInt(req, 'id'));
+  if (!c) throw notFound('Không tìm thấy lộ trình');
+  require_(principalOf(req), PERMISSIONS.STUDENT_VIEW, { studentId: c.student_id }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
+  return scheduleSvc.suggestedMockWeeks(c.id);
+}));
 
 /**
  * Áp lịch đề xuất vào thực tế. KHÔNG đụng vào lượt người đã chốt tay và lượt đã làm xong —
@@ -2220,9 +2243,10 @@ api.post('/admin/accounts/:id/xoa', requireAuth, wrap((req) => {
 }));
 
 /** Lộ trình và loại lớp — nay là dữ liệu, Quản trị hệ thống sửa được (mục 7.3). */
-api.get('/ref/routes', wrap(() => sysconfigSvc.listRoutes()));
+/* PR-Dọn (quét #10): danh mục cần đăng nhập; số "đang dùng" (lộ quy mô) chỉ ở bản Quản trị. */
+api.get('/ref/routes', requireAuth, wrap(() => sysconfigSvc.listRoutes()));
 api.get('/admin/routes', requireAuth, wrap((req) => {
-  principalOf(req);
+  require_(principalOf(req), PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, 'Chỉ Quản trị hệ thống xem được danh mục lộ trình đầy đủ.');
   return sysconfigSvc.listRoutes(true);
 }));
 api.put('/admin/routes', requireAuth, wrap((req) => sysconfigSvc.saveRoute(principalOf(req), req.body ?? {})));

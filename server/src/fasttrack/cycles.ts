@@ -11,6 +11,7 @@ import { addJourney, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, mondayOf, periodById } from '../platform/week.ts';
 import { apLichMacDinh } from '../classes/schedule.ts';
 import { taoMtMacDinh } from './mtMacDinh.ts';
+import { activeRouteCodes } from '../platform/sysconfig.ts';
 
 /**
  * Lộ trình học của một học viên.
@@ -131,6 +132,8 @@ export function createCycle(p: Principal, input: {
   const student = conn.prepare('SELECT * FROM students WHERE id = ?').get(input.studentId) as any;
   if (!student) throw notFound('Không tìm thấy học viên');
   if (input.examPeriodId && !periodById(Number(input.examPeriodId))) throw badRequest('Tuần dự kiến thi không hợp lệ.');
+  /* PR-Dọn (quét #20): chỉ nhận mã lộ trình đang dùng trong danh mục (Quản trị › Danh mục). */
+  if (input.route != null && !activeRouteCodes().includes(String(input.route))) throw badRequest('Lộ trình không có trong danh mục đang dùng.');
   const startedAt = input.startedAt ?? nowIso().slice(0, 10);
   if (!isIsoDate(startedAt)) throw badRequest('Ngày bắt đầu không hợp lệ.');
   const t = docTarget(input.targetScore);

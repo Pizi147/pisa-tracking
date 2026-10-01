@@ -5,7 +5,7 @@ import {
   TUTOR_REPORT_CATEGORIES, UNIT_STATUSES, trangThaiDonVi, trangThaiO, type DueState,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, diffDays, isIsoDate, notFound, nowIso, padCode } from '../util.ts';
+import { badRequest, diffDays, forbidden, isIsoDate, notFound, nowIso, padCode } from '../util.ts';
 import { can, require_, scopeFor, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { owningMonth, periodById, reportEditWindow } from '../platform/week.ts';
@@ -686,7 +686,7 @@ export function updateTask(p: Principal, taskId: number, patch: any) {
       .run(taskId, map[k], t[map[k]] === null ? null : String(t[map[k]]), v === null ? null : String(v), p.userId, nowIso());
   }
   if (patch.followerIds !== undefined) {
-    if (!manage) throw badRequest('Chỉ người quản lý công việc mới đổi được người theo dõi.');
+    if (!manage) throw forbidden('Chỉ người quản lý công việc mới đổi được người theo dõi.');
     setFollowers(conn, taskId, p.userId, t.branch_id, patch.followerIds);
   }
   if (patch.progress === 'done' && t.progress !== 'done') { sets.push('completed_at = ?'); params.push(nowIso()); }

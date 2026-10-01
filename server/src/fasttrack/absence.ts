@@ -206,7 +206,7 @@ export function requestAbsenceMove(p: Principal, attemptId: number, skills: stri
 } = {}): { outcomes: MoveOutcome[] } {
   const attempt = loadAttempt(attemptId);
   if (!canRequest(p, attempt)) {
-    throw badRequest('Chỉ giáo viên chủ nhiệm của lớp và Quản lý mới xử lý được việc vắng thi.');
+    throw forbidden('Chỉ giáo viên chủ nhiệm của lớp và Quản lý mới xử lý được việc vắng thi.');
   }
   if (attempt.status === 'cancelled') throw badRequest('Đợt này đã huỷ.');
   const list = [...new Set(skills)];
@@ -392,7 +392,7 @@ export function decideAbsenceMove(p: Principal, requestId: number, input: {
   const req = conn.prepare('SELECT * FROM skill_move_requests WHERE id = ?').get(requestId) as MoveRequest;
   if (!req) throw notFound('Không tìm thấy đề nghị dời lịch.');
   const attempt = loadAttempt(req.attempt_id);
-  if (!canDecide(p, attempt)) throw badRequest('Chỉ Quản lý mới trả lời được đề nghị dời lịch.');
+  if (!canDecide(p, attempt)) throw forbidden('Chỉ Quản lý mới trả lời được đề nghị dời lịch.');
   if (req.status !== 'pending') {
     throw badRequest('Đề nghị này đã được xử lý — không trả lời lại được.');
   }
@@ -552,7 +552,7 @@ export function restoreCancelledSkill(p: Principal, attemptId: number, skill: st
 } = {}) {
   const attempt = loadAttempt(attemptId);
   if (!canDecide(p, attempt)) {
-    throw badRequest('Chỉ Quản lý mới khôi phục được phần thi đã huỷ và đặt tuần mới.');
+    throw forbidden('Chỉ Quản lý mới khôi phục được phần thi đã huỷ và đặt tuần mới.');
   }
   const rows = ensureSkillRows(attemptId);
   const row = rows.find((r) => r.skill === skill);
@@ -794,7 +794,7 @@ export function resolveLateNoShow(
 ) {
   const attempt = loadAttempt(attemptId);
   if (!canDecide(p, attempt)) {
-    throw badRequest('Chỉ Quản lý mới hiệu chỉnh được dấu "-" của một tuần đã kết thúc.');
+    throw forbidden('Chỉ Quản lý mới hiệu chỉnh được dấu "-" của một tuần đã kết thúc.');
   }
   if (decision !== 'confirm' && decision !== 'reject') throw badRequest('Quyết định không hợp lệ.');
   const assessed = assessedSkillOf(skill);
