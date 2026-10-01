@@ -7,8 +7,9 @@ import { WeekPicker } from '../../ui/Filters.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { Empty, Field, NutChon, SectionNote, Skeleton, Status, TargetText, Th} from '../../ui/ui.tsx';
-import { fmtDate } from '../../lib/format.ts';
-import { BASELINE_SOURCES, BASELINE_SOURCE_LABEL, GIAI_THICH_KCK, KCK, duongDotTest } from '@shared/domain/index.ts';
+import { addDaysStr } from '../../lib/format.ts';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { BASELINE_SOURCES, BASELINE_SOURCE_LABEL, GIAI_THICH_KCK, KCK, duongDotTest, ngay, tuanLich } from '@shared/domain/index.ts';
 
 type Suggested = {
   attemptNo: number; studyWeek: number; periodId: number; weekStart: string; code: string;
@@ -90,6 +91,7 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, canEditCycle = t
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 
+  const { homNay } = useNgayNghiepVu();
   const rows = sugg.data ?? [];
   /* Có gì để áp không — nếu mọi lượt đều đã đúng hoặc đã khoá thì nút không nên sáng. */
   const actionable = rows.filter(
@@ -178,8 +180,8 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, canEditCycle = t
                           <td className="td text-slate-100 whitespace-nowrap">MT{r.attemptNo}</td>
                           <td className="td text-slate-400 whitespace-nowrap tabular-nums">tuần {r.studyWeek}</td>
                           <td className="td whitespace-nowrap">
-                            <span className="text-slate-200">{r.code}</span>
-                            <span className="block text-[11px] text-slate-500">{fmtDate(r.weekStart)}</span>
+                            <span className="text-slate-200">{tuanLich(r.weekStart, homNay)}</span>
+                            <span className="block text-[11px] text-slate-500">{ngay(r.weekStart, homNay)} – {ngay(addDaysStr(r.weekStart, 6), homNay)}</span>
                           </td>
                           <td className="td">
                             {/*

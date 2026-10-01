@@ -10,7 +10,7 @@ import { TenGiaoVien } from './TenGiaoVien.tsx';
 import { DaiLopChuyen } from './DaiChuyenLop.tsx';
 import type { TinhTrangXoaKetThuc } from './XoaKetThucLopPanel.tsx';
 import {
-  ROUTE_NAME, badgeLop, duongLichTest, laVaiQuanLy, needScoresText, ngay, nhomGiaoVienBoMon, nutChinhDauTrang, tuanKhoa, tuanLich, type BadgeLop, type DaiLop, type NhomGiaoVien, type WorkScope,
+  ROUTE_NAME, badgeLop, duongLichTest, laVaiQuanLy, needScoresText, nhomGiaoVienBoMon, nutChinhDauTrang, tuanKhoa, tuanLich, type BadgeLop, type DaiLop, type NhomGiaoVien, type WorkScope,
 } from '@shared/domain/index.ts';
 
 /** `GET /classes/:id/overview` (server/src/classes/classes.ts → classOverview). */
@@ -134,7 +134,7 @@ export function DauTrangLop({ data, periodId, onViec, onBanGiao }: {
   return (
     <header className="card space-y-2 p-3 sm:p-4">
       {data.status === 'finished' && (
-        <DaiChiXem>Lớp đã kết thúc{data.finishedAt ? ` ${ngay(data.finishedAt, homNay)}` : ''} — chỉ xem</DaiChiXem>
+        <DaiChiXem>Lớp đã kết thúc{data.finishedAt ? ` ${tuanLich(data.finishedAt, homNay)}` : ''} — chỉ xem</DaiChiXem>
       )}
       <div className="flex flex-wrap items-end gap-2">
         <div className="min-w-0">

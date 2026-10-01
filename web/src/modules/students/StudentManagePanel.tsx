@@ -319,7 +319,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
           {cycle.ratio ? (
             <p className="m-0 text-sm text-slate-200">
               {cycle.programmeName ?? cycle.label}
-              {cycle.endWeek && <span className="text-slate-500"> · kết thúc {cycle.endWeek.code}</span>}
+              {cycle.endWeek && <span className="text-slate-500"> · kết thúc {tuanLich(cycle.endWeek.weekStart, homNay)}</span>}
             </p>
           ) : (
             <p className="m-0 text-sm text-slate-200">

@@ -55,4 +55,26 @@ export async function runPrUxfBTests(t: YThucTestKit) {
     assert(/hienONgay\(value, kieu, homNay\)/.test(doc('web/src/ui/ONgay.tsx')), 'ONgay truyền homNay');
     assert(/W4 SEP hoặc dd\/mm/.test(doc('web/src/ui/ONgay.tsx')), 'placeholder ô tuần');
   });
+
+  // ------------------------------------------------------------------ Task 2 · hồ sơ lớp, dải chuyển lớp, thẻ Lịch thi, lịch MT
+  const yc: any = await import('../duyet/yeuCau.ts');
+  check('UXF-b (2) · U5: thẻ Lịch thi (Chờ duyệt) nói "đề nghị W…" / "thi tuần W…", năm hiện tại không có "2026"', () => {
+    const the = yc.hopChoDuyet(t.P.mbManager).the.filter((x: any) => x.loai === 'lich_thi' && /đề nghị W/.test(x.dong[0] ?? ''));
+    assert(the.length > 0, 'seed không có thẻ Lịch thi chờ có tuần đề nghị');
+    for (const x of the) {
+      assert(/đề nghị W\d [A-Z]{3}(?! \d)/.test(x.dong[0]), x.dong[0]);
+      assert(!x.neuDuyet || /thi tuần W\d [A-Z]{3}\.$/.test(x.neuDuyet), String(x.neuDuyet));
+    }
+  });
+  check('UXF-b (2) · quét chữ: hồ sơ lớp, dải Sắp chuyển, lịch MT, panel Tạm dừng nói mã tuần', () => {
+    assert(!/ngày \{ngay\(dai\.ngayRaLenh/.test(doc('web/src/modules/classes/DaiChuyenLop.tsx')), 'R5-1: dải Sắp chuyển còn "ngày dd/mm"');
+    assert(!/ngay\(data\.startWeekStart/.test(doc('web/src/modules/classes/ClassProgressPanel.tsx')), 'Khai giảng còn ngày');
+    const dt = doc('web/src/modules/classes/DauTrangLop.tsx');
+    assert(!/ngay\(data\.finishedAt/.test(dt) && /tuanLich\(data\.finishedAt/.test(dt), 'Lớp đã kết thúc');
+    const ta = doc('web/src/modules/classes/TeacherAssignPanel.tsx');
+    assert(!/ngay\(h\.from/.test(ta) && /tuanLich\(h\.from/.test(ta), 'Đã từng dạy');
+    const kh = doc('web/src/modules/students/StudentPlanPanel.tsx');
+    assert(!/fmtDate\(r\.weekStart\)/.test(kh) && !/\{r\.code\}/.test(kh), 'lịch MT còn .code / dd/mm/yyyy');
+    assert(!/kết thúc \{cycle\.endWeek\.code\}/.test(doc('web/src/modules/students/StudentManagePanel.tsx')), 'panel Tạm dừng in mã tuần có năm');
+  });
 }

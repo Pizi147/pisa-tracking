@@ -8,7 +8,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { Field, SectionNote, Skeleton, Status } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { MOC_KIEM_TRA_NORMAL } from '../../ui/chu.ts';
-import { kyHieuLop, lichMtMacDinh, ngay, tuanLich } from '@shared/domain/index.ts';
+import { kyHieuLop, lichMtMacDinh, tuanLich } from '@shared/domain/index.ts';
 
 type Progress = {
   programmeCode: string | null; programmeName: string | null;
@@ -91,7 +91,7 @@ export function ClassProgressPanel({ classId, classCode, tieuDe, onClose, onDone
           <div className="rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>
             <p className="text-sm text-slate-100 m-0">{data.label ?? 'Chưa tính được tiến độ'}</p>
             {data.startWeekStart && (
-              <p className="text-xs text-slate-500 mt-1 mb-0">Khai giảng {tuanLich(data.startWeekStart, homNay)} · {ngay(data.startWeekStart, homNay)}</p>
+              <p className="text-xs text-slate-500 mt-1 mb-0">Khai giảng {tuanLich(data.startWeekStart, homNay)}</p>
             )}
           </div>
 
