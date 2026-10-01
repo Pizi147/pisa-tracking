@@ -34,3 +34,27 @@ export function tuanKhoa(n: number, tong: number): string {
   if (!Number.isInteger(n) || !Number.isInteger(tong) || n < 1 || tong < 1) return '—';
   return `W${n}/${tong}`;
 }
+
+/** "tuần học 3/8" (lớp thường, có tổng) · "tuần học thứ 9" (FT — không giới hạn tuần). Cùng thân với UXF-a Task 4. */
+export const chuTuanHoc = (tuan: number, tong: number | null): string => (tong ? `tuần học ${tuan}/${tong}` : `tuần học thứ ${tuan}`);
+
+/**
+ * Q31-11: tuần học thứ n của em FT tại tuần `tuan` — đếm từ tuần bắt đầu lộ trình, bỏ tuần Tạm dừng. Trước tuần bắt đầu hoặc tuần đang dừng → null.
+ * Tuần Tạm dừng = tuần có ngày Tạm dừng tới TRƯỚC tuần Quay lại (Tạm dừng và Quay lại cùng tuần → không trừ tuần nào).
+ */
+export function tuanHocFt(batDau: string, tuan: string, dung: readonly { tu: string; den: string | null }[]): number | null {
+  const a = mondayOfDate(batDau);
+  const t = mondayOfDate(tuan);
+  if (t < a) return null;
+  const soTuan = (x: string, y: string) => Math.round((Date.parse(`${y}T00:00:00Z`) - Date.parse(`${x}T00:00:00Z`)) / (7 * 86_400_000));
+  let n = soTuan(a, t) + 1;
+  for (const k of dung) {
+    const tu = mondayOfDate(k.tu);
+    const den = k.den ? mondayOfDate(k.den) : null;
+    if (t >= tu && (den === null || t < den)) return null;
+    const lo = tu < a ? a : tu;
+    const hi = den === null || den > t ? t : den;   // tuần `t` không nằm trong khoảng dừng → hi là cận trên mở
+    if (hi > lo) n -= soTuan(lo, hi);
+  }
+  return n;
+}

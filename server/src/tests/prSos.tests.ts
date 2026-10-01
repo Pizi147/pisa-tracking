@@ -412,7 +412,8 @@ export async function runPrSosTests(t: YThucTestKit) {
     const iv = plansOf(c.id)[0];
     const cause = viecCua(P.w2Teacher).find((i) => i.key === `cause:${c.id}`);
     assert(cause && cause.tieuDe === `Xác nhận nguyên nhân Writing Task 2 · ${st.name}` && cause.due === c.han_xac_nhan && cause.actionLabel === 'Xác nhận nguyên nhân', JSON.stringify(cause));
-    assert(profileSvc.studentProfile(P.w2Teacher, st.id).headline.next?.text === 'Xác nhận nguyên nhân Writing Task 2', 'đầu hồ sơ chưa dùng việc tiếp v4');
+    /* PR-VAI-b (Q5): `headline.next` → `dauHoSo.viec.cuaBan` — GVBM W2 thấy "Xác nhận nguyên nhân Writing Task 2" là việc của mình. */
+    assert(profileSvc.studentProfile(P.w2Teacher, st.id).dauHoSo.viec.cuaBan[0]?.chu === 'Xác nhận nguyên nhân Writing Task 2', 'đầu hồ sơ chưa dùng việc tiếp v4');
     sosAuto.xacNhanCase(P.w2Teacher, c.id, { primaryCode: W2_CODE, urgency: 'attention', moTa: 'Em viết lạc đề ở Task 2, lập luận yếu.' });
     const ds = viecCua(P.w2Teacher);
     const xn = ds.find((i) => i.key === `xnpa:${iv.id}`);

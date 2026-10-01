@@ -628,12 +628,13 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     assert(profFt.currentClass?.khoa === null, `FT không có khoá đang học: ${JSON.stringify(profFt.currentClass?.khoa)}`);
   });
 
-  check('PR-Qb (3) · Q11: headline.next.category (khi có) thuộc đúng bộ hạng mục case', () => {
+  /* PR-VAI-b (Q5): `headline.next` → `dauHoSo.viec` (mọi việc của em theo người) — cùng ý: kỹ năng của việc thuộc đúng bộ hạng mục case. */
+  check('PR-Qb (3) · Q11: kỹ năng của mỗi việc ở đầu hồ sơ (dauHoSo.viec, khi có) thuộc đúng bộ hạng mục case', () => {
     const CATEGORY_HOP_LE = new Set<string>(d.CASE_CATEGORIES);
     for (const sid of [HV1, HV40]) {
-      const prof = studentProfile(P.admin, sid);
-      if (prof.headline.next) {
-        assert(CATEGORY_HOP_LE.has(prof.headline.next.category), `category lạ: ${prof.headline.next.category}`);
+      const v = (studentProfile(P.admin, sid) as any).dauHoSo.viec;
+      for (const x of [...v.cuaBan, ...v.nguoiKhac]) {
+        if (x.kyNang) assert(CATEGORY_HOP_LE.has(x.kyNang), `category lạ: ${x.kyNang}`);
       }
     }
   });

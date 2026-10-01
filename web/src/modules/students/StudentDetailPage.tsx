@@ -1,12 +1,13 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { BoLocDoan, Card, DaiChiXem, Empty, ErrorState, Info, Level, Outcome, Skeleton, Status, TargetText, Th} from '../../ui/ui.tsx';
+import { BoLocDoan, Card, DaiChiXem, Empty, ErrorState, Info, Level, Outcome, Skeleton, TargetText, Th} from '../../ui/ui.tsx';
 import { Modal } from '../../ui/Drawer.tsx';
 import { cuonOnDinh } from '../../lib/cuonOnDinh.ts';
-import { SkillBoard, type SkillBoardRow } from '../cases/SkillBoard.tsx';
+import { MuiTen, SkillBoard, type SkillBoardRow } from '../cases/SkillBoard.tsx';
 import { KetLuanKhoa, MiniTestO } from './KetLuanKhoa.tsx';
 import { HanhTrinh } from './HanhTrinh.tsx';
+import { DongThongTin, ThanhViec, type Viec } from './DauHoSo.tsx';
 import { LichSuLop } from './LichSuLop.tsx';
 import { NganCase } from './NganCase.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
@@ -21,12 +22,12 @@ import {
 } from '../../lib/format.ts';
 import {
   HO_SO_TAB_LABEL, JOURNEY_EVENT_LABEL, caseCategoriesFor, tenMonNgan, docThamSoHoSo, duongHoSoHocVien,
-  deadlineView, khoaLopThuong, ketQuaTestGanNhat, nhanKetQuaThuong, CHUONG_TRINH_KHONG_CHIA_MON, ngay, tuanLich, type HoSoTab,
+  ketQuaTestGanNhat, nhanKetQuaThuong, CHUONG_TRINH_KHONG_CHIA_MON, ngay, tuanLich, type HoSoTab,
 } from '@shared/domain/index.ts';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
 import { Han } from '../../ui/Han.tsx';
-import { QuaHan, ChipLichSu } from '../../ui/Nhan.tsx';
+import { ChipLichSu } from '../../ui/Nhan.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { DaiHocVienChuyen } from '../classes/DaiChuyenLop.tsx';
 
@@ -149,6 +150,15 @@ export default function StudentDetailPage() {
     navigate(duongHoSoHocVien(data.id, { kn, loTrinh: p.loTrinh }));
   };
 
+  /** Nút động từ của thanh việc: mở đúng Ngăn Case / tab Ý thức / trang bàn giao. */
+  const lamViec = (x: Viec) => {
+    const m = x.mo;
+    if (!m) return;
+    if (m.loai === 'case') setOpenCase({ caseId: m.caseId, paId: m.paId, viec: m.viec });
+    else if (m.loai === 'tab') navigate(duongHoSoHocVien(data.id, { tab: m.tab, sub: m.sub }));
+    else navigate(m.href);
+  };
+
   const setCycle = (cid: number) => {
     const next = new URLSearchParams(params);
     if (cid === data.cycles.find((c: any) => c.status === 'active')?.id) next.delete('lo-trinh');
@@ -186,44 +196,13 @@ export default function StudentDetailPage() {
                 {data.status !== 'active' && <Info>{studentStatusLabel(data.status)}</Info>}
                 {data.archivedAt && <Info>Đã lưu trữ</Info>}
               </h1>
-              <p className="text-xs text-slate-400 mt-1 mb-0">
-                {/*
-                  ĐẦU HỒ SƠ LỚP THƯỜNG (Q18): {mã lớp} · GVCN {tên} · {khoá đang học}, KHÔNG tên
-                  chương trình, KHÔNG "Mục tiêu"/"Dự kiến thi" (Q18, §3.8 dòng cuối) — dùng đúng
-                  hàm `khoaLopThuong` mà cột Khoá của hồ sơ lớp (PR-Qa) đã dùng, để hai chỗ luôn
-                  nói cùng một câu. `tiepTheo`/`nhacLoTrinh` từ `data.lopHoc` (PR-LT, Task 3).
-                */}
-                {data.currentClass?.khoa
-                  ? (() => {
-                    const { chinh, phu } = khoaLopThuong({
-                      maChuongTrinh: data.currentClass.khoa.ma,
-                      tuanHienTai: data.currentClass.khoa.tuanHienTai,
-                      tongTuan: data.currentClass.khoa.tongTuan,
-                      tuanKetThuc: data.currentClass.khoa.tuanKetThuc,
-                      tiepTheo: data.lopHoc?.tiepTheo ?? null,
-                      nhacLoTrinh: data.lopHoc?.nhacLoTrinh ?? false,
-                      homNay: homNay ?? '',
-                    });
-                    return (
-                      <>
-                        {data.currentClass.code}
-                        {data.currentClass.coreTeacher && <> · GVCN {data.currentClass.coreTeacher}</>}
-                        {' · '}{chinh}{phu ? ` · ${phu}` : ''}
-                      </>
-                    );
-                  })()
-                  : data.currentClass
-                    ? <>{data.currentClass.code} · {data.currentClass.programme ?? data.currentClass.branchName}
-                        {data.currentClass.coreTeacher && <> · GVCN {data.currentClass.coreTeacher}</>}</>
-                    : 'Chưa xếp lớp'}
-                {cy && !cy.ratio && (cy.target !== null || cy.khongCamKet) && <> · mục tiêu <TargetText band={cy.target} kck={cy.khongCamKet} /></>}
-              </p>
+              <DongThongTin tt={data.dauHoSo.thongTin} />
             </div>
 
             <div className="flex flex-wrap gap-2 items-start">
               {data.journeyStrip?.length > 1 && (
                 <button type="button" className="btn" aria-expanded={cycleOpen}
-                  onClick={() => setCycleOpen(!cycleOpen)}>Lộ trình <span aria-hidden className="text-[11px] text-slate-400">{cycleOpen ? '▾' : '▸'}</span></button>
+                  onClick={() => setCycleOpen(!cycleOpen)}>Lộ trình <span className="text-slate-400"><MuiTen mo={cycleOpen} /></span></button>
               )}
               {data.viewer.canReport && !data.lopHoc?.chiXem && (
                 <button className="btn btn-primary" onClick={() => setReportOpen(true)}>+ Case</button>
@@ -266,6 +245,9 @@ export default function StudentDetailPage() {
       <HeaderStats data={data} rows={skillRows} homNay={homNay}
         onOpenDot={(attemptId) => navigate(duongHoSoHocVien(data.id, { dot: attemptId }))}
         onOpenKn={moKyNang} />
+
+      {/* PR-VAI-b (K3-01, T72): việc gấp nhất của NGƯỜI XEM với em; không có việc thì không vẽ gì. */}
+      <ThanhViec viec={data.dauHoSo.viec} homNay={homNay} onLam={lamViec} />
 
       {/*
         BA TAB NGAY DƯỚI ĐẦU TRANG (D2, spec 2026-09-22): Học thuật (mặc định) · Ý thức & Phối hợp · Hành trình.
@@ -441,7 +423,6 @@ function HeaderStats({ data, rows, homNay, onOpenDot, onOpenKn }: {
   const choNguyenNhan = chuaChayCua(openCases.filter((c) => c.sos?.awaitingCause));
   const choKeHoach = chuaChayCua(openCases.filter((c) => !c.sos?.awaitingCause));
   const runningPlans = songPlans.length - choXacNhan - choNguyenNhan - choKeHoach;
-  const next = data.headline?.next ?? null;
   const kq = ketQuaTestGanNhat(data.attempts ?? [], homNay);
   const cheDo = data.cycle?.ratio ? 'ratio' as const : 'ielts' as const;
 
@@ -476,22 +457,6 @@ function HeaderStats({ data, rows, homNay, onOpenDot, onOpenKn }: {
         title="Mở bảng kỹ năng ở kỹ năng của Case mở đầu tiên"
         sub={openCases.length ? `${runningPlans} PA đang theo dõi${choXacNhan ? ` · ${choXacNhan} chờ xác nhận` : ''}${choNguyenNhan ? ` · ${choNguyenNhan} chờ nguyên nhân` : ''}${choKeHoach ? ` · ${choKeHoach} chờ kế hoạch` : ''}` : 'không có case nào đang mở'} />
 
-      <Stat label="Việc cần làm tiếp" nho
-        value={next?.text ?? 'Không có'}
-        tone={next?.overdue ? 'danger' : undefined}
-        onClick={next ? () => onOpenKn(next.category) : undefined}
-        title="Mở bảng kỹ năng ở đúng kỹ năng của việc này"
-        sub={next?.loai === 'cap-nhat-pa' && next.due
-          /* PR-N1 (K3 §4c, mockup 20): việc ghi kết quả PA nói TUẦN + hạn hết Thứ Hai + quá hạn n ngày — cùng luật <Han>. */
-          ? (() => {
-            const v = deadlineView({ kind: 'cap-nhat-pa', due: next.due, today: homNay ?? '' });
-            return <span className="tabular-nums">{v.viec.replace(/^Ghi kết quả /, '')} · {v.han}{v.quaHan && <> <QuaHan ngay={v.daysOverdue} /></>}</span>;
-          })()
-          : next?.due
-          ? (next.overdue
-            ? <QuaHan ngay={Math.max(1, Math.round((Date.parse(`${(homNay ?? '').slice(0, 10)}T00:00:00Z`) - Date.parse(`${next.due.slice(0, 10)}T00:00:00Z`)) / 86_400_000))} />
-            : `hạn ${ngay(next.due, homNay)}`)
-          : next ? 'chưa đặt hạn' : 'không có việc nào đang chờ'} />
     </div>
   );
 }

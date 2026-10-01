@@ -2,7 +2,7 @@ import { db } from '../db.ts';
 import {
   ASSESSED_SKILLS, BASELINE_SOURCE_LABEL, CYCLE_OUTCOME_LABEL, ENTRY_SKILLS,
   ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, JOURNEY_GROUP, PERMISSIONS,
-  caseHeadline, issueLabel, caseCategoryLabel, categoryOf, mocKeTiep, quaHan, studyWeekOf, tenMon,
+  caseHeadline, issueLabel, caseCategoryLabel, categoryOf, fmtExamMonth, mocKeTiep, quaHan, studyWeekOf, tenMon, tuanHocFt, tuanLich,
   type AssessedSkill, type EntrySkill, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { outcomeGroup } from '../cases/effectiveness.ts';
@@ -23,6 +23,9 @@ import { cuoiKhoaTheoHocVien, miniTestCuaHocVien, type EmCuoiKhoa } from '../nor
 import { quyenBoTro } from '../cases/boTro.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { activeClassOf, canManageDiscipline } from '../yThuc/access.ts';
+import { khoangTamDung } from './tamDung.ts';
+import { viecCuaHocVien } from './viecHocVien.ts';
+import { trangThaiYThuc } from '../yThuc/trangThai.ts';
 
 /**
  * HỒ SƠ HỌC VIÊN — phần trả lời câu hỏi "em này đang thế nào" trong khoảng ba mươi giây.
@@ -441,71 +444,51 @@ function progressOf(
 }
 
 /**
- * CÂU TỔNG HỢP ĐẦU HỒ SƠ (mục 4.1), dựng từ đúng bảng kỹ năng mà người đọc sẽ thấy ngay
- * bên dưới. Trả về ba mảnh rời để giao diện tô màu từng mảnh, chứ không phải một chuỗi dài
- * đã ghép sẵn — ghép sẵn thì mọi thứ cùng một màu và cái gấp nhất chìm vào giữa câu.
+ * DÒNG THÔNG TIN ĐẦU HỒ SƠ (PR-VAI-b Task 1, mockup 24 A/C/D1) — "em là ai":
+ *   FT          MB FT 101 · LT1 · target 6.5 · tuần học thứ 9 · thi dự kiến 06/2027 · GVCN …
+ *   lớp thường  MB FOU 15 · FOU · tuần học 7/10 · Cuối khoá W4 OCT · GVCN …
+ * FT đếm tuần học bằng `tuanHocFt` (một luật với PR-UXF-a, Q1) — bỏ tuần Tạm dừng; em đang dừng thì số dừng ở tuần trước ngày dừng.
  */
-function headlineOf(p: Principal, studentId: number, cycleId: number | null) {
-  const rows = (skillSupportBoard(p, studentId, cycleId) as any).rows as any[];
-  const today = demoToday();
+function dongThongTin(i: {
+  s: any; current: any; khoa: { ma: string; tuanHienTai: number | null; tongTuan: number | null; tuanKetThuc: string | null } | null;
+  gvcn: string | null; dangChay: any; today: string; startWeekSel: { cycleId: number; weekStart: string | null } | null;
+}) {
+  const { s, current, khoa, dangChay, today } = i;
+  const dung = khoangTamDung([s.id])[s.id] ?? [];
+  const dangDung = s.status === 'inactive' ? dung.find((k) => k.den === null) ?? null : null;
+  const boi = dangDung?.boiId
+    ? (db().prepare('SELECT full_name FROM users WHERE id = ?').get(dangDung.boiId) as any)?.full_name ?? null
+    : null;
+  const tamDung = dangDung ? { tu: dangDung.tu, lyDo: dangDung.lyDo, boi } : null;
+  if (!current) return { lop: null, lopId: null, loTrinh: null, target: null, tuanHoc: null, thiDuKien: null, gvcn: null, tamDung };
 
-  /* Kỹ năng đang DƯỚI KỲ VỌNG ở bài gần nhất — nói tên môn, không gộp thành một mức. */
-  const below = rows.filter((r) => r.missed === true).map((r) => r.short ?? r.label);
-  /* Vấn đề ĐANG xử lý, đếm theo case chứ không theo kỹ năng: một kỹ năng có thể hai case. */
-  const open = rows.reduce((n, r) => n + r.cases.filter((c: any) => c.status !== 'done').length, 0);
-
-  /*
-   * VIỆC TIẾP THEO QUAN TRỌNG NHẤT — MỘT việc, chọn theo hạn sớm nhất và mức chặn nhiều
-   * nhất. Bày ba việc ở đầu hồ sơ thì không việc nào được làm trước.
-   */
-  /* Câu BẮT ĐẦU BẰNG ĐỘNG TỪ (PR-HV Q7): ô "Việc cần làm tiếp" đọc như một việc, không như một nhận xét. "PA" ở đây
-     đúng D1 — đầu hồ sơ học viên là ngữ cảnh học thuật. */
-  type Next = { text: string; due: string | null; rank: number; category: string; loai?: 'cap-nhat-pa' };
-  const cands: Next[] = [];
-  /* DỰ PHÒNG (PR-HV, sửa sau rà soát 22/09): việc cập nhật hằng tuần CHƯA quá hạn CHỈ dùng khi không có việc nào khác —
-     nếu đưa vào `cands`, ứng viên có hạn sẽ thắng ứng viên không hạn ở `cands.sort` và chen trước "Xác minh SOS"/"Đề ra PA". */
-  const duPhong: Next[] = [];
-  /* Mục 3 (chủ sản phẩm 22/09): TÊN ĐẦY ĐỦ kỹ năng ("Writing Task 2"), không viết tắt "W2". */
-  const sk = (r: any) => r.label;
-  /* Mục 1 (chủ sản phẩm 22/09) + PR-SOS (K3-07): việc tiếp của từng Case lấy từ `viecTiepCuaCase` (thẻ Case của bảng kỹ năng). Xác nhận
-     nguyên nhân / Xác nhận PA là việc chặn đầu chuỗi — xếp TRƯỚC mọi ứng viên khác (hạn = hạn xác nhận). */
-  const xacDinh: Next[] = [];
-  for (const r of rows) {
-    for (const c of r.cases) {
-      if (c.status === 'done' || !c.viecTiep) continue;
-      const v = c.viecTiep as { chu: string; han: string | null };
-      if (v.chu === 'Xác nhận nguyên nhân') xacDinh.push({ text: `Xác nhận nguyên nhân ${sk(r)}`, due: v.han, rank: 0, category: r.category });
-      else if (v.chu.startsWith('Xác nhận PA')) xacDinh.push({ text: `Xác nhận PA ${sk(r)}`, due: v.han, rank: 1, category: r.category });
-      /* PR-LT2a: PA Bổ trợ — nộp kế hoạch chặn đầu chuỗi (hạn nộp); chờ Quản lý duyệt là việc chờ người khác. */
-      else if (v.chu === 'Nộp kế hoạch bổ trợ') xacDinh.push({ text: `Nộp kế hoạch bổ trợ ${sk(r)}`, due: v.han, rank: 1, category: r.category });
-      /* PR-S5F-b: hạn = hạn duyệt THẬT của thẻ kế hoạch (không "chưa đặt hạn"). */
-      else if (v.chu === 'Chờ Quản lý duyệt kế hoạch') cands.push({ text: `Chờ Quản lý duyệt kế hoạch ${sk(r)}`, due: c.boTro?.keHoach?.hanDuyet ?? null, rank: 2, category: r.category });
-      else if (v.chu.startsWith('Ghi kết quả cuối')) cands.push({ text: `Ghi kết quả cuối ${sk(r)}${v.chu.endsWith('(lớp cũ)') ? ' (lớp cũ)' : ''}`, due: v.han, rank: v.chu.endsWith('(lớp cũ)') ? 2 : 1, category: r.category, loai: 'cap-nhat-pa' });
-      else if (v.chu === 'Hoàn thành Case') cands.push({ text: `Hoàn thành Case ${sk(r)}`, due: null, rank: 2, category: r.category });
+  let tuanHoc: { tuan: number; tong: number | null; dangDung: boolean } | null = null;
+  let thiDuKien: { nhan: string; gt: string } | null = null;
+  if (khoa) {
+    if (khoa.tuanHienTai !== null && khoa.tuanHienTai >= 1 && khoa.tongTuan) {
+      tuanHoc = { tuan: Math.min(khoa.tuanHienTai, khoa.tongTuan), tong: khoa.tongTuan, dangDung: !!dangDung };
     }
-    if (r.state === 'no_plan') cands.push({ text: `Đề ra PA ${sk(r)}`, due: null, rank: 1, category: r.category });
-    if (r.overdueActionDue) cands.push({ text: `Ghi kết quả PA ${sk(r)}`, due: r.overdueActionDue, rank: 1, category: r.category, loai: 'cap-nhat-pa' });
-    /* Hạn tuần CHƯA quá hạn — chỉ dùng khi không còn việc khác. Dự kiến kết thúc KHÔNG bao giờ là việc (T53 Q1, K3-02). */
-    else if (r.nextActionDue) duPhong.push({ text: `Ghi kết quả PA ${sk(r)}`, due: r.nextActionDue, rank: 3, category: r.category, loai: 'cap-nhat-pa' });
-    if (r.pendingApproval) cands.push({ text: `Chờ Quản lý duyệt PA ${sk(r)}`, due: null, rank: 2, category: r.category });
+    if (khoa.tuanKetThuc) thiDuKien = { nhan: 'Cuối khoá', gt: tuanLich(khoa.tuanKetThuc, today) };
+  } else if (dangChay) {
+    const batDau = dangChay.start_period_id
+      ? (i.startWeekSel && i.startWeekSel.cycleId === dangChay.id ? i.startWeekSel.weekStart
+        : (db().prepare('SELECT week_start FROM report_periods WHERE id = ?').get(dangChay.start_period_id) as any)?.week_start ?? null)
+      : dangChay.started_at ?? null;
+    /* Đang dừng: tuần học đứng ở tuần ngay trước tuần Tạm dừng (mockup 24 D1 "tuần học thứ 14 · đang dừng"). */
+    const tuan = batDau ? tuanHocFt(batDau, dangDung ? addDays(mondayOf(dangDung.tu), -7) : mondayOf(today), dung) : null;
+    if (tuan !== null) tuanHoc = { tuan, tong: null, dangDung: !!dangDung };
+    const ke = examPlanOf(dangChay);
+    const gt = ke.confidence === 'none' ? null
+      : ke.confidence === 'month' ? fmtExamMonth(ke.month)
+      : dangChay.exam_date ? ke.label : tuanLich(ke.weekStart, today);
+    if (gt) thiDuKien = { nhan: 'thi dự kiến', gt };
   }
-  cands.sort((a, b) => {
-    /* Quá hạn trước, rồi hạn sớm hơn, rồi bậc chặn. */
-    const lateA = a.due && a.due < today ? 0 : 1;
-    const lateB = b.due && b.due < today ? 0 : 1;
-    if (lateA !== lateB) return lateA - lateB;
-    if (a.due && b.due && a.due !== b.due) return a.due < b.due ? -1 : 1;
-    if (!!a.due !== !!b.due) return a.due ? -1 : 1;
-    return a.rank - b.rank;
-  });
-
-  duPhong.sort((a, b) => (a.due! < b.due! ? -1 : 1));
-  /* Xác nhận nguyên nhân trước Xác nhận PA (chặn đầu chuỗi), rồi hạn sớm hơn. */
-  xacDinh.sort((a, b) => a.rank - b.rank || ((a.due ?? '9999') < (b.due ?? '9999') ? -1 : 1));
-  const chon = xacDinh[0] ?? cands[0] ?? duPhong[0] ?? null;
   return {
-    below, openCases: open,
-    next: chon ? { text: chon.text, due: chon.due, overdue: quaHan(chon.due, today), category: chon.category, loai: chon.loai } : null,
+    lop: current.class_code as string, lopId: current.class_id as number,
+    /* FT: lộ trình LT1/RF… · lớp thường: mã chương trình. */
+    loTrinh: khoa ? khoa.ma : dangChay?.route ?? null,
+    target: khoa || !dangChay ? null : dangChay.khong_cam_ket ? 'KCK' as const : (dangChay.target_score as number | null) ?? null,
+    tuanHoc, thiDuKien, gvcn: i.gvcn, tamDung,
   };
 }
 
@@ -759,6 +742,46 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   // Đọc MỘT LẦN, dùng lại cho cả `programme` lẫn khối `khoa` dưới — tránh gọi lại `programmeOfClass`
   // (và qua đó `isRatioClass`) hai lần cho cùng một lớp (sửa sau rà #75, vấn đề 5).
   const progHienTai = current ? programmeOfClass(current.class_id) : null;
+  const gvcnHienTai = current
+    ? (conn.prepare(
+      `SELECT u.full_name FROM teacher_assignments t JOIN users u ON u.id = t.user_id
+        WHERE t.class_id = ? AND t.is_core = 1 AND t.status = 'active' LIMIT 1`,
+    ).get(current.class_id) as any)?.full_name ?? null
+    : null;
+  const khoaHienTai = progHienTai?.scoringMode === 'ratio' && current
+    ? {
+      ma: progHienTai.code,
+      tuanHienTai: studyWeekOf(current.class_start_week, mondayOf(today)),
+      tongTuan: progHienTai.weeks,
+      tuanKetThuc: current.class_start_week && progHienTai.weeks ? addDays(current.class_start_week, (progHienTai.weeks - 1) * 7) : null,
+    }
+    : null;
+  const startWeekSel = selected?.start_period_id
+    ? (conn.prepare('SELECT week_start, code FROM report_periods WHERE id = ?').get(selected.start_period_id) as any) ?? null
+    : null;
+  const miniTest = (() => {
+    const mt = miniTestCuaHocVien([studentId]).get(studentId);
+    if (!mt) return null;
+    /* PA còn mở + CHÍNH Case của nó (không lấy MIN hai cột riêng — lệch Case thì form mở sai chỗ, không có ô Mini Test). */
+    const iv = db().prepare(
+      `SELECT case_id, CASE WHEN status IN ('planned', 'started') THEN id END AS pa_id FROM case_interventions WHERE nhom_bo_tro = ?
+        ORDER BY status NOT IN ('planned', 'started'), id LIMIT 1`,
+    ).get(mt.nhom) as any;
+    const pa = iv?.pa_id ? db().prepare('SELECT * FROM case_interventions WHERE id = ?').get(iv.pa_id) as any : null;
+    return { ...mt, caseId: iv?.case_id ?? null, paId: iv?.pa_id ?? null, coTheGhi: mt.tyLe === null && !!pa && quyenBoTro(p, pa) };
+  })();
+  const dai = daiHocVien(p, studentId);
+  /*
+   * PR-VAI-b (Q5): bảng kỹ năng dựng MỘT lần ở đây, dùng chung cho việc của em (thanh việc), câu tóm tắt và bốn ô — không hai nguồn
+   * "việc gấp nhất". Web vẫn gọi `/skill-board` để vẽ bảng (cùng hàm, cùng dữ liệu).
+   */
+  /* Luôn dựng (kể cả chưa có lộ trình) — `skillSupportBoard` kiểm quyền theo lớp đang học thật (`activeClassOf`, K2-6e): GV chỉ dạy lớp cũ bị chặn cả hồ sơ. */
+  const board = skillSupportBoard(p, studentId, selected?.id ?? null) as { rows: any[]; chuongTrinh: string | null };
+  const yThucEm = trangThaiYThuc([studentId], today).get(studentId) ?? null;
+  const viec = viecCuaHocVien(p, studentId, board, {
+    trangThaiEm: s.status, lopId: current?.class_id ?? null, chuongTrinh: board.chuongTrinh, yThuc: yThucEm, miniTest, dai,
+  });
+  const thongTin = dongThongTin({ startWeekSel: selected ? { cycleId: selected.id, weekStart: startWeekSel?.week_start ?? null } : null, s, current, khoa: khoaHienTai, gvcn: gvcnHienTai, dangChay: allCycles.find((c) => c.status === 'active') ?? null, today });
 
   return {
     id: s.id, studentCode: s.student_code, fullName: s.full_name, dob: s.dob, email: s.email ?? null,
@@ -770,27 +793,14 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
         branchName: current.branch_name,
         /* Chương trình của LỚP, và GVCN — hai thứ đầu hồ sơ phải nói ngay (mục 6.2 A). */
         programme: progHienTai?.name ?? null,
-        coreTeacher: (conn
-          .prepare(
-            `SELECT u.full_name FROM teacher_assignments t JOIN users u ON u.id = t.user_id
-              WHERE t.class_id = ? AND t.is_core = 1 AND t.status = 'active' LIMIT 1`,
-          )
-          .get(current.class_id) as any)?.full_name ?? null,
+        coreTeacher: gvcnHienTai,
         /*
          * KHOÁ ĐANG HỌC (Q18, PR-Qb) — chỉ lớp thường có, FT không có "tuần học của khoá" cố định.
          * Cùng cách tính `tuanKetThuc` với `hocVienLop.ts` (PR-Qa): tuần bắt đầu + (tổng tuần − 1) × 7 ngày.
          * Tính thẳng từ `progHienTai` + `class_start_week` (đã lấy sẵn ở JOIN của `enrollments` phía
          * trên) — KHÔNG gọi `isRatioClass`/`classProgressMany` riêng (bốn câu SQL thừa cho một lớp).
          */
-        khoa: progHienTai?.scoringMode === 'ratio'
-          ? {
-            ma: progHienTai.code,
-            tuanHienTai: studyWeekOf(current.class_start_week, mondayOf(demoToday())),
-            tongTuan: progHienTai.weeks,
-            tuanKetThuc: current.class_start_week && progHienTai.weeks
-              ? addDays(current.class_start_week, (progHienTai.weeks - 1) * 7) : null,
-          }
-          : null,
+        khoa: khoaHienTai,
       }
       : null,
     /*
@@ -833,10 +843,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
          * Tuần bắt đầu là mốc gốc sinh ra lịch MT mặc định; dự kiến thi chỉ có với lớp FT.
          */
         startPeriodId: selected.start_period_id ?? null,
-        startWeek: selected.start_period_id
-          ? (conn.prepare('SELECT week_start, code FROM report_periods WHERE id = ?')
-              .get(selected.start_period_id) as any) ?? null
-          : null,
+        startWeek: startWeekSel,
         examMonth: selected.exam_month ?? null,
         examPeriodId: selected.exam_period_id ?? null,
         /*
@@ -920,21 +927,6 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     standing: standingNow,
     /** Câu tóm tắt một dòng, dựng ở máy chủ để mọi màn nói y hệt nhau. */
     standingLine: standingNow ? standingLine(standingNow) : null,
-    /**
-     * CÂU TỔNG HỢP CỦA ĐẦU HỒ SƠ (mục 4.1) — dựng từ CHÍNH bảng kỹ năng bên dưới.
-     *
-     * Ba mệnh đề, đúng thứ tự người đọc cần: kỹ năng nào đang dưới kỳ vọng hoặc còn tín
-     * hiệu chờ xác minh · vấn đề nào đang xử lý · việc tiếp theo quan trọng nhất là gì.
-     *
-     * NÓI RÕ TỪNG KỸ NĂNG, không gộp thành một mức chung. Một em Listening đã đạt mà W2 và
-     * Speaking còn dưới kỳ vọng thì câu "SOS 2" ở đầu trang vừa đúng vừa vô dụng: nó không
-     * nói được môn nào đang ổn, môn nào chưa. Và nó tuyệt đối không được làm case Listening
-     * đang chờ kết luận trông như vẫn chưa đạt.
-     *
-     * Dựng từ cùng một nguồn với bảng bên dưới là điều kiện để hai chỗ không bao giờ nói
-     * ngược nhau — tính lại lần thứ hai ở đây là tự tạo ra một nguồn sự thật thứ hai.
-     */
-    headline: headlineOf(p, studentId, selected?.id ?? null),
     concerns: {
       openCases: openCases.length,
       carriedOver: openCases.filter((c) => c.carriedOver).length,
@@ -973,22 +965,18 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
         coTheKetLuan: can(p, PERMISSIONS.REQUEST_APPROVE, { studentId }),
       };
     })(),
+    /** PR-VAI-b: đầu hồ sơ "hiểu trong 30 giây" (mockup 24) — em là ai · em đang thế nào · bốn ô · việc của bạn. */
+    dauHoSo: {
+      thongTin, viec,
+      /** Kỹ năng dưới kỳ vọng ở đợt gần nhất (tên ngắn) — dựng từ CÙNG bảng kỹ năng bên dưới, hai chỗ không nói ngược nhau (mục 4.1). */
+      duoi: board.rows.filter((r) => r.missed === true).map((r) => (r.short ?? r.label) as string),
+    },
     lopHoc: lopHocCua(p, studentId, current),
     /** PR-CT: dải "Sắp chuyển / Đã chuyển" ngay dưới dòng thông tin đầu trang (mockup 20 — E). */
-    dai: daiHocVien(p, studentId),
+    dai,
     /** PR-LT2b: % Cuối khoá, hướng gợi ý, kết luận kỳ vọng đầu ra của lớp thường ĐANG học (null với FT / chưa có lớp). */
     /** PR-LT2b (M-05): Mini Test của em (lộ trình mới) + Case/PA để mở form Ghi kết quả cuối. */
-    miniTest: (() => {
-      const mt = miniTestCuaHocVien([studentId]).get(studentId);
-      if (!mt) return null;
-      /* PA còn mở + CHÍNH Case của nó (không lấy MIN hai cột riêng — lệch Case thì form mở sai chỗ, không có ô Mini Test). */
-      const iv = db().prepare(
-        `SELECT case_id, CASE WHEN status IN ('planned', 'started') THEN id END AS pa_id FROM case_interventions WHERE nhom_bo_tro = ?
-          ORDER BY status NOT IN ('planned', 'started'), id LIMIT 1`,
-      ).get(mt.nhom) as any;
-      const pa = iv?.pa_id ? db().prepare('SELECT * FROM case_interventions WHERE id = ?').get(iv.pa_id) as any : null;
-      return { ...mt, caseId: iv?.case_id ?? null, paId: iv?.pa_id ?? null, coTheGhi: mt.tyLe === null && !!pa && quyenBoTro(p, pa) };
-    })(),
+    miniTest,
     cuoiKhoa: (() => {
       /* MỘT câu: lớp đang học + lớp thường vừa rời (nếu có). PR-S5F-a: vừa chuyển (lên lớp / học lại / sang FT) mà lớp đang học chưa có điểm Cuối khoá
          → vẫn thấy % Cuối khoá của lớp thường vừa rời (hộp Kết luận khoá; kỳ vọng đầu ra BE/ELE — Quản lý đánh dấu được cả sau khi em đã sang FT). */

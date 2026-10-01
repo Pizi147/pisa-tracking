@@ -107,8 +107,9 @@ export async function runPrS5fbTests(t: YThucTestKit) {
     sosAuto.xacNhanCase(gvOf('MB FOU 12', 'speaking'), cP.id, XN('speaking'));
     boTro.nopKeHoachBoTro(ha, paBt(cP.id).id, KH);
     const the = get(`SELECT han_duyet FROM yeu_cau_duyet WHERE loai = 'ke_hoach_bo_tro' AND hoc_vien_id = ? ORDER BY id DESC`, hv);
-    const next = profile.studentProfile(P.mbManager, hv).headline.next;
-    assert(/^Chờ Quản lý duyệt kế hoạch/.test(next?.text ?? '') && next.due === the.han_duyet && !!the.han_duyet, `việc tiếp: ${JSON.stringify(next)} · hạn thẻ ${the?.han_duyet}`);
+    /* PR-VAI-b (Q5): `headline.next` → `dauHoSo.viec` — việc chờ Quản lý duyệt kế hoạch nằm ở "việc của người khác", người làm "Quản lý". */
+    const next = profile.studentProfile(P.mbManager, hv).dauHoSo.viec.nguoiKhac.find((x: any) => x.loai === 'cho-duyet' && /kế hoạch/.test(x.chu));
+    assert(next && /chờ Quản lý duyệt kế hoạch$/.test(next.chu) && next.han === the.han_duyet && !!the.han_duyet && next.nguoi.ten === 'Quản lý', `việc tiếp: ${JSON.stringify(next)} · hạn thẻ ${the?.han_duyet}`);
     const web = doc('students/StudentDetailPage.tsx');
     assert(/chờ nguyên nhân/.test(web) && /awaitingCause/.test(web), 'ô Case đếm riêng PA của Case chờ nguyên nhân');
   });

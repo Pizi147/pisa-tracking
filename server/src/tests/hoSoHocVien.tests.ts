@@ -117,33 +117,35 @@ export async function runHoSoHocVienTests(t: YThucTestKit) {
     assert(domain.quaHan(null, '2026-09-14') === false && domain.quaHan(undefined, '2026-09-14') === false && domain.quaHan('', '2026-09-14') === false, 'Không có hạn → false');
   });
 
-  await t.checkAsync('PR-HV · Q7 Ô "Việc cần làm tiếp": câu bắt đầu bằng động từ, có cờ quá hạn đúng', async () => {
+  /* PR-VAI-b (Q5): ô "Việc cần làm tiếp" (`headline.next`) → thanh việc `dauHoSo.viec` — cùng ý: câu bắt đầu bằng động từ, cờ quá hạn đúng,
+     tên kỹ năng đầy đủ; thứ tự nay theo hạn (quá hạn → hạn sớm → không hạn, T72). */
+  await t.checkAsync('PR-HV · Q7 → VAI-b: việc ở đầu hồ sơ bắt đầu bằng động từ, quá hạn đúng, tên kỹ năng đầy đủ, xếp theo hạn', async () => {
     const profile: any = await import('../students/profile.ts');
-    const casesMod: any = await import('../cases/cases.ts');
     const max = t.seedMax.sos_cases ?? Number.MAX_SAFE_INTEGER;
     const pairs = t.conn.prepare("SELECT DISTINCT student_id, cycle_id FROM sos_cases WHERE status != 'done' AND id <= ?").all(max) as any[];
     assert(pairs.length > 0, 'Bộ demo phải có học viên đang có case mở');
-    let coNext = 0;
+    let coViec = 0;
     for (const { student_id, cycle_id } of pairs) {
-      const next = profile.studentProfile(t.P.admin, student_id, cycle_id).headline?.next ?? null;
-      if (!next) continue;
-      coNext++;
-      assert(typeof next.overdue === 'boolean', `HV ${student_id}: next.overdue phải là boolean: ${JSON.stringify(next)}`);
-      assert(next.overdue === (next.due !== null && next.due < t.TODAY), `HV ${student_id}: overdue phải = (due < hôm nay ${t.TODAY}): ${JSON.stringify(next)}`);
-      assert(/^(Xác nhận nguyên nhân|Xác nhận PA|Xác minh SOS|Đề ra PA|Ghi kết quả PA|Ghi kết quả cuối|Hoàn thành Case|Chờ Quản lý duyệt PA|Nộp kế hoạch bổ trợ|Chờ Quản lý duyệt kế hoạch) /.test(next.text), `HV ${student_id}: câu phải bắt đầu bằng động từ: "${next.text}"`);
-      /* Mục 3 (chủ sản phẩm 22/09): tên kỹ năng ĐẦY ĐỦ, không viết tắt L / R / W1 / W2 / S. */
-      assert(!/ (L|R|W|W1|W2|S)$/.test(next.text), `HV ${student_id}: câu phải dùng tên đầy đủ của kỹ năng: "${next.text}"`);
-      /* Rà soát 22/09: "Ghi kết quả PA" CHƯA quá hạn (trước đây "Cập nhật PA") chỉ là dự phòng — không được chen trước việc khác (thứ tự ưu tiên cũ giữ nguyên). */
-      if (/^Ghi kết quả PA /.test(next.text) && !next.overdue) {
-        const rows = (casesMod.skillSupportBoard(t.P.admin, student_id, cycle_id) as any).rows as any[];
-        const viecKhac = rows.filter((r) => r.signal || r.state === 'no_plan' || r.overdueActionDue || r.pendingApproval || r.followOverdue);
-        assert(viecKhac.length === 0, `HV ${student_id}: ô ghi "${next.text}" (chưa quá hạn) nhưng vẫn còn việc ưu tiên hơn: ${JSON.stringify(viecKhac.map((r) => ({ kn: r.short, signal: !!r.signal, state: r.state, lamQuaHan: r.overdueActionDue, choDuyet: r.pendingApproval, capNhatQuaHan: r.followOverdue })))}`);
+      const v = profile.studentProfile(t.P.admin, student_id, cycle_id).dauHoSo.viec;
+      const tatCa = [...v.cuaBan, ...v.nguoiKhac];
+      coViec += tatCa.length;
+      for (const x of tatCa) {
+        assert((x.quaHanNgay !== null) === (x.han !== null && x.han < t.TODAY), `HV ${student_id}: quaHanNgay phải = (hạn < hôm nay ${t.TODAY}): ${JSON.stringify(x)}`);
+        if (x.loai !== 'cho-duyet') {
+          assert(/^(Xác nhận nguyên nhân|Xác nhận PA|Ghi kết quả|Nộp kế hoạch bổ trợ|Báo phụ huynh|Ghi Mini Test|Xác nhận xử lý|Bàn giao) /.test(x.chu), `HV ${student_id}: câu phải bắt đầu bằng động từ: "${x.chu}"`);
+        }
+        /* Mục 3 (chủ sản phẩm 22/09): tên kỹ năng ĐẦY ĐỦ, không viết tắt L / R / W1 / W2 / S. */
+        assert(!/ (L|R|W|W1|W2|S)$/.test(x.chu), `HV ${student_id}: câu phải dùng tên đầy đủ của kỹ năng: "${x.chu}"`);
+      }
+      for (const ds of [v.cuaBan, v.nguoiKhac]) {
+        const han = ds.map((x: any) => x.han ?? '9999');
+        assert(han.every((h: string, i: number) => i === 0 || han[i - 1] <= h), `HV ${student_id}: việc phải xếp theo hạn: ${han}`);
       }
     }
-    assert(coNext > 0, 'Phải có ít nhất một học viên có việc cần làm tiếp');
+    assert(coViec > 0, 'Phải có ít nhất một học viên có việc ở đầu hồ sơ');
   });
 
-  await t.checkAsync('PR-HV · Q7 (mục 1) → PR-SOS: Case từ SOS chờ xác nhận nguyên nhân → ô "Việc cần làm tiếp" là "Xác nhận nguyên nhân {kỹ năng}", hạn = hạn xác nhận, đứng trước mọi việc khác', async () => {
+  await t.checkAsync('PR-HV · Q7 (mục 1) → PR-SOS → VAI-b: Case từ SOS chờ xác nhận nguyên nhân → đầu hồ sơ có việc "Xác nhận nguyên nhân {kỹ năng}", hạn = hạn xác nhận', async () => {
     const profile: any = await import('../students/profile.ts');
     const casesMod: any = await import('../cases/cases.ts');
     const max = t.seedMax.sos_cases ?? Number.MAX_SAFE_INTEGER;
@@ -152,18 +154,16 @@ export async function runHoSoHocVienTests(t: YThucTestKit) {
     for (const { student_id, cycle_id } of pairs) {
       const rows = (casesMod.skillSupportBoard(t.P.admin, student_id, cycle_id) as any).rows as any[];
       const cho = rows.flatMap((r) => r.cases.filter((c: any) => c.status !== 'done' && c.sos?.awaitingCause).map((c: any) => ({ r, c })));
-      const next = profile.studentProfile(t.P.admin, student_id, cycle_id).headline?.next ?? null;
-      if (cho.length > 0) {
+      const v = profile.studentProfile(t.P.admin, student_id, cycle_id).dauHoSo.viec;
+      const tatCa = [...v.cuaBan, ...v.nguoiKhac];
+      for (const { r, c } of cho) {
         n++;
-        assert(next, `HV ${student_id}: có case chờ xác định nguyên nhân mà ô "Việc cần làm tiếp" lại rỗng ("Không có")`);
-        assert(/^Xác nhận nguyên nhân /.test(next.text), `HV ${student_id}: phải là "Xác nhận nguyên nhân …" (đứng trước mọi việc khác), được "${next.text}"`);
-        const som = cho.map((x) => x.c.sos.dueOn ?? '9999').sort()[0];
-        const dung = cho.find((x) => (x.c.sos.dueOn ?? '9999') === som)!;
-        assert(next.text === `Xác nhận nguyên nhân ${dung.r.label}` && next.due === (dung.c.sos.dueOn ?? null), `HV ${student_id}: mong "Xác nhận nguyên nhân ${dung.r.label}" hạn ${dung.c.sos.dueOn}, được ${JSON.stringify(next)}`);
-        continue;
+        const x = tatCa.find((y: any) => y.key === `cause:${c.id}`);
+        assert(x, `HV ${student_id}: có case chờ xác định nguyên nhân mà đầu hồ sơ không có việc`);
+        assert(x.chu === `Xác nhận nguyên nhân ${r.label}` && x.han === (c.sos.dueOn ?? null), `HV ${student_id}: mong "Xác nhận nguyên nhân ${r.label}" hạn ${c.sos.dueOn}, được ${JSON.stringify(x)}`);
       }
       /* PR-N1 S4-1: PA quy chế tự chạy — không còn việc "Xác nhận PA gợi ý". */
-      assert(!next || !/Xác nhận PA gợi ý/.test(next.text), `HV ${student_id}: ô còn "Xác nhận PA gợi ý": ${next?.text}`);
+      assert(!tatCa.some((x: any) => /Xác nhận PA gợi ý/.test(x.chu)), `HV ${student_id}: còn "Xác nhận PA gợi ý"`);
     }
     assert(n > 0, 'Bộ demo phải có học viên có case từ SOS chờ xác định nguyên nhân (ba em mới của sosV3Seed)');
   });

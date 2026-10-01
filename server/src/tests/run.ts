@@ -6669,15 +6669,16 @@ check('[4.1] Câu tổng hợp đầu hồ sơ nói rõ TỪNG kỹ năng, khôn
     )
     .get() as any;
   const pr = profile.studentProfile(P.admin, row.sid, row.cid) as any;
-  assert(pr.headline, 'Hồ sơ không có câu tổng hợp nào ở đầu');
-  assert(Array.isArray(pr.headline.below) && !('signals' in pr.headline),
-    'Câu tổng hợp phải nêu kỹ năng dưới kỳ vọng và không còn khối tín hiệu chờ xác minh (PR-LT2a)');
+  /* PR-VAI-b (Q5): `headline` bỏ — kỹ năng dưới kỳ vọng ở đầu hồ sơ nay là `dauHoSo.duoi` (dựng từ CÙNG bảng kỹ năng). */
+  assert(pr.dauHoSo, 'Hồ sơ không có đầu hồ sơ');
+  assert(Array.isArray(pr.dauHoSo.duoi) && !('headline' in pr),
+    'Đầu hồ sơ phải nêu kỹ năng dưới kỳ vọng; không còn `headline` cũ');
 
   /* Câu tổng hợp phải khớp với BẢNG BÊN DƯỚI — hai chỗ không được nói ngược nhau. */
   const board = (cases.skillSupportBoard(P.admin, row.sid, row.cid) as any).rows;
   const belowFromBoard = board.filter((r: any) => r.missed === true).map((r: any) => r.short ?? r.label);
-  assert(JSON.stringify(pr.headline.below) === JSON.stringify(belowFromBoard),
-    `Đầu hồ sơ nói ${JSON.stringify(pr.headline.below)} còn bảng nói ${JSON.stringify(belowFromBoard)}`);
+  assert(JSON.stringify(pr.dauHoSo.duoi) === JSON.stringify(belowFromBoard),
+    `Đầu hồ sơ nói ${JSON.stringify(pr.dauHoSo.duoi)} còn bảng nói ${JSON.stringify(belowFromBoard)}`);
 });
 
 check('[4.1] Một em có kỹ năng đạt và kỹ năng chưa đạt thì câu tổng hợp nêu đúng môn chưa đạt', () => {
@@ -6698,11 +6699,11 @@ check('[4.1] Một em có kỹ năng đạt và kỹ năng chưa đạt thì câ
     found = true;
     const pr = profile.studentProfile(P.admin, m.sid, m.cid) as any;
     for (const r of below) {
-      assert(pr.headline.below.includes(r.short ?? r.label),
+      assert(pr.dauHoSo.duoi.includes(r.short ?? r.label),
         `${r.label} dưới kỳ vọng mà câu tổng hợp không nêu`);
     }
     for (const r of met) {
-      assert(!pr.headline.below.includes(r.short ?? r.label),
+      assert(!pr.dauHoSo.duoi.includes(r.short ?? r.label),
         `${r.label} đã đạt mà câu tổng hợp vẫn kể vào nhóm dưới kỳ vọng`);
     }
     break;
@@ -9805,6 +9806,9 @@ await runPrS5fATests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 // ==================================================================== PR-S5F-b (sửa sau rà cuối đợt 5 — Giữa khoá, hồ sơ GV, tốc độ)
 const { runPrS5fbTests } = await import('./prS5fb.tests.ts');
 await runPrS5fbTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
+const { runPrVaiBTests } = await import('./prVaiB.tests.ts');
+await runPrVaiBTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

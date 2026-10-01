@@ -2416,6 +2416,13 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
     };
   });
 
+  /* PR-VAI-b (Q3): tên người làm việc tiếp — MỘT câu cho cả bảng, không mỗi Case một câu. */
+  const nguoiIds = [...new Set(rows.flatMap((r) => r.cases.map((c) => c.nguoiLam?.id)).filter((x): x is number => !!x))];
+  if (nguoiIds.length) {
+    const ten = new Map((conn.prepare(`SELECT id, full_name FROM users WHERE id IN (${nguoiIds.map(() => '?').join(',')})`).all(...nguoiIds) as any[])
+      .map((u) => [u.id as number, u.full_name as string]));
+    for (const r of rows) for (const c of r.cases) if (c.nguoiLam?.id) c.nguoiLam.ten = ten.get(c.nguoiLam.id) ?? null;
+  }
   return { studentId, cycleId: cycle?.id ?? null, chuongTrinh: ctBang, rows };
 }
 
@@ -2500,6 +2507,9 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>, bo
       mocChu: iv.preset === 1 ? mocChuPa({ span: iv.moc_quy_che ?? null, followupDue: iv.followup_due ?? null, mtKe: mtKe(iv), daXacNhan: !!iv.confirmed_at }, today) : null,
       lanCuoi: iv.status === 'started' && laLanGhiCuoi({ preset: iv.preset === 1, followupDue: iv.followup_due ?? null, actionDue: iv.action_due ?? null }, today),
       performer: iv.performer_user_name ?? iv.performer_name ?? null,
+      /** PR-VAI-b (Q2): người ghi kết quả PA — đúng cột Công việc dùng (`performer_user_id ?? recorded_by`, `mywork.ts` 2b). */
+      nguoiId: (iv.performer_user_id ?? iv.recorded_by ?? null) as number | null,
+      nhom: (iv.nhom_bo_tro ?? null) as string | null,
       status: iv.status as string,
       statusLabel: INTERVENTION_STATUS_LABEL[iv.status as keyof typeof INTERVENTION_STATUS_LABEL] ?? iv.status,
       startedOn: iv.started_date ?? iv.planned_date ?? null,
@@ -2560,6 +2570,11 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>, bo
     lyDoHeThong: c.system_close_reason ? SYSTEM_CLOSE_REASON_LABEL[c.system_close_reason as keyof typeof SYSTEM_CLOSE_REASON_LABEL] ?? null : null,
     rutSuaDiem: laRutSuaDiem(c),
   };
+  const viecTiep = viecTiepCuaCase(v4, plans.map((pl) => ({
+    lopCu: laPaLopCu(ivs.find((iv) => iv.id === pl.id)),
+    id: pl.id, ten: tenPaViecTiep(pl.kind, pl.name), batBuoc: pl.batBuoc, choXacNhan: pl.choXacNhan, xong: pl.status === 'completed',
+    actionDue: pl.actionDue, followupDue: pl.followupDue, choDuyet: pl.pendingApproval,
+  })), today, c.origin_kind === 'mock' ? null : planDueDate(String(c.detected_at ?? c.created_at ?? today).slice(0, 10), c.urgency));
   /* Lượt đánh giá mà case này đã đi qua — "MT2 · 17/08" ở chân thẻ (lớp thường: "Giữa khoá"/"Cuối khoá" thay MT{n}). */
   const attempts = (conn
     .prepare(
@@ -2585,11 +2600,10 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>, bo
       ? { mt: attempts.length ? Math.max(...attempts.map((x) => x.attemptNo)) : null, giua: tenGiuaCua(c), sos: c.sos_level ?? null } : null,
     /** PR-SOS (§7.3, K3-07): MỘT nhãn trạng thái + MỘT việc tiếp của Case — bảng kỹ năng, Ngăn Case, đầu hồ sơ đọc chung. */
     trangThaiV4: trangThaiCaseV4(v4, today),
-    viecTiep: viecTiepCuaCase(v4, plans.map((pl) => ({
-      lopCu: laPaLopCu(ivs.find((iv) => iv.id === pl.id)),
-      id: pl.id, ten: tenPaViecTiep(pl.kind, pl.name), batBuoc: pl.batBuoc, choXacNhan: pl.choXacNhan, xong: pl.status === 'completed',
-      actionDue: pl.actionDue, followupDue: pl.followupDue, choDuyet: pl.pendingApproval,
-    })), today, c.origin_kind === 'mock' ? null : planDueDate(String(c.detected_at ?? c.created_at ?? today).slice(0, 10), c.urgency)),
+    viecTiep,
+    nguoiLam: nguoiLamCua(viecTiep, c, plans, boTro),
+    /** Người phụ trách Case (`owner_user_id`) — việc Xác nhận nguyên nhân / Xác nhận PA của Công việc (Q2). */
+    ownerId: (c.owner_user_id ?? null) as number | null,
     plans,
     attempts,
     followUntil: c.follow_until ?? null,
@@ -2611,6 +2625,20 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>, bo
     /** PR-LT2a: khối PA Bổ trợ (xem `boTroCuaCase`) — `null` với Case không có PA bổ trợ. */
     boTro,
   };
+}
+
+/**
+ * NGƯỜI LÀM VIỆC TIẾP của một Case (PR-VAI-b Q3) — tính MỘT chỗ; cột Việc tiếp, thẻ điện thoại và thanh việc cùng đọc. Cùng luật người làm
+ * với Công việc (Q2): Xác nhận nguyên nhân / Xác nhận PA / Đề ra PA → người phụ trách Case · Ghi kết quả → người ghi PA · Nộp kế hoạch →
+ * người dạy bổ trợ · Chờ Quản lý duyệt → "Quản lý" (vai, không tên). `ten` điền ở `skillSupportBoard` bằng một câu cho cả bảng.
+ */
+function nguoiLamCua(v: { chu: string; paId?: number } | null, c: any, plans: { id: number; nguoiId: number | null }[], boTro: BoTroDto | null): { id: number | null; ten: string | null } | null {
+  if (!v) return null;
+  if (v.chu.startsWith('Chờ Quản lý')) return { id: null, ten: 'Quản lý' };
+  const id = v.paId ? plans.find((pl) => pl.id === v.paId)?.nguoiId ?? null
+    : v.chu === 'Nộp kế hoạch bổ trợ' ? boTro?.nguoiDay?.userId ?? null
+    : c.owner_user_id ?? null;
+  return id ? { id, ten: null } : null;
 }
 
 /**

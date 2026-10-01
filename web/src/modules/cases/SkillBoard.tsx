@@ -287,7 +287,7 @@ export function TenCase({ c }: { c: Pick<CaseCard, 'title' | 'tenSos'> }) {
 }
 
 /** Mũi tên gập/mở vẽ SVG 8px (ký tự ▸/▾ ở cỡ nhỏ của Inter chỉ còn như một dấu chấm). */
-function MuiTen({ mo }: { mo: boolean }) {
+export function MuiTen({ mo }: { mo: boolean }) {
   return (
     <svg aria-hidden viewBox="0 0 8 8" width="8" height="8" className={`transition-transform ${mo ? 'rotate-90' : ''}`}>
       <path d="M2.5 1 6 4 2.5 7" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
