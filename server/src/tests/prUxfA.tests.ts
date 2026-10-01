@@ -448,4 +448,49 @@ export async function runPrUxfATests(t: YThucTestKit) {
     const ft = khung('ft'), thuong = khung('thuong');
     for (const id of [...cua(ghiBu), ...cua(boQuen), ...cua(dungHan)]) assert(thuong.includes(id) && !ft.includes(id), `lọc khung: ${id} (lớp thường)`);
   });
+
+  // ==================================================================== Task 9 · bảng chi nhánh theo lớp của lượt; U1 soSanhLop; F5 chip "Tất cả"
+  const bangCn: any = await import('../worklist/bangChiNhanh.ts');
+
+  check('UXF-a (9) · bảng chi nhánh khung FT: Case từ lượt FT của em nay học lớp thường nằm ở HÀNG LỚP CỦA LƯỢT (cùng hàm bộ lọc khung); số ô = số dòng; = Case mở ở hồ sơ GV phụ trách', () => {
+    const H = taoHv(LOP_FT, true);
+    const luotH = themLuot({ ...H, cid: LOP_FT, no: 1, kind: 'mock', tuan: tuanTruoc(1) });
+    const caseH = Number(conn.prepare(`INSERT INTO sos_cases (student_id, cycle_id, attempt_id, category, topic, origin_kind, status, owner_user_id, detected_at, created_at) VALUES (?,?,?, 'reading', 'reading', 'mock', 'in_progress', ?, ?, ?)`)
+      .run(H.sid, H.cycleId, luotH, gvMb[0], TODAY, NOW).lastInsertRowid);
+    conn.prepare(`UPDATE enrollments SET status = 'transferred' WHERE student_id = ? AND class_id = ?`).run(H.sid, LOP_FT);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`).run(H.sid, LOP, TODAY, NOW);
+    const b = bangCn.bangChiNhanh(P.mbManager, { branchId: MB, ct: 'ft' });
+    const hangFt = b.hang.find((h: any) => h.id === LOP_FT);
+    const ds = bangCn.oBangChiNhanh(P.mbManager, { branchId: MB, ct: 'ft', cot: 'caseMo', khoa: `lop:${LOP_FT}` });
+    assert(hangFt && ds.rows.some((r: any) => r.id === caseH) && ds.n === hangFt.o.caseMo.n, `Case ở hàng lớp FT của lượt: ${JSON.stringify(hangFt?.o.caseMo)}`);
+    const tongFt = b.hang.reduce((n: number, h: any) => n + h.o.caseMo.n, 0);
+    assert(tongFt <= b.tong.caseMo.n && metricsSvc.metricSet(P.mbManager, 'case-mo', { branchId: MB, program: 'ft' }).ids.includes(caseH), 'Case thuộc khung FT ở ô tổng');
+    const thuong = bangCn.bangChiNhanh(P.mbManager, { branchId: MB, ct: 'thuong' }).hang.find((h: any) => h.id === LOP);
+    assert(!thuong || !bangCn.oBangChiNhanh(P.mbManager, { branchId: MB, ct: 'thuong', cot: 'caseMo', khoa: `lop:${LOP}` }).rows.some((r: any) => r.id === caseH), 'không rơi sang hàng lớp thường em đang học');
+    assert(hoSoGv.caseMoCuaGv(P.mbManager, gvMb[0], [MB], 'ft').some((c: any) => c.id === caseH), 'hồ sơ GV phụ trách (khung FT) có Case này');
+  });
+
+  check('UXF-a (9) · U1: lớp sắp theo soSanhLop (MB FT 9 trước MB FT 10) ở 6 đường kiểm kê; bảng chi nhánh theo đúng thứ tự', () => {
+    assert(d.soSanhLop({ code: 'MB FT 9' }, { code: 'MB FT 10' }) < 0, 'soSanhLop');
+    const goc = join(process.cwd(), 'server/src');
+    for (const f of ['fasttrack/planning.ts', 'worklist/branchpulse.ts', 'worklist/summary.ts', 'platform/xoaTaiKhoan.ts', 'phanTich/xuatMt.ts', 'worklist/bangChiNhanh.ts', 'cham/canCham.ts']) {
+      /* SQL có thể vẫn ORDER BY (thứ tự phụ trong lớp); thứ tự LỚP do `soSanhLop` sắp lại bằng JS sau câu. */
+      assert(/\.sort\(\(a, b\) => soSanhLop\(/.test(readFileSync(join(goc, f), 'utf8')), `${f}: chưa sắp lớp bằng soSanhLop`);
+    }
+    const lop = bangCn.bangChiNhanh(P.mbManager, { branchId: MB, ct: 'ca-hai' }).hang as any[];
+    for (let i = 1; i < lop.length; i++) assert(d.soSanhLop({ code: lop[i - 1].nhan }, { code: lop[i].nhan }) <= 0, `${lop[i - 1].nhan} › ${lop[i].nhan}`);
+  });
+
+  check('UXF-a (9) · F5 hàm thuần: n việc + m nhắc → Lọc nhanh "Tất cả" = Nhóm "Tất cả" = Σ nhóm; Quá hạn / Hôm nay không gồm nhắc', () => {
+    const it = (group: string, urgency: string, due: string | null) => ({ group, urgency, due });
+    const items = [it('score', 'overdue', '2026-09-10'), it('case_plan', 'today', TODAY), it('violation', 'normal', null), it('task', 'normal', '2026-09-18')];
+    const m = 3;
+    const loc = d.demLocNhanh(items, 'tat-ca', TODAY, m);
+    const nhom = d.demNhomChip(items, 'tat-ca', TODAY, m);
+    const tong = d.NHOM_VIEC.reduce((n: number, k: string) => n + nhom[k], 0);
+    assert(loc['tat-ca'] === items.length + m && nhom['tat-ca'] === loc['tat-ca'] && tong === nhom['tat-ca'], `Tất cả: lọc ${loc['tat-ca']} · nhóm ${nhom['tat-ca']} · Σ ${tong}`);
+    assert(loc['qua-han'] === 1 && loc['hom-nay'] === 1, `Quá hạn/Hôm nay không gồm nhắc: ${JSON.stringify(loc)}`);
+    const nhomQuaHan = d.demNhomChip(items, 'qua-han', TODAY, m);
+    assert(nhomQuaHan['tat-ca'] === 1 && nhomQuaHan['y-thuc'] === 0, `nhóm khi lọc Quá hạn: ${JSON.stringify(nhomQuaHan)}`);
+  });
 }

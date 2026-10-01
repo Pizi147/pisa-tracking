@@ -1,5 +1,5 @@
 import { db } from '../db.ts';
-import { PERMISSIONS } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, soSanhLop } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { can, scopeFor, type Principal } from '../permissions.ts';
 import { listCases } from '../cases/cases.ts';
@@ -134,9 +134,10 @@ export function branchPulse(p: Principal, f: { branchId?: number | null } = {}) 
   const classRows = conn
     .prepare(
       `SELECT c.id, c.code, c.branch_id, c.is_fast_track, b.name AS branch_name FROM classes c
-         JOIN branches b ON b.id = c.branch_id WHERE c.status = 'active'${scopeSql} ORDER BY b.id, c.code`,
+         JOIN branches b ON b.id = c.branch_id WHERE c.status = 'active'${scopeSql}`,
     )
     .all(...scopeArgs) as any[];
+  classRows.sort((a, b) => soSanhLop({ code: a.code, branchId: a.branch_id }, { code: b.code, branchId: b.branch_id }));   // PR-UXF-a U1
   const rosterOf = new Map<number, number[]>();
   for (const r of conn
     .prepare(

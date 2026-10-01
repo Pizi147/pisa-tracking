@@ -10,6 +10,7 @@ import { catDongPhu } from './hocVienLop.ts';
 import { ngay } from './hienThiNgay.ts';
 import { mondayOfDate } from './week.ts';
 import { TASK_GROUPS, TASK_PROGRESS_CLOSED, type TaskGroup, type TaskProgress } from './worklist.ts';
+import { NHOM_VIEC, nhomViecCua, type NhomViec } from './tongQuan.ts';
 
 const DAY_MS = 86_400_000;
 const addDaysIso = (iso: string, n: number): string =>
@@ -44,13 +45,31 @@ export function khopLocNhanh(it: MucLocNhanh, loc: LocNhanh, homNay: string): bo
   return d >= homNay && d <= chuNhat;
 }
 
-/** Số việc ở mỗi ô lọc nhanh — ĐÃ áp Loại việc đang chọn, CHƯA áp chính lọc nhanh (facet không tự lọc chính nó). */
+/**
+ * Số việc ở mỗi ô lọc nhanh — ĐÃ áp Loại việc đang chọn, CHƯA áp chính lọc nhanh (facet không tự lọc chính nó).
+ * PR-UXF-a F5 (Q19): `soNhac` = nhắc Phối hợp SOS (không có hạn) đang hiện — chỉ cộng vào "Tất cả", không vào Quá hạn / Hôm nay / Tuần này.
+ */
 export function demLocNhanh<T extends MucLocNhanh & { group: string }>(
-  items: T[], loai: string | 'tat-ca' | undefined, homNay: string,
+  items: T[], loai: string | 'tat-ca' | undefined, homNay: string, soNhac = 0,
 ): Record<LocNhanh, number> {
   const base = !loai || loai === 'tat-ca' ? items : items.filter((it) => it.group === loai);
   const out = {} as Record<LocNhanh, number>;
   for (const loc of LOC_NHANH) out[loc] = base.filter((it) => khopLocNhanh(it, loc, homNay)).length;
+  out['tat-ca'] += soNhac;
+  return out;
+}
+
+/**
+ * PR-UXF-a F5: hàng chip Nhóm việc — ĐÃ áp lọc nhanh `loc`, CHƯA áp nhóm. Nhắc (`soNhac`, không hạn) chỉ có khi `loc` = "Tất cả" và thuộc
+ * nhóm Ý thức. "Tất cả" = Σ nhóm — nên ở mặc định (không lọc) nó bằng ô "Tất cả" của Lọc nhanh: cùng việc, cùng nhắc.
+ */
+export function demNhomChip<T extends MucLocNhanh & { group: string }>(
+  items: T[], loc: LocNhanh, homNay: string, soNhac = 0,
+): Record<NhomViec | 'tat-ca', number> {
+  const out = Object.fromEntries([...NHOM_VIEC, 'tat-ca'].map((k) => [k, 0])) as Record<NhomViec | 'tat-ca', number>;
+  for (const it of items) if (khopLocNhanh(it, loc, homNay)) out[nhomViecCua(it.group)] += 1;
+  if (loc === 'tat-ca') out['y-thuc'] += soNhac;
+  out['tat-ca'] = NHOM_VIEC.reduce((n, k) => n + out[k], 0);
   return out;
 }
 

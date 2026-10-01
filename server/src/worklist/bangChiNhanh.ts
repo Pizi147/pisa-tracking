@@ -1,12 +1,11 @@
 import { db } from '../db.ts';
 import {
-  COT_BANG, COT_BANG_DON_VI, METRIC_UNIT_LABEL, PERMISSIONS, type ChuongTrinh, type CotBang,
+  COT_BANG, COT_BANG_DON_VI, METRIC_UNIT_LABEL, PERMISSIONS, soSanhLop, type ChuongTrinh, type CotBang,
 } from '../../../shared/domain/index.ts';
 import { forbidden, badRequest } from '../util.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
-import { listCases } from '../cases/cases.ts';
 import { studentsInScope } from './danhGia.ts';
-import { locTheoChuongTrinh } from './chuongTrinh.ts';
+import { locTheoChuongTrinh, lopCuaTap } from './chuongTrinh.ts';
 import { metricSet, rowsFor, type MetricRow } from './metrics.ts';
 
 /**
@@ -14,7 +13,8 @@ import { metricSet, rowsFor, type MetricRow } from './metrics.ts';
  * thuật · Đủ dữ liệu đánh giá.
  *
  * KHÔNG ĐẾM LẠI. Năm tập gốc lấy từ `metricSet` (cùng hàm, cùng quyền, cùng chương trình với ô số); bảng chỉ CHIA chúng về
- * lớp: học viên theo lớp ĐANG học, Case theo lớp nơi em đang được chăm sóc (`homeClassId`, như `branchpulse.ts`). Hàng tổng
+ * lớp: học viên theo lớp ĐANG học, Case theo LỚP CỦA LƯỢT TEST sinh ra Case (`lopCuaTap('case')` — CÙNG hàm bộ lọc khung dùng; PR-UXF-a:
+ * Case từ lượt FT của em nay học lớp thường vẫn ở hàng lớp FT của lượt, nên Σ hàng = ô khung FT). Hàng tổng
  * là TẬP GỐC, không phải tổng các hàng — một em ở hai lớp có mặt ở cả hai hàng nhưng một lần ở tổng (HĐSL luật 4).
  * Học viên ở hàng tổng = DÂN SỐ của các chỉ số (`studentsInScope`, cùng bộ lọc chương trình), nên mọi cột học viên của
  * hàng tổng đều là tập con của nó; em mà lớp đang học không còn active có ở hàng tổng nhưng không ở hàng nào.
@@ -64,8 +64,9 @@ function tinh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh }) {
   if (f.ct !== 'ca-hai') { where.push('c.is_fast_track = ?'); args.push(f.ct === 'ft' ? 1 : 0); }
   const lop = conn.prepare(
     `SELECT c.id, c.code, c.branch_id, c.is_fast_track, b.name AS branch_name FROM classes c
-       JOIN branches b ON b.id = c.branch_id WHERE ${where.join(' AND ')} ORDER BY b.id, c.code`,
+       JOIN branches b ON b.id = c.branch_id WHERE ${where.join(' AND ')}`,
   ).all(...args) as any[];
+  lop.sort((a, b) => soSanhLop({ code: a.code, branchId: a.branch_id }, { code: b.code, branchId: b.branch_id }));   // PR-UXF-a U1
 
   const tapLop = new Map<number, Tap>();
   for (const c of lop) tapLop.set(c.id, tapRong());
@@ -86,10 +87,9 @@ function tinh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh }) {
       if (sMau.has(sid)) t.duDuLieuMau.add(sid);
     }
   }
-  const lopCuaCase = new Map<number, number | null>();
-  for (const c of listCases(p, { branchId: branchId ?? undefined }).rows as any[]) lopCuaCase.set(c.id, c.homeClassId ?? null);
-  for (const id of caseMo.ids) { const l = lopCuaCase.get(id); if (l && tapLop.has(l)) tapLop.get(l)!.caseMo.add(id); }
-  for (const id of thieu.ids) { const l = lopCuaCase.get(id); if (l && tapLop.has(l)) tapLop.get(l)!.thieuPa.add(id); }
+  const lopCuaCase = lopCuaTap('case', [...new Set([...caseMo.ids, ...thieu.ids])]);
+  for (const id of caseMo.ids) { const l = lopCuaCase.get(id)?.classId; if (l && tapLop.has(l)) tapLop.get(l)!.caseMo.add(id); }
+  for (const id of thieu.ids) { const l = lopCuaCase.get(id)?.classId; if (l && tapLop.has(l)) tapLop.get(l)!.thieuPa.add(id); }
 
   const tongTap = tapRong();
   const danSo = new Set(locTheoChuongTrinh('hoc-vien', studentsInScope(p, branchId), f.ct));

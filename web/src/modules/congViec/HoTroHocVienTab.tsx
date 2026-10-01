@@ -15,7 +15,7 @@ import { useNhacYThuc } from '../yThuc/YThucReminders.tsx';
 import { ChonPhuTrach, type NguoiPhuTrach } from './ChonPhuTrach.tsx';
 import { CongTacKhung, khungDaNho, type KhungLoc } from '../../ui/CongTacKhung.tsx';
 import {
-  LOC_NHANH, LOC_NHANH_LABEL, NHOM_VIEC, NHOM_VIEC_LABEL, demLocNhanh, gomNhomViec, khopLocNhanh, nhomViecCua, type LocNhanh, type NhomViec as MaNhomViec,
+  LOC_NHANH, LOC_NHANH_LABEL, NHOM_VIEC, NHOM_VIEC_LABEL, demLocNhanh, demNhomChip, gomNhomViec, khopLocNhanh, nhomViecCua, type LocNhanh, type NhomViec as MaNhomViec,
 } from '@shared/domain/index.ts';
 
 type Work = {
@@ -82,17 +82,14 @@ export function HoTroHocVienTab() {
   const khung: KhungLoc = demKhung.ft > 0 && demKhung.thuong > 0 ? khungChon : 'tat-ca';
   const items = useMemo(() => (khung === 'tat-ca' ? tatCaViec : tatCaViec.filter((it) => !it.khung || it.khung === khung)), [tatCaViec, khung]);
   const trongNhom = useMemo(() => (nhom ? items.filter((it) => nhomViecCua(it.group) === nhom) : items), [items, nhom]);
-  const demHan = useMemo(() => demLocNhanh(trongNhom, 'tat-ca', homNay), [trongNhom, homNay]);
+  /* PR-UXF-a F5 (Q19): MỘT biến nhắc cho mọi chip "Tất cả" — nhắc (không hạn) của chính người xem; chỉ hiện ở "Tất cả", không ở Quá hạn/Hôm nay. */
+  const soNhac = nguoi === 'toi' ? nhac.length : 0;
+  const demHan = useMemo(() => demLocNhanh(trongNhom, 'tat-ca', homNay, !nhom || nhom === 'y-thuc' ? soNhac : 0), [trongNhom, homNay, nhom, soNhac]);
   const locItems = useMemo(() => items.filter((it) => khopLocNhanh(it, loc, homNay)), [items, loc, homNay]);
   const cuoiItems = useMemo(() => (nhom ? locItems.filter((it) => nhomViecCua(it.group) === nhom) : locItems), [locItems, nhom]);
-  /* Ý thức & Phối hợp là nhắc MỀM của chính người xem — không có ý nghĩa khi đang xem việc người khác. */
-  const soNhacYThuc = nguoi === 'toi' && (!nhom || nhom === 'y-thuc') ? nhac.length : 0;
-  const demNhom = useMemo(() => {
-    const out = Object.fromEntries(NHOM_VIEC.map((k) => [k, 0])) as Record<MaNhomViec, number>;
-    for (const it of locItems) out[nhomViecCua(it.group)] += 1;
-    out['y-thuc'] += nguoi === 'toi' ? nhac.length : 0;
-    return out;
-  }, [locItems, nguoi, nhac.length]);
+  /* Ý thức & Phối hợp là nhắc MỀM của chính người xem — không có ý nghĩa khi đang xem việc người khác; không có hạn nên chỉ ở lọc "Tất cả". */
+  const soNhacYThuc = loc === 'tat-ca' && (!nhom || nhom === 'y-thuc') ? soNhac : 0;
+  const demNhom = useMemo(() => demNhomChip(items, loc, homNay, soNhac), [items, loc, homNay, soNhac]);
   const dsNhom = useMemo(() => gomNhomViec(cuoiItems, soNhacYThuc), [cuoiItems, soNhacYThuc]);
   /* Đang lọc thì kết quả đã ít — mở hết luôn, không bắt bấm thêm một lần gập/mở nữa. */
   const moHet = loc !== 'tat-ca' || !!nhom;
@@ -148,7 +145,7 @@ export function HoTroHocVienTab() {
         )}
         <BoLocDoan ariaLabel="Nhóm việc" value={nhom ?? 'tat-ca'}
           onChange={(k) => { const next = new URLSearchParams(params); next.delete('loai'); if (k === 'tat-ca') next.delete('nhom'); else next.set('nhom', k); setParams(next, { replace: true }); }}
-          muc={[{ key: 'tat-ca', nhan: 'Tất cả', so: locItems.length + (nguoi === 'toi' ? nhac.length : 0) },
+          muc={[{ key: 'tat-ca', nhan: 'Tất cả', so: demNhom['tat-ca'] },
             ...NHOM_VIEC.map((k) => ({ key: k, nhan: NHOM_VIEC_LABEL[k], so: demNhom[k] }))]} />
         <BranchFilter branchId={branchId} onBranch={(id) => setParam('cn', id ? String(id) : null)} />
       </div>
