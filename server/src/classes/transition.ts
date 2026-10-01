@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  PERMISSIONS, PROGRAMME_TEMPLATES, kiemDongChuyenTiep, tuanChonDuoc, kyHieuLop, soSanhLop, tachSoLop, luatDoiLop, nextStepsAfter, programmeOf, tuanKhoa,
+  PERMISSIONS, PROGRAMME_TEMPLATES, kiemDongChuyenTiep, tuanChonDuoc, kyHieuLop, soSanhLop, tachSoLop, luatDoiLop, nextStepsAfter, programmeOf, tuanHocFt, tuanKhoa,
   type DongChuyenTiep, type Huong, type LoaiLop, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, isIsoDate, notFound } from '../util.ts';
@@ -15,6 +15,7 @@ import { apDungBaoLuuCaLop, apDungCaLop, dongLopNeuHet, type DongCaLop } from '.
 import { tiepTheoTheoHocVien } from './loTrinhTiep.ts';
 import { standingFor } from '../students/standing.ts';
 import { cuoiKhoaTheoHocVien } from '../normal/cuoiKhoa.ts';
+import { khoangTamDung } from '../students/tamDung.ts';
 
 /**
  * CHUYỂN TIẾP KHI MỘT LỚP HỌC HẾT CHƯƠNG TRÌNH — mục 6.1, đặc tả §3.9.2 (PR-LT thay khung cũ).
@@ -60,16 +61,20 @@ export function transitionPlan(p: Principal, classId: number) {
   const students = conn
     .prepare(
       `SELECT s.id, s.student_code, s.full_name, s.status,
-              cy.id AS cycle_id, cy.target_score
+              cy.id AS cycle_id, cy.target_score, cy.route, sp.week_start AS start_week
          FROM enrollments e
          JOIN students s ON s.id = e.student_id
          LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
+         LEFT JOIN report_periods sp ON sp.id = cy.start_period_id
         WHERE e.class_id = ? AND e.status = 'active'
           AND s.status = 'active' AND s.archived_at IS NULL
         ORDER BY s.full_name`,
     )
     .all(classId) as any[];
   const sids = students.map((s) => s.id as number);
+  /* PR-UXF-a Q6: lớp FT — "tuần học thứ n" của từng em (bỏ tuần Tạm dừng), MỘT câu khoảng dừng cho cả lớp. Lớp thường không cần. */
+  const dungCua = ft && sids.length ? khoangTamDung(sids) : {};
+  const tuanNay = mondayOf(demoToday());
 
   /* Lộ trình tiếp theo đã ghi (điền sẵn) — một câu cho cả lớp. */
   const loTrinhTiepMap = tiepTheoTheoHocVien([classId]);
@@ -170,6 +175,9 @@ export function transitionPlan(p: Principal, classId: number) {
     students: students.map((s) => ({
       id: s.id, studentCode: s.student_code, fullName: s.full_name,
       cycleId: s.cycle_id ?? null, target: s.target_score ?? null,
+      /** PR-UXF-a (mockup 20 màn I): FT `{ tuan, tong: null }` — "LT1 · tuần học thứ 9"; lớp thường null (cột Khoá đã có tuần của lớp). */
+      route: (s.route ?? null) as string | null,
+      tuanHoc: ft && s.start_week ? (() => { const tuan = tuanHocFt(s.start_week, tuanNay, dungCua[s.id] ?? []); return tuan ? { tuan, tong: null } : null; })() : null,
       loTrinhTiep: loTrinhTiepMap.get(s.id) ?? null,
       ketQua: ketQua.get(s.id) ?? null,
       cuoiKhoa: cuoiKhoa.get(s.id) ?? null,

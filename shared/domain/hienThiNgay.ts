@@ -34,3 +34,24 @@ export function tuanKhoa(n: number, tong: number): string {
   if (!Number.isInteger(n) || !Number.isInteger(tong) || n < 1 || tong < 1) return '—';
   return `W${n}/${tong}`;
 }
+
+/** "tuần học 3/8" (lớp thường, có tổng) · "tuần học thứ 9" (FT — không giới hạn tuần). Cùng thân với PR-VAI-b Task 1. */
+export const chuTuanHoc = (tuan: number, tong: number | null): string => (tong ? `tuần học ${tuan}/${tong}` : `tuần học thứ ${tuan}`);
+
+/**
+ * Q31-11 (chủ sản phẩm 01/10): tuần học thứ n của em FT tại tuần `tuan` — đếm từ tuần bắt đầu lộ trình `batDau`, BỎ tuần Tạm dừng
+ * (tuần có ngày Tạm dừng tới trước tuần Quay lại; Tạm dừng và Quay lại cùng tuần → không trừ). Trước tuần bắt đầu, hoặc `tuan` nằm
+ * trong một khoảng dừng ĐÃ khép → null. Đang dừng (chưa quay lại) → số tuần đã học tới trước tuần dừng. Cùng luật với PR-VAI-b Task 1.
+ */
+export function tuanHocFt(batDau: string, tuan: string, dung: readonly { tu: string; den: string | null }[]): number | null {
+  const dau = mondayOfDate(batDau), den = mondayOfDate(tuan);
+  if (den < dau) return null;
+  const khoang = dung.map((k) => ({ tu: mondayOfDate(k.tu), den: k.den ? mondayOfDate(k.den) : null }));
+  if (khoang.some((k) => k.den !== null && den >= k.tu && den < k.den)) return null;
+  const dangDung = (w: string) => khoang.some((k) => w >= k.tu && (k.den === null || w < k.den));
+  const TUAN_MS = 7 * 86_400_000;
+  const soTuan = Math.round((Date.parse(den) - Date.parse(dau)) / TUAN_MS) + 1;
+  let n = 0;
+  for (let i = 0; i < soTuan; i++) if (!dangDung(new Date(Date.parse(dau) + i * TUAN_MS).toISOString().slice(0, 10))) n += 1;
+  return n || null;
+}

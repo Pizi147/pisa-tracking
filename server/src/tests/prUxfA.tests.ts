@@ -194,4 +194,62 @@ export async function runPrUxfATests(t: YThucTestKit) {
     const sau = (classes.classRoster(pL, LOP) as any[]).find((s) => s.id === X.sid).openCases;
     assert(sau === 1 && classes.classOverview(pL, LOP).soCaseMo === (classes.classRoster(pL, LOP) as any[]).reduce((n, s) => n + s.openCases, 0), `Case xong không đếm: ${sau}`);
   });
+
+  // ==================================================================== Task 4 · FT "tuần học thứ n" (Q31-11, cùng luật PR-VAI-b Task 1)
+  const tamDung: any = await import('../students/tamDung.ts');
+  const luatLoTrinh: any = await import('../classes/luatLoTrinh.ts');
+  const dem = (fn: () => void): number => {
+    let n = 0; const goc = conn.prepare.bind(conn);
+    (conn as any).prepare = (sql: string) => { n += 1; return goc(sql); };
+    try { fn(); } finally { (conn as any).prepare = goc; }
+    return n;
+  };
+  const tuanTruoc = (n: number) => d.mondayOfDate(t.addDays(TODAY, -7 * n));
+  const ghiNhatKy = (sid: number, loai: 'pause' | 'resume', ngay: string) => conn.prepare(
+    `INSERT INTO journey_events (student_id, event_type, event_date, title, detail, created_by, created_at) VALUES (?,?,?,?,?,?,?)`,
+  ).run(sid, loai, ngay, loai === 'pause' ? 'Tạm dừng học' : 'Quay lại học', loai === 'pause' ? 'Ốm' : null, P.admin.userId, NOW);
+
+  check('UXF-a (4) · chuTuanHoc + tuanHocFt: đếm từ tuần bắt đầu, bỏ tuần Tạm dừng; tuần đang dừng (đã khép) → null; đang dừng → số tới trước tuần dừng; cùng tuần không trừ', () => {
+    assert(d.chuTuanHoc(3, 8) === 'tuần học 3/8' && d.chuTuanHoc(9, null) === 'tuần học thứ 9', 'chuTuanHoc');
+    const bd = tuanTruoc(10), nay = d.mondayOfDate(TODAY);
+    assert(d.tuanHocFt(bd, nay, []) === 11, `không dừng: ${d.tuanHocFt(bd, nay, [])}`);
+    const dung = [{ tu: t.addDays(tuanTruoc(7), 2), den: t.addDays(tuanTruoc(5), 1) }];   // dừng 2 tuần (tuần −7, −6)
+    assert(d.tuanHocFt(bd, nay, dung) === 9, `dừng 2 tuần rồi quay lại: ${d.tuanHocFt(bd, nay, dung)}`);
+    assert(d.tuanHocFt(bd, tuanTruoc(6), dung) === null, 'tuần trong khoảng dừng → null');
+    assert(d.tuanHocFt(bd, nay, [{ tu: tuanTruoc(2), den: null }]) === 8, `đang dừng từ tuần −2 → 8: ${d.tuanHocFt(bd, nay, [{ tu: tuanTruoc(2), den: null }])}`);
+    assert(d.tuanHocFt(bd, tuanTruoc(11), []) === null, 'trước tuần bắt đầu → null');
+    assert(d.tuanHocFt(bd, nay, [{ tu: tuanTruoc(4), den: t.addDays(tuanTruoc(4), 3) }]) === 11, 'Tạm dừng và Quay lại cùng tuần → không trừ');
+  });
+
+  const LOP_FT = taoLop('MB FT UXF1', 'FT');
+  const F = taoHv(LOP_FT, true);
+  conn.prepare('UPDATE learning_cycles SET start_period_id = ? WHERE id = ?').run(week.ensurePeriod(tuanTruoc(10)).id, F.cycleId);
+  ghiNhatKy(F.sid, 'pause', t.addDays(tuanTruoc(7), 2));
+  ghiNhatKy(F.sid, 'resume', t.addDays(tuanTruoc(5), 1));
+
+  check('UXF-a (4) · khoangTamDung một câu SQL cho cả lô; em không dừng không có khoá; em đang dừng den = null', () => {
+    const G = taoHv(LOP_FT, true);
+    ghiNhatKy(G.sid, 'pause', TODAY);
+    let k: any;
+    assert(dem(() => { k = tamDung.khoangTamDung([F.sid, G.sid, Y.sid]); }) === 1, 'một câu');
+    assert(k[F.sid].length === 1 && k[F.sid][0].tu === t.addDays(tuanTruoc(7), 2) && k[F.sid][0].den === t.addDays(tuanTruoc(5), 1), JSON.stringify(k[F.sid]));
+    assert(k[G.sid][0].den === null && k[G.sid][0].lyDo === 'Ốm', JSON.stringify(k[G.sid]));
+    assert(!(Y.sid in k), 'em không dừng: không khoá');
+    conn.prepare('DELETE FROM enrollments WHERE student_id = ?').run(G.sid);   // G chỉ dùng cho phép này
+  });
+
+  check('UXF-a (4) · xemChuyenLop: em FT → { tuan: n, tong: null } (bỏ 2 tuần dừng = 9; Trịnh Bảo Ngọc 8 tuần trước = 9); em lớp thường → tong = số tuần lớp; transitionPlan FT không mẫu số', () => {
+    const xf = luatLoTrinh.xemChuyenLop(P.mbManager, F.sid).hienTai.tuanHoc;
+    assert(xf && xf.tuan === 9 && xf.tong === null, `F: ${JSON.stringify(xf)}`);
+    const ngoc = luatLoTrinh.xemChuyenLop(P.mbManager, emId('Trịnh Bảo Ngọc')).hienTai.tuanHoc;
+    assert(ngoc && ngoc.tuan === 9 && ngoc.tong === null, `Ngọc: ${JSON.stringify(ngoc)}`);
+    const huy = luatLoTrinh.xemChuyenLop(P.mbManager, emId('Tạ Đức Huy')).hienTai.tuanHoc;
+    assert(!huy || typeof huy.tong === 'number', `lớp thường: ${JSON.stringify(huy)}`);
+    const tp = transition.transitionPlan(P.mbManager, lopId('MB FT 101'));
+    assert(tp.students.length > 0 && tp.students.every((s: any) => !s.tuanHoc || s.tuanHoc.tong === null), 'FT: tong null');
+    assert(tp.students.find((s: any) => s.id === emId('Trịnh Bảo Ngọc')).tuanHoc.tuan === 9, 'panel FT: Ngọc tuần học thứ 9 — cùng số với panel một em');
+    const tpF = transition.transitionPlan(P.mbManager, LOP_FT).students.find((s: any) => s.id === F.sid);
+    assert(tpF.tuanHoc.tuan === xf.tuan, 'hai đường: panel cả lớp = panel một em');
+    for (const x of [tp, luatLoTrinh.xemChuyenLop(P.mbManager, F.sid)]) assert(!/"tong":16/.test(JSON.stringify(x)), 'không payload FT nào có tong 16');
+  });
 }
