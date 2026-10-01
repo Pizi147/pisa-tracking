@@ -52,7 +52,8 @@ export function KetLuanKhoa({ studentId, studentName, lop, ct, cuoiKhoa, coTheKe
         {h.phu && <span className="text-xs tabular-nums text-slate-400">{h.phu}</span>}
         {cuoiKhoa.daChuyen && cuoiKhoa.lop && <span className="text-xs text-slate-500">lớp {cuoiKhoa.lop} (đã chuyển)</span>}
       </div>
-      {h.nhan && <div><Level tone={TONE[h.tone]}>{h.nhan}</Level></div>}
+      {/* Nhãn hướng gợi ý có thể dài ("Lên ELE + bổ trợ miễn phí …"): chip được xuống dòng thay vì đẩy trang tràn ngang ở 375 px (PR-UXD). */}
+      {h.nhan && <div className="[&>span]:max-w-full [&>span]:whitespace-normal [&>span]:rounded-xl"><Level tone={TONE[h.tone]}>{h.nhan}</Level></div>}
       {h.kyVong && (
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
           <span className="text-slate-400">{h.kyVong.nhan}</span>

@@ -9028,6 +9028,10 @@ await runPrS6fBTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 const { runPrDonATests } = await import('./prDonA.tests.ts');
 await runPrDonATests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
+// ==================================================================== PR-UXD (điện thoại 375 px)
+const { runPrUxdTests } = await import('./prUxd.tests.ts');
+await runPrUxdTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

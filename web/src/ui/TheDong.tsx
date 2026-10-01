@@ -23,13 +23,15 @@ export function useDienThoai(): boolean {
  * `MenuDong` tự nới) rồi các dòng `nhãn · giá trị` THEO ĐÚNG THỨ TỰ CỘT của bảng desktop. Số dùng `tabular-nums`. Mọi bảng dùng lại thành phần
  * này (PR-UXD D1 mở rộng, không dựng thứ hai). Nằm ở: Học viên & Lớp · Hồ sơ lớp → tab Học viên (Điểm FT, Điểm lớp thường, Cần hỗ trợ).
  */
-export function TheDong({ dau, hanhDong, dong, className = '' }: {
+export function TheDong({ dau, hanhDong, dong, className = '', id }: {
   dau: ReactNode; hanhDong?: ReactNode;
   dong: readonly { nhan: string; noiDung: ReactNode }[];
   className?: string;
+  /** Neo cuộn tới đúng thẻ (ví dụ `dot-{id}` ở hồ sơ học viên). */
+  id?: string;
 }) {
   return (
-    <article className={`border-t px-3 py-2.5 first:border-t-0 [&_a.link]:inline-block [&_a.link]:py-3.5 [&_button.link]:py-3.5 ${className}`} style={{ borderColor: 'var(--line)' }}>
+    <article id={id} className={`border-t px-3 py-2.5 first:border-t-0 [&_a.link]:inline-block [&_a.link]:py-3.5 [&_button.link]:py-3.5 ${className}`} style={{ borderColor: 'var(--line)' }}>
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1">{dau}</div>
         {hanhDong && <div className="shrink-0">{hanhDong}</div>}

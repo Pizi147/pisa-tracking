@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { BoLocDoan, Card, DaiChiXem, Empty, ErrorState, Info, Level, Outcome, Skeleton, TargetText, Th} from '../../ui/ui.tsx';
@@ -27,7 +27,7 @@ import { HangTab } from '../../ui/HangTab.tsx';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
 import { ChipLichSu } from '../../ui/Nhan.tsx';
 import { useSession } from '../../lib/session.tsx';
-import { useDienThoai } from '../../ui/TheDong.tsx';
+import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
 import { DaiHocVienChuyen } from '../classes/DaiChuyenLop.tsx';
 
 type OpenCase = { caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'them-pa' | 'xac-nhan' | 'xac-nhan-pa' | 'ke-hoach' } | null;
@@ -400,6 +400,9 @@ export default function StudentDetailPage() {
 
 // ==================================================================== khối nhỏ
 
+/** Chữ cái kỹ năng ở dòng Điểm của thẻ điện thoại (cùng chữ với đầu cột bảng). */
+const CHU_KY_NANG = { listening: 'L', reading: 'R', writing: 'W', speaking: 'S' } as const;
+
 /**
  * BẢNG MOCK TEST của hồ sơ HV (F8, K4-33). Nằm ở: Học viên & Lớp › hồ sơ học viên › tab Học thuật › khối "Mock Test".
  *
@@ -410,6 +413,7 @@ export default function StudentDetailPage() {
 function IeltsAttempts({ attempts, dotId, homNay, onOpen }: {
   attempts: any[]; dotId?: number; homNay: string | null; onOpen: (a: any) => void;
 }) {
+  const dienThoai = useDienThoai();
   const nhanCua = (a: any): { chu: string; title: string }[] => [
     ...(a.status === 'cancelled' ? [{ chu: 'đã huỷ', title: 'Lượt này đã huỷ.' }] : []),
     ...(a.huyPhan ? [{ chu: 'huỷ phần', title: 'Có kỹ năng bị huỷ phần thi.' }] : []),
@@ -418,6 +422,68 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen }: {
       title: `Dời do vắng: ${a.doiKyNang.map((k: string) => skillLabel(k)).join(', ')}.`,
     }] : []),
   ];
+  /** Chip lịch sử + nhãn nhỏ cạnh MT{n} — dùng chung bảng (máy tính) và thẻ (điện thoại). */
+  const nhanMt = (a: any) => {
+    const nhan = nhanCua(a);
+    return (
+      <>
+        {a.lichSu && <> <ChipLichSu /></>}
+        {nhan.slice(0, a.lichSu ? 1 : 2).map((x) => (
+          <span key={x.chu} title={x.title}
+            className="ml-1 inline-flex items-center whitespace-nowrap rounded border border-muted-line px-[5px] align-middle text-[11.5px] leading-4 text-muted">
+            {x.chu}
+          </span>
+        ))}
+        {nhan.length > (a.lichSu ? 1 : 2) && (
+          <span className="ml-1 text-[11.5px] text-muted" title={nhan.slice(a.lichSu ? 1 : 2).map((x) => x.title).join(' ')}>
+            +{nhan.length - (a.lichSu ? 1 : 2)}
+          </span>
+        )}
+      </>
+    );
+  };
+  /* G5: điểm một kỹ năng mở hồ sơ Mock cuộn tới đúng kỹ năng (Tab vào được; hàng bảng vẫn bấm mở đợt). */
+  const diemKyNang = (a: any, k: 'listening' | 'reading' | 'writing' | 'speaking') => (
+    a.bands?.[k] != null
+      ? <Link to={duongDotTest(a, k)} className="link" title={`Mở hồ sơ Mock · MT${a.attemptNo} · ${skillLabel(k)}`} onClick={(e) => e.stopPropagation()}>{fmtBand(a.bands[k])}</Link>
+      : fmtBand(a.bands?.[k])
+  );
+  /*
+   * ĐIỆN THOẠI (PR-UXD Q9): mỗi lượt MỘT thẻ — đầu thẻ `MT2 · W3 SEP` + Kết quả bên phải (tầng 1), rồi Điểm L R W S · Overall · Kỳ vọng ·
+   * Lớp (tầng 3, cuối). Cùng trường `a.*` và cùng link `attemptHref` / `duongDotTest` với bảng — đổi bảng thì đổi thẻ.
+   */
+  if (dienThoai) {
+    return (
+      <div>
+        {attempts.map((a) => (
+          <TheDong key={a.id} id={`dot-${a.id}`} className={a.id === dotId ? 'bg-[color:var(--accent-soft)]' : ''}
+            dau={(
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <Link to={attemptHref(a)} className="link font-semibold tabular-nums">MT{a.attemptNo}</Link>{nhanMt(a)}
+                  <div className="text-xs text-slate-500">{a.weekStart ? tuanLich(a.weekStart, homNay) : <Info pending>Chưa có tuần</Info>}</div>
+                </div>
+                <div className="shrink-0 text-right">
+                  <KetQuaDot coDiem={a.scored} yeuCau={a.required} dat={a.evaluable ? a.sosLevel === 0 : null} sos={a.sosLevel ?? null} />
+                  {a.scopeNote && <div className="text-xs text-slate-500">{a.scopeNote}</div>}
+                </div>
+              </div>
+            )}
+            dong={[
+              {
+                nhan: 'Điểm',
+                noiDung: (['listening', 'reading', 'writing', 'speaking'] as const).map((k, i) => (
+                  <Fragment key={k}>{i > 0 && ' · '}<span className="text-slate-500">{CHU_KY_NANG[k]}</span> {diemKyNang(a, k)}</Fragment>
+                )),
+              },
+              { nhan: 'Overall', noiDung: fmtBand(a.overall) },
+              { nhan: 'Kỳ vọng', noiDung: fmtBand(a.expectation) },
+              { nhan: 'Lớp', noiDung: a.classCode ?? '—' },
+            ]} />
+        ))}
+      </div>
+    );
+  }
   const so = 'td text-right tabular-nums';
   return (
     <div className="overflow-x-auto">
@@ -436,36 +502,19 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen }: {
         </thead>
         <tbody>
           {attempts.map((a) => {
-            const nhan = nhanCua(a);
             return (
               <tr key={a.id} id={`dot-${a.id}`} className="row-hover cursor-pointer" onClick={() => onOpen(a)}
                 style={a.id === dotId ? { background: 'var(--accent-soft)' } : undefined}>
                 <td className="td whitespace-nowrap">
                   <Link to={attemptHref(a)} className="link tabular-nums" onClick={(e) => e.stopPropagation()}>MT{a.attemptNo}</Link>
-                  {a.lichSu && <> <ChipLichSu /></>}
-                  {nhan.slice(0, a.lichSu ? 1 : 2).map((x) => (
-                    <span key={x.chu} title={x.title}
-                      className="ml-1 inline-flex items-center whitespace-nowrap rounded border border-muted-line px-[5px] align-middle text-[11.5px] leading-4 text-muted">
-                      {x.chu}
-                    </span>
-                  ))}
-                  {nhan.length > (a.lichSu ? 1 : 2) && (
-                    <span className="ml-1 text-[11.5px] text-muted" title={nhan.slice(a.lichSu ? 1 : 2).map((x) => x.title).join(' ')}>
-                      +{nhan.length - (a.lichSu ? 1 : 2)}
-                    </span>
-                  )}
+                  {nhanMt(a)}
                 </td>
                 <td className="td text-slate-300">{a.classCode ?? '—'}</td>
                 <td className="td whitespace-nowrap">
                   {a.weekStart ? tuanLich(a.weekStart, homNay) : <Info pending>Chưa có tuần</Info>}
                 </td>
                 {(['listening', 'reading', 'writing', 'speaking'] as const).map((k) => (
-                  <td key={k} className={so}>
-                    {/* G5: ô kỹ năng mở hồ sơ Mock cuộn tới đúng kỹ năng (Tab vào được; hàng vẫn bấm mở đợt). */}
-                    {a.bands?.[k] != null
-                      ? <Link to={duongDotTest(a, k)} className="link" title={`Mở hồ sơ Mock · MT${a.attemptNo} · ${skillLabel(k)}`} onClick={(e) => e.stopPropagation()}>{fmtBand(a.bands[k])}</Link>
-                      : fmtBand(a.bands?.[k])}
-                  </td>
+                  <td key={k} className={so}>{diemKyNang(a, k)}</td>
                 ))}
                 <td className={`${so} text-slate-100`}>{fmtBand(a.overall)}</td>
                 <td className={so}>{fmtBand(a.expectation)}</td>
@@ -491,6 +540,45 @@ function RatioAttempts({ attempts, dotId, homNay, onOpen, ct = null }: {
   /** Mã chương trình lộ trình — tên môn FOU G+V/P, Pre FOU Tổng hợp (MH2). */
   ct?: string | null;
 }) {
+  const dienThoai = useDienThoai();
+  /* Chip điểm từng phần — dùng chung bảng và thẻ điện thoại. */
+  const chipMon = (a: any) => (
+    <span className="flex flex-wrap gap-1">
+      {(a.skills ?? []).map((s: any) => (
+        <Outcome key={s.skill} tone={s.outcome === 'missing' ? 'muted' : s.outcome === 'pass' ? 'ok' : 'warn'}
+          title={s.label}>
+          {tenMonNgan(ct, s.skill)} {s.score !== null ? `${s.score}/${s.total}` : '—'}
+        </Outcome>
+      ))}
+    </span>
+  );
+  /* ĐIỆN THOẠI (PR-UXD Q9): mỗi lượt MỘT thẻ — `Giữa khoá · W3 SEP` + Kết quả bên phải, rồi Điểm từng phần · Lớp · Hồ sơ đợt ›. */
+  if (dienThoai) {
+    return (
+      <div>
+        {attempts.map((a) => (
+          <TheDong key={a.id} id={`dot-${a.id}`} className={a.id === dotId ? 'bg-[color:var(--accent-soft)]' : ''}
+            dau={(
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 text-sm">
+                  <span className="font-semibold">{a.kind === 'final' ? 'Cuối khoá' : 'Giữa khoá'}</span>
+                  <div className="text-xs text-slate-500">{a.weekStart ? tuanLich(a.weekStart, homNay) : <Info pending>Chưa có tuần</Info>}</div>
+                </div>
+                <div className="shrink-0 text-right">
+                  <KetQuaThuongO a={a} ct={ct} />
+                  {a.provisional && <div className="text-xs text-slate-400">mới {a.scored}/{a.required} môn</div>}
+                </div>
+              </div>
+            )}
+            dong={[
+              { nhan: 'Điểm từng phần', noiDung: chipMon(a) },
+              { nhan: 'Lớp', noiDung: a.classCode ?? '—' },
+              { nhan: 'Hồ sơ', noiDung: <Link to={attemptHref(a)} className="link text-[11px]">Hồ sơ đợt ›</Link> },
+            ]} />
+        ))}
+      </div>
+    );
+  }
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm min-w-[640px]">
@@ -512,16 +600,7 @@ function RatioAttempts({ attempts, dotId, homNay, onOpen, ct = null }: {
               <td className="td whitespace-nowrap">
                 {a.weekStart ? tuanLich(a.weekStart, homNay) : <Info pending>Chưa có tuần</Info>}
               </td>
-              <td className="td">
-                <span className="flex flex-wrap gap-1">
-                  {(a.skills ?? []).map((s: any) => (
-                    <Outcome key={s.skill} tone={s.outcome === 'missing' ? 'muted' : s.outcome === 'pass' ? 'ok' : 'warn'}
-                      title={s.label}>
-                      {tenMonNgan(ct, s.skill)} {s.score !== null ? `${s.score}/${s.total}` : '—'}
-                    </Outcome>
-                  ))}
-                </span>
-              </td>
+              <td className="td">{chipMon(a)}</td>
               <td className="td">
                 <KetQuaThuongO a={a} ct={ct} />
                 {a.provisional && <div className="text-xs text-slate-400">mới {a.scored}/{a.required} môn</div>}

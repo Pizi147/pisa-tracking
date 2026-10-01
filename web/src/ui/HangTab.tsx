@@ -4,6 +4,8 @@
  *
  * Trên 375px hàng tab cuộn ngang BÊN TRONG chính nó (`overflow-x-auto`) — không đẩy cả trang cuộn ngang.
  */
+import { useEffect, useRef } from 'react';
+
 export type HangTabMuc<K extends string> = { key: K; label: string; so?: number | null; canhBao?: boolean };
 
 export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, cap = 'chinh' }: {
@@ -11,13 +13,18 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, ca
   /** 'chinh' = hàng tab của trang (chữ text-sm), 'con' = tab con trong một khối (text-xs). */
   cap?: 'chinh' | 'con';
 }) {
+  const hang = useRef<HTMLDivElement>(null);
+  /* Mở trang với tab ở cuối hàng (ví dụ `?tab=y-thuc`) thì tab đang chọn tự cuộn vào tầm nhìn, không bị khuất. */
+  useEffect(() => {
+    hang.current?.querySelector<HTMLElement>('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }, [value]);
   return (
-    <div role="tablist" aria-label={ariaLabel} className="flex gap-1 overflow-x-auto overflow-y-hidden border-b" style={{ borderColor: 'var(--line)' }}>
+    <div ref={hang} role="tablist" aria-label={ariaLabel} className="flex gap-1 overflow-x-auto overflow-y-hidden border-b" style={{ borderColor: 'var(--line)' }}>
       {tabs.map((t) => {
         const active = t.key === value;
         return (
           <button key={t.key} type="button" role="tab" aria-selected={active} onClick={() => onChange(t.key)}
-            className={`min-h-[44px] whitespace-nowrap px-3 py-2 -mb-px sm:min-h-0 border-b-2 font-semibold appearance-none bg-transparent cursor-pointer ${
+            className={`min-h-[44px] whitespace-nowrap px-2.5 sm:px-3 py-2 -mb-px sm:min-h-0 border-b-2 font-semibold appearance-none bg-transparent cursor-pointer ${
               cap === 'con' ? 'text-xs' : 'text-sm'
             } ${active ? 'border-[color:var(--accent)] text-slate-100' : 'border-transparent text-slate-400 hover:text-slate-200'}`}>
             {t.label}
