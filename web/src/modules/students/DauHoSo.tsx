@@ -206,7 +206,7 @@ export function BonO({ o, homNay, onDot, onKn, onYThuc, kyNangHref }: {
       const href = kyNangHref?.(d.kn, d.attemptId ?? null) ?? null;
       return (
         <span key={d.kn}>{i > 0 && ' · '}{href
-          ? <Link to={href} className="link" title={`Mở hồ sơ Mock · ${kq.nhan.split(' · ')[0]} · ${d.ngan}`}>{d.ngan}</Link>
+          ? <Link to={href} className="link" title={`Mở Hồ sơ Mock Test · ${kq.nhan.split(' · ')[0]} · ${d.ngan}`}>{d.ngan}</Link>
           : d.ngan}</span>
       );
     })}</>

@@ -194,7 +194,7 @@ export function ThanCase({ data, onViec }: { data: CaseDetail; onViec: (v: ViewC
         ) : null}
         {lichSu.length > 0 && (
           <details>
-            <summary className="cursor-pointer text-xs text-slate-400">Lịch sử cập nhật ({lichSu.length})</summary>
+            <summary className="cursor-pointer text-xs text-slate-400">Lịch sử ({lichSu.length})</summary>
             <ol className="m-0 mt-2 list-none space-y-2 border-l p-0 pl-3" style={{ borderColor: 'var(--line)' }}>
               {lichSu.map((m) => (
                 <li key={m.key} className="text-xs">

@@ -65,12 +65,36 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
       const hits = quetChuCu(chuCu, choPhep);
       assert(hits.length === 0, `Còn ${hits.length} chỗ:\n    ${hits.join('\n    ')}`);
     });
-  void khongCon; // các Task sau dùng
 
   // ------------------------------------------------------------------ Task 0 · bảng thuật ngữ còn nguyên 147 dòng "Sửa thành"
   check('S3 (0) · THUAT_NGU_2026-10-01.md còn đủ 147 dòng có "Sửa thành" (nguồn để đối chiếu)', () => {
     const md = fs.readFileSync(path.join(ROOT, 'thiet-ke/THUAT_NGU_2026-10-01.md'), 'utf8');
     const n = md.split('\n').filter((l) => /^\| [A-G]-\d{3} \|/.test(l) && (l.split('|').slice(-2, -1)[0] ?? '').trim() !== '').length;
     assert(n === 147, `${n} dòng`);
+  });
+  // ------------------------------------------------------------------ Task 1 · điều hướng & tên trang (nhóm A)
+  // `migrate.ts`: chữ đã lưu trong DB / nhật ký di cư (Q11) — giữ nguyên.
+  khongCon('S3 (1) · Nhóm A: không còn "Lịch kiểm tra", "Khu Lưu trữ", "Quyền và nhật ký", "Tổng quan chấm điểm", "Lịch sử thay đổi/cập nhật/chỉnh sửa", "Hồ sơ đợt", "hồ sơ Mock", tên trang tính không dấu',
+    [
+      ['Lịch kiểm tra', /[Ll]ịch kiểm tra/],
+      ['Khu Lưu trữ', /Khu Lưu trữ/],
+      ['Quyền và nhật ký', /Quyền và nhật ký/],
+      ['Tổng quan chấm điểm', /Tổng quan chấm điểm/],
+      ['Lịch sử thay đổi', /[Ll]ịch sử (thay đổi|cập nhật|chỉnh sửa)/],
+      ['Việc của tôi · hôm nay', /Việc của tôi · hôm nay/],
+      ['Hồ sơ đợt', /[Hh]ồ sơ đợt/],
+      ['hồ sơ Mock', /[Hh]ồ sơ Mock(?! Test)/],
+      ['Xuất kết quả Mock Test', /Xuất kết quả Mock Test/],
+      ['Kết quả kiểm tra', /Kết quả kiểm tra/],
+      ['Việc học viên (tên tab)', /'Việc học viên'/],
+      ['Tên trang tính không dấu', /'(Tong hop|HV can chu y|Lop nhieu vi pham|Xu ly theo loai)'/],
+    ],
+    [['server/src/migrate.ts', '']]);
+  check('S3 (1) · Hồ sơ Mock Test là tên trang FT; lớp thường dùng "Bảng điểm đợt" (không có chữ Mock/MT); tab Hỗ trợ học viên', () => {
+    assert(/Hồ sơ Mock Test ·/.test(docNguon('web/src/modules/fasttrack/MockDetailPage.tsx')), 'tiêu đề MockDetailPage');
+    const sd = docNguon('web/src/modules/students/StudentDetailPage.tsx');
+    assert((sd.match(/Bảng điểm đợt ›/g) ?? []).length === 2, 'link lớp thường');
+    assert(/'ho-tro': 'Hỗ trợ học viên'/.test(docNguon('shared/domain/dieuHuong.ts')), 'TAB_CONG_VIEC_LABEL');
+    assert(/'Tổng hợp'/.test(docNguon('web/src/modules/phanTich/TongHopTestSos.tsx')), 'Excel A-054');
   });
 }

@@ -132,7 +132,7 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
     const aoa = bangXuatTongHop(data, cotHien, moTa);
     const ws = XLSX.utils.aoa_to_sheet(aoa);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Tong hop');
+    XLSX.utils.book_append_sheet(wb, ws, 'Tổng hợp');
     const ten = ngay(demoDate).split('/').join('-');
     XLSX.writeFile(wb, `${ct === 'thuong' ? 'tong-hop-test' : 'tong-hop-test-sos'}-${ten}.xlsx`);   // D8: lớp thường không chữ SOS
   }

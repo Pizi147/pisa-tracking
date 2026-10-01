@@ -85,7 +85,7 @@ export function ViecCuaToi() {
   return (
     <section className="card" aria-labelledby="viec-cua-toi">
       <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
-        <h2 id="viec-cua-toi" className="m-0 text-sm font-semibold text-slate-200">Việc của tôi · hôm nay</h2>
+        <h2 id="viec-cua-toi" className="sr-only">Việc hôm nay</h2>
         {data && tong}
       </header>
       {loading || !data ? <div className="p-4"><Skeleton rows={5} /></div> : data.scopeEmpty ? (

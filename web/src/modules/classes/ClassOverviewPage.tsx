@@ -98,7 +98,7 @@ export default function ClassOverviewPage() {
       {tab === 'phan-tich' && <PhanTichLopTab classId={data.id} />}
 
       {viec === 'tien-do' && (
-        <ClassProgressPanel classId={data.id} classCode={data.code} tieuDe={thuong ? 'Lịch kiểm tra' : 'Tuần khai giảng'}
+        <ClassProgressPanel classId={data.id} classCode={data.code} tieuDe={thuong ? 'Lịch Test của lớp' : 'Tuần khai giảng'}
           onClose={dong} onDone={xong} onChuyenTiep={data.viewer.coTheChuyenTiep ? () => setViec('chuyen-tiep') : undefined} />
       )}
       <TransitionPanel classId={data.id} open={viec === 'chuyen-tiep'} onClose={dong} onDone={xong} />

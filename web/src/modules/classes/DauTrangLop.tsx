@@ -107,7 +107,7 @@ export function DauTrangLop({ data, periodId, onViec, onBanGiao }: {
   ];
   const menu: MucMenu[] = [
     /* E7: panel FT tên "Tuần khai giảng", lớp thường "Lịch kiểm tra". Xuất Excel (PR-XUAT) chép vào mảng này, sau "Sửa thông tin lớp". */
-    ...(data.viewer.canEditProgress ? [{ key: 'tien-do', nhan: thuong ? 'Lịch kiểm tra' : 'Tuần khai giảng', onChon: () => onViec('tien-do') }] : []),
+    ...(data.viewer.canEditProgress ? [{ key: 'tien-do', nhan: thuong ? 'Lịch Test của lớp' : 'Tuần khai giảng', onChon: () => onViec('tien-do') }] : []),
     /* PR-CT (Q30-1): Quản lý RA LỆNH — lớp thường "Chuyển lớp cả lớp…", lớp FT (gộp / tách lớp, đổi lộ trình) "Chuyển nhiều em…". GVCN không thấy. */
     ...(thuong && data.viewer.coTheChuyenTiep ? [{ key: 'chuyen-tiep', nhan: 'Chuyển lớp cả lớp…', onChon: () => onViec('chuyen-tiep') }] : []),
     ...(!thuong && data.dai?.viewer.coTheChuyenNhieuEm ? [{ key: 'chuyen-tiep', nhan: 'Chuyển nhiều em…', onChon: () => onViec('chuyen-tiep') }] : []),

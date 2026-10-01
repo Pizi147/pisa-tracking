@@ -32,7 +32,7 @@ type AdminData = {
 const TABS = [
   { key: 'accounts', label: 'Tài khoản' },
   { key: 'catalog', label: 'Lộ trình & chương trình' },
-  { key: 'config', label: 'Quyền và nhật ký' },
+  { key: 'config', label: 'Quyền & nhật ký' },
 ] as const;
 
 export default function AdminPage() {

@@ -82,7 +82,7 @@ export async function runKhungTests(t: YThucTestKit) {
     assert(d.tabCongViecTuDuong(undefined) === 'ho-tro' && d.tabCongViecTuDuong('bao-cao') === 'bao-cao' && d.tabCongViecTuDuong('cho-duyet') === 'cho-duyet'
       && d.tabCongViecTuDuong('yeu-cau') === 'yeu-cau' && d.tabCongViecTuDuong('x') === null && d.tabCongViecTuDuong('ho-tro') === null,
     'Đọc tab từ đường dẫn (không có đoạn = Việc học viên)');
-    assert(Object.values(d.TAB_CONG_VIEC_LABEL).join(',') === 'Chờ duyệt,Việc học viên,Yêu cầu của tôi,Vận hành,Báo cáo đơn vị', 'Chữ tab Công việc');
+    assert(Object.values(d.TAB_CONG_VIEC_LABEL).join(',') === 'Chờ duyệt,Hỗ trợ học viên,Yêu cầu của tôi,Vận hành,Báo cáo đơn vị', 'Chữ tab Công việc');
     assert(d.DUONG_TAB_CONG_VIEC['ho-tro'] === '/cong-viec' && d.DUONG_TAB_CONG_VIEC['van-hanh'] === '/cong-viec/van-hanh'
       && d.DUONG_TAB_CONG_VIEC['cho-duyet'] === '/cong-viec/cho-duyet', 'Đường dẫn tab');
     assert(d.khuVucHienThi(QL).find((k: any) => k.key === 'cong-viec')?.to === '/cong-viec/cho-duyet'

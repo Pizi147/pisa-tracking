@@ -311,7 +311,7 @@ export default function StudentDetailPage() {
             lớp Normal là "Kết quả kiểm tra". Cụm "Điểm qua các lượt" đã bỏ — nó không phải
             tiếng Việt ai dùng, và nó đúng với cả hai loại lớp nên chẳng nói được gì.
           */}
-          <Card title={cy.ratio ? 'Kết quả kiểm tra' : 'Mock Test'} bodyClass="p-0">
+          <Card title={cy.ratio ? 'Kết quả Test' : 'Mock Test'} bodyClass="p-0">
             {data.attempts.length === 0 ? (
               <div className="p-4"><Empty title="Chưa có lượt đánh giá nào trong lộ trình này" /></div>
             ) : cy.ratio ? <RatioAttempts attempts={data.attempts} dotId={p.dot} homNay={homNay} ct={cy.programmeCode ?? null} onOpen={(a) => navigate(attemptHref(a))} />
@@ -447,7 +447,7 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen }: {
   /* G5: điểm một kỹ năng mở hồ sơ Mock cuộn tới đúng kỹ năng (Tab vào được; hàng bảng vẫn bấm mở đợt). */
   const diemKyNang = (a: any, k: 'listening' | 'reading' | 'writing' | 'speaking') => (
     a.bands?.[k] != null
-      ? <Link to={duongDotTest(a, k)} className="link" title={`Mở hồ sơ Mock · MT${a.attemptNo} · ${skillLabel(k)}`} onClick={(e) => e.stopPropagation()}>{fmtBand(a.bands[k])}</Link>
+      ? <Link to={duongDotTest(a, k)} className="link" title={`Mở Hồ sơ Mock Test · MT${a.attemptNo} · ${skillLabel(k)}`} onClick={(e) => e.stopPropagation()}>{fmtBand(a.bands[k])}</Link>
       : fmtBand(a.bands?.[k])
   );
   /*
@@ -575,7 +575,7 @@ function RatioAttempts({ attempts, dotId, homNay, onOpen, ct = null }: {
             dong={[
               { nhan: 'Điểm từng phần', noiDung: chipMon(a) },
               { nhan: 'Lớp', noiDung: a.classCode ?? '—' },
-              { nhan: 'Hồ sơ', noiDung: <Link to={attemptHref(a)} className="link text-[11px]">Hồ sơ đợt ›</Link> },
+              { nhan: 'Bảng điểm', noiDung: <Link to={attemptHref(a)} className="link text-[11px]">Bảng điểm đợt ›</Link> },
             ]} />
         ))}
       </div>
@@ -606,7 +606,7 @@ function RatioAttempts({ attempts, dotId, homNay, onOpen, ct = null }: {
               <td className="td">
                 <KetQuaThuongO a={a} ct={ct} />
                 {a.provisional && <div className="text-xs text-slate-400">mới {a.scored}/{a.required} môn</div>}
-                <Link to={attemptHref(a)} className="link text-[11px]" onClick={(e) => e.stopPropagation()}>Hồ sơ đợt ›</Link>
+                <Link to={attemptHref(a)} className="link text-[11px]" onClick={(e) => e.stopPropagation()}>Bảng điểm đợt ›</Link>
               </td>
             </tr>
           ))}

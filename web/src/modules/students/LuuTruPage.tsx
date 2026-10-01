@@ -83,7 +83,7 @@ export default function LuuTruPage() {
         )}
       </div>
 
-      <HangTab ariaLabel="Khu Lưu trữ" value={tab} onChange={(k) => setParam({ tab: k === 'lop' ? null : k })}
+      <HangTab ariaLabel="Lưu trữ" value={tab} onChange={(k) => setParam({ tab: k === 'lop' ? null : k })}
         tabs={[
           { key: 'lop', label: 'Lớp đã kết thúc', so: data?.lop.length },
           { key: 'hv', label: 'Học viên đã lưu trữ', so: data?.hocVien.length },

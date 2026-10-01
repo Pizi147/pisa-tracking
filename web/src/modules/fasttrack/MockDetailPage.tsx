@@ -219,7 +219,7 @@ export default function MockDetailPage() {
           <button className="btn btn-sm btn-ghost mb-1" onClick={() => navigate(-1)}>← Quay lại</button>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <h1 className="text-lg font-semibold text-slate-100 min-w-0 break-words">
-              {d.student.name} <span className="text-slate-500 text-sm">· {d.student.code}</span>
+              <span className="mr-2 text-sm font-medium text-slate-400">Hồ sơ Mock Test ·</span>{d.student.name} <span className="text-slate-500 text-sm">· {d.student.code}</span>
               <span className="text-slate-300 text-base font-medium whitespace-nowrap"> · MT{d.attemptNo}{d.lichSu && <> <ChipLichSu /></>}</span>
             </h1>
             {cancelled && <Tag>Đã huỷ</Tag>}
@@ -463,7 +463,7 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory }: {
         </div>
 
         <div role="cell">
-          <Label>Lịch kiểm tra</Label>
+          <Label>Lịch Test</Label>
           {!r.required ? <span className="text-slate-500 text-xs">—</span>
             : r.periodCode
               ? <>{tuanLich(r.weekStart, homNay)} <span className="text-slate-500 text-xs block sm:inline">({r.weekRange})</span></>
@@ -528,7 +528,7 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory }: {
       : d.cells.filter((x) => x.assessedSkill === 'writing' && coDiemO(x)).map((x) => x.skill));
 
   return (
-    <Card title="Lịch kiểm tra"
+    <Card title="Lịch Test"
       action={<div className="flex items-center gap-2">
         {d.splitWeeks && <Tag>Đợt này thi ở nhiều tuần</Tag>}
         <button type="button" className="btn btn-sm" onClick={onOpenHistory}>Lịch sử</button>
@@ -542,11 +542,11 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory }: {
       {d.cells.length === 0 ? (
         <Empty title="Lớp này chưa cấu hình kỹ năng nào" />
       ) : (
-        <div role="table" aria-label="Lịch kiểm tra theo kỹ năng">
+        <div role="table" aria-label="Lịch Test theo kỹ năng">
           <div role="row"
             className={`${ROW_GRID} hidden px-2 pb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500`}>
             <div role="columnheader">Kỹ năng</div>
-            <div role="columnheader">Lịch kiểm tra</div>
+            <div role="columnheader">Lịch Test</div>
             <div role="columnheader">Tình trạng và hạn</div>
             <div role="columnheader" className="text-right">Thao tác</div>
           </div>
@@ -586,7 +586,7 @@ function Label({ children }: { children: React.ReactNode }) {
 function HistoryCard({ d }: { d: Detail }) {
   return (
     <div id="lich-su">
-      <Card title="Lịch sử thay đổi">
+      <Card title="Lịch sử">
         <DongThoiGianLuot history={d.history} scoreHistory={d.scoreHistory} />
       </Card>
     </div>

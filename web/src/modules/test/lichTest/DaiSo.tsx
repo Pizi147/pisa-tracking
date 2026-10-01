@@ -11,7 +11,7 @@ export function DaiSo({ tq, tenTuan, onBam }: {
   tq: LichTest['tongQuan']; tenTuan: string; onBam: (o: OSo) => void;
 }) {
   return (
-    <div className="grid grid-cols-2 gap-2 md:grid-cols-4" role="group" aria-label="Tổng quan chấm điểm">
+    <div className="grid grid-cols-2 gap-2 md:grid-cols-4" role="group" aria-label="Tiến độ chấm điểm">
       <O onClick={() => onBam('da-cham')} nhan={`${tenTuan} đã chấm`} title="Bấm để xem danh sách lớp">
         {tq.daCham}/{tq.tong} <Don>bài</Don>
       </O>

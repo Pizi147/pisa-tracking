@@ -209,7 +209,7 @@ export function TasksBoard() {
               </colgroup>
               <thead>
                 <tr>
-                  <Th hint="Bấm một dòng để mở chi tiết, việc con và lịch sử cập nhật.">Việc</Th>
+                  <Th hint="Bấm một dòng để mở chi tiết, việc con và lịch sử.">Việc</Th>
                   <Th hint="Người chịu trách nhiệm làm. Người theo dõi chỉ xem, không sửa được.">Người phụ trách</Th>
                   <Th hint="Quá hạn tính theo hạn HIỆN TẠI (giữ nguyên luật cũ) — hạn đã dời hiện ở dòng phụ.">Hạn</Th>
                   <Th hint="Tạm ngưng là còn sống, tiếp tục được bất kỳ lúc nào; dừng hẳn là đã quyết định không làm.">Trạng thái</Th>
@@ -372,7 +372,7 @@ export function NganViecVanHanh({ taskId, onClose, onDone }: {
 
           {/* ─────────────────────────────────────────── lịch sử cập nhật */}
           <section>
-            <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-2">Lịch sử cập nhật</h3>
+            <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-2">Lịch sử</h3>
             {data.updates.length === 0 ? (
               <p className="text-xs text-slate-500 m-0">Chưa có cập nhật nào.</p>
             ) : (

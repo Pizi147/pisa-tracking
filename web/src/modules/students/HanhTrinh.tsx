@@ -402,7 +402,7 @@ function HopKyNang({ hop, vi, vanDe, soAn, truc, boCuc, rongTuan, homNay, onOpen
                         <i className={`mx-[5px] text-[11px] font-bold not-italic ${LECH[m.lech.dau]}`} title={LECH_TITLE[m.lech.dau]}>{m.lech.chu}</i>
                       )}
                       {href
-                        ? <Link to={href} title={`${m.title} · mở hồ sơ Mock`} className={`${lop} no-underline hover:underline`}>{m.chu}</Link>
+                        ? <Link to={href} title={`${m.title} · mở Hồ sơ Mock Test`} className={`${lop} no-underline hover:underline`}>{m.chu}</Link>
                         : <b title={m.title} className={lop}>{m.chu}</b>}
                     </Fragment>
                   );
