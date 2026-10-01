@@ -5,6 +5,7 @@ import { loadBundle, regularSkillViews, skillCells } from '../fasttrack/attempts
 import { settleNoShows } from '../fasttrack/absence.ts';
 import { scoringModeOf } from '../fasttrack/skillSchedule.ts';
 import { allProgrammes } from '../normal/regular.ts';
+import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 
 /**
  * Ô ĐIỂM CÒN NỢ — một ô = một kỹ năng một lượt, tuần thi đã bắt đầu, người được phân công chưa nhập (S12 + đặc tả §6).
@@ -29,8 +30,8 @@ export function scoreDebtCells(p: Principal, today: string, branchIds: number[] 
   settleNoShows(today);
   const conn = db();
   /* PR-MT (M3, K4-01): MT lịch sử không bao giờ là nợ — bỏ từ câu SQL (phủ Theo giáo viên, bai-qua-han-nhap-diem, Tổng quan). */
-  /* PR-UXF-a T65: em Tạm dừng (hoặc đã lưu trữ) không sinh nợ điểm — mọi hạn dừng. Hồ sơ HV vẫn hiện ô (đường riêng). */
-  const where = [`a.status != 'cancelled'`, `cl.status = 'active'`, `s.status = 'active'`, `s.archived_at IS NULL`, LUOT_TINH_NO_SQL('a')];
+  /* PR-UXF-a T65 → PR-S6F-a Q2: em không đang học (Tạm dừng, Kết thúc học, lưu trữ) không sinh nợ điểm. Hồ sơ HV vẫn hiện ô (đường riêng). */
+  const where = [`a.status != 'cancelled'`, `cl.status = 'active'`, HV_DANG_HOC_SQL('s'), LUOT_TINH_NO_SQL('a')];
   const args: unknown[] = [];
   if (branchIds) { where.push(`cl.branch_id IN (${branchIds.map(() => '?').join(',')})`); args.push(...branchIds); }
   const rows = conn

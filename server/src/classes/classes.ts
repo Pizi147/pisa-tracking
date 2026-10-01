@@ -26,6 +26,7 @@ import { daiLop } from './daiChuyenLop.ts';
 import { listCases } from '../cases/cases.ts';
 import { emCoBaoPhChuaLam } from '../yThuc/phoiHop.ts';
 import { trongBoNho } from '../platform/nguCanhRequest.ts';
+import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 
 /**
  * Màn Học viên lấy LỚP làm gốc.
@@ -166,6 +167,7 @@ function listClassSummariesThat(p: Principal, f: { branchId?: number; q?: string
               (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route,
               rp.week_start AS period_start, rp.week_end AS period_end
          FROM assessment_attempts a
+         JOIN students s ON s.id = a.student_id AND ${HV_DANG_HOC_SQL('s')}   -- PR-S6F-a Q2: badge cùng tập Nợ điểm
          LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
         WHERE a.class_id IN (${ph}) AND a.status != 'cancelled'`,
     )

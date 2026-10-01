@@ -4,6 +4,7 @@ import { demoToday } from '../demoConfig.ts';
 import { require_, scopeFor, type Principal } from '../permissions.ts';
 import { reportEditWindow } from '../platform/week.ts';
 import { metricSet } from './metrics.ts';
+import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 
 /**
  * VIỆC SINH RA TỪ DỮ LIỆU.
@@ -89,7 +90,7 @@ export function signalsFor(p: Principal, f: { branchId?: number | null; periodId
          JOIN classes c ON c.id = e.class_id
          LEFT JOIN programmes pg ON pg.code = c.programme_code
          JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status='active'
-        WHERE s.status='active' AND s.archived_at IS NULL AND c.branch_id IN (${ph})
+        WHERE ${HV_DANG_HOC_SQL('s')} AND c.branch_id IN (${ph})
           AND COALESCE(pg.scoring_mode, '') != 'ratio'
           AND NOT EXISTS (SELECT 1 FROM assessment_attempts a
                            WHERE a.cycle_id = cy.id AND a.status='planned')

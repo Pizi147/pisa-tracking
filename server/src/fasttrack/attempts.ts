@@ -31,6 +31,7 @@ import { currentCycle, cycleById, examPlanOf, luotSoCuaLoTrinh } from './cycles.
 import { closeCasesBySystem } from '../cases/systemClose.ts';
 import { chuanHoaNguoiThucHien } from '../cases/nguoiThucHien.ts';
 import { allProgrammes, evaluateRegular, isRatioClass, regularDeadline } from '../normal/regular.ts';
+import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 
 export type ScoreRow = {
   id: number; skill: EntrySkill;
@@ -593,7 +594,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
     if (!f.classIds.length) return { rows: [], scopeEmpty: false };
     where.push(`a.class_id IN (${f.classIds.map(() => '?').join(',')})`); params.push(...f.classIds);
   }
-  if (f.chiDangHoc) where.push(`s.status = 'active' AND s.archived_at IS NULL`);
+  if (f.chiDangHoc) where.push(HV_DANG_HOC_SQL('s'));   // PR-S6F-a Q2: một điều kiện "em đang học"
   if (f.studentId) { where.push('a.student_id = ?'); params.push(f.studentId); }
   if (f.status) { where.push('a.status = ?'); params.push(f.status); }
   // Tuần kết quả LUÔN là tuần kế hoạch của lượt, kể cả khi các kỹ năng mock lệch tuần.

@@ -19,6 +19,7 @@ import { allProgrammes } from '../normal/regular.ts';
 import { danhGiaMon } from '../classes/phanTichLop.ts';
 import { metricSet, parseObligation } from '../worklist/metrics.ts';
 import { paCoKetQua } from './hieuQuaPa.ts';
+import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 
 const LO = 400;
 const cho = (n: number) => Array.from({ length: n }, () => '?').join(',');
@@ -88,7 +89,9 @@ export function nguCanhPtGv(p: Principal, f: LocPtGv): NguCanhPtGv {
 
 type OBai = {
   id: number; attemptId: number; classId: number; studentId: number; hocVien: string; skill: string; tuan: string; han: string | null;
-  nhapDau: string | null; band: number | null; coDiem: boolean; tienDo: string; noShow: boolean; tamDung: boolean; kck: boolean; bai: string;
+  nhapDau: string | null; band: number | null; coDiem: boolean; tienDo: string; noShow: boolean;
+  /** Q2: em đang học — chỉ tập Chấm điểm lọc theo cờ này; Kết quả / Tiến bộ giữ bài đã có điểm của em đã thôi học. */
+  dangHoc: boolean; kck: boolean; bai: string;
 };
 type NapBai = { o: OBai[]; attempts: Map<number, any>; bundle: ReturnType<typeof loadBundle> };
 
@@ -99,7 +102,7 @@ export function napBai(p: Principal, c: NguCanhPtGv): NapBai {
   for (const lo of theoLo([...c.lop.keys()])) {
     rows.push(...conn.prepare(
       `SELECT a.*, pg.scoring_mode, cl.programme_code, rp.week_start AS period_start, rp.week_end AS period_end, rp.code AS period_code,
-              cy.target_score, cy.khong_cam_ket, cy.route, s.full_name AS hv_ten, s.status AS hv_status
+              cy.target_score, cy.khong_cam_ket, cy.route, s.full_name AS hv_ten, (${HV_DANG_HOC_SQL('s')}) AS dang_hoc
          FROM assessment_attempts a
          JOIN classes cl ON cl.id = a.class_id
          JOIN students s ON s.id = a.student_id
@@ -124,7 +127,7 @@ export function napBai(p: Principal, c: NguCanhPtGv): NapBai {
         id: baiId(a.id, skill), attemptId: a.id, classId: a.class_id, studentId: a.student_id, hocVien: a.hv_ten, skill, tuan: v.weekStart, han: v.deadline,
         nhapDau: row?.nhap_dau_ngay ?? null, band: row?.band ?? null,
         coDiem: (row?.band ?? null) !== null || (row?.raw_score ?? null) !== null, tienDo: v.progress, noShow: v.noShow,
-        tamDung: a.hv_status === 'inactive', kck: !!a.khong_cam_ket, bai: nhanDotNgan(a.kind, a.attempt_no) ?? '',
+        dangHoc: !!a.dang_hoc, kck: !!a.khong_cam_ket, bai: nhanDotNgan(a.kind, a.attempt_no) ?? '',
       });
     };
     if (a.scoring_mode === 'ratio') {
@@ -151,7 +154,7 @@ export type DongChamDiem = {
 };
 /**
  * Q13, Q20: ô có tuần thi trong khoảng, gán cho người được phân công ở HẠN NHẬP. Đúng hạn ⇔ `nhap_dau_ngay ≤ hạn` (sửa sau không tính); chưa nhập
- * mà hôm nay > hạn = trễ. Không tính: vắng / huỷ / ngoài phạm vi / chờ duyệt dời / MT lịch sử / dấu "-" / em Tạm dừng / ô chưa tới hạn chưa nhập.
+ * mà hôm nay > hạn = trễ. Không tính: vắng / huỷ / ngoài phạm vi / chờ duyệt dời / MT lịch sử / dấu "-" / em không đang học (Q2) / ô chưa tới hạn chưa nhập.
  */
 export function tapChamDiem(c: NguCanhPtGv, nap: NapBai): { tap: Tap; dong: Map<number, DongChamDiem & { gv: number }>; khongTinh: Map<number, number> } {
   const tap: Tap = new Map();
@@ -162,7 +165,7 @@ export function tapChamDiem(c: NguCanhPtGv, nap: NapBai): { tap: Tap; dong: Map<
     const l = c.lop.get(x.classId)!;
     const gv = kyNangPhuTrach(l.ct, x.skill).map((k) => c.nguoiLuc(x.classId, k, x.han!)).find((g) => g != null) ?? null;
     if (gv == null) continue;
-    const boQua = KHONG_TINH.has(x.tienDo) || x.noShow || x.tamDung;
+    const boQua = KHONG_TINH.has(x.tienDo) || x.noShow || !x.dangHoc;
     if (boQua || (!x.nhapDau && c.homNay <= x.han)) {
       if (x.tienDo === 'absent') khongTinh.set(gv, (khongTinh.get(gv) ?? 0) + 1);
       continue;
@@ -271,8 +274,9 @@ export function tapXuLyViPham(c: NguCanhPtGv): Tap & { lop?: Map<number, Set<num
   const lop = new Map<number, Set<number>>();
   for (const lo of theoLo([...c.lop.keys()])) {
     for (const v of db().prepare(
-      `SELECT id, class_id, han_xu_ly, phan_hoi_ngay FROM violations
-        WHERE valid = 1 AND class_id IN (${cho(lo.length)}) AND han_xu_ly BETWEEN ? AND ?`,
+      `SELECT v.id, v.class_id, v.han_xu_ly, v.phan_hoi_ngay FROM violations v
+         JOIN students s ON s.id = v.student_id AND ${HV_DANG_HOC_SQL('s')}   -- Q2: em không đang học không bị tính trễ
+        WHERE v.valid = 1 AND v.class_id IN (${cho(lo.length)}) AND v.han_xu_ly BETWEEN ? AND ?`,
     ).all(...lo, c.tu, c.cuoi) as any[]) {
       if (!v.phan_hoi_ngay && c.homNay <= v.han_xu_ly) continue;
       const gv = c.nguoiLuc(v.class_id, null, v.han_xu_ly);
