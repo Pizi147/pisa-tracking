@@ -87,6 +87,13 @@ function moTa(v: unknown): string {
 
 // ---------------------------------------------------------------- Ghi nhận (V4-1, V4-2, V4-6)
 
+/**
+ * PR-Dọn (6f): còn KHAI BẬC Ý thức HS cũ được không — có chuỗi, chưa lần xử lý nào trong chuỗi, chưa khai, không Tạm dừng.
+ * Hồ sơ em (`coTheKhai`) và việc "Khai bậc" ở Công việc gọi CHUNG hàm này.
+ */
+export const khaiDuoc = (em: { chuoi: readonly unknown[]; soXuLyChuoi: number; tungKhai: unknown; tamDung: unknown }): boolean =>
+  em.chuoi.length > 0 && em.soXuLyChuoi === 0 && !em.tungKhai && !em.tamDung;
+
 export function ghiNhan(p: Principal, studentId: number, violationIds: unknown): { ok: true; soGhiNhan: number } {
   const hv = hocVien(studentId);
   requireManageDiscipline(p, studentId, MANAGE_MESSAGE);
@@ -316,7 +323,7 @@ export function yThucHocVien(p: Principal, studentId: number, o: { phamVi?: 'chu
     studentId, ten: hv.full_name, maHv: hv.student_code, homNay,
     canManage, canRecord: can(p, PERMISSIONS.VIOLATION_RECORD, { studentId, classId: em.lopId }),
     canSuaKhai: can(p, PERMISSIONS.REQUEST_APPROVE, { studentId }) && !!em.khai?.coTheSua,
-    coTheKhai: canManage && em.chuoi.length > 0 && em.soXuLyChuoi === 0 && !em.tungKhai,
+    coTheKhai: canManage && khaiDuoc(em),
     chuoi: { nhan: em.nhanChuoi, cycleIds: em.chuoi, soXuLy: em.xuLy.filter((m) => m.status === 'done' && m.cycleId != null && em.chuoi.includes(m.cycleId)).length },
     bac: em.bac, bacNhan: em.bac > 0 ? MEASURE_KIND_LABEL[THANG[em.bac - 1]] : null,
     keTiep: em.keTiep ? { kind: em.keTiep.kind, nhan: MEASURE_KIND_LABEL[em.keTiep.kind], bac: em.keTiep.bac, canQl: em.keTiep.canQl } : null,

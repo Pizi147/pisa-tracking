@@ -128,8 +128,8 @@ export function buildPb2bDemo(ctx: BuildCtx): { gv: number; lop: number } {
     conn.prepare(`DELETE FROM attempt_skills WHERE attempt_id IN (${q})`).run(e.cycleId);
     conn.prepare('DELETE FROM assessment_attempts WHERE cycle_id = ?').run(e.cycleId);
     /* MT1 (bài trước của cột HV tiến bộ) chỉ 3 em; em khác MT2 là bài đầu tiên của kịch bản. */
-    const mt1 = i < 3 ? createAttempt(admin, { studentId: e.id, cycleId: e.cycleId, classId: ft, attemptNo: 1, periodId: W4AUG }) as any : null;
-    const mt2 = createAttempt(admin, { studentId: e.id, cycleId: e.cycleId, classId: ft, attemptNo: mt1 ? 2 : 1, periodId: W1SEP }) as any;
+    const mt1 = i < 3 ? createAttempt(admin, { studentId: e.id, cycleId: e.cycleId, attemptNo: 1, periodId: W4AUG }) as any : null;
+    const mt2 = createAttempt(admin, { studentId: e.id, cycleId: e.cycleId, attemptNo: mt1 ? 2 : 1, periodId: W1SEP }) as any;
     /* MT2 là bài THẬT của tuần W1 SEP (không phải MT lịch sử nhập bù) — `createAttempt` tự đánh dấu lịch sử vì tuần đã qua. */
     conn.prepare('UPDATE assessment_attempts SET lich_su = 0 WHERE id = ?').run(mt2.id);
     const kv = kyVong(mt1 ? 2 : 1);

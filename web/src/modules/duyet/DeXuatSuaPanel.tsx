@@ -5,13 +5,12 @@ import { useToast } from '../../ui/Toast.tsx';
 import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { NutChon, TargetText } from '../../ui/ui.tsx';
-import { GIAI_THICH_KCK, KCK, dsLoi, type LuatTruong } from '@shared/domain/index.ts';
+import { GIAI_THICH_KCK, KCK, dsLoi, type LuatTruong, type TruongDeXuat } from '@shared/domain/index.ts';
 
 /**
  * ĐỀ XUẤT SỬA THÔNG TIN HV (PR-DUYET, T44) — GV của lớp gửi, Quản lý duyệt ở Công việc › Chờ duyệt.
  * Target và lộ trình phải qua đây (PR-CT: chuyển lớp có Đề xuất chuyển lớp… riêng, GVCN không còn tự chuyển). Mở từ ⋮ hồ sơ HV hoặc liên kết "Đề xuất sửa" ở panel Lộ trình.
  */
-export type TruongDeXuat = 'target' | 'lo-trinh' | 'lich-mt' | 'khac';   // PR-CT: bỏ 'lop' — dùng Đề xuất chuyển lớp…
 const TRUONG: { key: TruongDeXuat; nhan: string }[] = [
   { key: 'target', nhan: 'Target' }, { key: 'lo-trinh', nhan: 'Lộ trình' },
   { key: 'lich-mt', nhan: 'Lịch MT' }, { key: 'khac', nhan: 'Khác' },

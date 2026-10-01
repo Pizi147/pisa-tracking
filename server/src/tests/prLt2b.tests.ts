@@ -28,7 +28,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
   });
   check('LT2b (1) · BE 55% → Quản lý cân nhắc (canQuanLy), 2 tuần, chưa có hướng; không báo PH', () => {
     const g = d.goiYCuoiKhoa({ ct: 'BE', tyLe: 0.55, monTruot: ['reading', 'writing', 'speaking'] })!;
-    assert(g.dai === '50_59' && g.huong === null && g.canQuanLy && g.canQl, 'canQuanLy');
+    assert(g.dai === '50_59' && g.huong === null && g.canQuanLy, 'canQuanLy');
     assert(g.boTroNeuLen!.soTuan === 2 && g.boTroNeuLen!.soBuoi === 3 && !g.baoPhTvv, 'bổ trợ nếu lên');
     assert(g.nhan.startsWith('Quản lý cân nhắc') && g.nhanNgan === '→ QL cân nhắc', g.nhan);
   });

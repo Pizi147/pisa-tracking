@@ -6,7 +6,8 @@ import {
   type AssessedSkill, type EntrySkill, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
+import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
+import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { dotHoanTat, dotHoanTatMany, quyenSuaSauHoanTat } from './hoanTat.ts';
 import {
   can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, moveableSkills, mySkills, require_, requireXemLuotCham, scopeFor, scoreEditPath, type LuotQuyen,
@@ -549,21 +550,13 @@ export type AttemptFilters = {
  * Danh sách ở phạm vi quản lý là để ĐÔN ĐỐC nên phải kèm tên; nạp theo từng lớp một lần,
  * đừng hỏi lại cho từng hàng — một trang danh sách có thể có hàng chục lượt.
  */
+/** PR-Dọn (Q13): GV chấm của từng (lớp, môn) theo luật phân công chung `phanCongDangHieuLuc` (đang hiệu lực, dòng đầu thắng). */
 function ownersByClass(classIds: number[]): Map<number, Record<string, string>> {
   const map = new Map<number, Record<string, string>>();
-  if (!classIds.length) return map;
-  const ids = [...new Set(classIds)];
-  const ph = ids.map(() => '?').join(',');
-  const rows = db()
-    .prepare(
-      `SELECT ta.class_id, ta.skill, u.full_name FROM teacher_assignments ta
-         JOIN users u ON u.id = ta.user_id
-        WHERE ta.class_id IN (${ph}) AND ta.status = 'active' AND ta.skill IS NOT NULL`,
-    )
-    .all(...ids) as any[];
-  for (const r of rows) {
-    if (!map.has(r.class_id)) map.set(r.class_id, {});
-    map.get(r.class_id)![r.skill] = r.full_name;
+  for (const [k, v] of phanCongDangHieuLuc(classIds, demoToday())) {
+    const [lop, mon] = k.split('|');
+    if (!map.has(+lop)) map.set(+lop, {});
+    map.get(+lop)![mon] = v.ten;
   }
   return map;
 }
@@ -595,7 +588,8 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
     where.push(`a.class_id IN (${f.classIds.map(() => '?').join(',')})`); params.push(...f.classIds);
   }
   /* PR-S6F-a Q2: một điều kiện "em đang học" — cả danh sách "cần chấm" (`my_scores`), đích của badge "n bài chờ chấm" (số = danh sách). */
-  if (f.chiDangHoc || f.need === 'my_scores') where.push(HV_DANG_HOC_SQL('s'));
+  /* PR-Dọn (Q9): và CÙNG luật Nợ điểm (`scoreDebt.ts`) — lớp đã kết thúc không sinh việc nhập điểm. */
+  if (f.chiDangHoc || f.need === 'my_scores') where.push(HV_DANG_HOC_SQL('s'), `c.status = 'active'`);
   if (f.studentId) { where.push('a.student_id = ?'); params.push(f.studentId); }
   if (f.status) { where.push('a.status = ?'); params.push(f.status); }
   // Tuần kết quả LUÔN là tuần kế hoạch của lượt, kể cả khi các kỹ năng mock lệch tuần.
@@ -1051,21 +1045,24 @@ export function attemptDetail(p: Principal, attemptId: number) {
  * Tạo một lượt MT. Quản lý chốt TUẦN — và tuần là thứ duy nhất phải khai.
  */
 export function createAttempt(p: Principal, input: {
-  studentId: number; cycleId?: number; classId?: number | null; attemptNo?: number;
+  studentId: number; cycleId?: number; attemptNo?: number;
   periodId: number; note?: string | null;
 }) {
   const conn = db();
   const student = conn.prepare('SELECT * FROM students WHERE id = ?').get(input.studentId) as any;
   if (!student) throw notFound('Không tìm thấy học viên');
+  /* PR-Dọn (Q26, quét #1): lớp của lượt LUÔN là lớp em đang học (ghi danh `active`) — không nhận lớp do nơi gọi gửi. */
   const enr = conn
     .prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1`)
     .get(student.id) as any;
-  const classId = input.classId ?? enr?.class_id ?? null;
+  const classId = enr?.class_id ?? null;
   require_(p, PERMISSIONS.PLAN_WEEK, { classId, studentId: student.id },
     'Chỉ Quản lý mới lập được kế hoạch tuần MT.');
 
   const cycle = input.cycleId ? cycleById(input.cycleId) : currentCycle(student.id);
   if (!cycle) throw badRequest('Học viên chưa có lộ trình nào. Mở lộ trình trước khi lên lịch MT.');
+  /* Q26 (lỗi mức Cao): lộ trình phải của ĐÚNG em — không thì hồi sinh / ghi đè lượt của em khác (chi nhánh khác) qua `hoiSinhLuot`. */
+  if (cycle.student_id !== student.id) throw badRequest('Lộ trình không thuộc học viên này.');
   const period = conn.prepare('SELECT * FROM report_periods WHERE id = ?').get(input.periodId) as any;
   if (!period) throw notFound('Không tìm thấy tuần kế hoạch');
 
@@ -1612,6 +1609,9 @@ export function saveScore(
 
     const resultDate = patch.resultDate !== undefined ? patch.resultDate : existing?.result_date ?? null;
     if (resultDate && !isIsoDate(resultDate)) throw badRequest('Ngày có kết quả không hợp lệ.');
+    /* PR-Dọn (quét #19): ngày có kết quả MỚI gửi lên không được ở tương lai (theo ngày nghiệp vụ). */
+    if (patch.resultDate && patch.resultDate > demoToday()) throw badRequest('Ngày có kết quả không được ở tương lai.');
+    chuTuDo(patch.note, 'Ghi chú', 2000);   // PR-Dọn (Q4, quét #24)
 
     let raw: number | null = existing?.raw_score ?? null;
     let total: number | null = existing?.raw_total ?? null;

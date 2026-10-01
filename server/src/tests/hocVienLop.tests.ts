@@ -439,10 +439,10 @@ export async function runHocVienLopTests(t: YThucTestKit) {
   check('PR-Qa · Q8 Sửa thông tin lớp: mã có tiền tố chi nhánh, không trùng; chỉ người có quyền sửa lớp; có nhật ký', () => {
     const cid = taoLop('MB FT 9904', 'FT');
     assertThrows(() => ttl.capNhatThongTinLop(P.sTeacher, cid, { so: '9914' }), /quyền/, 'GV bộ môn');
-    assertThrows(() => ttl.capNhatThongTinLop(P.admin, cid, { code: 'FT 9914' }), /Chỉ đổi được phần số/, 'Thiếu tiền tố (PR-LOP: máy ghép tên)');
-    assertThrows(() => ttl.capNhatThongTinLop(P.admin, cid, { code: 'MB FT 101' }), /Đã có lớp/, 'Trùng mã');
-    assertThrows(() => ttl.capNhatThongTinLop(P.admin, cid, { route: 'LT9' }), /LT1, LT2 hoặc RF/, 'LT lạ');
-    const r = ttl.capNhatThongTinLop(P.admin, cid, { so: '9914', route: 'LT2', note: 'Lớp tối' });
+    /* PR-Dọn (Q22): bỏ khoá kiểu cũ `code` / `route` — web gửi `so` / `loTrinh` (máy ghép tên lớp). */
+    assertThrows(() => ttl.capNhatThongTinLop(P.admin, cid, { so: '101' }), /Đã có lớp/, 'Trùng mã');
+    assertThrows(() => ttl.capNhatThongTinLop(P.admin, cid, { loTrinh: 'LT9' }), /LT1, LT2 hoặc RF/, 'LT lạ');
+    const r = ttl.capNhatThongTinLop(P.admin, cid, { so: '9914', loTrinh: 'LT2', note: 'Lớp tối' });
     eq([r.code, r.route, r.note], ['MB FT 9914', 'LT2', 'Lớp tối'], 'Đã lưu');
     const log = conn.prepare(`SELECT before_json, after_json FROM audit_logs WHERE action = 'class.info' AND entity_id = ? ORDER BY id DESC LIMIT 1`).get(cid) as any;
     assert(log && /MB FT 9904"/.test(log.before_json) && /MB FT 9914/.test(log.after_json), `Nhật ký: ${JSON.stringify(log)}`);
@@ -454,7 +454,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     const c = conn.prepare('SELECT programme_code, is_fast_track, route FROM classes WHERE id = ?').get(rong) as any;
     const ks = (conn.prepare('SELECT skill FROM class_skills WHERE class_id = ? ORDER BY skill').all(rong) as any[]).map((x) => x.skill).join(',');
     eq([c.programme_code, c.is_fast_track, c.route, ks], ['FOU', 0, null, 'listening,reading,speaking,writing'], 'Lớp trống đổi được');
-    assertThrows(() => ttl.capNhatThongTinLop(P.admin, rong, { route: 'LT1' }), /Fast Track/, 'Lớp thường không có LT');
+    assertThrows(() => ttl.capNhatThongTinLop(P.admin, rong, { loTrinh: 'LT1' }), /Fast Track/, 'Lớp thường không có LT');
     const coEm = taoLop('MB FT 9906', 'FT');
     taoHocVien({ cid: coEm, ft: true });
     assertThrows(() => ttl.capNhatThongTinLop(P.admin, coEm, { programmeCode: 'FOU' }), /đã có \d+ học viên/, 'Lớp có học viên');
@@ -537,7 +537,8 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     const dsGvThay = casesMod.listCases(gv, { classId: lopB }).rows.filter((c: any) => c.status !== 'done').length;
     const badge = hvl.danhSachHocVienLop(gv, {}).rows.find((r: any) => r.id === lopB)?.soCaseMo;
     eq(badge, dsGvThay, 'Badge lớp B phải khớp ĐÚNG danh sách "Cần hỗ trợ" mà GV lớp B thấy được — không đếm dư');
-    eq(dsGvThay, 0, 'Nợ để lại (ngoài phạm vi PR-Qa): case vẫn "vô hình" với GV lớp B vì cases.ts lọc quyền theo lớp lúc đánh giá (A)');
+    /* PR-Dọn (Q5): nợ đã trả — listCases xét quyền theo CÙNG lớp với bộ lọc (lớp đang học B), nên GV lớp B thấy Case cũ của em. */
+    eq(dsGvThay, 1, 'PR-Dọn Q5: GV lớp B (lớp đang học) thấy Case gắn bài ở lớp A');
   });
 
   // ------------------------------------------------------------------ Task 17 (fix sau rà soát planning) · Important

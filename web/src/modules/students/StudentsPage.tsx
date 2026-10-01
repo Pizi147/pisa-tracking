@@ -3,12 +3,11 @@ import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { invalidate } from '../../lib/api.ts';
-import { Alert, Card, Empty, ErrorState, Level, NhanTrangThai, SectionNote, Skeleton, Th } from '../../ui/ui.tsx';
+import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { Nhan, toneNhanTuBadge } from '../../ui/Nhan.tsx';
 import { HangNhom } from '../../ui/HangNhom.tsx';
 import { CongTacKhung, khungDaNho, type KhungLoc } from '../../ui/CongTacKhung.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
-import { attemptHref, caseStatusLabel, sosTone } from '../../lib/format.ts';
 import type { Branch } from '../../ui/Filters.tsx';
 import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
 import { IntakePanel } from './IntakePanel.tsx';
@@ -16,7 +15,7 @@ import { ClassCreatePanel } from '../classes/ClassCreatePanel.tsx';
 import { TenGiaoVien } from '../classes/TenGiaoVien.tsx';
 import { BangHocVienLop } from './BangHocVienLop.tsx';
 import {
-  LOC_HOC_VIEN, LOC_HOC_VIEN_NHAN, PHAM_VI_NHAN, badgeLop, chipHienLoc, demLoc, docThamSoLoc, duongLichTest, khungCua, laVaiQuanLy, lopMoSan, needScoresText, tenMonNgan, trangThaiCaseDong,
+  LOC_HOC_VIEN, LOC_HOC_VIEN_NHAN, PHAM_VI_NHAN, badgeLop, chipHienLoc, demLoc, docThamSoLoc, duongLichTest, khungCua, laVaiQuanLy, lopMoSan, needScoresText,
   type BadgeLop, type LocHocVien, type PhamVi, type SapXep, type WorkScope,
 } from '@shared/domain/index.ts';
 
@@ -379,136 +378,5 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, the =
       </HangNhom>
       {mo && <BangHocVienLop lop={lop} chiHien={chiHien} sapXep={sapXep} onDoi={onDoi} soCot={7} />}
     </tbody>
-  );
-}
-
-/**
- * Hàng đợi công việc: cùng dữ liệu lượt MT, chỉ đổi bộ lọc.
- *
- * KHÔNG khoá theo tuần — việc nợ từ tuần trước không biến mất khi đổi tuần ở nơi khác
- * (bảng chấm, Kế hoạch Test). Cột "Nợ từ tuần" chỉ NÓI ra tuần của từng môn còn thiếu.
- */
-export function WorkQueue({ view, branchId, q, scope }: {
-  view: string; branchId: number | null; q: string; scope: WorkScope | null;
-}) {
-  const [params] = useSearchParams();
-  const classId = params.get('classId');
-  const qs = useMemo(() => {
-    const s = new URLSearchParams();
-    s.set('need', view === 'sos' ? 'sos_open' : view);
-    if (branchId) s.set('branchId', String(branchId));
-    if (classId) s.set('classId', classId);
-    if (q.trim()) s.set('q', q.trim());
-    if (scope) s.set('scope', scope);
-    return `/attempts?${s.toString()}`;
-  }, [view, branchId, classId, q, scope]);
-  const { data, loading, error, reload } = useApi<{ rows: any[]; scopeEmpty: boolean }>(qs);
-  const navigate = useNavigate();
-
-  if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
-  if (loading) return <Skeleton rows={6} />;
-  if (!data) return null;
-
-  const label = view === 'my_scores' ? 'cần chấm' : 'đang ở mức SOS';
-  // Badge đếm BÀI KỸ NĂNG, không đếm LƯỢT — một lượt có thể nợ nhiều môn cùng lúc.
-  const count = view === 'my_scores'
-    ? data.rows.reduce((n: number, r: any) => n + (r.pendingSkills?.length ?? 0), 0)
-    : data.rows.length;
-  const unit = view === 'my_scores' ? 'bài' : 'lượt';
-
-  return (
-    <Card bodyClass="p-0"
-      title={<span>{count} {unit} {label}{classId ? ' của lớp đang chọn' : ''}</span>}
-      action={classId && <Link className="btn btn-sm no-underline" to={`/hoc-vien?view=${view}`}>Bỏ lọc lớp</Link>}>
-      {data.rows.length === 0 ? (
-        <Empty title={`Không còn việc nào ${label}`} hint="Xem tiếp bằng cách đổi cách xem hoặc bỏ bộ lọc." />
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr>
-                <th className="th">Học viên</th>
-                <th className="th">Lớp</th>
-                <Th hint="Lượt đánh giá đang cần bạn xử lý.">Bài</Th>
-                <Th hint="Tuần kế hoạch của đợt Test. Chưa có tuần thì cũng chưa có hạn nhập điểm.">Tuần</Th>
-                {view === 'my_scores' && (
-                  <Th hint="Tuần thi của CHÍNH môn còn thiếu điểm — có thể khác tuần của cả lượt.">Nợ từ tuần</Th>
-                )}
-                <Th hint="Bài cần chấm theo đúng phạm vi đang xem. Ở phạm vi quản lý, bài không phải việc của bạn có kèm tên giáo viên phụ trách.">
-                  Việc cần làm
-                </Th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.rows.map((r) => (
-                <tr key={r.id} className="row-hover cursor-pointer" onClick={() => navigate(attemptHref(r))}>
-                  <td className="td">
-                    <div className="text-slate-100">{r.studentName}</div>
-                    <div className="text-[11px] text-slate-500">{r.studentCode}</div>
-                  </td>
-                  <td className="td text-slate-300 whitespace-nowrap">{r.classCode ?? '—'}</td>
-                  {/* Lộ trình đã hiện ở cột Target ngay cạnh — nhắc lại chỉ là chữ thừa. */}
-                  {/* Lớp Normal không có "MT" — gọi đúng tên bài của nó. */}
-                  <td className="td tabular-nums whitespace-nowrap">
-                    {r.kind === 'mock' ? `MT${r.attemptNo}` : r.kind === 'final' ? 'Cuối khoá' : 'Giữa khoá'}
-                  </td>
-                  <td className="td whitespace-nowrap text-slate-300">{r.period?.code ?? '—'}</td>
-                  {view === 'my_scores' && (
-                    <td className="td whitespace-nowrap text-slate-300">
-                      {(r.pendingWeeks?.length ? r.pendingWeeks.join(', ') : r.period?.code) ?? '—'}
-                    </td>
-                  )}
-                  <td className="td text-xs">
-                    {view === 'my_scores' && (
-                      <div className="flex flex-col items-start gap-0.5">
-                        <span style={{ color: 'var(--accent)' }}>Nhập {r.pendingSkills.map((sk: string) => tenMonNgan(r.programmeCode ?? null, sk)).join(', ')}</span>
-                        {/*
-                          NÓI RÕ KHI QUẢN LÝ NHẬP HỘ (mục 3.3) — không đổi quyền, chỉ nói ra.
-                          `myPendingSkills` KHÔNG đổi theo phạm vi đang xem, nên so nó với
-                          `pendingSkills` (đã lọc theo phạm vi) là biết đúng bài nào không
-                          phải việc của chính người này — KHÔNG dựa vào biến `scope` phía
-                          giao diện, vì nó có thể là `null` (chưa chọn, máy chủ tự mặc định)
-                          trong khi dữ liệu vẫn đã lọc theo đúng phạm vi quản lý.
-                        */}
-                        {r.pendingSkills.some((sk: string) => !r.myPendingSkills.includes(sk)) && (
-                          <span className="text-xs text-slate-400">
-                            {r.pendingSkills
-                              .filter((sk: string) => !r.myPendingSkills.includes(sk))
-                              .map((sk: string) => `${tenMonNgan(r.programmeCode ?? null, sk)}: ${r.pendingOwners?.[sk] ?? 'chưa phân công'}`)
-                              .join(' · ')} — bạn không phụ trách bài này, nhập sẽ được ghi là sửa hộ
-                          </span>
-                        )}
-                      </div>
-                    )}
-                    {/*
-                      * Nhìn là biết case đã được làm hay chưa: mức SOS · trạng thái, rồi mốc
-                      * follow-up gần nhất. Không phải mở chi tiết mới rõ.
-                      */}
-                    {view === 'sos' && (
-                      <div className="flex flex-col items-start gap-0.5">
-                        <span className="flex items-center gap-1">
-                          <Level tone={sosTone(r.caseLevel)}>SOS {r.caseLevel}</Level>
-                          {/* PR-NEN (Q15): nhãn 6 chữ chung; chữ trạng thái case cũ còn ở tooltip. */}
-                          <NhanTrangThai t={trangThaiCaseDong(r.caseStatus)} title={caseStatusLabel(r.caseStatus ?? 'open')} />
-                        </span>
-                        <span className="text-xs text-slate-400">
-                          {r.caseFollowUp ?? 'Chưa có follow-up'}
-                        </span>
-                      </div>
-                    )}
-                    {r.overdueSkills > 0 && <Alert quaHan>Quá hạn {r.overdueSkills}</Alert>}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-      <div className="p-3">
-        <SectionNote>
-          Danh sách này xét <strong>xuyên tuần</strong>, nên việc còn tồn từ tuần trước không biến mất khi đổi tuần ở nơi khác.
-        </SectionNote>
-      </div>
-    </Card>
   );
 }

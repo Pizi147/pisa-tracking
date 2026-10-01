@@ -229,12 +229,11 @@ export async function runPrS6fATests(t: YThucTestKit) {
     const r = dongCham(TODAY, tuanW1).get(d.baiId(aV.id, 'listening'));
     assert(r && !r.dung, `bảng GV: ${JSON.stringify(r)}`);
   });
-  /* Chỉ lớp ĐANG HOẠT ĐỘNG: Nợ điểm không tính lớp đã kết thúc, Việc vẫn tính — lệch có từ trước, ngoài Q6 (chuyển planning / PR-Dọn). */
-  check('S6F-a (3e) · HAI ĐƯỜNG: (lớp, đợt) của việc nhập điểm "Quá hạn" của GV = (lớp, đợt) có ô Nợ điểm quá hạn của GV (lớp đang hoạt động)', () => {
+  /* PR-Dọn (Q9): Việc nhập điểm dùng CÙNG luật Nợ điểm (bỏ lớp đã kết thúc) — phép kiểm không còn tự lọc "lớp đang hoạt động". */
+  check('S6F-a (3e) · HAI ĐƯỜNG: (lớp, đợt) của việc nhập điểm "Quá hạn" của GV = (lớp, đợt) có ô Nợ điểm quá hạn của GV (mọi lớp)', () => {
     const g = gvL();
-    const lopMo = new Set((conn.prepare(`SELECT id FROM classes WHERE status = 'active'`).all() as any[]).map((r) => r.id));
     const viec = new Set((mw.myWork(g).groups as any[]).flatMap((x) => x.items)
-      .filter((it: any) => it.group === 'score' && it.mine && it.urgency === 'overdue' && lopMo.has(it.classId)).map((it: any) => `${it.classId}|${it.attemptNo}|${it.contextLabel}`));
+      .filter((it: any) => it.group === 'score' && it.mine && it.urgency === 'overdue').map((it: any) => `${it.classId}|${it.attemptNo}|${it.contextLabel}`));
     const luot = new Map((conn.prepare(`SELECT id, class_id, attempt_no, kind FROM assessment_attempts`).all() as any[]).map((a) => [a.id, a]));
     const no = new Set((debt.scoreDebtCells(P.admin, TODAY, null) as any[]).filter((x) => x.overdue && x.userId === g.userId).map((x) => {
       const a = luot.get(x.attemptId);
@@ -486,7 +485,8 @@ export async function runPrS6fATests(t: YThucTestKit) {
     if (l2) lenh.huyLenh(P.mbManager, l2.id, 'Dọn phép kiểm');
     assert(r2.ok.length === 1 && l2?.khac_goi_y === 1, `có lý do: ${JSON.stringify(r2)} · ${JSON.stringify(l2)}`);
   });
-  check('S6F-a (11e) · raLenh 1 000 dòng (đa số không thuộc lớp) → "Học viên không thuộc lớp này", không câu SQL nào quá 900 tham số', () => {
+  /* PR-Dọn (Q6): lệnh chuyển lớp tối đa 500 dòng — phép kiểm gửi đúng trần (không còn 1 000). */
+  check('S6F-a (11e) · raLenh 500 dòng (trần Q6, đa số không thuộc lớp) → "Học viên không thuộc lớp này", không câu SQL nào quá 900 tham số', () => {
     const be04 = classId('MB BE 04');
     const tuan = (d.tuanChonDuoc(TODAY) as string[])[0];
     const goc = conn.prepare;
@@ -495,9 +495,9 @@ export async function runPrS6fATests(t: YThucTestKit) {
     let r: any;
     try {
       r = lenh.raLenh(P.mbManager, { lopNguonId: be04, boiCanh: 'cuoi-khoa', tuanChung: tuan,
-        dongs: Array.from({ length: 1000 }, (_, i) => ({ studentId: 900000 + i, huong: 'hoc_lai', toClassId: classId('MB BE 03') })) });
+        dongs: Array.from({ length: 500 }, (_, i) => ({ studentId: 900000 + i, huong: 'hoc_lai', toClassId: classId('MB BE 03') })) });
     } finally { conn.prepare = goc; }
-    assert(r.failed.length === 1000 && r.failed.every((f: any) => f.message === 'Học viên không thuộc lớp này.'), JSON.stringify(r.failed.slice(0, 2)));
+    assert(r.failed.length === 500 && r.failed.every((f: any) => f.message === 'Học viên không thuộc lớp này.'), JSON.stringify(r.failed.slice(0, 2)));
     assert(maxThamSo <= 900, `câu SQL ${maxThamSo} tham số`);
   });
 }

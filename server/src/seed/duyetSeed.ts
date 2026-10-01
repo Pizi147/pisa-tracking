@@ -93,7 +93,7 @@ export function buildDuyetDemo(ctx: BuildCtx): { the: number } {
     const ok = guiDeXuatSua(ha, sid2, { truong: 'khac', moi: 'Cập nhật số điện thoại phụ huynh', lyDo: 'PH đổi số, em báo lại trong buổi học hôm qua.' });
     duyetYeuCau(vy, ok.id, { ghiChu: 'Đã cập nhật ở Thông tin học viên' });
     const bo = guiDeXuatSua(ha, sid2, { truong: 'lich-mt', moi: 'MT3 dời sang tuần sau', lyDo: 'Em xin nghỉ thi đấu thể thao cấp tỉnh tuần đó.' });
-    tuChoiYeuCau(vy, bo.id, 'Tuần sau trùng lịch Final của lớp — giữ lịch cũ, em thi bù buổi chiều.');
+    tuChoiYeuCau(vy, bo.id, 'Tuần sau trùng lịch Final của lớp — giữ lịch cũ, em thi bù tuần sau.');
   }
 
   // (d) QL Vy tự ghi một PA cần duyệt → thẻ "tự duyệt được"

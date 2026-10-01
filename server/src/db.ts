@@ -273,6 +273,7 @@ export function tx<T>(fn: () => T): T {
     } catch (e) {
       /* Cuộn lại hỏng (mạng Turso đứt…) thì vẫn ném LỖI GỐC. */
       try { if (conn.inTransaction) conn.exec('ROLLBACK'); } catch { /* giữ lỗi gốc */ }
+      xoaNho();   // PR-Dọn (Q7, quét #27): giá trị đã nhớ trong giao dịch có thể là dữ liệu vừa bị cuộn lại
       if (typeof e === 'object' && e !== null) loiTuGiaoDich.add(e);   // PR-Z2c-b: không thử lại
       throw e;
     }
@@ -286,6 +287,7 @@ export function tx<T>(fn: () => T): T {
   } catch (e) {
     /* Cuộn lại hỏng (mạng Turso đứt, savepoint đã mất…) thì vẫn ném LỖI GỐC — vòng ngoài sẽ cuộn lại cả giao dịch. */
     try { conn.exec(`ROLLBACK TO ${name}`); conn.exec(`RELEASE ${name}`); } catch { /* giữ lỗi gốc */ }
+    xoaNho();   // PR-Dọn (Q7, quét #27)
     if (typeof e === 'object' && e !== null) loiTuGiaoDich.add(e);
     throw e;
   } finally {
@@ -305,6 +307,19 @@ export function theoLo<T>(ds: readonly T[], fn: (lo: T[], ph: string) => void, c
     const lo = ds.slice(i, i + co);
     fn(lo, lo.map(() => '?').join(','));
   }
+}
+
+/**
+ * PR-Dọn (quét #26): CHỐNG BẤM ĐÚP cho bảng CHƯA có cột `idempotency_key` — dòng khớp `khop` (cùng người, cùng đối tượng, cùng nội
+ * dung; `IS ?` nên NULL khớp NULL) có `created_at` trong `giay` giây gần nhất → trả id của nó để nơi gọi trả lại bản đã có.
+ * `bang` và tên cột chỉ do mã truyền vào (hằng), không bao giờ từ thân yêu cầu.
+ * ponytail: chặn trùng 10 giây theo trạng thái; thêm cột khoá `idempotency_key` cho PA, followup, việc khi có migrate sau deploy.
+ */
+export function vuaGhi(bang: string, khop: Record<string, unknown>, giay = 10): number | null {
+  const cot = Object.keys(khop);
+  const tu = new Date(Date.now() - giay * 1000).toISOString();
+  return (db().prepare(`SELECT id FROM ${bang} WHERE ${cot.map((c) => `${c} IS ?`).join(' AND ')} AND created_at >= ? ORDER BY id DESC LIMIT 1`)
+    .get(...Object.values(khop), tu) as any)?.id ?? null;
 }
 
 /** `INSERT INTO t (a, b, …)` + `VALUES (?,?,…),(…)` + `duoi` nhiều dòng một câu, chia lô theo trần tham số. Mọi dòng cùng số cột. */

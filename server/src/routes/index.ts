@@ -3,13 +3,13 @@ import multer from 'multer';
 import { db, isInitialised } from '../db.ts';
 import { laBanChinh } from '../moiTruong.ts';
 import {
-  ENTRY_SKILLS, ENTRY_SKILL_LABEL, ISSUE_TAXONOMY, THEO_DONG, tenMonNgan,
+  ENTRY_SKILLS, THEO_DONG, tenMonNgan,
   PERMISSIONS, ROLE_LABEL, WORK_SCOPES, chuongTrinhTuThamSo, ctTuyChon, khoangTuThamSo, thamSoNguoi, tuDauKhoang,
   type Role, type TheoDong, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { docBoLocXuatMt, kiemGhiRoKhac, laKhac, soSanhLop, transferReasonText } from '../../../shared/domain/index.ts';
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
-import { HttpError, badRequest, forbidden, isIsoDate, notFound, toInt } from '../util.ts';
+import { HttpError, badRequest, chuTuDo, forbidden, isIsoDate, notFound, toInt } from '../util.ts';
 import { SESSION_COOKIE, createSession, destroySession, principalOf, requireAuth } from '../auth.ts';
 import { can, loadPrincipal, permissionSummary, require_, scopeFor } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
@@ -38,9 +38,6 @@ import * as skillScheduleSvc from '../fasttrack/skillSchedule.ts';
 import * as absenceSvc from '../fasttrack/absence.ts';
 import * as effectiveness from '../cases/effectiveness.ts';
 import * as cycleSvc from '../fasttrack/cycles.ts';
-import * as summarySvc from '../worklist/summary.ts';
-import * as pulseSvc from '../worklist/branchpulse.ts';
-import * as prefSvc from '../platform/prefs.ts';
 import * as profileSvc from '../students/profile.ts';
 import { hanhTrinhHocVien } from '../students/hanhTrinh.ts';
 import { docHet, thongBaoCua } from '../platform/thongBao.ts';
@@ -65,12 +62,10 @@ import * as xoaHocVienSvc from '../students/xoaHocVien.ts';
 import * as xoaTaiKhoanSvc from '../platform/xoaTaiKhoan.ts';
 import * as studentSvc from '../students/students.ts';
 import * as meetingSvc from '../worklist/meeting.ts';
-import * as dashboardSvc from '../worklist/dashboard.ts';
 import {
   PERIOD_WINDOW_PLANNING_FORWARD_WEEKS,
   ensurePeriod, listPeriods, periodById, periodWindow, reportEditWindow, setPeriodUnlocked,
 } from '../platform/week.ts';
-import * as planningSvc from '../fasttrack/planning.ts';
 import * as keHoachSvc from '../keHoach/keHoachTest.ts';
 import { signalsFor } from '../worklist/signals.ts';
 import * as accountSvc from '../platform/accounts.ts';
@@ -80,7 +75,6 @@ import * as mgmtSvc from '../worklist/mgmttasks.ts';
 import * as highlightSvc from '../worklist/highlights.ts';
 import * as tongQuanSvc from '../worklist/tongQuan.ts';
 import * as bangSvc from '../worklist/bangChiNhanh.ts';
-import { weeklyDrill, weeklyRollup } from '../worklist/weekly.ts';
 import * as tongHopSvc from '../phanTich/tongHop.ts';
 import * as xuatMtSvc from '../phanTich/xuatMt.ts';
 import * as vanDeHvSvc from '../phanTich/vanDeHv.ts';
@@ -318,7 +312,6 @@ api.get('/ref/nguoi', requireAuth, wrap((req) => {
     q: qStr(req, 'q'),
     nhom: nhom === 'nhan_vien' ? 'nhan_vien' : 'giao_vien',
     studentId: qInt(req, 'studentId'),
-    trongPhamVi: qStr(req, 'trongPhamVi') === '1',
     cungChiNhanh: qStr(req, 'cungChiNhanh') === '1',
   });
 }));
@@ -328,9 +321,20 @@ api.get('/ref/users', requireAuth, wrap((req) => {
   if (!can(p, PERMISSIONS.MEETING_EDIT, { anyScope: true }) && !can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true })) {
     return db().prepare('SELECT id, code, full_name AS fullName, title FROM users WHERE id = ?').all(p.userId);
   }
+  /* PR-Dọn (quét #9): ngoài Quản trị (toàn hệ thống), chỉ người có vai đang hoạt động ở chi nhánh mình quản (cộng chính mình). */
+  const scope = scopeFor(p, PERMISSIONS.MEETING_EDIT);
+  if (scope.all || can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true })) {
+    return db().prepare("SELECT id, code, full_name AS fullName, title FROM users WHERE status='active' ORDER BY full_name").all();
+  }
+  const cn = scope.branchIds.length ? scope.branchIds : [-1];
   return db()
-    .prepare("SELECT id, code, full_name AS fullName, title FROM users WHERE status='active' ORDER BY full_name")
-    .all();
+    .prepare(
+      `SELECT id, code, full_name AS fullName, title FROM users u WHERE status='active'
+         AND (u.id = ? OR EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.status = 'active'
+                                   AND ur.branch_id IN (${cn.map(() => '?').join(',')})))
+        ORDER BY full_name`,
+    )
+    .all(p.userId, ...cn);
 }));
 
 /**
@@ -346,6 +350,10 @@ api.get('/ref/teachers', requireAuth, wrap((req) => {
   const p = principalOf(req);
   if (!can(p, PERMISSIONS.CLASS_ASSIGN, { anyScope: true })) return [];
   const branchId = qInt(req, 'branchId');
+  /* PR-Dọn (quét #9): chi nhánh hỏi phải nằm trong phạm vi phân công của người xem; không gửi → mọi chi nhánh trong phạm vi. */
+  const scope = scopeFor(p, PERMISSIONS.CLASS_ASSIGN);
+  const cn = scope.all ? (branchId ? [branchId] : null) : scope.branchIds.filter((b) => !branchId || b === branchId);
+  if (cn && !cn.length) return [];
   return db()
     .prepare(
       `SELECT u.id, u.code, u.full_name AS name, u.title,
@@ -356,10 +364,10 @@ api.get('/ref/teachers', requireAuth, wrap((req) => {
         WHERE u.status = 'active'
           AND EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id
                        WHERE ur.user_id = u.id AND ur.status = 'active' AND r.key IN ('teacher', 'manager')
-                         AND (? IS NULL OR ur.branch_id IS NULL OR ur.branch_id = ?))
+                         AND (ur.branch_id IS NULL${cn ? ` OR ur.branch_id IN (${cn.map(() => '?').join(',')})` : ' OR 1=1'}))
         ORDER BY u.full_name`,
     )
-    .all(branchId ?? null, branchId ?? null)
+    .all(...(cn ?? []))
     /* MH6: kỹ năng tự khai (5 ô) — gợi ý phân công, không phải quyền. */
     .map((u: any) => ({ ...u, skills: String(u.skills ?? '').split(',').filter(Boolean) }));
 }));
@@ -407,13 +415,6 @@ api.post('/my-work/nhac', requireAuth, wrap((req) => {
   return nhacViec(principalOf(req), { key, ownerId });
 }));
 
-api.get('/overview', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  const p = principalOf(req);
-  const periodId = qInt(req, 'periodId') ?? ensurePeriod(demoToday()).id;
-  return dashboardSvc.overview(p, periodId, qInt(req, 'branchId'));
-}));
-
 // ============================================================ Mock Test
 
 api.get('/attempts', requireAuth, wrap((req) => {
@@ -431,42 +432,14 @@ api.get('/attempts', requireAuth, wrap((req) => {
 }));
 
 /*
- * CÁC ĐƯỜNG DẪN CỐ ĐỊNH PHẢI ĐỨNG TRƯỚC `/attempts/:id`.
- * Express khớp theo thứ tự khai báo, nên đặt sau thì `:id` sẽ nuốt luôn "no-plan" —
+ * CÁC ĐƯỜNG DẪN CỐ ĐỊNH (`/attempts/xyz`) PHẢI ĐỨNG TRƯỚC `/attempts/:id`.
+ * Express khớp theo thứ tự khai báo, nên đặt sau thì `:id` sẽ nuốt luôn chữ cố định —
  * request đi vào hàm chi tiết với một id không phải số.
  */
-
-/** Học viên chưa có tuần MT tiếp theo — việc của Quản lý. */
-api.get('/attempts/no-plan', requireAuth, wrap((req) => planningSvc.noPlanQueue(principalOf(req), {
-  branchId: toInt(req.query?.branchId), classId: toInt(req.query?.classId),
-  includePlanned: req.query?.includePlanned === '1',
-  /* Gõ tìm thẳng học viên, và lọc "chưa có MT thứ n" — hai cách vào của mục 10. */
-  q: qStr(req, 'q'),
-  missingAttemptNo: toInt(req.query?.missingAttemptNo),
-})));
 
 api.get('/attempts/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return attemptSvc.attemptDetail(principalOf(req), pInt(req, 'id'));
-}));
-
-/** Quản lý lập kế hoạch: chốt TUẦN, chưa cần ngày. */
-api.post('/attempts', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  const periodId = toInt(req.body?.periodId);
-  if (!periodId) throw badRequest('Cần chọn tuần kế hoạch.');
-  return attemptSvc.createAttempt(principalOf(req), { ...req.body, periodId });
-}));
-
-/**
- * Lên kế hoạch MT cho NHIỀU học viên cùng lúc, kèm chọn kỹ năng lượt này yêu cầu.
- * Bỏ tick một kỹ năng = ngay từ đầu không yêu cầu, KHÁC với "có yêu cầu nhưng chưa có điểm".
- */
-api.post('/attempts/bulk-plan', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  const periodId = toInt(req.body?.periodId);
-  if (!periodId) throw badRequest('Cần chọn tuần kế hoạch.');
-  return planningSvc.bulkPlan(principalOf(req), { ...req.body, periodId });
 }));
 
 // -------------------------------------------------------------- PR-Rc2: Kế hoạch Test
@@ -541,31 +514,6 @@ api.post('/ke-hoach-test/hang-loat', requireAuth, wrap((req) => {
 
 api.get('/ke-hoach-test/thuong/:classId', requireAuth, wrap((req) =>
   keHoachSvc.luoiThuong(principalOf(req), pInt(req, 'classId'))));
-
-/** Tổng hợp theo tuần cho Quản lý: mỗi tuần một dòng, mọi con số bấm được. */
-api.get('/weekly-rollup', requireAuth, wrap((req) => weeklyRollup(principalOf(req), {
-  branchId: toInt(req.query?.branchId),
-  weeks: toInt(req.query?.weeks) ?? undefined,
-  /* Normal và FT đếm hai thứ khác nhau (mục 4.2) — bộ lọc này quyết định nhãn cột luôn. */
-  track: req.query?.track === 'normal' ? 'normal' : req.query?.track === 'ft' ? 'ft' : null,
-})));
-
-/**
- * DANH SÁCH KHI BẤM MỘT SỐ CỦA BẢNG TUẦN — chính tập ID đã sinh ra số đó (cùng hàm, cùng quyền, cùng bộ lọc).
- * `periodId` bỏ trống là cả bảng (hợp các tuần đang hiện, đếm duy nhất). `rows=1` kèm tên để vẽ danh sách.
- */
-api.get('/weekly-rollup/ids', requireAuth, wrap((req) => {
-  const col = qStr(req, 'col');
-  if (!col) throw badRequest('Chưa chọn cột của bảng tuần.');
-  const d = weeklyDrill(principalOf(req), {
-    branchId: toInt(req.query?.branchId), weeks: toInt(req.query?.weeks) ?? undefined,
-    track: req.query?.track === 'normal' ? 'normal' : req.query?.track === 'ft' ? 'ft' : null,
-  }, toInt(req.query?.periodId), col);
-  return {
-    unit: d.unit, n: d.ids.length, empty: d.empty,
-    rows: qStr(req, 'rows') === '1' ? rowsFor(d.unit, d.ids) : undefined,
-  };
-}));
 
 /*
  * PHÂN TÍCH (PR-Pb, §3.3; PR-UX4) — Tổng hợp Test + SOS, Tổng hợp vấn đề HV, Hiệu quả PA, Ý thức, Bỏ quên.
@@ -711,12 +659,6 @@ api.post('/attempts/:id/skills/:skill/week', requireAuth, wrap((req) => {
   });
 }));
 
-api.post('/attempts/:id/skills/:skill/sit', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return skillScheduleSvc.setSitStatus(principalOf(req), pInt(req, 'id'), String(req.params.skill),
-    String(req.body?.status ?? ''), req.body?.note ?? null);
-}));
-
 api.post('/attempts/:id/skills/:skill/deadline', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return skillScheduleSvc.setSkillDeadline(principalOf(req), pInt(req, 'id'), String(req.params.skill),
@@ -739,17 +681,6 @@ api.post('/attempts/:id/absence-move', requireAuth, wrap((req) => {
     idempotencyKey: req.body?.idempotencyKey ?? null,
   });
 }));
-
-api.post('/move-requests/:id/decide', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return absenceSvc.decideAbsenceMove(principalOf(req), pInt(req, 'id'), {
-    approve: req.body?.approve === true,
-    note: req.body?.note ?? null,
-    periodId: toInt(req.body?.periodId) || null,
-  });
-}));
-
-api.get('/move-requests', requireAuth, wrap((req) => absenceSvc.openMoveRequests(principalOf(req))));
 
 api.post('/attempts/:id/skills/:skill/restore', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -838,10 +769,6 @@ api.post('/attempts/:id/scores/:skill/no-show/resolve', requireAuth, wrap((req) 
   return absenceSvc.resolveLateNoShow(principalOf(req), pInt(req, 'id'), skill, decision);
 }));
 
-api.get('/classes/:id/score-sheet', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  return attemptSvc.classScoreSheet(principalOf(req), pInt(req, 'id'), qInt(req, 'periodId') ?? null);
-}));
 /**
  * MỘT CỬA CHO BẢNG CHẤM (spec §3.5): máy chủ chọn đúng bảng theo loại lớp, giao diện không phải đoán. Mở
  * `/nhap-diem/:id` của một lớp thường thì đây là chỗ trả về lưới lớp thường.
@@ -1230,11 +1157,6 @@ api.post('/intake/commit', requireAuth, wrap((req) => {
   });
 }));
 
-api.get('/classes/:id/suggested-weeks', requireAuth, wrap((req) => {
-  const cls = db().prepare('SELECT start_date FROM classes WHERE id = ?').get(pInt(req, 'id')) as any;
-  return { weeks: intakeSvc.suggestMockWeeks(cls?.start_date ?? null, qInt(req, 'count') ?? 3) };
-}));
-
 // ============================================================ Lớp thường (FOU/BE/ELE)
 
 /** Bảng nhập điểm của lớp Normal: điểm đạt / tổng điểm, đạt từ 70%. */
@@ -1262,7 +1184,7 @@ api.put('/regular/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
 /** Danh sách chương trình học đang dùng. */
 /* Kèm `skills` + `checkpoints` của bảng: panel Tạo lớp vẽ ô phân công và dòng "10 tuần · Giữa khoá tuần 5 …" từ đây (PR-LOP). */
 api.get('/ref/programmes', requireAuth, wrap(() =>
-  [...regularSvc.allProgrammes().values()].sort((x, y) => x.code.localeCompare(y.code))));
+  [...regularSvc.allProgrammes().values()].filter((x) => x.active).sort((x, y) => x.code.localeCompare(y.code))));
 
 // ============================================================ Lộ trình và Đánh giá GV
 
@@ -1275,7 +1197,9 @@ api.get('/students/:id/cycles', requireAuth, wrap((req) => {
 
 api.post('/students/:id/cycles', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return cycleSvc.createCycle(principalOf(req), { ...req.body, studentId: pInt(req, 'id') });
+  /* PR-Dọn (quét #20): chỉ lấy các khoá cần — không trải cả thân yêu cầu (ghi nguyên vào audit `after`). */
+  const { route, targetScore, examPeriodId, startedAt, note } = (req.body ?? {}) as Record<string, any>;
+  return cycleSvc.createCycle(principalOf(req), { route, targetScore, examPeriodId, startedAt, note, studentId: pInt(req, 'id') });
 }));
 
 /** Một lộ trình, để panel Kế hoạch học nạp đúng giá trị đang có. */
@@ -1338,6 +1262,7 @@ api.post('/cycles/:id/target-revision', requireAuth, wrap((req) => {
 api.get('/classes/:id/progress', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   const id = pInt(req, 'id');
+  require_(principalOf(req), PERMISSIONS.ATTEMPT_VIEW, { classId: id }, 'Lớp này nằm ngoài phạm vi bạn được xem.');   // PR-Dọn (quét #10)
   const pr = scheduleSvc.classProgress(id);
   /* K2-22: dòng tóm tắt MT của lớp FT (panel Tuần khai giảng) — chỉ người xem được lớp; người khác không có dòng này. */
   const tomTatMt = pr.programmeCode === 'FT' && can(principalOf(req), PERMISSIONS.ATTEMPT_VIEW, { classId: id }) ? scheduleSvc.tomTatMt(id) : null;
@@ -1416,8 +1341,13 @@ api.patch('/classes/:id/progress', requireAuth, wrap((req) => {
 }));
 
 /** Lịch MT hệ thống ĐỀ XUẤT cho một lộ trình FT, tính từ tuần bắt đầu học. */
-api.get('/cycles/:id/suggested-mocks', requireAuth, wrap((req) =>
-  scheduleSvc.suggestedMockWeeks(pInt(req, 'id'))));
+api.get('/cycles/:id/suggested-mocks', requireAuth, wrap((req) => {
+  /* PR-Dọn (quét #10): chỉ người xem được em của lộ trình. */
+  const c = cycleSvc.cycleById(pInt(req, 'id'));
+  if (!c) throw notFound('Không tìm thấy lộ trình');
+  require_(principalOf(req), PERMISSIONS.STUDENT_VIEW, { studentId: c.student_id }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
+  return scheduleSvc.suggestedMockWeeks(c.id);
+}));
 
 /**
  * Áp lịch đề xuất vào thực tế. KHÔNG đụng vào lượt người đã chốt tay và lượt đã làm xong —
@@ -1466,15 +1396,6 @@ api.get('/cases', requireAuth, wrap((req) => {
   });
 }));
 
-/**
- * Bảng tổng hợp cho Quản lý: một hàng mỗi chi nhánh, hoặc mỗi lớp khi đã chọn chi nhánh.
- * Dùng CHUNG `listCases` với danh sách bên dưới nên số trên bảng và số dòng luôn khớp.
- */
-api.get('/summary', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  return summarySvc.branchSummary(principalOf(req), { branchId: qInt(req, 'branchId') });
-}));
-
 /*
  * ĐƯỜNG `/outcomes` ĐÃ BỎ cùng với bảng "Phương án & kết quả" đứng riêng (mục 15.1).
  *
@@ -1482,12 +1403,6 @@ api.get('/summary', requireAuth, wrap((req) => {
  * song song với `cases/effectiveness.ts`. Hai cách đếm cho một câu hỏi thì sớm muộn cũng ra
  * hai con số, và lúc đó không ai biết tin bên nào. Nay chỉ còn một nơi sở hữu luật 15.3.
  */
-
-/** Khối riêng của Quản lý: chi nhánh đang tắc ở đâu (theo lớp), và ai đang tắc (theo người). */
-api.get('/branch-pulse', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  return pulseSvc.branchPulse(principalOf(req), { branchId: qInt(req, 'branchId') });
-}));
 
 /* PR-GV: hồ sơ giáo viên + danh sách sau một số. `:id`/`lop`/`cn` là số nguyên dương (sai → 400); quyền kiểm ở `phamViHoSoGv`. */
 const soDuong = (v: unknown, ten: string): number | null => {
@@ -1575,19 +1490,7 @@ api.get('/tong-quan/chi-nhanh/o', requireAuth, wrap((req) => {
   });
 }));
 
-/** Lựa chọn hiển thị riêng của từng người — bộ cột đang xem, chi nhánh xem lần cuối… */
-api.get('/prefs', requireAuth, wrap((req) => prefSvc.allPrefs(principalOf(req))));
-api.put('/prefs/:key', requireAuth, wrap((req) => prefSvc.setPref(
-  principalOf(req), String(req.params.key), req.body?.value ?? null,
-)));
-
 api.get('/cases/:id', requireAuth, wrap((req) => caseSvc.caseDetail(principalOf(req), pInt(req, 'id'))));
-
-/** Phân loại vấn đề: tối đa MỘT vấn đề chính, kèm yếu tố đi kèm và hoàn cảnh. */
-api.put('/cases/:id/issues', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return caseSvc.setIssues(principalOf(req), pInt(req, 'id'), req.body ?? {});
-}));
 
 /** Ghi một tác động. Một case có nhiều tác động. */
 api.post('/cases/:id/interventions', requireAuth, wrap((req) => {
@@ -1647,15 +1550,6 @@ api.post('/phoi-hop-sos/:id/remove', requireAuth, wrap((req) => {
   return phoiHopSvc.removeCoordination(principalOf(req), pInt(req, 'id'), { reasonCode: b.reasonCode ?? null, reasonText: b.reasonText ?? null });
 }));
 
-/**
- * Quản lý trả lời một phương án đang chờ duyệt: duyệt / không duyệt / góp ý.
- * Góp ý KHÔNG kết thúc việc chờ — Quản lý vẫn nợ một câu trả lời.
- */
-api.post('/interventions/:id/respond', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return caseSvc.respondToPlan(principalOf(req), pInt(req, 'id'), req.body ?? {});
-}));
-
 /*
  * HỘP CHỜ DUYỆT (PR-DUYET, T41, §7.6): `hop=cho-duyet` (QL, Quản trị — 403 với GV) · `hop=cua-toi` (mọi vai: thẻ mình đã gửi).
  * Quyết định kiểm quyền theo phạm vi CỦA THẺ; thẻ đã xử lý → 400 "đã được xử lý" để giao diện làm mới danh sách.
@@ -1698,18 +1592,6 @@ api.post('/yeu-cau/:id/tra-loi', requireAuth, wrap((req) => {
 api.post('/interventions/:id/result', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return caseSvc.updateResult(principalOf(req), pInt(req, 'id'), req.body ?? {});
-}));
-
-/**
- * Đánh dấu một phương án ĐÃ LÀM XONG kèm ngày thực hiện.
- *
- * Chỉ còn dùng cho việc TRAO ĐỔI (gặp em, gọi phụ huynh) — những việc không có kết quả
- * chuyên môn để ghi, chỉ cần xác nhận đã diễn ra. Phương án học thuật đi qua
- * `/interventions/:id/result`.
- */
-api.post('/interventions/:id/complete', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return caseSvc.completeIntervention(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
 /**
@@ -1763,20 +1645,6 @@ api.post('/cases/:id/followups', requireAuth, wrap((req) => {
  * Bản ghi cũ vẫn đọc được hướng xử lý của mình; chỉ không sửa qua đường riêng nữa.
  */
 
-api.put('/cases/:id/owner', requireAuth, wrap((req) => {
-  const raw = (req.body ?? {}).ownerUserId;
-  return caseSvc.setCaseOwner(principalOf(req), pInt(req, 'id'),
-    raw === null || raw === undefined || raw === '' ? null : Number(raw));
-}));
-
-/** Bộ phân loại vấn đề để dựng ô chọn. Dữ liệu, không viết cứng trong giao diện. */
-api.get('/ref/issue-taxonomy', requireAuth, wrap(() => ({
-  /** Chủ đề của case = kỹ năng nhập điểm — dựng ô chọn từ dữ liệu, không viết cứng trong giao diện. */
-  topics: ENTRY_SKILLS.map((k) => ({ key: k, label: ENTRY_SKILL_LABEL[k] })),
-  /** Phân loại NGUYÊN NHÂN. W1 và W2 dùng chung bộ Writing. */
-  branches: ISSUE_TAXONOMY,
-})));
-
 // ============================================================ Liên hệ với HS và phụ huynh
 
 /*
@@ -1824,7 +1692,7 @@ api.post('/students/:id/transfer', requireAuth, wrap((req) => {
   } = req.body ?? {};
   if (!toClassId) throw badRequest('Cần chọn lớp đích.');
   /* PR-CT: panel mới gửi thẳng `lyDo` (một ô chữ ≥ 3 ký tự); đường lý do chọn nhanh cũ giữ cho phép kiểm và client cũ. */
-  const lyDoTuDo = typeof req.body?.lyDo === 'string' ? req.body.lyDo.trim() : '';
+  const lyDoTuDo = typeof req.body?.lyDo === 'string' ? chuTuDo(req.body.lyDo, 'Lý do chuyển lớp', 2000) ?? '' : '';   // PR-Dọn (Q4, quét #24)
   if (req.body?.lyDo !== undefined && lyDoTuDo.length < 3) throw badRequest('Ghi lý do chuyển lớp (ít nhất 3 ký tự).');
   /* RB-3: lý do chọn nhanh BẮT BUỘC; "Khác" phải ghi rõ ≥ 3 ký tự (T13). */
   if (!lyDoTuDo && laKhac(reasonCode)) {
@@ -2002,8 +1870,6 @@ api.patch('/tasks/:id', requireAuth, wrap((req) => {
   return meetingSvc.updateTask(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
-api.get('/tasks/:id/history', requireAuth, wrap((req) => meetingSvc.taskHistory(pInt(req, 'id'))));
-
 // ============================================================ Thông báo
 
 api.get('/notifications', requireAuth, wrap((req) => thongBaoCua(principalOf(req).userId)));
@@ -2029,9 +1895,6 @@ api.get('/mgmt-tasks', requireAuth, wrap((req) => mgmtSvc.listMgmtTasks(principa
   assigneeUserId: qInt(req, 'assigneeUserId'),
   periodId: qInt(req, 'periodId'),
 })));
-
-/** Việc được giao cho chính người đang xem — hiện ở Toàn cảnh, không cần mở tab quản lý. */
-api.get('/mgmt-tasks/mine', requireAuth, wrap((req) => mgmtSvc.myMgmtTasks(principalOf(req))));
 
 api.get('/mgmt-tasks/:id', requireAuth, wrap((req) =>
   mgmtSvc.mgmtTaskDetail(principalOf(req), pInt(req, 'id'))));
@@ -2221,9 +2084,10 @@ api.post('/admin/accounts/:id/xoa', requireAuth, wrap((req) => {
 }));
 
 /** Lộ trình và loại lớp — nay là dữ liệu, Quản trị hệ thống sửa được (mục 7.3). */
-api.get('/ref/routes', wrap(() => sysconfigSvc.listRoutes()));
+/* PR-Dọn (quét #10): danh mục cần đăng nhập; số "đang dùng" (lộ quy mô) chỉ ở bản Quản trị. */
+api.get('/ref/routes', requireAuth, wrap(() => sysconfigSvc.listRoutes()));
 api.get('/admin/routes', requireAuth, wrap((req) => {
-  principalOf(req);
+  require_(principalOf(req), PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, 'Chỉ Quản trị hệ thống xem được danh mục lộ trình đầy đủ.');
   return sysconfigSvc.listRoutes(true);
 }));
 api.put('/admin/routes', requireAuth, wrap((req) => sysconfigSvc.saveRoute(principalOf(req), req.body ?? {})));

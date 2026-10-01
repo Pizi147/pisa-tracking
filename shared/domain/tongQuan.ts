@@ -7,7 +7,7 @@
  */
 import type { DeadlineKind } from './display.ts';
 import { tuanLich } from './hienThiNgay.ts';
-import { mondayOfDate } from './week.ts';
+import { tuanKetQuaCuaHan } from './week.ts';
 
 // ------------------------------------------------------------------ chương trình
 /* PR-Pb2-a (Q31-1, T60): chỉ còn hai khung, FT trước. Nút "Cả hai" đã bỏ — khối không theo kỹ năng gộp bằng `null`. */
@@ -134,8 +134,7 @@ export function sapCanXuLy(dem: Partial<Record<MaCanXuLy, number>>, coQuyenDuyet
  * Q25: "tuần W4 SEP" — tuần KẾT QUẢ của hạn ghi kết quả cũ nhất (hạn = hết Thứ Hai tuần sau tuần kết quả). Một chỗ cho dòng Cần xử lý và ô số.
  */
 export function tuanCuaHanGhiKetQua(han: string, homNay: string): string {
-  const thu2 = mondayOfDate(han.slice(0, 10));
-  return `tuần ${tuanLich(new Date(Date.parse(`${thu2}T00:00:00Z`) - 7 * 86_400_000).toISOString().slice(0, 10), homNay)}`;
+  return `tuần ${tuanLich(tuanKetQuaCuaHan(han), homNay)}`;
 }
 
 /** Cột Người giữ việc (Q4): "Bạn", hoặc "n giáo viên" + tên sắp theo tên, quá 3 thì "+k". */

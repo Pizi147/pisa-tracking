@@ -118,7 +118,7 @@ export function buildPrMtDemo(ctx: BuildCtx): { students: number } {
   const mt2 = luot(linh.cycleId, 2);
   huyLuot(ql, luot(linh.cycleId, 3).id, { lyDo: 'Em xin hoãn đợt cuối' });
   huyLuot(ql, mt2.id, { lyDo: 'Em đổi lịch học' });
-  createAttempt(ql, { studentId: linh.id, cycleId: linh.cycleId, classId: ft101, periodId: mt2.planned_period_id });
+  createAttempt(ql, { studentId: linh.id, cycleId: linh.cycleId, periodId: mt2.planned_period_id });
 
   // ---------------------------------------------------------------- D16 · LT1 → RF, Case đi theo
   const huy = them(ft101, 'Đinh Gia Huy', tuan(-6));                      // MT1 (tuần học 6) = tuần trước, lên lịch từ đầu khoá

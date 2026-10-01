@@ -545,7 +545,7 @@ export async function runPrSosTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ Task 11 · demo D7, D8 (soi bộ demo đã dựng)
-  check('SOS (11) · D7: Case SOS ở MB FT 101 đủ trạng thái v4; D8: PA hạn hết T2 đúng ngày demo, PA quá hạn 2 ngày, PA ở tuần mốc; không còn Case đóng kiểu cũ', () => {
+  check('SOS (11) · D7: Case SOS ở MB FT 101 đủ trạng thái v4; D8: PA hạn hết T2 đúng ngày demo, PA quá hạn 1 tuần (hạn Thứ Hai), PA ở tuần mốc; không còn Case đóng kiểu cũ', () => {
     const caseCua = (ten: string, kn: string) => get(`SELECT sc.* FROM sos_cases sc JOIN students s ON s.id = sc.student_id
       WHERE s.full_name = ? AND sc.category = ? ORDER BY sc.id DESC LIMIT 1`, ten, kn);
     const k = (ten: string, kn: string) => (cases.caseDetail(P.admin, caseCua(ten, kn).id) as any).trangThaiV4.k as string;
@@ -560,7 +560,7 @@ export async function runPrSosTests(t: YThucTestKit) {
       && get(`SELECT 1 x FROM case_milestones WHERE case_id = ? AND kind = 'ql_tu_choi_khong_theo_doi'`, bao.id), 'Bảo: Quản lý từ chối, hạn mới');
     const paCua = (ten: string, kn: string) => get(`SELECT * FROM case_interventions WHERE case_id = ? AND preset = 1 AND status = 'started'`, caseCua(ten, kn).id);
     assert(paCua('Đỗ Minh Khôi', 'speaking').action_due === TODAY, 'D8: hạn hết T2 đúng ngày demo');
-    assert(paCua('Lý Minh Châu', 'reading').action_due === addDays(TODAY, -2), 'D8: quá hạn 2 ngày');
+    assert(paCua('Lý Minh Châu', 'reading').action_due === addDays(TODAY, -7), 'D8: quá hạn 1 tuần');   // PR-Dọn (10a): hạn PA rơi Thứ Hai
     const ngoc = paCua('Hoàng Bảo Ngọc', 'listening');
     assert(d.laLanGhiCuoi({ preset: true, followupDue: ngoc.followup_due, actionDue: ngoc.action_due }, TODAY), `D8: tuần mốc ${JSON.stringify(ngoc)}`);
     assert(!get(`SELECT 1 x FROM case_interventions WHERE closed_reason = 'dismissed'`), 'còn PA huỷ kiểu cũ "GVBM tự đóng"');

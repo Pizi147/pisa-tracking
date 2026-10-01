@@ -28,7 +28,6 @@ export const DUONG_DO: MucDo[] = [
   // ---------------------------------------------------------------- Chung
   { trang: 'Chung', vai: MOI_VAI, url: '/demo/session' },
   { trang: 'Chung', vai: MOI_VAI, url: '/ref/branches' },
-  { trang: 'Chung', vai: MOI_VAI, url: '/prefs' },
 
   // ---------------------------------------------------------------- Tổng quan · Quản lý
   {
@@ -42,7 +41,6 @@ export const DUONG_DO: MucDo[] = [
   },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/tong-quan/chi-nhanh' },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/tong-quan/chi-nhanh/o?cot=caseMo&khoa=tong' },
-  { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/branch-pulse' },
   /* PR-S6F-b (UXF-a P1): Báo cáo đơn vị — tín hiệu đọc sổ chỉ số MỘT lần mỗi chỉ số (không theo chi nhánh). */
   { trang: 'Báo cáo đơn vị', vai: ['QL', 'QT'], url: '/signals' },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/metrics/case-mo' },
@@ -52,7 +50,6 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/metrics/hv-duoi-ky-vong-mon' },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/metrics/hv-co-case-mo' },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/metrics/do-phu-danh-gia' },
-  { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/summary' },
 
   // ---------------------------------------------------------------- Phân tích Ý thức cho QL (PR-YT2, P13/P14)
   { trang: 'Phân tích Ý thức QL', vai: ['QL', 'QT'], url: '/metrics/vi-pham-theo-nhom' },
@@ -153,6 +150,8 @@ export const DUONG_DO: MucDo[] = [
    */
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}' },
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/skill-board' },
+  /* PR-Dọn-a (Q2): ô chọn người theo một em — kiểm STUDENT_VIEW trước, rồi lọc theo phạm vi người xem. */
+  { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/ref/nguoi?nhom=giao_vien&studentId={hv}' },
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/cases/{case}' },
   /* PR-VAI-b (V1/K3-47): dải "n yêu cầu chờ bạn duyệt" của hồ sơ HV — chỉ Quản lý / Quản trị gọi (GVCN 403). */
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN'], url: '/yeu-cau?studentId={hv}', maChuDich: { GVCN: 403 } },
@@ -183,7 +182,6 @@ export const DUONG_DO: MucDo[] = [
 
   // ---------------------------------------------------------------- Việc cần làm
   { trang: 'Việc cần làm', vai: MOI_VAI, url: '/tasks' },
-  { trang: 'Việc cần làm', vai: ['QL', 'QT'], url: '/mgmt-tasks/mine' },
   /* PR-Qb (sửa sau rà #75, vấn đề 5). */
   { trang: 'Việc cần làm', vai: MOI_VAI, url: '/notifications' },
 
@@ -251,11 +249,6 @@ export const TRAN: Record<string, number> = {
   'GVBM /ref/branches': 21,
   'GVCN_THUONG /ref/branches': 21,
   'QT /ref/branches': 20,
-  'QL /prefs': 19,
-  'GVCN /prefs': 19,
-  'GVBM /prefs': 19,
-  'GVCN_THUONG /prefs': 19,
-  'QT /prefs': 19,
   /* PR-VAI-a: trần đường mới = max(đo+10, ⌈đo×1,3⌉) — đo 01/10. */
   'QL /tong-quan/diem-chu-y?ct=ft': 52,
   'QT /tong-quan/diem-chu-y?ct=ft': 49,
@@ -280,8 +273,6 @@ export const TRAN: Record<string, number> = {
   'QT /tong-quan/chi-nhanh': 41,
   'QL /tong-quan/chi-nhanh/o?cot=caseMo&khoa=tong': 46,
   'QT /tong-quan/chi-nhanh/o?cot=caseMo&khoa=tong': 42,
-  'QL /branch-pulse': 42,
-  'QT /branch-pulse': 40,
   'QL /metrics/case-mo': 28,
   'QT /metrics/case-mo': 25,
   'QL /metrics/bai-qua-han-nhap-diem?rows=1': 35,   // PR-UXF-a Task 5: đo 25 → max(25+10, ⌈25×1.3⌉)
@@ -294,8 +285,6 @@ export const TRAN: Record<string, number> = {
   'QT /metrics/hv-co-case-mo': 25,
   'QL /metrics/do-phu-danh-gia': 29,
   'QT /metrics/do-phu-danh-gia': 29,
-  'QL /summary': 40,
-  'QT /summary': 37,
   // PR-YT2 (8), 23/09/2026 — mốc chốt ngay sau khi thêm đường, đo được 11/12 câu: max(sau+10, ⌈sau×1.3⌉).
   'QL /metrics/vi-pham-theo-nhom': 21,
   'QT /metrics/vi-pham-theo-nhom': 21,
@@ -437,28 +426,10 @@ export const TRAN: Record<string, number> = {
   'GVBM /cases?classId=3': 28,
   'GVCN_THUONG /cases?classId=3': 28,
   'QT /cases?classId=3': 25,
-  'QL /classes/5/overview': 55,
-  'QT /classes/5/overview': 51,
-  'GVCN_THUONG /classes/5/overview': 55,
   /* PR-S6F-b (UXF-a P2): roster lớp thường — id lớp {lopThuong} nay là 6 (các khoá /classes/5/… cũ không còn khớp, xem thân PR). Đo 01/10. */
   'QL /classes/6/roster': 68,
   'QT /classes/6/roster': 64,
   'GVCN_THUONG /classes/6/roster': 76,
-  'QL /classes/5/roster': 52,
-  'QT /classes/5/roster': 49,
-  'GVCN_THUONG /classes/5/roster': 52,
-  'QL /classes/5/phan-tich-lop': 30,
-  'QT /classes/5/phan-tich-lop': 29,
-  'GVCN_THUONG /classes/5/phan-tich-lop': 31,
-  'QL /classes/5/y-thuc': 27,
-  'QT /classes/5/y-thuc': 26,
-  'GVCN_THUONG /classes/5/y-thuc': 27,
-  'QL /classes/5/cham': 32,
-  'QT /classes/5/cham': 31,
-  'GVCN_THUONG /classes/5/cham': 32,
-  'QL /cases?classId=5': 28,
-  'QT /cases?classId=5': 25,
-  'GVCN_THUONG /cases?classId=5': 28,
   // PR-UX1 (3), 23/09/2026 — Lịch Test gộp Cần chấm (thêm `listAttempts` cho khối Nợ tuần trước): 16 → 26 câu (QT 28),
   // vẫn ít hơn hai trang cũ cộng lại (16 + 24). Trần max(sau+10, ⌈sau×1.3⌉).
   'QL /cham/lich-test': 36,
@@ -477,10 +448,38 @@ export const TRAN: Record<string, number> = {
   'GVBM /cham/lich-test?classId=3': 36,
   // PR-VAI-b: đầu hồ sơ 30 giây (việc theo người, câu tóm tắt, bốn ô, Tạm dừng) — đo 97/94/99/99 (phiên 2, Task 9 bỏ `journeyRows`/`episodes`: 96/93/98/98) sau khi nhớ `programmeOfClass` theo request
   // và lấy tên người làm qua JOIN; giữ trần cứng 100 (luật +10/+30 % cho 107–109, vượt trần cứng).
-  'QL /students/1': 100,
-  'QT /students/1': 100,
-  'GVCN /students/1': 100,
-  'GVBM /students/1': 100,
+  /* PR-Dọn (Task 9): gom câu hồ sơ HV 93–98 → 81–86 (JSON 4 vai × 3 em giống hệt) — trần hạ xuống đo + 10. */
+  'QL /students/1': 94,
+  'QT /students/1': 91,
+  'GVCN /students/1': 96,
+  'GVBM /students/1': 96,
+  /* PR-Dọn (Task 1, Q2): ô chọn người theo một em — đo + 10. */
+  'QL /ref/nguoi?nhom=giao_vien&studentId=1': 24,
+  'QT /ref/nguoi?nhom=giao_vien&studentId=1': 22,
+  'GVCN /ref/nguoi?nhom=giao_vien&studentId=1': 25,
+  'GVBM /ref/nguoi?nhom=giao_vien&studentId=1': 25,
+  /* PR-Dọn (9c): khoá lớp thường đổi /5 → /6 ({lopThuong} thật) — đo 01/10, trần max(đo + 10, ⌈đo × 1,3⌉), trần cứng 100. */
+  'QL /classes/6/overview': 97,
+  'QT /classes/6/overview': 93,
+  'GVCN_THUONG /classes/6/overview': 100,
+  'QL /classes/6/phan-tich-lop': 29,
+  'QT /classes/6/phan-tich-lop': 28,
+  'GVCN_THUONG /classes/6/phan-tich-lop': 30,
+  'QL /classes/6/y-thuc': 28,
+  'QT /classes/6/y-thuc': 27,
+  'GVCN_THUONG /classes/6/y-thuc': 28,
+  'QL /classes/6/cham': 35,
+  'QT /classes/6/cham': 34,
+  'GVCN_THUONG /classes/6/cham': 35,
+  'QL /cases?classId=6': 27,
+  'QT /cases?classId=6': 24,
+  'GVCN_THUONG /cases?classId=6': 27,
+  'QL /ke-hoach-test/thuong/6': 35,
+  'QT /ke-hoach-test/thuong/6': 34,
+  'QL /students/1/chuyen-lop?toClassId=6': 27,
+  'QT /students/1/chuyen-lop?toClassId=6': 26,
+  'GVCN /students/1/chuyen-lop?toClassId=6': 18,
+  'GVBM /students/1/chuyen-lop?toClassId=6': 18,
   'QL /students/1/skill-board': 56,
   'QT /students/1/skill-board': 54,
   'GVCN /students/1/skill-board': 56,
@@ -510,8 +509,6 @@ export const TRAN: Record<string, number> = {
   'GVBM /tasks': 20,
   'GVCN_THUONG /tasks': 20,
   'QT /tasks': 23,
-  'QL /mgmt-tasks/mine': 20,
-  'QT /mgmt-tasks/mine': 20,
   // PR-Qb (sửa sau rà #75, vấn đề 5).
   'QL /notifications': 19,
   'GVCN /notifications': 19,
@@ -526,8 +523,6 @@ export const TRAN: Record<string, number> = {
   'QL /ke-hoach-test/ft/3': 30,   // PR-XLMT: +1 câu đề nghị dời chờ duyệt (chip chờ Quản lý duyệt)
   'QT /ke-hoach-test/ft/3': 30,   // PR-XLMT: +1 câu đề nghị dời chờ duyệt (chip chờ Quản lý duyệt)
   // PR-UX2: lưới lớp thường theo HV × kỹ năng — đo 25/24 câu, trần = max(đo+10, ⌈đo×1.3⌉).
-  'QL /ke-hoach-test/thuong/5': 35,
-  'QT /ke-hoach-test/thuong/5': 34,
   // PR-LT (rà PR #86) — mốc chốt trên số đo sau khi rà, giống công thức chung: max(sau+10, ⌈sau×1.3⌉).
   'QL /hoc-vien-lop/luu-tru': 22,
   'GVCN /hoc-vien-lop/luu-tru': 22,
@@ -544,9 +539,6 @@ export const TRAN: Record<string, number> = {
   'QL /classes/6/transition': 42,   // PR-CT gộp LT2b: 39 → 42
   'QT /classes/6/transition': 41,   // PR-CT gộp LT2b: 38 → 41
   'GVCN_THUONG /classes/6/transition': 42,   // PR-CT gộp LT2b: 39 → 42
-  'QL /classes/5/transition': 36,
-  'QT /classes/5/transition': 35,
-  'GVCN_THUONG /classes/5/transition': 36,
   /* PR-CT (Task 6): phiếu bàn giao cả lớp nguồn — đo 14 / 13 / 13 câu (chưa có lệnh) → trần max(sau+10, ⌈sau×1.3⌉). Task 12 đo lại với bộ demo có lệnh. */
   'QL /lenh-chuyen/ban-giao?lop=6': 24,
   'QT /lenh-chuyen/ban-giao?lop=6': 23,
@@ -572,10 +564,6 @@ export const TRAN: Record<string, number> = {
   'QT /students/1/chuyen-lop': 20,
   'GVCN /students/1/chuyen-lop': 22,
   'GVBM /students/1/chuyen-lop': 21,
-  'QL /students/1/chuyen-lop?toClassId=5': 24,
-  'QT /students/1/chuyen-lop?toClassId=5': 23,
-  'GVCN /students/1/chuyen-lop?toClassId=5': 25,
-  'GVBM /students/1/chuyen-lop?toClassId=5': 21,
   // PR-XUAT (5), 30/09/2026 — mốc chốt ngay sau khi thêm đường, đo 16 câu (khung thường 19), KHÔNG đổi khi nhân dữ liệu ×3: max(sau+10, ⌈sau×1.3⌉).
   'QL /xuat-mt/xem-truoc?tg=dot&dot=mt:1,mt:2,mt:3,mt:4,mt:5,mt:6,mt:7,mt:8': 26,
   'QT /xuat-mt/xem-truoc?tg=dot&dot=mt:1,mt:2,mt:3,mt:4,mt:5,mt:6,mt:7,mt:8': 26,
@@ -641,6 +629,8 @@ export const TRAN: Record<string, number> = {
  * sau PR-TOC theo cùng công thức `max(sau + 10, ⌈sau × 1.3⌉)`. PR sau làm tăng PHẢI nâng trần kèm lý do, không âm thầm sửa số.
  */
 export const TRAN_GHI_LO = {
+  /** POST /notifications/doc-het — một câu UPDATE (S6F-a 10e) + phiên/quyền. PR-Dọn (9d): trần đặt sau khi đo. */
+  docHet: 19,   // đo 9 câu → max(9 + 10, ⌈9 × 1,3⌉)
   /** POST /intake/commit — 35 em lớp FT (lịch MT mặc định, có em "Đã thi tới MT", ngày thi, tuần riêng). Trước PR-TOC 1949, sau 44 (49 sau gộp PR-MON + rà #121: đọc chương trình lớp, đọc lại khoá trong giao dịch). */
   themHocVien35FT: 58,
   /** POST /classes/:id/transition — cả lớp thường (≥ 20 em) sang FT, mỗi em có lịch MT mặc định. Trước PR-TOC 1505, sau 124 → 128 sau rà #121 (32 em, gồm đóng Case mở của em có sẵn — S17). */
@@ -668,13 +658,18 @@ export const TRAN_GHI_LO = {
  * ở dev gọi đôi `/demo/session` — không tính). MỖI đường một lần (`useApi` gộp GET đang bay): trước PR GV gọi `/my-work` ×2 + `/my-work/dem`
  * (= ba lần `myWork`), QL gọi `/tong-quan/quan-ly` ×2. Trần = TỔNG câu SQL của cả lượt tải.
  */
+/* ponytail: danh sách viết tay, phép quét (prDonA 9e) bắt route mới; chuyển sang hằng dùng chung với web khi Tổng quan ổn định. */
 export const TAI_TRANG: Record<string, { vai: Vai; urls: string[]; tran: number }> = {
   'GV trang Tổng quan': {
     vai: 'GVCN', tran: 205,   // đo 157 (trước PR ≈ 157 + 2 × 66 = 289)
     urls: ['/demo/session', '/my-work', '/notifications', '/ref/classes', '/tong-quan/lop-toi-day?ct=ft', '/yeu-cau/dem'],
   },
   'QL trang Tổng quan': {
-    vai: 'QL', tran: 164,   // đo 126 (trước PR ≈ 126 + 71 = 197)
-    urls: ['/demo/session', '/notifications', '/ref/branches', '/ref/classes', '/tong-quan/quan-ly', '/metrics/hv-duoi-ky-vong-mon?ct=ft'],
+    vai: 'QL', tran: 450,   // PR-Dọn (9e): đủ 15 GET lúc mở trang → đo 346 câu (trước chỉ 6 GET, đo 126) — max(346 + 10, ⌈346 × 1,3⌉)
+    /* PR-Dọn (9e): đủ MỌI GET lúc mở trang (phép quét `prDonA.tests.ts` 9e bắt route mới): thêm badge Chờ duyệt (App), Điểm đáng chú ý,
+       sáu ô số, Lịch sắp tới, bảng chi nhánh. */
+    urls: ['/demo/session', '/notifications', '/ref/branches', '/ref/classes', '/yeu-cau/dem', '/tong-quan/quan-ly', '/tong-quan/diem-chu-y?ct=ft',
+      '/metrics/hv-duoi-ky-vong-mon?ct=ft', '/metrics/hv-co-case-mo?ct=ft', '/metrics/case-mo?ct=ft', '/metrics/case-cho-xac-dinh-nguyen-nhan?ct=ft',
+      '/metrics/case-xac-dinh-nguyen-nhan-qua-han?ct=ft', '/metrics/pa-can-cap-nhat?ct=ft', '/highlights?ct=ft', '/tong-quan/chi-nhanh?ct=ft'],
   },
 };

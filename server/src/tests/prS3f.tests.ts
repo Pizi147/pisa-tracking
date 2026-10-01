@@ -196,16 +196,14 @@ export async function runPrS3fTests(t: YThucTestKit) {
 
   // ------------------------------------------------------------------ 8 · chặn đường vòng chỉ-API
   const mt1L = (name: string) => { const st = makeStudent(name); const a = mkAttempt(st, 1); enter(a, 'listening', 5); return { st, a, c: caseOf(st.id, 'listening') }; };
-  check('S3F (8) · POST /interventions/:id/complete khép PA quy chế TRƯỚC mốc → 400 (T22); PUT /cases/:id/issues đặt nguyên nhân Case SOS chưa xác nhận → 400', () => {
+  /* PR-Dọn (Q14): `PUT /cases/:id/issues` + `setIssues` và route `/interventions/:id/complete` đã xoá (web không gọi) — giữ phần hàm còn sống. */
+  check('S3F (8) · completeIntervention khép PA quy chế TRƯỚC mốc → 400 (T22)', () => {
     const { c } = mt1L('D8');
-    assertThrows(() => cases.setIssues(P.admin, c.id, { primaryCode: L_CODE }), /Xác nhận Case/, 'nguyên nhân qua đường vòng');
-    assert(get('SELECT COUNT(*) n FROM case_issues WHERE case_id = ?', c.id).n === 0, 'nguyên nhân đã bị ghi');
     sosAuto.xacNhanCase(P.admin, c.id, XN);
     const iv = get('SELECT id FROM case_interventions WHERE case_id = ?', c.id);
     sosAuto.xacNhanPaQuyChe(P.admin, iv.id, { description: 'Tutor Listening hai buổi mỗi tuần, cô Hà chữa bài nghe.' });
     assertThrows(() => cases.completeIntervention(P.admin, iv.id, {}), /chưa tới mốc kết thúc/, 'khép PA quy chế sớm');
     assert(get('SELECT status FROM case_interventions WHERE id = ?', iv.id).status === 'started', 'PA bị khép');
-    cases.setIssues(P.admin, c.id, { primaryCode: L_CODE });   // đã xác nhận nguyên nhân → sửa phân loại vẫn được
   });
 
   // ------------------------------------------------------------------ 9–10 · giao diện (đọc mã nguồn — đúng chỗ đã sửa)

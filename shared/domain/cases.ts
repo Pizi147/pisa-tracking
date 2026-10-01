@@ -1072,21 +1072,6 @@ export const CYCLE_OUTCOME_LABEL: Record<CycleOutcome, string> = {
 
 // ---------------------------------------------------------------- Xử lý SOS
 
-export const ACADEMIC_SUPPORTS = [
-  'Xếp tự học 1 tháng',
-  'Học tutor đến lần mock sau',
-  'Học tutor đến lúc thi',
-  'Đề xuất lùi lịch thi',
-  'Khác',
-] as const;
-
-export const OPS_POLICIES = [
-  'Buổi bổ trợ với tutor',
-  'Buổi bổ trợ với GV cơ hữu',
-  'Tặng thêm mock test',
-  'Khác',
-] as const;
-
 export const MEETING_KINDS = ['Không cần', 'GVCN meeting HS', 'CX / GĐCN meeting HS'] as const;
 
 export const CASE_STATUSES = ['open', 'in_progress', 'done'] as const;

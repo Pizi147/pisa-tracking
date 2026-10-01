@@ -1,15 +1,16 @@
-import { db, tx } from '../db.ts';
+import { db, tx, vuaGhi } from '../db.ts';
 import {
   PERMISSIONS, TASK_GROUPS, TASK_PROGRESS, TASK_PROGRESS_CLOSED, TASK_PROGRESS_LABEL,
   TASK_PROGRESS_NEEDS_REASON, facetVanHanh, locVanHanh,
   type DongVanHanh, type HangSo, type TaskGroup, type TaskProgress, type TrangThaiLoc,
 } from '../../../shared/domain/index.ts';
-import { addDays, badRequest, isIsoDate, notFound, nowIso, padCode } from '../util.ts';
+import { addDays, badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso, padCode } from '../util.ts';
 import { can, require_, scopeFor, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { ensurePeriod } from '../platform/week.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { laNguoiHopLe } from '../platform/timNguoi.ts';
+import { caseAccess } from '../cases/cases.ts';
 
 /**
  * TIẾN ĐỘ CÔNG VIỆC — công việc quản lý vận hành (mục 8).
@@ -272,7 +273,7 @@ export function mgmtTaskDetail(p: Principal, taskId: number) {
   const inSub = sub.some((x) => x.assignee_user_id === p.userId || x.watcher_user_id === p.userId);
   const coQuyen = coQuyenViec(p, t);
   if (!coQuyen && !mine && !inSub) {
-    throw badRequest('Công việc này không được giao cho bạn.');
+    throw forbidden('Công việc này không được giao cho bạn.');
   }
 
   const people = (ids: (number | null)[]) => {
@@ -390,7 +391,9 @@ export function createMgmtTask(p: Principal, input: {
 }) {
   require_(p, PERMISSIONS.MEETING_EDIT, { branchId: input.branchId ?? null, anyScope: !input.branchId },
     'Chỉ Quản lý mới tạo được công việc quản lý.');
-  const title = (input.title ?? '').trim();
+  /* PR-Dọn (Q4, quét #24): chữ tự do có kiểu và trần. */
+  const title = chuTuDo(input.title, 'Tên công việc', 200) ?? '';
+  chuTuDo(input.note, 'Ghi chú', 2000);
   if (!title) throw badRequest('Công việc phải có tên.');
   if (!(TASK_GROUPS as readonly string[]).includes(input.group)) {
     throw badRequest('Công việc phải thuộc một trong bốn nhóm quản lý.');
@@ -407,9 +410,23 @@ export function createMgmtTask(p: Principal, input: {
     if (!parent) throw notFound('Không tìm thấy công việc cha.');
     /* MỘT TẦNG (mục 8.6): việc con của một việc con là chỗ bảng bắt đầu không đọc được nữa. */
     if (parent.parent_task_id) throw badRequest('Công việc con chỉ có một tầng.');
+    /* PR-Dọn (quét #5b): việc con chỉ gắn vào việc cha mình quản lý được — không tạo việc con ở chi nhánh khác. */
+    if (!coQuyenViec(p, parent)) throw forbidden('Bạn không quản lý công việc cha này.');
   }
 
   const taskBranchId = input.branchId ?? parent?.branch_id ?? null;
+  require_(p, PERMISSIONS.MEETING_EDIT, { branchId: taskBranchId, anyScope: !taskBranchId }, 'Chỉ Quản lý mới tạo được công việc quản lý.');
+  /*
+   * PR-Dọn (quét #5a): Case làm căn cứ — tối đa 50, mỗi Case phải tồn tại và người tạo XEM được (chi tiết việc hiện tên Case + tên HV;
+   * gắn Case chi nhánh khác là lộ tên HV chi nhánh đó cho mọi người xem việc).
+   */
+  if (input.caseIds !== undefined && !Array.isArray(input.caseIds)) throw badRequest('Danh sách Case không hợp lệ.');
+  if ((input.caseIds?.length ?? 0) > 50) throw badRequest('Gắn tối đa 50 Case cho một công việc.');
+  const caseIds = [...new Set(input.caseIds ?? [])];
+  for (const caseId of caseIds) {
+    if (!Number.isInteger(caseId) || caseId <= 0) throw badRequest('Mã Case không hợp lệ.');
+    caseAccess(caseId).requireView(p, 'Có Case nằm ngoài phạm vi bạn được xem.');
+  }
   let sourceType = 'manual';
   let sourceUnitReportId: number | null = null;
   if (input.unitReportId) {
@@ -429,6 +446,9 @@ export function createMgmtTask(p: Principal, input: {
   }
 
   return tx(() => {
+    /* PR-Dọn (quét #26): bấm đúp → trả lại việc vừa tạo. */
+    const cu = vuaGhi('tasks', { title, kind: 'branch_ops', branch_id: taskBranchId, parent_task_id: input.parentTaskId ?? null, created_by: p.userId });
+    if (cu) return mgmtTaskDetail(p, cu);
     const info = conn
       .prepare(
         `INSERT INTO tasks (code, title, kind, task_type, group_key, parent_task_id,
@@ -442,7 +462,7 @@ export function createMgmtTask(p: Principal, input: {
            input.due ?? null, (input.note ?? '').trim() || null, sourceType, sourceUnitReportId, p.userId, nowIso());
     const id = Number(info.lastInsertRowid);
 
-    for (const caseId of input.caseIds ?? []) {
+    for (const caseId of caseIds) {
       conn.prepare('INSERT OR IGNORE INTO task_case_links (task_id, case_id, created_at) VALUES (?,?,?)')
         .run(id, caseId, nowIso());
     }
@@ -493,13 +513,14 @@ export function updateMgmtTask(p: Principal, taskId: number, input: {
   /* Người được giao cập nhật được việc của mình; người THEO DÕI thì không (mục 8.3). */
   const isAssignee = t.assignee_user_id === p.userId;
   if (!coQuyenViec(p, t) && !isAssignee) {
-    throw badRequest('Chỉ người được giao hoặc Quản lý mới cập nhật được công việc này.');
+    throw forbidden('Chỉ người được giao hoặc Quản lý mới cập nhật được công việc này.');
   }
   if (!(TASK_PROGRESS as readonly string[]).includes(input.progress)) {
     throw badRequest('Trạng thái không hợp lệ.');
   }
   const needReason = (TASK_PROGRESS_NEEDS_REASON as readonly string[]).includes(input.progress);
-  const reason = (input.reason ?? '').trim();
+  const reason = chuTuDo(input.reason, 'Lý do', 2000) ?? '';   // PR-Dọn (Q4, quét #24)
+  chuTuDo(input.note, 'Ghi chú', 2000);
   if (needReason && !reason) {
     throw badRequest(
       `"${TASK_PROGRESS_LABEL[input.progress as TaskProgress]}" phải ghi lý do — `
@@ -515,7 +536,7 @@ export function updateMgmtTask(p: Principal, taskId: number, input: {
   let helpName: string | null = null;
   if (input.progress === 'paused') {
     helpUserId = input.helpUserId ?? null;
-    helpName = (input.helpName ?? '').trim() || null;
+    helpName = chuTuDo(input.helpName, 'Cần ai hỗ trợ', 120);
     if (!helpUserId && !helpName) throw badRequest('Tạm ngưng phải ghi cần ai hỗ trợ.');
     if (helpUserId) {
       kiemNguoi('Người cần hỗ trợ', helpUserId);

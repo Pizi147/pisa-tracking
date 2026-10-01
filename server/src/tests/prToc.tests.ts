@@ -156,10 +156,22 @@ export async function runPrTocTests(t: YThucTestKit) {
     const XONG = new Error('cuộn lại dữ liệu thử');
     try {
       dbMod.tx(() => {
-        const rows = Array.from({ length: 901 }, (_, i) => ({ fullName: `Lô Lớn ${i + 1}`, email: `ll${i + 1}@demo.test`, startWeek: '2026-09-28' }));
-        const r = intake.commitIntake(P.admin, { classId: ft, rows });
-        assert(r.added === 901 && r.mt.soEm === 901, `thêm ${r.added}, có lịch ${r.mt.soEm}`);
+        /*
+         * PR-Dọn (Q6): Thêm HV tối đa 200 dòng một lần — thêm 901 em qua 5 lần, xoá lịch tự tạo rồi dựng lại lịch MT cho CẢ 901 lộ trình
+         * trong MỘT lời gọi `taoMtMacDinhLo` (đường chia lô > 900 tham số mỗi câu IN, ý cũ của phép kiểm).
+         */
+        let them = 0;
+        for (let k = 0; k < 901; k += 200) {
+          const rows = Array.from({ length: Math.min(200, 901 - k) }, (_, i) => ({ fullName: `Lô Lớn ${k + i + 1}`, email: `ll${k + i + 1}@demo.test`, startWeek: '2026-09-28' }));
+          them += intake.commitIntake(P.admin, { classId: ft, rows }).added;
+        }
         const ds = `SELECT id FROM assessment_attempts WHERE student_id IN (SELECT id FROM students WHERE full_name LIKE 'Lô Lớn %')`;
+        const cys = (conn.prepare(`SELECT id FROM learning_cycles WHERE student_id IN (SELECT id FROM students WHERE full_name LIKE 'Lô Lớn %')`).all() as any[]).map((c) => c.id);
+        conn.prepare(`DELETE FROM attempt_schedule_history WHERE attempt_id IN (${ds})`).run();
+        conn.prepare(`DELETE FROM attempt_skills WHERE attempt_id IN (${ds})`).run();
+        conn.prepare(`DELETE FROM assessment_attempts WHERE id IN (${ds})`).run();
+        const lo = taoMtMacDinhLo(cys.map((cycleId) => ({ cycleId })), { actorUserId: P.admin.userId });
+        assert(them === 901 && cys.length === 901 && lo.size === 901, `thêm ${them}, lộ trình ${cys.length}, có lịch ${lo.size}`);
         const luot = (conn.prepare(`SELECT COUNT(*) n FROM (${ds})`).get() as any).n;
         const kn = (conn.prepare(`SELECT COUNT(*) n FROM attempt_skills WHERE attempt_id IN (${ds})`).get() as any).n;
         assert(luot === 901 * 3 && kn === 901 * 3 * 4, `lượt ${luot}/${901 * 3}, kỹ năng ${kn}/${901 * 12}`);

@@ -3,7 +3,7 @@ import { NOT_UNCONFIRMED_PRESET } from './sosState.ts';
 import { NGUONG_MINI_TEST } from '../../../shared/domain/cuoiKhoa.ts';
 import {
   CASE_CATEGORY_SHORT, INTERVENTION_KIND_LABEL,
-  caseCategoriesFor, caseCategoryLabel, categoryOf, isNoPlanCase, issueBoardCategoriesFor, issueLabel,
+  caseCategoryLabel, categoryOf, isNoPlanCase, issueBoardCategoriesFor, issueLabel,
   type InterventionKind,
 } from '../../../shared/domain/index.ts';
 
@@ -441,39 +441,35 @@ export function issueBoard(scope: Scope, category: string) {
       needsEvaluation: { count: 0, ids: [] as number[] },
     };
   }
-  const ph = sids.map(() => '?').join(',');
-
-  const cases = conn
-    .prepare(
-      `SELECT sc.id, sc.student_id, sc.status, sc.category, sc.topic, sc.disposition, sc.outcome,
-              (SELECT COUNT(*) FROM case_interventions i WHERE i.case_id = sc.id) AS iv_all
-         FROM sos_cases sc
-        WHERE sc.student_id IN (${ph})`,
-    )
-    .all(...sids) as any[];
+  /* PR-Dọn (quét #17): chia lô — phạm vi chi nhánh có thể vượt 900 em. */
+  const cases: any[] = [];
+  theoLo(sids, (lo, ph) => {
+    cases.push(...conn
+      .prepare(
+        `SELECT sc.id, sc.student_id, sc.status, sc.category, sc.topic, sc.disposition, sc.outcome,
+                (SELECT COUNT(*) FROM case_interventions i WHERE i.case_id = sc.id) AS iv_all
+           FROM sos_cases sc
+          WHERE sc.student_id IN (${ph})`,
+      )
+      .all(...lo) as any[]);
+  });
   const mine = cases.filter((c) => (c.category ?? categoryOf(c.topic)) === category);
   const caseIds = mine.map((c) => c.id);
 
-  const issues = caseIds.length
-    ? (conn
-        .prepare(
-          `SELECT case_id, taxonomy_code FROM case_issues
-            WHERE role = 'primary' AND case_id IN (${caseIds.map(() => '?').join(',')})`,
-        )
-        .all(...caseIds) as any[])
-    : [];
+  const issues: any[] = [];
+  const ivs: any[] = [];
+  theoLo(caseIds, (lo, ph) => {
+    issues.push(...conn.prepare(`SELECT case_id, taxonomy_code FROM case_issues WHERE role = 'primary' AND case_id IN (${ph})`).all(...lo) as any[]);
+    ivs.push(...conn
+      .prepare(
+        `SELECT iv.*, sc.id AS case_id FROM case_interventions iv
+           JOIN sos_cases sc ON sc.id = iv.case_id
+          WHERE iv.case_id IN (${ph}) AND iv.status != 'cancelled'
+            AND ${NOT_UNCONFIRMED_PRESET('iv')}`,
+      )
+      .all(...lo) as any[]);
+  });
   const codeOf = new Map<number, string>(issues.map((i) => [i.case_id, i.taxonomy_code]));
-
-  const ivs = caseIds.length
-    ? (conn
-        .prepare(
-          `SELECT iv.*, sc.id AS case_id FROM case_interventions iv
-             JOIN sos_cases sc ON sc.id = iv.case_id
-            WHERE iv.case_id IN (${caseIds.map(() => '?').join(',')}) AND iv.status != 'cancelled'
-              AND ${NOT_UNCONFIRMED_PRESET('iv')}`,
-        )
-        .all(...caseIds) as any[])
-    : [];
   /*
    * KẾT QUẢ THEO ĐƠN VỊ TẠI THỜI ĐIỂM HỖ TRỢ (F03). Danh sách CASE ở trên là hiện trạng (em đang học
    * ở đây), còn kết quả hỗ trợ là lịch sử: gán theo nơi em học lúc phương án xảy ra. Phạm vi không
@@ -577,116 +573,6 @@ export function issueBoard(scope: Scope, category: string) {
     note: rowSum > uniqueStudents
       ? `${uniqueStudents} học viên, nhưng cộng các hàng ra ${rowSum} vì một em có thể gặp nhiều phân loại.`
       : null,
-  };
-}
-
-/**
- * HÀNG KỸ NĂNG CỦA TRANG THỰC TRẠNG — mục 15.1, bước 2.
- *
- * Mỗi hạng mục một hàng, KỂ CẢ hạng mục đang không có case nào: "chưa có case" là một câu
- * trả lời, còn một hàng biến mất thì người đọc không biết mình đang thiếu gì.
- *
- * Bốn con số mỗi hàng là bốn câu hỏi khác nhau, không phải một phép chia:
- *   HV đang gặp     học viên ĐẾM DUY NHẤT có case đang mở ở hạng mục này
- *   Case đang mở    số case — một em có thể có hai case song song
- *   Thiếu phương án case đang mở mà chưa ai đề ra phương án nào
- *   Đang hỗ trợ     case đang mở và có ít nhất một phương án chưa khép
- */
-export function issueSkillRows(scope: Scope) {
-  const conn = db();
-  const sids = studentsOf(scope);
-  const cats = caseCategoriesFor(scope.ratio ? 'ratio' : 'ielts_band');
-  if (!sids.length) {
-    return cats.map((c) => ({
-      code: c, label: caseCategoryLabel(c), short: CASE_CATEGORY_SHORT[c] ?? c,
-      students: 0, openCases: 0, noPlan: 0, supporting: 0, unclassified: 0,
-      ids: { students: [] as number[], openCases: [] as number[], noPlan: [] as number[], supporting: [] as number[], unclassified: [] as number[] },
-    }));
-  }
-  const ph = sids.map(() => '?').join(',');
-  const cases = conn
-    .prepare(
-      `SELECT sc.id, sc.student_id, sc.status, sc.category, sc.topic, sc.disposition,
-              (SELECT COUNT(*) FROM case_interventions iv WHERE iv.case_id = sc.id) AS plan_count,
-              (SELECT COUNT(*) FROM case_interventions iv
-                WHERE iv.case_id = sc.id AND iv.status IN ('planned','started')
-                  AND ${NOT_UNCONFIRMED_PRESET('iv')}) AS open_plans,
-              (SELECT COUNT(*) FROM case_issues ci
-                WHERE ci.case_id = sc.id AND ci.role = 'primary') AS issue_count
-         FROM sos_cases sc
-        WHERE sc.student_id IN (${ph})`,
-    )
-    .all(...sids) as any[];
-
-  return cats.map((cat) => {
-    const mine = cases.filter((c) => (c.category ?? categoryOf(c.topic)) === cat);
-    const open = mine.filter((c) => c.status !== 'done');
-    /*
-     * MỖI SỐ LÀ ĐỘ DÀI CỦA MỘT TẬP ID (hợp đồng số liệu luật 1, PR-N): danh sách khi bấm số và con số cùng một tập, và
-     * cả bảng lẫn chỉ số `case-thieu-pa` gọi CÙNG `isNoPlanCase` — không còn định nghĩa thứ hai của "thiếu phương án".
-     */
-    const ids = {
-      /* ĐẾM DUY NHẤT — một em hai case cùng hạng mục vẫn là một em (mục 15.2). */
-      students: [...new Set(open.map((c) => c.student_id as number))].sort((x, y) => x - y),
-      openCases: open.map((c) => c.id as number),
-      noPlan: open.filter((c) => isNoPlanCase({ status: c.status, disposition: c.disposition, interventionCount: c.plan_count })).map((c) => c.id as number),
-      supporting: open.filter((c) => c.open_plans > 0).map((c) => c.id as number),
-      /*
-       * TẬP CHƯA PHÂN LOẠI ĐƯỢC hiện thành một con số riêng (mục 15.1) — phần lớn là dữ
-       * liệu cũ, và nó cần người xử lý chứ không phải bị gộp im lặng vào "Khác".
-       */
-      unclassified: open.filter((c) => c.issue_count === 0).map((c) => c.id as number),
-    };
-    return {
-      code: cat, label: caseCategoryLabel(cat), short: CASE_CATEGORY_SHORT[cat] ?? cat,
-      students: ids.students.length, openCases: ids.openCases.length, noPlan: ids.noPlan.length,
-      supporting: ids.supporting.length, unclassified: ids.unclassified.length,
-      ids,
-    };
-  });
-}
-
-/**
- * BẤM MỘT SỐ THÌ RA ĐÚNG TẬP BẢN GHI TẠO NÊN SỐ ĐÓ — mục 15.1 và 15.2.
- *
- * Danh sách này đi qua CÙNG bộ lọc phạm vi với con số vừa bấm, nên không có chuyện ô ghi 7
- * mà mở ra 5 dòng. `code` rỗng nghĩa là cả hạng mục; `__unclassified__` là tập chưa phân loại.
- */
-export function issueBoardCases(scope: Scope, category: string, code?: string | null) {
-  const conn = db();
-  const sids = studentsOf(scope);
-  if (!sids.length) return { rows: [] };
-  const ph = sids.map(() => '?').join(',');
-  const rows = conn
-    .prepare(
-      `SELECT sc.id, sc.title, sc.status, sc.category, sc.topic, sc.detected_at,
-              sc.sos_level, s.full_name, s.student_code, s.id AS student_id,
-              (SELECT ci.taxonomy_code FROM case_issues ci
-                WHERE ci.case_id = sc.id AND ci.role = 'primary' LIMIT 1) AS code,
-              (SELECT c.code FROM enrollments e JOIN classes c ON c.id = e.class_id
-                WHERE e.student_id = sc.student_id AND e.status = 'active'
-                ORDER BY e.id DESC LIMIT 1) AS class_code,
-              (SELECT COUNT(*) FROM case_interventions iv
-                WHERE iv.case_id = sc.id AND iv.status != 'cancelled'
-                  AND ${NOT_UNCONFIRMED_PRESET('iv')}) AS plan_count
-         FROM sos_cases sc JOIN students s ON s.id = sc.student_id
-        WHERE sc.student_id IN (${ph})
-        ORDER BY sc.status = 'done', sc.detected_at DESC`,
-    )
-    .all(...sids) as any[];
-
-  return {
-    rows: rows
-      .filter((r) => (r.category ?? categoryOf(r.topic)) === category)
-      .filter((r) => !code || (code === '__unclassified__' ? !r.code : r.code === code))
-      .map((r) => ({
-        caseId: r.id, studentId: r.student_id, studentName: r.full_name,
-        studentCode: r.student_code, classCode: r.class_code ?? null,
-        title: r.title ?? caseCategoryLabel(r.category ?? r.topic),
-        issueLabel: r.code ? issueLabel(r.code) : 'Chưa phân loại vấn đề',
-        status: r.status, sosLevel: r.sos_level ?? null,
-        detectedAt: r.detected_at, planCount: r.plan_count,
-      })),
   };
 }
 

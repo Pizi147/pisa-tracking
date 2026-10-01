@@ -108,7 +108,7 @@ export const Y_THUC_SEEDS: StudentYThuc[] = [
     violations: [
       { key: 'b1', on: '2026-09-08', reportedOn: '2026-09-10', category: 'homework', skill: 'writing1', by: 'T_KHOA', text: 'Không nộp bài Writing Task 1 buổi 08/09' },
       { key: 'b2', on: '2026-09-09', reportedOn: '2026-09-10', category: 'classroom', skill: 'writing2', by: 'T_LINH', text: 'Ra ngoài giữa giờ không xin phép' },
-      { key: 'b3', on: '2026-09-10', category: 'attendance', skill: null, by: 'T_HA', text: 'Nghỉ buổi sáng không báo trước' },
+      { key: 'b3', on: '2026-09-10', category: 'attendance', skill: null, by: 'T_HA', text: 'Nghỉ học không báo trước' },
     ],
   },
 
@@ -205,7 +205,7 @@ export const Y_THUC_SEEDS: StudentYThuc[] = [
     violations: [
       { key: 'j1', on: '2026-08-31', category: 'homework', skill: 'writing1', by: 'T_KHOA', text: 'Không nộp bài Writing Task 1 buổi 31/08' },
       { key: 'j2', on: '2026-09-01', category: 'classroom', skill: 'writing2', by: 'T_LINH', text: 'Dùng điện thoại trong giờ Writing' },
-      { key: 'j3', on: '2026-09-02', category: 'attendance', skill: null, by: 'T_HA', text: 'Nghỉ buổi sáng không báo trước' },
+      { key: 'j3', on: '2026-09-02', category: 'attendance', skill: null, by: 'T_HA', text: 'Nghỉ học không báo trước' },
     ],
     chuyen: { lop: 'MB FT 102', ngay: '2026-09-12', lyDo: 'Chuyển sang lớp LT2 theo nguyện vọng gia đình' },
   },
@@ -237,7 +237,7 @@ export const Y_THUC_SEEDS: StudentYThuc[] = [
     moi: { ten: 'Hà Phương Linh', target: 6.5 },
     violations: [
       { key: 'm1', on: '2026-08-17', category: 'homework', skill: 'reading', by: 'T_HA', text: 'Không nộp bài Reading tuần 1' },
-      { key: 'm2', on: '2026-08-18', category: 'attendance', skill: null, by: 'T_HA', text: 'Đi muộn 30 phút buổi sáng' },
+      { key: 'm2', on: '2026-08-18', category: 'attendance', skill: null, by: 'T_HA', text: 'Đi muộn 30 phút' },
       { key: 'm3', on: '2026-08-20', category: 'homework', skill: 'writing2', by: 'T_LINH', text: 'Không nộp bài Writing Task 2 tuần 1' },
       { key: 'm4', on: '2026-09-01', category: 'conduct', skill: 'speaking', by: 'T_TRANG', text: 'Nói lời thiếu tôn trọng với bạn trong giờ Speaking' },
       { key: 'm5', on: '2026-09-02', category: 'conduct', skill: 'writing1', by: 'T_KHOA', text: 'Bỏ về giữa giờ Writing sau khi bị nhắc' },
@@ -300,7 +300,7 @@ export const Y_THUC_SEEDS: StudentYThuc[] = [
       { key: 'h2', on: '2026-08-06', category: 'conduct', skill: 'speaking', by: 'T_YEN', text: 'Gần như không nói trong giờ Speaking, không hợp tác làm việc cặp' },
       { key: 'h3', on: '2026-08-06', category: 'homework', skill: 'writing', by: 'T_DUNG', text: 'Chưa nộp bài Writing của tuần đầu tiên' },
       { key: 'h4', on: '2026-08-07', category: 'homework', skill: 'reading', by: 'T_YEN', text: 'Không nộp bài Reading tuần đầu' },
-      { key: 'h5', on: '2026-09-09', category: 'attendance', skill: null, by: 'T_YEN', text: 'Đi muộn 25 phút buổi sáng, lớp Fast Track mới' },
+      { key: 'h5', on: '2026-09-09', category: 'attendance', skill: null, by: 'T_YEN', text: 'Đi muộn 25 phút, lớp Fast Track mới' },
     ],
     measures: [
       { key: 'hm1', kind: 'report_1', performedOn: '2026-08-06', performer: 'T_YEN', note: 'Gửi Report 1 về việc nghỉ học không báo.', violations: ['h1', 'h2', 'h3'] },
