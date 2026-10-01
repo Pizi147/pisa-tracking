@@ -35,14 +35,14 @@ function past(d: string | null | undefined): string | null {
 }
 
 /** Số câu đúng tương ứng một band, để điểm thô của Listening/Reading hợp lệ. */
-function rawFor(skill: 'listening' | 'reading', band: number): number {
+export function rawFor(skill: 'listening' | 'reading', band: number): number {
   const table = skill === 'listening' ? LISTENING_BY_RAW : READING_BY_RAW;
   for (let raw = 40; raw >= 0; raw -= 1) if (table[raw] <= band) return raw;
   return 0;
 }
 
 /** Bốn tiêu chí quanh band, để ô Writing/Speaking có dữ liệu chi tiết đọc được. */
-function criteriaFor(band: number): [number, number, number, number] {
+export function criteriaFor(band: number): [number, number, number, number] {
   const step = 0.5;
   return [band, Math.max(0, band - step), band, Math.min(9, band + step)];
 }

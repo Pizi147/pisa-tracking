@@ -519,3 +519,19 @@ Dựng bằng hàm nghiệp vụ (`server/src/seed/ctSeed.ts`), sau ngày demo *
 | 5 · GVCN đề xuất | **Đinh Quốc Bảo CT** (MB FOU 22) | Chờ duyệt (Thông tin HV): thẻ **Đề xuất chuyển lớp**; `Duyệt…` mở panel điền sẵn (sửa lớp / tuần) rồi `Duyệt và ra lệnh` |
 | 6 · bàn giao quá hạn | **MB FOU 23** — Hồ Diệu Anh CT, Vương Thu Hà CT | Lệnh ra 4 ngày trước, GVCN Khoa chưa xác nhận → thẻ Báo lên **Bàn giao quá hạn** (nút Nhắc); em vẫn chuyển đúng tuần |
 | 7 · đã chuyển | **Nguyễn Phương Thảo CT** (MB FOU 24 → MB BE 09) | Chuyển Thứ Hai 14/09; hồ sơ em: dải **Đã chuyển · bàn giao của Lê Minh Khoa** + `Đọc bàn giao`; Hành trình có mốc "Bàn giao"; **MB BE 09** có em nhãn **mới vào** và dải "Sắp nhận 5 em" |
+
+---
+
+## 17. PR-Pb2-b — Phân tích giáo viên · lớp FOU hai giáo viên (chỉ máy dev, 01/10/2026)
+
+Dựng bằng hàm nghiệp vụ (`server/src/seed/pb2bSeed.ts`, `buildPb2bDemo`), ngày demo **14/09/2026**. Tài khoản gợi ý: **Quản lý Nguyễn Khánh Vy** (Tổng quan › Phân tích › **Giáo viên**), **Quản trị** (phải chọn chi nhánh). Năm GV mới ở Monbay: **Đỗ Thu Hương** (L R), **Võ Mỹ Duyên** (W1 W2; GVCN + L R G+V MB FOU 16), **Lâm Quang Vinh** (S, GVCN MB FT 105), **Lê Thanh Bình** (GVCN + L R G+V MB FOU 14), **Ngô Bích Ngọc** (P ở MB FOU 14 và MB FOU 16).
+
+| D18 | Nằm ở | Bạn sẽ thấy |
+|---|---|---|
+| Ba màu ô kết quả | Phân tích › Giáo viên · Fast Track · Theo tháng 09/2026 | Hương L **5/7 · 71%** xanh, R **4/7 · 57%** vàng; Duyên W1 **2/7 · 29%** đỏ; Vinh S **mẫu nhỏ** (dưới 5 mục, không màu); Vinh L/R/W "—" |
+| Chấm điểm đúng hạn / trễ / sửa sau | bấm ô **Chấm điểm 12/14** của Hương | panel `Tất cả · Trễ`: 2 ô L nhập 11/09 (hạn 09/09) **Trễ 2 ngày** đứng đầu; ô L của Phan Gia Bảo nhập 03/09, `sửa 12/09 · lần sửa không tính` vẫn **Đúng hạn** |
+| Quá hạn chưa nhập | ô Chấm điểm **3/7** của Vinh | 4 ô S `chưa nhập · tới hôm nay 14/09` |
+| Xử lý vi phạm | hàng Vinh, cột Xử lý vi phạm | **3/6** — 3 vi phạm xử lý trước hạn, 3 vi phạm xử lý sau hạn; bấm → hồ sơ lớp MB FT 105 tab Ý thức |
+| HV tiến bộ | hàng Hương, Duyên | 3 em có MT1 (W4 AUG) — so MT2 W1 SEP từng kỹ năng |
+| FOU hai giáo viên | Lớp thường · 09/2026 | Bình `L · R · G+V · GVCN MB FOU 14`: L **5/5**, R **3/5**, W (G+V) **2/5**, S (P) "—"; Ngọc `P` chỉ có cột S (P) **4/4 · mẫu nhỏ**; ô Chấm điểm của Ngọc có 1 ô P trễ |
+| Phân công 2 ô | Hồ sơ lớp MB FOU 14 › ⋮ Sửa phân công | lưới 2 ô `L · R · G+V` và `P` + link **Tách từng môn**; hồ sơ GV Bình: vai `GVCN · L R G+V` |

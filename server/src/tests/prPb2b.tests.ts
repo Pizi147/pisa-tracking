@@ -469,4 +469,31 @@ export async function runPrPb2bTests(t: YThucTestKit) {
     const sau = dem();
     assert(sau === truoc, `${truoc} → ${sau} câu`);
   });
+
+  // ------------------------------------------------------------------ khối 6 · bộ demo D18 (Task 6)
+  console.log('\nPR-Pb2-b · Bộ demo D18: bảng giáo viên đủ dạng ô, lớp FOU hai giáo viên');
+  const idGv = (ten: string) => get('SELECT id FROM users WHERE full_name = ?', ten)?.id as number;
+  check('Pb2b (6a) · bảng MB Fast Track 09/2026: ≥ 5 hàng; đủ dạng ô (số ≥ 5 mục, mẫu nhỏ, "—", "không có"); ô kết quả đủ ba màu', () => {
+    const b = pt.phanTichGiaoVien(P.mbManager, { ct: 'ft', thang: '2026-09' });
+    assert(b.hang.length >= 5, `${b.hang.length} hàng`);
+    const o = b.hang.flatMap((h: any) => [h.chamDiem, h.ghiKetQuaPa, h.xuLyViPham, ...Object.values(h.ketQua), h.tienBo]);
+    assert(o.some((x: any) => x.k === 'so' && x.tong >= 5) && o.some((x: any) => x.k === 'so' && x.tong < 5), 'số / mẫu nhỏ');
+    assert(o.some((x: any) => x.k === 'na') && o.some((x: any) => x.k === 'rong'), '— / không có');
+    const mau = new Set(b.hang.flatMap((h: any) => Object.values(h.ketQua)).filter((x: any) => x.k === 'so').map((x: any) => d.mauKetQuaGv(x.dung, x.tong)));
+    assert(mau.has('thap') && mau.has('vua') && mau.has('cao'), [...mau].join());
+    const vinh = hangCua(b, idGv('Lâm Quang Vinh'));
+    assert(vinh?.xuLyViPham.k === 'so' && vinh.xuLyViPham.dung === 3 && vinh.xuLyViPham.tong === 6, JSON.stringify(vinh?.xuLyViPham));
+  });
+  check('Pb2b (6b) · bảng lớp thường 09/2026: lớp FOU hai GV — Bình "L · R · G+V · GVCN MB FOU 14", Ngọc chỉ có cột S (P)', () => {
+    const b = pt.phanTichGiaoVien(P.mbManager, { ct: 'thuong', thang: '2026-09' });
+    const binh = hangCua(b, idGv('Lê Thanh Bình'));
+    const ngoc = hangCua(b, idGv('Ngô Bích Ngọc'));
+    assert(binh?.phu === 'L · R · G+V · GVCN MB FOU 14' && binh.ketQua.speaking.k === 'na' && binh.ketQua.writing.k === 'so', JSON.stringify(binh));
+    assert(ngoc?.phu === 'P' && ngoc.ketQua.speaking.k === 'so' && ['listening', 'reading', 'writing'].every((k) => ngoc.ketQua[k].k === 'na'), JSON.stringify(ngoc));
+    assert(ngoc.dangDay.lop === 2, `Ngọc dạy ${ngoc.dangDay.lop} lớp`);
+  });
+  check('Pb2b (6c) · panel Chấm điểm của Hương: ≥ 1 dòng trễ, ≥ 1 dòng "sửa sau" vẫn đúng hạn', () => {
+    const pn = pt.oChamDiemGv(P.mbManager, { ct: 'ft', thang: '2026-09', gv: idGv('Đỗ Thu Hương') });
+    assert(pn.tre >= 1 && pn.rows.some((r: any) => r.dung && r.sua), `${pn.tre} trễ · sửa: ${pn.rows.filter((r: any) => r.sua).length}`);
+  });
 }
