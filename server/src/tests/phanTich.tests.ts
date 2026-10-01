@@ -454,7 +454,7 @@ export async function runPhanTichTests(t: YThucTestKit) {
     } finally { kit.don(); }
   });
 
-  check('UX4 · Vấn đề HV: chiChinh — bỏ lỗi phụ, số ≤ chế độ đủ; Chưa phân loại không đổi', () => {
+  check('UX4 · Vấn đề HV: chiChinh — bỏ lỗi phụ, số ≤ chế độ đủ; Case chỉ có lỗi phụ sang Chưa phân loại (PR-UXF-a Q15), không rơi', () => {
     const kit = baiTapUx4();
     try {
       const sid = kit.hv(CID_FT, 'chinh');
@@ -465,7 +465,9 @@ export async function runPhanTichTests(t: YThucTestKit) {
       for (const h of moiHang(chinh)) assert(h.soHv <= soHvCua(du, h.khoa), `chiChinh "${h.khoa}": ${h.soHv} > ${soHvCua(du, h.khoa)}`);
       assert(soHvCua(chinh, `kn:writing|${ISS.wLex}`) < soHvCua(du, `kn:writing|${ISS.wLex}`), 'lỗi phụ Từ vựng phải giảm khi chỉ lỗi chính');
       assert(soHvCua(chinh, `kn:speaking|${ISS.sPron}`) < soHvCua(du, `kn:speaking|${ISS.sPron}`), 'lỗi phụ Phát âm phải giảm');
-      eq(chinh.chuaPhanLoai, du.chuaPhanLoai, 'Chưa phân loại không đổi theo công tắc');
+      /* PR-UXF-a Q15: Case speaking chỉ có lỗi phụ không còn hàng nào khi bật "chỉ chính" → vào Chưa phân loại (+1), tổng Case không đổi. */
+      eq(chinh.chuaPhanLoai.case, du.chuaPhanLoai.case + 1, 'Case chỉ có lỗi phụ sang Chưa phân loại');
+      eq(chinh.tomTat.case + chinh.chuaPhanLoai.case, du.tomTat.case + du.chuaPhanLoai.case, 'Σ hàng + Chưa phân loại không đổi theo công tắc');
       eq(chinh.chiChinh, true, 'kết quả ghi lại công tắc');
     } finally { kit.don(); }
   });

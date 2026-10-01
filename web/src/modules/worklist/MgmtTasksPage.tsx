@@ -301,11 +301,12 @@ export function NganViecVanHanh({ taskId, onClose, onDone }: {
           )}
           {data.dueHistory?.length > 0 && (
             <section>
-              <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-1.5">Lịch sử dời hạn</h3>
+              <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-1.5">Lịch sử hạn</h3>
               <ul className="list-none p-0 m-0 space-y-1 text-xs tabular-nums text-slate-400">
                 {data.dueHistory.map((h: any, i: number) => (
                   <li key={i}>
-                    {h.old ? fmtDate(h.old) : '—'} → {h.new ? fmtDate(h.new) : '—'}
+                    {/* PR-UXF-a Q16: lần đặt hạn đầu không phải "dời hạn". */}
+                    {h.old ? <>Dời hạn {fmtDate(h.old)} → {h.new ? fmtDate(h.new) : '—'}</> : <>Đặt hạn {h.new ? fmtDate(h.new) : '—'}</>}
                     {h.reason && <> · "{h.reason}"</>}
                     {h.by && <span className="text-slate-500"> · {h.by}</span>}
                     {h.at && <span className="text-slate-500"> · {fmtDate(h.at)}</span>}

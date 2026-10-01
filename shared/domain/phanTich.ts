@@ -243,7 +243,8 @@ export function cotKyNangFor(ct: ChuongTrinh): CotTongHop[] {
   return kyNangTheoCt(ct).map((cat) => ({
     khoa: `kn:${cat}`, nhom: 'ky-nang' as const, donVi: 'hoc-vien' as const,
     nhan: () => CASE_CATEGORY_SHORT[cat],
-    goiY: `${kyNangTooltip(cat, ct)} ${DONG_TU_KY_NANG[ct]} — đếm học viên, không đếm lượt.`,
+    /* PR-UXF-a Q14: đếm cả lượt Tạm thời — khớp Case SOS sinh từ điểm một phần. */
+    goiY: `${kyNangTooltip(cat, ct)} ${DONG_TU_KY_NANG[ct]} — đếm học viên, không đếm lượt. Kể cả lượt Tạm thời (chưa đủ điểm).`,
   }));
 }
 
