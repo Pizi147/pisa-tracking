@@ -163,7 +163,7 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     const a = d.viecTiepCuaEm({ nhapDiem: { kyNang: ['reading'], dot: 'MT2', quaHan: false, han: null }, cases: [], yThuc: null, homNay: '2026-09-24' })[0];
     assert(a.han === null && a.quaHanNgay === null && a.title === 'Nhập điểm R · MT2', JSON.stringify(a));
     const b = d.viecTiepCuaEm({ nhapDiem: { kyNang: ['reading'], dot: 'MT2', quaHan: false, han: '2026-09-27' }, cases: [], yThuc: null, homNay: '2026-09-24' })[0];
-    assert(b.han === '27/09' && b.quaHanNgay === null && b.tone === 'warn' && !/quá hạn/.test(b.title), JSON.stringify(b));
+    assert(b.han === 'hạn 27/09' && b.quaHanNgay === null && b.tone === 'warn' && !/quá hạn/.test(b.title), JSON.stringify(b));
     /* PR-UXF-a VN29: hạn nhập điểm nay dựng ở MỘT hàm (`nhapDiemTheoEm`) cho bảng lớp và Học viên & Lớp — hạn sớm nhất của ô còn nợ. */
     assert(/nhapDiem: nhapDiemEm\.get\(s\.id\)/.test(docSach('server/src/classes/classes.ts')), 'classes.ts chưa dùng nhapDiemTheoEm');
     assert(/c\.deadline < x\.han/.test(docSach('server/src/classes/dongHocVien.ts')), 'nhapDiemTheoEm chưa lấy hạn sớm nhất');

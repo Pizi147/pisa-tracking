@@ -279,4 +279,18 @@ export async function runPrUxfBTests(t: YThucTestKit) {
     const nhanh = cy.slice(cy.indexOf('x.tuChoi ?'), cy.indexOf('x.soBatBuoc > 0'));
     assert(nhanh.includes('chọn cách xử lý khác') && !/vi phạm \/ 2 tuần/.test(nhanh), 'VN26');
   });
+
+  // ------------------------------------------------------------------ Task 8 · chữ nhỏ: lý do nhiều dòng (VN01), "hạn hết T2" (VN28)
+  check('UXF-b (8) · VN28: ô Việc tiếp theo giữ đủ tiền tố "hạn" — PA hạn Thứ Hai 14/09 → "hạn hết T2 14/09"; boTienTo đã xoá', () => {
+    const v = d.viecTiepCuaEm({
+      nhapDiem: null,
+      cases: [{ caseId: 2, topic: 'listening', viecTiep: { chu: 'Ghi kết quả PA Nghe podcast', loaiHan: 'cap-nhat-pa', han: '2026-09-14', paId: 9 } }],
+      yThuc: null, homNay: '2026-09-14',
+    });
+    assert(v[0]?.han === 'hạn hết T2 14/09', JSON.stringify(v[0]));
+    assert(!/boTienTo/.test(doc('shared/domain/hocVienLop.ts')), 'boTienTo còn');
+  });
+  check('UXF-b (8) · VN01: lý do thẻ Chờ duyệt vẽ từng dòng của yc.dong với whitespace-pre-line (xuống dòng "Bổ sung dd/mm: …")', () => {
+    assert(/yc\.dong\.map\(\(d, i\) => <p key=\{i\} className="m-0 whitespace-pre-line">/.test(doc('web/src/modules/duyet/TheYeuCau.tsx')), 'TheYeuCau');
+  });
 }
