@@ -117,7 +117,7 @@ export default function App() {
       <a href="#noi-dung" onClick={(e) => { e.preventDefault(); document.getElementById('noi-dung')?.focus(); }}
         className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[110] btn btn-sm">Bỏ qua tới nội dung</a>
       {!banChinh && <DemoBar />}
-      <header className="shrink-0 border-b bg-[color:var(--surface)]" style={{ borderColor: 'var(--line)' }}>
+      <header className="relative shrink-0 border-b bg-[color:var(--surface)]" style={{ borderColor: 'var(--line)' }}>
         <div className="flex items-center gap-3 px-3 sm:px-4 h-14 min-w-0">
           <div className="flex items-center gap-2 shrink-0">
             <div className="w-7 h-7 rounded-md border grid place-items-center font-bold text-xs"

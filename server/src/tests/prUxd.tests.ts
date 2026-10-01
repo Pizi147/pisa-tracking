@@ -26,4 +26,15 @@ export async function runPrUxdTests(t: YThucTestKit) {
     assert(!nut.includes('text-[11px]'), 'NutDay còn text-[11px]');
     assert(/h-\[3px\]/.test(nut), 'thiếu vạch mục đang mở');
   });
+
+  // ------------------------------------------------------------------ Task 2 · Thanh trên điện thoại (VN33)
+  check('UXD (2) · thanh trên: nút tìm 44 px + chữ cái tài khoản trên điện thoại; bảng thông báo neo đáy header (không top-14); header relative', () => {
+    const hd = doc('web/src/modules/platform/Header.tsx');
+    assert(/useDienThoai/.test(hd), 'Header chưa dùng useDienThoai');
+    assert(/aria-label="Tìm học viên, lớp"/.test(hd), 'thiếu nút tìm điện thoại');
+    assert(!/\bw-28\b/.test(hd) && !hd.includes('max-w-[4.5rem]'), 'còn w-28 / max-w-[4.5rem]');
+    assert(!/\btop-14\b/.test(hd) && /absolute inset-x-2 top-full/.test(hd), 'bảng thông báo chưa neo đáy header');
+    assert(/aria-label=\{`Tài khoản \$\{/.test(hd), 'nút tài khoản thiếu aria-label');
+    assert(/<header className="relative /.test(doc('web/src/App.tsx')), '<header> thiếu relative');
+  });
 }
