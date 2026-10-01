@@ -359,4 +359,87 @@ export async function runPrPb2aTests(t: YThucTestKit) {
       });
     });
   } finally { don(); }
+
+  // ================================================================== khối 4 · Tổng hợp Test lớp thường (P4, K1-19)
+  const th: any = await import('../phanTich/tongHop.ts');
+  const T = (o: Record<string, unknown> = {}) => ({ branchId: null, ct: 'thuong', soTuan: 52, classId: null, theo: 'dot', ...o });
+  const moiDongTh = (hang: any[]): any[] => hang.flatMap((h) => [h, ...(h.con ?? [])]);
+
+  check('Pb2-a (4) · phanLoaiBaiThuong: Cuối khoá 44/57/66/82 % → 4 dải (cùng daiCuoiKhoa); Giữa khoá 0/1/2 môn trượt; chưa đủ → chuaDu', () => {
+    const ev = (tyLeTong: number | null, truot = 0, complete = true) => ({ complete, tyLeTong, skills: Object.fromEntries(['l', 'r', 'w', 's'].map((k, i) => [k, { under: i < truot }])) });
+    const ck = [0.44, 0.57, 0.66, 0.82].map((x) => th.phanLoaiBaiThuong('final', ev(x)));
+    assert(ck.join() === 'ck-duoi50,ck-50,ck-60,ck-dat', ck.join());
+    assert(['duoi_50', '50_59', '60_69', 'dat'].join() === [0.44, 0.57, 0.66, 0.82].map((x) => d.daiCuoiKhoa(x)).join(), 'cùng daiCuoiKhoa');
+    assert([0, 1, 2, 3].map((n) => th.phanLoaiBaiThuong('progress', ev(null, n))).join() === 'gk-dat,gk-1,gk-2,gk-2', 'Giữa khoá theo môn');
+    assert(th.phanLoaiBaiThuong('progress', ev(null, 1, false)) === 'chuaDu' && th.phanLoaiBaiThuong('final', ev(null)) === 'chuaDu', 'chưa đủ');
+  });
+
+  check('Pb2-a (4) · MB BE 04 + MB FOU 21: mỗi bài rơi đúng một cột — Σ Giữa + Cuối + Chưa đủ = Bài ở mọi dòng và Tổng; cột không có bài → coDot', () => {
+    let coBai = 0;
+    for (const lop of ['MB BE 04', 'MB FOU 21']) for (const theo of ['dot', 'lop', 'tuan']) {
+      const k = th.tongHop(P.admin, T({ classId: classId(lop), theo }));
+      const cong = d.cotKetQuaCong('thuong') as string[];
+      for (const r of [...moiDongTh(k.hang), { nhan: 'Tổng', o: k.tong }]) {
+        const s = cong.reduce((n, c) => n + (r.o[c] ?? 0), 0);
+        assert(s === r.o.luot, `${lop}/${theo} "${r.nhan}": ${s} ≠ ${r.o.luot}`);
+      }
+      coBai += k.tong.luot;
+    }
+    assert(coBai > 0, 'phép kiểm không rỗng');
+    const k = th.tongHop(P.admin, T());
+    const giua = k.hang.find((h: any) => h.khoa === 'dot:giua');
+    assert(!giua || (giua.coDot?.giua === true && giua.coDot?.cuoi === false), `dòng chỉ Giữa khoá: ${JSON.stringify(giua?.coDot)}`);
+    assert(k.tongCoDot && typeof k.tongCoDot.giua === 'boolean', 'tongCoDot');
+    const kFt = th.tongHop(P.admin, T({ ct: 'ft' }));
+    assert(kFt.hang.every((h: any) => h.coDot === undefined) && kFt.tongCoDot === undefined, 'FT không có coDot');
+  });
+
+  check('Pb2-a (4) · khung FT: cột KHÔNG đổi; lớp thường không chữ SOS, không cột kỹ năng', () => {
+    const ft = d.cotTongHopFor('ft').map((c: any) => c.khoa).filter((k: string) => !k.startsWith('kn:'));
+    assert(ft.join() === 'luot,dat,sos1,sos2,sos3,tamThoi,chuaDu,hvCoCase,case,choNguyenNhan,choDuyet,dangLam,xongHuy', ft.join());
+    const tc = d.cotTongHopFor('thuong');
+    assert(tc.map((c: any) => c.khoa).join() === 'luot,gk-dat,gk-1,gk-2,ck-duoi50,ck-50,ck-60,ck-dat,chuaDu,mini-dat,mini-truot,hvCoCase,case,choNguyenNhan,choDuyet,dangLam,xongHuy',
+      tc.map((c: any) => c.khoa).join());
+    assert(!tc.some((c: any) => /SOS/.test(c.nhan('thuong') + c.goiY)), 'không chữ SOS');
+  });
+
+  check('Pb2-a (4) · Mini Test 75 % → mini-dat ở dòng bài Cuối khoá gốc; bấm ô ra đúng em (oTongHop = đường SQL thứ hai)', () => {
+    const tu = d.tuDauKhoang(TODAY, 52), den = d.mondayOfDate(TODAY);
+    const a = get(`SELECT a.id, a.student_id, a.cycle_id FROM assessment_attempts a JOIN classes c ON c.id = a.class_id JOIN report_periods rp ON rp.id = a.planned_period_id
+      JOIN learning_cycles cy ON cy.id = a.cycle_id
+      WHERE c.is_fast_track = 0 AND a.kind = 'final' AND a.status != 'cancelled' AND rp.week_start >= ? AND rp.week_start <= ?
+        AND COALESCE(cy.khong_cam_ket, 0) = 0 AND EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND (s.band IS NOT NULL OR s.raw_score IS NOT NULL))
+        AND NOT EXISTS (SELECT 1 FROM mini_test m WHERE m.tu_attempt_id = a.id AND m.student_id = a.student_id) LIMIT 1`, tu, den);
+    assert(a, 'bộ demo có bài Cuối khoá lớp thường đã chấm trong 52 tuần');
+    const id = Number(conn.prepare(`INSERT INTO mini_test (student_id, cycle_id, tu_attempt_id, nhom_bo_tro, so_buoi, ngay_du_kien, han, ty_le, ngay_lam) VALUES (?,?,?,?, 4, ?, ?, 0.75, ?)`)
+      .run(a.student_id, a.cycle_id, a.id, `mt:${a.id}`, TODAY, TODAY, TODAY).lastInsertRowid);
+    try {
+      const k = th.tongHop(P.admin, T());
+      const cuoi = k.hang.find((h: any) => h.khoa === 'dot:cuoi');
+      assert(cuoi && cuoi.o['mini-dat'] >= 1, `dòng Cuối khoá: ${JSON.stringify(cuoi?.o)}`);
+      const o = th.oTongHop(P.admin, { ...T(), khoa: 'dot:cuoi', cot: 'mini-dat' });
+      assert(o.n === cuoi.o['mini-dat'] && o.rows.some((r: any) => r.id === a.student_id), 'bấm ô ra đúng em');
+      const sql = (conn.prepare(`SELECT DISTINCT m.student_id AS id FROM mini_test m JOIN assessment_attempts a ON a.id = m.tu_attempt_id JOIN classes c ON c.id = a.class_id
+        JOIN report_periods rp ON rp.id = a.planned_period_id JOIN learning_cycles cy ON cy.id = a.cycle_id
+        WHERE c.is_fast_track = 0 AND a.kind = 'final' AND a.status != 'cancelled' AND rp.week_start >= ? AND rp.week_start <= ? AND COALESCE(cy.khong_cam_ket, 0) = 0
+          AND m.ty_le >= 0.7 AND EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND (s.band IS NOT NULL OR s.raw_score IS NOT NULL))`).all(tu, den) as any[]).map((r) => r.id as number);
+      assert(sx(o.rows.map((r: any) => r.id)) === sx(sql), `hai đường lệch: ${sx(o.rows.map((r: any) => r.id))} ≠ ${sx(sql)}`);
+      const giua = k.hang.find((h: any) => h.khoa === 'dot:giua');
+      assert(!giua || !giua.o['mini-dat'], 'Mini Test không rơi vào dòng Giữa khoá');
+    } finally { conn.prepare('DELETE FROM mini_test WHERE id = ?').run(id); }
+  });
+
+  check('Pb2-a (4) · Excel cùng cột: đầu đề tầng trên Giữa khoá / Cuối khoá / Mini Test; ô không áp dụng "—"; KCK vẫn ngoài mẫu số (cùng vòng luotKck)', () => {
+    const k = th.tongHop(P.admin, T());
+    const aoa = d.bangXuatTongHop(k, new Set(['ket-qua', 'xu-ly']), 'thử') as any[][];
+    assert(aoa[2].includes('Giữa khoá (theo môn)') && aoa[2].includes('Cuối khoá (% tổng)') && aoa[2].includes('Mini Test'), JSON.stringify(aoa[2]));
+    assert(aoa[3].includes('Dưới 50%') && aoa[3].includes('Từ 70%') && !aoa[3].some((x: any) => /SOS/.test(String(x))), JSON.stringify(aoa[3]));
+    const giua = k.hang.findIndex((h: any) => h.khoa === 'dot:giua');
+    if (giua >= 0) {
+      const dong = aoa[4 + giua + k.hang.slice(0, giua).reduce((n: number, h: any) => n + (h.con?.length ?? 0), 0)];
+      assert(dong.includes('—'), `dòng Giữa khoá có ô "—": ${JSON.stringify(dong)}`);
+    }
+    const src = fsMod.readFileSync(pathMod.join(REPO, 'server/src/phanTich/tongHop.ts'), 'utf8');
+    assert(src.indexOf('luotKck(a)) continue') < src.indexOf('phanLoaiBaiThuong(a.kind, ev)'), 'KCK bị loại trước khi phân loại');
+  });
 }

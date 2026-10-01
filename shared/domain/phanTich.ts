@@ -165,13 +165,21 @@ export type CotTongHop = {
   khoa: string; nhom: NhomCot; donVi: 'dot-test' | 'hoc-vien' | 'case';
   nhan: (ct: ChuongTrinh) => string;
   goiY: string;
+  /** PR-Pb2-a (P4, K1-19): tầng đầu đề con của lớp thường — Giữa khoá (theo môn) · Cuối khoá (% tổng) · Mini Test. */
+  nhomCon?: NhomCon;
 };
+export type NhomCon = 'giua' | 'cuoi' | 'mini';
+export const NHAN_NHOM_CON: Record<NhomCon, string> = { giua: 'Giữa khoá (theo môn)', cuoi: 'Cuối khoá (% tổng)', mini: 'Mini Test' };
 
 /** Cột lượt — nhãn đổi theo chương trình (Q18); đứng đầu bảng, cùng nhóm "Kết quả" (sáu cột sau cộng lại đúng bằng nó). */
 const COT_LUOT: CotTongHop = {
   khoa: 'luot', nhom: 'ket-qua', donVi: 'dot-test',
   nhan: (ct) => (ct === 'ft' ? 'Lượt MT' : 'Bài kiểm tra'),
   goiY: 'Số lượt đã chấm ít nhất một kỹ năng trong khoảng đang xem. Sáu cột Kết quả cộng lại đúng bằng cột này. Không tính học viên KCK (không cam kết đầu ra).',
+};
+const COT_LUOT_THUONG: CotTongHop = {
+  ...COT_LUOT,
+  goiY: 'Số bài đã chấm ít nhất một môn trong khoảng đang xem. Ba cột Giữa khoá, bốn cột Cuối khoá và Chưa đủ điểm cộng lại đúng bằng cột này. Không tính học viên KCK.',
 };
 const COT_KET_QUA: CotTongHop[] = [
   { khoa: 'dat', nhom: 'ket-qua', donVi: 'dot-test', nhan: () => 'Đạt', goiY: 'Đủ điểm mọi kỹ năng, không kỹ năng nào dưới kỳ vọng.' },
@@ -183,16 +191,31 @@ const COT_KET_QUA: CotTongHop[] = [
   { khoa: 'chuaDu', nhom: 'ket-qua', donVi: 'dot-test', nhan: () => 'Chưa đủ điểm',
     goiY: 'Chưa đủ điểm và phần đã chấm chưa kết luận được gì.' },
 ];
-/** PR-LT2a (T58): khung lớp thường KHÔNG có chữ SOS — cùng khoá cột `sos1..3` (màu, số liệu), chữ đổi thành số môn trượt. */
-const COT_KET_QUA_THUONG: CotTongHop[] = COT_KET_QUA.map((c) => {
-  const chu: Record<string, [string, string]> = {
-    sos1: ['1 môn trượt', 'Đủ điểm, đúng một môn dưới 70%.'],
-    sos2: ['2 môn trượt', 'Đủ điểm, hai môn dưới 70%.'],
-    sos3: ['≥ 3 môn trượt', 'Đủ điểm, từ ba môn dưới 70%.'],
-  };
-  const x = chu[c.khoa];
-  return x ? { ...c, nhan: () => x[0], goiY: x[1] } : c;
-});
+/**
+ * PR-Pb2-a (P4, K1-19, Q12): khung lớp thường KHÔNG có chữ SOS. Giữa khoá đếm MÔN trượt; Cuối khoá theo 4 dải % tổng (`daiCuoiKhoa`);
+ * Chưa đủ điểm; Σ ba nhóm đó = cột Bài. Mini Test đếm HỌC VIÊN, gắn dòng của bài Cuối khoá sinh ra nó (`tu_attempt_id`) — không cộng vào Bài.
+ */
+const COT_KET_QUA_THUONG: CotTongHop[] = [
+  { khoa: 'gk-dat', nhom: 'ket-qua', nhomCon: 'giua', donVi: 'dot-test', nhan: () => 'Đạt hết', goiY: 'Bài Giữa khoá đủ điểm, mọi môn từ 70%.' },
+  { khoa: 'gk-1', nhom: 'ket-qua', nhomCon: 'giua', donVi: 'dot-test', nhan: () => '1 môn trượt', goiY: 'Bài Giữa khoá đủ điểm, đúng một môn dưới 70%.' },
+  { khoa: 'gk-2', nhom: 'ket-qua', nhomCon: 'giua', donVi: 'dot-test', nhan: () => '≥ 2 môn trượt', goiY: 'Bài Giữa khoá đủ điểm, từ hai môn dưới 70%.' },
+  { khoa: 'ck-duoi50', nhom: 'ket-qua', nhomCon: 'cuoi', donVi: 'dot-test', nhan: () => 'Dưới 50%', goiY: 'Bài Cuối khoá đủ điểm, % tổng dưới 50% — gợi ý học lại.' },
+  { khoa: 'ck-50', nhom: 'ket-qua', nhomCon: 'cuoi', donVi: 'dot-test', nhan: () => '50–59%', goiY: 'Bài Cuối khoá đủ điểm, % tổng 50–59% — Quản lý cân nhắc.' },
+  { khoa: 'ck-60', nhom: 'ket-qua', nhomCon: 'cuoi', donVi: 'dot-test', nhan: () => '60–69%', goiY: 'Bài Cuối khoá đủ điểm, % tổng 60–69% — lên lớp kèm bổ trợ.' },
+  { khoa: 'ck-dat', nhom: 'ket-qua', nhomCon: 'cuoi', donVi: 'dot-test', nhan: () => 'Từ 70%', goiY: 'Bài Cuối khoá đủ điểm, % tổng từ 70% — Pass.' },
+  { khoa: 'chuaDu', nhom: 'ket-qua', donVi: 'dot-test', nhan: () => 'Chưa đủ điểm', goiY: 'Bài chưa nhập đủ điểm các môn — chưa xếp vào cột Giữa khoá hay Cuối khoá.' },
+  { khoa: 'mini-dat', nhom: 'ket-qua', nhomCon: 'mini', donVi: 'hoc-vien', nhan: () => 'Đạt', goiY: 'Học viên làm Mini Test sau bổ trợ (từ bài Cuối khoá của dòng này) đạt từ 70% — đếm học viên.' },
+  { khoa: 'mini-truot', nhom: 'ket-qua', nhomCon: 'mini', donVi: 'hoc-vien', nhan: () => 'Trượt', goiY: 'Học viên làm Mini Test sau bổ trợ dưới 70% — đếm học viên.' },
+];
+/** Cột Kết quả cộng lại đúng bằng cột Bài/Lượt (theo khung) — Mini Test đếm học viên nên đứng ngoài. */
+export function cotKetQuaCong(ct: ChuongTrinh): string[] {
+  return (ct === 'thuong' ? COT_KET_QUA_THUONG : COT_KET_QUA).filter((c) => c.nhomCon !== 'mini').map((c) => c.khoa);
+}
+/** Ô không áp dụng (dòng không có bài loại đó) → web và Excel ghi "—" thay vì 0. */
+export function oKhongApDung(c: CotTongHop, coDot: { giua: boolean; cuoi: boolean } | undefined): boolean {
+  if (!coDot || !c.nhomCon) return false;
+  return c.nhomCon === 'giua' ? !coDot.giua : !coDot.cuoi;
+}
 const COT_XU_LY: CotTongHop[] = [
   { khoa: 'hvCoCase', nhom: 'xu-ly', donVi: 'hoc-vien', nhan: () => 'HV có Case',
     goiY: 'Học viên có ít nhất một Case sinh từ các lượt trong dòng — một em nhiều Case vẫn tính một lần.' },
@@ -226,7 +249,9 @@ export function cotKyNangFor(ct: ChuongTrinh): CotTongHop[] {
 
 /** Toàn bộ cột của bảng Tổng hợp, đúng thứ tự hiển thị: Lượt + Kết quả · Dưới kỳ vọng theo kỹ năng · Xử lý. */
 export function cotTongHopFor(ct: ChuongTrinh): CotTongHop[] {
-  return [COT_LUOT, ...(ct === 'thuong' ? COT_KET_QUA_THUONG : COT_KET_QUA), ...cotKyNangFor(ct), ...COT_XU_LY];
+  return ct === 'thuong'
+    ? [COT_LUOT_THUONG, ...COT_KET_QUA_THUONG, ...COT_XU_LY]
+    : [COT_LUOT, ...COT_KET_QUA, ...cotKyNangFor(ct), ...COT_XU_LY];
 }
 
 // ------------------------------------------------------------------ màu ô kết quả (N-1b, Q23)
@@ -237,7 +262,12 @@ export type MauOKetQua = 'dat' | 'sos1' | 'sos2' | 'sos3' | 'tam' | 'xam';
  * Màu MỘT Ô của bảng Tổng hợp. Cột Đạt / SOS 1 / SOS 2 / SOS 3 mang màu riêng khi có số (ô 0 xám);
  * Tạm thời / Chưa đủ điểm chỉ xám đậm (`tam`) khi có số; cột khác (Lượt, kỹ năng, xử lý) không tô — `null`.
  */
+/** PR-Pb2-a: cột lớp thường mượn thang màu (không chữ SOS): đạt xanh · 1 môn / 60–69 vàng · 50–59 cam · ≥ 2 môn / dưới 50 / Mini Test trượt đỏ. */
+const MAU_THUONG: Record<string, MauOKetQua> = {
+  'gk-dat': 'dat', 'ck-dat': 'dat', 'mini-dat': 'dat', 'gk-1': 'sos1', 'ck-60': 'sos1', 'ck-50': 'sos2', 'gk-2': 'sos3', 'ck-duoi50': 'sos3', 'mini-truot': 'sos3',
+};
 export function mauOKetQua(khoaCot: string, v: number): MauOKetQua | null {
+  if (khoaCot in MAU_THUONG) return v > 0 ? MAU_THUONG[khoaCot] : 'xam';
   if (khoaCot === 'dat' || khoaCot === 'sos1' || khoaCot === 'sos2' || khoaCot === 'sos3') return v > 0 ? khoaCot : 'xam';
   if (khoaCot === 'tamThoi' || khoaCot === 'chuaDu') return v > 0 ? 'tam' : 'xam';
   return null;
@@ -348,12 +378,15 @@ export type DongTongHop = {
   phu?: string;
   o: Record<string, number>;
   con?: DongTongHop[];
+  /** PR-Pb2-a (lớp thường): dòng có bài Giữa khoá / Cuối khoá không — ô không áp dụng hiện "—". */
+  coDot?: { giua: boolean; cuoi: boolean };
 };
 export type TongHopKetQua = {
   theo: TheoDong; ct: ChuongTrinh; cot: string[];
   hang: DongTongHop[];
   /** Dòng Tổng = HỢP các tập (đếm duy nhất), không phải cộng các dòng — nhất là các cột học viên. */
   tong: Record<string, number>;
+  tongCoDot?: { giua: boolean; cuoi: boolean };
   scopeEmpty: boolean;
 };
 
@@ -436,14 +469,14 @@ export function bangXuatTongHop(
   const out: (string | number)[][] = [];
   out.push([`Tổng hợp Test + SOS · ${moTaBoLoc}`]);
   out.push([]);
-  out.push(['', ...cols.map((c) => nhomCotLabel(c.nhom, kq.ct))]);
+  out.push(['', ...cols.map((c) => (c.nhomCon ? NHAN_NHOM_CON[c.nhomCon] : nhomCotLabel(c.nhom, kq.ct)))]);
   out.push([THEO_DONG_COT_DAU[kq.theo], ...cols.map((c) => c.nhan(kq.ct))]);
   const dong = (r: DongTongHop, thut: boolean) =>
-    [`${thut ? '  ' : ''}${r.nhan}${r.phu ? ` · ${r.phu}` : ''}`, ...cols.map((c) => r.o[c.khoa] ?? 0)];
+    [`${thut ? '  ' : ''}${r.nhan}${r.phu ? ` · ${r.phu}` : ''}`, ...cols.map((c) => (oKhongApDung(c, r.coDot) ? '—' : r.o[c.khoa] ?? 0))];
   for (const r of kq.hang) {
     out.push(dong(r, false));
     for (const con of r.con ?? []) out.push(dong(con, true));
   }
-  out.push([`Cộng ${kq.hang.length} ${THEO_DONG_DANH_TU[kq.theo]}`, ...cols.map((c) => kq.tong[c.khoa] ?? 0)]);
+  out.push([`Cộng ${kq.hang.length} ${THEO_DONG_DANH_TU[kq.theo]}`, ...cols.map((c) => (oKhongApDung(c, kq.tongCoDot) ? '—' : kq.tong[c.khoa] ?? 0))]);
   return out;
 }

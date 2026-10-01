@@ -148,7 +148,6 @@ export async function runPhanTichTests(t: YThucTestKit) {
   const skillSchedule: any = await import('../fasttrack/skillSchedule.ts');
   const mbBranch = (conn.prepare(`SELECT id FROM branches WHERE code = 'MB'`).get() as any).id as number;
   const cpBranch = (conn.prepare(`SELECT id FROM branches WHERE code = 'CP'`).get() as any).id as number;
-  const KET_QUA_COLS = ['dat', 'sos1', 'sos2', 'sos3', 'tamThoi', 'chuaDu'];
   const demCauHoi = async (fn: () => unknown): Promise<number> => {
     const goc = conn.prepare;
     let n = 0;
@@ -162,6 +161,7 @@ export async function runPhanTichTests(t: YThucTestKit) {
   for (const theo of ['tuan', 'lop', 'dot', 'cn'] as const) for (const ct of ['ft', 'thuong'] as const) {
     check(`PR-Pb · Tổng hợp (${theo} · ${ct}): sáu cột Kết quả cộng lại đúng bằng Lượt, ở mọi dòng và dòng con`, () => {
       const kq = tongHopSvc.tongHop(P.admin, { branchId: null, ct, soTuan: 52, classId: null, theo });
+      const KET_QUA_COLS = d.cotKetQuaCong(ct) as string[];   // PR-Pb2-a: lớp thường Giữa khoá · Cuối khoá · Chưa đủ điểm
       for (const dong of layMoiDong(kq.hang)) {
         const tongKetQua = KET_QUA_COLS.reduce((s, c) => s + (dong.o[c] ?? 0), 0);
         assert(tongKetQua === dong.o.luot, `Dòng "${dong.nhan}": ${KET_QUA_COLS.map((c) => dong.o[c]).join('+')} = ${tongKetQua} ≠ luot ${dong.o.luot}`);

@@ -8,7 +8,7 @@ import { DINH_TRAI, SoO as SoLieuO } from './dungChung.tsx';
 import { NganXuatMt } from '../test/NganXuatMt.tsx';
 import {
   CHUONG_TRINH_LABEL, KHOANG_LABEL, KHOANG_MAC_DINH, THEO_DONG, THEO_DONG_COT_DAU, THEO_DONG_DANH_TU, THEO_DONG_LABEL,
-  addDaysIso, bangXuatTongHop, cotTongHopFor, mauOKetQua, mondayOfDate, ngay, nhomCotNhanNgan,
+  NHAN_NHOM_CON, addDaysIso, bangXuatTongHop, cotTongHopFor, mauOKetQua, mondayOfDate, ngay, nhomCotNhanNgan, oKhongApDung,
   type ChuongTrinh, type CotTongHop, type DongTongHop, type Khoang, type MauOKetQua, type NhomCot, type TheoDong, type TongHopKetQua,
 } from '@shared/domain/index.ts';
 
@@ -91,11 +91,20 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
 
   const allCols = cotTongHopFor(ct);
   const cols = allCols.filter((c) => cotHien.has(c.nhom));
-  const nhomChay: { nhom: NhomCot; cols: CotTongHop[] }[] = [];
+  /*
+   * Tầng đầu đề trên: FT theo nhóm cột (Kết quả · Dưới kỳ vọng · Xử lý). Lớp thường (PR-Pb2-a, P4) theo nhóm con — Giữa khoá (theo môn) ·
+   * Cuối khoá (% tổng) · Mini Test; cột Kết quả đứng riêng (Bài, Chưa đủ điểm) chiếm cả hai tầng.
+   */
+  const laThuong = ct === 'thuong';
+  const khoaNhom = (c: CotTongHop) => (laThuong && c.nhom === 'ket-qua' ? c.nhomCon ?? `don:${c.khoa}` : c.nhom);
+  const nhomChay: { khoa: string; nhan: string; cols: CotTongHop[] }[] = [];
   for (const c of cols) {
+    const k = khoaNhom(c);
     const last = nhomChay[nhomChay.length - 1];
-    if (last && last.nhom === c.nhom) last.cols.push(c); else nhomChay.push({ nhom: c.nhom, cols: [c] });
+    if (last && last.khoa === k) last.cols.push(c);
+    else nhomChay.push({ khoa: k, nhan: c.nhomCon && laThuong ? NHAN_NHOM_CON[c.nhomCon] : nhomCotNhanNgan(c.nhom, ct), cols: [c] });
   }
+  const donCot = (k: string) => k.startsWith('don:');
 
   const toggleCotHien = (nhom: NhomCot) => {
     const next = new Set(cotHien);
@@ -129,6 +138,7 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
   }
 
   const oCell = (row: DongTongHop, col: CotTongHop) => {
+    if (oKhongApDung(col, row.coDot)) return <span className="text-faint" title="Dòng này không có bài loại này">—</span>;
     const v = row.o[col.khoa] ?? 0;
     const mau = mauOKetQua(col.khoa, v);
     /* Ô 0: "0" xám, không gạch chân (không có danh sách để mở — thay cho "—" cũ). */
@@ -187,14 +197,14 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
               </button>
             ))}
           </div>
-          <span className="flex flex-wrap items-center gap-1" role="group" aria-label="Chú giải màu kết quả">
+          {!laThuong && <span className="flex flex-wrap items-center gap-1" role="group" aria-label="Chú giải màu kết quả">
             {CHU_GIAI.map((g) => (
               <span key={g.khoa} title={allCols.find((c) => c.khoa === g.khoa)?.goiY}
                 className={`inline-flex items-center rounded-md border px-1.5 text-xs font-medium leading-4 ${SCORE_CHIP[g.chip]}`}>
                 {allCols.find((c) => c.khoa === g.khoa)?.nhan(ct) ?? g.nhan}
               </span>
             ))}
-          </span>
+          </span>}
           <span className="flex-1" />
           <div className="relative">
             <button type="button" className="btn btn-sm" onClick={() => setMenuMo((v) => !v)} aria-expanded={menuMo}>
@@ -227,20 +237,22 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
               <colgroup>
                 <col style={{ width: 180 }} />
                 {/* Nhóm Xử lý cần rộng hơn — tiêu đề "HV có Case"/"Đang xử lý"/"Thiếu PA học thuật" bị cắt ở 64px. */}
-                {cols.map((c) => <col key={c.khoa} style={{ width: c.nhom === 'xu-ly' ? 88 : 64 }} />)}
+                {cols.map((c) => <col key={c.khoa} style={{ width: c.nhom === 'xu-ly' || (laThuong && !c.nhomCon) ? 88 : 64 }} />)}
               </colgroup>
               <thead>
                 <tr>
                   <th rowSpan={2} className="th sticky-col text-left">{THEO_DONG_COT_DAU[theo]}</th>
-                  {nhomChay.map((g, i) => (
-                    <th key={g.nhom + i} colSpan={g.cols.length} className={`th text-center ${i > 0 ? 'border-l' : ''}`} style={{ borderColor: 'var(--line-strong)' }}>
-                      {nhomCotNhanNgan(g.nhom, ct)}
-                    </th>
-                  ))}
+                  {nhomChay.map((g, i) => (donCot(g.khoa)
+                    ? <th key={g.khoa} rowSpan={2} title={g.cols[0].goiY} className={`th text-right align-bottom whitespace-normal leading-tight ${i > 0 ? 'border-l' : ''}`} style={{ borderColor: 'var(--line-strong)' }}>{g.cols[0].nhan(ct)}</th>
+                    : (
+                      <th key={g.khoa + i} colSpan={g.cols.length} className={`th text-center ${i > 0 ? 'border-l' : ''}`} style={{ borderColor: 'var(--line-strong)' }}>
+                        {g.nhan}
+                      </th>
+                    )))}
                 </tr>
                 <tr>
-                  {cols.map((c) => (
-                    <Th key={c.khoa} align="right" hint={c.goiY} className={c.nhom === 'xu-ly' ? 'whitespace-normal leading-tight' : ''}>
+                  {cols.filter((c) => !donCot(khoaNhom(c))).map((c) => (
+                    <Th key={c.khoa} align="right" hint={c.goiY} className={c.nhom === 'xu-ly' || laThuong ? 'whitespace-normal leading-tight' : ''}>
                       {c.nhan(ct)}
                     </Th>
                   ))}
@@ -258,7 +270,7 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
                     Cộng {data.hang.length} {THEO_DONG_DANH_TU[theo]}
                   </td>
                   {cols.map((c) => (
-                    <td key={c.khoa} className="td text-right tabular-nums font-semibold">{oCell({ khoa: 'tong', nhan: 'Tổng', o: data.tong }, c)}</td>
+                    <td key={c.khoa} className="td text-right tabular-nums font-semibold">{oCell({ khoa: 'tong', nhan: 'Tổng', o: data.tong, coDot: data.tongCoDot }, c)}</td>
                   ))}
                 </tr>
               </tbody>

@@ -498,9 +498,10 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     assert(/SOS 2/.test(ft.chu), ft.chu);
   });
 
-  check('LT2a (9) · Tổng hợp Test khung thường: cột "1 môn trượt / 2 môn trượt / ≥ 3 môn trượt" (cùng khoá sos1..3); khung FT vẫn "SOS 1..3"', () => {
+  check('LT2a (9) · Tổng hợp Test khung thường (PR-Pb2-a): Giữa khoá theo môn "Đạt hết / 1 môn trượt / ≥ 2 môn trượt", không chữ SOS; khung FT vẫn "SOS 1..3"', () => {
     const nhan = (ct: any) => d.cotTongHopFor(ct).filter((c: any) => /^sos[123]$/.test(c.khoa)).map((c: any) => c.nhan(ct)).join('|');
-    assert(nhan('thuong') === '1 môn trượt|2 môn trượt|≥ 3 môn trượt', nhan('thuong'));
+    const giua = d.cotTongHopFor('thuong').filter((c: any) => c.nhomCon === 'giua').map((c: any) => c.nhan('thuong')).join('|');
+    assert(giua === 'Đạt hết|1 môn trượt|≥ 2 môn trượt' && !d.cotTongHopFor('thuong').some((c: any) => /SOS/.test(c.nhan('thuong'))), giua);
     assert(nhan('ft') === 'SOS 1|SOS 2|SOS 3', nhan('ft'));
   });
 
