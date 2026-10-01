@@ -35,7 +35,7 @@ session code đọc được mà không cần hỏi lại:
 
 | File | Vai trò |
 |---|---|
-| `PISA-Rulebook-2026-09-19.md` | **Luật sản phẩm.** Mục 17 ưu tiên hơn mọi mô tả cũ mâu thuẫn |
+| `PISA-Rulebook-2026-09-19.md` | **Luật sản phẩm.** **Mục 20 (02/10) ưu tiên hơn mọi mục khác** — đã đối chiếu với code `main`; mục 18 ưu tiên hơn mục 17 |
 | `PISA-Design-Plan-after-PR28.md` | **Đặc tả thiết kế.** Mục 17–22 là bản mới nhất |
 
 Hai file này là **nguồn**, không phải nơi ghi tiến độ. Đừng đánh dấu đã làm vào chúng — tiến độ
@@ -44,7 +44,7 @@ ghi ở `plan.md`.
 ## Nguồn luật, theo thứ tự ưu tiên
 
 1. `thiet-ke/NGUON-Rule-Y-thuc-2026-09-21.md` — nguồn mới nhất do chủ sản phẩm gửi.
-2. `thiet-ke/PISA-Rulebook-2026-09-19.md` — luật sản phẩm. **Mục 18 ưu tiên hơn mục 17, mục 17
+2. `thiet-ke/PISA-Rulebook-2026-09-19.md` — luật sản phẩm. **Mục 20 (02/10) ưu tiên hơn mọi mục; mục 18 ưu tiên hơn mục 17, mục 17
    ưu tiên hơn mọi mô tả cũ mâu thuẫn.**
 3. `thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` — đặc tả phần Ý thức, chi tiết tới mức DDL.
 4. `thiet-ke/PISA-Design-Plan-after-PR28.md` — đặc tả thiết kế, mục 17–22 là bản mới nhất.
