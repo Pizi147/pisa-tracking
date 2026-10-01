@@ -1,5 +1,5 @@
 import { db } from '../db.ts';
-import { duongHoSoHocVien, nhanLoaiXuLy, PERMISSIONS, VIOLATION_CATEGORY_LABEL, metricById, tenMon, tenMonNgan, type ChiSo, type ChuongTrinh } from '../../../shared/domain/index.ts';
+import { duongCase, nhanLoaiXuLy, PERMISSIONS, VIOLATION_CATEGORY_LABEL, metricById, tenMon, tenMonNgan, type ChiSo, type ChuongTrinh } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { classScopeSql, scopeFor, type Principal, type Scope } from '../permissions.ts';
 import { badRequest, forbidden, HttpError, notFound } from '../util.ts';
@@ -100,7 +100,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
         /* MH2: tên môn theo chương trình của lộ trình (FOU "G+V"), không chữ thô "listening". K1-06 (Q26): mở hồ sơ HV ở Ngăn Case. */
         byId.set(r.id, {
           id: r.id, title: r.title ?? (r.mon ? tenMon(r.ct ?? null, r.mon) : `Case ${r.id}`), sub: [r.full_name, r.student_code].filter(Boolean).join(' · '),
-          href: r.sid ? duongHoSoHocVien(r.sid, { caseId: r.id }) : `/hoc-thuat/case/${r.id}`, nguoi: r.nguoi ?? null, han: r.han_xac_nhan ?? null,
+          href: duongCase(r.sid, r.id), nguoi: r.nguoi ?? null, han: r.han_xac_nhan ?? null,
         });
       }
     } else if (unit === 'phuong-an') {
@@ -115,7 +115,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
       ).all(...chunk) as any[]) {
         byId.set(r.id, {
           id: r.id, title: r.title, sub: [r.full_name, r.student_code].filter(Boolean).join(' · '),
-          href: r.sid ? duongHoSoHocVien(r.sid, { caseId: r.case_id }) : `/hoc-thuat/case/${r.case_id}`, nguoi: r.nguoi ?? null, han: r.action_due ?? null,
+          href: duongCase(r.sid, r.case_id), nguoi: r.nguoi ?? null, han: r.action_due ?? null,
         });
       }
     } else if (unit === 'dot-test' || unit === 'bai-thi') {
@@ -139,7 +139,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
       const phi = ivIds.map(() => '?').join(',');
       const byIv = new Map<number, any>();
       for (const r of conn.prepare(
-        `SELECT iv.id, iv.case_id, COALESCE(NULLIF(iv.description, ''), iv.kind) AS title, s.full_name, s.student_code
+        `SELECT iv.id, iv.case_id, COALESCE(NULLIF(iv.description, ''), iv.kind) AS title, s.id AS sid, s.full_name, s.student_code
            FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
            LEFT JOIN students s ON s.id = sc.student_id WHERE iv.id IN (${phi})`,
       ).all(...ivIds) as any[]) byIv.set(r.id, r);
@@ -149,7 +149,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
         if (!r) continue;
         byId.set(id, {
           id, title: `${r.title} · chu kỳ ${cycle}`,
-          sub: [r.full_name, r.student_code].filter(Boolean).join(' · '), href: `/hoc-thuat/case/${r.case_id}`,
+          sub: [r.full_name, r.student_code].filter(Boolean).join(' · '), href: duongCase(r.sid, r.case_id),
         });
       }
     } else if (unit === 'vi-pham') {
@@ -236,6 +236,9 @@ export const LISTED_METRICS: readonly string[] = [
   ...YTHUC_METRIC_IDS,
   ...PHOI_HOP_METRIC_IDS,
 ];
+
+/** Chỉ số không theo kỹ năng / khung (Q2): `metricSet` không lọc `program` cho chúng. */
+export const CHI_SO_GOP = new Set<string>([...YTHUC_METRIC_IDS, ...PHOI_HOP_METRIC_IDS]);
 
 /** Kỹ năng ĐÁNH GIÁ mà `hv-duoi-ky-vong-mon` nhận — chỉ số của khung Fast Track (MH5), không có môn lớp thường. */
 const SKILLS_FOR_METRIC = ['listening', 'reading', 'writing', 'speaking'] as const;
@@ -404,13 +407,15 @@ export function metricSet(
     ctLop?: string | null;
   } = {},
 ): MetricResult {
-  const r = locKhung(metricSetGoc(p, id, f), f.program ?? 'ca-hai');
+  const r = locKhung(id, metricSetGoc(p, id, f), f.program ?? null);
   /* Q25: hạn cũ nhất tính SAU bộ lọc khung — "tuần W4 SEP" của ô Fast Track chỉ từ PA Fast Track. */
   return r.chiTiet ? { ...r, hanCu: r.ids.flatMap((x) => r.chiTiet!.get(x)?.han ?? []).sort()[0] ?? null } : r;
 }
 
-function locKhung(r: MetricResult, ct: ChuongTrinh): MetricResult {
-  if (ct === 'ca-hai') return r;
+function locKhung(id: string, r: MetricResult, program: ChuongTrinh | null): MetricResult {
+  /* PR-Pb2-a (Q2, K1-18): Ý thức + Phối hợp SOS là khối GỘP — bỏ qua khung ở đúng một chỗ này. */
+  const ct = CHI_SO_GOP.has(id) ? null : program;
+  if (!ct) return r;
   const moi = [...new Set([...r.ids, ...(r.numeratorIds ?? []), ...(r.denominatorIds ?? [])])];
   const giu = new Set(locTheoChuongTrinh(r.unit, moi, ct));
   const loc = (xs?: number[]) => xs?.filter((x) => giu.has(x));

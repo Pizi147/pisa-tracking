@@ -7,7 +7,7 @@
  * loại lỗi chung, "Nên dùng", bước tiếp theo của Ý thức, và cách xuất Excel từ đúng dữ liệu đang hiện.
  */
 import {
-  CASE_CATEGORIES, CASE_CATEGORY_LABEL, CASE_CATEGORY_SHORT, FT_CASE_CATEGORIES, NORMAL_CASE_CATEGORIES,
+  CASE_CATEGORY_LABEL, CASE_CATEGORY_SHORT, FT_CASE_CATEGORIES, NORMAL_CASE_CATEGORIES,
   type CaseCategory,
 } from './cases.ts';
 import { mondayOfDate } from './week.ts';
@@ -16,40 +16,33 @@ import type { TrangThaiCaseV4 } from './sosV4.ts';
 
 // ------------------------------------------------------------------ góc nhìn (Q1, Q16)
 
-export const GOC_NHIN = ['tong-hop', 'van-de', 'hieu-qua-pa', 'y-thuc', 'danh-sach'] as const;
+/* PR-Pb2-a (T59, K1-27): góc nhìn Danh sách Case đã bỏ — đường dẫn cũ chuyển hướng ở `duongMoi` (dieuHuong.ts). */
+export const GOC_NHIN = ['tong-hop', 'van-de', 'hieu-qua-pa', 'y-thuc'] as const;
 export type GocNhin = (typeof GOC_NHIN)[number];
 export const GOC_NHIN_LABEL: Record<GocNhin, string> = {
   'tong-hop': 'Tổng hợp Test + SOS',
   'van-de': 'Tổng hợp vấn đề HV',
   'hieu-qua-pa': 'Hiệu quả PA',
   'y-thuc': 'Ý thức',   // PR-YT4 (K1-25): Phối hợp SOS ở Việc của GVCN, không ở góc nhìn này
-  'danh-sach': 'Danh sách Case',
 };
 export const GOC_NHIN_MAC_DINH: GocNhin = 'tong-hop';
 
 /**
- * ĐƯỜNG DẪN CŨ VẪN PHẢI MỞ ĐÚNG MÀN (Q16). `boThamSo` là các tham số CŨ cần xoá khỏi URL —
- * `hang-doi` / `tinh-hinh` / `ky-nang` KHÔNG có mặt ở đây dù chúng đưa người dùng vào Danh sách
- * Case: đó là BỘ LỌC của chính màn đó, không phải tên góc nhìn cũ, nên phải giữ nguyên trên URL.
+ * ĐƯỜNG DẪN CŨ VẪN PHẢI MỞ ĐÚNG MÀN (Q16). `boThamSo` là các tham số CŨ cần xoá khỏi URL.
  * `ct` khác `null` nghĩa là `loai-lop` cũ cần đổi thành tham số chương trình mới.
  * `gocMoi` khác `null` nghĩa là `goc` trên URL là TÊN CŨ (`ket-qua`, `chua-ai-nhan`) — web thay bằng tên mới (replace).
+ * Bộ lọc cũ của Danh sách Case (`hang-doi`/`tinh-hinh`/`ky-nang`) không tới được đây: `duongMoi` đã chuyển hướng trước.
  */
 export type KetQuaGocNhinTuThamSo = { goc: GocNhin; ct: ChuongTrinh | null; boThamSo: string[]; gocMoi: GocNhin | null };
 
 export function gocNhinTuThamSo(params: { get(key: string): string | null }): KetQuaGocNhinTuThamSo {
   const gocParam = params.get('goc');
-  const coBoLocDanhSach = !!(params.get('hang-doi') || params.get('tinh-hinh') || params.get('ky-nang'));
-  /*
-   * `goc` TƯỜNG MINH LUÔN THẮNG (kể cả `tong-hop`, vốn không có tham số riêng — vắng `goc` mới
-   * là lúc suy theo bộ lọc Danh sách Case). Thiếu nhánh này thì bấm "Tổng hợp" trong khi
-   * `hang-doi`/`tinh-hinh`/`ky-nang` còn sót trên URL sẽ kẹt mãi ở Danh sách Case.
-   */
   let gocMoi: GocNhin | null = null;
   let goc: GocNhin;
   if (gocParam === 'ket-qua') { goc = 'hieu-qua-pa'; gocMoi = goc; }
   else if (gocParam === 'chua-ai-nhan') { goc = 'van-de'; gocMoi = goc; }
   else if ((GOC_NHIN as readonly string[]).includes(gocParam ?? '')) goc = gocParam as GocNhin;
-  else goc = coBoLocDanhSach ? 'danh-sach' : GOC_NHIN_MAC_DINH;
+  else goc = GOC_NHIN_MAC_DINH;
   const boThamSo: string[] = [];
   if (params.get('xem') !== null) boThamSo.push('xem');
   const loaiLop = params.get('loai-lop');
@@ -62,11 +55,11 @@ export function gocNhinTuThamSo(params: { get(key: string): string | null }): Ke
 }
 
 /**
- * THAM SỐ CẦN XOÁ KHI BẤM SANG MỘT GÓC NHÌN KHÁC — `hang-doi`/`tinh-hinh`/`ky-nang` là bộ lọc RIÊNG của Danh sách
- * Case; rời màn đó mà không dọn thì lần bấm kế tiếp lại bị `gocNhinTuThamSo` suy nhầm về Danh sách Case.
+ * THAM SỐ CẦN XOÁ KHI BẤM SANG MỘT GÓC NHÌN — ba bộ lọc cũ của Danh sách Case (đã bỏ) luôn dọn; `gv`/`tu`/`den` là bộ lọc RIÊNG
+ * của Hiệu quả PA (PR-Pb2-a) — rời góc nhìn đó thì dọn, để quay lại không bị lọc ngầm.
  */
 export function thamSoXoaKhiDoiGoc(goc: GocNhin): readonly string[] {
-  return goc === 'danh-sach' ? [] : ['hang-doi', 'tinh-hinh', 'ky-nang'];
+  return goc === 'hieu-qua-pa' ? ['hang-doi', 'tinh-hinh', 'ky-nang'] : ['hang-doi', 'tinh-hinh', 'ky-nang', 'gv', 'tu', 'den'];
 }
 
 // ------------------------------------------------------------------ khoảng thời gian (Q5)
@@ -99,14 +92,12 @@ export function tuDauKhoang(homNay: string, soTuan: number): string {
 
 // ------------------------------------------------------------------ kỹ năng theo chương trình (Q7)
 
-/** Fast Track L·R·W1·W2·S; lớp thường L·R·W·S; Cả hai là HỢP hai bộ (không gộp W1/W2 vào W — Q7). */
+/** Fast Track L·R·W1·W2·S; lớp thường L·R·W·S (PR-Pb2-a: khung gộp đã bỏ). */
 export function kyNangTheoCt(ct: ChuongTrinh): readonly CaseCategory[] {
-  if (ct === 'ft') return FT_CASE_CATEGORIES;
-  if (ct === 'thuong') return NORMAL_CASE_CATEGORIES;
-  return CASE_CATEGORIES.filter((c) => c !== 'tong_hop');   // Pre FOU không có cột môn (MH3)
+  return ct === 'ft' ? FT_CASE_CATEGORIES : NORMAL_CASE_CATEGORIES;
 }
 
-/** Tooltip đầy đủ của một kỹ năng — ở "Cả hai", W cần nói rõ là Writing của lớp thường (Q7) để không lẫn với W1/W2. */
+/** Tooltip đầy đủ của một kỹ năng. */
 export function kyNangTooltip(cat: CaseCategory, _ct: ChuongTrinh): string {
   return CASE_CATEGORY_LABEL[cat];
 }
@@ -152,7 +143,6 @@ export const NHOM_COT: readonly NhomCot[] = ['ket-qua', 'ky-nang', 'xu-ly'];
 const NHAN_NHOM_KY_NANG: Record<ChuongTrinh, string> = {
   ft: 'Dưới kỳ vọng theo kỹ năng (đếm HV)',
   thuong: 'Chưa đạt theo môn (đếm HV)',
-  'ca-hai': 'Dưới kỳ vọng · chưa đạt (đếm HV)',
 };
 export function nhomCotLabel(nhom: NhomCot, ct: ChuongTrinh): string {
   if (nhom === 'ket-qua') return 'Kết quả Test (đếm lượt)';
@@ -162,26 +152,34 @@ export function nhomCotLabel(nhom: NhomCot, ct: ChuongTrinh): string {
 
 /** Động từ của nhóm "dưới kỳ vọng"/"chưa đạt" theo chương trình — dùng cho tooltip cột kỹ năng và các nhãn ngắn. */
 const DONG_TU_KY_NANG: Record<ChuongTrinh, string> = {
-  ft: 'dưới kỳ vọng', thuong: 'chưa đạt', 'ca-hai': 'dưới kỳ vọng / chưa đạt',
+  ft: 'dưới kỳ vọng', thuong: 'chưa đạt',
 };
 /** Nhãn NGẮN của nhóm cột (đầu đề bảng, menu "Cột hiện") — cùng luật ct với `nhomCotLabel`, chỉ ngắn hơn. */
 export function nhomCotNhanNgan(nhom: NhomCot, ct: ChuongTrinh): string {
   if (nhom === 'ket-qua') return 'Kết quả';
   if (nhom === 'xu-ly') return 'Xử lý';
-  return ct === 'ft' ? 'Dưới kỳ vọng' : ct === 'thuong' ? 'Chưa đạt' : 'Dưới kỳ vọng / chưa đạt';
+  return ct === 'ft' ? 'Dưới kỳ vọng' : 'Chưa đạt';
 }
 
 export type CotTongHop = {
   khoa: string; nhom: NhomCot; donVi: 'dot-test' | 'hoc-vien' | 'case';
   nhan: (ct: ChuongTrinh) => string;
   goiY: string;
+  /** PR-Pb2-a (P4, K1-19): tầng đầu đề con của lớp thường — Giữa khoá (theo môn) · Cuối khoá (% tổng) · Mini Test. */
+  nhomCon?: NhomCon;
 };
+export type NhomCon = 'giua' | 'cuoi' | 'mini';
+export const NHAN_NHOM_CON: Record<NhomCon, string> = { giua: 'Giữa khoá (theo môn)', cuoi: 'Cuối khoá (% tổng)', mini: 'Mini Test' };
 
 /** Cột lượt — nhãn đổi theo chương trình (Q18); đứng đầu bảng, cùng nhóm "Kết quả" (sáu cột sau cộng lại đúng bằng nó). */
 const COT_LUOT: CotTongHop = {
   khoa: 'luot', nhom: 'ket-qua', donVi: 'dot-test',
-  nhan: (ct) => (ct === 'ft' ? 'Lượt MT' : ct === 'thuong' ? 'Bài kiểm tra' : 'Lượt'),
+  nhan: (ct) => (ct === 'ft' ? 'Lượt MT' : 'Bài kiểm tra'),
   goiY: 'Số lượt đã chấm ít nhất một kỹ năng trong khoảng đang xem. Sáu cột Kết quả cộng lại đúng bằng cột này. Không tính học viên KCK (không cam kết đầu ra).',
+};
+const COT_LUOT_THUONG: CotTongHop = {
+  ...COT_LUOT,
+  goiY: 'Số bài đã chấm ít nhất một môn trong khoảng đang xem. Ba cột Giữa khoá, bốn cột Cuối khoá và Chưa đủ điểm cộng lại đúng bằng cột này. Không tính học viên KCK.',
 };
 const COT_KET_QUA: CotTongHop[] = [
   { khoa: 'dat', nhom: 'ket-qua', donVi: 'dot-test', nhan: () => 'Đạt', goiY: 'Đủ điểm mọi kỹ năng, không kỹ năng nào dưới kỳ vọng.' },
@@ -193,16 +191,31 @@ const COT_KET_QUA: CotTongHop[] = [
   { khoa: 'chuaDu', nhom: 'ket-qua', donVi: 'dot-test', nhan: () => 'Chưa đủ điểm',
     goiY: 'Chưa đủ điểm và phần đã chấm chưa kết luận được gì.' },
 ];
-/** PR-LT2a (T58): khung lớp thường KHÔNG có chữ SOS — cùng khoá cột `sos1..3` (màu, số liệu), chữ đổi thành số môn trượt. */
-const COT_KET_QUA_THUONG: CotTongHop[] = COT_KET_QUA.map((c) => {
-  const chu: Record<string, [string, string]> = {
-    sos1: ['1 môn trượt', 'Đủ điểm, đúng một môn dưới 70%.'],
-    sos2: ['2 môn trượt', 'Đủ điểm, hai môn dưới 70%.'],
-    sos3: ['≥ 3 môn trượt', 'Đủ điểm, từ ba môn dưới 70%.'],
-  };
-  const x = chu[c.khoa];
-  return x ? { ...c, nhan: () => x[0], goiY: x[1] } : c;
-});
+/**
+ * PR-Pb2-a (P4, K1-19, Q12): khung lớp thường KHÔNG có chữ SOS. Giữa khoá đếm MÔN trượt; Cuối khoá theo 4 dải % tổng (`daiCuoiKhoa`);
+ * Chưa đủ điểm; Σ ba nhóm đó = cột Bài. Mini Test đếm HỌC VIÊN, gắn dòng của bài Cuối khoá sinh ra nó (`tu_attempt_id`) — không cộng vào Bài.
+ */
+const COT_KET_QUA_THUONG: CotTongHop[] = [
+  { khoa: 'gk-dat', nhom: 'ket-qua', nhomCon: 'giua', donVi: 'dot-test', nhan: () => 'Đạt hết', goiY: 'Bài Giữa khoá đủ điểm, mọi môn từ 70%.' },
+  { khoa: 'gk-1', nhom: 'ket-qua', nhomCon: 'giua', donVi: 'dot-test', nhan: () => '1 môn trượt', goiY: 'Bài Giữa khoá đủ điểm, đúng một môn dưới 70%.' },
+  { khoa: 'gk-2', nhom: 'ket-qua', nhomCon: 'giua', donVi: 'dot-test', nhan: () => '≥ 2 môn trượt', goiY: 'Bài Giữa khoá đủ điểm, từ hai môn dưới 70%.' },
+  { khoa: 'ck-duoi50', nhom: 'ket-qua', nhomCon: 'cuoi', donVi: 'dot-test', nhan: () => 'Dưới 50%', goiY: 'Bài Cuối khoá đủ điểm, % tổng dưới 50% — gợi ý học lại.' },
+  { khoa: 'ck-50', nhom: 'ket-qua', nhomCon: 'cuoi', donVi: 'dot-test', nhan: () => '50–59%', goiY: 'Bài Cuối khoá đủ điểm, % tổng 50–59% — Quản lý cân nhắc.' },
+  { khoa: 'ck-60', nhom: 'ket-qua', nhomCon: 'cuoi', donVi: 'dot-test', nhan: () => '60–69%', goiY: 'Bài Cuối khoá đủ điểm, % tổng 60–69% — lên lớp kèm bổ trợ.' },
+  { khoa: 'ck-dat', nhom: 'ket-qua', nhomCon: 'cuoi', donVi: 'dot-test', nhan: () => 'Từ 70%', goiY: 'Bài Cuối khoá đủ điểm, % tổng từ 70% — Pass.' },
+  { khoa: 'chuaDu', nhom: 'ket-qua', donVi: 'dot-test', nhan: () => 'Chưa đủ điểm', goiY: 'Bài chưa nhập đủ điểm các môn — chưa xếp vào cột Giữa khoá hay Cuối khoá.' },
+  { khoa: 'mini-dat', nhom: 'ket-qua', nhomCon: 'mini', donVi: 'hoc-vien', nhan: () => 'Đạt', goiY: 'Học viên làm Mini Test sau bổ trợ (từ bài Cuối khoá của dòng này) đạt từ 70% — đếm học viên.' },
+  { khoa: 'mini-truot', nhom: 'ket-qua', nhomCon: 'mini', donVi: 'hoc-vien', nhan: () => 'Trượt', goiY: 'Học viên làm Mini Test sau bổ trợ dưới 70% — đếm học viên.' },
+];
+/** Cột Kết quả cộng lại đúng bằng cột Bài/Lượt (theo khung) — Mini Test đếm học viên nên đứng ngoài. */
+export function cotKetQuaCong(ct: ChuongTrinh): string[] {
+  return (ct === 'thuong' ? COT_KET_QUA_THUONG : COT_KET_QUA).filter((c) => c.nhomCon !== 'mini').map((c) => c.khoa);
+}
+/** Ô không áp dụng (dòng không có bài loại đó) → web và Excel ghi "—" thay vì 0. */
+export function oKhongApDung(c: CotTongHop, coDot: { giua: boolean; cuoi: boolean } | undefined): boolean {
+  if (!coDot || !c.nhomCon) return false;
+  return c.nhomCon === 'giua' ? !coDot.giua : !coDot.cuoi;
+}
 const COT_XU_LY: CotTongHop[] = [
   { khoa: 'hvCoCase', nhom: 'xu-ly', donVi: 'hoc-vien', nhan: () => 'HV có Case',
     goiY: 'Học viên có ít nhất một Case sinh từ các lượt trong dòng — một em nhiều Case vẫn tính một lần.' },
@@ -223,7 +236,7 @@ export const COT_XU_LY_V4: Record<TrangThaiCaseV4, string> = {
 
 /**
  * Cột kỹ năng "dưới kỳ vọng", sinh từ `kyNangTheoCt` — khoá kỹ thuật `kn:<hạng mục>`, không lộ ra màn (chỉ dùng nội bộ).
- * MH3/MH5 (PR-MON): CHỈ khung Fast Track có cột môn — Lớp thường không lọc/cột theo môn, "Cả hai" không trộn môn hai khung.
+ * MH3/MH5 (PR-MON): CHỈ khung Fast Track có cột môn — Lớp thường không lọc/cột theo môn.
  */
 export function cotKyNangFor(ct: ChuongTrinh): CotTongHop[] {
   if (ct !== 'ft') return [];
@@ -236,7 +249,9 @@ export function cotKyNangFor(ct: ChuongTrinh): CotTongHop[] {
 
 /** Toàn bộ cột của bảng Tổng hợp, đúng thứ tự hiển thị: Lượt + Kết quả · Dưới kỳ vọng theo kỹ năng · Xử lý. */
 export function cotTongHopFor(ct: ChuongTrinh): CotTongHop[] {
-  return [COT_LUOT, ...(ct === 'thuong' ? COT_KET_QUA_THUONG : COT_KET_QUA), ...cotKyNangFor(ct), ...COT_XU_LY];
+  return ct === 'thuong'
+    ? [COT_LUOT_THUONG, ...COT_KET_QUA_THUONG, ...COT_XU_LY]
+    : [COT_LUOT, ...COT_KET_QUA, ...cotKyNangFor(ct), ...COT_XU_LY];
 }
 
 // ------------------------------------------------------------------ màu ô kết quả (N-1b, Q23)
@@ -247,7 +262,12 @@ export type MauOKetQua = 'dat' | 'sos1' | 'sos2' | 'sos3' | 'tam' | 'xam';
  * Màu MỘT Ô của bảng Tổng hợp. Cột Đạt / SOS 1 / SOS 2 / SOS 3 mang màu riêng khi có số (ô 0 xám);
  * Tạm thời / Chưa đủ điểm chỉ xám đậm (`tam`) khi có số; cột khác (Lượt, kỹ năng, xử lý) không tô — `null`.
  */
+/** PR-Pb2-a: cột lớp thường mượn thang màu (không chữ SOS): đạt xanh · 1 môn / 60–69 vàng · 50–59 cam · ≥ 2 môn / dưới 50 / Mini Test trượt đỏ. */
+const MAU_THUONG: Record<string, MauOKetQua> = {
+  'gk-dat': 'dat', 'ck-dat': 'dat', 'mini-dat': 'dat', 'gk-1': 'sos1', 'ck-60': 'sos1', 'ck-50': 'sos2', 'gk-2': 'sos3', 'ck-duoi50': 'sos3', 'mini-truot': 'sos3',
+};
 export function mauOKetQua(khoaCot: string, v: number): MauOKetQua | null {
+  if (khoaCot in MAU_THUONG) return v > 0 ? MAU_THUONG[khoaCot] : 'xam';
   if (khoaCot === 'dat' || khoaCot === 'sos1' || khoaCot === 'sos2' || khoaCot === 'sos3') return v > 0 ? khoaCot : 'xam';
   if (khoaCot === 'tamThoi' || khoaCot === 'chuaDu') return v > 0 ? 'tam' : 'xam';
   return null;
@@ -289,12 +309,9 @@ export function hoKyNang(k: string | null | undefined): HoKyNang | null {
 
 // ------------------------------------------------------------------ hai việc "bỏ quên" (Q17–Q19)
 
-/** Loại học viên "bỏ quên" của "Chưa ai nhận" cũ — vừa là chỉ số trong sổ, vừa là bộ lọc ở Danh sách Case (`hang-doi`). PR-LT2a bỏ loại "Bỏ qua tín hiệu". */
+/** Loại "bỏ quên" cũ — PR-VAI-a (Q7) đã gỡ chỉ số U3 + boQuen.ts; chỉ còn để `duongMoi` chuyển đường dẫn cũ `hang-doi=…` về Tổng quan. */
 export const LOAI_BO_QUEN = ['can-ho-tro-2-lan'] as const;
 export type LoaiBoQuen = (typeof LOAI_BO_QUEN)[number];
-export const LOAI_BO_QUEN_LABEL: Record<LoaiBoQuen, string> = {
-  'can-ho-tro-2-lan': 'Cần hỗ trợ 2 lần liền, chưa có Case',
-};
 export const laLoaiBoQuen = (s: string | null | undefined): s is LoaiBoQuen => (LOAI_BO_QUEN as readonly string[]).includes(s ?? '');
 
 // ------------------------------------------------------------------ Hiệu quả PA (Q9, Q10)
@@ -317,11 +334,25 @@ export function nenDung(
   return anhEm.every((x) => x.soPa < NGUONG_IT_DU_LIEU || x.caiThien / x.soPa <= ty + 1e-9);
 }
 
-/** "Thời gian trung bình" (Q10): số ngày → tuần, làm tròn, tối thiểu 1; không có PA nào → null. */
-export function tuanTrungBinh(soNgay: readonly number[]): number | null {
+/** "Thời gian thường mất" (P9b, PR-Pb2-a): TRUNG VỊ số ngày → tuần, làm tròn, tối thiểu 1; không có PA nào → null. */
+export function tuanTrungVi(soNgay: readonly number[]): number | null {
   if (!soNgay.length) return null;
-  const tb = soNgay.reduce((s, x) => s + x, 0) / soNgay.length;
-  return Math.max(1, Math.round(tb / 7));
+  const x = [...soNgay].sort((a, b) => a - b);
+  const g = x.length >> 1;
+  const tv = x.length % 2 ? x[g] : (x[g - 1] + x[g]) / 2;
+  return Math.max(1, Math.round(tv / 7));
+}
+
+/** Tham số URL của Hiệu quả PA (Hợp đồng a↔b): `tu`/`den` = Thứ Hai tuần đầu / tuần cuối (gồm cả tuần `den`), tối đa 52 tuần. */
+const HQ_PA_TOI_DA_TUAN = 52;
+/** Kiểm `tu`/`den`: trả lỗi (chuỗi) hoặc null. `den` vắng = tới hôm nay. */
+export function loiKhoangTuan(tu: string, den: string | null): string | null {
+  const laThuHai = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(`${s}T00:00:00Z`)) && new Date(`${s}T00:00:00Z`).getUTCDay() === 1
+    && new Date(`${s}T00:00:00Z`).toISOString().slice(0, 10) === s;
+  if (!laThuHai(tu) || (den !== null && !laThuHai(den))) return 'Khoảng tuần phải bắt đầu bằng ngày Thứ Hai (YYYY-MM-DD).';
+  if (den !== null && tu > den) return 'Tuần đầu phải trước hoặc bằng tuần cuối.';
+  if (den !== null && (Date.parse(den) - Date.parse(tu)) / 604800000 + 1 > HQ_PA_TOI_DA_TUAN) return `Khoảng tối đa ${HQ_PA_TOI_DA_TUAN} tuần.`;
+  return null;
 }
 
 // ------------------------------------------------------------------ Ý thức (PR-YT4): bỏ "bước tiếp theo · Sắp Thư CC" (v3)
@@ -344,12 +375,15 @@ export type DongTongHop = {
   phu?: string;
   o: Record<string, number>;
   con?: DongTongHop[];
+  /** PR-Pb2-a (lớp thường): dòng có bài Giữa khoá / Cuối khoá không — ô không áp dụng hiện "—". */
+  coDot?: { giua: boolean; cuoi: boolean };
 };
 export type TongHopKetQua = {
   theo: TheoDong; ct: ChuongTrinh; cot: string[];
   hang: DongTongHop[];
   /** Dòng Tổng = HỢP các tập (đếm duy nhất), không phải cộng các dòng — nhất là các cột học viên. */
   tong: Record<string, number>;
+  tongCoDot?: { giua: boolean; cuoi: boolean };
   scopeEmpty: boolean;
 };
 
@@ -374,17 +408,30 @@ export type VanDeHvKetQua = {
   scopeEmpty: boolean;
 };
 
-/** Hiệu quả PA: hàng lớn = vấn đề (mã lỗi chính), hàng con = loại PA. */
+/**
+ * Hiệu quả PA — một dòng. PA do GV thêm: hàng lớn = vấn đề (mã lỗi chính), hàng con = loại PA. PA theo quy chế: hàng lớn = SOS 1·2·3 (FT)
+ * hoặc Bổ trợ Giữa khoá / sau Cuối khoá (lớp thường), không `nenDung` (PR-Pb2-a, Q8). `tvTuan` = trung vị (Q10); `dongThoi` = số PA chạy cùng PA khác của cùng Case.
+ */
 export type DongHieuQuaPa = {
-  khoa: string; nhan: string; soPa: number; caiThien: number;
-  tbTuan: number | null; itDuLieu: boolean; nenDung: boolean;
+  khoa: string; nhan: string; soPa: number; caiThien: number; hocVien: number;
+  tvTuan: number | null; dongThoi: number; itDuLieu: boolean; nenDung: boolean;
   con?: DongHieuQuaPa[];
 };
 export type HieuQuaPaKetQua = {
-  tomTat: { paCoKetQua: number; caiThien: number; vanDeDuDuLieu: number };
-  hang: DongHieuQuaPa[];
-  gom: { soVanDe: number; hang: DongHieuQuaPa[] } | null;
-  chuaGhiKetQua: number; caseChuaPhanLoai: number; scopeEmpty: boolean;
+  /** PA do giáo viên thêm (`preset = 0`) — như bảng cũ, giữ "Nên dùng". */
+  gvThem: {
+    tomTat: { paCoKetQua: number; caiThien: number; vanDeDuDuLieu: number };
+    hang: DongHieuQuaPa[];
+    gom: { soVanDe: number; hang: DongHieuQuaPa[] } | null;
+  };
+  /** PA theo quy chế (`preset = 1`, gồm Bổ trợ) — thứ tự cố định, không so, không xếp hạng. */
+  quyChe: { tomTat: { paCoKetQua: number; caiThien: number }; hang: DongHieuQuaPa[] };
+  chuaGhiKetQua: number; caseChuaPhanLoai: number;
+  /** PA có kết quả mà chưa rõ em học ở đâu lúc làm PA (F03) — không vào bảng nào. */
+  chuaRoNguon: number;
+  /** Ngữ cảnh đang lọc: tên GV đọc từ máy chủ (không tin URL); khoảng tuần (`den` null = tới hôm nay). */
+  loc: { gv: { id: number; ten: string } | null; tu: string; den: string | null; theoKhoang: boolean };
+  scopeEmpty: boolean;
 };
 
 /** Ý thức (PR-YT4): "Học viên cần chú ý" + "Lớp nhiều vi phạm". */
@@ -419,14 +466,14 @@ export function bangXuatTongHop(
   const out: (string | number)[][] = [];
   out.push([`Tổng hợp Test + SOS · ${moTaBoLoc}`]);
   out.push([]);
-  out.push(['', ...cols.map((c) => nhomCotLabel(c.nhom, kq.ct))]);
+  out.push(['', ...cols.map((c) => (c.nhomCon ? NHAN_NHOM_CON[c.nhomCon] : nhomCotLabel(c.nhom, kq.ct)))]);
   out.push([THEO_DONG_COT_DAU[kq.theo], ...cols.map((c) => c.nhan(kq.ct))]);
   const dong = (r: DongTongHop, thut: boolean) =>
-    [`${thut ? '  ' : ''}${r.nhan}${r.phu ? ` · ${r.phu}` : ''}`, ...cols.map((c) => r.o[c.khoa] ?? 0)];
+    [`${thut ? '  ' : ''}${r.nhan}${r.phu ? ` · ${r.phu}` : ''}`, ...cols.map((c) => (oKhongApDung(c, r.coDot) ? '—' : r.o[c.khoa] ?? 0))];
   for (const r of kq.hang) {
     out.push(dong(r, false));
     for (const con of r.con ?? []) out.push(dong(con, true));
   }
-  out.push([`Cộng ${kq.hang.length} ${THEO_DONG_DANH_TU[kq.theo]}`, ...cols.map((c) => kq.tong[c.khoa] ?? 0)]);
+  out.push([`Cộng ${kq.hang.length} ${THEO_DONG_DANH_TU[kq.theo]}`, ...cols.map((c) => (oKhongApDung(c, kq.tongCoDot) ? '—' : kq.tong[c.khoa] ?? 0))]);
   return out;
 }

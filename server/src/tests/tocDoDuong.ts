@@ -70,7 +70,6 @@ export const DUONG_DO: MucDo[] = [
     trang: 'Phân tích QL', vai: ['QL', 'QT', 'GVCN'], url: '/phan-tich/y-thuc',
     maChuDich: { GVCN: 403 },
   },
-  { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/phan-tich/bo-quen?loai=can-ho-tro-2-lan' },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/metrics/lop-thieu-gv-mon' },   // PR-VAI-a: thay chỉ số U3 đã xoá
   /* PR-LT2a: thay chỉ số "Bỏ qua tín hiệu" đã bỏ bằng chỉ số Case chờ nguyên nhân quá hạn (FT + Giữa khoá lớp thường — ô Tổng quan). */
   { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/metrics/case-xac-dinh-nguyen-nhan-qua-han' },
@@ -216,6 +215,11 @@ export const DUONG_DO: MucDo[] = [
   /* Bảng giáo viên của chi nhánh (Tổng quan › Theo lớp › Theo giáo viên): chỉ Quản lý / Quản trị; GVCN → 403. */
   { trang: 'Tổng quan QL', vai: ['QL', 'QT', 'GVCN'], url: '/giao-vien?cn={cn}&ct=ft', maChuDich: { GVCN: 403 } },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT', 'GVCN'], url: '/giao-vien?cn={cn}&ct=thuong', maChuDich: { GVCN: 403 } },
+  /* PR-Pb2-a: Hiệu quả PA lọc giáo viên + khoảng tuần (URL Hợp đồng a↔b, link từ hồ sơ GV / bảng giáo viên). */
+  { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/phan-tich/hieu-qua-pa?gv={gv}&tu=2026-08-31&den=2026-09-14' },
+  /* PR-Pb2-a (4): Tổng hợp Test — lớp thường thêm một câu Mini Test cố định (theo lô), không tăng theo số bài. */
+  { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/phan-tich/tong-hop?ct=ft' },
+  { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/phan-tich/tong-hop?ct=thuong&theo=dot' },
 ];
 
 /**
@@ -301,9 +305,7 @@ export const TRAN: Record<string, number> = {
   'QL /phan-tich/y-thuc': 26,
   'QT /phan-tich/y-thuc': 26,
   'GVCN /phan-tich/y-thuc': 20,
-  // PR-UX4 (5): boQuen dùng chung cho đường, hai chỉ số và hai dòng Cần xử lý — đo 22 câu (một lượt gọi, không nhân theo số HV).
-  'QL /phan-tich/bo-quen?loai=can-ho-tro-2-lan': 32,
-  'QT /phan-tich/bo-quen?loai=can-ho-tro-2-lan': 32,
+  // PR-VAI-a (Q7): đường /phan-tich/bo-quen đã gỡ cùng boQuen.ts.
   'QL /metrics/case-xac-dinh-nguyen-nhan-qua-han': 32,
   'QT /metrics/case-xac-dinh-nguyen-nhan-qua-han': 32,
   'GVCN /my-work': 76,   // PR-CT gộp LT2b: 68 → 76   // PR-LT2b: việc Ghi Mini Test + bộ demo D10–D13 (2 lớp mới: MB BE 04, MB ELE 02) 63 → 68 (+8 %)
@@ -600,6 +602,14 @@ export const TRAN: Record<string, number> = {
   'QL /giao-vien?cn=1&ct=thuong': 47,
   'QT /giao-vien?cn=1&ct=thuong': 45,
   'GVCN /giao-vien?cn=1&ct=thuong': 19,
+  // PR-Pb2-a (3), 01/10/2026 — Hiệu quả PA lọc gv + tu/den: đo 17 (QL) / 16 (QT) câu → max(đo+10, ⌈đo×1.3⌉).
+  'QL /phan-tich/hieu-qua-pa?gv=7&tu=2026-08-31&den=2026-09-14': 27,
+  'QT /phan-tich/hieu-qua-pa?gv=7&tu=2026-08-31&den=2026-09-14': 26,
+  // PR-Pb2-a (4) — Tổng hợp Test: FT 19 câu; lớp thường 20 (+1 câu Mini Test theo lô) → max(đo+10, ⌈đo×1.3⌉).
+  'QL /phan-tich/tong-hop?ct=ft': 29,
+  'QT /phan-tich/tong-hop?ct=ft': 29,
+  'QL /phan-tich/tong-hop?ct=thuong&theo=dot': 30,
+  'QT /phan-tich/tong-hop?ct=thuong&theo=dot': 30,
 };
 
 /**

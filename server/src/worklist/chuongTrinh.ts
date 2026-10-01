@@ -13,7 +13,7 @@ import { parseObligation } from './metrics.ts';
  *   bài / lượt          lớp của lượt
  *   vi phạm / PA xử lý  qua học viên
  *   lớp                 chính lớp đó (PR-VAI-a)
- * Chương trình = `classes.is_fast_track`. Không tìm được lớp → `isFt = null`: chỉ có mặt khi xem "Cả hai".
+ * Chương trình = `classes.is_fast_track`. Không tìm được lớp → `isFt = null`: chỉ có mặt ở chỉ số gộp (không lọc khung).
  * Truy vấn theo lô 400 — không một câu mỗi phần tử.
  */
 export type LopCuaPhanTu = { classId: number | null; code: string | null; isFt: boolean | null };
@@ -103,9 +103,9 @@ export function lopCuaTap(unit: ChiSo['donVi'], ids: number[]): Map<number, LopC
   }
 }
 
-/** Giữ phần tử thuộc đúng chương trình. Cả hai = không lọc. Không xác định được lớp → bị loại khỏi cả hai chương trình. */
+/** Giữ phần tử thuộc đúng chương trình. Không xác định được lớp → bị loại khỏi cả hai chương trình. */
 export function locTheoChuongTrinh(unit: ChiSo['donVi'], ids: number[], ct: ChuongTrinh): number[] {
-  if (ct === 'ca-hai' || !ids.length) return ids;
+  if (!ids.length) return ids;
   const m = lopCuaTap(unit, ids);
   const muonFt = ct === 'ft';
   return ids.filter((id) => { const x = m.get(id); return !!x && x.isFt !== null && x.isFt === muonFt; });

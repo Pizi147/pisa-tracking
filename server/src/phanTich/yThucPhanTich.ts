@@ -17,7 +17,7 @@ import { demoToday } from '../demoConfig.ts';
  * theo từng dòng. Tổng vi phạm của các lớp + hàng gom KHỚP `metricSet('vi-pham-tong')` cùng kỳ/chi nhánh (cùng cách lọc).
  */
 
-export type FilterYThuc = { branchId?: number | null; ct: ChuongTrinh; classId?: number | null; from: string; to: string };
+export type FilterYThuc = { branchId?: number | null; ct: ChuongTrinh | null; classId?: number | null; from: string; to: string };
 
 function addDays(iso: string, n: number): string {
   const d = new Date(`${iso.slice(0, 10)}T00:00:00Z`);
@@ -43,7 +43,7 @@ function tinh(p: Principal, f: FilterYThuc) {
 
   // 1) Vi phạm của cả kỳ này và kỳ liền trước, theo LỚP GHI (cùng cách `vi-pham-tong`).
   const b = branchSql('c.branch_id', scope.branchIds), cl = classSql('v.class_id', f.classId ?? null);
-  const ctSql = f.ct === 'ca-hai' ? '' : ` AND c.is_fast_track = ${f.ct === 'ft' ? 1 : 0}`;
+  const ctSql = !f.ct ? '' : ` AND c.is_fast_track = ${f.ct === 'ft' ? 1 : 0}`;
   const lopMuc = new Map<number, Muc>();          // classId (0 = không rõ lớp) → tập của lớp
   const conMuc = new Map<string, Muc>();          // `${classId}|${category}`
   const maLop = new Map<number, string>();
@@ -57,7 +57,7 @@ function tinh(p: Principal, f: FilterYThuc) {
   const eWhere = [b.sql, `c.status = 'active'`, `e.status = 'active'`, 's.archived_at IS NULL'];
   const eArgs: unknown[] = [...b.args];
   if (f.classId) { eWhere.push('c.id = ?'); eArgs.push(f.classId); }
-  if (f.ct !== 'ca-hai') { eWhere.push('c.is_fast_track = ?'); eArgs.push(f.ct === 'ft' ? 1 : 0); }
+  if (f.ct) { eWhere.push('c.is_fast_track = ?'); eArgs.push(f.ct === 'ft' ? 1 : 0); }
   const siSo = new Map<number, number>();
   const lopCuaHv = new Map<number, string>();
   const tenHv = new Map<number, string>();

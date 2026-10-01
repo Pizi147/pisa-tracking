@@ -1,5 +1,6 @@
 import { db } from '../db.ts';
 import { NOT_UNCONFIRMED_PRESET } from './sosState.ts';
+import { NGUONG_MINI_TEST } from '../../../shared/domain/cuoiKhoa.ts';
 import {
   CASE_CATEGORY_SHORT, INTERVENTION_KIND_LABEL,
   caseCategoriesFor, caseCategoryLabel, categoryOf, isNoPlanCase, issueBoardCategoriesFor, issueLabel,
@@ -209,7 +210,8 @@ function queryPlans(sids: number[], scope: Scope) {
   const params: unknown[] = [...sids];
   let range = '';
   if (scope.fromDate) { range += ' AND COALESCE(iv.completed_date, iv.updated_at, iv.created_at) >= ?'; params.push(scope.fromDate); }
-  if (scope.toDate) { range += ' AND COALESCE(iv.completed_date, iv.updated_at, iv.created_at) <= ?'; params.push(scope.toDate); }
+  /* PR-Pb2-a: so theo NGÀY (10 ký tự) — `toDate` là ngày trơn, mốc có giờ của chính ngày đó vẫn phải lọt. */
+  if (scope.toDate) { range += ' AND substr(COALESCE(iv.completed_date, iv.updated_at, iv.created_at), 1, 10) <= ?'; params.push(scope.toDate); }
   return (db()
     .prepare(
       /*
@@ -223,6 +225,7 @@ function queryPlans(sids: number[], scope: Scope) {
               ${SUPPORT_DAY} AS day,
               COALESCE(iv.started_date, iv.planned_date) AS started_on,
               sc.id AS case_id, sc.student_id, sc.category, sc.topic,
+              iv.preset, iv.nhom_bo_tro, iv.moc_quy_che, sc.owner_user_id, sc.sos_level, mt.ty_le AS mini_ty_le, mt.ngay_lam AS mini_ngay,
               (SELECT fu.outcome FROM case_followups fu
                 WHERE fu.intervention_id = iv.id AND fu.outcome IS NOT NULL
                 ORDER BY fu.observed_on DESC, fu.id DESC LIMIT 1) AS final_outcome,
@@ -231,6 +234,7 @@ function queryPlans(sids: number[], scope: Scope) {
                 ORDER BY fu.observed_on DESC, fu.id DESC LIMIT 1) AS outcome_on
          FROM case_interventions iv
          JOIN sos_cases sc ON sc.id = iv.case_id
+         LEFT JOIN mini_test mt ON mt.nhom_bo_tro = iv.nhom_bo_tro AND mt.student_id = sc.student_id   -- PR-Pb2-a (Q9): ≤ 1 dòng (UNIQUE student + bài gốc)
         WHERE sc.student_id IN (${ph})
           AND iv.status = 'completed'
           AND COALESCE(iv.approval_state, '') != 'pending'
@@ -241,7 +245,19 @@ function queryPlans(sids: number[], scope: Scope) {
 }
 
 type PlanRow = ReturnType<typeof shapePlan>;
+/**
+ * PR-Pb2-a (Q9, T61, K1-24): Mini Test là KẾT QUẢ CUỐI của PA bổ trợ sau Cuối khoá (nhóm `mt:`) — chưa có kết quả tuần mà Mini Test đã ghi
+ * thì ≥ 70 % là Tiến bộ, dưới là Không tiến bộ. Một chỗ duy nhất; chưa ghi Mini Test thì vẫn `undetermined` (chưa ghi kết quả).
+ */
+function ketQuaCuoi(r: any): { outcome: string | null; on: string | null } {
+  if (r.final_outcome) return { outcome: r.final_outcome, on: r.outcome_on ?? null };
+  if (typeof r.nhom_bo_tro === 'string' && r.nhom_bo_tro.startsWith('mt:') && r.mini_ty_le !== null && r.mini_ty_le !== undefined) {
+    return { outcome: r.mini_ty_le >= NGUONG_MINI_TEST ? 'improved' : 'unchanged', on: r.mini_ngay ?? null };
+  }
+  return { outcome: null, on: r.outcome_on ?? null };
+}
 function shapePlan(r: any) {
+  const kq = ketQuaCuoi(r);
   return {
     id: r.id as number,
     caseId: r.case_id as number,
@@ -250,13 +266,18 @@ function shapePlan(r: any) {
     category: (r.category ?? categoryOf(r.topic)) as string | null,
     /* Bị thay thế VẪN TÍNH nếu có kết quả cuối — lý do dừng là chuyện khác. */
     supersededBy: r.closed_reason === 'superseded',
-    outcome: r.final_outcome as string | null,
-    group: outcomeGroup(r.final_outcome),
+    outcome: kq.outcome,
+    group: outcomeGroup(kq.outcome),
     /** Ngày phương án xảy ra — căn cứ để gán đơn vị (F03). */
     day: r.day as string,
     /** Ngày bắt đầu (hoặc dự kiến) và ngày ghi kết quả cuối — cho "Thời gian trung bình" của Hiệu quả PA (PR-UX4, Q10). */
     startedOn: (r.started_on ?? null) as string | null,
-    outcomeOn: (r.outcome_on ?? null) as string | null,
+    outcomeOn: kq.on as string | null,
+    /* PR-Pb2-a (Q8): `preset = 1` ⇔ PA theo quy chế (gồm Bổ trợ); người phụ trách Case, mức SOS, nhóm bổ trợ — cho Hiệu quả PA. */
+    quyChe: r.preset === 1,
+    chuCase: (r.owner_user_id ?? null) as number | null,
+    sos: (r.sos_level ?? null) as number | null,
+    nhomBoTro: (r.nhom_bo_tro ?? null) as string | null,
   };
 }
 

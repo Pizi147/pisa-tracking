@@ -10,18 +10,21 @@ import { tuanLich } from './hienThiNgay.ts';
 import { mondayOfDate } from './week.ts';
 
 // ------------------------------------------------------------------ chương trình
-export const CHUONG_TRINH = ['thuong', 'ft', 'ca-hai'] as const;
+/* PR-Pb2-a (Q31-1, T60): chỉ còn hai khung, FT trước. Nút "Cả hai" đã bỏ — khối không theo kỹ năng gộp bằng `null`. */
+export const CHUONG_TRINH = ['ft', 'thuong'] as const;
 export type ChuongTrinh = (typeof CHUONG_TRINH)[number];
-export const CHUONG_TRINH_LABEL: Record<ChuongTrinh, string> = { thuong: 'Lớp thường', ft: 'Fast Track', 'ca-hai': 'Cả hai' };
+export const CHUONG_TRINH_LABEL: Record<ChuongTrinh, string> = { ft: 'Fast Track', thuong: 'Lớp thường' };
 
-/** Tham số `ct` trên địa chỉ trang / API. Vắng hoặc giá trị lạ = Cả hai. */
-export function chuongTrinhTuThamSo(s: string | null | undefined): ChuongTrinh {
-  return s === 'thuong' || s === 'ft' ? s : 'ca-hai';
+/** Q31-1: tham số `ct` vắng / lạ / giá trị của link cũ (đã bỏ "Cả hai") → `macDinh` (Quản lý: FT). */
+export function chuongTrinhTuThamSo(s: string | null | undefined, macDinh: ChuongTrinh = 'ft'): ChuongTrinh {
+  return s === 'thuong' || s === 'ft' ? s : macDinh;
 }
-/** Chuỗi gắn vào URL: rỗng khi Cả hai. */
-export function thamSoCt(ct: ChuongTrinh, dau: '?' | '&' = '&'): string {
-  return ct === 'ca-hai' ? '' : `${dau}ct=${ct}`;
+/** Khối gộp (Ý thức, lịch, hồ sơ GV): `ct` hợp lệ → lọc, vắng / lạ → `null` = không lọc khung. */
+export function ctTuyChon(s: string | null | undefined): ChuongTrinh | null {
+  return s === 'thuong' || s === 'ft' ? s : null;
 }
+/** Chuỗi gắn vào URL; `null` (khối gộp) → rỗng. */
+export const thamSoCt = (ct: ChuongTrinh | null, dau: '?' | '&' = '&'): string => (ct ? `${dau}ct=${ct}` : '');
 
 // ------------------------------------------------------------------ 4 nhóm việc của GV (§3.2)
 export const NHOM_VIEC = ['cham-diem', 'case-hoc-thuat', 'y-thuc', 'van-hanh'] as const;

@@ -15,13 +15,13 @@ export function SoO(props: Parameters<typeof SoLieuO>[0]) {
 }
 
 /** Props chung của các góc nhìn của Phân tích — cùng bộ lọc chi nhánh · chương trình · khoảng · lớp (PhanTich.tsx). */
-export type PhamViPhanTich = { branchId: number | null; ct: ChuongTrinh; tg: Khoang; classId: number | null };
+export type PhamViPhanTich = { branchId: number | null; ct: ChuongTrinh | null; tg: Khoang; classId: number | null };
 
 /** Chuỗi tham số bộ lọc chung, cùng luật với `TongHopTestSos` (không ghi tham số mặc định). */
 export function thamSoLoc(p: PhamViPhanTich, them: Record<string, string> = {}): string {
   const qs = new URLSearchParams();
   if (p.branchId) qs.set('branchId', String(p.branchId));
-  if (p.ct !== 'ca-hai') qs.set('ct', p.ct);
+  if (p.ct) qs.set('ct', p.ct);   // null = khối gộp (Ý thức)
   if (p.tg !== KHOANG_MAC_DINH) qs.set('tg', String(p.tg));
   if (p.classId) qs.set('lop', String(p.classId));
   for (const [k, v] of Object.entries(them)) qs.set(k, v);

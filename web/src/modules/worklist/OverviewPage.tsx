@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSession } from '../../lib/session.tsx';
 import { BranchFilter } from '../../ui/Filters.tsx';
-import { CaseBoard } from '../cases/CaseBoardPage.tsx';
+import { PhanTich } from '../phanTich/PhanTich.tsx';
 import { BranchPulse } from './BranchPulse.tsx';
 import { LichSapToi } from './Highlights.tsx';
 import { MetricTiles } from './MetricTiles.tsx';
@@ -39,7 +39,7 @@ export default function OverviewPage({ tab: tabProp = 'tong-quan' }: { tab?: Tab
     if (id) next.set('cn', String(id)); else next.delete('cn');
     setParams(next);
   };
-  /* Q5, Q31-1: khung của phần Số liệu — mặc định Fast Track, không "Cả hai"; nhớ theo máy. */
+  /* Q5, Q31-1: khung của phần Số liệu — mặc định Fast Track (hai khung, PR-Pb2-a); nhớ theo máy. */
   const [khung, setKhung] = useState<'ft' | 'thuong'>(() => (khungDaNho('tong-quan') === 'thuong' ? 'thuong' : 'ft'));
   // Chỉ hiện khi có mốc dữ liệu; không truyền "hôm nay" → dd/mm/yyyy (mockup)
   const duLieuDen = session?.demoDate ? `Dữ liệu đến ${ngay(session.demoDate)}` : null;
@@ -75,7 +75,7 @@ export default function OverviewPage({ tab: tabProp = 'tong-quan' }: { tab?: Tab
           <BranchFilter branchId={branchId} onBranch={setBranchId} />
         </div>
       </div>
-      {tab === 'board' && <CaseBoard embedded />}
+      {tab === 'board' && <PhanTich />}
       {tab === 'work' && (
         <>
           {/* ─────────────── tầng 1: việc chờ Quản lý quyết + việc đang trễ (gộp hai khung) */}

@@ -36,7 +36,8 @@ type Data = {
  */
 type DongLich = { tuan: string; tuanNay: boolean; chu: string; den: string | null; key: string };
 
-export function LichSapToi({ branchId, ct }: { branchId: number | null; ct: ChuongTrinh }) {
+/** `ct = null`: giáo viên xem lịch gộp hai khung (Q2). */
+export function LichSapToi({ branchId, ct }: { branchId: number | null; ct: ChuongTrinh | null }) {
   const { homNay } = useNgayNghiepVu();
   const { data, loading } = useApi<Data | null>(
     `/highlights?${branchId ? `branchId=${branchId}` : ''}${thamSoCt(ct)}`.replace(/\?&/, '?'), [branchId, ct],

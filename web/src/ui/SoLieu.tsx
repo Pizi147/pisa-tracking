@@ -12,7 +12,7 @@ const THOI_GIAN_NHAN: Record<ChiSo['thoiGian'], string> = {
   'ket-qua-trong-ky': 'Kết quả trong kỳ',
 };
 
-export type PhamViSoLieu = { branchId?: number | null; chuongTrinh?: ChuongTrinh };
+export type PhamViSoLieu = { branchId?: number | null; chuongTrinh?: ChuongTrinh | null };
 /** PR-VAI-a (Q26): dòng Case/PA có người phụ trách + hạn — panel ghi "người · quá hạn n ngày". */
 export type DongSoLieu = { id: number; title: string; sub: string; href: string; nguoi?: string | null; han?: string | null };
 
@@ -26,7 +26,7 @@ type Drill = {
 export function qsSoLieu(phamVi?: PhamViSoLieu, extra?: Record<string, string>): string {
   const b = phamVi?.branchId ?? null;
   const ex = extra ? Object.entries(extra).map(([k, v]) => `&${k}=${encodeURIComponent(v)}`).join('') : '';
-  return `rows=1${b ? `&branchId=${b}` : ''}${thamSoCt(phamVi?.chuongTrinh ?? 'ca-hai')}${ex}`;
+  return `rows=1${b ? `&branchId=${b}` : ''}${thamSoCt(phamVi?.chuongTrinh ?? null)}${ex}`;
 }
 
 /** Hộp "Cách tính" — chữ đọc thẳng từ sổ; nhãn theo THUAT_NGU g12-021/022. */

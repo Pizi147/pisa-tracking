@@ -64,14 +64,14 @@ export async function runTongQuanTests(t: YThucTestKit) {
   const ids = (id: string, f: any = {}) => (metricsSvc.metricSet(P.admin, id, f).ids as number[]);
 
   // ================================================================== 1. Luật thuần
-  check('PR-Pa · Chương trình: đọc tham số ct; mặc định Cả hai; không có chữ "Normal" trên màn', () => {
+  check('PR-Pa · Chương trình: đọc tham số ct; mặc định Fast Track (PR-Pb2-a); không có chữ "Normal" trên màn', () => {
     eq(d.chuongTrinhTuThamSo('thuong'), 'thuong', 'thuong');
     eq(d.chuongTrinhTuThamSo('ft'), 'ft', 'ft');
-    eq(d.chuongTrinhTuThamSo(null), 'ca-hai', 'vắng');
-    eq(d.chuongTrinhTuThamSo('normal'), 'ca-hai', 'giá trị lạ');
-    eq(d.thamSoCt('ca-hai'), '', 'Cả hai không gắn tham số');
+    eq(d.chuongTrinhTuThamSo(null), 'ft', 'vắng');
+    eq(d.chuongTrinhTuThamSo('normal'), 'ft', 'giá trị lạ');
+    eq(d.thamSoCt(null), '', 'khối gộp không gắn tham số');
     eq(d.thamSoCt('ft', '?'), '?ct=ft', 'ft');
-    eq(d.CHUONG_TRINH_LABEL, { thuong: 'Lớp thường', ft: 'Fast Track', 'ca-hai': 'Cả hai' }, 'Nhãn');
+    eq(d.CHUONG_TRINH_LABEL, { ft: 'Fast Track', thuong: 'Lớp thường' }, 'Nhãn');
   });
 
   check('PR-Pa · Gom nhóm việc GV: 10 loại việc về đúng 4 nhóm, nhóm có việc quá hạn tự mở, Ý thức không bao giờ tự mở', () => {
@@ -132,13 +132,11 @@ export async function runTongQuanTests(t: YThucTestKit) {
     eq([r[0].lienKet, r[0].soDanhSach], ['xem 5 học viên', 5], 'Link môn');
     eq([r[1].cau, r[1].soDanhSach], ['5/6 PA học thuật đã kết thúc có cải thiện', 6], 'PA cải thiện — danh sách là mẫu số');
     eq(r[2].cau, '12/20 lần cập nhật PA đúng hạn (30 ngày qua)', 'Đúng hạn < 80%');
-    for (const ct of ['thuong', 'ca-hai'] as const) {
-      assert(d.chonDiemDangChuY(ds, ct).every((x: any) => x.loai !== 'mon-duoi-ky-vong'), `${ct}: không trộn môn hai khung`);
-    }
+    assert(d.chonDiemDangChuY(ds, 'thuong').every((x: any) => x.loai !== 'mon-duoi-ky-vong'), 'thuong: không có câu môn của khung FT');
     const it = d.chonDiemDangChuY([
       mon('Listening', 'listening', 2, 20), { loai: 'pa-cai-thien', metricId: 'ty-le-co-cai-thien', tu: 3, mau: 4 },
       { loai: 'dung-han', metricId: 'dung-han-cap-nhat', tu: 19, mau: 20 },
-    ], 'ca-hai');
+    ], 'ft');
     eq(it, [], 'Không ứng viên nào đủ điều kiện');
   });
 
@@ -166,7 +164,7 @@ export async function runTongQuanTests(t: YThucTestKit) {
   });
 
   // ================================================================== 3. Lọc chương trình
-  check('PR-Pa · Chương trình: cùng một chỉ số, Lớp thường chỉ có em lớp thường, Fast Track chỉ có em FT, cả hai tập nằm trong Cả hai', () => {
+  check('PR-Pa · Chương trình: cùng một chỉ số, Lớp thường chỉ có em lớp thường, Fast Track chỉ có em FT, cả hai tập nằm trong tập không lọc', () => {
     const thuong = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     const ft = taoHocVien({ classCode: 'MB FT 101', weekStart: '2026-09-07' });
     const cThuong = moCase(thuong.sid, 'listening');
@@ -175,7 +173,7 @@ export async function runTongQuanTests(t: YThucTestKit) {
       const all = ids(id), t = ids(id, { program: 'thuong' }), f = ids(id, { program: 'ft' });
       assert(t.includes(a) && !t.includes(b), `${id}: Lớp thường sai`);
       assert(f.includes(b) && !f.includes(a), `${id}: Fast Track sai`);
-      assert([...t, ...f].every((x) => all.includes(x)), `${id}: tập lọc lọt ngoài Cả hai`);
+      assert([...t, ...f].every((x) => all.includes(x)), `${id}: tập lọc lọt ngoài tập không lọc`);
       assert(!t.some((x) => f.includes(x)), `${id}: một phần tử ở cả hai chương trình`);
     }
     const r = metricsSvc.metricSet(P.admin, 'hv-duoi-ky-vong-mon', { program: 'thuong' });
@@ -186,11 +184,11 @@ export async function runTongQuanTests(t: YThucTestKit) {
     eq(chuongTrinh.locTheoChuongTrinh('case', ids('case-xac-dinh-nguyen-nhan-qua-han', { program: 'ft' }), 'thuong'), [], 'Chỉ số Case quá hạn theo Fast Track không lẫn Case lớp thường');
   });
 
-  check('PR-Pa · Chương trình: /metrics nhận tham số ct; Cả hai = không lọc', () => {
+  check('PR-Pa · Chương trình: /metrics nhận tham số ct; vắng ct (null) = không lọc (PR-Pb2-a)', () => {
     const src = fsMod.readFileSync(pathMod.join(REPO, 'server/src/routes/index.ts'), 'utf8');
     const block = src.slice(src.indexOf("api.get('/metrics/:id'"), src.indexOf("api.get('/metrics/:id'") + 600);
-    assert(/program:\s*chuongTrinhTuThamSo\(qStr\(req, 'ct'\)\)/.test(block), 'Route /metrics/:id chưa đọc ct');
-    eq(ids('case-mo', { program: 'ca-hai' }), ids('case-mo'), 'Cả hai = không lọc');
+    assert(/program:\s*ctTuyChon\(qStr\(req, 'ct'\)\)/.test(block), 'Route /metrics/:id chưa đọc ct');
+    eq(ids('case-mo', { program: null }), ids('case-mo'), 'null = không lọc');
   });
 
   check('PR-Pa · tachTheoLop: gom theo lớp, hai lớp nhiều nhất, còn lại "+k lớp"; một phần tử ghi đúng lớp', () => {
@@ -346,30 +344,32 @@ export async function runTongQuanTests(t: YThucTestKit) {
   };
 
   check('PR-Pa · Bảng chi nhánh: bấm MỌI ô ra đúng số dòng đã ghi (G-10); hàng tổng là tập gốc của chỉ số', () => {
-    const b = moiO(P.admin, { ct: 'ca-hai' }, (khoa, cot, o) => {
-      const r = bang.oBangChiNhanh(P.admin, { ct: 'ca-hai', cot, khoa });
-      eq(r.rows.length, o.n, `Ô ${khoa}/${cot}`);
-    });
-    assert(b.hang.length > 0, 'Bảng không có hàng nào — phép kiểm vô nghĩa');
-    const t = bang.oBangChiNhanh(P.admin, { ct: 'ca-hai', cot: 'caseMo', khoa: 'tong' });
-    assert(t.rows.length > 0, 'Tổng Case mở rỗng — phép kiểm vô nghĩa');
-    eq(t.rows.map((x: any) => x.id).sort((a: number, b: number) => a - b), ids('case-mo').slice().sort((a, b) => a - b), 'Tổng Case mở = case-mo');
-    const dd = b.tong.duDuLieu;
-    const phu = metricsSvc.metricSet(P.admin, 'do-phu-danh-gia', {});
-    eq([dd.n, dd.mau], [phu.numeratorIds.length, phu.n], 'Đủ dữ liệu = tử số / mẫu số của do-phu-danh-gia');
-    const idsO = (cot: string) => new Set<number>(bang.oBangChiNhanh(P.admin, { ct: 'ca-hai', cot, khoa: 'tong' }).rows.map((r: any) => r.id));
-    const hv = idsO('hocVien');
-    for (const cot of ['duoiKyVong', 'sos', 'duDuLieu']) {
-      const lot = [...idsO(cot)].filter((id) => !hv.has(id));
-      assert(lot.length === 0, `Tổng ${cot} có em ngoài tổng Học viên: ${JSON.stringify(lot)}`);
+    for (const ct of ['ft', 'thuong'] as const) {
+      const b = moiO(P.admin, { ct }, (khoa, cot, o) => {
+        const r = bang.oBangChiNhanh(P.admin, { ct, cot, khoa });
+        eq(r.rows.length, o.n, `${ct}: ô ${khoa}/${cot}`);
+      });
+      assert(b.hang.length > 0, `${ct}: bảng không có hàng nào — phép kiểm vô nghĩa`);
+      const t = bang.oBangChiNhanh(P.admin, { ct, cot: 'caseMo', khoa: 'tong' });
+      assert(t.rows.length > 0, `${ct}: tổng Case mở rỗng — phép kiểm vô nghĩa`);
+      eq(t.rows.map((x: any) => x.id).sort((a: number, b: number) => a - b), ids('case-mo', { program: ct }).slice().sort((a, b) => a - b), `${ct}: tổng Case mở = case-mo`);
+      const dd = b.tong.duDuLieu;
+      const phu = metricsSvc.metricSet(P.admin, 'do-phu-danh-gia', { program: ct });
+      eq([dd.n, dd.mau], [phu.numeratorIds.length, phu.n], `${ct}: Đủ dữ liệu = tử số / mẫu số của do-phu-danh-gia`);
+      const idsO = (cot: string) => new Set<number>(bang.oBangChiNhanh(P.admin, { ct, cot, khoa: 'tong' }).rows.map((r: any) => r.id));
+      const hv = idsO('hocVien');
+      for (const cot of ['duoiKyVong', 'sos', 'duDuLieu']) {
+        const lot = [...idsO(cot)].filter((id) => !hv.has(id));
+        assert(lot.length === 0, `${ct}: tổng ${cot} có em ngoài tổng Học viên: ${JSON.stringify(lot)}`);
+      }
     }
   });
 
   check('PR-Pa · Bảng chi nhánh: Quản trị không chọn chi nhánh → hàng chi nhánh mở xuống lớp; Quản lý một chi nhánh → bảng lớp luôn', () => {
-    const a = bang.bangChiNhanh(P.admin, { ct: 'ca-hai' });
+    const a = bang.bangChiNhanh(P.admin, { ct: 'ft' });
     assert(a.cheDo === 'chi-nhanh' && a.hang.every((h: any) => h.loai === 'chi-nhanh' && Array.isArray(h.lop)), 'Quản trị');
     eq(a.branchId, null, 'Quản trị không chọn: branchId null');
-    const m = bang.bangChiNhanh(P.mbManager, { ct: 'ca-hai' });
+    const m = bang.bangChiNhanh(P.mbManager, { ct: 'ft' });
     assert(m.cheDo === 'lop' && m.hang.every((h: any) => h.loai === 'lop') && m.tenChiNhanh === 'Monbay', `Quản lý MB: ${m.cheDo}`);
     eq(m.branchId, mbBranch, 'QL một chi nhánh: bảng trả branchId đã giải');
   });
@@ -377,7 +377,7 @@ export async function runTongQuanTests(t: YThucTestKit) {
   check('PR-Pa · Bảng chi nhánh: Lớp thường không có hàng lớp FT; giáo viên bị từ chối', () => {
     const b = bang.bangChiNhanh(P.admin, { branchId: mbBranch, ct: 'thuong' });
     assert(b.hang.length > 0 && b.hang.every((h: any) => h.laFt === false), 'Lọt lớp FT vào Lớp thường');
-    assertThrows(() => bang.bangChiNhanh(P.normalCoreTeacher, { ct: 'ca-hai' }), /Quản lý/, 'GV mở bảng chi nhánh');
+    assertThrows(() => bang.bangChiNhanh(P.normalCoreTeacher, { ct: 'ft' }), /Quản lý/, 'GV mở bảng chi nhánh');
   });
 
   // ================================================================== 7. Lịch sắp tới

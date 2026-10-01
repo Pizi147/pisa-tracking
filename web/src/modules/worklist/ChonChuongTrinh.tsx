@@ -1,6 +1,6 @@
 import { CHUONG_TRINH, CHUONG_TRINH_LABEL, type ChuongTrinh } from '@shared/domain/index.ts';
 
-/** Thanh ngữ cảnh (§3.2, P6b): Lớp thường · Fast Track · Cả hai. Một nhóm nút liền, nút đang chọn tô màu nhấn. */
+/** Thanh ngữ cảnh (§3.2, P6b): Fast Track · Lớp thường (PR-Pb2-a: bỏ nút gộp). Một nhóm nút liền, nút đang chọn tô màu nhấn. */
 export function ChonChuongTrinh({ value, onChange }: { value: ChuongTrinh; onChange: (v: ChuongTrinh) => void }) {
   return (
     <div role="group" aria-label="Chương trình" className="inline-flex rounded-lg border overflow-hidden" style={{ borderColor: 'var(--line)' }}>

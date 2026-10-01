@@ -113,8 +113,8 @@ export function studentsInScope(p: Principal, branchId: number | null): number[]
 
 /**
  * Các đợt (không huỷ) của một nhóm học viên, đã xếp MỚI NHẤT TRƯỚC cho từng em.
- * PR-UX4: xuất ra để `phanTich/boQuen.ts` dùng, và nhớ trong request (cùng kiểu `latestAttempts`) — hai nơi cùng một request
- * (Tổng quan QL gọi cả ba chỉ số hiện trạng lẫn hai chỉ số "bỏ quên") chỉ đọc lượt MỘT lần. Người gọi KHÔNG được sửa kết quả.
+ * Nhớ trong request (cùng kiểu `latestAttempts`): Tổng quan QL gọi nhiều chỉ số hiện trạng mà chỉ đọc lượt MỘT lần. Người gọi KHÔNG
+ * được sửa kết quả. (PR-VAI-a Q7: `phanTich/boQuen.ts` — nơi dùng thứ hai — đã gỡ.)
  */
 export function attemptsNewestFirst(studentIds: number[]): Map<number, any[]> {
   return nho(`luot-hv:${studentIds.join(',')}`, () => attemptsNewestFirstGoc(studentIds));

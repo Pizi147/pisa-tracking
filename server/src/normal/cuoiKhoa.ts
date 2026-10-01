@@ -1,6 +1,6 @@
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
-  PERMISSIONS, REGULAR_SKILLS, caseDedupKey, categoryOf, chuHopKetLuan, chuMonTruot, daiCuoiKhoa, goiYCuoiKhoa, kyHieuLop, kyNangLopDich, lichBoTro, ngay, tenMon, weeklyUpdateDue,
+  NGUONG_MINI_TEST, PERMISSIONS, REGULAR_SKILLS, caseDedupKey, categoryOf, chuHopKetLuan, chuMonTruot, daiCuoiKhoa, goiYCuoiKhoa, kyHieuLop, kyNangLopDich, lichBoTro, ngay, tenMon, weeklyUpdateDue,
   type BoTroMienPhi, type GoiYCuoiKhoa,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -401,7 +401,6 @@ export function capNhatCuoiKhoaSauChuyen(p: Principal, a: { id: number; student_
 
 // ==================================================================== Mini Test (§6.3, T47, T61, M-05, K1-41)
 
-const NGUONG_MINI_TEST = 0.7;   // = RATIO_PASS_THRESHOLD — Mini Test ≥ 70% là đạt
 
 /** Kiểm đầu vào Mini Test: 0–100 (lưu 0–1), ngày ≤ hôm nay và không trước `ngày dự kiến − 14`. */
 export function kiemMiniTest(mt: { ngay_du_kien: string }, x: { tyLe?: unknown; ngay?: unknown }): { tyLe: number; ngay: string } {

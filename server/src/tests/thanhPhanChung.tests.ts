@@ -213,7 +213,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
   check('NEN (7) · T14: ô chọn người mở danh sách ngay; trạng thái quy trình dùng NhanTrangThai', () => {
     assert(/buocDanhSach\(/.test(doc('web/src/modules/congViec/ChonPhuTrach.tsx')), 'menu ChonPhuTrach chưa đi bằng mũi tên');
     assert(/<ChonNguoi/.test(doc('web/src/modules/yThuc/PhoiHopSosSection.tsx')), 'Phối hợp SOS chưa có ô người thực hiện');
-    for (const f of ['web/src/modules/yThuc/PhoiHopSosSection.tsx', 'web/src/modules/cases/CaseBoardPage.tsx', 'web/src/modules/students/StudentsPage.tsx'])
+    for (const f of ['web/src/modules/yThuc/PhoiHopSosSection.tsx', 'web/src/modules/students/NganCase.tsx', 'web/src/modules/students/StudentsPage.tsx'])   // PR-Pb2-a: CaseBoardPage không còn danh sách
       assert(/<NhanTrangThai\b/.test(doc(f)) && !/<Status kind/.test(doc(f)), `${f} chưa dùng NhanTrangThai`);
   });
 

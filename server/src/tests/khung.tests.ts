@@ -93,7 +93,7 @@ export async function runKhungTests(t: YThucTestKit) {
   check('PR-O · O5/O7 Mọi đường dẫn cũ về đúng chỗ, giữ bộ lọc, không vòng lặp', () => {
     const cases: Array<[string, string, string | null]> = [
       ['/tong-quan', '?cn=4', '/?cn=4'],
-      ['/', '?tab=tinh-hinh&cn=2&hang-doi=no_plan', '/phan-tich?cn=2&hang-doi=no_plan'],
+      ['/', '?tab=tinh-hinh&cn=2&hang-doi=no_plan', '/phan-tich?goc=van-de&cn=2'],   // PR-Pb2-a: một bước tới Vấn đề HV
       ['/', '?tab=bao-cao', '/'],
       ['/', '?cn=2', null], ['/', '', null],
       ['/hoc-thuat', '', '/phan-tich'], ['/hoc-thuat/', '?goc=y-thuc&cn=2', '/phan-tich?goc=y-thuc&cn=2'],
