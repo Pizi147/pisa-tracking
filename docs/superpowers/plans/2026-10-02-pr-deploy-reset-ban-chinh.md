@@ -37,7 +37,14 @@ Phần còn lại là phép kiểm, tài liệu và hai buổi chạy thật tr�
   `pisatracking-pizi147`, 5 chi nhánh `MB, BC, CP, UB, HD`, quản trị `dovutuanphong95.pisa@gmail.com`.
 
 
-> **Planning chốt 02/10 (chủ sản phẩm sắp hết token, planning tự quyết theo khuyến nghị):** giữ DB cũ **4 tuần** (Câu 1 = B) · tên DB mới **`pisatracking-v2`** (Câu 2 = A) · tập dượt init trên DB Turso tạm **`pisatracking-demo-thu-init`** do chủ sản phẩm tạo rồi tự đặt URL/token vào biến môi trường của phiên (Câu 3 = A). **Thứ tự:** PR-S3 merge trước; PR-Dọn-b **không bắt buộc** (lỗi phải sửa đã dồn vào Task 0b). Task 6–7 (tập dượt Turso, bản nháp Netlify) cần máy của chủ sản phẩm: nếu phiên chạy trên cloud thì làm Task 0b–5, 8–9, và **để Task 6–7 cho chủ sản phẩm làm theo Phụ lục A** (ghi rõ trong thân PR).
+> **Planning chốt 02/10 (chủ sản phẩm sắp hết token, planning tự quyết theo khuyến nghị):** ~~giữ DB cũ 4 tuần · tên DB mới `pisatracking-v2`~~ → **THAY bằng khối "Chủ sản phẩm chốt 02/10 — reset tại chỗ" ngay dưới** · tập dượt init trên DB Turso tạm **`pisatracking-demo-thu-init`** do chủ sản phẩm tạo rồi tự đặt URL/token vào biến môi trường của phiên (Câu 3 = A). **Thứ tự:** PR-S3 merge trước; PR-Dọn-b **không bắt buộc** (lỗi phải sửa đã dồn vào Task 0b). Task 6–7 (tập dượt Turso, bản nháp Netlify) cần máy của chủ sản phẩm: nếu phiên chạy trên cloud thì làm Task 0b–5, 8–9, và **để Task 6–7 cho chủ sản phẩm làm theo Phụ lục A** (ghi rõ trong thân PR).
+
+> **Chủ sản phẩm chốt 02/10 — RESET TẠI CHỖ (thắng mọi chỗ khác trong kế hoạch này, kể cả Q9, DEP-4 dòng L102/L110 và Phụ lục A):**
+> "Reset hết, không cần giữ DB cũ, xoá toàn bộ, thay sạch luôn, không thêm DB mới."
+> - **Không** tạo DB mới, **không** giữ DB cũ, **không** bắt buộc sao lưu trước reset. Bản chính vẫn dùng **đúng DB tên `pisatracking`**: chủ sản phẩm **xoá DB `pisatracking` trên Turso rồi tạo lại đúng tên đó, đúng vùng Ohio** → DB trống; lấy **token mới** (URL thường giữ nguyên, phải kiểm lại).
+> - **Kho tệp cũ (Netlify Blobs `bang-chung-pisatracking-pizi147`) phải xoá sạch** — tạo lại đúng tên DB thì kho tệp dùng lại kho cũ (`khoTep.ts`), tệp cũ sẽ trỏ vào dữ liệu không còn. **Task mới 5b:** thêm lệnh `npm run xoa-kho-tep` (chỉ chạy tay): in tên kho + số tệp, bắt gõ lại đúng tên kho để xác nhận, rồi xoá mọi khoá; từ chối kho có chữ `demo` khi không có cờ riêng; có phép kiểm (kho giả). `init-ban-chinh` in cảnh báo nếu kho tệp còn tệp.
+> - DB THỬ `pisatracking-demo` **giữ** (bản nháp dùng). Không còn bước "dọn DB cũ sau N tuần".
+> - Task 8 (DEP-4) viết mục "1a. Reset bản chính" theo luồng mới; Phụ lục A sửa theo bảng 10 bước ở cuối kế hoạch ("Phụ lục A' — reset tại chỗ").
 
 ## Bảng điều hành
 
@@ -405,6 +412,25 @@ Session chép vào `TRIEN_KHAI.md`, điền `<…>` bằng số đo và quyết 
 
 Đường lùi trong <4 tuần> đầu: §8 "Quay lại bản cũ" đưa web về **mã cũ + DB cũ**. Dữ liệu nhập vào DB mới sau reset **không** có ở DB cũ — chỉ dùng khi bản mới hỏng nặng.
 
+
+## Phụ lục A' — reset tại chỗ (THAY Phụ lục A, chủ sản phẩm chốt 02/10)
+
+Làm sau khi PR-DEPLOY merge. Mỗi khối lệnh có token: dòng đầu `Set-PSReadLineOption -HistorySaveStyle SaveNothing`; xong **đóng cửa sổ PowerShell**. Reset = **xoá sạch** DB bản chính `pisatracking` và kho tệp của nó, khởi tạo lại từ đầu; mọi tài khoản, lớp, học viên cũ **mất hẳn** (tạo lại ở bước 9). Báo trước cho người đang có tài khoản.
+
+| # | Việc | Lệnh / thao tác | Đúng khi | Hỏng thì |
+|---|---|---|---|---|
+| 1 | Lấy mã mới nhất | `git checkout main` · `git pull` · `npm install` | không có chữ đỏ `ERR!` | chụp gửi session, dừng |
+| 2 | DB THỬ lên schema mới | §11.1 với URL/token DB **THỬ** `pisatracking-demo` (bỏ qua nếu thân PR-DEPLOY ghi đã migrate DB THỬ) | `Hoàn tất` hoặc `Không có gì để nâng cấp` | chụp gửi session |
+| 3 | **Xoá DB bản chính cũ** | Turso › database **`pisatracking`** (không phải `pisatracking-demo`!) › Settings › Delete | DB `pisatracking` biến khỏi danh sách | nhìn kỹ tên trước khi xoá |
+| 4 | **Tạo lại đúng tên** | Turso › Create Database, tên **`pisatracking`**, vùng **Ohio** (như §2); copy URL + tạo **token mới** | URL dạng `libsql://pisatracking-pizi147.aws-us-east-2.turso.io` (không có `-demo`) | tên bị chiếm → chờ vài phút tạo lại; vẫn lỗi → gửi session |
+| 5 | **Xoá sạch kho tệp cũ** | khối §10 (có `NETLIFY_SITE_ID`, `NETLIFY_AUTH_TOKEN`) + URL DB vừa tạo; `npm run xoa-kho-tep`; gõ lại đúng tên kho khi được hỏi | dòng cuối báo đã xoá n tệp, kho còn 0 | tên kho có `demo` → **dừng**, sai DB |
+| 6 | **Khởi tạo** | khối §7.2 với URL + **token mới**; `ADMIN_EMAIL` = email quản trị thật; `ADMIN_PASSWORD` = mật khẩu mới ≥ 10 ký tự; `CHI_NHANH='MB=Monbay;BC=Bãi Cháy;CP=Cẩm Phả;UB=Uông Bí;HD=Hải Dương'` (sửa nếu đổi); `npm run init-ban-chinh` | dòng đầu `Đích: database BẢN CHÍNH …`; dòng cuối `Xong. Đã tạo tài khoản quản trị … và 5 chi nhánh`; không cảnh báo kho tệp | dòng đầu có `THỬ`/`KHÔNG RÕ` → Ctrl+C, kiểm URL · lỗi mạng → chạy lại đúng lệnh |
+| 7 | Kiểm DB | cùng cửa sổ `npm run kiem-sau-init`, rồi **đóng cửa sổ** | `[kiem-sau-init] Đạt.`, 5 chi nhánh, 1 tài khoản | `CÓ VẤN ĐỀ` → chụp gửi session |
+| 8 | Netlify dùng token mới | cửa sổ mới, khối §6 với URL + token mới (`--context production`, hỏi overwrite gõ `y`); hai lệnh `netlify env:get` | production in `libsql://pisatracking-pizi147…`; deploy-preview in `libsql://pisatracking-demo-…` | sai → dừng, chụp gửi session |
+| 9 | Lên chính thức + kiểm + nhập dữ liệu | `netlify deploy --build` (bản nháp, thử nhanh) rồi `netlify deploy --build --prod`; mở site, đăng nhập quản trị mới; mở `/api/demo/accounts`; rồi §9 | không có "Vào nhanh"; ngày là hôm nay; `/api/demo/accounts` báo không tìm thấy; 5 chi nhánh. Tạo tài khoản QL/GV → lớp + phân công → học viên (email bắt buộc) | lỗi → chụp gửi session (không còn bản cũ để quay lại) |
+| 10 | Thứ Hai đầu tiên xem cron | Netlify › Logs › Functions › `chot-vang` | dòng `[chot-vang] {"ngay":…,"boQua":null,…}` lúc ~00:05 và ~06:05 | không có dòng / `"boQua":"chua-khoi-tao"` / `lỗi` → chụp gửi session |
+
+Sau khi nhập dữ liệu ngày đầu: chạy một lần §10 sao lưu (khuyên, để có bản đầu tiên).
 ## Nhật ký
 
 | Ngày | Task | Ghi chú (mốc B, model thật, dòng đỏ trên main, thời gian đo, lệch kế hoạch, cổng gộp) |
