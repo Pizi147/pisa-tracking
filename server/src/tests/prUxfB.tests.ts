@@ -293,4 +293,51 @@ export async function runPrUxfBTests(t: YThucTestKit) {
   check('UXF-b (8) · VN01: lý do thẻ Chờ duyệt vẽ từng dòng của yc.dong với whitespace-pre-line (xuống dòng "Bổ sung dd/mm: …")', () => {
     assert(/yc\.dong\.map\(\(d, i\) => <p key=\{i\} className="m-0 whitespace-pre-line">/.test(doc('web/src/modules/duyet/TheYeuCau.tsx')), 'TheYeuCau');
   });
+
+  // ------------------------------------------------------------------ Task 9 · Báo phụ huynh qua TVV theo CASE, không theo môn trượt (R5-4, Câu 2 = A)
+  const phoiHopSvc: any = await import('../yThuc/phoiHop.ts');
+  const sosAutoSvc: any = await import('../cases/sosAuto.ts');
+  check('UXF-b (9) · R5-4: bài Giữa khoá 2 môn trượt + 2 Case → MỘT việc Báo PH; Case G+V "Không cần theo dõi" → việc còn, "môn khó khăn" chỉ còn môn kia; cả hai → việc chưa làm tự rút; mở lại → hồi; việc đã làm không đụng; chạy lặp không nhân đôi', () => {
+    const bai = t.conn.prepare(`SELECT a.id, a.student_id AS sid FROM assessment_attempts a JOIN sos_coordination_actions co ON co.attempt_id = a.id AND co.kind = 'bao_ph_tvv' AND co.status = 'pending'
+      WHERE a.kind = 'progress' AND (SELECT COUNT(DISTINCT cs.skill) FROM case_signals cs WHERE cs.attempt_id = a.id AND cs.status != 'withdrawn' AND cs.case_id IS NOT NULL) >= 2 LIMIT 1`).get() as any;
+    assert(bai, 'seed không có bài Giữa khoá 2 môn trượt có Báo PH');
+    const sig = t.conn.prepare(`SELECT skill, case_id FROM case_signals WHERE attempt_id = ? AND status != 'withdrawn' AND case_id IS NOT NULL ORDER BY id`).all(bai.id) as any[];
+    const [s1, s2] = [sig[0], sig.find((x) => x.skill !== sig[0].skill)];
+    const viec = () => t.conn.prepare(`SELECT id, status, remove_reason_code FROM sos_coordination_actions WHERE attempt_id = ? AND kind = 'bao_ph_tvv'`).all(bai.id) as any[];
+    const monKho = () => {
+      const lt = phoiHopSvc.coordinationOfStudent(t.P.admin, bai.sid).rows.find((x: any) => x.attemptId === bai.id);
+      const nd = lt.actions.find((x: any) => x.kind === 'bao_ph_tvv')?.noiDung as string[] | null;
+      return String(nd?.[1] ?? '');
+    };
+    const ten = (s: string) => d.tenMonNgan(t.conn.prepare('SELECT c.programme_code ct FROM assessment_attempts a JOIN classes c ON c.id = a.class_id WHERE a.id = ?').get(bai.id).ct, s);
+    assert(viec().length === 1 && viec()[0].status === 'pending', 'một việc chờ');
+    assert(monKho().includes(ten(s1.skill)) && monKho().includes(ten(s2.skill)), `hai môn: ${monKho()}`);
+    const dongY = (caseId: number) => sosAutoSvc.apDungKhongTheoDoi(t.conn, { doi_tuong_id: caseId, du_lieu: null, ly_do: 'UXF-b (9)' }, t.P.mbManager.userId);
+    dongY(s1.case_id);
+    assert(viec().length === 1 && viec()[0].status === 'pending', 'còn việc (môn kia)');
+    assert(!monKho().includes(ten(s1.skill)) && monKho().includes(ten(s2.skill)), `môn khó khăn chỉ còn môn kia: ${monKho()}`);
+    phoiHopSvc.dongBoBaoPhCuaBai(bai.id); phoiHopSvc.dongBoBaoPhCuaBai(bai.id);
+    assert(viec().length === 1, 'chạy lặp không sinh dòng thứ hai');
+    dongY(s2.case_id);
+    assert(viec().length === 1 && viec()[0].status === 'removed' && viec()[0].remove_reason_code === 'system_sos_changed', JSON.stringify(viec()));
+    t.conn.prepare(`UPDATE sos_cases SET status = 'in_progress', dismiss_reason_code = NULL, closed_at = NULL WHERE id = ?`).run(s2.case_id);
+    phoiHopSvc.dongBoBaoPhCuaBai(bai.id);
+    assert(viec().length === 1 && viec()[0].status === 'pending', `mở lại → hồi: ${JSON.stringify(viec())}`);
+    assert(monKho().includes(ten(s2.skill)) && !monKho().includes(ten(s1.skill)), `sau hồi: ${monKho()}`);
+  });
+  check('UXF-b (9) · R5-4 phủ định: việc Báo PH ĐÃ LÀM (done) không bao giờ bị đụng khi Case đổi trạng thái; Case xong (không phải "Không cần theo dõi") vẫn tính', () => {
+    const bai = t.conn.prepare(`SELECT a.id FROM assessment_attempts a JOIN sos_coordination_actions co ON co.attempt_id = a.id AND co.kind = 'bao_ph_tvv' AND co.status = 'done' WHERE a.kind = 'progress' LIMIT 1`).get() as any;
+    assert(bai, 'seed không có việc Báo PH đã làm');
+    const cs = t.conn.prepare(`SELECT case_id FROM case_signals WHERE attempt_id = ? AND case_id IS NOT NULL LIMIT 1`).get(bai.id) as any;
+    sosAutoSvc.apDungKhongTheoDoi(t.conn, { doi_tuong_id: cs.case_id, du_lieu: null, ly_do: 'UXF-b (9)' }, t.P.mbManager.userId);
+    assert((t.conn.prepare(`SELECT status FROM sos_coordination_actions WHERE attempt_id = ? AND kind = 'bao_ph_tvv'`).get(bai.id) as any).status === 'done', 'việc đã làm bị đụng');
+    /* Case đã XONG bình thường (không Không cần theo dõi, không rút) vẫn tính vào Báo PH. */
+    const x = t.conn.prepare(`SELECT cs.attempt_id, cs.skill FROM case_signals cs JOIN sos_cases c ON c.id = cs.case_id WHERE c.status = 'done' AND c.dismiss_reason_code IS NULL AND COALESCE(c.outcome_note, '') NOT LIKE ? AND cs.attempt_id IS NOT NULL LIMIT 1`).get('Không còn hợp lệ%') as any;
+    if (x) assert(phoiHopSvc.monBaoPh(x.attempt_id, [x.skill]).includes(x.skill), 'Case xong vẫn tính');
+  });
+  check('UXF-b (9) · quét chữ: regular.ts gọi monBaoPh; monBoKhoiBaoPh theo lô (một câu), không SQL trong vòng lặp từng môn', () => {
+    assert(/dongBoBaoPh\(a, monBaoPh\(a\.id,/.test(doc('server/src/normal/regular.ts')), 'regular.ts');
+    const ph = doc('server/src/yThuc/phoiHop.ts');
+    assert(/export function monBoKhoiBaoPh\(attemptIds/.test(ph) && /for \(let i = 0; i < attemptIds\.length; i \+= 400\)/.test(ph), 'monBoKhoiBaoPh theo lô');
+  });
 }
