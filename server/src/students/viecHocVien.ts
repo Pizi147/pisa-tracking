@@ -66,7 +66,7 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
         han: v.han, tone: 'info', nguoiId: c.ownerId ?? null, nut: 'Xác nhận nguyên nhân', mo: { loai: 'case', caseId: c.id, viec: 'xac-nhan' } });
     }
     if (v?.chu === 'Chờ Quản lý duyệt · không theo dõi') {
-      ds.push({ key: `cho-duyet:case:${c.id}`, loai: 'cho-duyet', chu: `Case ${kn} chờ Quản lý duyệt không theo dõi`, kyNang: r.category, caseId: c.id, paId: null,
+      ds.push({ key: `cho-duyet:case:${c.id}`, loai: 'cho-duyet', chu: `Case ${kn} chờ Quản lý duyệt · không theo dõi`, kyNang: r.category, caseId: c.id, paId: null,
         han: null, tone: 'wait', nguoiId: null, vaiChu: 'Quản lý', nut: 'Mở Case', mo: { loai: 'case', caseId: c.id } });
     }
     for (const pl of c.plans) {

@@ -494,7 +494,7 @@ function boOVaCau(i: {
       duoi: board.rows.filter((r) => r.missed === true).map((r) => ({ ngan: (r.short ?? r.label) as string, kn: r.category as string })),
       huong: ratio && a?.kind === 'final' ? i.huong : null,
     },
-    hocThuat: oHocThuat(board.rows),
+    hocThuat: oHocThuat(board.rows, s.status === 'inactive' ? i.thongTin.tamDung?.tu ?? null : null),
     yThuc: oYThuc(em ? {
       bacTen: em.bac > 0 ? MEASURE_KIND_LABEL[THANG[em.bac - 1] as keyof typeof MEASURE_KIND_LABEL] ?? null : null,
       nhom: em.nhom ?? null, soBatBuoc: em.soBatBuoc ?? 0, keTiep, han: em.han ?? null, quaHanNgay: quaHanYt, deXuat: deXuatCho,
@@ -525,6 +525,8 @@ function boOVaCau(i: {
 function dongThongTin(i: {
   s: any; current: any; khoa: { ma: string; tuanHienTai: number | null; tongTuan: number | null; tuanKetThuc: string | null } | null;
   gvcn: string | null; dangChay: any; today: string; startWeekSel: { cycleId: number; weekStart: string | null } | null;
+  /** Kế hoạch thi đã tính của lộ trình đang xem — dùng lại khi trùng lộ trình đang chạy (không hỏi lại tuần thi). */
+  keSel: { cycleId: number; ke: ReturnType<typeof examPlanOf> } | null;
 }) {
   const { s, current, khoa, dangChay, today } = i;
   const dung = khoangTamDung([s.id])[s.id] ?? [];
@@ -550,7 +552,7 @@ function dongThongTin(i: {
     /* Đang dừng: tuần học đứng ở tuần ngay trước tuần Tạm dừng (mockup 24 D1 "tuần học thứ 14 · đang dừng"). */
     const tuan = batDau ? tuanHocFt(batDau, dangDung ? addDays(mondayOf(dangDung.tu), -7) : mondayOf(today), dung) : null;
     if (tuan !== null) tuanHoc = { tuan, tong: null, dangDung: !!dangDung };
-    const ke = examPlanOf(dangChay);
+    const ke = i.keSel && i.keSel.cycleId === dangChay.id ? i.keSel.ke : examPlanOf(dangChay);
     const gt = ke.confidence === 'none' ? null
       : ke.confidence === 'month' ? fmtExamMonth(ke.month)
       : dangChay.exam_date ? ke.label : tuanLich(ke.weekStart, today);
@@ -854,7 +856,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   const viec = viecCuaHocVien(p, studentId, board, {
     trangThaiEm: s.status, lopId: current?.class_id ?? null, chuongTrinh: board.chuongTrinh, yThuc: yThucEm, miniTest, dai,
   });
-  const thongTin = dongThongTin({ startWeekSel: selected ? { cycleId: selected.id, weekStart: startWeekSel?.week_start ?? null } : null, s, current, khoa: khoaHienTai, gvcn: gvcnHienTai, dangChay: allCycles.find((c) => c.status === 'active') ?? null, today });
+  const thongTin = dongThongTin({ keSel: selected ? { cycleId: selected.id, ke: examPlan } : null, startWeekSel: selected ? { cycleId: selected.id, weekStart: startWeekSel?.week_start ?? null } : null, s, current, khoa: khoaHienTai, gvcn: gvcnHienTai, dangChay: allCycles.find((c) => c.status === 'active') ?? null, today });
   const cuoiKhoaEm = (() => {
     /* MỘT câu: lớp đang học + lớp thường vừa rời (nếu có). PR-S5F-a: vừa chuyển (lên lớp / học lại / sang FT) mà lớp đang học chưa có điểm Cuối khoá
        → vẫn thấy % Cuối khoá của lớp thường vừa rời (hộp Kết luận khoá; kỳ vọng đầu ra BE/ELE — Quản lý đánh dấu được cả sau khi em đã sang FT). */
@@ -1056,6 +1058,8 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
         coTheXoa: can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }),
         /* PR-LT2b (T49): đánh dấu kỳ vọng đầu ra + sửa Mini Test — chỉ Quản lý (`request.approve`). */
         coTheKetLuan: can(p, PERMISSIONS.REQUEST_APPROVE, { studentId }),
+        /* PR-VAI-b (V1/K3-47): dải "n yêu cầu chờ bạn duyệt" — cùng quyền hộp Chờ duyệt (`P_DUYET` = `request.approve`); web chỉ gọi `/yeu-cau?studentId=` khi có. */
+        coTheDuyet: can(p, PERMISSIONS.REQUEST_APPROVE, { studentId }),
       };
     })(),
     /** PR-VAI-b: đầu hồ sơ "hiểu trong 30 giây" (mockup 24) — em là ai · em đang thế nào · bốn ô · việc của bạn. */

@@ -124,7 +124,9 @@ export async function runPrS5fbTests(t: YThucTestKit) {
     assert(moc === d.mocChuBoTro('2026-10-18', '2026-09-14') && /^đến Cuối khoá · W\d [A-Z]{3}$/.test(moc), moc);
     assert(d.mocChuPa({ span: 'den_cuoi_khoa', followupDue: null, mtKe: null, daXacNhan: false }, '2026-09-14') === 'đến Cuối khoá', 'không có mốc thì không bịa tuần');
     const web = doc('cases/SkillBoard.tsx');
-    assert(/buổi\/tuần · \$\{p\.mocChu \?\? 'đến Cuối khoá'\} · trừ buổi Free/.test(web) && /tuanLich\(p\.startedOn/.test(web), 'tên PA Bổ trợ có mốc + trừ buổi Free; từ W..');
+    /* PR-VAI-b (Q19): khoảng PA qua `chuKhoangPa` (mã tuần cho MỌI PA, không riêng Bổ trợ). */
+    assert(/buổi\/tuần · \$\{p\.mocChu \?\? 'đến Cuối khoá'\} · trừ buổi Free/.test(web) && /chuKhoangPa\(\{ startedOn: p\.startedOn/.test(web)
+      && d.chuKhoangPa({ startedOn: '2026-09-16', completedOn: null, mocChu: null }, '2026-09-14') === 'từ W3 SEP', 'tên PA Bổ trợ có mốc + trừ buổi Free; từ W..');
   });
 
   // ------------------------------------------------------------------ 8 · Case rút do sửa điểm

@@ -7,7 +7,7 @@ import { cuonOnDinh } from '../../lib/cuonOnDinh.ts';
 import { MuiTen, SkillBoard, type SkillBoardRow } from '../cases/SkillBoard.tsx';
 import { KetLuanKhoa, MiniTestO } from './KetLuanKhoa.tsx';
 import { HanhTrinh } from './HanhTrinh.tsx';
-import { BonO, CauTomTat, DongThongTin, ThanhViec, type Viec } from './DauHoSo.tsx';
+import { BonO, CauTomTat, DaiChoDuyet, DaiTamDung, DongThongTin, ThanhViec, type Viec } from './DauHoSo.tsx';
 import { LichSuLop } from './LichSuLop.tsx';
 import { NganCase } from './NganCase.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
@@ -21,13 +21,14 @@ import {
   attemptStatusLabel, fmtBand, skillLabel, skillShort, sosTone, studentStatusLabel,
 } from '../../lib/format.ts';
 import {
-  HO_SO_TAB_LABEL, JOURNEY_EVENT_LABEL, caseCategoriesFor, tenMonNgan, docThamSoHoSo, duongHoSoHocVien,
+  HO_SO_TAB_LABEL, NHAN_NHOM_VIEC_QUAN_LY, duongDotTest, JOURNEY_EVENT_LABEL, caseCategoriesFor, tenMonNgan, docThamSoHoSo, duongHoSoHocVien,
   nhanKetQuaThuong, CHUONG_TRINH_KHONG_CHIA_MON, ngay, tuanLich, type HoSoTab,
 } from '@shared/domain/index.ts';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
 import { ChipLichSu } from '../../ui/Nhan.tsx';
 import { useSession } from '../../lib/session.tsx';
+import { useDienThoai } from '../../ui/TheDong.tsx';
 import { DaiHocVienChuyen } from '../classes/DaiChuyenLop.tsx';
 
 type OpenCase = { caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'them-pa' | 'xac-nhan' | 'xac-nhan-pa' | 'ke-hoach' } | null;
@@ -70,6 +71,7 @@ export default function StudentDetailPage() {
   const q = p.loTrinh ? `?cycleId=${p.loTrinh}` : p.dot != null ? `?attemptId=${p.dot}` : '';
   const { data, loading, error, reload } = useApi<Profile>(id ? `/students/${id}${q}` : null, [p.loTrinh, p.dot]);
   const [viecQuanLy, setViecQuanLy] = useState<ViecQuanLy | null>(null);
+  const dienThoai = useDienThoai();
   const [planOpen, setPlanOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   /** Ngăn Case (Q9) mở do BẤM trong trang (khối PA, ⋮ …) — mở do URL (`?case=`) đọc thẳng từ `p`. */
@@ -90,7 +92,7 @@ export default function StudentDetailPage() {
    */
   /* Lộ trình ĐANG XEM, không phải tham số trên URL: không có tham số thì là lộ trình đang chạy. */
   const boardCycleId: number | null = data?.cycle?.id ?? null;
-  const board = useApi<{ rows: SkillBoardRow[] }>(
+  const board = useApi<{ rows: SkillBoardRow[]; tamDungTu?: string | null }>(
     id && boardCycleId ? `/students/${id}/skill-board?cycleId=${boardCycleId}` : null,
     [id, boardCycleId],
   );
@@ -211,7 +213,7 @@ export default function StudentDetailPage() {
                 canEdit: data.viewer.canEdit, lopHoc: data.lopHoc ?? null, cycle: cy, status: data.status, coTheXoa: !!data.viewer.coTheXoa,
                 deXuatSua: !!data.viewer.coTheDeXuatSua,
               }).map((m) => ({
-                label: m.nhan, danger: m.nguyHiem, keTruoc: m.keTruoc,
+                label: m.nhan, danger: m.nguyHiem, keTruoc: m.keTruoc, hint: m.phu, nhom: NHAN_NHOM_VIEC_QUAN_LY[m.nhom],
                 onClick: () => (m.key === 'lo-trinh' ? setPlanOpen(true) : setViecQuanLy(m.key)),
               }))} />
             </div>
@@ -235,6 +237,9 @@ export default function StudentDetailPage() {
         </div>
       </div>
 
+      {/* PR-VAI-b (T65, mockup 24 D1): dải vàng Tạm dừng — đọc TRƯỚC bốn ô vì nó đổi nghĩa mọi con số bên dưới. */}
+      <DaiTamDung tamDung={data.dauHoSo.thongTin.tamDung} />
+
       {/* PR-CT (mockup 20 — E): dải Sắp chuyển / Đã chuyển ngay dưới dòng thông tin đầu trang; nút theo vai do máy chủ quyết. */}
       <DaiHocVienChuyen dai={data.dai ?? null} homNay={homNay}
         onLam={(k) => {
@@ -246,10 +251,13 @@ export default function StudentDetailPage() {
       {/* BỐN Ô (PR-VAI-b, K3-03, T72): Kết quả gần nhất · Học thuật · Ý thức · Sắp tới — mỗi ô một nguồn, bấm mở đúng chỗ sinh số. */}
       <BonO o={data.dauHoSo.o} homNay={homNay}
         onDot={(attemptId) => navigate(duongHoSoHocVien(data.id, { dot: attemptId, loTrinh: p.loTrinh }))}
-        onKn={moKyNang} onYThuc={() => setTab('y-thuc')} />
+        onKn={moKyNang} onYThuc={() => setTab('y-thuc')}
+        kyNangHref={(kn) => (data.dauHoSo.o?.ketQua?.kq && !data.dauHoSo.o.ketQua.ratio ? duongDotTest({ id: data.dauHoSo.o.ketQua.kq.attemptId, kind: 'mock' }, kn) : null)} />
 
       {/* PR-VAI-b (K3-01, T72): việc gấp nhất của NGƯỜI XEM với em; không có việc thì không vẽ gì. */}
       <ThanhViec viec={data.dauHoSo.viec} homNay={homNay} onLam={lamViec} />
+      {/* PR-VAI-b (V1/K3-47): Quản lý duyệt ngay trong hồ sơ — chỗ của thanh việc (Quản lý không có việc học thuật với em). */}
+      {data.viewer.coTheDuyet && <DaiChoDuyet studentId={data.id} homNay={homNay} onDoi={reload} />}
 
       {/*
         BA TAB NGAY DƯỚI ĐẦU TRANG (D2, spec 2026-09-22): Học thuật (mặc định) · Ý thức & Phối hợp · Hành trình.
@@ -283,8 +291,8 @@ export default function StudentDetailPage() {
           )}
           {/* id để R8c/kn cuộn tới đúng khung này (Task 5) — không sửa SkillBoard. */}
           <div id="bang-ky-nang">
-            <Card title="Tiến độ và hỗ trợ theo kỹ năng"
-              action={<span className="text-xs text-slate-500">Bấm một hàng để mở chi tiết ngay bên dưới</span>}
+            <Card title={dienThoai ? 'Tiến độ theo kỹ năng · Case gấp lên trước' : 'Tiến độ và hỗ trợ theo kỹ năng'}
+              action={dienThoai ? undefined : <span className="text-xs text-slate-500">Bấm một hàng để mở chi tiết ngay bên dưới</span>}
               bodyClass="p-0">
               <SkillBoard rows={skillRows}
                 loading={board.loading} error={board.error} onRetry={board.reload}
@@ -292,7 +300,8 @@ export default function StudentDetailPage() {
                 onPick={setSkillPick}
                 onReport={() => setReportOpen(true)}
                 onChanged={() => { board.reload(); reload(); }}
-                onMoCase={(caseId, o) => setOpenCase({ caseId, paId: o?.paId, viec: o?.viec })} />
+                onMoCase={(caseId, o) => setOpenCase({ caseId, paId: o?.paId, viec: o?.viec })}
+                tamDungTu={board.data?.tamDungTu ?? null} />
             </Card>
           </div>
 
@@ -453,10 +462,14 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen }: {
                 <td className="td whitespace-nowrap">
                   {a.weekStart ? tuanLich(a.weekStart, homNay) : <Info pending>Chưa có tuần</Info>}
                 </td>
-                <td className={so}>{fmtBand(a.bands?.listening)}</td>
-                <td className={so}>{fmtBand(a.bands?.reading)}</td>
-                <td className={so}>{fmtBand(a.bands?.writing)}</td>
-                <td className={so}>{fmtBand(a.bands?.speaking)}</td>
+                {(['listening', 'reading', 'writing', 'speaking'] as const).map((k) => (
+                  <td key={k} className={so}>
+                    {/* G5: ô kỹ năng mở hồ sơ Mock cuộn tới đúng kỹ năng (Tab vào được; hàng vẫn bấm mở đợt). */}
+                    {a.bands?.[k] != null
+                      ? <Link to={duongDotTest(a, k)} className="link" title={`Mở hồ sơ Mock · MT${a.attemptNo} · ${skillLabel(k)}`} onClick={(e) => e.stopPropagation()}>{fmtBand(a.bands[k])}</Link>
+                      : fmtBand(a.bands?.[k])}
+                  </td>
+                ))}
                 <td className={`${so} text-slate-100`}>{fmtBand(a.overall)}</td>
                 <td className={so}>{fmtBand(a.expectation)}</td>
                 <td className="td">

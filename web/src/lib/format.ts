@@ -2,7 +2,7 @@ import {
   ATTEMPT_STATUS_LABEL, CASE_STATUS_LABEL, CASE_STATUS_TONE, DUE_LABEL,
   ROLE_LABEL, SKILL_PROGRESS_LABEL, SOS_LABEL, STUDENT_STATUS_LABEL,
   TASK_PROGRESS_LABEL, TASK_TYPE_LABEL, UNIT_STATUS_LABEL,
-  tenMon, tenMonNgan,
+  duongDotTest, tenMon, tenMonNgan,
   type SkillProgress, type SosLevel, type StudentStatus,
 } from '@shared/domain/index.ts';
 
@@ -132,6 +132,5 @@ export function caseTone(status: string | null): Tone {
  * Một chỗ quyết định duy nhất. Màn nào tự ghép đường dẫn lấy thì sớm muộn lại ghép sai.
  */
 export function attemptHref(a: { id: number; kind?: string | null; classId?: number | null }): string {
-  if (!a.kind || a.kind === 'mock') return `/mock-test/${a.id}`;
-  return a.classId ? `/bang-diem-thuong/${a.classId}?kind=${a.kind}` : `/mock-test/${a.id}`;
+  return duongDotTest(a);   // PR-VAI-b (G5): một hàm đường dẫn ở shared — bản máy chủ (`fasttrack/attempts.ts`) chuyển ở PR-UXF-b
 }

@@ -467,7 +467,9 @@ export async function runPrSosTests(t: YThucTestKit) {
     const hangCase = hamCua(sb, 'HangCase');
     assert(!/<Level/.test(hangCase) && /<NhanTrangThai/.test(hangCase) && /<TenCase/.test(hangCase), 'hàng Case: SOS chỉ trong chip tên, một nhãn trạng thái');
     assert(!/followupDue/.test(hamCua(sb, 'HangPA')), 'HangPA còn hiện dự kiến kết thúc');
-    assert(/viecTiep/.test(hamCua(sb, 'nextStepOf')), 'nextStepOf chưa dùng việc tiếp v4');
+    /* PR-VAI-b (Task 6): `nextStepOf` → hàm thuần `viecTiepHang` (shared), vẫn đọc việc tiếp v4. */
+    const hs = doc('shared/domain/hoSoHocVien.ts');
+    assert(/viecTiepHang\(row\.cases/.test(sb) && /viecTiep/.test(hs.slice(hs.indexOf('export function viecTiepHang'))), 'nextStepOf chưa dùng việc tiếp v4');
     assert(/Chưa đạt · không mở Case/.test(sb) && /Không theo dõi \(Quản lý duyệt/.test(sb), 'CotCase thiếu chữ K3-06');
     assert((sb.match(/<CotPhai/g) ?? []).length >= 4 && /khoiSos/.test(sb), 'cột phải / khoiSos');
   });

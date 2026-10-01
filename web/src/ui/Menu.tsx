@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
+import { IconGap } from './BieuTuong.tsx';
 
 export type MenuItem = {
   label: string;
@@ -7,8 +8,10 @@ export type MenuItem = {
   danger?: boolean;
   /** Một dòng nói rõ việc này làm gì — hiện dưới nhãn. */
   hint?: string;
-  /** Đường kẻ NGAY TRÊN mục này (tách nhóm việc hiếm/nặng ở cuối menu) — như `MenuDong`. */
-  keTruoc?: boolean;
+  /** Đường kẻ NGAY TRÊN mục này (tách nhóm việc hiếm/nặng ở cuối menu) — như `MenuDong`. PR-VAI-b: `dam` vạch đậm · `do` vạch đỏ (trước Xoá). */
+  keTruoc?: boolean | 'dam' | 'do';
+  /** PR-VAI-b (K3-48): tên nhóm — đổi nhóm thì vẽ tiêu đề nhóm 11 px chữ hoa mờ + vạch mảnh. */
+  nhom?: string;
 };
 
 /**
@@ -44,22 +47,32 @@ export function Menu({ label, items, align = 'right', className = 'btn btn-sm bt
     <div ref={ref} className="relative inline-block">
       <button type="button" className={className} aria-haspopup="menu" aria-expanded={open}
         onClick={() => setOpen((o) => !o)}>
-        {label} <span aria-hidden className="text-[11px]">▾</span>
+        {label} <IconGap mo={open} size={10} />
       </button>
       {open && (
         <div role="menu"
           className="absolute z-30 mt-1 min-w-[13rem] rounded-lg border p-1 shadow-xl surface-2"
           style={{ borderColor: 'var(--line)', [align]: 0 }}>
-          {items.map((it) => (
-            <button key={it.label} type="button" role="menuitem"
-              className={`block w-full rounded-md px-3 py-1.5 text-left text-sm hover:bg-white/5 ${it.danger ? 'text-rose-200' : 'text-slate-200'} ${
-                it.keTruoc ? 'mt-1 rounded-t-none pt-2' : ''}`}
-              style={it.keTruoc ? { borderTop: '1px solid var(--line)' } : undefined}
-              onClick={() => { setOpen(false); it.onClick(); }}>
-              {it.label}
-              {it.hint && <span className="block text-[11px] text-slate-500">{it.hint}</span>}
-            </button>
-          ))}
+          {items.map((it, i) => {
+            const dauNhom = !!it.nhom && it.nhom !== items[i - 1]?.nhom;
+            const vach = it.keTruoc === 'do' ? '1px solid rgb(var(--bad-rgb))' : it.keTruoc === 'dam' ? '2px solid var(--line-strong)' : it.keTruoc ? '1px solid var(--line)' : null;
+            return (
+              <Fragment key={it.label}>
+                {dauNhom && (
+                  <div role="presentation" className={`px-3 pb-0.5 pt-2 text-[11px] font-bold uppercase tracking-[.05em] text-slate-400 ${i > 0 ? 'mt-1' : ''}`}
+                    style={i > 0 ? { borderTop: '1px solid var(--line)' } : undefined}>{it.nhom}</div>
+                )}
+                <button type="button" role="menuitem"
+                  className={`block w-full rounded-md px-3 py-1.5 text-left text-sm hover:bg-white/5 ${it.danger ? 'text-rose-200' : 'text-slate-200'} ${
+                    vach && !dauNhom ? 'mt-1 rounded-t-none pt-2' : ''}`}
+                  style={vach && !dauNhom ? { borderTop: vach } : undefined}
+                  onClick={() => { setOpen(false); it.onClick(); }}>
+                  {it.label}
+                  {it.hint && <span className="block text-[11.5px] text-slate-400">{it.hint}</span>}
+                </button>
+              </Fragment>
+            );
+          })}
         </div>
       )}
     </div>

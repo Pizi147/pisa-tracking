@@ -9,7 +9,7 @@
  *   đếm vi phạm theo nhóm             → `demTheoNhomViPham`   (Task 4)
  *   tiến độ case, việc tiếp của PA    → `tienDoCase`, `viecTiepPhuongAn` (Task 6)
  */
-import { ATTEMPT_SKILL_UNITS } from './display.ts';
+import { ATTEMPT_SKILL_UNITS, deadlineView, type DeadlineKind } from './display.ts';
 import { tuanLich } from './hienThiNgay.ts';
 import { VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, type ViolationCategory } from './yThuc.ts';
 
@@ -250,7 +250,7 @@ export function oHocThuat(rows: readonly {
     plans?: readonly { actionOverdue?: boolean }[];
     boTro?: { nhom: string; chung: boolean; buoiMoiTuan: number; keHoach: { trangThai: string } | null } | null;
   }[];
-}[]): { so: number; dong: { kn: string; nhan: string; t: string; viec: string | null; category: string }[]; phu: string | null } {
+}[], tamDungTu: string | null = null): { so: number; dong: { kn: string; nhan: string; t: string; viec: string | null; category: string }[]; phu: string | null } {
   const dong: { kn: string; nhan: string; t: string; viec: string | null; category: string }[] = [];
   const nhom = new Set<string>();
   let phu: string | null = null;
@@ -263,7 +263,9 @@ export function oHocThuat(rows: readonly {
         : v === 'Xác nhận nguyên nhân' ? 'nguyên nhân'
         : /^Xác nhận PA/.test(v) ? 'xác nhận PA'
         : /kế hoạch/.test(v) ? 'kế hoạch bổ trợ' : null;
-      dong.push({ kn: r.short ?? r.label, nhan: NHAN_TRANG_THAI_O[t] ?? 'Đang làm', t, viec, category: r.category });
+      /* T65: em Tạm dừng — mọi hạn dừng, "Quá hạn" đổi thành nhãn vàng "Tạm dừng từ dd/mm" (chỉ đổi chữ). */
+      if (tamDungTu && t === 'qua-han') dong.push({ kn: r.short ?? r.label, nhan: `Tạm dừng từ ${ngayNgan(tamDungTu)}`, t: 'tam-dung', viec: null, category: r.category });
+      else dong.push({ kn: r.short ?? r.label, nhan: NHAN_TRANG_THAI_O[t] ?? 'Đang làm', t, viec, category: r.category });
       const b = c.boTro;
       if (b && b.keHoach?.trangThai === 'cho' && !nhom.has(b.nhom)) {
         nhom.add(b.nhom);
@@ -272,7 +274,7 @@ export function oHocThuat(rows: readonly {
     }
   }
   /* Gấp lên trước: Quá hạn › Cần làm › Chờ duyệt › Đang làm (trong nhóm giữ thứ tự bảng). */
-  const thuTu = ['qua-han', 'can-lam', 'cho-duyet', 'dang-lam'];
+  const thuTu = ['qua-han', 'tam-dung', 'can-lam', 'cho-duyet', 'dang-lam'];
   dong.sort((a, b) => thuTu.indexOf(a.t) - thuTu.indexOf(b.t));
   if (!dong.length) phu = rows.some((r) => r.missed === true) ? 'không có Case mở' : 'mọi kỹ năng đạt';
   return { so: dong.length, dong, phu };
@@ -310,4 +312,55 @@ export function oSapToi(i: {
   if (i.ratio) return { tren: 'mốc kế tiếp', gt, phu: `${n.soPhan} môn${n.final && i.bacKe ? ` · xét lên ${i.bacKe}` : ''}` };
   if (i.kck) return { tren: 'mốc kế tiếp', gt, phu: n.attemptNo > 1 ? `so với MT${n.attemptNo - 1}, không kỳ vọng` : 'không kỳ vọng' };
   return { tren: 'mốc kế tiếp', gt, phu: `${n.kyVong !== null ? `kỳ vọng ${n.kyVong.toFixed(1)} · ` : ''}${n.soPhan} phần` };
+}
+
+// ====================================================================== bảng kỹ năng: chữ của hàng PA và cột Việc tiếp (PR-VAI-b Task 6)
+
+/** Khoảng PA nói MÃ TUẦN (Q19, Q30-6): `từ W3 SEP` · `W3 SEP → W1 OCT` (đã xong) — mốc quy chế nối sau (`· đến MT2 · W4 OCT`). */
+export function chuKhoangPa(p: { startedOn: string | null; completedOn: string | null; mocChu?: string | null }, homNay: string): string | null {
+  const dau = p.startedOn ? (p.completedOn ? `${tuanLich(p.startedOn, homNay)} → ${tuanLich(p.completedOn, homNay)}` : `từ ${tuanLich(p.startedOn, homNay)}`) : null;
+  return [dau, p.mocChu || null].filter(Boolean).join(' · ') || null;
+}
+
+/** Kết quả gần nhất của PA: `Tiến bộ một phần · W3 SEP` (tuần của lần ghi, không dd/mm). */
+export function chuKetQuaPa(nhan: string | null, ngay: string | null, homNay: string): string | null {
+  if (!nhan) return null;
+  return ngay ? `${nhan} · ${tuanLich(ngay, homNay)}` : nhan;
+}
+
+/**
+ * VIỆC TIẾP của một hàng kỹ năng (K3-07, Q3): việc của Case đang mở có hạn sớm nhất + NGƯỜI LÀM (`nguoiLam` máy chủ tính một chỗ).
+ * Dòng phụ: `hạn hết 02/10 · Đỗ Thanh Tùng` · quá hạn: `quaHan` = "quá hạn 3 ngày" (giao diện thêm ⚠ SVG, đỏ).
+ */
+export function viecTiepHang(cases: readonly {
+  status: string; viecTiep?: { chu: string; loaiHan: DeadlineKind | null; han: string | null } | null; nguoiLam?: { id: number | null; ten: string | null } | null;
+}[], homNay: string): { viec: string; han: string | null; quaHan: string | null; homNay: boolean; nguoi: string | null; title: string } | null {
+  const c = cases.filter((x) => x.status !== 'done' && x.viecTiep)
+    .sort((a, b) => (a.viecTiep!.han ?? '9999').localeCompare(b.viecTiep!.han ?? '9999'))[0];
+  if (!c) return null;
+  const v = c.viecTiep!;
+  const d = v.loaiHan && v.han ? deadlineView({ kind: v.loaiHan, due: v.han, today: homNay }) : null;
+  const nguoi = c.nguoiLam?.ten ?? null;
+  return {
+    viec: v.chu, han: d && d.han !== 'chưa có hạn' ? d.han : null, quaHan: d?.quaHan ?? null, homNay: !!d?.homNay, nguoi,
+    title: [d && d.han !== 'chưa có hạn' ? d.text : v.chu, nguoi].filter(Boolean).join(' · '),
+  };
+}
+
+/**
+ * THẺ KỸ NĂNG TRÊN ĐIỆN THOẠI (UX-D3, mockup 24 E): kỹ năng có Case mở lên trước (Case quá hạn trước nữa), kỹ năng không Case mở và không
+ * dưới kỳ vọng → thẻ gọn một dòng. Trong mỗi nhóm giữ thứ tự bảng.
+ */
+export function xepTheKyNang<R extends {
+  missed: boolean | null;
+  cases: readonly { status: string; trangThaiV4?: { t: string } | null; plans?: readonly { actionOverdue?: boolean }[] }[];
+}>(rows: readonly R[]): { row: R; gon: boolean }[] {
+  const bac = (r: R) => {
+    const mo = r.cases.filter((c) => c.status !== 'done');
+    if (mo.some((c) => c.trangThaiV4?.t === 'qua-han' || (c.plans ?? []).some((p) => p.actionOverdue))) return 0;
+    return mo.length ? 1 : 2;
+  };
+  return rows.map((row, i) => ({ row, i, b: bac(row) }))
+    .sort((a, b) => a.b - b.b || a.i - b.i)
+    .map(({ row, b }) => ({ row, gon: b === 2 && row.missed !== true }));
 }

@@ -1,7 +1,10 @@
 import { useState, type ReactNode } from 'react';
-import { chuTuanHoc, deadlineView, type DeadlineKind } from '@shared/domain/index.ts';
+import { Link } from 'react-router-dom';
+import { chuTuanHoc, deadlineView, type DeadlineKind, type TheYeuCauDto } from '@shared/domain/index.ts';
 import { TargetText } from '../../ui/ui.tsx';
-import { IconCanhBao, IconGap } from '../../ui/BieuTuong.tsx';
+import { useApi } from '../../lib/useApi.ts';
+import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
+import { IconCanhBao, IconGap, IconTamDung } from '../../ui/BieuTuong.tsx';
 
 /**
  * ĐẦU HỒ SƠ HỌC VIÊN "hiểu trong 30 giây" (PR-VAI-b, mockup 24) — máy chủ dựng mọi chữ (`dauHoSo`), web chỉ vẽ.
@@ -70,7 +73,7 @@ function ChuViec({ chu }: { chu: string }) {
 function NutGap({ mo, onClick, children }: { mo: boolean; onClick: () => void; children: ReactNode }) {
   return (
     <button type="button" aria-expanded={mo} onClick={onClick}
-      className="inline-flex min-h-[28px] items-center gap-[5px] border-0 bg-transparent p-0 text-[12px] font-semibold text-[color:var(--accent)] hover:underline">
+      className="inline-flex min-h-[44px] items-center gap-[5px] border-0 bg-transparent p-0 text-[12px] font-semibold text-[color:var(--accent)] hover:underline sm:min-h-[28px]">
       {children}<IconGap mo={mo} />
     </button>
   );
@@ -95,7 +98,7 @@ export function ThanhViec({ viec, homNay, onLam }: { viec: { cuaBan: Viec[]; ngu
         <span className="min-w-0 flex-1 basis-full text-[13.5px] text-slate-100 sm:basis-auto">
           <ChuViec chu={dau.chu} /> {dau.han && <HanViec x={dau} homNay={homNay} chiQuaHan />}
         </span>
-        {dau.mo && <button type="button" className="btn btn-primary btn-sm min-h-[36px] sm:min-h-0" onClick={() => onLam(dau)}>{dau.nut}</button>}
+        {dau.mo && <button type="button" className="btn btn-primary btn-sm min-h-[44px] w-full sm:min-h-0 sm:w-auto" onClick={() => onLam(dau)}>{dau.nut}</button>}
         {con.length > 0 && <NutGap mo={mo === 'ban'} onClick={() => setMo(mo === 'ban' ? null : 'ban')}>{con.length} việc khác của bạn</NutGap>}
         {viec.nguoiKhac.length > 0 && (
           <NutGap mo={mo === 'khac'} onClick={() => setMo(mo === 'khac' ? null : 'khac')}>{viec.nguoiKhac.length} việc của người khác</NutGap>
@@ -143,13 +146,28 @@ export function CauTomTat({ manh }: { manh: { chu: string; tone: string | null }
 const CHIP_SOS_O: Record<number, string> = { 1: 'bg-sos1-bg text-sos1', 2: 'bg-sos2-bg text-sos2', 3: 'bg-sos3-bg text-sos3' };
 const MAU_NHAN: Record<string, string> = {
   'qua-han': 'bg-bad-bg text-bad', 'can-lam': 'border border-[color:var(--line-strong)] text-slate-200', 'cho-duyet': 'bg-wait-bg text-wait',
-  'dang-lam': 'bg-[color:var(--surface-2)] text-slate-200',
+  'dang-lam': 'bg-[color:var(--surface-2)] text-slate-200', 'tam-dung': 'bg-soon-bg text-soon',
 };
 
 /** Một ô: nhãn 11,5 px · dòng trên 12 px · giá trị 17 px đậm · dòng phụ 12 px. Là `<button>` khi có chỗ để mở (mở đúng chỗ sinh ra số). */
-function O({ nhan, tren, children, phu, onClick, title }: {
+function O({ nhan, tren, children, phu, onClick, title, phuNgoai }: {
   nhan: string; tren?: ReactNode; children: ReactNode; phu?: ReactNode; onClick?: () => void; title: string;
+  /** Dòng phụ có liên kết (G5) → nằm NGOÀI nút (không lồng liên kết trong nút); phần trên vẫn bấm được. */
+  phuNgoai?: boolean;
 }) {
+  if (phuNgoai) {
+    return (
+      <div className="flex min-w-0 flex-col gap-[3px] rounded-[10px] border bg-[color:var(--surface)] px-3 py-2.5" style={{ borderColor: 'var(--line)' }}>
+        <button type="button" onClick={onClick} disabled={!onClick} title={title}
+          className="flex flex-col gap-[3px] border-0 bg-transparent p-0 text-left enabled:cursor-pointer">
+          <span className="text-[11.5px] font-semibold tracking-[.03em] text-slate-400">{nhan}</span>
+          {tren && <span className="text-[12px] text-slate-400">{tren}</span>}
+          <span className="flex flex-wrap items-center gap-1.5 text-[17px] font-bold leading-[1.35] text-slate-100">{children}</span>
+        </button>
+        {phu && <span className="text-[12px] leading-[1.45] text-slate-400">{phu}</span>}
+      </div>
+    );
+  }
   const Khung = onClick ? 'button' : 'div';
   return (
     <Khung type={onClick ? 'button' : undefined} onClick={onClick} title={title}
@@ -188,7 +206,7 @@ export function BonO({ o, homNay, onDot, onKn, onYThuc, kyNangHref }: {
       const href = kyNangHref?.(d.kn) ?? null;
       return (
         <span key={d.kn}>{i > 0 && ' · '}{href
-          ? <a href={href} className="link" onClick={(e) => e.stopPropagation()} title={`Mở hồ sơ Mock · ${d.ngan}`}>{d.ngan}</a>
+          ? <Link to={href} className="link" title={`Mở hồ sơ Mock · ${kq.nhan.split(' · ')[0]} · ${d.ngan}`}>{d.ngan}</Link>
           : d.ngan}</span>
       );
     })}</>
@@ -201,7 +219,7 @@ export function BonO({ o, homNay, onDot, onKn, onYThuc, kyNangHref }: {
   const gap = h.dong[0];
   return (
     <div className="grid grid-cols-2 gap-2.5 min-[760px]:grid-cols-4">
-      <O nhan="Kết quả gần nhất" tren={kq?.nhan} phu={phuKq} title="Mở đợt Test này ở bảng Học thuật"
+      <O nhan="Kết quả gần nhất" tren={kq?.nhan} phu={phuKq} title="Mở đợt Test này ở bảng Học thuật" phuNgoai={!!kyNangHref && !!k.duoi?.length}
         onClick={kq ? () => onDot(kq.attemptId) : undefined}>
         {k.kck && kq
           ? <span className="rounded-md border px-2 text-[15px] leading-6 tabular-nums text-slate-300" style={{ borderColor: 'var(--line-strong)' }}>Overall {k.overall !== null ? k.overall.toFixed(1) : '—'}</span>
@@ -212,10 +230,10 @@ export function BonO({ o, homNay, onDot, onKn, onYThuc, kyNangHref }: {
         phu={h.dong.length ? (
           <span className="flex flex-col gap-[3px]">
             {h.dong.slice(0, 3).map((d: any, i: number) => (
-              <span key={i} className="flex min-w-0 items-center gap-1.5">
+              <span key={i} className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
                 <span className="min-w-[30px] font-bold tabular-nums text-slate-100">{d.kn}</span>
                 <span className={`whitespace-nowrap rounded-md px-1.5 text-[11.5px] font-semibold leading-[18px] ${MAU_NHAN[d.t] ?? ''}`}>{d.nhan}</span>
-                {d.viec && <span className="truncate">{d.viec}</span>}
+                {d.viec && <span>{d.viec}</span>}
               </span>
             ))}
             {h.dong.length > 3 && <span>+{h.dong.length - 3} Case khác</span>}
@@ -233,5 +251,54 @@ export function BonO({ o, homNay, onDot, onKn, onYThuc, kyNangHref }: {
         <span className="text-[15px] tabular-nums">{s.gt}</span>
       </O>
     </div>
+  );
+}
+
+/**
+ * DẢI TẠM DỪNG (T65, K3-41, mockup 24 D1) — ngay dưới khung thông tin, trên bốn ô: mọi hạn của em đang dừng. Nền vàng nhạt, biểu tượng
+ * tạm dừng SVG; dòng phụ nói hạn tính lại thế nào khi quay lại. < 640 px chữ xuống dòng trọn, không dồn.
+ */
+export function DaiTamDung({ tamDung }: { tamDung: { tu: string; lyDo: string | null; boi: string | null } | null | undefined }) {
+  if (!tamDung) return null;
+  const ngayDung = `${tamDung.tu.slice(8, 10)}/${tamDung.tu.slice(5, 7)}`;
+  return (
+    <section aria-label="Học viên đang tạm dừng" className="flex items-start gap-2.5 rounded-[10px] bg-soon-bg px-3 py-2.5 shadow-[inset_3px_0_0_rgb(var(--soon-rgb))]">
+      <span className="mt-[3px] text-soon"><IconTamDung /></span>
+      <span className="min-w-0 text-[13px] text-slate-100">
+        <b className="font-semibold text-soon">Tạm dừng từ {ngayDung}</b> · mọi hạn đang dừng
+        {tamDung.lyDo && <> · lý do: {tamDung.lyDo}</>}
+        {tamDung.boi && <> · người ghi: {tamDung.boi}</>}
+        <span className="block text-[12px] text-slate-400">Quay lại học thì hạn tính lại từ ngày quay lại</span>
+      </span>
+    </section>
+  );
+}
+
+/**
+ * DẢI "n YÊU CẦU CHỜ BẠN DUYỆT" (V1/K3-47, mockup 24 B) — Quản lý quyết ngay trong hồ sơ, đúng thẻ của hộp Chờ duyệt (`TheYeuCau`: Duyệt /
+ * Từ chối… / Duyệt = ra lệnh). Nguồn `GET /yeu-cau?studentId=` (đã lọc quyền, quá hạn lên đầu). Nơi gọi chỉ vẽ khi `viewer.coTheDuyet`.
+ * Không có thẻ → không vẽ. Xong một thẻ → tải lại dải + hồ sơ.
+ */
+export function DaiChoDuyet({ studentId, homNay, onDoi }: { studentId: number; homNay: string | null; onDoi: () => void }) {
+  const { data, reload } = useApi<{ the: TheYeuCauDto[] }>(`/yeu-cau?studentId=${studentId}`, [studentId]);
+  const [mo, setMo] = useState(true);
+  const ds = data?.the ?? [];
+  if (!ds.length) return null;
+  const quaHan = ds.filter((y) => !!y.hanDuyet && !!homNay && y.hanDuyet < homNay).length;
+  return (
+    <section aria-label="Yêu cầu chờ bạn duyệt" className="rounded-[10px] bg-wait-bg">
+      <button type="button" aria-expanded={mo} onClick={() => setMo(!mo)}
+        className="flex w-full flex-wrap items-center gap-x-2.5 gap-y-1 border-0 bg-transparent px-3 py-[9px] text-left text-[13px] text-slate-100">
+        <span className="whitespace-nowrap text-[11.5px] font-bold uppercase tracking-[.04em] text-wait">Chờ duyệt</span>
+        <span><b className="font-semibold">{ds.length} yêu cầu chờ bạn duyệt</b>
+          {quaHan > 0 && <span className="font-semibold text-bad"> · {quaHan} quá hạn</span>}</span>
+        <span className="text-wait"><IconGap mo={mo} /></span>
+      </button>
+      {mo && (
+        <div className="flex flex-col gap-2 px-2.5 pb-2.5">
+          {ds.map((y) => <TheYeuCau key={y.id} yc={y} gon onXong={() => { reload(); onDoi(); }} />)}
+        </div>
+      )}
+    </section>
   );
 }

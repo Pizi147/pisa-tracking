@@ -1,5 +1,10 @@
 /** PHÉP KIỂM PR-VAI-b — hồ sơ học viên "hiểu trong 30 giây" (kế hoạch 2026-10-01-pr-vai-b-ho-so-hoc-vien). */
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { YThucTestKit } from './yThuc.tests.ts';
+
+const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 
 export async function runPrVaiBTests(t: YThucTestKit) {
   const { check, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax } = t;
@@ -301,5 +306,170 @@ export async function runPrVaiBTests(t: YThucTestKit) {
       }
     }
     assert(coQuaHan > 0, 'bộ demo MB FT 101 phải có em có việc học thuật quá hạn');
+  });
+
+  // ------------------------------------------------------------------ khối 4 · Tạm dừng, KCK (T65/K3-41 phần giao diện, Q31-7)
+  const { caseDetail } = await import('../cases/cases.ts');
+  check('VAI-b (4) · tamDungTu ở bảng kỹ năng + chi tiết Case: em Tạm dừng = ngày dừng; em đang học / đã Quay lại → null; đầu hồ sơ: không việc, câu mở đầu "Tạm dừng từ", ô Học thuật đổi "Quá hạn"', () => {
+    const sid = emLop('MB FT 101').find((x) => (skillSupportBoard(P.admin, x) as any).rows.some((r: any) => r.cases.some((c: any) => c.status !== 'done')))!;
+    assert(sid, 'bộ demo MB FT 101 phải có em có Case mở');
+    const caseId = (skillSupportBoard(P.admin, sid) as any).rows.flatMap((r: any) => r.cases).find((c: any) => c.status !== 'done').id as number;
+    assert((skillSupportBoard(P.admin, sid) as any).tamDungTu === null && (caseDetail(P.admin, caseId) as any).tamDungTu === null, 'em đang học → null');
+    const tu = addDays(thu2, -7);
+    conn.prepare(`UPDATE students SET status = 'inactive' WHERE id = ?`).run(sid);
+    try {
+      voiNhatKy(sid, [['pause', tu]], () => {
+        assert((skillSupportBoard(P.admin, sid) as any).tamDungTu === tu, 'bảng kỹ năng: tamDungTu = ngày dừng');
+        assert((caseDetail(P.admin, caseId) as any).tamDungTu === tu, 'chi tiết Case: tamDungTu = ngày dừng');
+        const dh = (studentProfile(P.admin, sid) as any).dauHoSo;
+        assert(dh.viec.cuaBan.length === 0 && dh.viec.nguoiKhac.length === 0, 'em Tạm dừng không có việc');
+        assert(dh.tomTat[0].chu === `Tạm dừng từ ${tu.slice(8, 10)}/${tu.slice(5, 7)}` && dh.tomTat[0].tone === 'warn', JSON.stringify(dh.tomTat));
+        assert(!dh.o.hocThuat.dong.some((x: any) => x.t === 'qua-han'), `ô Học thuật còn "Quá hạn": ${JSON.stringify(dh.o.hocThuat.dong)}`);
+      });
+    } finally { conn.prepare(`UPDATE students SET status = 'active' WHERE id = ?`).run(sid); }
+    voiNhatKy(sid, [['pause', addDays(tu, -14)], ['resume', addDays(tu, -7)]], () => {
+      assert((skillSupportBoard(P.admin, sid) as any).tamDungTu === null, 'đã Quay lại → null');
+    });
+    const web = fs.readFileSync(path.join(REPO, 'web/src/modules/cases/SkillBoard.tsx'), 'utf8');
+    assert(/tamDung && tt\.t === 'qua-han' \? <NhanTamDung/.test(web) && /tamDung && v\.quaHan\) return <span className="mt-0\.5 block"><NhanTamDung/.test(web), 'SkillBoard thay "Quá hạn" bằng NhanTamDung');
+    assert(/data\.tamDungTu \? <NhanTamDung/.test(fs.readFileSync(path.join(REPO, 'web/src/modules/cases/CasePanel.tsx'), 'utf8')), 'Ngăn Case thay quá hạn bằng NhanTamDung');
+  });
+
+  check('VAI-b (4) · KCK (Q31-7): câu mở đầu "KCK · không đặt kỳ vọng MT, không SOS"; ô Kết quả cờ KCK; ô Sắp tới không có số kỳ vọng; bảng kỹ năng không kỳ vọng', () => {
+    const em = all(`SELECT s.id FROM students s JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active' AND cy.khong_cam_ket = 1
+      WHERE s.status = 'active' AND s.id <= ? ORDER BY s.id`, seedMax.students).map((r) => r.id as number)[0];
+    assert(em, 'bộ demo phải có em KCK (Hồ Gia Hân, sosV3Seed)');
+    const dh = (studentProfile(P.admin, em) as any).dauHoSo;
+    assert(dh.tomTat[0].chu === 'KCK · không đặt kỳ vọng MT, không SOS', JSON.stringify(dh.tomTat));
+    assert(dh.o.ketQua.kck === true && !/kỳ vọng \d/.test(dh.o.sapToi.phu ?? ''), JSON.stringify(dh.o));
+    assert(dh.thongTin.target === 'KCK', `dòng thông tin: target ${dh.thongTin.target}`);
+    assert((skillSupportBoard(P.admin, em) as any).rows.every((r: any) => r.kck && r.expectation === null), 'bảng kỹ năng KCK: không kỳ vọng');
+  });
+
+  // ------------------------------------------------------------------ khối 5 · Quản lý duyệt trong hồ sơ (V1/K3-47) + menu ⋮ chia nhóm (K3-48)
+  const yeuCau = await import('../duyet/yeuCau.ts');
+  check('VAI-b (5) · viewer.coTheDuyet: Quản lý MB có; GVCN, GVBM không (PHỦ ĐỊNH) — và GVCN gọi /yeu-cau?studentId= bị chặn; thẻ quá hạn lên đầu', () => {
+    const sid = emCuaLop('MB FT 101');
+    assert((studentProfile(P.mbManager, sid) as any).viewer.coTheDuyet === true, 'Quản lý MB phải duyệt được');
+    for (const [ten, p] of [['GVCN', P.coreTeacher], ['GVBM', P.w2Teacher]] as const) {
+      assert((studentProfile(p, sid) as any).viewer.coTheDuyet === false, `${ten} không được có dải chờ duyệt`);
+      assertThrows(() => yeuCau.hopChoDuyet(p, { studentId: sid }), /Quản lý|quyền|403/i, `${ten} gọi /yeu-cau?studentId= phải bị chặn`);
+    }
+    const em = get(`SELECT hoc_vien_id id FROM yeu_cau_duyet WHERE trang_thai = 'cho' AND hoc_vien_id IS NOT NULL GROUP BY hoc_vien_id ORDER BY COUNT(*) DESC LIMIT 1`);
+    if (em) {
+      const the = (yeuCau.hopChoDuyet(P.admin, { studentId: em.id }) as any).the as { hanDuyet: string | null }[];
+      const han = the.map((x) => x.hanDuyet ?? '9999');
+      assert(han.every((h, i) => i === 0 || han[i - 1] <= h), `thẻ của em phải xếp quá hạn / hạn sớm lên đầu: ${han}`);
+    }
+  });
+
+  check('VAI-b (5) · mucQuanLyHocVien: chia nhóm Thông tin · Lộ trình · Lớp, dòng hệ quả, vạch đậm trước Tạm dừng/Kết thúc, vạch đỏ trước Xoá — TẬP MỤC theo quyền KHÔNG ĐỔI ở cả 5 vai', () => {
+    /* Bản tham chiếu: đúng luật chọn mục của bản cũ (trước PR-VAI-b) — chỉ thứ tự trong menu đổi theo nhóm. */
+    const cu = (i: any): string[] => {
+      const q = i.lopHoc?.quyen; const ratio = !!i.cycle?.ratio; const hoc = i.status === 'active'; const ds: string[] = [];
+      if (i.canEdit) ds.push('info'); if (q?.ghiLoTrinhTiep) ds.push('lo-trinh-tiep'); if (i.canEdit && i.cycle && !ratio) ds.push('lo-trinh');
+      if (i.deXuatSua && hoc) ds.push('de-xuat-sua'); if (q?.chuyenLop) ds.push('chuyen-lop'); if (q?.deXuatChuyenLop && hoc) ds.push('de-xuat-chuyen-lop');
+      if (i.canEdit && i.cycle && !ratio) ds.push('outcome'); if (q?.tamDung && hoc) ds.push('tam-dung'); if (q?.quayLai && !hoc && i.status === 'inactive') ds.push('quay-lai');
+      if (q?.ketThuc && i.status !== 'finished') ds.push('ket-thuc'); if (q?.luuTru) ds.push('luu-tru'); if (q?.boLuuTru) ds.push('bo-luu-tru'); if (i.coTheXoa) ds.push('xoa-hoc-vien');
+      return ds;
+    };
+    const ql = { ghiLoTrinhTiep: false, chuyenLop: true, tamDung: true, quayLai: true, ketThuc: true, luuTru: false, boLuuTru: false };
+    const vai = [
+      { ten: 'QT', canEdit: true, lopHoc: { quyen: ql }, cycle: { ratio: false }, status: 'active', coTheXoa: true },
+      { ten: 'QL', canEdit: true, lopHoc: { quyen: ql }, cycle: { ratio: false }, status: 'active' },
+      { ten: 'GVCN', canEdit: true, lopHoc: { quyen: { ...ql, chuyenLop: false, deXuatChuyenLop: true, tamDung: false, quayLai: false, ketThuc: false } }, cycle: { ratio: false }, status: 'active', deXuatSua: true },
+      { ten: 'GVBM', canEdit: false, lopHoc: null, cycle: { ratio: false }, status: 'active', deXuatSua: true },
+      { ten: 'GVCN thường', canEdit: true, lopHoc: { quyen: { ...ql, ghiLoTrinhTiep: true, chuyenLop: false, tamDung: false, quayLai: false, ketThuc: false } }, cycle: { ratio: true }, status: 'active' },
+    ];
+    for (const v of vai) {
+      const moi = d.mucQuanLyHocVien(v) as any[];
+      assert(JSON.stringify(moi.map((m) => m.key).sort()) === JSON.stringify(cu(v).sort()), `${v.ten}: tập mục đổi ${moi.map((m) => m.key)} ≠ ${cu(v)}`);
+      const nhom = moi.map((m) => ['thong-tin', 'lo-trinh', 'lop'].indexOf(m.nhom));
+      assert(nhom.every((x, i) => x >= 0 && (i === 0 || nhom[i - 1] <= x)), `${v.ten}: nhóm không liền: ${moi.map((m) => m.nhom)}`);
+    }
+    const qt = d.mucQuanLyHocVien(vai[0]) as any[];
+    const m = (k: string) => qt.find((x) => x.key === k);
+    assert(m('chuyen-lop').phu === 'chọn lớp đích và tuần bắt đầu' && m('tam-dung').phu === 'mọi hạn của em dừng · giữ lớp, lộ trình'
+      && m('ket-thuc').phu === 'đóng lộ trình · hồ sơ chỉ xem' && m('xoa-hoc-vien').phu === 'chỉ Quản trị hệ thống thấy dòng này', JSON.stringify(qt));
+    assert(m('tam-dung').keTruoc === 'dam' && !m('ket-thuc').keTruoc && m('xoa-hoc-vien').keTruoc === 'do' && m('xoa-hoc-vien').nguyHiem, 'vạch đậm / đỏ');
+    assert(!/▾/.test(fs.readFileSync(path.join(REPO, 'web/src/ui/Menu.tsx'), 'utf8')), 'Menu còn ký tự ▾ (phải SVG)');
+  });
+
+  // ------------------------------------------------------------------ khối 6 · bảng kỹ năng: Case khung rỗng / PA khối đặc, người làm, 12 px, mã tuần
+  check('VAI-b (6) · viecTiepHang: việc + "hạn … · người" (chữ hạn theo deadlineView); quá hạn nói "quá hạn n ngày"; chữ PA nói mã tuần (từ W3 SEP · đến MT2 · W4 OCT; Tiến bộ một phần · W3 SEP)', () => {
+    const v = d.viecTiepHang([
+      { status: 'in_progress', viecTiep: { chu: 'Ghi kết quả PA x', loaiHan: 'cap-nhat-pa', han: '2026-10-05' }, nguoiLam: { id: 1, ten: 'Phạm Quốc Bảo' } },
+      { status: 'open', viecTiep: { chu: 'Xác nhận nguyên nhân', loaiHan: 'xac-minh-sos', han: '2026-10-02' }, nguoiLam: { id: 2, ten: 'Đỗ Thanh Tùng' } },
+      { status: 'done', viecTiep: null, nguoiLam: null },
+    ], '2026-10-01');
+    assert(v.viec === 'Xác nhận nguyên nhân' && v.han === 'hạn 02/10' && v.nguoi === 'Đỗ Thanh Tùng' && !v.quaHan, JSON.stringify(v));
+    const q = d.viecTiepHang([{ status: 'open', viecTiep: { chu: 'Ghi kết quả PA x', loaiHan: 'cap-nhat-pa', han: '2026-09-28' }, nguoiLam: { id: 1, ten: 'A' } }], '2026-10-01');
+    assert(q.quaHan === 'quá hạn 3 ngày' && q.nguoi === 'A', JSON.stringify(q));
+    assert(d.viecTiepHang([{ status: 'done', viecTiep: null }], '2026-10-01') === null, 'không việc → null');
+    const k = d.chuKhoangPa({ startedOn: '2026-09-16', completedOn: null, mocChu: 'đến MT2 · W4 OCT' }, '2026-10-01');
+    assert(k === 'từ W3 SEP · đến MT2 · W4 OCT' && !/\d{2}\/\d{2}/.test(k), k);
+    assert(d.chuKhoangPa({ startedOn: '2026-09-16', completedOn: '2026-09-30', mocChu: null }, '2026-10-01') === 'W3 SEP → W1 OCT', 'đã xong');
+    assert(d.chuKetQuaPa('Tiến bộ một phần', '2026-09-18', '2026-10-01') === 'Tiến bộ một phần · W3 SEP', 'kết quả mã tuần');
+  });
+
+  check('VAI-b (6) · Quét SkillBoard.tsx: 11 px chỉ còn ở nhãn (chip MT, nhãn Case/PA) — hạn, kết quả, người 12 px (Q22); nhãn Case viền / PA nền; không ngày dd/mm ở khoảng PA', () => {
+    const web = fs.readFileSync(path.join(REPO, 'web/src/modules/cases/SkillBoard.tsx'), 'utf8');
+    const dong11 = web.split('\n').filter((l) => l.includes('text-[11px]'));
+    assert(dong11.every((l) => /rounded/.test(l)), `còn chữ 11 px không phải nhãn: ${dong11.map((l) => l.trim().slice(0, 90)).join(' | ')}`);
+    assert(/loai === 'Case' \? 'border border-current/.test(web) && /bg-\[color:var\(--line-strong\)\]/.test(web), 'Case khung rỗng / PA khối đặc');
+    assert(/<NhanLoai loai="Case" \/>/.test(web) && /<NhanLoai loai="PA" cho=\{choDuyetKh\} \/>/.test(web), 'hàng Case / hàng PA dùng NhanLoai');
+    assert(!/ngan\(p\.startedOn\)|ngan\(p\.lastOutcomeOn\)/.test(web), 'khoảng PA / kết quả còn dd/mm');
+  });
+
+  // ------------------------------------------------------------------ khối 7 · điện thoại 375 px: bảng kỹ năng thành thẻ (UX-D3)
+  check('VAI-b (7) · xepTheKyNang: Case quá hạn → Case mở → còn lại; kỹ năng đạt / không Case → thẻ gọn; giữ thứ tự bảng trong nhóm; < 640 px chỉ vẽ thẻ', () => {
+    const r = (ten: string, missed: boolean | null, cases: any[]) => ({ ten, missed, cases });
+    const ds = d.xepTheKyNang([
+      r('L', false, []), r('R', true, [{ status: 'in_progress', trangThaiV4: { t: 'dang-lam' }, plans: [] }]),
+      r('W1', null, []), r('W2', true, [{ status: 'in_progress', trangThaiV4: { t: 'dang-lam' }, plans: [{ actionOverdue: true }] }]),
+      r('S', true, [{ status: 'open', trangThaiV4: { t: 'qua-han' }, plans: [] }]), r('X', true, [{ status: 'done', plans: [] }]),
+    ]) as { row: { ten: string }; gon: boolean }[];
+    assert(ds.map((x) => x.row.ten).join() === 'W2,S,R,L,W1,X', ds.map((x) => x.row.ten).join());
+    assert(ds.map((x) => x.gon).join() === 'false,false,false,true,true,false', `gọn: ${ds.map((x) => x.gon)}`);
+    const web = fs.readFileSync(path.join(REPO, 'web/src/modules/cases/SkillBoard.tsx'), 'utf8');
+    assert(/if \(dienThoai\) return <TamDungCtx\.Provider[^]*?<TheKyNangDs/.test(web), 'SkillBoard chọn thẻ trên điện thoại, không vẽ bảng rồi ẩn');
+    const the = fs.readFileSync(path.join(REPO, 'web/src/modules/cases/TheKyNang.tsx'), 'utf8');
+    assert(/xepTheKyNang\(rows\)/.test(the) && /min-h-\[44px\]/.test(the) && !/text-\[11px\]/.test(the), 'thẻ: xếp theo luật, vùng bấm 44 px, không chữ 11 px');
+  });
+
+  // ------------------------------------------------------------------ khối 8 · đường dẫn sâu "MT · kỹ năng" → hồ sơ Mock (E.4 / G5)
+  const attemptsSvc = await import('../fasttrack/attempts.ts');
+  check('VAI-b (8) · duongDotTest / docKnMock: FT → /mock-test/{id}?kn=; kn lạ bỏ; lớp thường → bảng điểm lớp thường (bỏ kn); attemptHref web chỉ gọi duongDotTest', () => {
+    assert(d.duongDotTest({ id: 5, kind: 'mock' }, 'speaking') === '/mock-test/5?kn=speaking', 'FT + kn');
+    assert(d.duongDotTest({ id: 5, kind: 'mock' }) === '/mock-test/5' && d.duongDotTest({ id: 5 }) === '/mock-test/5', 'không kn');
+    assert(d.duongDotTest({ id: 5, kind: 'mock' }, 'abc') === '/mock-test/5', 'kn lạ → bỏ');
+    assert(d.duongDotTest({ id: 7, kind: 'progress', classId: 3 }, 'speaking') === '/bang-diem-thuong/3?kind=progress', 'lớp thường bỏ kn');
+    /* Không đổi đường cũ của attemptHref (mọi mẫu): mock · thiếu kind · lớp thường · lớp thường thiếu lớp. */
+    const cu = (a: any) => (!a.kind || a.kind === 'mock' ? `/mock-test/${a.id}` : a.classId ? `/bang-diem-thuong/${a.classId}?kind=${a.kind}` : `/mock-test/${a.id}`);
+    for (const a of [{ id: 1, kind: 'mock' }, { id: 2 }, { id: 3, kind: 'final', classId: 9 }, { id: 4, kind: 'progress', classId: null }]) {
+      assert(d.duongDotTest(a) === cu(a), `attemptHref đổi đường cũ: ${JSON.stringify(a)} → ${d.duongDotTest(a)}`);
+    }
+    assert(d.docKnMock('writing2') === 'writing' && d.docKnMock('writing1') === 'writing' && d.docKnMock('listening') === 'listening', 'docKnMock');
+    assert(d.docKnMock('abc') === null && d.docKnMock(null) === null, 'docKnMock lạ → null');
+    const f = fs.readFileSync(path.join(REPO, 'web/src/lib/format.ts'), 'utf8');
+    assert(/return duongDotTest\(a\);/.test(f), 'attemptHref web phải gọi duongDotTest');
+    for (const tep of ['cases/SkillBoard.tsx', 'cases/TheKyNang.tsx', 'students/StudentDetailPage.tsx', 'students/DauHoSo.tsx']) {
+      assert(!/`\/mock-test\//.test(fs.readFileSync(path.join(REPO, 'web/src/modules', tep), 'utf8')), `${tep} tự ghép /mock-test/`);
+    }
+    assert(/docKnMock\(thamSo\.get\('kn'\)\)/.test(fs.readFileSync(path.join(REPO, 'web/src/modules/fasttrack/MockDetailPage.tsx'), 'utf8')), 'hồ sơ Mock đọc ?kn=');
+  });
+
+  check('VAI-b (8) · skillSupportBoard: bandAttemptId cùng lượt với bandAttemptNo ở mọi hàng FT; PHỦ ĐỊNH: người ngoài phạm vi mở hồ sơ Mock vẫn bị chặn (kn không đổi quyền)', () => {
+    const { attemptDetail } = attemptsSvc;
+    let so = 0;
+    for (const sid of emLop('MB FT 101').slice(0, 6)) {
+      for (const r of (skillSupportBoard(P.admin, sid) as any).rows.filter((x: any) => x.bandAttemptNo)) {
+        const a = get('SELECT attempt_no, student_id FROM assessment_attempts WHERE id = ?', r.bandAttemptId);
+        assert(a && a.attempt_no === r.bandAttemptNo && a.student_id === sid, `em ${sid} ${r.category}: lượt ${r.bandAttemptId} ≠ MT${r.bandAttemptNo}`);
+        so++;
+        if (so === 1) assertThrows(() => attemptDetail(P.cpManager, r.bandAttemptId), /phạm vi|quyền/, 'QL chi nhánh CP mở hồ sơ Mock em MB');
+      }
+    }
+    assert(so > 0, 'bộ demo MB FT 101 phải có hàng có điểm');
   });
 }
