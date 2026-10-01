@@ -18,6 +18,7 @@ import { loadBundle, regularSkillViews, skillCells } from '../fasttrack/attempts
 import { allProgrammes } from '../normal/regular.ts';
 import { danhGiaMon } from '../classes/phanTichLop.ts';
 import { metricSet, parseObligation } from '../worklist/metrics.ts';
+import { paCoKetQua } from './hieuQuaPa.ts';
 
 const LO = 400;
 const cho = (n: number) => Array.from({ length: n }, () => '?').join(',');
@@ -285,9 +286,16 @@ export function tapXuLyViPham(c: NguCanhPtGv): Tap & { lop?: Map<number, Set<num
 
 // ------------------------------------------------------------------ cột 4 · PA hiệu quả (FT)
 
-/** TẠM (chờ PR-Pb2-a `paCoKetQua` lên main — kế hoạch Phần B Task 4): trả rỗng; KHÔNG mở PR khi hàm này còn tạm. */
-function tapPaHieuQua(_p: Principal, _c: NguCanhPtGv): Tap {
-  return new Map();
+/**
+ * Q16 (FT): PA giáo viên tự thêm (không PA theo quy chế) có kết quả trong khoảng — CHÍNH `paCoKetQua` của Hiệu quả PA (Pb2-a), cùng chi nhánh +
+ * khung + khoảng, gán cho người phụ trách Case; đúng ⇔ nhóm "success". Ô = Hiệu quả PA lọc `gv` cùng khoảng.
+ */
+export function tapPaHieuQua(c: NguCanhPtGv): Tap {
+  const tap: Tap = new Map();
+  for (const r of paCoKetQua({ branchIds: [c.cn], ct: c.khung, tu: c.tu, den: c.den })) {
+    if (!r.quyChe && r.chuCase != null) them(tap, r.chuCase, r.id, r.group === 'success');
+  }
+  return tap;
 }
 
 // ------------------------------------------------------------------ bảng
@@ -307,7 +315,7 @@ export function phanTichGiaoVien(p: Principal, f: LocPtGv): PhanTichGvKq {
   const kq = tapKetQua(c, nap);
   const ft = c.khung === 'ft';
   const tb = ft ? tapTienBo(c, nap) : null;
-  const pa = ft ? tapPaHieuQua(p, c) : null;
+  const pa = ft ? tapPaHieuQua(c) : null;
 
   /* Đang dạy (Q17): phân công hiệu lực ở min(cuối khoảng, hôm nay) + học viên đang học của các lớp đó — một câu theo lô. */
   const ngayDay = c.cuoi < c.homNay ? c.cuoi : c.homNay;

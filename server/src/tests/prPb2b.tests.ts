@@ -288,6 +288,7 @@ export async function runPrPb2bTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ khối 4 · bảng Phân tích giáo viên — máy chủ (Task 4)
   console.log('\nPR-Pb2-b · Bảng Phân tích giáo viên: mỗi cột một hàm tập, hai đường, quyền, không N+1');
   const pt: any = await import('../phanTich/giaoVien.ts');
+  const hieuQuaPaSvc: any = await import('../phanTich/hieuQuaPa.ts');
   const metricsSvc: any = await import('../worklist/metrics.ts');
   const nguCanh: any = await import('../platform/nguCanhRequest.ts');
   check('Pb2b (4a) · khoangPtGv: tháng 09/2026 = W1 SEP – W4 SEP (31/08 – 21/09); 14 tuần → lỗi; vắng → 4 tuần tới tuần hôm nay; tu > den → lỗi', () => {
@@ -440,8 +441,19 @@ export async function runPrPb2bTests(t: YThucTestKit) {
     const coTrongKhung = new Set(all(`SELECT DISTINCT ta.user_id FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id WHERE c.branch_id = ? AND c.is_fast_track = 1`, MB).map((r) => r.user_id));
     assert(chiThuong.every((h: any) => !coTrongKhung.has(h.id)), 'người không phân công FT không được có hàng FT');
   });
-  check('Pb2b (4k) · PA hiệu quả: CHỜ Pb2-a (paCoKetQua) — tạm "không có" ở mọi hàng FT', () => {
-    assert(bang().hang.every((h: any) => h.paHieuQua?.k === 'rong'), 'cột PA hiệu quả còn tạm');
+  check('Pb2b (4k) · PA hiệu quả, HAI ĐƯỜNG: ô mỗi GV = Hiệu quả PA lọc gv cùng khoảng (gvThem.tomTat: cải thiện / có kết quả); lớp thường không có cột', () => {
+    const hq: any = hieuQuaPaSvc;
+    const kh = { tu: d.addDaysIso(tuanNay, -84), den: tuanNay };   // 13 tuần tới tuần demo — đủ rộng để có PA có kết quả
+    const b = bang('ft', kh);
+    let coSo = 0;
+    for (const h of b.hang) {
+      const t = hq.hieuQuaPa(P.mbManager, { branchId: MB, ct: 'ft', soTuan: 4, gv: h.id, ...kh }).gvThem.tomTat;
+      const o = h.paHieuQua;
+      const so = o.k === 'so' ? [o.dung, o.tong] : [0, 0];
+      assert(so[0] === t.caiThien && so[1] === t.paCoKetQua, `${h.ten}: ô ${JSON.stringify(o)} ≠ Hiệu quả PA ${t.caiThien}/${t.paCoKetQua}`);
+      if (o.k === 'so') coSo += 1;
+    }
+    assert(coSo > 0, 'bộ demo không GV nào có PA giáo viên thêm có kết quả trong 13 tuần');
   });
   await t.checkAsync('Pb2b (4l) · PHỦ ĐỊNH qua route: GVCN / GVBM → 403; QL CP xem cn = MB → 403; Quản trị không cn → 400; 14 tuần → 400; QL MB → 200', async () => {
     await voiMayChu(async (goi) => {
