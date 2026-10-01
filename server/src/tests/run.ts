@@ -9033,6 +9033,10 @@ await runPrUxdTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 const { runPrUxfBTests } = await import('./prUxfB.tests.ts');
 await runPrUxfBTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
+// ==================================================================== PR-S3 (chữ cuối trên web)
+const { runPrS3ChuTests } = await import('./prS3Chu.tests.ts');
+await runPrS3ChuTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
