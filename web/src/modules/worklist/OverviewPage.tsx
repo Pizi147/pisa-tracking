@@ -1,7 +1,7 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSession } from '../../lib/session.tsx';
 import { BranchFilter } from '../../ui/Filters.tsx';
-import { CaseBoard } from '../cases/CaseBoardPage.tsx';
+import { PhanTich } from '../phanTich/PhanTich.tsx';
 import { BranchPulse } from './BranchPulse.tsx';
 import { LichSapToi } from './Highlights.tsx';
 import { MetricTiles } from './MetricTiles.tsx';
@@ -50,7 +50,7 @@ export default function OverviewPage({ tab: tabProp = 'tong-quan' }: { tab?: Tab
    * CHI NHÁNH ĐANG CHỌN NẰM TRÊN ĐỊA CHỈ TRANG, KHÔNG NẰM TRONG BỘ NHỚ CỦA RIÊNG MÀN NÀY.
    *
    * Lỗi owner báo 12/09: chọn Hải Dương mà bảng không đổi. Nguyên nhân là màn này giữ chi
-   * nhánh trong state riêng, còn bảng vấn đề bên dưới (`CaseBoard`) đọc tham số `cn` trên
+   * nhánh trong state riêng, còn bảng vấn đề bên dưới (`PhanTich`) đọc tham số `cn` trên
    * địa chỉ — HAI bộ lọc chi nhánh độc lập trên cùng MỘT màn hình. Nay chỉ còn một nguồn:
    * tham số `cn`. Đổi ở đâu thì cả trang đổi theo, và gửi đường dẫn cho người khác vẫn ra
    * đúng chi nhánh đó.
@@ -61,11 +61,11 @@ export default function OverviewPage({ tab: tabProp = 'tong-quan' }: { tab?: Tab
     if (id) next.set('cn', String(id)); else next.delete('cn');
     setParams(next);
   };
-  /* CHƯƠNG TRÌNH ĐANG CHỌN (`ct`) cũng nằm trên địa chỉ, cùng chỗ với `cn`; Cả hai = không có tham số. */
+  /* CHƯƠNG TRÌNH ĐANG CHỌN (`ct`) cũng nằm trên địa chỉ, cùng chỗ với `cn`; vắng = Fast Track (Q31-1). */
   const ct = chuongTrinhTuThamSo(params.get('ct'));
   const setCt = (v: ChuongTrinh) => {
     const next = new URLSearchParams(params);
-    if (v === 'ca-hai') next.delete('ct'); else next.set('ct', v);
+    next.set('ct', v);
     setParams(next, { replace: true });
   };
   // Chỉ hiện khi có mốc dữ liệu; không truyền "hôm nay" → dd/mm/yyyy (mockup)
@@ -84,7 +84,7 @@ export default function OverviewPage({ tab: tabProp = 'tong-quan' }: { tab?: Tab
           <ViecCuaToi />
           <HocVienCanHoTro />
         </div>
-        <LichSapToi branchId={null} ct="ca-hai" />
+        <LichSapToi branchId={null} ct={null} />
       </div>
     );
   }
@@ -103,7 +103,7 @@ export default function OverviewPage({ tab: tabProp = 'tong-quan' }: { tab?: Tab
           tabs={(['tong-quan', 'phan-tich'] as const).map((k) => ({ key: k, label: TAB_TONG_QUAN_LABEL[k] }))} />
         {duLieuDen && <span className="text-xs text-slate-500 pb-1">{duLieuDen}</span>}
       </div>
-      {tab === 'board' && <CaseBoard embedded />}
+      {tab === 'board' && <PhanTich />}
       {tab === 'work' && (
         <>
           <MetricTiles branchId={branchId} ct={ct} />

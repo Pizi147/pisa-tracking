@@ -1,6 +1,6 @@
 import { db } from '../db.ts';
 import {
-  COT_XU_LY_V4, LEGACY_REGULAR_SKILL_MAP, METRIC_UNIT_LABEL, PERMISSIONS, isNoPlanCase, khoaDot, trangThaiCaseV4,
+  COT_XU_LY_V4, LEGACY_REGULAR_SKILL_MAP, METRIC_UNIT_LABEL, NGUONG_MINI_TEST, NHAN_NHOM_CON, PERMISSIONS, daiCuoiKhoa, isNoPlanCase, khoaDot, trangThaiCaseV4,
   nhanDot, thuTuDot, tuDauKhoang, type ChuongTrinh, type CotTongHop, type DongTongHop, type TheoDong, type TongHopKetQua,
 } from '../../../shared/domain/index.ts';
 import { cotTongHopFor } from '../../../shared/domain/phanTich.ts';
@@ -36,6 +36,18 @@ export function phanLoaiLuot(ev: { sosLevel: number | null; complete: boolean })
   if (ev.sosLevel === 1) return 'sos1';
   if (ev.sosLevel === 2) return 'sos2';
   return 'sos3';
+}
+
+/**
+ * PR-Pb2-a (P4, K1-19, Q12): một bài lớp thường rơi ĐÚNG MỘT cột — chưa đủ điểm → `chuaDu`; Giữa khoá đếm MÔN trượt (đọc`ev.skills`, cùng
+ * luật chấm đã sinh Case); Cuối khoá theo dải % tổng (`daiCuoiKhoa` — một nơi ra 50/60/70).
+ */
+const DAI_COT: Record<string, string> = { duoi_50: 'ck-duoi50', '50_59': 'ck-50', '60_69': 'ck-60', dat: 'ck-dat' };
+export function phanLoaiBaiThuong(kind: string, ev: { complete: boolean; skills: Record<string, { under: boolean }>; tyLeTong?: number | null }): string {
+  if (!ev.complete) return 'chuaDu';
+  if (kind === 'final') return ev.tyLeTong == null ? 'chuaDu' : DAI_COT[daiCuoiKhoa(ev.tyLeTong)];
+  const truot = Object.values(ev.skills).filter((s) => s.under).length;
+  return truot === 0 ? 'gk-dat' : truot === 1 ? 'gk-1' : 'gk-2';
 }
 
 export type TrangThaiXuLy = 'dangXuLy' | 'thieuPa' | null;
@@ -76,7 +88,9 @@ function cmpKey(a: readonly unknown[], b: readonly unknown[]): number {
   return 0;
 }
 
-type DongRaw = { khoa: string; nhan: string; phu?: string; tap: Tap; sortKey: readonly unknown[]; con: Map<string, DongRaw> };
+type CoDot = { giua: boolean; cuoi: boolean };
+type DongRaw = { khoa: string; nhan: string; phu?: string; tap: Tap; sortKey: readonly unknown[]; con: Map<string, DongRaw>; coDot: CoDot };
+const coDotMoi = (): CoDot => ({ giua: false, cuoi: false });
 
 export type FilterTongHop = { branchId?: number | null; ct: ChuongTrinh; soTuan: number; classId?: number | null; theo: TheoDong };
 
@@ -94,7 +108,7 @@ function tinh(p: Principal, f: FilterTongHop) {
   const args: unknown[] = [...cs.params, tu, den];
   if (f.branchId) { where.push('c.branch_id = ?'); args.push(f.branchId); }
   if (f.classId) { where.push('c.id = ?'); args.push(f.classId); }
-  if (f.ct !== 'ca-hai') { where.push('c.is_fast_track = ?'); args.push(f.ct === 'ft' ? 1 : 0); }
+  where.push('c.is_fast_track = ?'); args.push(f.ct === 'ft' ? 1 : 0);
 
   const attempts = conn
     .prepare(
@@ -166,22 +180,27 @@ function tinh(p: Principal, f: FilterTongHop) {
   const dongOf = (a: any): { cha: DongRaw; con: DongRaw } => {
     const par = chaCua(a);
     let cha = hangMap.get(par.khoa);
-    if (!cha) { cha = { khoa: par.khoa, nhan: par.nhan, phu: par.phu, tap: new Map(), sortKey: par.sortKey, con: new Map() }; hangMap.set(par.khoa, cha); }
+    if (!cha) { cha = { khoa: par.khoa, nhan: par.nhan, phu: par.phu, tap: new Map(), sortKey: par.sortKey, con: new Map(), coDot: coDotMoi() }; hangMap.set(par.khoa, cha); }
     const chi = conCua(a);
     const khoaChi = `${par.khoa}|${chi.khoa}`;
     let con = cha.con.get(khoaChi);
-    if (!con) { con = { khoa: khoaChi, nhan: chi.nhan, tap: new Map(), sortKey: chi.sortKey, con: new Map() }; cha.con.set(khoaChi, con); }
+    if (!con) { con = { khoa: khoaChi, nhan: chi.nhan, tap: new Map(), sortKey: chi.sortKey, con: new Map(), coDot: coDotMoi() }; cha.con.set(khoaChi, con); }
     dongCua.set(a.id, { cha: par.khoa, con: khoaChi });
     return { cha, con };
   };
 
   const tongTap: Tap = new Map();
+  const tongCoDot = coDotMoi();
+  const laThuong = f.ct === 'thuong';
+  const cuoiDaDem: number[] = [];   // bài Cuối khoá đã vào bảng → Mini Test gắn đúng dòng của nó
   for (const a of attempts) {
     const { cha, con } = dongOf(a);
+    if (laThuong) for (const x of [cha.coDot, con.coDot, tongCoDot]) { if (a.kind === 'final') x.cuoi = true; else x.giua = true; }
     if (!scored.has(a.id) || luotKck(a)) continue;   // Q29-1: em KCK ngoài mẫu số
 
     const ev = evaluateAttemptRow(a, bundle, programmes);
-    const loai = phanLoaiLuot(ev);
+    const loai = laThuong ? phanLoaiBaiThuong(a.kind, ev) : phanLoaiLuot(ev);
+    if (laThuong && a.kind === 'final') cuoiDaDem.push(a.id);
     for (const tap of [cha.tap, con.tap, tongTap]) { them(tap, 'luot', a.id); them(tap, loai, a.id); }
 
     /*
@@ -241,6 +260,18 @@ function tinh(p: Principal, f: FilterTongHop) {
     }
   }
 
+  /* PR-Pb2-a: Mini Test (đếm HỌC VIÊN) vào dòng của bài Cuối khoá sinh ra nó — MỘT câu theo lô 400, ngưỡng `NGUONG_MINI_TEST`. */
+  for (let i = 0; i < cuoiDaDem.length; i += 400) {
+    const chunk = cuoiDaDem.slice(i, i + 400);
+    for (const r of conn.prepare(
+      `SELECT tu_attempt_id, student_id, ty_le FROM mini_test WHERE tu_attempt_id IN (${chunk.map(() => '?').join(',')}) AND ty_le IS NOT NULL`,
+    ).all(...chunk) as any[]) {
+      const dong = dongCua.get(r.tu_attempt_id)!;
+      const cha = hangMap.get(dong.cha)!, con = cha.con.get(dong.con)!;
+      for (const tap of [cha.tap, con.tap, tongTap]) them(tap, r.ty_le >= NGUONG_MINI_TEST ? 'mini-dat' : 'mini-truot', r.student_id);
+    }
+  }
+
   // Chỉ giữ dòng (và dòng con) có dữ liệu thật (luật "không in dòng toàn số 0", như WeeklyBoard).
   const hang = [...hangMap.values()].filter((r) => coDuLieu(r.tap));
   hang.sort((a, b) => (f.theo === 'tuan' ? -cmpKey(a.sortKey, b.sortKey) : cmpKey(a.sortKey, b.sortKey)));
@@ -251,7 +282,7 @@ function tinh(p: Principal, f: FilterTongHop) {
   }
 
   const scopeEmpty = !scope.all && scope.branchIds.length === 0 && scope.classIds.length === 0;
-  return { theo: f.theo, ct: f.ct, hang, tongTap, scopeEmpty };
+  return { theo: f.theo, ct: f.ct, hang, tongTap, tongCoDot: laThuong ? tongCoDot : undefined, scopeEmpty };
 }
 
 const soCuaTap = (tap: Tap, cols: readonly string[]): Record<string, number> =>
@@ -263,10 +294,10 @@ export function tongHop(p: Principal, f: FilterTongHop): TongHopKetQua {
   const cols = cotTongHopFor(r.ct).map((c) => c.khoa);
   const oCols = [...cols, 'choNguyenNhanQuaHan'];
   const gon = (d: DongRaw): DongTongHop => ({
-    khoa: d.khoa, nhan: d.nhan, phu: d.phu, o: soCuaTap(d.tap, oCols),
+    khoa: d.khoa, nhan: d.nhan, phu: d.phu, o: soCuaTap(d.tap, oCols), ...(r.ct === 'thuong' ? { coDot: d.coDot } : {}),
     con: (d as any).conSorted?.length ? (d as any).conSorted.map(gon) : undefined,
   });
-  return { theo: r.theo, ct: r.ct, cot: cols, hang: r.hang.map(gon), tong: soCuaTap(r.tongTap, oCols), scopeEmpty: r.scopeEmpty };
+  return { theo: r.theo, ct: r.ct, cot: cols, hang: r.hang.map(gon), tong: soCuaTap(r.tongTap, oCols), tongCoDot: r.tongCoDot, scopeEmpty: r.scopeEmpty };
 }
 
 /** Danh sách của MỘT ô — tính lại bằng chính `tinh`, nên danh sách luôn đúng bằng con số (G-10). */
@@ -288,7 +319,7 @@ export function oTongHop(p: Principal, f: FilterTongHop & { khoa: string; cot: s
   const ids = [...(tap.get(f.cot) ?? new Set<number>())].sort((a, b) => a - b);
   return {
     n: ids.length,
-    tieuDe: `${ids.length} ${METRIC_UNIT_LABEL[cotDef.donVi]} — ${cotDef.nhan(f.ct)} · ${nhanDong}`,
+    tieuDe: `${ids.length} ${METRIC_UNIT_LABEL[cotDef.donVi]} — ${cotDef.nhomCon ? `${NHAN_NHOM_CON[cotDef.nhomCon]} · ` : ''}${cotDef.nhan(f.ct)} · ${nhanDong}`,
     rows: rowsFor(cotDef.donVi, ids),
   };
 }

@@ -362,7 +362,7 @@ export async function runPrDuyetTests(t: YThucTestKit) {
   const mgmtSvc: any = await import('../worklist/mgmttasks.ts');
   const { navOf } = await import('../platform/nav.ts');
   check('DUYET (10) · Tổng quan QL có số Chờ duyệt (đọc từ hộp); Cần xử lý không còn "PA chờ duyệt"/"Case quá hạn xác định nguyên nhân"; cờ nav', () => {
-    const r = tongQuanSvc.tongQuanQuanLy(P.mbManager, { branchId: null, ct: 'ca-hai' });
+    const r = tongQuanSvc.tongQuanQuanLy(P.mbManager, { branchId: null, ct: 'ft' });
     const dem = yc.demYeuCau(P.mbManager);
     assert(r.choDuyet && r.choDuyet.cho === dem.cho && r.choDuyet.quaHan === dem.quaHan && r.choDuyet.baoLen === dem.baoLen, JSON.stringify(r.choDuyet));
     assert(!r.canXuLy.some((x: any) => x.metricId === 'pa-cho-duyet' || x.metricId === 'case-xac-dinh-nguyen-nhan-qua-han'), 'còn dòng thẻ');
@@ -409,7 +409,7 @@ export async function runPrDuyetTests(t: YThucTestKit) {
   check('DUYET (R2) · một hàm đếm: số badge/dải = chip "Tất cả" của hộp; quá hạn = số thẻ đỏ (gồm Báo lên)', () => {
     const hop = yc.hopChoDuyet(P.mbManager);
     const dem = yc.demYeuCau(P.mbManager);
-    const tq = tongQuanSvc.tongQuanQuanLy(P.mbManager, { branchId: null, ct: 'ca-hai' }).choDuyet;
+    const tq = tongQuanSvc.tongQuanQuanLy(P.mbManager, { branchId: null, ct: 'ft' }).choDuyet;
     const do_ = hop.the.filter((x: any) => x.hanDuyet && x.hanDuyet < TODAY).length;
     assert(dem.cho === hop.dem['tat-ca'] && dem.quaHan === do_ && dem.baoLen === hop.dem['bao-len'] && tq.cho === dem.cho && tq.quaHan === dem.quaHan,
       JSON.stringify({ dem, chip: hop.dem, do_, tq }));

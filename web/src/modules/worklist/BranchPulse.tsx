@@ -69,7 +69,6 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
   const tenLop = (h: Hang) => (
     <span className="whitespace-nowrap">
       <Link to={`/hoc-vien/lop/${h.id}`} className="link">{h.nhan}</Link>
-      {ct === 'ca-hai' && h.laFt !== null && <span className="text-[11px] leading-none align-middle text-slate-500 ml-1.5">{h.laFt ? 'FT' : 'Lớp thường'}</span>}
     </span>
   );
   return (

@@ -1,5 +1,5 @@
 import { db } from '../db.ts';
-import { nhanLoaiXuLy, PERMISSIONS, VIOLATION_CATEGORY_LABEL, metricById, tenMon, type ChiSo, type ChuongTrinh, type LoaiBoQuen } from '../../../shared/domain/index.ts';
+import { duongCase, nhanLoaiXuLy, PERMISSIONS, VIOLATION_CATEGORY_LABEL, metricById, tenMon, type ChiSo, type ChuongTrinh, type LoaiBoQuen } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, forbidden, HttpError, notFound } from '../util.ts';
@@ -75,23 +75,23 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
       }
     } else if (unit === 'case') {
       for (const r of conn.prepare(
-        `SELECT sc.id, sc.title, COALESCE(sc.category, sc.topic) AS mon, cy.programme_code AS ct, s.full_name, s.student_code, sc.status
+        `SELECT sc.id, sc.title, COALESCE(sc.category, sc.topic) AS mon, cy.programme_code AS ct, s.id AS sid, s.full_name, s.student_code, sc.status
            FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
            LEFT JOIN learning_cycles cy ON cy.id = sc.cycle_id
            LEFT JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
           WHERE sc.id IN (${ph})`,
       ).all(...chunk) as any[]) {
         /* MH2: tên môn theo chương trình của lộ trình (FOU "G+V"), không chữ thô "listening". */
-        byId.set(r.id, { id: r.id, title: r.title ?? (r.mon ? tenMon(r.ct ?? null, r.mon) : `Case ${r.id}`), sub: [r.full_name, r.student_code].filter(Boolean).join(' · '), href: `/hoc-thuat/case/${r.id}` });
+        byId.set(r.id, { id: r.id, title: r.title ?? (r.mon ? tenMon(r.ct ?? null, r.mon) : `Case ${r.id}`), sub: [r.full_name, r.student_code].filter(Boolean).join(' · '), href: duongCase(r.sid, r.id) });
       }
     } else if (unit === 'phuong-an') {
       for (const r of conn.prepare(
-        `SELECT iv.id, iv.case_id, COALESCE(NULLIF(iv.description, ''), iv.kind) AS title, s.full_name, s.student_code
+        `SELECT iv.id, iv.case_id, COALESCE(NULLIF(iv.description, ''), iv.kind) AS title, s.id AS sid, s.full_name, s.student_code
            FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
            LEFT JOIN students s ON s.id = sc.student_id
           WHERE iv.id IN (${ph})`,
       ).all(...chunk) as any[]) {
-        byId.set(r.id, { id: r.id, title: r.title, sub: [r.full_name, r.student_code].filter(Boolean).join(' · '), href: `/hoc-thuat/case/${r.case_id}` });
+        byId.set(r.id, { id: r.id, title: r.title, sub: [r.full_name, r.student_code].filter(Boolean).join(' · '), href: duongCase(r.sid, r.case_id) });
       }
     } else if (unit === 'dot-test' || unit === 'bai-thi') {
       /* Lượt Test: FT mở hồ sơ Test; bài của lớp Normal mở bảng điểm thường của lớp. */
@@ -114,7 +114,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
       const phi = ivIds.map(() => '?').join(',');
       const byIv = new Map<number, any>();
       for (const r of conn.prepare(
-        `SELECT iv.id, iv.case_id, COALESCE(NULLIF(iv.description, ''), iv.kind) AS title, s.full_name, s.student_code
+        `SELECT iv.id, iv.case_id, COALESCE(NULLIF(iv.description, ''), iv.kind) AS title, s.id AS sid, s.full_name, s.student_code
            FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
            LEFT JOIN students s ON s.id = sc.student_id WHERE iv.id IN (${phi})`,
       ).all(...ivIds) as any[]) byIv.set(r.id, r);
@@ -124,7 +124,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
         if (!r) continue;
         byId.set(id, {
           id, title: `${r.title} · chu kỳ ${cycle}`,
-          sub: [r.full_name, r.student_code].filter(Boolean).join(' · '), href: `/hoc-thuat/case/${r.case_id}`,
+          sub: [r.full_name, r.student_code].filter(Boolean).join(' · '), href: duongCase(r.sid, r.case_id),
         });
       }
     } else if (unit === 'vi-pham') {
@@ -195,6 +195,9 @@ export const LISTED_METRICS: readonly string[] = [
   ...YTHUC_METRIC_IDS,
   ...PHOI_HOP_METRIC_IDS,
 ];
+
+/** Chỉ số không theo kỹ năng / khung (Q2): `metricSet` không lọc `program` cho chúng. */
+export const CHI_SO_GOP = new Set<string>([...YTHUC_METRIC_IDS, ...PHOI_HOP_METRIC_IDS]);
 
 /** Kỹ năng ĐÁNH GIÁ mà `hv-duoi-ky-vong-mon` nhận — chỉ số của khung Fast Track (MH5), không có môn lớp thường. */
 const SKILLS_FOR_METRIC = ['listening', 'reading', 'writing', 'speaking'] as const;
@@ -354,8 +357,9 @@ export function metricSet(
   } = {},
 ): MetricResult {
   const r = metricSetGoc(p, id, f);
-  const ct = f.program ?? 'ca-hai';
-  if (ct === 'ca-hai') return r;
+  /* PR-Pb2-a (Q2, K1-18): Ý thức + Phối hợp SOS là khối GỘP — bỏ qua khung ở đúng một chỗ này. */
+  const ct = CHI_SO_GOP.has(id) ? null : f.program ?? null;
+  if (!ct) return r;
   const moi = [...new Set([...r.ids, ...(r.numeratorIds ?? []), ...(r.denominatorIds ?? [])])];
   const giu = new Set(locTheoChuongTrinh(r.unit, moi, ct));
   const loc = (xs?: number[]) => xs?.filter((x) => giu.has(x));

@@ -36,7 +36,8 @@ const TAB_LABEL = ['Tuần này', 'Tuần tới', 'Tuần nữa'];
 /** Số đợt Test của một tuần — dùng cho dòng tóm tắt khi khối đang gập. */
 const soDot = (w?: Week) => w ? w.normal.progressClasses.length + w.normal.finalClasses.length + w.ft.mockClasses.length : 0;
 
-export function LichSapToi({ branchId, ct }: { branchId: number | null; ct: ChuongTrinh }) {
+/** `ct = null`: giáo viên xem lịch gộp hai khung (Q2). */
+export function LichSapToi({ branchId, ct }: { branchId: number | null; ct: ChuongTrinh | null }) {
   const navigate = useNavigate();
   const { homNay } = useNgayNghiepVu();
   const { data, loading } = useApi<Data | null>(

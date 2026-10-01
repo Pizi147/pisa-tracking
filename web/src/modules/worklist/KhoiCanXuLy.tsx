@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Card, Skeleton, ErrorState } from '../../ui/ui.tsx';
 import { SoLieuO } from '../../ui/SoLieuO.tsx';
@@ -17,7 +17,6 @@ export function KhoiCanXuLy({ branchId, ct }: { branchId: number | null; ct: Chu
   const q = `${branchId ? `branchId=${branchId}` : ''}${thamSoCt(ct)}`.replace(/^&/, '');
   const url = q ? `/tong-quan/quan-ly?${q}` : '/tong-quan/quan-ly';
   const { data, loading, error, reload } = useApi<Data>(url, [branchId, ct]);
-  const navigate = useNavigate();
   const [mo, setMo] = useState<{ id: string; n: number; extra?: Record<string, string> } | null>(null);
   const phamVi = { branchId, chuongTrinh: ct };
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
@@ -39,10 +38,7 @@ export function KhoiCanXuLy({ branchId, ct }: { branchId: number | null; ct: Chu
                   {x.phu && <span className="block text-[11px] text-slate-500 truncate">{x.phu}</span>}
                 </span>
                 <button type="button" className={`btn btn-sm ${x.nut === 'Xem' ? '' : 'btn-primary'}`}
-                  onClick={() => (x.denLoc
-                    /* PR-UX4: hai dòng "bỏ quên" → Danh sách Case có bộ lọc sẵn (số vẫn mở ngăn HV qua SoLieuO). */
-                    ? navigate(`/phan-tich?goc=danh-sach&hang-doi=${x.denLoc}${branchId ? `&cn=${branchId}` : ''}${thamSoCt(ct)}`)
-                    : setMo({ id: x.metricId, n: x.n }))}>{x.nut}</button>
+                  onClick={() => setMo({ id: x.metricId, n: x.n })}>{x.nut}</button>
               </li>
             ))}
           </ul>
