@@ -220,8 +220,10 @@ export async function runPrPb2bTests(t: YThucTestKit) {
     const khongDay = d.slotsTuO(oList, { gvcn: 5, 'gop-fou': 7, speaking: 9 });
     assert(d.kiemPhanCong('FOU', FOU, khongDay)[0]?.khoa === 'gvcn', 'GVCN không dạy môn nào phải lỗi');
   });
-  check('Pb2b (2d) · nenTachFou: L = R = 7, G+V trống → false; L = 7, R = 9 → true; lớp BE → false · chonKhiDoiTach giữ người', () => {
-    assert(!d.nenTachFou('FOU', [{ skill: 'listening', userId: 7 }, { skill: 'reading', userId: 7 }, { skill: 'speaking', userId: 9 }]), 'cùng người');
+  /* PR-S6F-a Q3 (D3) đổi kỳ vọng: L = R = 7, G+V trống → TÁCH (mở gộp thì lưu sẽ tự gán G+V cho người 7); ba môn cùng người → gộp. */
+  check('Pb2b (2d) · nenTachFou: L = R = G+V = 7 → false; L = R = 7, G+V trống → true (S6F-a D3); L = 7, R = 9 → true; lớp BE → false · chonKhiDoiTach giữ người', () => {
+    assert(!d.nenTachFou('FOU', [{ skill: 'listening', userId: 7 }, { skill: 'reading', userId: 7 }, { skill: 'writing', userId: 7 }, { skill: 'speaking', userId: 9 }]), 'cùng người');
+    assert(d.nenTachFou('FOU', [{ skill: 'listening', userId: 7 }, { skill: 'reading', userId: 7 }, { skill: 'speaking', userId: 9 }]), 'G+V trống');
     assert(d.nenTachFou('FOU', [{ skill: 'listening', userId: 7 }, { skill: 'reading', userId: 9 }]), 'khác người');
     assert(!d.nenTachFou('BE', [{ skill: 'listening', userId: 7 }, { skill: 'reading', userId: 9 }]), 'BE');
     const gop = ['listening', 'reading', 'writing'];
@@ -341,7 +343,7 @@ export async function runPrPb2bTests(t: YThucTestKit) {
       assert(pn.rows.every((r: any, i: number, ds: any[]) => i === 0 || Number(ds[i - 1].dung) <= Number(r.dung)), `${h.ten}: dòng trễ phải đứng đầu`);
     }
   });
-  check('Pb2b (4d) · ô L nhập đúng hạn rồi sửa sau hạn → vẫn đúng hạn, panel ghi ngày sửa; R quá hạn chưa nhập → trễ; S dấu "-" → không có mặt', () => {
+  check('Pb2b (4d) · ô L nhập đúng hạn rồi sửa sau hạn → vẫn đúng hạn, panel ghi ngày sửa; R hạn đè đã qua nhưng tuần thi chưa hết → chưa tính (S6F-a D6); S dấu "-" → không có mặt', () => {
     /* Dòng panel của MỌI GV (phép kiểm trước có thể đã đổi người dạy L/R của MB FT 101 — gán người theo hạn, không theo người cố định). */
     const kh = { ct: 'ft', tu: tuanNay, den: tuanNay };
     const dongPanel = new Map<number, any>(bang('ft', kh).hang.flatMap((h: any) => pt.oChamDiemGv(P.mbManager, { ...kh, gv: h.id }).rows.map((r: any) => [r.id, r])));
@@ -349,7 +351,8 @@ export async function runPrPb2bTests(t: YThucTestKit) {
     const pcL = all(`SELECT user_id, effective_from, effective_to, status FROM teacher_assignments WHERE class_id = ? AND skill = 'listening'`, MB_FT);
     assert(L?.dung && L.nhapDau === D && L.sua, `ô L: ${JSON.stringify(L) ?? 'không có trong panel nào'} · hôm nay ${demoTodayNay()} · hạn ${hanL} · phân công L ${JSON.stringify(pcL)}`);
     const R = dongPanel.get(d.baiId(a1.id, 'reading'));
-    assert(R && !R.dung && R.nhapDau === null && R.tre === 1, `ô R: ${JSON.stringify(R) ?? 'không có trong panel nào'}`);
+    /* PR-S6F-a Q6 (D6) đổi kỳ vọng: một luật quá hạn nhập điểm — tuần thi còn chạy thì chưa ai trễ, kể cả hạn bị đặt đè sớm (phép kiểm S6F-a (3c) khoá phần sau tuần thi). */
+    assert(!R, `ô R tuần thi chưa hết vẫn bị tính: ${JSON.stringify(R)}`);
     const S = [...(pt.tapChamDiem(pt.nguCanhPtGv(P.mbManager, { ct: 'ft' }), { o: [], attempts: new Map(), bundle: null }).dong.values())];
     assert(S.length === 0, 'rỗng khi không có ô');
     const tatCa = [...dongPanel.keys()];

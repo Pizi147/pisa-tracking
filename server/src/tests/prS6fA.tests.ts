@@ -229,10 +229,12 @@ export async function runPrS6fATests(t: YThucTestKit) {
     const r = dongCham(TODAY, tuanW1).get(d.baiId(aV.id, 'listening'));
     assert(r && !r.dung, `bảng GV: ${JSON.stringify(r)}`);
   });
-  check('S6F-a (3e) · HAI ĐƯỜNG: (lớp, đợt) của việc nhập điểm "Quá hạn" của GV = (lớp, đợt) có ô Nợ điểm quá hạn của GV', () => {
+  /* Chỉ lớp ĐANG HOẠT ĐỘNG: Nợ điểm không tính lớp đã kết thúc, Việc vẫn tính — lệch có từ trước, ngoài Q6 (chuyển planning / PR-Dọn). */
+  check('S6F-a (3e) · HAI ĐƯỜNG: (lớp, đợt) của việc nhập điểm "Quá hạn" của GV = (lớp, đợt) có ô Nợ điểm quá hạn của GV (lớp đang hoạt động)', () => {
     const g = gvL();
+    const lopMo = new Set((conn.prepare(`SELECT id FROM classes WHERE status = 'active'`).all() as any[]).map((r) => r.id));
     const viec = new Set((mw.myWork(g).groups as any[]).flatMap((x) => x.items)
-      .filter((it: any) => it.group === 'score' && it.mine && it.urgency === 'overdue').map((it: any) => `${it.classId}|${it.attemptNo}|${it.contextLabel}`));
+      .filter((it: any) => it.group === 'score' && it.mine && it.urgency === 'overdue' && lopMo.has(it.classId)).map((it: any) => `${it.classId}|${it.attemptNo}|${it.contextLabel}`));
     const luot = new Map((conn.prepare(`SELECT id, class_id, attempt_no, kind FROM assessment_attempts`).all() as any[]).map((a) => [a.id, a]));
     const no = new Set((debt.scoreDebtCells(P.admin, TODAY, null) as any[]).filter((x) => x.overdue && x.userId === g.userId).map((x) => {
       const a = luot.get(x.attemptId);
