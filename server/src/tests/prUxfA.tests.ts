@@ -291,9 +291,10 @@ export async function runPrUxfATests(t: YThucTestKit) {
     }
     assert(tongHaiKhung === o.n, `ô FT + ô thường ${tongHaiKhung} ≠ ô gộp ${o.n}`);
     const cells = (debt.scoreDebtCells(P.admin, TODAY, [MB]) as any[]).filter((c) => c.overdue);
-    const c0 = cells[0];
-    const dong = metricsSvc.rowsFor('bai', [d.baiId(c0.attemptId, c0.skill)])[0];
-    assert(dong.sub.includes(d.tuanLich(c0.weekStart, TODAY)), `dòng phải ghi tuần thi của môn ${d.tuanLich(c0.weekStart, TODAY)}: ${dong.sub}`);
+    /* Dòng ghi tuần thi CỦA MÔN (Thứ Hai tuần thi của kỹ năng ở `attempt_skills`, không tuần của lượt) — X: ô L tuần 07/09. */
+    const dong = metricsSvc.rowsFor('bai', [d.baiId(luotX, 'listening')])[0];
+    const tuanL = get(`SELECT rp.week_start w FROM attempt_skills k JOIN report_periods rp ON rp.id = k.planned_period_id WHERE k.attempt_id = ? AND k.skill = 'listening'`, luotX).w as string;
+    assert(cells.length > 0 && dong.sub.includes(d.tuanLich(tuanL, TODAY)), `dòng phải ghi tuần thi của môn ${d.tuanLich(tuanL, TODAY)}: ${dong.sub}`);
   });
 
   check('UXF-a (5) · PHỦ ĐỊNH quyền: GVBM chỉ thấy bài lớp mình; QL chi nhánh CP không thấy bài MB', () => {
@@ -490,17 +491,16 @@ export async function runPrUxfATests(t: YThucTestKit) {
     }
   });
 
-  check('UXF-a (9) · F5 hàm thuần: n việc + m nhắc → Lọc nhanh "Tất cả" = Nhóm "Tất cả" = Σ nhóm; Quá hạn / Hôm nay không gồm nhắc', () => {
+  check('UXF-a (9) · F5 hàm thuần: Lọc nhanh "Tất cả" = Nhóm "Tất cả" = Σ nhóm; lọc Quá hạn thì nhóm chỉ đếm việc quá hạn (nhắc mềm đã thành việc thật — VAI-a K5-10)', () => {
     const it = (group: string, urgency: string, due: string | null) => ({ group, urgency, due });
     const items = [it('score', 'overdue', '2026-09-10'), it('case_plan', 'today', TODAY), it('violation', 'normal', null), it('task', 'normal', '2026-09-18')];
-    const m = 3;
-    const loc = d.demLocNhanh(items, 'tat-ca', TODAY, m);
-    const nhom = d.demNhomChip(items, 'tat-ca', TODAY, m);
+    const loc = d.demLocNhanh(items, 'tat-ca', TODAY);
+    const nhom = d.demNhomChip(items, 'tat-ca', TODAY);
     const tong = d.NHOM_VIEC.reduce((n: number, k: string) => n + nhom[k], 0);
-    assert(loc['tat-ca'] === items.length + m && nhom['tat-ca'] === loc['tat-ca'] && tong === nhom['tat-ca'], `Tất cả: lọc ${loc['tat-ca']} · nhóm ${nhom['tat-ca']} · Σ ${tong}`);
-    assert(loc['qua-han'] === 1 && loc['hom-nay'] === 1, `Quá hạn/Hôm nay không gồm nhắc: ${JSON.stringify(loc)}`);
-    const nhomQuaHan = d.demNhomChip(items, 'qua-han', TODAY, m);
-    assert(nhomQuaHan['tat-ca'] === 1 && nhomQuaHan['y-thuc'] === 0, `nhóm khi lọc Quá hạn: ${JSON.stringify(nhomQuaHan)}`);
+    assert(loc['tat-ca'] === items.length && nhom['tat-ca'] === loc['tat-ca'] && tong === nhom['tat-ca'], `Tất cả: lọc ${loc['tat-ca']} · nhóm ${nhom['tat-ca']} · Σ ${tong}`);
+    assert(loc['qua-han'] === 1 && loc['hom-nay'] === 1, `Quá hạn/Hôm nay: ${JSON.stringify(loc)}`);
+    const nhomQuaHan = d.demNhomChip(items, 'qua-han', TODAY);
+    assert(nhomQuaHan['tat-ca'] === 1 && nhomQuaHan['tat-ca'] === loc['qua-han'], `nhóm khi lọc Quá hạn: ${JSON.stringify(nhomQuaHan)}`);
   });
 
   // ==================================================================== Task 10 · Chưa phân loại không rơi Case; hạn gốc đúng; tooltip Tạm thời
