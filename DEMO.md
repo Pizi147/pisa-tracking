@@ -16,7 +16,25 @@ màn đăng nhập.
 |---|---|
 | Quản trị hệ thống | `dovutuanphong95.pisa@gmail.com` |
 | Quản lý Monbay · Bãi Cháy · Cẩm Phả · Hải Dương · Uông Bí | `vy.nguyen` · `dang.tran` · `mai.le` · `anh.pham` · `binh.hoang` + `.pisa@gmail.com` |
-| Giáo viên (ví dụ GVCN MB-FT 101) | `ha.tran.pisa@gmail.com` · các cô thầy khác cùng dạng `<tên>.<họ>.pisa@gmail.com` |
+| Giáo viên (ví dụ GVCN MB FT 101) | `ha.tran.pisa@gmail.com` · các cô thầy khác cùng dạng `<tên>.<họ>.pisa@gmail.com` |
+
+**Mục lục kịch bản D1–D18** (mã theo `thiet-ke/ra-27-09/K5.md` §6; tên lớp theo mẫu mới `MB FT 101`):
+
+| Mã | Ở đâu trong file | Em / lớp mở |
+|---|---|---|
+| D1 | mục 10 | **Phan Gia Hân**, **Đặng Quốc Bảo** (MB FT RF 12) |
+| D2 · D3 | mục 10 | **Lê Minh Khang** (MB FT 101) — MT lịch sử |
+| D4 | — | bỏ: database reset trước bản chính, không có lệnh bổ sung MT cho dữ liệu cũ |
+| D5 · D6 | mục 10 | Hồ Ngọc Diệp, Ngô Bảo Châu, Lý Thanh Tâm, Võ Minh Triết · Phạm Khánh Linh |
+| D7 · D8 | mục 9 | Vũ Ngọc Lan, Đỗ Minh Khôi, Trịnh Gia Bảo, Bùi Thảo Vy · Lý Minh Châu, Hoàng Bảo Ngọc |
+| D9 | mục 14 | **Lê Hoàng Anh** (MB FOU 15) |
+| D10 · D11 | mục 14, 15 | MB BE 03, MB BE 04, MB ELE 02 |
+| D12 · D13 | mục 13, 15 | MB Pre FOU 03 · em BE lên FT (Trung tâm / Học sinh) |
+| D14 | mục 1 | Ý thức v4 — 10+ em lớp MB FT 101 |
+| D15 | mục 1 (dòng j) | **Quách Thành Nam** (MB FT 101 → MB FT 102) |
+| D16 | mục 10 | **Đinh Gia Huy** (MB FT 101 → MB FT RF 12) |
+| D17 | mục 1 (QL Vy · Chờ duyệt), 9 (Báo lên), 11 (Lịch thi), 14 (Kế hoạch bổ trợ) | Chờ duyệt đủ 6 chip — bộ `server/src/seed/duyetSeed.ts` |
+| D18 | mục 17 | **Phân tích giáo viên** (Pb2-b) — không phải KPI (Q30-5 đã bỏ KPI) |
 
 ---
 
@@ -50,7 +68,7 @@ Bộ demo nằm ở `server/src/seed/yThucSeed.ts` (dựng sau khi đặt ngày 
 
 Thêm: **Đặng Thu Vân** (BC FT 205) — Report 1 do Quản lý Bãi Cháy **nhập hộ** việc thầy Quân đã gọi; một vi phạm Mới của cô Hân quá
 hạn → thẻ Báo lên ở chi nhánh BC. **Ngô Hải Yến** (CP FT 110) — vi phạm thầy Nam (GVCN) tự ghi là *Đã ghi nhận* (Q5). **Trần Hải Kiên**
-(HD BE 21 → HD FT 302) — Report 1, 2 ở lớp BE; sang FT là chuỗi thang mới (bậc kế lại là Report 1). **Đỗ Minh Khôi** (bộ SOS v3) —
+(HD BE 21 → HD FT 302) — Report 1, 2 ở lớp BE; sang FT là chuỗi thang mới (bậc kế lại là Report 1). **Đỗ Minh Khôi** (bộ SOS, mục 9) —
 hai vi phạm GVCN tự ghi, *Đã ghi nhận*. Một vi phạm của Trần Thu Hà đã **xoá** — chỉ còn một dòng `audit_logs`.
 
 Tài khoản nên mở: **cô Hà** (GVCN, id 7) — tab Ý thức & Phối hợp của MB FT 101: khung trái *Quá hạn* (Ngọc, Đăng) › *Bắt buộc*
@@ -73,12 +91,12 @@ Nếu chỉ có mười phút, mở đúng sáu hồ sơ này là hiểu đượ
 
 | # | Mở hồ sơ | Sẽ thấy gì |
 |---|---|---|
-| 1 | **Nguyễn Minh An** · PISA-000001 · MB-FT 101 | **Hành trình nhiều chương trình** Foundation → Beginner → Fast Track từ 12/2025. Một case Reading từ lớp Beginner vẫn mở và **theo em sang lớp mới** như một việc bàn giao. Bấm "Toàn bộ hành trình" để thấy điểm của hai chương trình cũ. |
-| 2 | **Trần Thu Hà** · PISA-000002 · MB-FT 101 | **SOS giảm dần sau hỗ trợ.** MT1 SOS 2 → hỗ trợ → MT2 SOS 1. Case Reading khép "Tiến bộ rõ rệt"; case Speaking còn theo dõi sang chu kỳ hai dù kết quả gần nhất đã khá lên. |
-| 3 | **Hồ Thanh Tùng** · CP-FT 110 | **Case tái diễn.** Reading từng chốt xong ở MT1; MT3 yếu lại → case **MỚI** nối vào case cũ; case cũ giữ nguyên kết quả. |
-| 4 | **Lý Tuấn Bình** · CP-FT 110 | **Thay phương án.** Nhận định "thiếu từ vựng" không nhích; xem lại thấy là **giọng**. Phương án cũ khép "Được thay thế" (KHÔNG phải thành công). |
-| 5 | **Phạm Gia Hân** · HD-BE 21 | **Bàn giao khi chuyển lớp.** Ghi chú bàn giao ở sự kiện chuyển lớp; chu kỳ hai do giáo viên mới thực hiện. |
-| 6 | **Lý Thanh Trúc** · UB-FT 401 | **Kết quả thi thật** 15/08/2026: 6.0 so với target 6.5 — chưa đạt. So với **Dương Minh Quân** cùng lớp (7.0, đạt). |
+| 1 | **Nguyễn Minh An** · PISA-000001 · MB FT 101 | **Hành trình nhiều chương trình** Foundation → Beginner → Fast Track từ 12/2025. Một case Reading từ lớp Beginner vẫn mở và **theo em sang lớp mới** như một việc bàn giao. Bấm "Toàn bộ hành trình" để thấy điểm của hai chương trình cũ. |
+| 2 | **Trần Thu Hà** · PISA-000002 · MB FT 101 | **SOS giảm dần sau hỗ trợ.** MT1 SOS 2 → hỗ trợ → MT2 SOS 1. Case Reading khép "Tiến bộ rõ rệt"; case Speaking còn theo dõi sang chu kỳ hai dù kết quả gần nhất đã khá lên. |
+| 3 | **Hồ Thanh Tùng** · CP FT 110 | **Case tái diễn.** Reading từng chốt xong ở MT1; MT3 yếu lại → case **MỚI** nối vào case cũ; case cũ giữ nguyên kết quả. |
+| 4 | **Lý Tuấn Bình** · CP FT 110 | **Thay phương án.** Nhận định "thiếu từ vựng" không nhích; xem lại thấy là **giọng**. Phương án cũ khép "Được thay thế" (KHÔNG phải thành công). |
+| 5 | **Phạm Gia Hân** · HD BE 21 | **Bàn giao khi chuyển lớp.** Ghi chú bàn giao ở sự kiện chuyển lớp; chu kỳ hai do giáo viên mới thực hiện. |
+| 6 | **Lý Thanh Trúc** · UB FT 401 | **Kết quả thi thật** 15/08/2026: 6.0 so với target 6.5 — chưa đạt. So với **Dương Minh Quân** cùng lớp (7.0, đạt). |
 
 ### Bảng kịch bản đầy đủ
 
@@ -86,24 +104,24 @@ Mã J01–J12 chỉ dùng trong tài liệu này, không hiện ra sản phẩm.
 
 | Mã | Học viên · lớp | Cần thấy gì |
 |---|---|---|
-| **J01** | Nguyễn Minh An · MB-FT 101 | Ba chương trình nối nhau. Case Reading lớp Beginner còn mở → **case bàn giao**, không tính thành SOS lớp Fast Track. Ý thức: mục 1 (e). |
-| **J02** | Trần Thu Hà · MB-FT 101 | MT1 SOS 2 → MT2 SOS 1. Reading hết case; Speaking còn một case chu kỳ hai. Ý thức: mục 1 (a). |
-| **J03** | Lê Quang Huy · MB-FT 101 | **Hồ sơ dày nhất** — mục 5. Ý thức: mục 1 (b). |
-| **J04** | Hồ Thanh Tùng · CP-FT 110 | Hai case Reading: một đã chốt (MT1), một mở (MT3) nối vào cái cũ, có mốc "tái phát". |
-| **J05** | Đinh Ngọc Quyên · CP-FT 110 | **Hai case song song** cùng hạng mục Writing Task 2 (bố cục · vốn từ), mỗi case phương án riêng. |
-| **J06** | Lý Tuấn Bình · CP-FT 110 | Phương án 1 "Được thay thế" sau "Chưa thay đổi"; phương án 2 "Tiến bộ rõ rệt". |
-| **J07** | Phan Minh Tú · BC-FT 205 | Đề xuất **bị từ chối** kèm lý do; **được duyệt** (chu kỳ chạy từ ngày duyệt); **đang chờ**, quá hạn trả lời. Mở bằng Quản lý Bãi Cháy. |
-| **J08** | Phạm Bảo Ngọc · MB-FT 101 | MT3 tuần này mới 2/4 kỹ năng → kết luận **tạm thời**; điểm MT2 không lấp vào ô trống. Cũng là ví dụ **tách tuần** (mục 4). Ý thức: mục 1 (c). |
-| **J09** | Trần Hải Kiên · HD-FT 302 | Lộ trình mới, chưa có MT → không có SOS; case Speaking từ Beginner cũ theo em như việc bàn giao. Ý thức: chuỗi thang mới khi sang FT (mục 1). |
-| **J10** | Phạm Gia Hân · HD-BE 21 | Chuyển lớp giữa chừng khi case còn mở; chu kỳ 1 cô Yến, chu kỳ 2 thầy Dũng. |
-| **J11** | Đặng Thu Vân · BC-FT 205 | Học thuật chưa có case. Ý thức: Report 1 do Quản lý nhập hộ, rồi một vi phạm Mới quá hạn → thẻ Báo lên. |
-| **J12** | Dương Minh Quân + Lý Thanh Trúc · UB-FT 401 | Cùng thi 15/08/2026: một em **đạt** 7.0, một em **chưa đạt** (6.0 so với 6.5). |
+| **J01** | Nguyễn Minh An · MB FT 101 | Ba chương trình nối nhau. Case Reading lớp Beginner còn mở → **case bàn giao**, không tính thành SOS lớp Fast Track. Ý thức: mục 1 (e). |
+| **J02** | Trần Thu Hà · MB FT 101 | MT1 SOS 2 → MT2 SOS 1. Reading hết case; Speaking còn một case chu kỳ hai. Ý thức: mục 1 (a). |
+| **J03** | Lê Quang Huy · MB FT 101 | **Hồ sơ dày nhất** — mục 5. Ý thức: mục 1 (b). |
+| **J04** | Hồ Thanh Tùng · CP FT 110 | Hai case Reading: một đã chốt (MT1), một mở (MT3) nối vào cái cũ, có mốc "tái phát". |
+| **J05** | Đinh Ngọc Quyên · CP FT 110 | **Hai case song song** cùng hạng mục Writing Task 2 (bố cục · vốn từ), mỗi case phương án riêng. |
+| **J06** | Lý Tuấn Bình · CP FT 110 | Phương án 1 "Được thay thế" sau "Chưa thay đổi"; phương án 2 "Tiến bộ rõ rệt". |
+| **J07** | Phan Minh Tú · BC FT 205 | Đề xuất **bị từ chối** kèm lý do; **được duyệt** (chu kỳ chạy từ ngày duyệt); **đang chờ**, quá hạn trả lời. Mở bằng Quản lý Bãi Cháy. |
+| **J08** | Phạm Bảo Ngọc · MB FT 101 | MT3 tuần này mới 2/4 kỹ năng → kết luận **tạm thời**; điểm MT2 không lấp vào ô trống. Cũng là ví dụ **tách tuần** (mục 4). Ý thức: mục 1 (c). |
+| **J09** | Trần Hải Kiên · HD FT 302 | Lộ trình mới, chưa có MT → không có SOS; case Speaking từ Beginner cũ theo em như việc bàn giao. Ý thức: chuỗi thang mới khi sang FT (mục 1). |
+| **J10** | Phạm Gia Hân · HD BE 21 | Chuyển lớp giữa chừng khi case còn mở; chu kỳ 1 cô Yến, chu kỳ 2 thầy Dũng. |
+| **J11** | Đặng Thu Vân · BC FT 205 | Học thuật chưa có case. Ý thức: Report 1 do Quản lý nhập hộ, rồi một vi phạm Mới quá hạn → thẻ Báo lên. |
+| **J12** | Dương Minh Quân + Lý Thanh Trúc · UB FT 401 | Cùng thi 15/08/2026: một em **đạt** 7.0, một em **chưa đạt** (6.0 so với 6.5). |
 
 ---
 
 ## 3. Điểm dưới kỳ vọng sinh TÍN HIỆU, không tự mở case
 
-> **Từ tối 21/09/2026 (rulebook v3) đoạn này chỉ còn đúng cho lớp NORMAL.** Mock Test Fast Track nay *tự tạo* case cho từng kỹ năng trượt — xem mục 9.
+> **Đoạn này chỉ đúng cho lớp NORMAL.** Mock Test Fast Track *tự tạo* Case cho từng kỹ năng trượt — xem mục 9.
 
 Điểm chỉ sinh **tín hiệu**: *"môn này dưới kỳ vọng, ai đó phải xem"*. Giáo viên bộ môn xác minh môn mình. Máy chỉ đọc được
 con số chứ không biết **vì sao**, nên nó không tự mở case hay tự xếp phương án.
@@ -118,8 +136,8 @@ con số chứ không biết **vì sao**, nên nó không tự mở case hay t�
 
 | Mở ở đâu | Cần thấy gì |
 |---|---|
-| **Chu Minh Hiếu** · MB-FT 102 → hồ sơ (Quản lý Monbay) | Thẻ **"Tín hiệu chờ xác minh"** trước bảng tiến độ: *Reading 5.0 so với kỳ vọng 5.5 · MT2*, hạn 16/09. **Chưa có case nào** — đó là điểm mấu chốt. Bấm **Mở case** để thấy form điền sẵn. |
-| **Mai Ngọc Diệp** · BC-FT 205 (Quản lý Bãi Cháy) | Tín hiệu Speaking **đã quá hạn xác minh** (hạn 09/09) — cố ý. |
+| **Chu Minh Hiếu** · MB FT 102 → hồ sơ (Quản lý Monbay) | Thẻ **"Tín hiệu chờ xác minh"** trước bảng tiến độ: *Reading 5.0 so với kỳ vọng 5.5 · MT2*, hạn 16/09. **Chưa có case nào** — đó là điểm mấu chốt. Bấm **Mở case** để thấy form điền sẵn. |
+| **Mai Ngọc Diệp** · BC FT 205 (Quản lý Bãi Cháy) | Tín hiệu Speaking **đã quá hạn xác minh** (hạn 09/09) — cố ý. |
 | Tổng quan của cô **Phạm Thu Trang** | Nhóm việc **"Xác minh tín hiệu"** đứng đầu, kèm nhãn *Quá hạn xác minh*. |
 
 Thử: bấm **"Đã xem, không mở case"** rồi để trống nhận định → không cho lưu.
@@ -128,7 +146,7 @@ Thử: bấm **"Đã xem, không mở case"** rồi để trống nhận định
 
 ## 9. SOS tự tạo case và Phối hợp SOS — SOS v4 (chỉ máy dev)
 
-Học viên MỚI ở `MB-FT 101`, dựng bằng chính các hàm nghiệp vụ (`server/src/seed/sosV3Seed.ts`): nhập điểm Mock Test → máy tự tạo case,
+Học viên MỚI ở `MB FT 101`, dựng bằng chính các hàm nghiệp vụ (`server/src/seed/sosV3Seed.ts`): nhập điểm Mock Test → máy tự tạo case,
 **PA theo quy chế chờ xác nhận** và việc phối hợp; rồi GVBM/GVCN/Quản lý thao tác (Xác nhận Case, Xác nhận PA, Không cần theo dõi, duyệt / từ chối).
 
 **D7 — Case SOS đủ trạng thái v4**
@@ -172,7 +190,6 @@ Dựng bằng chính các hàm nghiệp vụ (`server/src/seed/prMtSeed.ts`), sa
 | D1 · lớp RF | **Phan Gia Hân** (MB FT RF 12) | Mới vào: MT1 W2 OCT (tuần học 4), MT2 W1 NOV (tuần học 8) |
 | D1 · RF có SOS | **Đặng Quốc Bảo** (MB FT RF 12) | MT1 kỳ vọng **= target 6.5** (không trừ); L R 6.0 → SOS 2 → PA quy chế `Tutor · đến lúc thi`, Phối hợp theo hàng MT4 |
 | D2/D3 · HS cũ | **Lê Minh Khang** (MB FT 101) | Thêm hôm nay, bắt đầu 17 tuần trước: MT1–MT3 nhãn `lịch sử`. MT2 đã nhập SOS 2 — **không** Case (ngoài 4 tuần). MT3 (2 tuần trước) chưa nhập — GVCN Hà nhập thử ở Lịch Test (dòng nhắc cuối trang) → ra Case |
-| D4 · dữ liệu cũ | **Trần Hữu Phúc** (MB FT 101) | Em FT không có lượt nào — dòng (2) của `npm run chay-thu:mt` |
 | D5 · máy tự dời | **Hồ Ngọc Diệp** | "-" cả bốn kỹ năng tuần trước → chốt sáng thứ Hai → máy dời sang tuần này (vắng lần 1); chuông GVCN + GVBM "Đã tự dời …" |
 | D5 · chờ duyệt lần 2 | **Ngô Bảo Châu** | Listening vắng lần 2 → đề nghị chờ Quản lý, hạn hết CN 20/09, tuần đích W4 SEP; Lịch Test hàng lớp `vắng · chờ Quản lý duyệt dời` |
 | D5 · đã duyệt | **Lý Thanh Tâm** | Đề nghị lần 2 đã được Quản lý duyệt → Listening sang W4 SEP, đã dời 2 lần |
@@ -194,14 +211,14 @@ Dời Speaking sang tuần sau **chỉ đổi hạn Speaking**. Môn chưa đế
 | Mở ở đâu | Cần thấy gì |
 |---|---|
 | **Phạm Bảo Ngọc** → MT3 → thẻ "Lịch thi theo kỹ năng" | "Đợt này thi ở nhiều tuần". L, R có điểm (hạn 23/9); Writing chưa chấm; **Speaking** tuần 21–27/9 "Chưa đến lịch", hạn 30/9. "Tuần hoàn tất" là **W4 SEP**. |
-| **Tạ Thu Quỳnh** · MB-FT 102 → MT2 | **Chiều ngược lại**: Speaking trước, R/L/W tuần sau. |
-| **Lớp MB-FOU 12** → Bảng điểm → bài cuối khoá | Final Test trải **ba tuần**; vẫn phải đủ cả bốn môn mới hoàn tất. |
+| **Tạ Thu Quỳnh** · MB FT 102 → MT2 | **Chiều ngược lại**: Speaking trước, R/L/W tuần sau. |
+| **Lớp MB FOU 12** → Bảng điểm → bài cuối khoá | Final Test trải **ba tuần**; vẫn phải đủ cả bốn môn mới hoàn tất. |
 
 ---
 
 ## 5. Hồ sơ dày nhất: Lê Quang Huy (J03)
 
-Mở `Học viên → MB-FT 101 → Lê Quang Huy`: **một em nhiều case thì màn hình đọc ra sao**.
+Mở `Học viên → MB FT 101 → Lê Quang Huy`: **một em nhiều case thì màn hình đọc ra sao**.
 
 | Hàng kỹ năng | Trạng thái | Bấm vào sẽ thấy |
 |---|---|---|
@@ -222,8 +239,8 @@ lọc ngay danh sách bên dưới; "Việc cần làm" mặc định "Việc c�
 **Tổng quan → Thực trạng**: theo tuần (sáu cột kết luận cộng đúng bằng số lượt); theo chi nhánh → Vấn đề; → Phương án &
 kết quả (phương án bị thay nằm ở cột "Đã dừng", không bao giờ tính thành công). **Ý thức không có mặt ở đây** — nó ở ngoài mọi bảng hiệu quả hỗ trợ.
 
-**Học viên**: MB-FT 101 (Fast Track: Target · Dự kiến thi · Mốc · OVR · L · R · S · W1 · W2); MB-FOU 12 (Normal: điểm đạt/tổng,
-không Target); UB-FOUND 07 và HD-FOU 05 hết chương trình → "N em cần xếp lớp".
+**Học viên**: MB FT 101 (Fast Track: Target · Dự kiến thi · Mốc · OVR · L · R · S · W1 · W2); MB FOU 12 (Normal: điểm đạt/tổng,
+không Target); UB-FOUND 07 và HD FOU 05 hết chương trình → "N em cần xếp lớp".
 
 **Tiến độ công việc** (chỉ Quản trị và Quản lý): việc cha có bốn việc con (Writing quá hạn khi việc cha còn hạn); một việc
 từng tạm ngưng rồi tiếp tục; một việc dừng hẳn có lý do; một việc gắn case làm căn cứ nhưng không tự tạo phương án.
@@ -238,7 +255,7 @@ Mỗi dòng có phép kiểm tự động canh chừng (mục **42** của `npm 
 |---|---|---|
 | 1 | MT tách tuần theo **cả hai chiều** | Phạm Bảo Ngọc · Tạ Thu Quỳnh |
 | 2 | FT thi một phần kỹ năng, **không Overall giả** | Đợt MT có kỹ năng "không yêu cầu" |
-| 3 | Normal đủ bốn môn, ngưỡng 70% | Lớp MB-FOU 12 |
+| 3 | Normal đủ bốn môn, ngưỡng 70% | Lớp MB FOU 12 |
 | 4 | Dời vì vắng: lần đầu GVCN · lần hai chờ duyệt | Nguyễn Minh An · Trần Thu Hà |
 | 5 | Huỷ riêng một kỹ năng | Thẻ "Lịch thi theo kỹ năng" có hàng **Đã huỷ** |
 | 6 | Kỹ năng chờ xếp lại, đợt **chưa** kết thúc | Hàng "Chưa có tuần" / "Đã xác nhận vắng" |
@@ -285,7 +302,7 @@ sửa một câu chuyện học thuật: `server/src/seed/students.ts`; câu chu
 # Phần B — Những điều đã chốt, và những điều còn treo
 
 Chỉ ghi thứ **thực sự thay đổi cách phần mềm chạy**. Thứ tự ưu tiên khi hai nguồn nói khác nhau: **lời owner mới nhất** →
-`thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` (cho Ý thức) → `vong4/01_CHOT_NGHIEP_VU.md` → `PISA_Claude_Prompt.md` →
+`thiet-ke/PISA-Rulebook-2026-09-19.md` (Ý thức v4: mục B6 dưới đây) → `vong4/01_CHOT_NGHIEP_VU.md` → `PISA_Claude_Prompt.md` →
 `PISA_Design_Master_Reference.md` → mã đang chạy.
 
 ## B1. Cách chấm và kết luận
@@ -332,7 +349,7 @@ Chỉ ghi thứ **thực sự thay đổi cách phần mềm chạy**. Thứ t�
 
 ## B4. Khi có SOS, hệ thống sinh gì
 
-**Mock Test Fast Track (rulebook v3, 21/09/2026 tối):** mỗi kỹ năng trượt được *tự tạo hoặc tự gắn* một case, kèm phương án điền sẵn chờ GVBM xác nhận, và một lượt *Phối hợp SOS* cho GVCN — xem mục 9. **Lớp Normal:** chỉ **tín hiệu** (mục 3 ở trên). *Từ 21/09/2026* không còn tự sinh case Ý thức, không còn hai việc trao đổi tự sinh, không còn
+**Mock Test Fast Track:** mỗi kỹ năng trượt được *tự tạo hoặc tự gắn* một case, kèm phương án điền sẵn chờ GVBM xác nhận, và một lượt *Phối hợp SOS* cho GVCN — xem mục 9. **Lớp Normal:** chỉ **tín hiệu** (mục 3 ở trên). *Từ 21/09/2026* không còn tự sinh case Ý thức, không còn hai việc trao đổi tự sinh, không còn
 tự sinh phương án xếp tự học / tutor. Người xác minh quyết định.
 
 ## B5. Phương án, đề xuất và duyệt
@@ -356,7 +373,7 @@ duyệt** (bắt buộc lý do) · **góp ý** (không kết thúc việc chờ)
 ## B6. Ý thức — luật v4 (PR-YT4, chốt 27–29/09/2026)
 
 Nguồn đầy đủ: đặc tả `docs/superpowers/specs/2026-09-27-nang-cap-sau-deploy-design.md` §5.4–§5.8 (mã V4-1…V4-12). Luật thuần ở
-`shared/domain/yThuc.ts`, một cửa trạng thái ở `server/src/yThuc/trangThai.ts`. `thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` là bản v3 (lịch sử).
+`shared/domain/yThuc.ts`, một cửa trạng thái ở `server/src/yThuc/trangThai.ts`.
 
 | | |
 |---|---|
@@ -532,6 +549,7 @@ Dựng bằng hàm nghiệp vụ (`server/src/seed/pb2bSeed.ts`, `buildPb2bDemo`
 | Chấm điểm đúng hạn / trễ / sửa sau | bấm ô **Chấm điểm 12/14** của Hương | panel `Tất cả · Trễ`: 2 ô L nhập 11/09 (hạn 09/09) **Trễ 2 ngày** đứng đầu; ô L của Phan Gia Bảo nhập 03/09, `sửa 12/09 · lần sửa không tính` vẫn **Đúng hạn** |
 | Quá hạn chưa nhập | ô Chấm điểm **3/7** của Vinh | 4 ô S `chưa nhập · tới hôm nay 14/09` |
 | Xử lý vi phạm | hàng Vinh, cột Xử lý vi phạm | **3/6** — 3 vi phạm xử lý trước hạn, 3 vi phạm xử lý sau hạn; bấm → hồ sơ lớp MB FT 105 tab Ý thức |
+| PA hiệu quả | hàng Hương, Duyên, cột **PA hiệu quả** | Hương **1/1** (PA Tutor của Case tay Listening · Hồ Thảo Nhi, kết thúc 11/09 *Có tiến bộ*); Duyên **1/1** (PA Bài tập thêm · Writing Task 1 · Trịnh Ngọc Ánh, 11/09 *Tiến bộ một phần*); bấm → Hiệu quả PA lọc theo GV |
 | HV tiến bộ | hàng Hương, Duyên | 3 em có MT1 (W4 AUG) — so MT2 W1 SEP từng kỹ năng |
 | FOU hai giáo viên | Lớp thường · 09/2026 | Bình `L · R · G+V · GVCN MB FOU 14`: L **5/5**, R **3/5**, W (G+V) **2/5**, S (P) "—"; Ngọc `P` chỉ có cột S (P) **4/4 · mẫu nhỏ**; ô Chấm điểm của Ngọc có 1 ô P trễ |
 | Phân công 2 ô | Hồ sơ lớp MB FOU 14 › ⋮ Sửa phân công | lưới 2 ô `L · R · G+V` và `P` + link **Tách từng môn**; hồ sơ GV Bình: vai `GVCN · L R G+V` |

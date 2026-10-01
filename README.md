@@ -123,7 +123,7 @@ Gợi ý tài khoản nên dùng đầu tiên:
 | **Màn Tổng quan đầy đủ nhất**: đề xuất quá hạn duyệt, bài quá hạn chấm, lớp chưa có GVCN | **Trần Hải Đăng** — `dang.tran.pisa@gmail.com` (Quản lý Bãi Cháy) |
 | Bảng **Việc cần lưu ý** và tab **Thực trạng** của một chi nhánh đông lớp | **Nguyễn Khánh Vy** — `vy.nguyen.pisa@gmail.com` (Quản lý Monbay) |
 | Chốt **ngày** MT trong tuần đã có kế hoạch | **Vũ Thuỳ Dương** — `duong.vu.pisa@gmail.com` (Admin CN Monbay) |
-| Góc nhìn GVCN, thấy đúng lớp mình dạy | **Trần Ngọc Hà** — `ha.tran.pisa@gmail.com` (GVCN lớp MB-FT 101) |
+| Góc nhìn GVCN, thấy đúng lớp mình dạy | **Trần Ngọc Hà** — `ha.tran.pisa@gmail.com` (GVCN lớp MB FT 101) |
 | Giáo viên dạy ở **hai** chi nhánh, số liệu mỗi nơi đứng riêng | **Phạm Thu Trang** — `trang.pham.pisa@gmail.com` (Monbay + Bãi Cháy) |
 
 Mỗi vai trò mở vào đúng việc thường làm nhất. Đây chỉ là lối vào, không đổi quyền.
@@ -259,8 +259,9 @@ Tài liệu liên quan:
 > `PISA_Design_Master_Reference.md` và `PRODUCT_DEMO_SPEC.md` (đã bị `thiet-ke/` thay hẳn),
 > `vong4/` (đã xong từ lâu). Chúng là **lịch sử, không phải luật**, và giữ lại chỉ tạo rủi ro
 > đọc phải luật cũ. Cần tra lại thì dùng `git log`.
-- `DEMO.md` — **một tệp cho cả bản demo**: mười tám tình huống Ý thức, sáu hồ sơ nên mở đầu tiên, bảng kịch bản J01–J12,
-  bốn màn nên mở, và (phần B) những điều đã chốt cùng những điểm còn treo
+- `DEMO.md` — **một tệp cho cả bản demo**: mục lục kịch bản D1–D18 ở đầu, Ý thức v4 (mục 1), sáu hồ sơ nên mở đầu tiên, bảng
+  kịch bản J01–J12, SOS · lịch MT · lớp thường · chuyển lớp · Phân tích giáo viên (mục 9–17), và (phần B) những điều đã chốt
+  cùng những điểm còn treo
 - `CODE_MAP.md` — bản đồ mã nguồn, dành cho người sẽ tiếp tục xây phần mềm
 
 ---
@@ -269,14 +270,17 @@ Tài liệu liên quan:
 
 Bản chính (giáo viên dùng thật) chạy trên **Netlify**, dữ liệu ở **Turso**, tệp tải lên ở **Netlify Blobs**. Mọi bước —
 tạo database, đặt biến môi trường, khởi tạo, deploy, sao lưu — nằm trong **`TRIEN_KHAI.md`**, viết cho người không cần
-biết code. Kế hoạch kỹ thuật: `docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md`.
+biết code. **Reset bản chính (10/2026): `TRIEN_KHAI.md` mục 1a "Reset bản chính"** — mười bước, làm một lần sau PR-DEPLOY.
+Kế hoạch kỹ thuật: `docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md`, `docs/superpowers/plans/2026-10-02-pr-deploy-reset-ban-chinh.md`.
 
 **Máy dev không đổi gì:** `npm run dev`, `npm run seed`, `npm test`, `npm run check`, `npm run migrate` vẫn chạy như trên
-với file `data/pisa-demo.sqlite`. Bốn lệnh chỉ dùng cho bản chính:
+với file `data/pisa-demo.sqlite`. Các lệnh chỉ dùng cho bản chính:
 
 | Lệnh | Tác dụng |
 |---|---|
 | `npm run init-ban-chinh` | Khởi tạo database bản chính **rỗng** (bảng, vai trò, chi nhánh, một tài khoản quản trị). Database đã có dữ liệu → từ chối, không ghi gì |
+| `npm run kiem-sau-init` | CHỈ ĐỌC: kiểm database vừa khởi tạo — bảng nền, chi nhánh, không dữ liệu demo, không tài khoản mang mật khẩu demo, khoá ngoại. Dòng cuối `Đạt.` hoặc `CÓ VẤN ĐỀ` |
+| `npm run xoa-kho-tep` | Xoá sạch kho tệp bằng chứng của database đang trỏ tới (chỉ khi reset tại chỗ, mục 1a). Bắt gõ lại tên kho; kho database thử bị từ chối |
 | `npm run them-chi-nhanh -- MÃ "Tên"` | Thêm một chi nhánh. Mã đã có → từ chối |
 | `npm run sao-luu` | Chép toàn bộ database (và tệp bằng chứng) ra một file `.sqlite` mang tên database; giữ 14 bản mỗi database. Chỉ đọc database |
 | `npm run khoi-phuc` | Chép một file sao lưu vào một database **mới, hoàn toàn trống** (`TRIEN_KHAI.md` mục 11.2). Đích đã có dữ liệu → từ chối |
