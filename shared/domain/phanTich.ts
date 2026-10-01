@@ -225,7 +225,7 @@ export function oKhongApDung(c: CotTongHop, coDot: { giua: boolean; cuoi: boolea
 const COT_XU_LY: CotTongHop[] = [
   { khoa: 'hvCoCase', nhom: 'xu-ly', donVi: 'hoc-vien', nhan: () => 'HV có Case',
     goiY: 'Học viên có ít nhất một Case sinh từ các lượt trong dòng — một em nhiều Case vẫn tính một lần.' },
-  { khoa: 'case', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Case', goiY: 'Case sinh từ các lượt trong dòng — là tình trạng HÔM NAY của case, không phải lúc lượt được chấm.' },
+  { khoa: 'case', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Case', goiY: 'Case sinh từ các lượt trong dòng — là tình trạng HÔM NAY của Case, không phải lúc lượt được chấm.' },
   /* PR-SOS (K1-20): bốn cột theo MỘT nhãn trạng thái Case (`trangThaiCaseV4`) — tình trạng hôm nay. */
   { khoa: 'choNguyenNhan', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Chờ nguyên nhân',
     goiY: 'Case chưa xác nhận nguyên nhân — trong ngoặc là số đã quá hạn 3 ngày.' },
@@ -445,6 +445,8 @@ export type HieuQuaPaKetQua = {
 export type DongHvCanChuY = {
   studentId: number; ten: string; lop: string | null; viPham: number; chuaXuLy: number;
   bienPhapGanNhat: string | null; ngay: string | null;
+  /** G-058: lần xử lý MỚI HƠN lần đã xong gần nhất, còn đang chờ duyệt / bị từ chối — kèm nhãn trạng thái. */
+  lanXuLyMoi: { ten: string; nhan: string } | null;
   /** PR-YT4 (K1-25): nhóm em (Quá hạn · Bắt buộc xử lý · Chờ QL duyệt), bậc hiện tại và bậc kế trên thang. */
   nhom: 'qua_han' | 'bat_buoc' | 'cho_duyet'; bac: string | null; bacKe: string | null;
 };

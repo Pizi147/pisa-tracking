@@ -2363,7 +2363,7 @@ check('[9.3] Hoàn thành Case: một đường duy nhất, có kết luận và
     /chưa cập nhật kết quả/, 'Còn phương án chưa cập nhật mà vẫn đóng được',
   );
 
-  // Kết thúc phương án (tab "Kết thúc") → lúc này mới đóng được.
+  // Kết thúc PA (tab "Kết thúc") → lúc này mới đóng được.
   cases.updateResult(P.coreTeacher, ivId, {
     mode: 'end', outcome: 'improved', nextStep: 'complete',
     note: 'Em nghe bắt ý tốt hơn hẳn, đã hết buổi tutor cuối',
@@ -2474,7 +2474,7 @@ check('[9.1] Hai tab cập nhật kết quả: theo dõi tiếp thì không ph�
     `Hạn ghi kết quả mới phải là hết Thứ Hai kế tiếp, đang là ${iv2.actionDue}`);
   assert(iv2.actionDue > demoToday(), 'Vừa cập nhật xong đã báo quá hạn');
 
-  // "Thay phương án" khép phương án cũ với lý do ĐƯỢC THAY THẾ, không phải đã thành công.
+  // "Thay PA" khép phương án cũ với lý do ĐƯỢC THAY THẾ, không phải đã thành công.
   const replaced = cases.updateResult(P.coreTeacher, ivId, {
     mode: 'end', outcome: 'worse', nextStep: 'propose', note: 'Tự học không ăn thua với em này',
     decisionNote: 'Tự học không ăn thua nên chuyển sang tutor',
@@ -7707,7 +7707,7 @@ check('PR-F · Sổ chỉ số: đúng hai mươi chỉ số (PR-N thêm pa-cho-
     assert(['hoc-vien', 'case', 'phuong-an', 'bai', 'bai-thi', 'dot-test', 'nghia-vu', 'vi-pham', 'bien-phap', 'luot-sos', 'lop', 'viec-van-hanh'].includes(m.donVi), `${m.id}: đơn vị lạ "${m.donVi}"`);
     assert(['hien-trang', 'phat-sinh-trong-ky', 'ket-qua-trong-ky'].includes(m.thoiGian), `${m.id}: thời gian lạ "${m.thoiGian}"`);
   }
-  assert(domain.metricById('hv-co-case-mo')?.ten === 'Học viên có case đang mở', 'metricById phải tra đúng chỉ số');
+  assert(domain.metricById('hv-co-case-mo')?.ten === 'Học viên có Case đang mở', 'metricById phải tra đúng chỉ số');
   assert(domain.metricById('khong-co') === null, 'metricById của mã lạ phải là null');
 });
 
@@ -7890,7 +7890,7 @@ check('PR-F · Đối soát F10 (nhãn): hai định nghĩa khác nhau thì hai 
   const overviewLabel = domain.metricById('hv-co-case-mo')!;
   assert(/kể cả em đã kết thúc khoá/.test(overviewLabel.tapDuDieuKien),
     `Tổng quan phải nói rõ nó đếm CẢ em đã kết thúc khoá mà case còn mở: "${overviewLabel.tapDuDieuKien}"`);
-  assert(overviewLabel.ten === 'Học viên có case đang mở', `Nhãn Tổng quan: "${overviewLabel.ten}"`);
+  assert(overviewLabel.ten === 'Học viên có Case đang mở', `Nhãn Tổng quan: "${overviewLabel.ten}"`);
   /* Thực trạng đếm em ĐANG HỌC — nhãn cột là "HV đang gặp", không phải nhãn của Tổng quan (kiểm cả ở giao diện). */
   assert(overviewLabel.ten !== 'HV đang gặp', 'Hai màn đang dùng chung một nhãn cho hai định nghĩa khác nhau');
 });

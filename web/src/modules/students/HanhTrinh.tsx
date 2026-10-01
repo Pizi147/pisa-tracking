@@ -504,7 +504,7 @@ function VanDeHang({ v, vi, cuoi, truc, boCuc, rongTuan, homNay, onOpenCase }: {
           <NhanLoai loai="PA" cho={coPaCho || (!!cho && v.pa.length === 0)} />
           <span className="truncate">{boCuc.xuongDong
             ? (v.pa.length ? String(v.pa.length) : 'chưa có')
-            : [v.pa.length ? `${v.pa.length} phương án` : 'chưa có PA', v.nguoi].filter(Boolean).join(' · ')}</span>
+            : [v.pa.length ? `${v.pa.length} PA` : 'chưa có PA', v.nguoi].filter(Boolean).join(' · ')}</span>
         </span>
       </CotGhim>
       {cho && v.pa.length === 0 ? (

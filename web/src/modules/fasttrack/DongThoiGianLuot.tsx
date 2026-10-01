@@ -74,7 +74,7 @@ export function DongThoiGianLuot({ history, scoreHistory, ct = null, gioiHan = 5
         ))}
       </ol>
       {dong.length > gioiHan && (
-        <button type="button" className="btn btn-sm btn-ghost mt-2" onClick={() => setHet((v) => !v)}>
+        <button type="button" className="btn btn-sm btn-ghost mt-2 min-h-[44px] sm:min-h-0" onClick={() => setHet((v) => !v)}>
           {het ? 'Thu gọn' : `Xem hết ${dong.length}`}
         </button>
       )}

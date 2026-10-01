@@ -125,7 +125,7 @@ export async function runDieuChinhPaTests(t: YThucTestKit) {
 
   // ================================================================== 2. Luật quyết định (shared/domain)
 
-  console.log('\nPR-S2 · 2. Quyết định của lần Ghi kết quả: Giữ nguyên · Điều chỉnh · Thay phương án · Kết thúc phương án');
+  console.log('\nPR-S2 · 2. Quyết định của lần Ghi kết quả: Giữ nguyên · Điều chỉnh · Thay PA · Kết thúc PA');
 
   check('PR-S2 · S4: Chưa đủ dữ liệu được Giữ nguyên / Điều chỉnh / Thay nhưng không Kết thúc suông; kết quả tốt đủ năm lựa chọn; kết quả chưa tốt không Kết thúc suông', () => {
     const f = (o: string) => domain.decisionsFor(o).join(',');
@@ -153,7 +153,7 @@ export async function runDieuChinhPaTests(t: YThucTestKit) {
     }
     assert(domain.PLAN_DECISION_CHIPS.join(',') === 'keep,adjust,replace,end', 'Bốn nút chính phải đúng thứ tự nguồn §8');
     assert(domain.NEXT_STEP_LABEL.adjust === 'Điều chỉnh' && domain.NEXT_STEP_LABEL.continue === 'Giữ nguyên'
-      && domain.NEXT_STEP_LABEL.propose === 'Thay phương án', `Nhãn bước: ${JSON.stringify(domain.NEXT_STEP_LABEL)}`);
+      && domain.NEXT_STEP_LABEL.propose === 'Thay PA', `Nhãn bước: ${JSON.stringify(domain.NEXT_STEP_LABEL)}`);
     assert(domain.stepsForMode('monitor', 'unchanged').join(',') === 'continue,adjust', 'Theo dõi tiếp phải cho Giữ nguyên và Điều chỉnh');
     assert(domain.decisionNeedsReason('adjust') && domain.decisionNeedsReason('replace') && !domain.decisionNeedsReason('keep')
       && !domain.decisionNeedsReason('end'), 'Chỉ Điều chỉnh và Thay bắt lý do');

@@ -163,7 +163,7 @@ export function QuickReport({
   /*
    * CẢNH BÁO CASE TRÙNG — mục 7.13.
    *
-   * Máy chủ từ chối lần gửi đầu và trả về CHÍNH case đang vướng, nên pop-up dựng được ngay
+   * Máy chủ từ chối lần gửi đầu và trả về CHÍNH Case đang vướng, nên pop-up dựng được ngay
    * mà không phải hỏi lại thêm một vòng mạng. Hai lựa chọn chỉ khác nhau đúng một cờ, và
    * nội dung người dùng vừa gõ được giữ nguyên ở cả hai đường — không bắt gõ lại.
    */
@@ -182,7 +182,7 @@ export function QuickReport({
         ...extra,
       });
       invalidate('/cases'); invalidate('/students'); invalidate('/overview');
-      toast.push('ok', extra.mergeIntoExisting ? 'Đã ghi vào case đang có' : 'Đã ghi nhận');
+      toast.push('ok', extra.mergeIntoExisting ? 'Đã ghi vào Case đang có' : 'Đã ghi nhận');
       setDup(null);
       setDaLuu({ id: res.id, tieuDe: res.title, gop: !!extra.mergeIntoExisting, canEdit: !!res.viewer?.canEdit, viecTiep: res.viecTiep ?? null });
     } catch (e: any) {
@@ -276,7 +276,7 @@ export function QuickReport({
   const loi = dsLoi(LUAT, { 'hoc-vien': studentId, 'ky-nang': topic, 'phan-loai': primaryCode, 'ghi-ro': ghiRo, ten: title, 'mo-ta': summary,
     'tu-tuan': bfFrom, 'den-tuan': bfTo, 'ket-qua': bfOutcome, 'vi-sao': bfNote });
   if (mode === 'backfill' && bfFrom && bfTo && bfFrom > bfTo) loi.push({ khoa: 'den-tuan', nhan: 'Đến tuần', lyDo: 'Không được trước Từ tuần' });
-  if (mode === 'backfill' && !bfActions.some((a) => a.description.trim())) loi.push({ khoa: 'pa-0', nhan: 'Phương án đã áp dụng', lyDo: 'Chưa có PA nào' });
+  if (mode === 'backfill' && !bfActions.some((a) => a.description.trim())) loi.push({ khoa: 'pa-0', nhan: 'PA đã áp dụng', lyDo: 'Chưa có PA nào' });
   const thieu = loi.map((l) => l.nhan);
   const oLoi = lf.conThieu(loi);
   const loiCua = (khoa: string) => lf.loiCua(loi, khoa);
@@ -460,7 +460,7 @@ export function QuickReport({
                   <div key={i} className="rounded-lg border px-2.5 py-2" style={{ borderColor: 'var(--line)' }}>
                     {dangSua ? (
                       <div className="space-y-2">
-                        <input className="field w-full" {...(i === 0 ? o('pa-0') : {})} aria-label="Phương án đã áp dụng"
+                        <input className="field w-full" {...(i === 0 ? o('pa-0') : {})} aria-label="PA đã áp dụng"
                           placeholder={GOI_Y_MO_TA_PA} value={a.description}
                           onChange={(e) => setBfActions(bfActions.map((x, j) => (j === i ? { ...x, description: e.target.value } : x)))} />
                         {/* YC-12.5.3: kết quả của PA này — hàng PA hiện kết quả thay "Chưa có kết quả". */}

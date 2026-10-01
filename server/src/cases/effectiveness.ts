@@ -216,7 +216,7 @@ function queryPlans(sids: number[], scope: Scope) {
   theoLo(sids, (lo, ph) => { out.push(...(db()
     .prepare(
       /*
-       * CHỐT 5 (PR-C mục 10.4): case NHẬP BÙ không vào mẫu số hiệu quả hỗ trợ — nó ghi lại
+       * CHỐT 5 (PR-C mục 10.4): Case NHẬP BÙ không vào mẫu số hiệu quả hỗ trợ — nó ghi lại
        * trí nhớ, không phải một phương án đang được theo dõi hôm nay. Vẫn hiện đủ trên hồ sơ
        * và hành trình theo tuần; chỉ loại khỏi phép tính tỷ lệ ở đây.
        * S16/S17 (PR-S1): Case HỆ THỐNG tự đóng không có kết quả và PA bị huỷ vì việc đóng (`closed_reason = 'system_closed'`) không
@@ -340,7 +340,7 @@ function canBoSungDanhGiaCua(tatCa: PlanRow[], category: string | null) {
 /**
  * TỶ LỆ CÓ CẢI THIỆN — `(có tiến bộ + một phần) / (bốn mức xác định)`, trả về CẢ HAI TẬP ID.
  *
- * "Chưa đủ dữ liệu" và case nhập bù KHÔNG vào mẫu số. Ba phương án đủ kết quả (tiến bộ, một
+ * "Chưa đủ dữ liệu" và Case nhập bù KHÔNG vào mẫu số. Ba phương án đủ kết quả (tiến bộ, một
  * phần, không tiến bộ) cộng một phương án chưa xác định cho ra 2/3, KHÔNG phải 2/4. Số là độ dài
  * của tập, danh sách khi bấm vào là chính tập đó.
  */
@@ -359,7 +359,7 @@ export function improvementRate(scope: Scope & { category?: string | null }) {
  * TỶ LỆ THEO LOẠI PHƯƠNG ÁN — n/N trước %, và luôn kèm CỠ MẪU.
  *
  * Mẫu số là số phương án CÙNG LOẠI đã kết thúc VÀ có kết quả xác định. Không chia số phương
- * án thành công cho số CASE: một case có ba phương án, và đem chia chéo hai đơn vị khác nhau
+ * án thành công cho số CASE: một Case có ba phương án, và đem chia chéo hai đơn vị khác nhau
  * thì con số ra không trả lời được câu hỏi nào.
  *
  * KHÔNG XẾP HẠNG khi mẫu quá nhỏ. 1/1 = 100% không có nghĩa là loại đó tốt nhất, và gọi tên
@@ -409,12 +409,12 @@ function hieuQuaTheoLoaiCua(all: PlanRow[], category: string | null) {
  * Năm con số mỗi hàng, và mỗi con số là một đơn vị KHÁC NHAU (mục 15.2), nên tuyệt đối
  * không chia chéo chúng cho nhau:
  *
- *   Case                    số case mang phân loại này
- *   Phương án               số phương án của các case đó
+ *   Case                    số Case mang phân loại này
+ *   Phương án               số phương án của các Case đó
  *   PA đang theo dõi        phương án chưa khép lại
  *   PA thành công / không   chỉ tính phương án ĐÃ KẾT THÚC có kết quả xác định
  *
- * HỌC VIÊN ĐẾM DUY NHẤT trong từng hàng. Một em có hai case cùng phân loại vẫn là một em;
+ * HỌC VIÊN ĐẾM DUY NHẤT trong từng hàng. Một em có hai Case cùng phân loại vẫn là một em;
  * còn tổng các hàng lớn hơn số em duy nhất của cả bảng là chuyện bình thường, vì một em có
  * thể gặp nhiều phân loại — và bảng phải NÓI RA điều đó thay vì để người đọc tự cộng.
  */
@@ -427,7 +427,7 @@ export function classIssueBoard(classId: number, category: string, opts: { fromD
  *
  * Hai màn hỏi cùng những câu và chỉ khác phạm vi, nên chúng dùng chung đúng một hàm. Viết
  * hai bản là cách chắc chắn để một hôm nào đó bảng của lớp và trang Thực trạng cãi nhau về
- * cùng một case, và lúc đó không ai biết bên nào đúng.
+ * cùng một Case, và lúc đó không ai biết bên nào đúng.
  */
 export function issueBoard(scope: Scope, category: string) {
   const conn = db();
@@ -484,8 +484,8 @@ export function issueBoard(scope: Scope, category: string) {
   const outcomes = new Map(outcomeRows.map((r) => [r.id, r]));
 
   /*
-   * MỘT HÀNG CHO MỖI PHÂN LOẠI ĐANG CÓ MẶT, cộng một hàng riêng cho case CHƯA PHÂN LOẠI.
-   * Gộp case chưa phân loại vào "Khác" là giấu mất một tập cần người xử lý (mục 15.1).
+   * MỘT HÀNG CHO MỖI PHÂN LOẠI ĐANG CÓ MẶT, cộng một hàng riêng cho Case CHƯA PHÂN LOẠI.
+   * Gộp Case chưa phân loại vào "Khác" là giấu mất một tập cần người xử lý (mục 15.1).
    */
   const groups = new Map<string, number[]>();
   for (const c of mine) {
@@ -502,12 +502,12 @@ export function issueBoard(scope: Scope, category: string) {
       cases: ids.length,
       openCases: mine.filter((c) => ids.includes(c.id) && c.status !== 'done').length,
       /*
-       * HV ĐANG GẶP là HIỆN TRẠNG: chỉ em có case CHƯA KẾT LUẬN (F02). Trước đây cột này đếm từ MỌI
-       * case của phân loại trong khi `openCases` bên cạnh đã lọc chưa đóng — hai cột cạnh nhau nói về
-       * hai tập khác nhau. Em chỉ có case đã đóng không còn "đang gặp" vấn đề nữa.
+       * HV ĐANG GẶP là HIỆN TRẠNG: chỉ em có Case CHƯA KẾT LUẬN (F02). Trước đây cột này đếm từ MỌI
+       * Case của phân loại trong khi `openCases` bên cạnh đã lọc chưa đóng — hai cột cạnh nhau nói về
+       * hai tập khác nhau. Em chỉ có Case đã đóng không còn "đang gặp" vấn đề nữa.
        */
       students: new Set(mine.filter((c) => ids.includes(c.id) && c.status !== 'done').map((c) => c.student_id)).size,
-      /* Chỉ số LỊCH SỬ riêng: mọi em TỪNG có case ở phân loại này, kể cả case đã đóng. */
+      /* Chỉ số LỊCH SỬ riêng: mọi em TỪNG có Case ở phân loại này, kể cả Case đã đóng. */
       studentsEver: new Set(mine.filter((c) => ids.includes(c.id)).map((c) => c.student_id)).size,
       /* Case đang mở mà chưa ai đề ra phương án — đây là việc chặn, nên tách riêng. Cùng `isNoPlanCase` với chỉ số. */
       noPlan: mine.filter((c) => ids.includes(c.id)

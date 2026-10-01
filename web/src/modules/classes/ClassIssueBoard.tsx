@@ -55,7 +55,7 @@ export function VanDeKyNang({ classId, category }: { classId: number; category: 
                 <td className="td text-right tabular-nums">{so(t.hvGapVanDe.length, 'hv', 'Học viên gặp vấn đề')}</td>
                 <td className="td text-right tabular-nums">{so(t.caseTatCa.length, 'case', 'Case')}</td>
                 <td className="td text-right tabular-nums">{so(t.dangTheoDoi.length, 'dang-theo-doi', 'Case đang theo dõi')}</td>
-                <td className="td text-right tabular-nums">{so(t.daCoPa.length, 'da-co-pa', 'Case đã có phương án')}</td>
+                <td className="td text-right tabular-nums">{so(t.daCoPa.length, 'da-co-pa', 'Case đã có PA')}</td>
                 <td className="td text-right tabular-nums">
                   {so(t.daXong.length, 'da-xong', 'Case đã xong')}<span className="text-slate-500"> → </span>{so(t.thanhCong.length, 'thanh-cong', 'Case đã xong và thành công')}
                 </td>
@@ -65,8 +65,8 @@ export function VanDeKyNang({ classId, category }: { classId: number; category: 
         )}
       </section>
 
-      <section className="overflow-x-auto" aria-label={`Hiệu quả phương án ở ${mon}`}>
-        <h3 className="m-0 mb-1 text-xs font-semibold text-slate-200">Hiệu quả phương án ở {mon}</h3>
+      <section className="overflow-x-auto" aria-label={`Hiệu quả PA ở ${mon}`}>
+        <h3 className="m-0 mb-1 text-xs font-semibold text-slate-200">Hiệu quả PA ở {mon}</h3>
         {data.plans.length === 0 ? (
           <p className="m-0 py-2 text-xs text-slate-500">Chưa có phương án nào ở {mon}, nên chưa nói được loại nào hiệu quả.</p>
         ) : (

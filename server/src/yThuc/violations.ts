@@ -20,7 +20,7 @@ import {
  * VI PHẠM — MỖI SỰ VIỆC MỘT DÒNG ĐỘC LẬP (đặc tả §4.1 và §5.1–§5.2, nguồn mục 13–16).
  *
  * Vi phạm KHÔNG phải case: không đợt, không hạn, không mức độ, không người phụ trách. Ghi một vi phạm không sinh
- * biện pháp, case, tín hiệu, việc hay thông báo (V08) — nó chỉ xuất hiện trong hồ sơ học viên để GVCN theo dõi.
+ * biện pháp, Case, tín hiệu, việc hay thông báo (V08) — nó chỉ xuất hiện trong hồ sơ học viên để GVCN theo dõi.
  *
  * TRẠNG THÁI KHÔNG ĐƯỢC LƯU Ở ĐÂY (PR-YT4): sáu nhãn §5.4 (`Mới · Đã ghi nhận · Cần xử lý · Quá hạn · Chờ QL duyệt · Đã xử lý`) đọc qua
  * MỘT cửa `trangThaiYThuc()` (trangThai.ts). Cột `ghi_nhan_luc` chỉ ghi việc GVCN đã xem; nhãn vẫn do luật quyết.

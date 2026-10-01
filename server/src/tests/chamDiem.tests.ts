@@ -17,7 +17,7 @@ export async function runChamDiemTests(t: YThucTestKit) {
       d.nhanLopLichTest({ conBai, conBaiCuaToi, chuaToiHan, coDayLop });
     const eq = (got: any, want: string, m: string) => assert(`${got.loai}|${got.chu}` === want, `${m}: ${got.loai}|${got.chu} ≠ ${want}`);
     eq(n(0, 0, true, true), 'da-cham|Đã chấm', 'Hết bài thì "Đã chấm" dù tuần chưa tới');
-    eq(n(3, 3, true, true), 'chua-toi-han|Chưa tới hạn', 'Tuần sau: chưa ai nợ gì');
+    eq(n(3, 3, true, true), 'chua-toi-han|Chưa đến lịch', 'Tuần sau: chưa ai nợ gì');
     eq(n(3, 1, false, true), 'cho-ban|Chờ bạn chấm', 'Còn bài của tôi');
     eq(n(3, 0, false, true), 'cho-gv-khac|Chờ GV khác', 'Tôi dạy lớp nhưng bài còn lại của người khác');
     eq(n(3, 0, false, false), 'cho-cham|Chờ chấm', 'Quản lý (không dạy lớp) không thấy chữ "GV khác"');
@@ -38,7 +38,7 @@ export async function runChamDiemTests(t: YThucTestKit) {
     const eq = (got: string, want: string) => assert(got === want, `${got} ≠ ${want}`);
     eq(d.duongLichTest(), '/test/lich');
     eq(d.duongLichTest({ classId: null, kn: '' }), '/test/lich');
-    eq(d.duongLichTest({ kn: 'reading', classId: 7, periodId: 40, branchId: 2 }), '/test/lich?branchId=2&periodId=40&classId=7&kn=reading');
+    eq(d.duongLichTest({ kn: 'reading', classId: 7, periodId: 40, branchId: 2 }), '/test/lich?cn=2&periodId=40&classId=7&kn=reading');
     eq(d.duongLichTest({ classId: 7 }), '/test/lich?classId=7');
     for (const x of [d.duongLichTest(), d.duongLichTest({ classId: 7, kn: 'listening' })]) {
       const [p, q = ''] = x.split('?');
@@ -114,7 +114,7 @@ export async function runChamDiemTests(t: YThucTestKit) {
     eq(d.trangThaiChamLabel({ conBai: 0, tong: 8, quaHan: false, chuaToiHan: false }), 'Đã chấm xong', 'Xong');
     eq(d.trangThaiChamLabel({ conBai: 3, tong: 8, quaHan: false, chuaToiHan: false }), 'Còn 3 bài', 'Còn bài');
     eq(d.trangThaiChamLabel({ conBai: 3, tong: 8, quaHan: true, chuaToiHan: false }), 'Quá hạn · còn 3 bài', 'Quá hạn');
-    eq(d.trangThaiChamLabel({ conBai: 8, tong: 8, quaHan: false, chuaToiHan: true }), 'Chưa tới hạn', 'Chưa tới tuần thi');
+    eq(d.trangThaiChamLabel({ conBai: 8, tong: 8, quaHan: false, chuaToiHan: true }), 'Chưa đến lịch', 'Chưa tới tuần thi');
   });
 
   // ---------------------------------------------------------------- C08: dấu "-" của lớp thường
@@ -314,7 +314,7 @@ export async function runChamDiemTests(t: YThucTestKit) {
     /* Đợt 2 của cùng khoá cũng ở tuần 14/09: dời đợt 1 sang 21/09 là vượt qua đợt kế tiếp → setSkillWeek chặn. */
     taoLuot(cycleId, sid, 2, 'final', '2026-09-14');
     assertThrows(() => regular.reportRegularNoShow(P.normalSubjectTeacher, attemptId, k, true, '2026-09-16'),
-      /vượt qua đợt kế tiếp/, 'Dời lịch bị chặn thì cả lần ghi dấu phải thất bại');
+      /vượt qua lượt kế tiếp/, 'Dời lịch bị chặn thì cả lần ghi dấu phải thất bại');
     const sc = dauCua(attemptId, k);
     assert(!sc || !sc.no_show_period_id, 'Không còn dòng dấu "-" mồ côi sau khi dời thất bại');
     assert(tuanCuaMon(skillSched.loadSkillRows([attemptId]).get(attemptId), k) === '2026-09-14', 'Lịch giữ nguyên');
@@ -481,7 +481,7 @@ export async function runChamDiemTests(t: YThucTestKit) {
   });
 
   // ---------------------------------------------------------------- Lịch Test (PR-UX1: gộp Cần chấm vào đây)
-  const TRANG_THAI = /^(Đã chấm xong|Chưa tới hạn|Còn \d+ bài|Quá hạn · còn \d+ bài)$/;
+  const TRANG_THAI = /^(Đã chấm xong|Chưa đến lịch|Còn \d+ bài|Quá hạn · còn \d+ bài)$/;
   const { ensurePeriod } = await import('../platform/week.ts');
   const tuanId = (weekStart: string): number => ensurePeriod(weekStart).id;
   const TUAN_NAY = d.mondayOfDate(TODAY);
@@ -722,15 +722,15 @@ export async function runChamDiemTests(t: YThucTestKit) {
     assert(r.lop.find((l: any) => l.key === `${LOP}:final`).dotLabel === 'Cuối khoá', 'Tên đợt lớp thường');
   });
 
-  check('PR-Rc1 · Q14 Lịch Test: tuần chưa tới là "Chưa tới hạn"; em vắng không được đếm vào dòng', () => {
+  check('PR-Rc1 · Q14 Lịch Test: tuần chưa tới là "Chưa đến lịch"; em vắng không được đếm vào dòng', () => {
     const tuanXa = t.addDays(d.mondayOfDate(TODAY), 9 * 7);
     const { attemptId } = taoBaiThuong(tuanXa);
     const pid = (conn.prepare('SELECT id FROM report_periods WHERE week_start = ?').get(tuanXa) as any).id;
     const lopOf = () => cham.lichTest(P.mbManager, pid, null, TODAY).lop.find((l: any) => l.key === `${LOP}:progress`);
     const l1 = lopOf();
     assert(l1 && l1.dong.length > 0, 'Bài ở tuần sau phải hiện ở Lịch Test của tuần đó');
-    assert(l1.dong.every((x: any) => x.trangThai === 'Chưa tới hạn'), l1.dong.map((x: any) => x.trangThai).join(' | '));
-    assert(l1.nhan.loai === 'chua-toi-han' && !l1.moSan, 'Tuần chưa tới: nhãn "Chưa tới hạn", không tự mở');
+    assert(l1.dong.every((x: any) => x.trangThai === 'Chưa đến lịch'), l1.dong.map((x: any) => x.trangThai).join(' | '));
+    assert(l1.nhan.loai === 'chua-toi-han' && !l1.moSan, 'Tuần chưa tới: nhãn "Chưa đến lịch", không tự mở');
     const truoc = l1.dong.find((x: any) => x.kyNang.includes('reading')).soHv;
     conn.prepare(`UPDATE attempt_skills SET sit_status = 'absent' WHERE attempt_id = ? AND skill = 'reading'`).run(attemptId);
     const sau = lopOf()?.dong.find((x: any) => x.kyNang.includes('reading'))?.soHv ?? 0;

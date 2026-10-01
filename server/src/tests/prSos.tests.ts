@@ -167,7 +167,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     const keys = (myworkSvc.myWork(P.admin, { nguoi: 'tat-ca' }).items as any[]).map((i: any) => i.key as string);
     assert(!keys.includes(`action:${iv.id}`) && !keys.includes(`review:${iv.id}`), 'PA chờ xác nhận sinh việc Ghi kết quả');
   });
-  check('SOS (3) · Thông báo: GVBM một "Xác nhận nguyên nhân Listening · em · lớp" (thân "Case mới sau MT1: …") + hạn; GVCN "SOS 3 — {tên}"; GV W1 không nhận gì', () => {
+  check('SOS (3) · Thông báo: GVBM một "Xác nhận nguyên nhân Listening · em · lớp" (thân "Case mới sau MT1: …") + hạn; GVCN "SOS 3 · {tên}"; GV W1 không nhận gì', () => {
     const { st, a } = mt1Sos3('T3b');
     const c = caseOf(st.id, 'listening');
     /* Mức SOS trong tên là mức LÚC Case ra đời (nhập L trước → SOS 1); Speaking nhập sau cùng → SOS 3. */
@@ -179,7 +179,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     assert(nS.length === 1 && nS[0].title.startsWith('Xác nhận nguyên nhân Speaking · ') && nS[0].body.includes('[MT1] Speaking không đạt [SOS 3]'), JSON.stringify(nS));
     /* GVCN nhận một thông báo mỗi lần mức SOS của lượt lên (khoá theo mức, có sẵn) — chỉ GVCN. */
     const nA = all(`SELECT * FROM notifications WHERE entity_type = 'assessment_attempt' AND entity_id = ? ORDER BY id`, a.id);
-    assert(nA.length >= 1 && nA.every((n: any) => n.user_id === gvcn()) && nA[nA.length - 1].title === `SOS 3 — ${st.name}`, JSON.stringify(nA));
+    assert(nA.length >= 1 && nA.every((n: any) => n.user_id === gvcn()) && nA[nA.length - 1].title === `SOS 3 · ${st.name}`, JSON.stringify(nA));
     const w1 = P.w1Teacher.userId;
     const cuaW1 = all(`SELECT n.id FROM notifications n WHERE n.user_id = ? AND ((n.entity_type = 'assessment_attempt' AND n.entity_id = ?)
       OR (n.entity_type = 'sos_case' AND n.entity_id IN (SELECT id FROM sos_cases WHERE student_id = ?)))`, w1, a.id, st.id);

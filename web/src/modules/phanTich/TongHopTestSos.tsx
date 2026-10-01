@@ -2,6 +2,7 @@ import { Fragment, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { Card, Empty, ErrorState, SCORE_CHIP, Skeleton, Th } from '../../ui/ui.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { DINH_TRAI, SoO as SoLieuO } from './dungChung.tsx';
@@ -53,7 +54,7 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
   branchId: number | null; ct: ChuongTrinh; tg: Khoang; classId: number | null;
 }) {
   const { session } = useSession();
-  const demoDate = session?.demoDate ?? null;
+  const demoDate = useNgayNghiepVu().homNay || null;
   const [params, setParams] = useSearchParams();
   const theo: TheoDong = (THEO_DONG as readonly string[]).includes(params.get('theo') ?? '') ? (params.get('theo') as TheoDong) : 'tuan';
   const setTheo = (v: TheoDong) => {

@@ -143,7 +143,7 @@ const LOAI_MAT: { khoa: string; nhan: string; sql: string }[] = [
   { khoa: 'ghiKetQua', nhan: 'Ghi kết quả PA', sql: `SELECT COUNT(*) FROM (${F})` },
   { khoa: 'tinHieu', nhan: 'Case chờ xác nhận nguyên nhân', sql: `SELECT COUNT(*) FROM (${G})` },
   { khoa: 'viPham', nhan: 'Vi phạm', sql: `SELECT COUNT(*) FROM (${V})` },
-  { khoa: 'paXuLy', nhan: 'PA xử lý', sql: `SELECT COUNT(*) FROM (${M})` },
+  { khoa: 'paXuLy', nhan: 'Lần xử lý', sql: `SELECT COUNT(*) FROM (${M})` },
   { khoa: 'phoiHop', nhan: 'Phối hợp SOS', sql: `SELECT COUNT(*) FROM (${X})` },
   { khoa: 'tep', nhan: 'Tệp, liên kết đính kèm', sql: `SELECT COUNT(*) FROM attachments WHERE ${DK_TEP}` },
   { khoa: 'thongBao', nhan: 'Thông báo', sql: `SELECT COUNT(*) FROM notifications WHERE ${DK_THONG_BAO}` },

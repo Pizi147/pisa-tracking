@@ -19,7 +19,7 @@ import { allProgrammes, programmeByCode, type ProgrammeInfo } from '../normal/re
  * Hai câu hỏi của mục 7.6, và cả hai đều quy về một phép đếm tuần:
  *
  *   Lớp FT     em vào học tuần nào → MT1 tuần thứ 6, MT2 tuần 12, MT3 tuần 16 của em
- *   Lớp Normal lớp khai giảng tuần nào → lớp đang ở tuần thứ mấy trên mấy tuần
+ *   Lớp thường lớp khai giảng tuần nào → lớp đang ở tuần thứ mấy trên mấy tuần
  *
  * NGUYÊN TẮC LỚN NHẤT CỦA FILE NÀY: hệ thống chỉ ĐỀ XUẤT, không bao giờ ghi đè cái người
  * đã xếp. Owner nói rõ: "Đây là lịch mặc định; Quản lý chủ động xếp lại khi cần, và hệ
@@ -300,7 +300,7 @@ export function applySuggestedMockWeeks(p: Principal, cycleId: number): { create
   return { created: r.created.length, moved: r.moved.length, kept: r.kept };
 }
 
-// ==================================================================== lớp Normal
+// ==================================================================== lớp thường
 
 export type ClassProgress = {
   programmeCode: ProgrammeCode | null;
@@ -478,7 +478,7 @@ function computeProgress(
     : null;
 
   /*
-   * CHẶNG CỦA LỚP — owner yêu cầu 13/09/2026: lớp Normal phải TỰ BÁO khi đang trong tuần
+   * CHẶNG CỦA LỚP — owner yêu cầu 13/09/2026: lớp thường phải TỰ BÁO khi đang trong tuần
    * Progress Test, tuần Final Test, và khi đã hết chương trình.
    *
    * Vì sao báo TRƯỚC MỘT TUẦN chứ không chỉ báo trong tuần: đề kiểm tra và lịch phòng phải
@@ -657,7 +657,7 @@ const miss = (key: MissingInfo['key']): MissingInfo => ({ key, ...MISSING_LABEL[
  * Đây KHÔNG phải việc trong hàng đợi công việc — không có hạn, không ai bị thúc. Nó chỉ cần
  * được nhìn thấy bởi vai có trách nhiệm.
  *
- * Lớp Normal KHÔNG bị nhắc tháng thi: các em đó chưa thi IELTS, nhắc là nhắc sai.
+ * Lớp thường KHÔNG bị nhắc tháng thi: các em đó chưa thi IELTS, nhắc là nhắc sai.
  */
 export function missingForStudent(input: {
   cycle: {

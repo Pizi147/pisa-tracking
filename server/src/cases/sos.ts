@@ -25,7 +25,7 @@ import { tenCaseThuong, tenMonNgan } from '../../../shared/domain/index.ts';
  * Hành động phối hợp theo Lần MT × mức SOS, lấy nguyên từ 'Quy trinh SOS' của trung tâm.
  *
  * Đây là CHECKLIST cần phối hợp, không phải thứ hệ thống tự làm: SOS không tự cấp buổi học,
- * không tự lùi lịch thi, không tự đóng case và không tự xác nhận Head.
+ * không tự lùi lịch thi, không tự đóng Case và không tự xác nhận Head.
  */
 export type SosStep = {
   key: 'talk_student' | 'talk_parent' | 'academic' | 'ops' | 'meeting';
@@ -66,7 +66,7 @@ export function stepsFor(attemptNo: number, level: SosLevel): SosStep[] {
   if (attemptNo >= 3 && level >= 2) {
     steps.push({
       key: 'ops', label: 'Chính sách vận hành',
-      detail: 'P. Vận hành đưa chính sách hỗ trợ (buổi bổ trợ với Tutor / GV cơ hữu) — quyết định theo từng case',
+      detail: 'P. Vận hành đưa chính sách hỗ trợ (buổi bổ trợ với Tutor / GV cơ hữu) — quyết định theo từng Case',
       required: false,
     });
   }
@@ -126,14 +126,14 @@ export function followUntilAfter(attempt: any): string | null {
  * TÌM HOẶC MỞ CASE CHO MỘT HẠNG MỤC — và đây là chỗ vòng 4 khác hẳn vòng 3.
  *
  * Khoá gộp là `(học viên, lộ trình, hạng mục)`, KHÔNG có lượt MT trong đó. Nên MT2 trượt lại
- * Listening thì hàm này trả về ĐÚNG cái case Listening đang có, kèm một mốc mới — chứ không
- * mở case thứ hai. Đó chính là điều owner muốn: mở case ra là thấy phương án cũ đã làm gì
+ * Listening thì hàm này trả về ĐÚNG cái Case Listening đang có, kèm một mốc mới — chứ không
+ * mở Case thứ hai. Đó chính là điều owner muốn: mở Case ra là thấy phương án cũ đã làm gì
  * và có ăn thua không.
  *
  * Ba tình huống, ba loại mốc khác nhau, vì ba thứ này người đọc cần phân biệt:
  *   opened      lần đầu
- *   repeat      case đang mở mà lại trượt   → "phương án cũ chưa đạt kết quả"
- *   recurrence  case đã CHỐT KẾT THÚC mà lại trượt → "tưởng xong rồi mà hỏng lại"
+ *   repeat      Case đang mở mà lại trượt   → "phương án cũ chưa đạt kết quả"
+ *   recurrence  Case đã CHỐT KẾT THÚC mà lại trượt → "tưởng xong rồi mà hỏng lại"
  */
 export function upsertCategoryCase(
   p: Principal, attempt: any, category: CaseCategory, topic: string,
@@ -168,14 +168,14 @@ export function upsertCategoryCase(
   /*
    * CASE ĐÃ ĐÓNG MÀ TRƯỢT LẠI → MỞ CASE MỚI, NỐI VÀO CASE CŨ (mục 7.5, vòng 5).
    *
-   * ĐÂY LÀ ĐẢO LẠI QUYẾT ĐỊNH CỦA VÒNG 4, và lý do đảo rất cụ thể: mở lại case cũ thì phải
+   * ĐÂY LÀ ĐẢO LẠI QUYẾT ĐỊNH CỦA VÒNG 4, và lý do đảo rất cụ thể: mở lại Case cũ thì phải
    * xoá kết luận đã chốt của nó, mà kết luận ấy là một quyết định có thật của một người có
    * thật, ở một thời điểm mà lúc đó nó đúng. Đè lên nó là làm hồ sơ nói dối.
    *
-   * Case mới thừa kế khoá chống trùng (vì nó mới là case đang mở của hạng mục này), còn
-   * case cũ nhả khoá ra và giữ nguyên mọi thứ nó đã có.
+   * Case mới thừa kế khoá chống trùng (vì nó mới là Case đang mở của hạng mục này), còn
+   * Case cũ nhả khoá ra và giữ nguyên mọi thứ nó đã có.
    *
-   * Case cũ CÒN MỞ thì KHÔNG mở case thứ hai — chỉ cập nhật mức và ghi thêm một mốc, đúng
+   * Case cũ CÒN MỞ thì KHÔNG mở Case thứ hai — chỉ cập nhật mức và ghi thêm một mốc, đúng
    * như bảng ở mục 7.5.
    */
   if (existing.status === 'done') {
@@ -190,7 +190,7 @@ export function upsertCategoryCase(
       )
       .run(attempt.id, attempt.student_id, attempt.cycle_id, topic, category,
            detectedAt, sosLevel, key, followUntil, existing.id,
-           /* Case tái phát thừa kế người phụ trách của case cũ nếu người đó còn dạy lớp. */
+           /* Case tái phát thừa kế người phụ trách của Case cũ nếu người đó còn dạy lớp. */
            existing.owner_user_id
              ?? suggestCaseOwner({ classId: attempt.class_id ?? null, category }),
            nowIso());
@@ -199,7 +199,7 @@ export function upsertCategoryCase(
     addMilestone({
       caseId: existing.id, kind: 'recurrence', attemptId: attempt.id,
       attemptNo: attempt.attempt_no, sosLevel, occurredOn: detectedAt,
-      note: 'Tái diễn sau khi case này đã đóng — đã mở case mới nối tiếp',
+      note: 'Tái diễn sau khi Case này đã đóng — đã mở Case mới nối tiếp',
       createdBy: p.userId, dedupKey: `recur-link:${existing.id}:${attempt.id}`,
     });
     return { id, kind: 'recurrence' };
@@ -246,23 +246,23 @@ export function addMilestone(input: {
  * KẾT QUẢ MỘT ĐỢT ĐÁNH GIÁ SINH RA TÍN HIỆU — KHÔNG SINH CASE, KHÔNG SINH PHƯƠNG ÁN.
  *
  * Đây là thay đổi lớn nhất của vòng 7 trong luồng SOS (mục 6.2). Trước đây hàm này tự mở
- * case hoàn chỉnh cho từng môn trượt, và tự sinh một phương án "xếp tự học" hoặc "học tutor".
+ * Case hoàn chỉnh cho từng môn trượt, và tự sinh một phương án "xếp tự học" hoặc "học tutor".
  * Tất cả đã bị bỏ. (SOS chỉ sinh từ Mock Test và chỉ thuộc Học thuật — từ 21/09/2026 không còn
  * tín hiệu Ý thức/Khác nào.)
  *
  * Lý do bỏ, nói gọn: máy đọc được "band 5.5 < kỳ vọng 6.0", nhưng nó không biết VÌ SAO và
- * không xếp được tutor thay người. Những case và phương án tự sinh ấy làm bảng tổng hợp đầy
+ * không xếp được tutor thay người. Những Case và phương án tự sinh ấy làm bảng tổng hợp đầy
  * số mà không có một việc thật nào đứng sau.
  *
  * Nay hàm làm đúng hai việc:
  *
- *   1. Ghi mốc "đã đạt kỳ vọng" vào case đang mở của hạng mục lần này đã đạt, hạ mức về 0 —
+ *   1. Ghi mốc "đã đạt kỳ vọng" vào Case đang mở của hạng mục lần này đã đạt, hạ mức về 0 —
  *      nhưng KHÔNG tự đóng case. Một lần đạt chưa chứng minh vấn đề đã hết.
- *   2. Với môn dưới kỳ vọng: nếu hạng mục ĐÃ CÓ case đang mở thì thêm một mốc vào chính case
- *      đó và gắn tín hiệu vào nó — "không mặc định thêm case/phương án mới". Nếu chưa có
- *      case nào thì ghi một TÍN HIỆU CHỜ XÁC MINH, giao cho giáo viên bộ môn, hạn ba ngày.
+ *   2. Với môn dưới kỳ vọng: nếu hạng mục ĐÃ CÓ Case đang mở thì thêm một mốc vào chính Case
+ *      đó và gắn tín hiệu vào nó — "không mặc định thêm Case/phương án mới". Nếu chưa có
+ *      Case nào thì ghi một TÍN HIỆU CHỜ XÁC MINH, giao cho giáo viên bộ môn, hạn ba ngày.
 
- * Case đã ĐÓNG mà trượt lại cũng chỉ ra tín hiệu: mở case mới nối vào case cũ là một quyết
+ * Case đã ĐÓNG mà trượt lại cũng chỉ ra tín hiệu: mở Case mới nối vào Case cũ là một quyết
  * định có chủ đích của người dạy, không phải phản xạ của máy.
  */
 export function raiseSignalsForResult(p: Principal, attempt: any, result: AttemptResult) {
@@ -340,7 +340,7 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
   }
 
   /*
-   * RULEBOOK v3 (21/09/2026 tối, S01): CHỈ lượt Mock Test FAST TRACK mới TỰ TẠO case cho kỹ năng trượt mà chưa có case đang mở. Lớp Normal
+   * RULEBOOK v3 (21/09/2026 tối, S01): CHỈ lượt Mock Test FAST TRACK mới TỰ TẠO Case cho kỹ năng trượt mà chưa có Case đang mở. Lớp thường
    * (Progress/Final, chấm theo tỷ lệ) giữ nguyên mô hình tín hiệu cũ — Q-V3-1. Đây là cái công tắc duy nhất giữa hai mô hình.
    */
   const autoCases = isFastTrackMock(attempt, scoringModeOf(attempt));
@@ -353,7 +353,7 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
     const band = entry[skill] ?? null;
 
     /*
-     * CASE ĐANG MỞ CHO HẠNG MỤC NÀY thì tín hiệu về thẳng case đó — không mở case thứ hai,
+     * CASE ĐANG MỞ CHO HẠNG MỤC NÀY thì tín hiệu về thẳng Case đó — không mở Case thứ hai,
      * không sinh phương án. Vấn đề vẫn là vấn đề cũ; cái mới chỉ là một bằng chứng nữa.
      */
     let open = openHere.find((c) => c.category === category) ?? null;
@@ -364,12 +364,12 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
       skill, category,
       band, expectation: result.expectation, sosLevel: result.sosLevel,
       detectedOn: detectedAt,
-      /* Mock FT: tín hiệu được gắn NGAY vào một case, nên không có gì để "xác minh" — không báo. */
+      /* Mock FT: tín hiệu được gắn NGAY vào một Case, nên không có gì để "xác minh" — không báo. */
       silent: autoCases,
     });
 
     /*
-     * TÍN HIỆU ĐÃ NỐI VÀO MỘT CASE rồi (kể cả case đó nay đã ĐÓNG — `Không cần theo dõi`, hay chốt kết quả thường) thì KHÔNG tạo case mới cho chính
+     * TÍN HIỆU ĐÃ NỐI VÀO MỘT CASE rồi (kể cả Case đó nay đã ĐÓNG — `Không cần theo dõi`, hay chốt kết quả thường) thì KHÔNG tạo Case mới cho chính
      * lượt này: chạy lặp (lưu lại điểm, nhập kỹ năng khác, chấm lại) không được đảo quyết định của GVBM. Case chỉ được tạo lại khi tín hiệu được MỞ LẠI
      * (bị thu hồi rồi trượt lại — `raiseSignal` xoá `case_id`), hoặc ở MỘT LƯỢT SAU (tín hiệu của lượt đó là dòng khác).
      */
@@ -382,7 +382,7 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
     } else if (open) {
       /*
        * TÍN HIỆU ĐÃ NỐI VÀO CHÍNH CASE NÀY (chạy lặp: lưu lại điểm, nhập thêm kỹ năng khác, chấm lại) thì KHÔNG ghi thêm mốc "Trượt lại" — lượt
-       * này vừa mở hoặc đã được ghi vào case rồi. Chỉ mức SOS của cả lượt là có thể đổi, và chỉ khi case còn đang theo lượt này.
+       * này vừa mở hoặc đã được ghi vào Case rồi. Chỉ mức SOS của cả lượt là có thể đổi, và chỉ khi Case còn đang theo lượt này.
        */
       const already = signal.status === 'linked' && signal.case_id === open.id;
       if (already) {
@@ -417,7 +417,7 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
             conn.prepare('UPDATE sos_cases SET han_xac_nhan = ? WHERE id = ?').run(hanXacNhan(demoToday()), open.id);
           }
         }
-        /* Gắn thẳng, không qua tay người: case này đã có người phụ trách và đang chạy. */
+        /* Gắn thẳng, không qua tay người: Case này đã có người phụ trách và đang chạy. */
         if (signal.status === 'pending') {
           conn
             .prepare(
@@ -425,7 +425,7 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
                       resolution_note = ?, updated_at = ? WHERE id = ?`,
             )
             .run(open.id, p.userId, nowIso(),
-                 'Nối vào case đang mở của hạng mục này — cùng một vấn đề, thêm một bằng chứng.',
+                 'Nối vào Case đang mở của hạng mục này — cùng một vấn đề, thêm một bằng chứng.',
                  nowIso(), signal.id);
         }
       }
@@ -468,8 +468,8 @@ function recordChange(caseId: number, field: string, oldValue: string | null, ne
 }
 
 /**
- * CASE TỰ TẠO TỪ SOS (S01, S4-1) — mỗi kỹ năng trượt một case, W1/W2 tách (S02 — `failing` đã là kết quả của luật hai tầng nên không bao giờ
- * có case "Writing tổng"). Case đã ĐÓNG mà trượt lại thì `upsertCategoryCase` mở case mới NỐI vào case cũ. Case mới có PA theo quy chế
+ * CASE TỰ TẠO TỪ SOS (S01, S4-1) — mỗi kỹ năng trượt một Case, W1/W2 tách (S02 — `failing` đã là kết quả của luật hai tầng nên không bao giờ
+ * có case "Writing tổng"). Case đã ĐÓNG mà trượt lại thì `upsertCategoryCase` mở Case mới NỐI vào Case cũ. Case mới có PA theo quy chế
  * CHỜ XÁC NHẬN (Q28-3) + hạn xác nhận 3 ngày tính từ NGÀY CASE RA ĐỜI (không phải tuần thi — K5 §4 #6).
  * Tách hàm (Q15) để PR-LT2a gọi lại với PA Bổ trợ — không đổi luật FT. Trả dòng `sos_cases`.
  * PR-LT2a: `pa: 'bo_tro'` = Giữa khoá lớp thường — PA Bổ trợ thay PA quy chế, tên `[Giữa khoá] G+V không đạt`, không nhãn SOS (`sosLevel` null).
@@ -490,7 +490,7 @@ export function taoCaseTuDong(p: Principal, x: {
   addMilestone({
     caseId: up.id, kind: 'opened', attemptId: attempt.id, attemptNo: attempt.attempt_no,
     band: x.band, expectation: x.expectation, sosLevel: x.sosLevel,
-    occurredOn: x.detectedAt, note: boTro ? 'Giữa khoá tự tạo Case' : 'SOS tự tạo case từ kết quả Mock Test', createdBy: p.userId,
+    occurredOn: x.detectedAt, note: boTro ? 'Giữa khoá tự tạo Case' : 'SOS tự tạo Case từ kết quả Mock Test', createdBy: p.userId,
     dedupKey: `mt:${attempt.id}:${up.id}:opened`,
   });
   if (boTro) taoPaBoTro(conn, { caseId: up.id, attempt, skill: x.skill, category: x.category, ct, han });
@@ -536,7 +536,7 @@ function notifyTeachers(attempt: any, level: SosLevel) {
  * "Head xác nhận" ĐÃ BỎ khỏi luồng xử lý case.
  *
  * Đối chiếu code cũ: `confirmCase` chỉ ghi tên và ngày; nó không khoá điểm, không là điều
- * kiện để đổi trạng thái case, không mở khoá bước nào và không gắn với một trách nhiệm
+ * kiện để đổi trạng thái Case, không mở khoá bước nào và không gắn với một trách nhiệm
  * riêng nào. Tức là một bước duyệt không bảo vệ điều gì. Case kết thúc dựa trên chính
  * TRẠNG THÁI XỬ LÝ (chưa xử lý / đang xử lý / đã xử lý), không cần thêm một người bấm nút.
  *

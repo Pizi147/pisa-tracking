@@ -406,7 +406,7 @@ export async function runPrVaiATests(t: YThucTestKit) {
       for (const it of viec) {
         thay++;
         eq(it.count, phoiHop.coordinationOfClass(gv, it.classId).pendingCount, `lớp ${it.classCode}: count = số lượt tab Phối hợp`);
-        assert(it.due === null && it.urgency === 'normal' && it.actionLabel === 'Mở Phối hợp' && it.href.endsWith('?tab=y-thuc&sub=phoi-hop'), JSON.stringify(it));
+        assert(it.due === null && it.urgency === 'normal' && it.actionLabel === 'Mở Phối hợp SOS' && it.href.endsWith('?tab=y-thuc&sub=phoi-hop'), JSON.stringify(it));
       }
       eq(viec.length, phoiHop.myCoordinationLines(gv).length, 'một dòng mỗi lớp của myCoordinationLines');
     }

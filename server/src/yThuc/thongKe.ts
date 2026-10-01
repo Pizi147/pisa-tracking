@@ -144,7 +144,7 @@ export function yThucMetric(
     }
     case 'bien-phap-cho-duyet': {
       /* PR-YT4: đề xuất đang chờ QL (thẻ `y_thuc`). byKind theo loại — cùng cách `bien-phap-theo-loai`. */
-      if (f.kind && !(KHOA_LOAI_XU_LY as readonly string[]).includes(f.kind)) throw badRequest('Loại phương án xử lý không hợp lệ.');
+      if (f.kind && !(KHOA_LOAI_XU_LY as readonly string[]).includes(f.kind)) throw badRequest('Loại lần xử lý không hợp lệ.');
       const b = branchSql('c.branch_id', scope.branchIds), cl = classSql('m.class_id', f.classId);
       const rows = db()
         .prepare(
@@ -160,7 +160,7 @@ export function yThucMetric(
     case 'bien-phap-da-thuc-hien':
     case 'bien-phap-theo-loai': {
       if (id === 'bien-phap-theo-loai' && f.kind && !(KHOA_LOAI_XU_LY as readonly string[]).includes(f.kind)) {
-        throw badRequest('Loại phương án xử lý không hợp lệ.');
+        throw badRequest('Loại lần xử lý không hợp lệ.');
       }
       const b = branchSql('c.branch_id', scope.branchIds), t = period('m.performed_on'), cl = classSql('m.class_id', f.classId);
       const rows = db()

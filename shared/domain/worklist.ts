@@ -34,7 +34,7 @@ export const TASK_TYPE_LABEL: Record<TaskType, string> = {
  *
  * Đây là hạng mục quản lý vận hành, KHÔNG phải một hệ CRM: giới hạn bốn nhóm là để nó không
  * phình thành nơi chứa mọi việc của trung tâm. Việc nào không thuộc bốn nhóm này thì hoặc là
- * một case của học viên, hoặc là chuyện ngoài phạm vi phần mềm.
+ * một Case của học viên, hoặc là chuyện ngoài phạm vi phần mềm.
  */
 export const TASK_GROUPS = ['student_parent', 'curriculum', 'teacher', 'tutor'] as const;
 export type TaskGroup = (typeof TASK_GROUPS)[number];

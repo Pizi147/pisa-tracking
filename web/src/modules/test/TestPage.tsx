@@ -27,8 +27,8 @@ export default function TestPage() {
     return <Navigate to={`${DUONG_TAB_TEST[macDinh]}${qs ? `?${qs}` : ''}`} replace />;
   }
 
-  const branchId = params.get('branchId');
-  const go = (k: TabTest) => navigate(`${DUONG_TAB_TEST[k]}${branchId ? `?branchId=${branchId}` : ''}`);
+  const branchId = params.get('cn') ?? params.get('branchId');
+  const go = (k: TabTest) => navigate(`${DUONG_TAB_TEST[k]}${branchId ? `?cn=${branchId}` : ''}`);
 
   return (
     <div className="page space-y-4">

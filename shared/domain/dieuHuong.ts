@@ -95,7 +95,7 @@ export function tabTestMacDinh(nav: NavQuyen): TabTest | null {
  */
 export function duongLichTest(o: { classId?: number | null; periodId?: number | null; kn?: string | null; branchId?: number | null } = {}) {
   const q = new URLSearchParams();
-  if (o.branchId) q.set('branchId', String(o.branchId));
+  if (o.branchId) q.set('cn', String(o.branchId));
   if (o.periodId) q.set('periodId', String(o.periodId));
   if (o.classId) q.set('classId', String(o.classId));
   if (o.kn) q.set('kn', o.kn);

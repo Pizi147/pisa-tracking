@@ -32,7 +32,7 @@ type ChungPanel = {
 // ==================================================================== Thêm PA
 
 /**
- * THÊM PHƯƠNG ÁN (mục 8.2). Danh mục theo nhóm case; người làm chọn từ tài khoản (PR-Form F-2). PR-SOS: bỏ ô ngày kết thúc (Q28-4);
+ * THÊM PHƯƠNG ÁN (mục 8.2). Danh mục theo nhóm Case; người làm chọn từ tài khoản (PR-Form F-2). PR-SOS: bỏ ô ngày kết thúc (Q28-4);
  * Mô tả gợi ý "hướng dẫn, trọng tâm, ai thực hiện" (Q28-1); PA đã làm trước đây là liên kết phụ cuối form (K3-18).
  */
 export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quayLai, onClose, onSaved }: ChungPanel & {

@@ -56,14 +56,14 @@ export type MoveRequest = {
 
 const skillName = (s: string) => tenMon(null, s);   // gồm cả tong_hop (Pre FOU) — không hiện mã máy
 
-/** Lớp Normal huỷ LỊCH HẸN, Fast Track huỷ PHẦN THI. Hai hệ quả khác nhau (mục 10.6). */
+/** Lớp thường huỷ LỊCH HẸN, Fast Track huỷ PHẦN THI. Hai hệ quả khác nhau (mục 10.6). */
 function isRatio(attempt: any): boolean {
   return scoringModeOf(attempt) === 'ratio';
 }
 
 function loadAttempt(attemptId: number): any {
   const a = db().prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
-  if (!a) throw notFound('Không tìm thấy đợt kiểm tra');
+  if (!a) throw notFound('Không tìm thấy lượt kiểm tra');
   return a;
 }
 
@@ -849,7 +849,7 @@ export function baoVang(p: Principal, attemptId: number, skill: string, lyDo: st
   const loi = kiemLyDoThaoTac('Báo vắng', lyDo);
   if (loi) throw badRequest(loi);
   const row = ensureSkillRows(attemptId).find((r) => r.skill === skill);
-  if (!row?.required) throw badRequest(`${skillName(skill)} không nằm trong đợt này.`);
+  if (!row?.required) throw badRequest(`${skillName(skill)} không nằm trong lượt này.`);
   if (row.sit_status !== 'scheduled' || !row.planned_period_id || !row.week_start || !row.week_end) {
     throw badRequest(`${skillName(skill)} không còn chờ thi (đã thi, đang vắng hoặc đã huỷ) — không báo vắng được.`);
   }

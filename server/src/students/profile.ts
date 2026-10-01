@@ -4,7 +4,7 @@ import {
   ASSESSED_SKILLS, BASELINE_SOURCE_LABEL, CYCLE_OUTCOME_LABEL, ENTRY_SKILLS,
   ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, JOURNEY_GROUP, PERMISSIONS,
   caseHeadline, duongCase, issueLabel, caseCategoryLabel, categoryOf, fmtExamMonth, cauTomTat, ketQuaTestGanNhat, oHocThuat, oSapToi, oYThuc,
-  MEASURE_KIND_LABEL, THANG, nhanLoaiXuLy, programmeOf, tenBacKe, tenMonNgan, mocKeTiep, quaHan, studyWeekOf, tenMon, tuanHocTai, tuanLich,
+  MEASURE_KIND_LABEL, THANG, bacHoacNgoaiThang, nhanLoaiXuLy, programmeOf, tenBacKe, tenMonNgan, mocKeTiep, quaHan, studyWeekOf, tenMon, tuanHocTai, tuanLich,
   type AssessedSkill, type EntrySkill, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { outcomeGroup } from '../cases/effectiveness.ts';
@@ -64,7 +64,7 @@ function cycleLabel(c: any): string {
 /**
  * Kết luận một lượt đánh giá bằng ĐÚNG bộ máy của loại lớp đó.
  *
- * Lớp Normal chấm theo tỷ lệ điểm đạt/tổng điểm, không có band và không có Target IELTS. Đưa
+ * Lớp thường chấm theo tỷ lệ điểm đạt/tổng điểm, không có band và không có Target IELTS. Đưa
  * lượt của lớp thường qua bộ máy FT thì mọi kỹ năng đều "chưa có band" và hồ sơ hiện ra
  * một bảng trống — sai mà trông như thiếu dữ liệu.
  */
@@ -175,7 +175,7 @@ function checkpointView(attempts: any[]) {
  * trong bốn là quy tắc về những thứ KHÔNG được làm:
  *
  * 1. MỘT THANG ĐIỂM MỘT LOẠT. Lớp Fast Track vẽ band 0–9 cùng đường kỳ vọng của từng mốc;
- *    lớp Normal vẽ ĐIỂM GỐC dạng 13/30, tỷ lệ chỉ để đọc cho dễ. Hai bài khác đề khác thang
+ *    lớp thường vẽ ĐIỂM GỐC dạng 13/30, tỷ lệ chỉ để đọc cho dễ. Hai bài khác đề khác thang
  *    không phải là hai điểm so được thẳng với nhau, nên không quy hết về phần trăm rồi vẽ
  *    một đường mượt.
  * 2. ĐIỂM CHÍNH THỨC VÀ ĐIỂM CÔ TỰ CHẤM LÀ HAI LOẠI. Chúng nằm cùng một biểu đồ nhưng
@@ -233,7 +233,7 @@ function progressOf(
     }
   }
 
-  /* ------------------------------------ điểm cô tự chấm, lấy từ các lần cập nhật case */
+  /* ------------------------------------ điểm cô tự chấm, lấy từ các lần cập nhật Case */
   if (caseIds.length) {
     const rows = conn
       .prepare(
@@ -281,7 +281,7 @@ function progressOf(
    * thời gian; nó không viết "nhờ tutor nên tăng một band", vì thứ tự thời gian không phải
    * là quan hệ nhân quả và không ai đo được cái phản chứng.
    *
-   * Nhóm THEO CASE để nhiều phương án không đổ thành một rừng vạch — một case là một dải.
+   * Nhóm THEO CASE để nhiều phương án không đổ thành một rừng vạch — một Case là một dải.
    */
   const bands = new Map<string, any[]>();
   if (caseIds.length) {
@@ -425,7 +425,7 @@ function boOVaCau(i: {
     },
     hocThuat: oHocThuat(board.rows, s.status === 'inactive' ? i.thongTin.tamDung?.tu ?? null : null),
     yThuc: oYThuc(em ? {
-      bacTen: em.bac > 0 ? MEASURE_KIND_LABEL[THANG[em.bac - 1] as keyof typeof MEASURE_KIND_LABEL] ?? null : null,
+      bacTen: bacHoacNgoaiThang(em.bac, em.xuLy),
       nhom: em.nhom ?? null, soBatBuoc: em.soBatBuoc ?? 0, keTiep, han: em.han ?? null, quaHanNgay: quaHanYt, deXuat: deXuatCho,
       soMo: soViPhamMo, tamDung: !!em.tamDung || s.status === 'inactive',
     } : null),
@@ -933,9 +933,9 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     /*
      * TÌNH TRẠNG HỌC THUẬT HIỆN TẠI — lấy từ KẾT QUẢ BÀI GẦN NHẤT (mục 2.1).
      *
-     * Đây là thứ thay cho `concerns.maxSos` cũ. `maxSos` đọc mức SOS đã đóng băng trong case
-     * còn mở, nên một em thi MT3 đạt hết mà case MT2 chưa đóng vẫn bị gọi là SOS 1 ngay trên
-     * thẻ tên. Nay mức SOS chỉ nói về BÀI, còn case là một con số đếm riêng.
+     * Đây là thứ thay cho `concerns.maxSos` cũ. `maxSos` đọc mức SOS đã đóng băng trong Case
+     * còn mở, nên một em thi MT3 đạt hết mà Case MT2 chưa đóng vẫn bị gọi là SOS 1 ngay trên
+     * thẻ tên. Nay mức SOS chỉ nói về BÀI, còn Case là một con số đếm riêng.
      */
     standing: standingNow,
     /** Câu tóm tắt một dòng, dựng ở máy chủ để mọi màn nói y hệt nhau. */

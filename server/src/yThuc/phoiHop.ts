@@ -39,7 +39,7 @@ const ACT_MESSAGE = 'Chỉ giáo viên chủ nhiệm của lớp em đang học 
 // ---------------------------------------------------------------- điền sẵn và đồng bộ theo mức SOS (P01–P03)
 
 /**
- * ĐỒNG BỘ VIỆC PHỐI HỢP ĐIỀN SẴN với mức SOS hiện tại của lượt. Gọi từ CÙNG điểm với việc tự tạo case (`cases/sos.ts`), mỗi lần điểm của lượt đổi.
+ * ĐỒNG BỘ VIỆC PHỐI HỢP ĐIỀN SẴN với mức SOS hiện tại của lượt. Gọi từ CÙNG điểm với việc tự tạo Case (`cases/sos.ts`), mỗi lần điểm của lượt đổi.
  * Hàm của điểm nhập, nên cho ra cùng kết quả dù gọi bao nhiêu lần (P01):
  *
  *   · việc còn thiếu trong bảng §5.3 → THÊM (P01 lần đầu, P02 khi mức SOS tăng). Khoá duy nhất (lượt, loại, tên) chặn nhân đôi;
@@ -359,7 +359,7 @@ export function myCoordinationLines(p: Principal) {
     const pendingCount = dem.get(classId) ?? 0;
     if (pendingCount > 0 && ma.has(classId)) {
       const code = ma.get(classId)!;
-      lines.push({ classId, className: code, pendingCount, text: `Lớp ${code} — ${pendingCount} lượt Phối hợp cần xử lý` });
+      lines.push({ classId, className: code, pendingCount, text: `Lớp ${code} — ${pendingCount} lượt Phối hợp SOS cần xử lý` });
     }
   }
   return lines;

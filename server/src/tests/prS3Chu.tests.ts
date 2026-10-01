@@ -56,7 +56,7 @@ export function quetChuCu(chuCu: Array<[string, RegExp]>, choPhep: Array<[string
 export const docNguon = (rel: string) => boChuThich(fs.readFileSync(path.join(ROOT, rel), 'utf8'));
 
 export async function runPrS3ChuTests(t: YThucTestKit) {
-  const { check, assert } = t;
+  const { check, checkAsync, assert } = t;
   console.log('\nPR-S3 · Chữ cuối trên web');
 
   const khongCon = (ten: string, chuCu: Array<[string, RegExp]>, choPhep: Array<[string, string]> = []) =>
@@ -221,5 +221,52 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
     assert(/Vi phạm mới · \$\{hv\.full_name\}/.test(docNguon('server/src/yThuc/xuLy.ts')), 'xuLy');
     assert(/Báo phụ huynh qua TVV · \$\{hv\?\.full_name/.test(docNguon('server/src/yThuc/phoiHop.ts')), 'phoiHop');
     assert(/Bị từ chối · Không cần theo dõi/.test(docNguon('server/src/cases/sosAuto.ts')), 'sosAuto');
+  });
+  // ------------------------------------------------------------------ Task 7 · Ý thức & vi phạm (nhóm G)
+  khongCon('S3 (7) · Ý thức: "lần xử lý" (không "phương án xử lý" / "PA xử lý"), Chưa xử lý lần nào, Lần xử lý gần nhất, Theo xử lý · Theo vi phạm, Vi phạm chưa xem', [
+    ['phương án xử lý', /phương án xử lý|PA xử lý/],
+    ['Chưa bậc nào', /Chưa bậc nào/],
+    ['Xử lý gần nhất', />Xử lý gần nhất<|'Xử lý gần nhất'|HV có VP/],
+    ['vi phạm chưa ai xem', /vi phạm chưa ai xem|vi phạm mới chưa xem/],
+    ['tab con cũ', /label: 'Xử lý'|label: 'Vi phạm' \}/],
+  ], KY_THUAT);
+  await checkAsync('S3 (7) · "Chưa xử lý lần nào" không áp cho em đã bị xử lý ngoài thang (Đình chỉ…) hoặc đã có bậc — khi đó hiện bậc / lần xử lý đó; Phối hợp SOS (FT) · Phối hợp (lớp thường)', async () => {
+    const d: any = await import('../../../shared/domain/index.ts');
+    assert(d.bacHoacNgoaiThang(0, []) === null, 'chưa gì');
+    assert(d.bacHoacNgoaiThang(0, [{ kind: 'suspension', status: 'done', performedOn: '2026-09-01' }]) === d.MEASURE_KIND_LABEL.suspension, 'Đình chỉ → hiện Đình chỉ');
+    assert(d.bacHoacNgoaiThang(0, [{ kind: 'suspension', status: 'cho_duyet', performedOn: null }]) === null, 'đang chờ duyệt thì chưa tính là đã xử lý');
+    assert(d.bacHoacNgoaiThang(3, []) === d.MEASURE_KIND_LABEL.wl_1, 'bậc 3 = WL 1 (kể cả bậc khai trước khi dùng web)');
+    assert(/thuong \? 'Phối hợp' : 'Phối hợp SOS'/.test(docNguon('web/src/modules/yThuc/ClassYThucCard.tsx')) && /thuong \? 'Phối hợp' : 'Phối hợp SOS'/.test(docNguon('web/src/modules/yThuc/StudentYThucSection.tsx')), 'tab Phối hợp theo khung');
+    assert(/lanXuLyMoi/.test(docNguon('server/src/phanTich/yThucPhanTich.ts')) && /lanXuLyMoi/.test(docNguon('web/src/modules/phanTich/YThucPhoiHop.tsx')), 'lần xử lý mới hơn kèm nhãn trạng thái');
+  });
+  // ------------------------------------------------------------------ Task 8 · Case viết hoa, PA ngắn · Phương án rộng, Normal / Progress / Final còn sót
+  khongCon('S3 (8) · "Case" luôn viết hoa trong chữ người dùng thấy; không còn "lớp Normal" / Progress Test / Final Test; nút "Kết thúc PA", "Thay PA"', [
+    ['case thường', /^(?!\s*(case|default)\b)(?=.*[^\x00-\x7F]).*?(?<![\w'`.${}-])case(?![\w:.${}-])(?!\s+['"`])(?!\s+[\w.]+\s*:)/],
+    ['Normal / Progress / Final', /[Ll]ớp Normal|Progress Test|Final Test/],
+    ['Kết thúc phương án', /Kết thúc phương án|Thay phương án/],
+  ], KY_THUAT);
+  // ------------------------------------------------------------------ Task 9 · việc nhỏ chuyển cho S3
+  check('S3 (9) · A5 giữ ct · A6 một tham số chi nhánh cn (link cũ branchId vẫn đọc được) · A8 ngày nghiệp vụ qua useNgayNghiepVu · A10 Được thay thế · A11 bỏ "chu kỳ" · A17 mgmt có loại hạn', () => {
+    assert(/\['cn', 'ct'\]/.test(docNguon('web/src/modules/worklist/OverviewPage.tsx')), 'A5');
+    for (const f of ['students/StudentsPage.tsx', 'students/LuuTruPage.tsx', 'test/KeHoachTestTab.tsx', 'test/TestPage.tsx']) {
+      assert(/get\('cn'\) \?\? params\.get\('branchId'\)/.test(docNguon(`web/src/modules/${f}`)), `A6 ${f}`);
+    }
+    for (const f of ['classes/ClassOverviewPage.tsx', 'phanTich/TongHopTestSos.tsx', 'phanTich/YThucPhoiHop.tsx', 'students/StudentDetailPage.tsx', 'test/keHoach/HopKyNang.tsx', 'test/keHoach/NganXepHangLoat.tsx', 'test/keHoach/NganXepLichMt.tsx']) {
+      assert(!/session\??\.demoDate/.test(docNguon(`web/src/modules/${f}`)), `A8 ${f}`);
+    }
+    assert(!/session\??\.demoDate/.test(docNguon('web/src/ui/Filters.tsx')) && !/session\??\.demoDate/.test(docNguon('web/src/modules/worklist/OverviewPage.tsx')), 'A8 Filters / Overview');
+    assert(/Được thay thế/.test(docNguon('shared/domain/hoSoHocVien.ts')), 'A10');
+    assert(!/chu kỳ/.test(docNguon('server/src/cases/cases.ts')), 'A11');
+    assert(/mgmt: 'viec-van-hanh'/.test(docNguon('shared/domain/tongQuan.ts')), 'A17');
+  });
+  check('S3 (9) · Q10 ô bấm ≥ 44 px trên điện thoại: Thu gọn, Thu tất cả, ← Quay lại, Lộ trình / + Case / ⋮, chip lọc, số "Lớp tôi dạy"', () => {
+    const cao = (f: string, mau: RegExp) => assert(mau.test(docNguon(f)), `${f}: ${mau}`);
+    cao('web/src/ui/HangNhom.tsx', /max-sm:before:-inset-3\.5/);
+    cao('web/src/modules/test/LichTestTab.tsx', /min-h-\[44px\] px-1 text-xs/);
+    cao('web/src/modules/fasttrack/MockDetailPage.tsx', /mb-1 min-h-\[44px\] sm:min-h-0" onClick=\{\(\) => navigate\(-1\)\}>← Quay lại/);
+    cao('web/src/modules/students/StudentDetailPage.tsx', /mb-1\.5 min-h-\[44px\] sm:min-h-0" onClick=\{\(\) => navigate\(-1\)\}>← Quay lại/);
+    cao('web/src/modules/students/StudentDetailPage.tsx', /className="btn btn-primary min-h-\[44px\] sm:min-h-0" onClick=\{\(\) => setReportOpen\(true\)\}>\+ Case/);
+    cao('web/src/modules/students/StudentsPage.tsx', /cursor-pointer max-sm:min-h-\[44px\]/);
+    cao('web/src/modules/worklist/LopToiDay.tsx', /max-sm:before:-inset-y-3/);
   });
 }

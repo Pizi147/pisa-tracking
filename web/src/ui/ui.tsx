@@ -75,7 +75,7 @@ export const SCORE_TEXT: Record<ScoreTone, string> = {
  * HAI LUẬT MÀU KHÔNG ĐƯỢC PHÁ (mục 2.2):
  *
  *   · XANH LÁ CHỈ DÀNH CHO KẾT QUẢ (`<Outcome>`, Đạt, mức SOS 0). Xanh lá là một lời khen, và chỉ
- *     kết quả học tập mới có căn cứ để khen. "Đã lưu", "đã kết thúc phương án", "không có case" đều
+ *     kết quả học tập mới có căn cứ để khen. "Đã lưu", "đã kết thúc phương án", "không có Case" đều
  *     KHÔNG phải là tin tốt — chúng chỉ là việc đã xong (xám `done`) hoặc chưa có tin gì. Bảng màu
  *     cuối = mockup 18 (b4): việc xong là xám, xanh lá dành cho kết quả.
  *   · MÀU KHÔNG BAO GIỜ ĐỨNG MỘT MÌNH. Mỗi họ có hình dạng và biểu tượng riêng, nên người
@@ -340,7 +340,7 @@ export function Field({ label, children, hint, required, as = 'label' }: {
  * Ghi chú giải thích dưới một khu vực.
  *
  * Dùng `<div>` chứ không phải `<p>`: có chỗ ghi chú cần một danh sách bên trong — ví dụ
- * "chưa hoàn thành case được vì còn ba việc" — và một danh sách nằm trong thẻ đoạn văn là
+ * "chưa hoàn thành Case được vì còn ba việc" — và một danh sách nằm trong thẻ đoạn văn là
  * HTML sai, trình duyệt sẽ tự tách thẻ ra và làm hỏng đúng cái khung viền bên trái này.
  */
 export function SectionNote({ children }: { children: ReactNode }) {

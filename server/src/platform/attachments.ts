@@ -12,9 +12,9 @@ import { ghiNhanViecNenKhoTep, khoTepHienTai } from './khoTep.ts';
 /**
  * KHO TỆP VÀ LIÊN KẾT DÙNG CHUNG (thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md §4.5, PR-N N5).
  *
- * Trước đây hệ thống KHÔNG có bảng nào lưu tệp hay liên kết, nên CASE-04 (bằng chứng cho case) chưa thể làm, và các
+ * Trước đây hệ thống KHÔNG có bảng nào lưu tệp hay liên kết, nên CASE-04 (bằng chứng cho Case) chưa thể làm, và các
  * luật bắt buộc Thư cảnh cáo / Đình chỉ học phải có tệp không có chỗ để tựa. Dựng MỘT bảng cho cả bốn chỗ cần —
- * case học thuật · phương án · vi phạm · biện pháp — vì làm riêng bốn lần là bốn lần sai khác nhau.
+ * Case học thuật · phương án · vi phạm · biện pháp — vì làm riêng bốn lần là bốn lần sai khác nhau.
  *
  * BA LUẬT, áp ở mọi chỗ dùng:
  *   (a) LỖI TẢI TỆP KHÔNG LÀM MẤT NỘI DUNG ĐANG NHẬP. Tải tệp là MỘT request riêng (module này không nhận và không sinh
@@ -83,7 +83,7 @@ function unitReportOwner(unitReportId: number): OwnerAccess {
   };
 }
 
-/** Case học thuật: xem = quyền xem case; thêm/xoá = quyền SỬA case (đúng môn — AUTH-01/C02). Phương án dùng lại của case chứa nó. */
+/** Case học thuật: xem = quyền xem Case; thêm/xoá = quyền SỬA Case (đúng môn — AUTH-01/C02). Phương án dùng lại của Case chứa nó. */
 function caseOwner(caseId: number): OwnerAccess {
   const a = caseAccess(caseId);
   return {

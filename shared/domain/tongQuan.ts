@@ -51,7 +51,7 @@ export function nhomViecCua(loai: string): NhomViec { return NHOM_CUA_LOAI[loai]
 export const LOAI_HAN_CUA_VIEC: Partial<Record<string, DeadlineKind>> = {
   cause: 'xac-minh-sos', xac_nhan_pa: 'xac-minh-sos', ke_hoach_bo_tro: 'ke-hoach-bo-tro', mini_test: 'mini-test', no_plan: 'lap-pa', ghi_ket_qua_pa: 'cap-nhat-pa', score: 'nhap-diem',
   yt_xu_ly: 'xu-ly-vi-pham', yt_xem: 'xu-ly-vi-pham', yt_thuc_hien: 'xu-ly-vi-pham',
-  ban_giao: 'viec-van-hanh',
+  ban_giao: 'viec-van-hanh', mgmt: 'viec-van-hanh',
 };
 
 export type ViecGom = { group: string; urgency: 'overdue' | 'today' | 'normal'; due: string | null };

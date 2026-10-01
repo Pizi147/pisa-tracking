@@ -69,14 +69,14 @@ export function assessedBands(entry: EntryBands): Record<AssessedSkill, number |
  *
  * WRITING XÉT HAI TẦNG — owner đảo lại quy tắc cũ, chốt 13/09/2026:
  *
- *     band W tổng hợp ĐẠT kỳ vọng  →  KHÔNG sinh case nào, kể cả khi riêng W1 dưới kỳ vọng
+ *     band W tổng hợp ĐẠT kỳ vọng  →  KHÔNG sinh Case nào, kể cả khi riêng W1 dưới kỳ vọng
  *     band W tổng hợp TRƯỢT        →  so W1 và W2 với CÙNG kỳ vọng đó, task nào trượt thì
- *                                     task đó một case (có thể ra hai case)
+ *                                     task đó một Case (có thể ra hai Case)
  *
  * Vòng trước so W1 và W2 riêng lẻ ngay từ đầu, nên W1 = 5.0 với W2 = 6.5 (band Writing 6.0,
- * ĐẠT kỳ vọng 6.0, không tính vào SOS) vẫn sinh ra một case W1. Owner bỏ cách đó: em đã đạt
+ * ĐẠT kỳ vọng 6.0, không tính vào SOS) vẫn sinh ra một Case W1. Owner bỏ cách đó: em đã đạt
  * kỳ vọng môn Writing thì không mở việc cho em, còn chênh lệch giữa hai task là chuyện giáo
- * viên điều chỉnh trong lớp chứ không phải một case phải theo dõi và chốt kết quả.
+ * viên điều chỉnh trong lớp chứ không phải một Case phải theo dõi và chốt kết quả.
  *
  * Thiếu một trong hai task thì chưa có band tổng hợp, nên chưa kết luận gì về Writing —
  * chờ nhập đủ, không đoán.
@@ -205,7 +205,7 @@ export function evaluateAttempt(
    *
    * LỚP NORMAL THÌ KHÁC, CÓ CHỦ Ý: ở đó thiếu điểm KHÔNG được suy thành "đạt mọi môn"
    * (mục 6.3 — xem `evaluateRegular`). Lý do khác nhau: một lượt Mock Test luôn đủ bốn
-   * kỹ năng và chỉ chờ chấm, còn một bài kiểm tra lớp Normal có thể thiếu môn vì em vắng
+   * kỹ năng và chỉ chờ chấm, còn một bài kiểm tra lớp thường có thể thiếu môn vì em vắng
    * buổi đó — hai chuyện khác nhau, nên kết luận tạm thời mang nghĩa khác nhau.
    */
   const sosLevel: SosLevel | null =

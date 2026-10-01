@@ -25,7 +25,7 @@ import type { BoTro } from './NopKeHoachPanel.tsx';
  * thẻ; kết quả các tuần trước ở "Lịch sử cập nhật" thu gọn).
  *
  * Phần THÂN (`ThanCase`) dùng chung cho mọi lối vào: ngăn Case (`NganCase`, một panel đổi nội dung theo `view`) và trang riêng
- * `/hoc-thuat/case/:id` (`CasePanel`, có hàng nút mở ngăn Case). Các thao tác (Ghi kết quả · Thêm PA · Hoàn thành · Trả lời)
+ * `/hoc-thuat/Case/:id` (`CasePanel`, có hàng nút mở ngăn Case). Các thao tác (Ghi kết quả · Thêm PA · Hoàn thành · Trả lời)
  * KHÔNG còn hộp thoại đè lên ngăn — ngăn Case đổi nội dung và có dòng "← Case Listening" để về.
  */
 
@@ -53,20 +53,20 @@ export type CaseDetail = {
   sosLevel: number | null; urgency: string | null;
   summary: string | null; headline: string; detectedAt: string; reportedBy: string | null;
   status: string; disposition: string | null; dispositionNote: string | null; closedAt: string | null;
-  /** Tên case tự sinh theo mốc mới nhất, ví dụ "MT2 - Listening dưới kỳ vọng". */
+  /** Tên Case tự sinh theo mốc mới nhất, ví dụ "MT2 - Listening dưới kỳ vọng". */
   title: string | null;
-  /** Hạng mục — đơn vị của case từ vòng 4. */
+  /** Hạng mục — đơn vị của Case từ vòng 4. */
   category: string | null; categoryLabel: string | null;
   /** Mã chương trình lộ trình Case (MH2). */
   chuongTrinh?: string | null;
-  /** Case mở song song có chủ ý với một case khác cùng hạng mục. */
+  /** Case mở song song có chủ ý với một Case khác cùng hạng mục. */
   parallel: boolean;
   /** Lớp chấm điểm đạt/tổng (Normal) hay band 0–9 (Fast Track). */
   ratio: boolean;
   /** Các hạng mục hợp lệ để ghi điểm giáo viên tự chấm. */
   categories: { code: string; label: string }[];
   note: string | null;
-  /** Hạn BÁO KẾT QUẢ của cả case — khác hạn ghi kết quả từng phương án. */
+  /** Hạn BÁO KẾT QUẢ của cả Case — khác hạn ghi kết quả từng phương án. */
   followUntil: string | null; followOverdue: boolean;
   /** Kết quả chung đã chốt. */
   outcome: string | null; outcomeLabel: string | null;

@@ -43,7 +43,7 @@ export function lyDoBaoLenYThuc(em: EmYThuc | undefined): { viec: 'yt_xu_ly' | '
   const xuLy = tt.filter((x) => x.lyDoQuaHan === 'xu-ly').length;
   if (xuLy) return { viec: 'yt_xu_ly', viecId: em.studentId, ngan: `${em.soBatBuoc} vi phạm chưa xử lý`, cau: `${em.soBatBuoc} vi phạm bắt buộc xử lý đã quá hạn` };
   const xem = tt.filter((x) => x.lyDoQuaHan === 'xem').length;
-  if (xem) return { viec: 'yt_xem', viecId: em.studentId, ngan: `${xem} vi phạm chưa ai xem`, cau: `${xem} vi phạm mới quá 5 ngày chưa ai ghi nhận` };
+  if (xem) return { viec: 'yt_xem', viecId: em.studentId, ngan: `${xem} vi phạm chưa xem`, cau: `${xem} vi phạm mới quá 5 ngày chưa ai ghi nhận` };
   /* PR-S3F #7: quá hạn tính trên MỌI đề xuất đã duyệt — nêu lần xử lý quá hạn sớm nhất; khoá việc theo id lần xử lý (`yt_thuc_hien:{id}`). */
   const qua = em.daDuyet.find((x) => x.quaHan);
   if (qua) {

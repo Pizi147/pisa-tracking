@@ -91,7 +91,7 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
 
       <div className={`hidden px-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500 ${CAO_TRAI}`}>
         <span>Học viên</span>
-        <span className={LUOI}><span>Kỹ năng</span><span>Case</span><span>Phương án đang làm</span><span>Việc tiếp · hạn</span></span>
+        <span className={LUOI}><span>Kỹ năng</span><span>Case</span><span>PA đang làm</span><span>Việc tiếp · hạn</span></span>
       </div>
 
       {em.map((e) => {
@@ -150,7 +150,7 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
                     ))}
                     {h.them > 0 && (
                       <div className="px-3 pb-1.5 md:pl-[4.5rem]">
-                        <button type="button" className="link cursor-pointer border-0 bg-transparent p-0 text-[11.5px]"
+                        <button type="button" className="link cursor-pointer border-0 bg-transparent p-0 text-[11.5px] max-sm:min-h-[44px]"
                           onClick={() => setMoThem((s) => { const n = new Set(s); if (n.has(khoaMo)) n.delete(khoaMo); else n.add(khoaMo); return n; })}>
                           {hienHet ? 'Thu gọn' : `+${h.them} Case`}
                         </button>
@@ -210,7 +210,7 @@ function DongCase({ h, c, dau, ct, homNay, onMo, the = false }: {
             <span className="flex flex-wrap items-center gap-x-1.5"><NhanTrangThai t={c.trangThai.t} title={c.trangThai.chu} />
               {c.banGiaoTu && <span className="text-slate-500" title="Case bàn giao">từ {c.banGiaoTu}</span>}</span>
           ) },
-          { nhan: 'Phương án', noiDung: <span className="text-[11.5px]">{cacPa}</span> },
+          { nhan: 'PA', noiDung: <span className="text-[11.5px]">{cacPa}</span> },
           { nhan: 'Việc tiếp', noiDung: cauViec },
         ]} />
     );

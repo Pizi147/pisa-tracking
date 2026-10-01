@@ -3,7 +3,7 @@ import { SectionNote } from '../../ui/ui.tsx';
 
 /**
  * GHI CHI TIẾT THEO THÀNH PHẦN CỦA KỸ NĂNG (mục 9.3) — luôn TUỲ CHỌN, và chỉ hiện đúng bộ
- * của kỹ năng case đang nói tới: Section 1–4 cho Listening, bốn tiêu chí band cho Speaking.
+ * của kỹ năng Case đang nói tới: Section 1–4 cho Listening, bốn tiêu chí band cho Speaking.
  *
  * L/R ghi ĐẠT/TỔNG chứ không ghi band: "Section 3: 5.0" sẽ bị đọc thành band 5 ở Section 3,
  * một con số không tồn tại trong IELTS.

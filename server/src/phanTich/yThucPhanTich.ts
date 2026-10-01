@@ -1,6 +1,6 @@
 import { db } from '../db.ts';
 import {
-  khoaLoaiXuLy, nhanLoaiXuLy, MEASURE_KIND_LABEL, THANG, VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL,
+  XU_LY_STATUS_LABEL, bacHoacNgoaiThang, khoaLoaiXuLy, nhanLoaiXuLy, MEASURE_KIND_LABEL, THANG, VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL,
   type ChuongTrinh, type DongHvCanChuY, type DongLopViPham, type ViolationCategory, type YThucPhanTichKetQua,
 } from '../../../shared/domain/index.ts';
 import { badRequest, forbidden } from '../util.ts';
@@ -121,11 +121,15 @@ function tinh(p: Principal, f: FilterYThuc) {
     const trongKy = em.dsViPham.filter((v) => v.occurredOn >= f.from && v.occurredOn <= f.to);
     const chua = em.dsViPham.filter((v) => MO.has(em.viPham.get(v.id)?.t ?? ''));
     const gan = em.xuLy.filter((m) => m.status === 'done' && m.performedOn).sort((a, c) => (c.performedOn ?? '').localeCompare(a.performedOn ?? ''))[0] ?? null;
+    const ngayLan = (m: { performedOn: string | null; quyetLuc: string | null }) => m.performedOn ?? m.quyetLuc?.slice(0, 10) ?? '';
+    const moiHon = em.xuLy.filter((m) => m.status !== 'done' && m.status !== 'nhap' && ngayLan(m) >= (gan?.performedOn ?? ''))
+      .sort((a, c) => ngayLan(c).localeCompare(ngayLan(a)))[0] ?? null;
+    const lanXuLyMoi = moiHon ? { ten: nhanLoaiXuLy(moiHon.kind, moiHon.customName), nhan: XU_LY_STATUS_LABEL[moiHon.status] } : null;
     hvRows.push({
       studentId: sid, ten: tenHv.get(sid) ?? `#${sid}`, lop: lopCuaHv.get(sid) ?? null,
       viPham: trongKy.length, chuaXuLy: chua.length,
       bienPhapGanNhat: gan ? nhanLoaiXuLy(gan.kind, gan.customName) : null, ngay: gan?.performedOn ?? null,
-      nhom: em.nhom, bac: em.bac > 0 ? MEASURE_KIND_LABEL[THANG[em.bac - 1]] : null,
+      nhom: em.nhom, bac: bacHoacNgoaiThang(em.bac, em.xuLy), lanXuLyMoi,
       bacKe: em.keTiep ? `${MEASURE_KIND_LABEL[em.keTiep.kind]}${em.keTiep.canQl ? ' · cần QL' : ''}` : 'Hết thang',
     });
     hvTap.set(sid, { vpKy: trongKy.map((v) => v.id), chua: chua.map((v) => v.id) });

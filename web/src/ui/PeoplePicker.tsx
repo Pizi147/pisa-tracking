@@ -186,7 +186,7 @@ type ChonNguoiOption =
   | { kind: 'ngoai'; text: string };
 
 /**
- * Ô chọn MỘT người thực hiện/phụ trách — dùng chung cho case học thuật và Ý thức (PR-Form F-2, §22.5).
+ * Ô chọn MỘT người thực hiện/phụ trách — dùng chung cho Case học thuật và Ý thức (PR-Form F-2, §22.5).
  *
  * Khác `PersonPicker` (gọi `/ref/people`, đòi `MEETING_VIEW`): đây gọi `/ref/nguoi` — mọi người đăng nhập gọi được,
  * vào ô là có danh sách (T14: chưa gõ → 20 người, GV cùng lớp đầu), tìm không dấu. `choNgoai` → LUÔN có dòng cuối

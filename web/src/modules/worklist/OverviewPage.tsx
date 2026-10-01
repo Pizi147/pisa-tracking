@@ -29,8 +29,9 @@ export default function OverviewPage({ tab: tabProp = 'tong-quan' }: { tab?: Tab
   const tab = canSeeBoard && tabProp === 'phan-tich' ? 'board' : 'work';
   const navigate = useNavigate();
   const goTab = (k: TabTongQuan) => {
-    const cn = params.get('cn');
-    navigate(`${k === 'phan-tich' ? '/phan-tich' : '/'}${cn ? `?cn=${cn}` : ''}`);
+    const giu = new URLSearchParams();
+    for (const ten of ['cn', 'ct']) if (params.get(ten)) giu.set(ten, params.get(ten)!);
+    navigate(`${k === 'phan-tich' ? '/phan-tich' : '/'}${giu.size ? `?${giu}` : ''}`);
   };
   /* CHI NHÁNH ĐANG CHỌN NẰM TRÊN ĐỊA CHỈ TRANG (`cn`) — một nguồn cho cả trang, gửi đường dẫn vẫn ra đúng chi nhánh. */
   const branchId = params.get('cn') ? Number(params.get('cn')) : null;
@@ -42,7 +43,7 @@ export default function OverviewPage({ tab: tabProp = 'tong-quan' }: { tab?: Tab
   /* Q5, Q31-1: khung của phần Số liệu — mặc định Fast Track (hai khung, PR-Pb2-a); nhớ theo máy. */
   const [khung, setKhung] = useState<'ft' | 'thuong'>(() => (khungDaNho('tong-quan') === 'thuong' ? 'thuong' : 'ft'));
   // Chỉ hiện khi có mốc dữ liệu; không truyền "hôm nay" → dd/mm/yyyy (mockup)
-  const duLieuDen = session?.demoDate ? `Dữ liệu đến ${ngay(session.demoDate)}` : null;
+  const duLieuDen = homNay ? `Dữ liệu đến ${ngay(homNay)}` : null;
 
   if (!canSeeBoard) {
     /*

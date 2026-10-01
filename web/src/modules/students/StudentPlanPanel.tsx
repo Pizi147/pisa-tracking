@@ -120,7 +120,7 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, canEditCycle = t
             Gần ngày đăng ký mới chốt được TUẦN. Ép khai tuần ngay từ đầu thì người ta chọn
             bừa một tuần rồi không ai sửa lại — nên để trống tuần là chuyện bình thường.
 
-            Lớp Normal KHÔNG có hai ô này — các em đó chưa thi IELTS, hỏi là hỏi thừa.
+            Lớp thường KHÔNG có hai ô này — các em đó chưa thi IELTS, hỏi là hỏi thừa.
           */}
           {!ratio && (
             <>
@@ -145,8 +145,7 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, canEditCycle = t
 
           {ratio ? (
             <SectionNote>
-              Đây là lớp Normal nên không có lịch MT riêng từng em — cả lớp làm Progress Test và
-              Final Test cùng tuần theo chương trình. Xem và sửa hai mốc đó ở trang lớp.
+              Đây là lớp thường nên không có lịch MT riêng từng em — cả lớp làm bài Giữa khoá và Cuối khoá cùng tuần theo chương trình. Xem và sửa hai mốc đó ở trang lớp.
             </SectionNote>
           ) : (
             <div>

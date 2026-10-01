@@ -45,7 +45,7 @@ export type ClassSummary = {
   needScores: number;
   /** `needScores` đang đếm CỦA AI: `mine` (phần mình phải chấm) hay `managed` (cả lớp trong phạm vi). Badge phải nói đúng điều này. */
   workScope: WorkScope;
-  /** Số CASE SOS chưa xử lý xong — đếm case, không phải học viên. */
+  /** Số CASE SOS chưa xử lý xong — đếm Case, không phải học viên. */
   openCases: number;
   programmeCode: string | null;
   programmeName: string | null;
@@ -251,7 +251,7 @@ function listClassSummariesThat(p: Principal, f: { branchId?: number; q?: string
     id: c.id, code: c.code, kind: c.kind, route: c.route,
     programmeCode: c.programme_code ?? null,
     programmeName: c.programme_name ?? null,
-    /** Lớp Normal chấm theo điểm đạt/tổng điểm; lớp Fast Track chấm theo band IELTS. */
+    /** Lớp thường chấm theo điểm đạt/tổng điểm; lớp Fast Track chấm theo band IELTS. */
     scoringMode: c.scoring_mode ?? null,
     branchId: c.branch_id, branchCode: c.branch_code, branchName: c.branch_name,
     startDate: c.start_date,
@@ -356,7 +356,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
   // Lớp thường chấm khác lớp FT, nên đọc chương trình một lần rồi dùng lại cho mọi dòng.
   const prog = programmeOfClass(classId);
   const isRatio = prog?.scoringMode === 'ratio';
-  /* Chỉ lớp FT mới bị nhắc tháng thi và Target — lớp Normal chưa thi IELTS. */
+  /* Chỉ lớp FT mới bị nhắc tháng thi và Target — lớp thường chưa thi IELTS. */
   const isFt = prog?.code === 'FT';
   /* PR-XLMT (rà #126): "việc của tôi" giữ nghĩa cũ (`chiViec`) — quyền sửa ô mọi lúc của Quản lý không phải việc nhập điểm. */
   const myRegularSkills = isRatio ? editableSkills(p, classId, prog!.skills, undefined, true) : [];
@@ -383,12 +383,12 @@ export function classRoster(p: Principal, classId: number, q?: string) {
   /*
    * CASE CỦA LỘ TRÌNH TRƯỚC LÀ VIỆC BÀN GIAO, KHÔNG PHẢI MỨC SOS CỦA LỚP NÀY.
    *
-   * Một em học xong Foundation rồi lên Beginner mà còn case dở thì case đó vẫn phải nhìn
+   * Một em học xong Foundation rồi lên Beginner mà còn Case dở thì Case đó vẫn phải nhìn
    * thấy được — bỏ đi là bỏ rơi em. Nhưng gọi em là "SOS 3" ở lớp Beginner vì một bài
    * Foundation chấm trên thang khác thì lại sai: mức SOS là kết luận của MỘT lượt đánh giá
    * trong MỘT chương trình.
    *
-   * Nên tách đôi: mức SOS tính theo lộ trình đang chạy; case cũ còn mở đếm riêng thành việc
+   * Nên tách đôi: mức SOS tính theo lộ trình đang chạy; Case cũ còn mở đếm riêng thành việc
    * cần bàn giao, có nhãn riêng ở cột Trạng thái.
    */
   for (const r of openRows) {
@@ -402,9 +402,9 @@ export function classRoster(p: Principal, classId: number, q?: string) {
     openCaseCount.set(c.studentId, (openCaseCount.get(c.studentId) ?? 0) + 1);
   }
   /*
-   * TÌNH TRẠNG HỌC THUẬT lấy từ KẾT QUẢ BÀI GẦN NHẤT, không suy từ case còn mở.
+   * TÌNH TRẠNG HỌC THUẬT lấy từ KẾT QUẢ BÀI GẦN NHẤT, không suy từ Case còn mở.
    *
-   * Trước đây bảng này đọc mức SOS đã đóng băng trong case: em thi MT3 đạt hết mà case
+   * Trước đây bảng này đọc mức SOS đã đóng băng trong case: em thi MT3 đạt hết mà Case
    * Reading của MT2 chưa đóng thì vẫn bị gọi là SOS 1. Nay một chỗ tính duy nhất —
    * `standingFor` — dùng chung cho bảng lớp, danh sách học viên và bảng tổng hợp.
    */
@@ -464,9 +464,9 @@ export function classRoster(p: Principal, classId: number, q?: string) {
           failedCount: r.failedCount,
           sosLevel: r.sosLevel, evaluable: r.complete,
           /*
-           * ĐIỂM TỪNG MÔN của lớp Normal, dạng ĐIỂM ĐẠT / TỔNG ĐIỂM (mục 5.1).
+           * ĐIỂM TỪNG MÔN của lớp thường, dạng ĐIỂM ĐẠT / TỔNG ĐIỂM (mục 5.1).
            *
-           * Không quy về band và không quy về phần trăm: lớp Normal chấm theo điểm đạt trên
+           * Không quy về band và không quy về phần trăm: lớp thường chấm theo điểm đạt trên
            * tổng điểm, và đổi sang một thang khác là đổi luôn ý nghĩa của con số người dạy
            * đã gõ vào.
            */
@@ -534,7 +534,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
      * Tính ở máy chủ chứ không ở trình duyệt: cùng một phép so sánh mà mỗi màn tự làm lấy
      * thì sớm muộn cũng có hai màn cho ra hai kết quả khác nhau.
      *
-     * Lớp Normal không có band nên sáu ô này để trống — không dựng một con số giả.
+     * Lớp thường không có band nên sáu ô này để trống — không dựng một con số giả.
      */
     const lastTwo = done.slice(-2);
     const cell = (now: number | null, prev: number | null) => ({
@@ -593,7 +593,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
       /*
        * BA THÔNG TIN TÁCH RỜI, KHÔNG CÁI NÀO SUY RA TỪ CÁI KIA (mục 2.1):
        *   · `standing` — kết quả bài gần nhất, nói mức SOS của CHÍNH bài đó
-       *   · `openCases` — số case đang theo dõi, chỉ là một con số đếm
+       *   · `openCases` — số Case đang theo dõi, chỉ là một con số đếm
        *   · `handoverCases` — trong đó bao nhiêu cái mang từ lộ trình trước sang
        */
       standing: standing.get(s.id) ?? null,
@@ -819,7 +819,7 @@ export type { AssessedSkill };
  * `status`, dòng cũ ở nguyên chỗ.
  *
  * Hai loại phân công tách hẳn nhau:
- *   - GVCN   (`is_core = 1`, `skill` để trống): chăm cả lớp, đóng được case của lớp.
+ *   - GVCN   (`is_core = 1`, `skill` để trống): chăm cả lớp, đóng được Case của lớp.
  *   - GVBM   (`skill` có giá trị): CHỈ nhập được điểm đúng kỹ năng đó.
  * Một người có thể có cả hai dòng ở cùng một lớp — chủ nhiệm và dạy Listening chẳng hạn.
  */

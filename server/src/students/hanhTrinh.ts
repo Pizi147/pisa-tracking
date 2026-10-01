@@ -30,7 +30,7 @@ import { loTrinhTinhTuan } from '../fasttrack/cycles.ts';
 
 type GiaiDoanLoai = 'thuong' | 'ft';
 
-/** Hạng mục case ↔ hộp kỹ năng đang xem: writing1/2 ghép vào "writing" khi hộp là lớp thường, ngược lại bỏ. */
+/** Hạng mục Case ↔ hộp kỹ năng đang xem: writing1/2 ghép vào "writing" khi hộp là lớp thường, ngược lại bỏ. */
 function anhXaHangMuc(category: string | null, boHop: readonly CaseCategory[]): CaseCategory | null {
   if (!category) return null;
   if ((boHop as readonly string[]).includes(category)) return category as CaseCategory;
@@ -122,7 +122,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
     typed.set(a.id, typedResult(a, { scores: scoresByAttempt.get(a.id) ?? [], skips: skipsByAttempt.get(a.id) ?? [], prog: a.class_id ? progOf(a.class_programme) : null }));
   }
 
-  // -------------------------------------------------------------- (4) case · (5) PA · (6) lần ghi kết quả — của MỌI lộ trình
+  // -------------------------------------------------------------- (4) Case · (5) PA · (6) lần ghi kết quả — của MỌI lộ trình
   const caseRows = conn
     .prepare(
       `SELECT sc.*, a.attempt_no AS attempt_no, a.kind AS attempt_kind, ${CO_THE_KHONG_THEO_DOI('sc')} AS co_the_ktd,

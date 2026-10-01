@@ -811,7 +811,7 @@ api.get('/classes/:id/roster', requireAuth, wrap((req) => {
 }));
 
 /*
- * BẢNG PHÂN TÍCH VẤN ĐỀ CỦA MỘT LỚP (mục 13.4). Đường cũ của Bảng Ý thức của lớp (đếm số đợt case) đã bỏ 21/09/2026:
+ * BẢNG PHÂN TÍCH VẤN ĐỀ CỦA MỘT LỚP (mục 13.4). Đường cũ của Bảng Ý thức của lớp (đếm số đợt Case) đã bỏ 21/09/2026:
  * Ý thức nay là vi phạm và biện pháp xử lý, dữ liệu ba khu vực ở `GET /classes/:id/y-thuc`.
  */
 api.get('/classes/:id/issue-board', requireAuth, wrap((req) => {
@@ -902,7 +902,7 @@ api.delete('/attachments/:id', requireAuth, wrap(async (req) => {
 
 /**
  * Ý THỨC — VI PHẠM VÀ BIỆN PHÁP XỬ LÝ (PR-J, 21/09/2026). Module thứ chín: mọi đường đi qua `server/src/yThuc/`, nơi kiểm quyền ở MÁY
- * CHỦ (đặc tả mục 6) — giao diện chỉ ẩn nút cho gọn mắt. Không có đường nào tạo case Ý thức: mô hình đó đã bỏ.
+ * CHỦ (đặc tả mục 6) — giao diện chỉ ẩn nút cho gọn mắt. Không có đường nào tạo Case Ý thức: mô hình đó đã bỏ.
  */
 const yThucBody = (req: Request) => (req.body ?? {}) as Record<string, any>;
 
@@ -1159,7 +1159,7 @@ api.post('/intake/commit', requireAuth, wrap((req) => {
 
 // ============================================================ Lớp thường (FOU/BE/ELE)
 
-/** Bảng nhập điểm của lớp Normal: điểm đạt / tổng điểm, đạt từ 70%. */
+/** Bảng nhập điểm của lớp thường: điểm đạt / tổng điểm, đạt từ 70%. */
 api.get('/regular/classes/:classId/sheet', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return regularSvc.regularSheet(principalOf(req), pInt(req, 'classId'), qStr(req, 'kind'));
@@ -1492,7 +1492,7 @@ api.get('/tong-quan/chi-nhanh/o', requireAuth, wrap((req) => {
 
 api.get('/cases/:id', requireAuth, wrap((req) => caseSvc.caseDetail(principalOf(req), pInt(req, 'id'))));
 
-/** Ghi một tác động. Một case có nhiều tác động. */
+/** Ghi một tác động. Một Case có nhiều tác động. */
 api.post('/cases/:id/interventions', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return caseSvc.recordIntervention(principalOf(req), pInt(req, 'id'), req.body ?? {});
@@ -1500,7 +1500,7 @@ api.post('/cases/:id/interventions', requireAuth, wrap((req) => {
 
 /**
  * CASE TỪ SOS (SOS v4, PR-SOS): GVBM đúng kỹ năng hoặc Quản lý Xác nhận Case (nguyên nhân) → Xác nhận PA theo quy chế, hoặc gửi
- * "Không cần theo dõi" cho Quản lý duyệt. Quyền kiểm ở máy chủ theo ĐÚNG kỹ năng của case (C02). Đường cũ `/confirm`, `/replace` đã gỡ.
+ * "Không cần theo dõi" cho Quản lý duyệt. Quyền kiểm ở máy chủ theo ĐÚNG kỹ năng của Case (C02). Đường cũ `/confirm`, `/replace` đã gỡ.
  */
 api.post('/cases/:id/xac-nhan', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -1640,7 +1640,7 @@ api.post('/cases/:id/followups', requireAuth, wrap((req) => {
  *
  * Case chỉ còn MỘT đường kết thúc: nút "Hoàn thành Case" → POST /cases/:id/outcome. Giữ hai
  * đường đóng song song là giữ hai dấu vết khác nhau cho cùng một việc, và sớm muộn sẽ có
- * case đóng được ở đường này mà màn hình ở đường kia bảo là chưa đóng được.
+ * Case đóng được ở đường này mà màn hình ở đường kia bảo là chưa đóng được.
  *
  * Bản ghi cũ vẫn đọc được hướng xử lý của mình; chỉ không sửa qua đường riêng nữa.
  */
@@ -1650,7 +1650,7 @@ api.post('/cases/:id/followups', requireAuth, wrap((req) => {
 /*
  * BA ENDPOINT LIÊN HỆ ĐÃ BỎ Ở VÒNG 4.
  *
- * Hai việc trao đổi nay là hai PHƯƠNG ÁN của case Ý thức/Khác, nên chúng đi chung đường với
+ * Hai việc trao đổi nay là hai PHƯƠNG ÁN của Case Ý thức/Khác, nên chúng đi chung đường với
  * mọi phương án khác: `POST /cases/:id/interventions` để thêm, `POST /interventions/:id` để
  * đánh dấu đã làm. Ít hơn ba đường, và không còn chỗ nào phải cộng hai nguồn lại.
  */

@@ -147,7 +147,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
         });
       }
     } else if (unit === 'dot-test' || unit === 'bai-thi') {
-      /* Lượt Test: FT mở hồ sơ Test; bài của lớp Normal mở bảng điểm thường của lớp. */
+      /* Lượt Test: FT mở hồ sơ Test; bài của lớp thường mở bảng điểm thường của lớp. */
       for (const r of conn.prepare(
         `SELECT a.id, a.kind, a.attempt_no, a.class_id, s.full_name, s.student_code, c.code AS class_code, pr.code AS period_code
            FROM assessment_attempts a JOIN students s ON s.id = a.student_id
@@ -176,7 +176,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
         const r = byIv.get(interventionId);
         if (!r) continue;
         byId.set(id, {
-          id, title: `${r.title} · chu kỳ ${cycle}${k ? ` · tuần ghi bù thứ ${k + 1}` : ''}`,
+          id, title: `${r.title} · đợt ${cycle}${k ? ` · tuần ghi bù thứ ${k + 1}` : ''}`,
           sub: [r.full_name, r.student_code].filter(Boolean).join(' · '), href: duongCase(r.sid, r.case_id),
         });
       }
@@ -285,14 +285,14 @@ export const obligationId = (interventionId: number, cycle: number, k = 0) => in
 export const parseObligation = (id: number) => ({ interventionId: Math.floor(id / 1_000_000), cycle: Math.floor(id / 1000) % 1000, k: id % 1000 });
 
 /**
- * NGHĨA VỤ CẬP NHẬT ĐÃ QUA HẠN của một tập case (`dung-han-cap-nhat`).
+ * NGHĨA VỤ CẬP NHẬT ĐÃ QUA HẠN của một tập Case (`dung-han-cap-nhat`).
  *
  *   ĐÃ CẬP NHẬT  — mỗi chu kỳ có ít nhất một dòng theo dõi (`case_followups`) mang hạn của chính chu kỳ đó.
  *                  Đúng hạn nếu có ít nhất một dòng không trễ. Bấm ghi chú thêm lần nữa KHÔNG sinh nghĩa vụ mới.
  *   CHƯA LÀM     — phương án đang chạy, không chờ duyệt, hạn cập nhật của chu kỳ hiện tại đã qua mà chưa có dòng
  *                  theo dõi nào cho chu kỳ đó.
  * "Đã qua hạn" là hạn < ngày dữ liệu — cùng luật với `pa-can-cap-nhat`. Không tính phương án chờ duyệt (chưa được
- * chạy nên chưa có nghĩa vụ) và không tính case nhập bù (không có hạn cập nhật). Ý thức không còn case (21/09/2026).
+ * chạy nên chưa có nghĩa vụ) và không tính Case nhập bù (không có hạn cập nhật). Ý thức không còn Case (21/09/2026).
  */
 /**
  * Các tuần (k = 0…N−1) của khoảng ghi bù, N = `nhanTuanGhiKetQua(hạn, den).soTuan` — cùng hàm với tiêu đề "ghi bù N tuần" ở form ghi kết quả.
@@ -624,7 +624,7 @@ function metricSetGoc(
     case 'case-mo':
       return done(openCases().map((c: any) => c.id as number));
     case 'hv-co-case-mo': {
-      /* ĐẾM DUY NHẤT học viên, chỉ từ case CHƯA kết luận (F02) — không gộp case đã đóng. */
+      /* ĐẾM DUY NHẤT học viên, chỉ từ Case CHƯA kết luận (F02) — không gộp Case đã đóng. */
       const students = new Set<number>();
       for (const c of openCases()) if (c.studentId) students.add(c.studentId as number);
       return done([...students].sort((a, b) => a - b));
@@ -713,7 +713,7 @@ function metricSetGoc(
       return done(lopThieuGvMon(sc, scope.branchId));
     }
     case 'dung-han-cap-nhat': {
-      /* Nghĩa vụ của MỌI case học thuật trong phạm vi — kể cả case đã đóng: nghĩa vụ đã đến hạn vẫn là chuyện đã xảy ra. */
+      /* Nghĩa vụ của MỌI Case học thuật trong phạm vi — kể cả Case đã đóng: nghĩa vụ đã đến hạn vẫn là chuyện đã xảy ra. */
       const caseIds = listCases(p, { branchId }).rows
         .filter((c: any) => c.originKind !== 'backfill')
         .map((c: any) => c.id as number);

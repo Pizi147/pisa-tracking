@@ -538,7 +538,7 @@ export function commitIntake(
 export function createClass(p: Principal, input: {
   code: string; branchId: number; kind: string; route?: Route | null;
   isFastTrack?: boolean; startDate?: string | null; skills?: string[]; note?: string | null;
-  /** Tuần khai giảng — với lớp Normal đây là mốc gốc của hai kỳ kiểm tra. */
+  /** Tuần khai giảng — với lớp thường đây là mốc gốc của hai kỳ kiểm tra. */
   startPeriodId?: number | null;
   /** Lớp này học tiếp từ lớp nào — giữ sợi dây FOU → BE → FT. */
   previousClassId?: number | null;

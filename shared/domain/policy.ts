@@ -17,15 +17,15 @@
  * Cách hiểu của chủ sản phẩm: trong 3 ngày kể từ khi có SOS thì phải có phương án; có phương án rồi thì đi theo luật cũ —
  *   Học thuật: ghi kết quả vào mỗi Chủ nhật hằng tuần và chốt kết quả vào cuối đợt.
  *     (PR-N1, chủ sản phẩm 27/09 R-PA1: nay hạn ghi kết quả tuần là HẾT THỨ HAI tuần sau — xem `weeklyUpdateDue`.)
- *   Ý thức: hoàn thành hết phương án trong thời hạn mặc định của case là 1 tuần.
+ *   Ý thức: hoàn thành hết phương án trong thời hạn mặc định của Case là 1 tuần.
  *   'hai-moc-rieng' : hai mốc riêng như code hiện tại (hạn xác minh SOS, rồi hạn lập phương án).  ← đã chốt
  *   'mot-han-chung' : MỘT hạn 3 ngày kể từ SOS, trong đó phải có phương án.
  */
 export const C01_HAN_XAC_MINH_SOS_GOM_PA = 'hai-moc-rieng' as const;
 
 /**
- * C02 — ĐÃ CHỐT 20/09/2026, ĐÃ NỐI DÂY (`permissions.ts`, quyền sửa/xử lý case).
- * GVCN KHÔNG được xử lý case học thuật TRÁI MÔN: mỗi giáo viên, kể cả GVCN, chỉ xử lý case đúng kỹ năng mình dạy.
+ * C02 — ĐÃ CHỐT 20/09/2026, ĐÃ NỐI DÂY (`permissions.ts`, quyền sửa/xử lý Case).
+ * GVCN KHÔNG được xử lý Case học thuật TRÁI MÔN: mỗi giáo viên, kể cả GVCN, chỉ xử lý Case đúng kỹ năng mình dạy.
  * Case Ý thức (không có kỹ năng) vẫn chỉ GVCN.
  *   'gvcn-dung-mon' : GVCN chỉ xử lý môn mình dạy, như mọi GVBM.  ← đã chốt
  *   'gvcn-ca-lop'   : GVCN xử lý cả lớp (AUTH-01 cũ) — hết hiệu lực.
@@ -33,12 +33,12 @@ export const C01_HAN_XAC_MINH_SOS_GOM_PA = 'hai-moc-rieng' as const;
 export const C02_GVCN_XU_LY_CASE_TRAI_MON = 'gvcn-dung-mon' as const;
 
 /**
- * C03 — HẾT HIỆU LỰC 21/09/2026. Đã chốt 20/09/2026, từng nối dây vào cửa sổ gộp báo cáo của case Ý thức.
+ * C03 — HẾT HIỆU LỰC 21/09/2026. Đã chốt 20/09/2026, từng nối dây vào cửa sổ gộp báo cáo của Case Ý thức.
  * LÝ DO HẾT HIỆU LỰC: rule book mục 18 (`thiet-ke/LUAT_CHO_CHOT.md` mục 6.3) bỏ hẳn mô hình Case Ý thức. Mỗi vi phạm nay là một dòng
  * độc lập, không còn đợt để gộp — nên không còn "cửa sổ ba ngày" nào để đặt. Không mã nào còn đọc hằng số này.
  *
- * Luật cũ: báo cáo khác cùng phân loại trong 3 NGÀY ĐẦU tồn tại của case cũ (ngày mở + 2 ngày sau) thì lồng vào case đang có;
- * không thì ra case mới. Hạn mặc định của case là 1 tuần từ ngày mở; nâng mức ưu tiên không siết hạn phương án.
+ * Luật cũ: báo cáo khác cùng phân loại trong 3 NGÀY ĐẦU tồn tại của Case cũ (ngày mở + 2 ngày sau) thì lồng vào Case đang có;
+ * không thì ra Case mới. Hạn mặc định của Case là 1 tuần từ ngày mở; nâng mức ưu tiên không siết hạn phương án.
  *
  * GIỮ hằng số (không xoá) để dấu vết quyết định còn đó — xoá là xoá mất một quyết định có thật.
  */
@@ -63,8 +63,8 @@ export const C05_SOS_SINH_PA_TRAO_DOI = 'khong-bat-buoc' as const;
 
 /**
  * C06 — ĐÃ CHỐT 20/09/2026: GIỮ như hiện tại.
- *   'chi-da-hoan-thanh' : tab "Đã xong từ trước" chỉ nhận case ĐÃ HOÀN THÀNH; case đang xử lý dùng form thường.  ← đã chốt
- *   'ca-dang-xu-ly'     : tab này nhận cả case còn đang xử lý.
+ *   'chi-da-hoan-thanh' : tab "Đã xong từ trước" chỉ nhận Case ĐÃ HOÀN THÀNH; Case đang xử lý dùng form thường.  ← đã chốt
+ *   'ca-dang-xu-ly'     : tab này nhận cả Case còn đang xử lý.
  */
 export const C06_NHAP_BU_CASE_DANG_XU_LY = 'chi-da-hoan-thanh' as const;
 

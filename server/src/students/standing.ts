@@ -13,30 +13,30 @@ import { luotSinhViecRow } from '../worklist/danhGia.ts';
  *
  * ĐÂY LÀ CHỖ SỬA LỖI LỚN NHẤT CỦA VÒNG NÀY.
  *
- * Trước đây "SOS hiện tại" được suy ra từ CASE CÒN MỞ: lấy case có số MT lớn nhất rồi đọc mức
- * SOS đã đóng băng trong case đó. Cách ấy sai ở ba chỗ, và cả ba đều nói dối người đọc:
+ * Trước đây "SOS hiện tại" được suy ra từ CASE CÒN MỞ: lấy Case có số MT lớn nhất rồi đọc mức
+ * SOS đã đóng băng trong Case đó. Cách ấy sai ở ba chỗ, và cả ba đều nói dối người đọc:
  *
- *   1. Em thi MT3 đạt hết nhưng case Reading từ MT2 chưa đóng → màn hình vẫn gọi em là SOS 1.
+ *   1. Em thi MT3 đạt hết nhưng Case Reading từ MT2 chưa đóng → màn hình vẫn gọi em là SOS 1.
  *      Mức SOS là KẾT LUẬN CỦA MỘT BÀI THI, không phải "còn việc đang làm dở".
  *   2. Em sang lộ trình mới, chưa thi lượt nào → vẫn mang mức SOS của lộ trình cũ.
- *   3. Đóng case là đổi mức SOS, và thi đạt thì không đổi gì cả. Ngược hoàn toàn.
+ *   3. Đóng Case là đổi mức SOS, và thi đạt thì không đổi gì cả. Ngược hoàn toàn.
  *
  * Nay tách hẳn BA THÔNG TIN khác nhau, và không cái nào được suy ra từ cái kia:
  *
  *   · KẾT QUẢ HỌC THUẬT GẦN NHẤT  — mức SOS, lấy từ lượt đánh giá mới nhất có điểm
- *   · CASE ĐANG THEO DÕI          — đếm case, không sinh ra mức nào
- *   · KẾT QUẢ SAU HỖ TRỢ          — nằm trong từng case, cũng không sinh ra mức nào
+ *   · CASE ĐANG THEO DÕI          — đếm Case, không sinh ra mức nào
+ *   · KẾT QUẢ SAU HỖ TRỢ          — nằm trong từng Case, cũng không sinh ra mức nào
  *
  * Nhờ vậy màn hình nói được những câu đúng mà trước đây không nói được:
  *
- *   "MT2 đạt kỳ vọng · còn 2 case đang theo dõi"
+ *   "MT2 đạt kỳ vọng · còn 2 Case đang theo dõi"
  *   "MT3: SOS 1 tạm thời · mới có điểm 2/4 kỹ năng"
- *   "Chưa có kết quả trong lộ trình này · có 1 case bàn giao"
+ *   "Chưa có kết quả trong lộ trình này · có 1 Case bàn giao"
  */
 export type Standing = {
   studentId: number;
   cycleId: number | null;
-  /** `ielts_band` với Fast Track, `ratio` với lớp Normal. */
+  /** `ielts_band` với Fast Track, `ratio` với lớp thường. */
   mode: 'ielts_band' | 'ratio' | null;
 
   /** Lượt đánh giá MỚI NHẤT ĐÃ CÓ ĐIỂM trong lộ trình hiện tại. Chưa thi lượt nào thì NULL. */
@@ -84,7 +84,7 @@ export type Standing = {
 
   /** Case đang theo dõi — ĐẾM CASE, không phải một mức độ. */
   openCases: number;
-  /** Trong số đó, bao nhiêu case mang từ lộ trình trước sang (việc bàn giao). */
+  /** Trong số đó, bao nhiêu Case mang từ lộ trình trước sang (việc bàn giao). */
   handoverCases: number;
 };
 
@@ -112,8 +112,8 @@ export function standingLine(s: Standing): string {
   if (s.provisional) parts.push(`mới có điểm ${s.scored}/${s.required} ${unit}`);
   if (s.openCases > 0) {
     parts.push(s.handoverCases > 0 && s.handoverCases === s.openCases
-      ? `${s.handoverCases} case bàn giao`
-      : `còn ${s.openCases} case đang theo dõi`);
+      ? `${s.handoverCases} Case bàn giao`
+      : `còn ${s.openCases} Case đang theo dõi`);
   }
   return parts.join(' · ');
 }

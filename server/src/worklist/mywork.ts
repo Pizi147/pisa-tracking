@@ -132,7 +132,7 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   /*
    * XÁC ĐỊNH NGUYÊN NHÂN (rulebook v3, S04) — Case tự tạo từ Mock Test FT và từ Giữa khoá lớp thường (PR-LT2a).
    *
-   * Mock FT nay TỰ TẠO case cho kỹ năng trượt kèm phương án điền sẵn, nên không còn tín hiệu nào để "xác minh". Việc còn lại của GVBM đúng kỹ năng có
+   * Mock FT nay TỰ TẠO Case cho kỹ năng trượt kèm phương án điền sẵn, nên không còn tín hiệu nào để "xác minh". Việc còn lại của GVBM đúng kỹ năng có
    * đúng hạn ba ngày: xác định nguyên nhân, hoặc đóng `Không cần theo dõi`. PA theo quy chế đã tự chạy từ lúc tạo (PR-N1, S4-1) — không còn vế
    * "xác nhận PA gợi ý". Không có dòng này thì hạn ba ngày vô hình.
    */
@@ -261,7 +261,7 @@ function urgencyOf(date: string | null, today: string): WorkUrgency {
   return 'normal';
 }
 
-/** Đuôi tiêu đề: " Reading" hay "" khi case không có kỹ năng. `ct` = chương trình lớp (FOU "Grammar + Vocabulary"). */
+/** Đuôi tiêu đề: " Reading" hay "" khi Case không có kỹ năng. `ct` = chương trình lớp (FOU "Grammar + Vocabulary"). */
 const duoiKyNang = (topic: string | null | undefined, ct: string | null) => (topic ? ` ${caseTopicLabel(topic, ct)}` : '');
 
 /**
@@ -626,9 +626,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
 
     /*
      * HẠN PHẢI CÓ PHƯƠNG ÁN THEO MỨC ĐỘ (mục 8.3): Gấp 3 ngày, Bình thường 5 ngày, tính cả
-     * ngày đầu. Chỉ áp cho case học thuật.
+     * ngày đầu. Chỉ áp cho Case học thuật.
      *
-     * Trước vòng 7 hạn này bằng nguyên một chu kỳ hỗ trợ (hai tuần), nên một case Gấp nằm
+     * Trước vòng 7 hạn này bằng nguyên một chu kỳ hỗ trợ (hai tuần), nên một Case Gấp nằm
      * im mười ba ngày vẫn chưa bị coi là chậm. Nay mức độ quyết định hạn — và đó là lý do
      * mức độ chỉ còn hai bậc, mỗi bậc một con số.
      */
@@ -659,13 +659,13 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     });
   }
 
-  // ------------------------------------- 3b. case TỰ TẠO TỪ SOS: Xác nhận nguyên nhân · Xác nhận PA (S4-2, §3.1d)
+  // ------------------------------------- 3b. Case TỰ TẠO TỪ SOS: Xác nhận nguyên nhân · Xác nhận PA (S4-2, §3.1d)
   /*
    * MỘT DÒNG MỖI CASE (nguyên nhân) / MỖI PA (xác nhận PA). Hạn = `sos_cases.han_xac_nhan` (3 ngày tính cả ngày đầu), hết ngày hạn mới tính
    * quá hạn. "Chờ nguyên nhân" là của `awaitingCauseCaseIds` (đã loại thẻ Không cần theo dõi đang chờ).
    *
-   * AI THẤY: người phụ trách case (GVBM đúng kỹ năng); "Của GV (nhắc)" liệt kê dòng của GV cho Quản lý. Em Tạm dừng không sinh dòng (K3-41).
-   * Mọi trường hợp đều kiểm đúng quyền sửa case theo kỹ năng (C02).
+   * AI THẤY: người phụ trách Case (GVBM đúng kỹ năng); "Của GV (nhắc)" liệt kê dòng của GV cho Quản lý. Em Tạm dừng không sinh dòng (K3-41).
+   * Mọi trường hợp đều kiểm đúng quyền sửa Case theo kỹ năng (C02).
    */
   const cotCase = `sc.id, sc.topic, sc.summary, sc.origin_kind, sc.sos_level, sc.urgency, sc.owner_user_id, sc.attempt_id,
               COALESCE(sc.student_id, a.student_id) AS eff_student_id,
@@ -808,7 +808,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       contextLabel: nhanDot(r.attempt_kind, r.attempt_no), count: null,
       reason: 'Tạo task cho TVV trên Base: kết quả, môn khó khăn, nguyên nhân, phương án hỗ trợ và khả năng học lại.',
       tieuDe: `Báo phụ huynh qua TVV · ${r.full_name ?? 'Học viên'} · ${laCuoiKhoa ? `Cuối khoá${phanTramCuoi.get(r.attempt_id) ?? ''}` : 'Giữa khoá'}`,
-      actionLabel: 'Mở Phối hợp',
+      actionLabel: 'Mở Phối hợp SOS',
       href: duongHoSoHocVien(r.student_id, { tab: 'y-thuc', sub: 'phoi-hop' }),
       ownerId: gvcn || (laCuoiKhoa && cuaGv) ? p.userId : laCuoiKhoa ? null : r.gvcn_id ?? null, owner: null, mine: gvcn || (laCuoiKhoa && cuaGv),
       due: null, statusLabel: 'Chưa làm',
@@ -825,7 +825,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       studentId: null, studentName: `Lớp ${l.className}`, classId: l.classId, classCode: l.className,
       attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: 'Phối hợp SOS', count: l.pendingCount,
       reason: `${l.pendingCount} lượt Phối hợp SOS chưa xong`,
-      tieuDe: `Phối hợp SOS · ${l.className} · ${l.pendingCount} lượt`, actionLabel: 'Mở Phối hợp',
+      tieuDe: `Phối hợp SOS · ${l.className} · ${l.pendingCount} lượt`, actionLabel: 'Mở Phối hợp SOS',
       href: `/hoc-vien/lop/${l.classId}?tab=y-thuc&sub=phoi-hop`,
       ownerId: p.userId, owner: null, mine: true, due: null, statusLabel: 'Chưa xong',
     });
@@ -959,7 +959,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     }
   }
 
-  // ------------------------------------------------- 5. case chưa có người phụ trách
+  // ------------------------------------------------- 5. Case chưa có người phụ trách
   /*
    * "CHƯA CÓ NGƯỜI PHỤ TRÁCH" LÀ MỘT VIỆC, KHÔNG PHẢI MỘT Ô TRỐNG (mục 2.3 · 3.2).
    *
@@ -1080,7 +1080,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       }
       if (em.soMoi > 0) {
         items.push({ ...chung, key: `yt_xem:${r.id}`, group: 'yt_xem', urgency: urgencyOf(em.hanXem, today),
-          reason: `${em.soMoi} vi phạm chưa ai xem`, tieuDe: `Ghi nhận ${em.soMoi} vi phạm mới · ${r.ten}`, actionLabel: 'Ghi nhận',
+          reason: `${em.soMoi} vi phạm chưa xem`, tieuDe: `Ghi nhận ${em.soMoi} vi phạm mới · ${r.ten}`, actionLabel: 'Ghi nhận',
           href: duongLop(em.lopId, r.id, '&loc=moi'), due: em.hanXem, statusLabel: 'Mới' });
       }
       /* PR-S3F #7: MỘT việc cho MỖI lần xử lý đã duyệt (khoá theo id lần xử lý) — hai đề xuất cùng lúc không che nhau. */

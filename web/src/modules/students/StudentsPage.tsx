@@ -62,7 +62,8 @@ export default function StudentsPage() {
   const [params, setParams] = useSearchParams();
   const doc = docThamSoLoc(params.get('view'));
   const q = params.get('q') ?? '';
-  const branchId = params.get('branchId') ? Number(params.get('branchId')) : null;
+  const cnUrl = params.get('cn') ?? params.get('branchId');
+  const branchId = cnUrl ? Number(cnUrl) : null;
   const phamViUrl = params.get('phamVi');
   const sapXep: SapXep = params.get('sx') === 'chu-y' ? 'chu-y' : 'ten';
   const chiLop = params.get('classId') ? Number(params.get('classId')) : null;
@@ -119,7 +120,7 @@ export default function StudentsPage() {
     return m;
   }, [data, loc]);
 
-  if ('chuyenDen' in doc) return <Navigate to={`${doc.chuyenDen}${branchId ? `?branchId=${branchId}` : ''}`} replace />;
+  if ('chuyenDen' in doc) return <Navigate to={`${doc.chuyenDen}${branchId ? `?cn=${branchId}` : ''}`} replace />;
 
   const lopHien = (data?.rows ?? []).filter((c) => (khung === 'tat-ca' || khungCua(c.scoringMode) === khung)
     && (!chiLop || c.id === chiLop) && (!dangLoc || idsTheoLop.has(c.id)));
@@ -166,13 +167,13 @@ export default function StudentsPage() {
           value={draftQ} onChange={(e) => setDraftQ(e.target.value)} />
         {pv && pv.coThe.length > 1 && (
           <select className="field w-auto" aria-label="Phạm vi" value={pv.dangDung}
-            onChange={(e) => setParam({ phamVi: e.target.value, branchId: null, open: null })}>
+            onChange={(e) => setParam({ phamVi: e.target.value, cn: null, branchId: null, open: null })}>
             {pv.coThe.map((v) => <option key={v} value={v}>Phạm vi: {PHAM_VI_NHAN[v]}</option>)}
           </select>
         )}
         {pv?.dangDung === 'chi-nhanh' && (branches.data?.length ?? 0) > 1 && (
           <select className="field w-auto" aria-label="Chi nhánh" value={pv.chiNhanh ?? ''}
-            onChange={(e) => setParam({ phamVi: 'chi-nhanh', branchId: e.target.value, open: null })}>
+            onChange={(e) => setParam({ phamVi: 'chi-nhanh', cn: e.target.value, branchId: null, open: null })}>
             {(branches.data ?? []).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
           </select>
         )}
@@ -191,7 +192,7 @@ export default function StudentsPage() {
         {chips.map((k) => (
           <button key={k} type="button" title={LOC_HOC_VIEN_NHAN[k].goiY} aria-pressed={loc === k}
             onClick={() => setParam({ view: k === 'tat-ca' ? null : k, open: null })}
-            className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-semibold cursor-pointer ${
+            className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-semibold cursor-pointer max-sm:min-h-[44px] ${
               loc === k
                 ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)] border-[color:var(--accent-line)]'
                 : 'bg-transparent text-slate-400 border-slate-300/20 hover:bg-white/5'

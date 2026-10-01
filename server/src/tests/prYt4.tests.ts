@@ -533,7 +533,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const w1 = xl(gvcn, sid, [ghiVp(gvbm, sid)]);
     assert(thongBao(P.mbManager.userId, `yt-xu-ly:${r1.id}`).length === 0, 'Report 1 không báo');
     const n = thongBao(P.mbManager.userId, `yt-xu-ly:${w1.id}`);
-    assert(n.length === 1 && n[0].title === `Đã xử lý WL 1 — ${xuLy.xemXuLy(gvcn, w1.id).ten} · để biết` && !/không cần duyệt/.test(n[0].body ?? ''), JSON.stringify(n));
+    assert(n.length === 1 && n[0].title === `Đã xử lý WL 1 · ${xuLy.xemXuLy(gvcn, w1.id).ten} · để biết` && !/không cần duyệt/.test(n[0].body ?? ''), JSON.stringify(n));
   });
   check('YT4 (4) · Đã thực hiện chỉ cho lần xử lý QL đã duyệt; lần xử lý đã xong → 400', () => {
     const sid = hv(); const m = xl(gvcn, sid, [ghiVp(gvbm, sid)]);
@@ -873,7 +873,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   });
   check('YT4 (9) · Tab lớp M6: hai khung + tab "Xử lý · Vi phạm" dưới md; không còn bốn chip, hai chế độ, ô tick, khoảng ngày', () => {
     const s = docW(`${YT}/ClassYThucCard.tsx`);
-    assert(/md:grid-cols-\[minmax\(0,22rem\)_minmax\(0,1fr\)\]/.test(s) && /label: 'Xử lý'/.test(s) && /label: 'Vi phạm'/.test(s), 'hai khung');
+    assert(/md:grid-cols-\[minmax\(0,22rem\)_minmax\(0,1fr\)\]/.test(s) && /label: 'Theo xử lý'/.test(s) && /label: 'Theo vi phạm'/.test(s), 'hai khung');
     assert(!/BO_LOC_PHU|hopBoLocPhu|tuNgayTheoKhoang|byTime|type="checkbox"|Theo thời gian/.test(s), 'bộ lọc v3');
     assert(/NHOM_EM\.filter/.test(s) && /params\.get\('mo'\)/.test(s) && /'Phối hợp'/.test(s), 'nhóm em, ?mo, tab Phối hợp');
   });

@@ -129,7 +129,7 @@ export function latestResult(studentId: number) {
  * NHỮNG THỨ CÒN DỞ khi một em sắp chuyển lớp — để màn hình bày sẵn, người chuyển không phải
  * chép tay (mục 6.4).
  *
- * Trước vòng này, chuyển lớp xong là case còn mở rơi vào khoảng trống: giáo viên cũ không
+ * Trước vòng này, chuyển lớp xong là Case còn mở rơi vào khoảng trống: giáo viên cũ không
  * còn dạy em, giáo viên mới không biết em đang dở chuyện gì. Nay chuyển lớp BẮT BUỘC có
  * thông tin bàn giao, và đây là nguồn để viết thông tin đó.
  */
@@ -162,11 +162,11 @@ export function handoverBrief(studentId: number) {
 }
 
 export function transferStudent(p: Principal, studentId: number, toClassId: number, effectiveDate: string, reason: string, handover?: {
-  /** Ghi chú bàn giao — BẮT BUỘC khi em còn case chưa xong. */
+  /** Ghi chú bàn giao — BẮT BUỘC khi em còn Case chưa xong. */
   note?: string | null;
-  /** Chọn rõ "Không có lưu ý" (RB-3) — chỉ nhận khi em không còn case dở. */
+  /** Chọn rõ "Không có lưu ý" (RB-3) — chỉ nhận khi em không còn Case dở. */
   noNote?: boolean;
-  /** Người tiếp nhận CŨ — áp dụng cho MỌI case còn mở (giữ tương thích phép kiểm cũ). `nguoiNhan` thắng nếu có (Q14). */
+  /** Người tiếp nhận CŨ — áp dụng cho MỌI Case còn mở (giữ tương thích phép kiểm cũ). `nguoiNhan` thắng nếu có (Q14). */
   receiverUserId?: number | null;
   /** caseId → userId người nhận (Q14, panel Chuyển lớp gợi ý theo Case). */
   nguoiNhan?: Record<number, number> | null;
@@ -203,7 +203,7 @@ export function transferStudent(p: Principal, studentId: number, toClassId: numb
   const typed = (handover?.note ?? '').trim();
   if (brief.cases.length > 0 && !typed) {
     throw badRequest(
-      `Em còn ${brief.cases.length} case chưa xong. Ghi thông tin bàn giao để người nhận lớp `
+      `Em còn ${brief.cases.length} Case chưa xong. Ghi thông tin bàn giao để người nhận lớp `
       + 'biết em đang vướng gì và đang làm dở đến đâu.',
     );
   }

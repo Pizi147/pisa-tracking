@@ -160,7 +160,7 @@ function branchOfClass(classId: number): number | null {
   return r?.branch_id ?? null;
 }
 
-/** Fast Track hay Normal — sổ SCH-01: quyền dời lịch của giáo viên chỉ mở cho lớp Normal. */
+/** Fast Track hay Normal — sổ SCH-01: quyền dời lịch của giáo viên chỉ mở cho lớp thường. */
 function classIsFastTrack(classId: number): boolean {
   if (coNho()) return bangLop().get(classId)?.isFastTrack ?? false;
   const r = db().prepare('SELECT is_fast_track FROM classes WHERE id = ?').get(classId) as any;
@@ -376,7 +376,7 @@ function teacherAllows(p: Principal, permission: string, ctx: Ctx): boolean {
      */
     case PERMISSIONS.SOS_EDIT:
       if (ctx.anyScope === true) return true;
-      /* C02 (đã chốt 20/09/2026): GVCN KHÔNG xử lý case học thuật trái môn — chỉ đúng kỹ năng mình dạy. */
+      /* C02 (đã chốt 20/09/2026): GVCN KHÔNG xử lý Case học thuật trái môn — chỉ đúng kỹ năng mình dạy. */
       if (C02_GVCN_XU_LY_CASE_TRAI_MON === ('gvcn-ca-lop' as string)) {
         return hasAssignment(p, ctx, 'core') || hasAssignment(p, ctx, 'skill');
       }
@@ -407,7 +407,7 @@ function teacherAllows(p: Principal, permission: string, ctx: Ctx): boolean {
       return ctx.anyScope === true || coreDangHoc(p, ctx);
 
     /*
-     * DỜI LỊCH MỘT KỸ NĂNG (sổ SCH-01) — CHỈ lớp Normal, và CHỈ GVCN (mọi môn của lớp mình
+     * DỜI LỊCH MỘT KỸ NĂNG (sổ SCH-01) — CHỈ lớp thường, và CHỈ GVCN (mọi môn của lớp mình
      * chủ nhiệm) hoặc GVBM (đúng môn mình dạy). Fast Track chủ động vẫn là việc của Quản lý —
      * `PLAN_WEEK` giữ nguyên, không đụng ở đây.
      */
@@ -450,10 +450,10 @@ export function explain(p: Principal, permission: string, ctx: Ctx): string {
     if (permission === PERMISSIONS.SCORE_EDIT) return 'Bạn chỉ nhập được điểm của kỹ năng mình được phân công.';
     if (permission === PERMISSIONS.ESTIMATE_EDIT) return 'Bạn chỉ ước lượng được kỹ năng mình được phân công.';
     if (permission === PERMISSIONS.SOS_EDIT) {
-      return 'Bạn chỉ sửa/xử lý được case đúng kỹ năng mình dạy — case Ý thức thì chỉ GVCN.';
+      return 'Bạn chỉ sửa/xử lý được Case đúng kỹ năng mình dạy — Case Ý thức thì chỉ GVCN.';
     }
     if (permission === PERMISSIONS.SCHEDULE_MOVE) {
-      return 'Bạn chỉ dời được lịch lớp Normal mình phụ trách — Fast Track vẫn do Quản lý xếp.';
+      return 'Bạn chỉ dời được lịch lớp thường mình phụ trách — Fast Track vẫn do Quản lý xếp.';
     }
     if (permission === PERMISSIONS.VIOLATION_RECORD) return 'Bạn chỉ ghi được vi phạm của học viên trong lớp mình được phân công.';
     if (permission === PERMISSIONS.DISCIPLINE_MANAGE) {
@@ -556,7 +556,7 @@ export function mySkills(p: Principal, classId: number, skills: readonly string[
 
 /**
  * CÁC KỸ NĂNG dời được lịch ở một lớp (sổ SCH-01) — Quản lý/Quản trị dời được mọi kỹ năng
- * (kể cả Fast Track); giáo viên chỉ dời được ở lớp Normal, đúng phần mình phụ trách
+ * (kể cả Fast Track); giáo viên chỉ dời được ở lớp thường, đúng phần mình phụ trách
  * (`SCHEDULE_MOVE` đã tự chặn Fast Track và khớp GVCN/GVBM — xem `teacherAllows`).
  */
 export function moveableSkills(p: Principal, classId: number, skills: readonly string[]): string[] {

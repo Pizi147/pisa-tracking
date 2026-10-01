@@ -20,7 +20,7 @@ const CHI_ADMIN = 'Chỉ Quản trị hệ thống mới xoá hoặc kết thúc
 /** Bảng có cột `class_id` mà một dòng ở đó nghĩa là "lớp đã có dữ liệu" (`teacher_assignments`, `class_skills` là cấu hình, không tính). */
 const BANG_DU_LIEU: [string, string][] = [
   ['assessment_attempts', 'lượt Test'], ['case_signals', 'Case chờ xác nhận nguyên nhân'], ['teacher_estimates', 'ước lượng của giáo viên'],
-  ['tasks', 'công việc'], ['violations', 'vi phạm'], ['discipline_measures', 'phương án xử lý vi phạm'],
+  ['tasks', 'công việc'], ['violations', 'vi phạm'], ['discipline_measures', 'lần xử lý vi phạm'],
 ];
 
 function docLop(classId: number) {

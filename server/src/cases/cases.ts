@@ -42,7 +42,7 @@ import { boSungYeuCau, chotYeuCau, taoYeuCau, theCuaDoiTuong } from '../duyet/ye
 /**
  * CASE HỌC VỤ — một vòng đời cho cả hai nguồn.
  *
- * Case sinh từ kết quả đánh giá và case do giáo viên báo đi qua ĐÚNG một bộ máy: cùng
+ * Case sinh từ kết quả đánh giá và Case do giáo viên báo đi qua ĐÚNG một bộ máy: cùng
  * trạng thái, cùng hướng xử lý, cùng tác động, cùng cách xem lại. Nếu tách thành hai luồng
  * thì mọi màn hình tổng hợp về sau phải cộng hai nguồn bằng tay, và sẽ lệch.
  *
@@ -53,12 +53,12 @@ import { boSungYeuCau, chotYeuCau, taoYeuCau, theCuaDoiTuong } from '../duyet/ye
 
 // ---------------------------------------------------------------- quyền
 
-/** Người đang xem có được đóng case này không: GVCN của lớp, hoặc Quản lý trong phạm vi. */
+/** Người đang xem có được đóng Case này không: GVCN của lớp, hoặc Quản lý trong phạm vi. */
 /**
  * TÊN CASE — tự sinh, cập nhật theo MỐC MỚI NHẤT.
  *
  * Suy lúc đọc chứ không ghi vào database: sửa điểm thì tên đổi theo, không để lại một cái
- * tên cũ nói sai sự thật. Tiền tố `MT{n}` là cách nhận ra case đã bị điểm chạm vào; case
+ * tên cũ nói sai sự thật. Tiền tố `MT{n}` là cách nhận ra Case đã bị điểm chạm vào; Case
  * giáo viên tự báo mà chưa lượt MT nào chạm thì không có tiền tố.
  */
 export function caseTitleOf(c: {
@@ -67,7 +67,7 @@ export function caseTitleOf(c: {
 }): string {
   /*
    * TÊN NGƯỜI TẠO ĐẶT THẮNG TÊN SUY RA. Case tạo tay có tên riêng vì không có gì để suy;
-   * và không được tự gán "… dưới kỳ vọng" cho một case không sinh từ điểm (mục 7.3).
+   * và không được tự gán "… dưới kỳ vọng" cho một Case không sinh từ điểm (mục 7.3).
    */
   const own = (c.title ?? '').trim();
   if (own && c.origin_kind !== 'mock') return own;
@@ -104,7 +104,7 @@ export function caseTitleOf(c: {
   });
 }
 
-/** Các mốc của một case, cũ trước mới sau — màn case đọc từ trên xuống là ra câu chuyện. */
+/** Các mốc của một Case, cũ trước mới sau — màn Case đọc từ trên xuống là ra câu chuyện. */
 export function milestonesOf(caseId: number) {
   return (db()
     .prepare(
@@ -127,27 +127,27 @@ export function milestonesOf(caseId: number) {
  * HOÀN THÀNH CASE — MỘT NÚT, MỘT PANEL KẾT LUẬN (mục 9.3).
  *
  * Trước vòng 7 có bốn đường ra khỏi một case: "Chốt kết quả", "Kéo dài theo dõi", "Chọn
- * hướng xử lý" và "Đổi hướng xử lý". Bốn cái tên cho một câu hỏi duy nhất — case này kết
- * thúc thế nào — nên không ai chắc mình vừa làm gì, và hai case đóng cùng một kiểu lại có
+ * hướng xử lý" và "Đổi hướng xử lý". Bốn cái tên cho một câu hỏi duy nhất — Case này kết
+ * thúc thế nào — nên không ai chắc mình vừa làm gì, và hai Case đóng cùng một kiểu lại có
  * hai dấu vết khác nhau. Nay chỉ còn ĐÚNG MỘT đường.
  *
- * "Kéo dài theo dõi" biến mất vì nó vốn không phải một cách kết thúc: case chưa xong thì để
+ * "Kéo dài theo dõi" biến mất vì nó vốn không phải một cách kết thúc: Case chưa xong thì để
  * mở, và việc phải làm nằm ở PHƯƠNG ÁN (tab "Theo dõi thêm" ở mục 9.1), không phải ở
  * một cái nút đóng-mà-không-đóng.
  *
  * CHỈ ĐÓNG ĐƯỢC KHI MỌI PHƯƠNG ÁN ĐÃ KHÉP LẠI. Đóng sớm thì con số "đã xử lý xong" nói dối:
- * vẫn còn một việc treo mà case đã biến khỏi danh sách của mọi người. Và điểm mới đạt, ngày
- * trôi qua hay "case không có phương án nào" đều KHÔNG tự đóng được case — phải có người có
+ * vẫn còn một việc treo mà Case đã biến khỏi danh sách của mọi người. Và điểm mới đạt, ngày
+ * trôi qua hay "Case không có phương án nào" đều KHÔNG tự đóng được Case — phải có người có
  * quyền kết luận.
  */
 export function closeCaseOutcome(p: Principal, caseId: number, input: {
-  /** Mức tiến bộ — BẮT BUỘC (case học thuật). */
+  /** Mức tiến bộ — BẮT BUỘC (Case học thuật). */
   outcome?: string | null; note?: string | null;
   /** Ngày hoàn thành thực tế. Bỏ trống thì lấy hôm nay; không nhận ngày tương lai. */
   closedOn?: string | null;
   /** Mã cũ: chỉ còn nhận 'end'. "Kéo dài theo dõi" đã bỏ (mục 9.3). */
   decision?: string | null;
-  /** Ghi chi tiết theo thành phần của kỹ năng case (mục 9.3). TUỲ CHỌN. */
+  /** Ghi chi tiết theo thành phần của kỹ năng Case (mục 9.3). TUỲ CHỌN. */
   metrics?: unknown;
 }) {
   const conn = db();
@@ -160,7 +160,7 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
     throw badRequest('Mức độ thành công không hợp lệ.');
   }
   if (input.decision && input.decision !== 'end') {
-    throw badRequest('"Kéo dài theo dõi" đã bỏ — case chưa xong thì để mở và cập nhật ở phương án.');
+    throw badRequest('"Kéo dài theo dõi" đã bỏ — Case chưa xong thì để mở và cập nhật ở phương án.');
   }
   void CASE_DECISIONS;
   /*
@@ -178,12 +178,12 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
   const metrics = normalizeMetrics(input.metrics);
   /*
    * ĐÁNH GIÁ CHI TIẾT PHẢI ĐÚNG KỸ NĂNG CỦA CASE (mục 9.3) — không bắt chấm cả năm kỹ năng,
-   * và cũng không cho ghi Reading vào một case Listening.
+   * và cũng không cho ghi Reading vào một Case Listening.
    */
   if (metrics && c.category) {
     for (const m of metrics) {
       if (m.skill !== c.category) {
-        throw badRequest('Phần đánh giá chi tiết chỉ ghi cho đúng kỹ năng của case này.');
+        throw badRequest('Phần đánh giá chi tiết chỉ ghi cho đúng kỹ năng của Case này.');
       }
     }
   }
@@ -193,12 +193,12 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
    *
    * Trước đây hàm này tự kiểm "còn phương án nào đang chạy không", trong khi nút trên màn
    * hình lại hỏi `closeBlockers`. Hai phép kiểm khác nhau cho cùng một câu hỏi nghĩa là
-   * sớm muộn sẽ có đường đóng được case mà màn hình bảo là chưa đóng được — cụ thể là case
+   * sớm muộn sẽ có đường đóng được Case mà màn hình bảo là chưa đóng được — cụ thể là Case
    * CHƯA CÓ PHƯƠNG ÁN NÀO vẫn lọt qua đây.
    */
   const blockers = closeBlockers(caseId);
   if (blockers.length) {
-    throw badRequest(`Chưa chốt kết quả case được. ${blockers.join(' ')}`);
+    throw badRequest(`Chưa chốt kết quả Case được. ${blockers.join(' ')}`);
   }
 
   return tx(() => {
@@ -255,7 +255,7 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
 export function setFollowUntil(p: Principal, caseId: number, date: string | null) {
   const c = loadCase(caseId);
   require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
-    'Bạn không có quyền đổi hạn theo dõi của case này.');
+    'Bạn không có quyền đổi hạn theo dõi của Case này.');
   if (date && !isIsoDate(date)) throw badRequest('Hạn theo dõi không hợp lệ.');
   db().prepare('UPDATE sos_cases SET follow_until = ?, updated_at = ? WHERE id = ?')
     .run(date, nowIso(), caseId);
@@ -293,7 +293,7 @@ function loadCase(caseId: number) {
         WHERE sc.id = ?`,
     )
     .get(caseId) as any;
-  if (!c) throw notFound('Không tìm thấy case');
+  if (!c) throw notFound('Không tìm thấy Case');
   c.class_id = c.attempt_class_id ?? c.current_class_id ?? null;
   return c;
 }
@@ -301,7 +301,7 @@ function loadCase(caseId: number) {
 /**
  * NGỮ CẢNH QUYỀN CHO SOS_EDIT (AUTH-01) — MỘT chỗ dựng, dùng ở mọi nơi sửa/xử lý case.
  *
- * Truyền đúng kỹ năng của case (`c.topic`, ví dụ "listening") để `teacherAllows` so khớp phân công GVBM (C02). Thiếu hàm này thì
+ * Truyền đúng kỹ năng của Case (`c.topic`, ví dụ "listening") để `teacherAllows` so khớp phân công GVBM (C02). Thiếu hàm này thì
  * mỗi nơi gọi `require_`/`can` tự viết một cách khác, và đó chính là kiểu lỗi sinh ra AUTH-01 lần đầu. Ý thức KHÔNG đi qua đây:
  * quyền của nó ở `server/src/yThuc/access.ts` (C02 không áp cho Ý thức).
  */
@@ -315,7 +315,7 @@ function sosEditCtx(c: { class_id?: number | null; eff_student_id?: number | nul
 
 /**
  * QUYỀN CỦA MỘT CASE, cho module khác hỏi (kho tệp) thay vì tự dựng lại ngữ cảnh quyền — đúng bài học AUTH-01: mỗi nơi
- * tự viết `can(...)` một kiểu là cách sinh ra lỗi quyền. Xem = quyền xem case; sửa = `SOS_EDIT` theo đúng kỹ năng (C02).
+ * tự viết `can(...)` một kiểu là cách sinh ra lỗi quyền. Xem = quyền xem Case; sửa = `SOS_EDIT` theo đúng kỹ năng (C02).
  */
 /** Case đã rút vì điểm nguồn được sửa/huỷ — `retireCaseForCorrectedScore` ghi `outcome_note` bắt đầu bằng `SIGNAL_WITHDRAW_SCORE_FIXED`. */
 const laRutSuaDiem = (c: { status?: string; outcome_note?: string | null }) =>
@@ -352,7 +352,7 @@ function caseDaCoTheoKhoa(key: string | null | undefined): number | null {
 export function reportIssue(p: Principal, input: {
   studentId: number;
   cycleId?: number | null;
-  /** Tên case do người tạo đặt (mục 7.3). Chỉ case tạo tay mới có. */
+  /** Tên Case do người tạo đặt (mục 7.3). Chỉ Case tạo tay mới có. */
   title?: string | null;
   /** "Mô tả" — trước vòng 5 ô này tên là "Chuyện gì đang xảy ra". */
   summary: string;
@@ -372,9 +372,9 @@ export function reportIssue(p: Principal, input: {
   observation?: string | null;
   detectedAt?: string | null;
   idempotencyKey?: string;
-  /** Người dùng đã thấy cảnh báo case trùng và chọn "Ghi vào case đang có". */
+  /** Người dùng đã thấy cảnh báo Case trùng và chọn "Ghi vào Case đang có". */
   mergeIntoExisting?: boolean;
-  /** Người dùng đã thấy cảnh báo và chọn "Đây là vấn đề khác, mở case riêng". */
+  /** Người dùng đã thấy cảnh báo và chọn "Đây là vấn đề khác, mở Case riêng". */
   parallel?: boolean;
   /** Người phụ trách chính. Bỏ trống thì hệ thống gợi ý theo phân công của lớp. */
   ownerUserId?: number | null;
@@ -385,7 +385,7 @@ export function reportIssue(p: Principal, input: {
    * Ba việc khác hẳn đường thường khi cờ này bật:
    *   · `origin_kind = 'backfill'` thay vì `'teacher_report'` — chốt 7, phân biệt được ghi
    *     tại chỗ với nhớ lại rồi điền.
-   *   · KHÔNG có `follow_until` (chốt 2) — case nhập bù không có hạn nào, vì nó là chuyện đã xảy ra, không phải một nghĩa vụ
+   *   · KHÔNG có `follow_until` (chốt 2) — Case nhập bù không có hạn nào, vì nó là chuyện đã xảy ra, không phải một nghĩa vụ
    *     đang chạy.
    */
   backfill?: boolean;
@@ -411,13 +411,13 @@ export function reportIssue(p: Principal, input: {
    * BỐN TRƯỜNG BẮT BUỘC (mục 6.3): tên, mô tả, mức độ, phân loại.
    *
    * Ba trong bốn cái đó trước đây không bắt buộc, và hệ quả rất cụ thể: hồ sơ đầy những
-   * case tên "Reading dưới kỳ vọng" do máy đặt, mô tả trống, phân loại "Chưa rõ" — mở ra
+   * Case tên "Reading dưới kỳ vọng" do máy đặt, mô tả trống, phân loại "Chưa rõ" — mở ra
    * không biết em vướng gì, và không bảng tổng hợp nào đếm được.
    */
   /* PR-Dọn (Q4, quét #24): tên ≤ 200, mô tả ≤ 2 000 ký tự. */
   const title = chuTuDo(input.title, 'Tên Case', 200) ?? '';
   if (title.length < 6) {
-    throw badRequest('Đặt tên cho case — một câu ngắn nói đúng vấn đề, ví dụ '
+    throw badRequest('Đặt tên cho Case — một câu ngắn nói đúng vấn đề, ví dụ '
       + '"Reading: chưa xử lý được dạng True/False/Not Given".');
   }
   const summary = chuTuDo(input.summary, 'Mô tả', 2000) ?? '';
@@ -464,13 +464,13 @@ export function reportIssue(p: Principal, input: {
   /*
    * CẢNH BÁO CASE TRÙNG (mục 7.13).
    *
-   * Hạng mục này đã có case chưa xong thì mở thêm một cái nữa hiếm khi đúng: hai case song
+   * Hạng mục này đã có Case chưa xong thì mở thêm một cái nữa hiếm khi đúng: hai Case song
    * song cho cùng một môn nghĩa là hai người cùng theo dõi mà không ai thấy việc của người
    * kia. Nên mặc định GHI VÀO CASE ĐANG CÓ; mở riêng vẫn được nhưng phải là quyết định có
    * ý thức — giao diện hỏi trước, và người dùng gửi lại kèm `parallel: true`.
    *
    * Kiểm ở đây chứ không chỉ dựa vào chỉ mục duy nhất: chỉ mục chỉ biết chặn, không nói
-   * được cho người dùng biết case đang vướng là case nào.
+   * được cho người dùng biết Case đang vướng là Case nào.
    */
   /*
    * PHÂN LOẠI BẮT BUỘC, và không có lối thoát "Chưa rõ" (mục 6.3).
@@ -534,7 +534,7 @@ export function reportIssue(p: Principal, input: {
   }
 
   if (existing && input.mergeIntoExisting) {
-    /* "Ghi vào case đang có" — thêm chữ của người báo, không tạo bản ghi thứ hai. */
+    /* "Ghi vào Case đang có" — thêm chữ của người báo, không tạo bản ghi thứ hai. */
     return tx(() => {
       conn
         .prepare(
@@ -549,7 +549,7 @@ export function reportIssue(p: Principal, input: {
       addJourney({
         studentId: input.studentId, cycleId: cycle?.id ?? null,
         eventType: 'case_opened', eventDate: detectedAt,
-        title: 'Giáo viên ghi thêm vào case đang có', detail: summary,
+        title: 'Giáo viên ghi thêm vào Case đang có', detail: summary,
         refTable: 'sos_cases', refId: existing.id, createdBy: p.userId,
         dedupKey: `case_note:${existing.id}:${detectedAt}:${summary.slice(0, 20)}`,
       });
@@ -564,12 +564,12 @@ export function reportIssue(p: Principal, input: {
     /*
      * CASE CŨ ĐÃ ĐÓNG NHẢ KHOÁ CHỐNG TRÙNG RA (mục 6.2 · 7.5).
      *
-     * Khoá `(học viên, lộ trình, hạng mục)` luôn thuộc về case ĐANG MỞ của hạng mục đó. Một
-     * case đã chốt kết thúc mà vẫn giữ khoá thì hạng mục ấy bị khoá vĩnh viễn: vấn đề tái
-     * diễn sau đó không mở được case mới.
+     * Khoá `(học viên, lộ trình, hạng mục)` luôn thuộc về Case ĐANG MỞ của hạng mục đó. Một
+     * Case đã chốt kết thúc mà vẫn giữ khoá thì hạng mục ấy bị khoá vĩnh viễn: vấn đề tái
+     * diễn sau đó không mở được Case mới.
      *
-     * Nhả khoá KHÔNG đụng gì tới nội dung case cũ — kết luận, phương án và lịch sử của nó
-     * giữ nguyên. Việc nối case mới vào case cũ do đường tín hiệu lo, vì chỉ ở đó mới biết
+     * Nhả khoá KHÔNG đụng gì tới nội dung Case cũ — kết luận, phương án và lịch sử của nó
+     * giữ nguyên. Việc nối Case mới vào Case cũ do đường tín hiệu lo, vì chỉ ở đó mới biết
      * đây là tái diễn hay là một vấn đề khác.
      */
     if (dedupKey) {
@@ -590,7 +590,7 @@ export function reportIssue(p: Principal, input: {
            input.parallel ? null : dedupKey, input.parallel ? 1 : 0,
            /*
             * NGƯỜI BÁO KHÔNG MẶC NHIÊN LÀ NGƯỜI PHỤ TRÁCH (mục 2.3). Quản lý hoặc người nhập
-            * hộ mở case rất thường xuyên; gán họ làm người phụ trách là ghi sai trách nhiệm.
+            * hộ mở Case rất thường xuyên; gán họ làm người phụ trách là ghi sai trách nhiệm.
             * Ai báo thì lưu ở `reported_by`, còn đây là gợi ý theo phân công.
             */
            input.ownerUserId ?? suggestCaseOwner({ classId, category }),
@@ -598,12 +598,12 @@ export function reportIssue(p: Principal, input: {
     const caseId = Number(info.lastInsertRowid);
 
     /*
-     * KHÔNG ghi một mốc "Mở case" ở đây (mục 7.6).
+     * KHÔNG ghi một mốc "Mở Case" ở đây (mục 7.6).
      *
-     * Ngày mở và người tạo đã nằm ở đầu case; thêm một node "Mở case" vào dòng thời gian
+     * Ngày mở và người tạo đã nằm ở đầu Case; thêm một node "Mở Case" vào dòng thời gian
      * nội bộ là lặp lại đúng thông tin đó và đẩy những mốc có nghĩa — hỗ trợ đã làm, kết
      * quả sau hỗ trợ — xuống dưới. Hành trình học tập của TOÀN học viên vẫn có mốc "phát
-     * sinh case" (`addJourney` ngay dưới), vì ở đó nó thật sự là một mốc.
+     * sinh Case" (`addJourney` ngay dưới), vì ở đó nó thật sự là một mốc.
      */
 
     addIssues(caseId, p.userId, { ...input, topic, primaryCode });
@@ -679,7 +679,7 @@ export function addIssues(caseId: number, actor: number | null, input: {
 // ---------------------------------------------------------------- tác động và xem lại
 
 /**
- * Ghi một TÁC ĐỘNG. Một case có nhiều tác động — đây là chỗ các cột cố định cũ không tả được.
+ * Ghi một TÁC ĐỘNG. Một Case có nhiều tác động — đây là chỗ các cột cố định cũ không tả được.
  *
  * Người thực hiện tách khỏi người ghi nhận: CS trao đổi với phụ huynh, Admin ghi vào hệ
  * thống, thì phải giữ được cả hai. "Đã xong" bắt buộc có ngày thực tế; không có thì đó mới
@@ -716,7 +716,7 @@ export function recordIntervention(p: Principal, caseId: number, input: {
   const conn = db();
   const c = loadCase(caseId);
   require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
-    'Bạn không có quyền ghi nhận hỗ trợ cho case này.');
+    'Bạn không có quyền ghi nhận hỗ trợ cho Case này.');
   /* PR-S3F #2: thẻ "Không cần theo dõi" đang chờ Quản lý duyệt → chưa thêm PA (duyệt xong PA mới thêm sẽ bị huỷ oan). */
   if (sosCaseState(caseId).choDuyetKhongTheoDoi) {
     throw badRequest('Case đang chờ Quản lý duyệt "Không cần theo dõi" — chưa thêm phương án được. Chờ duyệt xong (hoặc bị từ chối) rồi thêm.');
@@ -872,7 +872,7 @@ export function recordIntervention(p: Principal, caseId: number, input: {
       });
     }
 
-    // Có tác động thì case chuyển sang đang xử lý — trừ khi đã đóng; Case từ SOS theo luật Q28-5.
+    // Có tác động thì Case chuyển sang đang xử lý — trừ khi đã đóng; Case từ SOS theo luật Q28-5.
     dongBoTrangThaiCase(caseId);
     addJourney({
       studentId: c.eff_student_id, cycleId: c.eff_cycle_id,
@@ -906,7 +906,7 @@ export function respondToPlan(p: Principal, interventionId: number, input: {
     .prepare(
       /*
        * `sos_cases` KHÔNG có cột lớp — lớp suy ra từ bài đánh giá, hoặc từ lớp em đang học.
-       * Giống hệt `loadCase`, để quyền của một case luôn tính trên cùng một lớp dù vào từ
+       * Giống hệt `loadCase`, để quyền của một Case luôn tính trên cùng một lớp dù vào từ
        * đâu; viết `sc.class_id` là sai và sẽ hỏng ngay khi chạy.
        */
       `SELECT iv.*, sc.student_id, sc.attempt_id, iv.status AS iv_status, sc.status AS case_status,
@@ -979,7 +979,7 @@ export function respondToPlan(p: Principal, interventionId: number, input: {
       studentId: iv.eff_student_id, cycleId: iv.eff_cycle_id,
       eventType: input.decision === 'declined' ? 'plan_declined' : 'plan_approved',
       eventDate: demoToday(),
-      title: input.decision === 'approved' ? 'Quản lý duyệt phương án hỗ trợ' : 'Quản lý không duyệt phương án',
+      title: input.decision === 'approved' ? 'Quản lý duyệt PA hỗ trợ' : 'Quản lý từ chối PA',
       detail: [iv.description, note].filter(Boolean).join(' — ') || null,
       refTable: 'case_interventions', refId: interventionId, createdBy: p.userId,
       dedupKey: `plan-${input.decision}:${interventionId}`,
@@ -999,7 +999,7 @@ export function respondToPlan(p: Principal, interventionId: number, input: {
 /**
  * ĐÁNH DẤU MỘT PHƯƠNG ÁN ĐÃ LÀM XONG — kèm NGÀY THỰC HIỆN.
  *
- * Đây là thao tác của mục 7.15: phương án thuộc case Ý thức/Khác thường chỉ cần đúng hai
+ * Đây là thao tác của mục 7.15: phương án thuộc Case Ý thức/Khác thường chỉ cần đúng hai
  * thứ này, ghi chú tuỳ chọn. Phương án học thuật cũng dùng chung đường này, rồi mới hẹn
  * ngày xem lại nếu cần.
  *
@@ -1019,7 +1019,7 @@ export function completeIntervention(p: Principal, interventionId: number, input
   if (!iv) throw notFound('Không tìm thấy phương án.');
   const c = loadCase(iv.case_id);
   require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
-    'Bạn không có quyền cập nhật phương án của case này.');
+    'Bạn không có quyền cập nhật phương án của Case này.');
 
   if (iv.preset === 1 && !iv.confirmed_at) {
     throw badRequest('Phương án điền sẵn này chưa được xác nhận — xác nhận (hoặc sửa / thay) trước khi ghi việc đã làm.');
@@ -1125,7 +1125,7 @@ export function backfillCase(p: Principal, input: {
     throw badRequest('Khoảng ngày "từ → đến" không hợp lệ.');
   }
   if (input.fromDate > input.toDate) throw badRequest('Ngày bắt đầu phải trước ngày kết thúc.');
-  if (input.toDate > today) throw badRequest('Không nhập bù được một case kết thúc ở tương lai.');
+  if (input.toDate > today) throw badRequest('Không nhập bù được một Case kết thúc ở tương lai.');
 
   if (!Array.isArray(input.actions) || !input.actions.length) {
     throw badRequest('Ghi ít nhất một dòng "đã làm gì" — nhập bù mà không có việc gì đã làm thì không có gì để ghi.');
@@ -1151,7 +1151,7 @@ export function backfillCase(p: Principal, input: {
   /*
    * CASE-03: nhập bù không có lối thoát "Chưa đủ dữ liệu" — bộ `CASE_OUTCOMES` dùng lại ở
    * đây vốn đã không có mức đó (nó chỉ tồn tại ở `FOLLOWUP_OUTCOMES`, cho MỘT lần xem lại
-   * giữa chừng chứ không phải kết luận cuối của cả case), nên không cần chặn tay thêm.
+   * giữa chừng chứ không phải kết luận cuối của cả Case), nên không cần chặn tay thêm.
    */
   if (!(CASE_OUTCOMES as readonly string[]).includes(input.outcome)) {
     throw badRequest('Mức độ thành công không hợp lệ.');
@@ -1164,8 +1164,8 @@ export function backfillCase(p: Principal, input: {
     const daCo = caseDaCoTheoKhoa(key);
     if (daCo) return caseDetail(p, daCo);
     /*
-     * CHỐT 6 (mục 10.4): KHÔNG kích hoạt cảnh báo case trùng như đường thường (đường thường
-     * chặn khi hạng mục đã có case đang mở — case nhập bù đã đóng ngay khi tạo nên không đụng
+     * CHỐT 6 (mục 10.4): KHÔNG kích hoạt cảnh báo Case trùng như đường thường (đường thường
+     * chặn khi hạng mục đã có Case đang mở — Case nhập bù đã đóng ngay khi tạo nên không đụng
      * luật đó). NHƯNG phải cảnh báo khi trùng với MỘT CASE NHẬP BÙ KHÁC cùng khoảng thời gian
      * — đó mới thật sự là nhập hai lần cùng một chuyện.
      */
@@ -1180,7 +1180,7 @@ export function backfillCase(p: Principal, input: {
         .get(input.studentId, category, input.fromDate, input.toDate) as any;
       if (overlap) {
         throw badRequest(
-          `Học viên này đã có một case nhập bù "${overlap.title ?? caseCategoryLabel(category)}" `
+          `Học viên này đã có một Case nhập bù "${overlap.title ?? caseCategoryLabel(category)}" `
           + `trùng khoảng ${tuanLich(overlap.detected_at, demoToday())} → ${tuanLich(overlap.closed_at, demoToday())} — có phải cùng một lần không?`,
           { duplicateBackfill: { id: overlap.id, title: overlap.title, from: overlap.detected_at, to: overlap.closed_at } },
         );
@@ -1221,10 +1221,10 @@ export function backfillCase(p: Principal, input: {
 }
 
 /**
- * Ghi một lần XEM LẠI. Gắn với một tác động, hoặc gắn thẳng vào case khi chỉ đang theo dõi.
+ * Ghi một lần XEM LẠI. Gắn với một tác động, hoặc gắn thẳng vào Case khi chỉ đang theo dõi.
  *
  * `outcome` là quan sát, KHÔNG phải khẳng định tác động gây ra thay đổi. Vì vậy điểm tăng
- * cũng không tự đóng case — người có quyền mới quyết định.
+ * cũng không tự đóng Case — người có quyền mới quyết định.
  */
 export function recordFollowUp(p: Principal, caseId: number, input: {
   interventionId?: number | null; observedOn?: string | null;
@@ -1233,7 +1233,7 @@ export function recordFollowUp(p: Principal, caseId: number, input: {
   const conn = db();
   const c = loadCase(caseId);
   require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
-    'Bạn không có quyền ghi nhận theo dõi cho case này.');
+    'Bạn không có quyền ghi nhận theo dõi cho Case này.');
   const observedOn = input.observedOn ?? demoToday();
   if (!isIsoDate(observedOn)) throw badRequest('Ngày quan sát không hợp lệ.');
   if (input.outcome && !(FOLLOWUP_OUTCOMES as readonly string[]).includes(input.outcome)) {
@@ -1241,7 +1241,7 @@ export function recordFollowUp(p: Principal, caseId: number, input: {
   }
   if (input.interventionId) {
     const iv = conn.prepare('SELECT case_id, preset, confirmed_at FROM case_interventions WHERE id = ?').get(input.interventionId) as any;
-    if (!iv || iv.case_id !== caseId) throw badRequest('Tác động không thuộc case này.');
+    if (!iv || iv.case_id !== caseId) throw badRequest('Tác động không thuộc Case này.');
     if (iv.preset === 1 && !iv.confirmed_at) {
       throw badRequest('Phương án điền sẵn này chưa được xác nhận — xác nhận (hoặc sửa / thay) trước khi ghi theo dõi.');
     }
@@ -1282,13 +1282,13 @@ export function recordFollowUp(p: Principal, caseId: number, input: {
 /**
  * Đổi hướng xử lý và/hoặc đóng case.
  *
- * ĐÓNG CASE BẮT BUỘC CÓ HƯỚNG XỬ LÝ. Không có thì không biết case kết thúc vì đã giải quyết
+ * ĐÓNG CASE BẮT BUỘC CÓ HƯỚNG XỬ LÝ. Không có thì không biết Case kết thúc vì đã giải quyết
  * hay vì bị bỏ quên. Quyền đóng: GVCN của lớp và Quản lý trong phạm vi.
  */
 export function setDisposition(p: Principal, caseId: number, input: {
   disposition?: string | null; note?: string | null; status?: string | null;
   /**
-   * Ghi chi tiết theo kỹ năng khi kết luận case (mục 7.7 [5] Option 2) — TUỲ CHỌN.
+   * Ghi chi tiết theo kỹ năng khi kết luận Case (mục 7.7 [5] Option 2) — TUỲ CHỌN.
    * Mặc định chỉ cần ghi chú ngắn; ai muốn ghi kỹ thì ghi thêm điểm mình tự chấm.
    */
   metrics?: unknown;
@@ -1304,25 +1304,25 @@ export function setDisposition(p: Principal, caseId: number, input: {
     }
     const disposition = input.disposition ?? c.disposition;
     if (!disposition) {
-      throw badRequest('Hoàn thành Case thì phải chọn hướng xử lý — để biết case kết thúc vì đã giải quyết hay bị bỏ quên.');
+      throw badRequest('Hoàn thành Case thì phải chọn hướng xử lý — để biết Case kết thúc vì đã giải quyết hay bị bỏ quên.');
     }
     /*
      * CHỈ ĐÓNG ĐƯỢC KHI MỌI PHƯƠNG ÁN ĐÃ KHÉP LẠI (mục 7.7 [5]).
      *
-     * Và một case CHƯA CÓ PHƯƠNG ÁN NÀO cũng không đủ điều kiện: đếm được "0 phương án còn
+     * Và một Case CHƯA CÓ PHƯƠNG ÁN NÀO cũng không đủ điều kiện: đếm được "0 phương án còn
      * mở" không có nghĩa là đã làm gì cho em. Thông báo NÓI RÕ còn thiếu gì, thay vì chỉ
      * làm mờ một cái nút và để người dùng tự đoán.
      */
     const blockers = closeBlockers(caseId);
     if (blockers.length) {
-      throw badRequest(`Chưa hoàn thành case được. ${blockers.join(' ')}`);
+      throw badRequest(`Chưa hoàn thành Case được. ${blockers.join(' ')}`);
     }
     if (disposition === 'monitor') {
-      throw badRequest('"Chỉ theo dõi thêm" nghĩa là case còn mở. Chọn hướng khác nếu muốn đóng.');
+      throw badRequest('"Chỉ theo dõi thêm" nghĩa là Case còn mở. Chọn hướng khác nếu muốn đóng.');
     }
   } else {
     require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
-      'Bạn không có quyền cập nhật case này.');
+      'Bạn không có quyền cập nhật Case này.');
   }
   if (input.disposition && !(DISPOSITIONS as readonly string[]).includes(input.disposition)) {
     throw badRequest('Hướng xử lý không hợp lệ.');
@@ -1349,8 +1349,8 @@ export function setDisposition(p: Principal, caseId: number, input: {
     }
 
     /*
-     * ĐIỂM KẾT LUẬN ghi thành một dòng cập nhật gắn thẳng vào case, không gắn vào phương án
-     * nào — vì nó là kết luận của CẢ case, không phải kết quả của một vòng hỗ trợ. Nhờ vậy
+     * ĐIỂM KẾT LUẬN ghi thành một dòng cập nhật gắn thẳng vào Case, không gắn vào phương án
+     * nào — vì nó là kết luận của CẢ Case, không phải kết quả của một vòng hỗ trợ. Nhờ vậy
      * biểu đồ tiến bộ chỉ phải đọc một chỗ duy nhất để lấy mọi điểm cô tự chấm.
      */
     if (metrics) {
@@ -1467,7 +1467,7 @@ export function caseDetail(p: Principal, caseId: number) {
       /** Khép lại VÌ SAO: `done` đã xong · `superseded` bị thay bằng phương án khác. */
       closedReason: iv.closed_reason ?? null,
       supersededBy: iv.superseded_by ?? null,
-      /* HẠN của chu kỳ đang chạy — hai tuần với case học thuật, một tuần với Ý thức/Khác. */
+      /* HẠN của chu kỳ đang chạy — hai tuần với Case học thuật, một tuần với Ý thức/Khác. */
       actionDue: iv.action_due ?? null,
       actionOverdue: !!iv.action_due && iv.action_due < demoToday()
         && (iv.status === 'planned' || iv.status === 'started')
@@ -1547,19 +1547,19 @@ export function caseDetail(p: Principal, caseId: number) {
     cycle,
     classId: c.class_id,
     attemptId: c.attempt_id, attemptNo: c.attempt_no ?? null,
-    /** Chủ đề — kỹ năng của case; mọi vấn đề đều phải có chỗ cất. */
+    /** Chủ đề — kỹ năng của Case; mọi vấn đề đều phải có chỗ cất. */
     topic: c.topic as string | null,
     /** MH2: mã chương trình của lộ trình Case — web gọi `tenMon(chuongTrinh, …)` (FOU G+V/P, Pre FOU Tổng hợp). */
     chuongTrinh: ctCase,
     topicLabel: c.topic ? caseTopicLabel(c.topic, ctCase) : null,
-    /** HẠNG MỤC — đơn vị của case từ vòng 4, dùng chung cho lớp FT và lớp Normal. */
+    /** HẠNG MỤC — đơn vị của Case từ vòng 4, dùng chung cho lớp FT và lớp thường. */
     category: c.category ?? categoryOf(c.topic),
     categoryLabel: (c.category ?? categoryOf(c.topic)) ? tenMon(ctCase, c.category ?? categoryOf(c.topic)) : caseCategoryLabel(null),
-    /** Tên case tự sinh theo mốc mới nhất, ví dụ "MT2 - Listening dưới kỳ vọng". */
+    /** Tên Case tự sinh theo mốc mới nhất, ví dụ "MT2 - Listening dưới kỳ vọng". */
     title: caseTitleOf(c),
     /*
      * BA VAI KHÁC NHAU, KHÔNG SUY RA TỪ NHAU (mục 2.3):
-     *   `owner`    — người phụ trách chính, chịu trách nhiệm điều phối case
+     *   `owner`    — người phụ trách chính, chịu trách nhiệm điều phối Case
      *   `reportedBy` — người ghi nhận vấn đề, có thể là người nhập hộ
      *   người thực hiện từng phương án — nằm trong chính phương án đó
      */
@@ -1567,11 +1567,11 @@ export function caseDetail(p: Principal, caseId: number) {
     owner: c.owner_user_id
       ? ((conn.prepare('SELECT full_name FROM users WHERE id = ?').get(c.owner_user_id) as any)?.full_name ?? null)
       : null,
-    /** Case mở song song có chủ ý với một case khác cùng hạng mục. */
+    /** Case mở song song có chủ ý với một Case khác cùng hạng mục. */
     parallel: !!c.parallel,
     /*
-     * LỚP NÀY CHẤM KIỂU GÌ. Lớp Normal chấm điểm đạt/tổng, lớp Fast Track chấm band 0–9.
-     * Ô ghi điểm giáo viên tự chấm phải hỏi đúng kiểu của lớp — hỏi band một lớp Normal là
+     * LỚP NÀY CHẤM KIỂU GÌ. Lớp thường chấm điểm đạt/tổng, lớp Fast Track chấm band 0–9.
+     * Ô ghi điểm giáo viên tự chấm phải hỏi đúng kiểu của lớp — hỏi band một lớp thường là
      * hỏi một con số không tồn tại ở đó.
      */
     ratio: isRatioCycle(cycle ?? {}),
@@ -1604,7 +1604,7 @@ export function caseDetail(p: Principal, caseId: number) {
     dispositionNote: c.disposition_note,
     closedAt: c.closed_at,
     acknowledgedAt: c.acknowledged_at,
-    /** Hạn BÁO KẾT QUẢ của cả case — khác hạn làm từng phương án. */
+    /** Hạn BÁO KẾT QUẢ của cả Case — khác hạn làm từng phương án. */
     followUntil: c.follow_until ?? null,
     followOverdue: !!c.follow_until && c.status !== 'done' && c.follow_until < demoToday(),
     /** Kết quả chung đã chốt, nếu có. */
@@ -1618,12 +1618,12 @@ export function caseDetail(p: Principal, caseId: number) {
      * thay vì để người dùng bấm rồi mới nhận lỗi.
      */
     canFinish: interventions.every((i: any) => i.status === 'completed' || i.status === 'cancelled'),
-    /** Các mốc trong vòng đời case — cũ trước mới sau, để màn case kể thành câu chuyện. */
+    /** Các mốc trong vòng đời Case — cũ trước mới sau, để màn Case kể thành câu chuyện. */
     milestones: milestonesOf(caseId),
     /* Ngày demo, để giao diện so hạn mà không phải hỏi thêm một lần nữa. */
     today: demoToday(),
     issues, interventions, followups,
-    /** Trạng thái case từ SOS (rulebook v3): chờ xác định nguyên nhân, hạn 3 ngày, lý do đóng `Không cần theo dõi`. */
+    /** Trạng thái Case từ SOS (rulebook v3): chờ xác định nguyên nhân, hạn 3 ngày, lý do đóng `Không cần theo dõi`. */
     sos: sosCaseState(caseId),
     /** PR-SOS (S4-5): thẻ ĐANG CHỜ ở mức Case ("Không cần theo dõi") — Ngăn Case nhúng `TheYeuCau gon` cho Quản lý. */
     yeuCauCase: theCuaDoiTuong('sos_case', [caseId]).find((y) => y.trangThai === 'cho' && y.loai === 'khong_theo_doi') ?? null,
@@ -1683,20 +1683,20 @@ export type CaseFilters = {
   classKind?: string | null;
   /** Người phụ trách chính — để bảng giáo viên đếm đúng trách nhiệm của từng người. */
   ownerUserId?: number | null;
-  /** Chỉ những case CHƯA CÓ ai phụ trách — một nhóm việc riêng, không phải một trạng thái. */
+  /** Chỉ những Case CHƯA CÓ ai phụ trách — một nhóm việc riêng, không phải một trạng thái. */
   noOwner?: boolean;
   /**
    * PHẠM VI LỘ TRÌNH (mục 7.2). Chỉ dùng ở hồ sơ một học viên.
    *
-   * Có `cycleId` thì chỉ lấy case của lộ trình đó; không có thì lấy TOÀN BỘ HÀNH TRÌNH,
-   * gồm cả case đã hoàn thành từ lớp và lộ trình trước. Bộ lọc phải nói rõ phạm vi, để
+   * Có `cycleId` thì chỉ lấy Case của lộ trình đó; không có thì lấy TOÀN BỘ HÀNH TRÌNH,
+   * gồm cả Case đã hoàn thành từ lớp và lộ trình trước. Bộ lọc phải nói rõ phạm vi, để
    * không ai nhìn một danh sách ngắn rồi tưởng lịch sử đã mất.
    */
   cycleId?: number | null;
 };
 
 /**
- * Danh sách case cho màn quản lý.
+ * Danh sách Case cho màn quản lý.
  *
  * Bốn hàng đợi trả lời bốn câu hỏi khác nhau, KHÔNG chồng nhau về mục đích:
  *   new    — chưa ai định hướng xử lý
@@ -1714,7 +1714,7 @@ export const CASE_STATE_LABEL: Record<CaseState, string> = {
   done: 'Xong',
 };
 
-/** Một dòng trong danh sách case, sau khi đã dựng xong. */
+/** Một dòng trong danh sách Case, sau khi đã dựng xong. */
 export type MappedCase = {
   id: number; originKind: string;
   studentId: number | null; studentName: string | null; studentCode: string | null;
@@ -1723,7 +1723,7 @@ export type MappedCase = {
   attemptId: number | null; attemptNo: number | null;
   sosLevel: number | null; urgency: string | null;
   summary: string | null; headline: string;
-  /** Tên case tự sinh theo mốc mới nhất — "MT2 - Listening dưới kỳ vọng". */
+  /** Tên Case tự sinh theo mốc mới nhất — "MT2 - Listening dưới kỳ vọng". */
   title: string;
   category: string | null; categoryLabel: string | null;
   primaryCode: string | null; primaryLabel: string | null;
@@ -1733,13 +1733,13 @@ export type MappedCase = {
   detectedAt: string; reporterName: string | null;
   /** NGƯỜI PHỤ TRÁCH CHÍNH — NULL nghĩa là chưa ai nhận, và đó là một việc phải xử lý. */
   ownerUserId: number | null; ownerName: string | null;
-  /** Bốn ô để đọc một case mà không phải mở ra (mục 6.2 C). */
+  /** Bốn ô để đọc một Case mà không phải mở ra (mục 6.2 C). */
   currentPlan: string | null; currentPlanDue: string | null;
   lastOutcome: string | null; lastOutcomeOn: string | null; lastNextStep: string | null;
   interventionCount: number; nextDue: string | null; dueOverdue: boolean;
-  /** Case mở SONG SONG có chủ ý với một case khác cùng hạng mục. */
+  /** Case mở SONG SONG có chủ ý với một Case khác cùng hạng mục. */
   parallel: boolean;
-  /** Case này nối tiếp case nào (vấn đề cũ tái phát sau khi đã chốt). */
+  /** Case này nối tiếp Case nào (vấn đề cũ tái phát sau khi đã chốt). */
   previousCaseId: number | null;
   state: CaseState;
 };
@@ -1785,9 +1785,9 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
   /*
    * LỌC THEO LỚP EM ĐANG HỌC, không phải lớp lúc đánh giá.
    *
-   * Bảng tổng hợp xếp case về lớp em đang học (để cột sĩ số và ba cột SOS nói về cùng một
+   * Bảng tổng hợp xếp Case về lớp em đang học (để cột sĩ số và ba cột SOS nói về cùng một
    * nhóm người). Bấm vào con số đó phải ra ĐÚNG danh sách tạo nên nó — nếu bộ lọc ở đây vẫn
-   * đi theo lớp lúc đánh giá thì một lớp vừa nhận bốn em chuyển sang sẽ hiện "19 case" mà
+   * đi theo lớp lúc đánh giá thì một lớp vừa nhận bốn em chuyển sang sẽ hiện "19 Case" mà
    * bấm vào lại ra danh sách rỗng.
    *
    * Em chưa xếp lớp thì lấy lớp của bài — vẫn hơn là rơi ra khỏi mọi bộ lọc.
@@ -1842,9 +1842,9 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
     .all(...params) as any[];
 
   /*
-   * LƯỢT MT MỚI NHẤT của từng case, lấy MỘT LẦN cho cả danh sách.
+   * LƯỢT MT MỚI NHẤT của từng Case, lấy MỘT LẦN cho cả danh sách.
    *
-   * Tên case tự sinh theo mốc mới nhất, nên cần con số này. Hỏi từng case một thì một bảng
+   * Tên Case tự sinh theo mốc mới nhất, nên cần con số này. Hỏi từng Case một thì một bảng
    * ba trăm dòng sinh ba trăm câu truy vấn — đúng kiểu chậm mà không ai biết vì sao.
    */
   const latestAttemptByCase = new Map<number, number>();
@@ -1858,10 +1858,10 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
   }
 
   /*
-   * PHƯƠNG ÁN ĐANG CHẠY và KẾT QUẢ GẦN NHẤT của từng case, lấy MỘT LẦN cho cả danh sách.
+   * PHƯƠNG ÁN ĐANG CHẠY và KẾT QUẢ GẦN NHẤT của từng Case, lấy MỘT LẦN cho cả danh sách.
    *
-   * Đây là hai thứ khiến một dòng case đọc được mà không phải mở ra: "đang làm gì" và "lần
-   * gần nhất ăn thua đến đâu". Trước vòng này dòng case chỉ nói "đang xử lý · 2 việc" —
+   * Đây là hai thứ khiến một dòng Case đọc được mà không phải mở ra: "đang làm gì" và "lần
+   * gần nhất ăn thua đến đâu". Trước vòng này dòng Case chỉ nói "đang xử lý · 2 việc" —
    * đúng nhưng vô dụng, vì nó không nói đang làm gì cho em cả.
    */
   const planOf = new Map<number, { kind: string; description: string | null; due: string | null }>();
@@ -1888,7 +1888,7 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
     }
   }
 
-  /* Kỹ năng của một case = kỹ năng của các dòng phân loại. Một case có thể chạm nhiều kỹ năng. */
+  /* Kỹ năng của một Case = kỹ năng của các dòng phân loại. Một Case có thể chạm nhiều kỹ năng. */
   const skillsByCase = new Map<number, string[]>();
   for (const r of conn
     .prepare('SELECT case_id, skill FROM case_issues WHERE skill IS NOT NULL').all() as any[]) {
@@ -1919,7 +1919,7 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
        */
       homeClassId: r.home_class_id ?? r.eff_class_id,
       homeBranchId: r.home_branch_id ?? r.eff_branch_id,
-      /* Lớp Normal và lớp FT chấm khác nhau, nên bộ lọc loại lớp là bộ lọc ĐẦU TIÊN. */
+      /* Lớp thường và lớp FT chấm khác nhau, nên bộ lọc loại lớp là bộ lọc ĐẦU TIÊN. */
       classKind: (r.class_is_ft ? 'ft' : 'normal') as 'ft' | 'normal',
       attemptId: r.attempt_id, attemptNo: r.attempt_no, attemptKind: r.attempt_kind ?? null,
       sosLevel: r.sos_level, urgency: r.urgency,
@@ -1931,9 +1931,9 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
       /*
        * TÊN NGƯỜI DÙNG TỰ ĐẶT LUÔN THẮNG (mục 7.3).
        *
-       * Bản trước chỗ này luôn dựng lại tên tự sinh, nên một case giáo viên đặt tên "Nghe
+       * Bản trước chỗ này luôn dựng lại tên tự sinh, nên một Case giáo viên đặt tên "Nghe
        * sót số và tên riêng" lên danh sách lại thành "Listening dưới kỳ vọng" — trong khi
-       * mở ra xem thì đúng tên đã gõ. Cùng một case mang hai cái tên ở hai màn là cách
+       * mở ra xem thì đúng tên đã gõ. Cùng một Case mang hai cái tên ở hai màn là cách
        * chắc chắn để người đọc tưởng đó là hai case.
        */
       title: (r.title ?? '').trim() || caseTitle({
@@ -2054,7 +2054,7 @@ export function listCases(p: Principal, f: CaseFilters = {}): {
 function facetsOf(all: MappedCase[], f: CaseFilters) {
   /*
    * LOẠI LỚP LÀ BỘ LỌC NGOÀI CÙNG, nên nó thu hẹp MỌI số đếm bên trong. Chọn "Normal" rồi
-   * mà chip kỹ năng vẫn đếm cả case lớp FT thì bấm vào ra danh sách ngắn hơn con số trên
+   * mà chip kỹ năng vẫn đếm cả Case lớp FT thì bấm vào ra danh sách ngắn hơn con số trên
    * chip — đúng kiểu lệch số owner nêu đích danh.
    */
   const base = f.classKind ? all.filter((r) => r.classKind === f.classKind) : all;
@@ -2077,13 +2077,13 @@ function facetsOf(all: MappedCase[], f: CaseFilters) {
      */
     issueBranch: tally(both, (r) => r.primaryCode),
     branch: tally(all, (r) => (r.branchId ? String(r.branchId) : null)),
-    /** Số case theo loại lớp — để chip Normal/FT có con số trước khi bấm. */
+    /** Số Case theo loại lớp — để chip Normal/FT có con số trước khi bấm. */
     classKind: tally(all, (r) => r.classKind),
     /** Ba trạng thái loại trừ nhau, cộng lại đúng bằng tổng. */
     state: tally(both, (r) => r.state),
     /*
      * Vấn đề cũ CHƯA GẮN ĐƯỢC KỸ NĂNG đếm riêng, để các số cộng lại đúng bằng tổng. Bước
-     * nâng cấp cố ý không đoán bừa kỹ năng cho những case trượt từ hai kỹ năng trở lên.
+     * nâng cấp cố ý không đoán bừa kỹ năng cho những Case trượt từ hai kỹ năng trở lên.
      */
     skillNone: base.filter((r) => !r.topic).length,
     total: both.length,
@@ -2099,10 +2099,10 @@ function facetsOf(all: MappedCase[], f: CaseFilters) {
  * câu trong một cái liếc mắt:
  *
  *   1. Em đang ở đâu ở môn này?      → band MT gần nhất, so với kỳ vọng, và so với lần trước
- *   2. Có case không, đang thế nào?  → trạng thái, đã kéo qua mấy lượt MT
+ *   2. Có Case không, đang thế nào?  → trạng thái, đã kéo qua mấy lượt MT
  *   3. Đã áp dụng phương án nào?     → phương án mới nhất và kết quả của nó
  *
- * Hạng mục KHÔNG có case vẫn hiện một dòng. Đó là điểm khác với danh sách case: người dạy
+ * Hạng mục KHÔNG có Case vẫn hiện một dòng. Đó là điểm khác với danh sách case: người dạy
  * cần thấy cả những môn đang ổn, nếu không thì "không thấy Reading" có hai nghĩa — ổn, hoặc
  * chưa ai nhập điểm — và hai nghĩa ấy dẫn tới hai việc khác hẳn nhau.
  */
@@ -2123,9 +2123,9 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
    * hay không: người chỉ có quyền xem thì không thấy nút, thay vì bấm vào rồi nhận một câu
    * từ chối.
    *
-   * (AUTH-01) KHÔNG còn một cờ chung cho cả bảng — case Học thuật siết đúng kỹ năng, nên
-   * GV Listening được sửa case Listening mà KHÔNG được sửa case Reading trên CÙNG một bảng.
-   * Tính riêng cho từng case ở chỗ dựng thẻ case bên dưới (`sosEditCtx(c)`), không phải một
+   * (AUTH-01) KHÔNG còn một cờ chung cho cả bảng — Case Học thuật siết đúng kỹ năng, nên
+   * GV Listening được sửa Case Listening mà KHÔNG được sửa Case Reading trên CÙNG một bảng.
+   * Tính riêng cho từng Case ở chỗ dựng thẻ Case bên dưới (`sosEditCtx(c)`), không phải một
    * lần hỏi chung ở đây.
    */
 
@@ -2139,7 +2139,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
   /*
    * ĐIỂM CỦA TỪNG Ô NHẬP — và LỚP NORMAL KHÔNG DÙNG CỘT `band`.
    *
-   * Fast Track chấm band IELTS nên đọc `band`. Lớp Normal chấm ĐIỂM ĐẠT trên TỔNG của chính
+   * Fast Track chấm band IELTS nên đọc `band`. Lớp thường chấm ĐIỂM ĐẠT trên TỔNG của chính
    * đề đó (21/40), nên `band` của nó luôn trống. Bản trước chỉ đọc `band`, nên hồ sơ một em
    * lớp Foundation có cột "Kết quả gần nhất" trống trơn trong khi bảng điểm ngay bên dưới
    * bày đủ bốn môn — đúng kiểu số liệu đá nhau mà cả mục 4.2 sinh ra để dẹp.
@@ -2161,7 +2161,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
 
   type Point = {
     attemptNo: number; attemptId: number; band: number; week: string | null; expectation: number | null;
-    /* Lớp Normal: điểm đạt/tổng của chính đề đó. Fast Track để trống. */
+    /* Lớp thường: điểm đạt/tổng của chính đề đó. Fast Track để trống. */
     score: number | null; total: number | null; passed: boolean | null;
     /** 'mock' | 'progress' | 'final' — lớp thường KHÔNG được gọi bài của mình là "MT" (PR-Form, SkillBoard). */
     attemptKind: string | null;
@@ -2191,12 +2191,12 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
   /*
    * CASE CỦA LỘ TRÌNH KHÁC VẪN CÒN MỞ THÌ PHẢI HIỆN — dán nhãn rõ, không giấu.
    *
-   * Một em học xong LT1 rồi sang LT2 mà case Listening của LT1 chưa chốt thì đó vẫn là việc
-   * đang treo của một đứa trẻ có thật. Lọc bỏ nó đi thì bảng sáu dòng nói "không có case"
+   * Một em học xong LT1 rồi sang LT2 mà Case Listening của LT1 chưa chốt thì đó vẫn là việc
+   * đang treo của một đứa trẻ có thật. Lọc bỏ nó đi thì bảng sáu dòng nói "không có Case"
    * trong khi thẻ tên phía trên vẫn hiện SOS 2 — đúng kiểu số liệu đá nhau owner đã nêu.
    *
-   * Xếp sau case của lộ trình đang chọn, nên nó chỉ được chọn làm đại diện khi lộ trình này
-   * chưa có case nào ở hạng mục đó.
+   * Xếp sau Case của lộ trình đang chọn, nên nó chỉ được chọn làm đại diện khi lộ trình này
+   * chưa có Case nào ở hạng mục đó.
    */
   const caseRows = conn
     .prepare(
@@ -2236,9 +2236,9 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
    * THỨ TỰ CASE TRONG MỘT KỸ NĂNG (mục 4.3): đang mở trước, rồi tới cập nhật NGHIỆP VỤ mới
    * nhất, rồi ngày tạo.
    *
-   * "Cập nhật nghiệp vụ" là một lần ai đó làm gì với case — ghi kết quả, thêm phương án,
+   * "Cập nhật nghiệp vụ" là một lần ai đó làm gì với Case — ghi kết quả, thêm phương án,
    * đổi kết luận. KHÔNG dùng `updated_at` chung: một lần chạy nền chạm vào bản ghi sẽ đẩy
-   * case đó lên đầu như thể vừa có người xử lý, và thứ tự trên màn hình thành vô nghĩa.
+   * Case đó lên đầu như thể vừa có người xử lý, và thứ tự trên màn hình thành vô nghĩa.
    */
   const lastTouch = (caseId: number): string | null => {
     const r = conn
@@ -2256,7 +2256,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
   const ctBang: string | null = cycle ? cycle.programme_code ?? programmeCodeOfCycle(cycle.id) : null;
   /*
    * PR-S5F-a: Case có hạng mục NGOÀI ô chuẩn của chương trình đang học (vd. Case "Cuối khoá Pre FOU · Tổng hợp không đạt" đi theo em lên FOU) vẫn
-   * phải có dòng — không thì bảng và thẻ tóm tắt nói "không có case" trong khi Case còn mở. Dòng thêm xếp sau các ô chuẩn.
+   * phải có dòng — không thì bảng và thẻ tóm tắt nói "không có Case" trong khi Case còn mở. Dòng thêm xếp sau các ô chuẩn.
    */
   const oChuan: readonly string[] = caseCategoriesFor(isRatioCycle(cycle) ? 'ratio' : 'ielts_band', ctBang);
   /*
@@ -2303,8 +2303,8 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
 
     /*
      * TRẠNG THÁI HIỂN THỊ — bốn mức, và mỗi mức dẫn tới một việc khác nhau:
-     *   none      chưa từng có case ở hạng mục này
-     *   no_plan   có case mà CHƯA AI đề ra phương án   → cần người quyết
+     *   none      chưa từng có Case ở hạng mục này
+     *   no_plan   có Case mà CHƯA AI đề ra phương án   → cần người quyết
      *   working   đang xử lý                            → chờ kết quả
      *   done      đã chốt kết thúc                      → để tra lại
      */
@@ -2353,14 +2353,14 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
         attemptNo: pt.attemptNo, band: pt.band, expectation: pt.expectation,
         score: pt.score, total: pt.total, passed: pt.passed, attemptKind: pt.attemptKind,
       })),
-      /* Lớp Normal: điểm đạt/tổng của đề gần nhất, để giao diện ghi "21/40" chứ không ghi band. */
+      /* Lớp thường: điểm đạt/tổng của đề gần nhất, để giao diện ghi "21/40" chứ không ghi band. */
       score: latest?.score ?? null,
       total: latest?.total ?? null,
       ratio,
       kck: !!cycle?.khong_cam_ket,
       /*
        * DƯỚI KỲ VỌNG — hai chương trình, hai cách hỏi. Fast Track so band với kỳ vọng của
-       * chính lượt đó; lớp Normal so tỷ lệ đạt với ngưỡng của chương trình.
+       * chính lượt đó; lớp thường so tỷ lệ đạt với ngưỡng của chương trình.
        */
       missed: ratio
         ? (latest ? latest.passed === false : null)
@@ -2389,10 +2389,10 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
       pendingApproval: interventions.some((i) => i.approval_state === 'pending'),
 
       /*
-       * ĐỦ CÁC CASE CỦA KỸ NĂNG NÀY (mục 4.2) — không chỉ một case đại diện.
+       * ĐỦ CÁC CASE CỦA KỸ NĂNG NÀY (mục 4.2) — không chỉ một Case đại diện.
        *
-       * Em có hai case Reading song song thì cái thứ hai phải có đường vào. Trước đây bảng
-       * này chỉ trỏ được vào một case, nên case còn lại chỉ tồn tại ở một khối khác bên
+       * Em có hai Case Reading song song thì cái thứ hai phải có đường vào. Trước đây bảng
+       * này chỉ trỏ được vào một Case, nên Case còn lại chỉ tồn tại ở một khối khác bên
        * dưới — và khối ấy chính là danh sách lặp mà mục 4.2 bảo bỏ đi.
        *
        * Đang mở trước; trong nhóm mở xếp theo lần cập nhật nghiệp vụ mới nhất rồi ngày tạo.
@@ -2411,7 +2411,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
           /*
            * `c` ở đây đến từ `SELECT * FROM sos_cases` thẳng (không JOIN ra `class_id` như
            * `loadCase()`) — dùng `classId`/`studentId` đã có sẵn trong phạm vi hàm này, chỉ
-           * lấy riêng `skill` theo đúng case (`sosEditCtx` không dùng được thẳng ở đây vì
+           * lấy riêng `skill` theo đúng Case (`sosEditCtx` không dùng được thẳng ở đây vì
            * khác tên trường `class_id`/`eff_student_id`).
            */
           canEdit: can(p, PERMISSIONS.SOS_EDIT, {
@@ -2472,13 +2472,13 @@ export function demBangChungCase(caseIds: number[]): Map<number, number> {
 /**
  * MỘT THẺ CASE, ĐỦ ĐỂ ĐỌC MÀ KHÔNG PHẢI MỞ THÊM GÌ.
  *
- * Hồ sơ học viên bày case thành các khối gọn: phân loại, câu mô tả, rồi MỖI PHƯƠNG ÁN MỘT
+ * Hồ sơ học viên bày Case thành các khối gọn: phân loại, câu mô tả, rồi MỖI PHƯƠNG ÁN MỘT
  * KHỐI NHỎ có tên, người làm, kết quả gần nhất kèm ngày, hạn cập nhật và ngày dự kiến xong.
  *
- * Gộp sẵn ở máy chủ vì giao diện cần cả mấy thứ này CÙNG LÚC cho từng case, và một em có thể
- * có năm case: để giao diện tự gọi từng case một là năm lần gọi cho một lần mở trang.
+ * Gộp sẵn ở máy chủ vì giao diện cần cả mấy thứ này CÙNG LÚC cho từng Case, và một em có thể
+ * có năm case: để giao diện tự gọi từng Case một là năm lần gọi cho một lần mở trang.
  *
- * (Trước 21/09/2026 thẻ này còn trả "báo cáo nguồn" của case Ý thức; Ý thức nay là vi phạm và biện pháp xử lý ở một bảng riêng.)
+ * (Trước 21/09/2026 thẻ này còn trả "báo cáo nguồn" của Case Ý thức; Ý thức nay là vi phạm và biện pháp xử lý ở một bảng riêng.)
  */
 function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>, boTro: BoTroDto | null = null, xinYKienCua: ReadonlyMap<number, unknown> = new Map()) {
   const conn = db();
@@ -2602,7 +2602,7 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>, bo
     id: pl.id, ten: tenPaViecTiep(pl.kind, pl.name), batBuoc: pl.batBuoc, choXacNhan: pl.choXacNhan, xong: pl.status === 'completed',
     actionDue: pl.actionDue, followupDue: pl.followupDue, choDuyet: pl.pendingApproval,
   })), today, c.origin_kind === 'mock' ? null : planDueDate(String(c.detected_at ?? c.created_at ?? today).slice(0, 10), c.urgency));
-  /* Lượt đánh giá mà case này đã đi qua — "MT2 · 17/08" ở chân thẻ (lớp thường: "Giữa khoá"/"Cuối khoá" thay MT{n}). */
+  /* Lượt đánh giá mà Case này đã đi qua — "MT2 · 17/08" ở chân thẻ (lớp thường: "Giữa khoá"/"Cuối khoá" thay MT{n}). */
   const attempts = (conn
     .prepare(
       `SELECT DISTINCT m.attempt_no, rp.week_start, a.kind AS attempt_kind FROM case_milestones m
@@ -2615,7 +2615,7 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>, bo
     .map((r) => ({ attemptNo: r.attempt_no as number, week: r.week_start ?? null, attemptKind: r.attempt_kind ?? null }));
 
   return {
-    /* Chủ đề gốc của case (§7.5, PR-K) — để giao diện mở đúng danh mục phân loại (`issuesForTopic`) khi "Xác định nguyên nhân". */
+    /* Chủ đề gốc của Case (§7.5, PR-K) — để giao diện mở đúng danh mục phân loại (`issuesForTopic`) khi "Xác định nguyên nhân". */
     topic: c.topic ?? null,
     issueCode: issue?.taxonomy_code ?? null,
     issueLabel: issue?.taxonomy_code ? issueLabel(issue.taxonomy_code) : null,
@@ -2639,7 +2639,7 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>, bo
     outcomeNote: c.outcome_note ?? null,
     closedOn: c.closed_at ? String(c.closed_at).slice(0, 10) : null,
     /*
-     * NHẬP BÙ (PR-C Task 3, chốt 7) — "ai nhập, nhập lúc nào" phải hiện ngay trên thẻ case,
+     * NHẬP BÙ (PR-C Task 3, chốt 7) — "ai nhập, nhập lúc nào" phải hiện ngay trên thẻ Case,
      * không giấu trong tooltip. `created_at` là lúc GÕ VÀO hệ thống, khác hẳn `detected_at`
      * (lúc chuyện thật sự xảy ra) — đúng khác biệt chốt 7 đòi phải phân biệt được.
      */
@@ -2689,7 +2689,7 @@ export type TeacherMetric = { skill: string; component?: string | null; score: n
  * "xu hướng" mà không ai chấm cả hai đầu bằng cùng một thước.
  *
  * Hai cách ghi, tuỳ lớp:
- *   · có TỔNG ĐIỂM → hiểu là điểm đạt/tổng, ví dụ 24/40 (lớp Normal, hoặc số câu đúng)
+ *   · có TỔNG ĐIỂM → hiểu là điểm đạt/tổng, ví dụ 24/40 (lớp thường, hoặc số câu đúng)
  *   · không có tổng → hiểu là BAND 0–9 bước 0,5 (lớp Fast Track)
  */
 export function parseMetrics(raw: unknown): TeacherMetric[] | null {
@@ -2712,7 +2712,7 @@ export function normalizeMetrics(input: unknown): TeacherMetric[] | null {
       throw badRequest('Điểm đánh giá phải gắn với một kỹ năng cụ thể.');
     }
     /*
-     * THÀNH PHẦN phải thuộc đúng kỹ năng đó (mục 9.3): không ghi "Passage 2" cho một case
+     * THÀNH PHẦN phải thuộc đúng kỹ năng đó (mục 9.3): không ghi "Passage 2" cho một Case
      * Listening. Danh mục thành phần là của chung, nên chỉ có một chỗ quyết định.
      */
     const component = (m?.component ?? '').toString().trim() || null;
@@ -2817,21 +2817,21 @@ export function updateResult(p: Principal, interventionId: number, input: {
   const c = loadCase(iv.case_id);
   /* PR-LT2a (Q9): PA Bổ trợ do người dạy (mặc định GVCN cho FOU) ghi — `quyenBoTro`; PA khác vẫn theo kỹ năng (C02). */
   if (iv.kind === 'bo_tro' || iv.kind === 'bo_tro_mien_phi') {
-    if (!quyenBoTro(p, iv)) throw forbidden('Bạn không có quyền cập nhật kết quả của case này.');
+    if (!quyenBoTro(p, iv)) throw forbidden('Bạn không có quyền cập nhật kết quả của Case này.');
   } else {
     require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
-      'Bạn không có quyền cập nhật kết quả của case này.');
+      'Bạn không có quyền cập nhật kết quả của Case này.');
   }
 
   if (iv.preset === 1 && !iv.confirmed_at) {
     throw badRequest('Phương án điền sẵn này chưa được xác nhận — xác nhận (hoặc sửa / thay) trước khi ghi kết quả.');
   }
   if (iv.approval_state === 'pending') {
-    throw badRequest('Phương án này đang chờ Quản lý duyệt — chu kỳ thực hiện chưa bắt đầu.');
+    throw badRequest('Phương án này đang chờ Quản lý duyệt — việc thực hiện chưa bắt đầu.');
   }
   if (iv.status === 'cancelled') throw badRequest('Phương án này đã huỷ.');
   if (iv.status === 'completed') {
-    throw badRequest('Phương án này đã kết thúc — không cập nhật thêm chu kỳ được.');
+    throw badRequest('Phương án này đã kết thúc — không cập nhật thêm được.');
   }
 
   /*
@@ -2846,7 +2846,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
   const mode = modeIn && (RESULT_MODES as readonly string[]).includes(modeIn)
     ? modeIn : 'monitor';
   if (!(FOLLOWUP_OUTCOMES as readonly string[]).includes(input.outcome)) {
-    throw badRequest('Kết quả không hợp lệ với loại case này.');
+    throw badRequest('Kết quả không hợp lệ với loại Case này.');
   }
   /*
    * GHI CHÚ CỤ THỂ LÀ BẮT BUỘC (mục 9.1).
@@ -2890,7 +2890,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
   } else if (mode === 'end') {
     /* PR-S2 (Q2): Chưa đủ dữ liệu vẫn không Kết thúc suông, nhưng THAY được (`endStepsFor('insufficient')` = ['propose']). */
     if (!canEndWithOutcome(input.outcome) && nextStep !== 'propose') {
-      throw badRequest('"Chưa đủ dữ liệu" thì chưa kết thúc phương án được, chọn Giữ nguyên, Điều chỉnh hoặc Thay phương án.');
+      throw badRequest('"Chưa đủ dữ liệu" thì chưa kết thúc phương án được, chọn Giữ nguyên, Điều chỉnh hoặc Thay PA.');
     }
     const allowed = stepsForMode('end', input.outcome);
     if (!(allowed as readonly string[]).includes(nextStep)) {
@@ -2903,7 +2903,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
     if (!isIsoDate(completedOn)) throw badRequest('Ngày hoàn thành không hợp lệ.');
     if (completedOn > demoToday()) throw badRequest('Không ghi được ngày hoàn thành ở tương lai.');
     if (nextStep === 'propose' && !input.newPlan?.kind) {
-      throw badRequest('Chọn "Thay phương án" thì phải nói rõ phương án mới là gì.');
+      throw badRequest('Chọn "Thay PA" thì phải nói rõ phương án mới là gì.');
     }
   }
   /*
@@ -3086,7 +3086,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
 /**
  * CÒN GÌ CHẶN VIỆC HOÀN THÀNH CASE — mục 7.7 [5].
  *
- * Case chỉ đóng được khi MỌI phương án đã khép lại và không còn gì đang chờ. Và một case
+ * Case chỉ đóng được khi MỌI phương án đã khép lại và không còn gì đang chờ. Và một Case
  * CHƯA CÓ PHƯƠNG ÁN NÀO cũng không đủ điều kiện đóng: đếm được "0 phương án còn mở" không
  * có nghĩa là đã làm gì cho em.
  *

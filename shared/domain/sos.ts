@@ -7,7 +7,7 @@
  * MẢNG DỮ LIỆU — không phải chuỗi `if` rải rác — nên đổi luật là đổi một dòng ở đây, và phép kiểm đọc đúng bảng đó.
  *
  * SOS Event KHÔNG có bảng riêng: nó là chính lượt Mock Test Fast Track (`assessment_attempts`) có `sos_level ≥ 1` (đặc tả §2).
- * Lớp Normal không có gì trong file này (Q-V3-1): Normal giữ mô hình tín hiệu cũ.
+ * Lớp thường không có gì trong file này (Q-V3-1): Normal giữ mô hình tín hiệu cũ.
  */
 import type { InterventionKind } from './cases.ts';
 
@@ -126,7 +126,7 @@ export type CoordinationRemoveReason = (typeof COORDINATION_REMOVE_REASONS)[numb
 export const COORDINATION_REMOVE_REASON_LABEL: Record<CoordinationRemoveReason, string> = {
   not_needed: 'Không cần trong trường hợp này',
   handled_otherwise: 'Đã xử lý theo cách khác',
-  duplicate_measure: 'Trùng với phương án xử lý khác',
+  duplicate_measure: 'Trùng với lần xử lý khác',
   other: 'Khác',
   system_sos_changed: 'Điểm được sửa — mức SOS không còn cần việc này',
   system_luot_huy: 'Lượt Test đã huỷ',

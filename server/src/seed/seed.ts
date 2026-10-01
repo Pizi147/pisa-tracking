@@ -231,7 +231,7 @@ export function runSeed() {
     setConfig('seeded_at', NOW);
 
     /*
-     * BỘ DEMO RULEBOOK v3 (PR-T T8) — DỰNG SAU KHI ĐÃ ĐẶT NGÀY DEMO: nó đi qua chính các hàm nghiệp vụ (nhập điểm → SOS tự tạo case + Phối hợp), mà mọi
+     * BỘ DEMO RULEBOOK v3 (PR-T T8) — DỰNG SAU KHI ĐÃ ĐẶT NGÀY DEMO: nó đi qua chính các hàm nghiệp vụ (nhập điểm → SOS tự tạo Case + Phối hợp), mà mọi
      * hạn/ngày trong đó đọc `demoToday()`. Chỉ cho máy dev; bản chính dùng dữ liệu rỗng.
      */
     const sosV3 = buildSosV3Demo({
@@ -308,11 +308,11 @@ export function runSeed() {
       '— trong đó xử lý theo thang (đã xong)': yThuc.done,
       '— trong đó đề xuất QL duyệt': yThuc.deXuat,
       'Khai bậc Ý thức (H5)': yThuc.khai,
-      '— trong đó demo rulebook v3 (SOS tự tạo case)': sosV3.cases,
+      '— trong đó demo rulebook v3 (SOS tự tạo Case)': sosV3.cases,
       'Việc Phối hợp SOS': (conn.prepare('SELECT COUNT(*) AS n FROM sos_coordination_actions').get() as any).n,
       'Phương án': (conn.prepare('SELECT COUNT(*) AS n FROM case_interventions').get() as any).n,
       'Lần cập nhật kết quả': (conn.prepare('SELECT COUNT(*) AS n FROM case_followups').get() as any).n,
-      'Mốc case': (conn.prepare('SELECT COUNT(*) AS n FROM case_milestones').get() as any).n,
+      'Mốc Case': (conn.prepare('SELECT COUNT(*) AS n FROM case_milestones').get() as any).n,
       'Tuần trong lịch': (conn.prepare('SELECT COUNT(*) AS n FROM report_periods').get() as any).n,
       'Công việc quản lý': tasks,
       'Ngày demo': DEMO_DATE,
@@ -406,7 +406,7 @@ function seedMeeting(conn: any, ctx: {
    * việc mới chưa bắt đầu · việc chạy qua ba tuần vẫn một định danh · việc tạm ngưng có lý do ·
    * việc từng tạm ngưng rồi tiếp tục · việc dừng hẳn có lý do · việc hoàn thành có kết quả ·
    * việc con quá hạn trong khi việc cha chưa tới hạn · người theo dõi khác người phụ trách ·
-   * việc gắn case làm căn cứ mà KHÔNG tự tạo phương án và KHÔNG tự đóng case nào.
+   * việc gắn Case làm căn cứ mà KHÔNG tự tạo phương án và KHÔNG tự đóng Case nào.
    */
   let n = 0;
   const unitOf = (code: string) => units.find((u) => u.code === code);
@@ -499,7 +499,7 @@ function seedMeeting(conn: any, ctx: {
 
   /* ── 2. Việc MỚI, chưa ai bắt đầu ── */
   addTask({
-    title: 'Chuẩn bị bộ đề Progress Test cho lớp Elementary khoá tới',
+    title: 'Chuẩn bị bộ đề Giữa khoá cho lớp Elementary khoá tới',
     unit: unitOf('BC'), branch: 'BC', assignee: 'MGR_BC', due: '2026-10-09',
     progress: 'not_started', type: 'in_period', periodId: currentPeriodId, group: 'curriculum',
   });
@@ -597,8 +597,8 @@ function seedMeeting(conn: any, ctx: {
   /*
    * ── 9. VIỆC GẮN CASE LÀM CĂN CỨ ──
    *
-   * Nó liên kết tới những case đang cần tutor để người đọc biết con số này từ đâu ra. Nhưng
-   * nó KHÔNG tự tạo phương án trong case nào và KHÔNG tự đóng case nào: một việc quản lý và
+   * Nó liên kết tới những Case đang cần tutor để người đọc biết con số này từ đâu ra. Nhưng
+   * nó KHÔNG tự tạo phương án trong Case nào và KHÔNG tự đóng Case nào: một việc quản lý và
    * một phương án hỗ trợ học viên là hai thứ khác nhau, gộp lại thì lịch sử của em sẽ có
    * những dòng không ai từng ghi.
    */
@@ -615,9 +615,9 @@ function seedMeeting(conn: any, ctx: {
     title: 'Xếp lịch tutor tháng 10 cho các em đang cần hỗ trợ',
     unit: unitOf('CP'), branch: 'CP', assignee: 'MGR_CP', due: '2026-09-25',
     progress: 'doing', type: 'in_period', periodId: currentPeriodId, group: 'student_parent',
-    note: 'Căn cứ là các case đang dùng phương án tutor — xem danh sách liên kết bên dưới.',
+    note: 'Căn cứ là các Case đang dùng PA Tutor — xem danh sách liên kết bên dưới.',
     cases: tutorCases,
-    updates: [{ progress: 'doing', note: `Đã rà ${tutorCases.length} case đang dùng tutor, còn chờ phòng trống.`, on: '2026-09-11' }],
+    updates: [{ progress: 'doing', note: `Đã rà ${tutorCases.length} Case đang dùng Tutor, còn chờ phòng trống.`, on: '2026-09-11' }],
   });
 
   /* NỐI VIỆC ↔ BÁO CÁO ĐƠN VỊ (R6): việc trên là căn cứ cho ô báo cáo Học viên/Phụ huynh của CP kỳ này. */

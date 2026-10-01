@@ -30,7 +30,8 @@ import { DUONG_LAM_MOI_Y_THUC, type BangYThucLop, type DongEm, type ViPhamV4, ty
  * Việc / thông báo mở `?tab=y-thuc&hv={id}&mo=xu-ly` (hoặc `mo=da-thuc-hien&xl={id}`) → chọn sẵn em, mở panel (một lần).
  * GVBM (K2-39): đọc được hai khung, KHÔNG thấy Ghi nhận / Xác nhận xử lý / Khai bậc; vẫn có `+ Ghi vi phạm`.
  */
-export function ClassYThucCard({ classId }: { classId: number }) {
+/** `thuong`: lớp thường — tab "Phối hợp" (không có chữ SOS); lớp FT: "Phối hợp SOS" (chủ sản phẩm 02/10). */
+export function ClassYThucCard({ classId, thuong = false }: { classId: number; thuong?: boolean }) {
   const { homNay } = useNgayNghiepVu();
   const toast = useToast();
   const [params, setParams] = useSearchParams();
@@ -187,7 +188,7 @@ export function ClassYThucCard({ classId }: { classId: number }) {
         <HangTab cap="con" ariaLabel="Ý thức & Phối hợp của lớp" value={sub} onChange={setSub}
           tabs={[
             { key: 'vi-pham', label: 'Vi phạm & xử lý', so: soCanLam },
-            { key: 'phoi-hop', label: 'Phối hợp', so: coord.data?.pendingCount ?? 0 },
+            { key: 'phoi-hop', label: thuong ? 'Phối hợp' : 'Phối hợp SOS', so: coord.data?.pendingCount ?? 0 },
           ]} />
       </div>
 
@@ -196,7 +197,7 @@ export function ClassYThucCard({ classId }: { classId: number }) {
           {/* Dưới md: hai khung thành hai tab. */}
           <div className="px-4 pt-2 md:hidden">
             <HangTab cap="con" ariaLabel="Khung Ý thức" value={khungDt} onChange={setKhungDt}
-              tabs={[{ key: 'xu-ly', label: 'Xử lý', so: soCanLam }, { key: 'vi-pham', label: 'Vi phạm' }]} />
+              tabs={[{ key: 'xu-ly', label: 'Theo xử lý', so: soCanLam }, { key: 'vi-pham', label: 'Theo vi phạm' }]} />
           </div>
           <div className="md:grid md:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
             <div className={`${khungDt === 'xu-ly' ? 'block' : 'hidden'} md:block md:border-r`} style={{ borderColor: 'var(--line)' }}>{khungTrai}</div>
@@ -226,7 +227,7 @@ function DongEmO({ x, nhom, chon, homNay, onChon }: { x: DongEm; nhom: NhomEm; c
   const ke = x.keTiep ? <>bậc kế tiếp <b className="font-semibold text-slate-200">{x.keTiep.nhan}{x.keTiep.canQl ? ' · cần QL' : ''}</b></> : <>đã hết thang — chỉ còn Đề xuất QL duyệt</>;
   const chuDeXuat = x.deXuat && nhom !== 'cho_duyet' ? ` · 1 đề xuất ${x.deXuat.status === 'cho_duyet' ? 'chờ QL' : 'đã duyệt'}` : '';
   const phu = nhom === 'qua_han' || nhom === 'bat_buoc'
-    ? (x.tuChoi ? <>Quản lý từ chối {x.tuChoi.nhan} · chọn cách xử lý khác · {ke}</> : x.soBatBuoc > 0 ? <>{x.soBatBuoc} vi phạm / 2 tuần · {ke}</> : <>{x.soMoi} vi phạm chưa ai xem</>)
+    ? (x.tuChoi ? <>Quản lý từ chối {x.tuChoi.nhan} · chọn cách xử lý khác · {ke}</> : x.soBatBuoc > 0 ? <>{x.soBatBuoc} vi phạm / 2 tuần · {ke}</> : <>{x.soMoi} vi phạm chưa xem</>)
     : nhom === 'cho_duyet' ? <>{x.deXuat?.nhan ?? 'Đề xuất'} · {x.deXuat?.status === 'da_duyet' ? 'đã duyệt, chờ thực hiện' : 'chờ QL duyệt'}</>
     : nhom === 'moi' ? <>{x.soMoi} vi phạm{x.moiTuoi !== null ? <> · <span className={x.moiTuoi >= 4 ? 'font-semibold text-soon' : ''}>{x.moiTuoi} ngày</span></> : null}</>
     : <>{x.xuLyGanNhat?.nhan ?? 'Đã xử lý'}{x.xuLyGanNhat ? ` · ${ngay(x.xuLyGanNhat.ngay, homNay)}` : ''}</>;

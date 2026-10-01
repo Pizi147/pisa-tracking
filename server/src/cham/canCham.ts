@@ -314,7 +314,7 @@ export function noTuanTruoc(
 export type DongLichTest = {
   key: string; dotLabel: string; kyNang: string[]; kyNangLabel: string;
   soHv: number; conBai: number;
-  /** Một trong: "Đã chấm xong" · "Chưa tới hạn" · "Còn n bài" · "Quá hạn · còn n bài" (`trangThaiChamLabel`). */
+  /** Một trong: "Đã chấm xong" · "Chưa đến lịch" · "Còn n bài" · "Quá hạn · còn n bài" (`trangThaiChamLabel`). */
   trangThai: string;
   href: string;
 };

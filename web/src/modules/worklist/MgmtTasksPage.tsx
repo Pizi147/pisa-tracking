@@ -59,7 +59,7 @@ const tenNgoaiCua = (v: NguoiChon | null): string | null => (v?.kieu === 'ngoai'
  *
  * PR-Ra: hàng số ở đầu tab bấm được (Q8, bốn câu hỏi CHỒNG NHAU có chủ ý), hàng lọc Nhóm ·
  * Trạng thái · Người phụ trách đứng cùng một hàng (§18.4: không quá 10 nút), bảng 5 cột với
- * Việc con thay "Cập nhật gần nhất" (Q7). Đây là công việc quản lý vận hành, không phải case
+ * Việc con thay "Cập nhật gần nhất" (Q7). Đây là công việc quản lý vận hành, không phải Case
  * của học viên — không có tầng "phương án xử lý", không có quy trình xin duyệt.
  */
 export function TasksBoard() {
@@ -270,7 +270,7 @@ export function TasksBoard() {
   );
 }
 
-/** Chi tiết một công việc: hạn + lịch sử dời hạn, việc con, lịch sử cập nhật, case làm căn cứ. */
+/** Chi tiết một công việc: hạn + lịch sử dời hạn, việc con, lịch sử cập nhật, Case làm căn cứ. */
 export function NganViecVanHanh({ taskId, onClose, onDone }: {
   taskId: number | null; onClose: () => void; onDone: () => void;
 }) {
@@ -392,7 +392,7 @@ export function NganViecVanHanh({ taskId, onClose, onDone }: {
                 Case làm căn cứ
                 {/* ⓘ bấm được (không chỉ rê chuột — luật "không thao tác nào chỉ hiện khi hover"). */}
                 <NutLuat label="Về Case làm căn cứ">
-                  Liên kết này chỉ là CĂN CỨ. Hoàn thành công việc quản lý KHÔNG đóng case nào, và cũng không tự tạo phương án cho em nào.
+                  Liên kết này chỉ là CĂN CỨ. Hoàn thành công việc quản lý KHÔNG đóng Case nào, và cũng không tự tạo phương án cho em nào.
                 </NutLuat>
               </h3>
               <ul className="list-none p-0 m-0 space-y-1 text-xs text-slate-300">

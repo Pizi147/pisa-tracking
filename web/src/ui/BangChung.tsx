@@ -17,7 +17,7 @@ const ACCEPT = ATTACHMENT_EXTENSIONS.map((e) => `.${e}`).join(',');
 
 /**
  * KHỐI "BẰNG CHỨNG" DÙNG CHUNG (PR-N N6, thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md §4.5) — một khối cho mọi chỗ cần tệp hoặc
- * liên kết: case học thuật, phương án, và (PR-J) vi phạm, biện pháp xử lý.
+ * liên kết: Case học thuật, phương án, và (PR-J) vi phạm, biện pháp xử lý.
  *
  *   + Đính kèm tệp   |   + Thêm liên kết   →   danh sách: tên đọc được · người tải · ngày
  *

@@ -7,7 +7,7 @@
  *   tab từ địa chỉ `?tab=`            → `parseHoSoTab`        (Task 2)
  *   ô "Kết quả Test gần nhất"         → `ketQuaTestGanNhat`   (Task 3)
  *   đếm vi phạm theo nhóm             → `demTheoNhomViPham`   (Task 4)
- *   tiến độ case, việc tiếp của PA    → `tienDoCase`, `viecTiepPhuongAn` (Task 6)
+ *   tiến độ Case, việc tiếp của PA    → `tienDoCase`, `viecTiepPhuongAn` (Task 6)
  */
 import { ATTEMPT_SKILL_UNITS, CHUA_CO_HAN, deadlineView, type DeadlineKind } from './display.ts';
 import { NHAN_TRANG_THAI } from './trangThai.ts';
@@ -46,22 +46,24 @@ export function demTheoNhomViPham(vs: readonly { category: string }[]): {
   };
 }
 
-// ====================================================================== thẻ case và khối phương án (Q8)
+// ====================================================================== thẻ Case và khối phương án (Q8)
 
-/** Một phương án học thuật như thẻ case trả về (`Plan` ở `SkillBoard.tsx`) — chỉ các trường luật này cần. */
+/** Một phương án học thuật như thẻ Case trả về (`Plan` ở `SkillBoard.tsx`) — chỉ các trường luật này cần. */
 export type PhuongAnTomTat = {
   status: string; lastOutcome: string | null; preset: boolean; confirmedAt: string | null;
   pendingApproval: boolean; approvalDue: string | null;
   actionDue: string | null; actionOverdue: boolean; completedOn: string | null;
   /** PR-SOS: PA theo quy chế chờ xác nhận (Q28-3) · lần ghi tới là "Ghi kết quả cuối" (T22). */
   choXacNhan?: boolean; lanCuoi?: boolean;
+  /** A10: lý do đóng (`superseded` = PA bị PA khác thay) — PA bị thay không trông như "Đã kết thúc". */
+  closedReason?: string | null;
 };
 export const dangChay = (p: { status: string }) => p.status === 'planned' || p.status === 'started';
 
 /**
- * Cột 2 đầu thẻ case: `{n} PA · {k} có kết quả` + việc gần nhất có hạn (`tiep`). Chỉ xét PA ĐANG CHẠY; case đã xong → không
+ * Cột 2 đầu thẻ case: `{n} PA · {k} có kết quả` + việc gần nhất có hạn (`tiep`). Chỉ xét PA ĐANG CHẠY; Case đã xong → không
  * có việc tiếp. Thứ tự: PA đang chạy ĐÃ QUÁ HẠN (sớm nhất) → PA chờ Quản lý → PA có hạn làm sớm
- * nhất → nghĩa vụ cập nhật hằng tuần của case (chủ sản phẩm chốt 22/09: việc đã trễ nói trước việc đang chờ người khác).
+ * nhất → nghĩa vụ cập nhật hằng tuần của Case (chủ sản phẩm chốt 22/09: việc đã trễ nói trước việc đang chờ người khác).
  * Hạn DỰ KIẾN XONG (followupDue) KHÔNG phải hạn (F11) — không dùng.
  */
 export function tienDoCase(plans: readonly PhuongAnTomTat[], c: { status: string; followUntil: string | null; followOverdue: boolean }): {
@@ -96,7 +98,7 @@ export function viecTiepPhuongAn(p: PhuongAnTomTat): {
   if (p.choXacNhan) return { loai: 'cho-xac-nhan', text: 'Chờ xác nhận', due: null, overdue: false };
   if (p.lanCuoi && dangChay(p)) return { loai: 'ghi-cuoi', text: 'Ghi kết quả cuối', due: p.actionDue, overdue: p.actionOverdue };
   if (dangChay(p)) return { loai: 'ghi-ket-qua', text: 'Ghi kết quả', due: p.actionDue, overdue: p.actionOverdue };
-  return { loai: 'da-xong', text: 'Đã kết thúc', due: p.completedOn, overdue: false };
+  return { loai: 'da-xong', text: p.closedReason === 'superseded' ? 'Được thay thế' : 'Đã kết thúc', due: p.completedOn, overdue: false };
 }
 
 // ====================================================================== ô "Việc cần làm tiếp" (Q7)

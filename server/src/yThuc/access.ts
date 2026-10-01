@@ -98,12 +98,12 @@ export function coordinationOwner(actionId: number) {
 /** Kho tệp: quyền của biện pháp làm chủ. Xem = quyền xem học viên; thêm/gỡ = quyền xử lý Ý thức (B10: vẫn bổ sung được khi đã thực hiện). */
 export function measureOwner(measureId: number) {
   const m = db().prepare('SELECT student_id FROM discipline_measures WHERE id = ?').get(measureId) as any;
-  if (!m) throw notFound('Không tìm thấy phương án xử lý');
+  if (!m) throw notFound('Không tìm thấy lần xử lý');
   return {
     requireView: (p: Principal) => requireViewStudent(p, m.student_id),
     requireEdit: (p: Principal) => {
       requireViewStudent(p, m.student_id);
-      requireManageDiscipline(p, m.student_id, 'Bạn không có quyền đính kèm hoặc gỡ bằng chứng của phương án xử lý này.');
+      requireManageDiscipline(p, m.student_id, 'Bạn không có quyền đính kèm hoặc gỡ bằng chứng của lần xử lý này.');
     },
   };
 }

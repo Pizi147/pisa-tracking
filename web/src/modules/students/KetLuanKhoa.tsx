@@ -121,7 +121,7 @@ function PanelKhongDat({ studentId, studentName, lop, ct, monTruot, ban, onDong,
         {lf.loiCua(loi, 'nguyen-nhan') && <span className="mt-1 block text-[11px] text-late">{lf.loiCua(loi, 'nguyen-nhan')}</span>}
         <p className="m-0 mt-1 text-[11px] text-slate-500">
           {nn === 'trung_tam' ? 'Sau khi em sang Fast Track: mỗi kỹ năng một Case + PA Tutor 10 buổi.'
-            : nn === 'hoc_sinh' ? 'Không tạo Case — ghi phương án xử lý từng trường hợp.' : 'Trung tâm chưa dạy đủ hay học viên chưa theo kịp?'}
+            : nn === 'hoc_sinh' ? 'Không tạo Case — ghi cách xử lý từng trường hợp.' : 'Trung tâm chưa dạy đủ hay học viên chưa theo kịp?'}
         </p>
       </Khoi>
       {nn === 'trung_tam' && (

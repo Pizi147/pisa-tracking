@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { api, invalidate } from '../../../lib/api.ts';
-import { useSession } from '../../../lib/session.tsx';
+import { useNgayNghiepVu } from '../../../ui/ngayNghiepVu.ts';
 import { addDaysStr } from '../../../lib/format.ts';
 import { useToast } from '../../../ui/Toast.tsx';
 import {
@@ -36,10 +36,10 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
   onClose: () => void; onSaved: () => void; onHienDien: (open: boolean) => void;
 }) {
   const toast = useToast();
-  const { session } = useSession();
   const moi = attemptId === null;
-  const homNay = session?.demoDate ? mondayOfDate(session.demoDate) : null;
-  const ngayNghiepVu = session?.demoDate ?? null;
+  const nghiepVu = useNgayNghiepVu().homNay;
+  const homNay = nghiepVu ? mondayOfDate(nghiepVu) : null;
+  const ngayNghiepVu = nghiepVu || null;
   const [thaoTac, setThaoTac] = useState<{ t: ThaoTac; k: KyNangKH } | null>(null);
 
   const khoiTao = (): Record<KyNangKH, Dong> => {

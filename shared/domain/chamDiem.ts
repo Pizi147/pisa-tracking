@@ -20,7 +20,7 @@ export type LoaiNhanLop = 'da-cham' | 'chua-toi-han' | 'cho-ban' | 'cho-gv-khac'
 export function nhanLopLichTest(i: { conBai: number; conBaiCuaToi: number; chuaToiHan: boolean; coDayLop: boolean })
   : { loai: LoaiNhanLop; chu: string } {
   if (i.conBai === 0) return { loai: 'da-cham', chu: 'Đã chấm' };          // web thêm ✓ nhỏ (G-1)
-  if (i.chuaToiHan) return { loai: 'chua-toi-han', chu: 'Chưa tới hạn' };
+  if (i.chuaToiHan) return { loai: 'chua-toi-han', chu: 'Chưa đến lịch' };
   if (i.conBaiCuaToi > 0) return { loai: 'cho-ban', chu: 'Chờ bạn chấm' };
   return i.coDayLop ? { loai: 'cho-gv-khac', chu: 'Chờ GV khác' } : { loai: 'cho-cham', chu: 'Chờ chấm' };
 }
@@ -88,7 +88,7 @@ export function tuanKeTiep(weekStart: string): string {
 /** Một câu trạng thái chấm cho dòng kỹ năng của Lịch Test. */
 export function trangThaiChamLabel(i: { conBai: number; tong: number; quaHan: boolean; chuaToiHan: boolean }): string {
   if (i.conBai === 0) return 'Đã chấm xong';
-  if (i.chuaToiHan) return 'Chưa tới hạn';
+  if (i.chuaToiHan) return 'Chưa đến lịch';
   return i.quaHan ? `Quá hạn · còn ${i.conBai} bài` : `Còn ${i.conBai} bài`;
 }
 

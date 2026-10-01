@@ -2,11 +2,11 @@ import { db } from '../db.ts';
 import { CASE_CATEGORY_SKILL } from '../../../shared/domain/index.ts';
 
 /**
- * GỢI Ý NGƯỜI PHỤ TRÁCH CHÍNH cho một case mới (mục 2.3).
+ * GỢI Ý NGƯỜI PHỤ TRÁCH CHÍNH cho một Case mới (mục 2.3).
  *
  * Quy tắc do owner chốt, và cố ý rất hẹp:
  *   · giáo viên ĐANG DẠY ĐÚNG KỸ NĂNG đó ở lớp của em; chưa phân công ai thì giáo viên chủ nhiệm
- *   (Ý thức không còn case nên không còn người phụ trách case Ý thức — 21/09/2026.)
+ *   (Ý thức không còn Case nên không còn người phụ trách Case Ý thức — 21/09/2026.)
  *
  * KHÔNG suy ra từ "mọi giáo viên dạy lớp đó". Một lớp có năm giáo viên, gán cả năm người
  * làm người phụ trách nghĩa là năm người cùng nợ một việc — và cuối cùng không ai làm.

@@ -29,7 +29,7 @@ export { UNCONFIRMED_PRESET, NOT_UNCONFIRMED_PRESET, PA_QUY_CHE_CHUA_GHI } from 
  * Chỉ lượt Mock Test FAST TRACK mới đi qua đây (Q-V3-1). Lớp thường KHÔNG có SOS: Giữa khoá tự tạo Case + PA Bổ trợ (PR-LT2a, `cases/boTro.ts`), Cuối khoá không tín
  * hiệu (LT2b) — không phương án điền sẵn theo mức SOS, không Phối hợp SOS.
  *
- * `cases/sos.ts` (nơi sở hữu `raiseSignalsForResult`, `taoCaseTuDong`) quyết định KHI NÀO tạo hay gắn case; file này lo phần "PA theo quy chế":
+ * `cases/sos.ts` (nơi sở hữu `raiseSignalsForResult`, `taoCaseTuDong`) quyết định KHI NÀO tạo hay gắn Case; file này lo phần "PA theo quy chế":
  *   · dựng PA theo bảng MT × mức SOS (`shared/domain/sos.ts`) — PA "CHỜ XÁC NHẬN", KHÔNG tự chạy (Q28-3),
  *   · đồng bộ PA quy chế chờ xác nhận khi mức SOS của lượt đổi (Q24),
  *   · Xác nhận Case → Xác nhận PA, Không cần theo dõi (thẻ Chờ duyệt) — phần dưới.
@@ -40,8 +40,8 @@ export { UNCONFIRMED_PRESET, NOT_UNCONFIRMED_PRESET, PA_QUY_CHE_CHUA_GHI } from 
  */
 
 /**
- * Lượt này có phải Mock Test Fast Track không. Chỉ lượt Mock của lớp chấm theo band mới tự tạo case / phối hợp; Progress/Final Test của
- * lớp Normal (chấm theo tỷ lệ) thì không.
+ * Lượt này có phải Mock Test Fast Track không. Chỉ lượt Mock của lớp chấm theo band mới tự tạo Case / phối hợp; Giữa khoá / Cuối khoá của
+ * lớp thường (chấm theo tỷ lệ) thì không.
  */
 export function isFastTrackMock(attempt: { kind?: string | null }, scoringMode: 'band' | 'ratio'): boolean {
   return (attempt.kind ?? 'mock') === 'mock' && scoringMode === 'band';
@@ -93,11 +93,11 @@ export function createPresetPlan(input: {
 /**
  * ĐỒNG BỘ PA QUY CHẾ CHỜ XÁC NHẬN với mức SOS hiện tại của lượt (PR-N1 Q24, PR-SOS).
  *
- * Điểm thường được nhập từng kỹ năng, bởi từng GVBM, vào những lúc khác nhau — nên case đầu tiên ra đời khi lượt mới ở SOS1, trước khi
+ * Điểm thường được nhập từng kỹ năng, bởi từng GVBM, vào những lúc khác nhau — nên Case đầu tiên ra đời khi lượt mới ở SOS1, trước khi
  * SOS3 xuất hiện. Đặc tả §4 nói phương án theo MỨC SOS CỦA CẢ LƯỢT, nên PA chờ xác nhận phải theo mức mới nhất. PA đã xác nhận thì
  * không bao giờ bị đụng.
  *
- * Áp cho case mà lượt này mở (`opened`) hoặc trượt lại (`repeat`): PA chờ xác nhận chưa chạy nên đi theo hàng MT mới nhất.
+ * Áp cho Case mà lượt này mở (`opened`) hoặc trượt lại (`repeat`): PA chờ xác nhận chưa chạy nên đi theo hàng MT mới nhất.
  */
 export function resyncUnconfirmedPresets(
   attempt: { id: number; attempt_no: number; cycle_id?: number | null },
@@ -123,7 +123,7 @@ export function resyncUnconfirmedPresets(
   }
 }
 
-/** Ghi hành trình + audit + báo GVBM (người phụ trách) cho một case vừa được SOS tự tạo. `hanXacNhan` = `sos_cases.han_xac_nhan`. */
+/** Ghi hành trình + audit + báo GVBM (người phụ trách) cho một Case vừa được SOS tự tạo. `hanXacNhan` = `sos_cases.han_xac_nhan`. */
 export function announceAutoCase(input: {
   caseId: number; studentId: number; cycleId: number | null; skillLabel: string; attemptNo: number;
   sosLevel: number | null; ownerUserId: number | null; detectedOn: string; hanXacNhan: string; actorUserId: number | null;
@@ -158,7 +158,7 @@ export function announceAutoCase(input: {
 
 // ---------------------------------------------------------------- Xác nhận Case · Xác nhận PA · Không cần theo dõi (S4-2…S4-7)
 
-const EDIT_MESSAGE = 'Bạn chỉ xử lý được case của kỹ năng mình được phân công (hoặc là Quản lý trong phạm vi).';
+const EDIT_MESSAGE = 'Bạn chỉ xử lý được Case của kỹ năng mình được phân công (hoặc là Quản lý trong phạm vi).';
 
 /** Ghi một mốc của Case (khoá chống trùng tuỳ chọn). Viết tại chỗ để không import vòng `sos.ts`. */
 export function ghiMoc(caseId: number, kind: MilestoneKind, on: string, note: string | null, actor: number | null, dedupKey: string | null = null) {
@@ -189,7 +189,7 @@ export function xacNhanCase(p: Principal, caseId: number, input: {
 }) {
   const conn = db();
   const c = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(caseId) as any;
-  if (!c) throw notFound('Không tìm thấy case');
+  if (!c) throw notFound('Không tìm thấy Case');
   caseAccess(caseId).requireEdit(p, EDIT_MESSAGE);
   const st = sosCaseState(caseId);
   if (!st.fromSos) throw badRequest('Chỉ Case tự tạo từ kết quả Test mới có bước Xác nhận Case.');
@@ -408,7 +408,7 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
 export function guiKhongTheoDoi(p: Principal, caseId: number, input: { reasonCode?: string | null; reasonText?: string | null }) {
   const conn = db();
   const c = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(caseId) as any;
-  if (!c) throw notFound('Không tìm thấy case');
+  if (!c) throw notFound('Không tìm thấy Case');
   caseAccess(caseId).requireEdit(p, EDIT_MESSAGE);
   if (c.status === 'done') throw badRequest('Case này đã đóng rồi.');
   const st = sosCaseState(caseId);
@@ -460,7 +460,7 @@ export function guiKhongTheoDoi(p: Principal, caseId: number, input: { reasonCod
 export function apDungKhongTheoDoi(conn: any, yc: { doi_tuong_id: number; du_lieu: string | null; ly_do: string | null }, nguoiDuyet: number) {
   const caseId = yc.doi_tuong_id;
   const c = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(caseId) as any;
-  if (!c) throw notFound('Không tìm thấy case');
+  if (!c) throw notFound('Không tìm thấy Case');
   if (c.status === 'done') throw badRequest('Case này đã đóng rồi.');
   let d: { reasonCode?: string; reasonText?: string | null } = {};
   try { d = JSON.parse(yc.du_lieu ?? '{}'); } catch { d = {}; }
@@ -496,7 +496,7 @@ export function apDungKhongTheoDoi(conn: any, yc: { doi_tuong_id: number; du_lie
 export function tuChoiKhongTheoDoi(conn: any, yc: { doi_tuong_id: number; nguoi_xin: number | null }, nguoiDuyet: number, lyDo: string) {
   const caseId = yc.doi_tuong_id;
   const c = conn.prepare('SELECT id, owner_user_id, (SELECT full_name FROM students WHERE id = sos_cases.student_id) AS hv FROM sos_cases WHERE id = ?').get(caseId) as any;
-  if (!c) throw notFound('Không tìm thấy case');
+  if (!c) throw notFound('Không tìm thấy Case');
   const today = demoToday();
   const han = hanXacNhan(today);
   conn.prepare('UPDATE sos_cases SET han_xac_nhan = ?, updated_at = ? WHERE id = ?').run(han, nowIso(), caseId);

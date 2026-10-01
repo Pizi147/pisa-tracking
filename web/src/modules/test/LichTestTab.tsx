@@ -58,7 +58,7 @@ export function LichTestTab() {
   const [params, setParams] = useSearchParams();
   const so = (k: string) => (params.get(k) ? Number(params.get(k)) : null);
   const periodParam = so('periodId');
-  const branchId = so('branchId');
+  const branchId = so('cn') ?? so('branchId');
   const urlClassId = so('classId');
   const urlKn = params.get('kn');
   const phamViParam = params.get('phamVi');
@@ -225,7 +225,7 @@ export function LichTestTab() {
   const nutXuat = session?.nav?.xuatMt && (
     <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setMoXuat(true)}>Xuất Excel</button>
   );
-  const locChiNhanh = <BranchFilter branchId={branchId} onBranch={(id) => datThamSo({ branchId: id ? String(id) : null })} />;
+  const locChiNhanh = <BranchFilter branchId={branchId} onBranch={(id) => datThamSo({ cn: id ? String(id) : null, branchId: null })} />;
   /* Số lựa chọn đang KHÁC mặc định: chi nhánh đã chọn, phạm vi "Tất cả" (máy chủ mặc định 'cua-toi' khi GV có lớp). */
   const soLoc = (branchId ? 1 : 0) + (data.coPhamViRong && data.phamVi !== 'cua-toi' ? 1 : 0);
   const coGiTrongLoc = branchCount > 1 || !!data.coPhamViRong || loai === 'thuong' || !!session?.nav?.xuatMt;
@@ -298,7 +298,7 @@ export function LichTestTab() {
           <div id="lich-test-lop" className="space-y-2">
             {lopTab.length > 1 && (
               <div className="flex justify-end">
-                <button type="button" className="min-h-[36px] px-1 text-xs text-slate-400 hover:text-slate-100"
+                <button type="button" className="min-h-[44px] px-1 text-xs text-slate-400 hover:text-slate-100 sm:min-h-[36px]"
                     onClick={() => {
                       const moHet = !lopTab.every(moCua);
                       const moi = { ...nho, ...Object.fromEntries(lopTab.map((l) => [l.key, moHet])) };

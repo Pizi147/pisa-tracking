@@ -36,7 +36,7 @@ import { usePeriods } from '../../ui/Filters.tsx';
 
 type Detail = {
   id: number;
-  /** `mock` với Fast Track; `progress` / `final` là bài của lớp Normal — màn khác hẳn. */
+  /** `mock` với Fast Track; `progress` / `final` là bài của lớp thường — màn khác hẳn. */
   kind: string;
   student: { id: number; name: string; code: string };
   cycle: { id: number; seq: number; route: string | null; target: number | null; khongCamKet?: boolean; examPlan: ExamPlan };
@@ -140,7 +140,7 @@ export default function MockDetailPage() {
   if (loading || !data) return <Skeleton rows={10} />;
 
   /*
-   * CHẶN CỬA: bài của lớp Normal KHÔNG được dựng bằng màn này.
+   * CHẶN CỬA: bài của lớp thường KHÔNG được dựng bằng màn này.
    *
    * Màn Mock Test gọi mọi lượt là "MT{n}", chấm theo band và so với kỳ vọng target — cả ba
    * thứ đó đều sai với một bài Progress Test. Mọi đường dẫn trong hệ thống đã trỏ đúng màn,
@@ -216,7 +216,7 @@ export default function MockDetailPage() {
       {/* A. ĐẦU TRANG — ai · đợt nào · kết luận gì, trong ba dòng. */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <button className="btn btn-sm btn-ghost mb-1" onClick={() => navigate(-1)}>← Quay lại</button>
+          <button className="btn btn-sm btn-ghost mb-1 min-h-[44px] sm:min-h-0" onClick={() => navigate(-1)}>← Quay lại</button>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <h1 className="text-lg font-semibold text-slate-100 min-w-0 break-words">
               <span className="mr-2 text-sm font-medium text-slate-400">Hồ sơ Mock Test ·</span>{d.student.name} <span className="text-slate-500 text-sm">· {d.student.code}</span>
@@ -296,7 +296,7 @@ export default function MockDetailPage() {
       {/* D. LỊCH KIỂM TRA — MỘT bảng làm việc: lịch, tình trạng, thao tác từng bài (điểm đã ở dải trên). */}
       <SkillWorkTable d={d} onMoDiem={moODiem} onDone={reload} onOpenHistory={openHistory} />
 
-      {/* E. LỊCH SỬ THAY ĐỔI — thu gọn cuối trang. Hồ sơ Test không còn khối case (rule book §17.5). */}
+      {/* E. LỊCH SỬ THAY ĐỔI — thu gọn cuối trang. Hồ sơ Test không còn khối Case (rule book §17.5). */}
       <HistoryCard d={d} />
 
       <WeekModal open={weekOpen} onClose={() => setWeekOpen(false)} attemptId={d.id}

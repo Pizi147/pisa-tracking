@@ -51,7 +51,7 @@ export function legacyTopicToViolationCategory(topic: string | null | undefined)
 export const VIOLATION_DESCRIPTION_MIN = 10;
 
 /**
- * Môn của một vi phạm — TÙY CHỌN (V02/V04). Lớp Fast Track phân công Writing thành hai task, lớp Normal có một môn Writing
+ * Môn của một vi phạm — TÙY CHỌN (V02/V04). Lớp Fast Track phân công Writing thành hai task, lớp thường có một môn Writing
  * và Pronunciation, nên danh sách này là hợp của hai bộ.
  */
 export const VIOLATION_SKILLS = ['listening', 'reading', 'writing1', 'writing2', 'writing', 'speaking', 'pronunciation'] as const;
@@ -230,6 +230,17 @@ export function chuoiThang(cycles: readonly { id: number; seq: number; route: st
 /** Bậc hiện tại = max(bậc các lần xử lý đã xong trong chuỗi, bậc khai trước khi dùng web — H5); 0 = chưa bậc nào. Ngoài thang không đẩy. */
 export function bacHienTai(xuLyDone: readonly { kind: string }[], khaiBac: number | null): number {
   return Math.max(0, khaiBac ?? 0, ...xuLyDone.map((x) => bacCuaLoai(x.kind)));
+}
+
+/**
+ * PR-S3 (G-030): chữ "bậc" của em ở Phân tích Ý thức và ô Ý thức. Có bậc trên thang (kể cả bậc khai trước khi dùng web) → tên bậc; chưa có bậc nhưng đã bị
+ * xử lý NGOÀI thang (Đình chỉ, Meeting CX/GĐCN, Khác) → lần xử lý đó; không có gì → `null` (màn ghi "Chưa xử lý lần nào").
+ */
+export function bacHoacNgoaiThang(bac: number, xuLy: readonly { kind: string; status: string; performedOn: string | null; customName?: string | null }[]): string | null {
+  if (bac > 0) return MEASURE_KIND_LABEL[THANG[bac - 1]];
+  const ngoai = xuLy.filter((m) => m.status === 'done' && (NGOAI_THANG as readonly string[]).includes(m.kind))
+    .sort((a, c) => (c.performedOn ?? '').localeCompare(a.performedOn ?? ''))[0];
+  return ngoai ? nhanLoaiXuLy(ngoai.kind, ngoai.customName) : null;
 }
 
 /** Bậc kế tiếp; `null` = hết thang (đã WL 3 — Q11: chỉ còn đề xuất ngoài thang). */

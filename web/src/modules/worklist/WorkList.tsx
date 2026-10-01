@@ -17,7 +17,7 @@ export type WorkItem = {
   tieuDe: string;
   ownerId: number | null; owner: string | null; mine: boolean;
   due: string | null; statusLabel: string;
-  /** Bài/case liên quan — ô thứ hai của dòng việc: "MT2", "Giữa khoá", "Case". */
+  /** Bài/Case liên quan — ô thứ hai của dòng việc: "MT2", "Giữa khoá", "Case". */
   contextLabel: string | null;
   /** Số học viên trong một dòng việc gom. NULL khi dòng chỉ nói về một em. */
   count: number | null;

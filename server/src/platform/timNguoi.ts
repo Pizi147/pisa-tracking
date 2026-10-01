@@ -9,7 +9,7 @@ import { PERMISSIONS, type NhomNguoi } from '../../../shared/domain/index.ts';
  * TÌM NGƯỜI CHO Ô CHỌN `ChonNguoi` — `GET /ref/nguoi` (PR-Form F-2, Q2).
  *
  * Khác `searchPeople` (`worklist/meeting.ts`, đòi `MEETING_VIEW`): route này chỉ cần đăng nhập — mọi giáo viên phải tự chọn
- * được người thực hiện cho case của mình. Bấm là có danh sách (T14): chưa gõ → 20 người, GV cùng lớp đứng đầu; tìm không phân
+ * được người thực hiện cho Case của mình. Bấm là có danh sách (T14): chưa gõ → 20 người, GV cùng lớp đứng đầu; tìm không phân
  * biệt hoa thường / dấu. GV đang dạy lớp của học viên (Q6) — trường hợp thường gặp nhất — luôn đứng đầu.
  */
 

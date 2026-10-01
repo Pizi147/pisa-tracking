@@ -22,7 +22,8 @@ import type { DanhSachLop, LopKH } from './keHoach/kieu.ts';
 export function KeHoachTestTab() {
   const [params, setParams] = useSearchParams();
   const { branchCount } = useSession();
-  const branchId = params.get('branchId') ? Number(params.get('branchId')) : null;
+  const cnUrl = params.get('cn') ?? params.get('branchId');
+  const branchId = cnUrl ? Number(cnUrl) : null;
   const loaiParam = params.get('loai') as 'ft' | 'thuong' | null;
   const classIdParam = params.get('classId') ? Number(params.get('classId')) : null;
 
@@ -117,7 +118,7 @@ export function KeHoachTestTab() {
           <>
             <div className="hidden sm:block"><BranchFilter branchId={branchId} onBranch={(id) => {
               const next = new URLSearchParams(params);
-              if (id) next.set('branchId', String(id)); else next.delete('branchId');
+              next.delete('branchId'); if (id) next.set('cn', String(id)); else next.delete('cn');
               next.delete('classId');
               setParams(next, { replace: true });
             }} /></div>
@@ -125,7 +126,7 @@ export function KeHoachTestTab() {
               <summary className="btn btn-sm cursor-pointer list-none">Lọc ▾</summary>
               <div className="mt-2"><BranchFilter branchId={branchId} onBranch={(id) => {
                 const next = new URLSearchParams(params);
-                if (id) next.set('branchId', String(id)); else next.delete('branchId');
+                next.delete('branchId'); if (id) next.set('cn', String(id)); else next.delete('cn');
                 next.delete('classId');
                 setParams(next, { replace: true });
               }} /></div>

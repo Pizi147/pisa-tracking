@@ -28,8 +28,10 @@ const MO_VP = new Set(['moi', 'can_xu_ly', 'qua_han']);
  *   5. Một dòng chữ phụ cuối đếm theo nhóm (thay năm ô đếm).
  * Thông báo / việc mở `?tab=y-thuc&mo=xu-ly` → mở panel Xác nhận xử lý một lần.
  */
-export function StudentYThucSection({ studentId, onGoAcademic }: {
+export function StudentYThucSection({ studentId, onGoAcademic, thuong = false }: {
   studentId: number;
+  /** Lớp thường: tab "Phối hợp" (không có chữ SOS); FT: "Phối hợp SOS". */
+  thuong?: boolean;
   /** Đổi sang tab Học thuật của hồ sơ (link trong thẻ Phối hợp SOS). */
   onGoAcademic?: () => void;
 }) {
@@ -116,7 +118,7 @@ export function StudentYThucSection({ studentId, onGoAcademic }: {
         {d.canRecord && <button type="button" className="btn btn-sm btn-primary" onClick={() => mo({ loai: 'ghi', studentId, studentName: d.ten })}>+ Ghi vi phạm</button>}
       </div>
       <HangTab cap="con" ariaLabel="Ý thức & Phối hợp của học viên" value={sub} onChange={setSub}
-        tabs={[{ key: 'vi-pham', label: 'Vi phạm & xử lý', so: soCan }, { key: 'phoi-hop', label: 'Phối hợp', so: coord.data?.pendingCount ?? 0 }]} />
+        tabs={[{ key: 'vi-pham', label: 'Vi phạm & xử lý', so: soCan }, { key: 'phoi-hop', label: thuong ? 'Phối hợp' : 'Phối hợp SOS', so: coord.data?.pendingCount ?? 0 }]} />
 
       {sub === 'vi-pham' && (
         <>
@@ -195,7 +197,7 @@ function ThanhViec({ d, homNay, onXuLy, onDaThucHien, onGhiNhan }: {
     cau = <>Đề xuất {d.deXuat.nhan} · chờ QL{d.deXuat.han ? ` · hạn ${ngay(d.deXuat.han, homNay)}` : ''}</>;
   } else if (d.soMoi > 0) {
     tone = d.nhom === 'qua_han' ? 'border-late-line bg-late-bg text-late' : 'border-[color:var(--line-strong)] text-slate-300';
-    cau = <>{d.soMoi} vi phạm mới chưa xem{d.nhom === 'qua_han' ? ` · quá hạn${d.daBaoQl ? ' · đã báo QL' : ''}` : d.hanXem ? ` · hạn ${ngay(d.hanXem, homNay)}` : ''}</>;
+    cau = <>{d.soMoi} vi phạm chưa xem{d.nhom === 'qua_han' ? ` · quá hạn${d.daBaoQl ? ' · đã báo QL' : ''}` : d.hanXem ? ` · hạn ${ngay(d.hanXem, homNay)}` : ''}</>;
     hanh = d.canManage ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onGhiNhan}>Ghi nhận {d.soMoi}</button> : null;
   }
   if (!cau) return null;

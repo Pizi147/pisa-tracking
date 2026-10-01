@@ -118,7 +118,7 @@ export async function runPrDuyetTests(t: YThucTestKit) {
       assert(daDuyet.filter((x) => x === id).length === 1, 'khiDuyet chạy lại');
       assert(yc.chotYeuCau(conn, { doiTuongLoai: 'thu', doiTuongId: docThe(id).doi_tuong_id }, 'duyet', {}) === 0, 'chốt lần hai phải trả 0');
       const kq = conn.prepare(`SELECT title FROM notifications WHERE user_id = ? AND kind = 'duyet_ket_qua' AND entity_id = ?`).all(P.coreTeacher.userId, id) as any[];
-      assert(kq.length === 1 && /đã duyệt/.test(kq[0].title), JSON.stringify(kq));
+      assert(kq.length === 1 && /Đã duyệt/.test(kq[0].title), JSON.stringify(kq));
       assert(maLoi(() => yc.duyetYeuCau(P.cpManager, tao())) === 403, 'QL CP duyệt thẻ MB');
       assert(maLoi(() => yc.duyetYeuCau(P.coreTeacher, tao())) === 403, 'GVCN duyệt');
     });

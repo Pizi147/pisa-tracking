@@ -1,7 +1,7 @@
 /**
  * SỔ ĐĂNG KÝ CHỈ SỐ — hợp đồng số liệu (thiet-ke/HOP_DONG_SO_LIEU.md).
  *
- * ẢNH ĐÃ CÓ THẬT: Toàn cảnh ghi 18 học viên / 32 case, còn Thực trạng ghi 20 / 34 dưới cùng một
+ * ẢNH ĐÃ CÓ THẬT: Toàn cảnh ghi 18 học viên / 32 Case, còn Thực trạng ghi 20 / 34 dưới cùng một
  * cái tên (F10). Hai màn đếm hai tập khác nhau mà không ai biết. Luật để chuyện đó không tái diễn:
  *
  *   1. MỘT CHỈ SỐ = MỘT HÀM. Cả con số lẫn danh sách khi bấm vào đều gọi CÙNG một hàm trả về
@@ -24,7 +24,7 @@ export type ChiSo = {
   ten: string;
   /** Câu hỏi mà con số trả lời, viết đủ chữ. */
   cauHoi: string;
-  /** Đơn vị đếm. Ba đơn vị học viên · case · phương án KHÔNG BAO GIỜ cộng vào nhau. */
+  /** Đơn vị đếm. Ba đơn vị học viên · Case · phương án KHÔNG BAO GIỜ cộng vào nhau. */
   donVi: 'hoc-vien' | 'case' | 'phuong-an' | 'bai' | 'bai-thi' | 'dot-test' | 'nghia-vu' | 'vi-pham' | 'bien-phap' | 'luot-sos' | 'lop' | 'viec-van-hanh';
   /** Mô tả MẪU SỐ (tập đủ điều kiện), viết đủ chữ. */
   tapDuDieuKien: string;
@@ -51,17 +51,17 @@ export const METRICS: readonly ChiSo[] = [
     thoiGian: 'hien-trang', khuTrung: 'Mỗi học viên chỉ đếm 1 lần ở mỗi môn', drilldown: '/metrics/hv-duoi-ky-vong-mon',
   },
   {
-    id: 'hv-co-case-mo', ten: 'Học viên có case đang mở',
-    cauHoi: 'Bao nhiêu em đang có ít nhất một case chưa kết luận?',
+    id: 'hv-co-case-mo', ten: 'Học viên có Case đang mở',
+    cauHoi: 'Bao nhiêu em đang có ít nhất một Case chưa kết luận?',
     donVi: 'hoc-vien',
-    tapDuDieuKien: 'Học viên có ít nhất một case HỌC THUẬT chưa kết luận trong phạm vi, kể cả em đã kết thúc khoá mà case chưa được kết luận. Ý thức không còn case (21/09/2026) nên không có mặt ở đây. KHÔNG gộp case đã đóng (F02). Khác cột "HV đang gặp" ở bảng Thực trạng, vốn chỉ tính em đang học.',
+    tapDuDieuKien: 'Học viên có ít nhất một Case HỌC THUẬT chưa kết luận trong phạm vi, kể cả em đã kết thúc khoá mà Case chưa được kết luận. Ý thức không còn Case (21/09/2026) nên không có mặt ở đây. KHÔNG gộp Case đã đóng (F02). Khác cột "HV đang gặp" ở bảng Thực trạng, vốn chỉ tính em đang học.',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi học viên chỉ đếm 1 lần', drilldown: '/metrics/hv-co-case-mo',
   },
   {
     id: 'case-mo', ten: 'Case đang mở',
-    cauHoi: 'Bao nhiêu case đang chờ kết luận?',
+    cauHoi: 'Bao nhiêu Case đang chờ kết luận?',
     donVi: 'case',
-    tapDuDieuKien: 'Case HỌC THUẬT chưa kết luận trong phạm vi (Ý thức không còn case). Đếm Case, không đếm học viên.',
+    tapDuDieuKien: 'Case HỌC THUẬT chưa kết luận trong phạm vi (Ý thức không còn Case). Đếm Case, không đếm học viên.',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi Case chỉ đếm 1 lần', drilldown: '/metrics/case-mo',
   },
   /* Ba chỉ số của khối Cần xử lý (PR-Pa, đặc tả §3.2) — mỗi dòng của khối là một chỉ số, để bấm vào ra đúng tập. */
@@ -90,12 +90,12 @@ export const METRICS: readonly ChiSo[] = [
     id: 'case-cho-xac-dinh-nguyen-nhan', ten: 'Case chờ xác nhận nguyên nhân',
     cauHoi: 'Bao nhiêu Case tự tạo (SOS Fast Track, Giữa khoá lớp thường) đang chờ GVBM xác nhận nguyên nhân?',
     donVi: 'case',
-    tapDuDieuKien: 'Case HỌC THUẬT do Mock Test Fast Track hoặc Giữa khoá lớp thường tự tạo, đang mở, mà chưa có nguyên nhân (nhóm nguyên nhân chính) và không có yêu cầu "Không cần theo dõi" đang chờ Quản lý duyệt (SOS v4, K5-51). Case tạo tay và case đã đóng (kể cả `Không cần theo dõi`) không thuộc tập.',
+    tapDuDieuKien: 'Case HỌC THUẬT do Mock Test Fast Track hoặc Giữa khoá lớp thường tự tạo, đang mở, mà chưa có nguyên nhân (nhóm nguyên nhân chính) và không có yêu cầu "Không cần theo dõi" đang chờ Quản lý duyệt (SOS v4, K5-51). Case tạo tay và Case đã đóng (kể cả `Không cần theo dõi`) không thuộc tập.',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi Case chỉ đếm 1 lần', drilldown: '/metrics/case-cho-xac-dinh-nguyen-nhan',
   },
   {
     id: 'case-thieu-pa', ten: 'Case chưa có PA',
-    cauHoi: 'Bao nhiêu case đang mở mà chưa có phương án hợp lệ nào?',
+    cauHoi: 'Bao nhiêu Case đang mở mà chưa có phương án hợp lệ nào?',
     donVi: 'case',
     tapDuDieuKien: 'Case HỌC THUẬT đang mở, đủ điều kiện cần hỗ trợ, chưa có phương án hợp lệ. Case CHỜ DUYỆT tách riêng, không quy chậm cho giáo viên.',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi Case chỉ đếm 1 lần', drilldown: '/metrics/case-thieu-pa',
@@ -111,28 +111,28 @@ export const METRICS: readonly ChiSo[] = [
     id: 'pa-cho-duyet', ten: 'PA học thuật chờ duyệt',
     cauHoi: 'Bao nhiêu phương án giáo viên đề xuất đang chờ Quản lý trả lời?',
     donVi: 'phuong-an',
-    tapDuDieuKien: 'Phương án đang chờ duyệt ở case đang mở trong phạm vi. Đếm phương án — không đếm case, không đếm học viên.',
+    tapDuDieuKien: 'Phương án đang chờ duyệt ở Case đang mở trong phạm vi. Đếm phương án — không đếm Case, không đếm học viên.',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi PA chỉ đếm 1 lần', drilldown: '/metrics/pa-cho-duyet',
   },
   {
     id: 'pa-co-ket-qua', ten: 'PA học thuật có kết quả xác định',
     cauHoi: 'Bao nhiêu phương án đã kết thúc và có kết quả rõ ràng?',
     donVi: 'phuong-an',
-    tapDuDieuKien: 'Phương án đã kết thúc, kết quả thuộc {có tiến bộ, một phần, không tiến bộ, kém hơn}. Một phương án MỘT dòng cuối. Loại case nhập bù.',
+    tapDuDieuKien: 'Phương án đã kết thúc, kết quả thuộc {có tiến bộ, một phần, không tiến bộ, kém hơn}. Một phương án MỘT dòng cuối. Loại Case nhập bù.',
     thoiGian: 'ket-qua-trong-ky', khuTrung: 'Mỗi PA chỉ đếm 1 lần, theo kết quả cuối', drilldown: '/metrics/pa-co-ket-qua',
   },
   {
     id: 'ty-le-co-cai-thien', ten: 'Tỷ lệ có cải thiện',
     cauHoi: 'Trong các phương án đã kết thúc có kết quả xác định, bao nhiêu phần có cải thiện?',
     donVi: 'phuong-an',
-    tapDuDieuKien: '(có tiến bộ + một phần) / (bốn mức xác định). LOẠI "chưa đủ dữ liệu" và case nhập bù. Luôn hiện n/N.',
+    tapDuDieuKien: '(có tiến bộ + một phần) / (bốn mức xác định). LOẠI "chưa đủ dữ liệu" và Case nhập bù. Luôn hiện n/N.',
     thoiGian: 'ket-qua-trong-ky', khuTrung: 'Mỗi PA chỉ đếm 1 lần, theo kết quả cuối', drilldown: '/metrics/ty-le-co-cai-thien',
   },
   {
     id: 'dung-han-cap-nhat', ten: 'Đúng hạn cập nhật',
     cauHoi: 'Bao nhiêu nghĩa vụ cập nhật được hoàn thành đúng hạn?',
     donVi: 'nghia-vu',
-    tapDuDieuKien: 'Mẫu số: nghĩa vụ cập nhật tuần (một phương án × một chu kỳ) của case học thuật đã QUA hạn — đã cập nhật hoặc chưa ai cập nhật; phương án chờ duyệt, phương án điền sẵn từ SOS chưa xác nhận, case Ý thức và case nhập bù không có nghĩa vụ. Tử số: nghĩa vụ hoàn thành đúng hạn. Mặc định mọi nghĩa vụ đã qua hạn tới ngày dữ liệu; có thể giới hạn theo kỳ. KHÔNG đếm số lần bấm ghi chú.',
+    tapDuDieuKien: 'Mẫu số: nghĩa vụ cập nhật tuần (một phương án × một tuần theo dõi) của Case học thuật đã QUA hạn — đã cập nhật hoặc chưa ai cập nhật; phương án chờ duyệt, phương án điền sẵn từ SOS chưa xác nhận, Case Ý thức và Case nhập bù không có nghĩa vụ. Tử số: nghĩa vụ hoàn thành đúng hạn. Mặc định mọi nghĩa vụ đã qua hạn tới ngày dữ liệu; có thể giới hạn theo kỳ. KHÔNG đếm số lần bấm ghi chú.',
     thoiGian: 'ket-qua-trong-ky', khuTrung: 'Mỗi PA chỉ đếm 1 lần ở mỗi đợt', drilldown: '/metrics/dung-han-cap-nhat',
   },
   {
@@ -218,7 +218,7 @@ export const METRICS: readonly ChiSo[] = [
     id: 'phoi-hop-luot-sos', ten: 'Lượt SOS',
     cauHoi: 'Có bao nhiêu lượt Mock Test Fast Track có SOS (mức 1 trở lên)?',
     donVi: 'luot-sos',
-    tapDuDieuKien: 'Lượt Mock Test Fast Track có `sos_level ≥ 1` (tính lại từ điểm: SOS hết thì lượt thôi là SOS Event) và có việc Phối hợp SOS. Lớp Normal không có. Theo tuần của lượt, lớp lúc đó.',
+    tapDuDieuKien: 'Lượt Mock Test Fast Track có `sos_level ≥ 1` (tính lại từ điểm: SOS hết thì lượt thôi là SOS Event) và có việc Phối hợp SOS. Lớp thường không có. Theo tuần của lượt, lớp lúc đó.',
     thoiGian: 'phat-sinh-trong-ky', khuTrung: 'Mỗi lượt Test chỉ đếm 1 lần', drilldown: '/metrics/phoi-hop-luot-sos',
   },
   {
@@ -274,13 +274,13 @@ export const METRICS: readonly ChiSo[] = [
   },];
 
 /**
- * Tên đơn vị để nói cho người đọc — `18 học viên`, `32 case`. Ba đơn vị học viên · case · phương án
+ * Tên đơn vị để nói cho người đọc — `18 học viên`, `32 Case`. Ba đơn vị học viên · Case · phương án
  * tuyệt đối không cộng vào nhau, nên mỗi con số PHẢI đi kèm đơn vị của nó.
  */
 export const METRIC_UNIT_LABEL: Record<ChiSo['donVi'], string> = {
   'hoc-vien': 'học viên', case: 'case', 'phuong-an': 'PA học thuật', bai: 'bài', 'bai-thi': 'bài thi',
   'dot-test': 'đợt Test', 'nghia-vu': 'nghĩa vụ',
-  'vi-pham': 'vi phạm', 'bien-phap': 'phương án xử lý', 'luot-sos': 'lượt', lop: 'lớp', 'viec-van-hanh': 'việc Vận hành',
+  'vi-pham': 'vi phạm', 'bien-phap': 'lần xử lý', 'luot-sos': 'lượt', lop: 'lớp', 'viec-van-hanh': 'việc Vận hành',
 };
 
 /** Tra một chỉ số theo mã; mã lạ trả null (không đoán). */

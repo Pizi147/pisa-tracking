@@ -14,20 +14,20 @@ import { PA_QUY_CHE_CHUA_GHI } from './sosState.ts';
  * TÍN HIỆU TỪ ĐIỂM — nơi sở hữu duy nhất của mục 6.2.
  *
  * Luật cốt lõi, và nó là một sự ĐẢO NGƯỢC so với mọi vòng trước: **kết quả dưới kỳ vọng
- * không tự mở case và không tự sinh phương án hỗ trợ nào.** Nó chỉ sinh một tín hiệu, giao
+ * không tự mở Case và không tự sinh phương án hỗ trợ nào.** Nó chỉ sinh một tín hiệu, giao
  * cho đúng một người, kèm hạn ba ngày để người đó xác minh.
  *
- * Vì sao phải đảo: hệ thống cũ nhìn "band 5.5 < kỳ vọng 6.0" rồi tự viết ra một case có tên
+ * Vì sao phải đảo: hệ thống cũ nhìn "band 5.5 < kỳ vọng 6.0" rồi tự viết ra một Case có tên
  * và một phương án "xếp tự học". Hai thứ đó trông như đã có người chẩn đoán và đã có người
- * lo, trong khi chưa ai đụng vào. Bảng tổng hợp vì thế đếm được rất nhiều case và rất nhiều
+ * lo, trong khi chưa ai đụng vào. Bảng tổng hợp vì thế đếm được rất nhiều Case và rất nhiều
  * phương án, mà không phản ánh một việc thật nào.
  *
- * RULEBOOK v3 (21/09/2026 tối) ĐỔI LUẬT NÀY CHO MOCK TEST FAST TRACK: điểm dưới kỳ vọng nay TỰ TẠO (hoặc tự gắn) case cho từng kỹ năng trượt và điền
- * sẵn PA theo quy chế chạy ngay (PR-N1 S4-1) — xem `cases/sos.ts` (`raiseSignalsForResult`) và `cases/sosAuto.ts`. Tín hiệu ở đó nối NGAY vào case (`linked`,
+ * RULEBOOK v3 (21/09/2026 tối) ĐỔI LUẬT NÀY CHO MOCK TEST FAST TRACK: điểm dưới kỳ vọng nay TỰ TẠO (hoặc tự gắn) Case cho từng kỹ năng trượt và điền
+ * sẵn PA theo quy chế chạy ngay (PR-N1 S4-1) — xem `cases/sos.ts` (`raiseSignalsForResult`) và `cases/sosAuto.ts`. Tín hiệu ở đó nối NGAY vào Case (`linked`,
  * hạn 3 ngày giữ nguyên) và là dây nối để thu hồi khi sửa điểm. PR-LT2a (N4) cũng bỏ mô hình mô tả dưới đây cho lớp thường: Giữa khoá tự tạo Case + PA Bổ trợ,
  * tín hiệu chỉ còn là dây nối (`silent`) — không còn hàng chờ "Xác minh", không "Tạo Case / Bỏ qua".
  *
- * Ba điều hàm trong file này KHÔNG bao giờ làm (với lớp Normal; với Mock FT thì việc tạo case nằm ở `sos.ts`, không ở đây):
+ * Ba điều hàm trong file này KHÔNG bao giờ làm (với lớp thường; với Mock FT thì việc tạo Case nằm ở `sos.ts`, không ở đây):
  *
  *   · không đoán nguyên nhân — tên, mô tả và phân loại là việc của người dạy;
  *   · không tạo phương án — kể cả khi nhập từng môn, chấm lại hay chạy lại bộ demo;
@@ -74,8 +74,8 @@ export function raiseSignal(input: {
   /** Ngày ghi nhận. Mặc định là hôm nay — KHÔNG lùi về tuần thi đã qua. */
   raisedOn?: string;
   /**
-   * Không gửi thông báo "Cần xác minh". Dùng khi tín hiệu sẽ được GẮN NGAY vào một case (rulebook v3: Mock Test FT tự tạo/gắn case) —
-   * lúc đó chẳng còn gì để "xác minh", và người phụ trách nhận một thông báo riêng nói đúng việc (case mới, chờ xác định nguyên nhân).
+   * Không gửi thông báo "Cần xác minh". Dùng khi tín hiệu sẽ được GẮN NGAY vào một Case (rulebook v3: Mock Test FT tự tạo/gắn Case) —
+   * lúc đó chẳng còn gì để "xác minh", và người phụ trách nhận một thông báo riêng nói đúng việc (Case mới, chờ xác định nguyên nhân).
    */
   silent?: boolean;
 }): SignalRow {
@@ -90,7 +90,7 @@ export function raiseSignal(input: {
         .prepare(
           /*
            * Mở lại thì phải XOÁ SẠCH dấu vết của lần xử lý trước, kể cả `case_id`. Giữ lại
-           * case cũ trên một tín hiệu đang chờ là một mâu thuẫn: chờ nghĩa là chưa thành gì.
+           * Case cũ trên một tín hiệu đang chờ là một mâu thuẫn: chờ nghĩa là chưa thành gì.
            */
           `UPDATE case_signals SET status = 'pending', band = ?, expectation = ?, sos_level = ?,
                   raised_on = ?, verify_due = ?, withdrawn_reason = NULL, case_id = NULL,
@@ -148,7 +148,7 @@ export function raiseSignal(input: {
 /**
  * Tên ngắn của tín hiệu: môn nào.
  *
- * Hai bộ mã cùng tồn tại và đều đúng: Fast Track nhập theo năm ô (W1/W2 riêng), lớp Normal
+ * Hai bộ mã cùng tồn tại và đều đúng: Fast Track nhập theo năm ô (W1/W2 riêng), lớp thường
  * chấm theo bốn môn (W là một). Tra cả hai bảng nhãn, không thì màn hình hiện ra mã thô.
  */
 export function labelOf(s: { skill: string | null; programme_code?: string | null }): string {
@@ -177,8 +177,8 @@ export function signalsOfStudent(studentId: number, cycleId?: number | null): Si
  *
  *   · Tín hiệu còn CHỜ XÁC MINH mà điểm đã sửa thành đạt → thu hồi. Chưa ai làm gì dựa trên
  *     nó, nên xoá nợ là đúng và không mất mát gì.
- *   · Tín hiệu ĐÃ thành case → KHÔNG tự đụng vào case. Case có thể đã có phương án thật, có
- *     người thật đã làm. Hàm chỉ đánh dấu tín hiệu mất căn cứ và trả tên case ra để nơi gọi
+ *   · Tín hiệu ĐÃ thành Case → KHÔNG tự đụng vào case. Case có thể đã có phương án thật, có
+ *     người thật đã làm. Hàm chỉ đánh dấu tín hiệu mất căn cứ và trả tên Case ra để nơi gọi
  *     báo cho người phụ trách xem lại. Xoá hộ là xoá mất việc đã diễn ra.
  *
  * Và tuyệt đối không ghi một mốc "đã tiến bộ": sửa một con số nhập sai KHÔNG phải một lần
@@ -225,7 +225,7 @@ export function withdrawSignalsNoLongerValid(input: {
  * CASE NÀY CÓ CÒN CĂN CỨ NÀO NGOÀI TÍN HIỆU ĐÃ MẤT KHÔNG (mục 9.4, tình huống 3 và 4).
  *
  * "Căn cứ độc lập" nghĩa là: một mốc từ đợt khác, một quan sát của giáo viên, một phương án
- * đã thực sự được làm, hoặc một lần cập nhật kết quả. Có bất kỳ thứ nào trong đó thì case
+ * đã thực sự được làm, hoặc một lần cập nhật kết quả. Có bất kỳ thứ nào trong đó thì Case
  * ĐƯỢC GIỮ và chỉ cần xem lại; không có gì cả thì nó chỉ sống nhờ con số vừa được sửa.
  */
 export function caseHasIndependentBasis(caseId: number, excludeAttemptId: number | null): boolean {
@@ -346,7 +346,7 @@ function gomTinHieu(p: Principal, attemptId: number, skills: string[], passText:
   });
   for (const item of casesToReview) {
     if (caseHasIndependentBasis(item.caseId, attemptId)) {
-      /* Giữ case, chỉ nhắc xem lại — người phụ trách quyết định có theo tiếp hay không. */
+      /* Giữ Case, chỉ nhắc xem lại — người phụ trách quyết định có theo tiếp hay không. */
       const c = conn.prepare('SELECT owner_user_id, student_id, status FROM sos_cases WHERE id = ?').get(item.caseId) as any;
       /* Case đã ĐÓNG (không cần theo dõi / chốt kết quả) thì không còn gì để "xem lại" — không nhắc. */
       if (c?.owner_user_id && c.status !== 'done') {
