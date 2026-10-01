@@ -294,11 +294,11 @@ export const parseObligation = (id: number) => ({ interventionId: Math.floor(id 
  * chạy nên chưa có nghĩa vụ) và không tính case nhập bù (không có hạn cập nhật). Ý thức không còn case (21/09/2026).
  */
 /**
- * Các tuần (k = 0…N−1) của khoảng ghi bù có hạn ĐÃ QUA trước `den` (ngày ghi, hoặc hôm nay khi chưa ghi). N = `nhanTuanGhiKetQua(hạn, den).soTuan`
- * — cùng hàm với tiêu đề "ghi bù N tuần" ở form ghi kết quả; chặn thêm "hạn tuần k đã qua" để hạn Chủ nhật của dữ liệu cũ không đếm dư một tuần.
+ * Các tuần (k = 0…N−1) của khoảng ghi bù, N = `nhanTuanGhiKetQua(hạn, den).soTuan` — cùng hàm với tiêu đề "ghi bù N tuần" ở form ghi kết quả.
+ * PR-S6F-b (Q21): tuần k có hạn CHƯA qua lúc ghi (`due + 7k >= den`, ví dụ ghi đúng Thứ Hai của tuần cuối) là ĐÚNG hạn — không bỏ khỏi mẫu số.
  */
-function tuanTre(due: string, den: string): number[] {
-  return Array.from({ length: nhanTuanGhiKetQua(due, den).soTuan }, (_, k) => k).filter((k) => addDaysIso(due, 7 * k) < den);
+function tuanGhiBu(due: string, den: string): { k: number; dung: boolean }[] {
+  return Array.from({ length: nhanTuanGhiKetQua(due, den).soTuan }, (_, k) => ({ k, dung: addDaysIso(due, 7 * k) >= den }));
 }
 
 function obligations(caseIds: number[], today: string, from: string | null, to: string | null) {
@@ -317,8 +317,8 @@ function obligations(caseIds: number[], today: string, from: string | null, to: 
       .all(...chunk) as any[]) {
       if (r.due >= today) continue;
       /* Đúng hạn: một nghĩa vụ đúng. Trễ: mỗi tuần ghi bù là một nghĩa vụ trễ. */
-      const ks = r.late === 0 ? [0] : tuanTre(r.due, r.ghi ?? today);
-      for (const k of ks) if (inPeriod(addDaysIso(r.due, 7 * k))) den.set(obligationId(r.iv, r.cycle, k), r.late === 0);
+      const ks = r.late === 0 ? [{ k: 0, dung: true }] : tuanGhiBu(r.due, r.ghi ?? today);
+      for (const { k, dung } of ks) if (inPeriod(addDaysIso(r.due, 7 * k))) den.set(obligationId(r.iv, r.cycle, k), dung);
     }
     for (const r of db()
       .prepare(
@@ -331,7 +331,8 @@ function obligations(caseIds: number[], today: string, from: string | null, to: 
       )
       .all(...chunk, today) as any[]) {
       /* Chưa ghi: mỗi tuần đã bỏ quên là một nghĩa vụ trễ (PA bỏ quên nhiều tuần không còn chỉ tính 1). */
-      for (const k of tuanTre(r.due, today)) if (inPeriod(addDaysIso(r.due, 7 * k))) den.set(obligationId(r.id, r.cycle, k), false);
+      /* Tuần chưa tới hạn (`dung`) chưa phải nghĩa vụ — chưa ghi thì chỉ tuần đã qua hạn mới tính. */
+      for (const { k } of tuanGhiBu(r.due, today).filter((x) => !x.dung)) if (inPeriod(addDaysIso(r.due, 7 * k))) den.set(obligationId(r.id, r.cycle, k), false);
     }
   }
   const ids = [...den.keys()].sort((x, y) => x - y);

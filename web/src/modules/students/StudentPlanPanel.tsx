@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
@@ -7,7 +8,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { Empty, Field, NutChon, SectionNote, Skeleton, Status, TargetText, Th} from '../../ui/ui.tsx';
 import { fmtDate } from '../../lib/format.ts';
-import { BASELINE_SOURCES, BASELINE_SOURCE_LABEL, GIAI_THICH_KCK, KCK } from '@shared/domain/index.ts';
+import { BASELINE_SOURCES, BASELINE_SOURCE_LABEL, GIAI_THICH_KCK, KCK, duongDotTest } from '@shared/domain/index.ts';
 
 type Suggested = {
   attemptNo: number; studyWeek: number; periodId: number; weekStart: string; code: string;
@@ -199,9 +200,9 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, canEditCycle = t
                               Speaking tuần sau, và mỗi kỹ năng mang hạn chấm của riêng nó.
                             */}
                             {r.existingAttemptId ? (
-                              <a className="btn btn-sm btn-ghost" href={`/mock-test/${r.existingAttemptId}`}>
+                              <Link className="btn btn-sm btn-ghost no-underline" to={duongDotTest({ id: r.existingAttemptId, kind: 'mock' })}>
                                 Mở lịch kỹ năng
-                              </a>
+                              </Link>
                             ) : (
                               <span className="text-xs text-slate-500">chưa có đợt</span>
                             )}

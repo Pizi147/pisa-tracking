@@ -1,6 +1,27 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, api, onInvalidate } from './api.ts';
 
+/*
+ * PR-S6F-b (D14): GET ĐANG BAY cùng đường dẫn dùng chung MỘT lời gọi — Tổng quan có nhiều khối cùng đọc `/my-work`, `/tong-quan/quan-ly`.
+ * Xoá khỏi bảng ngay khi xong (không phải cache: lần tải sau vẫn gọi máy chủ) và khi `invalidate` trúng tiền tố (để lần tải lại sau khi ghi
+ * không dùng lại một lời gọi bắt đầu TRƯỚC khi ghi).
+ */
+const dangBay = new Map<string, Promise<unknown>>();
+onInvalidate((prefix) => {
+  for (const k of [...dangBay.keys()]) if (prefix === null || k.startsWith(prefix)) dangBay.delete(k);
+});
+function getChung<T>(path: string): Promise<T> {
+  let p = dangBay.get(path) as Promise<T> | undefined;
+  if (!p) {
+    p = api.get<T>(path);
+    const xong = p;
+    dangBay.set(path, xong);
+    const bo = () => { if (dangBay.get(path) === xong) dangBay.delete(path); };
+    xong.then(bo, bo);
+  }
+  return p;
+}
+
 export type ApiState<T> = {
   data: T | null;
   /** true chỉ khi CHƯA có dữ liệu để hiển thị — dùng để bật skeleton. */
@@ -51,8 +72,7 @@ export function useApi<T>(path: string | null, deps: unknown[] = []): ApiState<T
     const seq = ++latest.current;
     setFetching(true);
     setError(null);
-    api
-      .get<T>(path)
+    getChung<T>(path)
       .then((d) => {
         if (seq !== latest.current) return;   // bỏ qua phản hồi cũ
         setDataState(d);

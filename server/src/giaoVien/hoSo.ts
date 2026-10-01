@@ -5,7 +5,7 @@
  * Không xếp hạng, không so sánh giữa người (Q30-5): chỉ số của MỘT người, hoặc bảng sắp theo tên.
  */
 import {
-  ENTRY_SKILLS, ENTRY_SKILL_SHORT, PERMISSIONS, baiId, chuongTrinhTuThamSo, ctTuyChon, demViecTheoNhom, duongThe, laCotOGv, nhanVaiLop, roleLabel, tenMonNgan,
+  ENTRY_SKILLS, ENTRY_SKILL_SHORT, PERMISSIONS, baiId, chuongTrinhTuThamSo, ctTuyChon, demViecTheoNhom, duongThe, laCotOGv, nhanVaiLop, roleLabel, soSanhLop, tenMonNgan,
   type ChipBanGiao, type ChuongTrinh, type CotOGv, type NhomViec,
 } from '../../../shared/domain/index.ts';
 import { db } from '../db.ts';
@@ -88,11 +88,11 @@ export function lopCuaGv(gvId: number, homNay: string, branchIds: number[] | nul
         WHERE e.class_id IN (${cho(lo.length)}) AND e.status = 'active' AND s.archived_at IS NULL`).all(...lo) as any[]) theoId.get(r.class_id)!.hvIds.add(r.student_id);
   }
   for (const l of lop) l.hocVien = l.hvIds.size;
-  return lop.sort((a, b) => (a.khung === b.khung ? a.ma.localeCompare(b.ma, 'vi') : a.khung === 'ft' ? -1 : 1));
+  return lop.sort((a, b) => (a.khung === b.khung ? soSanhLop({ code: a.ma }, { code: b.ma }) : a.khung === 'ft' ? -1 : 1));   // U1: MB FT 9 trước MB FT 10
 }
 
 /** Ô điểm chưa nhập của GV ở các lớp `lop` — `scoreDebtCells` (cùng luật bảng chấm), chỉ tính lớp đang hiện ở "Lớp đang dạy". */
-export function noDiemCuaGv(p: Principal, gvId: number, homNay: string, lop: readonly LopGv[]): DebtCell[] {
+export function noDiemCuaGv(p: Principal, gvId: number, homNay: string, lop: readonly Pick<LopGv, 'id' | 'branchId'>[]): DebtCell[] {
   const lopIds = new Set(lop.map((l) => l.id));
   const chiNhanh = [...new Set(lop.map((l) => l.branchId).filter((b): b is number => b !== null))];
   return scoreDebtCells(p, homNay, chiNhanh).filter((d) => d.userId === gvId && lopIds.has(d.classId));
@@ -213,13 +213,13 @@ export function hoSoGiaoVien(p: Principal, gvId: number): HoSoGv {
 export function chipBanGiao(gvId: number): Map<number, ChipBanGiao> {
   const out = new Map<number, ChipBanGiao>();
   const viec = viecBanGiao(gvId);
-  for (const v of viec) if (v.loai === 'gvcn') out.set(v.lopId, { loai: 'gvcn', mon: null, da: v.daXacNhan, n: v.n });
+  for (const v of viec) if (v.loai === 'gvcn') out.set(v.lopId, { loai: 'gvcn', mon: null, maMon: null, da: v.daXacNhan, n: v.n });
   for (const v of viec) {
     if (v.loai !== 'gvbm' || out.get(v.lopId)?.loai === 'gvcn') continue;
     const cu = out.get(v.lopId);
     out.set(v.lopId, cu
       ? { ...cu, mon: `${cu.mon} ${v.monNgan}`, da: Math.min(cu.da, v.daGhi) }
-      : { loai: 'gvbm', mon: v.monNgan, da: v.daGhi, n: v.n });
+      : { loai: 'gvbm', mon: v.monNgan, maMon: v.mon, da: v.daGhi, n: v.n });
   }
   return out;
 }

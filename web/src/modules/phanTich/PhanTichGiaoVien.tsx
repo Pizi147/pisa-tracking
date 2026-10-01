@@ -342,8 +342,8 @@ function PanelChamDiem({ kq, h, onDong }: { kq: PhanTichGvKq; h: HangPtGv; onDon
                     <td className="td"><Link to={`/hoc-vien/${r.studentId}`} className="link">{r.hocVien}</Link></td>
                     <td className="td text-slate-300">{r.lop} · {r.bai} · {r.mon}</td>
                     <td className="td whitespace-nowrap tabular-nums">{tuanLich(r.tuan, homNay)}</td>
-                    <td className="td whitespace-nowrap text-right tabular-nums">{ngay(r.han, homNay)}</td>
-                    <td className="td whitespace-nowrap text-right tabular-nums">
+                    <td className="td whitespace-nowrap text-right text-xs tabular-nums">{ngay(r.han, homNay)}</td>
+                    <td className="td whitespace-nowrap text-right text-xs tabular-nums">
                       {r.nhapDau ? ngay(r.nhapDau, homNay) : <span className="text-slate-400">chưa nhập</span>}
                       {r.sua && <span className="block text-xs text-slate-400">sửa {ngay(r.sua, homNay)}</span>}
                     </td>

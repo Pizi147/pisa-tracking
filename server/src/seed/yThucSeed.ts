@@ -207,7 +207,7 @@ export const Y_THUC_SEEDS: StudentYThuc[] = [
       { key: 'j2', on: '2026-09-01', category: 'classroom', skill: 'writing2', by: 'T_LINH', text: 'Dùng điện thoại trong giờ Writing' },
       { key: 'j3', on: '2026-09-02', category: 'attendance', skill: null, by: 'T_HA', text: 'Nghỉ buổi sáng không báo trước' },
     ],
-    chuyen: { lop: 'MB FT 102', ngay: '2026-09-12', lyDo: 'Chuyển sang lịch học buổi tối (LT2) theo nguyện vọng gia đình' },
+    chuyen: { lop: 'MB FT 102', ngay: '2026-09-12', lyDo: 'Chuyển sang lớp LT2 theo nguyện vọng gia đình' },
   },
 
   /* ============================================================ (k) Mạc Tuấn Kiệt — khai WL 1 → Report 4 + Meeting → WL 2; một vi phạm Mới */

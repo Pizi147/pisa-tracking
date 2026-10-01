@@ -7,6 +7,8 @@
  */
 import { outcomeLabelFor } from './cases.ts';
 import { tuanHocFt, tuanLich } from './hienThiNgay.ts';
+import { tenMonNgan } from './normal.ts';
+import type { BoTroMienPhi } from './cuoiKhoa.ts';
 import { RATIO_PASS_THRESHOLD } from './normal.ts';
 import { addDaysIso } from './sos.ts';
 import { ASSESSED_SKILL_LABEL } from './skills.ts';
@@ -286,9 +288,11 @@ export type DiemMoc = {
   attemptNo?: number; kind?: string; maLop?: string | null; kyVong?: number | null;
   /** PR-VAI-b (G5): lượt của mốc — mốc điểm mở hồ sơ Mock cuộn tới kỹ năng. */
   attemptId?: number;
+  /** PR-S6F-b: lớp của lượt — mốc lượt lớp thường (kể cả chưa xếp tuần) đi đường bảng điểm lớp thường, không tra lại ghim. */
+  classId?: number | null;
 };
 export type LechDiem = { dau: 'len' | 'xuong' | 'bang'; chu: string };
-export type MocDiem = { chu: string; xau: boolean; cho: boolean; lech: LechDiem | null; title: string; /** PR-VAI-b (G5): lượt của mốc. */ attemptId?: number | null };
+export type MocDiem = { chu: string; xau: boolean; cho: boolean; lech: LechDiem | null; title: string; /** PR-VAI-b (G5): lượt của mốc. */ attemptId?: number | null; kind?: string | null; classId?: number | null };
 
 const DAU_TRU = '−';
 
@@ -336,7 +340,7 @@ export function chuoiDiem(
     }
     const lech = giaTriTruoc === null ? null : lechDiem(giaTriTruoc, gia, cheDo);
     giaTriTruoc = gia;
-    return { chu, xau: d.chuaDat, cho: false, lech, title: phan.filter(Boolean).join(' · '), attemptId: d.attemptId ?? null };
+    return { chu, xau: d.chuaDat, cho: false, lech, title: phan.filter(Boolean).join(' · '), attemptId: d.attemptId ?? null, kind: d.kind ?? null, classId: d.classId ?? null };
   });
   if (conCho) {
     moc.push({ chu: '?', xau: false, cho: true, lech: null, title: `${o.dotCho ? nhanDotTest(o.dotCho) : 'Đợt sắp tới'} · chưa chấm` });
@@ -360,7 +364,9 @@ export function uocRongChuoi(moc: readonly MocDiem[]): number {
 
 /** Màu kết quả Test (N-1b): Đạt xanh lá · SOS 1 vàng · SOS 2 cam · SOS 3 đỏ · tạm thời / chưa đủ điểm xám viền đứt. */
 export type MauKetQua = 'dat' | 'sos1' | 'sos2' | 'sos3' | 'tam';
-export type NhanGhim = { chu: string; gon: string; day: string; mau: MauKetQua; /** PR-VAI-b: hai dòng trong một cột tuần — `MT1 / 5.5`, `Giữa / 3/4`, `Cuối / 80%`. */ hai: [string, string] };
+export type NhanGhim = { chu: string; gon: string; day: string; mau: MauKetQua; /** PR-VAI-b: hai dòng trong một cột tuần — `MT1 / 5.5`, `Giữa / 3/4`, `Cuối / 80%`. */ hai: [string, string];
+  /** Nhãn ghim ở CHƯƠNG (mockup 26 bản 2) khi khác `chu` của trục — lớp thường Giữa/Cuối khoá theo môn: "Giữa khoá · 3/4 môn". */
+  chuong?: string };
 
 const mauTuSos = (sos: number): MauKetQua => (sos <= 0 ? 'dat' : sos === 1 ? 'sos1' : sos === 2 ? 'sos2' : 'sos3');
 
@@ -427,7 +433,9 @@ export function nhanGhim(a: {
     const pt = `${Math.round(a.tyLe * 100)}%`;
     return { chu: `${ngan} · ${pt}${a.goiY ? ` ${a.goiY.nhanNgan}` : ''}`, gon: ngan, day: ghep(dai, `${pt} tổng`, a.goiY?.nhan ?? datMon), mau: a.goiY?.dai === 'dat' ? 'dat' : mau, hai: [ngan, pt] };
   }
-  return { chu: `${ngan} · ${datMon}`, gon: ngan, day: ghep(dai, datMon, sos <= 0 ? 'Đạt' : `${Math.min(sos, 3)} môn trượt`), mau, hai: [ngan, `${soDat}/${a.soYeuCau}`] };
+  /* Mockup 26 bản 2: ghim CHƯƠNG nói đủ chữ — "Giữa khoá · 3/4 môn" (trục giữ bản ngắn "Giữa · 3/4 môn đạt"). */
+  return { chu: `${ngan} · ${datMon}`, gon: ngan, day: ghep(dai, datMon, sos <= 0 ? 'Đạt' : `${Math.min(sos, 3)} môn trượt`), mau, hai: [ngan, `${soDat}/${a.soYeuCau}`],
+    chuong: `${daiKind} · ${soDat}/${a.soYeuCau} môn` };
 }
 
 /**
@@ -516,7 +524,7 @@ export type TonePaChuong = 'ok' | 'part' | 'bad' | 'run' | 'wait' | 'done';
 /** Một ghi danh (lớp) em đã học — máy chủ dựng sẵn nhãn, GVCN, tuần học; `chiaChuong` chỉ chia Test / Case / PA vào đúng chương. */
 export type LopChuong = {
   enrollmentId: number; classId: number; code: string; ngan: string; nhan: string; ct: string | null; ft: boolean;
-  tu: string; den: string | null; dangHoc: boolean; soTuan: number | null; tuanHoc: { tu: number; den: number | null } | null;
+  tu: string; den: string | null; dangHoc: boolean; soTuan: number | null; tuanHoc: { tu: number | null; den: number | null; dangDung: boolean } | null;
   gvcn: string | null; endKind: string | null; status: string; endReason: string | null;
   /** Lệnh chuyển lớp (đã chuyển) RỜI lớp này — Quản lý ra lệnh; `xacNhan` = GVCN lớp cũ đã xác nhận bàn giao. */
   lenh: { id: number; xacNhan: boolean } | null;
@@ -552,7 +560,14 @@ const RA_THEO_END_KIND: Record<string, RaChuong['loai']> = {
  *   PA thuộc chương chứa ngày BẮT ĐẦU PA. Ghim Test theo `class_id` của lượt. Không việc, hạn, người giữ việc.
  *   "Vì sao sang lớp sau" (`ra`) = kết thúc vì (`end_kind`) + lệnh chuyển đã thi hành ("Quản lý ra lệnh").
  */
-export function chiaChuong<G extends { classId: number | null; tuan: string | null; nhanNgan: string }>(i: {
+/** Chân chương "lên lớp" (mockup 26): "Lên FT" · "Lên BE" · kèm bổ trợ miễn phí "Lên FT + bổ trợ S" (tên môn ngắn theo chương trình lớp cũ). */
+export function chuLen(sau: { ft: boolean; ct: string | null } | null, bo: BoTroMienPhi | null, ctCu: string | null): string {
+  const len = `Lên ${sau?.ft ? 'FT' : sau?.ct ?? 'lớp sau'}`;
+  if (!bo) return len;
+  return `${len} + bổ trợ${bo.theoMon && bo.mon.length ? ` ${bo.mon.map((m) => tenMonNgan(ctCu, m)).join(', ')}` : ''}`;
+}
+
+export function chiaChuong<G extends { classId: number | null; tuan: string | null; nhanNgan: string; kind?: string; goiY?: unknown }>(i: {
   lop: readonly LopChuong[]; ghim: readonly G[]; cases: readonly CaseChuongVao[];
   tamDung: readonly { tu: string; den: string | null }[]; homNay: string;
 }): Chuong<G>[] {
@@ -580,12 +595,15 @@ export function chiaChuong<G extends { classId: number | null; tuan: string | nu
     });
     if (cuoi > goc) caseDong[cuoi].push({ caseId: c.caseId, ten: c.ten, kyNang: c.kyNang, sos: c.sos, pa: paO(cuoi), xongO: xongO(cuoi), diTheoSang: null });
   }
+  /* Bổ trợ miễn phí kèm khi lên lớp — gợi ý Cuối khoá (`goiYCuoiKhoa.boTroNeuLen`) của ghim Cuối khoá lớp đó. */
+  const boTroCuaChuong = (classId: number): BoTroMienPhi | null =>
+    (i.ghim.filter((g) => g.classId === classId && g.kind === 'final').at(-1)?.goiY as { boTroNeuLen?: BoTroMienPhi | null } | null | undefined)?.boTroNeuLen ?? null;
   return lop.map((l, k) => {
     const sau = lop[k + 1] ?? null;
     const loai = l.endKind ? RA_THEO_END_KIND[l.endKind] ?? null : l.status === 'transferred' ? 'chuyen' : l.status === 'completed' ? 'ket-thuc' : null;
     const ra: RaChuong | null = l.dangHoc ? null : {
       loai,
-      chu: loai === 'len' ? `Lên ${sau?.ft ? 'FT' : sau?.ct ?? 'lớp sau'}` : loai === 'chuyen' ? 'Chuyển lớp' : loai === 'hoc-lai' ? 'Học lại'
+      chu: loai === 'len' ? chuLen(sau, boTroCuaChuong(l.classId), l.ct) : loai === 'chuyen' ? 'Chuyển lớp' : loai === 'hoc-lai' ? 'Học lại'
         : loai === 'bao-luu' ? 'Bảo lưu' : loai === 'dung' ? 'Dừng học' : loai === 'ket-thuc' ? 'Kết thúc học' : l.status === 'paused' ? 'Tạm dừng học' : 'Rời lớp',
       how: l.lenh ? 'Quản lý ra lệnh' : loai === 'len' ? 'theo Cuối khoá' : l.endReason,
       tu: sau?.tu ?? null,

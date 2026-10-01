@@ -2709,8 +2709,8 @@ check('Case của học viên ngoài phạm vi bị chặn ở máy chủ', () =
 });
 
 check('Bốn hàng đợi trả lời bốn câu hỏi khác nhau', () => {
-  const q = cases.caseQueueCounts(P.admin, {});
-  assert(q.total > 0, 'Không có case nào đang mở');
+  /* PR-S6F-b (D16): route + `caseQueueCounts` đã bỏ (web không còn gọi) — kiểm thẳng tập đang mở của `listCases`. */
+  assert(cases.listCases(P.admin, { queue: null }).rows.some((r: any) => r.status !== 'done'), 'Không có case nào đang mở');
   const newOnes = cases.listCases(P.admin, { queue: 'new' }).rows;
   for (const r of newOnes) {
     assert(!r.disposition && r.interventionCount === 0, `Case ${r.id} đã có hướng xử lý mà vẫn nằm ở "chưa ai định hướng"`);
@@ -9197,11 +9197,16 @@ check('PR-N · N1 dung-han-cap-nhat: nghĩa vụ (phương án × chu kỳ) đú
   /* PR-UXF-a Q13: id nghĩa vụ = PA × 1e6 + chu kỳ × 1e3 + tuần k của khoảng ghi bù. "missed" hạn 06/09 chưa ghi tới 14/09 = 2 tuần trễ (06/09, 13/09). */
   const code = (ivId: number, cycle: number, k = 0) => ivId * 1_000_000 + cycle * 1000 + k;
   const gained = (r.ids as number[]).filter((id) => !(before.ids as number[]).includes(id)).sort((x, y) => x - y);
-  assert(JSON.stringify(gained) === JSON.stringify([code(ontime, 1), code(lateIv, 1), code(missed, 1), code(missed, 1, 1)].sort((x, y) => x - y)),
-    `Nghĩa vụ đến hạn phải là: đúng hạn, trễ (1 tuần), chưa làm (2 tuần); đang có [${gained.join(',')}]`);
+  /*
+   * PR-S6F-b (Q21): "lateIv" hạn 30/08, ghi 03/09 = "ghi bù 2 tuần" (`nhanTuanGhiKetQua`) → HAI nghĩa vụ: tuần 30/08 trễ, tuần 06/09 (hạn chưa qua
+   * lúc ghi) đúng hạn — N nghĩa vụ = N của tiêu đề, không bỏ tuần cuối khỏi mẫu số.
+   */
+  assert(domain.nhanTuanGhiKetQua('2026-08-30', '2026-09-03').soTuan === 2, 'tiền đề: ghi bù 2 tuần');
+  assert(JSON.stringify(gained) === JSON.stringify([code(ontime, 1), code(lateIv, 1), code(lateIv, 1, 1), code(missed, 1), code(missed, 1, 1)].sort((x, y) => x - y)),
+    `Nghĩa vụ đến hạn phải là: đúng hạn, ghi bù 2 tuần (1 trễ + 1 đúng), chưa làm (2 tuần); đang có [${gained.join(',')}]`);
   assert(!r.ids.includes(code(pending, 1)) && !r.ids.includes(code(future, 1)), 'Chờ duyệt và chưa đến hạn không phải nghĩa vụ đến hạn');
   const onTime = (r.numeratorIds as number[]).filter((id) => !(before.numeratorIds as number[]).includes(id));
-  assert(JSON.stringify(onTime) === JSON.stringify([code(ontime, 1)]), 'Chỉ nghĩa vụ hoàn thành ĐÚNG HẠN mới vào tử số (trễ và chưa làm thì không)');
+  assert(JSON.stringify(onTime.sort((x, y) => x - y)) === JSON.stringify([code(ontime, 1), code(lateIv, 1, 1)].sort((x, y) => x - y)), 'Chỉ nghĩa vụ hoàn thành ĐÚNG HẠN mới vào tử số (trễ và chưa làm thì không; tuần ghi bù chưa tới hạn là đúng — Q21)');
   assert(r.n === r.ids.length && r.numeratorIds.every((id: number) => r.ids.includes(id)), 'Số là độ dài tập; tử số ⊆ mẫu số');
   assert(r.unit === 'nghia-vu', 'Đơn vị phải là nghĩa vụ, không phải phương án');
   /* Phạm vi: Quản lý CP không thấy nghĩa vụ của em MB. */
@@ -9821,6 +9826,9 @@ await runPrVaiBTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 // ==================================================================== PR-Pb2-b (Phân tích giáo viên · FOU 2 GV · hồ sơ GV · ngày nghiệp vụ mới)
 const { runPrPb2bTests } = await import('./prPb2b.tests.ts');
 await runPrPb2bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
+const { runPrS6fBTests } = await import('./prS6fB.tests.ts');
+await runPrS6fBTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

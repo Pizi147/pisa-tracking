@@ -16,7 +16,7 @@ export type Viec = {
   key: string; loai: string; chu: string; kyNang: string | null; caseId: number | null; paId: number | null;
   han: string | null; quaHanNgay: number | null; tone: 'danger' | 'warn' | 'info' | 'wait';
   nguoi: { id: number | null; ten: string; vai: string | null }; cuaBan: boolean; nut: string;
-  mo: { loai: 'case'; caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'xac-nhan' | 'xac-nhan-pa' | 'ke-hoach' }
+  mo: { loai: 'case'; caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'xac-nhan' | 'xac-nhan-pa' | 'ke-hoach' | 'them-pa' }
     | { loai: 'tab'; tab: 'y-thuc'; sub?: 'phoi-hop' } | { loai: 'duong'; href: string } | null;
 };
 
@@ -31,7 +31,7 @@ export function DongThongTin({ tt }: { tt: any }) {
     <b key="lop">{tt.lop}</b>,
     tt.loTrinh && <b key="lt">{tt.loTrinh}</b>,
     tt.target !== null && <span key="tg">target <b><TargetText band={tt.target === 'KCK' ? null : tt.target} kck={tt.target === 'KCK'} /></b></span>,
-    tt.tuanHoc && <span key="tuan"><b className="tabular-nums">{chuTuanHoc(tt.tuanHoc.tuan, tt.tuanHoc.tong)}</b>{tt.tuanHoc.dangDung ? ' · đang dừng' : ''}</span>,
+    tt.tuanHoc && <span key="tuan"><b className="tabular-nums">{chuTuanHoc(tt.tuanHoc.tuan, tt.tuanHoc.tong, tt.tuanHoc.dangDung)}</b></span>,
     tt.thiDuKien && <span key="thi">{tt.thiDuKien.nhan} <b className="tabular-nums">{tt.thiDuKien.gt}</b></span>,
     tt.gvcn && <span key="gv">GVCN <b>{tt.gvcn}</b></span>,
   ].filter(Boolean);
@@ -46,8 +46,8 @@ export function DongThongTin({ tt }: { tt: any }) {
 
 /** Loại hạn của từng loại việc — để chữ hạn đúng đồng hồ (HE_GIAO_DIEN §4). */
 const LOAI_HAN: Record<string, DeadlineKind> = {
-  'nguyen-nhan': 'xac-minh-sos', 'xac-nhan-pa': 'xac-minh-sos', 'ghi-ket-qua': 'cap-nhat-pa', 'ke-hoach': 'ke-hoach-bo-tro',
-  'cho-duyet': 'duyet', 'mini-test': 'mini-test', 'y-thuc': 'xu-ly-vi-pham', 'ban-giao': 'viec-van-hanh', 'ban-giao-mon': 'viec-van-hanh',
+  'nguyen-nhan': 'xac-minh-sos', 'de-ra-pa': 'lap-pa', 'xac-nhan-pa': 'xac-minh-sos', 'ghi-ket-qua': 'cap-nhat-pa', 'ke-hoach': 'ke-hoach-bo-tro',
+  'cho-duyet': 'duyet', 'mini-test': 'mini-test', 'y-thuc': 'xu-ly-vi-pham', 'yt-xem': 'xu-ly-vi-pham', 'yt-thuc-hien': 'xu-ly-vi-pham', 'ban-giao': 'viec-van-hanh', 'ban-giao-mon': 'viec-van-hanh',
 };
 
 /** Hạn 12 px (Q22): "hạn hết 02/10" mờ · quá hạn: ⚠ SVG + "quá hạn 3 ngày" đỏ (`chiQuaHan`: bỏ mốc, như thanh việc mockup 24 A). */
@@ -188,7 +188,7 @@ function O({ nhan, tren, children, phu, onClick, title, phuNgoai }: {
 export function BonO({ o, homNay, onDot, onKn, onYThuc, kyNangHref }: {
   o: any; homNay: string | null; onDot: (attemptId: number) => void; onKn: (kn: string) => void; onYThuc: () => void;
   /** G5 (Task 8): đường tới hồ sơ Mock cuộn tới kỹ năng — null thì mã kỹ năng chỉ là chữ. */
-  kyNangHref?: (kn: string) => string | null;
+  kyNangHref?: (kn: string, attemptId: number | null) => string | null;
 }) {
   if (!o) return null;
   const k = o.ketQua;
@@ -203,7 +203,7 @@ export function BonO({ o, homNay, onDot, onKn, onYThuc, kyNangHref }: {
     : kq.dat ? <span className="text-ok">Đạt kỳ vọng</span> : 'Chưa đủ điểm';
   const duoi = k.duoi?.length ? (
     <>dưới kỳ vọng: {k.duoi.map((d: any, i: number) => {
-      const href = kyNangHref?.(d.kn) ?? null;
+      const href = kyNangHref?.(d.kn, d.attemptId ?? null) ?? null;
       return (
         <span key={d.kn}>{i > 0 && ' · '}{href
           ? <Link to={href} className="link" title={`Mở hồ sơ Mock · ${kq.nhan.split(' · ')[0]} · ${d.ngan}`}>{d.ngan}</Link>
@@ -279,7 +279,11 @@ export function DaiTamDung({ tamDung }: { tamDung: { tu: string; lyDo: string | 
  * Từ chối… / Duyệt = ra lệnh). Nguồn `GET /yeu-cau?studentId=` (đã lọc quyền, quá hạn lên đầu). Nơi gọi chỉ vẽ khi `viewer.coTheDuyet`.
  * Không có thẻ → không vẽ. Xong một thẻ → tải lại dải + hồ sơ.
  */
-export function DaiChoDuyet({ studentId, homNay, onDoi }: { studentId: number; homNay: string | null; onDoi: () => void }) {
+export function DaiChoDuyet({ studentId, homNay, onDoi, onThemPa }: {
+  studentId: number; homNay: string | null; onDoi: () => void;
+  /** Thẻ Xin ý kiến có nút "+ Thêm PA" như hộp Chờ duyệt (Q9 — đúng thẻ của hộp). */
+  onThemPa?: (caseId: number) => void;
+}) {
   const { data, reload } = useApi<{ the: TheYeuCauDto[] }>(`/yeu-cau?studentId=${studentId}`, [studentId]);
   const [mo, setMo] = useState(true);
   const ds = data?.the ?? [];
@@ -296,7 +300,7 @@ export function DaiChoDuyet({ studentId, homNay, onDoi }: { studentId: number; h
       </button>
       {mo && (
         <div className="flex flex-col gap-2 px-2.5 pb-2.5">
-          {ds.map((y) => <TheYeuCau key={y.id} yc={y} gon onXong={() => { reload(); onDoi(); }} />)}
+          {ds.map((y) => <TheYeuCau key={y.id} yc={y} gon onXong={() => { reload(); onDoi(); }} onThemPa={onThemPa} />)}
         </div>
       )}
     </section>

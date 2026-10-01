@@ -36,7 +36,7 @@ const ThanhPhanDemo = import.meta.env.DEV ? lazy(() => import('./modules/dev/Tha
  */
 /**
  * SỐ CẠNH MỤC "CÔNG VIỆC" — Quản lý (PR-DUYET K1-44, Q10): số thẻ trong hộp Chờ duyệt (= chip "Tất cả", `demHop`), đỏ khi có thẻ quá hạn.
- * Giáo viên (PR-VAI-a V2, Q16): số việc QUÁ HẠN của chính mình (`/my-work/dem`), luôn đỏ. Thanh trên và thanh dưới cùng một số.
+ * Giáo viên (PR-VAI-a V2, Q16): số việc QUÁ HẠN của chính mình (`/my-work` → `summary.overdue`, PR-S6F-b D14), luôn đỏ. Thanh trên và thanh dưới cùng một số.
  */
 type SoBadge = { n: number; quaHan: boolean; sr: string } | null;
 function SoCho({ so }: { so: SoBadge }) {
@@ -78,8 +78,12 @@ export default function App() {
   const location = useLocation();
   /* Một lần mỗi lần đổi trang (không hỏi lặp theo giờ); chỉ người duyệt được (Q10). */
   const dem = useApi<DemYeuCau>(session?.authenticated && session.nav?.workApprove ? '/yeu-cau/dem' : null, [location.pathname]).data;
-  /* Q16: giáo viên đọc MỘT lần (deps rỗng) — tự tải lại khi `/my-work` bị làm mới (`invalidate` theo tiền tố). */
-  const gv = useApi<{ quaHan: number }>(session?.authenticated && !session.nav?.workApprove && session.nav?.workSupport ? '/my-work/dem' : null, []).data;
+  /*
+   * Q16: giáo viên đọc MỘT lần (deps rỗng) — tự tải lại khi `/my-work` bị làm mới (`invalidate` theo tiền tố). D14: chính `/my-work` (Tổng quan,
+   * Công việc cũng đọc — `useApi` gộp GET đang bay, máy chủ tính `myWork` một lần).
+   */
+  const viecGv = useApi<{ summary: { overdue: number } }>(session?.authenticated && !session.nav?.workApprove && session.nav?.workSupport ? '/my-work' : null, []).data;
+  const gv = viecGv ? { quaHan: viecGv.summary?.overdue ?? 0 } : null;
   const so: SoBadge = dem?.cho ? { n: dem.cho, quaHan: !!dem.quaHan, sr: `${dem.cho} thẻ trong hộp Chờ duyệt${dem.quaHan ? `, ${dem.quaHan} quá hạn` : ''}` }
     : gv?.quaHan ? { n: gv.quaHan, quaHan: true, sr: `${gv.quaHan} việc quá hạn` } : null;
 

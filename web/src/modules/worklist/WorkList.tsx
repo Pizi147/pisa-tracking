@@ -48,8 +48,9 @@ export function DongViec({ it, onOpen, nutPhu }: {
     it.classCode && it.studentName !== `Lớp ${it.classCode}` ? it.classCode : null,
     it.contextLabel,
     !gomLop && it.count !== null && it.count > 1 ? `${it.count} HV` : null,
-    it.owner ?? (it.ownerId === null && !it.mine && it.group !== 'placement' ? 'chưa ai phụ trách' : null),
   ].filter(Boolean).join(' · ');
+  /* Q31-4 (D9): người phụ trách 12 px — tách khỏi phần ngữ cảnh 11 px của dòng phụ. */
+  const nguoi = it.owner ?? (it.ownerId === null && !it.mine && it.group !== 'placement' ? 'chưa ai phụ trách' : null);
   return (
     /* PR-VAI-a (§7.3, mockup 23 màn A): bốn cột thẳng qua mọi nhóm — nhãn trạng thái · việc · hạn (12 px) · nút. */
     <div className="grid grid-cols-[78px_minmax(0,1fr)] gap-x-3 gap-y-1 py-2 pr-3 hover:bg-white/5 sm:grid-cols-[78px_minmax(0,1fr)_150px_230px] sm:items-center" title={it.reason}>
@@ -59,7 +60,9 @@ export function DongViec({ it, onOpen, nutPhu }: {
           <span className="truncate text-[13px] font-semibold text-slate-100">{it.tieuDe}</span>
           {it.level && <Level tone={toneTheoNhan(it.level.text, it.level.tone)}>{it.level.text}</Level>}
         </span>
-        <span className="block truncate text-[11px] text-slate-500">{dongPhu}</span>
+        <span className="block truncate text-[11px] text-slate-500">
+          {dongPhu}{nguoi && <>{dongPhu ? ' · ' : ''}<span className="text-xs text-slate-400">{nguoi}</span></>}
+        </span>
       </button>
       <span className="col-start-2 text-xs sm:col-start-auto [&>span]:text-xs">
         {it.due ? <Han loai={loaiHan ?? 'viec-van-hanh'} han={it.due} haiDong /> : <span className="text-slate-500">không có hạn</span>}

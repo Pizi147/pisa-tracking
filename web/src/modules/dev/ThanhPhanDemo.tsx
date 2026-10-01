@@ -104,7 +104,7 @@ export default function ThanhPhanDemo() {
           empty={<Han loai="nhap-diem" han={null} coViec />}
           one={<Han loai="nhap-diem" han={d(9)} coViec />}
           many={<>{DEADLINE_KINDS.map((k) => <div key={k}><Han loai={k} han={d(9)} coViec /></div>)}</>}
-          long={<Han loai="lap-pa" han={d(3)} tienTo="Thi 14/09 – 20/09 tuần Speaking của lớp Fast Track buổi tối"
+          long={<Han loai="lap-pa" han={d(3)} tienTo="Thi 14/09 – 20/09 tuần Speaking của lớp Fast Track MB FT 101"
             ghiChu="hạn riêng cả đợt do quản lý chi nhánh đặt" />}
         />
         <div className="grid gap-3 sm:grid-cols-2 mt-3">

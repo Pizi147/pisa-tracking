@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, invalidateAll } from './api.ts';
+import { datNguoiDungKhung } from '../ui/CongTacKhung.tsx';
 import type { NavQuyen } from '@shared/domain/index.ts';
 
 export type Grant = {
@@ -64,6 +65,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => { void reload(); }, [reload]);
+  /* Q7: khung đã nhớ (CongTacKhung) theo người — đặt trước khi trang con đọc. */
+  datNguoiDungKhung(session?.user?.id ?? null);
 
   const switchAccount = useCallback(async (userId: number) => {
     await api.post('/demo/session', { userId });

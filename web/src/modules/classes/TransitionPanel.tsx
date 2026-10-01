@@ -357,7 +357,7 @@ function HangEm({ s, d, ft, luoi, maKe, routeTu, tuanCh, homNay, loi, loiMayChu,
         <span className="block truncate text-slate-100" title={s.fullName}>{s.fullName}</span>
         <span className="block text-[11px] tabular-nums text-slate-500">{s.studentCode}</span>
         {/* PR-UXF-a (mockup 20 màn I): em FT "LT1 · tuần học thứ 9" — không mẫu số (FT không giới hạn tuần). */}
-        {ft && s.tuanHoc && <span className="block text-[11px] text-slate-500">{[s.route, chuTuanHoc(s.tuanHoc.tuan, s.tuanHoc.tong)].filter(Boolean).join(' · ')}</span>}
+        {ft && s.tuanHoc && <span className="block text-[11px] text-slate-500">{[s.route, chuTuanHoc(s.tuanHoc.tuan, s.tuanHoc.tong, s.tuanHoc.dangDung)].filter(Boolean).join(' · ')}</span>}
       </span>
       <span role="cell" className="min-w-0">
         <span className={nhan}>{ft ? 'Kết quả gần nhất' : 'Cuối khoá'}</span>

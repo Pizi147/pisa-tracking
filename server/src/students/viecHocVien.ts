@@ -1,5 +1,5 @@
 import { db } from '../db.ts';
-import { MEASURE_KIND_LABEL, PERMISSIONS, hanBanGiao, tenMon, tuanLich, type DaiHocVien } from '../../../shared/domain/index.ts';
+import { MEASURE_KIND_LABEL, PERMISSIONS, hanBanGiao, nhanLoaiXuLy, tenMon, tuanLich, type DaiHocVien } from '../../../shared/domain/index.ts';
 import { can, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, diffDays } from '../util.ts';
@@ -8,7 +8,8 @@ import type { EmYThuc } from '../yThuc/trangThai.ts';
 export type ViecHocVien = {
   /** Đúng khoá của `myWork` (Q2) — phép kiểm so hai đường theo khoá. Việc "chờ Quản lý duyệt" không có ở Công việc → khoá `cho-duyet:…`. */
   key: string;
-  loai: 'nguyen-nhan' | 'xac-nhan-pa' | 'ghi-ket-qua' | 'ke-hoach' | 'cho-duyet' | 'bao-ph' | 'mini-test' | 'y-thuc' | 'ban-giao' | 'ban-giao-mon';
+  loai: 'nguyen-nhan' | 'de-ra-pa' | 'xac-nhan-pa' | 'ghi-ket-qua' | 'ke-hoach' | 'cho-duyet' | 'bao-ph' | 'mini-test' | 'y-thuc' | 'yt-xem' | 'yt-thuc-hien'
+    | 'ban-giao' | 'ban-giao-mon';
   /** "Ghi kết quả tuần W4 SEP · PA Tăng cường bài tập Writing Task 2" — động từ đầu câu. */
   chu: string;
   kyNang: string | null; caseId: number | null; paId: number | null;
@@ -18,21 +19,22 @@ export type ViecHocVien = {
   cuaBan: boolean;
   /** Nút động từ + chỗ mở (Ngăn Case / tab Ý thức / trang bàn giao). */
   nut: string;
-  mo: { loai: 'case'; caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'xac-nhan' | 'xac-nhan-pa' | 'ke-hoach' }
+  mo: { loai: 'case'; caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'xac-nhan' | 'xac-nhan-pa' | 'ke-hoach' | 'them-pa' }
     | { loai: 'tab'; tab: 'y-thuc'; sub?: 'phoi-hop' } | { loai: 'duong'; href: string } | null;
 };
 
 type Nguon = {
   trangThaiEm: string; lopId: number | null; chuongTrinh: string | null;
   yThuc: EmYThuc | null | undefined;
-  miniTest: { id: number; han: string | null; tyLe: number | null; nhom: string; caseId: number | null; paId: number | null } | null;
+  /** `gv` = người dạy bổ trợ có tài khoản đầu tiên của nhóm (cùng câu `myWork`), null → GVCN. */
+  miniTest: { id: number; han: string | null; tyLe: number | null; nhom: string; caseId: number | null; paId: number | null; gv: number | null } | null;
   dai: DaiHocVien | null;
 };
 
 /**
  * VIỆC CỦA MỘT EM THEO NGƯỜI (PR-VAI-b Task 2, K3-01) — mọi việc đang mở của em, MỖI VIỆC CÓ NGƯỜI LÀM, cùng luật người làm với Công việc (Q2):
- *   Xác nhận nguyên nhân / Xác nhận PA → người phụ trách Case · Ghi kết quả PA → `performer_user_id ?? recorded_by` · Nộp kế hoạch → người dạy
- *   bổ trợ · Báo PH qua TVV, Xử lý vi phạm → GVCN (Cuối khoá → Quản lý) · Mini Test → người dạy bổ trợ, không có thì GVCN · Bàn giao → người xem
+ *   Xác nhận nguyên nhân / Đề ra PA / Xác nhận PA → người phụ trách Case · Ghi kết quả PA → `performer_user_id ?? recorded_by` · Nộp kế hoạch → người dạy
+ *   bổ trợ · Báo PH qua TVV, Xử lý vi phạm, Ghi nhận vi phạm mới, Ghi "Đã thực hiện" → GVCN (Báo PH Cuối khoá → Quản lý) · Mini Test → người dạy bổ trợ, không có thì GVCN · Bàn giao → người xem
  *   theo `dai.nut` · "Chờ Quản lý duyệt…" → "Quản lý" (không ai trong số giáo viên, không vào thanh việc).
  * KHÔNG chạy `myWork` (quét cả phạm vi): Case/PA đọc từ `board` đã dựng, Ý thức / Mini Test / dải chuyển lớp do hồ sơ nạp sẵn.
  * Thêm hai câu: Báo PH của em · tên + vai người làm. Em Tạm dừng / đã kết thúc → rỗng (mọi hạn dừng, T65).
@@ -64,6 +66,11 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
     if (v?.chu === 'Xác nhận nguyên nhân') {
       ds.push({ key: `cause:${c.id}`, loai: 'nguyen-nhan', chu: `Xác nhận nguyên nhân ${kn}`, kyNang: r.category, caseId: c.id, paId: null,
         han: v.han, tone: 'info', nguoiId: c.ownerId ?? null, nut: 'Xác nhận nguyên nhân', mo: { loai: 'case', caseId: c.id, viec: 'xac-nhan' } });
+    }
+    /* PR-S6F-b (Q5): Case chưa có PA → "Đề ra PA" của người phụ trách Case; khoá `support:{caseId}` như Công việc (nhóm no_plan), hạn = hạn lập PA. */
+    if (v?.chu === 'Đề ra PA') {
+      ds.push({ key: `support:${c.id}`, loai: 'de-ra-pa', chu: `Đề ra PA ${kn}`, kyNang: r.category, caseId: c.id, paId: null,
+        han: v.han, tone: 'info', nguoiId: c.ownerId ?? null, nut: 'Đề ra PA', mo: { loai: 'case', caseId: c.id, viec: 'them-pa' } });
     }
     if (v?.chu === 'Chờ Quản lý duyệt · không theo dõi') {
       ds.push({ key: `cho-duyet:case:${c.id}`, loai: 'cho-duyet', chu: `Case ${kn} chờ Quản lý duyệt · không theo dõi`, kyNang: r.category, caseId: c.id, paId: null,
@@ -115,10 +122,10 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
       cuaBanTheoVai: cuoi ? can(p, PERMISSIONS.REQUEST_APPROVE, { classId: n.lopId, studentId: sid }) : undefined,
       nut: 'Đánh dấu đã làm', mo: { loai: 'tab', tab: 'y-thuc', sub: 'phoi-hop' } });
   }
-  /* Mini Test — người dạy bổ trợ (có tài khoản), không có thì GVCN (`mywork.ts` Mini Test). */
+  /* Mini Test — người dạy bổ trợ (có tài khoản đầu tiên của nhóm, cùng câu `mywork.ts` Mini Test), không có thì GVCN. */
   const mt = n.miniTest;
   if (mt && mt.tyLe === null) {
-    const gv = cases.map((x) => x.c.boTro).find((b) => b?.nhom === mt.nhom && b.nguoiDay?.userId)?.nguoiDay?.userId ?? -1;
+    const gv = mt.gv ?? -1;
     ds.push({ key: `minitest:${mt.id}`, loai: 'mini-test', chu: 'Ghi Mini Test · bổ trợ miễn phí', kyNang: null, caseId: mt.caseId, paId: mt.paId,
       han: mt.han, tone: 'info', nguoiId: gv, nut: 'Ghi Mini Test',
       mo: mt.caseId ? { loai: 'case', caseId: mt.caseId, paId: mt.paId ?? undefined, viec: 'ghi-ket-qua' } : null });
@@ -129,6 +136,19 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
     const ke = em.keTiep ? MEASURE_KIND_LABEL[em.keTiep.kind as keyof typeof MEASURE_KIND_LABEL] : 'đề xuất Quản lý duyệt';
     ds.push({ key: `yt_xu_ly:${sid}`, loai: 'y-thuc', chu: `Xác nhận xử lý Ý thức · ${ke}`, kyNang: null, caseId: null, paId: null,
       han: em.han, tone: 'warn', nguoiId: em.gvcnId, nut: 'Xác nhận xử lý', mo: { loai: 'tab', tab: 'y-thuc' } });
+  }
+  /* PR-S6F-b (Q5): hai việc Ý thức còn lại của GVCN — cùng khoá, chữ, hạn với `mywork.ts` 5b (`yt_xem`, `yt_thuc_hien`). */
+  if (em && !em.tamDung && em.gvcnId) {
+    if (em.soMoi > 0) {
+      ds.push({ key: `yt_xem:${sid}`, loai: 'yt-xem', chu: `Ghi nhận ${em.soMoi} vi phạm mới`, kyNang: null, caseId: null, paId: null,
+        han: em.hanXem, tone: 'warn', nguoiId: em.gvcnId, nut: 'Ghi nhận', mo: { loai: 'tab', tab: 'y-thuc' } });
+    }
+    for (const x of em.daDuyet) {
+      const nhan = nhanLoaiXuLy(x.kind, x.customName);
+      ds.push({ key: `yt_thuc_hien:${x.id}`, loai: 'yt-thuc-hien', chu: `Ghi "Đã thực hiện" ${nhan}`, kyNang: null, caseId: null, paId: null,
+        han: x.han, tone: 'warn', nguoiId: em.gvcnId, nut: 'Đã thực hiện',
+        mo: { loai: 'duong', href: `/hoc-vien/${sid}?tab=y-thuc&mo=da-thuc-hien&xl=${x.id}` } });
+    }
   }
   /* Bàn giao khi chuyển lớp — nút theo vai của NGƯỜI XEM (`daiHocVien`), hạn GVCN / GVBM của lệnh. */
   const dai = n.dai;

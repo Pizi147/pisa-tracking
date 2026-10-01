@@ -3,7 +3,7 @@ import {
   ASSESSED_SKILLS, BASELINE_SOURCE_LABEL, CYCLE_OUTCOME_LABEL, ENTRY_SKILLS,
   ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, JOURNEY_GROUP, PERMISSIONS,
   caseHeadline, duongCase, issueLabel, caseCategoryLabel, categoryOf, fmtExamMonth, cauTomTat, ketQuaTestGanNhat, oHocThuat, oSapToi, oYThuc,
-  MEASURE_KIND_LABEL, THANG, nhanLoaiXuLy, programmeOf, tenBacKe, tenMonNgan, mocKeTiep, quaHan, studyWeekOf, tenMon, tuanHocFt, tuanLich,
+  MEASURE_KIND_LABEL, THANG, nhanLoaiXuLy, programmeOf, tenBacKe, tenMonNgan, mocKeTiep, quaHan, studyWeekOf, tenMon, tuanHocTai, tuanLich,
   type AssessedSkill, type EntrySkill, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { outcomeGroup } from '../cases/effectiveness.ts';
@@ -416,7 +416,8 @@ function boOVaCau(i: {
     /** Ô Kết quả: lượt + kỹ năng dưới kỳ vọng (mỗi mã một liên kết, G5) · KCK · hướng Cuối khoá. */
     ketQua: {
       kq, kck, ratio, overall: (a?.overall ?? null) as number | null,
-      duoi: board.rows.filter((r) => r.missed === true).map((r) => ({ ngan: (r.short ?? r.label) as string, kn: r.category as string })),
+      /* G5: mỗi mã liên kết tới lượt sinh ra điểm của CHÍNH kỹ năng đó (`bandAttemptId`), không phải lượt của ô. */
+      duoi: board.rows.filter((r) => r.missed === true).map((r) => ({ ngan: (r.short ?? r.label) as string, kn: r.category as string, attemptId: (r.bandAttemptId ?? null) as number | null })),
       huong: ratio && a?.kind === 'final' ? i.huong : null,
     },
     hocThuat: oHocThuat(board.rows, s.status === 'inactive' ? i.thongTin.tamDung?.tu ?? null : null),
@@ -434,6 +435,7 @@ function boOVaCau(i: {
           kyVong: nextA.mode === 'ratio' || kck ? null : expectationFor(selected?.target_score ?? null, nextA.attemptNo, selected?.route ?? null),
         } : null,
         ratio: !!nextA ? nextA.mode === 'ratio' : i.cuoiKhoaDang, kck, bacKe: pc && pc !== 'FT' ? tenBacKe(pc) : null, homNay: today,
+        tamDung: s.status === 'inactive',
       }),
       attemptId: nextA?.id ?? null,
     },
@@ -445,13 +447,15 @@ function boOVaCau(i: {
  * DÒNG THÔNG TIN ĐẦU HỒ SƠ (PR-VAI-b Task 1, mockup 24 A/C/D1) — "em là ai":
  *   FT          MB FT 101 · LT1 · target 6.5 · tuần học thứ 9 · thi dự kiến 06/2027 · GVCN …
  *   lớp thường  MB FOU 15 · FOU · tuần học 7/10 · Cuối khoá W4 OCT · GVCN …
- * FT đếm tuần học bằng `tuanHocFt` (một luật với PR-UXF-a, Q1) — bỏ tuần Tạm dừng; em đang dừng thì số dừng ở tuần trước ngày dừng.
+ * FT đếm tuần học bằng `tuanHocTai` (PR-S6F-b D17 — một hàm cho đầu hồ sơ, chương Hành trình, panel Chuyển lớp / Lên lớp): bỏ tuần Tạm dừng; em đang dừng thì số dừng ở tuần trước tuần dừng.
  */
 function dongThongTin(i: {
   s: any; current: any; khoa: { ma: string; tuanHienTai: number | null; tongTuan: number | null; tuanKetThuc: string | null } | null;
   gvcn: string | null; dangChay: any; today: string; startWeekSel: { cycleId: number; weekStart: string | null } | null;
   /** Kế hoạch thi đã tính của lộ trình đang xem — dùng lại khi trùng lộ trình đang chạy (không hỏi lại tuần thi). */
   keSel: { cycleId: number; ke: ReturnType<typeof examPlanOf> } | null;
+  /** Tuần bài Cuối khoá đã xếp lịch của lớp đang học (cùng nguồn ô Sắp tới) — lớp thường ưu tiên tuần này, chưa có bài thì tuần kết thúc lớp. */
+  tuanCuoiKhoa?: string | null;
 }) {
   const { s, current, khoa, dangChay, today } = i;
   const dung = khoangTamDung([s.id])[s.id] ?? [];
@@ -462,21 +466,22 @@ function dongThongTin(i: {
   const tamDung = dangDung ? { tu: dangDung.tu, lyDo: dangDung.lyDo, boi } : null;
   if (!current) return { lop: null, lopId: null, loTrinh: null, target: null, tuanHoc: null, thiDuKien: null, gvcn: null, tamDung };
 
-  let tuanHoc: { tuan: number; tong: number | null; dangDung: boolean } | null = null;
+  let tuanHoc: { tuan: number | null; tong: number | null; dangDung: boolean } | null = null;
   let thiDuKien: { nhan: string; gt: string } | null = null;
   if (khoa) {
     if (khoa.tuanHienTai !== null && khoa.tuanHienTai >= 1 && khoa.tongTuan) {
       tuanHoc = { tuan: Math.min(khoa.tuanHienTai, khoa.tongTuan), tong: khoa.tongTuan, dangDung: !!dangDung };
     }
-    if (khoa.tuanKetThuc) thiDuKien = { nhan: 'Cuối khoá', gt: tuanLich(khoa.tuanKetThuc, today) };
+    const tuanCk = i.tuanCuoiKhoa ?? khoa.tuanKetThuc;
+    if (tuanCk) thiDuKien = { nhan: 'Cuối khoá', gt: tuanLich(tuanCk, today) };
   } else if (dangChay) {
     const batDau = dangChay.start_period_id
       ? (i.startWeekSel && i.startWeekSel.cycleId === dangChay.id ? i.startWeekSel.weekStart
         : (db().prepare('SELECT week_start FROM report_periods WHERE id = ?').get(dangChay.start_period_id) as any)?.week_start ?? null)
       : dangChay.started_at ?? null;
-    /* Đang dừng: tuần học đứng ở tuần ngay trước tuần Tạm dừng (mockup 24 D1 "tuần học thứ 14 · đang dừng"). */
-    const tuan = batDau ? tuanHocFt(batDau, dangDung ? addDays(mondayOf(dangDung.tu), -7) : mondayOf(today), dung) : null;
-    if (tuan !== null) tuanHoc = { tuan, tong: null, dangDung: !!dangDung };
+    /* Đang dừng: tuần học đứng ở tuần ngay trước tuần Tạm dừng (mockup 24 D1 "tuần học thứ 14 · đang dừng"); dừng ngay tuần đầu → "đang dừng". */
+    const th = batDau ? tuanHocTai(batDau, today, dung) : null;
+    if (th) tuanHoc = { tuan: th.tuan, tong: null, dangDung: th.dangDung };
     const ke = i.keSel && i.keSel.cycleId === dangChay.id ? i.keSel.ke : examPlanOf(dangChay);
     const gt = ke.confidence === 'none' ? null
       : ke.confidence === 'month' ? fmtExamMonth(ke.month)
@@ -728,12 +733,15 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     const mt = miniTestCuaHocVien([studentId]).get(studentId);
     if (!mt) return null;
     /* PA còn mở + CHÍNH Case của nó (không lấy MIN hai cột riêng — lệch Case thì form mở sai chỗ, không có ô Mini Test). */
+    /* `gv`: người dạy bổ trợ có tài khoản đầu tiên của nhóm — cùng câu với việc Mini Test ở Công việc (`mywork.ts`), trong cùng câu đọc PA. */
     const iv = db().prepare(
-      `SELECT case_id, CASE WHEN status IN ('planned', 'started') THEN id END AS pa_id FROM case_interventions WHERE nhom_bo_tro = ?
+      `SELECT case_id, CASE WHEN status IN ('planned', 'started') THEN id END AS pa_id,
+              (SELECT x.performer_user_id FROM case_interventions x WHERE x.nhom_bo_tro = ? AND x.performer_user_id IS NOT NULL ORDER BY x.id LIMIT 1) AS gv
+         FROM case_interventions WHERE nhom_bo_tro = ?
         ORDER BY status NOT IN ('planned', 'started'), id LIMIT 1`,
-    ).get(mt.nhom) as any;
+    ).get(mt.nhom, mt.nhom) as any;
     const pa = iv?.pa_id ? db().prepare('SELECT * FROM case_interventions WHERE id = ?').get(iv.pa_id) as any : null;
-    return { ...mt, caseId: iv?.case_id ?? null, paId: iv?.pa_id ?? null, coTheGhi: mt.tyLe === null && !!pa && quyenBoTro(p, pa) };
+    return { ...mt, caseId: iv?.case_id ?? null, paId: iv?.pa_id ?? null, gv: (iv?.gv ?? null) as number | null, coTheGhi: mt.tyLe === null && !!pa && quyenBoTro(p, pa) };
   })();
   const dai = daiHocVien(p, studentId);
   /*
@@ -746,7 +754,9 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   const viec = viecCuaHocVien(p, studentId, board, {
     trangThaiEm: s.status, lopId: current?.class_id ?? null, chuongTrinh: board.chuongTrinh, yThuc: yThucEm, miniTest, dai,
   });
-  const thongTin = dongThongTin({ keSel: selected ? { cycleId: selected.id, ke: examPlan } : null, startWeekSel: selected ? { cycleId: selected.id, weekStart: startWeekSel?.week_start ?? null } : null, s, current: lopDangGiu, khoa: khoaHienTai, gvcn: gvcnHienTai, dangChay: allCycles.find((c) => c.status === 'active') ?? null, today });
+  const thongTin = dongThongTin({ keSel: selected ? { cycleId: selected.id, ke: examPlan } : null, startWeekSel: selected ? { cycleId: selected.id, weekStart: startWeekSel?.week_start ?? null } : null, s, current: lopDangGiu, khoa: khoaHienTai, gvcn: gvcnHienTai, dangChay: allCycles.find((c) => c.status === 'active') ?? null, today,
+    tuanCuoiKhoa: attemptRows.filter((a) => a.kind === 'final' && a.status !== 'cancelled' && a.week_start && a.class_id === lopDangGiu?.class_id)
+      .map((a) => a.week_start as string).sort()[0] ?? null });
   const cuoiKhoaEm = (() => {
     /* MỘT câu: lớp đang học + lớp thường vừa rời (nếu có). PR-S5F-a: vừa chuyển (lên lớp / học lại / sang FT) mà lớp đang học chưa có điểm Cuối khoá
        → vẫn thấy % Cuối khoá của lớp thường vừa rời (hộp Kết luận khoá; kỳ vọng đầu ra BE/ELE — Quản lý đánh dấu được cả sau khi em đã sang FT). */

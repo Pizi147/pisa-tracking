@@ -6,7 +6,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { Field, Outcome, Th } from '../../ui/ui.tsx';
 import {
-  KCK, cotLuoiNhap, laKck, nhanCotNhap, tuanBatDauMacDinh, type CotNhap, type VanDeNhap,
+  KCK, cotLuoiNhap, duongDotTest, laKck, nhanCotNhap, tuanBatDauMacDinh, type CotNhap, type VanDeNhap,
 } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
@@ -225,7 +225,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
               </span>
             )}
             {ketQua.mt?.luotLichSuDau && (
-              <Link className="link text-xs" to={`/mock-test/${ketQua.mt.luotLichSuDau}`}>Nhập điểm MT lịch sử</Link>
+              <Link className="link text-xs" to={duongDotTest({ id: ketQua.mt.luotLichSuDau, kind: 'mock' })}>Nhập điểm MT lịch sử</Link>
             )}
             {hoSoLop && pathname !== hoSoLop && <Link className="link text-xs" to={hoSoLop}>Mở hồ sơ lớp</Link>}
           </div>

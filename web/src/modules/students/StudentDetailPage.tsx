@@ -251,12 +251,12 @@ export default function StudentDetailPage() {
       <BonO o={data.dauHoSo.o} homNay={homNay}
         onDot={(attemptId) => navigate(duongHoSoHocVien(data.id, { dot: attemptId, loTrinh: p.loTrinh }))}
         onKn={moKyNang} onYThuc={() => setTab('y-thuc')}
-        kyNangHref={(kn) => (data.dauHoSo.o?.ketQua?.kq && !data.dauHoSo.o.ketQua.ratio ? duongDotTest({ id: data.dauHoSo.o.ketQua.kq.attemptId, kind: 'mock' }, kn) : null)} />
+        kyNangHref={(kn, attemptId) => (attemptId && !data.dauHoSo.o?.ketQua?.ratio ? duongDotTest({ id: attemptId, kind: 'mock' }, kn) : null)} />
 
       {/* PR-VAI-b (K3-01, T72): việc gấp nhất của NGƯỜI XEM với em; không có việc thì không vẽ gì. */}
       <ThanhViec viec={data.dauHoSo.viec} homNay={homNay} onLam={lamViec} />
       {/* PR-VAI-b (V1/K3-47): Quản lý duyệt ngay trong hồ sơ — chỗ của thanh việc (Quản lý không có việc học thuật với em). */}
-      {data.viewer.coTheDuyet && <DaiChoDuyet studentId={data.id} homNay={homNay} onDoi={reload} />}
+      {data.viewer.coTheDuyet && <DaiChoDuyet studentId={data.id} homNay={homNay} onDoi={reload} onThemPa={(caseId) => setOpenCase({ caseId, viec: 'them-pa' })} />}
 
       {/*
         BA TAB NGAY DƯỚI ĐẦU TRANG (D2, spec 2026-09-22): Học thuật (mặc định) · Ý thức & Phối hợp · Hành trình.

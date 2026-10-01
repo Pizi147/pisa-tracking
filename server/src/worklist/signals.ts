@@ -1,9 +1,10 @@
 import { db } from '../db.ts';
 import { PERMISSIONS } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { require_, scopeFor, type Principal } from '../permissions.ts';
+import { bangLop, require_, scopeFor, type Principal } from '../permissions.ts';
 import { reportEditWindow } from '../platform/week.ts';
 import { metricSet } from './metrics.ts';
+import { lopCuaTap } from './chuongTrinh.ts';
 
 /**
  * VIỆC SINH RA TỪ DỮ LIỆU.
@@ -72,10 +73,22 @@ export function signalsFor(p: Principal, f: { branchId?: number | null; periodId
       });
     }
   };
-  /* PR-UXF-a K1-37 (Q12): (b), (c) đọc sổ chỉ số — một cửa, cùng tập với ô Cần xử lý ở Tổng quan; không SQL đếm riêng. */
+  /*
+   * PR-UXF-a K1-37 (Q12): (b), (c) đọc sổ chỉ số — một cửa, cùng tập với ô Cần xử lý ở Tổng quan; không SQL đếm riêng.
+   * PR-S6F-b: `metricSet` MỘT lần cho cả phạm vi (không một lần mỗi chi nhánh — N+1), chia theo chi nhánh của lớp bằng `lopCuaTap`
+   * (cùng hàm bộ lọc khung) + bảng lớp đã nhớ.
+   */
   const tuSo = (kind: Signal['kind'], metricId: string, owner: Signal['owner'], tone: Signal['tone'], nhan: (n: number) => string) => {
+    const r = metricSet(p, metricId, f.branchId ? { branchId: f.branchId } : {});
+    const lop = lopCuaTap(r.unit, r.ids);
+    const bl = bangLop();
+    const dem = new Map<number, number>();
+    for (const id of r.ids) {
+      const b = bl.get(lop.get(id)?.classId ?? -1)?.branchId;
+      if (b != null) dem.set(b, (dem.get(b) ?? 0) + 1);
+    }
     for (const b of branches) {
-      const n = metricSet(p, metricId, { branchId: b.id }).n;
+      const n = dem.get(b.id) ?? 0;
       push(kind, b.id, n, nhan(n), owner, tone, `/metrics/${metricId}?branchId=${b.id}`, metricId);
     }
   };

@@ -1,6 +1,6 @@
 import { THAM_SO_TOI_DA, db, theoLo, tx } from '../db.ts';
 import {
-  PERMISSIONS, luatDoiLop, tuanChonDuoc, tuanHocFt, type LoaiLop, type LuatDoiLop, type ProgrammeCode,
+  PERMISSIONS, luatDoiLop, tuanChonDuoc, tuanHocTai, type LoaiLop, type LuatDoiLop, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, notFound, nowIso } from '../util.ts';
@@ -360,11 +360,11 @@ export function xemChuyenLop(p: Principal, sid: number, toClassId?: number | nul
         if (enr.is_fast_track) {
           const bd = conn.prepare(`SELECT sp.week_start FROM learning_cycles cy JOIN report_periods sp ON sp.id = cy.start_period_id
                                     WHERE cy.student_id = ? AND cy.status = 'active'`).get(sid) as any;
-          const tuan = bd ? tuanHocFt(bd.week_start, mondayOf(demoToday()), khoangTamDung([sid])[sid] ?? []) : null;
-          return tuan ? { tuan, tong: null } : null;
+          const th = bd ? tuanHocTai(bd.week_start, demoToday(), khoangTamDung([sid])[sid] ?? []) : null;
+          return th ? { tuan: th.tuan, tong: null as number | null, dangDung: th.dangDung } : null;
         }
         const pr = classProgressMany([enr.class_id]).get(enr.class_id);
-        return pr?.currentWeek && pr.totalWeeks && pr.currentWeek >= 1 ? { tuan: pr.currentWeek, tong: pr.totalWeeks as number | null } : null;
+        return pr?.currentWeek && pr.totalWeeks && pr.currentWeek >= 1 ? { tuan: pr.currentWeek as number | null, tong: pr.totalWeeks as number | null, dangDung: false } : null;
       })(),
     },
     caseMo: openCases.map((c) => ({

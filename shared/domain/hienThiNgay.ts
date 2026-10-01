@@ -35,8 +35,27 @@ export function tuanKhoa(n: number, tong: number): string {
   return `W${n}/${tong}`;
 }
 
-/** "tuần học 3/8" (lớp thường, có tổng) · "tuần học thứ 9" (FT — không giới hạn tuần). Cùng thân với UXF-a Task 4. */
-export const chuTuanHoc = (tuan: number, tong: number | null): string => (tong ? `tuần học ${tuan}/${tong}` : `tuần học thứ ${tuan}`);
+/**
+ * "tuần học 3/8" (lớp thường, có tổng) · "tuần học thứ 9" (FT — không giới hạn tuần). Cùng thân với UXF-a Task 4.
+ * PR-S6F-b (D17): em đang dừng → "tuần học thứ 14 · đang dừng"; dừng ngay tuần đầu (`tuan` null) → "đang dừng".
+ */
+export const chuTuanHoc = (tuan: number | null, tong: number | null, dangDung = false): string => {
+  const so = tuan === null ? null : tong ? `tuần học ${tuan}/${tong}` : `tuần học thứ ${tuan}`;
+  return dangDung ? (so ? `${so} · đang dừng` : 'đang dừng') : so ?? '';
+};
+
+/**
+ * PR-S6F-b (D17): MỘT hàm "tuần học thứ n · đang dừng" cho đầu hồ sơ, chương Hành trình, panel Chuyển lớp / Lên lớp. `ngay` nằm trong một
+ * khoảng dừng → tuần học cuối TRƯỚC tuần dừng + `dangDung`; dừng ngay tuần đầu → `{ tuan: null, dangDung: true }`; trước tuần bắt đầu → null.
+ */
+export function tuanHocTai(batDau: string, ngay: string, dung: readonly { tu: string; den: string | null }[]): { tuan: number | null; dangDung: boolean } | null {
+  const t = mondayOfDate(ngay);
+  if (t < mondayOfDate(batDau)) return null;
+  const k = dung.find((x) => t >= mondayOfDate(x.tu) && (x.den === null || t < mondayOfDate(x.den)));
+  if (!k) return { tuan: tuanHocFt(batDau, t, dung), dangDung: false };
+  const truoc = new Date(Date.parse(`${mondayOfDate(k.tu)}T00:00:00Z`) - 7 * 86_400_000).toISOString().slice(0, 10);
+  return { tuan: tuanHocFt(batDau, truoc, dung), dangDung: true };
+}
 
 /**
  * Q31-11: tuần học thứ n của em FT tại tuần `tuan` — đếm từ tuần bắt đầu lộ trình, bỏ tuần Tạm dừng. Trước tuần bắt đầu hoặc tuần đang dừng → null.

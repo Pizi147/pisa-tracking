@@ -1753,7 +1753,7 @@ export type MappedCase = {
 
 /**
  * PR-TD: khoá bộ nhớ của `caseTrongPhamVi` — CHỈ gồm các bộ lọc đi vào SQL (`queue`/`classKind`/`skill` lọc SAU,
- * trong bộ nhớ, không vào khoá) — để `caseQueueCounts` (5 lần cùng bộ lọc SQL, khác `queue`) và Tổng quan (~12 lần
+ * trong bộ nhớ, không vào khoá) — để các lần gọi cùng bộ lọc SQL, khác `queue` (Tổng quan ~12 lần
  * cùng bộ lọc SQL) dùng chung đúng MỘT kết quả SQL. Bỏ giá trị `null`/`undefined`/`false`, sắp khoá theo tên để cùng
  * một bộ lọc luôn ra cùng một khoá bất kể thứ tự viết trong object.
  */
@@ -2087,15 +2087,6 @@ function facetsOf(all: MappedCase[], f: CaseFilters) {
   };
 }
 
-/** Đếm cho bốn hàng đợi. Một case có thể thuộc nhiều nhóm — đây là bốn câu hỏi, không phải phép chia. */
-export function caseQueueCounts(p: Principal, f: CaseFilters = {}) {
-  const all = listCases(p, { ...f, queue: null });
-  const q = (k: string) => listCases(p, { ...f, queue: k }).rows.length;
-  return {
-    total: all.rows.filter((r) => r.status !== 'done').length,
-    newCases: q('new'), active: q('active'), due: q('due'), review: q('review'),
-  };
-}
 
 
 /**
