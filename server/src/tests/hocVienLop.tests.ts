@@ -537,7 +537,8 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     const dsGvThay = casesMod.listCases(gv, { classId: lopB }).rows.filter((c: any) => c.status !== 'done').length;
     const badge = hvl.danhSachHocVienLop(gv, {}).rows.find((r: any) => r.id === lopB)?.soCaseMo;
     eq(badge, dsGvThay, 'Badge lớp B phải khớp ĐÚNG danh sách "Cần hỗ trợ" mà GV lớp B thấy được — không đếm dư');
-    eq(dsGvThay, 0, 'Nợ để lại (ngoài phạm vi PR-Qa): case vẫn "vô hình" với GV lớp B vì cases.ts lọc quyền theo lớp lúc đánh giá (A)');
+    /* PR-Dọn (Q5): nợ đã trả — listCases xét quyền theo CÙNG lớp với bộ lọc (lớp đang học B), nên GV lớp B thấy Case cũ của em. */
+    eq(dsGvThay, 1, 'PR-Dọn Q5: GV lớp B (lớp đang học) thấy Case gắn bài ở lớp A');
   });
 
   // ------------------------------------------------------------------ Task 17 (fix sau rà soát planning) · Important

@@ -393,6 +393,8 @@ export function decideAbsenceMove(p: Principal, requestId: number, input: {
   if (!req) throw notFound('Không tìm thấy đề nghị dời lịch.');
   const attempt = loadAttempt(req.attempt_id);
   if (!canDecide(p, attempt)) throw forbidden('Chỉ Quản lý mới trả lời được đề nghị dời lịch.');
+  /* PR-Dọn (VN10): cùng chốt với đường xin dời / báo vắng — đề nghị cũ còn treo trên MT lịch sử cũng không được duyệt. */
+  if (attempt.lich_su) throw badRequest('MT lịch sử không vào luồng vắng — nhập bù điểm, không dời lịch.');
   if (req.status !== 'pending') {
     throw badRequest('Đề nghị này đã được xử lý — không trả lời lại được.');
   }

@@ -1295,7 +1295,7 @@ check('Nhiều việc quanh MỘT vấn đề gom lại thành MỘT chương, k
 check('Target chốt tại lượt: sửa lộ trình không viết lại lịch sử', () => {
   const a = conn.prepare(`SELECT * FROM assessment_attempts WHERE status='done' ORDER BY id LIMIT 1`).get() as any;
   const before = a.target_at_attempt;
-  cycles.updateCycle(P.admin, a.cycle_id, { targetScore: 8 });
+  cycles.updateCycle(P.admin, a.cycle_id, { targetScore: 8, lyDo: 'Nâng mục tiêu' });
   const after = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(a.id) as any;
   assert(after.target_at_attempt === before, 'Sửa target đã viết lại lịch sử lượt cũ');
   assert((conn.prepare('SELECT target_score FROM learning_cycles WHERE id = ?').get(a.cycle_id) as any).target_score === 8,

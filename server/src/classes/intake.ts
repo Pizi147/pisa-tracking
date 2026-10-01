@@ -210,10 +210,15 @@ export function previewIntake(
    * Gửi mà sai → báo ở cả lô và KHÔNG lặng lẽ thay bằng mặc định (dòng không tự ghi tuần sẽ báo thiếu).
    */
   const homNay = demoToday();
-  const w0 = input.defaultStartWeek ? docNgayNhap(input.defaultStartWeek, homNay, canNamGan(homNay)) : null;
+  const tuanMacDinh = tuanBatDauMacDinh({ lopThuong: ratio, khaiGiang: cls.start_date ?? null }, homNay);
+  /* PR-Dọn (Q17, VN21): cận năm chỉ áp khi tuần KHÁC mặc định của lớp — lớp khai giảng đã lâu vẫn thêm HV với tuần khai giảng. */
+  const docTuan = (v: string) => {
+    const w = docNgayNhap(v, homNay);
+    return w.iso && mondayOf(w.iso) !== tuanMacDinh ? docNgayNhap(v, homNay, canNamGan(homNay)) : w;
+  };
+  const w0 = input.defaultStartWeek ? docTuan(input.defaultStartWeek) : null;
   if (w0?.loi) issues.push({ row: 0, field: 'startWeek', message: w0.loi, muc: 'loi' });
-  const defaultWeek = w0?.loi ? null
-    : w0?.iso ? mondayOf(w0.iso) : tuanBatDauMacDinh({ lopThuong: ratio, khaiGiang: cls.start_date ?? null }, homNay);
+  const defaultWeek = w0?.loi ? null : w0?.iso ? mondayOf(w0.iso) : tuanMacDinh;
 
   /* TRÙNG HỒ SƠ đọc MỘT câu cho cả lô (PR-TOC), lọc theo ngày sinh từng dòng ở dưới. */
   const cungTen = new Map<string, any[]>();
@@ -287,7 +292,7 @@ export function previewIntake(
     /* TUẦN BẮT ĐẦU: ô trống thì dùng mặc định của cả lô. */
     let startWeek: string | null = defaultWeek;
     if (coDuLieu(r.startWeek)) {
-      const w = docNgayNhap(r.startWeek, homNay, canNamGan(homNay));
+      const w = docTuan(String(r.startWeek));
       startWeek = w.iso ? mondayOf(w.iso) : null;
       if (w.loi) loi('startWeek', w.loi);
     }

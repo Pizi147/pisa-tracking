@@ -754,7 +754,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   const viec = viecCuaHocVien(p, studentId, board, {
     trangThaiEm: s.status, lopId: current?.class_id ?? null, chuongTrinh: board.chuongTrinh, yThuc: yThucEm, miniTest, dai,
   });
-  const thongTin = dongThongTin({ keSel: selected ? { cycleId: selected.id, ke: examPlan } : null, startWeekSel: selected ? { cycleId: selected.id, weekStart: startWeekSel?.week_start ?? null } : null, s, current: lopDangGiu, khoa: khoaHienTai, gvcn: gvcnHienTai, dangChay: allCycles.find((c) => c.status === 'active') ?? null, today,
+  const thongTin = dongThongTin({ keSel: selected ? { cycleId: selected.id, ke: examPlan } : null, startWeekSel: selected ? { cycleId: selected.id, weekStart: startWeekSel?.week_start ?? null } : null, s, current: lopDangGiu, khoa: khoaHienTai, gvcn: gvcnHienTai, dangChay: allCycles.find((c) => c.status === 'active') ?? null /* = nhánh dangHoc của loTrinhTinhTuan (Q11); không có lộ trình chạy thì không có dòng tuần học */, today,
     tuanCuoiKhoa: attemptRows.filter((a) => a.kind === 'final' && a.status !== 'cancelled' && a.week_start && a.class_id === lopDangGiu?.class_id)
       .map((a) => a.week_start as string).sort()[0] ?? null });
   const cuoiKhoaEm = (() => {

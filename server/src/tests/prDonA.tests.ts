@@ -374,4 +374,79 @@ export async function runPrDonATests(t: YThucTestKit) {
     assert(b && Array.isArray(b.rows), 'issueBoard 1 200 em');
     assert(!/\.all\(\.\.\.sids\) as any\[\];\s*const mine/.test(docNguon('server/src/cases/effectiveness.ts')), 'còn IN thô theo sids');
   });
+
+  // ------------------------------------------------------------------ khối 4 · lộ trình và ngày (VN10, VN15, VN20, VN21, VN25, Q11)
+  console.log('\nPR-Dọn-a · (4) Lộ trình và ngày');
+  const hanhTrinh: any = await import('../students/hanhTrinh.ts');
+  const profileSvc: any = await import('../students/profile.ts');
+  const luatLt: any = await import('../classes/luatLoTrinh.ts');
+  const transitionSvc: any = await import('../classes/transition.ts');
+
+  check('Dọn-a (4a) · VN10 đề nghị dời của MT lịch sử → decideAbsenceMove 400, cùng câu với đường xin dời', () => {
+    const { sid } = emMoi('MB FT 101');
+    const a = get(`SELECT id, planned_period_id FROM assessment_attempts WHERE student_id = ? ORDER BY id LIMIT 1`, sid);
+    conn.prepare('UPDATE assessment_attempts SET lich_su = 1 WHERE id = ?').run(a.id);
+    const id = Number(conn.prepare(`INSERT INTO skill_move_requests (attempt_id, skill, move_no, from_period_id, to_period_id, reason, requested_by, requested_on, decide_by, status, created_at)
+      VALUES (?, 'listening', 1, ?, ?, 'Ốm', ?, ?, ?, 'pending', ?)`).run(a.id, a.planned_period_id, week.ensurePeriod(t.addDays(tuanNay, 7)).id, P.coreTeacher.userId, TODAY, t.addDays(TODAY, 6), new Date().toISOString()).lastInsertRowid);
+    const e = loiCua(() => absence.decideAbsenceMove(P.mbManager, id, { approve: true }));
+    assert(e?.status === 400 && /MT lịch sử không vào luồng vắng/.test(e.message), `MT lịch sử: ${e?.status} ${e?.message}`);
+  });
+
+  check('Dọn-a (4b) · VN15 thi dự kiến ngày 07/12/2026 → tháng 01/2027: exam_period_id NULL, examPlanOf là tháng; chọn tuần khác cho tháng thì giữ (Q16)', () => {
+    const { cy } = emMoi('MB FT 101');
+    cyclesSvc.updateCycle(P.mbManager, cy, { examDate: '2026-12-07' });
+    const truoc = get('SELECT exam_period_id FROM learning_cycles WHERE id = ?', cy);
+    assert(truoc.exam_period_id, 'ngày thi phải có tuần');
+    /* Panel Kế hoạch gửi lại tuần cũ trong state — vẫn phải bỏ. */
+    cyclesSvc.updateCycle(P.mbManager, cy, { examDate: '2027-01', examPeriodId: truoc.exam_period_id });
+    const sau = get('SELECT * FROM learning_cycles WHERE id = ?', cy);
+    assert(sau.exam_period_id === null && sau.exam_month === '2027-01' && sau.exam_date === null, JSON.stringify({ p: sau.exam_period_id, m: sau.exam_month, d: sau.exam_date }));
+    assert(cyclesSvc.examPlanOf(sau).confidence === 'month', `examPlanOf: ${JSON.stringify(cyclesSvc.examPlanOf(sau))}`);
+    const tuanThang = week.ensurePeriod('2027-01-11').id;
+    cyclesSvc.updateCycle(P.mbManager, cy, { examDate: '2027-01', examPeriodId: tuanThang });
+    assert(get('SELECT exam_period_id FROM learning_cycles WHERE id = ?', cy).exam_period_id === tuanThang, 'khẳng định: tháng + tuần chọn thì giữ tuần');
+  });
+
+  check('Dọn-a (4c) · VN20 docONgay("01/01/0208", ngày, tối thiểu 1900) → câu cận năm "Không được trước …", không phải "Ngày không có thật"', () => {
+    const r = d.docONgay('01/01/0208', 'ngay', TODAY, { toiThieu: '1900-01-01' });
+    assert(r.iso === null && /Không được trước/.test(r.loi ?? ''), JSON.stringify(r));
+    assert(d.docONgay('31/02/2026', 'ngay', TODAY).loi === 'Ngày không có thật', 'khẳng định: ngày không có thật vẫn báo đúng');
+  });
+
+  check('Dọn-a (4d) · VN21 lớp thường khai giảng 05/09/2022: Thêm HV với tuần khai giảng → không lỗi dòng 0; tuần khác ngoài cận năm → vẫn lỗi (Q17)', () => {
+    const lop = classId('MB FOU 12');
+    const cu = get('SELECT start_date FROM classes WHERE id = ?', lop).start_date;
+    conn.prepare(`UPDATE classes SET start_date = '2022-09-05' WHERE id = ?`).run(lop);
+    try {
+      const xem = (w: string) => intake.previewIntake(P.mbManager, { classId: lop, rows: [{ fullName: 'Em Dọn-a VN21' }], defaultStartWeek: w })
+        .issues.filter((x: any) => x.row === 0 && x.field === 'startWeek');
+      assert(xem('2022-09-05').length === 0, `tuần khai giảng bị chặn: ${JSON.stringify(xem('2022-09-05'))}`);
+      assert(xem('2022-09-12').length === 1, 'tuần khác ngoài cận năm phải bị chặn');
+    } finally { conn.prepare('UPDATE classes SET start_date = ? WHERE id = ?').run(cu, lop); }
+  });
+
+  check('Dọn-a (4e) · VN25 updateCycle đổi target: thiếu lyDo → 400; có lyDo → một dòng cycle_target_revisions + Hành trình target_change; GVCN → 403 (Q15)', () => {
+    const { sid, cy } = emMoi('MB FT 101');
+    const e = loiCua(() => cyclesSvc.updateCycle(P.mbManager, cy, { targetScore: 7 }));
+    assert(e?.status === 400 && /lý do/i.test(e.message), `thiếu lý do: ${e?.status} ${e?.message}`);
+    assert(maLoi(() => cyclesSvc.updateCycle(P.coreTeacher, cy, { targetScore: 7, lyDo: 'Thử' })) === 403, 'GVCN');
+    cyclesSvc.updateCycle(P.mbManager, cy, { targetScore: 7, lyDo: 'Em tiến bộ nhanh', note: 'ghi chú' });
+    const rev = all('SELECT * FROM cycle_target_revisions WHERE cycle_id = ?', cy);
+    const ht = all(`SELECT * FROM journey_events WHERE student_id = ? AND event_type = 'target_change'`, sid);
+    const c = get('SELECT target_score, note FROM learning_cycles WHERE id = ?', cy);
+    assert(rev.length === 1 && rev[0].reason === 'Em tiến bộ nhanh' && ht.length === 1 && c.target_score === 7 && c.note === 'ghi chú', JSON.stringify({ rev: rev.length, ht: ht.length, c }));
+  });
+
+  check('Dọn-a (4f) · Q11 em FT vào lớp từ 03/08 (LT1), QL mở RF không chuyển lớp → Hành trình, đầu hồ sơ, xemChuyenLop, transitionPlan cùng tuanHoc', () => {
+    const lop = classId('MB FT 101');
+    const { sid, cy } = emMoi('MB FT 101');
+    conn.prepare(`UPDATE learning_cycles SET started_at = '2026-08-03', start_period_id = ? WHERE id = ?`).run(week.ensurePeriod('2026-08-03').id, cy);
+    conn.prepare(`UPDATE enrollments SET started_at = '2026-08-03' WHERE student_id = ?`).run(sid);
+    cyclesSvc.createCycle(P.mbManager, { studentId: sid, route: 'RF', targetScore: 6.5, startedAt: TODAY });
+    const ht = hanhTrinh.hanhTrinhHocVien(P.mbManager, sid, null).chuong.find((c: any) => c.classId === lop && c.dangHoc)?.tuanHoc?.tu;
+    const dau = profileSvc.studentProfile(P.mbManager, sid).dauHoSo.thongTin.tuanHoc?.tuan;
+    const xem = luatLt.xemChuyenLop(P.mbManager, sid).hienTai.tuanHoc?.tuan;
+    const ca = transitionSvc.transitionPlan(P.mbManager, lop).students.find((s: any) => s.id === sid)?.tuanHoc?.tuan;
+    assert(dau != null && ht === dau && xem === dau && ca === dau, JSON.stringify({ hanhTrinh: ht, dauHoSo: dau, xemChuyenLop: xem, transitionPlan: ca }));
+  });
 }
